@@ -1,0 +1,46 @@
+---
+title: "Apothem と手作業の Codex 構成の比較"
+description: "Codex の AGENTS.md、フック、スキル、エージェントを手作業で維持するのと、Apothem の共有プロファイルからインストールするのとの比較。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Codex はユーザー指示を `AGENTS.md` から読み取り、フックを `hooks.json` または
+`config.toml` から読み込み、カスタムエージェントを `agents/` の下で発見し、共有の
+Codex スキルルートからスキルを発見します。Apothem の codex アダプターは、運用者
+所有の `config.toml` 設定には手を触れずに、これらの表面を共有プロファイルから
+インストールします。
+
+## 労力の比較
+
+| タスク | 手作業の構成 | Apothem 管理 |
+| ---- | --------------- | --------------- |
+| `AGENTS.md` を書く | ユーザー指示を手で編集 | Codex のブートストラップテンプレートからインストール |
+| フックを書く | `hooks.json` または TOML フックテーブルを手書き | `~/.codex/hooks.json` にインストールし、Apothem のフックヘルパーを `~/.codex/hooks/` の下に配置 |
+| カスタムエージェントを書く | `~/.codex/agents/` の下に TOML ファイルを手書き | Apothem の Markdown エージェントから変換 |
+| 再利用可能なコマンドを書く | スキルを 1 ディレクトリずつ手作業で構築 | `~/.agents/skills/*/SKILL.md` としてラップ |
+| ルールを他の環境と揃えて保つ | 手作業、ツールごと | `apothem update` で自動 |
+| 構成が正しいか検証する | 手作業の検査 | `apothem verify --harness codex` |
+
+## Apothem が管理するもの
+
+codex アダプターは `AGENTS.md`、`hooks.json`、フックヘルパーファイル、変換済みの
+カスタムエージェント、生成されたスキルをインストールします。`~/.codex/config.toml`
+は上書きしません。モデル、サンドボックス、承認、MCP、その他のランタイム設定は
+運用者所有のままです。
+
+## 移行手順
+
+1. 共有プロファイルをまだ作成していなければ、`apothem profile init` を実行します。
+2. 既存の `AGENTS.md` のルールを共有コーパスへ移します。
+3. Codex の既存の `config.toml` ランタイム設定は、別の場所で手作業管理することを
+   選ばない限り、そのまま保ちます。
+4. `apothem install --harness codex` を実行して Codex ネイティブの表面を
+   インストールします。
+5. `apothem verify --harness codex` を実行してファイルが配置されたことを確認します。
+6. 以降の変更には毎回 `apothem update --harness codex` を使います。
+
+## 次に読む
+
+- [Codex アダプターのリファレンス](/docs/harnesses/codex)
+- [比較の概要](/docs/comparison)

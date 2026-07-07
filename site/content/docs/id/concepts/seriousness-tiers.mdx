@@ -1,0 +1,35 @@
+---
+title: "Tingkat keseriusan"
+description: "Empat tingkat keseriusan — cara Apothem menskalakan tata kelola sesuai tingkat keterlibatan."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem menskalakan beban tata kelola sesuai tingkat keterlibatan. Eksplorasi cepat
+tidak memerlukan commit bertanda tangan; peluncuran produksi memerlukannya.
+
+## Empat tingkat
+
+| Tingkat | Kapan dipakai | Batas bawah tata kelola |
+|------|-------------|-----------------|
+| **EXPLORING** | Prototipe, eksperimen sekali-pakai | Lint + tes + mandat inti (evaluasi kritis, penalaran solusi-terbaik, kejujuran langsung) |
+| **PERSONAL_USE** | Alat pribadi, skrip lokal | + Pemeriksaan tipe + commit per-fase + PROGRESS.md |
+| **SHARED** | Proyek tim, sumber-terbuka | + pemeriksaan yang gagal memblokir eksekusi + commit per-tugas + dokumentasi penuh + peninjauan paralel |
+| **PUBLIC_LAUNCH** | Layanan produksi, paket yang dipublikasikan | + Pemindaian keamanan + commit bertanda tangan + semver + peninjauan-ulang wajib |
+
+## Default ad-hoc
+
+Ketika tidak ada tingkat keseriusan yang ditentukan, Apothem default ke **PERSONAL_USE**.
+
+## Tata kelola layak minimum
+
+Pada EXPLORING, tiga mandat lintas-bidang selalu berlaku terlepas dari tingkat:
+- CM-1 (Evaluasi Kritis)
+- CM-5 (Solusi Terbaik)
+- CM-10 (Kejujuran Brutal)
+
+## Eskalasi tingkat
+
+Tingkat keseriusan dapat dieskalasi di tengah proyek. Ketika proyek PERSONAL_USE
+naik ke SHARED, jalankan sapuan kesiapan-rilis lokal penuh untuk menangkap
+kesenjangan tata kelola apa pun yang menumpuk pada tingkat yang lebih rendah.

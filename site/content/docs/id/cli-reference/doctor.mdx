@@ -1,0 +1,54 @@
+---
+title: "doctor"
+description: "Referensi CLI untuk perintah apothem doctor."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Menjalankan diagnostik sistem untuk pemasangan Apothem.
+
+## Sinopsis
+
+```
+apothem doctor [--quiet|-q] [--verbose|-v]
+               [--format plain|json] [--json] [--no-color]
+```
+
+Memeriksa pemasangan Apothem dan melaporkan status setiap adapter harness yang
+terdaftar. Ketika profil bersama tersedia, profil tersebut divalidasi terhadap
+skema bawaan paket — bukan sekadar diperiksa keberadaannya — sehingga profil yang
+rusak ditampilkan sebagai kegagalan diagnostik alih-alih "ditemukan" berwarna
+hijau. Keluaran JSON membawa bidang `profile_valid` (`true` / `false`, atau `null`
+ketika tidak ada profil) dan bidang `profile_error` ketika validasi gagal. Keluar
+dengan 0 ketika semua pemeriksaan lulus, dan dengan 1 ketika satu atau lebih
+harness tidak terpasang atau ketika profil yang tersedia gagal validasi skema.
+
+## Opsi
+
+| Opsi | Deskripsi |
+|---|---|
+| `--quiet`, `-q` | Menekan keluaran informatif; hanya kesalahan yang dikeluarkan. |
+| `--verbose`, `-v` | Mengeluarkan keluaran diagnostik tambahan. |
+| `--format plain\|json` | Format keluaran (bawaan: `plain`). |
+| `--json` | Singkatan untuk `--format json`. |
+| `--no-color` | Menonaktifkan kode warna ANSI pada keluaran. |
+| `-h`, `--help` | Menampilkan bantuan lalu keluar. |
+
+## Contoh
+
+```bash
+apothem doctor
+apothem doctor --json
+```
+
+## Kode keluar
+
+| Kode | Arti |
+|---|---|
+| 0 | Semua pemeriksaan lulus |
+| 1 | Sebuah harness tidak terpasang, atau profil yang tersedia gagal validasi skema |
+
+## Lihat juga
+
+- [apothem harnesses](/docs/cli-reference/harnesses) — mendaftar dan memeriksa harness yang terdaftar
+- [apothem verify](/docs/cli-reference/verify) — memeriksa pemasangan harness tertentu

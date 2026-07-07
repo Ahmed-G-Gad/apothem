@@ -1,0 +1,111 @@
+---
+title: "Kontrak pemaketan cohort"
+description: "Kontrak yang stabil dan dapat dikonsumsi hilir untuk pemaketan cohort dan manifes plugin — menyebutkan cohort dan menyelesaikan target asli per-harness-nya tanpa menurunkan ulang pemetaan."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+# Kontrak pemaketan cohort
+
+Dokumen ini menetapkan kontrak yang stabil dan dapat dikonsumsi hilir untuk
+pemaketan cohort dan manifes plugin. Seorang konsumen membaca kontrak ini untuk
+menyebutkan cohort dan menyelesaikan target asli per-harness-nya **tanpa
+menurunkan ulang pemetaan**.
+
+## Artefak
+
+| Artefak | Peran |
+| -------- | ---- |
+| `src/apothem/schemas/cohort.schema.json` | JSON Schema untuk dokumen manifes cohort. |
+| `src/apothem/schemas/cohort-manifest.yaml` | Instans manifes cohort — keenam cohort (`core`, `developer`, `security`, `research`, `ai-engineering`, `full`) diisi dengan himpunan anggotanya; `full` adalah gabungan dari lima lainnya. |
+| `src/apothem/schemas/plugin.schema.json` | JSON Schema untuk manifes plugin per-bundel (`plugin.json`). |
+| `src/apothem/lib/propagation-manifest.yaml` | **Sumber kebenaran** untuk target asli per-harness. |
+
+## Bentuk manifes cohort
+
+Manifes cohort adalah objek tingkat atas dengan tiga kunci:
+
+- `version` — string SemVer dari manifes.
+- `cohorts[]` — satu entri per cohort. Setiap entri memiliki `id` (dari himpunan
+  tertutup `core | developer | security | research | ai-engineering | full`),
+  `name`, `description`, dan `members` (objek yang mengelompokkan pengenal anggota
+  berdasarkan tipe katalog: `skills` / `agents` / `commands` / `rules` /
+  `hooks`).
+- `per_harness_targets` — kontrak resolusi (di bawah).
+
+Setiap pengenal anggota adalah nama kebab-case yang stabil yang berkorespondensi
+dengan artefak nyata di bawah `src/apothem/` (`skills/<name>/`, `agents/<name>.md`,
+`commands/<name>.md`, `rules/<name>.md`, atau entri `hooks/`).
+
+## Menyebutkan cohort
+
+Seorang konsumen memuat `cohort-manifest.yaml`, memvalidasinya terhadap
+`cohort.schema.json`, lalu melakukan iterasi atas `cohorts[]`. Untuk setiap cohort
+ia membaca `members.<type>` untuk memperoleh pengenal anggota dari setiap tipe
+katalog.
+
+## Menyelesaikan target asli per-harness (tanpa penurunan ulang)
+
+Manifes cohort **tidak** menyatakan ulang pemetaan harness. Sebagai gantinya,
+`per_harness_targets.source` menunjuk ke `lib/propagation-manifest.yaml`, satu-
+satunya sumber kebenaran. Aturan resolusinya:
+
+> Untuk anggota cohort bertipe katalog `T` (salah satu dari `skills`, `agents`,
+> `commands`, `rules`, `hooks`) dan harness target `H` (salah satu yang
+> tercantum dalam `per_harness_targets.harnesses`), target plugin asli adalah
+> bidang `target` dari entri dalam `lib/propagation-manifest.yaml` di bawah
+> `harnesses.H.install` yang `source`-nya cocok dengan `T/`.
+
+Sebagai contoh, sebuah skill cohort `core` yang dipasang untuk `claude_code`
+diselesaikan melalui entri `harnesses.claude_code.install` dengan
+`source: "skills/"` menjadi `target: "${HARNESS_ROOT}/skills/"`. Skill yang sama
+untuk `opencode` diselesaikan menjadi `${HARNESS_ROOT}/skills/`; untuk `gemini_cli`
+menjadi `${PROJECT_ROOT}/.gemini/skills/`. Konsumen tidak pernah mengarang target
+harness — mereka mencarinya.
+
+Placeholder `${HARNESS_ROOT}` / `${PROJECT_ROOT}` diselesaikan pada saat pemasangan
+oleh setiap adapter harness; konsumen cohort memperlakukan `target` yang sudah
+diselesaikan secara harfiah.
+
+## Peran manifes plugin
+
+`plugin.schema.json` menjelaskan sebuah `plugin.json` — bundel anggota katalog
+yang menjelaskan dirinya sendiri (`skills` / `commands` / `agents` / `hooks` /
+`rules`) dengan `name` yang wajib, `version` SemVer, dan `description`. Sebuah
+manifes plugin adalah unit yang dimaterialisasikan oleh adapter harness ke dalam
+permukaan plugin asli-nya; cohort memilih anggota mana yang dibawa sebuah plugin,
+dan manifes propagasi menyelesaikan di mana anggota tersebut mendarat per harness.
+
+## Keputusan pemaketan — satu bundel payung, cohort logis
+
+Cohort adalah **lapisan seleksi logis** (manifes ini), bukan sekumpulan bundel
+terpisah yang dapat dipasang secara independen. Apothem mengirimkan **satu bundel
+payung** yang membawa katalog lengkap; manifes cohort memungkinkan konsumen
+memilih subhimpunan yang koheren, dan manifes propagasi menyelesaikan di mana
+setiap anggota yang dipilih mendarat per harness.
+
+Memecah katalog menjadi bundel-bundel terpisah per cohort (mis. satu bundel per
+keluarga `developer` / `security` / `research`) **dapat dicapai tanpa duplikasi di
+tingkat repositori** melalui **pola symlink meta-plugin** yang didokumentasikan
+oleh permukaan distribusi utama: satu katalog marketplace mencantumkan beberapa
+plugin cohort, dan setiap direktori plugin cohort menyimpan **symlink** ke katalog
+bersama sumber-tunggal alih-alih salinan. Ketika sebuah cohort dipasang, harness
+mendereferensi setiap symlink dalam-marketplace — menyalin konten target ke dalam
+*cache* cohort tersebut — sehingga cohort yang terpasang mandiri, sementara
+**repositori menyimpan satu sumber kebenaran yang dikawat oleh symlink**
+(pengawatan alih-alih redundansi, persis seperti yang dipilih disiplin
+deduplikasi). Pembacaan sebelumnya bahwa bundel cohort "menduplikasi secara
+mekanis" katalog mencampuradukkan duplikasi *cache saat pemasangan* (salinan
+per-plugin normal milik harness) dengan duplikasi *repositori*; pola symlink
+menghindari yang terakhir.
+
+Apothem saat ini mengirimkan **satu bundel payung** karena itu adalah permukaan
+distribusi paling sederhana, bukan karena cohort secara mekanis mustahil.
+Mengadopsi bentuk per-cohort adalah **trade-off UX dan pemeliharaan** yang
+sesungguhnya, bukan pelanggaran deduplikasi: keuntungannya adalah pengalaman
+"pasang hanya keluarga ini" yang lebih halus; biayanya adalah memelihara N
+direktori symlink cohort plus entri marketplace-nya, permukaan konformitas / tes /
+golden yang lebih besar, dan salinan cache saat pemasangan per cohort. Lapisan
+cohort logis di atas sudah memberikan hasil *seleksi* "pasang hanya yang Anda
+butuhkan" dari bundel tunggal; *pemaketan* per-cohort adalah langkah berikutnya
+kapan pun pengalaman pemasangan yang lebih halus diinginkan.

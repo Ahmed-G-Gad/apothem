@@ -1,0 +1,32 @@
+---
+title: "Konvensi penamaan"
+description: "Menetapkan nama berkas kebab-case, format kunci frontmatter, penamaan branch dengan prefiks tipe, dan semantik prefiks numerik untuk urutan artefak terurut."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Referensi kanonik untuk bentuk nama berkas, pengidentifikasi, dan nama branch di seluruh ekosistem.** Ringkasan di [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Konvensi adalah deklarasi inline; halaman ini adalah referensi mandiri yang dirujuk kontributor hilir.
+
+---
+
+## 1. Nama sistem berkas
+
+Berkas dan folder menggunakan **kebab-case** secara default. Pengidentifikasi tidak membawa spasi, garis bawah, maupun camel-case.
+
+Pengecualian huruf besar kanonik disediakan untuk berkas singleton permukaan publikasi yang dikenali setiap kontributor pada perjumpaan pertama: `CLAUDE.md`, `README.md`, `LICENSE`, `CHANGELOG.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md`, dan singleton suite rencana (`MASTER-PLAN.md`, `PROGRESS.md`, `PHASE.md`, `SKILL.md`, `VERSION`). Setiap berkas lainnya menggunakan kebab-case.
+
+## 2. Kunci frontmatter
+
+Kunci frontmatter YAML menggunakan `kebab-case` (misalnya, `argument-hint`, `disable-model-invocation`). Aturan kebab-case berlaku secara seragam di seluruh aturan, perintah, pekerja terdelegasi, keterampilan, dan `CLAUDE.md` itu sendiri.
+
+## 3. Nama branch
+
+Branch mengikuti `<type>/<short-description>` dengan tipe yang diambil dari himpunan tertutup `{feat, fix, chore, docs, refactor, test, perf, ci, build, style, revert, release}`. Deskripsinya kebab-case dan kurang dari lima puluh karakter.
+
+## 4. Prefiks numerik
+
+Prefiks numerik (`NN-`) pada path sistem berkas menyampaikan pengurutan dan hanya berlaku di tempat pengurutan bersifat intrinsik — folder fase, folder subfase, skrip migrasi, dan kelas artefak lain mana pun yang urutannya merupakan bagian dari kontrak. Singleton tingkat-root yang tidak memiliki urutan saudara tidak membawa prefiks numerik; menambahkannya salah menandakan hubungan pengurutan yang tidak ada. Disiplin lengkap berada di [`src/apothem/rules/canonical-layout.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/canonical-layout.md) §2.1.
+
+## 5. Validator
+
+naming-grep di `src/apothem/conformity/naming_grep.py` adalah permukaan penegakan mekanis. CI memanggilnya melalui `make validate`.

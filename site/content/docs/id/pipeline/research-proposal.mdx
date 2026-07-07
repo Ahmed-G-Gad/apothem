@@ -1,0 +1,73 @@
+---
+title: "/research-proposal"
+description: "/research-proposal — Mengubah celah hasil sintesis dan kerangka teoretis menjadi rencana acuan yang layak didanai dan dapat ditinjau: sasaran SMART, register kelayakan dan risiko, jalur dampak, rencana praregistrasi, serta pemilihan pedoman pelaporan EQUATOR — tahap proposal dari alur /research, antara /research-synthesis dan /research-design."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Peran:** Peneliti Utama (rencana acuan)
+**Posisi alur:** tengah rantai
+
+Mengubah celah hasil sintesis dan kerangka teoretis menjadi rencana acuan yang layak didanai dan dapat ditinjau. Kelayakan etika diangkat di awal, dan rencana praregistrasi serta pemilihan pedoman pelaporan ditetapkan sebelum desain studi apa pun dioperasionalkan.
+
+## Pemanggilan kanonik
+
+```bash
+/research-proposal
+```
+
+Dengan argumen:
+
+```bash
+/research-proposal [--suite-name NAME] [--override] [--guideline NAME] [--prereg-registry NAME]
+```
+
+## Masukan
+
+Berkas `_inputs/synthesis.md` suite (peta SOTA + analisis celah) dan `_inputs/theory.md` (kerangka konseptual).
+
+## Keluaran
+
+`_inputs/proposal.md` (hierarki sasaran SMART, penilaian kelayakan, register sumber daya / lini masa / risiko, jalur dampak, rencana praregistrasi, dan praseleksi pedoman pelaporan EQUATOR).
+
+## Hilir
+
+/research-design (konsumen hilir — mengoperasionalkan proposal menjadi desain studi yang dibekukan dan terpraregistrasi).
+
+## Fase alur kerja
+
+Perintah ini mengikuti alur kerja standar pipa `/research`:
+
+1. **Muat konteks** — Baca `_inputs/synthesis.md` dan `_inputs/theory.md`, aturan, serta status suite yang ada.
+2. **Bangun hierarki sasaran SMART** — Ubah celah menjadi sasaran yang spesifik, terukur, dapat dicapai, relevan, dan terikat waktu.
+3. **Nilai kelayakan dan risiko** — Bangun register sumber daya / lini masa / risiko; angkat kelayakan etika di awal.
+4. **Rencanakan praregistrasi dan pelaporan** — Pilih registri, susun rencana praregistrasi, dan praseleksi pedoman pelaporan EQUATOR.
+5. **Petakan jalur dampak** — Telusuri bagaimana sasaran, bila tercapai, menghasilkan dampak hilir.
+6. **Verifikasi dan terbitkan** — Pastikan sasaran dapat diuji dan rencana dapat direproduksi; terbitkan `_inputs/proposal.md` beserta manifes serah terima.
+
+## Landasan ketelitian
+
+Ambisi tempat-terbit sasaran menetapkan bukan hanya pilihan pedoman pelaporan tetapi juga kedalaman landasan ketelitian yang harus dilampaui oleh tahap desain dan eksperimen hilir — landasan replikasi, paritas anggaran, penyetelan pada pembagian yang terpisah, dan signifikansi dengan ukuran efek — ditambah paket bukti reproduksibilitas yang akan dibawa oleh hasil kerjanya.
+
+## Mode kegagalan
+
+| Gejala | Penyebab | Pemulihan |
+|---------|-------|----------|
+| Sasaran tidak terukur | Sasaran dinyatakan sebagai aktivitas, bukan hasil | Rumuskan ulang sebagai sasaran SMART dengan metrik keberhasilan yang eksplisit |
+| Tidak ada rencana praregistrasi | Langkah praregistrasi dilewati | Pilih registri dan susun rencana sebelum melanjutkan ke `/research-design` |
+| Masukan sintesis hilang | `/research-synthesis` belum dijalankan | Jalankan `/research-synthesis` lebih dahulu untuk menghasilkan analisis celah |
+
+## Contoh
+
+```bash
+# Mengubah celah menjadi rencana acuan yang layak didanai
+/research-proposal --suite-name retrieval-latency
+
+# Mengunci pedoman pelaporan dan registri praregistrasi
+/research-proposal --guideline PRISMA --prereg-registry OSF
+```
+
+## Referensi silang
+
+- [Ikhtisar alur](/docs/pipeline)
+- [Referensi perintah](/docs/reference/commands)

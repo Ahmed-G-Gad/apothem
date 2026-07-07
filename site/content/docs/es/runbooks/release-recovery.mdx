@@ -1,0 +1,111 @@
+---
+title: "Runbook de recuperación de versión"
+description: "Procedimientos de recuperación para restaurar el repositorio cuando una secuencia de versión falla a mitad de camino, con diagnósticos etapa por etapa."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Este runbook restaura `ahmed-g-gad/apothem` a un estado funcional cuando una
+secuencia de versión de borrón-y-cuenta-nueva-en-el-sitio falla a mitad de
+camino. El repositorio público no se elimina ni se recrea durante la versión. La
+recuperación depende de la etiqueta de seguridad de historial específica de la
+versión, el clon local del mantenedor y el estado de los gestores de paquetes
+aguas abajo.
+
+## 1. Taxonomía de etapas
+
+| Etapa | Acción | Modo de fallo | Ruta de recuperación |
+|---|---|---|---|
+| 1 | Capturar y empujar la etiqueta de seguridad de historial | La etiqueta falta, no está firmada o apunta al grafo equivocado | Recrear la etiqueta desde el punto de fusión previo al aplastamiento antes de mover `main` |
+| 2 | Verificar CI, fortaleza de auditoría, estado de paquetes y changelog | Cualquier puerta falla | Detente; arregla en local; no muevas `main` |
+| 3 | Mover `main` al único commit de versión firmado | El force-with-lease falla, el commit no está firmado o el mensaje del commit es incorrecto | Restablece `main` local al commit firmado previsto y reintenta con un lease nuevo |
+| 4 | Publicar GitHub Release, Pages, npm y metadatos | Un publicador o una superficie de verificación falla | Conserva el commit de versión; vuelve a ejecutar solo el publicador fallido tras registrar el fallo |
+
+Cada acción de recuperación es idempotente. Ejecutarla sobre un estado limpio no
+hace nada; ejecutarla sobre un estado parcial restaura la condición esperada
+tras la etapa.
+
+## 2. Recuperación de la etiqueta de seguridad
+
+Verifica la etiqueta de seguridad antes de cualquier reescritura de historial:
+
+```bash
+git fetch origin --tags
+git show --summary --show-signature <history-safety-tag>
+git merge-base --is-ancestor origin/main <history-safety-tag>
+```
+
+Esperado: la etiqueta existe, la verificación de firma tiene éxito cuando la
+etiqueta está firmada, y el grafo completo previo al aplastamiento es alcanzable
+desde la etiqueta. Si la etiqueta falta en local pero está presente en remoto,
+tráela. Si falta en remoto, detén la versión y recréala antes de tocar `main`:
+
+```bash
+git tag -s <history-safety-tag> <pre-squash-commit>
+git push origin <history-safety-tag>
+```
+
+## 3. Recuperación de la rama principal
+
+Diagnostica el estado de `main` público:
+
+```bash
+gh api repos/ahmed-g-gad/apothem/commits/main \
+  --jq '.sha, .commit.message, .commit.verification.verified, .commit.verification.reason'
+```
+
+Esperado tras la migración: el mensaje es exactamente
+`release: Apothem <release-version>` y `verification.verified` es `true`.
+
+Si el push con force-with-lease falló antes de cambiar GitHub, deja el remoto
+como está, tráelo, reconstruye el commit de versión firmado en local y reintenta
+solo después de que el lease coincida:
+
+```bash
+git fetch origin main
+git push --force-with-lease=main:<expected-remote-sha> origin main
+```
+
+Si el push aterrizó con un commit sin firmar o no verificado, arregla la
+configuración de firma local, vuelve a crear el commit de versión desde el mismo
+árbol y haz force-push de nuevo con un lease. No elimines la etiqueta de
+seguridad.
+
+## 4. Recuperación de publicadores
+
+Cada publicador se reintenta de forma independiente después de que el commit de
+versión de GitHub se verifica:
+
+| Superficie | Diagnóstico | Recuperación |
+|---|---|---|
+| GitHub Release | `gh release view <release-tag> --json tagName,isDraft,isPrerelease,assets` | Elimina solo un borrador mal formado; en caso contrario, sube los recursos faltantes con `gh release upload --clobber` |
+| Etiqueta de versión | `git ls-remote origin refs/tags/<release-tag>` y `git tag -v <release-tag>` | Vuelve a etiquetar desde el mismo SHA con `-a -s` si la etiqueta falta o no está firmada; nunca reutilices un nombre de etiqueta para un commit distinto |
+| npm | `npm view @ahmed-g-gad/apothem version` y `npx @ahmed-g-gad/apothem@<version> --version` | Vuelve a ejecutar `publish-npm.yml` para `<release-tag>` tras confirmar npm Trusted Publishing para `@ahmed-g-gad/apothem` |
+| Pages | `gh run list --workflow=publish-static-site.yml --limit=1` y `curl -sSI https://apothem.ahmedgad.com/` | Vuelve a ejecutar `publish-static-site.yml`; verifica que el CNAME siga resolviendo a `ahmed-g-gad.github.io` |
+| Metadatos de GitHub | `gh repo view ahmed-g-gad/apothem --json description,homepageUrl,repositoryTopics,visibility` | Parchea descripción, página de inicio y temas en el sitio; no recrees el repositorio |
+
+## 5. Reversión
+
+La reversión es el último recurso. Prefiere primero la recuperación dirigida de
+publicadores. Si hay que deshacer el único commit de versión, restaura `main`
+desde la etiqueta de seguridad:
+
+```bash
+git fetch origin --tags
+git switch main
+git reset --hard <history-safety-tag>
+git push --force-with-lease origin main
+```
+
+Tras la reversión, vuelve a ejecutar CI, vuelve a aplicar la protección de rama
+si GitHub reporta desviación, y registra la reversión como un incidente que
+bloquea la versión. Conserva la etiqueta de versión solo si los artefactos de la
+versión siguen siendo válidos; en caso contrario, elimina la versión y la
+etiqueta mal formadas antes de reintentar.
+
+## 6. Referencias cruzadas
+
+- Configuración de Pages: `site/content/docs/runbooks/pages-enablement.mdx`.
+- Procedimiento de versión: `site/content/docs/runbooks/release-cycle.mdx`.
+- Recetas de empaquetado: `packaging/README.md`.
+- Ancla de recuperación: la etiqueta de seguridad de historial específica de la versión.

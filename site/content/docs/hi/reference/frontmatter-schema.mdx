@@ -1,0 +1,42 @@
+---
+title: "Frontmatter स्कीमा"
+description: "YAML frontmatter ब्लॉक संरचना, प्रति-क्लास आवश्यक कुंजियों, और सभी आर्टिफ़ैक्ट क्लासों में वैलिडेटर प्रवर्तन नियमों के लिए संदर्भ मार्गदर्शिका।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **हर आर्टिफ़ैक्ट क्लास पर YAML frontmatter के लिए कैननिकल संदर्भ।** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) परिपाटियों में दिया सारांश इनलाइन घोषणा है; [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) के अंतर्गत प्रति-क्लास JSON Schema मशीन-पठनीय अनुबंध हैं; यह पृष्ठ वह स्वतंत्र संदर्भ है जिसे डाउनस्ट्रीम योगदानकर्ता उद्धृत करते हैं।
+
+---
+
+## 1. Frontmatter ब्लॉक संरचना
+
+प्रत्येक आर्टिफ़ैक्ट अपने शीर्ष पर YAML frontmatter रखता है, जो `---` पंक्तियों से सीमांकित होता है। [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) के अनुसार कैननिकल लेखकत्व-हेडर बैनर Markdown-परिवार की फ़ाइलों में frontmatter के ऊपर बैठता है; frontmatter ठीक उसके बाद आता है।
+
+कुंजियाँ `kebab-case` का उपयोग करती हैं। अदिश मान या तो खुले होते हैं या दोहरे-उद्धरण में; कोलन, हैश चिह्न या अन्य YAML-महत्वपूर्ण वर्णों वाले स्ट्रिंग मान उद्धरण में रखे जाते हैं।
+
+## 2. प्रति-क्लास आवश्यक फ़ील्ड
+
+आवश्यक कुंजियों का समुच्चय आर्टिफ़ैक्ट क्लास के अनुसार बदलता है। आधिकारिक संरचना `scripts/dev/validate_ecosystem.py` और `schemas/` निर्देशिका के अंतर्गत प्रति-क्लास JSON Schema (प्रति आर्टिफ़ैक्ट क्लास एक स्कीमा फ़ाइल) द्वारा प्रवर्तित होती है।
+
+```text
+schemas/agent.schema.json
+schemas/skill.schema.json
+schemas/command.schema.json
+schemas/output-style.schema.json
+schemas/plan.schema.json
+```
+
+| क्लास | आवश्यक कुंजियाँ |
+|-------|---------------|
+| `CLAUDE.md` (रूट कॉन्फ़िग) | `name`, `version`, `updated`, `description`, `scope`, `portability` |
+| नियम (`src/apothem/rules/*.md`) | `name`, `description`, `pathFilter`, `alwaysApply` |
+| कमांड (`src/apothem/commands/*.md`) | `name`, `version`, `updated`, `description`, `argument-hint`, `disable-model-invocation` |
+| सहायक (नीचे दिखाई गई कैननिकल निर्देशिका) | `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns`, `effort` |
+| स्किल (`src/apothem/skills/*/SKILL.md`) | `name`, `description`, `archetype`, `userInvocable` |
+
+[`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) के प्रति-क्लास स्कीमा टाइप, फ़ॉर्मेट, enum और पैटर्न प्रतिबंधों सहित पूर्ण बाधा समुच्चय रखते हैं।
+
+## 3. वैलिडेटर
+
+`scripts/dev/validate_ecosystem.py` आर्टिफ़ैक्ट ट्री में चलता है, ऊपर दिए आवश्यक कुंजी समुच्चयों को लागू करता है, और किसी भी ऐसे आर्टिफ़ैक्ट पर `[FAIL]` रिपोर्ट करता है जिसमें कोई आवश्यक फ़ील्ड अनुपस्थित हो। `src/apothem/conformity/frontmatter_grep.py` का प्रति-लेखन `frontmatter-grep` PreToolUse Write/Edit हुक सीमाओं पर वही संरचना प्रवर्तित करता है।

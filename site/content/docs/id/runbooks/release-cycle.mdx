@@ -1,0 +1,248 @@
+---
+title: "Runbook siklus rilis"
+description: "Alur kerja rilis lengkap dari gerbang lokal melalui GitHub Release yang ditandatangani hingga dispatch publikasi npm opsional."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Runbook ini mengarahkan rilis `vX.Y.Z` dari `apothem` dari working tree
+yang bersih menuju permukaan distribusi yang terverifikasi. Prosedur ini
+ditulis untuk pengelola yang menggunakan `gh`, `git`, dan shell tingkat
+rilis; ia berakhir dengan halaman Release yang terverifikasi, CHANGELOG
+yang terisi, dan smoke jalur instalasi yang mengonfirmasi setiap permukaan
+yang berhadapan dengan pengguna menjawab perintah instalasi kanonis.
+
+Bentuk rilis adalah **tag tunggal, dua tahap**. Satu tag rilis yang
+ditandatangani pada `main` memicu `.github/workflows/release.yml`, yang
+membangun, menandatangani, mengatestasi, dan menerbitkan GitHub Release
+dengan kumpulan artefak lengkapnya — sdist, wheel, SBOM CycloneDX, bundel
+Sigstore cosign, provenans SLSA-3, dan arsip runtime platform. Tahap kedua
+yang opsional adalah dispatch manual `publish-npm.yml`, yang menerbitkan
+`@ahmed-g-gad/apothem` ke npmjs.com setelah
+`scripts/release/check-release-ready.sh` hijau. Bagian CHANGELOG berversi
+ditulis bersama commit tag; operator menjalankan smoke jalur instalasi
+setelah kedua tahap mendarat.
+
+## 1. Prasyarat
+
+Pengelola mengonfirmasi hal berikut sebelum menandai (tagging):
+
+- **Working tree.** Bersih (`git status` tidak menampilkan apa pun yang
+  tertunda). Semua pekerjaan fitur untuk rilis ada di `main`.
+- **CI hijau.** `main` terbaru `gh run list --branch=main --limit=1
+  --json conclusion --jq '.[0].conclusion'` mengembalikan `success`.
+- **Perkakas.** `gh` (GitHub CLI) versi 2.40 atau lebih baru yang
+  terautentikasi terhadap `ahmed-g-gad`; `git` 2.40 atau lebih baru dengan
+  subkunci penandatanganan GPG dimuat; ikatan trusted-publisher npm untuk
+  `@ahmed-g-gad/apothem` aktif (diverifikasi sesuai
+  [runbook penyiapan akun penerbit](/docs/runbooks/publisher-account-setup)).
+- **Jangkar versi selaras.** String versi yang dideklarasikan di
+  `pyproject.toml` cocok dengan tag yang direncanakan tanpa awalan `v`.
+  Verifikasi:
+
+  ```bash
+  grep '^version' pyproject.toml
+  ```
+
+  Keluaran yang diharapkan (untuk rilis `vX.Y.Z`; placeholder mewakili tag
+  rilis yang sedang berjalan):
+
+  ```text
+  version = "X.Y.Z"
+  ```
+
+- **Bagian CHANGELOG disiapkan.** `CHANGELOG.md` membawa bagian berversi
+  di bawah heading Keep-a-Changelog. Pengelola memperbarui tanggal dan
+  butir rilis dalam commit yang sama yang mendaratkan tag.
+
+## 2. Tag dan picu
+
+### 2.1 Tulis commit rilis
+
+Commit rilis mendaratkan dua perubahan:
+
+- Bagian versi `CHANGELOG.md` diberi tanggal sesuai tanggal UTC aktual rilis.
+- Versi `pyproject.toml` dinaikkan ke versi baru (hanya ketika commit
+  sebelumnya di `main` sudah membawa pin versi sebelumnya dan kenaikan baru
+  diperlukan; commit juga dapat mendarat selama siklus kenaikan versi
+  beberapa hari sebelum waktu tagging).
+
+Contoh commit:
+
+```bash
+git checkout main
+git pull --ff-only origin main
+# Author CHANGELOG and pyproject.toml edits via Edit tool, then:
+git add CHANGELOG.md pyproject.toml
+git commit -S -m "chore(release): cut vX.Y.Z"
+git push origin main
+```
+
+Flag `-S` menandatangani commit dengan kunci GPG. Push memicu matriks CI
+standar (lint, test, build); tunggu hijau sebelum tagging.
+
+### 2.2 Tandatangani dan push tag
+
+```bash
+git tag -a -s vX.Y.Z -m "vX.Y.Z"
+git push origin vX.Y.Z
+```
+
+Kombinasi `-a -s` menghasilkan tag teranotasi yang ditandatangani GPG.
+Push memicu `.github/workflows/release.yml`, yang membangun, menandatangani,
+mengatestasi, dan menerbitkan.
+
+### 2.3 Konfirmasi alur kerja rilis selesai
+
+```bash
+gh run watch $(gh run list --workflow=release.yml --limit=1 --json databaseId --jq '.[0].databaseId')
+```
+
+Alur kerja menjalankan build (sdist + wheel), pembuatan SBOM
+(CycloneDX), penandatanganan cosign tanpa kunci, pembuatan dan verifikasi
+provenans SLSA-3, build arsip platform (darwin / linux / windows),
+penandatanganan arsip dengan manifest `SHA256SUMS` teragregasi, dan
+publikasi GitHub Release akhir. Pengelola memindai log job `publish GitHub
+Release` untuk konfirmasi unggahan aset.
+
+### 2.4 Dispatch publikasi npm (tahap opsional)
+
+Setelah GitHub Release dan gerbang kesiapan hijau:
+
+```bash
+bash scripts/release/check-release-ready.sh vX.Y.Z
+gh workflow run publish-npm.yml --field tag=vX.Y.Z
+```
+
+Setujui deployment environment `npmjs` saat diminta. Alur kerja menerbitkan
+`@ahmed-g-gad/apothem@X.Y.Z` ke npmjs.com melalui npm Trusted Publishing
+(OIDC); tidak ada token registry yang disimpan di repositori.
+
+## 3. Permukaan Distribusi
+
+Setiap permukaan memiliki perintah verifikasi yang menjawab "apakah rilis
+mendarat di sini?":
+
+| # | Permukaan | Artefak | Verifikasi |
+|---|---|---|---|
+| 1 | GitHub Release (distribusi Python) | `apothem-X.Y.Z.tar.gz` (sdist) + `apothem-X.Y.Z-py3-none-any.whl` | `gh release view vX.Y.Z --json assets --jq '.assets[].name'` menyertakan kedua nama file |
+| 2 | GitHub Release (SBOM) | `sbom.cdx.json` | sama seperti baris 1; daftar aset menyertakan SBOM CycloneDX |
+| 3 | GitHub Release (tanda tangan) | `*.cosign.bundle` per artefak dist; `*.sig` per arsip; `SHA256SUMS` + `SHA256SUMS.sig` | `cosign verify-blob --bundle <artifact>.cosign.bundle <artifact>` keluar dengan kode 0 (dengan flag identitas alur kerja) |
+| 4 | GitHub Release (provenans) | `provenance.intoto.jsonl` | `bash scripts/release/verify-provenance.sh vX.Y.Z` keluar dengan kode 0 |
+| 5 | GitHub Release (arsip platform) | `apothem-vX.Y.Z-darwin.tar.gz`, `apothem-vX.Y.Z-linux.tar.gz`, `apothem-vX.Y.Z-windows.zip` | daftar aset menyertakan setiap arsip plus `SHA256SUMS` |
+| 6 | npmjs.com | `@ahmed-g-gad/apothem@X.Y.Z` | `npm view @ahmed-g-gad/apothem version` mengembalikan `X.Y.Z`; `npx @ahmed-g-gad/apothem@X.Y.Z --version` mencetak `apothem X.Y.Z` |
+| 7 | Pages (penginstal skrip) | `install.sh` / `install.ps1` di situs dokumentasi | `curl -fsSL https://apothem.ahmedgad.com/install.sh \| head -n 1` mengembalikan header skrip |
+
+GitHub Release adalah permukaan artefak kanonis; paket npm dan penginstal
+skrip adalah jalur instalasi yang dilapiskan di atasnya. Publikasi npm
+sengaja menjadi tahap terakhir.
+
+## 4. Disiplin CHANGELOG
+
+`CHANGELOG.md` membawa satu bagian per rilis di bawah konvensi
+Keep-a-Changelog. Suntingan CHANGELOG pada commit rilis:
+
+- Memastikan bagian versi menggunakan heading `## [X.Y.Z] — YYYY-MM-DD`.
+- Memastikan heading standar — Added, Changed, Deprecated, Removed, Fixed,
+  Security — digunakan jika berlaku. Heading kosong dihapus dari file yang
+  dirender.
+- Menangkap **kapabilitas**, bukan implementasi. Hanya bahasa domain;
+  tanpa referensi internal-rencana; tanpa hash commit; tanpa identifier
+  rencana atau fase.
+
+Bagian CHANGELOG yang lolos tinjauan pengelola berfungsi sebagai jangkar
+catatan rilis untuk narasi pengumuman.
+
+## 5. Smoke jalur instalasi
+
+Setelah kedua tahap selesai, pengelola menjalankan smoke. Smoke adalah
+verifikasi kanonis bahwa perintah instalasi yang berhadapan dengan pengguna
+menjawab.
+
+### 5.1 Plugin Claude Code
+
+```text
+/plugin marketplace add ahmed-g-gad/apothem
+/plugin install apothem@apothem
+```
+
+Diharapkan: plugin terinstal dan perintah `apothem` tersedia di dalam
+Claude Code.
+
+### 5.2 Node.js (npx)
+
+```bash
+npx @ahmed-g-gad/apothem@X.Y.Z --version
+```
+
+Keluaran yang diharapkan: `apothem X.Y.Z`.
+
+### 5.3 Penginstal skrip satu langkah (POSIX)
+
+```bash
+curl -fsSL https://apothem.ahmedgad.com/install.sh | sh
+apothem --version
+```
+
+Keluaran yang diharapkan: `apothem X.Y.Z`.
+
+### 5.4 Penginstal skrip satu langkah (Windows)
+
+```powershell
+irm https://apothem.ahmedgad.com/install.ps1 | iex
+apothem --version
+```
+
+Keluaran yang diharapkan: `apothem X.Y.Z`.
+
+### 5.5 Verifikasi artefak (bukti rantai pasok)
+
+```bash
+gh release download vX.Y.Z --pattern 'apothem-X.Y.Z*' --pattern '*.cosign.bundle'
+cosign verify-blob \
+  --bundle apothem-X.Y.Z-py3-none-any.whl.cosign.bundle \
+  --certificate-identity-regexp 'github.com/ahmed-g-gad/apothem' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  apothem-X.Y.Z-py3-none-any.whl
+bash scripts/release/verify-provenance.sh vX.Y.Z
+```
+
+Diharapkan: kedua verifikasi keluar dengan kode 0.
+
+Smoke menghasilkan satu baris PASS / FAIL per permukaan; catat baris-baris
+itu di log rilis pengelola.
+
+## 6. Pemulihan kegagalan
+
+Alur kerja rilis memiliki mode kegagalan terdokumentasi untuk engine rilis
+dan penerbit npm:
+
+| Kegagalan | Diagnostik | Pemulihan |
+|---|---|---|
+| Push tag ditolak (kegagalan penandatanganan) | `git push origin vX.Y.Z` mengembalikan `error: failed to push some refs` dengan pesan terkait GPG | Verifikasi subkunci GPG dimuat (`gpg --list-secret-keys --keyid-format=long`); tag ulang secara lokal dengan `-s` setelah memperbaiki keyring; push ulang |
+| Job `release.yml` gagal pada satu tahap | `gh run view <run-id> --log` menyebutkan job yang gagal (build / sbom / sign / provenance / archive / publish) | Jalankan ulang hanya job yang gagal via `gh run rerun <run-id> --failed`; jika kegagalan berulang, perbaiki input job di sumbernya sebelum tagging ulang |
+| Verifikasi provenans SLSA gagal | Job `verify SLSA provenance artifact` keluar dengan kode bukan nol | Inspeksi artefak provenans untuk ketidakcocokan subject-digest; bangun ulang dari tag yang sama — provenans terikat ke digest artefak yang persis, sehingga regenerasi artefak apa pun memerlukan rerun alur kerja penuh |
+| Publikasi npmjs.com ditolak | Job npm keluar dengan kode bukan nol saat `npm publish`; registry `404` saat `PUT` adalah ketidakcocokan otorisasi / trusted-publisher, bukan bukti bahwa kode paket hilang | Verifikasi npm Trusted Publishing untuk `@ahmed-g-gad/apothem` menyebutkan owner `ahmed-g-gad`, repositori `apothem`, alur kerja `publish-npm.yml`, dan aksi yang diizinkan `npm publish`; konfirmasi job berjalan dengan versi Node dan batas OIDC npm CLI yang dipin di alur kerja |
+| Tag terlihat tetapi aset hilang | `gh release view vX.Y.Z` mengembalikan stub rilis | Jalankan ulang job publish alur kerja rilis; jika stub bertahan, hapus halaman rilis (`gh release delete vX.Y.Z --cleanup-tag`) dan tag ulang dari SHA yang sama |
+
+Jika satu siklus pemulihan gagal mendaratkan permukaan dalam satu pass
+diagnostik, permukaan dicatat sebagai known-failure dalam catatan rilis
+dengan tautan ke isu terbuka; pengguna hilir diarahkan ke permukaan yang
+berfungsi sementara yang rusak diperbaiki dalam rilis patch.
+
+## 7. Referensi silang
+
+- **Penyiapan penerbit.** [Runbook penyiapan akun penerbit](/docs/runbooks/publisher-account-setup)
+  menetapkan ikatan trusted-publisher npm dan prasyarat sisi GitHub yang
+  diasumsikan runbook ini.
+- **Alur pemulihan.** Runbook pemulihan rilis
+  (`site/content/docs/runbooks/release-recovery.mdx`) mengatur jalur
+  kegagalan lintas tahap selama cutover rilis, bukan kegagalan
+  per-permukaan yang disebutkan di §6.
+- **Pengaktifan Pages.** Alur kerja `publish-static-site.yml` memvalidasi
+  dan men-deploy situs web proyek ke domain kustom; runbook pengaktifan
+  Pages (`site/content/docs/runbooks/pages-enablement.mdx`) adalah prosedur
+  hulu yang menetapkan domain kustom sejak awal.
+- **Kebijakan versioning.**
+  `site/content/docs/governance/release-engineering-policy.mdx` membawa
+  kebijakan SemVer + penandatanganan + deprekasi yang dihormati runbook ini.

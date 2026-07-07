@@ -1,0 +1,17 @@
+{
+  "argv": [
+    "harnesses",
+    "show",
+    "claude-code",
+    "--json"
+  ],
+  "exit_code": 0,
+  "json": {
+    "display_name": "Claude Code",
+    "installed": false,
+    "name": "claude-code",
+    "output_path": "<HOME>/.claude/settings.json",
+    "scope": "user"
+  },
+  "stdout": "{\"name\": \"claude-code\", \"display_name\": \"Claude Code\", \"scope\": \"user\", \"installed\": false, \"output_path\": \"<HOME>/.claude/settings.json\"}\n"
+}

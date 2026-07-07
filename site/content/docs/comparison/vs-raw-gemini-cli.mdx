@@ -1,0 +1,38 @@
+---
+title: "Apothem vs raw Gemini CLI config"
+description: "Hand-maintaining Gemini CLI's GEMINI.md rules file versus rendering it from Apothem's shared profile."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Gemini CLI reads a single `GEMINI.md` rules file. Apothem's gemini-cli adapter
+renders it from the shared profile. This page contrasts hand-maintaining that
+config against managing it with Apothem.
+
+## Effort comparison
+
+| Task | Raw hand-config | Apothem-managed |
+| ---- | --------------- | --------------- |
+| Author rules | Hand-edit one `GEMINI.md` | Rendered: shared rules embedded into `GEMINI.md` |
+| Keep rules aligned with other harnesses | Manual, per tool | Automatic on `apothem update` |
+| Install / remove the config | Write and delete `GEMINI.md` by hand | `apothem install` / `apothem uninstall` |
+| Verify the config is correct | Manual inspection | `apothem verify --harness gemini-cli` |
+
+## What Apothem manages
+
+The gemini-cli adapter embeds the shared rules into a single `GEMINI.md`. Gemini
+CLI has no PreToolUse hook, so guardrail intent is expressed in the rule prose
+rather than a tool-call interception point. Every change to the shared rules
+re-renders `GEMINI.md` on the next `apothem update`.
+
+## Migration path
+
+1. Run `apothem profile init` to create the shared profile if you have not yet.
+2. Move the rules from your existing `GEMINI.md` into the shared corpus.
+3. Run `apothem install --harness gemini-cli` to render and write `GEMINI.md`.
+4. Run `apothem verify --harness gemini-cli` to confirm the config landed.
+5. Use `apothem update --harness gemini-cli` for every later change.
+
+## Read next
+
+- [Gemini CLI adapter reference](/docs/harnesses/gemini-cli)
+- [Comparison overview](/docs/comparison)

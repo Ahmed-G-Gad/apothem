@@ -1,0 +1,72 @@
+---
+title: "Core workflows"
+description: "The four core Apothem workflows — profile, rules, plans, and the conformity gate."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem provides four core capabilities: a shared governance profile,
+a rules corpus, a structured planning pipeline, and a real-time conformity gate.
+
+<Callout title="New here?">
+  For a guided, zero-to-first-run walkthrough, start with the
+  [Getting started tutorial](/docs/tutorials/getting-started). This page is a
+  quick reference to the four core workflows once you are set up.
+</Callout>
+
+## The shared profile
+
+Your Apothem profile lives at `~/.config/apothem/profile.yaml` unless you pass
+`--profile PATH`. It is the single source of truth that every harness adapter
+derives native config from:
+
+```yaml
+identity:
+  name: "Example User"
+preferences:
+  style: "concise"
+rules:
+  - "Validate external input before writing files."
+```
+
+Create and inspect the profile:
+
+```bash
+apothem profile init
+apothem profile show --json
+```
+
+## First rule
+
+Add shared rules to the profile YAML, then re-materialize the selected harness.
+When those rules include example data, use fake placeholders so no real
+identity or credential lands in a shared profile or a CI run.
+
+```bash
+apothem profile set rules '["Always include a brief summary at the end of every response."]'
+apothem update --harness claude-code
+apothem verify --harness claude-code
+```
+
+## First plan
+
+The `/plan` pipeline runs inside your harness as slash commands, not
+through the `apothem` binary. Once a harness is installed, start a plan from the
+tool's chat:
+
+```text
+/plan-spec
+```
+
+`/plan-spec` refines your prose into a spec, and `/plan-generate` materializes a
+plan suite under `<project-root>/.apothem/plans/{suite}/`. See the
+[pipeline command reference](/docs/pipeline) for the full flow.
+
+## Conformity gate
+
+Run from the repository root:
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+Runs all mechanical conformity checks and reports pass/fail per bar.

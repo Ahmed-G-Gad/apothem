@@ -1,0 +1,50 @@
+---
+title: "使用委派工作者"
+description: "为专门化任务定义并调用持久化的委派工作者。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem 委派工作者是持久化、可复用的工作者定义，存放于 `src/apothem/`
+目录树下（规范目录见下方——名称为与运行时加载器兼容而保留）：
+
+```text
+src/apothem/agents/
+```
+
+每个委派工作者都编码了一个专门化角色、检测信号和一组允许使用的工具。
+
+## 委派工作者文件结构
+
+```markdown
+---
+name: "my-agent"
+description: "..."
+tools: "Read, Grep, Glob"
+---
+
+# My assistant
+
+## Role
+...
+
+## Detection signals
+Matched when: ...
+
+## Workflow
+...
+```
+
+## 内置委派工作者
+
+| 委派工作者 | 用途 |
+|-------|---------|
+| `codebase-explorer` | 深度代码库探索 |
+| `convention-auditor` | 命名与格式校验 |
+| `memory-auditor` | 记忆准确性校验 |
+| `quality-gate` | lint、测试、类型检查、安全扫描 |
+
+## 调用委派工作者
+
+委派工作者由编排器通过宿主运行时所暴露的委托工具进行调度。编排器
+根据任务描述和检测信号选择匹配的工作者。

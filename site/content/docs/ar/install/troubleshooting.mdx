@@ -1,0 +1,102 @@
+---
+title: "استكشاف الأخطاء وإصلاحها"
+description: "حلول لإخفاقات تثبيت Apothem الشائعة ومشكلات زمن التشغيل عبر مسارات المُلحَق وnpx والمُثبِّت."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+حلول لمشكلات تثبيت Apothem وزمن تشغيله الشائعة.
+
+## مشكلات التثبيت
+
+### لم يُعثَر على Python 3.10 أو أحدث
+
+تفحص المُثبِّتات وغلاف npx الأسماء `python3` و`python` والأسماء
+المُرقَّمة بالإصدار (`python3.14` حتى `python3.10`)، و`py -3` على Windows — مع رفض
+أغلفة مُشغِّل متجر Microsoft — وتتوقّف برسالة `No Python >= 3.10 found in
+PATH` عندما لا يستوفي أي مرشّح حدّ 3.10. ثبّت CPython 3.10 أو أحدث
+من python.org أو من مستودع حِزَم نظام التشغيل لديك، وتأكّد من أنّ `python3 --version`
+(أو `py -3 --version` على Windows) يُبلِغ عن 3.10 على الأقل، ثم أعِد التشغيل.
+
+### اعتماديات زمن تشغيل مفقودة: click، rich
+
+يُضمِّن المحرّك معظم اعتمادياته من الأطراف الثالثة داخل شجرة المصدر،
+لكن يجب أن يكون `click` و`rich` قابلَيْن للاستيراد تحت المُفسِّر الذي يختاره
+المُثبِّت. وعندما يكون أيٌّ منهما مفقودًا، يُسمّيه المُثبِّت ويعرض تثبيته
+نيابةً عنك:
+
+```text
+! Missing runtime dependencies: click rich
+```
+
+اقبَل الطلب ليُشغّل المُثبِّت `pip install` تحت ذلك المُفسِّر. ولتخطّي
+الطلب، مرِّر `--yes` (`-Yes` على PowerShell) أو اضبط
+`APOTHEM_AUTO_INSTALL_DEPS=1` للتثبيت تلقائيًا. وإن رفضت — أو كان `pip`
+غير متاح، أو فضّلت مدير حِزَم نظام التشغيل لديك — فثبّت الحِزَم المُسمّاة
+بنفسك (مثل `python3-click` و`python3-rich` على مضيفات عائلة Debian، أو
+`pip install click rich`) ثم أعِد التشغيل.
+
+### لم يُعثَر على `apothem` بعد تشغيل المُثبِّت
+
+يضع المُثبِّت شجرة المصدر في `~/.apothem` ولا يضيف
+ملفًا تنفيذيًا باسم `apothem` إلى `PATH`. شغّل المحرّك عبر صيغة الاستدعاء
+التي يطبعها المُثبِّت عند الاكتمال:
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+```
+
+أو استخدم صيغة npx (`npx @ahmed-g-gad/apothem <command>`)، التي لا تحتاج إلى
+إدخال في `PATH`.
+
+### فشل `/plugin marketplace add`
+
+يجلب `/plugin marketplace add ahmed-g-gad/apothem` إدراج السوق
+من GitHub. وعندما يفشل، تأكّد من قدرة الجهاز على الوصول إلى
+`https://github.com/ahmed-g-gad/apothem` (قواعد الشبكة أو الوكيل أو جدار الحماية)،
+ثم أعِد المحاولة. وإذا أُضيف السوق سابقًا أثناء عملية جلب
+جزئية، فأزِله وأعِد إضافته قبل تشغيل
+`/plugin install apothem@apothem`.
+
+### يقدّم npx إصدارًا قديمًا
+
+يخزّن `npx` الحِزَم المُنزَّلة مؤقتًا. وعندما يُبلِغ `npx @ahmed-g-gad/apothem --version`
+عن إصدار أقدم من الإصدار الحالي، امسح الذاكرة المؤقتة أو ثبّت
+وسم التوزيع (dist-tag):
+
+```bash
+npx clear-npx-cache
+npx @ahmed-g-gad/apothem@latest --version
+```
+
+### حجب irm / iex على Windows
+
+إذا حجبت سياسة تنفيذ PowerShell المُثبِّت:
+
+```powershell
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+irm https://apothem.ahmedgad.com/install.ps1 | iex
+```
+
+## مشكلات زمن التشغيل
+
+### لا يجد apothem install أي أُطُر عمل
+
+شغّل apothem doctor لإدراج أدلّة أُطُر العمل المُكتشَفة. إن لم يُعثَر على أي منها، فتأكّد من أنّ
+أداتك البرمجية مُثبَّتة وأنّها شُغِّلت مرّة واحدة على الأقل.
+
+### يُبلِغ apothem verify عن محوّل فاشل
+
+أعِد تشغيل apothem install لإعادة تجسيد المحوّل. وإذا استمرّت المشكلة، فراجع
+الصفحة الخاصة بالمحوّل ضمن [محوّلات أُطُر العمل](/docs/harnesses).
+
+### الخطّافات لا تُطلَق في Claude Code
+
+تأكّد من أنّ Apothem موصول عبر فحص ~/.claude/settings.json بحثًا عن إدخالات الخطّاف.
+إذا كان الملف يفتقر إلى الخطّافات، فشغّل apothem install مجدّدًا.
+
+## الحصول على المساعدة
+
+- [مشكلات GitHub](https://github.com/ahmed-g-gad/apothem/issues) -- تقارير الأخطاء
+- [مناقشات GitHub](https://github.com/ahmed-g-gad/apothem/discussions) -- الأسئلة
+- [الأسئلة الشائعة](/docs/faq) -- الأسئلة المتكرّرة

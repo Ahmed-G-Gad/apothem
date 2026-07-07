@@ -1,0 +1,21 @@
+---
+title: "Runbooks"
+description: "Apothem-Runbooks — Schritt-für-Schritt-Betriebsabläufe für Versionen, Publisher-Einrichtung, Pages-Aktivierung, Wiederherstellung und das Erstellen von Adaptern."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Betriebsabläufe für Maintainer. Jedes Runbook ist ein sequenzierter,
+kontextfreier Ablauf: Es führt einen bekannten Ausgangszustand in einen
+verifizierten Endzustand über, so geschrieben, dass ein kompetenter Mitwirkender
+ihm ohne Vorwissen folgen kann.
+
+## Seiten
+
+| Seite | Beschreibung |
+|------|-------------|
+| [Pages-Aktivierung](/docs/runbooks/pages-enablement) | Führt `apothem.ahmedgad.com` von einer frischen GitHub-Pages-Konfiguration zu einer HTTPS-Landingpage mit `200 OK`. |
+| [Versionszyklus](/docs/runbooks/release-cycle) | Führt eine `vX.Y.Z`-Version von einem sauberen Arbeitsbaum zu den verifizierten GitHub-Release- und npm-Flächen. |
+| [Einrichtung des Publisher-Kontos](/docs/runbooks/publisher-account-setup) | Konfiguriert den vertrauenswürdigen npmjs.com-Publisher für `@ahmed-g-gad/apothem` sowie die GitHub-seitigen Versionsvoraussetzungen. |
+| [Versionswiederherstellung](/docs/runbooks/release-recovery) | Stellt `ahmed-g-gad/apothem` in einen funktionsfähigen Zustand zurück, wenn die Versionsumschaltsequenz mitten im Ablauf fehlschlägt. |
+| [Erstellen eines neuen Harness-Adapters](/docs/runbooks/new-harness-adapter-authoring) | Erstelle und veröffentliche einen neuen Harness-Adapter für die First-Party-Aufnahme. |

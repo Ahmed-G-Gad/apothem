@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: MIT
+
+# Per rules/agent-capability-discipline.md §1 / §3 / §7. qwen_code
+# anchors ~/.qwen/settings.json and QWEN.md, then uses Qwen Code's documented
+# commands, skills (.qwen/skills/), and SubAgents discovery directories.
+# Commands are Markdown + YAML (TOML is deprecated). MCP is declared within
+# settings.json's mcpServers namespace. settings.json renders directly (no Jinja
+# template); the shipped instruction template is templates/QWEN.md.
+
+mcp_servers:
+  - settings.json-mcpServers-namespace
+# The adapter's materializer.py authors this MCP block from the shared profile.
+mcp_servers_authored: true
+sub_agent_dispatch: true
+custom_command_support: "markdown"
+recommended_postfix_rendering: "plain-text"
+long_context_compaction: "profile-managed"
+context_ignore_surface: "qwenignore-and-settings-mediated"
+layered_context_surface: "settings.json hooks plus QWEN.md hierarchical context"
+lsp_symbol_navigation: "tracked-gap-no-adapter-owned-LSP-surface"
+hook_learning_capture: "settings.json-hooks"
+standard_convention_pin: "STANDARD-CONVENTION-PIN.md"
+# web-fetch / browser-retrieval surface — the backing capability dimension for
+# rules/source-accessibility.md step 1 ("retrieve through the host's browser /
+# fetch capability"). Vendor-confirmed PARTIAL: qwen-code ships a built-in
+# `web_fetch` tool (URL retrieval); the built-in `web_search` tool was removed
+# and web search is now MCP-only (a documented breaking change). The
+# commit-pinned evidence triple (vendor-doc-url, commit-sha, snapshot-date)
+# lives at its canonical home, STANDARD-CONVENTION-PIN.md "Web-Fetch /
+# Browser-Retrieval Surface", per rules/agent-capability-discipline-matrix.md §1A.
+web_fetch: "partial"
+tool_surface_restrictions:
+  - secrets-paths
+  - destructive-shell-ops
+  - network-write-unsigned
+system_prompt_template_path: "templates/QWEN.md"
+agent_memory_surface: "n/a"

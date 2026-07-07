@@ -1,0 +1,98 @@
+---
+title: "quickstart"
+description: "CLI reference for the apothem quickstart guided first-run command."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Guided first run: ensure a profile exists, preview the writes, then install.
+
+## Synopsis
+
+```
+apothem quickstart [--harness NAME|all] [--project PATH] [--profile PATH]
+                   [--yes] [--quiet|-q] [--verbose|-v]
+                   [--format plain|json] [--json] [--no-color]
+```
+
+`quickstart` is the single guided entry point for a new operator. In one linear
+flow it: (1) ensures a shared profile exists — creating a starter profile with a
+personalize nudge if none is found; (2) previews the concrete files the selected
+harnesses will write, grouped by project root versus your home directory;
+(3) asks for confirmation; (4) installs with the grouped, de-noised
+capability-note output; and (5) prints the recommended next commands.
+
+It composes the same building blocks the `install` command uses — it does not
+reimplement them. `--harness` defaults to `all` and `--project` to the current
+directory.
+
+## Behavior
+
+- **Profile** — if the resolved profile path has no file, `quickstart` offers to
+  create a starter profile (auto-creates under `--yes`, a non-interactive shell,
+  or `--format json`) and names the placeholder identity fields to personalize.
+- **Preview + confirm** — before any write, the targets are listed under two
+  headings (project root vs your home directory); an interactive run confirms
+  before writing outside the project. `--yes`, a non-interactive shell, and
+  `--format json` proceed without prompting. Declining aborts before any write.
+- **Install** — capabilities a harness does not support natively are summarized
+  as one grouped note per harness (pass `--verbose` for the per-capability
+  detail); the full set is always in the `--format json` warnings array.
+- **Next step** — the terminal output names the follow-on commands (`apothem
+  verify …`, `apothem doctor`).
+
+## Options
+
+| Option | Description |
+|---|---|
+| `--harness NAME` | Harness adapter to install, or `all` for the registry-wide set (default: `all`). |
+| `--profile PATH` | Path to shared profile YAML. Defaults to `~/.config/apothem/profile.yaml`. |
+| `--project PATH` | Project root for project-scope harnesses. Defaults to the current directory. |
+| `--yes` | Run the full guided sequence non-interactively (skip every prompt). |
+| `--quiet`, `-q` | Suppress informational output; only errors are emitted. |
+| `--verbose`, `-v` | Print each non-projected capability's rationale instead of the grouped note. |
+| `--format plain\|json` | Output format (default: `plain`). |
+| `--json` | Shorthand for `--format json`. |
+| `--no-color` | Disable ANSI color codes in output. |
+| `-h`, `--help` | Show help and exit. |
+
+## JSON output
+
+`--format json` emits a single document summarizing each guided step:
+
+```json
+{
+  "status": "success",
+  "command": "quickstart",
+  "profile_path": "C:\\Users\\Example\\.config\\apothem\\profile.yaml",
+  "steps": [
+    {"step": "profile", "outcome": "created", "path": "…", "placeholder_identity": ["name", "email", "github"]},
+    {"step": "install", "status": "success", "harness": "all", "files_written": ["…"], "warnings": [], "results": []},
+    {"step": "recommend", "next": ["apothem verify --harness all --project .", "apothem doctor"]}
+  ],
+  "recommended_next": ["apothem verify --harness all --project .", "apothem doctor"]
+}
+```
+
+## Examples
+
+```bash
+apothem quickstart
+apothem quickstart --harness all --project . --yes
+apothem quickstart --harness claude-code
+apothem quickstart --json
+```
+
+## Exit codes
+
+| Code | Meaning |
+|---|---|
+| 0 | Guided run completed |
+| 1 | Expected validation, profile, harness, project, or adapter error |
+| 2 | Partial batch materialization after at least one write |
+
+## See also
+
+- [apothem install](/docs/cli-reference/install) — materialize a harness from the shared profile
+- [apothem verify](/docs/cli-reference/verify) — confirm an installation is live
+- [apothem doctor](/docs/cli-reference/doctor) — environment and installation health
+- [Getting Started](/docs/install) — full installation guide

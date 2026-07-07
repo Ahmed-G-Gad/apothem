@@ -1,0 +1,68 @@
+---
+title: "/plan-generate"
+description: "/plan-generate — 작성된 `_spec/spec.md`로부터 완전한 마스터 플랜 스위트를 생성합니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**역할:** 생성자
+**파이프라인 위치:** 중간
+
+작성된 `_spec/spec.md`로부터 완전한 마스터 플랜 스위트를 생성합니다.
+
+## 표준 호출
+
+```bash
+/plan-generate
+```
+
+인수와 함께:
+
+```bash
+/plan-generate [path/to/prose.md] [--mode NEW|OVERHAUL] [--seriousness LEVEL] [--context CONTEXT] [--mission MISSION] [--domain DOMAIN] [--dry-run]
+```
+
+## 입력
+
+`/plan-spec`에서 나온 작성된 `_spec/spec.md` + `_inputs/handoff-manifest.yml`(또는 운영자가 제공한 산문).
+
+## 출력
+
+`PREAMBLE.md`, `MASTER-PLAN.md`, `PROGRESS.md`, `PLAN-NOTES.md`, 그리고 페이즈별 `phases/**/PHASE.md` 파일, 더불어 보강된 `_inputs/handoff-manifest.yml`.
+
+## 하류
+
+/plan-review 또는 /plan-execute (하류)
+
+## 워크플로 페이즈
+
+이 명령은 작성된 명세로부터 완전한 마스터 플랜 스위트를 생성합니다:
+
+1. **요구 사항 수집** — `_spec/spec.md`와 상류 핸드오프 매니페스트를 읽습니다. 명세가 없으면 `Blocked: run /plan-spec first`로 거부합니다.
+2. **발견** — 다섯 가지 인지 필터로 심각도에 맞춰 발견을 실행합니다. 모든 권위 데이터 공백을 구조화 질의 채널을 통해 해소합니다.
+3. **분해** — 작업을 명시적 의존 순서를 갖춘 비순환 페이즈 그래프로 나눕니다.
+4. **스위트 발행** — `PREAMBLE.md`, `MASTER-PLAN.md`, `PROGRESS.md`, `PLAN-NOTES.md`, 그리고 모든 `phases/NN-topic/PHASE.md`를 작성합니다.
+5. **사전 발행 게이트 실행** — 발행된 모든 아티팩트에 대해 15바 스윕을 실행합니다. 실패 시 해소될 때까지 사용자 승인이 차단됩니다.
+
+## 실패 모드
+
+| 증상 | 원인 | 복구 |
+|---------|-------|----------|
+| Blocked: run /plan-spec first | 작성된 `_spec/spec.md` 없음 | `/plan-spec`을 실행해 명세를 작성하고 매니페스트를 발행 |
+| `_inputs/` 파일에 대한 생성 | 명세가 아직 도출 중 | 먼저 `/plan-spec`으로 `_inputs/forge.md`를 `_spec/spec.md`로 승격 |
+| 사전 발행 바 실패 | 발행된 아티팩트가 게이트에 실패 | 사용자 승인 전에 실패한 바를 수정 |
+
+## 예시
+
+```bash
+# Dry-run to preview the generated phase graph
+/plan-generate --dry-run
+
+# Generate a suite from authored prose
+/plan-generate path/to/prose.md --mode NEW
+```
+
+## 상호 참조
+
+- [파이프라인 개요](/docs/pipeline)
+- [명령 참조](/docs/reference/commands)

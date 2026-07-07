@@ -1,0 +1,78 @@
+---
+title: "Apothem-Dokumentation"
+description: "Ein einziges gemeinsames Profil, materialisiert in siebzehn Harnesses. Beginne hier: Installation, Nutzung, Harness-Abdeckung, der Befehlsfluss und die vollständige Referenz."
+machineTranslated: true
+---
+
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem ist ein host-unabhängiger Harness-Konfigurationsmanager. Du
+schreibst ein einziges gemeinsames Profil in `~/.config/apothem/profile.yaml`,
+und Apothem materialisiert es in die native Konfigurationsfläche von siebzehn
+Harnesses: Claude Code, Cursor, Gemini CLI, GitHub Copilot, Codex,
+Windsurf, Zed und den Rest des registrierten Katalogs.
+
+Die Einheit, die Apothem synchronisiert, ist breiter als nur die Regeln: Regeln,
+Slash-Befehle, Skills, Hooks, Output-Styles, Einstellungen (mit MCP-Servern),
+Schemas und Dokumentation reisen gemeinsam als ein einziges geregeltes Korpus,
+materialisiert in das native Format jedes Harness oder in einen Apothem-eigenen
+Teilbaum für Unterstützung, wenn das Werkzeug keine entsprechende Primitive besitzt.
+
+## Neu hier? Beginne in zwei Schritten
+
+1. **[Installation](/docs/install/quickstart)** — wähle einen Installationsweg
+   (werkzeugeigene Plugins und Erweiterungen, `npx` oder Ein-Schritt-Skripte) und
+   führe den geführten ersten Schritt aus. Die einzigen Voraussetzungen sind
+   [Node.js](https://nodejs.org/) und System-Python 3.10 oder neuer.
+2. **[Zum ersten funktionierenden Lauf](/docs/tutorials/getting-started)** —
+   schreibe ein gemeinsames Profil, materialisiere daraus die native Konfiguration
+   eines Harness und verifiziere das Ergebnis. Etwa fünfzehn Minuten, Ende zu Ende.
+
+## Wie Apothem funktioniert
+
+- **Ein Profil, viele native Konfigurationen.** Du schreibst die Absicht einmal;
+  Apothem übersetzt sie in die native Konfigurationsfläche jedes Werkzeugs — ohne
+  Vereinheitlichung auf den kleinsten gemeinsamen Nenner. Siehe
+  [host-unabhängige Haltung](/docs/concepts/ai-platform-agnosticism).
+- **Die Betriebsschleife: planen → härten → ausliefern.** Ein Planungsfluss
+  (`/plan`) führt eine Änderung durch Spezifikation, Generierung, Review und
+  Ausführung; ein Härtungsfluss (`/fortress`) treibt diese Arbeit in einen
+  release-gesicherten Zustand; das Release-Tor schließt die Schleife. Siehe
+  [den Befehlsfluss](/docs/pipeline).
+- **Arbeit, die Grenzen überdauert.** Langlaufende Arbeit lagert ihren vollen
+  Zustand in eine projektlokale `.apothem/plans/`-Suite aus, sodass eine frische Sitzung
+  auf jedem Konto oder Rechner sie an Ort und Stelle fortsetzt. Siehe
+  [fortsetzbare Planung](/docs/concepts/resumable-planning).
+
+## Beginne hier
+
+- **[Installation](/docs/install/quickstart)** — die Installationswege
+  (werkzeugeigene Plugins und Erweiterungen, `npx`, Ein-Schritt-Skripte) und ein
+  geführter erster Lauf.
+- **[Nutzung](/docs/usage/getting-started)** — schreibe dein Profil, installiere
+  es über alle Harnesses hinweg, verifiziere und aktualisiere es.
+- **[Harnesses](/docs/harnesses)** — der Katalog von siebzehn Harnesses mit der
+  nativen Fläche jedes Werkzeugs und seinem Umwandlungsverhalten.
+- **[Der Befehlsfluss](/docs/pipeline)** — die Stufen der Flüsse `/plan` und
+  `/research`, die Audit-und-Review-Sequenz, die Fähigkeiten workflow und
+  projectify sowie die Leitplanken für chirurgische Manipulation.
+
+## Geh in die Tiefe
+
+- **[Konzepte](/docs/concepts/ai-platform-agnosticism)** — das gemeinsame
+  Profil, die Harness-Adapter und das Materialisierungsmodell.
+- **[Architektur](/docs/architecture)** — die Struktur des Quellcodes, die
+  Adapter-Abstraktion, die eigenständige Laufzeit und der CI/CD-Fluss.
+- **[Referenz](/docs/reference)** — die CLI, das Profilschema, die Regeln, die
+  Fähigkeiten, die Befehle, die Hooks und die Ausgabestil-Kataloge.
+- **[Wie Apothem im Vergleich abschneidet](/docs/comparison)** — eine ehrliche
+  Differenzierungsmatrix mit namentlich genannten Mitbewerbern.
+
+## Governance und Sicherheit
+
+- **[Governance](/docs/governance)** — das Disziplinregister, das
+  Konformitätstor und die Versionsfassade.
+- **[Sicherheit](/docs/security)** — die Lieferketten-Haltung und die
+  Sicherheitsrichtlinie.
+- **[Änderungsprotokoll](/docs/changelog)** — die Versionshinweise, aktuelle
+  Version zuerst.

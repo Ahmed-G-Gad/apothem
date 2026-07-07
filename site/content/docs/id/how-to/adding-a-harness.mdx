@@ -1,0 +1,78 @@
+---
+title: "Menambah perkakas"
+description: "Aktifkan adapter perkakas agar konfigurasi native-nya diwujudkan dari profil bersama."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Tujuan: aktifkan satu perkakas lagi agar Apothem mewujudkan konfigurasi native
+perkakas itu dari profil bersama Anda.
+
+## Prasyarat
+
+- Sebuah profil bersama di `~/.config/apothem/profile.yaml` (buat satu dengan
+  `apothem profile init` jika belum ada).
+- CLI `apothem` pada `PATH` Anda. Jika Anda memasang pohon-sumber yang
+  mandiri, awali setiap command dengan `PYTHONPATH="$HOME/.apothem/src"`
+  dan jalankan `python -m apothem` sebagai pengganti `apothem` — atau gunakan
+  `npx @ahmed-g-gad/apothem`.
+
+## Langkah-langkah
+
+1. Daftar perkakas yang terdaftar dan lihat mana yang sudah terpasang:
+
+   ```bash
+   apothem harnesses list
+   ```
+
+   `apothem harnesses list` mencetak setiap id yang didukung; himpunan yang sama ada di
+   [daftar perkakas](/docs/harnesses) dan [registri perkakas](/docs/reference/harness-registry)
+   yang dibangkitkan-sumber. Pilih id untuk alat Anda
+   ketimbang memaku-kode daftar ini di sini — daftarnya bertambah seiring penambahan adapter.
+
+2. Periksa perkakas target untuk memastikan cakupan dan jalur keluarannya:
+
+   ```bash
+   apothem harnesses show cursor
+   ```
+
+   Baris `Scope: project` berarti adapter mewujudkan ke dalam pohon proyek
+   dan memerlukan `--project PATH`; `Scope: user` mewujudkan ke dalam direktori
+   konfigurasi bercakupan-pengguna dan tidak memerlukan flag proyek.
+
+3. Pratinjau pemasangan tanpa menulis berkas:
+
+   ```bash
+   apothem install --harness cursor --dry-run
+   ```
+
+4. Pasang perkakas. Untuk perkakas bercakupan-pengguna:
+
+   ```bash
+   apothem install --harness claude-code
+   ```
+
+   Untuk perkakas bercakupan-proyek, berikan akar proyek:
+
+   ```bash
+   apothem install --harness cursor --project /path/to/project
+   ```
+
+   Pasang setiap perkakas yang didukung sekaligus dengan `--harness all` (perkakas
+   bercakupan-proyek tetap memerlukan `--project`; id yang tercantum di `exclude_harnesses` dalam
+   profil dilewati).
+
+## Verifikasi
+
+```bash
+apothem verify --harness cursor
+```
+
+Baris `✓ <harness-id> is verified` memastikan target terkelola ada dan terurai.
+`apothem doctor` memberikan tampilan seluruh-sistem di setiap perkakas.
+
+## Terkait
+
+- [Menyunting profil](/docs/how-to/editing-the-profile) untuk mengubah apa yang
+  diwujudkan adapter, lalu jalankan ulang `apothem update`.
+- [Memasang](/docs/install) mencakup pemasangan jalankan-pertama.

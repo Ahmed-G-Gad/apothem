@@ -1,0 +1,100 @@
+---
+title: "发布者账户设置"
+description: "为 @ahmed-g-gad/apothem 配置 npmjs.com 的受信任发布者及 GitHub 侧的发布前置条件。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+本操作手册配置发布面的发布者一侧。分发形态只有一个注册表：npmjs.com 上的作用域
+npm 包 `@ahmed-g-gad/apothem`，在 GitHub Release、Pages、CI、conformity 及
+harness 工作流全部绿色之后，由手动调度的 `publish-npm.yml` 工作流发布。其余每个
+产物都直接在 GitHub Release 页面上发布，无需外部发布者账户。
+
+## 身份映射
+
+| 表面 | 账户 | 包标识 |
+|---|---|---|
+| GitHub | `ahmed-g-gad` | `ahmed-g-gad/apothem` |
+| npm (npmjs.com) | `ahmed-g-gad` | `@ahmed-g-gad/apothem` |
+
+GitHub 所有者将来允许变动。在平台支持动态解析之处，工作流和安装器逻辑读取
+`github.repository`、`github.repository_owner` 或 `APOTHEM_GITHUB_REPOSITORY`。
+注册表的包标识符保持稳定，因为用户安装的是包名，而非维护者账户名。
+
+## npm (npmjs.com)
+
+1. 以 `ahmed-g-gad` 身份登录 `https://www.npmjs.com/`。
+2. 在账户上启用双因素认证。
+3. 确认作用域包名：
+
+   ```bash
+   npm view @ahmed-g-gad/apothem name
+   ```
+
+   返回 `404` 表示该作用域包尚未发布。任何其他包响应都必须在发布前与本仓库和
+   账户相匹配。
+4. 如果 UI 要求一条首次包记录，则在 npm 上创建该包。保持名称为作用域形式：
+   `@ahmed-g-gad/apothem`。
+5. 从 GitHub Actions 为 `@ahmed-g-gad/apothem` 配置受信任发布（Trusted Publishing）：
+   - GitHub 所有者：`ahmed-g-gad`
+   - 仓库：`apothem`
+   - 工作流文件名：`publish-npm.yml`
+   - 环境：`npmjs`
+   - 允许的操作：`npm publish`。
+6. 在 GitHub 中，确认 `ahmed-g-gad/apothem` 上存在 `npmjs` 环境，且部署需要手动批准。
+7. 将 npm 表面保持为一个公开注册表包：npmjs.com 上的 `@ahmed-g-gad/apothem`。
+8. 确认发布就绪：
+
+   ```bash title="Release readiness"
+   bash scripts/release/check-release-ready.sh <release-tag>
+   ```
+
+9. 从 GitHub Actions 标签页运行 `Publish — npm`（`publish-npm.yml`），带上
+   `tag=<release-tag>`，并批准 `npmjs` 环境的部署。
+10. 验证已上线的包：
+
+    ```bash title="npm verification"
+    npm view @ahmed-g-gad/apothem version
+    npx @ahmed-g-gad/apothem@<version> --version
+    ```
+
+无需 `NPM_TOKEN`、用户名或密码密钥。该工作流通过 npm 受信任发布（OIDC）发布，
+Node 版本和 npm CLI 的 OIDC 下限固定在 `.github/workflows/publish-npm.yml` 中。
+它对 npmjs.com 运行 `npm publish --access public`；对于从公开 GitHub Actions
+工作流发布的公开包，npm 会自动生成出处溯源（provenance）。在 `PUT` 期间出现注册表
+`404` 表示 npm 侧的受信任发布者、包作用域或账户授权尚未对齐；在重试工作流之前
+先修正 npm 包设置。
+
+参考资料：[npm 受信任发布者](https://docs.npmjs.com/trusted-publishers/)、[npm 出处溯源](https://docs.npmjs.com/generating-provenance-statements/) 以及 [npm 作用域](https://docs.npmjs.com/about-scopes/)。
+
+## GitHub 侧的发布前置条件
+
+其余发布表面是 GitHub 原生的，并使用仓库作用域的 `GITHUB_TOKEN` 进行认证；
+不涉及任何外部账户。
+
+1. **GitHub Release。** `.github/workflows/release.yml` 在版本标签上运行，
+   只需其作业本地的 `contents: write` 权限。在打标签前确认工作流文件已存在于
+   `main` 上。
+2. **Pages 自定义域名。** 文档站点通过 `publish-static-site.yml` 部署到自定义
+   域名 `apothem.ahmedgad.com`。该域名、DNS 和 HTTPS 强制由
+   [Pages 启用操作手册](/docs/runbooks/pages-enablement) 建立；验证：
+
+   ```bash title="Pages verification"
+   gh api repos/ahmed-g-gad/apothem/pages --jq '.cname, .https_enforced'
+   curl -sSI https://apothem.ahmedgad.com/ | head -n 1
+   ```
+
+3. **脚本安装器。** `install.sh` 和 `install.ps1` 从 Pages 站点提供
+   （`https://apothem.ahmedgad.com/install.sh` 和
+   `https://apothem.ahmedgad.com/install.ps1`）。它们由同一次 Pages 部署发布；
+   无需单独的账户或令牌。
+
+## 验证矩阵
+
+设置完成后，每个发布者表面回答其规范检查：
+
+| 表面 | 检查 |
+|---|---|
+| npmjs.com | `npm view @ahmed-g-gad/apothem version` 返回已发布的版本 |
+| GitHub Release | `gh release view <release-tag> --json assets --jq '.assets[].name'` 列出 sdist、wheel、SBOM、cosign 包、出处溯源和平台归档 |
+| Pages | `curl -sSI https://apothem.ahmedgad.com/` 在自定义域名上返回 `200` |

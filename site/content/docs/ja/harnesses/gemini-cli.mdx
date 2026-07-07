@@ -1,0 +1,95 @@
+---
+title: "Gemini CLI"
+description: "Gemini CLI（GA）向けの Apothem ツールアダプター。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**ベンダー：** Google
+**インストール名：** `gemini-cli`
+**ステータス：** GA
+**ネイティブ構成：** プロジェクトローカルの `GEMINI.md` と `.gemini/`
+
+## インストール
+
+```bash
+apothem install --harness gemini-cli --project /path/to/project
+```
+
+このアダプターはプロジェクトスコープです。プロジェクトの `GEMINI.md` を
+インストールし、Apothem コマンドを Gemini の TOML スラッシュコマンドに変換し、
+ローカルヘルパー定義を正規化し、ネイティブでないサポート套組を
+`.gemini/.apothem/support/` 下に配置します。
+
+**書き込まれるファイル：**
+
+```text
+GEMINI.md
+.gemini/commands/*.toml
+.gemini/agents/*.md
+.gemini/skills/
+.gemini/.apothem/support/
+```
+
+## プロファイルからネイティブ構成へのマッピング
+
+アダプターは Apothem の共有套組を読み取り、それぞれを Gemini 互換のサーフェスを
+通じてルーティングします。Markdown ルール、テンプレート、フック素材は、Gemini
+ネイティブのルールディレクトリではなくサポート素材であるため、`.gemini/.apothem/support/`
+下に残ります。
+
+## 互換性に関する注意
+
+`~/.gemini/` は、グローバルな Gemini プロファイルを使用するツールのための
+ユーザースコープの領域のままです。Gemini CLI アダプターは、`--project` で渡された
+プロジェクトにのみ書き込みます。
+
+## 検証
+
+```bash
+apothem verify --harness gemini-cli --project /path/to/project
+```
+
+verify コマンドは次のことを確認します。
+
+1. ネイティブ構成が想定パスに存在すること。
+2. 共有プロファイルのすべての必須フィールドが存在すること。
+3. アダプター固有の検証ルーチンが成功を報告すること。
+
+## 更新
+
+```bash
+apothem update --harness gemini-cli --project /path/to/project
+```
+
+`GEMINI.md`、変換されたコマンド、ローカルヘルパー定義、インストール済みのスキル、
+および `.gemini/.apothem/support/` サポートツリーを更新します。
+
+## アンインストール
+
+```bash
+apothem uninstall --harness gemini-cli --project /path/to/project
+```
+
+アダプターが書き込んだネイティブ構成ファイルを削除します。
+共有プロファイルの YAML と Apothem エンジンには影響しません。
+
+## 適合ゲート
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## トラブルシューティング
+
+| 症状 | 修正 |
+|---------|-----|
+| 構成ファイルが見つからない | `apothem install --harness gemini-cli --project /path/to/project` を再実行する |
+| 検証が失敗した | `apothem update --harness gemini-cli --project /path/to/project` を実行し、再度検証する |
+| 予期しない構成内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、`apothem update --harness gemini-cli --project /path/to/project` を再実行する |
+
+## 構成ノブ
+
+| フラグ | デフォルト | 説明 |
+|------|---------|-------------|
+| `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューする。 |

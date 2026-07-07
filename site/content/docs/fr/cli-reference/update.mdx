@@ -1,0 +1,80 @@
+---
+title: "update"
+description: "Référence de la CLI pour la commande apothem update."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Réinstalle la configuration d'un adaptateur de harness à partir du profil partagé actuel.
+
+## Synopsis
+
+```
+apothem update --harness NAME|all [--profile PATH] [--dry-run]
+                [--project PATH]
+                [--quiet|-q] [--verbose|-v]
+                [--format plain|json] [--json] [--no-color]
+```
+
+`update` rematérialise la sortie du harness à partir du profil partagé actuel. Elle utilise la même validation de profil, la même sélection `--harness all`, la même vérification de la portée de projet, le même comportement de dry-run et la même enveloppe JSON que `install`.
+
+L'alias en forme continue `apothem updating` se résout vers le même gestionnaire.
+
+## Options
+
+| Option | Description |
+|---|---|
+| `--harness NAME` | Adaptateur de harness à mettre à jour, ou `all` pour l'ensemble de tout le registre (obligatoire). |
+| `--profile PATH` | Chemin vers le profil partagé YAML. Par défaut : `~/.config/apothem/profile.yaml`. |
+| `--dry-run` | Prévisualise la mise à jour sans écrire de fichiers. |
+| `--project PATH` | Racine du projet pour les harness à portée de projet. Obligatoire lorsque l'ensemble de harness sélectionné inclut des adaptateurs à portée de projet. |
+| `--quiet`, `-q` | Supprime la sortie informative ; seules les erreurs sont émises. |
+| `--verbose`, `-v` | Émet une sortie de diagnostic supplémentaire. |
+| `--format plain\|json` | Format de sortie (par défaut : `plain`). |
+| `--json` | Raccourci pour `--format json`. |
+| `--no-color` | Désactive les codes de couleur ANSI dans la sortie. |
+| `-h`, `--help` | Affiche l'aide et quitte. |
+
+## Sortie JSON
+
+```json
+{
+  "status": "success",
+  "command": "update",
+  "action": "updated",
+  "harness": "claude-code",
+  "profile_path": "C:\\Users\\Example\\.config\\apothem\\profile.yaml",
+  "project": null,
+  "files_written": [],
+  "results": [],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+`--dry-run` renvoie `status: "dry_run"` et `files_written: []`.
+
+## Exemples
+
+```bash
+apothem update --harness claude-code
+apothem update --harness claude-code --dry-run
+apothem update --harness all --project . --dry-run --json
+apothem Updating --harness claude-code   # continuous-form alias
+apothem updating --harness claude-code   # lowercase variant
+```
+
+## Codes de sortie
+
+| Code | Signification |
+|---|---|
+| 0 | Adaptateur mis à jour avec succès ou dry-run planifié proprement |
+| 1 | Erreur attendue de validation, de profil, de harness, de projet ou d'adaptateur |
+| 2 | Matérialisation par lots partielle après au moins une écriture |
+
+## Voir aussi
+
+- `apothem updating` — alias en forme continue de cette commande (documenté ici ; la CLI accepte les deux formes)
+- [apothem install](/docs/cli-reference/install) — installation initiale
+- [Guide de mise à jour](/docs/install/updating) — chemins de mise à jour par installateur

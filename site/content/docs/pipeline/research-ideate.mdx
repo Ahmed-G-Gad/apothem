@@ -1,0 +1,68 @@
+---
+title: "/research-ideate"
+description: "/research-ideate — Formulates the problem space from a domain seed: opportunity-and-gap scanning, invalidated-prior-hypothesis scanning, and ranked candidate research-question generation — the head stage of the /research pipeline, feeding /research-spec."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Role:** Principal Investigator (problem formulation)
+**Pipeline position:** head
+
+Formulates the problem space from zero — opportunity-and-gap scanning, invalidated-prior-hypothesis scanning, and candidate research-question generation with ranking — the entry stage of the `/research` pipeline. Every candidate is framed against an a-priori theoretical anchor, grounded in prior art, and stated in a falsifiable form, ready for `/research-spec`.
+
+## Canonical invocation
+
+```bash
+/research-ideate
+```
+
+With arguments:
+
+```bash
+/research-ideate [path/to/domain-notes] [--suite-name NAME] [--override] [--domain NAME]
+```
+
+## Inputs
+
+A domain seed — free-form domain notes (operator-supplied inline or as a path), or a bare `--domain` name when starting from scratch.
+
+## Outputs
+
+`_inputs/ideation.md` (the framed problem space, the opportunity-and-gap scan, the invalidated-prior-hypothesis scan, and the ranked candidate-question slate) plus the Handoff Manifest at the research-suite folder.
+
+## Downstream
+
+/research-spec (downstream consumer — frames the chosen candidate into a falsifiable spec).
+
+## Workflow phases
+
+The command follows the standard `/research` pipeline workflow:
+
+1. **Load context** — Read the domain seed, the rules, and any existing suite state.
+2. **Scan the opportunity and gap space** — Map what is studied, what is contested, and what is unaddressed in the domain.
+3. **Scan invalidated priors** — Surface hypotheses already refuted by prior art so the slate does not re-tread settled ground.
+4. **Generate and rank candidates** — Produce candidate research questions, each stated in a falsifiable form, ranked by tractability and impact.
+5. **Verify outputs** — Confirm every candidate is grounded in primary prior art and refutable; resolve every ambiguity through the structured-inquiry channel.
+6. **Emit the ideation slate** — `_inputs/ideation.md` plus the handoff manifest.
+
+## Failure modes
+
+| Symptom | Cause | Recovery |
+|---------|-------|----------|
+| No falsifiable candidate | Domain seed too broad or purely descriptive | Narrow the domain via structured inquiry; re-frame candidates as refutable questions |
+| Candidate restates an invalidated prior | Prior-art scan skipped | Run the invalidated-prior scan; drop or re-frame the overlapping candidate |
+| Missing domain seed | No notes or `--domain` supplied | Supply domain notes inline / as a path, or pass `--domain NAME` |
+
+## Examples
+
+```bash
+# Scan a domain and generate ranked candidate questions
+/research-ideate ~/notes/retrieval-systems.md --suite-name retrieval-latency
+
+# Start from a bare domain name
+/research-ideate --domain "vector-index recall under drift"
+```
+
+## Cross-references
+
+- [Pipeline overview](/docs/pipeline)
+- [Commands reference](/docs/reference/commands)

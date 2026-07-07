@@ -1,0 +1,36 @@
+---
+title: "Соглашения по Markdown"
+description: "Стандартизация разновидности Markdown, структуры заголовков, объявлений код-блоков, форматов внутренних ссылок, баннеров авторства и принудительного применения валидаторами."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Каноническая ссылка на форму и форматирование Markdown во всех авторских артефактах `.md`.** Сводка в [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Соглашения — это встроенное объявление; эта страница — автономная ссылка, которую цитируют нижестоящие участники.
+
+---
+
+## 1. Разновидность
+
+GitHub-Flavored Markdown (GFM) — это разновидность хоста. Каждый артефакт корректно отображается в веб-интерфейсе GitHub, на сайте документации Fumadocs и в стандартных редакторах с поддержкой Markdown.
+
+## 2. Иерархия заголовков
+
+Один H1 на файл. Последующие заголовки спускаются монотонно (H2 → H3 → H4) без пропуска уровней. Заголовки в регистре предложения; никаких ВЕРХНИХ РЕГИСТРОВ, никаких Заголовков С Большой Буквы Каждого Слова. H1 несёт основной заголовок документа и ЯВЛЯЕТСЯ якорем документа в навигации сайта документации.
+
+## 3. Код-блоки
+
+Огороженные код-блоки объявляют свой язык (` ```python `, ` ```bash `, ` ```yaml `, ` ```json `, ` ```mermaid `). Блоки без тега подавляют подсветку синтаксиса и сигнализируют о дрейфе авторства; правило markdownlint MD040 в [`.markdownlint.jsonc`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.jsonc) принудительно применяет языковой тег.
+
+## 4. Внутренние ссылки
+
+Внутренние перекрёстные ссылки используют **пути относительно корня сайта** (например, `[Authorship header](/docs/reference/authorship-header)`). Голые пути относительно репозитория с расширением `.md`/`.mdx` (`/docs/foo.md`) и полные URL на тот же репозиторий (`https://github.com/ahmed-g-gad/apothem/blob/main/...`) для внутрисайтовых ссылок избегаются, потому что они плохо переживают переименования страниц и реорганизации разделов.
+
+Внешние ссылки на изменяемые ref (`main`, `master`, `latest`, `HEAD`) закрепляются на SHA коммитов или тегах релизов всякий раз, когда стабильность связанного содержимого имеет значение; нестабильные ссылки документируются как таковые с соседним комментарием `{/* volatile */}`.
+
+## 5. Баннер авторства
+
+Каждый артефакт Markdown (за исключениями, перечисленными в [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas/header-exceptions.txt)) несёт канонический баннер заголовка авторства по байту 0, в варианте HTML-комментария согласно [Authorship header](/docs/reference/authorship-header). Баннер располагается над YAML-frontmatter там, где присутствуют оба.
+
+## 6. Валидаторы
+
+Вызов `markdownlint-cli2` в [`.markdownlint.jsonc`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.jsonc) принудительно применяет основную массу правил из §§1–4. `file-header-grep` в `src/apothem/conformity/file_header_grep.py` принудительно применяет §5. Оба подключены к цепочке хуков pre-commit в [`.pre-commit-config.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/.pre-commit-config.yaml) и к заданию качества CI в [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml).

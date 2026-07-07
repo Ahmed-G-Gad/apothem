@@ -1,0 +1,90 @@
+---
+title: "Codex"
+description: "Adaptador de ferramenta do Apothem para o Codex (Beta)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Fornecedor:** OpenAI
+**Nome de instalação:** `codex`
+**Status:** Beta
+**Configuração nativa:** `~/.codex/AGENTS.md`, `~/.codex/hooks.json`,
+`~/.codex/hooks/`, `~/.codex/agents/*.toml` e `~/.agents/skills/`
+
+## Instalação
+
+```bash
+apothem install --harness codex
+```
+
+O adaptador instala as instruções e os hooks nativos do Codex, converte os agentes do
+Apothem em agentes TOML do Codex e envolve os prompts de comandos reutilizáveis como
+skills do Codex.
+
+**Arquivos escritos:** `~/.codex/AGENTS.md`, `~/.codex/hooks.json`,
+`~/.codex/hooks/`, `~/.codex/agents/*.toml`,
+`~/.agents/skills/*/SKILL.md`, e arquivos de suporte sob
+`~/.config/apothem/{rules,templates}/`.
+
+## Mapeamento de perfil para configuração nativa
+
+O adaptador lê os conjuntos compartilhados do Apothem e instala cada um na superfície
+correta do Codex: as instruções em `AGENTS.md`, os hooks em `hooks.json` e `hooks/`, os
+agentes em TOML, as skills em `~/.agents/skills/`, e as regras/templates Markdown não
+nativos em `~/.config/apothem/` como material de suporte.
+
+## Notas de compatibilidade
+
+O Codex reserva `~/.codex/rules/` para as políticas de execução `.rules`. O Apothem não
+coloca ali regras de comportamento em Markdown; ele as mantém em `~/.config/apothem/` e
+as referencia a partir de `AGENTS.md` e das skills instaladas.
+
+## Verificação
+
+```bash
+apothem verify --harness codex
+```
+
+O comando verify confirma que:
+
+1. A configuração nativa existe no caminho esperado.
+2. Todos os campos obrigatórios do perfil compartilhado estão presentes.
+3. A rotina de verificação específica do adaptador relata sucesso.
+
+## Atualização
+
+```bash
+apothem update --harness codex
+```
+
+Atualiza o bootstrap do Codex, os agentes convertidos, as skills e os conjuntos de
+suporte.
+
+## Desinstalação
+
+```bash
+apothem uninstall --harness codex
+```
+
+Remove os arquivos de configuração nativa escritos pelo adaptador. O YAML do perfil
+compartilhado e o motor do Apothem não são afetados.
+
+## Portão de conformidade
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Solução de problemas
+
+| Sintoma | Correção |
+|---------|-----|
+| Arquivo de configuração não encontrado | Execute novamente `apothem install --harness codex` |
+| Verificação falhou | Execute `apothem update --harness codex` e verifique novamente |
+| Conteúdo de configuração inesperado | Verifique `~/.config/apothem/profile.yaml` ou `--profile PATH`, e execute novamente `apothem update --harness codex` |
+
+## Ajustes de configuração
+
+| Flag | Padrão | Descrição |
+|------|---------|-------------|
+| `--dry-run` | `false` | Pré-visualiza a instalação sem escrever arquivos. |

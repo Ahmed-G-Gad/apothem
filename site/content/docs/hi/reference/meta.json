@@ -1,0 +1,32 @@
+{
+  "title": "संदर्भ",
+  "pages": [
+    "index",
+    "cli",
+    "profile-fields",
+    "harness-registry",
+    "rules",
+    "skills",
+    "commands",
+    "agents",
+    "hooks",
+    "output-styles",
+    "mcp",
+    "settings",
+    "settings-reference",
+    "naming-conventions",
+    "frontmatter-schema",
+    "markdown-conventions",
+    "prose-conventions",
+    "commit-conventions",
+    "artifact-schema",
+    "artifact-registries",
+    "directory-tree",
+    "claude-md",
+    "ai-conventions",
+    "authorship-header",
+    "dependency-pinning-manifest",
+    "plans-discipline",
+    "..."
+  ]
+}

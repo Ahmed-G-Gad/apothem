@@ -1,0 +1,41 @@
+---
+title: "Registry maßgeblicher Rückfragen — Pflichtkategorien"
+description: "Sieben Pflicht-Rückfragekategorien und Ausnahmen für automatische Entscheidungen, die regeln, was der Assistent fragen muss versus entscheiden darf, wenn er an Host-Projekten operiert."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Kanonisches Register der Disziplin der maßgeblichen Rückfragen.** Dieses Dokument trägt den Katalog der sieben Pflichtkategorien, die Aufzählung der ausgenommenen automatischen Entscheidungen und die Bindungsdeklaration; die substanziellen Tabellen und Bindungen leben hier, operationalisiert durch `src/apothem/rules/authority-inquiry.md`.
+
+Beim Operieren an einem Host-Projekt frage nach — erfinde nicht — zu den sieben Kategorien unten. Rückfragen werden über den Kanal für strukturierte Rückfragen gemäß `src/apothem/rules/interactive-questions.md` geleitet. Jede Option trägt die dreiteilige Annotation (Begründung / Empfehlung / Standardzeiger) und eine Empfehlungsmarkierung gemäß M7.
+
+| Kategorie | Erfinden verboten | Nachfragen, weil |
+| -------- | ------------------- | --------------- |
+| Identität | Namen, E-Mails, Handles, Pronomen, Organisationen, Mandanten, Teamzugehörigkeiten, Rollenbeschreibungen | Bindet an eine reale Person; erzeugt reale Artefakte (Commits, PRs, öffentliche Zuschreibung) |
+| Geltungsbereichsrichtung | Welcher Teilbaum, welcher Branch, welche Umgebung (dev/staging/prod), welches Ziel (Bibliotheken vs. Dienste), welches benutzergerichtet vs. nur intern | Der Benutzer hat impliziten Kontext, der dem Assistenten fehlt; stille Auswahlen führen zu Fehlausrichtung |
+| Präferenz | Formatter, Linter, Test-Framework, Dokumentationsgenerator, CI-Anbieter, Branch-Strategie, Commit-Message-Konvention, Release-Signierung, Versionierungsschema, Lizenz — *wo der Host sich auf keine festgelegt hat* | Jede ist eine langlebige Festlegung, die sich der stillen Übernahme widersetzt |
+| Sicherheit | Kadenz der Geheimnisrotation, erlaubte Shells, erlaubter Netzwerk-Ausgang, Liste akzeptierter Risiken, Allowlist vertrauenswürdiger Aktionen, Spezifika des MCP-Server-Auth-Endpunkts | Sicherheits-Fehlkonfiguration ist folgenschwer; stille Auswahlen riskieren einen stillen Einbruch |
+| Benennung | Eine neue Konvention, die eingeführt wird, wo der Host keine hat, oder eine Namensbindung (Funktion, CLI-Flag, Unterbefehl, Konfigurationsschlüssel), wo der Benutzer implizite Präferenzen hat | Namen sind dauerhaft; stille Auswahlen summieren sich zu Namensraumverschmutzung |
+| Infrastruktur | Endpunkte, Hosts, Ports, Pfade, Regionen, Warteschlangennamen, Themennamen, Tabellennamen | Binden an reale Ressourcen; Erfindung verursacht reale Ausfälle |
+| Versions-Pins | Welche Version welcher Abhängigkeit, wo der Host nicht gepinnt hat und die Wahl von Bedeutung ist (sicherheitsrelevante Abhängigkeiten, Verhaltensänderungs-Abhängigkeiten, semver-major-Grenzen) | Long-Tail-Folgen; stille Auswahlen belasten den Benutzer |
+
+**Pflicht-Rückfragen** (Identität, Geltungsbereichsrichtung, Sicherheitshaltung, Benennung öffentlicher Oberflächen sind stets pflichtig) blockieren abhängige Artefakte; die Emission erzeugt `<USER-CONFIRM:id=<id>>`-Platzhalter. **Optionale Rückfragen** kann der Benutzer durch Schweigen ablehnen; der Assistent greift dann auf die empfohlene Option zurück und protokolliert den Rückgriff als Befund, damit der Benutzer sieht, dass eine Entscheidung getroffen wurde.
+
+## 1. Ausgenommene automatische Entscheidungen
+
+Das Folgende entscheidet der Assistent ohne Rückfrage — im Änderungs-Ledger offengelegt als „standardmäßig angewendet; rückgängig machen, wenn anders beabsichtigt":
+
+- **Reine Gültigkeit.** Syntaxfehler, Schemaverletzungen, eindeutige Tippfehler.
+- **Reine Strenge.** Folklore → zitiert; fehlende Daten ergänzt; nicht überprüfbare Behauptungen markiert.
+- **Universell sichere Sicherheit.** `deny .env*`, `deny ~/.ssh/**` Lesezugriffe, `deny rm -rf:*`, `deny sudo:*`, `deny git push --force*` auf geschützte Branches, `deny eval`/`exec` auf nicht vertrauenswürdige Eingaben.
+- **Reine Formatierungsnormalisierung.** EOL, nachgestellte Leerzeichen, einheitlicher Anführungszeichen-Stil je Datei *wo der Host einen etablierten Stil hat und das Artefakt abweicht*.
+- **Reparatur interner Referenzen, wo die Korrektur eindeutig ist.** Toter Pfad → eindeutiger lebender Pfad, per Suche entdeckt.
+
+Alles außerhalb dieser Ausnahme läuft über die Rückfrageoberfläche.
+
+## 2. Bindungen (§0.j five-direction)
+
+- **Drives →** Jede Host-Projekt-Artefakt-Emission (das Vor-Emissions-Gate feuert bei jedem Schreibvorgang von bedeutsamem Umfang gemäß `site/content/docs/governance/pre-emission-gate-registry.mdx`). Jede Mehrfach-Options-Präsentation wird über den Kanal für strukturierte Rückfragen gemäß der Kanonischer-Kanal-Verpflichtung geleitet. Die Durchsetzung des mechanischen Anteils in `src/apothem/conformity/*-grep.py`. Die regelweise Durchsetzung in `src/apothem/rules/{authority-inquiry,host-discovery,disclosure-ledger,ten-dimension-check,pre-emission-gate,expertise-posture,option-annotation,definitiveness,visual-leverage,bidirectional-binding,agile-sprints,canonical-layout,code-craft-*,systemic-participation,production-ready-prs}.md`.
+- **Satisfies →** Die als erstklassige Governance-Dimension neben der CM-N-Achse deklarierte Achse externer Konformität (M = Host-Projekt-Artefakte; CM = ökosystem-interne Artefakte; beide orthogonal, beide gelten, wo beide gelten). Die Verpflichtung zu Daueranweisungen, dass jeder Sitzungsstart das M-Set als stets aktiven Kontext erbt.
+- **Established by ↑** `CLAUDE.md` selbst (die Registry ist dem stets aktiven Kontext intrinsisch, nicht aus externem Zustand abgeleitet). Die Ratifizierung der Trivial-vs.-Nicht-trivial-Schwelle in `site/content/docs/governance/outward-conformity-registry.mdx` §1.
+- **Cross-bound with ↔** Jede Regel, die in der Tabelle der Registry externer Konformität in `site/content/docs/governance/outward-conformity-registry.mdx` genannt wird (der kanonische Mandatskörper). `src/apothem/conformity/*-grep.py` (die Durchsetzung des mechanischen Anteils des Gates). `src/apothem/rules/interactive-questions.md` (die Rückfrageoberfläche wird über die Kanonischer-Kanal-Verpflichtung geleitet, die jene Regel definiert).

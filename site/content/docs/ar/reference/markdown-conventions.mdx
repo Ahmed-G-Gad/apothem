@@ -1,0 +1,36 @@
+---
+title: "اصطلاحات Markdown"
+description: "توحيد نكهة Markdown، وبنية العناوين، وإعلانات أسوار الشيفرة، وصيغ الروابط الداخلية، ولافتات الكِتابة، والإنفاذ عبر المُتحقِّقات."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **مرجع كنسي لشكل <bdi>Markdown</bdi> وتنسيقه عبر كل مُنتَج `.md` مكتوب.** الملخص في [<bdi>`CLAUDE.md`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) <bdi>§4</bdi> الاصطلاحات هو الإعلان المُضمَّن؛ وهذه الصفحة هي المرجع المستقل الذي يستشهد به المساهمون في المراحل اللاحقة.
+
+---
+
+## 1. النكهة
+
+<bdi>GitHub-Flavored Markdown (GFM)</bdi> هي نكهة المضيف. يُعرَض كل مُنتَج بشكل صحيح في واجهة الويب لـ<bdi>GitHub</bdi>، وفي موقع توثيق <bdi>Fumadocs</bdi>، وفي المحررات القياسية المُدرِكة لـ<bdi>Markdown</bdi>.
+
+## 2. تسلسل العناوين
+
+عنوان <bdi>H1</bdi> واحد لكل ملف. تنحدر العناوين اللاحقة بشكل رتيب (<bdi>H2 → H3 → H4</bdi>) دون تخطّي المستويات. عناوين بحالة الجملة؛ لا حروف كبيرة بالكامل (<bdi>ALL-CAPS</bdi>)، ولا <bdi>Title Case Across Every Word</bdi>. يحمل <bdi>H1</bdi> العنوان الرئيس للمستند، وهو نفسه مرساة المستند في تنقّل موقع التوثيق.
+
+## 3. كتل الشيفرة
+
+تُعلِن كتل الشيفرة المُسوَّرة عن لغتها (` ```python `، ` ```bash `، ` ```yaml `، ` ```json `، ` ```mermaid `). الكتل بلا وسم تكبح إبراز الصياغة وتُشير إلى انحراف في الكِتابة؛ تَفرض قاعدة <bdi>markdownlint MD040</bdi> في [<bdi>`.markdownlint.jsonc`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.jsonc) وسمَ اللغة.
+
+## 4. الروابط الداخلية
+
+تستخدم الإحالات المتقاطعة الداخلية **مسارات نسبية إلى جذر الموقع** (مثلًا، `[Authorship header](/docs/reference/authorship-header)`). تُتجنَّب المسارات النسبية العارية للمستودع ذات اللاحقة `.md`/`.mdx` (`/docs/foo.md`) وعناوين <bdi>URL</bdi> الكاملة إلى المستودع نفسه (`https://github.com/ahmed-g-gad/apothem/blob/main/...`) للروابط داخل الموقع، لأنها لا تصمد أمام إعادة تسمية الصفحات وإعادة تنظيم الأقسام.
+
+تُثبَّت الروابط الخارجية إلى المراجع المتغيرة (`main`، `master`، `latest`، `HEAD`) إلى <bdi>SHA</bdi> الالتزامات أو وسوم الإصدارات كلما كان استقرار المحتوى المربوط مهمًّا؛ وتُوثَّق المراجع المتقلبة على هذا النحو بتعليق `{/* volatile */}` مجاور.
+
+## 5. لافتة الكِتابة
+
+يحمل كل مُنتَج <bdi>Markdown</bdi> (مع الاستثناءات المُعدَّدة في [<bdi>`src/apothem/schemas/header-exceptions.txt`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/schemas/header-exceptions.txt)) لافتة ترويسة الكِتابة الكنسية عند البايت <bdi>0</bdi>، بصيغة تعليق <bdi>HTML</bdi> وفق [<bdi>Authorship header</bdi>](/docs/reference/authorship-header). تجلس اللافتة فوق الـ<bdi>frontmatter</bdi> بصيغة <bdi>YAML</bdi> حيث يوجد كلاهما.
+
+## 6. المُتحقِّقات
+
+يَفرض استدعاء <bdi>`markdownlint-cli2`</bdi> في [<bdi>`.markdownlint.jsonc`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.jsonc) معظم قواعد <bdi>§§1–4</bdi>. ويَفرض <bdi>`file-header-grep`</bdi> عند <bdi>`src/apothem/conformity/file_header_grep.py`</bdi> القسمَ <bdi>§5</bdi>. وكلاهما موصول بسلسلة خطّافات ما قبل الالتزام (<bdi>pre-commit</bdi>) في [<bdi>`.pre-commit-config.yaml`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/.pre-commit-config.yaml) وبمهمة الجودة في <bdi>CI</bdi> عند [<bdi>`.github/workflows/ci.yml`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml).

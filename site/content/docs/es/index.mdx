@@ -1,0 +1,79 @@
+---
+title: "Documentación de Apothem"
+description: "Un único perfil compartido, materializado en diecisiete harness. Empieza aquí: instalación, uso, cobertura de entornos, el flujo de comandos y la referencia completa."
+machineTranslated: true
+---
+
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem es un gestor de configuración de entornos independiente del host.
+Defines un único perfil compartido en `~/.config/apothem/profile.yaml` y
+Apothem lo materializa en la superficie de configuración nativa de diecisiete
+harness: Claude Code, Cursor, Gemini CLI, GitHub Copilot,
+Codex, Windsurf, Zed y el resto del catálogo registrado.
+
+La unidad que Apothem sincroniza es más amplia que las reglas por sí solas:
+las reglas, los comandos de barra, las skills, los hooks, los output-styles, los
+ajustes (con servidores MCP), los esquemas y la documentación viajan juntos como
+un único corpus gobernado, materializado en el formato nativo de cada entorno o
+en un subárbol de soporte propio de Apothem cuando la herramienta no tiene una
+primitiva equivalente.
+
+## ¿Nuevo por aquí? Empieza en dos pasos
+
+1. **[Instalación](/docs/install/quickstart)** — elige una vía de instalación
+   (plugins y extensiones nativos de cada herramienta, `npx` o scripts de un solo
+   paso) y ejecuta el primer paso guiado. Los únicos requisitos previos son
+   [Node.js](https://nodejs.org/) y Python 3.10 o posterior del sistema.
+2. **[Llega a tu primera ejecución funcional](/docs/tutorials/getting-started)** —
+   define un perfil compartido, materializa desde él la configuración nativa de un
+   entorno y verifica el resultado. Unos quince minutos, de principio a fin.
+
+## Cómo funciona Apothem
+
+- **Un perfil, muchas configuraciones nativas.** Defines la intención una vez;
+  Apothem la traduce a la superficie de configuración nativa de cada herramienta,
+  sin aplanar al mínimo común denominador. Consulta
+  [la postura independiente del host](/docs/concepts/ai-platform-agnosticism).
+- **El bucle operativo: planificar → endurecer → publicar.** Un flujo de
+  planificación (`/plan`) lleva un cambio por especificación, generación, revisión
+  y ejecución; un flujo de endurecimiento (`/fortress`) lleva ese trabajo a un
+  estado listo para publicar; la puerta de publicación cierra el bucle. Consulta
+  [el flujo de comandos](/docs/pipeline).
+- **Trabajo que sobrevive a los límites.** El trabajo de larga duración
+  externaliza todo su estado a una suite `.apothem/plans/` local del proyecto, de modo que
+  una sesión nueva en cualquier cuenta o máquina lo reanuda en su sitio. Consulta
+  [la planificación reanudable](/docs/concepts/resumable-planning).
+
+## Empieza aquí
+
+- **[Instalación](/docs/install/quickstart)** — las vías de instalación
+  (plugins y extensiones nativos de cada herramienta, `npx`, scripts de un
+  solo paso) y una primera ejecución guiada.
+- **[Uso](/docs/usage/getting-started)** — define tu perfil, instálalo en
+  todos los entornos, verifícalo y actualízalo.
+- **[Entornos](/docs/harnesses)** — el catálogo de diecisiete entornos con la
+  superficie nativa de cada herramienta y su comportamiento de conversión.
+- **[El flujo de comandos](/docs/pipeline)** — las etapas de los flujos
+  `/plan` y `/research`, la secuencia de auditoría y revisión, las habilidades
+  de workflow y projectify, y las protecciones de manipulación quirúrgica.
+
+## Profundiza
+
+- **[Conceptos](/docs/concepts/ai-platform-agnosticism)** — el perfil
+  compartido, los adaptadores de entorno y el modelo de materialización.
+- **[Arquitectura](/docs/architecture)** — la estructura del código fuente, la
+  abstracción del adaptador, el runtime autocontenido y el flujo CI/CD.
+- **[Referencia](/docs/reference)** — la CLI, el esquema del perfil, las reglas,
+  las habilidades, los comandos, los hooks y los catálogos de estilos de salida.
+- **[Cómo se compara Apothem](/docs/comparison)** — una matriz de
+  diferenciación honesta y con competidores nombrados.
+
+## Gobernanza y seguridad
+
+- **[Gobernanza](/docs/governance)** — el registro de disciplinas, la puerta
+  de conformidad y la fachada de versiones.
+- **[Seguridad](/docs/security)** — la postura de cadena de suministro y la
+  política de seguridad.
+- **[Registro de cambios](/docs/changelog)** — las notas de versión, con la
+  versión actual primero.

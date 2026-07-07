@@ -1,0 +1,8 @@
+{
+  "argv": [
+    "completion",
+    "powershell"
+  ],
+  "exit_code": 0,
+  "stdout": "# Apothem shell completion for PowerShell.\n# Append to your PowerShell profile ($PROFILE) to enable, then restart the shell:\n#   apothem completion powershell >> $PROFILE\nRegister-ArgumentCompleter -Native -CommandName apothem -ScriptBlock {\n    param($wordToComplete, $commandAst, $cursorPosition)\n    $env:_APOTHEM_COMPLETE = \"powershell_complete\"\n    $env:COMP_WORDS = $commandAst.ToString()\n    $env:COMP_CWORD = $cursorPosition\n    try {\n        apothem | ForEach-Object {\n            $type, $value, $help = $_ -split \",\", 3\n            if ($value) {\n                $tooltip = if ($help) { $help } else { $value }\n                [System.Management.Automation.CompletionResult]::new(\n                    $value, $value, 'ParameterValue', $tooltip\n                )\n            }\n        }\n    } finally {\n        Remove-Item Env:_APOTHEM_COMPLETE\n        Remove-Item Env:COMP_WORDS\n        Remove-Item Env:COMP_CWORD\n    }\n}\n\n"
+}

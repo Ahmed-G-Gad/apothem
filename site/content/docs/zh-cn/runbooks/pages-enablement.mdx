@@ -1,0 +1,308 @@
+---
+title: "Pages 启用操作手册"
+description: "通过 CNAME DNS 配置在 apothem.ahmedgad.com 上以自定义域名启用 GitHub Pages 的分步操作手册。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+本操作手册将 `apothem.ahmedgad.com` 从全新的 GitHub Pages 配置一路推进到
+返回 `200 OK` 的 HTTPS 着陆页。该流程是为使用 `gh` 和 DNS 提供商控制台的
+操作员编写的；一位称职的新贡献者无需任何先验背景即可照此操作。
+
+本操作手册的结构为：一个**与提供商无关的核心部分**（每家提供商都共有的
+GitHub 侧和 DNS 记录步骤），其后是面向 Namecheap、Cloudflare、Route53
+以及通用 DNS 兜底方案的**提供商专属附录**。按顺序执行核心部分；跳转到
+与顶级域名注册商 / DNS 主机匹配的附录；然后返回核心部分进行验证。
+
+站点通过 GitHub Pages 从公开的 `ahmed-g-gad/apothem` 仓库托管，其自定义域名
+CNAME 指向 `ahmed-g-gad.github.io`。静态站点构建产物输出到 `site/dist/`；
+Pages 工作流在每次推送到 `main` 时将该构建产物提升到线上站点。
+
+## 1. 前置条件
+
+操作员在继续之前确认以下各项：
+
+- **仓库状态。** `ahmed-g-gad/apothem` 是公开的，已启用 Pages
+  （Settings > Pages > Source: GitHub Actions），并且
+  `publish-static-site.yml` 工作流存在于
+  `.github/workflows/publish-static-site.yml`。
+- **DNS 权限。** 操作员在注册商处或在受委派的 DNS 主机（Cloudflare、
+  Route53 等）处掌控 `ahmedgad.com` 的 DNS。可通过
+  `dig NS ahmedgad.com +short` 识别 DNS 主机。
+- **工具。** 已针对 `ahmed-g-gad` 账户完成认证的 `gh`（GitHub CLI）
+  2.40 或更高版本；用于 DNS 验证的 `dig`（BIND `dig` 或 `drill`）；
+  用于 HTTPS 检查的浏览器。
+- **顶级域名立场。** 本操作手册仅配置**子域名**
+  `apothem.ahmedgad.com`。顶级域名 `ahmedgad.com` 不受改动。
+  在顶级域名上使用 CNAME 需要 CNAME 扁平化（Cloudflare）或 ALIAS 记录
+  （Route53）；子域名路径可避开这两类复杂情况。
+
+## 2. 与提供商无关的核心部分
+
+### 2.1 将自定义域名添加到 Pages
+
+```bash
+gh api -X PUT \
+  /repos/ahmed-g-gad/apothem/pages \
+  -F cname=apothem.ahmedgad.com \
+  -F https_enforced=true
+```
+
+验证该调用返回了新的 CNAME 记录：
+
+```bash
+gh api /repos/ahmed-g-gad/apothem/pages \
+  --jq '.cname, .https_enforced, .status'
+```
+
+预期输出：
+
+```text
+apothem.ahmedgad.com
+true
+built
+```
+
+`built` 状态确认最近一次 Pages 构建已成功。`null` 状态意味着自 CNAME
+被应用以来 Pages 尚未运行——向 `main` 推送一个空操作（no-op）提交以触发构建。
+
+### 2.2 确认 CNAME 文件
+
+GitHub Pages 在每次部署时通过静态站点构建产物接收 `site/public/CNAME`。
+该文件在单独一行上包含自定义域名，不带协议方案，不带尾部斜杠：
+
+```text
+apothem.ahmedgad.com
+```
+
+该文件位于 `site/public/CNAME`。验证：
+
+```bash
+cat site/public/CNAME
+```
+
+如果文件缺失，请在 `site/public/CNAME` 处重新创建，并以
+`chore: restore Pages CNAME` 提交。
+
+### 2.3 添加 DNS 记录
+
+当顶级域名 DNS 提供商返回 GitHub 的四个 IP 地址之一（对于顶级域名）
+或返回指向 `<owner>.github.io` 的 CNAME（对于子域名）时，Pages 即可
+提供自定义域名服务。对于 `apothem.ahmedgad.com`，记录类别为 **CNAME**：
+
+| 字段 | 值 |
+|-------|-------|
+| 类型  | `CNAME` |
+| 主机  | `apothem`（仅子域名；注册商会追加顶级域名） |
+| 值 | `ahmed-g-gad.github.io.`（注册商要求时带尾部点号） |
+| TTL   | `3600`（一小时；切换期间为加快传播可调低） |
+
+添加记录的具体 UI 流程因提供商而异；跳转到下方匹配的附录，记录保存后再返回此处。
+
+### 2.4 等待 DNS 传播
+
+低 TTL 记录会在五分钟内完成传播，默认 3600 秒 TTL 的记录会在一小时内
+完成——在 DNS 区域传输（zone transfer）期间，提供商边缘节点可能会延长
+该窗口。跟踪进度：
+
+```bash
+dig apothem.ahmedgad.com CNAME +short
+```
+
+预期输出：
+
+```text
+ahmed-g-gad.github.io.
+```
+
+空输出表示记录尚未传播。每 30 秒重新运行一次。如果记录在 30 分钟后
+仍未出现，请返回与该 DNS 主机匹配的附录，并验证记录确实已在提供商处
+提交，而非停留在草稿状态。
+
+### 2.5 验证 HTTPS
+
+```bash
+curl -sSI https://apothem.ahmedgad.com/ | head -5
+```
+
+预期输出：
+
+```text
+HTTP/2 200
+server: GitHub.com
+content-type: text/html; charset=utf-8
+strict-transport-security: max-age=31536000
+```
+
+`HTTP/2 200` 与 `server: GitHub.com` 这一行共同确认 Pages 正在有效的
+TLS 证书下提供站点服务。对纯 HTTP 请求返回到 HTTPS URL 的 `301`
+同样满足此关卡；表示已强制 HTTPS。
+
+如果 `curl` 返回 `526`（Cloudflare 专有的证书无效代码）或 `502`
+（网关错误），说明证书尚未签发。一旦 CNAME 解析成功，Pages 会自动
+配置 Let's Encrypt 证书；首次签发最多需等待 24 小时。诊断方法：
+
+```bash
+gh api /repos/ahmed-g-gad/apothem/pages \
+  --jq '.https_certificate.state, .https_certificate.description'
+```
+
+`state: approved` 表示签发已完成。`state: requesting` 表示签发正在
+进行中；请等待。任何其他状态都需要重启 Pages（通过 API 将自定义域名
+关闭再打开）。
+
+### 2.6 验证深层链接
+
+```bash
+curl -sSI https://apothem.ahmedgad.com/architecture/ | head -3
+```
+
+预期输出：
+
+```text
+HTTP/2 200
+server: GitHub.com
+content-type: text/html; charset=utf-8
+```
+
+深层链接上的 `404` 表示静态站点构建尚未纳入该页面，或部署尚未完成。
+通过 `gh workflow run publish-static-site.yml` 触发一次重新构建。
+
+### 2.7 记录验证结果
+
+向操作员的站点状态日志（如果以内联方式维护，则向本操作手册的验证
+日志）追加一行，记录日期、操作员身份以及 `gh api` 的 Pages 状态输出。
+验证日志即审计追踪——每一次 Pages 配置变更都会留下一行。
+
+## 3. 提供商附录——Namecheap
+
+Namecheap 通过注册商的 "Advanced DNS" 标签页暴露 DNS。当注册商的
+NS 记录匹配 `dns1.registrar-servers.com` 和 `dns2.registrar-servers.com`
+（Namecheap 默认值）时，操作员在此处拥有 `ahmedgad.com`。通过
+`dig NS ahmedgad.com +short` 验证。
+
+步骤：
+
+1. 登录 Namecheap；打开仪表盘。
+2. 点击左侧导航中的 `Domain List`；定位 `ahmedgad.com`；点击 `Manage`。
+3. 点击 `Advanced DNS` 标签页。
+4. 点击 `Add New Record`。选择：
+   - Type：`CNAME Record`
+   - Host：`apothem`（无顶级域名，无尾部点号）
+   - Value：`ahmed-g-gad.github.io.`（带尾部点号）
+   - TTL：`Automatic`（Namecheap 默认值；遵循 1800 秒）
+5. 点击绿色对勾以保存。
+6. 等待 5 到 10 分钟让 Namecheap 完成边缘传播；然后返回与提供商无关的
+   核心部分 §2.4 进行 `dig` 验证。
+
+常见故障：当同一主机上已存在一条 `A` 记录时，Namecheap 的 UI 会无声地
+拒绝 CNAME 记录。请先删除冲突的 `A` 记录；根据 RFC 1034，同一主机上的
+CNAME 与 A 记录互斥。
+
+## 4. 提供商附录——Cloudflare
+
+当注册商的 NS 记录指向 `*.ns.cloudflare.com`（委派后的 Cloudflare 默认值）
+时，Cloudflare DNS 托管该顶级域名。通过 `dig NS ahmedgad.com +short` 验证。
+
+步骤：
+
+1. 登录 Cloudflare；选择 `ahmedgad.com` 区域。
+2. 点击左侧导航中的 `DNS` -> `Records`。
+3. 点击 `Add record`。选择：
+   - Type：`CNAME`
+   - Name：`apothem`（Cloudflare 会自动追加顶级域名）
+   - Target：`ahmed-g-gad.github.io`（在 Cloudflare 的 UI 中不带尾部点号）
+   - TTL：`Auto`（Cloudflare 默认值；通过其边缘路由）
+   - Proxy status：**DNS only**（灰色云朵，而非橙色）
+4. 点击 `Save`。
+
+代理状态的选择至关重要。将 Cloudflare 的代理打开（橙色云朵）会让流量在
+到达 GitHub Pages 之前先经过 Cloudflare 的边缘；这会破坏 Pages 的
+Let's Encrypt 签发，因为 Cloudflare 会出示它自己的证书。在初始设置时
+保持代理关闭；只有在决定是否在 Cloudflare 边缘管理证书之后，再在稍后
+打开代理。
+
+5. 等待 1 到 2 分钟让 Cloudflare 完成边缘传播；然后返回与提供商无关的
+   核心部分 §2.4。
+
+常见故障：Cloudflare 会无声地剥除 CNAME 目标中的尾部点号。目标字段
+接受不带尾部点号的 `ahmed-g-gad.github.io`；解析器会在查询时追加尾部
+点号。不要在 Cloudflare 的 UI 中输入尾部点号——那会产生一条双点号
+记录，从而无法解析。
+
+## 5. 提供商附录——Route53
+
+当注册商的 NS 记录指向四个 `awsdns-*.com` / `awsdns-*.org` /
+`awsdns-*.co.uk` / `awsdns-*.net` 服务器时，Route53 托管该区域。
+通过 `dig NS ahmedgad.com +short` 验证。
+
+步骤：
+
+1. 打开 AWS 控制台；导航到 Route53；点击 `Hosted zones`；选择
+   `ahmedgad.com` 区域。
+2. 点击 `Create record`。
+3. 配置：
+   - Record name：`apothem`（Route53 会自动追加顶级域名）
+   - Record type：`CNAME`
+   - Value：`ahmed-g-gad.github.io`（不带尾部点号）
+   - TTL：`300`（5 分钟；Route53 的默认值更高；切换期间为加快传播
+     可调低 TTL）
+   - Routing policy：`Simple routing`
+4. 点击 `Create records`。
+5. 等待 1 到 5 分钟让 Route53 完成传播；返回 §2.4。
+
+Route53 支持在查询时解析、无需 CNAME 间接寻址的**别名记录（alias
+records）**。这里未使用别名记录，因为别名目标仅限于 AWS 资源
+（CloudFront、S3、ELB 等），而 `ahmed-g-gad.github.io` 不是 AWS
+资源。CNAME 才是正确选择。
+
+常见故障：Route53 的 UI 接受具有不同路由策略的重复记录名；这会表现为
+健康检查式的故障转移路由，而非简单的 CNAME。保存前请确认
+`Routing policy` 读作 `Simple routing`。
+
+## 6. 提供商附录——通用 DNS
+
+对于未被上述具名附录覆盖的 DNS 主机（大多数注册商的默认 DNS 面板——
+GoDaddy、Hover、Gandi、OVH、Porkbun、Domains.google、Network
+Solutions），请套用与提供商无关的 CNAME 形态：
+
+| 字段 | 值 |
+|-------|-------|
+| 类型  | `CNAME` |
+| 主机  | `apothem`（仅子域名） |
+| 值 | `ahmed-g-gad.github.io.`（尾部点号——多数通用面板接受它；有些要求它） |
+| TTL   | `3600`（或切换期间面板可用的最低值） |
+
+通用面板上反复出现的两类故障：
+
+- **尾部点号不一致。** 有些面板要求尾部点号；有些拒绝它；少数两者皆可。
+  当记录在 30 分钟后仍未传播时，切换尾部点号并重新保存。
+- **同一主机上存在冲突的 A 记录。** 根据 RFC 1034（域名——概念与设施）
+  关于域名偏好的第三节，同一主机上的 CNAME 与 A 记录互斥。在添加
+  CNAME 之前先删除冲突的 A 记录。
+
+记录保存后，返回 §2.4 进行 `dig` 验证。
+
+## 7. 故障恢复
+
+Pages 启用流程有四种有记录的故障模式：
+
+| 故障 | 诊断 | 恢复 |
+|---|---|---|
+| `gh api .../pages` 返回 404 | 仓库上未启用 Pages | `gh api -X POST /repos/ahmed-g-gad/apothem/pages -f source.branch=main -f source.path=/site` 然后重试 §2.1 |
+| `dig` 在 30 分钟后仍返回空 | DNS 记录未在提供商处提交 | 返回匹配的提供商附录；验证记录已保存（而非草稿 / 待定）；检查面板是否漏掉了某个 `Save` 步骤 |
+| `https_certificate.state: errored` | Pages 无法签发证书 | 在 Pages 设置中将自定义域名关闭再打开；这会重新触发签发。新尝试最多等待 24 小时 |
+| 构建后深层链接 404 | 静态站点构建未纳入该页面 | `gh workflow run publish-static-site.yml`；完成后验证 `gh run list --workflow=publish-static-site.yml --limit=1 --json conclusion --jq '.[0].conclusion'` 返回 `success` |
+
+如果在执行一轮匹配诊断后恢复仍然失败，请上升到发布恢复操作手册
+（强制推送的全新历史可能使 Pages 配置处于不一致状态）。
+
+## 8. 交叉引用
+
+- **规范来源。** 规范 §2.5 将本操作手册列入 Cluster 4 文档交付物。
+- **CNAME 规范位置。** CNAME 文件位于 `site/public/CNAME` 并提交到仓库；
+  Pages 在每次构建时读取它。
+- **恢复流程。** 当切换序列在中途失败时，发布恢复操作手册会从恢复快照
+  重新应用 Pages 配置。
+- **发布周期。** 每次发布运行都包含一个 Pages 构建作业，用于验证站点
+  在自定义域名上正常渲染。

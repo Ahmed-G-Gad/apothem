@@ -1,0 +1,39 @@
+---
+title: "Webhook 审计"
+description: "Apothem Webhook 审计——密钥轮换、范围最小化和 Scorecard Webhooks 检查证据。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+OpenSSF Scorecard 的 **Webhooks** 检查会验证仓库 webhook 是否使用共享密钥对投递表面进行身份验证——若没有密钥，知道 webhook URL 的攻击者就可以重放或伪造事件。
+
+## Apothem 的 webhook 姿态
+
+| Webhook 表面 | 状态 | 密钥轮换周期 |
+|---|---|---|
+| **仓库 webhook** | 在仓库级别未配置任何项。 | 不适用 |
+| **组织 webhook** | 在组织级别未配置任何项。 | 不适用 |
+| **工作流事件** | 由 GitHub 管理；不受 Webhooks 检查约束。 | 不适用 |
+
+Apothem 当前运行**零个外部 webhook 表面**。每个事件驱动的集成都使用 GitHub 原生工作流（CI、Scorecard、CodeQL、pip-audit），它们不受 Scorecard Webhooks 检查约束。
+
+## 未来的 webhook 治理
+
+当 Apothem 增加 webhook 表面时（例如 Discord / Matrix 发布通知、下游消费者构建触发器），操作者**必须**：
+
+1. **生成高熵密钥**（≥ 32 字节，密码学随机）。
+2. **将密钥存储在仓库的加密机密表面中**——绝不放在源代码中，绝不放在工作流 YAML 中。
+3. **使用该密钥配置 webhook**，以便 GitHub 在每次投递时对 `X-Hub-Signature-256` 标头进行签名。
+4. **在接收端点上验证签名**，使用恒定时间比较。
+5. **轮换密钥**，每 12 个月一次，或在任何疑似泄露后 24 小时内。
+6. **在本审计文件中记录该 webhook**，包括其用途、接收端点和轮换日期。
+
+## 审计周期
+
+本文件在每次 `/security-audit` 通过时以及每个发布工程预切换检查点上接受审查。漂移（例如，引入了一个在此处没有条目的 webhook 表面）属于 HIGH 严重性发现。
+
+## 参考资料
+
+- [OpenSSF Scorecard — Webhooks 检查](https://github.com/ossf/scorecard/blob/main/docs/checks.md#webhooks)
+- [GitHub — Webhook 安全](https://docs.github.com/en/webhooks/using-webhooks/securing-your-webhooks)
+- [Apothem 安全策略](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)

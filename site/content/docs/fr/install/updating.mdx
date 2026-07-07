@@ -1,0 +1,83 @@
+---
+title: "Mise à jour"
+description: "Mettre à jour Apothem et les adaptateurs d'environnement."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## Mettre à jour le plugin Claude Code
+
+Actualisez l'entrée du marketplace, puis mettez à jour le plugin depuis le menu
+`/plugin` à l'intérieur de Claude Code :
+
+```text title="À l'intérieur de Claude Code"
+/plugin marketplace update apothem
+```
+
+Ouvrez `/plugin`, sélectionnez **apothem**, et choisissez l'action de mise à jour lorsqu'une version plus récente
+du plugin est listée.
+
+## npx exécute toujours la version actuelle
+
+`npx @ahmed-g-gad/apothem` résout le paquet publié actuel à chaque
+exécution, il n'y a donc rien à mettre à jour. Lorsqu'un cache npx obsolète sert une ancienne
+copie, épinglez explicitement la dist-tag :
+
+```bash
+npx @ahmed-g-gad/apothem@latest --version
+```
+
+## Mettre à jour une installation basée sur l'installeur
+
+Réexécutez l'installeur — il est idempotent et avance rapidement une arborescence existante —
+ou exécutez le script de mise à jour dédié :
+
+```bash title="macOS · Linux · WSL2 · BSD"
+bash scripts/installer/update.sh
+```
+
+```powershell title="Windows · PowerShell"
+pwsh -NoProfile -File scripts/installer/update.ps1
+```
+
+Le script de mise à jour réextrait l'arborescence source à `APOTHEM_HOME` (par défaut
+`~/.apothem`) vers `APOTHEM_REF` — laissé vide, il résout le dernier tag de version signé
+`vMAJOR.MINOR.PATCH`, une valeur de tag l'épingle, et `main` sélectionne la
+branche mobile. Il vérifie la signature du tag avec `git verify-tag` avant
+de re-matérialiser ; un tag non signé ou altéré interrompt l'opération à moins que
+`APOTHEM_ALLOW_UNVERIFIED=1` ne rétrograde l'interruption en avertissement. Il
+re-matérialise ensuite l'environnement nommé par `APOTHEM_HARNESS` en exécutant
+`apothem update` depuis l'arborescence actualisée (l'environnement prend sa
+valeur par défaut selon le tableau des
+[variables d'environnement de l'installeur](/docs/how-to/installer-environment-variables)). Il requiert une installation préalable : lorsqu'
+aucune arborescence n'existe à `APOTHEM_HOME` et que `APOTHEM_SOURCE` est vide, il se termine avec
+un message vous orientant d'abord vers l'installeur.
+
+## Re-matérialiser la sortie de l'environnement
+
+Après avoir mis à jour le moteur ou édité `~/.config/apothem/profile.yaml`,
+re-dérivez la configuration de l'environnement installé. Les adaptateurs à portée utilisateur n'ont pas besoin de
+`--project` ; les adaptateurs à portée de projet en ont besoin.
+
+```bash
+apothem update --harness claude-code
+apothem update --harness cursor --project /path/to/project
+apothem update --harness all --project /path/to/project
+```
+
+Exécutez la même commande avec `--dry-run --json` lorsque vous avez besoin d'un aperçu
+lisible par machine sans écriture sur le système de fichiers.
+
+## Limite actuelle de la commande
+
+`apothem update` met à jour uniquement la sortie de l'environnement. La CLI n'implémente pas
+`update --self`, `update --check` ni `update --apply` ; mettez à jour le moteur
+lui-même via le canal avec lequel vous l'avez installé — le flux `/plugin`, une nouvelle
+exécution `npx`, ou les scripts installer/update ci-dessus.
+
+## Vérifier la version du moteur
+
+```bash
+apothem --version
+npx @ahmed-g-gad/apothem --version
+```

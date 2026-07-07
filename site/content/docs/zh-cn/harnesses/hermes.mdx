@@ -1,0 +1,85 @@
+---
+title: "Hermes"
+description: "适用于 Hermes（预览版）的 Apothem 工具适配器。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**厂商：** Hermes
+**安装名称：** `hermes`
+**状态：** 预览版
+**平台原生配置：** `~/.hermes/config.yaml`
+
+## 安装
+
+```bash
+apothem install --harness hermes
+```
+
+适配器将共享配置档案翻译为 Hermes Agent 的用户全局配置文件，并在工具根目录下
+安装 Apothem 支持队列。
+
+**写入的文件：** `~/.hermes/config.yaml` 以及 `~/.hermes/.apothem/support/` 下的支持文件
+
+## 配置档案到平台原生配置的映射
+
+适配器读取 Apothem 的共享配置档案并渲染原生 YAML 配置。Hermes 自有的技能界面
+是 `skills.config`——可安装的注册表包，Hermes 会将其自动暴露为动态斜杠命令——
+这些并非由 Apothem 编写。Apothem 转而将共享的命令和技能内容作为支持材料交付到
+`~/.hermes/.apothem/support/` 下，并从原生指令锚点引用。辅助定义、规则、模板和钩子提示
+同样保留为 `~/.hermes/.apothem/support/` 下的支持材料。
+
+## 兼容性说明
+
+预览版适配器。原生 YAML 配置是活动的 Hermes 界面；Apothem 为技能使用其文档化的
+外部技能目录钩子，并将其他队列保留为已安装指引的参考材料。
+
+## 验证
+
+```bash
+apothem verify --harness hermes
+```
+
+verify 命令确认：
+
+1. 平台原生配置存在于预期路径。
+2. 共享配置档案中的所有必填字段都存在。
+3. 适配器专属的验证例程报告成功。
+
+## 更新
+
+```bash
+apothem update --harness hermes
+```
+
+从当前共享配置档案状态重新派生原生配置。
+在编辑 `~/.config/apothem/profile.yaml` 或升级已安装的 Apothem 包后运行。
+
+## 卸载
+
+```bash
+apothem uninstall --harness hermes
+```
+
+移除适配器写入的原生配置文件。
+共享配置档案 YAML 和 Apothem 引擎不受影响。
+
+## 合规门
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## 故障排查
+
+| 症状 | 修复 |
+|---------|-----|
+| 找不到配置文件 | 重新运行 `apothem install --harness hermes` |
+| 验证失败 | 运行 `apothem update --harness hermes`，然后再次验证 |
+| 意外的配置内容 | 检查 `~/.config/apothem/profile.yaml` 或 `--profile PATH`，然后重新运行 `apothem update --harness hermes` |
+
+## 配置开关
+
+| 标志 | 默认值 | 说明 |
+|------|---------|-------------|
+| `--dry-run` | `false` | 预览安装而不写入文件。 |

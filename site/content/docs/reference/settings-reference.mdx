@@ -1,0 +1,167 @@
+---
+title: "settings.json Documentation"
+description: "Configure Claude Code hook execution, permissions, events, timeouts, Python runtime, validation, and layered settings precedence for the Apothem ecosystem."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Scope.** This document describes the **Claude Code adapter**'s hook
+> wiring file (`settings.json`). Other harnesses
+> use their own native settings surfaces — see
+> [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses) for each adapter's
+> equivalent configuration entry point.
+
+## Overview
+
+`settings.json` configures Claude Code hook execution for the Apothem ecosystem.
+It declares which hooks fire on which events, their timeouts, and the top-level
+permission surface. Apothem ships one canonical template because Claude Code
+loads `~/.claude/settings.json` across supported platforms.
+
+## Python-Only Runtime
+
+Every configured hook uses Claude Code's exec-form command shape. The
+shipped template carries the `${HARNESS_ROOT}` token:
+
+```json
+{
+  "type": "command",
+  "command": "python",
+  "args": ["${HARNESS_ROOT}/apothem/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
+}
+```
+
+`apothem install` renders the token to the harness root's absolute path
+(forward-slash form, valid on Windows, macOS, and Linux), so the installed
+`settings.json` invokes the dispatcher materialized at
+`~/.claude/.apothem/support/hooks/dispatch.py` directly. The dispatcher and the
+conformity gate (`~/.claude/.apothem/support/conformity/gate.py`, with its schema
+fixtures beside it at `~/.claude/.apothem/support/schemas/`) are standalone stdlib
+scripts — no importable `apothem` package is required on the host, and one
+template serves every platform.
+
+## Hook Configuration Schema
+
+### Permissions
+
+```json
+"permissions": {
+  "allow": ["Read", "Glob", "Grep"]
+}
+```
+
+Tools not in `allow` require explicit per-call approval or workspace-level permission.
+Read-only tools are pre-approved; write operations (`Write`, `Edit`, `NotebookEdit`,
+`Bash`) run through the `PreToolUse` validator.
+
+### Hook Events
+
+> **Timeout values mirror the canonical hook-event budgets** — the table below
+> reproduces them for reader convenience; the canonical source governs.
+
+| Event | Trigger | Timeout | Purpose | Mandate |
+| ----- | ------- | ------- | ------- | ------- |
+| **SessionStart** | New Claude Code session | 30 seconds | Initialize context, read memory, check plan state | CM-14 |
+| **PreToolUse** | Before Write/Edit/NotebookEdit/Bash | 10 seconds | Validate CM-7 compliance + frontmatter | CM-7, CM-22 |
+| **PreCompact** | Before context compaction | 30 seconds | Externalize unexternalized state | CM-24 §2.3 |
+| **PostCompact** | After context compaction | 30 seconds | Re-bootstrap from externalized state | CM-24 §6.2 |
+| **Stop** | Session exit | 60 seconds | Session-end externalization | CM-14/CM-22/CM-24/CM-26 |
+
+`dispatch.py` additionally accepts `UserPromptSubmit` and `Notification` on its event
+whitelist. Neither is wired in the shipped templates; add a matcher block with the same
+locator + dispatch pattern to enable.
+
+### Top-Level Fields
+
+| Field | Purpose | Required |
+| ----- | ------- | -------- |
+| `permissions` | Object with `allow` array listing pre-approved tool names (read-only tools by default) | yes |
+| `hooks` | Map of event name → array of `{matcher, hooks[]}` blocks; see **Hook Events** below | yes |
+| `model` | Host-resolvable model selector. Either an alias or a full identifier is acceptable when the operator chooses to set one. | optional |
+| `defaultShell` | Default shell for tool `Bash` calls. Apothem does not set this in the shared template. | optional |
+| `autoUpdatesChannel` | Claude Code update channel. Apothem does not set this in the shared template. | optional |
+| `effortLevel` | Default reasoning effort (`low`, `medium`, `high`, `max`) | optional |
+
+## Validation
+
+Three validators cover the hook surface, in increasing rigor:
+
+```bash
+# Structural + Python-hygiene (fast, offline)
+python scripts/dev/validate_hooks.py
+
+# Full ecosystem (structure + frontmatter + delegated hook checks)
+python scripts/dev/validate_ecosystem.py
+
+# Adversarial sweep (storms every configured hook command with degraded inputs)
+python scripts/dev/chaos_pass.py
+```
+
+All three must exit 0 before committing hook or settings changes.
+
+Ad-hoc smoke test of a single event:
+
+```bash
+python src/apothem/hooks/dispatch.py --event-name SessionStart
+```
+
+Expected output: a single-line JSON envelope containing `hookSpecificOutput`.
+
+## Common Issues
+
+### SessionStart times out
+
+Most commonly the `find-python` locator is discovering the Microsoft Store shim and
+failing to resolve a real interpreter. Verify:
+
+```bash
+python src/apothem/hooks/dispatch.py --event-name SessionStart
+```
+
+If the command prints a valid JSON envelope but the Claude Code panel shows a timeout,
+raise the event's `timeout` in `settings.json`. If the command fails at the shell level,
+install a real CPython 3.10+ and ensure it is on PATH or discoverable by the locator.
+
+### Every Write/Edit is blocked
+
+`PreToolUse` is flagging plan-internal terms in content being written outside the harness install root (`~/.claude/` for the Claude Code adapter).
+Review the content for CM-7 violations (see
+`src/apothem/rules/persistent-conventions-vigilance.md`). Domain language only for
+codebase artifacts.
+
+### settings.json not loaded
+
+Claude Code reads `~/.claude/settings.json`. Verify Apothem installed into the
+expected harness root and restart the session after changing the file.
+
+### Hooks silently no-op
+
+The hook contract is "always exit 0, always emit valid JSON." If the interpreter cannot
+be located the locator returns empty and the command becomes a no-op. Run `chaos_pass.py`
+to confirm every configured hook returns a valid envelope — it catches degraded resolution
+paths that a live session would hide.
+
+## Layered Precedence
+
+Claude Code resolves the effective settings object by composing three layers in
+increasing order of precedence:
+
+| Tier | Location | Committed? | Rationale |
+|------|----------|------------|-----------|
+| 1. **System** | Harness defaults compiled into Claude Code itself | n/a (vendor-controlled) | The floor; every operator inherits the same baseline. |
+| 2. **Project** | `<harness-root>/settings.json` | ✅ Committed | Project-shared conventions: hooks, permissions, MCP servers, statusline wiring. The Apothem-source template lives inside the Claude Code adapter's templates directory. |
+| 3. **User-local** | `<harness-root>/settings.local.json` (gitignored) — templated as `settings.local.example.json` at the repository root | ❌ Gitignored | Operator-specific overrides: API tokens, machine-local paths, opt-in features. |
+
+Higher-tier values override lower-tier values **at the leaf-key level** — when both
+the project and user-local layers declare a `permissions.allow` entry, the union is
+taken; when both declare a scalar like `theme`, the user-local value wins. The exact
+per-key merge semantics are owned by the Claude Code harness.
+
+### Creating a user-local override
+
+1. Copy `settings.local.example.json` (repository root) to `<harness-root>/settings.local.json`.
+   The `settings.local.json` filename matches the `.gitignore` pattern, so the file never
+   lands in version control.
+2. Edit the local copy — keep only the keys to override; the harness composes the layers,
+   so absent keys inherit from the project layer.
+3. Verify the file parses as valid JSON before saving — the harness rejects malformed
+   JSON at session start.

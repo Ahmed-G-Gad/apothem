@@ -1,0 +1,45 @@
+---
+title: "Einstieg in große Codebasen"
+description: "Einrichtungs-Checkliste für große Codebasen mit Apothem: Kontexthierarchie, Skills, Hooks, Symbolsuche und Review-Kadenz."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Nutze diese Seite, wenn ein Repository für einen einzigen Prompt zu breit ist,
+Scans über den gesamten Baum kostspielig sind oder jeder Dienst eigene Build- und
+Testbefehle hat.
+
+## Hier beginnen
+
+1. Installiere oder aktualisiere den Ziel-Umgebungs-Adapter und führe dann `apothem verify --harness <name>` aus.
+2. Halte die Wurzel-Kontextfläche kurz: Projektkarte, kritische Befehle und nur Verweise.
+3. Lege lokale Konventionen neben den Code, wenn die Zielumgebung mehrschichtigen Kontext unterstützt.
+4. Verschiebe spezialisierte Abläufe nach `skills/`, `rules/` oder in Befehlsdokumente mit Pfadfiltern.
+5. Nutze schreibgeschützte delegierte Arbeiter für die breite Erkundung und bringe dann vor dem Bearbeiten eine kompakte Befundmenge zurück.
+6. Füge Ausschlüsse für Cache, generierte Dateien, Build und Vendor zur Ignore-Fläche der Umgebung hinzu, wo dies dokumentiert ist.
+7. Nutze LSP oder Symbolwerkzeuge, wenn verfügbar; andernfalls verwende `rg`, eng gefasste Pfade und explizite Dateigeltungsbereiche.
+8. Führe den engsten Lint- oder Testbefehl aus, der den berührten Code abdeckt; führe vor der Veröffentlichung das vollständige Gate aus.
+
+## Praxis-Übersicht
+
+| Praxis | Apothem-Bindung |
+|----------|-----------------|
+| Schlanker, immer geladener Kontext | `src/apothem/rules/token-budget-discipline.md` hält die immer aktiven Regeln kurz; Wurzel-Kontextdateien sollten nur Verweise und kritische Stolperfallen enthalten. |
+| Expertise auf Abruf | `src/apothem/skills/README.md` definiert die `SKILL.md`-Konvention; pfadgefilterte Begleitregeln halten eng gefasste Abläufe aus dem Basiskontext heraus. |
+| Mehrschichtiger Kontext | Jede Umgebungszeile deklariert `layered_context_surface` in `src/apothem/harnesses/<name>/capabilities.yml`; `STANDARD-CONVENTION-PIN.md` bleibt die Autorität der Zeile. |
+| Isolierte Erkundung | Der [Leitfaden für delegierte Arbeiter](/docs/usage/using-agents) bindet getrennte Kontextfenster und kompakte Rückgabeverträge. |
+| Symbolnavigation | `lsp_symbol_navigation` ist eine verfolgte Fähigkeitszelle. Zeilen bleiben `tracked-gap`, bis eine herstellergestützte Plugin- oder Werkzeugfläche fixiert ist. |
+| Ignore-Fläche | `context_ignore_surface` erfasst den dokumentierten Ausschlussmechanismus. Der Claude Code Adapter projiziert Ausschlüsse für generierte Dateien und Cache über `permissions.deny` in `settings.json`. |
+| Hook-Lernen | Hooks der Pass-Klasse bleiben still. Wiederkehrende Befunde werden über den Artefakt-Evolutionszyklus in `src/apothem/rules/persistent-conventions-vigilance.md` geleitet. |
+| Periodische Überprüfung | Führe alle drei bis sechs Monate sowie nach größeren Umgebungs- oder Modelländerungen eine Konfigurationsüberprüfung durch, unter Nutzung der `*-maintenance`-Plankadenz. |
+
+## Wartungshinweise
+
+Die maschinenlesbare Umgebungs-Fähigkeitszeile trägt vier Zellen für große Codebasen:
+`context_ignore_surface`, `layered_context_surface`, `lsp_symbol_navigation`
+und `hook_learning_capture`. Halte diese Zellen mit der benachbarten
+`STANDARD-CONVENTION-PIN.md` synchron, sobald sich eine Herstellerfläche ändert.
+
+Quellverweise:
+[Praktiken für große Codebasen](https://claude.com/blog/how-claude-code-works-in-large-codebases-best-practices-and-where-to-start),
+[Einstellungsberechtigungen](https://docs.anthropic.com/en/docs/claude-code/settings).

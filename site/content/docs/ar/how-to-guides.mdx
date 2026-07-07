@@ -1,0 +1,116 @@
+---
+title: "أدلة التأليف وخط الأنابيب العملية"
+description: "إرشادات موجَّهة للمهام لتنقيح المحتوى إلى مواصفات، وتوليد حزم الخطط، ومراجعة الخطط، وتنفيذ المراحل، وإضافة القطع، وتشغيل بوابات الجودة."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+إرشادات موجَّهة للمهام لـ **تأليف قطع Apothem وتشغيل خط أنابيب الخطط**. يجيب
+كل دليل عن سؤال ملموس واحد.
+
+لوصفات إعداد أول تشغيل — إضافة بيئة، تحرير الملف التعريفي، تشغيل المثبّت —
+انظر قسم [وصفات الإرشاد العملي](/docs/how-to) بدلًا من ذلك.
+
+## خط أنابيب حزمة الخطّة
+
+### كيف أنقّح محتوى خامًا إلى مواصفة؟
+
+استدعِ `/plan-spec` مع المحتوى الخام كمدخل. يشغّل دور Forge
+ست مراحل تحويل (الاكتشاف، الاعتبار الدقيق، تخطيط الفاعلية، التحقق من
+الحفظ، تطبيق الخبرة، مسح حلّ الأسئلة) ويُصدر المواصفة المُجمَّعة في
+`.apothem/plans/{suite}/_spec/spec.md`. انظر
+`src/apothem/commands/plan-spec.md` للبروتوكول الكامل.
+
+### كيف أولّد حزمة خطّة من مواصفة؟
+
+استدعِ `/plan-generate <suite-name>` بمجرّد وجود المواصفة في
+`.apothem/plans/{suite}/_spec/spec.md`. يُصدر المولّد ملفات البنية التحتية
+المعيارية بالإضافة إلى ملفات
+`phases/NN-kebab-topic/PHASE.md` لكل مرحلة. انظر
+`src/apothem/commands/plan-generate.md`.
+
+### كيف أراجع خطّة مولَّدة؟
+
+استدعِ `/plan-review path/to/plan-suite/`. يطبّق المراجِع
+تقنيات التخطيط الثماني ويُصدر بطاقات تقييم. تحجب بطاقات التقييم
+الفاشلة التنفيذ عند SHARED+ حتى تُحَلّ. انظر
+`src/apothem/commands/plan-review.md`.
+
+### كيف أنفّذ خطّة؟
+
+استدعِ `/plan-execute path/to/plan-suite/ [phase-id]`. بدون
+`phase-id`، تُشغَّل المرحلة المعلّقة التالية. ومع مُعرّف محدّد،
+تُشغَّل تلك المرحلة فقط. انظر `src/apothem/commands/plan-execute.md`.
+
+### كيف أتحقّق من حالة الخطّة؟
+
+استدعِ `/plan-status path/to/plan-suite/ [--verbose]`. تقرير
+للقراءة فقط. انظر `src/apothem/commands/plan-status.md`.
+
+## تأليف القطع
+
+### كيف أضيف قاعدة جديدة؟
+
+1. اختر اسم ملف kebab-case تحت `src/apothem/rules/`، مثل
+   `src/apothem/rules/my-new-rule.md`.
+2. ألّف الواجهة الأمامية (`name`، `description`، `type:
+   instruction`، و`pathFilter` اختياري).
+3. اكتب النص بالأقسام المعيارية: الغرض،
+   الالتزامات، تدرّج الجدّية، الأنماط المضادة، الإنفاذ،
+   الروابط.
+4. أضف صفًا إلى مجموعة القواعد (`src/apothem/rules/`).
+5. شغّل `python scripts/dev/validate_ecosystem.py --check
+   frontmatter-cohort` للتحقق.
+
+### كيف أضيف عاملًا مفوَّضًا جديدًا؟
+
+اختر اسم ملف kebab-case تحت الدليل المعروض أدناه، بالصيغة
+`my-worker.md`:
+
+```text
+src/apothem/agents/
+src/apothem/agents/my-worker.md
+```
+
+ثم:
+
+1. ألّف الواجهة الأمامية — متضمّنةً `name`، `description`،
+   `allowedTools`، `maxTurns`، `version`، وعلامة النوع المعروضة
+   أدناه:
+
+```text
+type: agent
+```
+
+1. اكتب موجّه النظام كنص.
+1. أضف صفًا إلى سجلّ المساعدات في مجموعة العمّال المفوَّضين (`src/apothem/agents/`).
+
+### كيف أضيف خطّافًا جديدًا؟
+
+1. ألّف رسالة سياق تحت
+   `src/apothem/hooks/messages/<event>-<scope>.md`.
+2. وصّل الخطّاف في `settings.json`.
+3. حدّث خطّ أنابيب الخطّافات.
+4. شغّل `python scripts/dev/validate_ecosystem.py --check
+   hook-validator`.
+
+## بوابات الجودة
+
+### كيف أشغّل بوابات الجودة المحلية؟
+
+```bash
+python -m ruff check .
+python -m ruff format --check .
+python -m mypy
+python -m pytest -q
+python scripts/dev/validate_ecosystem.py
+python scripts/dev/chaos_pass.py
+```
+
+يشغّل خط أنابيب التكامل المستمر المجموعة ذاتها بالتوازي.
+
+### كيف أتحقّق من واجهة أمامية لصنف قطعة واحد؟
+
+```bash
+python scripts/dev/validate_ecosystem.py --check frontmatter-cohort
+```

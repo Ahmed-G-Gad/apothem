@@ -1,0 +1,162 @@
+---
+title: "Deployment Checklist"
+description: "Pre-flight verification checklist for deploying or sharing the Apothem ecosystem"
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Pre-flight verification steps before deploying the Apothem ecosystem to a new
+machine, sharing it with others, or treating it as production-ready.
+
+---
+
+## 1. YAML Validity
+
+- [ ] All rule files parse without YAML errors — frontmatter block opens with `---`, closes with `---`, and contains no orphaned content outside the block
+- [ ] All delegated-worker files parse without YAML errors
+- [ ] All command files parse without YAML errors
+- [ ] All skill `SKILL.md` files parse without YAML errors
+
+**Verification:** `python scripts/dev/validate_ecosystem.py` parses every artifact's
+frontmatter and flags YAML errors + missing required fields. For ad-hoc
+orphan-list-item detection: `rg -n "^- " src/apothem/rules/*.md`.
+
+---
+
+## 2. Frontmatter Completeness
+
+For each artifact type, verify required fields are present:
+
+### Rules (`src/apothem/rules/*.md`)
+
+- [ ] `name` — kebab-case identifier matching the filename
+- [ ] `version` — semver `MAJOR.MINOR.PATCH` (e.g., `"X.Y.Z"`)
+- [ ] `updated` — ISO 8601 date (e.g., `"2026-04-20"`)
+- [ ] `description` — single-sentence summary
+- [ ] `scope` — `"always-on"` or `"path-filtered"`
+- [ ] `portability` — `"universal"`, `"universal-with-windows-caveats"`, `"unix-only"`, or `"windows-only"`
+- [ ] `pathFilter` — present and valid glob string for path-filtered rules; absent for always-on rules
+
+### Commands (`src/apothem/commands/*.md`)
+
+- [ ] `name` — kebab-case command name
+- [ ] `version`, `updated`, `description`, `argument-hint` present
+- [ ] `disable-model-invocation` present and intentional (`true` for guidance-only commands)
+- [ ] `effort`, `portability` reviewed where present (optional per schema)
+
+### Delegated workers
+
+Path:
+
+```text
+src/apothem/agents/*.md
+```
+
+- [ ] `name`, `version`, `updated`, `description` present
+- [ ] `tools` — comma-separated list of allowed tools
+- [ ] `disallowedTools` — explicitly lists disallowed tools
+- [ ] `maxTurns` — set (with rationale comment if > 10)
+- [ ] `permissionMode` — **must NOT be `"bypassPermissions"`** — use `"default"`
+- [ ] `memory: false` unless persistent memory is intentional
+
+### Skills (`src/apothem/skills/*/SKILL.md`)
+
+- [ ] `name`, `version`, `updated`, `description` present
+- [ ] `user-invocable` — declared (true/false)
+
+---
+
+## 3. Security
+
+- [ ] **No delegated worker uses `permissionMode: "bypassPermissions"`** — this bypasses interactive confirmation for Write/Bash operations
+- [ ] Worker `tools` lists are minimal — only tools the worker genuinely requires
+- [ ] Workers with `Bash` access are justified and have maxTurns limits
+- [ ] No hardcoded paths, tokens, or secrets in any artifact
+- [ ] Hooks in `settings.json` have reasonable timeouts (≤ 60 seconds) and do not execute arbitrary code from user input
+
+---
+
+## 4. Cross-Reference Integrity
+
+- [ ] Every rule listed in `src/apothem/rules/` table exists on disk at the stated path
+- [ ] Every command listed in `src/apothem/commands/` table exists on disk
+- [ ] Every delegated worker listed in the `src/apothem/agents/` registry table exists on disk
+- [ ] Every skill listed in `src/apothem/skills/` table exists on disk
+- [ ] Every hook in `src/apothem/hooks/` table has a corresponding entry in `settings.json`
+- [ ] All `src/apothem/rules/*.md` files exist and resolve their `Bindings` cross-references
+
+---
+
+## 5. Mandate Coverage
+
+- [ ] Every CM-N mandate has an enforcement location (either a rule file or explicit inline definition)
+- [ ] No rule file contradicts another (especially around seriousness scaling)
+- [ ] The CM-21 three-facet delineation is respected — no rule claims ownership of another rule's CM-21 facet
+
+---
+
+## 6. Functional Smoke Tests
+
+Run the Python validation surface first — it's fast, offline, and catches
+structural regressions:
+
+- [ ] `pytest tests` — unit tests for the hook runtime, all green
+- [ ] `python scripts/dev/validate_hooks.py` — hook structure + Python-only hygiene pass
+- [ ] `python scripts/dev/validate_ecosystem.py` — full tree + frontmatter + delegated hook checks pass
+- [ ] `python scripts/dev/chaos_pass.py` — every configured hook command returns a valid JSON envelope under degraded inputs
+
+Then live scenarios:
+
+- [ ] `/plan-spec --interactive` (or `/plan-spec <sample-file>`) — completes ingestion/clarification without command-level errors
+- [ ] `/plan-generate --dry-run` — produces structure preview without writing files
+- [ ] `/plan-status` on a complete plan suite — returns accurate phase counts
+- [ ] Delegated-worker dispatch: `codebase-explorer` worker invoked with a small scope completes within maxTurns and returns structured output
+
+---
+
+## 7. Documentation Currency
+
+- [ ] `CHANGELOG.md` (at ecosystem root) reflects every artifact change since the last release; the next release's section is populated before the tag lands, or every change is already cut into a released section
+- [ ] `site/content/docs/developer-guide.mdx` accurately describes the current artifact structure
+- [ ] `site/content/docs/reference/artifact-schema.mdx` matches the frontmatter fields actually present in artifacts
+- [ ] `site/content/docs/reference/settings-reference.mdx` matches the actual hook configuration in `settings.json`
+- [ ] `README.md` is consistent with the on-disk tree
+
+---
+
+## 8. Portability (if sharing with others)
+
+- [ ] All paths in hook commands are environment-agnostic or use `~` expansion
+- [ ] Hook commands use exec form and avoid shell-specific command strings
+- [ ] No hardcoded `C:\Users\username` or `/home/username` paths in any artifact
+- [ ] `settings.json` uses one hook event coverage table and the canonical dispatch module path
+
+---
+
+## 9. Version Alignment
+
+- [ ] CLAUDE.md `version` is the highest of any artifact in the tree (or equal to the most-recently-bumped artifact's version, by convention)
+- [ ] Every artifact's `version` matches the stated semver (`MAJOR.MINOR.PATCH`)
+- [ ] CHANGELOG.md contains exactly the release entry for the target version before tagging
+- [ ] Every artifact's `updated` field is at-or-after the date of its last behavior-changing edit
+- [ ] No artifact carries a `version` lower than the version at which it was last touched (no regressions)
+- [ ] `src/apothem/skills/plan-suite/SKILL.md` and `src/apothem/skills/plan-suite/master-template.md` are pinned to the same template version line
+
+---
+
+## Sign-Off
+
+| Check Category | Status | Notes |
+| -------------- | ------ | ----- |
+| YAML Validity | | |
+| Frontmatter Completeness | | |
+| Security | | |
+| Cross-Reference Integrity | | |
+| Mandate Coverage | | |
+| Functional Smoke Tests | | |
+| Documentation Currency | | |
+| Portability | | |
+| Version Alignment | | |
+
+**Deployment approved by:** ___________________
+**Date:** ___________________
+**Ecosystem version deployed:** ___________________

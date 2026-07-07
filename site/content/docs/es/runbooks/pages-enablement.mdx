@@ -1,0 +1,348 @@
+---
+title: "Runbook de habilitación de Pages"
+description: "Runbook paso a paso para lanzar GitHub Pages con dominio personalizado en apothem.ahmedgad.com mediante la configuración DNS de CNAME."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Este runbook lleva `apothem.ahmedgad.com` desde una configuración nueva de
+GitHub Pages hasta una página de aterrizaje HTTPS con `200 OK`. El
+procedimiento está escrito para el operador que maneja `gh` y la consola de
+un proveedor de DNS; un colaborador nuevo y competente lo sigue sin contexto
+previo.
+
+El runbook está estructurado como un **núcleo independiente del proveedor**
+(los pasos del lado de GitHub y de los registros DNS que todo proveedor
+comparte) seguido de **apéndices específicos por proveedor** para Namecheap,
+Cloudflare, Route53 y un respaldo de DNS genérico. Ejecuta el núcleo en orden;
+salta al apéndice que coincida con el registrador del dominio raíz / host de
+DNS; vuelve al núcleo para la verificación.
+
+El sitio se aloja desde el repositorio público `ahmed-g-gad/apothem` mediante
+GitHub Pages, con el CNAME del dominio personalizado apuntando a
+`ahmed-g-gad.github.io`. La compilación del sitio estático emite a
+`site/dist/`; el flujo de trabajo de Pages eleva ese artefacto de compilación
+al sitio en vivo en cada push a `main`.
+
+## 1. Requisitos previos
+
+El operador confirma lo siguiente antes de continuar:
+
+- **Estado del repositorio.** `ahmed-g-gad/apothem` es público, tiene Pages
+  habilitado (Settings > Pages > Source: GitHub Actions) y el flujo de
+  trabajo `publish-static-site.yml` existe en
+  `.github/workflows/publish-static-site.yml`.
+- **Autoridad sobre el DNS.** El operador controla el DNS de `ahmedgad.com`
+  en el registrador o en un host de DNS delegado (Cloudflare, Route53, etc.).
+  El host de DNS se identifica con `dig NS ahmedgad.com +short`.
+- **Herramientas.** `gh` (GitHub CLI) versión 2.40 o posterior autenticado
+  contra la cuenta `ahmed-g-gad`; `dig` (`dig` de BIND o `drill`) para la
+  verificación de DNS; un navegador para la inspección de HTTPS.
+- **Postura sobre el dominio raíz.** Este runbook configura únicamente el
+  **subdominio** `apothem.ahmedgad.com`. El dominio raíz `ahmedgad.com` no se
+  toca. Un CNAME en el dominio raíz requiere aplanamiento de CNAME
+  (Cloudflare) o registros ALIAS (Route53); la ruta del subdominio evita
+  ambas clases de complicación.
+
+## 2. Núcleo independiente del proveedor
+
+### 2.1 Añade el dominio personalizado a Pages
+
+```bash
+gh api -X PUT \
+  /repos/ahmed-g-gad/apothem/pages \
+  -F cname=apothem.ahmedgad.com \
+  -F https_enforced=true
+```
+
+Verifica que la llamada devolvió el nuevo registro CNAME:
+
+```bash
+gh api /repos/ahmed-g-gad/apothem/pages \
+  --jq '.cname, .https_enforced, .status'
+```
+
+Salida esperada:
+
+```text
+apothem.ahmedgad.com
+true
+built
+```
+
+El estado `built` confirma que la compilación de Pages más reciente tuvo
+éxito. Un estado `null` significa que Pages no se ha ejecutado desde que se
+aplicó el CNAME: haz push de un commit sin operaciones (no-op) a `main` para
+disparar la compilación.
+
+### 2.2 Confirma el archivo CNAME
+
+GitHub Pages recibe `site/public/CNAME` a través del artefacto de compilación
+del sitio estático en cada despliegue. El archivo contiene el dominio
+personalizado en una sola línea, sin esquema, sin barra final:
+
+```text
+apothem.ahmedgad.com
+```
+
+El archivo reside en `site/public/CNAME`. Verifica:
+
+```bash
+cat site/public/CNAME
+```
+
+Si el archivo falta, vuelve a crearlo en `site/public/CNAME` y haz commit con
+`chore: restore Pages CNAME`.
+
+### 2.3 Añade el registro DNS
+
+Pages sirve el dominio personalizado cuando el proveedor de DNS del dominio
+raíz devuelve una de las cuatro direcciones IP de GitHub (para dominios raíz)
+o un CNAME que apunta a `<owner>.github.io` (para subdominios). Para
+`apothem.ahmedgad.com` la clase de registro es **CNAME**:
+
+| Campo | Valor |
+|-------|-------|
+| Tipo  | `CNAME` |
+| Host  | `apothem` (solo el subdominio; el registrador añade el dominio raíz) |
+| Valor | `ahmed-g-gad.github.io.` (punto final cuando el registrador lo requiere) |
+| TTL   | `3600` (una hora; menor para una propagación más rápida durante la migración) |
+
+El flujo exacto de la interfaz para añadir el registro varía según el
+proveedor; salta al apéndice correspondiente más abajo y vuelve aquí cuando
+el registro esté guardado.
+
+### 2.4 Espera la propagación del DNS
+
+La propagación se completa en cinco minutos para registros de TTL bajo y en
+una hora para el TTL predeterminado de 3600 segundos: los nodos de borde del
+proveedor pueden extender la ventana durante una transferencia de zona DNS.
+Sigue el progreso:
+
+```bash
+dig apothem.ahmedgad.com CNAME +short
+```
+
+Salida esperada:
+
+```text
+ahmed-g-gad.github.io.
+```
+
+Una salida vacía significa que el registro aún no se ha propagado. Vuelve a
+ejecutar cada 30 segundos. Si el registro nunca aparece tras 30 minutos,
+vuelve al apéndice que coincida con el host de DNS y verifica que el registro
+esté confirmado en el proveedor, no pendiente en un estado de borrador.
+
+### 2.5 Verifica HTTPS
+
+```bash
+curl -sSI https://apothem.ahmedgad.com/ | head -5
+```
+
+Salida esperada:
+
+```text
+HTTP/2 200
+server: GitHub.com
+content-type: text/html; charset=utf-8
+strict-transport-security: max-age=31536000
+```
+
+`HTTP/2 200` y la línea `server: GitHub.com` juntos confirman que Pages está
+sirviendo el sitio bajo un certificado TLS válido. Un `301` a la URL de HTTPS
+en una petición de HTTP plano también satisface el control; HTTPS forzado
+está activado.
+
+Si `curl` devuelve un `526` (código de certificado inválido específico de
+Cloudflare) o un `502` (bad gateway), el certificado aún no se ha emitido.
+Pages aprovisiona certificados de Let's Encrypt automáticamente una vez que el
+CNAME resuelve; permite hasta 24 horas para la primera emisión. Para
+diagnóstico:
+
+```bash
+gh api /repos/ahmed-g-gad/apothem/pages \
+  --jq '.https_certificate.state, .https_certificate.description'
+```
+
+`state: approved` significa que la emisión está completa. `state: requesting`
+significa que la emisión está en curso; espera. Cualquier otro estado
+requiere un reinicio de Pages (desactiva y reactiva el dominio personalizado
+mediante la API).
+
+### 2.6 Verifica los enlaces profundos
+
+```bash
+curl -sSI https://apothem.ahmedgad.com/architecture/ | head -3
+```
+
+Salida esperada:
+
+```text
+HTTP/2 200
+server: GitHub.com
+content-type: text/html; charset=utf-8
+```
+
+Un `404` en un enlace profundo significa que la compilación del sitio estático
+no ha incorporado la página o que el despliegue no se ha completado. Dispara
+una recompilación con `gh workflow run publish-static-site.yml`.
+
+### 2.7 Registra la verificación
+
+Añade una fila al registro de estado del sitio del operador (o al registro de
+verificación de este runbook si se mantiene en línea) con la fecha, la
+identidad del operador y la salida de estado de Pages de `gh api`. El registro
+de verificación es el rastro de auditoría: cada cambio de configuración de
+Pages deja una fila.
+
+## 3. Apéndice del proveedor — Namecheap
+
+Namecheap expone el DNS a través de la pestaña "Advanced DNS" del registrador.
+El operador es dueño de `ahmedgad.com` aquí cuando los registros NS del
+registrador coinciden con `dns1.registrar-servers.com` y
+`dns2.registrar-servers.com` (el valor predeterminado de Namecheap). Verifica
+con `dig NS ahmedgad.com +short`.
+
+Pasos:
+
+1. Inicia sesión en Namecheap; abre el panel.
+2. Haz clic en `Domain List` en la navegación izquierda; localiza
+   `ahmedgad.com`; haz clic en `Manage`.
+3. Haz clic en la pestaña `Advanced DNS`.
+4. Haz clic en `Add New Record`. Elige:
+   - Type: `CNAME Record`
+   - Host: `apothem` (sin dominio raíz, sin punto final)
+   - Value: `ahmed-g-gad.github.io.` (con punto final)
+   - TTL: `Automatic` (valor predeterminado de Namecheap; honra 1800 segundos)
+5. Haz clic en la marca de verificación verde para guardar.
+6. Espera de 5 a 10 minutos para la propagación de borde de Namecheap; luego
+   vuelve al núcleo independiente del proveedor §2.4 para la verificación con
+   `dig`.
+
+Fallo común: la interfaz de Namecheap rechaza en silencio los registros CNAME
+cuando un registro `A` ya ocupa el mismo host. Elimina primero el registro `A`
+en conflicto; CNAME y A en el mismo host son mutuamente excluyentes según el
+RFC 1034.
+
+## 4. Apéndice del proveedor — Cloudflare
+
+Cloudflare DNS aloja el dominio raíz cuando los registros NS del registrador
+apuntan a `*.ns.cloudflare.com` (el valor predeterminado de Cloudflare tras la
+delegación). Verifica con `dig NS ahmedgad.com +short`.
+
+Pasos:
+
+1. Inicia sesión en Cloudflare; selecciona la zona `ahmedgad.com`.
+2. Haz clic en `DNS` -> `Records` en la navegación izquierda.
+3. Haz clic en `Add record`. Elige:
+   - Type: `CNAME`
+   - Name: `apothem` (Cloudflare añade el dominio raíz automáticamente)
+   - Target: `ahmed-g-gad.github.io` (sin punto final en la interfaz de Cloudflare)
+   - TTL: `Auto` (valor predeterminado de Cloudflare; enruta a través de su borde)
+   - Proxy status: **DNS only** (nube gris, no naranja)
+4. Haz clic en `Save`.
+
+La elección del estado del proxy es determinante. Activar el proxy de
+Cloudflare (nube naranja) enruta el tráfico a través del borde de Cloudflare
+antes de llegar a GitHub Pages; esto rompe la emisión de Let's Encrypt de
+Pages porque Cloudflare presenta su propio certificado. Mantén el proxy
+desactivado para la configuración inicial; actívalo más tarde solo después de
+decidir si gestionar el certificado en el borde de Cloudflare.
+
+5. Espera de 1 a 2 minutos para la propagación de borde de Cloudflare; luego
+   vuelve al núcleo independiente del proveedor §2.4.
+
+Fallo común: Cloudflare elimina en silencio el punto final de los objetivos
+CNAME. El campo de objetivo acepta `ahmed-g-gad.github.io` sin el punto final;
+el resolutor añade el punto final en el momento de la consulta. No escribas el
+punto final en la interfaz de Cloudflare: produce un registro de doble punto
+que no resuelve.
+
+## 5. Apéndice del proveedor — Route53
+
+Route53 aloja la zona cuando los registros NS del registrador apuntan a cuatro
+servidores `awsdns-*.com` / `awsdns-*.org` / `awsdns-*.co.uk` /
+`awsdns-*.net`. Verifica con `dig NS ahmedgad.com +short`.
+
+Pasos:
+
+1. Abre la Consola de AWS; navega a Route53; haz clic en `Hosted zones`;
+   selecciona la zona `ahmedgad.com`.
+2. Haz clic en `Create record`.
+3. Configura:
+   - Record name: `apothem` (Route53 añade el dominio raíz automáticamente)
+   - Record type: `CNAME`
+   - Value: `ahmed-g-gad.github.io` (sin punto final)
+   - TTL: `300` (5 minutos; los valores predeterminados de Route53 son más
+     altos; baja el TTL para una propagación más rápida durante la migración)
+   - Routing policy: `Simple routing`
+4. Haz clic en `Create records`.
+5. Espera de 1 a 5 minutos para la propagación de Route53; vuelve a §2.4.
+
+Route53 admite **registros de alias** que resuelven en el momento de la
+consulta sin una indirección CNAME. Aquí no se usan registros de alias porque
+los objetivos de alias están restringidos a recursos de AWS (CloudFront, S3,
+ELB, etc.) y `ahmed-g-gad.github.io` no es un recurso de AWS. CNAME es lo
+correcto.
+
+Fallo común: la interfaz de Route53 acepta nombres de registro duplicados con
+políticas de enrutamiento distintas; esto se manifiesta como un enrutamiento
+de conmutación por error de estilo healthcheck en lugar de un CNAME simple.
+Confirma que `Routing policy` diga `Simple routing` antes de guardar.
+
+## 6. Apéndice del proveedor — DNS genérico
+
+Para los hosts de DNS no cubiertos por los apéndices con nombre (los paneles
+de DNS predeterminados de la mayoría de los registradores: GoDaddy, Hover,
+Gandi, OVH, Porkbun, Domains.google, Network Solutions), aplica la forma de
+CNAME independiente del proveedor:
+
+| Campo | Valor |
+|-------|-------|
+| Tipo  | `CNAME` |
+| Host  | `apothem` (solo el subdominio) |
+| Valor | `ahmed-g-gad.github.io.` (punto final — la mayoría de los paneles genéricos lo aceptan; algunos lo requieren) |
+| TTL   | `3600` (o el valor más bajo disponible del panel durante la migración) |
+
+Las dos clases de fallo que se repiten en los paneles genéricos:
+
+- **Inconsistencia del punto final.** Algunos paneles requieren el punto
+  final; otros lo rechazan; unos pocos aceptan cualquiera. Cuando el registro
+  no se propaga tras 30 minutos, alterna el punto final y vuelve a guardar.
+- **Registro A en conflicto en el mismo host.** CNAME y A en el mismo host
+  violan el RFC 1034 (Domain Names — Concepts and Facilities) sección tres
+  sobre preferencias de nombres de dominio. Elimina el registro A en conflicto
+  antes de añadir el CNAME.
+
+Tras guardar el registro, vuelve a §2.4 para la verificación con `dig`.
+
+## 7. Recuperación de fallos
+
+El procedimiento de habilitación de Pages tiene cuatro modos de fallo
+documentados:
+
+| Fallo | Diagnóstico | Recuperación |
+|---|---|---|
+| `gh api .../pages` devuelve 404 | Pages no está habilitado en el repo | `gh api -X POST /repos/ahmed-g-gad/apothem/pages -f source.branch=main -f source.path=/site` y luego reintenta §2.1 |
+| `dig` devuelve vacío tras 30 minutos | El registro DNS no está confirmado en el proveedor | Vuelve al apéndice del proveedor correspondiente; verifica que el registro esté guardado (no borrador / pendiente); inspecciona el panel por un paso `Save` omitido |
+| `https_certificate.state: errored` | Pages no puede emitir un certificado | Desactiva y reactiva el dominio personalizado en la configuración de Pages; esto vuelve a disparar la emisión. Espera hasta 24 horas para el nuevo intento |
+| 404 en enlace profundo tras la compilación | La compilación del sitio estático no incluyó la página | `gh workflow run publish-static-site.yml`; al completarse, verifica que `gh run list --workflow=publish-static-site.yml --limit=1 --json conclusion --jq '.[0].conclusion'` devuelva `success` |
+
+Si la recuperación falla tras un ciclo del diagnóstico correspondiente,
+escala al runbook de recuperación de versiones (un push forzado de historial
+nuevo puede haber dejado la configuración de Pages en un estado inconsistente).
+
+## 8. Referencias cruzadas
+
+- **Origen de la especificación.** La Especificación §2.5 lista este runbook
+  en los entregables de documentación del Cluster 4.
+- **Ubicación canónica del CNAME.** El archivo CNAME reside en
+  `site/public/CNAME` y se confirma en el repositorio; Pages lo lee en cada
+  compilación.
+- **Flujo de recuperación.** El runbook de recuperación de versiones vuelve a
+  aplicar la configuración de Pages desde la instantánea de recuperación
+  cuando la secuencia de migración falla a mitad de camino.
+- **Ciclo de versiones.** Cada ejecución de versión incluye un trabajo de
+  compilación de Pages que verifica que el sitio se renderice en el dominio
+  personalizado.

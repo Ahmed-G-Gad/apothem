@@ -1,0 +1,8 @@
+{
+  "argv": [
+    "uninstall",
+    "--help"
+  ],
+  "exit_code": 0,
+  "stdout": "Usage: main uninstall [OPTIONS]\n\n  Remove a harness adapter configuration.\n\nOptions:\n  --harness NAME         Harness adapter name or 'all' for every supported\n                         harness.  [required]\n  --yes                  Skip confirmation prompt.\n  --project PATH         Project root for project-scope harnesses (e.g.,\n                         cursor). Required by adapters that materialize into a\n                         project tree rather than a user-scope configuration\n                         directory.\n  -q, --quiet            Suppress informational output; only errors are emitted.\n  -v, --verbose          Emit additional diagnostic output.\n  --format [plain|json]  Output format.  [default: plain]\n  --no-color             Disable ANSI color codes in output.\n  --json                 Shorthand for --format json.\n  -h, --help             Show this message and exit.\n\n  Examples:   apothem uninstall --harness claude-code   apothem uninstall\n  --harness all --project . --yes   apothem uninstall --harness claude-code\n  --yes\n\n  Related commands:   install      Install a harness configuration\n  uninstalling Continuous-form alias for uninstall   verify       Check\n  installation status\n\n  Exit codes:   0  Adapter uninstalled or was not installed   1  Harness not\n  found, confirmation declined or unavailable      (non-interactive or JSON mode\n  without --yes), or every removal failed   2  Partial removal — at least one\n  harness removed before a failure\n"
+}

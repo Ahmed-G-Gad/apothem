@@ -1,0 +1,94 @@
+---
+title: "OpenCode"
+description: "OpenCode(베타)용 Apothem 도구 어댑터."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**공급업체:** OpenCode
+**설치 이름:** `opencode`
+**상태:** 베타
+**네이티브 구성:** `~/.config/opencode/`
+
+## 설치
+
+```bash
+apothem install --harness opencode
+```
+
+어댑터는 OpenCode의 JSON 구성을 작성하고, Apothem 스킬을 OpenCode 스킬 표면에
+설치하며, 명령 프롬프트를 OpenCode Markdown 명령 파일로 변환하고, Apothem 도우미
+정의를 OpenCode 하위 도우미로 정규화합니다.
+
+**작성되는 파일:**
+
+```text
+~/.config/opencode/opencode.json
+~/.config/opencode/commands/
+~/.config/opencode/skills/
+~/.config/opencode/agents/
+~/.config/opencode/.apothem/support/{rules,templates,hooks}/
+```
+
+## 프로필에서 네이티브 구성으로의 매핑
+
+어댑터는 Apothem의 설치된 규칙을 가리키는 `instructions` 파일 목록과 함께
+`opencode.json`을 렌더링한 다음, 공유된 각 Apothem 세트를 OpenCode 네이티브 표면
+또는 Apothem 소유의 지원 하위 트리로 전파합니다. 이미 일치하는 Apothem 관리 하위
+항목은 교체 전에 백업됩니다.
+
+## 호환성 참고 사항
+
+규칙은 네이티브 `instructions` 목록을 통해 참조됩니다. 템플릿과 후크 프롬프트는
+`~/.config/opencode/.apothem/support/` 아래의 참조 자료입니다. 명령, 스킬, 도우미 정의는
+네이티브 검색 위치를 사용합니다.
+
+## 검증
+
+```bash
+apothem verify --harness opencode
+```
+
+verify 명령은 다음을 확인합니다:
+
+1. 네이티브 구성이 예상 경로에 존재합니다.
+2. 공유 프로필의 모든 필수 필드가 존재합니다.
+3. 어댑터 고유의 검증 루틴이 성공을 보고합니다.
+
+## 업데이트
+
+```bash
+apothem update --harness opencode
+```
+
+`opencode.json`, 네이티브 명령, 스킬, 도우미 정의, 그리고 Apothem 지원 트리를
+새로 고칩니다.
+
+## 제거
+
+```bash
+apothem uninstall --harness opencode
+```
+
+어댑터가 작성한 네이티브 구성 파일을 제거합니다.
+공유 프로필 YAML과 Apothem 엔진은 영향을 받지 않습니다.
+
+## 적합성 게이트
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## 문제 해결
+
+| 증상 | 수정 |
+|---------|-----|
+| 구성 파일을 찾을 수 없음 | `apothem install --harness opencode`를 다시 실행 |
+| 검증 실패 | `apothem update --harness opencode`를 실행한 후 다시 검증 |
+| 예기치 않은 구성 내용 | `~/.config/apothem/profile.yaml` 또는 `--profile PATH`를 확인한 후 `apothem update --harness opencode`를 다시 실행 |
+
+## 구성 노브
+
+| 플래그 | 기본값 | 설명 |
+|------|---------|-------------|
+| `--dry-run` | `false` | 파일을 작성하지 않고 설치를 미리 봅니다. |

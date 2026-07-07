@@ -1,0 +1,68 @@
+---
+title: "/plan-spec"
+description: "/plan-spec — Refines free-form prose or raw notes into a spec-grade `_spec/spec.md` specification ready for `/plan-generate`."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Role:** Forge
+**Pipeline position:** head
+
+Refines free-form prose or raw notes into a spec-grade `_spec/spec.md` specification ready for `/plan-generate`.
+
+## Canonical invocation
+
+```bash
+/plan-spec
+```
+
+With arguments:
+
+```bash
+/plan-spec [path/to/prose-source] [--suite-name NAME] [--refine-existing] [--standalone] [--quick SLUG [--tag TAG]]
+```
+
+## Inputs
+
+Free-form prose, raw notes, or ad-hoc requirements (operator-supplied inline or as a path).
+
+## Outputs
+
+`_spec/spec.md` (the promoted spec) + `_inputs/handoff-manifest.yml`. `--quick` instead writes a single project-local lightweight plan file at `<project-root>/.apothem/plans/<YYYY-MM-DD>--<kebab-slug>.md`.
+
+## Downstream
+
+/plan-generate (downstream consumer)
+
+## Workflow phases
+
+The Forge runs six transformation phases (the spec is promoted from `_inputs/forge.md` to `_spec/spec.md` at G4):
+
+1. **Discovery & Extraction** — Read the prose / notes and extract every requirement, decision, and constraint.
+2. **Meticulous Consideration** — Reason through each surface; surface every contradiction via the structured-inquiry channel.
+3. **Potency Mapping** — Map each requirement to its downstream leverage.
+4. **Preservation Verification** — Run the fifteen-bar pre-emission gate (G4) against the candidate spec before promotion.
+5. **Expertise Application** — Apply domain expertise; log expertise-gap findings.
+6. **Question-Resolution Sweep** — Resolve every open inquiry across gates G0–G5, then emit `_spec/spec.md` plus the Handoff Manifest.
+
+## Failure modes
+
+| Symptom | Cause | Recovery |
+|---------|-------|----------|
+| Missing prose input | No prose / notes supplied | Supply the free-form prose inline or as a path |
+| Unresolved contradiction | Prose carries conflicting requirements | Halt at G3 (Pre-amendment); resolve via structured inquiry, never silently |
+| Spec fails the gate | A pre-emission bar fails at G4 | Fix the failing bar before promotion from `_inputs/forge.md` |
+
+## Examples
+
+```bash
+# Forge raw notes into a spec-grade specification
+/plan-spec ~/notes/feature.md --suite-name my-feature
+
+# Lightweight project-local plan file (bypasses Forge elicitation)
+/plan-spec --quick my-feature
+```
+
+## Cross-references
+
+- [Pipeline overview](/docs/pipeline)
+- [Command reference](/docs/reference/commands)

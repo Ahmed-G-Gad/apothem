@@ -1,0 +1,104 @@
+---
+title: "CodeBuddy"
+description: "Apothem harness adapter for Tencent CodeBuddy (GA)."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Vendor:** Tencent
+**Install name:** `codebuddy`
+**Status:** GA
+**Native config:** `<project>/.codebuddy/rules/apothem-rules.md`
+
+## Installation
+
+```bash
+apothem install --harness codebuddy --project /path/to/project
+```
+
+The adapter writes one project-scope rules file from the shared Apothem
+rules and governance surface.
+
+**Files written:** `<project>/.codebuddy/rules/apothem-rules.md`
+
+## Profile-to-native-config mapping
+
+The adapter reads Apothem's shared profile and renders the project rules
+file on every `apothem install` or `apothem update` run. CodeBuddy reads
+every `*.md` file under `.codebuddy/rules/` as Markdown with optional YAML
+frontmatter (`alwaysApply`, `paths`, `enabled`) per the
+[CodeBuddy Rules documentation](https://www.codebuddy.ai/docs/ide/Rules);
+Apothem's file carries `alwaysApply: true` so the governance surface applies
+on every interaction. The shared profile is the source of truth; project-local
+edits to the generated file are backed up before the next sync replaces the
+Apothem-managed content.
+
+## Compatibility notes
+
+CodeBuddy's rules surface is project-scoped under `.codebuddy/rules/`. The
+adapter writes a dedicated `apothem-rules.md` file that co-exists with any
+rules files the operator authors in the same directory. The `CODEBUDDY.md`
+project memory file and `.codebuddy/settings.json` (permissions, MCP) are
+operator-owned; Apothem does not write them. Skills, commands, agents, and
+hooks are referenced as discipline inside the rules file — CodeBuddy exposes
+no adapter-owned file surface for them. The vendor surface conventions the
+adapter relies on are pinned at
+`src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md`, snapshotted
+against the live CodeBuddy documentation.
+
+## Verification
+
+```bash
+apothem verify --harness codebuddy --project /path/to/project
+```
+
+The verify command confirms that:
+
+1. The native config exists at the expected path.
+2. The managed rules file is present and non-empty.
+3. The adapter-specific verification routine reports success.
+
+## Updating
+
+```bash
+apothem update --harness codebuddy --project /path/to/project
+```
+
+Re-derives the project rules file from the current shared profile state.
+`install` and `update` are idempotent — re-running overwrites the managed
+file with the latest rendered content.
+
+## Uninstalling
+
+```bash
+apothem uninstall --harness codebuddy --project /path/to/project
+```
+
+Removes the native config files written by the adapter, renaming the managed
+rules file to a timestamped backup. The shared profile YAML and the Apothem
+engine are unaffected.
+
+## Conformity gate
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| Config file not found | Re-run `apothem install --harness codebuddy --project /path/to/project` |
+| Verification failed | Run `apothem update --harness codebuddy --project /path/to/project`, then verify again |
+| Unexpected config content | Check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run `apothem update --harness codebuddy --project /path/to/project` |
+
+## Configuration knobs
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--dry-run` | `false` | Preview install without writing files. |
+
+## See also
+
+- [All harnesses](/docs/harnesses) — the full catalog of supported tools
+- [Install guide](/docs/install) — install Apothem into this harness
+- [`apothem harnesses` reference](/docs/cli-reference/harnesses) — list and inspect adapters from the CLI

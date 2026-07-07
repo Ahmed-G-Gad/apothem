@@ -1,0 +1,111 @@
+---
+title: "パブリッシャーアカウントのセットアップ"
+description: "@ahmed-g-gad/apothem 向けの npmjs.com 信頼済みパブリッシャーと、GitHub 側のリリース前提条件を構成します。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+この Runbook は、リリース面のパブリッシャー側を構成します。配布のかたちはレジストリ
+が 1 つだけです。npmjs.com 上のスコープ付き npm パッケージ
+`@ahmed-g-gad/apothem` で、GitHub Release、Pages、CI、conformity、および harness
+の各ワークフローがグリーンになった後に、手動でディスパッチされる `publish-npm.yml`
+ワークフローによって公開されます。その他のすべての成果物は GitHub Release ページ
+自体で配布され、外部のパブリッシャーアカウントを必要としません。
+
+## アイデンティティマップ
+
+| 面 | アカウント | パッケージ識別子 |
+|---|---|---|
+| GitHub | `ahmed-g-gad` | `ahmed-g-gad/apothem` |
+| npm (npmjs.com) | `ahmed-g-gad` | `@ahmed-g-gad/apothem` |
+
+GitHub のオーナーは将来変動することが許容されています。ワークフローおよびインストーラー
+のロジックは、プラットフォームが動的解決を許可する場所で `github.repository`、
+`github.repository_owner`、または `APOTHEM_GITHUB_REPOSITORY` を読み取ります。
+ユーザーはメンテナーのアカウント名ではなくパッケージ名をインストールするため、
+レジストリのパッケージ識別子は安定したままになります。
+
+## npm (npmjs.com)
+
+1. `ahmed-g-gad` として `https://www.npmjs.com/` にサインインします。
+2. アカウントで二要素認証を有効にします。
+3. スコープ付きパッケージ名を確認します。
+
+   ```bash
+   npm view @ahmed-g-gad/apothem name
+   ```
+
+   `404` は、スコープ付きパッケージがまだ公開されていないことを意味します。それ以外の
+   パッケージ応答は、公開する前にこのリポジトリおよびアカウントと一致している必要が
+   あります。
+4. UI が最初のパッケージレコードを要求する場合は、npm 上でパッケージを作成します。
+   名前はスコープ付きのまま保ちます: `@ahmed-g-gad/apothem`。
+5. GitHub Actions から `@ahmed-g-gad/apothem` の信頼済み公開（Trusted Publishing）
+   を構成します。
+   - GitHub オーナー: `ahmed-g-gad`
+   - リポジトリ: `apothem`
+   - ワークフローファイル名: `publish-npm.yml`
+   - 環境: `npmjs`
+   - 許可されるアクション: `npm publish`。
+6. GitHub で、`npmjs` 環境が `ahmed-g-gad/apothem` に存在し、デプロイに手動承認を
+   必要とすることを確認します。
+7. npm の面を 1 つの公開レジストリパッケージに保ちます: npmjs.com 上の
+   `@ahmed-g-gad/apothem`。
+8. リリース準備状態を確認します。
+
+   ```bash title="Release readiness"
+   bash scripts/release/check-release-ready.sh <release-tag>
+   ```
+
+9. GitHub Actions タブから `Publish — npm`（`publish-npm.yml`）を
+   `tag=<release-tag>` で実行し、`npmjs` 環境のデプロイを承認します。
+10. ライブパッケージを検証します。
+
+    ```bash title="npm verification"
+    npm view @ahmed-g-gad/apothem version
+    npx @ahmed-g-gad/apothem@<version> --version
+    ```
+
+`NPM_TOKEN`、ユーザー名、パスワードのシークレットは必要ありません。ワークフローは、
+Node のバージョンと npm CLI の OIDC 下限を `.github/workflows/publish-npm.yml`
+内にピン留めした状態で、npm Trusted Publishing（OIDC）を通じて公開します。npmjs.com
+に対して `npm publish --access public` を実行します。npm は、公開された GitHub
+Actions ワークフローから公開された公開パッケージに対して、来歴（provenance）を自動的
+に発行します。`PUT` 中のレジストリ `404` は、npm 側の信頼済みパブリッシャー、パッケージ
+スコープ、またはアカウント認可がまだ整合していないことを意味します。ワークフローを
+再試行する前に npm パッケージ設定を修正してください。
+
+参考資料: [npm 信頼済みパブリッシャー](https://docs.npmjs.com/trusted-publishers/)、[npm 来歴](https://docs.npmjs.com/generating-provenance-statements/)、および [npm スコープ](https://docs.npmjs.com/about-scopes/)。
+
+## GitHub 側のリリース前提条件
+
+残りのリリース面は GitHub ネイティブであり、リポジトリスコープの `GITHUB_TOKEN`
+で認証します。外部アカウントは一切関与しません。
+
+1. **GitHub Release。** `.github/workflows/release.yml` はバージョンタグ上で実行され、
+   ジョブローカルの `contents: write` 権限のみを必要とします。タグを付ける前に、
+   ワークフローファイルが `main` 上に存在することを確認します。
+2. **Pages カスタムドメイン。** ドキュメントサイトは `publish-static-site.yml` を
+   通じてカスタムドメイン `apothem.ahmedgad.com` にデプロイされます。ドメイン、DNS、
+   および HTTPS の強制は [Pages 有効化 Runbook](/docs/runbooks/pages-enablement)
+   によって確立されます。検証します。
+
+   ```bash title="Pages verification"
+   gh api repos/ahmed-g-gad/apothem/pages --jq '.cname, .https_enforced'
+   curl -sSI https://apothem.ahmedgad.com/ | head -n 1
+   ```
+
+3. **スクリプトインストーラー。** `install.sh` と `install.ps1` は Pages サイトから
+   提供されます（`https://apothem.ahmedgad.com/install.sh` と
+   `https://apothem.ahmedgad.com/install.ps1`）。これらは同じ Pages デプロイによって
+   公開されます。別個のアカウントやトークンは必要ありません。
+
+## 検証マトリクス
+
+セットアップ後、各パブリッシャー面はその正規のチェックに応答します。
+
+| 面 | チェック |
+|---|---|
+| npmjs.com | `npm view @ahmed-g-gad/apothem version` がリリース済みバージョンを返す |
+| GitHub Release | `gh release view <release-tag> --json assets --jq '.assets[].name'` が sdist、wheel、SBOM、cosign バンドル、来歴、およびプラットフォームアーカイブを一覧表示する |
+| Pages | `curl -sSI https://apothem.ahmedgad.com/` がカスタムドメインで `200` を返す |

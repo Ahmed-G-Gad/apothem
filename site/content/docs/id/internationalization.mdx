@@ -1,0 +1,112 @@
+---
+title: "Internasionalisasi (i18n)"
+description: "Cara situs dokumentasi Apothem mendeklarasikan kohor lokalnya, memancarkan tautan bahasa-alternatif hreflang, menangani render kanan-ke-kiri, dan memunculkan kesenjangan terjemahan secara jujur."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Halaman ini mendokumentasikan cara situs dokumentasi Apothem menangani banyak
+bahasa: kohor lokal yang dideklarasikannya, mekanisme `hreflang` yang dipancarkannya,
+kesiapan kanan-ke-kirinya, dan keadaan jujur terjemahan per-lokal.
+
+## Ringkasan keputusan
+
+- **Platform: Next.js App Router + Fumadocs.** Situs dibangun dari `site/`.
+  Kohor lokal dideklarasikan di `site/lib/i18n.ts`, dan mekanisme
+  tautan bahasa-alternatif berada di `site/lib/hreflang.ts`.
+- **Kohor lokal: dideklarasikan.** Modern Dev Cohort yang terdiri dari dua belas lokal
+  dideklarasikan sebagai sumber kebenaran kanonik, dengan bahasa Inggris sebagai lokal sumber.
+- **Perutean per-lokal: belum diaktifkan.** Mengaktifkan rute berawalan-lokal
+  di seluruh kohor sementara hanya konten bahasa Inggris yang ada akan menciptakan sebelas
+  rute tanpa-konten yang diam-diam jatuh kembali ke sumber bahasa Inggris. Itu
+  adalah jenis penyimpangan-Inggris-saja yang diam-diam yang dilarang disiplin i18n, jadi perutean
+  tetap satu-lokal sampai konten terjemahan yang ditinjau tiba.
+- **Mekanisme `hreflang`: aktif.** Setiap halaman memancarkan himpunan `<link rel="alternate">`
+  yang mencakup setiap lokal yang memiliki konten tertulis, plus fallback `x-default`.
+  Lokal yang masih menunggu terjemahan dihilangkan — tidak pernah diarahkan ke
+  fallback bahasa Inggris — sehingga mesin pencari diberitahu secara akurat bahwa tidak ada
+  terjemahan.
+- **Kesiapan kanan-ke-kiri: tersedia.** Lembar gaya bersama menggunakan properti CSS
+  logis di seluruhnya, sehingga halaman bahasa Arab dirender dengan benar di bawah `dir="rtl"`
+  begitu konten bahasa Arab tiba.
+- **Kebijakan terjemahan mesin: tidak ada yang dikirim tanpa ditinjau.** Tidak ada prosa halaman
+  yang diterjemahkan-mesin yang dipublikasikan. Terjemahan disemai oleh mesin dan digerbangi pada
+  peninjauan manusia sebelum lokal mana pun ditandai sebagai diterjemahkan.
+
+## Kohor lokal
+
+Modern Dev Cohort mendeklarasikan dua belas lokal. Bahasa Inggris dilayani di akar
+situs; sebelas target dideklarasikan agar tumpukan siap-internasionalisasi
+dan kesenjangan terjemahan eksplisit ketimbang diam-diam.
+
+| Kode | Jalur | Bahasa | Arah | Konten |
+|------|------|----------|-----------|---------|
+| `en` | `/` | Inggris | LTR | Diterjemahkan (sumber) |
+| `zh-CN` | `/zh-cn/` | Tionghoa Sederhana | LTR | Tertunda |
+| `es` | `/es/` | Spanyol | LTR | Tertunda |
+| `pt-BR` | `/pt-br/` | Portugis Brasil | LTR | Tertunda |
+| `fr` | `/fr/` | Prancis | LTR | Tertunda |
+| `de` | `/de/` | Jerman | LTR | Tertunda |
+| `ja` | `/ja/` | Jepang | LTR | Tertunda |
+| `ko` | `/ko/` | Korea | LTR | Tertunda |
+| `ru` | `/ru/` | Rusia | LTR | Tertunda |
+| `id` | `/id/` | Indonesia | LTR | Tertunda |
+| `ar` | `/ar/` | Arab | RTL | Tertunda |
+| `hi` | `/hi/` | Hindi | LTR | Tertunda |
+
+Kohor adalah sumber kebenaran tunggal; amendemen terhadapnya melewati
+keputusan yang disengaja, tidak pernah suntingan diam-diam.
+
+## Cara kerja `hreflang`
+
+`site/lib/hreflang.ts` membangun peta `alternates.languages` yang dirender Next.js
+ke dalam `<head>` setiap halaman. Konstruksinya menghormati satu aturan: tautan
+bahasa-alternatif sebuah lokal dipancarkan **hanya** ketika lokal itu memiliki konten
+tertulis. Karena bahasa Inggris adalah satu-satunya lokal yang diterjemahkan hari ini, setiap halaman memancarkan
+persis dua tautan:
+
+```html
+<link rel="alternate" hreflang="en" href="https://apothem.ahmedgad.com/..." />
+<link rel="alternate" hreflang="x-default" href="https://apothem.ahmedgad.com/..." />
+```
+
+Tautan `canonical` halaman selalu URL-nya sendiri — ia tidak pernah mengarah lintas
+lokal. Saat konten sebuah lokal tiba dan statusnya beralih menjadi diterjemahkan di
+`site/lib/i18n.ts`, tautan `hreflang` lokal itu mulai dipancarkan otomatis,
+dan perutean per-lokal diaktifkan dalam change-set yang sama.
+
+## Render kanan-ke-kiri
+
+Bahasa Arab adalah lokal kanan-ke-kiri kohor ini. Situs siap untuknya:
+
+- **Hanya properti CSS logis.** Lembar gaya dan komponen bersama menggunakan
+  properti logis (`margin-inline-start`, `padding-inline-end`,
+  `text-align: start`, `inset-inline-start`) ketimbang properti fisik
+  (`margin-left`, `text-align: left`). Properti logis membalik otomatis
+  di bawah `dir="rtl"`, sehingga lembar gaya yang sama melayani kedua arah dengan benar.
+- **Atribut arah.** Halaman bahasa Arab menyetel `dir="rtl"` pada elemen `<html>`
+  bersama `lang="ar"` begitu konten bahasa Arab tiba.
+- **Konten dwiarah.** String berarah-campur — misalnya sebuah command
+  bahasa Inggris di dalam paragraf bahasa Arab — dibungkus dalam `<bdi>` agar rentang
+  kiri-ke-kanan yang tersemat dirender dengan benar dalam alur kanan-ke-kiri.
+
+## Menambah terjemahan
+
+Untuk menerjemahkan situs ke sebuah lokal kohor:
+
+1. Tulis halaman terjemahan yang ditinjau untuk lokal itu.
+2. Balik status konten lokal menjadi diterjemahkan di `site/lib/i18n.ts`.
+3. Tautan `hreflang`-nya mulai dipancarkan dan rute-rutenya menjadi dapat dijangkau.
+
+Pertahankan halaman bahasa Inggris sebagai sumber kebenaran sampai terjemahan sebuah lokal
+ditulis dan ditinjau. Tidak ada konten yang diterjemahkan-mesin yang dikirim tanpa ditinjau.
+
+## Keadaan saat ini dan jalur menuju korpus terjemahan
+
+Hari ini situs siap-internasionalisasi tetapi berkonten-Inggris-saja.
+Infrastruktur — deklarasi kohor, mekanisme `hreflang`, kesiapan
+kanan-ke-kiri CSS-logis — tersedia; korpus terjemahan per-lokal tidak.
+Korpus yang sepenuhnya diterjemahkan adalah pekerjaan tingkat-fitur: halaman setiap lokal
+disemai-mesin lalu ditinjau-manusia, dan sebuah rilis siap-produksi
+secara internasionalisasi hanya setelah setiap lokal melewati ambang peninjauannya. Sampai saat itu,
+kohor dideklarasikan, kesenjangan terlihat, dan tidak ada terjemahan tanpa-tinjauan yang dikirim.

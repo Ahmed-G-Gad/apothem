@@ -1,0 +1,70 @@
+---
+title: "/research-publish"
+description: "/research-publish——将论文格式化为期刊模板并组装投稿包（补充材料、数据／代码可用性、投稿信、伦理／利益冲突声明），并附带预印本／DOI 计划。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**角色：** 首席研究者（发表）
+**流水线位置：** 链路中段
+
+将论文格式化为期刊模板并组装投稿包——补充材料、数据／代码可用性声明、投稿信、伦理与利益冲突声明——外加带 DOI 的预印本／归档计划和一份投稿清单。由操作者投递投稿包；终端后继是 `/research-disseminate`，它将已发表的工作传递给其受众。
+
+## 规范调用
+
+```bash
+/research-publish
+```
+
+带参数：
+
+```bash
+/research-publish [path/to/research-suite/]
+```
+
+## 输入
+
+论文交付物和 `_outputs/review-report.md`（同行评审修订）。
+
+## 输出
+
+宿主自然位置的期刊格式化投稿包（格式化的稿件＋补充材料＋数据／代码可用性声明＋投稿信＋伦理／利益冲突声明）＋ `_outputs/publication-record.md` ＋一份投稿清单。
+
+## 下游
+
+/research-disseminate（下游消费者）——由操作者执行投稿，随后 `/research-disseminate` 将已发表的工作传递给其受众。当期刊返回修订意见时，先对修订后的论文重新运行 `/research-review`，再重建投稿包。
+
+## 工作流阶段
+
+该命令遵循标准的 `/research` 流水线工作流：
+
+1. **加载上下文**——读取论文和评审报告。
+2. **验证序列门**——确认 `_outputs/review-report.md` 存在；否则以 `Blocked: run /research-review first` 停止。
+3. **格式化与打包**——应用期刊模板；组装补充材料、数据／代码可用性、投稿信、伦理／利益冲突声明。
+4. **规划预印本／归档**——记录预印本和 DOI 计划；构建投稿清单。
+5. **更新交接清单**——记录投稿包和发表记录。
+6. **发出投稿包**——期刊格式化的投稿包＋ `_outputs/publication-record.md`。
+
+## 严谨性强制底线
+
+格式化尊重分阶段披露：对于双盲发表场所，作者、机构和系统身份被剥离至单独提交的元数据，仅在指定的清样阶段才恢复。归档存放携带随发表场所伸缩的可复现性证据包（数据、代码、固定的环境、随机种子、硬件日志、逐实例结果和图表）。
+
+## 失败模式
+
+| 症状 | 原因 | 恢复 |
+|---------|-------|----------|
+| Blocked: run /research-review first | 没有评审报告 | 运行 `/research-review` 以产出 `_outputs/review-report.md` |
+| 未处理的 HIGH 级修订 | 跳过了评审发现 | 处理该修订并重新运行 `/research-review` |
+| 缺少数据／代码可用性 | 缺失可复现性界面 | 在投稿前补上数据／代码可用性声明 |
+
+## 示例
+
+```bash
+# 组装期刊投稿包
+/research-publish path/to/research-suite/
+```
+
+## 交叉引用
+
+- [流水线概览](/docs/pipeline)
+- [命令参考](/docs/reference/commands)

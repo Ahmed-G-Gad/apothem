@@ -1,0 +1,41 @@
+---
+title: "`CLAUDE.md`"
+description: "Die stets geladene Ökosystem-Konfiguration, die jeder Interaktion den Basiskontext bereitstellt, mit sieben Abschnitten zu Plansuite, Identität, Verzeichnissen, Governance-Stufen, Direktiven, Mandaten und Registern."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+`CLAUDE.md` ist die stets geladene Ökosystem-Konfiguration. Das Runtime des
+Host-Harnesses lädt sie bei jeder Interaktion, sodass ihr Inhalt der
+*Basiskontext* ist, den jedes andere Artefakt erweitert.
+
+## Abschnitte
+
+| Abschnitt | Zweck |
+|---------|---------|
+| §1 Plansuite | Benennt die Master-Plansuite-Vorlage und die acht `/plan-<stage>`-Befehle |
+| §2 Kognitive Identität & Softwarearchitektur | Erklärt die Rolle des Senior-Softwarearchitekten und die kreative Haltung |
+| §3 Artefaktverzeichnisse | On-Disk-Wurzeln je Klasse (Regeln, Befehle, Skills, delegierte Worker usw.) |
+| §4 Ernsthaftigkeitsskalierte Governance | Vierstufige Skalierungslinse (EXPLORING / PERSONAL_USE / SHARED / PUBLIC_LAUNCH) |
+| §5 Operative Direktiven | Frameworks für Problemlösung, strategische Entdeckung und Kommunikation |
+| §6 Übergreifende Mandate | Das CM-N-Register (CM-1 bis CM-28) |
+| §7 Register | Unterregister für Befehle, Regeln, delegierte Worker, Hooks, Skills, Evolution und leere Klassen |
+
+## Konventionen für Mandat-Bezeichner
+
+Drei Präfixe tragen unterschiedliche Bedeutungen:
+
+- **CM-N** — Konfigurationsmandat, definiert in der Regel-Kohorte
+  (`src/apothem/rules/operational-mandates.md` und den mandatsspezifischen Regeldateien).
+- **TM-N** — Vorlagenmandat, definiert in
+  `src/apothem/skills/plan-suite/master-template.md` §4.
+- **CP-N** — Kernprinzip, definiert in derselben Vorlage §6.
+
+Die Plansuite-Vorlage ist das kanonische TM/CP-Register; die Stufen der
+`/plan`-Pipeline lösen Querverweise über diese Datei auf.
+
+## Siehe auch
+
+- [Regeln](/docs/reference/rules) — die Regeldateien, die CM-1 bis CM-28 operationalisieren.
+- [Befehle](/docs/reference/commands) — die `/plan`-Pipeline-Stufen, die der Anker §1 Plansuite benennt.
+- [Hooks](/docs/reference/hooks) — die Hook-Schicht, die CM-7, CM-22 und CM-24 durchsetzt.

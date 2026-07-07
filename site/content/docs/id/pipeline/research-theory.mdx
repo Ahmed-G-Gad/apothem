@@ -1,0 +1,69 @@
+---
+title: "/research-theory"
+description: "/research-theory — Membangun kerangka konseptual dan teoretis untuk pertanyaan penelitian yang telah dibingkai: teori perubahan, konstruk dengan definisi operasional, dan diagram model konseptual — tahap pendasaran teoretis pipeline /research, antara /research-spec dan /research-sources."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Peran:** Peneliti Utama (pendasaran teoretis)
+**Posisi pipeline:** tengah rantai
+
+Membangun kerangka konseptual dan teoretis fondasional untuk pertanyaan penelitian yang telah dibingkai — pendasaran a priori yang menjadi rujukan balik tahap pencarian sistematis dan sintesis. Setiap konstruk didasarkan pada teori primer dan setiap relasi yang diteorikan dinyatakan dalam bentuk yang dapat disangkal.
+
+## Pemanggilan kanonis
+
+```bash
+/research-theory
+```
+
+Dengan argumen:
+
+```bash
+/research-theory [--suite-name NAME] [--override] [--framework NAME]
+```
+
+## Masukan
+
+`_spec/research-spec.md` milik suite (kumpulan pertanyaan yang telah dibingkai dan dapat difalsifikasi yang dihasilkan oleh `/research-spec`).
+
+## Keluaran
+
+`_inputs/theory.md` (kerangka konseptual / teoretis, teori perubahan / model logika, konstruk beserta definisi operasionalnya, dan diagram model konseptual).
+
+## Hilir
+
+/research-sources (konsumen hilir — pencarian sistematis merujuk balik kriteria inklusinya ke konstruk-konstruk ini).
+
+## Fase alur kerja
+
+Perintah ini mengikuti alur kerja pipeline `/research` standar:
+
+1. **Muat konteks** — Membaca `_spec/research-spec.md`, aturan, dan keadaan suite yang ada.
+2. **Bingkai model konseptual** — Mendefinisikan konstruk dan definisi operasionalnya; mendasarkan setiap konstruk pada teori primer.
+3. **Gambar teori perubahan** — Membangun model logika yang menghubungkan konstruk dengan hasil yang diharapkan; menyatakan setiap relasi dalam bentuk yang dapat disangkal.
+4. **Diagramkan model** — Mengemisikan diagram model konseptual yang dirujuk oleh tahap-tahap hilir.
+5. **Verifikasi keluaran** — Memastikan setiap konstruk didasarkan pada teori dan setiap relasi dapat disangkal; menyelesaikan ambiguitas melalui kanal kueri terstruktur.
+6. **Emisikan kerangka** — `_inputs/theory.md` plus manifes serah terima yang diperbarui.
+
+## Mode kegagalan
+
+| Gejala | Penyebab | Pemulihan |
+|---------|-------|----------|
+| Konstruk tidak memiliki definisi operasional | Konsep dinyatakan secara abstrak | Definisikan konstruk dalam istilah terukur; kutip teori primer |
+| Relasi yang diteorikan tidak dapat disangkal | Relasi dinyatakan sebagai kebenaran umum | Nyatakan ulang relasi sebagai klaim yang dapat difalsifikasi |
+| Masukan spesifikasi hilang | `/research-spec` belum dijalankan | Jalankan `/research-spec` terlebih dahulu untuk membingkai pertanyaan |
+
+## Contoh
+
+```bash
+# Membangun kerangka teoretis untuk pertanyaan yang dibingkai
+/research-theory --suite-name retrieval-latency
+
+# Menambatkan ke kerangka teoretis bernama
+/research-theory --framework "information foraging theory"
+```
+
+## Referensi silang
+
+- [Ikhtisar pipeline](/docs/pipeline)
+- [Referensi perintah](/docs/reference/commands)

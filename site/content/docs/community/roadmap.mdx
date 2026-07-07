@@ -1,0 +1,37 @@
+---
+title: "Roadmap"
+description: "Apothem public roadmap — upcoming features and planned improvements."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## Shipped
+
+- The seventeen harness adapters, each with install, uninstall, update, and
+  verify.
+- The audit and drift-review infrastructure.
+- The Apothem CLI surface (quickstart, install, update, uninstall, verify,
+  status, diff, rollback, migrate-workspace, harnesses, profile, doctor,
+  completion).
+- The GitHub Actions CI/CD pipeline and the signed-release supply chain.
+
+## Near term
+
+- Mature the npm / npx distribution: keep the `@ahmed-g-gad/apothem` entry
+  point aligned with each release and broaden its platform coverage.
+- Grow the Claude Code plugin listing as the marketplace surface stabilizes.
+- Harness adapter auto-update via `apothem update --watch`.
+- Profile versioning and migration tooling.
+- Shared-profile schema validation in the conformity gate.
+- Additional harness adapters based on community requests.
+
+## Longer term
+
+- Cloud-hosted profile sync (optional, operator-controlled).
+- VS Code extension for real-time conformity feedback.
+- Team-shared profile management.
+
+## Requests and feedback
+
+Submit roadmap requests via
+[GitHub Discussions](https://github.com/ahmed-g-gad/apothem/discussions).
+The roadmap is community-informed; popular requests move faster.

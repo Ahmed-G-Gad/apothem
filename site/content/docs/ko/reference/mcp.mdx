@@ -1,0 +1,43 @@
+---
+title: "MCP 서버"
+description: "Model Context Protocol 서버 구성 — 운영자 소유이며 각 도구의 네이티브 MCP 메커니즘을 통해 등록됩니다. Apothem 은 공유 프로필에서 인벤토리를 동기화하지만 서버 항목은 전혀 작성하지 않습니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Model Context Protocol (MCP) 서버는 **운영자 소유**입니다. Apothem 은 공유
+프로필에 MCP 인벤토리를 담아 각 도구의 네이티브 MCP 표면으로 투영하지만, 자체
+서버 항목은 전혀 작성하지 않습니다 — 이 표면은 관리 대상으로서 여러분의 것으로
+남습니다.
+
+## MCP 서버가 등록되는 곳
+
+각 도구는 자체 네이티브 메커니즘을 통해 MCP 서버를 등록하며, Apothem 은 그
+표면을 덮어쓰는 대신 존중합니다. Claude Code 어댑터(여럿 중 하나)에서는 서버가
+`claude mcp add` 로 `~/.claude.json`(사용자 또는 로컬 스코프)과 프로젝트 수준의
+`.mcp.json` 에 등록됩니다. 다른 어댑터는 각자의 네이티브 표면으로 투영합니다.
+Apothem 의 관리 대상 설정은 결코 `mcpServers` 블록을 담지 않습니다.
+
+## 서버 추가하기
+
+도구의 네이티브 메커니즘을 통해 서버를 등록하세요. 정규 항목 형태는 `mcpServers`
+아래의 키 하나입니다:
+
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/some/path"]
+    }
+  }
+}
+```
+
+도구의 런타임은 세션 시작 시 등록된 서버를 로드합니다. 새 서버를 받아들이려면
+도구를 재시작하세요.
+
+## 명명 규약
+
+MCP 도구는 도구의 표준 MCP-도구 명명 규약에 따라 `mcp__<server>__<tool>`
+형태로 어시스턴트에 표면화됩니다.

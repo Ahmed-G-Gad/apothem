@@ -1,0 +1,148 @@
+---
+title: "Glossary"
+description: "Apothem glossary — key terms and concepts."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Key terms used across Apothem's documentation, code, and governance, in
+alphabetical order.
+
+## Adapter
+A class implementing the `HarnessAdapter` protocol that translates the shared
+profile into a harness-specific config format. Adapters live one per
+sub-package under `src/apothem/harnesses/<name>/`. See
+[Harness adapter abstraction](/docs/architecture/harness-adapter-abstraction).
+
+## Audit review sequence
+The eleven-command audit sweep covering code, code-review, security,
+performance, architecture, UX, accessibility, docs, dependencies, supply
+chain, and threat model. Driven by the `/fortress` hardening pipeline. See
+[Audit review sequence](/docs/concepts/review-fortress).
+
+## Behavior-diff golden
+A committed snapshot in `tests/fixtures/behavior-diff/` that the deterministic
+install and CLI oracles are byte-compared against, so an unintended change to
+an install plan, rendered cohort, or CLI output is caught as drift rather than
+shipping silently. The comparison canonicalizes platform-divergent bytes so the
+corpus stays portable across operating systems.
+
+## Cohort
+A grouped set of synced artifacts of one kind — rules, commands, skills,
+agents, hooks, output-styles, schemas, or templates — that the engine
+materializes into each harness from the single shared profile. One profile
+carries every cohort; each adapter projects them into its harness's native
+surface.
+
+## Conformity gate
+The mechanical fraction of the fifteen-bar pre-emission gate — the
+machine-checkable validators at `src/apothem/conformity/gate.py`. Runs before
+every artifact emission; the reasoned bars are evaluated in review.
+
+## Entry point
+The `apothem.harnesses` setuptools entry-point group declared in
+`pyproject.toml`. It mirrors the harness registry exactly; a test asserts the
+declared entry points equal the registered adapters, so a convention-correct
+but unregistered adapter surfaces as a coverage regression.
+
+## Harness
+An assistant platform that Apothem supports via a dedicated adapter.
+Supported platforms:
+
+```text
+Antigravity
+Claude Code
+CodeBuddy
+Codex
+Cursor
+Gemini CLI
+GitHub Copilot
+GLM (Z.ai)
+Hermes
+Kimi Code
+Kiro
+Open-Claw
+OpenCode
+Qwen Code
+Trae
+Windsurf
+Zed
+```
+
+See [Harnesses](/docs/harnesses).
+
+## Harness registry
+The catalog at `src/apothem/lib/harness_registry.py` (data in
+`harness_registry_data.py`) that lists every adapter and is **authoritative at
+runtime** — the engine resolves every adapter from it, so it loads from a plain
+checkout. Filesystem-convention discovery under `src/apothem/harnesses/` is a
+conformance parity check, not the runtime resolver.
+
+## Hook
+A command registered on a harness lifecycle event (PreToolUse, PostToolUse,
+SessionStart, Stop). The native registration surface varies per harness — a
+settings file, a dedicated hooks manifest, or, where a harness exposes no native
+hook surface, Apothem support material referenced from the instruction anchor. Hook
+scripts and their message contexts live under `src/apothem/hooks/`.
+
+## Materializer
+An adapter's optional `materialize_native_config(profile) -> str` that renders a
+single-file native configuration from the shared profile, for harnesses whose
+config is one structured surface (e.g. a JSON or YAML settings file).
+Template-propagation adapters omit the materializer and instead copy or convert
+cohorts per the propagation manifest.
+
+## Output-style
+A Markdown definition under `output-styles/` that shapes the assistant's
+response format and voice (for example a concise-engineer or forensic-auditor
+style). One of the synced cohorts an adapter installs.
+
+## Plan suite
+A structured collection of planning artifacts (PREAMBLE.md, MASTER-PLAN.md,
+PROGRESS.md, PLAN-NOTES.md, per-phase PHASE.md files) produced by
+`/plan-generate` and executed by `/plan-execute`, under a project-local
+`.apothem/plans/` directory (a legacy `.plans/` tree is upgraded via
+`apothem migrate-workspace`).
+
+## Pre-emission gate
+The fifteen-bar sign-off block recorded before an artifact is emitted or a
+phase output is considered complete. The mechanical bars run as the conformity
+gate; the reasoned bars are evaluated in review. See
+[Pre-emission gate](/docs/governance/pre-emission-gate-registry).
+
+## Propagation manifest
+`src/apothem/lib/propagation-manifest.yaml` — declares, per
+template-propagation adapter, which cohorts it installs and any
+harness-native-format conversions (for example converting commands
+into a harness's TOML form).
+
+## Release-readiness gates
+The three convergence gates: local conformity, continuous-integration, and the
+audit review sequence. A release proceeds only after the relevant gates pass.
+
+## Self-contained runtime
+Apothem vendors its runtime Python dependencies (such as `pyyaml` and
+`jsonschema`) under `src/apothem/_vendor/`, so the engine runs from a plain
+checkout. Only `click` and `rich` resolve at install time. See
+[Self-contained runtime](/docs/architecture/self-contained-runtime).
+
+## Seriousness tier
+One of four governance levels (EXPLORING, PERSONAL_USE, SHARED, PUBLIC_LAUNCH)
+that determines which quality controls apply. See
+[Seriousness tiers](/docs/concepts/seriousness-tiers).
+
+## Shared profile
+A schema-validated YAML file at `~/.config/apothem/profile.yaml` or
+`--profile PATH`. Harness adapters combine it with the packaged Apothem cohorts
+and derive native config for each supported harness.
+
+## STANDARD-CONVENTION-PIN
+The per-adapter `STANDARD-CONVENTION-PIN.md` recording the vendor documentation
+URL, commit SHA, snapshot date, and canonical filename and schema the adapter's
+conventions are pinned to. Re-verified on a cadence so an adapter never drifts
+silently from the vendor surface it targets.
+
+## Support subtree
+An Apothem-owned directory a harness install uses for cohorts the harness has
+no native primitive for (rules, hooks, skills, or agents). It is referenced
+from the harness's native instruction anchor rather than forced into a
+vendor-reserved directory.

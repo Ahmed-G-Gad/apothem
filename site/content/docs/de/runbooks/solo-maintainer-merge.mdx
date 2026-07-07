@@ -1,0 +1,82 @@
+---
+title: "PR-Merge-Zeremonie für Einzelbetreuer"
+description: "Zeremonie zum Selbst-Merge von Pull Requests, wenn Branch-Protection- und enforce_admins-Regeln einen Einzelbetreuer sonst blockieren würden."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Kanonische Referenz für das Selbst-Mergen von PRs unter dem Branch-Protection-Invariant des Projekts.** Wenn der Betreuer der einzige Mitwirkende mit Schreibzugriff ist, erzeugen GitHubs Branch-Protection-Regeln `enforce_admins=true` + `required_approving_review_count=1` eine Selbst-Merge-Sperre, deren Auflösung diese Seite dokumentiert.
+
+---
+
+## 1. Die Sperre
+
+Der `main`-Branch des Repositorys trägt diesen Schutzsatz:
+
+- `required_pull_request_reviews.required_approving_review_count: 1`
+- `enforce_admins: true`
+
+Diese Regeln sind für Szenarien mit mehreren Betreuern korrekt (jede Änderung erreicht `main` über einen von Kollegen geprüften PR; Administratoren sind nicht ausgenommen). Für Einzelbetreuer erzeugen sie eine Sperre: GitHubs Richtlinie verbietet die Selbstfreigabe eines PR, den du selbst erstellt hast, und `enforce_admins=true` blockiert die `gh pr merge --admin`-Überschreibung der Review-Freigabeanforderung.
+
+Es gibt drei Auflösungspfade:
+
+| Pfad | Wann zu verwenden |
+|------|-------------|
+| **Temporäre Umschalt-Zeremonie (kanonisch für dieses Repository)** | Standard für Selbst-Merges von Einzelbetreuern; bewahrt das Schutz-Invariant außerhalb des Merge-Fensters |
+| Eine CI-Bot-Identität mit Schreibzugriff bereitstellen | Nur übernehmen, wenn das Onboarding mehrerer Betreuer unmittelbar bevorsteht; eine Bot-Freigabe untergräbt die Absicht der menschlichen Überprüfung des Schutzes |
+| `required_approving_review_count: 0` dauerhaft setzen | Nur übernehmen, wenn das Repository auf unbestimmte Zeit unter Einzelbetreuung bleibt; kehrt die Review-Absicht des Schutzes um |
+
+Dieses Repository ratifiziert die **temporäre Umschalt-Zeremonie** als den kanonischen Pfad. Die anderen beiden sind dokumentierte Notausgänge, nicht die Standardoption.
+
+## 2. Die temporäre Umschalt-Zeremonie
+
+Das Invariant der Zeremonie: Der Schutzzustand zu Beginn der Zeremonie ist gleich dem Schutzzustand am Ende. Die Lockerung existiert nur innerhalb des Merge-Fensters.
+
+Manuelle Form:
+
+```bash
+# 1. Open the PR, push branch, wait for CI green.
+gh pr create --base main --head <feature-branch> --title "..." --body "..."
+gh pr checks <pr-number>            # poll until all green
+
+# 2. Relax approver-count to 0.
+gh api repos/<owner>/<repo>/branches/main/protection/required_pull_request_reviews \
+    -X PATCH -F required_approving_review_count=0
+
+# 3. Squash-merge with admin override (admin override now succeeds because the
+#    review-approval requirement is the only block enforce_admins refuses).
+gh pr merge <pr-number> --squash --delete-branch --admin
+
+# 4. Restore approver-count to 1.
+gh api repos/<owner>/<repo>/branches/main/protection/required_pull_request_reviews \
+    -X PATCH -F required_approving_review_count=1
+```
+
+Gekapselte Form: Siehe [`scripts/dev/admin_merge.py`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/dev/admin_merge.py) für den atomaren Python-Wrapper, der die Schritte 2 → 3 → 4 in einer einzigen nicht-interaktiven Sequenz ausführt — mit `try` / `finally`-Rollback-Sicherheit bei einem Fehlschlag von Schritt 3.
+
+```bash
+python scripts/dev/admin_merge.py <pr-number>
+```
+
+## 3. Invarianten
+
+- **Umschaltfenster minimiert.** Die Schritte 2 → 3 → 4 werden in einer einzigen nicht-interaktiven Sequenz ausgeführt. Der Schutz befindet sich nur für die Dauer des Merge-API-Aufrufs im gelockerten Zustand — bei jedem beobachteten Lauf unter einer Sekunde.
+- **Die Wiederherstellung ist bedingungslos.** Schritt 4 läuft auch dann, wenn Schritt 3 fehlschlägt (die `try` / `finally`-Klausel des Wrappers stellt die Wiederherstellung auf jedem Ausstiegspfad sicher). Ein fehlgeschlagener Merge-Versuch lässt den Schutz nicht gelockert zurück.
+- **Die CI-Kontrolle bleibt durchgehend erhalten.** `required_status_checks` ist vom Umschalten nicht betroffen; der Merge erfordert weiterhin, dass die konfigurierten Statusprüfungs-Kontexte grün sind.
+- **Audit-Spur sichtbar.** Die `gh pr merge --admin`-Anmerkung erscheint in den Merge-Metadaten des PR; die Umschaltungen der Schutz-API erscheinen im Audit-Log des Repositorys unter der Identität des Betreuers.
+
+## 4. Wann die Zeremonie NICHT zu verwenden ist
+
+Die Zeremonie dient dem **Selbst-Merge** der eigenen PRs des Betreuers. Wenn ein Peer-Reviewer verfügbar ist (ein Mitwirkender mit Schreibzugriff), ist der Standardpfad `gh pr review --approve` + `gh pr merge --squash --delete-branch` korrekt und die Zeremonie überflüssig.
+
+Wenn das Repository einen zweiten Betreuer aufnimmt, ziehe die Zeremonie zurück: Der Standard-PR-Review-Ablauf stellt die Absicht der menschlichen Überprüfung des Schutzes ohne jegliches Umschalten wieder her.
+
+## 5. Einen vergangenen Lauf prüfen
+
+Jede Zeremonie-Aufrufung hinterlässt Spuren auf drei dauerhaften Oberflächen, die ein Operator im Nachhinein inspizieren kann:
+
+- **Die Merge-Metadaten des PR.** `gh pr view <pr-number> --json mergedBy,mergedAt,mergeCommit` gibt den Merge-Akteur, den Merge-Zeitstempel und den SHA des Squash-Commits zurück. Der `mergedBy`-Akteur stimmt mit der Betreuer-Identität überein, die Schritt 3 ausgeführt hat.
+- **Das Audit-Log des Repositorys.** `gh api /repos/<owner>/<repo>/actions/runs --jq '.workflow_runs[] | select(.event=="push")'` korreliert den CI-Lauf nach dem Merge mit dem Merge-Commit; das Audit-Log der Schutzregeln des Repositorys (`gh api /repos/<owner>/<repo>/branches/main/protection`-Verlauf über die Settings → Branches-Oberfläche) zeigt die Umschaltungen von Schritt 2 und Schritt 4, die das Merge-Fenster einrahmen.
+- **Die Git-Historie des Betreuers.** `git log main --merges --first-parent` listet jeden Squash-Merge-Commit auf `main` mit der entsprechenden PR-Nummer im Commit-Betreff auf (Suffix `(#<pr-number>)` gemäß der Voreinstellung von `gh pr merge --squash`) und lässt den Operator jede vergangene Landung bis zu ihrem PR und ihrer Zeremonie-Aufrufung zurückverfolgen.
+
+Wenn `scripts/dev/admin_merge.py` der Einstiegspunkt ist, benennt sein nicht-interaktives Log (stdout) die drei Schutz-API-Aufrufe und den Merge-API-Aufruf in Reihenfolge; das Wrapper-Log per Pipe an `tee` weiterzuleiten erfasst ein Audit-Fragment pro Lauf, ohne von der Log-Aufbewahrung auf GitHub-Seite abzuhängen.

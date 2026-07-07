@@ -1,0 +1,90 @@
+---
+title: "术语表"
+description: "Apothem 术语表——关键术语与概念。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem 文档、代码与治理中使用的关键术语，按字母顺序排列。
+
+## 适配器
+一个实现 `HarnessAdapter` 协议的类，将共享配置档案转换为特定工具的配置格式。适配器在 `src/apothem/harnesses/<name>/` 下每个子包一个。参见[工具适配器抽象](/docs/architecture/harness-adapter-abstraction)。
+
+## 审计评审序列
+覆盖代码、代码评审、安全、性能、架构、用户体验、无障碍、文档、依赖、供应链和威胁模型的十一条命令审计扫查。由 `/fortress` 加固流水线驱动。参见[审计评审序列](/docs/concepts/review-fortress)。
+
+## 行为差异黄金基准
+`tests/fixtures/behavior-diff/` 中一份已提交的快照，确定性的安装与 CLI 预言机会与其逐字节比对，因此对安装计划、渲染集合或 CLI 输出的意外改动会被作为漂移捕获，而不是无声地发布出去。该比对会将平台相关的字节规范化，从而使语料在各操作系统间保持可移植。
+
+## 集合
+一组同一种类的已同步工件——规则、命令、技能、委托、钩子、输出样式、模式或模板——引擎会从单一共享配置档案将它们物化到每个工具中。一份配置档案承载全部集合；每个适配器将它们投射到其工具的原生表面。
+
+## 合规闸门
+十五道预发布闸门中的机械部分——位于 `src/apothem/conformity/gate.py` 的可由机器检查的校验器。在每次工件发布之前运行；需要推理判断的关卡则在评审中评估。
+
+## 入口点
+`pyproject.toml` 中声明的 `apothem.harnesses` setuptools 入口点组。它与工具注册表完全镜像；一项测试断言所声明的入口点等于已注册的适配器，因此一个约定正确但未注册的适配器会作为覆盖回归浮现出来。
+
+## 工具
+Apothem 通过专用适配器支持的助手平台。受支持的平台：
+
+```text
+Antigravity
+Claude Code
+CodeBuddy
+Codex
+Cursor
+Gemini CLI
+GitHub Copilot
+GLM (Z.ai)
+Hermes
+Kimi Code
+Kiro
+Open-Claw
+OpenCode
+Qwen Code
+Trae
+Windsurf
+Zed
+```
+
+参见[工具](/docs/harnesses)。
+
+## 工具注册表
+位于 `src/apothem/lib/harness_registry.py` 的目录（数据在 `harness_registry_data.py` 中），列出每个适配器，并在**运行时具有权威性**——引擎从中解析每个适配器，因此它可从普通检出加载。`src/apothem/harnesses/` 下基于文件系统约定的发现是一项一致性对等检查，而非运行时解析器。
+
+## 钩子
+注册在工具生命周期事件（PreToolUse、PostToolUse、SessionStart、Stop）上的命令。原生注册表面因工具而异——一个设置文件、一份专用钩子清单，或者当工具不暴露原生钩子表面时，从指令锚点引用的 Apothem 支持材料。钩子脚本及其消息上下文位于 `src/apothem/hooks/` 下。
+
+## 物化器
+适配器可选的 `materialize_native_config(profile) -> str`，从共享配置档案渲染出单文件原生配置，用于配置为一个结构化表面（例如一个 JSON 或 YAML 设置文件）的工具。模板传播适配器省略物化器，转而按传播清单复制或转换集合。
+
+## 输出样式
+`output-styles/` 下一份 Markdown 定义，用于塑造助手的响应格式与语气（例如简洁工程师风格或取证审计员风格）。这是适配器安装的已同步集合之一。
+
+## 计划套件
+由 `/plan-generate` 生成、并由 `/plan-execute` 执行的结构化规划工件集合（PREAMBLE.md、MASTER-PLAN.md、PROGRESS.md、PLAN-NOTES.md、每阶段的 PHASE.md 文件），位于项目本地的 `.apothem/plans/` 目录下（旧有的 `.plans/` 树通过 `apothem migrate-workspace` 升级）。
+
+## 预发布闸门
+在工件被发布或阶段输出被视为完成之前记录的十五道签发关卡块。机械关卡作为合规闸门运行；需要推理判断的关卡在评审中评估。参见[预发布闸门](/docs/governance/pre-emission-gate-registry)。
+
+## 传播清单
+`src/apothem/lib/propagation-manifest.yaml`——按模板传播适配器声明它安装哪些集合，以及任何工具原生格式转换（例如将命令转换为某个工具的 TOML 形式）。
+
+## 发布就绪闸门
+三道收敛闸门：本地合规、持续集成和审计评审序列。只有在相关闸门通过之后，发布才会继续。
+
+## 自包含运行时
+Apothem 将其运行时 Python 依赖（例如 `pyyaml` 和 `jsonschema`）vendored 到 `src/apothem/_vendor/` 下，因此引擎可从普通检出运行。只有 `click` 和 `rich` 在安装时解析。参见[自包含运行时](/docs/architecture/self-contained-runtime)。
+
+## 严肃度层级
+四种治理级别之一（EXPLORING、PERSONAL_USE、SHARED、PUBLIC_LAUNCH），决定哪些质量控制适用。参见[严肃度层级](/docs/concepts/seriousness-tiers)。
+
+## 共享配置档案
+位于 `~/.config/apothem/profile.yaml` 或 `--profile PATH` 的经模式校验的 YAML 文件。工具适配器将其与打包的 Apothem 集合相结合，为每个受支持的工具派生原生配置。
+
+## STANDARD-CONVENTION-PIN
+每个适配器的 `STANDARD-CONVENTION-PIN.md`，记录厂商文档 URL、commit SHA、快照日期，以及该适配器约定所锁定到的规范文件名与模式。按一定周期重新核验，因此适配器绝不会无声地偏离它所面向的厂商表面。
+
+## 支持子树
+一个 Apothem 自有的目录，工具安装会将其用于该工具没有原生原语可承载的集合（规则、钩子、技能或委托）。它从工具的原生指令锚点被引用，而不是被强行塞进厂商保留目录。

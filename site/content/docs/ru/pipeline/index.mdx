@@ -1,0 +1,138 @@
+---
+title: "Команды конвейера"
+description: "Справочник команд конвейера Apothem — поток /plan и каталог команд аудита."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem поставляется с осознающим архитектуру конвейером `/plan`,
+тринадцатистадийным конвейером `/research` и последовательностью аудита из
+одиннадцати команд — давая каждому проекту структурированный путь от сырой
+прозы к коду продакшен-уровня, проверенному по множеству осей, и от сырой идеи
+к распространённой статье, прошедшей рецензирование коллегами.
+
+## Обзор конвейера
+
+```mermaid
+flowchart LR
+    accTitle: Plan pipeline command flow
+    accDescr: Left-to-right flowchart of the apothem plan pipeline from the spec stage through the generate and review stages, then through a conditional architecture-bearing decision that either runs the design stage or skips directly to the execute stage. The orthogonal audit stage wraps the spec-through-review span as a closed remediation loop.
+    A[/plan-spec] --> B[/plan-generate]
+    B --> C[/plan-review]
+    AUD[/plan-audit<br/>orthogonal: wraps spec → review] -.->|closed-loop remediation| A
+    C --> Q{Architecture-bearing suite?}
+    Q -->|yes| F[/plan-design<br/>emit _inputs/design.md]
+    Q -->|no| D[/plan-execute]
+    F --> D
+    D --> E[/plan-status]
+    D --> G[Audit review sequence]
+    G --> H[Completion milestone]
+```
+
+## Стадии планирования
+
+Конвейер поставляется как восемь первоклассных слэш-команд, по одной на стадию —
+каждая независимо вызываемая как `/plan-<stage>`.
+
+| Стадия | Роль | Позиция |
+|-------|------|----------|
+| [/plan-spec](/docs/pipeline/plan-spec) | Кузница — от прозы к спецификации | Головная |
+| [/plan-generate](/docs/pipeline/plan-generate) | Генератор — от спецификации к набору планов | Промежуточная |
+| [/plan-review](/docs/pipeline/plan-review) | Аудитор — криминалистический аудит плана | Промежуточная |
+| [/plan-design](/docs/pipeline/plan-design) | Архитектор — `_inputs/design.md` для наборов с архитектурой | Условный шлюз |
+| [/plan-execute](/docs/pipeline/plan-execute) | Исполнитель — выполнение фаз | Конечная |
+| [/plan-status](/docs/pipeline/plan-status) | Докладчик — статус только для чтения | Только для чтения |
+| [/plan-audit](/docs/pipeline/plan-audit) | Страж — обёртка с замкнутым циклом для spec → generate → review | Ортогональная (до выполнения) |
+| /plan-amend | Распорядитель — повторно входимая правка существующего комплекта | Повторно входимая |
+
+`/plan-audit` ортогонален линейному потоку, а не стадия внутри него. Он
+оборачивает `/plan-spec → /plan-generate → /plan-review` в единый замкнутый
+цикл, выполняет только недостающие вышестоящие стадии, активно устраняет
+выявленные проблемы и оставляет набор готовым для `/plan-execute`. Он отличается
+от последовательности аудита ниже, которая аудирует выполненную кодовую базу, а
+не набор планов.
+
+`/plan-design` — не универсальная церемония. `/plan-review` классифицирует,
+изменяет ли набор поверхности, несущие архитектуру. Если да, `/plan-design`
+выдаёт трассу проектирования, которую потребляют `/plan-execute` и
+`/architecture-review`. Если нет, проверенный набор переходит непосредственно к
+выполнению.
+
+## Исследовательский конвейер
+
+Исследовательский конвейер поставляется как тринадцать первоклассных
+слэш-команд, по одной на стадию — каждая независимо вызываемая как
+`/research-<stage>`, сцепленных Шлюзом последовательности и Манифестом передачи,
+под десятью мандатами строгости (авторитетные источники, воспроизводимость,
+фальсифицируемость, целостность цитирования, предрегистрация, этика / конфликты,
+статистическая строгость, открытая наука / FAIR, соответствие руководствам по
+отчётности, теоретическая обоснованность / влияние).
+
+```mermaid
+flowchart LR
+    accTitle: Research pipeline command flow
+    accDescr: Left-to-right flowchart of the apothem research pipeline from the ideate stage through spec, theory, sources, synthesis, proposal, study design, experiment, analysis, paper, and peer review to publish and disseminate, with a revision loop from review back to paper.
+    RI[/research-ideate] --> RS[/research-spec]
+    RS --> RT[/research-theory]
+    RT --> RSO[/research-sources]
+    RSO --> RSY[/research-synthesis]
+    RSY --> RPR[/research-proposal]
+    RPR --> RD[/research-design]
+    RD --> RE[/research-experiment]
+    RE --> RA[/research-analysis]
+    RA --> RP[/research-paper]
+    RP --> RR[/research-review]
+    RR --> RPU[/research-publish]
+    RPU --> RDI[/research-disseminate]
+    RR -.->|revision loop| RP
+```
+
+| Стадия | Роль | Позиция |
+|-------|------|----------|
+| [/research-ideate](/docs/pipeline/research-ideate) | Сформулировать задачу — кандидатные вопросы из доменного зерна | Головная |
+| [/research-spec](/docs/pipeline/research-spec) | Обрамить вопрос — фальсифицируемые гипотезы + охват | Промежуточная |
+| [/research-theory](/docs/pipeline/research-theory) | Концептуальная рамка + теория изменений | Промежуточная |
+| [/research-sources](/docs/pipeline/research-sources) | Систематический сбор источников | Промежуточная |
+| [/research-synthesis](/docs/pipeline/research-synthesis) | Карта SOTA + анализ пробелов | Промежуточная |
+| [/research-proposal](/docs/pipeline/research-proposal) | Цели + осуществимость + влияние + план предрегистрации | Промежуточная |
+| [/research-design](/docs/pipeline/research-design) | Проектирование исследования + предрегистрация | Промежуточная |
+| [/research-experiment](/docs/pipeline/research-experiment) | Выполнить + записать, воспроизводимо | Промежуточная |
+| [/research-analysis](/docs/pipeline/research-analysis) | Результаты + статистика | Промежуточная |
+| [/research-paper](/docs/pipeline/research-paper) | Черновик статьи высшего уровня | Промежуточная |
+| [/research-review](/docs/pipeline/research-review) | Критика уровня рецензирования коллегами | Промежуточная |
+| [/research-publish](/docs/pipeline/research-publish) | Пакет для площадки + подача | Промежуточная |
+| [/research-disseminate](/docs/pipeline/research-disseminate) | Распространение + влияние + FAIR-архивация | Конечная |
+
+Обёрнутый оркестратор рабочего процесса `/research` ведёт эти стадии от сырого
+вопроса до опубликованной статьи (сам он не является стадией), независимо
+проверяя вывод каждой стадии прежде, чем следующая стадия будет на нём
+строиться; `--quick` выполняет только `/research-sources` +
+`/research-synthesis` для одноразового отчёта с цитированием.
+
+Эмпирические этапы (источники, проектирование, эксперимент, анализ) и этапы
+написания (статья, рецензирование, публикация, распространение) дополнительно
+опираются на операционализирующие строгость поверхности — честное
+многометодное сравнение, происхождение компараторов, каркас программы
+эксперимента, план использования вычислений, подключаемый автономный цикл
+эксперимента, шлюз продвижения по определению готовности и слепое
+рецензирование с поэтапным раскрытием, — которые добавляют операционную детализацию к десяти мандатам, не расширяя их.
+
+## Последовательность аудита
+
+Обёрнутый оркестратор рабочего процесса `/audit` проходит по всем одиннадцати измерениям ниже как единый параллельный проход — аудит-крепостной аналог `/plan` и `/research` — синтезируя единый дедуплицированный, отсортированный по серьёзности отчёт о находках (только отчёт; устранение маршрутизируется в `/elevate`). Каждое измерение также вызываемо по отдельности.
+
+Обёрнутый оркестратор рабочего процесса `/fortress` замыкает цикл, о котором отчитывается `/audit`: он обнаруживает через `/audit`, проверяет каждую находку, устраняет каждого выжившего на его владеющей поверхности, повторно аудирует в ограниченном цикле и пропускает результат через шлюз `/release-readiness` — аналог укрепления для продакшена `/plan` и `/research`.
+
+| Команда | Область качества |
+|---------|--------------|
+| [/code-review](/docs/pipeline/code-review) | Качество кода |
+| [/code-audit](/docs/pipeline/code-audit) | Корпус кода |
+| [/security-audit](/docs/pipeline/security-audit) | OWASP / ASVS |
+| [/perf-audit](/docs/pipeline/perf-audit) | Производительность |
+| [/architecture-review](/docs/pipeline/architecture-review) | Архитектура |
+| [/ux-review](/docs/pipeline/ux-review) | Опыт разработчика |
+| [/a11y-audit](/docs/pipeline/a11y-audit) | Доступность |
+| [/docs-review](/docs/pipeline/docs-review) | Документация |
+| [/dependency-audit](/docs/pipeline/dependency-audit) | Зависимости |
+| [/supply-chain-audit](/docs/pipeline/supply-chain-audit) | Цепочка поставок |
+| [/threat-model-audit](/docs/pipeline/threat-model-audit) | Модель угроз |

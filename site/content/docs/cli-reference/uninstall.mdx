@@ -1,0 +1,82 @@
+---
+title: "uninstall"
+description: "CLI reference for the apothem uninstall command."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Remove a harness adapter configuration.
+
+## Synopsis
+
+```
+apothem uninstall --harness NAME|all [--yes] [--project PATH]
+                   [--quiet|-q] [--verbose|-v]
+                   [--format plain|json] [--json] [--no-color]
+```
+
+Removes adapter-managed harness targets. Prompts for confirmation unless
+`--yes` is supplied. When no prompt is possible — `--format json` (prompt
+text would corrupt the single JSON document) or a non-interactive shell (no
+TTY) — the command refuses up front with a structured
+`uninstall.confirmation_required` error (exit 1) unless `--yes` is supplied.
+If a selected harness is not installed, the command succeeds (exit 0) with a
+"nothing to remove" notice.
+
+A `--harness all` removal is deliberately exhaustive: it covers every
+registered harness, including any the profile's `exclude_harnesses` skips
+during install — cleanup reaches state a previously broader install may have
+left behind. Harnesses that were never installed report "nothing to remove".
+
+The continuous-form alias `apothem uninstalling` resolves to the same handler.
+
+## Options
+
+| Option | Description |
+|---|---|
+| `--harness NAME` | Harness adapter to remove, or `all` for the registry-wide set (required). |
+| `--yes` | Skip confirmation prompt. |
+| `--project PATH` | Project root for project-scope harnesses. |
+| `--quiet`, `-q` | Suppress informational output; only errors are emitted. |
+| `--verbose`, `-v` | Emit additional diagnostic output. |
+| `--format plain\|json` | Output format (default: `plain`). |
+| `--json` | Shorthand for `--format json`. |
+| `--no-color` | Disable ANSI color codes in output. |
+| `-h`, `--help` | Show help and exit. |
+
+## JSON output
+
+When the adapter is installed and successfully removed:
+
+```json
+{"action": "uninstalled", "harness": "claude-code", "output_path": "..."}
+```
+
+When the adapter was not installed:
+
+```json
+{"status": "not_installed", "harness": "claude-code"}
+```
+
+## Examples
+
+```bash
+apothem uninstall --harness claude-code
+apothem uninstall --harness claude-code --yes
+apothem uninstall --harness cursor --project . --yes
+apothem uninstall --harness all --project . --yes
+apothem Uninstalling --harness cursor --project . --yes   # continuous-form alias
+```
+
+## Exit codes
+
+| Code | Meaning |
+|---|---|
+| 0 | Adapter uninstalled, or was not installed |
+| 1 | Harness not found, confirmation declined or unavailable (non-interactive or JSON mode without `--yes`), or every removal failed |
+| 2 | Partial removal — at least one harness was removed before a failure |
+
+## See also
+
+- `apothem uninstalling` — continuous-form alias for this command (documented here; the CLI accepts both forms)
+- [apothem install](/docs/cli-reference/install) — install a harness configuration
+- [apothem verify](/docs/cli-reference/verify) — confirm installation status

@@ -1,0 +1,17 @@
+{
+  "changed": true,
+  "counts": {
+    "created": 1,
+    "error": 0,
+    "skipped": 0,
+    "unchanged": 3,
+    "updated": 0,
+    "warning": 13
+  },
+  "dry_run": false,
+  "files_written": [
+    "<ROOT>/.apothem/providers/glm.toml"
+  ],
+  "harness": "glm",
+  "warnings": 13
+}

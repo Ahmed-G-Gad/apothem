@@ -1,0 +1,44 @@
+---
+title: "Apothem vs raw Open-Claw config"
+description: "Hand-maintaining Open-Claw config versus managing it through Apothem's shared profile."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Open-Claw reads `~/.openclaw/openclaw.json`. Its `agents.defaults.skills` is a
+name allowlist (not a directory loader) and MCP is a CLI surface, so Apothem
+authors no config keys; it installs shared command and skill cohorts under
+`~/.openclaw/.apothem/support/skills/` as support material.
+
+## Status
+
+**Preview.** The Open-Claw adapter targets the current documented config file
+and extra skill-directory surface. Non-skill cohorts remain Apothem support
+material.
+
+## Effort comparison
+
+| Task | Raw hand-config | Apothem-managed |
+| ---- | --------------- | --------------- |
+| Author reusable skills | Hand-edit config and skill directories | Write once in the shared corpus |
+| Keep cohorts aligned with other harnesses | Manual, per tool | Automatic on `apothem update` |
+| Install / remove the config | Manual | `apothem install` / `apothem uninstall` |
+| Verify the config is correct | Manual inspection | `apothem verify --harness open-claw` |
+
+## What Apothem manages
+
+The Open-Claw adapter writes `openclaw.json`, wraps Apothem slash commands as
+skills, copies Apothem skills into the referenced support directory, and keeps
+rules, templates, agents, and hook material under the Apothem support subtree.
+
+## Migration path
+
+1. Run `apothem profile init` to create the shared profile if you have not yet.
+2. Move reusable Open-Claw skills or command prompts into the shared corpus.
+3. Run `apothem install --harness open-claw` to render the native config and
+   support skill directory.
+4. Run `apothem verify --harness open-claw` to confirm the config landed.
+
+## Read next
+
+- [Open-Claw adapter reference](/docs/harnesses/open-claw)
+- [Comparison overview](/docs/comparison)

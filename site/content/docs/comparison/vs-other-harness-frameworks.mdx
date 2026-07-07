@@ -1,0 +1,61 @@
+---
+title: "Apothem vs other harness frameworks"
+description: "How Apothem compares to single-harness config tools, dotfile managers, and manual per-tool configuration as approaches to managing harness setups."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+This page frames Apothem against the categories of tooling operators already
+use to manage harness configuration. It names capability
+categories, not specific products — the comparison is structural and applies
+regardless of which tool in each category you reach for.
+
+## The categories
+
+Operators managing harness config across multiple tools fall into one of
+four approaches:
+
+1. **Manual per-tool configuration.** You edit each harness's native config
+   file by hand — one file per tool, no shared source.
+2. **Single-harness configuration tools.** A tool dedicated to one assistant
+   platform that manages that platform's config well but does not reach the
+   other tools you use.
+3. **General-purpose dotfile managers.** A tool that version-controls and
+   syncs config files across machines but treats each file as opaque text.
+4. **Multi-harness configuration managers.** A tool that holds one shared
+   profile and renders each harness's native format from it. Apothem is in
+   this category.
+
+## Capability comparison
+
+| Capability | Manual per-tool | Single-harness tool | Dotfile manager | Apothem |
+| ---------- | --------------- | ------------------- | --------------- | ------- |
+| Covers many harnesses | Yes (by effort) | No (one harness) | Yes (file-level) | Yes (seventeen adapters) |
+| Single shared source of truth | No | No | No | Yes |
+| Renders native formats per harness | Manual | Yes (one harness) | No | Yes |
+| Cross-harness drift prevention | Manual | N/A | File sync only | Yes |
+| Format translation (`.mdc`, `.toml`, embedded `.md`) | Manual | Per its harness | No | Yes |
+| Verification command | None | Varies | None | Yes |
+| Adding a new harness | More manual work | Not possible | Track more files | Install one adapter |
+
+## Where each approach fits
+
+**Manual per-tool configuration** fits a single tool with config you rarely
+change. The cost grows with every tool you add and every rule you keep aligned
+across them.
+
+**Single-harness tools** fit operators committed to one platform. They do not
+solve the multi-tool problem — the moment you add a second assistant, you are
+back to keeping two configs aligned.
+
+**Dotfile managers** fit cross-machine sync of arbitrary files. They move bytes
+between machines but do not understand harness formats, so they cannot render
+one profile into seventeen native shapes or verify any of them.
+
+**Apothem** fits operators running multiple harnesses who want one source
+of truth. You write the profile once; Apothem renders, installs, updates, and
+verifies each harness's native config.
+
+## Read next
+
+- [Comparison overview and feature matrix](/docs/comparison)
+- [Harness adapters](/docs/harnesses)

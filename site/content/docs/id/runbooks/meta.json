@@ -1,0 +1,15 @@
+{
+  "title": "Runbook",
+  "pages": [
+    "index",
+    "release-cycle",
+    "deployment-checklist",
+    "release-recovery",
+    "pages-enablement",
+    "publisher-account-setup",
+    "new-harness-adapter-authoring",
+    "cross-machine-sync-checklist",
+    "solo-maintainer-merge",
+    "..."
+  ]
+}

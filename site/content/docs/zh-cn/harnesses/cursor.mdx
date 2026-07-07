@@ -1,0 +1,82 @@
+---
+title: "Cursor"
+description: "适用于 Cursor（正式版）的 Apothem 工具适配器。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**厂商：** Anysphere
+**安装名称：** `cursor`
+**状态：** 正式版
+**平台原生配置：** 项目根目录下的 `.cursor/rules/`
+
+## 安装
+
+```bash
+apothem install --harness cursor --project /path/to/project
+```
+
+该适配器根据共享的 Apothem 规则和治理面，渲染出单个项目范围的 `.mdc` 规则文件。
+
+**写入的文件：** `<project>/.cursor/rules/apothem-rules.mdc`
+
+## 配置档案到平台原生配置的映射
+
+在每次 `apothem install` 或 `apothem update` 时，适配器都会读取 Apothem
+的共享配置档案，并渲染项目规则文件。共享配置档案是唯一可信来源；在下次同步用
+Apothem 管理的内容替换之前，会先备份对所生成文件的项目本地修改。
+
+## 兼容性说明
+
+Cursor 0.45+ 通过 `.cursor/rules/` 支持项目级指令。该适配器默认写入项目范围的
+`.cursor/rules/` 目录；Cursor 没有可供此适配器管理的、有文档记录的基于文件的
+用户全局规则路径。
+
+## 验证
+
+```bash
+apothem verify --harness cursor --project /path/to/project
+```
+
+verify 命令确认：
+
+1. 平台原生配置存在于预期路径。
+2. 共享配置档案中的所有必填字段均已存在。
+3. 适配器专属的验证例程报告成功。
+
+## 更新
+
+```bash
+apothem update --harness cursor --project /path/to/project
+```
+
+从当前的共享配置档案状态重新派生项目规则文件。
+
+## 卸载
+
+```bash
+apothem uninstall --harness cursor --project /path/to/project
+```
+
+移除适配器写入的平台原生配置文件。
+共享配置档案 YAML 和 Apothem 引擎不受影响。
+
+## 合规门
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## 故障排查
+
+| 症状 | 修复方法 |
+|---------|-----|
+| 找不到配置文件 | 重新运行 `apothem install --harness cursor --project /path/to/project` |
+| 验证失败 | 运行 `apothem update --harness cursor --project /path/to/project`，然后再次验证 |
+| 意外的配置内容 | 检查 `~/.config/apothem/profile.yaml` 或 `--profile PATH`，然后重新运行 `apothem update --harness cursor --project /path/to/project` |
+
+## 配置开关
+
+| 标志 | 默认值 | 说明 |
+|------|---------|-------------|
+| `--dry-run` | `false` | 预览安装而不写入文件。 |

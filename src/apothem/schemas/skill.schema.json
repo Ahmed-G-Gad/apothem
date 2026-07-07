@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://apothem.ahmedgad.com/schemas/skill.schema.json",
+  "title": "Skill",
+  "description": "Frontmatter schema for skill definitions under src/apothem/skills/<name>/SKILL.md. Reconciled to the live skill corpus: every shipped SKILL.md carries name, description, version, updated, archetype, userInvocable, disable-model-invocation, and allowed-tools; argument-hint is optional. The agnostic posture forbids a model/effort/permission preset, so effort/model/permissionMode are not admitted keys.",
+  "type": "object",
+  "required": [
+    "allowed-tools",
+    "archetype",
+    "description",
+    "disable-model-invocation",
+    "name",
+    "updated",
+    "userInvocable",
+    "version"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Human-readable kebab-case name (matches the skill folder).",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "description": {
+      "type": "string",
+      "description": "Trigger-rich, capability-led description that surfaces detection signals so the harness routes matching requests to the skill. The shipped corpus uses dense trigger phrasing up to ~1.6k chars; the 2048 ceiling bounds the field while admitting the live convention.",
+      "maxLength": 2048
+    },
+    "version": {
+      "type": "string",
+      "description": "SemVer version of the skill definition.",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "updated": {
+      "type": "string",
+      "description": "ISO 8601 date of the skill's last revision.",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "archetype": {
+      "type": "string",
+      "description": "Shape class of the skill, named as a kebab-case '<class>-template' identifier (e.g. audit-template, authoring-template, workflow-template).",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*-template$"
+    },
+    "userInvocable": {
+      "type": "boolean",
+      "description": "Whether the operator can invoke the skill directly through the Skill tool."
+    },
+    "disable-model-invocation": {
+      "type": "boolean",
+      "description": "When true, the skill is reached only by explicit invocation, never auto-selected by the model from its description."
+    },
+    "allowed-tools": {
+      "type": "string",
+      "description": "Comma-separated list of tools the skill may invoke (e.g. \"Read, Write, Edit, Glob, Grep, Bash\"), or \"*\" for the full surface."
+    },
+    "argument-hint": {
+      "type": "string",
+      "description": "Optional usage hint shown to the operator describing the skill's accepted arguments and flags."
+    }
+  },
+  "examples": [
+    {
+      "name": "dependency-upgrade",
+      "description": "Changelog-reviewed, pinned, gate-verified dependency upgrade — matched when the operator asks to 'bump deps', 'upgrade dependencies', or 'refresh dependency versions'.",
+      "version": "0.1.0",
+      "updated": "2026-06-09",
+      "archetype": "maintenance-template",
+      "userInvocable": true,
+      "disable-model-invocation": true,
+      "allowed-tools": "Read, Write, Edit, Glob, Grep, Bash",
+      "argument-hint": "[--package NAME] [--dry-run]"
+    }
+  ]
+}

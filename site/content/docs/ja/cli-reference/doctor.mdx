@@ -1,0 +1,54 @@
+---
+title: "doctor"
+description: "apothem doctor コマンドの CLI リファレンス。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem インストールのシステム診断を実行します。
+
+## 概要
+
+```
+apothem doctor [--quiet|-q] [--verbose|-v]
+               [--format plain|json] [--json] [--no-color]
+```
+
+Apothem のインストールを確認し、登録済みの各環境アダプターの状態を報告します。
+共有プロファイルが存在する場合は、その存在を確認するだけでなく、同梱のスキーマに
+照らして検証されます。これにより、不正なプロファイルは緑色の「検出」ではなく診断
+失敗として表面化します。JSON 出力には `profile_valid` フィールド（`true` /
+`false`、プロファイルが存在しない場合は `null`）と、検証が失敗した場合の
+`profile_error` フィールドが含まれます。すべてのチェックに合格すると 0 で終了し、
+1 つ以上の環境が未インストールの場合、または存在するプロファイルがスキーマ検証に
+失敗した場合は 1 で終了します。
+
+## オプション
+
+| オプション | 説明 |
+|---|---|
+| `--quiet`, `-q` | 情報出力を抑制し、エラーのみを出力します。 |
+| `--verbose`, `-v` | 追加の診断出力を出します。 |
+| `--format plain\|json` | 出力形式（デフォルト：`plain`）。 |
+| `--json` | `--format json` の省略形。 |
+| `--no-color` | 出力中の ANSI カラーコードを無効化します。 |
+| `-h`, `--help` | ヘルプを表示して終了します。 |
+
+## 例
+
+```bash
+apothem doctor
+apothem doctor --json
+```
+
+## 終了コード
+
+| コード | 意味 |
+|---|---|
+| 0 | すべてのチェックに合格 |
+| 1 | 環境が未インストール、または存在するプロファイルがスキーマ検証に失敗 |
+
+## 関連項目
+
+- [apothem harnesses](/docs/cli-reference/harnesses) — 登録済みの環境を一覧表示・検査する
+- [apothem verify](/docs/cli-reference/verify) — 特定の環境のインストールを確認する

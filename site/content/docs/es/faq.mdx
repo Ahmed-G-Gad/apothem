@@ -1,0 +1,121 @@
+---
+title: "Preguntas frecuentes"
+description: "Preguntas habituales sobre el propósito de Apothem, los entornos compatibles, la opcionalidad de la suite de plan, la personalización de reglas, los tipos de artefactos y las ubicaciones del estado del ecosistema."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Preguntas habituales, en orden de frecuencia.
+
+## ¿Qué es `apothem`?
+
+Una configuración portátil y agnóstica respecto al host que convierte tu directorio
+personal en un marco de gobernanza, ideación y automatización
+para el desarrollo guiado por harness. Combina reglas de comportamiento, estándares
+creativos, comandos de barra, trabajadores delegados persistentes, hooks y habilidades
+en una única superficie coherente.
+
+## ¿Con qué CLI de harness funciona?
+
+Apothem es agnóstico respecto al entorno. Los adaptadores por entorno bajo
+`src/apothem/harnesses/<harness>/` proyectan el perfil compartido en
+el directorio de configuración nativo de cada herramienta; la lista canónica vive en
+[`site/content/docs/harnesses/`](/docs/harnesses) y actualmente cubre los siguientes entornos compatibles:
+
+```text
+Claude Code, GitHub Copilot, Cursor, Gemini CLI, Codex, Windsurf, OpenCode,
+Antigravity, Open-Claw, Hermes, Qwen Code, CodeBuddy, Kiro, Trae, y Zed
+```
+
+El adaptador de Claude Code se materializa en `~/.claude/`; su despachador de hooks es neutral respecto al host:
+resuelve la raíz del ecosistema primero a partir de `$CLAUDE_PROJECT_DIR`, luego
+`$LLM_PROJECT_DIR`, y por último recurre a `$HOME/.claude`.
+
+## ¿Necesito usar la canalización de la suite de plan?
+
+No. La canalización de la suite de plan es un componente del ecosistema.
+Las reglas de comportamiento, los estándares creativos, los hooks y la
+cadena de herramientas de validación son útiles de forma independiente.
+
+## ¿Cómo personalizo las reglas sin bifurcar el repositorio?
+
+Añade tu propio archivo de regla en `src/apothem/rules/<my-rule>.md`
+con el frontmatter canónico. El cargador de reglas recoge cada
+archivo que coincida con el patrón `src/apothem/rules/*.md`.
+
+## ¿Cómo desactivo una regla temporalmente?
+
+Cambia el nombre del archivo para que quede fuera del patrón
+`src/apothem/rules/*.md` o muévelo a un directorio hermano que el cargador no
+explore.
+
+## ¿Cuál es la diferencia entre reglas, habilidades y trabajadores delegados?
+
+- **Reglas** gobiernan el comportamiento: obligaciones siempre activas o
+  filtradas por ruta que el asistente sigue.
+- **Habilidades** son técnicas reutilizables y detectables: una señal de
+  detección, un procedimiento y un hook de aplicación.
+- **Trabajadores delegados** son roles persistentes con sus propias restricciones
+  de herramientas y prompts de sistema, despachados mediante el
+  protocolo de orquestación de trabajadores.
+
+## ¿Cómo informo de un problema de seguridad?
+
+Consulta `SECURITY.md`. Los canales admitidos son GitHub Security
+Advisories y `me@ahmedgad.com`.
+
+## ¿Cómo contribuyo?
+
+Consulta [Contribuir](/docs/developer-guide). En resumen: lee
+`CONTRIBUTING.md`, bifurca el repositorio, abre un PR con la
+plantilla de PR canónica rellenada y asegúrate de que las diez clases de
+comprobaciones de CI pasen.
+
+## ¿Dónde vive el estado del ecosistema?
+
+- El **estado de plan por suite** vive bajo `<project>/.apothem/plans/{suite}/`.
+- La **memoria por proyecto** vive bajo `projects/{hash}/memory/`.
+- La **memoria entre proyectos** vive bajo `memory/`.
+- El **scratch por sesión** vive bajo `<project>/.apothem/plans/{suite}/_inputs/`.
+
+## ¿Puedo retomar un trabajo de larga duración en una nueva sesión o en otra máquina?
+
+Sí. El trabajo de larga duración externaliza su estado completo a una suite
+`.apothem/plans/` local del proyecto — un contrato de reanudación más un protocolo de
+arranque en frío —, de modo que el trabajo no vive dentro de un único historial
+de chat. Como el estado está en los archivos de tu proyecto, una sesión nueva en
+cualquier cuenta o máquina apuntada al mismo proyecto retoma el trabajo donde
+quedó. Apothem no transfiere los archivos entre cuentas por sí mismo; viajan del
+mismo modo en que ya viajan los archivos de tu proyecto (control de versiones,
+un checkout compartido, un directorio sincronizado). Consulta
+[Planificación reanudable](/docs/concepts/resumable-planning).
+
+## ¿Apothem necesita pip?
+
+No, no para el motor en sí. El motor es un árbol de fuentes autocontenido con
+dependencias incorporadas: se ejecuta como `python -m apothem` desde cualquier
+checkout, la caché de npx o el árbol del plugin sobre Python del sistema 3.10+, y
+no instala nada de su propio código en `site-packages` (`click` y `rich` son los
+únicos prerrequisitos del intérprete). La única excepción opcional: si falta
+`click` o `rich`, el instalador ofrece ejecutar `pip install` solo para esos dos
+por ti — con tu confirmación, o `--yes` / `APOTHEM_AUTO_INSTALL_DEPS=1`. Los
+paquetes propios de Apothem nunca se instalan en `site-packages`.
+
+## ¿Cómo se ejecutan los hooks sin un paquete instalado?
+
+`apothem install` materializa el despachador de hooks y la puerta de conformidad
+bajo la raíz del entorno (para Claude Code: `~/.claude/.apothem/support/hooks/` y
+`~/.claude/.apothem/support/conformity/`), y las entradas de hook renderizadas invocan esos
+scripts por ruta absoluta. Ambos son scripts autónomos de la biblioteca estándar, de modo que los hooks
+funcionan en una máquina que nunca ha visto `pip install`.
+
+## ¿Cómo desinstalo por completo?
+
+Ejecuta `apothem uninstall --harness <name>` por cada entorno instalado, elimina
+el motor según tu canal de instalación y borra `~/.apothem/` (copias de seguridad) más
+`~/.config/apothem/` (tu perfil) si quieres no dejar residuos. La
+[guía de desinstalación](/docs/install/uninstalling) recorre cada canal.
+
+## ¿Bajo qué licencia está el ecosistema?
+
+MIT — consulta `LICENSE`.

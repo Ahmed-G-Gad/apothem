@@ -1,0 +1,90 @@
+---
+title: "Адаптеры окружений"
+description: "Адаптеры окружений Apothem — один общий профиль, семнадцать поддерживаемых целей."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem поставляется с семнадцатью встроенными адаптерами окружений. Каждый адаптер преобразует
+одни и те же общие когорты в нативные файлы платформы там, где платформа их поддерживает,
+и в принадлежащие Apothem вспомогательные деревья там, где она их не поддерживает.
+
+## Поддерживаемые окружения
+
+Реестр поддерживаемых содержит ровно семнадцать адаптеров. Используйте эти точные
+имена установки с `--harness` или используйте `all` для детерминированного набора
+реестра:
+
+```text
+antigravity
+claude-code
+codebuddy
+codex
+cursor
+gemini-cli
+github-copilot
+glm
+hermes
+kimi-code
+kiro
+open-claw
+opencode
+qwen-code
+trae
+windsurf
+zed
+```
+
+Подробная матрица реестра, целевые пути, состояния возможностей, поддержка MCP
+и подтверждения закрепления соглашений находятся в [техническом справочнике по реестру](/docs/reference/harness-registry).
+
+## Установка нескольких окружений
+
+Установите одно окружение или используйте `all`, чтобы выбрать реестр в детерминированном
+порядке. Окружения с областью действия проекта требуют `--project PATH`; это включает `all`,
+поскольку реестр содержит как цели с областью действия пользователя, так и цели с областью действия проекта.
+
+```bash
+apothem install --harness claude-code
+apothem install --harness cursor --project /path/to/project
+apothem install --harness gemini-cli --project /path/to/project
+apothem install --harness all --project /path/to/project
+```
+
+## Проверка ваших установок
+
+Проверьте каждый адаптер окружения по отдельности или вызовите `apothem doctor` для
+сводки статуса установки по каждому адаптеру среди всех зарегистрированных адаптеров:
+
+```bash
+apothem verify --harness claude-code
+apothem verify --harness all --project /path/to/project
+apothem doctor
+```
+
+## Как работают адаптеры
+
+Каждый адаптер реализует протокол `HarnessAdapter`, зарегистрированный через
+точки входа setuptools. При установке CLI загружает и проверяет общий
+профиль YAML, разрешает адаптер через реестр, проверяет
+план материализации и записывает нативную для платформы конфигурацию в нативное
+пользовательское или проектное расположение окружения. При обновлении он заново выводит из текущего
+состояния профиля.
+
+```
+profile.yaml + packaged cohorts
+    identity / preferences / rules
+    commands / skills / delegated definitions / hooks / templates
+         |
+         +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/antigravity-cli/plugins/apothem/
+         +-- claude-code    --> ~/.claude/ native folders + ~/.claude/.apothem/support/
+         +-- codex          --> ~/.codex/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
+         +-- cursor         --> <project>/.cursor/rules/*.mdc
+         +-- gemini-cli     --> <project>/GEMINI.md + <project>/.gemini/
+         +-- github-copilot --> <project>/.github/copilot-instructions.md
+         +-- windsurf       --> <project>/.devin/rules/
+         +-- ...
+```
+
+См. [Абстракция адаптера окружения](/docs/architecture/harness-adapter-abstraction)
+для спецификации протокола.

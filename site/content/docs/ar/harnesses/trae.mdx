@@ -1,0 +1,86 @@
+---
+title: "Trae"
+description: "محوّل إطار عمل Apothem لـ Trae (GA)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**المورّد:** <bdi>ByteDance</bdi>
+**اسم التثبيت:** <bdi>`trae`</bdi>
+**الحالة:** <bdi>GA</bdi>
+**الإعداد الأصلي:** <bdi>`<project>/.trae/rules/apothem-rules.md`</bdi>
+
+## التثبيت
+
+```bash
+apothem install --harness trae --project /path/to/project
+```
+
+يكتب المحوّل ملفّ قواعد <bdi>Trae</bdi> واحدًا بنطاق المشروع من سطح القواعد والحوكمة
+المشترك لـ<bdi>Apothem</bdi>.
+
+**الملفات المكتوبة:** <bdi>`<project>/.trae/rules/apothem-rules.md`</bdi>
+
+## تعيين الملف التعريفي إلى الإعداد الأصلي
+
+يقرأ المحوّل الملف التعريفي المشترك لـ<bdi>Apothem</bdi> ويصيّر ملفّ قواعد المشروع في كل
+عملية <bdi>`apothem install`</bdi> أو <bdi>`apothem update`</bdi>. الملف التعريفي
+المشترك هو مصدر الحقيقة؛ وتُحفَظ نسخة احتياطية من التعديلات المحلية للمشروع على الملف
+المُولَّد قبل أن تستبدل المزامنة التالية المحتوى المُدار بواسطة <bdi>Apothem</bdi>.
+
+## ملاحظات التوافق
+
+سطح قواعد <bdi>Trae</bdi> الحالي بنطاق المشروع تحت <bdi>`.trae/rules/`</bdi>. يكتب
+المحوّل ملفًّا مخصّصًا باسم <bdi>`apothem-rules.md`</bdi> يتعايش مع المرسيين
+<bdi>`project_rules.md`</bdi> و<bdi>`user_rules.md`</bdi> اللذين يملكهما المشغّل ولا
+يطمسهما أبدًا. سطح خوادم الأدوات <bdi>`.trae/mcp.json`</bdi> وسطح المهارات
+<bdi>`.trae/skills/`</bdi> يملكهما المشغّل؛ ولا يكتبهما <bdi>Apothem</bdi>.
+
+## التحقّق
+
+```bash
+apothem verify --harness trae --project /path/to/project
+```
+
+يؤكّد أمر التحقّق ما يلي:
+
+1. وجود الإعداد الأصلي في المسار المتوقَّع.
+2. وجود جميع الحقول الإلزامية من الملف التعريفي المشترك.
+3. إبلاغ روتين التحقّق الخاص بالمحوّل عن النجاح.
+
+## التحديث
+
+```bash
+apothem update --harness trae --project /path/to/project
+```
+
+يعيد اشتقاق ملفّ قواعد المشروع من حالة الملف التعريفي المشترك الحالية.
+
+## إلغاء التثبيت
+
+```bash
+apothem uninstall --harness trae --project /path/to/project
+```
+
+يزيل ملفات الإعداد الأصلية التي كتبها المحوّل.
+لا يتأثّر <bdi>YAML</bdi> الملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
+
+## بوّابة المطابقة
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## استكشاف الأخطاء وإصلاحها
+
+| العَرَض | الإصلاح |
+|---------|-----|
+| ملف الإعداد غير موجود | أعد تشغيل <bdi>`apothem install --harness trae --project /path/to/project`</bdi> |
+| فشل التحقّق | شغّل <bdi>`apothem update --harness trae --project /path/to/project`</bdi>، ثم تحقّق مجدّدًا |
+| محتوى إعداد غير متوقَّع | تحقّق من <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness trae --project /path/to/project`</bdi> |
+
+## مفاتيح الضبط
+
+| العَلَم | الافتراضي | الوصف |
+|------|---------|-------------|
+| <bdi>`--dry-run`</bdi> | <bdi>`false`</bdi> | معاينة التثبيت دون كتابة ملفات. |

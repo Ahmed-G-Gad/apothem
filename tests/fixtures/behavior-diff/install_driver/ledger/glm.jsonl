@@ -1,0 +1,1 @@
+{"harness": "glm", "install_id": "<INSTALL_ID>", "kind": "install", "root": "<ROOT>", "targets": [{"mode": "write_text", "ownership_class": "operator-owned", "path": "<ROOT>/.apothem/providers/glm.toml"}], "timestamp": "<TIMESTAMP>"}

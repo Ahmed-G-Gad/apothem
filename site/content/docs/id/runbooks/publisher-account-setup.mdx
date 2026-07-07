@@ -1,0 +1,111 @@
+---
+title: "Penyiapan Akun Penerbit"
+description: "Konfigurasikan penerbit tepercaya npmjs.com untuk @ahmed-g-gad/apothem dan prasyarat rilis di sisi GitHub."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Runbook ini mengonfigurasi sisi penerbit dari permukaan rilis. Cerita distribusi
+memiliki satu registri: paket npm bercakupan `@ahmed-g-gad/apothem` di npmjs.com,
+yang diterbitkan oleh alur kerja `publish-npm.yml` yang dijalankan secara manual
+setelah alur kerja GitHub Release, Pages, CI, conformity, dan harness berstatus
+hijau. Setiap artefak lainnya dikirim di halaman GitHub Release itu sendiri dan
+tidak memerlukan akun penerbit eksternal.
+
+## Peta Identitas
+
+| Permukaan | Akun | Identitas paket |
+|---|---|---|
+| GitHub | `ahmed-g-gad` | `ahmed-g-gad/apothem` |
+| npm (npmjs.com) | `ahmed-g-gad` | `@ahmed-g-gad/apothem` |
+
+Pemilik GitHub diizinkan berubah di masa mendatang. Logika alur kerja dan
+penginstal membaca `github.repository`, `github.repository_owner`, atau
+`APOTHEM_GITHUB_REPOSITORY` di tempat platform mengizinkan resolusi dinamis.
+Pengidentifikasi paket registri tetap stabil karena pengguna menginstal nama
+paket, bukan nama akun pengelola.
+
+## npm (npmjs.com)
+
+1. Masuk ke `https://www.npmjs.com/` sebagai `ahmed-g-gad`.
+2. Aktifkan autentikasi dua faktor pada akun.
+3. Konfirmasikan nama paket bercakupan:
+
+   ```bash
+   npm view @ahmed-g-gad/apothem name
+   ```
+
+   `404` berarti paket bercakupan belum diterbitkan. Respons paket lainnya harus
+   cocok dengan repositori dan akun ini sebelum penerbitan.
+4. Buat paket di npm jika UI memerlukan catatan paket pertama. Pertahankan nama
+   tetap bercakupan: `@ahmed-g-gad/apothem`.
+5. Konfigurasikan Penerbitan Tepercaya (Trusted Publishing) untuk
+   `@ahmed-g-gad/apothem` dari GitHub Actions:
+   - Pemilik GitHub: `ahmed-g-gad`
+   - Repositori: `apothem`
+   - Nama file alur kerja: `publish-npm.yml`
+   - Lingkungan: `npmjs`
+   - Tindakan yang diizinkan: `npm publish`.
+6. Di GitHub, verifikasi bahwa lingkungan `npmjs` ada di `ahmed-g-gad/apothem`
+   dan memerlukan persetujuan manual untuk penyebaran.
+7. Pertahankan permukaan npm sebagai satu paket registri publik:
+   `@ahmed-g-gad/apothem` di npmjs.com.
+8. Konfirmasikan kesiapan rilis:
+
+   ```bash title="Release readiness"
+   bash scripts/release/check-release-ready.sh <release-tag>
+   ```
+
+9. Jalankan `Publish — npm` (`publish-npm.yml`) dari tab GitHub Actions dengan
+   `tag=<release-tag>` dan setujui penyebaran lingkungan `npmjs`.
+10. Verifikasi paket yang sudah aktif:
+
+    ```bash title="npm verification"
+    npm view @ahmed-g-gad/apothem version
+    npx @ahmed-g-gad/apothem@<version> --version
+    ```
+
+Tidak diperlukan rahasia `NPM_TOKEN`, nama pengguna, atau kata sandi. Alur kerja
+menerbitkan melalui npm Trusted Publishing (OIDC) dengan versi Node dan batas
+bawah OIDC dari CLI npm yang dipatok di dalam
+`.github/workflows/publish-npm.yml`. Alur kerja menjalankan
+`npm publish --access public` terhadap npmjs.com; npm secara otomatis
+memancarkan provenans (provenance) untuk paket publik yang diterbitkan dari alur
+kerja GitHub Actions publik. `404` registri selama `PUT` berarti penerbit
+tepercaya di sisi npm, cakupan paket, atau otorisasi akun belum selaras;
+perbaiki pengaturan paket npm sebelum mencoba alur kerja lagi.
+
+Referensi: [Penerbit Tepercaya npm](https://docs.npmjs.com/trusted-publishers/), [provenans npm](https://docs.npmjs.com/generating-provenance-statements/), dan [cakupan npm](https://docs.npmjs.com/about-scopes/).
+
+## Prasyarat rilis di sisi GitHub
+
+Permukaan rilis selebihnya bersifat asli GitHub dan diautentikasi dengan
+`GITHUB_TOKEN` bercakupan repositori; tidak ada akun eksternal yang terlibat.
+
+1. **GitHub Release.** `.github/workflows/release.yml` berjalan pada tag versi
+   dan hanya memerlukan izin `contents: write` lokal-tugasnya. Konfirmasikan
+   bahwa file alur kerja ada di `main` sebelum memberi tag.
+2. **Domain khusus Pages.** Situs dokumentasi disebarkan melalui
+   `publish-static-site.yml` ke domain khusus `apothem.ahmedgad.com`. Domain,
+   DNS, dan penegakan HTTPS ditetapkan oleh
+   [runbook pengaktifan Pages](/docs/runbooks/pages-enablement); verifikasi:
+
+   ```bash title="Pages verification"
+   gh api repos/ahmed-g-gad/apothem/pages --jq '.cname, .https_enforced'
+   curl -sSI https://apothem.ahmedgad.com/ | head -n 1
+   ```
+
+3. **Penginstal skrip.** `install.sh` dan `install.ps1` disajikan dari situs
+   Pages (`https://apothem.ahmedgad.com/install.sh` dan
+   `https://apothem.ahmedgad.com/install.ps1`). Keduanya diterbitkan oleh
+   penyebaran Pages yang sama; tidak diperlukan akun atau token terpisah.
+
+## Matriks verifikasi
+
+Setelah penyiapan, setiap permukaan penerbit menjawab pemeriksaan kanoniknya:
+
+| Permukaan | Pemeriksaan |
+|---|---|
+| npmjs.com | `npm view @ahmed-g-gad/apothem version` mengembalikan versi yang dirilis |
+| GitHub Release | `gh release view <release-tag> --json assets --jq '.assets[].name'` mencantumkan sdist, wheel, SBOM, bundel cosign, provenans, dan arsip platform |
+| Pages | `curl -sSI https://apothem.ahmedgad.com/` mengembalikan `200` pada domain khusus |

@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: MIT
+
+# Per rules/agent-capability-discipline.md §1 / §3 / §7. The open_claw
+# harness (a multi-channel messaging gateway) pins ~/.openclaw/openclaw.json
+# (JSON5). Per the 2026-06-25 pin: skills load from ~/.openclaw/skills plus each
+# agent workspace and are THEN filtered by the agents.defaults.skills allowlist
+# (the allowlist filters the directory-loaded set — it is not itself a loader);
+# subagents are documented via agents.list[].subagents.allowAgents. MCP servers
+# live in the mcp.servers config block, managed via the `openclaw mcp` CLI; the
+# adapter authors no skill or MCP entries either way. Tool-surface universal-deny
+# floor binds regardless.
+
+mcp_servers: []
+# Operator-owned MCP surface: the adapter recognizes it but authors no entries.
+mcp_servers_authored: false
+sub_agent_dispatch: true
+custom_command_support: "skills-allowlist"
+recommended_postfix_rendering: "plain-text"
+long_context_compaction: "profile-managed"
+context_ignore_surface: "not-documented-in-current-pin"
+layered_context_surface: "openclaw.json plus agents.defaults.skills allowlist support skills"
+lsp_symbol_navigation: "tracked-gap-no-adapter-owned-LSP-surface"
+hook_learning_capture: "artifact-evolution-cycle"
+standard_convention_pin: "STANDARD-CONVENTION-PIN.md"
+# web-fetch / browser-retrieval surface — the backing capability dimension for
+# rules/source-accessibility.md step 1 ("retrieve through the host's browser /
+# fetch capability"). The pinned snapshot catalogs config-materialization
+# surfaces, not the vendor tool surface, so the web-fetch tool is not yet
+# discovered against the pin — discovery-pending per
+# rules/agent-capability-discipline-matrix.md §1.
+web_fetch: "discovery-pending"
+tool_surface_restrictions:
+  - secrets-paths
+  - destructive-shell-ops
+  - network-write-unsigned
+system_prompt_template_path: "n/a"
+agent_memory_surface: "n/a"

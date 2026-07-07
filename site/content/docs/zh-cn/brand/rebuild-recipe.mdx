@@ -1,0 +1,65 @@
+---
+title: "资产重建配方"
+description: "使用 resvg 和 Pillow 从主 SVG 源重新生成所有光栅品牌资产。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+资产重建配方会从主 SVG 重新生成每一份光栅资产。
+它是品牌迭代的权威更新路径。
+
+## 何时运行
+
+在以下情况运行重建配方：
+
+- 主 SVG（`assets/src/logo.svg` 或 `assets/src/logo-dark.svg`）发生变更。
+- 紧凑型 favicon 主文件（`assets/favicon.svg`）发生变更。
+- 社交卡片主文件（`assets/src/og-banner.svg` 或 `assets/src/twitter-card.svg`）发生变更。
+- 需要新的光栅尺寸。
+- 你想验证已提交的资产是否仍与 SVG 源一致。
+
+## 脚本
+
+| 脚本 | 平台 | 路径 |
+| --- | --- | --- |
+| `rebuild-assets-resvg.py` | 任何装有 Python + resvg 的宿主 | `scripts/dev/rebuild-assets-resvg.py` |
+
+## 要求
+
+生成器使用 [resvg](https://github.com/linebender/resvg) 将每一份 SVG 光栅化，
+并用 [Pillow](https://python-pillow.org/) 组合光栅图集：
+
+- **Pillow：** `pip install pillow`。
+- **resvg：** 从
+  [resvg releases](https://github.com/linebender/resvg/releases) 下载适用于你所在平台的发布二进制文件——
+  Windows 上是 `resvg-win64.zip`，Linux 上是 `resvg-linux-x86_64.tar.gz`，macOS 上是
+  `resvg-macos.zip`——将其解压到你的 `PATH` 中，或用 `--resvg <path>`
+  将脚本指向它。
+
+## 用法
+
+重新生成每一份光栅资产：
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py
+```
+
+传入 `--check-only` 以在不重新生成任何资产的情况下验证工具链是否可用：
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py --check-only
+```
+
+如果 resvg 不在你的 `PATH` 中，请将脚本指向该二进制文件：
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py --resvg /path/to/resvg
+```
+
+## 验证
+
+一次成功的运行会重新生成浅色和深色标志光栅图、favicon PNG/ICO
+集合、Apple touch 图标、OG/Twitter 图像，并将网页所用的子集——
+包括站点引用的主视觉标志源——镜像到 `site/public/`。
+生成之后，运行站点构建，并在发布前检查主页、浏览器标签页
+favicon 以及社交卡片 PNG。

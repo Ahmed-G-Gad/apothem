@@ -1,0 +1,69 @@
+---
+title: "/research-design"
+description: "/research-design — Operationalizes the hypotheses into testable predictions and designs the study (variables, controls, sample, power), then freezes the analysis plan as a preregistration."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Role:** Principal Investigator (study design)
+**Pipeline position:** mid-chain
+
+Operationalizes the hypotheses into testable predictions and designs the study or experiment — variables, controls, sample, instruments, power analysis, threats-to-validity — then produces a preregistration that freezes the analysis plan before data collection.
+
+## Canonical invocation
+
+```bash
+/research-design
+```
+
+With arguments:
+
+```bash
+/research-design [path/to/research-suite/]
+```
+
+## Inputs
+
+`_inputs/proposal.md` (the plan-of-record from `/research-proposal`, the predecessor stage), `_inputs/synthesis.md` (the SOTA map + gap statement), and `_spec/research-spec.md` (the hypotheses).
+
+## Outputs
+
+`_inputs/study-design.md` (operationalized predictions, variable specification, controls, sample, instruments, power analysis, threats-to-validity) + `_inputs/preregistration.md` (the frozen analysis plan).
+
+## Downstream
+
+/research-experiment (downstream consumer)
+
+## Workflow phases
+
+The command follows the standard `/research` pipeline workflow:
+
+1. **Load context** — Read the synthesis and the spec's hypotheses.
+2. **Verify the Sequence Gate** — Confirm `_inputs/proposal.md` (and the upstream `_inputs/synthesis.md` and `_spec/research-spec.md`) exists; otherwise halt with `Blocked: run /research-proposal first`.
+3. **Design the study** — Operationalize predictions; specify variables, controls, sample, instruments, power; enumerate threats-to-validity.
+4. **Preregister** — Freeze the analysis plan before any data collection.
+5. **Update the handoff manifest** — Record the study-design and preregistration paths.
+6. **Emit the design** — `_inputs/study-design.md` + `_inputs/preregistration.md`.
+
+## Rigor floor
+
+For a comparison-bearing study the design fixes, and preregisters, the empirical floor: one unified budget across all compared methods (equal wall-clock and, where meaningful, equal evaluation count), at least thirty repetitions per instance for stochastic methods, an ablation factor that disables one component at a time, sensitivity sweeps over each parameter, and automated configuration on a training split evaluated on a disjoint test split. The floor depth scales to the target-venue ambition.
+
+## Failure modes
+
+| Symptom | Cause | Recovery |
+|---------|-------|----------|
+| Blocked: run /research-proposal first | No plan-of-record | Run `/research-proposal` to produce `_inputs/proposal.md` |
+| Underpowered design | Sample too small for the effect | Re-run the power analysis; resize the sample |
+| Analysis plan not frozen | Preregistration skipped | Author `_inputs/preregistration.md` before data collection |
+
+## Examples
+
+```bash
+# Design the study and preregister the analysis plan
+/research-design path/to/research-suite/
+```
+
+## Cross-references
+
+- [Pipeline overview](/docs/pipeline)
+- [Commands reference](/docs/reference/commands)

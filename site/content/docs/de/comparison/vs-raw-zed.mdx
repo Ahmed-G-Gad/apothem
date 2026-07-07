@@ -1,0 +1,47 @@
+---
+title: "Apothem im Vergleich zur manuellen Zed-Konfiguration"
+description: "Die flache .rules-Anweisungsdatei von Zed von Hand pflegen, verglichen mit ihrer Erzeugung aus dem geteilten Profil von Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Zed liest Agentenanweisungen aus einer einzigen flachen `.rules`-Datei im
+Projektstamm (neben der `AGENTS.md` / `CLAUDE.md`-Familie). Der zed-Adapter von
+Apothem erzeugt diese Datei aus dem geteilten Profil. Diese Seite stellt das
+Pflegen dieser Konfiguration von Hand der Verwaltung mit Apothem gegenüber.
+
+## Aufwandsvergleich
+
+| Aufgabe | Manuelle Konfiguration | Von Apothem verwaltet |
+| ---- | --------------- | --------------- |
+| Anweisungen schreiben | Die `.rules`-Datei von Hand schreiben | Aus dem geteilten Korpus erzeugt |
+| Eine frühere `.rules` bewahren | Selbst daran denken, sie beiseite zu kopieren | Der Adapter sichert die vorhandene Datei vor dem Ersetzen |
+| Regeln mit anderen Umgebungen ausgerichtet halten | Manuell, pro Werkzeug | Automatisch bei `apothem update` |
+| Verifizieren, dass die Konfiguration korrekt ist | Manuelle Inspektion | `apothem verify --harness zed` |
+
+## Was Apothem verwaltet
+
+Der zed-Adapter erzeugt die geteilten Regeln in der flachen `.rules`-Datei des
+Projektstamms. Zed hat keinen PreToolUse-Hook, daher lebt die Schutzabsicht im
+Prosatext der Regel statt an einem Abfangpunkt für Werkzeugaufrufe. Die globale
+Anweisungsdatei `~/.config/zed/AGENTS.md` und der MCP-Kontextserver-Block aus
+`.zed/settings.json` gehören dem Operator und bleiben unangetastet. Jede Änderung
+an den geteilten Regeln erzeugt die Datei beim nächsten `apothem update` neu.
+
+## Migrationspfad
+
+1. Führen Sie `apothem profile init` aus, um das geteilte Profil zu erstellen,
+   falls noch nicht geschehen.
+2. Verschieben Sie die Anweisungen aus Ihrer vorhandenen `.rules` (und jeden
+   projektspezifischen `AGENTS.md`-Inhalt, den Sie teilen möchten) in das
+   geteilte Korpus.
+3. Führen Sie `apothem install --harness zed` aus, um die `.rules`-Datei zu
+   erzeugen. Ihre frühere `.rules` wird zuerst gesichert.
+4. Führen Sie `apothem verify --harness zed` aus, um zu bestätigen, dass die
+   Konfiguration angekommen ist.
+5. Verwenden Sie `apothem update --harness zed` für jede spätere Änderung.
+
+## Als Nächstes lesen
+
+- [Zed-Adapter-Referenz](/docs/harnesses/zed)
+- [Vergleichsüberblick](/docs/comparison)

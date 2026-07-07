@@ -1,0 +1,36 @@
+---
+title: "Niveles de seriedad"
+description: "Los cuatro niveles de seriedad — cómo Apothem escala la gobernanza según el nivel de compromiso."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem escala la carga de gobernanza según el nivel de compromiso. Una exploración
+rápida no necesita commits firmados; un lanzamiento a producción sí.
+
+## Los cuatro niveles
+
+| Nivel | Cuándo usarlo | Piso de gobernanza |
+|-------|---------------|--------------------|
+| **EXPLORING** | Prototipos, experimentos desechables | Lint + pruebas + los mandatos centrales (evaluación crítica, razonamiento de la mejor solución, honestidad directa) |
+| **PERSONAL_USE** | Herramientas personales, scripts locales | + Verificación de tipos + commits por fase + PROGRESS.md |
+| **SHARED** | Proyectos de equipo, código abierto | + las comprobaciones fallidas bloquean la ejecución + commits por tarea + documentación completa + revisión en paralelo |
+| **PUBLIC_LAUNCH** | Servicios en producción, paquetes publicados | + Escaneos de seguridad + commits firmados + semver + re-revisión obligatoria |
+
+## Valor predeterminado puntual
+
+Cuando no se especifica un nivel de seriedad, Apothem usa por defecto **PERSONAL_USE**.
+
+## Gobernanza mínima viable
+
+En EXPLORING, tres mandatos transversales se aplican siempre independientemente del nivel:
+- CM-1 (Evaluación Crítica)
+- CM-5 (Mejor Solución)
+- CM-10 (Honestidad Brutal)
+
+## Escalada de nivel
+
+El nivel de seriedad puede escalarse a mitad de proyecto. Cuando un proyecto
+PERSONAL_USE asciende a SHARED, ejecuta el barrido local completo de preparación para
+el lanzamiento a fin de detectar cualquier brecha de gobernanza acumulada en el nivel
+inferior.

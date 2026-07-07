@@ -1,0 +1,106 @@
+---
+title: "Strategie zur Abhängigkeits-Internalisierung"
+description: "Welche Drittanbieter-Pakete Apothem unter src/apothem/_vendor/ internalisiert, welche Systemvoraussetzungen bleiben und wie internalisierte Kopien aktualisiert werden."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+# Strategie zur Abhängigkeits-Internalisierung
+
+## Richtlinie
+
+Die [eigenständige Laufzeitumgebung](/docs/architecture/self-contained-runtime)
+von Apothem erfordert, dass die Drittanbieter-Abhängigkeiten der Engine aus dem
+Quellbaum selbst importierbar sind. Jede Laufzeit-Abhängigkeit wird daher auf
+eine von drei Weisen behandelt:
+
+- **Als reiner Python-Quellcode internalisiert** unter `src/apothem/_vendor/`.
+  Der Bootstrap stellt dieses Verzeichnis dem `sys.path` voran, vor
+  site-packages, sodass die internalisierte Kopie das Rennen um die
+  Import-Auflösung gegen jede systemweit installierte Version gewinnt.
+- **Durch einen reinen Python-Shim ersetzt**, wenn die Upstream-Distribution
+  eine kompilierte Erweiterung mitbringt, die nicht als portabler Quellcode
+  reisen kann.
+- **Als dokumentierte Systemvoraussetzung beibehalten**, wenn die
+  Internalisierung mehr Oberfläche mit sich brächte, als sie einspart.
+
+Die Platzierungsregel ist strikt: Nur reine Python-Distributionen leben in
+`_vendor/`. Eine kompilierte Erweiterung (C, Rust/PyO3, Cython) ist plattform-
+und ABI-spezifisch und gehört dort nie hin. Jedes internalisierte Paket führt
+seine Upstream-Lizenzdatei neben dem Quellcode mit.
+
+## Was internalisiert wird
+
+| Paket | Hinweise |
+|---|---|
+| `yaml` | Der reine Python-Parser/-Emitter. Die optionale libyaml-C-Erweiterung ist eine Beschleunigung, nie eine Voraussetzung, und wird nicht mitgeführt; die Imports bleiben `import yaml`. |
+| `jsonschema` | Der Schema-Validator, der für die Validierung von Profile, Konfiguration und Golden-Fixtures verwendet wird. |
+| `attrs` (und sein `attr`-Alias) | Von `jsonschema` benötigt. |
+| `referencing` | Von `jsonschema` benötigt. |
+| `jsonschema_specifications` | Von `jsonschema` benötigt. |
+| `rpds` | Ein reiner Python-Shim, nicht die Upstream-Distribution — siehe unten. |
+| `typing_extensions` | Von der internalisierten Validierungskette benötigt. |
+
+## Der `rpds`-Shim
+
+Das Upstream-`jsonschema` hängt von `rpds-py` ab, einer in Rust (PyO3)
+implementierten Bibliothek für persistente Datenstrukturen, die eine kompilierte
+`.pyd`/`.so` mit nur einem dünnen `.py`-Wrapper ausliefert. Es gibt keinen
+portablen reinen Python-Quellcode zum Kopieren, daher kann es nicht
+internalisiert werden.
+
+Stattdessen ist `src/apothem/_vendor/rpds/` ein reiner Python-Shim, der genau die
+API-Teilmenge neu implementiert, die `jsonschema` und `referencing` nutzen —
+`HashTrieMap`, `HashTrieSet` und `List` —, gestützt auf die eingebauten Typen
+`dict` / `frozenset` / `tuple`. Der Shim hält den Upstream-Persistenzvertrag ein:
+mutierende Methoden geben eine neue Instanz zurück und lassen den Empfänger
+unverändert, worauf sich die Verbraucher verlassen, wenn sie diese Strukturen als
+Feld-Standardwerte eingefrorener Klassen speichern. Die Schemata von Apothem sind
+klein, daher ist der Performance-Unterschied gegenüber der Rust-Implementierung
+unerheblich.
+
+## Was nicht internalisiert wird
+
+- **`click`** — das CLI-Framework. Es ist groß, terminalseitig und weithin
+  verfügbar, daher bleibt es eine Systemvoraussetzung, die die Installer prüfen.
+- **`rich`** — die Terminal-Rendering-Bibliothek, aus denselben Gründen als
+  Systemvoraussetzung beibehalten.
+- **`rpds-py`** — kompiliert; durch den obigen Shim ersetzt.
+- **Die libyaml-C-Erweiterung** — optional; das internalisierte reine
+  Python-`yaml`-Paket benötigt sie nie.
+
+Die Installer prüfen, dass `click` und `rich` unter dem ausgewählten
+Interpreter importierbar sind, bevor sie irgendetwas tun; fehlt eines davon,
+nennen sie es und bieten an, es für dich zu installieren — mit deiner
+Bestätigung oder automatisch mit `--yes` / `APOTHEM_AUTO_INSTALL_DEPS=1`.
+
+## Ein internalisiertes Paket aktualisieren
+
+Um ein internalisiertes Paket auf eine neuere Upstream-Version zu aktualisieren:
+
+1. Hole die Upstream-Quelldistribution in der Zielversion.
+2. Kopiere das reine Python-Paketverzeichnis nach `src/apothem/_vendor/`, ersetze
+   die vorherige Kopie und aktualisiere die benachbarte Lizenzdatei.
+3. Aktualisiere `src/apothem/_vendor/vendor.txt` — den fixierten Abschluss —,
+   sodass seine `name==version`-Zeile für das Paket der neuen Upstream-Version
+   entspricht, und aktualisiere den `[[annotations]]`-Block des Pakets in der
+   `REUSE.toml`-Wurzeldatei, falls sich seine Upstream-Lizenz oder sein Copyright
+   geändert haben. Beides ist im **selben Änderungssatz** wie die Kopie
+   erforderlich (das Mandat lebender Abhängigkeiten); die
+   Lieferketten-Prüfinstanzen und der `reuse lint`-Gate lesen sie.
+4. Lasse die Importpfade unberührt — die Verbraucher importieren die kanonischen
+   Namen, und die `sys.path`-Vorrangstellung des Bootstraps erledigt den Rest.
+5. Führe die Testsuite und den Konformitäts-Gate aus; das Verhalten des
+   Validierungs-Stacks ist durch die Profile- und Schema-Validierungstests
+   abgedeckt.
+
+Der `rpds`-Shim wird anders aktualisiert: Er verfolgt die API-Teilmenge, die
+seine Verbraucher nutzen, sodass ein `jsonschema`/`referencing`-Update gegen die
+implementierte Oberfläche des Shims geprüft wird, und der Shim wächst nur, wenn
+eine neue Aufrufstelle auftaucht.
+
+## Empfohlener nächster Schritt
+
+**Lies die Seite zur [eigenständigen Laufzeitumgebung](/docs/architecture/self-contained-runtime)**,
+um zu sehen, wie der internalisierte Baum, das `PYTHONPATH=src`-Aufrufmodell und
+der Bootstrap des Plugin-Baums zur Laufzeit zusammenpassen.

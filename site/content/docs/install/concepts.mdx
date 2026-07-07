@@ -1,0 +1,65 @@
+---
+title: "Concepts"
+description: "Glossary defining shared profiles, harness adapters, rules, hooks, conformity gates, skills, and delegated workers in Apothem."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+A quick reference for the terms you will encounter throughout the Apothem documentation.
+
+## Shared profile
+
+A schema-validated YAML file at `~/.config/apothem/profile.yaml` (override with `--profile PATH`).
+It is the single source of truth for your identity, preferences, and configuration; every harness
+adapter reads it on install and derives that harness's native config from it.
+
+## Harness adapter
+
+A per-platform adapter that translates the shared profile into the native config format for a
+specific harness. The supported runtimes are listed in:
+
+```text
+Claude Code, Cursor, Gemini CLI, etc.
+```
+
+Installing Apothem always means: install the shared profile, then materialize one or more
+adapters.
+
+## Behavioral rule
+
+A Markdown file under src/apothem/rules/ that is loaded on every interaction (always-on) or
+only when editing files under a specific path (path-filtered). Rules codify how the
+harness should behave.
+
+## Hook
+
+A Python script registered in settings.json that fires on harness lifecycle events
+(PreToolUse, PostToolUse, SessionStart, PreCompact, Stop, PostCompact). Hooks enforce conformity
+mandates in real-time before output reaches disk. The hook event model is a Claude Code surface
+today; adapters for harnesses without a hook mechanism simply omit it.
+
+## Conformity gate
+
+The mechanical fraction of the fifteen-bar pre-emission gate (M1-M15) — the standalone validators
+that must pass before any artifact is emitted. The pre-emission gate is the quality floor; the
+conformity gate runs its machine-checkable bars, and hooks enforce individual bars in real-time.
+
+## Plan suite
+
+A structured directory at &lt;project-root&gt;/.apothem/plans/&lt;suite-name&gt;/ containing a spec, a master plan, per-phase
+PHASE.md files, and output artifacts. The /plan pipeline manages plan suites.
+
+## Skill
+
+A reusable, slash-command-invocable technique bundled as a SKILL.md file under
+src/apothem/skills/&lt;name&gt;/. Skills extend the slash-command surface beyond the built-in
+/plan pipeline.
+
+## Delegated worker
+
+A persistent, purpose-scoped assistant defined at the canonical path:
+
+```text
+src/apothem/agents/<name>.md
+```
+
+Delegated workers handle research, auditing, quality checking, and memory management.

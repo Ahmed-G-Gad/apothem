@@ -1,0 +1,73 @@
+---
+title: "/research-proposal"
+description: "/research-proposal — Transforma la brecha sintetizada y el marco teórico en un plan maestro financiable y revisable: objetivos SMART, registro de viabilidad y riesgos, vía de impacto, plan de preinscripción y selección de la guía de publicación EQUATOR — la etapa de propuesta del flujo de /research, entre /research-synthesis y /research-design."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rol:** Investigador Principal (plan maestro)
+**Posición en el flujo:** mitad de cadena
+
+Transforma la brecha sintetizada y el marco teórico en un plan maestro financiable y revisable. La viabilidad ética se plantea desde el principio, y el plan de preinscripción y la selección de la guía de publicación se fijan antes de operacionalizar cualquier diseño de estudio.
+
+## Invocación canónica
+
+```bash
+/research-proposal
+```
+
+Con argumentos:
+
+```bash
+/research-proposal [--suite-name NAME] [--override] [--guideline NAME] [--prereg-registry NAME]
+```
+
+## Entradas
+
+El archivo `_inputs/synthesis.md` de la suite (el mapa SOTA + el análisis de la brecha) y `_inputs/theory.md` (el marco conceptual).
+
+## Salidas
+
+`_inputs/proposal.md` (la jerarquía de objetivos SMART, la evaluación de viabilidad, el registro de recursos / cronograma / riesgos, la vía de impacto, el plan de preinscripción y la preselección de la guía de publicación EQUATOR).
+
+## Aguas abajo
+
+/research-design (consumidor aguas abajo — operacionaliza la propuesta en un diseño de estudio congelado y preinscrito).
+
+## Fases del flujo de trabajo
+
+El comando sigue el flujo de trabajo estándar del flujo `/research`:
+
+1. **Cargar el contexto** — Leer `_inputs/synthesis.md` y `_inputs/theory.md`, las reglas y cualquier estado existente de la suite.
+2. **Construir la jerarquía de objetivos SMART** — Convertir la brecha en objetivos específicos, medibles, alcanzables, relevantes y delimitados en el tiempo.
+3. **Evaluar la viabilidad y el riesgo** — Construir el registro de recursos / cronograma / riesgos; plantear la viabilidad ética desde el principio.
+4. **Planificar la preinscripción y la publicación** — Seleccionar el registro, redactar el plan de preinscripción y preseleccionar la guía de publicación EQUATOR.
+5. **Trazar la vía de impacto** — Rastrear cómo los objetivos, una vez cumplidos, producen impacto aguas abajo.
+6. **Verificar y emitir** — Confirmar que los objetivos son comprobables y el plan reproducible; emitir `_inputs/proposal.md` más el manifiesto de traspaso.
+
+## Umbral de rigor
+
+La ambición del lugar de publicación objetivo fija no solo la elección de la guía de publicación, sino la profundidad del umbral de rigor que las etapas posteriores de diseño y experimento deben superar —umbral de replicación, paridad de presupuesto, ajuste en particiones disjuntas y significancia con un tamaño del efecto— más el paquete de evidencia de reproducibilidad que llevará el entregable.
+
+## Modos de fallo
+
+| Síntoma | Causa | Recuperación |
+|---------|-------|----------|
+| El objetivo no es medible | El objetivo se planteó como actividad, no como resultado | Reformularlo como un objetivo SMART con una métrica de éxito explícita |
+| Sin plan de preinscripción | El paso de preinscripción se omitió | Seleccionar un registro y redactar el plan antes de avanzar a `/research-design` |
+| Falta la entrada de síntesis | `/research-synthesis` aún no se ha ejecutado | Ejecutar primero `/research-synthesis` para producir el análisis de la brecha |
+
+## Ejemplos
+
+```bash
+# Convierte la brecha en un plan maestro financiable
+/research-proposal --suite-name retrieval-latency
+
+# Fija la guía de publicación y el registro de preinscripción
+/research-proposal --guideline PRISMA --prereg-registry OSF
+```
+
+## Referencias cruzadas
+
+- [Resumen del flujo](/docs/pipeline)
+- [Referencia de comandos](/docs/reference/commands)

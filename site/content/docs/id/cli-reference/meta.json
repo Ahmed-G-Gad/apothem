@@ -1,0 +1,20 @@
+{
+  "title": "Referensi CLI",
+  "pages": [
+    "index",
+    "quickstart",
+    "install",
+    "uninstall",
+    "update",
+    "rollback",
+    "verify",
+    "status",
+    "diff",
+    "doctor",
+    "harnesses",
+    "profile",
+    "migrate-workspace",
+    "completion",
+    "..."
+  ]
+}

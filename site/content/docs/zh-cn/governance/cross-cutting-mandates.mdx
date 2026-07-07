@@ -1,0 +1,109 @@
+---
+title: "横切强制规定登记册（CM-1–CM-28）"
+description: "治理所有交互与流水线操作的生态系统内部横切强制规定（CM-1–CM-28）的完整登记册与定义。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **横切强制规定的规范登记册。** 本文档承载 CM-N 登记册的完整正文；实质性的枚举内容存放于此，由 `src/apothem/rules/` 下的规则文件操作化。任何需要详细 CM-N 正文的会话都按需加载本文档。
+
+## 登记册自引用豁免
+
+本文档**即**权威的 CM-N 登记册——它是 `CM-1` 到 `CM-28` 这些标记被*定义*的源头。在登记册自身的正文内部重述这些标记是权威的，而非泄露计划内部术语。代码库隔离不变量对所有*其他*制品（规则、辅助件、命令、钩子、模式、脚本、工具、测试、文档、README、变更日志、提交主题/正文、分支名、PR 标题/描述）继续全力适用：禁止使用 `CM-N` / `TM-N` / `CP-N` 标记，仅使用自然领域语言。
+
+## 命名空间
+
+`CM-N` = 配置强制规定（在此处定义，或按制品登记册规则行在 `src/apothem/rules/*.md` 中定义）；`TM-N` = 模板强制规定（在 `src/apothem/skills/plan-suite/master-template.md` §4 “General Mandates” 中定义，TM-1–28）；`CP-N` = 核心原则（在同一模板 §6 “Core Principles” 中定义，CP-1–27）。计划套件模板是权威的 TM/CP 登记册——`/plan` 命令通过该文件解析交叉引用。辅助制品（规则、辅助件、命令、钩子）以引用方式援引本登记册。
+
+## 激活
+
+CM-1–10 与认知身份治理所有交互。CM-11、CM-13、CM-15、CM-16、CM-20 仅在 `/plan` 流水线内适用。CM-12、CM-14、CM-17–19、CM-21–22、CM-24–26 普遍适用（始终启用）。CM-23、CM-27、CM-28 在其声明的路径过滤范围内普遍适用。临时默认模态等级：PERSONAL_USE。
+
+## CM-1–10（操作性）
+
+(1) 批判性评估（→TM-10），(2) 零假设（→TM-1），(3) 配置驱动（→TM-2），(4) 实现前先搜索（→TM-4），(5) 最佳方案（→TM-7），(6) 自我改进（→CP-20），(7) 连贯产品（→TM-11），(8) 瓶颈优先聚焦，(9) 决策速度，(10) 残酷诚实。带违规指标的完整定义：`src/apothem/rules/operational-mandates.md`。
+
+## CM-7（计划内部隔离）
+
+> 这是 CM-7 面向代码库的侧面；面向产品完整性的侧面在 `src/apothem/rules/operational-mandates.md §CM-7` 中记录为**连贯产品（→TM-11）**。两个标签指向同一条强制规定。
+
+代码库制品**绝不**得包含计划内部引用。**禁止术语（权威块——同级消费者交叉引用此枚举）：** TM-N、CM-N、CP-N、“Resumption Contract”、“Phase Output Registry”、“convention anchors”、阶段文件夹名、计划套件文件名（PROGRESS.md、PLAN-NOTES.md、PREAMBLE、MASTER-PLAN）、模态等级名（EXPLORING、PERSONAL_USE、SHARED、PUBLIC_LAUNCH）。**受保护制品：** 源代码、测试、配置、模式、构建脚本、数据、资产、提交消息、分支名、PR 标题/描述、README、CONTRIBUTING、API 文档、变更日志——任何在 Apothem 源代码树之外可见的制品（各harness安装目标，例如 Claude Code 的 `~/.claude/`）。仅使用自然领域语言。**同级消费者**（每个以引用方式援引此块，而非重新枚举）：`src/apothem/hooks/messages/pretooluse-bash.md`、`src/apothem/hooks/messages/pretooluse-write.md`、`src/apothem/hooks/messages/pretooluse-edit.md`、`src/apothem/hooks/messages/pretooluse-notebookedit.md`、`src/apothem/rules/operational-mandates.md` §CM-7 违规指标。
+
+## CM-11（计划完整性）
+
+**A — 散文保真度：** 每条需求都可在散文↔计划之间追溯。评分卡：PASS ≥90% STRONG/0 ABSENT。
+**B — 内部一致性：** 计划套件内部的跨文档连贯性。评分卡：PASS 100%。
+**C — 关卡：** 在 SHARED+ 处 FAIL 阻断执行（SHARED 处允许 Product Owner 凭已记录理由覆盖；PUBLIC_LAUNCH 处为硬阻断）。在 PERSONAL_USE 处为建议性。
+
+## CM-12（上下文管理）
+
+始终保持精简的上下文管理——见 CM-24 规则。四个子层级在下方的子引用约定章节中枚举。压缩纪律（CM-19）治理动作；CM-12 治理稳态纪律。
+
+## CM-13（提交）
+
+- **A — 按任务节奏：** 在 SHARED+ 处按任务提交。在 PERSONAL_USE 处按阶段提交。在 EXPLORING 处可选。
+- **B — 质量/修复提交：** 质量关卡修复与修复变更立即提交，与功能工作分开。
+- **C — 阶段结束关卡：** 不得有未提交的更改跨越阶段边界。CM-7 隔离适用于所有 git 制品。在 PUBLIC_LAUNCH 处：需要 GPG 签名的提交（`git commit -S`）。
+- **D — 仅人类署名：** 每个 git 制品中的每个署名面（提交主题、提交正文、`Author:`、`Co-Authored-By:` 尾注、`Signed-off-by:` 尾注、分支名、标签名、标签注释、储藏名、git-notes 正文、PR 标题、PR 描述）仅署名**人类贡献者**。助手绝不将自身、底层语言模型、运行时 / harness / IDE / 扩展 / 供应商或任何其他自动化工具署名到这些面中的任何一个。禁止模式在 `src/apothem/rules/production-ready-prs.md` §6（Commit-Message Discipline → Human-only authorship）中枚举并以机械方式强制执行，匹配器位于 `src/apothem/hooks/messages/pretooluse-bash.md` Scan 3，在每次 git 写入的 Bash 调用上触发。
+- **E — git-mv / git-rm 目标上的数字前缀纪律：** 文件系统路径上的数字前缀（`NN-`）传达排序，仅在排序为内在属性时适用——阶段文件夹序列、子阶段序列、宿主发现的序数命名方案。没有同级序列的根级单例不带数字前缀；添加它是毫无意义的装饰，错误地暗示了一个并不存在的排序关系。完整规范位于 `src/apothem/rules/canonical-layout.md` §2.1。在 `src/apothem/hooks/messages/pretooluse-bash.md` Scan 2 中，于 `git mv` / `git rm` 以及提交正文路径引用上以机械方式强制执行。
+
+## CM-14（会话协议）
+
+**开始：** 执行盲启动（CM-24 §6）。**结束：** 执行阶段退出（CM-24 §2.5）+ 记忆评估（CM-26）+ 制品演化（CM-22 §2+§4）。
+
+## CM-15–21（流水线）
+
+CM-15 与 CM-16 在此处内联定义（无独立规则）；CM-17–21 按制品登记册规则表委托给规则。
+
+- **CM-15 集体连贯性：** 验证计划制品在修改后仍保持连贯。
+- **CM-16 自主执行：** 在 SHARED+ 处，绝不在阶段之间停止。在阶段转换处强制压缩（PERSONAL_USE+）。
+- **CM-17 工作者团队：** 为可并行化的工作部署委托工作者团队——见 CM-25 规则。
+- **CM-18 错误恢复：** 六个通用类别（CM-24 §8）；计划执行类别在 TM-18 中。3 次失败后升级。
+- **CM-19 压缩纪律：** 主动压缩触发器——见 CM-24 §3。
+- **CM-20 流水线编排：** prose→[approval]→generate→[approval]→review→[approval]→execute(01→NN)。审查技巧：`src/apothem/rules/planning-techniques.md`。
+- **CM-21 创意质量：** 认知滤镜是质量关卡，而非装饰。缩放按认知身份规则 §2。
+
+## CM-22–28（规则委托）
+
+规则委托强制规定的单行锚点（完整规范存放于所援引文件中）：
+
+- **CM-22 约定警觉** — 生态系统约定与主动制品演化。见 `src/apothem/rules/persistent-conventions-vigilance.md`。
+- **CM-23 大文件生成** — 超过单次写入阈值文件的增量追加协议。见 `src/apothem/rules/large-file-generation.md`。
+- **CM-24 上下文管理协议** — 外部化、压缩、盲启动与预算纪律。见 `src/apothem/rules/context-management.md`。
+- **CM-25 工作者编排** — 部署模式、返回契约、上下文隔离。完整规范位于工作者编排规则（省略交叉链接；目标文件名包含禁止术语）。
+- **CM-26 自动记忆生命周期** — 记忆纪律、主题文件组织、会话结束评估。见 `src/apothem/rules/auto-memory.md`。
+- **CM-27 整洁架构层** — Domain / Application / Infrastructure / Presentation 分离。见 `src/apothem/rules/clean-architecture-layers.md`。
+- **CM-28 Python 资深架构师** — 面向 Python 制品的 SOLID、风格、测试与安全护栏。见 `src/apothem/rules/code-craft-python.md`。
+
+## 规则委托式与内联定义式强制规定
+
+- **规则委托式**（完整规范位于 `src/apothem/rules/`）：见制品登记册规则表的 “Implements” 列。涵盖 CM-1–10、CM-12、CM-14、CM-17–28。
+- **内联定义式**（完整规范在此处，无独立规则）：CM-11（计划完整性）、CM-13（提交）、CM-15（集体连贯性）、CM-16（自主执行）。
+
+## 子引用约定
+
+命令使用字母后缀来引用强制规定内部的特定子章节。模式：`CM-N` + 后缀字母 = 规则章节。**大小写约定：** 大写后缀表示强制规定内部的结构性子章节；小写后缀表示某个 Stewardship 层级内部的更细粒度指令。权威的子引用键映射表（登记册内部定义）在下方的代码块中逐字保留：
+
+```text
+CM-11A = Prose Fidelity
+CM-11B = Internal Consistency
+CM-11C = Gates
+
+CM-12a = lean ingestion / demand loading (context-management §7.2)
+CM-12b = budget awareness (§7.1)
+CM-12c = budget pressure response (§7.3)
+CM-12d = per-task effort calibration (context-management §7.4 — D3 stratified taxonomy; PHASE.md frontmatter is the per-phase override surface)
+
+CM-13A = per-task commits
+CM-13B = quality / remediation commits
+CM-13C = end-of-phase commit gate
+
+CM-23A = pre-generation size assessment (§1)
+CM-23B = incremental generation protocol (§2)
+
+CM-24B = proactive externalization (§2)
+
+CM-25A = worker-team patterns (§1)
+CM-25C = return-contract enforcement (§4)
+CM-25E = isolation / non-duplication (§5)
+```

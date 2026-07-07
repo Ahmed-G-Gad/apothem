@@ -1,0 +1,41 @@
+---
+title: "Apothem versus konfigurasi OpenCode manual"
+description: "Memelihara konfigurasi, perintah, skill, dan agen OpenCode dengan tangan versus merendernya dari profil bersama Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+OpenCode membaca konfigurasi JSON ditambah direktori penemuan perintah, skill, dan agen
+native. Apothem merender konfigurasi JSON dengan daftar file `instructions` dan
+mengonversi korpus bersama menjadi direktori native di tempat OpenCode mendukungnya.
+
+## Perbandingan upaya
+
+| Tugas | Konfigurasi manual | Dikelola Apothem |
+| ---- | --------------- | --------------- |
+| Menulis aturan | Menyunting konfigurasi dan prompt pendukung dengan tangan | Dirender atau dirujuk dari profil bersama |
+| Menulis perintah, skill, agen | Memelihara tiap direktori OpenCode dengan tangan | Dikonversi dari korpus bersama Apothem |
+| Menjaga korpus selaras dengan lingkungan lain | Manual, per alat | Otomatis saat `apothem update` |
+| Memasang / menghapus permukaan | Manual | `apothem install` / `apothem uninstall` |
+| Memverifikasi konfigurasi sudah benar | Inspeksi manual | `apothem verify --harness opencode` |
+
+## Apa yang dikelola Apothem
+
+Adapter opencode menulis `opencode.json`, mengonversi perintah garis miring Apothem
+menjadi file perintah Markdown OpenCode, menyalin skill ke permukaan skill native, dan
+mengadaptasi definisi pembantu sebagai subagen Markdown. Aturan, templat, dan prompt
+hook tetap berada di bawah subpohon pendukung Apothem; aturan dirujuk dari daftar
+`instructions` native.
+
+## Jalur migrasi
+
+1. Jalankan `apothem profile init` untuk membuat profil bersama jika Anda belum memilikinya.
+2. Pindahkan aturan, perintah, skill, dan agen OpenCode yang sudah ada ke korpus bersama.
+3. Jalankan `apothem install --harness opencode` untuk merender konfigurasi native dan direktori penemuan.
+4. Jalankan `apothem verify --harness opencode` untuk memastikan konfigurasi sudah terpasang.
+5. Gunakan `apothem update --harness opencode` untuk setiap perubahan berikutnya.
+
+## Baca berikutnya
+
+- [Referensi adapter OpenCode](/docs/harnesses/opencode)
+- [Ikhtisar perbandingan](/docs/comparison)

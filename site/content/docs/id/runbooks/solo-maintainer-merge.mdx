@@ -1,0 +1,82 @@
+---
+title: "Seremoni Merge PR untuk Pemelihara Tunggal"
+description: "Seremoni untuk men-merge sendiri pull request ketika aturan proteksi branch dan enforce_admins akan membuat pemelihara tunggal terkunci."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Rujukan kanonik untuk men-merge sendiri PR di bawah invarian proteksi branch proyek.** Ketika pemelihara adalah satu-satunya kontributor dengan akses tulis, aturan proteksi branch GitHub `enforce_admins=true` + `required_approving_review_count=1` menciptakan kebuntuan merge-mandiri yang resolusinya didokumentasikan halaman ini.
+
+---
+
+## 1. Kebuntuan
+
+Branch `main` repositori membawa set proteksi ini:
+
+- `required_pull_request_reviews.required_approving_review_count: 1`
+- `enforce_admins: true`
+
+Aturan ini benar untuk skenario multi-pemelihara (setiap perubahan mencapai `main` melalui PR yang ditinjau rekan; admin tidak dikecualikan). Aturan ini menghasilkan kebuntuan bagi pemelihara tunggal: kebijakan GitHub melarang persetujuan-mandiri atas PR yang Anda buat sendiri, dan `enforce_admins=true` memblokir penimpaan `gh pr merge --admin` terhadap persyaratan persetujuan tinjauan.
+
+Ada tiga jalur resolusi:
+
+| Jalur | Kapan digunakan |
+|------|-------------|
+| **Seremoni alih-sementara (kanonik untuk repositori ini)** | Bawaan untuk merge-mandiri pemelihara tunggal; menjaga invarian proteksi di luar jendela merge |
+| Sediakan identitas bot CI dengan akses tulis | Pakai hanya jika onboarding multi-pemelihara sudah dekat; persetujuan oleh bot melemahkan maksud tinjauan manusia dari proteksi |
+| Setel `required_approving_review_count: 0` secara permanen | Pakai hanya jika repositori akan tetap pemelihara tunggal tanpa batas; membalik maksud tinjauan dari proteksi |
+
+Repositori ini meratifikasi **seremoni alih-sementara** sebagai jalur kanonik. Dua lainnya adalah pintu darurat terdokumentasi, bukan bawaan.
+
+## 2. Seremoni Alih-Sementara
+
+Invarian seremoni: keadaan proteksi di awal seremoni sama dengan keadaan proteksi di akhir. Pelonggaran hanya hidup di dalam jendela merge.
+
+Bentuk manual:
+
+```bash
+# 1. Open the PR, push branch, wait for CI green.
+gh pr create --base main --head <feature-branch> --title "..." --body "..."
+gh pr checks <pr-number>            # poll until all green
+
+# 2. Relax approver-count to 0.
+gh api repos/<owner>/<repo>/branches/main/protection/required_pull_request_reviews \
+    -X PATCH -F required_approving_review_count=0
+
+# 3. Squash-merge with admin override (admin override now succeeds because the
+#    review-approval requirement is the only block enforce_admins refuses).
+gh pr merge <pr-number> --squash --delete-branch --admin
+
+# 4. Restore approver-count to 1.
+gh api repos/<owner>/<repo>/branches/main/protection/required_pull_request_reviews \
+    -X PATCH -F required_approving_review_count=1
+```
+
+Bentuk terbungkus: lihat [`scripts/dev/admin_merge.py`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/dev/admin_merge.py) untuk pembungkus Python atomik yang menjalankan langkah 2 → 3 → 4 dalam satu urutan non-interaktif dengan keamanan rollback `try` / `finally` saat langkah 3 gagal.
+
+```bash
+python scripts/dev/admin_merge.py <pr-number>
+```
+
+## 3. Invarian
+
+- **Jendela alih diminimalkan.** Langkah 2 → 3 → 4 dieksekusi dalam satu urutan non-interaktif. Proteksi berada dalam keadaan longgar hanya selama durasi panggilan API merge — di bawah satu detik pada setiap eksekusi yang teramati.
+- **Pemulihan bersifat tanpa syarat.** Langkah 4 berjalan bahkan ketika langkah 3 gagal (klausa `try` / `finally` pembungkus memastikan pemulihan pada jalur keluar mana pun). Upaya merge yang gagal tidak meninggalkan proteksi dalam keadaan longgar.
+- **Gerbang CI dipertahankan sepanjang proses.** `required_status_checks` tidak terpengaruh oleh alih; merge tetap mensyaratkan konteks pemeriksaan status yang dikonfigurasi berstatus hijau.
+- **Jejak audit terlihat.** Anotasi `gh pr merge --admin` muncul dalam metadata merge PR; alih API proteksi muncul dalam log audit repositori di bawah identitas pemelihara.
+
+## 4. Kapan TIDAK Menggunakan Seremoni
+
+Seremoni ini untuk **merge-mandiri** atas PR milik pemelihara sendiri. Ketika peninjau rekan tersedia (kontributor dengan akses tulis), jalur standar `gh pr review --approve` + `gh pr merge --squash --delete-branch` adalah yang benar dan seremoni tidak diperlukan.
+
+Jika repositori meng-onboard pemelihara kedua, pensiunkan seremoni: alur tinjauan PR standar memulihkan maksud tinjauan manusia dari proteksi tanpa alih apa pun.
+
+## 5. Mengaudit Eksekusi Lampau
+
+Setiap pemanggilan seremoni mendarat pada tiga permukaan tahan lama yang dapat diperiksa operator setelahnya:
+
+- **Metadata merge PR.** `gh pr view <pr-number> --json mergedBy,mergedAt,mergeCommit` mengembalikan aktor merge, cap waktu merge, dan SHA commit squash. Aktor `mergedBy` cocok dengan identitas pemelihara yang menjalankan langkah 3.
+- **Log audit repositori.** `gh api /repos/<owner>/<repo>/actions/runs --jq '.workflow_runs[] | select(.event=="push")'` mengaitkan eksekusi CI pasca-merge dengan commit merge; log audit aturan proteksi repositori (riwayat `gh api /repos/<owner>/<repo>/branches/main/protection` via antarmuka Settings → Branches) menampilkan alih langkah 2 dan langkah 4 yang mengapit jendela merge.
+- **Riwayat git pemelihara.** `git log main --merges --first-parent` mendaftar setiap commit squash-merge pada `main` dengan nomor PR terkait pada subjek commit (sufiks `(#<pr-number>)` sesuai bawaan `gh pr merge --squash`), memungkinkan operator menelusuri setiap pendaratan lampau kembali ke PR dan pemanggilan seremoninya.
+
+Ketika `scripts/dev/admin_merge.py` adalah titik masuknya, log non-interaktifnya (stdout) menyebutkan tiga panggilan API proteksi dan panggilan API merge secara berurutan; menyalurkan pembungkus ke `tee` menangkap fragmen audit per-eksekusi tanpa bergantung pada retensi log sisi GitHub.

@@ -1,0 +1,108 @@
+---
+title: "Publisher Account Setup"
+description: "Configure the npmjs.com trusted publisher for @ahmed-g-gad/apothem and the GitHub-side release prerequisites."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+This runbook configures the publisher side of the release surface. The
+distribution story has one registry: the scoped npm package
+`@ahmed-g-gad/apothem` on npmjs.com, published by the manually-dispatched
+`publish-npm.yml` workflow after the GitHub Release, Pages, CI, conformity,
+and harness workflows are green. Every other artifact ships on the GitHub
+Release page itself and needs no external publisher account.
+
+## Identity Map
+
+| Surface | Account | Package identity |
+|---|---|---|
+| GitHub | `ahmed-g-gad` | `ahmed-g-gad/apothem` |
+| npm (npmjs.com) | `ahmed-g-gad` | `@ahmed-g-gad/apothem` |
+
+The GitHub owner is allowed to drift in the future. Workflow and installer
+logic reads `github.repository`, `github.repository_owner`, or
+`APOTHEM_GITHUB_REPOSITORY` where a platform permits dynamic resolution.
+The registry package identifier remains stable because users install the
+package name, not the maintainer account name.
+
+## npm (npmjs.com)
+
+1. Sign in to `https://www.npmjs.com/` as `ahmed-g-gad`.
+2. Enable two-factor authentication on the account.
+3. Confirm the scoped package name:
+
+   ```bash
+   npm view @ahmed-g-gad/apothem name
+   ```
+
+   A `404` means the scoped package has not been published yet. Any other
+   package response must match this repository and account before publishing.
+4. Create the package on npm if the UI requires a first package record. Keep the
+   name scoped: `@ahmed-g-gad/apothem`.
+5. Configure Trusted Publishing for `@ahmed-g-gad/apothem` from GitHub Actions:
+   - GitHub owner: `ahmed-g-gad`
+   - Repository: `apothem`
+   - Workflow filename: `publish-npm.yml`
+   - Environment: `npmjs`
+   - Allowed action: `npm publish`.
+6. In GitHub, verify the `npmjs` environment exists on `ahmed-g-gad/apothem`
+   and requires manual approval for deployment.
+7. Keep the npm surface to one public registry package:
+   `@ahmed-g-gad/apothem` on npmjs.com.
+8. Confirm release readiness:
+
+   ```bash title="Release readiness"
+   bash scripts/release/check-release-ready.sh <release-tag>
+   ```
+
+9. Run `Publish — npm` (`publish-npm.yml`) from the GitHub Actions tab with
+   `tag=<release-tag>` and approve the `npmjs` environment deployment.
+10. Verify the live package:
+
+    ```bash title="npm verification"
+    npm view @ahmed-g-gad/apothem version
+    npx @ahmed-g-gad/apothem@<version> --version
+    ```
+
+No `NPM_TOKEN`, username, or password secret is required. The workflow
+publishes through npm Trusted Publishing (OIDC) with the Node version and the
+npm CLI OIDC floor pinned inside `.github/workflows/publish-npm.yml`. It runs
+`npm publish --access public` against npmjs.com; npm automatically emits
+provenance for public packages published from a public GitHub Actions
+workflow. A registry `404` during `PUT` means the npm-side trusted publisher,
+package scope, or account authorization is not aligned yet; fix the npm
+package settings before retrying the workflow.
+
+References: [npm Trusted Publishers](https://docs.npmjs.com/trusted-publishers/), [npm provenance](https://docs.npmjs.com/generating-provenance-statements/), and [npm scopes](https://docs.npmjs.com/about-scopes/).
+
+## GitHub-side release prerequisites
+
+The remaining release surfaces are GitHub-native and authenticate with the
+repository-scoped `GITHUB_TOKEN`; no external account is involved.
+
+1. **GitHub Release.** `.github/workflows/release.yml` runs on the version tag
+   and needs only its job-local `contents: write` permission. Confirm the
+   workflow file is present on `main` before tagging.
+2. **Pages custom domain.** The documentation site deploys through
+   `publish-static-site.yml` to the custom domain `apothem.ahmedgad.com`.
+   The domain, DNS, and HTTPS enforcement are established by the
+   [Pages-enablement runbook](/docs/runbooks/pages-enablement); verify:
+
+   ```bash title="Pages verification"
+   gh api repos/ahmed-g-gad/apothem/pages --jq '.cname, .https_enforced'
+   curl -sSI https://apothem.ahmedgad.com/ | head -n 1
+   ```
+
+3. **Script installers.** `install.sh` and `install.ps1` are served from the
+   Pages site (`https://apothem.ahmedgad.com/install.sh` and
+   `https://apothem.ahmedgad.com/install.ps1`). They are published by the same
+   Pages deployment; no separate account or token is required.
+
+## Verification matrix
+
+After setup, each publisher surface answers its canonical check:
+
+| Surface | Check |
+|---|---|
+| npmjs.com | `npm view @ahmed-g-gad/apothem version` returns the released version |
+| GitHub Release | `gh release view <release-tag> --json assets --jq '.assets[].name'` lists sdist, wheel, SBOM, cosign bundles, provenance, and platform archives |
+| Pages | `curl -sSI https://apothem.ahmedgad.com/` returns `200` on the custom domain |

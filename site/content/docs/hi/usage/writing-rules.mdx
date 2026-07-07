@@ -1,0 +1,61 @@
+---
+title: "नियम लिखना"
+description: "Apothem के व्यवहार नियम लिखें, उनका दायरा तय करें और उन्हें बनाए रखें।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+नियम `src/apothem/rules/` में `.md` एक्सटेंशन वाली Markdown फ़ाइलें होती हैं।
+
+## नियम फ़्रंटमैटर
+
+```yaml
+---
+name: "..."
+description: "..."
+pathFilter: ""            # empty string for always-on; a glob for path-filtered
+alwaysApply: true         # true for always-on; false for path-filtered
+---
+```
+
+## नियम दायरे
+
+| दायरा | कब लागू होता है |
+|-------|-------------|
+| `always-on` | हर सत्र, हर फ़ाइल |
+| `path-filtered` | केवल जब सक्रिय फ़ाइल `path-filter` से मेल खाती है |
+| `operator-selected` | ऑपरेटर settings.json में स्पष्ट रूप से सक्षम करता है |
+
+## उदाहरण नियम
+
+```markdown
+---
+name: "python-conventions"
+description: "Python style conventions for this project"
+pathFilter: "**/*.py"
+alwaysApply: false
+---
+
+# Python conventions
+
+- Use type annotations on all public functions.
+- Maximum line length: 88 characters.
+- Prefer explicit over implicit.
+```
+
+## नियमों को हार्नेस पर लागू करना
+
+नियम लिखने के बाद, हर इंस्टॉल किए गए हार्नेस अडैप्टर को अपडेट करें। इंस्टॉल किए गए
+सेट को देखने के लिए `apothem harnesses list` चलाएँ, फिर प्रति हार्नेस एक बार update
+को कॉल करें:
+
+```bash
+apothem update --harness claude-code
+apothem update --harness cursor
+```
+
+## नियम सत्यापन
+
+```bash
+python -m apothem.conformity.gate --check frontmatter
+```

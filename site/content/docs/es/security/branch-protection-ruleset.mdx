@@ -1,0 +1,54 @@
+---
+title: "Protección de ramas"
+description: "Protección de ramas de Apothem en main: puerta de revisión, control mediante verificaciones de estado y restricciones de push."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+La rama `main` de Apothem está protegida por la protección de ramas de GitHub después de que se publica el único commit de lanzamiento nuevo. La protección hace cumplir la disciplina de conjunto de cambios declarada en `rules/production-ready-prs.md` y alimenta las verificaciones **Branch-Protection** y **Code-Review** de OpenSSF Scorecard para el trabajo futuro.
+
+## Declaración del conjunto de reglas
+
+| Ajuste | Valor | Justificación |
+|---|---|---|
+| **Objetivo** | `main` | Protege la rama predeterminada pública. |
+| **Estado de aplicación** | `active` | No está en modo de simulación. |
+| **Requerir pull request antes de fusionar** | ✅ | Los pushes directos a `main` quedan bloqueados. |
+| **Revisiones de aprobación requeridas** | **1** | Puerta mínima de revisión humana para un nuevo proyecto con mantenedor único. |
+| **Descartar aprobaciones obsoletas en nuevos commits** | ✅ | Un force-push tras la aprobación vuelve a disparar la revisión. |
+| **Requerir revisión de Code Owners** | Diferido | Habilitar esto antes de que se incorpore un segundo mantenedor puede bloquear los PR de mantenedor único. |
+| **Requerir aprobación del push revisable más reciente** | ✅ | El último commit enviado debe llevar aprobación. |
+| **Resolución de conversaciones requerida** | ✅ | Los hilos de revisión abiertos bloquean la fusión. |
+| **Requerir que las verificaciones de estado pasen** | ✅ | Workflow de CI + Scorecard + CodeQL + pip-audit. |
+| **Verificaciones de estado requeridas** | Verificaciones núcleo actuales | La lista requerida se actualiza desde el último commit de lanzamiento en verde. |
+| **Requerir que las ramas estén actualizadas** | ✅ | Previene regresiones por fusión obsoleta. |
+| **Requerir commits firmados** | Recomendado | Los commits de lanzamiento locales están firmados; la aplicación completa espera hasta que la documentación de incorporación de contribuyentes describa la configuración SSH/GPG. |
+| **Requerir historial lineal** | ✅ | Mantiene comprensible el historial público de una sola línea. |
+| **Bloquear force-pushes** | ✅ | La reescritura de historial en `main` queda bloqueada. |
+| **Permitir eliminación** | ❌ | La rama `main` no puede eliminarse. |
+
+## Restricción de mantenedor único
+
+GitHub no permite que los archivos del repositorio creen historial de revisión humana. Por lo tanto, el repositorio aplica la protección de ramas más fuerte que no genera bloqueo para su modelo de mantenedor actual: una revisión de aprobación, descarte de revisión obsoleta, aprobación del último push, resolución de conversaciones, verificaciones de estado, historial lineal, y sin eliminación de rama ni force-push. Cuando se incorpore un segundo mantenedor, la revisión de CODEOWNERS y un mínimo de dos revisores se convertirán en el ajuste más fuerte.
+
+## Requisitos de verificación de estado
+
+Las cuatro verificaciones de estado de control estricto declaradas arriba:
+
+- **`ci`** — matriz completa de pruebas + ruff + mypy + bandit + Trivy + pip-audit sobre el árbol de dependencias resuelto
+- **`Scorecard`** — ejecución de OpenSSF Scorecard sin regresión por verificación
+- **`CodeQL`** — paquetes de consulta `security-extended` para `python` + `actions`
+- **`pip-audit`** — escaneo de vulnerabilidades semanal + por PR contra el árbol de dependencias resuelto
+
+Cualquier otro workflow puede reportar estado, pero su resultado no controla la fusión a menos que se promueva a la lista de verificaciones requeridas.
+
+## Cadencia de auditoría
+
+Este archivo se revisa en cada auditoría de seguridad y en cada punto de control de ingeniería de lanzamiento. La deriva entre este archivo y la configuración real de protección de ramas es un hallazgo de alta severidad.
+
+## Referencias
+
+- [OpenSSF Scorecard — Branch-Protection check](https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection)
+- [GitHub — About protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
+- [Apothem CODEOWNERS](https://github.com/ahmed-g-gad/apothem/blob/main/.github/CODEOWNERS) — propiedad de revisión con alcance por ruta
+- `rules/production-ready-prs.md` §1 — disciplina de mismo conjunto de cambios que este conjunto de reglas hace cumplir

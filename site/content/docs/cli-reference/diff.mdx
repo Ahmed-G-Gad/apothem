@@ -1,0 +1,106 @@
+---
+title: "diff"
+description: "CLI reference for the apothem diff command."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Preview the pending configuration changes for a single harness.
+
+## Synopsis
+
+```
+apothem diff --harness NAME [--profile PATH] [--project PATH]
+             [--quiet|-q] [--verbose|-v]
+             [--format plain|json] [--json] [--no-color]
+```
+
+`diff` is a read-only inspection command. It runs the same materialization the
+`install` command would run, but in dry-run mode — nothing is written to disk.
+For each pending target it renders a plain-language action (for example
+`Write file`, `Merge directory`, `Install skills`, or `Prune stale files`), the
+target path, a preview status (`would create`, `would update`, `would remove`,
+or `no change`), and — for operator-owned anchors that would be merged — the
+unified diff of the change. The status is computed by comparing the source
+against the current on-disk target, so an already-matching target reads
+`no change` and is hidden from the default view. It is the answer to "what would
+`apothem install` do to this harness right now?" without making the change.
+
+For operator-owned targets — files that carry both your own content and an
+Apothem-managed block — the diff shows the exact lines that would change. For
+other targets, the planned action and preview status are summarized.
+
+The default view lists only pending changes. Pass `--verbose` to see the full
+plan, including unchanged targets, annotated with the raw internal operation
+kind and outcome. The `--json` envelope is unaffected by the display layer: it
+always carries the raw `operation` and `outcome` fields for machine consumers.
+
+`diff` operates on a single harness. Unlike `status`, it does not accept `all`;
+pass one harness name.
+
+## Options
+
+| Option | Description |
+|---|---|
+| `--harness NAME` | Harness adapter to preview (required; single harness, not `all`). |
+| `--profile PATH` | Path to shared profile YAML. Defaults to `~/.config/apothem/profile.yaml`. |
+| `--project PATH` | Project root for project-scope harnesses. Required when the selected harness is project-scope. |
+| `--quiet`, `-q` | Suppress informational output; only errors are emitted. |
+| `--verbose`, `-v` | Show the full plan, including unchanged targets, annotated with the raw operation kind and outcome. |
+| `--format plain\|json` | Output format (default: `plain`). |
+| `--json` | Shorthand for `--format json`. |
+| `--no-color` | Disable ANSI color codes in output. |
+| `-h`, `--help` | Show help and exit. |
+
+## JSON output
+
+The `--json` envelope mirrors the dry-run install envelope. `status` is
+`dry_run`, `files_written` is always empty, and the `materialization` block
+plus the `results` list carry the full planned-target detail. Each operator-owned
+result row's `detail.diff` field carries the unified diff string.
+
+```json
+{
+  "status": "dry_run",
+  "command": "diff",
+  "action": "dry_run",
+  "harness": "claude-code",
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "updated",
+      "operation": "sentinel_merge",
+      "path": "C:\\Users\\Example\\.claude\\CLAUDE.md",
+      "message": "dry run: no filesystem changes made",
+      "detail": {
+        "ownership_class": "operator-owned",
+        "diff": "--- a/CLAUDE.md\n+++ b/CLAUDE.md\n@@ ..."
+      }
+    }
+  ],
+  "warnings": [],
+  "error": null,
+  "materialization": { "...": "..." }
+}
+```
+
+## Examples
+
+```bash
+apothem diff --harness claude-code
+apothem diff --harness cursor --project .
+apothem diff --harness claude-code --json
+```
+
+## Exit codes
+
+| Code | Meaning |
+|---|---|
+| 0 | Diff reported (pending changes are reported, not an error) |
+| 1 | Expected validation, profile, harness, or project error |
+
+## See also
+
+- [apothem status](/docs/cli-reference/status) — report install/verify/drift across every harness
+- [apothem verify](/docs/cli-reference/verify) — verify a single harness installation
+- [apothem install](/docs/cli-reference/install) — apply the previewed changes

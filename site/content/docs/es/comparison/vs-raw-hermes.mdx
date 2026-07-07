@@ -1,0 +1,50 @@
+---
+title: "Apothem vs. la configuración de Hermes en bruto"
+description: "Mantener a mano la configuración de Hermes frente a gestionarla a través del perfil compartido de Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Hermes lee `~/.hermes/config.yaml`. Apothem escribe la configuración YAML nativa
+(proyectando el inventario de MCP del perfil en `auxiliary.mcp`) e instala
+cohortes compartidas de comandos y skills bajo `~/.hermes/.apothem/support/skills/`. El
+propio `skills.config` de Hermes es una lista de paquetes de registro, así que
+Apothem no lo escribe.
+
+## Estado
+
+**Vista previa.** El adaptador de Hermes apunta al archivo de configuración
+actualmente documentado y a la superficie de descubrimiento de skills. Las
+cohortes que no son de skills siguen siendo material de apoyo de Apothem.
+
+## Comparación de esfuerzo
+
+| Tarea | Config a mano en bruto | Gestionado por Apothem |
+| ---- | --------------- | --------------- |
+| Escribir skills reutilizables | Editar a mano la config y los directorios de skills | Escribir una vez en el corpus compartido |
+| Mantener las cohortes alineadas con otros entornos | Manual, por herramienta | Automático con `apothem update` |
+| Instalar / eliminar la config | Manual | `apothem install` / `apothem uninstall` |
+| Verificar que la config es correcta | Inspección manual | `apothem verify --harness hermes` |
+
+## Qué gestiona Apothem
+
+El adaptador de Hermes escribe `config.yaml`, envuelve los comandos de barra de
+Apothem como skills, copia las skills de Apothem en el directorio de apoyo
+referenciado y mantiene las reglas, plantillas, agents y material de hooks bajo el
+subárbol de apoyo de Apothem.
+
+## Ruta de migración
+
+1. Ejecuta `apothem profile init` para crear el perfil compartido si aún no lo
+   has hecho.
+2. Mueve las skills o los prompts de comandos reutilizables de Hermes al corpus
+   compartido.
+3. Ejecuta `apothem install --harness hermes` para renderizar la configuración
+   nativa y el directorio de skills de apoyo.
+4. Ejecuta `apothem verify --harness hermes` para confirmar que la configuración
+   aterrizó.
+
+## Leer a continuación
+
+- [Referencia del adaptador de Hermes](/docs/harnesses/hermes)
+- [Visión general de la comparación](/docs/comparison)

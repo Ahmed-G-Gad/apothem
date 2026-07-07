@@ -1,0 +1,70 @@
+# SPDX-License-Identifier: MIT
+
+# Apothem shared profile example.
+# Copy to ~/.config/apothem/profile.yaml and edit local values.
+# Schema: src/apothem/schemas/profile.schema.json
+
+# Optional profile-schema version; defaults to the current version (1) when
+# omitted. Version-less profiles remain valid.
+schema_version: 1
+
+identity:
+  name: "Example User"
+  role: "senior software engineer"
+  email: "dev@example.invalid"
+  website: "https://example.invalid"
+  github: "example-user"
+
+preferences:
+  language: "python"
+  style: "concise"
+  formatter: "ruff"
+  test_framework: "pytest"
+
+seriousness: PERSONAL_USE
+
+# Opt-in toggles for shipped behaviors. Every flag is default-off; a clean
+# install imposes none of them. Set a flag true to opt into that behavior;
+# omit the block entirely to keep every behavior off.
+enforcement:
+  sprints: false
+  agent_teams: false
+  multitasking: false
+  continuous_execution: false
+  learning_loop: false
+
+rules:
+  - "Prefer explicit decisions over guessed product behavior."
+  - "Validate external input before writing files."
+  - "Keep generated harness output deterministic."
+
+# MCP server inventory: the cross-harness portability surface. Keyed by server
+# name. stdio servers carry command (+ optional args/env); http/sse/
+# streamable-http servers carry url. Apothem materializes these into the three
+# harnesses whose native config it renders directly (opencode, qwen-code,
+# hermes) and lists them as instruction-context reference (an "MCP Servers"
+# section in the managed block) for every other harness.
+mcp_servers:
+  filesystem:
+    transport: stdio
+    command: "npx"
+    args: ["-y", "@modelcontextprotocol/server-filesystem", "."]
+  docs:
+    transport: streamable-http
+    url: "https://mcp.example.invalid/docs"
+
+harnesses:
+  claude-code:
+    seriousness: SHARED
+  cursor:
+    preferences:
+      style: "verbose"
+    # Per-harness MCP overrides union with the shared inventory by server name.
+    mcp_servers:
+      search:
+        transport: http
+        url: "https://mcp.example.invalid/search"
+
+exclude_harnesses:
+  - antigravity
+  - open-claw

@@ -1,0 +1,97 @@
+---
+title: "migrate-workspace"
+description: "مرجع واجهة سطر الأوامر لأمر apothem migrate-workspace."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+يُرحِّل مساحة عمل قديمة لكل مساعد برمجي إلى التخطيط المشترك <bdi>`.apothem`</bdi>.
+
+## الموجز
+
+```
+apothem migrate-workspace [--project PATH] [--dry-run]
+                          [--quiet|-q] [--verbose|-v]
+                          [--format plain|json] [--json] [--no-color]
+```
+
+يطوي <bdi>`migrate-workspace`</bdi> دليل بيانات قديمًا لكل مساعد برمجي
+(<bdi>`.apothem/<harness>/...`</bdi>) وشجرة <bdi>`.plans/`</bdi> قديمة في دليل
+العمل المشترك الواحد <bdi>`.apothem/{plans,memory,learning,contexts}`</bdi>.
+القاعدة هي جذر <bdi>`--project`</bdi> المُحَلّ عند تقديمه، وإلا فدليل العمل الحالي
+(الافتراضي المحلي للمشروع).
+
+تندمج الذاكرة والسياقات ومخازن التعلّم لكل مساعد برمجي اندماجًا اتحاديًّا في المخزن
+المشترك حسب المُعرِّف؛ وتُسلسَل إشارات التعلّم مع إزالة التكرار؛ ويُتخطّى سجلٌّ متعارض
+(المُعرِّف نفسه، جسم مختلف)، ولا يُكتَب فوقه أبدًا. تُنقَل شجرة <bdi>`.plans/`</bdi>
+قديمة تحت <bdi>`.apothem/plans/`</bdi>. ويُنسَخ كل مصدر مُستهلَك احتياطيًّا أولًا.
+الترحيل عديم الأثر — إعادة تشغيله على شجرة مُرحَّلة سلفًا لا تفعل شيئًا.
+
+## الخيارات
+
+| الخيار | الوصف |
+|---|---|
+| `--project PATH` | جذر المشروع للمُحَوِّلات بنطاق المشروع التي تتجسّد في شجرة مشروع بدلًا من دليل تهيئة بنطاق المستخدم. |
+| `--dry-run` | يكتشف التخطيط القديم ويُبلِّغ بما سيُرحَّل دون كتابة. |
+| `--quiet`, `-q` | يُخمِد المخرجات المعلوماتية؛ تُصدَر الأخطاء فقط. |
+| `--verbose`, `-v` | يُصدِر مخرجات تشخيصية إضافية. |
+| `--format plain\|json` | تنسيق المخرجات (الافتراضي: `plain`). |
+| `--json` | اختصار لـ `--format json`. |
+| `--no-color` | يُعطِّل رموز ألوان <bdi>ANSI</bdi> في المخرجات. |
+| `-h`, `--help` | يعرض المساعدة ويخرج. |
+
+## مخرجات JSON
+
+يحمل غلاف <bdi>`--json`</bdi> نتيجة الترحيل. عند اكتمال الترحيل تكون
+<bdi>`status`</bdi> هي <bdi>`success`</bdi>، وتُبلِّغ الحمولة بأعداد السجلّات المُدمَجة،
+وما إذا نُقِلت شجرة <bdi>`.plans/`</bdi>، وجذر النسخ الاحتياطي، وأي تعارضات مُتخطّاة.
+يُبلِّغ استدعاء <bdi>`--dry-run`</bdi> بدلًا من ذلك بـ <bdi>`legacy_layout_detected`</bdi>.
+
+```json
+{
+  "command": "migrate-workspace",
+  "status": "success",
+  "base": "/home/example/project",
+  "migrated": true,
+  "backup_root": "/home/example/project/.apothem/.backups/01J9Z…",
+  "memory_merged": 12,
+  "contexts_merged": 4,
+  "learning_merged": 7,
+  "conflicts": [],
+  "plans_moved": true,
+  "notes": []
+}
+```
+
+عند عدم وجود تخطيط قديم، تكون <bdi>`migrated`</bdi> هي <bdi>`false`</bdi> ولا يُكتَب أي
+شيء. يُسقِط غلاف <bdi>`--dry-run`</bdi> أعداد النتيجة ويُبلِّغ بالاكتشاف فقط:
+
+```json
+{
+  "command": "migrate-workspace",
+  "base": "/home/example/project",
+  "dry_run": true,
+  "legacy_layout_detected": false
+}
+```
+
+## أمثلة
+
+```bash
+apothem migrate-workspace
+apothem migrate-workspace --project .
+apothem migrate-workspace --dry-run --json
+```
+
+## رموز الخروج
+
+| الرمز | المعنى |
+|---|---|
+| 0 | اكتمل الترحيل، أو لم يُعثَر على تخطيط قديم (لا شيء لترحيله) |
+| 1 | خطأ متوقَّع — خطأ تحقّق أو خطأ في جذر المشروع، أو فشل ترحيل |
+
+## انظر أيضًا
+
+- [apothem install](/docs/cli-reference/install) — تجسيد مساعد برمجي من الملف الشخصي المشترك
+- [apothem status](/docs/cli-reference/status) — الإبلاغ بحالة التثبيت والتحقّق والانحراف
+- [انضباط الخطط](/docs/reference/plans-discipline) — التخطيط المشترك <bdi>`.apothem/plans/`</bdi>

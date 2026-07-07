@@ -1,0 +1,6 @@
+{
+  "type": "command",
+  "command": "python3 \"<ROOT>/statuslines/render.py\"",
+  "commandWindows": "py -3 \"<ROOT>/statuslines/render.py\"",
+  "description": "Operating-posture statusline: active sprint goal, unresolved inquiry count, current phase / sub-phase pointer. Agnostic — values are read from the operating agent's working trace (the most recently-touched plan suite's PROGRESS.md), never hardcoded."
+}

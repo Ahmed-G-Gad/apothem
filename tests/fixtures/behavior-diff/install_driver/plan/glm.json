@@ -1,0 +1,7 @@
+[
+  {
+    "mode": "write_text",
+    "source": "<APOTHEM_SRC>/harnesses/glm/templates/glm.toml",
+    "target": "<ROOT>/.apothem/providers/glm.toml"
+  }
+]

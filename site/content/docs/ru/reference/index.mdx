@@ -1,0 +1,25 @@
+---
+title: "Справочник"
+description: "Навигируемый реестр классов артефактов с путями и дисковыми раскладками для правил, команд, навыков, делегированных работников, хуков, серверов MCP, настроек и стилей вывода."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Справочник по классам артефактов. Каждая страница описывает назначение класса, дисковую раскладку, контракт frontmatter и реестр, перечисляющий каждый экземпляр.
+
+Ниже показаны пути относительно репозитория; каждый адаптер материализует их в свой нативный каталог конфигурации (напр. `~/.claude/` для адаптера Claude Code — см. [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses) для назначений каждого окружения).
+
+| Класс | Страница | Путь к источнику относительно репозитория |
+|-------|------|--------------|
+| `CLAUDE.md` | [CLAUDE.md](/docs/reference/claude-md) | `CLAUDE.md` |
+| Правила | [Правила](/docs/reference/rules) | `src/apothem/rules/` |
+| Команды | [Команды](/docs/reference/commands) | `src/apothem/commands/` |
+| Навыки | [Навыки](/docs/reference/skills) | `src/apothem/skills/` |
+| Делегированные работники | [справочная страница](/docs/reference/agents) | см. блок canonical-paths |
+| Хуки | [Хуки](/docs/reference/hooks) | `src/apothem/hooks/` |
+| Серверы MCP | [Серверы MCP](/docs/reference/mcp) | общий профиль — `mcp_servers` |
+| Настройки | [Настройки](/docs/reference/settings) | `src/apothem/harnesses/claude_code/templates/settings.json` |
+| Стили вывода | [Стили вывода](/docs/reference/output-styles) | `src/apothem/output-styles/` |
+| Реестр окружений | [Реестр окружений](/docs/reference/harness-registry) | `src/apothem/lib/harness_registry.py` |
+
+Полный канонический реестр живёт в когортах артефактов (`rules/`, `commands/`, `skills/`, `agents/`, `hooks/`). Эта страница отражает этот реестр в навигируемой форме.

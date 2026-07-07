@@ -1,0 +1,30 @@
+---
+title: "Référence de la CLI"
+description: "Référence de la CLI Apothem — synopsis par commande, options et codes de sortie de l'interface en ligne de commande apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+L'interface en ligne de commande `apothem` gère les configurations d'adaptateurs de harness à partir du profil partagé. Chaque page ci-dessous documente une sous-commande : son synopsis, ses options, son comportement et ses codes de sortie.
+
+Chacune des commandes `install`, `update` et `uninstall` accepte aussi un alias en forme continue (`installing`, `updating`, `uninstalling`) identique en options et en comportement à la commande de base. La mise à jour et la désinstallation via les canaux d'installation — le plugin Claude Code, `npx` et les scripts d'installation en une étape — sont documentées dans les guides d'installation [Mise à jour](/docs/install/updating) et [Désinstallation](/docs/install/uninstalling), pas par les alias eux-mêmes.
+
+## Commandes
+
+| Commande | Description |
+|---------|-------------|
+| [quickstart](/docs/cli-reference/quickstart) | Première exécution guidée : assure un profil, prévisualise les écritures, puis installe. |
+| [install](/docs/cli-reference/install) | Installe la configuration d'un adaptateur de harness à partir du profil partagé (alias : `installing`). |
+| [update](/docs/cli-reference/update) | Réinstalle la configuration d'un adaptateur de harness à partir du profil partagé actuel (alias : `updating`). |
+| [uninstall](/docs/cli-reference/uninstall) | Supprime la configuration d'un adaptateur de harness (alias : `uninstalling`). |
+| [rollback](/docs/cli-reference/rollback) | Restaure un harness à l'état précédant son installation enregistrée. |
+| [verify](/docs/cli-reference/verify) | Vérifie l'installation d'un adaptateur de harness. |
+| [status](/docs/cli-reference/status) | Indique l'état d'installation, de vérification et de dérive de chaque harness enregistré. |
+| [diff](/docs/cli-reference/diff) | Prévisualise les changements de configuration en attente pour un seul harness. |
+| [harnesses](/docs/cli-reference/harnesses) | Liste et inspecte les adaptateurs de harness enregistrés. |
+| [profile](/docs/cli-reference/profile) | Gère le profil partagé Apothem. |
+| [doctor](/docs/cli-reference/doctor) | Exécute les diagnostics système pour l'installation d'Apothem. |
+| [completion](/docs/cli-reference/completion) | Émet un script de complétion shell chargeable via source (bash, zsh, fish, powershell). |
+
+Pour les commandes slash et la vue d'ensemble de la CLI de plus haut niveau, consultez les pages de référence
+[Vue d'ensemble de la CLI](/docs/reference/cli) et [Commandes slash](/docs/reference/commands).

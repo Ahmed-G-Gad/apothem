@@ -1,0 +1,99 @@
+---
+title: "diff"
+description: "apothem diff コマンドの CLI リファレンス。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+単一のハーネスの保留中の構成変更をプレビューします。
+
+## 構文
+
+```
+apothem diff --harness NAME [--profile PATH] [--project PATH]
+             [--quiet|-q] [--verbose|-v]
+             [--format plain|json] [--json] [--no-color]
+```
+
+`diff` は読み取り専用の検査コマンドです。`install` コマンドが実行するのと同じ
+マテリアライズ処理を実行しますが、ドライランモードで動作します。ディスクには何も
+書き込みません。その後、計画されたターゲットごとに、操作、ターゲットパス、結果、
+そして（マージされることになるオペレーター所有のアンカーについては）変更の統一差分
+をレンダリングします。これは、「今この瞬間に `apothem install`
+がこのハーネスに対して何をするか？」という問いへの、変更を行わない
+ままの答えです。
+
+オペレーター所有のターゲット（あなた自身のコンテンツと Apothem 管理のブロックの両方を
+携えるファイル）については、差分は変更されることになる正確な行を示します。その他の
+ターゲットについては、計画された操作と結果が要約されます。
+
+`diff` は単一のハーネスに対して動作します。`status` とは異なり、`all`
+は受け付けません。ハーネス名を 1 つ渡してください。
+
+## オプション
+
+| オプション | 説明 |
+|---|---|
+| `--harness NAME` | プレビューするハーネスアダプター（必須。`all` ではなく単一のアシスタント）。 |
+| `--profile PATH` | 共有プロファイル YAML へのパス。デフォルトは `~/.config/apothem/profile.yaml`。 |
+| `--project PATH` | プロジェクトスコープのハーネス向けのプロジェクトルート。選択したアシスタントがプロジェクトスコープの場合は必須。 |
+| `--quiet`, `-q` | 情報出力を抑制し、エラーのみを発します。 |
+| `--verbose`, `-v` | 追加の診断出力を発します。 |
+| `--format plain\|json` | 出力形式（デフォルト: `plain`）。 |
+| `--json` | `--format json` の短縮形。 |
+| `--no-color` | 出力中の ANSI カラーコードを無効にします。 |
+| `-h`, `--help` | ヘルプを表示して終了します。 |
+
+## JSON 出力
+
+`--json` のエンベロープは、ドライランの install のエンベロープを反映します。`status`
+は `dry_run`、`files_written` は常に空であり、`materialization` ブロックと `results`
+リストが計画されたターゲットの完全な詳細を携えます。各オペレーター所有の結果行の
+`detail.diff` フィールドは、統一差分の文字列を携えます。
+
+```json
+{
+  "status": "dry_run",
+  "command": "diff",
+  "action": "dry_run",
+  "harness": "claude-code",
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "updated",
+      "operation": "sentinel_merge",
+      "path": "C:\\Users\\Example\\.claude\\CLAUDE.md",
+      "message": "dry run: no filesystem changes made",
+      "detail": {
+        "ownership_class": "operator-owned",
+        "diff": "--- a/CLAUDE.md\n+++ b/CLAUDE.md\n@@ ..."
+      }
+    }
+  ],
+  "warnings": [],
+  "error": null,
+  "materialization": { "...": "..." }
+}
+```
+
+## 例
+
+```bash
+apothem diff --harness claude-code
+apothem diff --harness cursor --project .
+apothem diff --harness claude-code --json
+```
+
+## 終了コード
+
+| コード | 意味 |
+|---|---|
+| 0 | 差分を報告した（保留中の変更は報告されるものであり、エラーではない） |
+| 1 | 予期される検証、プロファイル、ハーネス、またはプロジェクトのエラー |
+
+## 関連項目
+
+- [apothem status](/docs/cli-reference/status) — 各ハーネスのインストール/検証/ドリフトの状態を報告する
+- [apothem verify](/docs/cli-reference/verify) — 単一のハーネスのインストールを検証する
+- [apothem install](/docs/cli-reference/install) — プレビューした変更を適用する

@@ -1,0 +1,88 @@
+---
+title: "ハーネスアダプター"
+description: "Apothem のハーネスアダプター — 1 つの共有プロファイル、15 のサポート対象ターゲット。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem は 17 個の組み込みハーネスアダプターを提供します。各アダプターは、同じ共有コホートを、
+プラットフォームがサポートする場合はプラットフォームネイティブのファイルへ、サポートしない
+場合は Apothem 所有のサポートツリーへと変換します。
+
+## サポート対象ハーネス
+
+サポート対象のレジストリには、ちょうど 17 個のアダプターが含まれます。`--harness` には以下の
+正確なインストール名を使用するか、確定的なレジストリセットには `all` を使用します。
+
+```text
+antigravity
+claude-code
+codebuddy
+codex
+cursor
+gemini-cli
+github-copilot
+glm
+hermes
+kimi-code
+kiro
+open-claw
+opencode
+qwen-code
+trae
+windsurf
+zed
+```
+
+詳細なレジストリマトリクス、ターゲットパス、機能の状態、MCP サポート、規約ピンの根拠は、
+[技術レジストリリファレンス](/docs/reference/harness-registry)にあります。
+
+## 複数のハーネスをインストールする
+
+1 つのハーネスをインストールするか、`all` を使ってレジストリを確定的な順序で選択します。
+プロジェクトスコープのハーネスには `--project PATH` が必要です。レジストリにはユーザースコープと
+プロジェクトスコープの両方のターゲットが含まれるため、`all` もこれに該当します。
+
+```bash
+apothem install --harness claude-code
+apothem install --harness cursor --project /path/to/project
+apothem install --harness gemini-cli --project /path/to/project
+apothem install --harness all --project /path/to/project
+```
+
+## インストールを検証する
+
+各ハーネスアダプターを個別に検証するか、登録済みのすべてのアダプターにわたるアダプターごとの
+インストール状況のサマリーを得るために `apothem doctor` を呼び出します。
+
+```bash
+apothem verify --harness claude-code
+apothem verify --harness all --project /path/to/project
+apothem doctor
+```
+
+## アダプターの仕組み
+
+各アダプターは、setuptools のエントリーポイント経由で登録された `HarnessAdapter` プロトコルを
+実装します。インストール時、CLI は共有 YAML プロファイルを読み込んで検証し、レジストリを通じて
+アダプターを解決し、マテリアライズ計画を検証し、プラットフォームネイティブの設定をハーネスの
+ネイティブなユーザーまたはプロジェクトの場所に書き込みます。更新時には、現在のプロファイルの
+状態から再導出します。
+
+```
+profile.yaml + packaged cohorts
+    identity / preferences / rules
+    commands / skills / delegated definitions / hooks / templates
+         |
+         +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/antigravity-cli/plugins/apothem/
+         +-- claude-code    --> ~/.claude/ native folders + ~/.claude/.apothem/support/
+         +-- codex          --> ~/.codex/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
+         +-- cursor         --> <project>/.cursor/rules/*.mdc
+         +-- gemini-cli     --> <project>/GEMINI.md + <project>/.gemini/
+         +-- github-copilot --> <project>/.github/copilot-instructions.md
+         +-- windsurf       --> <project>/.devin/rules/
+         +-- ...
+```
+
+プロトコルの仕様については[ハーネスアダプター抽象化](/docs/architecture/harness-adapter-abstraction)を
+参照してください。

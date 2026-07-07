@@ -1,0 +1,53 @@
+---
+title: "源代码布局"
+description: "为什么 Apothem 使用 src/ 布局，以及该目录树是如何组织的。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem 采用了 [PyPA src-layout](https://packaging.python.org/en/latest/discussions/src-layout-vs-flat-layout/)，将所有可导入的 Python 代码放在 `src/apothem/` 之下。
+
+## 为什么采用 src-layout
+
+- **导入隔离。** 只有当 `src/` 在路径上时，`import apothem` 才能解析
+  （引擎以 `PYTHONPATH=src python -m apothem` 运行），从而防止从无关目录
+  意外导入工作树。
+- **自包含运行时。** Apothem 直接从检出运行，其依赖以 vendored 方式置于
+  `src/apothem/_vendor/` 之下 —— 无需安装步骤。src-layout 使该可导入表面
+  与仓库的工具链、测试和脚本保持干净分离。
+- **干净的分发。** 同一布局产出格式良好的 sdist 与 wheel（以及可选的
+  `pip install -e .` 可编辑安装），其内容与实际分发的内容完全一致，
+  不会有任何游离的顶层模块混入。
+
+## 目录树结构
+
+```
+src/apothem/
+    agents/         persistent agent definitions (*.md)
+    audit/          inventory and provenance tools
+    benchmarks/     performance benchmarks
+    cli/            Click CLI (quickstart, install, update, uninstall, verify, status, diff, rollback, harnesses, profile, doctor, completion)
+    commands/       slash command definitions (*.md)
+    conformity/     mechanical gate checkers (*-grep.py)
+    harnesses/      one sub-package per harness adapter (17 adapters)
+    hooks/          hook dispatcher + message files
+    lib/            shared Python library
+    output-styles/  output-style definitions (*.md)
+    rules/          behavioral rules (*.md)
+    schemas/        YAML/JSON schemas
+    skills/         reusable skill templates (folder/SKILL.md)
+    statuslines/    status-line config (*.json)
+    templates/      reusable template artifacts
+```
+
+## 可导入工件 vs. 配置工件
+
+`src/apothem/` 之下的许多条目是 Markdown 配置工件，而不是 Python 模块。可导入的 Python 表面是：
+
+- `src/apothem/cli/`（作为 `apothem` 入口点暴露的 Click CLI）
+- `src/apothem/harnesses/`（17 个harness适配器子包）
+- `src/apothem/lib/`（共享库：配置档案、注册表、物化器、传播）
+- `src/apothem/hooks/`（dispatch.py、lib/）
+- `src/apothem/conformity/`（机械化的 grep 脚本）
+- `src/apothem/audit/`（清单脚本）
+- `src/apothem/benchmarks/`（性能基准驱动程序）

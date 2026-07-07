@@ -1,0 +1,138 @@
+---
+title: "Multi-Surface-Harness-Konventionen"
+description: "Kanonische normative Referenz für die Konfiguration und Kohärenz von Multi-Surface-Harnesses über die Laufzeitumgebungen für Chat, IDE-Vervollständigung und PR-Review hinweg."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Kanonische normative Referenz für nachgelagerte Mitwirkende.** Dieses Dokument spiegelt die Abschnitte zu den Multi-Surface-Harness-Konventionen der Projektspezifikation wider (Spezifikation §0.6 + §2.8 + §4.7); es ist die eigenständige Referenz, die mit dem veröffentlichten Repository ausgeliefert wird. Die architektonische Begründung ist in [ADR-0003](/docs/architecture) festgehalten.
+
+---
+
+## 1. Warum Plural
+
+Eine moderne Engineering-Oberfläche wird von mehreren Harness-Laufzeitumgebungen berührt — Chat-Konsolen, IDE-internen Vervollständigungs-Engines, Pair-Programming-Begleitern und Pull-Request-Reviewern. Jede liest ihre eigene kanonische Konfigurationsdatei. Wenn das Projekt nur eine solche Datei ausliefert, improvisieren die übrigen Laufzeitumgebungen stillschweigend gegen nicht deklarierte Konventionen; das fehlende repo-interne Gedächtnis leckt sofort.
+
+Die Kosten einer fehlenden Oberfläche sind **stille Drift im maschinell generierten Code** — die schlimmste Art von Defekt, weil er sich unsichtbar anhäuft. Jedes maschinell generierte Artefakt verschärft die Divergenz; bis ein menschlicher Reviewer den Widerspruch entdeckt, trägt die Codebasis bereits wochenlange inkonsistente Konventionen mit sich.
+
+Die Konfiguration der Programmier-Laufzeitumgebung ist plural durch die Realität der Bereitstellung. Das veröffentlichte Ökosystem **MUSS** eine Verhaltensgedächtnisdatei für die Chat-Konsolen-Laufzeitumgebung **UND** eine repo-bezogene Anweisungsdatei für die IDE-interne Vervollständigungs-Laufzeitumgebung ausliefern. Die beiden Oberflächen **MÜSSEN** wechselseitig kohärent sein — kein Widerspruch, keine Drift — und **MÜSSEN** gemeinsam dieselben Disziplinen kodieren.
+
+---
+
+## 2. Der Kohärenzvertrag
+
+Jede in Reichweite befindliche Konventionsoberfläche (§3) ist ein *Kanal*, der die einzige Konventionsspezifikation des Projekts ausdrückt. Die Spezifikation wird zerlegt in:
+
+- **Gemeinsame Abschnitte** — Pläne-Disziplin, strukturierte Rückfrage (oder Oberflächen-Äquivalent), Autorschafts-Header, Benennung, Anti-Muster, Modale Hierarchie. Diese **MÜSSEN** in jeder erforderlichen Oberfläche erscheinen und **MÜSSEN** über die Oberflächen hinweg semantisch äquivalent sein.
+- **Oberflächenspezifische Abschnitte** — Fähigkeits-Rahmungen, Werkzeugaufruf-Muster, Unterschiede zwischen Codegenerierung und Chat. Diese **DÜRFEN** sich über die Oberflächen unterscheiden, aber **DÜRFEN NICHT** den gemeinsamen Abschnitten widersprechen.
+
+Der Validator `multi-surface-coherence` (§7) läuft bei jedem CI-Lauf und beim Pre-Commit und bestätigt den Vertrag.
+
+Die zwei (oder mehr) Oberflächen sind unterschiedliche *Kanäle*, die eine *Spezifikation* ausdrücken. Gemeinsame Abschnitte **MÜSSEN** über die Oberflächen hinweg übereinstimmen — semantisch und, wo möglich, auch lexikalisch. Oberflächenspezifische Abschnitte **DÜRFEN NICHT** den gemeinsamen Abschnitten widersprechen.
+
+---
+
+## 3. Oberflächen im Geltungsbereich
+
+| Oberfläche | Pfad | Pflicht? | Zielgruppe |
+|---|---|---|---|
+| `AGENTS.md` | Repository-Wurzel (und/oder `.codex/AGENTS.md`) | **MUST** | AGENTS-fähige Programmier-Laufzeitumgebungen |
+| `CLAUDE.md` | Repository-Wurzel (und/oder `.claude/CLAUDE.md`) | **MUST** | Claude Code |
+| Anweisungsdatei unter `.github/` | Anweisungsdatei unter `.github/` | **MUST** | IDE-interne Vervollständigungs-Laufzeitumgebung |
+| Helfer-Manifest unter `site/content/docs/architecture/` | Repository-Wurzel | **MAY** (Opt-in über den Kanal der strukturierten Rückfrage) | Multi-Helfer-Orchestrierungsplattformen |
+| `.cursorrules` | Repository-Wurzel | **MAY** (Opt-in) | IDE-interne Editor-Laufzeitumgebung |
+| `.windsurfrules` | Repository-Wurzel | **MAY** (Opt-in) | IDE-interne Begleiter-Laufzeitumgebung |
+
+Für diesen Auftrag hat sich der Operator für die optionalen Assistenten-Oberflächen entschieden, die von der Fixture erfasst werden. Nicht verwendete anbieterspezifische Wurzelkonfigurationen sind bewusst abwesend; eine werkzeugspezifische Konfigurationsdatei wird nur dann hinzugefügt, wenn dieses Werkzeug eine aktive Bearbeitungsoberfläche für dieses Repository ist.
+
+---
+
+## 4. Abschnittsliste für die IDE-interne Anweisungsdatei
+
+Die repo-bezogene Anweisungsdatei unter `.github/` **MUSS** in dieser Reihenfolge die folgenden Abschnitte enthalten (jeder mit dem exakten Überschriftentext unten; die Abschnittstexte werden verfasst, nicht per Vorlage gestempelt, aber jeder **MUSS** die aufgeführten Aussagen abdecken):
+
+1. **Project Context** — ein Absatz: was dieses Repository ist, wer es nutzt, seine Form auf oberster Ebene. Konkret; kein Marketing.
+2. **Coding Conventions** — Benennung, modale Hierarchie, Frontmatter, Markdown-Stil, sprachspezifische Stilpunkte, wo sie von den Standardwerten abweichen.
+{/* REUSE-IgnoreStart */}
+3. **File Headers** — jede Datei, die die Laufzeitumgebung generiert, **MUSS** mit der kanonischen einzelnen Zeile `SPDX-License-Identifier: MIT` gemäß [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) beginnen, in der Kommentarvariante, die zum Dateityp passt. Verweis auf `scripts/inject-header.*` und `site/content/docs/reference/authorship-header.mdx`.
+{/* REUSE-IgnoreEnd */}
+4. **Plans Discipline** — die Laufzeitumgebung **DARF KEINEN** Code oder keine Skripte generieren, die in ein Harness-Konfigurationsverzeichnis (zum Beispiel `~/.claude/plans/` oder `~/.codex/.plans/`) oder an einen anderen globalen Plänen-Ort schreiben. Planungsartefakte gehen nach `<project-root>/.apothem/plans/` (ein veralteter `<project-root>/.plans/`-Baum wird via `apothem migrate-workspace` aktualisiert) gemäß [`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline).
+5. **Structured Inquiry Behavior** — wenn die Laufzeitumgebung unsicher ist, **DARF SIE NICHT** stillschweigend erfinden. Stattdessen fügt sie einen klar gekennzeichneten Klärungsblock ein (z. B. einen Kommentar `# TODO(clarify): <question>`) und bringt die Frage im Chat zur Sprache, wo die Oberfläche es erlaubt. Keine erfundenen APIs, keine erfundenen Modellnamen, keine erfundenen Dateipfade.
+6. **Forbidden Patterns** — explizite Verbote: keine Marketing-Adjektive, keine ausweichende Füllung, keine console.log-Debug-Überreste, keine fest codierten absoluten Pfade zum Home des Benutzers, keine committeten Geheimnisse, keine committeten Dateien unter `.apothem/plans/` (oder dem veralteten `.plans/`), kein Widerspruch zur kanonischen Projektanweisungsdatei.
+7. **Output Format** — generierter Code/Prosa entspricht den vereinheitlichten konversationellen Ausgabekonventionen: Definitheit, einheitliche Gliederung, Dichte, Zusammenfassungsdisziplin, Zitate. Für Code: dokumentierte öffentliche Oberfläche, typisiert, wo die Sprache Typen unterstützt, getestet, wo ein Test-Gerüst existiert.
+8. **Review Checklist** — was ein Reviewer (Mensch oder Laufzeitumgebung im PR-Review-Modus) vor der Genehmigung **VERIFIZIEREN MUSS**: Header vorhanden, Benennung konform, keine Schreibvorgänge in `.apothem/plans/`, keine Widersprüche zur kanonischen Projektanweisungsdatei, Validatoren lokal grün.
+9. **Pointers** — Links zu `AGENTS.md`, `CLAUDE.md`, `site/content/docs/reference/plans-discipline.mdx`, `site/content/docs/reference/authorship-header.mdx`, diesem Konventionsdokument, `schemas/` und `CONTRIBUTING.md`.
+
+Die Datei beginnt mit der SPDX-Zeile des kanonischen Autorschafts-Headers (Markdown-Variante) gemäß [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) §2 — sichtbar oder unsichtbar gemäß der vom Projekt gewählten Header-Sichtbarkeitsrichtlinie.
+
+Die IDE-interne Anweisungsdatei ist **keine** wortgetreue Kopie von `AGENTS.md` oder `CLAUDE.md`. `AGENTS.md` ist die kanonische Projektanweisungsoberfläche, `CLAUDE.md` spiegelt sie für Claude Code wider, und die IDE-interne Anweisungsdatei ist für eine editor-interne Code-Vervollständigungs-Laufzeitumgebung formuliert, die Vorschläge ausgibt, die ein Entwickler annimmt oder ablehnt. Die *Information* (Disziplinen, Konventionen, Anti-Muster) ist identisch; die *Rahmung* unterscheidet sich.
+
+---
+
+## 5. Referenz der Aussagenliste
+
+Die Fixture unter [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml) zählt jede gemeinsame Aussage auf. Beispieleinträge:
+
+```yaml
+- id: plans.location
+  claim: "Planning artifacts live at <project-root>/.apothem/plans/, never inside a harness configuration directory."
+  required-in: [AGENTS.md, CLAUDE.md, .github/copilot-instructions.md]
+  optional-in: [site/content/docs/architecture/agents.mdx, .cursorrules]
+- id: header.canonical
+  claim: "Every applicable new file begins with the canonical authorship-header banner per site/content/docs/reference/authorship-header.mdx."
+  required-in: [AGENTS.md, CLAUDE.md, .github/copilot-instructions.md]
+- id: ambiguity.resolution
+  claim: "Ambiguity is surfaced via the structured-inquiry channel or a clearly-marked TODO(clarify); never silently invented."
+  required-in: [AGENTS.md, CLAUDE.md, .github/copilot-instructions.md]
+# ... (one entry per shared claim)
+```
+
+Der Validator parst jede Oberfläche, versucht die Oberflächen-Präsenz jeder Aussage zu finden (über Überschriftenhierarchie + Schlüsselwortextraktion aus dem Text) und schlägt bei jeder Lücke oder jedem Widerspruch fehl.
+
+---
+
+## 6. Abgleichsregel
+
+Wenn erkannt wird, dass sich zwei Oberflächen bei einer gemeinsamen Aussage widersprechen, ist der standardmäßige Abgleich:
+
+> `AGENTS.md` ist die kanonische Projektstimme. Jede widersprechende Oberfläche wird neu geschrieben, um die Semantik von `AGENTS.md` in oberflächengerechter Rahmung widerzuspiegeln.
+
+Eine oberflächenspezifische Überschreibung ist nur mit einer expliziten, dateiinternen Markierung `<!-- coherence-override: <claim-id> -->` zulässig, die auf einen ADR verweist, der die bewusste Divergenz erklärt. Die Überschreibungsmarkierung wird selbst in der Erlaubnisliste des Validators aufgeführt und erscheint im CI-Bericht.
+
+Für dieses Repository ist die ratifizierte Abgleichsstrategie **`agents-md-wins`**: `AGENTS.md` ist kanonisch, und jeder aktive Harness-Spiegel bleibt semantisch äquivalent.
+
+---
+
+## 7. Validatoren
+
+Drei Validatoren implementieren gemeinsam den Kohärenzvertrag:
+
+```text
+- in-IDE-instructions-presence    (src/apothem/conformity/copilot_instructions_presence_grep.py)
+- multi-surface-coherence         (src/apothem/conformity/multi_surface_coherence_grep.py)
+- license-author-consistency      (src/apothem/conformity/license_author_consistency_grep.py)
+```
+
+- Der erste bestätigt, dass die IDE-interne Anweisungsdatei existiert, parst, jeden in §4 aufgezählten kanonischen Abschnitt enthält und mit dem kanonischen Autorschafts-Banner beginnt.
+- Der zweite parst die kanonischen Abschnitte jeder Oberfläche; bestätigt, dass die gemeinsamen Abschnitte unter einem normalisierten Komparator wechselseitig konsistent sind (groß-/kleinschreibungsunabhängig, leerzeichentolerant, lexikalische Paraphrase erlaubt, aber semantische Äquivalenz auf der von der Fixture definierten Aussagenliste erforderlich).
+- Der dritte bestätigt, dass die Copyright-Zeile des LICENSE und die Zeile „Copyright (c)" des kanonischen Banners denselben Autor nennen.
+
+---
+
+## 8. Lebenszyklus der Oberfläche
+
+- **Eine Oberfläche hinzufügen.** Der Operator entscheidet sich dafür über den Kanal der strukturierten Rückfrage oder über ein nachfolgendes `make surfaces-add <name>`. Der Generator verfasst die Oberfläche gegen die Aussagenliste, führt den Validator aus und legt einen ADR an, falls eine oberflächenspezifische Überschreibung benötigt wird.
+- **Eine Oberfläche entfernen.** Die strukturierte Rückfrage bestätigt die Entfernung, ein ADR hält die Begründung fest, die required-in-Liste des Validators wird geändert.
+- **Drift-Erkennung.** Jeder Commit, der von der Aussagenliste abweicht, wird von Pre-Commit / CI abgelehnt; der Autor des Commits schreibt die Oberfläche neu, um die Kohärenz wiederherzustellen.
+
+---
+
+## Siehe auch
+
+- [ADR-0003](/docs/architecture) — architektonische Begründung, erwogene Alternativen.
+- [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml) — die kanonische Fixture der Aussagenliste.
+- [`AGENTS.md`](https://github.com/ahmed-g-gad/apothem/blob/main/AGENTS.md) — die kanonische Projektstimme.
+- [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) — der Claude Code Spiegel.
+- [`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline) — die kanonische Referenz der gemeinsamen Aussage Pläne-Disziplin.
+- [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) — die kanonische Referenz der gemeinsamen Aussage Autorschafts-Header.
+- Projektspezifikation §0.6 + §2.8 + §4.7 — der vollständige kanonische Text, der hier gespiegelt wird.

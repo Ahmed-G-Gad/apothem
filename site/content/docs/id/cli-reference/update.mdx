@@ -1,0 +1,80 @@
+---
+title: "update"
+description: "Referensi CLI untuk perintah apothem update."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Memasang ulang konfigurasi adapter asisten-pengkodean dari profil bersama saat ini.
+
+## Ringkasan
+
+```
+apothem update --harness NAME|all [--profile PATH] [--dry-run]
+                [--project PATH]
+                [--quiet|-q] [--verbose|-v]
+                [--format plain|json] [--json] [--no-color]
+```
+
+`update` mematerialisasi ulang keluaran asisten-pengkodean dari profil bersama saat ini. Perintah ini menggunakan validasi profil, pemilihan `--harness all`, pemeriksaan lingkup-proyek, perilaku dry-run, dan amplop JSON yang sama dengan `install`.
+
+Alias bentuk-kontinu `apothem updating` di-resolve ke handler yang sama.
+
+## Opsi
+
+| Opsi | Deskripsi |
+|---|---|
+| `--harness NAME` | Adapter asisten-pengkodean yang akan diperbarui, atau `all` untuk set selingkup-registri (wajib). |
+| `--profile PATH` | Path ke profil bersama YAML. Default-nya `~/.config/apothem/profile.yaml`. |
+| `--dry-run` | Pratinjau pembaruan tanpa menulis berkas. |
+| `--project PATH` | Root proyek untuk asisten-pengkodean berlingkup-proyek. Wajib ketika set asisten-pengkodean yang dipilih mencakup adapter berlingkup-proyek. |
+| `--quiet`, `-q` | Menekan keluaran informasi; hanya galat yang dikeluarkan. |
+| `--verbose`, `-v` | Mengeluarkan keluaran diagnostik tambahan. |
+| `--format plain\|json` | Format keluaran (default: `plain`). |
+| `--json` | Singkatan untuk `--format json`. |
+| `--no-color` | Menonaktifkan kode warna ANSI dalam keluaran. |
+| `-h`, `--help` | Menampilkan bantuan dan keluar. |
+
+## Keluaran JSON
+
+```json
+{
+  "status": "success",
+  "command": "update",
+  "action": "updated",
+  "harness": "claude-code",
+  "profile_path": "C:\\Users\\Example\\.config\\apothem\\profile.yaml",
+  "project": null,
+  "files_written": [],
+  "results": [],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+`--dry-run` mengembalikan `status: "dry_run"` dan `files_written: []`.
+
+## Contoh
+
+```bash
+apothem update --harness claude-code
+apothem update --harness claude-code --dry-run
+apothem update --harness all --project . --dry-run --json
+apothem Updating --harness claude-code   # continuous-form alias
+apothem updating --harness claude-code   # lowercase variant
+```
+
+## Kode keluar
+
+| Kode | Arti |
+|---|---|
+| 0 | Adapter berhasil diperbarui atau dry-run direncanakan dengan bersih |
+| 1 | Galat validasi, profil, asisten-pengkodean, proyek, atau adapter yang diharapkan |
+| 2 | Materialisasi batch parsial setelah setidaknya satu penulisan |
+
+## Lihat juga
+
+- `apothem updating` — alias bentuk-kontinu untuk perintah ini (didokumentasikan di sini; CLI menerima kedua bentuk)
+- [apothem install](/docs/cli-reference/install) — pemasangan awal
+- [Panduan pembaruan](/docs/install/updating) — jalur pembaruan per pemasang

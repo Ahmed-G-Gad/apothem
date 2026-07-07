@@ -1,0 +1,35 @@
+---
+title: "Ausgabestile"
+description: "Bediener-Tonprofile (Senior Architect, Concise Engineer, Forensic Auditor), pro Sitzung über den /output-style-Befehl aktiviert."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Ausgabestil-Profile liegen unter `src/apothem/output-styles/` und tragen die
+Bediener-Tonleitlinien je Stil. Das Runtime des Host-Harnesses aktiviert
+einen Stil pro Sitzung über `/output-style <name>`.
+
+## Kanonische Profile
+
+| Profil | Datei | Ton |
+|---------|------|------|
+| Standard-Architekt | `src/apothem/output-styles/default-architect.md` | Senior-Software-Architect-Ton (Standard) |
+| Knapper Ingenieur | `src/apothem/output-styles/concise-engineer.md` | Knapper Engineering-Ton |
+| Forensischer Prüfer | `src/apothem/output-styles/forensic-auditor.md` | Befund-für-Befund-Audit-Ton |
+
+## Frontmatter-Vertrag
+
+```yaml
+---
+name: <style name>
+description: <one-line tone summary>
+type: output-style
+---
+```
+
+## Ein neues Profil erstellen
+
+Erstellen Sie eine neue `<name>.md`-Datei unter `src/apothem/output-styles/` mit
+dem kanonischen Frontmatter, deklarieren Sie den Ton im Hauptteil und ratifizieren
+Sie ihn, indem Sie zu Beginn Ihrer nächsten Sitzung `/output-style <name>`
+aufrufen.

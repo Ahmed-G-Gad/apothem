@@ -1,0 +1,102 @@
+---
+title: "Strategi internalisasi dependensi"
+description: "Paket pihak ketiga mana yang diinternalkan Apothem di bawah src/apothem/_vendor/, mana yang tetap menjadi prasyarat sistem, dan bagaimana salinan yang diinternalkan disegarkan."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+# Strategi internalisasi dependensi
+
+## Kebijakan
+
+[Runtime mandiri](/docs/architecture/self-contained-runtime) Apothem menuntut
+agar dependensi pihak ketiga milik mesin dapat diimpor dari pohon sumber itu
+sendiri. Karena itu, setiap dependensi runtime ditangani dengan salah satu dari
+tiga cara:
+
+- **Diinternalkan sebagai sumber Python murni** di bawah `src/apothem/_vendor/`.
+  Bootstrap menempatkan direktori itu di depan `sys.path`, mendahului
+  site-packages, sehingga salinan yang diinternalkan memenangkan perlombaan
+  resolusi impor atas versi mana pun yang terpasang di sistem.
+- **Digantikan oleh shim Python murni** ketika distribusi hulu membawa sebuah
+  ekstensi terkompilasi yang tidak dapat bepergian sebagai sumber portabel.
+- **Dipertahankan sebagai prasyarat sistem yang terdokumentasi** ketika
+  internalisasi akan membawa lebih banyak permukaan daripada yang dihematnya.
+
+Aturan penempatannya ketat: hanya distribusi Python murni yang tinggal di
+`_vendor/`. Sebuah ekstensi terkompilasi (C, Rust/PyO3, Cython) bersifat spesifik
+platform dan ABI, dan tidak pernah berada di sana. Setiap paket yang diinternalkan
+membawa berkas lisensi hulunya berdampingan dengan sumbernya.
+
+## Apa yang diinternalkan
+
+| Paket | Catatan |
+|---|---|
+| `yaml` | Parser/emitter Python murni. Ekstensi C libyaml opsional adalah percepatan, tidak pernah suatu keharusan, dan tidak dibawa; impor tetap `import yaml`. |
+| `jsonschema` | Validator skema yang digunakan untuk validasi profile, konfigurasi, dan golden fixture. |
+| `attrs` (dan aliasnya `attr`) | Dibutuhkan oleh `jsonschema`. |
+| `referencing` | Dibutuhkan oleh `jsonschema`. |
+| `jsonschema_specifications` | Dibutuhkan oleh `jsonschema`. |
+| `rpds` | Sebuah shim Python murni, bukan distribusi hulu — lihat di bawah. |
+| `typing_extensions` | Dibutuhkan oleh rantai validasi yang diinternalkan. |
+
+## Shim `rpds`
+
+`jsonschema` hulu bergantung pada `rpds-py`, sebuah pustaka struktur data
+persisten yang diimplementasikan dalam Rust (PyO3) yang membawa `.pyd`/`.so`
+terkompilasi hanya dengan pembungkus `.py` yang tipis. Tidak ada sumber Python
+murni yang portabel untuk disalin, sehingga ia tidak dapat diinternalkan.
+
+Sebagai gantinya, `src/apothem/_vendor/rpds/` adalah sebuah shim Python murni yang
+mengimplementasikan ulang persis subset API yang dilatih `jsonschema` dan
+`referencing` — `HashTrieMap`, `HashTrieSet`, dan `List` — didukung oleh tipe
+bawaan `dict` / `frozenset` / `tuple`. Shim ini menghormati kontrak persistensi
+hulu: metode pemutasi mengembalikan sebuah instance baru dan meninggalkan
+penerima tidak berubah, yang menjadi andalan para konsumen saat menyimpan
+struktur-struktur ini sebagai nilai default bidang kelas yang dibekukan. Skema
+Apothem kecil, jadi perbedaan kinerja terhadap implementasi Rust tidak relevan.
+
+## Apa yang tidak diinternalkan
+
+- **`click`** — kerangka kerja CLI. Ia besar, berorientasi terminal, dan tersedia
+  secara luas, sehingga tetap menjadi prasyarat sistem yang diperiksa oleh para
+  pemasang.
+- **`rich`** — pustaka penyajian terminal, dipertahankan sebagai prasyarat sistem
+  dengan alasan yang sama.
+- **`rpds-py`** — terkompilasi; digantikan oleh shim di atas.
+- **Ekstensi C libyaml** — opsional; paket `yaml` Python murni yang diinternalkan
+  tidak pernah membutuhkannya.
+
+Para pemasang memverifikasi bahwa `click` dan `rich` dapat diimpor di bawah
+interpreter terpilih sebelum melakukan apa pun; jika salah satunya hilang, mereka
+menamainya dan menawarkan untuk memasangnya bagi Anda — dengan konfirmasi Anda,
+atau secara otomatis dengan `--yes` / `APOTHEM_AUTO_INSTALL_DEPS=1`.
+
+## Menyegarkan paket yang diinternalkan
+
+Untuk memperbarui paket yang diinternalkan ke versi hulu yang lebih baru:
+
+1. Ambil distribusi sumber hulu pada versi target.
+2. Salin direktori paket Python murni ke dalam `src/apothem/_vendor/`, menggantikan
+   salinan sebelumnya, dan segarkan berkas lisensi yang berdampingan.
+3. Perbarui `src/apothem/_vendor/vendor.txt` — penutupan yang disematkan — agar
+   baris `name==version` paketnya cocok dengan versi hulu yang baru, dan perbarui
+   blok `[[annotations]]` paket di `REUSE.toml` akar jika lisensi atau hak ciptanya
+   di hulu berubah. Keduanya diperlukan dalam **set perubahan yang sama** dengan
+   penyalinan (mandat dependensi yang hidup); para auditor rantai pasok dan gate
+   `reuse lint` membacanya.
+4. Biarkan jalur impor tak tersentuh — para konsumen mengimpor nama kanonis dan
+   prioritas `sys.path` milik bootstrap melakukan sisanya.
+5. Jalankan suite pengujian dan gate konformitas; perilaku tumpukan validasi
+   tercakup oleh pengujian validasi profile dan skema.
+
+Shim `rpds` disegarkan secara berbeda: ia melacak subset API yang digunakan para
+konsumennya, jadi pembaruan `jsonschema`/`referencing` diperiksa terhadap
+permukaan yang diimplementasikan shim, dan shim hanya tumbuh ketika sebuah titik
+panggil baru muncul.
+
+## Langkah berikutnya yang disarankan
+
+**Baca halaman [runtime mandiri](/docs/architecture/self-contained-runtime)** untuk
+melihat bagaimana pohon yang diinternalkan, model invokasi `PYTHONPATH=src`, dan
+bootstrap pohon plugin berpadu pada waktu jalan.

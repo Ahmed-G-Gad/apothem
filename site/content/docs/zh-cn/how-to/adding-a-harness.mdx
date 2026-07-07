@@ -1,0 +1,76 @@
+---
+title: "添加工具"
+description: "启用某个工具的适配器，使其原生配置从共享配置文件物化而来。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+目标：再启用一个工具，使 Apothem 从你的共享配置文件物化出该工具的
+原生配置。
+
+## 前置条件
+
+- 位于 `~/.config/apothem/profile.yaml` 的共享配置文件（若尚不存在，
+  可用 `apothem profile init` 创建一份）。
+- `apothem` CLI 在你的 `PATH` 上。如果你安装的是自包含的源码树，请为
+  每条命令加上前缀 `PYTHONPATH="$HOME/.apothem/src"`，并用
+  `python -m apothem` 替代 `apothem` 运行 —— 或者使用
+  `npx @ahmed-g-gad/apothem`。
+
+## 步骤
+
+1. 列出已注册的工具，查看哪些已经安装：
+
+   ```bash
+   apothem harnesses list
+   ```
+
+   `apothem harnesses list` 会打印每个受支持的 id；相同的集合可见于
+   [工具列表](/docs/harnesses) 与源代码生成的
+   [工具注册表](/docs/reference/harness-registry)。请为你的工具挑选对应的
+   id，而不是在此处硬编码该列表 —— 随着适配器的加入，它会不断增长。
+
+2. 检查目标工具，以确认其作用域与输出路径：
+
+   ```bash
+   apothem harnesses show cursor
+   ```
+
+   一行 `Scope: project` 表示该适配器物化进项目树，并需要 `--project PATH`；
+   `Scope: user` 表示物化进用户作用域的配置目录，无需 project 标志。
+
+3. 在不写入文件的情况下预览安装：
+
+   ```bash
+   apothem install --harness cursor --dry-run
+   ```
+
+4. 安装该工具。对于用户作用域的工具：
+
+   ```bash
+   apothem install --harness claude-code
+   ```
+
+   对于项目作用域的工具，传入项目根目录：
+
+   ```bash
+   apothem install --harness cursor --project /path/to/project
+   ```
+
+   用 `--harness all` 一次性安装每个受支持的工具（项目作用域的工具
+   仍需 `--project`；配置文件中 `exclude_harnesses` 内列出的 id 会被跳过）。
+
+## 验证
+
+```bash
+apothem verify --harness cursor
+```
+
+一行 `✓ <harness-id> is verified` 确认受管理的目标已存在且可解析。
+`apothem doctor` 给出贯穿每个工具的全系统视图。
+
+## 相关
+
+- [编辑配置文件](/docs/how-to/editing-the-profile) 以更改适配器所物化的
+  内容，然后重新运行 `apothem update`。
+- [安装](/docs/install) 涵盖首次运行的安装。

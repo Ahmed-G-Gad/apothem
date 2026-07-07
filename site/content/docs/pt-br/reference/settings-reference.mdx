@@ -1,0 +1,168 @@
+---
+title: "Documentação do settings.json"
+description: "Configure a execução de hooks do Claude Code, permissões, eventos, tempos limite, runtime Python, validação e precedência de configurações em camadas para o ecossistema Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Escopo.** Este documento descreve o arquivo de fiação de hooks
+> (`settings.json`) do **adaptador do Claude Code**. Outros harness
+> usam suas próprias superfícies de configuração nativas — consulte
+> [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses) para o
+> ponto de entrada de configuração equivalente de cada adaptador.
+
+## Visão geral
+
+`settings.json` configura a execução de hooks do Claude Code para o ecossistema Apothem.
+Ele declara quais hooks disparam em quais eventos, seus tempos limite e a superfície
+de permissões de nível superior. O Apothem distribui um único modelo canônico porque o Claude Code
+carrega `~/.claude/settings.json` em todas as plataformas suportadas.
+
+## Runtime apenas Python
+
+Cada hook configurado usa a forma de comando exec do Claude Code. O
+modelo distribuído carrega o token `${HARNESS_ROOT}`:
+
+```json
+{
+  "type": "command",
+  "command": "python",
+  "args": ["${HARNESS_ROOT}/apothem/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
+}
+```
+
+`apothem install` renderiza o token para o caminho absoluto da raiz do harness
+(forma com barra normal, válida no Windows, macOS e Linux), de modo que o
+`settings.json` instalado invoca diretamente o despachante materializado em
+`~/.claude/.apothem/support/hooks/dispatch.py`. O despachante e a
+porta de conformidade (`~/.claude/.apothem/support/conformity/gate.py`, com seus fixtures de schema
+ao lado dele em `~/.claude/.apothem/support/schemas/`) são scripts autônomos da biblioteca
+padrão — nenhum pacote `apothem` importável é necessário no host, e um único
+modelo serve a cada plataforma.
+
+## Esquema de configuração de hooks
+
+### Permissões
+
+```json
+"permissions": {
+  "allow": ["Read", "Glob", "Grep"]
+}
+```
+
+Ferramentas que não estão em `allow` exigem aprovação explícita por chamada ou permissão em nível de workspace.
+Ferramentas somente leitura são pré-aprovadas; operações de escrita (`Write`, `Edit`, `NotebookEdit`,
+`Bash`) passam pelo validador `PreToolUse`.
+
+### Eventos de hooks
+
+> **Os valores de tempo limite espelham os orçamentos canônicos de evento de hook** — a tabela abaixo
+> os reproduz para conveniência do leitor; a fonte canônica prevalece.
+
+| Evento | Gatilho | Tempo limite | Propósito | Mandato |
+| ----- | ------- | ------- | ------- | ------- |
+| **SessionStart** | Nova sessão do Claude Code | 30 segundos | Inicializar contexto, ler memória, verificar estado do plano | CM-14 |
+| **PreToolUse** | Antes de Write/Edit/NotebookEdit/Bash | 10 segundos | Validar conformidade com CM-7 + frontmatter | CM-7, CM-22 |
+| **PreCompact** | Antes da compactação de contexto | 30 segundos | Externalizar o estado não externalizado | CM-24 §2.3 |
+| **PostCompact** | Após a compactação de contexto | 30 segundos | Reiniciar o bootstrap a partir do estado externalizado | CM-24 §6.2 |
+| **Stop** | Saída da sessão | 60 segundos | Externalização no fim da sessão | CM-14/CM-22/CM-24/CM-26 |
+
+`dispatch.py` adicionalmente aceita `UserPromptSubmit` e `Notification` em sua lista
+de permissões de eventos. Nenhum está conectado nos modelos distribuídos; adicione um bloco matcher com o mesmo
+padrão de localizador + despacho para habilitá-lo.
+
+### Campos de nível superior
+
+| Campo | Propósito | Obrigatório |
+| ----- | ------- | -------- |
+| `permissions` | Objeto com um array `allow` listando nomes de ferramentas pré-aprovadas (ferramentas somente leitura por padrão) | sim |
+| `hooks` | Mapa de nome de evento → array de blocos `{matcher, hooks[]}`; veja **Eventos de hooks** abaixo | sim |
+| `model` | Seletor de modelo resolvível pelo host. Um alias ou um identificador completo é aceitável quando o operador escolhe definir um. | opcional |
+| `defaultShell` | Shell padrão para chamadas da ferramenta `Bash`. O Apothem não define isso no modelo compartilhado. | opcional |
+| `autoUpdatesChannel` | Canal de atualização do Claude Code. O Apothem não define isso no modelo compartilhado. | opcional |
+| `effortLevel` | Esforço de raciocínio padrão (`low`, `medium`, `high`, `max`) | opcional |
+
+## Validação
+
+Três validadores cobrem a superfície de hooks, com rigor crescente:
+
+```bash
+# Estrutural + higiene de Python (rápido, offline)
+python scripts/dev/validate_hooks.py
+
+# Ecossistema completo (estrutura + frontmatter + verificações de hooks delegadas)
+python scripts/dev/validate_ecosystem.py
+
+# Varredura adversarial (martela cada comando de hook configurado com entradas degradadas)
+python scripts/dev/chaos_pass.py
+```
+
+Todos os três precisam sair com 0 antes de fazer commit de mudanças em hooks ou configurações.
+
+Teste de fumaça ad-hoc de um único evento:
+
+```bash
+python src/apothem/hooks/dispatch.py --event-name SessionStart
+```
+
+Saída esperada: um envelope JSON de uma única linha contendo `hookSpecificOutput`.
+
+## Problemas comuns
+
+### SessionStart atinge o tempo limite
+
+Mais comumente, o localizador `find-python` está descobrindo o shim da Microsoft Store e
+falhando em resolver um interpretador real. Verifique:
+
+```bash
+python src/apothem/hooks/dispatch.py --event-name SessionStart
+```
+
+Se o comando imprimir um envelope JSON válido mas o painel do Claude Code mostrar um tempo limite,
+aumente o `timeout` do evento em `settings.json`. Se o comando falhar no nível do shell,
+instale um CPython 3.10+ real e garanta que ele esteja no PATH ou seja descobrível pelo localizador.
+
+### Todo Write/Edit é bloqueado
+
+`PreToolUse` está sinalizando termos internos de plano em conteúdo sendo escrito fora da raiz de instalação do harness (`~/.claude/` para o adaptador do Claude Code).
+Revise o conteúdo em busca de violações de CM-7 (veja
+`src/apothem/rules/persistent-conventions-vigilance.md`). Apenas linguagem de domínio para
+artefatos do código base.
+
+### settings.json não carregado
+
+O Claude Code lê `~/.claude/settings.json`. Verifique se o Apothem foi instalado na
+raiz do harness esperada e reinicie a sessão após alterar o arquivo.
+
+### Hooks silenciosamente sem efeito
+
+O contrato do hook é "sempre sair com 0, sempre emitir JSON válido". Se o interpretador não puder
+ser localizado, o localizador retorna vazio e o comando se torna uma no-operação. Execute `chaos_pass.py`
+para confirmar que cada hook configurado retorna um envelope válido — ele captura caminhos de resolução
+degradados que uma sessão ao vivo ocultaria.
+
+## Precedência em camadas
+
+O Claude Code resolve o objeto de configurações efetivo compondo três camadas em
+ordem crescente de precedência:
+
+| Camada | Localização | Versionado? | Justificativa |
+|------|----------|------------|-----------|
+| 1. **Sistema** | Padrões do harness compilados dentro do próprio Claude Code | n/a (controlado pelo fornecedor) | O piso; todo operador herda a mesma linha de base. |
+| 2. **Projeto** | `<harness-root>/settings.json` | ✅ Versionado | Convenções compartilhadas do projeto: hooks, permissões, servidores MCP, fiação da barra de status. O modelo do código-fonte do Apothem vive dentro do diretório de templates do adaptador do Claude Code. |
+| 3. **Local do usuário** | `<harness-root>/settings.local.json` (gitignored) — modelado como `settings.local.example.json` na raiz do repositório | ❌ Gitignored | Substituições específicas do operador: tokens de API, caminhos locais da máquina, recursos opt-in. |
+
+Valores de camada superior substituem valores de camada inferior **no nível da chave-folha** — quando
+tanto a camada de projeto quanto a local do usuário declaram uma entrada `permissions.allow`, a
+união é tomada; quando ambas declaram um escalar como `theme`, o valor local do usuário vence. A semântica
+exata de mesclagem por chave pertence ao harness do Claude Code.
+
+### Criar uma substituição local do usuário
+
+1. Copie `settings.local.example.json` (raiz do repositório) para `<harness-root>/settings.local.json`.
+   O nome de arquivo `settings.local.json` corresponde ao padrão do `.gitignore`, então o arquivo nunca
+   aterrissa no controle de versão.
+2. Edite a cópia local — mantenha apenas as chaves a substituir; o harness compõe as camadas,
+   então chaves ausentes herdam da camada de projeto.
+3. Verifique se o arquivo é analisado como JSON válido antes de salvar — o harness rejeita
+   JSON malformado no início da sessão.

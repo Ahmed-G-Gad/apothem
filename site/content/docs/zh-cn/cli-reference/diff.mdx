@@ -1,0 +1,94 @@
+---
+title: "diff"
+description: "apothem diff 命令的 CLI 参考。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+预览单个harness的待定配置更改。
+
+## 概要
+
+```
+apothem diff --harness NAME [--profile PATH] [--project PATH]
+             [--quiet|-q] [--verbose|-v]
+             [--format plain|json] [--json] [--no-color]
+```
+
+`diff` 是一个只读的检查命令。它运行与 `install` 命令相同的具现化流程，但处于
+试运行模式——不会向磁盘写入任何内容。然后，它会按计划的目标渲染操作、目标路径、
+结果，以及（对于将被合并的、操作者自有的锚点）该更改的统一差异。它回答的是
+“此刻 `apothem install` 会对这个harness做什么？”——而不实际做出更改。
+
+对于操作者自有的目标——同时携带你自己的内容和一个由 Apothem 管理的块的文件——
+差异会显示将要更改的确切行。对于其他目标，则会汇总计划的操作和结果。
+
+`diff` 作用于单个harness。与 `status` 不同，它不接受 `all`；请传入一个harness
+名称。
+
+## 选项
+
+| 选项 | 描述 |
+|---|---|
+| `--harness NAME` | 要预览的harness适配器（必填；单个harness，而非 `all`）。 |
+| `--profile PATH` | 共享配置文件 YAML 的路径。默认为 `~/.config/apothem/profile.yaml`。 |
+| `--project PATH` | 项目范围harness的项目根目录。当所选harness为项目范围时必填。 |
+| `--quiet`, `-q` | 抑制信息性输出；仅发出错误。 |
+| `--verbose`, `-v` | 发出额外的诊断输出。 |
+| `--format plain\|json` | 输出格式（默认：`plain`）。 |
+| `--json` | `--format json` 的简写。 |
+| `--no-color` | 在输出中禁用 ANSI 颜色码。 |
+| `-h`, `--help` | 显示帮助并退出。 |
+
+## JSON 输出
+
+`--json` 信封镜像试运行 install 的信封。`status` 为 `dry_run`，`files_written`
+始终为空，而 `materialization` 块以及 `results` 列表携带完整的计划目标细节。每个
+操作者自有的结果行的 `detail.diff` 字段携带统一差异字符串。
+
+```json
+{
+  "status": "dry_run",
+  "command": "diff",
+  "action": "dry_run",
+  "harness": "claude-code",
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "updated",
+      "operation": "sentinel_merge",
+      "path": "C:\\Users\\Example\\.claude\\CLAUDE.md",
+      "message": "dry run: no filesystem changes made",
+      "detail": {
+        "ownership_class": "operator-owned",
+        "diff": "--- a/CLAUDE.md\n+++ b/CLAUDE.md\n@@ ..."
+      }
+    }
+  ],
+  "warnings": [],
+  "error": null,
+  "materialization": { "...": "..." }
+}
+```
+
+## 示例
+
+```bash
+apothem diff --harness claude-code
+apothem diff --harness cursor --project .
+apothem diff --harness claude-code --json
+```
+
+## 退出码
+
+| 码 | 含义 |
+|---|---|
+| 0 | 已报告差异（待定更改会被报告，而非错误） |
+| 1 | 预期的校验、配置文件、harness或项目错误 |
+
+## 另请参阅
+
+- [apothem status](/docs/cli-reference/status) — 报告每个harness的安装/校验/漂移状态
+- [apothem verify](/docs/cli-reference/verify) — 校验单个harness安装
+- [apothem install](/docs/cli-reference/install) — 应用已预览的更改

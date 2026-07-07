@@ -1,0 +1,71 @@
+---
+title: "uninstall"
+description: "apothem uninstall कमांड के लिए CLI संदर्भ।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+एक कोडिंग-सहायक अडैप्टर कॉन्फ़िगरेशन हटाता है।
+
+## सारांश
+
+```
+apothem uninstall --harness NAME|all [--yes] [--project PATH]
+                   [--quiet|-q] [--verbose|-v]
+                   [--format plain|json] [--json] [--no-color]
+```
+
+अडैप्टर द्वारा प्रबंधित कोडिंग-सहायक लक्ष्यों को हटाता है। जब तक `--yes` न दिया जाए, पुष्टि के लिए संकेत देता है। यदि कोई चयनित कोडिंग-सहायक इंस्टॉल नहीं है, तो कमांड "nothing to remove" सूचना के साथ सफल होती है (एग्ज़िट 0)।
+
+सतत-रूप उपनाम `apothem uninstalling` उसी हैंडलर पर रिज़ॉल्व होता है।
+
+## विकल्प
+
+| विकल्प | विवरण |
+|---|---|
+| `--harness NAME` | हटाने के लिए कोडिंग-सहायक अडैप्टर, या रजिस्ट्री-व्यापी सेट के लिए `all` (आवश्यक)। |
+| `--yes` | पुष्टि संकेत को छोड़ता है। |
+| `--project PATH` | परियोजना-स्कोप्ड कोडिंग-सहायकों के लिए परियोजना रूट। |
+| `--quiet`, `-q` | सूचनात्मक आउटपुट को दबाता है; केवल त्रुटियाँ उत्सर्जित होती हैं। |
+| `--verbose`, `-v` | अतिरिक्त नैदानिक आउटपुट उत्सर्जित करता है। |
+| `--format plain\|json` | आउटपुट प्रारूप (डिफ़ॉल्ट: `plain`)। |
+| `--json` | `--format json` का संक्षिप्त रूप। |
+| `--no-color` | आउटपुट में ANSI रंग कोड अक्षम करता है। |
+| `-h`, `--help` | सहायता दिखाता है और बाहर निकलता है। |
+
+## JSON आउटपुट
+
+जब अडैप्टर इंस्टॉल है और सफलतापूर्वक हटा दिया गया है:
+
+```json
+{"action": "uninstalled", "harness": "claude-code", "output_path": "..."}
+```
+
+जब अडैप्टर इंस्टॉल नहीं था:
+
+```json
+{"status": "not_installed", "harness": "claude-code"}
+```
+
+## उदाहरण
+
+```bash
+apothem uninstall --harness claude-code
+apothem uninstall --harness claude-code --yes
+apothem uninstall --harness cursor --project . --yes
+apothem uninstall --harness all --project . --yes
+apothem Uninstalling --harness cursor --project . --yes   # continuous-form alias
+```
+
+## एग्ज़िट कोड
+
+| कोड | अर्थ |
+|---|---|
+| 0 | अडैप्टर अनइंस्टॉल किया गया, या इंस्टॉल नहीं था |
+| 1 | कोडिंग-सहायक नहीं मिला, या उपयोगकर्ता ने पुष्टि संकेत को निरस्त कर दिया |
+
+## यह भी देखें
+
+- `apothem uninstalling` — इस कमांड का सतत-रूप उपनाम (यहाँ प्रलेखित; CLI दोनों रूप स्वीकार करता है)
+- [apothem install](/docs/cli-reference/install) — एक कोडिंग-सहायक कॉन्फ़िगरेशन इंस्टॉल करें
+- [apothem verify](/docs/cli-reference/verify) — इंस्टॉलेशन स्थिति की पुष्टि करें

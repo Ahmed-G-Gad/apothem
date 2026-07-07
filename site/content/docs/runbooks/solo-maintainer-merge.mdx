@@ -1,0 +1,81 @@
+---
+title: "Solo-Maintainer PR-Merge Ceremony"
+description: "Ceremony to self-merge pull requests when branch protection and enforce_admins rules would otherwise deadlock a solo maintainer."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Canonical reference for self-merging PRs under the project's branch-protection invariant.** When the maintainer is the sole contributor with write access, GitHub's branch-protection rules `enforce_admins=true` + `required_approving_review_count=1` create a self-merge deadlock that this page documents the resolution for.
+
+---
+
+## 1. The Deadlock
+
+The repository's `main` branch carries the protection set:
+
+- `required_pull_request_reviews.required_approving_review_count: 1`
+- `enforce_admins: true`
+
+These rules are correct for multi-maintainer scenarios (every change reaches `main` through a peer-reviewed PR; admins are not exempt). They produce a deadlock for solo maintainers: GitHub's policy disallows self-approval on a PR you authored, and `enforce_admins=true` blocks the `gh pr merge --admin` override of the review-approval requirement.
+
+Three resolution paths exist:
+
+| Path | When to use |
+|------|-------------|
+| **Temp-toggle ceremony (canonical for this repo)** | Default for solo-maintainer self-merges; preserves the protection invariant outside the merge window |
+| Provision a CI-bot identity with write access | Adopt only if multi-maintainer onboarding is imminent; bot-approval undermines the human-review intent of the protection |
+| Permanently set `required_approving_review_count: 0` | Adopt only if the repo will remain solo-maintainer indefinitely; reverses the protection's review intent |
+
+This repository ratifies the **temp-toggle ceremony** as the canonical path. The other two are documented escape hatches, not the default.
+
+## 2. The Temp-Toggle Ceremony
+
+The ceremony's invariant: the protection state at the start of the ceremony equals the protection state at the end. The relaxation lives only inside the merge window.
+
+Manual form:
+
+```bash
+# 1. Open the PR, push branch, wait for CI green.
+gh pr create --base main --head <feature-branch> --title "..." --body "..."
+gh pr checks <pr-number>            # poll until all green
+
+# 2. Relax approver-count to 0.
+gh api repos/<owner>/<repo>/branches/main/protection/required_pull_request_reviews \
+    -X PATCH -F required_approving_review_count=0
+
+# 3. Squash-merge with admin override (admin override now succeeds because the
+#    review-approval requirement is the only block enforce_admins refuses).
+gh pr merge <pr-number> --squash --delete-branch --admin
+
+# 4. Restore approver-count to 1.
+gh api repos/<owner>/<repo>/branches/main/protection/required_pull_request_reviews \
+    -X PATCH -F required_approving_review_count=1
+```
+
+Wrapped form: see [`scripts/dev/admin_merge.py`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/dev/admin_merge.py) for the atomic Python wrapper that executes steps 2 → 3 → 4 in a single non-interactive sequence with `try` / `finally` rollback safety on step-3 failure.
+
+```bash
+python scripts/dev/admin_merge.py <pr-number>
+```
+
+## 3. Invariants
+
+- **Toggle window minimized.** Steps 2 → 3 → 4 execute in a single non-interactive sequence. The protection is in its relaxed state for the merge API call's duration only — under one second on every observed run.
+- **Restore is unconditional.** Step 4 runs even when step 3 fails (the wrapper's `try` / `finally` clause ensures restoration on any exit path). A failed merge attempt does not leave the protection relaxed.
+- **CI gating preserved throughout.** `required_status_checks` is unaffected by the toggle; the merge still requires the configured status-check contexts to be green.
+- **Audit trail visible.** The `gh pr merge --admin` annotation appears in the PR's merge metadata; the protection-API toggles appear in the repo's audit log under the maintainer's identity.
+
+## 4. When NOT to Use the Ceremony
+
+The ceremony is for **self-merge** of the maintainer's own PRs. When a peer reviewer is available (a contributor with write access), the standard `gh pr review --approve` + `gh pr merge --squash --delete-branch` path is correct and the ceremony is unnecessary.
+
+If the repository onboards a second maintainer, retire the ceremony: the standard PR-review flow restores the human-review intent of the protection without any toggle.
+
+## 5. Auditing a Past Run
+
+Every ceremony invocation lands on three durable surfaces that an operator can inspect after the fact:
+
+- **The PR's merge metadata.** `gh pr view <pr-number> --json mergedBy,mergedAt,mergeCommit` returns the merge actor, the merge timestamp, and the squash commit's SHA. The `mergedBy` actor matches the maintainer identity that ran step 3.
+- **The repository's audit log.** `gh api /repos/<owner>/<repo>/actions/runs --jq '.workflow_runs[] | select(.event=="push")'` correlates the post-merge CI run to the merge commit; the repository's protection-rule audit log (`gh api /repos/<owner>/<repo>/branches/main/protection` history via the Settings → Branches UI) shows the step-2 and step-4 toggles bracketing the merge window.
+- **The maintainer's git history.** `git log main --merges --first-parent` lists every squash-merge commit on `main` with the corresponding PR number in the commit subject (`(#<pr-number>)` suffix per the `gh pr merge --squash` default), letting the operator trace any past landing back to its PR and ceremony invocation.
+
+When `scripts/dev/admin_merge.py` is the entry point, its non-interactive log (stdout) names the three protection-API calls and the merge-API call in sequence; piping the wrapper to `tee` captures a per-run audit fragment without depending on the GitHub-side log retention.

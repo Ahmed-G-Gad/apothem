@@ -1,0 +1,112 @@
+---
+title: "Contrato de empacotamento de cohort"
+description: "O contrato estável e consumível a jusante para empacotamento de cohort e manifestos de plugin — enumere as cohorts e resolva seus alvos nativos por harness sem rederivar o mapeamento."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+# Contrato de empacotamento de cohort
+
+Este documento especifica o contrato estável e consumível a jusante para
+empacotamento de cohort e manifestos de plugin. Um consumidor lê este contrato
+para enumerar as cohorts e resolver seus alvos nativos por harness **sem
+rederivar o mapeamento**.
+
+## Artefatos
+
+| Artefato | Função |
+| -------- | ---- |
+| `src/apothem/schemas/cohort.schema.json` | Esquema JSON para um documento de manifesto de cohort. |
+| `src/apothem/schemas/cohort-manifest.yaml` | A instância do manifesto de cohort — todas as seis cohorts (`core`, `developer`, `security`, `research`, `ai-engineering`, `full`) preenchidas com seus conjuntos de membros; `full` é a união das outras cinco. |
+| `src/apothem/schemas/plugin.schema.json` | Esquema JSON para um manifesto de plugin por pacote (`plugin.json`). |
+| `src/apothem/lib/propagation-manifest.yaml` | **Fonte da verdade** para os alvos nativos por harness. |
+
+## Forma do manifesto de cohort
+
+O manifesto de cohort é um objeto de nível superior com três chaves:
+
+- `version` — string SemVer do manifesto.
+- `cohorts[]` — uma entrada por cohort. Cada entrada tem `id` (do conjunto
+  fechado `core | developer | security | research | ai-engineering | full`),
+  `name`, `description` e `members` (um objeto que agrupa os identificadores de
+  membros por tipo de catálogo: `skills` / `agents` / `commands` / `rules` /
+  `hooks`).
+- `per_harness_targets` — o contrato de resolução (abaixo).
+
+Cada identificador de membro é um nome estável em kebab-case que corresponde a um
+artefato real sob `src/apothem/` (`skills/<name>/`, `agents/<name>.md`,
+`commands/<name>.md`, `rules/<name>.md`, ou uma entrada de `hooks/`).
+
+## Enumerando cohorts
+
+Um consumidor carrega `cohort-manifest.yaml`, valida-o contra
+`cohort.schema.json`, e então itera sobre `cohorts[]`. Para cada cohort ele lê
+`members.<type>` para obter os identificadores de membros de cada tipo de
+catálogo.
+
+## Resolvendo alvos nativos por harness (sem rederivação)
+
+O manifesto de cohort **não** reafirma o mapeamento de harness. Em vez disso,
+`per_harness_targets.source` aponta para `lib/propagation-manifest.yaml`, a única
+fonte da verdade. A regra de resolução:
+
+> Para um membro de cohort do tipo de catálogo `T` (um de `skills`, `agents`,
+> `commands`, `rules`, `hooks`) e um harness de destino `H` (um dos listados em
+> `per_harness_targets.harnesses`), o alvo nativo do plugin é o campo `target` da
+> entrada em `lib/propagation-manifest.yaml` sob `harnesses.H.install` cujo
+> `source` corresponde a `T/`.
+
+Por exemplo, uma skill da cohort `core` instalada para `claude_code` resolve-se
+através da entrada `harnesses.claude_code.install` com `source: "skills/"` para
+`target: "${HARNESS_ROOT}/skills/"`. A mesma skill para `opencode` resolve-se
+para `${HARNESS_ROOT}/skills/`; para `gemini_cli` para
+`${PROJECT_ROOT}/.gemini/skills/`. Os consumidores nunca inventam alvos de
+harness — eles os consultam.
+
+Os marcadores de posição `${HARNESS_ROOT}` / `${PROJECT_ROOT}` são resolvidos no
+momento da instalação por cada adaptador de harness; os consumidores de cohort
+tratam o `target` resolvido literalmente.
+
+## Função do manifesto de plugin
+
+`plugin.schema.json` descreve um `plugin.json` — um pacote autodescritivo de
+membros de catálogo (`skills` / `commands` / `agents` / `hooks` / `rules`) com um
+`name` obrigatório, uma `version` SemVer e uma `description`. Um manifesto de
+plugin é a unidade que um adaptador de harness materializa em sua superfície de
+plugin nativa; as cohorts selecionam quais membros um plugin carrega, e o
+manifesto de propagação resolve onde cada membro aterrissa por harness.
+
+## Decisão de empacotamento — um pacote guarda-chuva, cohorts lógicas
+
+As cohorts são uma **camada de seleção lógica** (este manifesto), não um conjunto
+de pacotes separados e instaláveis de forma independente. O Apothem distribui
+**um pacote guarda-chuva** carregando o catálogo completo; o manifesto de cohort
+permite que um consumidor escolha um subconjunto coerente, e o manifesto de
+propagação resolve onde cada membro selecionado aterrissa por harness.
+
+Dividir o catálogo em pacotes separados por cohort (p. ex., um pacote por família
+`developer` / `security` / `research`) é **alcançável sem duplicação no nível do
+repositório** via o **padrão de symlink de meta-plugin** documentado pela
+superfície de distribuição principal: um catálogo de marketplace lista várias
+cohorts de plugin, e cada diretório de plugin de cohort contém **symlinks** para
+o catálogo compartilhado de fonte única em vez de cópias. Quando uma cohort é
+instalada, o harness desreferencia cada symlink dentro do marketplace — copiando
+o conteúdo do alvo para o *cache* daquela cohort — de modo que a cohort instalada
+é autocontida, enquanto o **repositório mantém uma única fonte da verdade ligada
+por symlinks** (ligação em vez de redundância, exatamente como a disciplina de
+deduplicação prefere). A leitura anterior de que os pacotes de cohort "duplicam
+mecanicamente" o catálogo confundia a duplicação do *cache no momento da
+instalação* (a cópia normal por plugin do harness) com a duplicação do
+*repositório*; o padrão de symlink evita esta última.
+
+O Apothem atualmente distribui **um pacote guarda-chuva** porque essa é a
+superfície de distribuição mais simples, não porque as cohorts sejam
+mecanicamente impossíveis. Adotar a forma por cohort é um genuíno **trade-off de
+UX e manutenção**, não uma violação de deduplicação: a vantagem é uma experiência
+mais fina de "instalar apenas esta família"; os custos são manter N diretórios de
+symlink de cohort mais suas entradas de marketplace, uma superfície de
+conformidade / teste / golden maior, e cópias de cache no momento da instalação
+por cohort. A camada de cohort lógica acima já entrega o resultado de *seleção*
+"instale apenas o que você precisa" a partir do pacote único; o *empacotamento*
+por cohort é o próximo passo sempre que a experiência de instalação mais fina for
+desejada.

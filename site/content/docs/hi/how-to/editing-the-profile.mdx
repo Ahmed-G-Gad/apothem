@@ -1,0 +1,90 @@
+---
+title: "प्रोफ़ाइल संपादित करें"
+description: "साझा प्रोफ़ाइल बदलें और प्रत्येक इंस्टॉल किए गए टूल को पुनः-मटेरियलाइज़ करें।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+लक्ष्य: साझा प्रोफ़ाइल में एक मान बदलें और उसे हर उस टूल में धकेलें जो आपने
+इंस्टॉल किया है।
+
+## पूर्वापेक्षाएँ
+
+- आपके `PATH` पर `apothem` CLI (या स्व-निहित रूप: आगे
+  `PYTHONPATH="$HOME/.apothem/src"` जोड़कर `python -m apothem` चलाएँ, या
+  `npx @ahmed-g-gad/apothem` का उपयोग करें)।
+- `~/.config/apothem/profile.yaml` पर एक प्रोफ़ाइल। यदि यह अनुपस्थित है तो
+  `apothem profile init` से एक बनाएँ।
+
+## प्रोफ़ाइल का आकार
+
+प्रोफ़ाइल एक एकल YAML दस्तावेज़ है। इसकी शीर्ष-स्तरीय कुंजियाँ:
+
+- `identity` (आवश्यक) — `name`, साथ ही वैकल्पिक `role`, `email`, `website`,
+  `github`।
+- `preferences` — `language`, `style` (`concise` / `verbose` / `balanced`),
+  `formatter`, `test_framework`।
+- `rules` — सक्षम टूल के साथ साझा किए गए अतिरिक्त नियम स्ट्रिंग की एक सूची।
+- `seriousness` — `EXPLORING`, `PERSONAL_USE`, `SHARED`,
+  `PUBLIC_LAUNCH` में से एक।
+- `enforcement` — ऑप्ट-इन टॉगल (`sprints`, `agent_teams`, `multitasking`,
+  `continuous_execution`, `learning_loop`), हर फ़्लैग डिफ़ॉल्ट-बंद।
+- `harnesses` — टूल id द्वारा कुंजीबद्ध प्रति-टूल ओवरराइड।
+- `exclude_harnesses` — बैच (`--harness all`) कमांड द्वारा छोड़े गए टूल
+  id।
+
+## चरण
+
+1. वर्तमान प्रोफ़ाइल का निरीक्षण करें:
+
+   ```bash
+   apothem profile show
+   ```
+
+2. इसे संपादित करें। इसे अपने सिस्टम संपादक में खोलें:
+
+   ```bash
+   apothem profile edit
+   ```
+
+   या कमांड लाइन से एक एकल बिंदु-वाली कुंजी सेट करें। मान
+   अक्षरशः संग्रहीत होता है (`true`/`false` और स्पष्ट `[..]`/`{..}` इनपुट को छोड़कर, जिन्हें पार्स किया जाता है) और
+   प्रोफ़ाइल लिखने से पहले स्कीमा के विरुद्ध सत्यापित होती है — एक अमान्य सेट
+   अस्वीकृत कर दिया जाता है और डिस्क पर प्रोफ़ाइल अपरिवर्तित रहती है:
+
+   ```bash
+   apothem profile set seriousness SHARED
+   apothem profile set identity.name "Ada Lovelace"
+   ```
+
+3. टूल को पुनः-मटेरियलाइज़ करें ताकि बदलाव उनकी नेटिव कॉन्फ़िग तक पहुँचे।
+   एक उपयोगकर्ता-दायरे के टूल के लिए:
+
+   ```bash
+   apothem update --harness claude-code
+   ```
+
+   एक प्रोजेक्ट-दायरे के टूल के लिए, प्रोजेक्ट रूट पास करें; हर इंस्टॉल किए गए टूल को
+   ताज़ा करने के लिए `all` का उपयोग करें:
+
+   ```bash
+   apothem update --harness cursor --project /path/to/project
+   apothem update --harness all --project /path/to/project
+   ```
+
+## सत्यापन
+
+```bash
+apothem profile show
+apothem verify --harness all
+```
+
+`profile show` आपके संपादन को परावर्तित करता है; `verify` पुष्टि करता है कि मटेरियलाइज़ की गई कॉन्फ़िग
+अद्यतन प्रोफ़ाइल से मेल खाती है।
+
+## संबंधित
+
+- पुनः-मटेरियलाइज़ करने से पहले किसी नए टूल को प्रोफ़ाइल नियंत्रण में लाने के लिए
+  [एक टूल जोड़ें](/docs/how-to/adding-a-harness)।
+- [अपडेट करना](/docs/install/updating) पुनः-मटेरियलाइज़ चरण के साथ-साथ इंजन को
+  अपग्रेड करने को कवर करता है।

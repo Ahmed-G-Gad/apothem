@@ -1,0 +1,426 @@
+---
+title: "Spesifikasi Skema Artefak"
+description: "Skema frontmatter YAML kanonis dan field wajib untuk semua tipe artefak di pohon sumber Apothem, dengan template per-kelas dan aturan validasi."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Frontmatter YAML kanonis dan field wajib untuk semua artefak ekosistem Apothem.**
+
+## Ikhtisar
+
+Semua artefak di pohon sumber Apothem (di bawah `src/apothem/` dan permukaan
+konfigurasi root) harus menyertakan blok frontmatter YAML (di antara delimiter
+`---`) dengan field wajib dan opsional yang spesifik untuk tipe artefaknya.
+Dokumen ini mendefinisikan skema kanonis untuk setiap tipe.
+
+**Aturan Universal:**
+
+- Frontmatter patuh YAML 1.2
+- Semua nilai string memakai tanda kutip ganda kecuali kosong
+- Urutan field: field wajib lebih dulu, field opsional dikelompokkan menurut relevansi
+- Komentar dalam frontmatter memakai `#` dengan spasi: `# comment`
+- Nilai path harus relatif (tanpa `/` di awal) dan memakai garis miring depan (`/`) untuk kompatibilitas lintas-platform
+
+**Konvensi Versioning (universal lintas tipe artefak):**
+
+- `version` bersifat **semantik** (`MAJOR.MINOR.PATCH`). Naikkan MAJOR untuk perubahan skema atau kontrak yang merusak; MINOR untuk perubahan aditif yang tidak merusak (field opsional baru, seksi tambahan, antipola tambahan); PATCH untuk klarifikasi, perbaikan format, atau suntingan khusus-dokumen tanpa perubahan perilaku.
+- `updated` adalah **tanggal ISO 8601** (`YYYY-MM-DD`) dari suntingan terbaru. Ia harus berubah setiap kali `version` dinaikkan dan boleh diperbarui secara independen untuk penyegaran tautan tanpa kenaikan versi.
+- Artefak baru disemai pada `v0.Y.Z`. Promosi ke `vX.Y.Z` menandakan kontrak artefak cukup stabil untuk menjadi komitmen publik.
+
+---
+
+## Skema: Rule
+
+**Pola path:** `src/apothem/rules/*.md`
+
+**Tujuan:** Mandat perilaku dan direktif operasional.
+
+### Field Wajib
+
+```yaml
+---
+name: "kebab-case-identifier"
+description: "One-line description"
+pathFilter: "**/*.py, **/*.toml"
+alwaysApply: true | false
+---
+```
+
+| Field | Tipe | Tujuan | Contoh |
+| ----- | ---- | ------- | ------- |
+| `name` | string | Pengidentifikasi terbaca-mesin | `"operational-mandates"` |
+| `version` | string | Versi semantik | `"X.Y.Z"` |
+| `updated` | string (ISO 8601) | Tanggal pembaruan terakhir | `"2026-04-20"` |
+| `description` | string | Deskripsi satu baris untuk registri | `"Operational mandates CM-1–10"` |
+| `scope` | enum | `always-on` (berlaku di mana saja) atau `path-filtered` (bersyarat pada path berkas) | `"always-on"` |
+| `portability` | enum | Jaminan kompatibilitas lingkungan | `"universal"` |
+
+### Field Opsional (jika berlaku)
+
+Rules carry no optional frontmatter fields, and — unlike other artifact classes — no `version` / `updated` / `scope` / `portability` fields either. The four mandatory fields above are the complete rule frontmatter contract enforced by `frontmatter_grep`.
+
+### Contoh
+
+```yaml
+---
+name: "operational-mandates"
+description: "Behavioral definitions for CM-1 through CM-10: violation indicators and recovery actions"
+pathFilter: ""
+alwaysApply: true
+---
+
+# Rule: Operational Mandates
+...
+```
+
+---
+
+## Skema: Command
+
+**Pola path:** `src/apothem/commands/*.md`
+
+**Tujuan:** Definisi command slash (`/plan-execute`, `/freshify`, dsb.).
+
+### Field Wajib
+
+```yaml
+---
+name: "command-name"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "What this command does"
+argument-hint: "[argument-pattern]"
+disable-model-invocation: true | false
+portability: "universal"
+allowed-tools: "*"
+---
+```
+
+| Field | Tipe | Tujuan | Contoh |
+| ----- | ---- | ------- | ------- |
+| `name` | string | Nama command (tanpa `/` di awal) | `"plan-execute"` |
+| `version` | string | Versi semantik | `"X.Y.Z"` |
+| `updated` | string (ISO 8601) | Tanggal pembaruan terakhir | `"2026-04-20"` |
+| `description` | string | Deskripsi singkat | `"Executes a phase with quality gates"` |
+| `argument-hint` | string | Pola penggunaan atau `"[args...]"` jika tidak ada | `"[path/to/plan] [phase-id]"` |
+| `disable-model-invocation` | boolean | Jika true, command tidak dimaksudkan untuk dipanggil oleh runtime asisten-koding | `true` |
+
+### Field Opsional
+
+Commands carry no optional frontmatter fields — the eight mandatory fields above are the complete command frontmatter contract enforced by `command.schema.json` (`additionalProperties: false`).
+
+### Contoh
+
+```yaml
+---
+name: "plan-execute"
+version: "X.Y.Z"
+updated: "2026-04-20"
+description: "Executes a specific phase from a Master Plan Suite with conformity checking and quality gates"
+argument-hint: "[path/to/plan-suite/] [phase-id] [--dry-run]"
+disable-model-invocation: true
+portability: "universal"
+allowed-tools: "*"
+---
+
+# /plan-execute — Execute a Specific Phase
+...
+```
+
+---
+
+## Skema: Pembantu
+
+**Pola path:**
+
+```text
+src/apothem/agents/*.md
+```
+
+**Tujuan:** Definisi pembantu persisten untuk eksplorasi paralel, audit, dan
+gerbang kualitas.
+
+### Field Wajib
+
+```yaml
+---
+name: "agent-name"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "What this agent specializes in"
+tools: "Tool1, Tool2, Tool3"
+disallowedTools: "Write, Edit"
+maxTurns: 20
+effort: "high" | "medium" | "low"
+---
+```
+
+| Field | Tipe | Tujuan | Contoh |
+| ----- | ---- | ------- | ------- |
+| `name` | string | Pengidentifikasi pembantu | `"codebase-explorer"` |
+| `version` | string | Versi semantik | `"X.Y.Z"` |
+| `updated` | string (ISO 8601) | Tanggal pembaruan terakhir | `"2026-04-20"` |
+| `description` | string | Deskripsi spesialisasi | `"Deep codebase exploration"` |
+| `tools` | string (dipisah koma) | Tool yang diizinkan | `"Read, Glob, Grep, Bash"` |
+| `disallowedTools` | string (dipisah koma) | Tool yang dilarang | `"Write, Edit, TodoWrite"` |
+| `maxTurns` | integer | Giliran percakapan maksimum (umum 5–20; nilai di atas 20 memerlukan komentar alasan inline) | `20` |
+| `effort` | enum | Cakupan komputasi | `"high"` |
+
+### Field Opsional
+
+```yaml
+permissionMode: "default"       # Permission handling
+memory: true | false                    # If true, agent retains memory across sessions
+pattern: "Research" | "Audit" | "Implementation" | "Quality"  # Agent team pattern
+portability: "universal"
+```
+
+### Contoh
+
+```yaml
+---
+name: "codebase-explorer"
+version: "X.Y.Z"
+updated: "2026-04-20"
+description: "Deep codebase exploration — find patterns, trace dependencies, discover conventions, map architecture"
+tools: "Read, Glob, Grep, Bash"
+disallowedTools: "Write, Edit, TodoWrite"
+maxTurns: 20
+effort: "high"
+permissionMode: "default"
+memory: false
+portability: "universal"
+---
+
+You are a codebase exploration specialist...
+```
+
+---
+
+## Skema: Skill
+
+**Pola path:** `src/apothem/skills/*/SKILL.md`
+
+**Tujuan:** Definisi teknik yang dapat dipakai ulang dengan sinyal deteksi dan
+prosedur eksekusi.
+
+### Field Wajib
+
+```yaml
+---
+name: "skill-name"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "What this skill teaches"
+archetype: "workflow-template"
+userInvocable: true | false
+disable-model-invocation: true | false
+allowed-tools: "Read, Write, Glob"
+---
+```
+
+| Field | Tipe | Tujuan | Contoh |
+| ----- | ---- | ------- | ------- |
+| `name` | string | Pengidentifikasi skill | `"plan-suite"` |
+| `version` | string | Versi semantik | `"X.Y.Z"` |
+| `updated` | string (ISO 8601) | Tanggal pembaruan terakhir | `"2026-04-20"` |
+| `description` | string | Apa yang disediakan skill | `"Master Plan Suite template"` |
+| `user-invocable` | boolean | Jika true, pengguna dapat meminta skill ini secara eksplisit | `false` |
+
+### Field Opsional
+
+```yaml
+argument-hint: "[args...]"                           # Usage pattern if userInvocable
+effort: "low" | "medium" | "high" | "xhigh" | "max" # Optional effort level
+```
+
+### Contoh
+
+```yaml
+---
+name: "ecosystem-audit"
+version: "X.Y.Z"
+updated: "2026-04-20"
+description: "Comprehensive blind audit of the apothem ecosystem"
+archetype: "audit-template"
+userInvocable: true
+disable-model-invocation: true
+allowed-tools: "Read, Write, Edit, Glob, Grep, Bash"
+argument-hint: "[--focus area] [--fix]"
+effort: "max"
+---
+
+## Purpose
+...
+```
+
+---
+
+## Skema: Hook
+
+**Pola path:** blok `hooks` pada `settings.json` ditambah implementasi Python
+di bawah `src/apothem/hooks/`.
+
+**Tujuan:** Mendeklarasikan validator yang dipicu-event dan handler manajemen
+status yang dipanggil host pada titik siklus-hidup yang terdefinisi dengan baik.
+
+### Skema Berkas Settings
+
+Kunci tingkat-atas `hooks` memetakan nama event ke array blok matcher:
+
+```json
+"hooks": {
+  "<EventName>": [
+    {
+      "matcher": "<pattern>",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "python",
+          "args": ["-m", "apothem.hooks.dispatch", "<EventName>", "<message-name>"],
+          "timeout": <seconds>,
+          "statusMessage": "<short human-readable label>"
+        }
+      ]
+    }
+  ]
+}
+```
+
+| Field | Tipe | Tujuan | Contoh |
+| ----- | ---- | ------- | ------- |
+| `matcher` | string | Pola nama-tool (atau `"*"` untuk event tak-bergantung-tool) | `"Write"` |
+| `hooks[].type` | literal `"command"` | Satu-satunya tipe handler hook yang didukung saat ini | `"command"` |
+| `hooks[].command` | string | Command yang dapat dieksekusi; Apothem memakai `python` | `"python"` |
+| `hooks[].args` | array string | Argumen bentuk-exec yang memanggil `-m apothem.hooks.dispatch` atau `-m apothem.conformity.gate` | `["-m", "apothem.hooks.dispatch", "SessionStart"]` |
+| `hooks[].timeout` | integer detik | Waktu jalan maksimum sebelum host menghentikan hook | `30` |
+| `hooks[].statusMessage` | string | Label singkat yang muncul di UI host | `"Session start"` |
+
+### Event Wajib
+
+Template yang dikirim mendaftarkan event-event berikut. Kelimanya wajib agar
+validator melaporkan PASS:
+
+> **Nilai timeout mencerminkan anggaran hook-event kanonis** — tabel di bawah
+> mereproduksinya demi kenyamanan pembaca; sumber kanonis yang berlaku.
+
+| Event | Timeout Tipikal | Tujuan |
+| ----- | --------------- | ------- |
+| `SessionStart` | 30 detik | Baca memori, periksa status plan, laporkan kesiapan |
+| `PreToolUse` | 10 detik | Validasi tulisan untuk kebijakan isolasi-konten + frontmatter |
+| `PreCompact` | 30 detik | Verifikasi status diekstern-kan sebelum kompaksi konteks |
+| `PostCompact` | 30 detik | Pulihkan status kerja setelah kompaksi konteks |
+| `Stop` | 60 detik | Eksternalisasi akhir-sesi — status resumsi, output, keputusan |
+
+`dispatch.py` juga menerima `UserPromptSubmit` dan `Notification` pada daftar
+putih event-nya untuk kompatibilitas-maju; tidak satu pun terpasang di template
+yang dikirim. Tambahkan blok matcher dengan pola bentuk-exec yang sama untuk
+mengaktifkan.
+
+### Lapisan Python
+
+Setiap command hook melalui dispatcher Python yang sama:
+
+| Berkas | Peran |
+| ---- | ---- |
+| `src/apothem/hooks/dispatch.py` | Merutekan `SessionStart` ke `session_start_bootstrap.main()` dan setiap event ber-daftar-putih lainnya ke `emit_hook_context.main()`. Selalu keluar dengan kode 0. |
+| `src/apothem/hooks/session_start_bootstrap.py` | Skrip hook awal-sesi — memancarkan memori dan konteks ringkasan suite plan. |
+| `src/apothem/hooks/emit_hook_context.py` | Pemancar hook default — menulis envelope valid yang membawa payload `--context-file` terdaftar. |
+| `src/apothem/hooks/messages/*.md` | Payload konteks statis yang dirujuk oleh `--context-file`. |
+
+### Validasi
+
+`scripts/dev/validate_hooks.py` menegakkan kontrak hook:
+
+- `settings.json` terurai sebagai JSON dan mendeklarasikan setiap event wajib.
+- Ketiga skrip Python ada dan terurai sebagai Python yang valid.
+- Semua berkas pesan yang dirujuk oleh argumen `--context-file` ada.
+- Tidak ada path pengguna absolut yang di-hardcode (`C:\Users\...` dsb.) muncul di `src/apothem/hooks/**.py`.
+- Artefak shell di bawah `src/apothem/hooks/` dan `scripts/` terbatas pada stub locator / bootstrap yang disetujui.
+
+---
+
+## Skema: CLAUDE.md
+
+**Path:** `CLAUDE.md` (root)
+
+**Tujuan:** Indeks konfigurasi ekosistem global.
+
+### Frontmatter YAML Wajib
+
+```yaml
+---
+name: "CLAUDE"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "Global Claude Code ecosystem configuration and mandate index"
+scope: "always-on"
+portability: "universal"
+---
+```
+
+### Seksi Wajib (berurutan)
+
+1. **§1 Suite Plan** — Rujukan ke lokasi template
+2. **§2 Identitas Kognitif** — Mandat arsitektur kreatif
+3. **§3 Direktori Artefak** — Tabel path dan tujuan
+4. **§4 Tata Kelola Berskala-Keseriusan** — Definisi empat tingkat
+5. **§5 Direktif Operasional** — Prinsip pemecahan-masalah, komunikasi
+6. **§6 Mandat Lintas-Sektoral** — Ikhtisar CM-1–28
+7. **§7 Registri** — Tabel artefak:
+   - 7.1 Command
+   - 7.2 Rule
+   - 7.3 Pembantu
+   - 7.4 Hook
+   - 7.5 Skill
+   - 7.6 Evolusi Artefak
+
+---
+
+## Daftar Periksa Validasi
+
+Setiap artefak harus memenuhi pemeriksaan ini:
+
+### Validasi Frontmatter
+
+- [ ] YAML valid secara sintaksis (tanpa galat parsing)
+- [ ] Semua field wajib hadir untuk tipe artefak
+- [ ] `name` mengikuti konvensi kebab-case
+- [ ] `version` semantik (`MAJOR.MINOR.PATCH`)
+- [ ] `updated` berformat tanggal ISO 8601 (`YYYY-MM-DD`)
+- [ ] `description` adalah string satu baris yang tidak kosong
+- [ ] Field opsional cocok dengan nilai enum yang diharapkan (jika berlaku)
+- [ ] Tidak ada typo pada nama field (gunakan nama kanonis dari skema)
+- [ ] Tidak ada spasi ekstra atau masalah format
+
+### Validasi Konten
+
+- [ ] Konten dimulai tepat setelah `---` penutup pada baris baru
+- [ ] Tidak ada rujukan internal-plan (kepatuhan CM-7)
+- [ ] Rujukan-silang terselesaikan (jika mendaftar artefak lain)
+- [ ] Tautan memakai path relatif dengan garis miring depan
+
+### Validasi Portabilitas
+
+- [ ] Tidak ada path absolut yang di-hardcode (gunakan relatif)
+- [ ] Tidak ada sintaks spesifik-Windows di artefak berlingkup universal
+- [ ] Pemisah path memakai garis miring depan
+- [ ] Variabel lingkungan memakai format tak-bergantung-platform (`${VAR}` atau native-tool)
+
+---
+
+## Catatan
+
+- **Konsistensi sebagai Keamanan:** Frontmatter kanonis memungkinkan validasi
+  otomatis, peralatan, dan verifikasi lintas-artefak. Penyimpangan menumpuk
+  dengan cepat.
+- **Deklarasi Portabilitas:** Tidak semua artefak bisa universal. Deklarasikan
+  batasan secara eksplisit — lebih baik mendokumentasikan satu peringatan
+  daripada mengirim bug diam-diam.
+- **kebab-case untuk Nama:** Mudah dipakai di URL, skrip, dan konteks
+  baris-perintah. Hindari spasi, garis-bawah, dan camelCase untuk nama.
+- **Higiene Naik-Versi:** Setiap suntingan yang mengubah perilaku harus
+  menaikkan `version` dan `updated` bersama. Perbaikan format atau typo murni
+  menaikkan PATCH; seksi opsional atau antipola baru menaikkan MINOR;
+  reorganisasi struktural atau perubahan kontrak menaikkan MAJOR.

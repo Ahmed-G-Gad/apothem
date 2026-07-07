@@ -1,0 +1,75 @@
+---
+title: "プラットフォーム"
+description: "Apothem がサポートするオペレーティングシステム、シェル、インストーラースクリプト、および自己完結型ランタイムに必要なシステム Python の前提条件。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem は 2 つのインストーラースクリプトを同梱しており、それらを合わせると、
+現代の開発者向けデスクトップおよびサーバーのマトリクスをカバーします。
+プラットフォーム固有のビルドはありません。エンジンは、同梱された依存関係を
+備えたソースツリーから動作する [自己完結型ランタイム](/docs/architecture/self-contained-runtime) であるため、プラットフォームのサポート範囲は、
+ちょうど 2 つのインストーラーのいずれかがそのツリーを配置して実行できる
+ホストの集合と一致します。他の 2 つのインストール手段はマトリクスをさらに
+広げます。すなわち、Claude Code プラグインは Claude Code が動作する場所なら
+どこでも動作し、npx 形式(`npx @ahmed-g-gad/apothem`)は Node.js 18 以上を
+備えた任意の OS で動作します。
+
+## オペレーティングシステムとシェルのマトリクス
+
+| OS ファミリ | サポートされるシェル | インストーラースクリプト |
+| --------- | ---------------- | ---------------- |
+| macOS | POSIX `bash`(システムの bash、またはユーザーがインストールした新しい bash) | `install.sh` |
+| Linux | POSIX `bash` | `install.sh` |
+| Windows Subsystem for Linux(WSL2) | POSIX `bash` | `install.sh` |
+| BSD(FreeBSD、OpenBSD、NetBSD) | POSIX `bash` | `install.sh` |
+| Termux(Android) | POSIX `bash` | `install.sh` |
+| ChromeOS Linux コンテナ(Crostini) | POSIX `bash` | `install.sh` |
+| Windows | Windows PowerShell 5.1 以上 | `install.ps1` |
+| PowerShell 7 以上を備えた任意のプラットフォーム | PowerShell 7 以上(クロスプラットフォーム) | `install.ps1` |
+
+2 つのスクリプトは互いに機能的に同等です。`install.sh` は POSIX `bash` を
+必要とします。`install.ps1` は Windows PowerShell 5.1 以降、または
+PowerShell 7 自体がサポートする任意のプラットフォーム上の PowerShell 7 以上を
+必要とします —— macOS や Linux もこれに含まれ、そこでは `install.sh` の
+代替手段となります。
+
+## 唯一の前提条件: システム Python
+
+Apothem は Python パッケージを一切インストールしません。エンジンの import は、
+すでにお持ちのインタープリターに対して、同梱ソースを `PYTHONPATH` の先頭に
+追加した状態で実行されます。各インストーラーは、他の何かを行う前に前提条件を
+チェックします:
+
+- **CPython 3.10 以上。** インストーラーは `python3`、`python`、および
+  バージョン付きの名前(`python3.14` から `python3.10` まで)を探索し、
+  バージョン 3.10 以上を報告する最初のものを採用します。Windows では
+  Microsoft Store ランチャーのシムを拒否し、同梱の `find-python` ロケーターも
+  同じ下限を適用します。
+- **ランタイムライブラリがインポート可能。** エンジンはシステムインタープリターから `click` と `rich` を import します。残りのサードパーティ依存関係はソースツリーに同梱（vendored）されています。インストーラーは両方が import 可能か確認し、欠けているものを示し、不足している前提条件を代わりにインストールするか尋ねます — 確認のうえ、または `--yes` / `APOTHEM_AUTO_INSTALL_DEPS=1` で自動的に。
+- **`git`** はネットワークインストールの場合にのみ必要です(スクリプトが
+  ソースツリーをクローンします)。チェックアウトからのローカルインストールには
+  `git` は不要です。
+
+インタープリター、ライブラリ、または `git` が不在の場合、インストーラーは
+推測したり環境を変更したりするのではなく、何を提供すべきかを正確に示す
+診断メッセージとともに終了します。
+
+## プラットフォームがサポートされる条件
+
+プラットフォームは、次の両方が成り立つときにサポートされます:
+
+1. 2 つのインストーラーのいずれかがそこで動作する —— つまり、ホストに
+   POSIX `bash`(`install.sh`)またはサポートされる PowerShell
+   (`install.ps1`)があること。
+2. `click` と `rich` が import 可能な CPython 3.10 以上のインタープリターが
+   そこで動作すること。
+
+コンパイルされたコンポーネント、ネイティブ拡張、プラットフォームごとの
+バイナリはありません。同じソースツリーがインタープリターの動作する場所
+すべてで動作するため、上記のマトリクスが完全かつ正確なサポートの表明であり、
+それ以上のことは主張されていません。
+
+## 推奨される次のステップ
+
+**お使いのプラットフォーム向けのインストーラーを実行してください** —— CPython 3.10 以上のインタープリターが PATH 上にあることを確認したうえで、POSIX シェルでは `curl -fsSL https://apothem.ahmedgad.com/install.sh | bash`、PowerShell では `irm https://apothem.ahmedgad.com/install.ps1 | iex` を実行します。

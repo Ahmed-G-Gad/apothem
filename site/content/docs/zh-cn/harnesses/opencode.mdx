@@ -1,0 +1,92 @@
+---
+title: "OpenCode"
+description: "适用于 OpenCode（测试版）的 Apothem 工具适配器。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**厂商：** OpenCode
+**安装名称：** `opencode`
+**状态：** 测试版
+**平台原生配置：** `~/.config/opencode/`
+
+## 安装
+
+```bash
+apothem install --harness opencode
+```
+
+该适配器写入 OpenCode 的 JSON 配置，将 Apothem 技能安装到 OpenCode 技能界面，
+将命令提示转换为 OpenCode Markdown 命令文件，并将 Apothem 辅助工具定义规范化为
+OpenCode 子辅助工具。
+
+**写入的文件：**
+
+```text
+~/.config/opencode/opencode.json
+~/.config/opencode/commands/
+~/.config/opencode/skills/
+~/.config/opencode/agents/
+~/.config/opencode/.apothem/support/{rules,templates,hooks}/
+```
+
+## 配置档案到平台原生配置的映射
+
+适配器渲染 `opencode.json`，其中的 `instructions` 文件列表指向 Apothem 已安装的
+规则，然后将每个共享的 Apothem 套组传播到 OpenCode 原生界面或 Apothem 所有的
+支持子树中。已存在的匹配的 Apothem 托管子项会在替换之前被备份。
+
+## 兼容性说明
+
+规则通过原生的 `instructions` 列表被引用。模板和钩子提示是
+`~/.config/opencode/.apothem/support/` 下的参考素材；命令、技能和辅助工具定义使用原生
+发现位置。
+
+## 验证
+
+```bash
+apothem verify --harness opencode
+```
+
+verify 命令确认：
+
+1. 平台原生配置存在于预期路径。
+2. 共享配置档案中的所有必填字段都已存在。
+3. 适配器特定的验证例程报告成功。
+
+## 更新
+
+```bash
+apothem update --harness opencode
+```
+
+刷新 `opencode.json`、原生命令、技能、辅助工具定义，以及 Apothem 支持树。
+
+## 卸载
+
+```bash
+apothem uninstall --harness opencode
+```
+
+移除适配器写入的平台原生配置文件。
+共享配置档案 YAML 和 Apothem 引擎不受影响。
+
+## 合规门
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## 故障排查
+
+| 症状 | 修复方法 |
+|---------|-----|
+| 找不到配置文件 | 重新运行 `apothem install --harness opencode` |
+| 验证失败 | 运行 `apothem update --harness opencode`，然后再次验证 |
+| 意外的配置内容 | 检查 `~/.config/apothem/profile.yaml` 或 `--profile PATH`，然后重新运行 `apothem update --harness opencode` |
+
+## 配置开关
+
+| 标志 | 默认值 | 说明 |
+|------|---------|-------------|
+| `--dry-run` | `false` | 预览安装而不写入文件。 |

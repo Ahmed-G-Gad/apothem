@@ -1,0 +1,112 @@
+---
+title: "Guías prácticas de autoría y canalización"
+description: "Recorridos orientados a tareas para refinar contenido en especificaciones, generar suites de planes, revisar planes, ejecutar fases, añadir artefactos y ejecutar compuertas de calidad."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Recorridos orientados a tareas para **crear artefactos de Apothem y manejar la
+canalización de planes**. Cada guía responde a una única pregunta concreta.
+
+Para las recetas de configuración de primera ejecución — añadir un entorno, editar el
+perfil, manejar el instalador — consulta en su lugar la sección
+[Recetas prácticas](/docs/how-to).
+
+## Canalización de la suite de planes
+
+### ¿Cómo refino contenido en bruto en una especificación?
+
+Invoca `/plan-spec` con el contenido en bruto como entrada. El rol Forge ejecuta seis
+fases de transformación (Descubrimiento, Consideración Meticulosa, Mapeo de Potencia,
+Verificación de Preservación, Aplicación de Pericia, Barrido de Resolución de
+Preguntas) y emite la especificación consolidada en `.apothem/plans/{suite}/_spec/spec.md`.
+Consulta `src/apothem/commands/plan-spec.md` para el protocolo completo.
+
+### ¿Cómo genero una suite de planes a partir de una especificación?
+
+Invoca `/plan-generate <suite-name>` una vez que la especificación viva en
+`.apothem/plans/{suite}/_spec/spec.md`. El generador emite los archivos canónicos de
+infraestructura más los archivos `phases/NN-kebab-topic/PHASE.md` por fase. Consulta
+`src/apothem/commands/plan-generate.md`.
+
+### ¿Cómo reviso un plan generado?
+
+Invoca `/plan-review path/to/plan-suite/`. El revisor aplica las ocho técnicas de
+planificación y emite cuadros de mando. Los cuadros de mando reprobados bloquean la
+ejecución en SHARED+ hasta resolverse. Consulta `src/apothem/commands/plan-review.md`.
+
+### ¿Cómo ejecuto un plan?
+
+Invoca `/plan-execute path/to/plan-suite/ [phase-id]`. Sin un `phase-id`, se ejecuta
+la siguiente fase pendiente. Con un id específico, solo se ejecuta esa fase. Consulta
+`src/apothem/commands/plan-execute.md`.
+
+### ¿Cómo compruebo el estado de un plan?
+
+Invoca `/plan-status path/to/plan-suite/ [--verbose]`. Informe de solo lectura.
+Consulta `src/apothem/commands/plan-status.md`.
+
+## Autoría de artefactos
+
+### ¿Cómo añado una nueva regla?
+
+1. Elige un nombre de archivo kebab-case bajo `src/apothem/rules/`, p. ej.
+   `src/apothem/rules/my-new-rule.md`.
+2. Escribe el frontmatter (`name`, `description`, `type: instruction`, `pathFilter`
+   opcional).
+3. Escribe el cuerpo con las secciones canónicas: Propósito, Obligaciones, Escalado
+   por Seriedad, Antipatrones, Cumplimiento, Vínculos.
+4. Añade una fila a la cohorte de reglas (`src/apothem/rules/`).
+5. Ejecuta `python scripts/dev/validate_ecosystem.py --check frontmatter-cohort` para
+   verificar.
+
+### ¿Cómo añado un nuevo trabajador delegado?
+
+Elige un nombre de archivo kebab-case bajo el directorio que se muestra abajo, usando
+la forma `my-worker.md`:
+
+```text
+src/apothem/agents/
+src/apothem/agents/my-worker.md
+```
+
+Luego:
+
+1. Escribe el frontmatter — incluyendo `name`, `description`, `allowedTools`,
+   `maxTurns`, `version` y el marcador de tipo que se muestra abajo:
+
+```text
+type: agent
+```
+
+1. Escribe el prompt del sistema como cuerpo.
+1. Añade una fila al registro de ayudantes en la cohorte de trabajadores delegados (`src/apothem/agents/`).
+
+### ¿Cómo añado un nuevo hook?
+
+1. Escribe un mensaje de contexto bajo
+   `src/apothem/hooks/messages/<event>-<scope>.md`.
+2. Conecta el hook en `settings.json`.
+3. Actualiza la canalización de hooks.
+4. Ejecuta `python scripts/dev/validate_ecosystem.py --check hook-validator`.
+
+## Compuertas de calidad
+
+### ¿Cómo ejecuto las compuertas de calidad locales?
+
+```bash
+python -m ruff check .
+python -m ruff format --check .
+python -m mypy
+python -m pytest -q
+python scripts/dev/validate_ecosystem.py
+python scripts/dev/chaos_pass.py
+```
+
+La canalización de CI ejecuta el mismo conjunto en paralelo.
+
+### ¿Cómo compruebo el frontmatter de una sola clase de artefacto?
+
+```bash
+python scripts/dev/validate_ecosystem.py --check frontmatter-cohort
+```

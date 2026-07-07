@@ -1,0 +1,88 @@
+---
+title: "Open-Claw"
+description: "Open-Claw(미리 보기)를 위한 Apothem 하니스 어댑터."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**공급업체:** Open-Claw
+**설치 이름:** `open-claw`
+**상태:** 미리 보기
+**네이티브 구성:** `~/.openclaw/openclaw.json`
+
+## 설치
+
+```bash
+apothem install --harness open-claw
+```
+
+어댑터는 공유 프로필을 OpenClaw의 사용자 전역 구성 파일로 변환하고 하니스 루트 아래에
+Apothem 지원 코호트를 설치합니다. OpenClaw의 네이티브 구성은 JSON입니다. materializer는
+이에 맞추어 JSON을 렌더링합니다.
+
+**작성되는 파일:** `~/.openclaw/openclaw.json` 및 `~/.openclaw/.apothem/support/` 아래의 지원
+파일
+
+## 프로필에서 네이티브 구성으로의 매핑
+
+어댑터는 Apothem의 공유 프로필을 읽습니다. OpenClaw의 네이티브 skills 필드는 이름
+허용 목록(디렉터리 로더가 아님)이고 MCP는 CLI 표면이므로, Apothem은 어떤 구성 키도
+작성하지 않습니다. 공유 명령, 스킬, 규칙, 템플릿, 훅 프롬프트는 `~/.openclaw/.apothem/support/`
+아래에 지원 자료로 설치됩니다.
+
+## 호환성 참고 사항
+
+미리 보기 어댑터. 네이티브 JSON 구성이 Open-Claw의 활성 표면입니다. Apothem은 스킬에
+대해 문서화된 추가 skill-directory 훅을 사용하고, 다른 코호트는 설치된 안내를 위한 참조
+자료로 유지합니다.
+
+## 검증
+
+```bash
+apothem verify --harness open-claw
+```
+
+verify 명령은 다음을 확인합니다.
+
+1. 네이티브 구성이 예상 경로에 존재합니다.
+2. 공유 프로필의 모든 필수 필드가 존재합니다.
+3. 어댑터별 검증 루틴이 성공을 보고합니다.
+
+## 업데이트
+
+```bash
+apothem update --harness open-claw
+```
+
+현재 공유 프로필 상태에서 네이티브 구성을 다시 도출합니다.
+`~/.config/apothem/profile.yaml`을 편집했거나 설치된 Apothem 패키지를 업그레이드한
+다음 실행합니다.
+
+## 제거
+
+```bash
+apothem uninstall --harness open-claw
+```
+
+어댑터가 작성한 네이티브 구성 파일을 제거합니다. 공유 프로필 YAML과 Apothem 엔진은
+영향을 받지 않습니다.
+
+## 적합성 게이트
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## 문제 해결
+
+| 증상 | 해결 |
+|---------|-----|
+| 구성 파일을 찾을 수 없음 | `apothem install --harness open-claw`를 다시 실행 |
+| 검증 실패 | `apothem update --harness open-claw`를 실행한 다음 다시 검증 |
+| 예기치 않은 구성 내용 | `~/.config/apothem/profile.yaml` 또는 `--profile PATH`를 확인한 다음 `apothem update --harness open-claw`를 다시 실행 |
+
+## 구성 노브
+
+| 플래그 | 기본값 | 설명 |
+|------|---------|-------------|
+| `--dry-run` | `false` | 파일을 작성하지 않고 설치를 미리 봅니다. |

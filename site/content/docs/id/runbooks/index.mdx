@@ -1,0 +1,21 @@
+---
+title: "Runbook"
+description: "Runbook Apothem — prosedur operasional langkah demi langkah untuk rilis, penyiapan penerbit, pengaktifan Pages, pemulihan, dan penulisan adaptor."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Prosedur operasional untuk para pengelola. Setiap runbook adalah prosedur yang
+berurutan dan bebas konteks: ia menggiring keadaan awal yang diketahui menuju
+keadaan akhir yang terverifikasi, ditulis agar kontributor yang cakap dapat
+mengikutinya tanpa konteks sebelumnya.
+
+## Halaman
+
+| Halaman | Deskripsi |
+|------|-------------|
+| [Pengaktifan Pages](/docs/runbooks/pages-enablement) | Menggiring `apothem.ahmedgad.com` dari konfigurasi GitHub Pages yang baru ke halaman arahan HTTPS dengan `200 OK`. |
+| [Siklus rilis](/docs/runbooks/release-cycle) | Menggiring rilis `vX.Y.Z` dari pohon kerja yang bersih ke permukaan GitHub Release dan npm yang terverifikasi. |
+| [Penyiapan akun penerbit](/docs/runbooks/publisher-account-setup) | Mengonfigurasi penerbit tepercaya npmjs.com untuk `@ahmed-g-gad/apothem` dan prasyarat rilis di sisi GitHub. |
+| [Pemulihan rilis](/docs/runbooks/release-recovery) | Memulihkan `ahmed-g-gad/apothem` ke keadaan yang berfungsi ketika urutan peralihan rilis gagal di tengah jalan. |
+| [Penulisan adaptor lingkungan baru](/docs/runbooks/new-harness-adapter-authoring) | Tulis dan terbitkan adaptor lingkungan baru untuk penyertaan pihak pertama. |

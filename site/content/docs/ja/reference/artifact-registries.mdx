@@ -1,0 +1,185 @@
+---
+title: "アーティファクトレジストリ"
+description: "Apothem エコシステムのアーティファクトの完全な一覧：コマンド、ルール、委任ワーカー、フック、スキル、出力スタイル、アーティファクト進化の規律、および空のアーティファクトクラスの宣言。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **アーティファクトコホートの正規レジストリ。** 本ドキュメントは、コマンド、ルール、委任ワーカー、フック、スキル、出力スタイル、アーティファクト進化の規律、および空のアーティファクトクラスの宣言の完全な一覧を載せています。実質的なテーブルはここに置かれます。プロジェクトのソースレイアウトが、凝縮された常時ロードのビューを提供します。
+
+## 1. コマンド
+
+`src/apothem/commands/*.md`（非再帰）から 30 個のコマンドが登録されます。各コマンドは第一級の登録済みファイルです。`/plan` オーケストレーターは、すでに第一級であるプランステージを連鎖させるだけで、それ自体のステージロジックを持たないため、依然としてモノリシックなディスパッチャーもサブコマンドのグルーピングも存在しません。非プラン・非ワークフローのコマンド：
+
+| コマンド | ファイル | 説明 |
+| ------- | ---- | ----------- |
+| `/a11y-audit` | `src/apothem/commands/a11y-audit.md` | デプロイ済み Web サーフェスのアクセシビリティ監査を WCAG 2.2 AA に対してページごとに実施 |
+| `/architecture-review` | `src/apothem/commands/architecture-review.md` | リポジトリの設計アーティファクトおよび規約上のレイヤー規律に対するアーキテクチャ整合性レビュー |
+| `/code-audit` | `src/apothem/commands/code-audit.md` | リポジトリコーパス規模でのファイル横断的フォレンジックコード監査を 6 つの敵対的フェーズにわたって実施 |
+| `/code-review` | `src/apothem/commands/code-review.md` | `src/`、`scripts/`、`tools/` 全体にわたるファイルごとのコード品質レビュー（ファイルごとの所見つき） |
+| `/dependency-audit` | `src/apothem/commands/dependency-audit.md` | リポジトリのマニフェストファイル全体にわたる依存関係ごと（直接＋推移的）の監査 |
+| `/docs-review` | `src/apothem/commands/docs-review.md` | ホストドキュメントサーフェス配下のすべての Markdown ページのドキュメントレビュー |
+| `/elevate` | `src/apothem/commands/elevate.md` | 独立したクリティークワーカーを通じてあらゆるプロジェクトサーフェスを現行 SOTA へ引き上げ、その後 `/freshify` へ引き継ぐ |
+| `/eval` | `src/apothem/commands/eval.md` | eval-harness スキル上に構築されたモデル非依存の言語モデル評価キャンペーン |
+| `/freshify` | `src/apothem/commands/freshify.md` | プロジェクトをフレッシュ・トレースフリー・本番対応にする。各破壊的ステップは確認ゲート付き |
+| `/github-deploy-fresh` | `src/apothem/commands/github-deploy-fresh.md` | `/freshify` の GitHub 特化版で、`origin/main` 上に単一のフレッシュな初版リリースを生成 |
+| `/github-deploy-next` | `src/apothem/commands/github-deploy-next.md` | GitHub のリリースサーフェス上で完全な次回リリースサイクルを最初から最後まで実行 |
+| `/perf-audit` | `src/apothem/commands/perf-audit.md` | `src/apothem/rules/performance-discipline.md` のクラスごとのパフォーマンス予算に対する監査 |
+| `/release-readiness` | `src/apothem/commands/release-readiness.md` | プレリリースゲートのスイープ：品質マトリクス、依存関係リスク、リリースエンジニアリングのチェック |
+| `/research` | `src/apothem/commands/research.md` | 並列のソース発見と抽出を伴うマルチソースリサーチエンゲージメント |
+| `/security-audit` | `src/apothem/commands/security-audit.md` | OWASP ASVS、OWASP Top 10、CWE Top 25 に対するセキュリティ態勢の監査 |
+| `/supply-chain-audit` | `src/apothem/commands/supply-chain-audit.md` | SLSA、Sigstore、SBOM 標準に対するサプライチェーン監査 |
+| `/test-suite` | `src/apothem/commands/test-suite.md` | ホストが批准したテストフレームワークに対する、振る舞い優先のテスト作成と実行 |
+| `/threat-model-audit` | `src/apothem/commands/threat-model-audit.md` | アーキテクチャ、データフロー、信頼境界にわたる STRIDE と PASTA に対する脅威モデリング監査 |
+| `/ux-review` | `src/apothem/commands/ux-review.md` | 開発者体験レビュー：CLI のエルゴノミクス、インストールフロー、ヘルプテキスト、エラーメッセージ |
+
+### プランパイプラインのコマンド
+
+プランパイプラインは 8 つの第一級コマンドとして出荷されます——ステージごとに 1 つで、それぞれ `src/apothem/commands/plan-<stage>.md` の独自の登録済みファイルから `/plan-<stage>` として直接呼び出せます。
+
+| コマンド | ファイル | 振る舞い |
+| ------- | ---- | -------- |
+| `/plan-spec` | `src/apothem/commands/plan-spec.md` | 自由形式の散文を仕様グレードの `_spec/spec.md` に洗練する。すべての未解決の問いは、暗黙のデフォルト化ではなく構造化インクワイアリチャネルを経由する。`--quick` は `<project-root>/.apothem/plans/` 配下に単一の軽量プランファイルを書き出す（`.plans/` は引き続きサポートされる後方互換フォールバックです） |
+| `/plan-generate` | `src/apothem/commands/plan-generate.md` | 作成済みの散文／要件から完全なマスタープランスイートを生成 |
+| `/plan-review` | `src/apothem/commands/plan-review.md` | 既存スイートのフォレンジック監査——散文への忠実度、内部整合性、ギャップ分析——を対話型 Q&A で洗練 |
+| `/plan-design` | `src/apothem/commands/plan-design.md` | スイートの `_inputs/design.md` にアーキテクチャ設計アーティファクトを生成し、プロモーション前に 15 バーのプリエミッションゲートで検証 |
+| `/plan-audit` | `src/apothem/commands/plan-audit.md` | spec → generate → review の完全なサイクルにわたる閉ループの監査と是正を行い、所見がゼロになるか、定義された撤退を伴う反復上限に達するまでループする |
+| `/plan-execute` | `src/apothem/commands/plan-execute.md` | 適合性チェックと品質ゲート付きでフェーズを実行する——既定の労力は `medium`、`PHASE.md` フロントマターの `effort:` フィールドでフェーズごとに上書き可能。既定では各フェーズ境界で停止し、`--no-pause`（またはプロファイルの `enforcement.continuous_execution` フラグ）で連続的なフェーズ間の前進を有効にする |
+| `/plan-status` | `src/apothem/commands/plan-status.md` | タスク、フェーズ、アーティファクトの各次元に対する読み取り専用の進捗レポート |
+| `/plan-amend` | `src/apothem/commands/plan-amend.md` | 既存スイートを、過去に解決された決定を破壊することなく補正・拡張・洗練・撤回する。影響を受ける下流のアーティファクトのみを再導出する |
+
+### オペレーターワークフロー＆オーケストレーターのコマンド
+
+3 つのコマンドは、それ自体のステージロジックを持つのではなく深いプロシージャに入ります：2 つのオペレーターワークフローのエントリポイント（それぞれ同名の兄弟スキルに支えられる）に加えて、薄いプランパイプラインオーケストレーター。
+
+| コマンド | ファイル | 説明 |
+| ------- | ---- | ----------- |
+| `/workflow` | `src/apothem/commands/workflow.md` | 汎用のワークフローハーネシングのエントリポイント（`/goal <<mission>>`）：真に独立したマルチワーカーの動的ワークフローを、名前付きリターン契約、所見が生き残る前の既定で反証する検証、変更台帳に開示されたミッションを超えた是正、決定論的な出力のもとで駆動する。マルチワーカーのディスパッチと自動実行はオプトイン／確認ゲート付き。`workflow` スキルに支えられる |
+| `/projectify` | `src/apothem/commands/projectify.md` | チャットアプリのプロジェクト引き上げ：Claude Project、Custom GPT、または Gem のために、Description／Instruction／knowledge-Files のデリバラブルを現行の SOTA 規約へ、プラットフォームごとの測定可能なコンテキスト予算内で作成する。決定論的な出力、オプトインの自律性。`projectify` スキルに支えられる |
+| `/plan` | `src/apothem/commands/plan.md` | 第一級のプランステージを連鎖させる薄いオーケストレーター（`plan-spec → plan-generate → plan-review → plan-design（条件付き）→ plan-execute`）で、各ステージを前ステージの Handoff Manifest から再開する。ステージロジックは持たない——連鎖はオプトイン／確認ゲート付き（`--auto` は連続的に連鎖する） |
+
+## 2. ルール
+
+振る舞いのルールは `src/apothem/rules/` 配下に存在します——小さな常時ロードのコアに加えて、より大きなパスフィルタ済みのセット（一致するアーティファクトに触れたときにオンデマンドでロードされる）。ルールごとの完全な一覧——Scope（常時ロード／パスフィルタ済み）と Implements の各列つき——は、リファレンスインベントリジェネレーターによって `src/apothem/rules/*.md` から更新されるソース生成の `reference/rules.mdx` です。権威ある現行リストはそれを参照してください。
+
+> **CM-21 のファセット区分**（3 つのルールが、異なる重複しないファセットで CM-21 を共同実装します）：**創造的フィルタ＆認知的アイデンティティ** → `cognitive-identity.md`；**生成方法論（執筆＆再執筆プロトコル）** → `clean-room-generation.md`；**計画／レビュー技法** → `planning-techniques.md`。各ルールは自身のファセットを所有し、他は外部を参照します。
+
+> **Interactive-questions スキーマのポインタ。** 構造化インクワイアリの規約上の呼び出しスキーマ——必須フィールド、フィールド要約テーブル、2 つの実行可能な作業例（§2.1 のシングルセレクトと §2.2 のマルチセレクト）——は `src/apothem/rules/interactive-questions.md` §2「Structured-Inquiry Shape」に存在します。下流のアーティファクトは §2.1 または §2.2 を呼び出しテンプレートとしてコピーできます。各オプションの `description` 本体が担う 3 セグメントのオプションアノテーションスキーマは、同ファイルの §3 で規定されています。
+
+## 3. 委任ワーカー
+
+12 個の永続的なワーカー定義がエコシステムに同梱されています。オーケストレーションルールのチームパターンがそれらにディスパッチします。各定義は下記のファイルパスに存在します。
+
+```text
+Worker              File                                       Pattern         Model Policy
+------------------- ------------------------------------------ --------------- -------------
+Codebase Explorer   src/apothem/agents/codebase-explorer.md   Research        host-selected
+Convention Auditor  src/apothem/agents/convention-auditor.md  Audit           host-selected
+Dependency Auditor  src/apothem/agents/dependency-auditor.md  Audit           host-selected
+Fact Checker        src/apothem/agents/fact-checker.md        Audit           host-selected
+MCP Builder         src/apothem/agents/mcp-builder.md         Generation      host-selected
+Memory Auditor      src/apothem/agents/memory-auditor.md      Audit           host-selected
+Prompt Evaluator    src/apothem/agents/prompt-evaluator.md    Quality         host-selected
+Quality Gate        src/apothem/agents/quality-gate.md        Quality         host-selected
+Refactor Surgeon    src/apothem/agents/refactor-surgeon.md    Implementation  host-selected
+Research Scout      src/apothem/agents/research-scout.md      Research        host-selected
+Security Scanner    src/apothem/agents/security-scanner.md    Audit           host-selected
+Test Runner         src/apothem/agents/test-runner.md         Quality         host-selected
+```
+
+## 4. フック
+
+登録されたすべてのフックコマンドは、Claude Code の exec 形式のコマンド形態
+（`command: "python"` に `args` 配列を加えたもの）を使用し、
+`-m apothem.hooks.dispatch` または `-m apothem.conformity.gate` のいずれかを呼び出します。ディスパッチャーは
+エコシステムルートの解決のために `src/apothem/hooks/lib/resolve_root.py` をインポートし、
+それと並んで `src/apothem/hooks/` 自体の配下にある 2 つのヘルパーに委任します：
+`src/apothem/hooks/emit_hook_context.py` はアシスタント向けにイベントペイロードを整形し、
+`src/apothem/hooks/session_start_bootstrap.py` は、ディスパッチャーがそのイベントをルーティングする際に
+引き渡す SessionStart の準備作業を担います。サポートされるイベントが発火したときにアシスタントに
+表示されるフックメッセージは、`src/apothem/hooks/messages/` 配下に Markdown コンテキストファイルとして
+存在します——イベントバリアントごとに 1 つ：`postcompact.md`、`precompact.md`、
+`pretooluse-bash.md`、`pretooluse-bash-plan-guard.md`、`pretooluse-conformity.md`、
+`pretooluse-dependency-guard.md`、`pretooluse-edit.md`、`pretooluse-edit-header-guard.md`、
+`pretooluse-eval-guard.md`、`pretooluse-notebookedit.md`、`pretooluse-write.md`、
+`pretooluse-write-header-guard.md`、`pretooluse-write-plan-guard.md`、`sessionstart.md`、
+`stop.md`。各ルーティング済みコンテキストファイルは、そのイベントが発火し、かつそのコンテキスト引数が
+`settings.json` に登録されているときにディスパッチャーによってロードされます。3 つのコンテキストファイル
+（`pretooluse-conformity.md`、`pretooluse-dependency-guard.md`、`pretooluse-eval-guard.md`）は、
+現在の `settings.json` ルーティングエントリを持たない利用可能なバリアントとして出荷されています。
+
+```text
+Event             Automates                Timeout  Purpose
+----------------- ------------------------ -------- --------------------------------------------------
+SessionStart      CM-14                    30s      Read memory, check plan state, report readiness
+PreCompact        CM-24 §2.3               30s      Verify state externalized before compaction
+PostCompact       CM-24 §6.2               30s      Restore working state after compaction
+Stop              CM-14/CM-22/CM-24/CM-26  60s      Session-end externalization
+PreToolUse        CM-7/CM-22               10s      Write/Edit/NotebookEdit validation — codebase-isolation, frontmatter, license-header, and plans-locality checks plus the conformity gate. Bash validation — git artifact isolation and plans-locality
+PostToolUse       —                        10s      Accepted by src/apothem/hooks/dispatch.py whitelist for forward compatibility; no settings.json entry currently routes this event
+UserPromptSubmit  —                        10s      Accepted by src/apothem/hooks/dispatch.py whitelist for forward compatibility; no settings.json entry currently routes this event
+Notification      —                        10s      Accepted by src/apothem/hooks/dispatch.py whitelist for forward compatibility; no settings.json entry currently routes this event
+```
+
+> **規約。** **Automates** が `—` の行は `dispatch.py` によって受理されますが、`settings.json` には配線されていません。**Timeout** 列は、そのイベントが後で配線された場合に適用されるディスパッチレベルの既定値を示します。
+>
+> **Timeout 値の規約上のブロック。** このテーブルの **Timeout** 列は、エコシステム全体にわたるフックの Timeout 値の唯一の信頼できる情報源です。`settings.json` のフックごとの `timeout` フィールド、`site/content/docs/reference/settings-reference.mdx` § Hook Events と `site/content/docs/reference/artifact-schema.mdx` § Hooks Pipeline のミラーテーブル、および `src/apothem/rules/persistent-conventions-vigilance.md` § Convention Awareness のルールガイダンスは、すべてこの列から導出されます。今後の Timeout の改訂はここに着地し、消費者は次回の参照時に再導出します。
+
+### 設定テンプレートのレビュー周期
+
+`settings.json` は唯一の Claude Code テンプレートです。各フックコマンドは
+シェル固有のラッパーではなく exec 形式を使用するため、クロス OS の振る舞いは
+ペアになったテンプレートを diff するのではなく、1 つのファイル内でレビューされます。新しいパーミッションエントリ、
+フックイベント、Timeout、ステータスメッセージは、そのファイルにアトミックに着地します。
+
+## 5. スキル
+
+再利用可能なスキルは `src/apothem/skills/` 配下に、スキルごとに 1 フォルダで存在します。
+
+| スキル | パス | ユーザー呼び出し可 | 目的 |
+| ----- | ---- | -------------- | ------- |
+| Dependency Upgrade | `src/apothem/skills/dependency-upgrade/` | はい | Changelog をレビュー済みで、ピン留めされ、ゲートで検証された依存関係のアップグレード |
+| Dev Toolkit | `src/apothem/skills/dev-toolkit/` | はい | 規律ある工学ループ——構造化デバッグ、test-first の Red-Green-Refactor、垂直スライス分解、要件からイシューへの分解 |
+| Diagram Authoring | `src/apothem/skills/diagram-authoring/` | はい | 宣言的な図とデータ可視化のための Author → Validate → Render → Export パイプライン（SVG／PNG／PDF） |
+| Document Authoring | `src/apothem/skills/document-authoring/` | はい | 承認ゲート付きの長文ドキュメント作成（Outline → Draft → Review）、検証済み引用と決定論的な組版コンパイルつき |
+| Ecosystem Audit | `src/apothem/skills/ecosystem-audit/` | はい | Apothem 構成ツリーのブラインド監査 |
+| Eval Harness | `src/apothem/skills/eval-harness/` | はい | 明示的な合格基準を伴う再現可能な言語モデル評価ハーネス |
+| Incident Runbook | `src/apothem/skills/incident-runbook/` | はい | Trigger → Diagnosis → Action → Verification → Rollback としてのランブック作成 |
+| Multi-Source Research | `src/apothem/skills/multi-source-research/` | はい | ファンアウトされ、相互検証され、引用されたリサーチレポート |
+| Plan Suite | `src/apothem/skills/plan-suite/` | いいえ | `/plan` パイプラインのステージが消費するマスターテンプレート |
+| Projectify | `src/apothem/skills/projectify/` | はい | チャットアプリのプロジェクト引き上げ——Description／Instruction／knowledge-Files のデリバラブルを、プラットフォームごとの測定可能なコンテキスト予算内で SOTA 規約へ |
+| Prompt Engineering | `src/apothem/skills/prompt-engineering/` | はい | Eval で検証された構造化プロンプト設計 |
+| Refactor Extract | `src/apothem/skills/refactor-extract/` | はい | 振る舞いを保つ抽出リファクタリング |
+| Secret Rotation | `src/apothem/skills/secret-rotation/` | はい | 露出した認証情報の安全な廃止と置換 |
+| Source Synthesis | `src/apothem/skills/source-synthesis/` | はい | 固定されたソースセットを 1 つの引用された統合へと調停 |
+| Surgical Guard | `src/apothem/skills/surgical-guard/` | はい | 最小 diff のアンカー境界編集を、反応的で diff ベースの編集後品質ガードと組み合わせたもの |
+| Test Authoring | `src/apothem/skills/test-authoring/` | はい | Arrange-Act-Assert の規律を伴う振る舞い優先のテスト作成 |
+| Vuln Triage | `src/apothem/skills/vuln-triage/` | はい | セキュリティアドバイザリを深刻度で分類し、是正をルーティング |
+| Workflow | `src/apothem/skills/workflow/` | はい | 敵対的な既定で反証する検証と、開示されたミッションを超えた是正を伴う、汎用のマルチワーカーワークフローハーネシング |
+
+> **規約。** 各行の **パス** はフォルダです。エントリポイントはその中の `SKILL.md` ファイル——例：`src/apothem/skills/plan-suite/SKILL.md`——で、プロジェクトのソースレイアウトで宣言されたフォルダ-with-`SKILL.md` スキル規約に従います。
+
+## 6. 出力スタイル
+
+4 つの出力スタイルが `src/apothem/output-styles/` 配下に存在します。
+
+| スタイル | ファイル | 目的 |
+| ----- | ---- | ------- |
+| Default | `src/apothem/output-styles/default.md` | エコシステム既定スタイル——統一された出力規約、計画コンテンツのルーティング、ファイル作成契約 |
+| Default Architect | `src/apothem/output-styles/default-architect.md` | シニアアーキテクトのトーン——分析的、直接的、具体的な駆動要因の引用 |
+| Concise Engineer | `src/apothem/output-styles/concise-engineer.md` | 短文形式の工学的出力——散文は最小限、コードファースト |
+| Forensic Auditor | `src/apothem/output-styles/forensic-auditor.md` | レビュークラスの姿勢——所見ごと、スコアカード形状の出力、所見ごとの反証材料 |
+
+## 7. アーティファクト進化
+
+**必須。** 再利用可能なパターン、修正、または技法が再発したとき（セッション内で 2 回以上、または記憶に再発として記録されたとき）、エコシステムは進化しなければなりません。サイクルには 4 つのステップがあります：あらゆるインタラクション中にパターンを **Detect**；既存のスキル、ルール、コマンド、フック、記憶を重複について **Search**；一致するアーティファクトをその場で進化させる（手順、アンチパターン、スコープを更新）か、関心が真に直交している場合は新しいものを作成することで **Act**；相互参照が依然として解決し、依存するアーティファクトが一貫したままであることを **Validate**。作成より洗練を優先する——新しいアーティファクトは保守面を複利的に増やす。あらゆるアーティファクトクラスにわたるギャップ検出トリガーの閉じたカタログを含む完全なプロトコルは、`src/apothem/rules/persistent-conventions-vigilance.md` §2+§4 を参照してください。
+
+## 8. 空のアーティファクトクラス
+
+エコシステムレジストリで宣言されているが、アクティベーショントリガーが発火するまで意図的に空であるサーフェス。各行は、予約されたサーフェス、そのクラスを足場立てするファイルまたはディレクトリ、そしてその行を空-アテステーションから埋め済みへと昇格させるトリガーを記録します。
+
+| クラス | 足場 | ステータス | アクティベーショントリガー |
+| ----- | -------- | ------ | ------------------ |
+| MCP サーバー | （足場はまだなし） | 空-アテステーション | ユーザー構成ルート配下での最初の MCP サーバーインストール |
+
+空-アテステーションはギャップではなく、肯定的な宣言です。クラスの足場（存在する場合）は、アクティベーションの瞬間を追跡する規約上の no-op アーティファクトです。空-アテステーションから埋め済みへの昇格は、足場の最初の非空の値とともに、該当するレジストリセクションにアトミックに着地します。

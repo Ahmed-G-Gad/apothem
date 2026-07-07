@@ -1,0 +1,45 @@
+---
+title: "Apothem vs konfigurasi GitHub Copilot mentah"
+description: "Memelihara copilot-instructions.md GitHub Copilot secara manual versus merendernya dari profil bersama Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+GitHub Copilot membaca instruksinya dari `.github/copilot-instructions.md`.
+Adaptor github-copilot Apothem merender berkas itu dari profil bersama. Halaman
+ini mengontraskan pemeliharaan manual konfigurasi tersebut dengan mengelolanya
+melalui Apothem.
+
+## Perbandingan upaya
+
+| Tugas | Konfigurasi manual mentah | Dikelola Apothem |
+| ---- | --------------- | --------------- |
+| Menulis instruksi | Menyunting tangan `.github/copilot-instructions.md` | Dirender: aturan bersama disematkan ke dalam berkas |
+| Menjaga instruksi selaras dengan lingkungan lain | Manual, per alat | Otomatis saat `apothem update` |
+| Memasang / menghapus konfigurasi | Menulis dan menghapus berkas secara manual | `apothem install` / `apothem uninstall` |
+| Memverifikasi konfigurasi sudah benar | Inspeksi manual | `apothem verify --harness github-copilot` |
+
+## Apa yang dikelola Apothem
+
+Adaptor github-copilot menyematkan aturan bersama ke
+`.github/copilot-instructions.md`. Copilot beroperasi sebagai ekstensi IDE dan
+tidak mengekspos hook panggilan alat, jadi maksud pagar pengaman dibawa
+sepenuhnya di dalam instruksi yang dirender. Setiap perubahan pada aturan bersama
+merender ulang berkas pada `apothem update` berikutnya.
+
+## Jalur migrasi
+
+1. Jalankan `apothem profile init` untuk membuat profil bersama jika Anda belum
+   melakukannya.
+2. Pindahkan isi `.github/copilot-instructions.md` yang ada ke korpus bersama.
+3. Jalankan `apothem install --harness github-copilot` untuk merender berkas
+   instruksi.
+4. Jalankan `apothem verify --harness github-copilot` untuk memastikan
+   konfigurasi sudah terpasang.
+5. Gunakan `apothem update --harness github-copilot` untuk setiap perubahan
+   berikutnya.
+
+## Baca berikutnya
+
+- [Referensi adaptor GitHub Copilot](/docs/harnesses/github-copilot)
+- [Ikhtisar perbandingan](/docs/comparison)

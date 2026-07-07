@@ -1,0 +1,34 @@
+---
+title: "출력 스타일"
+description: "operator 톤 프로파일(Senior Architect, Concise Engineer, Forensic Auditor)을 /output-style 명령으로 세션마다 활성화합니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+출력-스타일 프로파일은 `src/apothem/output-styles/` 아래에 존재하며 스타일별
+operator 톤 지침을 담습니다. 호스트 하니스 런타임은
+`/output-style <name>` 을 통해 세션 단위로 스타일을 활성화합니다.
+
+## 정규 프로파일
+
+| 프로파일 | 파일 | 톤 |
+|---------|------|------|
+| 기본 아키텍트 | `src/apothem/output-styles/default-architect.md` | 시니어 소프트웨어 아키텍트 톤(기본값) |
+| 간결한 엔지니어 | `src/apothem/output-styles/concise-engineer.md` | 짧은 형식의 엔지니어링 톤 |
+| 포렌식 감사자 | `src/apothem/output-styles/forensic-auditor.md` | 발견-별 감사 톤 |
+
+## Frontmatter 계약
+
+```yaml
+---
+name: <style name>
+description: <one-line tone summary>
+type: output-style
+---
+```
+
+## 새 프로파일 작성하기
+
+`src/apothem/output-styles/` 아래에 정규 frontmatter 를 갖춘 새 `<name>.md`
+파일을 생성하고, 본문에 톤을 선언한 뒤, 다음 세션의 시작에서
+`/output-style <name>` 을 호출하여 비준합니다.

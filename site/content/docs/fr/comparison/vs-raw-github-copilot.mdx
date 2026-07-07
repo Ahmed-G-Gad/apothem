@@ -1,0 +1,46 @@
+---
+title: "Apothem face à la configuration GitHub Copilot brute"
+description: "Maintenir à la main le copilot-instructions.md de GitHub Copilot versus le rendre depuis le profil partagé d'Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+GitHub Copilot lit ses instructions depuis `.github/copilot-instructions.md`.
+L'adaptateur github-copilot d'Apothem rend ce fichier depuis le profil partagé.
+Cette page met en contraste la maintenance manuelle de cette configuration et sa
+gestion avec Apothem.
+
+## Comparaison de l'effort
+
+| Tâche | Configuration brute à la main | Géré par Apothem |
+| ---- | --------------- | --------------- |
+| Rédiger les instructions | Modifier à la main `.github/copilot-instructions.md` | Rendu : règles partagées intégrées dans le fichier |
+| Garder les instructions alignées avec les autres environnements | Manuel, par outil | Automatique lors de `apothem update` |
+| Installer / supprimer la configuration | Écrire et supprimer le fichier à la main | `apothem install` / `apothem uninstall` |
+| Vérifier que la configuration est correcte | Inspection manuelle | `apothem verify --harness github-copilot` |
+
+## Ce que gère Apothem
+
+L'adaptateur github-copilot intègre les règles partagées dans
+`.github/copilot-instructions.md`. Copilot fonctionne comme une extension d'IDE
+et n'expose aucun hook d'appel d'outil, de sorte que l'intention de garde-fou est
+portée entièrement dans les instructions rendues. Chaque changement des règles
+partagées re-rend le fichier lors du prochain `apothem update`.
+
+## Chemin de migration
+
+1. Exécutez `apothem profile init` pour créer le profil partagé si ce n'est pas
+   déjà fait.
+2. Déplacez le contenu de votre `.github/copilot-instructions.md` existant vers
+   le corpus partagé.
+3. Exécutez `apothem install --harness github-copilot` pour rendre le fichier
+   d'instructions.
+4. Exécutez `apothem verify --harness github-copilot` pour confirmer que la
+   configuration est en place.
+5. Utilisez `apothem update --harness github-copilot` pour chaque changement
+   ultérieur.
+
+## À lire ensuite
+
+- [Référence de l'adaptateur GitHub Copilot](/docs/harnesses/github-copilot)
+- [Vue d'ensemble des comparaisons](/docs/comparison)

@@ -1,0 +1,81 @@
+---
+title: "update"
+description: "CLI reference for the apothem update command."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Re-install a harness adapter configuration from the current shared profile.
+
+## Synopsis
+
+```
+apothem update --harness NAME|all [--profile PATH] [--dry-run]
+                [--project PATH]
+                [--quiet|-q] [--verbose|-v]
+                [--format plain|json] [--json] [--no-color]
+```
+
+`update` re-materializes harness output from the current shared profile. It
+uses the same profile validation, `--harness all` selection, project-scope
+checking, dry-run behavior, and JSON envelope as `install`.
+
+The continuous-form alias `apothem updating` resolves to the same handler.
+
+## Options
+
+| Option | Description |
+|---|---|
+| `--harness NAME` | Harness adapter to update, or `all` for the registry-wide set (required). |
+| `--profile PATH` | Path to shared profile YAML. Defaults to `~/.config/apothem/profile.yaml`. |
+| `--dry-run` | Preview update without writing files. |
+| `--project PATH` | Project root for project-scope harnesses. Required when the selected harness set includes project-scope adapters. |
+| `--quiet`, `-q` | Suppress informational output; only errors are emitted. |
+| `--verbose`, `-v` | Emit additional diagnostic output. |
+| `--format plain\|json` | Output format (default: `plain`). |
+| `--json` | Shorthand for `--format json`. |
+| `--no-color` | Disable ANSI color codes in output. |
+| `-h`, `--help` | Show help and exit. |
+
+## JSON output
+
+```json
+{
+  "status": "success",
+  "command": "update",
+  "action": "updated",
+  "harness": "claude-code",
+  "profile_path": "C:\\Users\\Example\\.config\\apothem\\profile.yaml",
+  "project": null,
+  "files_written": [],
+  "results": [],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+`--dry-run` returns `status: "dry_run"` and `files_written: []`.
+
+## Examples
+
+```bash
+apothem update --harness claude-code
+apothem update --harness claude-code --dry-run
+apothem update --harness all --project . --dry-run --json
+apothem Updating --harness claude-code   # continuous-form alias
+apothem updating --harness claude-code   # lowercase variant
+```
+
+## Exit codes
+
+| Code | Meaning |
+|---|---|
+| 0 | Adapter updated successfully or dry-run planned cleanly |
+| 1 | Expected validation, profile, harness, project, or adapter error |
+| 2 | Partial batch materialization after at least one write |
+
+## See also
+
+- `apothem updating` — continuous-form alias for this command (documented here; the CLI accepts both forms)
+- [apothem install](/docs/cli-reference/install) — initial install
+- [Updating guide](/docs/install/updating) — per-installer update paths

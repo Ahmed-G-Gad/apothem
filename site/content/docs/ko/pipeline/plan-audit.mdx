@@ -1,0 +1,70 @@
+---
+title: "/plan-audit"
+description: "/plan-audit — /plan 파이프라인의 폐루프 수호자 — spec → generate → review를 감싸며, 스위트가 검토된 무발견 전체가 될 때까지 발견을 능동적으로 교정합니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**역할:** 수호자
+**파이프라인 위치:** 감싸기 / 직교(실행 전)
+
+`/plan` 파이프라인의 폐루프 수호자. `/plan-review`가 생성된 스위트를 보고하고 정련하는 반면, `/plan-audit`는 상류 사이클(`/plan-spec → /plan-generate → /plan-review`)을 감싸 스위트를 검토된 무발견 전체로 구동합니다 — 누락된 상류 단계만 실행하고, 결과를 감사하며, 기계적으로 해결 가능한 발견을 제자리에서 수정하고, 판단 분기를 구조화 질의 채널을 통해 드러내며, 스위트가 깨끗해지거나 유계 후퇴가 발동될 때까지 반복합니다. 페이즈 구현 작업을 실행하는 일은 결코 없습니다. 스위트를 `/plan-execute`에 넘길 준비가 된 상태로 남깁니다.
+
+## 정규 호출
+
+```bash
+/plan-audit
+```
+
+인자와 함께:
+
+```bash
+/plan-audit [suite-path] [--from spec|generate|review] [--remediate] [--cap N] [--maintenance] [--dry-run]
+```
+
+## 입력
+
+대상 스위트의 `_spec/spec.md`, `_inputs/handoff-manifest.yml`, 인프라 파일, `phases/**/PHASE.md`, 그리고 기존 페이즈 보고서.
+
+## 출력
+
+`<suite>/_outputs/audit-report-<YYYY-MM-DD>.md`에 위치한 지속적이고 유계인 보고서; 무발견 판정, 미해결 발견 수, 교정 원장, 그리고 일체의 유지보수 라우팅을 담은 갱신된 인계 매니페스트; 그리고 잔여 발견이 남으면 0이 아닌 종료 상태.
+
+## 파이프라인 위치
+
+`/plan-audit`는 선형 파이프라인에 대해 **직교**하며, 그 안의 한 단계가 아닙니다. 정규 선형 시퀀스는 `/plan-spec → /plan-generate → /plan-review → /plan-design`(조건부, 아키텍처를 지닌 스위트에 한함) `→ /plan-execute`입니다. `/plan-audit`는 `/plan-spec → /plan-generate → /plan-review`를 임의의 지점에서 호출할 수 있는 단일 폐루프 래퍼로 포괄합니다. 상태를 검사하고 누락된 단계만 실행합니다. 이는 요새 감사 체인(`/code-review`에서 진입, `/threat-model-audit`에서 종단)과 구별되며, 후자는 계획 스위트가 아니라 실행된 코드베이스를 감사합니다.
+
+## 워크플로 페이즈
+
+1. **대상 해결** — 인자로부터 스위트를 해결하거나, `.apothem/plans/` 아래에서 가장 최근에 수정된 스위트를 선택하고(`.plans/`는 지원되는 하위 호환 폴백입니다) 그 해결을 명시합니다.
+2. **단계 평가** — 어떤 산출물이 존재하는지(spec 준비됨 / 생성됨 / 검토됨 / 실행됨) 감지하고, 검토된 실행 가능 전체에 이르는 최소 간극을 명명합니다.
+3. **검토 가능한 전체로 가져오기** — 누락된 상류 단계만 실행하고, 각 간극을 정규 명령에 위임합니다. 산문을 새로 고치기 위해서만 충족된 단계를 재실행하는 일은 결코 없습니다.
+4. **포렌식 감사** — `/plan-review` 감사 차원, 계획 기법 카탈로그, 15개 바의 사전 발행 게이트를 적용합니다.
+5. **능동적 교정** — 기계적 발견을 제자리에서 수정하고, 판단 분기를 구조화 질의 채널을 통해 드러내며, 정당하게 범위 밖인 작업을 형제 `*-maintenance` 스위트로 라우팅합니다.
+6. **상한과 후퇴를 가진 루프** — 미해결 발견이 남지 않을 때까지 감사-와-교정을 반복하며, 반복 상한(기본 3)으로 유계로 하고, 상한이 소진되면 정의된 후퇴를 수행합니다.
+
+## 실패 모드
+
+| 증상 | 원인 | 복구 |
+|---------|-------|----------|
+| 상한 소진에도 잔여 발견 존재 | 발견이 반복 상한 내에서 해결되지 않음 | 감사 보고서를 검토하고, 적격 항목을 `*-maintenance` 스위트로 라우팅하며, 근거가 있을 때만 `--cap`을 올린다 |
+| 판단 분기 미해결 | 어떤 발견이 정책/범위/권한 결정을 요구함 | 구조화 질의 프롬프트에 답한다. 루프는 결코 조용히 선택하지 않는다 |
+| 권위 있는 spec 누락 | `_spec/spec.md` 없음 | 래퍼가 `/plan-spec`으로 라우팅하여 작성한다 |
+| 품질 게이트 FAIL | 출력이 표준을 충족하지 않음 | 교정이 근본 원인을 수정하고 손댄 위치를 재감사한다 |
+
+## 예시
+
+```bash
+# Dry-run: report detected suite, stage, planned audit dimensions, would-write targets
+/plan-audit --dry-run
+
+# Audit and actively remediate a named suite, capping the loop at 2 iterations
+/plan-audit path/to/plan-suite/ --remediate --cap 2
+```
+
+## 상호 참조
+
+- [파이프라인 개요](/docs/pipeline)
+- [/plan-review](/docs/pipeline/plan-review)
+- [/plan-execute](/docs/pipeline/plan-execute)
+- [마스터 플랜 스위트 템플릿](/docs/reference/commands)

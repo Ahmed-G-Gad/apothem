@@ -1,0 +1,70 @@
+---
+title: "/plan-execute"
+description: "/plan-execute — Exécute une phase précise d'une Suite de Plan Maître avec vérification de conformité."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rôle :** Exécuteur
+**Position dans le pipeline :** terminal
+
+Exécute une phase précise d'une Suite de Plan Maître avec vérification de conformité.
+
+## Invocation canonique
+
+```bash
+/plan-execute
+```
+
+Avec des arguments :
+
+```bash
+/plan-execute [path/to/plan-suite/] [phase-id] [--dry-run]
+```
+
+## Entrées
+
+Suite de plan générée + relue ; `_inputs/handoff-manifest.yml` relu
+
+## Sorties
+
+Fichiers REPORT.md par phase, artefacts de la base de code, COMPLETION.md
+
+## En aval
+
+`/code-review` — le point d'entrée canonique de la séquence de forteresse d'audit à onze commandes. `/plan-execute` est l'étape terminale du pipeline de *plan* ; lorsque la phase finale s'achève, le code construit passe à la forteresse d'audit pour relecture.
+
+## Phases du flux de travail
+
+La commande suit le flux de travail standard du pipeline `/plan` :
+
+1. **Charger le contexte** — Lit la suite de plan, les règles et le Contrat de Reprise.
+2. **Vérifier les prérequis** — Confirme que les phases de dépendance sont terminées.
+3. **Exécuter les tâches** — Accomplit la mission de la commande.
+4. **Vérifier les sorties** — Confirme que toutes les sorties déclarées existent et passent les portes de qualité.
+5. **Mettre à jour PROGRESS.md** — Consigne les sorties vérifiées dans le Registre des Sorties de Phase.
+6. **Émettre REPORT.md** — La preuve de libération de la porte de pré-émission est consignée.
+
+## Modes d'échec
+
+| Symptôme | Cause | Récupération |
+|---------|-------|----------|
+| Prérequis incomplet | Phase dépendante non terminée | Terminez d'abord la phase en amont |
+| Porte de qualité FAIL | La sortie ne respecte pas les normes | Corrigez la sortie et relancez |
+| Fichier d'entrée manquant | Fichier de suite de plan absent | Exécutez `/plan-generate` pour le créer |
+
+## Exemples
+
+```bash
+# Dry-run to preview what would happen
+/plan-execute --dry-run
+
+# Execute against a named plan suite
+/plan-execute path/to/plan-suite/
+```
+
+## Renvois
+
+- [Aperçu du pipeline](/docs/pipeline)
+- [Référence des commandes](/docs/reference/commands)
+- [Entrée de la forteresse d'audit : `/code-review`](/docs/reference/commands) — la séquence de relecture dans laquelle entre le code construit une fois le pipeline de plan achevé

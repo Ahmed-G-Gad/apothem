@@ -1,0 +1,44 @@
+---
+title: "Serveurs MCP"
+description: "Configuration des serveurs Model Context Protocol — propriété de l'opérateur et enregistrés via le mécanisme MCP natif de chaque outil ; Apothem synchronise l'inventaire depuis le profil partagé mais n'écrit aucune entrée de serveur."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Les serveurs Model Context Protocol (MCP) sont la **propriété de l'opérateur**.
+Apothem tient l'inventaire MCP dans le profil partagé et le projette dans la
+surface MCP native de chaque outil, mais n'écrit aucune entrée de serveur propre
+— la surface reste à votre charge.
+
+## Où les serveurs MCP s'enregistrent
+
+Chaque outil enregistre les serveurs MCP via son propre mécanisme natif, et
+Apothem respecte cette surface au lieu de l'écraser. Sur l'adaptateur Claude Code
+(l'un parmi beaucoup), les serveurs s'enregistrent avec `claude mcp add` dans
+`~/.claude.json` (portée utilisateur ou locale) et un `.mcp.json` au niveau du
+projet ; les autres adaptateurs projettent dans leurs propres surfaces natives.
+Les paramètres gérés par Apothem ne portent jamais de bloc `mcpServers`.
+
+## Ajouter un serveur
+
+Enregistrez un serveur via le mécanisme natif de votre outil ; la forme d'entrée
+canonique est une clé sous `mcpServers` :
+
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/some/path"]
+    }
+  }
+}
+```
+
+Le runtime de l'outil charge les serveurs enregistrés au démarrage de la session ;
+redémarrez l'outil pour prendre en compte les nouveaux serveurs.
+
+## Convention de nommage
+
+Les outils MCP se présentent à l'assistant sous la forme `mcp__<server>__<tool>`
+selon la convention standard de nommage des outils MCP de l'outil.

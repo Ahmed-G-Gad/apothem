@@ -1,0 +1,422 @@
+---
+title: "مواصفة مخطّط الأداة (Artifact Schema)"
+description: "مخطّط فرونت-ماتر YAML الكنسي والحقول المطلوبة لكل أنواع الأدوات في شجرة مصدر Apothem، مع قوالب لكل صنف وقواعد تحقّق."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**فرونت-ماتر <bdi>YAML</bdi> كنسي وحقول مطلوبة لكل أدوات منظومة Apothem.**
+
+## نظرة عامة
+
+يجب أن تتضمّن كل الأدوات في شجرة مصدر Apothem (تحت <bdi>`src/apothem/`</bdi>
+وسطح الإعداد الجذري) كتلة فرونت-ماتر <bdi>YAML</bdi> (بين فاصلَي <bdi>`---`</bdi>)
+بحقول إلزامية واختيارية خاصّة بنوع الأداة. يعرّف هذا المستند المخطّط الكنسي
+لكل نوع.
+
+**قواعد كونية:**
+
+- الفرونت-ماتر متوافق مع <bdi>YAML 1.2</bdi>
+- كل القيم النصّية تستخدم علامات اقتباس مزدوجة ما لم تكن فارغة
+- ترتيب الحقول: الحقول الإلزامية أولًا، والحقول الاختيارية مجمَّعة حسب الصلة
+- التعليقات في الفرونت-ماتر تستخدم <bdi>`#`</bdi> مع مسافة: <bdi>`# comment`</bdi>
+- قيم المسارات يجب أن تكون نسبية (بلا <bdi>`/`</bdi> في البداية) وتستخدم الشرطة المائلة الأمامية (<bdi>`/`</bdi>) من أجل التوافق عبر المنصّات
+
+**اصطلاح ترقيم الإصدارات (كوني عبر أنواع الأدوات):**
+
+- <bdi>`version`</bdi> **دلالي** (<bdi>`MAJOR.MINOR.PATCH`</bdi>). ارفع <bdi>MAJOR</bdi> لتغييرات المخطّط أو العقد الكاسرة؛ و<bdi>MINOR</bdi> للتغييرات الإضافية غير الكاسرة (حقول اختيارية جديدة، أقسام إضافية، أنماط مضادّة إضافية)؛ و<bdi>PATCH</bdi> للتوضيحات أو إصلاحات التنسيق أو التحريرات الخاصّة بالوثائق فقط دون تغيير في السلوك.
+- <bdi>`updated`</bdi> هو **تاريخ <bdi>ISO 8601</bdi>** (<bdi>`YYYY-MM-DD`</bdi>) لأحدث تحرير. يجب أن يتغيّر مع كل رفع لِـ <bdi>`version`</bdi> ويمكن تحديثه باستقلال من أجل تحديثات الروابط دون رفع للإصدار.
+- تُبذَر الأدوات الجديدة عند <bdi>`v0.Y.Z`</bdi>. الترقية إلى <bdi>`vX.Y.Z`</bdi> تشير إلى أن عقد الأداة مستقرّ بما يكفي ليكون التزامًا عموميًّا.
+
+---
+
+## المخطّط: القواعد
+
+**نمط المسار:** <bdi>`src/apothem/rules/*.md`</bdi>
+
+**الغرض:** تفويضات سلوكية وتوجيهات تشغيلية.
+
+### الحقول الإلزامية
+
+```yaml
+---
+name: "kebab-case-identifier"
+description: "One-line description"
+pathFilter: "**/*.py, **/*.toml"
+alwaysApply: true | false
+---
+```
+
+| الحقل | النوع | الغرض | المثال |
+| ----- | ---- | ------- | ------- |
+| <bdi>`name`</bdi> | string | معرّف قابل للقراءة آليًّا | <bdi>`"operational-mandates"`</bdi> |
+| <bdi>`version`</bdi> | string | إصدار دلالي | <bdi>`"X.Y.Z"`</bdi> |
+| <bdi>`updated`</bdi> | string (ISO 8601) | تاريخ آخر تحديث | <bdi>`"2026-04-20"`</bdi> |
+| <bdi>`description`</bdi> | string | وصف من سطر واحد للسجلّات | <bdi>`"Operational mandates CM-1–10"`</bdi> |
+| <bdi>`scope`</bdi> | enum | <bdi>`always-on`</bdi> (تنطبق في كل مكان) أو <bdi>`path-filtered`</bdi> (مشروطة بمسار الملف) | <bdi>`"always-on"`</bdi> |
+| <bdi>`portability`</bdi> | enum | ضمان التوافق البيئي | <bdi>`"universal"`</bdi> |
+
+### الحقول الاختيارية (إن انطبقت)
+
+Rules carry no optional frontmatter fields, and — unlike other artifact classes — no `version` / `updated` / `scope` / `portability` fields either. The four mandatory fields above are the complete rule frontmatter contract enforced by `frontmatter_grep`.
+
+### المثال
+
+```yaml
+---
+name: "operational-mandates"
+description: "Behavioral definitions for CM-1 through CM-10: violation indicators and recovery actions"
+pathFilter: ""
+alwaysApply: true
+---
+
+# Rule: Operational Mandates
+...
+```
+
+---
+
+## المخطّط: الأوامر
+
+**نمط المسار:** <bdi>`src/apothem/commands/*.md`</bdi>
+
+**الغرض:** تعريفات أوامر السلاش (<bdi>`/plan-execute`</bdi>، <bdi>`/freshify`</bdi>، إلخ).
+
+### الحقول الإلزامية
+
+```yaml
+---
+name: "command-name"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "What this command does"
+argument-hint: "[argument-pattern]"
+disable-model-invocation: true | false
+portability: "universal"
+allowed-tools: "*"
+---
+```
+
+| الحقل | النوع | الغرض | المثال |
+| ----- | ---- | ------- | ------- |
+| <bdi>`name`</bdi> | string | اسم الأمر (بلا <bdi>`/`</bdi> في البداية) | <bdi>`"plan-execute"`</bdi> |
+| <bdi>`version`</bdi> | string | إصدار دلالي | <bdi>`"X.Y.Z"`</bdi> |
+| <bdi>`updated`</bdi> | string (ISO 8601) | تاريخ آخر تحديث | <bdi>`"2026-04-20"`</bdi> |
+| <bdi>`description`</bdi> | string | وصف قصير | <bdi>`"Executes a phase with quality gates"`</bdi> |
+| <bdi>`argument-hint`</bdi> | string | نمط الاستخدام أو <bdi>`"[args...]"`</bdi> إن لم يوجد | <bdi>`"[path/to/plan] [phase-id]"`</bdi> |
+| <bdi>`disable-model-invocation`</bdi> | boolean | إذا كان true، فالأمر ليس مقصودًا لأن يُستدعى من زمن تشغيل مساعِد الترميز | <bdi>`true`</bdi> |
+
+### الحقول الاختيارية
+
+Commands carry no optional frontmatter fields — the eight mandatory fields above are the complete command frontmatter contract enforced by `command.schema.json` (`additionalProperties: false`).
+
+### المثال
+
+```yaml
+---
+name: "plan-execute"
+version: "X.Y.Z"
+updated: "2026-04-20"
+description: "Executes a specific phase from a Master Plan Suite with conformity checking and quality gates"
+argument-hint: "[path/to/plan-suite/] [phase-id] [--dry-run]"
+disable-model-invocation: true
+portability: "universal"
+allowed-tools: "*"
+---
+
+# /plan-execute — Execute a Specific Phase
+...
+```
+
+---
+
+## المخطّط: العاملون المساعِدون
+
+**نمط المسار:**
+
+```text
+src/apothem/agents/*.md
+```
+
+**الغرض:** تعريفات العاملين المساعِدين الدائمة من أجل الاستكشاف المتوازي
+والتدقيق وبوّابات الجودة.
+
+### الحقول الإلزامية
+
+```yaml
+---
+name: "agent-name"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "What this agent specializes in"
+tools: "Tool1, Tool2, Tool3"
+disallowedTools: "Write, Edit"
+maxTurns: 20
+effort: "high" | "medium" | "low"
+---
+```
+
+| الحقل | النوع | الغرض | المثال |
+| ----- | ---- | ------- | ------- |
+| <bdi>`name`</bdi> | string | معرّف العامل المساعِد | <bdi>`"codebase-explorer"`</bdi> |
+| <bdi>`version`</bdi> | string | إصدار دلالي | <bdi>`"X.Y.Z"`</bdi> |
+| <bdi>`updated`</bdi> | string (ISO 8601) | تاريخ آخر تحديث | <bdi>`"2026-04-20"`</bdi> |
+| <bdi>`description`</bdi> | string | وصف التخصّص | <bdi>`"Deep codebase exploration"`</bdi> |
+| <bdi>`tools`</bdi> | string (مفصولة بفواصل) | الأدوات المسموح بها | <bdi>`"Read, Glob, Grep, Bash"`</bdi> |
+| <bdi>`disallowedTools`</bdi> | string (مفصولة بفواصل) | الأدوات الممنوعة | <bdi>`"Write, Edit, TodoWrite"`</bdi> |
+| <bdi>`maxTurns`</bdi> | integer | الحدّ الأقصى لأدوار المحادثة (نموذجيًّا 5–20؛ القيم فوق 20 تتطلّب تعليق تبرير مضمَّن) | <bdi>`20`</bdi> |
+| <bdi>`effort`</bdi> | enum | النطاق الحسابي | <bdi>`"high"`</bdi> |
+
+### الحقول الاختيارية
+
+```yaml
+permissionMode: "default"       # Permission handling
+memory: true | false                    # If true, agent retains memory across sessions
+pattern: "Research" | "Audit" | "Implementation" | "Quality"  # Agent team pattern
+portability: "universal"
+```
+
+### المثال
+
+```yaml
+---
+name: "codebase-explorer"
+version: "X.Y.Z"
+updated: "2026-04-20"
+description: "Deep codebase exploration — find patterns, trace dependencies, discover conventions, map architecture"
+tools: "Read, Glob, Grep, Bash"
+disallowedTools: "Write, Edit, TodoWrite"
+maxTurns: 20
+effort: "high"
+permissionMode: "default"
+memory: false
+portability: "universal"
+---
+
+You are a codebase exploration specialist...
+```
+
+---
+
+## المخطّط: المهارات
+
+**نمط المسار:** <bdi>`src/apothem/skills/*/SKILL.md`</bdi>
+
+**الغرض:** تعريفات تقنيات قابلة لإعادة الاستخدام مع إشارات اكتشاف وإجراءات تنفيذ.
+
+### الحقول الإلزامية
+
+```yaml
+---
+name: "skill-name"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "What this skill teaches"
+archetype: "workflow-template"
+userInvocable: true | false
+disable-model-invocation: true | false
+allowed-tools: "Read, Write, Glob"
+---
+```
+
+| الحقل | النوع | الغرض | المثال |
+| ----- | ---- | ------- | ------- |
+| <bdi>`name`</bdi> | string | معرّف المهارة | <bdi>`"plan-suite"`</bdi> |
+| <bdi>`version`</bdi> | string | إصدار دلالي | <bdi>`"X.Y.Z"`</bdi> |
+| <bdi>`updated`</bdi> | string (ISO 8601) | تاريخ آخر تحديث | <bdi>`"2026-04-20"`</bdi> |
+| <bdi>`description`</bdi> | string | ما توفّره المهارة | <bdi>`"Master Plan Suite template"`</bdi> |
+| <bdi>`user-invocable`</bdi> | boolean | إذا كان true، فيمكن للمستخدم طلب هذه المهارة صراحةً | <bdi>`false`</bdi> |
+
+### الحقول الاختيارية
+
+```yaml
+argument-hint: "[args...]"                           # Usage pattern if userInvocable
+effort: "low" | "medium" | "high" | "xhigh" | "max" # Optional effort level
+```
+
+### المثال
+
+```yaml
+---
+name: "ecosystem-audit"
+version: "X.Y.Z"
+updated: "2026-04-20"
+description: "Comprehensive blind audit of the apothem ecosystem"
+archetype: "audit-template"
+userInvocable: true
+disable-model-invocation: true
+allowed-tools: "Read, Write, Edit, Glob, Grep, Bash"
+argument-hint: "[--focus area] [--fix]"
+effort: "max"
+---
+
+## Purpose
+...
+```
+
+---
+
+## المخطّط: الخطّافات
+
+**نمط المسار:** كتلة <bdi>`hooks`</bdi> في <bdi>`settings.json`</bdi> إضافةً إلى
+تطبيقات Python تحت <bdi>`src/apothem/hooks/`</bdi>.
+
+**الغرض:** إعلان مدقّقات مُشغَّلة بالأحداث ومعالِجات إدارة-الحالة التي يستدعيها
+المضيف عند نقاط دورة-حياة محدّدة جيّدًا.
+
+### مخطّط ملف الإعدادات
+
+يربط المفتاح ذو المستوى الأعلى <bdi>`hooks`</bdi> أسماء الأحداث بمصفوفات من كتل المطابِق:
+
+```json
+"hooks": {
+  "<EventName>": [
+    {
+      "matcher": "<pattern>",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "python",
+          "args": ["-m", "apothem.hooks.dispatch", "<EventName>", "<message-name>"],
+          "timeout": <seconds>,
+          "statusMessage": "<short human-readable label>"
+        }
+      ]
+    }
+  ]
+}
+```
+
+| الحقل | النوع | الغرض | المثال |
+| ----- | ---- | ------- | ------- |
+| <bdi>`matcher`</bdi> | string | نمط اسم-الأداة (أو <bdi>`"*"`</bdi> للأحداث المحايدة-للأداة) | <bdi>`"Write"`</bdi> |
+| <bdi>`hooks[].type`</bdi> | حرفي <bdi>`"command"`</bdi> | النوع الوحيد المدعوم اليوم لمعالِج الخطّاف | <bdi>`"command"`</bdi> |
+| <bdi>`hooks[].command`</bdi> | string | أمر قابل للتنفيذ؛ يستخدم Apothem <bdi>`python`</bdi> | <bdi>`"python"`</bdi> |
+| <bdi>`hooks[].args`</bdi> | مصفوفة سلاسل | وسائط بصيغة-exec تستدعي <bdi>`-m apothem.hooks.dispatch`</bdi> أو <bdi>`-m apothem.conformity.gate`</bdi> | <bdi>`["-m", "apothem.hooks.dispatch", "SessionStart"]`</bdi> |
+| <bdi>`hooks[].timeout`</bdi> | integer ثوانٍ | الحدّ الأقصى لزمن التشغيل قبل أن يقتل المضيف الخطّاف | <bdi>`30`</bdi> |
+| <bdi>`hooks[].statusMessage`</bdi> | string | لصيقة قصيرة تظهر في واجهة المضيف | <bdi>`"Session start"`</bdi> |
+
+### الأحداث المطلوبة
+
+تسجّل القوالب المُسلَّمة الأحداث التالية. الخمسة جميعها مطلوبة لكي تبلّغ
+المدقّقات عن <bdi>PASS</bdi>:
+
+> **قيم المهلة تعكس الكتلة الكنسية في <bdi>`CLAUDE.md`</bdi> §٧.٤** — الجدول أدناه
+> يعيد إنتاجها لراحة القارئ؛ والعمود الكنسي هو الحاكم.
+
+| الحدث | المهلة النموذجية | الغرض |
+| ----- | --------------- | ------- |
+| <bdi>`SessionStart`</bdi> | ٣٠ ثانية | قراءة الذاكرة، التحقّق من حالة الخطّة، الإبلاغ عن الجاهزية |
+| <bdi>`PreToolUse`</bdi> | ١٠ ثوانٍ | التحقّق من عمليات الكتابة لسياسات عزل-المحتوى + الفرونت-ماتر |
+| <bdi>`PreCompact`</bdi> | ٣٠ ثانية | التحقّق من تخريج الحالة قبل ضغط السياق |
+| <bdi>`PostCompact`</bdi> | ٣٠ ثانية | استعادة حالة العمل بعد ضغط السياق |
+| <bdi>`Stop`</bdi> | ٦٠ ثانية | تخريج نهاية-الجلسة — حالة الاستئناف، المخرجات، القرارات |
+
+يقبل <bdi>`dispatch.py`</bdi> أيضًا <bdi>`UserPromptSubmit`</bdi> و<bdi>`Notification`</bdi>
+في قائمته البيضاء للأحداث من أجل التوافق المستقبلي؛ وليس أيّ منهما موصولًا في
+القوالب المُسلَّمة. أضِف كتلة مطابِق بنفس نمط صيغة-exec للتفعيل.
+
+### طبقة Python
+
+تمرّ كل أوامر الخطّافات عبر موزِّع Python نفسه:
+
+| الملف | الدور |
+| ---- | ---- |
+| <bdi>`src/apothem/hooks/dispatch.py`</bdi> | يوجّه <bdi>`SessionStart`</bdi> إلى <bdi>`session_start_bootstrap.main()`</bdi> وكل حدث آخر مُدرَج في القائمة البيضاء إلى <bdi>`emit_hook_context.main()`</bdi>. يخرج دائمًا بالرمز 0. |
+| <bdi>`src/apothem/hooks/session_start_bootstrap.py`</bdi> | سكربت خطّاف بدء-الجلسة — يصدر الذاكرة وسياق ملخّص حزمة الخطّة. |
+| <bdi>`src/apothem/hooks/emit_hook_context.py`</bdi> | مُصدِر الخطّافات الافتراضي — يكتب مظروفًا صحيحًا يحمل حمولة <bdi>`--context-file`</bdi> المسجّلة. |
+| <bdi>`src/apothem/hooks/messages/*.md`</bdi> | حمولة سياق ساكنة يشير إليها <bdi>`--context-file`</bdi>. |
+
+### التحقّق
+
+يفرض <bdi>`scripts/dev/validate_hooks.py`</bdi> عقد الخطّافات:
+
+- يُحلَّل <bdi>`settings.json`</bdi> كـ <bdi>JSON</bdi> ويعلن كل حدث مطلوب.
+- توجد سكربتات Python الثلاثة جميعها وتُحلَّل كـ Python صحيح.
+- توجد كل ملفات الرسائل التي تشير إليها وسائط <bdi>`--context-file`</bdi>.
+- لا تظهر مسارات مستخدِم مطلقة مُضمَّنة (<bdi>`C:\Users\...`</bdi> إلخ) في <bdi>`src/apothem/hooks/**.py`</bdi>.
+- تقتصر أدوات الصدفة (shell) تحت <bdi>`src/apothem/hooks/`</bdi> و<bdi>`scripts/`</bdi> على كعوب المحدِّد / الإقلاع المعتمدة.
+
+---
+
+## المخطّط: CLAUDE.md
+
+**المسار:** <bdi>`CLAUDE.md`</bdi> (الجذر)
+
+**الغرض:** فهرس الإعداد العمومي للمنظومة.
+
+### الفرونت-ماتر <bdi>YAML</bdi> الإلزامي
+
+```yaml
+---
+name: "CLAUDE"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "Global Claude Code ecosystem configuration and mandate index"
+scope: "always-on"
+portability: "universal"
+---
+```
+
+### الأقسام المطلوبة (بالترتيب)
+
+١. **§١ حزمة الخطّة** — إشارة إلى موقع القالب
+٢. **§٢ الهوية الإدراكية** — تفويض المعمارية الإبداعية
+٣. **§٣ أدلّة الأدوات** — جدول المسارات والأغراض
+٤. **§٤ الحوكمة المتدرّجة-بالجدّية** — تعريف المستويات الأربعة
+٥. **§٥ التوجيهات التشغيلية** — مبادئ حلّ-المشكلات والتواصل
+٦. **§٦ التفويضات الشاملة** — نظرة عامة على <bdi>CM-1–28</bdi>
+٧. **§٧ السجلّات** — جداول الأدوات:
+   - ٧.١ الأوامر
+   - ٧.٢ القواعد
+   - ٧.٣ العاملون المساعِدون
+   - ٧.٤ الخطّافات
+   - ٧.٥ المهارات
+   - ٧.٦ تطوّر الأدوات
+
+---
+
+## قائمة تحقّق التحقيق
+
+يجب أن تستوفي كل أداة هذه الفحوص:
+
+### تحقّق الفرونت-ماتر
+
+- [ ] الـ <bdi>YAML</bdi> صحيح نحويًّا (بلا أخطاء تحليل)
+- [ ] كل الحقول الإلزامية حاضرة لنوع الأداة
+- [ ] يتّبع <bdi>`name`</bdi> اصطلاح <bdi>kebab-case</bdi>
+- [ ] <bdi>`version`</bdi> دلالي (<bdi>`MAJOR.MINOR.PATCH`</bdi>)
+- [ ] <bdi>`updated`</bdi> بصيغة تاريخ <bdi>ISO 8601</bdi> (<bdi>`YYYY-MM-DD`</bdi>)
+- [ ] <bdi>`description`</bdi> سلسلة غير فارغة من سطر واحد
+- [ ] الحقول الاختيارية تطابق قيم enum المتوقّعة (إن انطبق)
+- [ ] لا أخطاء إملائية في أسماء الحقول (استخدم الأسماء الكنسية من المخطّط)
+- [ ] لا مسافات بيضاء زائدة ولا مشكلات تنسيق
+
+### تحقّق المحتوى
+
+- [ ] يبدأ المحتوى مباشرةً بعد <bdi>`---`</bdi> الإغلاق على سطر جديد
+- [ ] لا إشارات داخلية-للخطّة (امتثال <bdi>CM-7</bdi>)
+- [ ] تُحَلّ الإشارات المتقاطعة (إن عُدِّدت أدوات أخرى)
+- [ ] تستخدم الروابط مسارات نسبية بشرطات مائلة أمامية
+
+### تحقّق قابلية النقل
+
+- [ ] لا مسارات مطلقة مُضمَّنة (استخدم النسبية)
+- [ ] لا صياغة خاصّة بـ Windows في الأدوات ذات النطاق <bdi>universal</bdi>
+- [ ] تستخدم فواصل المسارات الشرطات المائلة الأمامية
+- [ ] تستخدم متغيّرات البيئة صيغة محايدة-للمنصّة (<bdi>`${VAR}`</bdi> أو الأصيلة-للأداة)
+
+---
+
+## ملاحظات
+
+- **الاتساق كأمن:** يمكّن الفرونت-ماتر الكنسي من التحقّق الآلي والأدوات
+  والتحقيق عبر-الأدوات. تتراكم الانحرافات بسرعة.
+- **إعلان قابلية النقل:** ليست كل الأدوات قادرة على أن تكون <bdi>universal</bdi>.
+  أعلِن القيود صراحةً — توثيق تنبيه أفضل من شحن خلل صامت.
+- **<bdi>kebab-case</bdi> للأسماء:** سهل الاستخدام في الروابط والسكربتات وسياقات
+  سطر-الأوامر. تجنّب المسافات والشرطات السفلية و<bdi>camelCase</bdi> في الأسماء.
+- **نظافة رفع الإصدار:** كل تحرير يغيّر السلوك يجب أن يرفع <bdi>`version`</bdi>
+  و<bdi>`updated`</bdi> معًا. إصلاحات التنسيق أو الأخطاء الإملائية الصِّرفة ترفع
+  <bdi>PATCH</bdi>؛ والأقسام الاختيارية أو الأنماط المضادّة الجديدة ترفع <bdi>MINOR</bdi>؛
+  وإعادة التنظيم الهيكلية أو تغييرات العقد ترفع <bdi>MAJOR</bdi>.

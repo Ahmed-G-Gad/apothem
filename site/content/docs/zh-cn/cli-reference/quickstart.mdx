@@ -1,0 +1,84 @@
+---
+title: "quickstart"
+description: "apothem quickstart 引导式首次运行命令的 CLI 参考。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+引导式首次运行：确保存在配置文件，预览写入内容，然后安装。
+
+## 概要
+
+```
+apothem quickstart [--harness NAME|all] [--project PATH] [--profile PATH]
+                   [--yes] [--quiet|-q] [--verbose|-v]
+                   [--format plain|json] [--json] [--no-color]
+```
+
+`quickstart` 是新操作者的唯一引导式入口。在一条线性流程中，它会：(1) 确保存在共享配置文件——若未找到则创建一个起始配置文件并提示进行个性化设置；(2) 预览所选harness将写入的具体文件，按项目根目录与你的主目录分组；(3) 请求确认；(4) 以分组、去噪的能力说明输出进行安装；(5) 打印推荐的后续命令。
+
+它复用 `install` 命令所用的相同构件——并不重新实现它们。`--harness` 默认为 `all`，`--project` 默认为当前目录。
+
+## 行为
+
+- **配置文件** — 若解析出的配置文件路径没有文件，`quickstart` 会主动提供创建起始配置文件（在 `--yes`、非交互式 shell 或 `--format json` 下自动创建），并指出需要个性化的占位身份字段。
+- **预览 + 确认** — 在任何写入之前，目标会列在两个标题下（项目根目录与你的主目录）；交互式运行会在写入项目之外的内容前进行确认。`--yes`、非交互式 shell 和 `--format json` 会在不提示的情况下继续。拒绝会在任何写入之前中止。
+- **安装** — harness原生不支持的能力会被汇总为每个harness一条分组说明（传入 `--verbose` 以获取每项能力的详情）；完整集合始终包含在 `--format json` 的 warnings 数组中。
+- **后续步骤** — 终端输出会指明后续命令（`apothem verify …`、`apothem doctor`）。
+
+## 选项
+
+| 选项 | 描述 |
+|---|---|
+| `--harness NAME` | 要安装的harness适配器，或 `all` 表示注册表范围内的集合（默认：`all`）。 |
+| `--profile PATH` | 共享配置文件 YAML 的路径。默认为 `~/.config/apothem/profile.yaml`。 |
+| `--project PATH` | 项目范围harness的项目根目录。默认为当前目录。 |
+| `--yes` | 以非交互方式运行完整的引导式序列（跳过每个提示）。 |
+| `--quiet`, `-q` | 抑制信息性输出；仅发出错误。 |
+| `--verbose`, `-v` | 打印每项未投影能力的理由，而非分组说明。 |
+| `--format plain\|json` | 输出格式（默认：`plain`）。 |
+| `--json` | `--format json` 的简写。 |
+| `--no-color` | 禁用输出中的 ANSI 颜色码。 |
+| `-h`, `--help` | 显示帮助并退出。 |
+
+## JSON 输出
+
+`--format json` 会发出一个总结每个引导步骤的单一文档：
+
+```json
+{
+  "status": "success",
+  "command": "quickstart",
+  "profile_path": "C:\\Users\\Example\\.config\\apothem\\profile.yaml",
+  "steps": [
+    {"step": "profile", "outcome": "created", "path": "…", "placeholder_identity": ["name", "email", "github"]},
+    {"step": "install", "status": "success", "harness": "all", "files_written": ["…"], "warnings": [], "results": []},
+    {"step": "recommend", "next": ["apothem verify --harness all --project .", "apothem doctor"]}
+  ],
+  "recommended_next": ["apothem verify --harness all --project .", "apothem doctor"]
+}
+```
+
+## 示例
+
+```bash
+apothem quickstart
+apothem quickstart --harness all --project . --yes
+apothem quickstart --harness claude-code
+apothem quickstart --json
+```
+
+## 退出码
+
+| 码 | 含义 |
+|---|---|
+| 0 | 引导式运行已完成 |
+| 1 | 预期内的校验、配置文件、harness、项目或适配器错误 |
+| 2 | 至少一次写入后的部分批量物化 |
+
+## 另请参阅
+
+- [apothem install](/docs/cli-reference/install) — 从共享配置文件物化某个harness
+- [apothem verify](/docs/cli-reference/verify) — 确认安装已生效
+- [apothem doctor](/docs/cli-reference/doctor) — 环境与安装健康状况
+- [开始使用](/docs/install) — 完整安装指南

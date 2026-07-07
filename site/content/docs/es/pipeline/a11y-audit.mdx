@@ -1,0 +1,69 @@
+---
+title: "/a11y-audit"
+description: "/a11y-audit — Auditoría de accesibilidad frente a WCAG 2.2 AA para cada página renderizada."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rol:** Auditor de accesibilidad
+**Posición en el pipeline:** fortaleza
+
+Auditoría de accesibilidad frente a WCAG 2.2 AA para cada página renderizada.
+
+## Invocación canónica
+
+```bash
+/a11y-audit
+```
+
+Con argumentos:
+
+```bash
+/a11y-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+```
+
+## Entradas
+
+Sitio web del proyecto desplegado o servido localmente
+
+## Salidas
+
+Hallazgos de accesibilidad + REPORT.md
+
+## Aguas abajo
+
+La etapa de auditoría de accesibilidad de la Secuencia de Revisión de Auditoría
+
+## Fases del flujo de trabajo
+
+El comando sigue el flujo de trabajo estándar del pipeline `/plan`:
+
+1. **Cargar contexto** — Lee la suite de plan, las reglas y el Contrato de Reanudación.
+2. **Verificar prerrequisitos** — Confirma que las fases de dependencia están completas.
+3. **Ejecutar tareas** — Cumple la misión del comando.
+4. **Verificar salidas** — Confirma que todas las salidas declaradas existen y pasan las compuertas de calidad.
+5. **Actualizar PROGRESS.md** — Registra las salidas verificadas en el Registro de Salidas de Fase.
+6. **Emitir REPORT.md** — Queda registrada la prueba de liberación de la compuerta de pre-emisión.
+
+## Modos de fallo
+
+| Síntoma | Causa | Recuperación |
+|---------|-------|----------|
+| Prerrequisito incompleto | Fase dependiente no terminada | Completa primero la fase aguas arriba |
+| Compuerta de calidad FAIL | La salida no cumple los estándares | Corrige la salida y reejecuta |
+| Falta un archivo de entrada | Archivo de la suite de plan ausente | Ejecuta `/plan-generate` para crearlo |
+
+## Ejemplos
+
+```bash
+# Dry-run to preview what would happen
+/a11y-audit --dry-run
+
+# Execute against a named plan suite
+/a11y-audit path/to/plan-suite/
+```
+
+## Referencias cruzadas
+
+- [Visión general del pipeline](/docs/pipeline)
+- [Plantilla de Suite de Plan Maestra](/docs/reference/commands)

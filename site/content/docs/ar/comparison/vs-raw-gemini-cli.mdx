@@ -1,0 +1,40 @@
+---
+title: "Apothem مقابل تهيئة Gemini CLI اليدوية"
+description: "صيانة ملف القواعد GEMINI.md الخاص بـ Gemini CLI يدويًّا، مقابل تحويله من ملف التعريف المشترك لـ Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+يقرأ <bdi>Gemini CLI</bdi> ملف قواعد <bdi>`GEMINI.md`</bdi> واحدًا. يُحوِّل محوِّل
+<bdi>gemini-cli</bdi> في <bdi>Apothem</bdi> ذلك الملف من ملف التعريف المشترك.
+تقابل هذه الصفحة بين صيانة تلك التهيئة يدويًّا وإدارتها بـ <bdi>Apothem</bdi>.
+
+## مقارنة الجهد
+
+| المهمة | تهيئة يدوية | يديرها Apothem |
+| ---- | --------------- | --------------- |
+| كتابة القواعد | تحرير ملف <bdi>`GEMINI.md`</bdi> واحد يدويًّا | مُحوَّلة: القواعد المشتركة مُضمَّنة في <bdi>`GEMINI.md`</bdi> |
+| إبقاء القواعد متوائمة مع البيئات الأخرى | يدويًّا، لكل أداة | تلقائيًّا عند <bdi>`apothem update`</bdi> |
+| تثبيت التهيئة / إزالتها | كتابة <bdi>`GEMINI.md`</bdi> وحذفه يدويًّا | <bdi>`apothem install`</bdi> / <bdi>`apothem uninstall`</bdi> |
+| التحقّق من صحّة التهيئة | فحص يدوي | <bdi>`apothem verify --harness gemini-cli`</bdi> |
+
+## ما الذي يديره Apothem
+
+يُضمِّن محوِّل <bdi>gemini-cli</bdi> القواعد المشتركة في ملف <bdi>`GEMINI.md`</bdi>
+واحد. لا يملك <bdi>Gemini CLI</bdi> خطّاف <bdi>PreToolUse</bdi>، ولذا تُعبَّر نيّة
+الحواجز الواقية في نصّ القواعد بدلًا من نقطة اعتراض استدعاء أداة. كلّ تغيير في
+القواعد المشتركة يعيد تحويل <bdi>`GEMINI.md`</bdi> عند <bdi>`apothem update`</bdi>
+التالي.
+
+## مسار الترحيل
+
+1. شغّل <bdi>`apothem profile init`</bdi> لإنشاء ملف التعريف المشترك إن لم تكن قد فعلت بعد.
+2. انقل القواعد من <bdi>`GEMINI.md`</bdi> الموجود لديك إلى الذخيرة المشتركة.
+3. شغّل <bdi>`apothem install --harness gemini-cli`</bdi> لتحويل <bdi>`GEMINI.md`</bdi> وكتابته.
+4. شغّل <bdi>`apothem verify --harness gemini-cli`</bdi> للتأكّد من نزول التهيئة.
+5. استخدم <bdi>`apothem update --harness gemini-cli`</bdi> لكل تغيير لاحق.
+
+## اقرأ تاليًا
+
+- [مرجع محوِّل Gemini CLI](/docs/harnesses/gemini-cli)
+- [نظرة عامة على المقارنة](/docs/comparison)

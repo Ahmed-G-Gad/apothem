@@ -1,0 +1,101 @@
+---
+title: "Release-engineering policy"
+description: "Five canonical policies for versioning, release tagging, deprecation cycles, breaking changes, and rollback procedures."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Five policies govern how `apothem` releases.
+
+## 1. Semantic versioning
+
+The project ships under [Semantic Versioning 2.0](https://semver.org/).
+Version numbers take the form `MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]`.
+
+| Bump | Triggers |
+|------|----------|
+| **MAJOR** | Breaking changes to artifact schemas, mandate identifiers (CM-N / TM-N / CP-N), or hook contracts |
+| **MINOR** | New rules, delegated workers, commands, skills, hook events, or non-breaking schema extensions |
+| **PATCH** | Clarifications, anti-pattern additions, doc fixes, edits that do not change behavior |
+
+Candidate tags use the format `vX.Y.Z-rc.N` (release candidate)
+or `vX.Y.Z-alpha.N` / `vX.Y.Z-beta.N` (early-access).
+
+## 2. Release tags
+
+Every release lands a signed git tag of the form `vMAJOR.MINOR.PATCH`
+on `main`. The tag triggers `.github/workflows/release.yml` which
+builds, signs, generates SBOM and SLSA-3 provenance, and
+publishes the GitHub Release page.
+
+Tag conventions:
+
+- **Format** — `vMAJOR.MINOR.PATCH` exactly. No `release-` prefix,
+  no `-final` suffix.
+- **Annotation** — every tag is an annotated tag (`git tag -a -s`)
+  carrying the release-notes summary in the tag message.
+- **Signature** — every tag is GPG-signed. The release workflow
+  additionally produces a Sigstore keyless cosign signature on
+  each artifact and a SLSA-3 provenance release proof, both
+  attached to the GitHub Release page.
+
+## 3. Deprecation policy
+
+The current public support line is the latest released minor. When the
+project has multiple public minors, the [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
+supported-versions matrix is the source of truth for any additional
+critical-fix-only support windows.
+
+Deprecation cadence:
+
+- **Announcement** — a deprecated symbol or behavior is
+  announced in the `CHANGELOG.md` `### Deprecated` section of
+  the release in which the deprecation lands. The release notes
+  mirror the deprecation announcement.
+- **Grace window** — deprecated symbols stay available for a
+  minimum of one full minor cycle before removal.
+- **Removal** — removal lands in a `MAJOR` bump. Each removed
+  symbol carries a `CHANGELOG.md` `### Removed` line and a
+  migration guide entry under
+  [How-to-guides](/docs/how-to-guides).
+
+## 4. Breaking-change policy
+
+Breaking changes require:
+
+1. **An RFC issue** — opened against the `rfcs` issue label
+   describing the breaking change, the migration path, and the
+   rollback strategy.
+2. **A 30-day comment window** — the RFC stays open for at least
+   30 days before merge. Maintainers may extend the window when
+   feedback warrants.
+3. **A MAJOR bump** — the release that lands the breaking
+   change bumps the MAJOR component.
+4. **A migration guide** — the change ships with a
+   [How-to-guides](/docs/how-to-guides) entry walking the
+   operator through the migration.
+
+## 5. Rollback policy
+
+If a release exhibits a regression that blocks adoption:
+
+1. **Revert** — the offending commit(s) are reverted on `main`.
+2. **Release-minus-one re-tag** — a follow-up release lands as
+   `vMAJOR.MINOR.PATCH+1` carrying the revert plus any
+   incremental fixes. The previous bad release is **not**
+   deleted from GitHub Releases — a `### Yanked` annotation in
+   `CHANGELOG.md` documents the situation so reproducible
+   builds remain anchored.
+3. **Communication** — a security-advisories notice (when
+   security-relevant) or a Discussions post (when
+   reliability-relevant) accompanies the rollback.
+
+## See also
+
+- [CHANGELOG.md](https://github.com/ahmed-g-gad/apothem/blob/main/CHANGELOG.md)
+  — the canonical release ledger.
+- [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
+  — supported-versions matrix and reporting channels.
+- [cicd-pipeline.md](/docs/architecture/cicd-pipeline) — the CI check
+  classes that gate every release.
+- [deployment-checklist.md](/docs/runbooks/deployment-checklist) — the
+  per-release production-readiness sweep.

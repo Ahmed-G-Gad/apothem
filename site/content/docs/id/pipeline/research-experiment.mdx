@@ -1,0 +1,70 @@
+---
+title: "/research-experiment"
+description: "/research-experiment — Menjalankan studi yang dirancang dan menangkap data mentah dengan provenans lengkap plus manifes reproduksibilitas (lingkungan, seed, protokol, penyematan versi)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Peran:** Peneliti Utama (eksekusi)
+**Posisi pipeline:** tengah rantai
+
+Menjalankan studi atau eksperimen yang dirancang dan menangkap data mentah dengan provenans lengkap. Menjamin reproduksibilitas: mencatat lingkungan, seed, log protokol, dan penyematan versi sehingga pihak independen dapat menjalankan ulang.
+
+## Pemanggilan kanonis
+
+```bash
+/research-experiment
+```
+
+Dengan argumen:
+
+```bash
+/research-experiment [path/to/research-suite/]
+```
+
+## Masukan
+
+`_inputs/study-design.md` (rancangan) dan `_inputs/preregistration.md` (rencana analisis yang dibekukan).
+
+## Keluaran
+
+`_outputs/experiment-log.md` (jejak protokol bercap waktu), data mentah di lokasi yang alami bagi host, dan `_outputs/reproducibility-manifest.md` (lingkungan, seed, protokol, penyematan versi).
+
+## Hilir
+
+/research-analysis (konsumen hilir)
+
+## Fase alur kerja
+
+Perintah ini mengikuti alur kerja pipeline `/research` standar:
+
+1. **Muat konteks** — Membaca rancangan studi dan praregistrasi.
+2. **Verifikasi Gerbang Urutan** — Memastikan `_inputs/study-design.md` ada; jika tidak, hentikan dengan `Blocked: run /research-design first`.
+3. **Jalankan & catat** — Menjalankan protokol; menangkap data mentah dengan provenans; mencatat jejak protokol bercap waktu.
+4. **Tangkap reproduksibilitas** — Mencatat lingkungan, seed, protokol, dan penyematan versi.
+5. **Perbarui manifes serah terima** — Mencatat lokasi data dan manifes reproduksibilitas.
+6. **Emisikan log** — `_outputs/experiment-log.md` + data mentah + `_outputs/reproducibility-manifest.md`.
+
+## Landasan ketelitian
+
+Eksekusi menjalankan lintasan pilot untuk mengkalibrasi anggaran dan rentang, lalu perbandingan penuh di bawah rencana pemanfaatan-komputasi yang dinyatakan (alokasi inti, batas memori, paralelisasi aman atas pengulangan independen). Setiap metode stokastik menjalankan regimen pengulangan terpraregistrasinya dengan seed yang tercatat dan perangkat keras terlog. Sebuah lup eksperimen otonom yang opt-in dan mati-secara-bawaan tersedia: terhadap harness yang dibekukan ia mengusulkan perubahan pada satu target yang dapat diubah, menjalankannya pada anggaran tetap, mempertahankannya hanya jika ia mengungguli petahana, dan menjurnal setiap percobaan.
+
+## Mode kegagalan
+
+| Gejala | Penyebab | Pemulihan |
+|---------|-------|----------|
+| Blocked: run /research-design first | Tidak ada rancangan studi | Jalankan `/research-design` untuk menghasilkan `_inputs/study-design.md` |
+| Eksekusi tidak dapat direproduksi | Catatan seed / lingkungan hilang | Catat manifes reproduksibilitas lengkap sebelum melanjutkan |
+| Penyimpangan protokol tak terdokumentasi | Perubahan di tengah eksekusi tidak dicatat | Catat penyimpangan dalam log eksperimen; ungkapkan saat analisis |
+
+## Contoh
+
+```bash
+# Jalankan studi yang dirancang dan tangkap data mentah yang dapat direproduksi
+/research-experiment path/to/research-suite/
+```
+
+## Referensi silang
+
+- [Ikhtisar pipeline](/docs/pipeline)
+- [Referensi perintah](/docs/reference/commands)

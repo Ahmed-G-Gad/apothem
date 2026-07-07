@@ -1,0 +1,48 @@
+---
+title: "工具设置"
+description: "为平台添加和配置工具适配器。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## 安装工具适配器
+
+```bash
+apothem install --harness <name>
+```
+
+可用名称参见[受支持的工具列表](/docs/harnesses)。项目作用域的适配器需要提供项目路径：
+
+```bash
+apothem install --harness cursor --project /path/to/project
+apothem install --harness gemini-cli --project /path/to/project
+apothem install --harness github-copilot --project /path/to/project
+apothem install --harness windsurf --project /path/to/project
+```
+
+## 安装多个工具
+
+当你希望安装每一个受支持的适配器时，使用覆盖整个注册表的选择器。由于注册集中包含项目作用域的适配器，需要传入项目根目录。
+
+```bash
+apothem install --harness claude-code
+apothem install --harness cursor --project /path/to/project
+apothem install --harness all --project /path/to/project
+```
+
+## 验证工具设置
+
+```bash
+apothem verify --harness <name>
+apothem verify --harness all --project /path/to/project
+```
+
+要一次性检查每个已注册的适配器，运行 `apothem doctor`。它会打印一张按工具划分的安装状态表，如果有任何适配器报告未安装，则以非零状态退出。
+
+## 查看已安装的工具
+
+```bash
+apothem harnesses list
+```
+
+传入 `apothem harnesses show <name>` 可查看每个适配器的详情（名称、安装状态和输出路径）。

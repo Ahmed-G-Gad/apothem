@@ -1,0 +1,68 @@
+---
+title: "/plan-review"
+description: "/plan-review — Audit forensique d'une suite de plan existante — fidélité de la prose, cohérence, qualité."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rôle :** Auditeur
+**Position dans le pipeline :** intermédiaire
+
+Audit forensique d'une suite de plan existante — fidélité de la prose, cohérence, qualité.
+
+## Invocation canonique
+
+```bash
+/plan-review
+```
+
+Avec des arguments :
+
+```bash
+/plan-review [path/to/plan-suite/] [--focus AREA] [--dry-run]
+```
+
+## Entrées
+
+Suite de plan générée + `_inputs/handoff-manifest.yml` issu de `/plan-generate`.
+
+## Sorties
+
+Cartes de score de relecture dans `PLAN-NOTES.md` (`## Review Scorecards`), un Résumé de relecture dans `PROGRESS.md`, des cartes d'impact de révision par constat dans `PLAN-NOTES.md` (les rapports volumineux durables dans `_outputs/`), et le `_inputs/handoff-manifest.yml` augmenté portant le verdict de relecture.
+
+## En aval
+
+`/plan-design` (conditionnel — suites portant une architecture uniquement) puis `/plan-execute` ; pour les suites sans architecture, `/plan-execute` consomme directement les Cartes de score de relecture pour conditionner l'exécution à partir de SHARED+.
+
+## Phases du flux de travail
+
+La commande exécute un audit forensique, à l'aveugle, ligne par ligne, puis affine via des questions-réponses interactives :
+
+1. **Charger le contexte** — Lire chaque fichier de la suite de plan (`phases/**/PHASE.md`, fichiers d'infrastructure, rapports) et le manifeste de transfert en amont ; refuser avec `Blocked: run /plan-generate first` lorsque la suite est absente.
+2. **Auditer** — Balayer les dimensions (fidélité de la prose, cohérence interne, complétude, qualité, risque, normes, domaine, architecture, qualité créative) sous le Mandat de relecture à l'aveugle.
+3. **Trier les constats** — Statuer sur chaque constat (accept · revise · reject · defer) via le canal d'interrogation structurée avec un décompte de gravité par constat.
+4. **Exécuter la porte de pré-émission** — Exécuter la porte à quinze barres sur le rapport de relecture et les cartes de score mises à jour ; un échec bloque la promotion.
+5. **Émettre la relecture** — Écrire les Cartes de score de relecture dans `PLAN-NOTES.md`, le Résumé de relecture dans `PROGRESS.md`, et le manifeste de transfert augmenté.
+
+## Modes de défaillance
+
+| Symptôme | Cause | Récupération |
+|---------|-------|----------|
+| Blocked: run /plan-generate first | Aucune suite générée | Exécutez `/plan-generate` pour produire la suite que cette commande audite |
+| Des constats restent ouverts | L'audit a révélé des défauts non résolus | Statuez sur chaque constat (accept · revise · reject · defer) avant le verdict terminal |
+| Carte de score FAIL | Une dimension passe sous le seuil CONDITIONAL | Traitez la dimension défaillante et relancez la relecture |
+
+## Exemples
+
+```bash
+# Dry-run pour prévisualiser la portée de l'audit
+/plan-review --dry-run
+
+# Auditer une suite de plan nommée, ciblée sur un domaine
+/plan-review path/to/plan-suite/ --focus architecture
+```
+
+## Références croisées
+
+- [Aperçu du pipeline](/docs/pipeline)
+- [Référence des commandes](/docs/reference/commands)

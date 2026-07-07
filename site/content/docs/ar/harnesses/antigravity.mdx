@@ -1,0 +1,100 @@
+---
+title: "Antigravity"
+description: "محوّل أداة Apothem لـ Antigravity (إصدار أوّلي)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**المورّد:** <bdi>Antigravity</bdi>
+**اسم التثبيت:** <bdi>`antigravity`</bdi>
+**الحالة:** إصدار أوّلي
+**الإعداد الأصلي:** <bdi>`~/.gemini/GEMINI.md`</bdi> إضافةً إلى
+<bdi>`~/.gemini/antigravity-cli/plugins/apothem/`</bdi>
+
+## التثبيت
+
+```bash
+apothem install --harness antigravity
+```
+
+يقوم المحوّل بتجسيد الملف التعريفي المشترك إلى <bdi>`~/.gemini/GEMINI.md`</bdi> ويثبّت
+مجموعات دعم <bdi>Apothem</bdi> بوصفها مُلحَق <bdi>Antigravity CLI</bdi>.
+
+**الملفات المكتوبة:** <bdi>`~/.gemini/GEMINI.md`</bdi>،
+و<bdi>`~/.gemini/antigravity-cli/plugins/apothem/plugin.json`</bdi>،
+و<bdi>`~/.gemini/antigravity-cli/plugins/apothem/skills/`</bdi>،
+و<bdi>`~/.gemini/antigravity-cli/plugins/apothem/rules/`</bdi>،
+وتعريفات المساعِدات المحلّية المُحوَّلة داخل المُلحَق،
+و<bdi>`~/.gemini/antigravity-cli/plugins/apothem/apothem/templates/`</bdi>،
+و<bdi>`~/.gemini/antigravity-cli/plugins/apothem/apothem/hooks/`</bdi>.
+
+**مرساة المستخدم المشتركة.** <bdi>`~/.gemini/GEMINI.md`</bdi> هو أيضًا المرساة على
+نطاق المستخدم لأدوات عائلة <bdi>Gemini</bdi>. يُبقي محوّل <bdi>Antigravity</bdi>
+مادّته الإضافية الخاصّة بـ<bdi>Apothem</bdi> داخل مُلحَق <bdi>`apothem`</bdi> تحت
+<bdi>`~/.gemini/antigravity-cli/plugins/`</bdi>، حتى لا يستولي على أدلّة مشاريع
+<bdi>Gemini CLI</bdi> العامّة.
+
+## تعيين الملف التعريفي إلى الإعداد الأصلي
+
+يقرأ المحوّل الملف التعريفي المشترك لـ<bdi>Apothem</bdi> ويجسّد مرساة التعليمات
+إضافةً إلى مجموعات الدعم في كل عملية <bdi>`apothem install`</bdi> أو
+<bdi>`apothem update`</bdi>.
+
+## ملاحظات التوافق
+
+محوّل في إصدار أوّلي. مرساة <bdi>`GEMINI.md`</bdi> هي محتوى تعليمات نشط؛ ويحفظ
+مُلحَق <bdi>Antigravity</bdi> مهارات الأوامر المُحوَّلة، والمهارات القابلة لإعادة
+الاستخدام، وتعريفات المساعِدات المحلّية، والقواعد، والقوالب، ومادّة دعم الخطافات في
+مساحة أسماء واضحة يملكها <bdi>Apothem</bdi>.
+لا تُسجَّل ملفات الخطافات بوصفها أحداث خطافات <bdi>Antigravity</bdi> نشطة إلى أن
+يمتلك المحوّل طبقة ترجمة مخطّط لملفّ <bdi>`hooks.json`</bdi> الخاص بـ<bdi>Antigravity</bdi>.
+
+## التحقّق
+
+```bash
+apothem verify --harness antigravity
+```
+
+يؤكّد أمر التحقّق ما يلي:
+
+1. وجود ملف السياق الأصلي في المسار المتوقَّع.
+2. وجود بيانات تعريف مُلحَق <bdi>Apothem Antigravity CLI</bdi> وإعلانه اسم المُلحَق
+   <bdi>`apothem`</bdi>.
+
+## التحديث
+
+```bash
+apothem update --harness antigravity
+```
+
+يعيد اشتقاق الإعداد الأصلي من الحالة الراهنة للملف التعريفي المشترك. شغّله بعد تحرير
+<bdi>`~/.config/apothem/profile.yaml`</bdi> أو ترقية حزمة <bdi>Apothem</bdi> المثبّتة.
+
+## إلغاء التثبيت
+
+```bash
+apothem uninstall --harness antigravity
+```
+
+يزيل ملفات الإعداد الأصلي التي كتبها المحوّل.
+لا يتأثّر ملفّ <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
+
+## بوّابة المطابقة
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## استكشاف الأخطاء وإصلاحها
+
+| العَرَض | الإصلاح |
+|---------|-----|
+| ملف الإعداد غير موجود | أعد تشغيل <bdi>`apothem install --harness antigravity`</bdi> |
+| فشل التحقّق | شغّل <bdi>`apothem update --harness antigravity`</bdi>، ثم تحقّق مجدّدًا |
+| محتوى إعداد غير متوقَّع | تحقّق من <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness antigravity`</bdi> |
+
+## مفاتيح الضبط
+
+| العَلَم | الافتراضي | الوصف |
+|------|---------|-------------|
+| <bdi>`--dry-run`</bdi> | <bdi>`false`</bdi> | معاينة التثبيت دون كتابة ملفات. |

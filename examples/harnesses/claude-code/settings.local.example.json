@@ -1,0 +1,10 @@
+{
+  "_comment": "Template for <project-root>/settings.local.json. Copy to that path and edit. Do not commit. The .local.json suffix matches the gitignore pattern.",
+  "permissions": {
+    "allow": [],
+    "deny": []
+  },
+  "env": {
+    "EXAMPLE_LOCAL_VAR": "<your-value>"
+  }
+}

@@ -1,0 +1,87 @@
+---
+title: "Postura agnóstica respecto al host"
+description: "Cómo Apothem logra una postura agnóstica respecto al host a través del perfil compartido y los adaptadores de entorno."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem se diseñó en torno a un único principio: tu configuración de gobernanza
+debería sobrevivir a cualquier entorno de ejecución de asistente concreto. El perfil compartido de Apothem
+es un archivo YAML validado por esquema en `~/.config/apothem/profile.yaml` o
+`--profile PATH`; los conjuntos de Apothem empaquetados aportan comandos, reglas, habilidades,
+hooks, plantillas, líneas de estado, estilos de salida y definiciones de delegación.
+Los adaptadores por entorno bajo `src/apothem/harnesses/<harness>/` traducen esas entradas al formato
+que requiere cada entorno compatible:
+
+```text
+Claude Code, Cursor, Gemini CLI, GitHub Copilot, Codex, Windsurf,
+OpenCode, Antigravity, Open-Claw, Hermes, Qwen Code,
+CodeBuddy, Kiro, Trae, Zed
+```
+
+## La idea central
+
+El agnosticismo respecto al host significa que tu *intención* —quién eres, cómo quieres que se comporten los
+asistentes, las reglas que deben seguir— vive en un único lugar que ningún entorno
+posee. Los entornos son consumidores intercambiables de esa intención. Cuando llega un nuevo
+asistente, lo adoptas añadiendo un adaptador, no reescribiendo tu
+configuración. Cuando un asistente que usabas deja de interesarte, lo descartas
+sin perder la gobernanza que construiste. El perfil es el activo; el entorno
+es un destino de renderizado. Un entorno puede usarse para programar, chatear, trabajar en equipo, investigar o escribir: el perfil es agnóstico respecto a para qué sirve el entorno.
+
+Esto es una inversión deliberada. El camino habitual es configurar cada herramienta
+directamente, lo que deja tu inversión a merced de la longevidad y el
+formato de esa herramienta. Apothem trata la configuración como capital portátil y el entorno como
+una terminal desechable.
+
+## El problema
+
+Cada entorno de ejecución de asistente tiene su propio formato de configuración:
+
+```text
+Claude Code:    CLAUDE.md + settings.json
+Cursor:         .cursor/rules/*.mdc
+GitHub Copilot: .github/copilot-instructions.md
+Windsurf:       .devin/rules/
+Codex:          AGENTS.md
+```
+
+Sin Apothem, mantienes N archivos de configuración separados que se desvían entre sí con el tiempo.
+
+## La solución de Apothem
+
+```text
+One shared Apothem profile (YAML) + packaged cohorts
+    identity.name
+    preferences.style
+    rules[]
+         |
+         v
+    Adapter layer (HarnessAdapter protocol — src/apothem/harnesses/<harness>/)
+         |
+         +---> Claude Code adapter   -> ~/.claude/
+         +---> Cursor adapter        -> .cursor/rules/*.mdc
+         +---> Copilot adapter       -> .github/copilot-instructions.md
+         +---> Windsurf adapter      -> .devin/rules/
+         +---> ...
+```
+
+Editas el perfil compartido una vez y luego ejecutas `apothem update --harness <name>` o
+`apothem update --harness all --project <path>` para propagar el cambio.
+`apothem harnesses list` imprime el conjunto registrado.
+
+## Por qué "apothem"
+
+El nombre codifica la arquitectura. En geometría, un *apotema* es la perpendicular
+desde el **centro** de un polígono regular hasta el **punto medio de uno de sus lados**: la
+distancia única desde el núcleo hasta cada arista, idéntica en todas las direcciones. Ese
+es el diseño: un perfil compartido en el centro, diecisiete entornos equidistantes en el
+perímetro, cada materialización a la misma distancia de la fuente de verdad. El
+núcleo no cambia cuando cambia una arista; las aristas comparten una única relación con el
+núcleo. La deriva es estructuralmente imposible.
+
+## Garantías de portabilidad
+
+Las reglas marcadas con `portability: universal` están garantizadas como traducibles a todos los
+entornos compatibles. Las reglas marcadas con `portability: project-specific` pueden requerir
+documentación de anulación por entorno en el cuerpo de la regla.

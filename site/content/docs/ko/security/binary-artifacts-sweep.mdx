@@ -1,0 +1,57 @@
+---
+title: "바이너리 산출물 스윕"
+description: "Apothem 바이너리 산출물 스윕 — 소스에 추적되는 컴파일/패키징 바이너리는 0개. OpenSSF Scorecard Binary-Artifacts 점검 증거."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+OpenSSF Scorecard의 **Binary-Artifacts** 점검은 소스 트리에 컴파일/패키징/불투명 바이너리 산출물이 전혀 없음을 검증합니다. 소스의 바이너리는 감사가 불가능하며 공급망 공격의 발판을 제공합니다. 바이너리는 소스 트리가 드러내지 않는 코드를 내장하므로, 리뷰어는 머지 전에 이를 검사할 수 없습니다.
+
+## Apothem의 바이너리 산출물 자세
+
+Apothem은 버전 관리에 추적되는 컴파일·패키징·불투명 바이너리 산출물이 전혀 없는 **순수 Python 소스 트리**입니다. 저장소는 소스에서 처음부터 끝까지 감사할 수 있습니다.
+
+## 스윕 방법론
+
+스윕은 Scorecard가 바이너리로 간주하는 파일 유형을 열거한 다음, 각 유형이 버전 관리에 없는지 검증합니다.
+
+| 확장자 계열 | 설명 | Apothem 상태 |
+|---|---|---|
+| `.exe`, `.dll`, `.so`, `.dylib` | 컴파일된 네이티브 바이너리 | ✅ 추적 0개 |
+| `.bin`, `.o`, `.a`, `.lib` | 오브젝트 파일 / 정적 라이브러리 | ✅ 추적 0개 |
+| `.jar`, `.war`, `.ear` | Java 패키지 | ✅ 추적 0개 |
+| `.whl`, `.egg` | Python 배포물 | ✅ 추적 0개 (`dist/`에 빌드됨; gitignore 처리됨) |
+| `.tar.gz`, `.zip` (빌드된 배포물) | 빌드 산출물을 담은 압축 아카이브 | ✅ 추적 0개 |
+| `.class`, `.pyc`, `.pyo` | 컴파일된 바이트코드 | ✅ 추적 0개 (`__pycache__/` gitignore 처리됨) |
+| `.crt`, `.pem`, `.key`, `.p12`, `.pfx` | 암호 자료 | ✅ 추적 0개 (`.gitignore`에서 거부됨) |
+
+## 허용되는 바이너리 부류
+
+소스에 허용되는 바이너리 산출물은 좁게 한정된 두 부류입니다.
+
+1. **브랜드 자산** — `assets/*.png`, `assets/*.ico`, `assets/favicon.*`. 이들은 `scripts/dev/rebuild-assets.{sh,ps1}`를 통해 `assets/src/`의 SVG 마스터로부터 **결정론적으로 재생성 가능**합니다. Scorecard는 `image/png` 면제에 따라 이를 정당한 것으로 취급합니다.
+2. **폰트 파일** — `assets/fonts/*.ttf`, `assets/fonts/*.woff2`. 라이선스가 문서화된 번들 폰트 파일이며, Scorecard의 `font/*` 면제에 따릅니다.
+
+두 부류 모두 [`site/content/docs/brand/index.mdx`](/docs/brand)에 문서화되어 있으며, 그 출처는 자산 재빌드 레시피에 기록됩니다.
+
+## 검증 명령
+
+```shell
+# apothem 저장소 루트에서:
+git ls-files | grep -E '\\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
+```
+
+이 호출은 **0줄**을 반환해야 합니다. 비어 있지 않은 결과는 바이너리 산출물이 소스에 추적되었음을 의미하며, 이는 다음 릴리스를 차단하는 HIGH 심각도 발견 사항입니다.
+
+## 감사 주기
+
+이 스윕은 다음의 일부입니다.
+
+- **PR별 CI** — `.github/workflows/ci.yml`에 바이너리 산출물 grep 단계가 포함됩니다.
+- **릴리스별 체크포인트** — 릴리스 엔지니어링 런북이 태깅 전에 스윕을 검증합니다.
+- **주간 Scorecard 실행** — OpenSSF Scorecard 워크플로가 점검 통과를 재확인합니다.
+
+## 참고 자료
+
+- [OpenSSF Scorecard — Binary-Artifacts 점검](https://github.com/ossf/scorecard/blob/main/docs/checks.md#binary-artifacts)
+- [Apothem `.gitignore`](https://github.com/ahmed-g-gad/apothem/blob/main/.gitignore) — 바이너리의 우발적 체크인을 막는 거부 목록

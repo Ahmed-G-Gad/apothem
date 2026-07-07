@@ -1,0 +1,32 @@
+---
+title: "명명 규칙"
+description: "kebab-case 파일명, frontmatter 키 형식, 타입 접두사가 있는 브랜치 명명, 그리고 순서가 있는 아티팩트 시퀀스에 대한 숫자 접두사 의미를 규정합니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **생태계 전반에 걸친 파일명, 식별자, 브랜치 이름 형태에 대한 정규 참조.** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) 규칙의 요약은 인라인 선언이며, 이 페이지는 다운스트림 기여자가 인용하는 독립 참조입니다.
+
+---
+
+## 1. 파일 시스템 이름
+
+파일과 폴더는 기본적으로 **kebab-case**를 사용합니다. 식별자에는 공백, 밑줄, 카멜 케이스가 없습니다.
+
+정규 대문자 예외는 모든 기여자가 처음 접할 때 인식하는 발행 표면 싱글톤 파일에 예약되어 있습니다. `CLAUDE.md`, `README.md`, `LICENSE`, `CHANGELOG.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md`, 그리고 계획 스위트 싱글톤(`MASTER-PLAN.md`, `PROGRESS.md`, `PHASE.md`, `SKILL.md`, `VERSION`)입니다. 그 외 모든 파일은 kebab-case를 사용합니다.
+
+## 2. frontmatter 키
+
+YAML frontmatter 키는 `kebab-case`를 사용합니다(예: `argument-hint`, `disable-model-invocation`). kebab-case 규칙은 규칙, 명령, 위임 작업자, 스킬, 그리고 `CLAUDE.md` 자체에 걸쳐 균일하게 적용됩니다.
+
+## 3. 브랜치 이름
+
+브랜치는 `<type>/<short-description>`를 따르며, 타입은 닫힌 집합 `{feat, fix, chore, docs, refactor, test, perf, ci, build, style, revert, release}`에서 가져옵니다. 설명은 kebab-case이며 50자 미만입니다.
+
+## 4. 숫자 접두사
+
+파일 시스템 경로의 숫자 접두사(`NN-`)는 순서를 전달하며, 순서가 본질적인 곳——단계 폴더, 하위 단계 폴더, 마이그레이션 스크립트, 그리고 시퀀스가 계약의 일부인 기타 아티팩트 클래스——에만 적용됩니다. 형제 시퀀스가 없는 루트 수준 싱글톤은 숫자 접두사를 갖지 않습니다. 접두사를 추가하면 존재하지 않는 순서 관계를 잘못 알리게 됩니다. 전체 규율은 [`src/apothem/rules/canonical-layout.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/canonical-layout.md) §2.1에 있습니다.
+
+## 5. 검증기
+
+`src/apothem/conformity/naming_grep.py`의 naming-grep이 기계적 강제 실행 표면입니다. CI는 `make validate`를 통해 이를 호출합니다.

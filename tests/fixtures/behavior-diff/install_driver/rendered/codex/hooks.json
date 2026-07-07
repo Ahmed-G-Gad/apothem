@@ -1,0 +1,127 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"<ROOT>/hooks/dispatch.py\" SessionStart",
+            "commandWindows": "py -3 \"<ROOT>/hooks/dispatch.py\" SessionStart",
+            "timeout": 30,
+            "statusMessage": "Initializing session posture"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-bash",
+            "commandWindows": "py -3 \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-bash",
+            "timeout": 10,
+            "statusMessage": "Validating shell command safety and isolation"
+          },
+          {
+            "type": "command",
+            "command": "python3 \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-bash-plan-guard",
+            "commandWindows": "py -3 \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-bash-plan-guard",
+            "timeout": 10,
+            "statusMessage": "Enforcing plans locality on shell redirections"
+          },
+          {
+            "type": "command",
+            "command": "python3 \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-eval-guard",
+            "commandWindows": "py -3 \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-eval-guard",
+            "timeout": 10,
+            "statusMessage": "Flagging unsafe dynamic evaluation or deserialization"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-write",
+            "commandWindows": "py -3 \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-write",
+            "timeout": 10,
+            "statusMessage": "Validating write target and content"
+          },
+          {
+            "type": "command",
+            "command": "python3 \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-write-header-guard",
+            "commandWindows": "py -3 \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-write-header-guard",
+            "timeout": 10,
+            "statusMessage": "Injecting authorship header if missing"
+          },
+          {
+            "type": "command",
+            "command": "python3 \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-write-plan-guard",
+            "commandWindows": "py -3 \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-write-plan-guard",
+            "timeout": 10,
+            "statusMessage": "Enforcing plans locality on the target path"
+          },
+          {
+            "type": "command",
+            "command": "python3 \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-dependency-guard",
+            "commandWindows": "py -3 \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-dependency-guard",
+            "timeout": 10,
+            "statusMessage": "Flagging unpinned or untrusted dependency additions"
+          },
+          {
+            "type": "command",
+            "command": "python3 \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-eval-guard",
+            "commandWindows": "py -3 \"<ROOT>/hooks/dispatch.py\" PreToolUse pretooluse-eval-guard",
+            "timeout": 10,
+            "statusMessage": "Flagging unsafe dynamic evaluation or deserialization"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "manual|auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"<ROOT>/hooks/dispatch.py\" PreCompact precompact",
+            "commandWindows": "py -3 \"<ROOT>/hooks/dispatch.py\" PreCompact precompact",
+            "timeout": 30,
+            "statusMessage": "Externalizing state before context compression"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "manual|auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"<ROOT>/hooks/dispatch.py\" PostCompact postcompact",
+            "commandWindows": "py -3 \"<ROOT>/hooks/dispatch.py\" PostCompact postcompact",
+            "timeout": 30,
+            "statusMessage": "Restoring state from durable files after compaction"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"<ROOT>/hooks/dispatch.py\" Stop stop",
+            "commandWindows": "py -3 \"<ROOT>/hooks/dispatch.py\" Stop stop",
+            "timeout": 60,
+            "statusMessage": "Finalizing session and externalizing state"
+          }
+        ]
+      }
+    ]
+  }
+}

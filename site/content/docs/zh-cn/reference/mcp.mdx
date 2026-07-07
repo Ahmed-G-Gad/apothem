@@ -1,0 +1,39 @@
+---
+title: "MCP 服务器"
+description: "Model Context Protocol 服务器配置 — 由操作者拥有，通过每个工具的原生 MCP 机制注册；Apothem 从共享配置文件同步清单，但不写入任何服务器条目。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Model Context Protocol (MCP) 服务器**由操作者拥有**。Apothem 在共享配置文件中
+携带 MCP 清单，并将其投影到每个工具的原生 MCP 表面，但不写入自己的任何服务器
+条目 — 该表面始终归你管理。
+
+## MCP 服务器在何处注册
+
+每个工具通过自己的原生机制注册 MCP 服务器，Apothem 尊重该表面而非将其覆盖。在
+Claude Code 适配器（众多适配器之一）上，服务器通过 `claude mcp add` 注册到
+`~/.claude.json`（用户或本地作用域）以及项目级的 `.mcp.json`；其他适配器投影到
+各自的原生表面。Apothem 的受管设置从不携带 `mcpServers` 块。
+
+## 添加服务器
+
+通过工具的原生机制注册一个服务器；规范的条目形态是 `mcpServers` 下的一个键：
+
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/some/path"]
+    }
+  }
+}
+```
+
+工具的运行时在会话启动时加载已注册的服务器；重启工具以获取新服务器。
+
+## 命名约定
+
+MCP 工具按工具的标准 MCP-工具命名约定，以 `mcp__<server>__<tool>` 的形式呈现给
+助手。

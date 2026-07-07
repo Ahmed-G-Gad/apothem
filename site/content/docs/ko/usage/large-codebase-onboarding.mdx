@@ -1,0 +1,44 @@
+---
+title: "대규모 코드베이스 온보딩"
+description: "Apothem를 위한 대규모 코드베이스 설정 체크리스트: 컨텍스트 계층, 스킬, 훅, 심볼 검색, 리뷰 주기."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+저장소가 단일 프롬프트에 담기에 너무 방대하거나, 전체 트리 스캔 비용이 크거나,
+각 서비스가 자체 빌드·테스트 명령을 가질 때 이 페이지를 사용하세요.
+
+## 여기서 시작하기
+
+1. 대상 환경 어댑터를 설치하거나 업데이트한 다음 `apothem verify --harness <name>`을 실행합니다.
+2. 루트 컨텍스트 면을 짧게 유지합니다. 프로젝트 맵, 핵심 명령, 포인터만 둡니다.
+3. 대상 환경이 계층형 컨텍스트를 지원할 때 로컬 관례를 코드 옆에 둡니다.
+4. 특화된 절차는 경로 필터가 있는 `skills/`, `rules/` 또는 명령 문서로 옮깁니다.
+5. 넓은 탐색에는 읽기 전용 위임 작업자를 사용하고, 편집 전에 간결한 발견 집합을 가져옵니다.
+6. 문서화된 곳에서는 캐시·생성물·빌드·벤더 제외 항목을 환경의 무시 면에 추가합니다.
+7. 가능하면 LSP나 심볼 도구를 사용하고, 그렇지 않으면 `rg`, 좁힌 경로, 명시적 파일 범위를 사용합니다.
+8. 변경된 코드를 포괄하는 가장 좁은 lint 또는 테스트 명령을 실행하고, 릴리스 전에 전체 게이트를 실행합니다.
+
+## 실천 대응표
+
+| 실천 | Apothem 바인딩 |
+|----------|-----------------|
+| 가볍고 항상 로드되는 컨텍스트 | `src/apothem/rules/token-budget-discipline.md`가 항상 켜지는 규칙을 짧게 유지합니다. 루트 컨텍스트 파일은 포인터와 핵심 함정만 담아야 합니다. |
+| 온디맨드 전문성 | `src/apothem/skills/README.md`가 `SKILL.md` 관례를 정의합니다. 경로 필터링된 동반 규칙이 좁은 절차를 기준 컨텍스트 밖에 둡니다. |
+| 계층형 컨텍스트 | 각 환경 행은 `src/apothem/harnesses/<name>/capabilities.yml`에서 `layered_context_surface`를 선언합니다. `STANDARD-CONVENTION-PIN.md`가 해당 행의 권위로 남습니다. |
+| 격리된 탐색 | [위임 작업자 가이드](/docs/usage/using-agents)는 분리된 컨텍스트 창과 간결한 반환 계약을 연결합니다. |
+| 심볼 탐색 | `lsp_symbol_navigation`은 추적되는 능력 셀입니다. 벤더가 지원하는 플러그인 또는 도구 면이 고정되기 전까지 행은 `tracked-gap`으로 유지됩니다. |
+| 무시 면 | `context_ignore_surface`는 문서화된 제외 메커니즘을 기록합니다. Claude Code 어댑터는 `settings.json`의 `permissions.deny`를 통해 생성물과 캐시 제외를 투영합니다. |
+| 훅 학습 | 통과 부류의 훅은 침묵을 유지합니다. 반복되는 발견은 `src/apothem/rules/persistent-conventions-vigilance.md`의 산출물 진화 주기를 통해 라우팅됩니다. |
+| 주기적 리뷰 | `*-maintenance` 계획 주기를 사용하여 3~6개월마다, 그리고 주요 환경 또는 모델 변경 후에 구성 리뷰를 실행합니다. |
+
+## 유지 보수 노트
+
+기계 판독 가능한 환경 능력 행은 네 개의 대규모 코드베이스 셀을 담습니다.
+`context_ignore_surface`, `layered_context_surface`, `lsp_symbol_navigation`,
+그리고 `hook_learning_capture`입니다. 벤더 면이 변경될 때마다 이 셀들을 형제
+`STANDARD-CONVENTION-PIN.md`와 동기화하세요.
+
+출처 참고:
+[대규모 코드베이스 실천](https://claude.com/blog/how-claude-code-works-in-large-codebases-best-practices-and-where-to-start),
+[설정 권한](https://docs.anthropic.com/en/docs/claude-code/settings).

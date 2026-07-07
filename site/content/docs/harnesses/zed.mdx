@@ -1,0 +1,95 @@
+---
+title: "Zed"
+description: "Apothem harness adapter for Zed (GA)."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Vendor:** Zed Industries
+**Install name:** `zed`
+**Status:** GA
+**Native config:** `<project>/.rules`
+
+## Installation
+
+```bash
+apothem install --harness zed --project /path/to/project
+```
+
+The adapter writes one project-scope Zed instruction file from the shared
+Apothem rules and governance surface. Zed reads a single flat `.rules` file at
+the project root (alongside the `AGENTS.md` / `CLAUDE.md` family) as agent
+instructions; there is no per-tool rules directory, so the whole Apothem
+surface lands in this one file.
+
+**Files written:** `<project>/.rules`
+
+## Profile-to-native-config mapping
+
+The adapter reads Apothem's shared profile and renders the project `.rules`
+file on every `apothem install` or `apothem update` run. The shared profile is
+the source of truth; any pre-existing `.rules` (or project-local edits to the
+generated file) is backed up before the next sync replaces the Apothem-managed
+content.
+
+## Compatibility notes
+
+Zed's current agent-instruction surface is the flat project-root `.rules` file.
+The global `~/.config/zed/AGENTS.md` instruction file and the MCP context-server
+block (`.zed/settings.json` `context_servers`) are operator-owned; Apothem does
+not write them.
+
+## Verification
+
+```bash
+apothem verify --harness zed --project /path/to/project
+```
+
+The verify command confirms that:
+
+1. The native config exists at the expected path.
+2. All mandatory fields from the shared profile are present.
+3. The adapter-specific verification routine reports success.
+
+## Updating
+
+```bash
+apothem update --harness zed --project /path/to/project
+```
+
+Re-derives the project `.rules` file from the current shared profile state.
+
+## Uninstalling
+
+```bash
+apothem uninstall --harness zed --project /path/to/project
+```
+
+Removes the native config file written by the adapter, renaming it to a
+timestamped backup first. The shared profile YAML and Apothem engine
+are unaffected.
+
+## Conformity gate
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| Config file not found | Re-run `apothem install --harness zed --project /path/to/project` |
+| Verification failed | Run `apothem update --harness zed --project /path/to/project`, then verify again |
+| Unexpected config content | Check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run `apothem update --harness zed --project /path/to/project` |
+
+## Configuration knobs
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--dry-run` | `false` | Preview install without writing files. |
+
+## See also
+
+- [All harnesses](/docs/harnesses) — the full catalog of supported tools
+- [Install guide](/docs/install) — install Apothem into this harness
+- [`apothem harnesses` reference](/docs/cli-reference/harnesses) — list and inspect adapters from the CLI

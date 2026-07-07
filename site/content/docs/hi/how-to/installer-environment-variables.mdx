@@ -1,0 +1,116 @@
+---
+title: "इंस्टॉलर पर्यावरण चर"
+description: "पर्यावरण चरों से स्क्रिप्ट इंस्टॉलर (गंतव्य, स्रोत, टूल, प्रोफ़ाइल, सत्यापन) को नियंत्रित करें।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+लक्ष्य: इसे चलाने से पहले पर्यावरण चर सेट करके स्क्रिप्ट को संपादित किए बिना
+`install.sh` / `install.ps1` चलाएँ।
+
+## पूर्वापेक्षाएँ
+
+- एक POSIX शेल (`bash`) या PowerShell 5.1+।
+- ये चर इंस्टॉलर के शीर्ष पर एक बार पढ़े जाते हैं, इसलिए उन्हें
+  उसी कमांड में सेट करें (या पहले उन्हें एक्सपोर्ट करें), फिर इंस्टॉलर चलाएँ।
+
+## इंस्टॉलर चर
+
+| चर | नियंत्रित करता है | डिफ़ॉल्ट |
+| --- | --- | --- |
+| `APOTHEM_HOME` | क्लोन किए गए स्रोत वृक्ष के लिए इंस्टॉल गंतव्य | `$HOME/.apothem` |
+| `APOTHEM_REPO` | क्लोन करने के लिए Git रिमोट | `https://github.com/ahmed-g-gad/apothem` |
+| `APOTHEM_REF` | चेक आउट करने के लिए Git ref; अनसेट होने पर नवीनतम हस्ताक्षरित `vMAJOR.MINOR.PATCH` टैग को रिज़ॉल्व करता है, एक टैग मान इसे पिन करता है, `main` चलायमान शाखा का चयन करता है | अनसेट (नवीनतम हस्ताक्षरित टैग) |
+| `APOTHEM_ALLOW_UNVERIFIED` | `1` पर सेट होने पर एक टैग-हस्ताक्षर-सत्यापन विफलता को घातक निरस्तीकरण से चेतावनी में घटाता है | `0` (सत्यापन, fail-closed) |
+| `APOTHEM_SOURCE` | क्लोन करने के बजाय उपयोग के लिए स्पष्ट स्थानीय स्रोत वृक्ष | अनसेट (क्लोन) |
+| `APOTHEM_HARNESS` | इंस्टॉल करने के लिए टूल | `claude-code` |
+| `APOTHEM_PROFILE` | साझा प्रोफ़ाइल YAML का पथ | `$HOME/.config/apothem/profile.yaml` |
+| `APOTHEM_SKIP_VERIFY` | `1` पर सेट होने पर इंस्टॉल-पश्चात सत्यापन चरण छोड़ें | `0` (सत्यापन चलता है) |
+| `APOTHEM_AUTO_INSTALL_DEPS` | `1` पर सेट होने पर, गायब पूर्व-आवश्यकताएँ `click` / `rich` बिना पूछे स्वतः इंस्टॉल करता है | `0` (पूछता है, या गैर-इंटरैक्टिव पाइप में अस्वीकार करता है) |
+| `APOTHEM_BIN_DIR` | रखे गए `apothem` कमांड shim के लिए डायरेक्टरी | `$HOME/.local/bin` (POSIX); `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) |
+
+`APOTHEM_SOURCE` क्लोन पर प्राथमिकता लेता है: जब एक ऐसे चेकआउट पर सेट होता है जो
+`src/apothem` रखता है, तो इंस्टॉलर इसे सीधे उपयोग करता है,
+`APOTHEM_REPO` / `APOTHEM_REF` को कभी नहीं छूता, और टैग रिज़ॉल्यूशन तथा हस्ताक्षर
+सत्यापन छोड़ देता है (सत्यापित करने के लिए कुछ भी फ़ेच नहीं किया जाता)।
+
+## विश्वास मॉडल
+
+`APOTHEM_REF` सेट न होने पर, इंस्टॉलर नवीनतम हस्ताक्षरित रिलीज़
+टैग रिज़ॉल्व करता है और किसी भी कॉन्फ़िगरेशन को मटेरियलाइज़ करने से पहले `git verify-tag` से
+उसके हस्ताक्षर का सत्यापन करता है; एक अहस्ताक्षरित या छेड़छाड़ किया हुआ टैग इंस्टॉल को निरस्त कर देता है। एक ज्ञात
+रिलीज़ को `APOTHEM_REF=<tag>` से पिन करें (यह भी सत्यापित होता है; एक टैग
+[रिलीज़ पृष्ठ](https://github.com/ahmed-g-gad/apothem/releases) से),
+`APOTHEM_REF=main` से चलायमान शाखा चुनें (असत्यापित), या
+`APOTHEM_ALLOW_UNVERIFIED=1` सेट करके एक चेतावनी के साथ सत्यापन विफलता को पार करके आगे
+बढ़ें (एयर-गैप्ड, स्थानीय, या प्री-हस्ताक्षरित-रिलीज़ उपयोग)।
+
+```bash title="पिन किया हुआ, सत्यापित इंस्टॉल"
+APOTHEM_REF=vMAJOR.MINOR.PATCH bash install.sh
+```
+
+```bash title="सत्यापन के बिना आगे बढ़ें (अंतरिम / एयर-गैप्ड)"
+APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
+```
+
+## चरण (POSIX bash)
+
+1. एक गैर-डिफ़ॉल्ट टूल इंस्टॉल करें:
+
+   ```bash
+   APOTHEM_HARNESS=cursor bash install.sh
+   ```
+
+2. स्रोत ref और इंस्टॉल गंतव्य पिन करें:
+
+   ```bash
+   APOTHEM_REF=main APOTHEM_HOME=/opt/apothem bash install.sh
+   ```
+
+3. एक स्थानीय चेकआउट और एक कस्टम प्रोफ़ाइल का उपयोग करें, सत्यापन छोड़ते हुए:
+
+   ```bash
+   APOTHEM_SOURCE=/work/apothem \
+   APOTHEM_PROFILE=/work/profile.yaml \
+   APOTHEM_SKIP_VERIFY=1 \
+   bash install.sh
+   ```
+
+## चरण (PowerShell)
+
+इंस्टॉलर चलाने से पहले प्रत्येक चर को `$env:` पर सेट करें:
+
+```powershell
+$env:APOTHEM_HARNESS = 'cursor'
+pwsh -NoProfile -File install.ps1
+```
+
+```powershell
+$env:APOTHEM_REF = 'main'
+$env:APOTHEM_HOME = 'C:\opt\apothem'
+pwsh -NoProfile -File install.ps1
+```
+
+```powershell
+$env:APOTHEM_SOURCE = 'C:\work\apothem'
+$env:APOTHEM_PROFILE = 'C:\work\profile.yaml'
+$env:APOTHEM_SKIP_VERIFY = '1'
+pwsh -NoProfile -File install.ps1
+```
+
+## सत्यापन
+
+इंस्टॉलर `✓ Harness <name> installed` प्रिंट करता है, फिर (जब तक
+`APOTHEM_SKIP_VERIFY=1` न हो) `✓ verify passed`। स्वतंत्र रूप से पुष्टि करें:
+
+```bash
+apothem verify --harness cursor
+```
+
+जब प्रोफ़ाइल अभी मौजूद नहीं थी, तो इंस्टॉलर उदाहरण से एक बनाता है
+और जल्दी बाहर निकल जाता है — `$APOTHEM_PROFILE` संपादित करें, फिर पुनः चलाएँ।
+
+## संबंधित
+
+- [इंस्टॉल करना](/docs/install) एक-शॉट नेटवर्क इंस्टॉल को कवर करता है।
+- [एक टूल जोड़ें](/docs/how-to/adding-a-harness) पहले इंस्टॉल के बाद CLI के माध्यम से टूल जोड़ने को कवर करता है।

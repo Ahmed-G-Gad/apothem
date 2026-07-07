@@ -1,0 +1,109 @@
+---
+title: "횡단 관심사 명령 레지스트리 (CM-1–CM-28)"
+description: "모든 상호작용과 파이프라인 작업을 통제하는 생태계 내부 횡단 관심사 명령(CM-1–CM-28)의 완전한 레지스트리와 정의."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **횡단 관심사 명령의 정규 레지스트리.** 이 문서는 CM-N 레지스트리의 본문 전체를 담습니다. 실질적인 열거는 여기에 있으며, `src/apothem/rules/` 아래의 규칙 파일들에 의해 운용됩니다. 자세한 CM-N 본문이 필요한 모든 세션은 이 문서를 온디맨드로 로드합니다.
+
+## 레지스트리 자기 참조 면제
+
+이 문서가 바로 정규 CM-N 레지스트리입니다 — `CM-1`부터 `CM-28`까지의 토큰이 *정의*되는 원천입니다. 이러한 토큰을 *레지스트리 자신의 본문 안에서* 다시 진술하는 것은 정규이며, 플랜 내부 용어의 누출이 아닙니다. 코드베이스 격리 불변식은 다른 모든 *그 외* 아티팩트(규칙, 헬퍼, 명령, 훅, 스키마, 스크립트, 도구, 테스트, 문서, README, 변경 로그, 커밋 제목/본문, 브랜치 이름, PR 제목/설명)에 대해 계속 전적으로 적용됩니다. `CM-N` / `TM-N` / `CP-N` 토큰을 쓰지 않고, 자연스러운 도메인 언어만 사용합니다.
+
+## 네임스페이스
+
+`CM-N` = 구성 명령(여기서 정의되거나, 아티팩트 레지스트리 규칙 행에 따라 `src/apothem/rules/*.md`에서 정의됨); `TM-N` = 템플릿 명령(`src/apothem/skills/plan-suite/master-template.md` §4 "General Mandates", TM-1–28에서 정의됨); `CP-N` = 핵심 원칙(같은 템플릿 §6 "Core Principles", CP-1–27에서 정의됨). 플랜 스위트 템플릿이 정규 TM/CP 레지스트리입니다 — `/plan` 명령은 그 파일을 통해 상호 참조를 해결합니다. 헬퍼 아티팩트(규칙, 헬퍼, 명령, 훅)는 이 레지스트리를 참조로 인용합니다.
+
+## 활성화
+
+CM-1–10과 인지 정체성은 모든 상호작용을 통제합니다. CM-11, CM-13, CM-15, CM-16, CM-20은 `/plan` 파이프라인 내에서만 적용됩니다. CM-12, CM-14, CM-17–19, CM-21–22, CM-24–26은 보편적으로 적용됩니다(항상 활성화). CM-23, CM-27, CM-28은 선언된 경로 필터 범위 내에서 보편적으로 적용됩니다. 임시 기본 모달 등급: PERSONAL_USE.
+
+## CM-1–10 (운영)
+
+(1) 비판적 평가(→TM-10), (2) 무가정(→TM-1), (3) 구성 주도(→TM-2), (4) 구현 전 검색(→TM-4), (5) 최선의 솔루션(→TM-7), (6) 자기 개선(→CP-20), (7) 일관된 제품(→TM-11), (8) 병목 우선 집중, (9) 의사결정 속도, (10) 가차 없는 정직함. 위반 지표를 포함한 완전한 정의: `src/apothem/rules/operational-mandates.md`.
+
+## CM-7 (플랜 내부 격리)
+
+> 이것은 CM-7의 코드베이스 측면입니다. 제품 완전성 측면은 `src/apothem/rules/operational-mandates.md §CM-7`에서 **일관된 제품(→TM-11)**으로 문서화되어 있습니다. 두 라벨은 동일한 명령을 가리킵니다.
+
+코드베이스 아티팩트는 플랜 내부 참조를 **절대** 포함해서는 안 됩니다. **금지 용어(정규 블록 — 형제 소비자는 이 열거를 상호 참조함):** TM-N, CM-N, CP-N, "Resumption Contract", "Phase Output Registry", "convention anchors", 페이즈 폴더 이름, 플랜 스위트 파일 이름(PROGRESS.md, PLAN-NOTES.md, PREAMBLE, MASTER-PLAN), 모달 등급 이름(EXPLORING, PERSONAL_USE, SHARED, PUBLIC_LAUNCH). **보호 아티팩트:** 소스 코드, 테스트, 구성, 스키마, 빌드 스크립트, 데이터, 자산, 커밋 메시지, 브랜치 이름, PR 제목/설명, README, CONTRIBUTING, API 문서, 변경 로그 — Apothem 소스 트리 외부에서 보이는 모든 아티팩트(Claude Code의 `~/.claude/`와 같은 하니스별 설치 대상). 자연스러운 도메인 언어만 사용. **형제 소비자**(각각 이 블록을 다시 열거하는 대신 참조로 인용함): `src/apothem/hooks/messages/pretooluse-bash.md`, `src/apothem/hooks/messages/pretooluse-write.md`, `src/apothem/hooks/messages/pretooluse-edit.md`, `src/apothem/hooks/messages/pretooluse-notebookedit.md`, `src/apothem/rules/operational-mandates.md` §CM-7 위반 지표.
+
+## CM-11 (플랜 무결성)
+
+**A — 산문 충실도:** 모든 요구사항은 산문↔플랜으로 추적 가능. 스코어카드: PASS ≥90% STRONG/0 ABSENT.
+**B — 내부 일관성:** 플랜 스위트 내 문서 간 일관성. 스코어카드: PASS 100%.
+**C — 게이트:** FAIL은 SHARED+에서 실행을 차단합니다(SHARED에서는 기록된 근거와 함께 Product Owner 재정의 허용; PUBLIC_LAUNCH에서는 하드 차단). PERSONAL_USE에서는 권고적.
+
+## CM-12 (컨텍스트 관리)
+
+항상 린한 컨텍스트 관리 — CM-24 규칙 참조. 네 개의 서브 티어는 아래 하위 참조 규약 섹션에 열거되어 있습니다. 압축 규율(CM-19)이 액션을 통제하고, CM-12가 정상 상태 규율을 통제합니다.
+
+## CM-13 (커밋)
+
+- **A — 태스크별 케이던스:** SHARED+에서는 태스크별. PERSONAL_USE에서는 페이즈별. EXPLORING에서는 선택적.
+- **B — 품질/시정 커밋:** 품질 게이트 수정과 시정 변경은 기능 작업과 분리하여 즉시 커밋됩니다.
+- **C — 페이즈 종료 게이트:** 커밋되지 않은 변경은 페이즈 경계를 넘지 않습니다. CM-7 격리는 모든 git 아티팩트에 적용됩니다. PUBLIC_LAUNCH에서는 GPG 서명 커밋(`git commit -S`)이 필수입니다.
+- **D — 인간 전용 저작:** 모든 git 아티팩트의 모든 저작 표면(커밋 제목, 커밋 본문, `Author:`, `Co-Authored-By:` 트레일러, `Signed-off-by:` 트레일러, 브랜치 이름, 태그 이름, 태그 주석, stash 이름, git-notes 본문, PR 제목, PR 설명)은 **인간 기여자만** 표기합니다. 어시스턴트는 그 표면 중 어느 것에도 자신, 기반 언어 모델, 런타임 / 하니스 / IDE / 확장 / 공급업체, 그 밖의 어떤 자동화 도구도 저작자로 표기하지 않습니다. 금지 패턴은 `src/apothem/rules/production-ready-prs.md` §6(Commit-Message Discipline → Human-only authorship)에서 열거되고 기계적으로 강제되며, 매처는 `src/apothem/hooks/messages/pretooluse-bash.md` Scan 3에 있어 모든 git 쓰기 Bash 호출에서 발화합니다.
+- **E — git-mv / git-rm 대상의 숫자 접두사 규율:** 파일 시스템 경로의 숫자 접두사(`NN-`)는 순서를 전달하며, 순서가 본질적인 경우에만 적용됩니다 — 페이즈 폴더 시퀀스, 서브페이즈 시퀀스, 호스트가 발견한 서수 명명 스킴. 형제 시퀀스가 없는 루트 레벨 싱글톤은 숫자 접두사를 갖지 않습니다. 하나를 추가하는 것은 존재하지 않는 순서 관계를 잘못 신호하는 무의미한 장식입니다. 완전한 사양은 `src/apothem/rules/canonical-layout.md` §2.1. `src/apothem/hooks/messages/pretooluse-bash.md` Scan 2에서 `git mv` / `git rm` 및 커밋 본문의 경로 참조에 대해 기계적으로 강제됩니다.
+
+## CM-14 (세션 프로토콜)
+
+**시작:** Blind Bootstrap 실행(CM-24 §6). **종료:** Phase Exit(CM-24 §2.5) + 메모리 평가(CM-26) + 아티팩트 진화(CM-22 §2+§4) 실행.
+
+## CM-15–21 (파이프라인)
+
+CM-15와 CM-16은 여기서 인라인 정의됩니다(별도 규칙 없음); CM-17–21은 아티팩트 레지스트리 규칙 표에 따라 규칙에 위임합니다.
+
+- **CM-15 집단적 일관성:** 수정 후에도 플랜 아티팩트가 일관되게 유지되는지 검증합니다.
+- **CM-16 자율 실행:** SHARED+에서는 페이즈 사이에서 절대 멈추지 않습니다. 페이즈 전환 시 압축 필수(PERSONAL_USE+).
+- **CM-17 작업자 팀:** 병렬화 가능한 작업을 위해 위임 작업자 팀을 배치합니다 — CM-25 규칙 참조.
+- **CM-18 오류 복구:** 여섯 가지 일반 클래스(CM-24 §8); 플랜 실행 클래스는 TM-18에 있습니다. 3회 실패 후 에스컬레이션.
+- **CM-19 압축 규율:** 능동적 압축 트리거 — CM-24 §3 참조.
+- **CM-20 파이프라인 오케스트레이션:** prose→[approval]→generate→[approval]→review→[approval]→execute(01→NN). 리뷰 기법: `src/apothem/rules/planning-techniques.md`.
+- **CM-21 창의적 품질:** 인지 필터는 품질 게이트이며 장식이 아닙니다. 스케일링은 인지 정체성 규칙 §2에 따릅니다.
+
+## CM-22–28 (규칙 위임)
+
+규칙 위임 명령의 한 줄 앵커(완전한 사양은 인용된 파일에 있음):
+
+- **CM-22 규약 경계** — 생태계 규약과 능동적 아티팩트 진화. `src/apothem/rules/persistent-conventions-vigilance.md` 참조.
+- **CM-23 대용량 파일 생성** — 단일 쓰기 임계값을 초과하는 파일을 위한 증분 추가 프로토콜. `src/apothem/rules/large-file-generation.md` 참조.
+- **CM-24 컨텍스트 관리 프로토콜** — 외부화, 압축, blind bootstrap, 예산 규율. `src/apothem/rules/context-management.md` 참조.
+- **CM-25 작업자 오케스트레이션** — 배치 패턴, 반환 계약, 컨텍스트 격리. 완전한 사양은 작업자 오케스트레이션 규칙에 있습니다(상호 링크 생략; 대상 파일 이름에 금지 어휘가 포함됨).
+- **CM-26 자동 메모리 라이프사이클** — 메모리 규율, 토픽 파일 구성, 세션 종료 평가. `src/apothem/rules/auto-memory.md` 참조.
+- **CM-27 클린 아키텍처 레이어** — Domain / Application / Infrastructure / Presentation 분리. `src/apothem/rules/clean-architecture-layers.md` 참조.
+- **CM-28 Python 시니어 아키텍트** — Python 아티팩트를 위한 SOLID, 스타일, 테스트, 보안 가드레일. `src/apothem/rules/code-craft-python.md` 참조.
+
+## 규칙 위임 명령 대 인라인 정의 명령
+
+- **규칙 위임**(완전한 사양은 `src/apothem/rules/`에): 아티팩트 레지스트리 규칙 표의 "Implements" 열 참조. CM-1–10, CM-12, CM-14, CM-17–28을 다룹니다.
+- **인라인 정의**(완전한 사양은 여기, 별도 규칙 없음): CM-11(플랜 무결성), CM-13(커밋), CM-15(집단적 일관성), CM-16(자율 실행).
+
+## 하위 참조 규약
+
+명령은 명령 내의 특정 하위 섹션을 참조하기 위해 문자 접미사를 사용합니다. 패턴: `CM-N` + 접미사 문자 = 규칙 섹션. **대소문자 규약:** 대문자 접미사는 명령 내의 구조적 하위 섹션을 나타내고, 소문자 접미사는 Stewardship 티어 내의 더 세분화된 지시를 나타냅니다. 정규 하위 참조 키 매핑 표(레지스트리 내부 정의)는 아래 펜스 블록에 그대로 보존됩니다:
+
+```text
+CM-11A = Prose Fidelity
+CM-11B = Internal Consistency
+CM-11C = Gates
+
+CM-12a = lean ingestion / demand loading (context-management §7.2)
+CM-12b = budget awareness (§7.1)
+CM-12c = budget pressure response (§7.3)
+CM-12d = per-task effort calibration (context-management §7.4 — D3 stratified taxonomy; PHASE.md frontmatter is the per-phase override surface)
+
+CM-13A = per-task commits
+CM-13B = quality / remediation commits
+CM-13C = end-of-phase commit gate
+
+CM-23A = pre-generation size assessment (§1)
+CM-23B = incremental generation protocol (§2)
+
+CM-24B = proactive externalization (§2)
+
+CM-25A = worker-team patterns (§1)
+CM-25C = return-contract enforcement (§4)
+CM-25E = isolation / non-duplication (§5)
+```

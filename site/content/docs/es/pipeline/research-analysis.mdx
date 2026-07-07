@@ -1,0 +1,70 @@
+---
+title: "/research-analysis"
+description: "/research-analysis — Analiza los datos brutos según el plan preregistrado: pruebas planificadas, tamaños del efecto con intervalos de confianza, comprobaciones de robustez y desviaciones divulgadas."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rol:** Investigador principal (análisis)
+**Posición en la canalización:** mitad de la cadena
+
+Analiza los datos brutos según el plan preregistrado: ejecuta las pruebas estadísticas planificadas, informa los tamaños del efecto con intervalos de confianza (no solo valores p), aplica la corrección por comparaciones múltiples donde corresponda, ejecuta comprobaciones de robustez / sensibilidad y divulga cada desviación respecto al preregistro.
+
+## Invocación canónica
+
+```bash
+/research-analysis
+```
+
+Con argumentos:
+
+```bash
+/research-analysis [path/to/research-suite/]
+```
+
+## Entradas
+
+Los datos brutos en la ubicación natural del host que registró la etapa de experimento, más `_inputs/preregistration.md` (el plan de análisis congelado).
+
+## Salidas
+
+`_outputs/analysis.md` (las pruebas preregistradas con tamaños del efecto e IC, la corrección por comparaciones múltiples, las comprobaciones de robustez y las desviaciones divulgadas) + figuras / tablas en una ubicación natural del host.
+
+## Aguas abajo
+
+/research-paper (consumidor aguas abajo)
+
+## Fases del flujo de trabajo
+
+El comando sigue el flujo de trabajo estándar de la canalización `/research`:
+
+1. **Cargar el contexto** — Leer los datos brutos y el preregistro.
+2. **Verificar la Compuerta de secuencia** — Confirmar que existen las salidas del experimento; de lo contrario, detenerse con `Blocked: run /research-experiment first`.
+3. **Analizar** — Ejecutar las pruebas preregistradas; informar tamaños del efecto + IC; corregir por comparaciones múltiples; ejecutar comprobaciones de robustez / sensibilidad.
+4. **Divulgar las desviaciones** — Registrar cada desviación respecto al plan preregistrado.
+5. **Actualizar el manifiesto de traspaso** — Registrar la ruta del análisis y las figuras / tablas.
+6. **Emitir el análisis** — `_outputs/analysis.md` + figuras / tablas.
+
+## Umbral de rigor
+
+Los resultados estocásticos se informan como mejor, media, mediana, desviación estándar y peor a lo largo de las repeticiones, con curvas de convergencia y gráficos de distribución. Las comparaciones usan pruebas no paramétricas —una prueba de rangos con signo pareada por pares, una prueba de rangos ómnibus con corrección post-hoc entre métodos— informadas con un tamaño del efecto de superioridad estocástica y un diagrama de diferencia crítica. Un resultado avanza al artículo solo cuando supera la compuerta de avance: vence a sus comparadores de forma convincente y significativa, y la superación se registra en un cuaderno de ejecución auditable.
+
+## Modos de fallo
+
+| Síntoma | Causa | Recuperación |
+|---------|-------|----------|
+| Blocked: run /research-experiment first | No hay datos brutos | Ejecuta `/research-experiment` para producir los datos + el registro |
+| Valor p informado sin tamaño del efecto | Informe estadístico incompleto | Informa tamaños del efecto + intervalos de confianza |
+| Desviación de análisis no divulgada | El plan se desvió en silencio | Divulga la desviación respecto al preregistro |
+
+## Ejemplos
+
+```bash
+# Analizar los datos brutos según el plan preregistrado
+/research-analysis path/to/research-suite/
+```
+
+## Referencias cruzadas
+
+- [Resumen de la canalización](/docs/pipeline)
+- [Referencia de comandos](/docs/reference/commands)

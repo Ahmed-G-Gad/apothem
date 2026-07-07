@@ -1,0 +1,344 @@
+---
+title: "इंस्टॉलेशन"
+description: "Apothem इंस्टॉलेशन का अवलोकन — आठ इंस्टॉल चैनल, प्रत्येक अपनी पूर्वापेक्षाओं, एक कॉपी-रेडी कमांड, और एक सत्यापन चरण के साथ: Claude Code प्लगइन, npm शिम, एक-चरण इंस्टॉलर, VS Code-परिवार एक्सटेंशन, तीन कमांड-लाइन बूटस्ट्रैप एक्सटेंशन, और प्रत्यक्ष इंजन।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem दो मिनट से कम में इंस्टॉल हो जाता है और आपके मौजूदा हार्नेस
+कॉन्फ़िगरेशन के साथ-साथ काम करता है। हर पथ वही स्व-निहित इंजन चलाता है — स्रोत
+वृक्ष अपनी अंतर्निहित निर्भरताएँ साथ रखता है और सिस्टम Python 3.10 या नए पर एक
+चेकआउट से चलता है (देखें
+[स्व-निहित रनटाइम](/docs/architecture/self-contained-runtime))।
+
+**दो पूर्वापेक्षाएँ हर पथ में साझा हैं:** `PATH` पर सिस्टम **Python 3.10 या नया**,
+जिसके अंतर्गत `click` और `rich` पैकेज आयात-योग्य हों। npm-शिम और टूल-प्लगइन पथों को
+`npx` चलाने के लिए अतिरिक्त रूप से **Node.js 18 या नए** की आवश्यकता होती है। नीचे
+प्रत्येक चैनल का अपना अनुभाग उसकी सटीक पूर्वापेक्षाएँ, एक कॉपी-रेडी कमांड, और एक
+सत्यापन चरण दोहराता है।
+
+## एक चैनल चुनें
+
+आठ इंस्टॉल चैनल उपलब्ध हैं। आप पहले से जैसे काम करते हैं उसके अनुसार चुनें।
+
+| # | चैनल | प्रदान करता है | पूर्वापेक्षाएँ |
+|---|---------|----------|---------------|
+| 1 | [Claude Code प्लगइन](#1-claude-code-plugin) | Claude Code में पूर्ण हार्नेस | Claude Code · Python 3.10+ |
+| 2 | [npm शिम (`npx`)](#2-npm-shim-npx) | पूर्ण हार्नेस, कोई भी टूल | Node 18+ · Python 3.10+ |
+| 3 | [एक-चरण इंस्टॉलर](#3-one-shot-installers) | पूर्ण हार्नेस + एक `apothem` कमांड | Python 3.10+ (नेटवर्क इंस्टॉल के लिए `git`) |
+| 4 | [VS Code परिवार एक्सटेंशन](#4-vs-code-family-extension) | संपादक से पूर्ण हार्नेस | VS Code · Node 18+ · Python 3.10+ |
+| 5 | [कमांड-लाइन बूटस्ट्रैप (एक्सटेंशन होस्ट)](#5-command-line-bootstrap-extension-host) | बूटस्ट्रैप जो इंजन चलाता है | इसका होस्ट टूल · Node 18+ · Python 3.10+ |
+| 6 | [कमांड-लाइन बूटस्ट्रैप (`qwen-code` होस्ट)](#6-command-line-bootstrap-qwen-code-host) | बूटस्ट्रैप जो इंजन चलाता है | इसका होस्ट टूल · Node 18+ · Python 3.10+ |
+| 7 | [कमांड-लाइन बूटस्ट्रैप (प्लगइन होस्ट)](#7-command-line-bootstrap-plugin-host) | बूटस्ट्रैप जो इंजन चलाता है | इसका होस्ट टूल · Node 18+ · Python 3.10+ |
+| 8 | [प्रत्यक्ष इंजन (`python -m apothem`)](#8-direct-engine-python--m-apothem) | एक चेकआउट से पूर्ण हार्नेस | Python 3.10+ (`click`, `rich`) |
+
+<Callout title="कौन-से चैनल पूर्ण हार्नेस प्रदान करते हैं">
+  npm शिम (2), एक-चरण इंस्टॉलर (3), और प्रत्यक्ष इंजन (8) किसी भी हार्नेस के लिए
+  पूरी सिंक की गई इकाई को अपने-आप मूर्त रूप देते हैं। तीन कमांड-लाइन एक्सटेंशन (5–7)
+  एक छोटा **बूटस्ट्रैप** इंस्टॉल करते हैं जो पूर्ण हार्नेस को मूर्त रूप देने के लिए
+  इंजन को शेल-आउट करता है (`npx @ahmed-g-gad/apothem install`) — वे प्रवेश-बिंदु
+  हैं, अपने-आप में पूर्ण डिलीवरी नहीं। Claude Code प्लगइन (1) और VS Code-परिवार
+  एक्सटेंशन (4) इंजन को साथ लेकर चलते हैं और उसे सीधे चलाते हैं।
+</Callout>
+
+हर पथ इडेम्पोटेन्ट है: पुनः चलाना सुरक्षित है और उसी अवस्था पर अभिसरित होता है।
+
+## 1. Claude Code प्लगइन
+
+**पूर्वापेक्षाएँ:** Claude Code, और `PATH` पर सिस्टम Python 3.10+।
+
+प्लगइन पथ पूरी तरह Claude Code के भीतर चलता है। यह Apothem इंजन को उसके स्लैश
+कमांड, सौंपे गए वर्कर, स्किल, नियम, और हुक के साथ पैकेज करता है — यह सब प्लगइन के
+स्व-निहित वृक्ष से चलने योग्य है:
+
+```text title="Inside Claude Code"
+/plugin marketplace add ahmed-g-gad/apothem
+/plugin install apothem@apothem
+```
+
+इंस्टॉलेशन के बाद, Apothem कमांड सेट (`/plan-spec`, `/code-review`,
+`/security-audit`, और बाकी), साथ में आए सौंपे गए वर्कर, और स्किल हर Claude Code
+सत्र में उपलब्ध रहते हैं। कमांड के पूर्ण कैटलॉग के लिए
+[स्लैश कमांड](/docs/reference/commands) देखें।
+
+**सत्यापित करें:** Claude Code के भीतर `/plugin` चलाएँ और पुष्टि करें कि **apothem**
+इंस्टॉल किए गए के रूप में सूचीबद्ध है, या किसी टर्मिनल से ड्रिफ़्ट रिपोर्ट जाँचें:
+
+```bash title="Verify"
+npx @ahmed-g-gad/apothem verify --harness claude-code
+```
+
+## 2. npm शिम (`npx`)
+
+**पूर्वापेक्षाएँ:** Node.js 18+ (`npx` के लिए) और `PATH` पर सिस्टम Python 3.10+।
+शिम इंटरप्रेटर को खोजता है और हर CLI कमांड को साथ में आए इंजन को अग्रेषित करता है —
+आपके सिस्टम पर स्थायी रूप से कुछ नहीं रखा जाता।
+
+```bash title="npx"
+npx @ahmed-g-gad/apothem install --harness claude-code
+```
+
+यह सीधे रिपॉज़िटरी से भी चलता है:
+
+```bash title="npx from the repository"
+npx github:ahmed-g-gad/apothem install --harness claude-code
+```
+
+[CLI संदर्भ](/docs/cli-reference) में हर कमांड इस रूप में काम करता है;
+`apothem` को `npx @ahmed-g-gad/apothem` से बदलें। यही OpenCode और हर उस अन्य टूल
+के लिए भी इंस्टॉलेशन पथ है जो कोई अलग प्लगइन या एक्सटेंशन रजिस्ट्री प्रदान नहीं
+करता — Apothem उन्हें सीधे उनके नेटिव कॉन्फ़िगरेशन डायरेक्टरी में सिंक कर देता है
+(`npx @ahmed-g-gad/apothem install --harness opencode`)।
+
+**सत्यापित करें:**
+
+```bash title="Verify"
+npx @ahmed-g-gad/apothem --version
+npx @ahmed-g-gad/apothem verify --harness claude-code
+```
+
+## 3. एक-चरण इंस्टॉलर
+
+**पूर्वापेक्षाएँ:** `PATH` पर सिस्टम Python 3.10+ (इंस्टॉलर आपके लिए `click` /
+`rich` पूर्वापेक्षाएँ जोड़ने की पेशकश करता है); `git` केवल उस नेटवर्क इंस्टॉल के लिए
+आवश्यक है जो स्रोत को क्लोन करता है।
+
+इंस्टॉलर स्क्रिप्ट नवीनतम हस्ताक्षरित रिलीज़ टैग का समाधान करती हैं, उसके हस्ताक्षर
+को सत्यापित करती हैं, Apothem के स्रोत वृक्ष को उस टैग पर `~/.apothem` में रखती
+हैं, यदि कोई प्रोफ़ाइल न हो तो एक प्रारंभिक प्रोफ़ाइल बनाती हैं, आपके पहले हार्नेस
+को मूर्त रूप देती हैं, और परिणाम सत्यापित करती हैं। पुनः चलाना इडेम्पोटेन्ट है:
+मौजूदा वृक्ष हल किए गए टैग पर फिर से चेकआउट हो जाता है और हार्नेस फिर से मूर्त रूप
+दिया जाता है। टैग-पिन किया गया सत्यापित इंस्टॉल डिफ़ॉल्ट और अनुशंसित पथ है।
+
+```bash title="macOS · Linux · WSL2 · BSD — latest signed tag, verified"
+curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
+```
+
+```powershell title="Windows · PowerShell — latest signed tag, verified"
+irm https://apothem.ahmedgad.com/install.ps1 | iex
+```
+
+वही स्क्रिप्ट एक चेकआउट में `scripts/installer/` के अंतर्गत आती हैं — `install`,
+`uninstall`, और `update` अपने `.sh`, `.ps1`, और `.bat` रूपों में — ताकि आप उन्हें
+क्लोन करने के बाद सीधे चला सकें:
+
+```bash title="From a checkout"
+APOTHEM_HARNESS=claude-code sh scripts/installer/install.sh                                 # POSIX
+$env:APOTHEM_HARNESS = 'claude-code'; pwsh -NoProfile -File scripts/installer/install.ps1   # Windows
+```
+
+### विश्वास मॉडल
+
+कोई `APOTHEM_REF` सेट न होने पर, इंस्टॉलर सबसे ऊँचे `vMAJOR.MINOR.PATCH` रिलीज़ टैग
+का समाधान करता है और *उसी* को चेकआउट करता है — कभी भी चलती हुई `main` शाखा को नहीं।
+किसी भी कॉन्फ़िगरेशन को मूर्त रूप देने से पहले, प्राप्त टैग के हस्ताक्षर को
+`git verify-tag` से सत्यापित किया जाता है; कोई बिना-हस्ताक्षर, छेड़छाड़ किया हुआ, या
+असत्यापनीय टैग कुछ भी लिखने से पहले इंस्टॉलेशन को रोक देता है। किसी विशिष्ट रिलीज़
+पर पिन करने के लिए `APOTHEM_REF` का उपयोग करें:
+
+```bash title="Pinned, verified install"
+APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/install.sh)"
+```
+
+`vMAJOR.MINOR.PATCH` को
+[रिलीज़ पृष्ठ](https://github.com/ahmed-g-gad/apothem/releases) के किसी टैग से
+बदलें।
+
+दो स्पष्ट अधिभावी डिफ़ॉल्ट व्यवहार को ढीला करते हैं: `APOTHEM_REF=main` चलती हुई
+शाखा को (बिना सत्यापन के) चेकआउट करता है, और `APOTHEM_ALLOW_UNVERIFIED=1` सत्यापन
+विफलता को चेतावनी में घटाकर आगे बढ़ता है — एयर-गैप्ड, स्थानीय, या पूर्व-हस्ताक्षरित-
+रिलीज़ उपयोग के लिए। `APOTHEM_SOURCE` के माध्यम से स्थानीय चेकआउट कुछ भी प्राप्त
+नहीं करता और सत्यापन छोड़ देता है।
+
+इंजन फिर रखे गए वृक्ष से सीधे एक स्व-निहित रनटाइम के रूप में चलता है — इसकी
+तृतीय-पक्ष निर्भरताएँ स्रोत वृक्ष के भीतर अंतर्निहित हैं, इसलिए कोई पैकेज रजिस्ट्री
+शामिल नहीं होती:
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+```
+
+दोनों स्क्रिप्ट एक ही कॉन्फ़िगरेशन पर्यावरण-चर पढ़ती हैं (`APOTHEM_HOME`,
+`APOTHEM_REPO`, `APOTHEM_REF`, `APOTHEM_ALLOW_UNVERIFIED`, `APOTHEM_SOURCE`,
+`APOTHEM_HARNESS`, `APOTHEM_PROFILE`, `APOTHEM_SKIP_VERIFY`,
+`APOTHEM_AUTO_INSTALL_DEPS`); पूर्ण तालिका के लिए
+[इंस्टॉलर के पर्यावरण-चर](/docs/how-to/installer-environment-variables) देखें और
+`python -m` आह्वान मॉडल कैसे काम करता है यह समझने के लिए
+[स्व-निहित रनटाइम](/docs/architecture/self-contained-runtime) देखें।
+
+**`apothem` कमांड।** सफल इंस्टॉल के बाद, इंस्टॉलर एक `apothem` शिम लिखता है जो साथ
+में आए इंजन को अग्रेषित करता है — POSIX पर `$HOME/.local/bin` में, Windows पर
+`%LOCALAPPDATA%\Microsoft\WindowsApps` में (एक उपयोगकर्ता डायरेक्टरी जो पहले से
+डिफ़ॉल्ट Windows `PATH` पर है)। इंस्टॉलर कभी आपके `PATH` को संपादित नहीं करता। एक
+बार डायरेक्टरी `PATH` पर आ जाने पर आप बिना किसी मैनुअल `PYTHONPATH` के सीधे
+`apothem <command>` चलाते हैं।
+
+**सत्यापित करें:**
+
+```bash title="Verify"
+apothem verify --harness claude-code
+
+# or, before the shim is on PATH, from the bundled source:
+PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
+```
+
+## 4. VS Code परिवार एक्सटेंशन
+
+**पूर्वापेक्षाएँ:** VS Code, Node.js 18+, और `PATH` पर सिस्टम Python 3.10+।
+
+**Apothem** एक्सटेंशन
+[Visual Studio Marketplace](https://marketplace.visualstudio.com/) से इंस्टॉल
+होता है — एक ही एक्सटेंशन VS Code और उसके इन-एडिटर साथी सहायक सतह को कवर करता है।
+इसके पैलेट कमांड (`Apothem: Install`, `Verify`, `Update`, `Uninstall`, `Doctor`)
+वही इंजन कॉन्फ़िगर किए गए रनर के माध्यम से चलाते हैं (डिफ़ॉल्ट रूप से
+`npx @ahmed-g-gad/apothem`; स्रोत से चलाने के लिए `apothem.runner` सेटिंग को किसी
+स्थानीय चेकआउट की ओर इंगित करें)।
+
+**सत्यापित करें:** संपादक के कमांड पैलेट से **Apothem: Verify** कमांड चलाएँ, या
+किसी टर्मिनल से:
+
+```bash title="Verify"
+npx @ahmed-g-gad/apothem verify --harness claude-code
+```
+
+## 5. कमांड-लाइन बूटस्ट्रैप (एक्सटेंशन होस्ट)
+
+**पूर्वापेक्षाएँ:** इसका होस्ट कमांड-लाइन टूल, Node.js 18+, और `PATH` पर सिस्टम
+Python 3.10+।
+
+Apothem को सीधे रिपॉज़िटरी से एक एक्सटेंशन के रूप में इंस्टॉल करें — कमांड सटीक
+होस्ट और हार्नेस स्लग साथ रखता है:
+
+```bash title="Install the extension"
+gemini extensions install https://github.com/ahmed-g-gad/apothem
+```
+
+यह एक्सटेंशन एक **बूटस्ट्रैप** है, अपने-आप में पूर्ण इंस्टॉल नहीं: यह एक Apothem
+संदर्भ फ़ाइल लोड करता है और एक `/apothem` कमांड जोड़ता है जो इंजन को शेल-आउट करता है
+(`npx @ahmed-g-gad/apothem`)। उसके माध्यम से इंस्टॉल चलाकर पूर्ण हार्नेस को मूर्त
+रूप दें:
+
+```bash title="Materialize the full harness"
+npx @ahmed-g-gad/apothem install --harness gemini-cli --project .
+```
+
+**सत्यापित करें:**
+
+```bash title="Verify"
+npx @ahmed-g-gad/apothem verify --harness gemini-cli --project .
+```
+
+## 6. कमांड-लाइन बूटस्ट्रैप (`qwen-code` होस्ट)
+
+**पूर्वापेक्षाएँ:** इसका होस्ट कमांड-लाइन टूल, Node.js 18+, और `PATH` पर सिस्टम
+Python 3.10+।
+
+Apothem को सीधे रिपॉज़िटरी से एक `--harness qwen-code` एक्सटेंशन के रूप में इंस्टॉल
+करें:
+
+```bash title="Install the extension"
+qwen extensions install ahmed-g-gad/apothem
+```
+
+चैनल-5 एक्सटेंशन की तरह, यह एक **बूटस्ट्रैप** है: यह एक Apothem संदर्भ फ़ाइल लोड
+करता है और इंजन को शेल-आउट करता है। उसके माध्यम से इंस्टॉल चलाकर पूर्ण हार्नेस को
+मूर्त रूप दें:
+
+```bash title="Materialize the full harness"
+npx @ahmed-g-gad/apothem install --harness qwen-code
+```
+
+**सत्यापित करें:**
+
+```bash title="Verify"
+npx @ahmed-g-gad/apothem verify --harness qwen-code
+```
+
+## 7. कमांड-लाइन बूटस्ट्रैप (प्लगइन होस्ट)
+
+**पूर्वापेक्षाएँ:** इसका होस्ट कमांड-लाइन टूल, Node.js 18+, और `PATH` पर सिस्टम
+Python 3.10+।
+
+रिपॉज़िटरी को एक प्लगइन मार्केटप्लेस के रूप में जोड़ें, फिर प्लगइन इंस्टॉल करें —
+कमांड सटीक होस्ट और हार्नेस स्लग साथ रखता है:
+
+```bash title="Install the plugin"
+codex plugin marketplace add ahmed-g-gad/apothem
+codex plugin add apothem@apothem
+```
+
+चैनल-5 और चैनल-6 एक्सटेंशन की तरह, यह एक **बूटस्ट्रैप** है जो इंजन को शेल-आउट करता
+है। उसके माध्यम से इंस्टॉल चलाकर पूर्ण हार्नेस को मूर्त रूप दें:
+
+```bash title="Materialize the full harness"
+npx @ahmed-g-gad/apothem install --harness codex
+```
+
+**सत्यापित करें:**
+
+```bash title="Verify"
+npx @ahmed-g-gad/apothem verify --harness codex
+```
+
+## 8. प्रत्यक्ष इंजन (`python -m apothem`)
+
+**पूर्वापेक्षाएँ:** `click` और `rich` पैकेज आयात-योग्य के साथ सिस्टम Python 3.10+,
+साथ ही रिपॉज़िटरी का एक चेकआउट। कोई Node.js आवश्यक नहीं।
+
+स्व-निहित इंजन को सीधे किसी क्लोन से चलाएँ — स्रोत वृक्ष अपनी अंतर्निहित निर्भरताएँ
+साथ रखता है, इसलिए पूरा सेटअप बस `PYTHONPATH=src` है:
+
+```bash title="Direct engine"
+git clone https://github.com/ahmed-g-gad/apothem
+cd apothem
+PYTHONPATH=src python -m apothem install --harness claude-code
+```
+
+**सत्यापित करें:**
+
+```bash title="Verify"
+PYTHONPATH=src python -m apothem verify --harness claude-code
+```
+
+## किसी भी इंस्टॉल को सत्यापित करें
+
+ऊपर हर चैनल अपनी सत्यापन कमांड बताता है। दो सामान्य रूप हैं:
+
+```bash title="Installer path"
+PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
+```
+
+```bash title="npx path"
+npx @ahmed-g-gad/apothem verify --harness claude-code
+```
+
+हार्नेस के नाम को उस अडैप्टर से बदलें जिसे आपने इंस्टॉल किया है; सभी समर्थित नामों
+के लिए [हार्नेस सूची](/docs/harnesses) देखें। हर पंजीकृत अडैप्टर को एक नज़र में
+जाँचने के लिए, उसी रूप में `apothem doctor` (या `npx @ahmed-g-gad/apothem doctor`)
+चलाएँ। प्लगइन पथ के लिए, Claude Code के भीतर `/plugin` चलाएँ और पुष्टि करें कि
+**apothem** इंस्टॉल किए गए के रूप में सूचीबद्ध है।
+
+## पूर्वापेक्षाएँ एक नज़र में
+
+- **Python 3.10 या उसके बाद का** — इंजन चलाने वाला हर पथ इसे खोजता है (`python3`,
+  `python`, संस्करण-युक्त नाम, और Windows पर `py -3`)।
+- उस इंटरप्रेटर के अंतर्गत **`click` और `rich` आयात-योग्य** — दो टर्मिनल-सामने
+  निर्भरताएँ जिन्हें इंजन अंतर्निहित नहीं करता। इंस्टॉलर दोनों की जाँच करते हैं,
+  किसी भी अनुपस्थित निर्भरता का नाम बताते हैं, और उसे आपके लिए इंस्टॉल करने की
+  पेशकश करते हैं — आपकी पुष्टि के साथ, या `--yes` (`-Yes` PowerShell पर) या
+  `APOTHEM_AUTO_INSTALL_DEPS=1` के साथ स्वचालित रूप से।
+- **Node.js 18 या उसके बाद का** — केवल npm-शिम और टूल-प्लगइन पथ।
+- **Git** — केवल इंस्टॉलर पथ, और केवल नेटवर्क रूप के लिए (स्क्रिप्ट स्रोत-कोड को
+  क्लोन करती है; स्थानीय चेकआउट को क्लोनिंग की आवश्यकता नहीं)।
+- **Claude Code** — केवल प्लगइन पथ। **VS Code** और प्रत्येक कमांड-लाइन बूटस्ट्रैप
+  का अपना होस्ट टूल केवल उनके अपने चैनल (4–7) के लिए आवश्यक हैं।
+
+## अगली मार्गदर्शिकाएँ
+
+| लक्ष्य | मार्गदर्शिका |
+|------|-------|
+| सबसे छोटा सेटअप | [त्वरित प्रारंभ](/docs/install/quickstart) |
+| एक हार्नेस जोड़ें | [हार्नेस सेटअप](/docs/install/harness-setup) |
+| अपडेट करें | [अपडेट](/docs/install/updating) |
+| अनइंस्टॉल करें | [अनइंस्टॉलेशन](/docs/install/uninstalling) |
+| कुछ विफल हुआ | [समस्या निवारण](/docs/install/troubleshooting) |

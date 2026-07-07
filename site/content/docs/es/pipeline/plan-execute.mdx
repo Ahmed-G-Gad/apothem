@@ -1,0 +1,70 @@
+---
+title: "/plan-execute"
+description: "/plan-execute — Ejecuta una fase específica de una Suite de Plan Maestra con comprobación de conformidad."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rol:** Ejecutor
+**Posición en el pipeline:** terminal
+
+Ejecuta una fase específica de una Suite de Plan Maestra con comprobación de conformidad.
+
+## Invocación canónica
+
+```bash
+/plan-execute
+```
+
+Con argumentos:
+
+```bash
+/plan-execute [path/to/plan-suite/] [phase-id] [--dry-run]
+```
+
+## Entradas
+
+Suite de plan generada + revisada; `_inputs/handoff-manifest.yml` revisado
+
+## Salidas
+
+Archivos REPORT.md por fase, artefactos de la base de código, COMPLETION.md
+
+## Aguas abajo
+
+`/code-review` — el punto de entrada canónico de la secuencia de fortaleza de auditoría de once comandos. `/plan-execute` es la etapa terminal del pipeline de *plan*; cuando la fase final se completa, el código construido se traspasa a la fortaleza de auditoría para su revisión.
+
+## Fases del flujo de trabajo
+
+El comando sigue el flujo de trabajo estándar del pipeline `/plan`:
+
+1. **Cargar contexto** — Lee la suite de plan, las reglas y el Contrato de Reanudación.
+2. **Verificar prerrequisitos** — Confirma que las fases de dependencia están completas.
+3. **Ejecutar tareas** — Cumple la misión del comando.
+4. **Verificar salidas** — Confirma que todas las salidas declaradas existen y pasan las compuertas de calidad.
+5. **Actualizar PROGRESS.md** — Registra las salidas verificadas en el Registro de Salidas de Fase.
+6. **Emitir REPORT.md** — Queda registrada la prueba de liberación de la compuerta de pre-emisión.
+
+## Modos de fallo
+
+| Síntoma | Causa | Recuperación |
+|---------|-------|----------|
+| Prerrequisito incompleto | Fase dependiente no terminada | Completa primero la fase aguas arriba |
+| Compuerta de calidad FAIL | La salida no cumple los estándares | Corrige la salida y reejecuta |
+| Falta un archivo de entrada | Archivo de la suite de plan ausente | Ejecuta `/plan-generate` para crearlo |
+
+## Ejemplos
+
+```bash
+# Dry-run to preview what would happen
+/plan-execute --dry-run
+
+# Execute against a named plan suite
+/plan-execute path/to/plan-suite/
+```
+
+## Referencias cruzadas
+
+- [Visión general del pipeline](/docs/pipeline)
+- [Referencia de comandos](/docs/reference/commands)
+- [Entrada de la fortaleza de auditoría: `/code-review`](/docs/reference/commands) — la secuencia de revisión en la que entra el código construido una vez completado el pipeline de plan

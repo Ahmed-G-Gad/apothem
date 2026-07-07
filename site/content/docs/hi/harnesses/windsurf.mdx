@@ -1,0 +1,84 @@
+---
+title: "Windsurf"
+description: "Windsurf (GA) के लिए Apothem टूल अडैप्टर।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**विक्रेता:** Codeium
+**इंस्टॉल नाम:** `windsurf`
+**स्थिति:** GA
+**नेटिव कॉन्फ़िग:** `<project>/.devin/rules/apothem-rules.md`
+
+## इंस्टॉलेशन
+
+```bash
+apothem install --harness windsurf --project /path/to/project
+```
+
+अडैप्टर साझा Apothem नियमों और शासन-तल से एक प्रोजेक्ट-स्तरीय Windsurf नियम फ़ाइल
+लिखता है।
+
+**लिखी गई फ़ाइलें:** `<project>/.devin/rules/apothem-rules.md`
+
+## प्रोफ़ाइल से नेटिव कॉन्फ़िग में मानचित्रण
+
+अडैप्टर Apothem की साझा प्रोफ़ाइल पढ़ता है और प्रत्येक `apothem install` या
+`apothem update` रन पर प्रोजेक्ट नियम फ़ाइल रेंडर करता है। साझा प्रोफ़ाइल सत्य का
+स्रोत है; जनरेट की गई फ़ाइल में प्रोजेक्ट-स्थानीय संपादनों का बैकअप, अगली
+सिंक्रनाइज़ेशन के Apothem-प्रबंधित सामग्री को बदलने से पहले, ले लिया जाता है।
+
+## संगतता टिप्पणियाँ
+
+Windsurf का वर्तमान नियम-तल `.devin/rules/` के अंतर्गत प्रोजेक्ट-स्तरीय है।
+वर्कफ़्लो और मशीन-स्थानीय मेमोरी ऑपरेटर के स्वामित्व में हैं; Apothem उन्हें नहीं
+लिखता। एकल-फ़ाइल रूप `.windsurfrules` जानबूझकर नहीं लिखा जाता।
+
+## सत्यापन
+
+```bash
+apothem verify --harness windsurf --project /path/to/project
+```
+
+verify कमांड पुष्टि करता है कि:
+
+1. नेटिव कॉन्फ़िग अपेक्षित पथ पर मौजूद है।
+2. साझा प्रोफ़ाइल के सभी अनिवार्य फ़ील्ड मौजूद हैं।
+3. अडैप्टर-विशिष्ट सत्यापन रूटीन सफलता की रिपोर्ट करता है।
+
+## अपडेट करना
+
+```bash
+apothem update --harness windsurf --project /path/to/project
+```
+
+वर्तमान साझा प्रोफ़ाइल स्थिति से प्रोजेक्ट नियम फ़ाइल को पुनः व्युत्पन्न करता है।
+
+## अनइंस्टॉल करना
+
+```bash
+apothem uninstall --harness windsurf --project /path/to/project
+```
+
+अडैप्टर द्वारा लिखी गई नेटिव कॉन्फ़िग फ़ाइलों को हटाता है।
+साझा प्रोफ़ाइल YAML और Apothem इंजन अप्रभावित रहते हैं।
+
+## अनुरूपता द्वार
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## समस्या निवारण
+
+| लक्षण | समाधान |
+|---------|-----|
+| कॉन्फ़िग फ़ाइल नहीं मिली | `apothem install --harness windsurf --project /path/to/project` पुनः चलाएँ |
+| सत्यापन विफल रहा | `apothem update --harness windsurf --project /path/to/project` चलाएँ, फिर पुनः सत्यापित करें |
+| अप्रत्याशित कॉन्फ़िग सामग्री | `~/.config/apothem/profile.yaml` या `--profile PATH` जाँचें, फिर `apothem update --harness windsurf --project /path/to/project` पुनः चलाएँ |
+
+## कॉन्फ़िगरेशन नॉब
+
+| फ़्लैग | डिफ़ॉल्ट | विवरण |
+|------|---------|-------------|
+| `--dry-run` | `false` | फ़ाइलें लिखे बिना इंस्टॉलेशन का पूर्वावलोकन करें। |

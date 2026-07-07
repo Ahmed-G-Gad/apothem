@@ -1,0 +1,30 @@
+---
+title: "Einstellungen"
+description: "Claude Code Harness-Konfiguration in settings.json, die Tool-Berechtigungen, Hook-Verdrahtung, Umgebungsvariablen und Statuszeilen-Vorlagen abdeckt."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+`settings.json` trägt die Claude Code Harness-Konfiguration: Hook-Verdrahtung,
+Tool-Berechtigungen, Umgebungsvariablen und Statuszeilen-Einstellungen.
+
+Die vollständige kanonische Referenz liegt unter
+[settings-reference.md](/docs/reference/settings-reference). Diese Seite fasst den Vertrag
+zusammen und verweist auf die tiefere Referenz.
+
+## Abschnitte
+
+| Abschnitt | Zweck |
+|---------|---------|
+| `permissions` | Tool-Whitelists und -Blacklists je Matcher |
+| `hooks` | Ereignisgeschlüsselte Hook-Befehlstabelle (die kanonische Verdrahtung) |
+| `env` | Umgebungsvariablen je Sitzung |
+| `statusLine` | Statuszeilen-Vorlage, die der Host rendert |
+
+## Einzel-Vorlagen-Invariante
+
+Der Claude Code Adapter liefert eine einzige `settings.json`-Vorlage aus.
+Hook-Befehle verwenden die Exec-Form (`command` plus `args`) statt
+Shell-spezifischer Befehlszeichenketten, sodass das betriebssystemübergreifende
+Verhalten innerhalb einer Datei geprüft wird. Neue Berechtigungseinträge und
+Hook-Ereignisse landen atomar in dieser Datei.

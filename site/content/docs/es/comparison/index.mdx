@@ -1,0 +1,100 @@
+---
+title: "Comparación"
+description: "Cómo evaluar Apothem frente a la configuración de entornos mantenida a mano y otros enfoques de configuración, con una matriz de funciones y páginas por entorno."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem es un gestor de configuración de entornos agnóstico al host.
+Un único perfil compartido en `~/.config/apothem/profile.yaml` se materializa en
+diecisiete superficies de configuración nativas de entorno. Esta sección enmarca cómo
+evaluar Apothem frente a las alternativas que ya usas.
+
+## Cómo se compara Apothem
+
+Otras herramientas resuelven porciones adyacentes de este problema. Los gestores
+de configuración basados en archivos como **chezmoi** y **GNU Stow** colocan o
+plantillan archivos pero nunca traducen una fuente a la configuración *nativa* de
+cada herramienta. Las CLI de sincronización de reglas entre
+herramientas como **rulesync** sí generan archivos nativos por herramienta en
+más herramientas que las diecisiete de Apothem, y una unidad sincronizada
+comparablemente amplia. La distinción de Apothem es la **disciplina de
+gobernanza y ciclo de vida que se distribuye en torno a la sincronización**: una
+puerta mecánica de conformidad, flujos deterministas, una fortaleza de
+auditoría y un ciclo de vida reversible y verificado.
+
+| Capacidad | Apothem | Gestores de config. de archivos (chezmoi, Stow) | Sincronización de reglas entre herramientas (rulesync) | Config. nativa por herramienta |
+| ---------- | :-----: | :----------------------------------: | :-----------------------------: | :--------------------: |
+| Una fuente a los esquemas nativos de muchas herramientas | Sí — diecisiete adaptadores de entorno | No — copia / enlace simbólico, sin traducción | Sí | No — una sola herramienta |
+| Unidad sincronizada | reglas, habilidades, hooks, comandos de barra, MCP | archivos arbitrarios | reglas, ignore, MCP, comandos, subagentes, habilidades, hooks, permisos | — |
+| Corpus de gobernanza (reglas de comportamiento más una puerta mecánica de conformidad) | Sí — `python -m apothem.conformity.gate` | No | No | No |
+| Flujos deterministas de planificación e investigación | Sí — de `/plan-spec` a `/plan-execute`, `/research` de trece etapas | No | No | No |
+| Fortaleza de auditoría que detecta y remedia | Sí — barrido de once comandos, bucle de reauditoría `/fortress` | No | No | No |
+| Versiones reforzadas frente a la cadena de suministro | Sí — SBOM, Sigstore, SLSA, objetivo Scorecard | No | varía | No |
+| Ciclo de vida reversible y verificado | Sí — copia de seguridad, `apothem verify --json`, desinstalación sin huérfanos | varía | varía | — |
+
+Donde un competidor es más fuerte, se le nombra: **rulesync** llega a más
+herramientas y lleva una unidad sincronizada comparablemente amplia, y varias
+herramientas de sincronización materializan esquemas nativos. Apothem cambia el
+recuento bruto de herramientas por la disciplina de gobernanza, auditoría y
+ciclo de vida que se distribuye en torno a la sincronización —una puerta de
+conformidad, flujos deterministas `/plan` y `/research`, una fortaleza de
+auditoría de once comandos, memoria duradera y un ciclo de vida reversible y
+verificado— que una herramienta de sincronización de reglas no lleva.
+
+## Cómo comparar
+
+Compara a lo largo de tres ejes:
+
+1. **Fuente de verdad.** ¿Dónde viven tus reglas, agentes, comandos y ajustes?
+   Apothem mantiene un único corpus compartido y renderiza desde él el formato
+   nativo de cada entorno. La configuración mantenida a mano guarda una copia por
+   herramienta.
+2. **Coste de la deriva.** ¿Qué ocurre cuando cambias una regla? Apothem propaga
+   el cambio a cada entorno instalado al ejecutar `apothem update`. La
+   configuración mantenida a mano exige editar el archivo nativo de cada
+   herramienta por separado y mantenerlos alineados de memoria.
+3. **Verificación.** ¿Cómo sabes que cada entorno está correctamente
+   configurado? Apothem incluye `apothem verify --harness <name>` y
+   `apothem doctor`. La configuración mantenida a mano no tiene verificación
+   incorporada.
+
+## Matriz de funciones
+
+La matriz contrasta Apothem con las dos alternativas a las que los operadores
+recurren primero: mantener a mano la configuración nativa de cada entorno y
+gestionar esos archivos mediante un gestor de dotfiles de propósito general.
+
+| Capacidad | Config. mantenida a mano | Gestor de dotfiles | Apothem |
+| ---------- | ---------------------- | --------------- | ------- |
+| Una única fuente de verdad compartida | No (una copia por herramienta) | No (rastrea archivos, no un perfil) | Sí (un perfil) |
+| Renderiza formatos nativos del entorno | Manual | No | Sí (materializador por adaptador) |
+| Prevención de deriva entre entornos | Alineación manual | Solo sincronización de archivos | Sí (`apothem update`) |
+| Instalación/desinstalación por entorno | Manual | Parcial (enlace/copia) | Sí (`install` / `uninstall`) |
+| Verificación incorporada | Ninguna | Ninguna | Sí (`verify` / `doctor`) |
+| Traducción de formato por herramienta | Ninguna | Ninguna | Sí (`.mdc`, `.toml`, `.md` incrustado) |
+| Diecisiete entornos desde una sola entrada | No | No | Sí |
+
+## Páginas de comparación
+
+- [Apothem frente a otros frameworks de entornos](/docs/comparison/vs-other-harness-frameworks)
+- [vs antigravity puro](/docs/comparison/vs-raw-antigravity)
+- [vs claude-code puro](/docs/comparison/vs-raw-claude-code)
+- [vs codebuddy puro](/docs/comparison/vs-raw-codebuddy)
+- [vs codex puro](/docs/comparison/vs-raw-codex)
+- [vs cursor puro](/docs/comparison/vs-raw-cursor)
+- [vs gemini-cli puro](/docs/comparison/vs-raw-gemini-cli)
+- [vs github-copilot puro](/docs/comparison/vs-raw-github-copilot)
+- [vs glm puro](/docs/comparison/vs-raw-glm)
+- [vs hermes puro](/docs/comparison/vs-raw-hermes)
+- [vs kimi-code puro](/docs/comparison/vs-raw-kimi-code)
+- [vs kiro puro](/docs/comparison/vs-raw-kiro)
+- [vs open-claw puro](/docs/comparison/vs-raw-open-claw)
+- [vs opencode puro](/docs/comparison/vs-raw-opencode)
+- [vs qwen-code puro](/docs/comparison/vs-raw-qwen-code)
+- [vs trae puro](/docs/comparison/vs-raw-trae)
+- [vs windsurf puro](/docs/comparison/vs-raw-windsurf)
+- [vs zed puro](/docs/comparison/vs-raw-zed)
+
+Para el detalle de los adaptadores por entorno, consulta la sección de
+[adaptadores de entorno](/docs/harnesses).

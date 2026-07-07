@@ -1,0 +1,62 @@
+---
+title: "Écrire des règles"
+description: "Rédigez, délimitez la portée et maintenez les règles de comportement d'Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Les règles sont des fichiers Markdown dans `src/apothem/rules/` avec l'extension
+`.md`.
+
+## Frontmatter de règle
+
+```yaml
+---
+name: "..."
+description: "..."
+pathFilter: ""            # empty string for always-on; a glob for path-filtered
+alwaysApply: true         # true for always-on; false for path-filtered
+---
+```
+
+## Portées de règle
+
+| Portée | Quand elle s'applique |
+|-------|-------------|
+| `always-on` | Chaque session, chaque fichier |
+| `path-filtered` | Uniquement quand le fichier actif correspond à `path-filter` |
+| `operator-selected` | L'opérateur l'active explicitement dans settings.json |
+
+## Règle d'exemple
+
+```markdown
+---
+name: "python-conventions"
+description: "Python style conventions for this project"
+pathFilter: "**/*.py"
+alwaysApply: false
+---
+
+# Python conventions
+
+- Use type annotations on all public functions.
+- Maximum line length: 88 characters.
+- Prefer explicit over implicit.
+```
+
+## Appliquer les règles aux harnesses
+
+Après avoir écrit une règle, mettez à jour chaque adaptateur de harness
+installé. Exécutez `apothem harnesses list` pour voir l'ensemble installé, puis
+appelez update une fois par harness :
+
+```bash
+apothem update --harness claude-code
+apothem update --harness cursor
+```
+
+## Validation des règles
+
+```bash
+python -m apothem.conformity.gate --check frontmatter
+```

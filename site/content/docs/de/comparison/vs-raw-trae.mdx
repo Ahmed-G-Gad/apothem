@@ -1,0 +1,43 @@
+---
+title: "Apothem im Vergleich zur manuellen Trae-Konfiguration"
+description: "Die Regeln von Trae unter .trae/rules/ von Hand pflegen, verglichen mit dem Rendern aus dem geteilten Profil von Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Trae liest Regeln aus einem `.trae/rules/`-Verzeichnis, dessen Anbieter-Anker
+`project_rules.md` und `user_rules.md` sind. Der trae-Adapter von Apothem rendert eine
+dedizierte `apothem-rules.md`-Datei in diesem Verzeichnis aus dem geteilten Profil.
+Diese Seite stellt das Pflegen dieser Konfiguration von Hand der Verwaltung mit Apothem
+gegenüber.
+
+## Aufwandsvergleich
+
+| Aufgabe | Manuelle Konfiguration | Von Apothem verwaltet |
+| ---- | --------------- | --------------- |
+| Regeln schreiben | Jede Datei unter `.trae/rules/` von Hand schreiben | Aus dem geteilten Korpus gerendert |
+| Die Apothem-Oberfläche getrennt halten | Daran denken, `project_rules.md` nicht zu überladen | Der Adapter schreibt eine dedizierte `apothem-rules.md` |
+| Regeln mit anderen Umgebungen ausgerichtet halten | Manuell, pro Werkzeug | Automatisch bei `apothem update` |
+| Verifizieren, dass die Konfiguration korrekt ist | Manuelle Inspektion | `apothem verify --harness trae` |
+
+## Was Apothem verwaltet
+
+Der trae-Adapter rendert die geteilten Regeln in eine dedizierte
+`apothem-rules.md`-Datei unter `.trae/rules/` und lässt die vom Operator gehaltenen
+Anker `project_rules.md` und `user_rules.md` unberührt. Trae hat keinen
+PreToolUse-Hook, daher lebt die Schutzschranken-Absicht in der Regelprosa statt an
+einem Tool-Aufruf-Abfangpunkt. Jede Änderung an den geteilten Regeln rendert die Datei
+beim nächsten `apothem update` neu.
+
+## Migrationspfad
+
+1. Führen Sie `apothem profile init` aus, um das geteilte Profil zu erstellen, falls noch nicht geschehen.
+2. Verschieben Sie die Regeln aus Ihren vorhandenen `.trae/rules/`-Dateien in das geteilte Korpus.
+3. Führen Sie `apothem install --harness trae` aus, um die `apothem-rules.md`-Datei zu rendern.
+4. Führen Sie `apothem verify --harness trae` aus, um zu bestätigen, dass die Konfiguration angekommen ist.
+5. Verwenden Sie `apothem update --harness trae` für jede spätere Änderung.
+
+## Als Nächstes lesen
+
+- [Trae-Adapter-Referenz](/docs/harnesses/trae)
+- [Vergleichsüberblick](/docs/comparison)

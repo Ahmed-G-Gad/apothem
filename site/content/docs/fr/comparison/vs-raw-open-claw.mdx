@@ -1,0 +1,50 @@
+---
+title: "Apothem face à la configuration Open-Claw brute"
+description: "Maintenir à la main la configuration d'Open-Claw plutôt que la gérer via le profil partagé d'Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Open-Claw lit `~/.openclaw/openclaw.json`. Son `agents.defaults.skills` est une
+liste de noms autorisés (et non un chargeur de répertoires) et MCP est une surface
+de CLI, donc Apothem n'écrit aucune clé de configuration ; il installe des
+cohortes partagées de commandes et de skills sous `~/.openclaw/.apothem/support/skills/`
+comme matériel de support.
+
+## Statut
+
+**Aperçu.** L'adaptateur Open-Claw cible le fichier de configuration actuellement
+documenté et la surface supplémentaire de répertoire de skills. Les cohortes hors
+skills restent du matériel de support Apothem.
+
+## Comparaison d'effort
+
+| Tâche | Config à la main brute | Géré par Apothem |
+| ---- | --------------- | --------------- |
+| Écrire des skills réutilisables | Modifier à la main la config et les répertoires de skills | Écrire une fois dans le corpus partagé |
+| Garder les cohortes alignées avec les autres environnements | Manuel, par outil | Automatique lors d'`apothem update` |
+| Installer / supprimer la config | Manuel | `apothem install` / `apothem uninstall` |
+| Vérifier que la config est correcte | Inspection manuelle | `apothem verify --harness open-claw` |
+
+## Ce que gère Apothem
+
+L'adaptateur Open-Claw écrit `openclaw.json`, enveloppe les commandes en barre
+oblique d'Apothem en skills, copie les skills d'Apothem dans le répertoire de
+support référencé, et conserve les règles, modèles, agents et matériel de hooks
+sous le sous-arbre de support d'Apothem.
+
+## Chemin de migration
+
+1. Exécutez `apothem profile init` pour créer le profil partagé si ce n'est pas
+   déjà fait.
+2. Déplacez les skills ou les prompts de commandes réutilisables d'Open-Claw dans
+   le corpus partagé.
+3. Exécutez `apothem install --harness open-claw` pour générer la configuration
+   native et le répertoire de skills de support.
+4. Exécutez `apothem verify --harness open-claw` pour confirmer que la
+   configuration a bien été posée.
+
+## À lire ensuite
+
+- [Référence de l'adaptateur Open-Claw](/docs/harnesses/open-claw)
+- [Vue d'ensemble de la comparaison](/docs/comparison)

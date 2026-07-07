@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 220" role="img" aria-labelledby="title desc">
+  <title id="title">Apothem touch icon</title>
+  <desc id="desc">The Apothem mark on a solid dark tile, sized for home-screen and pinned-tab icons that composite over an opaque background.</desc>
+  <defs>
+    <linearGradient id="apo-emerald-at" x1="110" y1="110" x2="110" y2="40.7" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#059669"/>
+      <stop offset="1" stop-color="#6ee7b7"/>
+    </linearGradient>
+  </defs>
+  <rect width="220" height="220" fill="#0f172a"/>
+  <g transform="translate(110 110) scale(0.84) translate(-110 -110)">
+    <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="110" cy="110" r="69.3" stroke="#94a3b8" stroke-width="2.5" opacity="0.5"/>
+      <polygon points="190,110 150,179.3 70,179.3 30,110 70,40.7 150,40.7" stroke="#cbd5e1" stroke-width="10"/>
+      <g stroke="#64748b" stroke-width="4" opacity="0.85">
+        <line x1="110" y1="110" x2="170" y2="75.35"/>
+        <line x1="110" y1="110" x2="170" y2="144.65"/>
+        <line x1="110" y1="110" x2="110" y2="179.3"/>
+        <line x1="110" y1="110" x2="50" y2="144.65"/>
+        <line x1="110" y1="110" x2="50" y2="75.35"/>
+      </g>
+      <line x1="110" y1="110" x2="110" y2="40.7" stroke="url(#apo-emerald-at)" stroke-width="9"/>
+    </g>
+    <g fill="#64748b" opacity="0.85">
+      <circle cx="170" cy="75.35" r="4"/><circle cx="170" cy="144.65" r="4"/><circle cx="110" cy="179.3" r="4"/><circle cx="50" cy="144.65" r="4"/><circle cx="50" cy="75.35" r="4"/>
+    </g>
+    <circle cx="110" cy="110" r="8" fill="#cbd5e1"/>
+    <circle cx="110" cy="110" r="3.5" fill="#34d399"/>
+    <circle cx="110" cy="40.7" r="7" fill="#34d399"/>
+  </g>
+</svg>

@@ -1,0 +1,22 @@
+---
+title: "Runbooks"
+description: "Apothem runbooks — step-by-step operational procedures for releases, publisher setup, Pages enablement, recovery, and adapter authoring."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Operational procedures for maintainers. Each runbook is a sequenced,
+context-free procedure: it drives a known starting state to a verified end
+state, written so a competent contributor can follow it without prior context.
+
+## Pages
+
+| Page | Description |
+|------|-------------|
+| [Pages enablement](/docs/runbooks/pages-enablement) | Drive `apothem.ahmedgad.com` from a fresh GitHub Pages config to a `200 OK` HTTPS landing page. |
+| [Release cycle](/docs/runbooks/release-cycle) | Drive a `vX.Y.Z` release from a clean working tree to the verified GitHub Release and npm surfaces. |
+| [Publisher account setup](/docs/runbooks/publisher-account-setup) | Configure the npmjs.com trusted publisher for `@ahmed-g-gad/apothem` and the GitHub-side release prerequisites. |
+| [Release recovery](/docs/runbooks/release-recovery) | Restore `ahmed-g-gad/apothem` to a working state when the release cutover sequence fails mid-flight. |
+| [New harness adapter authoring](/docs/runbooks/new-harness-adapter-authoring) | Author and publish a new harness adapter for first-party inclusion. |
+| [Deployment checklist](/docs/runbooks/deployment-checklist) | Run the pre-flight verification checklist before deploying or sharing the Apothem ecosystem. |
+| [Solo-maintainer merge ceremony](/docs/runbooks/solo-maintainer-merge) | Self-merge a pull request when branch-protection and `enforce_admins` rules would otherwise deadlock a solo maintainer. |
+| [Cross-machine sync checklist](/docs/runbooks/cross-machine-sync-checklist) | Verify the Claude Code adapter installs, validates, and uninstalls correctly on a fresh host, with full portability checks. |

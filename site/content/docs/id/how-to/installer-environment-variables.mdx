@@ -1,0 +1,117 @@
+---
+title: "Variabel lingkungan pemasang"
+description: "Kendalikan pemasang skrip (tujuan, sumber, perkakas, profil, verifikasi) dengan variabel lingkungan."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Tujuan: jalankan `install.sh` / `install.ps1` tanpa menyunting skrip dengan menyetel
+variabel lingkungan sebelum Anda menjalankannya.
+
+## Prasyarat
+
+- Shell POSIX (`bash`) atau PowerShell 5.1+.
+- Variabel dibaca sekali di bagian atas pemasang, jadi setel di
+  command yang sama (atau ekspor lebih dulu), lalu jalankan pemasang.
+
+## Variabel pemasang
+
+| Variabel | Mengendalikan | Default |
+| --- | --- | --- |
+| `APOTHEM_HOME` | Tujuan pemasangan untuk pohon-sumber yang diklon | `$HOME/.apothem` |
+| `APOTHEM_REPO` | Remote Git untuk diklon | `https://github.com/ahmed-g-gad/apothem` |
+| `APOTHEM_REF` | Ref Git untuk di-checkout; jika tidak disetel akan meresolusi tag `vMAJOR.MINOR.PATCH` bertanda tangan terbaru, nilai tag mematoknya, `main` memilih cabang yang bergerak | tidak disetel (tag bertanda tangan terbaru) |
+| `APOTHEM_ALLOW_UNVERIFIED` | Menurunkan kegagalan verifikasi-tanda-tangan-tag dari pembatalan fatal menjadi peringatan ketika disetel `1` | `0` (verifikasi, gagal-tertutup) |
+| `APOTHEM_SOURCE` | Pohon-sumber lokal eksplisit untuk dipakai ketimbang mengklon | tidak disetel (klon) |
+| `APOTHEM_HARNESS` | Perkakas untuk dipasang | `claude-code` |
+| `APOTHEM_PROFILE` | Jalur ke YAML profil bersama | `$HOME/.config/apothem/profile.yaml` |
+| `APOTHEM_SKIP_VERIFY` | Melewati langkah verifikasi pasca-pemasangan ketika disetel `1` | `0` (verifikasi berjalan) |
+| `APOTHEM_AUTO_INSTALL_DEPS` | Memasang prasyarat `click` / `rich` yang hilang secara otomatis, tanpa bertanya, bila disetel `1` | `0` (bertanya, atau menolak dalam pipa non-interaktif) |
+| `APOTHEM_BIN_DIR` | Direktori untuk shim perintah `apothem` yang ditempatkan | `$HOME/.local/bin` (POSIX); `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) |
+
+`APOTHEM_SOURCE` lebih diutamakan ketimbang klon: ketika disetel ke checkout yang
+berisi `src/apothem`, pemasang menggunakannya langsung, tidak pernah menyentuh
+`APOTHEM_REPO` / `APOTHEM_REF`, dan melewati resolusi tag serta verifikasi
+tanda tangan (tidak ada yang diambil untuk diverifikasi).
+
+## Model kepercayaan
+
+Tanpa `APOTHEM_REF` yang disetel, pemasang meresolusi tag rilis bertanda tangan
+terbaru dan memverifikasi tanda tangannya dengan `git verify-tag` sebelum mewujudkan
+konfigurasi apa pun; tag yang tak-bertanda-tangan atau dirusak membatalkan pemasangan. Patok rilis
+yang dikenal dengan `APOTHEM_REF=<tag>` (juga diverifikasi; tag dari
+[halaman rilis](https://github.com/ahmed-g-gad/apothem/releases)), pilih
+cabang yang bergerak dengan `APOTHEM_REF=main` (tidak diverifikasi), atau setel
+`APOTHEM_ALLOW_UNVERIFIED=1` untuk melanjutkan melewati kegagalan verifikasi dengan
+peringatan (penggunaan air-gapped, lokal, atau pra-rilis-bertanda-tangan).
+
+```bash title="Pemasangan dipatok, terverifikasi"
+APOTHEM_REF=vMAJOR.MINOR.PATCH bash install.sh
+```
+
+```bash title="Lanjutkan tanpa verifikasi (sementara / air-gapped)"
+APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
+```
+
+## Langkah-langkah (POSIX bash)
+
+1. Pasang perkakas non-default:
+
+   ```bash
+   APOTHEM_HARNESS=cursor bash install.sh
+   ```
+
+2. Patok ref sumber dan tujuan pemasangan:
+
+   ```bash
+   APOTHEM_REF=main APOTHEM_HOME=/opt/apothem bash install.sh
+   ```
+
+3. Gunakan checkout lokal dan profil khusus, lewati verifikasi:
+
+   ```bash
+   APOTHEM_SOURCE=/work/apothem \
+   APOTHEM_PROFILE=/work/profile.yaml \
+   APOTHEM_SKIP_VERIFY=1 \
+   bash install.sh
+   ```
+
+## Langkah-langkah (PowerShell)
+
+Setel setiap variabel pada `$env:` sebelum menjalankan pemasang:
+
+```powershell
+$env:APOTHEM_HARNESS = 'cursor'
+pwsh -NoProfile -File install.ps1
+```
+
+```powershell
+$env:APOTHEM_REF = 'main'
+$env:APOTHEM_HOME = 'C:\opt\apothem'
+pwsh -NoProfile -File install.ps1
+```
+
+```powershell
+$env:APOTHEM_SOURCE = 'C:\work\apothem'
+$env:APOTHEM_PROFILE = 'C:\work\profile.yaml'
+$env:APOTHEM_SKIP_VERIFY = '1'
+pwsh -NoProfile -File install.ps1
+```
+
+## Verifikasi
+
+Pemasang mencetak `✓ Harness <name> installed`, lalu (kecuali
+`APOTHEM_SKIP_VERIFY=1`) `✓ verify passed`. Konfirmasi secara independen:
+
+```bash
+apothem verify --harness cursor
+```
+
+Ketika profil belum ada, pemasang membuat satu dari contoh
+dan keluar lebih awal — sunting `$APOTHEM_PROFILE`, lalu jalankan ulang.
+
+## Terkait
+
+- [Memasang](/docs/install) mencakup pemasangan jaringan satu-tembakan.
+- [Menambah perkakas](/docs/how-to/adding-a-harness) mencakup penambahan perkakas
+  melalui CLI setelah pemasangan pertama.

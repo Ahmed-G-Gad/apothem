@@ -1,0 +1,45 @@
+---
+title: "Apothem बनाम कच्चा GitHub Copilot कॉन्फ़िगरेशन"
+description: "GitHub Copilot की copilot-instructions.md को हाथ से अनुरक्षित करने बनाम उसे Apothem की साझा प्रोफ़ाइल से रेंडर करने की तुलना।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+GitHub Copilot अपने निर्देश `.github/copilot-instructions.md` से पढ़ता है।
+Apothem का github-copilot अडैप्टर उस फ़ाइल को साझा प्रोफ़ाइल से रेंडर करता है। यह
+पृष्ठ उस कॉन्फ़िगरेशन को हाथ से अनुरक्षित करने की तुलना Apothem से उसे प्रबंधित
+करने से करता है।
+
+## प्रयास की तुलना
+
+| कार्य | कच्चा हस्त-कॉन्फ़िगरेशन | Apothem-प्रबंधित |
+| ---- | --------------- | --------------- |
+| निर्देश लिखना | `.github/copilot-instructions.md` को हाथ से संपादित करें | रेंडर: साझा नियम फ़ाइल में अंतःस्थापित |
+| निर्देशों को अन्य हार्नेसों के साथ संरेखित रखना | मैनुअल, प्रति टूल | `apothem update` पर स्वचालित |
+| कॉन्फ़िगरेशन स्थापित / हटाना | फ़ाइल को हाथ से लिखें और हटाएँ | `apothem install` / `apothem uninstall` |
+| कॉन्फ़िगरेशन सही है इसकी पुष्टि | मैनुअल निरीक्षण | `apothem verify --harness github-copilot` |
+
+## Apothem क्या प्रबंधित करता है
+
+github-copilot अडैप्टर साझा नियमों को `.github/copilot-instructions.md` में
+अंतःस्थापित करता है। Copilot एक IDE एक्सटेंशन के रूप में काम करता है और कोई
+टूल-कॉल हुक उजागर नहीं करता, इसलिए गार्डरेल का अभिप्राय पूरी तरह रेंडर किए गए
+निर्देशों में वहन किया जाता है। साझा नियमों में हर बदलाव अगले `apothem update` पर
+फ़ाइल को फिर से रेंडर करता है।
+
+## माइग्रेशन पथ
+
+1. यदि आपने अभी तक साझा प्रोफ़ाइल नहीं बनाई है, तो `apothem profile init` चलाएँ।
+2. अपनी मौजूदा `.github/copilot-instructions.md` की सामग्री को साझा कॉर्पस में ले
+   जाएँ।
+3. निर्देश फ़ाइल को रेंडर करने के लिए
+   `apothem install --harness github-copilot` चलाएँ।
+4. कॉन्फ़िगरेशन स्थापित हुआ इसकी पुष्टि के लिए
+   `apothem verify --harness github-copilot` चलाएँ।
+5. हर बाद के बदलाव के लिए `apothem update --harness github-copilot` का उपयोग
+   करें।
+
+## आगे पढ़ें
+
+- [GitHub Copilot अडैप्टर संदर्भ](/docs/harnesses/github-copilot)
+- [तुलना अवलोकन](/docs/comparison)

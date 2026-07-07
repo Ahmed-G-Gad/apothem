@@ -1,0 +1,127 @@
+---
+title: "/plan-design"
+description: "/plan-design — Produces a comprehensive architectural-design artifact at `_inputs/design.md`."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Role:** Architect
+**Pipeline position:** conditional post-review, pre-execute
+
+Produces the architectural-design artifact at `_inputs/design.md` when a plan
+suite has architecture-bearing work. It is intentionally conditional: a prose,
+documentation, metadata, or narrow fixture suite proceeds from `/plan-review`
+directly to `/plan-execute`; a suite that changes components, interfaces,
+schemas, data flow, adapters, release topology, security boundaries, or runtime
+behavior passes through `/plan-design` first.
+
+## Canonical invocation
+
+```bash
+/plan-design path/to/plan-suite/
+```
+
+With arguments:
+
+```bash
+/plan-design [path/to/plan-suite/] [--refine-existing] [--dry-run]
+```
+
+## Inputs
+
+Reviewed plan suite + `_spec/spec.md` + `_inputs/handoff-manifest.yml` + PASS
+review scorecards from `/plan-review`.
+
+## Outputs
+
+`_inputs/design.md` plus an augmented `_inputs/handoff-manifest.yml` carrying
+the design artifact path, design-gate result, seven-axis coverage result, and
+Bidirectional Binding Matrix summary.
+
+## Applicability gate
+
+Run `/plan-design` when at least one downstream phase declares or implies:
+
+- Source-layout, package-boundary, adapter-boundary, or module-boundary changes.
+- Public interfaces, protocols, schemas, configuration contracts, or CLI
+  behavior.
+- Cross-component data flow, lifecycle ordering, state transitions, or
+  dependency edges.
+- Security, performance, concurrency, observability, deployment, release, or
+  supply-chain architecture.
+- A later `/architecture-review` pass that must trace implementation back to a
+  design artifact.
+
+Skip `/plan-design` when the suite is limited to copy edits, generated
+inventory refreshes, narrow fixture updates, one-off documentation fixes, or
+other work whose implementation can be verified without an architectural trace
+surface. The skip path is explicit: `/plan-review` records the non-architecture
+classification, then `/plan-execute` continues from the reviewed plan suite.
+
+## Downstream
+
+`/plan-execute` consumes the design artifact for architecture-bearing phases.
+`/architecture-review` consumes the same artifact during the Audit Review Sequence.
+If `_inputs/design.md` is absent for architecture-bearing work, the architecture
+review stops and routes the suite back through `/plan-design`.
+
+## Workflow phases
+
+The command follows six architecture-specific transformation phases:
+
+1. **Input ingest** — Read the reviewed suite, scorecards, phase outputs, and
+   handoff manifest; block on missing or failing review evidence at SHARED+.
+2. **Architectural decomposition** — Walk Architecture, Concurrency,
+   Performance, Security, Testing, Tooling, and Observability; identify
+   components, edges, and open architectural questions.
+3. **Component-interface design** — Define public interfaces, protocol
+   contracts, schemas, invariants, failure modes, and dependency-inversion
+   boundaries.
+4. **Cross-component binding ratification** — Close every upstream,
+   downstream, sibling, criterion, and anchor edge; emit a Bidirectional Binding
+   Matrix when the component graph crosses the matrix threshold.
+5. **Design artifact emission** — Write `_inputs/design.md` with component
+   sections, diagrams, decision records, validation outcome, and bindings.
+6. **Design validation gate** — Run the fifteen-bar pre-emission gate; update
+   `_inputs/handoff-manifest.yml` only after the design passes.
+
+## Design artifact shape
+
+The emitted `_inputs/design.md` contains:
+
+- Executive summary with component count and seven-axis coverage.
+- One section per principal component, ordered from inner domain surfaces to
+  outer adapters and operator surfaces.
+- Mermaid architecture, sequence, state, or dependency diagrams where structure
+  would otherwise be ambiguous.
+- Settled architectural decision records with alternatives, trade-offs, and
+  reversibility notes.
+- Validation-gate outcome and Bidirectional Binding Matrix when applicable.
+- The artifact's own five-direction bindings to upstream and downstream
+  planning surfaces.
+
+## Failure modes
+
+| Symptom | Cause | Recovery |
+|---------|-------|----------|
+| Prerequisite incomplete | Dependent phase not finished | Complete upstream phase first |
+| Quality gate FAIL | Output does not meet standards | Fix the output and re-run |
+| Missing reviewed suite | Plan suite or review scorecards absent | Run `/plan-generate`, then `/plan-review` |
+| Non-architecture suite | No phase needs an architectural trace surface | Record the skip and continue to `/plan-execute` |
+| Architecture review blocks | `_inputs/design.md` absent for architecture-bearing implementation | Run `/plan-design`, then re-run `/architecture-review` |
+
+## Examples
+
+```bash
+# Dry-run to preview applicability, component count, and open questions
+/plan-design --dry-run
+
+# Emit design for a named architecture-bearing suite
+/plan-design path/to/plan-suite/
+```
+
+## Cross-references
+
+- [Pipeline overview](/docs/pipeline)
+- [/plan-execute](/docs/pipeline/plan-execute)
+- [/architecture-review](/docs/pipeline/architecture-review)
+- [Master Plan Suite Template](/docs/reference/commands)

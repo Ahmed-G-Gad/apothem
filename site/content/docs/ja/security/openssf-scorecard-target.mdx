@@ -1,0 +1,50 @@
+---
+title: "OpenSSF Scorecard の姿勢"
+description: "Apothem の OpenSSF Scorecard 目標と、スコアを改善し続けるために用いる証拠面。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem は OpenSSF Scorecard の最高スコアを目標としつつ、新しい単独メンテナーのリポジトリから Scorecard が推論できること・できないことについて公開ファサードを誠実に保ちます。本ドキュメントは、各チェック、それを裏づける証拠面、そして姿勢を最新に保つコントロールを列挙します。
+
+ライブスコアは [Scorecard ビューア](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem) にあります。バッジは [README ヘッダー](https://github.com/ahmed-g-gad/apothem/blob/main/README.md) にあります。
+
+## チェックごとの証拠マトリクス
+
+| チェック | 証拠面 | 備考 |
+|---|---|---|
+| **Binary-Artifacts** | [binary-artifacts-sweep.md](/docs/security/binary-artifacts-sweep) | ソースに追跡される実行可能バイナリはゼロ。生成された配布アーカイブは `dist/` に留まります。 |
+| **Branch-Protection** | [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) | `main` は公開リリース昇格の前に保護されます。新しいリリースコミットが着地した後は、強制プッシュと削除がブロックされます。 |
+| **CI-Tests** | [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) | Pytest マトリクス、ruff、mypy、CodeQL、Trivy、ドキュメントビルド、パッケージングのスモークチェック。 |
+| **CII-Best-Practices** | OpenSSF Best Practices 登録 | OpenSSF Best Practices サイトでメンテナー側の登録が必要です。これはリポジトリのファイルだけでは完了できません。 |
+| **Code-Review** | ブランチ保護 + CODEOWNERS | 今後のプルリクエストに対して強制されます。レビュー済み PR が存在するまで、Scorecard の履歴は限定的なままです。 |
+| **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | 新しい単独メンテナーのプロジェクトは、複数組織にわたる貢献履歴を捏造できません。これは貢献者が参加するにつれて自然に改善します。 |
+| **Dangerous-Workflow** | ワークフロー監査 | `pull_request_target` なし。Actions は SHA で固定され、明示的な権限でスコープが限定されています。 |
+| **Dependency-Update-Tool** | [`renovate.json`](https://github.com/ahmed-g-gad/apothem/blob/main/renovate.json) | Renovate は GitHub Actions、Python マニフェスト、ハッシュロックされたリリース要件、npm 面をカバーしつつ、グループ化された依存関係 PR を利用可能に保ちます。 |
+| **Fuzzing** | [`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | Hypothesis のプロパティテストがパーサーと frontmatter の不変条件を検証します。上流の Scorecard は Hypothesis をファジング統合として認めない場合があります。 |
+| **License** | [LICENSE](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) | リポジトリルートの MIT ライセンス。 |
+| **Maintained** | Git 履歴 | 現在のリリースコミットとアクティブなワークフローの頻度がメンテナンスを示します。非常に新しいリポジトリは経過期間の警告を受ける場合があります。 |
+| **Packaging** | [`.github/workflows/`](https://github.com/ahmed-g-gad/apothem/tree/main/.github/workflows) | sdist、wheel、SBOM、SLSA 来歴、Sigstore 署名を生成する Release、Pages、npmjs.com のワークフロー。 |
+| **Pinned-Dependencies** | ワークフロー監査 + ハッシュロックされた要件 | Actions は SHA で固定。リリースツールのインストールは `--require-hashes` を使用。ワークフロー専用の pip ツールは正確なピンを使用します。 |
+| **SAST** | [`.github/workflows/codeql.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/codeql.yml) | Python と Actions にわたる CodeQL の `security-extended` クエリ。 |
+| **Security-Policy** | [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) | 協調的開示ポリシー、サポート対象バージョンマトリクス、対応タイムライン。 |
+| **Signed-Releases** | [`.github/workflows/release.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/release.yml) | Sigstore のキーレス署名、SLSA 来歴、SBOM、チェックサム、リリース成果物。 |
+| **Token-Permissions** | ワークフロー監査 | ワークフローはデフォルトで読み取り専用権限。書き込みスコープはジョブローカルで、デプロイ／パッケージング操作に紐づいています。 |
+| **Vulnerabilities** | [`.github/workflows/pip-audit.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/pip-audit.yml) + [`.github/workflows/dependency-review.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/dependency-review.yml) | 毎週の脆弱性スキャンと、SARIF アップロード付きの CI スキャン。dependency-review ゲートは、脆弱なまたは許可されないライセンスの依存関係を導入するプルリクエストをブロックします。 |
+
+## スコアの解釈
+
+Scorecard は各チェックを 0〜10 のスケールで採点し、総合スコアは加重平均です。リポジトリ履歴、サードパーティ登録、または貢献者の多様性に依存するコントロールは、過大主張するのではなく明示的に追跡します。ファイル制御のチェックでドリフトが生じると、即座の是正がトリガーされます。
+
+## 更新頻度
+
+- **プッシュごと:** Scorecard ワークフローは `main` への各プッシュで再実行されます。
+- **毎週:** 月曜 UTC 02:30 —— 上流の採点方法論の変化 + 既存の固定済み依存関係に対して新たに開示された脆弱性を捕捉します。
+- **リリースごと:** 公開昇格の前に、メンテナーがライブの Scorecard ビューア面を検証し、プラットフォーム状態の制約を記録します。
+
+## 参考
+
+- [OpenSSF Scorecard](https://github.com/ossf/scorecard) —— 上流プロジェクト
+- [Scorecard チェックリファレンス](https://github.com/ossf/scorecard/blob/main/docs/checks.md) —— チェックごとのセマンティクス
+- [`ossf/scorecard-action`](https://github.com/ossf/scorecard-action) —— GitHub Actions ラッパー
+- [SLSA フレームワーク](https://slsa.dev/) —— サプライチェーンレベル(apothem は SLSA-3 で出荷)

@@ -1,0 +1,43 @@
+---
+title: "Large-codebase onboarding"
+description: "Large-codebase setup checklist for Apothem: context hierarchy, skills, hooks, symbol search, and review cadence."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Use this page when a repository is too broad for one prompt, full-tree scans
+are costly, or each service has its own build and test commands.
+
+## Start here
+
+1. Install or update the target harness adapter, then run `apothem verify --harness <name>`.
+2. Keep the root context surface short: project map, critical commands, and pointers only.
+3. Put local conventions beside the code when the target harness supports layered context.
+4. Move specialized procedures into `skills/`, `rules/`, or command docs with path filters.
+5. Use read-only delegated workers for broad exploration, then bring back a compact finding set before editing.
+6. Add cache, generated, build, and vendor exclusions to the harness ignore surface where documented.
+7. Use LSP or symbol tooling when available; otherwise use `rg`, narrow paths, and explicit file scopes.
+8. Run the narrowest lint or test command that covers touched code; run the full gate before release.
+
+## Practice map
+
+| Practice | Apothem binding |
+|----------|-----------------|
+| Lean always-loaded context | `src/apothem/rules/token-budget-discipline.md` keeps always-on rules short; root context files should carry only pointers and critical gotchas. |
+| On-demand expertise | `src/apothem/skills/README.md` defines the `SKILL.md` convention; path-filtered companion rules keep narrow procedures out of baseline context. |
+| Layered context | Each harness row declares `layered_context_surface` in `src/apothem/harnesses/<name>/capabilities.yml`; `STANDARD-CONVENTION-PIN.md` remains the authority for the row. |
+| Isolated exploration | The [delegated-worker guide](/docs/usage/using-agents) binds separate context windows and compact return contracts. |
+| Symbol navigation | `lsp_symbol_navigation` is a tracked capability cell. Rows stay `tracked-gap` until a vendor-supported plugin or tool surface is pinned. |
+| Ignore surface | `context_ignore_surface` records the documented exclusion mechanism. The Claude Code adapter projects generated and cache exclusions through `settings.json` `permissions.deny`. |
+| Hook learning | Pass-class hooks stay silent. Recurring findings route through the artifact-evolution cycle in `src/apothem/rules/persistent-conventions-vigilance.md`. |
+| Periodic review | Run a configuration review every three to six months, and after major harness or model changes, using the `*-maintenance` plan cadence. |
+
+## Maintenance notes
+
+The machine-readable harness capability row carries four large-codebase cells:
+`context_ignore_surface`, `layered_context_surface`, `lsp_symbol_navigation`,
+and `hook_learning_capture`. Keep those cells synchronized with the sibling
+`STANDARD-CONVENTION-PIN.md` whenever a vendor surface changes.
+
+Source references:
+[large-codebase practices](https://claude.com/blog/how-claude-code-works-in-large-codebases-best-practices-and-where-to-start),
+[settings permissions](https://docs.anthropic.com/en/docs/claude-code/settings).

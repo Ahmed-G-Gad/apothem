@@ -1,0 +1,132 @@
+---
+title: "Schema des gemeinsamen Profils"
+description: "Schema für das YAML des gemeinsamen Apothem-Profils."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Das gemeinsame Apothem-Profil ist eine YAML-Datei unter
+`~/.config/apothem/profile.yaml` oder unter dem mit `--profile PATH`
+angegebenen Pfad. Es ist die semantische Quelle der Wahrheit für Identität,
+Präferenzen, gemeinsame Regeln, Harness-spezifische Überschreibungen und
+Harness-Ausschlüsse. Adapter leiten harness-native Dateien aus diesem Profil und
+den gepackten Apothem-Payload-Kohorten ab.
+
+Das Laufzeitmodell ist `src/apothem/lib/profile.py`; das JSON Schema ist
+`src/apothem/schemas/profile.schema.json`.
+
+## Minimal gültiges Profil
+
+Das einzige erforderliche Feld ist `identity.name`:
+
+```yaml
+identity:
+  name: "Example User"
+```
+
+## Gerüst, das `profile init` schreibt
+
+`apothem profile init` schreibt ein etwas vollständigeres Gerüst —
+Platzhalter-Identitätsfelder, die der Operator personalisieren soll — und
+validiert es, bevor es Erfolg meldet:
+
+```yaml
+identity:
+  name: "Example User"
+  email: "dev@example.invalid"
+  github: "example-user"
+```
+
+Der Befehl gibt einen Personalisierungshinweis aus, der diese Felder benennt.
+Erreicht eine immer noch als Platzhalter belassene Identität später `install`
+oder `update`, geben diese Befehle einen Hinweis aus und fahren fort — Apothem
+erfindet nie eine Platzhalter-Identität und blockiert auch nicht deswegen.
+
+## Kanonische Felder
+
+| Feld | Erforderlich | Standard | Hinweise |
+| --- | --- | --- | --- |
+| `identity.name` | Ja | keiner | Nicht leerer Anzeigename des Operators. |
+| `identity.role` | Nein | `senior software engineer` | Gemeinsamer Rollentext. |
+| `identity.email` | Nein | weggelassen | Muss, falls vorhanden, im E-Mail-Format sein. |
+| `identity.website` | Nein | weggelassen | Muss, falls vorhanden, im URI-Format sein. |
+| `identity.github` | Nein | weggelassen | GitHub-Benutzername ohne `@`. |
+| `preferences.language` | Nein | `python` | Auf Kleinbuchstaben normalisiert. |
+| `preferences.style` | Nein | `concise` | Eines von `concise`, `verbose`, `balanced`. |
+| `preferences.formatter` | Nein | weggelassen | Nicht leerer String, falls vorhanden. |
+| `preferences.test_framework` | Nein | weggelassen | Nicht leerer String, falls vorhanden. |
+| `rules` | Nein | `[]` | Eindeutige nicht leere Strings; Zeilenumbrüche werden auf LF normalisiert. |
+| `seriousness` | Nein | `PERSONAL_USE` | Eines von `EXPLORING`, `PERSONAL_USE`, `SHARED`, `PUBLIC_LAUNCH`. |
+| `harnesses` | Nein | `{}` | Harness-spezifische Überschreibungen, nach unterstützter Harness-ID indiziert. |
+| `exclude_harnesses` | Nein | `[]` | Unterstützte Harness-IDs, die von `--harness all` ausgeschlossen sind. |
+
+## Harness-Schlüssel
+
+Das Schema akzeptiert genau diese siebzehn Harness-IDs:
+
+```text
+antigravity
+claude-code
+codebuddy
+codex
+cursor
+gemini-cli
+github-copilot
+glm
+hermes
+kimi-code
+kiro
+open-claw
+opencode
+qwen-code
+trae
+windsurf
+zed
+```
+
+Unbekannte Felder auf oberster Ebene, unbekannte Harness-Schlüssel, falsche
+Werttypen, doppelte Ausschlüsse und fehlerhafte Identitätsfelder schlagen fehl,
+bevor install oder update schreibt. Erwartete Fehler enthalten ein Feld, einen
+Grund, eine Behebung, einen redigierten sicheren Wert, wo nützlich, sowie
+`files_written: []` bei Validierungsfehlern.
+
+## Vom Profilfeld zur nativen Datei
+
+Das Profil ist das *Was*; die Adapter sind das *Wie*. Den durchgängigen Ablauf
+zu verstehen erklärt, warum eine einzige Bearbeitung einer einzigen YAML-Datei
+jeden installierten Harness neu formen kann.
+
+Ein Profilfeld trägt semantische Absicht, kein wörtliches Konfigurationsschnipsel.
+`identity.name` ist „wer der Operator ist", keine Zeile JSON. Die gepackten
+Payload-Kohorten (`commands`, `rules`, `skills`, `hooks`, `templates`,
+`statuslines`, `output-styles`, `agents`) tragen Verhaltensinhalte in Apothems
+eigenem neutralem Format. Weder das Feld noch die Kohorte weiß, wie die
+Konfiguration irgendeines Harness aussieht — dieses Wissen gehört allein den
+Adaptern.
+
+Wenn du `apothem update` ausführst, ist der Ablauf:
+
+1. **Laden und validieren** des Profils gegen das JSON Schema. Nichts wird
+   geschrieben, bis das gesamte Profil gültig ist, sodass ein Tippfehler nie zur
+   Hälfte installiert.
+2. **Adapter auflösen** für den ausgewählten Harness (oder `all`, abzüglich
+   etwaiger `exclude_harnesses`) über die zentrale Registry.
+3. **Materialisieren** — jeder Adapter liest dasselbe Profil und dieselben
+   Kohorten und übersetzt sie dann in den Dialekt seines Harness. Ein Feld wie
+   `preferences.style` wird in einem Harness zu einem nativen Konfigurationswert
+   und in einem anderen zu gerendertem Anweisungskontext; eine Regel in
+   `rules[]` wird zu einer `.mdc`-Datei für Cursor, zu einem Abschnitt von
+   repository-weiten Anweisungen für Copilot oder zu einem Support-Baum-Eintrag,
+   wo der Harness keine native Regeloberfläche hat.
+4. **Schreiben** der nativen Dateien — eine gerenderte Einzelkonfiguration, eine
+   konvertierte Kohorte oder ein Support-Unterbaum, der vom nativen Anker des
+   Harness referenziert wird.
+
+Dasselbe Profil treibt jedes Harness an, sodass die Materialisierungen sich
+nicht über die Absicht uneinig sein können. Fähigkeitszellen, die der Harness
+nicht unterstützt (oder die noch ausstehend zu entdecken sind), tauchen vor
+jedem Schreiben als strukturierte Warnungen auf, statt in eine
+Anbieteroberfläche erfunden zu werden, die es nicht gibt. Das macht die
+Eine-Bearbeitung-viele-Harnesses-Garantie real: Das Profil wird einmal
+bearbeitet, und jeder Adapter leitet seine nativen Dateien aus dieser einzigen
+Quelle neu ab.

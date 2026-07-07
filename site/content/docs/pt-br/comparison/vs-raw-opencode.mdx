@@ -1,0 +1,42 @@
+---
+title: "Apothem versus a configuração manual do OpenCode"
+description: "Manter à mão a configuração, os comandos, as skills e os agentes do OpenCode versus renderizá-los a partir do perfil compartilhado do Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+O OpenCode lê uma configuração JSON além de diretórios nativos de descoberta de
+comandos, skills e agentes. O Apothem renderiza a configuração JSON com uma lista de
+arquivos `instructions` e converte os corpora compartilhados em diretórios nativos
+onde o OpenCode os suporta.
+
+## Comparação de esforço
+
+| Tarefa | Configuração manual | Gerenciada pelo Apothem |
+| ---- | --------------- | --------------- |
+| Escrever regras | Editar à mão a configuração e os prompts de suporte | Renderizadas ou referenciadas a partir do perfil compartilhado |
+| Escrever comandos, skills, agentes | Manter cada diretório do OpenCode à mão | Convertidos a partir dos corpora compartilhados do Apothem |
+| Manter os corpora alinhados com outros ambientes | Manual, por ferramenta | Automático no `apothem update` |
+| Instalar / remover a superfície | Manual | `apothem install` / `apothem uninstall` |
+| Verificar se a configuração está correta | Inspeção manual | `apothem verify --harness opencode` |
+
+## O que o Apothem gerencia
+
+O adaptador opencode escreve `opencode.json`, converte os comandos de barra do Apothem
+em arquivos de comando Markdown do OpenCode, copia as skills para a superfície de
+skills nativa e adapta as definições auxiliares como subagentes Markdown. As regras,
+os templates e os prompts de hook permanecem sob a árvore de suporte do Apothem; as
+regras são referenciadas a partir da lista nativa `instructions`.
+
+## Caminho de migração
+
+1. Execute `apothem profile init` para criar o perfil compartilhado se você ainda não tiver.
+2. Mova as regras, os comandos, as skills e os agentes do OpenCode existentes para o corpus compartilhado.
+3. Execute `apothem install --harness opencode` para renderizar a configuração nativa e os diretórios de descoberta.
+4. Execute `apothem verify --harness opencode` para confirmar que a configuração foi instalada.
+5. Use `apothem update --harness opencode` para cada mudança posterior.
+
+## Leia a seguir
+
+- [Referência do adaptador OpenCode](/docs/harnesses/opencode)
+- [Visão geral da comparação](/docs/comparison)

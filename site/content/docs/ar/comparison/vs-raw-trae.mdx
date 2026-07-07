@@ -1,0 +1,43 @@
+---
+title: "Apothem مقابل تهيئة Trae اليدوية"
+description: "صيانة قواعد Trae ضمن .trae/rules/ يدويًّا، مقابل تصييرها من ملف التعريف المشترك لـ Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+يقرأ <bdi>Trae</bdi> القواعد من دليل <bdi>`.trae/rules/`</bdi> الذي مرساتاه من المورّد هما
+<bdi>`project_rules.md`</bdi> و<bdi>`user_rules.md`</bdi>. ويصيّر محوِّل <bdi>trae</bdi>
+في <bdi>Apothem</bdi> ملفّ <bdi>`apothem-rules.md`</bdi> مخصّصًا في ذلك الدليل من ملف
+التعريف المشترك. وتقابل هذه الصفحة بين صيانة تلك التهيئة يدويًّا وإدارتها بـ
+<bdi>Apothem</bdi>.
+
+## مقارنة الجهد
+
+| المهمة | تهيئة يدوية | يديرها Apothem |
+| ---- | --------------- | --------------- |
+| كتابة القواعد | كتابة كلّ ملفّ ضمن <bdi>`.trae/rules/`</bdi> يدويًّا | مُصيَّرة من المتن المشترك |
+| الحفاظ على فصل سطح Apothem | تذكُّر عدم إثقال <bdi>`project_rules.md`</bdi> | يكتب المحوِّل ملفّ <bdi>`apothem-rules.md`</bdi> مخصّصًا |
+| إبقاء القواعد متوائمة مع البيئات الأخرى | يدويًّا، لكل أداة | تلقائيًّا عند <bdi>`apothem update`</bdi> |
+| التحقّق من صحّة التهيئة | فحص يدوي | <bdi>`apothem verify --harness trae`</bdi> |
+
+## ما الذي يديره Apothem
+
+يصيّر محوِّل <bdi>trae</bdi> القواعد المشتركة في ملفّ <bdi>`apothem-rules.md`</bdi> مخصّص
+ضمن <bdi>`.trae/rules/`</bdi>، ويترك مرساتَي <bdi>`project_rules.md`</bdi> و
+<bdi>`user_rules.md`</bdi> المملوكتين للمشغّل دون مساس. ولا يمتلك <bdi>Trae</bdi> خطّاف
+<bdi>PreToolUse</bdi>، لذا يسكن مقصد المتراس في نصّ القواعد بدلًا من نقطة اعتراض لاستدعاء
+الأداة. وكلّ تغيير في القواعد المشتركة يعيد تصيير الملفّ عند <bdi>`apothem update`</bdi>
+التالي.
+
+## مسار الترحيل
+
+1. شغّل <bdi>`apothem profile init`</bdi> لإنشاء ملف التعريف المشترك إن لم تكن قد فعلت بعد.
+2. انقل القواعد من ملفّات <bdi>`.trae/rules/`</bdi> الموجودة لديك إلى المتن المشترك.
+3. شغّل <bdi>`apothem install --harness trae`</bdi> لتصيير ملفّ <bdi>`apothem-rules.md`</bdi>.
+4. شغّل <bdi>`apothem verify --harness trae`</bdi> للتأكّد من وصول التهيئة.
+5. استخدم <bdi>`apothem update --harness trae`</bdi> مع كل تغيير لاحق.
+
+## اقرأ تاليًا
+
+- [مرجع محوِّل Trae](/docs/harnesses/trae)
+- [نظرة عامة على المقارنة](/docs/comparison)

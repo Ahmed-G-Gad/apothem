@@ -1,0 +1,82 @@
+---
+title: "Cerimônia de merge de PR para mantenedor solo"
+description: "Cerimônia para fazer o merge dos próprios pull requests quando as regras de proteção de branch e enforce_admins travariam um mantenedor solo."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Referência canônica para fazer o merge dos próprios PRs sob o invariante de proteção de branch do projeto.** Quando o mantenedor é o único contribuidor com acesso de escrita, as regras de proteção de branch do GitHub `enforce_admins=true` + `required_approving_review_count=1` criam um impasse de auto-merge cuja resolução esta página documenta.
+
+---
+
+## 1. O impasse
+
+A branch `main` do repositório carrega este conjunto de proteção:
+
+- `required_pull_request_reviews.required_approving_review_count: 1`
+- `enforce_admins: true`
+
+Essas regras são corretas para cenários com vários mantenedores (toda mudança chega à `main` por meio de um PR revisado por pares; administradores não ficam isentos). Elas produzem um impasse para mantenedores solo: a política do GitHub não permite a autoaprovação de um PR que você mesmo criou, e `enforce_admins=true` bloqueia a sobreposição `gh pr merge --admin` do requisito de aprovação de revisão.
+
+Existem três caminhos de resolução:
+
+| Caminho | Quando usar |
+|------|-------------|
+| **Cerimônia de alternância temporária (canônica para este repositório)** | Padrão para auto-merges de mantenedor solo; preserva o invariante de proteção fora da janela de merge |
+| Provisionar uma identidade de bot de CI com acesso de escrita | Adote apenas se a integração de vários mantenedores estiver iminente; a aprovação por bot enfraquece a intenção de revisão humana da proteção |
+| Definir permanentemente `required_approving_review_count: 0` | Adote apenas se o repositório permanecer com mantenedor solo indefinidamente; reverte a intenção de revisão da proteção |
+
+Este repositório ratifica a **cerimônia de alternância temporária** como o caminho canônico. Os outros dois são saídas de emergência documentadas, não o padrão.
+
+## 2. A cerimônia de alternância temporária
+
+O invariante da cerimônia: o estado de proteção no início da cerimônia é igual ao estado de proteção no fim. A flexibilização vive apenas dentro da janela de merge.
+
+Forma manual:
+
+```bash
+# 1. Open the PR, push branch, wait for CI green.
+gh pr create --base main --head <feature-branch> --title "..." --body "..."
+gh pr checks <pr-number>            # poll until all green
+
+# 2. Relax approver-count to 0.
+gh api repos/<owner>/<repo>/branches/main/protection/required_pull_request_reviews \
+    -X PATCH -F required_approving_review_count=0
+
+# 3. Squash-merge with admin override (admin override now succeeds because the
+#    review-approval requirement is the only block enforce_admins refuses).
+gh pr merge <pr-number> --squash --delete-branch --admin
+
+# 4. Restore approver-count to 1.
+gh api repos/<owner>/<repo>/branches/main/protection/required_pull_request_reviews \
+    -X PATCH -F required_approving_review_count=1
+```
+
+Forma encapsulada: consulte [`scripts/dev/admin_merge.py`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/dev/admin_merge.py) para ver o wrapper atômico em Python que executa os passos 2 → 3 → 4 em uma única sequência não interativa, com segurança de rollback via `try` / `finally` caso o passo 3 falhe.
+
+```bash
+python scripts/dev/admin_merge.py <pr-number>
+```
+
+## 3. Invariantes
+
+- **Janela de alternância minimizada.** Os passos 2 → 3 → 4 executam em uma única sequência não interativa. A proteção fica em seu estado flexibilizado apenas pela duração da chamada à API de merge — menos de um segundo em toda execução observada.
+- **A restauração é incondicional.** O passo 4 roda mesmo quando o passo 3 falha (a cláusula `try` / `finally` do wrapper garante a restauração em qualquer caminho de saída). Uma tentativa de merge malsucedida não deixa a proteção flexibilizada.
+- **O controle de CI é preservado o tempo todo.** `required_status_checks` não é afetado pela alternância; o merge ainda exige que os contextos de verificação de status configurados estejam em verde.
+- **Trilha de auditoria visível.** A anotação `gh pr merge --admin` aparece nos metadados de merge do PR; as alternâncias da API de proteção aparecem no log de auditoria do repositório sob a identidade do mantenedor.
+
+## 4. Quando NÃO usar a cerimônia
+
+A cerimônia é para o **auto-merge** dos PRs do próprio mantenedor. Quando há um revisor par disponível (um contribuidor com acesso de escrita), o caminho padrão `gh pr review --approve` + `gh pr merge --squash --delete-branch` é o correto e a cerimônia é desnecessária.
+
+Se o repositório integrar um segundo mantenedor, aposente a cerimônia: o fluxo padrão de revisão de PR restaura a intenção de revisão humana da proteção sem qualquer alternância.
+
+## 5. Auditar uma execução passada
+
+Cada invocação da cerimônia deixa marca em três superfícies duráveis que um operador pode inspecionar depois:
+
+- **Os metadados de merge do PR.** `gh pr view <pr-number> --json mergedBy,mergedAt,mergeCommit` retorna o ator do merge, o carimbo de tempo do merge e o SHA do commit de squash. O ator `mergedBy` corresponde à identidade do mantenedor que executou o passo 3.
+- **O log de auditoria do repositório.** `gh api /repos/<owner>/<repo>/actions/runs --jq '.workflow_runs[] | select(.event=="push")'` correlaciona a execução de CI pós-merge ao commit de merge; o log de auditoria das regras de proteção do repositório (histórico de `gh api /repos/<owner>/<repo>/branches/main/protection` via a interface Settings → Branches) mostra as alternâncias do passo 2 e do passo 4 delimitando a janela de merge.
+- **O histórico git do mantenedor.** `git log main --merges --first-parent` lista cada commit de squash-merge na `main` com o número de PR correspondente no assunto do commit (sufixo `(#<pr-number>)` conforme o padrão de `gh pr merge --squash`), permitindo ao operador rastrear qualquer aterrissagem passada de volta ao seu PR e à sua invocação de cerimônia.
+
+Quando `scripts/dev/admin_merge.py` é o ponto de entrada, seu log não interativo (stdout) nomeia as três chamadas à API de proteção e a chamada à API de merge em sequência; canalizar o wrapper para `tee` captura um fragmento de auditoria por execução sem depender da retenção de log do lado do GitHub.

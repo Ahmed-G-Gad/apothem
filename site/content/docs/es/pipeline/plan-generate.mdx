@@ -1,0 +1,68 @@
+---
+title: "/plan-generate"
+description: "/plan-generate — Genera una Suite de Plan Maestra completa a partir del `_spec/spec.md` redactado."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rol:** Generador
+**Posición en el pipeline:** intermedia
+
+Genera una Suite de Plan Maestra completa a partir del `_spec/spec.md` redactado.
+
+## Invocación canónica
+
+```bash
+/plan-generate
+```
+
+Con argumentos:
+
+```bash
+/plan-generate [path/to/prose.md] [--mode NEW|OVERHAUL] [--seriousness LEVEL] [--context CONTEXT] [--mission MISSION] [--domain DOMAIN] [--dry-run]
+```
+
+## Entradas
+
+El `_spec/spec.md` redactado + `_inputs/handoff-manifest.yml` de `/plan-spec` (o prosa proporcionada por el operador).
+
+## Salidas
+
+`PREAMBLE.md`, `MASTER-PLAN.md`, `PROGRESS.md`, `PLAN-NOTES.md` y los archivos `phases/**/PHASE.md` por fase, más el `_inputs/handoff-manifest.yml` aumentado.
+
+## Aguas abajo
+
+/plan-review o /plan-execute (aguas abajo)
+
+## Fases del flujo de trabajo
+
+El comando genera una Suite de Plan Maestra completa a partir de la spec redactada:
+
+1. **Ingerir requisitos** — Lee `_spec/spec.md` y el Manifiesto de Traspaso aguas arriba; rechaza con `Blocked: run /plan-spec first` cuando la spec está ausente.
+2. **Descubrir** — Ejecuta el descubrimiento escalado por seriedad con los Cinco Filtros Cognitivos; resuelve cada brecha de datos autoritativos a través del canal de consulta estructurada.
+3. **Descomponer** — Divide el trabajo en un grafo de fases acíclico con un orden de dependencia explícito.
+4. **Emitir la suite** — Redacta `PREAMBLE.md`, `MASTER-PLAN.md`, `PROGRESS.md`, `PLAN-NOTES.md` y cada `phases/NN-topic/PHASE.md`.
+5. **Ejecutar la compuerta de pre-emisión** — Ejecuta el barrido de quince barras frente a cada artefacto emitido; el fallo bloquea la aprobación del usuario hasta resolverse.
+
+## Modos de fallo
+
+| Síntoma | Causa | Recuperación |
+|---------|-------|----------|
+| Blocked: run /plan-spec first | Sin `_spec/spec.md` redactado | Ejecuta `/plan-spec` para redactar la spec y emitir el Manifiesto |
+| Generación frente a un archivo `_inputs/` | La spec sigue en plena elicitación | Promueve `_inputs/forge.md` a `_spec/spec.md` mediante `/plan-spec` primero |
+| Una barra de pre-emisión falla | Un artefacto emitido falla la compuerta | Corrige la barra que falla antes de la aprobación del usuario |
+
+## Ejemplos
+
+```bash
+# Dry-run para previsualizar el grafo de fases generado
+/plan-generate --dry-run
+
+# Generar una suite a partir de prosa redactada
+/plan-generate path/to/prose.md --mode NEW
+```
+
+## Referencias cruzadas
+
+- [Visión general del pipeline](/docs/pipeline)
+- [Referencia de comandos](/docs/reference/commands)

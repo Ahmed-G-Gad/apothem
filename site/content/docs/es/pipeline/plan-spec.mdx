@@ -1,0 +1,69 @@
+---
+title: "/plan-spec"
+description: "/plan-spec — Refina prosa libre o notas en bruto en una especificación `_spec/spec.md` de grado spec lista para `/plan-generate`."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rol:** Forja
+**Posición en el pipeline:** cabeza
+
+Refina prosa libre o notas en bruto en una especificación `_spec/spec.md` de grado spec lista para `/plan-generate`.
+
+## Invocación canónica
+
+```bash
+/plan-spec
+```
+
+Con argumentos:
+
+```bash
+/plan-spec [path/to/prose-source] [--suite-name NAME] [--refine-existing] [--standalone] [--quick SLUG [--tag TAG]]
+```
+
+## Entradas
+
+Prosa libre, notas en bruto o requisitos ad-hoc (proporcionados por el operador en línea o como una ruta).
+
+## Salidas
+
+`_spec/spec.md` (la spec promovida) + `_inputs/handoff-manifest.yml`. En su lugar, `--quick` escribe un único archivo de plan ligero local al proyecto en `<project-root>/.apothem/plans/<YYYY-MM-DD>--<kebab-slug>.md`.
+
+## Aguas abajo
+
+/plan-generate (consumidor aguas abajo)
+
+## Fases del flujo de trabajo
+
+La Forja ejecuta seis fases de transformación (la spec se promueve de `_inputs/forge.md` a `_spec/spec.md` en G4):
+
+1. **Descubrimiento y Extracción** — Lee la prosa / notas y extrae cada requisito, decisión y restricción.
+2. **Consideración Meticulosa** — Razona cada superficie; expón cada contradicción a través del canal de consulta estructurada.
+3. **Mapeo de Potencia** — Mapea cada requisito a su apalancamiento aguas abajo.
+4. **Verificación de Preservación** — Ejecuta la compuerta de pre-emisión de quince barras (G4) frente a la spec candidata antes de la promoción.
+5. **Aplicación de Pericia** — Aplica pericia de dominio; registra hallazgos de brechas de pericia.
+6. **Barrido de Resolución de Preguntas** — Resuelve cada consulta abierta a lo largo de las compuertas G0–G5, luego emite `_spec/spec.md` más el Manifiesto de Traspaso.
+
+## Modos de fallo
+
+| Síntoma | Causa | Recuperación |
+|---------|-------|----------|
+| Falta entrada de prosa | No se proporcionó prosa / notas | Proporciona la prosa libre en línea o como una ruta |
+| Contradicción sin resolver | La prosa lleva requisitos en conflicto | Detente en G3 (Pre-enmienda); resuelve mediante consulta estructurada, nunca en silencio |
+| La spec falla la compuerta | Una barra de pre-emisión falla en G4 | Corrige la barra que falla antes de la promoción desde `_inputs/forge.md` |
+
+## Ejemplos
+
+```bash
+# Forjar notas en bruto en una especificación de grado spec
+/plan-spec ~/notes/feature.md --suite-name my-feature
+
+# Archivo de plan ligero local al proyecto (omite la elicitación de la Forja)
+/plan-spec --quick my-feature
+```
+
+## Referencias cruzadas
+
+- [Visión general del pipeline](/docs/pipeline)
+- [Referencia de comandos](/docs/reference/commands)

@@ -1,0 +1,82 @@
+---
+title: "단독 메인테이너 PR 병합 의식"
+description: "브랜치 보호와 enforce_admins 규칙이 단독 메인테이너를 교착 상태에 빠뜨릴 때 풀 리퀘스트를 직접 병합하기 위한 의식."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **프로젝트의 브랜치 보호 불변식 아래에서 PR을 직접 병합하기 위한 정준 참조.** 메인테이너가 쓰기 권한을 가진 유일한 기여자일 때, GitHub의 브랜치 보호 규칙 `enforce_admins=true` + `required_approving_review_count=1`은 자가 병합 교착 상태를 만들며, 이 페이지는 그 해결 방법을 문서화합니다.
+
+---
+
+## 1. 교착 상태
+
+저장소의 `main` 브랜치에는 다음 보호 집합이 설정되어 있습니다.
+
+- `required_pull_request_reviews.required_approving_review_count: 1`
+- `enforce_admins: true`
+
+이 규칙들은 여러 메인테이너 시나리오에서는 올바릅니다(모든 변경은 동료 검토를 거친 PR을 통해 `main`에 도달하며, 관리자도 예외가 아닙니다). 그러나 단독 메인테이너에게는 교착 상태를 일으킵니다. GitHub 정책은 본인이 작성한 PR에 대한 자가 승인을 허용하지 않으며, `enforce_admins=true`는 검토 승인 요구사항에 대한 `gh pr merge --admin` 재정의를 차단하기 때문입니다.
+
+세 가지 해결 경로가 있습니다.
+
+| 경로 | 사용 시점 |
+|------|-------------|
+| **임시 토글 의식(이 저장소의 정준 방식)** | 단독 메인테이너 자가 병합의 기본값. 병합 윈도우 밖에서는 보호 불변식을 유지함 |
+| 쓰기 권한을 가진 CI 봇 신원을 프로비저닝함 | 여러 메인테이너 온보딩이 임박한 경우에만 채택. 봇 승인은 보호가 의도한 사람의 검토를 약화시킴 |
+| `required_approving_review_count: 0`을 영구적으로 설정함 | 저장소가 무기한으로 단독 메인테이너로 남는 경우에만 채택. 보호의 검토 의도를 뒤집음 |
+
+이 저장소는 **임시 토글 의식**을 정준 경로로 비준합니다. 다른 두 가지는 문서화된 비상 탈출구이며 기본값이 아닙니다.
+
+## 2. 임시 토글 의식
+
+이 의식의 불변식은 의식 시작 시점의 보호 상태가 종료 시점의 보호 상태와 같다는 것입니다. 완화는 오직 병합 윈도우 안에만 존재합니다.
+
+수동 방식:
+
+```bash
+# 1. Open the PR, push branch, wait for CI green.
+gh pr create --base main --head <feature-branch> --title "..." --body "..."
+gh pr checks <pr-number>            # poll until all green
+
+# 2. Relax approver-count to 0.
+gh api repos/<owner>/<repo>/branches/main/protection/required_pull_request_reviews \
+    -X PATCH -F required_approving_review_count=0
+
+# 3. Squash-merge with admin override (admin override now succeeds because the
+#    review-approval requirement is the only block enforce_admins refuses).
+gh pr merge <pr-number> --squash --delete-branch --admin
+
+# 4. Restore approver-count to 1.
+gh api repos/<owner>/<repo>/branches/main/protection/required_pull_request_reviews \
+    -X PATCH -F required_approving_review_count=1
+```
+
+래핑된 방식: 단계 2 → 3 → 4를 단일 비대화형 시퀀스로 실행하고 단계 3 실패 시 `try` / `finally`로 롤백 안전성을 보장하는 원자적 Python 래퍼는 [`scripts/dev/admin_merge.py`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/dev/admin_merge.py)를 참조하세요.
+
+```bash
+python scripts/dev/admin_merge.py <pr-number>
+```
+
+## 3. 불변식
+
+- **토글 윈도우 최소화.** 단계 2 → 3 → 4는 단일 비대화형 시퀀스로 실행됩니다. 보호가 완화 상태에 있는 것은 병합 API 호출 동안뿐이며, 관측된 모든 실행에서 1초 미만입니다.
+- **복원은 무조건적.** 단계 3이 실패하더라도 단계 4는 실행됩니다(래퍼의 `try` / `finally` 절이 모든 종료 경로에서 복원을 보장합니다). 실패한 병합 시도가 보호를 완화된 상태로 남기지 않습니다.
+- **CI 게이팅은 전 과정에서 유지됨.** `required_status_checks`는 토글의 영향을 받지 않습니다. 병합에는 여전히 구성된 상태 검사 컨텍스트가 녹색이어야 합니다.
+- **감사 추적이 가시적.** `gh pr merge --admin` 주석은 PR의 병합 메타데이터에 나타납니다. 보호 API 토글은 저장소 감사 로그에 메인테이너의 신원으로 나타납니다.
+
+## 4. 의식을 사용하지 말아야 할 때
+
+이 의식은 메인테이너 본인 PR의 **자가 병합**을 위한 것입니다. 동료 검토자(쓰기 권한을 가진 기여자)가 있는 경우에는 표준 `gh pr review --approve` + `gh pr merge --squash --delete-branch` 경로가 올바르며 의식은 불필요합니다.
+
+저장소가 두 번째 메인테이너를 온보딩하면 의식을 폐기하세요. 표준 PR 검토 흐름이 어떠한 토글도 없이 보호가 의도한 사람의 검토를 복원합니다.
+
+## 5. 과거 실행 감사
+
+각 의식 호출은 운영자가 사후에 점검할 수 있는 세 개의 지속적 표면에 남습니다.
+
+- **PR의 병합 메타데이터.** `gh pr view <pr-number> --json mergedBy,mergedAt,mergeCommit`는 병합 행위자, 병합 타임스탬프, squash 커밋의 SHA를 반환합니다. `mergedBy` 행위자는 단계 3을 실행한 메인테이너 신원과 일치합니다.
+- **저장소의 감사 로그.** `gh api /repos/<owner>/<repo>/actions/runs --jq '.workflow_runs[] | select(.event=="push")'`는 병합 후 CI 실행을 병합 커밋과 연관시킵니다. 저장소의 보호 규칙 감사 로그(Settings → Branches UI를 통한 `gh api /repos/<owner>/<repo>/branches/main/protection` 이력)는 병합 윈도우를 둘러싸는 단계 2와 단계 4의 토글을 보여줍니다.
+- **메인테이너의 git 이력.** `git log main --merges --first-parent`는 `main`의 모든 squash 병합 커밋을 커밋 제목에 해당 PR 번호(`gh pr merge --squash` 기본값에 따른 `(#<pr-number>)` 접미사)와 함께 나열하여, 운영자가 과거의 모든 랜딩을 그 PR과 의식 호출까지 추적할 수 있게 합니다.
+
+`scripts/dev/admin_merge.py`가 진입점인 경우, 그 비대화형 로그(stdout)는 세 개의 보호 API 호출과 병합 API 호출을 순서대로 이름과 함께 출력합니다. 래퍼를 `tee`로 파이프하면 GitHub 측 로그 보존에 의존하지 않고 실행별 감사 조각을 캡처할 수 있습니다.

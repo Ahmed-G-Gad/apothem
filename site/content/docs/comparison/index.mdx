@@ -1,0 +1,92 @@
+---
+title: "Comparison"
+description: "How to evaluate Apothem against hand-maintained harness config and other configuration approaches, with a feature matrix and per-harness pages."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem is a host-agnostic AI-harness configuration manager. One shared
+profile at `~/.config/apothem/profile.yaml` materializes into seventeen
+harness-native config surfaces. This section frames how to evaluate Apothem
+against the alternatives you already use.
+
+## How Apothem compares
+
+Other tools solve adjacent slices of this problem. File-based config managers
+like **chezmoi** and **GNU Stow** place or template files but never translate
+one source into each harness's *native* configuration schema. Cross-tool
+rule-sync CLIs like **rulesync** do generate per-tool native files across many
+tools — a broader tool count than Apothem's seventeen, and a comparably wide
+synced unit. Apothem's distinction is the **governance and lifecycle discipline
+shipped around the sync** — a mechanized conformity gate, deterministic
+pipelines, an audit fortress, and a reversible verified lifecycle.
+
+| Capability | Apothem | File config managers (chezmoi, Stow) | Cross-tool rule sync (rulesync) | Per-tool native config |
+| ---------- | :-----: | :----------------------------------: | :-----------------------------: | :--------------------: |
+| One source to many tools' native schemas | Yes — seventeen harness adapters | No — copy / symlink, no translation | Yes | No — single tool |
+| Synced unit | rules, skills, hooks, slash-commands, MCP | arbitrary files | rules, ignore, MCP, commands, subagents, skills, hooks, permissions | — |
+| Governance corpus (behavioral rules plus a mechanical conformity gate) | Yes — `python -m apothem.conformity.gate` | No | No | No |
+| Deterministic plan and research pipelines | Yes — `/plan-spec` to `/plan-execute`, thirteen-stage `/research` | No | No | No |
+| Audit fortress that detects and remediates | Yes — eleven-command sweep, `/fortress` re-audit loop | No | No | No |
+| Supply-chain hardened releases | Yes — SBOM, Sigstore, SLSA, Scorecard target | No | varies | No |
+| Reversible, verified lifecycle | Yes — backup, `apothem verify --json`, zero-orphan uninstall | varies | varies | — |
+
+Where a peer is stronger, it is named: **rulesync** reaches more tools and
+carries a comparably wide synced unit, and several sync tools materialize
+native schemas. Apothem trades raw tool count for the governance, audit, and
+lifecycle discipline shipped around the sync — a conformity gate, deterministic
+plan and research pipelines, an eleven-command audit fortress, durable memory,
+and a reversible verified lifecycle — that a rule-sync tool does not carry.
+
+## How to compare
+
+Compare along three axes:
+
+1. **Source of truth.** Where do your rules, agents, commands, and settings
+   live? Apothem keeps one shared corpus and renders each harness's native
+   format from it. Hand-maintained config keeps one copy per tool.
+2. **Drift cost.** What happens when you change a rule? Apothem propagates
+   the change to every installed harness on `apothem update`. Hand-maintained
+   config requires you to edit each tool's native file separately and keep
+   them aligned by memory.
+3. **Verification.** How do you know each harness is correctly configured?
+   Apothem ships `apothem verify --harness <name>` and `apothem doctor`.
+   Hand-maintained config has no built-in verification.
+
+## Feature matrix
+
+The matrix contrasts Apothem against the two alternatives operators reach for
+first: hand-maintaining each harness's native config, and managing those files
+through a general-purpose dotfile manager.
+
+| Capability | Hand-maintained config | Dotfile manager | Apothem |
+| ---------- | ---------------------- | --------------- | ------- |
+| Single shared source of truth | No (one copy per tool) | No (tracks files, not a profile) | Yes (one profile) |
+| Renders harness-native formats | Manual | No | Yes (per-adapter materializer) |
+| Cross-harness drift prevention | Manual alignment | File sync only | Yes (`apothem update`) |
+| Per-harness install/uninstall | Manual | Partial (symlink/copy) | Yes (`install` / `uninstall`) |
+| Built-in verification | None | None | Yes (`verify` / `doctor`) |
+| Format translation per tool | None | None | Yes (`.mdc`, `.toml`, embedded `.md`) |
+| Seventeen harnesses from one input | No | No | Yes |
+
+## Comparison pages
+
+- [Apothem vs other harness frameworks](/docs/comparison/vs-other-harness-frameworks)
+- [vs raw antigravity](/docs/comparison/vs-raw-antigravity)
+- [vs raw claude-code](/docs/comparison/vs-raw-claude-code)
+- [vs raw codebuddy](/docs/comparison/vs-raw-codebuddy)
+- [vs raw codex](/docs/comparison/vs-raw-codex)
+- [vs raw cursor](/docs/comparison/vs-raw-cursor)
+- [vs raw gemini-cli](/docs/comparison/vs-raw-gemini-cli)
+- [vs raw github-copilot](/docs/comparison/vs-raw-github-copilot)
+- [vs raw glm](/docs/comparison/vs-raw-glm)
+- [vs raw hermes](/docs/comparison/vs-raw-hermes)
+- [vs raw kimi-code](/docs/comparison/vs-raw-kimi-code)
+- [vs raw kiro](/docs/comparison/vs-raw-kiro)
+- [vs raw open-claw](/docs/comparison/vs-raw-open-claw)
+- [vs raw opencode](/docs/comparison/vs-raw-opencode)
+- [vs raw qwen-code](/docs/comparison/vs-raw-qwen-code)
+- [vs raw trae](/docs/comparison/vs-raw-trae)
+- [vs raw windsurf](/docs/comparison/vs-raw-windsurf)
+- [vs raw zed](/docs/comparison/vs-raw-zed)
+
+For per-harness adapter detail, see the [harness adapters](/docs/harnesses) section.

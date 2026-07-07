@@ -1,0 +1,48 @@
+---
+title: "Pencopotan"
+description: "Hapus Apothem dan bersihkan konfigurasi harness."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## Hapus konfigurasi harness terlebih dahulu
+
+Sebelum mencopot Apothem, hapus setiap konfigurasi adaptor harness agar
+harness Anda berada dalam keadaan bersih. Jalankan `apothem harnesses list` untuk melihat
+adaptor mana yang saat ini terpasang, lalu hapus satu per satu atau gunakan
+penyeleksi seluruh-registri:
+
+```bash
+apothem uninstall --harness claude-code
+apothem uninstall --harness cursor --project /path/to/project
+apothem uninstall --harness all --project /path/to/project --yes
+```
+
+Gunakan `--yes` untuk melewati prompt konfirmasi per-harness.
+
+## Hapus engine
+
+Penghapusan mengikuti kanal instalasi yang Anda gunakan:
+
+- **Plugin Claude Code** — hapus plugin dari dalam Claude Code:
+  `/plugin uninstall apothem@apothem` (entri marketplace dapat dihapus
+  dengan `/plugin marketplace remove ahmed-g-gad/apothem`).
+- **npx** — tidak ada yang perlu dihapus; `npx` berjalan dari cache-nya. Bersihkan dengan
+  `npm cache clean --force` jika Anda ingin salinan tersimpan-cache hilang.
+- **Installer sekali-jalan** — jalankan skrip pencopotan yang sesuai dari
+  checkout: `scripts/installer/uninstall.sh` (POSIX) atau
+  `scripts/installer/uninstall.ps1` (PowerShell). Keduanya mengonfirmasi sebelum
+  menghapus dan menolak target yang tidak aman.
+- **Cadangan dan state** — cadangan instalasi berada di bawah `~/.apothem/backups/`;
+  hapus `~/.apothem/` saat Anda tidak lagi membutuhkannya.
+
+## Apa yang TIDAK dihapus
+
+- YAML profil bersama di `~/.config/apothem/profile.yaml` atau
+  `--profile PATH` tidak pernah dihapus oleh `apothem uninstall`.
+- Berkas tak-terkait yang ditulis operator di direktori harness dipertahankan.
+- Suite rencana di bawah `<project>/.apothem/plans/` (dan `<project>/.plans/` lama) tidak terpengaruh.
+
+Untuk membersihkan akar harness sepenuhnya, hapus jalur native-harness yang didokumentasikan di
+[halaman referensi harness](/docs/harnesses) setelah memastikan Anda telah mencadangkan
+aturan, helper, atau berkas profil kustom apa pun yang ingin Anda simpan.

@@ -1,0 +1,43 @@
+---
+title: "Apothem 대 수동 Antigravity 구성"
+description: "Antigravity CLI의 전역 컨텍스트와 플러그인 파일을 손으로 유지하는 것과 Apothem의 공유 프로파일을 통해 관리하는 것의 비교."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Antigravity는 클래스 I 매니페스트 전파 환경입니다. Apothem은 전역
+`~/.gemini/GEMINI.md` 컨텍스트 앵커를 작성하고
+`~/.gemini/antigravity-cli/plugins/apothem/` 아래에 Apothem 플러그인을 설치합니다.
+이 페이지는 그 레이아웃을 손으로 유지하는 것과 Apothem으로 관리하는 것을 대비합니다.
+
+## 노력 비교
+
+| 작업 | 수동 구성 | Apothem 관리 |
+| ---- | --------------- | --------------- |
+| 규칙 작성 | 각 플러그인 규칙 파일을 손으로 작성 | 공유 코퍼스에 한 번 작성 |
+| 재사용 가능한 프롬프트 보존 | 명령 프롬프트와 스킬을 플러그인 파일로 손으로 복사 | 플러그인 스킬로 변환 또는 복사 |
+| 훅 지원 자료 보존 | 활성 배선 없이 훅 참조를 손으로 복사 | Apothem 플러그인 지원 트리 아래로 복사 |
+| 규칙을 다른 환경과 맞춰 유지 | 수동, 도구별 | `apothem update` 시 자동 |
+| 구성 설치 / 제거 | 파일을 손으로 복사하고 삭제 | `apothem install` / `apothem uninstall` |
+| 구성이 올바른지 검증 | 수동 검사 | `apothem verify --harness antigravity` |
+
+## Apothem이 관리하는 것
+
+Apothem은 Antigravity의 전역 컨텍스트 파일, 플러그인 메타데이터, 변환된 명령 스킬,
+재사용 가능한 스킬, 변환된 에이전트, 규칙, 템플릿, 훅 지원 자료를 관리합니다. 훅
+파일은 지원 자료로 보존됩니다. 어댑터가 Antigravity의 `hooks.json`에 대한 스키마
+변환 계층을 소유하기 전까지는, Apothem이 활성 Antigravity 훅 이벤트를 등록하지
+않습니다.
+
+## 마이그레이션 경로
+
+1. 공유 프로파일을 아직 만들지 않았다면 `apothem profile init`을 실행합니다.
+2. 손으로 작성한 기존 Antigravity 규칙을 공유 코퍼스로 옮깁니다.
+3. `apothem install --harness antigravity`를 실행해 코퍼스를 전파합니다.
+4. `apothem verify --harness antigravity`를 실행해 구성이 안착했는지 확인합니다.
+5. 이후의 모든 변경에는 `apothem update --harness antigravity`를 사용합니다.
+
+## 다음으로 읽기
+
+- [Antigravity 어댑터 레퍼런스](/docs/harnesses/antigravity)
+- [비교 개요](/docs/comparison)

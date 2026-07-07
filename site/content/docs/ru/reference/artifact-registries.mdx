@@ -1,0 +1,185 @@
+---
+title: "Реестры артефактов"
+description: "Полное перечисление артефактов экосистемы Apothem: команды, правила, помощники, хуки, навыки, стили вывода, дисциплина эволюции артефактов и объявления пустых классов артефактов."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Канонический реестр когорт артефактов.** Этот документ несёт полные перечисления команд, правил, помощников, хуков, навыков, стилей вывода, дисциплины эволюции артефактов и объявлений пустых классов артефактов; содержательные таблицы живут здесь. Раскладка исходников проекта предоставляет сжатое всегда загруженное представление.
+
+## 1. Команды
+
+Тридцать команд регистрируются из `src/apothem/commands/*.md` (нерекурсивно). Каждая команда — первоклассный зарегистрированный файл; оркестратор `/plan` лишь сцепляет уже первоклассные стадии плана и не несёт собственной стадийной логики, поэтому по-прежнему нет монолитного диспетчера и нет группировки подкоманд. Не-плановые, не-рабочепроцессные команды:
+
+| Команда | Файл | Описание |
+| ------- | ---- | ----------- |
+| `/a11y-audit` | `src/apothem/commands/a11y-audit.md` | Аудит доступности развёрнутой веб-поверхности по WCAG 2.2 AA, страница за страницей |
+| `/architecture-review` | `src/apothem/commands/architecture-review.md` | Обзор архитектурной целостности репозитория относительно его проектного артефакта и канонической дисциплины слоёв |
+| `/code-audit` | `src/apothem/commands/code-audit.md` | Межфайловый форензический аудит кода в масштабе корпуса репозитория через шесть состязательных фаз |
+| `/code-review` | `src/apothem/commands/code-review.md` | Пофайловый обзор качества кода по `src/`, `scripts/` и `tools/` с пофайловыми находками |
+| `/dependency-audit` | `src/apothem/commands/dependency-audit.md` | Аудит по каждой зависимости (прямые + транзитивные) по файлам манифеста репозитория |
+| `/docs-review` | `src/apothem/commands/docs-review.md` | Обзор документации каждой Markdown-страницы под поверхностью документации хоста |
+| `/elevate` | `src/apothem/commands/elevate.md` | Поднимает каждую поверхность проекта до текущего SOTA через независимых критикующих помощников, затем передаёт `/freshify` |
+| `/eval` | `src/apothem/commands/eval.md` | Модель-агностичная кампания оценки языковых моделей, построенная на навыке eval-harness |
+| `/freshify` | `src/apothem/commands/freshify.md` | Делает проект свежим, без следов и готовым к продакшену; каждый деструктивный шаг проходит через подтверждающий гейт |
+| `/github-deploy-fresh` | `src/apothem/commands/github-deploy-fresh.md` | GitHub-специализация `/freshify`, производящая единственный свежий релиз первой версии на `origin/main` |
+| `/github-deploy-next` | `src/apothem/commands/github-deploy-next.md` | Выполняет полный цикл следующего релиза от начала до конца на релизной поверхности GitHub |
+| `/perf-audit` | `src/apothem/commands/perf-audit.md` | Аудит относительно бюджетов производительности по классам в `src/apothem/rules/performance-discipline.md` |
+| `/release-readiness` | `src/apothem/commands/release-readiness.md` | Прохождение предрелизного гейта: матрица качества, риск зависимостей и проверки релизной инженерии |
+| `/research` | `src/apothem/commands/research.md` | Многоисточниковое исследование с параллельным обнаружением и извлечением источников |
+| `/security-audit` | `src/apothem/commands/security-audit.md` | Аудит состояния безопасности относительно OWASP ASVS, OWASP Top 10 и CWE Top 25 |
+| `/supply-chain-audit` | `src/apothem/commands/supply-chain-audit.md` | Аудит цепочки поставок относительно стандартов SLSA, Sigstore и SBOM |
+| `/test-suite` | `src/apothem/commands/test-suite.md` | Создание и выполнение тестов с приоритетом поведения относительно ратифицированного тестового фреймворка хоста |
+| `/threat-model-audit` | `src/apothem/commands/threat-model-audit.md` | Аудит моделирования угроз относительно STRIDE и PASTA по архитектуре, потоку данных и границам доверия |
+| `/ux-review` | `src/apothem/commands/ux-review.md` | Обзор опыта разработчика: эргономика CLI, поток установки, тексты справки и сообщения об ошибках |
+
+### Команды плановой конвейера
+
+Плановый конвейер поставляется как восемь первоклассных команд — по одной на стадию, каждая вызывается напрямую как `/plan-<stage>` из своего зарегистрированного файла `src/apothem/commands/plan-<stage>.md`.
+
+| Команда | Файл | Поведение |
+| ------- | ---- | -------- |
+| `/plan-spec` | `src/apothem/commands/plan-spec.md` | Уточняет свободную прозу до `_spec/spec.md` спецификационного уровня; каждый открытый вопрос проходит через канал структурированного запроса, а не молчаливое умолчание; `--quick` записывает единственный лёгкий файл плана под `<project-root>/.apothem/plans/` (`.plans/` остаётся поддерживаемым резервным вариантом для обратной совместимости) |
+| `/plan-generate` | `src/apothem/commands/plan-generate.md` | Генерирует полный набор Master Plan Suite из написанной прозы/требований |
+| `/plan-review` | `src/apothem/commands/plan-review.md` | Форензический аудит существующего набора — верность прозе, внутренняя согласованность, анализ пробелов — уточняемый через интерактивные Q&A |
+| `/plan-design` | `src/apothem/commands/plan-design.md` | Производит артефакт архитектурного проектирования в `_inputs/design.md` набора, валидируемый пятнадцатиполосным гейтом предэмиссии перед промоушеном |
+| `/plan-audit` | `src/apothem/commands/plan-audit.md` | Замкнутый аудит и устранение по полному циклу spec → generate → review, циклически до нуля находок или достижения предела итераций с определённым отступлением |
+| `/plan-execute` | `src/apothem/commands/plan-execute.md` | Выполняет фазу с проверкой соответствия и гейтами качества — усилие по умолчанию `medium`, переопределяемое для фазы через поле `effort:` во фронтматтере `PHASE.md`; по умолчанию останавливается на каждой границе фазы, а `--no-pause` (или флаг профиля `enforcement.continuous_execution`) включает непрерывное продвижение от фазы к фазе |
+| `/plan-status` | `src/apothem/commands/plan-status.md` | Отчёт о прогрессе только для чтения по измерениям задачи, фазы и артефакта |
+| `/plan-amend` | `src/apothem/commands/plan-amend.md` | Дополняет, расширяет, уточняет или откатывает существующий набор, не разрушая ранее принятых решений; перевыводит только затронутые нижестоящие артефакты |
+
+### Команды рабочего процесса оператора и оркестратора
+
+Три команды входят в глубокую процедуру, а не несут собственную стадийную логику: две точки входа рабочего процесса оператора (каждая поддержана одноимённым навыком-братом) плюс тонкий оркестратор планового конвейера.
+
+| Команда | Файл | Описание |
+| ------- | ---- | ----------- |
+| `/workflow` | `src/apothem/commands/workflow.md` | Универсальная точка входа управления рабочими процессами (`/goal <<mission>>`): управляет подлинно независимыми мульти-помощниковыми динамическими рабочими процессами под именованными контрактами возврата, верификацией с опровержением-по-умолчанию до того, как находка выживет, устранением сверх миссии, раскрытым в журнале изменений, и детерминированным выводом; диспетчеризация мульти-помощников и автозапуск — по согласию / через подтверждающий гейт. Поддержана навыком `workflow` |
+| `/projectify` | `src/apothem/commands/projectify.md` | Возвышение проекта чат-приложения: создаёт результаты Description / Instruction / knowledge-Files для Claude Project, Custom GPT или Gem до текущих соглашений SOTA в пределах измеримого бюджета контекста по платформам; детерминированный вывод, автономность по согласию. Поддержана навыком `projectify` |
+| `/plan` | `src/apothem/commands/plan.md` | Тонкий оркестратор, сцепляющий первоклассные стадии плана (`plan-spec → plan-generate → plan-review → plan-design (условно) → plan-execute`), возобновляющий каждую из Handoff Manifest предыдущей стадии; не несёт стадийной логики — сцепление по согласию / через подтверждающий гейт (`--auto` сцепляет непрерывно) |
+
+## 2. Правила
+
+Поведенческие правила живут под `src/apothem/rules/` — небольшое всегда загруженное ядро плюс больший набор с фильтрацией по пути (загружаемый по требованию при касании совпадающих артефактов). Полное перечисление по каждому правилу — со столбцами Scope (всегда загружено / фильтрация по пути) и Implements — это исходно-генерируемый `reference/rules.mdx`, обновляемый из `src/apothem/rules/*.md` генератором инвентаря справки; обращайтесь к нему за авторитетным текущим списком.
+
+> **Разграничение фасетов CM-21** (три правила совместно реализуют CM-21 с различными, непересекающимися фасетами): **творческие фильтры и когнитивная идентичность** → `cognitive-identity.md`; **методология генерации (протоколы написания и переписывания)** → `clean-room-generation.md`; **техники планирования/обзора** → `planning-techniques.md`. Каждое правило владеет своим фасетом; остальные ссылаются наружу.
+
+> **Указатель на схему interactive-questions.** Каноническая схема вызова структурированного запроса — обязательные поля, таблица-сводка полей, два исполнимых проработанных примера (одиночный выбор в §2.1 и множественный выбор в §2.2) — живёт в `src/apothem/rules/interactive-questions.md` §2 «Structured-Inquiry Shape». Нижестоящие артефакты могут копировать §2.1 или §2.2 как шаблоны вызова; трёхсегментная схема аннотации опций, которую несёт тело `description` каждой опции, задана в §3 того же файла.
+
+## 3. Помощники
+
+Двенадцать постоянных определений помощников поставляются с экосистемой; командные паттерны правила оркестрации диспетчеризуют к ним. Каждое определение живёт по указанному ниже пути к файлу.
+
+```text
+Worker              File                                       Pattern         Model Policy
+------------------- ------------------------------------------ --------------- -------------
+Codebase Explorer   src/apothem/agents/codebase-explorer.md   Research        host-selected
+Convention Auditor  src/apothem/agents/convention-auditor.md  Audit           host-selected
+Dependency Auditor  src/apothem/agents/dependency-auditor.md  Audit           host-selected
+Fact Checker        src/apothem/agents/fact-checker.md        Audit           host-selected
+MCP Builder         src/apothem/agents/mcp-builder.md         Generation      host-selected
+Memory Auditor      src/apothem/agents/memory-auditor.md      Audit           host-selected
+Prompt Evaluator    src/apothem/agents/prompt-evaluator.md    Quality         host-selected
+Quality Gate        src/apothem/agents/quality-gate.md        Quality         host-selected
+Refactor Surgeon    src/apothem/agents/refactor-surgeon.md    Implementation  host-selected
+Research Scout      src/apothem/agents/research-scout.md      Research        host-selected
+Security Scanner    src/apothem/agents/security-scanner.md    Audit           host-selected
+Test Runner         src/apothem/agents/test-runner.md         Quality         host-selected
+```
+
+## 4. Хуки
+
+Каждая зарегистрированная команда хука использует exec-форму команды Claude Code
+(`command: "python"` плюс массив `args`) и вызывает либо
+`-m apothem.hooks.dispatch`, либо `-m apothem.conformity.gate`. Диспетчер
+импортирует `src/apothem/hooks/lib/resolve_root.py` для разрешения корня экосистемы и
+делегирует двум помощникам, лежащим рядом под самим `src/apothem/hooks/`:
+`src/apothem/hooks/emit_hook_context.py` форматирует полезные нагрузки событий для ассистента, а
+`src/apothem/hooks/session_start_bootstrap.py` несёт подготовительную работу SessionStart, которую
+диспетчер передаёт при маршрутизации этого события. Сообщения хуков, показываемые
+ассистенту при срабатывании поддерживаемых событий, живут как Markdown-файлы контекста под
+`src/apothem/hooks/messages/` — по одному на вариант события: `postcompact.md`, `precompact.md`,
+`pretooluse-bash.md`, `pretooluse-bash-plan-guard.md`, `pretooluse-conformity.md`,
+`pretooluse-dependency-guard.md`, `pretooluse-edit.md`, `pretooluse-edit-header-guard.md`,
+`pretooluse-eval-guard.md`, `pretooluse-notebookedit.md`, `pretooluse-write.md`,
+`pretooluse-write-header-guard.md`, `pretooluse-write-plan-guard.md`, `sessionstart.md`,
+`stop.md`. Каждый маршрутизированный файл контекста загружается диспетчером при срабатывании его события
+и когда его аргумент контекста зарегистрирован в `settings.json`; три файла контекста
+(`pretooluse-conformity.md`, `pretooluse-dependency-guard.md`, `pretooluse-eval-guard.md`)
+поставляются как доступные варианты без текущей записи маршрутизации в `settings.json`.
+
+```text
+Event             Automates                Timeout  Purpose
+----------------- ------------------------ -------- --------------------------------------------------
+SessionStart      CM-14                    30s      Read memory, check plan state, report readiness
+PreCompact        CM-24 §2.3               30s      Verify state externalized before compaction
+PostCompact       CM-24 §6.2               30s      Restore working state after compaction
+Stop              CM-14/CM-22/CM-24/CM-26  60s      Session-end externalization
+PreToolUse        CM-7/CM-22               10s      Write/Edit/NotebookEdit validation — codebase-isolation, frontmatter, license-header, and plans-locality checks plus the conformity gate. Bash validation — git artifact isolation and plans-locality
+PostToolUse       —                        10s      Accepted by src/apothem/hooks/dispatch.py whitelist for forward compatibility; no settings.json entry currently routes this event
+UserPromptSubmit  —                        10s      Accepted by src/apothem/hooks/dispatch.py whitelist for forward compatibility; no settings.json entry currently routes this event
+Notification      —                        10s      Accepted by src/apothem/hooks/dispatch.py whitelist for forward compatibility; no settings.json entry currently routes this event
+```
+
+> **Соглашение.** Строки, где **Automates** — это `—`, принимаются `dispatch.py`, но не подключены в `settings.json`; столбец **Timeout** показывает умолчание уровня диспетчеризации, которое применяется, если и когда событие позже будет подключено.
+>
+> **Канонический блок значений Timeout.** Столбец **Timeout** этой таблицы — единственный источник истины для значений тайм-аута хуков по всей экосистеме. Поля `timeout` по каждому хуку в `settings.json`, зеркальные таблицы в `site/content/docs/reference/settings-reference.mdx` § Hook Events и `site/content/docs/reference/artifact-schema.mdx` § Hooks Pipeline, а также руководство по правилам в `src/apothem/rules/persistent-conventions-vigilance.md` § Convention Awareness — все выводятся из этого столбца. Будущие пересмотры тайм-аутов приземляются здесь, а потребители перевыводят при следующем обращении.
+
+### Каденция обзора шаблона настроек
+
+`settings.json` — единственный шаблон Claude Code. Каждая команда хука использует
+exec-форму вместо обёртки, специфичной для оболочки, поэтому кросс-ОС-поведение
+обозревается внутри одного файла, а не сравнением парных шаблонов. Новые записи разрешений,
+события хуков, тайм-ауты и сообщения статуса приземляются в этот файл атомарно.
+
+## 5. Навыки
+
+Переиспользуемые навыки живут под `src/apothem/skills/`, по одной папке на навык.
+
+| Навык | Путь | Вызываем пользователем | Назначение |
+| ----- | ---- | -------------- | ------- |
+| Dependency Upgrade | `src/apothem/skills/dependency-upgrade/` | Да | Обновления зависимостей с обзором changelog, закреплением и проверкой гейтами |
+| Dev Toolkit | `src/apothem/skills/dev-toolkit/` | Да | Дисциплинированные инженерные циклы — структурированная отладка, test-first Red-Green-Refactor, декомпозиция вертикальными срезами, разбивка требования на задачу |
+| Diagram Authoring | `src/apothem/skills/diagram-authoring/` | Да | Конвейер Author → Validate → Render → Export для декларативных диаграмм и визуализаций данных (SVG / PNG / PDF) |
+| Document Authoring | `src/apothem/skills/document-authoring/` | Да | Создание длинных документов с гейтом одобрения (Outline → Draft → Review) с проверенными цитатами и детерминированной компиляцией вёрстки |
+| Ecosystem Audit | `src/apothem/skills/ecosystem-audit/` | Да | Слепой аудит дерева конфигурации Apothem |
+| Eval Harness | `src/apothem/skills/eval-harness/` | Да | Воспроизводимые харнессы оценки языковых моделей с явными критериями прохождения |
+| Incident Runbook | `src/apothem/skills/incident-runbook/` | Да | Создание runbook как Trigger → Diagnosis → Action → Verification → Rollback |
+| Multi-Source Research | `src/apothem/skills/multi-source-research/` | Да | Разветвлённые, перекрёстно проверенные, цитируемые исследовательские отчёты |
+| Plan Suite | `src/apothem/skills/plan-suite/` | Нет | Мастер-шаблон, потребляемый стадиями конвейера `/plan` |
+| Projectify | `src/apothem/skills/projectify/` | Да | Возвышение проекта чат-приложения — результаты Description / Instruction / knowledge-Files до соглашений SOTA в пределах измеримого бюджета контекста по платформам |
+| Prompt Engineering | `src/apothem/skills/prompt-engineering/` | Да | Структурированное проектирование промптов с валидацией eval |
+| Refactor Extract | `src/apothem/skills/refactor-extract/` | Да | Рефакторинги извлечения с сохранением поведения |
+| Secret Rotation | `src/apothem/skills/secret-rotation/` | Да | Безопасный вывод из обращения и замена скомпрометированных учётных данных |
+| Source Synthesis | `src/apothem/skills/source-synthesis/` | Да | Согласует фиксированный набор источников в один цитируемый синтез |
+| Surgical Guard | `src/apothem/skills/surgical-guard/` | Да | Якорно-ограниченное редактирование с минимальным diff в паре с реактивным, основанным на diff гардом качества после редактирования |
+| Test Authoring | `src/apothem/skills/test-authoring/` | Да | Создание тестов с приоритетом поведения по дисциплине Arrange-Act-Assert |
+| Vuln Triage | `src/apothem/skills/vuln-triage/` | Да | Классифицирует уведомления о безопасности по серьёзности и маршрутизирует устранение |
+| Workflow | `src/apothem/skills/workflow/` | Да | Универсальное управление мульти-помощниковыми рабочими процессами с состязательной верификацией с опровержением-по-умолчанию и раскрытым устранением сверх миссии |
+
+> **Соглашение.** **Путь** каждой строки — это папка; точка входа — файл `SKILL.md` внутри неё — например, `src/apothem/skills/plan-suite/SKILL.md` — согласно соглашению о навыках «папка-с-`SKILL.md`», объявленному в раскладке исходников проекта.
+
+## 6. Стили вывода
+
+Четыре стиля вывода живут под `src/apothem/output-styles/`.
+
+| Стиль | Файл | Назначение |
+| ----- | ---- | ------- |
+| Default | `src/apothem/output-styles/default.md` | Стиль экосистемы по умолчанию — унифицированные соглашения вывода, маршрутизация планового контента и контракт создания файлов |
+| Default Architect | `src/apothem/output-styles/default-architect.md` | Тон старшего архитектора — аналитический, прямой, с цитированием конкретных драйверов |
+| Concise Engineer | `src/apothem/output-styles/concise-engineer.md` | Короткоформатный инженерный вывод — минимум прозы, код в первую очередь |
+| Forensic Auditor | `src/apothem/output-styles/forensic-auditor.md` | Поза класса обзора — находка за находкой, вывод в форме оценочной карты, опровергатель на каждую находку |
+
+## 7. Эволюция артефактов
+
+**Обязательно.** Когда переиспользуемый паттерн, исправление или техника повторяется (2+ экземпляров в сессии или отмечено в памяти как повторяющееся), экосистема должна эволюционировать. Цикл состоит из четырёх шагов: **Detect** паттерна во время любого взаимодействия; **Search** по существующим навыкам, правилам, командам, хукам и памяти на предмет перекрытия; **Act** путём эволюции совпадающего артефакта на месте (обновить процедуру, антипаттерны, область охвата) или создания нового, когда забота подлинно ортогональна; **Validate**, что перекрёстные ссылки по-прежнему разрешаются и зависимые артефакты остаются согласованными. Предпочитайте уточнение созданию — новые артефакты усложняют поверхность сопровождения. См. `src/apothem/rules/persistent-conventions-vigilance.md` §2+§4 для полного протокола, включая закрытый каталог триггеров обнаружения пробелов по каждому классу артефактов.
+
+## 8. Пустые классы артефактов
+
+Поверхности, объявленные в реестре экосистемы, но намеренно пустые до срабатывания триггера активации. Каждая строка записывает зарезервированную поверхность, файл или каталог, который выстраивает каркас класса, и триггер, продвигающий строку из пустой-аттестации в заполненную.
+
+| Класс | Каркас | Статус | Триггер активации |
+| ----- | -------- | ------ | ------------------ |
+| MCP-серверы | (каркаса пока нет) | пустая-аттестация | Первая установка MCP-сервера под корнем конфигурации пользователя |
+
+Пустая-аттестация — это положительное объявление, а не пробел. Каркас класса (если он существует) — это канонический no-op-артефакт, отслеживающий момент активации. Продвижения из пустой-аттестации в заполненную приземляются в соответствующем разделе реестра атомарно с первым непустым значением каркаса.

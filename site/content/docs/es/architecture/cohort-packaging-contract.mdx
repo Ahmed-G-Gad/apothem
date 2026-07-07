@@ -1,0 +1,115 @@
+---
+title: "Contrato de empaquetado de cohortes"
+description: "El contrato estable y consumible aguas abajo para el empaquetado de cohortes y los manifiestos de complementos — enumera las cohortes y resuelve sus destinos nativos por entorno sin volver a derivar el mapeo."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+# Contrato de empaquetado de cohortes
+
+Este documento especifica el contrato estable y consumible aguas abajo para el
+empaquetado de cohortes y los manifiestos de complementos. Un consumidor lee
+este contrato para enumerar las cohortes y resolver sus destinos nativos por
+entorno **sin volver a derivar el mapeo**.
+
+## Artefactos
+
+| Artefacto | Función |
+| -------- | ---- |
+| `src/apothem/schemas/cohort.schema.json` | Esquema JSON para un documento de manifiesto de cohorte. |
+| `src/apothem/schemas/cohort-manifest.yaml` | La instancia del manifiesto de cohortes — las seis cohortes (`core`, `developer`, `security`, `research`, `ai-engineering`, `full`) pobladas con sus conjuntos de miembros; `full` es la unión de las otras cinco. |
+| `src/apothem/schemas/plugin.schema.json` | Esquema JSON para un manifiesto de complemento por paquete (`plugin.json`). |
+| `src/apothem/lib/propagation-manifest.yaml` | **Fuente de verdad** para los destinos nativos por entorno. |
+
+## Forma del manifiesto de cohortes
+
+El manifiesto de cohortes es un objeto de nivel superior con tres claves:
+
+- `version` — cadena SemVer del manifiesto.
+- `cohorts[]` — una entrada por cohorte. Cada entrada tiene `id` (del conjunto
+  cerrado `core | developer | security | research | ai-engineering | full`),
+  `name`, `description` y `members` (un objeto que agrupa los identificadores de
+  miembros por tipo de catálogo: `skills` / `agents` / `commands` / `rules` /
+  `hooks`).
+- `per_harness_targets` — el contrato de resolución (abajo).
+
+Cada identificador de miembro es un nombre estable en kebab-case que corresponde
+a un artefacto real bajo `src/apothem/` (`skills/<name>/`, `agents/<name>.md`,
+`commands/<name>.md`, `rules/<name>.md`, o una entrada de `hooks/`).
+
+## Enumerar cohortes
+
+Un consumidor carga `cohort-manifest.yaml`, lo valida contra
+`cohort.schema.json`, y luego itera sobre `cohorts[]`. Para cada cohorte lee
+`members.<type>` para obtener los identificadores de miembros de cada tipo de
+catálogo.
+
+## Resolver los destinos nativos por entorno (sin volver a derivar)
+
+El manifiesto de cohortes **no** reformula el mapeo de entornos. En su lugar,
+`per_harness_targets.source` apunta a `lib/propagation-manifest.yaml`, la única
+fuente de verdad. La regla de resolución:
+
+> Para un miembro de cohorte de tipo de catálogo `T` (uno de `skills`, `agents`,
+> `commands`, `rules`, `hooks`) y un entorno de destino `H` (uno de los listados
+> en `per_harness_targets.harnesses`), el destino nativo del complemento es el
+> campo `target` de la entrada en `lib/propagation-manifest.yaml` bajo
+> `harnesses.H.install` cuyo `source` coincide con `T/`.
+
+Por ejemplo, una skill de la cohorte `core` instalada para `claude_code` se
+resuelve a través de la entrada `harnesses.claude_code.install` con
+`source: "skills/"` a `target: "${HARNESS_ROOT}/skills/"`. La misma skill para
+`opencode` se resuelve a `${HARNESS_ROOT}/skills/`; para `gemini_cli` a
+`${PROJECT_ROOT}/.gemini/skills/`. Los consumidores nunca inventan destinos de
+entorno — los buscan.
+
+Los marcadores de posición `${HARNESS_ROOT}` / `${PROJECT_ROOT}` los resuelve
+cada adaptador de entorno en el momento de la instalación; los consumidores de
+cohortes toman el `target` resuelto de forma literal.
+
+## Función del manifiesto de complemento
+
+`plugin.schema.json` describe un `plugin.json` — un paquete autodescriptivo de
+miembros de catálogo (`skills` / `commands` / `agents` / `hooks` / `rules`) con
+un `name` requerido, una `version` SemVer y una `description`. Un manifiesto de
+complemento es la unidad que un adaptador de entorno materializa en su superficie
+de complemento nativa; las cohortes seleccionan qué miembros lleva un complemento,
+y el manifiesto de propagación resuelve dónde aterriza cada miembro por entorno.
+
+## Decisión de empaquetado — un único paquete paraguas, cohortes lógicas
+
+Las cohortes son una **capa de selección lógica** (este manifiesto), no un
+conjunto de paquetes separados e instalables de forma independiente. Apothem
+distribuye **un único paquete paraguas** que lleva el catálogo completo; el
+manifiesto de cohortes permite a un consumidor elegir un subconjunto coherente, y
+el manifiesto de propagación resuelve dónde aterriza cada miembro seleccionado
+por entorno.
+
+Dividir el catálogo en paquetes separados por cohorte (p. ej., un paquete por
+familia `developer` / `security` / `research`) es **alcanzable sin duplicación a
+nivel del repositorio** mediante el **patrón de enlaces simbólicos de
+meta-complemento** documentado por la superficie de distribución principal: un
+catálogo de mercado lista varios complementos de cohorte, y cada directorio de
+complemento de cohorte contiene **enlaces simbólicos** hacia el catálogo
+compartido de fuente única en lugar de copias. Cuando se instala una cohorte, el
+entorno desreferencia cada enlace simbólico dentro del mercado — copiando el
+contenido del destino en la *caché* de esa cohorte — de modo que la cohorte
+instalada es autocontenida, mientras que el **repositorio conserva una única
+fuente de verdad cableada por enlaces simbólicos** (cableado en lugar de
+redundancia, exactamente como prefiere la disciplina de deduplicación). La
+lectura anterior de que los paquetes de cohorte "duplican mecánicamente" el
+catálogo confundía la duplicación de la *caché en el momento de la instalación*
+(la copia por complemento normal del entorno) con la duplicación del
+*repositorio*; el patrón de enlaces simbólicos evita esta última.
+
+Apothem actualmente distribuye **un único paquete paraguas** porque esa es la
+superficie de distribución más sencilla, no porque las cohortes sean
+mecánicamente imposibles. Adoptar la forma por cohorte es un genuino **compromiso
+de UX y mantenimiento**, no una violación de la deduplicación: la ventaja es una
+experiencia más fina de "instala solo esta familia"; los costes son mantener N
+directorios de enlaces simbólicos de cohorte más sus entradas de mercado, una
+superficie de conformidad / pruebas / golden más grande, y copias de caché en el
+momento de la instalación por cohorte. La capa de cohorte lógica de arriba ya
+ofrece el resultado de *selección* "instala solo lo que necesitas" desde el único
+paquete; el *empaquetado* por cohorte es el siguiente paso cuando se desee la
+experiencia de instalación más fina.

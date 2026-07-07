@@ -1,0 +1,104 @@
+---
+title: "مخطّط خط أنابيب CI/CD"
+description: "خريطة بصرية وتفصيل بالمسارات لمراحل سير عمل البناء والاختبار وفحص الأسلوب والأمن والنشر التي تُبوِّب كلّ تغيير في الشيفرة وكلّ إصدار."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**الخريطة البنيوية لسير عمل البناء · التحقّق · النشر الذي يُبوِّب كلّ تغيير في
+منظومة <bdi>Apothem</bdi>.** يُثبِّت هذا المستند سطح التصوير؛ أمّا ملفّات سير
+العمل الفعلية لـ<bdi>GitHub Actions</bdi> وأدوات الإصدار فتُوضَع لاحقًا ضمن تثبيت
+الجاهزية للإنتاج.
+
+## شكل خط الأنابيب
+
+```mermaid
+%%{ init: { "theme": "neutral" } }%%
+%% verified: 2026-04-27 %%
+%% provenance: pyproject.toml + scripts/dev/validate_ecosystem.py + scripts/dev/validate_hooks.py %%
+%% cross-reference: site/content/docs/developer-guide.mdx (contributor workflow) %%
+flowchart LR
+    accTitle: CI/CD pipeline shape
+    accDescr: Left-to-right flowchart of the apothem CI CD pipeline showing build, test, lint, type-check, security scan, docs build, package, sign, and publish stages with branch protection gates between them.
+    subgraph Trigger["Trigger surface"]
+        PR["Pull request opened or updated"]
+        PUSH["Push to main"]
+        TAG["Tag release vX.Y.Z"]
+    end
+    subgraph Static["Static analysis lane"]
+        LINT["Ruff lint + format check"]
+        TYPE["Mypy strict"]
+        MD["markdownlint"]
+        FRONT["Frontmatter validator"]
+    end
+    subgraph Test["Test lane"]
+        PYTEST["pytest tests/hooks"]
+        ECO["validate_ecosystem.py"]
+        CHAOS["chaos_pass.py (release lane)"]
+        BENCH["src/apothem/benchmarks/ (release lane)"]
+    end
+    subgraph Security["Security lane"]
+        SECRETS["Secret scan"]
+        SBOM["SBOM generation"]
+        LICENSE["License audit"]
+    end
+    subgraph Publish["Publish lane (tags only)"]
+        SIGN["Signed-tag verification"]
+        ATTEST["Provenance attestation"]
+        DOCS["Project website publish"]
+        RELEASE["Release notes from CHANGELOG.md"]
+    end
+    PR --> Static
+    PR --> Test
+    PR --> Security
+    PUSH --> Static
+    PUSH --> Test
+    PUSH --> Security
+    TAG --> Static
+    TAG --> Test
+    TAG --> Security
+    TAG --> Publish
+    Static --> GATE{All lanes green?}
+    Test --> GATE
+    Security --> GATE
+    GATE -->|yes| MERGE[Merge / publish]
+    GATE -->|no| BLOCK[Block · surface failures · request fix]
+    Publish --> MERGE
+```
+
+## أدوار المسارات
+
+- **مسار التحليل الساكن** — تغذية راجعة سريعة. يغطّي <bdi>Ruff</bdi> أسلوب
+  <bdi>Python</bdi> ومجموعة قواعد منتقاة؛ ويفرض <bdi>mypy</bdi> انضباط الأنواع
+  عند <bdi>strict</bdi>؛ ويضبط <bdi>markdownlint</bdi> سطح التوثيق؛ ويُبوِّب
+  مُتحقِّق الـ<bdi>frontmatter</bdi> امتثال مخطّط القِطَع للقواعد والمهارات
+  والعاملين المُفوَّضين والأوامر.
+- **مسار الاختبار** — يُشغِّل <bdi>`pytest tests/hooks`</bdi> بيئة تشغيل الـ
+  <bdi>hook</bdi> ضدّ مصفوفة الأحداث الكاملة؛ و<bdi>`validate_ecosystem.py`</bdi>
+  هو البوّابة البنيوية الرئيسية للاتّساق عبر القِطَع؛ ويُفعَّل
+  <bdi>`chaos_pass.py`</bdi> ومجموعة المقاييس المرجعية حسب الصنف تحت
+  <bdi>`src/apothem/benchmarks/`</bdi> على مسار الإصدار لالتقاط التدهور تحت
+  المدخلات المتدهورة وانحدارات ميزانية وقت التشغيل.
+- **مسار الأمن** — يلتقط فحص الأسرار الاعتمادات المُودَعة بالخطأ؛ ويُبوِّب توليد
+  <bdi>SBOM</bdi> وعمليات تدقيق الترخيص سطح سلسلة التوريد لأيّ تثبيت جاهزية
+  للإنتاج.
+- **مسار النشر** — لا يعمل إلّا على الإصدارات الموسومة. يؤكّد التحقّق من الوسم
+  المُوقَّع منشأ فرع الإصدار؛ ويُنشَر موقع المشروع من
+  <bdi>`site/dist/`</bdi> إلى هدف <bdi>GitHub Pages</bdi>؛ وتُشتَقّ ملاحظات
+  الإصدار من تنسيق <bdi>Keep-A-Changelog</bdi> في <bdi>`CHANGELOG.md`</bdi>.
+
+## التهيئة الملموسة
+
+تُثبَّت ملفّات سير العمل الفعلية (<bdi>`.github/workflows/ci.yml`</bdi>،
+<bdi>`.github/workflows/release.yml`</bdi>، وغيرها) أثناء بناء منظومة الجاهزية
+للإنتاج. يُعرِّف هذا المخطّط الشكل المعياري الذي تعكسه كلّ تهيئة مستقبلية.
+
+## مراجع متقاطعة موثوقة
+
+- <bdi>`pyproject.toml`</bdi> — مصدر الحقيقة لتهيئة <bdi>Ruff</bdi> / <bdi>mypy</bdi> / <bdi>pytest</bdi>.
+- <bdi>`scripts/dev/validate_ecosystem.py`</bdi> — البوّابة الرئيسية عبر القِطَع.
+- <bdi>`scripts/dev/validate_hooks.py`</bdi> — التحقّق البنيوي الخاصّ بالـ<bdi>hook</bdi>.
+- <bdi>`scripts/dev/chaos_pass.py`</bdi> — مسح خصومي لكلّ <bdi>hook</bdi> مُهيَّأ.
+- <bdi>`src/apothem/benchmarks/`</bdi> — مُتحقِّقو ميزانية وقت التشغيل حسب الصنف.
+- <bdi>`site/content/docs/developer-guide.mdx`</bdi> — سير عمل المُساهِم الموجَّه للمُشغِّل.
+- <bdi>`CHANGELOG.md`</bdi> — مصدر ملاحظات الإصدار.

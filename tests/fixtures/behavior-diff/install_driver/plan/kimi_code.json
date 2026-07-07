@@ -1,0 +1,37 @@
+[
+  {
+    "mode": "sentinel_merge",
+    "source": "<APOTHEM_SRC>/harnesses/kimi_code/templates/AGENTS.md",
+    "target": "<ROOT>/AGENTS.md"
+  },
+  {
+    "mode": "merge_tree_entries",
+    "source": "<APOTHEM_SRC>/hooks",
+    "target": "<ROOT>/.kimi-code/.apothem/support/hooks"
+  },
+  {
+    "mode": "merge_tree_entries",
+    "source": "<APOTHEM_SRC>/rules",
+    "target": "<ROOT>/.kimi-code/.apothem/support/rules"
+  },
+  {
+    "mode": "merge_tree_entries",
+    "source": "<APOTHEM_SRC>/skills",
+    "target": "<ROOT>/.kimi-code/.apothem/support/skills"
+  },
+  {
+    "mode": "command_skills",
+    "source": "<APOTHEM_SRC>/commands",
+    "target": "<ROOT>/.kimi-code/.apothem/support/skills"
+  },
+  {
+    "mode": "merge_tree_entries",
+    "source": "<APOTHEM_SRC>/agents",
+    "target": "<ROOT>/.kimi-code/.apothem/support/agents"
+  },
+  {
+    "mode": "merge_tree_entries",
+    "source": "<APOTHEM_SRC>/templates",
+    "target": "<ROOT>/.kimi-code/.apothem/support/templates"
+  }
+]

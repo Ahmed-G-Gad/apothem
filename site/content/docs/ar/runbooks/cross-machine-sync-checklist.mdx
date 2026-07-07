@@ -1,0 +1,162 @@
+---
+title: "قائمة تحقق التحقق من المزامنة عبر الأجهزة"
+description: "إجراء تحقق لتأكيد أن محوّل Claude Code يُثبَّت ويُتحقَّق منه ويُزال بشكل صحيح على مضيف جديد، مع فحوص محمولية كاملة."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **النطاق.** تتحقق قائمة التحقق هذه من طبقة محمولية التثبيت / الإزالة لـ**محوّل <bdi>Claude Code</bdi>** على مضيف ثانٍ جديد. للأدوات الأخرى وصفات تحقق خاصة بكل مضيف موثّقة ضمن [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses). المسار <bdi>`~/.claude/`</bdi> هو وجهة التثبيت القانونية لمحوّل <bdi>Claude Code</bdi>؛ استبدل المسار الأصلي للمحوّل عند التحقق من أداة مختلفة.
+
+> **تحقق يقوده المشغِّل لطبقة محمولية التثبيت / الإزالة على مضيف ثانٍ جديد.** كُتب طور النشر (<bdi>`vX.Y.Z`</bdi>) على مضيف <bdi>Windows</bdi> واحد؛ ويحتاج ادعاء محمولية <bdi>`~/.claude/`</bdi> (<bdi>`CLAUDE.md`</bdi> <bdi>`portability: universal`</bdi>) إلى تمرين شامل من طرف إلى طرف على مضيف ثانٍ قبل أن يحمل الثابت متعدد المضيفات وزنًا. هذه القائمة هي وصفة التحقق القانونية على المضيف الثاني (محوّل <bdi>Claude Code</bdi>).
+
+---
+
+## 1. الشروط المسبقة على المضيف الثاني
+
+شغِّل على المضيف الثاني قبل بدء التحقق:
+
+| العنصر | الأمر | المتوقَّع |
+|------|---------|----------|
+| <bdi>Git</bdi> مثبَّت | `git --version` | <bdi>Git 2.40+</bdi> |
+| <bdi>Python 3.10+</bdi> متاح | <bdi>`python3 --version`</bdi> (<bdi>POSIX</bdi>) أو <bdi>`py -3 --version`</bdi> (<bdi>Windows</bdi>) | <bdi>3.10 / 3.11 / 3.12 / 3.13</bdi> |
+| مصادقة <bdi>GitHub</bdi> (اختياري، للاستنساخ المصادَق عليه / فحوص الـ<bdi>API</bdi>) | `gh auth status` | مسجَّل الدخول بالحساب المصرَّح له للمستودع عند استخدام سير العمل المصادَق عليه |
+| <bdi>Shell</bdi> متاح | <bdi>`bash --version`</bdi> (<bdi>POSIX</bdi>) أو <bdi>`pwsh --version`</bdi> (<bdi>Windows</bdi>) | <bdi>Bash 4+</bdi> أو <bdi>PowerShell 7+</bdi> |
+| لا يوجد دليل <bdi>`~/.claude/`</bdi> مسبق | `ls ~/.claude 2>&1` | "No such file or directory" — إن وُجد، فاحتفظ بنسخة احتياطية قبل المتابعة |
+
+## 2. التحقق من الاستنساخ والتثبيت
+
+نفّذ على المضيف الثاني:
+
+```bash
+# Clone the published repo to ~/.claude (the install destination)
+git clone https://github.com/ahmed-g-gad/apothem.git ~/.claude
+cd ~/.claude
+
+# (POSIX path) Run scripts/installer/install.sh dry-run first
+bash scripts/installer/install.sh --dry-run                                    # exit 0; Quick Start banner
+
+# (POSIX path) Run scripts/installer/install.sh for real
+bash scripts/installer/install.sh                                               # exit 0; sentinel-file check; idempotent
+
+# (Windows path) PowerShell parallel
+pwsh -File scripts/installer/install.ps1 -DryRun                                # exit 0; Quick Start banner
+pwsh -File scripts/installer/install.ps1                                        # exit 0
+```
+
+التقط رمز الخروج وشعار <bdi>stdout</bdi> لكل أمر. سجِّل في <bdi>`<second-host>/.audit/cross-machine-clone-install.md`</bdi>.
+
+## 3. انضباط العناصر الأربعة (بحسب <bdi>`src/apothem/rules/production-ready-prs.md`</bdi> §8.3)
+
+تحقق من كل من الثوابت الأربعة على المضيف الثاني:
+
+### 3.1 أمان ملف الحارس (sentinel)
+
+```bash
+# Re-run installer at the same destination.
+bash scripts/installer/install.sh                                               # POSIX
+pwsh -File scripts/installer/install.ps1                                        # Windows
+```
+
+**المتوقَّع:** يكتشف المُثبِّت <bdi>`~/.claude/`</bdi> صالحًا موجودًا (ملف الحارس موجود)، ويقوم بتقديم سريع (fast-forward) بدلًا من إعادة التثبيت أو التكرار؛ رمز الخروج <bdi>0</bdi>.
+
+### 3.2 مفحوص المتطلبات المسبقة
+
+```bash
+# Temporarily move git out of PATH.
+PATH=/usr/bin:/bin bash scripts/installer/install.sh                            # POSIX (no git)
+```
+
+**المتوقَّع:** يرفض المُثبِّت التشغيل؛ ويُصدر تشخيص "git not found" صريحًا؛ رمز الخروج غير صفري.
+
+### 3.3 إعادة تشغيل متماثلة (idempotent)
+
+```bash
+# Run installer N times back-to-back.
+for i in 1 2 3 4 5; do bash scripts/installer/install.sh; done                  # POSIX
+1..5 | ForEach-Object { pwsh -File scripts/installer/install.ps1 }              # Windows
+```
+
+**المتوقَّع:** يخرج كل استدعاء برمز <bdi>0</bdi>؛ لا آثار جانبية بعد الاستدعاء الأول؛ لا ملفات مكرَّرة؛ لا تكرار لـ<bdi>RC</bdi> الخاص بـ<bdi>shell-profile</bdi>.
+
+### 3.4 قابل للتهيئة عبر متغيرات البيئة
+
+```bash
+# Install to a non-default location.
+CLAUDE_PROJECT_DIR=/tmp/alt-claude bash scripts/installer/install.sh            # POSIX
+$env:CLAUDE_PROJECT_DIR='C:\tmp\alt-claude'; pwsh -File scripts/installer/install.ps1   # Windows
+```
+
+**المتوقَّع:** يحترم المُثبِّت متغيّر البيئة؛ ولا يُعدَّل <bdi>`~/.claude/`</bdi>؛ وتحتوي الوجهة البديلة على التخطيط المتوقَّع.
+
+## 4. التحقق من حزمة المدقِّقات (بعد التثبيت)
+
+```bash
+cd ~/.claude
+make validate                                                 # 50 conformity validators
+make headers-doctor                                           # file-header-grep → passed:true
+make ai-surfaces-doctor                                       # multi-surface-coherence → passed:true
+make plans-doctor                                             # no-global-plans + plans-discipline-language
+make lint                                                     # ruff + mypy
+make test                                                     # pytest 265/265
+```
+
+**المتوقَّع:** كل بوابة خضراء. التقط رموز الخروج + أسطر الملخص.
+
+## 5. التحقق من الإزالة
+
+```bash
+# POSIX path — interactive uninstall
+bash scripts/installer/uninstall.sh                           # answers: "y" to confirm
+ls ~/.claude 2>&1                                             # "No such file or directory"
+
+# Re-install from clone, then uninstall non-interactively
+git clone https://github.com/ahmed-g-gad/apothem.git ~/.claude
+bash scripts/installer/uninstall.sh --yes
+ls ~/.claude 2>&1                                             # "No such file or directory"
+```
+
+**المتوقَّع:** يطلب التدفق التفاعلي التأكيد؛ ويتخطى <bdi>`--yes`</bdi> المطالبة للتشغيلات الدُّفعية؛ ويترك كلا التدفقين <bdi>`~/.claude/`</bdi> مُزالًا بنظافة؛ وتُنظَّف مراجع متغيرات بيئة <bdi>shell-profile</bdi> المرافقة.
+
+## 6. التحقق من حواجز الأمان
+
+```bash
+# Run uninstall against a path that fails the sentinel-file check.
+mkdir -p /tmp/not-a-claude-install
+CLAUDE_PROJECT_DIR=/tmp/not-a-claude-install bash scripts/installer/uninstall.sh --yes
+```
+
+**المتوقَّع:** يرفض المُزيل؛ ويُصدر تشخيص "sentinel-file missing; refusing to remove unsafe target"؛ رمز الخروج غير صفري. لم يُمَسّ المسار.
+
+```bash
+# Run uninstall against $HOME, /, or empty path.
+CLAUDE_PROJECT_DIR=$HOME bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
+CLAUDE_PROJECT_DIR=/ bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
+CLAUDE_PROJECT_DIR='' bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
+```
+
+**المتوقَّع:** يرفض كل منها بتشخيص "unsafe target" صريح؛ ولا يمسّ أيٌّ منها نظام الملفات.
+
+## 7. الإبلاغ
+
+بعد التشغيل على المضيف الثاني، التقط النتائج في:
+
+- <bdi>`<second-host>/.audit/cross-machine-clone-install.md`</bdi> (نتائج أوامر الاستنساخ + التثبيت)
+- <bdi>`<second-host>/.audit/cross-machine-validators.md`</bdi> (نتائج مدقِّقات القسم 4)
+- <bdi>`<second-host>/.audit/cross-machine-uninstall.md`</bdi> (نتائج الإزالة + الأمان للقسمين 5–6)
+
+اعرض النتائج على المُشرف:
+
+- ✅ تتحقق كل ثوابت انضباط العناصر الأربعة + كل بوابات المدقِّقات خضراء + رفضت كل حواجز أمان الإزالة الأهداف غير الآمنة ← يُتحقَّق من ادعاء <bdi>`portability: universal`</bdi> الخاص بالنشر من طرف إلى طرف
+- ❌ أي إخفاق ← افتح مشكلة على <bdi>`https://github.com/ahmed-g-gad/apothem/issues/new`</bdi> مع القسم المخفِق + المخرجات الملتقطة؛ ويتولى المُشرف الفرز
+
+## 8. معايير القبول
+
+- [ ] §1 الشروط المسبقة مستوفاة
+- [ ] §2 ينجح الاستنساخ والتثبيت على كل من أصداف <bdi>POSIX</bdi> و<bdi>Windows</bdi>
+- [ ] §3 يتحقق انضباط العناصر الأربعة (أمان ملف الحارس؛ مفحوص المتطلبات المسبقة؛ متماثل؛ قابل للتهيئة عبر متغير البيئة)
+- [ ] §4 كل بوابة مدقِّق خضراء
+- [ ] §5 تنجح الإزالة التفاعلية؛ وينجح <bdi>`--yes`</bdi> دون مطالبة
+- [ ] §6 يُطلَق كل رفض من حواجز الأمان
+- [ ] §7 النتائج ملتقطة عند مسارات التدقيق الموثّقة
+
+عندما يُؤشَّر على كل مربع أعلاه على مضيف ثانٍ جديد، تُغلَق متابعة المزامنة عبر الأجهزة (<bdi>COMPLETION.md</bdi> §7 القيد المُلزِم).

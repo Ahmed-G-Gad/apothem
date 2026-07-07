@@ -1,0 +1,55 @@
+---
+title: "ソースレイアウト"
+description: "なぜ Apothem が src/ レイアウトを使用するのか、そしてツリーがどのように構成されているか。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem は [PyPA の src-layout](https://packaging.python.org/en/latest/discussions/src-layout-vs-flat-layout/) を採用し、インポート可能なすべての Python を `src/apothem/` の下に配置しています。
+
+## なぜ src-layout なのか
+
+- **インポートの分離。** `import apothem` は `src/` がパス上にあるときのみ解決され
+  （エンジンは `PYTHONPATH=src python -m apothem` として実行されます）、無関係な
+  ディレクトリから作業ツリーが誤ってインポートされることを防ぎます。
+- **自己完結型ランタイム。** Apothem は依存関係を `src/apothem/_vendor/` の下に
+  ベンダリングした状態でチェックアウトから直接実行されます — インストール手順は不要です。
+  src-layout はそのインポート可能な表面を、リポジトリのツール群、テスト、スクリプトから
+  きれいに分離した状態に保ちます。
+- **クリーンな配布。** 同じレイアウトが、整った形式の sdist と wheel（および任意の
+  `pip install -e .` 編集可能インストール）を生成し、その内容は出荷されるものと正確に一致し、
+  余計なトップレベルモジュールが紛れ込むことはありません。
+
+## ツリー構造
+
+```
+src/apothem/
+    agents/         persistent agent definitions (*.md)
+    audit/          inventory and provenance tools
+    benchmarks/     performance benchmarks
+    cli/            Click CLI (quickstart, install, update, uninstall, verify, status, diff, rollback, harnesses, profile, doctor, completion)
+    commands/       slash command definitions (*.md)
+    conformity/     mechanical gate checkers (*-grep.py)
+    harnesses/      one sub-package per harness adapter (17 adapters)
+    hooks/          hook dispatcher + message files
+    lib/            shared Python library
+    output-styles/  output-style definitions (*.md)
+    rules/          behavioral rules (*.md)
+    schemas/        YAML/JSON schemas
+    skills/         reusable skill templates (folder/SKILL.md)
+    statuslines/    status-line config (*.json)
+    templates/      reusable template artifacts
+```
+
+## インポート可能な成果物 vs. 構成成果物
+
+`src/apothem/` の下にある多くの項目は、Python モジュールではなく Markdown の構成成果物です。
+インポート可能な Python 表面は次のとおりです。
+
+- `src/apothem/cli/`（`apothem` エントリーポイントとして公開される Click CLI）
+- `src/apothem/harnesses/`（17 のハーネスアダプターサブパッケージ）
+- `src/apothem/lib/`（共有ライブラリ: プロファイル、レジストリ、マテリアライザー、伝播）
+- `src/apothem/hooks/`（dispatch.py、lib/）
+- `src/apothem/conformity/`（機械的な grep スクリプト）
+- `src/apothem/audit/`（インベントリスクリプト）
+- `src/apothem/benchmarks/`（性能ベンチマークドライバー）

@@ -1,0 +1,14 @@
+{
+  "title": "使用",
+  "pages": [
+    "index",
+    "getting-started",
+    "authoring-plans",
+    "writing-rules",
+    "using-agents",
+    "hook-development",
+    "conformity-gate",
+    "large-codebase-onboarding",
+    "..."
+  ]
+}

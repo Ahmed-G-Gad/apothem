@@ -1,0 +1,34 @@
+---
+title: "Gaya keluaran"
+description: "Profil nada operator (Senior Architect, Concise Engineer, Forensic Auditor) yang diaktifkan per-sesi melalui perintah /output-style."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Profil gaya-keluaran berada di bawah `src/apothem/output-styles/` dan membawa
+panduan nada operator per-gaya. Harness host mengaktifkan sebuah
+gaya secara per-sesi melalui `/output-style <name>`.
+
+## Profil kanonis
+
+| Profil | Berkas | Nada |
+|---------|------|------|
+| Arsitek default | `src/apothem/output-styles/default-architect.md` | Nada Senior Software Architect (default) |
+| Insinyur ringkas | `src/apothem/output-styles/concise-engineer.md` | Nada engineering format-pendek |
+| Auditor forensik | `src/apothem/output-styles/forensic-auditor.md` | Nada audit temuan-demi-temuan |
+
+## Kontrak frontmatter
+
+```yaml
+---
+name: <style name>
+description: <one-line tone summary>
+type: output-style
+---
+```
+
+## Menulis profil baru
+
+Buat berkas `<name>.md` baru di bawah `src/apothem/output-styles/` dengan
+frontmatter kanonis, deklarasikan nada di badan, dan ratifikasi dengan memanggil
+`/output-style <name>` di awal sesi Anda berikutnya.

@@ -1,0 +1,73 @@
+---
+title: "/research-proposal"
+description: "/research-proposal——将综合得出的研究缺口和理论框架转化为可资助、可评审的工作蓝本：SMART 目标、可行性与风险登记册、影响路径、预注册计划，以及 EQUATOR 报告指南选择——这是 /research 流水线中的提案阶段，位于 /research-synthesis 与 /research-design 之间。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**角色：** 首席研究者（工作蓝本）
+**流水线位置：** 链路中段
+
+将综合得出的研究缺口和理论框架转化为可资助、可评审的工作蓝本。伦理可行性会被提前提出，预注册计划和报告指南选择会在任何研究设计被付诸实施之前先行确定。
+
+## 规范调用
+
+```bash
+/research-proposal
+```
+
+带参数：
+
+```bash
+/research-proposal [--suite-name NAME] [--override] [--guideline NAME] [--prereg-registry NAME]
+```
+
+## 输入
+
+套件的 `_inputs/synthesis.md`（SOTA 图谱 ＋ 缺口分析）和 `_inputs/theory.md`（概念框架）。
+
+## 输出
+
+`_inputs/proposal.md`（SMART 目标层级、可行性评估、资源／时间线／风险登记册、影响路径、预注册计划，以及 EQUATOR 报告指南的预选）。
+
+## 下游
+
+/research-design（下游消费者——将提案付诸实施，形成冻结的、预注册的研究设计）。
+
+## 工作流阶段
+
+该命令遵循标准的 `/research` 流水线工作流：
+
+1. **加载上下文**——读取 `_inputs/synthesis.md` 和 `_inputs/theory.md`、规则，以及任何已有的套件状态。
+2. **构建 SMART 目标层级**——将缺口转化为具体、可测量、可达成、相关且有时限的目标。
+3. **评估可行性与风险**——构建资源／时间线／风险登记册；提前提出伦理可行性。
+4. **规划预注册与报告**——选择登记处，起草预注册计划，并预选 EQUATOR 报告指南。
+5. **绘制影响路径**——追溯目标一旦达成将如何产生下游影响。
+6. **验证并发出**——确认目标可检验且计划可复现；发出 `_inputs/proposal.md` 以及交接清单。
+
+## 严谨性强制底线
+
+目标发表场所的抱负不仅决定报告指南的选择，还决定下游设计与实验阶段必须清越的严谨性强制底线深度——复现底线、预算对等、在互不相交的划分上调参、以及带效应量的显著性——外加交付物将携带的可复现性证据包。
+
+## 失败模式
+
+| 症状 | 原因 | 恢复 |
+|---------|-------|----------|
+| 目标不可测量 | 目标被表述为活动而非结果 | 重新表述为带有明确成功指标的 SMART 目标 |
+| 没有预注册计划 | 预注册步骤被跳过 | 在继续进行 `/research-design` 之前先选择登记处并起草计划 |
+| 缺少综合输入 | `/research-synthesis` 尚未运行 | 先运行 `/research-synthesis` 以产出缺口分析 |
+
+## 示例
+
+```bash
+# 将缺口转化为可资助的工作蓝本
+/research-proposal --suite-name retrieval-latency
+
+# 固定报告指南和预注册登记处
+/research-proposal --guideline PRISMA --prereg-registry OSF
+```
+
+## 交叉引用
+
+- [流水线概览](/docs/pipeline)
+- [命令参考](/docs/reference/commands)

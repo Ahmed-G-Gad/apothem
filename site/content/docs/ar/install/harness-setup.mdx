@@ -1,0 +1,53 @@
+---
+title: "إعداد إطار العمل"
+description: "إضافة محوّلات أُطُر العمل وتهيئتها للمنصّات."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## تثبيت محوّل إطار عمل
+
+```bash
+apothem install --harness <name>
+```
+
+راجع [قائمة أُطُر العمل المدعومة](/docs/harnesses) للاطّلاع على الأسماء المتاحة.
+تتطلّب المحوّلات ذات نطاق المشروع مسار المشروع:
+
+```bash
+apothem install --harness cursor --project /path/to/project
+apothem install --harness gemini-cli --project /path/to/project
+apothem install --harness github-copilot --project /path/to/project
+apothem install --harness windsurf --project /path/to/project
+```
+
+## تثبيت أُطُر عمل متعدّدة
+
+استخدم المُحدِّد الذي يشمل السجلّ بأكمله عندما تريد كل محوّل مدعوم. ولأنّ
+المجموعة المُسجَّلة تتضمّن محوّلات ذات نطاق المشروع، مرّر جذر المشروع.
+
+```bash
+apothem install --harness claude-code
+apothem install --harness cursor --project /path/to/project
+apothem install --harness all --project /path/to/project
+```
+
+## التحقّق من إعداد إطار العمل
+
+```bash
+apothem verify --harness <name>
+apothem verify --harness all --project /path/to/project
+```
+
+للتحقّق من كل محوّل مُسجَّل دفعةً واحدة، شغّل `apothem doctor`. إذ يطبع
+جدول حالة تثبيت لكل إطار عمل ويخرج برمز غير صفري إذا أبلغ أي محوّل
+عن عدم التثبيت.
+
+## عرض أُطُر العمل المُثبَّتة
+
+```bash
+apothem harnesses list
+```
+
+مرّر `apothem harnesses show <name>` للحصول على تفاصيل كل محوّل (الاسم، وحالة
+التثبيت، ومسار المُخرَج).

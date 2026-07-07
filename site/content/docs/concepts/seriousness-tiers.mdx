@@ -1,0 +1,34 @@
+---
+title: "Seriousness tiers"
+description: "The four seriousness tiers — how Apothem scales governance to engagement level."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem scales governance overhead to the engagement level. A quick exploration
+does not need signed commits; a production launch does.
+
+## The four tiers
+
+| Tier | When to use | Governance floor |
+|------|-------------|-----------------|
+| **EXPLORING** | Prototypes, throwaway experiments | Lint + tests + the core mandates (critical evaluation, best-solution reasoning, direct honesty) |
+| **PERSONAL_USE** | Personal tools, local scripts | + Type-check + per-phase commits + PROGRESS.md |
+| **SHARED** | Team projects, open-source | + failing checks block execution + per-task commits + full docs + parallel review |
+| **PUBLIC_LAUNCH** | Production services, published packages | + Security scans + signed commits + semver + mandatory re-review |
+
+## Ad-hoc default
+
+When no seriousness tier is specified, Apothem defaults to **PERSONAL_USE**.
+
+## Minimum viable governance
+
+At EXPLORING, three cross-cutting mandates always apply regardless of tier:
+- CM-1 (Critical Evaluation)
+- CM-5 (Best Solution)
+- CM-10 (Brutal Honesty)
+
+## Tier escalation
+
+The seriousness tier can be escalated mid-project. When a PERSONAL_USE project
+graduates to SHARED, run the full local release-readiness sweep to catch
+any governance gaps that accumulated at the lower tier.

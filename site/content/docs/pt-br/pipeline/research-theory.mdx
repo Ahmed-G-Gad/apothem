@@ -1,0 +1,69 @@
+---
+title: "/research-theory"
+description: "/research-theory — Constrói o arcabouço conceitual e teórico de uma pergunta de pesquisa enquadrada: teoria da mudança, construtos com definições operacionais e um diagrama de modelo conceitual — a etapa de fundamentação teórica do pipeline /research, entre /research-spec e /research-sources."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Papel:** Pesquisador Principal (fundamentação teórica)
+**Posição no pipeline:** intermediária
+
+Constrói o arcabouço conceitual e teórico fundamental para uma pergunta de pesquisa enquadrada — a fundamentação a priori à qual as etapas de busca sistemática e síntese remetem. Cada construto é ancorado na teoria primária e cada relação teorizada é enunciada em uma forma refutável.
+
+## Invocação canônica
+
+```bash
+/research-theory
+```
+
+Com argumentos:
+
+```bash
+/research-theory [--suite-name NAME] [--override] [--framework NAME]
+```
+
+## Entradas
+
+O `_spec/research-spec.md` da suíte (o conjunto de perguntas enquadradas e falsificáveis produzido por `/research-spec`).
+
+## Saídas
+
+`_inputs/theory.md` (o arcabouço conceitual / teórico, a teoria da mudança / modelo lógico, os construtos com suas definições operacionais e um diagrama de modelo conceitual).
+
+## Downstream
+
+/research-sources (consumidor downstream — a busca sistemática remete seus critérios de inclusão a esses construtos).
+
+## Fases do fluxo de trabalho
+
+O comando segue o fluxo de trabalho padrão do pipeline `/research`:
+
+1. **Carregar o contexto** — Lê `_spec/research-spec.md`, as regras e qualquer estado existente da suíte.
+2. **Enquadrar o modelo conceitual** — Define os construtos e suas definições operacionais; ancora cada um na teoria primária.
+3. **Desenhar a teoria da mudança** — Constrói o modelo lógico que liga os construtos aos resultados esperados; enuncia cada relação em uma forma refutável.
+4. **Diagramar o modelo** — Emite um diagrama de modelo conceitual que as etapas a jusante referenciam.
+5. **Verificar as saídas** — Confirma que cada construto está ancorado na teoria e que cada relação é refutável; resolve a ambiguidade pelo canal de consulta estruturada.
+6. **Emitir o arcabouço** — `_inputs/theory.md` mais o manifesto de transferência atualizado.
+
+## Modos de falha
+
+| Sintoma | Causa | Recuperação |
+|---------|-------|----------|
+| O construto carece de uma definição operacional | Conceito enunciado de forma abstrata | Defina o construto em termos mensuráveis; cite a teoria primária |
+| A relação teorizada não é refutável | Relação enunciada como um truísmo | Reenuncie a relação como uma afirmação falsificável |
+| Falta a entrada de especificação | `/research-spec` ainda não foi executado | Execute `/research-spec` primeiro para enquadrar a pergunta |
+
+## Exemplos
+
+```bash
+# Constrói o arcabouço teórico para uma pergunta enquadrada
+/research-theory --suite-name retrieval-latency
+
+# Ancora a um arcabouço teórico nomeado
+/research-theory --framework "information foraging theory"
+```
+
+## Referências cruzadas
+
+- [Visão geral do pipeline](/docs/pipeline)
+- [Referência de comandos](/docs/reference/commands)

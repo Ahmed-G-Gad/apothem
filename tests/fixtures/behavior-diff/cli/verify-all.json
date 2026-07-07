@@ -1,0 +1,9 @@
+{
+  "argv": [
+    "verify",
+    "--harness",
+    "all"
+  ],
+  "exit_code": 1,
+  "stdout": "Error: Apothem validation failed.\nField: project\nReason: project-scope harnesses require --project: cursor, gemini-cli, github-copilot, kimi-code, windsurf, codebuddy, kiro, trae, zed, glm.\nFix: Pass --project PATH or select only user-scope harnesses.\nFiles written: none.\n"
+}

@@ -1,0 +1,41 @@
+---
+title: "Apothem 对比手工 Cursor 配置"
+description: "手工维护 `.cursor/rules/` 下的 Cursor MDC 规则，相较于从 Apothem 的共享配置档案渲染它们。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Cursor 读取 `.cursor/rules/` 下 MDC 格式的规则。MDC 格式要求若干 frontmatter
+字段——`description`、`globs` 和 `alwaysApply`。Apothem 的 cursor 适配器从
+共享配置档案渲染这些 `.mdc` 文件。本页将手工维护该配置与用 Apothem 管理它
+加以对比。
+
+## 工夫对比
+
+| 任务 | 手工配置 | Apothem 管理 |
+| ---- | --------------- | --------------- |
+| 编写规则 | 在 `.cursor/rules/` 下手工编写每个 `.mdc` 文件 | 从共享语料库渲染 |
+| 写 MDC frontmatter | 逐个文件手工编写 `description` / `globs` / `alwaysApply` | 由适配器生成 |
+| 保持单一规则格式 | 在 MDC 规则与单一 `.cursorrules` 文件之间手工取舍 | 适配器只写 `.cursor/rules/` 的 MDC 文件 |
+| 让规则与其他环境保持对齐 | 手工，逐工具 | 在 `apothem update` 时自动完成 |
+| 验证配置是否正确 | 手工检查 | `apothem verify --harness cursor` |
+
+## Apothem 管理什么
+
+cursor 适配器把共享规则渲染为 `.cursor/rules/` 下的 `.mdc` 文件，并为每个文件
+生成所需的 MDC frontmatter（`description`、`globs`、`alwaysApply`）。适配器
+只写 Cursor 读取的基于目录的 MDC 格式；它不写单一文件的 `.cursorrules`。
+Cursor 没有 PreToolUse 钩子，因此护栏意图存在于规则散文之中。
+
+## 迁移路径
+
+1. 若尚未创建共享配置档案，运行 `apothem profile init` 来创建它。
+2. 把你现有 `.cursor/rules/`（以及任何 `.cursorrules`）中的规则移入共享语料库。
+3. 运行 `apothem install --harness cursor` 来渲染带有正确 MDC frontmatter 的 `.mdc` 文件。
+4. 运行 `apothem verify --harness cursor` 来确认配置已落地。
+5. 此后每次变更都使用 `apothem update --harness cursor`。
+
+## 接下来阅读
+
+- [Cursor 适配器参考](/docs/harnesses/cursor)
+- [对比概览](/docs/comparison)

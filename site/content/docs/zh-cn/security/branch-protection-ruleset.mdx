@@ -1,0 +1,54 @@
+---
+title: "分支保护"
+description: "main 分支上的 Apothem 分支保护——审查门控、状态检查门控以及推送限制。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+在发布单个崭新的发布提交之后，Apothem 的 `main` 分支受 GitHub 分支保护的保护。该保护强制执行 `rules/production-ready-prs.md` 中声明的变更集纪律，并为后续工作驱动 OpenSSF Scorecard 的 **Branch-Protection** 与 **Code-Review** 检查。
+
+## 规则集声明
+
+| 设置 | 值 | 理由 |
+|---|---|---|
+| **目标** | `main` | 保护公共默认分支。 |
+| **强制执行状态** | `active` | 非演练模式。 |
+| **合并前要求拉取请求** | ✅ | 阻止直接推送到 `main`。 |
+| **所需批准审查数** | **1** | 新的单人维护项目的最低人工审查门控。 |
+| **新提交时撤销过时批准** | ✅ | 批准后的强制推送将重新触发审查。 |
+| **要求来自 Code Owners 的审查** | 已推迟 | 在第二位维护者加入之前启用此项可能会使单人维护者的 PR 陷入死锁。 |
+| **要求对最近一次可审查推送的批准** | ✅ | 最新推送的提交必须携带批准。 |
+| **要求会话解决** | ✅ | 未解决的审查讨论串会阻止合并。 |
+| **要求状态检查通过** | ✅ | CI 工作流 + Scorecard + CodeQL + pip-audit。 |
+| **所需状态检查** | 当前核心检查 | 所需列表会从最新的绿色发布提交中刷新。 |
+| **要求分支处于最新状态** | ✅ | 防止过时合并回归。 |
+| **要求签名提交** | 推荐 | 本地发布提交已签名；完整强制执行将等到贡献者引导文档说明 SSH/GPG 设置之后。 |
+| **要求线性历史** | ✅ | 保持单线公共历史的可理解性。 |
+| **阻止强制推送** | ✅ | 阻止在 `main` 上重写历史。 |
+| **允许删除** | ❌ | `main` 分支不可被删除。 |
+
+## 单人维护者约束
+
+GitHub 不允许仓库文件创建人工审查历史。因此该仓库为其当前维护者模型应用最强的不会死锁的分支保护：一次批准审查、过时审查撤销、最新推送批准、会话解决、状态检查、线性历史，以及禁止分支删除或强制推送。当第二位维护者加入时，CODEOWNERS 审查与两名审查者最低要求将成为更强的设置。
+
+## 状态检查要求
+
+上文声明的四项硬门控状态检查：
+
+- **`ci`** — 完整测试矩阵 + ruff + mypy + bandit + Trivy + 针对已解析依赖树的 pip-audit
+- **`Scorecard`** — OpenSSF Scorecard 运行，无逐项检查回归
+- **`CodeQL`** — 针对 `python` + `actions` 的 `security-extended` 查询包
+- **`pip-audit`** — 针对已解析依赖树的每周 + 逐 PR 漏洞扫描
+
+任何其他工作流均可报告状态，但其结果不会门控合并，除非它被提升进入所需检查列表。
+
+## 审计节奏
+
+本文件在每次安全审计以及每个发布工程检查点都会被审查。本文件与实际分支保护配置之间的偏移是高严重性发现。
+
+## 参考资料
+
+- [OpenSSF Scorecard — Branch-Protection check](https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection)
+- [GitHub — About protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
+- [Apothem CODEOWNERS](https://github.com/ahmed-g-gad/apothem/blob/main/.github/CODEOWNERS) — 路径范围的审查所有权
+- `rules/production-ready-prs.md` §1 — 本规则集强制执行的同一变更集纪律

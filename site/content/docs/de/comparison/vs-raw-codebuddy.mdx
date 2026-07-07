@@ -1,0 +1,48 @@
+---
+title: "Apothem vs. rohe CodeBuddy-Regeln"
+description: "Warum CodeBuddys Projektregeln über Apothem leiten, statt pro Projekt .codebuddy/rules-Dateien von Hand zu schreiben."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+CodeBuddy liest Projektregeln aus `.codebuddy/rules/*.md`. Du kannst diese
+Dateien von Hand schreiben, pro Projekt, für immer. Apothem verwaltet eine davon
+für dich und hält sie über jedes Harness und jedes Projekt hinweg konsistent.
+
+## Der rohe Ansatz
+
+CodeBuddy-Regeln von Hand zu schreiben bedeutet:
+
+- Dieselben Engineering-Disziplinen für jedes neue Projekt in `.codebuddy/rules/`
+  zu kopieren und einzufügen.
+- Aus dem Takt zu geraten, während sich die Disziplinen weiterentwickeln — es
+  gibt keine einzige Quelle der Wahrheit.
+- Dieselben Konventionen für Cursor, Windsurf, Claude Code und jedes andere von
+  dir genutzte Werkzeug neu abzuleiten, weil jedes seine eigene Regelfläche hat.
+
+## Der Apothem-Ansatz
+
+Apothem hält eine kanonische Regel-Kohorte im Quell-Repository und projiziert sie
+in die native Fläche jedes Harness. Für CodeBuddy schreibt es:
+
+```
+<project>/.codebuddy/rules/apothem-rules.md
+```
+
+| Anliegen | Rohes CodeBuddy | Apothem |
+| --- | --- | --- |
+| Quelle der Wahrheit | Die Dateien jedes Projekts | Eine kanonische Kohorte |
+| Harness-übergreifende Konsistenz | Manuell pro Werkzeug | Automatisch projiziert |
+| Aktualisierungen | Jedes Projekt von Hand bearbeiten | `apothem update --harness codebuddy --project <path>` |
+| Eigene Regeln des Operators | Mit den Disziplinen vermischt | Unangetastet — Apothem schreibt eine eigene Datei |
+| Entfernung | Manuelles Löschen | `apothem uninstall` mit zeitgestempeltem Backup |
+
+## Was dein bleibt
+
+Apothem schreibt nur `apothem-rules.md`. Deine Memory-Datei `CODEBUDDY.md`, deine
+Berechtigungen und MCP-Server in `.codebuddy/settings.json` und alle anderen von
+dir verfassten Regeldateien bleiben vollständig im Besitz des Operators. Der
+Adapter erkennt diese Flächen, bearbeitet sie aber nie.
+
+Die vollständigen Lebenszyklus-Befehle findest du auf der
+[CodeBuddy-Harness-Seite](/docs/harnesses/codebuddy).

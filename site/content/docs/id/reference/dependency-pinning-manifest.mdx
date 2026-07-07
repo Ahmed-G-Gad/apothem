@@ -1,0 +1,76 @@
+---
+title: "Manifes Penyematan Dependensi"
+description: "Kebijakan deklarasi dependensi yang mencakup rentang runtime Python, perkakas pengembangan, berkas kunci perkakas rilis, dan batas bawah versi yang diratifikasi untuk setiap permukaan build."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> Sikap yang diratifikasi tentang cara Apothem mendeklarasikan, menyematkan, dan
+> mengunci dependensi.
+> Audiens: kontributor dan konsumen hilir yang perlu memahami model
+> reproduktibilitas.
+
+## Sikap
+
+Apothem adalah CLI Python dengan kumpulan dependensi runtime yang kecil ditambah
+rantai perkakas pengembangan, audit, rilis, dan dokumentasi yang lebih besar.
+Dependensi runtime menggunakan batas bawah yang konservatif di `pyproject.toml`;
+situs web meng-commit `site/package-lock.json`; GitHub Actions disematkan oleh
+SHA yang tak dapat diubah dengan komentar versi dan ditingkatkan oleh Renovate.
+
+| Kelas | Deklarasi | Kebijakan penguncian |
+|---|---|---|
+| Dependensi runtime Python | `[project.dependencies]` di `pyproject.toml` | Rentang batas bawah; tanpa kunci runtime Python yang di-commit |
+| Perkakas pengembangan / keamanan | extras `[project.optional-dependencies]` | Rentang batas bawah; CI memasang versi yang cocok saat ini |
+| Perkakas rilis | `scripts/release/requirements-build-linux.txt` | Dikunci hash untuk alur kerja rilis; dihasilkan dari penutupan perkakas rilis |
+| Perkakas khusus CI | `.github/workflows/*.yml` | Perkakas pip khusus alur kerja menggunakan penyematan eksak (`pip`, `bandit`, `pip-audit`, `pip-licenses`, `pyinstaller`) |
+| Situs dokumentasi | `site/package.json` | `site/package-lock.json` di-commit dan dikonsumsi oleh `npm ci` |
+| GitHub Actions | Referensi `uses:` yang disematkan SHA dengan komentar versi | Renovate mengusulkan pembaruan; pengecualian membawa penanda `action-pinning-exempt:` |
+
+## Ratifikasi rilis
+
+| Permukaan | Status yang diratifikasi | Rasionel |
+|---|---|---|
+| Dependensi runtime | Batas bawah saat ini berada di `pyproject.toml` `[project.dependencies]` | Batas bawah stabil saat ini diratifikasi sebelum rilis; tanpa penghalang CVE runtime yang diketahui |
+| Perkakas pengembangan | Batas bawah saat ini berada di extra `dev` dari `pyproject.toml` | Batas bawah stabil terbaru diratifikasi sebelum rilis |
+| Perkakas keamanan | Batas bawah saat ini berada di extra `security` dari `pyproject.toml` | Batas bawah pemindai saat ini diratifikasi sebelum rilis |
+| Perkakas rilis | Penutupan yang dikunci hash berada di `scripts/release/requirements-build-linux.txt` | Alur kerja rilis memasang dengan `--require-hashes`; skrip lokal mensyaratkan `build` sudah ada alih-alih diam-diam memasang dependensi yang bergerak |
+| Perkakas dokumentasi | Rentang saat ini berada di `site/package.json`; resolusi eksak berada di `site/package-lock.json` | `npm outdated` tidak mengembalikan dependensi dokumentasi yang usang setelah penyegaran berkas kunci |
+| GitHub Actions | Penyematan SHA yang ada dipertahankan untuk rilis saat ini; alur kerja SLSA yang dapat dipakai ulang tetap menjadi pengecualian yang didokumentasikan dan disematkan tag | Eksekusi ulang CI publik hijau; peningkatan versi mayor action yang luas sengaja diserahkan ke PR otomasi dependensi untuk menghindari gejolak permukaan rilis |
+| Pengemasan npm | Alur kerja `publish-npm.yml` hanya manual; tanpa pemicu rilis otomatis | Satu-satunya paket npm publik adalah `@ahmed-g-gad/apothem`; publikasi berjalan setelah kesiapan rilis lolos |
+
+## Penguncian
+
+Berkas kunci Python dihasilkan sesuai permintaan oleh kontributor. Berkas
+tersebut tidak di-commit karena penutupan runtime Apothem kecil, CLI mendukung
+beberapa versi minor Python, dan CI sengaja melatih versi perkakas yang cocok
+terbaru.
+
+```sh
+# Astral uv:
+uv pip install -e ".[dev,security,release]"
+uv pip freeze > requirements.dev.lock
+
+# pip-tools:
+pip-compile --extra=dev --extra=security --extra=release -o requirements.dev.lock pyproject.toml
+
+# Plain pip:
+pip install -e ".[dev,security,release]"
+pip freeze > requirements.dev.lock
+```
+
+Situs web berbeda: `site/package-lock.json` di-commit dan CI menggunakan
+`npm ci`, sehingga situs dokumentasi yang dirender memiliki penutupan Node yang
+dapat direproduksi.
+
+## Rasionel
+
+- **Mengapa penyematan rentang untuk Python?** CLI mendukung matriks Python yang
+  luas dan CI seharusnya mengungkap masalah kompatibilitas dengan perkakas saat
+  ini sebelum pengguna menemuinya.
+- **Mengapa kunci Node yang di-commit?** Situs web adalah artefak statis yang
+  disebarkan; berkas kunci memberikan build `npm ci` yang deterministik untuk
+  permukaan publik tersebut.
+- **Mengapa Actions yang disematkan SHA?** Tag bersifat dapat berubah; SHA tidak
+  dapat diubah. Renovate memperbarui SHA yang disematkan, sementara gerbang rilis
+  mencatat setiap penahanan yang disengaja.

@@ -1,0 +1,28 @@
+---
+title: "Settings"
+description: "Claude Code harness configuration in settings.json covering tool permissions, hook wiring, environment variables, and status-line templates."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+`settings.json` carries the Claude Code harness configuration: hook wiring,
+tool permissions, environment variables, and status-line settings.
+
+The full canonical reference lives at
+[settings-reference.md](/docs/reference/settings-reference). This page summarizes the contract
+and points at the deeper reference.
+
+## Sections
+
+| Section | Purpose |
+|---------|---------|
+| `permissions` | Tool whitelists and blacklists per matcher |
+| `hooks` | Event-keyed hook command table (the canonical wiring) |
+| `env` | Per-session environment variables |
+| `statusLine` | Status-line template the host renders |
+
+## Single-template invariant
+
+The Claude Code adapter ships one `settings.json` template. Hook commands use
+exec form (`command` plus `args`) instead of shell-specific command strings, so
+cross-OS behavior is reviewed inside one file. New permission entries and hook
+events land in that file atomically.

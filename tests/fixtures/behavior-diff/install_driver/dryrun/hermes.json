@@ -1,0 +1,124 @@
+[
+  {
+    "detail": {
+      "capability": "output_styles",
+      "status": "unsupported"
+    },
+    "message": "No Hermes output-style file surface is pinned.",
+    "operation": "capability_projection",
+    "outcome": "warning",
+    "path": "src/apothem/harnesses/hermes/capabilities.yml"
+  },
+  {
+    "detail": {
+      "capability": "statuslines",
+      "status": "unsupported"
+    },
+    "message": "No Hermes statusline file surface is pinned.",
+    "operation": "capability_projection",
+    "outcome": "warning",
+    "path": "src/apothem/harnesses/hermes/capabilities.yml"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/cli-config.yaml"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/profile.yaml"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/apothem/templates"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/apothem/hooks"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/apothem/rules"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/apothem/skills"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/apothem/agents"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "command_skills",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/support/skills",
+    "source": "<APOTHEM_SRC>/commands"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/support/skills",
+    "source": "<APOTHEM_SRC>/skills"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/support/agents",
+    "source": "<APOTHEM_SRC>/agents"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/support/rules",
+    "source": "<APOTHEM_SRC>/rules"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/support/templates",
+    "source": "<APOTHEM_SRC>/templates"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/support/hooks",
+    "source": "<APOTHEM_SRC>/hooks"
+  }
+]

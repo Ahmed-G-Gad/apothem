@@ -1,0 +1,65 @@
+---
+title: "नया टूल अडैप्टर लिखना"
+description: "नया Apothem टूल अडैप्टर लिखने और प्रकाशित करने के लिए रनबुक।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+जब आप Apothem में फ़र्स्ट-पार्टी समावेश के लिए या किसी थर्ड-पार्टी पैकेज के रूप में
+नया टूल अडैप्टर लिख रहे हों, तब इस रनबुक का उपयोग करें।
+
+## पूर्वापेक्षाएँ
+
+- [HarnessAdapter प्रोटोकॉल](/docs/architecture/harness-adapter-abstraction) से परिचय
+- लक्ष्य टूल के कॉन्फ़िगरेशन प्रारूप की समझ
+- Python 3.10+
+
+## चरण
+
+### 1. अडैप्टर लागू करें
+
+लक्ष्य टूल के लिए `HarnessAdapter` लागू करने हेतु
+[टूल अडैप्टर लिखना](/docs/examples/authoring-a-harness-adapter) उदाहरण का अनुसरण करें।
+
+### 2. दस्तावेज़ पृष्ठ लिखें
+
+`site/content/docs/harnesses/<slug>.mdx` बनाएँ, जो निम्न को कवर करता हो:
+
+- इंस्टॉलेशन प्रवाह
+- प्रोफ़ाइल-से-नेटिव-कॉन्फ़िग मैपिंग
+- संगतता संबंधी सावधानियाँ
+- सत्यापन विधियाँ
+- अपडेट और अनइंस्टॉल विधियाँ
+- अनुरूपता गेट सतह
+- समस्या-निवारण तालिका
+- कॉन्फ़िगरेशन नॉब तालिका
+
+### 3. परीक्षण लिखें
+
+```bash
+tests/packaging/test_<slug>_adapter.py
+tests/unit/test_<slug>_adapter.py
+```
+
+न्यूनतम परीक्षण कवरेज:
+- `test_install_creates_expected_files`
+- `test_verify_passes_after_install`
+- `test_uninstall_removes_files`
+
+### 4. स्थानीय रूप से सत्यापित करें
+
+```bash
+apothem install --harness <slug>
+apothem verify --harness <slug>
+python -m apothem.conformity.gate --all .
+```
+
+### 5. पुल रिक्वेस्ट सबमिट करें
+
+निम्न के साथ एक PR खोलें:
+
+- अडैप्टर कार्यान्वयन
+- `site/content/docs/harnesses/<slug>.mdx` पर दस्तावेज़ पृष्ठ
+- परीक्षण
+- `pyproject.toml` में एंट्री-पॉइंट पंजीकरण
+- एक चेंजलॉग प्रविष्टि

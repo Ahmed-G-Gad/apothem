@@ -1,0 +1,43 @@
+---
+title: "Apothem 对比手工 Claude Code 配置"
+description: "手工维护 Claude Code 的整棵原生配置树，对比通过 Apothem 的共享配置档案来管理它。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Claude Code（厂商为 Anthropic）将其原生配置保存在 `~/.claude/` 下。Apothem 的
+claude-code 适配器是全表面适配器：它把共享语料库直接传播到那棵树中。本页将手工
+维护配置与用 Apothem 管理它作对比。
+
+## 工作量对比
+
+| 任务 | 手工配置 | Apothem 托管 |
+| ---- | --------------- | --------------- |
+| 编写规则、代理、命令、技能 | 在 `~/.claude/` 中手工编辑每个表面 | 在共享语料库中写一次 |
+| 维护输出风格和状态栏 | 逐表面手工编辑 | 从共享语料库传播 |
+| 配置钩子 | 手工编辑 `settings.json` 钩子条目 | 传播（PreToolUse/PostToolUse/Stop/SessionStart） |
+| 让配置与其他环境保持对齐 | 手工，逐工具 | 在 `apothem update` 时自动完成 |
+| 验证配置是否正确 | 手工检查 | `apothem verify --harness claude-code` |
+
+## Apothem 管理什么
+
+适配器会把规则、代理、命令、技能、输出风格、状态栏以及 `settings.json` 传播到
+`~/.claude/`。原生的 PreToolUse、PostToolUse、Stop 和 SessionStart 钩子从共享
+语料库配置而来。
+
+Apothem **不**管理 `CLAUDE.md`——那是运维者自有的领地。你在 `CLAUDE.md` 中的项目
+和个人指令仍归你所有；Apothem 治理的是围绕它的那些被传播的表面。
+
+## 迁移路径
+
+1. 如果你还没有创建共享配置档案，运行 `apothem profile init`。
+2. 把你现有 `~/.claude/` 中的规则、代理、命令和技能迁入共享语料库。
+3. 把 `CLAUDE.md` 留在原处——Apothem 不会动它。
+4. 运行 `apothem install --harness claude-code` 来传播语料库。
+5. 运行 `apothem verify --harness claude-code` 来确认配置已落地。
+6. 之后的每次更改都使用 `apothem update --harness claude-code`。
+
+## 接下来阅读
+
+- [Claude Code 适配器参考](/docs/harnesses/claude-code)
+- [对比概览](/docs/comparison)

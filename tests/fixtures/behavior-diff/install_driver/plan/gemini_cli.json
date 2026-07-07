@@ -1,0 +1,37 @@
+[
+  {
+    "mode": "sentinel_merge",
+    "source": "<APOTHEM_SRC>/harnesses/gemini_cli/templates/GEMINI.md",
+    "target": "<ROOT>/GEMINI.md"
+  },
+  {
+    "mode": "gemini_commands",
+    "source": "<APOTHEM_SRC>/commands",
+    "target": "<ROOT>/.gemini/commands"
+  },
+  {
+    "mode": "merge_tree_entries",
+    "source": "<APOTHEM_SRC>/skills",
+    "target": "<ROOT>/.gemini/skills"
+  },
+  {
+    "mode": "gemini_agents",
+    "source": "<APOTHEM_SRC>/agents",
+    "target": "<ROOT>/.gemini/agents"
+  },
+  {
+    "mode": "merge_tree_entries",
+    "source": "<APOTHEM_SRC>/rules",
+    "target": "<ROOT>/.gemini/.apothem/support/rules"
+  },
+  {
+    "mode": "merge_tree_entries",
+    "source": "<APOTHEM_SRC>/templates",
+    "target": "<ROOT>/.gemini/.apothem/support/templates"
+  },
+  {
+    "mode": "merge_tree_entries",
+    "source": "<APOTHEM_SRC>/hooks",
+    "target": "<ROOT>/.gemini/.apothem/support/hooks"
+  }
+]

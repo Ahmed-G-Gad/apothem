@@ -1,0 +1,59 @@
+---
+title: "Penelusuran rencana"
+description: "Penelusuran ujung-ke-ujung pipeline /plan untuk tugas nyata."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Contoh ini menelusuri pipeline `/plan` penuh untuk tugas sederhana: menambahkan subperintah CLI baru ke Apothem.
+
+## Langkah 1: Tulis persyaratan dalam prosa
+
+Buat `prose.md`:
+
+```markdown
+Add a `apothem status` subcommand that prints the current apothem
+version, installed harnesses, and the result of `apothem verify`.
+The output should be machine-parseable (JSON with --json flag) and
+human-readable by default.
+```
+
+## Langkah 2: Sempurnakan menjadi spesifikasi
+
+```bash
+/plan-spec prose.md --suite-name apothem-status-command
+```
+
+Ini menjalankan Forge enam-fase, mengajukan pertanyaan klarifikasi dan menghasilkan `plans/apothem-status-command/_spec/spec.md`.
+
+## Langkah 3: Hasilkan rencana
+
+```bash
+/plan-generate
+```
+
+Menghasilkan PREAMBLE.md, MASTER-PLAN.md, PROGRESS.md, PLAN-NOTES.md, dan berkas PHASE.md per-fase di bawah `plans/apothem-status-command/phases/`.
+
+## Langkah 4: Tinjau rencana
+
+```bash
+/plan-review
+```
+
+Audit forensik dengan skor kesetiaan-prosa, konsistensi, dan kualitas. Perbaiki temuan FAIL apa pun sebelum melanjutkan.
+
+## Langkah 5: Eksekusi fase
+
+```bash
+/plan-execute    # executes the first phase, then pauses
+/plan-execute    # executes the next phase, then pauses
+...
+```
+
+## Langkah 6: Periksa kemajuan
+
+```bash
+/plan-status
+```
+
+Melaporkan fase saat ini, keluaran terverifikasi, dan tindakan berikutnya.

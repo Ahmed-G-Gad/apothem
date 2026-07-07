@@ -1,0 +1,7 @@
+{
+  "argv": [
+    "--version"
+  ],
+  "exit_code": 0,
+  "stdout": "Apothem, version <VERSION>\n"
+}

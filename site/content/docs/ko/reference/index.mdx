@@ -1,0 +1,25 @@
+---
+title: "레퍼런스"
+description: "규칙, 명령, 스킬, 위임 작업자, 훅, MCP 서버, 설정, 출력 스타일의 경로와 디스크 레이아웃을 담은 탐색 가능한 산출물 클래스 레지스트리."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+산출물 클래스별 레퍼런스. 각 페이지는 해당 클래스의 목적, 디스크 레이아웃, frontmatter 계약, 그리고 모든 인스턴스를 나열하는 레지스트리를 설명합니다.
+
+아래에는 저장소 상대 경로가 표시됩니다. 각 어댑터는 이를 자신의 네이티브 구성 디렉터리로 머티리얼라이즈합니다(예: Claude Code 어댑터의 `~/.claude/` — 하니스별 대상은 [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses) 참조).
+
+| 클래스 | 페이지 | 저장소 상대 소스 경로 |
+|-------|------|--------------|
+| `CLAUDE.md` | [CLAUDE.md](/docs/reference/claude-md) | `CLAUDE.md` |
+| 규칙 | [규칙](/docs/reference/rules) | `src/apothem/rules/` |
+| 명령 | [명령](/docs/reference/commands) | `src/apothem/commands/` |
+| 스킬 | [스킬](/docs/reference/skills) | `src/apothem/skills/` |
+| 위임 작업자 | [레퍼런스 페이지](/docs/reference/agents) | canonical-paths 블록 참조 |
+| 훅 | [훅](/docs/reference/hooks) | `src/apothem/hooks/` |
+| MCP 서버 | [MCP 서버](/docs/reference/mcp) | 공유 프로필 — `mcp_servers` |
+| 설정 | [설정](/docs/reference/settings) | `src/apothem/harnesses/claude_code/templates/settings.json` |
+| 출력 스타일 | [출력 스타일](/docs/reference/output-styles) | `src/apothem/output-styles/` |
+| 하니스 레지스트리 | [하니스 레지스트리](/docs/reference/harness-registry) | `src/apothem/lib/harness_registry.py` |
+
+완전한 정규 레지스트리는 아티팩트 코호트(`rules/`, `commands/`, `skills/`, `agents/`, `hooks/`)에 걸쳐 있습니다. 이 페이지는 그 레지스트리를 탐색 가능한 형태로 미러링합니다.

@@ -1,0 +1,69 @@
+---
+title: "/plan-execute"
+description: "/plan-execute — Executes a specific phase from a Master Plan Suite with conformity checking."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Role:** Executor
+**Pipeline position:** terminal
+
+Executes a specific phase from a Master Plan Suite with conformity checking.
+
+## Canonical invocation
+
+```bash
+/plan-execute
+```
+
+With arguments:
+
+```bash
+/plan-execute [path/to/plan-suite/] [phase-id] [--dry-run]
+```
+
+## Inputs
+
+Generated + reviewed plan suite; reviewed `_inputs/handoff-manifest.yml`
+
+## Outputs
+
+Per-phase REPORT.md files, codebase artifacts, COMPLETION.md
+
+## Downstream
+
+`/code-review` — the canonical entry point of the eleven-command audit-fortress sequence. `/plan-execute` is the terminal stage of the *plan* pipeline; when the final phase completes, the built code hands off to the audit-fortress for review.
+
+## Workflow phases
+
+The command follows the standard `/plan` pipeline workflow:
+
+1. **Load context** — Read plan suite, rules, and Resumption Contract.
+2. **Verify prerequisites** — Confirm dependency phases complete.
+3. **Execute tasks** — Perform the command mission.
+4. **Verify outputs** — Confirm all declared outputs exist and pass quality gates.
+5. **Update PROGRESS.md** — Record verified outputs in the Phase Output Registry.
+6. **Emit REPORT.md** — Pre-emission gate release proof recorded.
+
+## Failure modes
+
+| Symptom | Cause | Recovery |
+|---------|-------|----------|
+| Prerequisite incomplete | Dependent phase not finished | Complete upstream phase first |
+| Quality gate FAIL | Output does not meet standards | Fix the output and re-run |
+| Missing input file | Plan suite file absent | Run `/plan-generate` to create it |
+
+## Examples
+
+```bash
+# Dry-run to preview what would happen
+/plan-execute --dry-run
+
+# Execute against a named plan suite
+/plan-execute path/to/plan-suite/
+```
+
+## Cross-references
+
+- [Pipeline overview](/docs/pipeline)
+- [Command reference](/docs/reference/commands)
+- [Audit-fortress entry: `/code-review`](/docs/reference/commands) — the review sequence the built code enters once the plan pipeline completes

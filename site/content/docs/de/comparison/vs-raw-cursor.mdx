@@ -1,0 +1,47 @@
+---
+title: "Apothem im Vergleich zur manuellen Cursor-Konfiguration"
+description: "Die MDC-Regeln von Cursor unter .cursor/rules/ von Hand pflegen gegenüber dem Rendern aus Apothems geteiltem Profil."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Cursor liest Regeln im MDC-Format unter `.cursor/rules/`. Das MDC-Format
+erfordert Frontmatter-Felder — `description`, `globs` und `alwaysApply`. Apothems
+cursor-Adapter rendert diese `.mdc`-Dateien aus dem geteilten Profil. Diese Seite
+stellt das Pflegen jener Konfiguration von Hand der Verwaltung mit Apothem
+gegenüber.
+
+## Aufwandsvergleich
+
+| Aufgabe | Manuelle Konfiguration | Von Apothem verwaltet |
+| ---- | --------------- | --------------- |
+| Regeln verfassen | Jede `.mdc`-Datei unter `.cursor/rules/` von Hand schreiben | Aus dem geteilten Korpus gerendert |
+| MDC-Frontmatter schreiben | `description` / `globs` / `alwaysApply` pro Datei von Hand verfassen | Vom Adapter generiert |
+| Ein einziges Regelformat halten | Von Hand zwischen MDC-Regeln und einer einzelnen `.cursorrules`-Datei wählen | Der Adapter schreibt nur MDC-Dateien von `.cursor/rules/` |
+| Regeln mit anderen Umgebungen ausgerichtet halten | Manuell, pro Werkzeug | Automatisch bei `apothem update` |
+| Prüfen, ob die Konfiguration korrekt ist | Manuelle Inspektion | `apothem verify --harness cursor` |
+
+## Was Apothem verwaltet
+
+Der cursor-Adapter rendert die geteilten Regeln in `.mdc`-Dateien unter
+`.cursor/rules/` und generiert das erforderliche MDC-Frontmatter (`description`,
+`globs`, `alwaysApply`) für jede Datei. Der Adapter schreibt nur das
+verzeichnisbasierte MDC-Format, das Cursor liest; er schreibt keine einzelne
+`.cursorrules`.
+Cursor hat keinen PreToolUse-Hook, daher lebt die Leitplanken-Absicht in der
+Regelprosa.
+
+## Migrationspfad
+
+1. Führe `apothem profile init` aus, um das geteilte Profil zu erstellen, falls noch nicht geschehen.
+2. Verschiebe die Regeln aus deinem vorhandenen `.cursor/rules/` (und jeder `.cursorrules`)
+   in das geteilte Korpus.
+3. Führe `apothem install --harness cursor` aus, um die `.mdc`-Dateien
+   mit korrektem MDC-Frontmatter zu rendern.
+4. Führe `apothem verify --harness cursor` aus, um zu bestätigen, dass die Konfiguration angekommen ist.
+5. Verwende `apothem update --harness cursor` für jede spätere Änderung.
+
+## Als Nächstes lesen
+
+- [Cursor-Adapter-Referenz](/docs/harnesses/cursor)
+- [Vergleichsüberblick](/docs/comparison)

@@ -1,0 +1,67 @@
+---
+title: "/plan-status"
+description: "/plan-status — Schreibgeschützter Fortschritts-Reporter für Plan-Suites — gibt den Status aus, ohne Dateien zu ändern."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rolle:** Reporter
+**Pipeline-Position:** schreibgeschützt
+
+Schreibgeschützter Fortschritts-Reporter für Plan-Suites — gibt den Status aus, ohne Dateien zu ändern.
+
+## Kanonischer Aufruf
+
+```bash
+/plan-status
+```
+
+Mit Argumenten:
+
+```bash
+/plan-status [path/to/plan-suite/] [--verbose]
+```
+
+## Eingaben
+
+Jede Plan-Suite in jedem Zustand ihres Lebenszyklus — liest `PROGRESS.md`, `PLAN-NOTES.md`, `MASTER-PLAN.md` und die `phases/`-Berichte.
+
+## Ausgaben
+
+Ein strategischer Statusbericht, der in den Ausgabestrom des Betreibers geschrieben wird. Dieser Befehl ist schreibgeschützt — er erstellt und ändert keine Dateien.
+
+## Nachgelagert
+
+Eigenständig zur Fortschrittsinspektion verwendet — orthogonal zur kanonischen Sequenz, jederzeit schreibgeschützt aufrufbar.
+
+## Workflow-Phasen
+
+Der Befehl ist schreibgeschützt — er liest die Verfolgungsdateien der Suite und berichtet; er schreibt nichts:
+
+1. **Kontext laden** — `PROGRESS.md`, `PLAN-NOTES.md`, `MASTER-PLAN.md` lesen und `phases/` nach vorhandenen Berichten durchsuchen.
+2. **Status bewerten** — Die Dimensionen Aufgabe / Phase / Artefakt überblicken und den Wiederaufnahme-Vertrag lesen.
+3. **Den Statusbericht ausgeben** — Den Abschlussstatus, den Phasen-Tracker und die strategische Analyse direkt an den Betreiber übermitteln.
+4. **Stichprobenprüfung** — Mit `--verbose` die Gesundheit der Suite benoten und Stichprobenbelege (Markdown-Links, Zeilenbereiche, Commit-SHAs) gegen vorhandene Dateien anführen, ohne sie zu ändern.
+
+## Fehlermodi
+
+| Symptom | Ursache | Behebung |
+|---------|-------|----------|
+| Erforderliche Verfolgungsdatei fehlt | Plan-Suite unvollständig | Die Lücke als Befund aufzeigen; `/plan-generate` ausführen, um die Suite zu erstellen |
+| Fehlerhafte Verfolgungsdatei | Abschnitt abgeschnitten oder nicht parsbar | Das Fehlen / den Widerspruch im Bericht benennen; die Reparatur leitet zu den schreibenden Befehlen |
+| Feld fehlt oder ist über Dateien hinweg widersprüchlich | Verfolgungs-Drift | Den Widerspruch ausdrücklich melden; den fehlenden Wert nicht synthetisieren |
+
+## Beispiele
+
+```bash
+# Über die jüngste Plan-Suite berichten
+/plan-status
+
+# Ausführliche Gesundheitsbenotung gegen eine benannte Plan-Suite
+/plan-status path/to/plan-suite/ --verbose
+```
+
+## Querverweise
+
+- [Pipeline-Überblick](/docs/pipeline)
+- [Befehlsreferenz](/docs/reference/commands)

@@ -1,0 +1,132 @@
+---
+title: "パイプラインコマンド"
+description: "Apothem パイプラインコマンドリファレンス — /plan フローと監査コマンドカタログ。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem は、アーキテクチャを意識した `/plan` パイプライン、13 ステージの
+`/research` パイプライン、さらに 11 コマンドの監査シーケンスを提供します。
+これにより、あらゆるプロジェクトに、生のプロセから多軸でレビューされた
+プロダクション級コードへ、そして生のアイデアから普及されピアレビューを
+受けた論文へと至る構造化された道筋がもたらされます。
+
+## パイプラインの概要
+
+```mermaid
+flowchart LR
+    accTitle: Plan pipeline command flow
+    accDescr: Left-to-right flowchart of the apothem plan pipeline from the spec stage through the generate and review stages, then through a conditional architecture-bearing decision that either runs the design stage or skips directly to the execute stage. The orthogonal audit stage wraps the spec-through-review span as a closed remediation loop.
+    A[/plan-spec] --> B[/plan-generate]
+    B --> C[/plan-review]
+    AUD[/plan-audit<br/>orthogonal: wraps spec → review] -.->|closed-loop remediation| A
+    C --> Q{Architecture-bearing suite?}
+    Q -->|yes| F[/plan-design<br/>emit _inputs/design.md]
+    Q -->|no| D[/plan-execute]
+    F --> D
+    D --> E[/plan-status]
+    D --> G[Audit review sequence]
+    G --> H[Completion milestone]
+```
+
+## プランニングステージ
+
+このパイプラインは 8 つのファーストクラスのスラッシュコマンドとして、
+ステージごとに 1 つずつ提供され、それぞれ `/plan-<stage>` として独立して
+呼び出せます。
+
+| ステージ | 役割 | 位置 |
+|-------|------|----------|
+| [/plan-spec](/docs/pipeline/plan-spec) | フォージ — プロセから仕様へ | 先頭 |
+| [/plan-generate](/docs/pipeline/plan-generate) | ジェネレーター — 仕様からプランスイートへ | 中盤 |
+| [/plan-review](/docs/pipeline/plan-review) | 監査担当 — フォレンジックなプラン監査 | 中盤 |
+| [/plan-design](/docs/pipeline/plan-design) | アーキテクト — アーキテクチャを伴うスイートのための `_inputs/design.md` | 条件付きゲート |
+| [/plan-execute](/docs/pipeline/plan-execute) | 実行担当 — フェーズの実行 | 終端 |
+| [/plan-status](/docs/pipeline/plan-status) | レポーター — 読み取り専用ステータス | 読み取り専用 |
+| [/plan-audit](/docs/pipeline/plan-audit) | ガーディアン — spec → generate → review のクローズドループラッパー | 直交（実行前） |
+| /plan-amend | スチュワード — 既存スイートの再入可能な修正 | 再入可能 |
+
+`/plan-audit` は線形フローに対して直交しており、その中の 1 ステージでは
+ありません。`/plan-spec → /plan-generate → /plan-review` を単一のクローズド
+ループとしてラップし、不足している上流ステージのみを実行し、発見事項を能動的に
+是正し、スイートを `/plan-execute` の準備が整った状態にします。これは下記の
+監査レビューシーケンスとは異なります。後者はプランスイートではなく実行済みの
+コードベースを監査します。
+
+`/plan-design` は普遍的な儀式ではありません。`/plan-review` は、スイートが
+アーキテクチャを伴うサーフェスを変更するかどうかを分類します。変更する場合、
+`/plan-design` は `/plan-execute` と `/architecture-review` が消費する設計
+トレースを出力します。変更しない場合、レビュー済みのスイートはそのまま実行へ
+進みます。
+
+## リサーチパイプライン
+
+リサーチパイプラインは 13 のファーストクラスのスラッシュコマンドとして、
+ステージごとに 1 つずつ提供され、それぞれ `/research-<stage>` として独立して
+呼び出せます。シーケンスゲートと引き継ぎマニフェストによって連鎖し、10 の
+厳密性マンデート（権威ある情報源、再現性、反証可能性、引用の完全性、事前登録、
+倫理／利益相反、統計的厳密性、オープンサイエンス／FAIR、レポーティング
+ガイドライン適合、理論的根拠／インパクト）の下にあります。
+
+```mermaid
+flowchart LR
+    accTitle: Research pipeline command flow
+    accDescr: Left-to-right flowchart of the apothem research pipeline from the ideate stage through spec, theory, sources, synthesis, proposal, study design, experiment, analysis, paper, and peer review to publish and disseminate, with a revision loop from review back to paper.
+    RI[/research-ideate] --> RS[/research-spec]
+    RS --> RT[/research-theory]
+    RT --> RSO[/research-sources]
+    RSO --> RSY[/research-synthesis]
+    RSY --> RPR[/research-proposal]
+    RPR --> RD[/research-design]
+    RD --> RE[/research-experiment]
+    RE --> RA[/research-analysis]
+    RA --> RP[/research-paper]
+    RP --> RR[/research-review]
+    RR --> RPU[/research-publish]
+    RPU --> RDI[/research-disseminate]
+    RR -.->|revision loop| RP
+```
+
+| ステージ | 役割 | 位置 |
+|-------|------|----------|
+| [/research-ideate](/docs/pipeline/research-ideate) | 問題の定式化 — ドメインシードから候補となる問い | 先頭 |
+| [/research-spec](/docs/pipeline/research-spec) | 問いの枠づけ — 反証可能な仮説 + スコープ | 中盤 |
+| [/research-theory](/docs/pipeline/research-theory) | 概念フレームワーク + 変化の理論 | 中盤 |
+| [/research-sources](/docs/pipeline/research-sources) | 体系的な情報源収集 | 中盤 |
+| [/research-synthesis](/docs/pipeline/research-synthesis) | SOTA マップ + ギャップ分析 | 中盤 |
+| [/research-proposal](/docs/pipeline/research-proposal) | 目的 + 実現可能性 + インパクト + 事前登録計画 | 中盤 |
+| [/research-design](/docs/pipeline/research-design) | 研究デザイン + 事前登録 | 中盤 |
+| [/research-experiment](/docs/pipeline/research-experiment) | 実行 + 記録、再現可能 | 中盤 |
+| [/research-analysis](/docs/pipeline/research-analysis) | 結果 + 統計 | 中盤 |
+| [/research-paper](/docs/pipeline/research-paper) | トップティアの論文ドラフト | 中盤 |
+| [/research-review](/docs/pipeline/research-review) | ピアレビュー水準の批評 | 中盤 |
+| [/research-publish](/docs/pipeline/research-publish) | 投稿先パッケージ + 提出 | 中盤 |
+| [/research-disseminate](/docs/pipeline/research-disseminate) | 普及 + インパクト + FAIR アーカイブ | 終端 |
+
+`/research` のラップされたワークフローオーケストレーターは、これらのステージを
+生の問いから公開された論文まで駆動し（それ自体はステージではありません）、次の
+ステージがそれに基づいて構築する前に各ステージの出力を独立して確認します。
+`--quick` は、一回限りの引用付きレポートのために `/research-sources` +
+`/research-synthesis` のみを実行します。
+
+経験的な各段階（ソース、設計、実験、分析）と執筆の各段階（論文、レビュー、公開、普及）はさらに、厳密性を運用化するサーフェス——公平な複数手法比較、比較対象の出所、実験プログラムの足場、計算利用計画、オプトインの自律実験ループ、完了定義の進出ゲート、そして段階的な開示を伴う盲検化——を活用します。これらは 10 のマンデートを拡張することなく、運用上の詳細を付け加えるものです。
+
+## 監査レビューシーケンス
+
+`/audit` のラップされたワークフローオーケストレーターは、以下の 11 のすべての次元を単一の並列パスとして一掃します — `/plan` と `/research` の監査フォートレス版です — そして、重複を排除し重大度でトリアージされた単一の発見事項レポートを統合します（レポートのみ。是正は `/elevate` にルーティングされます）。各次元は個別にも呼び出せます。
+
+`/fortress` のラップされたワークフローオーケストレーターは、`/audit` が報告するループを閉じます。`/audit` を介して検出し、各発見事項を検証し、それぞれの生存項目をその所有サーフェスで是正し、境界付きループで再監査し、結果を `/release-readiness` のゲートに通します — `/plan` と `/research` のプロダクション堅牢化版です。
+
+| コマンド | 品質領域 |
+|---------|--------------|
+| [/code-review](/docs/pipeline/code-review) | コード品質 |
+| [/code-audit](/docs/pipeline/code-audit) | コードコーパス |
+| [/security-audit](/docs/pipeline/security-audit) | OWASP / ASVS |
+| [/perf-audit](/docs/pipeline/perf-audit) | パフォーマンス |
+| [/architecture-review](/docs/pipeline/architecture-review) | アーキテクチャ |
+| [/ux-review](/docs/pipeline/ux-review) | 開発者体験 |
+| [/a11y-audit](/docs/pipeline/a11y-audit) | アクセシビリティ |
+| [/docs-review](/docs/pipeline/docs-review) | ドキュメント |
+| [/dependency-audit](/docs/pipeline/dependency-audit) | 依存関係 |
+| [/supply-chain-audit](/docs/pipeline/supply-chain-audit) | サプライチェーン |
+| [/threat-model-audit](/docs/pipeline/threat-model-audit) | 脅威モデル |

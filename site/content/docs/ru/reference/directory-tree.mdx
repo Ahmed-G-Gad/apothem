@@ -1,0 +1,65 @@
+---
+title: "Дерево иерархии каталогов"
+description: "Визуальная карта структуры дерева исходного кода Apothem, показывающая артефакты конфигурации экосистемы, уровни времени выполнения и расположение правил, команд, навыков, делегированных работников, хуков и вспомогательных файлов."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Каноническая структурная карта дерева исходного кода Apothem, отрисованная в
+виде графа Mermaid.** Каждый адаптер per-harness в
+`src/apothem/harnesses/<harness>/` проецирует это дерево в нативный каталог
+конфигурации harness (например, `~/.claude/` для Claude Code). Каждый класс
+артефакта, объявленный в Разделе 7 `CLAUDE.md`, находит здесь своё место.
+Каталоги состояния времени выполнения (локальные для машины, в gitignore)
+включены для ориентации, но никогда не содержат артефактов конфигурации
+экосистемы.
+
+## Компоновка
+
+```mermaid
+%%{ init: { "theme": "neutral" } }%%
+%% verified: 2026-06-16 %%
+%% provenance: README.md (Quick Start · Location) %%
+%% cross-reference: site/content/docs/architecture/source-layout.mdx (Directory Layout summary) %%
+graph TD
+    accTitle: Apothem repository layout tree
+    accDescr: Top-down tree showing every top-level directory of the apothem repository with its purpose and key contents as a comprehensive navigation reference for contributors.
+    ROOT["apothem source tree<br/>(materializes into the harness config<br/>directory — e.g. ~/.claude/ for Claude Code)"]
+    ROOT --> CONFIG_FILES["Config files<br/>CLAUDE.md · README.md · CHANGELOG.md<br/>settings.json<br/>pyproject.toml · .gitignore · .markdownlint.json"]
+    ROOT --> RULES["src/apothem/rules/<br/>(.md files)"]
+    ROOT --> COMMANDS["commands/<br/>(slash-command bodies)"]
+    ROOT --> SKILLS["src/apothem/skills/<br/>{skill}/SKILL.md"]
+    ROOT --> AGENTS["src/apothem/agents/<br/>(flat *.md entry points)"]
+    ROOT --> HOOKS["src/apothem/hooks/"]
+    HOOKS --> HOOKS_LIB["lib/<br/>bootstrap.{ps1,sh}<br/>find-python.{ps1,sh}<br/>resolve_root.py"]
+    HOOKS --> HOOKS_MSGS["messages/<br/>(static context per event)"]
+    HOOKS --> HOOKS_PY["dispatch.py<br/>session_start_bootstrap.py<br/>emit_hook_context.py"]
+    ROOT --> TOOLS["scripts/<br/>validate_hooks.py<br/>validate_ecosystem.py<br/>chaos_pass.py<br/>src/apothem/benchmarks/<br/>lib/"]
+    ROOT --> TESTS["tests/hooks/<br/>(pytest coverage)"]
+    ROOT --> DOCS["site/content/docs/<br/>reference/ · architecture/<br/>governance/ · harnesses/<br/>runbooks/ · developer-guide.mdx"]
+    ROOT --> MEMORY["memory/<br/>MEMORY.md (index)<br/>promotion-ledger.md<br/>expertise-gap-log.md<br/>{topic}.md files"]
+    ROOT --> PLANS["plans/<br/>(per-suite folders<br/>PREAMBLE · MASTER-PLAN<br/>per-phase directories<br/>_spec/ · _inputs/ scratch tiers)"]
+    ROOT --> PROJECTS["projects/<br/>{hash}/<br/>memory/ · sessions/<br/>(per-project runtime state)"]
+    ROOT --> RUNTIME["runtime-data/<br/>history.jsonl · backups/<br/>(machine-local · gitignored)"]
+    classDef cfg fill:#fff5d6,stroke:#aa8800
+    classDef runtime fill:#e8f0ff,stroke:#3366aa,stroke-dasharray: 4 2
+    class CONFIG_FILES,RULES,COMMANDS,SKILLS,AGENTS,HOOKS,HOOKS_LIB,HOOKS_MSGS,HOOKS_PY,TOOLS,TESTS,DOCS,MEMORY cfg
+    class PLANS,PROJECTS,RUNTIME runtime
+```
+
+## Чтение диаграммы
+
+- **Сплошные жёлтые узлы** — это конфигурация экосистемы: под контролем версий,
+  проверенная, написанная намеренно.
+- **Пунктирные синие узлы** — это уровни времени выполнения: локальное для машины
+  состояние и артефакты per-suite / per-project, которые следуют структурным
+  соглашениям, но не входят в поставляемую конфигурацию.
+- Направление стрелки показывает вложенность, а не поток данных. Каждый потомок —
+  это прямой подкаталог своего родителя.
+
+## Авторитетные перекрёстные ссылки
+
+- `CLAUDE.md` Раздел 3 — полная таблица каталогов артефактов.
+- `CLAUDE.md` Раздел 7 — реестры (команды, правила, делегированные работники, навыки, хуки).
+- `site/content/docs/architecture/source-layout.mdx` — повествовательное резюме каталогов.
+- `README.md` Quick Start — обзор для оператора.

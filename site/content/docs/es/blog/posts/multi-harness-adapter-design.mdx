@@ -1,0 +1,116 @@
+---
+title: "Dentro del diseño del adaptador multi-entorno"
+description: "Un análisis técnico a fondo del protocolo HarnessAdapter de Apothem y las tres clases de adaptador que materializan un perfil en diecisiete entornos."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem materializa un único perfil compartido en diecisiete configuraciones
+nativas de entorno. Diecisiete objetivos, diecisiete formatos de proveedor, diecisiete
+ubicaciones de instalación — y una única interfaz uniforme de la que tanto el
+operador como la CLI dependen. Esta publicación explica cómo la capa de
+adaptadores mantiene unido ese contrato.
+
+## El protocolo HarnessAdapter
+
+Cada adaptador de entorno implementa un protocolo estructural `HarnessAdapter`.
+El protocolo es la costura entre la CLI y los detalles específicos del
+proveedor. Declara las operaciones que la CLI invoca y los metadatos que la CLI
+lee:
+
+- `name` — el identificador registrado del adaptador.
+- `output_path` — dónde aterriza en disco la configuración materializada.
+- `install` — renderizar y escribir la configuración nativa del entorno.
+- `uninstall` — eliminar la configuración materializada, dejando intacto el
+  perfil compartido.
+- `is_installed` — informar si la configuración del entorno está presente.
+- `verify` — detectar la deriva entre el perfil y la configuración en disco.
+
+Como el contrato es un `typing.Protocol`, un adaptador lo satisface por su
+forma, no por herencia. La CLI carga los adaptadores dinámicamente a través de
+`importlib.metadata` desde la tabla
+`[project.entry-points."apothem.harnesses"]` en `pyproject.toml`. Añadir un
+entorno significa publicar un subpaquete que exponga el protocolo — sin editar
+el despachador central.
+
+## Un subpaquete por adaptador
+
+Cada adaptador vive en su propio subpaquete bajo
+`src/apothem/harnesses/<name>/`:
+
+- `__init__.py` — la clase `<Name>Adapter` que implementa el protocolo y delega
+  en los módulos de acción hermanos.
+- `install.py` / `uninstall.py` / `update.py` / `verify.py` — las
+  implementaciones por acción que la clase del adaptador importa y llama.
+- `materializer.py` — un `materialize_native_config(profile) -> str` opcional
+  que renderiza el perfil compartido en el texto de configuración nativo del
+  entorno.
+
+Dividir cada acción en su propio módulo mantiene delgada la clase del
+adaptador: es un despachador que conecta los métodos del protocolo con las
+funciones de acción. Un lector que abre `verify.py` ve exactamente la lógica de
+detección de deriva de ese único entorno, sin ruido de instalación o
+desinstalación que sortear.
+
+## Tres clases de adaptador
+
+Los diecisiete entornos no consumen todos la configuración de la misma manera.
+Apothem los ordena en tres clases según cuánta transformación necesita el
+perfil antes de llegar al entorno.
+
+### Clase I — propagación cruda
+
+El entorno consume los mismos artefactos que Apothem ya escribe — reglas `.md`
+planas, agents, hooks — sin paso de renderizado. El adaptador copia las
+plantillas crudas en el árbol de configuración del entorno. No hay
+`materializer.py`, porque no se renderiza nada; los artefactos del perfil son
+la salida.
+
+### Clase II-A — crudo más plantillas de proveedor
+
+El entorno consume los artefactos crudos de Apothem Y un conjunto de archivos
+de plantilla específicos del proveedor (archivos de ajustes, manifiesto o
+andamiaje que el entorno requiere). El adaptador copia juntos los artefactos
+crudos y las plantillas de proveedor. Las plantillas de proveedor viven junto
+al adaptador en un directorio `templates/`.
+
+### Clase II-B — renderizado desde el perfil
+
+El entorno quiere un único archivo de configuración nativo renderizado a partir
+de los campos estructurados del perfil compartido. El `materializer.py` del
+adaptador lee el perfil y emite el texto nativo del entorno — un `config.yaml`
+de Hermes, un `openclaw.json` de Open-Claw, un `opencode.json` de OpenCode o un
+`settings.json` de Qwen Code. La Clase II-B es donde se concentra el trabajo de
+reconciliación de formatos;
+[el análisis a fondo de la convergencia de convenciones](/docs/blog/posts/cross-harness-convention-convergence)
+lo cubre en detalle.
+
+## claude-code: el adaptador de referencia de superficie completa
+
+El adaptador claude-code es la implementación de referencia para la superficie
+de configuración más amplia — reglas, agents, hooks, output-styles, ajustes y
+directorios de convención. Pertenece a la Clase II-A: propaga las plantillas
+crudas de Apothem y aplana los directorios de convención, y envía plantillas de
+ajustes de proveedor bajo
+`src/apothem/harnesses/claude_code/templates/`. No lleva `materializer.py` — no
+renderiza un archivo de configuración nativo a partir del perfil; propaga
+artefactos y directorios de convención directamente.
+
+Un límite deliberado: el adaptador claude-code no gestiona `CLAUDE.md`. Ese
+archivo es territorio propiedad del operador. Apothem materializa la superficie
+de configuración circundante — las reglas, los hooks, los ajustes — y deja
+intacta la voz del propio `CLAUDE.md` del operador. Un adaptador que lo
+sobrescribiera borraría instrucciones de proyecto escritas a mano en cada
+`apothem install`, así que el adaptador traza la línea en el límite del
+directorio y se detiene.
+
+## Por qué importa la uniformidad
+
+El protocolo le da al operador un único modelo mental a través de diecisiete
+herramientas. `apothem install`, `apothem verify`, `apothem uninstall` se
+comportan de la misma manera ya sea que el objetivo renderice un único archivo
+o aplane un árbol de directorios. Las diferencias de proveedor viven dentro de
+los subpaquetes de adaptador, detrás del protocolo, donde corresponde.
+
+Lee la referencia orientada al operador en [Entornos](/docs/harnesses) y el
+modelo de perfil en [Conceptos](/docs/concepts).

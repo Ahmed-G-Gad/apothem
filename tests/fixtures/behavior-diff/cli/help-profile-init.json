@@ -1,0 +1,9 @@
+{
+  "argv": [
+    "profile",
+    "init",
+    "--help"
+  ],
+  "exit_code": 0,
+  "stdout": "Usage: main profile init [OPTIONS]\n\n  Create a schema-valid shared profile scaffold.\n\nOptions:\n  --profile PATH         Path to shared profile YAML.\n  --force                Overwrite an existing profile scaffold.\n  -q, --quiet            Suppress informational output; only errors are emitted.\n  -v, --verbose          Emit additional diagnostic output.\n  --format [plain|json]  Output format.  [default: plain]\n  --no-color             Disable ANSI color codes in output.\n  --json                 Shorthand for --format json.\n  -h, --help             Show this message and exit.\n\n  Examples:   apothem profile init   apothem profile init --profile\n  ./profile.yaml --force\n\n  Related commands:   profile show  Display the shared profile   profile edit\n  Open the profile in the system editor\n\n  Exit codes:   0  Profile scaffold created   1  Profile exists or cannot be\n  written\n"
+}

@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: MIT
+
+title: Question
+labels:
+  - question
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a question about Apothem? Search resolved Q&A discussions first. When your question is about a specific rule, skill, command, or hook, link the file path (paths under `src/apothem/`) so it can be answered precisely.
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What would you like to know?
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Any relevant context (harness, version, use-case).
+    validations:
+      required: false

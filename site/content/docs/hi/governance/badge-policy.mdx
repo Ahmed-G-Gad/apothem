@@ -1,0 +1,120 @@
+---
+title: "बैज नीति"
+description: "README के लिए गतिशील और स्थिर बैज स्रोतों को निर्दिष्ट करें, जिसमें GitHub-नेटिव वर्कफ़्लो स्थिति, shields.io एंडपॉइंट JSON, और स्थिर बैज रूप शामिल हैं।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+यह दस्तावेज़ README बैज पट्टी और उसके गतिशील डेटा स्रोतों को प्रकाशित करने वाली
+अवसंरचना के लिए कैनोनिकल संदर्भ है। परियोजना के README में प्रत्येक बैज यहाँ
+निर्दिष्ट तीन रूपों में से किसी एक के माध्यम से हल होता है; भविष्य में जोड़े गए
+नए बैज उन्हीं रूपों का अनुसरण करते हैं अन्यथा समीक्षा में अस्वीकृत कर दिए जाते
+हैं।
+
+## 1. पृष्ठभूमि
+
+स्थिर `https://img.shields.io/badge/X-Y-Z` URL कभी स्वयं नहीं बदलते, इसलिए वे
+परियोजना की वास्तविक स्थिति से दूर हट जाते हैं — एक `release-vN-blue` बैज `vN+1`
+के जारी होने के बहुत बाद तक भी `vN` दिखाता रहता है। इसलिए नीति प्रत्येक ऐसे मान
+के लिए गतिशील रूपों की माँग करती है जो बदलता है, और स्थिर बैज को मानों के उस छोटे
+समूह (लाइसेंस, Python लक्ष्य संस्करण) के लिए आरक्षित रखती है जो शायद ही कभी
+बदलते हैं, जहाँ स्थिर रूप ईमानदार होता है।
+
+## 2. वास्तुकला
+
+तीन रूप परियोजना के प्रत्येक बैज को कवर करते हैं:
+
+1. **GitHub-नेटिव वर्कफ़्लो स्थिति बैज।** किसी वर्कफ़्लो के बैज URL का आकार
+   `https://github.com/<owner>/<repo>/actions/workflows/<file>/badge.svg` होता
+   है और यह डिफ़ॉल्ट ब्रांच पर नवीनतम रन को दर्शाता है। GitHub रिपॉज़िटरी के
+   सार्वजनिक मेटाडेटा से बैज प्रस्तुत करता है।
+2. **shields.io एंडपॉइंट बैज।** एक shields.io एंडपॉइंट बैज एक
+   `https://img.shields.io/endpoint?url=<published-json>` URL को हल करता है जहाँ
+   JSON shields.io एंडपॉइंट स्कीमा (`schemaVersion`, `label`, `message`,
+   `color`) के अनुरूप होता है। प्रकाशित JSON `apothem.ahmedgad.com/badges/*.json`
+   पर रहता है; इसकी सामग्री प्रत्येक सफल CI रन पर एक CI वर्कफ़्लो द्वारा उत्पन्न
+   की जाती है। एंडपॉइंट बैज मीट्रिक को किसी तृतीय-पक्ष परिवर्तनशील भंडार के बजाय
+   परियोजना-नियंत्रित प्रकाशन के अंतर्गत रखते हैं।
+3. **shields.io स्थिर बैज।** एक स्थिर बैज का आकार
+   `https://img.shields.io/badge/<label>-<message>-<color>` होता है जिसमें कोई
+   प्रतिक्रियाशील डेटा स्रोत नहीं होता। उन मानों के लिए आरक्षित जो वास्तव में
+   शायद ही कभी बदलते हैं (लाइसेंस पहचानकर्ता, Python लक्ष्य संस्करण)।
+
+परियोजना मीट्रिक का सार्वजनिक-Gist प्रकाशन डिज़ाइन द्वारा बाहर रखा गया है।
+परियोजना-नियंत्रित डोमेन पर shields.io एंडपॉइंट कैनोनिकल विकल्प हैं।
+
+## 3. प्रति-बैज विनिर्देश
+
+| बैज | रूप | स्रोत | URL आकार |
+|---|---|---|---|
+| CI स्थिति | GitHub-नेटिव | `.github/workflows/ci.yml` | `https://github.com/ahmed-g-gad/apothem/actions/workflows/ci.yml/badge.svg?branch=main` |
+| अंतिम कमिट | GitHub-नेटिव | रिपॉज़िटरी मेटाडेटा | `https://img.shields.io/github/last-commit/ahmed-g-gad/apothem` |
+| लाइसेंस | shields.io स्थिर | `LICENSE` (MIT) | `https://img.shields.io/badge/License-MIT-yellow.svg` |
+| नवीनतम रिलीज़ | shields.io एंडपॉइंट | `badges/release.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/release.json` |
+| कवरेज | shields.io एंडपॉइंट | `badges/coverage.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/coverage.json` |
+| सुरक्षा | shields.io एंडपॉइंट | `badges/security.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/security.json` |
+| आपूर्ति शृंखला | shields.io एंडपॉइंट | `badges/supply-chain.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/supply-chain.json` |
+| दस्तावेज़ीकरण | shields.io एंडपॉइंट | `badges/docs.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/docs.json` |
+| Python संस्करण | shields.io स्थिर | `pyproject.toml` `python_requires` | `https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white` |
+
+CodeQL एक समर्पित `.github/workflows/codeql.yml` वर्कफ़्लो के रूप में चलता है जो
+Python और Actions सतहों का विश्लेषण करता है; `ci.yml` का security-scan जॉब
+केवल bandit चलाता है और CodeQL SARIF प्रकाशन को `codeql.yml` पर छोड़ देता है।
+सुरक्षा बैज एक GitHub-नेटिव वर्कफ़्लो बैज के बजाय badges वर्कफ़्लो द्वारा प्रकाशित
+एंडपॉइंट JSON का उपभोग करता है, जिससे बैज अंतर्निहित स्कैनर टोपोलॉजी के पार
+स्थिर रहता है।
+
+## 4. JSON प्रकाशन तंत्र
+
+एंडपॉइंट JSON `.github/workflows/badges.yml` द्वारा उत्पन्न किए जाते हैं।
+वर्कफ़्लो:
+
+- `ci` वर्कफ़्लो के पूर्ण होने के बाद `workflow_run` पर ट्रिगर होता है (और CI रन
+  के बिना पुनः-प्रकाशन के लिए मैनुअल `workflow_dispatch` पर भी)।
+- नवीनतम टैग को `git describe --tags --abbrev=0` से और मूल CI निष्कर्ष को
+  `workflow_run` ईवेंट से हल करता है।
+- प्रत्येक JSON को `jq -n` के माध्यम से उत्पन्न करता है ताकि आउटपुट shields.io
+  एंडपॉइंट स्कीमा (`schemaVersion: 1`, साथ ही `label`, `message`, `color`) से
+  सख़्ती से मेल खाए।
+- अपलोड से पहले प्रत्येक उत्सर्जित JSON को `jq -e` से मान्य करता है।
+- निर्देशिका को `badges` नामक वर्कफ़्लो आर्टिफ़ैक्ट के रूप में अपलोड करता है।
+
+आर्टिफ़ैक्ट को `apothem.ahmedgad.com/badges/` पर परिनियोजित करना
+`.github/workflows/publish-static-site.yml` द्वारा संभाला जाता है। साइट बिल्ड के
+दौरान, वह वर्कफ़्लो नवीनतम सफल `badges` आर्टिफ़ैक्ट डाउनलोड करता है और उसे
+`site/dist/badges/` के अंतर्गत स्टेज करता है। यदि आर्टिफ़ैक्ट अनुपस्थित या
+समाप्त हो गया है, तो साइट फिर भी परिनियोजित होती है और टूटे JSON को प्रकाशित करने
+के बजाय अनुपस्थित बैज आर्टिफ़ैक्ट को वर्कफ़्लो लॉग में दर्ज करती है।
+
+## 5. रखरखाव प्रोटोकॉल
+
+पहले रूप तय करके एक नया बैज जोड़ें:
+
+- यदि बैज किसी CI वर्कफ़्लो की रन-स्थिति को दर्शाता है, तो GitHub-नेटिव रूप को
+  वरीयता दें। बैज का URL वर्कफ़्लो फ़ाइल द्वारा निश्चित होता है; किसी प्रकाशन
+  अवसंरचना की आवश्यकता नहीं है।
+- यदि बैज किसी मीट्रिक (एक गणना, एक प्रतिशत, एक संस्करण स्ट्रिंग, एक श्रेणीबद्ध
+  लेबल) को दर्शाता है जो समय के साथ अद्यतन होता है, तो shields.io एंडपॉइंट रूप का
+  उपयोग करें। `.github/workflows/badges.yml` में मौजूदा पाँच के साथ एक
+  JSON-उत्पादन चरण जोड़ें और README बैज पट्टी में
+  `apothem.ahmedgad.com/badges/<name>.json` उपभोक्ता URL जोड़ें।
+- यदि बैज किसी ऐसे मान को दर्शाता है जो वास्तव में शायद ही कभी बदलता है
+  (लाइसेंस, भाषा लक्ष्य, शासन मोड), तो shields.io स्थिर रूप का उपयोग करें। बैज
+  जोड़ते समय इस फ़ाइल की प्रति-बैज तालिका में परिवर्तन की लय का दस्तावेज़ीकरण
+  करें।
+
+किसी बैज को पहले README से हटाकर सेवामुक्त करें, फिर badges वर्कफ़्लो से उसका
+JSON-उत्पादन चरण हटाएँ, फिर ऊपर की प्रति-बैज तालिका से उसकी पंक्ति हटाएँ। विलोपन
+को परमाणु रखें ताकि README कभी ऐसे JSON आर्टिफ़ैक्ट का संदर्भ न दे जिसे वर्कफ़्लो
+उत्पन्न नहीं करता।
+
+## 6. पार-संदर्भ
+
+- वह CI वर्कफ़्लो जिसकी रन-स्थिति को GitHub-नेटिव CI बैज दर्शाता है:
+  `.github/workflows/ci.yml`।
+- वह badges वर्कफ़्लो जो एंडपॉइंट JSON प्रकाशित करता है:
+  `.github/workflows/badges.yml`।
+- वह स्थिर-साइट डोमेन जो JSON प्रस्तुत करता है:
+  `apothem.ahmedgad.com`।
+- shields.io एंडपॉइंट स्कीमा संदर्भ:
+  [https://shields.io/badges/endpoint-badge](https://shields.io/badges/endpoint-badge)।

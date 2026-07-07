@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: MIT
+
+# Repo-internal companion — not shipped in the .vsix.
+.vscodeignore
+**/.gitignore
+**/*.map
+# Locally-built package artifacts — never bundle a .vsix into itself.
+*.vsix

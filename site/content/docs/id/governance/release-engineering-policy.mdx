@@ -1,0 +1,103 @@
+---
+title: "Kebijakan rekayasa rilis"
+description: "Lima kebijakan kanonik untuk versioning, penandaan rilis, siklus penghentian, perubahan yang tidak kompatibel, dan prosedur rollback."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Lima kebijakan mengatur cara `apothem` dirilis.
+
+## 1. Versioning semantik
+
+Proyek ini didistribusikan di bawah [Semantic Versioning 2.0](https://semver.org/).
+Nomor versi mengambil bentuk `MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]`.
+
+| Kenaikan | Pemicu |
+|----------|--------|
+| **MAJOR** | Perubahan yang tidak kompatibel pada skema artefak, pengidentifikasi mandat (CM-N / TM-N / CP-N), atau kontrak hook |
+| **MINOR** | Aturan baru, pekerja yang didelegasikan, perintah, keterampilan, peristiwa hook, atau perluasan skema yang tetap kompatibel |
+| **PATCH** | Klarifikasi, penambahan antipola, perbaikan dokumentasi, dan suntingan yang tidak mengubah perilaku |
+
+Tag kandidat menggunakan format `vX.Y.Z-rc.N` (kandidat rilis)
+atau `vX.Y.Z-alpha.N` / `vX.Y.Z-beta.N` (akses awal).
+
+## 2. Tag rilis
+
+Setiap rilis menempatkan tag git bertanda tangan dalam bentuk `vMAJOR.MINOR.PATCH`
+di `main`. Tag tersebut memicu `.github/workflows/release.yml` yang
+membangun, menandatangani, menghasilkan SBOM dan provenance SLSA-3, serta
+menerbitkan halaman GitHub Release.
+
+Konvensi tag:
+
+- **Format** — tepatnya `vMAJOR.MINOR.PATCH`. Tanpa awalan `release-`,
+  tanpa akhiran `-final`.
+- **Anotasi** — setiap tag adalah tag beranotasi (`git tag -a -s`)
+  yang membawa ringkasan catatan rilis dalam pesan tag.
+- **Tanda tangan** — setiap tag ditandatangani dengan GPG. Alur kerja rilis
+  juga menghasilkan tanda tangan cosign tanpa kunci Sigstore pada
+  setiap artefak dan bukti provenance rilis SLSA-3, keduanya
+  dilampirkan ke halaman GitHub Release.
+
+## 3. Kebijakan penghentian
+
+Lini dukungan publik saat ini adalah versi minor terbaru yang dirilis. Ketika
+proyek memiliki beberapa versi minor publik, matriks versi yang didukung pada
+[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
+adalah sumber kebenaran untuk jendela dukungan tambahan apa pun yang
+hanya untuk perbaikan kritis.
+
+Irama penghentian:
+
+- **Pengumuman** — simbol atau perilaku yang dihentikan
+  diumumkan di bagian `### Deprecated` pada `CHANGELOG.md` dari
+  rilis tempat penghentian itu mendarat. Catatan rilis
+  mencerminkan pengumuman penghentian tersebut.
+- **Jendela tenggang** — simbol yang dihentikan tetap tersedia selama
+  minimal satu siklus minor penuh sebelum dihapus.
+- **Penghapusan** — penghapusan dilakukan pada kenaikan `MAJOR`. Setiap simbol
+  yang dihapus membawa baris `### Removed` pada `CHANGELOG.md` dan
+  entri panduan migrasi di bawah
+  [Panduan praktis](/docs/how-to-guides).
+
+## 4. Kebijakan perubahan yang tidak kompatibel
+
+Perubahan yang tidak kompatibel mensyaratkan:
+
+1. **Sebuah isu RFC** — dibuka dengan label isu `rfcs`
+   yang menjelaskan perubahan tidak kompatibel, jalur migrasi, dan
+   strategi rollback.
+2. **Jendela komentar 30 hari** — RFC tetap terbuka selama setidaknya
+   30 hari sebelum penggabungan. Pemelihara dapat memperpanjang jendela ketika
+   umpan balik memerlukannya.
+3. **Sebuah kenaikan MAJOR** — rilis yang memuat perubahan
+   tidak kompatibel menaikkan komponen MAJOR.
+4. **Sebuah panduan migrasi** — perubahan dikirim dengan
+   entri [Panduan praktis](/docs/how-to-guides) yang memandu
+   operator melalui migrasi.
+
+## 5. Kebijakan rollback
+
+Jika sebuah rilis menunjukkan regresi yang menghambat adopsi:
+
+1. **Revert** — commit yang bermasalah di-revert pada `main`.
+2. **Penandaan ulang rilis-plus-satu** — rilis lanjutan mendarat sebagai
+   `vMAJOR.MINOR.PATCH+1` yang membawa revert ditambah
+   perbaikan inkremental apa pun. Rilis cacat sebelumnya **tidak**
+   dihapus dari GitHub Releases — anotasi `### Yanked` pada
+   `CHANGELOG.md` mendokumentasikan situasi tersebut agar
+   build yang dapat direproduksi tetap terjangkar.
+3. **Komunikasi** — pemberitahuan security-advisories (ketika
+   relevan dengan keamanan) atau kiriman Discussions (ketika
+   relevan dengan keandalan) menyertai rollback.
+
+## Lihat juga
+
+- [CHANGELOG.md](https://github.com/ahmed-g-gad/apothem/blob/main/CHANGELOG.md)
+  — buku besar rilis kanonik.
+- [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
+  — matriks versi yang didukung dan saluran pelaporan.
+- [cicd-pipeline.md](/docs/architecture/cicd-pipeline) — kelas
+  pemeriksaan CI yang menggerbang setiap rilis.
+- [deployment-checklist.md](/docs/runbooks/deployment-checklist) — sapuan
+  kesiapan produksi per rilis.

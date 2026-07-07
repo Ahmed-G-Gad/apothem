@@ -1,0 +1,87 @@
+---
+title: "Host-agnostic posture"
+description: "How Apothem achieves a host-agnostic posture via the shared profile and harness adapters."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem is designed around a single principle: your governance configuration
+should outlast any single harness. The shared Apothem profile
+is a schema-validated YAML file at `~/.config/apothem/profile.yaml` or
+`--profile PATH`; packaged Apothem cohorts provide commands, rules, skills,
+hooks, templates, statuslines, output styles, and delegation definitions.
+Per-harness adapters under `src/apothem/harnesses/<harness>/` translate those inputs into the format
+each supported harness requires:
+
+```text
+Claude Code, Cursor, Gemini CLI, GitHub Copilot, Codex, Windsurf,
+OpenCode, Antigravity, Open-Claw, Hermes, Qwen Code,
+CodeBuddy, Kiro, Trae, Zed, GLM (Z.ai), Kimi Code
+```
+
+## The core idea
+
+Host-agnosticism means your *intent* — who you are, how you want assistants to
+behave, the rules they must follow — lives in one place that no single harness
+owns. The harnesses are interchangeable consumers of that intent. When a new
+assistant arrives, you adopt it by adding an adapter, not by re-authoring your
+configuration. When an assistant you used falls out of favor, you drop it
+without losing the governance you built. The profile is the asset; the harness
+is a render target. A harness may be used for coding, chat, cowork, research, or
+writing — the profile is agnostic to what the harness is for.
+
+This is a deliberate inversion. The common path is to configure each tool
+directly, which makes your investment hostage to that tool's longevity and
+format. Apothem treats configuration as portable capital and the harness as a
+disposable terminal.
+
+## The problem
+
+Every harness has its own config format:
+
+```text
+Claude Code:    CLAUDE.md + settings.json
+Cursor:         .cursor/rules/*.mdc
+GitHub Copilot: .github/copilot-instructions.md
+Windsurf:       .devin/rules/
+Codex:          AGENTS.md
+```
+
+Without Apothem, you maintain N separate config files that drift apart over time.
+
+## The Apothem solution
+
+```text
+One shared Apothem profile (YAML) + packaged cohorts
+    identity.name
+    preferences.style
+    rules[]
+         |
+         v
+    Adapter layer (HarnessAdapter protocol — src/apothem/harnesses/<harness>/)
+         |
+         +---> Claude Code adapter   -> ~/.claude/
+         +---> Cursor adapter        -> .cursor/rules/*.mdc
+         +---> Copilot adapter       -> .github/copilot-instructions.md
+         +---> Windsurf adapter      -> .devin/rules/
+         +---> ...
+```
+
+You edit the shared profile once, then run `apothem update --harness <name>` or
+`apothem update --harness all --project <path>` to propagate the change.
+`apothem harnesses list` prints the registered set.
+
+## Why "apothem"
+
+The name encodes the architecture. In geometry, an *apothem* is the perpendicular
+from a regular polygon's **center** to the **midpoint of one of its sides** — the
+single distance from the core to every edge, identical along every direction. That
+is the design: one shared profile at the center, seventeen equidistant harnesses on the
+perimeter, every materialization the same length away from the source of truth. The
+core does not change when an edge changes; the edges share a single relationship to
+the core. Drift is structurally impossible.
+
+## Portability guarantees
+
+Rules marked `portability: universal` are guaranteed translatable to every
+supported harness. Rules marked `portability: project-specific` may require
+per-harness override documentation in the rule body.

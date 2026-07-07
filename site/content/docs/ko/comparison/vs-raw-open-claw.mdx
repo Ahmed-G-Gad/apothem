@@ -1,0 +1,45 @@
+---
+title: "Apothem 대 원시 Open-Claw 설정"
+description: "Open-Claw 설정을 직접 유지보수하는 것 대 Apothem의 공유 프로파일을 통해 관리하는 것."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Open-Claw는 `~/.openclaw/openclaw.json`을 읽습니다. 그
+`agents.defaults.skills`는 이름 허용 목록(디렉터리 로더가 아님)이고 MCP는 CLI
+표면이므로, Apothem은 어떤 설정 키도 작성하지 않습니다. 공유 명령 코호트와 스킬
+코호트를 `~/.openclaw/.apothem/support/skills/` 아래에 지원 자료로 설치합니다.
+
+## 상태
+
+**프리뷰.** Open-Claw 어댑터는 현재 문서화된 설정 파일과 추가 스킬 디렉터리
+표면을 대상으로 합니다. 스킬이 아닌 코호트는 Apothem 지원 자료로 남습니다.
+
+## 노력 비교
+
+| 작업 | 원시 수동 설정 | Apothem 관리 |
+| ---- | --------------- | --------------- |
+| 재사용 가능한 스킬 작성 | 설정과 스킬 디렉터리를 직접 편집 | 공유 코퍼스에 한 번 작성 |
+| 코호트를 다른 환경과 정렬 유지 | 도구별 수동 | `apothem update` 시 자동 |
+| 설정 설치 / 제거 | 수동 | `apothem install` / `apothem uninstall` |
+| 설정이 올바른지 검증 | 수동 검사 | `apothem verify --harness open-claw` |
+
+## Apothem이 관리하는 것
+
+Open-Claw 어댑터는 `openclaw.json`을 작성하고, Apothem의 슬래시 명령을 스킬로
+감싸며, Apothem 스킬을 참조된 지원 디렉터리로 복사하고, 규칙·템플릿·agents·hook
+자료를 Apothem 지원 서브트리 아래에 보관합니다.
+
+## 마이그레이션 경로
+
+1. 아직 만들지 않았다면 `apothem profile init`을 실행해 공유 프로파일을
+   생성합니다.
+2. 재사용 가능한 Open-Claw 스킬이나 명령 프롬프트를 공유 코퍼스로 옮깁니다.
+3. `apothem install --harness open-claw`를 실행해 네이티브 설정과 지원 스킬
+   디렉터리를 렌더링합니다.
+4. `apothem verify --harness open-claw`를 실행해 설정이 안착했는지 확인합니다.
+
+## 다음 읽을거리
+
+- [Open-Claw 어댑터 참조](/docs/harnesses/open-claw)
+- [비교 개요](/docs/comparison)

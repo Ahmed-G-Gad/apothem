@@ -1,0 +1,68 @@
+---
+title: "/plan-generate"
+description: "‏/plan-generate — يُولّد حزمة خطة رئيسية كاملة من ملف `_spec/spec.md` المكتوب."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**الدور:** المُولِّد
+**الموضع في خط المعالجة:** وسطي
+
+يُولّد حزمة خطة رئيسية كاملة من ملف <bdi>`_spec/spec.md`</bdi> المكتوب.
+
+## الاستدعاء المعياري
+
+```bash
+/plan-generate
+```
+
+مع الوسائط:
+
+```bash
+/plan-generate [path/to/prose.md] [--mode NEW|OVERHAUL] [--seriousness LEVEL] [--context CONTEXT] [--mission MISSION] [--domain DOMAIN] [--dry-run]
+```
+
+## المدخلات
+
+ملف <bdi>`_spec/spec.md`</bdi> المكتوب + <bdi>`_inputs/handoff-manifest.yml`</bdi> من <bdi>`/plan-spec`</bdi> (أو نثر يقدّمه المشغّل).
+
+## المخرجات
+
+<bdi>`PREAMBLE.md`</bdi>، و<bdi>`MASTER-PLAN.md`</bdi>، و<bdi>`PROGRESS.md`</bdi>، و<bdi>`PLAN-NOTES.md`</bdi>، وملفات <bdi>`phases/**/PHASE.md`</bdi> لكل مرحلة، إضافةً إلى <bdi>`_inputs/handoff-manifest.yml`</bdi> المُعزَّز.
+
+## المراحل اللاحقة
+
+<bdi>/plan-review</bdi> أو <bdi>/plan-execute</bdi> (المستهلِك اللاحق)
+
+## مراحل سير العمل
+
+يُولّد الأمر حزمة خطة رئيسية كاملة من المواصفة المكتوبة:
+
+1. **استيعاب المتطلبات** — قراءة <bdi>`_spec/spec.md`</bdi> وبيان التسليم الأعلى منه؛ والرفض بـ<bdi>`Blocked: run /plan-spec first`</bdi> عند غياب المواصفة.
+2. **الاكتشاف** — تشغيل اكتشاف مُقاس بالجدّية مع المرشّحات الإدراكية الخمسة؛ وحسم كل فجوة بيانات موثوقة عبر قناة الاستفسار المُهيكَل.
+3. **التفكيك** — تجزئة العمل إلى رسم مراحل لا دوري بترتيب تبعية صريح.
+4. **إصدار الحزمة** — كتابة <bdi>`PREAMBLE.md`</bdi>، و<bdi>`MASTER-PLAN.md`</bdi>، و<bdi>`PROGRESS.md`</bdi>، و<bdi>`PLAN-NOTES.md`</bdi>، وكل <bdi>`phases/NN-topic/PHASE.md`</bdi>.
+5. **تشغيل بوّابة ما قبل الإصدار** — تشغيل المسح ذي الخمسة عشر شريطًا مقابل كل ناتج مُصدَر؛ والفشل يمنع موافقة المستخدم حتى الحلّ.
+
+## أنماط الفشل
+
+| العَرَض | السبب | المعالجة |
+|---------|-------|----------|
+| <bdi>Blocked: run /plan-spec first</bdi> | لا توجد <bdi>`_spec/spec.md`</bdi> مكتوبة | شغّل <bdi>`/plan-spec`</bdi> لكتابة المواصفة وإصدار البيان |
+| توليد مقابل ملف <bdi>`_inputs/`</bdi> | المواصفة لا تزال أثناء الاستنباط | رقِّ <bdi>`_inputs/forge.md`</bdi> إلى <bdi>`_spec/spec.md`</bdi> عبر <bdi>`/plan-spec`</bdi> أولًا |
+| يُخفِق شريط ما قبل الإصدار | ناتج مُصدَر يُخفِق في البوّابة | أصلح الشريط المُخفِق قبل موافقة المستخدم |
+
+## أمثلة
+
+```bash
+# تشغيل تجريبي لمعاينة رسم المراحل المُولَّد
+/plan-generate --dry-run
+
+# توليد حزمة من نثر مكتوب
+/plan-generate path/to/prose.md --mode NEW
+```
+
+## الإحالات المرجعية
+
+- [نظرة عامة على خط المعالجة](/docs/pipeline)
+- [مرجع الأوامر](/docs/reference/commands)

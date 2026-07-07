@@ -1,0 +1,112 @@
+---
+title: "Практические руководства по авторству и конвейеру"
+description: "Ориентированные на задачи пошаговые руководства по доработке контента в спецификации, генерации наборов планов, проверке планов, выполнению фаз, добавлению артефактов и запуску шлюзов качества."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Ориентированные на задачи пошаговые руководства по **авторству артефактов Apothem
+и управлению конвейером планов**. Каждое руководство отвечает на один конкретный
+вопрос.
+
+Для рецептов первоначальной настройки — добавление среды, редактирование профиля,
+управление установщиком — см. вместо этого раздел [Практические рецепты](/docs/how-to).
+
+## Конвейер набора планов
+
+### Как доработать сырой контент в спецификацию?
+
+Вызовите `/plan-spec` с сырым контентом в качестве ввода. Роль Forge выполняет шесть
+фаз преобразования (Discovery, Meticulous Consideration, Potency Mapping,
+Preservation Verification, Expertise Application, Question-Resolution Sweep) и выдаёт
+консолидированную спецификацию в `.apothem/plans/{suite}/_spec/spec.md`. См.
+`src/apothem/commands/plan-spec.md` для полного протокола.
+
+### Как сгенерировать набор планов из спецификации?
+
+Вызовите `/plan-generate <suite-name>`, как только спецификация будет в
+`.apothem/plans/{suite}/_spec/spec.md`. Генератор выдаёт канонические инфраструктурные файлы
+плюс пофазные файлы `phases/NN-kebab-topic/PHASE.md`. См.
+`src/apothem/commands/plan-generate.md`.
+
+### Как проверить сгенерированный план?
+
+Вызовите `/plan-review path/to/plan-suite/`. Проверяющий применяет восемь методик
+планирования и выдаёт оценочные карты. Проваленные оценочные карты блокируют
+выполнение на SHARED+ до устранения. См. `src/apothem/commands/plan-review.md`.
+
+### Как выполнить план?
+
+Вызовите `/plan-execute path/to/plan-suite/ [phase-id]`. Без `phase-id` выполняется
+следующая ожидающая фаза. С конкретным id выполняется только эта фаза. См.
+`src/apothem/commands/plan-execute.md`.
+
+### Как проверить статус плана?
+
+Вызовите `/plan-status path/to/plan-suite/ [--verbose]`. Отчёт только для чтения.
+См. `src/apothem/commands/plan-status.md`.
+
+## Авторство артефактов
+
+### Как добавить новое правило?
+
+1. Выберите имя файла kebab-case под `src/apothem/rules/`, например
+   `src/apothem/rules/my-new-rule.md`.
+2. Создайте фронтматтер (`name`, `description`, `type: instruction`, опциональный
+   `pathFilter`).
+3. Напишите тело с каноническими разделами: Purpose, Obligations, Seriousness
+   Scaling, Anti-Patterns, Enforcement, Bindings.
+4. Добавьте строку в когорту правил (`src/apothem/rules/`).
+5. Запустите `python scripts/dev/validate_ecosystem.py --check frontmatter-cohort`
+   для проверки.
+
+### Как добавить нового делегированного исполнителя?
+
+Выберите имя файла kebab-case под показанным ниже каталогом, используя форму
+`my-worker.md`:
+
+```text
+src/apothem/agents/
+src/apothem/agents/my-worker.md
+```
+
+Затем:
+
+1. Создайте фронтматтер — включая `name`, `description`, `allowedTools`, `maxTurns`,
+   `version` и маркер типа, показанный ниже:
+
+```text
+type: agent
+```
+
+1. Напишите системный запрос в качестве тела.
+1. Добавьте строку в реестр помощников в когорте делегированных исполнителей (`src/apothem/agents/`).
+
+### Как добавить новый хук?
+
+1. Создайте контекстное сообщение под
+   `src/apothem/hooks/messages/<event>-<scope>.md`.
+2. Подключите хук в `settings.json`.
+3. Обновите конвейер хуков.
+4. Запустите `python scripts/dev/validate_ecosystem.py --check hook-validator`.
+
+## Шлюзы качества
+
+### Как запустить локальные шлюзы качества?
+
+```bash
+python -m ruff check .
+python -m ruff format --check .
+python -m mypy
+python -m pytest -q
+python scripts/dev/validate_ecosystem.py
+python scripts/dev/chaos_pass.py
+```
+
+Конвейер CI запускает тот же набор параллельно.
+
+### Как проверить фронтматтер одного класса артефактов?
+
+```bash
+python scripts/dev/validate_ecosystem.py --check frontmatter-cohort
+```

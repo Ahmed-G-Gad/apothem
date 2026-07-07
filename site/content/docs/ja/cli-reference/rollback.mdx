@@ -1,0 +1,80 @@
+---
+title: "rollback"
+description: "apothem rollback コマンドの CLI リファレンス。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+ハーネスを、記録されたインストール前の状態に復元します。
+
+## 構文
+
+```
+apothem rollback --harness NAME|all [--install-id ULID | --last] [--yes]
+                 [--project PATH]
+                 [--quiet|-q] [--verbose|-v]
+                 [--format plain|json] [--json] [--no-color]
+```
+
+`rollback` は、選択した各ハーネスのインストール前のバイト列を Apothem のバックアップルートから再構築します。記録されたインストールパス（デフォルトでは最新のもの、または `--install-id` で指定したもの）を解決し、そのインストールで取得したすべてのバックアップを復元してから、ハーネスの台帳に `rollback` レコードを追記します。
+
+`--yes` が指定されない限り、ハーネスごとに確認を求めます。`--install-id` と `--last` はインストールパスを選択するもので、相互排他的です。
+
+## オプション
+
+| オプション | 説明 |
+|---|---|
+| `--harness NAME` | ロールバックするハーネスアダプター、またはレジストリ全体の集合を表す `all`（必須）。 |
+| `--install-id ULID` | 指定したインストールパスをロールバックします。デフォルトは最後に記録されたインストールです。 |
+| `--last` | 最後に記録されたインストールをロールバックします（デフォルト。明示的な形式）。`--install-id` と相互排他的です。 |
+| `--yes` | ハーネスごとの確認プロンプトをスキップします。 |
+| `--project PATH` | プロジェクトスコープのハーネス用のプロジェクトルート。選択した集合にプロジェクトスコープのアダプターが含まれる場合は必須です。 |
+| `--quiet`, `-q` | 情報出力を抑制し、エラーのみを出力します。 |
+| `--verbose`, `-v` | 追加の診断出力を発行します。 |
+| `--format plain\|json` | 出力形式（デフォルト: `plain`）。 |
+| `--json` | `--format json` の省略形。 |
+| `--no-color` | 出力の ANSI カラーコードを無効にします。 |
+| `-h`, `--help` | ヘルプを表示して終了します。 |
+
+## JSON 出力
+
+```json
+{
+  "status": "success",
+  "command": "rollback",
+  "action": "rolled_back",
+  "harness": "claude-code",
+  "profile_path": null,
+  "project": null,
+  "files_written": [],
+  "results": [],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+復元された各ターゲットは `"operation": "rollback"` として `results` に表示され、`outcome` は `created` または `updated`（および `files_written` 内）となります。インストールが新規作成したターゲット（復元すべき以前のバイト列がないもの）は `"outcome": "skipped"` として報告され、復元に失敗したものは `"outcome": "error"` です。一致するインストールレコードが存在しない場合、コマンドは `"status": "error"` とともに `rollback.no_record` エラーを報告します。
+
+## 例
+
+```bash
+apothem rollback --harness claude-code --last
+apothem rollback --harness claude-code --install-id 01J9Z… --yes
+apothem rollback --harness cursor --project . --last --json
+```
+
+## 終了コード
+
+| コード | 意味 |
+|---|---|
+| 0 | 正常にロールバックした、または復元するものがなかった（インストールがバックアップを取得していなかった） |
+| 1 | 予期されるエラー — インストールレコードがない、セレクターの競合、不明なハーネス、プロジェクトルートの欠落、または確認の中止 |
+| 2 | 少なくとも 1 つのターゲットをロールバックした後の部分的な復元 |
+
+## 関連項目
+
+- [apothem install](/docs/cli-reference/install) — ハーネス構成をインストールします
+- [apothem update](/docs/cli-reference/update) — 現在の共有プロファイルから再インストールします
+- [apothem uninstall](/docs/cli-reference/uninstall) — ハーネス構成を削除します
+- [apothem status](/docs/cli-reference/status) — インストール、検証、ドリフトの状態を報告します

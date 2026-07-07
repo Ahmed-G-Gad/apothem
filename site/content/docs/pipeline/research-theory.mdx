@@ -1,0 +1,68 @@
+---
+title: "/research-theory"
+description: "/research-theory — Builds the conceptual and theoretical framework for a framed research question: theory-of-change, constructs with operational definitions, and a conceptual-model diagram — the theoretical-grounding stage of the /research pipeline, between /research-spec and /research-sources."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Role:** Principal Investigator (theoretical grounding)
+**Pipeline position:** mid-chain
+
+Builds the foundational conceptual and theoretical framework for a framed research question — the a-priori grounding the systematic search and synthesis stages trace back to. Every construct is grounded in primary theory and every theorized relation is stated in a refutable form.
+
+## Canonical invocation
+
+```bash
+/research-theory
+```
+
+With arguments:
+
+```bash
+/research-theory [--suite-name NAME] [--override] [--framework NAME]
+```
+
+## Inputs
+
+The suite's `_spec/research-spec.md` (the framed, falsifiable question set produced by `/research-spec`).
+
+## Outputs
+
+`_inputs/theory.md` (the conceptual / theoretical framework, the theory-of-change / logic model, the constructs with their operational definitions, and a conceptual-model diagram).
+
+## Downstream
+
+/research-sources (downstream consumer — the systematic search traces its inclusion criteria back to these constructs).
+
+## Workflow phases
+
+The command follows the standard `/research` pipeline workflow:
+
+1. **Load context** — Read `_spec/research-spec.md`, the rules, and any existing suite state.
+2. **Frame the conceptual model** — Define the constructs and their operational definitions; ground each in primary theory.
+3. **Draw the theory of change** — Build the logic model linking constructs to expected outcomes; state every relation in a refutable form.
+4. **Diagram the model** — Emit a conceptual-model diagram the downstream stages reference.
+5. **Verify outputs** — Confirm every construct is theory-grounded and every relation refutable; resolve ambiguity through the structured-inquiry channel.
+6. **Emit the framework** — `_inputs/theory.md` plus the updated handoff manifest.
+
+## Failure modes
+
+| Symptom | Cause | Recovery |
+|---------|-------|----------|
+| Construct lacks an operational definition | Concept stated abstractly | Define the construct in measurable terms; cite the primary theory |
+| Theorized relation not refutable | Relation stated as a truism | Re-state the relation as a falsifiable claim |
+| Missing spec input | `/research-spec` not yet run | Run `/research-spec` first to frame the question |
+
+## Examples
+
+```bash
+# Build the theoretical framework for a framed question
+/research-theory --suite-name retrieval-latency
+
+# Anchor to a named theoretical framework
+/research-theory --framework "information foraging theory"
+```
+
+## Cross-references
+
+- [Pipeline overview](/docs/pipeline)
+- [Commands reference](/docs/reference/commands)

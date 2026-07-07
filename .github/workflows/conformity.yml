@@ -1,0 +1,184 @@
+# SPDX-License-Identifier: MIT
+
+# Outward-conformity verification workflow.
+#
+# Runs the conformity fixture sweep on every push and every pull request
+# that touches the user-scope ecosystem tree (`src/apothem/rules/`, `src/apothem/commands/`,
+# `src/apothem/agents/`, `src/apothem/skills/`, `src/apothem/hooks/`, `scripts/`, `src/apothem/output-styles/`, `settings.json`,
+# `CLAUDE.md`, `.mcp.json*`, `src/apothem/statuslines/`). The job invokes the
+# verification driver at `tests/conformity-scenarios/verify.py` in strict mode
+# and fails the build when any cell of the per-fixture per-mandate matrix
+# records `fail`.
+#
+# A scheduled retest runs once per week so dependency drift in the verifier
+# (or in the host's ratified ruff config) surfaces as a failing build before
+# the next pull request lands.
+#
+# SHA-pinning policy mirrors the sibling `ci.yml` workflow: every `uses:`
+# reference is pinned by 40-character commit SHA followed by a `# vX.Y.Z`
+# version comment. Renovate bumps each pinned SHA (pinDigests) weekly so security
+# patches propagate without human-in-the-loop rewrite.
+#
+# Permissions policy: the workflow declares `contents: read` at the workflow
+# scope; no per-job override escalates beyond read-only.
+
+name: Conformity
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'CLAUDE.md'
+      - 'src/apothem/rules/**'
+      - 'src/apothem/commands/**'
+      - 'src/apothem/agents/**'
+      - 'src/apothem/skills/**'
+      - 'src/apothem/hooks/**'
+      - 'scripts/**'
+      - 'src/apothem/output-styles/**'
+      - 'src/apothem/harnesses/claude_code/templates/settings.json'
+      - 'examples/harnesses/claude-code/native-install/settings.json'
+      - 'examples/harnesses/claude-code/settings.local.example.json'
+      - '.mcp.json*'
+      - 'src/apothem/statuslines/**'
+      - 'src/apothem/conformity/**'
+      - 'tests/conformity/**'
+      - '.github/workflows/conformity.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'CLAUDE.md'
+      - 'src/apothem/rules/**'
+      - 'src/apothem/commands/**'
+      - 'src/apothem/agents/**'
+      - 'src/apothem/skills/**'
+      - 'src/apothem/hooks/**'
+      - 'scripts/**'
+      - 'src/apothem/output-styles/**'
+      - 'src/apothem/harnesses/claude_code/templates/settings.json'
+      - 'examples/harnesses/claude-code/native-install/settings.json'
+      - 'examples/harnesses/claude-code/settings.local.example.json'
+      - '.mcp.json*'
+      - 'src/apothem/statuslines/**'
+      - 'src/apothem/conformity/**'
+      - 'tests/conformity/**'
+      - '.github/workflows/conformity.yml'
+  schedule:
+    # Weekly full-retest cadence (Mondays 06:00 UTC) per the suite's CI policy.
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Single-sourced pip pin (CVE-2026-6357 closes on pip >=26.1). One value per
+# workflow file; scripts/dev/check_pip_pin_drift.py fails the build if any
+# workflow's PIP_PIN_VERSION diverges from the canonical pin.
+env:
+  PIP_PIN_VERSION: "26.1.2"
+
+concurrency:
+  group: conformity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  conformity-fixture-sweep:
+    name: conformity-fixture-sweep
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install ruff for verifier lint corroboration
+        run: |
+          # Lockstep: keep in sync with the ruff floor in pyproject.toml
+          # [project.optional-dependencies].dev and the ruff-pre-commit rev in
+          # .pre-commit-config.yaml. Linting the driver with an older ruff than
+          # the ratified config would pass rules here that fail locally.
+          python -m pip install "pip==${PIP_PIN_VERSION}"
+          python -m pip install ruff==0.15.20
+
+      - name: Lint the verification driver
+        run: |
+          ruff check tests/conformity-scenarios/verify.py
+
+      - name: Run the conformity fixture sweep
+        env:
+          PYTHONIOENCODING: utf-8
+        run: |
+          python tests/conformity-scenarios/verify.py --strict --json > conformity-result.json
+          echo
+          echo "--- conformity verdict (strict mode) ---"
+          python -c "import json; d = json.load(open('conformity-result.json')); a = d['aggregate']; print(f\"overall: {a['overall']}\"); print(f\"cells: {a['cell-counts']}\"); print(f\"surfaced-gap-rate: {a['surfaced-gap-rate']}\")"
+
+      - name: Surface conformity verdict to job summary
+        if: always()
+        run: |
+          if [ -f conformity-result.json ]; then
+            {
+              echo '## Conformity verdict'
+              echo
+              echo '```json'
+              cat conformity-result.json
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'No conformity-result.json produced - verifier failed before reaching the matrix step.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload conformity verdict artifact
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: conformity-result
+          path: conformity-result.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  corpus-perwrite-gate:
+    name: corpus-perwrite-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: '3.12'
+
+      # The per-Write corpus runner routes every git-tracked file through every
+      # per-Write matcher with per-suffix applicability, the plans-workspace and
+      # test-fixture exemptions, and the blocking-vs-advisory partition. Under
+      # --strict the step FAILS the build iff a BLOCKING matcher flags a finding;
+      # advisory matchers report (surfaced on stderr) but never gate. The
+      # partition and the exemption behavior are defined in the conformity gate
+      # itself — src/apothem/conformity/gate.py (the _BLOCKING_PER_WRITE_GREPS /
+      # _ADVISORY_PER_WRITE_GREPS classification and the scope-exemption logic).
+      # This is the mechanical-enforcement surface for host-agnostic CI; the
+      # PreToolUse hooks are advisory nudges only.
+      - name: Conformity corpus runner (per-Write, strict)
+        run: |
+          python scripts/dev/run_corpus_gate.py --all-perwrite . --strict

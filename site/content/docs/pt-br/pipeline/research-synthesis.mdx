@@ -1,0 +1,70 @@
+---
+title: "/research-synthesis"
+description: "/research-synthesis — Concilia as fontes coletadas em um mapa do estado da arte e uma matriz de literatura, verifica de forma adversarial cada afirmação e declara a lacuna de pesquisa explícita."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Papel:** Pesquisador principal (síntese)
+**Posição no pipeline:** meio da cadeia
+
+Concilia as fontes coletadas em um mapa do estado da arte + matriz de literatura e declara a lacuna de pesquisa explícita que o trabalho aborda. Toda afirmação que sustenta o argumento é verificada de forma adversarial contra duas ou mais fontes independentes, refutando por padrão.
+
+## Invocação canônica
+
+```bash
+/research-synthesis
+```
+
+Com argumentos:
+
+```bash
+/research-synthesis [path/to/research-suite/]
+```
+
+## Entradas
+
+`_inputs/source-ledger.md` (o índice de fontes classificado e filtrado) mais as extrações por fonte sob `sources/`.
+
+## Saídas
+
+`_inputs/synthesis.md` — o mapa do estado da arte, a matriz de literatura, o livro-razão de achados contestados e a declaração explícita da lacuna em uma única frase.
+
+## A jusante
+
+/research-proposal (consumidor a jusante)
+
+## Fases do fluxo de trabalho
+
+O comando segue o fluxo de trabalho padrão do pipeline `/research`:
+
+1. **Carregar contexto** — Ler o livro-razão de fontes e as extrações por fonte.
+2. **Verificar o Portão de sequência** — Confirmar que o livro-razão de fontes existe; caso contrário, parar com `Blocked: run /research-sources first`.
+3. **Sintetizar** — Construir o mapa do estado da arte + matriz de literatura; conciliar concordâncias e contradições; declarar a lacuna explícita.
+4. **Verificar de forma adversarial** — Toda afirmação que sustenta o argumento é refutada por padrão contra duas ou mais fontes independentes.
+5. **Atualizar o manifesto de transferência** — Registrar o caminho da síntese e o livro-razão de afirmações contestadas.
+6. **Emitir a síntese** — `_inputs/synthesis.md`.
+
+## Piso de rigor
+
+Antes de a declaração da lacuna ser finalizada, a síntese concilia sua terminologia, seus achados e suas recomendações com corpora irmãos relacionados (coerência entre corpora); um conflito é registrado no livro-razão de achados contestados, nunca harmonizado silenciosamente. A lacuna deve resolver-se em uma contribuição distinta e parcimoniosa — não uma já fechada por uma afirmação corroborada, e não decomponível em elementos sobrepostos e não distintos.
+
+## Modos de falha
+
+| Sintoma | Causa | Recuperação |
+|---------|-------|----------|
+| Blocked: run /research-sources first | Sem livro-razão de fontes | Execute `/research-sources` para produzir `_inputs/source-ledger.md` |
+| Uma afirmação sobrevive sem ≥2 fontes | Corroboração insuficiente | Marque como contestada ou não verificável; não afirme |
+| Sem declaração explícita da lacuna | À síntese falta um alvo | Rederive a lacuna em uma única frase que a pesquisa aborda |
+
+## Exemplos
+
+```bash
+# Sintetizar as fontes coletadas em um mapa do estado da arte + lacuna
+/research-synthesis path/to/research-suite/
+```
+
+## Referências cruzadas
+
+- [Visão geral do pipeline](/docs/pipeline)
+- [Referência de comandos](/docs/reference/commands)

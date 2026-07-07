@@ -1,0 +1,168 @@
+---
+title: "Dokumentasi settings.json"
+description: "Konfigurasikan eksekusi hook Claude Code, izin, event, timeout, runtime Python, validasi, dan presedensi pengaturan berlapis untuk ekosistem Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Cakupan.** Dokumen ini menjelaskan file pengabelan hook
+> (`settings.json`) milik **adapter Claude Code**. harness lain
+> menggunakan permukaan pengaturan native masing-masing — lihat
+> [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses) untuk
+> titik masuk konfigurasi setara dari setiap adapter.
+
+## Ikhtisar
+
+`settings.json` mengonfigurasi eksekusi hook Claude Code untuk ekosistem Apothem.
+File ini mendeklarasikan hook mana yang berjalan pada event mana, timeout-nya, dan permukaan
+izin tingkat atas. Apothem mengirimkan satu template kanonis karena Claude Code
+memuat `~/.claude/settings.json` di semua platform yang didukung.
+
+## Runtime Khusus Python
+
+Setiap hook yang dikonfigurasi menggunakan bentuk perintah exec Claude Code.
+Template yang dikirimkan membawa token `${HARNESS_ROOT}`:
+
+```json
+{
+  "type": "command",
+  "command": "python",
+  "args": ["${HARNESS_ROOT}/apothem/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
+}
+```
+
+`apothem install` merender token tersebut menjadi jalur absolut akar harness
+(bentuk garis miring depan, valid di Windows, macOS, dan Linux), sehingga
+`settings.json` yang terpasang memanggil dispatcher yang dimaterialisasi di
+`~/.claude/.apothem/support/hooks/dispatch.py` secara langsung. Dispatcher dan
+gerbang konformitas (`~/.claude/.apothem/support/conformity/gate.py`, dengan fixture schema-nya
+di sebelahnya pada `~/.claude/.apothem/support/schemas/`) adalah skrip stdlib mandiri
+— tidak diperlukan paket `apothem` yang dapat diimpor di host, dan satu
+template melayani setiap platform.
+
+## Schema Konfigurasi Hook
+
+### Izin
+
+```json
+"permissions": {
+  "allow": ["Read", "Glob", "Grep"]
+}
+```
+
+Tool yang tidak ada di `allow` memerlukan persetujuan eksplisit per-panggilan atau izin tingkat workspace.
+Tool read-only sudah disetujui sebelumnya; operasi tulis (`Write`, `Edit`, `NotebookEdit`,
+`Bash`) berjalan melalui validator `PreToolUse`.
+
+### Event Hook
+
+> **Nilai timeout mencerminkan anggaran hook-event kanonis** — tabel di bawah
+> mereproduksinya demi kemudahan pembaca; sumber kanonis yang berlaku.
+
+| Event | Pemicu | Timeout | Tujuan | Mandat |
+| ----- | ------- | ------- | ------- | ------- |
+| **SessionStart** | Sesi Claude Code baru | 30 detik | Inisialisasi konteks, baca memori, periksa status plan | CM-14 |
+| **PreToolUse** | Sebelum Write/Edit/NotebookEdit/Bash | 10 detik | Validasi kepatuhan CM-7 + frontmatter | CM-7, CM-22 |
+| **PreCompact** | Sebelum pemadatan konteks | 30 detik | Eksternalisasi status yang belum dieksternalisasi | CM-24 §2.3 |
+| **PostCompact** | Setelah pemadatan konteks | 30 detik | Bootstrap ulang dari status yang dieksternalisasi | CM-24 §6.2 |
+| **Stop** | Keluar sesi | 60 detik | Eksternalisasi akhir-sesi | CM-14/CM-22/CM-24/CM-26 |
+
+`dispatch.py` juga menerima `UserPromptSubmit` dan `Notification` pada daftar putih
+event-nya. Tidak satu pun yang dikabelkan di template yang dikirimkan; tambahkan blok matcher dengan pola
+locator + dispatch yang sama untuk mengaktifkannya.
+
+### Field Tingkat Atas
+
+| Field | Tujuan | Wajib |
+| ----- | ------- | -------- |
+| `permissions` | Objek dengan array `allow` yang mencantumkan nama tool yang disetujui sebelumnya (tool read-only secara default) | ya |
+| `hooks` | Peta nama event → array blok `{matcher, hooks[]}`; lihat **Event Hook** di bawah | ya |
+| `model` | Selektor model yang dapat diselesaikan host. Alias atau identifier lengkap dapat diterima saat operator memilih untuk menyetelnya. | opsional |
+| `defaultShell` | Shell default untuk panggilan tool `Bash`. Apothem tidak menyetel ini di template bersama. | opsional |
+| `autoUpdatesChannel` | Channel pembaruan Claude Code. Apothem tidak menyetel ini di template bersama. | opsional |
+| `effortLevel` | Upaya penalaran default (`low`, `medium`, `high`, `max`) | opsional |
+
+## Validasi
+
+Tiga validator mencakup permukaan hook, dengan kerigoran yang meningkat:
+
+```bash
+# Struktural + higiene Python (cepat, offline)
+python scripts/dev/validate_hooks.py
+
+# Ekosistem penuh (struktur + frontmatter + pemeriksaan hook yang didelegasikan)
+python scripts/dev/validate_ecosystem.py
+
+# Sapuan adversarial (menyerang setiap perintah hook yang dikonfigurasi dengan input terdegradasi)
+python scripts/dev/chaos_pass.py
+```
+
+Ketiganya harus keluar dengan 0 sebelum melakukan commit perubahan hook atau pengaturan.
+
+Uji asap ad-hoc dari satu event:
+
+```bash
+python src/apothem/hooks/dispatch.py --event-name SessionStart
+```
+
+Keluaran yang diharapkan: amplop JSON satu baris yang berisi `hookSpecificOutput`.
+
+## Masalah Umum
+
+### SessionStart timeout
+
+Paling umum, locator `find-python` menemukan shim Microsoft Store dan
+gagal menyelesaikan interpreter sungguhan. Verifikasi:
+
+```bash
+python src/apothem/hooks/dispatch.py --event-name SessionStart
+```
+
+Jika perintah mencetak amplop JSON yang valid tetapi panel Claude Code menampilkan timeout,
+naikkan `timeout` event tersebut di `settings.json`. Jika perintah gagal di tingkat shell,
+pasang CPython 3.10+ sungguhan dan pastikan ia ada di PATH atau dapat ditemukan oleh locator.
+
+### Setiap Write/Edit terblokir
+
+`PreToolUse` menandai istilah internal plan dalam konten yang ditulis di luar akar pemasangan harness (`~/.claude/` untuk adapter Claude Code).
+Tinjau konten untuk pelanggaran CM-7 (lihat
+`src/apothem/rules/persistent-conventions-vigilance.md`). Hanya bahasa domain untuk
+artefak basis kode.
+
+### settings.json tidak dimuat
+
+Claude Code membaca `~/.claude/settings.json`. Verifikasi Apothem terpasang ke
+akar harness yang diharapkan dan mulai ulang sesi setelah mengubah file.
+
+### Hook diam-diam tidak melakukan apa-apa
+
+Kontrak hook adalah "selalu keluar dengan 0, selalu memancarkan JSON yang valid". Jika interpreter tidak dapat
+ditemukan, locator mengembalikan kosong dan perintah menjadi no-op. Jalankan `chaos_pass.py`
+untuk memastikan setiap hook yang dikonfigurasi mengembalikan amplop yang valid — ia menangkap jalur resolusi
+terdegradasi yang akan disembunyikan oleh sesi langsung.
+
+## Presedensi Berlapis
+
+Claude Code menyelesaikan objek pengaturan efektif dengan menyusun tiga lapisan dalam
+urutan presedensi yang meningkat:
+
+| Tingkat | Lokasi | Di-commit? | Alasan |
+|------|----------|------------|-----------|
+| 1. **Sistem** | Default harness yang dikompilasi ke dalam Claude Code itu sendiri | t/a (dikendalikan vendor) | Lantai dasar; setiap operator mewarisi baseline yang sama. |
+| 2. **Proyek** | `<harness-root>/settings.json` | ✅ Di-commit | Konvensi bersama proyek: hook, izin, server MCP, pengabelan statusline. Template sumber Apothem berada di dalam direktori templates adapter Claude Code. |
+| 3. **Lokal-pengguna** | `<harness-root>/settings.local.json` (gitignored) — di-template sebagai `settings.local.example.json` di akar repositori | ❌ Gitignored | Override khusus operator: token API, jalur lokal mesin, fitur opt-in. |
+
+Nilai tingkat lebih tinggi mengesampingkan nilai tingkat lebih rendah **pada tingkat kunci-daun** — ketika
+baik lapisan proyek maupun lokal-pengguna mendeklarasikan entri `permissions.allow`, gabungan
+diambil; ketika keduanya mendeklarasikan skalar seperti `theme`, nilai lokal-pengguna menang. Semantik
+penggabungan per-kunci yang tepat dimiliki oleh harness Claude Code.
+
+### Membuat override lokal-pengguna
+
+1. Salin `settings.local.example.json` (akar repositori) ke `<harness-root>/settings.local.json`.
+   Nama file `settings.local.json` cocok dengan pola `.gitignore`, sehingga file tidak pernah
+   masuk ke kontrol versi.
+2. Edit salinan lokal — simpan hanya kunci yang akan di-override; harness menyusun lapisan-lapisan,
+   sehingga kunci yang tidak ada diwarisi dari lapisan proyek.
+3. Verifikasi file terurai sebagai JSON yang valid sebelum menyimpan — harness menolak
+   JSON yang malformed saat sesi dimulai.

@@ -1,0 +1,131 @@
+---
+title: "Perintah pipeline"
+description: "Referensi perintah pipeline Apothem — alur /plan dan katalog perintah audit."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem menghadirkan pipeline `/plan` yang sadar-arsitektur, pipeline
+`/research` tiga belas tahap, ditambah urutan audit sebelas perintah —
+memberikan setiap proyek jalur terstruktur dari prosa mentah menuju kode
+tingkat-produksi yang ditinjau multi-sumbu, dan dari ide mentah menuju makalah
+yang disebarluaskan dan ditelaah sejawat.
+
+## Gambaran umum pipeline
+
+```mermaid
+flowchart LR
+    accTitle: Plan pipeline command flow
+    accDescr: Left-to-right flowchart of the apothem plan pipeline from the spec stage through the generate and review stages, then through a conditional architecture-bearing decision that either runs the design stage or skips directly to the execute stage. The orthogonal audit stage wraps the spec-through-review span as a closed remediation loop.
+    A[/plan-spec] --> B[/plan-generate]
+    B --> C[/plan-review]
+    AUD[/plan-audit<br/>orthogonal: wraps spec → review] -.->|closed-loop remediation| A
+    C --> Q{Architecture-bearing suite?}
+    Q -->|yes| F[/plan-design<br/>emit _inputs/design.md]
+    Q -->|no| D[/plan-execute]
+    F --> D
+    D --> E[/plan-status]
+    D --> G[Audit review sequence]
+    G --> H[Completion milestone]
+```
+
+## Tahap-tahap perencanaan
+
+Pipeline dihadirkan sebagai delapan perintah garis-miring kelas-satu, satu per
+tahap — masing-masing dapat dipanggil secara independen sebagai `/plan-<stage>`.
+
+| Tahap | Peran | Posisi |
+|-------|------|----------|
+| [/plan-spec](/docs/pipeline/plan-spec) | Penempa — dari prosa ke spesifikasi | Awal |
+| [/plan-generate](/docs/pipeline/plan-generate) | Generator — dari spesifikasi ke suite-rencana | Tengah-rantai |
+| [/plan-review](/docs/pipeline/plan-review) | Auditor — audit rencana forensik | Tengah-rantai |
+| [/plan-design](/docs/pipeline/plan-design) | Arsitek — `_inputs/design.md` untuk suite ber-arsitektur | Gerbang bersyarat |
+| [/plan-execute](/docs/pipeline/plan-execute) | Eksekutor — eksekusi fase | Terminal |
+| [/plan-status](/docs/pipeline/plan-status) | Pelapor — status hanya-baca | Hanya-baca |
+| [/plan-audit](/docs/pipeline/plan-audit) | Penjaga — pembungkus lingkar-tertutup untuk spec → generate → review | Ortogonal (pra-eksekusi) |
+| /plan-amend | Pengurus — amandemen re-entran untuk suite yang ada | Re-entran |
+
+`/plan-audit` ortogonal terhadap alur linear, bukan sebuah tahap di dalamnya. Ia
+membungkus `/plan-spec → /plan-generate → /plan-review` sebagai satu lingkar
+tertutup, hanya menjalankan tahap-tahap hulu yang hilang, secara aktif
+memperbaiki temuan, dan meninggalkan suite siap untuk `/plan-execute`. Ia
+berbeda dari urutan audit di bawah, yang mengaudit basis-kode yang telah
+dieksekusi alih-alih suite-rencana.
+
+`/plan-design` bukan upacara universal. `/plan-review` mengklasifikasikan apakah
+suite mengubah permukaan ber-arsitektur. Jika ya, `/plan-design` mengeluarkan
+jejak desain yang dikonsumsi `/plan-execute` dan `/architecture-review`. Jika
+tidak, suite yang ditinjau langsung berlanjut ke eksekusi.
+
+## Pipeline riset
+
+Pipeline riset dihadirkan sebagai tiga belas perintah garis-miring kelas-satu,
+satu per tahap — masing-masing dapat dipanggil secara independen sebagai
+`/research-<stage>`, dirantai oleh Gerbang Urutan dan Manifes Serah-Terima, di
+bawah sepuluh mandat ketelitian (sumber otoritatif, reproduksibilitas,
+falsifiabilitas, integritas kutipan, praregistrasi, etika / konflik, ketelitian
+statistik, sains terbuka / FAIR, kesesuaian pedoman pelaporan, landasan teoretis
+/ dampak).
+
+```mermaid
+flowchart LR
+    accTitle: Research pipeline command flow
+    accDescr: Left-to-right flowchart of the apothem research pipeline from the ideate stage through spec, theory, sources, synthesis, proposal, study design, experiment, analysis, paper, and peer review to publish and disseminate, with a revision loop from review back to paper.
+    RI[/research-ideate] --> RS[/research-spec]
+    RS --> RT[/research-theory]
+    RT --> RSO[/research-sources]
+    RSO --> RSY[/research-synthesis]
+    RSY --> RPR[/research-proposal]
+    RPR --> RD[/research-design]
+    RD --> RE[/research-experiment]
+    RE --> RA[/research-analysis]
+    RA --> RP[/research-paper]
+    RP --> RR[/research-review]
+    RR --> RPU[/research-publish]
+    RPU --> RDI[/research-disseminate]
+    RR -.->|revision loop| RP
+```
+
+| Tahap | Peran | Posisi |
+|-------|------|----------|
+| [/research-ideate](/docs/pipeline/research-ideate) | Merumuskan masalah — pertanyaan kandidat dari benih domain | Awal |
+| [/research-spec](/docs/pipeline/research-spec) | Membingkai pertanyaan — hipotesis yang dapat difalsifikasi + cakupan | Tengah-rantai |
+| [/research-theory](/docs/pipeline/research-theory) | Kerangka konseptual + teori perubahan | Tengah-rantai |
+| [/research-sources](/docs/pipeline/research-sources) | Pengumpulan sumber sistematis | Tengah-rantai |
+| [/research-synthesis](/docs/pipeline/research-synthesis) | Peta SOTA + analisis celah | Tengah-rantai |
+| [/research-proposal](/docs/pipeline/research-proposal) | Tujuan + kelayakan + dampak + rencana praregistrasi | Tengah-rantai |
+| [/research-design](/docs/pipeline/research-design) | Desain studi + praregistrasi | Tengah-rantai |
+| [/research-experiment](/docs/pipeline/research-experiment) | Menjalankan + mencatat, reproduksibel | Tengah-rantai |
+| [/research-analysis](/docs/pipeline/research-analysis) | Hasil + statistik | Tengah-rantai |
+| [/research-paper](/docs/pipeline/research-paper) | Draf makalah papan-atas | Tengah-rantai |
+| [/research-review](/docs/pipeline/research-review) | Kritik setara telaah-sejawat | Tengah-rantai |
+| [/research-publish](/docs/pipeline/research-publish) | Paket tempat-terbit + pengajuan | Tengah-rantai |
+| [/research-disseminate](/docs/pipeline/research-disseminate) | Diseminasi + dampak + pengarsipan FAIR | Terminal |
+
+Orkestrator alur-kerja terbungkus `/research` menggerakkan tahap-tahap ini dari
+pertanyaan mentah hingga makalah terbit (ia sendiri bukan sebuah tahap),
+memeriksa keluaran setiap tahap secara independen sebelum tahap berikutnya
+membangun di atasnya; `--quick` hanya menjalankan `/research-sources` +
+`/research-synthesis` untuk laporan terkutip sekali-jalan.
+
+Tahap-tahap empiris (sumber, desain, eksperimen, analisis) dan tahap-tahap penulisan (makalah, tinjauan, publikasi, diseminasi) tambahan bersandar pada permukaan pengoperasionalan ketelitian — perbandingan lintas-metode yang adil, asal-usul komparator, perancah program-eksperimen, rencana pemanfaatan-komputasi, lup eksperimen otonom yang opt-in, gerbang kenaikan definisi-selesai, serta pembutaan dengan pengungkapan bertahap — yang menambahkan detail operasional pada kesepuluh mandat tanpa memperluasnya.
+
+## Urutan audit
+
+Orkestrator alur-kerja terbungkus `/audit` menyapu seluruh sebelas dimensi di bawah sebagai satu lintasan paralel — analog audit-benteng dari `/plan` dan `/research` — menyintesis satu laporan temuan yang terdeduplikasi dan ter-triase berdasarkan tingkat keparahan (laporan-saja; perbaikan dirutekan ke `/elevate`). Setiap dimensi juga dapat dipanggil secara individual.
+
+Orkestrator alur-kerja terbungkus `/fortress` menutup lingkar yang dilaporkan `/audit`: ia mendeteksi melalui `/audit`, memverifikasi setiap temuan, memperbaiki setiap yang lolos pada permukaan pemiliknya, mengaudit-ulang dalam lingkar terbatas, dan menggerbangkan hasilnya melalui `/release-readiness` — analog pengerasan-produksi dari `/plan` dan `/research`.
+
+| Perintah | Area kualitas |
+|---------|--------------|
+| [/code-review](/docs/pipeline/code-review) | Kualitas kode |
+| [/code-audit](/docs/pipeline/code-audit) | Korpus kode |
+| [/security-audit](/docs/pipeline/security-audit) | OWASP / ASVS |
+| [/perf-audit](/docs/pipeline/perf-audit) | Performa |
+| [/architecture-review](/docs/pipeline/architecture-review) | Arsitektur |
+| [/ux-review](/docs/pipeline/ux-review) | Pengalaman pengembang |
+| [/a11y-audit](/docs/pipeline/a11y-audit) | Aksesibilitas |
+| [/docs-review](/docs/pipeline/docs-review) | Dokumentasi |
+| [/dependency-audit](/docs/pipeline/dependency-audit) | Dependensi |
+| [/supply-chain-audit](/docs/pipeline/supply-chain-audit) | Rantai pasok |
+| [/threat-model-audit](/docs/pipeline/threat-model-audit) | Model ancaman |

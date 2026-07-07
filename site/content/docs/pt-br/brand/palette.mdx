@@ -1,0 +1,47 @@
+---
+title: "Paleta de marca"
+description: "Cores de marca centrais do Apothem e as dezessete cores de marca das ferramentas. A única fonte da verdade são os tokens de design canônicos em assets/design-tokens.css; o site espelha esses valores."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## Paleta central
+
+A paleta canônica — a rampa neutra slate, a rampa de acento emerald e os matizes
+semânticos — pertence aos tokens de design em
+[`assets/design-tokens.css`](https://github.com/ahmed-g-gad/apothem/blob/main/assets/design-tokens.css)
+(e seu espelho `assets/design-tokens.json`). O tema do site em
+[`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
+espelha esses valores de tokens nas variáveis CSS que o tema do Fumadocs consome. Cada
+valor abaixo remonta a um passo de rampa canônico.
+
+| Papel | Token (CSS) | Modo claro | Modo escuro | Uso |
+|---|---|---|---|---|
+| Primária | `--brand-text` | slate-900 `#0f172a` | slate-50 `#f8fafc` | Títulos, texto de navegação, superfícies de leitura primárias. |
+| Acento | `--sl-color-accent` | emerald-600 `#059669` | emerald-400 `#34d399` | Links ativos, anéis de foco, navegação selecionada. |
+| Texto do corpo | `--brand-muted` | slate-600 `#475066` | slate-300 `#c2ccda` | Texto de prosa padrão. |
+| Fundo do corpo | `--brand-surface` | white `#ffffff` | slate-900 `#0f172a` | Fundo padrão. |
+| Fundo de navegação | `--brand-surface-muted` | slate-50 `#f8fafc` | slate-950 `#080c15` | Faixas de cabeçalho e navegação. |
+| Fundo de código | `--brand-code-bg` | slate-900 `#0f172a` | slate-950 `#080c15` | Superfícies de código em linha / em bloco. |
+
+## Paleta de ferramentas
+
+As cores das ferramentas vivem em [Cores das ferramentas](/docs/brand/harness-colors). O
+mapeamento geométrico sobre o hexágono da marca Apothem — seu nó central e seu nó
+terminal — está integrado à seção de marca. A fonte da verdade CSS em
+[`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
+conecta cada token à sua variável CSS.
+
+## Uso na documentação
+
+A paleta é conectada por meio da folha de estilos global `site/app/global.css`,
+importada pelo layout raiz. As variantes de modo claro e escuro alternam com o estado da
+classe `.dark` do tema.
+
+## Atualizações
+
+A paleta é atualizada apenas quando uma cor central muda (slate / emerald) ou uma
+ferramenta ratifica uma mudança de cor de marca a montante. As mudanças por ferramenta se
+propagam atomicamente por `site/app/global.css`,
+[Cores das ferramentas](/docs/brand/harness-colors) e cada mestre SVG afetado sob
+`assets/src/`.

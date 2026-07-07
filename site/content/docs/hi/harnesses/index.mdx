@@ -1,0 +1,90 @@
+---
+title: "हार्नेस एडॉप्टर"
+description: "Apothem हार्नेस एडॉप्टर — एक साझा प्रोफ़ाइल, सत्रह समर्थित लक्ष्य।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem सत्रह अंतर्निहित हार्नेस एडॉप्टर के साथ आता है। प्रत्येक एडॉप्टर
+उन्हीं साझा कोहोर्ट को प्लेटफ़ॉर्म-मूल फ़ाइलों में अनुवादित करता है जहाँ प्लेटफ़ॉर्म उनका समर्थन
+करता है, और जहाँ नहीं करता वहाँ Apothem-स्वामित्व वाले समर्थन ट्री में।
+
+## समर्थित हार्नेस
+
+समर्थित रजिस्ट्री में ठीक सत्रह एडॉप्टर हैं। `--harness` के साथ इन्हीं सटीक
+इंस्टॉल नामों का उपयोग करें, या नियतात्मक रजिस्ट्री
+समुच्चय के लिए `all` का उपयोग करें:
+
+```text
+antigravity
+claude-code
+codebuddy
+codex
+cursor
+gemini-cli
+github-copilot
+glm
+hermes
+kimi-code
+kiro
+open-claw
+opencode
+qwen-code
+trae
+windsurf
+zed
+```
+
+विस्तृत रजिस्ट्री मैट्रिक्स, लक्ष्य पथ, क्षमता अवस्थाएँ, MCP समर्थन,
+और कन्वेंशन-पिन साक्ष्य [तकनीकी रजिस्ट्री संदर्भ](/docs/reference/harness-registry) में हैं।
+
+## एकाधिक हार्नेस इंस्टॉल करें
+
+एक हार्नेस इंस्टॉल करें, या रजिस्ट्री को नियतात्मक
+क्रम में चुनने के लिए `all` का उपयोग करें। प्रोजेक्ट-स्कोप हार्नेस के लिए `--project PATH` आवश्यक है; इसमें `all`
+भी शामिल है क्योंकि रजिस्ट्री में यूज़र-स्कोप और प्रोजेक्ट-स्कोप दोनों लक्ष्य शामिल हैं।
+
+```bash
+apothem install --harness claude-code
+apothem install --harness cursor --project /path/to/project
+apothem install --harness gemini-cli --project /path/to/project
+apothem install --harness all --project /path/to/project
+```
+
+## अपने इंस्टॉल सत्यापित करें
+
+प्रत्येक हार्नेस एडॉप्टर को अलग-अलग सत्यापित करें, या हर पंजीकृत एडॉप्टर में
+प्रति-एडॉप्टर इंस्टॉल-स्थिति सारांश के लिए `apothem doctor` को कॉल करें:
+
+```bash
+apothem verify --harness claude-code
+apothem verify --harness all --project /path/to/project
+apothem doctor
+```
+
+## एडॉप्टर कैसे काम करते हैं
+
+प्रत्येक एडॉप्टर setuptools एंट्री-पॉइंट्स के माध्यम से पंजीकृत `HarnessAdapter`
+प्रोटोकॉल को लागू करता है। इंस्टॉल पर, CLI साझा
+YAML प्रोफ़ाइल को लोड और सत्यापित करता है, रजिस्ट्री के माध्यम से एडॉप्टर को रिज़ॉल्व करता है,
+मटेरियलाइज़ेशन योजना को सत्यापित करता है, और प्लेटफ़ॉर्म-मूल कॉन्फ़िग को हार्नेस के
+मूल यूज़र या प्रोजेक्ट स्थान पर लिखता है। अपडेट पर, यह वर्तमान
+प्रोफ़ाइल स्थिति से फिर से व्युत्पन्न करता है।
+
+```
+profile.yaml + packaged cohorts
+    identity / preferences / rules
+    commands / skills / delegated definitions / hooks / templates
+         |
+         +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/antigravity-cli/plugins/apothem/
+         +-- claude-code    --> ~/.claude/ native folders + ~/.claude/.apothem/support/
+         +-- codex          --> ~/.codex/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
+         +-- cursor         --> <project>/.cursor/rules/*.mdc
+         +-- gemini-cli     --> <project>/GEMINI.md + <project>/.gemini/
+         +-- github-copilot --> <project>/.github/copilot-instructions.md
+         +-- windsurf       --> <project>/.devin/rules/
+         +-- ...
+```
+
+प्रोटोकॉल विनिर्देश के लिए [हार्नेस एडॉप्टर एब्स्ट्रैक्शन](/docs/architecture/harness-adapter-abstraction)
+देखें।

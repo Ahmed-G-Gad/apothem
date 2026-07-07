@@ -1,0 +1,73 @@
+---
+title: "/research-disseminate"
+description: "/research-disseminate — Treibt Verbreitung und Wirkung nach der Annahme voran: Preprint-Ankündigung, öffentliche Artefakte, FAIR-Archivierungs-Deposit, Altmetrics-Verfolgung, die Erwiderungs- / Revisionsschleife der Gutachter und der Stufe-2-Pfad des registrierten Reports — die Abschlussstufe des /research-Flows, nach /research-publish."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rolle:** Hauptforscher (Verbreitung & Wirkung)
+**Position im Flow:** Abschluss
+
+Treibt Verbreitung und Wirkung nach der Annahme voran. Der Operator führt die öffentlichen Aktionen aus; die Stufe endet bei einem fertigen Verbreitungsplan und veröffentlicht niemals automatisch.
+
+## Kanonischer Aufruf
+
+```bash
+/research-disseminate
+```
+
+Mit Argumenten:
+
+```bash
+/research-disseminate [--suite-name NAME] [--override] [--archive REPO] [--preprint SERVER]
+```
+
+## Eingaben
+
+Die `_outputs/publication-record.md` der Suite (das Venue-Paket + der Einreichungsdatensatz, erzeugt von `/research-publish`).
+
+## Ausgaben
+
+`_outputs/dissemination-plan.md` (die Preprint-Ankündigung, der Plan für öffentliche Artefakte, der Datensatz des FAIR-Archivierungs-Deposits, der Plan für Altmetrics und Wirkungsverfolgung, die Erwiderungs- / Revisionsschleife und der Stufe-2-Pfad des registrierten Reports).
+
+## Nachgelagert
+
+Abschluss — der Verbreitungsplan ist das letzte Artefakt des Flows. Die Erwiderungs- / Revisionsschleife der Gutachter kann erneut in `/research-paper` eintreten, wenn eine Revision erforderlich ist.
+
+## Workflow-Phasen
+
+Der Befehl folgt dem Standard-Workflow des `/research`-Flows:
+
+1. **Kontext laden** — `_outputs/publication-record.md`, die Regeln und jeden bestehenden Suite-Zustand lesen.
+2. **Preprint und öffentliche Artefakte planen** — Die Preprint-Ankündigung und den Plan für Vortrag / Poster / Blog entwerfen.
+3. **Das FAIR-Archivierungs-Deposit festhalten** — Das Deposit von Daten + Code in ein FAIR-Repository mit persistenten Bezeichnern planen.
+4. **Wirkungsverfolgung einrichten** — Altmetrics und Wirkungsverfolgung gegenüber dem Wirkungspfad des Vorschlags planen.
+5. **Die Erwiderungsschleife vorbereiten** — Die Gutachter-Erwiderung und gegebenenfalls den Stufe-2-Pfad des registrierten Reports entwerfen.
+6. **Verifizieren und ausgeben** — Bestätigen, dass der Plan umsetzbar ist; `_outputs/dissemination-plan.md` plus das Übergabe-Manifest ausgeben. Der Operator führt die öffentlichen Aktionen aus.
+
+## Rigorositätsuntergrenze
+
+Öffentliche Artefakte tragen natürliche Fachsprache; wo die Verbreitung der De-Anonymisierung vorausgeht, werden Autor, Institution und Systemidentität für die dafür vorgesehene Stufe zurückgehalten. Das FAIR-Deposit ist das dauerhafte, zitierbare Reproduzierbarkeitsnachweis-Paket, skaliert nach dem Anspruch des Publikationsorts, das es einer unabhängigen Partei erlaubt, die Studie zu reproduzieren.
+
+## Fehlermodi
+
+| Symptom | Ursache | Behebung |
+|---------|-------|----------|
+| Kein FAIR-Deposit-Datensatz | Archivierungsschritt übersprungen | Ein FAIR-Repository auswählen (`--archive`) und den Deposit-Plan mit persistenten Bezeichnern festhalten |
+| Plan versucht automatisch zu veröffentlichen | Stufengrenze überschritten | Beim fertigen Plan anhalten; der Operator führt jede öffentliche Aktion aus |
+| Publikationsdatensatz fehlt | `/research-publish` noch nicht ausgeführt | Zuerst `/research-publish` ausführen, um das Venue-Paket zu erzeugen |
+
+## Beispiele
+
+```bash
+# Verbreitung nach der Annahme planen
+/research-disseminate --suite-name retrieval-latency
+
+# Den Preprint-Server und das FAIR-Archiv festlegen
+/research-disseminate --preprint arXiv --archive Zenodo
+```
+
+## Querverweise
+
+- [Flow-Überblick](/docs/pipeline)
+- [Befehlsreferenz](/docs/reference/commands)

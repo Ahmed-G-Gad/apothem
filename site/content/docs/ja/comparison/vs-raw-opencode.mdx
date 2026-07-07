@@ -1,0 +1,42 @@
+---
+title: "Apothem と手作業の OpenCode 構成の比較"
+description: "OpenCode の構成、コマンド、スキル、エージェントを手作業で維持するのと、Apothem の共有プロファイルからレンダリングするのとの比較。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+OpenCode は JSON 構成に加えて、ネイティブのコマンド・スキル・エージェントの発見
+ディレクトリを読み取ります。Apothem は `instructions` ファイルリストを伴う JSON 構成
+をレンダリングし、OpenCode が対応している箇所では共有コーパスをネイティブ
+ディレクトリへ変換します。
+
+## 労力の比較
+
+| タスク | 手作業の構成 | Apothem 管理 |
+| ---- | --------------- | --------------- |
+| ルールを書く | 構成と支援プロンプトを手で編集 | 共有プロファイルからレンダリングまたは参照 |
+| コマンド・スキル・エージェントを書く | 各 OpenCode ディレクトリを手で維持 | 共有 Apothem コーパスから変換 |
+| コーパスを他の環境と揃えて保つ | 手作業、ツールごと | `apothem update` で自動 |
+| 表面のインストール／削除 | 手作業 | `apothem install` / `apothem uninstall` |
+| 構成が正しいか検証する | 手作業の検査 | `apothem verify --harness opencode` |
+
+## Apothem が管理するもの
+
+opencode アダプターは `opencode.json` を書き込み、Apothem のスラッシュコマンドを
+OpenCode の Markdown コマンドファイルへ変換し、スキルをネイティブのスキル表面へ
+コピーし、補助定義を Markdown のサブエージェントとして適応させます。ルール、
+テンプレート、フックプロンプトは Apothem の支援サブツリーの下に残ります。ルールは
+ネイティブの `instructions` リストから参照されます。
+
+## 移行手順
+
+1. 共有プロファイルをまだ作成していなければ、`apothem profile init` を実行します。
+2. 既存の OpenCode のルール、コマンド、スキル、エージェントを共有コーパスへ移します。
+3. `apothem install --harness opencode` を実行してネイティブ構成と発見ディレクトリをレンダリングします。
+4. `apothem verify --harness opencode` を実行して構成が配置されたことを確認します。
+5. 以降の変更には毎回 `apothem update --harness opencode` を使います。
+
+## 次に読む
+
+- [OpenCode アダプターのリファレンス](/docs/harnesses/opencode)
+- [比較の概要](/docs/comparison)

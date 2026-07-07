@@ -1,0 +1,32 @@
+---
+title: "Namenskonventionen"
+description: "Schreibt kebab-case-Dateinamen, das Frontmatter-Schlüsselformat, die Branch-Benennung mit Typ-Präfixen und die Semantik numerischer Präfixe für geordnete Artefaktsequenzen vor."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Kanonische Referenz für die Form von Dateinamen, Bezeichnern und Branch-Namen im gesamten Ökosystem.** Die Zusammenfassung in [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Konventionen ist die Inline-Deklaration; diese Seite ist die eigenständige Referenz, die nachgelagerte Mitwirkende zitieren.
+
+---
+
+## 1. Dateisystemnamen
+
+Dateien und Ordner verwenden standardmäßig **kebab-case**. Bezeichner enthalten keine Leerzeichen, keine Unterstriche und kein Camel-Case.
+
+Die kanonischen Großbuchstaben-Ausnahmen sind den Singleton-Dateien der Veröffentlichungsoberfläche vorbehalten, die jeder Mitwirkende beim ersten Kontakt erkennt: `CLAUDE.md`, `README.md`, `LICENSE`, `CHANGELOG.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md` sowie die Plan-Suite-Singletons (`MASTER-PLAN.md`, `PROGRESS.md`, `PHASE.md`, `SKILL.md`, `VERSION`). Jede andere Datei verwendet kebab-case.
+
+## 2. Frontmatter-Schlüssel
+
+YAML-Frontmatter-Schlüssel verwenden `kebab-case` (zum Beispiel `argument-hint`, `disable-model-invocation`). Die kebab-case-Regel gilt einheitlich für Regeln, Befehle, delegierte Worker, Skills und `CLAUDE.md` selbst.
+
+## 3. Branch-Namen
+
+Branches folgen `<type>/<short-description>`, wobei der Typ aus der geschlossenen Menge `{feat, fix, chore, docs, refactor, test, perf, ci, build, style, revert, release}` stammt. Die Beschreibung ist kebab-case und kürzer als fünfzig Zeichen.
+
+## 4. Numerische Präfixe
+
+Numerische Präfixe (`NN-`) auf Dateisystempfaden vermitteln eine Reihenfolge und gelten nur dort, wo die Reihenfolge intrinsisch ist — Phasenordner, Unterphasenordner, Migrationsskripte und jede andere Artefaktklasse, deren Sequenz Teil des Vertrags ist. Singletons auf Wurzelebene, die keine Geschwistersequenz haben, tragen kein numerisches Präfix; eines hinzuzufügen signalisiert fälschlicherweise eine Reihenfolgebeziehung, die nicht existiert. Die vollständige Disziplin findet sich in [`src/apothem/rules/canonical-layout.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/canonical-layout.md) §2.1.
+
+## 5. Validatoren
+
+Der naming-grep in `src/apothem/conformity/naming_grep.py` ist die mechanische Durchsetzungsoberfläche. Die CI ruft ihn über `make validate` auf.

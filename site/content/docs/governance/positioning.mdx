@@ -1,0 +1,300 @@
+---
+title: "Positioning"
+description: "Understand Apothem as artifact-ratification governance with fifteen mandates, canonical-channel input discipline, and cognitive-identity creative architecture for assistant-driven work."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Audience:** evaluators deciding whether to adopt `apothem` for production assistant-driven work.
+> **Length:** ~12 minutes to read end-to-end. Skimmable section-by-section.
+> **Purpose:** frame what `apothem` actually IS, what it is NOT, and why the answer to "what does this project distribute?" is structurally different from the answer most governance-tooling projects give.
+
+---
+
+## §1. Thesis
+
+`apothem` is **artifact-ratification governance**, packaged as a binary.
+
+The conventional framing of assistant tooling is **prompt-tuning**: a system prompt, a model selection, a context-window strategy, a small library of slash-commands, and a pile of prompt-engineering folklore. Under that framing, the operator's leverage point is the prose they hand the model. When the model misbehaves, the recovery is to edit the prose. The artifact the project distributes is the prompt set.
+
+`apothem` rejects that framing.
+
+The leverage point of an assistant operating against a real project is not the prose the operator hands the model — it is the **artifact the model is about to emit**. That artifact will land in a workspace, get committed, get reviewed, get merged, get deployed, get cited by downstream artifacts, get inherited by future contributors. Its quality is a downstream-irreversible property the prompt cannot retroactively repair. Editing the prompt after a malformed commit lands is a tax on the operator, not a recovery of the artifact.
+
+The discipline this project encodes is **inversion**: every emission passes through a structured, agreed-upon, mechanically-checked gate **before** it leaves the assistant's hands. The gate enforces fifteen mandates that span host-discovery, disclosure, ten quality dimensions, authority hygiene, expertise incorporation, option-annotation, definitiveness, visual leverage, bidirectional binding, agile sprint apparatus, canonical layout, code craft, systemic participation, and production-readiness. Every mandate is a **rule** with a path-filtered scope and a body that operationalizes a specific failure class. Every gate failure is a structural finding the assistant surfaces — never a silent degradation.
+
+The rule corpus IS the product. The binary `apothem` is its **packaging** — a distribution surface that carries the corpus to every operator's user-config root and registers it as the assistant's operating posture. The packaging is replaceable; the corpus is the long-tail asset.
+
+A project that adopts `apothem` does not adopt a prompt. It adopts a **governance regime**. Every artifact the assistant emits in the host repository — code, tests, configuration, schemas, documentation, runbooks, commit messages, branch names — meets the same fifteen-bar floor. The operator's leverage point shifts from "what should I tell the assistant?" to "which mandates constrain this emission, and what evidence does the gate require?". The shift is structural, not stylistic.
+
+This document frames why the corpus is the load-bearing asset, walks the fifteen mandates with their rule-file anchors, and surfaces the two cross-cutting disciplines (canonical-channel input handling and cognitive-identity creative architecture) that bind the corpus into a coherent whole.
+
+---
+
+## §2. Three-pillar architecture
+
+The corpus rests on three pillars. Each pillar is a separable surface with its own canonical specification; each pillar reinforces the other two.
+
+### Pillar A — The mandate registry (M1–M15 + CM-1..CM-28)
+
+The mandate registry is the **outward-axis** governance surface. **M1–M15** govern every artifact the assistant produces in a host project: host-discovery, disclosure, ten quality dimensions, authority, expertise, option annotation, definitiveness, visual leverage, bidirectional binding, agile sprints, canonical layout, code craft, systemic participation, and production-readiness. The registry is canonicalized as the fifteen-mandate registry and operationalized by the rule files enumerated in §3 below.
+
+**CM-1..CM-28** are the **inward-axis** counterparts — operational mandates that govern the assistant's interaction discipline (critical evaluation, zero assumptions, search-before-implement, best-solution evaluation, brutal honesty, decision velocity, bottleneck-first focus, coherent product, and twenty further entries covering plans locality, context stewardship, orchestration of delegated work, large-file generation, and memory lifecycle). The inward axis is canonicalized in the operational-mandates rule and `site/content/docs/governance/cross-cutting-mandates.mdx`.
+
+Every emission passes both axs. The gate at `src/apothem/rules/pre-emission-gate.md` runs the fifteen mechanical and reasoned bars per emission and records a verification block in the artifact's working trace.
+
+### Pillar B — The canonical-channel discipline
+
+The canonical-channel discipline binds **how the assistant solicits operator input**. Free-form prompts are retired ecosystem-wide; every choice routes through the structured-inquiry channel with a structured option-annotation schema (rationale + recommendation + default-pointer per option), a closed recommendation taxonomy, a per-file destructive-op confirmation floor, and a heuristic sweep that catches conversational-prompt drift across every governed surface. The full specification lives at `src/apothem/rules/interactive-questions.md` with depth carried at the path-filtered companions `src/apothem/rules/interactive-questions-canonical-shapes.md` and `src/apothem/rules/interactive-questions-sweep-matchers.md`.
+
+The discipline's leverage is **decision auditability**. Every operator-volitional choice carries the evidence the assistant considered, the recommendation the assistant issued, and the rationale grounded in concrete drivers. Six months after the choice, an auditor reading the disclosure ledger can reconstruct the decision boundary without consulting the operator's memory.
+
+### Pillar C — The cognitive-identity taxonomy
+
+The cognitive-identity taxonomy binds **how the assistant thinks**. Five sequential cognitive filters (Obvious Purge, Domain Exile, Inversion Press, Combinatorial Explosion, Aesthetic Demand) compose a creative cadence applied at every substantive output. Six ideation techniques (Historical Saboteur, Constraint Paradox, Living Systems Lens, Second-Order Narrative, Villain Frame, 100-Year Zoom) fire on detection signals when the standard approach has yielded an unsatisfying outcome. Seven axs of breadth (Architecture, Concurrency, Performance, Security, Testing, Tooling, Observability) constitute the depth surface every non-trivial decision attests against. The full specification lives at `src/apothem/rules/cognitive-identity.md` with depth carried at the path-filtered companion `src/apothem/rules/cognitive-identity-techniques.md`.
+
+The taxonomy's leverage is **structural novelty**. The Obvious Purge filter discards the first-idea answer that everyone reaches for; the Inversion Press requires at least one inverted assumption to survive into the final output; the Aesthetic Demand rejects functional-but-forgettable forms. The result is an assistant that produces outputs operators stop and re-read — not because the prose is decorated, but because the structural choice is non-obvious in a way that, once seen, feels inevitable.
+
+### How the pillars reinforce each other
+
+The three pillars are **mutually load-bearing**. The mandate registry (Pillar A) defines what the artifact must satisfy. The canonical-channel discipline (Pillar B) defines how operator input enters the decision surface that produces the artifact. The cognitive-identity taxonomy (Pillar C) defines the creative cadence that gives the artifact its shape. Removing any one pillar collapses the other two: a registry without a canonical channel produces silently-defaulted artifacts that look conformant but conceal structural decisions; a canonical channel without cognitive depth produces correctly-routed but generically-shaped outputs; a cognitive cadence without a registry produces aesthetically-elegant artifacts that fail integration with the host project.
+
+---
+
+## §3. Mandate registry walkthrough
+
+The fifteen-mandate registry is the canonical outward-axis governance surface. Each row below names the mandate, its operational scope, and the rule file that carries the canonical specification. Every rule file is path-filtered to the artifact classes it governs and demand-loaded into the assistant's operating context when those classes are touched.
+
+### M1 — Host-Project Agnosticism & Convention Discovery
+
+**Scope.** Whatever the assistant produces in a host project is shaped by what the host project already is — its stack, language, framework, toolchain, formatter, linter, test framework, documentation generator, branch strategy, commit-message convention, layout, naming, dependency-pinning policy. Every one is **discovered** from the host's authoritative source-of-truth (manifests, lock files, sibling files of comparable kind, repository-level convention documents) and **honored**. Where the host is silent on a convention the assistant must adopt, the silence surfaces as an authoritative inquiry — never resolved by silently picking an internal default.
+
+**Canonical specification.** `src/apothem/rules/host-discovery.md` (with per-language manifest catalog at `src/apothem/rules/host-discovery-manifests.md`).
+
+**Why it matters.** The assistant's emission is **indistinguishable from one a long-tenured contributor of the host project would have written**. Convention drift is a structural failure, not a stylistic preference.
+
+### M2 — Editorial Discipline & Disclosed Amendments
+
+**Scope.** Every change of meaningful scope carries an explicit **disclosure ledger** — what was asked, what was amended, what was extended, what was refined, what was deferred. Silent over-compliance ("did exactly what was asked, even though it was wrong") and silent over-reach ("widened the change scope without telling") are both failures. Every amendment carries a rationale at the scholarly / technical bar (cited reference, RFC, vendor docs, sibling-file precedent, named pattern from the literature).
+
+**Canonical specification.** `src/apothem/rules/disclosure-ledger.md` (with marker-class catalog at `src/apothem/rules/disclosure-ledger-markers.md`).
+
+**Why it matters.** A diff that quietly fixes an adjacent bug while implementing the requested change is an undisclosed amendment. A reviewer six months later cannot distinguish the deliberate fix from drift. The ledger is the audit-and-recovery surface.
+
+### M3 — The Ten Quality Dimensions
+
+**Scope.** Every artifact is evaluated against ten quality dimensions before emission: scientific rigor, consistency / coherence / integration / validity, configurability / irredundancy / consolidation, readability / intuition / cleanness, orphanism / staleness, structurality / systemicity / uniformity / comprehensiveness, architecture, naming uniformity, scholarly / technical referencing, and examples / tests / docstrings / documentation. A single artifact failing multiple dimensions is **multiplicative**, not additive — an artifact that is stale AND orphan AND inconsistently named AND undocumented is a candidate for retraction, not repair.
+
+**Canonical specification.** `src/apothem/rules/ten-dimension-check.md` (with per-dimension bodies at `src/apothem/rules/ten-dimension-check-dimensions.md`).
+
+**Why it matters.** Quality is decomposable. Naming the ten dimensions makes each one auditable and surfaceable in isolation; ambiguous "this looks weak" findings become specific "dimension 5 staleness: reference at line 42 points at a moved file".
+
+### M4 — Self-Application — Pre-Emission Gate
+
+**Scope.** Every artifact passes a **fifteen-bar pre-emission gate** before emission. Mechanical bars (M2, M5, M7, M8, M10, M13, M15) carry executable matchers at `src/apothem/conformity/*-grep.py` orchestrated by `src/apothem/conformity/gate.py`. Reasoned bars (M1, M3, M6, M9, M11, M12, M14) are evaluated by the operating assistant and recorded in the verification block. A single bar failure blocks emission; iteration continues until every bar passes.
+
+**Canonical specification.** `src/apothem/rules/pre-emission-gate.md` (with full bar table at `src/apothem/rules/pre-emission-gate-bars.md`).
+
+**Why it matters.** Quality is a pre-emission concern, not a downstream "the user can revise" concern. The gate is the structural translation of that conviction into mechanical enforcement.
+
+### M5 — Authority Principle (Inquire, Do Not Invent)
+
+**Scope.** Names, emails, handles, hostnames, organizations, tenants, endpoints, credentials, scope direction, naming choices the host has not yet settled, retention policies, version pins on host-mutable surfaces, infrastructure decisions the user has not declared — **none** is invented. Each is either discovered from an authoritative source of truth in the host (M1 discovery half) or inquired from the user (M5 inquiry half) — never papered-over with a plausible-looking guess.
+
+**Canonical specification.** `src/apothem/rules/authority-inquiry.md` (with seven-category catalog at `src/apothem/rules/authority-inquiry-categories.md`).
+
+**Why it matters.** Identity, security, scope-direction, and public-surface naming carry legal and audit weight. A guessed contact address, a fabricated `CODEOWNERS` handle, or an invented release-signing endpoint creates downstream cleanup that costs orders of magnitude more than the inquiry would have.
+
+### M6 — Expertise Incorporation
+
+**Scope.** Every meaningful-scope artifact reads the user's intention before literal text, amends proactively when the literal request would leave a known defect, extends on adjacent gaps, refines with cited rationale, anticipates second-order consequences, calibrates depth to task, and imports lessons from adjacent domains — disclosing every amendment via the M2 ledger.
+
+**Canonical specification.** `src/apothem/rules/expertise-posture.md` (with seven sub-elements + calibration ladder at `src/apothem/rules/expertise-posture-elements.md`).
+
+**Why it matters.** Expertise without disclosure is silent override. Expertise with disclosure is leverage — the operator sees the amendment, evaluates the rationale, and either ratifies or reverts. The assistant acts as a senior contributor whose judgment is auditable, not as an opaque substitute for the operator's intent.
+
+### M7 — Option Annotation Discipline
+
+**Scope.** Every multi-option choice surfaced by the assistant — in prose responses, ADRs, README sections, PR descriptions, design documents, runbook steps, code comments, commit-message bodies, RFCs — carries the canonical recommended marker on the recommended option plus a principle-linked rationale. Silent picks and un-annotated option lists are forbidden in authoritative territory.
+
+**Canonical specification.** `src/apothem/rules/option-annotation.md` (with prose-and-document form at `src/apothem/rules/option-annotation-form.md`).
+
+**Why it matters.** Every authored option set is an audit surface. The reader sees not only the choice but the alternative space, the recommendation, and the concrete driver behind it. The same discipline binds the assistant's structured-inquiry invocations and the prose authored into permanent artifacts.
+
+### M8 — Definitiveness, Airtightness, and the Family of Rigorous-Systems Virtues
+
+**Scope.** Every statement is definitive (no hedging where binding prescription is possible) and airtight (no gaps in declared domains, no loopholes where literal-honoring violates intent, no unstated assumptions, no precedence ties, no silent fallbacks). The hedging-vocabulary list is mechanically detected at the gate; each occurrence in prescriptive prose resolves on one of three paths — promote to unconditional with conditions named, demote to explicit conditional with branches enumerated, or remove and route the choice to the inquiry surface.
+
+**Canonical specification.** `src/apothem/rules/definitiveness.md` (with seven-virtue catalog at `src/apothem/rules/definitiveness-virtues.md`).
+
+**Why it matters.** Hedged prescriptive prose is a tax on every reader. The reader cannot tell whether the hedge concedes a real conditional or signals authorial uncertainty. The discipline forces the author to name the condition or remove the prescription — the reader gets a binding statement either way.
+
+### M9 — Visual Leverage
+
+**Scope.** Where subject matter is structural — architecture, control flow, data flow, dependency graph, state machine, sequence, decision tree, hierarchy, precedence stack, lifecycle, permission matrix — the artifact carries a **diagram** alongside the prose. Mermaid is the recommended default for Markdown-centric corpora; the host's existing notation is honored per M1 discovery. Every diagram carries provenance, a verification date, and a binding back to the artifact it abstracts.
+
+**Canonical specification.** `src/apothem/rules/visual-leverage.md`.
+
+**Why it matters.** A two-thousand-word architectural description with no diagram is **systematic under-utilization** of the medium and a structural failure of the artifact, not a stylistic preference. Spatial relationships are illegible in linear prose; the diagram is co-equal first-class output, not decoration.
+
+### M10 — Bidirectional Binding & Phase-Execution Threading
+
+**Scope.** Every substantive structural element carries reciprocal bindings to its peers in the canonical five-direction notation: **Drives →** / **Driven by ←** / **Satisfies →** / **Established by ↑** / **Cross-bound with ↔**. Every binding declared in one direction has a reciprocal back-pointer at the other end; half-edges are structural failures, not aesthetic preferences. A mechanical reciprocity-grep at `src/apothem/conformity/binding_reciprocity_grep.py` enforces the invariant at the gate.
+
+**Canonical specification.** `src/apothem/rules/bidirectional-binding.md`.
+
+**Why it matters.** Reciprocal bindings turn the corpus into a navigable graph. Any rule's `Cross-bound with ↔` row points at every peer that cites it, and every cited peer points back. Refactoring the corpus becomes mechanical — rename a rule, the reciprocity-grep flags every stale citation in the same change-set.
+
+### M11 — Agile Sprints & Empirical Process Control
+
+**Scope.** Non-trivial multi-step work runs as disciplined Agile sprints with the seven canonical elements: Sprint Goal (outcome-shaped, testable), Sprint Backlog (INVEST-shaped, prioritized), Definition of Ready (sprint-entry gate), Definition of Done (sprint-exit gate), Sprint Review (approved / rejected / carry-forward per item), Sprint Retrospective (continue / stop / start), Velocity Tracking (signal, never target). Three pillars of empirical process control — transparency, inspection, adaptation — operate throughout.
+
+**Canonical specification.** `src/apothem/rules/agile-sprints.md` (with element bodies at `src/apothem/rules/agile-sprints-elements.md`).
+
+**Why it matters.** A bulk multi-day diff with no sprint structure is opaque to review. The apparatus surfaces every increment, every acceptance criterion, every rejection at the moment it happens — not deferred to a retrospective long after the structural decision is irreversible.
+
+### M12 — Reporting Tiers & Canonical Layout of Generated Outputs
+
+**Scope.** Non-trivial multi-step work emits two-tier reporting: a per-sub-phase report at the working tier and a phase-level rollup at the reviewing tier that aggregates rather than concatenates — uniform template across sub-phases, aggregated metrics, surfaced patterns, phase-level self-check, outward declarations. Generated outputs sit at predictable, host-discovered canonical locations with provenance and reciprocal cross-references. **Orphan outputs** (artifacts with no consumer / no index entry / no producer attribution) are structural failures.
+
+**Canonical specification.** `src/apothem/rules/canonical-layout.md` (with reporting-tier bodies at `src/apothem/rules/canonical-layout-reporting-tiers.md`).
+
+**Why it matters.** A flat list of `report1.md` / `report2.md` at ad-hoc locations is illegible six weeks later. The two-tier discipline plus host-canonical layout means every output is discoverable, every consumer is named, every producer is attributable.
+
+### M13 — Code Craft Conventions
+
+**Scope.** Every code artifact meets eleven sub-elements: why-not-what commenting, intent-revealing naming, specific-exception handling, function and module design with single-responsibility bias, deliberate logging levels, behavior-descriptive testing, formatter / linter / type-checker passing clean, security-conscious code (no hardcoded secrets, no shell injection, no unsafe deserialization), concurrency discipline, named-constant elimination of unexplained numeric literals, and documentation surface coverage. Per-language sibling rules carry the language-specific materialization.
+
+**Canonical specification.** `src/apothem/rules/code-craft-conventions.md` (universal-delegation stub) plus the per-language sibling rules `src/apothem/rules/code-craft-python.md`, `src/apothem/rules/code-craft-shell.md`, and `src/apothem/rules/code-craft-markdown.md`.
+
+**Why it matters.** Code-craft drift compounds. A single bare exception handler becomes the precedent the next contributor cites; one hardcoded secret becomes the convention the team accepts; one unexplained literal becomes a dozen. The eleven sub-elements name the failure classes and the gate enforces them per emission.
+
+### M14 — Ecosystem Systemicity in the Host Project
+
+**Scope.** Every newly-introduced component declares four systemic relations — **upstream** (what triggers it), **downstream** (what consumes it), **peers** (siblings of the same kind), **enforcers** (host quality gates that govern it) — and converges with peer conventions in the same change-set. Silos (self-contained artifacts diverging from sibling conventions, duplicate-of-existing functionality) and orphans (components with no consumer / no index entry / no producer attribution) are structural failures.
+
+**Canonical specification.** `src/apothem/rules/systemic-participation.md` (with operational depth at `src/apothem/rules/systemic-participation-relations.md`).
+
+**Why it matters.** A new test, doc, workflow, module, or configuration entry that does not declare its place in the host's reference graph is invisible to maintenance. The four-relations declaration plus same-change registry update means every component is discoverable and unwindable from its first commit.
+
+### M15 — Production-Ready Discipline on Host-Project Artifacts
+
+**Scope.** Every change ships in production-ready form: tests + documentation + CHANGELOG entry + conformant commit message + CI green in the same change-set. Supply-chain posture preserved (no unpinned dependency, no secret literal, no permission escalation, no unpinned actions, no unsigned release where signing is required). Release-engineering invariants preserved (versioning honored, tag-to-version consistency, tag signing where required). Modern project surface populated (paired multi-OS install / update / uninstall scripts, logo asset, modern centered README header, install / updating / uninstalling sections). Every commit's authorship metadata names **human contributors only** — the assistant never attributes itself or the underlying language model to any commit, trailer, branch, tag, or pull-request field.
+
+**Canonical specification.** `src/apothem/rules/production-ready-prs.md` (with visibility surfaces and modern-surface specification at `src/apothem/rules/production-ready-prs-surfaces.md`).
+
+**Why it matters.** "I'll add tests in a follow-up" never lands. The same-change-set discipline forecloses the failure mode that produces the largest cumulative cost in long-running projects: deferred quality work that compounds into systemic technical debt.
+
+---
+
+## §4. Canonical-channel discipline
+
+The canonical-channel discipline is the **input-side counterpart** to the mandate registry's emission-side enforcement. Every choice the assistant surfaces to the operator routes through the structured-inquiry channel. Free-form conversational prompts as primary input are forbidden; the discipline is enforced at the gate by seven heuristic matchers (H1–H7) that sweep every governed surface and flag deviations as gate findings.
+
+The canonical specification lives at `src/apothem/rules/interactive-questions.md`. The companion rules carry depth: `src/apothem/rules/interactive-questions-canonical-shapes.md` carries the worked examples, the schema bodies, the recommendation taxonomy, the harness fallback, the destructive-op canonical option sets, and the default-pointer worked examples; `src/apothem/rules/interactive-questions-sweep-matchers.md` carries the H1–H7 matcher catalog with reproducible ripgrep invocations.
+
+### Structured question shape
+
+Every invocation carries four fields: a one-sentence `question` ending in a question mark, a short `header` (twelve characters maximum), a two-to-four-element `options` array, and a `multiSelect` boolean. Each option carries a one-to-five-word `label` and a `description` body with three fixed-order segments:
+
+1. **rationale** — one sentence stating what this option means and its direct, observable consequence on ecosystem state.
+2. **recommendation** — one value from the closed taxonomy: recommended, acceptable, discouraged, or destructive-no-default. Non-neutral values carry a why-clause citing at least one **concrete driver** from a closed six-class taxonomy: locked decisions, named risks, named constraints, open-question postures, rule citations, and observed ecosystem state. The vague-rationale forbid list is non-conformant when standing as the sole justification for a non-neutral recommendation.
+3. **default-pointer** — names the safe default with rationale, OR explicitly declares `no-default: user decision required`. Destructive operations universally use the no-default form.
+
+Exactly one option per invocation may carry the recommended-marker label postfix, bidirectionally bound to the body recommendation value. Mismatches between the label postfix and the body value are detected by the H6 matcher as gate findings.
+
+### Per-file destructive-op confirmation
+
+Every destructive operation — delete, rename, move, overwrite-without-retention, revert-uncommitted-modifications — routes through the structured-inquiry channel on a per-file basis. One invocation per file, every time. `multiSelect: true` is non-conformant on destructive-op invocations; the canonical option sets at the destructive-op subsections are the floor. Confirmation fatigue is an accepted cost; silent destruction is not.
+
+### Heuristic sweep — H1 through H7
+
+Seven mechanical matchers sweep the governed-core surfaces (commands, rules, skills, delegated-worker definitions, hooks, the harness configuration files, and `CLAUDE.md`) for two failure classes:
+
+- **Conversational-form heuristics (H1–H3).** H1 catches imperative-plus-question-mark prompts. H2 catches "Please confirm / approve / choose". H3 catches "Which of the following / these". Each matcher's hit count is compared against a documented exclusion-zone count (definitional self-citations and preserved-conversation contexts); deviations are gate findings.
+- **Annotation-compliance heuristics (H4–H7).** H4 catches options missing any of the three body segments. H5 catches non-neutral recommendations missing a concrete-driver citation. H6 catches label-postfix versus body-value mismatches. H7 catches destructive-op invocations missing the verbatim no-default floor.
+
+The sweep is reproducible — every matcher carries a ripgrep invocation that any operator can run against the corpus. The discipline is mechanical, not interpretive.
+
+### Why this shape, not something else
+
+Conversational prompts as primary input have three structural failure modes the canonical-channel discipline forecloses:
+
+1. **Decision-space erasure.** A free-form prompt presents a single proposed action and asks the operator to ratify it. The alternatives the assistant considered, their relative weights, and the rationale behind the chosen path are invisible. The operator ratifies-or-rejects without seeing the decision space.
+2. **Bias asymmetry.** Without an explicit recommendation marker plus concrete-driver rationale, the assistant's preference is conveyed through prose tone, framing, and order — channels the operator cannot evaluate as evidence. The recommended marker plus the cited driver makes the bias explicit and auditable.
+3. **Audit decay.** Six months after the choice, an auditor reading the conversation log sees the question and the answer but cannot reconstruct the decision boundary. The structured invocation's three-segment body is durable evidence the auditor reads in the same shape the operator saw at decision time.
+
+The discipline turns every operator-volitional choice into a **decision artifact** — a record of what was offered, what was recommended, what was chosen, and why.
+
+---
+
+## §5. Cognitive-identity taxonomy
+
+The cognitive-identity taxonomy is the corpus's **creative-architecture** specification. It binds how the assistant thinks before it emits, not what the assistant emits. Outputs that satisfy every mandate but feel generic — first-idea solutions cleanly executed — are non-conformant on Filter 1 (Obvious Purge) and Filter 5 (Aesthetic Demand). The taxonomy's leverage is to produce outputs that are not only correct but **structurally novel** in a way that, once seen, feels inevitable.
+
+The canonical specification lives at `src/apothem/rules/cognitive-identity.md`. The companion rule `src/apothem/rules/cognitive-identity-techniques.md` carries the detailed bodies: the seven-axs-of-breadth taxonomy, the five-filter cadence with per-filter prose, the six ideation techniques with detection signals, the language standards (forbidden phrases plus required qualities), and the five philosophical principles.
+
+### The five cognitive filters
+
+Every substantive output passes a five-filter cadence in canonical order:
+
+1. **Filter 1 — The Obvious Purge.** The first idea is what everyone reaches for. Discard it. The first idea is a starting point for what NOT to do. *Always-on; fires on every substantive output.*
+2. **Filter 2 — The Domain Exile.** Reframe the problem through a foreign domain. Business → evolutionary biology. Education → urban infrastructure. Software architecture → tidal mechanics. Solutions from alien domains carry the genetic material of novelty. *Fires on non-trivial decisions.*
+3. **Filter 3 — The Inversion Press.** Invert each assumption. Instead of solving the problem, make the problem the solution. Instead of reducing friction, weaponize it. **At least one inverted assumption survives into the final output as an invariant, not an option.** *Fires on non-trivial decisions.*
+4. **Filter 4 — The Combinatorial Explosion.** Force a synthesis between the problem and a distant concept. Thermodynamics + negotiation theory. Mycorrhizal networks + organizational design. The less obvious the pairing, the higher the creative yield. *Fires on non-trivial decisions.*
+5. **Filter 5 — The Aesthetic Demand.** Does the output have a soul? A shape? Texture? Is it beautiful in its logic? Outputs must have **conceptual elegance** — feeling inevitable once seen, though invisible before. *Always-on; fires on every substantive output.*
+
+Filter 1 sets the floor (anti-obvious); Filter 5 sets the ceiling (anti-graceless). The middle three filters operate as creative pressure on non-trivial decisions where the standard approach has yielded an unsatisfying outcome.
+
+### The six ideation techniques
+
+When a problem resists the standard approach or demands originality the five filters did not produce, six ideation techniques fire on detection signals:
+
+- **The Historical Saboteur** — fires when a problem has been "solved" multiple times with the same unsatisfying outcome. Re-weaponize the era's forgotten knowledge.
+- **The Constraint Paradox** — fires when the solution space feels overconstrained. Add an extreme constraint and design a solution that only works *because* of it.
+- **The Living Systems Lens** — fires when the system shows organic-looking pathologies (feedback loops, self-perpetuating waste). Ask: what feeds it, what reproduces it, what would kill it, what evolutionary pressure created it?
+- **The Second-Order Narrative** — fires when a proposal lands flat technically yet provokes social resistance. Lead with what the proposal changes about how people think, not what it does.
+- **The Villain Frame** — fires when a proposal accommodates every stakeholder and pleases no one. Identify who would HATE the idea and design specifically to amplify that hatred.
+- **The 100-Year Zoom** — fires when the entire problem framing assumes constraints unlikely to survive ten or more years. Project forward; bring the future clarity backward.
+
+Each technique attacks a distinct cognitive blind spot. Selecting the wrong technique produces noise, not insight; the detection signals are the trigger conditions, not optional thought experiments.
+
+### The seven axs of breadth
+
+Every non-trivial decision attests against seven canonical expertise axs:
+
+- **Architecture** — system design, modularity, layering, integration boundaries.
+- **Concurrency** — race conditions, deadlocks, async coordination, parallelism.
+- **Performance** — throughput, latency, resource budgets, quantitative gates.
+- **Security** — authn / authz, secrets handling, attack surfaces, defensive coding.
+- **Testing** — coverage, isolation, mocking discipline, regression catchment.
+- **Tooling** — lint / format / CI / CD / observability instrumentation.
+- **Observability** — logging, metrics, tracing, alerting, debuggability.
+
+Each emission attests which axs apply, which are not-applicable-with-reason, and which are envelope-limited (a recognized gap routed for closure). The seven axs constitute the depth surface the M3 ten quality dimensions are evaluated against; the per-axis amendments are tracked at `<harness-root>/memory/expertise-gap-log.md`. The Performance axis carries its own path-filtered doctrine at `src/apothem/rules/performance-discipline.md` with per-class budgets (hook handlers, conformity-gate orchestrator, test-suite, delegated-worker spawn) and quantitative gates at `src/apothem/benchmarks/`.
+
+### Language standards
+
+The taxonomy bans a closed list of vocabulary in substantive outputs: marketing intensifiers, the consensus-appeal shorthands, and any hedge that softens an idea before it lands. Required qualities replace them: specificity (vague ideas are gestures, not ideas), surprise (the reader does not see it coming), internal logic (coherent on its own terms), generativity (produces further ideas downstream), and tension (the best ideas contain a productive contradiction).
+
+### Why this taxonomy, not "be creative"
+
+"Be creative" is an instruction without leverage. The cognitive-identity taxonomy decomposes creativity into mechanical surfaces: filters that fire in canonical order, techniques that fire on detection signals, axs that the output attests against, and a vocabulary discipline that catches the shortcuts an author reaches for under cost pressure. The taxonomy is **operationalized cognitive architecture** — every substantive output passes a cadence the operator can audit, not a vibe the operator hopes the assistant honors.
+
+---
+
+## §6. Closing
+
+`apothem` is not the binary you install. The binary is the packaging that materializes the corpus into each supported tool's native configuration directory — via per-harness adapters under `src/apothem/harnesses/<harness>/` — and registers it as the assistant's operating posture. The product is the corpus — fifteen mandates plus twenty-eight cross-cutting mandates plus the canonical-channel discipline plus the cognitive-identity taxonomy — and the rule files at `src/apothem/rules/*.md` are its canonical specification.
+
+A project that adopts `apothem` adopts the governance regime, not the prompts. Every artifact the assistant produces in your repository — code, tests, configuration, schemas, documentation, runbooks, commit messages, branch names — passes the same fifteen-bar pre-emission gate, carries the same disclosure ledger, honors the same host-discovered conventions, declares the same reciprocal bindings, satisfies the same code-craft sub-elements, and ships in the same production-ready form. The operator's leverage point shifts from prompt-tuning to artifact-ratification.
+
+To evaluate the claim directly, read the corpus. Clone the repository, walk to `src/apothem/rules/`, and read the rule files in any order — every rule is self-contained, every binding is reciprocal, every cross-reference resolves to a specific rule path plus section anchor. The rules collectively describe an assistant that writes code the way a senior contributor in your project would write it; the binary is the surface that delivers them.
+
+The corpus is what stays after the binary changes.
+
+```sh
+gh repo clone ahmed-g-gad/apothem
+$EDITOR src/apothem/rules/*.md
+```
+
+The reading is the evaluation.

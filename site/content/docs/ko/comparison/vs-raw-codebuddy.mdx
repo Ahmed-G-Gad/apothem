@@ -1,0 +1,46 @@
+---
+title: "Apothem 대 원시 CodeBuddy 규칙"
+description: "프로젝트별로 .codebuddy/rules 파일을 직접 작성하는 대신 CodeBuddy의 프로젝트 규칙을 Apothem을 통해 처리하는 이유."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+CodeBuddy는 프로젝트 규칙을 `.codebuddy/rules/*.md`에서 읽습니다. 그 파일들을
+프로젝트별로 영원히 직접 작성할 수도 있습니다. Apothem은 그중 하나를 대신 관리하며
+모든 환경과 모든 프로젝트에 걸쳐 일관되게 유지합니다.
+
+## 원시 방식
+
+CodeBuddy 규칙을 직접 작성한다는 것은 다음을 의미합니다.
+
+- 새 프로젝트마다 동일한 엔지니어링 규율을 `.codebuddy/rules/`에 복사·붙여넣기.
+- 규율이 발전함에 따라 동기화가 어긋남 — 단일 진실 공급원이 없음.
+- Cursor, Windsurf, Claude Code 및 당신이 사용하는 다른 모든 도구에 대해 동일한
+  관례를 다시 도출 — 각 도구가 고유한 규칙 표면을 갖기 때문.
+
+## Apothem 방식
+
+Apothem은 소스 리포지토리에 하나의 정규 규칙 코호트를 유지하고 그것을 각 환경의
+네이티브 표면으로 투영합니다. CodeBuddy의 경우 다음을 작성합니다.
+
+```
+<project>/.codebuddy/rules/apothem-rules.md
+```
+
+| 관심사 | 원시 CodeBuddy | Apothem |
+| --- | --- | --- |
+| 진실 공급원 | 각 프로젝트의 파일 | 하나의 정규 코호트 |
+| 환경 간 일관성 | 도구별 수동 | 자동 투영 |
+| 업데이트 | 프로젝트마다 직접 편집 | `apothem update --harness codebuddy --project <path>` |
+| 운영자 자신의 규칙 | 규율과 뒤섞임 | 그대로 유지 — Apothem은 전용 파일을 작성 |
+| 제거 | 수동 삭제 | 타임스탬프 백업이 있는 `apothem uninstall` |
+
+## 당신의 것으로 남는 것
+
+Apothem은 `apothem-rules.md`만 작성합니다. 당신의 `CODEBUDDY.md` 메모리 파일,
+`.codebuddy/settings.json`의 권한과 MCP 서버, 그리고 당신이 작성한 다른 모든 규칙
+파일은 전적으로 운영자 소유로 남습니다. 어댑터는 그 표면들을 인식하지만 결코
+편집하지 않습니다.
+
+전체 수명 주기 명령은 [CodeBuddy 환경 페이지](/docs/harnesses/codebuddy)를
+참조하세요.

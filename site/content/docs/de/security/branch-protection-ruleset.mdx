@@ -1,0 +1,54 @@
+---
+title: "Branch-Schutz"
+description: "Apothem-Branch-Schutz auf main — Review-Gate, Gating durch Status-Checks und Push-Beschränkungen."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Der `main`-Branch von Apothem wird nach der Veröffentlichung des einzigen frischen Release-Commits durch GitHub-Branch-Schutz geschützt. Der Schutz setzt die in `rules/production-ready-prs.md` deklarierte Change-Set-Disziplin durch und speist die OpenSSF-Scorecard-Checks **Branch-Protection** und **Code-Review** für künftige Arbeit.
+
+## Ruleset-Deklaration
+
+| Einstellung | Wert | Begründung |
+|---|---|---|
+| **Ziel** | `main` | Schützt den öffentlichen Standard-Branch. |
+| **Durchsetzungsstatus** | `active` | Nicht im Probelauf-Modus. |
+| **Pull Request vor dem Merge erforderlich** | ✅ | Direkte Pushes auf `main` blockiert. |
+| **Erforderliche genehmigende Reviews** | **1** | Mindest-Gate für menschliche Review bei einem neuen Solo-Maintainer-Projekt. |
+| **Veraltete Genehmigungen bei neuen Commits verwerfen** | ✅ | Ein Force-Push nach der Genehmigung löst die Review erneut aus. |
+| **Review von Code Owners erforderlich** | Aufgeschoben | Dies vor dem Beitritt eines zweiten Maintainers zu aktivieren, kann Solo-Maintainer-PRs in eine Sackgasse führen. |
+| **Genehmigung des jüngsten überprüfbaren Pushes erforderlich** | ✅ | Der zuletzt gepushte Commit muss eine Genehmigung tragen. |
+| **Auflösung von Konversationen erforderlich** | ✅ | Offene Review-Threads blockieren den Merge. |
+| **Bestehen von Status-Checks erforderlich** | ✅ | CI-Workflow + Scorecard + CodeQL + pip-audit. |
+| **Erforderliche Status-Checks** | Aktuelle Kern-Checks | Die erforderliche Liste wird aus dem jüngsten grünen Release-Commit aktualisiert. |
+| **Branches müssen aktuell sein** | ✅ | Verhindert Regressionen durch veralteten Merge. |
+| **Signierte Commits erforderlich** | Empfohlen | Lokale Release-Commits sind signiert; die vollständige Durchsetzung wartet, bis die Contributor-Onboarding-Dokumentation das SSH/GPG-Setup beschreibt. |
+| **Lineare Historie erforderlich** | ✅ | Hält die einzeilige öffentliche Historie verständlich. |
+| **Force-Pushes blockieren** | ✅ | Das Umschreiben der Historie auf `main` ist blockiert. |
+| **Löschung erlauben** | ❌ | Der `main`-Branch kann nicht gelöscht werden. |
+
+## Solo-Maintainer-Einschränkung
+
+GitHub erlaubt es Repository-Dateien nicht, eine menschliche Review-Historie zu erstellen. Das Repository wendet daher den stärksten, nicht in eine Sackgasse führenden Branch-Schutz für sein aktuelles Maintainer-Modell an: eine genehmigende Review, Verwerfen veralteter Reviews, Genehmigung des jüngsten Pushes, Auflösung von Konversationen, Status-Checks, lineare Historie sowie keine Branch-Löschung oder Force-Push. Wenn ein zweiter Maintainer beitritt, werden die CODEOWNERS-Review und ein Minimum von zwei Reviewern zur stärkeren Einstellung.
+
+## Anforderungen an Status-Checks
+
+Die vier oben deklarierten hart gatenden Status-Checks:
+
+- **`ci`** — vollständige Test-Matrix + ruff + mypy + bandit + Trivy + pip-audit auf dem aufgelösten Abhängigkeitsbaum
+- **`Scorecard`** — OpenSSF-Scorecard-Lauf ohne Regression je Check
+- **`CodeQL`** — `security-extended`-Query-Packs für `python` + `actions`
+- **`pip-audit`** — wöchentlicher + PR-weiser Schwachstellen-Scan gegen den aufgelösten Abhängigkeitsbaum
+
+Jeder andere Workflow kann einen Status melden, aber sein Ergebnis gatet den Merge nicht, sofern er nicht in die Liste der erforderlichen Checks befördert wird.
+
+## Audit-Kadenz
+
+Diese Datei wird bei jedem Sicherheitsaudit und an jedem Release-Engineering-Kontrollpunkt überprüft. Eine Abweichung zwischen dieser Datei und der tatsächlichen Branch-Schutz-Konfiguration ist ein Befund mit hoher Schwere.
+
+## Referenzen
+
+- [OpenSSF Scorecard — Branch-Protection check](https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection)
+- [GitHub — About protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
+- [Apothem CODEOWNERS](https://github.com/ahmed-g-gad/apothem/blob/main/.github/CODEOWNERS) — pfadbezogenes Review-Eigentum
+- `rules/production-ready-prs.md` §1 — Same-Change-Set-Disziplin, die dieses Ruleset durchsetzt

@@ -1,0 +1,4 @@
+exit_code: 0
+passed: true
+findings_count: 0
+rationale: Canonical 6-line form per src/apothem/schemas/authorship-header.txt; matcher reports clean pass.

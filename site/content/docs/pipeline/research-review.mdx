@@ -1,0 +1,69 @@
+---
+title: "/research-review"
+description: "/research-review — Peer-review-grade adversarial critique of the paper: a seven-axis reviewer scorecard (novelty, rigor, reproducibility, clarity, ethics, statistical review, reporting-guideline conformance) plus a severity-triaged required-revision list."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Role:** Principal Investigator (peer review)
+**Pipeline position:** mid-chain
+
+Subjects the paper to a peer-review-grade adversarial critique against venue standards — novelty, rigor, reproducibility, clarity, ethics, statistical review, and reporting-guideline conformance. Emits a **seven-axis** reviewer scorecard plus a severity-triaged required-revision list with concrete-driver rationale per finding. Refute-by-default.
+
+## Canonical invocation
+
+```bash
+/research-review
+```
+
+With arguments:
+
+```bash
+/research-review [path/to/research-suite/]
+```
+
+## Inputs
+
+The paper deliverable at the host-natural location the paper stage recorded.
+
+## Outputs
+
+`_outputs/review-report.md` — the **seven-axis** reviewer scorecard (novelty · rigor · reproducibility · clarity · ethics · statistical review · reporting-guideline conformance), the severity-triaged (HIGH / MEDIUM / LOW) required-revision list with concrete-driver rationale per finding, the reproducibility-package and re-run verdict, the citation-integrity audit, and the overall `accept · minor-revision · major-revision · reject` verdict.
+
+## Downstream
+
+/research-publish (downstream consumer). A `major-revision` or `reject` verdict drives the revision loop back to `/research-paper` to address the required revisions before re-review.
+
+## Workflow phases
+
+The command follows the standard `/research` pipeline workflow:
+
+1. **Load context** — Read the paper deliverable.
+2. **Verify the Sequence Gate** — Confirm the paper exists; otherwise halt with `Blocked: run /research-paper first`.
+3. **Review adversarially** — Score the seven axes (novelty · rigor · reproducibility · clarity · ethics · statistical review · reporting-guideline conformance); run the reproducibility re-run and citation-integrity audit; refute-by-default; locate concrete defects with evidence.
+4. **Triage revisions** — Rank required revisions HIGH / MEDIUM / LOW with concrete-driver rationale.
+5. **Update the handoff manifest** — Record the review report and the scorecard verdict.
+6. **Emit the review** — `_outputs/review-report.md`.
+
+## Rigor floor
+
+The review scores the empirical claims against the advance-gate bar — adequate replication, nonparametric significance with an effect size and critical-difference ranks, and budget parity across compared methods — and treats the verdict as an explicit advance gate: a paper advances only when it beats the venue bar convincingly and significantly, with the clearance logged. Under a double-blind venue the reviewer also flags any identity leak as an anonymization defect.
+
+## Failure modes
+
+| Symptom | Cause | Recovery |
+|---------|-------|----------|
+| Blocked: run /research-paper first | No paper | Run `/research-paper` to produce the manuscript |
+| Charitable scoring | Reviewer assumed best case | Refute-by-default; score against the evidence present |
+| Finding without rationale | Revision asserted, not justified | Attach a concrete-driver rationale to every finding |
+
+## Examples
+
+```bash
+# Peer-review the paper and emit a reviewer scorecard
+/research-review path/to/research-suite/
+```
+
+## Cross-references
+
+- [Pipeline overview](/docs/pipeline)
+- [Commands reference](/docs/reference/commands)

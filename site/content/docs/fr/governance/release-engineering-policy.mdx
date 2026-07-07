@@ -1,0 +1,103 @@
+---
+title: "Politique d'ingénierie de publication"
+description: "Cinq politiques canoniques pour le versionnage, l'étiquetage des publications, les cycles d'obsolescence, les changements incompatibles et les procédures de retour arrière."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Cinq politiques régissent la façon dont `apothem` est publié.
+
+## 1. Versionnage sémantique
+
+Le projet est distribué sous [Versionnage sémantique 2.0](https://semver.org/).
+Les numéros de version prennent la forme `MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]`.
+
+| Incrément | Déclencheurs |
+|-----------|--------------|
+| **MAJOR** | Changements incompatibles dans les schémas d'artefacts, les identifiants de mandat (CM-N / TM-N / CP-N) ou les contrats de hooks |
+| **MINOR** | Nouvelles règles, travailleurs délégués, commandes, compétences, événements de hook ou extensions de schéma non incompatibles |
+| **PATCH** | Clarifications, ajouts d'anti-modèles, corrections de documentation et modifications qui ne changent pas le comportement |
+
+Les étiquettes candidates utilisent le format `vX.Y.Z-rc.N` (candidate à la publication)
+ou `vX.Y.Z-alpha.N` / `vX.Y.Z-beta.N` (accès anticipé).
+
+## 2. Étiquettes de publication
+
+Chaque publication dépose sur `main` une étiquette git signée de la forme
+`vMAJOR.MINOR.PATCH`. L'étiquette déclenche `.github/workflows/release.yml`, qui
+construit, signe, génère le SBOM et la provenance SLSA-3, et
+publie la page GitHub Release.
+
+Conventions d'étiquetage :
+
+- **Format** — exactement `vMAJOR.MINOR.PATCH`. Pas de préfixe `release-`,
+  pas de suffixe `-final`.
+- **Annotation** — chaque étiquette est une étiquette annotée (`git tag -a -s`)
+  portant le résumé des notes de publication dans le message de l'étiquette.
+- **Signature** — chaque étiquette est signée avec GPG. Le flux de travail de publication
+  produit en outre une signature cosign sans clé Sigstore sur
+  chaque artefact et une preuve de provenance de publication SLSA-3, toutes deux
+  jointes à la page GitHub Release.
+
+## 3. Politique d'obsolescence
+
+La ligne de support public actuelle est la dernière version mineure publiée. Lorsque
+le projet comporte plusieurs versions mineures publiques, la matrice des versions
+prises en charge de [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
+fait foi pour toute fenêtre de support supplémentaire
+limitée aux correctifs critiques.
+
+Cadence d'obsolescence :
+
+- **Annonce** — un symbole ou un comportement obsolète est
+  annoncé dans la section `### Deprecated` du `CHANGELOG.md` de
+  la publication dans laquelle l'obsolescence intervient. Les notes de publication
+  reflètent l'annonce d'obsolescence.
+- **Fenêtre de grâce** — les symboles obsolètes restent disponibles pendant
+  au minimum un cycle mineur complet avant leur suppression.
+- **Suppression** — la suppression intervient lors d'un incrément `MAJOR`. Chaque symbole
+  supprimé porte une ligne `### Removed` dans `CHANGELOG.md` et une
+  entrée de guide de migration sous
+  [Guides pratiques](/docs/how-to-guides).
+
+## 4. Politique de changements incompatibles
+
+Les changements incompatibles exigent :
+
+1. **Un ticket RFC** — ouvert avec l'étiquette de ticket `rfcs`
+   décrivant le changement incompatible, le chemin de migration et la
+   stratégie de retour arrière.
+2. **Une fenêtre de commentaires de 30 jours** — la RFC reste ouverte pendant au moins
+   30 jours avant la fusion. Les mainteneurs peuvent prolonger la fenêtre lorsque
+   les retours le justifient.
+3. **Un incrément MAJOR** — la publication qui introduit le changement
+   incompatible incrémente le composant MAJOR.
+4. **Un guide de migration** — le changement est livré avec une
+   entrée de [Guides pratiques](/docs/how-to-guides) qui guide
+   l'opérateur tout au long de la migration.
+
+## 5. Politique de retour arrière
+
+Si une publication présente une régression qui bloque l'adoption :
+
+1. **Annuler** — le ou les commits fautifs sont annulés sur `main`.
+2. **Réétiquetage version-plus-un** — une publication de suivi intervient sous
+   `vMAJOR.MINOR.PATCH+1` portant l'annulation plus toute
+   correction incrémentale. La précédente publication défectueuse n'est **pas**
+   supprimée de GitHub Releases — une annotation `### Yanked` dans
+   `CHANGELOG.md` documente la situation afin que les
+   compilations reproductibles restent ancrées.
+3. **Communication** — un avis security-advisories (lorsqu'il
+   est pertinent pour la sécurité) ou une publication Discussions (lorsqu'elle
+   est pertinente pour la fiabilité) accompagne le retour arrière.
+
+## Voir aussi
+
+- [CHANGELOG.md](https://github.com/ahmed-g-gad/apothem/blob/main/CHANGELOG.md)
+  — le registre canonique des publications.
+- [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
+  — la matrice des versions prises en charge et les canaux de signalement.
+- [cicd-pipeline.md](/docs/architecture/cicd-pipeline) — les classes de
+  vérifications CI qui contrôlent chaque publication.
+- [deployment-checklist.md](/docs/runbooks/deployment-checklist) — le balayage de
+  préparation à la production par publication.

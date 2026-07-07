@@ -1,0 +1,43 @@
+---
+title: "Apothem vs raw Windsurf config"
+description: "Hand-maintaining Windsurf's rules under .devin/rules/ versus rendering them from apothem's shared profile."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Windsurf is now Devin Desktop and reads rules from a `.devin/rules/`
+directory (the preferred location, which takes precedence over the
+`.windsurf/rules/` fallback). Apothem's windsurf adapter renders the
+directory-based rules from the shared profile. This page contrasts
+hand-maintaining that config against managing it with apothem.
+
+## Effort comparison
+
+| Task | Raw hand-config | Apothem-managed |
+| ---- | --------------- | --------------- |
+| Author rules | Hand-write each file under `.windsurf/rules/` | Rendered from the shared corpus |
+| Keep one rule format | Hand-pick between `.windsurf/rules/` and a single `.windsurfrules` file | The adapter writes only `.devin/rules/` |
+| Keep rules aligned with other harnesses | Manual, per tool | Automatic on `apothem update` |
+| Verify the config is correct | Manual inspection | `apothem verify --harness windsurf` |
+
+## What Apothem manages
+
+The windsurf adapter renders the shared rules into the `.devin/rules/`
+directory; it does not write a single-file `.windsurfrules`. Windsurf has
+no PreToolUse hook, so guardrail intent lives in the rule prose rather than a
+tool-call interception point. Every change to the shared rules re-renders the
+directory on the next `apothem update`.
+
+## Migration path
+
+1. Run `apothem profile init` to create the shared profile if you have not yet.
+2. Move the rules from your existing `.windsurf/rules/` (and any
+   single-file `.windsurfrules`) into the shared corpus.
+3. Run `apothem install --harness windsurf` to render the `.devin/rules/`
+   directory.
+4. Run `apothem verify --harness windsurf` to confirm the config landed.
+5. Use `apothem update --harness windsurf` for every later change.
+
+## Read next
+
+- [Windsurf adapter reference](/docs/harnesses/windsurf)
+- [Comparison overview](/docs/comparison)

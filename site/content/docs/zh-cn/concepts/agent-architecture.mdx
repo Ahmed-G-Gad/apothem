@@ -1,0 +1,130 @@
+---
+title: "委托架构"
+description: "Apothem 如何将单一的委托能力集合投射到十七个具有不同钩子表面与规则格式的 AI 工具之上。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+这是一个面向开发者的技术规格页面。它使用 Apothem 的内部术语 ——
+适配器类、物化器、传播清单、同级约定收敛 —— 而不会为一般读者
+弱化这些术语。
+
+Apothem 读取一份共享配置档案（`~/.config/apothem/profile.yaml`），并为
+十七个已注册的适配器物化各工具原生的配置。这些工具并不共享同一套
+委托能力模型：有些暴露工具调用前钩子，有些从扁平的 `.md` 文件运行规则，
+有些将每条规则嵌入单一指令文件，还有些在安装时渲染由配置档案驱动的
+配置。本页面描绘了这种分歧，以及 Apothem 在其间所施加的纪律。
+
+## 各工具委托能力矩阵
+
+下面的矩阵涵盖全部十七个工具。各列分别为：每个工具暴露的 PreToolUse
+钩子表面、Apothem 用于激活规则的格式、适配器类（参见
+[适配器类](#adapter-classes-explained)），以及该适配器是否通过物化器
+渲染原生配置。
+
+
+| 工具 | PreToolUse 钩子表面 | 规则激活格式 | 适配器类 | 物化器 |
+|---------|-------------------------|------------------------|---------------|--------------|
+| antigravity | 存在原生钩子表面；Apothem 仅提供支持材料 | `GEMINI.md` 加 Antigravity CLI 插件规则 | I 类 | 无 |
+| claude-code | 原生 PreToolUse / PostToolUse / Stop / SessionStart | `rules/` 下的 `.md` 扁平规则 | II-A 类 | 无（厂商设置模板） |
+| codebuddy | 无 | `.codebuddy/rules/apothem-rules.md` 项目规则文件 | I 类 | 无 |
+| codex | 原生 `hooks.json` 生命周期钩子 | `AGENTS.md` 加由已安装技能引用的支持规则 | I 类 | 无 |
+| cursor | 无 | `.mdc` 工作区规则（MDC 前置元数据：`description` / `globs` / `alwaysApply`） | I 类 | 无 |
+| gemini-cli | 无 | 嵌入单一 `GEMINI.md` 的规则 | I 类 | 无 |
+| github-copilot | 无（IDE 扩展，无工具调用钩子） | `.github/copilot-instructions.md` 中的规则 | I 类 | 无 |
+| glm | 无（模型后端，无委托工具表面） | `.apothem/providers/glm.toml` 后端提供方配置（无规则集合） | I 类 | 无 |
+| hermes | 仅支持材料 | `config.yaml` 加外部技能目录 | II-B 类 | `config.yaml` |
+| kimi-code | 无 | `AGENTS.md` 加 `.kimi-code/.apothem/support/` 下的支持规则 | I 类 | 无 |
+| kiro | 无（Kiro 委托钩子不在适配器范围内） | `.kiro/steering/apothem-rules.md` 引导文件 | I 类 | 无 |
+| open-claw | 仅支持材料 | `openclaw.json` 加额外技能目录 | II-B 类 | `openclaw.json` |
+| opencode | 仅支持材料 | 配置档案渲染的 JSON 加原生命令、技能与委托 | II-B 类 | `opencode.json` |
+| qwen-code | 原生 PreToolUse / Stop / SessionStart | `QWEN.md` 加原生命令、技能与委托 | II-B 类 | `settings.json` / `QWEN.md` |
+| trae | 无 | `.trae/rules/apothem-rules.md` 项目规则文件 | I 类 | 无 |
+| windsurf | 无 | `.devin/rules/` 中的规则 | I 类 | 无 |
+| zed | 无 | 项目根目录 `.rules` 扁平文件 | I 类 | 无 |
+
+
+矩阵说明：
+
+- **claude-code** 是参考适配器。它承载原生 PreToolUse、PostToolUse、Stop
+  与 SessionStart 钩子，并附带厂商设置模板（`settings.json`）。它有意
+  不管理 `CLAUDE.md` —— 该文件属于操作者自有的领域。
+- **codex** 通过 `hooks.json` 安装原生生命周期钩子，将委托转换为 TOML，
+  把命令提示词封装为 Codex 技能，并将 `config.toml` 留给操作者自有。
+- **antigravity** 将 `~/.gemini/GEMINI.md` 保留为全局上下文锚点，并在
+  `~/.gemini/antigravity-cli/plugins/apothem/` 下安装一个 Apothem 插件。
+  在适配器掌握 Antigravity 钩子模式翻译之前，钩子文件作为支持材料保留。
+- **cursor** 通过承载厂商 MDC 前置元数据（`description`、`globs`、
+  `alwaysApply`）的 `.mdc` 文件激活规则；适配器不写入单文件
+  `.cursorrules`。
+- **windsurf** 使用 `.devin/rules/`；适配器不写入单文件
+  `.windsurfrules`。
+- **hermes** 与 **open-claw** 渲染原生配置文件，并通过每个工具
+  所记录的技能目录设置接入 Apothem 支持技能目录。不受支持的共享集合
+  保留在 Apothem 自有的支持子树下。
+- **qwen-code** 渲染所记录的 `settings.json` 键用于上下文与钩子分派，
+  然后使用 Qwen 原生的命令、技能与委托目录。
+
+## 跨工具编排纪律
+
+Apothem 施加 **同级约定收敛**：同一个操作者可调用的工作流被投射进
+每个工具的原生惯用法，而不是被强行塞进一种共享格式。一条在 claude-code
+下以扁平 `.md` 文件激活的规则，在 cursor 下变为 `.mdc` 工作区规则，
+在 gemini-cli 下变为 `GEMINI.md` 的嵌入章节，在 qwen-code 下变为
+`QWEN.md` 中的串接引用加原生发现目录 —— 同样的意图，各工具的方言。
+
+规范主集合位于：
+
+```
+src/apothem/{rules,commands,skills,agents,output-styles,hooks,conformity,statuslines}/
+```
+
+每个适配器传播该集合的一个子集。每个工具的子集在
+`src/apothem/lib/propagation-manifest.yaml` 中声明；该清单是关于哪些
+工件以何种形式到达哪个工具的唯一真实来源。适配器从不在清单之外
+凭空创造工件，清单也从不为某个工具分配它没有表面可承载的工件。
+
+## 适配器类详解
+
+Apothem 依据适配器将共享配置档案翻译为工具原生输出的方式，将其分为
+三类。
+
+- **I 类 —— 原始传播。** 适配器将规范主工件（清单声明的一个子集）
+  直接复制到工具的配置位置，不经渲染步骤。没有物化器。antigravity、
+  codebuddy、codex、cursor、gemini-cli、github-copilot、glm、kimi-code、
+  kiro、trae、windsurf 与 zed 属于 I 类。
+- **II-A 类 —— 原始 + 厂商绑定的设置模板。** 适配器进行原始传播工件，
+  并额外管理绑定到厂商模式的厂商特定设置模板。claude-code 属于 II-A 类。
+- **II-B 类 —— 配置档案渲染的单表面物化器。** 适配器通过物化器将共享
+  配置档案渲染进单一原生配置表面。hermes、open-claw、opencode 与
+  qwen-code 属于 II-B 类。
+
+## 物化时行为
+
+类的区分在物化时显现 —— 即当操作者针对某个工具运行 CLI 时：
+
+- `apothem install --harness <H>` 为 `<H>` 传播清单子集，并且对于
+  II-A / II-B 类适配器，渲染工具原生配置。
+- `apothem verify --harness <H>` 将已安装配置与当前配置档案本应产生的
+  内容进行对照，并报告偏移。
+- `apothem doctor` 报告每个已注册适配器在各工具上的状态 ——
+  已安装 / 缺失 / 偏移。
+
+完整命令表面参见 [CLI 参考](/docs/cli-reference)。
+
+## 分歧分类法
+
+十七个工具沿三个轴线发生分歧。矩阵中每一处各工具的差异都可归结为
+其中之一。
+
+
+| 轴线 | 十七个工具中观察到的范围 |
+|------|---------------------------------------------|
+| 钩子表面 | 原生多事件（claude-code、codex、qwen-code）→ 仅支持钩子材料（antigravity、gemini-cli、hermes、open-claw、opencode）→ 无（codebuddy、cursor、github-copilot、glm、kimi-code、kiro、trae、windsurf、zed） |
+| 规则激活格式 | 扁平 `.md`（claude-code）→ 插件规则（antigravity）→ `.mdc` 工作区（cursor）→ 目录规则（codebuddy、trae、windsurf）→ 引导文件（kiro）→ 项目根扁平文件（zed）→ 单一嵌入文件（codex、gemini-cli、github-copilot、kimi-code）→ 配置引用的支持材料（hermes、open-claw、opencode、qwen-code）→ 后端提供方配置（glm） |
+| 适配器类 | I 类原始传播 → II-A 类原始 + 厂商设置 → II-B 类配置档案渲染单表面 |
+
+
+Apothem 的工作是在这三个轴线随各工具变化的同时，保持一个连贯的操作者
+意图恒定不变。传播清单与适配器类契约就是让该意图在分歧之中保持稳定的
+两个机制。

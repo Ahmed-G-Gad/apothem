@@ -1,0 +1,103 @@
+---
+title: "Dépannage"
+description: "Solutions aux échecs d'installation et aux problèmes d'exécution courants d'Apothem sur les voies plugin, npx et installeur."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Solutions aux problèmes d'installation et d'exécution courants d'Apothem.
+
+## Problèmes d'installation
+
+### Aucun Python 3.10+ trouvé
+
+Les installeurs et le shim npx sondent `python3`, `python`, les noms
+versionnés (`python3.14` jusqu'à `python3.10`), et `py -3` sous Windows — en rejetant
+les shims du lanceur du Microsoft Store — et s'arrêtent avec `No Python >= 3.10 found in
+PATH` lorsqu'aucun candidat ne satisfait le seuil de 3.10. Installez CPython 3.10 ou une version plus récente
+depuis python.org ou le dépôt de paquets de votre OS, confirmez que `python3 --version`
+(ou `py -3 --version` sous Windows) signale au moins 3.10, puis réexécutez.
+
+### Dépendances d'exécution manquantes : click, rich
+
+Le moteur intègre la plupart de ses dépendances tierces dans l'arborescence
+source, mais `click` et `rich` doivent être importables sous l'interpréteur que
+l'installeur sélectionne. Lorsque l'un ou l'autre manque, l'installeur le nomme et
+propose de l'installer pour vous :
+
+```text
+! Missing runtime dependencies: click rich
+```
+
+Acceptez l'invite pour que l'installeur exécute `pip install` sous cet
+interpréteur. Pour ignorer l'invite, passez `--yes` (`-Yes` sous PowerShell) ou
+définissez `APOTHEM_AUTO_INSTALL_DEPS=1` pour installer automatiquement. Si vous
+refusez — ou si `pip` est indisponible, ou si vous préférez le gestionnaire de
+paquets de votre OS — installez vous-même les paquets nommés (par exemple
+`python3-click` et `python3-rich` sur les hôtes de la famille Debian, ou
+`pip install click rich`) puis réexécutez.
+
+### `apothem` introuvable après l'exécution de l'installeur
+
+L'installeur place l'arborescence source à `~/.apothem` et n'ajoute pas d'exécutable
+`apothem` à votre `PATH`. Exécutez le moteur via l'invocation
+que l'installeur affiche à la fin :
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+```
+
+ou utilisez la forme npx (`npx @ahmed-g-gad/apothem <command>`), qui ne nécessite aucune
+entrée dans `PATH`.
+
+### `/plugin marketplace add` échoue
+
+`/plugin marketplace add ahmed-g-gad/apothem` récupère l'entrée du marketplace
+depuis GitHub. En cas d'échec, confirmez que la machine peut atteindre
+`https://github.com/ahmed-g-gad/apothem` (règles de réseau, de proxy ou de pare-feu),
+puis réessayez. Si le marketplace a été ajouté précédemment lors d'une récupération
+partielle, supprimez-le et rajoutez-le avant d'exécuter
+`/plugin install apothem@apothem`.
+
+### npx sert une version obsolète
+
+`npx` met en cache les paquets téléchargés. Lorsque `npx @ahmed-g-gad/apothem --version`
+signale une version plus ancienne que la version actuelle, videz le cache ou épinglez
+la dist-tag :
+
+```bash
+npx clear-npx-cache
+npx @ahmed-g-gad/apothem@latest --version
+```
+
+### irm / iex bloqués sous Windows
+
+Si la politique d'exécution de PowerShell bloque l'installeur :
+
+```powershell
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+irm https://apothem.ahmedgad.com/install.ps1 | iex
+```
+
+## Problèmes d'exécution
+
+### apothem install ne trouve aucun environnement
+
+Exécutez apothem doctor pour lister les répertoires d'environnement détectés. Si aucun n'est trouvé, assurez-vous que votre
+outil est installé et a été lancé au moins une fois.
+
+### apothem verify signale un adaptateur défaillant
+
+Réexécutez apothem install pour re-matérialiser l'adaptateur. Si le problème persiste, consultez la
+page spécifique à l'adaptateur sous [Adaptateurs d'environnement](/docs/harnesses).
+
+### Les hooks ne se déclenchent pas dans Claude Code
+
+Confirmez qu'Apothem est bien câblé en vérifiant la présence des entrées de hook dans ~/.claude/settings.json.
+Si le fichier ne contient pas les hooks, réexécutez apothem install.
+
+## Obtenir de l'aide
+
+- [GitHub Issues](https://github.com/ahmed-g-gad/apothem/issues) -- signalements de bugs
+- [GitHub Discussions](https://github.com/ahmed-g-gad/apothem/discussions) -- questions
+- [FAQ](/docs/faq) -- foire aux questions

@@ -1,0 +1,73 @@
+---
+title: "completion"
+description: "Referensi CLI untuk perintah apothem completion."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Mencetak skrip pelengkapan-shell untuk shell yang diminta ke output standar. Mengaktifkan pelengkapan bersifat **opt-in**: perintah ini hanya mencetak skrip — ia tidak pernah menyunting berkas startup shell Anda. Anda sendiri yang menambahkan output ke berkas pelengkapan shell.
+
+## Ringkasan
+
+```
+apothem completion bash|zsh|fish|powershell
+```
+
+Skrip yang dipancarkan mengaktifkan pelengkapan `<TAB>` untuk subperintah dan flag `apothem`, dan — untuk opsi `--harness` — untuk id harness yang terdaftar plus `all`.
+
+## Shell yang didukung
+
+| Shell | Cara skrip dihasilkan |
+|---|---|
+| `bash` | Skrip pelengkapan bash asli dari Click. |
+| `zsh` | Skrip pelengkapan zsh asli dari Click. |
+| `fish` | Skrip pelengkapan fish asli dari Click. |
+| `powershell` | Sebuah cuplikan `Register-ArgumentCompleter` yang menjembatani ke protokol pelengkapan Click (Click tidak menyertakan skrip PowerShell asli, jadi cuplikan ini menyambungkan protokol yang sama ke PowerShell). |
+
+Meminta shell lain mana pun keluar dengan `2` beserta daftar shell yang didukung.
+
+## Mengaktifkan pelengkapan per shell
+
+Pertama, perintah `apothem` harus berada di `PATH` Anda (pemasang sekali-jalan menempatkannya di sana). Lalu aktifkan pelengkapan dengan menambahkan skrip ke berkas pelengkapan shell dan memulai ulang shell:
+
+```bash
+# bash — tambahkan ke bashrc Anda
+apothem completion bash >> ~/.bashrc
+
+# zsh — tambahkan ke zshrc Anda
+apothem completion zsh >> ~/.zshrc
+
+# fish — tulis ke direktori pelengkapan fish
+apothem completion fish > ~/.config/fish/completions/apothem.fish
+```
+
+```powershell
+# PowerShell — tambahkan registrasi pelengkap ke profil Anda
+apothem completion powershell >> $PROFILE
+```
+
+Untuk mencoba pelengkapan hanya pada sesi saat ini tanpa menyunting berkas apa pun, lakukan source skrip secara langsung (bash/zsh): `source <(apothem completion bash)`.
+
+## Mengapa bersifat opt-in
+
+Apothem tidak pernah diam-diam menyunting berkas startup shell seorang operator. Pemasang mencetak petunjuk satu baris yang menunjuk ke perintah ini; operator memutuskan apakah akan mengaktifkan pelengkapan dan ke berkas mana menambahkannya. Ini menjaga jejak pemasangan tetap dapat diprediksi dan dapat dibalik — menghapus blok yang ditambahkan akan menonaktifkan pelengkapan.
+
+## Opsi
+
+| Opsi | Deskripsi |
+|---|---|
+| `SHELL` | Salah satu dari `bash`, `zsh`, `fish`, `powershell` (argumen posisional wajib). |
+| `-h`, `--help` | Tampilkan bantuan dan keluar. |
+
+## Kode keluar
+
+| Kode | Arti |
+|---|---|
+| 0 | Skrip pelengkapan dipancarkan |
+| 2 | Shell yang tidak didukung diminta |
+
+## Lihat juga
+
+- [apothem install](/docs/cli-reference/install) — memasang sebuah konfigurasi harness
+- [apothem harnesses](/docs/cli-reference/harnesses) — id harness yang ditawarkan pelengkapan `--harness`
+- [Referensi CLI](/docs/cli-reference) — semua subperintah

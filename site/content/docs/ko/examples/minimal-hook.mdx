@@ -1,0 +1,55 @@
+---
+title: "최소 훅"
+description: "최소 Apothem 훅 예제 — 파일 쓰기마다 검사를 발화시킵니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+이 예제는 가능한 한 가장 작은 Apothem 훅을 보여줍니다: 모든 `Write` 도구 호출
+이전에 발화하여 대상 경로를 로깅하는 PreToolUse 훅입니다.
+
+## 훅 스크립트
+
+```python
+# src/apothem/hooks/log_writes.py
+import json, sys
+
+data = json.load(sys.stdin)
+path = data.get("tool_input", {}).get("file_path", "unknown")
+print(f"[apothem] Writing to: {path}", file=sys.stderr)
+sys.exit(0)  # exit 0 = proceed; non-zero = block
+```
+
+## settings.json 에서 등록
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python src/apothem/hooks/log_writes.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## 훅 테스트하기
+
+Claude Code 에서 임의의 파일 쓰기를 수행하고 훅 추적 패널에서 stderr 출력을
+관찰하세요.
+
+## 쓰기 차단하기
+
+`sys.exit(0)` 을 `sys.exit(1)` 로 변경하고 stdout 에 JSON 차단 블록을 출력하세요:
+
+```python
+print(json.dumps({"decision": "block", "reason": "blocked by log_writes"}))
+sys.exit(1)
+```

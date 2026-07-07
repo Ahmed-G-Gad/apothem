@@ -1,0 +1,43 @@
+---
+title: "编写计划"
+description: "用 /plan 流水线编写计划套件。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+`/plan` 流水线将原始的散文需求转化为可执行、已审查、经质量门把关的实现计划。
+
+## 核心阶段
+
+该流水线作为八个一等的 `/plan-<stage>` 命令交付。日常流程运行其中五个：
+
+1. `/plan-spec` —— 将散文精炼为规格级的 `_spec/spec.md`
+2. `/plan-generate` —— 生成完整的计划套件骨架
+3. `/plan-review` —— 对已生成计划进行取证审计
+4. `/plan-execute` —— 一次执行一个阶段
+5. `/plan-status` —— 随时检视进度
+
+另外三个阶段补全这一套件：`/plan-design` 为承载架构的套件发出架构设计制品，`/plan-audit` 运行一个闭环的 spec → generate → review 修复封装，`/plan-amend` 在不丢失已解决决策的前提下修订既有套件。
+
+## 快速计划（单文件）
+
+```bash
+# Creates plans/YYYY-MM-DD--my-feature.md in the current project
+/plan-spec --quick my-feature
+```
+
+## 完整计划套件
+
+```bash
+# Step 1 — write your requirements to prose.md, then:
+/plan-spec prose.md --suite-name my-project-plan
+/plan-generate
+/plan-review
+/plan-execute
+```
+
+## 计划生命周期
+
+计划经历以下转换：`draft` -> `in-progress` -> `converged`（提升为 ADR）或 `abandoned`。
+
+完整生命周期规范参见 [计划纪律](/docs/reference/plans-discipline)。

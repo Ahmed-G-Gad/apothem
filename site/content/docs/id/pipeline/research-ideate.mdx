@@ -1,0 +1,69 @@
+---
+title: "/research-ideate"
+description: "/research-ideate — Merumuskan ruang masalah dari benih domain: pemindaian peluang-dan-celah, pemindaian hipotesis-terdahulu yang telah digugurkan, dan pembangkitan pertanyaan riset kandidat yang diperingkat — tahap awal pipeline /research, yang memasok /research-spec."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Peran:** Peneliti Utama (perumusan masalah)
+**Posisi pipeline:** awal
+
+Merumuskan ruang masalah dari nol — pemindaian peluang-dan-celah, pemindaian hipotesis-terdahulu yang telah digugurkan, dan pembangkitan pertanyaan riset kandidat dengan pemeringkatan — tahap masuk pipeline `/research`. Setiap kandidat dibingkai terhadap jangkar teoretis a-priori, berlandaskan karya terdahulu, dan dinyatakan dalam bentuk yang dapat difalsifikasi, siap untuk `/research-spec`.
+
+## Pemanggilan kanonis
+
+```bash
+/research-ideate
+```
+
+Dengan argumen:
+
+```bash
+/research-ideate [path/to/domain-notes] [--suite-name NAME] [--override] [--domain NAME]
+```
+
+## Masukan
+
+Sebuah benih domain — catatan domain berformat bebas (disediakan operator secara inline atau sebagai sebuah path), atau sekadar nama `--domain` saat memulai dari nol.
+
+## Keluaran
+
+`_inputs/ideation.md` (ruang masalah yang dibingkai, pemindaian peluang-dan-celah, pemindaian hipotesis-terdahulu yang telah digugurkan, dan daftar pertanyaan kandidat yang diperingkat) ditambah Manifes Serah-Terima di folder suite riset.
+
+## Hilir
+
+/research-spec (konsumen hilir — membingkai kandidat terpilih menjadi spesifikasi yang dapat difalsifikasi).
+
+## Fase alur kerja
+
+Perintah ini mengikuti alur kerja standar pipeline `/research`:
+
+1. **Memuat konteks** — Membaca benih domain, aturan, dan keadaan suite yang sudah ada.
+2. **Memindai ruang peluang dan celah** — Memetakan apa yang sudah dikaji, apa yang diperdebatkan, dan apa yang masih belum tertangani dalam domain tersebut.
+3. **Memindai hipotesis-terdahulu yang digugurkan** — Memunculkan hipotesis yang telah disanggah oleh karya terdahulu agar daftarnya tidak menapaki kembali tanah yang sudah tuntas.
+4. **Membangkitkan dan memeringkat kandidat** — Menghasilkan pertanyaan riset kandidat, masing-masing dinyatakan dalam bentuk yang dapat difalsifikasi, diperingkat berdasarkan keterolahan dan dampak.
+5. **Memverifikasi keluaran** — Memastikan setiap kandidat berlandaskan karya terdahulu primer dan dapat disanggah; menyelesaikan setiap ambiguitas melalui kanal kueri terstruktur.
+6. **Mengeluarkan daftar ideasi** — `_inputs/ideation.md` ditambah manifes serah-terima.
+
+## Mode kegagalan
+
+| Gejala | Penyebab | Pemulihan |
+|---------|-------|----------|
+| Tidak ada kandidat yang dapat difalsifikasi | Benih domain terlalu luas atau murni deskriptif | Persempit domain via kueri terstruktur; bingkai ulang kandidat sebagai pertanyaan yang dapat disanggah |
+| Kandidat menyatakan ulang hipotesis-terdahulu yang digugurkan | Pemindaian karya terdahulu dilewati | Jalankan pemindaian hipotesis-terdahulu yang digugurkan; buang atau bingkai ulang kandidat yang tumpang-tindih |
+| Benih domain hilang | Tidak ada catatan atau `--domain` yang disediakan | Sediakan catatan domain secara inline / sebagai path, atau berikan `--domain NAME` |
+
+## Contoh
+
+```bash
+# Pindai sebuah domain dan bangkitkan pertanyaan kandidat yang diperingkat
+/research-ideate ~/notes/retrieval-systems.md --suite-name retrieval-latency
+
+# Mulai dari sekadar nama domain
+/research-ideate --domain "vector-index recall under drift"
+```
+
+## Referensi silang
+
+- [Ikhtisar pipeline](/docs/pipeline)
+- [Referensi perintah](/docs/reference/commands)

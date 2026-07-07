@@ -1,0 +1,9 @@
+{
+  "argv": [
+    "harnesses",
+    "show",
+    "claude-code"
+  ],
+  "exit_code": 0,
+  "stdout": "  Name:       claude-code\n  Display:    Claude Code\n  Scope:      user\n  Installed:  False\n  Output:     <HOME>/.claude/settings.json\n"
+}

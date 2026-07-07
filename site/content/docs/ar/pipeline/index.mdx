@@ -1,0 +1,132 @@
+---
+title: "أوامر خط الأنابيب"
+description: "مرجع أوامر خط أنابيب Apothem — تدفّق ‎/plan وكتالوج أوامر التدقيق."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+يأتي <bdi>Apothem</bdi> مع خطّ أنابيب <bdi>`/plan`</bdi> واعٍ بالمعمارية، وخطّ
+أنابيب <bdi>`/research`</bdi> من ثلاث عشرة مرحلة، إضافةً إلى سلسلة تدقيق من أحد
+عشر أمرًا — ممّا يمنح كلّ مشروع مسارًا مُهيكَلًا من النثر الخام إلى شِفرة بمستوى
+الإنتاج مُراجَعة على محاور متعدّدة، ومن الفكرة الخام إلى ورقة بحثية منشورة
+ومُراجَعة من الأقران.
+
+## نظرة عامة على خط الأنابيب
+
+```mermaid
+flowchart LR
+    accTitle: Plan pipeline command flow
+    accDescr: Left-to-right flowchart of the apothem plan pipeline from the spec stage through the generate and review stages, then through a conditional architecture-bearing decision that either runs the design stage or skips directly to the execute stage. The orthogonal audit stage wraps the spec-through-review span as a closed remediation loop.
+    A[/plan-spec] --> B[/plan-generate]
+    B --> C[/plan-review]
+    AUD[/plan-audit<br/>orthogonal: wraps spec → review] -.->|closed-loop remediation| A
+    C --> Q{Architecture-bearing suite?}
+    Q -->|yes| F[/plan-design<br/>emit _inputs/design.md]
+    Q -->|no| D[/plan-execute]
+    F --> D
+    D --> E[/plan-status]
+    D --> G[Audit review sequence]
+    G --> H[Completion milestone]
+```
+
+## مراحل التخطيط
+
+يُشحَن خطّ الأنابيب على هيئة ثمانية أوامر مائلة من الدرجة الأولى، واحد لكلّ مرحلة —
+كلٌّ منها قابل للاستدعاء بصورة مستقلّة كـ <bdi>`/plan-<stage>`</bdi>.
+
+| المرحلة | الدور | الموضع |
+|-------|------|----------|
+| [<bdi>/plan-spec</bdi>](/docs/pipeline/plan-spec) | المِصهَر — من النثر إلى المواصفة | رأسي |
+| [<bdi>/plan-generate</bdi>](/docs/pipeline/plan-generate) | المُولِّد — من المواصفة إلى حزمة الخطّة | وسط السلسلة |
+| [<bdi>/plan-review</bdi>](/docs/pipeline/plan-review) | المُدقِّق — تدقيق جنائي للخطّة | وسط السلسلة |
+| [<bdi>/plan-design</bdi>](/docs/pipeline/plan-design) | المعماري — <bdi>`_inputs/design.md`</bdi> للحزم الحاملة للمعمارية | بوابة شَرطية |
+| [<bdi>/plan-execute</bdi>](/docs/pipeline/plan-execute) | المُنفِّذ — تنفيذ الأطوار | طرفي |
+| [<bdi>/plan-status</bdi>](/docs/pipeline/plan-status) | المُبلِّغ — حالة للقراءة فقط | للقراءة فقط |
+| [<bdi>/plan-audit</bdi>](/docs/pipeline/plan-audit) | الحارس — غلاف بحلقة مغلقة لـ <bdi>spec → generate → review</bdi> | متعامد (قبل التنفيذ) |
+| <bdi>/plan-amend</bdi> | القيّم — تعديل معاود الدخول لمجموعة قائمة | معاود الدخول |
+
+<bdi>`/plan-audit`</bdi> متعامد على التدفّق الخطّي، وليس مرحلةً داخله. فهو يغلّف
+<bdi>`/plan-spec → /plan-generate → /plan-review`</bdi> كحلقة مغلقة واحدة،
+ويُشغِّل المراحل الصاعدة المفقودة فقط، ويعالج النتائج بفاعلية، ويترك الحزمة جاهزة
+لـ <bdi>`/plan-execute`</bdi>. وهو متمايز عن سلسلة التدقيق أدناه، التي تُدقّق قاعدة
+شِفرة مُنفَّذة بدلًا من حزمة خطّة.
+
+<bdi>`/plan-design`</bdi> ليس طقسًا كونيًّا. إذ يُصنِّف <bdi>`/plan-review`</bdi> ما إذا كانت
+الحزمة تُغيِّر أسطحًا حاملةً للمعمارية. فإن كانت كذلك، يُخرِج <bdi>`/plan-design`</bdi> أثرَ
+التصميم الذي يستهلكه <bdi>`/plan-execute`</bdi> و<bdi>`/architecture-review`</bdi>. وإن لم تكن،
+انتقلت الحزمة المُراجَعة مباشرةً إلى التنفيذ.
+
+## خط أنابيب البحث
+
+يُشحَن خطّ أنابيب البحث على هيئة ثلاثة عشر أمرًا مائلًا من الدرجة الأولى، واحد
+لكلّ مرحلة — كلٌّ منها قابل للاستدعاء بصورة مستقلّة كـ <bdi>`/research-<stage>`</bdi>،
+مُتسلسِلة عبر بوّابة تسلسل وبيان تسليم، تحت عشرة تفويضات صرامة (المصادر
+الموثوقة، وقابلية الاستنساخ، وقابلية التفنيد، ونزاهة الاستشهاد، والتسجيل
+المُسبَق، والأخلاقيّات / تضارب المصالح، والصرامة الإحصائية، والعلم المفتوح /
+<bdi>FAIR</bdi>، والامتثال لأدلّة الإبلاغ، والتأسيس النظري / الأثر).
+
+```mermaid
+flowchart LR
+    accTitle: Research pipeline command flow
+    accDescr: Left-to-right flowchart of the apothem research pipeline from the ideate stage through spec, theory, sources, synthesis, proposal, study design, experiment, analysis, paper, and peer review to publish and disseminate, with a revision loop from review back to paper.
+    RI[/research-ideate] --> RS[/research-spec]
+    RS --> RT[/research-theory]
+    RT --> RSO[/research-sources]
+    RSO --> RSY[/research-synthesis]
+    RSY --> RPR[/research-proposal]
+    RPR --> RD[/research-design]
+    RD --> RE[/research-experiment]
+    RE --> RA[/research-analysis]
+    RA --> RP[/research-paper]
+    RP --> RR[/research-review]
+    RR --> RPU[/research-publish]
+    RPU --> RDI[/research-disseminate]
+    RR -.->|revision loop| RP
+```
+
+| المرحلة | الدور | الموضع |
+|-------|------|----------|
+| [<bdi>/research-ideate</bdi>](/docs/pipeline/research-ideate) | صياغة المشكلة — أسئلة مرشَّحة من بذرة مجال | رأسي |
+| [<bdi>/research-spec</bdi>](/docs/pipeline/research-spec) | تأطير السؤال — فرضيات قابلة للتفنيد + النطاق | وسط السلسلة |
+| [<bdi>/research-theory</bdi>](/docs/pipeline/research-theory) | إطار مفاهيمي + نظرية التغيير | وسط السلسلة |
+| [<bdi>/research-sources</bdi>](/docs/pipeline/research-sources) | جمع منهجي للمصادر | وسط السلسلة |
+| [<bdi>/research-synthesis</bdi>](/docs/pipeline/research-synthesis) | خريطة <bdi>SOTA</bdi> + تحليل الثغرات | وسط السلسلة |
+| [<bdi>/research-proposal</bdi>](/docs/pipeline/research-proposal) | الأهداف + الجدوى + الأثر + خطة التسجيل المُسبَق | وسط السلسلة |
+| [<bdi>/research-design</bdi>](/docs/pipeline/research-design) | تصميم الدراسة + التسجيل المُسبَق | وسط السلسلة |
+| [<bdi>/research-experiment</bdi>](/docs/pipeline/research-experiment) | التشغيل + التسجيل، قابل للاستنساخ | وسط السلسلة |
+| [<bdi>/research-analysis</bdi>](/docs/pipeline/research-analysis) | النتائج + الإحصاء | وسط السلسلة |
+| [<bdi>/research-paper</bdi>](/docs/pipeline/research-paper) | مسوّدة ورقة من الطراز الأول | وسط السلسلة |
+| [<bdi>/research-review</bdi>](/docs/pipeline/research-review) | نقد بمستوى مراجعة الأقران | وسط السلسلة |
+| [<bdi>/research-publish</bdi>](/docs/pipeline/research-publish) | حزمة المكان + التقديم | وسط السلسلة |
+| [<bdi>/research-disseminate</bdi>](/docs/pipeline/research-disseminate) | النشر + الأثر + الأرشفة وفق <bdi>FAIR</bdi> | طرفي |
+
+يقود مُنسِّق سير العمل المُغلَّف <bdi>`/research`</bdi> هذه المراحل من السؤال الخام إلى
+الورقة المنشورة (وهو نفسه ليس مرحلة)، مُتحقِّقًا من مُخرَج كلّ مرحلة بصورة مستقلّة
+قبل أن تبني المرحلة التالية عليه؛ ويُشغِّل <bdi>`--quick`</bdi> فقط <bdi>`/research-sources`</bdi> +
+<bdi>`/research-synthesis`</bdi> لتقرير موثَّق بالاستشهاد بمرور واحد.
+
+تستند المراحل التجريبية (المصادر، والتصميم، والتجربة، والتحليل) ومراحل الكتابة
+(الورقة، والمراجعة، والنشر، والإذاعة) إضافةً إلى ذلك إلى أسطح تفعيل الصرامة —
+مقارنة عادلة متعدّدة الطرائق، ومصدرية المُقارِنات، وسقالة برنامج التجربة، وخطة
+استغلال الحوسبة، وحلقة تجربة مستقلّة اختيارية، وبوّابة تقدّم بتعريف إنجاز، والتعمية
+مع الكشف المرحلي — وهي تُضيف تفصيلًا تشغيليًّا إلى التفويضات العشرة دون أن تمدّدها.
+
+## سلسلة تدقيق المراجعة
+
+يجتاح مُنسِّق سير العمل المُغلَّف <bdi>`/audit`</bdi> الأبعاد الأحد عشر أدناه جميعها كمرور موازٍ واحد — وهو نظير التدقيق-الحصن لـ <bdi>`/plan`</bdi> و<bdi>`/research`</bdi> — مُركِّبًا تقرير نتائج واحدًا مُزالًا منه التكرار ومُصنَّفًا حسب الخطورة (للإبلاغ فقط؛ تُوجَّه المعالجة إلى <bdi>`/elevate`</bdi>). وكلّ بُعد قابل للاستدعاء فرديًّا أيضًا.
+
+يغلق مُنسِّق سير العمل المُغلَّف <bdi>`/fortress`</bdi> الحلقة التي يُبلِغ عنها <bdi>`/audit`</bdi>: فهو يكتشف عبر <bdi>`/audit`</bdi>، ويتحقّق من كلّ نتيجة، ويعالج كلّ ناجٍ على سطحه المالك، ويُعيد التدقيق في حلقة محدودة، ويُبوِّب النتيجة عبر <bdi>`/release-readiness`</bdi> — وهو نظير تصليب-الإنتاج لـ <bdi>`/plan`</bdi> و<bdi>`/research`</bdi>.
+
+| الأمر | مجال الجودة |
+|---------|--------------|
+| [<bdi>/code-review</bdi>](/docs/pipeline/code-review) | جودة الشِّفرة |
+| [<bdi>/code-audit</bdi>](/docs/pipeline/code-audit) | مدوّنة الشِّفرة |
+| [<bdi>/security-audit</bdi>](/docs/pipeline/security-audit) | <bdi>OWASP / ASVS</bdi> |
+| [<bdi>/perf-audit</bdi>](/docs/pipeline/perf-audit) | الأداء |
+| [<bdi>/architecture-review</bdi>](/docs/pipeline/architecture-review) | المعمارية |
+| [<bdi>/ux-review</bdi>](/docs/pipeline/ux-review) | تجربة المطوّر |
+| [<bdi>/a11y-audit</bdi>](/docs/pipeline/a11y-audit) | إمكانية الوصول |
+| [<bdi>/docs-review</bdi>](/docs/pipeline/docs-review) | التوثيق |
+| [<bdi>/dependency-audit</bdi>](/docs/pipeline/dependency-audit) | الاعتماديات |
+| [<bdi>/supply-chain-audit</bdi>](/docs/pipeline/supply-chain-audit) | سلسلة التوريد |
+| [<bdi>/threat-model-audit</bdi>](/docs/pipeline/threat-model-audit) | نموذج التهديد |

@@ -1,0 +1,54 @@
+---
+title: "تطوير الخطّافات"
+description: "أنشئ الخطّافات وسجّلها في خط أنابيب خطّافات Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+الخطّافات هي أوامر <bdi>shell</bdi> تُطلَق عند أحداث الـ<bdi>harness</bdi>. وهي
+تفرض المطابقة، وتحقن السياق، وتُشغِّل بوابات الجودة دون تدخّل المُشغِّل.
+
+## أحداث الخطّاف
+
+| الحدث | متى يُطلَق |
+|-------|--------------|
+| <bdi>`PreToolUse`</bdi> | قبل كلّ استدعاء أداة |
+| <bdi>`PostToolUse`</bdi> | بعد كلّ استدعاء أداة |
+| <bdi>`SessionStart`</bdi> | عند تمهيد الجلسة |
+| <bdi>`PreCompact`</bdi> | قبل ضغط السياق |
+| <bdi>`PostCompact`</bdi> | بعد ضغط السياق |
+| <bdi>`Stop`</bdi> | عند نهاية الجلسة |
+
+## ملفّات رسائل الخطّاف
+
+لكلّ خطّاف ملفّ رسالة مقابِل في
+<bdi>`src/apothem/hooks/messages/<event>-<name>.md`</bdi> يوفّر السياق للمساعد في
+اللحظة التي يُطلَق فيها الخطّاف.
+
+## تسجيل خطّاف
+
+أضف أمر الخطّاف إلى <bdi>`settings.json`</bdi>:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python src/apothem/hooks/my-check.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## موزِّع الخطّافات
+
+تُوجَّه كلّ الخطّافات عبر <bdi>`src/apothem/hooks/dispatch.py`</bdi>، الذي يحوّل
+أيّ خطأ في الخطّاف إلى مغلّف <bdi>fail-open</bdi> كي لا تحجب الخطّافات الـ<bdi>harness</bdi>
+أبدًا.

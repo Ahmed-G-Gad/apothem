@@ -1,0 +1,67 @@
+---
+title: "/plan-generate"
+description: "/plan-generate — Generates a complete Master Plan Suite from the authored `_spec/spec.md`."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Role:** Generator
+**Pipeline position:** mid
+
+Generates a complete Master Plan Suite from the authored `_spec/spec.md`.
+
+## Canonical invocation
+
+```bash
+/plan-generate
+```
+
+With arguments:
+
+```bash
+/plan-generate [path/to/prose.md] [--mode NEW|OVERHAUL] [--seriousness LEVEL] [--context CONTEXT] [--mission MISSION] [--domain DOMAIN] [--dry-run]
+```
+
+## Inputs
+
+The authored `_spec/spec.md` + `_inputs/handoff-manifest.yml` from `/plan-spec` (or operator-supplied prose).
+
+## Outputs
+
+`PREAMBLE.md`, `MASTER-PLAN.md`, `PROGRESS.md`, `PLAN-NOTES.md`, and per-phase `phases/**/PHASE.md` files, plus the augmented `_inputs/handoff-manifest.yml`.
+
+## Downstream
+
+/plan-review or /plan-execute (downstream)
+
+## Workflow phases
+
+The command generates a complete Master Plan Suite from the authored spec:
+
+1. **Ingest requirements** — Read `_spec/spec.md` and the upstream Handoff Manifest; refuse with `Blocked: run /plan-spec first` when the spec is absent.
+2. **Discover** — Run seriousness-scaled discovery with the Five Cognitive Filters; resolve every authoritative-data gap through the structured-inquiry channel.
+3. **Decompose** — Break the work into an acyclic phase graph with an explicit dependency order.
+4. **Emit the suite** — Author `PREAMBLE.md`, `MASTER-PLAN.md`, `PROGRESS.md`, `PLAN-NOTES.md`, and every `phases/NN-topic/PHASE.md`.
+5. **Run the pre-emission gate** — Run the fifteen-bar sweep against every emitted artifact; failure blocks user-approval until resolved.
+
+## Failure modes
+
+| Symptom | Cause | Recovery |
+|---------|-------|----------|
+| Blocked: run /plan-spec first | No authored `_spec/spec.md` | Run `/plan-spec` to author the spec and emit the Manifest |
+| Generation against an `_inputs/` file | Spec still mid-elicitation | Promote `_inputs/forge.md` to `_spec/spec.md` via `/plan-spec` first |
+| Pre-emission bar fails | An emitted artifact fails the gate | Fix the failing bar before user-approval |
+
+## Examples
+
+```bash
+# Dry-run to preview the generated phase graph
+/plan-generate --dry-run
+
+# Generate a suite from authored prose
+/plan-generate path/to/prose.md --mode NEW
+```
+
+## Cross-references
+
+- [Pipeline overview](/docs/pipeline)
+- [Command reference](/docs/reference/commands)

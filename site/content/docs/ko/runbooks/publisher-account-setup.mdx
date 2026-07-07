@@ -1,0 +1,110 @@
+---
+title: "퍼블리셔 계정 설정"
+description: "@ahmed-g-gad/apothem용 npmjs.com 신뢰할 수 있는 퍼블리셔와 GitHub 측 릴리스 사전 요구 사항을 구성합니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+이 런북은 릴리스 표면의 퍼블리셔 측을 구성합니다. 배포 형태에는 레지스트리가
+하나뿐입니다. npmjs.com의 스코프 지정 npm 패키지 `@ahmed-g-gad/apothem`로,
+GitHub Release, Pages, CI, conformity 및 harness 워크플로가 모두 녹색이 된 후
+수동으로 디스패치되는 `publish-npm.yml` 워크플로에 의해 게시됩니다. 다른 모든
+아티팩트는 GitHub Release 페이지 자체에서 배포되며 외부 퍼블리셔 계정이 필요하지
+않습니다.
+
+## 신원 매핑
+
+| 표면 | 계정 | 패키지 식별자 |
+|---|---|---|
+| GitHub | `ahmed-g-gad` | `ahmed-g-gad/apothem` |
+| npm (npmjs.com) | `ahmed-g-gad` | `@ahmed-g-gad/apothem` |
+
+GitHub 소유자는 향후 변경될 수 있습니다. 워크플로 및 설치 프로그램 로직은
+플랫폼이 동적 해석을 허용하는 곳에서 `github.repository`,
+`github.repository_owner` 또는 `APOTHEM_GITHUB_REPOSITORY`를 읽습니다.
+사용자는 관리자 계정 이름이 아니라 패키지 이름을 설치하므로 레지스트리 패키지
+식별자는 안정적으로 유지됩니다.
+
+## npm (npmjs.com)
+
+1. `ahmed-g-gad`로 `https://www.npmjs.com/`에 로그인합니다.
+2. 계정에 2단계 인증을 활성화합니다.
+3. 스코프 지정 패키지 이름을 확인합니다.
+
+   ```bash
+   npm view @ahmed-g-gad/apothem name
+   ```
+
+   `404`는 스코프 지정 패키지가 아직 게시되지 않았음을 의미합니다. 그 외의 다른
+   패키지 응답은 게시하기 전에 이 저장소 및 계정과 일치해야 합니다.
+4. UI에서 첫 번째 패키지 레코드가 필요한 경우 npm에서 패키지를 생성합니다. 이름은
+   스코프 지정 형태로 유지합니다: `@ahmed-g-gad/apothem`.
+5. GitHub Actions에서 `@ahmed-g-gad/apothem`에 대한 신뢰할 수 있는 게시(Trusted
+   Publishing)를 구성합니다.
+   - GitHub 소유자: `ahmed-g-gad`
+   - 저장소: `apothem`
+   - 워크플로 파일 이름: `publish-npm.yml`
+   - 환경: `npmjs`
+   - 허용된 작업: `npm publish`.
+6. GitHub에서 `npmjs` 환경이 `ahmed-g-gad/apothem`에 존재하고 배포에 수동 승인이
+   필요한지 확인합니다.
+7. npm 표면을 하나의 공개 레지스트리 패키지로 유지합니다: npmjs.com의
+   `@ahmed-g-gad/apothem`.
+8. 릴리스 준비 상태를 확인합니다.
+
+   ```bash title="Release readiness"
+   bash scripts/release/check-release-ready.sh <release-tag>
+   ```
+
+9. GitHub Actions 탭에서 `tag=<release-tag>`로 `Publish — npm`
+   (`publish-npm.yml`)을 실행하고 `npmjs` 환경 배포를 승인합니다.
+10. 라이브 패키지를 확인합니다.
+
+    ```bash title="npm verification"
+    npm view @ahmed-g-gad/apothem version
+    npx @ahmed-g-gad/apothem@<version> --version
+    ```
+
+`NPM_TOKEN`, 사용자 이름 또는 비밀번호 시크릿이 필요하지 않습니다. 워크플로는 Node
+버전과 npm CLI의 OIDC 하한이 `.github/workflows/publish-npm.yml` 내에 고정된 상태로
+npm Trusted Publishing(OIDC)을 통해 게시합니다. npmjs.com에 대해
+`npm publish --access public`을 실행합니다. npm은 공개 GitHub Actions 워크플로에서
+게시된 공개 패키지에 대해 출처(provenance)를 자동으로 생성합니다. `PUT` 중의
+레지스트리 `404`는 npm 측 신뢰할 수 있는 퍼블리셔, 패키지 스코프 또는 계정 권한이
+아직 정렬되지 않았음을 의미합니다. 워크플로를 다시 시도하기 전에 npm 패키지 설정을
+수정하세요.
+
+참고 자료: [npm 신뢰할 수 있는 퍼블리셔](https://docs.npmjs.com/trusted-publishers/), [npm 출처](https://docs.npmjs.com/generating-provenance-statements/) 및 [npm 스코프](https://docs.npmjs.com/about-scopes/).
+
+## GitHub 측 릴리스 사전 요구 사항
+
+나머지 릴리스 표면은 GitHub 네이티브이며 저장소 스코프의 `GITHUB_TOKEN`으로
+인증합니다. 외부 계정은 관여하지 않습니다.
+
+1. **GitHub Release.** `.github/workflows/release.yml`은 버전 태그에서 실행되며
+   작업 로컬 `contents: write` 권한만 필요합니다. 태그를 지정하기 전에 워크플로
+   파일이 `main`에 있는지 확인합니다.
+2. **Pages 사용자 지정 도메인.** 문서 사이트는 `publish-static-site.yml`을 통해
+   사용자 지정 도메인 `apothem.ahmedgad.com`에 배포됩니다. 도메인, DNS 및 HTTPS
+   적용은 [Pages 활성화 런북](/docs/runbooks/pages-enablement)에 의해 설정됩니다.
+   확인합니다.
+
+   ```bash title="Pages verification"
+   gh api repos/ahmed-g-gad/apothem/pages --jq '.cname, .https_enforced'
+   curl -sSI https://apothem.ahmedgad.com/ | head -n 1
+   ```
+
+3. **스크립트 설치 프로그램.** `install.sh`와 `install.ps1`은 Pages 사이트에서
+   제공됩니다(`https://apothem.ahmedgad.com/install.sh` 및
+   `https://apothem.ahmedgad.com/install.ps1`). 동일한 Pages 배포에 의해
+   게시됩니다. 별도의 계정이나 토큰이 필요하지 않습니다.
+
+## 검증 매트릭스
+
+설정 후 각 퍼블리셔 표면은 해당 정식 검사에 응답합니다.
+
+| 표면 | 검사 |
+|---|---|
+| npmjs.com | `npm view @ahmed-g-gad/apothem version`이 릴리스된 버전을 반환함 |
+| GitHub Release | `gh release view <release-tag> --json assets --jq '.assets[].name'`이 sdist, wheel, SBOM, cosign 번들, 출처 및 플랫폼 아카이브를 나열함 |
+| Pages | `curl -sSI https://apothem.ahmedgad.com/`이 사용자 지정 도메인에서 `200`을 반환함 |

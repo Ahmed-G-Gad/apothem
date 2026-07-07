@@ -1,0 +1,73 @@
+---
+title: "安全"
+description: "Apothem 的安全态势——OpenSSF Scorecard 目标、漏洞报告、加固表面。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem 的安全态势建立在五大支柱之上：供应链加固、漏洞响应、分支保护、发布签名以及持续安全分析。本章节记录每个表面。
+
+## 威胁模型
+
+Apothem 是一个配置物化器。它读取一份共享配置，并将 harness 原生
+配置文件写入每个 harness 所读取的目录。该单一功能界定了
+它信任什么、不信任什么。
+
+- **Apothem 信任什么。** 你撰写的共享配置，以及安装器放置的捆绑源码
+  树。配置是你声明的意图；引擎在通过 schema 校验后将其视为权威输入。
+- **Apothem 不信任什么。** 配置内容只有在校验之后才会抵达文件系统：
+  schema 失败、未知的 harness ID、不安全的项目路径、缺失的清单来源、
+  目标遍历以及符号链接穿越，全部会在任何写入之前停止，并返回带有
+  `files_written: []` 的结构化诊断信息。
+- **物化输出永不携带什么。** 没有任何机密。配置诊断在抵达普通输出、
+  JSON、日志、文档片段或测试之前，会对类机密的键和形似令牌的值进行
+  脱敏处理，公开示例则使用虚构的占位身份与域名。物化后的配置意在被
+  提交与共享；它不携带任何凭据。
+- **通用拒绝底线。** Apothem 物化的规则携带一条不容协商的拒绝底线，
+  无论任何按 harness 划分的允许列表如何——机密路径（`.env*`、
+  `~/.ssh/**`、凭据存储）、破坏性 shell 操作（`rm -rf`、`sudo`、
+  向受保护分支强制推送）以及对不可信输入的执行。任何允许列表都不会
+  悄然拓宽这条底线。
+- **影响半径。** 写入被限定在 harness 目录以及 Apothem 拥有的支持子树
+  范围内。现有的受管目标在替换前会被备份，共享发现目录则会逐子项合并，
+  因此无关的、由操作者撰写的文件仍保留原位。
+
+## 运行时安全态势
+
+Harness 生命周期与配置写入命令在写入前进行校验。配置 schema 失败、
+未知的 harness ID、不安全的项目路径、缺失的清单来源、目标遍历以及
+符号链接穿越，都会在文件系统写入之前停止，并返回带有
+`files_written: []` 的结构化诊断信息。
+
+安装与更新操作通过在替换前备份现有受管目标来保留它们。共享发现目录
+会逐子项合并，因此无关的、由操作者撰写的文件仍保留原位。`--dry-run`
+执行相同的校验并报告计划中的结果，而不会创建任何目录或文件。
+
+配置诊断在抵达普通输出、JSON 输出、日志、文档片段或测试之前，会对
+类机密的键和形似令牌的值进行脱敏处理。公开示例使用虚构的占位身份
+与域名。
+
+## 快速链接
+
+- [**OpenSSF Scorecard 态势**](/docs/security/openssf-scorecard-target) — 逐项检查证据与已知平台限制
+- [**Webhooks 审计**](/docs/security/webhooks-audit) — webhook 密钥卫生证据
+- [**分支保护**](/docs/security/branch-protection-ruleset) — 评审关卡、状态检查与推送限制
+- [**二进制产物扫描**](/docs/security/binary-artifacts-sweep) — 源码中零二进制的发布证明
+- [安全策略](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) — 漏洞报告与受支持版本
+- [OpenSSF Scorecard 徽章](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem) — 实时分数
+
+## 报告漏洞
+
+请在仓库的 Security 选项卡上使用 [私有漏洞报告](https://github.com/ahmed-g-gad/apothem/security)。完整策略、受支持版本矩阵以及响应时间线位于 [`SECURITY.md`](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)。
+
+## 供应链发布证明
+
+每个发布产物都附带：
+
+- **SLSA-3 构建溯源**，经由 [`slsa-framework/slsa-github-generator`](https://github.com/slsa-framework/slsa-github-generator)
+- **Sigstore 签名**，经由 [`sigstore/cosign-installer`](https://github.com/sigstore/cosign-installer)
+- **CycloneDX SBOM**，经由 [`anchore/sbom-action`](https://github.com/anchore/sbom-action)
+- **npm 溯源声明**，经由 `@ahmed-g-gad/apothem` 上的可信发布 OIDC
+- **GPG 签名的 git 标签**（EDDSA 密钥 `70396FED9C634163`）
+
+校验配方在 [发布周期](/docs/runbooks/release-cycle) 与 [发布恢复](/docs/runbooks/release-recovery) 中内联记录；一份专门的发布校验运行手册即将推出。

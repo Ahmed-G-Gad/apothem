@@ -1,0 +1,133 @@
+---
+title: "Schéma du profil partagé"
+description: "Schéma du YAML du profil partagé d'Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Le profil partagé d'Apothem est un fichier YAML situé à
+`~/.config/apothem/profile.yaml`, ou au chemin fourni avec `--profile PATH`.
+C'est la source sémantique de vérité pour l'identité, les préférences, les
+règles partagées, les surcharges par environnement et les exclusions
+d'environnements. Les adaptateurs dérivent les fichiers natifs de chaque
+environnement à partir de ce profil et des cohorts de charge utile empaquetés
+d'Apothem.
+
+Le modèle d'exécution est `src/apothem/lib/profile.py` ; le JSON Schema est
+`src/apothem/schemas/profile.schema.json`.
+
+## Profil valide minimal
+
+Le seul champ obligatoire est `identity.name` :
+
+```yaml
+identity:
+  name: "Example User"
+```
+
+## Échafaudage écrit par `profile init`
+
+`apothem profile init` écrit un échafaudage légèrement plus complet — des champs
+d'identité d'espace réservé que l'opérateur est censé personnaliser — et le
+valide avant de signaler le succès :
+
+```yaml
+identity:
+  name: "Example User"
+  email: "dev@example.invalid"
+  github: "example-user"
+```
+
+La commande affiche un rappel de personnalisation nommant ces champs. Si une
+identité encore au stade d'espace réservé atteint plus tard `install` ou
+`update`, ces commandes affichent une note informative et poursuivent — Apothem
+ne fabrique jamais ni ne se bloque sur une identité d'espace réservé.
+
+## Champs canoniques
+
+| Champ | Obligatoire | Par défaut | Notes |
+| --- | --- | --- | --- |
+| `identity.name` | Oui | aucun | Nom d'affichage de l'opérateur non vide. |
+| `identity.role` | Non | `senior software engineer` | Texte de rôle partagé. |
+| `identity.email` | Non | omis | Doit être au format e-mail lorsqu'il est présent. |
+| `identity.website` | Non | omis | Doit être au format URI lorsqu'il est présent. |
+| `identity.github` | Non | omis | Nom d'utilisateur GitHub sans `@`. |
+| `preferences.language` | Non | `python` | Normalisé en minuscules. |
+| `preferences.style` | Non | `concise` | L'un de `concise`, `verbose`, `balanced`. |
+| `preferences.formatter` | Non | omis | Chaîne non vide lorsqu'elle est présente. |
+| `preferences.test_framework` | Non | omis | Chaîne non vide lorsqu'elle est présente. |
+| `rules` | Non | `[]` | Chaînes non vides uniques ; les sauts de ligne se normalisent en LF. |
+| `seriousness` | Non | `PERSONAL_USE` | L'un de `EXPLORING`, `PERSONAL_USE`, `SHARED`, `PUBLIC_LAUNCH`. |
+| `harnesses` | Non | `{}` | Surcharges par environnement indexées par l'ID d'environnement pris en charge. |
+| `exclude_harnesses` | Non | `[]` | IDs d'environnement pris en charge exclus de `--harness all`. |
+
+## Clés d'environnement
+
+Le schéma accepte exactement ces dix-sept IDs d'environnement :
+
+```text
+antigravity
+claude-code
+codebuddy
+codex
+cursor
+gemini-cli
+github-copilot
+glm
+hermes
+kimi-code
+kiro
+open-claw
+opencode
+qwen-code
+trae
+windsurf
+zed
+```
+
+Les champs de niveau supérieur inconnus, les clés d'environnement inconnues, les
+types de valeur erronés, les exclusions en double et les champs d'identité mal
+formés échouent avant que install ou update n'écrivent. Les erreurs attendues
+comprennent un champ, une raison, un correctif, une valeur sûre caviardée
+lorsqu'elle est utile, et `files_written: []` pour les échecs de validation.
+
+## Du champ de profil au fichier natif
+
+Le profil est le *quoi* ; les adaptateurs sont le *comment*. Comprendre le flux
+de bout en bout explique pourquoi une seule modification d'un unique fichier
+YAML peut remodeler chaque environnement installé.
+
+Un champ de profil porte une intention sémantique, et non un extrait de
+configuration littéral. `identity.name` est « qui est l'opérateur », pas une
+ligne de JSON. Les cohorts de charge utile empaquetés (`commands`, `rules`,
+`skills`, `hooks`, `templates`, `statuslines`, `output-styles`, `agents`)
+portent un contenu comportemental dans le format neutre propre à Apothem. Ni le
+champ ni le cohort ne savent à quoi ressemble la configuration d'un
+environnement — cette connaissance n'appartient qu'aux adaptateurs.
+
+Lorsque vous exécutez `apothem update`, le flux est :
+
+1. **Charger et valider** le profil par rapport au JSON Schema. Rien n'est écrit
+   tant que tout le profil n'est pas valide, de sorte qu'une faute de frappe
+   n'installe jamais à moitié.
+2. **Résoudre les adaptateurs** pour l'environnement sélectionné (ou `all`,
+   moins tout `exclude_harnesses`) via le registre central.
+3. **Matérialiser** — chaque adaptateur lit le même profil et les mêmes cohorts,
+   puis les traduit dans le dialecte de son environnement. Un champ comme
+   `preferences.style` devient une valeur de configuration native dans un
+   environnement et un contexte d'instruction rendu dans un autre ; une règle
+   dans `rules[]` devient un fichier `.mdc` pour Cursor, une section
+   d'instructions à l'échelle du dépôt pour Copilot, ou une entrée d'arbre de
+   support là où l'environnement n'a pas de surface de règles native.
+4. **Écrire** les fichiers natifs — une unique configuration rendue, un cohort
+   converti, ou un sous-arbre de support référencé depuis l'ancre native de
+   l'environnement.
+
+Le même profil pilote chaque environnement, de sorte que les matérialisations ne
+peuvent pas être en désaccord sur l'intention. Les cellules de capacité que
+l'environnement ne prend pas en charge (ou qui sont encore en attente de
+découverte) émergent sous forme d'avertissements structurés avant toute
+écriture, plutôt que d'être inventées dans une surface de fournisseur qui
+n'existe pas. C'est ce qui rend réelle la garantie
+une-modification-plusieurs-environnements : le profil est modifié une fois, et
+chaque adaptateur re-dérive ses fichiers natifs à partir de cette source unique.

@@ -1,0 +1,104 @@
+---
+title: "status"
+description: "Référence de la CLI pour la commande apothem status."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Signale l'état d'installation, de vérification et de dérive de chaque harness enregistré.
+
+## Synopsis
+
+```
+apothem status [--project PATH]
+               [--quiet|-q] [--verbose|-v]
+               [--format plain|json] [--json] [--no-color]
+```
+
+`status` est une commande d'inspection en lecture seule. Elle parcourt chaque adaptateur de harness enregistré et signale trois faits par assistant : s'il est installé, si ses cibles gérées se vérifient et si la configuration installée a dérivé du profil partagé. Elle n'écrit rien sur le disque.
+
+Pour chaque harness, `status` signale :
+
+| Colonne | Signification |
+|---|---|
+| `installed` | La configuration gérée de l'adaptateur existe à son chemin cible. |
+| `verified` | Les cibles gérées de l'adaptateur sont présentes et valides. |
+| `drift` | Le verdict de fidélité du profil (voir ci-dessous). |
+
+La valeur de `drift` est l'une des suivantes :
+
+| Valeur | Signification |
+|---|---|
+| `in-sync` | La configuration installée porte textuellement le profil partagé fraîchement projeté. |
+| `drift` | Le harness est installé mais son contenu de profil projeté ne correspond plus au profil partagé actuel. Relancez `apothem install` pour reprojeter. |
+| `absent` | Le harness n'est pas installé, il n'y a donc rien à comparer. |
+| `needs-project` | Un harness à portée de projet a été signalé sans `--project`, sa cible ne peut donc pas être résolue. Passez `--project PATH` pour l'inspecter. |
+
+La dérive est signalée, jamais traitée comme une erreur : `status` se termine avec 0 même lorsqu'un ou plusieurs harness signalent `drift`. La dérive est un fait sur votre configuration, pas un échec de la commande.
+
+Si le profil partagé ne peut pas être chargé, la dérive est dégradée en `absent` pour les harness installés (les faits installed/verified sont toujours signalés) plutôt que d'interrompre le balayage.
+
+## Options
+
+| Option | Description |
+|---|---|
+| `--project PATH` | Racine de projet pour les harness à portée de projet. Sans elle, les harness à portée de projet signalent `needs-project`. |
+| `--quiet`, `-q` | Supprime la sortie informative ; seules les erreurs sont émises. |
+| `--verbose`, `-v` | Émet une sortie de diagnostic supplémentaire. |
+| `--format plain\|json` | Format de sortie (par défaut : `plain`). |
+| `--json` | Raccourci pour `--format json`. |
+| `--no-color` | Désactive les codes de couleur ANSI dans la sortie. |
+| `-h`, `--help` | Affiche l'aide et quitte. |
+
+## Sortie JSON
+
+L'enveloppe `--json` porte une ligne de résultat par harness enregistré. Chaque ligne porte les clés documentées `harness`, `installed`, `verified` et `drift`.
+
+```json
+{
+  "status": "success",
+  "command": "status",
+  "action": "status",
+  "harness": "all",
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "installed": true,
+      "verified": true,
+      "drift": "in-sync"
+    },
+    {
+      "harness": "cursor",
+      "installed": false,
+      "verified": false,
+      "drift": "needs-project"
+    }
+  ],
+  "warnings": [],
+  "error": null
+}
+```
+
+Isolation des défaillances par adaptateur : si un seul adaptateur lève une exception en signalant son état, la ligne de cet harness porte `outcome: "error"` et un `message`, les assistants restants continuent de signaler normalement, et le processus se termine avec le code 2.
+
+## Exemples
+
+```bash
+apothem status
+apothem status --project .
+apothem status --json
+```
+
+## Codes de sortie
+
+| Code | Signification |
+|---|---|
+| 0 | État signalé (la dérive est signalée, pas une erreur) |
+| 2 | Au moins un adaptateur n'a pas pu signaler son état |
+
+## Voir aussi
+
+- [apothem verify](/docs/cli-reference/verify) — vérifie l'installation d'un seul harness
+- [apothem diff](/docs/cli-reference/diff) — prévisualise les changements en attente d'un harness
+- [apothem harnesses](/docs/cli-reference/harnesses) — liste et inspecte les harness enregistrés

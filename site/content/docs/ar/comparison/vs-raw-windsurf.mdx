@@ -1,0 +1,42 @@
+---
+title: "Apothem مقابل تهيئة Windsurf الخام"
+description: "صيانة قواعد Windsurf يدويًا ضمن .devin/rules/ مقابل رسمها من ملف تعريف apothem المشترك."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+يقرأ <bdi>Windsurf</bdi> القواعد من مجلد `.devin/rules/`. يرسم محوِّل
+<bdi>windsurf</bdi> في <bdi>Apothem</bdi> القواعد المعتمدة على المجلد من ملف
+التعريف المشترك. تقابل هذه الصفحة بين صيانة تلك التهيئة يدويًا وإدارتها مع
+<bdi>apothem</bdi>.
+
+## مقارنة الجهد
+
+| المهمة | تهيئة يدوية خام | مُدارة بـ Apothem |
+| ---- | --------------- | --------------- |
+| تأليف القواعد | كتابة كل ملف يدويًا ضمن `.windsurf/rules/` | مرسومة من المجموعة المشتركة |
+| الإبقاء على صيغة قواعد واحدة | الاختيار يدويًا بين `.windsurf/rules/` وملف `.windsurfrules` المفرد | يكتب المحوِّل `.devin/rules/` فقط |
+| إبقاء القواعد متوائمة مع بيئات أخرى | يدويًا، لكل أداة | تلقائيًا عند `apothem update` |
+| التحقّق من صحة التهيئة | فحص يدوي | `apothem verify --harness windsurf` |
+
+## ما الذي يديره apothem
+
+يرسم محوِّل <bdi>windsurf</bdi> القواعد المشتركة في مجلد `.devin/rules/`؛ وهو
+لا يكتب ملف `.windsurfrules` مفردًا. لا يملك <bdi>Windsurf</bdi> خطّاف
+<bdi>PreToolUse</bdi>، لذا يعيش قصد المتراس في نثر القاعدة لا في نقطة اعتراض
+لاستدعاء الأداة. كل تغيير في القواعد المشتركة يعيد رسم المجلد عند
+`apothem update` التالي.
+
+## مسار الترحيل
+
+1. شغّل `apothem profile init` لإنشاء ملف التعريف المشترك إن لم تكن قد فعلت بعد.
+2. انقل القواعد من `.windsurf/rules/` الحالي لديك (وأي ملف `.windsurfrules`
+   مفرد) إلى المجموعة المشتركة.
+3. شغّل `apothem install --harness windsurf` لرسم مجلد `.devin/rules/`.
+4. شغّل `apothem verify --harness windsurf` للتأكد من أن التهيئة قد حُطّت.
+5. استخدم `apothem update --harness windsurf` لكل تغيير لاحق.
+
+## اقرأ بعد ذلك
+
+- [مرجع محوِّل Windsurf](/docs/harnesses/windsurf)
+- [نظرة عامة على المقارنة](/docs/comparison)

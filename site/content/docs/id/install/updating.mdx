@@ -1,0 +1,83 @@
+---
+title: "Pemutakhiran"
+description: "Mutakhirkan Apothem dan adaptor harness."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## Mutakhirkan plugin Claude Code
+
+Segarkan daftar marketplace, lalu mutakhirkan plugin dari menu `/plugin`
+di dalam Claude Code:
+
+```text title="Di dalam Claude Code"
+/plugin marketplace update apothem
+```
+
+Buka `/plugin`, pilih **apothem**, dan pilih aksi pemutakhiran saat versi plugin
+yang lebih baru tercantum.
+
+## npx selalu menjalankan rilis terkini
+
+`npx @ahmed-g-gad/apothem` me-resolve paket terkini yang dipublikasikan pada setiap
+jalankan, sehingga tidak ada yang perlu dimutakhirkan. Saat cache npx yang basi menyajikan salinan
+lama, sematkan dist-tag secara eksplisit:
+
+```bash
+npx @ahmed-g-gad/apothem@latest --version
+```
+
+## Mutakhirkan penyiapan berbasis-installer
+
+Jalankan ulang installer — bersifat idempoten dan mem-fast-forward pohon yang ada —
+atau jalankan skrip pemutakhiran khusus:
+
+```bash title="macOS · Linux · WSL2 · BSD"
+bash scripts/installer/update.sh
+```
+
+```powershell title="Windows · PowerShell"
+pwsh -NoProfile -File scripts/installer/update.ps1
+```
+
+Skrip pemutakhiran me-checkout-ulang pohon sumber di `APOTHEM_HOME` (default
+`~/.apothem`) ke `APOTHEM_REF` — jika tidak diatur, ia me-resolve tag rilis
+`vMAJOR.MINOR.PATCH` bertanda tangan terkini, sebuah nilai tag menyematkannya, dan `main` memilih
+cabang yang bergerak. Ia memverifikasi tanda tangan tag dengan `git verify-tag` sebelum
+materialisasi-ulang; tag yang tidak ditandatangani atau dirusak akan membatalkan kecuali
+`APOTHEM_ALLOW_UNVERIFIED=1` menurunkan pembatalan menjadi peringatan. Ia kemudian
+memateri-ulang harness yang dinamai oleh `APOTHEM_HARNESS` dengan menjalankan
+`apothem update` dari pohon yang disegarkan (harness ini default sesuai tabel
+[variabel lingkungan installer](/docs/how-to/installer-environment-variables)).
+Ia memerlukan instalasi sebelumnya: saat
+tidak ada pohon di `APOTHEM_HOME` dan `APOTHEM_SOURCE` tidak diatur, ia keluar dengan
+pesan yang mengarahkan Anda ke installer terlebih dahulu.
+
+## Materialisasi-ulang keluaran harness
+
+Setelah memutakhirkan engine atau mengedit `~/.config/apothem/profile.yaml`,
+turunkan-ulang konfigurasi harness yang terpasang. Adaptor cakupan-pengguna tidak memerlukan
+`--project`; adaptor cakupan-proyek memerlukannya.
+
+```bash
+apothem update --harness claude-code
+apothem update --harness cursor --project /path/to/project
+apothem update --harness all --project /path/to/project
+```
+
+Jalankan perintah yang sama dengan `--dry-run --json` saat Anda memerlukan pratinjau
+yang dapat dibaca mesin tanpa penulisan ke sistem berkas.
+
+## Batas perintah saat ini
+
+`apothem update` hanya memutakhirkan keluaran harness. CLI tidak mengimplementasikan
+`update --self`, `update --check`, atau `update --apply`; mutakhirkan engine
+itu sendiri melalui kanal yang Anda gunakan saat instalasi — alur `/plugin`, sebuah jalankan
+`npx` yang segar, atau skrip installer/pemutakhiran di atas.
+
+## Periksa versi engine
+
+```bash
+apothem --version
+npx @ahmed-g-gad/apothem --version
+```

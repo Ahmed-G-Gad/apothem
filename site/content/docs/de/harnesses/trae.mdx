@@ -1,0 +1,87 @@
+---
+title: "Trae"
+description: "Apothem-Harness-Adapter für Trae (GA)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Anbieter:** ByteDance
+**Installationsname:** `trae`
+**Status:** GA
+**Native Konfiguration:** `<project>/.trae/rules/apothem-rules.md`
+
+## Installation
+
+```bash
+apothem install --harness trae --project /path/to/project
+```
+
+Der Adapter schreibt eine Trae-Regeldatei mit Projektgeltungsbereich aus der
+gemeinsamen Regel- und Governance-Oberfläche von Apothem.
+
+**Geschriebene Dateien:** `<project>/.trae/rules/apothem-rules.md`
+
+## Zuordnung von Profil zu nativer Konfiguration
+
+Der Adapter liest das gemeinsame Profil von Apothem und rendert die Projekt-Regeldatei
+bei jeder Ausführung von `apothem install` oder `apothem update`. Das gemeinsame Profil
+ist die Quelle der Wahrheit; projektlokale Änderungen an der generierten Datei werden
+gesichert, bevor die nächste Synchronisierung den von Apothem verwalteten Inhalt
+ersetzt.
+
+## Kompatibilitätshinweise
+
+Die aktuelle Regel-Oberfläche von Trae hat Projektgeltungsbereich unter `.trae/rules/`.
+Der Adapter schreibt eine dedizierte `apothem-rules.md`-Datei, die neben den
+betreiberseitigen Ankern `project_rules.md` und `user_rules.md` koexistiert und sie
+niemals überschreibt. Die Tool-Server-Oberfläche `.trae/mcp.json` und die
+Skill-Oberfläche `.trae/skills/` gehören dem Betreiber; Apothem schreibt sie nicht.
+
+## Verifizierung
+
+```bash
+apothem verify --harness trae --project /path/to/project
+```
+
+Der Befehl verify bestätigt, dass:
+
+1. Die native Konfiguration am erwarteten Pfad existiert.
+2. Alle erforderlichen Felder aus dem gemeinsamen Profil vorhanden sind.
+3. Die adapterspezifische Verifizierungsroutine Erfolg meldet.
+
+## Aktualisierung
+
+```bash
+apothem update --harness trae --project /path/to/project
+```
+
+Leitet die Projekt-Regeldatei aus dem aktuellen Zustand des gemeinsamen Profils neu ab.
+
+## Deinstallation
+
+```bash
+apothem uninstall --harness trae --project /path/to/project
+```
+
+Entfernt die vom Adapter geschriebenen nativen Konfigurationsdateien.
+Das YAML des gemeinsamen Profils und die Apothem-Engine bleiben unberührt.
+
+## Konformitäts-Gate
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Fehlerbehebung
+
+| Symptom | Behebung |
+|---------|-----|
+| Konfigurationsdatei nicht gefunden | Führen Sie `apothem install --harness trae --project /path/to/project` erneut aus |
+| Verifizierung fehlgeschlagen | Führen Sie `apothem update --harness trae --project /path/to/project` aus und verifizieren Sie erneut |
+| Unerwarteter Konfigurationsinhalt | Prüfen Sie `~/.config/apothem/profile.yaml` oder `--profile PATH` und führen Sie `apothem update --harness trae --project /path/to/project` erneut aus |
+
+## Konfigurationsschalter
+
+| Flag | Standard | Beschreibung |
+|------|---------|-------------|
+| `--dry-run` | `false` | Installation vorschauen, ohne Dateien zu schreiben. |

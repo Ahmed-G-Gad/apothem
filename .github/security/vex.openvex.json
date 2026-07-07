@@ -1,0 +1,74 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "https://apothem.ahmedgad.com/.well-known/vex/apothem-runtime.openvex.json",
+  "author": "Ahmed G. Gad <me@ahmedgad.com>",
+  "role": "Project Maintainer",
+  "timestamp": "2026-06-10T00:00:00Z",
+  "version": 1,
+  "tooling": "apothem supply-chain producer pipeline",
+  "statements": [
+    {
+      "vulnerability": { "name": "GHSA-65pc-fj4g-8rjx", "aliases": ["idna 3.13"] },
+      "products": [
+        { "@id": "pkg:github/ahmed-g-gad/apothem", "identifiers": { "purl": "pkg:github/ahmed-g-gad/apothem" } }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "idna is not an apothem runtime dependency. apothem's declared runtime set is click, rich, pyyaml, jsonschema (pyproject.toml [project.dependencies]); idna enters only transitively through development/network tooling and is absent from the installed apothem execution path."
+    },
+    {
+      "vulnerability": { "name": "PYSEC-2024-277", "aliases": ["joblib 1.5.3"] },
+      "products": [
+        { "@id": "pkg:github/ahmed-g-gad/apothem", "identifiers": { "purl": "pkg:github/ahmed-g-gad/apothem" } }
+      ],
+      "status": "not_affected",
+      "justification": "component_not_present",
+      "impact_statement": "joblib is not a declared apothem dependency in any extra (runtime, dev, security, release). It is an ambient package in the audit environment only and is not shipped in the apothem wheel."
+    },
+    {
+      "vulnerability": { "name": "PYSEC-2026-89", "aliases": ["markdown 3.10.2"] },
+      "products": [
+        { "@id": "pkg:github/ahmed-g-gad/apothem", "identifiers": { "purl": "pkg:github/ahmed-g-gad/apothem" } }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "markdown is not a declared apothem dependency after the documentation site moved to Next.js + Fumadocs. Any markdown finding comes from ambient audit tooling and is not present in the installed apothem runtime execution path."
+    },
+    {
+      "vulnerability": { "name": "PYSEC-2026-97", "aliases": ["nltk 3.9.4"] },
+      "products": [
+        { "@id": "pkg:github/ahmed-g-gad/apothem", "identifiers": { "purl": "pkg:github/ahmed-g-gad/apothem" } }
+      ],
+      "status": "not_affected",
+      "justification": "component_not_present",
+      "impact_statement": "nltk is not a declared apothem dependency in any extra. It is an ambient package in the audit environment only and is not shipped in the apothem wheel."
+    },
+    {
+      "vulnerability": { "name": "GHSA-62q4-447f-wv8h", "aliases": ["pymdown-extensions 10.21.2"] },
+      "products": [
+        { "@id": "pkg:github/ahmed-g-gad/apothem", "identifiers": { "purl": "pkg:github/ahmed-g-gad/apothem" } }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "pymdown-extensions is not a declared apothem dependency after the documentation site moved to Next.js + Fumadocs. It is not present in the installed apothem runtime execution path."
+    },
+    {
+      "vulnerability": { "name": "PYSEC-2026-141", "aliases": ["urllib3 2.6.3"] },
+      "products": [
+        { "@id": "pkg:github/ahmed-g-gad/apothem", "identifiers": { "purl": "pkg:github/ahmed-g-gad/apothem" } }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "urllib3 is not an apothem runtime dependency; apothem's audit utilities use the standard-library urllib.request, not urllib3. urllib3 enters only transitively through development/release tooling. Remediation tracked: upgrade to >= 2.7.0 via the dependency-update bot."
+    },
+    {
+      "vulnerability": { "name": "PYSEC-2026-142", "aliases": ["urllib3 2.6.3"] },
+      "products": [
+        { "@id": "pkg:github/ahmed-g-gad/apothem", "identifiers": { "purl": "pkg:github/ahmed-g-gad/apothem" } }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "urllib3 is not an apothem runtime dependency; apothem's audit utilities use the standard-library urllib.request, not urllib3. urllib3 enters only transitively through development/release tooling. Remediation tracked: upgrade to >= 2.7.0 via the dependency-update bot."
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+---
+title: "/plan-review"
+description: "/plan-review — Forensische Audit einer bestehenden Plan-Suite — Prosa-Treue, Konsistenz, Qualität."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rolle:** Auditor
+**Pipeline-Position:** mittig
+
+Forensische Audit einer bestehenden Plan-Suite — Prosa-Treue, Konsistenz, Qualität.
+
+## Kanonischer Aufruf
+
+```bash
+/plan-review
+```
+
+Mit Argumenten:
+
+```bash
+/plan-review [path/to/plan-suite/] [--focus AREA] [--dry-run]
+```
+
+## Eingaben
+
+Generierte Plan-Suite + `_inputs/handoff-manifest.yml` aus `/plan-generate`.
+
+## Ausgaben
+
+Prüf-Scorecards in `PLAN-NOTES.md` (`## Review Scorecards`), eine Prüf-Zusammenfassung in `PROGRESS.md`, Überarbeitungs-Auswirkungskarten pro Befund in `PLAN-NOTES.md` (dauerhafte große Berichte in `_outputs/`) und das erweiterte `_inputs/handoff-manifest.yml`, das das Prüfurteil trägt.
+
+## Nachgelagert
+
+`/plan-design` (bedingt — nur für architekturtragende Suites), dann `/plan-execute`; für nicht architekturtragende Suites verbraucht `/plan-execute` die Prüf-Scorecards direkt, um die Ausführung ab SHARED+ abzuriegeln.
+
+## Workflow-Phasen
+
+Der Befehl führt eine forensische, blinde, zeilenweise Audit durch und verfeinert dann über interaktive Rückfragen:
+
+1. **Kontext laden** — Jede Plan-Suite-Datei (`phases/**/PHASE.md`, Infrastrukturdateien, Berichte) und das vorgelagerte Übergabe-Manifest lesen; mit `Blocked: run /plan-generate first` verweigern, wenn die Suite fehlt.
+2. **Auditieren** — Die Dimensionen durchgehen (Prosa-Treue, interne Konsistenz, Vollständigkeit, Qualität, Risiko, Standards, Domäne, Architektur, kreative Qualität) unter dem Blind-Review-Mandat.
+3. **Befunde triagieren** — Jeden Befund über den strukturierten Rückfrage-Kanal disponieren (annehmen · überarbeiten · ablehnen · zurückstellen), mit Schweregrad-Zählungen pro Befund.
+4. **Das Pre-Emission-Gate ausführen** — Das Fünfzehn-Balken-Gate gegen den Prüfbericht und die aktualisierten Scorecards ausführen; ein Fehlschlag blockiert die Beförderung.
+5. **Die Prüfung ausgeben** — Die Prüf-Scorecards in `PLAN-NOTES.md`, die Prüf-Zusammenfassung in `PROGRESS.md` und das erweiterte Übergabe-Manifest schreiben.
+
+## Fehlermodi
+
+| Symptom | Ursache | Behebung |
+|---------|-------|----------|
+| Blocked: run /plan-generate first | Keine generierte Suite | Führe `/plan-generate` aus, um die Suite zu erzeugen, die dieser Befehl auditiert |
+| Offene Befunde verbleiben | Audit deckte ungelöste Mängel auf | Jeden Befund disponieren (annehmen · überarbeiten · ablehnen · zurückstellen) vor dem terminalen Urteil |
+| Scorecard FAIL | Eine Dimension fällt unter den CONDITIONAL-Schwellenwert | Die fehlerhafte Dimension beheben und erneut prüfen |
+
+## Beispiele
+
+```bash
+# Dry-run zur Vorschau des Audit-Umfangs
+/plan-review --dry-run
+
+# Eine benannte Plan-Suite auditieren, fokussiert auf einen Bereich
+/plan-review path/to/plan-suite/ --focus architecture
+```
+
+## Querverweise
+
+- [Pipeline-Überblick](/docs/pipeline)
+- [Befehlsreferenz](/docs/reference/commands)

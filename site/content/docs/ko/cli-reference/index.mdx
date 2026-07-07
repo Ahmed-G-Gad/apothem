@@ -1,0 +1,31 @@
+---
+title: "CLI 참조"
+description: "Apothem CLI 참조 — apothem 명령줄 인터페이스의 명령별 개요, 옵션, 종료 코드."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+`apothem` 명령줄 인터페이스는 공유 프로필에서 하니스 어댑터 구성을 관리합니다. 아래의 각 페이지는 하나의 하위 명령을 문서화합니다. 그 개요, 옵션, 동작, 종료 코드입니다.
+
+`install`, `update`, `uninstall` 각각은 플래그와 동작이 기본 명령과 동일한 연속형 별칭(`installing`, `updating`, `uninstalling`)도 받습니다. 설치 채널 — Claude Code 플러그인, `npx`, 단일 단계 설치 스크립트 — 을 통한 업데이트와 제거는 별칭 자체가 아니라 [업데이트](/docs/install/updating) 및 [제거](/docs/install/uninstalling) 설치 가이드에 문서화되어 있습니다.
+
+## 명령
+
+| 명령 | 설명 |
+|---------|-------------|
+| [quickstart](/docs/cli-reference/quickstart) | 안내형 첫 실행: 프로필을 확보하고, 작성을 미리 본 다음, 설치합니다. |
+| [install](/docs/cli-reference/install) | 공유 프로필에서 하니스 어댑터 구성을 설치합니다(별칭: `installing`). |
+| [update](/docs/cli-reference/update) | 현재 공유 프로필에서 하니스 어댑터 구성을 다시 설치합니다(별칭: `updating`). |
+| [uninstall](/docs/cli-reference/uninstall) | 하니스 어댑터 구성을 제거합니다(별칭: `uninstalling`). |
+| [rollback](/docs/cli-reference/rollback) | 하니스를 기록된 설치 직전 상태로 복원합니다. |
+| [verify](/docs/cli-reference/verify) | 하니스 어댑터 설치를 검증합니다. |
+| [status](/docs/cli-reference/status) | 등록된 각 하니스의 설치, 검증, 드리프트 상태를 보고합니다. |
+| [diff](/docs/cli-reference/diff) | 단일 하니스의 보류 중인 구성 변경을 미리 봅니다. |
+| [harnesses](/docs/cli-reference/harnesses) | 등록된 하니스 어댑터를 나열하고 검사합니다. |
+| [profile](/docs/cli-reference/profile) | 공유 Apothem 프로필을 관리합니다. |
+| [doctor](/docs/cli-reference/doctor) | Apothem 설치에 대한 시스템 진단을 실행합니다. |
+| [completion](/docs/cli-reference/completion) | source로 로드 가능한 셸 자동 완성 스크립트를 출력합니다(bash, zsh, fish, powershell). |
+
+슬래시 명령과 상위 수준 CLI 개요는
+[CLI 개요](/docs/reference/cli) 및 [슬래시 명령](/docs/reference/commands)
+참조 페이지를 확인하세요.

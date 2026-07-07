@@ -1,0 +1,91 @@
+---
+title: "Hermes"
+description: "Hermes（プレビュー）向けの Apothem ハーネスアダプター。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**ベンダー：** Hermes
+**インストール名：** `hermes`
+**ステータス：** プレビュー
+**ネイティブ設定：** `~/.hermes/config.yaml`
+
+## インストール
+
+```bash
+apothem install --harness hermes
+```
+
+アダプターは共有プロファイルを Hermes Agent のユーザーグローバル設定ファイルへ
+変換し、ハーネスルート配下に Apothem のサポートコホートをインストールします。
+
+**書き込まれるファイル：** `~/.hermes/config.yaml` および `~/.hermes/.apothem/support/`
+配下のサポートファイル
+
+## プロファイルからネイティブ設定へのマッピング
+
+アダプターは Apothem の共有プロファイルを読み取り、ネイティブの YAML 設定を
+レンダリングします。Hermes 自身のスキル面は `skills.config` —— Hermes が動的な
+スラッシュコマンドとして自動的に公開する、インストール可能なレジストリ
+パッケージ —— であり、Apothem はこれを記述しません。代わりに Apothem は、共有の
+コマンドおよびスキルの内容を `~/.hermes/.apothem/support/` 配下のサポート資料として
+提供し、ネイティブの指示アンカーから参照します。ヘルパー定義、ルール、
+テンプレート、フックプロンプトも同様に `~/.hermes/.apothem/support/` 配下のサポート資料
+として残ります。
+
+## 互換性に関する注意
+
+プレビューアダプター。ネイティブの YAML 設定がアクティブな Hermes 面です。
+Apothem はスキルに対して文書化された外部スキルディレクトリフックを使用し、
+その他のコホートはインストール済みガイダンスの参照資料として保持します。
+
+## 検証
+
+```bash
+apothem verify --harness hermes
+```
+
+verify コマンドは次を確認します：
+
+1. ネイティブ設定が予期されたパスに存在する。
+2. 共有プロファイルからのすべての必須フィールドが存在する。
+3. アダプター固有の検証ルーチンが成功を報告する。
+
+## 更新
+
+```bash
+apothem update --harness hermes
+```
+
+現在の共有プロファイルの状態からネイティブ設定を再導出します。
+`~/.config/apothem/profile.yaml` を編集した後、またはインストール済みの
+Apothem パッケージをアップグレードした後に実行してください。
+
+## アンインストール
+
+```bash
+apothem uninstall --harness hermes
+```
+
+アダプターが書き込んだネイティブ設定ファイルを削除します。
+共有プロファイルの YAML と Apothem エンジンには影響しません。
+
+## 適合ゲート
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## トラブルシューティング
+
+| 症状 | 修正 |
+|---------|-----|
+| 設定ファイルが見つからない | `apothem install --harness hermes` を再実行する |
+| 検証に失敗 | `apothem update --harness hermes` を実行し、再度検証する |
+| 予期しない設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、`apothem update --harness hermes` を再実行する |
+
+## 設定ノブ
+
+| フラグ | デフォルト | 説明 |
+|------|---------|-------------|
+| `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューします。 |

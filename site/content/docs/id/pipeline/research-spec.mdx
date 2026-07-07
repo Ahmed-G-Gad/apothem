@@ -1,0 +1,73 @@
+---
+title: "/research-spec"
+description: "/research-spec — Membingkai pertanyaan penelitian bentuk-bebas atau catatan mentah menjadi spesifikasi penelitian setara-spec (hipotesis terfalsifikasi, lingkup, kriteria, metrik keberhasilan) yang siap untuk /research-theory."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Peran:** Peneliti Utama (pembingkaian)
+**Posisi pipeline:** tengah rantai
+
+Membingkai pertanyaan penelitian bentuk-bebas atau catatan mentah menjadi `_spec/research-spec.md` setara-spec — sekumpulan hipotesis yang dapat diuji dan terfalsifikasi dengan lingkup eksplisit, kriteria inklusi / eksklusi, dan metrik keberhasilan — yang siap untuk `/research-theory`.
+
+## Pemanggilan kanonik
+
+```bash
+/research-spec
+```
+
+Dengan argumen:
+
+```bash
+/research-spec [path/to/question-or-notes] [--suite-name NAME] [--quick SLUG]
+```
+
+## Masukan
+
+Sebuah pertanyaan penelitian bentuk-bebas atau catatan mentah (disediakan oleh operator secara inline atau sebagai path).
+
+## Keluaran
+
+`_spec/research-spec.md` (pertanyaan, hipotesis terfalsifikasi, lingkup, kriteria inklusi / eksklusi, metrik keberhasilan, glosarium) + `_inputs/handoff-manifest.yml`. `--quick` justru menulis ringkasan penelitian ringan yang lokal-proyek.
+
+## Hilir
+
+/research-theory (konsumen hilir)
+
+## Fase alur kerja
+
+Perintah ini mengikuti alur kerja pipeline `/research` standar:
+
+1. **Muat konteks** — Membaca pertanyaan / catatan, aturan, dan keadaan suite yang ada.
+2. **Bingkai pertanyaan** — Menguraikan menjadi hipotesis terfalsifikasi dengan lingkup eksplisit dan kriteria inklusi / eksklusi; memunculkan setiap ambiguitas melalui kanal kueri terstruktur.
+3. **Tetapkan metrik keberhasilan** — Menyatakan kriteria terukur yang dengannya penelitian akan dinilai.
+4. **Verifikasi keluaran** — Memastikan spesifikasi bersifat definitif (setiap kesenjangan data-otoritas terselesaikan melalui kanal kueri terstruktur, tidak ada yang ditinggalkan sebagai penanda konfirmasi yang belum terisi) dan lolos batas dasar mandat ketelitian.
+5. **Perbarui manifes serah-terima** — Mencatat path spesifikasi serta jumlah kueri terbuka / terselesaikan.
+6. **Pancarkan spesifikasi** — `_spec/research-spec.md` plus manifes serah-terima.
+
+## Landasan ketelitian
+
+Setiap kontribusi yang diklaim dibatasi agar bersifat khas, substansial, dan dapat diablasi secara independen, sehingga efek marginalnya dapat diisolasi kemudian. Kedalaman landasan ketelitian yang diperlukan berskala sesuai ambisi tempat-terbit sasaran; bila ambisi itu tidak ditentukan, ia dikonfirmasi melalui kueri terstruktur, tidak pernah direkayasa.
+
+## Mode kegagalan
+
+| Gejala | Penyebab | Pemulihan |
+|---------|-------|----------|
+| Ambiguitas hipotesis tak terselesaikan | Pertanyaan kurang spesifik | Munculkan melalui kueri terstruktur; jangan mengarang lingkup |
+| Tidak ada metrik keberhasilan terukur | Tujuan dinyatakan sebagai aktivitas, bukan hasil | Bingkai ulang sebagai hasil yang dapat diuji dan terfalsifikasi |
+| Masukan pertanyaan hilang | Tidak ada prosa / catatan yang disediakan | Sediakan pertanyaan penelitian secara inline atau sebagai path |
+
+## Contoh
+
+```bash
+# Frame a question into a research spec
+/research-spec ~/notes/retrieval-latency-study.md --suite-name retrieval-latency
+
+# Lightweight project-local research brief
+/research-spec --quick retrieval-latency
+```
+
+## Referensi silang
+
+- [Ikhtisar pipeline](/docs/pipeline)
+- [Referensi perintah](/docs/reference/commands)

@@ -1,0 +1,101 @@
+---
+title: "profile"
+description: "Справочник CLI для группы команд apothem profile."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Управляет общим профилем Apothem.
+
+`profile` — это группа команд с четырьмя подкомандами: `init`, `show`, `set` и `edit`.
+Общий профиль — это единый источник истины, который каждый адаптер ассистента по написанию кода
+материализует в свою нативную конфигурацию.
+
+## Сводка
+
+```
+apothem profile init [--profile PATH] [--force]
+                     [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+apothem profile show [--profile PATH] [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+apothem profile set KEY VALUE
+                     [--profile PATH] [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+apothem profile edit [--profile PATH] [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+```
+
+## Общие параметры
+
+Каждая подкоманда принимает приведённые ниже общие параметры.
+
+| Параметр | Описание |
+|---|---|
+| `--profile PATH` | Путь к YAML общего профиля (по умолчанию — стандартное расположение профиля). |
+| `--quiet`, `-q` | Подавляет информационный вывод; выводятся только ошибки. |
+| `--verbose`, `-v` | Выводит дополнительный диагностический вывод. |
+| `--format plain\|json` | Формат вывода (по умолчанию: `plain`). |
+| `--json` | Сокращение для `--format json`. |
+| `--no-color` | Отключает коды цвета ANSI в выводе. |
+| `-h`, `--help` | Показывает справку и завершает работу. |
+
+## Подкоманды
+
+### `profile init`
+
+Создаёт допустимый по схеме минимальный каркас профиля в
+`~/.config/apothem/profile.yaml` или `--profile PATH`. Существующие файлы
+сохраняются, если не указан `--force`.
+
+| Параметр | Описание |
+|---|---|
+| `--force` | Перезаписывает существующий каркас профиля. |
+
+### `profile show`
+
+Отображает проверенный общий профиль с раскрытыми значениями по умолчанию.
+
+### `profile set KEY VALUE`
+
+Устанавливает ключ в общем профиле. `KEY` — это путь с точками, который спускается во
+вложенный профиль (`identity.name`, `preferences.style`, `enforcement.sprints`,
+`harnesses.<harness>.preferences.style`); единичный ключ без точки задаёт
+узел верхнего уровня. `VALUE` сохраняется как буквальная строка — голые слова не
+приводятся к типам (`no` остаётся `"no"`, `2024-01-01` и `1.0` остаются строками) — кроме
+`true`/`false` (булевы флаги принуждения) и явного `[...]`/`{...}`
+ввода списка/карты. Полностью собранный профиль проверяется по схеме
+перед записью; недопустимый set отклоняется, и профиль на диске остаётся без изменений.
+
+| Аргумент | Описание |
+|---|---|
+| `KEY` | Путь с точками в профиль, который нужно установить (обязательно). |
+| `VALUE` | Буквальное присваиваемое значение; проверяется перед записью (обязательно). |
+
+### `profile edit`
+
+Открывает общий профиль в системном редакторе.
+
+## Примеры
+
+```bash
+apothem profile init
+apothem profile init --profile ./profile.yaml --force --json
+apothem profile show
+apothem profile show --json
+apothem profile set seriousness SHARED
+apothem profile set rules '["Use fake placeholders in examples."]'
+apothem profile edit
+```
+
+## Коды выхода
+
+| Код | Значение |
+|---|---|
+| 0 | Успех (или, для `edit`, редактор завершился нормально) |
+| 1 | Профиль отсутствует, недействителен, уже существует без `--force`, или не может быть записан |
+
+## См. также
+
+- [apothem install](/docs/cli-reference/install) — материализует профиль в ассистент по написанию кода
+- [apothem doctor](/docs/cli-reference/doctor) — выполняет общесистемную диагностику установки

@@ -1,0 +1,9 @@
+{
+  "argv": [
+    "diff",
+    "--harness",
+    "all"
+  ],
+  "exit_code": 1,
+  "stdout": "Error: Apothem validation failed.\nProfile: <HOME>/.config/apothem/profile.yaml\nField: harness\nReason: 'all' is not a supported harness.\nFix: Use one of: antigravity, claude-code, codex, cursor, gemini-cli, github-copilot, hermes, kimi-code, open-claw, opencode, qwen-code, windsurf, codebuddy, kiro, trae, zed, glm, or use 'all' for batch lifecycle commands.\nFiles written: none.\n"
+}

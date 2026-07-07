@@ -1,0 +1,86 @@
+---
+title: "Zed"
+description: "Zed(GA)를 위한 Apothem 하니스 어댑터."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**공급업체:** Zed Industries
+**설치 이름:** `zed`
+**상태:** GA
+**네이티브 구성:** `<project>/.rules`
+
+## 설치
+
+```bash
+apothem install --harness zed --project /path/to/project
+```
+
+어댑터는 공유 Apothem 규칙 및 거버넌스 표면에서 프로젝트 범위 Zed 지시 파일
+하나를 작성합니다. Zed는 프로젝트 루트에 있는 단일 평면 `.rules` 파일(`AGENTS.md`
+/ `CLAUDE.md` 계열과 나란히)을 지시로 읽습니다. 도구별 규칙 디렉터리가 없으므로
+전체 Apothem 표면이 이 하나의 파일에 담깁니다.
+
+**작성되는 파일:** `<project>/.rules`
+
+## 프로필에서 네이티브 구성으로의 매핑
+
+어댑터는 Apothem의 공유 프로필을 읽고 매 `apothem install` 또는 `apothem update`
+실행마다 프로젝트 `.rules` 파일을 렌더링합니다. 공유 프로필이 진실의 원천입니다.
+기존의 모든 `.rules`(또는 생성된 파일에 대한 프로젝트 로컬 편집)는 다음 동기화가
+Apothem 관리 콘텐츠를 교체하기 전에 백업됩니다.
+
+## 호환성 참고 사항
+
+Zed의 현재 지시 표면은 프로젝트 루트의 평면 `.rules` 파일입니다. 전역
+`~/.config/zed/AGENTS.md` 지시 파일과 MCP 컨텍스트 서버 블록(`.zed/settings.json`의
+`context_servers`)은 운영자가 소유합니다. Apothem은 이를 작성하지 않습니다.
+
+## 검증
+
+```bash
+apothem verify --harness zed --project /path/to/project
+```
+
+verify 명령은 다음을 확인합니다.
+
+1. 네이티브 구성이 예상 경로에 존재합니다.
+2. 공유 프로필의 모든 필수 필드가 존재합니다.
+3. 어댑터별 검증 루틴이 성공을 보고합니다.
+
+## 업데이트
+
+```bash
+apothem update --harness zed --project /path/to/project
+```
+
+현재 공유 프로필 상태에서 프로젝트 `.rules` 파일을 다시 도출합니다.
+
+## 제거
+
+```bash
+apothem uninstall --harness zed --project /path/to/project
+```
+
+어댑터가 작성한 네이티브 구성 파일을 제거하고, 먼저 타임스탬프가 붙은 백업으로
+이름을 변경합니다. 공유 프로필 YAML과 Apothem 엔진은 영향을 받지 않습니다.
+
+## 적합성 게이트
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## 문제 해결
+
+| 증상 | 해결 |
+|---------|-----|
+| 구성 파일을 찾을 수 없음 | `apothem install --harness zed --project /path/to/project`를 다시 실행 |
+| 검증 실패 | `apothem update --harness zed --project /path/to/project`를 실행한 다음 다시 검증 |
+| 예기치 않은 구성 내용 | `~/.config/apothem/profile.yaml` 또는 `--profile PATH`를 확인한 다음 `apothem update --harness zed --project /path/to/project`를 다시 실행 |
+
+## 구성 노브
+
+| 플래그 | 기본값 | 설명 |
+|------|---------|-------------|
+| `--dry-run` | `false` | 파일을 작성하지 않고 설치를 미리 봅니다. |

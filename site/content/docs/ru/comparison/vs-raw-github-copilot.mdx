@@ -1,0 +1,46 @@
+---
+title: "Apothem против сырой конфигурации GitHub Copilot"
+description: "Ручное сопровождение copilot-instructions.md GitHub Copilot против его рендеринга из общего профиля Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+GitHub Copilot читает свои инструкции из `.github/copilot-instructions.md`.
+Адаптер github-copilot в Apothem рендерит этот файл из общего профиля. На этой
+странице ручное сопровождение этой конфигурации сравнивается с управлением ею
+через Apothem.
+
+## Сравнение усилий
+
+| Задача | Сырая ручная конфигурация | Под управлением Apothem |
+| ---- | --------------- | --------------- |
+| Написать инструкции | Редактировать `.github/copilot-instructions.md` вручную | Отрендерено: общие правила встроены в файл |
+| Согласовывать инструкции с другими средами | Вручную, для каждого инструмента | Автоматически при `apothem update` |
+| Установить / удалить конфигурацию | Создавать и удалять файл вручную | `apothem install` / `apothem uninstall` |
+| Проверять, что конфигурация верна | Ручная проверка | `apothem verify --harness github-copilot` |
+
+## Чем управляет Apothem
+
+Адаптер github-copilot встраивает общие правила в
+`.github/copilot-instructions.md`. Copilot работает как расширение IDE и не
+предоставляет хуков вызова инструментов, поэтому намерение ограждения целиком
+несётся в отрендеренных инструкциях. Каждое изменение общих правил повторно
+рендерит файл при следующем `apothem update`.
+
+## Путь миграции
+
+1. Запустите `apothem profile init`, чтобы создать общий профиль, если вы ещё
+   этого не сделали.
+2. Перенесите содержимое существующего `.github/copilot-instructions.md` в общий
+   корпус.
+3. Запустите `apothem install --harness github-copilot`, чтобы отрендерить файл
+   инструкций.
+4. Запустите `apothem verify --harness github-copilot`, чтобы подтвердить, что
+   конфигурация установлена.
+5. Используйте `apothem update --harness github-copilot` для каждого
+   последующего изменения.
+
+## Читать дальше
+
+- [Справочник адаптера GitHub Copilot](/docs/harnesses/github-copilot)
+- [Обзор сравнений](/docs/comparison)

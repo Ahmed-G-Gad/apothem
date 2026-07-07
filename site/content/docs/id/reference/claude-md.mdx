@@ -1,0 +1,41 @@
+---
+title: "`CLAUDE.md`"
+description: "Konfigurasi ekosistem yang selalu dimuat, yang memberikan konteks dasar ke setiap interaksi, dengan tujuh bagian yang mencakup paket rencana, identitas, direktori, tingkat tata kelola, direktif, mandat, dan registri."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+`CLAUDE.md` adalah konfigurasi ekosistem yang selalu dimuat. Runtime asisten
+pengodean host memuatnya pada setiap interaksi, sehingga isinya adalah *konteks
+dasar* yang diperluas oleh setiap artefak lain.
+
+## Bagian
+
+| Bagian | Tujuan |
+|---------|---------|
+| §1 Paket rencana | Menamai templat master paket rencana dan delapan perintah `/plan-<stage>` |
+| §2 Identitas kognitif & arsitektur perangkat lunak | Mendeklarasikan peran Arsitek Perangkat Lunak Senior dan sikap kreatif |
+| §3 Direktori artefak | Root on-disk per kelas (aturan, perintah, keterampilan, pekerja terdelegasi, dll.) |
+| §4 Tata kelola berskala keseriusan | Lensa penskalaan empat tingkat (EXPLORING / PERSONAL_USE / SHARED / PUBLIC_LAUNCH) |
+| §5 Direktif operasional | Kerangka pemecahan masalah, penemuan strategis, dan komunikasi |
+| §6 Mandat lintas-sektoral | Registri CM-N (CM-1 hingga CM-28) |
+| §7 Registri | Sub-registri untuk perintah, aturan, pekerja terdelegasi, hook, keterampilan, evolusi, dan kelas kosong |
+
+## Konvensi pengidentifikasi mandat
+
+Tiga awalan membawa makna yang berbeda:
+
+- **CM-N** — mandat konfigurasi, didefinisikan di kohort rules
+  (`src/apothem/rules/operational-mandates.md` dan berkas-berkas rule per-mandat).
+- **TM-N** — mandat templat, didefinisikan di
+  `src/apothem/skills/plan-suite/master-template.md` §4.
+- **CP-N** — prinsip inti, didefinisikan dalam templat yang sama §6.
+
+Templat paket rencana adalah registri TM/CP kanonis; tahap-tahap pipeline `/plan`
+menyelesaikan referensi silang melalui berkas tersebut.
+
+## Lihat juga
+
+- [Aturan](/docs/reference/rules) — berkas aturan yang mengoperasionalkan CM-1 hingga CM-28.
+- [Perintah](/docs/reference/commands) — tahap pipeline `/plan` yang dinamai oleh jangkar §1 Paket rencana.
+- [Hook](/docs/reference/hooks) — lapisan hook yang menegakkan CM-7, CM-22, dan CM-24.

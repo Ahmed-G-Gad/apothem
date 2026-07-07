@@ -1,0 +1,40 @@
+---
+title: "Apothem vs raw GitHub Copilot config"
+description: "Hand-maintaining GitHub Copilot's copilot-instructions.md versus rendering it from Apothem's shared profile."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+GitHub Copilot reads its instructions from `.github/copilot-instructions.md`.
+Apothem's github-copilot adapter renders that file from the shared profile. This
+page contrasts hand-maintaining that config against managing it with Apothem.
+
+## Effort comparison
+
+| Task | Raw hand-config | Apothem-managed |
+| ---- | --------------- | --------------- |
+| Author instructions | Hand-edit `.github/copilot-instructions.md` | Rendered: shared rules embedded into the file |
+| Keep instructions aligned with other harnesses | Manual, per tool | Automatic on `apothem update` |
+| Install / remove the config | Write and delete the file by hand | `apothem install` / `apothem uninstall` |
+| Verify the config is correct | Manual inspection | `apothem verify --harness github-copilot` |
+
+## What Apothem manages
+
+The github-copilot adapter embeds the shared rules into
+`.github/copilot-instructions.md`. Copilot operates as an IDE extension and
+exposes no tool-call hooks, so guardrail intent is carried entirely in the
+rendered instructions. Every change to the shared rules re-renders the file on
+the next `apothem update`.
+
+## Migration path
+
+1. Run `apothem profile init` to create the shared profile if you have not yet.
+2. Move the content of your existing `.github/copilot-instructions.md` into the
+   shared corpus.
+3. Run `apothem install --harness github-copilot` to render the instructions file.
+4. Run `apothem verify --harness github-copilot` to confirm the config landed.
+5. Use `apothem update --harness github-copilot` for every later change.
+
+## Read next
+
+- [GitHub Copilot adapter reference](/docs/harnesses/github-copilot)
+- [Comparison overview](/docs/comparison)

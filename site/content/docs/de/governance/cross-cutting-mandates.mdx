@@ -1,0 +1,109 @@
+---
+title: "Registry der übergreifenden Mandate (CM-1–CM-28)"
+description: "Vollständige Registry und Definitionen der ökosystem-internen übergreifenden Mandate (CM-1–CM-28), die alle Interaktionen und Pipeline-Operationen regeln."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Kanonisches Register der übergreifenden Mandate.** Dieses Dokument trägt den vollständigen Inhalt der CM-N-Registry; die substanziellen Aufzählungen leben hier, operationalisiert durch die Regeldateien unter `src/apothem/rules/`. Jede Sitzung, die den ausführlichen CM-N-Inhalt benötigt, lädt dieses Dokument bei Bedarf.
+
+## Selbstreferenz-Ausnahme der Registry
+
+Dieses Dokument IST die kanonische CM-N-Registry — es ist die Quelle, in der die Token `CM-1` bis `CM-28` *definiert* werden. Diese Token *innerhalb des eigenen Körpers der Registry* erneut zu nennen ist kanonisch, kein Durchsickern plan-interner Terminologie. Das Codebase-Isolations-Invariant gilt weiterhin mit voller Kraft für alle *anderen* Artefakte (Regeln, Helfer, Befehle, Hooks, Schemas, Skripte, Werkzeuge, Tests, Dokumentation, README, Änderungsprotokolle, Commit-Betreffzeilen/-Körper, Branch-Namen, PR-Titel/-Beschreibungen): keine `CM-N`- / `TM-N`- / `CP-N`-Token, ausschließlich natürliche Domänensprache.
+
+## Namespaces
+
+`CM-N` = Konfigurationsmandat (hier definiert, oder in `src/apothem/rules/*.md` gemäß der Regelzeile der Artefakt-Registries); `TM-N` = Vorlagenmandat (definiert in `src/apothem/skills/plan-suite/master-template.md` §4 „General Mandates", TM-1–28); `CP-N` = Kernprinzip (definiert in derselben Vorlage §6 „Core Principles", CP-1–27). Die Vorlage der Plan-Suite ist die kanonische TM/CP-Registry — `/plan`-Befehle lösen Querverweise über diese Datei auf. Helfer-Artefakte (Regeln, Helfer, Befehle, Hooks) zitieren diese Registry per Referenz.
+
+## Aktivierung
+
+CM-1–10 + kognitive Identität regeln alle Interaktionen. CM-11, CM-13, CM-15, CM-16, CM-20 gelten nur innerhalb der `/plan`-Pipeline. CM-12, CM-14, CM-17–19, CM-21–22, CM-24–26 gelten universell (immer aktiv). CM-23, CM-27, CM-28 gelten universell innerhalb ihres deklarierten Pfadfilter-Bereichs. Ad-hoc-Standard-Modalstufe: PERSONAL_USE.
+
+## CM-1–10 (Operativ)
+
+(1) Kritische Bewertung (→TM-10), (2) Null Annahmen (→TM-1), (3) Konfigurationsgesteuert (→TM-2), (4) Vor dem Implementieren suchen (→TM-4), (5) Beste Lösung (→TM-7), (6) Selbstverbesserung (→CP-20), (7) Kohärentes Produkt (→TM-11), (8) Engpass-zuerst-Fokus, (9) Entscheidungsgeschwindigkeit, (10) Brutale Ehrlichkeit. Vollständige Definitionen mit Verstoß-Indikatoren: `src/apothem/rules/operational-mandates.md`.
+
+## CM-7 (Plan-interne Isolation)
+
+> Dies ist die codebase-zugewandte Facette von CM-7; die Facette der Produktvollständigkeit ist als **Kohärentes Produkt (→TM-11)** in `src/apothem/rules/operational-mandates.md §CM-7` dokumentiert. Beide Bezeichnungen verweisen auf dasselbe Mandat.
+
+Codebase-Artefakte dürfen NIEMALS plan-interne Referenzen enthalten. **Verbotene Begriffe (kanonischer Block — Geschwister-Konsumenten referenzieren diese Aufzählung):** TM-N, CM-N, CP-N, „Resumption Contract", „Phase Output Registry", „convention anchors", Phasen-Ordnernamen, Plan-Suite-Dateinamen (PROGRESS.md, PLAN-NOTES.md, PREAMBLE, MASTER-PLAN), Modalstufen-Namen (EXPLORING, PERSONAL_USE, SHARED, PUBLIC_LAUNCH). **Geschützte Artefakte:** Quellcode, Tests, Konfigurationen, Schemas, Build-Skripte, Daten, Assets, Commit-Nachrichten, Branch-Namen, PR-Titel/-Beschreibungen, README, CONTRIBUTING, API-Dokumentation, Änderungsprotokolle — jedes Artefakt, das außerhalb des Apothem-Quellbaums sichtbar ist (die Installationsziele je Coding-Assistant, etwa `~/.claude/` für Claude Code). Ausschließlich natürliche Domänensprache. **Geschwister-Konsumenten** (jeder zitiert diesen Block per Referenz, statt ihn neu aufzuzählen): `src/apothem/hooks/messages/pretooluse-bash.md`, `src/apothem/hooks/messages/pretooluse-write.md`, `src/apothem/hooks/messages/pretooluse-edit.md`, `src/apothem/hooks/messages/pretooluse-notebookedit.md`, `src/apothem/rules/operational-mandates.md` §CM-7 Verstoß-Indikatoren.
+
+## CM-11 (Plan-Integrität)
+
+**A — Prosa-Treue:** Jede Anforderung ist Prosa↔Plan nachvollziehbar. Scorecard: PASS ≥90% STRONG/0 ABSENT.
+**B — Interne Konsistenz:** Dokumentübergreifende Kohärenz innerhalb der Plan-Suite. Scorecard: PASS 100%.
+**C — Gates:** FAIL blockiert die Ausführung bei SHARED+ (Product-Owner-Override bei SHARED mit protokollierter Begründung erlaubt; harte Blockierung bei PUBLIC_LAUNCH). Beratend bei PERSONAL_USE.
+
+## CM-12 (Kontext-Verwaltung)
+
+Schlanke Kontextverwaltung zu jeder Zeit — siehe Regel CM-24. Vier Unterstufen sind im Abschnitt Unterreferenz-Konvention weiter unten aufgezählt. Die Kompaktierungsdisziplin (CM-19) regelt die Aktion; CM-12 regelt die Disziplin im stationären Zustand.
+
+## CM-13 (Commits)
+
+- **A — Kadenz je Aufgabe:** Je Aufgabe bei SHARED+. Je Phase bei PERSONAL_USE. Optional bei EXPLORING.
+- **B — Qualitäts-/Abhilfe-Commits:** Korrekturen an Qualitäts-Gates und Abhilfeänderungen werden sofort committet, getrennt von der Funktionsarbeit.
+- **C — Phasenende-Gate:** Keine nicht committeten Änderungen überschreiten Phasengrenzen. Die CM-7-Isolation gilt für alle git-Artefakte. Bei PUBLIC_LAUNCH: GPG-signierte Commits (`git commit -S`) erforderlich.
+- **D — Ausschließlich menschliche Urheberschaft:** Jede Urheberschaftsoberfläche in jedem git-Artefakt (Commit-Betreff, Commit-Körper, `Author:`, `Co-Authored-By:`-Trailer, `Signed-off-by:`-Trailer, Branch-Name, Tag-Name, Tag-Annotation, Stash-Name, git-notes-Körper, PR-Titel, PR-Beschreibung) nennt **ausschließlich menschliche Beitragende**. Der Assistent schreibt sich selbst, das zugrunde liegende Sprachmodell, die Laufzeitumgebung / den Coding-Assistant / die IDE / die Erweiterung / den Anbieter oder ein sonstiges automatisiertes Werkzeug niemals einer dieser Oberflächen zu. Die verbotenen Muster sind aufgezählt und werden mechanisch durchgesetzt in `src/apothem/rules/production-ready-prs.md` §6 (Commit-Message Discipline → Human-only authorship), mit dem Matcher in `src/apothem/hooks/messages/pretooluse-bash.md` Scan 3, der bei jeder git-schreibenden Bash-Aufruf auslöst.
+- **E — Numerische-Präfix-Disziplin bei git-mv- / git-rm-Zielen:** Numerische Präfixe (`NN-`) auf Dateisystempfaden vermitteln eine Reihenfolge und gelten nur dort, wo die Reihenfolge intrinsisch ist — Phasenordner-Sequenzen, Unterphasen-Sequenzen, vom Host entdeckte ordinale Benennungsschemata. Singletons auf Wurzelebene ohne Geschwister-Sequenz tragen kein numerisches Präfix; eines hinzuzufügen ist bedeutungslose Dekoration, die fälschlich eine Reihenfolge-Beziehung signalisiert, die nicht existiert. Vollständige Spezifikation in `src/apothem/rules/canonical-layout.md` §2.1. Mechanisch durchgesetzt in `src/apothem/hooks/messages/pretooluse-bash.md` Scan 2 bei `git mv` / `git rm` und bei Pfadreferenzen im Commit-Körper.
+
+## CM-14 (Sitzungsprotokolle)
+
+**Start:** Blind Bootstrap ausführen (CM-24 §6). **Ende:** Phase Exit (CM-24 §2.5) + Speicher-Auswertung (CM-26) + Artefakt-Evolution (CM-22 §2+§4) ausführen.
+
+## CM-15–21 (Pipeline)
+
+CM-15 und CM-16 werden hier inline definiert (keine separate Regel); CM-17–21 delegieren an Regeln gemäß der Regeltabelle der Artefakt-Registries.
+
+- **CM-15 Kollektive Kohärenz:** Verifizieren, dass Plan-Artefakte nach einer Modifikation kohärent bleiben.
+- **CM-16 Autonome Ausführung:** Bei SHARED+ niemals zwischen Phasen anhalten. Kompaktierung an Phasenübergängen verpflichtend (PERSONAL_USE+).
+- **CM-17 Worker-Teams:** Delegierte Worker-Teams für parallelisierbare Arbeit einsetzen — siehe Regel CM-25.
+- **CM-18 Fehlerbehebung:** Sechs allgemeine Klassen (CM-24 §8); Plan-Ausführungsklassen in TM-18. Nach 3 Fehlschlägen eskalieren.
+- **CM-19 Kompaktierungsdisziplin:** Proaktive Kompaktierungs-Trigger — siehe CM-24 §3.
+- **CM-20 Pipeline-Orchestrierung:** prose→[approval]→generate→[approval]→review→[approval]→execute(01→NN). Review-Techniken: `src/apothem/rules/planning-techniques.md`.
+- **CM-21 Kreative Qualität:** Kognitive Filter sind Qualitäts-Gates, keine Dekoration. Skalierung gemäß der Regel zur kognitiven Identität, §2.
+
+## CM-22–28 (Regel-delegiert)
+
+Einzeilige Anker für die regel-delegierten Mandate (die vollständigen Spezifikationen leben in den zitierten Dateien):
+
+- **CM-22 Konventions-Wachsamkeit** — Ökosystem-Konventionen und proaktive Artefakt-Evolution. Siehe `src/apothem/rules/persistent-conventions-vigilance.md`.
+- **CM-23 Generierung großer Dateien** — inkrementelles Anhänge-Protokoll für Dateien oberhalb der Einzelschreib-Schwelle. Siehe `src/apothem/rules/large-file-generation.md`.
+- **CM-24 Protokoll der Kontext-Verwaltung** — Externalisierung, Kompaktierung, Blind Bootstrap und Budgetdisziplin. Siehe `src/apothem/rules/context-management.md`.
+- **CM-25 Worker-Orchestrierung** — Einsatzmuster, Rückgabeverträge, Kontext-Isolation. Vollständige Spezifikation in der Worker-Orchestrierungs-Regel (Querverweis weggelassen; der Zieldateiname enthält verbotenes Vokabular).
+- **CM-26 Auto-Speicher-Lebenszyklus** — Speicherdisziplin, Themendatei-Organisation, Sitzungsende-Auswertung. Siehe `src/apothem/rules/auto-memory.md`.
+- **CM-27 Clean-Architecture-Schichten** — Trennung Domain / Application / Infrastructure / Presentation. Siehe `src/apothem/rules/clean-architecture-layers.md`.
+- **CM-28 Python-Senior-Architekt** — SOLID-, Stil-, Test- und Sicherheitsleitplanken für Python-Artefakte. Siehe `src/apothem/rules/code-craft-python.md`.
+
+## Regel-delegierte vs. inline-definierte Mandate
+
+- **Regel-delegiert** (vollständige Spezifikation in `src/apothem/rules/`): siehe die Spalte „Implements" der Regeltabelle der Artefakt-Registries. Deckt CM-1–10, CM-12, CM-14, CM-17–28 ab.
+- **Inline-definiert** (vollständige Spezifikation hier, keine separate Regel): CM-11 (Plan-Integrität), CM-13 (Commits), CM-15 (Kollektive Kohärenz), CM-16 (Autonome Ausführung).
+
+## Unterreferenz-Konvention
+
+Befehle verwenden Buchstaben-Suffixe, um auf bestimmte Unterabschnitte innerhalb von Mandaten zu verweisen. Muster: `CM-N` + Suffix-Buchstabe = Regelabschnitt. **Schreibweisen-Konvention:** Großbuchstaben-Suffixe bezeichnen strukturelle Unterabschnitte innerhalb eines Mandats; Kleinbuchstaben-Suffixe bezeichnen feinkörnigere Direktiven innerhalb einer Stewardship-Stufe. Die kanonische Schlüsselzuordnungstabelle der Unterreferenzen (registry-interne Definitionen) ist im umzäunten Block unten wörtlich erhalten:
+
+```text
+CM-11A = Prose Fidelity
+CM-11B = Internal Consistency
+CM-11C = Gates
+
+CM-12a = lean ingestion / demand loading (context-management §7.2)
+CM-12b = budget awareness (§7.1)
+CM-12c = budget pressure response (§7.3)
+CM-12d = per-task effort calibration (context-management §7.4 — D3 stratified taxonomy; PHASE.md frontmatter is the per-phase override surface)
+
+CM-13A = per-task commits
+CM-13B = quality / remediation commits
+CM-13C = end-of-phase commit gate
+
+CM-23A = pre-generation size assessment (§1)
+CM-23B = incremental generation protocol (§2)
+
+CM-24B = proactive externalization (§2)
+
+CM-25A = worker-team patterns (§1)
+CM-25C = return-contract enforcement (§4)
+CM-25E = isolation / non-duplication (§5)
+```

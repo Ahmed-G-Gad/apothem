@@ -1,0 +1,69 @@
+---
+title: "/plan-audit"
+description: "/plan-audit — Closed-loop guardian of the /plan pipeline — wraps spec → generate → review and actively remediates findings until the suite is a reviewed, zero-finding whole."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Role:** Guardian
+**Pipeline position:** wrapping / orthogonal (pre-execute)
+
+Closed-loop guardian of the `/plan` pipeline. Where `/plan-review` reports and refines a generated suite, `/plan-audit` wraps the upstream cycle (`/plan-spec → /plan-generate → /plan-review`) and drives the suite to a reviewed, zero-finding whole — running only the missing upstream stages, auditing the result, fixing mechanically resolvable findings in place, surfacing judgment forks through the structured-inquiry channel, and looping until the suite is clean or a bounded retreat fires. It never executes phase implementation work; it leaves the suite ready for `/plan-execute`.
+
+## Canonical invocation
+
+```bash
+/plan-audit
+```
+
+With arguments:
+
+```bash
+/plan-audit [suite-path] [--from spec|generate|review] [--remediate] [--cap N] [--maintenance] [--dry-run]
+```
+
+## Inputs
+
+The target suite's `_spec/spec.md`, `_inputs/handoff-manifest.yml`, infrastructure files, `phases/**/PHASE.md`, and any existing phase reports.
+
+## Outputs
+
+A persistent, bounded report at `<suite>/_outputs/audit-report-<YYYY-MM-DD>.md`; an updated handoff manifest carrying the zero-finding verdict, open-finding count, remediation ledger, and any maintenance routing; and a non-zero terminal status when residual findings remain.
+
+## Pipeline position
+
+`/plan-audit` is **orthogonal** to the linear pipeline, not a stage within it. The canonical linear sequence is `/plan-spec → /plan-generate → /plan-review → /plan-design` (conditional, architecture-bearing suites only) `→ /plan-execute`. `/plan-audit` encompasses `/plan-spec → /plan-generate → /plan-review` as a single closed-loop wrapper that can be invoked at any point: it inspects state and runs only the missing stages. It is distinct from the fortress-audit chain (entered at `/code-review`, terminal at `/threat-model-audit`), which audits an executed codebase rather than a plan suite.
+
+## Workflow phases
+
+1. **Resolve target** — Resolve the suite from the argument, or choose the most recently modified suite under `.apothem/plans/` and state the resolution.
+2. **Assess stage** — Detect which artifacts exist (spec-ready / generated / reviewed / executed) and name the smallest gap to a reviewed, executable whole.
+3. **Bring to a reviewable whole** — Run only the missing upstream stages, delegating to the canonical command for each gap; never re-run a satisfied stage merely to refresh prose.
+4. **Forensic audit** — Apply the `/plan-review` audit dimensions, the planning-technique catalog, and the fifteen-bar pre-emission gate.
+5. **Active remediation** — Fix mechanical findings in place; surface judgment forks through the structured-inquiry channel; route legitimately out-of-scope work to a sibling `*-maintenance` suite.
+6. **Loop with cap and retreat** — Repeat audit-and-remediate until zero open findings remain, bounded by an iteration cap (default 3) with a defined retreat on cap exhaustion.
+
+## Failure modes
+
+| Symptom | Cause | Recovery |
+|---------|-------|----------|
+| Cap exhausted with residual findings | Findings not resolvable within the iteration cap | Review the audit report; route eligible items to a `*-maintenance` suite; raise `--cap` only with rationale |
+| Judgment fork unresolved | A finding requires a policy/scope/authority decision | Answer the structured-inquiry prompt; the loop never silently picks |
+| Missing authoritative spec | No `_spec/spec.md` | The wrapper routes to `/plan-spec` to author it |
+| Quality gate FAIL | Output does not meet standards | Remediation fixes the root cause and re-audits the touched loci |
+
+## Examples
+
+```bash
+# Dry-run: report detected suite, stage, planned audit dimensions, would-write targets
+/plan-audit --dry-run
+
+# Audit and actively remediate a named suite, capping the loop at 2 iterations
+/plan-audit path/to/plan-suite/ --remediate --cap 2
+```
+
+## Cross-references
+
+- [Pipeline overview](/docs/pipeline)
+- [/plan-review](/docs/pipeline/plan-review)
+- [/plan-execute](/docs/pipeline/plan-execute)
+- [Master Plan Suite Template](/docs/reference/commands)

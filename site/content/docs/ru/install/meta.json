@@ -1,0 +1,13 @@
+{
+  "title": "Установка",
+  "pages": [
+    "index",
+    "quickstart",
+    "concepts",
+    "harness-setup",
+    "updating",
+    "uninstalling",
+    "troubleshooting",
+    "..."
+  ]
+}

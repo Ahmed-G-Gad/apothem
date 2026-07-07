@@ -1,0 +1,60 @@
+---
+title: "سجلّ بوّابة ما-قبل-الإصدار — فحص الخمسة عشر شريطًا الإلزامي"
+description: "فحص مطابقة إلزامي من خمسة عشر شريطًا يُشغَّل قبل إصدار ذي نطاق ذي معنى، مع تخطيطات الإجراء-عند-الفشل ومخطّط برهان-الإصدار."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **مرافق كانوني لِـ <bdi>`CLAUDE.md`</bdi> §13.** يحمل هذا المستند جدول البوّابة الكامل من خمسة عشر شريطًا وكتلة <bdi>YAML</bdi> الخاصة بمخطّط برهان-الإصدار. يحتفظ <bdi>`CLAUDE.md`</bdi> بسطر المرساة + المؤشّر؛ أمّا الجدول الجوهري والمخطّط فيعيشان هنا.
+
+قبل أيّ إصدار لأثرٍ ذي نطاق ذي معنى (وفق عتبة التافه-مقابل-غير-التافه في <bdi>`site/content/docs/governance/outward-conformity-registry.mdx`</bdi> §1)، شغِّل بوّابة ما-قبل-الإصدار من خمسة عشر شريطًا. مَكنِنْ عبر خطّافات <bdi>PreToolUse</bdi> حيثما أمكن (عمليات <bdi>grep</bdi> الآلية في <bdi>`src/apothem/conformity/*-grep.py`</bdi> التي يُنسّقها <bdi>`src/apothem/conformity/gate.py`</bdi>)؛ واستدلّ حيث تتعذّر المكننة. **فشل أيّ شريط مفرد يحجب الإصدار؛ راجِع حتى يجتاز كل شريط؛ وأصدِر مع تسجيل برهان-إصدار البوّابة.**
+
+| # | الشريط | نوع الفحص | الفشل → الإجراء |
+| - | --- | ---------- | ---------------- |
+| 1 | <bdi>M1</bdi> لا-اعتمادية المُضيف | استدلالي | راجِع لمطابقة اصطلاحات المُضيف |
+| 2 | <bdi>M2</bdi> الإفصاح التحريري | استدلالي | أضِف سجلّ الإفصاح |
+| 3 | <bdi>M3</bdi> الأبعاد العشرة | مختلط (آلي + استدلالي) | راجِع على البُعد الفاشل |
+| 4 | <bdi>M4</bdi> التطبيق-الذاتي | آلي (برهان-الإصدار حاضر) | سجِّل برهان-الإصدار |
+| 5 | <bdi>M5</bdi> السلطة | آلي (<bdi>grep</bdi> للعنصر النائب <bdi>`<USER-CONFIRM:…>`</bdi>) | أعِد التوجيه إلى سطح الاستفسار |
+| 6 | <bdi>M6</bdi> الخبرة | استدلالي (قسم الثغرات-المُظهَرة حاضر) | أظهِر الثغرات؛ استشهِد |
+| 7 | <bdi>M7</bdi> تعليق الخيارات | آلي (مجموعة الخيارات تحمل وصم التوصية) | علِّق |
+| 8 | <bdi>M8</bdi> الحسم | آلي (<bdi>grep</bdi> للمفردات المراوِغة) | ارفع المراوغة إلى صِيَغ شرطية |
+| 9 | <bdi>M9</bdi> الرافعة البصرية | استدلالي (يوجد مخطّط حيث يكون بنيويًّا) | أنشِئ / حدِّث المخطّط |
+| 10 | <bdi>M10</bdi> الربط ثنائي-الاتجاه | آلي (<bdi>grep</bdi> لتبادلية الروابط) | أغلِق أنصاف-الحواف |
+| 11 | <bdi>M11</bdi> سباقات أجايل | استدلالي (جهاز السباق مُجسَّد) | أعِد الهيكلة كسباقات |
+| 12 | <bdi>M12</bdi> تقرير المراحل والتخطيط | آلي (<bdi>grep</bdi> للمخرَج-اليتيم) + استدلالي | أنشِئ التجميعة؛ أعِد التموضع |
+| 13 | <bdi>M13</bdi> حرفة الشيفرة | آلي (<bdi>lint</bdi> / تنسيق / فحص-الأنواع؛ <bdi>grep</bdi> لِـ <bdi>bare-except</bdi> والرقم-السحري والشيفرة-المُعلَّقة) | راجِع |
+| 14 | <bdi>M14</bdi> النَّظْمية | استدلالي (يُعلِن المنبع / المصبّ / الأقران / المُنفِّذين) | أعلِن؛ فهرِس |
+| 15 | <bdi>M15</bdi> الجاهزية-للإنتاج | آلي (<bdi>grep</bdi> لِـ <bdi>production-ready-pr</bdi>) + استدلالي | أضِف اختبارات / توثيقًا / <bdi>CHANGELOG</bdi> |
+
+## 1. مخطّط برهان-الإصدار
+
+كل تشغيل للبوّابة يُسجِّل النتيجة في أثر-عمل الأثر (تعليق مخفيّ، كتلة بيانات-وصفية، ملفّ سجلّ-إصدار منفصل — وفق ما تسمح به اصطلاحات المُضيف):
+
+```yaml
+conformity-attestation:
+  artifact: <path-or-identifier>
+  ecosystem-version: <git-commit-sha-or-equivalent ratifying the rule set in force>
+  bars:
+    M1-host-agnosticism:        pass | n/a (with reason)
+    M2-editorial-disclosure:    pass | n/a
+    M3-ten-dimensions:          pass | n/a
+    M4-self-application:        pass
+    M5-authority:               pass
+    M6-expertise:               pass | n/a
+    M7-option-annotation:       pass | n/a (no option set)
+    M8-definitiveness:          pass
+    M9-visual-leverage:         pass | n/a (subject not structural)
+    M10-bidirectional-binding:  pass
+    M11-agile-sprints:          pass | n/a (trivial work)
+    M12-phase-layout:           pass | n/a
+    M13-code-craft:             pass | n/a (not code)
+    M14-systemicity:            pass
+    M15-production-ready:       pass | n/a (no host-public-surface change)
+  surfaced-gaps: []
+  unresolved-inquiries: []
+  amendments-disclosed: []
+  date: <ISO-8601>
+```
+
+وصمات <bdi>`n/a`</bdi> صريحة ومُعلَّلة — لا تخطّيًا صامتًا أبدًا. يربط حقل <bdi>`ecosystem-version`</bdi> برهانَ الإصدار بحالة قابلة-للاستنساخ للنظام البيئي على نطاق المستخدم (الـ<bdi>commit</bdi> النشط لشجرة مصدر <bdi>Apothem</bdi> في <bdi>git</bdi> وقت تشغيل البوّابة — مثل سحب <bdi>`~/.claude/`</bdi> لمُحوِّل <bdi>Claude Code</bdi>)، كي تتمكّن عمليات التدقيق المستقبلية من إعادة تشغيل البوّابة على متون القواعد ذاتها.

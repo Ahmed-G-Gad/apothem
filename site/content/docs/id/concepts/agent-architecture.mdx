@@ -1,0 +1,143 @@
+---
+title: "Arsitektur Pekerja Terdelegasi"
+description: "Cara Apothem memproyeksikan satu kohor kapabilitas pekerja-terdelegasi ke tujuh belas harness dengan permukaan hook dan format aturan yang berbeda-beda."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Ini adalah halaman spesifikasi teknis yang ditujukan untuk pengembang. Halaman ini menggunakan kosakata internal Apothem —
+kelas adapter, materializer, manifest propagasi, konvergensi
+konvensi-sejenis — tanpa memperhalusnya untuk audiens umum.
+
+Apothem membaca satu profil bersama (`~/.config/apothem/profile.yaml`) dan
+mewujudkan konfigurasi native-harness untuk tujuh belas adapter yang terdaftar.
+Harness-harness ini tidak berbagi model kapabilitas pekerja-terdelegasi: sebagian mengekspos
+hook pra-pemanggilan-alat, sebagian menjalankan aturan dari berkas `.md` datar, sebagian menyematkan setiap
+aturan dalam satu berkas instruksi, dan sebagian merender konfigurasi yang dikendalikan profil
+saat pemasangan. Halaman ini memetakan perbedaan itu dan disiplin yang diterapkan Apothem
+di seluruhnya.
+
+## Matriks kapabilitas pekerja-terdelegasi per-harness
+
+Matriks di bawah ini mencakup seluruh tujuh belas harness. Kolom: permukaan hook PreToolUse
+yang diekspos setiap harness, format yang digunakan Apothem untuk mengaktifkan aturan, kelas
+adapter (lihat [Kelas adapter](#adapter-classes-explained)), dan
+apakah adapter merender konfigurasi native melalui materializer.
+
+
+| Harness | Permukaan hook PreToolUse | Format aktivasi aturan | Kelas adapter | Materializer |
+|---------|-------------------------|------------------------|---------------|--------------|
+| antigravity | Permukaan hook native tersedia; hanya materi pendukung Apothem | `GEMINI.md` plus aturan plugin Antigravity CLI | Class I | tidak ada |
+| claude-code | Native PreToolUse / PostToolUse / Stop / SessionStart | Aturan datar `.md` di bawah `rules/` | Class II-A | tidak ada (templat pengaturan vendor) |
+| codebuddy | Tidak ada | Berkas aturan proyek `.codebuddy/rules/apothem-rules.md` | Class I | tidak ada |
+| codex | Hook siklus-hidup native `hooks.json` | `AGENTS.md` plus aturan pendukung yang dirujuk oleh skill terpasang | Class I | tidak ada |
+| cursor | Tidak ada | Aturan workspace `.mdc` (frontmatter MDC: `description` / `globs` / `alwaysApply`) | Class I | tidak ada |
+| gemini-cli | Tidak ada | Aturan disematkan dalam satu `GEMINI.md` | Class I | tidak ada |
+| github-copilot | Tidak ada (ekstensi IDE, tanpa hook pemanggilan-alat) | Aturan dalam `.github/copilot-instructions.md` | Class I | tidak ada |
+| glm | Tidak ada (backend model; tanpa permukaan alat pekerja) | `.apothem/providers/glm.toml` konfigurasi penyedia backend (tanpa kohor aturan) | Class I | tidak ada |
+| hermes | Hanya materi pendukung | `config.yaml` plus direktori skill eksternal | Class II-B | `config.yaml` |
+| kimi-code | Tidak ada | `AGENTS.md` plus aturan pendukung di bawah `.kimi-code/.apothem/support/` | Class I | tidak ada |
+| kiro | Tidak ada (hook pekerja Kiro di luar cakupan adapter) | Berkas steering `.kiro/steering/apothem-rules.md` | Class I | tidak ada |
+| open-claw | Hanya materi pendukung | `openclaw.json` plus direktori skill tambahan | Class II-B | `openclaw.json` |
+| opencode | Hanya materi pendukung | JSON yang dirender profil plus command, skill, dan pekerja native | Class II-B | `opencode.json` |
+| qwen-code | Native PreToolUse / Stop / SessionStart | `QWEN.md` plus command, skill, dan pekerja native | Class II-B | `settings.json` / `QWEN.md` |
+| trae | Tidak ada | Berkas aturan proyek `.trae/rules/apothem-rules.md` | Class I | tidak ada |
+| windsurf | Tidak ada | Aturan dalam `.devin/rules/` | Class I | tidak ada |
+| zed | Tidak ada | Berkas datar `.rules` di akar proyek | Class I | tidak ada |
+
+
+Catatan tentang matriks:
+
+- **claude-code** adalah adapter rujukan. Ia membawa hook PreToolUse,
+  PostToolUse, Stop, dan SessionStart native dan menyertakan templat pengaturan
+  vendor. Ia secara sengaja
+  tidak mengelola `CLAUDE.md` — berkas itu adalah wilayah milik operator.
+- **codex** memasang hook siklus-hidup native melalui `hooks.json`, mengonversi
+  pekerja ke TOML, membungkus prompt command sebagai skill Codex, dan membiarkan
+  `config.toml` dimiliki operator.
+- **antigravity** menjaga `~/.gemini/GEMINI.md` sebagai jangkar konteks global
+  dan memasang plugin Apothem di bawah
+  `~/.gemini/antigravity-cli/plugins/apothem/`. Berkas hook dipertahankan sebagai
+  materi pendukung sampai adapter memiliki penerjemahan skema-hook Antigravity.
+- **cursor** mengaktifkan aturan melalui berkas `.mdc` yang membawa frontmatter MDC
+  vendor (`description`, `globs`, `alwaysApply`); adapter tidak menulis
+  berkas-tunggal `.cursorrules`.
+- **windsurf** menggunakan `.devin/rules/`; adapter tidak menulis berkas-tunggal
+  `.windsurfrules`.
+- **hermes** dan **open-claw** merender berkas konfigurasi native dan menghubungkan direktori
+  skill pendukung Apothem melalui pengaturan direktori-skill yang terdokumentasi pada masing-masing
+  harness. Kohor bersama yang tidak didukung tetap berada di bawah subtree pendukung
+  milik Apothem.
+- **qwen-code** merender kunci `settings.json` yang terdokumentasi untuk konteks dan pengiriman hook,
+  lalu menggunakan direktori command, skill, dan pekerja native Qwen.
+
+## Disiplin orkestrasi lintas-harness
+
+Apothem menerapkan **konvergensi konvensi-sejenis**: alur kerja yang sama
+yang dapat dipanggil operator diproyeksikan ke idiom native masing-masing harness
+ketimbang dipaksakan ke dalam satu format bersama. Sebuah aturan yang aktif sebagai berkas
+`.md` datar di claude-code menjadi aturan workspace `.mdc` di cursor,
+bagian tersemat dari `GEMINI.md` di gemini-cli, dan rujukan terkonkatenasi
+di `QWEN.md` qwen-code plus direktori penemuan native — maksud yang
+sama, dialek tiap harness.
+
+Kohor master-kanonik berada di:
+
+```
+src/apothem/{rules,commands,skills,agents,output-styles,hooks,conformity,statuslines}/
+```
+
+Setiap adapter mempropagasi sebuah subset dari kohor ini. Subset per harness
+dideklarasikan di `src/apothem/lib/propagation-manifest.yaml`; manifest adalah
+sumber kebenaran tunggal untuk artefak mana yang mencapai harness mana dan dalam
+bentuk apa. Sebuah adapter tidak pernah menciptakan artefak di luar manifest, dan
+manifest tidak pernah menugaskan suatu artefak ke harness yang tidak memiliki permukaan untuk menampungnya.
+
+## Penjelasan kelas adapter
+
+Apothem menyortir adapter ke dalam tiga kelas berdasarkan cara mereka menerjemahkan profil
+bersama menjadi keluaran native-harness.
+
+- **Class I — propagasi-mentah.** Adapter menyalin artefak master-kanonik
+  (subset yang dideklarasikan manifest) langsung ke lokasi konfigurasi
+  harness tanpa langkah rendering. Tidak ada materializer. antigravity,
+  codebuddy, codex, cursor, gemini-cli, github-copilot, glm, kimi-code, kiro, trae,
+  windsurf, dan zed adalah Class I.
+- **Class II-A — mentah + templat pengaturan terikat-vendor.** Adapter
+  mempropagasi-mentah artefak dan tambahan mengelola templat pengaturan
+  spesifik-vendor yang terikat pada skema vendor. claude-code adalah Class II-A.
+- **Class II-B — materializer permukaan-tunggal yang dirender-profil.** Adapter
+  merender profil bersama menjadi satu permukaan konfigurasi native melalui
+  materializer. hermes, open-claw, opencode, dan qwen-code adalah Class II-B.
+
+## Perilaku saat materializer
+
+Perbedaan kelas muncul saat materializer — ketika operator menjalankan
+CLI terhadap suatu harness:
+
+- `apothem install --harness <H>` mempropagasi subset manifest untuk `<H>`
+  dan, untuk adapter Class II-A / II-B, merender konfigurasi native-harness.
+- `apothem verify --harness <H>` memeriksa konfigurasi terpasang terhadap apa
+  yang akan dihasilkan profil saat ini dan melaporkan penyimpangan.
+- `apothem doctor` melaporkan status per-harness di seluruh adapter yang
+  terdaftar — terpasang / tidak ada / menyimpang.
+
+Lihat [referensi CLI](/docs/cli-reference) untuk seluruh permukaan command.
+
+## Taksonomi perbedaan
+
+Ketujuh belas harness berbeda sepanjang tiga sumbu. Setiap perbedaan per-harness
+dalam matriks tereduksi menjadi salah satu dari ini.
+
+
+| Sumbu | Rentang yang teramati di seluruh tujuh belas harness |
+|------|---------------------------------------------|
+| Permukaan hook | Multi-peristiwa native (claude-code, codex, qwen-code) → hanya materi-hook pendukung (antigravity, gemini-cli, hermes, open-claw, opencode) → tidak ada (codebuddy, cursor, github-copilot, glm, kimi-code, kiro, trae, windsurf, zed) |
+| Format aktivasi aturan | `.md` datar (claude-code) → aturan plugin (antigravity) → workspace `.mdc` (cursor) → aturan direktori (codebuddy, trae, windsurf) → berkas steering (kiro) → berkas datar akar-proyek (zed) → satu berkas tersemat (codex, gemini-cli, github-copilot, kimi-code) → materi pendukung yang dirujuk-konfigurasi (hermes, open-claw, opencode, qwen-code) → konfigurasi penyedia backend (glm) |
+| Kelas adapter | Class I propagasi-mentah → Class II-A mentah + pengaturan vendor → Class II-B permukaan-tunggal yang dirender-profil |
+
+
+Tugas Apothem adalah menjaga satu maksud operator yang koheren tetap konstan sementara ketiga
+sumbu ini bervariasi per harness. Manifest propagasi dan kontrak kelas-adapter
+adalah dua mekanisme yang menjaga maksud itu stabil di seluruh
+perbedaan tersebut.

@@ -1,0 +1,194 @@
+---
+title: "入门：从零到一个可用的环境"
+description: "从一台空白机器到一份已物化、已验证的环境配置的端到端演练。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+本教程将带你完整走过你的第一次 Apothem 配置。你从空无一物开始，最终得到一份
+真实的环境配置 ——由你自己编写的配置档案生成、经过验证并确认可用。预计约十五
+分钟。下面的每条命令都是真实且可复制粘贴运行的。
+
+<Callout title="已经配置好了？">
+  如果你只想要四个核心命令的简洁参考，见
+  [核心工作流](/docs/usage/getting-started)。本页是有引导的、从零到首次运行的
+  导览。
+</Callout>
+
+读完之后，你将拥有：
+
+1. 通过脚本安装器安装好的 Apothem。
+2. 已编辑的、驱动每个环境的共享配置档案。
+3. 一个环境已物化的原生配置。
+4. 该配置已验证，且已确认一次可用的首次运行。
+
+我们将全程使用 **Claude Code** 作为示例环境，因为它是安装脚本的默认环境。同样的
+步骤适用于任何受支持的环境 ——在你到达 [环境列表](/docs/harnesses) 时替换名称
+即可。
+
+## 你首先需要什么
+
+- 一个类 Unix 的 shell（macOS、Linux 或 WSL）。PowerShell 安装脚本覆盖
+  Windows；本教程展示 `bash` 路径。
+- 你的 `PATH` 中有 Python 3.10 或更新版本。用 `python3 --version` 检查。
+- 引擎从你的解释器导入的两个运行时库：`click` 和 `rich`。其余依赖（`pyyaml`、`jsonschema`）已随源码树一并打包（vendored），因此只需这两个可被导入即可。安装脚本会检查它们，列出缺失项，并提出代你安装，以便你确认后继续。
+
+Apothem 以打包的源码树而非已发布的软件包形式发布 ——没有 `pip install` 步骤。
+安装脚本会克隆该树并直接从中运行引擎。
+
+## 第 1 步 —— 安装 Apothem
+
+运行网络安装脚本：
+
+```bash
+curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
+```
+
+安装脚本执行以下步骤：
+
+1. **前置条件检查。** 安装脚本会找到一个真实的 Python 3.10+ 解释器并确认两个运行时库（`click` 与 `rich`）可导入。如果缺少其中之一，它会指出该库并提出代你安装 —— 或设置 `APOTHEM_AUTO_INSTALL_DEPS=1` 以在不询问的情况下安装。
+2. **源码放置。** 打包的树会被克隆到 `~/.apothem`（用 `APOTHEM_HOME` 环境变量
+   覆盖）。重新运行会快进已存在的克隆，而非重复克隆。
+3. **配置档案引导。** 如果你还没有配置档案，安装脚本会把示例配置档案复制到
+   `~/.config/apothem/profile.yaml`，然后**停下并请你编辑它**再继续。这是有意
+   为之 ——示例使用占位身份数据，你应在写入任何环境配置之前让它成为你自己的。
+   我们将在第 2 步这样做。
+
+你可以用环境变量来引导安装。你最可能用到的那些：
+
+```bash
+# Install a different harness as the default, and point at a project profile.
+APOTHEM_HARNESS=cursor \
+APOTHEM_PROFILE="$HOME/.config/apothem/profile.yaml" \
+  curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
+```
+
+其他可识别的变量有 `APOTHEM_REPO` 和 `APOTHEM_REF`（克隆哪个远程以及检出哪个
+git ref ——未设置时会解析并验证最新的已签名发布标签，设置某个标签以固定它，或
+设为 `main` 表示移动中的分支）、`APOTHEM_ALLOW_UNVERIFIED=1`（将标签签名验证的
+失败降级为警告）、`APOTHEM_SOURCE`（使用已存在的本地检出而非克隆），以及
+`APOTHEM_SKIP_VERIFY=1`（跳过安装后验证 ——而我们想要运行它，所以让它保持未
+设置）。
+
+当安装脚本完成一次完整运行时，它会打印一个横幅，展示如何调用引擎。它会在你的
+`PATH` 上放置一个 `apothem` 垫片（shim）（POSIX：`$HOME/.local/bin`；Windows：
+`%LOCALAPPDATA%\Microsoft\WindowsApps`），因此一旦该目录在 `PATH` 上，你就可以
+直接运行引擎：
+
+```bash
+apothem <command>
+```
+
+如果垫片无法被放置 ——或其目录尚未在 `PATH` 上 ——横幅会打印一个无需垫片的
+自包含回退方式：
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>
+```
+
+本教程余下部分都写作 `apothem <command>`；如果你使用回退形式，请把你的安装脚本
+横幅所打印的确切前缀加在每条命令之前。
+
+## 第 2 步 —— 让配置档案成为你自己的
+
+`~/.config/apothem/profile.yaml` 中的共享配置档案是唯一的真相来源。每个环境
+适配器都会读取它并从中派生该环境的原生配置。编辑一次，你安装的每个环境就会保持
+一致。
+
+在引擎的编辑器中打开它，或在任何文本编辑器中打开：
+
+```bash
+apothem profile edit
+```
+
+一份最小、有效的配置档案看起来像这样：
+
+```yaml
+identity:
+  name: "Example User"
+preferences:
+  style: "concise"
+rules:
+  - "Validate external input before writing files."
+```
+
+把占位的 `name` 替换为你自己的，并添加任何你希望每个环境强制执行的规则。保持
+示例值是伪造的 ——这份配置档案的设计目标就是可安全分享。
+
+确认引擎能干净地回读你的编辑：
+
+```bash
+apothem profile show --json
+```
+
+如果 YAML 格式错误，你会在这里看到它 ——修复并重新运行，然后再继续。
+
+## 第 3 步 —— 物化一份环境配置
+
+安装脚本已在第 1 步物化了默认环境。要显式地这样做 ——或物化第二个环境 ——运行
+`install`：
+
+```bash
+apothem install --harness claude-code
+```
+
+这会读取你的配置档案并写入 Claude Code 的原生配置。要查看你可以指向的每个环境：
+
+```bash
+apothem harnesses list
+```
+
+有些环境是项目作用域而非用户作用域，这些环境需要一个 `--project` 路径，以便
+适配器知道该写到哪里：
+
+```bash
+apothem install --harness cursor --project .
+```
+
+## 第 4 步 —— 验证并确认一次首次运行
+
+物化只是故事的一半。现在确认配置已正确落地：
+
+```bash
+apothem verify --harness claude-code
+```
+
+`verify` 会检查环境的预期配置文件是否存在并与配置档案所声明的相符。一次干净的
+运行意味着物化成功。
+
+要在每个已注册适配器上做一次全机健康检查，运行：
+
+```bash
+apothem doctor
+```
+
+`doctor` 会报告每个适配器的安装状态，并在任何已注册的适配器报告未安装时以非零
+状态退出 ——这是配置脚本中一个有用的闸门。
+
+**你的第一次运行。** 打开你刚配置好的工具 ——本例中是 Claude Code ——并在
+任意项目中启动一个会话。你写入配置档案的规则与偏好现已成为该工具行为的一部分。
+这就是可用的首次运行：你在第 2 步编辑的配置档案正在塑造一次真实的会话。
+
+## 你构建了什么
+
+从一台空白机器开始，你安装了 Apothem、编写了一份共享配置档案、从中物化了一个
+环境的原生配置、验证了结果并确认它可用。配置档案是持久的产物 ——修改它一次，
+然后重新运行 `apothem update --harness <name>`，把变更推送到任何环境。
+
+## 接下来去哪里
+
+- **添加另一个工具。** [环境列表](/docs/harnesses) 涵盖每个受支持的平台及其
+  适配器名称。用一个新的 `--harness` 重复第 3 步。
+- **在单个任务上深入。** [操作指南](/docs/how-to) 是面向任务的食谱，用于编写
+  规则、编写计划以及运行合规闸门。
+- **查阅具体细节。** [参考](/docs/harnesses) 完整记录每个适配器、配置档案模式
+  以及 CLI 表面。
+- **规划比会话更长久的工作。** [可恢复的规划](/docs/concepts/resumable-planning)
+  解释 Apothem 如何将长时间运行的工作外置到项目本地的 `.apothem/plans/` 套件，
+  使任何机器上的新会话都能就地恢复它。
+
+## 推荐的下一步
+
+**运行 `apothem doctor`** 来检查你的配置 ——它会报告每个已注册适配器的状态，
+因此你刚安装的环境会显示为健康，其余则显示为尚未安装 ——然后再着手添加更多
+环境。

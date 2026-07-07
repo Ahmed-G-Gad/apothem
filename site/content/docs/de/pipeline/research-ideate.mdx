@@ -1,0 +1,69 @@
+---
+title: "/research-ideate"
+description: "/research-ideate — Formuliert den Problemraum aus einem Domänen-Seed: Chancen- und Lücken-Scan, Scan invalidierter früherer Hypothesen und gerangte Erzeugung kandidierender Forschungsfragen — die Eingangsstufe der /research-Pipeline, die /research-spec speist."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rolle:** Hauptforscher (Problemformulierung)
+**Pipeline-Position:** Eingangsstufe
+
+Formuliert den Problemraum von Grund auf — Chancen- und Lücken-Scan, Scan invalidierter früherer Hypothesen und Erzeugung kandidierender Forschungsfragen mit Rangfolge — die Eingangsstufe der `/research`-Pipeline. Jeder Kandidat wird gegen einen a-priori theoretischen Anker gerahmt, im vorhandenen Stand der Forschung verankert und in einer falsifizierbaren Form formuliert, bereit für `/research-spec`.
+
+## Kanonischer Aufruf
+
+```bash
+/research-ideate
+```
+
+Mit Argumenten:
+
+```bash
+/research-ideate [path/to/domain-notes] [--suite-name NAME] [--override] [--domain NAME]
+```
+
+## Eingaben
+
+Ein Domänen-Seed — formfreie Domänennotizen (vom Bediener inline oder als Pfad bereitgestellt) oder ein bloßer `--domain`-Name, wenn von Grund auf begonnen wird.
+
+## Ausgaben
+
+`_inputs/ideation.md` (der gerahmte Problemraum, der Chancen- und Lücken-Scan, der Scan invalidierter früherer Hypothesen und die gerangte Liste kandidierender Fragen) sowie das Übergabe-Manifest im Ordner der Forschungs-Suite.
+
+## Nachgelagert
+
+/research-spec (nachgelagerter Verbraucher — rahmt den gewählten Kandidaten in eine falsifizierbare Spezifikation).
+
+## Workflow-Phasen
+
+Der Befehl folgt dem Standard-Workflow der `/research`-Pipeline:
+
+1. **Kontext laden** — Den Domänen-Seed, die Regeln und jeden vorhandenen Suite-Zustand lesen.
+2. **Den Chancen- und Lückenraum scannen** — Kartieren, was untersucht ist, was umstritten ist und was in der Domäne unbearbeitet bleibt.
+3. **Invalidierte frühere Hypothesen scannen** — Hypothesen zutage fördern, die durch den vorhandenen Stand der Forschung bereits widerlegt sind, damit die Liste keinen bereits geklärten Boden erneut betritt.
+4. **Kandidaten erzeugen und rangieren** — Kandidierende Forschungsfragen produzieren, jede in einer falsifizierbaren Form formuliert, nach Bearbeitbarkeit und Wirkung rangiert.
+5. **Ausgaben verifizieren** — Bestätigen, dass jeder Kandidat im primären vorhandenen Stand der Forschung verankert und widerlegbar ist; jede Mehrdeutigkeit über den strukturierten Abfragekanal auflösen.
+6. **Die Ideenliste ausgeben** — `_inputs/ideation.md` sowie das Übergabe-Manifest.
+
+## Fehlermodi
+
+| Symptom | Ursache | Behebung |
+|---------|-------|----------|
+| Kein falsifizierbarer Kandidat | Domänen-Seed zu breit oder rein beschreibend | Die Domäne über strukturierte Abfrage eingrenzen; Kandidaten als widerlegbare Fragen neu rahmen |
+| Kandidat formuliert eine invalidierte frühere Hypothese neu | Scan des vorhandenen Stands der Forschung übersprungen | Den Scan invalidierter früherer Hypothesen ausführen; den überlappenden Kandidaten verwerfen oder neu rahmen |
+| Fehlender Domänen-Seed | Keine Notizen oder `--domain` bereitgestellt | Domänennotizen inline / als Pfad bereitstellen oder `--domain NAME` übergeben |
+
+## Beispiele
+
+```bash
+# Eine Domäne scannen und gerangte kandidierende Fragen erzeugen
+/research-ideate ~/notes/retrieval-systems.md --suite-name retrieval-latency
+
+# Von einem bloßen Domänennamen ausgehen
+/research-ideate --domain "vector-index recall under drift"
+```
+
+## Querverweise
+
+- [Pipeline-Überblick](/docs/pipeline)
+- [Befehlsreferenz](/docs/reference/commands)

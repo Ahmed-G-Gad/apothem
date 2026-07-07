@@ -1,0 +1,55 @@
+---
+title: "Utiliser des travailleurs délégués"
+description: "Définir et invoquer des travailleurs délégués persistants pour des tâches spécialisées."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Les travailleurs délégués Apothem sont des définitions de travailleurs
+persistantes et réutilisables, stockées sous l'arborescence `src/apothem/` (le
+répertoire canonique est indiqué ci-dessous — le nom est conservé pour la
+compatibilité avec le chargeur du runtime) :
+
+```text
+src/apothem/agents/
+```
+
+Chaque travailleur délégué encode un rôle spécialisé, des signaux de détection
+et un ensemble d'outils autorisés.
+
+## Structure du fichier de travailleur délégué
+
+```markdown
+---
+name: "my-agent"
+description: "..."
+tools: "Read, Grep, Glob"
+---
+
+# My assistant
+
+## Role
+...
+
+## Detection signals
+Matched when: ...
+
+## Workflow
+...
+```
+
+## Travailleurs délégués intégrés
+
+| Travailleur délégué | Objectif |
+|-------|---------|
+| `codebase-explorer` | Exploration approfondie de la base de code |
+| `convention-auditor` | Vérification du nommage et du formatage |
+| `memory-auditor` | Vérification de l'exactitude de la mémoire |
+| `quality-gate` | Lint, tests, vérification de types, analyse de sécurité |
+
+## Invocation des travailleurs délégués
+
+Les travailleurs délégués sont répartis par l'orchestrateur via l'outil de
+délégation exposé par le runtime de l'hôte. L'orchestrateur sélectionne le
+travailleur délégué correspondant en fonction de la description de la tâche et
+des signaux de détection.

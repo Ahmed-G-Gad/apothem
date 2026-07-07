@@ -1,0 +1,46 @@
+---
+title: "Apothem と手作業の Claude Code 構成の比較"
+description: "Claude Code のネイティブ構成ツリー全体を手作業で維持するのと、Apothem の共有プロファイルを通じて管理するのとの比較。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Claude Code（提供元 Anthropic）はネイティブ構成を `~/.claude/` の下に保持します。
+Apothem の claude-code アダプターは全表面アダプターであり、共有コーパスをその
+ツリーへ直接伝播します。本ページは、構成を手作業で維持するのと Apothem で管理する
+のとを対比します。
+
+## 労力の比較
+
+| タスク | 手作業の構成 | Apothem 管理 |
+| ---- | --------------- | --------------- |
+| ルール、エージェント、コマンド、スキルを書く | `~/.claude/` の各表面を手で編集 | 共有コーパスに一度書く |
+| 出力スタイルとステータスラインを維持する | 表面ごとに手で編集 | 共有コーパスから伝播 |
+| フックを構成する | `settings.json` のフックエントリを手で編集 | 伝播（PreToolUse/PostToolUse/Stop/SessionStart） |
+| 構成を他の環境と揃えて保つ | 手作業、ツールごと | `apothem update` で自動 |
+| 構成が正しいか検証する | 手作業の検査 | `apothem verify --harness claude-code` |
+
+## Apothem が管理するもの
+
+アダプターはルール、エージェント、コマンド、スキル、出力スタイル、ステータス
+ライン、`settings.json` を `~/.claude/` へ伝播します。ネイティブの PreToolUse、
+PostToolUse、Stop、SessionStart の各フックは共有コーパスから構成されます。
+
+Apothem は `CLAUDE.md` を管理し**ません**——そのファイルは運用者自身の領域です。
+`CLAUDE.md` 内のプロジェクトおよび個人の指示はあなたのものであり続けます。Apothem
+が統治するのはその周囲の伝播された表面です。
+
+## 移行手順
+
+1. 共有プロファイルをまだ作成していなければ、`apothem profile init` を実行します。
+2. 既存の `~/.claude/` のルール、エージェント、コマンド、スキルを共有コーパスへ
+   移します。
+3. `CLAUDE.md` はそのまま残します——Apothem はそれに触れません。
+4. `apothem install --harness claude-code` を実行してコーパスを伝播します。
+5. `apothem verify --harness claude-code` を実行して構成が配置されたことを確認します。
+6. 以降の変更には毎回 `apothem update --harness claude-code` を使います。
+
+## 次に読む
+
+- [Claude Code アダプターのリファレンス](/docs/harnesses/claude-code)
+- [比較の概要](/docs/comparison)

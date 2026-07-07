@@ -1,0 +1,132 @@
+# SPDX-License-Identifier: MIT
+
+# Documentation-only pull-request status-check stub.
+#
+# The `main` ruleset requires the `quality / <os> / py<ver>` matrix and the
+# `coverage` status checks. Those live in `ci.yml`, which triggers on every
+# code-and-config surface (src/**, tests/**, pyproject.toml, site/**,
+# examples/**, scripts/**, .github/workflows/**, .pre-commit-config.yaml,
+# .gitleaks.toml). A pull request that touches ONLY documentation outside that
+# set never runs them, so the required contexts would stay "expected" forever
+# and the PR could not merge.
+#
+# This workflow's `paths-ignore` is the EXACT complement of `ci.yml`'s trigger
+# `paths` (kept in lockstep — the complement is asserted by
+# `tests/scripts/test_required_check_coverage.py`). But `paths` and
+# `paths-ignore` are both ANY-match triggers, so a MIXED docs+code PR satisfies
+# both filters and would start BOTH workflows on the same context names — the
+# stub could then report a required check green over a real code change. To
+# close that gap each stub job is SELF-GATING: it first inspects the PR's
+# changed files and, if any gated surface is present, fails immediately instead
+# of echoing a fabricated success. The honest green path is therefore: a
+# purely-documentation PR runs this stub (no gated file, guard passes, contexts
+# report green); any PR touching a gated surface runs `ci.yml`'s REAL
+# quality+coverage, and this stub — if it starts at all — fails its guard so it
+# can never stand in for the real job.
+
+name: CI Docs Stub
+
+on:
+  # Manual dispatch renders an honest green no-op run (the dispatch-noop job
+  # below): there is no pull-request diff to gate, so the required quality and
+  # coverage contexts are skipped and never fabricated. The pull_request path
+  # is the real gate.
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - 'src/**'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - 'site/**'
+      - 'examples/**'
+      - 'scripts/**'
+      - '.github/workflows/**'
+      - '.pre-commit-config.yaml'
+      - '.gitleaks.toml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-docs-stub-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: quality / ${{ matrix.os }} / py${{ matrix.python-version }}
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Assert documentation-only change
+        # Self-gating guard: a mixed docs+code PR satisfies this workflow's
+        # paths-ignore ANY-match trigger too, so confirm no gated surface is in
+        # the diff before reporting success. If any is, `ci.yml`'s real job owns
+        # this context — fail rather than fabricate a green.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          bash .github/workflows/scripts/assert-docs-only.sh
+      - name: Documentation-only change
+        run: echo "Documentation-only change — the quality matrix does not apply; reporting success to satisfy the required check."
+
+  coverage:
+    name: coverage
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Assert documentation-only change
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          bash .github/workflows/scripts/assert-docs-only.sh
+      - name: Documentation-only change
+        run: echo "Documentation-only change — coverage does not apply; reporting success to satisfy the required check."
+
+  dispatch-noop:
+    name: Manual dispatch no-op
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+      - name: No-op
+        run: |
+          echo "Manual dispatch — no pull-request diff to gate; CI Docs Stub is a no-op here. The pull_request path is the real gate."

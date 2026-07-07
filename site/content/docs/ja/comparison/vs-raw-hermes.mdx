@@ -1,0 +1,46 @@
+---
+title: "Apothem と素の Hermes 設定の比較"
+description: "Hermes 設定を手で保守するか、Apothem の共有プロファイル経由で管理するか。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Hermes は `~/.hermes/config.yaml` を読み込みます。Apothem はネイティブの YAML 設定を
+書き込み（プロファイルの MCP インベントリを `auxiliary.mcp` に投影します）、共有の
+コマンド群とスキル群を `~/.hermes/.apothem/support/skills/` の下に設置します。Hermes 自身の
+`skills.config` はレジストリパッケージのリストであるため、Apothem はそれを書き込み
+ません。
+
+## ステータス
+
+**プレビュー。** Hermes アダプターは、現在ドキュメント化されている設定ファイルと
+スキル探索面を対象とします。スキル以外の群は Apothem のサポート材料のままです。
+
+## 工数の比較
+
+| タスク | 素の手動設定 | Apothem 管理 |
+| ---- | --------------- | --------------- |
+| 再利用可能なスキルを書く | 設定とスキルディレクトリを手で編集 | 共有コーパスに一度書く |
+| 群を他の環境と揃えておく | ツールごとに手動 | `apothem update` で自動 |
+| 設定をインストール／削除する | 手動 | `apothem install` / `apothem uninstall` |
+| 設定が正しいか検証する | 手動の確認 | `apothem verify --harness hermes` |
+
+## Apothem が管理するもの
+
+Hermes アダプターは `config.yaml` を書き込み、Apothem のスラッシュコマンドをスキル
+として包み、Apothem のスキルを参照先のサポートディレクトリへコピーし、ルール、
+テンプレート、agents、hook 材料を Apothem サポートサブツリーの下に保持します。
+
+## 移行手順
+
+1. まだ作成していない場合は `apothem profile init` を実行して共有プロファイルを作成
+   します。
+2. 再利用可能な Hermes のスキルやコマンドプロンプトを共有コーパスへ移します。
+3. `apothem install --harness hermes` を実行して、ネイティブ設定とサポートスキル
+   ディレクトリをレンダリングします。
+4. `apothem verify --harness hermes` を実行して、設定が配置されたことを確認します。
+
+## 次に読む
+
+- [Hermes アダプターリファレンス](/docs/harnesses/hermes)
+- [比較の概要](/docs/comparison)

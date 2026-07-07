@@ -1,0 +1,73 @@
+---
+title: "/research-sources"
+description: "/research-sources — Recolección sistemática de fuentes: descompone la especificación en subconsultas, despliega el descubrimiento en paralelo, criba y clasifica, y extrae por fuente en un libro mayor de fuentes clasificado."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rol:** Investigador principal (recolección de fuentes)
+**Posición en la canalización:** intermedia
+
+Recolección sistemática de fuentes — descompone la especificación de investigación en subconsultas, despliega en paralelo el descubrimiento de fuentes y la extracción por fuente, deduplica, clasifica por autoridad / actualidad / relevancia, criba frente a los criterios de inclusión de la especificación y registra la procedencia de cada fuente superviviente.
+
+## Invocación canónica
+
+```bash
+/research-sources
+```
+
+Con argumentos:
+
+```bash
+/research-sources [path/to/research-suite/] [--depth N]
+```
+
+## Entradas
+
+`_inputs/theory.md` (el marco conceptual / teórico de `/research-theory`, la etapa predecesora) más `_spec/research-spec.md` (la especificación de investigación aprobada de `/research-spec`).
+
+## Salidas
+
+`sources/<id>.md` (una extracción con procedencia por cada fuente superviviente) + `_inputs/source-ledger.md` (el índice de fuentes clasificado, cribado y deduplicado con un índice de citas).
+
+## Aguas abajo
+
+/research-synthesis (consumidor aguas abajo)
+
+## Fases del flujo de trabajo
+
+El comando sigue el flujo de trabajo estándar de la canalización `/research`:
+
+1. **Cargar contexto** — Leer la especificación de investigación y sus criterios de inclusión / exclusión.
+2. **Verificar la Puerta de secuencia** — Confirmar que `_inputs/theory.md` (y la `_spec/research-spec.md` aprobada) existe; de lo contrario, detenerse con `Blocked: run /research-theory first`.
+3. **Descubrir y extraer** — Descomponer en subconsultas, desplegar el descubrimiento, deduplicar, clasificar, cribar y extraer por fuente con procedencia.
+4. **Verificar salidas** — Confirmar que cada fuente superviviente esté citada y cribada frente a los criterios de la especificación.
+5. **Actualizar el manifiesto de traspaso** — Registrar el libro mayor de fuentes y las rutas de extracción por fuente.
+6. **Emitir el libro mayor** — Las extracciones de `sources/` más `_inputs/source-ledger.md`.
+
+## Umbral de rigor
+
+Más allá del libro mayor de fuentes, esta etapa construye un libro mayor de procedencia de comparadores: las líneas base más recientes del estado del arte contra las que se ejecutará el estudio, cada una verificada frente a una fuente recuperable y registrada con su procedencia y su accesibilidad. Un comparador que no pueda confirmarse ni obtenerse se marca como tal y nunca se fabrica (R1, R4).
+
+## Modos de fallo
+
+| Síntoma | Causa | Recuperación |
+|---------|-------|----------|
+| Blocked: run /research-theory first | Sin fundamento teórico | Ejecuta `/research-theory` para producir `_inputs/theory.md` |
+| Fuente que no cumple los criterios de inclusión | Fuente fuera de alcance o de baja autoridad | Crítala; registra la justificación de exclusión en el libro mayor |
+| Cita fabricada | Fuente adivinada, no obtenida | Nunca inventes una fuente; una cita adivinada es un hallazgo |
+
+## Ejemplos
+
+```bash
+# Recopilar fuentes para una suite de investigación enmarcada
+/research-sources path/to/research-suite/
+
+# Despliegue de descubrimiento más profundo
+/research-sources path/to/research-suite/ --depth N
+```
+
+## Referencias cruzadas
+
+- [Visión general de la canalización](/docs/pipeline)
+- [Referencia de comandos](/docs/reference/commands)

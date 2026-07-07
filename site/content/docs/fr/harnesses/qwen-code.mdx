@@ -1,0 +1,97 @@
+---
+title: "Qwen Code"
+description: "Adaptateur d'outil Apothem pour Qwen Code (bêta)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Fournisseur :** Alibaba Cloud
+**Nom d'installation :** `qwen-code`
+**Statut :** Bêta
+**Configuration native :** `~/.qwen/`
+
+## Installation
+
+```bash
+apothem install --harness qwen-code
+```
+
+L'adaptateur écrit les paramètres de Qwen Code, installe une ancre de contexte
+`QWEN.md`, enregistre les répartiteurs de hooks d'Apothem, convertit les commandes
+d'Apothem en fichiers de commandes Markdown Qwen, installe les compétences sous forme
+de répertoires SKILL.md et adapte les définitions d'assistants en sous-assistants Qwen.
+
+**Fichiers écrits :**
+
+```text
+~/.qwen/settings.json
+~/.qwen/QWEN.md
+~/.qwen/commands/
+~/.qwen/skills/
+~/.qwen/agents/
+~/.qwen/.apothem/support/{rules,templates,hooks}/
+```
+
+## Correspondance du profil vers la configuration native
+
+L'adaptateur restitue les clés documentées de `settings.json` pour le contexte et les
+hooks, écrit `QWEN.md` et tisse les commandes, les compétences et les définitions
+d'assistants d'Apothem à travers les répertoires de découverte natifs de Qwen Code.
+Les règles, les modèles et le matériel source des hooks restent du matériel de prise
+en charge sous `~/.qwen/.apothem/support/`.
+
+## Notes de compatibilité
+
+`~/.qwen/.apothem/support/` est du matériel de prise en charge référencé par `QWEN.md` et les
+commandes de hooks des paramètres ; ce n'est pas un espace de noms de découverte
+appartenant au fournisseur.
+
+## Vérification
+
+```bash
+apothem verify --harness qwen-code
+```
+
+La commande verify confirme que :
+
+1. La configuration native existe au chemin attendu.
+2. Tous les champs obligatoires du profil partagé sont présents.
+3. La routine de vérification propre à l'adaptateur signale une réussite.
+
+## Mise à jour
+
+```bash
+apothem update --harness qwen-code
+```
+
+Rafraîchit `settings.json`, `QWEN.md`, les commandes natives, les compétences, les
+sous-assistants et l'arborescence de prise en charge d'Apothem.
+
+## Désinstallation
+
+```bash
+apothem uninstall --harness qwen-code
+```
+
+Supprime les fichiers de configuration native écrits par l'adaptateur.
+Le YAML du profil partagé et le moteur Apothem ne sont pas affectés.
+
+## Porte de conformité
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Dépannage
+
+| Symptôme | Correctif |
+|---------|-----|
+| Fichier de configuration introuvable | Réexécutez `apothem install --harness qwen-code` |
+| Échec de la vérification | Exécutez `apothem update --harness qwen-code`, puis vérifiez à nouveau |
+| Contenu de configuration inattendu | Vérifiez `~/.config/apothem/profile.yaml` ou `--profile PATH`, puis réexécutez `apothem update --harness qwen-code` |
+
+## Boutons de configuration
+
+| Indicateur | Par défaut | Description |
+|------|---------|-------------|
+| `--dry-run` | `false` | Prévisualise l'installation sans écrire de fichiers. |

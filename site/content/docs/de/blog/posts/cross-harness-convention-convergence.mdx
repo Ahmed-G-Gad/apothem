@@ -1,0 +1,88 @@
+---
+title: "Konventionskonvergenz über Harnesses hinweg"
+description: "Wie Apothem einen einzigen Operator-Workflow über siebzehn Harnesses hinweg konsistent hält, trotz divergierender Anbieter-Konfigurationsformate und Enforcement-Flächen."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Siebzehn Harnesses, siebzehn Meinungen darüber, wo die Konfiguration lebt und
+welche Form sie annimmt. Apothems Aufgabe ist es, den Workflow des Operators auf
+allen identisch wirken zu lassen — du schreibst Konventionen einmal, und sie
+verhalten sich gleich, ob du zu Claude Code, Cursor oder Gemini CLI greifst.
+Dieser Beitrag behandelt die beiden Divergenzen, die Apothem in Einklang bringt:
+Konfigurationsformat und Enforcement-Fläche.
+
+## Die Formatdivergenz
+
+Jedes Harness liest seine Regeln aus einer anderen Dateiform. Apothems Profil
+hält die Absicht des Operators in einer einzigen neutralen Form; jeder Adapter
+rendert diese Absicht in die Form, die sein Harness erwartet.
+
+| Form | Harnesses (Beispiele) | Was Apothem ausgibt |
+| --- | --- | --- |
+| Flache `.md`-Regeldateien in einem Verzeichnis | claude-code, windsurf, trae | Rohe Regeldateien, in den Regelbaum des Harness kopiert |
+| Cursor-`.mdc`-Regeln | cursor | Ein `.mdc`-Regelsatz mit dem Metadaten-Header, den Cursor erwartet |
+| Anweisungsdokument in einer einzigen Datei | codex, gemini-cli, github-copilot, zed | Ein verkettetes Dokument —`AGENTS.md`, `GEMINI.md`, `copilot-instructions.md`, `.rules`— zusammengesetzt aus dem Regelsatz des Profils |
+
+Ein flaches `.md`-Harness übernimmt die Regeln wörtlich. Ein `.mdc`-Harness
+braucht den Cursor-Metadaten-Header um jede Regel gewickelt. Ein
+Einzeldatei-Harness braucht den gesamten Regelsatz in ein einziges Dokument
+abgeflacht, mit stabiler Abschnittsreihenfolge, damit der Operator dieselben
+Konventionen in derselben Reihenfolge liest, unabhängig vom Ziel. Das neutrale
+Profil ist die einzige Quelle der Wahrheit; die Divergenz lebt vollständig im
+Rendering-Schritt jedes Adapters.
+
+## Die Abschnittsreihenfolge ist der Konvergenzanker
+
+Viele Regeln in ein einziges Dokument abzuflachen birgt das Risiko, sie zwischen
+Harnesses zu mischen, sodass dieselben Konventionen in `AGENTS.md` in einer
+anderen Reihenfolge landen als in `GEMINI.md`. Apothem fixiert die Reihenfolge
+auf Profilebene: Der Regelsatz hat eine deklarierte Sequenz, und jeder
+Einzeldatei-Adapter durchläuft ihn in dieser Reihenfolge. Der Operator, der sich
+in einem Harness merkt „Namenskonventionen kommen vor Commit-Konventionen",
+findet dieselbe Sequenz in jedem anderen. Konvergenz ist kein Zufall des
+Renderings — sie ist eine Eigenschaft, die das Profil festnagelt.
+
+## Die Enforcement-Divergenz
+
+Das Konfigurationsformat ist die sichtbare Hälfte. Die schwierigere Hälfte ist
+das Enforcement: wie eine Konvention in dem Moment zur Rechenschaft gezogen wird,
+in dem der Operator (oder der Agent) handelt.
+
+### Native PreToolUse-Hooks
+
+claude-code, codex und qwen-code legen native Hook-Flächen offen. Ein
+PreToolUse-Hook feuert, bevor ein Tool-Aufruf ausgeführt wird, inspiziert ihn und
+blockiert oder schreibt ihn um. Das ist Echtzeit-Enforcement: Eine Regel gegen
+das Schreiben von Planungsartefakten an einen globalen Ort wird zu einem Hook,
+der das Schreiben ablehnt, bevor es die Festplatte berührt. Apothem
+materialisiert diese Hooks direkt in die Hook-Konfiguration des Harness, sodass
+die Konvention von der Laufzeit des Harness erzwungen wird.
+
+### Wrapper-basierte Disziplin anderswo
+
+Die übrigen Harnesses legen keine äquivalente Pre-Execution-Hook-Fläche offen,
+die Apothem besitzt. Apothem kann kein Laufzeit-Gate installieren, wo das Harness
+keinen Anschluss dafür bietet. Stattdessen wird die Konvention als
+Anweisungstext in der materialisierten Konfiguration getragen — der Agent liest
+die Regel und ist an sie gebunden, aber kein Laufzeitmechanismus fängt eine
+verletzende Aktion ab. Apothem macht den Unterschied explizit, anstatt vorzugeben,
+es bestehe Parität: Eine hook-gestützte Konvention und eine anweisungsgestützte
+Konvention sind nicht dieselbe Garantie, und der Operator sieht, welche Harnesses
+zur Laufzeit erzwingen und welche sich auf Anweisungsdisziplin verlassen.
+
+## Was Konvergenz in der Praxis bedeutet
+
+Der Operator schreibt eine Konvention. Apothem rendert sie in siebzehn Formate
+und hängt das stärkste Enforcement an, das jedes Harness unterstützt — einen
+nativen Hook, wo die Fläche existiert, Anweisungstext, wo sie nicht existiert. Der
+Workflow konvergiert; die Garantien werden pro Harness ehrlich angegeben.
+
+Deshalb ist `apothem verify` auf ganzer Linie wichtig: Wo kein Laufzeit-Hook die
+Drift abfangen kann, führt der Operator `verify` aus, um eine Harness-Konfiguration
+zu erkennen, die vom Profil abgedriftet ist. Der verify-Befehl ist das
+Konvergenz-Auffangnetz für jedes Harness, dem natives Enforcement fehlt.
+
+Lies die Enforcement-Fläche pro Harness unter [Harnesses](/docs/harnesses) und die
+Adapter-Mechanik in
+[der Tiefenanalyse des Adapter-Designs](/docs/blog/posts/multi-harness-adapter-design).

@@ -1,0 +1,29 @@
+---
+title: "設定"
+description: "ツール権限・フック配線・環境変数・ステータスライン テンプレートを扱う、settings.json 内の Claude Code harness 設定。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+`settings.json` は Claude Code harness の設定を担います。フック配線、ツール権限、
+環境変数、ステータスライン設定です。
+
+完全な規約上のリファレンスは
+[settings-reference.md](/docs/reference/settings-reference) にあります。本ページはその契約を
+要約し、より深いリファレンスへ案内します。
+
+## セクション
+
+| セクション | 目的 |
+|---------|---------|
+| `permissions` | マッチャーごとのツールのホワイトリストとブラックリスト |
+| `hooks` | イベントをキーとするフック コマンド テーブル（規約上の配線） |
+| `env` | セッションごとの環境変数 |
+| `statusLine` | ホストがレンダリングするステータスライン テンプレート |
+
+## 単一テンプレート不変条件
+
+Claude Code アダプターは `settings.json` テンプレートを 1 つだけ出荷します。
+フック コマンドはシェル固有のコマンド文字列ではなく exec 形式（`command` と
+`args`）を使うため、OS をまたぐ挙動は単一のファイル内でレビューされます。
+新しい権限エントリとフック イベントは、そのファイルにアトミックに着地します。

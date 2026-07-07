@@ -1,0 +1,105 @@
+---
+title: "릴리스 복구 런북"
+description: "릴리스 시퀀스가 진행 도중 실패했을 때 리포지터리를 동작 가능한 상태로 복원하기 위한 복구 절차로, 단계별 진단을 포함합니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+이 런북은 제자리 클린 슬레이트 방식의 릴리스 시퀀스가 진행 도중 실패했을 때
+`ahmed-g-gad/apothem`을 동작 가능한 상태로 복원합니다. 릴리스 중에 공개
+리포지터리가 삭제되거나 다시 생성되지 않습니다. 복구는 릴리스 전용 히스토리
+안전 태그, 메인테이너의 로컬 클론, 그리고 다운스트림 패키지 관리자 상태에
+의존합니다.
+
+## 1. 단계 분류
+
+| 단계 | 작업 | 실패 모드 | 복구 경로 |
+|---|---|---|---|
+| 1 | 히스토리 안전 태그를 캡처하여 푸시한다 | 태그가 없거나, 서명되지 않았거나, 잘못된 그래프를 가리킨다 | `main`을 이동하기 전에 스쿼시 이전 병합 지점에서 태그를 다시 만든다 |
+| 2 | CI, 감사 요새, 패키지 상태, 변경 로그를 검증한다 | 어떤 게이트라도 실패한다 | 중단하고 로컬에서 고친다. `main`을 이동하지 않는다 |
+| 3 | `main`을 서명된 단일 릴리스 커밋으로 이동한다 | force-with-lease가 실패하거나, 커밋이 서명되지 않았거나, 커밋 메시지가 잘못되었다 | 로컬 `main`을 의도한 서명된 커밋으로 리셋하고 새 lease로 다시 시도한다 |
+| 4 | GitHub Release, Pages, npm, 메타데이터를 게시한다 | 어떤 게시자 또는 검증 면이 실패한다 | 릴리스 커밋은 유지한다. 실패를 기록한 뒤 실패한 게시자만 다시 실행한다 |
+
+모든 복구 작업은 멱등적입니다. 깨끗한 상태에서 실행하면 아무 일도 일어나지
+않습니다. 부분적인 상태에서 실행하면 예상되는 단계 이후 조건으로 복원됩니다.
+
+## 2. 안전 태그 복구
+
+히스토리 재작성을 하기 전에 안전 태그를 검증합니다.
+
+```bash
+git fetch origin --tags
+git show --summary --show-signature <history-safety-tag>
+git merge-base --is-ancestor origin/main <history-safety-tag>
+```
+
+예상: 태그가 존재하고, 태그가 서명된 경우 서명 검증이 성공하며, 스쿼시 이전의
+전체 그래프가 태그에서 도달 가능합니다. 태그가 로컬에는 없지만 원격에는 있는
+경우 가져옵니다. 원격에 없는 경우 릴리스를 중단하고 `main`을 건드리기 전에
+다시 만듭니다.
+
+```bash
+git tag -s <history-safety-tag> <pre-squash-commit>
+git push origin <history-safety-tag>
+```
+
+## 3. 메인 브랜치 복구
+
+공개된 `main` 상태를 진단합니다.
+
+```bash
+gh api repos/ahmed-g-gad/apothem/commits/main \
+  --jq '.sha, .commit.message, .commit.verification.verified, .commit.verification.reason'
+```
+
+전환 후 예상: 메시지가 정확히 `release: Apothem <release-version>`이고
+`verification.verified`가 `true`입니다.
+
+force-with-lease 푸시가 GitHub를 변경하기 전에 실패한 경우, 원격을 그대로 두고,
+가져온 다음, 서명된 릴리스 커밋을 로컬에서 재구축하고, lease가 일치한 후에만
+다시 시도합니다.
+
+```bash
+git fetch origin main
+git push --force-with-lease=main:<expected-remote-sha> origin main
+```
+
+푸시가 서명되지 않았거나 검증되지 않은 커밋으로 착지한 경우, 로컬 서명 구성을
+고치고, 같은 트리에서 릴리스 커밋을 다시 만들고, lease와 함께 다시 force-push
+합니다. 안전 태그를 삭제하지 마십시오.
+
+## 4. 게시자 복구
+
+각 게시자는 GitHub 릴리스 커밋이 검증된 후 독립적으로 다시 시도됩니다.
+
+| 면 | 진단 | 복구 |
+|---|---|---|
+| GitHub Release | `gh release view <release-tag> --json tagName,isDraft,isPrerelease,assets` | 잘못 형성된 드래프트만 삭제한다. 그렇지 않으면 `gh release upload --clobber`로 누락된 자산을 업로드한다 |
+| 릴리스 태그 | `git ls-remote origin refs/tags/<release-tag>`와 `git tag -v <release-tag>` | 태그가 없거나 서명되지 않은 경우 같은 SHA에서 `-a -s`로 다시 태그한다. 다른 커밋에 태그 이름을 절대 재사용하지 않는다 |
+| npm | `npm view @ahmed-g-gad/apothem version`과 `npx @ahmed-g-gad/apothem@<version> --version` | `@ahmed-g-gad/apothem`의 npm Trusted Publishing을 확인한 뒤 `<release-tag>`에 대해 `publish-npm.yml`을 다시 실행한다 |
+| Pages | `gh run list --workflow=publish-static-site.yml --limit=1`과 `curl -sSI https://apothem.ahmedgad.com/` | `publish-static-site.yml`을 다시 실행한다. CNAME이 여전히 `ahmed-g-gad.github.io`로 해석되는지 검증한다 |
+| GitHub 메타데이터 | `gh repo view ahmed-g-gad/apothem --json description,homepageUrl,repositoryTopics,visibility` | 설명, 홈페이지, 토픽을 제자리에서 패치한다. 리포지터리를 다시 만들지 않는다 |
+
+## 5. 롤백
+
+롤백은 최후의 수단입니다. 먼저 표적화된 게시자 복구를 선호합니다. 단일 릴리스
+커밋을 되돌려야 하는 경우, 안전 태그에서 `main`을 복원합니다.
+
+```bash
+git fetch origin --tags
+git switch main
+git reset --hard <history-safety-tag>
+git push --force-with-lease origin main
+```
+
+롤백 후에는 CI를 다시 실행하고, GitHub가 드리프트를 보고하면 브랜치 보호를
+다시 적용하며, 롤백을 릴리스를 차단하는 인시던트로 기록합니다. 릴리스
+아티팩트가 여전히 유효한 경우에만 릴리스 태그를 유지합니다. 그렇지 않으면 다시
+시도하기 전에 잘못 형성된 릴리스와 태그를 삭제합니다.
+
+## 6. 상호 참조
+
+- Pages 구성: `site/content/docs/runbooks/pages-enablement.mdx`.
+- 릴리스 절차: `site/content/docs/runbooks/release-cycle.mdx`.
+- 패키징 레시피: `packaging/README.md`.
+- 복구 앵커: 릴리스 전용 히스토리 안전 태그.

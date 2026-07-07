@@ -1,0 +1,130 @@
+---
+title: "Apothem v1.0.1 — Launch-Veröffentlichung"
+description: "Apothem v1.0.1 ist verfügbar — ein gemeinsames Profil, materialisiert in siebzehn KI-Assistenz-Harnesses, mehrere Installationswege und eine signierte, attestierte Veröffentlichung."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem v1.0.1 ist die Launch-Veröffentlichung des host-agnostischen
+Konfigurationsmanagers für KI-Assistenz-Harnesses: ein gemeinsames Profil,
+siebzehn Harnesses, eine einzige signierte Version und
+Lieferketten-Nachweise, die der Veröffentlichung selbst beiliegen.
+
+## Die These: ein Profil, siebzehn Harnesses
+
+Apothem liest ein einziges gemeinsames Profil unter
+`~/.config/apothem/profile.yaml` und materialisiert es in die native
+Konfiguration, die jedes Harness erwartet. Du schreibst deine Verhaltensregeln,
+Skills, Hooks und Konventionen ein einziges Mal. Apothem rendert sie in siebzehn
+harness-native Ziele und hält sie synchron.
+
+Die siebzehn Adapter in dieser Veröffentlichung:
+
+- antigravity
+- claude-code
+- codebuddy
+- codex
+- cursor
+- gemini-cli
+- github-copilot
+- glm
+- hermes
+- kimi-code
+- kiro
+- open-claw
+- opencode
+- qwen-code
+- trae
+- windsurf
+- zed
+
+Füge deinem Arbeitsablauf ein Werkzeug hinzu, führe einen Befehl aus, und deine
+Konfiguration ist da. Entferne ein Werkzeug, und Apothem deinstalliert es sauber
+— ohne verwaiste Dateien zu hinterlassen.
+
+## Installation
+
+Mehrere Installationswege, eine CLI darunter:
+
+1. **Claude Code-Plugin** — innerhalb von Claude Code:
+
+   ```text
+   /plugin marketplace add ahmed-g-gad/apothem
+   /plugin install apothem@apothem
+   ```
+
+2. **npx** — führe die CLI direkt aus dem npm-Paket `@ahmed-g-gad/apothem` aus,
+   ohne Installationsschritt:
+
+   ```bash
+   npx @ahmed-g-gad/apothem profile init
+   npx @ahmed-g-gad/apothem install --harness all --project .
+   ```
+
+3. **Einschritt-Skript-Installer** — platziert eine eigenständige Laufzeit und
+   den `apothem`-Starter im PATH:
+
+   ```bash
+   curl -fsSL https://apothem.ahmedgad.com/install.sh | sh    # POSIX
+   ```
+
+   ```powershell
+   irm https://apothem.ahmedgad.com/install.ps1 | iex         # Windows
+   ```
+
+4. **Werkzeug-native Plugins und Erweiterungen** — eine Gemini CLI-Erweiterung
+   (`gemini extensions install https://github.com/ahmed-g-gad/apothem`), eine
+   Qwen Code-Erweiterung (`qwen extensions install ahmed-g-gad/apothem`), ein
+   Codex-Plugin (`codex plugin marketplace add ahmed-g-gad/apothem`) und eine
+   Erweiterung der VS Code-Familie (Visual Studio Marketplace, die
+   VS Code und GitHub Copilot abdeckt).
+
+## Lieferketten-Haltung
+
+Die [GitHub Release v1.0.1](https://github.com/ahmed-g-gad/apothem/releases/tag/v1.0.1)
+trägt den vollständigen Nachweissatz neben dem Code:
+
+- sdist und wheel, vor der Veröffentlichung geprüft.
+- Eine CycloneDX-SBOM.
+- Schlüssellose Sigstore cosign-Signaturbundles für jedes Artefakt.
+- SLSA-3-Build-Provenienz, im Veröffentlichungs-Workflow selbst verifiziert.
+- Plattform-Laufzeitarchive (darwin / linux / windows) mit einem signierten
+  `SHA256SUMS`-Manifest.
+
+Das Versions-Tag ist GPG-signiert, und das npm-Paket wird über Trusted
+Publishing (OIDC) mit automatischer Provenienz veröffentlicht.
+
+## Was in der Schachtel ist
+
+Die `apothem`-CLI stellt die Operator-Befehle bereit, die du für den vollen
+Konfigurations-Lebenszyklus brauchst:
+
+- `apothem install` — materialisiert das Profil in ein Harness oder in alle.
+- `apothem uninstall` — entfernt die materialisierte Konfiguration eines
+  Harness und lässt das gemeinsame Profil unangetastet.
+- `apothem update` — materialisiert erneut, nachdem du das Profil bearbeitet
+  hast.
+- `apothem verify` — erkennt Abweichungen zwischen dem Profil und der
+  On-Disk-Konfiguration eines Harness.
+- `apothem harnesses` — listet jeden registrierten Adapter auf.
+- `apothem profile` — inspiziert und verwaltet das gemeinsame Profil.
+- `apothem doctor` — diagnostiziert Umgebungs- und Konfigurationsprobleme.
+
+Jeder Harness-Adapter implementiert ein einheitliches
+`HarnessAdapter`-Protokoll — `install`, `uninstall`, `is_installed`, `verify` —
+sodass sich jedes Harness vom Sitz des Operators aus vorhersehbar verhält,
+unabhängig vom Anbieterformat darunter. Mehr über den Entwurf liest du im
+[Tiefgang zur Adapter-Architektur](/docs/blog/posts/multi-harness-adapter-design)
+und über den Formatabgleich in der
+[Konvergenz der Konventionen über Harnesses hinweg](/docs/blog/posts/cross-harness-convention-convergence).
+
+## Wohin als Nächstes
+
+- [Schnellstart](/docs/install/quickstart) — installiere und materialisiere
+  dein erstes Profil.
+- [Harnesses](/docs/harnesses) — Referenz je Adapter für alle siebzehn Ziele.
+- [Konzepte](/docs/concepts) — das Profilmodell und die
+  Materialisierungs-Pipeline.
+
+Apothem ist MIT-lizenziert und wird offen entwickelt unter
+[github.com/ahmed-g-gad/apothem](https://github.com/ahmed-g-gad/apothem).

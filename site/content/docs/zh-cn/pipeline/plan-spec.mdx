@@ -1,0 +1,69 @@
+---
+title: "/plan-spec"
+description: "/plan-spec——把自由格式散文或原始笔记打磨为规范级的 `_spec/spec.md` 规格，可供 `/plan-generate` 使用。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**角色：** 锻造者
+**流水线位置：** 头部
+
+把自由格式散文或原始笔记打磨为规范级的 `_spec/spec.md` 规格，可供 `/plan-generate` 使用。
+
+## 规范调用
+
+```bash
+/plan-spec
+```
+
+带参数：
+
+```bash
+/plan-spec [path/to/prose-source] [--suite-name NAME] [--refine-existing] [--standalone] [--quick SLUG [--tag TAG]]
+```
+
+## 输入
+
+自由格式散文、原始笔记或临时需求（由操作者内联提供或以路径形式提供）。
+
+## 输出
+
+`_spec/spec.md`（晋级后的规格）+ `_inputs/handoff-manifest.yml`。`--quick` 则改为在 `<project-root>/.apothem/plans/<YYYY-MM-DD>--<kebab-slug>.md` 写入单个项目本地的轻量级计划文件。
+
+## 下游
+
+/plan-generate（下游消费者）
+
+## 工作流阶段
+
+锻造者运行六个转换阶段（规格在 G4 从 `_inputs/forge.md` 晋级到 `_spec/spec.md`）：
+
+1. **发现与提取** — 读取散文／笔记，提取每一项需求、决策和约束。
+2. **细致考量** — 推敲每一处界面；通过结构化询问通道暴露每一处矛盾。
+3. **效力映射** — 将每项需求映射到其下游杠杆。
+4. **保全验证** — 在晋级之前，对候选规格运行十五条预发出门（G4）。
+5. **专识应用** — 应用领域专识；记录专识缺口发现。
+6. **问题解决巡查** — 跨 G0–G5 各门解决每一处未决询问，随后发出 `_spec/spec.md` 外加交接清单。
+
+## 失败模式
+
+| 症状 | 原因 | 恢复 |
+|---------|-------|----------|
+| 缺少散文输入 | 未提供任何散文／笔记 | 内联提供或以路径形式提供自由格式散文 |
+| 未解决的矛盾 | 散文携带相互冲突的需求 | 在 G3（预修订）停止；通过结构化询问解决，绝不静默处理 |
+| 规格未通过门 | 某条预发出门在 G4 失败 | 在从 `_inputs/forge.md` 晋级之前修复未通过的门 |
+
+## 示例
+
+```bash
+# 把原始笔记锻造为规范级规格
+/plan-spec ~/notes/feature.md --suite-name my-feature
+
+# 轻量级项目本地计划文件（绕过锻造者征询）
+/plan-spec --quick my-feature
+```
+
+## 交叉引用
+
+- [流水线概览](/docs/pipeline)
+- [命令参考](/docs/reference/commands)

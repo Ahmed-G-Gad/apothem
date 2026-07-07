@@ -1,0 +1,47 @@
+---
+title: "Apothem مقابل تهيئة Cursor اليدوية"
+description: "صيانة قواعد MDC الخاصة بـ Cursor تحت .cursor/rules/ يدويًّا، مقابل تحويلها من ملف التعريف المشترك لـ Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+يقرأ <bdi>Cursor</bdi> القواعد بصيغة <bdi>MDC</bdi> تحت <bdi>`.cursor/rules/`</bdi>.
+تتطلّب صيغة <bdi>MDC</bdi> حقول <bdi>frontmatter</bdi> — <bdi>`description`</bdi>
+و<bdi>`globs`</bdi> و<bdi>`alwaysApply`</bdi>. يُحوِّل محوِّل <bdi>cursor</bdi> في
+<bdi>Apothem</bdi> ملفات <bdi>`.mdc`</bdi> تلك من ملف التعريف المشترك. تقابل هذه
+الصفحة بين صيانة تلك التهيئة يدويًّا وإدارتها بـ <bdi>Apothem</bdi>.
+
+## مقارنة الجهد
+
+| المهمة | تهيئة يدوية | يديرها Apothem |
+| ---- | --------------- | --------------- |
+| كتابة القواعد | كتابة كل ملف <bdi>`.mdc`</bdi> تحت <bdi>`.cursor/rules/`</bdi> يدويًّا | مُحوَّلة من الذخيرة المشتركة |
+| كتابة <bdi>frontmatter</bdi> لـ <bdi>MDC</bdi> | كتابة <bdi>`description`</bdi> / <bdi>`globs`</bdi> / <bdi>`alwaysApply`</bdi> يدويًّا لكل ملف | يولّدها المحوِّل |
+| الحفاظ على صيغة قواعد واحدة | الاختيار يدويًّا بين قواعد <bdi>MDC</bdi> وملف <bdi>`.cursorrules`</bdi> واحد | يكتب المحوِّل ملفات <bdi>MDC</bdi> في <bdi>`.cursor/rules/`</bdi> فقط |
+| إبقاء القواعد متوائمة مع البيئات الأخرى | يدويًّا، لكل أداة | تلقائيًّا عند <bdi>`apothem update`</bdi> |
+| التحقّق من صحّة التهيئة | فحص يدوي | <bdi>`apothem verify --harness cursor`</bdi> |
+
+## ما الذي يديره Apothem
+
+يُحوِّل محوِّل <bdi>cursor</bdi> القواعد المشتركة إلى ملفات <bdi>`.mdc`</bdi> تحت
+<bdi>`.cursor/rules/`</bdi>، ويولّد <bdi>frontmatter</bdi> الـ <bdi>MDC</bdi>
+المطلوب (<bdi>`description`</bdi> و<bdi>`globs`</bdi> و<bdi>`alwaysApply`</bdi>)
+لكل ملف. يكتب المحوِّل صيغة <bdi>MDC</bdi> القائمة على الأدلّة التي يقرأها
+<bdi>Cursor</bdi> فقط؛ ولا يكتب ملف <bdi>`.cursorrules`</bdi> مفردًا.
+لا يملك <bdi>Cursor</bdi> خطّاف <bdi>PreToolUse</bdi>، ولذا تقيم نيّة الحواجز
+الواقية في نصّ القواعد.
+
+## مسار الترحيل
+
+1. شغّل <bdi>`apothem profile init`</bdi> لإنشاء ملف التعريف المشترك إن لم تكن قد فعلت بعد.
+2. انقل القواعد من <bdi>`.cursor/rules/`</bdi> الموجود لديك (وأيّ <bdi>`.cursorrules`</bdi>)
+   إلى الذخيرة المشتركة.
+3. شغّل <bdi>`apothem install --harness cursor`</bdi> لتحويل ملفات <bdi>`.mdc`</bdi>
+   بـ <bdi>frontmatter</bdi> الـ <bdi>MDC</bdi> الصحيح.
+4. شغّل <bdi>`apothem verify --harness cursor`</bdi> للتأكّد من نزول التهيئة.
+5. استخدم <bdi>`apothem update --harness cursor`</bdi> لكل تغيير لاحق.
+
+## اقرأ تاليًا
+
+- [مرجع محوِّل Cursor](/docs/harnesses/cursor)
+- [نظرة عامة على المقارنة](/docs/comparison)

@@ -1,0 +1,34 @@
+---
+title: "आउटपुट शैलियाँ"
+description: "ऑपरेटर-टोन प्रोफ़ाइल (Senior Architect, Concise Engineer, Forensic Auditor) जो /output-style आदेश के माध्यम से प्रति-सत्र सक्रिय होती हैं।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+आउटपुट-शैली प्रोफ़ाइल `src/apothem/output-styles/` के अंतर्गत रहती हैं और प्रति-शैली
+ऑपरेटर-टोन मार्गदर्शन वहन करती हैं। होस्ट कोडिंग-सहायक रनटाइम
+`/output-style <name>` के माध्यम से एक शैली को प्रति-सत्र आधार पर सक्रिय करता है।
+
+## विहित प्रोफ़ाइल
+
+| प्रोफ़ाइल | फ़ाइल | टोन |
+|---------|------|------|
+| डिफ़ॉल्ट आर्किटेक्ट | `src/apothem/output-styles/default-architect.md` | वरिष्ठ सॉफ़्टवेयर आर्किटेक्ट टोन (डिफ़ॉल्ट) |
+| संक्षिप्त इंजीनियर | `src/apothem/output-styles/concise-engineer.md` | संक्षिप्त-स्वरूप इंजीनियरिंग टोन |
+| फ़ोरेंसिक ऑडिटर | `src/apothem/output-styles/forensic-auditor.md` | निष्कर्ष-दर-निष्कर्ष ऑडिट टोन |
+
+## Frontmatter कॉन्ट्रैक्ट
+
+```yaml
+---
+name: <style name>
+description: <one-line tone summary>
+type: output-style
+---
+```
+
+## एक नई प्रोफ़ाइल लिखना
+
+`src/apothem/output-styles/` के अंतर्गत विहित frontmatter के साथ एक नई `<name>.md`
+फ़ाइल बनाएँ, मुख्य भाग में टोन घोषित करें, और अपने अगले सत्र की शुरुआत में
+`/output-style <name>` का आह्वान करके इसकी पुष्टि करें।

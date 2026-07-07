@@ -1,0 +1,43 @@
+---
+title: "계획 작성"
+description: "/plan 파이프라인으로 계획 스위트를 작성합니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+`/plan` 파이프라인은 원시 산문 요구사항을 실행 가능하고 검토되며 품질 게이트를 거친 구현 계획으로 변환합니다.
+
+## 핵심 단계
+
+이 파이프라인은 여덟 개의 일급 `/plan-<stage>` 명령으로 제공됩니다. 일상적인 흐름에서는 그중 다섯 개를 실행합니다:
+
+1. `/plan-spec` — 산문을 사양 등급의 `_spec/spec.md`로 정련
+2. `/plan-generate` — 완전한 계획 스위트 골격을 생성
+3. `/plan-review` — 생성된 계획의 포렌식 감사
+4. `/plan-execute` — 페이즈를 한 번에 하나씩 실행
+5. `/plan-status` — 언제든지 진행 상황을 검사
+
+세 단계가 이 묶음을 보완합니다: `/plan-design`은 아키텍처를 지닌 스위트에 대해 아키텍처 설계 산출물을 발행하고, `/plan-audit`은 폐루프 spec → generate → review 교정 래퍼를 실행하며, `/plan-amend`는 해결된 결정을 잃지 않고 기존 스위트를 개정합니다.
+
+## 빠른 계획(단일 파일)
+
+```bash
+# Creates plans/YYYY-MM-DD--my-feature.md in the current project
+/plan-spec --quick my-feature
+```
+
+## 완전한 계획 스위트
+
+```bash
+# Step 1 — write your requirements to prose.md, then:
+/plan-spec prose.md --suite-name my-project-plan
+/plan-generate
+/plan-review
+/plan-execute
+```
+
+## 계획 생명 주기
+
+계획은 다음을 거쳐 전이합니다: `draft` -> `in-progress` -> `converged`(ADR로 승격) 또는 `abandoned`.
+
+전체 생명 주기 사양은 [계획 규율](/docs/reference/plans-discipline)을 참조하세요.

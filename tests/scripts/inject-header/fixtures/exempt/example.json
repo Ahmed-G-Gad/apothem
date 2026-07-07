@@ -1,0 +1,6 @@
+{
+  "name": "example",
+  "purpose": "header-exception fixture matched by the **/*.json glob in src/apothem/schemas/header-exceptions.txt",
+  "exempt-because": "JSON has no comment syntax; the injector's exception list explicitly skips *.json files",
+  "sibling-attribution": "where attribution is required for a JSON config, the convention is a sibling NOTICE.md carrying the canonical banner"
+}

@@ -1,0 +1,62 @@
+---
+title: "Audit-Prüfsequenz"
+description: "Die Audit-Sequenz aus elf Befehlen, die Apothem vor dem Release überprüft."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Die Audit-Prüfsequenz ist der Qualitätssicherungs-Durchlauf aus elf Befehlen,
+der ein Projekt vor dem Release überprüft. Jeder Befehl auditiert einen
+Qualitätsbereich und gibt Befunde aus, die behoben oder ausdrücklich behandelt
+werden müssen.
+
+Zwei kanonische Orchestratoren treiben diese elf Dimensionen an. `/audit` führt
+sie parallel als einen einzigen Nur-Bericht-Durchlauf aus — es liefert einen
+deduplizierten, nach Schweregrad triagierten Befundbericht und ändert niemals
+Quellcode. `/fortress` ist die geschlossene Behebungsschleife (erkennen →
+verifizieren → beheben → erneut auditieren → Tor) , die ein Projekt zu einem
+release-getorten Zustand härtet. Jede Dimension bleibt zudem einzeln aufrufbar.
+
+## Die elf Audit-Bereiche
+
+| Befehl | Achse | Standard |
+|---------|------|----------|
+| /code-review | Codequalität | Handwerksprüfung je Datei |
+| /code-audit | Code-Korpus | dateiübergreifende Forensik |
+| /security-audit | Sicherheit | OWASP ASVS v4 + Top 10 |
+| /perf-audit | Performance | Core Web Vitals + USE-Methode |
+| /architecture-review | Architektur | Konformität des Design-Artefakts |
+| /ux-review | Entwicklererfahrung | CLI-Ergonomie + Onboarding |
+| /a11y-audit | Barrierefreiheit | WCAG 2.2 AA |
+| /docs-review | Dokumentation | Zehn-Dimensionen-Qualität |
+| /dependency-audit | Abhängigkeiten | Lizenz + CVE + Aktualität |
+| /supply-chain-audit | Lieferkette | SLSA + Sigstore + SBOM |
+| /threat-model-audit | Bedrohungsmodell | STRIDE + PASTA |
+
+## Release-Reife-Tore
+
+Die Sequenz trägt zu den Release-Reife-Toren bei:
+
+- **Lokales Tor:** Lokale Konformitätsprüfungen bestehen.
+- **GitHub-Tor** (vor dem Umstieg): GitHub-seitige Verifikation — CI-Workflows
+  grün bei jedem Commit, jeder Prüfung.
+- **Audit-Tor:** Vollständige Prüfsequenz abgeschlossen — alle elf Bereiche
+  auditiert, Befunde behandelt, Beobachtungspunkte dokumentiert.
+
+## Behebungsschleife
+
+Die Audit-Befehle sind Nur-Bericht: Sie liefern Befunde, wenden aber niemals
+Korrekturen an. Die Behebung läuft über `/fortress`, die geschlossene Schleife,
+die dem Muster „iterieren bis grün" folgt — Befunde werden triagiert und
+verifiziert, Korrekturen an der jeweils besitzenden Oberfläche jedes Befunds
+angewendet, das Audit erneut ausgeführt, und die Schleife läuft weiter, bis die
+Befunde bereinigt sind und das Release-Tor besteht. Die projektweite Anhebung auf
+den aktuellen Stand der Technik läuft über `/elevate`.
+
+## Warum die Sequenz existiert
+
+Softwarequalität verfällt entlang mehrerer Dimensionen gleichzeitig. Eine einzige
+Prüfung kann Mängel übersehen, die zwischen Codequalität, Sicherheit, Performance,
+Architektur, Barrierefreiheit, Dokumentation, Abhängigkeitslage und
+Lieferkettenlage liegen. Die Audit-Sequenz legt diese Brillen getrennt an, damit
+das Release-Tor das vollständige Risikoprofil sieht.

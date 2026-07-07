@@ -1,0 +1,96 @@
+---
+title: "Gemini CLI"
+description: "Adaptateur d'outil Apothem pour Gemini CLI (GA)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Fournisseur :** Google
+**Nom d'installation :** `gemini-cli`
+**Statut :** GA
+**Configuration native :** `GEMINI.md` et `.gemini/` locaux au projet
+
+## Installation
+
+```bash
+apothem install --harness gemini-cli --project /path/to/project
+```
+
+L'adaptateur a une portée de projet. Il installe le `GEMINI.md` du projet,
+convertit les commandes Apothem en commandes barre obliques TOML de Gemini,
+normalise les définitions d'assistants locaux et place les cohortes de prise en
+charge non natives sous `.gemini/.apothem/support/`.
+
+**Fichiers écrits :**
+
+```text
+GEMINI.md
+.gemini/commands/*.toml
+.gemini/agents/*.md
+.gemini/skills/
+.gemini/.apothem/support/
+```
+
+## Correspondance du profil vers la configuration native
+
+L'adaptateur lit les cohortes partagées d'Apothem et achemine chacune via une
+surface compatible avec Gemini. Les règles Markdown, les modèles et le matériel de
+hooks restent sous `.gemini/.apothem/support/` parce qu'il s'agit de matériel de prise en
+charge, et non d'un répertoire de règles natif de Gemini.
+
+## Notes de compatibilité
+
+`~/.gemini/` reste un territoire de portée utilisateur pour les outils qui
+utilisent un profil Gemini global. L'adaptateur Gemini CLI n'écrit que dans le
+projet passé via `--project`.
+
+## Vérification
+
+```bash
+apothem verify --harness gemini-cli --project /path/to/project
+```
+
+La commande verify confirme que :
+
+1. La configuration native existe au chemin attendu.
+2. Tous les champs obligatoires du profil partagé sont présents.
+3. La routine de vérification propre à l'adaptateur signale un succès.
+
+## Mise à jour
+
+```bash
+apothem update --harness gemini-cli --project /path/to/project
+```
+
+Actualise `GEMINI.md`, les commandes converties, les définitions d'assistants
+locaux, les compétences installées et l'arborescence de prise en charge
+`.gemini/.apothem/support/`.
+
+## Désinstallation
+
+```bash
+apothem uninstall --harness gemini-cli --project /path/to/project
+```
+
+Supprime les fichiers de configuration native écrits par l'adaptateur.
+Le YAML du profil partagé et le moteur Apothem ne sont pas affectés.
+
+## Porte de conformité
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Dépannage
+
+| Symptôme | Correctif |
+|---------|-----|
+| Fichier de configuration introuvable | Réexécutez `apothem install --harness gemini-cli --project /path/to/project` |
+| Échec de la vérification | Exécutez `apothem update --harness gemini-cli --project /path/to/project`, puis vérifiez à nouveau |
+| Contenu de configuration inattendu | Vérifiez `~/.config/apothem/profile.yaml` ou `--profile PATH`, puis réexécutez `apothem update --harness gemini-cli --project /path/to/project` |
+
+## Boutons de configuration
+
+| Indicateur | Par défaut | Description |
+|------|---------|-------------|
+| `--dry-run` | `false` | Prévisualise l'installation sans écrire de fichiers. |

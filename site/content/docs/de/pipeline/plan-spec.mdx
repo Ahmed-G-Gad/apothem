@@ -1,0 +1,69 @@
+---
+title: "/plan-spec"
+description: "/plan-spec — Verfeinert freie Prosa oder rohe Notizen zu einer spec-tauglichen `_spec/spec.md`-Spezifikation, bereit für `/plan-generate`."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rolle:** Schmiede
+**Pipeline-Position:** Kopf
+
+Verfeinert freie Prosa oder rohe Notizen zu einer spec-tauglichen `_spec/spec.md`-Spezifikation, bereit für `/plan-generate`.
+
+## Kanonischer Aufruf
+
+```bash
+/plan-spec
+```
+
+Mit Argumenten:
+
+```bash
+/plan-spec [path/to/prose-source] [--suite-name NAME] [--refine-existing] [--standalone] [--quick SLUG [--tag TAG]]
+```
+
+## Eingaben
+
+Freie Prosa, rohe Notizen oder Ad-hoc-Anforderungen (vom Operator inline oder als Pfad bereitgestellt).
+
+## Ausgaben
+
+`_spec/spec.md` (die beförderte Spezifikation) + `_inputs/handoff-manifest.yml`. `--quick` schreibt stattdessen eine einzelne projektlokale, leichtgewichtige Plandatei unter `<project-root>/.apothem/plans/<YYYY-MM-DD>--<kebab-slug>.md`.
+
+## Nachgelagert
+
+/plan-generate (nachgelagerter Konsument)
+
+## Workflow-Phasen
+
+Die Schmiede führt sechs Transformationsphasen aus (die Spezifikation wird bei G4 von `_inputs/forge.md` zu `_spec/spec.md` befördert):
+
+1. **Entdeckung & Extraktion** — Die Prosa / Notizen lesen und jede Anforderung, Entscheidung und Einschränkung extrahieren.
+2. **Akribische Betrachtung** — Jede Oberfläche durchdenken; jeden Widerspruch über den strukturierten Rückfrage-Kanal aufzeigen.
+3. **Potenz-Abbildung** — Jede Anforderung auf ihre nachgelagerte Hebelwirkung abbilden.
+4. **Erhaltungs-Verifikation** — Das Fünfzehn-Balken-Pre-Emission-Gate (G4) gegen die Kandidaten-Spezifikation vor der Beförderung ausführen.
+5. **Anwendung von Fachwissen** — Domänen-Fachwissen anwenden; Fachwissens-Lückenbefunde protokollieren.
+6. **Frage-Auflösungs-Durchlauf** — Jede offene Rückfrage über die Gates G0–G5 auflösen, dann `_spec/spec.md` plus das Übergabe-Manifest ausgeben.
+
+## Fehlermodi
+
+| Symptom | Ursache | Behebung |
+|---------|-------|----------|
+| Fehlende Prosa-Eingabe | Keine Prosa / Notizen bereitgestellt | Die freie Prosa inline oder als Pfad bereitstellen |
+| Ungelöster Widerspruch | Prosa trägt widersprüchliche Anforderungen | Bei G3 (Vor-Änderung) anhalten; über strukturierte Rückfrage auflösen, niemals stillschweigend |
+| Spezifikation besteht das Gate nicht | Ein Pre-Emission-Balken schlägt bei G4 fehl | Den fehlerhaften Balken beheben vor der Beförderung aus `_inputs/forge.md` |
+
+## Beispiele
+
+```bash
+# Rohe Notizen zu einer spec-tauglichen Spezifikation schmieden
+/plan-spec ~/notes/feature.md --suite-name my-feature
+
+# Leichtgewichtige projektlokale Plandatei (umgeht die Schmiede-Elicitation)
+/plan-spec --quick my-feature
+```
+
+## Querverweise
+
+- [Pipeline-Überblick](/docs/pipeline)
+- [Befehlsreferenz](/docs/reference/commands)

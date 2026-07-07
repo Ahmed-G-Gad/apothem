@@ -1,0 +1,125 @@
+---
+title: "Política de selos"
+description: "Especifica as fontes de selos dinâmicos e estáticos para o README, cobrindo o status de fluxo de trabalho nativo do GitHub, o JSON de endpoint do shields.io e as formas de selo estático."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Este documento é a referência canônica para a faixa de selos do README e a
+infraestrutura que publica suas fontes de dados dinâmicas. Cada selo no README
+do projeto é resolvido por meio de uma das três formas especificadas aqui;
+novos selos adicionados no futuro seguem as mesmas formas ou são rejeitados na
+revisão.
+
+## 1. Contexto
+
+URLs estáticas `https://img.shields.io/badge/X-Y-Z` nunca mudam por conta
+própria, então elas se afastam do estado real do projeto — um selo
+`release-vN-blue` continua mostrando `vN` muito tempo depois de `vN+1` ser
+lançado. A política, portanto, exige formas dinâmicas para cada valor que se
+move e reserva selos estáticos para o pequeno conjunto de valores (licença,
+versão alvo do Python) que raramente mudam, onde a forma estática é honesta.
+
+## 2. Arquitetura
+
+Três formas cobrem cada selo do projeto:
+
+1. **Selos de status de fluxo de trabalho nativos do GitHub.** A URL de selo de
+   um fluxo de trabalho tem a forma
+   `https://github.com/<owner>/<repo>/actions/workflows/<file>/badge.svg` e
+   reflete a execução mais recente no branch padrão. O GitHub serve o selo a
+   partir dos metadados públicos do repositório.
+2. **Selos de endpoint do shields.io.** Um selo de endpoint do shields.io
+   resolve uma URL `https://img.shields.io/endpoint?url=<published-json>` onde
+   o JSON está em conformidade com o esquema de endpoint do shields.io
+   (`schemaVersion`, `label`, `message`, `color`). O JSON publicado fica em
+   `apothem.ahmedgad.com/badges/*.json`; seu conteúdo é gerado por um fluxo de
+   trabalho de CI a cada execução de CI bem-sucedida. Selos de endpoint mantêm
+   as métricas sob publicação controlada pelo projeto em vez de um armazenamento
+   mutável de terceiros.
+3. **Selos estáticos do shields.io.** Um selo estático tem a forma
+   `https://img.shields.io/badge/<label>-<message>-<color>` sem fonte de dados
+   reativa. Reservado para valores que genuinamente raramente mudam
+   (identificador de licença, versão alvo do Python).
+
+A publicação de métricas do projeto em Gists públicos é excluída por design.
+Endpoints do shields.io sobre o domínio controlado pelo projeto são o
+substituto canônico.
+
+## 3. Especificação por selo
+
+| Selo | Forma | Fonte | Forma da URL |
+|---|---|---|---|
+| Status de CI | Nativo do GitHub | `.github/workflows/ci.yml` | `https://github.com/ahmed-g-gad/apothem/actions/workflows/ci.yml/badge.svg?branch=main` |
+| Último commit | Nativo do GitHub | metadados do repositório | `https://img.shields.io/github/last-commit/ahmed-g-gad/apothem` |
+| Licença | Estático do shields.io | `LICENSE` (MIT) | `https://img.shields.io/badge/License-MIT-yellow.svg` |
+| Última versão | Endpoint do shields.io | `badges/release.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/release.json` |
+| Cobertura | Endpoint do shields.io | `badges/coverage.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/coverage.json` |
+| Segurança | Endpoint do shields.io | `badges/security.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/security.json` |
+| Cadeia de suprimentos | Endpoint do shields.io | `badges/supply-chain.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/supply-chain.json` |
+| Documentação | Endpoint do shields.io | `badges/docs.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/docs.json` |
+| Versão do Python | Estático do shields.io | `pyproject.toml` `python_requires` | `https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white` |
+
+O CodeQL é executado como um fluxo de trabalho dedicado
+`.github/workflows/codeql.yml` que analisa as superfícies Python e Actions; o
+job security-scan do `ci.yml` executa apenas bandit, deixando a publicação de
+SARIF do CodeQL para o `codeql.yml`. O selo de segurança consome o JSON de
+endpoint publicado pelo fluxo de trabalho de badges em vez de um selo de fluxo
+de trabalho nativo do GitHub, mantendo-se estável através da topologia de
+scanner subjacente.
+
+## 4. Mecanismo de publicação de JSON
+
+Os JSONs de endpoint são produzidos por `.github/workflows/badges.yml`. O
+fluxo de trabalho:
+
+- É disparado por `workflow_run` após o fluxo de trabalho `ci` ser concluído
+  (e por `workflow_dispatch` manual para republicação sem uma execução de CI).
+- Resolve a tag mais recente a partir de `git describe --tags --abbrev=0` e a
+  conclusão de CI pai a partir do evento `workflow_run`.
+- Gera cada JSON via `jq -n` para que a saída corresponda estritamente ao
+  esquema de endpoint do shields.io (`schemaVersion: 1`, mais `label`,
+  `message`, `color`).
+- Valida cada JSON emitido com `jq -e` antes do upload.
+- Faz o upload do diretório como um artefato de fluxo de trabalho chamado
+  `badges`.
+
+A implantação dos artefatos em `apothem.ahmedgad.com/badges/` é tratada por
+`.github/workflows/publish-static-site.yml`. Durante a construção do site, esse
+fluxo de trabalho baixa o artefato `badges` bem-sucedido mais recente e o
+prepara em `site/dist/badges/`. Se o artefato estiver ausente ou expirado, o
+site ainda é implantado e registra o artefato de selo faltante nos logs do
+fluxo de trabalho em vez de publicar JSON quebrado.
+
+## 5. Protocolo de manutenção
+
+Adicione um novo selo decidindo primeiro a forma:
+
+- Se o selo refletir o estado de execução de um fluxo de trabalho de CI,
+  prefira a forma nativa do GitHub. A URL do selo é fixada pelo arquivo do
+  fluxo de trabalho; nenhuma infraestrutura de publicação é necessária.
+- Se o selo refletir uma métrica (uma contagem, uma porcentagem, uma string de
+  versão, um rótulo graduado) que se atualiza ao longo do tempo, use a forma de
+  endpoint do shields.io. Adicione uma etapa de geração de JSON a
+  `.github/workflows/badges.yml` ao lado das cinco existentes e adicione a URL
+  consumidora `apothem.ahmedgad.com/badges/<name>.json` à faixa de selos do
+  README.
+- Se o selo refletir um valor que genuinamente raramente muda (licença, alvo de
+  linguagem, modo de governança), use a forma estática do shields.io. Documente
+  a cadência de mudança na tabela por selo deste arquivo ao adicionar o selo.
+
+Aposente um selo removendo-o primeiro do README, depois removendo sua etapa de
+geração de JSON do fluxo de trabalho de badges, e então removendo sua linha da
+tabela por selo acima. Mantenha a exclusão atômica para que o README nunca
+faça referência a um artefato JSON que o fluxo de trabalho não produz.
+
+## 6. Referências cruzadas
+
+- O fluxo de trabalho de CI cujo estado de execução o selo de CI nativo do
+  GitHub reflete: `.github/workflows/ci.yml`.
+- O fluxo de trabalho de badges que publica os JSONs de endpoint:
+  `.github/workflows/badges.yml`.
+- O domínio do site estático que serve os JSONs:
+  `apothem.ahmedgad.com`.
+- A referência do esquema de endpoint do shields.io:
+  [https://shields.io/badges/endpoint-badge](https://shields.io/badges/endpoint-badge).

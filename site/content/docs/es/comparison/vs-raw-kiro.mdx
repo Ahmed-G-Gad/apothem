@@ -1,0 +1,42 @@
+---
+title: "Apothem frente a la configuración manual de Kiro"
+description: "Mantener a mano los archivos de dirección de Kiro bajo .kiro/steering/ frente a renderizarlos desde el perfil compartido de Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Kiro lee la dirección desde un directorio `.kiro/steering/` de archivos Markdown. El
+adaptador kiro de Apothem renderiza un archivo de dirección `apothem-rules.md` dedicado
+a partir del perfil compartido. Esta página contrasta mantener esa configuración a mano
+frente a gestionarla con Apothem.
+
+## Comparación de esfuerzo
+
+| Tarea | Configuración manual | Gestionada por Apothem |
+| ---- | --------------- | --------------- |
+| Escribir reglas de dirección | Escribir a mano cada archivo bajo `.kiro/steering/` | Renderizadas desde el corpus compartido |
+| Mantener intactos los archivos de base | Recordar no sobrescribir `product.md` / `tech.md` / `structure.md` | El adaptador escribe solo `apothem-rules.md` |
+| Mantener las reglas alineadas con otros entornos | Manual, por herramienta | Automático en `apothem update` |
+| Verificar que la configuración es correcta | Inspección manual | `apothem verify --harness kiro` |
+
+## Qué gestiona Apothem
+
+El adaptador kiro renderiza las reglas compartidas en un archivo de dirección
+`apothem-rules.md` dedicado con front matter `inclusion: always` y no toca los archivos
+de base escritos por el operador de Kiro. Kiro no tiene un hook PreToolUse, por lo que
+la intención de los guardarraíles vive en la prosa de las reglas en lugar de en un
+punto de interceptación de llamadas a herramientas. Cada cambio en las reglas
+compartidas vuelve a renderizar el archivo en el siguiente `apothem update`.
+
+## Ruta de migración
+
+1. Ejecuta `apothem profile init` para crear el perfil compartido si aún no lo tienes.
+2. Mueve las reglas de tu `.kiro/steering/` existente al corpus compartido.
+3. Ejecuta `apothem install --harness kiro` para renderizar el archivo de dirección `apothem-rules.md`.
+4. Ejecuta `apothem verify --harness kiro` para confirmar que la configuración se instaló.
+5. Usa `apothem update --harness kiro` para cada cambio posterior.
+
+## Lee a continuación
+
+- [Referencia del adaptador Kiro](/docs/harnesses/kiro)
+- [Resumen de comparación](/docs/comparison)

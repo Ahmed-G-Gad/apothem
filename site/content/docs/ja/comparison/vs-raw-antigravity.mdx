@@ -1,0 +1,43 @@
+---
+title: "Apothem と手作業の Antigravity 構成の比較"
+description: "Antigravity CLI のグローバルコンテキストとプラグインファイルを手作業で維持するのと、Apothem の共有プロファイルを通じて管理するのとの比較。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Antigravity はクラス I のマニフェスト伝播環境です。Apothem はグローバルの
+`~/.gemini/GEMINI.md` コンテキストアンカーを書き込み、`~/.gemini/antigravity-cli/plugins/apothem/`
+の下に Apothem プラグインをインストールします。本ページは、そのレイアウトを手作業で
+維持するのと Apothem で管理するのとを対比します。
+
+## 労力の比較
+
+| タスク | 手作業の構成 | Apothem 管理 |
+| ---- | --------------- | --------------- |
+| ルールを書く | 各プラグインルールファイルを手書き | 共有コーパスに一度書く |
+| 再利用可能なプロンプトを保つ | コマンドプロンプトとスキルをプラグインファイルへ手でコピー | プラグインスキルとして変換またはコピー |
+| フック支援素材を保つ | 有効な接続なしでフック参照を手でコピー | Apothem プラグインの支援ツリーの下にコピー |
+| ルールを他の環境と揃えて保つ | 手作業、ツールごと | `apothem update` で自動 |
+| 構成のインストール／削除 | ファイルを手でコピー・削除 | `apothem install` / `apothem uninstall` |
+| 構成が正しいか検証する | 手作業の検査 | `apothem verify --harness antigravity` |
+
+## Apothem が管理するもの
+
+Apothem は Antigravity のグローバルコンテキストファイル、プラグインメタデータ、
+変換済みコマンドスキル、再利用可能なスキル、変換済みエージェント、ルール、
+テンプレート、フック支援素材を管理します。フックファイルは支援素材として保持
+されます。アダプターが Antigravity の `hooks.json` 向けのスキーマ翻訳層を持つまで、
+Apothem は有効な Antigravity フックイベントを登録しません。
+
+## 移行手順
+
+1. 共有プロファイルをまだ作成していなければ、`apothem profile init` を実行します。
+2. 既存の手書き Antigravity ルールを共有コーパスへ移します。
+3. `apothem install --harness antigravity` を実行してコーパスを伝播します。
+4. `apothem verify --harness antigravity` を実行して構成が配置されたことを確認します。
+5. 以降の変更には毎回 `apothem update --harness antigravity` を使います。
+
+## 次に読む
+
+- [Antigravity アダプターのリファレンス](/docs/harnesses/antigravity)
+- [比較の概要](/docs/comparison)

@@ -1,0 +1,138 @@
+---
+title: "/plan-design"
+description: "/plan-design — Erzeugt ein umfassendes Architekturdesign-Artefakt unter `_inputs/design.md`."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rolle:** Architekt
+**Pipeline-Position:** bedingt, nach der Prüfung, vor der Ausführung
+
+Erzeugt das Architekturdesign-Artefakt unter `_inputs/design.md`, wenn eine
+Plan-Suite architekturtragende Arbeit umfasst. Es ist bewusst bedingt: eine
+Suite aus Prosa, Dokumentation, Metadaten oder eng begrenzten Fixtures geht von
+`/plan-review` direkt zu `/plan-execute`; eine Suite, die Komponenten,
+Schnittstellen, Schemata, Datenfluss, Adapter, Release-Topologie,
+Sicherheitsgrenzen oder Laufzeitverhalten ändert, durchläuft zuerst
+`/plan-design`.
+
+## Kanonischer Aufruf
+
+```bash
+/plan-design path/to/plan-suite/
+```
+
+Mit Argumenten:
+
+```bash
+/plan-design [path/to/plan-suite/] [--refine-existing] [--dry-run]
+```
+
+## Eingaben
+
+Geprüfte Plan-Suite + `_spec/spec.md` + `_inputs/handoff-manifest.yml` +
+PASS-Prüfungs-Scorecards aus `/plan-review`.
+
+## Ausgaben
+
+`_inputs/design.md` plus ein erweitertes `_inputs/handoff-manifest.yml`, das den
+Pfad des Design-Artefakts, das Ergebnis des Design-Tors, das Ergebnis der
+Sieben-Achsen-Abdeckung und die Zusammenfassung der bidirektionalen
+Bindungsmatrix trägt.
+
+## Anwendbarkeits-Tor
+
+Führe `/plan-design` aus, wenn mindestens eine nachgelagerte Phase deklariert
+oder impliziert:
+
+- Änderungen an Quell-Layout, Paketgrenze, Adaptergrenze oder Modulgrenze.
+- Öffentliche Schnittstellen, Protokolle, Schemata, Konfigurationsverträge oder
+  CLI-Verhalten.
+- Komponentenübergreifender Datenfluss, Lebenszyklus-Reihenfolge,
+  Zustandsübergänge oder Abhängigkeitskanten.
+- Architektur für Sicherheit, Performance, Nebenläufigkeit, Beobachtbarkeit,
+  Bereitstellung, Release oder Lieferkette.
+- Ein späterer `/architecture-review`-Durchgang, der die Implementierung auf ein
+  Design-Artefakt zurückverfolgen muss.
+
+Überspringe `/plan-design`, wenn sich die Suite auf Textbearbeitungen,
+Aktualisierungen generierter Inventare, eng begrenzte Fixture-Updates,
+punktuelle Dokumentationskorrekturen oder andere Arbeit beschränkt, deren
+Implementierung ohne eine architektonische Trace-Oberfläche verifiziert werden
+kann. Der Überspringpfad ist explizit: `/plan-review` erfasst die
+Nicht-Architektur-Klassifizierung, dann fährt `/plan-execute` von der geprüften
+Plan-Suite fort.
+
+## Nachgelagert
+
+`/plan-execute` verbraucht das Design-Artefakt für architekturtragende Phasen.
+`/architecture-review` verbraucht dasselbe Artefakt während der
+Audit-Prüfsequenz. Fehlt `_inputs/design.md` für architekturtragende Arbeit,
+stoppt die Architekturprüfung und leitet die Suite zurück durch `/plan-design`.
+
+## Workflow-Phasen
+
+Der Befehl folgt sechs architekturspezifischen Transformationsphasen:
+
+1. **Eingabe-Aufnahme** — Liest die geprüfte Suite, die Scorecards, die
+   Phasenausgaben und das Übergabe-Manifest; blockiert bei fehlendem oder
+   fehlgeschlagenem Prüfnachweis ab SHARED+.
+2. **Architektonische Zerlegung** — Durchläuft Architektur, Nebenläufigkeit,
+   Performance, Sicherheit, Tests, Tooling und Beobachtbarkeit; identifiziert
+   Komponenten, Kanten und offene architektonische Fragen.
+3. **Komponenten-Schnittstellendesign** — Definiert öffentliche Schnittstellen,
+   Protokollverträge, Schemata, Invarianten, Fehlermodi und
+   Abhängigkeitsinversionsgrenzen.
+4. **Ratifizierung komponentenübergreifender Bindungen** — Schließt jede
+   vorgelagerte, nachgelagerte, geschwisterliche, Kriteriums- und Ankerkante;
+   gibt eine bidirektionale Bindungsmatrix aus, wenn der Komponentengraph die
+   Matrixschwelle überschreitet.
+5. **Ausgabe des Design-Artefakts** — Schreibt `_inputs/design.md` mit
+   Komponentenabschnitten, Diagrammen, Entscheidungsaufzeichnungen,
+   Validierungsergebnis und Bindungen.
+6. **Design-Validierungstor** — Führt das Fünfzehn-Stäbe-Pre-Emission-Tor aus;
+   aktualisiert `_inputs/handoff-manifest.yml` erst, nachdem das Design bestanden
+   hat.
+
+## Form des Design-Artefakts
+
+Das ausgegebene `_inputs/design.md` enthält:
+
+- Eine Zusammenfassung mit Komponentenanzahl und Sieben-Achsen-Abdeckung.
+- Einen Abschnitt je Hauptkomponente, geordnet von inneren Domänenoberflächen
+  hin zu äußeren Adaptern und Operator-Oberflächen.
+- Mermaid-Architektur-, Sequenz-, Zustands- oder Abhängigkeitsdiagramme dort, wo
+  die Struktur andernfalls mehrdeutig wäre.
+- Festgelegte architektonische Entscheidungsaufzeichnungen mit Alternativen,
+  Kompromissen und Reversibilitätsnotizen.
+- Ergebnis des Validierungstors und bidirektionale Bindungsmatrix, sofern
+  zutreffend.
+- Die eigenen Fünf-Richtungs-Bindungen des Artefakts zu vorgelagerten und
+  nachgelagerten Planungsoberflächen.
+
+## Fehlermodi
+
+| Symptom | Ursache | Behebung |
+|---------|-------|----------|
+| Voraussetzung unvollständig | Abhängige Phase nicht abgeschlossen | Schließe zuerst die vorgelagerte Phase ab |
+| Qualitätstor FAIL | Ausgabe erfüllt die Standards nicht | Behebe die Ausgabe und führe erneut aus |
+| Geprüfte Suite fehlt | Plan-Suite oder Prüf-Scorecards fehlen | Führe `/plan-generate`, dann `/plan-review` aus |
+| Nicht-Architektur-Suite | Keine Phase benötigt eine architektonische Trace-Oberfläche | Erfasse das Überspringen und fahre mit `/plan-execute` fort |
+| Architekturprüfung blockiert | `_inputs/design.md` fehlt für architekturtragende Implementierung | Führe `/plan-design`, dann erneut `/architecture-review` aus |
+
+## Beispiele
+
+```bash
+# Dry-Run zur Vorschau von Anwendbarkeit, Komponentenanzahl und offenen Fragen
+/plan-design --dry-run
+
+# Design für eine benannte architekturtragende Suite ausgeben
+/plan-design path/to/plan-suite/
+```
+
+## Querverweise
+
+- [Pipeline-Überblick](/docs/pipeline)
+- [/plan-execute](/docs/pipeline/plan-execute)
+- [/architecture-review](/docs/pipeline/architecture-review)
+- [Master-Plan-Suite-Vorlage](/docs/reference/commands)

@@ -1,0 +1,83 @@
+---
+title: "Ajouter un environnement"
+description: "Activer un adaptateur d'environnement pour que sa configuration native soit matérialisée depuis le profil partagé."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Objectif : activer un environnement supplémentaire pour qu'Apothem matérialise
+la configuration native de cet environnement depuis votre profil partagé.
+
+## Prérequis
+
+- Un profil partagé à `~/.config/apothem/profile.yaml` (créez-en un avec
+  `apothem profile init` s'il n'existe pas encore).
+- La CLI `apothem` sur votre `PATH`. Si vous avez installé l'arborescence source
+  autonome, préfixez chaque commande par `PYTHONPATH="$HOME/.apothem/src"`
+  et exécutez `python -m apothem` à la place d'`apothem` — ou utilisez
+  `npx @ahmed-g-gad/apothem`.
+
+## Étapes
+
+1. Listez les environnements enregistrés et voyez lesquels sont déjà installés :
+
+   ```bash
+   apothem harnesses list
+   ```
+
+   `apothem harnesses list` affiche chaque identifiant pris en charge ; le même
+   ensemble figure dans la [liste des environnements](/docs/harnesses) et le
+   [registre des environnements](/docs/reference/harness-registry) généré depuis
+   la source. Choisissez l'identifiant de votre outil plutôt que de coder la
+   liste en dur ici — elle s'agrandit à mesure que des adaptateurs sont ajoutés.
+
+2. Inspectez l'environnement cible pour confirmer son périmètre et son chemin de
+   sortie :
+
+   ```bash
+   apothem harnesses show cursor
+   ```
+
+   Une ligne `Scope: project` signifie que l'adaptateur matérialise dans une
+   arborescence de projet et nécessite `--project PATH` ; `Scope: user`
+   matérialise dans un répertoire de configuration au niveau utilisateur et ne
+   nécessite aucun drapeau de projet.
+
+3. Prévisualisez l'installation sans écrire de fichiers :
+
+   ```bash
+   apothem install --harness cursor --dry-run
+   ```
+
+4. Installez l'environnement. Pour un environnement au niveau utilisateur :
+
+   ```bash
+   apothem install --harness claude-code
+   ```
+
+   Pour un environnement au niveau projet, passez la racine du projet :
+
+   ```bash
+   apothem install --harness cursor --project /path/to/project
+   ```
+
+   Installez tous les environnements pris en charge d'un coup avec
+   `--harness all` (les environnements au niveau projet nécessitent toujours
+   `--project` ; les identifiants listés dans `exclude_harnesses` dans le profil
+   sont ignorés).
+
+## Vérifier
+
+```bash
+apothem verify --harness cursor
+```
+
+Une ligne `✓ <harness-id> is verified` confirme que les cibles gérées existent
+et sont analysables. `apothem doctor` donne la vue d'ensemble du système sur
+chaque environnement.
+
+## Connexes
+
+- [Modifier le profil](/docs/how-to/editing-the-profile) pour changer ce que
+  l'adaptateur matérialise, puis ré-exécutez `apothem update`.
+- [Installation](/docs/install) couvre l'installation initiale.

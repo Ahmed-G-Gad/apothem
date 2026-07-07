@@ -1,0 +1,32 @@
+---
+title: "Commit-Konventionen"
+description: "Legt das Format der Commit-Nachrichten, die Release-Markierung, die Disziplin der ausschließlich menschlichen Autorschaft und die Kadenz pro Aufgabe für git-Artefakte und Versionskontrolle fest."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Kanonische Referenz für git-Commit-Nachrichten, Release-Tags und Autorschaftsdisziplin.** Die Zusammenfassung in [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Konventionen ist die Inline-Deklaration; diese Seite ist die eigenständige Referenz, die nachgelagerte Mitwirkende zitieren.
+
+---
+
+## 1. Conventional Commits
+
+Commit-Betreffe folgen der **Conventional-Commits**-Form: `<type>(<scope>): <subject>`. Die geschlossene `<type>`-Menge ist `{feat, fix, chore, docs, refactor, test, perf, ci, build, style, revert, release}`. Der `<scope>` ist die Oberfläche, die der Commit berührt (z. B. `feat(conformity)`, `docs(adr)`, `fix(ci)`); der Scope wird nur bei übergreifenden Änderungen weggelassen, die sich nicht lokalisieren lassen.
+
+Der Betreff ist im Imperativ, klein nach dem type/scope-Doppelpunkt, ohne abschließenden Punkt und unter 72 Zeichen. Der Body — durch eine Leerzeile vom Betreff getrennt — erklärt, **warum** die Änderung existiert, nicht was der Diff geändert hat; der Diff ist selbst die kanonische Aufzeichnung des Was.
+
+## 2. Autorschaftsdisziplin (nur Menschen)
+
+Jede Autorschaftsoberfläche in jedem git-Artefakt (Commit-Betreff, Commit-Body, `Author:`-Feld, `Co-Authored-By:`-Trailer, `Signed-off-by:`-Trailer, Branch-Name, Tag-Name, Tag-Annotation, Stash-Name, git-notes-Body, PR-Titel, PR-Beschreibung) nennt **nur menschliche Mitwirkende**. Die Laufzeit des Harness schreibt sich selbst, dem zugrundeliegenden Sprachmodell, der Laufzeit / Umgebung / IDE / Erweiterung / dem Anbieter oder jedem anderen automatisierten Werkzeug niemals eine dieser Oberflächen zu. Zu den verbotenen Mustern gehören `Co-Authored-By: <model-name>`, `Co-Authored-By: <noreply@*-vendor.com>`, Body-Narrative wie `generated with X` oder `co-authored by an automated helper` und jeder Betreffzeilen-Marker, der nicht-menschliche Autorschaft signalisiert. Die vollständige Spezifikation befindet sich unter [`src/apothem/rules/production-ready-prs.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/production-ready-prs.md) §6; die mechanische Durchsetzung befindet sich unter [`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/hooks/messages/pretooluse-bash.md) Scan 3.
+
+## 3. Release-Tags (Semantische Versionierung)
+
+Release-Tags folgen der **Semantischen Versionierung** (`vMAJOR.MINOR.PATCH`). Die Version vor 1.0 ist `0.MINOR.PATCH` gemäß der Vor-Stabil-Konvention der Spezifikation; inkompatible Änderungen erhöhen MINOR, Fehlerbehebungen erhöhen PATCH. Das Tag ist annotiert (`git tag -a`) und auf der Veröffentlichungsebene signiert gemäß [`site/content/docs/governance/release-engineering-policy.mdx`](/docs/governance/release-engineering-policy). Die Paketversion befindet sich im Quell-Manifest (`pyproject.toml` `version`), und Laufzeit- / versionstragende Oberflächen werden aus diesen Paket-Metadaten abgeleitet.
+
+## 4. Kadenz pro Aufgabe
+
+Commits werden bei SHARED+-Ernsthaftigkeit pro Aufgabe, bei PERSONAL_USE pro Phase und bei EXPLORING optional durchgeführt. Der Commit einer Aufgabe wird unmittelbar nach Bestehen der Verifizierungs-Gates der Aufgabe durchgeführt; aufgeschobene Commits sammeln Kontext an und riskieren, den Umfang zu verlieren. Die vollständige Disziplin befindet sich unter [`src/apothem/rules/operational-mandates.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/operational-mandates.md) §CM-13.
+
+## 5. Validatoren
+
+Die pre-commit-Hook-Kette in [`.pre-commit-config.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/.pre-commit-config.yaml) setzt die Qualitäts-Gates pro Schreibvorgang durch. Die Durchsetzung der Autorschaftsdisziplin am bash-Hook (Scan 3 von `src/apothem/hooks/messages/pretooluse-bash.md`) erkennt verbotene Trailer und Body-Marker, bevor eine git-Schreiboperation durchgeführt wird.

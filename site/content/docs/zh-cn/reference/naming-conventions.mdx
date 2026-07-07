@@ -1,0 +1,32 @@
+---
+title: "命名约定"
+description: "规定 kebab-case 文件名、frontmatter 键格式、带类型前缀的分支命名，以及有序工件序列的数字前缀语义。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **整个生态系统中文件名、标识符和分支名形态的规范参考。** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) 约定中的摘要是内联声明；本页是下游贡献者引用的独立参考。
+
+---
+
+## 1. 文件系统名称
+
+文件和文件夹默认使用 **kebab-case**。标识符不含空格、不含下划线，也不使用驼峰命名。
+
+规范的大写例外保留给每位贡献者初次接触即能识别的发布表面单例文件：`CLAUDE.md`、`README.md`、`LICENSE`、`CHANGELOG.md`、`SECURITY.md`、`CODE_OF_CONDUCT.md`、`CONTRIBUTING.md`，以及计划套件单例文件（`MASTER-PLAN.md`、`PROGRESS.md`、`PHASE.md`、`SKILL.md`、`VERSION`）。其他所有文件都使用 kebab-case。
+
+## 2. Frontmatter 键
+
+YAML frontmatter 键使用 `kebab-case`（例如 `argument-hint`、`disable-model-invocation`）。kebab-case 规则在规则、命令、委派工作者、技能以及 `CLAUDE.md` 本身之间统一适用。
+
+## 3. 分支名称
+
+分支遵循 `<type>/<short-description>`，其中类型取自封闭集合 `{feat, fix, chore, docs, refactor, test, perf, ci, build, style, revert, release}`。描述为 kebab-case，且少于五十个字符。
+
+## 4. 数字前缀
+
+文件系统路径上的数字前缀（`NN-`）表示排序，仅在排序是固有属性的地方适用——阶段文件夹、子阶段文件夹、迁移脚本，以及任何其他序列属于契约一部分的工件类。没有兄弟序列的根级单例文件不带数字前缀；添加前缀会错误地暗示一种并不存在的排序关系。完整的规范见 [`src/apothem/rules/canonical-layout.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/canonical-layout.md) §2.1。
+
+## 5. 校验器
+
+位于 `src/apothem/conformity/naming_grep.py` 的 naming-grep 是机械化的强制执行表面。CI 通过 `make validate` 调用它。

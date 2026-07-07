@@ -1,0 +1,80 @@
+---
+title: "Documentation d'Apothem"
+description: "Un seul profil partagé, matérialisé dans dix-sept environnements. Commencez ici : installation, utilisation, couverture des environnements, le flux de commandes et la référence complète."
+machineTranslated: true
+---
+
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem est un gestionnaire de configuration d'environnements indépendant de
+l'hôte. Vous rédigez un seul profil partagé dans
+`~/.config/apothem/profile.yaml`, et Apothem le matérialise dans la surface de
+configuration native de dix-sept environnements : Claude Code, Cursor,
+Gemini CLI, GitHub Copilot, Codex, Windsurf, Zed et le reste du catalogue
+enregistré.
+
+L'unité qu'Apothem synchronise est plus large que les seules règles : les règles,
+les commandes slash, les skills, les hooks, les output-styles, les settings
+(avec les serveurs MCP), les schémas et la documentation voyagent ensemble comme
+un seul corpus gouverné, matérialisé dans le format natif de chaque environnement
+ou dans une sous-arborescence de support propre à Apothem lorsque l'outil n'a pas
+de primitive équivalente.
+
+## Vous débutez ? Commencez en deux étapes
+
+1. **[Installation](/docs/install/quickstart)** — choisissez une voie
+   d'installation (plugins et extensions natifs des outils, `npx` ou scripts en une
+   seule étape) et lancez la première étape guidée. Les seuls prérequis sont
+   [Node.js](https://nodejs.org/) et Python 3.10 ou plus récent du système.
+2. **[Atteignez votre première exécution fonctionnelle](/docs/tutorials/getting-started)** —
+   rédigez un profil partagé, matérialisez-en la configuration native d'un
+   environnement et vérifiez le résultat. Environ quinze minutes, de bout en bout.
+
+## Comment fonctionne Apothem
+
+- **Un profil, de nombreuses configurations natives.** Vous rédigez l'intention
+  une seule fois ; Apothem la traduit dans la surface de configuration native de
+  chaque outil, sans aplatissement au plus petit dénominateur commun. Voir
+  [la posture indépendante de l'hôte](/docs/concepts/ai-platform-agnosticism).
+- **La boucle opératoire : planifier → durcir → livrer.** Un flux de planification
+  (`/plan`) fait passer un changement par la spécification, la génération, la
+  révision et l'exécution ; un flux de durcissement (`/fortress`) amène ce travail
+  à un état verrouillé pour la publication ; la porte de publication ferme la
+  boucle. Voir [le flux de commandes](/docs/pipeline).
+- **Un travail qui survit aux frontières.** Le travail de longue durée externalise
+  tout son état dans une suite `.apothem/plans/` locale au projet, de sorte qu'une nouvelle
+  session sur n'importe quel compte ou machine le reprend sur place. Voir
+  [la planification reprenable](/docs/concepts/resumable-planning).
+
+## Commencez ici
+
+- **[Installation](/docs/install/quickstart)** — les voies d'installation
+  (les plugins et extensions natifs des outils, `npx` et les scripts en une seule
+  étape) et une première exécution guidée.
+- **[Utilisation](/docs/usage/getting-started)** — rédigez votre profil,
+  installez-le dans tous les environnements, vérifiez-le et mettez-le à jour.
+- **[Environnements](/docs/harnesses)** — le catalogue de dix-sept environnements
+  avec la surface native de chaque outil et son comportement de conversion.
+- **[Le flux de commandes](/docs/pipeline)** — les étapes des flux `/plan` et
+  `/research`, la séquence d'audit et de révision, les skills workflow et
+  projectify, et les garde-fous de manipulation chirurgicale.
+
+## Approfondissez
+
+- **[Concepts](/docs/concepts/ai-platform-agnosticism)** — le profil partagé,
+  les adaptateurs d'environnement et le modèle de matérialisation.
+- **[Architecture](/docs/architecture)** — la structure du code source,
+  l'abstraction de l'adaptateur, le runtime autonome et le flux CI/CD.
+- **[Référence](/docs/reference)** — la CLI, le schéma du profil, les règles, les
+  skills, les commandes, les hooks et les catalogues d'output-styles.
+- **[Comment Apothem se compare](/docs/comparison)** — une matrice de
+  différenciation honnête, avec des concurrents nommés.
+
+## Gouvernance et sécurité
+
+- **[Gouvernance](/docs/governance)** — le registre des disciplines, le portail
+  de conformité et la façade de versions.
+- **[Sécurité](/docs/security)** — la posture de chaîne d'approvisionnement et la
+  politique de sécurité.
+- **[Journal des modifications](/docs/changelog)** — les notes de version, la
+  version actuelle en premier.

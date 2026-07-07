@@ -1,0 +1,68 @@
+---
+title: "Receta de reconstrucción de recursos"
+description: "Regenera todos los recursos de marca en formato raster a partir de las fuentes SVG maestras con resvg y Pillow."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+La receta de reconstrucción de recursos regenera cada recurso raster a partir de
+los SVG maestros. Es la ruta de actualización autoritativa para las iteraciones
+de marca.
+
+## Cuándo ejecutarla
+
+Ejecuta la receta de reconstrucción cuando:
+
+- El SVG maestro (`assets/src/logo.svg` o `assets/src/logo-dark.svg`) cambie.
+- El maestro del favicon compacto (`assets/favicon.svg`) cambie.
+- Un maestro de tarjeta social (`assets/src/og-banner.svg` o `assets/src/twitter-card.svg`) cambie.
+- Se necesite un nuevo tamaño raster.
+- Quieras verificar que los recursos confirmados aún coinciden con la fuente SVG.
+
+## Script
+
+| Script | Plataforma | Ruta |
+| --- | --- | --- |
+| `rebuild-assets-resvg.py` | Cualquier host con Python + resvg | `scripts/dev/rebuild-assets-resvg.py` |
+
+## Requisitos
+
+El generador rasteriza cada SVG con [resvg](https://github.com/linebender/resvg)
+y compone los conjuntos raster con [Pillow](https://python-pillow.org/):
+
+- **Pillow:** `pip install pillow`.
+- **resvg:** descarga el binario de la versión publicada para tu plataforma desde
+  las [versiones de resvg](https://github.com/linebender/resvg/releases) —
+  `resvg-win64.zip` en Windows, `resvg-linux-x86_64.tar.gz` en Linux o
+  `resvg-macos.zip` en macOS —, extráelo en tu `PATH` o indícaselo al script
+  con `--resvg <ruta>`.
+
+## Uso
+
+Regenera cada recurso raster:
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py
+```
+
+Pasa `--check-only` para verificar que la cadena de herramientas está disponible
+sin regenerar ningún recurso:
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py --check-only
+```
+
+Si resvg no está en tu `PATH`, indícale al script dónde está el binario:
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py --resvg /path/to/resvg
+```
+
+## Verificación
+
+Una ejecución exitosa regenera los rasters de la marca en versión clara y oscura,
+el conjunto de favicon PNG/ICO, los iconos Apple touch, las imágenes OG/Twitter, y
+replica el subconjunto servido en la web —incluidas las fuentes del logo principal
+que el sitio referencia— en `site/public/`. Tras la generación, ejecuta la
+compilación del sitio e inspecciona la página de inicio, el favicon de la pestaña
+del navegador y los PNG de las tarjetas sociales antes de publicar.

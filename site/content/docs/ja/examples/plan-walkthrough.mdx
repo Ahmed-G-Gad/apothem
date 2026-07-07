@@ -1,0 +1,59 @@
+---
+title: "計画ウォークスルー"
+description: "実際のタスクに対する /plan パイプラインのエンドツーエンドのウォークスルー。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+この例では、単純なタスクに対する完全な `/plan` パイプラインをウォークスルーします。すなわち、Apothem に新しい CLI サブコマンドを追加します。
+
+## ステップ 1：散文の要件を書く
+
+`prose.md` を作成します。
+
+```markdown
+Add a `apothem status` subcommand that prints the current apothem
+version, installed harnesses, and the result of `apothem verify`.
+The output should be machine-parseable (JSON with --json flag) and
+human-readable by default.
+```
+
+## ステップ 2：仕様へ精錬する
+
+```bash
+/plan-spec prose.md --suite-name apothem-status-command
+```
+
+これは 6 フェーズの Forge を実行し、明確化のための質問を行い、`plans/apothem-status-command/_spec/spec.md` を生成します。
+
+## ステップ 3：計画を生成する
+
+```bash
+/plan-generate
+```
+
+`plans/apothem-status-command/phases/` の下に、PREAMBLE.md、MASTER-PLAN.md、PROGRESS.md、PLAN-NOTES.md、および各フェーズの PHASE.md ファイルを生成します。
+
+## ステップ 4：計画をレビューする
+
+```bash
+/plan-review
+```
+
+散文忠実度、一貫性、品質スコアを伴うフォレンジック監査。続行する前にすべての FAIL 発見を修正してください。
+
+## ステップ 5：フェーズを実行する
+
+```bash
+/plan-execute    # executes the first phase, then pauses
+/plan-execute    # executes the next phase, then pauses
+...
+```
+
+## ステップ 6：進捗を確認する
+
+```bash
+/plan-status
+```
+
+現在のフェーズ、検証済みの出力、および次のアクションを報告します。

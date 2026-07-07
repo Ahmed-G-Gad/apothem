@@ -1,0 +1,72 @@
+---
+title: "मुख्य वर्कफ़्लो"
+description: "Apothem के चार मुख्य वर्कफ़्लो — प्रोफ़ाइल, नियम, योजनाएँ, और अनुरूपता गेट।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem चार मुख्य क्षमताएँ प्रदान करता है: एक साझा गवर्नेंस प्रोफ़ाइल, एक नियम
+कॉर्पस, एक संरचित नियोजन पाइपलाइन, और एक रियल-टाइम अनुरूपता गेट।
+
+<Callout title="यहाँ नए हैं?">
+  शून्य से पहले रन तक के मार्गदर्शित वॉकथ्रू के लिए, पहले
+  [आरंभ करने का ट्यूटोरियल](/docs/tutorials/getting-started) से शुरू करें। यह पृष्ठ
+  सेटअप पूरा होने के बाद चार मुख्य वर्कफ़्लो के लिए एक त्वरित संदर्भ है।
+</Callout>
+
+## साझा प्रोफ़ाइल
+
+जब तक आप `--profile PATH` पास नहीं करते, आपकी Apothem प्रोफ़ाइल
+`~/.config/apothem/profile.yaml` पर रहती है। यह सत्य का एकमात्र स्रोत है जिससे हर
+हार्नेस अडैप्टर अपनी नेटिव कॉन्फ़िगरेशन व्युत्पन्न करता है:
+
+```yaml
+identity:
+  name: "Example User"
+preferences:
+  style: "concise"
+rules:
+  - "Validate external input before writing files."
+```
+
+प्रोफ़ाइल बनाएँ और निरीक्षण करें:
+
+```bash
+apothem profile init
+apothem profile show --json
+```
+
+## पहला नियम
+
+प्रोफ़ाइल YAML में साझा नियम जोड़ें, फिर चयनित हार्नेस को फिर से मूर्त रूप दें।
+जब उन नियमों में उदाहरण डेटा शामिल हो, तो काल्पनिक प्लेसहोल्डर का उपयोग करें ताकि कोई वास्तविक पहचान या क्रेडेंशियल किसी साझा प्रोफ़ाइल या CI रन में न पहुँचे।
+
+```bash
+apothem profile set rules '["Always include a brief summary at the end of every response."]'
+apothem update --harness claude-code
+apothem verify --harness claude-code
+```
+
+## पहली योजना
+
+`/plan` पाइपलाइन `apothem` बाइनरी के माध्यम से नहीं, बल्कि आपके हार्नेस के
+भीतर स्लैश कमांड के रूप में चलती है। एक बार हार्नेस इंस्टॉल हो जाने पर, टूल की चैट
+से एक योजना शुरू करें:
+
+```text
+/plan-spec
+```
+
+`/plan-spec` आपके गद्य को एक स्पेसिफ़िकेशन में परिष्कृत करता है, और `/plan-generate`
+`<project-root>/.apothem/plans/{suite}/` के अंतर्गत एक योजना सूट को मूर्त रूप देता है।
+पूरे प्रवाह के लिए [पाइपलाइन कमांड संदर्भ](/docs/pipeline) देखें।
+
+## अनुरूपता गेट
+
+रिपॉज़िटरी रूट से चलाएँ:
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+सभी यांत्रिक अनुरूपता जाँचें चलाता है और प्रति बार पास/फ़ेल की रिपोर्ट करता है।

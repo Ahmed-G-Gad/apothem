@@ -1,0 +1,70 @@
+---
+title: "/research-experiment"
+description: "/research-experiment — Exécute l'étude conçue et capture les données brutes avec une traçabilité complète, ainsi qu'un manifeste de reproductibilité (environnement, graine, protocole, versions épinglées)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rôle :** Investigateur principal (exécution)
+**Position dans le pipeline :** intermédiaire
+
+Exécute l'étude ou l'expérience conçue et capture les données brutes avec une traçabilité complète. Garantit la reproductibilité : consigne l'environnement, la graine, le journal du protocole et les versions épinglées afin qu'une partie indépendante puisse réexécuter.
+
+## Invocation canonique
+
+```bash
+/research-experiment
+```
+
+Avec arguments :
+
+```bash
+/research-experiment [path/to/research-suite/]
+```
+
+## Entrées
+
+`_inputs/study-design.md` (la conception) et `_inputs/preregistration.md` (le plan d'analyse figé).
+
+## Sorties
+
+`_outputs/experiment-log.md` (la trace horodatée du protocole), les données brutes à un emplacement naturel pour l'hôte, et `_outputs/reproducibility-manifest.md` (environnement, graine, protocole, versions épinglées).
+
+## En aval
+
+/research-analysis (consommateur en aval)
+
+## Phases du flux de travail
+
+La commande suit le flux de travail standard du pipeline `/research` :
+
+1. **Charger le contexte** — Lire la conception de l'étude et le préenregistrement.
+2. **Vérifier la barrière de séquence** — Confirmer que `_inputs/study-design.md` existe ; sinon, s'arrêter avec `Blocked: run /research-design first`.
+3. **Exécuter et consigner** — Exécuter le protocole ; capturer les données brutes avec leur traçabilité ; consigner la trace horodatée du protocole.
+4. **Capturer la reproductibilité** — Consigner l'environnement, la graine, le protocole et les versions épinglées.
+5. **Mettre à jour le manifeste de transfert** — Consigner l'emplacement des données et le manifeste de reproductibilité.
+6. **Émettre le journal** — `_outputs/experiment-log.md` + données brutes + `_outputs/reproducibility-manifest.md`.
+
+## Seuil de rigueur
+
+L'exécution lance une passe pilote pour calibrer les budgets et les plages, puis la comparaison complète sous un plan d'utilisation de calcul déclaré (allocation de cœurs, plafonds de mémoire, parallélisation sûre des répétitions indépendantes). Chaque méthode stochastique exécute son régime de répétitions préenregistré avec des graines consignées et un matériel journalisé. Une boucle d'expérimentation autonome, optionnelle et désactivée par défaut, est disponible : face à un harnais figé, elle propose une modification à une seule cible mutable, l'exécute au budget fixé, ne la conserve que si elle bat le titulaire, et journalise chaque essai.
+
+## Modes de défaillance
+
+| Symptôme | Cause | Récupération |
+|---------|-------|----------|
+| Blocked: run /research-design first | Aucune conception d'étude | Exécuter `/research-design` pour produire `_inputs/study-design.md` |
+| Exécution non reproductible | Enregistrement de la graine / de l'environnement manquant | Consigner le manifeste de reproductibilité complet avant de continuer |
+| Écart de protocole non documenté | Changement en cours d'exécution non consigné | Consigner l'écart dans le journal de l'expérience ; le divulguer lors de l'analyse |
+
+## Exemples
+
+```bash
+# Exécuter l'étude conçue et capturer des données brutes reproductibles
+/research-experiment path/to/research-suite/
+```
+
+## Renvois
+
+- [Aperçu du pipeline](/docs/pipeline)
+- [Référence des commandes](/docs/reference/commands)

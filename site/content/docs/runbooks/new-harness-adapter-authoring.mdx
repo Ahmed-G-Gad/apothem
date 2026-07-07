@@ -1,0 +1,64 @@
+---
+title: "New harness adapter authoring"
+description: "Runbook for authoring and publishing a new Apothem harness adapter."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Use this runbook when authoring a new harness adapter for first-party inclusion
+in Apothem or as a third-party package.
+
+## Prerequisites
+
+- Familiarity with the [HarnessAdapter protocol](/docs/architecture/harness-adapter-abstraction)
+- Understanding of the target harness config format
+- Python 3.10+
+
+## Steps
+
+### 1. Implement the adapter
+
+Follow the [Authoring a harness adapter](/docs/examples/authoring-a-harness-adapter)
+example to implement `HarnessAdapter` for the target harness.
+
+### 2. Write the docs page
+
+Create `site/content/docs/harnesses/<slug>.mdx` covering:
+
+- Installation flow
+- Profile-to-native-config mapping
+- Compatibility caveats
+- Verification recipes
+- Update and uninstall recipes
+- Conformity gate surface
+- Troubleshooting table
+- Configuration knobs table
+
+### 3. Write tests
+
+```bash
+tests/packaging/test_<slug>_adapter.py
+tests/unit/test_<slug>_adapter.py
+```
+
+Minimum test coverage:
+- `test_install_creates_expected_files`
+- `test_verify_passes_after_install`
+- `test_uninstall_removes_files`
+
+### 4. Verify locally
+
+```bash
+apothem install --harness <slug>
+apothem verify --harness <slug>
+python -m apothem.conformity.gate --all .
+```
+
+### 5. Submit pull request
+
+Open a PR with:
+
+- Adapter implementation
+- Docs page at `site/content/docs/harnesses/<slug>.mdx`
+- Tests
+- Entry-point registration in `pyproject.toml`
+- Changelog entry

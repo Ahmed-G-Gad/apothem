@@ -1,0 +1,90 @@
+---
+title: "GitHub Copilot"
+description: "GitHub Copilot（GA）向けの Apothem ハーネスアダプター。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**ベンダー：** GitHub / Microsoft
+**インストール名：** `github-copilot`
+**ステータス：** GA
+**ネイティブ設定：** `<project>/.github/copilot-instructions.md`
+
+## インストール
+
+```bash
+apothem install --harness github-copilot --project /path/to/project
+```
+
+このアダプターは、共有された Apothem のルールとガバナンス面からプロジェクト指示
+ファイルを派生させます。
+
+**書き込まれるファイル：** `<project>/.github/copilot-instructions.md`
+
+## プロファイルからネイティブ設定へのマッピング
+
+アダプターは、`apothem install` または `apothem update` を実行するたびに、Apothem
+の共有プロファイルを読み取り、リポジトリ全体に適用される Copilot 指示ファイルを
+レンダリングします。共有プロファイルが真実の源です。生成されたファイルに対する
+プロジェクトローカルな編集は、次回の同期が Apothem 管理下のコンテンツを置き換える
+前にバックアップされます。
+
+## 互換性に関する注意
+
+GitHub Copilot は、このアダプターが管理できるファイルベースのユーザーグローバル指示
+パスを公開していません。Apothem はドキュメント化されたプロジェクトスコープの指示
+ファイルを対象とし、IDE レベルのユーザー設定はオペレーターの所有のままにします。
+
+Apothem は `copilot-instructions.md` を、プロジェクトのアシスタント指示面の中の
+一つの声として扱います。適合ゲートのマルチサーフェス整合性チェックは、その共有された
+主張がプロジェクトの他の指示ファイルと意味的に整合し続けることを検証するため、Copilot
+がツールチェーンの他の部分が読み取る内容と矛盾する指示を受け取ることは決してありません。
+
+## 検証
+
+```bash
+apothem verify --harness github-copilot --project /path/to/project
+```
+
+verify コマンドは、次のことを確認します。
+
+1. ネイティブ設定が期待されるパスに存在すること。
+2. 共有プロファイルからのすべての必須フィールドが存在すること。
+3. アダプター固有の検証ルーチンが成功を報告すること。
+
+## 更新
+
+```bash
+apothem update --harness github-copilot --project /path/to/project
+```
+
+現在の共有プロファイルの状態からプロジェクト指示ファイルを再導出します。
+
+## アンインストール
+
+```bash
+apothem uninstall --harness github-copilot --project /path/to/project
+```
+
+アダプターによって書き込まれたネイティブ設定ファイルを削除します。
+共有プロファイルの YAML と Apothem エンジンは影響を受けません。
+
+## 適合ゲート
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## トラブルシューティング
+
+| 症状 | 対処 |
+|---------|-----|
+| 設定ファイルが見つからない | `apothem install --harness github-copilot --project /path/to/project` を再実行する |
+| 検証に失敗した | `apothem update --harness github-copilot --project /path/to/project` を実行してから、再度検証する |
+| 予期しない設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、`apothem update --harness github-copilot --project /path/to/project` を再実行する |
+
+## 設定ノブ
+
+| フラグ | デフォルト | 説明 |
+|------|---------|-------------|
+| `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューする。 |

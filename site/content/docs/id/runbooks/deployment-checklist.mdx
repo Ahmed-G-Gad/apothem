@@ -1,0 +1,163 @@
+---
+title: "Checklist Deployment"
+description: "Checklist verifikasi pra-penerbangan untuk men-deploy atau berbagi ekosistem Apothem"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Langkah-langkah verifikasi pra-penerbangan sebelum men-deploy ekosistem Apothem ke
+mesin baru, membagikannya dengan orang lain, atau memperlakukannya sebagai siap-produksi.
+
+---
+
+## 1. Validitas YAML
+
+- [ ] Semua berkas aturan terurai tanpa galat YAML — blok frontmatter dibuka dengan `---`, ditutup dengan `---`, dan tidak memuat konten yatim di luar blok
+- [ ] Semua berkas pekerja terdelegasi terurai tanpa galat YAML
+- [ ] Semua berkas perintah terurai tanpa galat YAML
+- [ ] Semua berkas `SKILL.md` skill terurai tanpa galat YAML
+
+**Verifikasi:** `python scripts/dev/validate_ecosystem.py` mengurai
+frontmatter setiap artefak dan menandai galat YAML + bidang wajib yang hilang. Untuk deteksi
+ad hoc item daftar yatim: `rg -n "^- " src/apothem/rules/*.md`.
+
+---
+
+## 2. Kelengkapan frontmatter
+
+Untuk setiap jenis artefak, verifikasi bahwa bidang wajib hadir:
+
+### Aturan (`src/apothem/rules/*.md`)
+
+- [ ] `name` — pengidentifikasi kebab-case yang cocok dengan nama berkas
+- [ ] `version` — semver `MAJOR.MINOR.PATCH` (mis., `"X.Y.Z"`)
+- [ ] `updated` — tanggal ISO 8601 (mis., `"2026-04-20"`)
+- [ ] `description` — ringkasan satu kalimat
+- [ ] `scope` — `"always-on"` atau `"path-filtered"`
+- [ ] `portability` — `"universal"`, `"universal-with-windows-caveats"`, `"unix-only"`, atau `"windows-only"`
+- [ ] `pathFilter` — hadir dan berupa string glob yang valid untuk aturan terfilter-jalur; absen untuk aturan yang selalu aktif
+
+### Perintah (`src/apothem/commands/*.md`)
+
+- [ ] `name` — nama perintah kebab-case
+- [ ] `version`, `updated`, `description`, `argument-hint` hadir
+- [ ] `disable-model-invocation` hadir dan disengaja (`true` untuk perintah panduan-saja)
+- [ ] `effort`, `portability` ditinjau jika hadir (opsional menurut schema)
+
+### Pekerja terdelegasi
+
+Jalur:
+
+```text
+src/apothem/agents/*.md
+```
+
+- [ ] `name`, `version`, `updated`, `description` hadir
+- [ ] `tools` — daftar peralatan yang diizinkan dipisahkan koma
+- [ ] `disallowedTools` — secara eksplisit mendaftar peralatan yang tidak diizinkan
+- [ ] `maxTurns` — disetel (dengan komentar alasan jika > 10)
+- [ ] `permissionMode` — **TIDAK boleh `"bypassPermissions"`** — gunakan `"default"`
+- [ ] `memory: false` kecuali memori persisten memang disengaja
+
+### Skill (`src/apothem/skills/*/SKILL.md`)
+
+- [ ] `name`, `version`, `updated`, `description` hadir
+- [ ] `user-invocable` — dideklarasikan (true/false)
+
+---
+
+## 3. Keamanan
+
+- [ ] **Tidak ada pekerja terdelegasi yang menggunakan `permissionMode: "bypassPermissions"`** — ini melewati konfirmasi interaktif untuk operasi Write/Bash
+- [ ] Daftar `tools` pekerja minimal — hanya peralatan yang benar-benar dibutuhkan pekerja
+- [ ] Pekerja dengan akses `Bash` punya pembenaran dan memiliki batas maxTurns
+- [ ] Tidak ada jalur, token, atau rahasia yang di-hardcode di artefak mana pun
+- [ ] Hook di `settings.json` memiliki timeout yang wajar (≤ 60 detik) dan tidak menjalankan kode sembarang dari input pengguna
+
+---
+
+## 4. Integritas referensi-silang
+
+- [ ] Setiap aturan yang terdaftar di tabel `src/apothem/rules/` ada di disk pada jalur yang dinyatakan
+- [ ] Setiap perintah yang terdaftar di tabel `src/apothem/commands/` ada di disk
+- [ ] Setiap pekerja terdelegasi yang terdaftar di tabel registri `src/apothem/agents/` ada di disk
+- [ ] Setiap skill yang terdaftar di tabel `src/apothem/skills/` ada di disk
+- [ ] Setiap hook di tabel `src/apothem/hooks/` memiliki entri yang sesuai di `settings.json`
+- [ ] Semua berkas `src/apothem/rules/*.md` yang dirujuk oleh kolom `Implements` CLAUDE.md ada
+
+---
+
+## 5. Cakupan mandat
+
+- [ ] Setiap CM-N yang dirujuk di CLAUDE.md memiliki lokasi penegakan (entah berkas aturan atau definisi inline eksplisit)
+- [ ] Tidak ada berkas aturan yang bertentangan dengan yang lain (khususnya seputar penskalaan keseriusan)
+- [ ] Delineasi tiga-faset CM-21 dihormati — tidak ada aturan yang mengklaim kepemilikan faset CM-21 aturan lain
+
+---
+
+## 6. Uji asap fungsional
+
+Jalankan permukaan validasi Python terlebih dahulu — cepat, offline, dan menangkap
+regresi struktural:
+
+- [ ] `pytest tests` — uji unit untuk runtime hook, semua hijau
+- [ ] `python scripts/dev/validate_hooks.py` — struktur hook + pemeriksaan kebersihan khusus-Python lulus
+- [ ] `python scripts/dev/validate_ecosystem.py` — pohon penuh + frontmatter + pemeriksaan hook terdelegasi lulus
+- [ ] `python scripts/dev/chaos_pass.py` — setiap perintah hook yang dikonfigurasi mengembalikan amplop JSON yang valid di bawah input yang terdegradasi
+
+Lalu skenario langsung:
+
+- [ ] `/plan-spec --interactive` (atau `/plan-spec <sample-file>`) — menyelesaikan ingest/klarifikasi tanpa galat tingkat-perintah
+- [ ] `/plan-generate --dry-run` — menghasilkan pratinjau struktur tanpa menulis berkas
+- [ ] `/plan-status` pada suite rencana yang lengkap — mengembalikan jumlah fase yang akurat
+- [ ] Pengiriman pekerja terdelegasi: pekerja `codebase-explorer` yang dipanggil dengan cakupan kecil selesai dalam maxTurns dan mengembalikan keluaran terstruktur
+
+---
+
+## 7. Kekinian dokumentasi
+
+- [ ] `CHANGELOG.md` (di akar ekosistem) mencerminkan setiap perubahan artefak sejak rilis terakhir; bagian rilis berikutnya diisi sebelum tag mendarat, atau setiap perubahan sudah dipotong ke bagian yang telah dirilis
+- [ ] `site/content/docs/developer-guide.mdx` secara akurat mendeskripsikan struktur artefak saat ini
+- [ ] `site/content/docs/reference/artifact-schema.mdx` cocok dengan bidang frontmatter yang benar-benar hadir di artefak
+- [ ] `site/content/docs/reference/settings-reference.mdx` cocok dengan konfigurasi hook aktual di `settings.json`
+- [ ] `README.md` konsisten dengan pohon di disk
+
+---
+
+## 8. Portabilitas (jika dibagikan dengan orang lain)
+
+- [ ] Semua jalur dalam perintah hook agnostik-lingkungan atau menggunakan ekspansi `~`
+- [ ] Perintah hook menggunakan bentuk exec dan menghindari string perintah spesifik-shell
+- [ ] Tidak ada jalur `C:\Users\username` atau `/home/username` yang di-hardcode di artefak mana pun
+- [ ] `settings.json` menggunakan satu tabel cakupan peristiwa hook dan jalur modul pengiriman kanonis
+
+---
+
+## 9. Penyelarasan versi
+
+- [ ] `version` CLAUDE.md adalah yang tertinggi dari artefak mana pun di pohon (atau sama dengan versi artefak yang paling baru di-bump, menurut konvensi)
+- [ ] `version` setiap artefak cocok dengan semver yang dinyatakan (`MAJOR.MINOR.PATCH`)
+- [ ] CHANGELOG.md memuat persis entri rilis untuk versi target sebelum tagging
+- [ ] Bidang `updated` setiap artefak berada pada-atau-setelah tanggal pengeditan terakhirnya yang mengubah perilaku
+- [ ] Tidak ada artefak yang membawa `version` lebih rendah dari versi saat terakhir disentuh (tanpa regresi)
+- [ ] `src/apothem/skills/plan-suite/SKILL.md` dan `src/apothem/skills/plan-suite/master-template.md` disematkan ke garis versi template yang sama
+
+---
+
+## Persetujuan
+
+| Kategori Pemeriksaan | Status | Catatan |
+| -------------- | ------ | ----- |
+| Validitas YAML | | |
+| Kelengkapan frontmatter | | |
+| Keamanan | | |
+| Integritas referensi-silang | | |
+| Cakupan mandat | | |
+| Uji asap fungsional | | |
+| Kekinian dokumentasi | | |
+| Portabilitas | | |
+| Penyelarasan versi | | |
+
+**Deployment disetujui oleh:** ___________________
+**Tanggal:** ___________________
+**Versi ekosistem yang di-deploy:** ___________________

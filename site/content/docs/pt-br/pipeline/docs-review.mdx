@@ -1,0 +1,69 @@
+---
+title: "/docs-review"
+description: "/docs-review — Passagem de revisão de documentação frente às convenções de prosa e aos padrões de qualidade de dez dimensões."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Papel:** Revisor de documentação
+**Posição no pipeline:** fortaleza
+
+Passagem de revisão de documentação frente às convenções de prosa e aos padrões de qualidade de dez dimensões.
+
+## Invocação canônica
+
+```bash
+/docs-review
+```
+
+Com argumentos:
+
+```bash
+/docs-review [path/to/plan-suite/] [phase-id] [--dry-run]
+```
+
+## Entradas
+
+Superfície de documentação do repositório anfitrião
+
+## Saídas
+
+Achados de documentação + REPORT.md
+
+## Downstream
+
+A etapa de revisão de documentação da Sequência de Revisão de Auditoria
+
+## Fases do fluxo de trabalho
+
+O comando segue o fluxo de trabalho padrão do pipeline `/plan`:
+
+1. **Carregar contexto** — Lê a suite de plano, as regras e o Contrato de Retomada.
+2. **Verificar pré-requisitos** — Confirma que as fases de dependência estão concluídas.
+3. **Executar tarefas** — Cumpre a missão do comando.
+4. **Verificar saídas** — Confirma que todas as saídas declaradas existem e passam pelos portões de qualidade.
+5. **Atualizar PROGRESS.md** — Registra as saídas verificadas no Registro de Saídas de Fase.
+6. **Emitir REPORT.md** — Fica registrada a prova de liberação do portão de pré-emissão.
+
+## Modos de falha
+
+| Sintoma | Causa | Recuperação |
+|---------|-------|----------|
+| Pré-requisito incompleto | Fase dependente não finalizada | Conclua primeiro a fase a montante |
+| Portão de qualidade FAIL | A saída não atende aos padrões | Corrija a saída e reexecute |
+| Falta um arquivo de entrada | Arquivo da suite de plano ausente | Execute `/plan-generate` para criá-lo |
+
+## Exemplos
+
+```bash
+# Dry-run to preview what would happen
+/docs-review --dry-run
+
+# Execute against a named plan suite
+/docs-review path/to/plan-suite/
+```
+
+## Referências cruzadas
+
+- [Visão geral do pipeline](/docs/pipeline)
+- [Modelo de Suite de Plano Mestre](/docs/reference/commands)

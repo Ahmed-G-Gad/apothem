@@ -1,0 +1,44 @@
+---
+title: "Apothem बनाम हस्तचालित Cursor कॉन्फ़िगरेशन"
+description: "`.cursor/rules/` के अंतर्गत Cursor के MDC नियमों को हाथ से बनाए रखने बनाम उन्हें Apothem के साझा प्रोफ़ाइल से रेंडर करने की तुलना।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Cursor `.cursor/rules/` के अंतर्गत MDC प्रारूप में नियम पढ़ता है। MDC प्रारूप को
+frontmatter फ़ील्ड चाहिए — `description`, `globs` और `alwaysApply`। Apothem का
+cursor अडैप्टर उन `.mdc` फ़ाइलों को साझा प्रोफ़ाइल से रेंडर करता है। यह पृष्ठ उस
+कॉन्फ़िग को हाथ से बनाए रखने की तुलना उसे Apothem से प्रबंधित करने से करता है।
+
+## प्रयास तुलना
+
+| कार्य | हस्तचालित कॉन्फ़िग | Apothem-प्रबंधित |
+| ---- | --------------- | --------------- |
+| नियम लिखना | `.cursor/rules/` के अंतर्गत प्रत्येक `.mdc` फ़ाइल हाथ से लिखें | साझा कॉर्पस से रेंडर |
+| MDC frontmatter लिखना | प्रति फ़ाइल `description` / `globs` / `alwaysApply` हाथ से लिखें | अडैप्टर द्वारा जनरेट |
+| एक नियम प्रारूप बनाए रखना | MDC नियमों और एकल `.cursorrules` फ़ाइल के बीच हाथ से चुनें | अडैप्टर केवल `.cursor/rules/` MDC फ़ाइलें लिखता है |
+| नियमों को अन्य एनवायरनमेंट के साथ संरेखित रखना | मैनुअल, प्रति टूल | `apothem update` पर स्वचालित |
+| कॉन्फ़िग सही है यह सत्यापित करना | मैनुअल निरीक्षण | `apothem verify --harness cursor` |
+
+## Apothem क्या प्रबंधित करता है
+
+cursor अडैप्टर साझा नियमों को `.cursor/rules/` के अंतर्गत `.mdc` फ़ाइलों में रेंडर
+करता है, और प्रत्येक फ़ाइल के लिए आवश्यक MDC frontmatter (`description`, `globs`,
+`alwaysApply`) जनरेट करता है। अडैप्टर केवल वही डायरेक्टरी-आधारित MDC प्रारूप
+लिखता है जिसे Cursor पढ़ता है; यह एकल-फ़ाइल `.cursorrules` नहीं लिखता।
+Cursor में कोई PreToolUse हुक नहीं है, इसलिए गार्डरेल मंशा नियम-गद्य में रहती है।
+
+## माइग्रेशन पथ
+
+1. यदि आपके पास अभी तक नहीं है तो साझा प्रोफ़ाइल बनाने के लिए `apothem profile init` चलाएँ।
+2. अपने मौजूदा `.cursor/rules/` (और किसी भी `.cursorrules`) से नियमों को
+   साझा कॉर्पस में ले जाएँ।
+3. सही MDC frontmatter वाली `.mdc` फ़ाइलें रेंडर करने के लिए
+   `apothem install --harness cursor` चलाएँ।
+4. कॉन्फ़िग उतरी है यह पुष्टि करने के लिए `apothem verify --harness cursor` चलाएँ।
+5. हर बाद के बदलाव के लिए `apothem update --harness cursor` का उपयोग करें।
+
+## आगे पढ़ें
+
+- [Cursor अडैप्टर संदर्भ](/docs/harnesses/cursor)
+- [तुलना अवलोकन](/docs/comparison)

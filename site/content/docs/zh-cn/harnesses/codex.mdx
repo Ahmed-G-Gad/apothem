@@ -1,0 +1,88 @@
+---
+title: "Codex"
+description: "适用于 Codex（Beta）的 Apothem 工具适配器。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**厂商：** OpenAI
+**安装名称：** `codex`
+**状态：** Beta
+**平台原生配置：** `~/.codex/AGENTS.md`、`~/.codex/hooks.json`、
+`~/.codex/hooks/`、`~/.codex/agents/*.toml` 和 `~/.agents/skills/`
+
+## 安装
+
+```bash
+apothem install --harness codex
+```
+
+适配器安装 Codex 原生指令和钩子，将 Apothem 智能体转换为 Codex TOML 智能体，
+并将可复用的命令提示包装为 Codex 技能。
+
+**写入的文件：** `~/.codex/AGENTS.md`、`~/.codex/hooks.json`、
+`~/.codex/hooks/`、`~/.codex/agents/*.toml`、
+`~/.agents/skills/*/SKILL.md`，以及 `~/.config/apothem/{rules,templates}/`
+下的支持文件。
+
+## 配置档案到平台原生配置的映射
+
+适配器读取 Apothem 的共享队列，并将每一项安装到正确的 Codex 界面：指令安装到
+`AGENTS.md`，钩子安装到 `hooks.json` 和 `hooks/`，智能体安装为 TOML，技能安装到
+`~/.agents/skills/`，而非原生的 Markdown 规则/模板作为支持材料安装到
+`~/.config/apothem/`。
+
+## 兼容性说明
+
+Codex 将 `~/.codex/rules/` 保留给 `.rules` 执行策略。Apothem 不会在那里放置
+Markdown 行为规则；它将这些规则保留在 `~/.config/apothem/` 中，并从 `AGENTS.md`
+和已安装的技能中引用它们。
+
+## 验证
+
+```bash
+apothem verify --harness codex
+```
+
+verify 命令确认：
+
+1. 平台原生配置存在于预期路径。
+2. 共享配置档案中所有必需字段均存在。
+3. 适配器专属的验证例程报告成功。
+
+## 更新
+
+```bash
+apothem update --harness codex
+```
+
+刷新 Codex 引导程序、已转换的智能体、技能和支持队列。
+
+## 卸载
+
+```bash
+apothem uninstall --harness codex
+```
+
+移除适配器写入的平台原生配置文件。
+共享配置档案 YAML 和 Apothem 引擎不受影响。
+
+## 合规门
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## 故障排查
+
+| 症状 | 修复方法 |
+|---------|-----|
+| 找不到配置文件 | 重新运行 `apothem install --harness codex` |
+| 验证失败 | 运行 `apothem update --harness codex`，然后再次验证 |
+| 意外的配置内容 | 检查 `~/.config/apothem/profile.yaml` 或 `--profile PATH`，然后重新运行 `apothem update --harness codex` |
+
+## 配置开关
+
+| 标志 | 默认值 | 说明 |
+|------|---------|-------------|
+| `--dry-run` | `false` | 预览安装而不写入文件。 |

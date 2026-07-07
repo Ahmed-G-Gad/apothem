@@ -1,0 +1,420 @@
+---
+title: "아티팩트 스키마 명세"
+description: "Apothem 소스 트리의 모든 아티팩트 타입에 대한 정규 YAML 프런트매터 스키마와 필수 필드. 클래스별 템플릿과 검증 규칙 포함."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Apothem 생태계의 모든 아티팩트에 대한 정규 YAML 프런트매터와 필수 필드.**
+
+## 개요
+
+Apothem 소스 트리(`src/apothem/` 아래와 루트 설정 서피스)의 모든 아티팩트는
+해당 아티팩트 타입에 고유한 필수 필드와 선택 필드를 갖춘 YAML 프런트매터
+블록(`---` 구분자 사이)을 포함해야 합니다. 본 문서는 각 타입의 정규 스키마를
+정의합니다.
+
+**보편 규칙:**
+
+- 프런트매터는 YAML 1.2 준수
+- 모든 문자열 값은 비어 있지 않은 한 큰따옴표 사용
+- 필드 순서: 필수 필드를 먼저, 선택 필드는 관련성별로 그룹화
+- 프런트매터의 주석은 공백을 동반한 `#` 사용: `# comment`
+- 경로 값은 상대(선행 `/` 없음)여야 하며, 크로스플랫폼 호환을 위해 슬래시(`/`)를 사용
+
+**버저닝 규약(아티팩트 타입을 막론하고 보편적):**
+
+- `version`은 **시맨틱**(`MAJOR.MINOR.PATCH`)입니다. 파괴적 스키마 또는 계약 변경에는 MAJOR를, 후방 호환되는 가산적 변경(새 선택 필드, 추가 섹션, 추가 안티패턴)에는 MINOR를, 동작을 바꾸지 않는 명확화·서식 수정·문서 전용 편집에는 PATCH를 올립니다.
+- `updated`는 가장 최근 편집의 **ISO 8601 날짜**(`YYYY-MM-DD`)입니다. `version`을 올릴 때마다 변경되어야 하며, 버전을 올리지 않는 링크 갱신에는 독립적으로 갱신할 수 있습니다.
+- 새 아티팩트는 `v0.Y.Z`로 시작합니다. `vX.Y.Z`로의 승격은 그 아티팩트의 계약이 공개 약속이 될 만큼 충분히 안정적임을 나타냅니다.
+
+---
+
+## 스키마: 규칙
+
+**경로 패턴:** `src/apothem/rules/*.md`
+
+**목적:** 동작 명령 및 운영 지시.
+
+### 필수 필드
+
+```yaml
+---
+name: "kebab-case-identifier"
+description: "One-line description"
+pathFilter: "**/*.py, **/*.toml"
+alwaysApply: true | false
+---
+```
+
+| 필드 | 타입 | 목적 | 예시 |
+| ----- | ---- | ------- | ------- |
+| `name` | string | 기계 판독 가능한 식별자 | `"operational-mandates"` |
+| `version` | string | 시맨틱 버전 | `"X.Y.Z"` |
+| `updated` | string (ISO 8601) | 최종 갱신일 | `"2026-04-20"` |
+| `description` | string | 레지스트리용 한 줄 설명 | `"Operational mandates CM-1–10"` |
+| `scope` | enum | `always-on`(어디서나 적용) 또는 `path-filtered`(파일 경로에 조건부) | `"always-on"` |
+| `portability` | enum | 환경 호환성 보장 | `"universal"` |
+
+### 선택 필드(해당하는 경우)
+
+Rules carry no optional frontmatter fields, and — unlike other artifact classes — no `version` / `updated` / `scope` / `portability` fields either. The four mandatory fields above are the complete rule frontmatter contract enforced by `frontmatter_grep`.
+
+### 예시
+
+```yaml
+---
+name: "operational-mandates"
+description: "Behavioral definitions for CM-1 through CM-10: violation indicators and recovery actions"
+pathFilter: ""
+alwaysApply: true
+---
+
+# Rule: Operational Mandates
+...
+```
+
+---
+
+## 스키마: 명령어
+
+**경로 패턴:** `src/apothem/commands/*.md`
+
+**목적:** 슬래시 명령어 정의(`/plan-execute`, `/freshify` 등).
+
+### 필수 필드
+
+```yaml
+---
+name: "command-name"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "What this command does"
+argument-hint: "[argument-pattern]"
+disable-model-invocation: true | false
+portability: "universal"
+allowed-tools: "*"
+---
+```
+
+| 필드 | 타입 | 목적 | 예시 |
+| ----- | ---- | ------- | ------- |
+| `name` | string | 명령어 이름(선행 `/` 없음) | `"plan-execute"` |
+| `version` | string | 시맨틱 버전 | `"X.Y.Z"` |
+| `updated` | string (ISO 8601) | 최종 갱신일 | `"2026-04-20"` |
+| `description` | string | 짧은 설명 | `"Executes a phase with quality gates"` |
+| `argument-hint` | string | 사용 패턴, 없으면 `"[args...]"` | `"[path/to/plan] [phase-id]"` |
+| `disable-model-invocation` | boolean | true이면 명령어가 하니스 런타임에 의해 호출되도록 의도되지 않음 | `true` |
+
+### 선택 필드
+
+Commands carry no optional frontmatter fields — the eight mandatory fields above are the complete command frontmatter contract enforced by `command.schema.json` (`additionalProperties: false`).
+
+### 예시
+
+```yaml
+---
+name: "plan-execute"
+version: "X.Y.Z"
+updated: "2026-04-20"
+description: "Executes a specific phase from a Master Plan Suite with conformity checking and quality gates"
+argument-hint: "[path/to/plan-suite/] [phase-id] [--dry-run]"
+disable-model-invocation: true
+portability: "universal"
+allowed-tools: "*"
+---
+
+# /plan-execute — Execute a Specific Phase
+...
+```
+
+---
+
+## 스키마: 헬퍼
+
+**경로 패턴:**
+
+```text
+src/apothem/agents/*.md
+```
+
+**목적:** 병렬 탐색, 감사, 품질 게이트를 위한 영속적 헬퍼 정의.
+
+### 필수 필드
+
+```yaml
+---
+name: "agent-name"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "What this agent specializes in"
+tools: "Tool1, Tool2, Tool3"
+disallowedTools: "Write, Edit"
+maxTurns: 20
+effort: "high" | "medium" | "low"
+---
+```
+
+| 필드 | 타입 | 목적 | 예시 |
+| ----- | ---- | ------- | ------- |
+| `name` | string | 헬퍼 식별자 | `"codebase-explorer"` |
+| `version` | string | 시맨틱 버전 | `"X.Y.Z"` |
+| `updated` | string (ISO 8601) | 최종 갱신일 | `"2026-04-20"` |
+| `description` | string | 전문 분야 설명 | `"Deep codebase exploration"` |
+| `tools` | string(쉼표 구분) | 허용된 도구 | `"Read, Glob, Grep, Bash"` |
+| `disallowedTools` | string(쉼표 구분) | 금지된 도구 | `"Write, Edit, TodoWrite"` |
+| `maxTurns` | integer | 최대 대화 턴 수(일반적으로 5–20, 20을 초과하는 값은 인라인 근거 주석 필요) | `20` |
+| `effort` | enum | 계산 범위 | `"high"` |
+
+### 선택 필드
+
+```yaml
+permissionMode: "default"       # Permission handling
+memory: true | false                    # If true, agent retains memory across sessions
+pattern: "Research" | "Audit" | "Implementation" | "Quality"  # Agent team pattern
+portability: "universal"
+```
+
+### 예시
+
+```yaml
+---
+name: "codebase-explorer"
+version: "X.Y.Z"
+updated: "2026-04-20"
+description: "Deep codebase exploration — find patterns, trace dependencies, discover conventions, map architecture"
+tools: "Read, Glob, Grep, Bash"
+disallowedTools: "Write, Edit, TodoWrite"
+maxTurns: 20
+effort: "high"
+permissionMode: "default"
+memory: false
+portability: "universal"
+---
+
+You are a codebase exploration specialist...
+```
+
+---
+
+## 스키마: 스킬
+
+**경로 패턴:** `src/apothem/skills/*/SKILL.md`
+
+**목적:** 검출 신호와 실행 절차를 갖춘 재사용 가능한 기법 정의.
+
+### 필수 필드
+
+```yaml
+---
+name: "skill-name"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "What this skill teaches"
+archetype: "workflow-template"
+userInvocable: true | false
+disable-model-invocation: true | false
+allowed-tools: "Read, Write, Glob"
+---
+```
+
+| 필드 | 타입 | 목적 | 예시 |
+| ----- | ---- | ------- | ------- |
+| `name` | string | 스킬 식별자 | `"plan-suite"` |
+| `version` | string | 시맨틱 버전 | `"X.Y.Z"` |
+| `updated` | string (ISO 8601) | 최종 갱신일 | `"2026-04-20"` |
+| `description` | string | 스킬이 제공하는 것 | `"Master Plan Suite template"` |
+| `user-invocable` | boolean | true이면 사용자가 이 스킬을 명시적으로 요청할 수 있음 | `false` |
+
+### 선택 필드
+
+```yaml
+argument-hint: "[args...]"                           # Usage pattern if userInvocable
+effort: "low" | "medium" | "high" | "xhigh" | "max" # Optional effort level
+```
+
+### 예시
+
+```yaml
+---
+name: "ecosystem-audit"
+version: "X.Y.Z"
+updated: "2026-04-20"
+description: "Comprehensive blind audit of the apothem ecosystem"
+archetype: "audit-template"
+userInvocable: true
+disable-model-invocation: true
+allowed-tools: "Read, Write, Edit, Glob, Grep, Bash"
+argument-hint: "[--focus area] [--fix]"
+effort: "max"
+---
+
+## Purpose
+...
+```
+
+---
+
+## 스키마: 훅
+
+**경로 패턴:** `settings.json`의 `hooks` 블록과 `src/apothem/hooks/` 아래의
+Python 구현.
+
+**목적:** 호스트가 잘 정의된 라이프사이클 지점에서 호출하는, 이벤트 트리거형
+검증기와 상태 관리 핸들러를 선언한다.
+
+### 설정 파일 스키마
+
+`hooks` 최상위 키는 이벤트 이름을 매처 블록 배열에 매핑합니다:
+
+```json
+"hooks": {
+  "<EventName>": [
+    {
+      "matcher": "<pattern>",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "python",
+          "args": ["-m", "apothem.hooks.dispatch", "<EventName>", "<message-name>"],
+          "timeout": <seconds>,
+          "statusMessage": "<short human-readable label>"
+        }
+      ]
+    }
+  ]
+}
+```
+
+| 필드 | 타입 | 목적 | 예시 |
+| ----- | ---- | ------- | ------- |
+| `matcher` | string | 도구 이름 패턴(도구 비종속 이벤트에는 `"*"`) | `"Write"` |
+| `hooks[].type` | 리터럴 `"command"` | 현재 유일하게 지원되는 훅 핸들러 타입 | `"command"` |
+| `hooks[].command` | string | 실행 가능 명령어; Apothem은 `python` 사용 | `"python"` |
+| `hooks[].args` | string 배열 | `-m apothem.hooks.dispatch` 또는 `-m apothem.conformity.gate`를 호출하는 exec 형식 인자 | `["-m", "apothem.hooks.dispatch", "SessionStart"]` |
+| `hooks[].timeout` | integer 초 | 호스트가 훅을 종료하기 전 최대 실행 시간 | `30` |
+| `hooks[].statusMessage` | string | 호스트 UI에 표시되는 짧은 라벨 | `"Session start"` |
+
+### 필수 이벤트
+
+출하되는 템플릿은 다음 이벤트를 등록합니다. 검증기가 PASS를 보고하려면
+다섯 개 모두 필수입니다:
+
+> **타임아웃 값은 정규 훅 이벤트 예산을 반영합니다** — 아래 테이블은
+> 독자 편의를 위해 이를 재현한 것입니다. 정규 출처가 지배합니다.
+
+| 이벤트 | 일반적 타임아웃 | 목적 |
+| ----- | --------------- | ------- |
+| `SessionStart` | 30초 | 메모리 읽기, 플랜 상태 점검, 준비 상태 보고 |
+| `PreToolUse` | 10초 | 콘텐츠 격리 정책 + 프런트매터에 대한 쓰기 검증 |
+| `PreCompact` | 30초 | 컨텍스트 압축 전에 상태가 외부화되었는지 검증 |
+| `PostCompact` | 30초 | 컨텍스트 압축 후 작업 상태 복원 |
+| `Stop` | 60초 | 세션 종료 시 외부화 — 재개 상태, 출력, 결정 |
+
+`dispatch.py`는 전방 호환성을 위해 `UserPromptSubmit`과 `Notification`도 이벤트
+화이트리스트에서 받아들입니다. 둘 다 출하 템플릿에서는 배선되지 않았습니다.
+동일한 exec 형식 패턴의 매처 블록을 추가해 활성화하세요.
+
+### Python 레이어
+
+모든 훅 명령어는 동일한 Python 디스패처를 경유합니다:
+
+| 파일 | 역할 |
+| ---- | ---- |
+| `src/apothem/hooks/dispatch.py` | `SessionStart`를 `session_start_bootstrap.main()`으로, 그 외 모든 화이트리스트된 이벤트를 `emit_hook_context.main()`으로 라우팅. 항상 0으로 종료. |
+| `src/apothem/hooks/session_start_bootstrap.py` | 세션 시작 훅 스크립트 — 메모리와 플랜 스위트 요약 컨텍스트를 방출. |
+| `src/apothem/hooks/emit_hook_context.py` | 기본 훅 이미터 — 등록된 `--context-file` 페이로드를 운반하는 유효한 엔벨로프를 작성. |
+| `src/apothem/hooks/messages/*.md` | `--context-file`이 참조하는 정적 컨텍스트 페이로드. |
+
+### 검증
+
+`scripts/dev/validate_hooks.py`는 훅 계약을 강제합니다:
+
+- `settings.json`이 JSON으로 파싱되고 모든 필수 이벤트를 선언한다.
+- 세 개의 Python 스크립트 모두 존재하며 유효한 Python으로 파싱된다.
+- `--context-file` 인자가 참조하는 모든 메시지 파일이 존재한다.
+- 하드코딩된 절대 사용자 경로(`C:\Users\...` 등)가 `src/apothem/hooks/**.py`에 나타나지 않는다.
+- `src/apothem/hooks/`와 `scripts/` 아래의 셸 아티팩트는 승인된 로케이터 / 부트스트랩 스텁으로 한정된다.
+
+---
+
+## 스키마: CLAUDE.md
+
+**경로:** `CLAUDE.md`(루트)
+
+**목적:** 글로벌 생태계 설정 인덱스.
+
+### 필수 YAML 프런트매터
+
+```yaml
+---
+name: "CLAUDE"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "Global Claude Code ecosystem configuration and mandate index"
+scope: "always-on"
+portability: "universal"
+---
+```
+
+### 필수 섹션(순서대로)
+
+1. **§1 플랜 스위트** — 템플릿 위치 참조
+2. **§2 인지 정체성** — 창의적 아키텍처 명령
+3. **§3 아티팩트 디렉터리** — 경로와 목적 테이블
+4. **§4 심각도 스케일 거버넌스** — 네 단계 정의
+5. **§5 운영 지시** — 문제 해결, 커뮤니케이션 원칙
+6. **§6 횡단 명령** — CM-1–28 개관
+7. **§7 레지스트리** — 아티팩트 테이블:
+   - 7.1 명령어
+   - 7.2 규칙
+   - 7.3 헬퍼
+   - 7.4 훅
+   - 7.5 스킬
+   - 7.6 아티팩트 진화
+
+---
+
+## 검증 체크리스트
+
+모든 아티팩트는 다음 점검을 만족해야 합니다:
+
+### 프런트매터 검증
+
+- [ ] YAML이 구문상 유효(파싱 오류 없음)
+- [ ] 아티팩트 타입에 대한 모든 필수 필드 존재
+- [ ] `name`이 kebab-case 규약을 따름
+- [ ] `version`이 시맨틱(`MAJOR.MINOR.PATCH`)
+- [ ] `updated`가 ISO 8601 날짜 형식(`YYYY-MM-DD`)
+- [ ] `description`이 비어 있지 않은 단일 행 문자열
+- [ ] 선택 필드가 기대되는 enum 값과 일치(해당하는 경우)
+- [ ] 필드 이름에 오타 없음(스키마의 정규 이름 사용)
+- [ ] 여분의 공백이나 서식 문제 없음
+
+### 콘텐츠 검증
+
+- [ ] 콘텐츠가 닫는 `---` 직후 새 행에서 시작
+- [ ] 플랜 내부 참조 없음(CM-7 준수)
+- [ ] 크로스 레퍼런스가 해결됨(다른 아티팩트를 열거하는 경우)
+- [ ] 링크가 슬래시를 동반한 상대 경로 사용
+
+### 포터빌리티 검증
+
+- [ ] 하드코딩된 절대 경로 없음(상대 사용)
+- [ ] universal 범위 아티팩트에 Windows 고유 구문 없음
+- [ ] 경로 구분자가 슬래시 사용
+- [ ] 환경 변수가 플랫폼 비종속 형식(`${VAR}` 또는 도구 네이티브) 사용
+
+---
+
+## 노트
+
+- **보안으로서의 일관성:** 정규 프런트매터는 자동 검증, 툴링, 크로스 아티팩트
+  검증을 가능하게 합니다. 일탈은 빠르게 누적됩니다.
+- **포터빌리티 선언:** 모든 아티팩트가 universal일 수는 없습니다. 제약을 명시적으로
+  선언하세요 — 소리 없는 버그를 출하하기보다 주의점을 문서화하는 편이 낫습니다.
+- **이름에는 kebab-case:** URL, 스크립트, 명령줄 컨텍스트에서 사용하기 쉽습니다.
+  이름에 공백, 언더스코어, camelCase를 피하세요.
+- **버전 범프 위생:** 모든 동작 변경 편집은 `version`과 `updated`를 함께 올려야 합니다.
+  순수한 서식이나 오타 수정은 PATCH를, 새 선택 섹션이나 안티패턴은 MINOR를, 구조적
+  재편성이나 계약 변경은 MAJOR를 올립니다.

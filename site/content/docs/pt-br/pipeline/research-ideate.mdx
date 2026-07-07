@@ -1,0 +1,69 @@
+---
+title: "/research-ideate"
+description: "/research-ideate — Formula o espaço do problema a partir de uma semente de domínio: varredura de oportunidades e lacunas, varredura de hipóteses prévias invalidadas e geração ranqueada de questões de pesquisa candidatas — a etapa inicial do pipeline /research, alimentando /research-spec."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Papel:** Pesquisador Principal (formulação do problema)
+**Posição no pipeline:** inicial
+
+Formula o espaço do problema do zero — varredura de oportunidades e lacunas, varredura de hipóteses prévias invalidadas e geração de questões de pesquisa candidatas com ranqueamento — a etapa de entrada do pipeline `/research`. Cada candidata é enquadrada diante de uma âncora teórica a priori, fundamentada no trabalho prévio e enunciada em uma forma falsificável, pronta para `/research-spec`.
+
+## Invocação canônica
+
+```bash
+/research-ideate
+```
+
+Com argumentos:
+
+```bash
+/research-ideate [path/to/domain-notes] [--suite-name NAME] [--override] [--domain NAME]
+```
+
+## Entradas
+
+Uma semente de domínio — notas de domínio em formato livre (fornecidas pelo operador em linha ou como um caminho), ou um simples nome `--domain` ao começar do zero.
+
+## Saídas
+
+`_inputs/ideation.md` (o espaço do problema enquadrado, a varredura de oportunidades e lacunas, a varredura de hipóteses prévias invalidadas e a lista ranqueada de questões candidatas) mais o Manifesto de Transferência na pasta da suíte de pesquisa.
+
+## Downstream
+
+/research-spec (consumidor downstream — enquadra a candidata escolhida em uma especificação falsificável).
+
+## Fases do fluxo de trabalho
+
+O comando segue o fluxo de trabalho padrão do pipeline `/research`:
+
+1. **Carregar o contexto** — Ler a semente de domínio, as regras e qualquer estado existente da suíte.
+2. **Varrer o espaço de oportunidades e lacunas** — Mapear o que foi estudado, o que é contestado e o que permanece sem ser abordado no domínio.
+3. **Varrer as hipóteses prévias invalidadas** — Trazer à tona as hipóteses já refutadas pelo trabalho prévio para que a lista não percorra novamente terreno já resolvido.
+4. **Gerar e ranquear candidatas** — Produzir questões de pesquisa candidatas, cada uma enunciada em uma forma falsificável, ranqueadas por tratabilidade e impacto.
+5. **Verificar as saídas** — Confirmar que cada candidata está fundamentada no trabalho prévio primário e é refutável; resolver cada ambiguidade através do canal de consulta estruturada.
+6. **Emitir a lista de ideação** — `_inputs/ideation.md` mais o manifesto de transferência.
+
+## Modos de falha
+
+| Sintoma | Causa | Recuperação |
+|---------|-------|----------|
+| Nenhuma candidata falsificável | Semente de domínio ampla demais ou puramente descritiva | Estreitar o domínio via consulta estruturada; reenquadrar as candidatas como questões refutáveis |
+| A candidata reformula uma hipótese prévia invalidada | A varredura do trabalho prévio foi pulada | Executar a varredura de hipóteses prévias invalidadas; descartar ou reenquadrar a candidata sobreposta |
+| Falta a semente de domínio | Nenhuma nota ou `--domain` fornecida | Fornecer notas de domínio em linha / como caminho, ou passar `--domain NAME` |
+
+## Exemplos
+
+```bash
+# Varrer um domínio e gerar questões candidatas ranqueadas
+/research-ideate ~/notes/retrieval-systems.md --suite-name retrieval-latency
+
+# Começar a partir de um nome de domínio simples
+/research-ideate --domain "vector-index recall under drift"
+```
+
+## Referências cruzadas
+
+- [Visão geral do pipeline](/docs/pipeline)
+- [Referência de comandos](/docs/reference/commands)

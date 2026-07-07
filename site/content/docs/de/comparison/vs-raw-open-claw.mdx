@@ -1,0 +1,50 @@
+---
+title: "Apothem vs. rohe Open-Claw-Konfiguration"
+description: "Die Open-Claw-Konfiguration von Hand pflegen versus sie über Apothems gemeinsames Profil verwalten."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Open-Claw liest `~/.openclaw/openclaw.json`. Sein `agents.defaults.skills` ist
+eine Namens-Allowlist (kein Verzeichnis-Loader), und MCP ist eine CLI-Fläche,
+daher schreibt Apothem keine Konfigurationsschlüssel; es installiert gemeinsame
+Befehls- und Skill-Kohorten unter `~/.openclaw/.apothem/support/skills/` als
+Unterstützungsmaterial.
+
+## Status
+
+**Vorschau.** Der Open-Claw-Adapter zielt auf die aktuell dokumentierte
+Konfigurationsdatei und die zusätzliche Skill-Verzeichnis-Fläche. Nicht-Skill-
+Kohorten bleiben Apothem-Unterstützungsmaterial.
+
+## Aufwandsvergleich
+
+| Aufgabe | Rohe Handkonfiguration | Apothem-verwaltet |
+| ---- | --------------- | --------------- |
+| Wiederverwendbare Skills schreiben | Konfiguration und Skill-Verzeichnisse von Hand bearbeiten | Einmal im gemeinsamen Korpus schreiben |
+| Kohorten mit anderen Harnesses abgestimmt halten | Manuell, pro Werkzeug | Automatisch bei `apothem update` |
+| Konfiguration installieren / entfernen | Manuell | `apothem install` / `apothem uninstall` |
+| Prüfen, ob die Konfiguration korrekt ist | Manuelle Inspektion | `apothem verify --harness open-claw` |
+
+## Was Apothem verwaltet
+
+Der Open-Claw-Adapter schreibt `openclaw.json`, verpackt Apothems Slash-Befehle
+als Skills, kopiert Apothem-Skills in das referenzierte Unterstützungsverzeichnis
+und hält Regeln, Templates, Agents und Hook-Material unter dem
+Apothem-Unterstützungsteilbaum.
+
+## Migrationspfad
+
+1. Führe `apothem profile init` aus, um das gemeinsame Profil zu erstellen, falls
+   noch nicht geschehen.
+2. Verschiebe wiederverwendbare Open-Claw-Skills oder Befehls-Prompts in den
+   gemeinsamen Korpus.
+3. Führe `apothem install --harness open-claw` aus, um die native Konfiguration
+   und das Unterstützungs-Skill-Verzeichnis zu rendern.
+4. Führe `apothem verify --harness open-claw` aus, um zu bestätigen, dass die
+   Konfiguration gelandet ist.
+
+## Als Nächstes lesen
+
+- [Open-Claw-Adapter-Referenz](/docs/harnesses/open-claw)
+- [Vergleichsüberblick](/docs/comparison)

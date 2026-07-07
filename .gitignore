@@ -1,0 +1,244 @@
+# SPDX-License-Identifier: MIT
+
+# =============================================================================
+# Secrets — NEVER commit
+# =============================================================================
+.credentials.json
+.env
+.env.*
+!.env.example
+!.env.template
+# Operator-local settings override (user-local layer); the committed
+# template is settings.local.example.json, kept by the negation below.
+settings.local.json
+!settings.local.example.json
+*.pem
+*.key
+*.p12
+*.pfx
+
+# =============================================================================
+# Python — caches, builds, distributions, coverage, Jupyter, virtualenvs
+# =============================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+.eggs/
+build/
+dist/
+wheels/
+# VS Code extension package artifacts (built by @vscode/vsce package).
+*.vsix
+.installed.cfg
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.markdownlint-cli2/
+.cache/
+.pytype/
+.pyre/
+.dmypy.json
+dmypy.json
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+*.py,cover
+htmlcov/
+.hypothesis/
+.ipynb_checkpoints/
+.python-version
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+.ENV/
+env.bak/
+venv.bak/
+virtualenv/
+
+# =============================================================================
+# Node / JavaScript (defensive — in case MCP tools or sub-projects need it)
+# =============================================================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# =============================================================================
+# Claude Code runtime state (machine-local, auto-managed, never portable)
+# =============================================================================
+# apothem ships a runnable Claude-Code installable example at
+# `examples/harnesses/claude-code/native-install/`. Only the canonical
+# `settings.json` file is tracked at that path; the adjacent
+# agents/commands/output-styles/rules/skills/statuslines subtrees are
+# machine-local session state and remain untracked by the patterns below.
+examples/harnesses/claude-code/native-install/agents/
+examples/harnesses/claude-code/native-install/commands/
+examples/harnesses/claude-code/native-install/output-styles/
+examples/harnesses/claude-code/native-install/rules/
+examples/harnesses/claude-code/native-install/skills/
+examples/harnesses/claude-code/native-install/statuslines/
+# The root-anchored patterns below guard against harness runtime state
+# landing at the repo root: a Claude Code session whose config home resolves
+# to the checkout (e.g. via CLAUDE_CONFIG_DIR) spills machine-local state —
+# backups, caches, logs, session transcripts, telemetry — into the working
+# tree. None of these directories exist in the source tree; the leading `/`
+# keeps the guard from swallowing legitimately named nested paths.
+/.last-cleanup
+/backups/
+/cache/
+/debug/
+/downloads/
+/file-history/
+/history.jsonl
+/ide/
+/logs/
+/runtime-data/
+/session-env/
+/sessions/
+/shell-snapshots/
+/statsig/
+/telemetry/
+/todos/
+
+# =============================================================================
+# Per-user / generated artifacts — entirely excluded (user-specific, regenerated)
+# =============================================================================
+# Session transcripts, hash-named per-project state, and per-project auto-memory
+/projects/
+
+# Auto-memory (global tier) — user-specific persistent knowledge
+/memory/
+
+# Apothem working directory (project-local shared state: plans, memory,
+# learning, contexts, backups, state; gitignored — never committed). The
+# sole canonical plans home is `.apothem/plans/`; an operator with a legacy
+# `.plans/` tree upgrades it via `apothem migrate-workspace`. The
+# `!.apothem/.keep` negation lets a downstream project commit an empty
+# `.apothem/.keep` marker to advertise the convention without leaking any
+# actual working artifact into the published tree. The full snippet is
+# documented at `site/content/docs/reference/plans-discipline.mdx` for
+# downstream-project reuse.
+#
+# Ignore the CONTENTS of `.apothem/` (not the directory itself) so the
+# `!.apothem/.keep` negation below can take effect — a negation cannot
+# re-include a file when its parent directory is itself ignored.
+.apothem/*
+!.apothem/.keep
+.audit/
+
+# Session-local scratch notes (any location)
+*.scratch.md
+
+# Plan-internal output directories (`_outputs/`, `_inputs/`) are working
+# state of the planning pipeline — never published in the source tree.
+# Codebase artifacts carry zero plan-internal references (CM-7); a tracked
+# `_outputs/` is plan-leakage and is ignored here to prevent recurrence.
+_outputs/
+_inputs/
+
+# =============================================================================
+# Site build output
+# =============================================================================
+# `site/` roots the Next.js + Fumadocs SOURCE project (tracked). Its build
+# artifacts and dependencies are ignored. The committed docs source lives under
+# `site/content/docs/`; generated public summaries are rebuilt from that
+# tree by `site/scripts/build-llms-txt.mjs`.
+site/dist/
+site/node_modules/
+site/.next/
+site/.source/
+# Build-generated machine-readable summaries (produced by site/scripts/build-llms-txt.mjs).
+site/public/llms.txt
+site/public/llms-full.txt
+
+# =============================================================================
+# Editor / IDE noise (shared `.vscode/` config intentionally tracked)
+# =============================================================================
+# IDE temp directories
+.idea/
+.vs/
+.vscode/.history/
+*.iml
+*.ipr
+*.iws
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.swp
+*.swo
+*.swn
+*.swm
+.*.sw[a-z]
+.#*
+\#*\#
+*~
+
+# =============================================================================
+# Operating-system noise
+# =============================================================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+.fuse_hidden*
+.Trash-*
+.nfs*
+
+# =============================================================================
+# Logs, temporary files, editor backups, crash dumps
+# =============================================================================
+*.log
+*.log.*
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+*.orig
+*.rej
+*.pid
+*.seed
+*.pid.lock
+*.stackdump
+# Core dumps only — the anchored forms avoid swallowing source files such
+# as `core.py` or `core.ts` anywhere in the tree.
+core
+core.[0-9]*
+
+# =============================================================================
+# Archives — listed as commented-out entries; uncomment to ignore individual
+# extensions in projects that ship binary archive deliverables.
+# =============================================================================
+# *.zip
+# *.tar
+# *.tar.gz
+# *.tgz
+# *.7z
+# *.rar

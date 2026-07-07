@@ -1,0 +1,73 @@
+---
+title: "/research-proposal"
+description: "/research-proposal — Verwandelt die synthetisierte Lücke und den theoretischen Rahmen in einen förderfähigen, prüfbaren Referenzplan: SMART-Ziele, Machbarkeits- und Risikoregister, Wirkungspfad, Präregistrierungsplan und Auswahl der EQUATOR-Berichtsleitlinie — die Vorschlagsphase der /research-Pipeline, zwischen /research-synthesis und /research-design."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rolle:** Leitende Forscherin / Leitender Forscher (Referenzplan)
+**Pipeline-Position:** Kettenmitte
+
+Verwandelt die synthetisierte Lücke und den theoretischen Rahmen in einen förderfähigen, prüfbaren Referenzplan. Die ethische Machbarkeit wird vorab angesprochen, und der Präregistrierungsplan sowie die Auswahl der Berichtsleitlinie werden festgelegt, bevor ein Studiendesign operationalisiert wird.
+
+## Kanonischer Aufruf
+
+```bash
+/research-proposal
+```
+
+Mit Argumenten:
+
+```bash
+/research-proposal [--suite-name NAME] [--override] [--guideline NAME] [--prereg-registry NAME]
+```
+
+## Eingaben
+
+Die `_inputs/synthesis.md` der Suite (die SOTA-Karte + die Lückenanalyse) und `_inputs/theory.md` (der konzeptionelle Rahmen).
+
+## Ausgaben
+
+`_inputs/proposal.md` (die SMART-Zielhierarchie, die Machbarkeitsbewertung, das Ressourcen- / Zeitplan- / Risikoregister, der Wirkungspfad, der Präregistrierungsplan und die Vorauswahl der EQUATOR-Berichtsleitlinie).
+
+## Nachgelagert
+
+/research-design (nachgelagerter Verbraucher — operationalisiert den Vorschlag zu einem eingefrorenen, präregistrierten Studiendesign).
+
+## Workflow-Phasen
+
+Der Befehl folgt dem standardmäßigen Workflow der `/research`-Pipeline:
+
+1. **Kontext laden** — `_inputs/synthesis.md` und `_inputs/theory.md`, die Regeln und jeden bestehenden Suite-Zustand lesen.
+2. **Die SMART-Zielhierarchie aufbauen** — Die Lücke in spezifische, messbare, erreichbare, relevante und terminierte Ziele umwandeln.
+3. **Machbarkeit und Risiko bewerten** — Das Ressourcen- / Zeitplan- / Risikoregister aufbauen; die ethische Machbarkeit vorab ansprechen.
+4. **Präregistrierung und Berichterstattung planen** — Das Register auswählen, den Präregistrierungsplan entwerfen und die EQUATOR-Berichtsleitlinie vorauswählen.
+5. **Den Wirkungspfad abbilden** — Nachvollziehen, wie die Ziele, sofern erreicht, nachgelagerte Wirkung erzeugen.
+6. **Prüfen und ausgeben** — Bestätigen, dass die Ziele testbar und der Plan reproduzierbar sind; `_inputs/proposal.md` sowie das Übergabemanifest ausgeben.
+
+## Rigorositätsuntergrenze
+
+Der Anspruch des Zielorts der Veröffentlichung legt nicht nur die Wahl der Berichtsleitlinie fest, sondern auch die Tiefe der Rigorositätsuntergrenze, die die nachgelagerten Design- und Experimentstufen erreichen müssen — Replikationsuntergrenze, Budgetparität, Abstimmung auf disjunkten Splits und Signifikanz mit einer Effektstärke — plus das Reproduzierbarkeitsnachweis-Paket, das das Liefergut tragen wird.
+
+## Fehlermodi
+
+| Symptom | Ursache | Behebung |
+|---------|-------|----------|
+| Ziel ist nicht messbar | Ziel als Aktivität statt als Ergebnis formuliert | Als SMART-Ziel mit einer expliziten Erfolgsmetrik neu formulieren |
+| Kein Präregistrierungsplan | Präregistrierungsschritt übersprungen | Ein Register auswählen und den Plan entwerfen, bevor mit `/research-design` fortgefahren wird |
+| Fehlende Synthese-Eingabe | `/research-synthesis` noch nicht ausgeführt | Zuerst `/research-synthesis` ausführen, um die Lückenanalyse zu erzeugen |
+
+## Beispiele
+
+```bash
+# Verwandelt die Lücke in einen förderfähigen Referenzplan
+/research-proposal --suite-name retrieval-latency
+
+# Legt die Berichtsleitlinie und das Präregistrierungsregister fest
+/research-proposal --guideline PRISMA --prereg-registry OSF
+```
+
+## Querverweise
+
+- [Pipeline-Überblick](/docs/pipeline)
+- [Befehlsreferenz](/docs/reference/commands)

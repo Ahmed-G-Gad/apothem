@@ -1,0 +1,66 @@
+---
+title: "Konsep"
+description: "Glosarium yang mendefinisikan profil bersama, adapter harness, aturan, hook, gerbang konformitas, skill, dan pekerja terdelegasi di Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Referensi singkat untuk istilah-istilah yang akan Anda temui di seluruh dokumentasi Apothem.
+
+## Profil bersama
+
+Berkas YAML tervalidasi-skema di `~/.config/apothem/profile.yaml` (timpa dengan `--profile PATH`).
+Ia adalah satu-satunya sumber kebenaran untuk identitas, preferensi, dan konfigurasi Anda; setiap
+adapter harness membacanya saat instalasi dan menurunkan konfigurasi native harness itu darinya.
+
+## Adapter harness
+
+Adapter per-platform yang menerjemahkan profil bersama menjadi format konfigurasi native untuk
+harness tertentu. Runtime yang didukung tercantum di:
+
+```text
+Claude Code, Cursor, Gemini CLI, etc.
+```
+
+Menginstal Apothem selalu berarti: instal profil bersama, lalu materialkan satu atau lebih
+adapter.
+
+## Aturan perilaku
+
+Berkas Markdown di bawah src/apothem/rules/ yang dimuat pada setiap interaksi (selalu aktif) atau
+hanya saat mengedit berkas di bawah jalur tertentu (terfilter-jalur). Aturan mengkodifikasi bagaimana
+harness harus berperilaku.
+
+## Hook
+
+Skrip Python yang terdaftar di settings.json yang dipicu pada peristiwa siklus hidup harness
+(PreToolUse, PostToolUse, SessionStart, PreCompact, Stop, PostCompact). Hook menegakkan mandat
+konformitas secara real-time sebelum keluaran mencapai disk. Model peristiwa hook adalah permukaan Claude Code
+saat ini; adapter untuk harness tanpa mekanisme hook cukup mengabaikannya.
+
+## Gerbang konformitas
+
+Bagian mekanis dari gerbang pra-emisi lima-belas-bar (M1-M15) — validator mandiri
+yang harus lolos sebelum artefak apa pun dipancarkan. Gerbang pra-emisi adalah lantai kualitas;
+gerbang konformitas menjalankan bar-bar yang dapat dicek mesin, dan hook menegakkan masing-masing bar secara real-time.
+
+## Suite rencana
+
+Direktori terstruktur di &lt;project-root&gt;/.apothem/plans/&lt;suite-name&gt;/ yang berisi spec, master plan, berkas
+PHASE.md per-fase, dan artefak keluaran. Pipeline /plan mengelola suite rencana.
+
+## Skill
+
+Teknik yang dapat digunakan kembali, dapat dipanggil melalui perintah-garis-miring, yang dipaket sebagai berkas SKILL.md di bawah
+src/apothem/skills/&lt;name&gt;/. Skill memperluas permukaan perintah-garis-miring melampaui pipeline /plan
+bawaan.
+
+## Pekerja terdelegasi
+
+Asisten yang persisten dan tercakup tujuan yang didefinisikan pada jalur kanonis:
+
+```text
+src/apothem/agents/<name>.md
+```
+
+Pekerja terdelegasi menangani riset, audit, pemeriksaan kualitas, dan manajemen memori.

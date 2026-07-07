@@ -1,0 +1,137 @@
+# SPDX-License-Identifier: MIT
+
+# Weekly dependency audit (pip-audit) — runs on a weekly cadence so new
+# CVEs are surfaced even when no code changes.
+#
+# Distinct from ci.yml's supply-chain-scan job:
+#   - ci.yml's pip-audit blocks merges on every PR (latest deps).
+#   - This workflow's weekly cron catches new CVEs disclosed against
+#     already-resolved deps and fails the run when a CVE surfaces. The
+#     OpenSSF "Vulnerabilities" check is OSV-database-backed (not
+#     SARIF-backed), so the workflow's pass/fail status alone is the
+#     canonical Scorecard feed.
+
+name: Pip Audit (Weekly)
+
+on:
+  schedule:
+    - cron: "0 3 * * 1"   # every Monday 03:00 UTC
+  push:
+    branches: [main]
+    paths:
+      - "pyproject.toml"
+      - "requirements*.txt"
+      - "Pipfile*"
+      - "src/apothem/_vendor/**"
+      - ".github/workflows/pip-audit.yml"
+  pull_request:
+    paths:
+      - "pyproject.toml"
+      - "requirements*.txt"
+      - "Pipfile*"
+      - "src/apothem/_vendor/**"
+      - ".github/workflows/pip-audit.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Single-sourced pip pin (CVE-2026-6357 closes on pip >=26.1). One value per
+# workflow file; scripts/dev/check_pip_pin_drift.py fails the build if any
+# workflow's PIP_PIN_VERSION diverges from the canonical pin.
+env:
+  PIP_PIN_VERSION: "26.1.2"
+
+concurrency:
+  group: pip-audit-${{ github.ref }}
+  cancel-in-progress: true  # scan-class cadence: cancel stale runs on rebase
+
+jobs:
+  audit:
+    name: pip-audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install pip-audit
+        run: |
+          python -m pip install "pip==${PIP_PIN_VERSION}"
+          python -m pip install "pip-audit==2.10.1"
+
+      - name: Resolve apothem dependency tree
+        run: |
+          python -m pip install -e .[dev]
+
+      - name: Run pip-audit (table)
+        id: audit
+        continue-on-error: true
+        run: |
+          # Default pip-audit exits 0 on no-vulns and 1 on vulns found. The
+          # editable apothem install is reported as a skip ("Dependency not
+          # found on PyPI") which does NOT cause a non-zero exit at default
+          # severity — only actual CVEs do. `--strict` was dropped because it
+          # treats unaudited deps (including the editable apothem itself) as
+          # hard failures, drowning real CVE signal in environment noise.
+          # The OpenSSF Scorecard "Vulnerabilities" check is OSV-database-
+          # backed (not SARIF-backed), so feeds correctly from the workflow's
+          # pass/fail status alone — which is exactly pip-audit's default
+          # exit semantics.
+          #
+          # CVE-2026-3219 ignored: the advisory targets `pip` itself (the
+          # package-manager runtime) over a tar+ZIP file-handling heuristic;
+          # it is informational for developer tooling, not a project-dep
+          # vulnerability, and no fix version is published.
+          # Expiry: 2026-08-20 — if no upstream fix has landed by then,
+          # re-triage and either re-justify with a fresh expiry or drop the
+          # ignore. No open-ended suppression.
+          #
+          # PYSEC-2026-89 ignored: the advisory targets Python-Markdown < 3.8.1
+          # (unhandled AssertionError on malformed HTML -> DoS). The resolved
+          # tree pins markdown 3.10.2, which is well past the 3.8.1 fix; the
+          # OSV record carries no fixed-version range, so pip-audit reports the
+          # already-patched version as vulnerable (false positive).
+          # Expiry: 2026-08-20 — re-triage if the OSV record gains a fixed
+          # range or markdown is downgraded. No open-ended suppression.
+          pip-audit --desc \
+            --ignore-vuln CVE-2026-3219 \
+            --ignore-vuln PYSEC-2026-89
+
+      - name: Run pip-audit (frozen vendored closure)
+        id: audit_vendor
+        continue-on-error: true
+        run: |
+          # Audit the EXACT versions vendored under src/apothem/_vendor/ — the
+          # versions that actually execute at runtime — rather than only the
+          # resolved-latest declared deps audited above. src/apothem/_vendor/
+          # vendor.txt pins the frozen closure; pip-audit reads it as a
+          # requirements file (inline `#` comments, e.g. on the rpds-py anchor
+          # line, are stripped by the requirements parser). A CVE disclosed
+          # against any pinned vendored version fails this step and the run.
+          #
+          # The same CVE-2026-3219 / PYSEC-2026-89 ignores from the resolved-
+          # tree audit do not apply here: neither pip nor markdown is in the
+          # vendored closure, so no ignore is needed for the frozen set.
+          pip-audit --desc -r src/apothem/_vendor/vendor.txt
+
+      - name: Surface failure as workflow status
+        if: steps.audit.outcome == 'failure' || steps.audit_vendor.outcome == 'failure'
+        run: |
+          echo "::error::pip-audit found vulnerable dependencies (resolved tree and/or frozen vendored closure). See this run's log for details."
+          exit 1

@@ -1,0 +1,190 @@
+---
+title: "Quick start"
+description: "Install Apothem, author a profile, materialize your first harness, and verify it — a copy-paste tour with expected output."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+This is the fast path from nothing to a verified harness configuration: install,
+author the shared profile, materialize one tool's native config, confirm it, and
+make your first edit. Every command is real and copy-paste runnable, and each
+step shows what a clean run prints. The install itself lands in under two
+minutes; editing the profile is the only part that takes as long as you want it
+to.
+
+By the end you will have a working harness configuration generated from a
+profile you wrote — and you will know the one command that pushes a profile
+change back out to every tool.
+
+<Callout title="Want the slow, narrated version?">
+  The [getting-started tutorial](/docs/tutorials/getting-started) walks the same
+  ground with more explanation of each step and why it matters. This page is the
+  terse, output-first tour.
+</Callout>
+
+You will use **Claude Code** as the example harness — it is the installer's
+default. Swap the adapter name at any step to target a different tool; the
+[harness list](/docs/harnesses) has every supported name.
+
+## 1. Install Apothem
+
+Apothem ships as a self-contained runtime — the engine runs straight from its
+source tree with vendored dependencies. One command fetches the source, places
+the engine, and materializes your first harness:
+
+```bash title="macOS · Linux · WSL2"
+curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
+```
+
+```powershell title="Windows · PowerShell 7+"
+irm https://apothem.ahmedgad.com/install.ps1 | iex
+```
+
+The installer requires a system Python 3.10+ with `click` and `rich`
+importable, plus `git` for the network form. It checks the prerequisites,
+places the engine under `~/.apothem`, and prints the exact engine invocation
+for your shell on completion:
+
+```text
+Apothem installed.
+Run the engine with:
+
+  apothem <command>
+```
+
+<Callout title="First-run profile stop">
+  If you have no profile yet, the installer copies the example profile to
+  `~/.config/apothem/profile.yaml` and stops there, asking you to edit it before
+  any harness config is written — so on a first run, materializing your first
+  harness is the `apothem install` in Step 3, after you make the profile yours
+  in Step 2. When a profile already exists, the run continues straight through
+  to materialization.
+</Callout>
+
+<Callout title="The `apothem` command">
+  The installer places an `apothem` shim on your `PATH`, so you run the engine
+  directly as `apothem <command>`. If the shim's directory is not yet on `PATH`,
+  the banner prints a self-contained fallback —
+  `PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>` — that needs no
+  shim; prepend the exact prefix your banner printed to each command.
+</Callout>
+
+The [installation guide](/docs/install) covers the other install paths — the
+Claude Code plugin (`/plugin marketplace add ahmed-g-gad/apothem` then
+`/plugin install apothem@apothem`); the VS Code-family and other tool-native
+extensions; and the on-demand npx form (`npx @ahmed-g-gad/apothem <command>`) —
+alongside the environment-variable options.
+
+## 2. Create the shared profile
+
+`apothem profile init` writes the smallest schema-valid profile to
+`~/.config/apothem/profile.yaml`. Pass `--profile PATH` when you keep a project
+or CI-specific profile elsewhere.
+
+```bash
+apothem profile init
+apothem profile show --json
+```
+
+The scaffold uses fake placeholder identity data and is safe to edit before you
+install any harness output. `show --json` reads it back and reports the
+validated profile:
+
+```json
+{
+  "identity": {
+    "name": "Example User",
+    "email": "dev@example.invalid",
+    "github": "example-user"
+  }
+}
+```
+
+This is also where a malformed edit surfaces — if the YAML is invalid, `show`
+reports it here, before any harness config is written. Make the profile yours
+with `apothem profile edit` (opens it in your editor) or set a single key
+in place:
+
+```bash
+apothem profile set identity.name "Your Name"
+```
+
+## 3. Install harness adapters
+
+Materialize the adapter for your primary harness. This reads your profile
+and writes that tool's native configuration:
+
+```bash
+apothem install --harness claude-code
+```
+
+```text
+Installed claude-code.
+Wrote: ~/.claude/settings.json
+```
+
+Project-scope adapters write inside a project rather than your home directory,
+so they need a `--project PATH`. Preview any install without writing files using
+`--dry-run`:
+
+```bash
+apothem install --harness cursor --project . --dry-run
+apothem install --harness cursor --project .
+```
+
+Install the whole registry-backed set at once with `--harness all`. Because that
+selection writes both project-scope and user-scope files, the command prints the
+concrete targets grouped by location and confirms before writing outside the
+project root:
+
+```bash
+apothem install --harness all --project .
+```
+
+See the [full harness list](/docs/harnesses) for every supported name, and the
+[install reference](/docs/cli-reference/install) for the complete option set.
+
+## 4. Verify
+
+Materializing is only half the job — `verify` confirms the harness's expected
+config files landed and match what the profile declares:
+
+```bash
+apothem verify --harness claude-code
+```
+
+```text
+claude-code: managed targets verified.
+```
+
+`verify` exits non-zero if the configuration is missing or has drifted, so it
+doubles as a gate in a setup script. For a whole-machine health check across
+every registered adapter, run:
+
+```bash
+apothem doctor
+```
+
+`doctor` reports each adapter's installed state and exits non-zero if any
+registered adapter reports not installed.
+
+## 5. Your first run
+
+Open the harness you just configured — Claude Code, in this example — and
+start a session in any project. The rules and preferences you wrote into the
+profile in Step 2 are now part of that tool's behavior. That is the working
+first run: one profile, shaping a real session.
+
+When you change the profile later, re-apply it without re-installing:
+
+```bash
+apothem update --harness claude-code
+```
+
+## Next steps
+
+- [Add more harnesses](/docs/install/harness-setup) — repeat Step 3 per tool.
+- [Write your first rule](/docs/usage/writing-rules) — the unit every harness
+  inherits.
+- [Author a plan](/docs/usage/authoring-plans) — drive a whole mission through
+  the deterministic plan pipeline.
+- [CLI reference](/docs/cli-reference) — every command, flag, and exit code.

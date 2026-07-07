@@ -1,0 +1,47 @@
+---
+title: "Uninstalling"
+description: "Remove Apothem and clean up harness configs."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## Remove harness configs first
+
+Before uninstalling Apothem, remove each harness adapter config to leave
+your harnesses in a clean state. Run `apothem harnesses list` to see
+which adapters are currently installed, then remove them one at a time or use
+the registry-wide selector:
+
+```bash
+apothem uninstall --harness claude-code
+apothem uninstall --harness cursor --project /path/to/project
+apothem uninstall --harness all --project /path/to/project --yes
+```
+
+Pass `--yes` to skip the per-harness confirmation prompt.
+
+## Remove the engine
+
+Removal matches the install channel you used:
+
+- **Claude Code plugin** — remove the plugin from inside Claude Code:
+  `/plugin uninstall apothem@apothem` (the marketplace entry can be removed
+  with `/plugin marketplace remove ahmed-g-gad/apothem`).
+- **npx** — nothing to remove; `npx` runs from its cache. Clear it with
+  `npm cache clean --force` if you want the cached copy gone.
+- **One-shot installer** — run the matching uninstall script from the
+  checkout: `scripts/installer/uninstall.sh` (POSIX) or
+  `scripts/installer/uninstall.ps1` (PowerShell). Both confirm before
+  removing and refuse unsafe targets.
+- **Backups and state** — install backups live under `~/.apothem/backups/`;
+  delete `~/.apothem/` once you no longer need them.
+
+## What is NOT removed
+
+- The shared profile YAML at `~/.config/apothem/profile.yaml` or
+  `--profile PATH` is never removed by `apothem uninstall`.
+- Unrelated operator-authored files in harness directories are preserved.
+- Plan suites under `<project>/.apothem/plans/` (and the legacy `<project>/.plans/`) are unaffected.
+
+To fully clean up a harness root, remove the harness-native path documented on
+the [harness reference pages](/docs/harnesses) after confirming you have backed up
+any custom rules, helpers, or profile files you want to keep.

@@ -1,0 +1,70 @@
+---
+title: "/research-publish"
+description: "/research-publish — Formatea el artículo según la plantilla del lugar de publicación y ensambla el paquete de envío (suplementario, disponibilidad de datos/código, carta de presentación, ética/conflicto de interés), con un plan de preprint/DOI."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rol:** Investigador principal (publicación)
+**Posición en la canalización:** mitad de la cadena
+
+Formatea el artículo según la plantilla del lugar de publicación y ensambla el paquete de envío — materiales suplementarios, declaración de disponibilidad de datos / código, carta de presentación, declaraciones de ética y de conflicto de interés — más un plan de preprint / archivado con un DOI y una lista de comprobación de envío. El operador envía el paquete; el sucesor terminal es `/research-disseminate`, que lleva el trabajo publicado a su audiencia.
+
+## Invocación canónica
+
+```bash
+/research-publish
+```
+
+Con argumentos:
+
+```bash
+/research-publish [path/to/research-suite/]
+```
+
+## Entradas
+
+El entregable del artículo y `_outputs/review-report.md` (las revisiones de la revisión por pares).
+
+## Salidas
+
+El paquete de envío con formato del lugar de publicación en una ubicación natural del host (el manuscrito formateado + materiales suplementarios + declaración de disponibilidad de datos / código + carta de presentación + declaraciones de ética / conflicto de interés) + `_outputs/publication-record.md` + una lista de comprobación de envío.
+
+## Aguas abajo
+
+/research-disseminate (consumidor aguas abajo) — el operador realiza el envío, luego `/research-disseminate` lleva el trabajo publicado a su audiencia. Cuando el lugar de publicación devuelve revisiones, vuelve a ejecutar `/research-review` contra el artículo revisado antes de reconstruir el paquete.
+
+## Fases del flujo de trabajo
+
+El comando sigue el flujo de trabajo estándar de la canalización `/research`:
+
+1. **Cargar contexto** — Leer el artículo y el informe de revisión.
+2. **Verificar la Puerta de secuencia** — Confirmar que `_outputs/review-report.md` existe; de lo contrario, detenerse con `Blocked: run /research-review first`.
+3. **Formatear y empaquetar** — Aplicar la plantilla del lugar de publicación; ensamblar suplementario, disponibilidad de datos/código, carta de presentación, declaraciones de ética / conflicto de interés.
+4. **Planificar el preprint / archivado** — Registrar el plan de preprint y DOI; construir la lista de comprobación de envío.
+5. **Actualizar el manifiesto de traspaso** — Registrar el paquete de envío y el registro de publicación.
+6. **Emitir el paquete** — El paquete de envío con formato del lugar de publicación + `_outputs/publication-record.md`.
+
+## Umbral de rigor
+
+El formateo respeta la divulgación por etapas: para un lugar de publicación de doble ciego, la identidad del autor, la institución y el sistema se retiran a metadatos enviados por separado y se restauran solo en la etapa designada de versión final para impresión. El depósito de archivo lleva el paquete de evidencia de reproducibilidad escalado al lugar de publicación (datos, código, entorno fijado, semillas, registro de hardware, resultados por instancia y figuras).
+
+## Modos de fallo
+
+| Síntoma | Causa | Recuperación |
+|---------|-------|----------|
+| Blocked: run /research-review first | Sin informe de revisión | Ejecuta `/research-review` para producir `_outputs/review-report.md` |
+| Revisión HIGH sin atender | Hallazgo de revisión omitido | Atiende la revisión y vuelve a ejecutar `/research-review` |
+| Falta disponibilidad de datos/código | Superficie de reproducibilidad ausente | Añade la declaración de disponibilidad de datos / código antes del envío |
+
+## Ejemplos
+
+```bash
+# Ensamblar el paquete de envío del lugar de publicación
+/research-publish path/to/research-suite/
+```
+
+## Referencias cruzadas
+
+- [Visión general de la canalización](/docs/pipeline)
+- [Referencia de comandos](/docs/reference/commands)

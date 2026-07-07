@@ -1,0 +1,104 @@
+---
+title: "Antigravity"
+description: "Apothem harness adapter for Antigravity (Preview)."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Vendor:** Antigravity
+**Install name:** `antigravity`
+**Status:** Preview
+**Native config:** `~/.gemini/GEMINI.md` plus
+`~/.gemini/antigravity-cli/plugins/apothem/`
+
+## Installation
+
+```bash
+apothem install --harness antigravity
+```
+
+The adapter renders the shared profile to `~/.gemini/GEMINI.md` and installs
+Apothem support cohorts as an Antigravity CLI plugin.
+
+**Files written:** `~/.gemini/GEMINI.md`,
+`~/.gemini/antigravity-cli/plugins/apothem/plugin.json`,
+`~/.gemini/antigravity-cli/plugins/apothem/skills/`,
+`~/.gemini/antigravity-cli/plugins/apothem/rules/`,
+converted local helper definitions inside the plugin,
+`~/.gemini/antigravity-cli/plugins/apothem/apothem/templates/`, and
+`~/.gemini/antigravity-cli/plugins/apothem/apothem/hooks/`.
+
+**Shared user anchor.** `~/.gemini/GEMINI.md` is also the user-scope anchor for
+Gemini-family tooling. The Antigravity adapter keeps its extra Apothem material
+inside the `apothem` plugin under `~/.gemini/antigravity-cli/plugins/` so it
+does not claim generic Gemini CLI project directories.
+
+## Profile-to-native-config mapping
+
+The adapter reads Apothem's shared profile and renders the instruction anchor
+plus support cohorts on every `apothem install` or `apothem update` run.
+
+## Compatibility notes
+
+Preview adapter. The `GEMINI.md` anchor is active instruction content; the
+Antigravity plugin preserves converted command skills, reusable skills, local
+helper definitions, rules, templates, and hook support material in a clear
+Apothem-owned namespace.
+Hook files are not registered as active Antigravity hook events until the
+adapter owns a schema translation layer for Antigravity `hooks.json`.
+
+## Verification
+
+```bash
+apothem verify --harness antigravity
+```
+
+The verify command confirms that:
+
+1. The native context file exists at the expected path.
+2. The Apothem Antigravity CLI plugin metadata exists and declares the
+   `apothem` plugin name.
+
+## Updating
+
+```bash
+apothem update --harness antigravity
+```
+
+Re-derives the native config from the current shared profile state. Run after
+editing `~/.config/apothem/profile.yaml` or upgrading the installed Apothem
+package.
+
+## Uninstalling
+
+```bash
+apothem uninstall --harness antigravity
+```
+
+Removes the native config files written by the adapter.
+The shared profile YAML and Apothem engine are unaffected.
+
+## Conformity gate
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| Config file not found | Re-run `apothem install --harness antigravity` |
+| Verification failed | Run `apothem update --harness antigravity`, then verify again |
+| Unexpected config content | Check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run `apothem update --harness antigravity` |
+
+## Configuration knobs
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--dry-run` | `false` | Preview install without writing files. |
+
+## See also
+
+- [All harnesses](/docs/harnesses) — the full catalog of supported tools
+- [Install guide](/docs/install) — install Apothem into this harness
+- [`apothem harnesses` reference](/docs/cli-reference/harnesses) — list and inspect adapters from the CLI

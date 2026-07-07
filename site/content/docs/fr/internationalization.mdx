@@ -1,0 +1,127 @@
+---
+title: "Internationalisation (i18n)"
+description: "Comment le site de documentation d'Apothem déclare sa cohorte de locales, émet des liens hreflang vers les langues alternatives, gère le rendu de droite à gauche et expose honnêtement l'écart de traduction."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Cette page documente la façon dont le site de documentation d'Apothem gère
+plusieurs langues : la cohorte de locales qu'il déclare, le mécanisme
+`hreflang` qu'il émet, sa préparation au rendu de droite à gauche, et l'état
+honnête de la traduction par locale.
+
+## Résumé des décisions
+
+- **Plateforme : Next.js App Router + Fumadocs.** Le site est construit depuis
+  `site/`. La cohorte de locales est déclarée dans `site/lib/i18n.ts`, et le
+  mécanisme de liens vers les langues alternatives se trouve dans
+  `site/lib/hreflang.ts`.
+- **Cohorte de locales : déclarée.** La cohorte Modern Dev de douze locales est
+  déclarée comme source de vérité canonique, l'anglais étant la locale source.
+- **Routage par locale : pas encore activé.** Activer les routes préfixées par
+  locale sur l'ensemble de la cohorte alors que seul le contenu anglais existe
+  créerait onze routes sans contenu qui retombent silencieusement sur la source
+  anglaise. C'est précisément le type de dérive silencieuse vers l'anglais-seul
+  que la discipline i18n interdit ; le routage reste donc mono-locale jusqu'à ce
+  qu'un contenu traduit et relu soit déployé.
+- **Mécanisme `hreflang` : actif.** Chaque page émet un ensemble de
+  `<link rel="alternate">` couvrant chaque locale dotée d'un contenu rédigé,
+  plus un repli `x-default`. Les locales en attente de traduction sont omises —
+  jamais pointées vers le repli anglais — afin d'indiquer fidèlement aux moteurs
+  de recherche qu'aucune traduction n'existe.
+- **Préparation au rendu de droite à gauche : en place.** Les feuilles de style
+  partagées utilisent partout des propriétés CSS logiques, de sorte que les
+  pages arabes s'affichent correctement sous `dir="rtl"` dès qu'un contenu arabe
+  sera déployé.
+- **Politique de traduction automatique : rien n'est publié sans relecture.**
+  Aucune prose de page traduite automatiquement n'est publiée. La traduction est
+  amorcée par machine et conditionnée à une relecture humaine avant qu'une
+  locale ne soit marquée comme traduite.
+
+## La cohorte de locales
+
+La cohorte Modern Dev déclare douze locales. L'anglais est servi à la racine du
+site ; les onze cibles sont déclarées afin que la pile soit prête pour
+l'internationalisation et que l'écart de traduction soit explicite plutôt que
+silencieux.
+
+| Code | Chemin | Langue | Direction | Contenu |
+|------|------|----------|-----------|---------|
+| `en` | `/` | Anglais | LTR | Traduit (source) |
+| `zh-CN` | `/zh-cn/` | Chinois simplifié | LTR | En attente |
+| `es` | `/es/` | Espagnol | LTR | En attente |
+| `pt-BR` | `/pt-br/` | Portugais brésilien | LTR | En attente |
+| `fr` | `/fr/` | Français | LTR | En attente |
+| `de` | `/de/` | Allemand | LTR | En attente |
+| `ja` | `/ja/` | Japonais | LTR | En attente |
+| `ko` | `/ko/` | Coréen | LTR | En attente |
+| `ru` | `/ru/` | Russe | LTR | En attente |
+| `id` | `/id/` | Indonésien | LTR | En attente |
+| `ar` | `/ar/` | Arabe | RTL | En attente |
+| `hi` | `/hi/` | Hindi | LTR | En attente |
+
+La cohorte est l'unique source de vérité ; ses amendements passent par une
+décision délibérée, jamais par une modification silencieuse.
+
+## Comment fonctionne `hreflang`
+
+`site/lib/hreflang.ts` construit la carte `alternates.languages` que Next.js
+rend dans le `<head>` de chaque page. Sa construction respecte une règle : le
+lien vers la langue alternative d'une locale n'est émis **que** lorsque cette
+locale dispose d'un contenu rédigé. Comme l'anglais est aujourd'hui la seule
+locale traduite, chaque page émet exactement deux liens :
+
+```html
+<link rel="alternate" hreflang="en" href="https://apothem.ahmedgad.com/..." />
+<link rel="alternate" hreflang="x-default" href="https://apothem.ahmedgad.com/..." />
+```
+
+Le lien `canonical` de la page est toujours sa propre URL — il ne pointe jamais
+vers une autre locale. Lorsque le contenu d'une locale est déployé et que son
+statut bascule à « traduit » dans `site/lib/i18n.ts`, le lien `hreflang` de
+cette locale commence à s'émettre automatiquement, et le routage par locale est
+activé dans le même change-set.
+
+## Rendu de droite à gauche
+
+L'arabe est la locale de droite à gauche de la cohorte. Le site y est prêt :
+
+- **Propriétés CSS logiques uniquement.** Les feuilles de style et composants
+  partagés utilisent des propriétés logiques (`margin-inline-start`,
+  `padding-inline-end`, `text-align: start`, `inset-inline-start`) plutôt que
+  physiques (`margin-left`, `text-align: left`). Les propriétés logiques
+  s'inversent automatiquement sous `dir="rtl"`, de sorte que la même feuille de
+  style sert correctement les deux directions.
+- **Attribut de direction.** Les pages arabes définissent `dir="rtl"` sur
+  l'élément `<html>` aux côtés de `lang="ar"` dès qu'un contenu arabe est
+  déployé.
+- **Contenu bidirectionnel.** Les chaînes à direction mixte — par exemple une
+  commande anglaise dans un paragraphe arabe — sont encapsulées dans `<bdi>`
+  afin que la séquence de gauche à droite intégrée s'affiche correctement au
+  sein du flux de droite à gauche.
+
+## Ajouter une traduction
+
+Pour traduire le site dans une locale de la cohorte :
+
+1. Rédigez les pages traduites et relues pour cette locale.
+2. Basculez le statut de contenu de la locale à « traduit » dans
+   `site/lib/i18n.ts`.
+3. Son lien `hreflang` commence à s'émettre et ses routes deviennent
+   accessibles.
+
+Conservez la page anglaise comme source de vérité jusqu'à ce que la traduction
+d'une locale soit rédigée et relue. Aucun contenu traduit automatiquement n'est
+publié sans relecture.
+
+## État actuel et chemin vers un corpus traduit
+
+Le site est aujourd'hui prêt pour l'internationalisation mais son contenu est en
+anglais uniquement. L'infrastructure — déclaration de la cohorte, mécanisme
+`hreflang`, préparation au rendu de droite à gauche via le CSS logique — est en
+place ; le corpus traduit par locale ne l'est pas. Un corpus entièrement traduit
+est un travail de niveau fonctionnalité : les pages de chaque locale sont
+amorcées par machine puis relues par un humain, et une version n'est prête pour
+la production en matière d'internationalisation qu'une fois que chaque locale a
+franchi son seuil de relecture. D'ici là, la cohorte est déclarée, l'écart est
+visible, et aucune traduction non relue n'est publiée.

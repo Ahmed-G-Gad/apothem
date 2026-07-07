@@ -1,0 +1,54 @@
+---
+title: "브랜치 보호"
+description: "main의 Apothem 브랜치 보호 — 리뷰 게이트, 상태 검사 게이팅, 푸시 제한."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem의 `main` 브랜치는 단일 새 릴리스 커밋이 게시된 후 GitHub 브랜치 보호로 보호됩니다. 이 보호는 `rules/production-ready-prs.md`에 선언된 변경 세트 규율을 강제하며, 향후 작업을 위해 OpenSSF Scorecard의 **Branch-Protection** 및 **Code-Review** 검사에 입력을 제공합니다.
+
+## 규칙 세트 선언
+
+| 설정 | 값 | 근거 |
+|---|---|---|
+| **대상** | `main` | 공개 기본 브랜치를 보호합니다. |
+| **강제 상태** | `active` | 드라이런 모드가 아닙니다. |
+| **병합 전 풀 리퀘스트 요구** | ✅ | `main`으로의 직접 푸시를 차단합니다. |
+| **필요 승인 리뷰 수** | **1** | 새로운 단독 메인테이너 프로젝트를 위한 최소 사람 리뷰 게이트. |
+| **새 커밋 시 오래된 승인 폐기** | ✅ | 승인 후 force-push는 리뷰를 다시 트리거합니다. |
+| **Code Owners의 리뷰 요구** | 연기됨 | 두 번째 메인테이너가 합류하기 전에 이를 활성화하면 단독 메인테이너의 PR이 교착될 수 있습니다. |
+| **가장 최근의 리뷰 가능한 푸시 승인 요구** | ✅ | 가장 최근에 푸시된 커밋이 승인을 가져야 합니다. |
+| **대화 해결 요구** | ✅ | 열린 리뷰 스레드가 병합을 차단합니다. |
+| **상태 검사 통과 요구** | ✅ | CI 워크플로 + Scorecard + CodeQL + pip-audit. |
+| **필수 상태 검사** | 현재 핵심 검사 | 필수 목록은 최신의 그린 릴리스 커밋에서 갱신됩니다. |
+| **브랜치가 최신 상태여야 함** | ✅ | 오래된 병합으로 인한 회귀를 방지합니다. |
+| **서명된 커밋 요구** | 권장 | 로컬 릴리스 커밋은 서명됩니다. 전면 강제는 기여자 온보딩 문서가 SSH/GPG 설정을 기술할 때까지 기다립니다. |
+| **선형 히스토리 요구** | ✅ | 단일 라인 공개 히스토리를 이해하기 쉽게 유지합니다. |
+| **force-push 차단** | ✅ | `main`에서의 히스토리 재작성을 차단합니다. |
+| **삭제 허용** | ❌ | `main` 브랜치는 삭제할 수 없습니다. |
+
+## 단독 메인테이너 제약
+
+GitHub은 저장소 파일이 사람의 리뷰 히스토리를 만들도록 허용하지 않습니다. 따라서 저장소는 현재의 메인테이너 모델에 대해 교착되지 않는 가장 강력한 브랜치 보호를 적용합니다. 즉, 한 건의 승인 리뷰, 오래된 리뷰 폐기, 최신 푸시 승인, 대화 해결, 상태 검사, 선형 히스토리, 그리고 브랜치 삭제나 force-push 금지입니다. 두 번째 메인테이너가 합류하면 CODEOWNERS 리뷰와 두 명의 리뷰어 최소 요건이 더 강력한 설정이 됩니다.
+
+## 상태 검사 요구 사항
+
+위에 선언된 네 가지 하드 게이팅 상태 검사:
+
+- **`ci`** — 전체 테스트 매트릭스 + ruff + mypy + bandit + Trivy + 해결된 의존성 트리에 대한 pip-audit
+- **`Scorecard`** — 검사별 회귀 없는 OpenSSF Scorecard 실행
+- **`CodeQL`** — `python` + `actions`용 `security-extended` 쿼리 팩
+- **`pip-audit`** — 해결된 의존성 트리에 대한 주간 + PR별 취약점 스캔
+
+다른 워크플로도 상태를 보고할 수 있지만, 필수 검사 목록으로 승격되지 않는 한 그 결과는 병합을 게이팅하지 않습니다.
+
+## 감사 주기
+
+이 파일은 모든 보안 감사 시점과 모든 릴리스 엔지니어링 체크포인트에서 검토됩니다. 이 파일과 실제 브랜치 보호 구성 사이의 드리프트는 고심각도 발견 사항입니다.
+
+## 참고 자료
+
+- [OpenSSF Scorecard — Branch-Protection check](https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection)
+- [GitHub — About protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
+- [Apothem CODEOWNERS](https://github.com/ahmed-g-gad/apothem/blob/main/.github/CODEOWNERS) — 경로 범위의 리뷰 소유권
+- `rules/production-ready-prs.md` §1 — 이 규칙 세트가 강제하는 동일 변경 세트 규율

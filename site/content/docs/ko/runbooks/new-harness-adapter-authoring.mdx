@@ -1,0 +1,65 @@
+---
+title: "새 도구 어댑터 작성"
+description: "새 Apothem 도구 어댑터를 작성하고 게시하기 위한 런북."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem에 1차 구성으로 포함하거나 서드파티 패키지로 만들기 위해 새 도구
+어댑터를 작성할 때 이 런북을 사용하세요.
+
+## 사전 요구 사항
+
+- [HarnessAdapter 프로토콜](/docs/architecture/harness-adapter-abstraction)에 대한 이해
+- 대상 도구의 구성 형식에 대한 이해
+- Python 3.10+
+
+## 단계
+
+### 1. 어댑터 구현
+
+[도구 어댑터 작성](/docs/examples/authoring-a-harness-adapter) 예제를 따라
+대상 도구를 위한 `HarnessAdapter`를 구현합니다.
+
+### 2. 문서 페이지 작성
+
+다음 내용을 다루는 `site/content/docs/harnesses/<slug>.mdx`를 생성합니다.
+
+- 설치 흐름
+- 프로파일에서 네이티브 구성으로의 매핑
+- 호환성 주의 사항
+- 검증 레시피
+- 업데이트 및 제거 레시피
+- 적합성 게이트 표면
+- 문제 해결 표
+- 구성 노브 표
+
+### 3. 테스트 작성
+
+```bash
+tests/packaging/test_<slug>_adapter.py
+tests/unit/test_<slug>_adapter.py
+```
+
+최소 테스트 커버리지:
+- `test_install_creates_expected_files`
+- `test_verify_passes_after_install`
+- `test_uninstall_removes_files`
+
+### 4. 로컬에서 검증
+
+```bash
+apothem install --harness <slug>
+apothem verify --harness <slug>
+python -m apothem.conformity.gate --all .
+```
+
+### 5. 풀 리퀘스트 제출
+
+다음을 포함한 PR을 엽니다.
+
+- 어댑터 구현
+- `site/content/docs/harnesses/<slug>.mdx`의 문서 페이지
+- 테스트
+- `pyproject.toml`의 진입점 등록
+- 변경 로그 항목

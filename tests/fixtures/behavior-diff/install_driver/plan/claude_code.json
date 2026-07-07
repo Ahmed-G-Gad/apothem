@@ -1,0 +1,57 @@
+[
+  {
+    "mode": "write_text",
+    "source": "<APOTHEM_SRC>/harnesses/claude_code/templates/settings.json",
+    "target": "<ROOT>/settings.json"
+  },
+  {
+    "mode": "merge_tree_entries",
+    "source": "<APOTHEM_SRC>/agents",
+    "target": "<ROOT>/agents"
+  },
+  {
+    "mode": "command_skills",
+    "source": "<APOTHEM_SRC>/commands",
+    "target": "<ROOT>/skills"
+  },
+  {
+    "mode": "merge_tree_entries",
+    "source": "<APOTHEM_SRC>/rules",
+    "target": "<ROOT>/rules"
+  },
+  {
+    "mode": "merge_tree_entries",
+    "source": "<APOTHEM_SRC>/skills",
+    "target": "<ROOT>/skills"
+  },
+  {
+    "mode": "merge_tree_entries",
+    "source": "<APOTHEM_SRC>/templates",
+    "target": "<ROOT>/.apothem/support/templates"
+  },
+  {
+    "mode": "merge_tree_entries",
+    "source": "<APOTHEM_SRC>/hooks",
+    "target": "<ROOT>/.apothem/support/hooks"
+  },
+  {
+    "mode": "merge_tree_entries",
+    "source": "<APOTHEM_SRC>/conformity",
+    "target": "<ROOT>/.apothem/support/conformity"
+  },
+  {
+    "mode": "merge_tree_entries",
+    "source": "<APOTHEM_SRC>/schemas",
+    "target": "<ROOT>/.apothem/support/schemas"
+  },
+  {
+    "mode": "merge_tree_entries",
+    "source": "<APOTHEM_SRC>/statuslines",
+    "target": "<ROOT>/statuslines"
+  },
+  {
+    "mode": "merge_tree_entries",
+    "source": "<APOTHEM_SRC>/output-styles",
+    "target": "<ROOT>/output-styles"
+  }
+]

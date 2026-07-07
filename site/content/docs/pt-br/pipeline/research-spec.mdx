@@ -1,0 +1,73 @@
+---
+title: "/research-spec"
+description: "/research-spec — Enquadra uma pergunta de pesquisa de forma livre ou notas brutas em uma especificação de pesquisa de grau spec (hipóteses falsificáveis, escopo, critérios, métricas de sucesso) pronta para /research-theory."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Papel:** Investigador principal (enquadramento)
+**Posição na pipeline:** meio da cadeia
+
+Enquadra uma pergunta de pesquisa de forma livre ou notas brutas em um `_spec/research-spec.md` de grau spec — um conjunto de hipóteses testáveis e falsificáveis com escopo explícito, critérios de inclusão / exclusão e métricas de sucesso — pronto para `/research-theory`.
+
+## Invocação canônica
+
+```bash
+/research-spec
+```
+
+Com argumentos:
+
+```bash
+/research-spec [path/to/question-or-notes] [--suite-name NAME] [--quick SLUG]
+```
+
+## Entradas
+
+Uma pergunta de pesquisa de forma livre ou notas brutas (fornecidas pelo operador em linha ou como um caminho).
+
+## Saídas
+
+`_spec/research-spec.md` (pergunta, hipóteses falsificáveis, escopo, critérios de inclusão / exclusão, métricas de sucesso, glossário) + `_inputs/handoff-manifest.yml`. `--quick` grava, em vez disso, um briefing de pesquisa leve e local do projeto.
+
+## A jusante
+
+/research-theory (consumidor a jusante)
+
+## Fases do fluxo de trabalho
+
+O comando segue o fluxo de trabalho padrão da pipeline `/research`:
+
+1. **Carregar contexto** — Ler a pergunta / notas, as regras e qualquer estado existente da suíte.
+2. **Enquadrar a pergunta** — Decompor em hipóteses falsificáveis com escopo explícito e critérios de inclusão / exclusão; trazer à tona cada ambiguidade pelo canal de consulta estruturada.
+3. **Definir métricas de sucesso** — Declarar os critérios mensuráveis pelos quais a pesquisa será julgada.
+4. **Verificar as saídas** — Confirmar que a especificação é definitiva (toda lacuna de dados de autoridade resolvida pelo canal de consulta estruturada, nenhuma deixada como um marcador de posição de confirmação não preenchido) e que passa no piso do mandato de rigor.
+5. **Atualizar o manifesto de transferência** — Registrar o caminho da especificação e as contagens de consultas abertas / resolvidas.
+6. **Emitir a especificação** — `_spec/research-spec.md` mais o manifesto de transferência.
+
+## Piso de rigor
+
+Cada contribuição reivindicada é restrita a ser distinta, substancial e ablacionável de forma independente, para que seu efeito marginal possa ser isolado posteriormente. A profundidade do piso de rigor exigido escala conforme a ambição do veículo-alvo; onde essa ambição não está especificada, ela é confirmada por consulta estruturada, nunca inventada.
+
+## Modos de falha
+
+| Sintoma | Causa | Recuperação |
+|---------|-------|----------|
+| Ambiguidade de hipótese não resolvida | Pergunta subespecificada | Trazer à tona por consulta estruturada; não inventar escopo |
+| Nenhuma métrica de sucesso mensurável | Objetivo declarado como atividade, não como resultado | Reenquadrar como um resultado testável e falsificável |
+| Entrada de pergunta ausente | Nenhuma prosa / notas fornecida | Fornecer a pergunta de pesquisa em linha ou como um caminho |
+
+## Exemplos
+
+```bash
+# Frame a question into a research spec
+/research-spec ~/notes/retrieval-latency-study.md --suite-name retrieval-latency
+
+# Lightweight project-local research brief
+/research-spec --quick retrieval-latency
+```
+
+## Referências cruzadas
+
+- [Visão geral da pipeline](/docs/pipeline)
+- [Referência de comandos](/docs/reference/commands)

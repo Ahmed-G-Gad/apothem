@@ -1,0 +1,47 @@
+---
+title: "Apothem مقابل تهيئة Open-Claw الخام"
+description: "صيانة تهيئة Open-Claw يدويًا مقابل إدارتها عبر الملف الشخصي المشترك لـ Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+يقرأ <bdi>Open-Claw</bdi> ملف `~/.openclaw/openclaw.json`. حقله
+`agents.defaults.skills` هو قائمة أسماء مسموح بها (وليس مُحمِّل أدلّة)، و<bdi>MCP</bdi>
+سطح <bdi>CLI</bdi>، لذا لا يؤلّف <bdi>Apothem</bdi> أي مفاتيح تهيئة؛ بل يثبّت
+مجموعات الأوامر والمهارات المشتركة تحت `~/.openclaw/.apothem/support/skills/` بوصفها مواد
+دعم.
+
+## الحالة
+
+**معاينة.** يستهدف محوِّل <bdi>Open-Claw</bdi> ملف التهيئة المُوثَّق حاليًا وسطح
+دليل المهارات الإضافي. تبقى المجموعات غير المهارية مواد دعم لـ <bdi>Apothem</bdi>.
+
+## مقارنة الجهد
+
+| المهمة | تهيئة يدوية خام | مُدارة بـ Apothem |
+| ---- | --------------- | --------------- |
+| تأليف مهارات قابلة لإعادة الاستخدام | تحرير التهيئة وأدلّة المهارات يدويًا | الكتابة مرّة واحدة في المتن المشترك |
+| إبقاء المجموعات متوائمة مع البيئات الأخرى | يدويًا، لكل أداة | تلقائيًا عند `apothem update` |
+| تثبيت / إزالة التهيئة | يدويًا | `apothem install` / `apothem uninstall` |
+| التحقّق من صحّة التهيئة | فحص يدوي | `apothem verify --harness open-claw` |
+
+## ما يديره Apothem
+
+يكتب محوِّل <bdi>Open-Claw</bdi> ملف `openclaw.json`، ويلفّ أوامر الشَّرطة المائلة
+الخاصة بـ <bdi>Apothem</bdi> بوصفها مهارات، وينسخ مهارات <bdi>Apothem</bdi> إلى
+دليل الدعم المُشار إليه، ويحفظ القواعد والقوالب و<bdi>agents</bdi> ومادة الـ
+<bdi>hook</bdi> تحت شجرة دعم <bdi>Apothem</bdi> الفرعية.
+
+## مسار الهجرة
+
+1. شغّل `apothem profile init` لإنشاء الملف الشخصي المشترك إن لم تكن قد فعلت بعد.
+2. انقل مهارات <bdi>Open-Claw</bdi> أو مُوجِّهات الأوامر القابلة لإعادة الاستخدام
+   إلى المتن المشترك.
+3. شغّل `apothem install --harness open-claw` لتصيير التهيئة الأصلية ودليل مهارات
+   الدعم.
+4. شغّل `apothem verify --harness open-claw` لتأكيد أن التهيئة قد هبطت.
+
+## اقرأ بعد ذلك
+
+- [مرجع محوِّل Open-Claw](/docs/harnesses/open-claw)
+- [نظرة عامة على المقارنة](/docs/comparison)

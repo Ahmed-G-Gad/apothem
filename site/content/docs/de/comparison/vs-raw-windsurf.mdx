@@ -1,0 +1,45 @@
+---
+title: "Apothem vs. rohe Windsurf-Konfiguration"
+description: "Windsurfs Regeln unter .devin/rules/ von Hand pflegen versus sie aus Apothems gemeinsamem Profil rendern."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Windsurf liest Regeln aus einem Verzeichnis `.devin/rules/`. Apothems
+windsurf-Adapter rendert die verzeichnisbasierten Regeln aus dem gemeinsamen
+Profil. Diese Seite stellt die manuelle Pflege dieser Konfiguration der
+Verwaltung mit apothem gegenüber.
+
+## Aufwandsvergleich
+
+| Aufgabe | Rohe Handkonfiguration | Von Apothem verwaltet |
+| ---- | --------------- | --------------- |
+| Regeln verfassen | Jede Datei unter `.windsurf/rules/` von Hand schreiben | Aus dem gemeinsamen Korpus gerendert |
+| Ein einziges Regelformat beibehalten | Von Hand zwischen `.windsurf/rules/` und einer einzelnen `.windsurfrules`-Datei wählen | Der Adapter schreibt nur `.devin/rules/` |
+| Regeln mit anderen Harnesses ausgerichtet halten | Manuell, pro Werkzeug | Automatisch bei `apothem update` |
+| Prüfen, ob die Konfiguration korrekt ist | Manuelle Inspektion | `apothem verify --harness windsurf` |
+
+## Was apothem verwaltet
+
+Der windsurf-Adapter rendert die gemeinsamen Regeln in das Verzeichnis
+`.devin/rules/`; er schreibt keine einzelne `.windsurfrules`-Datei. Windsurf
+hat keinen PreToolUse-Hook, daher liegt die Schutzabsicht im Regeltext und nicht
+an einem Abfangpunkt für Werkzeugaufrufe. Jede Änderung an den gemeinsamen Regeln
+rendert das Verzeichnis beim nächsten `apothem update` neu.
+
+## Migrationspfad
+
+1. Führe `apothem profile init` aus, um das gemeinsame Profil zu erstellen, falls
+   noch nicht geschehen.
+2. Verschiebe die Regeln aus deinem bestehenden `.windsurf/rules/` (und jeder
+   einzelnen `.windsurfrules`) in den gemeinsamen Korpus.
+3. Führe `apothem install --harness windsurf` aus, um das Verzeichnis
+   `.devin/rules/` zu rendern.
+4. Führe `apothem verify --harness windsurf` aus, um zu bestätigen, dass die
+   Konfiguration angekommen ist.
+5. Verwende `apothem update --harness windsurf` für jede spätere Änderung.
+
+## Weiterlesen
+
+- [Windsurf-Adapter-Referenz](/docs/harnesses/windsurf)
+- [Vergleichsübersicht](/docs/comparison)

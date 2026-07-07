@@ -1,0 +1,31 @@
+---
+title: "CLI संदर्भ"
+description: "Apothem CLI संदर्भ — apothem कमांड-लाइन इंटरफ़ेस के लिए प्रति-कमांड सारांश, विकल्प और एग्जिट कोड।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+`apothem` कमांड-लाइन इंटरफ़ेस साझा प्रोफ़ाइल से कोडिंग-सहायक अडैप्टर कॉन्फ़िगरेशन का प्रबंधन करता है। नीचे दिया गया प्रत्येक पृष्ठ एक सबकमांड को प्रलेखित करता है: इसका सारांश, विकल्प, व्यवहार और एग्जिट कोड।
+
+`install`, `update` और `uninstall` में से प्रत्येक एक सतत-रूप उपनाम (`installing`, `updating`, `uninstalling`) भी स्वीकार करता है, जो फ़्लैग और व्यवहार में आधार कमांड के समान होता है। इंस्टॉल चैनलों — Claude Code प्लगइन, `npx`, और एकल-चरण इंस्टॉलर स्क्रिप्ट — के माध्यम से अपडेट और अनइंस्टॉल करना उपनामों द्वारा नहीं, बल्कि [अपडेट करना](/docs/install/updating) और [अनइंस्टॉल करना](/docs/install/uninstalling) इंस्टॉल गाइड में प्रलेखित है।
+
+## कमांड
+
+| कमांड | विवरण |
+|---------|-------------|
+| [quickstart](/docs/cli-reference/quickstart) | निर्देशित पहला रन: एक प्रोफ़ाइल सुनिश्चित करें, राइट्स का पूर्वावलोकन करें, फिर इंस्टॉल करें। |
+| [install](/docs/cli-reference/install) | साझा प्रोफ़ाइल से एक कोडिंग-सहायक अडैप्टर कॉन्फ़िगरेशन इंस्टॉल करता है (उपनाम: `installing`)। |
+| [update](/docs/cli-reference/update) | वर्तमान साझा प्रोफ़ाइल से एक कोडिंग-सहायक अडैप्टर कॉन्फ़िगरेशन फिर से इंस्टॉल करता है (उपनाम: `updating`)। |
+| [uninstall](/docs/cli-reference/uninstall) | एक कोडिंग-सहायक अडैप्टर कॉन्फ़िगरेशन हटाता है (उपनाम: `uninstalling`)। |
+| [rollback](/docs/cli-reference/rollback) | एक कोडिंग-सहायक को उसके रिकॉर्ड किए गए इंस्टॉल से पहले की स्थिति में पुनर्स्थापित करता है। |
+| [verify](/docs/cli-reference/verify) | एक कोडिंग-सहायक अडैप्टर इंस्टॉलेशन को सत्यापित करता है। |
+| [status](/docs/cli-reference/status) | प्रत्येक पंजीकृत कोडिंग-सहायक के लिए इंस्टॉल, सत्यापन और ड्रिफ़्ट स्थिति की रिपोर्ट करता है। |
+| [diff](/docs/cli-reference/diff) | एकल कोडिंग-सहायक के लंबित कॉन्फ़िगरेशन परिवर्तनों का पूर्वावलोकन करता है। |
+| [harnesses](/docs/cli-reference/harnesses) | पंजीकृत कोडिंग-सहायक अडैप्टरों को सूचीबद्ध और निरीक्षण करता है। |
+| [profile](/docs/cli-reference/profile) | साझा Apothem प्रोफ़ाइल का प्रबंधन करता है। |
+| [doctor](/docs/cli-reference/doctor) | Apothem इंस्टॉलेशन के लिए सिस्टम डायग्नोस्टिक्स चलाता है। |
+| [completion](/docs/cli-reference/completion) | एक source-योग्य shell-कम्प्लीशन स्क्रिप्ट उत्सर्जित करता है (bash, zsh, fish, powershell)। |
+
+स्लैश कमांड और उच्च-स्तरीय CLI अवलोकन के लिए,
+[CLI अवलोकन](/docs/reference/cli) और [स्लैश कमांड](/docs/reference/commands)
+संदर्भ पृष्ठ देखें।

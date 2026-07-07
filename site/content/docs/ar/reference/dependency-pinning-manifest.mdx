@@ -1,0 +1,70 @@
+---
+title: "بيان تثبيت الاعتماديات"
+description: "سياسة الإعلان عن الاعتماديات تغطي نطاقات بيئة تشغيل Python، وأدوات التطوير، وملفات قفل أدوات الإصدار، والحدود الدنيا للإصدارات المُصادَق عليها لكل سطح بناء."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> الموقف المُصادَق عليه لكيفية إعلان <bdi>Apothem</bdi> عن الاعتماديات وتثبيتها وقفلها.
+> الجمهور: المساهمون والمستهلكون في المراحل اللاحقة ممّن يحتاجون إلى فهم نموذج قابلية إعادة الإنتاج.
+
+## الموقف
+
+<bdi>Apothem</bdi> هو واجهة سطر أوامر <bdi>Python</bdi> بمجموعة صغيرة من اعتماديات وقت التشغيل،
+إضافةً إلى سلسلة أدوات أكبر للتطوير والتدقيق والإصدار والتوثيق. تستخدم اعتماديات
+وقت التشغيل حدودًا دنيا متحفظة في <bdi>`pyproject.toml`</bdi>؛ ويُودِع الموقع
+<bdi>`site/package-lock.json`</bdi>؛ وتُثبَّت <bdi>GitHub Actions</bdi> بـ<bdi>SHA</bdi> غير قابل للتغيير
+مع تعليقات الإصدار، وتُرقَّى عبر <bdi>Renovate</bdi>.
+
+| الصنف | الإعلان | سياسة القفل |
+|---|---|---|
+| اعتماديات وقت تشغيل <bdi>Python</bdi> | <bdi>`[project.dependencies]`</bdi> في <bdi>`pyproject.toml`</bdi> | نطاقات بحد أدنى؛ بلا قفل وقت تشغيل <bdi>Python</bdi> مُودَع |
+| أدوات التطوير / الأمان | <bdi>extras</bdi> الخاصة بـ<bdi>`[project.optional-dependencies]`</bdi> | نطاقات بحد أدنى؛ يُثبِّت <bdi>CI</bdi> الإصدارات المطابقة الحالية |
+| أدوات الإصدار | <bdi>`scripts/release/requirements-build-linux.txt`</bdi> | مقفولة بالتجزئة لسير عمل الإصدار؛ مُولَّدة من إغلاق أدوات الإصدار |
+| أدوات <bdi>CI</bdi> فقط | <bdi>`.github/workflows/*.yml`</bdi> | تستخدم أدوات <bdi>pip</bdi> الخاصة بسير العمل تثبيتات دقيقة (<bdi>`pip`</bdi>، <bdi>`bandit`</bdi>، <bdi>`pip-audit`</bdi>، <bdi>`pip-licenses`</bdi>، <bdi>`pyinstaller`</bdi>) |
+| موقع التوثيق | <bdi>`site/package.json`</bdi> | <bdi>`site/package-lock.json`</bdi> مُودَع ويستهلكه <bdi>`npm ci`</bdi> |
+| <bdi>GitHub Actions</bdi> | مراجع <bdi>`uses:`</bdi> مُثبَّتة بـ<bdi>SHA</bdi> مع تعليقات الإصدار | يقترح <bdi>Renovate</bdi> التحديثات؛ وتحمل الاستثناءات علامات <bdi>`action-pinning-exempt:`</bdi> |
+
+## مصادقة الإصدار
+
+| السطح | الحالة المُصادَق عليها | المسوّغ |
+|---|---|---|
+| اعتماديات وقت التشغيل | تعيش الحدود الدنيا الحالية في <bdi>`pyproject.toml`</bdi> <bdi>`[project.dependencies]`</bdi> | حدود دنيا مستقرة حالية مُصادَق عليها قبل الإصدار؛ بلا مُعيق <bdi>CVE</bdi> معروف لوقت التشغيل |
+| أدوات التطوير | تعيش الحدود الدنيا الحالية في <bdi>extra</bdi> <bdi>`dev`</bdi> من <bdi>`pyproject.toml`</bdi> | أحدث حدود دنيا مستقرة مُصادَق عليها قبل الإصدار |
+| أدوات الأمان | تعيش الحدود الدنيا الحالية في <bdi>extra</bdi> <bdi>`security`</bdi> من <bdi>`pyproject.toml`</bdi> | حدود دنيا حالية للماسحات مُصادَق عليها قبل الإصدار |
+| أدوات الإصدار | يعيش الإغلاق المقفول بالتجزئة في <bdi>`scripts/release/requirements-build-linux.txt`</bdi> | يُثبِّت سير عمل الإصدار بـ<bdi>`--require-hashes`</bdi>؛ وتشترط النصوص المحلية وجود <bdi>`build`</bdi> مسبقًا بدلًا من تثبيت اعتماديات متحركة بصمت |
+| أدوات التوثيق | تعيش النطاقات الحالية في <bdi>`site/package.json`</bdi>؛ وتعيش الحلول الدقيقة في <bdi>`site/package-lock.json`</bdi> | لا يُرجِع <bdi>`npm outdated`</bdi> أي اعتمادية توثيق بائتة بعد تحديث ملف القفل |
+| <bdi>GitHub Actions</bdi> | تُستبقى تثبيتات <bdi>SHA</bdi> الموجودة للإصدار الحالي؛ ويبقى سير عمل <bdi>SLSA</bdi> القابل لإعادة الاستخدام الاستثناءَ المُوثَّق المُثبَّت بوسم | إعادة تشغيل <bdi>CI</bdi> العام خضراء؛ وتُترَك ترقيات الإصدارات الكبرى الواسعة لـ<bdi>actions</bdi> عمدًا لطلبات دمج أتمتة الاعتماديات لتفادي اضطراب سطح الإصدار |
+| تحزيم <bdi>npm</bdi> | سير عمل <bdi>`publish-npm.yml`</bdi> يدوي فقط؛ بلا مُحفِّز إصدار آلي | الحزمة <bdi>npm</bdi> العامة الوحيدة هي <bdi>`@ahmed-g-gad/apothem`</bdi>؛ ويُشغَّل النشر بعد اجتياز جاهزية الإصدار |
+
+## القفل
+
+تُولَّد ملفات قفل <bdi>Python</bdi> عند الطلب من قِبَل المساهم. ولا تُودَع لأن إغلاق وقت
+تشغيل <bdi>Apothem</bdi> صغير، ولأن واجهة سطر الأوامر تدعم عدة إصدارات فرعية من <bdi>Python</bdi>،
+ولأن <bdi>CI</bdi> يمارس عمدًا أحدث إصدارات الأدوات المطابقة.
+
+```sh
+# Astral uv:
+uv pip install -e ".[dev,security,release]"
+uv pip freeze > requirements.dev.lock
+
+# pip-tools:
+pip-compile --extra=dev --extra=security --extra=release -o requirements.dev.lock pyproject.toml
+
+# Plain pip:
+pip install -e ".[dev,security,release]"
+pip freeze > requirements.dev.lock
+```
+
+أما الموقع فمختلف: يُودَع <bdi>`site/package-lock.json`</bdi> ويستخدم <bdi>CI</bdi> الأمر
+<bdi>`npm ci`</bdi>، فيكون لموقع التوثيق المُصيَّر إغلاق <bdi>Node</bdi> قابل لإعادة الإنتاج.
+
+## المسوّغ
+
+- **لماذا تثبيت بالنطاقات لـ<bdi>Python</bdi>؟** تدعم واجهة سطر الأوامر مصفوفة <bdi>Python</bdi> واسعة،
+  وينبغي لـ<bdi>CI</bdi> أن يكشف مشكلات التوافق مع الأدوات الحالية قبل أن يصطدم بها المستخدمون.
+- **لماذا قفل <bdi>Node</bdi> مُودَع؟** الموقع أثر ساكن مُنشَر؛ ويمنح ملف القفل عمليات بناء
+  <bdi>`npm ci`</bdi> حتمية لذلك السطح العام.
+- **لماذا <bdi>Actions</bdi> مُثبَّتة بـ<bdi>SHA</bdi>؟** الوسوم قابلة للتغيير؛ أما <bdi>SHA</bdi> فغير قابلة
+  للتغيير. يُحدِّث <bdi>Renovate</bdi> قيم <bdi>SHA</bdi> المُثبَّتة، بينما تُسجِّل بوابة الإصدار أي
+  تأجيل مقصود.

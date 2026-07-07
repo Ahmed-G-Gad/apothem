@@ -1,0 +1,90 @@
+---
+title: "محوّلات أُطُر العمل"
+description: "محوّلات أُطُر عمل Apothem — ملف تعريفي مشترك واحد، وسبعة عشر هدفًا مدعومًا."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+يأتي Apothem مع سبعة عشر محوّل إطار عمل مدمجًا. يترجم كل محوّل
+المجموعات المشتركة نفسها إلى ملفات أصلية للمنصّة حيث تدعمها
+المنصّة، وإلى أشجار دعم يملكها Apothem حيث لا تدعمها.
+
+## أُطُر العمل المدعومة
+
+يحتوي السجلّ المدعوم على سبعة عشر محوّلًا بالضبط. استخدم أسماء التثبيت
+هذه تحديدًا مع `--harness`، أو استخدم `all` للحصول على مجموعة السجلّ
+الحتمية:
+
+```text
+antigravity
+claude-code
+codebuddy
+codex
+cursor
+gemini-cli
+github-copilot
+glm
+hermes
+kimi-code
+kiro
+open-claw
+opencode
+qwen-code
+trae
+windsurf
+zed
+```
+
+تقيم مصفوفة السجلّ المفصّلة، والمسارات المستهدفة، وحالات القدرات، ودعم MCP،
+وأدلّة تثبيت الاتفاقيات في [مرجع السجلّ التقني](/docs/reference/harness-registry).
+
+## تثبيت أُطُر عمل متعدّدة
+
+ثبّت إطار عمل واحدًا، أو استخدم `all` لتحديد السجلّ بترتيب
+حتمي. تتطلّب أُطُر العمل ذات نطاق المشروع `--project PATH`؛ ويشمل ذلك `all`
+لأنّ السجلّ يتضمّن أهدافًا ذات نطاق المستخدم وأهدافًا ذات نطاق المشروع معًا.
+
+```bash
+apothem install --harness claude-code
+apothem install --harness cursor --project /path/to/project
+apothem install --harness gemini-cli --project /path/to/project
+apothem install --harness all --project /path/to/project
+```
+
+## تحقّق من تثبيتاتك
+
+تحقّق من كل محوّل إطار عمل على حدة، أو استدعِ `apothem doctor` للحصول على
+ملخّص حالة التثبيت لكل محوّل عبر كل محوّل مُسجَّل:
+
+```bash
+apothem verify --harness claude-code
+apothem verify --harness all --project /path/to/project
+apothem doctor
+```
+
+## كيف تعمل المحوّلات
+
+ينفّذ كل محوّل بروتوكول `HarnessAdapter` المُسجَّل عبر
+نقاط دخول setuptools. عند التثبيت، تُحمِّل واجهة سطر الأوامر الملف التعريفي
+المشترك بصيغة YAML وتتحقّق منه، وتحلّ المحوّل عبر السجلّ، وتتحقّق من
+خطّة التجسيد، وتكتب الإعداد الأصلي للمنصّة إلى موقع المستخدم أو المشروع
+الأصلي لإطار العمل. وعند التحديث، تعيد الاشتقاق من حالة الملف التعريفي
+الحالية.
+
+```
+profile.yaml + packaged cohorts
+    identity / preferences / rules
+    commands / skills / delegated definitions / hooks / templates
+         |
+         +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/antigravity-cli/plugins/apothem/
+         +-- claude-code    --> ~/.claude/ native folders + ~/.claude/.apothem/support/
+         +-- codex          --> ~/.codex/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
+         +-- cursor         --> <project>/.cursor/rules/*.mdc
+         +-- gemini-cli     --> <project>/GEMINI.md + <project>/.gemini/
+         +-- github-copilot --> <project>/.github/copilot-instructions.md
+         +-- windsurf       --> <project>/.devin/rules/
+         +-- ...
+```
+
+راجع [تجريد محوّل إطار العمل](/docs/architecture/harness-adapter-abstraction)
+للاطّلاع على مواصفة البروتوكول.

@@ -1,0 +1,73 @@
+---
+title: "completion"
+description: "apothem completion コマンドの CLI リファレンス。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+要求された shell 用のシェル補完スクリプトを標準出力に出力します。補完の有効化は**オプトイン**です。このコマンドはスクリプトを出力するだけで、shell の起動ファイルを編集することは決してありません。出力を shell の補完ファイルに追加するのはあなた自身です。
+
+## 構文
+
+```
+apothem completion bash|zsh|fish|powershell
+```
+
+出力されるスクリプトは、`apothem` のサブコマンド、フラグ、そして —— `--harness` オプションについては —— 登録済みの harness id および `all` の `<TAB>` 補完を有効にします。
+
+## 対応 shell
+
+| Shell | スクリプトの生成方法 |
+|---|---|
+| `bash` | Click のネイティブ bash 補完スクリプト。 |
+| `zsh` | Click のネイティブ zsh 補完スクリプト。 |
+| `fish` | Click のネイティブ fish 補完スクリプト。 |
+| `powershell` | Click の補完プロトコルへ橋渡しする `Register-ArgumentCompleter` スニペット（Click はネイティブの PowerShell スクリプトを同梱していないため、このスニペットが同じプロトコルを PowerShell に接続します）。 |
+
+その他の shell を要求すると、対応 shell の一覧とともに `2` で終了します。
+
+## shell ごとの補完の有効化
+
+まず `apothem` コマンドが `PATH` 上にある必要があります（ワンショットのインストーラーがそこに配置します）。次に、スクリプトを shell の補完ファイルに追加し、shell を再起動して補完を有効化します。
+
+```bash
+# bash —— bashrc に追加
+apothem completion bash >> ~/.bashrc
+
+# zsh —— zshrc に追加
+apothem completion zsh >> ~/.zshrc
+
+# fish —— fish の補完ディレクトリに書き込む
+apothem completion fish > ~/.config/fish/completions/apothem.fish
+```
+
+```powershell
+# PowerShell —— 補完器の登録をプロファイルに追加
+apothem completion powershell >> $PROFILE
+```
+
+ファイルを編集せずに現在のセッションだけで補完を試すには、スクリプトを直接 source します（bash/zsh）：`source <(apothem completion bash)`。
+
+## なぜオプトインなのか
+
+Apothem は操作者の shell 起動ファイルを黙って編集することは決してありません。インストーラーはこのコマンドを指す 1 行のヒントを出力します。補完を有効にするか、どのファイルに追加するかは操作者が決めます。これにより、インストールのフットプリントは予測可能かつ可逆になります —— 追加したブロックを削除すれば補完が無効になります。
+
+## オプション
+
+| オプション | 説明 |
+|---|---|
+| `SHELL` | `bash`、`zsh`、`fish`、`powershell` のいずれか（必須の位置引数）。 |
+| `-h`、`--help` | ヘルプを表示して終了。 |
+
+## 終了コード
+
+| コード | 意味 |
+|---|---|
+| 0 | 補完スクリプトを出力 |
+| 2 | 対応していない shell を要求した |
+
+## 関連項目
+
+- [apothem install](/docs/cli-reference/install) —— harness 構成をインストールする
+- [apothem harnesses](/docs/cli-reference/harnesses) —— `--harness` 補完が提供する harness id
+- [CLI リファレンス](/docs/cli-reference) —— すべてのサブコマンド

@@ -1,0 +1,99 @@
+---
+title: "OpenCode"
+description: "Apothem harness adapter for OpenCode (Beta)."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Vendor:** OpenCode
+**Install name:** `opencode`
+**Status:** Beta
+**Native config:** `~/.config/opencode/`
+
+## Installation
+
+```bash
+apothem install --harness opencode
+```
+
+The adapter writes OpenCode's JSON config, installs Apothem skills into the
+OpenCode skills surface, converts command prompts to OpenCode Markdown command
+files, and normalizes Apothem helper definitions as OpenCode subhelpers.
+
+**Files written:**
+
+```text
+~/.config/opencode/opencode.json
+~/.config/opencode/commands/
+~/.config/opencode/skills/
+~/.config/opencode/agents/
+~/.config/opencode/.apothem/support/{rules,templates,hooks}/
+```
+
+## Profile-to-native-config mapping
+
+The adapter renders `opencode.json` with an `instructions` file list pointing
+at Apothem's installed rules, then propagates each shared Apothem cohort into
+either a native OpenCode surface or an Apothem-owned support subtree. Existing
+matching Apothem-managed children are backed up before replacement.
+
+## Compatibility notes
+
+Rules are referenced through the native `instructions` list. Templates and
+hook prompts are reference material under `~/.config/opencode/.apothem/support/`;
+commands, skills, and helper definitions use native discovery locations.
+
+## Verification
+
+```bash
+apothem verify --harness opencode
+```
+
+The verify command confirms that:
+
+1. The native config exists at the expected path.
+2. All mandatory fields from the shared profile are present.
+3. The adapter-specific verification routine reports success.
+
+## Updating
+
+```bash
+apothem update --harness opencode
+```
+
+Refreshes `opencode.json`, native commands, skills, helper definitions, and the
+Apothem support tree.
+
+## Uninstalling
+
+```bash
+apothem uninstall --harness opencode
+```
+
+Removes the native config files written by the adapter.
+The shared profile YAML and Apothem engine are unaffected.
+
+## Conformity gate
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| Config file not found | Re-run `apothem install --harness opencode` |
+| Verification failed | Run `apothem update --harness opencode`, then verify again |
+| Unexpected config content | Check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run `apothem update --harness opencode` |
+
+## Configuration knobs
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--dry-run` | `false` | Preview install without writing files. |
+
+## See also
+
+- [All harnesses](/docs/harnesses) — the full catalog of supported tools
+- [Install guide](/docs/install) — install Apothem into this harness
+- [`apothem harnesses` reference](/docs/cli-reference/harnesses) — list and inspect adapters from the CLI

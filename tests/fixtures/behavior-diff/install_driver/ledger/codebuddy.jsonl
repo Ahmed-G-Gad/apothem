@@ -1,0 +1,1 @@
+{"harness": "codebuddy", "install_id": "<INSTALL_ID>", "kind": "install", "root": "<ROOT>", "targets": [{"mode": "sentinel_merge", "ownership_class": "operator-owned", "path": "<ROOT>/.codebuddy/rules/apothem-rules.md"}], "timestamp": "<TIMESTAMP>"}

@@ -1,0 +1,41 @@
+---
+title: "Registro de consultas autoritativas — Categorias obrigatórias"
+description: "Sete categorias de consulta obrigatórias e exceções de decisão automática que regem o que o assistente deve perguntar versus o que pode decidir ao operar sobre projetos anfitriões."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Registro canônico da disciplina de inquérito autoritativo.** Este documento carrega o catálogo das sete categorias obrigatórias, a enumeração das decisões automáticas excetuadas e a declaração de vínculos; as tabelas substantivas e os vínculos vivem aqui, operacionalizados por `src/apothem/rules/authority-inquiry.md`.
+
+Ao operar sobre um projeto anfitrião, consulte — não invente — sobre as sete categorias abaixo. As consultas são roteadas pelo canal de consulta estruturada segundo `src/apothem/rules/interactive-questions.md`. Cada opção carrega a anotação de três segmentos (justificativa / recomendação / ponteiro padrão) e um marcador de recomendação segundo M7.
+
+| Categoria | Proibido inventar | Consultar porque |
+| -------- | ------------------- | --------------- |
+| Identidade | Nomes, e-mails, identificadores, pronomes, organizações, inquilinos, afiliações de equipe, descrições de papel | Vincula-se a uma pessoa real; cria artefatos do mundo real (commits, PRs, atribuição pública) |
+| Direção de escopo | Qual subárvore, qual ramo, qual ambiente (dev/staging/prod), qual alvo (bibliotecas vs serviços), qual é voltado ao usuário vs apenas interno | O usuário tem contexto implícito que falta ao assistente; escolhas silenciosas desalinham |
+| Preferência | Formatador, linter, framework de testes, gerador de documentação, provedor de CI, estratégia de ramos, convenção de mensagens de commit, assinatura de releases, esquema de versionamento, licença — *onde o anfitrião não fixou um* | Cada um é um compromisso de longa vida que resiste à adoção silenciosa |
+| Segurança | Cadência de rotação de segredos, shells permitidos, saída de rede permitida, lista de riscos aceitos, lista de ações confiáveis, especificidades do endpoint de autenticação do servidor MCP | A má configuração de segurança é de alto impacto; escolhas silenciosas arriscam uma brecha silenciosa |
+| Nomenclatura | Uma nova convenção introduzida onde o anfitrião não tem nenhuma, ou um vínculo de nome (função, flag de CLI, subcomando, chave de configuração) onde o usuário tem preferências implícitas | Nomes são duradouros; escolhas silenciosas se acumulam em poluição do espaço de nomes |
+| Infraestrutura | Endpoints, hosts, portas, caminhos, regiões, nomes de filas, nomes de tópicos, nomes de tabelas | Vinculam-se a recursos do mundo real; a invenção causa falhas do mundo real |
+| Fixações de versão | Qual versão de qual dependência, onde o anfitrião não fixou e a escolha importa (dependências relevantes para a segurança, dependências com mudança de comportamento, fronteiras semver-major) | Consequências de cauda longa; escolhas silenciosas sobrecarregam o usuário |
+
+**As consultas obrigatórias** (Identidade, Direção de escopo, Postura de segurança, Nomenclatura de superfícies públicas são sempre obrigatórias) bloqueiam artefatos dependentes; a emissão produz marcadores `<USER-CONFIRM:id=<id>>`. **As consultas opcionais** o usuário pode declinar pelo silêncio; o assistente então recorre à opção recomendada e registra o recurso como um achado para que o usuário veja que uma decisão foi tomada.
+
+## 1. Decisões automáticas excetuadas
+
+O seguinte o assistente decide sem consulta — revelado no livro-razão de mudanças como "aplicado por padrão; reverter se a intenção for outra":
+
+- **Validade pura.** Erros de sintaxe, violações de esquema, erros de digitação inequívocos.
+- **Rigor puro.** Folclore → citado; datas faltantes adicionadas; afirmações não verificáveis marcadas.
+- **Segurança universalmente segura.** `deny .env*`, `deny ~/.ssh/**` leituras, `deny rm -rf:*`, `deny sudo:*`, `deny git push --force*` para ramos protegidos, `deny eval`/`exec` sobre entrada não confiável.
+- **Normalização pura de formatação.** EOL, espaços em branco finais, estilo único de aspas por arquivo *onde o anfitrião tem um estilo estabelecido e o artefato diverge*.
+- **Reparo de referências internas onde a correção é inequívoca.** Caminho morto → caminho vivo único descoberto por busca.
+
+Qualquer coisa fora desta exceção passa pela superfície de consulta.
+
+## 2. Vínculos (§0.j five-direction)
+
+- **Drives →** Cada emissão de artefato de projeto anfitrião (o portão de pré-emissão dispara em cada escrita de escopo significativo segundo `site/content/docs/governance/pre-emission-gate-registry.mdx`). Cada apresentação de múltiplas opções é roteada pelo canal de consulta estruturada segundo a obrigação de canal canônico. A aplicação da fração mecânica em `src/apothem/conformity/*-grep.py`. A aplicação por regra em `src/apothem/rules/{authority-inquiry,host-discovery,disclosure-ledger,ten-dimension-check,pre-emission-gate,expertise-posture,option-annotation,definitiveness,visual-leverage,bidirectional-binding,agile-sprints,canonical-layout,code-craft-*,systemic-participation,production-ready-prs}.md`.
+- **Satisfies →** O eixo de conformidade externa declarado como dimensão de governança de primeira classe ao lado do eixo CM-N (M = artefatos de projetos anfitriões; CM = artefatos internos do ecossistema; ambos ortogonais, ambos se aplicam onde ambos se aplicam). A obrigação de diretrizes permanentes que cada inicialização de sessão herda o conjunto M como contexto sempre ativo.
+- **Established by ↑** O próprio `CLAUDE.md` (o registro é intrínseco ao contexto sempre ativo, não derivado de estado externo). A ratificação do limiar trivial versus não trivial em `site/content/docs/governance/outward-conformity-registry.mdx` §1.
+- **Cross-bound with ↔** Cada regra nomeada na tabela do registro de conformidade externa em `site/content/docs/governance/outward-conformity-registry.mdx` (o corpo canônico por mandato). `src/apothem/conformity/*-grep.py` (a aplicação da fração mecânica do portão). `src/apothem/rules/interactive-questions.md` (a superfície de consulta é roteada pela obrigação de canal canônico que essa regra define).

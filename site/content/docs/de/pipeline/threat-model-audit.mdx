@@ -1,0 +1,67 @@
+---
+title: "/threat-model-audit"
+description: "/threat-model-audit — Audit-Durchlauf zur Bedrohungsmodellierung gegen die Methodiken STRIDE + PASTA."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rolle:** Bedrohungsmodellierer
+**Pipeline-Position:** Festung
+
+Audit-Durchlauf zur Bedrohungsmodellierung gegen die Methodiken STRIDE + PASTA.
+
+## Kanonischer Aufruf
+
+```bash
+/threat-model-audit
+```
+
+Mit Argumenten:
+
+```bash
+/threat-model-audit [path/to/target/] [--dry-run]
+```
+
+## Eingaben
+
+Architektur und Datenflüsse des Host-Repositorys.
+
+## Ausgaben
+
+Ein deduplizierter, nach Schweregrad triagierter Bedrohungsmodell-Befundbericht (nur Bericht; die Behebung leitet zu `/fortress` / `/elevate`).
+
+## Nachgelagert
+
+Die Bedrohungsmodell-Dimension der Audit-Prüfsequenz — parallel von `/audit` durchlaufen und von `/fortress` behoben.
+
+## Workflow-Phasen
+
+Der Befehl führt einen Audit-Durchlauf zur Bedrohungsmodellierung über das Host-Repository aus:
+
+1. **Die Oberfläche kartieren** — Die Architektur, Eintrittspunkte, Vertrauensgrenzen und Datenflüsse aufzählen.
+2. **Bedrohungen modellieren** — Die Methodiken STRIDE + PASTA auf jede Grenze und jedes Asset anwenden.
+3. **Befunde triagieren** — Jede Bedrohung nach Schweregrad mit einer Begründung mit konkretem Treiber einstufen.
+4. **Den Bericht ausgeben** — Die deduplizierten, nach Schweregrad triagierten Befunde synthetisieren (nur Bericht).
+
+## Fehlermodi
+
+| Symptom | Ursache | Behebung |
+|---------|-------|----------|
+| Keine Architekturoberfläche | Das Ziel hat keine auffindbaren Datenfluss-Grenzen | Das Audit auf ein Repository mit kartierbaren Eintrittspunkten und Vertrauensgrenzen richten |
+| Nicht verorteter Befund | Bedrohung ohne Locus behauptet | Das betroffene Asset / die Grenze und die Methodik-Zelle anhängen, an der es scheitert |
+| Behebung erwartet | Das Audit ist nur Bericht | Die Befunde an `/fortress` (Behebung) oder `/elevate` leiten |
+
+## Beispiele
+
+```bash
+# Dry-run zur Vorschau des Audit-Umfangs
+/threat-model-audit --dry-run
+
+# Ein Ziel-Repository auditieren
+/threat-model-audit path/to/target/
+```
+
+## Querverweise
+
+- [Pipeline-Überblick](/docs/pipeline)
+- [Befehlsreferenz](/docs/reference/commands)

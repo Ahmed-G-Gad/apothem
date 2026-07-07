@@ -1,0 +1,84 @@
+---
+title: "Windsurf"
+description: "Adaptor alat Apothem untuk Windsurf (GA)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Vendor:** Codeium
+**Nama instalasi:** `windsurf`
+**Status:** GA
+**Konfigurasi native:** `<project>/.devin/rules/apothem-rules.md`
+
+## Instalasi
+
+```bash
+apothem install --harness windsurf --project /path/to/project
+```
+
+Adaptor menulis satu berkas aturan Windsurf berlingkup proyek dari aturan bersama
+dan permukaan tata kelola Apothem.
+
+**Berkas yang ditulis:** `<project>/.devin/rules/apothem-rules.md`
+
+## Pemetaan profil ke konfigurasi native
+
+Adaptor membaca profil bersama Apothem dan merender berkas aturan proyek pada setiap
+jalannya `apothem install` atau `apothem update`. Profil bersama adalah sumber
+kebenaran; suntingan lokal proyek pada berkas yang dihasilkan dicadangkan sebelum
+sinkronisasi berikutnya mengganti konten yang dikelola Apothem.
+
+## Catatan kompatibilitas
+
+Permukaan aturan Windsurf saat ini berlingkup proyek di bawah `.devin/rules/`.
+Alur kerja dan memori lokal mesin dimiliki oleh operator; Apothem tidak menulisnya.
+Bentuk berkas tunggal `.windsurfrules` sengaja tidak ditulis.
+
+## Verifikasi
+
+```bash
+apothem verify --harness windsurf --project /path/to/project
+```
+
+Perintah verify memastikan bahwa:
+
+1. Konfigurasi native ada di jalur yang diharapkan.
+2. Semua bidang wajib dari profil bersama hadir.
+3. Rutin verifikasi khusus adaptor melaporkan keberhasilan.
+
+## Pembaruan
+
+```bash
+apothem update --harness windsurf --project /path/to/project
+```
+
+Menurunkan ulang berkas aturan proyek dari status profil bersama saat ini.
+
+## Pencopotan
+
+```bash
+apothem uninstall --harness windsurf --project /path/to/project
+```
+
+Menghapus berkas konfigurasi native yang ditulis oleh adaptor.
+YAML profil bersama dan mesin Apothem tidak terpengaruh.
+
+## Gerbang konformitas
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Pemecahan masalah
+
+| Gejala | Perbaikan |
+|---------|-----|
+| Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness windsurf --project /path/to/project` |
+| Verifikasi gagal | Jalankan `apothem update --harness windsurf --project /path/to/project`, lalu verifikasi lagi |
+| Konten konfigurasi tak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness windsurf --project /path/to/project` |
+
+## Tombol konfigurasi
+
+| Flag | Default | Deskripsi |
+|------|---------|-------------|
+| `--dry-run` | `false` | Pratinjau instalasi tanpa menulis berkas. |

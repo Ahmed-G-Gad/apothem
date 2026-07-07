@@ -1,0 +1,103 @@
+---
+title: "Pemecahan masalah"
+description: "Solusi untuk kegagalan instalasi dan masalah runtime Apothem yang umum di seluruh jalur plugin, npx, dan installer."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Solusi untuk masalah instalasi dan runtime Apothem yang umum.
+
+## Masalah instalasi
+
+### Python 3.10+ tidak ditemukan
+
+Installer dan shim npx menyelidiki `python3`, `python`, nama-nama
+berversi (`python3.14` sampai `python3.10`), dan `py -3` di Windows — menolak
+shim peluncur Microsoft Store — dan berhenti dengan `No Python >= 3.10 found in
+PATH` saat tidak ada kandidat yang memenuhi lantai 3.10. Instal CPython 3.10 atau yang lebih baru
+dari python.org atau repositori paket OS Anda, konfirmasikan `python3 --version`
+(atau `py -3 --version` di Windows) melaporkan setidaknya 3.10, lalu jalankan ulang.
+
+### Dependensi runtime hilang: click, rich
+
+Engine memvendor sebagian besar dependensi pihak-ketiganya di dalam pohon
+sumber, tetapi `click` dan `rich` harus dapat diimpor oleh interpreter yang
+dipilih installer. Saat salah satunya hilang, installer menyebutnya dan
+menawarkan untuk memasangnya untuk Anda:
+
+```text
+! Missing runtime dependencies: click rich
+```
+
+Terima prompt agar installer menjalankan `pip install` di bawah interpreter
+tersebut. Untuk melewati prompt, berikan `--yes` (`-Yes` di PowerShell) atau
+setel `APOTHEM_AUTO_INSTALL_DEPS=1` untuk memasang secara otomatis. Jika Anda
+menolak — atau `pip` tidak tersedia, atau Anda lebih suka pengelola paket OS
+Anda — pasang paket yang dinamai itu sendiri (misalnya `python3-click` dan
+`python3-rich` pada host keluarga-Debian, atau `pip install click rich`) lalu
+jalankan ulang.
+
+### `apothem` tidak ditemukan setelah menjalankan installer
+
+Installer menempatkan pohon sumber di `~/.apothem` dan tidak menambahkan
+eksekutabel `apothem` ke `PATH` Anda. Jalankan engine melalui pemanggilan
+yang dicetak installer saat selesai:
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+```
+
+atau gunakan bentuk npx (`npx @ahmed-g-gad/apothem <command>`), yang tidak memerlukan
+entri `PATH`.
+
+### `/plugin marketplace add` gagal
+
+`/plugin marketplace add ahmed-g-gad/apothem` mengambil daftar marketplace
+dari GitHub. Saat gagal, konfirmasikan bahwa mesin dapat menjangkau
+`https://github.com/ahmed-g-gad/apothem` (aturan jaringan, proksi, atau firewall),
+lalu coba lagi. Jika marketplace ditambahkan sebelumnya di bawah pengambilan
+parsial, hapus dan tambahkan ulang sebelum menjalankan
+`/plugin install apothem@apothem`.
+
+### npx menyajikan versi basi
+
+`npx` menyimpan-cache paket yang diunduh. Saat `npx @ahmed-g-gad/apothem --version`
+melaporkan versi yang lebih lama daripada rilis terkini, bersihkan cache atau sematkan
+dist-tag:
+
+```bash
+npx clear-npx-cache
+npx @ahmed-g-gad/apothem@latest --version
+```
+
+### irm / iex diblokir di Windows
+
+Jika kebijakan eksekusi PowerShell memblokir installer:
+
+```powershell
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+irm https://apothem.ahmedgad.com/install.ps1 | iex
+```
+
+## Masalah runtime
+
+### apothem install tidak menemukan harness
+
+Jalankan apothem doctor untuk mendaftar direktori harness yang terdeteksi. Jika tidak ada yang ditemukan, pastikan
+harness Anda terpasang dan telah diluncurkan setidaknya sekali.
+
+### apothem verify melaporkan adaptor yang gagal
+
+Jalankan ulang apothem install untuk memateri-ulang adaptor. Jika masalah berlanjut, periksa
+halaman khusus-adaptor di bawah [Adaptor Harness](/docs/harnesses).
+
+### Hook tidak terpicu di Claude Code
+
+Konfirmasikan Apothem terhubung dengan memeriksa ~/.claude/settings.json untuk entri hook.
+Jika berkas kehilangan hook, jalankan apothem install lagi.
+
+## Mendapatkan bantuan
+
+- [GitHub Issues](https://github.com/ahmed-g-gad/apothem/issues) -- laporan bug
+- [GitHub Discussions](https://github.com/ahmed-g-gad/apothem/discussions) -- pertanyaan
+- [FAQ](/docs/faq) -- pertanyaan yang sering diajukan

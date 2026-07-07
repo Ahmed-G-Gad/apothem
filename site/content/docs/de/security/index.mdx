@@ -1,0 +1,89 @@
+---
+title: "Sicherheit"
+description: "Apothems Sicherheitshaltung – OpenSSF-Scorecard-Ziel, Schwachstellenmeldung, Härtungsoberflächen."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothems Sicherheitshaltung ruht auf fünf Säulen: Härtung der Lieferkette, Schwachstellenreaktion, Branch-Schutz, Versionssignierung und kontinuierliche Sicherheitsanalyse. Dieser Abschnitt dokumentiert jede Oberfläche.
+
+## Bedrohungsmodell
+
+Apothem ist ein Konfigurations-Materialisierer. Es liest ein gemeinsames Profil
+und schreibt harness-native Konfigurationsdateien in die Verzeichnisse, die
+jeder Harness liest. Diese eine Funktion begrenzt, was
+es vertraut und was nicht.
+
+- **Was Apothem vertraut.** Das gemeinsame Profil, das du verfasst, und der
+  gebündelte Quellbaum, den der Installer ablegt. Das Profil ist deine erklärte
+  Absicht; die Engine behandelt es nach der Schemavalidierung als maßgebliche
+  Eingabe.
+- **Was Apothem nicht vertraut.** Profilinhalte erreichen das Dateisystem erst
+  nach der Validierung: Schemafehler, unbekannte Harness-IDs, unsichere
+  Projektpfade, fehlende Manifestquellen, Ziel-Traversierung und
+  Symlink-Überschreitungen halten alle vor jedem Schreibvorgang an und liefern
+  strukturierte Diagnosen mit `files_written: []` zurück.
+- **Was die materialisierte Ausgabe niemals mit sich führt.** Keine Geheimnisse.
+  Die Profildiagnosen schwärzen geheimnisartige Schlüssel und tokenförmige Werte,
+  bevor sie die Klartextausgabe, das JSON, die Logs, die Doku-Schnipsel oder die
+  Tests erreichen, und öffentliche Beispiele verwenden fiktive
+  Platzhalter-Identitäten und -Domänen. Die materialisierte Konfiguration ist
+  dafür gedacht, committet und geteilt zu werden; sie trägt keine
+  Anmeldedaten.
+- **Die universelle Verweigerungsgrundlinie.** Die Regeln, die Apothem
+  materialisiert, tragen eine nicht verhandelbare Verweigerungsgrundlinie
+  unabhängig von jeder harness-spezifischen Erlaubnisliste – Geheimnispfade
+  (`.env*`, `~/.ssh/**`, Anmeldedatenspeicher), destruktive Shell-Operationen
+  (`rm -rf`, `sudo`, Force-Pushes auf geschützte Branches) und die Ausführung
+  nicht vertrauenswürdiger Eingaben. Keine Erlaubnisliste erweitert diese
+  Grundlinie stillschweigend.
+- **Wirkungsradius.** Schreibvorgänge sind auf die Harness-Verzeichnisse und die
+  Apothem-eigenen Support-Teilbäume beschränkt. Bestehende verwaltete Ziele
+  werden vor dem Ersetzen gesichert und gemeinsame Discovery-Verzeichnisse
+  werden Kind für Kind zusammengeführt, sodass nicht verwandte, vom Operator
+  verfasste Dateien an Ort und Stelle bleiben.
+
+## Sicherheitshaltung zur Laufzeit
+
+Harness-Lebenszyklus- und Profilschreibbefehle validieren vor dem Schreiben.
+Profil-Schemafehler, unbekannte Harness-IDs, unsichere Projektpfade, fehlende
+Manifestquellen, Ziel-Traversierung und Symlink-Überschreitungen halten vor
+Schreibvorgängen ins Dateisystem an und liefern strukturierte Diagnosen mit
+`files_written: []` zurück.
+
+Installations- und Aktualisierungsvorgänge bewahren bestehende verwaltete Ziele,
+indem sie sie vor dem Ersetzen sichern. Gemeinsame Discovery-Verzeichnisse
+werden Kind für Kind zusammengeführt, sodass nicht verwandte, vom Operator
+verfasste Dateien an Ort und Stelle bleiben. `--dry-run` führt dieselbe
+Validierung durch und meldet die geplanten Ergebnisse, ohne Verzeichnisse oder
+Dateien zu erstellen.
+
+Die Profildiagnosen schwärzen geheimnisartige Schlüssel und tokenförmige Werte,
+bevor sie die Klartextausgabe, die JSON-Ausgabe, die Logs, die Doku-Schnipsel
+oder die Tests erreichen. Öffentliche Beispiele verwenden fiktive
+Platzhalter-Identitäten und -Domänen.
+
+## Schnelllinks
+
+- [**OpenSSF-Scorecard-Haltung**](/docs/security/openssf-scorecard-target) — Nachweis je Prüfung und bekannte Plattformgrenzen
+- [**Webhooks-Audit**](/docs/security/webhooks-audit) — Nachweis der Webhook-Secret-Hygiene
+- [**Branch-Schutz**](/docs/security/branch-protection-ruleset) — Review-Gate, Statusprüfungen und Push-Beschränkungen
+- [**Binärartefakt-Durchlauf**](/docs/security/binary-artifacts-sweep) — Versionsnachweis ohne Binärdateien im Quellcode
+- [Sicherheitsrichtlinie](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) — Schwachstellenmeldung & unterstützte Versionen
+- [OpenSSF-Scorecard-Badge](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem) — Live-Bewertung
+
+## Eine Schwachstelle melden
+
+Verwende das [Private Vulnerability Reporting](https://github.com/ahmed-g-gad/apothem/security) im Security-Tab des Repositorys. Die vollständige Richtlinie, die Matrix der unterstützten Versionen und die Reaktionszeiten finden sich in [`SECURITY.md`](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
+
+## Lieferketten-Versionsnachweise
+
+Jedes Versionsartefakt wird ausgeliefert mit:
+
+- **SLSA-3-Build-Provenienz** über [`slsa-framework/slsa-github-generator`](https://github.com/slsa-framework/slsa-github-generator)
+- **Sigstore-Signaturen** über [`sigstore/cosign-installer`](https://github.com/sigstore/cosign-installer)
+- **CycloneDX-SBOM** über [`anchore/sbom-action`](https://github.com/anchore/sbom-action)
+- **npm-Provenienz-Erklärungen** über Trusted-Publishing-OIDC auf `@ahmed-g-gad/apothem`
+- **GPG-signierte git-Tags** (EDDSA-Schlüssel `70396FED9C634163`)
+
+Verifizierungsrezepte sind inline in [Versionszyklus](/docs/runbooks/release-cycle) und [Versionswiederherstellung](/docs/runbooks/release-recovery) dokumentiert; ein dediziertes Runbook zur Versionsverifizierung steht noch aus.

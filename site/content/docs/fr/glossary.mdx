@@ -1,0 +1,165 @@
+---
+title: "Glossaire"
+description: "Glossaire d'Apothem — termes et concepts clés."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Termes clés utilisés dans la documentation, le code et la gouvernance
+d'Apothem, par ordre alphabétique.
+
+## Adaptateur
+Une classe implémentant le protocole `HarnessAdapter` qui traduit le profil
+partagé vers un format de configuration propre à un environnement. Les
+adaptateurs vivent à raison d'un par sous-paquet sous
+`src/apothem/harnesses/<name>/`. Voir
+[Abstraction d'adaptateur d'environnement](/docs/architecture/harness-adapter-abstraction).
+
+## Séquence de revue d'audit
+La passe d'audit à onze commandes couvrant le code, la revue de code, la
+sécurité, la performance, l'architecture, l'UX, l'accessibilité, la
+documentation, les dépendances, la chaîne d'approvisionnement et le modèle de
+menace. Pilotée par le flux de durcissement `/fortress`. Voir
+[Séquence de revue d'audit](/docs/concepts/review-fortress).
+
+## Golden de behavior-diff
+Un instantané validé dans `tests/fixtures/behavior-diff/` auquel les oracles
+déterministes d'installation et de CLI sont comparés octet à octet, de sorte
+qu'un changement non intentionnel d'un plan d'installation, d'une cohorte rendue
+ou d'une sortie de CLI est détecté comme une dérive plutôt que livré
+silencieusement. La comparaison canonise les octets divergents selon la
+plateforme afin que le corpus reste portable entre systèmes d'exploitation.
+
+## Cohorte
+Un ensemble groupé d'artefacts synchronisés d'un même type — règles, commandes,
+skills, agents, hooks, output-styles, schémas ou templates — que le moteur
+matérialise dans chaque environnement à partir de l'unique profil partagé. Un
+seul profil porte chaque cohorte ; chaque adaptateur les projette dans la
+surface native de son environnement.
+
+## Portail de conformité
+La fraction mécanique du portail de pré-émission à quinze barres — les
+validateurs vérifiables par machine à `src/apothem/conformity/gate.py`.
+S'exécute avant chaque émission d'artefact ; les barres raisonnées sont
+évaluées en revue.
+
+## Point d'entrée
+Le groupe de points d'entrée setuptools `apothem.harnesses` déclaré dans
+`pyproject.toml`. Il reflète exactement le registre des environnements ; un test
+affirme que les points d'entrée déclarés égalent les adaptateurs enregistrés, de
+sorte qu'un adaptateur conforme à la convention mais non enregistré ressort
+comme une régression de couverture.
+
+## Environnement
+Une plateforme d'assistant qu'Apothem prend en charge via un adaptateur dédié.
+Plateformes prises en charge :
+
+```text
+Antigravity
+Claude Code
+CodeBuddy
+Codex
+Cursor
+Gemini CLI
+GitHub Copilot
+GLM (Z.ai)
+Hermes
+Kimi Code
+Kiro
+Open-Claw
+OpenCode
+Qwen Code
+Trae
+Windsurf
+Zed
+```
+
+Voir [Environnements](/docs/harnesses).
+
+## Registre des environnements
+Le catalogue à `src/apothem/lib/harness_registry.py` (données dans
+`harness_registry_data.py`) qui liste chaque adaptateur et fait **autorité à
+l'exécution** — le moteur y résout chaque adaptateur, de sorte qu'il se charge
+depuis un simple checkout. La découverte par convention de système de fichiers
+sous `src/apothem/harnesses/` est un contrôle de parité de conformance, non le
+résolveur d'exécution.
+
+## Hook
+Une commande enregistrée sur un événement du cycle de vie d'un environnement
+(PreToolUse, PostToolUse, SessionStart, Stop). La surface d'enregistrement
+native varie selon l'environnement — un fichier de settings, un manifeste de
+hooks dédié, ou, lorsqu'un environnement n'expose aucune surface de hook native,
+du matériel de support Apothem référencé depuis l'ancre d'instructions. Les
+scripts de hooks et leurs contextes de message vivent sous
+`src/apothem/hooks/`.
+
+## Materializer
+Le `materialize_native_config(profile) -> str` optionnel d'un adaptateur qui
+rend une configuration native en fichier unique à partir du profil partagé, pour
+les environnements dont la configuration est une seule surface structurée (par
+exemple un fichier de settings JSON ou YAML). Les adaptateurs à propagation de
+templates omettent le materializer et copient ou convertissent plutôt les
+cohortes selon le manifeste de propagation.
+
+## Output-style
+Une définition Markdown sous `output-styles/` qui façonne le format et la voix
+de réponse de l'assistant (par exemple un style ingénieur-concis ou
+auditeur-forensique). L'une des cohortes synchronisées qu'un adaptateur
+installe.
+
+## Suite de planification
+Une collection structurée d'artefacts de planification (PREAMBLE.md,
+MASTER-PLAN.md, PROGRESS.md, PLAN-NOTES.md, fichiers PHASE.md par phase) produite
+par `/plan-generate` et exécutée par `/plan-execute`, sous un répertoire
+`.apothem/plans/` local au projet (un arbre `.plans/` hérité est mis à niveau
+via `apothem migrate-workspace`).
+
+## Portail de pré-émission
+Le bloc de validation à quinze barres enregistré avant qu'un artefact ne soit
+émis ou qu'une sortie de phase ne soit considérée comme terminée. Les barres
+mécaniques s'exécutent comme le portail de conformité ; les barres raisonnées
+sont évaluées en revue. Voir
+[Portail de pré-émission](/docs/governance/pre-emission-gate-registry).
+
+## Manifeste de propagation
+`src/apothem/lib/propagation-manifest.yaml` — déclare, par adaptateur à
+propagation de templates, quelles cohortes il installe et toute conversion au
+format natif de l'environnement (par exemple la conversion de commandes vers la
+forme TOML d'un environnement).
+
+## Portails d'aptitude à la publication
+Les trois portails de convergence : conformité locale, intégration continue et
+la séquence de revue d'audit. Une publication ne se poursuit qu'après la
+réussite des portails concernés.
+
+## Runtime autonome
+Apothem vendorise ses dépendances Python d'exécution (telles que `pyyaml` et
+`jsonschema`) sous `src/apothem/_vendor/`, de sorte que le moteur s'exécute
+depuis un simple checkout. Seuls `click` et `rich` se résolvent au moment de
+l'installation. Voir
+[Runtime autonome](/docs/architecture/self-contained-runtime).
+
+## Niveau de sérieux
+L'un des quatre niveaux de gouvernance (EXPLORING, PERSONAL_USE, SHARED,
+PUBLIC_LAUNCH) qui détermine quels contrôles qualité s'appliquent. Voir
+[Niveaux de sérieux](/docs/concepts/seriousness-tiers).
+
+## Profil partagé
+Un fichier YAML validé par schéma à `~/.config/apothem/profile.yaml` ou
+`--profile PATH`. Les adaptateurs d'environnement le combinent avec les cohortes
+Apothem packagées et dérivent la configuration native de chaque environnement
+pris en charge.
+
+## STANDARD-CONVENTION-PIN
+Le `STANDARD-CONVENTION-PIN.md` par adaptateur consignant l'URL de la
+documentation éditeur, le SHA de commit, la date d'instantané ainsi que le nom
+de fichier canonique et le schéma auxquels les conventions de l'adaptateur sont
+épinglées. Re-vérifié à cadence régulière afin qu'un adaptateur ne dérive jamais
+silencieusement de la surface éditeur qu'il cible.
+
+## Sous-arborescence de support
+Un répertoire détenu par Apothem qu'une installation d'environnement utilise
+pour les cohortes dont l'environnement n'a aucune primitive native (règles,
+hooks, skills ou agents). Elle est référencée depuis l'ancre d'instructions
+native de l'environnement plutôt que forcée dans un répertoire réservé à
+l'éditeur.

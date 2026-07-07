@@ -1,0 +1,287 @@
+# SPDX-License-Identifier: MIT
+
+# Clean-machine install gate.
+#
+# Two complementary guarantees, both fail-closed:
+#
+# 1. installer-shell-compat — exercises the one-shot installers on every
+#    documented shell so an installability regression cannot land silently:
+#    Linux dash + macOS sh (POSIX `sh -n` parse + `shellcheck -s sh` bashism
+#    gate + a `--dry-run` functional smoke) and Windows PowerShell 5.1 (an AST
+#    parse that rejects a reintroduced `??`, plus a `-DryRun` smoke). A
+#    reintroduced bash array, `[[ … ]]`, `local`, or `??` fails this gate.
+#
+# 2. clean-install-gate + wheel-smoke — provision a clean runner with ONLY the
+#    documented runtime prereqs (click rich pyyaml jsonschema) plus the test
+#    runner — deliberately NOT apothem itself — then exercise the hermetic
+#    install gate and the built-wheel clean-venv smoke.
+#
+# REQUIRED-CHECK POLICY (tracked note, not asserted against live GitHub):
+# This workflow MUST be configured as a branch-protection required status check
+# for `main`. It carries NO `paths`/`paths-ignore` filter, so it ALWAYS runs on
+# every pull_request — a required check can never be reported "skipped but green"
+# and then let an installer-shell regression merge. Do not reintroduce a path
+# filter here without also removing it from the required-check set.
+#
+# SHA-pinning policy: every `uses:` reference is pinned by 40-character commit
+# SHA followed by a `# vMAJOR.MINOR.PATCH` comment, identical to the canonical
+# policy documented in ci.yml and reusable-python-setup.yml.
+
+name: Clean Install Gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Single-sourced pip pin (CVE-2026-6357 closes on pip >=26.1). One value per
+# workflow file; scripts/dev/check_pip_pin_drift.py fails the build if any
+# workflow's PIP_PIN_VERSION diverges from the canonical pin.
+env:
+  PIP_PIN_VERSION: "26.1.2"
+
+concurrency:
+  group: clean-install-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  installer-shell-compat:
+    name: installer-shell-compat / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+    steps:
+      - name: Harden runner
+        if: runner.os == 'Linux'
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: "3.12"
+
+      - name: POSIX shell syntax + bashism gate (Linux/macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if command -v dash >/dev/null 2>&1; then SH='dash'; else SH='sh'; fi
+          echo "::group::$SH -n parse"
+          for f in scripts/installer/install.sh scripts/installer/update.sh \
+                   src/apothem/hooks/lib/find-python.sh; do
+            "$SH" -n "$f" && echo "parse OK: $f"
+          done
+          echo "::endgroup::"
+          # The bashism gate: shellcheck -s sh fails closed on a reintroduced
+          # array, [[ … ]], `local`, here-string, or other POSIX-incompatibility.
+          if command -v shellcheck >/dev/null 2>&1; then
+            echo "::group::shellcheck -s sh"
+            shellcheck -s sh --severity=warning \
+              scripts/installer/install.sh \
+              scripts/installer/update.sh \
+              src/apothem/hooks/lib/find-python.sh
+            echo "::endgroup::"
+          fi
+
+      - name: POSIX installer dry-run smoke (Linux/macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        env:
+          APOTHEM_SOURCE: ${{ github.workspace }}
+          APOTHEM_HARNESS: claude-code
+        run: |
+          set -euo pipefail
+          python -m pip install "pip==${PIP_PIN_VERSION}"
+          python -m pip install click rich pyyaml jsonschema
+          if command -v dash >/dev/null 2>&1; then SH='dash'; else SH='sh'; fi
+          "$SH" scripts/installer/install.sh --dry-run --yes
+
+      - name: PowerShell 5.1 parse + dry-run smoke (Windows)
+        if: runner.os == 'Windows'
+        # `shell: powershell` selects Windows PowerShell 5.1 (the #Requires floor),
+        # NOT pwsh 7+, so a reintroduced `??` fails here.
+        shell: powershell
+        env:
+          APOTHEM_SOURCE: ${{ github.workspace }}
+          APOTHEM_HARNESS: claude-code
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $files = @(
+            'scripts/installer/install.ps1',
+            'scripts/installer/uninstall.ps1',
+            'src/apothem/hooks/lib/find-python.ps1'
+          )
+          foreach ($f in $files) {
+            $errors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $f).Path, [ref]$null, [ref]$errors)
+            if ($errors) {
+              $errors | ForEach-Object { Write-Host $_.Message }
+              throw "PowerShell 5.1 parse errors in $f"
+            }
+            Write-Host "parse OK: $f"
+          }
+          python -m pip install "pip==$env:PIP_PIN_VERSION"
+          python -m pip install click rich pyyaml jsonschema
+          powershell -NoProfile -File scripts/installer/install.ps1 -DryRun -Yes
+
+      - name: POSIX entry-point shim smoke (Linux/macOS)
+        # A real (non-dry-run) install must place an `apothem` command on PATH
+        # that runs the bundled engine without a manual PYTHONPATH (UX-4). This
+        # asserts the shim resolves and runs — the dry-run smoke above never
+        # reaches the shim, so this is the post-install resolution guarantee.
+        if: runner.os != 'Windows'
+        shell: bash
+        env:
+          APOTHEM_SOURCE: ${{ github.workspace }}
+          APOTHEM_HARNESS: claude-code
+        run: |
+          set -euo pipefail
+          python -m pip install "pip==${PIP_PIN_VERSION}"
+          python -m pip install click rich pyyaml jsonschema
+          mkdir -p "$HOME/.config/apothem"
+          cp src/apothem/schemas/profile.example.yaml "$HOME/.config/apothem/profile.yaml"
+          sh scripts/installer/install.sh --yes
+          test -x "$HOME/.local/bin/apothem"
+          export PATH="$HOME/.local/bin:$PATH"
+          command -v apothem
+          apothem harnesses list >/dev/null
+          echo "apothem entry point resolves and runs"
+
+      - name: PowerShell entry-point shim smoke (Windows)
+        # PowerShell parity to the POSIX shim smoke: a real install writes an
+        # apothem.cmd shim into $HOME\.apothem\bin and adds it to PATH; assert it
+        # resolves as a bare `apothem` and runs the engine.
+        if: runner.os == 'Windows'
+        shell: powershell
+        env:
+          APOTHEM_SOURCE: ${{ github.workspace }}
+          APOTHEM_HARNESS: claude-code
+          # Pin the shim directory so the smoke is deterministic regardless of
+          # whether the runner keeps WindowsApps (the default) on PATH. The
+          # installer writes the shim here and never edits PATH.
+          APOTHEM_BIN_DIR: ${{ runner.temp }}\apothem-bin
+        run: |
+          $ErrorActionPreference = 'Stop'
+          python -m pip install "pip==$env:PIP_PIN_VERSION"
+          python -m pip install click rich pyyaml jsonschema
+          New-Item -ItemType Directory -Force -Path (Join-Path $HOME '.config\apothem') | Out-Null
+          Copy-Item src/apothem/schemas/profile.example.yaml (Join-Path $HOME '.config\apothem\profile.yaml')
+          powershell -NoProfile -File scripts/installer/install.ps1 -Yes
+          $shim = Join-Path $env:APOTHEM_BIN_DIR 'apothem.cmd'
+          if (-not (Test-Path -LiteralPath $shim)) { throw "apothem shim not found at $shim" }
+          $env:Path = "$env:Path$([System.IO.Path]::PathSeparator)$env:APOTHEM_BIN_DIR"
+          if (-not (Get-Command apothem -ErrorAction SilentlyContinue)) { throw "apothem did not resolve on PATH" }
+          apothem harnesses list | Out-Null
+          Write-Host "apothem entry point resolves and runs"
+
+  clean-install-gate:
+    name: clean-install-gate / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+    steps:
+      - name: Harden runner
+        if: runner.os == 'Linux'
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: "3.12"
+      - name: Install runtime prereqs (no apothem package)
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "::group::pip pin"
+          python -m pip install "pip==${PIP_PIN_VERSION}"
+          echo "::endgroup::"
+          echo "::group::runtime prereqs + pytest (NOT apothem)"
+          python -m pip install click rich pyyaml jsonschema pytest pytest-xdist
+          echo "::endgroup::"
+      - name: Run clean-machine install gate
+        shell: bash
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
+        run: |
+          set -euo pipefail
+          python -m pytest tests/integration/test_clean_machine_install.py -v --color=yes
+
+  wheel-smoke:
+    name: wheel-smoke / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+    steps:
+      - name: Harden runner
+        if: runner.os == 'Linux'
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: "3.12"
+      - name: Install build + test runner (NOT apothem)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install "pip==${PIP_PIN_VERSION}"
+          # build/pytest drive the gate; the apothem runtime deps let the outer
+          # pytest import the source-tree test helpers (conftest) — the built
+          # wheel is still installed into its own isolated venv inside the test.
+          python -m pip install build pytest pytest-xdist click rich pyyaml jsonschema
+      - name: Build wheel + clean-venv install/validate smoke
+        # Builds the wheel, installs it into an isolated fresh venv (off the
+        # source tree), validates a real profile end-to-end, and asserts the
+        # built wheel/sdist carry the full vendored runtime data set — the
+        # data-loss footgun the source-tree clean-install gate cannot catch.
+        shell: bash
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
+        run: |
+          set -euo pipefail
+          python -m pytest tests/packaging/test_wheel_install.py \
+            tests/packaging/test_wheel_payload.py -v --color=yes

@@ -1,0 +1,90 @@
+---
+title: "Zed"
+description: "Adaptor harness Apothem untuk Zed (GA)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Vendor:** Zed Industries
+**Nama instal:** `zed`
+**Status:** GA
+**Konfigurasi native:** `<project>/.rules`
+
+## Instalasi
+
+```bash
+apothem install --harness zed --project /path/to/project
+```
+
+Adaptor menulis satu berkas instruksi Zed berlingkup-proyek dari permukaan aturan
+dan tata kelola Apothem bersama. Zed membaca satu berkas `.rules` datar di akar
+proyek (berdampingan dengan keluarga `AGENTS.md` / `CLAUDE.md`) sebagai instruksi;
+tidak ada direktori aturan per-alat, sehingga seluruh permukaan Apothem jatuh ke
+dalam satu berkas ini.
+
+**Berkas yang ditulis:** `<project>/.rules`
+
+## Pemetaan profil ke konfigurasi native
+
+Adaptor membaca profil bersama Apothem dan merender berkas `.rules` proyek pada
+setiap jalannya `apothem install` atau `apothem update`. Profil bersama adalah
+sumber kebenaran; setiap `.rules` yang sudah ada (atau suntingan lokal-proyek pada
+berkas yang dihasilkan) dicadangkan sebelum sinkronisasi berikutnya mengganti konten
+yang dikelola Apothem.
+
+## Catatan kompatibilitas
+
+Permukaan instruksi Zed saat ini adalah berkas `.rules` datar di akar proyek. Berkas
+instruksi global `~/.config/zed/AGENTS.md` dan blok server konteks MCP
+(`context_servers` di `.zed/settings.json`) milik operator; Apothem tidak
+menulisnya.
+
+## Verifikasi
+
+```bash
+apothem verify --harness zed --project /path/to/project
+```
+
+Perintah verify mengonfirmasi bahwa:
+
+1. Konfigurasi native ada di jalur yang diharapkan.
+2. Semua bidang wajib dari profil bersama hadir.
+3. Rutin verifikasi khusus adaptor melaporkan keberhasilan.
+
+## Pemutakhiran
+
+```bash
+apothem update --harness zed --project /path/to/project
+```
+
+Menurunkan-ulang berkas `.rules` proyek dari keadaan profil bersama saat ini.
+
+## Pencopotan
+
+```bash
+apothem uninstall --harness zed --project /path/to/project
+```
+
+Menghapus berkas konfigurasi native yang ditulis oleh adaptor, terlebih dahulu
+mengganti namanya menjadi cadangan bertanda waktu. YAML profil bersama dan mesin
+Apothem tidak terpengaruh.
+
+## Gerbang konformitas
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Pemecahan masalah
+
+| Gejala | Perbaikan |
+|---------|-----|
+| Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness zed --project /path/to/project` |
+| Verifikasi gagal | Jalankan `apothem update --harness zed --project /path/to/project`, lalu verifikasi lagi |
+| Konten konfigurasi tak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness zed --project /path/to/project` |
+
+## Tombol konfigurasi
+
+| Flag | Default | Deskripsi |
+|------|---------|-------------|
+| `--dry-run` | `false` | Pratinjau instalasi tanpa menulis berkas. |

@@ -1,0 +1,48 @@
+---
+title: "`CLAUDE.md`"
+description: "The always-loaded project configuration that gives every interaction its baseline context: prose sections covering the AI-surface canon, operating loop, purpose, and disciplines, with the cross-cutting mandates operationalized in the rules cohort."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+`CLAUDE.md` is the always-loaded project configuration. The host
+harness loads it on every interaction, so its content is the
+*baseline context* every other artifact extends. It stays coherent with
+`AGENTS.md` (the canonical agent-instruction surface) and
+`.github/copilot-instructions.md`, which mirror the same disciplines.
+
+## What it carries
+
+The project `CLAUDE.md` is authored in prose sections — the AI-surface canon,
+the plan → harden → ship operating loop, the project purpose and source
+layout, the plans / release / file-header disciplines, ambiguity handling, and
+the coding and harness-adapter conventions. It states *what the project is* and
+*how to work in it*; it does not restate the governance mandates, which live in
+the rules cohort and are surfaced to the runtime as rule files.
+
+| Governance surface | Where it lives |
+|---|---|
+| Cross-cutting mandates (CM-N) | `src/apothem/rules/operational-mandates.md` and the per-mandate rule files |
+| The fifteen production mandates (M-N) | the per-mandate rule files (`definitiveness.md`, `pre-emission-gate.md`, `production-ready-prs.md`, …) |
+| Cognitive identity & architecture posture | `src/apothem/rules/cognitive-identity.md` |
+| Seriousness-scaled governance | each rule's own *Seriousness Scaling* section |
+| The `/plan` pipeline | the `/plan-*` commands and `src/apothem/skills/plan-suite/` |
+| Artifact directories | the source layout — `rules/`, `commands/`, `skills/`, `agents/`, `hooks/` |
+
+## Mandate identifier conventions
+
+Three prefixes carry distinct meanings:
+
+- **CM-N** — config mandate, defined in the rules cohort
+  (`src/apothem/rules/operational-mandates.md` and the per-mandate rule files).
+- **TM-N** — template mandate, defined in
+  `src/apothem/skills/plan-suite/master-template.md` §4.
+- **CP-N** — core principle, defined in the same template §6.
+
+The plan-suite template is the canonical TM/CP registry; the `/plan`
+pipeline stages resolve cross-references through that file.
+
+## See also
+
+- [Rules](/docs/reference/rules) — the rule files that operationalize the cross-cutting mandates.
+- [Commands](/docs/reference/commands) — the `/plan` pipeline stages.
+- [Hooks](/docs/reference/hooks) — the hook layer that enforces the coherent-product, conventions, and context-management mandates.

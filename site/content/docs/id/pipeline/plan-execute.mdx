@@ -1,0 +1,70 @@
+---
+title: "/plan-execute"
+description: "/plan-execute — Mengeksekusi fase tertentu dari Master Plan Suite dengan pemeriksaan konformitas."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Peran:** Eksekutor
+**Posisi pipeline:** terminal
+
+Mengeksekusi fase tertentu dari Master Plan Suite dengan pemeriksaan konformitas.
+
+## Pemanggilan kanonik
+
+```bash
+/plan-execute
+```
+
+Dengan argumen:
+
+```bash
+/plan-execute [path/to/plan-suite/] [phase-id] [--dry-run]
+```
+
+## Masukan
+
+Suite plan yang dihasilkan + ditinjau; `_inputs/handoff-manifest.yml` yang ditinjau
+
+## Keluaran
+
+File REPORT.md per fase, artefak basis kode, COMPLETION.md
+
+## Hilir
+
+`/code-review` — titik masuk kanonik dari urutan benteng audit sebelas perintah. `/plan-execute` adalah tahap terminal dari pipeline *plan*; ketika fase akhir selesai, kode yang dibangun diserahkan ke benteng audit untuk ditinjau.
+
+## Fase alur kerja
+
+Perintah ini mengikuti alur kerja pipeline `/plan` standar:
+
+1. **Memuat konteks** — Membaca suite plan, aturan, dan Kontrak Pelanjutan.
+2. **Memverifikasi prasyarat** — Memastikan fase dependensi telah selesai.
+3. **Mengeksekusi tugas** — Menjalankan misi perintah.
+4. **Memverifikasi keluaran** — Memastikan semua keluaran yang dideklarasikan ada dan lulus gerbang kualitas.
+5. **Memperbarui PROGRESS.md** — Mencatat keluaran terverifikasi di Registri Keluaran Fase.
+6. **Memancarkan REPORT.md** — Bukti rilis gerbang pra-emisi dicatat.
+
+## Mode kegagalan
+
+| Gejala | Penyebab | Pemulihan |
+|---------|-------|----------|
+| Prasyarat tidak lengkap | Fase dependen belum selesai | Selesaikan dulu fase hulu |
+| Gerbang kualitas FAIL | Keluaran tidak memenuhi standar | Perbaiki keluaran dan jalankan ulang |
+| File masukan hilang | File suite plan tidak ada | Jalankan `/plan-generate` untuk membuatnya |
+
+## Contoh
+
+```bash
+# Dry-run to preview what would happen
+/plan-execute --dry-run
+
+# Execute against a named plan suite
+/plan-execute path/to/plan-suite/
+```
+
+## Referensi silang
+
+- [Ikhtisar pipeline](/docs/pipeline)
+- [Referensi perintah](/docs/reference/commands)
+- [Masuk ke benteng audit: `/code-review`](/docs/reference/commands) — urutan tinjauan yang dimasuki kode yang dibangun setelah pipeline plan selesai

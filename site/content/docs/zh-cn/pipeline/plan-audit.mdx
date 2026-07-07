@@ -1,0 +1,70 @@
+---
+title: "/plan-audit"
+description: "/plan-audit——/plan 流水线的闭环守卫——封装 spec → generate → review，并主动修复发现，直到套件成为一个已审查、零发现的整体。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**角色：** 守卫
+**流水线位置：** 封装 / 正交（执行前）
+
+`/plan` 流水线的闭环守卫。`/plan-review` 报告并精炼一个已生成的套件，而 `/plan-audit` 封装上游循环（`/plan-spec → /plan-generate → /plan-review`），并把套件驱动到一个已审查、零发现的整体——仅运行缺失的上游阶段，审计结果，就地修复机械可解的发现，通过结构化询问通道呈现判断分叉，并循环直到套件干净或触发有界退避。它从不执行阶段实现工作；它让套件准备好交给 `/plan-execute`。
+
+## 规范调用
+
+```bash
+/plan-audit
+```
+
+带参数：
+
+```bash
+/plan-audit [suite-path] [--from spec|generate|review] [--remediate] [--cap N] [--maintenance] [--dry-run]
+```
+
+## 输入
+
+目标套件的 `_spec/spec.md`、`_inputs/handoff-manifest.yml`、基础设施文件、`phases/**/PHASE.md`，以及任何已存在的阶段报告。
+
+## 输出
+
+位于 `<suite>/_outputs/audit-report-<YYYY-MM-DD>.md` 的持久、有界报告；一份更新后的交接清单，携带零发现裁定、未决发现计数、修复账本以及任何维护路由；当残留发现仍存在时返回非零终止状态。
+
+## 流水线位置
+
+`/plan-audit` 对线性流水线是**正交**的，而非其中的一个阶段。规范线性序列是 `/plan-spec → /plan-generate → /plan-review → /plan-design`（条件性的，仅承载架构的套件）`→ /plan-execute`。`/plan-audit` 把 `/plan-spec → /plan-generate → /plan-review` 涵盖为单个闭环封装，可在任意点调用：它检视状态并仅运行缺失的阶段。它有别于堡垒审计链（在 `/code-review` 进入，在 `/threat-model-audit` 终止），后者审计已执行的代码库而非计划套件。
+
+## 工作流阶段
+
+1. **解析目标** — 从参数解析套件，或选择 `.apothem/plans/` 下最近修改的套件（`.plans/` 是受支持的向后兼容回退）并陈述该解析。
+2. **评估阶段** — 检测哪些制品存在（spec 就绪 / 已生成 / 已审查 / 已执行），并命名到达一个已审查、可执行整体的最小缺口。
+3. **带至可审查整体** — 仅运行缺失的上游阶段，将每个缺口委派给规范命令；绝不仅为刷新散文而重新运行已满足的阶段。
+4. **取证审计** — 应用 `/plan-review` 审计维度、规划技术目录以及十五栏预发出门。
+5. **主动修复** — 就地修复机械发现；通过结构化询问通道呈现判断分叉；把确实超出范围的工作路由到同级 `*-maintenance` 套件。
+6. **带上限与退避的循环** — 重复审计-与-修复直到零未决发现，以迭代上限（默认 3）为界，并在上限耗尽时执行已定义的退避。
+
+## 失败模式
+
+| 症状 | 原因 | 恢复 |
+|---------|-------|----------|
+| 上限耗尽仍有残留发现 | 发现无法在迭代上限内解决 | 审阅审计报告；把合格项路由到 `*-maintenance` 套件；仅在有理由时提高 `--cap` |
+| 判断分叉未解决 | 某发现需要策略/范围/权限决策 | 回答结构化询问提示；循环绝不静默选择 |
+| 缺失权威规范 | 没有 `_spec/spec.md` | 封装器路由到 `/plan-spec` 以编写它 |
+| 质量门 FAIL | 输出不达标 | 修复修复根因并重新审计触及的位点 |
+
+## 示例
+
+```bash
+# Dry-run: report detected suite, stage, planned audit dimensions, would-write targets
+/plan-audit --dry-run
+
+# Audit and actively remediate a named suite, capping the loop at 2 iterations
+/plan-audit path/to/plan-suite/ --remediate --cap 2
+```
+
+## 交叉引用
+
+- [流水线概览](/docs/pipeline)
+- [/plan-review](/docs/pipeline/plan-review)
+- [/plan-execute](/docs/pipeline/plan-execute)
+- [主计划套件模板](/docs/reference/commands)

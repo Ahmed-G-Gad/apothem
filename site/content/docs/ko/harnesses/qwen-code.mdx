@@ -1,0 +1,95 @@
+---
+title: "Qwen Code"
+description: "Qwen Code(베타)용 Apothem 도구 어댑터."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**공급업체:** Alibaba Cloud
+**설치 이름:** `qwen-code`
+**상태:** 베타
+**네이티브 구성:** `~/.qwen/`
+
+## 설치
+
+```bash
+apothem install --harness qwen-code
+```
+
+어댑터는 Qwen Code 설정을 작성하고, `QWEN.md` 컨텍스트 앵커를 설치하며, Apothem
+후크 디스패처를 등록하고, Apothem 명령을 Qwen Markdown 명령 파일로 변환하며,
+스킬을 SKILL.md 디렉터리로 설치하고, 도우미 정의를 Qwen 서브에이전트로
+적응시킵니다.
+
+**작성되는 파일:**
+
+```text
+~/.qwen/settings.json
+~/.qwen/QWEN.md
+~/.qwen/commands/
+~/.qwen/skills/
+~/.qwen/agents/
+~/.qwen/.apothem/support/{rules,templates,hooks}/
+```
+
+## 프로필에서 네이티브 구성으로의 매핑
+
+어댑터는 컨텍스트와 후크를 위해 문서화된 `settings.json` 키를 렌더링하고,
+`QWEN.md`를 작성하며, Apothem 명령, 스킬, 도우미 정의를 Qwen Code의 네이티브
+탐색 디렉터리에 엮어 넣습니다. 규칙, 템플릿, 후크 소스 자료는 `~/.qwen/.apothem/support/`
+아래의 지원 자료로 남습니다.
+
+## 호환성 참고 사항
+
+`~/.qwen/.apothem/support/`는 `QWEN.md`와 설정의 후크 명령이 참조하는 지원 자료입니다.
+이는 공급업체가 소유한 탐색 네임스페이스가 아닙니다.
+
+## 검증
+
+```bash
+apothem verify --harness qwen-code
+```
+
+verify 명령은 다음을 확인합니다:
+
+1. 네이티브 구성이 예상 경로에 존재합니다.
+2. 공유 프로필의 모든 필수 필드가 존재합니다.
+3. 어댑터별 검증 루틴이 성공을 보고합니다.
+
+## 업데이트
+
+```bash
+apothem update --harness qwen-code
+```
+
+`settings.json`, `QWEN.md`, 네이티브 명령, 스킬, 서브에이전트, 그리고 Apothem
+지원 트리를 새로 고칩니다.
+
+## 제거
+
+```bash
+apothem uninstall --harness qwen-code
+```
+
+어댑터가 작성한 네이티브 구성 파일을 제거합니다.
+공유 프로필 YAML과 Apothem 엔진은 영향을 받지 않습니다.
+
+## 적합성 게이트
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## 문제 해결
+
+| 증상 | 수정 |
+|---------|-----|
+| 구성 파일을 찾을 수 없음 | `apothem install --harness qwen-code`를 다시 실행 |
+| 검증 실패 | `apothem update --harness qwen-code`를 실행한 후 다시 검증 |
+| 예기치 않은 구성 내용 | `~/.config/apothem/profile.yaml` 또는 `--profile PATH`를 확인한 후 `apothem update --harness qwen-code`를 다시 실행 |
+
+## 구성 노브
+
+| 플래그 | 기본값 | 설명 |
+|------|---------|-------------|
+| `--dry-run` | `false` | 파일을 작성하지 않고 설치를 미리 봅니다. |

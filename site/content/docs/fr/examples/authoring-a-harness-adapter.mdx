@@ -1,0 +1,107 @@
+---
+title: "Créer un adaptateur d'environnement"
+description: "Guide pas à pas pour créer un nouvel adaptateur d'environnement Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Ce guide détaille la création d'un adaptateur d'environnement Apothem à partir de
+zéro, en utilisant le protocole `HarnessAdapter`.
+
+## Prérequis
+
+- Python 3.10+
+- Un environnement d'assistant cible avec un format de configuration connu
+- Compréhension de l'[abstraction d'adaptateur d'environnement](/docs/architecture/harness-adapter-abstraction)
+
+## Étape 1 : Créer le paquet de l'adaptateur
+
+```bash
+mkdir apothem-myadapter
+cd apothem-myadapter
+```
+
+```toml
+# pyproject.toml
+[project]
+name = "apothem-myadapter"
+version = "X.Y.Z"
+requires-python = ">=3.10"
+dependencies = ["apothem>=X.Y.Z"]  # pin the floor to the apothem release you target
+
+[project.entry-points."apothem.harnesses"]
+my-harness = "apothem_myadapter.adapter:MyHarnessAdapter"
+```
+
+## Étape 2 : Implémenter l'adaptateur
+
+```python
+# src/apothem_myadapter/adapter.py
+from pathlib import Path
+from typing import Any
+
+from apothem.harnesses import HarnessAdapter
+
+
+class MyHarnessAdapter(HarnessAdapter):
+    """Implements the HarnessAdapter protocol for "My Harness".
+
+    First-party adapters in the apothem tree usually delegate to the
+    ``make_user_scope_adapter`` / ``make_project_scope_adapter`` factories in
+    ``apothem.harnesses._shared.wrapper_factories`` and declare their install
+    rules in ``src/apothem/lib/propagation-manifest.yaml``. Implementing the
+    protocol directly, as shown here, is the clearest way to read its surface.
+    """
+
+    @property
+    def name(self) -> str:
+        return "my-harness"
+
+    @property
+    def output_path(self) -> Path:
+        # The single native config file this adapter owns on disk.
+        return Path.home() / ".myharness" / "config.md"
+
+    def install(self, profile: dict[str, Any]) -> object:
+        # ``profile`` is the loaded shared-profile dict (rules, skills, hooks...).
+        self.output_path.parent.mkdir(parents=True, exist_ok=True)
+        self.output_path.write_text(self._render(profile), encoding="utf-8")
+        return self.output_path
+
+    def update(self, profile: dict[str, Any]) -> object:
+        return self.install(profile)  # idempotent re-materialization
+
+    def uninstall(self) -> None:
+        self.output_path.unlink(missing_ok=True)
+
+    def is_installed(self) -> bool:
+        return self.output_path.is_file()
+
+    def verify(self) -> bool:
+        return self.output_path.is_file() and self.output_path.stat().st_size > 0
+
+    def _render(self, profile: dict[str, Any]) -> str:
+        # Translate the profile into the harness's native format.
+        rules = profile.get("rules", [])
+        return "\n\n".join(str(rule) for rule in rules)
+```
+
+## Étape 3 : Installer et tester
+
+```bash
+pip install -e .
+apothem install --harness my-harness
+apothem verify --harness my-harness
+```
+
+## Étape 4 : Ajouter à la documentation de pyproject.toml
+
+Documentez l'environnement dans `site/content/docs/harnesses/my-harness.mdx` en
+suivant le [modèle de page d'environnement](/docs/harnesses).
+
+## Étape 5 : Soumettre pour inclusion
+
+Ouvrez une pull request sur le dépôt Apothem avec :
+- Le paquet de l'adaptateur (ou un lien vers celui-ci)
+- La page de documentation
+- Un test de vérification dans `tests/packaging/test_myadapter_install.py`

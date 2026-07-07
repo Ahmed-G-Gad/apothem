@@ -1,0 +1,77 @@
+---
+title: "Security"
+description: "Apothem security posture — OpenSSF Scorecard target, vulnerability reporting, hardening surfaces."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem's security posture is built on five pillars: supply-chain hardening, vulnerability response, branch protection, release signing, and continuous security analysis. This section documents each surface.
+
+## Threat model
+
+Apothem is a configuration materializer. It reads a shared profile and writes
+harness-native configuration files into the directories each
+harness reads. That single function bounds what it trusts and what it does not.
+
+- **What Apothem trusts.** The shared profile you author and the bundled source
+  tree placed by the installer. The profile is your declared intent; the engine
+  treats it as authoritative input after schema validation.
+- **What Apothem does not trust.** Profile contents reach the filesystem only
+  after validation: schema failures, unknown harness IDs, unsafe project paths,
+  missing manifest sources, target traversal, and symlink crossings all stop
+  before any write and return structured diagnostics with `files_written: []`.
+- **What materialized output never carries.** No secrets. Profile diagnostics
+  redact secret-like keys and token-shaped values before they reach plain
+  output, JSON, logs, docs snippets, or tests, and public examples use fake
+  placeholder identities and domains. Materialized configuration is meant to be
+  committed and shared; it carries no credentials.
+- **The universal-deny floor.** The rules Apothem materializes carry a
+  non-negotiable deny floor regardless of any per-harness allow-list — secrets
+  paths (`.env*`, `~/.ssh/**`, credential stores), destructive shell operations
+  (`rm -rf`, `sudo`, force-pushes to protected branches), and execution of
+  untrusted input. No allow-list silently widens this floor.
+- **Blast radius.** Writes are scoped to the harness directories and the
+  Apothem-owned support subtrees. Existing managed targets are backed up before
+  replacement and shared discovery directories are merged child-by-child, so
+  unrelated operator-authored files remain in place.
+
+## Runtime safety posture
+
+Harness lifecycle and profile-write commands validate before writing. Profile
+schema failures, unknown harness IDs, unsafe project paths, missing manifest
+sources, target traversal, and symlink crossings stop before filesystem writes
+and return structured diagnostics with `files_written: []`.
+
+Install and update operations preserve existing managed targets by backing them
+up before replacement. Shared discovery directories are merged child-by-child so
+unrelated operator-authored files remain in place. `--dry-run` performs the
+same validation and reports planned outcomes without creating directories or
+files.
+
+Profile diagnostics redact secret-like keys and token-shaped values before
+they reach plain output, JSON output, logs, docs snippets, or tests. Public
+examples use fake placeholder identities and domains.
+
+## Quick links
+
+- [**OpenSSF Scorecard posture**](/docs/security/openssf-scorecard-target) — per-check evidence and known platform limits
+- [**Webhooks audit**](/docs/security/webhooks-audit) — webhook-secret hygiene evidence
+- [**Branch protection**](/docs/security/branch-protection-ruleset) — review gate, status checks, and push restrictions
+- [**Binary artifacts sweep**](/docs/security/binary-artifacts-sweep) — zero-binary-in-source release proof
+- [Security policy](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) — vulnerability reporting & supported versions
+- [OpenSSF Scorecard badge](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem) — live score
+
+## Reporting a vulnerability
+
+Use [Private Vulnerability Reporting](https://github.com/ahmed-g-gad/apothem/security) on the repository's Security tab. The full policy, supported-version matrix, and response timelines are at [`SECURITY.md`](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
+
+## Supply-chain release proofs
+
+Every release artifact ships with:
+
+- **SLSA-3 build provenance** via [`slsa-framework/slsa-github-generator`](https://github.com/slsa-framework/slsa-github-generator)
+- **Sigstore signatures** via [`sigstore/cosign-installer`](https://github.com/sigstore/cosign-installer)
+- **CycloneDX SBOM** via [`anchore/sbom-action`](https://github.com/anchore/sbom-action)
+- **npm provenance statements** via Trusted Publishing OIDC on `@ahmed-g-gad/apothem`
+- **GPG-signed git tags** (EDDSA key `70396FED9C634163`)
+
+Verification recipes are documented inline at [Release cycle](/docs/runbooks/release-cycle) and [Release recovery](/docs/runbooks/release-recovery); a dedicated verify-a-release runbook is forthcoming.

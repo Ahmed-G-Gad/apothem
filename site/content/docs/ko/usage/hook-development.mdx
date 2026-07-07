@@ -1,0 +1,52 @@
+---
+title: "훅 개발"
+description: "Apothem 훅 파이프라인에서 훅을 작성하고 등록합니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+훅은 하네스 이벤트에서 실행되는 shell 명령입니다. 운영자의 개입 없이 적합성을
+강제하고, 컨텍스트를 주입하고, 품질 게이트를 실행합니다.
+
+## 훅 이벤트
+
+| 이벤트 | 실행 시점 |
+|-------|--------------|
+| `PreToolUse` | 모든 도구 호출 전 |
+| `PostToolUse` | 모든 도구 호출 후 |
+| `SessionStart` | 세션 부트스트랩 시 |
+| `PreCompact` | 컨텍스트 압축 전 |
+| `PostCompact` | 컨텍스트 압축 후 |
+| `Stop` | 세션 종료 시 |
+
+## 훅 메시지 파일
+
+각 훅에는 `src/apothem/hooks/messages/<event>-<name>.md`에 대응하는 메시지
+파일이 있으며, 훅이 실행되는 순간 어시스턴트에 컨텍스트를 제공합니다.
+
+## 훅 등록
+
+훅 명령을 `settings.json`에 추가합니다:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python src/apothem/hooks/my-check.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## 훅 디스패처
+
+모든 훅은 `src/apothem/hooks/dispatch.py`를 통해 라우팅되며, 이는 모든 훅 오류를
+fail-open 봉투로 변환하여 훅이 하네스를 절대 차단하지 않도록 합니다.

@@ -1,0 +1,67 @@
+---
+title: "/threat-model-audit"
+description: "/threat-model-audit — Passe d'audit de modélisation des menaces face aux méthodologies STRIDE + PASTA."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rôle :** Modélisateur de menaces
+**Position dans le pipeline :** forteresse
+
+Passe d'audit de modélisation des menaces face aux méthodologies STRIDE + PASTA.
+
+## Invocation canonique
+
+```bash
+/threat-model-audit
+```
+
+Avec des arguments :
+
+```bash
+/threat-model-audit [path/to/target/] [--dry-run]
+```
+
+## Entrées
+
+Architecture et flux de données du dépôt hôte.
+
+## Sorties
+
+Un rapport de constats de modélisation des menaces dédupliqué et trié par gravité (rapport uniquement ; la remédiation passe par `/fortress` / `/elevate`).
+
+## En aval
+
+La dimension de modélisation des menaces de la séquence de relecture d'audit — balayée en parallèle par `/audit` et remédiée par `/fortress`.
+
+## Phases du flux de travail
+
+La commande exécute une passe d'audit de modélisation des menaces sur le dépôt hôte :
+
+1. **Cartographier la surface** — Énumérer l'architecture, les points d'entrée, les frontières de confiance et les flux de données.
+2. **Modéliser les menaces** — Appliquer les méthodologies STRIDE + PASTA à chaque frontière et actif.
+3. **Trier les constats** — Classer chaque menace par gravité avec une justification à moteur concret.
+4. **Émettre le rapport** — Synthétiser les constats dédupliqués et triés par gravité (rapport uniquement).
+
+## Modes de défaillance
+
+| Symptôme | Cause | Récupération |
+|---------|-------|----------|
+| Aucune surface d'architecture | La cible n'a pas de frontières de flux de données découvrables | Pointez l'audit vers un dépôt avec des points d'entrée et des frontières de confiance cartographiables |
+| Constat sans périmètre | Menace affirmée sans locus | Joignez l'actif / la frontière affecté et la cellule de méthodologie qu'il met en défaut |
+| Remédiation attendue | L'audit est en rapport uniquement | Acheminez les constats vers `/fortress` (remédiation) ou `/elevate` |
+
+## Exemples
+
+```bash
+# Dry-run pour prévisualiser la portée de l'audit
+/threat-model-audit --dry-run
+
+# Auditer un dépôt cible
+/threat-model-audit path/to/target/
+```
+
+## Références croisées
+
+- [Aperçu du pipeline](/docs/pipeline)
+- [Référence des commandes](/docs/reference/commands)

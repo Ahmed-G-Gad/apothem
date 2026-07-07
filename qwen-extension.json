@@ -1,0 +1,14 @@
+{
+  "name": "apothem",
+  "version": "1.0.1",
+  "description": "Install and manage the Apothem shared profile — one source of truth for rules, slash-commands, skills, hooks, output-styles, settings, schemas, docs, and MCP servers — across seventeen AI assistant harnesses, from Qwen Code.",
+  "homepage": "https://apothem.ahmedgad.com/",
+  "repository": "https://github.com/ahmed-g-gad/apothem",
+  "license": "MIT",
+  "author": {
+    "name": "Ahmed G. Gad",
+    "email": "me@ahmedgad.com",
+    "url": "https://github.com/ahmed-g-gad"
+  },
+  "contextFileName": "QWEN.md"
+}

@@ -1,0 +1,480 @@
+# SPDX-License-Identifier: MIT
+
+# Continuous Integration workflow.
+#
+# Ten canonical check classes run on every push to main and every pull request:
+#   1. lint               — ruff check
+#   2. format-check       — ruff format --check
+#   3. type-check         — mypy
+#   4. test               — pytest across an OS x Python matrix
+#   5. coverage           — pytest-cov with HTML + XML reports + Codecov upload
+#   6. security-scan      — bandit static analysis (CodeQL owned by codeql.yml)
+#   7. supply-chain-scan  — Trivy filesystem scan (deps + IaC) + pip-audit
+#   8. docs-build         — Next.js + Fumadocs build
+#   9. example-run        — smoke test for each examples/* artifact-class demo
+#  10. release-preflight  — semantic-version tag dry-run + CHANGELOG sanity
+#
+# SHA-pinning policy
+# ------------------
+# Every action `uses:` reference is pinned by 40-character commit SHA followed
+# by a `# vMAJOR.MINOR.PATCH` version comment. Renovate (see
+# renovate.json) proposes SHA bumps on its weekly schedule; a proposal
+# lands only when a maintainer merges it, so pins are also reviewed and
+# bumped manually during hardening passes. One documented exception
+# remains (release.yml): the SLSA reusable generator is trust-anchored on
+# its per-tag attestation (Sigstore policy forbids SHA-pinning of trusted
+# reusable workflows). That `uses:` line carries an
+# `action-pinning-exempt:` marker for auditability.
+#
+# Permissions policy
+# ------------------
+# The workflow-level permissions block grants the minimum scopes the steps
+# below need (read-only on contents). Per-job overrides escalate only where
+# justified — coverage upload escalates to id-token:write for OIDC, security
+# escalates to security-events:write so CodeQL can post SARIF. No job uses
+# write-all.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - 'site/**'
+      - 'examples/**'
+      - 'scripts/**'
+      - '.github/workflows/**'
+      - '.pre-commit-config.yaml'
+      - '.gitleaks.toml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - 'site/**'
+      - 'examples/**'
+      - 'scripts/**'
+      - '.github/workflows/**'
+      - '.pre-commit-config.yaml'
+      - '.gitleaks.toml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Single-sourced pip pin (CVE-2026-6357 closes on pip >=26.1). One value per
+# workflow file; scripts/dev/check_pip_pin_drift.py fails the build if any
+# workflow's PIP_PIN_VERSION diverges from the canonical pin.
+env:
+  PIP_PIN_VERSION: "26.1.2"
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  # 1, 2, 3, 4 — lint, format-check, type-check, test
+  quality:
+    name: quality / ${{ matrix.os }} / py${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    # A pre-release cell is advisory: it exercises the next Python against the
+    # suite for early-warning without gating the merge. matrix.include carries
+    # `prerelease: true` on the 3.15 cell only; the job's continue-on-error and
+    # setup-python's allow-prereleases key off it. Every stable cell keeps
+    # prerelease unset (false-y) and stays a hard gate.
+    continue-on-error: ${{ matrix.prerelease || false }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        include:
+          - os: ubuntu-latest
+            python-version: "3.15"
+            prerelease: true
+    steps:
+      - name: Harden runner
+        # harden-runner supports only Ubuntu runners; guard it so the step is
+        # skipped (not a silent no-op) on the windows-latest cells and the
+        # "Harden runner" name does not overstate coverage. Matches
+        # clean-install-gate.yml. Non-Linux cells run unhardened by platform
+        # limitation.
+        if: runner.os == 'Linux'
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          allow-prereleases: ${{ matrix.prerelease || false }}
+          cache: pip
+      - name: Install dependencies
+        # Force bash so ${PIP_PIN_VERSION} is env expansion on every matrix OS.
+        # Without this the windows-latest cell defaults to pwsh, where
+        # ${PIP_PIN_VERSION} is PowerShell variable syntax that expands to
+        # empty — installing an unpinned pip and silently voiding the pin.
+        shell: bash
+        run: |
+          python -m pip install "pip==${PIP_PIN_VERSION}"
+          python -m pip install -e ".[dev]"
+      - name: Ruff (lint)
+        run: python -m ruff check .
+      - name: Ruff (format check)
+        run: python -m ruff format --check .
+      - name: Mypy (type check)
+        run: python -m mypy
+      - name: Pytest
+        run: python -m pytest --color=yes
+      - name: Ecosystem validator
+        run: python scripts/dev/validate_ecosystem.py --content-root src/apothem
+      - name: Conformity validators (corpus mode)
+        shell: pwsh
+        run: |
+          # --strict is load-bearing: without it the gate is advisory and
+          # exits zero even on blocking findings, so every branch below is
+          # unreachable. The advisory default serves operator ad-hoc runs;
+          # CI is the enforcement layer.
+          python -m apothem.conformity.gate --all . --strict
+          if ($LASTEXITCODE -eq 0) {
+            exit 0
+          }
+
+          $allExitCode = $LASTEXITCODE
+          $subject = git log -1 --pretty=%s
+          if ($subject -notlike "feat: release apothem *") {
+            exit $allExitCode
+          }
+
+          Write-Host "Release root commit: rerunning all standalone validators except conventional-commit-grep."
+          $payload = python -m apothem.conformity.gate --list
+          $validators = ($payload | ConvertFrom-Json).standalone_validators |
+            Where-Object { $_ -ne "conventional-commit-grep" }
+
+          foreach ($validator in $validators) {
+            $script = "src/apothem/conformity/$($validator.Replace('-', '_')).py"
+            python $script .
+            if ($LASTEXITCODE -ne 0) {
+              exit $LASTEXITCODE
+            }
+          }
+      - name: Chaos sweep
+        run: python scripts/dev/chaos_pass.py --content-root src/apothem
+
+  # 5 — coverage
+  coverage:
+    name: coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [quality]
+    permissions:
+      contents: read
+      id-token: write   # OIDC for Codecov tokenless upload
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install "pip==${PIP_PIN_VERSION}"
+          python -m pip install -e ".[dev]"
+      - name: Pytest with coverage
+        # Bare --cov uses the engine-scoped source set in pyproject
+        # ([tool.coverage.run] source = cli/harnesses/lib/hooks/statuslines), so
+        # the blocking number is the honest engine coverage, gated by
+        # [tool.coverage.report] fail_under = 80 — not the conformity-inflated
+        # aggregate. HTML/XML artifacts are unchanged.
+        run: |
+          python -m pytest \
+            --cov \
+            --cov-report=term-missing \
+            --cov-report=xml:coverage.xml \
+            --cov-report=html:coverage-html
+      - name: Upload coverage XML
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: coverage-xml
+          path: coverage.xml
+          retention-days: 30
+      - name: Upload coverage HTML
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: coverage-html
+          path: coverage-html/
+          retention-days: 30
+
+  # 6 — security-scan (bandit; CodeQL owned by codeql.yml to avoid SARIF collision)
+  security-scan:
+    name: security-scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+      # CodeQL (Python) is owned solely by codeql.yml — which scans the full
+      # src/** tree plus the actions language — so this job runs only bandit.
+      # Running CodeQL here too collided on the /language:python SARIF
+      # category (GitHub keeps one analysis, silently dropping the other).
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: "3.12"
+      - name: Install bandit
+        run: python -m pip install "bandit[toml]==1.9.4"
+      - name: Bandit static analysis
+        run: python -m bandit -c pyproject.toml -r src/apothem scripts
+
+  # 7 — supply-chain-scan (Trivy + pip-audit + gitleaks)
+  supply-chain-scan:
+    name: supply-chain-scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          fetch-depth: 0   # gitleaks needs full history
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: "3.12"
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+      - name: Upload Trivy SARIF
+        # Public-repository release posture: SARIF upload is part of the
+        # supply-chain gate and fails the job if Code Scanning rejects it.
+        # Skipped on fork pull requests: the GITHUB_TOKEN there is read-only,
+        # so security-events:write is unavailable and the upload would always
+        # fail — red-failing every external contributor's PR. The Trivy scan
+        # itself still runs on forks; only the SARIF upload (which the fork
+        # token cannot perform) is gated.
+        if: >-
+          github.event_name != 'pull_request' ||
+          github.event.pull_request.head.repo.full_name == github.repository
+        uses: github/codeql-action/upload-sarif@54f647b7e1bb85c95cddabcd46b0c578ec92bc1a  # v4.36.3
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy
+      - name: Upgrade pip
+        # Upgrade the runner-bundled pip before pip-audit runs so the audit
+        # scans against a current pip version (CVE-2026-6357 closes on pip
+        # >=26.1; earlier runner pip carries the vulnerable archive-handling
+        # path). The fix-the-vuln approach is preferred over --ignore-vuln.
+        run: python -m pip install "pip==${PIP_PIN_VERSION}"
+      - name: pip-audit
+        run: |
+          python -m pip install "pip-audit==2.10.1"
+          # Use the CLI binary (the import name uses an underscore —
+          # `python -m pip-audit` raises ModuleNotFoundError). `--desc`
+          # surfaces advisory descriptions; `--strict` is intentionally
+          # NOT set during 0.x so a transient transitive advisory does
+          # not wedge the build before a remediation lands.
+          #
+          # CVE-2026-3219 ignored: the advisory targets `pip` itself
+          # (the package manager runtime) over a tar+ZIP file-handling
+          # heuristic. No fix version is published yet; the advisory
+          # is informational for developer tooling, not a project-dep
+          # vulnerability.
+          # Expiry: 2026-08-20 — if no upstream fix has landed by then,
+          # re-triage and either re-justify with a fresh expiry or drop
+          # the ignore. No open-ended suppression.
+          pip-audit --desc --ignore-vuln CVE-2026-3219
+      - name: Gitleaks (secrets scan)
+        # Self-contained CLI install instead of a wrapper Action so the
+        # step does not depend on an upstream tag/SHA the wrapper repo
+        # may move out from under us. The release-archive download URL
+        # is pinned by version, and the binary is verified by sha256
+        # before invocation.
+        run: |
+          set -euo pipefail
+          # Lockstep: keep in sync with the gitleaks rev in .pre-commit-config.yaml.
+          GL_VERSION="8.30.1"
+          BASE_URL="https://github.com/gitleaks/gitleaks/releases/download/v${GL_VERSION}"
+          GL_ARCHIVE="gitleaks_${GL_VERSION}_linux_x64.tar.gz"
+          curl --retry 5 --retry-delay 2 --retry-all-errors -sSfL "${BASE_URL}/${GL_ARCHIVE}" -o "/tmp/${GL_ARCHIVE}"
+          curl --retry 5 --retry-delay 2 --retry-all-errors -sSfL "${BASE_URL}/gitleaks_${GL_VERSION}_checksums.txt" -o /tmp/gitleaks-checksums.txt
+          grep "${GL_ARCHIVE}" /tmp/gitleaks-checksums.txt > /tmp/gitleaks-checksum.txt
+          (cd /tmp && sha256sum -c /tmp/gitleaks-checksum.txt)
+          tar -xzf "/tmp/${GL_ARCHIVE}" -C /tmp gitleaks
+          sudo install -m 0755 /tmp/gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+          # Config auto-discovered: the canonical `.gitleaks.toml` lives at
+          # the repo root, resolved identically by this job and the
+          # pre-commit `gitleaks` hook.
+          gitleaks detect --source . --no-banner --redact
+
+  # 8 — docs-build
+  docs-build:
+    name: docs-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+        with:
+          node-version-file: site/.nvmrc
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - name: Install docs dependencies
+        working-directory: site
+        run: npm ci
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: "3.12"
+      - name: Install reference-emitter runtime dependencies
+        # npm run build runs the source reference emitter, which introspects the
+        # live Click tree; the non-vendored runtime deps (click, rich) must import.
+        run: python -m pip install click rich pyyaml jsonschema
+      - name: Build docs
+        working-directory: site
+        run: npm run build
+      - name: Upload docs artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: docs-site
+          path: site/dist/
+          retention-days: 14
+
+  # 9 — example-run
+  example-run:
+    name: example-run / ${{ matrix.example }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        example:
+          - minimal-claude-md
+          - minimal-skill
+          - minimal-agent
+          - minimal-command
+          - minimal-hook
+          - minimal-output-style
+          - minimal-plan-pipeline
+          - minimal-research-pipeline
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: "3.12"
+      - name: Smoke-test ${{ matrix.example }}
+        run: |
+          test -d "examples/${{ matrix.example }}"
+          test -f "examples/${{ matrix.example }}/README.md"
+          if [ -x "examples/${{ matrix.example }}/run.sh" ]; then
+            bash "examples/${{ matrix.example }}/run.sh"
+          else
+            echo "No executable run.sh; presence-only smoke test passed."
+          fi
+
+  # 10 — release-preflight
+  release-preflight:
+    name: release-preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: "3.12"
+      - name: Check pip-pin single-source coherence
+        # The pip pin (CVE-2026-6357) is single-sourced per workflow via the
+        # PIP_PIN_VERSION env var; this gate fails if any workflow's pin drifts
+        # or a raw `pip==<version>` literal is reintroduced.
+        run: python scripts/dev/check_pip_pin_drift.py
+      - name: Install release toolchain
+        run: python -m pip install --require-hashes -r scripts/release/requirements-build-linux.txt
+      - name: Build sdist + wheel
+        run: python -m build
+      - name: Validate semantic version in pyproject and CHANGELOG entry
+        run: |
+          python -c "
+          import re, sys, tomllib, pathlib
+          cfg = tomllib.loads(open('pyproject.toml','rb').read().decode())
+          proj = cfg['project']
+          if 'version' in proj:
+              v = proj['version']
+          else:
+              attr = cfg['tool']['setuptools']['dynamic']['version']['attr']
+              parts = attr.split('.')
+              init = pathlib.Path('src', *parts[:-1], '__init__.py')
+              m = re.search(r'__version__\s*=\s*[\'\"]([^\'\"]+)[\'\"]', init.read_text(encoding='utf-8'))
+              if not m:
+                  sys.exit(f'cannot resolve dynamic version attr {attr!r} from {init}')
+              v = m.group(1)
+          if not re.match(r'^\d+\.\d+\.\d+(?:[-+].+)?$', v):
+              sys.exit(f'pyproject.toml version {v!r} is not semver')
+          changelog = open('CHANGELOG.md', encoding='utf-8').read()
+          if not re.search(rf'^## \[{re.escape(v)}\]', changelog, re.MULTILINE):
+              sys.exit(f'CHANGELOG.md is missing a [{v}] section header for the current pyproject version')
+          print(f'pyproject.toml version OK: {v}; CHANGELOG carries the matching entry')
+          "

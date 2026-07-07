@@ -1,0 +1,31 @@
+---
+title: "Configurações"
+description: "Configuração do harness do Claude Code em settings.json, cobrindo permissões de ferramentas, cabeamento de hooks, variáveis de ambiente e modelos de linha de status."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+O `settings.json` carrega a configuração do harness do Claude Code: cabeamento de
+hooks, permissões de ferramentas, variáveis de ambiente e ajustes da linha de
+status.
+
+A referência canônica completa vive em
+[settings-reference.md](/docs/reference/settings-reference). Esta página resume o contrato
+e aponta para a referência mais aprofundada.
+
+## Seções
+
+| Seção | Propósito |
+|---------|---------|
+| `permissions` | Listas brancas e negras de ferramentas por matcher |
+| `hooks` | Tabela de comandos de hook indexada por evento (o cabeamento canônico) |
+| `env` | Variáveis de ambiente por sessão |
+| `statusLine` | Modelo de linha de status que o host renderiza |
+
+## Invariante de modelo único
+
+O adaptador do Claude Code envia um único modelo `settings.json`. Os comandos de
+hook usam a forma exec (`command` mais `args`) em vez de strings de comando
+específicas do shell, de modo que o comportamento entre sistemas operacionais é
+revisado dentro de um único arquivo. Novas entradas de permissões e eventos de
+hook aterrissam nesse arquivo de forma atômica.

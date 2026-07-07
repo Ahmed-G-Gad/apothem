@@ -1,0 +1,338 @@
+---
+title: "Runbook pengaktifan Pages"
+description: "Runbook langkah demi langkah untuk meluncurkan GitHub Pages dengan domain kustom di apothem.ahmedgad.com melalui konfigurasi DNS CNAME."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Runbook ini mengarahkan `apothem.ahmedgad.com` dari konfigurasi GitHub
+Pages yang baru menuju halaman landing HTTPS dengan status `200 OK`.
+Prosedur ini ditulis untuk operator yang menggunakan `gh` dan konsol
+penyedia DNS; kontributor baru yang kompeten dapat mengikutinya tanpa
+konteks sebelumnya.
+
+Runbook disusun sebagai **inti yang tidak bergantung pada penyedia**
+(langkah sisi GitHub dan langkah DNS-record yang dibagi setiap penyedia)
+diikuti oleh **lampiran spesifik-penyedia** untuk Namecheap, Cloudflare,
+Route53, dan opsi cadangan DNS generik. Jalankan inti secara berurutan;
+lompat ke lampiran yang cocok dengan registrar domain apex / host DNS;
+kembali ke inti untuk verifikasi.
+
+Situs dihosting dari repositori publik `ahmed-g-gad/apothem` melalui
+GitHub Pages dengan CNAME domain kustom menunjuk ke
+`ahmed-g-gad.github.io`. Build situs statis menghasilkan keluaran ke
+`site/dist/`; alur kerja Pages mengangkat artefak build itu ke situs
+live pada setiap push ke `main`.
+
+## 1. Prasyarat
+
+Operator mengonfirmasi hal berikut sebelum melanjutkan:
+
+- **Status repositori.** `ahmed-g-gad/apothem` bersifat publik, telah
+  mengaktifkan Pages (Settings > Pages > Source: GitHub Actions), dan
+  alur kerja `publish-static-site.yml` ada di
+  `.github/workflows/publish-static-site.yml`.
+- **Otoritas DNS.** Operator mengendalikan DNS untuk `ahmedgad.com` di
+  registrar atau di host DNS yang didelegasikan (Cloudflare, Route53,
+  dll.). Host DNS diidentifikasi melalui `dig NS ahmedgad.com +short`.
+- **Perkakas.** `gh` (GitHub CLI) versi 2.40 atau lebih baru yang
+  terautentikasi terhadap akun `ahmed-g-gad`; `dig` (BIND `dig` atau
+  `drill`) untuk verifikasi DNS; sebuah peramban untuk inspeksi HTTPS.
+- **Sikap apex.** Runbook ini hanya mengonfigurasi **subdomain**
+  `apothem.ahmedgad.com`. Apex `ahmedgad.com` tidak disentuh. CNAME di
+  apex memerlukan CNAME-flattening (Cloudflare) atau ALIAS record
+  (Route53); jalur subdomain menghindari kedua kelas komplikasi tersebut.
+
+## 2. Inti yang tidak bergantung pada penyedia
+
+### 2.1 Tambahkan domain kustom ke Pages
+
+```bash
+gh api -X PUT \
+  /repos/ahmed-g-gad/apothem/pages \
+  -F cname=apothem.ahmedgad.com \
+  -F https_enforced=true
+```
+
+Verifikasi bahwa panggilan tersebut mengembalikan record CNAME yang baru:
+
+```bash
+gh api /repos/ahmed-g-gad/apothem/pages \
+  --jq '.cname, .https_enforced, .status'
+```
+
+Keluaran yang diharapkan:
+
+```text
+apothem.ahmedgad.com
+true
+built
+```
+
+Status `built` mengonfirmasi bahwa build Pages terbaru berhasil. Status
+`null` berarti Pages belum berjalan sejak CNAME diterapkan — push commit
+no-op ke `main` untuk memicu build.
+
+### 2.2 Konfirmasi berkas CNAME
+
+GitHub Pages menerima `site/public/CNAME` melalui artefak build situs
+statis pada setiap deploy. Berkas tersebut berisi domain kustom dalam
+satu baris, tanpa skema, tanpa trailing slash:
+
+```text
+apothem.ahmedgad.com
+```
+
+Berkas tersebut berada di `site/public/CNAME`. Verifikasi:
+
+```bash
+cat site/public/CNAME
+```
+
+Jika berkas hilang, buat ulang di `site/public/CNAME` dan commit dengan
+`chore: restore Pages CNAME`.
+
+### 2.3 Tambahkan DNS record
+
+Pages menyajikan domain kustom ketika penyedia DNS apex mengembalikan
+salah satu dari empat alamat IP GitHub (untuk domain apex) atau sebuah
+CNAME yang menunjuk ke `<owner>.github.io` (untuk subdomain). Untuk
+`apothem.ahmedgad.com` kelas record-nya adalah **CNAME**:
+
+| Field | Nilai |
+|-------|-------|
+| Type  | `CNAME` |
+| Host  | `apothem` (hanya subdomain; registrar menambahkan apex) |
+| Value | `ahmed-g-gad.github.io.` (titik akhir ketika registrar mensyaratkannya) |
+| TTL   | `3600` (satu jam; lebih rendah untuk propagasi lebih cepat saat cutover) |
+
+Alur UI yang tepat untuk menambahkan record bervariasi per penyedia;
+lompat ke lampiran yang cocok di bawah, kembali ke sini ketika record
+telah disimpan.
+
+### 2.4 Tunggu propagasi DNS
+
+Propagasi selesai dalam lima menit untuk record ber-TTL rendah dan dalam
+satu jam untuk TTL default 3600 detik — edge penyedia dapat
+memperpanjang jendela ini selama transfer zona DNS. Lacak progres:
+
+```bash
+dig apothem.ahmedgad.com CNAME +short
+```
+
+Keluaran yang diharapkan:
+
+```text
+ahmed-g-gad.github.io.
+```
+
+Keluaran kosong berarti record belum terpropagasi. Jalankan ulang setiap
+30 detik. Jika record tidak pernah muncul setelah 30 menit, kembali ke
+lampiran yang cocok dengan host DNS dan verifikasi bahwa record
+ter-commit di penyedia, bukan tertahan dalam status draf.
+
+### 2.5 Verifikasi HTTPS
+
+```bash
+curl -sSI https://apothem.ahmedgad.com/ | head -5
+```
+
+Keluaran yang diharapkan:
+
+```text
+HTTP/2 200
+server: GitHub.com
+content-type: text/html; charset=utf-8
+strict-transport-security: max-age=31536000
+```
+
+Baris `HTTP/2 200` dan `server: GitHub.com` bersama-sama mengonfirmasi
+bahwa Pages menyajikan situs di bawah sertifikat TLS yang valid. Sebuah
+`301` ke URL HTTPS pada permintaan HTTP-biasa juga memenuhi gerbang
+tersebut; HTTPS-enforced aktif.
+
+Jika `curl` mengembalikan `526` (kode sertifikat-tidak-valid spesifik
+Cloudflare) atau `502` (bad gateway), sertifikat belum diterbitkan. Pages
+menyediakan sertifikat Let's Encrypt secara otomatis begitu CNAME
+ter-resolve; berikan waktu hingga 24 jam untuk penerbitan pertama. Untuk
+diagnostik:
+
+```bash
+gh api /repos/ahmed-g-gad/apothem/pages \
+  --jq '.https_certificate.state, .https_certificate.description'
+```
+
+`state: approved` berarti penerbitan selesai. `state: requesting` berarti
+penerbitan sedang berlangsung; tunggu. Status lain memerlukan restart
+Pages (matikan dan nyalakan domain kustom melalui API).
+
+### 2.6 Verifikasi deep link
+
+```bash
+curl -sSI https://apothem.ahmedgad.com/architecture/ | head -3
+```
+
+Keluaran yang diharapkan:
+
+```text
+HTTP/2 200
+server: GitHub.com
+content-type: text/html; charset=utf-8
+```
+
+Sebuah `404` pada deep link berarti build situs statis belum memuat
+halaman tersebut atau deploy belum selesai. Picu rebuild melalui
+`gh workflow run publish-static-site.yml`.
+
+### 2.7 Catat verifikasi
+
+Tambahkan satu baris ke log status-situs operator (atau ke log verifikasi
+runbook ini jika dipelihara secara inline) dengan tanggal, identitas
+operator, dan keluaran status Pages dari `gh api`. Log verifikasi adalah
+jejak audit — setiap perubahan konfigurasi Pages meninggalkan satu baris.
+
+## 3. Lampiran penyedia — Namecheap
+
+Namecheap menyediakan DNS melalui tab "Advanced DNS" registrar. Operator
+memiliki `ahmedgad.com` di sini ketika NS record registrar cocok dengan
+`dns1.registrar-servers.com` dan `dns2.registrar-servers.com` (default
+Namecheap). Verifikasi dengan `dig NS ahmedgad.com +short`.
+
+Langkah-langkah:
+
+1. Masuk ke Namecheap; buka dasbor.
+2. Klik `Domain List` di navigasi kiri; temukan `ahmedgad.com`; klik
+   `Manage`.
+3. Klik tab `Advanced DNS`.
+4. Klik `Add New Record`. Pilih:
+   - Type: `CNAME Record`
+   - Host: `apothem` (tanpa apex, tanpa titik akhir)
+   - Value: `ahmed-g-gad.github.io.` (dengan titik akhir)
+   - TTL: `Automatic` (default Namecheap; menghormati 1800 detik)
+5. Klik tanda centang hijau untuk menyimpan.
+6. Tunggu 5 hingga 10 menit untuk propagasi edge Namecheap; lalu kembali
+   ke inti yang tidak bergantung pada penyedia §2.4 untuk verifikasi `dig`.
+
+Kegagalan umum: UI Namecheap secara diam-diam menolak record CNAME ketika
+sebuah record `A` sudah menempati host yang sama. Hapus record `A` yang
+berkonflik terlebih dahulu; CNAME dan A pada host yang sama saling
+eksklusif menurut RFC 1034.
+
+## 4. Lampiran penyedia — Cloudflare
+
+Cloudflare DNS menghosting apex ketika NS record registrar menunjuk ke
+`*.ns.cloudflare.com` (default Cloudflare setelah delegasi). Verifikasi
+dengan `dig NS ahmedgad.com +short`.
+
+Langkah-langkah:
+
+1. Masuk ke Cloudflare; pilih zona `ahmedgad.com`.
+2. Klik `DNS` -> `Records` di navigasi kiri.
+3. Klik `Add record`. Pilih:
+   - Type: `CNAME`
+   - Name: `apothem` (Cloudflare menambahkan apex secara otomatis)
+   - Target: `ahmed-g-gad.github.io` (tanpa titik akhir di UI Cloudflare)
+   - TTL: `Auto` (default Cloudflare; merutekan melalui edge-nya)
+   - Proxy status: **DNS only** (awan abu-abu, bukan oranye)
+4. Klik `Save`.
+
+Pilihan proxy-status bersifat menentukan. Mengaktifkan proxy Cloudflare
+(awan oranye) merutekan lalu lintas melalui edge Cloudflare sebelum
+mencapai GitHub Pages; ini merusak penerbitan Let's Encrypt di Pages
+karena Cloudflare menyajikan sertifikatnya sendiri. Biarkan proxy mati
+untuk penyiapan awal; aktifkan proxy nanti hanya setelah memutuskan
+apakah akan mengelola sertifikat di edge Cloudflare.
+
+5. Tunggu 1 hingga 2 menit untuk propagasi edge Cloudflare; lalu kembali
+   ke inti yang tidak bergantung pada penyedia §2.4.
+
+Kegagalan umum: Cloudflare menghapus titik akhir dari target CNAME secara
+diam-diam. Field target menerima `ahmed-g-gad.github.io` tanpa titik
+akhir; resolver menambahkan titik akhir saat kueri. Jangan mengetik titik
+akhir di UI Cloudflare — ini menghasilkan record bertitik-ganda yang
+gagal ter-resolve.
+
+## 5. Lampiran penyedia — Route53
+
+Route53 menghosting zona ketika NS record registrar menunjuk ke empat
+server `awsdns-*.com` / `awsdns-*.org` / `awsdns-*.co.uk` / `awsdns-*.net`.
+Verifikasi dengan `dig NS ahmedgad.com +short`.
+
+Langkah-langkah:
+
+1. Buka AWS Console; navigasi ke Route53; klik `Hosted zones`; pilih zona
+   `ahmedgad.com`.
+2. Klik `Create record`.
+3. Konfigurasikan:
+   - Record name: `apothem` (Route53 menambahkan apex secara otomatis)
+   - Record type: `CNAME`
+   - Value: `ahmed-g-gad.github.io` (tanpa titik akhir)
+   - TTL: `300` (5 menit; default Route53 lebih tinggi; turunkan TTL untuk
+     propagasi lebih cepat saat cutover)
+   - Routing policy: `Simple routing`
+4. Klik `Create records`.
+5. Tunggu 1 hingga 5 menit untuk propagasi Route53; kembali ke §2.4.
+
+Route53 mendukung **alias record** yang ter-resolve saat kueri tanpa
+indireksi CNAME. Alias record tidak digunakan di sini karena target alias
+terbatas pada sumber daya AWS (CloudFront, S3, ELB, dll.) dan
+`ahmed-g-gad.github.io` bukan sumber daya AWS. CNAME sudah tepat.
+
+Kegagalan umum: UI Route53 menerima nama record duplikat dengan policy
+routing yang berbeda; ini muncul sebagai routing failover bergaya
+healthcheck alih-alih CNAME sederhana. Pastikan `Routing policy` membaca
+`Simple routing` sebelum menyimpan.
+
+## 6. Lampiran penyedia — DNS generik
+
+Untuk host DNS yang tidak tercakup oleh lampiran yang disebutkan namanya
+(panel DNS default sebagian besar registrar — GoDaddy, Hover, Gandi, OVH,
+Porkbun, Domains.google, Network Solutions), terapkan bentuk CNAME yang
+tidak bergantung pada penyedia:
+
+| Field | Nilai |
+|-------|-------|
+| Type  | `CNAME` |
+| Host  | `apothem` (hanya subdomain) |
+| Value | `ahmed-g-gad.github.io.` (titik akhir — sebagian besar panel generik menerimanya; beberapa mensyaratkannya) |
+| TTL   | `3600` (atau nilai terendah yang tersedia di panel saat cutover) |
+
+Dua kelas kegagalan yang berulang di panel generik:
+
+- **Inkonsistensi titik akhir.** Beberapa panel mensyaratkan titik akhir;
+  yang lain menolaknya; sebagian menerima keduanya. Ketika record gagal
+  terpropagasi setelah 30 menit, alihkan titik akhir dan simpan ulang.
+- **Record A yang berkonflik pada host yang sama.** CNAME dan A pada host
+  yang sama melanggar RFC 1034 (Domain Names — Concepts and Facilities)
+  bagian tiga tentang preferensi nama-domain. Hapus record A yang
+  berkonflik sebelum menambahkan CNAME.
+
+Setelah record disimpan, kembali ke §2.4 untuk verifikasi `dig`.
+
+## 7. Pemulihan kegagalan
+
+Prosedur pengaktifan Pages memiliki empat mode kegagalan yang
+terdokumentasi:
+
+| Kegagalan | Diagnostik | Pemulihan |
+|---|---|---|
+| `gh api .../pages` mengembalikan 404 | Pages tidak diaktifkan pada repo | `gh api -X POST /repos/ahmed-g-gad/apothem/pages -f source.branch=main -f source.path=/site` lalu ulangi §2.1 |
+| `dig` mengembalikan kosong setelah 30 menit | DNS record tidak ter-commit di penyedia | Kembali ke lampiran penyedia yang cocok; verifikasi record disimpan (bukan draf / pending); periksa panel untuk langkah `Save` yang terlewat |
+| `https_certificate.state: errored` | Pages tidak dapat menerbitkan sertifikat | Matikan dan nyalakan domain kustom di pengaturan Pages; ini memicu ulang penerbitan. Tunggu hingga 24 jam untuk percobaan baru |
+| 404 deep-link setelah build | Build situs statis tidak menyertakan halaman | `gh workflow run publish-static-site.yml`; saat selesai verifikasi `gh run list --workflow=publish-static-site.yml --limit=1 --json conclusion --jq '.[0].conclusion'` mengembalikan `success` |
+
+Jika pemulihan gagal setelah satu siklus diagnostik yang cocok,
+eskalasikan ke runbook pemulihan-rilis (force-push riwayat baru mungkin
+telah meninggalkan konfigurasi Pages dalam keadaan tidak konsisten).
+
+## 8. Referensi silang
+
+- **Sumber spesifikasi.** Spesifikasi §2.5 mencantumkan runbook ini dalam
+  deliverable dokumentasi Cluster 4.
+- **Lokasi kanonik CNAME.** Berkas CNAME berada di `site/public/CNAME` dan
+  ter-commit ke repositori; Pages membacanya pada setiap build.
+- **Alur pemulihan.** Runbook pemulihan-rilis menerapkan ulang
+  konfigurasi Pages dari snapshot pemulihan ketika urutan cutover gagal
+  di tengah jalan.
+- **Siklus rilis.** Setiap eksekusi rilis menyertakan job build Pages yang
+  memverifikasi situs ter-render di domain kustom.

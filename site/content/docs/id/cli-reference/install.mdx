@@ -1,0 +1,124 @@
+---
+title: "install"
+description: "Referensi CLI untuk perintah apothem install."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Memasang konfigurasi adapter asisten-pengkodean dari profil bersama.
+
+## Ringkasan
+
+```
+apothem install --harness NAME|all [--profile PATH] [--dry-run]
+                 [--project PATH]
+                 [--quiet|-q] [--verbose|-v]
+                 [--format plain|json] [--json] [--no-color]
+```
+
+Memuat dan memvalidasi profil bersama, memilih adapter bernama atau set `all` selingkup-registri, memvalidasi rencana materialisasi, dan menulis konfigurasi asli asisten-pengkodean beserta kohort pendukung. Adapter berlingkup-proyek memerlukan `--project PATH`.
+
+Alias bentuk-kontinu `apothem installing` di-resolve ke handler yang sama.
+
+## Pratinjau radius-dampak
+
+`install --harness all` mengembang ke lingkup campuran: adapter berlingkup-proyek menulis di bawah root `--project` yang disediakan, sedangkan adapter berlingkup-pengguna menulis di bawah direktori home Anda — di luar root tersebut. Sebelum berkas apa pun ditulis, perintah ini mencetak target konkret yang dikelompokkan di bawah dua judul: yang berada di dalam root proyek dan yang berada di bawah direktori home Anda.
+
+Ketika pilihan menulis di luar root proyek, sebuah konfirmasi interaktif menjaga penulisan yang berakar di home. `--yes`, shell non-interaktif (tanpa TTY), `--dry-run`, dan `--format json` masing-masing melanjutkan tanpa bertanya; `--dry-run` dan `--format json` tidak menulis apa pun. Menolak prompt akan membatalkan sebelum berkas apa pun ditulis.
+
+## Catatan kemampuan
+
+Setiap adapter hanya memproyeksikan kemampuan yang didukung secara asli oleh asisten-pengkodeannya; kemampuan tanpa permukaan asli dilaporkan, bukan dibuang secara diam-diam. Dalam mode plain ini berupa satu catatan terkelompok per asisten-pengkodean (misalnya `Note: <harness> - 9 capabilities not projected; pass --verbose for detail`); di bawah `--verbose` setiap kemampuan mencetak baris alasannya sendiri. Amplop `--format json` selalu membawa array `warnings` lengkap terlepas dari tingkat verbositas.
+
+## Opsi
+
+| Opsi | Deskripsi |
+|---|---|
+| `--harness NAME` | Adapter asisten-pengkodean yang akan dipasang, atau `all` untuk set selingkup-registri (wajib). Jalankan `apothem harnesses list` untuk nama-nama yang terdaftar. |
+| `--profile PATH` | Path ke YAML profil bersama. Default-nya `~/.config/apothem/profile.yaml`. |
+| `--dry-run` | Pratinjau pemasangan tanpa menulis berkas. |
+| `--project PATH` | Root proyek untuk asisten-pengkodean berlingkup-proyek. |
+| `--quiet`, `-q` | Menekan keluaran informatif; hanya error yang dikeluarkan. |
+| `--verbose`, `-v` | Mencetak alasan setiap kemampuan yang tidak diproyeksikan, bukan catatan terkelompok per asisten-pengkodean. |
+| `--format plain\|json` | Format keluaran (default: `plain`). |
+| `--json` | Singkatan dari `--format json`. |
+| `--no-color` | Menonaktifkan kode warna ANSI di keluaran. |
+| `-h`, `--help` | Menampilkan bantuan dan keluar. |
+
+## Keluaran JSON
+
+Ketika `--json` (atau `--format json`) diberikan, satu dokumen JSON ditulis ke stdout:
+
+```json
+{
+  "status": "success",
+  "command": "install",
+  "action": "installed",
+  "harness": "claude-code",
+  "profile_path": "C:\\Users\\Example\\.config\\apothem\\profile.yaml",
+  "project": null,
+  "files_written": ["C:\\Users\\Example\\.claude\\settings.json"],
+  "results": [],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+Untuk `--dry-run`:
+
+```json
+{
+  "status": "dry_run",
+  "command": "install",
+  "action": "dry_run",
+  "harness": "claude-code",
+  "files_written": [],
+  "results": [],
+  "warnings": [],
+  "error": null
+}
+```
+
+Error validasi yang diharapkan menggunakan amplop yang sama dan menyertakan objek error:
+
+```json
+{
+  "status": "error",
+  "command": "install",
+  "harness": "all",
+  "files_written": [],
+  "error": {
+    "code": "project.required",
+    "field": "project",
+    "reason": "project-scope harnesses require --project: cursor, gemini-cli, github-copilot, windsurf.",
+    "fix": "Pass --project PATH or select only user-scope harnesses."
+  }
+}
+```
+
+## Contoh
+
+```bash
+apothem install --harness claude-code
+apothem install --harness claude-code --dry-run
+apothem install --harness cursor --project . --profile ~/profile.yaml --json
+apothem install --harness all --project . --dry-run --json
+apothem Installing --harness claude-code   # continuous-form alias
+apothem installing --harness claude-code   # lowercase variant
+```
+
+## Kode keluar
+
+| Kode | Arti |
+|---|---|
+| 0 | Adapter berhasil dipasang atau dry-run direncanakan dengan bersih |
+| 1 | Error validasi, profil, asisten-pengkodean, proyek, atau adapter yang diharapkan |
+| 2 | Materialisasi batch sebagian setelah setidaknya satu penulisan |
+
+## Lihat juga
+
+- `apothem installing` — alias bentuk-kontinu untuk perintah ini (didokumentasikan di sini; CLI menerima kedua bentuk)
+- [apothem update](/docs/cli-reference/update) — menerapkan ulang profil saat ini ke sebuah asisten-pengkodean
+- [apothem verify](/docs/cli-reference/verify) — memastikan adapter aktif
+- [Memulai](/docs/install) — panduan pemasangan lengkap

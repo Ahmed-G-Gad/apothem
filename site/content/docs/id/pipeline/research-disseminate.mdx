@@ -1,0 +1,73 @@
+---
+title: "/research-disseminate"
+description: "/research-disseminate — Mendorong diseminasi dan dampak pascapenerimaan: pengumuman preprint, artefak publik, deposit arsip FAIR, pelacakan altmetrics, lup sanggahan / revisi pengulas, dan jalur tahap 2 laporan teregistrasi — tahap terminal alur /research, setelah /research-publish."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Peran:** Peneliti utama (diseminasi & dampak)
+**Posisi alur:** terminal
+
+Mendorong diseminasi dan dampak pascapenerimaan. Operator melakukan tindakan publik; tahap ini berhenti pada rencana diseminasi yang siap dan tidak pernah menerbitkan secara otomatis.
+
+## Pemanggilan kanonis
+
+```bash
+/research-disseminate
+```
+
+Dengan argumen:
+
+```bash
+/research-disseminate [--suite-name NAME] [--override] [--archive REPO] [--preprint SERVER]
+```
+
+## Masukan
+
+`_outputs/publication-record.md` milik suite (paket tempat publikasi + catatan pengiriman yang dihasilkan oleh `/research-publish`).
+
+## Keluaran
+
+`_outputs/dissemination-plan.md` (pengumuman preprint, rencana artefak publik, catatan deposit arsip FAIR, rencana altmetrics dan pelacakan dampak, lup sanggahan / revisi, dan jalur tahap 2 laporan teregistrasi).
+
+## Hilir
+
+Terminal — rencana diseminasi adalah artefak akhir alur. Lup sanggahan / revisi pengulas dapat masuk kembali ke `/research-paper` ketika revisi diperlukan.
+
+## Fase alur kerja
+
+Perintah ini mengikuti alur kerja standar alur `/research`:
+
+1. **Muat konteks** — Baca `_outputs/publication-record.md`, aturan-aturan, dan status suite yang ada.
+2. **Rencanakan preprint dan artefak publik** — Susun pengumuman preprint serta rencana presentasi / poster / blog.
+3. **Catat deposit arsip FAIR** — Rencanakan deposit data + kode ke repositori FAIR dengan pengidentifikasi persisten.
+4. **Siapkan pelacakan dampak** — Rencanakan altmetrics dan pelacakan dampak terhadap jalur dampak proposal.
+5. **Persiapkan lup sanggahan** — Susun sanggahan pengulas dan jalur tahap 2 laporan teregistrasi bila berlaku.
+6. **Verifikasi dan terbitkan** — Pastikan rencana dapat dijalankan; terbitkan `_outputs/dissemination-plan.md` plus manifes serah terima. Operator melakukan tindakan publik.
+
+## Landasan ketelitian
+
+Artefak publik membawa bahasa domain alami; ketika diseminasi mendahului de-anonimisasi, identitas penulis, institusi, dan sistem ditahan untuk tahap yang ditetapkan. Deposit FAIR adalah paket bukti-reproduksibilitas yang tahan-lama dan dapat-disitasi, diskalakan sesuai ambisi tempat-terbit, yang memungkinkan pihak independen mereproduksi studi.
+
+## Mode kegagalan
+
+| Gejala | Penyebab | Pemulihan |
+|---------|-------|----------|
+| Tidak ada catatan deposit FAIR | Langkah pengarsipan dilewati | Pilih repositori FAIR (`--archive`) dan catat rencana deposit dengan pengidentifikasi persisten |
+| Rencana mencoba menerbitkan otomatis | Batas tahap dilampaui | Berhenti pada rencana yang siap; operator melakukan setiap tindakan publik |
+| Catatan publikasi hilang | `/research-publish` belum dijalankan | Jalankan `/research-publish` lebih dulu untuk menghasilkan paket tempat publikasi |
+
+## Contoh
+
+```bash
+# Rencanakan diseminasi setelah penerimaan
+/research-disseminate --suite-name retrieval-latency
+
+# Tetapkan server preprint dan arsip FAIR
+/research-disseminate --preprint arXiv --archive Zenodo
+```
+
+## Referensi silang
+
+- [Ikhtisar alur](/docs/pipeline)
+- [Referensi perintah](/docs/reference/commands)

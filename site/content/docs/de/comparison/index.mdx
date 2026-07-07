@@ -1,0 +1,100 @@
+---
+title: "Vergleich"
+description: "Wie man Apothem gegenüber handgepflegter Harness-Konfiguration und anderen Konfigurationsansätzen bewertet, mit einer Funktionsmatrix und Seiten pro Harness."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem ist ein host-unabhängiger Harness-Konfigurationsmanager. Ein
+einziges gemeinsames Profil in `~/.config/apothem/profile.yaml` wird in siebzehn
+harness-native Konfigurationsflächen materialisiert. Dieser Abschnitt steckt den
+Rahmen ab, wie man Apothem gegenüber den Alternativen bewertet, die du bereits
+verwendest.
+
+## Wie Apothem im Vergleich abschneidet
+
+Andere Werkzeuge lösen angrenzende Ausschnitte dieses Problems. Dateibasierte
+Konfigurationsmanager wie **chezmoi** und **GNU Stow** legen Dateien ab oder
+vorlagen sie, übersetzen eine Quelle aber niemals in das *native*
+Konfigurationsschema jedes Harness. Werkzeugübergreifende
+Regel-Sync-CLIs wie **rulesync** erzeugen zwar werkzeugnative Dateien für viele
+Werkzeuge — mehr davon als die siebzehn von Apothem, und eine vergleichbar
+breite synchronisierte Einheit. Das Unterscheidungsmerkmal von Apothem ist die
+**Governance- und Lebenszyklus-Disziplin, die rund um die Synchronisierung
+ausgeliefert wird** — ein mechanisiertes Konformitätstor, deterministische
+Pipelines, eine Audit-Festung und ein reversibler, verifizierter Lebenszyklus.
+
+| Fähigkeit | Apothem | Dateibasierte Konfig.-Manager (chezmoi, Stow) | Werkzeugübergr. Regel-Sync (rulesync) | Werkzeugnative Konfig. |
+| ---------- | :-----: | :----------------------------------: | :-----------------------------: | :--------------------: |
+| Eine Quelle zu den nativen Schemata vieler Werkzeuge | Ja — siebzehn Harness-Adapter | Nein — Kopie / Symlink, keine Übersetzung | Ja | Nein — ein einziges Werkzeug |
+| Synchronisierte Einheit | Regeln, Fähigkeiten, Hooks, Slash-Befehle, MCP | beliebige Dateien | Regeln, Ignorier-Dateien, MCP, Befehle, Subagenten, Fähigkeiten, Hooks, Berechtigungen | — |
+| Governance-Korpus (Verhaltensregeln plus ein mechanisches Konformitätstor) | Ja — `python -m apothem.conformity.gate` | Nein | Nein | Nein |
+| Deterministische Planungs- und Rechercheflüsse | Ja — von `/plan-spec` bis `/plan-execute`, `/research` in dreizehn Stufen | Nein | Nein | Nein |
+| Audit-Festung, die erkennt und behebt | Ja — Durchlauf von elf Befehlen, `/fortress`-Reaudit-Schleife | Nein | Nein | Nein |
+| Lieferketten-gehärtete Versionen | Ja — SBOM, Sigstore, SLSA, Scorecard-Ziel | Nein | variiert | Nein |
+| Reversibler, verifizierter Lebenszyklus | Ja — Sicherung, `apothem verify --json`, Deinstallation ohne Waisen | variiert | variiert | — |
+
+Wo ein Mitbewerber stärker ist, wird er genannt: **rulesync** erreicht mehr
+Werkzeuge und trägt eine vergleichbar breite synchronisierte Einheit, und
+mehrere Sync-Werkzeuge materialisieren native Schemata. Apothem tauscht die
+reine Werkzeuganzahl gegen die Governance-, Audit- und Lebenszyklus-Disziplin,
+die rund um die Synchronisierung ausgeliefert wird — ein Konformitätstor,
+deterministische `/plan`- und `/research`-Pipelines, eine Audit-Festung mit elf
+Befehlen, dauerhaftes Gedächtnis und ein reversibler, verifizierter
+Lebenszyklus —, die ein Regel-Sync-Werkzeug nicht mitbringt.
+
+## Wie man vergleicht
+
+Vergleiche entlang dreier Achsen:
+
+1. **Quelle der Wahrheit.** Wo leben deine Regeln, delegierten Worker, Befehle und
+   Einstellungen? Apothem hält ein einziges gemeinsames Korpus und gibt daraus
+   das native Format jedes Harness wieder. Handgepflegte Konfiguration hält eine
+   Kopie pro Werkzeug.
+2. **Drift-Kosten.** Was passiert, wenn du eine Regel änderst? Apothem
+   propagiert die Änderung bei `apothem update` an jeden installierten Harness.
+   Handgepflegte Konfiguration verlangt, die native Datei jedes Werkzeugs
+   separat zu bearbeiten und sie aus dem Gedächtnis abgeglichen zu halten.
+3. **Verifizierung.** Woher weißt du, dass jeder Harness korrekt konfiguriert
+   ist? Apothem liefert `apothem verify --harness <name>` und `apothem doctor`.
+   Handgepflegte Konfiguration hat keine eingebaute Verifizierung.
+
+## Funktionsmatrix
+
+Die Matrix stellt Apothem den beiden Alternativen gegenüber, zu denen Operatoren
+zuerst greifen: die native Konfiguration jedes Harness von Hand zu pflegen und
+diese Dateien über einen universellen Dotfile-Manager zu verwalten.
+
+| Fähigkeit | Handgepflegte Konfig. | Dotfile-Manager | Apothem |
+| ---------- | ---------------------- | --------------- | ------- |
+| Eine einzige gemeinsame Quelle der Wahrheit | Nein (eine Kopie pro Werkzeug) | Nein (verfolgt Dateien, kein Profil) | Ja (ein Profil) |
+| Gibt harness-native Formate wieder | Manuell | Nein | Ja (Materialisierer pro Adapter) |
+| Drift-Prävention zwischen Harnesses | Manueller Abgleich | Nur Datei-Sync | Ja (`apothem update`) |
+| Installation/Deinstallation pro Harness | Manuell | Teilweise (Symlink/Kopie) | Ja (`install` / `uninstall`) |
+| Eingebaute Verifizierung | Keine | Keine | Ja (`verify` / `doctor`) |
+| Formatübersetzung pro Werkzeug | Keine | Keine | Ja (`.mdc`, `.toml`, eingebettetes `.md`) |
+| Siebzehn Harnesses aus einer einzigen Eingabe | Nein | Nein | Ja |
+
+## Vergleichsseiten
+
+- [Apothem gegenüber anderen Harness-Frameworks](/docs/comparison/vs-other-harness-frameworks)
+- [vs rohes antigravity](/docs/comparison/vs-raw-antigravity)
+- [vs rohes claude-code](/docs/comparison/vs-raw-claude-code)
+- [vs rohes codebuddy](/docs/comparison/vs-raw-codebuddy)
+- [vs rohes codex](/docs/comparison/vs-raw-codex)
+- [vs rohes cursor](/docs/comparison/vs-raw-cursor)
+- [vs rohes gemini-cli](/docs/comparison/vs-raw-gemini-cli)
+- [vs rohes github-copilot](/docs/comparison/vs-raw-github-copilot)
+- [vs rohes glm](/docs/comparison/vs-raw-glm)
+- [vs rohes hermes](/docs/comparison/vs-raw-hermes)
+- [vs rohes kimi-code](/docs/comparison/vs-raw-kimi-code)
+- [vs rohes kiro](/docs/comparison/vs-raw-kiro)
+- [vs rohes open-claw](/docs/comparison/vs-raw-open-claw)
+- [vs rohes opencode](/docs/comparison/vs-raw-opencode)
+- [vs rohes qwen-code](/docs/comparison/vs-raw-qwen-code)
+- [vs rohes trae](/docs/comparison/vs-raw-trae)
+- [vs rohes windsurf](/docs/comparison/vs-raw-windsurf)
+- [vs rohes zed](/docs/comparison/vs-raw-zed)
+
+Für die Detailansicht der Adapter pro Harness siehe den Abschnitt
+[Harness-Adapter](/docs/harnesses).

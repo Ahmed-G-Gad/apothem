@@ -1,0 +1,133 @@
+---
+title: "Apothem v1.0.1 — version de lancement"
+description: "Apothem v1.0.1 est disponible — un unique profil partagé matérialisé dans dix-sept environnements d'assistant d'IA, plusieurs chemins d'installation et une version signée et attestée."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem v1.0.1 est la version de lancement du gestionnaire de configuration
+agnostique à l'hôte pour les environnements d'assistant d'IA : un unique profil
+partagé, dix-sept environnements, une seule version signée et des preuves de
+chaîne d'approvisionnement attachées à la version elle-même.
+
+## La thèse : un profil, dix-sept environnements
+
+Apothem lit un unique profil partagé à `~/.config/apothem/profile.yaml` et le
+matérialise dans la configuration native qu'attend chaque environnement. Vous
+écrivez vos règles de comportement, vos skills, vos hooks et vos conventions une
+seule fois. Apothem les rend en dix-sept cibles natives d'environnement et les
+maintient synchronisées.
+
+Les dix-sept adaptateurs de cette version :
+
+- antigravity
+- claude-code
+- codebuddy
+- codex
+- cursor
+- gemini-cli
+- github-copilot
+- glm
+- hermes
+- kimi-code
+- kiro
+- open-claw
+- opencode
+- qwen-code
+- trae
+- windsurf
+- zed
+
+Ajoutez un outil à votre flux de travail, lancez une commande, et votre
+configuration est là. Retirez un outil, et Apothem le désinstalle proprement —
+sans laisser de fichiers orphelins.
+
+## Installation
+
+Plusieurs chemins d'installation, une seule CLI en dessous :
+
+1. **Plugin Claude Code** — à l'intérieur de Claude Code :
+
+   ```text
+   /plugin marketplace add ahmed-g-gad/apothem
+   /plugin install apothem@apothem
+   ```
+
+2. **npx** — lancez la CLI directement depuis le paquet npm
+   `@ahmed-g-gad/apothem`, sans étape d'installation :
+
+   ```bash
+   npx @ahmed-g-gad/apothem profile init
+   npx @ahmed-g-gad/apothem install --harness all --project .
+   ```
+
+3. **Installateur par script en une seule étape** — place un runtime autonome
+   et le lanceur `apothem` sur le PATH :
+
+   ```bash
+   curl -fsSL https://apothem.ahmedgad.com/install.sh | sh    # POSIX
+   ```
+
+   ```powershell
+   irm https://apothem.ahmedgad.com/install.ps1 | iex         # Windows
+   ```
+
+4. **Plugins et extensions natifs des outils** — une extension Gemini CLI
+   (`gemini extensions install https://github.com/ahmed-g-gad/apothem`), une
+   extension Qwen Code (`qwen extensions install ahmed-g-gad/apothem`), un
+   plugin Codex (`codex plugin marketplace add ahmed-g-gad/apothem`) et une
+   extension de la famille VS Code (Visual Studio Marketplace,
+   couvrant VS Code et GitHub Copilot).
+
+## Posture de chaîne d'approvisionnement
+
+La [GitHub Release v1.0.1](https://github.com/ahmed-g-gad/apothem/releases/tag/v1.0.1)
+porte l'ensemble complet des preuves aux côtés du code :
+
+- sdist et wheel, vérifiés avant la publication.
+- Un SBOM CycloneDX.
+- Des bundles de signature sans clé Sigstore cosign pour chaque artefact.
+- Une provenance de build SLSA-3, vérifiée à l'intérieur du flux de travail de
+  la version lui-même.
+- Des archives de runtime par plateforme (darwin / linux / windows) avec un
+  manifeste `SHA256SUMS` signé.
+
+L'étiquette de version est signée GPG, et le paquet npm est publié via Trusted
+Publishing (OIDC) avec provenance automatique.
+
+## Ce qu'il y a dans la boîte
+
+La CLI `apothem` expose les commandes d'opérateur dont vous avez besoin pour le
+cycle de vie complet de la configuration :
+
+- `apothem install` — matérialise le profil dans un environnement ou dans tous.
+- `apothem uninstall` — supprime la configuration matérialisée d'un
+  environnement, en laissant le profil partagé intact.
+- `apothem update` — re-matérialise après que vous avez modifié le profil.
+- `apothem verify` — détecte la dérive entre le profil et la configuration sur
+  disque d'un environnement.
+- `apothem harnesses` — liste chaque adaptateur enregistré.
+- `apothem profile` — inspecte et gère le profil partagé.
+- `apothem doctor` — diagnostique les problèmes d'environnement et de
+  configuration.
+
+Chaque adaptateur d'environnement implémente un protocole `HarnessAdapter`
+uniforme — `install`, `uninstall`, `is_installed`, `verify` — afin que chaque
+environnement se comporte de manière prévisible depuis le siège de l'opérateur,
+quel que soit le format d'éditeur en dessous. Pour en savoir plus sur la
+conception, lisez
+[la plongée technique dans l'architecture de l'adaptateur](/docs/blog/posts/multi-harness-adapter-design)
+et sur la réconciliation des formats
+[la convergence des conventions entre environnements](/docs/blog/posts/cross-harness-convention-convergence).
+
+## Où aller ensuite
+
+- [Démarrage rapide](/docs/install/quickstart) — installez et matérialisez
+  votre premier profil.
+- [Environnements](/docs/harnesses) — référence par adaptateur pour les dix-sept
+  cibles.
+- [Concepts](/docs/concepts) — le modèle de profil et le pipeline de
+  matérialisation.
+
+Apothem est sous licence MIT et développé au grand jour sur
+[github.com/ahmed-g-gad/apothem](https://github.com/ahmed-g-gad/apothem).

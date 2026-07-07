@@ -1,0 +1,60 @@
+---
+title: "事前発行ゲート登録簿 — 必須十五項検査"
+description: "意味のあるスコープの発行前に実行される必須十五項コンフォーマンス検査。失敗時アクションのマッピングとリリース証明スキーマを伴う。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **十五項事前発行ゲートの正規登録簿。** この文書は完全な十五項ゲート表とリリース証明スキーマの YAML ブロックを担います。実質的な表とスキーマはここに置かれ、`src/apothem/rules/pre-emission-gate.md` によって操作可能にされます。
+
+意味のあるスコープの成果物発行の前に（`site/content/docs/governance/outward-conformity-registry.mdx` §1 のトリビアル対非トリビアル閾値に従い）、十五項の事前発行ゲートを実行してください。可能な箇所では PreToolUse フックで機械化し（`src/apothem/conformity/gate.py` が編成する `src/apothem/conformity/*-grep.py` の機械的 grep）、機械化が不可能な箇所では推論します。**いずれか一項の失敗が発行をブロックします。各項が通過するまで修正し、ゲートのリリース証明を記録して発行してください。**
+
+| # | 項 | 検査種別 | 失敗 → アクション |
+| - | --- | ---------- | ---------------- |
+| 1 | M1 ホスト非依存 | 推論 | ホスト規約に合わせて修正 |
+| 2 | M2 編集的開示 | 推論 | 開示台帳を追加 |
+| 3 | M3 十次元 | 混合（機械的 + 推論） | 失敗した次元で修正 |
+| 4 | M4 自己適用 | 機械的（リリース証明が存在） | リリース証明を記録 |
+| 5 | M5 権威 | 機械的（`<USER-CONFIRM:…>` プレースホルダー grep） | 照会表面へ再ルーティング |
+| 6 | M6 専門性 | 推論（表面化した欠落の節が存在） | 欠落を表面化；引用 |
+| 7 | M7 選択肢注釈 | 機械的（選択肢集合が推奨マーカーを伴う） | 注釈を付与 |
+| 8 | M8 確定性 | 機械的（曖昧語彙 grep） | 曖昧表現を条件式へ昇格 |
+| 9 | M9 視覚的レバレッジ | 推論（構造的な箇所に図示が存在） | 図示を作成／更新 |
+| 10 | M10 双方向バインディング | 機械的（バインディング相互性 grep） | 半辺を閉じる |
+| 11 | M11 アジャイルスプリント | 推論（スプリント装置がインスタンス化済み） | スプリントとして再構成 |
+| 12 | M12 フェーズ報告とレイアウト | 機械的（孤児出力 grep）+ 推論 | ロールアップを作成；再配置 |
+| 13 | M13 コードクラフト | 機械的（リント／フォーマット／型チェック；bare-except、マジックナンバー、コメントアウトコードの grep） | 修正 |
+| 14 | M14 システム性 | 推論（上流／下流／同位／執行者を宣言） | 宣言；索引化 |
+| 15 | M15 本番対応 | 機械的（production-ready-pr grep）+ 推論 | テスト／ドキュメント／CHANGELOG を追加 |
+
+## 1. リリース証明スキーマ
+
+各ゲート実行は、成果物の作業トレース（隠しコメント、メタデータブロック、独立した発行ログファイル——ホストの規約が許す形式）に結果を記録します：
+
+```yaml
+conformity-attestation:
+  artifact: <path-or-identifier>
+  ecosystem-version: <git-commit-sha-or-equivalent ratifying the rule set in force>
+  bars:
+    M1-host-agnosticism:        pass | n/a (with reason)
+    M2-editorial-disclosure:    pass | n/a
+    M3-ten-dimensions:          pass | n/a
+    M4-self-application:        pass
+    M5-authority:               pass
+    M6-expertise:               pass | n/a
+    M7-option-annotation:       pass | n/a (no option set)
+    M8-definitiveness:          pass
+    M9-visual-leverage:         pass | n/a (subject not structural)
+    M10-bidirectional-binding:  pass
+    M11-agile-sprints:          pass | n/a (trivial work)
+    M12-phase-layout:           pass | n/a
+    M13-code-craft:             pass | n/a (not code)
+    M14-systemicity:            pass
+    M15-production-ready:       pass | n/a (no host-public-surface change)
+  surfaced-gaps: []
+  unresolved-inquiries: []
+  amendments-disclosed: []
+  date: <ISO-8601>
+```
+
+`n/a` のマーク付けは明示的かつ推論されたものであり——決して暗黙の省略ではありません。`ecosystem-version` フィールドは、リリース証明をユーザースコープのエコシステムの再現可能な状態（ゲート実行時にアクティブだった Apothem ソースツリーの git コミット——例えば Claude Code アダプターの `~/.claude/` チェックアウト）にアンカーし、将来の監査が同一のルール本文に対してゲートを再生できるようにします。

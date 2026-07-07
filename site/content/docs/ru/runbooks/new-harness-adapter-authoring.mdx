@@ -1,0 +1,65 @@
+---
+title: "Создание нового адаптера среды"
+description: "Руководство по созданию и публикации нового адаптера среды Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Используйте это руководство при создании нового адаптера среды для встроенного
+включения в Apothem или как стороннего пакета.
+
+## Предварительные требования
+
+- Знакомство с [протоколом HarnessAdapter](/docs/architecture/harness-adapter-abstraction)
+- Понимание формата конфигурации целевой среды
+- Python 3.10+
+
+## Шаги
+
+### 1. Реализуйте адаптер
+
+Следуйте примеру [Создание адаптера среды](/docs/examples/authoring-a-harness-adapter),
+чтобы реализовать `HarnessAdapter` для целевой среды.
+
+### 2. Напишите страницу документации
+
+Создайте `site/content/docs/harnesses/<slug>.mdx`, охватывающую:
+
+- Процесс установки
+- Сопоставление профиля с нативной конфигурацией
+- Оговорки о совместимости
+- Рецепты проверки
+- Рецепты обновления и удаления
+- Поверхность шлюза соответствия
+- Таблицу устранения неполадок
+- Таблицу параметров конфигурации
+
+### 3. Напишите тесты
+
+```bash
+tests/packaging/test_<slug>_adapter.py
+tests/unit/test_<slug>_adapter.py
+```
+
+Минимальное покрытие тестами:
+- `test_install_creates_expected_files`
+- `test_verify_passes_after_install`
+- `test_uninstall_removes_files`
+
+### 4. Проверьте локально
+
+```bash
+apothem install --harness <slug>
+apothem verify --harness <slug>
+python -m apothem.conformity.gate --all .
+```
+
+### 5. Отправьте запрос на включение изменений
+
+Откройте PR с:
+
+- реализацией адаптера
+- страницей документации по адресу `site/content/docs/harnesses/<slug>.mdx`
+- тестами
+- регистрацией точки входа в `pyproject.toml`
+- записью в журнале изменений

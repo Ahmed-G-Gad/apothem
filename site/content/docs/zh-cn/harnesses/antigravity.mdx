@@ -1,0 +1,96 @@
+---
+title: "Antigravity"
+description: "适用于 Antigravity（预览版）的 Apothem 工具适配器。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**厂商：** Antigravity
+**安装名称：** `antigravity`
+**状态：** 预览版
+**平台原生配置：** `~/.gemini/GEMINI.md` 以及
+`~/.gemini/antigravity-cli/plugins/apothem/`
+
+## 安装
+
+```bash
+apothem install --harness antigravity
+```
+
+该适配器将共享配置档案渲染为 `~/.gemini/GEMINI.md`，并将
+Apothem 支持套组作为 Antigravity CLI 插件安装。
+
+**写入的文件：** `~/.gemini/GEMINI.md`、
+`~/.gemini/antigravity-cli/plugins/apothem/plugin.json`、
+`~/.gemini/antigravity-cli/plugins/apothem/skills/`、
+`~/.gemini/antigravity-cli/plugins/apothem/rules/`、
+插件内已转换的本地辅助工具定义、
+`~/.gemini/antigravity-cli/plugins/apothem/apothem/templates/`，以及
+`~/.gemini/antigravity-cli/plugins/apothem/apothem/hooks/`。
+
+**共享的用户锚点。** `~/.gemini/GEMINI.md` 同时也是 Gemini 系列工具的用户级锚点。
+Antigravity 适配器将其额外的 Apothem 材料保留在 `~/.gemini/antigravity-cli/plugins/`
+下的 `apothem` 插件中，因此不会占用通用的 Gemini CLI 项目目录。
+
+## 配置档案到平台原生配置的映射
+
+在每次 `apothem install` 或 `apothem update` 时，适配器都会读取 Apothem
+的共享配置档案，并渲染指令锚点以及支持套组。
+
+## 兼容性说明
+
+预览版适配器。`GEMINI.md` 锚点是活动的指令内容；Antigravity 插件
+在一个清晰的、由 Apothem 所有的命名空间中，保留已转换的命令技能、可复用技能、
+本地辅助工具定义、规则、模板和钩子支持材料。
+在适配器拥有针对 Antigravity `hooks.json` 的模式转换层之前，钩子文件
+不会被注册为活动的 Antigravity 钩子事件。
+
+## 验证
+
+```bash
+apothem verify --harness antigravity
+```
+
+verify 命令确认：
+
+1. 平台原生上下文文件存在于预期路径。
+2. Apothem Antigravity CLI 插件元数据存在并声明了
+   `apothem` 插件名称。
+
+## 更新
+
+```bash
+apothem update --harness antigravity
+```
+
+从当前的共享配置档案状态重新派生平台原生配置。在编辑
+`~/.config/apothem/profile.yaml` 之后或升级已安装的 Apothem 包之后运行。
+
+## 卸载
+
+```bash
+apothem uninstall --harness antigravity
+```
+
+移除适配器写入的平台原生配置文件。
+共享配置档案 YAML 和 Apothem 引擎不受影响。
+
+## 合规门
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## 故障排查
+
+| 症状 | 修复方法 |
+|---------|-----|
+| 找不到配置文件 | 重新运行 `apothem install --harness antigravity` |
+| 验证失败 | 运行 `apothem update --harness antigravity`，然后再次验证 |
+| 意外的配置内容 | 检查 `~/.config/apothem/profile.yaml` 或 `--profile PATH`，然后重新运行 `apothem update --harness antigravity` |
+
+## 配置开关
+
+| 标志 | 默认值 | 说明 |
+|------|---------|-------------|
+| `--dry-run` | `false` | 预览安装而不写入文件。 |

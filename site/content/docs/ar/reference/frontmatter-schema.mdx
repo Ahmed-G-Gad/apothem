@@ -1,0 +1,42 @@
+---
+title: "مخطّط الفرونت-ماتر (Frontmatter Schema)"
+description: "دليل مرجعي لبنية كتلة الفرونت-ماتر YAML، والمفاتيح المطلوبة لكل صنف، وقواعد إنفاذ المُدقِّق عبر أصناف الأدوات."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **مرجع كنسي للفرونت-ماتر <bdi>YAML</bdi> على كل صنف من أصناف الأدوات.** الملخّص في [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) §٤ الاصطلاحات هو الإعلان المضمَّن؛ ومخطّطات <bdi>JSON Schema</bdi> لكل صنف في [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) هي العقد المقروء آليًّا؛ وهذه الصفحة هي المرجع المستقلّ الذي يستشهد به المساهمون اللاحقون.
+
+---
+
+## ١. بنية كتلة الفرونت-ماتر
+
+تحمل كل أداة فرونت-ماتر <bdi>YAML</bdi> في رأسها، مُحدَّدًا بأسطر <bdi>`---`</bdi>. ويقع شعار رأس النسبة الكنسي بحسب [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) فوق الفرونت-ماتر في ملفّات عائلة <bdi>Markdown</bdi>؛ ويتبعه الفرونت-ماتر مباشرةً.
+
+تستخدم المفاتيح <bdi>`kebab-case`</bdi>. والقيم القياسية إمّا عارية وإمّا بين علامتَي اقتباس مزدوجتين؛ أمّا القيم النصّية التي تحتوي على نقطتين رأسيّتين أو علامات تجزئة أو غيرها من المحارف ذات الدلالة في <bdi>YAML</bdi> فتُحاط بعلامات اقتباس.
+
+## ٢. الحقول المطلوبة لكل صنف
+
+تتفاوت مجموعة المفاتيح المطلوبة بحسب صنف الأداة. وتُنفَّذ البنية المُعتمَدة بواسطة <bdi>`scripts/dev/validate_ecosystem.py`</bdi> ومخطّطات <bdi>JSON Schema</bdi> لكل صنف تحت الدليل <bdi>`schemas/`</bdi> (ملفّ مخطّط واحد لكل صنف أداة).
+
+```text
+schemas/agent.schema.json
+schemas/skill.schema.json
+schemas/command.schema.json
+schemas/output-style.schema.json
+schemas/plan.schema.json
+```
+
+| الصنف | المفاتيح المطلوبة |
+|-------|---------------|
+| <bdi>`CLAUDE.md`</bdi> (إعداد الجذر) | <bdi>`name`</bdi>، <bdi>`version`</bdi>، <bdi>`updated`</bdi>، <bdi>`description`</bdi>، <bdi>`scope`</bdi>، <bdi>`portability`</bdi> |
+| القواعد (<bdi>`src/apothem/rules/*.md`</bdi>) | <bdi>`name`</bdi>، <bdi>`description`</bdi>، <bdi>`pathFilter`</bdi>، <bdi>`alwaysApply`</bdi> |
+| الأوامر (<bdi>`src/apothem/commands/*.md`</bdi>) | <bdi>`name`</bdi>، <bdi>`version`</bdi>، <bdi>`updated`</bdi>، <bdi>`description`</bdi>، <bdi>`argument-hint`</bdi>، <bdi>`disable-model-invocation`</bdi> |
+| المساعِدون (الدليل الكنسي المعروض أدناه) | <bdi>`name`</bdi>، <bdi>`version`</bdi>، <bdi>`updated`</bdi>، <bdi>`description`</bdi>، <bdi>`tools`</bdi>، <bdi>`disallowedTools`</bdi>، <bdi>`maxTurns`</bdi>، <bdi>`effort`</bdi> |
+| المهارات (<bdi>`src/apothem/skills/*/SKILL.md`</bdi>) | <bdi>`name`</bdi>، <bdi>`description`</bdi>، <bdi>`archetype`</bdi>، <bdi>`userInvocable`</bdi> |
+
+تحمل المخطّطات لكل صنف في [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) مجموعة القيود الكاملة، بما في ذلك قيود النوع والتنسيق و<bdi>enum</bdi> والنمط.
+
+## ٣. المُدقِّقات
+
+يجتاز <bdi>`scripts/dev/validate_ecosystem.py`</bdi> شجرة الأدوات، ويطبّق مجموعات المفاتيح المطلوبة أعلاه، ويُبلِّغ <bdi>`[FAIL]`</bdi> عن أي أداة ينقصها حقل مطلوب. ويُنفِّذ <bdi>`frontmatter-grep`</bdi> العامل عند كل كتابة في <bdi>`src/apothem/conformity/frontmatter_grep.py`</bdi> البنية نفسها عند حدود خطّاف <bdi>PreToolUse Write/Edit</bdi>.

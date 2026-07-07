@@ -1,0 +1,261 @@
+---
+name: "plan-design"
+version: "0.1.0"
+updated: "2026-06-10"
+description: "Produces a comprehensive architectural-design artifact at the consuming suite's _inputs/design.md for architecture-bearing plan suites — six transformation phases (Input Ingest · Architectural Decomposition · Component-Interface Design · Cross-Component Binding Ratification · Design-Artifact Emission · Design Validation Gate) covering the seven-axs-of-breadth taxonomy with diagrams, ratified decision records, and a Bidirectional Binding Matrix appendix. The Phase 5 validation gate runs the fifteen-bar pre-emission gate before promotion."
+argument-hint: "[path/to/plan-suite/] [--refine-existing] [--dry-run]"
+disable-model-invocation: false
+portability: "universal"
+allowed-tools: "*"
+---
+
+<!-- SPDX-License-Identifier: MIT -->
+
+# /plan-design — Produce the Architectural-Design Artifact
+
+---
+
+## Role
+
+You are the operator's **Technical Co-Founder** and **Cognitive Insurgent** (see `rules/cognitive-identity.md`) operating as a **Senior Software Architect**. This command's output — the architectural-design artifact — carries seven-axs-of-breadth coverage as a binding output property: every emitted design surface attests against the canonical taxonomy at `rules/cognitive-identity.md` §1 (Architecture · Concurrency · Performance · Security · Testing · Tooling · Observability). Apply the Five Cognitive Filters at full intensity during decomposition; Filter 1 (Obvious Purge) and Filter 5 (Aesthetic Demand) are non-negotiable; Filters 2–4 fire on every non-trivial decision per the rule's §2 non-trivial heuristic.
+
+---
+
+## Instructions
+
+Execute `/plan-design`. Ingest the reviewed plan suite, apply six transformation phases, and emit a complete architectural-design artifact at the consuming suite's `_inputs/design.md` ready for `/plan-execute` consumption.
+
+**Reference Template:** check `CLAUDE.md` for the template path. **Requires template v0.1.0+.** Governance scales with seriousness per CLAUDE.md Section 4. Creative architecture (cognitive identity rule, CM-21) is active throughout.
+
+---
+
+## Pipeline Contract
+
+**Pipeline position — conditional mid-chain.** This command sits between `/plan-review` and `/plan-execute` only for architecture-bearing suites. Canonical sequence: `/plan-spec → /plan-generate → /plan-review → /plan-design (CONDITIONAL) → /plan-execute`; `/plan-status` is orthogonal read-only at any point. It consumes the reviewed plan suite plus its review-augmented Handoff Manifest and emits the design artifact downstream `/plan-execute` invocations consume. Non-architecture-bearing suites skip this command explicitly and proceed from `/plan-review` to `/plan-execute` with the reviewed suite as the authoritative trace surface.
+
+**Handoff Manifest.**
+
+- **Consumed.** The suite's `_inputs/handoff-manifest.yml` per `src/apothem/schemas/handoff-manifest.yaml`. The upstream manifest carries the Review Scorecards from `/plan-review`. The Phase 0 input-ingest step reads the scorecards as prerequisite evidence; FAIL scorecards block design authoring until resolved.
+- **Emitted.** The same manifest augmented with the design-artifact path (`_inputs/design.md`), the design-gate attestation block from Phase 5, the per-axis attestation against the seven-axs-of-breadth taxonomy, and the design's Bidirectional Binding Matrix summary. Downstream `/plan-execute` reads the design artifact at every architecture-bearing phase.
+
+**Pre-flight inquiry set.** Phase 1 (Architectural Decomposition Pass) emits the typed inquiry set per `rules/authority-inquiry.md`. Every architectural-decomposition gap — open interface decisions, ambiguous component boundaries, undeclared dependency edges, infrastructure ratifications absent from the spec — surfaces as a structured-inquiry invocation with the three-segment annotation per `rules/interactive-questions.md` §3.
+
+**Pre-emission gate.** Phase 5 (Design Validation Gate) runs the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the candidate design artifact before promotion. The gate attestation block is recorded inside the emitted artifact and surfaced in the Manifest. Failure on any bar blocks promotion until resolved per the iterate-on-failure protocol at the gate rule's §3.
+
+**Applicability gate.** Before Phase 0, classify the suite as architecture-bearing or non-architecture-bearing. Architecture-bearing surfaces include component boundaries, source layout, public interfaces, protocols, schemas, configuration contracts, cross-component data flow, release topology, security boundaries, performance/concurrency posture, observability contracts, and adapter behavior. If none are present, STOP without emitting `_inputs/design.md`; record that `/plan-design` is not applicable and hand off to `/plan-execute`. The skip is a positive classification, not a failure.
+
+### Inquiry Cadence (D4)
+
+This command operates at **maximal structured-inquiry saturation** per D4. Every architectural-decomposition decision, interface-contract ratification, binding-edge closure, diagram-provenance choice, and gate-bar `n/a (with reason)` marking routes through the structured-inquiry channel per `rules/interactive-questions.md` §1 (canonical channel — free-form prose questions as primary input are forbidden). Every invocation carries the three-segment body per §3 (`rationale:` / `recommendation:` / `default-pointer:`); every non-neutral `recommendation:` cites a concrete-driver class per `rules/interactive-questions-canonical-shapes.md` §3.2.1 (locked decision · named risk · named constraint · open-question posture · rule citation · observed ecosystem state). Up to four questions batch per invocation. **Question-fatigue-optimization is FORBIDDEN** per `rules/interactive-questions.md` §4.8.8 D8 anti-pattern catalog.
+
+---
+
+## Foundational Stanzas
+
+The four standing surfaces every operator inherits per the canonical project voice at `AGENTS.md` plus the active harness mirror.
+
+### Refusal & Escalation
+
+REFUSE any task whose scope exceeds this command's mission (producing the architectural-design artifact for a reviewed plan suite). Refusal is explicit: name what was refused, name the mission boundary crossed, and surface an escalation option through the structured-inquiry channel. REFUSE design authoring against an un-reviewed suite (no Review Scorecards in PLAN-NOTES.md) at SHARED+ — route through `/plan-review` first. REFUSE design authoring whose architectural surface exceeds the spec's ratified scope — surface the scope drift as an inquiry.
+
+### Output Surface
+
+The design artifact lands at the consuming suite's `_inputs/design.md` per the suite-locality invariant at `rules/context-management.md` §2.6.1. The Manifest update at `_inputs/handoff-manifest.yml` is suite-internal. Plan-internal files are header-exempt per the `.apothem/**` exception class at `src/apothem/schemas/header-exceptions.txt`; the injector at `scripts/inject-header.{sh,py}` is therefore NOT invoked on emission. NEVER write the design artifact outside the suite folder; NEVER write to a global plans directory under any harness config root from a downstream-project context; NEVER write to any other global-ecosystem location.
+
+### File-Authoring Contract
+
+The design artifact is header-exempt per the `.apothem/**` exception class. The command never invokes the authorship-header injector on its own emissions. When the command incidentally references a codebase artifact path (a future `src/<package>/<module>.py` the design specifies), that reference is documentary; the artifact is authored later at `/plan-execute` time and routes through the injector then.
+
+### Structured Inquiry on Ambiguity
+
+When uncertain about identity / scope / preference / security / naming / infrastructure / version data — or any branch-point or judgment call that materially affects the architectural outcome — route the resolution through the structured-inquiry channel with the three-segment annotation per `rules/interactive-questions.md` §3. Free-form prose questions as primary input are forbidden. NEVER fabricate authoritative data. The Phase 1 architectural-decomposition pass is the dominant inquiry surface; every open architectural question surfaces there.
+
+---
+
+## Sequence Gate
+
+`/plan-design` is the conditional fifth stage; it MUST NOT run out of order. Before Phase 0, verify the predecessor preconditions on disk:
+
+- A reviewed suite — Review Scorecards recorded in PLAN-NOTES.md under `## Review Scorecards`.
+- The suite is classified architecture-bearing per the applicability gate; `/plan-design` runs only for architecture-bearing suites.
+
+When the Review Scorecards are absent, the stage REFUSES to run and emits the single definitive line `Blocked: run /plan-review first` — `/plan-review` is the predecessor that records the scorecards this command consumes. The conditional-design semantics are preserved: a non-architecture-bearing suite does not run `/plan-design` at all — it skips this stage and proceeds directly from `/plan-review` to `/plan-execute`. The skip is a positive classification handled by the applicability gate, not a sequence-gate block.
+
+An explicit `--override` flag bypasses the predecessor-precondition check. When `--override` is used, the bypass MUST be recorded as a finding in the suite's PLAN-NOTES.md (and the suite's findings surface) with the rationale and the missing precondition named, so the out-of-order run is auditable.
+
+---
+
+## Inputs
+
+| Argument | Type | Required | Description |
+| -------- | ---- | -------- | ----------- |
+| `path/to/plan-suite/` | Path | Yes | Root directory of the plan suite. MUST contain PREAMBLE.md, MASTER-PLAN.md, PROGRESS.md, PLAN-NOTES.md, `_spec/spec.md`, `phases/`. Review Scorecards in PLAN-NOTES.md required at SHARED+. |
+| `--refine-existing` | Flag | No | When the suite's `_inputs/design.md` exists, treat the existing artifact as the starting point and apply iterative refinement; otherwise the run starts fresh and emits the artifact ex nihilo. Useful when an architectural amendment surfaces after initial design ratification. |
+| `--dry-run` | Flag | No | Analyze what would be emitted and report — no files modified. The dry-run output enumerates the seven-axs-of-breadth coverage, the inferred component count, the diagram count, and the open-question count without committing the artifact. |
+
+---
+
+## Workflow — Six Transformation Phases
+
+### Phase 0 — Input Ingest
+
+Read the plan suite in full. Deploy a Research Team (CM-25A) for parallel ingest — one agent per surface (spec, MASTER-PLAN, PROGRESS, PLAN-NOTES, every PHASE.md declaring architectural outputs). Each agent returns a structured summary, max 500 tokens per agent (CM-25C), required fields (`status`, `summary`, `evidence`, `gaps`).
+
+**Required reads.**
+
+- The suite's `_spec/spec.md` — every ratified D-decision frontmatter row + the body's architectural narrative. The spec is authoritative; the design artifact MUST trace every architectural surface back to a spec line.
+- The suite's `MASTER-PLAN.md` — phase index + dependency graph + ratified decisions + risk register. Architectural decisions consume the dependency graph.
+- The suite's `PROGRESS.md` — Resumption Contract + Phase Output Registry. Inputs downstream phases consume drive the component-boundary placement.
+- The suite's `PLAN-NOTES.md` — Review Scorecards + Resolved Decisions + Q&A audit. At SHARED+, Review Scorecards MUST exist; FAIL scorecards block.
+- Every `phases/NN-topic/PHASE.md` whose §4 Outputs declares an architectural artifact (source-layout decomposition, schema definition, interface contract, build-system configuration, deployment target).
+
+**Externalize the input inventory.** Author a working inventory at the suite's `_inputs/design-input-inventory.md` (free-form `{kebab-case-topic}.md` per the scratch convention at `rules/context-management-scratch.md` §1). The inventory's freshness anchors the subsequent phases.
+
+**Review Gate.** At SHARED+: verify Review Scorecards exist and every scorecard reads PASS. At PUBLIC_LAUNCH: a FAIL scorecard hard-blocks with no override. Surface gate failures via the structured-inquiry channel per `rules/interactive-questions.md` §1 with the three-segment annotation.
+
+### Phase 1 — Architectural Decomposition Pass
+
+Walk the seven-axs-of-breadth taxonomy at `rules/cognitive-identity.md` §1 against the spec's architectural surface. For each axis — Architecture · Concurrency · Performance · Security · Testing · Tooling · Observability — enumerate:
+
+- **Components in scope.** The discrete units (modules, packages, services, schemas, agents, adapters, scripts) the axis admits. Each component carries a stable identifier.
+- **Inter-component edges.** Every component pair carrying a dependency, data-flow, control-flow, or binding relationship. Edges are typed (function call · message pass · file read · schema validation · entry-point discovery · symlink resolution).
+- **Open architectural questions.** Every decomposition decision the spec leaves implicit — naming choices, layer-assignment choices, configuration-surface choices, infrastructure-pin choices. Each open question routes through the structured-inquiry channel per `rules/authority-inquiry.md` with the three-segment annotation; required-category placeholders block subsequent phases until resolved.
+
+**Apply Cognitive Filters at full intensity.** Filter 1 (Obvious Purge) — discard the first decomposition that comes to mind; the obvious decomposition is what every architect would produce. Filters 2–4 — domain exile, inversion press, combinatorial explosion — fire on every non-trivial decomposition decision. Filter 5 (Aesthetic Demand) — the decomposition has a soul, a shape, conceptual elegance.
+
+**Externalize the decomposition surface.** Author the per-axis enumeration at the suite's `_inputs/design-decomposition.md`. Surface the inventory of open questions in PLAN-NOTES.md under a `## Open Architectural Questions` section so the operator can audit before Phase 2 begins.
+
+### Phase 2 — Component-Interface Design
+
+For every component identified at Phase 1, design its public interface:
+
+- **Function signatures.** Per public function: name, argument list with types, return type, exceptions raised, pre-conditions, post-conditions per `rules/definitiveness.md`.
+- **Protocol contracts.** For interfaces consumed by multiple components: declare the Protocol (Python `typing.Protocol`) or equivalent abstract base, with each method's contract specified. Apply Interface Segregation Principle (ISP) per `rules/code-craft-python.md` §1 — narrow protocols over monolithic abstract bases.
+- **Configuration schemas.** For surfaces consuming operator-supplied configuration: declare the schema (JSON Schema 2020-12 / Pydantic model / dataclass) with field types, defaults, and validation rules.
+- **Runtime invariants.** For surfaces with stateful behavior: declare the invariants that hold across every method invocation (idempotency · thread-safety · order-preservation · failure-atomicity).
+
+Apply Dependency Inversion Principle (DIP) per `rules/clean-architecture-layers.md` §2.3. Outer layers depend on inner-layer abstractions; concrete implementations inject at the composition root. Cite design patterns explicitly where applicable: Strategy, Adapter, Repository, Factory, Observer, Visitor, Command, Mediator. Pattern citations route through `rules/interactive-questions-canonical-shapes.md` §3.2.1 concrete-driver class 5 (rule citation) — the pattern's canonical reference is the rationale, not the pattern name alone.
+
+### Phase 3 — Cross-Component Binding Ratification
+
+Apply `rules/bidirectional-binding.md` five-direction notation to every component pair: `Drives →` (downstream) / `Driven by ←` (upstream) / `Satisfies →` (criterion) / `Established by ↑` (anchor) / `Cross-bound with ↔` (sibling). Verify reciprocity — no half-edges. Every forward declaration carries its reciprocal at the cited target; half-edges are structural failures per the binding rule §2.
+
+**Bidirectional Binding Matrix.** When the design carries ≥5 components AND at least one component binds to ≥3 peers, author the square matrix per §4 of the binding rule. The matrix's reciprocity invariant is mechanical: when row R column C carries `→`, row C column R MUST carry `←`; when row R column C carries `↔`, row C column R MUST also carry `↔`. The diagonal is `—`.
+
+**Phase-execution threading.** Where the design surfaces ordered execution (an installation pipeline, a migration sequence, a release process), the order is named, numbered, anchor-bearing, and fully cited at both ends per `rules/bidirectional-binding.md` §3.
+
+### Phase 4 — Design-Artifact Emission
+
+Emit the suite's `_inputs/design.md` with the following canonical sections:
+
+1. **`## §1 Executive Summary`** — one paragraph stating the architectural mission + the seven-axs coverage + the component count.
+2. **`## §2 ... §N` Per-Component Sections** — one section per principal component carrying Purpose · Interface · Contracts · Bindings (§0.j five-direction). Components ordered by dependency depth (innermost domain first; outermost adapters last) per Clean Architecture layer discipline.
+3. **`## §Diagrams` Mermaid Diagrams** — every structural relationship carries its diagram per `rules/visual-leverage.md` §1 trigger catalog. Required diagram classes: architecture sketch (`graph TD` / `flowchart`); component-interaction sequence (`sequenceDiagram`); state machine (`stateDiagram-v2`) where applicable; dependency graph (`graph LR`). Every diagram carries the metadata header (`%% verified: <ISO-8601> %%` + `%% provenance: <source> %%` + `%% cross-reference: <peer> %%`) per the rule §2.
+4. **`## §Decision Records`** — every ratified architectural decision recorded as `AD-<N>: <one-sentence summary>` followed by Rationale (concrete-driver classes per `rules/interactive-questions-canonical-shapes.md` §3.2.1) + Alternatives Considered + Trade-offs + Reversibility note.
+5. **`## §Validation Gate Outcome`** — the Phase 5 fifteen-bar gate attestation block per `rules/pre-emission-gate.md` §2.
+6. **`## §Bidirectional Binding Matrix`** — the square matrix authored at Phase 3, when the ≥5-components-with-≥3-peers threshold triggers.
+7. **`## §Bindings (§0.j five-direction)`** — the artifact's own outward bindings to upstream and downstream surfaces.
+
+Apply incremental generation per `rules/large-file-generation.md` when the artifact exceeds 500 lines. Plan the section structure before authoring; emit the first section via Write; append subsequent sections via Edit; verify transition coherence at every boundary.
+
+### Phase 5 — Design Validation Gate
+
+Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the emitted artifact:
+
+- **M1 host-discovery.** Every identifier / interface / convention honors the host's discovered idioms per `rules/host-discovery.md`.
+- **M2 editorial disclosure.** Every amendment / extension / refinement during design authoring is disclosed in the artifact's working trace per `rules/disclosure-ledger.md`.
+- **M3 ten-dimension check.** Each of the ten dimensions per `rules/ten-dimension-check.md` passes individually.
+- **M4 self-application.** The gate attestation block is present in the artifact's §Validation Gate Outcome section.
+- **M5 authority.** Zero authoritative-confirmation placeholders remain unfilled; no fabricated authoritative data.
+- **M6 expertise.** A surfaced-gaps section is present where adjacent gaps exist.
+- **M7 option annotation.** Every multi-option choice surfaced inline carries `**Recommended**` + concrete-driver rationale per `rules/option-annotation.md`.
+- **M8 definitiveness.** Hedging vocabulary absent in prescriptive contexts; pre / post / failure conditions stated per `rules/definitiveness.md`.
+- **M9 visual leverage.** Every structural section carries its diagram with a `verified:` date per `rules/visual-leverage.md`.
+- **M10 bidirectional binding.** Every binding is reciprocally closed; no half-edges per `rules/bidirectional-binding.md`.
+- **M11 agile sprints.** N/A — design authoring is a single-sprint surface.
+- **M12 phase reporting & layout.** The design artifact lands at the canonical `_inputs/design.md` per `rules/canonical-layout.md`.
+- **M13 code craft.** N/A unless the artifact emits executable code blocks; when present, code blocks honor `rules/code-craft-python.md` and sibling per-language code-craft rules.
+- **M14 systemicity.** Every new component declared at Phase 1 carries its upstream / downstream / peers / enforcers per `rules/systemic-participation.md`.
+- **M15 production-ready.** N/A at the design tier; production-ready discipline applies at `/plan-execute` time when the design materializes as code.
+
+**Iterate on failure.** A single bar failure blocks promotion. The failing bar's "Failure → action" cell at `rules/pre-emission-gate-bars.md` §1 names the rule that owns the revision protocol. Revise; re-run the gate; iterate until every bar passes; emit the attestation block.
+
+---
+
+## Critical Rules
+
+- **NEVER assume.** Invoke the structured-inquiry channel for any architectural ambiguity per the canonical channel.
+- **NEVER fabricate authoritative data.** Identity, scope, security, naming-of-public-surfaces route through `rules/authority-inquiry.md`.
+- **NEVER emit a design without the validation-gate attestation.** Phase 5 is non-optional; gate failure blocks promotion.
+- **NEVER carry a half-edge into the emitted artifact.** Every binding declared in one direction has its reciprocal at the other end per `rules/bidirectional-binding.md` §2.
+- **NEVER use vague-rationale phrases as the sole justification for a non-neutral recommendation.** Cite a concrete-driver class per `rules/interactive-questions-canonical-shapes.md` §3.2.1.
+- **Per-file destructive-op floor.** Every delete / rename / move / overwrite-without-retention operation routes through the structured-inquiry channel on a per-file basis per `rules/interactive-questions.md` §6 — one invocation per file, no `multiSelect` batching, every option's `default-pointer:` carrying the verbatim `no-default: user decision required` marker.
+
+---
+
+## Decision Tree
+
+```mermaid
+%%{ init: { "theme": "neutral" } }%%
+%% verified: 2026-05-11 %%
+%% provenance: commands/plan-design.md §Workflow %%
+%% cross-reference: src/apothem/commands/ (slash-command cohort) %%
+flowchart TD
+    Start[/plan-design invoked/] --> Suite{Suite files present?}
+    Suite -->|no| Recommend[STOP — recommend /plan-generate]
+    Suite -->|yes| Review{Review Scorecards present at SHARED+?}
+    Review -->|no| AskRev[structured inquiry: run /plan-review · proceed without · abort]
+    Review -->|yes, FAIL| AskFail[structured inquiry: resolve · override · abort]
+    Review -->|yes, PASS| Bearing{Architecture-bearing suite?}
+    Bearing -->|no| Skip[STOP — design not applicable · handoff to /plan-execute]
+    Bearing -->|yes| Refine{--refine-existing flag set?}
+    Refine -->|yes, design.md exists| Iter[Iterative refinement on existing artifact]
+    Refine -->|no| Fresh[Author fresh artifact]
+    Iter --> P0[Phase 0: Input Ingest]
+    Fresh --> P0
+    P0 --> P1[Phase 1: Architectural Decomposition Pass]
+    P1 --> Open{Open architectural questions remain?}
+    Open -->|yes| AskOpen[structured inquiry: surface each open question]
+    AskOpen --> P1
+    Open -->|no| P2[Phase 2: Component-Interface Design]
+    P2 --> P3[Phase 3: Cross-Component Binding Ratification]
+    P3 --> Recip{All bindings reciprocally closed?}
+    Recip -->|no| Fix[Close half-edges]
+    Fix --> P3
+    Recip -->|yes| P4[Phase 4: Design-Artifact Emission]
+    P4 --> P5[Phase 5: Design Validation Gate]
+    P5 --> Bar{All fifteen bars pass?}
+    Bar -->|no| Revise[Revise on failing bar · re-run gate]
+    Revise --> P5
+    Bar -->|yes| Promote[Promote artifact · update Handoff Manifest]
+    Promote --> Done[Pipeline handoff to /plan-execute]
+```
+
+The tree distinguishes deterministic forks (suite-file presence, scorecard state, flag presence, gate-bar verdicts) from structured-inquiry forks (open architectural questions, scorecard-FAIL disposition) from iteration forks (Phase 1 open-question loop, Phase 3 binding-closure loop, Phase 5 gate-bar loop).
+
+---
+
+## Output
+
+- The design artifact at the suite's `_inputs/design.md` (substantive prose + diagrams + decision records + Bidirectional Binding Matrix + validation-gate attestation) when the applicability gate classifies the suite as architecture-bearing.
+- The updated Manifest at the suite's `_inputs/handoff-manifest.yml` with the design-artifact path + design-gate attestation block + per-axis attestation against the seven-axs-of-breadth taxonomy; for non-architecture-bearing suites, the manifest records that design was not applicable and `/plan-execute` is the next consumer.
+- An optional decomposition working file at the suite's `_inputs/design-decomposition.md` (per-axis enumeration produced at Phase 1).
+- An optional input-inventory working file at the suite's `_inputs/design-input-inventory.md` (Phase 0 read inventory).
+
+---
+
+## Recommended Next Step
+
+Invoke `/plan-execute` on the designed suite. The design artifact at `_inputs/design.md` is the upstream input the next phase's execution consumes per the canonical design → execute handoff. Alternate routes apply only when the design surfaced fresh requirements: invoke `/plan-spec` when the design reveals a spec requirement the existing `_spec/spec.md` does not cover, or `/plan-generate` when the design refines an existing spec and the plan suite needs regeneration.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** `commands/plan-execute.md` (every architecture-bearing phase consumes the design artifact at execution time). `commands/plan-review.md` (subsequent review cycles audit against the ratified design). The Phase 1 architectural-decomposition pass at every architecture-bearing plan suite. The fifteen-bar pre-emission gate at Phase 5.
+- **Satisfies →** the commands registry row "/plan-design". the `/plan` pipeline (the fifth `/plan` stage rounds out the prose-refinement → generation → review → design → execute pipeline for architecture-bearing suites). The consuming suite's spec D-decisions ratifying architectural surfaces when present.
+- **Established by ↑** the `/plan` pipeline. the commands registry. `skills/plan-suite/master-template.md` (the template every plan suite materializes). `rules/cognitive-identity.md` §1 seven-axs-of-breadth taxonomy (the canonical depth the design artifact attests against).
+- **Gated by ←** The plan suite's mandatory file presence (PREAMBLE.md + MASTER-PLAN.md + PROGRESS.md + PLAN-NOTES.md + `_spec/spec.md` + `phases/`). The Review Scorecards in PLAN-NOTES.md at SHARED+. The harness's Agent + structured inquiry + Edit + Write tool surface.
+- **Cross-bound with ↔** `commands/plan-spec.md` (prose refinement is the upstream antecedent of the suite this command designs against). `commands/plan-generate.md` (suite generation precedes design). `commands/plan-review.md` (forensic audit precedes design at SHARED+). `commands/plan-execute.md` (consumes the design artifact). `rules/cognitive-identity.md` (seven-axs taxonomy drives Phase 1). `rules/clean-architecture-layers.md` (Phase 2 SOLID interface design). `rules/bidirectional-binding.md` (Phase 3 reciprocal-closure invariant). `rules/visual-leverage.md` (Phase 4 diagram requirement). `rules/pre-emission-gate.md` (Phase 5 fifteen-bar validation). `rules/option-annotation.md` (every architectural decision record cites a concrete-driver class). `rules/authority-inquiry.md` (every open architectural question routes through the canonical channel).
+
+## Installed Reference Paths
+
+When this skill is installed by Apothem, resolve repository-style references such as `rules/...`, `templates/...`, and `hooks/...` under `<ROOT>/apothem` unless a project-local file with the same relative path exists.

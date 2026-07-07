@@ -1,0 +1,70 @@
+---
+title: "/research-publish"
+description: "/research-publish — Formata o artigo conforme o modelo do veículo e monta o pacote de submissão (suplementar, disponibilidade de dados/código, carta de apresentação, ética/conflito de interesse), com um plano de preprint/DOI."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Papel:** Pesquisador principal (publicação)
+**Posição no pipeline:** meio da cadeia
+
+Formata o artigo conforme o modelo do veículo e monta o pacote de submissão — materiais suplementares, declaração de disponibilidade de dados / código, carta de apresentação, declarações de ética e de conflito de interesse — mais um plano de preprint / arquivamento com um DOI e uma lista de verificação de submissão. O operador submete o pacote; o sucessor terminal é `/research-disseminate`, que leva o trabalho publicado ao seu público.
+
+## Invocação canônica
+
+```bash
+/research-publish
+```
+
+Com argumentos:
+
+```bash
+/research-publish [path/to/research-suite/]
+```
+
+## Entradas
+
+O entregável do artigo e o `_outputs/review-report.md` (as revisões da revisão por pares).
+
+## Saídas
+
+O pacote de submissão formatado para o veículo em um local natural do host (o manuscrito formatado + materiais suplementares + declaração de disponibilidade de dados / código + carta de apresentação + declarações de ética / conflito de interesse) + `_outputs/publication-record.md` + uma lista de verificação de submissão.
+
+## A jusante
+
+/research-disseminate (consumidor a jusante) — o operador realiza a submissão e, em seguida, `/research-disseminate` leva o trabalho publicado ao seu público. Quando o veículo retorna revisões, execute novamente `/research-review` sobre o artigo revisado antes de remontar o pacote.
+
+## Fases do fluxo de trabalho
+
+O comando segue o fluxo de trabalho padrão do pipeline `/research`:
+
+1. **Carregar contexto** — Ler o artigo e o relatório de revisão.
+2. **Verificar o Portão de sequência** — Confirmar que `_outputs/review-report.md` existe; caso contrário, parar com `Blocked: run /research-review first`.
+3. **Formatar e empacotar** — Aplicar o modelo do veículo; montar suplementar, disponibilidade de dados/código, carta de apresentação, declarações de ética / conflito de interesse.
+4. **Planejar o preprint / arquivamento** — Registrar o plano de preprint e DOI; construir a lista de verificação de submissão.
+5. **Atualizar o manifesto de transferência** — Registrar o pacote de submissão e o registro de publicação.
+6. **Emitir o pacote** — O pacote de submissão formatado para o veículo + `_outputs/publication-record.md`.
+
+## Piso de rigor
+
+A formatação honra a divulgação em estágios: para um veículo de revisão duplo-cega, autor, instituição e identidade do sistema são removidos para metadados submetidos separadamente e restaurados somente no estágio designado de versão final. O depósito de arquivamento carrega o pacote de evidências de reprodutibilidade escalonado ao veículo (dados, código, ambiente fixado, sementes, registro de hardware, resultados por instância e figuras).
+
+## Modos de falha
+
+| Sintoma | Causa | Recuperação |
+|---------|-------|----------|
+| Blocked: run /research-review first | Sem relatório de revisão | Execute `/research-review` para produzir `_outputs/review-report.md` |
+| Revisão HIGH não atendida | Achado de revisão ignorado | Atenda à revisão e execute novamente `/research-review` |
+| Falta disponibilidade de dados/código | Superfície de reprodutibilidade ausente | Adicione a declaração de disponibilidade de dados / código antes da submissão |
+
+## Exemplos
+
+```bash
+# Montar o pacote de submissão do veículo
+/research-publish path/to/research-suite/
+```
+
+## Referências cruzadas
+
+- [Visão geral do pipeline](/docs/pipeline)
+- [Referência de comandos](/docs/reference/commands)

@@ -1,0 +1,93 @@
+---
+title: "harnesses"
+description: "Référence de la CLI pour le groupe de commandes apothem harnesses."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Liste et inspecte les adaptateurs d'environnement enregistrés.
+
+`harnesses` est un groupe de commandes avec deux sous-commandes : `list` et `show`.
+
+## Synopsis
+
+```
+apothem harnesses list [--quiet|-q] [--verbose|-v]
+                       [--format plain|json] [--json] [--no-color]
+apothem harnesses show NAME
+                       [--quiet|-q] [--verbose|-v]
+                       [--format plain|json] [--json] [--no-color]
+```
+
+## Sous-commandes
+
+### `harnesses list`
+
+Liste tous les adaptateurs d'environnement enregistrés.
+
+| Option | Description |
+|---|---|
+| `--quiet`, `-q` | Supprime la sortie informative ; seules les erreurs sont émises. |
+| `--verbose`, `-v` | Émet une sortie de diagnostic supplémentaire. |
+| `--format plain\|json` | Format de sortie (par défaut : `plain`). |
+| `--json` | Raccourci pour `--format json`. |
+| `--no-color` | Désactive les codes de couleur ANSI dans la sortie. |
+| `-h`, `--help` | Affiche l'aide et quitte. |
+
+### `harnesses show NAME`
+
+Affiche les détails d'un adaptateur d'environnement spécifique. `NAME` est l'identifiant
+de l'environnement en kebab-case ; exécutez `apothem harnesses list` pour voir les identifiants disponibles.
+
+| Option | Description |
+|---|---|
+| `NAME` | Adaptateur d'environnement à inspecter (argument positionnel obligatoire). |
+| `--quiet`, `-q` | Supprime la sortie informative ; seules les erreurs sont émises. |
+| `--verbose`, `-v` | Émet une sortie de diagnostic supplémentaire. |
+| `--format plain\|json` | Format de sortie (par défaut : `plain`). |
+| `--json` | Raccourci pour `--format json`. |
+| `--no-color` | Désactive les codes de couleur ANSI dans la sortie. |
+| `-h`, `--help` | Affiche l'aide et quitte. |
+
+## Exemples
+
+```bash
+apothem harnesses list
+apothem harnesses list --json
+apothem harnesses show claude-code
+apothem harnesses show claude-code --json
+```
+
+Les ID d'environnement enregistrés sont :
+
+```text
+antigravity
+claude-code
+codebuddy
+codex
+cursor
+gemini-cli
+github-copilot
+glm
+hermes
+kimi-code
+kiro
+open-claw
+opencode
+qwen-code
+trae
+windsurf
+zed
+```
+
+## Codes de sortie
+
+| Code | Signification |
+|---|---|
+| 0 | Succès |
+| 1 | Environnement introuvable (`harnesses show` avec un `NAME` inconnu) |
+
+## Voir aussi
+
+- [apothem doctor](/docs/cli-reference/doctor) — exécute les diagnostics d'installation à l'échelle du système
+- [apothem verify](/docs/cli-reference/verify) — vérifie l'installation d'un environnement spécifique

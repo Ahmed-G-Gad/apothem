@@ -1,0 +1,57 @@
+---
+title: "バイナリ成果物スイープ"
+description: "Apothem のバイナリ成果物スイープ — ソースに追跡されるコンパイル済み/パッケージ化済みバイナリはゼロ。OpenSSF Scorecard の Binary-Artifacts チェックの証拠。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+OpenSSF Scorecard の **Binary-Artifacts** チェックは、ソースツリーがコンパイル済み/パッケージ化済み/不透明なバイナリ成果物を一切含まないことを検証します。ソース内のバイナリは監査不能であり、サプライチェーン攻撃の足がかりになります。バイナリはソースツリーが表に出さないコードを埋め込んでいるため、レビュアーはマージ前にそれを検査できません。
+
+## Apothem のバイナリ成果物に対する姿勢
+
+Apothem は**純粋な Python のソースツリー**であり、バージョン管理に追跡されるコンパイル済み・パッケージ化済み・不透明なバイナリ成果物はゼロです。リポジトリはソースから端から端まで監査可能です。
+
+## スイープの方法論
+
+スイープは Scorecard がバイナリとみなすファイル種別を列挙し、それぞれがバージョン管理に存在しないことを検証します。
+
+| 拡張子ファミリ | 説明 | Apothem の状態 |
+|---|---|---|
+| `.exe`、`.dll`、`.so`、`.dylib` | コンパイル済みネイティブバイナリ | ✅ 追跡ゼロ |
+| `.bin`、`.o`、`.a`、`.lib` | オブジェクトファイル / 静的ライブラリ | ✅ 追跡ゼロ |
+| `.jar`、`.war`、`.ear` | Java パッケージ | ✅ 追跡ゼロ |
+| `.whl`、`.egg` | Python ディストリビューション | ✅ 追跡ゼロ（`dist/` にビルド。gitignore 対象） |
+| `.tar.gz`、`.zip`（ビルド済みディストリビューション） | ビルド成果物を含む圧縮アーカイブ | ✅ 追跡ゼロ |
+| `.class`、`.pyc`、`.pyo` | コンパイル済みバイトコード | ✅ 追跡ゼロ（`__pycache__/` は gitignore 対象） |
+| `.crt`、`.pem`、`.key`、`.p12`、`.pfx` | 暗号資材 | ✅ 追跡ゼロ（`.gitignore` で拒否） |
+
+## 許可されるバイナリ区分
+
+ソースには、ごく限られた 2 区分のバイナリ成果物が許可されています。
+
+1. **ブランドアセット** — `assets/*.png`、`assets/*.ico`、`assets/favicon.*`。これらは `scripts/dev/rebuild-assets.{sh,ps1}` を介して `assets/src/` の SVG マスターから**決定論的に再生成可能**です。Scorecard はこれらを `image/png` 免除に基づき正当とみなします。
+2. **フォントファイル** — `assets/fonts/*.ttf`、`assets/fonts/*.woff2`。ライセンスが明記された同梱フォントファイル。Scorecard の `font/*` 免除に基づきます。
+
+両区分は [`site/content/docs/brand/index.mdx`](/docs/brand) に記載され、その出所はアセット再構築レシピに記録されています。
+
+## 検証コマンド
+
+```shell
+# apothem リポジトリのルートから:
+git ls-files | grep -E '\\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
+```
+
+この呼び出しは**ゼロ行**を返すはずです。空でない結果は、バイナリ成果物がソースに追跡されたことを示します — これは次のリリースをブロックする重大度 HIGH の指摘です。
+
+## 監査の頻度
+
+このスイープは次の一部です。
+
+- **PR ごとの CI** — `.github/workflows/ci.yml` にバイナリ成果物の grep ステップが含まれます。
+- **リリースごとのチェックポイント** — リリースエンジニアリングのランブックがタグ付け前にスイープを検証します。
+- **週次の Scorecard 実行** — OpenSSF Scorecard のワークフローがチェックの合格を再確認します。
+
+## 参考資料
+
+- [OpenSSF Scorecard — Binary-Artifacts チェック](https://github.com/ossf/scorecard/blob/main/docs/checks.md#binary-artifacts)
+- [Apothem の `.gitignore`](https://github.com/ahmed-g-gad/apothem/blob/main/.gitignore) — バイナリの偶発的なチェックインを防ぐ拒否リスト

@@ -1,0 +1,29 @@
+---
+title: "Pengaturan"
+description: "Konfigurasi harness Claude Code di settings.json yang mencakup izin alat, pengabelan hook, variabel lingkungan, dan templat baris status."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+`settings.json` membawa konfigurasi harness Claude Code: pengabelan hook, izin
+alat, variabel lingkungan, dan pengaturan baris status.
+
+Referensi kanonis lengkap ada di
+[settings-reference.md](/docs/reference/settings-reference). Halaman ini meringkas kontraknya
+dan menunjuk ke referensi yang lebih mendalam.
+
+## Bagian
+
+| Bagian | Tujuan |
+|---------|---------|
+| `permissions` | Daftar putih dan daftar hitam alat per matcher |
+| `hooks` | Tabel perintah hook berkunci-peristiwa (pengabelan kanonis) |
+| `env` | Variabel lingkungan per sesi |
+| `statusLine` | Templat baris status yang dirender host |
+
+## Invarian templat tunggal
+
+Adaptor Claude Code mengirimkan satu templat `settings.json`. Perintah hook
+menggunakan bentuk exec (`command` plus `args`) alih-alih string perintah khusus
+shell, sehingga perilaku lintas-OS ditinjau di dalam satu berkas. Entri izin baru
+dan peristiwa hook mendarat di berkas itu secara atomik.

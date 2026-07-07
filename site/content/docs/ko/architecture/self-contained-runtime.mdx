@@ -1,0 +1,117 @@
+---
+title: "자기완결적 런타임"
+description: "Apothem의 엔진이 임의의 체크아웃에서 어떻게 실행되는가 — 내장된 의존성, PYTHONPATH=src 호출 모델, 그리고 플러그인 트리 부트스트랩."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+# 자기완결적 런타임
+
+Apothem의 엔진은 자기완결적 런타임입니다. 레지스트리 없이, 임의의 체크아웃이나
+배치된 소스 트리에서 곧바로 실행됩니다. 서드파티 의존성이 엔진과 함께 이동하기
+때문입니다. 이를 가능하게 하는 두 부품이 있습니다 — 내장된 의존성 트리와,
+설치된 콘솔 스크립트를 필요로 하지 않는 `python -m` 호출 모델입니다.
+
+## 내장된 의존성 트리
+
+검증과 직렬화 스택은 순수 Python 소스로서 `src/apothem/_vendor/` 아래에
+내장되어 있으며, 각 패키지는 그 상류 라이선스 파일과 나란히 놓여 있습니다.
+
+- `yaml` (순수 Python 파서/이미터. 선택적 libyaml C 확장은 포함하지 않습니다)
+- `jsonschema`, 그 의존 체인 `attrs`(그리고 그 `attr` 별칭),
+  `referencing`, `jsonschema_specifications`와 함께
+- `rpds` — `jsonschema`와 `referencing`이 사용하는 `HashTrieMap`,
+  `HashTrieSet`, `List` 표면을 재구현한 순수 Python 심으로, 내장 타입을
+  백엔드로 삼아 이 스택이 컴파일 확장 제로로 실행되게 합니다
+- `typing_extensions`
+
+내장된 사본은 시스템에 설치된 어떤 버전보다도 우선합니다. 부트스트랩은 vendor
+디렉터리를 site-packages 앞에 두어 `sys.path` 맨 앞에 붙입니다. 선택 정책 —
+무엇이 내장되고, 무엇이 내장되지 않으며, 내장 패키지가 어떻게 갱신되는지 — 는
+[의존성 내장 전략](/docs/architecture/vendoring-strategy)에 문서화되어 있습니다.
+
+두 의존성은 트리 바깥에 남습니다. **`click`**과 **`rich`**, 즉 CLI가 임포트하는
+터미널 지향 라이브러리입니다. 이들은 엔진을 실행하는 인터프리터 아래에서
+임포트 가능해야 합니다. 설치 프로그램은 둘 다 확인하고, 누락된 것이 있으면
+그 이름을 알리며, 당신의 확인 아래 — 또는 `--yes` /
+`APOTHEM_AUTO_INSTALL_DEPS=1`로 자동으로 — 설치해 주겠다고 제안합니다.
+
+## `python -m` 호출 모델
+
+Apothem은 의도적으로 `pyproject.toml`에서 콘솔 스크립트를 전혀 선언하지
+않습니다 — 콘솔 스크립트는 패키지 관리자가 그것들을 `PATH`에 둘 때에만 존재하며,
+자기완결적 런타임은 결코 그러한 관리자를 가정하지 않습니다. 엔진은 그 대신 두
+호출 표면을 가집니다.
+
+| 표면 | 호출 | 컨텍스트 |
+| ------- | ---------- | ------- |
+| 엔진 CLI | `python -m apothem <command>` | `src/`를 `PYTHONPATH`에 올린 소스 트리(체크아웃, npx 캐시, 플러그인 트리) |
+| 훅 런타임 | `python "<harness-root>/apothem/hooks/dispatch.py" <event>` | 하니스 루트 아래의 물화된 사본, 절대 경로로 |
+
+- `python -m apothem`은 `src/apothem/__main__.py`를 실행하며, 이것이
+  `apothem.cli:main` — Click 명령 그룹 — 을 호출합니다.
+- 물화된 `settings.json` / `hooks.json`의 훅 항목은 디스패처(그리고 Claude
+  Code의 경우, `<harness-root>/apothem/conformity/gate.py`의 일치성 게이트)를
+  절대 스크립트 경로로 호출합니다. 둘 다 자신의 `sys.path`를 부트스트랩하는
+  독립적인 stdlib 스크립트이며, 게이트의 스키마 픽스처는
+  `<harness-root>/apothem/schemas/`에서 그것과 나란히 이동하므로, 훅은
+  **호스트에 임포트 가능한 `apothem` 패키지가 없는** 상태로 실행됩니다.
+  템플릿은 `${HARNESS_ROOT}` 토큰을 지니며, `apothem install`이 이것을
+  슬래시 형식의 실제 하니스 루트 경로로 렌더링합니다.
+- 소스 체크아웃에서는, 모듈 형식
+  `python -m apothem.hooks.dispatch`와
+  `python -m apothem.conformity.gate`가 개발을 위해 동일한 코드를 실행합니다.
+
+체크아웃의 `src/` 디렉터리를 `PYTHONPATH` 앞에 붙이면 패키지 디렉터리가
+임포트 가능해집니다.
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+```
+
+이것은 원샷 설치 프로그램이 완료 시 출력하는 바로 그 호출입니다.
+
+## 플러그인 트리 부트스트랩
+
+Claude Code 플러그인은 `PYTHONPATH`에 의존하는 대신 엔진을
+`<plugin_root>/lib/apothem` 아래에 번들합니다. 부트스트랩 모듈
+`apothem.lib.plugin_bootstrap`은 `bootstrap_syspath`를 노출하며, 이것은
+멱등하게 `<plugin_root>/lib`와 vendor 디렉터리를 `sys.path` 앞에 붙여
+`import apothem`과 모든 내장 의존성이 플러그인 트리에서 해석되도록 합니다.
+기형적 트리(`lib/` 누락)는 오래된 시스템 사본을 조용히 임포트하는 대신
+`PluginBootstrapError`를 발생시킵니다.
+
+## 설치 프로그램이 디스크에 두는 것
+
+스크립트 설치 프로그램은 소스 트리의 git 클론을 `~/.apothem`
+(`APOTHEM_HOME`으로 재정의 가능)에 두고 거기서 엔진을 실행합니다 — 선택적
+`click` / `rich` 사전 조건 제안을 넘어서 `site-packages`에 설치되는 Python
+패키지는 없습니다. 그 클론은 런타임이 결코 임포트하지 않는 테스트 스위트와
+문서 사이트를 포함한 전체 리포지토리이며, 여기에는 두 가지 의도적인 이유가
+있습니다. 엔진은 그 **cohort** — 규칙, 스킬, 명령, 템플릿 — 를 트리에서 곧바로
+각 하니스로 **물화** 하므로, 트리는 단지 런타임이 아니라 살아 있는 정보원이라는
+점. 그리고 `.git` 디렉터리가 제자리에 남아 `apothem update`가 다시 내려받는
+대신 기존 클론을 패스트 포워드한다는 점입니다.
+
+이 소스에서 실행하는 레이아웃은 `nvm`, `pyenv`, `oh-my-zsh` 같은 도구가 쓰는
+것과 동일한 패턴입니다 — 몇 메가바이트의 소스에 이력을 더한 것으로, 제거
+프로그램으로 한 단계에 제거할 수 있습니다(되돌릴 시스템 상태가 없습니다). 더
+가벼운 풋프린트 — `tests/`와 `site/`를 생략한 얕거나 희소한 체크아웃 — 도
+가능하지만, 그것은 제자리에서 이루어지는, 서명으로 검증된, `git` 기반 업데이트
+경로를 내주게 됩니다. 현재 레이아웃은 최소 디스크보다 단순하고 검증 가능한
+업데이트를 선호합니다.
+
+## 런타임이 Python을 찾는 방법
+
+원샷 설치 프로그램과 npx 심은 같은 방식으로 인터프리터를 찾습니다. `python3`,
+`python`, 버전이 붙은 이름(`python3.14`부터 `python3.10`까지), 그리고 Windows의
+`py -3`를 탐색하고, Microsoft Store 런처 심을 거부하며, 버전 3.10 이상을
+보고하는 첫 후보를 받아들입니다. 소스 트리에서 실행할 때, 설치 프로그램은
+번들된 `hooks/lib/find-python` 로케이터를 재사용하며, 이것은 동일한 하한을
+적용합니다.
+
+## 권장 다음 단계
+
+**`python -m apothem --help` 실행** — 체크아웃의 `src/` 디렉터리를
+`PYTHONPATH`에 올려 자기완결적 CLI 경로가 당신의 호스트에서 해석되는지
+확인하세요.

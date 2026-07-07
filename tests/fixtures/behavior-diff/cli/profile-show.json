@@ -1,0 +1,8 @@
+{
+  "argv": [
+    "profile",
+    "show"
+  ],
+  "exit_code": 0,
+  "stdout": "{\n  \"identity\": {\n    \"name\": \"Example User\",\n    \"role\": \"senior software engineer\",\n    \"email\": \"dev@example.invalid\",\n    \"github\": \"example-user\"\n  },\n  \"preferences\": {\n    \"language\": \"python\",\n    \"style\": \"concise\"\n  },\n  \"rules\": [],\n  \"seriousness\": \"PERSONAL_USE\",\n  \"enforcement\": {\n    \"sprints\": false,\n    \"agent_teams\": false,\n    \"multitasking\": false,\n    \"continuous_execution\": false,\n    \"learning_loop\": false\n  },\n  \"mcp_servers\": {},\n  \"harnesses\": {},\n  \"exclude_harnesses\": [],\n  \"workspace\": {\n    \"directory_name\": \".apothem\",\n    \"scope\": \"project-local\"\n  }\n}\n"
+}

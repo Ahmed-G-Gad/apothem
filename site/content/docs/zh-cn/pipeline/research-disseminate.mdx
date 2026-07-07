@@ -1,0 +1,73 @@
+---
+title: "/research-disseminate"
+description: "/research-disseminate —— 推动接收后的传播与影响：预印本公告、公共制品、FAIR 归档存放、altmetrics 追踪、审稿人答辩 / 修订循环，以及注册报告第二阶段路径 —— 这是 /research 流水线的终结阶段，紧随 /research-publish 之后。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**角色：** 首席研究员（传播与影响）
+**流水线位置：** 终结
+
+推动接收后的传播与影响。公开操作由操作者执行；本阶段止步于一份就绪的传播计划，绝不自动发布。
+
+## 标准调用
+
+```bash
+/research-disseminate
+```
+
+带参数：
+
+```bash
+/research-disseminate [--suite-name NAME] [--override] [--archive REPO] [--preprint SERVER]
+```
+
+## 输入
+
+套件的 `_outputs/publication-record.md`（由 `/research-publish` 生成的投稿包 + 投稿记录）。
+
+## 输出
+
+`_outputs/dissemination-plan.md`（预印本公告、公共制品计划、FAIR 归档存放记录、altmetrics 与影响追踪计划、答辩 / 修订循环，以及注册报告第二阶段路径）。
+
+## 下游
+
+终结 —— 传播计划是流水线的最终制品。审稿人答辩 / 修订循环在需要修订时可能重新进入 `/research-paper`。
+
+## 工作流阶段
+
+该命令遵循标准的 `/research` 流水线工作流：
+
+1. **加载上下文** —— 读取 `_outputs/publication-record.md`、规则以及任何现有的套件状态。
+2. **规划预印本与公共制品** —— 起草预印本公告以及演讲 / 海报 / 博客计划。
+3. **记录 FAIR 归档存放** —— 规划将数据 + 代码存放至带持久标识符的 FAIR 仓库。
+4. **设置影响追踪** —— 针对提案的影响路径规划 altmetrics 与影响追踪。
+5. **准备答辩循环** —— 起草审稿人答辩，并在适用时规划注册报告第二阶段路径。
+6. **验证并发出** —— 确认计划可执行；发出 `_outputs/dissemination-plan.md` 以及交接清单。公开操作由操作者执行。
+
+## 严谨性强制底线
+
+公共制品携带自然的领域语言；当传播先于去匿名化时，作者、机构和系统身份留待指定阶段处理。FAIR 存放是那份持久、可引用、随发表场所抱负伸缩的可复现性证据包，使独立方能够复现本研究。
+
+## 失败模式
+
+| 症状 | 原因 | 恢复 |
+|---------|-------|----------|
+| 没有 FAIR 存放记录 | 跳过了归档步骤 | 选择一个 FAIR 仓库（`--archive`）并记录带持久标识符的存放计划 |
+| 计划尝试自动发布 | 越过了阶段边界 | 止步于就绪计划；每一项公开操作均由操作者执行 |
+| 缺少出版记录 | 尚未运行 `/research-publish` | 先运行 `/research-publish` 以生成投稿包 |
+
+## 示例
+
+```bash
+# 接收后规划传播
+/research-disseminate --suite-name retrieval-latency
+
+# 固定预印本服务器与 FAIR 归档
+/research-disseminate --preprint arXiv --archive Zenodo
+```
+
+## 交叉引用
+
+- [流水线概览](/docs/pipeline)
+- [命令参考](/docs/reference/commands)

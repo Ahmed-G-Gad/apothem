@@ -1,0 +1,87 @@
+---
+title: "Trae"
+description: "Adaptateur d'environnement Apothem pour Trae (GA)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Éditeur :** ByteDance
+**Nom d'installation :** `trae`
+**Statut :** GA
+**Configuration native :** `<project>/.trae/rules/apothem-rules.md`
+
+## Installation
+
+```bash
+apothem install --harness trae --project /path/to/project
+```
+
+L'adaptateur écrit un fichier de règles Trae à portée de projet à partir de la
+surface partagée de règles et de gouvernance d'Apothem.
+
+**Fichiers écrits :** `<project>/.trae/rules/apothem-rules.md`
+
+## Mappage du profil vers la configuration native
+
+L'adaptateur lit le profil partagé d'Apothem et génère le fichier de règles du projet
+à chaque exécution de `apothem install` ou `apothem update`. Le profil partagé est la
+source de vérité ; les modifications locales au projet apportées au fichier généré
+sont sauvegardées avant que la prochaine synchronisation ne remplace le contenu géré
+par Apothem.
+
+## Notes de compatibilité
+
+La surface de règles actuelle de Trae est à portée de projet sous `.trae/rules/`.
+L'adaptateur écrit un fichier `apothem-rules.md` dédié qui coexiste avec les ancrages
+`project_rules.md` et `user_rules.md` détenus par l'opérateur et ne les écrase jamais.
+La surface de serveurs d'outils `.trae/mcp.json` et la surface de skills
+`.trae/skills/` sont détenues par l'opérateur ; Apothem ne les écrit pas.
+
+## Vérification
+
+```bash
+apothem verify --harness trae --project /path/to/project
+```
+
+La commande verify confirme que :
+
+1. La configuration native existe au chemin attendu.
+2. Tous les champs obligatoires du profil partagé sont présents.
+3. La routine de vérification spécifique à l'adaptateur signale un succès.
+
+## Mise à jour
+
+```bash
+apothem update --harness trae --project /path/to/project
+```
+
+Re-dérive le fichier de règles du projet à partir de l'état actuel du profil partagé.
+
+## Désinstallation
+
+```bash
+apothem uninstall --harness trae --project /path/to/project
+```
+
+Supprime les fichiers de configuration native écrits par l'adaptateur.
+Le YAML du profil partagé et le moteur d'Apothem ne sont pas affectés.
+
+## Porte de conformité
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Dépannage
+
+| Symptôme | Correctif |
+|---------|-----|
+| Fichier de configuration introuvable | Réexécutez `apothem install --harness trae --project /path/to/project` |
+| La vérification a échoué | Exécutez `apothem update --harness trae --project /path/to/project`, puis vérifiez à nouveau |
+| Contenu de configuration inattendu | Vérifiez `~/.config/apothem/profile.yaml` ou `--profile PATH`, puis réexécutez `apothem update --harness trae --project /path/to/project` |
+
+## Paramètres de configuration
+
+| Flag | Par défaut | Description |
+|------|---------|-------------|
+| `--dry-run` | `false` | Prévisualise l'installation sans écrire de fichiers. |

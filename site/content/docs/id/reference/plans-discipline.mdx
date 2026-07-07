@@ -1,0 +1,201 @@
+---
+title: "Disiplin Plan — Memori Kerja Efemeral Lokal-Proyek"
+description: "Mengelola memori kerja efemeral lokal-proyek di .apothem/plans/ (pohon legasi .plans/ dimutakhirkan via apothem migrate-workspace) dengan skema frontmatter, transisi siklus hidup, promosi ke ADR, dan penegakan melalui hook dan validator."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+{/* [Machine-seeded — pending review] */}
+
+> **Rujukan normatif kanonis untuk kontributor hilir.** Dokumen ini mencerminkan seksi Disiplin Plan pada spesifikasi proyek (Spec §3); ini adalah rujukan mandiri yang dikirim bersama repo yang diterbitkan. Disiplin yang diperkenalkan di sini bersifat fundamental; setiap direktif di bawah ini adalah `MUST` kecuali ditandai lain secara eksplisit. Rasionel arsitekturalnya tercatat di [ADR-0001](/docs/reference/plans-discipline).
+
+---
+
+## 1. Definisi & Batasan
+
+Sebuah **plan** adalah setiap artefak kerja yang disengaja dan sementara yang dihasilkan selama penalaran tentang suatu proyek, termasuk namun tidak terbatas pada:
+
+- Sketsa arsitektur, walkthrough desain sistem, dekomposisi komponen.
+- Struktur perincian kerja, daftar tugas multi-langkah, pohon dekomposisi.
+- Strategi refactor, walkthrough migrasi, urutan rollout.
+- Jurnal debugging, log hipotesis, catatan reproduksi.
+- Catatan eksplorasi, tulisan spike, draf prompt, transkrip asisten koding yang disimpan untuk pemakaian nanti.
+- Dokumen apa pun yang ditulis *untuk berpikir dengannya*, bukan *untuk dirilis*.
+
+Plan secara kategoris berbeda dari kelas-kelas berdekatan ini:
+
+| Artefak | Siklus hidup | Lokasi | Di-commit? |
+|---|---|---|---|
+| **Plan** | Memori kerja sementara | `<project-root>/.apothem/plans/` (satu-satunya rumah kanonis) — pohon legasi `<project-root>/.plans/` dimutakhirkan via `apothem migrate-workspace` | **Tidak pernah** (di-gitignore) |
+| **ADR** (Architecture Decision Record) | Permanen, menentukan | direktori ADR yang diratifikasi proyek | Selalu |
+| **Deskripsi issue / PR** | Terikat tracker | GitHub / setara | n/a (tracker) |
+| **File instruksi harness** (nama file kanonis per-harness) | Konfigurasi perilaku tahan lama | `<harness-config-root>/` (lokal-proyek atau lingkup-pengguna tergantung harness) | Selalu (di dalam repo) |
+| **Kode** | Hasil tereksekusi dari sebuah plan | di mana pun kode berada | Selalu |
+
+Plan mendahului ADR. Ketika sebuah plan menyatu menuju keputusan tahan lama, keputusan itu **dipromosikan** ke sebuah ADR (§4 Siklus Hidup); plan itu sendiri diarsipkan atau dibuang.
+
+---
+
+## 2. Lokasi, Visibilitas & Penamaan
+
+- **Path.** `<project-root>/.apothem/plans/` adalah satu-satunya rumah kanonis. Pohon legasi `<project-root>/.plans/` tidak lagi kanonis — mutakhirkan dengan `apothem migrate-workspace` (§5). **Bukan** direktori konfigurasi harness (misalnya `~/.claude/plans/`, `~/.claude/.plans/`, atau `~/.codex/.plans/`). **Bukan** folder scratch desktop. **Bukan** `~/notes/`. **Bukan** `tmp/plans/`.
+- **Visibilitas.** Folder terdaftar di `.gitignore` proyek sesuai snippet kanonis di §6. Runtime asisten koding HARUS memverifikasi keberadaan entri ini sebelum penulisan apa pun; jika tidak ada, ia menambahkan entri dengan komentar header satu-baris dan tautan ke dokumen ini.
+- **Konvensi nama file.** `YYYY-MM-DD--<kebab-case-slug>.md`. Untuk workspace yang lebih besar, sub-kategorikan di bawah `.apothem/plans/<area>/YYYY-MM-DD--<slug>.md`.
+  - Contoh: `.apothem/plans/2026-04-30--auth-refactor-strategy.md`, `.apothem/plans/api/2026-04-30--rate-limit-rollout.md`.
+- **Indeks.** Sebuah `.apothem/plans/INDEX.md` opsional (juga di-gitignore) boleh mengagregasi tautan dan status; jika ada, runtime asisten koding memeliharanya pada setiap penulisan plan.
+- **Arsip.** Plan yang menyatu atau ditinggalkan dipindahkan ke `.apothem/plans/_archive/`. Tidak pernah dihapus tanpa konfirmasi kueri terstruktur eksplisit.
+- **Header kepengarangan pada plan.** Plan **dikecualikan** dari baris SPDX header kepengarangan (sesuai [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) §Daftar Pengecualian). Mereka adalah efemera yang di-gitignore; menerapkan penanda provenans permanen pada memori kerja sementara adalah kesalahan kategori. Frontmatter (§3) membawa provenans plan.
+
+---
+
+## 3. Skema Frontmatter (tervalidasi)
+
+Setiap file plan membawa:
+
+```yaml
+---
+title: <human-readable title>
+project: <git-remote-url-or-canonical-local-path>
+created: <ISO-8601 timestamp>
+updated: <ISO-8601 timestamp>
+status: draft | in-progress | converged | abandoned
+tags: [<kebab>, ...]
+supersedes: <prior-plan-relative-path or null>
+promotes-to: <ADR path or null>
+---
+```
+
+JSON Schema untuk plan berada di [`src/apothem/schemas/plan.schema.json`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/plan.schema.json). Perintah slash `/plan` (dan validator `plans-discipline-language`) memvalidasi terhadapnya pada setiap penulisan.
+
+---
+
+## 4. Siklus Hidup & Alur Kerja Promosi
+
+1. **Draft** — pembuatan awal; `status: draft`.
+2. **In-progress** — diiterasi secara aktif; `status: in-progress`; `updated` disegarkan pada setiap suntingan material.
+3. **Konvergensi** — sebuah keputusan tahan lama mengkristal:
+   1. Ekstrak keputusan ke dalam ADR baru di lokasi ADR yang diratifikasi proyek.
+   2. Setel `promotes-to` plan ke path ADR.
+   3. Setel `status: converged`.
+   4. Secara opsional pindahkan ke `.apothem/plans/_archive/`.
+4. **Pengabaian** — arah ditinggalkan; `status: abandoned`; arsipkan atau, dengan kueri terstruktur eksplisit, buang.
+5. **Penggantian** — ketika plan baru menggantikan yang lebih lama, setel `supersedes` plan baru ke path plan lama, dan setel `status` plan lama sesuai dengannya.
+
+Promosi adalah *satu-satunya* jalur yang dengannya konten plan menjadi tahan lama, terkontrol-versi, dan terlihat oleh rekan tim. **Tidak ada plan yang pernah bermigrasi seutuhnya ke dalam sumber yang di-commit.**
+
+---
+
+## 5. Protokol Migrasi — Sekali Saja, Dari Direktori Plan Harness ke `.apothem/plans/` Per-Proyek
+
+> **Catatan.** Protokol ini berlaku untuk proyek hilir yang mengadopsi Disiplin Plan untuk pertama kali, di mana artefak perencanaan sebelumnya berada di dalam direktori konfigurasi harness (misalnya `~/.claude/plans/`, `~/.claude/.plans/`, atau path setara untuk harness lain). Kasus rekursif untuk ekosistem itu sendiri diselesaikan dengan meng-gitignore state plan lokal-harness alih-alih memigrasikannya secara fisik ke dalam sumber.
+
+{/* [Machine-seeded — pending review] */}
+> **Tooling.** For projects already on the legacy layout — a sibling `<project-root>/.plans/` tree plus per-harness `<project-root>/.apothem/<harness>/{memory,contexts,learning}` stores — the `apothem migrate-workspace` command collapses both into the shared `<project-root>/.apothem/{plans,memory,learning,contexts}` working directory. The command is idempotent and non-destructive: it backs up every source it consumes, moves `.plans/` to `.apothem/plans/`, union-merges the per-harness memory and context stores, concatenate-dedups the learning signals, and never overwrites a conflicting record. Run `apothem migrate-workspace --dry-run` to preview the moves first.
+
+Migrasi ini idempoten dan reversibel hingga momen penghapusan direktori plan lokal-harness (setelahnya tarball cadangan di `./.audit/plans-backup-<timestamp>.tar.gz` menyediakan artefak rollback). Contoh-contoh di bawah memakai `~/.claude/plans/`; substitusikan path setara untuk harness yang aktif.
+
+**Langkah 1 — Inventaris.** Setiap file di bawah direktori plan lokal-harness dienumerasi dan diklasifikasikan `plan-artifact (quarantined)`.
+
+**Langkah 2 — Peta Provenans.** Sebuah rekaman provenans dibangun untuk setiap plan, dengan proyek tujuan yang diinferensikan dan skor keyakinan yang diturunkan dari field `project` frontmatter, sinyal pemindaian-tubuh (URL repo, nama paket, path absolut), dan petunjuk kontekstual.
+
+**Langkah 3 — Konfirmasi Pemetaan.** Peta lengkap disajikan kepada operator sebagai satu kueri terstruktur terkonsolidasi (atau urutan yang dikelompokkan ketat ketika jumlah file melampaui ukuran prompt tunggal yang nyaman). Untuk setiap plan, operator memilih di antara:
+
+- **Confirm** proyek tujuan yang diinferensikan.
+- **Reassign** ke proyek berbeda (opsi menyajikan daftar proyek yang diketahui operator).
+- **Defer** — pindahkan ke `~/.claude/.audit/orphan-plans/<original-name>` untuk penyortiran kemudian.
+- **Discard** — hanya dengan kueri terstruktur yang eksplisit dan dikonfirmasi terpisah (ini destruktif).
+
+Ketika keyakinan `high` untuk banyak plan, prompt menawarkan afordansi *confirm-all-high-confidence* untuk mengompres putaran bolak-balik sambil tetap memunculkan setiap keputusan individual dalam log.
+
+**Langkah 4 — Persiapan Proyek Pra-Pemindahan.** Untuk setiap proyek tujuan unik:
+
+1. Verifikasi root proyek ada dan dapat dibaca.
+2. Verifikasi ia adalah repositori git (untuk root non-git, munculkan melalui kanal kueri terstruktur apakah melanjutkan, menginisialisasi, atau melewati).
+3. Pastikan `<project-root>/.apothem/plans/` ada; buat dengan `mkdir -p` jika tidak.
+4. Verifikasi `.gitignore` proyek berisi snippet kanonis dari §6; jika tidak ada, tambahkan dengan komentar header yang mengkreditkan migrasi ini.
+5. Verifikasi `<project-root>/.apothem/plans/` belum dilacak oleh git; jika sudah (kesalahan kontributor sebelumnya), munculkan melalui kanal kueri terstruktur dengan opsi *untrack-and-keep*, *untrack-and-remove-from-history*, *abort*.
+
+**Langkah 5 — Pemindahan.** Untuk setiap pasangan plan → tujuan yang terkonfirmasi:
+
+1. Hitung nama file tujuan: jika sumber memiliki frontmatter, normalisasikan sesuai §3; jika tidak, bungkus tubuh dengan frontmatter (status `draft`, field project diset, created dari mtime, tags `[migrated]`) dan ganti nama menjadi `YYYY-MM-DD--<slug>.md`.
+2. Jika ada tabrakan nama di tujuan, tambahkan `-imported-<unix-timestamp>` dan log penggantian nama.
+3. Salin file (mempertahankan mtime), verifikasi SHA-256 cocok di tujuan, lalu putuskan tautan sumber.
+4. Tambahkan entri ke `<project-root>/.apothem/plans/_migration-manifest.md` (juga di-gitignore) yang mencatat: path lokal-harness asal, path tujuan, SHA-256 asli, timestamp, jawaban kueri terstruktur yang mengotorisasi pemindahan ini.
+
+**Langkah 6 — Verifikasi.** Setelah semua pemindahan:
+
+1. Konfirmasi direktori plan lokal-harness kosong (plan yatim, jika ada, berada di dalam direktori audit/karantina harness tersebut, di luar direktori yang segera dihapus).
+2. Konfirmasi setiap proyek tujuan memiliki `.apothem/plans/` yang terisi dan sebuah manifest.
+3. Spot-check dengan SHA-256 bahwa konten yang dimigrasi cocok dengan aslinya.
+
+**Langkah 7 — Tarball & Penghapusan.** Buat `./.audit/plans-backup-<ISO-timestamp>.tar.gz` yang berisi seluruh pohon plan lokal-harness pra-pemindahan (diekstrak dari snapshot temp yang diambil pada Langkah 1). Lalu, melalui kueri terstruktur final yang mengonfirmasi kesiapan, hapus direktori plan lokal-harness yang kini kosong.
+
+**Langkah 8 — Rekaman Audit.** Terbitkan `./.audit/plans-migration.md` yang merangkum setiap pemindahan, setiap file yang ditangguhkan, setiap pembuangan, setiap penggantian-nama akibat tabrakan, dan setiap penambahan gitignore.
+
+---
+
+## 6. Snippet `.gitignore` Hilir (kanonis, salin-tempel)
+
+Setiap proyek yang mengadopsi ekosistem ini HARUS menambahkan blok berikut ke `.gitignore`-nya:
+
+```text
+# Apothem working directory (project-local shared state: plans, memory,
+# learning, contexts; gitignored — never committed). The sole canonical plans
+# home is `.apothem/plans/`.
+# See: <repo-url>/blob/main/site/content/docs/reference/plans-discipline.mdx
+# Ignore the CONTENTS of this directory (not the directory) so the
+# `.keep` negation below can take effect.
+.apothem/*
+!.apothem/.keep
+```
+
+{/* [Machine-seeded — pending review] */}
+Pengecualian `.keep` opsional menjaga keberadaan direktori di perkakas yang memangkas path kosong, tanpa membocorkan konten. Apakah menyertakan `.keep` diputuskan per-proyek melalui kanal kueri terstruktur pada pemanggilan `/plan` pertama kali. Baris `.apothem/*` + `!.apothem/.keep` adalah snippet kanonis; proyek yang masih membawa pohon legasi `<project-root>/.plans/` menjalankan `apothem migrate-workspace` (§5) untuk memutakhirkannya ke `.apothem/plans/`.
+
+---
+
+## 7. Mekanisme Penegakan-Sendiri
+
+Disiplin ini harus bertahan di setiap sesi mendatang. Permukaan penegakan berikut wajib dan terkode dalam ekosistem yang diterbitkan:
+
+1. **`AGENTS.md` dan permukaan instruksi cermin** — blok perilaku wajib level-atas yang menyatakan: *"Planning artifacts are written to `<project-root>/.apothem/plans/` — the sole canonical plans home (a legacy `<project-root>/.plans/` tree is upgraded via `apothem migrate-workspace`) — never to any harness configuration directory (for example `~/.codex/` or `~/.claude/`) and never to a global location. This rule is non-negotiable; cite §3 of the project spec on every related decision."* Blok ini terdeteksi oleh validator `plans-discipline-language`.
+2. **File instruksi dalam-repo per-harness** — mencerminkan direktif yang sama dalam pembingkaian yang sesuai untuk permukaan instruksi harness tersebut (§4 *Disiplin Plan*); terdeteksi oleh validator yang sama pada setiap permukaan harness terdaftar.
+3. **Output-style default** — ketika sebuah respons akan menghasilkan konten berbentuk plan (strategi multi-langkah, dekomposisi, walkthrough desain, jurnal debugging), style merutekan artefak ke penulisan `.apothem/plans/` lokal-proyek alih-alih mencetak-dan-membuang secara inline. Style secara eksplisit menginstruksikan: *"Jika tidak ada root proyek yang dapat ditemukan, hentikan dengan kueri terstruktur yang menanyakan operator di mana harus merencanakan."*
+4. **Setiap prompt pekerja terdelegasi** — membawa stanza *Output Surface* yang menamai `.apothem/plans/` sebagai tujuan untuk artefak perencanaan apa pun, dan stanza *Anti-Pattern* yang menamai direktori plan lokal-harness sebagai terlarang.
+5. **Perintah slash `/plan` khusus** — menerima slug + tubuh, menulis ke `<project-root>/.apothem/plans/YYYY-MM-DD--<slug>.md` dengan frontmatter yang benar, memastikan `.gitignore` tujuan benar, menolak menulis ke path root-konfigurasi-harness.
+6. **Sebuah hook `pre-tool-use` — `plan-write-guard`** — mencegat setiap pemanggilan perkakas tulis-file. Jika path target cocok dengan lokasi plan lokal-harness (misalnya `~/.claude/plans/...` atau `~/.codex/.plans/...`) atau path ekosistem-global lain mana pun yang diidentifikasi heuristik sebagai berbentuk plan, hook memblokir penulisan dan memunculkan kueri terstruktur yang mengusulkan pengalihan ke `.plans/` proyek saat ini.
+7. **Validator CI** — `no-global-plans` menggagalkan build jika memori kerja plan yang di-commit muncul kembali di pohon yang diterbitkan; `plans-discipline-language` gagal jika direktif kanonis menghilang dari file instruksi harness terdaftar mana pun atau output-style default. Permukaan target kanonis validator (dipertahankan sebagai kontrak filesystem) tercantum dalam blok berpagar di bawah.
+
+```text
+AGENTS.md
+CLAUDE.md
+.github/copilot-instructions.md
+```
+
+8. **Hook pre-commit** — mencerminkan hal di atas secara lokal sehingga disiplin ditegakkan sebelum commit mana pun mendarat.
+
+---
+
+## 8. Anti-Pola (terlarang secara kategoris)
+
+- Menulis plan di dalam direktori konfigurasi harness (misalnya `~/.claude/plans/` atau `~/.codex/.plans/`) atau lokasi global lainnya.
+- Meng-commit plan ke riwayat git suatu proyek (hook saat-commit seharusnya menolak ini).
+- Mencampur plan dengan ADR (siklus hidup berbeda, lokasi berbeda, status-commit berbeda).
+- Plan tanpa frontmatter, plan tanpa nama file berprefiks-tanggal, plan tanpa field `project`.
+- Plan lintas-proyek (satu plan, dua proyek). Pecah mereka — satu plan per proyek.
+- Berbagi plan antar mesin melalui sinkronisasi konfigurasi-harness (mis. `~/.claude` untuk Claude Code) — sebuah argumen struktural untuk menjaga plan tetap lokal-proyek: repo proyek *adalah* mekanisme sinkronisasi, pada kesempatan langka ketika plan layak dibagikan — dan kelayakan itu sendiri adalah sinyal bahwa konten seharusnya dipromosikan ke sebuah ADR.
+- Konten plan yang ditanam di dalam prompt pekerja-terdelegasi, tubuh skill, atau output-style. Permukaan-permukaan itu adalah *konfigurasi perilaku tahan lama*; plan adalah *memori kerja sementara*.
+- Menerapkan baris SPDX header kepengarangan ke file plan (plan dikecualikan secara desain — §2, [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) §Daftar Pengecualian).
+
+---
+
+## Lihat Juga
+
+- [ADR-0001](/docs/reference/plans-discipline) — rasionel arsitektural, alternatif yang dipertimbangkan, trade-off yang diterima.
+- [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) — disiplin baris SPDX header kepengarangan (plan dikecualikan secara kategoris).
+- Halaman konvensi asisten koding — konvensi asisten koding multi-permukaan (Disiplin Plan muncul sebagai klaim bersama di seluruh file instruksi harness terdaftar dan setiap permukaan opsional yang di-opt-in). Path:
+
+```text
+site/content/docs/reference/ai-conventions.mdx
+```
+- Spesifikasi proyek §3 — teks kanonis lengkap yang dicerminkan di sini.

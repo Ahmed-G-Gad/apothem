@@ -1,0 +1,91 @@
+---
+title: "Редактировать профиль"
+description: "Измените общий профиль и повторно материализуйте каждую установленную среду."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Цель: изменить значение в общем профиле и распространить его в каждую установленную
+вами среду.
+
+## Предварительные требования
+
+- CLI `apothem` в вашем `PATH` (или самодостаточная форма: префикс
+  `PYTHONPATH="$HOME/.apothem/src"` и запуск `python -m apothem`, или
+  `npx @ahmed-g-gad/apothem`).
+- Профиль по адресу `~/.config/apothem/profile.yaml`. Создайте его с помощью
+  `apothem profile init`, если он отсутствует.
+
+## Форма профиля
+
+Профиль — это единый YAML-документ. Его ключи верхнего уровня:
+
+- `identity` (обязательно) — `name`, плюс опциональные `role`, `email`, `website`,
+  `github`.
+- `preferences` — `language`, `style` (`concise` / `verbose` / `balanced`),
+  `formatter`, `test_framework`.
+- `rules` — список дополнительных строк правил, разделяемых со способными средами.
+- `seriousness` — один из `EXPLORING`, `PERSONAL_USE`, `SHARED`,
+  `PUBLIC_LAUNCH`.
+- `enforcement` — переключатели подключения по выбору (`sprints`, `agent_teams`,
+  `multitasking`, `continuous_execution`, `learning_loop`), каждый флаг по умолчанию
+  выключен.
+- `harnesses` — переопределения по средам, ключ — идентификатор среды.
+- `exclude_harnesses` — идентификаторы сред, пропускаемые пакетными командами
+  (`--harness all`).
+
+## Шаги
+
+1. Изучите текущий профиль:
+
+   ```bash
+   apothem profile show
+   ```
+
+2. Отредактируйте его. Откройте его в системном редакторе:
+
+   ```bash
+   apothem profile edit
+   ```
+
+   Или задайте один ключ через точку из командной строки. Значение сохраняется
+   буквально (за исключением `true`/`false` и явного ввода `[..]`/`{..}`, которые разбираются), и профиль
+   проверяется по схеме перед записью — недопустимое присвоение отклоняется, а
+   профиль на диске остаётся неизменным:
+
+   ```bash
+   apothem profile set seriousness SHARED
+   apothem profile set identity.name "Ada Lovelace"
+   ```
+
+3. Повторно материализуйте среды, чтобы изменение достигло их нативной конфигурации.
+   Для среды пользовательского уровня:
+
+   ```bash
+   apothem update --harness claude-code
+   ```
+
+   Для среды уровня проекта передайте корень проекта; используйте `all`, чтобы
+   обновить каждую установленную среду:
+
+   ```bash
+   apothem update --harness cursor --project /path/to/project
+   apothem update --harness all --project /path/to/project
+   ```
+
+## Проверка
+
+```bash
+apothem profile show
+apothem verify --harness all
+```
+
+`profile show` отражает ваше изменение; `verify` подтверждает, что
+материализованная конфигурация соответствует обновлённому профилю.
+
+## Связанное
+
+- [Добавьте среду](/docs/how-to/adding-a-harness), чтобы перевести новую среду под
+  управление профиля перед повторной материализацией.
+- [Обновление](/docs/install/updating) охватывает обновление движка вместе с шагом
+  повторной материализации.

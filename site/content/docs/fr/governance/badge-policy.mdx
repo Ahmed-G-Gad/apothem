@@ -1,0 +1,126 @@
+---
+title: "Politique des badges"
+description: "Spécifier les sources de badges dynamiques et statiques pour le README, couvrant le statut de workflow natif GitHub, le JSON d'endpoint shields.io et les formes de badge statique."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Ce document est la référence canonique pour la bande de badges du README et
+l'infrastructure qui publie ses sources de données dynamiques. Chaque badge du
+README du projet se résout via l'une des trois formes spécifiées ici ; les
+nouveaux badges ajoutés à l'avenir suivent les mêmes formes ou sont rejetés en
+revue.
+
+## 1. Contexte
+
+Les URL statiques `https://img.shields.io/badge/X-Y-Z` ne changent jamais
+d'elles-mêmes, de sorte qu'elles s'écartent de l'état réel du projet — un
+badge `release-vN-blue` continue d'afficher `vN` longtemps après la sortie de
+`vN+1`. La politique exige donc des formes dynamiques pour chaque valeur qui
+bouge, et réserve les badges statiques au petit ensemble de valeurs (licence,
+version cible de Python) qui changent rarement, où la forme statique est
+honnête.
+
+## 2. Architecture
+
+Trois formes couvrent chaque badge du projet :
+
+1. **Badges de statut de workflow natifs GitHub.** L'URL de badge d'un workflow
+   a la forme
+   `https://github.com/<owner>/<repo>/actions/workflows/<file>/badge.svg` et
+   reflète la dernière exécution sur la branche par défaut. GitHub sert le
+   badge à partir des métadonnées publiques du dépôt.
+2. **Badges d'endpoint shields.io.** Un badge d'endpoint shields.io résout une
+   URL `https://img.shields.io/endpoint?url=<published-json>` où le JSON est
+   conforme au schéma d'endpoint shields.io (`schemaVersion`, `label`,
+   `message`, `color`). Le JSON publié se trouve à
+   `apothem.ahmedgad.com/badges/*.json` ; son contenu est généré par un
+   workflow CI à chaque exécution CI réussie. Les badges d'endpoint maintiennent
+   les métriques sous une publication contrôlée par le projet plutôt qu'un
+   magasin mutable tiers.
+3. **Badges statiques shields.io.** Un badge statique a la forme
+   `https://img.shields.io/badge/<label>-<message>-<color>` sans source de
+   données réactive. Réservé aux valeurs qui changent véritablement rarement
+   (identifiant de licence, version cible de Python).
+
+La publication des métriques du projet via des Gists publics est exclue par
+conception. Les endpoints shields.io sur le domaine contrôlé par le projet sont
+le substitut canonique.
+
+## 3. Spécification par badge
+
+| Badge | Forme | Source | Forme de l'URL |
+|---|---|---|---|
+| Statut CI | Natif GitHub | `.github/workflows/ci.yml` | `https://github.com/ahmed-g-gad/apothem/actions/workflows/ci.yml/badge.svg?branch=main` |
+| Dernier commit | Natif GitHub | métadonnées du dépôt | `https://img.shields.io/github/last-commit/ahmed-g-gad/apothem` |
+| Licence | Statique shields.io | `LICENSE` (MIT) | `https://img.shields.io/badge/License-MIT-yellow.svg` |
+| Dernière version | Endpoint shields.io | `badges/release.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/release.json` |
+| Couverture | Endpoint shields.io | `badges/coverage.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/coverage.json` |
+| Sécurité | Endpoint shields.io | `badges/security.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/security.json` |
+| Chaîne d'approvisionnement | Endpoint shields.io | `badges/supply-chain.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/supply-chain.json` |
+| Documentation | Endpoint shields.io | `badges/docs.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/docs.json` |
+| Version Python | Statique shields.io | `pyproject.toml` `python_requires` | `https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white` |
+
+CodeQL s'exécute comme un workflow dédié `.github/workflows/codeql.yml` qui
+analyse les surfaces Python et Actions ; le job security-scan de `ci.yml`
+n'exécute que bandit, laissant la publication SARIF de CodeQL à `codeql.yml`.
+Le badge de sécurité consomme le JSON d'endpoint publié par le workflow badges
+plutôt qu'un badge de workflow natif GitHub, restant ainsi stable à travers la
+topologie du scanner sous-jacente.
+
+## 4. Mécanisme de publication du JSON
+
+Les JSON d'endpoint sont produits par `.github/workflows/badges.yml`. Le
+workflow :
+
+- Se déclenche sur `workflow_run` après l'achèvement du workflow `ci` (et sur
+  un `workflow_dispatch` manuel pour une republication sans exécution CI).
+- Résout la dernière étiquette depuis `git describe --tags --abbrev=0` et la
+  conclusion CI parente depuis l'événement `workflow_run`.
+- Génère chaque JSON via `jq -n` afin que la sortie corresponde strictement au
+  schéma d'endpoint shields.io (`schemaVersion: 1`, plus `label`, `message`,
+  `color`).
+- Valide chaque JSON émis avec `jq -e` avant le téléversement.
+- Téléverse le répertoire en tant qu'artefact de workflow nommé `badges`.
+
+Le déploiement des artefacts vers `apothem.ahmedgad.com/badges/` est géré par
+`.github/workflows/publish-static-site.yml`. Pendant la construction du site,
+ce workflow télécharge l'artefact `badges` réussi le plus récent et le prépare
+sous `site/dist/badges/`. Si l'artefact est absent ou expiré, le site se
+déploie quand même et consigne l'artefact de badge manquant dans les journaux
+du workflow au lieu de publier du JSON cassé.
+
+## 5. Protocole de maintenance
+
+Ajoutez un nouveau badge en décidant d'abord de sa forme :
+
+- Si le badge reflète l'état d'exécution d'un workflow CI, préférez la forme
+  native GitHub. L'URL du badge est fixée par le fichier de workflow ; aucune
+  infrastructure de publication n'est nécessaire.
+- Si le badge reflète une métrique (un décompte, un pourcentage, une chaîne de
+  version, une étiquette graduée) qui se met à jour au fil du temps, utilisez la
+  forme d'endpoint shields.io. Ajoutez une étape de génération de JSON à
+  `.github/workflows/badges.yml` à côté des cinq existantes et ajoutez l'URL
+  consommatrice `apothem.ahmedgad.com/badges/<name>.json` à la bande de badges
+  du README.
+- Si le badge reflète une valeur qui change véritablement rarement (licence,
+  cible de langage, mode de gouvernance), utilisez la forme statique
+  shields.io. Documentez la cadence de changement dans le tableau par badge de
+  ce fichier lors de l'ajout du badge.
+
+Retirez un badge en le supprimant d'abord du README, puis en supprimant son
+étape de génération de JSON du workflow badges, et enfin en supprimant sa
+ligne du tableau par badge ci-dessus. Maintenez la suppression atomique afin
+que le README ne référence jamais un artefact JSON que le workflow ne produit
+pas.
+
+## 6. Références croisées
+
+- Le workflow CI dont le badge CI natif GitHub reflète l'état d'exécution :
+  `.github/workflows/ci.yml`.
+- Le workflow badges qui publie les JSON d'endpoint :
+  `.github/workflows/badges.yml`.
+- Le domaine du site statique qui sert les JSON :
+  `apothem.ahmedgad.com`.
+- La référence du schéma d'endpoint shields.io :
+  [https://shields.io/badges/endpoint-badge](https://shields.io/badges/endpoint-badge).

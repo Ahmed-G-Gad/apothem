@@ -1,0 +1,69 @@
+---
+title: "/research-ideate"
+description: "/research-ideate — Formula el espacio del problema a partir de una semilla de dominio: barrido de oportunidades y brechas, barrido de hipótesis previas invalidadas y generación clasificada de preguntas de investigación candidatas — la etapa inicial del pipeline /research, que alimenta a /research-spec."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rol:** Investigador Principal (formulación del problema)
+**Posición en el pipeline:** inicial
+
+Formula el espacio del problema desde cero — barrido de oportunidades y brechas, barrido de hipótesis previas invalidadas y generación de preguntas de investigación candidatas con clasificación — la etapa de entrada del pipeline `/research`. Cada candidata se enmarca frente a un anclaje teórico a priori, se fundamenta en el trabajo previo y se enuncia en una forma falsable, lista para `/research-spec`.
+
+## Invocación canónica
+
+```bash
+/research-ideate
+```
+
+Con argumentos:
+
+```bash
+/research-ideate [path/to/domain-notes] [--suite-name NAME] [--override] [--domain NAME]
+```
+
+## Entradas
+
+Una semilla de dominio — notas de dominio en formato libre (proporcionadas por el operador en línea o como una ruta), o un simple nombre `--domain` cuando se parte de cero.
+
+## Salidas
+
+`_inputs/ideation.md` (el espacio del problema enmarcado, el barrido de oportunidades y brechas, el barrido de hipótesis previas invalidadas y la lista clasificada de preguntas candidatas) más el Manifiesto de Transferencia en la carpeta de la suite de investigación.
+
+## Aguas abajo
+
+/research-spec (consumidor aguas abajo — enmarca la candidata elegida en una especificación falsable).
+
+## Fases del flujo de trabajo
+
+El comando sigue el flujo de trabajo estándar del pipeline `/research`:
+
+1. **Cargar el contexto** — Leer la semilla de dominio, las reglas y cualquier estado existente de la suite.
+2. **Barrer el espacio de oportunidades y brechas** — Mapear qué se ha estudiado, qué se disputa y qué queda sin abordar en el dominio.
+3. **Barrer las hipótesis previas invalidadas** — Hacer aflorar las hipótesis ya refutadas por el trabajo previo para que la lista no vuelva a recorrer terreno ya resuelto.
+4. **Generar y clasificar candidatas** — Producir preguntas de investigación candidatas, cada una enunciada en una forma falsable, clasificadas por tratabilidad e impacto.
+5. **Verificar las salidas** — Confirmar que cada candidata se fundamenta en el trabajo previo primario y es refutable; resolver cada ambigüedad a través del canal de consulta estructurada.
+6. **Emitir la lista de ideación** — `_inputs/ideation.md` más el manifiesto de transferencia.
+
+## Modos de fallo
+
+| Síntoma | Causa | Recuperación |
+|---------|-------|----------|
+| Ninguna candidata falsable | Semilla de dominio demasiado amplia o puramente descriptiva | Acotar el dominio mediante consulta estructurada; reenmarcar las candidatas como preguntas refutables |
+| La candidata reformula una hipótesis previa invalidada | Se omitió el barrido del trabajo previo | Ejecutar el barrido de hipótesis previas invalidadas; descartar o reenmarcar la candidata solapada |
+| Falta la semilla de dominio | No se proporcionaron notas ni `--domain` | Proporcionar notas de dominio en línea / como ruta, o pasar `--domain NAME` |
+
+## Ejemplos
+
+```bash
+# Barrer un dominio y generar preguntas candidatas clasificadas
+/research-ideate ~/notes/retrieval-systems.md --suite-name retrieval-latency
+
+# Empezar desde un nombre de dominio simple
+/research-ideate --domain "vector-index recall under drift"
+```
+
+## Referencias cruzadas
+
+- [Resumen del pipeline](/docs/pipeline)
+- [Referencia de comandos](/docs/reference/commands)

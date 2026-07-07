@@ -1,0 +1,48 @@
+---
+title: "아키텍처"
+description: "Apothem 아키텍처 개요 — 공유 프로파일, 하네스 어댑터 추상화, 그리고 소스 트리의 구성 방식."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem은 하나의 아이디어를 중심으로 구축됩니다. 단일 공유 거버넌스 프로파일을,
+하네스별 어댑터를 통해 각 프로그래밍 도우미 런타임의 네이티브 구성 형식으로
+물화하는 것입니다. 이 섹션에서는 구조적 구성 요소 — 어댑터 프로토콜, 프로파일
+스키마, 소스 트리 레이아웃, 그리고 이들을 연결하는 설치 워크플로 — 를
+설명합니다.
+
+## 시스템 개요
+
+한눈에 보면 Apothem은 하나의 파이프라인입니다. 단일 공유 프로파일이 하네스
+레지스트리에 입력되고, 레지스트리는 모든 하네스별 어댑터를 해석합니다. 각
+어댑터는 해당 하네스의 네이티브 구성 표면을 물화하며, 상시 적합성 게이트가
+물화된 모든 표면을 검사합니다.
+
+```mermaid
+%% provenance: hand-authored %%
+%% verified: 2026-06-23 %%
+%% cross-reference: src/apothem/lib/harness_registry.py (runtime registry) + src/apothem/harnesses/ (adapter sub-packages) + src/apothem/conformity/ (conformity gate) %%
+flowchart TD
+    accTitle: Apothem end-to-end materialization flow
+    accDescr: One shared profile feeds the harness registry, which resolves seventeen per-harness adapters; each adapter runs its install, uninstall, update, and verify lifecycle, with four single-file-config adapters also rendering a native config file through a materializer, and writes the harness's own native configuration surface. A standing conformity gate checks every materialized surface.
+    P["Shared profile<br/>~/.config/apothem/profile.yaml<br/>rules, skills, hooks, slash-commands, MCP servers"]
+    R["Harness registry<br/>authoritative at runtime<br/>(resolves every adapter)"]
+    A["17 per-harness adapters<br/>each: install / uninstall / update / verify<br/>+ materializer on 4 single-file-config adapters"]
+    N["Each harness's native config surface<br/>Claude Code settings.json, Cursor .mdc,<br/>Gemini GEMINI.md, Copilot instructions.md, …"]
+    G["Conformity gate<br/>pre-emission validators"]
+
+    P --> R
+    R --> A
+    A --> N
+    G -.->|standing check over every materialized surface| N
+```
+
+## 페이지
+
+| 페이지 | 설명 |
+|------|-------------|
+| [하네스 어댑터 추상화](/docs/architecture/harness-adapter-abstraction) | `HarnessAdapter` 프로토콜 — 어댑터가 공유 프로파일을 플랫폼 네이티브 구성으로 변환하는 방법. |
+| [공유 프로파일 스키마](/docs/architecture/shared-profile-schema) | `~/.config/apothem/profile.yaml` 또는 `--profile PATH`에 있는 스키마 기반 YAML 프로파일. |
+| [소스 레이아웃](/docs/architecture/source-layout) | Apothem이 `src/` 레이아웃을 사용하는 이유와 트리의 구성 방식. |
+| [설치 워크플로](/docs/architecture/installation-workflow) | `apothem install`, `update`, `uninstall`이 처음부터 끝까지 작동하는 방식. |
+| [위임 작업자](/docs/architecture/agents) | 이 저장소에서 작동하는 멀티 워커 런타임을 위한 저장소 범위 지침. |

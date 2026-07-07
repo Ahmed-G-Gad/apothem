@@ -1,0 +1,38 @@
+---
+title: "Apothem 对比原生 GitHub Copilot 配置"
+description: "手工维护 GitHub Copilot 的 copilot-instructions.md，与从 Apothem 的共享配置档案渲染它。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+GitHub Copilot 从 `.github/copilot-instructions.md` 读取其指令。Apothem 的
+github-copilot 适配器从共享配置档案渲染该文件。本页将手工维护该配置与用
+Apothem 管理它进行对比。
+
+## 工作量对比
+
+| 任务 | 原生手工配置 | Apothem 管理 |
+| ---- | --------------- | --------------- |
+| 编写指令 | 手动编辑 `.github/copilot-instructions.md` | 渲染：共享规则内嵌进该文件 |
+| 与其他环境保持指令对齐 | 手动、逐工具 | 在 `apothem update` 时自动完成 |
+| 安装 / 移除配置 | 手动写入和删除文件 | `apothem install` / `apothem uninstall` |
+| 验证配置正确 | 手动检查 | `apothem verify --harness github-copilot` |
+
+## Apothem 管理什么
+
+github-copilot 适配器将共享规则内嵌进 `.github/copilot-instructions.md`。
+Copilot 作为 IDE 扩展运行，不暴露工具调用钩子，因此护栏意图完全承载于渲染出的
+指令之中。每次对共享规则的变更都会在下一次 `apothem update` 时重新渲染该文件。
+
+## 迁移路径
+
+1. 若你尚未创建共享配置档案，运行 `apothem profile init`。
+2. 把你现有 `.github/copilot-instructions.md` 的内容移入共享语料。
+3. 运行 `apothem install --harness github-copilot` 以渲染指令文件。
+4. 运行 `apothem verify --harness github-copilot` 确认配置已落地。
+5. 之后每次变更都使用 `apothem update --harness github-copilot`。
+
+## 继续阅读
+
+- [GitHub Copilot 适配器参考](/docs/harnesses/github-copilot)
+- [对比概览](/docs/comparison)

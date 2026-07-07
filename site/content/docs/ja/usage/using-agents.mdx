@@ -1,0 +1,52 @@
+---
+title: "委譲ワーカーの利用"
+description: "専門化されたタスク向けに永続的な委譲ワーカーを定義し、呼び出す。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem の委譲ワーカーは、`src/apothem/` ツリー配下に格納される永続的で再利用可能な
+ワーカー定義です（規約上のディレクトリは下記のとおり——名前はランタイムローダーとの
+互換性のために保持されています）。
+
+```text
+src/apothem/agents/
+```
+
+各委譲ワーカーは、専門化された役割、検出シグナル、許可ツールのセットをエンコードします。
+
+## 委譲ワーカーファイルの構造
+
+```markdown
+---
+name: "my-agent"
+description: "..."
+tools: "Read, Grep, Glob"
+---
+
+# My assistant
+
+## Role
+...
+
+## Detection signals
+Matched when: ...
+
+## Workflow
+...
+```
+
+## 組み込み委譲ワーカー
+
+| 委譲ワーカー | 目的 |
+|-------|---------|
+| `codebase-explorer` | 深いコードベース探索 |
+| `convention-auditor` | 命名とフォーマットの検証 |
+| `memory-auditor` | メモリ正確性の検証 |
+| `quality-gate` | lint、テスト、型チェック、セキュリティスキャン |
+
+## 委譲ワーカーの呼び出し
+
+委譲ワーカーは、ホストランタイムが公開する委任ツールを介してオーケストレーターによって
+ディスパッチされます。オーケストレーターは、タスクの説明と検出シグナルに基づいて、
+一致するワーカーを選択します。

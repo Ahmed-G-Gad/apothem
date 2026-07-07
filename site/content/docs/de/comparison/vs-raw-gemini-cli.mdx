@@ -1,0 +1,40 @@
+---
+title: "Apothem im Vergleich zur manuellen Gemini-CLI-Konfiguration"
+description: "Die GEMINI.md-Regeldatei von Gemini CLI von Hand pflegen im Vergleich zum Rendern aus dem gemeinsamen Profil von Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Gemini CLI liest eine einzige `GEMINI.md`-Regeldatei. Der gemini-cli-Adapter von
+Apothem rendert sie aus dem gemeinsamen Profil. Diese Seite stellt die manuelle
+Pflege dieser Konfiguration der Verwaltung mit Apothem gegenüber.
+
+## Aufwandsvergleich
+
+| Aufgabe | Manuelle Konfiguration | Von Apothem verwaltet |
+| ---- | --------------- | --------------- |
+| Regeln verfassen | Eine `GEMINI.md` von Hand bearbeiten | Gerendert: gemeinsame Regeln in `GEMINI.md` eingebettet |
+| Regeln mit anderen Umgebungen abgestimmt halten | Manuell, pro Werkzeug | Automatisch bei `apothem update` |
+| Konfiguration installieren / entfernen | `GEMINI.md` von Hand schreiben und löschen | `apothem install` / `apothem uninstall` |
+| Prüfen, ob die Konfiguration korrekt ist | Manuelle Inspektion | `apothem verify --harness gemini-cli` |
+
+## Was Apothem verwaltet
+
+Der gemini-cli-Adapter bettet die gemeinsamen Regeln in eine einzige `GEMINI.md`
+ein. Gemini CLI hat keinen PreToolUse-Hook, daher wird die Absicht der
+Schutzplanken im Regeltext ausgedrückt statt an einem
+Werkzeugaufruf-Abfangpunkt. Jede Änderung an den gemeinsamen Regeln rendert
+`GEMINI.md` beim nächsten `apothem update` neu.
+
+## Migrationspfad
+
+1. Führe `apothem profile init` aus, um das gemeinsame Profil zu erstellen, falls noch nicht geschehen.
+2. Verschiebe die Regeln aus deiner vorhandenen `GEMINI.md` in den gemeinsamen Korpus.
+3. Führe `apothem install --harness gemini-cli` aus, um `GEMINI.md` zu rendern und zu schreiben.
+4. Führe `apothem verify --harness gemini-cli` aus, um zu bestätigen, dass die Konfiguration angekommen ist.
+5. Verwende `apothem update --harness gemini-cli` für jede spätere Änderung.
+
+## Als Nächstes lesen
+
+- [Referenz des Gemini-CLI-Adapters](/docs/harnesses/gemini-cli)
+- [Vergleichsüberblick](/docs/comparison)

@@ -1,0 +1,42 @@
+---
+title: "品牌调板"
+description: "Apothem 核心品牌色与十七种工具品牌色。单一事实来源是位于 assets/design-tokens.css 的规范设计令牌；网站镜像这些值。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## 核心调板
+
+规范调板——板岩中性色阶、翡翠强调色阶和语义色相——由位于
+[`assets/design-tokens.css`](https://github.com/ahmed-g-gad/apothem/blob/main/assets/design-tokens.css)
+的设计令牌（及其 `assets/design-tokens.json` 镜像）拥有。位于
+[`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
+的网站主题将这些令牌值镜像到 Fumadocs 主题所使用的 CSS 变量中。下方的每个值
+都追溯到一个规范色阶级别。
+
+| 角色 | 令牌（CSS） | 浅色模式 | 深色模式 | 用途 |
+|---|---|---|---|---|
+| 主色 | `--brand-text` | slate-900 `#0f172a` | slate-50 `#f8fafc` | 标题、导航文本、主要阅读界面。 |
+| 强调色 | `--sl-color-accent` | emerald-600 `#059669` | emerald-400 `#34d399` | 活动链接、焦点环、选中的导航。 |
+| 正文文本 | `--brand-muted` | slate-600 `#475066` | slate-300 `#c2ccda` | 默认正文文本。 |
+| 正文底色 | `--brand-surface` | white `#ffffff` | slate-900 `#0f172a` | 默认背景。 |
+| 导航底色 | `--brand-surface-muted` | slate-50 `#f8fafc` | slate-950 `#080c15` | 页眉和导航条带。 |
+| 代码底色 | `--brand-code-bg` | slate-900 `#0f172a` | slate-950 `#080c15` | 行内/块级代码界面。 |
+
+## 工具调板
+
+工具颜色位于[工具颜色](/docs/brand/harness-colors)。它在 Apothem 标识的六边形——
+其中心节点和终端节点——上的几何映射已折叠进品牌部分。位于
+[`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
+的 CSS 事实来源将每个令牌接入其 CSS 变量。
+
+## 在文档中的用法
+
+调板通过全局样式表 `site/app/global.css` 接入，由根布局导入。浅色和深色模式变体
+随主题的 `.dark` 类状态切换。
+
+## 更新
+
+仅当某个核心颜色（板岩/翡翠）发生变化，或某个工具在上游批准了品牌色变更时，调板
+才会更新。逐工具的变更会跨 `site/app/global.css`、[工具颜色](/docs/brand/harness-colors)
+以及 `assets/src/` 下每个受影响的 SVG 母版原子性地传播。

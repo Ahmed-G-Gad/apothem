@@ -1,0 +1,48 @@
+---
+title: "Apothem مقابل تهيئة Claude Code اليدوية"
+description: "صيانة شجرة التهيئة الأصلية الكاملة لـ Claude Code يدويًّا، مقابل إدارتها عبر ملف التعريف المشترك لـ Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+يحتفظ <bdi>Claude Code</bdi> (من المُصنّع <bdi>Anthropic</bdi>) بتهيئته الأصلية تحت
+<bdi>`~/.claude/`</bdi>. ومحوِّل <bdi>claude-code</bdi> في <bdi>Apothem</bdi> هو محوِّل السطح
+الكامل: فهو ينشر المتن المشترك مباشرةً إلى تلك الشجرة. وتقابل هذه الصفحة بين صيانة
+التهيئة يدويًّا وإدارتها بـ <bdi>Apothem</bdi>.
+
+## مقارنة الجهد
+
+| المهمة | تهيئة يدوية | يديرها Apothem |
+| ---- | --------------- | --------------- |
+| كتابة القواعد والوكلاء والأوامر والمهارات | تحرير كل سطح في <bdi>`~/.claude/`</bdi> يدويًّا | كتابتها مرّةً واحدة في المتن المشترك |
+| صيانة أنماط الإخراج وأشرطة الحالة | تحرير يدوي لكل سطح | منشورة من المتن المشترك |
+| تهيئة الخطّافات | تحرير مدخلات خطّافات <bdi>`settings.json`</bdi> يدويًّا | منشورة (<bdi>PreToolUse/PostToolUse/Stop/SessionStart</bdi>) |
+| إبقاء التهيئة متوائمة مع البيئات الأخرى | يدويًّا، لكل أداة | تلقائيًّا عند <bdi>`apothem update`</bdi> |
+| التحقّق من صحّة التهيئة | فحص يدوي | <bdi>`apothem verify --harness claude-code`</bdi> |
+
+## ما الذي يديره Apothem
+
+ينشر المحوِّل القواعد والوكلاء والأوامر والمهارات وأنماط الإخراج وأشرطة الحالة
+و<bdi>`settings.json`</bdi> إلى <bdi>`~/.claude/`</bdi>. وتُهيَّأ الخطّافات الأصلية
+<bdi>PreToolUse</bdi> و<bdi>PostToolUse</bdi> و<bdi>Stop</bdi> و<bdi>SessionStart</bdi> من المتن
+المشترك.
+
+و<bdi>Apothem</bdi> **لا** يدير <bdi>`CLAUDE.md`</bdi> — فذلك الملف أرضٌ مملوكة للمشغّل.
+تبقى تعليماتك الخاصة بالمشروع والشخصية في <bdi>`CLAUDE.md`</bdi> ملكًا لك؛ ويحكم
+<bdi>Apothem</bdi> الأسطح المنشورة من حوله.
+
+## مسار الترحيل
+
+1. شغّل <bdi>`apothem profile init`</bdi> لإنشاء ملف التعريف المشترك إن لم تكن قد فعلت
+   بعد.
+2. انقل قواعدك ووكلاءك وأوامرك ومهاراتك القائمة من <bdi>`~/.claude/`</bdi> إلى المتن
+   المشترك.
+3. اترك <bdi>`CLAUDE.md`</bdi> في مكانه — لن يمسّه <bdi>Apothem</bdi>.
+4. شغّل <bdi>`apothem install --harness claude-code`</bdi> لنشر المتن.
+5. شغّل <bdi>`apothem verify --harness claude-code`</bdi> للتأكّد من وصول التهيئة.
+6. استخدم <bdi>`apothem update --harness claude-code`</bdi> مع كل تغيير لاحق.
+
+## اقرأ تاليًا
+
+- [مرجع محوِّل Claude Code](/docs/harnesses/claude-code)
+- [نظرة عامة على المقارنة](/docs/comparison)

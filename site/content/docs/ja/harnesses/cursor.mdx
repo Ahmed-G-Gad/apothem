@@ -1,0 +1,86 @@
+---
+title: "Cursor"
+description: "Cursor（正式版）向けの Apothem ツールアダプター。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**ベンダー：** Anysphere
+**インストール名：** `cursor`
+**ステータス：** 正式版
+**ネイティブ構成：** プロジェクトルートの `.cursor/rules/`
+
+## インストール
+
+```bash
+apothem install --harness cursor --project /path/to/project
+```
+
+アダプターは、共有された Apothem のルールとガバナンス面から、プロジェクト範囲の
+`.mdc` ルールファイルを 1 つレンダリングします。
+
+**書き込まれるファイル：** `<project>/.cursor/rules/apothem-rules.mdc`
+
+## プロファイルからネイティブ構成へのマッピング
+
+アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または
+`apothem update` を実行するたびにプロジェクトのルールファイルをレンダリングします。
+共有プロファイルが信頼できる唯一の情報源です。生成されたファイルへのプロジェクト
+ローカルな編集は、次回の同期で Apothem 管理のコンテンツに置き換えられる前に
+バックアップされます。
+
+## 互換性に関する注意
+
+Cursor 0.45+ は `.cursor/rules/` を通じてプロジェクトレベルの指示をサポートします。
+アダプターはデフォルトでプロジェクト範囲の `.cursor/rules/` ディレクトリに書き込み
+ます。Cursor には、このアダプターが管理できる、ファイルベースのユーザーグローバル
+ルールパスは文書化されていません。
+
+## 検証
+
+```bash
+apothem verify --harness cursor --project /path/to/project
+```
+
+verify コマンドは次のことを確認します：
+
+1. ネイティブ構成が想定どおりのパスに存在すること。
+2. 共有プロファイルのすべての必須フィールドが存在すること。
+3. アダプター固有の検証ルーチンが成功を報告すること。
+
+## 更新
+
+```bash
+apothem update --harness cursor --project /path/to/project
+```
+
+現在の共有プロファイルの状態からプロジェクトのルールファイルを再導出します。
+
+## アンインストール
+
+```bash
+apothem uninstall --harness cursor --project /path/to/project
+```
+
+アダプターが書き込んだネイティブ構成ファイルを削除します。
+共有プロファイルの YAML と Apothem エンジンには影響しません。
+
+## 適合ゲート
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## トラブルシューティング
+
+| 症状 | 対処 |
+|---------|-----|
+| 構成ファイルが見つからない | `apothem install --harness cursor --project /path/to/project` を再実行する |
+| 検証に失敗した | `apothem update --harness cursor --project /path/to/project` を実行し、再度検証する |
+| 予期しない構成内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、`apothem update --harness cursor --project /path/to/project` を再実行する |
+
+## 構成のつまみ
+
+| フラグ | デフォルト | 説明 |
+|------|---------|-------------|
+| `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューします。 |

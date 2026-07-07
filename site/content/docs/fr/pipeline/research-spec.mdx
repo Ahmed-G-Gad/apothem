@@ -1,0 +1,73 @@
+---
+title: "/research-spec"
+description: "/research-spec — Cadre une question de recherche en forme libre ou des notes brutes en une spécification de recherche de niveau spec (hypothèses falsifiables, portée, critères, métriques de réussite) prête pour /research-theory."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rôle :** Chercheur principal (cadrage)
+**Position dans le pipeline :** intermédiaire
+
+Cadre une question de recherche en forme libre ou des notes brutes en un `_spec/research-spec.md` de niveau spec — un ensemble d'hypothèses testables et falsifiables avec une portée explicite, des critères d'inclusion / exclusion et des métriques de réussite — prêt pour `/research-theory`.
+
+## Invocation canonique
+
+```bash
+/research-spec
+```
+
+Avec des arguments :
+
+```bash
+/research-spec [path/to/question-or-notes] [--suite-name NAME] [--quick SLUG]
+```
+
+## Entrées
+
+Une question de recherche en forme libre ou des notes brutes (fournies par l'opérateur en ligne ou sous forme de chemin).
+
+## Sorties
+
+`_spec/research-spec.md` (question, hypothèses falsifiables, portée, critères d'inclusion / exclusion, métriques de réussite, glossaire) + `_inputs/handoff-manifest.yml`. `--quick` écrit à la place un brief de recherche léger et local au projet.
+
+## En aval
+
+/research-theory (consommateur en aval)
+
+## Phases du flux de travail
+
+La commande suit le flux de travail standard du pipeline `/research` :
+
+1. **Charger le contexte** — Lire la question / les notes, les règles et tout état existant de la suite.
+2. **Cadrer la question** — Décomposer en hypothèses falsifiables avec une portée explicite et des critères d'inclusion / exclusion ; faire émerger chaque ambiguïté par le canal d'enquête structurée.
+3. **Définir les métriques de réussite** — Énoncer les critères mesurables selon lesquels la recherche sera jugée.
+4. **Vérifier les sorties** — Confirmer que la spécification est définitive (toute lacune de données d'autorité résolue par le canal d'enquête structurée, aucune laissée comme espace réservé de confirmation non rempli) et qu'elle passe le seuil du mandat de rigueur.
+5. **Mettre à jour le manifeste de transfert** — Enregistrer le chemin de la spécification et le décompte des enquêtes ouvertes / résolues.
+6. **Émettre la spécification** — `_spec/research-spec.md` plus le manifeste de transfert.
+
+## Seuil de rigueur
+
+Chaque contribution revendiquée est contrainte d'être distincte, substantielle et ablatable de manière indépendante, afin que son effet marginal puisse être isolé ultérieurement. La profondeur du seuil de rigueur requis évolue avec l'ambition du lieu de publication visé ; là où cette ambition n'est pas spécifiée, elle est confirmée par le canal d'enquête structurée, jamais inventée.
+
+## Modes de défaillance
+
+| Symptôme | Cause | Récupération |
+|---------|-------|----------|
+| Ambiguïté d'hypothèse non résolue | Question sous-spécifiée | Faire émerger par enquête structurée ; ne pas inventer de portée |
+| Aucune métrique de réussite mesurable | Objectif énoncé comme une activité, pas comme un résultat | Recadrer en un résultat testable et falsifiable |
+| Entrée de question manquante | Aucune prose / note fournie | Fournir la question de recherche en ligne ou sous forme de chemin |
+
+## Exemples
+
+```bash
+# Frame a question into a research spec
+/research-spec ~/notes/retrieval-latency-study.md --suite-name retrieval-latency
+
+# Lightweight project-local research brief
+/research-spec --quick retrieval-latency
+```
+
+## Renvois
+
+- [Aperçu du pipeline](/docs/pipeline)
+- [Référence des commandes](/docs/reference/commands)

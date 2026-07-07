@@ -1,0 +1,99 @@
+---
+title: "Gemini CLI"
+description: "Apothem harness adapter for Gemini CLI (GA)."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Vendor:** Google
+**Install name:** `gemini-cli`
+**Status:** GA
+**Native config:** project-local `GEMINI.md` and `.gemini/`
+
+## Installation
+
+```bash
+apothem install --harness gemini-cli --project /path/to/project
+```
+
+The adapter is project-scoped. It installs the project `GEMINI.md`, converts
+Apothem commands to Gemini TOML slash commands, normalizes local helper
+definitions, and places non-native support cohorts under `.gemini/.apothem/support/`.
+
+**Files written:**
+
+```text
+GEMINI.md
+.gemini/commands/*.toml
+.gemini/agents/*.md
+.gemini/skills/
+.gemini/.apothem/support/
+```
+
+## Profile-to-native-config mapping
+
+The adapter reads Apothem's shared cohorts and routes each one through a
+Gemini-compatible surface. Markdown rules, templates, and hook material remain
+under `.gemini/.apothem/support/` because they are support material, not a Gemini-native
+rules directory.
+
+## Compatibility notes
+
+`~/.gemini/` remains user-scope territory for tools that use a global Gemini
+profile. The Gemini CLI adapter writes only to the project passed through
+`--project`.
+
+## Verification
+
+```bash
+apothem verify --harness gemini-cli --project /path/to/project
+```
+
+The verify command confirms that:
+
+1. The native config exists at the expected path.
+2. All mandatory fields from the shared profile are present.
+3. The adapter-specific verification routine reports success.
+
+## Updating
+
+```bash
+apothem update --harness gemini-cli --project /path/to/project
+```
+
+Refreshes `GEMINI.md`, converted commands, local helper definitions, installed
+skills, and the `.gemini/.apothem/support/` support tree.
+
+## Uninstalling
+
+```bash
+apothem uninstall --harness gemini-cli --project /path/to/project
+```
+
+Removes the native config files written by the adapter.
+The shared profile YAML and Apothem engine are unaffected.
+
+## Conformity gate
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| Config file not found | Re-run `apothem install --harness gemini-cli --project /path/to/project` |
+| Verification failed | Run `apothem update --harness gemini-cli --project /path/to/project`, then verify again |
+| Unexpected config content | Check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run `apothem update --harness gemini-cli --project /path/to/project` |
+
+## Configuration knobs
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--dry-run` | `false` | Preview install without writing files. |
+
+## See also
+
+- [All harnesses](/docs/harnesses) — the full catalog of supported tools
+- [Install guide](/docs/install) — install Apothem into this harness
+- [`apothem harnesses` reference](/docs/cli-reference/harnesses) — list and inspect adapters from the CLI

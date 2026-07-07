@@ -1,0 +1,52 @@
+---
+title: "Using delegated workers"
+description: "Define and invoke persistent delegated workers for specialized tasks."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem delegated workers are persistent, reusable worker definitions stored under
+the `src/apothem/` tree (canonical directory shown below — name
+preserved for compatibility with the runtime loader):
+
+```text
+src/apothem/agents/
+```
+
+Each delegated worker encodes a
+specialized role, detection signals, and an allowed-tools set.
+
+## Delegated-worker file structure
+
+```markdown
+---
+name: "my-agent"
+description: "..."
+tools: "Read, Grep, Glob"
+---
+
+# My assistant
+
+## Role
+...
+
+## Detection signals
+Matched when: ...
+
+## Workflow
+...
+```
+
+## Built-in delegated workers
+
+| Delegated worker | Purpose |
+|-------|---------|
+| `codebase-explorer` | Deep codebase exploration |
+| `convention-auditor` | Naming and formatting verification |
+| `memory-auditor` | Memory accuracy verification |
+| `quality-gate` | Lint, test, type-check, security scan |
+
+## Invoking delegated workers
+
+Delegated workers are dispatched by the orchestrator via the delegation
+tool exposed by the harness runtime. The orchestrator
+selects the matching worker based on the task description and detection signals.

@@ -1,0 +1,70 @@
+---
+title: "/research-paper"
+description: "/research-paper — Merakit draf makalah tingkat atas (dari abstrak hingga kesimpulan beserta referensi) dari sintesis, desain, dan analisis, dengan setiap sitasi diverifikasi agar dapat di-resolve."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Peran:** Peneliti utama (penulisan)
+**Posisi pipeline:** tengah rantai
+
+Merakit draf makalah tingkat atas dari sintesis, desain, dan analisis — abstrak, pendahuluan, karya terkait, metode, hasil, pembahasan, keterbatasan, kesimpulan, referensi. Setiap sitasi diverifikasi agar dapat di-resolve ke sumber nyata; tanpa sitasi hantu.
+
+## Pemanggilan kanonis
+
+```bash
+/research-paper
+```
+
+Dengan argumen:
+
+```bash
+/research-paper [path/to/research-suite/]
+```
+
+## Masukan
+
+`_inputs/synthesis.md` (peta SOTA + celah), `_inputs/study-design.md` (metode), dan `_outputs/analysis.md` (hasil).
+
+## Keluaran
+
+Hasil makalah di lokasi yang alami bagi host (`paper/`) — abstrak, pendahuluan, karya terkait, metode, hasil, pembahasan, keterbatasan, kesimpulan, referensi.
+
+## Hilir
+
+/research-review (konsumen hilir)
+
+## Fase alur kerja
+
+Perintah ini mengikuti alur kerja pipeline `/research` standar:
+
+1. **Memuat konteks** — Membaca sintesis, desain studi, dan analisis.
+2. **Memverifikasi Gerbang Urutan** — Memastikan `_outputs/analysis.md` ada; jika tidak, berhenti dengan `Blocked: run /research-analysis first`.
+3. **Merakit draf** — Menyusun dari abstrak hingga kesimpulan; pendahuluan dan karya terkait bersandar pada sintesis, metode pada desain, hasil pada analisis.
+4. **Memverifikasi sitasi** — Setiap referensi di-resolve ke sumber nyata.
+5. **Memperbarui manifes serah terima** — Mencatat jalur hasil makalah.
+6. **Memancarkan makalah** — naskah di lokasi `paper/` yang alami bagi host.
+
+## Landasan ketelitian
+
+Di bawah tempat-terbit tunanetra-ganda, naskah hanya membawa apa yang diizinkan kebijakan anonimitas: penulis, institusi, pendanaan, dan sistem yang diteliti dideskripsikan dalam bahasa domain alami tanpa menyebutkannya, ditahan ke metadata yang diajukan terpisah untuk tahap de-anonimisasi yang ditetapkan. Kedalaman pelaporan reproduksibilitas dan statistik berskala sesuai ambisi tempat-terbit sasaran.
+
+## Mode kegagalan
+
+| Gejala | Penyebab | Pemulihan |
+|---------|-------|----------|
+| Blocked: run /research-analysis first | Tidak ada analisis | Jalankan `/research-analysis` untuk menghasilkan `_outputs/analysis.md` |
+| Sitasi hantu | Referensi tidak dapat di-resolve | Hapus atau perbaiki sitasi; jangan pernah mengarang sumber |
+| Hasil dilebih-lebihkan | Pembahasan melampaui analisis | Batasi klaim pada ukuran efek yang dianalisis + CI |
+
+## Contoh
+
+```bash
+# Merakit draf makalah dari sintesis + desain + analisis
+/research-paper path/to/research-suite/
+```
+
+## Referensi silang
+
+- [Ikhtisar pipeline](/docs/pipeline)
+- [Referensi perintah](/docs/reference/commands)

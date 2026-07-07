@@ -1,0 +1,70 @@
+---
+title: "/research-experiment"
+description: "/research-experiment — Ejecuta el estudio diseñado y captura datos en bruto con procedencia completa, junto con un manifiesto de reproducibilidad (entorno, semilla, protocolo, fijación de versiones)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rol:** Investigador Principal (ejecución)
+**Posición en la canalización:** intermedia
+
+Ejecuta el estudio o experimento diseñado y captura datos en bruto con procedencia completa. Garantiza la reproducibilidad: registra el entorno, la semilla, el registro del protocolo y la fijación de versiones para que una parte independiente pueda volver a ejecutarlo.
+
+## Invocación canónica
+
+```bash
+/research-experiment
+```
+
+Con argumentos:
+
+```bash
+/research-experiment [path/to/research-suite/]
+```
+
+## Entradas
+
+`_inputs/study-design.md` (el diseño) y `_inputs/preregistration.md` (el plan de análisis congelado).
+
+## Salidas
+
+`_outputs/experiment-log.md` (la traza del protocolo con marca de tiempo), los datos en bruto en una ubicación natural del host y `_outputs/reproducibility-manifest.md` (entorno, semilla, protocolo, fijación de versiones).
+
+## Aguas abajo
+
+/research-analysis (consumidor aguas abajo)
+
+## Fases del flujo de trabajo
+
+El comando sigue el flujo de trabajo estándar de la canalización `/research`:
+
+1. **Cargar el contexto** — Lee el diseño del estudio y el preregistro.
+2. **Verificar la Puerta de Secuencia** — Confirma que `_inputs/study-design.md` existe; de lo contrario, detente con `Blocked: run /research-design first`.
+3. **Ejecutar y registrar** — Ejecuta el protocolo; captura datos en bruto con procedencia; registra la traza del protocolo con marca de tiempo.
+4. **Capturar la reproducibilidad** — Registra el entorno, la semilla, el protocolo y la fijación de versiones.
+5. **Actualizar el manifiesto de transferencia** — Registra la ubicación de los datos y el manifiesto de reproducibilidad.
+6. **Emitir el registro** — `_outputs/experiment-log.md` + datos en bruto + `_outputs/reproducibility-manifest.md`.
+
+## Umbral de rigor
+
+La ejecución realiza una pasada piloto para calibrar presupuestos y rangos, y luego la comparación completa bajo un plan declarado de utilización de cómputo (asignación de núcleos, techos de memoria, paralelización segura de repeticiones independientes). Cada método estocástico ejecuta su régimen de repeticiones preregistrado con semillas registradas y hardware anotado. Está disponible un bucle de experimentación autónomo opcional y desactivado por defecto: contra un arnés congelado, propone un cambio a un único objetivo mutable, lo ejecuta con el presupuesto fijo, lo conserva solo si supera al titular y deja constancia de cada ensayo.
+
+## Modos de fallo
+
+| Síntoma | Causa | Recuperación |
+|---------|-------|----------|
+| Blocked: run /research-design first | Sin diseño del estudio | Ejecuta `/research-design` para producir `_inputs/study-design.md` |
+| Ejecución no reproducible | Falta el registro de la semilla / el entorno | Registra el manifiesto de reproducibilidad completo antes de continuar |
+| Desviación del protocolo sin documentar | Cambio a mitad de ejecución no registrado | Registra la desviación en el registro del experimento; divúlgala en el análisis |
+
+## Ejemplos
+
+```bash
+# Ejecuta el estudio diseñado y captura datos en bruto reproducibles
+/research-experiment path/to/research-suite/
+```
+
+## Referencias cruzadas
+
+- [Resumen de la canalización](/docs/pipeline)
+- [Referencia de comandos](/docs/reference/commands)

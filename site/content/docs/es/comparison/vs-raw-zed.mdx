@@ -1,0 +1,49 @@
+---
+title: "Apothem frente a la configuración manual de Zed"
+description: "Mantener a mano el archivo de instrucciones plano .rules de Zed frente a renderizarlo desde el perfil compartido de Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Zed lee las instrucciones del agente desde un único archivo plano `.rules` en la
+raíz del proyecto (junto a la familia `AGENTS.md` / `CLAUDE.md`). El adaptador
+zed de Apothem renderiza ese archivo desde el perfil compartido. Esta página
+contrasta mantener esa configuración a mano frente a gestionarla con Apothem.
+
+## Comparación de esfuerzo
+
+| Tarea | Configuración manual | Gestionada por Apothem |
+| ---- | --------------- | --------------- |
+| Escribir instrucciones | Escribir a mano el archivo `.rules` | Renderizado desde el corpus compartido |
+| Preservar un `.rules` anterior | Acordarte de copiarlo aparte tú mismo | El adaptador respalda el archivo existente antes de reemplazarlo |
+| Mantener las reglas alineadas con otros entornos | Manual, por herramienta | Automático en `apothem update` |
+| Verificar que la configuración es correcta | Inspección manual | `apothem verify --harness zed` |
+
+## Qué gestiona Apothem
+
+El adaptador zed renderiza las reglas compartidas en el archivo plano `.rules` de
+la raíz del proyecto. Zed no tiene hook PreToolUse, por lo que la intención de
+guardarraíl vive en la prosa de la regla en vez de en un punto de intercepción de
+llamada a herramienta. El archivo de instrucciones global
+`~/.config/zed/AGENTS.md` y el bloque del servidor de contexto MCP de
+`.zed/settings.json` son propiedad del operador y se dejan intactos. Cada cambio
+en las reglas compartidas vuelve a renderizar el archivo en el siguiente
+`apothem update`.
+
+## Ruta de migración
+
+1. Ejecuta `apothem profile init` para crear el perfil compartido si aún no lo
+   tienes.
+2. Mueve las instrucciones de tu `.rules` existente (y cualquier contenido de
+   `AGENTS.md` específico del proyecto que quieras compartir) al corpus
+   compartido.
+3. Ejecuta `apothem install --harness zed` para renderizar el archivo `.rules`.
+   Tu `.rules` anterior se respalda primero.
+4. Ejecuta `apothem verify --harness zed` para confirmar que la configuración se
+   instaló.
+5. Usa `apothem update --harness zed` para cada cambio posterior.
+
+## Lee a continuación
+
+- [Referencia del adaptador Zed](/docs/harnesses/zed)
+- [Resumen de comparación](/docs/comparison)

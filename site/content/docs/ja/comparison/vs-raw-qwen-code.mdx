@@ -1,0 +1,45 @@
+---
+title: "Apothem と手作業の Qwen Code 構成の比較"
+description: "Qwen Code の設定・コマンド・スキル・サブエージェントを手作業で維持するのと、Apothem の共有プロファイルからレンダリングするのとの比較。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Qwen Code は設定、フック、`QWEN.md`、ネイティブの Markdown コマンド、
+SKILL.md ディレクトリ、Markdown サブエージェントを読み取ります。Apothem は
+共有プロファイルから文書化された設定キーをレンダリングし、Qwen Code が
+対応している場合は共有コホートを Qwen ネイティブのファイルシステム形態へ
+変換します。
+
+## 労力の比較
+
+| タスク | 手作業の構成 | Apothem 管理 |
+| ---- | --------------- | --------------- |
+| ルールを書く | QWEN.md と支援ファイルを手作業で維持 | 共有プロファイルからレンダリングまたは参照 |
+| フックを構成する | `settings.json` のフックエントリを手作業で編集 | Qwen Code のネイティブなフックマップ経由でインストール |
+| コマンド・スキル・エージェントを書く | 各 Qwen ディレクトリを手作業で維持 | 共有の Apothem コホートから変換 |
+| コホートを他の環境と揃えて保つ | 手作業、ツールごと | `apothem update` 時に自動 |
+| サーフェスをインストール / 削除する | 手作業 | `apothem install` / `apothem uninstall` |
+| 構成が正しいか検証する | 手作業の確認 | `apothem verify --harness qwen-code` |
+
+## Apothem が管理するもの
+
+qwen-code アダプターは `settings.json` を書き込み、`QWEN.md` をインストールし、
+Apothem のスラッシュコマンドを Qwen の Markdown コマンドファイルへ変換し、
+スキルをネイティブのスキルサーフェスへコピーし、補助定義を Qwen の
+サブエージェントとして適応させ、Apothem のフックディスパッチャーを登録します。
+ルール、テンプレート、フックのソース材料は Apothem の支援サブツリー下に残り、
+ネイティブのコンテキストから参照されます。
+
+## 移行手順
+
+1. 共有プロファイルをまだ作成していなければ、`apothem profile init` を実行して作成します。
+2. 既存の Qwen Code のルール・コマンド・スキル・エージェントを共有コーパスへ移します。
+3. `apothem install --harness qwen-code` を実行してネイティブサーフェスをレンダリングします。
+4. `apothem verify --harness qwen-code` を実行して構成が反映されたことを確認します。
+5. 以降の変更のたびに `apothem update --harness qwen-code` を使います。
+
+## 次に読む
+
+- [Qwen Code アダプターのリファレンス](/docs/harnesses/qwen-code)
+- [比較の概要](/docs/comparison)

@@ -1,0 +1,162 @@
+---
+title: "マシン間同期検証チェックリスト"
+description: "Claude Code アダプターが新しいホスト上で正しくインストール・検証・アンインストールされることを、完全な可搬性チェック付きで確認する検証手順。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **スコープ。** このチェックリストは、新しい 2 台目のホスト上で **Claude Code アダプター**のインストール / アンインストール可搬性レイヤーを検証します。他のツールには [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses) 配下に文書化されたホストごとの検証レシピがあります。パス `~/.claude/` は Claude Code アダプターの標準インストール先です。別のツールを検証する際は、そのアダプター固有のパスに置き換えてください。
+
+> **新しい 2 台目のホスト上でのインストール / アンインストール可搬性レイヤーのオペレーター主導検証。** 公開層（`vX.Y.Z`）は単一の Windows ホスト上で作成されました。`~/.claude/` の可搬性に関する主張（`CLAUDE.md` `portability: universal`）は、マルチホスト不変条件が意味を持つ前に、2 台目のホストでエンドツーエンドの実施が必要です。このチェックリストは標準の 2 台目ホスト検証レシピ（Claude Code アダプター）です。
+
+---
+
+## 1. 2 台目のホストでの前提条件
+
+検証を開始する前に 2 台目のホストで実行します:
+
+| 項目 | コマンド | 期待値 |
+|------|---------|----------|
+| Git がインストール済み | `git --version` | Git 2.40+ |
+| Python 3.10+ が利用可能 | `python3 --version`（POSIX）または `py -3 --version`（Windows） | 3.10 / 3.11 / 3.12 / 3.13 |
+| GitHub 認証（任意、認証付きクローン / API チェック用） | `gh auth status` | 認証付きワークフローを使用する場合、リポジトリの認可済みアカウントでログイン済み |
+| Shell が利用可能 | `bash --version`（POSIX）または `pwsh --version`（Windows） | Bash 4+ または PowerShell 7+ |
+| 既存の `~/.claude/` ディレクトリがない | `ls ~/.claude 2>&1` | "No such file or directory" — 存在する場合は続行前にバックアップする |
+
+## 2. クローンとインストールの検証
+
+2 台目のホストで実行します:
+
+```bash
+# Clone the published repo to ~/.claude (the install destination)
+git clone https://github.com/ahmed-g-gad/apothem.git ~/.claude
+cd ~/.claude
+
+# (POSIX path) Run scripts/installer/install.sh dry-run first
+bash scripts/installer/install.sh --dry-run                                    # exit 0; Quick Start banner
+
+# (POSIX path) Run scripts/installer/install.sh for real
+bash scripts/installer/install.sh                                               # exit 0; sentinel-file check; idempotent
+
+# (Windows path) PowerShell parallel
+pwsh -File scripts/installer/install.ps1 -DryRun                                # exit 0; Quick Start banner
+pwsh -File scripts/installer/install.ps1                                        # exit 0
+```
+
+各コマンドの終了コードと stdout バナーを取得します。`<second-host>/.audit/cross-machine-clone-install.md` に記録します。
+
+## 3. 4 要素のディシプリン（`src/apothem/rules/production-ready-prs.md` §8.3 に従う）
+
+2 台目のホストで 4 つの不変条件のそれぞれを検証します:
+
+### 3.1 センチネルファイルの安全性
+
+```bash
+# Re-run installer at the same destination.
+bash scripts/installer/install.sh                                               # POSIX
+pwsh -File scripts/installer/install.ps1                                        # Windows
+```
+
+**期待値:** インストーラーは既存の有効な `~/.claude/`（センチネルファイルが存在）を検出し、再インストールや重複ではなくファストフォワードする。終了コード 0。
+
+### 3.2 前提条件チェック済み
+
+```bash
+# Temporarily move git out of PATH.
+PATH=/usr/bin:/bin bash scripts/installer/install.sh                            # POSIX (no git)
+```
+
+**期待値:** インストーラーは実行を拒否し、明示的な "git not found" 診断を出力する。終了コードは非ゼロ。
+
+### 3.3 冪等な再実行
+
+```bash
+# Run installer N times back-to-back.
+for i in 1 2 3 4 5; do bash scripts/installer/install.sh; done                  # POSIX
+1..5 | ForEach-Object { pwsh -File scripts/installer/install.ps1 }              # Windows
+```
+
+**期待値:** すべての呼び出しが終了コード 0 で終了する。初回呼び出し後に副作用なし。重複ファイルなし。shell-profile RC の重複なし。
+
+### 3.4 環境変数で構成可能
+
+```bash
+# Install to a non-default location.
+CLAUDE_PROJECT_DIR=/tmp/alt-claude bash scripts/installer/install.sh            # POSIX
+$env:CLAUDE_PROJECT_DIR='C:\tmp\alt-claude'; pwsh -File scripts/installer/install.ps1   # Windows
+```
+
+**期待値:** インストーラーは環境変数を尊重する。`~/.claude/` は変更されない。代替先には期待されるレイアウトが含まれる。
+
+## 4. バリデータースイートの検証（インストール後）
+
+```bash
+cd ~/.claude
+make validate                                                 # 50 conformity validators
+make headers-doctor                                           # file-header-grep → passed:true
+make ai-surfaces-doctor                                       # multi-surface-coherence → passed:true
+make plans-doctor                                             # no-global-plans + plans-discipline-language
+make lint                                                     # ruff + mypy
+make test                                                     # pytest 265/265
+```
+
+**期待値:** すべてのゲートが緑。終了コード + サマリー行を取得します。
+
+## 5. アンインストールの検証
+
+```bash
+# POSIX path — interactive uninstall
+bash scripts/installer/uninstall.sh                           # answers: "y" to confirm
+ls ~/.claude 2>&1                                             # "No such file or directory"
+
+# Re-install from clone, then uninstall non-interactively
+git clone https://github.com/ahmed-g-gad/apothem.git ~/.claude
+bash scripts/installer/uninstall.sh --yes
+ls ~/.claude 2>&1                                             # "No such file or directory"
+```
+
+**期待値:** 対話フローはプロンプトを表示する。`--yes` はバッチ実行のためにプロンプトをスキップする。どちらのフローも `~/.claude/` をクリーンに削除する。関連する shell-profile 環境変数の参照はクリーンアップされる。
+
+## 6. セーフティガードの検証
+
+```bash
+# Run uninstall against a path that fails the sentinel-file check.
+mkdir -p /tmp/not-a-claude-install
+CLAUDE_PROJECT_DIR=/tmp/not-a-claude-install bash scripts/installer/uninstall.sh --yes
+```
+
+**期待値:** アンインストーラーは拒否し、"sentinel-file missing; refusing to remove unsafe target" 診断を出力する。終了コードは非ゼロ。そのパスは変更されない。
+
+```bash
+# Run uninstall against $HOME, /, or empty path.
+CLAUDE_PROJECT_DIR=$HOME bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
+CLAUDE_PROJECT_DIR=/ bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
+CLAUDE_PROJECT_DIR='' bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
+```
+
+**期待値:** それぞれが明示的な "unsafe target" 診断で拒否する。いずれもファイルシステムに触れない。
+
+## 7. レポート
+
+2 台目ホストでの実行後、結果を次の場所に取得します:
+
+- `<second-host>/.audit/cross-machine-clone-install.md`（クローン + インストールコマンドの結果）
+- `<second-host>/.audit/cross-machine-validators.md`（第 4 節バリデーターの結果）
+- `<second-host>/.audit/cross-machine-uninstall.md`（第 5〜6 節アンインストール + 安全性の結果）
+
+メンテナーに所見を提示します:
+
+- ✅ 4 要素のディシプリン不変条件がすべて成立 + すべてのバリデーターゲートが緑 + すべてのアンインストール・セーフティガードが安全でないターゲットを拒否 → 公開物の `portability: universal` の主張がエンドツーエンドで検証される
+- ❌ 何らかの失敗 → 失敗した節 + 取得した出力を添えて `https://github.com/ahmed-g-gad/apothem/issues/new` に課題を提出する。メンテナーがトリアージする
+
+## 8. 受け入れ基準
+
+- [ ] §1 前提条件を満たす
+- [ ] §2 POSIX と Windows の両シェルでクローンとインストールが成功する
+- [ ] §3 4 要素のディシプリンが成立する（センチネルファイルの安全性；前提条件チェック済み；冪等；環境変数で構成可能）
+- [ ] §4 すべてのバリデーターゲートが緑
+- [ ] §5 対話式アンインストールが成功する；`--yes` がプロンプトなしで成功する
+- [ ] §6 すべてのセーフティガード拒否が発火する
+- [ ] §7 結果が文書化された監査パスに取得される
+
+新しい 2 台目のホスト上で上記の各チェックボックスがすべてチェックされたとき、マシン間同期のフォローオン（COMPLETION.md §7 制約ボトルネック）はクローズされます。

@@ -1,0 +1,57 @@
+---
+title: "Registre de conformité externe — Lors d'opérations sur des projets hôtes"
+description: "Registre de quinze mandats (M1–M15) spécifiant les exigences de conformité pour tous les artefacts générés dans les projets hôtes, croisé avec les mandats internes à l'écosystème."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Registre canonique des quinze mandats de production.** Ce document porte le registre complet de quinze mandats (M1–M15), la ratification du seuil trivial vs non trivial, la politique de croisement M↔CM et le protocole d'introduction de mandat ; les énumérations substantielles vivent ici, opérationnalisées par les fichiers de règles par mandat.
+
+Lorsque cet écosystème génère, édite, retravaille, adapte, étend ou supprime un artefact quelconque dans un projet hôte (la cible d'invocation de l'utilisateur — dépôt git, arborescence de documentation, corpus de recherche, manifeste d'infrastructure, bloc-notes), chaque artefact produit satisfait à la **barre de quinze mandats (M1–M15)** déclarée ci-dessous. Cela est non négociable et s'applique à toute surface de l'écosystème (auxiliaire, assistant, commande, hook, réponse, diff, message). L'application se fait par le portail de pré-émission (voir `site/content/docs/governance/pre-emission-gate-registry.mdx`) ; l'application de la fraction mécanique vit dans `src/apothem/conformity/*-grep.py`, orchestrée par `src/apothem/conformity/gate.py`.
+
+Les quinze mandats opèrent **aux côtés des** mandats CM-N selon la politique de vocabulaire parallèle (voir `site/content/docs/governance/cross-cutting-mandates.mdx`) ; M et CM sont des dimensions de gouvernance orthogonales (M est l'axe externe — artefacts de projets hôtes ; CM est l'axe interne — artefacts internes à l'écosystème). Chaque règle listée ci-dessous est le foyer canonique de son mandat ; ce registre est l'index.
+
+| ID | Mandat | Résumé en une ligne | Règle canonique |
+| -- | ------- | ---------------- | -------------- |
+| M1 | Agnosticisme vis-à-vis du projet hôte | Découvre la pile / le formateur / le linter / l'agencement / les idiomes de l'hôte ; les honore ; fait remonter le silence comme une demande selon M5 avec annotation M7 | `src/apothem/rules/host-discovery.md` |
+| M2 | Discipline éditoriale | Divulgue chaque amendement / extension / raffinement avec sa justification ; pas de surconformité silencieuse, pas de débordement silencieux | `src/apothem/rules/disclosure-ledger.md` |
+| M3 | Dix dimensions de qualité | Chaque artefact passe la vérification à dix points (rigueur, cohérence, configurabilité, lisibilité, orphelinat, structuralité, architecture, nomenclature, référencement académique, exemples/tests/documentation) | `src/apothem/rules/ten-dimension-check.md` |
+| M4 | Auto-application | Exécute le portail de pré-émission à quinze points avant chaque émission de portée significative ; consigne la preuve de publication | `src/apothem/rules/pre-emission-gate.md` |
+| M5 | Principe d'autorité | Demande, n'invente pas ; les données d'identité / de portée / de préférence / de sécurité / de nomenclature / d'infrastructure / d'épinglage de version ne sont jamais fabriquées | `src/apothem/rules/authority-inquiry.md` |
+| M6 | Incorporation d'expertise | Lis l'intention, amende proactivement, étends sur les lacunes adjacentes, raffine avec une justification citée, anticipe les conséquences de second ordre | `src/apothem/rules/expertise-posture.md` |
+| M7 | Annotation des options | Tout choix à plusieurs options porte un marqueur de recommandation plus une justification liée à des principes ; les choix silencieux sont interdits en territoire faisant autorité | `src/apothem/rules/option-annotation.md` |
+| M8 | Caractère définitif et étanchéité | Aucune atermoiement là où une prescription contraignante est possible ; pas de « ça dépend » sans branches énumérées ; chaque contrat a des conditions préalables / postérieures / d'échec | `src/apothem/rules/definitiveness.md` |
+| M9 | Levier visuel | Le sujet structurel porte un diagramme de la réalité actuelle (Mermaid par défaut) avec provenance + date de vérification | `src/apothem/rules/visual-leverage.md` |
+| M10 | Liaison bidirectionnelle | Les éléments structurels substantiels déclarent des liaisons réciproques (Drives → / Driven by ← / Satisfies → / Established by ↑ / Cross-bound with ↔) | `src/apothem/rules/bidirectional-binding.md` |
+| M11 | Sprints agiles | Le travail non trivial à plusieurs étapes s'exécute comme des sprints disciplinés (Objectif / Backlog / DoR / DoD / Revue / Rétrospective) | `src/apothem/rules/agile-sprints.md` |
+| M12 | Rapports de phase et agencement canonique | Le travail multiphase émet des rapports par sous-phase + une synthèse au niveau de la phase ; les sorties dans l'agencement canonique | `src/apothem/rules/canonical-layout.md` |
+| M13 | Métier du code | Commentaires du pourquoi-pas-quoi ; noms révélateurs d'intention avec unités ; gestion d'exceptions typée ; constantes nommées ; honore le linter / formateur / vérificateur de types de l'hôte | `src/apothem/rules/code-craft-{python,shell,markdown,conventions}.md` (par langage) |
+| M14 | Systémicité de l'écosystème | Les nouveaux composants déclarent les ascendants / descendants / pairs / applicateurs ; indexés dans les registres de l'hôte ; aucun silo ni orphelin introduit | `src/apothem/rules/systemic-participation.md` |
+| M15 | Forme prête pour la production | Les modifications de code sont livrées avec tests + documentation + entrée au CHANGELOG + message de commit conforme + CI au vert dans le même ensemble de modifications | `src/apothem/rules/production-ready-prs.md` |
+
+## 1. Seuil trivial vs non trivial (réglé)
+
+Le seuil séparant le travail trivial du non trivial — le travail non trivial déclenche l'appareillage M11 + M12 — est un **hybride nombre de lignes + portée** : une modification est triviale lorsqu'elle est une édition d'un seul fichier de ≤ 5 lignes ET n'introduit aucun changement de surface d'API publique ET aucun changement de comportement. Tout le reste est non trivial. Réglé une seule fois selon la discipline régler-une-fois de M5 ; le seuil vit ici à la portée de l'utilisateur et n'est remplacé que par une déclaration explicite de portée projet honorant la découverte d'hôte de M1 (p. ex. un `<project>/.claude/CLAUDE.md` pour Claude Code, ou la surface par projet équivalente pour un autre harness).
+
+## 2. Croisement M↔CM
+
+Chaque corps de règle numérotée M déclare son croisement CM-N en ligne (dans sa liaison `Cross-bound with ↔`) en utilisant la politique de vocabulaire parallèle : là où un mandat M a son analogue CM-N le plus proche, les deux règles s'appliquent là où les deux s'appliquent (pas de substitution). Les croisements sont intrinsèques aux corps des règles ; ce registre résume la politique d'axe sans dupliquer la table de croisement.
+
+## 3. Protocole d'introduction de mandat
+
+Ajouter un nouveau mandat numéroté M (p. ex., un futur M16) est une **modification groupée**. Le groupe n'atteint le registre que lorsque chaque composant ci-dessous est présent dans le même ensemble de modifications. Les ajouts silencieux — une nouvelle ligne M dans la table du registre sans le groupe de soutien — produisent une dérive de l'axe des mandats et sont non conformes selon la participation systémique M14.
+
+| Composant requis | But | Où il atterrit |
+| ------------------ | ------- | -------------- |
+| **Ligne du mandat dans la table du registre** | Nomme le mandat, son résumé en une ligne, sa règle canonique | La table de ce registre ci-dessus |
+| **Cellule de croisement CM-N** | Déclare l'analogue CM-N le plus proche (ou marque `(no direct CM-N analog)` comme nouvel axe) selon la politique de vocabulaire parallèle de §2 | La ligne `Cross-bound with ↔` de la nouvelle règle |
+| **Corps de règle canonique** | La spécification substantielle du mandat (Conditions préalables / Comportement requis / Surface de divulgation / Indices d'échec / Liaisons cinq directions) | `src/apothem/rules/<mandate-name>.md` |
+| **Ligne du portail de pré-émission** | Nomme le type de vérification de la barre (mécanique / raisonnée / mixte) et son `Failure → action` | La table du registre du portail de pré-émission (`site/content/docs/governance/pre-emission-gate-registry.mdx`) |
+| **Surface d'application** | Soit un grep mécanique dans `src/apothem/conformity/<name>-grep.py` orchestré par `gate.py`, SOIT une déclaration explicite de barre raisonnée avec l'ancre d'auto-vérification de l'opérateur | `src/apothem/conformity/` (mécanique) ou la ligne du portail marquée `reasoned` (auto-vérification de l'opérateur) |
+| **Fixture de conformité** | Une fixture sous `tests/conformity-scenarios/fixtures/F-<N>-<name>/` exerçant les modes d'échec du mandat ; la liste de mandats du vérificateur est mise à jour pour inclure la nouvelle barre | `tests/conformity-scenarios/` |
+| **Mise à jour du schéma de preuve de publication** | Le bloc `bars:` de la preuve de publication gagne la nouvelle ligne ; les blocs de preuve de publication des artefacts existants traitent la nouvelle ligne comme `n/a (with reason: pre-mandate-N artifact)` jusqu'au réaudit | `site/content/docs/governance/pre-emission-gate-registry.mdx` §1 schéma |
+| **Entrée au grand livre de divulgation** | Consigne l'introduction du mandat avec une justification ancrée dans un facteur concret (récurrence de motif observée ; faille de sécurité exposée ; capacité que les quinze existants ne couvrent pas) | Le corps du commit de l'ensemble de modifications ou la description du PR selon `src/apothem/rules/disclosure-ledger.md` |
+
+**Discipline d'application.** Une proposition de mandat qui arrive sans le groupe est rejetée à la revue ; le proposant complète le groupe ou rétrograde la proposition en extension d'un mandat existant. Les quinze mandats existants ont été adoptés ensemble comme l'axe externe de la spécification ; les ajouts futurs honorent la même cadence d'adoption tous-les-composants-ou-aucun-composant plutôt que d'atterrir au coup par coup.
+
+**Protocole de rétrogradation / mise au rebut.** Lorsqu'un M-N établi est trouvé redondant avec un CM-N existant ou avec un autre M-N (la carte de couverture de croisement dans le corps de la règle matérialisante montre une adjacence `direct` dans les deux directions), la rétrogradation est l'inverse symétrique : la ligne du registre est retirée, la ligne du portail est retirée, la règle canonique est retirée (avec le contenu intégré dans la règle absorbante selon `src/apothem/rules/clean-room-generation.md` §3 Protocole de réécriture), la fixture de conformité est retirée, le bloc `bars:` du schéma de preuve de publication abandonne la ligne, et l'ensemble de modifications est consigné au grand livre de divulgation avec la citation de la règle absorbante. La rétrogradation préserve le même invariant tous-les-composants-ou-aucun-composant.

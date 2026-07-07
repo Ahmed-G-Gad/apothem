@@ -1,0 +1,406 @@
+{
+  "antigravity": [
+    {
+      "mode": "sentinel_merge",
+      "source": "harnesses/antigravity/templates/GEMINI.md",
+      "target": "<ROOT>/GEMINI.md"
+    },
+    {
+      "mode": "write_text",
+      "source": "harnesses/antigravity/templates/plugin.json",
+      "target": "<ROOT>/antigravity-cli/plugins/apothem/plugin.json"
+    },
+    {
+      "mode": "command_skills",
+      "source": "commands",
+      "target": "<ROOT>/antigravity-cli/plugins/apothem/skills"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "rules",
+      "target": "<ROOT>/antigravity-cli/plugins/apothem/rules"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "skills",
+      "target": "<ROOT>/antigravity-cli/plugins/apothem/skills"
+    },
+    {
+      "mode": "gemini_agents",
+      "source": "agents",
+      "target": "<ROOT>/antigravity-cli/plugins/apothem/agents"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "templates",
+      "target": "<ROOT>/antigravity-cli/plugins/apothem/.apothem/support/templates"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "hooks",
+      "target": "<ROOT>/antigravity-cli/plugins/apothem/.apothem/support/hooks"
+    }
+  ],
+  "claude-code": [
+    {
+      "mode": "write_text",
+      "source": "harnesses/claude_code/templates/settings.json",
+      "target": "<ROOT>/settings.json"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "agents",
+      "target": "<ROOT>/agents"
+    },
+    {
+      "mode": "command_skills",
+      "source": "commands",
+      "target": "<ROOT>/skills"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "rules",
+      "target": "<ROOT>/rules"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "skills",
+      "target": "<ROOT>/skills"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "templates",
+      "target": "<ROOT>/.apothem/support/templates"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "hooks",
+      "target": "<ROOT>/.apothem/support/hooks"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "conformity",
+      "target": "<ROOT>/.apothem/support/conformity"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "schemas",
+      "target": "<ROOT>/.apothem/support/schemas"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "statuslines",
+      "target": "<ROOT>/statuslines"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "output-styles",
+      "target": "<ROOT>/output-styles"
+    }
+  ],
+  "codex": [
+    {
+      "mode": "sentinel_merge",
+      "source": "harnesses/codex/templates/AGENTS.md",
+      "target": "<ROOT>/AGENTS.md"
+    },
+    {
+      "mode": "write_text",
+      "source": "harnesses/codex/templates/hooks.json",
+      "target": "<ROOT>/hooks.json"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "hooks",
+      "target": "<ROOT>/hooks"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "rules",
+      "target": "<ROOT>/../.config/apothem/rules"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "skills",
+      "target": "<ROOT>/../.agents/skills"
+    },
+    {
+      "mode": "command_skills",
+      "source": "commands",
+      "target": "<ROOT>/../.agents/skills"
+    },
+    {
+      "mode": "codex_agents",
+      "source": "agents",
+      "target": "<ROOT>/agents"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "templates",
+      "target": "<ROOT>/../.config/apothem/templates"
+    }
+  ],
+  "cursor": [
+    {
+      "mode": "sentinel_merge",
+      "source": "harnesses/cursor/templates/apothem-rules.mdc",
+      "target": "<ROOT>/.cursor/rules/apothem-rules.mdc"
+    }
+  ],
+  "gemini-cli": [
+    {
+      "mode": "sentinel_merge",
+      "source": "harnesses/gemini_cli/templates/GEMINI.md",
+      "target": "<ROOT>/GEMINI.md"
+    },
+    {
+      "mode": "gemini_commands",
+      "source": "commands",
+      "target": "<ROOT>/.gemini/commands"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "skills",
+      "target": "<ROOT>/.gemini/skills"
+    },
+    {
+      "mode": "gemini_agents",
+      "source": "agents",
+      "target": "<ROOT>/.gemini/agents"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "rules",
+      "target": "<ROOT>/.gemini/.apothem/support/rules"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "templates",
+      "target": "<ROOT>/.gemini/.apothem/support/templates"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "hooks",
+      "target": "<ROOT>/.gemini/.apothem/support/hooks"
+    }
+  ],
+  "github-copilot": [
+    {
+      "mode": "sentinel_merge",
+      "source": "harnesses/github_copilot/templates/copilot-instructions.md",
+      "target": "<ROOT>/.github/copilot-instructions.md"
+    }
+  ],
+  "hermes": [
+    {
+      "mode": "command_skills",
+      "source": "commands",
+      "target": "<ROOT>/.apothem/support/skills"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "skills",
+      "target": "<ROOT>/.apothem/support/skills"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "agents",
+      "target": "<ROOT>/.apothem/support/agents"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "rules",
+      "target": "<ROOT>/.apothem/support/rules"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "templates",
+      "target": "<ROOT>/.apothem/support/templates"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "hooks",
+      "target": "<ROOT>/.apothem/support/hooks"
+    }
+  ],
+  "kimi-code": [
+    {
+      "mode": "sentinel_merge",
+      "source": "harnesses/kimi_code/templates/AGENTS.md",
+      "target": "<ROOT>/AGENTS.md"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "hooks",
+      "target": "<ROOT>/.kimi-code/.apothem/support/hooks"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "rules",
+      "target": "<ROOT>/.kimi-code/.apothem/support/rules"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "skills",
+      "target": "<ROOT>/.kimi-code/.apothem/support/skills"
+    },
+    {
+      "mode": "command_skills",
+      "source": "commands",
+      "target": "<ROOT>/.kimi-code/.apothem/support/skills"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "agents",
+      "target": "<ROOT>/.kimi-code/.apothem/support/agents"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "templates",
+      "target": "<ROOT>/.kimi-code/.apothem/support/templates"
+    }
+  ],
+  "open-claw": [
+    {
+      "mode": "command_skills",
+      "source": "commands",
+      "target": "<ROOT>/.apothem/support/skills"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "skills",
+      "target": "<ROOT>/.apothem/support/skills"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "agents",
+      "target": "<ROOT>/.apothem/support/agents"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "rules",
+      "target": "<ROOT>/.apothem/support/rules"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "templates",
+      "target": "<ROOT>/.apothem/support/templates"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "hooks",
+      "target": "<ROOT>/.apothem/support/hooks"
+    }
+  ],
+  "opencode": [
+    {
+      "mode": "merge_tree_entries",
+      "source": "skills",
+      "target": "<ROOT>/skills"
+    },
+    {
+      "mode": "markdown_commands",
+      "source": "commands",
+      "target": "<ROOT>/commands"
+    },
+    {
+      "mode": "opencode_agents",
+      "source": "agents",
+      "target": "<ROOT>/agents"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "rules",
+      "target": "<ROOT>/.apothem/support/rules"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "templates",
+      "target": "<ROOT>/.apothem/support/templates"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "hooks",
+      "target": "<ROOT>/.apothem/support/hooks"
+    }
+  ],
+  "qwen-code": [
+    {
+      "mode": "sentinel_merge",
+      "source": "harnesses/qwen_code/templates/QWEN.md",
+      "target": "<ROOT>/QWEN.md"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "skills",
+      "target": "<ROOT>/skills"
+    },
+    {
+      "mode": "markdown_commands",
+      "source": "commands",
+      "target": "<ROOT>/commands"
+    },
+    {
+      "mode": "qwen_agents",
+      "source": "agents",
+      "target": "<ROOT>/agents"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "rules",
+      "target": "<ROOT>/.apothem/support/rules"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "templates",
+      "target": "<ROOT>/.apothem/support/templates"
+    },
+    {
+      "mode": "merge_tree_entries",
+      "source": "hooks",
+      "target": "<ROOT>/.apothem/support/hooks"
+    }
+  ],
+  "windsurf": [
+    {
+      "mode": "sentinel_merge",
+      "source": "harnesses/windsurf/templates/apothem-rules.md",
+      "target": "<ROOT>/.devin/rules/apothem-rules.md"
+    }
+  ],
+  "codebuddy": [
+    {
+      "mode": "sentinel_merge",
+      "source": "harnesses/codebuddy/templates/apothem-rules.md",
+      "target": "<ROOT>/.codebuddy/rules/apothem-rules.md"
+    }
+  ],
+  "kiro": [
+    {
+      "mode": "sentinel_merge",
+      "source": "harnesses/kiro/templates/apothem-rules.md",
+      "target": "<ROOT>/.kiro/steering/apothem-rules.md"
+    }
+  ],
+  "trae": [
+    {
+      "mode": "sentinel_merge",
+      "source": "harnesses/trae/templates/apothem-rules.md",
+      "target": "<ROOT>/.trae/rules/apothem-rules.md"
+    }
+  ],
+  "zed": [
+    {
+      "mode": "sentinel_merge",
+      "source": "harnesses/zed/templates/apothem-rules.md",
+      "target": "<ROOT>/.rules"
+    }
+  ],
+  "glm": [
+    {
+      "mode": "write_text",
+      "source": "harnesses/glm/templates/glm.toml",
+      "target": "<ROOT>/.apothem/providers/glm.toml"
+    }
+  ]
+}

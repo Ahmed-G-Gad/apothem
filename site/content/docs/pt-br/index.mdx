@@ -1,0 +1,80 @@
+---
+title: "Documentação do Apothem"
+description: "Um único perfil compartilhado, materializado em dezessete harnesses. Comece por aqui: instalação, uso, cobertura de harnesses, o fluxo de comandos e a referência completa."
+machineTranslated: true
+---
+
+{/* SPDX-License-Identifier: MIT */}
+
+O Apothem é um gerenciador de configuração de harness agnóstico ao host.
+Você escreve um único perfil compartilhado em `~/.config/apothem/profile.yaml` e
+o Apothem o materializa na superfície de configuração nativa de dezessete
+harnesses: Claude Code, Cursor, Gemini CLI, GitHub Copilot,
+Codex, Windsurf, Zed e o restante do catálogo registrado.
+
+A unidade que o Apothem sincroniza é mais ampla do que apenas as regras:
+regras, comandos de barra, habilidades, hooks, estilos de saída, configurações
+(com servidores MCP), esquemas e documentação viajam juntos como um único corpus
+governado, materializado no formato nativo de cada harness ou em uma subárvore
+de suporte própria do Apothem quando a ferramenta não tem uma primitiva
+equivalente.
+
+## Novo por aqui? Comece em dois passos
+
+1. **[Instalação](/docs/install/quickstart)** — escolha uma via de instalação
+   (plugins e extensões nativos das ferramentas, `npx` ou scripts de uma única
+   etapa) e execute o primeiro passo guiado. Os únicos pré-requisitos são
+   [Node.js](https://nodejs.org/) e o Python 3.10 ou mais recente do sistema.
+2. **[Chegue à sua primeira execução funcional](/docs/tutorials/getting-started)** —
+   escreva um perfil compartilhado, materialize a partir dele a configuração nativa
+   de um harness e verifique o resultado. Cerca de quinze minutos, de ponta a
+   ponta.
+
+## Como o Apothem funciona
+
+- **Um perfil, muitas configurações nativas.** Você escreve a intenção uma vez; o
+  Apothem a traduz para a superfície de configuração nativa de cada ferramenta —
+  sem nivelar ao menor denominador comum. Veja
+  [a postura agnóstica ao host](/docs/concepts/ai-platform-agnosticism).
+- **O laço operacional: planejar → endurecer → entregar.** Um fluxo de
+  planejamento (`/plan`) leva uma mudança por especificação, geração, revisão e
+  execução; um fluxo de endurecimento (`/fortress`) conduz esse trabalho a um
+  estado pronto para entrega; o portão de entrega fecha o laço. Veja
+  [o fluxo de comandos](/docs/pipeline).
+- **Trabalho que sobrevive a fronteiras.** O trabalho de longa duração externaliza
+  todo o seu estado para uma suíte `.apothem/plans/` local do projeto, de modo que uma
+  nova sessão em qualquer conta ou máquina o retoma no lugar. Veja
+  [o planejamento retomável](/docs/concepts/resumable-planning).
+
+## Comece por aqui
+
+- **[Instalação](/docs/install/quickstart)** — as vias de instalação (plugins e
+  extensões nativos das ferramentas, `npx`, scripts de uma única etapa) e uma
+  primeira execução guiada.
+- **[Uso](/docs/usage/getting-started)** — escreva seu perfil, instale-o em
+  todos os harnesses, verifique-o e atualize-o.
+- **[Harnesses](/docs/harnesses)** — o catálogo de dezessete harnesses com a
+  superfície nativa de cada ferramenta e seu comportamento de conversão.
+- **[O fluxo de comandos](/docs/pipeline)** — as etapas dos fluxos `/plan` e
+  `/research`, a sequência de auditoria e revisão, as habilidades de workflow e
+  projectify e as proteções de manipulação cirúrgica.
+
+## Aprofunde-se
+
+- **[Conceitos](/docs/concepts/ai-platform-agnosticism)** — o perfil
+  compartilhado, os adaptadores de harness e o modelo de materialização.
+- **[Arquitetura](/docs/architecture)** — a estrutura do código-fonte, a
+  abstração do adaptador, o runtime autocontido e o fluxo CI/CD.
+- **[Referência](/docs/reference)** — a CLI, o esquema do perfil, as regras, as
+  habilidades, os comandos, os hooks e os catálogos de estilos de saída.
+- **[Como o Apothem se compara](/docs/comparison)** — uma matriz de
+  diferenciação honesta e com concorrentes nomeados.
+
+## Governança e segurança
+
+- **[Governança](/docs/governance)** — o registro de disciplinas, o portão de
+  conformidade e a fachada de versões.
+- **[Segurança](/docs/security)** — a postura de cadeia de suprimentos e a
+  política de segurança.
+- **[Registro de alterações](/docs/changelog)** — as notas de versão, com a
+  versão atual primeiro.

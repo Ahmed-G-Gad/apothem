@@ -1,0 +1,139 @@
+# SPDX-License-Identifier: MIT
+
+# license-audit — scans for copyleft or otherwise incompatible dependency
+# licenses (e.g., GPL, AGPL, CDDL) in the resolved dependency tree that would
+# conflict with apothem's MIT distribution. Complements pip-audit (CVE scan)
+# and the release.yml SBOM by adding a license-posture gate to the supply-chain
+# producer pipeline.
+#
+# Runs weekly (catches license drift in transitive deps disclosed between
+# code changes) and on dependency-manifest changes.
+
+name: License Audit
+
+on:
+  schedule:
+    - cron: "0 4 * * 1"   # every Monday 04:00 UTC (one hour after pip-audit)
+  push:
+    branches: [main]
+    paths:
+      - "pyproject.toml"
+      - "requirements*.txt"
+      - "REUSE.toml"
+      - "LICENSES/**"
+      - "src/apothem/_vendor/**"
+      - ".github/workflows/license-audit.yml"
+  pull_request:
+    paths:
+      - "pyproject.toml"
+      - "requirements*.txt"
+      - "REUSE.toml"
+      - "LICENSES/**"
+      - "src/apothem/_vendor/**"
+      - ".github/workflows/license-audit.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Single-sourced pip pin (CVE-2026-6357 closes on pip >=26.1). One value per
+# workflow file; scripts/dev/check_pip_pin_drift.py fails the build if any
+# workflow's PIP_PIN_VERSION diverges from the canonical pin.
+env:
+  PIP_PIN_VERSION: "26.1.2"
+
+concurrency:
+  group: license-audit-${{ github.ref }}
+  cancel-in-progress: true  # scan-class cadence: cancel stale runs on rebase
+
+jobs:
+  audit:
+    name: pip-licenses
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          # Audit egress: this job checks out the repo, sets up Python, and pip-
+          # installs pip-licenses + the apothem runtime plus their index-resolved
+          # dependency closure. Audit mode records every egress destination
+          # without an allowlist, so the install resolves without a maintained
+          # endpoint list while the run's network activity stays observable.
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install pip-licenses + apothem runtime deps
+        run: |
+          python -m pip install "pip==${PIP_PIN_VERSION}"
+          python -m pip install pip-licenses==5.5.5
+          # Runtime deps only — the license gate covers what apothem ships,
+          # not dev/docs/test tooling (which is not distributed in the wheel).
+          python -m pip install .
+
+      - name: Emit license inventory (table)
+        run: |
+          python -m piplicenses --format=markdown --with-urls --with-authors \
+            --order=license
+
+      - name: Fail on copyleft / network-copyleft licenses
+        run: |
+          # Allowlist: permissive licenses compatible with MIT redistribution.
+          # Any dependency whose license is NOT on this list fails the gate so
+          # a human ratifies the compatibility before it ships.
+          # Entries cover both the legacy classifier strings and the PEP 639
+          # SPDX expressions that pip-licenses 5.x reads from package metadata
+          # (e.g. typing_extensions now declares "PSF-2.0", the SPDX form of
+          # the already-allowed Python Software Foundation License).
+          python -m piplicenses --format=json \
+            --allow-only="MIT License;MIT;BSD License;BSD-3-Clause;BSD-2-Clause;Apache Software License;Apache 2.0;Apache-2.0;ISC License (ISCL);ISC;Python Software Foundation License;PSF-2.0;The Unlicense (Unlicense);Mozilla Public License 2.0 (MPL 2.0)" \
+            || {
+              echo "::error::A dependency carries a license outside the MIT-compatible allowlist. Review the license inventory above and ratify or remove the dependency.";
+              exit 1;
+            }
+
+  # REUSE compliance gate — enforces the REUSE.toml file-level licensing
+  # contract over the WHOLE tree, including the src/apothem/_vendor/[[annotations]]
+  # blocks that record each vendored subtree's true upstream license + copyright.
+  # `reuse lint` exits non-zero on any unlicensed file, any missing/unused
+  # LICENSES/ text, or any malformed SPDX expression — so dropping a _vendor
+  # annotation (e.g. the typing_extensions PSF-2.0 block) leaves LICENSES/
+  # PSF-2.0.txt unused and fails the gate.
+  reuse:
+    name: reuse-lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          # Stays on audit: fsfe/reuse-action is a Docker container action, so
+          # this job pulls a container image whose registry + layer-CDN egress
+          # is not conservatively enumerable as a stable allowed-endpoints set.
+          # Block-mode graduation is deferred until the pull endpoints are
+          # observed from an audit run.
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: REUSE lint
+        uses: fsfe/reuse-action@676e2d560c9a403aa252096d99fcab3e1132b0f5  # v6.0.0
+        with:
+          args: lint

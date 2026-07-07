@@ -1,0 +1,93 @@
+---
+title: "harnesses"
+description: "apothem harnesses 命令组的 CLI 参考。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+列出并查看已注册的harness适配器。
+
+`harnesses` 是一个命令组，包含两个子命令：`list` 和 `show`。
+
+## 概要
+
+```
+apothem harnesses list [--quiet|-q] [--verbose|-v]
+                       [--format plain|json] [--json] [--no-color]
+apothem harnesses show NAME
+                       [--quiet|-q] [--verbose|-v]
+                       [--format plain|json] [--json] [--no-color]
+```
+
+## 子命令
+
+### `harnesses list`
+
+列出所有已注册的harness适配器。
+
+| 选项 | 描述 |
+|---|---|
+| `--quiet`, `-q` | 抑制信息性输出；仅发出错误。 |
+| `--verbose`, `-v` | 发出额外的诊断输出。 |
+| `--format plain\|json` | 输出格式（默认：`plain`）。 |
+| `--json` | `--format json` 的简写。 |
+| `--no-color` | 在输出中禁用 ANSI 颜色码。 |
+| `-h`, `--help` | 显示帮助并退出。 |
+
+### `harnesses show NAME`
+
+显示特定harness适配器的详细信息。`NAME` 是 kebab-case 形式的harness
+标识符；运行 `apothem harnesses list` 查看可用的标识符。
+
+| 选项 | 描述 |
+|---|---|
+| `NAME` | 要查看的harness适配器（必填位置参数）。 |
+| `--quiet`, `-q` | 抑制信息性输出；仅发出错误。 |
+| `--verbose`, `-v` | 发出额外的诊断输出。 |
+| `--format plain\|json` | 输出格式（默认：`plain`）。 |
+| `--json` | `--format json` 的简写。 |
+| `--no-color` | 在输出中禁用 ANSI 颜色码。 |
+| `-h`, `--help` | 显示帮助并退出。 |
+
+## 示例
+
+```bash
+apothem harnesses list
+apothem harnesses list --json
+apothem harnesses show claude-code
+apothem harnesses show claude-code --json
+```
+
+已注册的harness ID 为：
+
+```text
+antigravity
+claude-code
+codebuddy
+codex
+cursor
+gemini-cli
+github-copilot
+glm
+hermes
+kimi-code
+kiro
+open-claw
+opencode
+qwen-code
+trae
+windsurf
+zed
+```
+
+## 退出码
+
+| 码 | 含义 |
+|---|---|
+| 0 | 成功 |
+| 1 | 未找到harness（`harnesses show` 使用了未知的 `NAME`） |
+
+## 另请参阅
+
+- [apothem doctor](/docs/cli-reference/doctor) — 运行系统级安装诊断
+- [apothem verify](/docs/cli-reference/verify) — 检查特定harness安装

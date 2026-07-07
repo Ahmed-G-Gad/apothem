@@ -1,0 +1,96 @@
+---
+title: "हार्नेस रजिस्ट्री"
+description: "अंतर्निर्मित Apothem हार्नेस एडाप्टरों के लिए तकनीकी रजिस्ट्री संदर्भ।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+हार्नेस रजिस्ट्री CLI, दस्तावेज़ीकरण, फ़िक्स्चर परीक्षणों, और परिपाटी-पिन
+सत्यापन द्वारा उपयोग की जाने वाली स्रोत-सत्य एडाप्टर सूची है। रनटाइम स्रोत
+`src/apothem/lib/harness_registry.py` है; नीचे की प्रत्येक पंक्ति उस रजिस्ट्री,
+प्रति-एडाप्टर `capabilities.yml`, और प्रत्येक एडाप्टर के
+`STANDARD-CONVENTION-PIN.md` तक अनुरेखणीय है।
+
+## रजिस्ट्री मैट्रिक्स
+
+| हार्नेस | इंस्टॉल नाम | दायरा | प्रारूप | लक्ष्य | MCP | परिपाटी पिन |
+| --- | --- | --- | --- | --- | --- | --- |
+| Antigravity | `antigravity` | user | markdown | `~/.gemini/GEMINI.md`; `~/.gemini/antigravity-cli/plugins/apothem/` | खोज-लंबित | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
+| Claude Code | `claude-code` | user | json | `~/.claude/settings.json`; मूल `agents`, `rules`, `skills`, `statuslines`, `output-styles`; `~/.claude/.apothem/support/` | मूल | `src/apothem/harnesses/claude_code/STANDARD-CONVENTION-PIN.md` |
+| CodeBuddy | `codebuddy` | project | markdown | `<project>/.codebuddy/rules/apothem-rules.md` | मूल | `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` |
+| Codex | `codex` | user | markdown | `~/.codex/AGENTS.md`; `hooks.json`; `hooks/`; `agents/*.toml`; `~/.agents/skills/`; `~/.config/apothem/` | खोज-लंबित | `src/apothem/harnesses/codex/STANDARD-CONVENTION-PIN.md` |
+| Cursor | `cursor` | project | mdc | `<project>/.cursor/rules/apothem-rules.mdc` | मूल | `src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md` |
+| Gemini CLI | `gemini-cli` | project | markdown | `<project>/GEMINI.md`; `<project>/.gemini/{commands,skills,agents}/` | खोज-लंबित | `src/apothem/harnesses/gemini_cli/STANDARD-CONVENTION-PIN.md` |
+| GitHub Copilot | `github-copilot` | project | markdown | `<project>/.github/copilot-instructions.md` | असमर्थित | `src/apothem/harnesses/github_copilot/STANDARD-CONVENTION-PIN.md` |
+| GLM (Z.ai) | `glm` | project | toml | `<project>/.apothem/providers/glm.toml` | असमर्थित | `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md` |
+| Hermes | `hermes` | user | yaml | `~/.hermes/config.yaml`; `~/.hermes/.apothem/support/` | असमर्थित | `src/apothem/harnesses/hermes/STANDARD-CONVENTION-PIN.md` |
+| Kimi Code | `kimi-code` | project | markdown | `<project>/.kimi-code/.apothem/support/`; `<project>/AGENTS.md` | खोज-लंबित | `src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md` |
+| Kiro | `kiro` | project | markdown | `<project>/.kiro/steering/apothem-rules.md` | मूल | `src/apothem/harnesses/kiro/STANDARD-CONVENTION-PIN.md` |
+| Open-Claw | `open-claw` | user | json | `~/.openclaw/openclaw.json`; `~/.openclaw/.apothem/support/` | असमर्थित | `src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md` |
+| OpenCode | `opencode` | user | json | `~/.config/opencode/opencode.json`; मूल `commands`, `skills`, `agents`; `.apothem/support/` | मूल | `src/apothem/harnesses/opencode/STANDARD-CONVENTION-PIN.md` |
+| Qwen Code | `qwen-code` | user | json | `~/.qwen/settings.json`; `~/.qwen/QWEN.md`; मूल `commands`, `skills`, `agents`; `.apothem/support/` | मूल | `src/apothem/harnesses/qwen_code/STANDARD-CONVENTION-PIN.md` |
+| Trae | `trae` | project | markdown | `<project>/.trae/rules/apothem-rules.md` | मूल | `src/apothem/harnesses/trae/STANDARD-CONVENTION-PIN.md` |
+| Windsurf | `windsurf` | project | markdown | `<project>/.devin/rules/apothem-rules.md` | असमर्थित | `src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md` |
+| Zed | `zed` | project | markdown | `<project>/.rules` | मूल | `src/apothem/harnesses/zed/STANDARD-CONVENTION-PIN.md` |
+
+## पेलोड कोहोर्ट समर्थन
+
+स्थिति मान `native`, `converted`, `support-tree`,
+`profile-projected`, `unsupported`, `not-applicable`, और
+`discovery-pending` हैं।
+
+| हार्नेस | मूल या रूपांतरित पेलोड | समर्थन-वृक्ष पेलोड | असमर्थित या लंबित चेतावनियाँ |
+| --- | --- | --- | --- |
+| Antigravity | रूपांतरित कमांड और सहायक; मूल स्किल, उप-सहायक डिस्पैच, सिस्टम प्रॉम्प्ट टेम्पलेट; प्रोफ़ाइल-प्रक्षेपित उपकरण प्रतिबंध | हुक, नियम, टेम्पलेट | स्टेटसलाइन, आउटपुट स्टाइल; MCP और मेमोरी खोज लंबित |
+| Claude Code | रूपांतरित कमांड; मूल स्किल, हुक, सहायक, नियम, स्टेटसलाइन, आउटपुट स्टाइल, MCP, उप-सहायक डिस्पैच, उपकरण प्रतिबंध, मेमोरी | टेम्पलेट | `CLAUDE.md` ऑपरेटर-स्वामित्व में रहता है; कोई एडाप्टर-लिखित सिस्टम प्रॉम्प्ट टेम्पलेट नहीं |
+| CodeBuddy | मूल नियम, MCP, सिस्टम प्रॉम्प्ट टेम्पलेट, मेमोरी; प्रोफ़ाइल-प्रक्षेपित उपकरण प्रतिबंध | कोई नहीं | कमांड, स्किल, हुक, सहायक, स्टेटसलाइन, आउटपुट स्टाइल, उप-सहायक डिस्पैच |
+| Codex | रूपांतरित कमांड और सहायक; मूल स्किल, हुक, उप-सहायक डिस्पैच, सिस्टम प्रॉम्प्ट टेम्पलेट, मेमोरी; प्रोफ़ाइल-प्रक्षेपित उपकरण प्रतिबंध | नियम, टेम्पलेट | स्टेटसलाइन, आउटपुट स्टाइल; MCP खोज लंबित क्योंकि Apothem `config.toml` को अधिलिखित नहीं करता |
+| Cursor | मूल नियम, MCP, सिस्टम प्रॉम्प्ट टेम्पलेट; प्रोफ़ाइल-प्रक्षेपित उपकरण प्रतिबंध | कोई नहीं | कमांड, स्किल, हुक, सहायक, स्टेटसलाइन, आउटपुट स्टाइल, उप-सहायक डिस्पैच, मेमोरी |
+| Gemini CLI | रूपांतरित कमांड और सहायक; मूल स्किल, उप-सहायक डिस्पैच, सिस्टम प्रॉम्प्ट टेम्पलेट; प्रोफ़ाइल-प्रक्षेपित उपकरण प्रतिबंध | हुक, नियम, टेम्पलेट | स्टेटसलाइन, आउटपुट स्टाइल; MCP और मेमोरी खोज लंबित |
+| GitHub Copilot | मूल नियम और सिस्टम प्रॉम्प्ट टेम्पलेट; प्रोफ़ाइल-प्रक्षेपित उपकरण प्रतिबंध | कोई नहीं | कमांड, स्किल, हुक, सहायक, स्टेटसलाइन, आउटपुट स्टाइल, MCP, उप-सहायक डिस्पैच, मेमोरी |
+| GLM (Z.ai) | कोई नहीं | कोई नहीं | कमांड, स्किल, हुक, सहायक, नियम, टेम्पलेट, स्टेटसलाइन, आउटपुट स्टाइल, MCP, उप-सहायक डिस्पैच, उपकरण प्रतिबंध, सिस्टम प्रॉम्प्ट टेम्पलेट, मेमोरी — GLM बिना किसी मूल कॉन्फ़िग सतह वाला एक मॉडल बैकएंड है |
+| Hermes | रूपांतरित कमांड; मूल सिस्टम प्रॉम्प्ट टेम्पलेट; प्रोफ़ाइल-प्रक्षेपित उपकरण प्रतिबंध | स्किल, हुक, सहायक, नियम, टेम्पलेट | स्टेटसलाइन, आउटपुट स्टाइल, MCP, उप-सहायक डिस्पैच |
+| Kimi Code | मूल उप-सहायक डिस्पैच, सिस्टम प्रॉम्प्ट टेम्पलेट, मेमोरी | कमांड, स्किल, हुक, सहायक, नियम, टेम्पलेट | स्टेटसलाइन, आउटपुट स्टाइल; MCP और उपकरण प्रतिबंध खोज लंबित |
+| Kiro | मूल नियम, MCP, सिस्टम प्रॉम्प्ट टेम्पलेट, मेमोरी; प्रोफ़ाइल-प्रक्षेपित उपकरण प्रतिबंध | कोई नहीं | कमांड, स्किल, हुक, सहायक, स्टेटसलाइन, आउटपुट स्टाइल, उप-सहायक डिस्पैच |
+| Open-Claw | रूपांतरित कमांड; मूल सिस्टम प्रॉम्प्ट टेम्पलेट; प्रोफ़ाइल-प्रक्षेपित उपकरण प्रतिबंध | स्किल, हुक, सहायक, नियम, टेम्पलेट | स्टेटसलाइन, आउटपुट स्टाइल, MCP, उप-सहायक डिस्पैच |
+| OpenCode | रूपांतरित कमांड और सहायक; मूल स्किल, MCP, उप-सहायक डिस्पैच, सिस्टम प्रॉम्प्ट टेम्पलेट; प्रोफ़ाइल-प्रक्षेपित उपकरण प्रतिबंध | हुक, नियम, टेम्पलेट | स्टेटसलाइन, आउटपुट स्टाइल |
+| Qwen Code | रूपांतरित कमांड और सहायक; मूल स्किल, हुक, MCP, उप-सहायक डिस्पैच, सिस्टम प्रॉम्प्ट टेम्पलेट, मेमोरी; प्रोफ़ाइल-प्रक्षेपित उपकरण प्रतिबंध | नियम, टेम्पलेट | स्टेटसलाइन, आउटपुट स्टाइल |
+| Trae | मूल नियम, MCP, सिस्टम प्रॉम्प्ट टेम्पलेट; प्रोफ़ाइल-प्रक्षेपित उपकरण प्रतिबंध | कोई नहीं | कमांड, स्किल, हुक, सहायक, स्टेटसलाइन, आउटपुट स्टाइल, उप-सहायक डिस्पैच, मेमोरी |
+| Windsurf | मूल नियम और सिस्टम प्रॉम्प्ट टेम्पलेट; प्रोफ़ाइल-प्रक्षेपित उपकरण प्रतिबंध | कोई नहीं | कमांड, स्किल, हुक, सहायक, स्टेटसलाइन, आउटपुट स्टाइल, MCP, उप-सहायक डिस्पैच, मेमोरी |
+| Zed | मूल नियम, MCP, सिस्टम प्रॉम्प्ट टेम्पलेट; प्रोफ़ाइल-प्रक्षेपित उपकरण प्रतिबंध | कोई नहीं | कमांड, स्किल, हुक, सहायक, स्टेटसलाइन, आउटपुट स्टाइल, उप-सहायक डिस्पैच, मेमोरी |
+
+## सत्यापन हुक
+
+रजिस्ट्री इन जाँचों के माध्यम से समकालिक रहती है:
+
+| जाँच | उद्देश्य |
+| --- | --- |
+| `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | पुष्टि करता है कि प्रत्येक एडाप्टर के पास एक वर्तमान परिपाटी पिन है और रजिस्ट्री अभी भी सत्रह एडाप्टर परिगणित करती है। |
+| `python -m apothem.conformity.gate --all .` | दस्तावेज़ीकरण और कार्यान्वयन अनुरूपता जाँच चलाता है। |
+| `python -m pytest` | रजिस्ट्री फ़िक्स्चर परीक्षण और एडाप्टर कॉन्ट्रैक्ट परीक्षण निष्पादित करता है। |
+
+## उत्पन्न हार्नेस एडाप्टर संदर्भ
+
+{/* apothem:generated-reference:start */}
+
+| Harness | Scope | Format | Target paths |
+| --- | --- | --- | --- |
+| Antigravity (`antigravity`) | user | markdown | `~/.gemini/GEMINI.md`<br />`~/.gemini/antigravity-cli/plugins/apothem/` |
+| Claude Code (`claude-code`) | user | json | `~/.claude/.apothem/support/{templates,hooks,conformity,schemas}/`<br />`~/.claude/settings.json`<br />`~/.claude/{agents,rules,skills,statuslines,output-styles}/` |
+| CodeBuddy (`codebuddy`) | project | markdown | `<project>/.codebuddy/rules/apothem-rules.md` |
+| Codex (`codex`) | user | markdown | `~/.agents/skills/`<br />`~/.codex/AGENTS.md`<br />`~/.codex/agents/*.toml`<br />`~/.codex/hooks.json`<br />`~/.codex/hooks/`<br />`~/.config/apothem/{rules,templates}/` |
+| Cursor (`cursor`) | project | mdc | `<project>/.cursor/rules/apothem-rules.mdc` |
+| Gemini CLI (`gemini-cli`) | project | markdown | `<project>/.gemini/.apothem/support/`<br />`<project>/.gemini/{commands,skills,agents}/`<br />`<project>/GEMINI.md` |
+| GitHub Copilot (`github-copilot`) | project | markdown | `<project>/.github/copilot-instructions.md` |
+| GLM (Z.ai) (`glm`) | project | toml | `<project>/.apothem/providers/glm.toml` |
+| Hermes (`hermes`) | user | yaml | `~/.hermes/.apothem/support/`<br />`~/.hermes/config.yaml` |
+| Kimi Code (`kimi-code`) | project | markdown | `<project>/.kimi-code/.apothem/support/`<br />`<project>/AGENTS.md` |
+| Kiro (`kiro`) | project | markdown | `<project>/.kiro/steering/apothem-rules.md` |
+| Open-Claw (`open-claw`) | user | json | `~/.openclaw/.apothem/support/`<br />`~/.openclaw/openclaw.json` |
+| OpenCode (`opencode`) | user | json | `~/.config/opencode/.apothem/support/`<br />`~/.config/opencode/opencode.json`<br />`~/.config/opencode/{commands,skills,agents}/` |
+| Qwen Code (`qwen-code`) | user | json | `~/.qwen/.apothem/support/`<br />`~/.qwen/QWEN.md`<br />`~/.qwen/settings.json`<br />`~/.qwen/{commands,skills,agents}/` |
+| Trae (`trae`) | project | markdown | `<project>/.trae/rules/apothem-rules.md` |
+| Windsurf (`windsurf`) | project | markdown | `<project>/.devin/rules/apothem-rules.md` |
+| Zed (`zed`) | project | markdown | `<project>/.rules` |
+
+{/* apothem:generated-reference:end */}

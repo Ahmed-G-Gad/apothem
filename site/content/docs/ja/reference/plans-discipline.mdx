@@ -1,0 +1,201 @@
+---
+title: "計画ディシプリン — プロジェクトローカルな一時的作業メモリ"
+description: "フロントマタースキーマ、ライフサイクル遷移、ADR への昇格、フックとバリデーターによる強制を備えた .apothem/plans/（レガシーな .plans/ ツリーは apothem migrate-workspace でアップグレードされます）内のプロジェクトローカルな一時的作業メモリを管理します。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+{/* [Machine-seeded — pending review] */}
+
+> **下流のコントリビューター向けの、規範的かつ規約上の参照。** 本ドキュメントは、プロジェクト仕様の計画ディシプリンのセクション（仕様 §3）を反映したものです。公開リポジトリに同梱される独立した参照です。ここで導入されるディシプリンは基盤的なものであり、以下のすべての指令は、明示的に別段の記載がない限り `MUST` です。アーキテクチャ上の根拠は [ADR-0001](/docs/reference/plans-discipline) に記録されています。
+
+---
+
+## 1. 定義と境界
+
+**計画（plan）** とは、プロジェクトについて推論する過程で生み出される、意図的かつ一時的な作業成果物のすべてを指し、以下を含みますがこれらに限られません。
+
+- アーキテクチャのスケッチ、システム設計のウォークスルー、コンポーネント分解。
+- 作業分解構造、多段階のタスクリスト、分解ツリー。
+- リファクタリング戦略、移行ウォークスルー、ロールアウトのシーケンス。
+- デバッグ日誌、仮説ログ、再現ノート。
+- 探索ノート、スパイク記録、プロンプトのドラフト、後で利用するために保持されたハーネスのトランスクリプト。
+- *出荷するため* ではなく、*それを使って考えるため* に書かれたあらゆるドキュメント。
+
+計画は、これらの隣接するクラスとはカテゴリ的に区別されます。
+
+| 成果物 | ライフサイクル | 場所 | コミットされるか？ |
+|---|---|---|---|
+| **計画** | 一時的な作業メモリ | `<project-root>/.apothem/plans/`（唯一の正規ホーム）— レガシーな `<project-root>/.plans/` ツリーは `apothem migrate-workspace` でアップグレードされます | **決してされない**（gitignore 対象） |
+| **ADR**（アーキテクチャ決定記録） | 永続的、決定的 | プロジェクトが批准した ADR ディレクトリ | 常に |
+| **イシュー / PR の説明** | トラッカーに紐づく | GitHub / 同等物 | 該当なし（トラッカー） |
+| **ハーネス指示ファイル**（ハーネスごとの正規ファイル名） | 永続的な挙動設定 | `<harness-config-root>/`（ハーネスにより、プロジェクトローカルまたはユーザースコープ） | 常に（リポジトリ内） |
+| **コード** | 計画の実行された結果 | コードが置かれる場所 | 常に |
+
+計画は ADR に先行します。計画が永続的な決定へと収束したとき、その決定は ADR へと **昇格** されます（§4 ライフサイクル）。計画そのものはアーカイブされるか破棄されます。
+
+---
+
+## 2. 場所、可視性、命名
+
+- **パス。** `<project-root>/.apothem/plans/` が唯一の正規ホームです。レガシーな `<project-root>/.plans/` ツリーはもはや正規ではありません — `apothem migrate-workspace`（§5）でアップグレードしてください。ハーネス設定ディレクトリ（例えば `~/.claude/plans/`、`~/.claude/.plans/`、`~/.codex/.plans/`）では **ありません**。デスクトップのスクラッチフォルダーでも **ありません**。`~/notes/` でも **ありません**。`tmp/plans/` でも **ありません**。
+- **可視性。** フォルダーは §6 の正規スニペットに従ってプロジェクトの `.gitignore` に登録されます。ハーネスのランタイムは、いかなる書き込みの前にもこのエントリの存在を検証し **なければなりません**。存在しない場合は、1 行のヘッダーコメントと本ドキュメントへのリンクを添えてエントリを追記します。
+- **ファイル名の規約。** `YYYY-MM-DD--<kebab-case-slug>.md`。より大規模なワークスペースでは、`.apothem/plans/<area>/YYYY-MM-DD--<slug>.md` の下にサブカテゴリ化します。
+  - 例: `.apothem/plans/2026-04-30--auth-refactor-strategy.md`、`.apothem/plans/api/2026-04-30--rate-limit-rollout.md`。
+- **インデックス。** 任意の `.apothem/plans/INDEX.md`（これも gitignore 対象）がリンクとステータスを集約してもよく、存在する場合、ハーネスのランタイムはすべての計画書き込み時にそれを維持します。
+- **アーカイブ。** 収束または放棄された計画は `.apothem/plans/_archive/` に移動します。明示的な構造化照会の確認なしに削除されることは決してありません。
+- **計画の著作者ヘッダー。** 計画は、著作者ヘッダーの SPDX 行から **免除** されます（[`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) §免除リスト による）。それらは gitignore 対象の一時的なものであり、一時的な作業メモリに永続的な来歴マーカーを適用することはカテゴリエラーです。フロントマター（§3）が計画の来歴を担います。
+
+---
+
+## 3. フロントマタースキーマ（検証済み）
+
+すべての計画ファイルは次を持ちます。
+
+```yaml
+---
+title: <human-readable title>
+project: <git-remote-url-or-canonical-local-path>
+created: <ISO-8601 timestamp>
+updated: <ISO-8601 timestamp>
+status: draft | in-progress | converged | abandoned
+tags: [<kebab>, ...]
+supersedes: <prior-plan-relative-path or null>
+promotes-to: <ADR path or null>
+---
+```
+
+計画用の JSON スキーマは [`src/apothem/schemas/plan.schema.json`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/plan.schema.json) にあります。`/plan` スラッシュコマンド（および `plans-discipline-language` バリデーター）は、すべての書き込み時にこれに対して検証します。
+
+---
+
+## 4. ライフサイクルと昇格ワークフロー
+
+1. **ドラフト** — 初回作成。`status: draft`。
+2. **進行中** — 活発に反復中。`status: in-progress`。実質的な編集ごとに `updated` を更新。
+3. **収束** — 永続的な決定が結晶化する。
+   1. その決定を、プロジェクトが批准した ADR の場所に新しい ADR として抽出する。
+   2. 計画の `promotes-to` をその ADR パスに設定する。
+   3. `status: converged` を設定する。
+   4. 任意で `.apothem/plans/_archive/` に移動する。
+4. **放棄** — 方向性が放棄される。`status: abandoned`。アーカイブするか、明示的な構造化照会を伴って破棄する。
+5. **置換** — 新しい計画が古いものを置き換えるとき、新しい計画の `supersedes` を古い計画のパスに設定し、古い計画の `status` をそれに応じて設定する。
+
+昇格は、計画の内容が永続的・バージョン管理下・チームメイトから可視となる *唯一の* 経路です。**いかなる計画も、コミットされるソースへ丸ごと移行することはありません。**
+
+---
+
+## 5. 移行プロトコル — 一度きり、ハーネス計画ディレクトリからプロジェクトごとの `.apothem/plans/` へ
+
+> **注。** このプロトコルは、計画ディシプリンを初めて採用する下流プロジェクトで、従前の計画成果物がハーネス設定ディレクトリ（例えば `~/.claude/plans/`、`~/.claude/.plans/`、または別のハーネスの同等パス）内に存在する場合に適用されます。エコシステム自体に対する再帰的なケースは、ハーネスローカルな計画状態をソースへ物理的に移行するのではなく gitignore することで解決されます。
+
+{/* [Machine-seeded — pending review] */}
+> **Tooling.** For projects already on the legacy layout — a sibling `<project-root>/.plans/` tree plus per-harness `<project-root>/.apothem/<harness>/{memory,contexts,learning}` stores — the `apothem migrate-workspace` command collapses both into the shared `<project-root>/.apothem/{plans,memory,learning,contexts}` working directory. The command is idempotent and non-destructive: it backs up every source it consumes, moves `.plans/` to `.apothem/plans/`, union-merges the per-harness memory and context stores, concatenate-dedups the learning signals, and never overwrites a conflicting record. Run `apothem migrate-workspace --dry-run` to preview the moves first.
+
+移行は冪等であり、ハーネスローカルな計画ディレクトリ削除の瞬間まで可逆です（その後は `./.audit/plans-backup-<timestamp>.tar.gz` のバックアップ tarball がロールバック成果物を提供します）。以下の例では `~/.claude/plans/` を使用します。アクティブなハーネスの同等パスに置き換えてください。
+
+**ステップ 1 — インベントリ。** ハーネスローカルな計画ディレクトリ下のすべてのファイルが列挙され、`plan-artifact (quarantined)` に分類されます。
+
+**ステップ 2 — 来歴マップ。** 各計画について、フロントマターの `project` フィールド、本文スキャンのシグナル（リポジトリ URL、パッケージ名、絶対パス）、文脈的手がかりから導出された、推測される宛先プロジェクトと信頼度スコアを伴う来歴記録が構築されます。
+
+**ステップ 3 — マッピングの確認。** 完全なマップが、単一の統合された構造化照会としてオペレーターに提示されます（ファイル数が快適な単一プロンプトのサイズを超える場合は、密にバッチ化されたシーケンスとして）。各計画について、オペレーターは次から選択します。
+
+- 推測された宛先プロジェクトを **確認（Confirm）** する。
+- 別のプロジェクトに **再割り当て（Reassign）** する（オプションはオペレーターの既知のプロジェクトリストを提示します）。
+- **延期（Defer）** — `~/.claude/.audit/orphan-plans/<original-name>` に移動して後で仕分けする。
+- **破棄（Discard）** — 明示的かつ別途確認された構造化照会を伴う場合のみ（これは破壊的です）。
+
+多くの計画で信頼度が `high` の場合、プロンプトは、ログ内ですべての個別決定を依然として可視化しつつラウンドトリップを圧縮するための *confirm-all-high-confidence* アフォーダンスを提供します。
+
+**ステップ 4 — 移動前のプロジェクト準備。** 一意な宛先プロジェクトごとに。
+
+1. プロジェクトルートが存在し、読み取り可能であることを検証する。
+2. それが git リポジトリであることを検証する（非 git ルートについては、続行・初期化・スキップのいずれかを構造化照会チャネル経由で提示する）。
+3. `<project-root>/.apothem/plans/` が存在することを確実にする。なければ `mkdir -p` で作成する。
+4. プロジェクトの `.gitignore` が §6 の正規スニペットを含むことを検証する。なければ、この移行をクレジットするヘッダーコメントを添えて追記する。
+5. `<project-root>/.apothem/plans/` が git によってすでに追跡されていないことを検証する。追跡されている場合（過去のコントリビューターのミス）、*untrack-and-keep*、*untrack-and-remove-from-history*、*abort* のオプションを伴って構造化照会チャネル経由で提示する。
+
+**ステップ 5 — 移動。** 確認された各計画 → 宛先のペアリングについて。
+
+1. 宛先ファイル名を計算する。ソースにフロントマターがある場合は §3 に従って正規化し、ない場合は本文をフロントマター（status `draft`、project フィールドを設定、created は mtime から、tags は `[migrated]`）でラップし、`YYYY-MM-DD--<slug>.md` にリネームする。
+2. 宛先で名前の衝突がある場合、`-imported-<unix-timestamp>` を付加してリネームをログに記録する。
+3. ファイルをコピーし（mtime を保持）、宛先で SHA-256 が一致することを検証してから、ソースを削除する。
+4. `<project-root>/.apothem/plans/_migration-manifest.md`（これも gitignore 対象）にエントリを追記し、元のハーネスローカルパス、宛先パス、元の SHA-256、タイムスタンプ、この移動を承認した構造化照会の回答を記録する。
+
+**ステップ 6 — 検証。** すべての移動の後。
+
+1. ハーネスローカルな計画ディレクトリが空であることを確認する（孤立した計画があれば、まもなく削除されるディレクトリの外にある、そのハーネスの監査/隔離ディレクトリ内にある）。
+2. 各宛先プロジェクトに、内容を持つ `.apothem/plans/` とマニフェストがあることを確認する。
+3. SHA-256 によって、移行された内容が元のものと一致することをスポットチェックする。
+
+**ステップ 7 — Tarball と削除。** ステップ 1 で取得した一時スナップショットから抽出した、移動前のハーネスローカルな計画ツリー全体を含む `./.audit/plans-backup-<ISO-timestamp>.tar.gz` を作成する。次に、準備完了を確認する最終的な構造化照会を経て、いまや空となったハーネスローカルな計画ディレクトリを削除する。
+
+**ステップ 8 — 監査記録。** すべての移動、すべての延期ファイル、すべての破棄、すべての衝突リネーム、すべての gitignore 追記を要約した `./.audit/plans-migration.md` を発行する。
+
+---
+
+## 6. 下流の `.gitignore` スニペット（正規、コピー&ペースト）
+
+このエコシステムを採用するすべてのプロジェクトは、以下のブロックをその `.gitignore` に追加し **なければなりません**。
+
+```text
+# Apothem working directory (project-local shared state: plans, memory,
+# learning, contexts; gitignored — never committed). The sole canonical plans
+# home is `.apothem/plans/`.
+# See: <repo-url>/blob/main/site/content/docs/reference/plans-discipline.mdx
+# Ignore the CONTENTS of this directory (not the directory) so the
+# `.keep` negation below can take effect.
+.apothem/*
+!.apothem/.keep
+```
+
+{/* [Machine-seeded — pending review] */}
+任意の `.keep` 免除は、内容を漏らすことなく、空のパスを刈り取るツールにおいてディレクトリの存在を保ちます。`.keep` を含めるかどうかは、`/plan` の初回呼び出し時に構造化照会チャネルを通じてプロジェクトごとに決定されます。`.apothem/*` + `!.apothem/.keep` 行が正規スニペットです。レガシーな `<project-root>/.plans/` ツリーをまだ抱えているプロジェクトは、`apothem migrate-workspace`（§5）を実行して `.apothem/plans/` へアップグレードします。
+
+---
+
+## 7. 自己強制メカニズム
+
+このディシプリンは、未来のあらゆるセッションを生き延びなければなりません。以下の強制サーフェスは必須であり、公開されたエコシステムに符号化されています。
+
+1. **`AGENTS.md` およびミラー指示サーフェス** — 次のことを述べるトップレベルの必須挙動ブロック。*"Planning artifacts are written to `<project-root>/.apothem/plans/` — the sole canonical plans home (a legacy `<project-root>/.plans/` tree is upgraded via `apothem migrate-workspace`) — never to any harness configuration directory (for example `~/.codex/` or `~/.claude/`) and never to a global location. This rule is non-negotiable; cite §3 of the project spec on every related decision."* このブロックは `plans-discipline-language` バリデーターによって検出されます。
+2. **ハーネスごとのリポジトリ内指示ファイル** — そのハーネスの指示サーフェスに適したフレーミングで同じ指令をミラーします（§4 *計画ディシプリン*）。各登録済みハーネスサーフェスで同じバリデーターによって検出されます。
+3. **デフォルトの出力スタイル** — 応答が計画形状の内容（多段階戦略、分解、設計ウォークスルー、デバッグ日誌）を生み出す場合、スタイルはその成果物をインラインで印刷して破棄するのではなく、プロジェクトローカルな `.apothem/plans/` への書き込みへルーティングします。スタイルは明示的に指示します。*「プロジェクトルートが発見できない場合、どこで計画するかをオペレーターに尋ねる構造化照会で停止する。」*
+4. **すべての委任ワーカープロンプト** — あらゆる計画成果物の宛先として `.apothem/plans/` を指名する *Output Surface* スタンザと、ハーネスローカルな計画ディレクトリを禁止として指名する *Anti-Pattern* スタンザを持ちます。
+5. **専用の `/plan` スラッシュコマンド** — slug + 本文を受け取り、正しいフロントマターで `<project-root>/.apothem/plans/YYYY-MM-DD--<slug>.md` に書き込み、宛先の `.gitignore` が正しいことを確実にし、ハーネス設定ルートのパスへの書き込みを拒否します。
+6. **`pre-tool-use` フック — `plan-write-guard`** — すべてのファイル書き込みツール呼び出しをインターセプトします。ターゲットパスがハーネスローカルな計画の場所（例えば `~/.claude/plans/...` や `~/.codex/.plans/...`）、またはヒューリスティックが計画形状と識別する他のグローバルエコシステムパスに一致する場合、フックは書き込みをブロックし、現在のプロジェクトの `.apothem/plans/` へのリダイレクトを提案する構造化照会を提起します。
+7. **CI バリデーター** — `no-global-plans` は、コミットされた計画作業メモリが公開ツリーに再出現するとビルドを失敗させます。`plans-discipline-language` は、正規の指令がいずれかの登録済みハーネス指示ファイルまたはデフォルトの出力スタイルから脱落すると失敗します。バリデーターの正規ターゲットサーフェス（ファイルシステム契約として保持）は、以下のフェンスブロックに列挙されています。
+
+```text
+AGENTS.md
+CLAUDE.md
+.github/copilot-instructions.md
+```
+
+8. **Pre-commit フック** — 上記をローカルでミラーし、いかなるコミットが着地する前にもディシプリンが強制されるようにします。
+
+---
+
+## 8. アンチパターン（カテゴリ的に禁止）
+
+- 計画をハーネス設定ディレクトリ（例えば `~/.claude/plans/` や `~/.codex/.plans/`）または他のグローバルな場所に書き込むこと。
+- 計画をプロジェクトの git 履歴にコミットすること（コミット時のフックがこれを拒否すべきです）。
+- 計画と ADR を混在させること（異なるライフサイクル、異なる場所、異なるコミットステータス）。
+- フロントマターのない計画、日付プレフィックスのファイル名のない計画、`project` フィールドのない計画。
+- クロスプロジェクトな計画（1 つの計画、2 つのプロジェクト）。それらを分割すること — プロジェクトごとに 1 つの計画。
+- ハーネス設定の同期（例えば Claude Code の `~/.claude`）を介してマシン間で計画を共有すること — 計画をプロジェクトローカルに保つことを支持する構造的論拠は次のとおりです。計画の共有が稀に正当化される場合、プロジェクトリポジトリ *こそが* 同期メカニズムであり、その正当化自体が、内容が ADR へ昇格されるべきというシグナルです。
+- 委任ワーカープロンプト、スキル本文、または出力スタイルの内部に埋め込まれた計画内容。それらのサーフェスは *永続的な挙動設定* であり、計画は *一時的な作業メモリ* です。
+- 計画ファイルに著作者ヘッダーの SPDX 行を適用すること（計画は設計上免除されています — §2、[`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) §免除リスト）。
+
+---
+
+## 関連項目
+
+- [ADR-0001](/docs/reference/plans-discipline) — アーキテクチャ上の根拠、検討された代替案、受け入れられたトレードオフ。
+- [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) — 著作者ヘッダーの SPDX 行ディシプリン（計画はカテゴリ的に免除されます）。
+- ハーネス規約ページ — マルチサーフェスのハーネス規約（計画ディシプリンは、すべての登録済みハーネス指示ファイルおよびオプトインされたあらゆる任意サーフェスにわたる共有された主張として現れます）。パス:
+
+```text
+site/content/docs/reference/ai-conventions.mdx
+```
+- プロジェクト仕様 §3 — ここに反映された完全な正規テキスト。

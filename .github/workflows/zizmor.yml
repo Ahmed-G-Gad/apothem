@@ -1,0 +1,58 @@
+# SPDX-License-Identifier: MIT
+
+# zizmor — static analysis for GitHub Actions workflow security.
+# Audits every workflow under .github/ for template injection, credential
+# persistence, unpinned actions, and excessive permissions; SARIF uploaded
+# to the GitHub Security tab.
+# Ref: https://github.com/zizmorcore/zizmor-action
+
+name: Zizmor
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zizmor-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  zizmor:
+    name: zizmor workflow audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # SARIF upload to code scanning requires public-repo access via
+    # GITHUB_TOKEN; skip on private repos (Resource not accessible by
+    # integration). Job auto-activates when the repo is made public — no
+    # further config change required.
+    if: github.event.repository.private == false
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          # Audit egress: this job checks out the repo, runs the zizmor
+          # workflow auditor (a container action pulled from GHCR, which also
+          # resolves its build-time dependency closure), and uploads SARIF to
+          # code scanning. Audit mode records every egress destination without
+          # an allowlist, so the container pull and its dependency resolution
+          # proceed without a maintained endpoint list while the run's network
+          # activity stays observable.
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Run zizmor
+        uses: zizmorcore/zizmor-action@192e21d79ab29983730a13d1382995c2307fbcaa  # v0.5.7

@@ -1,0 +1,166 @@
+---
+title: "settings.json 文档"
+description: "为 Apothem 生态配置 Claude Code 的钩子执行、权限、事件、超时、Python 运行时、校验以及分层设置优先级。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **范围。** 本文档描述 **Claude Code 适配器** 的钩子
+> 接线文件（`settings.json`）。其他 harness
+> 使用各自的原生设置面板——参见
+> [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses) 了解每个适配器的
+> 等价配置入口。
+
+## 概览
+
+`settings.json` 为 Apothem 生态配置 Claude Code 的钩子执行。
+它声明哪些钩子在哪些事件上触发、它们的超时，以及顶层
+权限面板。Apothem 只随附一份规范模板，因为 Claude Code
+会在所有受支持平台上加载 `~/.claude/settings.json`。
+
+## 仅限 Python 的运行时
+
+每个已配置的钩子都使用 Claude Code 的 exec 形式命令结构。
+随附的模板携带 `${HARNESS_ROOT}` 令牌：
+
+```json
+{
+  "type": "command",
+  "command": "python",
+  "args": ["${HARNESS_ROOT}/apothem/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
+}
+```
+
+`apothem install` 会把该令牌渲染为 harness 根目录的绝对路径
+（正斜杠形式，在 Windows、macOS 和 Linux 上均有效），因此安装后的
+`settings.json` 会直接调用物化于
+`~/.claude/.apothem/support/hooks/dispatch.py` 的分发器。该分发器与
+一致性门禁（`~/.claude/.apothem/support/conformity/gate.py`，其 schema
+fixture 位于其旁的 `~/.claude/.apothem/support/schemas/`）都是独立的标准库
+脚本——主机上无需可导入的 `apothem` 包，且一份
+模板即可服务每个平台。
+
+## 钩子配置 Schema
+
+### 权限
+
+```json
+"permissions": {
+  "allow": ["Read", "Glob", "Grep"]
+}
+```
+
+不在 `allow` 中的工具需要显式的逐调用批准或工作区级权限。
+只读工具已预先批准；写操作（`Write`、`Edit`、`NotebookEdit`、
+`Bash`）会经过 `PreToolUse` 校验器。
+
+### 钩子事件
+
+> **超时值镜像规范的钩子事件预算**——下表
+> 为方便读者而复现它们；以规范的来源为准。
+
+| 事件 | 触发条件 | 超时 | 用途 | 强制项 |
+| ----- | ------- | ------- | ------- | ------- |
+| **SessionStart** | 新的 Claude Code 会话 | 30 秒 | 初始化上下文、读取记忆、检查计划状态 | CM-14 |
+| **PreToolUse** | 在 Write/Edit/NotebookEdit/Bash 之前 | 10 秒 | 校验 CM-7 合规性 + frontmatter | CM-7、CM-22 |
+| **PreCompact** | 在上下文压缩之前 | 30 秒 | 外化尚未外化的状态 | CM-24 §2.3 |
+| **PostCompact** | 在上下文压缩之后 | 30 秒 | 从外化状态重新引导 | CM-24 §6.2 |
+| **Stop** | 会话退出 | 60 秒 | 会话结束外化 | CM-14/CM-22/CM-24/CM-26 |
+
+`dispatch.py` 还在其事件白名单中接受 `UserPromptSubmit` 和 `Notification`。
+两者在随附模板中均未接线；添加一个使用相同
+定位器 + 分发模式的 matcher 块即可启用。
+
+### 顶层字段
+
+| 字段 | 用途 | 必填 |
+| ----- | ------- | -------- |
+| `permissions` | 包含 `allow` 数组的对象，列出预先批准的工具名（默认是只读工具） | 是 |
+| `hooks` | 事件名 → `{matcher, hooks[]}` 块数组的映射；见下方 **钩子事件** | 是 |
+| `model` | 主机可解析的模型选择器。当操作者选择设置时，别名或完整标识符均可接受。 | 可选 |
+| `defaultShell` | 工具 `Bash` 调用的默认 shell。Apothem 在共享模板中不设置此项。 | 可选 |
+| `autoUpdatesChannel` | Claude Code 的更新通道。Apothem 在共享模板中不设置此项。 | 可选 |
+| `effortLevel` | 默认推理强度（`low`、`medium`、`high`、`max`） | 可选 |
+
+## 校验
+
+三个校验器以递增的严格度覆盖钩子面板：
+
+```bash
+# 结构 + Python 卫生（快速、离线）
+python scripts/dev/validate_hooks.py
+
+# 完整生态（结构 + frontmatter + 委派的钩子检查）
+python scripts/dev/validate_ecosystem.py
+
+# 对抗性扫描（用降级输入冲击每个已配置的钩子命令）
+python scripts/dev/chaos_pass.py
+```
+
+在提交钩子或设置更改之前，三者都必须以 0 退出。
+
+对单个事件的临时冒烟测试：
+
+```bash
+python src/apothem/hooks/dispatch.py --event-name SessionStart
+```
+
+预期输出：一行包含 `hookSpecificOutput` 的 JSON 信封。
+
+## 常见问题
+
+### SessionStart 超时
+
+最常见的原因是 `find-python` 定位器发现了 Microsoft Store 的占位程序，
+未能解析到真正的解释器。请验证：
+
+```bash
+python src/apothem/hooks/dispatch.py --event-name SessionStart
+```
+
+如果命令打印了有效的 JSON 信封但 Claude Code 面板显示超时，
+请在 `settings.json` 中提高该事件的 `timeout`。如果命令在 shell 层级失败，
+请安装真正的 CPython 3.10+ 并确保它在 PATH 上或可被定位器发现。
+
+### 每个 Write/Edit 都被阻止
+
+`PreToolUse` 正在标记写入到 harness 安装根目录之外（Claude Code 适配器为 `~/.claude/`）内容中的计划内部术语。
+检查内容是否存在 CM-7 违规（见
+`src/apothem/rules/persistent-conventions-vigilance.md`）。代码库制品只能用领域语言。
+
+### settings.json 未加载
+
+Claude Code 读取 `~/.claude/settings.json`。请验证 Apothem 是否已安装到
+预期的 harness 根目录，并在更改该文件后重启会话。
+
+### 钩子静默无操作
+
+钩子契约是「始终以 0 退出，始终发出有效 JSON」。如果无法定位
+解释器，定位器会返回空，命令便成为无操作。运行 `chaos_pass.py`
+以确认每个已配置的钩子都返回有效信封——它能捕获实时会话会隐藏的
+降级解析路径。
+
+## 分层优先级
+
+Claude Code 通过按递增的优先级顺序组合三层来解析有效设置对象：
+
+| 层级 | 位置 | 是否提交？ | 理由 |
+|------|----------|------------|-----------|
+| 1. **系统** | 编译进 Claude Code 自身的 harness 默认值 | 不适用（由供应商控制） | 底线；每个操作者都继承相同的基线。 |
+| 2. **项目** | `<harness-root>/settings.json` | ✅ 已提交 | 项目共享约定：钩子、权限、MCP 服务器、状态栏接线。Apothem 源码模板位于 Claude Code 适配器的 templates 目录内。 |
+| 3. **用户本地** | `<harness-root>/settings.local.json`（gitignored）——在仓库根以 `settings.local.example.json` 作为模板 | ❌ Gitignored | 操作者专属覆盖：API 令牌、本机路径、可选启用的功能。 |
+
+更高层级的值会**在叶键级别**覆盖更低层级的值——当
+项目层与用户本地层都声明了 `permissions.allow` 条目时，取并集；
+当两者都声明了像 `theme` 这样的标量时，用户本地的值胜出。确切的
+逐键合并语义由 Claude Code harness 拥有。
+
+### 创建用户本地覆盖
+
+1. 把 `settings.local.example.json`（仓库根）复制为 `<harness-root>/settings.local.json`。
+   `settings.local.json` 文件名匹配 `.gitignore` 模式，因此该文件永远
+   不会进入版本控制。
+2. 编辑本地副本——只保留要覆盖的键；harness 会组合各层，
+   因此缺失的键会从项目层继承。
+3. 保存前验证该文件能解析为有效 JSON——harness 会在会话开始时
+   拒绝格式错误的 JSON。

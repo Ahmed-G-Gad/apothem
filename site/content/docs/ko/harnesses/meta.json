@@ -1,0 +1,24 @@
+{
+  "title": "하니스 어댑터",
+  "pages": [
+    "index",
+    "claude-code",
+    "cursor",
+    "gemini-cli",
+    "github-copilot",
+    "codex",
+    "windsurf",
+    "zed",
+    "opencode",
+    "qwen-code",
+    "kiro",
+    "trae",
+    "codebuddy",
+    "antigravity",
+    "hermes",
+    "open-claw",
+    "kimi-code",
+    "glm",
+    "..."
+  ]
+}

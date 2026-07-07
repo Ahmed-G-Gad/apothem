@@ -1,0 +1,91 @@
+---
+title: "Hermes"
+description: "محوّل إطار عمل Apothem لـ Hermes (إصدار معاينة)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**المورّد:** <bdi>Hermes</bdi>
+**اسم التثبيت:** <bdi>`hermes`</bdi>
+**الحالة:** إصدار معاينة
+**الإعداد الأصلي:** <bdi>`~/.hermes/config.yaml`</bdi>
+
+## التثبيت
+
+```bash
+apothem install --harness hermes
+```
+
+يترجم المحوّل الملف التعريفي المشترك إلى ملفّ إعداد المستخدم العامّ لـ<bdi>Hermes
+Agent</bdi> ويثبّت مجموعات دعم <bdi>Apothem</bdi> تحت جذر إطار العمل.
+
+**الملفات المكتوبة:** <bdi>`~/.hermes/config.yaml`</bdi> وملفات الدعم تحت
+<bdi>`~/.hermes/.apothem/support/`</bdi>
+
+## تعيين الملف التعريفي إلى الإعداد الأصلي
+
+يقرأ المحوّل الملف التعريفي المشترك لـ<bdi>Apothem</bdi> ويصيّر إعداد
+<bdi>YAML</bdi> الأصلي. سطح المهارات الخاص بـ<bdi>Hermes</bdi> هو
+<bdi>`skills.config`</bdi> — حِزَم سِجِلّ قابلة للتثبيت يكشفها <bdi>Hermes</bdi>
+تلقائيًّا بوصفها أوامر مائلة ديناميكية — وهو ما لا يكتبه <bdi>Apothem</bdi>. بل
+يسلّم <bdi>Apothem</bdi> محتوى الأوامر والمهارات المشترك بوصفه مادّة دعم تحت
+<bdi>`~/.hermes/.apothem/support/`</bdi>، مُشارًا إليها من مرساة التعليمات الأصلية.
+وتبقى تعريفات المساعدة والقواعد والقوالب وموجّهات الخطافات كذلك مادّة دعم تحت
+<bdi>`~/.hermes/.apothem/support/`</bdi>.
+
+## ملاحظات التوافق
+
+محوّل في إصدار معاينة. إعداد <bdi>YAML</bdi> الأصلي هو سطح <bdi>Hermes</bdi>
+النشِط؛ ويستخدم <bdi>Apothem</bdi> خطّاف دليل المهارات الخارجيّ المُوثَّق
+للمهارات، ويُبقي المجموعات الأخرى مادّةً مرجعية للإرشاد المُثبَّت.
+
+## التحقّق
+
+```bash
+apothem verify --harness hermes
+```
+
+يؤكّد أمر التحقّق ما يلي:
+
+1. وجود الإعداد الأصلي في المسار المتوقَّع.
+2. وجود كل الحقول الإلزامية من الملف التعريفي المشترك.
+3. إبلاغ روتين التحقّق الخاص بالمحوّل عن النجاح.
+
+## التحديث
+
+```bash
+apothem update --harness hermes
+```
+
+يعيد اشتقاق الإعداد الأصلي من حالة الملف التعريفي المشترك الحالية.
+شغّله بعد تعديل <bdi>`~/.config/apothem/profile.yaml`</bdi> أو ترقية حزمة
+<bdi>Apothem</bdi> المُثبَّتة.
+
+## إلغاء التثبيت
+
+```bash
+apothem uninstall --harness hermes
+```
+
+يزيل ملفات الإعداد الأصلية التي كتبها المحوّل.
+لا يتأثّر <bdi>YAML</bdi> الملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
+
+## بوّابة المطابقة
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## استكشاف الأخطاء وإصلاحها
+
+| العَرَض | الإصلاح |
+|---------|-----|
+| ملف الإعداد غير موجود | أعد تشغيل <bdi>`apothem install --harness hermes`</bdi> |
+| فشل التحقّق | شغّل <bdi>`apothem update --harness hermes`</bdi>، ثم تحقّق مجدّدًا |
+| محتوى إعداد غير متوقَّع | تحقّق من <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness hermes`</bdi> |
+
+## مفاتيح الضبط
+
+| العَلَم | الافتراضي | الوصف |
+|------|---------|-------------|
+| <bdi>`--dry-run`</bdi> | <bdi>`false`</bdi> | معاينة التثبيت دون كتابة ملفات. |

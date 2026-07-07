@@ -1,0 +1,151 @@
+---
+title: "Glosarium"
+description: "Glosarium Apothem — istilah dan konsep utama."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Istilah utama yang digunakan di seluruh dokumentasi, kode, dan tata kelola Apothem,
+dalam urutan alfabet.
+
+## Adapter
+Sebuah kelas yang mengimplementasikan protokol `HarnessAdapter` yang menerjemahkan
+profil bersama menjadi format konfigurasi khusus-harness. Adapter berada satu per
+sub-paket di bawah `src/apothem/harnesses/<name>/`. Lihat
+[Abstraksi adapter harness](/docs/architecture/harness-adapter-abstraction).
+
+## Urutan tinjauan audit
+Sapuan audit sebelas-perintah yang mencakup kode, tinjauan-kode, keamanan,
+kinerja, arsitektur, UX, aksesibilitas, dokumen, dependensi, rantai pasok, dan
+model ancaman. Digerakkan oleh pipeline pengerasan `/fortress`. Lihat
+[Urutan tinjauan audit](/docs/concepts/review-fortress).
+
+## Behavior-diff golden
+Sebuah snapshot terkomit di `tests/fixtures/behavior-diff/` yang dibandingkan
+byte demi byte terhadap oracle install dan CLI deterministik, sehingga perubahan
+tak-disengaja pada rencana install, kohor yang dirender, atau keluaran CLI
+tertangkap sebagai penyimpangan alih-alih terkirim diam-diam. Perbandingannya
+mengkanonikkan byte yang berbeda antar-platform sehingga korpus tetap portabel
+lintas sistem operasi.
+
+## Kohor
+Sekumpulan artefak tersinkron dari satu jenis — aturan, command, skill, agen,
+hook, output-style, skema, atau templat — yang dimaterialisasikan mesin ke setiap
+harness dari satu profil bersama. Satu profil membawa setiap kohor; setiap adapter
+memproyeksikannya ke permukaan native harness-nya.
+
+## Gerbang konformitas
+Bagian mekanis dari gerbang pra-emisi lima-belas-bar — validator yang dapat dicek
+mesin di `src/apothem/conformity/gate.py`. Berjalan sebelum setiap emisi artefak;
+bar-bar bernalar dievaluasi dalam tinjauan.
+
+## Entry point
+Grup entry-point setuptools `apothem.harnesses` yang dideklarasikan di
+`pyproject.toml`. Ia mencerminkan registri harness persis; sebuah pengujian
+menegaskan entry point yang dideklarasikan setara dengan adapter yang terdaftar,
+sehingga adapter yang benar-secara-konvensi tetapi tidak terdaftar muncul sebagai
+regresi cakupan.
+
+## Harness
+Sebuah platform asisten yang didukung Apothem melalui adapter khusus.
+Platform yang didukung:
+
+```text
+Antigravity
+Claude Code
+CodeBuddy
+Codex
+Cursor
+Gemini CLI
+GitHub Copilot
+GLM (Z.ai)
+Hermes
+Kimi Code
+Kiro
+Open-Claw
+OpenCode
+Qwen Code
+Trae
+Windsurf
+Zed
+```
+
+Lihat [Harness](/docs/harnesses).
+
+## Registri harness
+Katalog di `src/apothem/lib/harness_registry.py` (data di
+`harness_registry_data.py`) yang mendaftar setiap adapter dan bersifat
+**otoritatif saat runtime** — mesin me-resolve setiap adapter darinya, sehingga
+ia dimuat dari checkout biasa. Penemuan berbasis-konvensi-berkas di bawah
+`src/apothem/harnesses/` adalah pemeriksaan paritas konformansi, bukan resolver
+runtime.
+
+## Hook
+Sebuah command yang terdaftar pada peristiwa siklus-hidup harness (PreToolUse,
+PostToolUse, SessionStart, Stop). Permukaan pendaftaran native berbeda per
+harness — sebuah berkas pengaturan, sebuah manifest hook khusus, atau, ketika
+sebuah harness tidak mengekspos permukaan hook native, materi pendukung Apothem
+yang dirujuk dari jangkar instruksi. Skrip hook dan konteks pesannya berada di
+bawah `src/apothem/hooks/`.
+
+## Materializer
+`materialize_native_config(profile) -> str` opsional milik sebuah adapter yang
+merender konfigurasi native berkas-tunggal dari profil bersama, untuk harness
+yang konfigurasinya berupa satu permukaan terstruktur (misalnya berkas pengaturan
+JSON atau YAML). Adapter propagasi-templat menghilangkan materializer dan
+sebagai gantinya menyalin atau mengonversi kohor sesuai manifest propagasi.
+
+## Output-style
+Sebuah definisi Markdown di bawah `output-styles/` yang membentuk format dan
+suara respons asisten (misalnya gaya concise-engineer atau forensic-auditor).
+Salah satu kohor tersinkron yang dipasang sebuah adapter.
+
+## Suite rencana
+Kumpulan terstruktur dari artefak perencanaan (PREAMBLE.md, MASTER-PLAN.md,
+PROGRESS.md, PLAN-NOTES.md, berkas PHASE.md per-fase) yang dihasilkan oleh
+`/plan-generate` dan dieksekusi oleh `/plan-execute`, di bawah direktori
+`.apothem/plans/` lokal-proyek (pohon `.plans/` warisan ditingkatkan via
+`apothem migrate-workspace`).
+
+## Gerbang pra-emisi
+Blok persetujuan lima-belas-bar yang dicatat sebelum sebuah artefak dipancarkan
+atau keluaran fase dianggap selesai. Bar-bar mekanis berjalan sebagai gerbang
+konformitas; bar-bar bernalar dievaluasi dalam tinjauan. Lihat
+[Gerbang pra-emisi](/docs/governance/pre-emission-gate-registry).
+
+## Manifest propagasi
+`src/apothem/lib/propagation-manifest.yaml` — mendeklarasikan, per adapter
+propagasi-templat, kohor mana yang dipasangnya dan konversi format-native-harness
+apa pun (misalnya mengonversi command ke bentuk TOML sebuah harness).
+
+## Gerbang kesiapan-rilis
+Tiga gerbang konvergensi: konformitas lokal, integrasi-berkelanjutan, dan urutan
+tinjauan audit. Sebuah rilis berlanjut hanya setelah gerbang yang relevan lolos.
+
+## Runtime mandiri
+Apothem mem-vendor dependensi Python runtime-nya (seperti `pyyaml` dan
+`jsonschema`) di bawah `src/apothem/_vendor/`, sehingga mesin berjalan dari
+checkout biasa. Hanya `click` dan `rich` yang di-resolve saat pemasangan. Lihat
+[Runtime mandiri](/docs/architecture/self-contained-runtime).
+
+## Tingkat keseriusan
+Salah satu dari empat tingkat tata kelola (EXPLORING, PERSONAL_USE, SHARED,
+PUBLIC_LAUNCH) yang menentukan kontrol kualitas mana yang berlaku. Lihat
+[Tingkat keseriusan](/docs/concepts/seriousness-tiers).
+
+## Profil bersama
+Berkas YAML tervalidasi-skema di `~/.config/apothem/profile.yaml` atau
+`--profile PATH`. Adapter harness menggabungkannya dengan kohor Apothem yang
+dipaket dan menurunkan konfigurasi native untuk setiap harness yang didukung.
+
+## STANDARD-CONVENTION-PIN
+Berkas `STANDARD-CONVENTION-PIN.md` per-adapter yang mencatat URL dokumentasi
+vendor, commit SHA, tanggal snapshot, serta nama berkas dan skema kanonik tempat
+konvensi adapter dipatok. Diverifikasi ulang secara berkala sehingga sebuah
+adapter tidak pernah menyimpang diam-diam dari permukaan vendor yang ditargetnya.
+
+## Support subtree
+Sebuah direktori milik-Apothem yang digunakan pemasangan harness untuk kohor
+yang tidak dimiliki primitif native-nya oleh harness (aturan, hook, skill, atau
+agen). Ia dirujuk dari jangkar instruksi native harness alih-alih dipaksakan ke
+direktori yang direservasi-vendor.

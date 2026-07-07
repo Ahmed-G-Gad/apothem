@@ -1,0 +1,36 @@
+---
+title: "Markdown परिपाटियाँ"
+description: "Markdown फ़्लेवर, हेडिंग संरचना, कोड फेंस घोषणाएँ, आंतरिक लिंक प्रारूप, लेखकत्व बैनर और वैलिडेटर प्रवर्तन को मानकीकृत करें।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **प्रत्येक लिखित `.md` आर्टिफ़ैक्ट में Markdown के आकार और स्वरूपण के लिए कैनोनिकल संदर्भ।** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) परिपाटियाँ में दिया सारांश इनलाइन घोषणा है; यह पृष्ठ वह स्वतंत्र संदर्भ है जिसे डाउनस्ट्रीम योगदानकर्ता उद्धृत करते हैं।
+
+---
+
+## 1. फ़्लेवर
+
+GitHub-Flavored Markdown (GFM) होस्ट फ़्लेवर है। प्रत्येक आर्टिफ़ैक्ट GitHub के वेब UI, Fumadocs डॉक्यूमेंटेशन साइट और मानक Markdown-सक्षम संपादकों में सही ढंग से रेंडर होता है।
+
+## 2. हेडिंग पदानुक्रम
+
+प्रति फ़ाइल एक H1। बाद के हेडिंग बिना स्तर छोड़े एकदिश्य रूप से नीचे उतरते हैं (H2 → H3 → H4)। वाक्य-केस हेडिंग; कोई ALL-CAPS नहीं, कोई Title Case Across Every Word नहीं। H1 दस्तावेज़ का प्राथमिक शीर्षक धारण करता है और डॉक्यूमेंटेशन-साइट नेविगेशन में दस्तावेज़ का एंकर ही है।
+
+## 3. कोड ब्लॉक
+
+फेंस किए गए कोड ब्लॉक अपनी भाषा घोषित करते हैं (` ```python `, ` ```bash `, ` ```yaml `, ` ```json `, ` ```mermaid `)। बिना टैग वाले ब्लॉक सिंटैक्स हाइलाइटिंग को दबा देते हैं और लेखन-विचलन का संकेत देते हैं; [`.markdownlint.jsonc`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.jsonc) पर markdownlint MD040 नियम भाषा टैग को प्रवर्तित करता है।
+
+## 4. आंतरिक लिंक
+
+आंतरिक क्रॉस-संदर्भ **साइट-रूट पथ** का उपयोग करते हैं (उदा., `[Authorship header](/docs/reference/authorship-header)`)। `.md`/`.mdx` एक्सटेंशन वाले नंगे रिपॉज़िटरी-सापेक्ष पथ (`/docs/foo.md`) और उसी रिपॉज़िटरी के पूर्ण URL (`https://github.com/ahmed-g-gad/apothem/blob/main/...`) साइट-आंतरिक लिंक के लिए टाले जाते हैं, क्योंकि वे पृष्ठ पुनर्नामकरण और अनुभाग पुनर्गठन के सामने टिकते नहीं।
+
+परिवर्तनीय रेफ़ (`main`, `master`, `latest`, `HEAD`) के बाहरी लिंक तब कमिट SHA या रिलीज़ टैग पर पिन किए जाते हैं जब भी लिंक की गई सामग्री की स्थिरता मायने रखती है; अस्थिर संदर्भों को निकटवर्ती `{/* volatile */}` टिप्पणी के साथ ऐसा प्रलेखित किया जाता है।
+
+## 5. लेखकत्व बैनर
+
+प्रत्येक Markdown आर्टिफ़ैक्ट ([`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas/header-exceptions.txt) में सूचीबद्ध अपवादों के साथ) बाइट 0 पर, [Authorship header](/docs/reference/authorship-header) के अनुसार HTML-टिप्पणी संस्करण में, कैनोनिकल लेखकत्व-हेडर बैनर धारण करता है। जहाँ दोनों मौजूद होते हैं वहाँ बैनर YAML frontmatter के ऊपर बैठता है।
+
+## 6. वैलिडेटर
+
+[`.markdownlint.jsonc`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.jsonc) पर `markdownlint-cli2` आह्वान §§1–4 के अधिकांश नियमों को प्रवर्तित करता है। `src/apothem/conformity/file_header_grep.py` पर `file-header-grep` §5 को प्रवर्तित करता है। दोनों [`.pre-commit-config.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/.pre-commit-config.yaml) की प्री-कमिट हुक चेन और [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) के CI गुणवत्ता जॉब में जुड़े हुए हैं।

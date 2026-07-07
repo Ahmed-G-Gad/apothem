@@ -1,0 +1,8 @@
+{
+  "argv": [
+    "profile",
+    "--help"
+  ],
+  "exit_code": 0,
+  "stdout": "Usage: main profile [OPTIONS] COMMAND [ARGS]...\n\n  Manage the shared Apothem profile.\n\nOptions:\n  -h, --help  Show this message and exit.\n\nCommands:\n  edit  Open the shared profile in the system editor.\n  init  Create a schema-valid shared profile scaffold.\n  set   Set a key in the shared profile.\n  show  Display the current shared profile.\n"
+}

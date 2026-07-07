@@ -1,0 +1,152 @@
+---
+title: "Architektur der delegierten Worker"
+description: "Wie Apothem eine einzige Fähigkeitskohorte delegierter Worker über siebzehn Harnesses mit divergierenden Hook-Oberflächen und Regelformaten projiziert."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Dies ist eine an Entwickler gerichtete Tech-Spec-Seite. Sie verwendet Apothems
+internes Vokabular — Adapterklassen, Materializer, Propagation-Manifest,
+Geschwister-Konventions-Konvergenz — ohne es für ein allgemeines Publikum
+abzuschwächen.
+
+Apothem liest ein gemeinsames Profil (`~/.config/apothem/profile.yaml`) und
+materialisiert die tool-native Konfiguration für siebzehn registrierte Adapter.
+Die Harnesses teilen sich kein Fähigkeitsmodell für delegierte Worker: Manche
+stellen Pre-Tool-Call-Hooks bereit, manche führen Regeln aus flachen
+`.md`-Dateien aus,
+manche betten jede Regel in eine einzige Anweisungsdatei ein, und manche
+rendern eine profilgesteuerte Konfiguration zur Installationszeit. Diese Seite
+kartiert diese Divergenz und die Disziplin, die Apothem darüber hinweg anwendet.
+
+## Fähigkeitsmatrix für delegierte Worker je Harness
+
+Die Matrix unten deckt alle siebzehn Harnesses ab. Spalten: die PreToolUse-Hook-
+Oberfläche, die jeder Harness bereitstellt, das Format, das Apothem zur
+Aktivierung von Regeln verwendet, die Adapterklasse (siehe
+[Adapterklassen](#adapterklassen-erklärt)), und ob der Adapter über einen
+Materializer eine native Konfiguration rendert.
+
+
+| Harness | PreToolUse-Hook-Oberfläche | Regel-Aktivierungsformat | Adapterklasse | Materializer |
+|---------|-------------------------|------------------------|---------------|--------------|
+| antigravity | Native Hook-Oberfläche vorhanden; nur Apothem-Unterstützungsmaterial | `GEMINI.md` plus Antigravity-CLI-Plugin-Regeln | Klasse I | keiner |
+| claude-code | Native PreToolUse / PostToolUse / Stop / SessionStart | flache `.md`-Regeln unter `rules/` | Klasse II-A | keiner (Vendor-Settings-Templates) |
+| codebuddy | Keine | `.codebuddy/rules/apothem-rules.md` Projektregeldatei | Klasse I | keiner |
+| codex | Native `hooks.json` Lebenszyklus-Hooks | `AGENTS.md` plus von installierten Skills referenzierte Unterstützungsregeln | Klasse I | keiner |
+| cursor | Keine | `.mdc`-Workspace-Regeln (MDC-Frontmatter: `description` / `globs` / `alwaysApply`) | Klasse I | keiner |
+| gemini-cli | Keine | Regeln eingebettet in einzelne `GEMINI.md` | Klasse I | keiner |
+| github-copilot | Keine (IDE-Erweiterung, keine Tool-Call-Hooks) | Regeln in `.github/copilot-instructions.md` | Klasse I | keiner |
+| glm | Keine (Modell-Backend; keine Agent-Tool-Oberfläche) | `.apothem/providers/glm.toml` Backend-Provider-Konfiguration (keine Regelkohorte) | Klasse I | keiner |
+| hermes | Nur Unterstützungsmaterial | `config.yaml` plus externes Skill-Verzeichnis | Klasse II-B | `config.yaml` |
+| kimi-code | Keine | `AGENTS.md` plus Unterstützungsregeln unter `.kimi-code/.apothem/support/` | Klasse I | keiner |
+| kiro | Keine (Kiro-Hooks liegen außerhalb des Adapter-Geltungsbereichs) | `.kiro/steering/apothem-rules.md` Steering-Datei | Klasse I | keiner |
+| open-claw | Nur Unterstützungsmaterial | `openclaw.json` plus zusätzliches Skill-Verzeichnis | Klasse II-B | `openclaw.json` |
+| opencode | Nur Unterstützungsmaterial | profil-gerendertes JSON plus native Commands, Skills und delegierte Worker | Klasse II-B | `opencode.json` |
+| qwen-code | Native PreToolUse / Stop / SessionStart | `QWEN.md` plus native Commands, Skills und delegierte Worker | Klasse II-B | `settings.json` / `QWEN.md` |
+| trae | Keine | `.trae/rules/apothem-rules.md` Projektregeldatei | Klasse I | keiner |
+| windsurf | Keine | Regeln in `.devin/rules/` | Klasse I | keiner |
+| zed | Keine | flache `.rules`-Datei im Projektstamm | Klasse I | keiner |
+
+
+Anmerkungen zur Matrix:
+
+- **claude-code** ist der Referenzadapter. Er trägt native PreToolUse-,
+  PostToolUse-, Stop- und SessionStart-Hooks und liefert ein Vendor-Settings-
+  Template (`settings.json`). Er verwaltet bewusst nicht `CLAUDE.md` — diese
+  Datei ist Hoheitsgebiet des Betreibers.
+- **codex** installiert native Lebenszyklus-Hooks über `hooks.json`,
+  konvertiert delegierte Worker nach TOML, verpackt Command-Prompts als
+  Codex-Skills und belässt `config.toml` in Betreiberhoheit.
+- **antigravity** behält `~/.gemini/GEMINI.md` als globalen Kontextanker und
+  installiert ein Apothem-Plugin unter
+  `~/.gemini/antigravity-cli/plugins/apothem/`. Hook-Dateien werden als
+  Unterstützungsmaterial vorgehalten, bis der Adapter die Übersetzung des
+  Antigravity-Hook-Schemas übernimmt.
+- **cursor** aktiviert Regeln über `.mdc`-Dateien, die das Vendor-MDC-Frontmatter
+  (`description`, `globs`, `alwaysApply`) tragen; der Adapter schreibt keine
+  Einzeldatei `.cursorrules`.
+- **windsurf** verwendet `.devin/rules/`; der Adapter schreibt keine
+  Einzeldatei `.windsurfrules`.
+- **hermes** und **open-claw** rendern native Konfigurationsdateien und binden
+  Apothem-Unterstützungs-Skill-Verzeichnisse über die dokumentierte
+  Skill-Verzeichnis-Einstellung jedes Harness an. Nicht unterstützte gemeinsame
+  Kohorten verbleiben unter Apothem-eigenen Unterstützungs-Teilbäumen.
+- **qwen-code** rendert dokumentierte `settings.json`-Schlüssel für Kontext und
+  Hook-Dispatch und verwendet anschließend Qwen-native Verzeichnisse für
+  Commands, Skills und delegierte Worker.
+
+## Disziplin der tool-übergreifenden Orchestrierung
+
+Apothem wendet **Geschwister-Konventions-Konvergenz** an: derselbe vom Betreiber
+aufrufbare Workflow wird in das native Idiom jedes Harness projiziert, statt in ein
+einziges gemeinsames Format gezwängt zu werden. Eine Regel, die unter claude-code
+als flache `.md`-Datei aktiviert wird, wird unter cursor zu einer
+`.mdc`-Workspace-Regel, unter gemini-cli zu einem eingebetteten Abschnitt von
+`GEMINI.md` und unter qwen-code zu einer verketteten Referenz in `QWEN.md` plus
+nativen Discovery-Verzeichnissen — dieselbe Absicht, der Dialekt jedes Harness.
+
+Die kanonische Master-Kohorte liegt unter:
+
+```
+src/apothem/{rules,commands,skills,agents,output-styles,hooks,conformity,statuslines}/
+```
+
+Jeder Adapter propagiert eine Teilmenge dieser Kohorte. Die Teilmenge je Harness
+ist in `src/apothem/lib/propagation-manifest.yaml` deklariert; das Manifest ist
+die einzige Quelle der Wahrheit dafür, welche Artefakte welchen Harness in welcher
+Form erreichen. Ein Adapter erfindet niemals Artefakte außerhalb des Manifests,
+und das Manifest weist niemals ein Artefakt einem Harness zu, dem die Oberfläche
+zum Beherbergen fehlt.
+
+## Adapterklassen erklärt
+
+Apothem sortiert Adapter in drei Klassen danach, wie sie das gemeinsame Profil in
+tool-native Ausgabe übersetzen.
+
+- **Klasse I — Roh-Propagation.** Der Adapter kopiert die kanonischen
+  Master-Artefakte (eine im Manifest deklarierte Teilmenge) ohne Rendering-Schritt
+  direkt an den Konfigurationsort des Harness. Es gibt keinen Materializer.
+  antigravity, codebuddy, codex, cursor, gemini-cli, github-copilot, glm,
+  kimi-code, kiro, trae, windsurf und zed sind Klasse I.
+- **Klasse II-A — Roh + vendor-gebundene Settings-Templates.** Der Adapter
+  propagiert Artefakte roh und verwaltet zusätzlich vendor-spezifische
+  Settings-Templates, die an das Schema des Vendors gebunden sind. claude-code
+  ist Klasse II-A.
+- **Klasse II-B — profil-gerenderter Einzeloberflächen-Materializer.** Der
+  Adapter rendert das gemeinsame Profil über einen Materializer in eine einzige
+  native Konfigurationsoberfläche. hermes, open-claw, opencode und qwen-code sind
+  Klasse II-B.
+
+## Verhalten zur Materializer-Zeit
+
+Die Klassenunterscheidung tritt zur Materializer-Zeit zutage — wenn ein Betreiber
+die CLI gegen einen Harness ausführt:
+
+- `apothem install --harness <H>` propagiert die Manifest-Teilmenge für `<H>`
+  und rendert für Adapter der Klasse II-A / II-B die tool-native Konfiguration.
+- `apothem verify --harness <H>` prüft die installierte Konfiguration gegen das,
+  was das aktuelle Profil erzeugen würde, und meldet Drift.
+- `apothem doctor` meldet den Status je Harness über jeden registrierten Adapter
+  hinweg — installiert / fehlend / abgedriftet.
+
+Siehe die [CLI-Referenz](/docs/cli-reference) für die vollständigen
+Command-Oberflächen.
+
+## Divergenz-Taxonomie
+
+Die siebzehn Harnesses divergieren entlang dreier Achsen. Jeder Unterschied je
+Harness in der Matrix lässt sich auf eine davon zurückführen.
+
+
+| Achse | Über die siebzehn Harnesses beobachtete Spannweite |
+|------|---------------------------------------------|
+| Hook-Oberfläche | Native Multi-Event (claude-code, codex, qwen-code) → nur Unterstützungs-Hook-Material (antigravity, gemini-cli, hermes, open-claw, opencode) → keine (codebuddy, cursor, github-copilot, glm, kimi-code, kiro, trae, windsurf, zed) |
+| Regel-Aktivierungsformat | Flach `.md` (claude-code) → Plugin-Regeln (antigravity) → `.mdc`-Workspace (cursor) → Verzeichnisregeln (codebuddy, trae, windsurf) → Steering-Datei (kiro) → flache Datei im Projektstamm (zed) → einzelne eingebettete Datei (codex, gemini-cli, github-copilot, kimi-code) → konfigurations-referenziertes Unterstützungsmaterial (hermes, open-claw, opencode, qwen-code) → Backend-Provider-Konfiguration (glm) |
+| Adapterklasse | Klasse I Roh-Propagation → Klasse II-A Roh + Vendor-Settings → Klasse II-B profil-gerenderte Einzeloberfläche |
+
+
+Apothems Aufgabe ist es, eine kohärente Betreiberabsicht konstant zu halten,
+während diese drei Achsen je Harness variieren. Das Propagation-Manifest und der
+Adapterklassen-Vertrag sind die beiden Mechanismen, die diese Absicht über die
+Divergenz hinweg stabil halten.

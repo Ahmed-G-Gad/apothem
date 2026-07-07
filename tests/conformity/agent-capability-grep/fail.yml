@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT
+
+# Fixture: sample capability declaration missing required fields. Used by
+# the matcher's test suite to verify the matcher emits findings
+# enumerating each absent field.
+mcp_servers:
+  - filesystem
+custom_command_support: "yes"
+recommended_postfix_rendering: "plain-text"
+system_prompt_template_path: templates/system-prompt.md

@@ -1,0 +1,116 @@
+---
+title: "Au cœur de la conception de l'adaptateur multi-environnement"
+description: "Une plongée technique dans le protocole HarnessAdapter d'Apothem et les trois classes d'adaptateur qui matérialisent un profil en dix-sept environnements."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem matérialise un unique profil partagé en dix-sept configurations natives
+d'environnement. Dix-sept cibles, dix-sept formats d'éditeur, dix-sept emplacements
+d'installation — et une seule interface uniforme dont l'opérateur et la CLI
+dépendent tous deux. Cet article explique comment la couche d'adaptateurs tient
+ce contrat ensemble.
+
+## Le protocole HarnessAdapter
+
+Chaque adaptateur d'environnement implémente un protocole structurel
+`HarnessAdapter`. Le protocole est la couture entre la CLI et les détails
+propres à l'éditeur. Il déclare les opérations que la CLI invoque et les
+métadonnées que la CLI lit :
+
+- `name` — l'identifiant enregistré de l'adaptateur.
+- `output_path` — où la configuration matérialisée atterrit sur le disque.
+- `install` — rendre et écrire la configuration native de l'environnement.
+- `uninstall` — supprimer la configuration matérialisée, en laissant le profil
+  partagé intact.
+- `is_installed` — indiquer si la configuration de l'environnement est présente.
+- `verify` — détecter la dérive entre le profil et la configuration sur disque.
+
+Comme le contrat est un `typing.Protocol`, un adaptateur le satisfait par sa
+forme, et non par héritage. La CLI charge les adaptateurs dynamiquement via
+`importlib.metadata` depuis la table
+`[project.entry-points."apothem.harnesses"]` dans `pyproject.toml`. Ajouter un
+environnement signifie publier un sous-paquet qui expose le protocole — sans
+modifier le répartiteur central.
+
+## Un sous-paquet par adaptateur
+
+Chaque adaptateur vit dans son propre sous-paquet sous
+`src/apothem/harnesses/<name>/` :
+
+- `__init__.py` — la classe `<Name>Adapter` qui implémente le protocole et
+  délègue aux modules d'action voisins.
+- `install.py` / `uninstall.py` / `update.py` / `verify.py` — les
+  implémentations par action que la classe de l'adaptateur importe et appelle.
+- `materializer.py` — un `materialize_native_config(profile) -> str` optionnel
+  qui rend le profil partagé sous forme de texte de configuration natif de
+  l'environnement.
+
+Diviser chaque action dans son propre module garde la classe de l'adaptateur
+fine : c'est un répartiteur qui relie les méthodes du protocole aux fonctions
+d'action. Un lecteur qui ouvre `verify.py` voit exactement la logique de
+détection de dérive de ce seul environnement, sans bruit d'installation ou de
+désinstallation à traverser.
+
+## Trois classes d'adaptateur
+
+Les dix-sept environnements ne consomment pas tous la configuration de la même
+façon. Apothem les trie en trois classes selon la quantité de transformation
+que le profil nécessite avant d'atteindre l'environnement.
+
+### Classe I — propagation brute
+
+L'environnement consomme les mêmes artefacts qu'Apothem écrit déjà — des règles
+`.md` plates, des agents, des hooks — sans étape de rendu. L'adaptateur copie
+les modèles bruts dans l'arborescence de configuration de l'environnement. Il
+n'y a pas de `materializer.py`, car rien n'est rendu ; les artefacts du profil
+sont la sortie.
+
+### Classe II-A — brut plus modèles d'éditeur
+
+L'environnement consomme les artefacts bruts d'Apothem ET un ensemble de
+fichiers de modèle propres à l'éditeur (fichiers de paramètres, de manifeste ou
+d'échafaudage que l'environnement requiert). L'adaptateur copie ensemble les
+artefacts bruts et les modèles d'éditeur. Les modèles d'éditeur vivent à côté
+de l'adaptateur dans un répertoire `templates/`.
+
+### Classe II-B — rendu depuis le profil
+
+L'environnement veut un unique fichier de configuration natif rendu à partir des
+champs structurés du profil partagé. Le `materializer.py` de l'adaptateur lit le
+profil et émet le texte natif de l'environnement — un `config.yaml` de Hermes,
+un `openclaw.json` d'Open-Claw, un `opencode.json` d'OpenCode ou un
+`settings.json` de Qwen Code. La Classe II-B est l'endroit où se concentre le
+travail de réconciliation des formats ;
+[l'analyse approfondie de la convergence des conventions](/docs/blog/posts/cross-harness-convention-convergence)
+le couvre en détail.
+
+## claude-code : l'adaptateur de référence à surface complète
+
+L'adaptateur claude-code est l'implémentation de référence pour la plus large
+surface de configuration — règles, agents, hooks, output-styles, paramètres et
+répertoires de convention. Il appartient à la Classe II-A : il propage les
+modèles bruts d'Apothem et aplatit les répertoires de convention, et il livre
+des modèles de paramètres d'éditeur sous
+`src/apothem/harnesses/claude_code/templates/`. Il ne porte pas de
+`materializer.py` — il ne rend pas de fichier de configuration natif à partir du
+profil ; il propage directement les artefacts et les répertoires de convention.
+
+Une frontière délibérée : l'adaptateur claude-code ne gère pas `CLAUDE.md`. Ce
+fichier est un territoire qui appartient à l'opérateur. Apothem matérialise la
+surface de configuration environnante — les règles, les hooks, les paramètres —
+et laisse intacte la voix du `CLAUDE.md` propre à l'opérateur. Un adaptateur qui
+l'écraserait effacerait des instructions de projet écrites à la main à chaque
+`apothem install`, donc l'adaptateur trace la ligne à la frontière du
+répertoire et s'arrête.
+
+## Pourquoi l'uniformité compte
+
+Le protocole donne à l'opérateur un seul modèle mental à travers dix-sept outils.
+`apothem install`, `apothem verify`, `apothem uninstall` se comportent de la
+même façon, que la cible rende un unique fichier ou aplatisse une arborescence
+de répertoires. Les différences d'éditeur vivent à l'intérieur des sous-paquets
+d'adaptateur, derrière le protocole, là où elles ont leur place.
+
+Lisez la référence destinée à l'opérateur sur [Environnements](/docs/harnesses)
+et le modèle de profil dans [Concepts](/docs/concepts).

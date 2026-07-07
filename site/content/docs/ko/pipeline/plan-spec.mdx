@@ -1,0 +1,69 @@
+---
+title: "/plan-spec"
+description: "/plan-spec — 자유 형식 산문이나 원시 노트를 `/plan-generate`에 사용할 수 있는 spec급 `_spec/spec.md` 명세로 다듬습니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**역할:** 포지
+**파이프라인 위치:** 헤드
+
+자유 형식 산문이나 원시 노트를 `/plan-generate`에 사용할 수 있는 spec급 `_spec/spec.md` 명세로 다듬습니다.
+
+## 표준 호출
+
+```bash
+/plan-spec
+```
+
+인수와 함께:
+
+```bash
+/plan-spec [path/to/prose-source] [--suite-name NAME] [--refine-existing] [--standalone] [--quick SLUG [--tag TAG]]
+```
+
+## 입력
+
+자유 형식 산문, 원시 노트, 또는 임시 요구 사항(운영자가 인라인으로 또는 경로로 제공).
+
+## 출력
+
+`_spec/spec.md`(승격된 명세) + `_inputs/handoff-manifest.yml`. `--quick`는 대신 `<project-root>/.apothem/plans/<YYYY-MM-DD>--<kebab-slug>.md`에 단일 프로젝트 로컬 경량 플랜 파일을 작성합니다.
+
+## 하류
+
+/plan-generate (하류 소비자)
+
+## 워크플로 페이즈
+
+포지는 여섯 가지 변환 페이즈를 실행합니다(명세는 G4에서 `_inputs/forge.md`에서 `_spec/spec.md`로 승격됩니다):
+
+1. **발견 및 추출** — 산문 / 노트를 읽고 모든 요구 사항, 결정, 제약을 추출합니다.
+2. **세심한 고려** — 각 표면을 추론합니다. 구조화 질의 채널을 통해 모든 모순을 표면화합니다.
+3. **잠재력 매핑** — 각 요구 사항을 그 하류 레버리지에 매핑합니다.
+4. **보존 검증** — 승격 전에 후보 명세에 대해 15바 사전 발행 게이트(G4)를 실행합니다.
+5. **전문성 적용** — 도메인 전문성을 적용합니다. 전문성 공백 발견 사항을 기록합니다.
+6. **질의 해소 스윕** — 게이트 G0–G5 전반의 모든 미해결 질의를 해소한 다음, `_spec/spec.md`와 핸드오프 매니페스트를 발행합니다.
+
+## 실패 모드
+
+| 증상 | 원인 | 복구 |
+|---------|-------|----------|
+| 산문 입력 누락 | 산문 / 노트가 제공되지 않음 | 자유 형식 산문을 인라인으로 또는 경로로 제공 |
+| 미해결 모순 | 산문에 상충하는 요구 사항이 있음 | G3(사전 수정)에서 중단; 묵시적으로가 아니라 구조화 질의로 해소 |
+| 명세가 게이트에 실패 | G4에서 사전 발행 바가 실패함 | `_inputs/forge.md`에서 승격하기 전에 실패한 바를 수정 |
+
+## 예시
+
+```bash
+# Forge raw notes into a spec-grade specification
+/plan-spec ~/notes/feature.md --suite-name my-feature
+
+# Lightweight project-local plan file (bypasses Forge elicitation)
+/plan-spec --quick my-feature
+```
+
+## 상호 참조
+
+- [파이프라인 개요](/docs/pipeline)
+- [명령 참조](/docs/reference/commands)

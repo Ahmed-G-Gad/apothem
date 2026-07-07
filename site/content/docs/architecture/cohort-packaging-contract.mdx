@@ -1,0 +1,105 @@
+---
+title: "Cohort packaging contract"
+description: "The stable, downstream-consumable contract for cohort packaging and plugin manifests — enumerate cohorts and resolve their per-harness native targets without re-deriving the mapping."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+# Cohort Packaging Contract
+
+This document specifies the stable, downstream-consumable contract for cohort
+packaging and plugin manifests. A consumer reads this contract to enumerate
+cohorts and resolve their per-harness native targets **without re-deriving the
+mapping**.
+
+## Artifacts
+
+| Artifact | Role |
+| -------- | ---- |
+| `src/apothem/schemas/cohort.schema.json` | JSON Schema for a cohort-manifest document. |
+| `src/apothem/schemas/cohort-manifest.yaml` | The cohort-manifest instance — all six cohorts (`core`, `developer`, `security`, `research`, `ai-engineering`, `full`) populated with their member sets; `full` is the union of the other five. |
+| `src/apothem/schemas/plugin.schema.json` | JSON Schema for a per-bundle plugin manifest (`plugin.json`). |
+| `src/apothem/lib/propagation-manifest.yaml` | **Source of truth** for per-harness native targets. |
+
+## Cohort manifest shape
+
+The cohort manifest is a top-level object with three keys:
+
+- `version` — SemVer string of the manifest.
+- `cohorts[]` — one entry per cohort. Each entry has `id` (from the closed set
+  `core | developer | security | research | ai-engineering | full`), `name`,
+  `description`, and `members` (an object grouping member identifiers by catalog
+  type: `skills` / `agents` / `commands` / `rules` / `hooks`).
+- `per_harness_targets` — the resolution contract (below).
+
+Each member identifier is a stable kebab-case name that corresponds to a real
+artifact under `src/apothem/` (`skills/<name>/`, `agents/<name>.md`,
+`commands/<name>.md`, `rules/<name>.md`, or a hooks entry — either an
+executable `hooks/<name>.py` or an advisory message context at
+`hooks/messages/<name>.md` delivered through the dispatcher).
+
+## Enumerating cohorts
+
+A consumer loads `cohort-manifest.yaml`, validates it against
+`cohort.schema.json`, then iterates `cohorts[]`. For each cohort it reads
+`members.<type>` to obtain the member identifiers of each catalog type.
+
+## Resolving per-harness native targets (no re-derivation)
+
+The cohort manifest does **not** restate the harness mapping. Instead,
+`per_harness_targets.source` points at `lib/propagation-manifest.yaml`, the
+single source of truth. The resolution rule:
+
+> For a cohort member of catalog type `T` (one of `skills`, `agents`,
+> `commands`, `rules`, `hooks`) and a target harness `H` (one of those listed in
+> `per_harness_targets.harnesses`), the native plugin target is the `target`
+> field of the entry in `lib/propagation-manifest.yaml` under
+> `harnesses.H.install` whose `source` matches `T/`.
+
+For example, a `core` cohort skill installed for `claude_code` resolves through
+the `harnesses.claude_code.install` entry with `source: "skills/"` to
+`target: "${HARNESS_ROOT}/skills/"`. The same skill for `opencode` resolves to
+`${HARNESS_ROOT}/skills/`; for `gemini_cli` to `${PROJECT_ROOT}/.gemini/skills/`.
+Consumers never invent harness targets — they look them up.
+
+The `${HARNESS_ROOT}` / `${PROJECT_ROOT}` placeholders are resolved at install
+time by each harness adapter; cohort consumers treat the resolved `target`
+verbatim.
+
+## Plugin manifest role
+
+`plugin.schema.json` describes a `plugin.json` — a self-describing bundle of
+catalog members (`skills` / `commands` / `agents` / `hooks` / `rules`) with a
+required `name`, SemVer `version`, and `description`. A plugin manifest is the
+unit a harness adapter materializes into its native plugin surface; cohorts
+select which members a plugin carries, and the propagation manifest resolves
+where those members land per harness.
+
+## Packaging decision — one umbrella bundle, logical cohorts
+
+Cohorts are a **logical selection layer** (this manifest), not a set of separate,
+independently-installable bundles. Apothem ships **one umbrella bundle** carrying the
+full catalog; the cohort manifest lets a consumer pick a coherent subset, and the
+propagation manifest resolves where each selected member lands per harness.
+
+Splitting the catalog into separate per-cohort bundles (e.g. one bundle per
+`developer` / `security` / `research` family) is **achievable without repo-level
+duplication** via the primary distribution surface's documented **meta-plugin symlink
+pattern**: one marketplace catalog lists several cohort plugins, and each cohort plugin
+directory holds **symlinks** into the single-source shared catalog rather than copies.
+When a cohort is installed, the harness dereferences each within-marketplace symlink —
+copying the target's content into that cohort's *cache* — so the installed cohort is
+self-contained, while the **repository keeps one source of truth wired by symlinks**
+(wiring over redundancy, exactly as the dedup discipline prefers). The earlier reading
+that cohort bundles "mechanically duplicate" the catalog conflated *install-time cache*
+duplication (the harness's normal per-plugin copy) with *repository* duplication; the
+symlink pattern avoids the latter.
+
+Apothem currently ships **one umbrella bundle** because that is the simplest
+distribution surface, not because cohorts are mechanically impossible. Adopting the
+per-cohort form is a genuine **UX-and-maintenance trade-off**, not a dedup violation:
+the upside is a finer "install only this family" experience; the costs are maintaining
+N cohort symlink directories plus their marketplace entries, a larger conformity / test
+/ golden surface, and per-cohort install-time cache copies. The logical-cohort layer
+above already delivers the "install only what you need" *selection* outcome from the
+single bundle; the per-cohort *packaging* is the next step whenever the finer install
+UX is wanted.

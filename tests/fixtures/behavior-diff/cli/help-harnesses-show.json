@@ -1,0 +1,9 @@
+{
+  "argv": [
+    "harnesses",
+    "show",
+    "--help"
+  ],
+  "exit_code": 0,
+  "stdout": "Usage: main harnesses show [OPTIONS] NAME\n\n  Show details for a specific harness adapter.\n\nOptions:\n  -q, --quiet            Suppress informational output; only errors are emitted.\n  -v, --verbose          Emit additional diagnostic output.\n  --format [plain|json]  Output format.  [default: plain]\n  --no-color             Disable ANSI color codes in output.\n  --json                 Shorthand for --format json.\n  -h, --help             Show this message and exit.\n\n  Examples:   apothem harnesses show claude-code   apothem harnesses show\n  claude-code --json\n\n  Related commands:   harnesses list  List all registered harnesses\n\n  Exit codes:   0  Success   1  Harness not found\n"
+}

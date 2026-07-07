@@ -1,0 +1,43 @@
+---
+title: "Apothem 대 수동 Cursor 구성"
+description: "`.cursor/rules/` 아래의 Cursor MDC 규칙을 손으로 유지하는 것 대 Apothem의 공유 프로파일에서 렌더링하는 것."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Cursor는 `.cursor/rules/` 아래에서 MDC 형식의 규칙을 읽습니다. MDC 형식은
+frontmatter 필드 — `description`, `globs`, `alwaysApply` — 를 요구합니다.
+Apothem의 cursor 어댑터는 그 `.mdc` 파일들을 공유 프로파일에서 렌더링합니다.
+이 페이지는 그 구성을 손으로 유지하는 것과 Apothem으로 관리하는 것을
+대비합니다.
+
+## 수고 비교
+
+| 작업 | 수동 구성 | Apothem 관리 |
+| ---- | --------------- | --------------- |
+| 규칙 작성 | `.cursor/rules/` 아래 각 `.mdc` 파일을 손으로 작성 | 공유 코퍼스에서 렌더링 |
+| MDC frontmatter 작성 | 파일마다 `description` / `globs` / `alwaysApply`를 손으로 작성 | 어댑터가 생성 |
+| 단일 규칙 형식 유지 | MDC 규칙과 단일 `.cursorrules` 파일 사이에서 손으로 선택 | 어댑터는 `.cursor/rules/`의 MDC 파일만 작성 |
+| 규칙을 다른 환경과 맞춰 유지 | 수동, 도구별 | `apothem update` 시 자동 |
+| 구성이 올바른지 검증 | 수동 점검 | `apothem verify --harness cursor` |
+
+## Apothem이 관리하는 것
+
+cursor 어댑터는 공유 규칙을 `.cursor/rules/` 아래의 `.mdc` 파일로 렌더링하고,
+각 파일에 필요한 MDC frontmatter(`description`, `globs`, `alwaysApply`)를
+생성합니다. 어댑터는 Cursor가 읽는 디렉터리 기반 MDC 형식만 작성하며, 단일
+파일 `.cursorrules`는 작성하지 않습니다.
+Cursor에는 PreToolUse 훅이 없으므로, 가드레일 의도는 규칙 산문 안에 존재합니다.
+
+## 마이그레이션 경로
+
+1. 아직 없다면 `apothem profile init`을 실행해 공유 프로파일을 만듭니다.
+2. 기존 `.cursor/rules/`(및 모든 `.cursorrules`)의 규칙을 공유 코퍼스로 옮깁니다.
+3. `apothem install --harness cursor`를 실행해 올바른 MDC frontmatter를 갖춘 `.mdc` 파일을 렌더링합니다.
+4. `apothem verify --harness cursor`를 실행해 구성이 반영되었는지 확인합니다.
+5. 이후 모든 변경에는 `apothem update --harness cursor`를 사용합니다.
+
+## 다음으로 읽기
+
+- [Cursor 어댑터 참조](/docs/harnesses/cursor)
+- [비교 개요](/docs/comparison)

@@ -1,0 +1,42 @@
+---
+title: "`CLAUDE.md`"
+description: "La configuración del ecosistema, siempre cargada, que proporciona contexto de base a cada interacción, con siete secciones que cubren el conjunto de planificación, identidad, directorios, niveles de gobernanza, directivas, mandatos y registros."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+`CLAUDE.md` es la configuración del ecosistema que siempre se carga. El runtime
+del harness anfitrión la carga en cada interacción, por lo que
+su contenido es el *contexto de base* que todo otro artefacto extiende.
+
+## Secciones
+
+| Sección | Propósito |
+|---------|---------|
+| §1 Conjunto de planificación | Nombra la plantilla maestra del conjunto de planificación y los ocho comandos `/plan-<stage>` |
+| §2 Identidad cognitiva y arquitectura de software | Declara el rol de Arquitecto de Software Sénior y la postura creativa |
+| §3 Directorios de artefactos | Raíces en disco por clase (reglas, comandos, habilidades, trabajadores delegados, etc.) |
+| §4 Gobernanza escalada por seriedad | Lente de escalado de cuatro niveles (EXPLORING / PERSONAL_USE / SHARED / PUBLIC_LAUNCH) |
+| §5 Directivas operativas | Marcos de resolución de problemas, descubrimiento estratégico y comunicación |
+| §6 Mandatos transversales | El registro CM-N (CM-1 hasta CM-28) |
+| §7 Registros | Subregistros para comandos, reglas, trabajadores delegados, hooks, habilidades, evolución y clases vacías |
+
+## Convenciones de identificador de mandato
+
+Tres prefijos llevan significados distintos:
+
+- **CM-N** — mandato de configuración, definido en la cohorte de reglas
+  (`src/apothem/rules/operational-mandates.md` y los archivos de regla por mandato).
+- **TM-N** — mandato de plantilla, definido en
+  `src/apothem/skills/plan-suite/master-template.md` §4.
+- **CP-N** — principio central, definido en la misma plantilla §6.
+
+La plantilla del conjunto de planificación es el registro canónico de TM/CP; las
+etapas de la canalización `/plan` resuelven las referencias cruzadas a través de
+ese archivo.
+
+## Véase también
+
+- [Reglas](/docs/reference/rules) — los archivos de regla que operacionalizan CM-1 hasta CM-28.
+- [Comandos](/docs/reference/commands) — las etapas de la canalización `/plan` que nombra el ancla del §1 Conjunto de planificación.
+- [Hooks](/docs/reference/hooks) — la capa de hooks que aplica CM-7, CM-22 y CM-24.

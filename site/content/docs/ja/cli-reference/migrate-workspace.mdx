@@ -1,0 +1,95 @@
+---
+title: "migrate-workspace"
+description: "apothem migrate-workspace コマンドの CLI リファレンス。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+ハーネスごとのレガシーワークスペースを共有の `.apothem` レイアウトへ移行します。
+
+## 構文
+
+```
+apothem migrate-workspace [--project PATH] [--dry-run]
+                          [--quiet|-q] [--verbose|-v]
+                          [--format plain|json] [--json] [--no-color]
+```
+
+`migrate-workspace` は、ハーネスごとのレガシーなデータホーム
+(`.apothem/<harness>/...`) とレガシーな `.plans/` ツリーを、単一の共有作業ディレクトリ
+`.apothem/{plans,memory,learning,contexts}` へ統合します。基点は、指定された場合は解決済みの
+`--project` ルート、そうでない場合は現在の作業ディレクトリ（プロジェクトローカルのデフォルト）です。
+
+ハーネスごとのメモリ、コンテキスト、学習ストアは、id ごとに共有ストアへ和集合マージされます。
+学習シグナルは連結のうえ重複除去されます。競合するレコード（同一の id、異なる本体）はスキップされ、
+上書きされることはありません。レガシーな `.plans/` ツリーは `.apothem/plans/` の下へ移動されます。
+消費される各ソースは、まずバックアップされます。この移行はべき等です——すでに移行済みのツリーに対して
+再実行しても何も起こりません。
+
+## オプション
+
+| オプション | 説明 |
+|---|---|
+| `--project PATH` | ユーザースコープの構成ディレクトリではなくプロジェクトツリーへ物質化する、プロジェクトスコープのアダプター向けのプロジェクトルート。 |
+| `--dry-run` | レガシーレイアウトを検出し、書き込まずに移行される内容を報告します。 |
+| `--quiet`, `-q` | 情報出力を抑制します。エラーのみを出力します。 |
+| `--verbose`, `-v` | 追加の診断出力を出します。 |
+| `--format plain\|json` | 出力形式（デフォルト: `plain`）。 |
+| `--json` | `--format json` の省略形。 |
+| `--no-color` | 出力中の ANSI カラーコードを無効にします。 |
+| `-h`, `--help` | ヘルプを表示して終了します。 |
+
+## JSON 出力
+
+`--json` のエンベロープは移行結果を保持します。移行が完了した場合、`status` は `success` となり、
+ペイロードはマージされたレコード数、`.plans/` ツリーが再配置されたかどうか、バックアップルート、
+スキップされた競合を報告します。`--dry-run` の呼び出しは、代わりに `legacy_layout_detected` を報告します。
+
+```json
+{
+  "command": "migrate-workspace",
+  "status": "success",
+  "base": "/home/example/project",
+  "migrated": true,
+  "backup_root": "/home/example/project/.apothem/.backups/01J9Z…",
+  "memory_merged": 12,
+  "contexts_merged": 4,
+  "learning_merged": 7,
+  "conflicts": [],
+  "plans_moved": true,
+  "notes": []
+}
+```
+
+レガシーレイアウトが存在しない場合、`migrated` は `false` となり、何も書き込まれません。
+`--dry-run` のエンベロープは結果のカウントを省略し、検出のみを報告します。
+
+```json
+{
+  "command": "migrate-workspace",
+  "base": "/home/example/project",
+  "dry_run": true,
+  "legacy_layout_detected": false
+}
+```
+
+## 例
+
+```bash
+apothem migrate-workspace
+apothem migrate-workspace --project .
+apothem migrate-workspace --dry-run --json
+```
+
+## 終了コード
+
+| コード | 意味 |
+|---|---|
+| 0 | 移行が完了した、またはレガシーレイアウトが見つからなかった（移行するものがない） |
+| 1 | 予期されるエラー——検証またはプロジェクトルートのエラー、あるいは移行の失敗 |
+
+## 関連項目
+
+- [apothem install](/docs/cli-reference/install) — 共有プロファイルからハーネスを物質化する
+- [apothem status](/docs/cli-reference/status) — インストール、検証、ドリフトの状態を報告する
+- [Plans ディシプリン](/docs/reference/plans-discipline) — 共有の `.apothem/plans/` レイアウト

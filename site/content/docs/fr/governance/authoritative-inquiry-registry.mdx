@@ -1,0 +1,41 @@
+---
+title: "Registre des demandes faisant autorité — Catégories obligatoires"
+description: "Sept catégories de demande obligatoires et dérogations de décision automatique régissant ce que l'assistant doit demander par rapport à ce qu'il peut décider lors d'opérations sur des projets hôtes."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Registre canonique de la discipline des demandes faisant autorité.** Ce document porte le catalogue des sept catégories obligatoires, l'énumération des décisions automatiques dérogées et la déclaration de liaisons ; les tableaux substantiels et les liaisons vivent ici, opérationnalisés par `src/apothem/rules/authority-inquiry.md`.
+
+Lors d'opérations sur un projet hôte, demande — n'invente pas — sur les sept catégories ci-dessous. Les demandes sont acheminées par le canal de demande structurée selon `src/apothem/rules/interactive-questions.md`. Chaque option porte l'annotation à trois segments (justification / recommandation / pointeur par défaut) et un marqueur de recommandation selon M7.
+
+| Catégorie | Interdit d'inventer | Demander parce que |
+| -------- | ------------------- | --------------- |
+| Identité | Noms, e-mails, identifiants, pronoms, organisations, locataires, affiliations d'équipe, descriptions de rôle | Se lie à une personne réelle ; crée des artefacts du monde réel (commits, PR, attribution publique) |
+| Direction de portée | Quel sous-arbre, quelle branche, quel environnement (dev/staging/prod), quelle cible (bibliothèques vs services), quoi est destiné à l'utilisateur vs interne uniquement | L'utilisateur dispose d'un contexte implicite que l'assistant n'a pas ; les choix silencieux désalignent |
+| Préférence | Formateur, linter, framework de tests, générateur de documentation, fournisseur de CI, stratégie de branches, convention de messages de commit, signature de releases, schéma de versionnage, licence — *là où l'hôte n'en a pas arrêté un* | Chacun est un engagement de longue durée qui résiste à l'adoption silencieuse |
+| Sécurité | Cadence de rotation des secrets, shells autorisés, sortie réseau autorisée, liste des risques acceptés, liste d'actions de confiance, spécificités du point de terminaison d'authentification du serveur MCP | La mauvaise configuration de sécurité a un impact élevé ; les choix silencieux risquent une brèche silencieuse |
+| Nomenclature | Une nouvelle convention introduite là où l'hôte n'en a aucune, ou une liaison de nom (fonction, drapeau de CLI, sous-commande, clé de configuration) là où l'utilisateur a des préférences implicites | Les noms sont durables ; les choix silencieux s'accumulent en pollution de l'espace de noms |
+| Infrastructure | Points de terminaison, hôtes, ports, chemins, régions, noms de files d'attente, noms de sujets, noms de tables | Se lient à des ressources du monde réel ; l'invention cause des défaillances du monde réel |
+| Épinglages de version | Quelle version de quelle dépendance, là où l'hôte n'a pas épinglé et où le choix importe (dépendances pertinentes pour la sécurité, dépendances à changement de comportement, frontières semver-major) | Conséquences à longue traîne ; les choix silencieux pèsent sur l'utilisateur |
+
+**Les demandes obligatoires** (Identité, Direction de portée, Posture de sécurité, Nomenclature des surfaces publiques sont toujours obligatoires) bloquent les artefacts dépendants ; l'émission produit des marqueurs `<USER-CONFIRM:id=<id>>`. **Les demandes facultatives** que l'utilisateur peut décliner par le silence ; l'assistant se rabat alors sur l'option recommandée et consigne le repli comme une observation afin que l'utilisateur voie qu'une décision a été prise.
+
+## 1. Décisions automatiques dérogées
+
+Ce qui suit, l'assistant le décide sans demande — divulgué dans le grand livre des changements comme « appliqué par défaut ; à annuler si l'intention est autre » :
+
+- **Validité pure.** Erreurs de syntaxe, violations de schéma, coquilles sans ambiguïté.
+- **Rigueur pure.** Folklore → cité ; dates manquantes ajoutées ; affirmations invérifiables marquées.
+- **Sécurité universellement sûre.** `deny .env*`, `deny ~/.ssh/**` lectures, `deny rm -rf:*`, `deny sudo:*`, `deny git push --force*` vers des branches protégées, `deny eval`/`exec` sur entrée non fiable.
+- **Normalisation pure du formatage.** EOL, espaces de fin, style de guillemets unique par fichier *là où l'hôte a un style établi et que l'artefact diverge*.
+- **Réparation de références internes là où la correction est sans ambiguïté.** Chemin mort → chemin vivant unique découvert par recherche.
+
+Tout ce qui est hors de cette dérogation passe par la surface de demande.
+
+## 2. Liaisons (§0.j five-direction)
+
+- **Drives →** Chaque émission d'artefact de projet hôte (le portail de pré-émission se déclenche à chaque écriture de portée significative selon `site/content/docs/governance/pre-emission-gate-registry.mdx`). Chaque présentation à plusieurs options est acheminée par le canal de demande structurée selon l'obligation de canal canonique. L'application de la fraction mécanique dans `src/apothem/conformity/*-grep.py`. L'application par règle dans `src/apothem/rules/{authority-inquiry,host-discovery,disclosure-ledger,ten-dimension-check,pre-emission-gate,expertise-posture,option-annotation,definitiveness,visual-leverage,bidirectional-binding,agile-sprints,canonical-layout,code-craft-*,systemic-participation,production-ready-prs}.md`.
+- **Satisfies →** L'axe de conformité externe déclaré comme dimension de gouvernance de premier ordre aux côtés de l'axe CM-N (M = artefacts de projets hôtes ; CM = artefacts internes à l'écosystème ; les deux orthogonaux, les deux s'appliquent là où les deux s'appliquent). L'obligation de directives permanentes que chaque amorçage de session hérite de l'ensemble M comme contexte toujours actif.
+- **Established by ↑** `CLAUDE.md` lui-même (le registre est intrinsèque au contexte toujours actif, non dérivé d'un état externe). La ratification du seuil trivial vs non trivial dans `site/content/docs/governance/outward-conformity-registry.mdx` §1.
+- **Cross-bound with ↔** Chaque règle nommée dans le tableau du registre de conformité externe dans `site/content/docs/governance/outward-conformity-registry.mdx` (le corps canonique par mandat). `src/apothem/conformity/*-grep.py` (l'application de la fraction mécanique du portail). `src/apothem/rules/interactive-questions.md` (la surface de demande est acheminée par l'obligation de canal canonique que cette règle définit).

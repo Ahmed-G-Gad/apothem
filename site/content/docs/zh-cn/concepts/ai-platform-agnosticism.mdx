@@ -1,0 +1,62 @@
+---
+title: "与宿主无关的姿态"
+description: "Apothem 如何通过共享配置档案和工具适配器实现与宿主无关的姿态。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem 围绕一条原则而设计：你的治理配置应当比任何单一的助手运行时活得更久。共享的 Apothem 配置档案是位于 `~/.config/apothem/profile.yaml` 或 `--profile PATH` 的经模式校验的 YAML 文件；打包的 Apothem 套组提供命令、规则、技能、钩子、模板、状态栏、输出样式和委托定义。`src/apothem/harnesses/<harness>/` 下按工具划分的适配器将这些输入转换为每个受支持工具所需的格式：
+
+```text
+Claude Code, Cursor, Gemini CLI, GitHub Copilot, Codex, Windsurf,
+OpenCode, Antigravity, Open-Claw, Hermes, Qwen Code,
+CodeBuddy, Kiro, Trae, Zed
+```
+
+## 核心理念
+
+与宿主无关意味着你的*意图*——你是谁、你希望助手如何行为、它们必须遵循的规则——存在于一个不归任何单一工具所有的地方。各个工具是这一意图的可互换消费者。当一个新助手出现时，你通过添加一个适配器来采用它，而不是重新编写你的配置。当你曾使用的某个助手失宠时，你可以舍弃它，而不会丢失你已构建的治理。配置档案是资产；工具是渲染目标。工具可用于编程、聊天、协同工作、研究或写作——配置档案与工具的用途无关。
+
+这是一种刻意的反转。常见的做法是直接配置每个工具，这使你的投入被该工具的存续期和格式所挟持。Apothem 将配置视为可移植的资本，将工具视为一次性的终端。
+
+## 问题所在
+
+每个工具都有自己的配置格式：
+
+```text
+Claude Code:    CLAUDE.md + settings.json
+Cursor:         .cursor/rules/*.mdc
+GitHub Copilot: .github/copilot-instructions.md
+Windsurf:       .devin/rules/
+Codex:          AGENTS.md
+```
+
+没有 Apothem，你将需要维护 N 个相互独立的配置文件，它们会随着时间推移而彼此偏离。
+
+## Apothem 的解决方案
+
+```text
+One shared Apothem profile (YAML) + packaged cohorts
+    identity.name
+    preferences.style
+    rules[]
+         |
+         v
+    Adapter layer (HarnessAdapter protocol — src/apothem/harnesses/<harness>/)
+         |
+         +---> Claude Code adapter   -> ~/.claude/
+         +---> Cursor adapter        -> .cursor/rules/*.mdc
+         +---> Copilot adapter       -> .github/copilot-instructions.md
+         +---> Windsurf adapter      -> .devin/rules/
+         +---> ...
+```
+
+你只需编辑一次共享配置档案，然后运行 `apothem update --harness <name>` 或 `apothem update --harness all --project <path>` 来传播变更。`apothem harnesses list` 会打印已注册的集合。
+
+## 为何取名 "apothem"
+
+这个名字将其架构编码于其中。在几何学中，*边心距*（apothem）是从正多边形的**中心**到**其某一条边的中点**的垂线——从核心到每条边的单一距离，沿每个方向都完全相同。这正是其设计：一个共享配置档案位于中心，十七个等距的工具位于周边，每一次具现化与可信来源之间都相隔相同的距离。当一条边发生变化时，核心不会改变；各条边与核心共享同一种关系。偏离在结构上是不可能的。
+
+## 可移植性保证
+
+标记为 `portability: universal` 的规则保证可以被转换到每个受支持的工具。标记为 `portability: project-specific` 的规则可能需要在规则正文中为每个工具提供覆盖说明。

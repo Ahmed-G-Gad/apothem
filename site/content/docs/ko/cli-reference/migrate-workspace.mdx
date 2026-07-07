@@ -1,0 +1,95 @@
+---
+title: "migrate-workspace"
+description: "apothem migrate-workspace 명령에 대한 CLI 참조."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+하니스별 레거시 워크스페이스를 공유 `.apothem` 레이아웃으로 마이그레이션합니다.
+
+## 개요
+
+```
+apothem migrate-workspace [--project PATH] [--dry-run]
+                          [--quiet|-q] [--verbose|-v]
+                          [--format plain|json] [--json] [--no-color]
+```
+
+`migrate-workspace`는 하니스별 레거시 데이터 홈(`.apothem/<harness>/...`)과 레거시
+`.plans/` 트리를 단일 공유 작업 디렉터리 `.apothem/{plans,memory,learning,contexts}`로
+통합합니다. 기준점은 제공된 경우 해석된 `--project` 루트이며, 그렇지 않으면 현재 작업
+디렉터리(프로젝트 로컬 기본값)입니다.
+
+하니스별 메모리, 컨텍스트, 학습 저장소는 id별로 공유 저장소에 합집합 병합됩니다. 학습
+신호는 연결되고 중복 제거됩니다. 충돌하는 레코드(동일한 id, 다른 본문)는 건너뛰며 절대
+덮어쓰지 않습니다. 레거시 `.plans/` 트리는 `.apothem/plans/` 아래로 이동됩니다. 소비되는
+각 소스는 먼저 백업됩니다. 이 마이그레이션은 멱등적입니다——이미 마이그레이션된 트리에서
+다시 실행해도 아무 일도 일어나지 않습니다.
+
+## 옵션
+
+| 옵션 | 설명 |
+|---|---|
+| `--project PATH` | 사용자 범위 구성 디렉터리가 아닌 프로젝트 트리로 구체화하는 프로젝트 범위 어댑터의 프로젝트 루트. |
+| `--dry-run` | 레거시 레이아웃을 감지하고 작성하지 않은 채 무엇이 마이그레이션될지 보고합니다. |
+| `--quiet`, `-q` | 정보성 출력을 억제합니다. 오류만 내보냅니다. |
+| `--verbose`, `-v` | 추가 진단 출력을 내보냅니다. |
+| `--format plain\|json` | 출력 형식(기본값: `plain`). |
+| `--json` | `--format json`의 약어. |
+| `--no-color` | 출력에서 ANSI 색상 코드를 비활성화합니다. |
+| `-h`, `--help` | 도움말을 표시하고 종료합니다. |
+
+## JSON 출력
+
+`--json` 봉투는 마이그레이션 결과를 담습니다. 마이그레이션이 완료되면 `status`는 `success`이며,
+페이로드는 병합된 레코드 수, `.plans/` 트리가 재배치되었는지 여부, 백업 루트, 건너뛴 충돌을
+보고합니다. `--dry-run` 호출은 대신 `legacy_layout_detected`를 보고합니다.
+
+```json
+{
+  "command": "migrate-workspace",
+  "status": "success",
+  "base": "/home/example/project",
+  "migrated": true,
+  "backup_root": "/home/example/project/.apothem/.backups/01J9Z…",
+  "memory_merged": 12,
+  "contexts_merged": 4,
+  "learning_merged": 7,
+  "conflicts": [],
+  "plans_moved": true,
+  "notes": []
+}
+```
+
+레거시 레이아웃이 없으면 `migrated`는 `false`이며 아무것도 작성되지 않습니다. `--dry-run`
+봉투는 결과 수를 생략하고 감지만 보고합니다.
+
+```json
+{
+  "command": "migrate-workspace",
+  "base": "/home/example/project",
+  "dry_run": true,
+  "legacy_layout_detected": false
+}
+```
+
+## 예제
+
+```bash
+apothem migrate-workspace
+apothem migrate-workspace --project .
+apothem migrate-workspace --dry-run --json
+```
+
+## 종료 코드
+
+| 코드 | 의미 |
+|---|---|
+| 0 | 마이그레이션이 완료되었거나 레거시 레이아웃을 찾지 못함(마이그레이션할 것이 없음) |
+| 1 | 예상되는 오류——검증 또는 프로젝트 루트 오류, 또는 마이그레이션 실패 |
+
+## 함께 보기
+
+- [apothem install](/docs/cli-reference/install) — 공유 프로필에서 하니스를 구체화
+- [apothem status](/docs/cli-reference/status) — 설치, 검증, 드리프트 상태를 보고
+- [플랜 규율](/docs/reference/plans-discipline) — 공유 `.apothem/plans/` 레이아웃

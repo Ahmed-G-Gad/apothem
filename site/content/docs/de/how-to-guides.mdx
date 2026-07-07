@@ -1,0 +1,116 @@
+---
+title: "How-tos zum Verfassen & zur Pipeline"
+description: "Aufgabenorientierte Durchgänge zum Verfeinern von Inhalten zu Specs, Generieren von Plan-Suiten, Prüfen von Plänen, Ausführen von Phasen, Hinzufügen von Artefakten und Ausführen von Qualitätstoren."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Aufgabenorientierte Durchgänge zum **Verfassen von Apothem-Artefakten und zum
+Steuern der Plan-Pipeline**. Jede Anleitung beantwortet eine einzige konkrete
+Frage.
+
+Für Rezepte zur Ersteinrichtung — ein Tool hinzufügen, das Profil bearbeiten,
+den Installer steuern — siehe stattdessen den Abschnitt
+[How-to-Rezepte](/docs/how-to).
+
+## Plan-Suite-Pipeline
+
+### Wie verfeinere ich Rohinhalt zu einer Spec?
+
+Rufe `/plan-spec` mit dem Rohinhalt als Eingabe auf. Die Forge-Rolle durchläuft
+sechs Transformationsphasen (Discovery, Meticulous Consideration, Potency
+Mapping, Preservation Verification, Expertise Application, Question-Resolution
+Sweep) und gibt die konsolidierte Spec unter `.apothem/plans/{suite}/_spec/spec.md` aus.
+Siehe `src/apothem/commands/plan-spec.md` für das vollständige Protokoll.
+
+### Wie generiere ich eine Plan-Suite aus einer Spec?
+
+Rufe `/plan-generate <suite-name>` auf, sobald die Spec unter
+`.apothem/plans/{suite}/_spec/spec.md` liegt. Der Generator gibt die kanonischen
+Infrastrukturdateien plus die phasenweisen `phases/NN-kebab-topic/PHASE.md`-Dateien
+aus. Siehe `src/apothem/commands/plan-generate.md`.
+
+### Wie prüfe ich einen generierten Plan?
+
+Rufe `/plan-review path/to/plan-suite/` auf. Der Prüfer wendet die acht
+Planungstechniken an und gibt Scorecards aus. Fehlschlagende Scorecards
+blockieren die Ausführung bei SHARED+, bis sie behoben sind. Siehe
+`src/apothem/commands/plan-review.md`.
+
+### Wie führe ich einen Plan aus?
+
+Rufe `/plan-execute path/to/plan-suite/ [phase-id]` auf. Ohne eine `phase-id`
+läuft die nächste ausstehende Phase. Mit einer spezifischen ID läuft nur diese
+Phase. Siehe `src/apothem/commands/plan-execute.md`.
+
+### Wie prüfe ich den Plan-Status?
+
+Rufe `/plan-status path/to/plan-suite/ [--verbose]` auf. Schreibgeschützter
+Bericht. Siehe `src/apothem/commands/plan-status.md`.
+
+## Artefakte verfassen
+
+### Wie füge ich eine neue Regel hinzu?
+
+1. Wähle einen kebab-case-Dateinamen unter `src/apothem/rules/`, z. B.
+   `src/apothem/rules/my-new-rule.md`.
+2. Verfasse das Frontmatter (`name`, `description`, `type:
+   instruction`, optional `pathFilter`).
+3. Schreibe den Body mit den kanonischen Abschnitten: Purpose,
+   Obligations, Seriousness Scaling, Anti-Patterns, Enforcement,
+   Bindings.
+4. Füge eine Zeile zur Regel-Kohorte (`src/apothem/rules/`) hinzu.
+5. Führe `python scripts/dev/validate_ecosystem.py --check
+   frontmatter-cohort` aus, um zu verifizieren.
+
+### Wie füge ich einen neuen delegierten Worker hinzu?
+
+Wähle einen kebab-case-Dateinamen unter dem unten gezeigten Verzeichnis, in der
+Form `my-worker.md`:
+
+```text
+src/apothem/agents/
+src/apothem/agents/my-worker.md
+```
+
+Dann:
+
+1. Verfasse das Frontmatter — einschließlich `name`, `description`,
+   `allowedTools`, `maxTurns`, `version` und der unten gezeigten Typmarkierung:
+
+```text
+type: agent
+```
+
+1. Schreibe den System-Prompt als Body.
+1. Füge eine Zeile zur Helfer-Registry in der Kohorte der delegierten Worker (`src/apothem/agents/`) hinzu.
+
+### Wie füge ich einen neuen Hook hinzu?
+
+1. Verfasse eine Kontextnachricht unter
+   `src/apothem/hooks/messages/<event>-<scope>.md`.
+2. Verdrahte den Hook in `settings.json`.
+3. Aktualisiere die Hooks-Pipeline.
+4. Führe `python scripts/dev/validate_ecosystem.py --check
+   hook-validator` aus.
+
+## Qualitätstore
+
+### Wie führe ich die lokalen Qualitätstore aus?
+
+```bash
+python -m ruff check .
+python -m ruff format --check .
+python -m mypy
+python -m pytest -q
+python scripts/dev/validate_ecosystem.py
+python scripts/dev/chaos_pass.py
+```
+
+Die CI-Pipeline führt denselben Satz parallel aus.
+
+### Wie prüfe ich das Frontmatter einer einzelnen Artefaktklasse?
+
+```bash
+python scripts/dev/validate_ecosystem.py --check frontmatter-cohort
+```

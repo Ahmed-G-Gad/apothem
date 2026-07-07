@@ -1,0 +1,89 @@
+---
+title: "Codex"
+description: "Codex (Beta) के लिए Apothem हार्नेस एडॉप्टर।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**विक्रेता:** OpenAI
+**इंस्टॉल नाम:** `codex`
+**स्थिति:** Beta
+**नेटिव कॉन्फ़िग:** `~/.codex/AGENTS.md`, `~/.codex/hooks.json`,
+`~/.codex/hooks/`, `~/.codex/agents/*.toml`, और `~/.agents/skills/`
+
+## इंस्टॉलेशन
+
+```bash
+apothem install --harness codex
+```
+
+एडॉप्टर Codex-नेटिव निर्देश और हुक स्थापित करता है, Apothem एजेंटों को Codex TOML एजेंटों
+में परिवर्तित करता है, और पुन: उपयोग योग्य कमांड प्रॉम्प्ट को Codex स्किल के रूप में लपेटता
+है।
+
+**लिखी गई फ़ाइलें:** `~/.codex/AGENTS.md`, `~/.codex/hooks.json`,
+`~/.codex/hooks/`, `~/.codex/agents/*.toml`,
+`~/.agents/skills/*/SKILL.md`, और `~/.config/apothem/{rules,templates}/` के अंतर्गत
+समर्थन फ़ाइलें।
+
+## प्रोफ़ाइल-से-नेटिव-कॉन्फ़िग मैपिंग
+
+एडॉप्टर Apothem के साझा समूहों को पढ़ता है और प्रत्येक को सही Codex सतह में स्थापित करता है:
+निर्देश `AGENTS.md` में, हुक `hooks.json` और `hooks/` में, एजेंट TOML में, स्किल
+`~/.agents/skills/` में, और गैर-नेटिव Markdown नियम/टेम्पलेट `~/.config/apothem/` में समर्थन
+सामग्री के रूप में।
+
+## संगतता टिप्पणियाँ
+
+Codex `~/.codex/rules/` को `.rules` निष्पादन नीतियों के लिए आरक्षित रखता है। Apothem वहाँ
+Markdown व्यवहार नियम नहीं रखता; यह उन्हें `~/.config/apothem/` में रखता है और उन्हें
+`AGENTS.md` तथा स्थापित स्किल से संदर्भित करता है।
+
+## सत्यापन
+
+```bash
+apothem verify --harness codex
+```
+
+verify कमांड पुष्टि करता है कि:
+
+1. नेटिव कॉन्फ़िग अपेक्षित पथ पर मौजूद है।
+2. साझा प्रोफ़ाइल के सभी अनिवार्य फ़ील्ड मौजूद हैं।
+3. एडॉप्टर-विशिष्ट सत्यापन रूटीन सफलता की रिपोर्ट करता है।
+
+## अपडेट करना
+
+```bash
+apothem update --harness codex
+```
+
+Codex बूटस्ट्रैप, परिवर्तित एजेंटों, स्किल, और समर्थन समूहों को ताज़ा करता है।
+
+## अनइंस्टॉल करना
+
+```bash
+apothem uninstall --harness codex
+```
+
+एडॉप्टर द्वारा लिखी गई नेटिव कॉन्फ़िग फ़ाइलों को हटाता है। साझा प्रोफ़ाइल YAML और Apothem
+इंजन अप्रभावित रहते हैं।
+
+## कन्फ़ॉर्मिटी गेट
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## समस्या निवारण
+
+| लक्षण | समाधान |
+|---------|-----|
+| कॉन्फ़िग फ़ाइल नहीं मिली | `apothem install --harness codex` को फिर से चलाएँ |
+| सत्यापन विफल | `apothem update --harness codex` चलाएँ, फिर दोबारा सत्यापित करें |
+| अप्रत्याशित कॉन्फ़िग सामग्री | `~/.config/apothem/profile.yaml` या `--profile PATH` जाँचें, फिर `apothem update --harness codex` को फिर से चलाएँ |
+
+## कॉन्फ़िगरेशन नॉब
+
+| फ़्लैग | डिफ़ॉल्ट | विवरण |
+|------|---------|-------------|
+| `--dry-run` | `false` | फ़ाइलें लिखे बिना इंस्टॉल का पूर्वावलोकन करें। |

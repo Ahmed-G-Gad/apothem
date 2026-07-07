@@ -1,0 +1,137 @@
+---
+title: "Multi-Surface Harness Conventions"
+description: "Canonical normative reference for multi-surface harness configuration and coherence across chat, IDE completion, and PR review runtimes."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Canonical normative reference for downstream contributors.** This document mirrors the project specification's Multi-Surface Harness Conventions sections (Spec §0.6 + §2.8 + §4.7); it is the standalone reference that ships with the published repo. The architectural rationale is recorded at [ADR-0003](/docs/architecture).
+
+---
+
+## 1. Why Plural
+
+A modern engineering surface is touched by multiple harnesses — chat consoles, in-IDE completion engines, pair-programming companions, and pull-request reviewers. Each reads its own canonical configuration file. If the project ships only one such file, the remaining runtimes silently freelance against unstated conventions; the missing in-repo memory leaks immediately.
+
+The cost of a missing surface is **silent drift in machine-generated code** — the worst kind of defect because it accumulates invisibly. Every machine-generated artifact compounds the divergence; by the time a human reviewer spots the contradiction, the codebase carries weeks of inconsistent conventions.
+
+Harness-runtime configuration is plural by deployment reality. The published ecosystem MUST ship a behavioural-memory file for the chat-console runtime AND a repo-scoped instructions file for the in-IDE completion runtime. The two surfaces MUST be mutually coherent — no contradiction, no drift — and MUST jointly encode the same disciplines.
+
+---
+
+## 2. The Coherence Contract
+
+Every convention surface in scope (§3) is a *channel* expressing the project's single conventions specification. The specification is decomposed into:
+
+- **Shared sections** — Plans Discipline, structured inquiry (or surface-equivalent), Authorship Header, Naming, Anti-Patterns, Modal Hierarchy. These MUST appear in every required surface and MUST be semantically equivalent across surfaces.
+- **Surface-specific sections** — capability framings, tool-call patterns, codegen-vs-chat differences. These MAY differ across surfaces but MUST NOT contradict shared sections.
+
+The `multi-surface-coherence` validator (§7) runs on every CI run and on pre-commit, asserting the contract.
+
+The two (or more) surfaces are different *channels* expressing one *specification*. Shared sections MUST match — semantically and, where possible, lexically — across surfaces. Surface-specific sections MUST NOT contradict shared sections.
+
+---
+
+## 3. Surfaces in Scope
+
+| Surface | Path | Mandatory? | Audience |
+|---|---|---|---|
+| `AGENTS.md` | repo root (and/or `.codex/AGENTS.md`) | **MUST** | AGENTS-aware harnesses |
+| `CLAUDE.md` | repo root (and/or `.claude/CLAUDE.md`) | **MUST** | Claude Code |
+| `.github/`-rooted instructions file | `.github/`-rooted instructions file | **MUST** | in-IDE completion runtime |
+| `site/content/docs/architecture/`-rooted helpers manifest | repo root | **MAY** (opt-in via the structured-inquiry channel) | multi-helper orchestration platforms |
+| `.cursorrules` | repo root | **MAY** (opt-in) | in-IDE editor runtime |
+| `.windsurfrules` | repo root | **MAY** (opt-in) | in-IDE companion runtime |
+
+For this engagement the operator opted in to the optional assistant surfaces recorded by the fixture. Unused vendor-specific root configs are intentionally absent; a tool-specific config file is added only when that tool is an active editing surface for this repository.
+
+---
+
+## 4. Section List for the In-IDE Instructions File
+
+The repo-scoped instructions file under `.github/` MUST contain, in this order, the following sections (each with the exact heading text below; section bodies are authored, not template-stamped, but each MUST cover the listed claims):
+
+1. **Project Context** — one paragraph: what this repository is, who uses it, its top-level shape. Concrete; no marketing.
+2. **Coding Conventions** — naming, modal hierarchy, frontmatter, markdown style, language-specific style points where they diverge from defaults.
+{/* REUSE-IgnoreStart */}
+3. **File Headers** — every file the runtime generates MUST begin with the canonical single `SPDX-License-Identifier: MIT` line per [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header), in the comment variant matching the filetype. Pointer to `scripts/inject-header.*` and `site/content/docs/reference/authorship-header.mdx`.
+{/* REUSE-IgnoreEnd */}
+4. **Plans Discipline** — the runtime MUST NOT generate code or scripts that write to a harness configuration directory (for example `~/.claude/plans/` or `~/.codex/.plans/`) or any other global plans location. Planning artifacts go to `<project-root>/.apothem/plans/` (a legacy `<project-root>/.plans/` tree is upgraded via `apothem migrate-workspace`) per [`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline).
+5. **Structured Inquiry Behavior** — when the runtime is uncertain, it MUST NOT silently fabricate. Instead it inserts a clearly-marked clarification block (e.g., a `# TODO(clarify): <question>` comment) and surfaces the question in chat where the surface allows. No invented APIs, no invented model names, no invented file paths.
+6. **Forbidden Patterns** — explicit don'ts: no marketing adjectives, no hedging filler, no console.log debug detritus, no hard-coded absolute paths to user home, no committing secrets, no committing files under `.apothem/plans/` (or the legacy `.plans/`), no contradicting the canonical project instruction file.
+7. **Output Format** — generated code/prose conforms to the unified conversational output conventions: definitiveness, uniform sectioning, density, summary discipline, citations. For code: documented public surface, typed where the language supports types, tested where a test scaffolding exists.
+8. **Review Checklist** — what a reviewer (human or runtime in PR-review mode) MUST verify before approving: header present, naming compliant, no `.apothem/plans/` writes, no contradictions with the canonical project instruction file, validators green locally.
+9. **Pointers** — links to `AGENTS.md`, `CLAUDE.md`, `site/content/docs/reference/plans-discipline.mdx`, `site/content/docs/reference/authorship-header.mdx`, this conventions document, `schemas/`, and `CONTRIBUTING.md`.
+
+The file begins with the canonical authorship-header SPDX line (Markdown variant) per [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) §2 — visible-or-invisible per the project's chosen header-visibility policy.
+
+The in-IDE instructions file is **not** a verbatim copy of `AGENTS.md` or `CLAUDE.md`. `AGENTS.md` is the canonical project instruction surface, `CLAUDE.md` mirrors it for Claude Code, and the in-IDE instructions file is voiced for an in-editor code-completion runtime that emits suggestions a developer accepts or rejects. The *information* (disciplines, conventions, anti-patterns) is identical; the *framing* differs.
+
+---
+
+## 5. Claim List Reference
+
+The fixture at [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml) enumerates each shared claim. Sample entries:
+
+```yaml
+- id: plans.location
+  claim: "Planning artifacts live at <project-root>/.apothem/plans/, never inside a harness configuration directory."
+  required-in: [AGENTS.md, CLAUDE.md, .github/copilot-instructions.md]
+  optional-in: [site/content/docs/architecture/agents.mdx, .cursorrules]
+- id: header.canonical
+  claim: "Every applicable new file begins with the canonical authorship-header banner per site/content/docs/reference/authorship-header.mdx."
+  required-in: [AGENTS.md, CLAUDE.md, .github/copilot-instructions.md]
+- id: ambiguity.resolution
+  claim: "Ambiguity is surfaced via the structured-inquiry channel or a clearly-marked TODO(clarify); never silently invented."
+  required-in: [AGENTS.md, CLAUDE.md, .github/copilot-instructions.md]
+# ... (one entry per shared claim)
+```
+
+The validator parses each surface, attempts to find each claim's surface-presence (via heading hierarchy + body keyword extraction), and fails on any miss or contradiction.
+
+---
+
+## 6. Reconciliation Rule
+
+When two surfaces are detected as contradicting on a shared claim, the default reconciliation is:
+
+> `AGENTS.md` is the canonical project voice. Any contradicting surface is rewritten to mirror `AGENTS.md` semantics in surface-appropriate framing.
+
+A surface-specific override is permitted only with an explicit, in-file `<!-- coherence-override: <claim-id> -->` marker that points at an ADR explaining the deliberate divergence. The override marker is itself enumerated in the validator's allow-list and surfaces in the CI report.
+
+For this repository the ratified reconciliation strategy is **`agents-md-wins`**: `AGENTS.md` is canonical, and every active harness mirror stays semantically equivalent.
+
+---
+
+## 7. Validators
+
+Three validators co-implement the coherence contract:
+
+```text
+- in-IDE-instructions-presence    (src/apothem/conformity/copilot_instructions_presence_grep.py)
+- multi-surface-coherence         (src/apothem/conformity/multi_surface_coherence_grep.py)
+- license-author-consistency      (src/apothem/conformity/license_author_consistency_grep.py)
+```
+
+- The first asserts the in-IDE instructions file exists, parses, contains every canonical section enumerated in §4, and begins with the canonical authorship banner.
+- The second parses each surface's canonical sections; asserts shared sections are mutually consistent under a normalized comparator (case-insensitive, whitespace-tolerant, allow lexical paraphrase but require semantic equivalence on the fixture-defined claim list).
+- The third asserts the LICENSE's copyright line and the canonical banner's "Copyright (c)" line name the same author.
+
+---
+
+## 8. Surface Lifecycle
+
+- **Add a surface.** Operator opts in via the structured-inquiry channel or via subsequent `make surfaces-add <name>`. The generator authors the surface against the claim list, runs the validator, files an ADR if a surface-specific override is needed.
+- **Remove a surface.** structured inquiry confirms removal, ADR records the rationale, validator's required-in list is amended.
+- **Drift detection.** Any commit that diverges from the claim list is rejected by pre-commit / CI; the commit's author rewrites the surface to restore coherence.
+
+---
+
+## See Also
+
+- [ADR-0003](/docs/architecture) — architectural rationale, alternatives considered.
+- [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml) — the canonical claim list fixture.
+- [`AGENTS.md`](https://github.com/ahmed-g-gad/apothem/blob/main/AGENTS.md) — the canonical project voice.
+- [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) — the Claude Code mirror.
+- [`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline) — the Plans Discipline shared claim's canonical reference.
+- [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) — the Authorship Header shared claim's canonical reference.
+- Project specification §0.6 + §2.8 + §4.7 — the full canonical text mirrored here.

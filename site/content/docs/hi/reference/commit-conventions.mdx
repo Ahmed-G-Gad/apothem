@@ -1,0 +1,32 @@
+---
+title: "कमिट कन्वेंशन"
+description: "git आर्टिफ़ैक्ट और संस्करण नियंत्रण के लिए कमिट संदेश प्रारूप, रिलीज़ टैगिंग, केवल-मानव लेखकत्व अनुशासन, और प्रति-कार्य ताल स्थापित करें।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **git कमिट संदेशों, रिलीज़ टैग, और लेखकत्व अनुशासन के लिए विहित संदर्भ।** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) कन्वेंशन का सारांश इनलाइन घोषणा है; यह पृष्ठ वह स्वतंत्र संदर्भ है जिसे अनुप्रवाह योगदानकर्ता उद्धृत करते हैं।
+
+---
+
+## 1. Conventional Commits
+
+कमिट विषय **Conventional Commits** स्वरूप का अनुसरण करते हैं: `<type>(<scope>): <subject>`। बंद `<type>` समुच्चय `{feat, fix, chore, docs, refactor, test, perf, ci, build, style, revert, release}` है। `<scope>` वह सतह है जिसे कमिट छूता है (उदाहरण के लिए, `feat(conformity)`, `docs(adr)`, `fix(ci)`); scope केवल उन क्रॉस-कटिंग परिवर्तनों के लिए छोड़ा जाता है जो स्थानीयकृत नहीं होते।
+
+विषय आज्ञार्थक भाव में है, type/scope कोलन के बाद छोटे अक्षरों में, बिना अंत में पूर्णविराम के, और 72 अक्षरों से कम। बॉडी — विषय से एक रिक्त पंक्ति द्वारा अलग — यह व्याख्या करती है कि परिवर्तन **क्यों** मौजूद है, न कि diff ने क्या बदला; diff स्वयं इस बात का विहित अभिलेख है कि क्या बदला।
+
+## 2. लेखकत्व अनुशासन (केवल-मानव)
+
+प्रत्येक git आर्टिफ़ैक्ट में प्रत्येक लेखकत्व सतह (कमिट विषय, कमिट बॉडी, `Author:` फ़ील्ड, `Co-Authored-By:` ट्रेलर, `Signed-off-by:` ट्रेलर, ब्रांच नाम, टैग नाम, टैग एनोटेशन, stash नाम, git-notes बॉडी, PR शीर्षक, PR विवरण) **केवल मानव योगदानकर्ताओं** को नामित करती है। कोडिंग-सहायक रनटाइम कभी भी स्वयं को, अंतर्निहित भाषा मॉडल को, रनटाइम / परिवेश / IDE / एक्सटेंशन / विक्रेता को, या किसी अन्य स्वचालित उपकरण को, उन सतहों में से किसी एक को भी आरोपित नहीं करता। निषिद्ध पैटर्न में `Co-Authored-By: <model-name>`, `Co-Authored-By: <noreply@*-vendor.com>`, `generated with X` या `co-authored by an automated helper` जैसी बॉडी कथा, और गैर-मानव लेखकत्व का संकेत देने वाला कोई भी विषय-पंक्ति मार्कर शामिल है। पूर्ण विनिर्देश [`src/apothem/rules/production-ready-prs.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/production-ready-prs.md) §6 में है; यांत्रिक प्रवर्तन [`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/hooks/messages/pretooluse-bash.md) Scan 3 में है।
+
+## 3. रिलीज़ टैग (सिमेंटिक वर्जनिंग)
+
+रिलीज़ टैग **सिमेंटिक वर्जनिंग** (`vMAJOR.MINOR.PATCH`) का अनुसरण करते हैं। 1.0 से पूर्व का संस्करण विनिर्देश की स्थिर-पूर्व कन्वेंशन के अनुसार `0.MINOR.PATCH` है; ब्रेकिंग परिवर्तन MINOR को बढ़ाते हैं, बग फ़िक्स PATCH को बढ़ाते हैं। टैग एनोटेटेड (`git tag -a`) है और [`site/content/docs/governance/release-engineering-policy.mdx`](/docs/governance/release-engineering-policy) के अनुसार प्रकाशन स्तर पर हस्ताक्षरित है। पैकेज संस्करण स्रोत मैनिफ़ेस्ट (`pyproject.toml` `version`) में है, और रनटाइम / संस्करण-वाहक सतहें उस पैकेज मेटाडेटा से व्युत्पन्न होती हैं।
+
+## 4. प्रति-कार्य ताल
+
+कमिट SHARED+ गंभीरता पर प्रति-कार्य, PERSONAL_USE पर प्रति-चरण, और EXPLORING पर वैकल्पिक रूप से लैंड होते हैं। किसी कार्य का कमिट कार्य के सत्यापन गेट पास होने के तुरंत बाद लैंड होता है; स्थगित कमिट संदर्भ संचित करते हैं और दायरा खोने का जोखिम उठाते हैं। पूर्ण अनुशासन [`src/apothem/rules/operational-mandates.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/operational-mandates.md) §CM-13 में है।
+
+## 5. वैलिडेटर
+
+[`.pre-commit-config.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/.pre-commit-config.yaml) पर pre-commit हुक श्रृंखला प्रति-लेखन गुणवत्ता गेट को लागू करती है। bash हुक पर लेखकत्व-अनुशासन प्रवर्तन (`src/apothem/hooks/messages/pretooluse-bash.md` का Scan 3) किसी भी git-लेखन ऑपरेशन के लैंड होने से पहले निषिद्ध ट्रेलर और बॉडी मार्कर पकड़ लेता है।

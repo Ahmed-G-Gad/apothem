@@ -1,0 +1,64 @@
+---
+title: "Pohon Hierarki Direktori"
+description: "Peta visual struktur pohon sumber Apothem yang menampilkan artefak konfigurasi ekosistem, tingkatan runtime, serta lokasi aturan, perintah, keterampilan, pekerja terdelegasi, hook, dan berkas pendukung."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Peta struktural kanonik dari pohon sumber Apothem yang dirender sebagai
+graf Mermaid.** Setiap adaptor per-harness di bawah
+`src/apothem/harnesses/<harness>/` memproyeksikan pohon ini ke dalam direktori
+konfigurasi native milik harness (mis. `~/.claude/` untuk Claude Code). Setiap
+kelas artefak yang dideklarasikan di Bagian 7 `CLAUDE.md` memiliki tempatnya di
+sini. Direktori state runtime (lokal-mesin, di-gitignore) disertakan untuk
+orientasi tetapi tidak pernah berisi artefak konfigurasi ekosistem.
+
+## Tata Letak
+
+```mermaid
+%%{ init: { "theme": "neutral" } }%%
+%% verified: 2026-06-16 %%
+%% provenance: README.md (Quick Start · Location) %%
+%% cross-reference: site/content/docs/architecture/source-layout.mdx (Directory Layout summary) %%
+graph TD
+    accTitle: Apothem repository layout tree
+    accDescr: Top-down tree showing every top-level directory of the apothem repository with its purpose and key contents as a comprehensive navigation reference for contributors.
+    ROOT["apothem source tree<br/>(materializes into the harness config<br/>directory — e.g. ~/.claude/ for Claude Code)"]
+    ROOT --> CONFIG_FILES["Config files<br/>CLAUDE.md · README.md · CHANGELOG.md<br/>settings.json<br/>pyproject.toml · .gitignore · .markdownlint.json"]
+    ROOT --> RULES["src/apothem/rules/<br/>(.md files)"]
+    ROOT --> COMMANDS["commands/<br/>(slash-command bodies)"]
+    ROOT --> SKILLS["src/apothem/skills/<br/>{skill}/SKILL.md"]
+    ROOT --> AGENTS["src/apothem/agents/<br/>(flat *.md entry points)"]
+    ROOT --> HOOKS["src/apothem/hooks/"]
+    HOOKS --> HOOKS_LIB["lib/<br/>bootstrap.{ps1,sh}<br/>find-python.{ps1,sh}<br/>resolve_root.py"]
+    HOOKS --> HOOKS_MSGS["messages/<br/>(static context per event)"]
+    HOOKS --> HOOKS_PY["dispatch.py<br/>session_start_bootstrap.py<br/>emit_hook_context.py"]
+    ROOT --> TOOLS["scripts/<br/>validate_hooks.py<br/>validate_ecosystem.py<br/>chaos_pass.py<br/>src/apothem/benchmarks/<br/>lib/"]
+    ROOT --> TESTS["tests/hooks/<br/>(pytest coverage)"]
+    ROOT --> DOCS["site/content/docs/<br/>reference/ · architecture/<br/>governance/ · harnesses/<br/>runbooks/ · developer-guide.mdx"]
+    ROOT --> MEMORY["memory/<br/>MEMORY.md (index)<br/>promotion-ledger.md<br/>expertise-gap-log.md<br/>{topic}.md files"]
+    ROOT --> PLANS["plans/<br/>(per-suite folders<br/>PREAMBLE · MASTER-PLAN<br/>per-phase directories<br/>_spec/ · _inputs/ scratch tiers)"]
+    ROOT --> PROJECTS["projects/<br/>{hash}/<br/>memory/ · sessions/<br/>(per-project runtime state)"]
+    ROOT --> RUNTIME["runtime-data/<br/>history.jsonl · backups/<br/>(machine-local · gitignored)"]
+    classDef cfg fill:#fff5d6,stroke:#aa8800
+    classDef runtime fill:#e8f0ff,stroke:#3366aa,stroke-dasharray: 4 2
+    class CONFIG_FILES,RULES,COMMANDS,SKILLS,AGENTS,HOOKS,HOOKS_LIB,HOOKS_MSGS,HOOKS_PY,TOOLS,TESTS,DOCS,MEMORY cfg
+    class PLANS,PROJECTS,RUNTIME runtime
+```
+
+## Membaca Diagram
+
+- **Node kuning solid** adalah konfigurasi ekosistem: berada di bawah kontrol
+  versi, tervalidasi, ditulis secara sengaja.
+- **Node biru putus-putus** adalah tingkatan runtime: state lokal-mesin dan
+  artefak per-suite / per-project yang mengikuti konvensi struktural tetapi
+  bukan bagian dari konfigurasi yang dikirimkan.
+- Arah panah menunjukkan pewadahan, bukan aliran data. Setiap anak adalah
+  subdirektori langsung dari induknya.
+
+## Referensi Silang Otoritatif
+
+- `CLAUDE.md` Bagian 3 — tabel direktori artefak lengkap.
+- `CLAUDE.md` Bagian 7 — registri (perintah, aturan, pekerja terdelegasi, keterampilan, hook).
+- `site/content/docs/architecture/source-layout.mdx` — ringkasan direktori naratif.
+- `README.md` Quick Start — gambaran umum berorientasi operator.

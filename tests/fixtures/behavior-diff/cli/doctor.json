@@ -1,0 +1,7 @@
+{
+  "argv": [
+    "doctor"
+  ],
+  "exit_code": 1,
+  "stdout": "Apothem Doctor\n  Version:   Apothem v<VERSION>\n  Python:    <PYVER>\n  Platform:  <PLATFORM>\n  Profile:   <HOME>/.config/apothem/profile.yaml [missing]\n        Harness Status        \n┌────────────────┬───────────┐\n│ Harness        │ Installed │\n├────────────────┼───────────┤\n│ antigravity    │     -     │\n│ claude-code    │     -     │\n│ codex          │     -     │\n│ cursor         │     -     │\n│ gemini-cli     │     -     │\n│ github-copilot │     -     │\n│ hermes         │     -     │\n│ kimi-code      │     -     │\n│ open-claw      │     -     │\n│ opencode       │     -     │\n│ qwen-code      │     -     │\n│ windsurf       │     -     │\n│ codebuddy      │     -     │\n│ kiro           │     -     │\n│ trae           │     -     │\n│ zed            │     -     │\n│ glm            │     -     │\n└────────────────┴───────────┘\nSome harnesses are not installed or could not be checked. Run 'apothem install --harness <name>'.\n"
+}

@@ -1,0 +1,67 @@
+---
+title: "/plan-status"
+description: "/plan-status — Rapporteur de progression de suite de plan en lecture seule — émet l'état sans modifier aucun fichier."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rôle :** Rapporteur
+**Position dans le pipeline :** lecture seule
+
+Rapporteur de progression de suite de plan en lecture seule — émet l'état sans modifier aucun fichier.
+
+## Invocation canonique
+
+```bash
+/plan-status
+```
+
+Avec des arguments :
+
+```bash
+/plan-status [path/to/plan-suite/] [--verbose]
+```
+
+## Entrées
+
+Toute suite de plan dans n'importe quel état de son cycle de vie — lit `PROGRESS.md`, `PLAN-NOTES.md`, `MASTER-PLAN.md` et les rapports de `phases/`.
+
+## Sorties
+
+Un rapport d'état stratégique écrit vers le flux de sortie de l'opérateur. Cette commande est en lecture seule — elle ne crée et ne modifie aucun fichier.
+
+## En aval
+
+Utilisé de manière autonome pour l'inspection de la progression — orthogonal à la séquence canonique, invocable en lecture seule à tout moment.
+
+## Phases du flux de travail
+
+La commande est en lecture seule — elle lit les fichiers de suivi de la suite et établit un rapport ; elle n'écrit rien :
+
+1. **Charger le contexte** — Lire `PROGRESS.md`, `PLAN-NOTES.md`, `MASTER-PLAN.md` et parcourir `phases/` à la recherche des rapports existants.
+2. **Évaluer l'état** — Examiner les dimensions tâche / phase / artefact et lire le Contrat de Reprise.
+3. **Émettre le rapport d'état** — Présenter l'état d'achèvement, le suivi des phases et l'analyse stratégique directement à l'opérateur.
+4. **Vérification ponctuelle** — Avec `--verbose`, attribuer une note de santé à la suite et citer les preuves de vérification ponctuelle (liens markdown, plages de lignes, SHA de commits) par rapport aux fichiers existants sans en modifier aucun.
+
+## Modes de défaillance
+
+| Symptôme | Cause | Récupération |
+|---------|-------|----------|
+| Fichier de suivi requis manquant | Suite de plan incomplète | Signalez la lacune comme un constat ; exécutez `/plan-generate` pour créer la suite |
+| Fichier de suivi malformé | Section tronquée ou non analysable | Nommez l'absence / la contradiction dans le rapport ; la réparation passe par les commandes en écriture |
+| Champ absent ou contradictoire entre les fichiers | Dérive du suivi | Signalez explicitement la contradiction ; ne synthétisez pas la valeur manquante |
+
+## Exemples
+
+```bash
+# Établir un rapport sur la suite de plan la plus récente
+/plan-status
+
+# Note de santé verbose sur une suite de plan nommée
+/plan-status path/to/plan-suite/ --verbose
+```
+
+## Références croisées
+
+- [Aperçu du pipeline](/docs/pipeline)
+- [Référence des commandes](/docs/reference/commands)

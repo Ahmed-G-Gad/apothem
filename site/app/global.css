@@ -1,0 +1,285 @@
+/* SPDX-License-Identifier: MIT */
+
+@import 'tailwindcss';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+
+@source '../node_modules/fumadocs-ui/dist/**/*.js';
+
+/*
+ * Apothem design system — original tokens derived from the brand's own
+ * geometry. The brand mark is a regular hexagon with its apothem (the
+ * perpendicular from the centre to an edge midpoint) drawn in emerald. The
+ * palette is built from three brand families read off that mark:
+ *
+ *   - apothem (emerald)  — the precise, load-bearing accent line
+ *   - polygon (slate)    — the structural hexagon outline and supports
+ *   - field (deep navy)  — the surface the geometry is drawn on
+ *
+ * Values are authored in OKLCH for perceptually even ramps. The hexes that
+ * anchor the families are the logo's own colours (#059669 / #34d399 emerald,
+ * #333c50–#c2ccda slate, #0f172a navy); the intermediate steps are derived
+ * ramps, not sampled from any external site.
+ */
+
+@theme {
+  /* apothem accent — emerald ramp */
+  --color-apothem-50: oklch(0.97 0.02 165);
+  --color-apothem-100: oklch(0.94 0.05 165);
+  --color-apothem-200: oklch(0.88 0.09 164);
+  --color-apothem-300: oklch(0.81 0.13 163);
+  --color-apothem-400: oklch(0.74 0.15 162);
+  --color-apothem-500: oklch(0.68 0.15 162); /* #34d399 family — dark accent */
+  --color-apothem-600: oklch(0.6 0.13 162); /* #059669 family — light accent */
+  --color-apothem-700: oklch(0.5 0.11 162);
+  --color-apothem-800: oklch(0.42 0.09 162);
+  --color-apothem-900: oklch(0.35 0.07 163);
+
+  /* polygon structure — slate ramp */
+  --color-polygon-50: oklch(0.98 0.004 250);
+  --color-polygon-100: oklch(0.95 0.006 250);
+  --color-polygon-200: oklch(0.9 0.008 250);
+  --color-polygon-300: oklch(0.83 0.012 250); /* #c2ccda family */
+  --color-polygon-400: oklch(0.71 0.018 252); /* #94a2b8 family */
+  --color-polygon-500: oklch(0.6 0.025 254); /* #65748c family */
+  --color-polygon-600: oklch(0.5 0.03 256);
+  --color-polygon-700: oklch(0.4 0.032 258); /* #333c50 family */
+  --color-polygon-800: oklch(0.3 0.03 260);
+  --color-polygon-900: oklch(0.22 0.028 262);
+
+  /* field surface — deep navy ramp */
+  --color-field-700: oklch(0.28 0.03 264);
+  --color-field-800: oklch(0.21 0.03 265);
+  --color-field-900: oklch(0.17 0.028 266); /* #0f172a family */
+  --color-field-950: oklch(0.14 0.025 266);
+
+  /* fonts */
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica,
+    Arial, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
+  --font-mono:
+    ui-monospace, 'JetBrains Mono', 'SFMono-Regular', 'Cascadia Code', Menlo,
+    Consolas, 'Liberation Mono', monospace;
+}
+
+@layer base {
+  :root {
+    --radius: 0.625rem;
+
+    /* light theme — field families lighten to a near-white drawing surface */
+    --background: oklch(0.99 0.003 250);
+    --foreground: oklch(0.22 0.028 262);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.22 0.028 262);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.22 0.028 262);
+    /* apothem-600 emerald, darkened to L0.52 so emerald-on-white text and
+       white-on-emerald button labels clear WCAG AA 4.5:1 (4.9:1 on bg,
+       4.7:1 on the muted/40 composite); hue + chroma preserve the family. */
+    --primary: oklch(0.52 0.13 162);
+    --primary-foreground: oklch(0.99 0.003 250);
+    --secondary: oklch(0.95 0.006 250); /* polygon-100 */
+    --secondary-foreground: oklch(0.3 0.03 260);
+    --muted: oklch(0.95 0.006 250);
+    --muted-foreground: oklch(0.5 0.025 254);
+    --accent: oklch(0.94 0.05 165); /* apothem-100 wash */
+    --accent-foreground: oklch(0.4 0.11 162);
+    --destructive: oklch(0.58 0.21 25);
+    --border: oklch(0.9 0.008 250); /* polygon-200 */
+    --input: oklch(0.9 0.008 250);
+    /* emerald focus ring darkened to L0.52 so the indicator clears the 3:1
+       non-text contrast floor against the near-white light surface (4.8:1). */
+    --ring: oklch(0.52 0.15 162);
+
+    /* fumadocs surface bridge — light */
+    --color-fd-background: var(--background);
+    --color-fd-foreground: var(--foreground);
+    --color-fd-muted: var(--muted);
+    --color-fd-muted-foreground: var(--muted-foreground);
+    --color-fd-popover: var(--popover);
+    --color-fd-popover-foreground: var(--popover-foreground);
+    --color-fd-card: var(--card);
+    --color-fd-card-foreground: var(--card-foreground);
+    --color-fd-border: var(--border);
+    --color-fd-primary: var(--primary);
+    --color-fd-primary-foreground: var(--primary-foreground);
+    --color-fd-secondary: var(--secondary);
+    --color-fd-secondary-foreground: var(--secondary-foreground);
+    --color-fd-accent: var(--accent);
+    --color-fd-accent-foreground: var(--accent-foreground);
+    --color-fd-ring: var(--ring);
+  }
+
+  .dark {
+    /* dark-first theme — field families are the deep-navy drawing ground */
+    --background: oklch(0.17 0.028 266); /* field-900 */
+    --foreground: oklch(0.94 0.006 250); /* polygon-100 */
+    --card: oklch(0.21 0.03 265); /* field-800 */
+    --card-foreground: oklch(0.94 0.006 250);
+    --popover: oklch(0.21 0.03 265);
+    --popover-foreground: oklch(0.94 0.006 250);
+    --primary: oklch(0.68 0.15 162); /* apothem-500 emerald — dark accent */
+    --primary-foreground: oklch(0.17 0.028 266);
+    --secondary: oklch(0.28 0.03 264); /* field-700 */
+    --secondary-foreground: oklch(0.94 0.006 250);
+    --muted: oklch(0.26 0.03 264);
+    --muted-foreground: oklch(0.71 0.018 252); /* polygon-400 */
+    --accent: oklch(0.32 0.05 230);
+    --accent-foreground: oklch(0.94 0.006 250);
+    --destructive: oklch(0.66 0.18 25);
+    --border: oklch(0.32 0.025 262);
+    --input: oklch(0.32 0.025 262);
+    --ring: oklch(0.68 0.15 162);
+
+    /* fumadocs surface bridge — dark */
+    --color-fd-background: var(--background);
+    --color-fd-foreground: var(--foreground);
+    --color-fd-muted: var(--muted);
+    --color-fd-muted-foreground: var(--muted-foreground);
+    --color-fd-popover: var(--popover);
+    --color-fd-popover-foreground: var(--popover-foreground);
+    --color-fd-card: var(--card);
+    --color-fd-card-foreground: var(--card-foreground);
+    --color-fd-border: var(--border);
+    --color-fd-primary: var(--primary);
+    --color-fd-primary-foreground: var(--primary-foreground);
+    --color-fd-secondary: var(--secondary);
+    --color-fd-secondary-foreground: var(--secondary-foreground);
+    --color-fd-accent: var(--accent);
+    --color-fd-accent-foreground: var(--accent-foreground);
+    --color-fd-ring: var(--ring);
+  }
+}
+
+@layer components {
+  /*
+   * apothem-grid — a faint hexagonal-field backdrop for the landing hero,
+   * evoking the polygon lattice the mark is drawn from. Layered radial +
+   * linear gradients, so it ships as pure CSS (no asset, no JS).
+   */
+  .apothem-grid {
+    background-image:
+      radial-gradient(
+        circle at 50% 0%,
+        color-mix(in oklch, var(--primary) 14%, transparent),
+        transparent 55%
+      ),
+      linear-gradient(
+        to right,
+        color-mix(in oklch, var(--border) 60%, transparent) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        to bottom,
+        color-mix(in oklch, var(--border) 60%, transparent) 1px,
+        transparent 1px
+      );
+    background-size:
+      100% 100%,
+      3.5rem 3.5rem,
+      3.5rem 3.5rem;
+    background-position:
+      center top,
+      center,
+      center;
+    -webkit-mask-image: radial-gradient(
+      ellipse 75% 70% at 50% 25%,
+      black 35%,
+      transparent 80%
+    );
+    mask-image: radial-gradient(
+      ellipse 75% 70% at 50% 25%,
+      black 35%,
+      transparent 80%
+    );
+  }
+
+  /*
+   * apothem-glow — a soft emerald radial bloom that sits behind the hero
+   * mark to give the first viewport a single strong focal point. Pure CSS,
+   * theme-aware via the --primary token, and decorative (the markup carries
+   * aria-hidden), so it adds no asset weight and no motion.
+   */
+  .apothem-glow {
+    background-image: radial-gradient(
+      circle at 50% 50%,
+      color-mix(in oklch, var(--primary) 22%, transparent),
+      transparent 70%
+    );
+  }
+
+  /* the precise apothem accent line — a brand motif for section rules */
+  .apothem-rule {
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      color-mix(in oklch, var(--primary) 70%, transparent),
+      transparent
+    );
+  }
+}
+
+@layer base {
+  /*
+   * Keyboard focus floor (WCAG 2.4.7 / 2.4.11). Custom landing links and the
+   * GitHub anchor render as bare <a>/<Link> elements with no component-level
+   * ring; this gives every keyboard-reachable element a visible emerald ring
+   * that clears the 3:1 non-text contrast floor in both themes. Pointer
+   * interaction is unaffected — :focus-visible fires only for keyboard focus.
+   */
+  a:focus-visible,
+  button:focus-visible,
+  [role='button']:focus-visible,
+  [tabindex]:focus-visible,
+  summary:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: var(--radius);
+  }
+
+  /*
+   * Themed native scrollbar. The Fumadocs sidebar renders its own Radix
+   * ScrollArea overlay, but the page (and any native-overflow region) shows
+   * the browser default; this tints the track/thumb with the border/muted
+   * tokens so the scrollbar reads as part of the theme in both modes. Firefox
+   * uses the standard properties; WebKit/Blink uses the pseudo-elements.
+   */
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    border-radius: 9999px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: var(--muted-foreground);
+  }
+
+  /*
+   * Honor a reduced-motion preference (WCAG 2.3.3). The hero backdrop is a
+   * static gradient, but the colour/opacity transitions on links, buttons,
+   * and badges are motion; collapse them to near-instant for visitors who ask
+   * for reduced motion.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

@@ -1,0 +1,84 @@
+---
+title: "quickstart"
+description: "apothem quickstart のガイド付き初回実行コマンドの CLI リファレンス。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+ガイド付き初回実行: プロファイルが存在することを確認し、書き込みをプレビューしてから、インストールします。
+
+## 構文
+
+```
+apothem quickstart [--harness NAME|all] [--project PATH] [--profile PATH]
+                   [--yes] [--quiet|-q] [--verbose|-v]
+                   [--format plain|json] [--json] [--no-color]
+```
+
+`quickstart` は新しいオペレーター向けの唯一のガイド付きエントリーポイントです。1 つの直線的なフローで、次を行います: (1) 共有プロファイルが存在することを確認します — 見つからない場合は、個人設定を促すメッセージ付きのスターター プロファイルを作成します。(2) 選択したハーネスが書き込む具体的なファイルを、プロジェクトルートとホームディレクトリに分類してプレビューします。(3) 確認を求めます。(4) グループ化されノイズが除去された機能ノートの出力でインストールします。(5) 推奨される後続コマンドを表示します。
+
+これは `install` コマンドが使用するのと同じ構成要素を組み合わせます — それらを再実装しません。`--harness` の既定値は `all`、`--project` の既定値はカレントディレクトリです。
+
+## 動作
+
+- **プロファイル** — 解決されたプロファイルパスにファイルがない場合、`quickstart` はスターター プロファイルの作成を提案し（`--yes`、非対話型シェル、または `--format json` の下では自動作成）、個人設定するプレースホルダーのアイデンティティフィールドを示します。
+- **プレビュー + 確認** — 書き込みの前に、ターゲットは 2 つの見出しの下に一覧表示されます（プロジェクトルートとホームディレクトリ）。対話型実行ではプロジェクト外への書き込みの前に確認します。`--yes`、非対話型シェル、`--format json` はプロンプトなしで続行します。拒否すると、どの書き込みよりも前に中止します。
+- **インストール** — ハーネスがネイティブにサポートしていない機能は、ハーネスごとに 1 つのグループ化されたノートとして要約されます（機能ごとの詳細は `--verbose` を渡してください）。完全なセットは常に `--format json` の warnings 配列にあります。
+- **次のステップ** — ターミナル出力に後続コマンド（`apothem verify …`、`apothem doctor`）が示されます。
+
+## オプション
+
+| オプション | 説明 |
+|---|---|
+| `--harness NAME` | インストールするハーネスのアダプター、またはレジストリ全体のセットには `all`（既定値: `all`）。 |
+| `--profile PATH` | 共有プロファイル YAML へのパス。既定値は `~/.config/apothem/profile.yaml`。 |
+| `--project PATH` | プロジェクトスコープのハーネス用のプロジェクトルート。既定値はカレントディレクトリ。 |
+| `--yes` | 完全なガイド付きシーケンスを非対話的に実行します（すべてのプロンプトをスキップ）。 |
+| `--quiet`, `-q` | 情報出力を抑制し、エラーのみを発します。 |
+| `--verbose`, `-v` | グループ化されたノートの代わりに、投影されない各機能の根拠を表示します。 |
+| `--format plain\|json` | 出力形式（既定値: `plain`）。 |
+| `--json` | `--format json` の省略形。 |
+| `--no-color` | 出力内の ANSI カラーコードを無効にします。 |
+| `-h`, `--help` | ヘルプを表示して終了します。 |
+
+## JSON 出力
+
+`--format json` は、各ガイドステップを要約する単一のドキュメントを発します:
+
+```json
+{
+  "status": "success",
+  "command": "quickstart",
+  "profile_path": "C:\\Users\\Example\\.config\\apothem\\profile.yaml",
+  "steps": [
+    {"step": "profile", "outcome": "created", "path": "…", "placeholder_identity": ["name", "email", "github"]},
+    {"step": "install", "status": "success", "harness": "all", "files_written": ["…"], "warnings": [], "results": []},
+    {"step": "recommend", "next": ["apothem verify --harness all --project .", "apothem doctor"]}
+  ],
+  "recommended_next": ["apothem verify --harness all --project .", "apothem doctor"]
+}
+```
+
+## 例
+
+```bash
+apothem quickstart
+apothem quickstart --harness all --project . --yes
+apothem quickstart --harness claude-code
+apothem quickstart --json
+```
+
+## 終了コード
+
+| コード | 意味 |
+|---|---|
+| 0 | ガイド付き実行が完了 |
+| 1 | 予期される検証、プロファイル、ハーネス、プロジェクト、またはアダプターのエラー |
+| 2 | 少なくとも 1 回の書き込み後の部分的なバッチ物質化 |
+
+## 関連項目
+
+- [apothem install](/docs/cli-reference/install) — 共有プロファイルからハーネスを物質化します
+- [apothem verify](/docs/cli-reference/verify) — インストールが有効であることを確認します
+- [apothem doctor](/docs/cli-reference/doctor) — 環境とインストールの健全性
+- [はじめに](/docs/install) — 完全なインストールガイド

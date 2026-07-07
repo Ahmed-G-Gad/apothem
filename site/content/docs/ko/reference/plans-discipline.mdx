@@ -1,0 +1,201 @@
+---
+title: "계획 디시플린 — 프로젝트 로컬 임시 작업 메모리"
+description: "프론트매터 스키마, 라이프사이클 전이, ADR로의 승격, 후크 및 검증기를 통한 강제와 함께 .apothem/plans/(레거시 .plans/ 트리는 apothem migrate-workspace로 업그레이드됨) 내의 프로젝트 로컬 임시 작업 메모리를 관리합니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+{/* [Machine-seeded — pending review] */}
+
+> **다운스트림 기여자를 위한 정규 규범 참조.** 본 문서는 프로젝트 명세의 계획 디시플린 섹션(Spec §3)을 미러링합니다. 게시된 저장소와 함께 제공되는 독립형 참조입니다. 여기서 도입되는 디시플린은 기초적이며, 아래의 모든 지시는 명시적으로 달리 표시되지 않는 한 `MUST`입니다. 아키텍처적 근거는 [ADR-0001](/docs/reference/plans-discipline)에 기록되어 있습니다.
+
+---
+
+## 1. 정의 및 경계
+
+**계획(plan)**이란 프로젝트에 대해 추론하는 과정에서 생성되는 의도적이고 일시적인 작업 산출물을 말하며, 다음을 포함하되 이에 국한되지 않습니다:
+
+- 아키텍처 스케치, 시스템 설계 워크스루, 컴포넌트 분해.
+- 작업 분해 구조, 다단계 작업 목록, 분해 트리.
+- 리팩터링 전략, 마이그레이션 워크스루, 롤아웃 시퀀스.
+- 디버깅 일지, 가설 로그, 재현 노트.
+- 탐색 노트, 스파이크 기록, 프롬프트 초안, 추후 사용을 위해 보관된 하니스 트랜스크립트.
+- *출시하기 위해서*가 아니라 *그것으로 사고하기 위해* 작성된 모든 문서.
+
+계획은 이러한 인접 클래스들과 범주적으로 구별됩니다:
+
+| 산출물 | 라이프사이클 | 위치 | 커밋됨? |
+|---|---|---|---|
+| **계획** | 일시적 작업 메모리 | `<project-root>/.apothem/plans/`(유일한 정규 홈) — 레거시 `<project-root>/.plans/` 트리는 `apothem migrate-workspace`로 업그레이드됨 | **결코 안 됨**(gitignore 대상) |
+| **ADR**(아키텍처 결정 기록) | 영구적, 결정적 | 프로젝트가 비준한 ADR 디렉터리 | 항상 |
+| **이슈 / PR 설명** | 트래커에 종속 | GitHub / 동등물 | 해당 없음(트래커) |
+| **하네스 지시 파일**(하네스별 정규 파일명) | 지속적 행동 구성 | `<harness-config-root>/`(하네스에 따라 프로젝트 로컬 또는 사용자 스코프) | 항상(저장소 내) |
+| **코드** | 계획의 실행된 결과 | 코드가 있는 곳 | 항상 |
+
+계획은 ADR에 선행합니다. 계획이 지속적 결정으로 수렴하면, 그 결정은 ADR로 **승격**됩니다(§4 라이프사이클). 계획 자체는 아카이브되거나 폐기됩니다.
+
+---
+
+## 2. 위치, 가시성, 명명
+
+- **경로.** `<project-root>/.apothem/plans/` 가 유일한 정규 홈입니다. 레거시 `<project-root>/.plans/` 트리는 더 이상 정규가 아닙니다 — `apothem migrate-workspace`(§5)로 업그레이드하세요. 하네스 구성 디렉터리(예: `~/.claude/plans/`, `~/.claude/.plans/`, `~/.codex/.plans/`)가 **아닙니다**. 데스크톱 스크래치 폴더가 **아닙니다**. `~/notes/`가 **아닙니다**. `tmp/plans/`가 **아닙니다**.
+- **가시성.** 폴더는 §6의 정규 스니펫에 따라 프로젝트의 `.gitignore`에 등록됩니다. 하니스 런타임은 어떤 쓰기 전에도 이 엔트리의 존재를 검증해야 합니다. 부재 시, 한 줄짜리 헤더 주석과 본 문서로의 링크를 추가합니다.
+- **파일명 규약.** `YYYY-MM-DD--<kebab-case-slug>.md`. 더 큰 워크스페이스의 경우 `.apothem/plans/<area>/YYYY-MM-DD--<slug>.md` 아래에 하위 분류합니다.
+  - 예: `.apothem/plans/2026-04-30--auth-refactor-strategy.md`, `.apothem/plans/api/2026-04-30--rate-limit-rollout.md`.
+- **인덱스.** 선택적 `.apothem/plans/INDEX.md`(역시 gitignore 대상)는 링크와 상태를 집계할 수 있으며, 존재하는 경우 하니스 런타임이 모든 계획 쓰기 시 이를 유지합니다.
+- **아카이브.** 수렴되거나 포기된 계획은 `.apothem/plans/_archive/`로 재배치됩니다. 명시적인 구조화된 질의 확인 없이는 결코 삭제되지 않습니다.
+- **계획의 저작권 헤더.** 계획은 저작권 헤더 SPDX 라인에서 **면제**됩니다([`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) §면제 목록 참조). 이들은 gitignore 대상 일시 산출물이며, 일시적 작업 메모리에 영구 출처 마커를 적용하는 것은 범주 오류입니다. 프론트매터(§3)가 계획의 출처를 담당합니다.
+
+---
+
+## 3. 프론트매터 스키마(검증됨)
+
+모든 계획 파일은 다음을 담습니다:
+
+```yaml
+---
+title: <human-readable title>
+project: <git-remote-url-or-canonical-local-path>
+created: <ISO-8601 timestamp>
+updated: <ISO-8601 timestamp>
+status: draft | in-progress | converged | abandoned
+tags: [<kebab>, ...]
+supersedes: <prior-plan-relative-path or null>
+promotes-to: <ADR path or null>
+---
+```
+
+계획용 JSON 스키마는 [`src/apothem/schemas/plan.schema.json`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/plan.schema.json)에 있습니다. `/plan` 슬래시 명령(및 `plans-discipline-language` 검증기)은 모든 쓰기 시 이에 대해 검증합니다.
+
+---
+
+## 4. 라이프사이클 및 승격 워크플로우
+
+1. **드래프트** — 최초 생성; `status: draft`.
+2. **진행 중** — 활발히 반복 중; `status: in-progress`; 실질적 편집마다 `updated` 갱신.
+3. **수렴** — 지속적 결정이 결정화됨:
+   1. 그 결정을 프로젝트가 비준한 ADR 위치에 새 ADR로 추출.
+   2. 계획의 `promotes-to`를 그 ADR 경로로 설정.
+   3. `status: converged` 설정.
+   4. 선택적으로 `.apothem/plans/_archive/`로 이동.
+4. **포기** — 방향이 포기됨; `status: abandoned`; 아카이브하거나 명시적인 구조화된 질의를 동반하여 폐기.
+5. **대체** — 새 계획이 더 오래된 것을 대체할 때, 새 계획의 `supersedes`를 옛 계획의 경로로 설정하고, 옛 계획의 `status`를 그에 맞게 설정.
+
+승격은 계획 내용이 지속적이고 버전 관리되며 팀원에게 가시화되는 *유일한* 경로입니다. **어떤 계획도 커밋되는 소스로 통째로 마이그레이션되지 않습니다.**
+
+---
+
+## 5. 마이그레이션 프로토콜 — 일회성, 하네스 계획 디렉터리에서 프로젝트별 `.apothem/plans/`로
+
+> **참고.** 이 프로토콜은 계획 디시플린을 처음 채택하는 다운스트림 프로젝트로서, 이전 계획 산출물이 하네스 구성 디렉터리(예: `~/.claude/plans/`, `~/.claude/.plans/`, 또는 다른 하네스의 동등 경로) 안에 존재하는 경우에 적용됩니다. 생태계 자체에 대한 재귀적 경우는 하네스 로컬 계획 상태를 소스로 물리적으로 마이그레이션하는 대신 gitignore함으로써 해결됩니다.
+
+{/* [Machine-seeded — pending review] */}
+> **Tooling.** For projects already on the legacy layout — a sibling `<project-root>/.plans/` tree plus per-harness `<project-root>/.apothem/<harness>/{memory,contexts,learning}` stores — the `apothem migrate-workspace` command collapses both into the shared `<project-root>/.apothem/{plans,memory,learning,contexts}` working directory. The command is idempotent and non-destructive: it backs up every source it consumes, moves `.plans/` to `.apothem/plans/`, union-merges the per-harness memory and context stores, concatenate-dedups the learning signals, and never overwrites a conflicting record. Run `apothem migrate-workspace --dry-run` to preview the moves first.
+
+마이그레이션은 멱등이며, 하네스 로컬 계획 디렉터리 제거 순간까지 가역적입니다(그 후로는 `./.audit/plans-backup-<timestamp>.tar.gz`의 백업 tarball이 롤백 산출물을 제공합니다). 아래 예시는 `~/.claude/plans/`를 사용합니다; 활성 하네스의 동등 경로로 치환하세요.
+
+**단계 1 — 인벤토리.** 하네스 로컬 계획 디렉터리 아래의 모든 파일이 열거되어 `plan-artifact (quarantined)`로 분류됩니다.
+
+**단계 2 — 출처 맵.** 각 계획에 대해, 프론트매터 `project` 필드, 본문 스캔 신호(저장소 URL, 패키지명, 절대 경로), 맥락적 단서에서 도출된 추정 목적지 프로젝트와 신뢰도 점수를 담은 출처 기록이 구축됩니다.
+
+**단계 3 — 매핑 확인.** 전체 맵이 단일 통합 구조화된 질의로 운영자에게 제시됩니다(파일 수가 편안한 단일 프롬프트 크기를 초과하면 촘촘하게 배치된 시퀀스로). 각 계획에 대해 운영자는 다음 중에서 선택합니다:
+
+- 추정된 목적지 프로젝트를 **확인(Confirm)**.
+- 다른 프로젝트로 **재할당(Reassign)**(옵션은 운영자의 알려진 프로젝트 목록을 제시).
+- **연기(Defer)** — `~/.claude/.audit/orphan-plans/<original-name>`으로 이동하여 추후 분류.
+- **폐기(Discard)** — 명시적이고 별도로 확인된 구조화된 질의를 동반하는 경우에만(이는 파괴적임).
+
+많은 계획에 대해 신뢰도가 `high`인 경우, 프롬프트는 로그에 모든 개별 결정을 여전히 노출하면서 왕복을 압축하기 위한 *confirm-all-high-confidence* 어포던스를 제공합니다.
+
+**단계 4 — 이동 전 프로젝트 준비.** 각 고유한 목적지 프로젝트에 대해:
+
+1. 프로젝트 루트가 존재하고 읽을 수 있는지 검증.
+2. 그것이 git 저장소인지 검증(비-git 루트의 경우, 진행·초기화·건너뛰기 여부를 구조화된 질의 채널을 통해 노출).
+3. `<project-root>/.apothem/plans/`가 존재하는지 보장; 없으면 `mkdir -p`로 생성.
+4. 프로젝트의 `.gitignore`가 §6의 정규 스니펫을 포함하는지 검증; 부재 시 이 마이그레이션을 명시하는 헤더 주석과 함께 추가.
+5. `<project-root>/.apothem/plans/`가 git에 의해 이미 추적되고 있지 않은지 검증; 추적되고 있다면(과거 기여자의 실수), *untrack-and-keep*, *untrack-and-remove-from-history*, *abort* 옵션과 함께 구조화된 질의 채널을 통해 노출.
+
+**단계 5 — 이동.** 확인된 각 계획 → 목적지 페어링에 대해:
+
+1. 목적지 파일명 계산: 소스에 프론트매터가 있으면 §3에 따라 정규화하고, 없으면 본문을 프론트매터(status `draft`, project 필드 설정, created는 mtime에서, tags는 `[migrated]`)로 감싸 `YYYY-MM-DD--<slug>.md`로 이름 변경.
+2. 목적지에서 이름 충돌이 있으면 `-imported-<unix-timestamp>`를 추가하고 이름 변경을 로그에 기록.
+3. 파일을 복사(mtime 보존)하고 목적지에서 SHA-256이 일치하는지 검증한 뒤 소스를 삭제.
+4. `<project-root>/.apothem/plans/_migration-manifest.md`(역시 gitignore 대상)에 엔트리를 추가하여 원본 하네스 로컬 경로, 목적지 경로, 원본 SHA-256, 타임스탬프, 이 이동을 승인한 구조화된 질의 응답을 기록.
+
+**단계 6 — 검증.** 모든 이동 후:
+
+1. 하네스 로컬 계획 디렉터리가 비어 있는지 확인(고아 계획이 있다면, 곧 삭제될 디렉터리 바깥의 해당 하네스 감사/격리 디렉터리 안에 있음).
+2. 각 목적지 프로젝트에 내용이 채워진 `.apothem/plans/`와 매니페스트가 있는지 확인.
+3. SHA-256으로 마이그레이션된 내용이 원본과 일치하는지 스폿 체크.
+
+**단계 7 — Tarball 및 제거.** 단계 1에서 취한 임시 스냅샷에서 추출한, 이동 전 하네스 로컬 계획 트리 전체를 담은 `./.audit/plans-backup-<ISO-timestamp>.tar.gz`를 생성. 그런 다음 준비 완료를 확인하는 최종 구조화된 질의를 거쳐, 이제 비어 있는 하네스 로컬 계획 디렉터리를 제거.
+
+**단계 8 — 감사 기록.** 모든 이동, 모든 연기 파일, 모든 폐기, 모든 충돌 이름 변경, 모든 gitignore 추가를 요약하는 `./.audit/plans-migration.md`를 발행.
+
+---
+
+## 6. 다운스트림 `.gitignore` 스니펫(정규, 복사-붙여넣기)
+
+이 생태계를 채택하는 모든 프로젝트는 자신의 `.gitignore`에 다음 블록을 추가해야 합니다:
+
+```text
+# Apothem working directory (project-local shared state: plans, memory,
+# learning, contexts; gitignored — never committed). The sole canonical plans
+# home is `.apothem/plans/`.
+# See: <repo-url>/blob/main/site/content/docs/reference/plans-discipline.mdx
+# Ignore the CONTENTS of this directory (not the directory) so the
+# `.keep` negation below can take effect.
+.apothem/*
+!.apothem/.keep
+```
+
+{/* [Machine-seeded — pending review] */}
+선택적 `.keep` 면제는 내용을 누출하지 않으면서, 빈 경로를 정리하는 도구에서 디렉터리의 존재를 보존합니다. `.keep` 포함 여부는 `/plan`의 최초 호출 시 구조화된 질의 채널을 통해 프로젝트별로 결정됩니다. `.apothem/*` + `!.apothem/.keep` 라인이 정규 스니펫입니다; 레거시 `<project-root>/.plans/` 트리를 여전히 보유한 프로젝트는 `apothem migrate-workspace`(§5)를 실행하여 `.apothem/plans/`로 업그레이드합니다.
+
+---
+
+## 7. 자기 강제 메커니즘
+
+이 디시플린은 미래의 모든 세션에서 살아남아야 합니다. 다음 강제 표면은 필수이며, 게시된 생태계에 인코딩되어 있습니다:
+
+1. **`AGENTS.md` 및 미러 지시 표면** — 다음을 명시하는 최상위 필수 행동 블록: *"Planning artifacts are written to `<project-root>/.apothem/plans/` — the sole canonical plans home (a legacy `<project-root>/.plans/` tree is upgraded via `apothem migrate-workspace`) — never to any harness configuration directory (for example `~/.codex/` or `~/.claude/`) and never to a global location. This rule is non-negotiable; cite §3 of the project spec on every related decision."* 이 블록은 `plans-discipline-language` 검증기에 의해 감지됩니다.
+2. **하네스별 저장소 내 지시 파일** — 그 하네스의 지시 표면에 적합한 프레이밍으로 동일한 지시를 미러링합니다(§4 *계획 디시플린*); 각 등록된 하네스 표면에서 동일한 검증기에 의해 감지됩니다.
+3. **기본 출력 스타일** — 응답이 계획 형태의 내용(다단계 전략, 분해, 설계 워크스루, 디버깅 일지)을 생성할 때, 스타일은 그 산출물을 인라인으로 출력하고 폐기하는 대신 프로젝트 로컬 `.apothem/plans/` 쓰기로 라우팅합니다. 스타일은 명시적으로 지시합니다: *"프로젝트 루트를 발견할 수 없으면, 어디에 계획할지 운영자에게 묻는 구조화된 질의로 중단한다."*
+4. **모든 위임 작업자 프롬프트** — 모든 계획 산출물의 목적지로 `.apothem/plans/`를 지명하는 *Output Surface* 스탠자와, 하네스 로컬 계획 디렉터리를 금지로 지명하는 *Anti-Pattern* 스탠자를 담습니다.
+5. **전용 `/plan` 슬래시 명령** — slug + 본문을 받아 올바른 프론트매터로 `<project-root>/.apothem/plans/YYYY-MM-DD--<slug>.md`에 작성하고, 목적지의 `.gitignore`가 올바른지 보장하며, 하네스 구성 루트 경로로의 쓰기를 거부합니다.
+6. **`pre-tool-use` 후크 — `plan-write-guard`** — 모든 파일 쓰기 도구 호출을 가로챕니다. 대상 경로가 하네스 로컬 계획 위치(예: `~/.claude/plans/...` 또는 `~/.codex/.plans/...`), 또는 휴리스틱이 계획 형태로 식별하는 다른 글로벌 생태계 경로와 일치하면, 후크는 쓰기를 차단하고 현재 프로젝트의 `.apothem/plans/`로의 리다이렉션을 제안하는 구조화된 질의를 제기합니다.
+7. **CI 검증기** — `no-global-plans`는 커밋된 계획 작업 메모리가 게시된 트리에 재출현하면 빌드를 실패시킵니다; `plans-discipline-language`는 정규 지시가 등록된 하네스 지시 파일이나 기본 출력 스타일에서 누락되면 실패합니다. 검증기의 정규 대상 표면(파일시스템 계약으로 보존됨)은 아래 펜스 블록에 나열되어 있습니다.
+
+```text
+AGENTS.md
+CLAUDE.md
+.github/copilot-instructions.md
+```
+
+8. **Pre-commit 후크** — 위 사항들을 로컬에서 미러링하여 어떤 커밋이 안착하기 전에도 디시플린이 강제되도록 합니다.
+
+---
+
+## 8. 안티패턴(범주적으로 금지)
+
+- 계획을 하네스 구성 디렉터리(예: `~/.claude/plans/` 또는 `~/.codex/.plans/`)나 다른 글로벌 위치에 작성하는 것.
+- 계획을 프로젝트의 git 히스토리에 커밋하는 것(커밋 시점 후크가 이를 거부해야 합니다).
+- 계획과 ADR을 혼합하는 것(다른 라이프사이클, 다른 위치, 다른 커밋 상태).
+- 프론트매터 없는 계획, 날짜 접두 파일명 없는 계획, `project` 필드 없는 계획.
+- 크로스 프로젝트 계획(하나의 계획, 두 프로젝트). 분할하세요 — 프로젝트당 하나의 계획.
+- 하네스 구성 동기화(예: Claude Code의 `~/.claude`)를 통해 머신 간에 계획을 공유하는 것 — 계획을 프로젝트 로컬로 유지하는 것을 지지하는 구조적 논거는 다음과 같습니다. 계획 공유가 드물게 정당화되는 경우, 프로젝트 저장소가 *바로* 동기화 메커니즘이며 — 그러한 정당화 자체가 내용이 ADR로 승격되어야 한다는 신호입니다.
+- 위임 작업자 프롬프트, 스킬 본문, 또는 출력 스타일 내부에 임베드된 계획 내용. 그 표면들은 *지속적 행동 구성*이고, 계획은 *일시적 작업 메모리*입니다.
+- 계획 파일에 저작권 헤더 SPDX 라인을 적용하는 것(계획은 설계상 면제됩니다 — §2, [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) §면제 목록).
+
+---
+
+## 함께 보기
+
+- [ADR-0001](/docs/reference/plans-discipline) — 아키텍처적 근거, 고려된 대안, 수용된 트레이드오프.
+- [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) — 저작권 헤더 SPDX 라인 디시플린(계획은 범주적으로 면제됩니다).
+- 하니스 규약 페이지 — 다중 표면 하니스 규약(계획 디시플린은 모든 등록된 하네스 지시 파일과 옵트인된 모든 선택적 표면에 걸친 공유 주장으로 나타납니다). 경로:
+
+```text
+site/content/docs/reference/ai-conventions.mdx
+```
+- 프로젝트 명세 §3 — 여기에 미러링된 완전한 정규 텍스트.

@@ -1,0 +1,41 @@
+---
+title: "Apothem 대 원시 GitHub Copilot 구성"
+description: "GitHub Copilot의 copilot-instructions.md를 직접 손으로 유지하는 것과 Apothem의 공유 프로파일에서 렌더링하는 것의 비교."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+GitHub Copilot은 `.github/copilot-instructions.md`에서 지침을 읽습니다. Apothem의
+github-copilot 어댑터는 그 파일을 공유 프로파일에서 렌더링합니다. 이 페이지는 그
+구성을 직접 손으로 유지하는 것과 Apothem으로 관리하는 것을 대비합니다.
+
+## 노력 비교
+
+| 작업 | 원시 수동 구성 | Apothem 관리 |
+| ---- | --------------- | --------------- |
+| 지침 작성 | `.github/copilot-instructions.md`를 직접 편집 | 렌더링: 공유 규칙을 파일에 내장 |
+| 다른 환경과 지침 정렬 유지 | 수동, 도구별 | `apothem update` 시 자동 |
+| 구성 설치 / 제거 | 파일을 직접 작성하고 삭제 | `apothem install` / `apothem uninstall` |
+| 구성이 올바른지 검증 | 수동 검사 | `apothem verify --harness github-copilot` |
+
+## Apothem이 관리하는 것
+
+github-copilot 어댑터는 공유 규칙을 `.github/copilot-instructions.md`에
+내장합니다. Copilot은 IDE 확장으로 동작하며 도구 호출 훅을 노출하지 않으므로,
+가드레일 의도는 전적으로 렌더링된 지침 안에 담깁니다. 공유 규칙에 대한 모든
+변경은 다음 `apothem update` 시 파일을 다시 렌더링합니다.
+
+## 마이그레이션 경로
+
+1. 아직 공유 프로파일을 만들지 않았다면 `apothem profile init`을 실행합니다.
+2. 기존 `.github/copilot-instructions.md`의 내용을 공유 코퍼스로 옮깁니다.
+3. `apothem install --harness github-copilot`을 실행해 지침 파일을
+   렌더링합니다.
+4. `apothem verify --harness github-copilot`을 실행해 구성이 적용되었는지
+   확인합니다.
+5. 이후 모든 변경에는 `apothem update --harness github-copilot`을 사용합니다.
+
+## 다음으로 읽기
+
+- [GitHub Copilot 어댑터 참조](/docs/harnesses/github-copilot)
+- [비교 개요](/docs/comparison)

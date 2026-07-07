@@ -1,0 +1,128 @@
+---
+title: "Apothem v1.0.1 — rilis peluncuran"
+description: "Apothem v1.0.1 telah tersedia — satu profil bersama yang dimaterialisasi ke dalam tujuh belas harness asisten AI, beberapa jalur pemasangan, dan rilis yang ditandatangani dan diatestasi."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem v1.0.1 adalah rilis peluncuran dari pengelola konfigurasi agnostik-host
+untuk harness asisten AI: satu profil bersama, tujuh belas harness, satu
+versi tunggal yang ditandatangani, dan bukti rantai pasok yang dilampirkan pada
+rilis itu sendiri.
+
+## Tesis: satu profil, tujuh belas harness
+
+Apothem membaca satu profil bersama di `~/.config/apothem/profile.yaml` dan
+memmaterialisasikannya menjadi konfigurasi asli yang diharapkan oleh setiap harness.
+Anda menulis aturan perilaku, skill, hook, dan konvensi Anda satu kali saja.
+Apothem merendernya menjadi tujuh belas target asli-harness dan menjaganya tetap
+sinkron.
+
+Tujuh belas adapter dalam rilis ini:
+
+- antigravity
+- claude-code
+- codebuddy
+- codex
+- cursor
+- gemini-cli
+- github-copilot
+- glm
+- hermes
+- kimi-code
+- kiro
+- open-claw
+- opencode
+- qwen-code
+- trae
+- windsurf
+- zed
+
+Tambahkan sebuah alat ke alur kerja Anda, jalankan satu perintah, dan
+konfigurasi Anda sudah ada di sana. Hapus sebuah alat, dan Apothem akan
+mencopotnya dengan bersih — tanpa meninggalkan berkas yatim.
+
+## Pemasangan
+
+Beberapa jalur pemasangan, satu CLI di bawahnya:
+
+1. **Plugin Claude Code** — di dalam Claude Code:
+
+   ```text
+   /plugin marketplace add ahmed-g-gad/apothem
+   /plugin install apothem@apothem
+   ```
+
+2. **npx** — jalankan CLI langsung dari paket npm `@ahmed-g-gad/apothem`, tanpa
+   langkah pemasangan:
+
+   ```bash
+   npx @ahmed-g-gad/apothem profile init
+   npx @ahmed-g-gad/apothem install --harness all --project .
+   ```
+
+3. **Pemasang skrip sekali jalan** — menempatkan runtime mandiri dan peluncur
+   `apothem` di PATH:
+
+   ```bash
+   curl -fsSL https://apothem.ahmedgad.com/install.sh | sh    # POSIX
+   ```
+
+   ```powershell
+   irm https://apothem.ahmedgad.com/install.ps1 | iex         # Windows
+   ```
+
+4. **Plugin dan ekstensi asli-alat** — ekstensi Gemini CLI
+   (`gemini extensions install https://github.com/ahmed-g-gad/apothem`),
+   ekstensi Qwen Code (`qwen extensions install ahmed-g-gad/apothem`), plugin
+   Codex (`codex plugin marketplace add ahmed-g-gad/apothem`), dan ekstensi
+   keluarga VS Code (Visual Studio Marketplace, mencakup VS Code
+   dan GitHub Copilot).
+
+## Postur rantai pasok
+
+[GitHub Release v1.0.1](https://github.com/ahmed-g-gad/apothem/releases/tag/v1.0.1)
+membawa perangkat bukti lengkap di samping kode:
+
+- sdist dan wheel, diperiksa sebelum dipublikasikan.
+- Sebuah SBOM CycloneDX.
+- Bundel tanda tangan tanpa-kunci Sigstore cosign untuk setiap artefak.
+- Provenans build SLSA-3, diverifikasi di dalam alur kerja rilis itu sendiri.
+- Arsip runtime per-platform (darwin / linux / windows) dengan manifes
+  `SHA256SUMS` yang ditandatangani.
+
+Tag rilis ditandatangani dengan GPG, dan paket npm dipublikasikan melalui
+Trusted Publishing (OIDC) dengan provenans otomatis.
+
+## Apa isi kotaknya
+
+CLI `apothem` mengekspos perintah operator yang Anda butuhkan untuk seluruh
+siklus hidup konfigurasi:
+
+- `apothem install` — memmaterialisasikan profil ke dalam satu harness atau semuanya.
+- `apothem uninstall` — menghapus konfigurasi harness yang dimaterialisasikan,
+  membiarkan profil bersama tidak tersentuh.
+- `apothem update` — memmaterialisasikan ulang setelah Anda menyunting profil.
+- `apothem verify` — mendeteksi penyimpangan antara profil dan konfigurasi
+  harness di disk.
+- `apothem harnesses` — mendaftar setiap adapter yang terdaftar.
+- `apothem profile` — memeriksa dan mengelola profil bersama.
+- `apothem doctor` — mendiagnosis masalah lingkungan dan konfigurasi.
+
+Setiap adapter harness mengimplementasikan protokol `HarnessAdapter` yang
+seragam — `install`, `uninstall`, `is_installed`, `verify` — sehingga setiap
+harness berperilaku dapat diprediksi dari kursi operator, terlepas dari format
+vendor di bawahnya. Baca lebih lanjut tentang desainnya di
+[telaah mendalam arsitektur adapter](/docs/blog/posts/multi-harness-adapter-design)
+dan tentang rekonsiliasi format di
+[konvergensi konvensi antar-harness](/docs/blog/posts/cross-harness-convention-convergence).
+
+## Ke mana selanjutnya
+
+- [Mulai cepat](/docs/install/quickstart) — pasang dan materialisasi profil
+  pertama Anda.
+- [Harness](/docs/harnesses) — referensi per-adapter untuk ketujuh belas target.
+- [Konsep](/docs/concepts) — model profil dan pipeline materialisasi.
+
+Apothem berlisensi MIT dan dikembangkan secara terbuka di
+[github.com/ahmed-g-gad/apothem](https://github.com/ahmed-g-gad/apothem).

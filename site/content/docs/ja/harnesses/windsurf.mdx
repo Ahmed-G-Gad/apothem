@@ -1,0 +1,84 @@
+---
+title: "Windsurf"
+description: "Windsurf（GA）向けの Apothem ツールアダプター。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**ベンダー：** Codeium
+**インストール名：** `windsurf`
+**ステータス：** GA
+**ネイティブ構成：** `<project>/.devin/rules/apothem-rules.md`
+
+## インストール
+
+```bash
+apothem install --harness windsurf --project /path/to/project
+```
+
+アダプターは、共有された Apothem のルールおよびガバナンス面から、1 つの
+プロジェクトスコープの Windsurf ルールファイルを書き込みます。
+
+**書き込まれるファイル：** `<project>/.devin/rules/apothem-rules.md`
+
+## プロファイルからネイティブ構成へのマッピング
+
+アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または
+`apothem update` の各実行時にプロジェクトルールファイルをレンダリングします。共有
+プロファイルが事実の源です。生成されたファイルへのプロジェクトローカルな編集は、
+次回の同期で Apothem が管理するコンテンツを置き換える前にバックアップされます。
+
+## 互換性に関する注意
+
+Windsurf の現在のルール面は `.devin/rules/` 配下のプロジェクトスコープです。
+ワークフローとマシンローカルなメモリは操作者が所有します。Apothem はそれらを
+書き込みません。単一ファイル形式の `.windsurfrules` は意図的に書き込まれません。
+
+## 検証
+
+```bash
+apothem verify --harness windsurf --project /path/to/project
+```
+
+verify コマンドは次のことを確認します。
+
+1. ネイティブ構成が想定パスに存在すること。
+2. 共有プロファイルのすべての必須フィールドが存在すること。
+3. アダプター固有の検証ルーチンが成功を報告すること。
+
+## 更新
+
+```bash
+apothem update --harness windsurf --project /path/to/project
+```
+
+現在の共有プロファイルの状態からプロジェクトルールファイルを再導出します。
+
+## アンインストール
+
+```bash
+apothem uninstall --harness windsurf --project /path/to/project
+```
+
+アダプターが書き込んだネイティブ構成ファイルを削除します。
+共有プロファイルの YAML と Apothem エンジンには影響しません。
+
+## 適合ゲート
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## トラブルシューティング
+
+| 症状 | 修正 |
+|---------|-----|
+| 構成ファイルが見つからない | `apothem install --harness windsurf --project /path/to/project` を再実行する |
+| 検証が失敗した | `apothem update --harness windsurf --project /path/to/project` を実行し、再度検証する |
+| 予期しない構成内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、`apothem update --harness windsurf --project /path/to/project` を再実行する |
+
+## 構成ノブ
+
+| フラグ | デフォルト | 説明 |
+|------|---------|-------------|
+| `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューする。 |

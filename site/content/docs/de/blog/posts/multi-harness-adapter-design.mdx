@@ -1,0 +1,117 @@
+---
+title: "Ein Blick in das Multi-Harness-Adapter-Design"
+description: "Ein technischer Tiefgang in Apothems HarnessAdapter-Protokoll und die drei Adapterklassen, die ein Profil in siebzehn Harnesses materialisieren."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem materialisiert ein einziges gemeinsames Profil in siebzehn
+harness-native Konfigurationen. Siebzehn Ziele, siebzehn Anbieterformate,
+siebzehn Installationsorte — und eine einheitliche Schnittstelle, auf die sich
+der Operator und die CLI gleichermaßen verlassen. Dieser Beitrag erklärt, wie
+die Adapterschicht diesen Vertrag zusammenhält.
+
+## Das HarnessAdapter-Protokoll
+
+Jeder Harness-Adapter implementiert ein strukturelles
+`HarnessAdapter`-Protokoll. Das Protokoll ist die Naht zwischen der CLI und den
+anbieterspezifischen Details. Es deklariert die Operationen, die die CLI
+aufruft, und die Metadaten, die die CLI liest:
+
+- `name` — der registrierte Bezeichner des Adapters.
+- `output_path` — wo die materialisierte Konfiguration auf der Festplatte
+  landet.
+- `install` — die harness-native Konfiguration rendern und schreiben.
+- `uninstall` — die materialisierte Konfiguration entfernen und das gemeinsame
+  Profil unangetastet lassen.
+- `is_installed` — melden, ob die Konfiguration des Harness vorhanden ist.
+- `verify` — Abweichungen zwischen dem Profil und der Konfiguration auf der
+  Festplatte erkennen.
+
+Da der Vertrag ein `typing.Protocol` ist, erfüllt ein Adapter ihn durch seine
+Form, nicht durch Vererbung. Die CLI lädt Adapter dynamisch über
+`importlib.metadata` aus der Tabelle
+`[project.entry-points."apothem.harnesses"]` in `pyproject.toml`. Einen Harness
+hinzuzufügen bedeutet, ein Unterpaket zu veröffentlichen, das das Protokoll
+freilegt — ohne den zentralen Dispatcher zu bearbeiten.
+
+## Ein Unterpaket pro Adapter
+
+Jeder Adapter lebt in seinem eigenen Unterpaket unter
+`src/apothem/harnesses/<name>/`:
+
+- `__init__.py` — die `<Name>Adapter`-Klasse, die das Protokoll implementiert
+  und an die benachbarten Aktionsmodule delegiert.
+- `install.py` / `uninstall.py` / `update.py` / `verify.py` — die
+  Implementierungen pro Aktion, die die Adapterklasse importiert und aufruft.
+- `materializer.py` — ein optionales `materialize_native_config(profile) -> str`,
+  das das gemeinsame Profil in den harness-nativen Konfigurationstext rendert.
+
+Jede Aktion in ihr eigenes Modul aufzuteilen, hält die Adapterklasse schlank:
+Sie ist ein Dispatcher, der die Protokollmethoden mit den Aktionsfunktionen
+verdrahtet. Ein Leser, der `verify.py` öffnet, sieht genau die
+Abweichungserkennungslogik für genau diesen einen Harness, ohne sich durch
+Installations- oder Deinstallationsrauschen kämpfen zu müssen.
+
+## Drei Adapterklassen
+
+Die siebzehn Harnesses konsumieren Konfiguration nicht alle auf dieselbe Weise.
+Apothem sortiert sie in drei Klassen, je nachdem, wie viel Transformation das
+Profil benötigt, bevor es den Harness erreicht.
+
+### Klasse I — Rohpropagierung
+
+Der Harness konsumiert dieselben Artefakte, die Apothem bereits schreibt —
+flache `.md`-Regeln, Agents, Hooks — ohne Rendering-Schritt. Der Adapter kopiert
+die Roh-Templates in den Konfigurationsbaum des Harness. Es gibt kein
+`materializer.py`, weil nichts gerendert wird; die Artefakte des Profils sind
+die Ausgabe.
+
+### Klasse II-A — roh plus Anbieter-Templates
+
+Der Harness konsumiert Apothems Roh-Artefakte UND eine Reihe
+anbieterspezifischer Template-Dateien (Einstellungs-, Manifest- oder
+Gerüstdateien, die der Harness benötigt). Der Adapter kopiert die Roh-Artefakte
+und die Anbieter-Templates zusammen. Die Anbieter-Templates leben neben dem
+Adapter in einem `templates/`-Verzeichnis.
+
+### Klasse II-B — profil-gerendert
+
+Der Harness möchte eine einzige native Konfigurationsdatei, die aus den
+strukturierten Feldern des gemeinsamen Profils gerendert wird. Das
+`materializer.py` des Adapters liest das Profil und gibt den harness-nativen
+Text aus — eine Hermes-`config.yaml`, eine Open-Claw-`openclaw.json`, eine
+OpenCode-`opencode.json` oder eine Qwen-Code-`settings.json`. Klasse II-B ist,
+wo sich die Arbeit der Formatabstimmung konzentriert;
+[der Tiefgang zur Konventionskonvergenz](/docs/blog/posts/cross-harness-convention-convergence)
+behandelt sie im Detail.
+
+## claude-code: der Referenzadapter für die volle Oberfläche
+
+Der claude-code-Adapter ist die Referenzimplementierung für die breiteste
+Konfigurationsoberfläche — Regeln, Agents, Hooks, Output-Styles, Einstellungen
+und Konventionsverzeichnisse. Er gehört zur Klasse II-A: Er propagiert Apothems
+Roh-Templates und flacht die Konventionsverzeichnisse ab und liefert
+Anbieter-Einstellungs-Templates unter
+`src/apothem/harnesses/claude_code/templates/`. Er trägt kein `materializer.py`
+— er rendert keine native Konfigurationsdatei aus dem Profil; er propagiert
+Artefakte und Konventionsverzeichnisse direkt.
+
+Eine bewusste Grenze: Der claude-code-Adapter verwaltet `CLAUDE.md` nicht. Diese
+Datei ist Territorium des Operators. Apothem materialisiert die umgebende
+Konfigurationsoberfläche — die Regeln, die Hooks, die Einstellungen — und lässt
+die eigene `CLAUDE.md`-Stimme des Operators unangetastet. Ein Adapter, der sie
+überschreiben würde, würde bei jedem `apothem install` handgeschriebene
+Projektanweisungen löschen, also zieht der Adapter die Linie an der
+Verzeichnisgrenze und hält an.
+
+## Warum die Einheitlichkeit zählt
+
+Das Protokoll gibt dem Operator ein einziges mentales Modell über siebzehn
+Werkzeuge hinweg. `apothem install`, `apothem verify`, `apothem uninstall`
+verhalten sich auf dieselbe Weise, ob das Ziel eine einzelne Datei rendert oder
+einen Verzeichnisbaum abflacht. Die Anbieterunterschiede leben innerhalb der
+Adapter-Unterpakete, hinter dem Protokoll, wo sie hingehören.
+
+Lesen Sie die operatororientierte Referenz unter [Harnesses](/docs/harnesses)
+und das Profilmodell unter [Konzepte](/docs/concepts).

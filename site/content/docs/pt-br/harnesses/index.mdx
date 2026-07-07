@@ -1,0 +1,90 @@
+---
+title: "Adaptadores de ferramenta"
+description: "Adaptadores de ferramenta do Apothem — um perfil compartilhado, dezessete alvos suportados."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+O Apothem traz dezessete adaptadores de ferramenta integrados. Cada adaptador traduz os
+mesmos cohorts compartilhados em arquivos nativos da plataforma onde a plataforma os
+suporta e em árvores de suporte de propriedade do Apothem onde ela não suporta.
+
+## Ferramentas suportadas
+
+O registro de suportados contém exatamente dezessete adaptadores. Use estes nomes
+exatos de instalação com `--harness`, ou use `all` para o conjunto determinístico do
+registro:
+
+```text
+antigravity
+claude-code
+codebuddy
+codex
+cursor
+gemini-cli
+github-copilot
+glm
+hermes
+kimi-code
+kiro
+open-claw
+opencode
+qwen-code
+trae
+windsurf
+zed
+```
+
+A matriz detalhada do registro, os caminhos de destino, os estados de capacidade, o suporte a MCP
+e as evidências de convention-pin ficam na [referência técnica do registro](/docs/reference/harness-registry).
+
+## Instalar várias ferramentas
+
+Instale uma ferramenta, ou use `all` para selecionar o registro em ordem
+determinística. Ferramentas com escopo de projeto exigem `--project PATH`; isso inclui `all`
+porque o registro inclui tanto alvos com escopo de usuário quanto com escopo de projeto.
+
+```bash
+apothem install --harness claude-code
+apothem install --harness cursor --project /path/to/project
+apothem install --harness gemini-cli --project /path/to/project
+apothem install --harness all --project /path/to/project
+```
+
+## Verificar suas instalações
+
+Verifique cada adaptador de ferramenta individualmente, ou chame `apothem doctor` para um
+resumo de status de instalação por adaptador em todos os adaptadores registrados:
+
+```bash
+apothem verify --harness claude-code
+apothem verify --harness all --project /path/to/project
+apothem doctor
+```
+
+## Como os adaptadores funcionam
+
+Cada adaptador implementa o protocolo `HarnessAdapter` registrado via
+entry-points do setuptools. Na instalação, a CLI carrega e valida o perfil
+YAML compartilhado, resolve o adaptador através do registro, valida o
+plano de materialização e grava a configuração nativa da plataforma na localização
+nativa de usuário ou de projeto da ferramenta. Na atualização, ela rederiva a partir do estado
+atual do perfil.
+
+```
+profile.yaml + packaged cohorts
+    identity / preferences / rules
+    commands / skills / delegated definitions / hooks / templates
+         |
+         +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/antigravity-cli/plugins/apothem/
+         +-- claude-code    --> ~/.claude/ native folders + ~/.claude/.apothem/support/
+         +-- codex          --> ~/.codex/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
+         +-- cursor         --> <project>/.cursor/rules/*.mdc
+         +-- gemini-cli     --> <project>/GEMINI.md + <project>/.gemini/
+         +-- github-copilot --> <project>/.github/copilot-instructions.md
+         +-- windsurf       --> <project>/.devin/rules/
+         +-- ...
+```
+
+Consulte [Abstração de adaptador de ferramenta](/docs/architecture/harness-adapter-abstraction)
+para a especificação do protocolo.

@@ -1,0 +1,73 @@
+---
+title: "/research-sources"
+description: "/research-sources — Systematische Quellensammlung: zerlegt die Spezifikation in Teilabfragen, fächert die Entdeckung parallel auf, siebt und reiht, und extrahiert pro Quelle in ein gereihtes Quellenregister."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rolle:** Hauptforscher (Quellensammlung)
+**Pipeline-Position:** Mitte der Kette
+
+Systematische Quellensammlung — zerlegt die Forschungsspezifikation in Teilabfragen, fächert die Quellenentdeckung und die Extraktion pro Quelle parallel auf, dedupliziert, reiht nach Autorität / Aktualität / Relevanz, siebt gegen die Einschlusskriterien der Spezifikation und erfasst die Provenienz jeder verbleibenden Quelle.
+
+## Kanonischer Aufruf
+
+```bash
+/research-sources
+```
+
+Mit Argumenten:
+
+```bash
+/research-sources [path/to/research-suite/] [--depth N]
+```
+
+## Eingaben
+
+`_inputs/theory.md` (der konzeptionelle / theoretische Rahmen aus `/research-theory`, der Vorgängerschritt) plus `_spec/research-spec.md` (die genehmigte Forschungsspezifikation aus `/research-spec`).
+
+## Ausgaben
+
+`sources/<id>.md` (eine provenienztragende Extraktion pro verbleibender Quelle) + `_inputs/source-ledger.md` (der gereihte, gesiebte, deduplizierte Quellenindex mit einem Zitationsindex).
+
+## Stromabwärts
+
+/research-synthesis (Verbraucher stromabwärts)
+
+## Workflow-Phasen
+
+Der Befehl folgt dem standardmäßigen Workflow der `/research`-Pipeline:
+
+1. **Kontext laden** — Die Forschungsspezifikation und ihre Einschluss- / Ausschlusskriterien lesen.
+2. **Das Sequenz-Gate verifizieren** — Bestätigen, dass `_inputs/theory.md` (und die genehmigte `_spec/research-spec.md`) existiert; andernfalls mit `Blocked: run /research-theory first` anhalten.
+3. **Entdecken & extrahieren** — In Teilabfragen zerlegen, die Entdeckung auffächern, deduplizieren, reihen, sieben und pro Quelle mit Provenienz extrahieren.
+4. **Ausgaben verifizieren** — Bestätigen, dass jede verbleibende Quelle zitiert und gegen die Spezifikationskriterien gesiebt ist.
+5. **Das Übergabemanifest aktualisieren** — Das Quellenregister und die Extraktionspfade pro Quelle festhalten.
+6. **Das Register ausgeben** — Die `sources/`-Extraktionen plus `_inputs/source-ledger.md`.
+
+## Rigorositätsuntergrenze
+
+Über das Quellenregister hinaus baut diese Stufe ein Provenienzregister der Vergleichsverfahren auf: die zeitlich nächstliegenden aktuellen Stand-der-Technik-Referenzverfahren, gegen die die Studie antreten wird, jedes gegen eine abrufbare Quelle verifiziert und mit seiner Provenienz und Erreichbarkeit erfasst. Ein Vergleichsverfahren, das sich nicht bestätigen oder abrufen lässt, wird als solches markiert und niemals erfunden (R1, R4).
+
+## Fehlermodi
+
+| Symptom | Ursache | Behebung |
+|---------|-------|----------|
+| Blocked: run /research-theory first | Keine theoretische Fundierung | Führen Sie `/research-theory` aus, um `_inputs/theory.md` zu erzeugen |
+| Quelle erfüllt die Einschlusskriterien nicht | Außerhalb des Geltungsbereichs oder Quelle mit geringer Autorität | Sieben Sie sie aus; erfassen Sie die Ausschlussbegründung im Register |
+| Erfundenes Zitat | Quelle erraten, nicht abgerufen | Erfinden Sie niemals eine Quelle; ein erratenes Zitat ist ein Befund |
+
+## Beispiele
+
+```bash
+# Quellen für eine gerahmte Forschungssuite sammeln
+/research-sources path/to/research-suite/
+
+# Tiefere Entdeckungs-Auffächerung
+/research-sources path/to/research-suite/ --depth N
+```
+
+## Querverweise
+
+- [Pipeline-Übersicht](/docs/pipeline)
+- [Befehlsreferenz](/docs/reference/commands)

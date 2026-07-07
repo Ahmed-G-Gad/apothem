@@ -1,0 +1,55 @@
+---
+title: "doctor"
+description: "Referencia de CLI para el comando apothem doctor."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Ejecuta diagnósticos del sistema para la instalación de Apothem.
+
+## Sinopsis
+
+```
+apothem doctor [--quiet|-q] [--verbose|-v]
+               [--format plain|json] [--json] [--no-color]
+```
+
+Comprueba la instalación de Apothem e informa del estado de cada adaptador de
+harness registrado. Cuando hay un perfil compartido presente, se valida contra el
+esquema empaquetado — no solo se comprueba su existencia —, de modo que un perfil
+con errores se expone como un fallo de diagnóstico en lugar de un «encontrado» en
+verde. La salida JSON incluye un campo `profile_valid` (`true` / `false`, o `null`
+cuando no hay perfil presente) y un campo `profile_error` cuando la validación
+falla. Sale con 0 cuando todas las comprobaciones pasan, y con 1 cuando uno o más
+harnesses no están instalados o cuando el perfil presente no supera la validación
+del esquema.
+
+## Opciones
+
+| Opción | Descripción |
+|---|---|
+| `--quiet`, `-q` | Suprime la salida informativa; solo se emiten errores. |
+| `--verbose`, `-v` | Emite salida de diagnóstico adicional. |
+| `--format plain\|json` | Formato de salida (predeterminado: `plain`). |
+| `--json` | Abreviatura de `--format json`. |
+| `--no-color` | Desactiva los códigos de color ANSI en la salida. |
+| `-h`, `--help` | Muestra la ayuda y sale. |
+
+## Ejemplos
+
+```bash
+apothem doctor
+apothem doctor --json
+```
+
+## Códigos de salida
+
+| Código | Significado |
+|---|---|
+| 0 | Todas las comprobaciones pasaron |
+| 1 | Un harness no está instalado, o un perfil presente no superó la validación del esquema |
+
+## Véase también
+
+- [apothem harnesses](/docs/cli-reference/harnesses) — lista e inspecciona los harnesses registrados
+- [apothem verify](/docs/cli-reference/verify) — comprueba la instalación de un harness específico

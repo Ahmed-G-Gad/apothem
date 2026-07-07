@@ -1,0 +1,69 @@
+---
+title: "/supply-chain-audit"
+description: "/supply-chain-audit — Audit de la chaîne d'approvisionnement face aux normes SLSA + Sigstore + SBOM."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rôle :** Auditeur de la chaîne d'approvisionnement
+**Position dans le pipeline :** forteresse
+
+Audit de la chaîne d'approvisionnement face aux normes SLSA + Sigstore + SBOM.
+
+## Invocation canonique
+
+```bash
+/supply-chain-audit
+```
+
+Avec des arguments :
+
+```bash
+/supply-chain-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+```
+
+## Entrées
+
+Pipeline de publication du dépôt hôte
+
+## Sorties
+
+Constats de la chaîne d'approvisionnement + REPORT.md
+
+## En aval
+
+L'étape supply-chain-audit de la Séquence de Relecture d'Audit
+
+## Phases du flux de travail
+
+La commande suit le flux de travail standard du pipeline `/plan` :
+
+1. **Charger le contexte** — Lit la suite de plan, les règles et le Contrat de Reprise.
+2. **Vérifier les prérequis** — Confirme que les phases de dépendance sont terminées.
+3. **Exécuter les tâches** — Accomplit la mission de la commande.
+4. **Vérifier les sorties** — Confirme que toutes les sorties déclarées existent et passent les portes de qualité.
+5. **Mettre à jour PROGRESS.md** — Consigne les sorties vérifiées dans le Registre des Sorties de Phase.
+6. **Émettre REPORT.md** — La preuve de libération de la porte de pré-émission est consignée.
+
+## Modes d'échec
+
+| Symptôme | Cause | Récupération |
+|---------|-------|----------|
+| Prérequis incomplet | Phase dépendante non terminée | Terminez d'abord la phase en amont |
+| Porte de qualité FAIL | La sortie ne respecte pas les normes | Corrigez la sortie et relancez |
+| Fichier d'entrée manquant | Fichier de suite de plan absent | Exécutez `/plan-generate` pour le créer |
+
+## Exemples
+
+```bash
+# Dry-run to preview what would happen
+/supply-chain-audit --dry-run
+
+# Execute against a named plan suite
+/supply-chain-audit path/to/plan-suite/
+```
+
+## Renvois
+
+- [Aperçu du pipeline](/docs/pipeline)
+- [Modèle de Suite de Plan Maître](/docs/reference/commands)

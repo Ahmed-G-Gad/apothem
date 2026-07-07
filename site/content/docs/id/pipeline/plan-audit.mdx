@@ -1,0 +1,70 @@
+---
+title: "/plan-audit"
+description: "/plan-audit — Penjaga lingkar-tertutup pipeline /plan — membungkus spec → generate → review dan secara aktif memperbaiki temuan sampai suite menjadi keseluruhan yang ditinjau tanpa temuan."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Peran:** Penjaga
+**Posisi pipeline:** membungkus / ortogonal (pra-eksekusi)
+
+Penjaga lingkar-tertutup pipeline `/plan`. Sementara `/plan-review` melaporkan dan menyempurnakan suite yang dihasilkan, `/plan-audit` membungkus siklus hulu (`/plan-spec → /plan-generate → /plan-review`) dan menggiring suite menuju keseluruhan yang ditinjau tanpa temuan — menjalankan hanya tahap hulu yang hilang, mengaudit hasilnya, memperbaiki di tempat temuan yang dapat diselesaikan secara mekanis, memunculkan percabangan penilaian melalui kanal inquiry terstruktur, dan mengulang sampai suite bersih atau penarikan-mundur berbatas terpicu. Ia tidak pernah menjalankan pekerjaan implementasi fase; ia meninggalkan suite siap untuk `/plan-execute`.
+
+## Pemanggilan kanonis
+
+```bash
+/plan-audit
+```
+
+Dengan argumen:
+
+```bash
+/plan-audit [suite-path] [--from spec|generate|review] [--remediate] [--cap N] [--maintenance] [--dry-run]
+```
+
+## Masukan
+
+`_spec/spec.md` suite target, `_inputs/handoff-manifest.yml`, berkas infrastruktur, `phases/**/PHASE.md`, dan laporan fase yang sudah ada.
+
+## Keluaran
+
+Laporan persisten dan berbatas di `<suite>/_outputs/audit-report-<YYYY-MM-DD>.md`; manifes serah-terima yang diperbarui yang membawa vonis tanpa temuan, hitungan temuan terbuka, buku besar remediasi, dan setiap pengarahan pemeliharaan; serta status terminal bukan-nol ketika temuan sisa masih ada.
+
+## Posisi pipeline
+
+`/plan-audit` bersifat **ortogonal** terhadap pipeline linier, bukan sebuah tahap di dalamnya. Urutan linier kanonis adalah `/plan-spec → /plan-generate → /plan-review → /plan-design` (kondisional, hanya suite ber-arsitektur) `→ /plan-execute`. `/plan-audit` mencakup `/plan-spec → /plan-generate → /plan-review` sebagai satu pembungkus lingkar-tertutup yang dapat dipanggil di titik mana pun: ia memeriksa keadaan dan menjalankan hanya tahap yang hilang. Ia berbeda dari rantai audit benteng (masuk di `/code-review`, terminal di `/threat-model-audit`), yang mengaudit basis kode yang dieksekusi alih-alih suite rencana.
+
+## Fase alur kerja
+
+1. **Selesaikan target** — Menyelesaikan suite dari argumen, atau memilih suite yang paling baru diubah di bawah `.apothem/plans/` (`.plans/` adalah fallback kompatibel-mundur yang didukung) dan menyatakan penyelesaiannya.
+2. **Nilai tahap** — Mendeteksi artefak mana yang ada (spec siap / dihasilkan / ditinjau / dieksekusi) dan menamai celah terkecil menuju keseluruhan yang ditinjau dan dapat dieksekusi.
+3. **Bawa ke keseluruhan yang dapat ditinjau** — Menjalankan hanya tahap hulu yang hilang, mendelegasikan ke perintah kanonis tiap celah; tidak pernah menjalankan-ulang tahap yang sudah terpenuhi hanya untuk menyegarkan prosa.
+4. **Audit forensik** — Menerapkan dimensi audit `/plan-review`, katalog teknik perencanaan, dan gerbang pra-pengeluaran lima-belas palang.
+5. **Remediasi aktif** — Memperbaiki temuan mekanis di tempat; memunculkan percabangan penilaian melalui kanal inquiry terstruktur; mengarahkan pekerjaan yang sah di luar cakupan ke suite saudara `*-maintenance`.
+6. **Lingkar dengan batas dan penarikan-mundur** — Mengulang audit-dan-remediasi sampai tidak ada temuan terbuka yang tersisa, dibatasi oleh batas iterasi (bawaan 3) dengan penarikan-mundur terdefinisi saat batas habis.
+
+## Mode kegagalan
+
+| Gejala | Penyebab | Pemulihan |
+|---------|-------|----------|
+| Batas habis dengan temuan sisa | Temuan tidak dapat diselesaikan dalam batas iterasi | Tinjau laporan audit; arahkan item yang memenuhi syarat ke suite `*-maintenance`; naikkan `--cap` hanya dengan alasan |
+| Percabangan penilaian tak terselesaikan | Suatu temuan memerlukan keputusan kebijakan/cakupan/otoritas | Jawab prompt inquiry terstruktur; lingkar tidak pernah memilih secara diam-diam |
+| Spec otoritatif hilang | Tidak ada `_spec/spec.md` | Pembungkus mengarahkan ke `/plan-spec` untuk menulisnya |
+| Gerbang kualitas FAIL | Keluaran tidak memenuhi standar | Remediasi memperbaiki akar penyebab dan mengaudit-ulang lokus yang tersentuh |
+
+## Contoh
+
+```bash
+# Dry-run: report detected suite, stage, planned audit dimensions, would-write targets
+/plan-audit --dry-run
+
+# Audit and actively remediate a named suite, capping the loop at 2 iterations
+/plan-audit path/to/plan-suite/ --remediate --cap 2
+```
+
+## Referensi silang
+
+- [Gambaran umum pipeline](/docs/pipeline)
+- [/plan-review](/docs/pipeline/plan-review)
+- [/plan-execute](/docs/pipeline/plan-execute)
+- [Templat Suite Rencana Induk](/docs/reference/commands)

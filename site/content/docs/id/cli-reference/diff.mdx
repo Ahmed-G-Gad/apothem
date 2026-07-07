@@ -1,0 +1,98 @@
+---
+title: "diff"
+description: "Referensi CLI untuk perintah apothem diff."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Pratinjau perubahan konfigurasi tertunda untuk satu asisten-pengkodean.
+
+## Ringkasan
+
+```
+apothem diff --harness NAME [--profile PATH] [--project PATH]
+             [--quiet|-q] [--verbose|-v]
+             [--format plain|json] [--json] [--no-color]
+```
+
+`diff` adalah perintah inspeksi hanya-baca. Perintah ini menjalankan materialisasi yang
+sama dengan yang akan dijalankan perintah `install`, tetapi dalam mode dry-run — tidak
+ada yang ditulis ke disk. Kemudian ia merender, per target yang direncanakan, operasi,
+jalur target, hasilnya, dan (untuk jangkar milik operator yang akan digabungkan) diff
+terpadu dari perubahan tersebut. Inilah jawaban atas "apa yang akan dilakukan `apothem
+install` terhadap asisten-pengkodean ini saat ini?" tanpa membuat perubahan.
+
+Untuk target milik operator — berkas yang membawa konten Anda sendiri sekaligus blok
+yang dikelola Apothem — diff menampilkan baris persis yang akan berubah. Untuk target
+lainnya, operasi dan hasil yang direncanakan diringkas.
+
+`diff` beroperasi pada satu asisten-pengkodean. Tidak seperti `status`, ia tidak
+menerima `all`; berikan satu nama asisten-pengkodean.
+
+## Opsi
+
+| Opsi | Deskripsi |
+|---|---|
+| `--harness NAME` | Adaptor asisten-pengkodean yang akan dipratinjau (wajib; satu asisten, bukan `all`). |
+| `--profile PATH` | Jalur ke YAML profil bersama. Default-nya `~/.config/apothem/profile.yaml`. |
+| `--project PATH` | Root proyek untuk asisten-pengkodean berlingkup-proyek. Wajib ketika asisten yang dipilih berlingkup-proyek. |
+| `--quiet`, `-q` | Menekan keluaran informatif; hanya galat yang dipancarkan. |
+| `--verbose`, `-v` | Memancarkan keluaran diagnostik tambahan. |
+| `--format plain\|json` | Format keluaran (default: `plain`). |
+| `--json` | Singkatan untuk `--format json`. |
+| `--no-color` | Menonaktifkan kode warna ANSI dalam keluaran. |
+| `-h`, `--help` | Menampilkan bantuan dan keluar. |
+
+## Keluaran JSON
+
+Amplop `--json` mencerminkan amplop instalasi dry-run. `status` bernilai `dry_run`,
+`files_written` selalu kosong, dan blok `materialization` ditambah daftar `results`
+membawa detail target terencana selengkapnya. Bidang `detail.diff` pada setiap baris
+hasil milik operator membawa string diff terpadu.
+
+```json
+{
+  "status": "dry_run",
+  "command": "diff",
+  "action": "dry_run",
+  "harness": "claude-code",
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "updated",
+      "operation": "sentinel_merge",
+      "path": "C:\\Users\\Example\\.claude\\CLAUDE.md",
+      "message": "dry run: no filesystem changes made",
+      "detail": {
+        "ownership_class": "operator-owned",
+        "diff": "--- a/CLAUDE.md\n+++ b/CLAUDE.md\n@@ ..."
+      }
+    }
+  ],
+  "warnings": [],
+  "error": null,
+  "materialization": { "...": "..." }
+}
+```
+
+## Contoh
+
+```bash
+apothem diff --harness claude-code
+apothem diff --harness cursor --project .
+apothem diff --harness claude-code --json
+```
+
+## Kode keluar
+
+| Kode | Arti |
+|---|---|
+| 0 | Diff dilaporkan (perubahan tertunda dilaporkan, bukan galat) |
+| 1 | Galat validasi, profil, asisten-pengkodean, atau proyek yang diharapkan |
+
+## Lihat juga
+
+- [apothem status](/docs/cli-reference/status) — melaporkan status pemasangan/verifikasi/penyimpangan di setiap asisten-pengkodean
+- [apothem verify](/docs/cli-reference/verify) — memverifikasi pemasangan satu asisten-pengkodean
+- [apothem install](/docs/cli-reference/install) — menerapkan perubahan yang dipratinjau

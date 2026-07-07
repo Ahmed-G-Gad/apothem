@@ -1,0 +1,49 @@
+---
+title: "合规闸门"
+description: "运行 Apothem 合规闸门以验证生态系统的健康状况。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+位于 `src/apothem/conformity/gate.py` 的合规闸门会对操作者编写的每一个产物运行
+十五项机械检查。
+
+## 运行闸门
+
+```bash
+python -m apothem.conformity.gate
+```
+
+## 闸门检查项
+
+| 检查项 | 检查内容 | 类型 |
+|-----|-------|------|
+| M1 | 范围一致性 | 推理 |
+| M2 | 计划内部隔离（CM-7） | 机械 |
+| M3 | 标准合规 | 推理 |
+| M4 | 前置元数据有效性 | 机械 |
+| M5 | 无禁用措辞 | 机械 |
+| M6 | 编辑披露 | 推理 |
+| M7 | 产物中无计划引用 | 机械 |
+| M8 | 存在署名标头 | 机械 |
+| M9 | 诚实评估 | 推理 |
+| M10 | 命名规范 | 机械 |
+| M11 | 冲刺机制 | 推理 |
+| M12 | 规范布局 | 机械 |
+| M13 | 代码工艺 | 推理 |
+| M14 | 系统性参与 | 推理 |
+| M15 | 人工署名 | 机械 |
+
+## 定向检查
+
+```bash
+# 运行单项检查
+python -m apothem.conformity.gate --check multi-surface-coherence
+
+# 针对特定文件运行
+python -m apothem.conformity.gate src/apothem/rules/my-rule.md
+```
+
+## CI 集成
+
+闸门通过 `.github/workflows/conformity.yml` 在每次推送时于 CI 中运行。

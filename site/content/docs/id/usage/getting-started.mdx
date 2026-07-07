@@ -1,0 +1,75 @@
+---
+title: "Alur kerja inti"
+description: "Empat alur kerja inti Apothem — profil, aturan, rencana, dan gerbang kesesuaian."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem menyediakan empat kemampuan inti: profil tata kelola bersama, korpus
+aturan, alur perencanaan terstruktur, dan gerbang kesesuaian waktu nyata.
+
+<Callout title="Baru di sini?">
+  Untuk panduan terbimbing dari nol hingga jalan pertama, mulailah dari
+  [tutorial memulai](/docs/tutorials/getting-started). Halaman ini adalah rujukan
+  cepat ke empat alur kerja inti setelah Anda selesai menyiapkan.
+</Callout>
+
+## Profil bersama
+
+Profil Apothem Anda berada di `~/.config/apothem/profile.yaml` kecuali Anda
+meneruskan `--profile PATH`. Ia adalah satu-satunya sumber kebenaran yang menjadi
+asal setiap adaptor lingkungan menurunkan konfigurasi native-nya:
+
+```yaml
+identity:
+  name: "Example User"
+preferences:
+  style: "concise"
+rules:
+  - "Validate external input before writing files."
+```
+
+Buat dan periksa profil:
+
+```bash
+apothem profile init
+apothem profile show --json
+```
+
+## Aturan pertama
+
+Tambahkan aturan bersama ke YAML profil, lalu materialisasikan ulang lingkungan
+yang dipilih. Saat aturan itu menyertakan data contoh, gunakan placeholder fiktif
+agar tidak ada identitas atau kredensial nyata yang masuk ke profil bersama atau
+jalannya CI.
+
+```bash
+apothem profile set rules '["Always include a brief summary at the end of every response."]'
+apothem update --harness claude-code
+apothem verify --harness claude-code
+```
+
+## Rencana pertama
+
+Alur `/plan` berjalan di dalam harness Anda sebagai perintah garis
+miring, bukan melalui biner `apothem`. Setelah sebuah lingkungan terpasang, mulai
+sebuah rencana dari obrolan alat:
+
+```text
+/plan-spec
+```
+
+`/plan-spec` menyempurnakan prosa Anda menjadi spesifikasi, dan `/plan-generate`
+mewujudkan suite rencana di bawah `<project-root>/.apothem/plans/{suite}/`. Lihat
+[rujukan perintah alur](/docs/pipeline) untuk alur lengkapnya.
+
+## Gerbang kesesuaian
+
+Jalankan dari akar repositori:
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+Menjalankan semua pemeriksaan kesesuaian mekanis dan melaporkan lulus/gagal per
+bilah.

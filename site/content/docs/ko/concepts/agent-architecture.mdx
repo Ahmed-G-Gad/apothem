@@ -1,0 +1,138 @@
+---
+title: "에이전트 아키텍처"
+description: "Apothem이 단일 에이전트 역량 코호트를, 훅 표면과 규칙 형식이 제각각인 열일곱 개의 하니스에 어떻게 투영하는가."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+이 페이지는 개발자를 대상으로 하는 기술 명세 페이지입니다. 어댑터 클래스,
+머티리얼라이저, 전파 매니페스트, 형제 규약 수렴 등 Apothem의 내부 용어를
+일반 독자를 위해 완화하지 않고 그대로 사용합니다.
+
+Apothem은 하나의 공유 프로필(`~/.config/apothem/profile.yaml`)을 읽어 등록된
+열일곱 개 어댑터를 위한 하니스 네이티브 구성을 머티리얼라이즈합니다. 이 하니스들은
+에이전트 역량 모델을 공유하지 않습니다. 어떤 것은 도구 호출 전 훅을 노출하고,
+어떤 것은 평면 `.md` 파일로 규칙을 실행하며, 어떤 것은 모든 규칙을 단일 지침
+파일에 임베드하고, 어떤 것은 설치 시점에 프로필 기반 구성을 렌더링합니다.
+이 페이지는 그 분기 양상과 Apothem이 그 위에 적용하는 규율을 정리합니다.
+
+## 하니스별 에이전트 역량 매트릭스
+
+아래 매트릭스는 열일곱 개 하니스 전부를 다룹니다. 열은 각 하니스가 노출하는
+PreToolUse 훅 표면, Apothem이 규칙을 활성화하는 데 사용하는 형식, 어댑터
+클래스([어댑터 클래스](#adapter-classes-explained) 참조), 그리고 어댑터가
+머티리얼라이저를 통해 네이티브 구성을 렌더링하는지 여부입니다.
+
+
+| 하니스 | PreToolUse 훅 표면 | 규칙 활성화 형식 | 어댑터 클래스 | 머티리얼라이저 |
+|---------|-------------------------|------------------------|---------------|--------------|
+| antigravity | 네이티브 훅 표면 존재; Apothem 지원 자료만 | `GEMINI.md` 및 Antigravity CLI 플러그인 규칙 | Class I | 없음 |
+| claude-code | 네이티브 PreToolUse / PostToolUse / Stop / SessionStart | `rules/` 아래 `.md` 평면 규칙 | Class II-A | 없음 (벤더 설정 템플릿) |
+| codebuddy | 없음 | `.codebuddy/rules/apothem-rules.md` 프로젝트 규칙 파일 | Class I | 없음 |
+| codex | 네이티브 `hooks.json` 라이프사이클 훅 | `AGENTS.md` 및 설치된 스킬이 참조하는 지원 규칙 | Class I | 없음 |
+| cursor | 없음 | `.mdc` 워크스페이스 규칙 (MDC 프런트매터: `description` / `globs` / `alwaysApply`) | Class I | 없음 |
+| gemini-cli | 없음 | 단일 `GEMINI.md`에 임베드된 규칙 | Class I | 없음 |
+| github-copilot | 없음 (IDE 확장, 도구 호출 훅 없음) | `.github/copilot-instructions.md`의 규칙 | Class I | 없음 |
+| glm | 없음 (모델 백엔드, 에이전트 도구 표면 없음) | `.apothem/providers/glm.toml` 백엔드 프로바이더 구성 (규칙 코호트 없음) | Class I | 없음 |
+| hermes | 지원 자료만 | `config.yaml` 및 외부 스킬 디렉터리 | Class II-B | `config.yaml` |
+| kimi-code | 없음 | `AGENTS.md` 및 `.kimi-code/.apothem/support/` 아래 지원 규칙 | Class I | 없음 |
+| kiro | 없음 (Kiro 에이전트 훅은 어댑터 범위 밖) | `.kiro/steering/apothem-rules.md` 스티어링 파일 | Class I | 없음 |
+| open-claw | 지원 자료만 | `openclaw.json` 및 추가 스킬 디렉터리 | Class II-B | `openclaw.json` |
+| opencode | 지원 자료만 | 프로필 렌더링 JSON 및 네이티브 커맨드, 스킬, 에이전트 | Class II-B | `opencode.json` |
+| qwen-code | 네이티브 PreToolUse / Stop / SessionStart | `QWEN.md` 및 네이티브 커맨드, 스킬, 에이전트 | Class II-B | `settings.json` / `QWEN.md` |
+| trae | 없음 | `.trae/rules/apothem-rules.md` 프로젝트 규칙 파일 | Class I | 없음 |
+| windsurf | 없음 | `.devin/rules/`의 규칙 | Class I | 없음 |
+| zed | 없음 | 프로젝트 루트 `.rules` 평면 파일 | Class I | 없음 |
+
+
+매트릭스에 대한 참고 사항:
+
+- **claude-code**는 기준 어댑터입니다. 네이티브 PreToolUse, PostToolUse, Stop,
+  SessionStart 훅을 갖추고 벤더 설정 템플릿을 제공합니다.
+  의도적으로 `CLAUDE.md`는 관리하지 않습니다 — 그 파일은 운영자 소유 영역입니다.
+- **codex**는 `hooks.json`을 통해 네이티브 라이프사이클 훅을 설치하고,
+  에이전트를 TOML로 변환하며, 커맨드 프롬프트를 Codex 스킬로 감싸고,
+  `config.toml`은 운영자 소유로 남깁니다.
+- **antigravity**는 `~/.gemini/GEMINI.md`를 전역 컨텍스트 앵커로 유지하고
+  `~/.gemini/antigravity-cli/plugins/apothem/` 아래에 Apothem 플러그인을
+  설치합니다. 훅 파일은 어댑터가 Antigravity 훅 스키마 변환을 소유하기 전까지
+  지원 자료로 보존됩니다.
+- **cursor**는 벤더 MDC 프런트매터(`description`, `globs`, `alwaysApply`)를 담은
+  `.mdc` 파일을 통해 규칙을 활성화합니다. 어댑터는 단일 파일 `.cursorrules`를
+  작성하지 않습니다.
+- **windsurf**는 `.devin/rules/`를 사용합니다. 어댑터는 단일 파일
+  `.windsurfrules`를 작성하지 않습니다.
+- **hermes**와 **open-claw**는 네이티브 구성 파일을 렌더링하고 각 도구의
+  문서화된 스킬 디렉터리 설정을 통해 Apothem 지원 스킬 디렉터리를 연결합니다.
+  지원되지 않는 공유 코호트는 Apothem 소유 지원 하위 트리 아래에 남습니다.
+- **qwen-code**는 컨텍스트와 훅 디스패치를 위한 문서화된 `settings.json` 키를
+  렌더링한 뒤 Qwen 네이티브 커맨드, 스킬, 에이전트 디렉터리를 사용합니다.
+
+## 하니스 간 오케스트레이션 규율
+
+Apothem은 **형제 규약 수렴**을 적용합니다. 동일한 운영자 호출 가능 워크플로를
+하나의 공유 형식에 억지로 끼워 넣는 대신 각 하니스의 네이티브 관용구로
+투영합니다. claude-code에서 평면 `.md` 파일로 활성화되는 규칙은 cursor에서는
+`.mdc` 워크스페이스 규칙이 되고, gemini-cli에서는 `GEMINI.md`의 임베드된
+섹션이 되며, qwen-code에서는 `QWEN.md`에 연결된 참조와 네이티브 디스커버리
+디렉터리가 됩니다 — 동일한 의도를, 각 하니스의 방언으로.
+
+정식 마스터 코호트는 다음 위치에 있습니다:
+
+```
+src/apothem/{rules,commands,skills,agents,output-styles,hooks,conformity,statuslines}/
+```
+
+각 어댑터는 이 코호트의 부분집합을 전파합니다. 도구별 부분집합은
+`src/apothem/lib/propagation-manifest.yaml`에 선언되어 있습니다. 이 매니페스트는
+어떤 아티팩트가 어떤 도구에 어떤 형식으로 도달하는지에 대한 단일 진실 공급원
+입니다. 어댑터는 매니페스트 밖의 아티팩트를 결코 만들어 내지 않으며,
+매니페스트는 도구가 호스팅할 표면을 갖추지 못한 아티팩트를 결코 할당하지
+않습니다.
+
+## 어댑터 클래스 설명
+
+Apothem은 공유 프로필을 하니스 네이티브 출력으로 변환하는 방식에 따라 어댑터를
+세 가지 클래스로 분류합니다.
+
+- **Class I — 원본 전파.** 어댑터는 정식 마스터 아티팩트(매니페스트가 선언한
+  부분집합)를 렌더링 단계 없이 도구의 구성 위치로 직접 복사합니다.
+  머티리얼라이저가 없습니다. antigravity, codebuddy, codex, cursor, gemini-cli,
+  github-copilot, glm, kimi-code, kiro, trae, windsurf, zed가 Class I입니다.
+- **Class II-A — 원본 + 벤더 바인딩 설정 템플릿.** 어댑터는 아티팩트를 원본
+  전파하면서 추가로 벤더 스키마에 바인딩된 벤더 고유 설정 템플릿을 관리합니다.
+  claude-code가 Class II-A입니다.
+- **Class II-B — 프로필 렌더링 단일 표면 머티리얼라이저.** 어댑터는 공유
+  프로필을 머티리얼라이저를 통해 단일 네이티브 구성 표면으로 렌더링합니다.
+  hermes, open-claw, opencode, qwen-code가 Class II-B입니다.
+
+## 머티리얼라이즈 시점의 동작
+
+클래스 구분은 머티리얼라이즈 시점 — 운영자가 도구에 대해 CLI를 실행할 때 —
+드러납니다:
+
+- `apothem install --harness <H>`는 `<H>`에 대한 매니페스트 부분집합을 전파하고,
+  Class II-A / II-B 어댑터의 경우 도구 네이티브 구성을 렌더링합니다.
+- `apothem verify --harness <H>`는 설치된 구성을 현재 프로필이 생성할 결과와
+  비교하여 드리프트를 보고합니다.
+- `apothem doctor`는 등록된 모든 어댑터에 대해 도구별 상태 — 설치됨 / 없음 /
+  드리프트됨 — 를 보고합니다.
+
+전체 커맨드 표면은 [CLI 레퍼런스](/docs/cli-reference)를 참조하십시오.
+
+## 분기 분류 체계
+
+열일곱 개 하니스는 세 가지 축을 따라 분기합니다. 매트릭스의 모든 하니스별 차이는
+이 중 하나로 환원됩니다.
+
+
+| 축 | 열일곱 개 하니스에서 관찰된 범위 |
+|------|---------------------------------------------|
+| 훅 표면 | 네이티브 멀티 이벤트(claude-code, codex, qwen-code) → 지원 전용 훅 자료(antigravity, gemini-cli, hermes, open-claw, opencode) → 없음(codebuddy, cursor, github-copilot, glm, kimi-code, kiro, trae, windsurf, zed) |
+| 규칙 활성화 형식 | 평면 `.md`(claude-code) → 플러그인 규칙(antigravity) → `.mdc` 워크스페이스(cursor) → 디렉터리 규칙(codebuddy, trae, windsurf) → 스티어링 파일(kiro) → 프로젝트 루트 평면 파일(zed) → 단일 임베드 파일(codex, gemini-cli, github-copilot, kimi-code) → 구성 참조 지원 자료(hermes, open-claw, opencode, qwen-code) → 백엔드 프로바이더 구성(glm) |
+| 어댑터 클래스 | Class I 원본 전파 → Class II-A 원본 + 벤더 설정 → Class II-B 프로필 렌더링 단일 표면 |
+
+
+Apothem의 역할은 이 세 축이 도구마다 변하는 동안 일관된 하나의 운영자 의도를
+변함없이 유지하는 것입니다. 전파 매니페스트와 어댑터 클래스 계약이 그 분기를
+넘어 의도를 안정적으로 유지하는 두 가지 메커니즘입니다.

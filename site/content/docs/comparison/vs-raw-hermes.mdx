@@ -1,0 +1,43 @@
+---
+title: "Apothem vs raw Hermes config"
+description: "Hand-maintaining Hermes config versus managing it through Apothem's shared profile."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Hermes reads `~/.hermes/config.yaml`. Apothem writes the native YAML config
+(projecting the profile's MCP inventory into `auxiliary.mcp`) and installs shared
+command and skill cohorts under `~/.hermes/.apothem/support/skills/`. Hermes's own
+`skills.config` is a registry-package list, so Apothem does not author it.
+
+## Status
+
+**Preview.** The Hermes adapter targets the current documented config file and
+skill-discovery surface. Non-skill cohorts remain Apothem support material.
+
+## Effort comparison
+
+| Task | Raw hand-config | Apothem-managed |
+| ---- | --------------- | --------------- |
+| Author reusable skills | Hand-edit config and skill directories | Write once in the shared corpus |
+| Keep cohorts aligned with other harnesses | Manual, per tool | Automatic on `apothem update` |
+| Install / remove the config | Manual | `apothem install` / `apothem uninstall` |
+| Verify the config is correct | Manual inspection | `apothem verify --harness hermes` |
+
+## What Apothem manages
+
+The Hermes adapter writes `config.yaml`, wraps Apothem slash commands as
+skills, copies Apothem skills into the referenced support directory, and keeps
+rules, templates, agents, and hook material under the Apothem support subtree.
+
+## Migration path
+
+1. Run `apothem profile init` to create the shared profile if you have not yet.
+2. Move reusable Hermes skills or command prompts into the shared corpus.
+3. Run `apothem install --harness hermes` to render the native config and
+   support skill directory.
+4. Run `apothem verify --harness hermes` to confirm the config landed.
+
+## Read next
+
+- [Hermes adapter reference](/docs/harnesses/hermes)
+- [Comparison overview](/docs/comparison)

@@ -1,0 +1,83 @@
+---
+title: "Trae"
+description: "适用于 Trae（GA）的 Apothem 工具适配器。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**厂商：** ByteDance
+**安装名称：** `trae`
+**状态：** GA
+**平台原生配置：** `<project>/.trae/rules/apothem-rules.md`
+
+## 安装
+
+```bash
+apothem install --harness trae --project /path/to/project
+```
+
+适配器从共享的 Apothem 规则和治理界面写出一个项目范围的 Trae 规则文件。
+
+**写入的文件：** `<project>/.trae/rules/apothem-rules.md`
+
+## 配置档案到平台原生配置的映射
+
+适配器读取 Apothem 的共享配置档案，并在每次 `apothem install` 或
+`apothem update` 运行时渲染项目规则文件。共享配置档案才是真实来源；在下一次同步
+替换由 Apothem 管理的内容之前，对生成文件的项目本地编辑会先被备份。
+
+## 兼容性说明
+
+Trae 当前的规则界面在 `.trae/rules/` 下按项目范围划定。适配器写出一个专用的
+`apothem-rules.md` 文件，它与操作者自有的 `project_rules.md` 和 `user_rules.md`
+锚点共存，并且从不覆盖它们。`.trae/mcp.json` 工具服务器界面和 `.trae/skills/`
+技能界面由操作者自有；Apothem 不会写入它们。
+
+## 验证
+
+```bash
+apothem verify --harness trae --project /path/to/project
+```
+
+verify 命令确认：
+
+1. 平台原生配置存在于预期路径。
+2. 共享配置档案中的所有必需字段均已存在。
+3. 适配器专属的验证例程报告成功。
+
+## 更新
+
+```bash
+apothem update --harness trae --project /path/to/project
+```
+
+从当前的共享配置档案状态重新派生项目规则文件。
+
+## 卸载
+
+```bash
+apothem uninstall --harness trae --project /path/to/project
+```
+
+移除适配器写入的平台原生配置文件。
+共享配置档案 YAML 和 Apothem 引擎不受影响。
+
+## 合规门
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## 故障排查
+
+| 症状 | 修复方法 |
+|---------|-----|
+| 找不到配置文件 | 重新运行 `apothem install --harness trae --project /path/to/project` |
+| 验证失败 | 运行 `apothem update --harness trae --project /path/to/project`，然后再次验证 |
+| 意外的配置内容 | 检查 `~/.config/apothem/profile.yaml` 或 `--profile PATH`，然后重新运行 `apothem update --harness trae --project /path/to/project` |
+
+## 配置开关
+
+| 标志 | 默认值 | 说明 |
+|------|---------|-------------|
+| `--dry-run` | `false` | 预览安装而不写入文件。 |

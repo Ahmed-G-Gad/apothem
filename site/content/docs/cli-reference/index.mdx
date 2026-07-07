@@ -1,0 +1,39 @@
+---
+title: "CLI reference"
+description: "Apothem CLI reference — per-command synopsis, options, and exit codes for the apothem command-line interface."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+The `apothem` command-line interface manages harness adapter configurations
+from the shared profile. Each page below documents one subcommand: its
+synopsis, options, behavior, and exit codes.
+
+Each of `install`, `update`, and `uninstall` also accepts a continuous-form
+alias (`installing`, `updating`, `uninstalling`) that is identical in flags and
+behavior to the base command. Updating and uninstalling through the install
+channels — the Claude Code plugin, `npx`, and the one-shot installer
+scripts — are documented in the [Updating](/docs/install/updating) and
+[Uninstalling](/docs/install/uninstalling) install guides, not by the aliases
+themselves.
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| [quickstart](/docs/cli-reference/quickstart) | Guided first run: ensure a profile, preview the writes, then install. |
+| [install](/docs/cli-reference/install) | Install a harness adapter configuration from the shared profile (alias: `installing`). |
+| [update](/docs/cli-reference/update) | Re-install a harness adapter configuration from the current shared profile (alias: `updating`). |
+| [uninstall](/docs/cli-reference/uninstall) | Remove a harness adapter configuration (alias: `uninstalling`). |
+| [rollback](/docs/cli-reference/rollback) | Restore a harness to the state before its recorded install. |
+| [verify](/docs/cli-reference/verify) | Verify a harness adapter installation. |
+| [status](/docs/cli-reference/status) | Report install, verify, and drift state for every registered harness. |
+| [diff](/docs/cli-reference/diff) | Preview the pending configuration changes for a single harness. |
+| [harnesses](/docs/cli-reference/harnesses) | List and inspect registered harness adapters. |
+| [profile](/docs/cli-reference/profile) | Manage the shared Apothem profile. |
+| [migrate-workspace](/docs/cli-reference/migrate-workspace) | Migrate a legacy per-harness workspace into the shared `.apothem` layout. |
+| [doctor](/docs/cli-reference/doctor) | Run system diagnostics for the Apothem installation. |
+| [completion](/docs/cli-reference/completion) | Emit a sourceable shell-completion script (bash, zsh, fish, powershell). |
+
+For slash commands and the higher-level CLI overview, see the
+[CLI overview](/docs/reference/cli) and [Slash commands](/docs/reference/commands)
+reference pages.

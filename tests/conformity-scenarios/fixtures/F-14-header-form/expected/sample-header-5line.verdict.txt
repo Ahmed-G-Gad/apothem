@@ -1,0 +1,5 @@
+exit_code: 2
+passed: false
+rule: HEADER_MALFORMED
+context_substr: authorship header found but not in canonical form for variant 'hash'
+rationale: Legacy 5-line block lacks the SPDX top line and carries 'All rights reserved' instead of 'Licensed under MIT; see LICENSE for terms'; matcher detects AUTHOR_MARK but rejects the form.

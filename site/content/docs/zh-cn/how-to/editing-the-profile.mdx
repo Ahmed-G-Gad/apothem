@@ -1,0 +1,84 @@
+---
+title: "编辑配置文件"
+description: "更改共享配置文件并为每个已安装的工具重新物化。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+目标：更改共享配置文件中的某个值，并将其推送到你已安装的每个工具。
+
+## 前置条件
+
+- `apothem` CLI 在你的 `PATH` 上（或采用自包含形式：加前缀
+  `PYTHONPATH="$HOME/.apothem/src"` 并运行 `python -m apothem`，或使用
+  `npx @ahmed-g-gad/apothem`）。
+- 位于 `~/.config/apothem/profile.yaml` 的配置文件。若缺失，可用
+  `apothem profile init` 创建一份。
+
+## 配置文件结构
+
+配置文件是单个 YAML 文档。其顶层键为：
+
+- `identity`（必填）—— `name`，加上可选的 `role`、`email`、`website`、
+  `github`。
+- `preferences` —— `language`、`style`（`concise` / `verbose` / `balanced`）、
+  `formatter`、`test_framework`。
+- `rules` —— 与有能力的工具共享的额外规则字符串列表。
+- `seriousness` —— `EXPLORING`、`PERSONAL_USE`、`SHARED`、
+  `PUBLIC_LAUNCH` 之一。
+- `enforcement` —— 选择性启用的开关（`sprints`、`agent_teams`、`multitasking`、
+  `continuous_execution`、`learning_loop`），每个标志默认关闭。
+- `harnesses` —— 以工具 id 为键的各工具覆盖项。
+- `exclude_harnesses` —— 被批量命令（`--harness all`）跳过的工具 id。
+
+## 步骤
+
+1. 检查当前配置文件：
+
+   ```bash
+   apothem profile show
+   ```
+
+2. 编辑它。在系统编辑器中打开：
+
+   ```bash
+   apothem profile edit
+   ```
+
+   或从命令行设置单个点分键。该值按字面存储（`true`/`false` 以及显式的
+   `[..]`/`{..}` 输入除外，这些会被解析），并在写入前根据模式进行验证 —— 无效的设置会被
+   拒绝，磁盘上的配置文件保持不变：
+
+   ```bash
+   apothem profile set seriousness SHARED
+   apothem profile set identity.name "Ada Lovelace"
+   ```
+
+3. 重新物化各工具，使更改到达它们的原生配置。对于用户作用域的工具：
+
+   ```bash
+   apothem update --harness claude-code
+   ```
+
+   对于项目作用域的工具，传入项目根目录；用 `all` 刷新每个已安装的工具：
+
+   ```bash
+   apothem update --harness cursor --project /path/to/project
+   apothem update --harness all --project /path/to/project
+   ```
+
+## 验证
+
+```bash
+apothem profile show
+apothem verify --harness all
+```
+
+`profile show` 反映你的编辑；`verify` 确认已物化的配置与更新后的
+配置文件相符。
+
+## 相关
+
+- [添加工具](/docs/how-to/adding-a-harness)，以在重新物化之前将一个新工具
+  纳入配置文件的管理。
+- [更新](/docs/install/updating) 涵盖在重新物化步骤的同时升级引擎。

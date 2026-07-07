@@ -1,0 +1,77 @@
+# SPDX-License-Identifier: MIT
+
+# OpenSSF Scorecard — runs weekly and on every push to main.
+# Publishes results to OpenSSF API; SARIF uploaded to GitHub Security tab.
+# Ref: https://github.com/ossf/scorecard-action
+
+name: Scorecard
+
+on:
+  workflow_dispatch:
+  branch_protection_rule:
+  schedule:
+    - cron: "30 2 * * 1"   # every Monday 02:30 UTC
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scorecard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analysis:
+    name: Scorecard analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Scorecard requires public-repo access via GITHUB_TOKEN; skip on private
+    # repos (Resource not accessible by integration). Job auto-activates when
+    # the repo is made public — no further config change required.
+    if: github.event.repository.private == false
+    permissions:
+      security-events: write
+      id-token: write
+      contents: read
+      actions: read
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          # Block egress: Scorecard's endpoint set is well-documented and
+          # stable. Endpoints cover action-tarball fetch, the GitHub API/clone
+          # surface Scorecard probes, the OSSF result-publish + OSV APIs, and
+          # the Sigstore endpoints keyless publish_results signing contacts.
+          egress-policy: block
+          allowed-endpoints: >
+            github.com:443
+            api.github.com:443
+            codeload.github.com:443
+            objects.githubusercontent.com:443
+            release-assets.githubusercontent.com:443
+            api.securityscorecards.dev:443
+            api.scorecard.dev:443
+            api.osv.dev:443
+            www.bestpractices.dev:443
+            oss-fuzz-build-logs.storage.googleapis.com:443
+            fulcio.sigstore.dev:443
+            rekor.sigstore.dev:443
+            tuf-repo-cdn.sigstore.dev:443
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Run Scorecard
+        uses: ossf/scorecard-action@4eaacf0543bb3f2c246792bd56e8cdeffafb205a  # v2.4.3
+        with:
+          results_file: scorecard-results.sarif
+          results_format: sarif
+          publish_results: true
+
+      - name: Upload SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@54f647b7e1bb85c95cddabcd46b0c578ec92bc1a  # v4.36.3
+        with:
+          sarif_file: scorecard-results.sarif

@@ -1,0 +1,25 @@
+---
+title: "Referensi"
+description: "Registri kelas artefak yang dapat dinavigasi dengan jalur dan tata letak di disk untuk aturan, perintah, skill, pekerja terdelegasi, hook, server MCP, pengaturan, dan gaya keluaran."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Referensi per kelas artefak. Setiap halaman menjelaskan tujuan kelas, tata letak di disk, kontrak frontmatter, dan registri yang mendaftar setiap instansi.
+
+Jalur relatif-repositori ditampilkan di bawah; setiap adapter memmaterialisasikannya ke direktori konfigurasi natifnya (mis. `~/.claude/` untuk adapter Claude Code — lihat [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses) untuk tujuan tiap harness).
+
+| Kelas | Halaman | Jalur sumber relatif-repositori |
+|-------|------|--------------|
+| `CLAUDE.md` | [CLAUDE.md](/docs/reference/claude-md) | `CLAUDE.md` |
+| Aturan | [Aturan](/docs/reference/rules) | `src/apothem/rules/` |
+| Perintah | [Perintah](/docs/reference/commands) | `src/apothem/commands/` |
+| Skill | [Skill](/docs/reference/skills) | `src/apothem/skills/` |
+| Pekerja terdelegasi | [halaman referensi](/docs/reference/agents) | lihat blok canonical-paths |
+| Hook | [Hook](/docs/reference/hooks) | `src/apothem/hooks/` |
+| Server MCP | [Server MCP](/docs/reference/mcp) | profil bersama — `mcp_servers` |
+| Pengaturan | [Pengaturan](/docs/reference/settings) | `src/apothem/harnesses/claude_code/templates/settings.json` |
+| Gaya keluaran | [Gaya keluaran](/docs/reference/output-styles) | `src/apothem/output-styles/` |
+| Registri harness | [Registri harness](/docs/reference/harness-registry) | `src/apothem/lib/harness_registry.py` |
+
+Registri kanonis lengkap tersebar di seluruh kohort artefak (`rules/`, `commands/`, `skills/`, `agents/`, `hooks/`). Halaman ini mencerminkan registri itu dalam bentuk yang dapat dinavigasi.

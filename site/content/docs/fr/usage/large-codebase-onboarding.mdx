@@ -1,0 +1,45 @@
+---
+title: "Prise en main des grandes bases de code"
+description: "Liste de configuration pour les grandes bases de code avec Apothem : hiérarchie de contexte, compétences, hooks, recherche de symboles et cadence de revue."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Utilisez cette page lorsqu'un dépôt est trop vaste pour une seule invite, que les
+analyses de l'arborescence complète sont coûteuses, ou que chaque service a ses
+propres commandes de build et de test.
+
+## Commencez ici
+
+1. Installez ou mettez à jour l'adaptateur d'environnement cible, puis exécutez `apothem verify --harness <name>`.
+2. Gardez la surface de contexte racine courte : carte du projet, commandes critiques et pointeurs uniquement.
+3. Placez les conventions locales à côté du code lorsque l'environnement cible prend en charge le contexte en couches.
+4. Déplacez les procédures spécialisées vers `skills/`, `rules/` ou des documents de commande avec des filtres de chemin.
+5. Utilisez des travailleurs délégués en lecture seule pour l'exploration large, puis rapportez un ensemble compact de constats avant d'éditer.
+6. Ajoutez les exclusions de cache, de fichiers générés, de build et de fournisseurs à la surface d'ignore de l'environnement là où c'est documenté.
+7. Utilisez LSP ou des outils de symboles lorsqu'ils sont disponibles ; sinon, utilisez `rg`, des chemins restreints et des portées de fichiers explicites.
+8. Exécutez la commande de lint ou de test la plus restreinte qui couvre le code touché ; exécutez la passerelle complète avant la publication.
+
+## Carte des pratiques
+
+| Pratique | Liaison Apothem |
+|----------|-----------------|
+| Contexte toujours chargé et léger | `src/apothem/rules/token-budget-discipline.md` garde les règles toujours actives courtes ; les fichiers de contexte racine ne devraient porter que des pointeurs et les pièges critiques. |
+| Expertise à la demande | `src/apothem/skills/README.md` définit la convention `SKILL.md` ; les règles compagnes filtrées par chemin maintiennent les procédures restreintes hors du contexte de base. |
+| Contexte en couches | Chaque ligne d'environnement déclare `layered_context_surface` dans `src/apothem/harnesses/<name>/capabilities.yml` ; `STANDARD-CONVENTION-PIN.md` reste l'autorité de la ligne. |
+| Exploration isolée | Le [guide des travailleurs délégués](/docs/usage/using-agents) lie des fenêtres de contexte distinctes et des contrats de retour compacts. |
+| Navigation par symboles | `lsp_symbol_navigation` est une cellule de capacité suivie. Les lignes restent en `tracked-gap` jusqu'à ce qu'une surface de plugin ou d'outil prise en charge par le fournisseur soit épinglée. |
+| Surface d'ignore | `context_ignore_surface` consigne le mécanisme d'exclusion documenté. L'adaptateur Claude Code projette les exclusions de fichiers générés et de cache via `permissions.deny` dans `settings.json`. |
+| Apprentissage des hooks | Les hooks de classe passante restent silencieux. Les constats récurrents sont acheminés par le cycle d'évolution des artefacts dans `src/apothem/rules/persistent-conventions-vigilance.md`. |
+| Revue périodique | Exécutez une revue de configuration tous les trois à six mois, et après des changements majeurs d'environnement ou de modèle, en utilisant la cadence de plans `*-maintenance`. |
+
+## Notes de maintenance
+
+La ligne de capacité d'environnement lisible par machine porte quatre cellules de grande base de code :
+`context_ignore_surface`, `layered_context_surface`, `lsp_symbol_navigation`
+et `hook_learning_capture`. Gardez ces cellules synchronisées avec le
+`STANDARD-CONVENTION-PIN.md` voisin chaque fois qu'une surface de fournisseur change.
+
+Références sources :
+[pratiques pour grandes bases de code](https://claude.com/blog/how-claude-code-works-in-large-codebases-best-practices-and-where-to-start),
+[permissions des paramètres](https://docs.anthropic.com/en/docs/claude-code/settings).

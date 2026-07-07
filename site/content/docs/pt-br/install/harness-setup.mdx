@@ -1,0 +1,53 @@
+---
+title: "Configuração de ferramenta"
+description: "Adicione e configure adaptadores de ferramenta para plataformas."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## Instalar um adaptador de ferramenta
+
+```bash
+apothem install --harness <name>
+```
+
+Consulte a [lista de ferramentas suportadas](/docs/harnesses) para os nomes disponíveis.
+Adaptadores com escopo de projeto exigem o caminho do projeto:
+
+```bash
+apothem install --harness cursor --project /path/to/project
+apothem install --harness gemini-cli --project /path/to/project
+apothem install --harness github-copilot --project /path/to/project
+apothem install --harness windsurf --project /path/to/project
+```
+
+## Instalar várias ferramentas
+
+Use o seletor abrangente do registro quando você quiser todos os adaptadores suportados. Como
+o conjunto registrado inclui adaptadores com escopo de projeto, passe a raiz do projeto.
+
+```bash
+apothem install --harness claude-code
+apothem install --harness cursor --project /path/to/project
+apothem install --harness all --project /path/to/project
+```
+
+## Verificar a configuração de ferramenta
+
+```bash
+apothem verify --harness <name>
+apothem verify --harness all --project /path/to/project
+```
+
+Para verificar todos os adaptadores registrados de uma só vez, execute `apothem doctor`. Ele imprime
+uma tabela de status de instalação por ferramenta e sai com código diferente de zero se algum adaptador relatar
+não-instalado.
+
+## Ver ferramentas instaladas
+
+```bash
+apothem harnesses list
+```
+
+Passe `apothem harnesses show <name>` para detalhes por adaptador (nome, estado de
+instalação e caminho de saída).

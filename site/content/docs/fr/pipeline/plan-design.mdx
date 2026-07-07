@@ -1,0 +1,140 @@
+---
+title: "/plan-design"
+description: "/plan-design — Produit un artefact complet de conception architecturale dans `_inputs/design.md`."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rôle :** Architecte
+**Position dans le pipeline :** conditionnelle, post-revue, pré-exécution
+
+Produit l'artefact de conception architecturale dans `_inputs/design.md` lorsqu'une
+suite de planification comporte du travail porteur d'architecture. Elle est
+intentionnellement conditionnelle : une suite de prose, de documentation, de
+métadonnées ou de fixtures restreintes passe de `/plan-review` directement à
+`/plan-execute` ; une suite qui modifie des composants, des interfaces, des
+schémas, des flux de données, des adaptateurs, la topologie de publication, des
+limites de sécurité ou le comportement à l'exécution passe d'abord par
+`/plan-design`.
+
+## Invocation canonique
+
+```bash
+/plan-design path/to/plan-suite/
+```
+
+Avec arguments :
+
+```bash
+/plan-design [path/to/plan-suite/] [--refine-existing] [--dry-run]
+```
+
+## Entrées
+
+Suite de planification revue + `_spec/spec.md` + `_inputs/handoff-manifest.yml` +
+fiches de score de revue PASS issues de `/plan-review`.
+
+## Sorties
+
+`_inputs/design.md` ainsi qu'un `_inputs/handoff-manifest.yml` augmenté portant le
+chemin de l'artefact de conception, le résultat de la porte de conception, le
+résultat de couverture sur sept axes et le résumé de la Matrice de Liaison
+Bidirectionnelle.
+
+## Porte d'applicabilité
+
+Exécutez `/plan-design` lorsqu'au moins une phase aval déclare ou implique :
+
+- Des changements de disposition des sources, de limite de paquet, de limite
+  d'adaptateur ou de limite de module.
+- Des interfaces publiques, protocoles, schémas, contrats de configuration ou
+  comportement de la CLI.
+- Des flux de données entre composants, un ordonnancement du cycle de vie, des
+  transitions d'état ou des arêtes de dépendance.
+- Une architecture de sécurité, de performance, de concurrence, d'observabilité,
+  de déploiement, de publication ou de chaîne d'approvisionnement.
+- Une passe ultérieure de `/architecture-review` devant tracer l'implémentation
+  jusqu'à un artefact de conception.
+
+Sautez `/plan-design` lorsque la suite se limite à des retouches de texte, à des
+rafraîchissements d'inventaire généré, à des mises à jour de fixtures
+restreintes, à des corrections ponctuelles de documentation ou à un autre travail
+dont l'implémentation peut être vérifiée sans surface de traçage architectural.
+Le chemin d'évitement est explicite : `/plan-review` enregistre la classification
+non-architecturale, puis `/plan-execute` poursuit depuis la suite de
+planification revue.
+
+## En aval
+
+`/plan-execute` consomme l'artefact de conception pour les phases porteuses
+d'architecture. `/architecture-review` consomme le même artefact pendant la
+Séquence de Revue d'Audit. Si `_inputs/design.md` est absent pour un travail
+porteur d'architecture, la revue d'architecture s'arrête et réachemine la suite
+par `/plan-design`.
+
+## Phases du flux de travail
+
+La commande suit six phases de transformation spécifiques à l'architecture :
+
+1. **Ingestion des entrées** — Lit la suite revue, les fiches de score, les
+   sorties de phase et le manifeste de passation ; bloque sur une preuve de revue
+   absente ou en échec à SHARED+.
+2. **Décomposition architecturale** — Parcourt Architecture, Concurrence,
+   Performance, Sécurité, Tests, Tooling et Observabilité ; identifie les
+   composants, les arêtes et les questions architecturales ouvertes.
+3. **Conception d'interface de composants** — Définit les interfaces publiques,
+   les contrats de protocole, les schémas, les invariants, les modes de
+   défaillance et les limites d'inversion de dépendance.
+4. **Ratification des liaisons entre composants** — Ferme chaque arête amont,
+   aval, sœur, de critère et d'ancrage ; émet une Matrice de Liaison
+   Bidirectionnelle lorsque le graphe de composants franchit le seuil de la
+   matrice.
+5. **Émission de l'artefact de conception** — Écrit `_inputs/design.md` avec des
+   sections de composants, des diagrammes, des registres de décisions, le
+   résultat de validation et les liaisons.
+6. **Porte de validation de la conception** — Exécute la porte de pré-émission à
+   quinze barreaux ; met à jour `_inputs/handoff-manifest.yml` seulement après que
+   la conception réussit.
+
+## Forme de l'artefact de conception
+
+Le `_inputs/design.md` émis contient :
+
+- Un résumé exécutif avec le nombre de composants et la couverture sur sept axes.
+- Une section par composant principal, ordonnée des surfaces de domaine internes
+  vers les adaptateurs et surfaces d'opérateur externes.
+- Des diagrammes Mermaid d'architecture, de séquence, d'état ou de dépendance là
+  où la structure serait autrement ambiguë.
+- Des registres de décisions architecturales arrêtées avec alternatives,
+  compromis et notes de réversibilité.
+- Le résultat de la porte de validation et la Matrice de Liaison Bidirectionnelle
+  le cas échéant.
+- Les propres liaisons à cinq directions de l'artefact vers les surfaces de
+  planification amont et aval.
+
+## Modes de défaillance
+
+| Symptôme | Cause | Récupération |
+|---------|-------|----------|
+| Prérequis incomplet | Phase dépendante non terminée | Terminez d'abord la phase amont |
+| Porte qualité FAIL | La sortie ne respecte pas les standards | Corrigez la sortie et relancez |
+| Suite revue manquante | Suite de planification ou fiches de revue absentes | Exécutez `/plan-generate`, puis `/plan-review` |
+| Suite non-architecturale | Aucune phase n'a besoin d'une surface de traçage architectural | Enregistrez l'évitement et continuez vers `/plan-execute` |
+| La revue d'architecture bloque | `_inputs/design.md` absent pour une implémentation porteuse d'architecture | Exécutez `/plan-design`, puis relancez `/architecture-review` |
+
+## Exemples
+
+```bash
+# Dry-run pour prévisualiser l'applicabilité, le nombre de composants et les questions ouvertes
+/plan-design --dry-run
+
+# Émet la conception pour une suite porteuse d'architecture nommée
+/plan-design path/to/plan-suite/
+```
+
+## Références croisées
+
+- [Vue d'ensemble du pipeline](/docs/pipeline)
+- [/plan-execute](/docs/pipeline/plan-execute)
+- [/architecture-review](/docs/pipeline/architecture-review)
+- [Modèle de Suite de Plan Maître](/docs/reference/commands)

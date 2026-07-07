@@ -1,0 +1,70 @@
+---
+title: "/research-design"
+description: "/research-design — 가설을 검증 가능한 예측으로 조작화하고 연구를 설계(변수, 통제, 표본, 검정력)한 다음, 분석 계획을 사전 등록으로 동결합니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**역할:** 책임 연구원(연구 설계)
+**파이프라인 위치:** 체인 중간
+
+가설을 검증 가능한 예측으로 조작화하고 연구 또는 실험을 설계합니다 — 변수, 통제, 표본, 도구, 검정력 분석, 타당도 위협 — 그런 다음 데이터 수집 전에 분석 계획을 동결하는 사전 등록을 생성합니다.
+
+## 정규 호출
+
+```bash
+/research-design
+```
+
+인수 사용:
+
+```bash
+/research-design [path/to/research-suite/]
+```
+
+## 입력
+
+`_inputs/proposal.md`(`/research-proposal`, 이전 단계에서 나온 기록 계획), `_inputs/synthesis.md`(SOTA 지도 + 격차 진술), 그리고 `_spec/research-spec.md`(가설).
+
+## 출력
+
+`_inputs/study-design.md`(조작화된 예측, 변수 명세, 통제, 표본, 도구, 검정력 분석, 타당도 위협) + `_inputs/preregistration.md`(동결된 분석 계획).
+
+## 하류
+
+/research-experiment(하류 소비자)
+
+## 워크플로 단계
+
+이 명령은 표준 `/research` 파이프라인 워크플로를 따릅니다.
+
+1. **컨텍스트 로드** — 종합과 명세의 가설을 읽습니다.
+2. **시퀀스 게이트 검증** — `_inputs/proposal.md`(및 상류의 `_inputs/synthesis.md`와 `_spec/research-spec.md`)가 존재하는지 확인합니다. 그렇지 않으면 `Blocked: run /research-proposal first`로 중단합니다.
+3. **연구 설계** — 예측을 조작화합니다. 변수, 통제, 표본, 도구, 검정력을 명세합니다. 타당도 위협을 열거합니다.
+4. **사전 등록** — 어떤 데이터 수집보다 먼저 분석 계획을 동결합니다.
+5. **핸드오프 매니페스트 업데이트** — 연구 설계와 사전 등록의 경로를 기록합니다.
+6. **설계 발행** — `_inputs/study-design.md` + `_inputs/preregistration.md`.
+
+## 최저 엄밀성 기준
+
+비교를 수반하는 연구의 경우, 설계는 경험적 하한을 고정하고 사전 등록합니다. 즉, 비교되는 모든 방법에 걸친 하나의 통일된 예산(동일한 실제 소요 시간과, 의미 있는 경우 동일한 평가 횟수), 확률적 방법에 대해 인스턴스당 최소 30회의 반복, 한 번에 한 구성 요소를 비활성화하는 절제(ablation) 요인, 각 매개변수에 대한 민감도 스윕, 그리고 분리된 테스트 분할에서 평가되는 훈련 분할에서의 자동 구성입니다. 하한의 깊이는 목표 게재처의 야심에 따라 조정됩니다.
+
+## 실패 모드
+
+| 증상 | 원인 | 복구 |
+|---------|-------|----------|
+| Blocked: run /research-proposal first | 기록 계획 없음 | `/research-proposal`를 실행하여 `_inputs/proposal.md` 생성 |
+| 검정력 부족 설계 | 효과에 비해 표본이 너무 작음 | 검정력 분석을 다시 실행; 표본 크기 재조정 |
+| 분석 계획이 동결되지 않음 | 사전 등록 건너뜀 | 데이터 수집 전에 `_inputs/preregistration.md` 작성 |
+
+## 예시
+
+```bash
+# 연구를 설계하고 분석 계획을 사전 등록합니다
+/research-design path/to/research-suite/
+```
+
+## 상호 참조
+
+- [파이프라인 개요](/docs/pipeline)
+- [명령 참조](/docs/reference/commands)

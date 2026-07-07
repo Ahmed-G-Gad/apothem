@@ -1,0 +1,89 @@
+---
+title: "Adaptadores de entorno"
+description: "Adaptadores de entorno de Apothem — un perfil compartido, diecisiete destinos compatibles."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem incluye diecisiete adaptadores de entorno integrados. Cada adaptador traduce los
+mismos conjuntos compartidos en archivos nativos de la plataforma donde la plataforma los admite
+y en árboles de soporte propios de Apothem donde no.
+
+## Entornos compatibles
+
+El registro de entornos compatibles contiene exactamente diecisiete adaptadores. Usa estos nombres exactos
+de instalación con `--harness`, o usa `all` para el conjunto determinista del registro:
+
+```text
+antigravity
+claude-code
+codebuddy
+codex
+cursor
+gemini-cli
+github-copilot
+glm
+hermes
+kimi-code
+kiro
+open-claw
+opencode
+qwen-code
+trae
+windsurf
+zed
+```
+
+La matriz detallada del registro, las rutas de destino, los estados de capacidad, la compatibilidad con MCP
+y la evidencia de anclaje de convenciones viven en la [referencia técnica del registro](/docs/reference/harness-registry).
+
+## Instala varios entornos
+
+Instala un entorno, o usa `all` para seleccionar el registro en orden determinista.
+Los entornos de ámbito de proyecto requieren `--project PATH`; eso incluye `all`
+porque el registro contiene destinos tanto de ámbito de usuario como de ámbito de proyecto.
+
+```bash
+apothem install --harness claude-code
+apothem install --harness cursor --project /path/to/project
+apothem install --harness gemini-cli --project /path/to/project
+apothem install --harness all --project /path/to/project
+```
+
+## Verifica tus instalaciones
+
+Verifica cada adaptador de entorno por separado, o ejecuta `apothem doctor` para obtener un
+resumen del estado de instalación por adaptador de todos los adaptadores registrados:
+
+```bash
+apothem verify --harness claude-code
+apothem verify --harness all --project /path/to/project
+apothem doctor
+```
+
+## Cómo funcionan los adaptadores
+
+Cada adaptador implementa el protocolo `HarnessAdapter` registrado mediante
+los entry-points de setuptools. Durante la instalación, la CLI carga y valida el perfil
+YAML compartido, resuelve el adaptador a través del registro, valida el
+plan de materialización y escribe la configuración nativa de la plataforma en la ubicación
+nativa de usuario o de proyecto del entorno. Durante la actualización, vuelve a derivar a partir del estado actual
+del perfil.
+
+```
+profile.yaml + packaged cohorts
+    identity / preferences / rules
+    commands / skills / delegated definitions / hooks / templates
+         |
+         +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/antigravity-cli/plugins/apothem/
+         +-- claude-code    --> ~/.claude/ native folders + ~/.claude/.apothem/support/
+         +-- codex          --> ~/.codex/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
+         +-- cursor         --> <project>/.cursor/rules/*.mdc
+         +-- gemini-cli     --> <project>/GEMINI.md + <project>/.gemini/
+         +-- github-copilot --> <project>/.github/copilot-instructions.md
+         +-- windsurf       --> <project>/.devin/rules/
+         +-- ...
+```
+
+Consulta [Abstracción del adaptador de entorno](/docs/architecture/harness-adapter-abstraction)
+para ver la especificación del protocolo.

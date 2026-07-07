@@ -1,0 +1,91 @@
+---
+title: "Zed"
+description: "Adaptador de ferramenta do Apothem para o Zed (GA)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Fornecedor:** Zed Industries
+**Nome de instalação:** `zed`
+**Status:** GA
+**Configuração nativa:** `<project>/.rules`
+
+## Instalação
+
+```bash
+apothem install --harness zed --project /path/to/project
+```
+
+O adaptador escreve um arquivo de instruções do Zed com escopo de projeto a partir
+da superfície compartilhada de regras e governança do Apothem. O Zed lê um único
+arquivo plano `.rules` na raiz do projeto (ao lado da família `AGENTS.md` /
+`CLAUDE.md`) como instruções; não há um diretório de regras por ferramenta, então
+toda a superfície do Apothem cai neste único arquivo.
+
+**Arquivos escritos:** `<project>/.rules`
+
+## Mapeamento de perfil para configuração nativa
+
+O adaptador lê o perfil compartilhado do Apothem e renderiza o arquivo `.rules` do
+projeto a cada execução de `apothem install` ou `apothem update`. O perfil
+compartilhado é a fonte da verdade; qualquer `.rules` preexistente (ou as edições
+locais do projeto no arquivo gerado) é salvo em backup antes que a próxima
+sincronização substitua o conteúdo gerenciado pelo Apothem.
+
+## Notas de compatibilidade
+
+A superfície de instruções atual do Zed é o arquivo plano `.rules` na raiz do
+projeto. O arquivo de instruções global `~/.config/zed/AGENTS.md` e o bloco de
+servidores de contexto MCP (`context_servers` em `.zed/settings.json`) são
+propriedade do operador; o Apothem não os escreve.
+
+## Verificação
+
+```bash
+apothem verify --harness zed --project /path/to/project
+```
+
+O comando verify confirma que:
+
+1. A configuração nativa existe no caminho esperado.
+2. Todos os campos obrigatórios do perfil compartilhado estão presentes.
+3. A rotina de verificação específica do adaptador relata sucesso.
+
+## Atualização
+
+```bash
+apothem update --harness zed --project /path/to/project
+```
+
+Rederiva o arquivo `.rules` do projeto a partir do estado atual do perfil
+compartilhado.
+
+## Desinstalação
+
+```bash
+apothem uninstall --harness zed --project /path/to/project
+```
+
+Remove o arquivo de configuração nativa escrito pelo adaptador, renomeando-o
+primeiro para um backup com marca de tempo. O YAML do perfil compartilhado e o
+motor do Apothem não são afetados.
+
+## Portão de conformidade
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Solução de problemas
+
+| Sintoma | Correção |
+|---------|-----|
+| Arquivo de configuração não encontrado | Execute novamente `apothem install --harness zed --project /path/to/project` |
+| Verificação falhou | Execute `apothem update --harness zed --project /path/to/project` e verifique novamente |
+| Conteúdo de configuração inesperado | Verifique `~/.config/apothem/profile.yaml` ou `--profile PATH`, e execute novamente `apothem update --harness zed --project /path/to/project` |
+
+## Ajustes de configuração
+
+| Flag | Padrão | Descrição |
+|------|---------|-------------|
+| `--dry-run` | `false` | Pré-visualiza a instalação sem escrever arquivos. |

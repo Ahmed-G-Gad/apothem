@@ -1,0 +1,89 @@
+---
+title: "Harness-Adapter"
+description: "Apothem-Harness-Adapter — ein gemeinsames Profil, siebzehn unterstützte Ziele."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem liefert siebzehn integrierte Harness-Adapter aus. Jeder Adapter übersetzt
+dieselben gemeinsamen Kohorten in plattformnative Dateien, wo die Plattform sie
+unterstützt, und in Apothem-eigene Support-Bäume, wo dies nicht der Fall ist.
+
+## Unterstützte Harnesses
+
+Die unterstützte Registry enthält genau siebzehn Adapter. Verwenden Sie diese exakten
+Installationsnamen mit `--harness` oder verwenden Sie `all` für die deterministische
+Registry-Menge:
+
+```text
+antigravity
+claude-code
+codebuddy
+codex
+cursor
+gemini-cli
+github-copilot
+glm
+hermes
+kimi-code
+kiro
+open-claw
+opencode
+qwen-code
+trae
+windsurf
+zed
+```
+
+Die detaillierte Registry-Matrix, Zielpfade, Fähigkeitszustände, MCP-Unterstützung
+und Konventions-Pin-Belege finden Sie in der [technischen Registry-Referenz](/docs/reference/harness-registry).
+
+## Mehrere Harnesses installieren
+
+Installieren Sie einen einzelnen Harness oder verwenden Sie `all`, um die Registry in deterministischer
+Reihenfolge auszuwählen. Harnesses mit Projektbereich erfordern `--project PATH`; das schließt `all`
+ein, weil die Registry sowohl Ziele mit Benutzerbereich als auch mit Projektbereich enthält.
+
+```bash
+apothem install --harness claude-code
+apothem install --harness cursor --project /path/to/project
+apothem install --harness gemini-cli --project /path/to/project
+apothem install --harness all --project /path/to/project
+```
+
+## Ihre Installationen überprüfen
+
+Überprüfen Sie jeden Harness-Adapter einzeln oder rufen Sie `apothem doctor` für eine
+Installationsstatus-Zusammenfassung pro Adapter über jeden registrierten Adapter hinweg auf:
+
+```bash
+apothem verify --harness claude-code
+apothem verify --harness all --project /path/to/project
+apothem doctor
+```
+
+## Wie Adapter funktionieren
+
+Jeder Adapter implementiert das `HarnessAdapter`-Protokoll, das über
+setuptools-Entry-Points registriert ist. Bei der Installation lädt und validiert die CLI das gemeinsame
+YAML-Profil, löst den Adapter über die Registry auf, validiert den
+Materialisierungsplan und schreibt die plattformnative Konfiguration an den nativen
+Benutzer- oder Projektort des Harness. Bei einem Update leitet sie aus dem aktuellen
+Profilzustand neu ab.
+
+```
+profile.yaml + packaged cohorts
+    identity / preferences / rules
+    commands / skills / delegated definitions / hooks / templates
+         |
+         +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/antigravity-cli/plugins/apothem/
+         +-- claude-code    --> ~/.claude/ native folders + ~/.claude/.apothem/support/
+         +-- codex          --> ~/.codex/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
+         +-- cursor         --> <project>/.cursor/rules/*.mdc
+         +-- gemini-cli     --> <project>/GEMINI.md + <project>/.gemini/
+         +-- github-copilot --> <project>/.github/copilot-instructions.md
+         +-- windsurf       --> <project>/.devin/rules/
+         +-- ...
+```
+
+Die Protokollspezifikation finden Sie unter [Harness-Adapter-Abstraktion](/docs/architecture/harness-adapter-abstraction).

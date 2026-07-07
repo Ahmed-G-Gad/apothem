@@ -1,0 +1,101 @@
+---
+title: "profile"
+description: "apothem profile कमांड समूह के लिए CLI संदर्भ।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+साझा Apothem प्रोफ़ाइल का प्रबंधन करता है।
+
+`profile` चार उपकमांडों वाला एक कमांड समूह है: `init`, `show`, `set`, और `edit`।
+साझा प्रोफ़ाइल वह एकमात्र सत्य का स्रोत है जिसे प्रत्येक कोडिंग-सहायक अडैप्टर
+अपने मूल कॉन्फ़िगरेशन में मूर्त रूप देता है।
+
+## सारांश
+
+```
+apothem profile init [--profile PATH] [--force]
+                     [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+apothem profile show [--profile PATH] [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+apothem profile set KEY VALUE
+                     [--profile PATH] [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+apothem profile edit [--profile PATH] [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+```
+
+## सामान्य विकल्प
+
+प्रत्येक उपकमांड नीचे दिए गए साझा विकल्पों को स्वीकार करता है।
+
+| विकल्प | विवरण |
+|---|---|
+| `--profile PATH` | साझा प्रोफ़ाइल YAML का पथ (डिफ़ॉल्ट रूप से मानक प्रोफ़ाइल स्थान)। |
+| `--quiet`, `-q` | सूचनात्मक आउटपुट को दबाता है; केवल त्रुटियाँ निकाली जाती हैं। |
+| `--verbose`, `-v` | अतिरिक्त नैदानिक आउटपुट निकालता है। |
+| `--format plain\|json` | आउटपुट प्रारूप (डिफ़ॉल्ट: `plain`)। |
+| `--json` | `--format json` का संक्षिप्त रूप। |
+| `--no-color` | आउटपुट में ANSI रंग कोड अक्षम करता है। |
+| `-h`, `--help` | सहायता दिखाता है और बाहर निकलता है। |
+
+## उपकमांड
+
+### `profile init`
+
+`~/.config/apothem/profile.yaml` या `--profile PATH` पर एक स्कीमा-मान्य न्यूनतम
+प्रोफ़ाइल स्कैफ़ोल्ड बनाता है। `--force` दिए जाने तक मौजूदा फ़ाइलें
+संरक्षित रहती हैं।
+
+| विकल्प | विवरण |
+|---|---|
+| `--force` | किसी मौजूदा प्रोफ़ाइल स्कैफ़ोल्ड को अधिलेखित करता है। |
+
+### `profile show`
+
+मान्य किए गए, डिफ़ॉल्ट-विस्तारित साझा प्रोफ़ाइल को प्रदर्शित करता है।
+
+### `profile set KEY VALUE`
+
+साझा प्रोफ़ाइल में एक कुंजी सेट करता है। `KEY` एक डॉट-युक्त पथ है जो नेस्टेड
+प्रोफ़ाइल में उतरता है (`identity.name`, `preferences.style`, `enforcement.sprints`,
+`harnesses.<harness>.preferences.style`); बिना डॉट वाली एकल कुंजी एक शीर्ष-स्तरीय
+नोड सेट करती है। `VALUE` एक शाब्दिक स्ट्रिंग के रूप में संग्रहीत होता है — सादे शब्दों को
+ज़बरन परिवर्तित नहीं किया जाता (`no` `"no"` बना रहता है, `2024-01-01` और `1.0` स्ट्रिंग बने रहते हैं) — सिवाय
+`true`/`false` (बूलियन प्रवर्तन फ़्लैग) और स्पष्ट `[...]`/`{...}` सूची/मानचित्र इनपुट के।
+पूरी तरह संयोजित प्रोफ़ाइल को लिखने से पहले स्कीमा के विरुद्ध मान्य किया जाता है;
+एक अमान्य set अस्वीकृत किया जाता है और डिस्क पर प्रोफ़ाइल अपरिवर्तित रहती है।
+
+| तर्क | विवरण |
+|---|---|
+| `KEY` | सेट करने के लिए प्रोफ़ाइल में डॉट-युक्त पथ (आवश्यक)। |
+| `VALUE` | असाइन करने के लिए शाब्दिक मान; लिखने से पहले मान्य किया गया (आवश्यक)। |
+
+### `profile edit`
+
+सिस्टम संपादक में साझा प्रोफ़ाइल खोलता है।
+
+## उदाहरण
+
+```bash
+apothem profile init
+apothem profile init --profile ./profile.yaml --force --json
+apothem profile show
+apothem profile show --json
+apothem profile set seriousness SHARED
+apothem profile set rules '["Use fake placeholders in examples."]'
+apothem profile edit
+```
+
+## निकास कोड
+
+| कोड | अर्थ |
+|---|---|
+| 0 | सफलता (या, `edit` के लिए, संपादक सामान्य रूप से बाहर निकला) |
+| 1 | प्रोफ़ाइल अनुपस्थित, अमान्य, `--force` के बिना पहले से मौजूद, या लिखी नहीं जा सकती |
+
+## यह भी देखें
+
+- [apothem install](/docs/cli-reference/install) — प्रोफ़ाइल को किसी कोडिंग-सहायक में मूर्त रूप देता है
+- [apothem doctor](/docs/cli-reference/doctor) — सिस्टम-व्यापी इंस्टॉल नैदानिकी चलाता है

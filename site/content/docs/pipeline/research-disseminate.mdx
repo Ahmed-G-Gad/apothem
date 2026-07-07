@@ -1,0 +1,72 @@
+---
+title: "/research-disseminate"
+description: "/research-disseminate — Drives post-acceptance dissemination and impact: preprint announcement, public artifacts, FAIR archival deposit, altmetrics tracking, the reviewer rebuttal / revision loop, and the registered-report stage-2 path — the terminal stage of the /research pipeline, after /research-publish."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Role:** Principal Investigator (dissemination & impact)
+**Pipeline position:** terminal
+
+Drives post-acceptance dissemination and impact. The operator performs the public actions; the stage stops at a ready dissemination plan and never auto-publishes.
+
+## Canonical invocation
+
+```bash
+/research-disseminate
+```
+
+With arguments:
+
+```bash
+/research-disseminate [--suite-name NAME] [--override] [--archive REPO] [--preprint SERVER]
+```
+
+## Inputs
+
+The suite's `_outputs/publication-record.md` (the venue package + submission record produced by `/research-publish`).
+
+## Outputs
+
+`_outputs/dissemination-plan.md` (the preprint announcement, the public-artifact plan, the FAIR archival deposit record, the altmetrics and impact-tracking plan, the rebuttal / revision loop, and the registered-report stage-2 path).
+
+## Downstream
+
+Terminal — the dissemination plan is the pipeline's final artifact. The reviewer rebuttal / revision loop may re-enter `/research-paper` when a revision is required.
+
+## Workflow phases
+
+The command follows the standard `/research` pipeline workflow:
+
+1. **Load context** — Read `_outputs/publication-record.md`, the rules, and any existing suite state.
+2. **Plan the preprint and public artifacts** — Draft the preprint announcement and the talk / poster / blog plan.
+3. **Record the FAIR archival deposit** — Plan the data + code deposit to a FAIR repository with persistent identifiers.
+4. **Set up impact tracking** — Plan altmetrics and impact tracking against the proposal's impact pathway.
+5. **Prepare the rebuttal loop** — Draft the reviewer rebuttal and the registered-report stage-2 path where applicable.
+6. **Verify and emit** — Confirm the plan is actionable; emit `_outputs/dissemination-plan.md` plus the handoff manifest. The operator performs the public actions.
+
+## Rigor floor
+
+Public artifacts carry natural domain language; where dissemination precedes de-anonymization, author, institution, and system identity are held for the designated stage. The FAIR deposit is the durable, citable reproducibility-evidence package, scaled to the venue ambition, that lets an independent party reproduce the study.
+
+## Failure modes
+
+| Symptom | Cause | Recovery |
+|---------|-------|----------|
+| No FAIR deposit record | Archival step skipped | Select a FAIR repository (`--archive`) and record the deposit plan with persistent identifiers |
+| Plan attempts to auto-publish | Stage boundary overstepped | Stop at the ready plan; the operator performs every public action |
+| Missing publication record | `/research-publish` not yet run | Run `/research-publish` first to produce the venue package |
+
+## Examples
+
+```bash
+# Plan dissemination after acceptance
+/research-disseminate --suite-name retrieval-latency
+
+# Pin the preprint server and FAIR archive
+/research-disseminate --preprint arXiv --archive Zenodo
+```
+
+## Cross-references
+
+- [Pipeline overview](/docs/pipeline)
+- [Commands reference](/docs/reference/commands)

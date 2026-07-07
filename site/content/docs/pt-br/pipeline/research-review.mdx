@@ -1,0 +1,70 @@
+---
+title: "/research-review"
+description: "/research-review — Crítica adversarial em nível de revisão por pares do artigo: um placar do revisor de sete eixos (novidade, rigor, reprodutibilidade, clareza, ética, revisão estatística, conformidade com diretrizes de relato) mais uma lista de revisões obrigatórias triada por gravidade."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Papel:** Investigador principal (revisão por pares)
+**Posição no pipeline:** meio da cadeia
+
+Submete o artigo a uma crítica adversarial em nível de revisão por pares frente aos padrões do local de publicação — novidade, rigor, reprodutibilidade, clareza, ética, revisão estatística e conformidade com diretrizes de relato. Emite um placar do revisor de **sete eixos** mais uma lista de revisões obrigatórias triada por gravidade, com uma justificativa de motor concreto por achado. Refutação por padrão.
+
+## Invocação canônica
+
+```bash
+/research-review
+```
+
+Com argumentos:
+
+```bash
+/research-review [path/to/research-suite/]
+```
+
+## Entradas
+
+O entregável do artigo na localização natural do host que a etapa do artigo registrou.
+
+## Saídas
+
+`_outputs/review-report.md` — o placar do revisor de **sete eixos** (novidade · rigor · reprodutibilidade · clareza · ética · revisão estatística · conformidade com diretrizes de relato), a lista de revisões obrigatórias triada por gravidade (HIGH / MEDIUM / LOW) com uma justificativa de motor concreto por achado, o veredicto do pacote de reprodutibilidade e da reexecução, a auditoria de integridade das citações e o veredicto geral `accept · minor-revision · major-revision · reject`.
+
+## A jusante
+
+/research-publish (consumidor a jusante). Um veredicto `major-revision` ou `reject` aciona o laço de revisão de volta para `/research-paper` para tratar as revisões obrigatórias antes de uma nova revisão.
+
+## Fases do fluxo de trabalho
+
+O comando segue o fluxo de trabalho padrão do pipeline `/research`:
+
+1. **Carregar o contexto** — Ler o entregável do artigo.
+2. **Verificar o Portão de sequência** — Confirmar que o artigo existe; caso contrário, parar com `Blocked: run /research-paper first`.
+3. **Revisar adversarialmente** — Pontuar os sete eixos (novidade · rigor · reprodutibilidade · clareza · ética · revisão estatística · conformidade com diretrizes de relato); executar a reexecução de reprodutibilidade e a auditoria de integridade das citações; refutação por padrão; localizar defeitos concretos com evidência.
+4. **Triar as revisões** — Ordenar as revisões obrigatórias HIGH / MEDIUM / LOW com uma justificativa de motor concreto.
+5. **Atualizar o manifesto de transferência** — Registrar o relatório de revisão e o veredicto do placar.
+6. **Emitir a revisão** — `_outputs/review-report.md`.
+
+## Piso de rigor
+
+A revisão pontua as afirmações empíricas frente à barra do portão de avanço — replicação adequada, significância não paramétrica com um tamanho de efeito e postos de diferença crítica, e paridade de orçamento entre os métodos comparados — e trata o veredicto como um portão de avanço explícito: um artigo avança somente quando supera a barra do veículo de forma convincente e significativa, com a aprovação registrada. Sob um veículo de revisão duplo-cega, o revisor também sinaliza qualquer vazamento de identidade como um defeito de anonimização.
+
+## Modos de falha
+
+| Sintoma | Causa | Recuperação |
+|---------|-------|----------|
+| Blocked: run /research-paper first | Nenhum artigo | Execute `/research-paper` para produzir o manuscrito |
+| Pontuação caridosa | O revisor assumiu o melhor caso | Refutação por padrão; pontue de acordo com a evidência presente |
+| Achado sem justificativa | Revisão afirmada, não justificada | Anexe uma justificativa de motor concreto a cada achado |
+
+## Exemplos
+
+```bash
+# Revise o artigo por pares e emita um placar do revisor
+/research-review path/to/research-suite/
+```
+
+## Referências cruzadas
+
+- [Visão geral do pipeline](/docs/pipeline)
+- [Referência de comandos](/docs/reference/commands)

@@ -1,0 +1,93 @@
+---
+title: "harnesses"
+description: "Referensi CLI untuk grup perintah apothem harnesses."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Mendaftar dan memeriksa adapter harness yang terdaftar.
+
+`harnesses` adalah grup perintah dengan dua subperintah: `list` dan `show`.
+
+## Ringkasan
+
+```
+apothem harnesses list [--quiet|-q] [--verbose|-v]
+                       [--format plain|json] [--json] [--no-color]
+apothem harnesses show NAME
+                       [--quiet|-q] [--verbose|-v]
+                       [--format plain|json] [--json] [--no-color]
+```
+
+## Subperintah
+
+### `harnesses list`
+
+Mendaftar semua adapter harness yang terdaftar.
+
+| Opsi | Deskripsi |
+|---|---|
+| `--quiet`, `-q` | Menekan keluaran informatif; hanya error yang dikeluarkan. |
+| `--verbose`, `-v` | Memancarkan keluaran diagnostik tambahan. |
+| `--format plain\|json` | Format keluaran (default: `plain`). |
+| `--json` | Singkatan dari `--format json`. |
+| `--no-color` | Menonaktifkan kode warna ANSI di keluaran. |
+| `-h`, `--help` | Menampilkan bantuan dan keluar. |
+
+### `harnesses show NAME`
+
+Menampilkan detail untuk adapter harness tertentu. `NAME` adalah pengidentifikasi
+harness dalam kebab-case; jalankan `apothem harnesses list` untuk melihat pengidentifikasi yang tersedia.
+
+| Opsi | Deskripsi |
+|---|---|
+| `NAME` | Adapter harness yang akan diperiksa (argumen posisional wajib). |
+| `--quiet`, `-q` | Menekan keluaran informatif; hanya error yang dikeluarkan. |
+| `--verbose`, `-v` | Memancarkan keluaran diagnostik tambahan. |
+| `--format plain\|json` | Format keluaran (default: `plain`). |
+| `--json` | Singkatan dari `--format json`. |
+| `--no-color` | Menonaktifkan kode warna ANSI di keluaran. |
+| `-h`, `--help` | Menampilkan bantuan dan keluar. |
+
+## Contoh
+
+```bash
+apothem harnesses list
+apothem harnesses list --json
+apothem harnesses show claude-code
+apothem harnesses show claude-code --json
+```
+
+ID harness yang terdaftar adalah:
+
+```text
+antigravity
+claude-code
+codebuddy
+codex
+cursor
+gemini-cli
+github-copilot
+glm
+hermes
+kimi-code
+kiro
+open-claw
+opencode
+qwen-code
+trae
+windsurf
+zed
+```
+
+## Kode keluar
+
+| Kode | Arti |
+|---|---|
+| 0 | Berhasil |
+| 1 | Harness tidak ditemukan (`harnesses show` dengan `NAME` yang tidak dikenal) |
+
+## Lihat juga
+
+- [apothem doctor](/docs/cli-reference/doctor) — menjalankan diagnostik pemasangan seluruh sistem
+- [apothem verify](/docs/cli-reference/verify) — memeriksa pemasangan harness tertentu

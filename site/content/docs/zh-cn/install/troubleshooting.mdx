@@ -1,0 +1,76 @@
+---
+title: "故障排查"
+description: "针对插件、npx 和安装程序各路径下常见的 Apothem 安装失败和运行时问题的解决方案。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+针对常见的 Apothem 安装和运行时问题的解决方案。
+
+## 安装问题
+
+### 未找到 Python 3.10+
+
+安装程序和 npx 垫片会探测 `python3`、`python`、带版本号的名称（`python3.14` 到 `python3.10`），以及 Windows 上的 `py -3` —— 拒绝 Microsoft Store 启动器垫片 —— 并在没有任何候选满足 3.10 底线时以 `No Python >= 3.10 found in PATH` 停止。请从 python.org 或你的操作系统软件包仓库安装 CPython 3.10 或更新版本，确认 `python3 --version`（或 Windows 上的 `py -3 --version`）报告至少为 3.10，然后重新运行。
+
+### 缺少运行时依赖：click、rich
+
+引擎将其大部分第三方依赖随源代码树一同打包，但 `click` 和 `rich` 必须在安装程序所选的解释器下可被导入。当二者之一缺失时，安装程序会指出它并主动为你安装：
+
+```text
+! Missing runtime dependencies: click rich
+```
+
+接受提示，让安装程序在该解释器下运行 `pip install`。若要跳过提示，可传入 `--yes`（在 PowerShell 上为 `-Yes`）或设置 `APOTHEM_AUTO_INSTALL_DEPS=1` 以自动安装。如果你拒绝 —— 或 `pip` 不可用，或你更倾向于使用操作系统的软件包管理器 —— 请自行安装所列出的软件包（例如在 Debian 系主机上为 `python3-click` 和 `python3-rich`，或 `pip install click rich`），然后重新运行。
+
+### 运行安装程序后找不到 `apothem`
+
+安装程序将源代码树放在 `~/.apothem`，并不会向你的 `PATH` 添加 `apothem` 可执行文件。请通过安装程序在完成时打印的调用方式运行引擎：
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+```
+
+或使用 npx 形式（`npx @ahmed-g-gad/apothem <command>`），它无需任何 `PATH` 条目。
+
+### `/plugin marketplace add` 失败
+
+`/plugin marketplace add ahmed-g-gad/apothem` 会从 GitHub 获取市场列表。当它失败时，请确认该机器可以访问 `https://github.com/ahmed-g-gad/apothem`（网络、代理或防火墙规则），然后重试。如果市场之前是在一次不完整的获取下添加的，请在运行 `/plugin install apothem@apothem` 之前先移除并重新添加它。
+
+### npx 提供过期版本
+
+`npx` 会缓存已下载的软件包。当 `npx @ahmed-g-gad/apothem --version` 报告的版本比当前发布版本旧时，请清除缓存或锁定 dist-tag：
+
+```bash
+npx clear-npx-cache
+npx @ahmed-g-gad/apothem@latest --version
+```
+
+### Windows 上 irm / iex 被阻止
+
+如果 PowerShell 执行策略阻止了安装程序：
+
+```powershell
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+irm https://apothem.ahmedgad.com/install.ps1 | iex
+```
+
+## 运行时问题
+
+### apothem install 未找到任何工具
+
+运行 apothem doctor 列出检测到的工具目录。如果未找到任何工具，请确保你的工具已安装且至少启动过一次。
+
+### apothem verify 报告某个适配器失败
+
+重新运行 apothem install 以重新具现化该适配器。如果问题仍然存在，请查看 [工具适配器](/docs/harnesses)下针对该适配器的专门页面。
+
+### Claude Code 中钩子未触发
+
+通过检查 ~/.claude/settings.json 中的钩子条目，确认 Apothem 已接入。如果该文件缺少这些钩子，请再次运行 apothem install。
+
+## 获取帮助
+
+- [GitHub Issues](https://github.com/ahmed-g-gad/apothem/issues) —— 错误报告
+- [GitHub Discussions](https://github.com/ahmed-g-gad/apothem/discussions) —— 提问
+- [常见问题](/docs/faq) —— 常见问题解答

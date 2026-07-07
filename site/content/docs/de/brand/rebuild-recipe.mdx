@@ -1,0 +1,68 @@
+---
+title: "Rezept zum Neuaufbau der Assets"
+description: "Alle Raster-Markenassets aus den Master-SVG-Quellen mit resvg und Pillow neu generieren."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Das Rezept zum Neuaufbau der Assets generiert jedes Raster-Asset aus den
+Master-SVGs neu. Es ist der maßgebliche Aktualisierungspfad für
+Marken-Iterationen.
+
+## Wann ausführen
+
+Führe das Rezept zum Neuaufbau aus, wenn:
+
+- Das Master-SVG (`assets/src/logo.svg` oder `assets/src/logo-dark.svg`) sich ändert.
+- Der kompakte Favicon-Master (`assets/favicon.svg`) sich ändert.
+- Ein Social-Card-Master (`assets/src/og-banner.svg` oder `assets/src/twitter-card.svg`) sich ändert.
+- Eine neue Rastergröße benötigt wird.
+- Du überprüfen willst, dass die committeten Assets noch zur SVG-Quelle passen.
+
+## Skript
+
+| Skript | Plattform | Pfad |
+| --- | --- | --- |
+| `rebuild-assets-resvg.py` | Jeder Host mit Python + resvg | `scripts/dev/rebuild-assets-resvg.py` |
+
+## Voraussetzungen
+
+Der Generator rastert jedes SVG mit [resvg](https://github.com/linebender/resvg)
+und setzt die Raster-Sätze mit [Pillow](https://python-pillow.org/) zusammen:
+
+- **Pillow:** `pip install pillow`.
+- **resvg:** Lade die Release-Binärdatei für deine Plattform von den
+  [resvg-Releases](https://github.com/linebender/resvg/releases) herunter —
+  `resvg-win64.zip` unter Windows, `resvg-linux-x86_64.tar.gz` unter Linux oder
+  `resvg-macos.zip` unter macOS — entpacke sie in deinen `PATH` oder verweise
+  das Skript mit `--resvg <path>` darauf.
+
+## Verwendung
+
+Generiere jedes Raster-Asset neu:
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py
+```
+
+Übergib `--check-only`, um zu überprüfen, ob die Toolchain verfügbar ist, ohne
+Assets neu zu generieren:
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py --check-only
+```
+
+Wenn resvg nicht in deinem `PATH` liegt, verweise das Skript auf die Binärdatei:
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py --resvg /path/to/resvg
+```
+
+## Überprüfung
+
+Ein erfolgreicher Lauf generiert die hellen und dunklen Marken-Raster, das
+Favicon-PNG/ICO-Set, die Apple-Touch-Icons und die OG-/Twitter-Bilder neu und
+spiegelt die im Web ausgelieferte Teilmenge — einschließlich der Hero-Logo-Quellen,
+auf die die Website verweist — nach `site/public/`. Führe nach der Generierung den
+Website-Build aus und prüfe vor dem Veröffentlichen die Startseite, das
+Browser-Tab-Favicon und die Social-Card-PNGs.

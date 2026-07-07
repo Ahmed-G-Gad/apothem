@@ -1,0 +1,69 @@
+---
+title: "Conformity Gate"
+description: "Run the Apothem conformity gate to verify ecosystem health."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+The conformity gate at `src/apothem/conformity/gate.py` runs the
+mechanical fraction of the fifteen-bar pre-emission gate (M1-M15)
+against every artifact the operator authors.
+
+## Running the gate
+
+The gate is **advisory by default**: it reports findings and exits `0`, so a
+local run never blocks you. Add `--strict` (or set
+`APOTHEM_CONFORMITY_STRICT=1`) to exit non-zero on a blocking finding — the mode
+CI and pre-commit use to fail a violating change.
+
+```bash
+# Advisory: report every validator's findings across the repo, exit 0
+python -m apothem.conformity.gate --all .
+
+# Strict: exit non-zero (code 2) when a blocking finding is present
+python -m apothem.conformity.gate --all --strict .
+```
+
+Exit codes: `0` clean (or advisory), `2` a strict findings-block, `3` a
+CLI-usage error such as an unknown validator name.
+
+## Gate bars
+
+| Bar | Check | Kind |
+|-----|-------|------|
+| M1 | Host-project agnosticism | Reasoned |
+| M2 | Editorial disclosure | Mechanical |
+| M3 | Ten quality dimensions | Reasoned |
+| M4 | Self-application | Mechanical |
+| M5 | Authority (no fabricated identity / endpoint / secret) | Mechanical |
+| M6 | Expertise incorporation | Reasoned |
+| M7 | Option annotation | Mechanical |
+| M8 | Definitiveness | Mechanical |
+| M9 | Visual leverage | Reasoned |
+| M10 | Bidirectional binding | Mechanical |
+| M11 | Agile sprints | Reasoned |
+| M12 | Phase reporting & canonical layout | Mechanical |
+| M13 | Code craft | Mechanical |
+| M14 | Systemicity | Reasoned |
+| M15 | Production-ready | Mechanical |
+
+## Targeted checks
+
+```bash
+# List every registered validator
+python -m apothem.conformity.gate --list
+
+# Run a single named validator
+python -m apothem.conformity.gate --check multi-surface-coherence
+
+# Run every validator against one file
+python -m apothem.conformity.gate src/apothem/rules/my-rule.md
+```
+
+`--hook` mode (`python -m apothem.conformity.gate --hook`) is the
+harness-dispatched entry point: it reads a tool-input JSON payload from stdin
+and runs the per-write matcher chain against the pending write. This is the
+form the deployed `PreToolUse` hook invokes; you rarely call it by hand.
+
+## CI integration
+
+The gate runs in CI via `.github/workflows/conformity.yml` on every push.

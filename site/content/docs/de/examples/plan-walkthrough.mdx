@@ -1,0 +1,59 @@
+---
+title: "Plan-Durchlauf"
+description: "End-to-End-Durchlauf der /plan-Pipeline für eine reale Aufgabe."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Dieses Beispiel durchläuft die vollständige `/plan`-Pipeline für eine einfache Aufgabe: das Hinzufügen eines neuen CLI-Unterbefehls zu Apothem.
+
+## Schritt 1: Anforderungen in Prosa schreiben
+
+Erstelle `prose.md`:
+
+```markdown
+Add a `apothem status` subcommand that prints the current apothem
+version, installed harnesses, and the result of `apothem verify`.
+The output should be machine-parseable (JSON with --json flag) and
+human-readable by default.
+```
+
+## Schritt 2: Zur Spezifikation verfeinern
+
+```bash
+/plan-spec prose.md --suite-name apothem-status-command
+```
+
+Dies führt den sechsphasigen Forge aus, stellt Klärungsfragen und erzeugt `plans/apothem-status-command/_spec/spec.md`.
+
+## Schritt 3: Den Plan generieren
+
+```bash
+/plan-generate
+```
+
+Erzeugt PREAMBLE.md, MASTER-PLAN.md, PROGRESS.md, PLAN-NOTES.md und die PHASE.md-Dateien pro Phase unter `plans/apothem-status-command/phases/`.
+
+## Schritt 4: Den Plan prüfen
+
+```bash
+/plan-review
+```
+
+Forensisches Audit mit Bewertungen für Prosa-Treue, Konsistenz und Qualität. Behebe vor dem Fortfahren alle FAIL-Befunde.
+
+## Schritt 5: Phasen ausführen
+
+```bash
+/plan-execute    # executes the first phase, then pauses
+/plan-execute    # executes the next phase, then pauses
+...
+```
+
+## Schritt 6: Fortschritt prüfen
+
+```bash
+/plan-status
+```
+
+Meldet die aktuelle Phase, die verifizierten Ausgaben und die nächste Aktion.

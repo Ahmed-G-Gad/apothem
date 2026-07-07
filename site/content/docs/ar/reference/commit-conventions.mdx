@@ -1,0 +1,32 @@
+---
+title: "اتفاقيات الالتزام (Commit)"
+description: "تُرسي تنسيق رسائل الالتزام، ووسم الإصدارات، وانضباط التأليف البشري حصرًا، والإيقاع لكل مهمة لمصنوعات git والتحكم في الإصدارات."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **المرجع المعياري لرسائل التزام <bdi>git</bdi> ووسوم الإصدار وانضباط التأليف.** المُلخّص في <bdi>[`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md)</bdi> §4 الاتفاقيات هو الإعلان السطري؛ وهذه الصفحة هي المرجع المستقلّ الذي يستشهد به المساهمون اللاحقون.
+
+---
+
+## 1. Conventional Commits
+
+تتبع مواضيع الالتزام شكل **<bdi>Conventional Commits</bdi>**: <bdi>`<type>(<scope>): <subject>`</bdi>. مجموعة <bdi>`<type>`</bdi> المغلقة هي <bdi>`{feat, fix, chore, docs, refactor, test, perf, ci, build, style, revert, release}`</bdi>. و<bdi>`<scope>`</bdi> هو السطح الذي يمسّه الالتزام (مثل <bdi>`feat(conformity)`</bdi>، و<bdi>`docs(adr)`</bdi>، و<bdi>`fix(ci)`</bdi>)؛ ويُحذف النطاق فقط للتغييرات الشاملة التي لا تتموضع في مكان محدّد.
+
+الموضوع بصيغة الأمر، بأحرف صغيرة بعد نقطتي type/scope، دون نقطة في النهاية، وبأقل من 72 حرفًا. أمّا المتن — المفصول عن الموضوع بسطر فارغ — فيوضّح **لماذا** يوجد التغيير، لا ما الذي غيّره الـ<bdi>diff</bdi>؛ فالـ<bdi>diff</bdi> نفسه هو السجلّ المعياري لِما تغيّر.
+
+## 2. انضباط التأليف (البشري حصرًا)
+
+كل سطح تأليف في كل مصنوعة <bdi>git</bdi> (موضوع الالتزام، ومتن الالتزام، وحقل <bdi>`Author:`</bdi>، وذيل <bdi>`Co-Authored-By:`</bdi>، وذيل <bdi>`Signed-off-by:`</bdi>، واسم الفرع، واسم الوسم، وتعليق الوسم، واسم الـ<bdi>stash</bdi>، ومتن <bdi>git-notes</bdi>، وعنوان طلب السحب، ووصف طلب السحب) يذكر **المساهمين البشريين فقط**. لا يَنسب وقتُ تشغيل <bdi>harness</bdi> نفسَه قط، ولا نموذجَ اللغة الأساسي، ولا وقتَ التشغيل / البيئة / بيئة التطوير المتكاملة / الإضافة / المورّد، ولا أي أداة آلية أخرى، إلى أيٍّ من تلك الأسطح. تشمل الأنماط المحظورة <bdi>`Co-Authored-By: <model-name>`</bdi>، و<bdi>`Co-Authored-By: <noreply@*-vendor.com>`</bdi>، وسردًا في المتن مثل <bdi>`generated with X`</bdi> أو <bdi>`co-authored by an automated helper`</bdi>، وأي علامة في سطر الموضوع تشير إلى تأليف غير بشري. تقيم المواصفة الكاملة في <bdi>[`src/apothem/rules/production-ready-prs.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/production-ready-prs.md)</bdi> §6؛ ويقيم التنفيذ الآلي في <bdi>[`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/hooks/messages/pretooluse-bash.md)</bdi> <bdi>Scan 3</bdi>.
+
+## 3. وسوم الإصدار (الإصدار الدلالي)
+
+تتبع وسوم الإصدار **الإصدار الدلالي** (<bdi>`vMAJOR.MINOR.PATCH`</bdi>). الإصدار قبل 1.0 هو <bdi>`0.MINOR.PATCH`</bdi> وفقًا لاتفاقية ما قبل الاستقرار في المواصفة؛ فالتغييرات الكاسرة تزيد <bdi>MINOR</bdi>، وإصلاحات العلل تزيد <bdi>PATCH</bdi>. الوسم مُعلَّق (<bdi>`git tag -a`</bdi>) ومُوقَّع على مستوى النشر وفقًا لـ<bdi>[`site/content/docs/governance/release-engineering-policy.mdx`](/docs/governance/release-engineering-policy)</bdi>. تقيم نسخة الحزمة في بيان المصدر (<bdi>`pyproject.toml`</bdi> الحقل <bdi>`version`</bdi>)، وتُشتقّ الأسطح الحاملة لزمن التشغيل / النسخة من بيانات الحزمة الوصفية تلك.
+
+## 4. الإيقاع لكل مهمة
+
+تُسجَّل الالتزامات لكل مهمة عند جدّية <bdi>SHARED+</bdi>، ولكل مرحلة عند <bdi>PERSONAL_USE</bdi>، واختياريًّا عند <bdi>EXPLORING</bdi>. يُسجَّل التزام المهمة فور اجتياز بوّابات التحقّق الخاصة بها؛ فالالتزامات المؤجَّلة تُراكِم السياق وتُخاطِر بفقدان النطاق. يقيم الانضباط الكامل في <bdi>[`src/apothem/rules/operational-mandates.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/operational-mandates.md)</bdi> §CM-13.
+
+## 5. المُتحقِّقات
+
+تُنفِّذ سلسلة خطافات <bdi>pre-commit</bdi> في <bdi>[`.pre-commit-config.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/.pre-commit-config.yaml)</bdi> بوّابات الجودة لكل عملية كتابة. ويلتقط تنفيذُ انضباط التأليف عند خطّاف <bdi>bash</bdi> (الفحص <bdi>Scan 3</bdi> من <bdi>`src/apothem/hooks/messages/pretooluse-bash.md`</bdi>) الذيولَ المحظورة وعلامات المتن قبل أن تُسجَّل أي عملية كتابة في <bdi>git</bdi>.

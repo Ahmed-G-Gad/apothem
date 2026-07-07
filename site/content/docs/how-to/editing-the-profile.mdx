@@ -1,0 +1,89 @@
+---
+title: "Edit the profile"
+description: "Change the shared profile and re-materialize every installed harness."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Goal: change a value in the shared profile and push it into every harness you
+have installed.
+
+## Prerequisites
+
+- The `apothem` CLI on your `PATH` (or the self-contained form: prefix with
+  `PYTHONPATH="$HOME/.apothem/src"` and run `python -m apothem`, or use
+  `npx @ahmed-g-gad/apothem`).
+- A profile at `~/.config/apothem/profile.yaml`. Create one with
+  `apothem profile init` if it is missing.
+
+## The profile shape
+
+The profile is a single YAML document. Its top-level keys:
+
+- `identity` (required) — `name`, plus optional `role`, `email`, `website`,
+  `github`.
+- `preferences` — `language`, `style` (`concise` / `verbose` / `balanced`),
+  `formatter`, `test_framework`.
+- `rules` — a list of extra rule strings shared with capable harnesses.
+- `seriousness` — one of `EXPLORING`, `PERSONAL_USE`, `SHARED`,
+  `PUBLIC_LAUNCH`.
+- `enforcement` — opt-in toggles (`sprints`, `agent_teams`, `multitasking`,
+  `continuous_execution`, `learning_loop`), every flag default-off.
+- `harnesses` — per-harness overrides keyed by harness id.
+- `exclude_harnesses` — harness ids skipped by batch (`--harness all`)
+  commands.
+
+## Steps
+
+1. Inspect the current profile:
+
+   ```bash
+   apothem profile show
+   ```
+
+2. Edit it. Open it in your system editor:
+
+   ```bash
+   apothem profile edit
+   ```
+
+   Or set a single dotted key from the command line. The value is stored
+   literally (except `true`/`false` and explicit `[..]`/`{..}` input, which are parsed) and the
+   profile is validated against the schema before writing — an invalid set is
+   refused and the profile on disk is unchanged:
+
+   ```bash
+   apothem profile set seriousness SHARED
+   apothem profile set identity.name "Ada Lovelace"
+   ```
+
+3. Re-materialize the harnesses so the change reaches their native config.
+   For a user-scope harness:
+
+   ```bash
+   apothem update --harness claude-code
+   ```
+
+   For a project-scope harness, pass the project root; use `all` to refresh
+   every installed harness:
+
+   ```bash
+   apothem update --harness cursor --project /path/to/project
+   apothem update --harness all --project /path/to/project
+   ```
+
+## Verify
+
+```bash
+apothem profile show
+apothem verify --harness all
+```
+
+`profile show` reflects your edit; `verify` confirms the materialized config
+matches the updated profile.
+
+## Related
+
+- [Add a harness](/docs/how-to/adding-a-harness) to bring a new harness under
+  profile control before re-materializing.
+- [Updating](/docs/install/updating) covers upgrading the engine alongside the
+  re-materialize step.

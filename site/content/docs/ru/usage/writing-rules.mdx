@@ -1,0 +1,61 @@
+---
+title: "Написание правил"
+description: "Создавайте, ограничивайте область действия и поддерживайте поведенческие правила Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Правила — это файлы Markdown в `src/apothem/rules/` с расширением `.md`.
+
+## Frontmatter правила
+
+```yaml
+---
+name: "..."
+description: "..."
+pathFilter: ""            # empty string for always-on; a glob for path-filtered
+alwaysApply: true         # true for always-on; false for path-filtered
+---
+```
+
+## Области действия правил
+
+| Область действия | Когда применяется |
+|-------|-------------|
+| `always-on` | Каждая сессия, каждый файл |
+| `path-filtered` | Только когда активный файл соответствует `path-filter` |
+| `operator-selected` | Оператор явно включает в settings.json |
+
+## Пример правила
+
+```markdown
+---
+name: "python-conventions"
+description: "Python style conventions for this project"
+pathFilter: "**/*.py"
+alwaysApply: false
+---
+
+# Python conventions
+
+- Use type annotations on all public functions.
+- Maximum line length: 88 characters.
+- Prefer explicit over implicit.
+```
+
+## Применение правил к harness
+
+После написания правила обновите каждый установленный адаптер harness.
+Выполните `apothem harnesses list`, чтобы увидеть установленный набор, затем
+вызовите update по одному разу для каждого harness:
+
+```bash
+apothem update --harness claude-code
+apothem update --harness cursor
+```
+
+## Валидация правил
+
+```bash
+python -m apothem.conformity.gate --check frontmatter
+```

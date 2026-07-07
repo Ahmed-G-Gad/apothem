@@ -1,0 +1,70 @@
+---
+title: "/research-experiment"
+description: "/research-experiment —— 执行已设计的研究并捕获带有完整溯源的原始数据，外加一份可复现性清单（环境、随机种子、协议、版本固定）。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**角色：** 首席研究员（执行）
+**流水线位置：** 链路中段
+
+执行已设计的研究或实验，并捕获带有完整溯源的原始数据。保证可复现性：记录环境、随机种子、协议日志和版本固定，以便独立方能够重新运行。
+
+## 规范调用
+
+```bash
+/research-experiment
+```
+
+带参数：
+
+```bash
+/research-experiment [path/to/research-suite/]
+```
+
+## 输入
+
+`_inputs/study-design.md`（设计）与 `_inputs/preregistration.md`（冻结的分析计划）。
+
+## 输出
+
+`_outputs/experiment-log.md`（带时间戳的协议轨迹）、位于主机自然位置的原始数据，以及 `_outputs/reproducibility-manifest.md`（环境、随机种子、协议、版本固定）。
+
+## 下游
+
+/research-analysis（下游消费方）
+
+## 工作流阶段
+
+该命令遵循标准的 `/research` 流水线工作流：
+
+1. **加载上下文** —— 读取研究设计与预注册。
+2. **校验顺序门** —— 确认 `_inputs/study-design.md` 存在；否则以 `Blocked: run /research-design first` 停止。
+3. **运行与记录** —— 执行协议；捕获带溯源的原始数据；记录带时间戳的协议轨迹。
+4. **捕获可复现性** —— 记录环境、随机种子、协议和版本固定。
+5. **更新交接清单** —— 记录数据位置与可复现性清单。
+6. **发出日志** —— `_outputs/experiment-log.md` + 原始数据 + `_outputs/reproducibility-manifest.md`。
+
+## 严谨性强制底线
+
+执行先运行一遍试点扫查来校准预算与取值范围，然后在一份声明的算力利用计划下运行完整对照（核心分配、内存上限、独立重复的安全并行化）。每个随机方法都以其预注册的重复方案运行，记录随机种子并记录硬件。可选、默认关闭的自主实验循环可用：针对一个冻结的框架，它对单个可变目标提出一次变更，在固定预算下运行，仅在优于现任者时保留，并将每一次试验记入日志。
+
+## 失败模式
+
+| 症状 | 原因 | 恢复 |
+|---------|-------|----------|
+| Blocked: run /research-design first | 没有研究设计 | 运行 `/research-design` 以生成 `_inputs/study-design.md` |
+| 运行不可复现 | 缺少随机种子 / 环境记录 | 在继续之前记录完整的可复现性清单 |
+| 协议偏差未记录 | 运行中途的变更未被记录 | 在实验日志中记录该偏差；在分析阶段披露 |
+
+## 示例
+
+```bash
+# 运行已设计的研究并捕获可复现的原始数据
+/research-experiment path/to/research-suite/
+```
+
+## 交叉引用
+
+- [流水线概览](/docs/pipeline)
+- [命令参考](/docs/reference/commands)

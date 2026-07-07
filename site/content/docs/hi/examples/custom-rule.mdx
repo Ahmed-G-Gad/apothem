@@ -1,0 +1,48 @@
+---
+title: "कस्टम नियम"
+description: "अपनी परियोजना के लिए एक कस्टम सदैव-सक्रिय नियम लिखना।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+यह उदाहरण एक परियोजना-विशिष्ट सदैव-सक्रिय नियम जोड़ता है जो सभी फ़ाइलों में एक
+नामकरण कन्वेंशन लागू करता है।
+
+## नियम फ़ाइल
+
+```markdown
+---
+name: "kebab-filenames"
+description: "Enforce kebab-case filenames in the src/ tree"
+pathFilter: ""
+alwaysApply: true
+---
+
+# Kebab-case filenames
+
+All new files created under `src/` MUST use kebab-case naming
+(lowercase letters, digits, and hyphens only — no underscores,
+no camelCase, no PascalCase).
+
+**Correct:** `src/styles/button-group.css`, `src/components/nav-bar.css`
+**Incorrect:** `src/styles/buttonGroup.css`, `src/components/NavBar.css`
+
+When in doubt, err on the side of more hyphens.
+```
+
+इसे अपने harness इंस्टॉल रूट के भीतर `rules/kebab-filenames.md` में सहेजें (Claude Code अडैप्टर के लिए `~/.claude/`; अन्यथा harness-नेटिव पथ प्रतिस्थापित करें)।
+
+## सत्यापित करें कि नियम लोड हुआ है
+
+```bash
+python -m apothem.conformity.gate --check frontmatter
+```
+
+## harness में प्रचारित करें
+
+प्रत्येक इंस्टॉल किए गए harness के लिए एक बार अपडेट आदेश चलाएँ:
+
+```bash
+apothem update --harness claude-code
+apothem update --harness cursor
+```

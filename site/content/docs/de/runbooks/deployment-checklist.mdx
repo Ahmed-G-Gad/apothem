@@ -1,0 +1,163 @@
+---
+title: "Deployment-Checkliste"
+description: "Vorab-Verifizierungscheckliste zum Bereitstellen oder Teilen des Apothem-Ökosystems"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Vorab-Verifizierungsschritte, bevor das Apothem-Ökosystem auf einer neuen
+Maschine bereitgestellt, mit anderen geteilt oder als produktionsreif behandelt wird.
+
+---
+
+## 1. YAML-Gültigkeit
+
+- [ ] Alle Regeldateien werden ohne YAML-Fehler geparst — der Frontmatter-Block öffnet mit `---`, schließt mit `---` und enthält keinen verwaisten Inhalt außerhalb des Blocks
+- [ ] Alle delegierten Worker-Dateien werden ohne YAML-Fehler geparst
+- [ ] Alle Befehlsdateien werden ohne YAML-Fehler geparst
+- [ ] Alle `SKILL.md`-Skill-Dateien werden ohne YAML-Fehler geparst
+
+**Verifizierung:** `python scripts/dev/validate_ecosystem.py` parst das
+Frontmatter jedes Artefakts und meldet YAML-Fehler + fehlende erforderliche Felder. Zur ad-hoc
+Erkennung verwaister Listenelemente: `rg -n "^- " src/apothem/rules/*.md`.
+
+---
+
+## 2. Frontmatter-Vollständigkeit
+
+Überprüfen Sie für jeden Artefakttyp, ob die erforderlichen Felder vorhanden sind:
+
+### Regeln (`src/apothem/rules/*.md`)
+
+- [ ] `name` — kebab-case-Bezeichner, der dem Dateinamen entspricht
+- [ ] `version` — semver `MAJOR.MINOR.PATCH` (z. B. `"X.Y.Z"`)
+- [ ] `updated` — ISO-8601-Datum (z. B. `"2026-04-20"`)
+- [ ] `description` — Zusammenfassung in einem einzigen Satz
+- [ ] `scope` — `"always-on"` oder `"path-filtered"`
+- [ ] `portability` — `"universal"`, `"universal-with-windows-caveats"`, `"unix-only"` oder `"windows-only"`
+- [ ] `pathFilter` — vorhanden und gültiger Glob-String für pfadgefilterte Regeln; abwesend für immer aktive Regeln
+
+### Befehle (`src/apothem/commands/*.md`)
+
+- [ ] `name` — Befehlsname in kebab-case
+- [ ] `version`, `updated`, `description`, `argument-hint` vorhanden
+- [ ] `disable-model-invocation` vorhanden und beabsichtigt (`true` für rein anleitende Befehle)
+- [ ] `effort`, `portability` überprüft, sofern vorhanden (laut Schema optional)
+
+### Delegierte Worker
+
+Pfad:
+
+```text
+src/apothem/agents/*.md
+```
+
+- [ ] `name`, `version`, `updated`, `description` vorhanden
+- [ ] `tools` — durch Kommas getrennte Liste der erlaubten Werkzeuge
+- [ ] `disallowedTools` — listet explizit die nicht erlaubten Werkzeuge auf
+- [ ] `maxTurns` — gesetzt (mit Begründungskommentar, wenn > 10)
+- [ ] `permissionMode` — **darf NICHT `"bypassPermissions"` sein** — verwenden Sie `"default"`
+- [ ] `memory: false`, sofern persistenter Speicher nicht beabsichtigt ist
+
+### Skills (`src/apothem/skills/*/SKILL.md`)
+
+- [ ] `name`, `version`, `updated`, `description` vorhanden
+- [ ] `user-invocable` — deklariert (true/false)
+
+---
+
+## 3. Sicherheit
+
+- [ ] **Kein delegierter Worker verwendet `permissionMode: "bypassPermissions"`** — dies umgeht die interaktive Bestätigung für Write/Bash-Operationen
+- [ ] Die `tools`-Listen des Workers sind minimal — nur die Werkzeuge, die der Worker tatsächlich benötigt
+- [ ] Worker mit `Bash`-Zugriff sind begründet und haben maxTurns-Grenzen
+- [ ] Keine fest codierten Pfade, Tokens oder Geheimnisse in irgendeinem Artefakt
+- [ ] Hooks in `settings.json` haben angemessene Timeouts (≤ 60 Sekunden) und führen keinen beliebigen Code aus Benutzereingaben aus
+
+---
+
+## 4. Integrität der Querverweise
+
+- [ ] Jede in der Tabelle `src/apothem/rules/` aufgeführte Regel existiert auf der Festplatte am angegebenen Pfad
+- [ ] Jeder in der Tabelle `src/apothem/commands/` aufgeführte Befehl existiert auf der Festplatte
+- [ ] Jeder im Registrierungstabelle `src/apothem/agents/` aufgeführte delegierte Worker existiert auf der Festplatte
+- [ ] Jeder in der Tabelle `src/apothem/skills/` aufgeführte Skill existiert auf der Festplatte
+- [ ] Jeder Hook in der Tabelle `src/apothem/hooks/` hat einen entsprechenden Eintrag in `settings.json`
+- [ ] Alle von der `Implements`-Spalte von CLAUDE.md referenzierten `src/apothem/rules/*.md`-Dateien existieren
+
+---
+
+## 5. Mandatsabdeckung
+
+- [ ] Jedes in CLAUDE.md referenzierte CM-N hat einen Durchsetzungsort (entweder eine Regeldatei oder eine explizite Inline-Definition)
+- [ ] Keine Regeldatei widerspricht einer anderen (insbesondere rund um die Ernsthaftigkeitsskalierung)
+- [ ] Die CM-21-Dreifacetten-Abgrenzung wird eingehalten — keine Regel beansprucht den Besitz der CM-21-Facette einer anderen Regel
+
+---
+
+## 6. Funktionale Smoke-Tests
+
+Führen Sie zuerst die Python-Validierungsoberfläche aus — sie ist schnell, offline und fängt
+strukturelle Regressionen ab:
+
+- [ ] `pytest tests` — Unit-Tests für das Hook-Runtime, alle grün
+- [ ] `python scripts/dev/validate_hooks.py` — Hook-Struktur + Nur-Python-Hygieneprüfung bestanden
+- [ ] `python scripts/dev/validate_ecosystem.py` — vollständiger Baum + Frontmatter + delegierte Hook-Prüfungen bestanden
+- [ ] `python scripts/dev/chaos_pass.py` — jeder konfigurierte Hook-Befehl liefert unter degradierten Eingaben einen gültigen JSON-Umschlag
+
+Dann Live-Szenarien:
+
+- [ ] `/plan-spec --interactive` (oder `/plan-spec <sample-file>`) — schließt Ingest/Klärung ohne Fehler auf Befehlsebene ab
+- [ ] `/plan-generate --dry-run` — erzeugt eine Strukturvorschau, ohne Dateien zu schreiben
+- [ ] `/plan-status` auf einer vollständigen Plan-Suite — liefert genaue Phasenzählungen
+- [ ] Delegierter-Worker-Dispatch: der `codebase-explorer`-Worker, mit kleinem Umfang aufgerufen, schließt innerhalb von maxTurns ab und liefert strukturierte Ausgabe
+
+---
+
+## 7. Aktualität der Dokumentation
+
+- [ ] `CHANGELOG.md` (im Ökosystem-Stammverzeichnis) spiegelt jede Artefaktänderung seit der letzten Veröffentlichung wider; der Abschnitt der nächsten Veröffentlichung wird befüllt, bevor das Tag landet, oder jede Änderung ist bereits in einen veröffentlichten Abschnitt geschnitten
+- [ ] `site/content/docs/developer-guide.mdx` beschreibt die aktuelle Artefaktstruktur präzise
+- [ ] `site/content/docs/reference/artifact-schema.mdx` stimmt mit den tatsächlich in den Artefakten vorhandenen Frontmatter-Feldern überein
+- [ ] `site/content/docs/reference/settings-reference.mdx` stimmt mit der tatsächlichen Hook-Konfiguration in `settings.json` überein
+- [ ] `README.md` ist mit dem Baum auf der Festplatte konsistent
+
+---
+
+## 8. Portabilität (beim Teilen mit anderen)
+
+- [ ] Alle Pfade in Hook-Befehlen sind umgebungsunabhängig oder verwenden die `~`-Erweiterung
+- [ ] Hook-Befehle verwenden die Exec-Form und vermeiden shell-spezifische Befehlszeichenfolgen
+- [ ] Keine fest codierten `C:\Users\username`- oder `/home/username`-Pfade in irgendeinem Artefakt
+- [ ] `settings.json` verwendet eine einzige Hook-Ereignis-Abdeckungstabelle und den kanonischen Dispatch-Modulpfad
+
+---
+
+## 9. Versionsabstimmung
+
+- [ ] Die `version` von CLAUDE.md ist die höchste aller Artefakte im Baum (oder per Konvention gleich der Version des zuletzt hochgesetzten Artefakts)
+- [ ] Die `version` jedes Artefakts stimmt mit dem angegebenen semver (`MAJOR.MINOR.PATCH`) überein
+- [ ] CHANGELOG.md enthält vor dem Tagging genau den Veröffentlichungseintrag für die Zielversion
+- [ ] Das `updated`-Feld jedes Artefakts liegt am Datum seiner letzten verhaltensändernden Bearbeitung oder danach
+- [ ] Kein Artefakt trägt eine `version`, die niedriger ist als die Version, bei der es zuletzt angefasst wurde (keine Regressionen)
+- [ ] `src/apothem/skills/plan-suite/SKILL.md` und `src/apothem/skills/plan-suite/master-template.md` sind an dieselbe Vorlagenversionslinie gepinnt
+
+---
+
+## Freigabe
+
+| Prüfkategorie | Status | Notizen |
+| -------------- | ------ | ----- |
+| YAML-Gültigkeit | | |
+| Frontmatter-Vollständigkeit | | |
+| Sicherheit | | |
+| Integrität der Querverweise | | |
+| Mandatsabdeckung | | |
+| Funktionale Smoke-Tests | | |
+| Aktualität der Dokumentation | | |
+| Portabilität | | |
+| Versionsabstimmung | | |
+
+**Deployment genehmigt von:** ___________________
+**Datum:** ___________________
+**Bereitgestellte Ökosystem-Version:** ___________________

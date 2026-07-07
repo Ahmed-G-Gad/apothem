@@ -1,0 +1,149 @@
+[
+  {
+    "detail": {
+      "capability": "mcp_servers",
+      "status": "discovery-pending"
+    },
+    "message": "`.kimi-code/mcp.json` is the recognized operator-owned MCP surface; Apothem names it but defers authoring entries.",
+    "operation": "capability_projection",
+    "outcome": "warning",
+    "path": "src/apothem/harnesses/kimi_code/capabilities.yml"
+  },
+  {
+    "detail": {
+      "capability": "output_styles",
+      "status": "unsupported"
+    },
+    "message": "No Kimi Code output-style file surface is pinned.",
+    "operation": "capability_projection",
+    "outcome": "warning",
+    "path": "src/apothem/harnesses/kimi_code/capabilities.yml"
+  },
+  {
+    "detail": {
+      "capability": "statuslines",
+      "status": "unsupported"
+    },
+    "message": "No Kimi Code statusline file surface is pinned.",
+    "operation": "capability_projection",
+    "outcome": "warning",
+    "path": "src/apothem/harnesses/kimi_code/capabilities.yml"
+  },
+  {
+    "detail": {
+      "capability": "tool_surface_restrictions",
+      "status": "discovery-pending"
+    },
+    "message": "Kimi Code tool-permission surface not yet pinned.",
+    "operation": "capability_projection",
+    "outcome": "warning",
+    "path": "src/apothem/harnesses/kimi_code/capabilities.yml"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/.kimi-code/apothem/skills/AGENTS.md"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/.kimi-code/apothem/templates"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/.kimi-code/apothem/hooks"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/.kimi-code/apothem/rules"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/.kimi-code/apothem/skills"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/.kimi-code/apothem/agents"
+  },
+  {
+    "detail": {
+      "diff": "--- a/AGENTS.md\n+++ b/AGENTS.md\n@@ -0,0 +1,76 @@\n+<!-- BEGIN APOTHEM MANAGED BLOCK -->\n+<!-- SPDX-License-Identifier: MIT -->\n+\n+# Apothem — Kimi Code Bootstrap\n+\n+This file is the vendor-canonical agent-instructions surface for the Kimi\n+Code CLI (Moonshot): the project-root `AGENTS.md` per the vendor\n+configuration docs\n+(https://moonshotai.github.io/kimi-cli/en/configuration/config-files.html).\n+It follows the universal AGENTS.md convention adopted across coding-agent\n+ecosystems. Apothem materialises its governance surface into this file as a\n+sentinel-delimited managed block and keeps non-native Markdown cohorts under\n+an Apothem-owned support tree at `<project>/.kimi-code/.apothem/support/`.\n+\n+## Apothem Conventions\n+\n+The Apothem-managed cohorts are installed as follows:\n+\n+- `<project>/AGENTS.md` — this Kimi Code instruction anchor, carrying the\n+  Apothem governance surface as a managed block. Operator prose outside the\n+  Apothem sentinels is preserved on every re-install.\n+- `<project>/.kimi-code/.apothem/support/rules/` — Apothem Markdown rules used as\n+  reference material by this file and the installed cohorts.\n+- `<project>/.kimi-code/.apothem/support/skills/` — Apothem skills plus command prompts\n+  wrapped as skills.\n+- `<project>/.kimi-code/.apothem/support/agents/` — Apothem sub-agent definitions.\n+- `<project>/.kimi-code/.apothem/support/templates/` — plan, report, and audit\n+  templates.\n+\n+## Runtime Configuration\n+\n+Kimi Code CLI's runtime configuration lives under `<project>/.kimi-code/`.\n+Apothem does not overwrite operator-owned configuration there; it installs\n+instructions and support content through the vendor-native paths above. The\n+`<project>/.kimi-code/mcp.json` MCP surface is operator-owned — Apothem names\n+it but authors no entries. The Kimi Code model family is selected through the\n+operator's own configuration; Apothem presets no model or effort.\n+\n+## Operator Surface\n+\n+Operators may extend project-specific instructions in this `AGENTS.md` outside\n+the Apothem managed block. Re-run `apothem install --harness kimi-code\n+--project <this-project-root>` to refresh this instruction anchor and the\n+installed support cohorts. The operation is idempotent.\n+\n+# Apothem Shared Profile\n+\n+Managed by Apothem from the shared profile. Edits inside the sentinels are overwritten on the next `apothem install`; change the shared profile instead.\n+\n+## Operator\n+\n+- **Name:** Golden-Corpus-Operator\n+- **Role:** release engineer\n+- **Email:** golden@corpus.invalid\n+- **Website:** https://golden.corpus.invalid\n+- **GitHub:** @golden-corpus-operator\n+\n+## Preferences\n+\n+- **Primary language:** python\n+- **Response style:** concise\n+- **Governance seriousness:** PUBLIC_LAUNCH\n+\n+## Custom Rules\n+\n+- golden-corpus-validate-input-before-write\n+\n+## Opted-in Behaviors\n+\n+- Sprint apparatus for non-trivial multi-step work\n+\n+## MCP Servers\n+\n+Configured MCP servers (materialized into the harnesses with a native MCP config surface; named here as reference for the rest):\n+- golden-corpus-srv\n+<!-- END APOTHEM MANAGED BLOCK -->\n",
+      "ownership_class": "operator-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "sentinel_merge",
+    "outcome": "created",
+    "path": "<ROOT>/AGENTS.md",
+    "source": "<APOTHEM_SRC>/harnesses/kimi_code/templates/AGENTS.md"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/.kimi-code/.apothem/support/hooks",
+    "source": "<APOTHEM_SRC>/hooks"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/.kimi-code/.apothem/support/rules",
+    "source": "<APOTHEM_SRC>/rules"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/.kimi-code/.apothem/support/skills",
+    "source": "<APOTHEM_SRC>/skills"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "command_skills",
+    "outcome": "created",
+    "path": "<ROOT>/.kimi-code/.apothem/support/skills",
+    "source": "<APOTHEM_SRC>/commands"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/.kimi-code/.apothem/support/agents",
+    "source": "<APOTHEM_SRC>/agents"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/.kimi-code/.apothem/support/templates",
+    "source": "<APOTHEM_SRC>/templates"
+  }
+]

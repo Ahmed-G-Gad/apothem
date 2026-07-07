@@ -1,0 +1,31 @@
+---
+title: "Commit Conventions"
+description: "Establish commit message format, release tagging, human-only authorship discipline, and per-task cadence for git artifacts and version control."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Canonical reference for git commit messages, release tags, and authorship discipline.** The summary at [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Conventions is the inline declaration; this page is the standalone reference downstream contributors cite.
+
+---
+
+## 1. Conventional Commits
+
+Commit subjects follow the **Conventional Commits** shape: `<type>(<scope>): <subject>`. The closed `<type>` set is `{feat, fix, chore, docs, refactor, test, perf, ci, build, style, revert, release}`. The `<scope>` is the surface the commit touches (e.g., `feat(conformity)`, `docs(adr)`, `fix(ci)`); the scope is omitted only for cross-cutting changes that do not localize.
+
+The subject is imperative-mood, lowercase after the type/scope colon, no trailing period, and under 72 characters. The body — separated from the subject by a blank line — explains **why** the change exists, not what the diff changed; the diff is itself the canonical record of what.
+
+## 2. Authorship Discipline (Human-Only)
+
+Every authorship surface in every git artifact (commit subject, commit body, `Author:` field, `Co-Authored-By:` trailer, `Signed-off-by:` trailer, branch name, tag name, tag annotation, stash name, git-notes body, PR title, PR description) names **human contributors only**. The harness never attributes itself, the underlying language model, the runtime / harness / IDE / extension / vendor, or any other automated tool to any of those surfaces. Forbidden patterns include `Co-Authored-By: <model-name>`, `Co-Authored-By: <noreply@*-vendor.com>`, body narrative like `generated with X` or `co-authored by an automated helper`, and any subject-line marker that signals non-human authorship. The full specification lives at [`src/apothem/rules/production-ready-prs.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/production-ready-prs.md) §6; mechanical enforcement lives at [`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/hooks/messages/pretooluse-bash.md) Scan 3.
+
+## 3. Release Tags (Semantic Versioning)
+
+Release tags follow **Semantic Versioning** (`vMAJOR.MINOR.PATCH`). The version pre-1.0 is `0.MINOR.PATCH` per the spec's pre-stable convention; breaking changes increment MINOR, bug fixes increment PATCH. The tag is annotated (`git tag -a`) and signed at the publication tier per [`site/content/docs/governance/release-engineering-policy.mdx`](/docs/governance/release-engineering-policy). The package version lives in the source manifest (`pyproject.toml` `version`), and runtime/version-bearing surfaces derive from that package metadata.
+
+## 4. Per-Task Cadence
+
+Commits land per-task at SHARED+ seriousness, per-phase at PERSONAL_USE, optional at EXPLORING. A task's commit lands immediately after the task's verification gates pass; deferred commits accumulate context and risk losing scope. The full discipline lives at [`src/apothem/rules/operational-mandates.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/operational-mandates.md) §CM-13.
+
+## 5. Validators
+
+The pre-commit hook chain at [`.pre-commit-config.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/.pre-commit-config.yaml) enforces the per-write quality gates. Authorship-discipline enforcement at the bash hook (Scan 3 of `src/apothem/hooks/messages/pretooluse-bash.md`) catches forbidden trailers and body markers before any git-write operation lands.

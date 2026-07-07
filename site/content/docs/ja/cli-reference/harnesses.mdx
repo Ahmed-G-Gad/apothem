@@ -1,0 +1,93 @@
+---
+title: "harnesses"
+description: "apothem harnesses コマンドグループの CLI リファレンス。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+登録されたハーネスアダプターを一覧表示し、検査します。
+
+`harnesses` は、2 つのサブコマンドを持つコマンドグループです：`list` と `show`。
+
+## 構文
+
+```
+apothem harnesses list [--quiet|-q] [--verbose|-v]
+                       [--format plain|json] [--json] [--no-color]
+apothem harnesses show NAME
+                       [--quiet|-q] [--verbose|-v]
+                       [--format plain|json] [--json] [--no-color]
+```
+
+## サブコマンド
+
+### `harnesses list`
+
+登録されたすべてのハーネスアダプターを一覧表示します。
+
+| オプション | 説明 |
+|---|---|
+| `--quiet`, `-q` | 情報出力を抑制します。エラーのみを出力します。 |
+| `--verbose`, `-v` | 追加の診断出力を出力します。 |
+| `--format plain\|json` | 出力形式（デフォルト：`plain`）。 |
+| `--json` | `--format json` の省略形。 |
+| `--no-color` | 出力中の ANSI カラーコードを無効にします。 |
+| `-h`, `--help` | ヘルプを表示して終了します。 |
+
+### `harnesses show NAME`
+
+特定のハーネスアダプターの詳細を表示します。`NAME` は kebab-case の
+ハーネス識別子です。利用可能な識別子を確認するには `apothem harnesses list` を実行してください。
+
+| オプション | 説明 |
+|---|---|
+| `NAME` | 検査するハーネスアダプター（必須の位置引数）。 |
+| `--quiet`, `-q` | 情報出力を抑制します。エラーのみを出力します。 |
+| `--verbose`, `-v` | 追加の診断出力を出力します。 |
+| `--format plain\|json` | 出力形式（デフォルト：`plain`）。 |
+| `--json` | `--format json` の省略形。 |
+| `--no-color` | 出力中の ANSI カラーコードを無効にします。 |
+| `-h`, `--help` | ヘルプを表示して終了します。 |
+
+## 例
+
+```bash
+apothem harnesses list
+apothem harnesses list --json
+apothem harnesses show claude-code
+apothem harnesses show claude-code --json
+```
+
+登録されたハーネス ID は次のとおりです。
+
+```text
+antigravity
+claude-code
+codebuddy
+codex
+cursor
+gemini-cli
+github-copilot
+glm
+hermes
+kimi-code
+kiro
+open-claw
+opencode
+qwen-code
+trae
+windsurf
+zed
+```
+
+## 終了コード
+
+| コード | 意味 |
+|---|---|
+| 0 | 成功 |
+| 1 | ハーネスが見つかりません（不明な `NAME` を指定した `harnesses show`） |
+
+## 関連項目
+
+- [apothem doctor](/docs/cli-reference/doctor) — システム全体のインストール診断を実行します
+- [apothem verify](/docs/cli-reference/verify) — 特定のハーネスのインストールを確認します

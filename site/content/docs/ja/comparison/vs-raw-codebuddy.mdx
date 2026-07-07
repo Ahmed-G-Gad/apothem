@@ -1,0 +1,48 @@
+---
+title: "Apothem と素の CodeBuddy ルールの比較"
+description: "CodeBuddy のプロジェクトルールを、プロジェクトごとに .codebuddy/rules ファイルを手書きするのではなく Apothem 経由にする理由。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+CodeBuddy はプロジェクトルールを `.codebuddy/rules/*.md` から読み込みます。それ
+らのファイルをプロジェクトごとに、ずっと手書きすることもできます。Apothem はその
+うちの 1 つをあなたの代わりに管理し、すべての環境とすべてのプロジェクトにわたって
+一貫させます。
+
+## 素のやり方
+
+CodeBuddy ルールを手書きするとは、次のことを意味します。
+
+- 新しいプロジェクトごとに同じエンジニアリングの規律を `.codebuddy/rules/` へ
+  コピー＆ペーストする。
+- 規律が進化するにつれて同期がずれていく——単一の信頼できる情報源がない。
+- Cursor、Windsurf、Claude Code、そしてあなたが使う他のすべてのツールについて
+  同じ慣習を再導出する。各ツールに独自のルール面があるためです。
+
+## Apothem のやり方
+
+Apothem はソースリポジトリに 1 つの正規のルール群を保ち、それを各環境のネイティブ
+面へ投影します。CodeBuddy には次を書き込みます。
+
+```
+<project>/.codebuddy/rules/apothem-rules.md
+```
+
+| 関心事 | 素の CodeBuddy | Apothem |
+| --- | --- | --- |
+| 信頼できる情報源 | 各プロジェクトのファイル | 1 つの正規の群 |
+| 環境間の一貫性 | ツールごとに手動 | 自動で投影 |
+| 更新 | プロジェクトごとに手で編集 | `apothem update --harness codebuddy --project <path>` |
+| 操作者自身のルール | 規律と混在 | 影響なし——Apothem は専用ファイルを書き込む |
+| 削除 | 手動削除 | タイムスタンプ付きバックアップを伴う `apothem uninstall` |
+
+## あなたのものとして残るもの
+
+Apothem は `apothem-rules.md` だけを書き込みます。あなたの `CODEBUDDY.md` メモリ
+ファイル、`.codebuddy/settings.json` の権限と MCP サーバー、そしてあなたが書いた
+他のあらゆるルールファイルは、完全に操作者の所有のままです。アダプターはそれらの
+面を認識しますが、決して編集しません。
+
+ライフサイクルコマンド全体は
+[CodeBuddy 環境ページ](/docs/harnesses/codebuddy)を参照してください。

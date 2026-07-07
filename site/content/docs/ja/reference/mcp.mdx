@@ -1,0 +1,44 @@
+---
+title: "MCP サーバー"
+description: "Model Context Protocol サーバー設定 — オペレーター所有であり、各ツールのネイティブ MCP 機構を通じて登録される。Apothem は共有プロファイルからインベントリを同期するが、サーバーエントリは一切記述しない。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Model Context Protocol (MCP) サーバーは**オペレーター所有**です。Apothem は共有
+プロファイルに MCP インベントリを保持し、それを各ツールのネイティブ MCP サーフェスへ
+投影しますが、自前のサーバーエントリは一切記述しません — このサーフェスは管理する
+対象としてあなたのものであり続けます。
+
+## MCP サーバーが登録される場所
+
+各ツールは自身のネイティブ機構を通じて MCP サーバーを登録し、Apothem はそのサーフェスを
+上書きするのではなく尊重します。Claude Code アダプター（数あるうちの一つ）では、
+サーバーは `claude mcp add` で `~/.claude.json`（ユーザーまたはローカルスコープ）と
+プロジェクトレベルの `.mcp.json` に登録されます。他のアダプターはそれぞれのネイティブ
+サーフェスへ投影します。Apothem の管理対象設定が `mcpServers` ブロックを保持することは
+決してありません。
+
+## サーバーの追加
+
+ツールのネイティブ機構を通じてサーバーを登録します。正規のエントリ形状は
+`mcpServers` の下の一つのキーです。
+
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/some/path"]
+    }
+  }
+}
+```
+
+ツールのランタイムは、セッション開始時に登録済みのサーバーを読み込みます。
+新しいサーバーを取り込むにはツールを再起動してください。
+
+## 命名規約
+
+MCP ツールは、ツールの標準的な MCP-ツール命名規約に従い、`mcp__<server>__<tool>`
+としてアシスタントに現れます。

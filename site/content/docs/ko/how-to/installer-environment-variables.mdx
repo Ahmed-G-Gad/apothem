@@ -1,0 +1,118 @@
+---
+title: "설치 프로그램 환경 변수"
+description: "환경 변수로 스크립트 설치 프로그램(대상, 소스, 도구, 프로파일, 검증)을 제어합니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+목표: 스크립트를 편집하지 않고, 실행 전에 환경 변수를 설정하여 `install.sh` /
+`install.ps1`을 구동합니다.
+
+## 사전 요건
+
+- POSIX 셸(`bash`) 또는 PowerShell 5.1+.
+- 변수는 설치 프로그램 상단에서 한 번 읽히므로, 동일한 명령에서 설정하거나
+  (먼저 export 한 뒤) 설치 프로그램을 실행하십시오.
+
+## 설치 프로그램 변수
+
+| 변수 | 제어 대상 | 기본값 |
+| --- | --- | --- |
+| `APOTHEM_HOME` | 복제된 소스 트리의 설치 대상 | `$HOME/.apothem` |
+| `APOTHEM_REPO` | 복제할 Git 원격 | `https://github.com/ahmed-g-gad/apothem` |
+| `APOTHEM_REF` | 체크아웃할 Git 레퍼런스. 설정하지 않으면 최신 서명 `vMAJOR.MINOR.PATCH` 태그로 해석되고, 태그 값은 그것에 고정하며, `main`은 이동하는 브랜치를 선택합니다 | 설정 안 함 (최신 서명 태그) |
+| `APOTHEM_ALLOW_UNVERIFIED` | `1`로 설정 시 태그 서명 검증 실패를 치명적 중단에서 경고로 강등 | `0` (검증, fail-closed) |
+| `APOTHEM_SOURCE` | 복제 대신 사용할 명시적 로컬 소스 트리 | 설정 안 함 (복제) |
+| `APOTHEM_HARNESS` | 설치할 도구 | `claude-code` |
+| `APOTHEM_PROFILE` | 공유 프로파일 YAML 경로 | `$HOME/.config/apothem/profile.yaml` |
+| `APOTHEM_SKIP_VERIFY` | `1`로 설정 시 설치 후 검증 단계 건너뛰기 | `0` (검증 실행) |
+| `APOTHEM_AUTO_INSTALL_DEPS` | `1`로 설정하면 누락된 전제 조건 `click` / `rich`를 묻지 않고 자동으로 설치합니다 | `0`(묻기, 비대화형 파이프에서는 거부) |
+| `APOTHEM_BIN_DIR` | 배치된 `apothem` 명령 shim의 디렉터리 | `$HOME/.local/bin`(POSIX); `%LOCALAPPDATA%\Microsoft\WindowsApps`(Windows) |
+
+`APOTHEM_SOURCE`는 복제보다 우선합니다. `src/apothem`을 포함하는 체크아웃으로
+설정되면 설치 프로그램은 그것을 직접 사용하고, `APOTHEM_REPO` /
+`APOTHEM_REF`는 결코 건드리지 않으며, 태그 해석과 서명 검증을 건너뜁니다
+(검증할 항목을 가져오지 않습니다).
+
+## 신뢰 모델
+
+`APOTHEM_REF`가 설정되지 않은 경우, 설치 프로그램은 최신 서명 릴리스 태그를
+해석하고 구성을 머티리얼라이즈하기 전에 `git verify-tag`로 서명을 검증합니다.
+서명되지 않았거나 변조된 태그는 설치를 중단합니다. 알려진 릴리스를
+`APOTHEM_REF=<tag>`로 고정하거나(역시 검증됨;
+[릴리스 페이지](https://github.com/ahmed-g-gad/apothem/releases)의 태그),
+`APOTHEM_REF=main`으로 이동하는 브랜치를 선택하거나(검증 안 됨),
+`APOTHEM_ALLOW_UNVERIFIED=1`을 설정하여 경고와 함께 검증 실패를 넘어 진행할 수
+있습니다(에어갭, 로컬, 서명 전 릴리스 사용).
+
+```bash title="고정된 검증 설치"
+APOTHEM_REF=vMAJOR.MINOR.PATCH bash install.sh
+```
+
+```bash title="검증 없이 진행 (임시 / 에어갭)"
+APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
+```
+
+## 단계 (POSIX bash)
+
+1. 기본값이 아닌 도구를 설치합니다:
+
+   ```bash
+   APOTHEM_HARNESS=cursor bash install.sh
+   ```
+
+2. 소스 레퍼런스와 설치 대상을 고정합니다:
+
+   ```bash
+   APOTHEM_REF=main APOTHEM_HOME=/opt/apothem bash install.sh
+   ```
+
+3. 로컬 체크아웃과 사용자 지정 프로파일을 사용하고 검증을 건너뜁니다:
+
+   ```bash
+   APOTHEM_SOURCE=/work/apothem \
+   APOTHEM_PROFILE=/work/profile.yaml \
+   APOTHEM_SKIP_VERIFY=1 \
+   bash install.sh
+   ```
+
+## 단계 (PowerShell)
+
+설치 프로그램을 실행하기 전에 각 변수를 `$env:`에 설정합니다:
+
+```powershell
+$env:APOTHEM_HARNESS = 'cursor'
+pwsh -NoProfile -File install.ps1
+```
+
+```powershell
+$env:APOTHEM_REF = 'main'
+$env:APOTHEM_HOME = 'C:\opt\apothem'
+pwsh -NoProfile -File install.ps1
+```
+
+```powershell
+$env:APOTHEM_SOURCE = 'C:\work\apothem'
+$env:APOTHEM_PROFILE = 'C:\work\profile.yaml'
+$env:APOTHEM_SKIP_VERIFY = '1'
+pwsh -NoProfile -File install.ps1
+```
+
+## 검증
+
+설치 프로그램은 `✓ Harness <name> installed`를 출력한 뒤
+(`APOTHEM_SKIP_VERIFY=1`이 아닌 한) `✓ verify passed`를 출력합니다. 독립적으로
+확인하십시오:
+
+```bash
+apothem verify --harness cursor
+```
+
+프로파일이 아직 존재하지 않았다면, 설치 프로그램은 예시로부터 하나를 생성하고
+일찍 종료합니다 — `$APOTHEM_PROFILE`을 편집한 뒤 다시 실행하십시오.
+
+## 관련 항목
+
+- [설치하기](/docs/install)는 원샷 네트워크 설치를 다룹니다.
+- 첫 설치 이후 CLI를 통해 도구를 추가하려면
+  [도구 추가하기](/docs/how-to/adding-a-harness)를 참조하십시오.

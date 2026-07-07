@@ -1,0 +1,11 @@
+{
+  "title": "الأمان",
+  "pages": [
+    "index",
+    "openssf-scorecard-target",
+    "branch-protection-ruleset",
+    "webhooks-audit",
+    "binary-artifacts-sweep",
+    "..."
+  ]
+}

@@ -1,0 +1,54 @@
+---
+title: "Source layout"
+description: "Why Apothem uses a src/ layout and how the tree is organized."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem adopted the [PyPA src-layout](https://packaging.python.org/en/latest/discussions/src-layout-vs-flat-layout/), placing all importable Python under `src/apothem/`.
+
+## Why src-layout
+
+- **Import isolation.** `import apothem` resolves only when `src/` is on the path
+  (the engine runs as `PYTHONPATH=src python -m apothem`), preventing accidental
+  imports of the working tree from an unrelated directory.
+- **Self-contained runtime.** Apothem runs directly from a checkout with its
+  dependencies vendored under `src/apothem/_vendor/` — no install step is required.
+  src-layout keeps that importable surface cleanly separated from the repository's
+  tooling, tests, and scripts.
+- **Clean distribution.** The same layout produces a well-formed sdist and wheel
+  (and an optional `pip install -e .` editable install) whose contents match exactly
+  what ships, with no stray top-level modules leaking in.
+
+## Tree structure
+
+```
+src/apothem/
+    agents/         persistent agent definitions (*.md)
+    audit/          inventory and provenance tools
+    benchmarks/     performance benchmarks
+    cli/            Click CLI (quickstart, install, update, uninstall, verify, status, diff, rollback, harnesses, profile, doctor, completion)
+    commands/       slash command definitions (*.md)
+    conformity/     mechanical gate checkers (*-grep.py)
+    harnesses/      one sub-package per harness adapter (17 adapters)
+    hooks/          hook dispatcher + message files
+    lib/            shared Python library
+    output-styles/  output-style definitions (*.md)
+    rules/          behavioral rules (*.md)
+    schemas/        YAML/JSON schemas
+    skills/         reusable skill templates (folder/SKILL.md)
+    statuslines/    status-line config (*.json)
+    templates/      reusable template artifacts
+```
+
+## Importable vs. configuration artifacts
+
+Many items under `src/apothem/` are Markdown configuration artifacts, not
+Python modules. The importable Python surface is:
+
+- `src/apothem/cli/` (the Click CLI exposed as the `apothem` entry point)
+- `src/apothem/harnesses/` (the 17 harness adapter sub-packages)
+- `src/apothem/lib/` (shared library: profile, registry, materializer, propagation)
+- `src/apothem/hooks/` (dispatch.py, lib/)
+- `src/apothem/conformity/` (mechanical grep scripts)
+- `src/apothem/audit/` (inventory scripts)
+- `src/apothem/benchmarks/` (performance benchmark drivers)

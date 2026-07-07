@@ -1,0 +1,94 @@
+---
+title: "Gemini CLI"
+description: "Gemini CLI (GA) के लिए Apothem टूल अडैप्टर।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**विक्रेता:** Google
+**इंस्टॉल नाम:** `gemini-cli`
+**स्थिति:** GA
+**नेटिव कॉन्फ़िग:** प्रोजेक्ट-स्थानीय `GEMINI.md` और `.gemini/`
+
+## इंस्टॉलेशन
+
+```bash
+apothem install --harness gemini-cli --project /path/to/project
+```
+
+यह अडैप्टर प्रोजेक्ट-स्कोप वाला है। यह प्रोजेक्ट का `GEMINI.md` इंस्टॉल करता है,
+Apothem कमांड को Gemini TOML स्लैश कमांड में परिवर्तित करता है, स्थानीय सहायक
+परिभाषाओं को सामान्य करता है, और गैर-नेटिव सहायता समुच्चयों को `.gemini/.apothem/support/`
+के अंतर्गत रखता है।
+
+**लिखी गई फ़ाइलें:**
+
+```text
+GEMINI.md
+.gemini/commands/*.toml
+.gemini/agents/*.md
+.gemini/skills/
+.gemini/.apothem/support/
+```
+
+## प्रोफ़ाइल से नेटिव कॉन्फ़िग में मानचित्रण
+
+अडैप्टर Apothem के साझा समुच्चय पढ़ता है और प्रत्येक को Gemini-संगत सतह के माध्यम
+से रूट करता है। Markdown नियम, टेम्पलेट और हुक सामग्री `.gemini/.apothem/support/` के अंतर्गत
+बनी रहती हैं क्योंकि वे सहायता सामग्री हैं, Gemini-नेटिव नियम डायरेक्टरी नहीं।
+
+## संगतता टिप्पणियाँ
+
+जो टूल वैश्विक Gemini प्रोफ़ाइल का उपयोग करते हैं उनके लिए `~/.gemini/` उपयोक्ता-स्तरीय
+क्षेत्र बना रहता है। Gemini CLI अडैप्टर केवल `--project` के माध्यम से पास किए गए
+प्रोजेक्ट में लिखता है।
+
+## सत्यापन
+
+```bash
+apothem verify --harness gemini-cli --project /path/to/project
+```
+
+verify कमांड पुष्टि करता है कि:
+
+1. नेटिव कॉन्फ़िग अपेक्षित पथ पर मौजूद है।
+2. साझा प्रोफ़ाइल के सभी अनिवार्य फ़ील्ड मौजूद हैं।
+3. अडैप्टर-विशिष्ट सत्यापन दिनचर्या सफलता की रिपोर्ट करती है।
+
+## अपडेट करना
+
+```bash
+apothem update --harness gemini-cli --project /path/to/project
+```
+
+`GEMINI.md`, परिवर्तित कमांड, स्थानीय सहायक परिभाषाएँ, इंस्टॉल किए गए कौशल, और
+`.gemini/.apothem/support/` सहायता ट्री को रीफ़्रेश करता है।
+
+## अनइंस्टॉल करना
+
+```bash
+apothem uninstall --harness gemini-cli --project /path/to/project
+```
+
+अडैप्टर द्वारा लिखी गई नेटिव कॉन्फ़िग फ़ाइलों को हटाता है।
+साझा प्रोफ़ाइल YAML और Apothem इंजन अप्रभावित रहते हैं।
+
+## अनुरूपता द्वार
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## समस्या निवारण
+
+| लक्षण | समाधान |
+|---------|-----|
+| कॉन्फ़िग फ़ाइल नहीं मिली | `apothem install --harness gemini-cli --project /path/to/project` पुनः चलाएँ |
+| सत्यापन विफल रहा | `apothem update --harness gemini-cli --project /path/to/project` चलाएँ, फिर पुनः सत्यापित करें |
+| अप्रत्याशित कॉन्फ़िग सामग्री | `~/.config/apothem/profile.yaml` या `--profile PATH` जाँचें, फिर `apothem update --harness gemini-cli --project /path/to/project` पुनः चलाएँ |
+
+## कॉन्फ़िगरेशन नॉब
+
+| फ़्लैग | डिफ़ॉल्ट | विवरण |
+|------|---------|-------------|
+| `--dry-run` | `false` | फ़ाइलें लिखे बिना इंस्टॉलेशन का पूर्वावलोकन करें। |

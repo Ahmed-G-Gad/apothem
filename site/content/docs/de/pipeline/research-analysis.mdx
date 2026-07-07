@@ -1,0 +1,70 @@
+---
+title: "/research-analysis"
+description: "/research-analysis — Analysiert die Rohdaten gemäß dem präregistrierten Plan: geplante Tests, Effektstärken mit Konfidenzintervallen, Robustheitsprüfungen und offengelegte Abweichungen."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rolle:** Leitender Forscher (Analyse)
+**Pipeline-Position:** Kettenmitte
+
+Analysiert die Rohdaten gemäß dem präregistrierten Plan — führt die geplanten statistischen Tests aus, berichtet Effektstärken mit Konfidenzintervallen (nicht nur p-Werte), wendet die Korrektur für multiple Vergleiche an, wo zutreffend, führt Robustheits- / Sensitivitätsprüfungen durch und legt jede Abweichung von der Präregistrierung offen.
+
+## Kanonischer Aufruf
+
+```bash
+/research-analysis
+```
+
+Mit Argumenten:
+
+```bash
+/research-analysis [path/to/research-suite/]
+```
+
+## Eingaben
+
+Die Rohdaten am host-natürlichen Ort, den die Experiment-Stufe aufgezeichnet hat, plus `_inputs/preregistration.md` (der eingefrorene Analyseplan).
+
+## Ausgaben
+
+`_outputs/analysis.md` (die präregistrierten Tests mit Effektstärken und KIs, die Korrektur für multiple Vergleiche, die Robustheitsprüfungen und die offengelegten Abweichungen) + Abbildungen / Tabellen an einem host-natürlichen Ort.
+
+## Nachgelagert
+
+/research-paper (nachgelagerter Konsument)
+
+## Workflow-Phasen
+
+Der Befehl folgt dem standardmäßigen `/research`-Pipeline-Workflow:
+
+1. **Kontext laden** — Die Rohdaten und die Präregistrierung lesen.
+2. **Das Sequenz-Gate prüfen** — Bestätigen, dass die Experiment-Ausgaben vorhanden sind; andernfalls mit `Blocked: run /research-experiment first` anhalten.
+3. **Analysieren** — Die präregistrierten Tests ausführen; Effektstärken + KIs berichten; für multiple Vergleiche korrigieren; Robustheits- / Sensitivitätsprüfungen durchführen.
+4. **Abweichungen offenlegen** — Jede Abweichung vom präregistrierten Plan festhalten.
+5. **Das Übergabe-Manifest aktualisieren** — Den Analysepfad und die Abbildungen / Tabellen festhalten.
+6. **Die Analyse ausgeben** — `_outputs/analysis.md` + Abbildungen / Tabellen.
+
+## Rigorositätsuntergrenze
+
+Stochastische Ergebnisse werden als bestes, mittleres, medianes, Standardabweichungs- und schlechtestes Ergebnis über die Wiederholungen hinweg berichtet, mit Konvergenzkurven und Verteilungsdiagrammen. Vergleiche verwenden nichtparametrische Tests — ein gepaarter Vorzeichen-Rang-Test paarweise, ein Omnibus-Rangtest mit Post-hoc-Korrektur über Methoden hinweg — berichtet mit einer Effektstärke der stochastischen Überlegenheit und einem Diagramm der kritischen Differenz. Ein Ergebnis rückt nur dann ins Paper vor, wenn es das Vorrückungs-Gate durchläuft: Es schlägt seine Vergleichsverfahren überzeugend und signifikant, und die Freigabe wird in einem auditierbaren Runbook protokolliert.
+
+## Fehlermodi
+
+| Symptom | Ursache | Behebung |
+|---------|-------|----------|
+| Blocked: run /research-experiment first | Keine Rohdaten | `/research-experiment` ausführen, um die Daten + das Protokoll zu erzeugen |
+| p-Wert ohne Effektstärke berichtet | Unvollständige statistische Berichterstattung | Effektstärken + Konfidenzintervalle berichten |
+| Nicht offengelegte Analyseabweichung | Der Plan wich stillschweigend ab | Die Abweichung von der Präregistrierung offenlegen |
+
+## Beispiele
+
+```bash
+# Die Rohdaten gemäß dem präregistrierten Plan analysieren
+/research-analysis path/to/research-suite/
+```
+
+## Querverweise
+
+- [Pipeline-Überblick](/docs/pipeline)
+- [Befehlsreferenz](/docs/reference/commands)

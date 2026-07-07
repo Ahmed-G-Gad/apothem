@@ -1,0 +1,40 @@
+---
+title: "Apothem face à la configuration manuelle de Gemini CLI"
+description: "Maintenir à la main le fichier de règles GEMINI.md de Gemini CLI face à le rendre depuis le profil partagé d'Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Gemini CLI lit un unique fichier de règles `GEMINI.md`. L'adaptateur gemini-cli
+d'Apothem le rend depuis le profil partagé. Cette page met en regard la
+maintenance manuelle de cette configuration et sa gestion avec Apothem.
+
+## Comparaison d'effort
+
+| Tâche | Configuration manuelle | Gérée par Apothem |
+| ---- | --------------- | --------------- |
+| Écrire les règles | Éditer à la main un seul `GEMINI.md` | Rendues : règles partagées intégrées dans `GEMINI.md` |
+| Garder les règles alignées avec les autres environnements | Manuel, par outil | Automatique lors de `apothem update` |
+| Installer / supprimer la configuration | Écrire et supprimer `GEMINI.md` à la main | `apothem install` / `apothem uninstall` |
+| Vérifier que la configuration est correcte | Inspection manuelle | `apothem verify --harness gemini-cli` |
+
+## Ce que gère Apothem
+
+L'adaptateur gemini-cli intègre les règles partagées dans un seul `GEMINI.md`.
+Gemini CLI n'a pas de hook PreToolUse, donc l'intention des garde-fous s'exprime
+dans la prose des règles plutôt qu'en un point d'interception d'appel d'outil.
+Chaque modification des règles partagées re-rend `GEMINI.md` lors du prochain
+`apothem update`.
+
+## Chemin de migration
+
+1. Exécutez `apothem profile init` pour créer le profil partagé si vous ne l'avez pas encore.
+2. Déplacez les règles de votre `GEMINI.md` existant vers le corpus partagé.
+3. Exécutez `apothem install --harness gemini-cli` pour rendre et écrire `GEMINI.md`.
+4. Exécutez `apothem verify --harness gemini-cli` pour confirmer que la configuration est en place.
+5. Utilisez `apothem update --harness gemini-cli` pour chaque modification ultérieure.
+
+## À lire ensuite
+
+- [Référence de l'adaptateur Gemini CLI](/docs/harnesses/gemini-cli)
+- [Aperçu de la comparaison](/docs/comparison)

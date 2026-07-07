@@ -1,0 +1,89 @@
+---
+title: "Harness adapters"
+description: "Apothem harness adapters — one shared profile, seventeen supported targets."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem ships seventeen built-in harness adapters. Each adapter translates the
+same shared cohorts into platform-native files where the platform supports
+them and Apothem-owned support trees where it does not.
+
+## Supported harnesses
+
+The supported registry contains exactly seventeen adapters. Use these exact
+install names with `--harness`, or use `all` for the deterministic registry
+set:
+
+```text
+antigravity
+claude-code
+codebuddy
+codex
+cursor
+gemini-cli
+github-copilot
+glm
+hermes
+kimi-code
+kiro
+open-claw
+opencode
+qwen-code
+trae
+windsurf
+zed
+```
+
+The detailed registry matrix, target paths, capability states, MCP support,
+and convention-pin evidence live in the [technical registry reference](/docs/reference/harness-registry).
+
+## Install multiple harnesses
+
+Install one harness, or use `all` to select the registry in deterministic
+order. Project-scope harnesses require `--project PATH`; that includes `all`
+because the registry includes both user-scope and project-scope targets.
+
+```bash
+apothem install --harness claude-code
+apothem install --harness cursor --project /path/to/project
+apothem install --harness gemini-cli --project /path/to/project
+apothem install --harness all --project /path/to/project
+```
+
+## Verify your installs
+
+Verify each harness adapter individually, or call `apothem doctor` for a
+per-adapter install-status summary across every registered adapter:
+
+```bash
+apothem verify --harness claude-code
+apothem verify --harness all --project /path/to/project
+apothem doctor
+```
+
+## How adapters work
+
+Each adapter implements the `HarnessAdapter` protocol registered via
+setuptools entry-points. On install, the CLI loads and validates the shared
+YAML profile, resolves the adapter through the registry, validates the
+materialization plan, and writes the platform-native config to the harness's
+native user or project location. On update, it re-derives from the current
+profile state.
+
+```
+profile.yaml + packaged cohorts
+    identity / preferences / rules
+    commands / skills / delegated definitions / hooks / templates
+         |
+         +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/antigravity-cli/plugins/apothem/
+         +-- claude-code    --> ~/.claude/ native folders + ~/.claude/.apothem/support/
+         +-- codex          --> ~/.codex/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
+         +-- cursor         --> <project>/.cursor/rules/*.mdc
+         +-- gemini-cli     --> <project>/GEMINI.md + <project>/.gemini/
+         +-- github-copilot --> <project>/.github/copilot-instructions.md
+         +-- windsurf       --> <project>/.devin/rules/
+         +-- ...
+```
+
+See [Harness adapter abstraction](/docs/architecture/harness-adapter-abstraction)
+for the protocol specification.

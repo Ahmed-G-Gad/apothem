@@ -1,0 +1,71 @@
+---
+title: "Dependency Pinning Manifest"
+description: "Dependency declaration policy covering Python runtime ranges, dev tooling, release-tool lock files, and ratified version floors for each build surface."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> Ratified posture for how Apothem declares, pins, and locks dependencies.
+> Audience: contributors and downstream consumers who need to understand the
+> reproducibility model.
+
+## Posture
+
+Apothem is a Python CLI with a small runtime dependency set plus a larger
+development, audit, release, and documentation toolchain. Runtime dependencies
+use conservative lower bounds in `pyproject.toml`; the website commits
+`site/package-lock.json`; GitHub Actions are pinned by immutable SHA with
+version comments and are bumped by Renovate.
+
+| Class | Declaration | Lock policy |
+|---|---|---|
+| Runtime Python dependencies | `[project.dependencies]` in `pyproject.toml` | Lower-bound ranges; no committed Python runtime lock |
+| Dev / security tooling | `[project.optional-dependencies]` extras | Lower-bound ranges; CI installs current matching versions |
+| Release tooling | `scripts/release/requirements-build-linux.txt` | Hash-locked for release workflows; generated from the release tooling closure |
+| CI-only tools | `.github/workflows/*.yml` | Workflow-only pip tools use exact pins (`pip`, `bandit`, `pip-audit`, `pip-licenses`, `pyinstaller`) |
+| Documentation site | `site/package.json` | `site/package-lock.json` committed and consumed by `npm ci` |
+| GitHub Actions | SHA-pinned `uses:` refs with version comments | Renovate proposes updates; exceptions carry `action-pinning-exempt:` markers |
+
+## Release ratification
+
+| Surface | Ratified state | Rationale |
+|---|---|---|
+| Runtime deps | Current lower bounds live in `pyproject.toml` `[project.dependencies]` | Current stable floors ratified before release; no known runtime CVE blocker |
+| Dev tooling | Current lower bounds live in `pyproject.toml` `dev` extra | Latest stable floors ratified before release |
+| Security tooling | Current lower bounds live in `pyproject.toml` `security` extra | Current scanner floors ratified before release |
+| Release tooling | Hash-locked closure lives in `scripts/release/requirements-build-linux.txt` | Release workflow installs with `--require-hashes`; local scripts require `build` to already exist instead of silently installing moving dependencies |
+| Docs tooling | Current ranges live in `site/package.json`; exact resolution lives in `site/package-lock.json` | `npm outdated` returns no stale docs dependency after lockfile refresh |
+| GitHub Actions | Existing SHA pins retained for the current release; the SLSA reusable workflow remains the documented tag-pinned exception | Public CI rerun is green; broad action-major upgrades are intentionally left to dependency-automation PRs to avoid release-surface churn |
+| npm packaging | Manual-only `publish-npm.yml` workflow; no automatic release trigger | The single public npm package is `@ahmed-g-gad/apothem`; publication runs after release readiness passes |
+
+## Locking
+
+Python lock files are generated on demand by the contributor. They are not
+committed because Apothem's runtime closure is small, the CLI supports multiple
+Python minor versions, and CI intentionally exercises the latest matching
+tooling versions.
+
+```sh
+# Astral uv:
+uv pip install -e ".[dev,security,release]"
+uv pip freeze > requirements.dev.lock
+
+# pip-tools:
+pip-compile --extra=dev --extra=security --extra=release -o requirements.dev.lock pyproject.toml
+
+# Plain pip:
+pip install -e ".[dev,security,release]"
+pip freeze > requirements.dev.lock
+```
+
+The website is different: `site/package-lock.json` is committed and CI uses
+`npm ci`, so the rendered documentation site has a reproducible Node closure.
+
+## Rationale
+
+- **Why range pins for Python?** The CLI supports a broad Python matrix and CI
+  should reveal compatibility issues with current tooling before users hit
+  them.
+- **Why a committed Node lock?** The website is a deployed static artifact; the
+  lockfile gives deterministic `npm ci` builds for that public surface.
+- **Why SHA-pinned Actions?** Tags are mutable; SHAs are immutable. Renovate
+  updates the pinned SHAs, while the release gate records any intentional hold.

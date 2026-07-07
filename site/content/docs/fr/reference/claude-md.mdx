@@ -1,0 +1,41 @@
+---
+title: "`CLAUDE.md`"
+description: "La configuration de l'écosystème, toujours chargée, qui fournit le contexte de base à chaque interaction, avec sept sections couvrant la suite de planification, l'identité, les répertoires, les niveaux de gouvernance, les directives, les mandats et les registres."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+`CLAUDE.md` est la configuration de l'écosystème toujours chargée. Le runtime de
+le harness hôte la charge à chaque interaction, de sorte que son
+contenu est le *contexte de base* que chaque autre artefact étend.
+
+## Sections
+
+| Section | Objectif |
+|---------|---------|
+| §1 Suite de planification | Nomme le modèle maître de la suite de planification et les huit commandes `/plan-<stage>` |
+| §2 Identité cognitive et architecture logicielle | Déclare le rôle d'Architecte Logiciel Senior et la posture créative |
+| §3 Répertoires d'artefacts | Racines sur disque par classe (règles, commandes, compétences, travailleurs délégués, etc.) |
+| §4 Gouvernance à échelle de sérieux | Lentille d'échelonnement à quatre niveaux (EXPLORING / PERSONAL_USE / SHARED / PUBLIC_LAUNCH) |
+| §5 Directives opérationnelles | Cadres de résolution de problèmes, de découverte stratégique et de communication |
+| §6 Mandats transversaux | Le registre CM-N (CM-1 à CM-28) |
+| §7 Registres | Sous-registres pour les commandes, règles, travailleurs délégués, hooks, compétences, évolution et classes vides |
+
+## Conventions d'identifiant de mandat
+
+Trois préfixes portent des significations distinctes :
+
+- **CM-N** — mandat de configuration, défini dans la cohorte de règles
+  (`src/apothem/rules/operational-mandates.md` et les fichiers de règle par mandat).
+- **TM-N** — mandat de modèle, défini dans
+  `src/apothem/skills/plan-suite/master-template.md` §4.
+- **CP-N** — principe fondamental, défini dans le même modèle §6.
+
+Le modèle de la suite de planification est le registre canonique TM/CP ; les
+étapes du pipeline `/plan` résolvent les références croisées via ce fichier.
+
+## Voir aussi
+
+- [Règles](/docs/reference/rules) — les fichiers de règle qui opérationnalisent CM-1 à CM-28.
+- [Commandes](/docs/reference/commands) — les étapes du pipeline `/plan` que nomme l'ancre §1 Suite de planification.
+- [Hooks](/docs/reference/hooks) — la couche de hooks qui applique CM-7, CM-22 et CM-24.

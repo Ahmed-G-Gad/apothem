@@ -1,0 +1,120 @@
+---
+title: "Self-contained runtime"
+description: "How Apothem's engine runs from any checkout — vendored dependencies, the PYTHONPATH=src invocation model, and the plugin-tree bootstrap."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+# Self-Contained Runtime
+
+Apothem's engine is a self-contained runtime: it runs registry-free,
+directly from any checkout or placed source tree, because its third-party
+dependencies travel with it. Two pieces make that work — a vendored
+dependency tree and a `python -m` invocation model that needs no installed
+console scripts.
+
+## Vendored dependency tree
+
+The validation and serialization stack is vendored as pure-Python source
+under `src/apothem/_vendor/`, each package alongside its upstream license
+file:
+
+- `yaml` (the pure-Python parser/emitter; the optional libyaml C extension
+  is not carried)
+- `jsonschema`, with its dependency chain `attrs` (and its `attr` alias),
+  `referencing`, and `jsonschema_specifications`
+- `rpds` — a pure-Python shim that reimplements the `HashTrieMap`,
+  `HashTrieSet`, and `List` surface `jsonschema` and `referencing` use,
+  backed by builtin types, so the stack runs with zero compiled extensions
+- `typing_extensions`
+
+Vendored copies take precedence over any system-installed version: the
+bootstrap prepends the vendor directory to `sys.path` ahead of
+site-packages. The selection policy — what is vendored, what is not, and
+how vendored packages are refreshed — is documented in the
+[dependency vendoring strategy](/docs/architecture/vendoring-strategy).
+
+Two dependencies stay outside the tree: **`click`** and **`rich`**, the
+terminal-facing libraries the CLI imports. They must be importable under
+the interpreter that runs the engine; the installers check both, name any
+that is missing, and offer to install it for you — with your confirmation,
+or automatically with `--yes` / `APOTHEM_AUTO_INSTALL_DEPS=1`.
+
+## The `python -m` invocation model
+
+Apothem intentionally declares no console scripts in `pyproject.toml` —
+console scripts only exist when a package manager places them on `PATH`,
+and the self-contained runtime never assumes one. The engine has two
+invocation surfaces instead:
+
+| Surface | Invocation | Context |
+| ------- | ---------- | ------- |
+| Engine CLI | `python -m apothem <command>` | A source tree with `src/` on `PYTHONPATH` (checkout, npx cache, plugin tree) |
+| Hook runtime | `python "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | The materialized copy under the harness root's shared `.apothem/support/` tree, by absolute path |
+
+- `python -m apothem` runs `src/apothem/__main__.py`, which calls
+  `apothem.cli:main` — the Click command group.
+- Hook entries in the materialized `settings.json` / `hooks.json` invoke
+  the dispatcher (and, for Claude Code, the conformity gate at
+  `<harness-root>/.apothem/support/conformity/gate.py`) by absolute script path.
+  Both are standalone stdlib scripts that bootstrap their own `sys.path`,
+  and the gate's schema fixtures ride beside it at
+  `<harness-root>/.apothem/support/schemas/`, so hooks run with **no importable
+  `apothem` package on the host**. The templates carry a
+  `${HARNESS_ROOT}` token that `apothem install` renders to the real
+  harness-root path in forward-slash form.
+- From a source checkout, the module forms
+  `python -m apothem.hooks.dispatch` and
+  `python -m apothem.conformity.gate` run the same code for development.
+
+The package directory becomes importable by prepending the checkout's
+`src/` directory to `PYTHONPATH`:
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+```
+
+This is exactly the invocation the one-shot installer prints at completion.
+
+## Plugin-tree bootstrap
+
+The Claude Code plugin bundles the engine under `<plugin_root>/lib/apothem`
+rather than relying on `PYTHONPATH`. The bootstrap module
+`apothem.lib.plugin_bootstrap` exposes `bootstrap_syspath`, which
+idempotently prepends `<plugin_root>/lib` and the vendor directory to
+`sys.path` so `import apothem` and every vendored dependency resolve from
+the plugin tree. A malformed tree (missing `lib/`) raises
+`PluginBootstrapError` rather than silently importing a stale system copy.
+
+## What the installer places on disk
+
+The script installers place a git clone of the source tree at `~/.apothem`
+(override with `APOTHEM_HOME`) and run the engine from it — no Python packages
+are installed into `site-packages` beyond the optional `click` / `rich`
+prerequisite offer. The clone is the full repository, including the test suite
+and documentation site the runtime never imports, for two deliberate reasons:
+the engine **materializes its cohorts** — rules, skills, commands, and
+templates — directly from the tree into each harness, so the tree is the live
+source of truth rather than only a runtime; and the `.git` directory stays in
+place so `apothem update` fast-forwards the existing clone instead of
+re-downloading.
+
+This run-from-source layout is the same pattern tools like `nvm`, `pyenv`, and
+`oh-my-zsh` use — a few megabytes of source plus history, removable in one step
+with the uninstaller (there is no system state to unwind). A slimmer footprint
+— a shallow or sparse checkout that omits `tests/` and `site/` — is possible
+but would trade away the in-place, signature-verified `git`-based update path;
+the current layout favours a simple, verifiable update over minimal disk.
+
+## How the runtime finds Python
+
+The one-shot installers and the npx shim locate an interpreter the same
+way: probe `python3`, `python`, the versioned names (`python3.14` through
+`python3.10`), and `py -3` on Windows; reject Microsoft Store launcher
+shims; and accept the first candidate reporting version 3.10 or newer.
+When run from a source tree, the installers reuse the bundled
+`hooks/lib/find-python` locator, which applies the same floor.
+
+## Recommended Next Step
+
+**Run `python -m apothem --help`** with the checkout's `src/` directory on
+`PYTHONPATH` to confirm the self-contained CLI path resolves on your host.

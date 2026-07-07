@@ -1,0 +1,54 @@
+---
+title: "フック開発"
+description: "Apothem のフックパイプラインでフックを作成・登録します。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+フックは環境イベントで発火する shell コマンドです。オペレーターの介入なしに
+適合性を強制し、コンテキストを注入し、品質ゲートを実行します。
+
+## フックイベント
+
+| イベント | 発火するタイミング |
+|-------|--------------|
+| `PreToolUse` | すべてのツール呼び出しの前 |
+| `PostToolUse` | すべてのツール呼び出しの後 |
+| `SessionStart` | セッションのブートストラップ時 |
+| `PreCompact` | コンテキスト圧縮の前 |
+| `PostCompact` | コンテキスト圧縮の後 |
+| `Stop` | セッション終了時 |
+
+## フックメッセージファイル
+
+各フックには `src/apothem/hooks/messages/<event>-<name>.md` に対応する
+メッセージファイルがあり、フックが発火した瞬間にアシスタントへコンテキストを
+提供します。
+
+## フックの登録
+
+フックコマンドを `settings.json` に追加します。
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python src/apothem/hooks/my-check.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## フックディスパッチャー
+
+すべてのフックは `src/apothem/hooks/dispatch.py` を経由します。これは任意の
+フックエラーをフェイルオープンのエンベロープに変換するため、フックが環境を
+ブロックすることは決してありません。

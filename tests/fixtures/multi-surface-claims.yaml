@@ -1,0 +1,383 @@
+# Multi-surface AI-conventions claim list.
+#
+# This fixture is the byte-exact / claim-list input to the
+# `multi-surface-coherence` validator. Each entry enumerates a shared
+# claim that MUST appear in every required-in surface and MUST be
+# semantically equivalent across surfaces under the reconciliation
+# strategy `agents-md-wins` (AGENTS.md is the canonical project voice; surface
+# overrides require an inline `<!-- coherence-override: <claim-id> -->`
+# marker paired with a project ADR.
+#
+# The validator parses each surface, locates each claim by heading
+# hierarchy + body keyword extraction (using the
+# `semantic-equivalence-tokens` field), and fails on any miss or
+# contradiction.
+#
+# Schema (per claim entry):
+#   id:                          unique kebab-case identifier
+#   claim:                       canonical statement of the claim
+#   required-in:                 surfaces where the claim MUST appear
+#   optional-in:                 surfaces where the claim MAY appear
+#                                (populated from the locked opt-in set)
+#   semantic-equivalence-tokens: key tokens for fuzzy semantic match
+#   forbidden-in:                surfaces where the claim MUST NOT
+#                                appear (omitted when empty)
+#
+# Surface vocabulary (mandatory + opt-in):
+#   - AGENTS.md                          (mandatory; canonical project voice)
+#   - CLAUDE.md                          (mandatory; Claude Code mirror)
+#   - .github/copilot-instructions.md    (mandatory)
+#   - site/content/docs/architecture/agents.mdx                          (opt-in; multi-agent runtimes)
+#   - .cursorrules                       (opt-in; Cursor IDE)
+#   - .windsurfrules                     (opt-in; Windsurf IDE)
+
+claims:
+
+  # --- Plans Discipline ----------------------------------------------------
+
+  - id: plans.location
+    claim: "Planning artifacts live at <project-root>/.apothem/plans/, the sole canonical home (a legacy <project-root>/.plans/ tree is upgraded via apothem migrate-workspace), never inside a harness configuration directory."
+    required-in:
+      - AGENTS.md
+      - CLAUDE.md
+      - .github/copilot-instructions.md
+    optional-in:
+      - site/content/docs/architecture/agents.mdx
+      - .cursorrules
+      - .windsurfrules
+    semantic-equivalence-tokens:
+      - project-root/.apothem/plans
+      - never
+      - global
+
+  - id: plans.gitignored
+    claim: "The <project-root>/.apothem/plans/ directory is gitignored per the canonical .gitignore snippet."
+    required-in:
+      - AGENTS.md
+      - CLAUDE.md
+      - .github/copilot-instructions.md
+    optional-in:
+      - site/content/docs/architecture/agents.mdx
+      - .cursorrules
+      - .windsurfrules
+    semantic-equivalence-tokens:
+      - gitignored
+      - .gitignore
+      - canonical snippet
+
+  - id: plans.never-commit
+    claim: "Plans MUST NEVER be committed to a project's git history."
+    required-in:
+      - AGENTS.md
+      - CLAUDE.md
+      - .github/copilot-instructions.md
+    optional-in:
+      - site/content/docs/architecture/agents.mdx
+      - .cursorrules
+      - .windsurfrules
+    semantic-equivalence-tokens:
+      - never commit
+      - git history
+      - plans
+
+  - id: plans.lifecycle
+    claim: "Plans transition: draft -> in-progress -> converged (promote to ADR) -> abandoned."
+    required-in:
+      - AGENTS.md
+      - CLAUDE.md
+      - .github/copilot-instructions.md
+    optional-in:
+      - site/content/docs/architecture/agents.mdx
+      - .cursorrules
+      - .windsurfrules
+    semantic-equivalence-tokens:
+      - draft
+      - in-progress
+      - converged
+      - promote to ADR
+      - abandoned
+
+  # --- File Headers --------------------------------------------------------
+
+  - id: header.canonical
+    claim: "Every applicable new file begins with the canonical SPDX-License-Identifier: MIT header line, in the comment family matching the filetype."
+    required-in:
+      - AGENTS.md
+      - CLAUDE.md
+      - .github/copilot-instructions.md
+    optional-in:
+      - site/content/docs/architecture/agents.mdx
+      - .cursorrules
+      - .windsurfrules
+    semantic-equivalence-tokens:
+      - SPDX-License-Identifier
+      - comment family
+      - applicable
+      - new file
+
+  - id: header.byte-exact-fixture
+    claim: "The byte-exact header fixture is at src/apothem/schemas/authorship-header.txt; the bordered branded banner box is retired and the root LICENSE carries the full copyright instrument."
+    required-in:
+      - AGENTS.md
+      - CLAUDE.md
+      - .github/copilot-instructions.md
+    optional-in:
+      - site/content/docs/architecture/agents.mdx
+      - .cursorrules
+      - .windsurfrules
+    semantic-equivalence-tokens:
+      - byte-exact
+      - src/apothem/schemas/authorship-header.txt
+      - fixture
+
+  - id: header.injector
+    claim: "Use scripts/inject-header.{sh,py} to add the SPDX line to new applicable files."
+    required-in:
+      - AGENTS.md
+      - CLAUDE.md
+      - .github/copilot-instructions.md
+    optional-in:
+      - site/content/docs/architecture/agents.mdx
+      - .cursorrules
+      - .windsurfrules
+    semantic-equivalence-tokens:
+      - scripts/inject-header
+      - inject
+      - SPDX
+
+  - id: header.exempt-classes
+    claim: "The SPDX line is exempt for: LICENSE, JSON, lockfiles, generated, vendored, .audit/, .plans/, .keep, binaries (full list at src/apothem/schemas/header-exceptions.txt)."
+    required-in:
+      - AGENTS.md
+      - CLAUDE.md
+      - .github/copilot-instructions.md
+    optional-in:
+      - site/content/docs/architecture/agents.mdx
+      - .cursorrules
+      - .windsurfrules
+    semantic-equivalence-tokens:
+      - exempt
+      - LICENSE
+      - lockfiles
+      - src/apothem/schemas/header-exceptions.txt
+
+  # --- Structured Inquiry Behavior --------------------------------
+
+  - id: ambiguity.resolution
+    claim: "Ambiguity is surfaced via the structured-inquiry channel (Claude) or a clearly-marked TODO(clarify) comment (Copilot); never silently invented."
+    required-in:
+      - AGENTS.md
+      - CLAUDE.md
+      - .github/copilot-instructions.md
+    optional-in:
+      - site/content/docs/architecture/agents.mdx
+      - .cursorrules
+      - .windsurfrules
+    semantic-equivalence-tokens:
+      - structured inquiry
+      - TODO(clarify)
+      - never silently invented
+
+  - id: ambiguity.never-fabricate
+    claim: "When uncertain, NEVER fabricate identity / scope / preference / security / naming / infrastructure / version data."
+    required-in:
+      - AGENTS.md
+      - CLAUDE.md
+      - .github/copilot-instructions.md
+    optional-in:
+      - site/content/docs/architecture/agents.mdx
+      - .cursorrules
+      - .windsurfrules
+    semantic-equivalence-tokens:
+      - never fabricate
+      - identity
+      - scope
+      - security
+      - infrastructure
+
+  # --- Agent-Guidance Surface Locality -------------------------------------
+
+  - id: agents-md.locality
+    claim: "Agent-facing operating guidance lives in two surfaces: the root AGENTS.md is the single repo-internal agent-instruction canon, and each folder's per-folder operating contract lives in that folder's README; materialized harness-output AGENTS.md files under src/apothem/harnesses/*/templates/ are product surfaces, not repo-internal companions."
+    required-in:
+      - AGENTS.md
+      - CLAUDE.md
+      - .github/copilot-instructions.md
+    optional-in:
+      - site/content/docs/architecture/agents.mdx
+      - .cursorrules
+      - .windsurfrules
+    semantic-equivalence-tokens:
+      - AGENTS.md
+      - README
+      - product surface
+      - templates
+
+  # --- Naming --------------------------------------------------------------
+
+  - id: naming.kebab-case-files
+    claim: "Files / folders use kebab-case; canonical-uppercase exceptions for CLAUDE.md, README.md, LICENSE, etc."
+    required-in:
+      - AGENTS.md
+      - CLAUDE.md
+      - .github/copilot-instructions.md
+    optional-in:
+      - site/content/docs/architecture/agents.mdx
+      - .cursorrules
+      - .windsurfrules
+    semantic-equivalence-tokens:
+      - kebab-case
+      - canonical-uppercase
+      - CLAUDE.md
+      - LICENSE
+
+  - id: naming.conventional-commits
+    claim: "Commits follow Conventional Commits: type(scope): subject with imperative mood, <= 72-char subject."
+    required-in:
+      - AGENTS.md
+      - CLAUDE.md
+      - .github/copilot-instructions.md
+    optional-in:
+      - site/content/docs/architecture/agents.mdx
+      - .cursorrules
+      - .windsurfrules
+    semantic-equivalence-tokens:
+      - Conventional Commits
+      - type(scope)
+      - imperative
+      - 72
+
+  - id: naming.semver-tags
+    claim: "Release tags follow vMAJOR.MINOR.PATCH SemVer."
+    required-in:
+      - AGENTS.md
+      - CLAUDE.md
+      - .github/copilot-instructions.md
+    optional-in:
+      - site/content/docs/architecture/agents.mdx
+      - .cursorrules
+      - .windsurfrules
+    semantic-equivalence-tokens:
+      - vMAJOR.MINOR.PATCH
+      - SemVer
+      - tags
+
+  # --- Forbidden Patterns / Anti-Patterns ----------------------------------
+
+  - id: forbidden.marketing-adjectives
+    claim: "Marketing adjectives (powerful, seamless, robust) are forbidden in user-facing artifacts unless concretely substantiated."
+    required-in:
+      - AGENTS.md
+      - CLAUDE.md
+      - .github/copilot-instructions.md
+    optional-in:
+      - site/content/docs/architecture/agents.mdx
+      - .cursorrules
+      - .windsurfrules
+    semantic-equivalence-tokens:
+      - marketing adjectives
+      - powerful
+      - seamless
+      - forbidden
+
+  - id: forbidden.hedging-filler
+    claim: "Hedging filler (basically, kind of, in some sense) is forbidden in directive text."
+    required-in:
+      - AGENTS.md
+      - CLAUDE.md
+      - .github/copilot-instructions.md
+    optional-in:
+      - site/content/docs/architecture/agents.mdx
+      - .cursorrules
+      - .windsurfrules
+    semantic-equivalence-tokens:
+      - hedging
+      - basically
+      - kind of
+      - directive
+
+  # --- Modal Hierarchy -----------------------------------------------------
+
+  - id: modal.rfc-2119
+    claim: "Use RFC 2119 modal hierarchy: MUST / MUST NOT / SHOULD / SHOULD NOT / MAY."
+    required-in:
+      - AGENTS.md
+      - CLAUDE.md
+      - .github/copilot-instructions.md
+    optional-in:
+      - site/content/docs/architecture/agents.mdx
+      - .cursorrules
+      - .windsurfrules
+    semantic-equivalence-tokens:
+      - RFC 2119
+      - MUST
+      - SHOULD
+      - MAY
+
+  # --- Release Facade --------------------------------------------------------
+
+  - id: release.current-version-only
+    claim: "Public release surfaces remain current-version-only: one visible release tag, one GitHub Release, one Pages deployment."
+    required-in:
+      - AGENTS.md
+      - CLAUDE.md
+      - .github/copilot-instructions.md
+    optional-in:
+      - site/content/docs/architecture/agents.mdx
+      - .cursorrules
+      - .windsurfrules
+    semantic-equivalence-tokens:
+      - current-version-only
+      - release tag
+      - GitHub Release
+      - Pages deployment
+
+  - id: release.distribution-paths
+    claim: "Apothem distributes through several install paths — tool-native plugins and extensions (the Claude Code plugin, a Gemini CLI extension, a Qwen Code extension, a Codex plugin, and a VS Code-family extension), the npx @ahmed-g-gad/apothem shim, and the one-shot script installers — and each tagged release attaches its signed artifacts to the single GitHub Release page."
+    required-in:
+      - AGENTS.md
+      - CLAUDE.md
+      - .github/copilot-instructions.md
+    optional-in:
+      - site/content/docs/architecture/agents.mdx
+      - .cursorrules
+      - .windsurfrules
+    semantic-equivalence-tokens:
+      - Claude Code plugin
+      - npx @ahmed-g-gad/apothem
+      - install.sh
+      - signed artifacts
+
+  - id: release.gates-before-publish
+    claim: "The GitHub Release is published only after local gates and the CI, Clean Install Gate, Harness Matrix, and Conformity workflows are green."
+    required-in:
+      - AGENTS.md
+      - CLAUDE.md
+      - .github/copilot-instructions.md
+    optional-in:
+      - site/content/docs/architecture/agents.mdx
+      - .cursorrules
+      - .windsurfrules
+    semantic-equivalence-tokens:
+      - local gates
+      - Clean Install Gate
+      - green
+
+  # --- Session Closure -----------------------------------------------------
+
+  - id: session.closure
+    claim: "Every session ends with a formal, verifiable close: a Recommended Next Step, a done / deferred ledger, and a verification attestation of what was checked."
+    required-in:
+      - AGENTS.md
+      - CLAUDE.md
+      - .github/copilot-instructions.md
+    optional-in:
+      - site/content/docs/architecture/agents.mdx
+      - .cursorrules
+      - .windsurfrules
+    semantic-equivalence-tokens:
+      - session
+      - formal
+      - verifiable
+      - Recommended Next Step
+      - attestation

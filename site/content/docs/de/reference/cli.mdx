@@ -1,0 +1,180 @@
+---
+title: "CLI-Referenz"
+description: "Apothem-CLI-Referenz — alle Unterbefehle und Flags."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Die `apothem`-CLI ist die primäre Bedienoberfläche zum Verwalten des gemeinsamen
+Profils und der Harness-Adapter.
+
+## Globale Flags
+
+| Flag | Beschreibung |
+|------|-------------|
+| `--version` | Gibt die Apothem-Version aus und beendet sich |
+| `--help` | Gibt die Hilfe zum Befehl aus |
+
+## Unterbefehle
+
+### `apothem install`
+
+Installiert einen Harness-Adapter aus dem gemeinsamen Profil.
+
+```bash
+apothem install --harness <name|all> [--profile PATH] [--project PATH] [--dry-run]
+```
+
+| Option | Beschreibung |
+|--------|-------------|
+| `--harness <name>` | Name des Harness-Adapters (siehe kanonische Werte unten). Erforderlich. |
+| `--profile PATH` | Pfad zur YAML-Datei des gemeinsamen Profils. Standard: `~/.config/apothem/profile.yaml`. |
+| `--project PATH` | Projektwurzel für Harnesses mit Projektbereich. |
+| `--dry-run` | Vorschau der Installation ohne Schreiben von Dateien. |
+
+Kanonische `--harness`-Werte:
+
+```text
+antigravity
+claude-code
+codebuddy
+codex
+cursor
+gemini-cli
+github-copilot
+hermes
+kiro
+open-claw
+opencode
+qwen-code
+trae
+windsurf
+zed
+```
+
+Verwende `--harness all --project <path>`, um die registrierungsweite Menge
+auszuwählen. Die `exclude_harnesses`-Liste des Profils wird bei der
+Stapelauswahl für Installation/Aktualisierung berücksichtigt.
+
+### `apothem update`
+
+Leitet die native Konfiguration eines Harness-Adapters aus dem aktuellen
+gemeinsamen Profil neu ab.
+
+```bash
+apothem update --harness <name|all> [--profile PATH] [--project PATH] [--dry-run]
+```
+
+| Option | Beschreibung |
+|--------|-------------|
+| `--harness <name>` | Name des Harness-Adapters. Erforderlich. |
+| `--profile PATH` | Pfad zur YAML-Datei des gemeinsamen Profils. |
+| `--project PATH` | Projektwurzel für Harnesses mit Projektbereich. |
+| `--dry-run` | Vorschau der Aktualisierung ohne Schreiben von Dateien. |
+
+`update` materialisiert die Harness-Ausgabe neu. Es aktualisiert nicht das Paket
+der Apothem-CLI; verwende für Paket-Upgrades den Paketmanager, mit dem Apothem
+installiert wurde.
+
+### `apothem uninstall`
+
+Entfernt die native Konfiguration eines Harness-Adapters.
+
+```bash
+apothem uninstall --harness <name|all> [--project PATH] [--yes]
+```
+
+| Option | Beschreibung |
+|--------|-------------|
+| `--harness <name>` | Name des Harness-Adapters. Erforderlich. |
+| `--project PATH` | Projektwurzel für Harnesses mit Projektbereich. |
+| `--yes` | Überspringt die Bestätigungsabfrage. |
+
+### `apothem verify`
+
+Prüft, ob ein Harness-Adapter installiert ist und sein Ausgabepfad vorhanden ist.
+
+```bash
+apothem verify --harness <name|all> [--project PATH]
+```
+
+| Option | Beschreibung |
+|--------|-------------|
+| `--harness <name>` | Name des Harness-Adapters oder `all`. Erforderlich. |
+| `--project PATH` | Projektwurzel für Harnesses mit Projektbereich. |
+
+Der Exit-Code ist `0`, wenn der Adapter installiert ist, und `1`, wenn nicht.
+
+### `apothem profile`
+
+Verwaltet das gemeinsame Apothem-Profil.
+
+```bash
+apothem profile show [--profile PATH]
+apothem profile init [--profile PATH] [--force]
+apothem profile set <key> <value> [--profile PATH]
+apothem profile edit [--profile PATH]
+```
+
+| Unterbefehl | Beschreibung |
+|------------|-------------|
+| `profile init` | Erstellt ein schema-gültiges minimales Profilgerüst. |
+| `profile show` | Gibt das aufgelöste Profil (YAML) auf stdout aus. |
+| `profile set <key> <value>` | Setzt ein Profilfeld. Der Wert wird als YAML geparst (Strings, Zahlen, Booleans, Listen und Mappings werden alle akzeptiert). |
+| `profile edit` | Öffnet das Profil in `$EDITOR` (fällt auf den plattformüblichen Standardeditor zurück). |
+
+Die Option `--profile PATH` richtet jeden Unterbefehl auf eine alternative
+Profildatei aus. Standard: `~/.config/apothem/profile.yaml`.
+
+### `apothem harnesses`
+
+Listet registrierte Harness-Adapter auf und inspiziert sie.
+
+```bash
+apothem harnesses list
+apothem harnesses show <name>
+```
+
+| Unterbefehl | Beschreibung |
+|------------|-------------|
+| `harnesses list` | Gibt eine Tabelle jedes registrierten Adapters mit seinem Installationsstatus-Flag und Ausgabepfad aus. |
+| `harnesses show <name>` | Gibt Name, Installationsstatus und Ausgabepfad eines Adapters aus. |
+
+### `apothem doctor`
+
+Führt Systemdiagnosen für die Apothem-Installation aus.
+
+```bash
+apothem doctor
+```
+
+Gibt die Apothem-Version, den Python-Interpreter, die Plattform, den aufgelösten
+Profilpfad und eine Installationsstatustabelle pro Harness aus. Der Exit-Code ist
+`0`, wenn jeder registrierte Adapter als installiert gemeldet wird; andernfalls
+`1`.
+
+## Generierte Befehls- und Flag-Referenz
+
+{/* apothem:generated-reference:start */}
+
+| Command | Flags | Description |
+| --- | --- | --- |
+| `apothem completion` | — | Print a shell-completion script for SHELL to stdout. Supported shells: bash, zsh, fish, powershell. Every script is generated by Click's env-var completion protocol — PowerShell through the completion class registered above, since Click ships none natively. Enabling completion is opt-in: this command only prints the script — pipe or append it to the shell's completion file yourself (see ``--help``). |
+| `apothem diff` | `--format`, `--harness`, `--json`, `--no-color`, `--profile`, `--project`, `--quiet, -q`, `--verbose, -v` | Preview the pending configuration changes for a single harness. |
+| `apothem doctor` | `--format`, `--json`, `--no-color`, `--quiet, -q`, `--verbose, -v` | Report Apothem environment and installation health, exiting non-zero on any failure. Prints the engine version, Python, and platform, validates the shared profile against the packaged schema — a present-but-malformed profile is a failure, not a green "found" — and probes every registered adapter's install state. An adapter that raises degrades to an error row rather than aborting the sweep. Any failed check — an invalid profile, or a harness that is uninstalled or could not be probed — forces a non-zero exit so a CI or setup step can gate on it. |
+| `apothem harnesses list` | `--format`, `--json`, `--no-color`, `--quiet, -q`, `--verbose, -v` | List all registered harness adapters. |
+| `apothem harnesses show` | `--format`, `--json`, `--no-color`, `--quiet, -q`, `--verbose, -v` | Show details for a specific harness adapter. |
+| `apothem install` | `--clean, --fresh`, `--dry-run`, `--format`, `--harness`, `--json`, `--no-color`, `--profile`, `--project`, `--quiet, -q`, `--verbose, -v`, `--yes` | Install a harness adapter configuration. |
+| `apothem migrate-workspace` | `--dry-run`, `--format`, `--json`, `--no-color`, `--project`, `--quiet, -q`, `--verbose, -v` | Migrate a legacy per-harness workspace into the shared ``.apothem`` layout. The base is the resolved ``--project`` root when supplied, otherwise the current working directory (the project-local default). Per-harness memory/contexts/learning stores union-merge into the shared store; a conflicting record is skipped, never overwritten; a legacy ``.plans`` tree moves under ``.apothem/plans``; every consumed source is backed up first. The migration is idempotent. |
+| `apothem profile edit` | `--format`, `--json`, `--no-color`, `--profile`, `--quiet, -q`, `--verbose, -v` | Open the shared profile in the system editor. |
+| `apothem profile init` | `--force`, `--format`, `--json`, `--no-color`, `--profile`, `--quiet, -q`, `--verbose, -v` | Create a schema-valid shared profile scaffold. |
+| `apothem profile set` | `--format`, `--json`, `--no-color`, `--profile`, `--quiet, -q`, `--verbose, -v` | Set a key in the shared profile. KEY is a dotted path that descends into the nested profile structure (``identity.name``, ``preferences.style``, ``enforcement.sprints``, ``harnesses.&lt;harness&gt;.preferences.style``); a single key with no dot sets a top-level node. VALUE is stored as a literal string — bare words are not coerced (``no`` stays ``"no"``, ``2024-01-01`` and ``1.0`` stay strings) — except ``true``/``false`` (the boolean enforcement flags) and explicit ``[...]``/``&#123;...&#125;`` list/map input. The fully-assembled profile is validated against the packaged schema BEFORE writing; an invalid set is refused with the standard diagnostic and the profile on disk is unchanged. |
+| `apothem profile show` | `--format`, `--json`, `--no-color`, `--profile`, `--quiet, -q`, `--verbose, -v` | Display the current shared profile. |
+| `apothem quickstart` | `--format`, `--harness`, `--json`, `--no-color`, `--profile`, `--project`, `--quiet, -q`, `--verbose, -v`, `--yes` | Guided first run: ensure a profile, preview the writes, then install. Walks a new operator through the canonical path in one linear flow — create a starter profile if none exists (with a personalize nudge), preview the files each harness will write (project root vs your home directory), confirm, then install with the grouped capability-note output — and ends with the recommended next commands. ``--yes`` runs the whole sequence non-interactively; ``--format json`` emits one structured summary of every step. It composes the install building blocks; it does not duplicate them. |
+| `apothem rollback` | `--format`, `--harness`, `--install-id`, `--json`, `--last`, `--no-color`, `--project`, `--quiet, -q`, `--verbose, -v`, `--yes` | Restore a harness to the state before its recorded install. |
+| `apothem status` | `--format`, `--json`, `--no-color`, `--profile`, `--project`, `--quiet, -q`, `--verbose, -v` | Report install, verify, and drift state for every registered harness. |
+| `apothem uninstall` | `--format`, `--harness`, `--json`, `--no-color`, `--project`, `--quiet, -q`, `--verbose, -v`, `--yes` | Remove a harness adapter configuration. |
+| `apothem update` | `--dry-run`, `--format`, `--harness`, `--json`, `--no-color`, `--profile`, `--project`, `--quiet, -q`, `--verbose, -v` | Re-install a harness adapter configuration from the current profile. |
+| `apothem verify` | `--format`, `--harness`, `--json`, `--no-color`, `--profile`, `--project`, `--quiet, -q`, `--verbose, -v` | Verify a harness adapter installation. Without ``--profile`` the check is structural: every managed target must be present and valid. With ``--profile`` the check additionally requires profile fidelity, so a present-but-drifted install fails verify — answering "is THIS profile faithfully installed?" rather than merely "does it exist?". |
+
+{/* apothem:generated-reference:end */}

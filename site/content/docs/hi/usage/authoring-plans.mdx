@@ -1,0 +1,43 @@
+---
+title: "योजनाएँ लिखना"
+description: "/plan पाइपलाइन के साथ योजना सूट लिखें।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+`/plan` पाइपलाइन कच्ची गद्य आवश्यकताओं को निष्पादन-योग्य, समीक्षित, गुणवत्ता-गेटेड कार्यान्वयन योजनाओं में रूपांतरित करती है।
+
+## मुख्य चरण
+
+यह पाइपलाइन आठ प्रथम-श्रेणी `/plan-<stage>` कमांड के रूप में आती है। रोज़मर्रा का प्रवाह इनमें से पाँच को चलाता है:
+
+1. `/plan-spec` — गद्य को विनिर्देश-स्तरीय `_spec/spec.md` में परिष्कृत करें
+2. `/plan-generate` — पूर्ण योजना सूट कंकाल उत्पन्न करें
+3. `/plan-review` — उत्पन्न योजना का फोरेंसिक ऑडिट
+4. `/plan-execute` — एक बार में एक फ़ेज़ निष्पादित करें
+5. `/plan-status` — किसी भी समय प्रगति का निरीक्षण करें
+
+तीन चरण इस समुच्चय को पूर्ण करते हैं: `/plan-design` आर्किटेक्चर-धारक सूट के लिए एक आर्किटेक्चरल-डिज़ाइन कलाकृति जारी करता है, `/plan-audit` एक बंद-लूप spec → generate → review उपचार आवरण चलाता है, और `/plan-amend` हल किए गए निर्णयों को खोए बिना किसी मौजूदा सूट को संशोधित करता है।
+
+## त्वरित योजना (एकल फ़ाइल)
+
+```bash
+# Creates plans/YYYY-MM-DD--my-feature.md in the current project
+/plan-spec --quick my-feature
+```
+
+## पूर्ण योजना सूट
+
+```bash
+# Step 1 — write your requirements to prose.md, then:
+/plan-spec prose.md --suite-name my-project-plan
+/plan-generate
+/plan-review
+/plan-execute
+```
+
+## योजना जीवन-चक्र
+
+योजनाएँ इनसे होकर संक्रमण करती हैं: `draft` -> `in-progress` -> `converged` (ADR में पदोन्नत) या `abandoned`।
+
+पूर्ण जीवन-चक्र विनिर्देश के लिए [योजना अनुशासन](/docs/reference/plans-discipline) देखें।

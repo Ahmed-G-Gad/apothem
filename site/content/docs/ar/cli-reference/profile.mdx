@@ -1,0 +1,101 @@
+---
+title: "profile"
+description: "مرجع واجهة سطر الأوامر لمجموعة أوامر apothem profile."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+يُدير الملف الشخصي المشترك لـ <bdi>Apothem</bdi>.
+
+<bdi>`profile`</bdi> هي مجموعة أوامر تضم أربعة أوامر فرعية: <bdi>`init`</bdi> و<bdi>`show`</bdi> و<bdi>`set`</bdi> و<bdi>`edit`</bdi>.
+الملف الشخصي المشترك هو المصدر الوحيد للحقيقة الذي يُجسِّده كل مُحَوِّل مساعد برمجي
+في تهيئته الأصلية.
+
+## الموجز
+
+```
+apothem profile init [--profile PATH] [--force]
+                     [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+apothem profile show [--profile PATH] [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+apothem profile set KEY VALUE
+                     [--profile PATH] [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+apothem profile edit [--profile PATH] [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+```
+
+## الخيارات المشتركة
+
+يقبل كل أمر فرعي الخيارات المشتركة أدناه.
+
+| الخيار | الوصف |
+|---|---|
+| `--profile PATH` | مسار <bdi>YAML</bdi> للملف الشخصي المشترك (القيمة الافتراضية هي الموقع القياسي للملف الشخصي). |
+| `--quiet`, `-q` | يُخمِد المخرجات المعلوماتية؛ تُصدَر الأخطاء فقط. |
+| `--verbose`, `-v` | يُصدِر مخرجات تشخيصية إضافية. |
+| `--format plain\|json` | تنسيق المخرجات (الافتراضي: `plain`). |
+| `--json` | اختصار لـ `--format json`. |
+| `--no-color` | يُعطِّل رموز ألوان <bdi>ANSI</bdi> في المخرجات. |
+| `-h`, `--help` | يعرض المساعدة ويخرج. |
+
+## الأوامر الفرعية
+
+### `profile init`
+
+يُنشئ هيكلًا أوّليًّا أدنى صالحًا وفق المخطّط في
+<bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>. تُحفَظ الملفات الموجودة
+ما لم يُقدَّم <bdi>`--force`</bdi>.
+
+| الخيار | الوصف |
+|---|---|
+| `--force` | يكتب فوق هيكل ملف شخصي أوّلي موجود. |
+
+### `profile show`
+
+يعرض الملف الشخصي المشترك بعد التحقّق منه وتوسيع القيم الافتراضية.
+
+### `profile set KEY VALUE`
+
+يُعيِّن مفتاحًا في الملف الشخصي المشترك. <bdi>`KEY`</bdi> هو مسار منقوط ينزل عبر
+الملف الشخصي المتداخل (<bdi>`identity.name`</bdi>، <bdi>`preferences.style`</bdi>، <bdi>`enforcement.sprints`</bdi>،
+<bdi>`harnesses.<harness>.preferences.style`</bdi>)؛ ويُعيِّن مفتاح وحيد دون نقطة
+عقدةً على المستوى الأعلى. تُخزَّن <bdi>`VALUE`</bdi> كسلسلة حرفية — لا تُحوَّل الكلمات المجرّدة
+قسرًا (<bdi>`no`</bdi> يبقى <bdi>`"no"`</bdi>، ويبقى <bdi>`2024-01-01`</bdi> و<bdi>`1.0`</bdi> سلاسل) — باستثناء
+<bdi>`true`</bdi>/<bdi>`false`</bdi> (أعلام الفرض المنطقية) والإدخال الصريح <bdi>`[...]`</bdi>/<bdi>`{...}`</bdi>
+بصيغة قائمة/خريطة. ويُتحقَّق من الملف الشخصي المُجمَّع بالكامل مقابل المخطّط
+قبل الكتابة؛ ويُرفَض أي <bdi>set</bdi> غير صالح ويبقى الملف الشخصي على القرص دون تغيير.
+
+| المعامل | الوصف |
+|---|---|
+| `KEY` | مسار منقوط داخل الملف الشخصي المراد تعيينه (مطلوب). |
+| `VALUE` | قيمة حرفية للإسناد؛ يُتحقَّق منها قبل الكتابة (مطلوب). |
+
+### `profile edit`
+
+يفتح الملف الشخصي المشترك في محرّر النظام.
+
+## أمثلة
+
+```bash
+apothem profile init
+apothem profile init --profile ./profile.yaml --force --json
+apothem profile show
+apothem profile show --json
+apothem profile set seriousness SHARED
+apothem profile set rules '["Use fake placeholders in examples."]'
+apothem profile edit
+```
+
+## رموز الخروج
+
+| الرمز | المعنى |
+|---|---|
+| 0 | نجاح (أو، بالنسبة لـ `edit`، خرج المحرّر بشكل طبيعي) |
+| 1 | الملف الشخصي مفقود أو غير صالح أو موجود مسبقًا دون `--force` أو تعذّرت كتابته |
+
+## انظر أيضًا
+
+- [apothem install](/docs/cli-reference/install) — يُجسِّد الملف الشخصي داخل مساعد برمجي
+- [apothem doctor](/docs/cli-reference/doctor) — يُشغِّل تشخيصات التثبيت على مستوى النظام بأكمله

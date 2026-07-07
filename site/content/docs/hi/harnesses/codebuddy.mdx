@@ -1,0 +1,97 @@
+---
+title: "CodeBuddy"
+description: "Tencent CodeBuddy (GA) के लिए Apothem हार्नेस एडॉप्टर।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**विक्रेता:** Tencent
+**इंस्टॉल नाम:** `codebuddy`
+**स्थिति:** GA
+**नेटिव कॉन्फ़िग:** `<project>/.codebuddy/rules/apothem-rules.md`
+
+## इंस्टॉलेशन
+
+```bash
+apothem install --harness codebuddy --project /path/to/project
+```
+
+एडॉप्टर साझा Apothem नियम और गवर्नेंस सतह से एक प्रोजेक्ट-स्कोप्ड नियम फ़ाइल लिखता है।
+
+**लिखी गई फ़ाइलें:** `<project>/.codebuddy/rules/apothem-rules.md`
+
+## प्रोफ़ाइल-से-नेटिव-कॉन्फ़िग मैपिंग
+
+एडॉप्टर Apothem की साझा प्रोफ़ाइल पढ़ता है और प्रत्येक `apothem install` या
+`apothem update` रन पर प्रोजेक्ट नियम फ़ाइल को रेंडर करता है। CodeBuddy
+`.codebuddy/rules/` के अंतर्गत प्रत्येक `*.md` फ़ाइल को वैकल्पिक YAML फ्रंटमैटर
+(`alwaysApply`, `paths`, `enabled`) के साथ Markdown के रूप में पढ़ता है —
+[CodeBuddy Rules दस्तावेज़ीकरण](https://www.codebuddy.ai/docs/ide/Rules) देखें; Apothem
+की फ़ाइल `alwaysApply: true` धारण करती है, इसलिए गवर्नेंस सतह प्रत्येक अंतःक्रिया पर लागू
+होती है। साझा प्रोफ़ाइल सत्य का स्रोत है; उत्पन्न फ़ाइल पर प्रोजेक्ट-स्थानीय संपादनों का
+बैकअप अगले सिंक द्वारा Apothem-प्रबंधित सामग्री को प्रतिस्थापित करने से पहले लिया जाता
+है।
+
+## संगतता टिप्पणियाँ
+
+CodeBuddy की नियम सतह `.codebuddy/rules/` के अंतर्गत प्रोजेक्ट-स्कोप्ड है। एडॉप्टर एक
+समर्पित `apothem-rules.md` फ़ाइल लिखता है जो उसी डायरेक्टरी में ऑपरेटर द्वारा रचित किसी
+भी नियम फ़ाइल के साथ सह-अस्तित्व में रहती है। `CODEBUDDY.md` प्रोजेक्ट मेमोरी फ़ाइल और
+`.codebuddy/settings.json` (अनुमतियाँ, MCP) ऑपरेटर के स्वामित्व में हैं; Apothem उन्हें
+नहीं लिखता। स्किल, कमांड, एजेंट, और हुक को नियम फ़ाइल के भीतर अनुशासन के रूप में संदर्भित
+किया जाता है — CodeBuddy उनके लिए कोई एडॉप्टर-स्वामित्व वाली फ़ाइल सतह उजागर नहीं करता।
+एडॉप्टर जिन विक्रेता-सतह अभिसमयों पर निर्भर करता है, वे
+`src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` में पिन किए गए हैं, जो लाइव
+CodeBuddy दस्तावेज़ीकरण के विरुद्ध स्नैपशॉट किए गए हैं।
+
+## सत्यापन
+
+```bash
+apothem verify --harness codebuddy --project /path/to/project
+```
+
+verify कमांड पुष्टि करता है कि:
+
+1. नेटिव कॉन्फ़िग अपेक्षित पथ पर मौजूद है।
+2. प्रबंधित नियम फ़ाइल मौजूद और गैर-रिक्त है।
+3. एडॉप्टर-विशिष्ट सत्यापन रूटीन सफलता की रिपोर्ट करता है।
+
+## अपडेट करना
+
+```bash
+apothem update --harness codebuddy --project /path/to/project
+```
+
+वर्तमान साझा प्रोफ़ाइल स्थिति से प्रोजेक्ट नियम फ़ाइल को फिर से व्युत्पन्न करता है।
+`install` और `update` इडेम्पोटेंट हैं — फिर से चलाने पर प्रबंधित फ़ाइल नवीनतम रेंडर की गई
+सामग्री से अधिलेखित हो जाती है।
+
+## अनइंस्टॉल करना
+
+```bash
+apothem uninstall --harness codebuddy --project /path/to/project
+```
+
+एडॉप्टर द्वारा लिखी गई नेटिव कॉन्फ़िग फ़ाइलों को हटाता है, प्रबंधित नियम फ़ाइल को
+टाइमस्टैम्प किए गए बैकअप में पुनर्नामित करता है। साझा प्रोफ़ाइल YAML और Apothem इंजन
+अप्रभावित रहते हैं।
+
+## कन्फ़ॉर्मिटी गेट
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## समस्या निवारण
+
+| लक्षण | समाधान |
+|---------|-----|
+| कॉन्फ़िग फ़ाइल नहीं मिली | `apothem install --harness codebuddy --project /path/to/project` को फिर से चलाएँ |
+| सत्यापन विफल | `apothem update --harness codebuddy --project /path/to/project` चलाएँ, फिर दोबारा सत्यापित करें |
+| अप्रत्याशित कॉन्फ़िग सामग्री | `~/.config/apothem/profile.yaml` या `--profile PATH` जाँचें, फिर `apothem update --harness codebuddy --project /path/to/project` को फिर से चलाएँ |
+
+## कॉन्फ़िगरेशन नॉब
+
+| फ़्लैग | डिफ़ॉल्ट | विवरण |
+|------|---------|-------------|
+| `--dry-run` | `false` | फ़ाइलें लिखे बिना इंस्टॉल का पूर्वावलोकन करें। |

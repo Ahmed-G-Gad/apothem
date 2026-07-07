@@ -1,0 +1,55 @@
+---
+title: "Delegierte Arbeiter verwenden"
+description: "Persistente delegierte Arbeiter für spezialisierte Aufgaben definieren und aufrufen."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem-Delegierte-Arbeiter sind persistente, wiederverwendbare
+Arbeiter-Definitionen, die unter dem `src/apothem/`-Baum gespeichert sind (das
+kanonische Verzeichnis ist unten gezeigt — der Name bleibt aus Kompatibilität mit
+dem Runtime-Loader erhalten):
+
+```text
+src/apothem/agents/
+```
+
+Jeder delegierte Arbeiter kodiert eine spezialisierte Rolle, Erkennungssignale
+und einen Satz zugelassener Werkzeuge.
+
+## Struktur der Delegierte-Arbeiter-Datei
+
+```markdown
+---
+name: "my-agent"
+description: "..."
+tools: "Read, Grep, Glob"
+---
+
+# My assistant
+
+## Role
+...
+
+## Detection signals
+Matched when: ...
+
+## Workflow
+...
+```
+
+## Eingebaute delegierte Arbeiter
+
+| Delegierter Arbeiter | Zweck |
+|-------|---------|
+| `codebase-explorer` | Tiefe Codebase-Erkundung |
+| `convention-auditor` | Benennungs- und Formatierungsprüfung |
+| `memory-auditor` | Prüfung der Memory-Genauigkeit |
+| `quality-gate` | Lint, Test, Typprüfung, Sicherheits-Scan |
+
+## Delegierte Arbeiter aufrufen
+
+Delegierte Arbeiter werden vom Orchestrator über das vom Host-Runtime
+bereitgestellte Delegationswerkzeug versendet. Der Orchestrator wählt den
+passenden delegierten Arbeiter anhand der Aufgabenbeschreibung und der
+Erkennungssignale.

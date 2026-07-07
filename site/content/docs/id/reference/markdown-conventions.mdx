@@ -1,0 +1,36 @@
+---
+title: "Konvensi Markdown"
+description: "Menstandarkan rasa Markdown, struktur heading, deklarasi blok kode, format tautan internal, banner kepengarangan, dan penegakan oleh validator."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Rujukan kanonis untuk bentuk dan format Markdown di seluruh artefak `.md` yang ditulis.** Ringkasan di [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Konvensi adalah deklarasi inline; halaman ini adalah rujukan mandiri yang dikutip kontributor hilir.
+
+---
+
+## 1. Rasa
+
+GitHub-Flavored Markdown (GFM) adalah rasa host. Setiap artefak dirender dengan benar di UI web GitHub, di situs dokumentasi Fumadocs, dan di editor standar yang mengenali Markdown.
+
+## 2. Hierarki Heading
+
+Satu H1 per file. Heading berikutnya menurun secara monoton (H2 → H3 → H4) tanpa melewati level. Heading dengan kapitalisasi kalimat; tanpa HURUF KAPITAL SEMUA, tanpa Kapital Di Setiap Kata. H1 membawa judul utama dokumen dan ADALAH anchor dokumen di navigasi situs dokumentasi.
+
+## 3. Blok Kode
+
+Blok kode berpagar mendeklarasikan bahasanya (` ```python `, ` ```bash `, ` ```yaml `, ` ```json `, ` ```mermaid `). Blok tanpa tag menekan penyorotan sintaks dan menandakan penyimpangan penulisan; aturan markdownlint MD040 di [`.markdownlint.jsonc`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.jsonc) menegakkan tag bahasa.
+
+## 4. Tautan Internal
+
+Referensi silang internal memakai **jalur relatif terhadap root situs** (mis., `[Authorship header](/docs/reference/authorship-header)`). Jalur relatif repositori telanjang dengan ekstensi `.md`/`.mdx` (`/docs/foo.md`) dan URL penuh ke repo yang sama (`https://github.com/ahmed-g-gad/apothem/blob/main/...`) dihindari untuk tautan dalam situs karena rentan terhadap penggantian nama halaman dan reorganisasi seksi.
+
+Tautan eksternal ke ref yang dapat berubah (`main`, `master`, `latest`, `HEAD`) disematkan ke SHA commit atau tag rilis setiap kali stabilitas konten yang ditautkan penting; referensi volatil didokumentasikan demikian dengan komentar `{/* volatile */}` di sebelahnya.
+
+## 5. Banner Kepengarangan
+
+Setiap artefak Markdown (dengan pengecualian yang dienumerasi di [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas/header-exceptions.txt)) membawa banner header kepengarangan kanonis pada byte 0, dalam varian komentar HTML sesuai [Authorship header](/docs/reference/authorship-header). Banner berada di atas frontmatter YAML jika keduanya ada.
+
+## 6. Validator
+
+Pemanggilan `markdownlint-cli2` di [`.markdownlint.jsonc`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.jsonc) menegakkan sebagian besar aturan §§1–4. `file-header-grep` di `src/apothem/conformity/file_header_grep.py` menegakkan §5. Keduanya tersambung ke rantai hook pre-commit di [`.pre-commit-config.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/.pre-commit-config.yaml) dan ke job kualitas CI di [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml).

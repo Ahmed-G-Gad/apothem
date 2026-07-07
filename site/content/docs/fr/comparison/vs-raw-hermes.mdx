@@ -1,0 +1,50 @@
+---
+title: "Apothem face à la configuration Hermes brute"
+description: "Maintenir à la main la configuration de Hermes plutôt que la gérer via le profil partagé d'Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Hermes lit `~/.hermes/config.yaml`. Apothem écrit la configuration YAML native
+(en projetant l'inventaire MCP du profil dans `auxiliary.mcp`) et installe des
+cohortes partagées de commandes et de skills sous `~/.hermes/.apothem/support/skills/`. Le
+`skills.config` propre à Hermes est une liste de paquets de registre, donc Apothem
+ne l'écrit pas.
+
+## Statut
+
+**Aperçu.** L'adaptateur Hermes cible le fichier de configuration actuellement
+documenté et la surface de découverte de skills. Les cohortes hors skills restent
+du matériel de support Apothem.
+
+## Comparaison d'effort
+
+| Tâche | Config à la main brute | Géré par Apothem |
+| ---- | --------------- | --------------- |
+| Écrire des skills réutilisables | Modifier à la main la config et les répertoires de skills | Écrire une fois dans le corpus partagé |
+| Garder les cohortes alignées avec les autres environnements | Manuel, par outil | Automatique lors d'`apothem update` |
+| Installer / supprimer la config | Manuel | `apothem install` / `apothem uninstall` |
+| Vérifier que la config est correcte | Inspection manuelle | `apothem verify --harness hermes` |
+
+## Ce que gère Apothem
+
+L'adaptateur Hermes écrit `config.yaml`, enveloppe les commandes en barre oblique
+d'Apothem en skills, copie les skills d'Apothem dans le répertoire de support
+référencé, et conserve les règles, modèles, agents et matériel de hooks sous le
+sous-arbre de support d'Apothem.
+
+## Chemin de migration
+
+1. Exécutez `apothem profile init` pour créer le profil partagé si ce n'est pas
+   déjà fait.
+2. Déplacez les skills ou les prompts de commandes réutilisables de Hermes dans le
+   corpus partagé.
+3. Exécutez `apothem install --harness hermes` pour générer la configuration
+   native et le répertoire de skills de support.
+4. Exécutez `apothem verify --harness hermes` pour confirmer que la configuration
+   a bien été posée.
+
+## À lire ensuite
+
+- [Référence de l'adaptateur Hermes](/docs/harnesses/hermes)
+- [Vue d'ensemble de la comparaison](/docs/comparison)

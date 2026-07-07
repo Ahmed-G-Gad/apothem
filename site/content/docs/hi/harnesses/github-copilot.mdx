@@ -1,0 +1,90 @@
+---
+title: "GitHub Copilot"
+description: "GitHub Copilot (GA) के लिए Apothem हार्नेस एडॉप्टर।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**विक्रेता:** GitHub / Microsoft
+**इंस्टॉल नाम:** `github-copilot`
+**स्थिति:** GA
+**नेटिव कॉन्फ़िग:** `<project>/.github/copilot-instructions.md`
+
+## इंस्टॉलेशन
+
+```bash
+apothem install --harness github-copilot --project /path/to/project
+```
+
+एडॉप्टर साझा Apothem नियमों और गवर्नेंस सतह से प्रोजेक्ट निर्देश फ़ाइल व्युत्पन्न
+करता है।
+
+**लिखी गई फ़ाइलें:** `<project>/.github/copilot-instructions.md`
+
+## प्रोफ़ाइल-से-नेटिव-कॉन्फ़िग मैपिंग
+
+एडॉप्टर साझा Apothem प्रोफ़ाइल पढ़ता है और प्रत्येक `apothem install` या `apothem
+update` रन पर रिपॉज़िटरी-व्यापी Copilot निर्देश फ़ाइल रेंडर करता है। साझा प्रोफ़ाइल
+सत्य का स्रोत है; उत्पन्न फ़ाइल में किए गए प्रोजेक्ट-लोकल संपादन को अगला सिंक
+Apothem-प्रबंधित सामग्री को प्रतिस्थापित करने से पहले बैकअप किया जाता है।
+
+## संगतता टिप्पणियाँ
+
+GitHub Copilot इस एडॉप्टर के प्रबंधन के लिए कोई फ़ाइल-आधारित उपयोगकर्ता-वैश्विक
+निर्देश पथ उजागर नहीं करता। Apothem प्रलेखित प्रोजेक्ट-स्कोप निर्देश फ़ाइल को लक्षित
+करता है और IDE-स्तर की उपयोगकर्ता सेटिंग्स को ऑपरेटर के स्वामित्व में छोड़ देता है।
+
+Apothem `copilot-instructions.md` को प्रोजेक्ट की सहायक निर्देश सतहों में से एक
+आवाज़ के रूप में मानता है: कन्फ़ॉर्मिटी गेट की बहु-सतह संगति जाँच यह सत्यापित करती है
+कि इसके साझा दावे प्रोजेक्ट की अन्य निर्देश फ़ाइलों के साथ शब्दार्थ रूप से संरेखित
+रहें, इसलिए Copilot को कभी ऐसा मार्गदर्शन नहीं मिलता जो शेष टूलचेन के पढ़े गए के
+विपरीत हो।
+
+## सत्यापन
+
+```bash
+apothem verify --harness github-copilot --project /path/to/project
+```
+
+verify कमांड पुष्टि करता है कि:
+
+1. नेटिव कॉन्फ़िग अपेक्षित पथ पर मौजूद है।
+2. साझा प्रोफ़ाइल के सभी अनिवार्य फ़ील्ड मौजूद हैं।
+3. एडॉप्टर-विशिष्ट सत्यापन रूटीन सफलता की रिपोर्ट करता है।
+
+## अपडेट करना
+
+```bash
+apothem update --harness github-copilot --project /path/to/project
+```
+
+वर्तमान साझा प्रोफ़ाइल स्थिति से प्रोजेक्ट निर्देश फ़ाइल को फिर से व्युत्पन्न करता है।
+
+## अनइंस्टॉल करना
+
+```bash
+apothem uninstall --harness github-copilot --project /path/to/project
+```
+
+एडॉप्टर द्वारा लिखी गई नेटिव कॉन्फ़िग फ़ाइलों को हटाता है।
+साझा प्रोफ़ाइल YAML और Apothem इंजन अप्रभावित रहते हैं।
+
+## कन्फ़ॉर्मिटी गेट
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## समस्या निवारण
+
+| लक्षण | समाधान |
+|---------|-----|
+| कॉन्फ़िग फ़ाइल नहीं मिली | `apothem install --harness github-copilot --project /path/to/project` को फिर से चलाएँ |
+| सत्यापन विफल | `apothem update --harness github-copilot --project /path/to/project` चलाएँ, फिर दोबारा सत्यापित करें |
+| अप्रत्याशित कॉन्फ़िग सामग्री | `~/.config/apothem/profile.yaml` या `--profile PATH` जाँचें, फिर `apothem update --harness github-copilot --project /path/to/project` को फिर से चलाएँ |
+
+## कॉन्फ़िगरेशन नॉब
+
+| फ़्लैग | डिफ़ॉल्ट | विवरण |
+|------|---------|-------------|
+| `--dry-run` | `false` | फ़ाइलें लिखे बिना इंस्टॉल का पूर्वावलोकन करें। |

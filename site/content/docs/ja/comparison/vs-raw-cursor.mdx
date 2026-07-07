@@ -1,0 +1,44 @@
+---
+title: "Apothem と手作業の Cursor 構成の比較"
+description: "`.cursor/rules/` 下の Cursor の MDC ルールを手作業で維持するのと、Apothem の共有プロファイルからレンダリングするのとの比較。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Cursor は `.cursor/rules/` 下の MDC 形式でルールを読み取ります。MDC 形式は
+frontmatter フィールド——`description`、`globs`、`alwaysApply`——を要求します。
+Apothem の cursor アダプターは、それらの `.mdc` ファイルを共有プロファイルから
+レンダリングします。本ページは、その構成を手作業で維持することと、Apothem で
+管理することとを対比します。
+
+## 労力の比較
+
+| タスク | 手作業の構成 | Apothem 管理 |
+| ---- | --------------- | --------------- |
+| ルールを書く | `.cursor/rules/` 下の各 `.mdc` ファイルを手作業で書く | 共有コーパスからレンダリング |
+| MDC frontmatter を書く | ファイルごとに `description` / `globs` / `alwaysApply` を手作業で書く | アダプターが生成 |
+| 単一のルール形式を保つ | MDC ルールと単一の `.cursorrules` ファイルの間で手作業で選ぶ | アダプターは `.cursor/rules/` の MDC ファイルだけを書く |
+| ルールを他の環境と揃えて保つ | 手作業、ツールごと | `apothem update` 時に自動 |
+| 構成が正しいか検証する | 手作業の確認 | `apothem verify --harness cursor` |
+
+## Apothem が管理するもの
+
+cursor アダプターは共有ルールを `.cursor/rules/` 下の `.mdc` ファイルへ
+レンダリングし、各ファイルに必要な MDC frontmatter（`description`、`globs`、
+`alwaysApply`）を生成します。アダプターは Cursor が読み取るディレクトリベースの
+MDC 形式だけを書き、単一ファイルの `.cursorrules` は書きません。
+Cursor には PreToolUse フックがないため、ガードレールの意図はルールの散文の中に
+存在します。
+
+## 移行手順
+
+1. 共有プロファイルをまだ作成していなければ、`apothem profile init` を実行して作成します。
+2. 既存の `.cursor/rules/`（および任意の `.cursorrules`）のルールを共有コーパスへ移します。
+3. `apothem install --harness cursor` を実行して、正しい MDC frontmatter を持つ `.mdc` ファイルをレンダリングします。
+4. `apothem verify --harness cursor` を実行して構成が反映されたことを確認します。
+5. 以降の変更のたびに `apothem update --harness cursor` を使います。
+
+## 次に読む
+
+- [Cursor アダプターのリファレンス](/docs/harnesses/cursor)
+- [比較の概要](/docs/comparison)

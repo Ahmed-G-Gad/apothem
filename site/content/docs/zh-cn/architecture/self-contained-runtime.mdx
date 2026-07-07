@@ -1,0 +1,109 @@
+---
+title: "自包含运行时"
+description: "Apothem 的引擎如何从任意检出运行——内联依赖、PYTHONPATH=src 调用模型，以及插件树引导。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+# 自包含运行时
+
+Apothem 的引擎是一个自包含运行时：它无需注册表，可以直接从任意检出或
+放置的源码树运行，因为它的第三方依赖随它一同迁移。两个部件让这一切得以
+成立——一棵内联的依赖树，以及一个无需已安装控制台脚本的 `python -m`
+调用模型。
+
+## 内联依赖树
+
+校验与序列化栈以纯 Python 源码的形式内联于
+`src/apothem/_vendor/` 之下，每个包都与其上游许可证文件并列：
+
+- `yaml`（纯 Python 解析器/发射器；可选的 libyaml C 扩展不被携带）
+- `jsonschema`，连同它的依赖链 `attrs`（及其 `attr` 别名）、
+  `referencing` 和 `jsonschema_specifications`
+- `rpds`——一个纯 Python 垫片，重新实现了 `jsonschema` 与 `referencing`
+  所使用的 `HashTrieMap`、`HashTrieSet` 和 `List` 表面，以内置类型为后端，
+  因此该栈在零编译扩展的情况下运行
+- `typing_extensions`
+
+内联副本优先于任何系统安装的版本：引导会把 vendor 目录前置到 `sys.path`，
+排在 site-packages 之前。选择策略——何者内联、何者不内联，以及内联包如何
+刷新——记录在
+[依赖内联策略](/docs/architecture/vendoring-strategy)中。
+
+两个依赖留在树外：**`click`** 与 **`rich`**，即 CLI 导入的面向终端的库。
+它们必须在运行引擎的解释器下可导入；安装器会检查二者，指出任何缺失者，
+并提议为你安装它——在你确认下，或者通过 `--yes` /
+`APOTHEM_AUTO_INSTALL_DEPS=1` 自动安装。
+
+## `python -m` 调用模型
+
+Apothem 有意在 `pyproject.toml` 中不声明任何控制台脚本——控制台脚本只在
+包管理器把它们放到 `PATH` 上时才存在，而自包含运行时从不假定有这样一个
+包管理器。引擎取而代之有两个调用表面：
+
+| 表面 | 调用 | 上下文 |
+| ------- | ---------- | ------- |
+| 引擎 CLI | `python -m apothem <command>` | 一棵在 `PYTHONPATH` 上带有 `src/` 的源码树（检出、npx 缓存、插件树） |
+| 钩子运行时 | `python "<harness-root>/apothem/hooks/dispatch.py" <event>` | harness根下的物化副本，按绝对路径 |
+
+- `python -m apothem` 运行 `src/apothem/__main__.py`，它调用
+  `apothem.cli:main`——Click 命令组。
+- 物化的 `settings.json` / `hooks.json` 中的钩子条目按绝对脚本路径调用
+  分发器（对于 Claude Code，还有位于
+  `<harness-root>/apothem/conformity/gate.py` 的一致性闸门）。
+  二者都是独立的标准库脚本，会自行引导各自的 `sys.path`，且闸门的模式夹具
+  与它并列于
+  `<harness-root>/apothem/schemas/`，因此钩子在**宿主上没有可导入的
+  `apothem` 包**的情况下运行。模板携带一个
+  `${HARNESS_ROOT}` 令牌，`apothem install` 会将其渲染为正斜杠形式的
+  真实harness根路径。
+- 从源码检出运行时，模块形式
+  `python -m apothem.hooks.dispatch` 与
+  `python -m apothem.conformity.gate` 为开发运行相同的代码。
+
+通过把检出的 `src/` 目录前置到 `PYTHONPATH`，包目录便变得可导入：
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+```
+
+这正是一键安装器在完成时打印的调用。
+
+## 插件树引导
+
+Claude Code 插件把引擎打包于 `<plugin_root>/lib/apothem` 之下，
+而不依赖 `PYTHONPATH`。引导模块
+`apothem.lib.plugin_bootstrap` 暴露 `bootstrap_syspath`，它会幂等地
+把 `<plugin_root>/lib` 与 vendor 目录前置到
+`sys.path`，使 `import apothem` 及每个内联依赖都从插件树解析。一棵畸形的
+树（缺失 `lib/`）会抛出
+`PluginBootstrapError`，而不是静默地导入一份陈旧的系统副本。
+
+## 安装器在磁盘上放置什么
+
+脚本安装器在 `~/.apothem`（可用 `APOTHEM_HOME` 覆盖）放置一份源码树的
+git 克隆，并从中运行引擎——除了可选的 `click` / `rich` 前置条件提议之外，
+不会有任何 Python 包安装进 `site-packages`。该克隆是完整的仓库，包括运行时
+从不导入的测试套件与文档站点，出于两个深思熟虑的原因：引擎会**物化它的
+cohort**——规则、技能、命令与模板——直接从树中物化到每个harness，因此
+该树是活的真理之源，而不仅仅是运行时；而 `.git` 目录留在原处，使
+`apothem update` 快进现有的克隆，而非重新下载。
+
+这种从源码运行的布局与 `nvm`、`pyenv` 和 `oh-my-zsh` 这类工具所采用的模式
+相同——几兆字节的源码加历史，可用卸载器一步移除（没有系统状态需要解开）。
+更精简的占用——一份省略 `tests/` 与 `site/` 的浅克隆或稀疏检出——是可能的，
+但会换走原地的、签名校验的、基于 `git` 的更新路径；当前布局倾向于简单、
+可验证的更新，而非最小磁盘占用。
+
+## 运行时如何找到 Python
+
+一键安装器与 npx 垫片以相同方式定位解释器：探测 `python3`、`python`、
+带版本号的名称（`python3.14` 至 `python3.10`）以及 Windows 上的 `py -3`；
+拒绝 Microsoft Store 启动器垫片；并接受第一个报告版本为 3.10 或更新的
+候选者。从源码树运行时，安装器复用打包的
+`hooks/lib/find-python` 定位器，它应用相同的下限。
+
+## 推荐的下一步
+
+**运行 `python -m apothem --help`**，在 `PYTHONPATH` 上带有检出的 `src/`
+目录，以确认自包含 CLI 路径在你的宿主上解析成功。

@@ -1,0 +1,88 @@
+---
+title: "Open-Claw"
+description: "محوّل إطار عمل Apothem لـ Open-Claw (معاينة)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**المورّد:** <bdi>Open-Claw</bdi>
+**اسم التثبيت:** <bdi>`open-claw`</bdi>
+**الحالة:** معاينة
+**الإعداد الأصلي:** <bdi>`~/.openclaw/openclaw.json`</bdi>
+
+## التثبيت
+
+```bash
+apothem install --harness open-claw
+```
+
+يترجم المحوّل الملف التعريفي المشترك إلى ملف الإعداد العام للمستخدم في <bdi>OpenClaw</bdi>
+ويثبّت أفواج دعم <bdi>Apothem</bdi> تحت جذر إطار العمل. الإعداد الأصلي لـ<bdi>OpenClaw</bdi>
+هو <bdi>JSON</bdi>؛ ويصيّر الـ<bdi>materializer</bdi> الـ<bdi>JSON</bdi> ليطابقه.
+
+**الملفات المكتوبة:** <bdi>`~/.openclaw/openclaw.json`</bdi> وملفات الدعم تحت
+<bdi>`~/.openclaw/.apothem/support/`</bdi>
+
+## تعيين الملف التعريفي إلى الإعداد الأصلي
+
+يقرأ المحوّل الملف التعريفي المشترك لـ<bdi>Apothem</bdi>. حقل <bdi>skills</bdi> الأصلي في
+<bdi>OpenClaw</bdi> هو قائمة أسماء مسموح بها (وليس مُحمِّل أدلّة)، و<bdi>MCP</bdi> سطح
+<bdi>CLI</bdi>، لذا لا يكتب <bdi>Apothem</bdi> أي مفاتيح إعداد. تُثبَّت الأوامر والمهارات
+والقواعد والقوالب ومطالبات الخطافات المشتركة بوصفها مواد دعم تحت
+<bdi>`~/.openclaw/.apothem/support/`</bdi>.
+
+## ملاحظات التوافق
+
+محوّل معاينة. الإعداد الأصلي بصيغة <bdi>JSON</bdi> هو السطح النشط لـ<bdi>Open-Claw</bdi>؛
+يستخدم <bdi>Apothem</bdi> الخطاف الموثَّق لدليل المهارات الإضافي للمهارات، ويحتفظ بالأفواج
+الأخرى بوصفها مادة مرجعية للإرشادات المثبَّتة.
+
+## التحقّق
+
+```bash
+apothem verify --harness open-claw
+```
+
+يؤكّد أمر التحقّق ما يلي:
+
+1. وجود الإعداد الأصلي في المسار المتوقَّع.
+2. وجود جميع الحقول الإلزامية من الملف التعريفي المشترك.
+3. إبلاغ روتين التحقّق الخاص بالمحوّل عن النجاح.
+
+## التحديث
+
+```bash
+apothem update --harness open-claw
+```
+
+يعيد اشتقاق الإعداد الأصلي من حالة الملف التعريفي المشترك الحالية. شغّله بعد تعديل
+<bdi>`~/.config/apothem/profile.yaml`</bdi> أو ترقية حزمة <bdi>Apothem</bdi> المثبَّتة.
+
+## إلغاء التثبيت
+
+```bash
+apothem uninstall --harness open-claw
+```
+
+يزيل ملفات الإعداد الأصلية التي كتبها المحوّل. لا يتأثّر <bdi>YAML</bdi> الملف التعريفي
+المشترك ولا محرّك <bdi>Apothem</bdi>.
+
+## بوّابة المطابقة
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## استكشاف الأخطاء وإصلاحها
+
+| العَرَض | الإصلاح |
+|---------|-----|
+| ملف الإعداد غير موجود | أعد تشغيل <bdi>`apothem install --harness open-claw`</bdi> |
+| فشل التحقّق | شغّل <bdi>`apothem update --harness open-claw`</bdi>، ثم تحقّق مجدّدًا |
+| محتوى إعداد غير متوقَّع | تحقّق من <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness open-claw`</bdi> |
+
+## مفاتيح الضبط
+
+| العَلَم | الافتراضي | الوصف |
+|------|---------|-------------|
+| <bdi>`--dry-run`</bdi> | <bdi>`false`</bdi> | معاينة التثبيت دون كتابة ملفات. |

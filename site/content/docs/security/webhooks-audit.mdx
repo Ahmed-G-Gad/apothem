@@ -1,0 +1,38 @@
+---
+title: "Webhooks audit"
+description: "Apothem webhooks audit — secret rotation, scope-minimization, and Scorecard Webhooks check evidence."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+The OpenSSF Scorecard **Webhooks** check verifies that repository webhooks use a shared secret to authenticate the delivery surface — without one, an attacker who learns the webhook URL can replay or forge events.
+
+## Apothem's webhook posture
+
+| Webhook surface | Status | Secret rotation cadence |
+|---|---|---|
+| **Repository webhooks** | None configured at the repository level. | n/a |
+| **Organization webhooks** | None configured at the organization level. | n/a |
+| **Workflow events** | GitHub-managed; not subject to the Webhooks check. | n/a |
+
+Apothem currently operates **zero external webhook surfaces**. Every event-driven integration uses GitHub-native workflows (CI, Scorecard, CodeQL, pip-audit) which are not subject to the Scorecard Webhooks check.
+
+## Future webhook governance
+
+When Apothem grows webhook surfaces (e.g., Discord / Matrix release notifications, downstream-consumer build triggers), the operator MUST:
+
+1. **Generate a high-entropy secret** (≥ 32 bytes, cryptographically random).
+2. **Store the secret in the repository's encrypted secrets surface** — never in source, never in workflow YAML.
+3. **Configure the webhook with the secret** so GitHub signs the `X-Hub-Signature-256` header on every delivery.
+4. **Verify the signature on the receiving endpoint** using a constant-time comparison.
+5. **Rotate the secret** every 12 months OR within 24 hours of any suspected compromise.
+6. **Document the webhook** in this audit file with its purpose, receiving endpoint, and rotation date.
+
+## Audit cadence
+
+This file is reviewed on every `/security-audit` pass and at every release-engineering pre-cutover checkpoint. Drift (e.g., a webhook surface introduced without an entry here) is a HIGH-severity finding.
+
+## References
+
+- [OpenSSF Scorecard — Webhooks check](https://github.com/ossf/scorecard/blob/main/docs/checks.md#webhooks)
+- [GitHub — Webhook security](https://docs.github.com/en/webhooks/using-webhooks/securing-your-webhooks)
+- [Apothem Security Policy](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)

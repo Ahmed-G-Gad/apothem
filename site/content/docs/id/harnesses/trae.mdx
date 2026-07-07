@@ -1,0 +1,86 @@
+---
+title: "Trae"
+description: "Adaptor harness Apothem untuk Trae (GA)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Vendor:** ByteDance
+**Nama instal:** `trae`
+**Status:** GA
+**Konfigurasi native:** `<project>/.trae/rules/apothem-rules.md`
+
+## Instalasi
+
+```bash
+apothem install --harness trae --project /path/to/project
+```
+
+Adaptor menulis satu berkas aturan Trae berlingkup-proyek dari permukaan aturan dan
+tata kelola Apothem bersama.
+
+**Berkas yang ditulis:** `<project>/.trae/rules/apothem-rules.md`
+
+## Pemetaan profil ke konfigurasi native
+
+Adaptor membaca profil bersama Apothem dan merender berkas aturan proyek pada setiap
+jalannya `apothem install` atau `apothem update`. Profil bersama adalah sumber
+kebenaran; suntingan lokal-proyek pada berkas yang dihasilkan dicadangkan sebelum
+sinkronisasi berikutnya mengganti konten yang dikelola Apothem.
+
+## Catatan kompatibilitas
+
+Permukaan aturan Trae saat ini berlingkup-proyek di bawah `.trae/rules/`. Adaptor
+menulis berkas `apothem-rules.md` khusus yang berdampingan dengan jangkar
+`project_rules.md` dan `user_rules.md` milik operator dan tidak pernah menimpanya.
+Permukaan server alat `.trae/mcp.json` dan permukaan skill `.trae/skills/` milik
+operator; Apothem tidak menulisnya.
+
+## Verifikasi
+
+```bash
+apothem verify --harness trae --project /path/to/project
+```
+
+Perintah verify mengonfirmasi bahwa:
+
+1. Konfigurasi native ada di jalur yang diharapkan.
+2. Semua bidang wajib dari profil bersama hadir.
+3. Rutin verifikasi khusus adaptor melaporkan keberhasilan.
+
+## Pemutakhiran
+
+```bash
+apothem update --harness trae --project /path/to/project
+```
+
+Menurunkan-ulang berkas aturan proyek dari keadaan profil bersama saat ini.
+
+## Pencopotan
+
+```bash
+apothem uninstall --harness trae --project /path/to/project
+```
+
+Menghapus berkas konfigurasi native yang ditulis oleh adaptor.
+YAML profil bersama dan mesin Apothem tidak terpengaruh.
+
+## Gerbang konformitas
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Pemecahan masalah
+
+| Gejala | Perbaikan |
+|---------|-----|
+| Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness trae --project /path/to/project` |
+| Verifikasi gagal | Jalankan `apothem update --harness trae --project /path/to/project`, lalu verifikasi lagi |
+| Konten konfigurasi tak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness trae --project /path/to/project` |
+
+## Tombol konfigurasi
+
+| Flag | Default | Deskripsi |
+|------|---------|-------------|
+| `--dry-run` | `false` | Pratinjau instalasi tanpa menulis berkas. |

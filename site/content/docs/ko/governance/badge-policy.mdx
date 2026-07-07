@@ -1,0 +1,116 @@
+---
+title: "배지 정책"
+description: "GitHub 네이티브 워크플로 상태, shields.io 엔드포인트 JSON, 정적 배지 형식을 다루며 README용 동적 및 정적 배지 소스를 지정합니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+이 문서는 README 배지 스트립과 그 동적 데이터 소스를 게시하는
+인프라에 대한 정규 참조입니다. 프로젝트 README의 모든 배지는 여기서
+지정된 세 가지 형식 중 하나를 통해 해석됩니다. 향후 추가되는 새 배지는
+동일한 형식을 따르거나 검토에서 거부됩니다.
+
+## 1. 배경
+
+정적 `https://img.shields.io/badge/X-Y-Z` URL은 스스로 변하지 않으므로
+프로젝트의 실제 상태에서 멀어집니다 — `release-vN-blue` 배지는 `vN+1`이
+출시된 후에도 한참 동안 `vN`을 계속 표시합니다. 따라서 이 정책은 움직이는
+모든 값에 대해 동적 형식을 요구하고, 정적 형식이 정직한, 거의 변하지 않는
+작은 값 집합(라이선스, Python 대상 버전)에는 정적 배지를 예약합니다.
+
+## 2. 아키텍처
+
+세 가지 형식이 프로젝트의 모든 배지를 다룹니다.
+
+1. **GitHub 네이티브 워크플로 상태 배지.** 워크플로의 배지 URL은
+   `https://github.com/<owner>/<repo>/actions/workflows/<file>/badge.svg`
+   형태를 가지며 기본 브랜치의 최신 실행을 반영합니다. GitHub는 리포지토리의
+   공개 메타데이터에서 배지를 제공합니다.
+2. **shields.io 엔드포인트 배지.** shields.io 엔드포인트 배지는 JSON이
+   shields.io 엔드포인트 스키마(`schemaVersion`, `label`, `message`,
+   `color`)를 준수하는 `https://img.shields.io/endpoint?url=<published-json>`
+   URL을 해석합니다. 게시된 JSON은 `apothem.ahmedgad.com/badges/*.json`에
+   있으며, 그 내용은 성공적인 모든 CI 실행에서 CI 워크플로에 의해 생성됩니다.
+   엔드포인트 배지는 메트릭을 타사의 변경 가능한 저장소가 아닌 프로젝트가
+   제어하는 게시 아래에 유지합니다.
+3. **shields.io 정적 배지.** 정적 배지는 반응형 데이터 소스가 없는
+   `https://img.shields.io/badge/<label>-<message>-<color>` 형태를 가집니다.
+   정말로 거의 변하지 않는 값(라이선스 식별자, Python 대상 버전)을 위해
+   예약됩니다.
+
+프로젝트 메트릭의 공개 Gist 게시는 설계상 제외됩니다. 프로젝트가 제어하는
+도메인의 shields.io 엔드포인트가 정규 대체물입니다.
+
+## 3. 배지별 사양
+
+| 배지 | 형식 | 소스 | URL 형태 |
+|---|---|---|---|
+| CI 상태 | GitHub 네이티브 | `.github/workflows/ci.yml` | `https://github.com/ahmed-g-gad/apothem/actions/workflows/ci.yml/badge.svg?branch=main` |
+| 마지막 커밋 | GitHub 네이티브 | 리포지토리 메타데이터 | `https://img.shields.io/github/last-commit/ahmed-g-gad/apothem` |
+| 라이선스 | shields.io 정적 | `LICENSE` (MIT) | `https://img.shields.io/badge/License-MIT-yellow.svg` |
+| 최신 릴리스 | shields.io 엔드포인트 | `badges/release.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/release.json` |
+| 커버리지 | shields.io 엔드포인트 | `badges/coverage.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/coverage.json` |
+| 보안 | shields.io 엔드포인트 | `badges/security.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/security.json` |
+| 공급망 | shields.io 엔드포인트 | `badges/supply-chain.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/supply-chain.json` |
+| 문서 | shields.io 엔드포인트 | `badges/docs.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/docs.json` |
+| Python 버전 | shields.io 정적 | `pyproject.toml` `python_requires` | `https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white` |
+
+CodeQL은 Python과 Actions 표면을 분석하는 전용 `.github/workflows/codeql.yml`
+워크플로로 실행됩니다. `ci.yml`의 security-scan 작업은 bandit만 실행하고
+CodeQL SARIF 게시는 `codeql.yml`에 맡깁니다. 보안 배지는 GitHub 네이티브
+워크플로 배지가 아니라 badges 워크플로가 게시하는 엔드포인트 JSON을
+소비하므로, 기반 스캐너 토폴로지 전반에 걸쳐 안정적으로 유지됩니다.
+
+## 4. JSON 게시 메커니즘
+
+엔드포인트 JSON은 `.github/workflows/badges.yml`에 의해 생성됩니다. 이
+워크플로는 다음을 수행합니다.
+
+- `ci` 워크플로가 완료된 후 `workflow_run`으로 트리거됩니다(그리고 CI
+  실행 없이 재게시하기 위한 수동 `workflow_dispatch`로도 트리거됩니다).
+- 최신 태그를 `git describe --tags --abbrev=0`에서, 부모 CI 결론을
+  `workflow_run` 이벤트에서 해석합니다.
+- 출력이 shields.io 엔드포인트 스키마(`schemaVersion: 1`에 더해 `label`,
+  `message`, `color`)와 엄격하게 일치하도록 `jq -n`을 통해 각 JSON을
+  생성합니다.
+- 업로드 전에 `jq -e`로 발행된 각 JSON을 검증합니다.
+- 디렉터리를 `badges`라는 이름의 워크플로 아티팩트로 업로드합니다.
+
+아티팩트를 `apothem.ahmedgad.com/badges/`로 배포하는 작업은
+`.github/workflows/publish-static-site.yml`이 처리합니다. 사이트 빌드 중에
+해당 워크플로는 최신의 성공한 `badges` 아티팩트를 다운로드하여
+`site/dist/badges/` 아래에 스테이징합니다. 아티팩트가 없거나 만료된 경우,
+사이트는 여전히 배포되며 깨진 JSON을 게시하는 대신 누락된 배지 아티팩트를
+워크플로 로그에 기록합니다.
+
+## 5. 유지 관리 프로토콜
+
+먼저 형식을 결정하여 새 배지를 추가합니다.
+
+- 배지가 CI 워크플로의 실행 상태를 반영하는 경우, GitHub 네이티브 형식을
+  선호하십시오. 배지의 URL은 워크플로 파일에 의해 고정되며, 게시 인프라가
+  필요하지 않습니다.
+- 배지가 시간이 지나면서 업데이트되는 메트릭(개수, 백분율, 버전 문자열,
+  등급 라벨)을 반영하는 경우, shields.io 엔드포인트 형식을 사용하십시오.
+  `.github/workflows/badges.yml`의 기존 다섯 개 옆에 JSON 생성 단계를
+  추가하고 `apothem.ahmedgad.com/badges/<name>.json` 소비자 URL을 README
+  배지 스트립에 추가하십시오.
+- 배지가 정말로 거의 변하지 않는 값(라이선스, 언어 대상, 거버넌스 모드)을
+  반영하는 경우, shields.io 정적 형식을 사용하십시오. 배지를 추가할 때 이
+  파일의 배지별 표에 변경 주기를 문서화하십시오.
+
+먼저 README에서 배지를 제거한 다음, badges 워크플로에서 해당 JSON 생성
+단계를 제거하고, 그 다음 위의 배지별 표에서 해당 행을 제거하여 배지를
+폐기하십시오. README가 워크플로가 생성하지 않는 JSON 아티팩트를 절대
+참조하지 않도록 삭제를 원자적으로 유지하십시오.
+
+## 6. 상호 참조
+
+- GitHub 네이티브 CI 배지가 실행 상태를 반영하는 CI 워크플로:
+  `.github/workflows/ci.yml`.
+- 엔드포인트 JSON을 게시하는 badges 워크플로:
+  `.github/workflows/badges.yml`.
+- JSON을 제공하는 정적 사이트 도메인:
+  `apothem.ahmedgad.com`.
+- shields.io 엔드포인트 스키마 참조:
+  [https://shields.io/badges/endpoint-badge](https://shields.io/badges/endpoint-badge).

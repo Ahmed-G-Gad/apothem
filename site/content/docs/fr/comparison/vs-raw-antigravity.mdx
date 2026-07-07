@@ -1,0 +1,48 @@
+---
+title: "Apothem face à la configuration manuelle d'Antigravity"
+description: "Maintenir à la main le contexte global et les fichiers de plugin d'Antigravity CLI face à les gérer via le profil partagé d'Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Antigravity est un environnement de propagation de manifeste de Classe I :
+Apothem écrit l'ancre de contexte global `~/.gemini/GEMINI.md` et installe un
+plugin Apothem sous `~/.gemini/antigravity-cli/plugins/apothem/`. Cette page
+oppose la maintenance manuelle de cette disposition à sa gestion avec Apothem.
+
+## Comparaison de l'effort
+
+| Tâche | Configuration manuelle | Géré par Apothem |
+| ---- | --------------- | --------------- |
+| Écrire des règles | Écrire à la main chaque fichier de règle de plugin | Écrire une fois dans le corpus partagé |
+| Préserver les prompts réutilisables | Copier à la main les prompts de commande et les skills dans les fichiers de plugin | Convertis ou copiés en skills de plugin |
+| Préserver le matériel de support des hooks | Copier à la main les références de hooks sans câblage actif | Copiés sous l'arbre de support du plugin Apothem |
+| Garder les règles alignées avec d'autres environnements | Manuel, par outil | Automatique lors de `apothem update` |
+| Installer / retirer la configuration | Copier et supprimer des fichiers à la main | `apothem install` / `apothem uninstall` |
+| Vérifier que la configuration est correcte | Inspection manuelle | `apothem verify --harness antigravity` |
+
+## Ce qu'Apothem gère
+
+Apothem gère le fichier de contexte global d'Antigravity, les métadonnées du
+plugin, les skills de commande converties, les skills réutilisables, les agents
+convertis, les règles, les modèles et le matériel de support des hooks. Les
+fichiers de hook sont conservés en tant que matériel de support ; Apothem
+n'enregistre pas d'événements de hook actifs d'Antigravity tant que l'adaptateur
+ne possède pas une couche de traduction de schéma pour le `hooks.json`
+d'Antigravity.
+
+## Chemin de migration
+
+1. Exécutez `apothem profile init` pour créer le profil partagé si vous ne
+   l'avez pas encore.
+2. Déplacez vos règles d'Antigravity écrites à la main vers le corpus partagé.
+3. Exécutez `apothem install --harness antigravity` pour propager le corpus.
+4. Exécutez `apothem verify --harness antigravity` pour confirmer que la
+   configuration a été installée.
+5. Utilisez `apothem update --harness antigravity` pour chaque modification
+   ultérieure.
+
+## À lire ensuite
+
+- [Référence de l'adaptateur Antigravity](/docs/harnesses/antigravity)
+- [Aperçu de la comparaison](/docs/comparison)

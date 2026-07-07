@@ -1,0 +1,124 @@
+---
+title: "流水线命令"
+description: "Apothem 流水线命令参考——/plan 流程与审计命令目录。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem 提供一个具备架构感知能力的 `/plan` 流水线、一个十三阶段的
+`/research` 流水线，以及一个十一命令的审计序列——为每个项目提供一条
+从原始散文到生产级、多维度审查代码，再从原始构想到完成传播、经同行评审的
+论文的结构化路径。
+
+## 流水线概览
+
+```mermaid
+flowchart LR
+    accTitle: Plan pipeline command flow
+    accDescr: Left-to-right flowchart of the apothem plan pipeline from the spec stage through the generate and review stages, then through a conditional architecture-bearing decision that either runs the design stage or skips directly to the execute stage. The orthogonal audit stage wraps the spec-through-review span as a closed remediation loop.
+    A[/plan-spec] --> B[/plan-generate]
+    B --> C[/plan-review]
+    AUD[/plan-audit<br/>orthogonal: wraps spec → review] -.->|closed-loop remediation| A
+    C --> Q{Architecture-bearing suite?}
+    Q -->|yes| F[/plan-design<br/>emit _inputs/design.md]
+    Q -->|no| D[/plan-execute]
+    F --> D
+    D --> E[/plan-status]
+    D --> G[Audit review sequence]
+    G --> H[Completion milestone]
+```
+
+## 规划阶段
+
+该流水线以八个一等斜杠命令的形式提供，每阶段一个——各自可作为
+`/plan-<stage>` 独立调用。
+
+| 阶段 | 角色 | 位置 |
+|-------|------|----------|
+| [/plan-spec](/docs/pipeline/plan-spec) | 锻造——从散文到规范 | 首阶段 |
+| [/plan-generate](/docs/pipeline/plan-generate) | 生成器——从规范到计划套件 | 链中 |
+| [/plan-review](/docs/pipeline/plan-review) | 审计员——计划取证审计 | 链中 |
+| [/plan-design](/docs/pipeline/plan-design) | 架构师——为承载架构的套件生成 `_inputs/design.md` | 条件门 |
+| [/plan-execute](/docs/pipeline/plan-execute) | 执行器——阶段执行 | 末端 |
+| [/plan-status](/docs/pipeline/plan-status) | 报告器——只读状态 | 只读 |
+| [/plan-audit](/docs/pipeline/plan-audit) | 守护者——对 spec → generate → review 的闭环包装 | 正交（执行前） |
+| /plan-amend | 管家——对现有套件的可重入修订 | 可重入 |
+
+`/plan-audit` 与线性流程正交，而非其中的一个阶段。它将
+`/plan-spec → /plan-generate → /plan-review` 包装为一个单一闭环，仅运行
+缺失的上游阶段，主动修复发现项，并使套件准备好交给 `/plan-execute`。它有别于
+下文的审计审查序列——后者审计的是已执行的代码库，而非计划套件。
+
+`/plan-design` 不是一道通用仪式。`/plan-review` 会判定套件是否变更
+承载架构的界面。若是，`/plan-design` 会生成 `/plan-execute` 与
+`/architecture-review` 所消费的设计踪迹；若否，已审查的套件直接进入执行。
+
+## 研究流水线
+
+研究流水线以十三个一等斜杠命令的形式提供，每阶段一个——各自可作为
+`/research-<stage>` 独立调用，由序列门与交接清单串联，遵循十条严谨性
+准则（权威来源、可复现性、可证伪性、引用完整性、预注册、
+伦理／利益冲突、统计严谨性、开放科学／FAIR、报告准则
+合规、理论扎根／影响力）。
+
+```mermaid
+flowchart LR
+    accTitle: Research pipeline command flow
+    accDescr: Left-to-right flowchart of the apothem research pipeline from the ideate stage through spec, theory, sources, synthesis, proposal, study design, experiment, analysis, paper, and peer review to publish and disseminate, with a revision loop from review back to paper.
+    RI[/research-ideate] --> RS[/research-spec]
+    RS --> RT[/research-theory]
+    RT --> RSO[/research-sources]
+    RSO --> RSY[/research-synthesis]
+    RSY --> RPR[/research-proposal]
+    RPR --> RD[/research-design]
+    RD --> RE[/research-experiment]
+    RE --> RA[/research-analysis]
+    RA --> RP[/research-paper]
+    RP --> RR[/research-review]
+    RR --> RPU[/research-publish]
+    RPU --> RDI[/research-disseminate]
+    RR -.->|revision loop| RP
+```
+
+| 阶段 | 角色 | 位置 |
+|-------|------|----------|
+| [/research-ideate](/docs/pipeline/research-ideate) | 构建问题——从领域种子生成候选问题 | 首阶段 |
+| [/research-spec](/docs/pipeline/research-spec) | 框定问题——可证伪假设 + 范围 | 链中 |
+| [/research-theory](/docs/pipeline/research-theory) | 概念框架 + 变革理论 | 链中 |
+| [/research-sources](/docs/pipeline/research-sources) | 系统性来源收集 | 链中 |
+| [/research-synthesis](/docs/pipeline/research-synthesis) | SOTA 图谱 + 缺口分析 | 链中 |
+| [/research-proposal](/docs/pipeline/research-proposal) | 目标 + 可行性 + 影响力 + 预注册计划 | 链中 |
+| [/research-design](/docs/pipeline/research-design) | 研究设计 + 预注册 | 链中 |
+| [/research-experiment](/docs/pipeline/research-experiment) | 运行 + 记录，可复现 | 链中 |
+| [/research-analysis](/docs/pipeline/research-analysis) | 结果 + 统计 | 链中 |
+| [/research-paper](/docs/pipeline/research-paper) | 顶级论文草稿 | 链中 |
+| [/research-review](/docs/pipeline/research-review) | 同行评审级别的批判 | 链中 |
+| [/research-publish](/docs/pipeline/research-publish) | 期刊投递包 + 提交 | 链中 |
+| [/research-disseminate](/docs/pipeline/research-disseminate) | 传播 + 影响力 + FAIR 归档 | 末端 |
+
+`/research` 包装工作流编排器驱动这些阶段，从原始问题直至发表的论文
+（它本身不是一个阶段），在下一阶段基于其构建之前，独立检查每个阶段的
+输出；`--quick` 仅运行 `/research-sources` + `/research-synthesis`，用于
+一次性生成带引用的报告。
+
+经验阶段（来源、设计、实验、分析）和写作阶段（论文、评审、发表、传播）还额外借助若干将严谨性操作化的界面——公平的多方法比较、对照者出处、一套实验方案脚手架、一份算力利用计划、一个可选的自主实验循环、一道完成定义晋级门，以及带分阶段披露的盲化——这些为十条准则增添了操作细节，而不扩展它们。
+
+## 审计审查序列
+
+`/audit` 包装工作流编排器以单次并行扫查横扫下列全部十一个维度——它是 `/plan` 与 `/research` 在审计堡垒上的对应物——综合出一份去重、按严重程度分级的发现报告（仅报告；修复路由至 `/elevate`）。每个维度也均可单独调用。
+
+`/fortress` 包装工作流编排器闭合 `/audit` 所报告的回路：它通过 `/audit` 进行检测，逐项核实每个发现，在其归属界面修复每个幸存项，在有界循环中重新审计，并通过 `/release-readiness` 对结果设门——它是 `/plan` 与 `/research` 在生产硬化上的对应物。
+
+| 命令 | 质量领域 |
+|---------|--------------|
+| [/code-review](/docs/pipeline/code-review) | 代码质量 |
+| [/code-audit](/docs/pipeline/code-audit) | 代码语料 |
+| [/security-audit](/docs/pipeline/security-audit) | OWASP / ASVS |
+| [/perf-audit](/docs/pipeline/perf-audit) | 性能 |
+| [/architecture-review](/docs/pipeline/architecture-review) | 架构 |
+| [/ux-review](/docs/pipeline/ux-review) | 开发者体验 |
+| [/a11y-audit](/docs/pipeline/a11y-audit) | 可访问性 |
+| [/docs-review](/docs/pipeline/docs-review) | 文档 |
+| [/dependency-audit](/docs/pipeline/dependency-audit) | 依赖项 |
+| [/supply-chain-audit](/docs/pipeline/supply-chain-audit) | 供应链 |
+| [/threat-model-audit](/docs/pipeline/threat-model-audit) | 威胁模型 |

@@ -1,0 +1,55 @@
+---
+title: "Минимальный хук"
+description: "Пример минимального хука Apothem — запуск проверки при каждой записи файла."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Этот пример показывает минимально возможный хук Apothem: хук PreToolUse, который
+срабатывает перед каждым вызовом инструмента `Write` и логирует целевой путь.
+
+## Скрипт хука
+
+```python
+# src/apothem/hooks/log_writes.py
+import json, sys
+
+data = json.load(sys.stdin)
+path = data.get("tool_input", {}).get("file_path", "unknown")
+print(f"[apothem] Writing to: {path}", file=sys.stderr)
+sys.exit(0)  # exit 0 = proceed; non-zero = block
+```
+
+## Регистрация в settings.json
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python src/apothem/hooks/log_writes.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## Тестирование хука
+
+Выполните любую запись файла в Claude Code и понаблюдайте за выводом stderr в
+панели трассировки хука.
+
+## Блокировка записей
+
+Измените `sys.exit(0)` на `sys.exit(1)` и выведите JSON-блок в stdout:
+
+```python
+print(json.dumps({"decision": "block", "reason": "blocked by log_writes"}))
+sys.exit(1)
+```

@@ -1,0 +1,70 @@
+---
+title: "/research-paper"
+description: "/research-paper — Ensambla un borrador de artículo de primer nivel (del resumen a la conclusión más las referencias) a partir de la síntesis, el diseño y el análisis, con cada cita verificada para que resuelva."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rol:** Investigador principal (redacción)
+**Posición en la canalización:** intermedia
+
+Ensambla un borrador de artículo de primer nivel a partir de la síntesis, el diseño y el análisis: resumen, introducción, trabajo relacionado, método, resultados, discusión, limitaciones, conclusión, referencias. Cada cita se verifica para que resuelva a una fuente real; sin citas fantasma.
+
+## Invocación canónica
+
+```bash
+/research-paper
+```
+
+Con argumentos:
+
+```bash
+/research-paper [path/to/research-suite/]
+```
+
+## Entradas
+
+`_inputs/synthesis.md` (mapa SOTA + brecha), `_inputs/study-design.md` (método) y `_outputs/analysis.md` (resultados).
+
+## Salidas
+
+El entregable del artículo en una ubicación natural del host (`paper/`): resumen, introducción, trabajo relacionado, método, resultados, discusión, limitaciones, conclusión, referencias.
+
+## Posterior
+
+/research-review (consumidor posterior)
+
+## Fases del flujo de trabajo
+
+El comando sigue el flujo de trabajo estándar de la canalización `/research`:
+
+1. **Cargar el contexto** — Leer la síntesis, el diseño del estudio y el análisis.
+2. **Verificar la compuerta de secuencia** — Confirmar que `_outputs/analysis.md` existe; de lo contrario, detenerse con `Blocked: run /research-analysis first`.
+3. **Ensamblar el borrador** — Componer del resumen a la conclusión; la introducción y el trabajo relacionado se basan en la síntesis, el método en el diseño, los resultados en el análisis.
+4. **Verificar las citas** — Cada referencia resuelve a una fuente real.
+5. **Actualizar el manifiesto de traspaso** — Registrar la ruta del entregable del artículo.
+6. **Emitir el artículo** — el manuscrito en la ubicación natural del host `paper/`.
+
+## Umbral de rigor
+
+Bajo un lugar de publicación de doble ciego, el manuscrito lleva solo lo que la política de anonimato permite: el autor, la institución, la financiación y el sistema bajo estudio se describen en lenguaje natural del dominio sin nombrarlos, reservados a metadatos enviados por separado para una etapa designada de desanonimización. La profundidad de la reproducibilidad y del informe estadístico se escala a la ambición del lugar de publicación objetivo.
+
+## Modos de fallo
+
+| Síntoma | Causa | Recuperación |
+|---------|-------|----------|
+| Blocked: run /research-analysis first | Sin análisis | Ejecuta `/research-analysis` para producir `_outputs/analysis.md` |
+| Cita fantasma | La referencia no resuelve | Elimina o corrige la cita; nunca fabriques una fuente |
+| Resultados exagerados | La discusión excede el análisis | Restringe las afirmaciones a los tamaños de efecto analizados + los IC |
+
+## Ejemplos
+
+```bash
+# Ensamblar el borrador del artículo a partir de síntesis + diseño + análisis
+/research-paper path/to/research-suite/
+```
+
+## Referencias cruzadas
+
+- [Visión general de la canalización](/docs/pipeline)
+- [Referencia de comandos](/docs/reference/commands)

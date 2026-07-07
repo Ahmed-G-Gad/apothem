@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: MIT
+
+# Authors of Apothem.
+#
+# Purpose: the canonical COPYRIGHT record — the people who hold copyright in
+# the work, for licensing and attribution. This is one of three related
+# rosters; see the cross-links below for the others.
+#
+#   AUTHORS         (this file) — copyright holders, by name and email.
+#   CONTRIBUTORS.md            — everyone who has contributed, from git history.
+#   MAINTAINERS.md             — the governance owners who review and release.
+#
+# Order is chronological by first contribution. Entries follow the
+# format:
+#   Name <email>
+#
+# To add yourself, open a pull request that appends your line below.
+# The .mailmap file at the repository root maps any alternate identities
+# you may use to your canonical entry here.
+
+Ahmed G. Gad <me@ahmedgad.com>

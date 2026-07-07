@@ -1,0 +1,70 @@
+---
+title: "/research-synthesis"
+description: "/research-synthesis — Réconcilie les sources collectées en une carte de l'état de l'art et une matrice de littérature, vérifie de manière contradictoire chaque affirmation et énonce la lacune de recherche explicite."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rôle :** Investigateur principal (synthèse)
+**Position dans le pipeline :** intermédiaire
+
+Réconcilie les sources collectées en une carte de l'état de l'art + matrice de littérature et énonce la lacune de recherche explicite que le travail comble. Toute affirmation porteuse est vérifiée de manière contradictoire par rapport à deux sources indépendantes ou plus, en réfutant par défaut.
+
+## Invocation canonique
+
+```bash
+/research-synthesis
+```
+
+Avec des arguments :
+
+```bash
+/research-synthesis [path/to/research-suite/]
+```
+
+## Entrées
+
+`_inputs/source-ledger.md` (l'index de sources classé et filtré) plus les extractions par source sous `sources/`.
+
+## Sorties
+
+`_inputs/synthesis.md` — la carte de l'état de l'art, la matrice de littérature, le registre des constats contestés et l'énoncé explicite de la lacune en une seule phrase.
+
+## En aval
+
+/research-proposal (consommateur en aval)
+
+## Phases du flux de travail
+
+La commande suit le flux de travail standard du pipeline `/research` :
+
+1. **Charger le contexte** — Lire le registre de sources et les extractions par source.
+2. **Vérifier la Porte de séquence** — Confirmer que le registre de sources existe ; sinon, s'arrêter avec `Blocked: run /research-sources first`.
+3. **Synthétiser** — Construire la carte de l'état de l'art + matrice de littérature ; réconcilier les accords et les contradictions ; énoncer la lacune explicite.
+4. **Vérifier de manière contradictoire** — Toute affirmation porteuse est réfutée par défaut par rapport à deux sources indépendantes ou plus.
+5. **Mettre à jour le manifeste de transfert** — Enregistrer le chemin de synthèse et le registre des affirmations contestées.
+6. **Émettre la synthèse** — `_inputs/synthesis.md`.
+
+## Seuil de rigueur
+
+Avant que l'énoncé de la lacune ne soit finalisé, la synthèse réconcilie sa terminologie, ses constats et ses recommandations avec les corpus frères apparentés (cohérence inter-corpus) ; un conflit est consigné dans le registre des constats contestés, jamais harmonisé en silence. La lacune doit se résoudre en une contribution distincte et parcimonieuse — non déjà comblée par une affirmation corroborée, et non décomposable en éléments non distincts qui se chevauchent.
+
+## Modes de défaillance
+
+| Symptôme | Cause | Récupération |
+|---------|-------|----------|
+| Blocked: run /research-sources first | Aucun registre de sources | Exécutez `/research-sources` pour produire `_inputs/source-ledger.md` |
+| Une affirmation survit sans ≥2 sources | Corroboration insuffisante | Marquez-la comme contestée ou non vérifiable ; ne l'affirmez pas |
+| Aucun énoncé explicite de la lacune | À la synthèse manque une cible | Redérivez la lacune en une seule phrase que la recherche comble |
+
+## Exemples
+
+```bash
+# Synthétiser les sources collectées en une carte de l'état de l'art + lacune
+/research-synthesis path/to/research-suite/
+```
+
+## Références croisées
+
+- [Vue d'ensemble du pipeline](/docs/pipeline)
+- [Référence des commandes](/docs/reference/commands)

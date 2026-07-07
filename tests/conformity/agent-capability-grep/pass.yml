@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: MIT
+
+# Fixture: sample capability declaration with all required fields
+# populated. Used by tests/conformity/test_agent_capability_grep.py to
+# verify the matcher returns passed=True when every required field is
+# present in a YAML declaration.
+mcp_servers:
+  - filesystem
+  - git
+  - github
+sub_agent_dispatch: true
+custom_command_support: "yes"
+recommended_postfix_rendering: "plain-text"
+long_context_compaction: "profile-managed"
+context_ignore_surface: "settings.json permissions.deny"
+standard_convention_pin: "STANDARD-CONVENTION-PIN.md"
+tool_surface_restrictions:
+  - no-shell-exec
+  - no-network-write
+system_prompt_template_path: templates/system-prompt.md
+agent_memory_surface: ~/.claude/projects/{hash}/memory/

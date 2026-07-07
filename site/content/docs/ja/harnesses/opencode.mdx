@@ -1,0 +1,96 @@
+---
+title: "OpenCode"
+description: "OpenCode（ベータ版）向けの Apothem ツールアダプター。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**ベンダー：** OpenCode
+**インストール名：** `opencode`
+**ステータス：** ベータ版
+**ネイティブ構成：** `~/.config/opencode/`
+
+## インストール
+
+```bash
+apothem install --harness opencode
+```
+
+このアダプターは OpenCode の JSON 構成を書き込み、Apothem のスキルを OpenCode の
+スキルサーフェスにインストールし、コマンドプロンプトを OpenCode の Markdown
+コマンドファイルに変換し、Apothem のヘルパー定義を OpenCode のサブヘルパーとして
+正規化します。
+
+**書き込まれるファイル：**
+
+```text
+~/.config/opencode/opencode.json
+~/.config/opencode/commands/
+~/.config/opencode/skills/
+~/.config/opencode/agents/
+~/.config/opencode/.apothem/support/{rules,templates,hooks}/
+```
+
+## プロファイルからネイティブ構成へのマッピング
+
+アダプターは、Apothem のインストール済みルールを指す `instructions` ファイル
+リストを伴って `opencode.json` をレンダリングし、その後、共有された各 Apothem
+套組を OpenCode のネイティブサーフェスまたは Apothem 所有のサポートサブツリーの
+いずれかに伝播します。既存の一致する Apothem 管理の子要素は、置き換える前に
+バックアップされます。
+
+## 互換性に関する注意
+
+ルールはネイティブの `instructions` リストを通じて参照されます。テンプレートと
+フックプロンプトは `~/.config/opencode/.apothem/support/` 下の参照素材です。コマンド、
+スキル、ヘルパー定義はネイティブの検出場所を使用します。
+
+## 検証
+
+```bash
+apothem verify --harness opencode
+```
+
+verify コマンドは次のことを確認します。
+
+1. ネイティブ構成が想定パスに存在すること。
+2. 共有プロファイルのすべての必須フィールドが存在すること。
+3. アダプター固有の検証ルーチンが成功を報告すること。
+
+## 更新
+
+```bash
+apothem update --harness opencode
+```
+
+`opencode.json`、ネイティブコマンド、スキル、ヘルパー定義、および Apothem
+サポートツリーを更新します。
+
+## アンインストール
+
+```bash
+apothem uninstall --harness opencode
+```
+
+アダプターが書き込んだネイティブ構成ファイルを削除します。
+共有プロファイルの YAML と Apothem エンジンには影響しません。
+
+## 適合ゲート
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## トラブルシューティング
+
+| 症状 | 修正 |
+|---------|-----|
+| 構成ファイルが見つからない | `apothem install --harness opencode` を再実行する |
+| 検証が失敗した | `apothem update --harness opencode` を実行し、再度検証する |
+| 予期しない構成内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、`apothem update --harness opencode` を再実行する |
+
+## 構成ノブ
+
+| フラグ | デフォルト | 説明 |
+|------|---------|-------------|
+| `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューする。 |

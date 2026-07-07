@@ -1,0 +1,99 @@
+---
+title: "トラブルシューティング"
+description: "プラグイン、npx、インストーラーの各経路における、よくある Apothem のインストール失敗と実行時の問題への対処法。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+よくある Apothem のインストールと実行時の問題への対処法です。
+
+## インストールの問題
+
+### Python 3.10 以上が見つからない
+
+インストーラーと npx シムは、`python3`、`python`、バージョン付きの名前
+（`python3.14` から `python3.10`）、および Windows では `py -3` を探索し —— Microsoft Store の
+ランチャーシムは拒否します —— 3.10 の下限を満たす候補がない場合は `No Python >= 3.10 found in
+PATH` で停止します。python.org または OS のパッケージリポジトリから CPython 3.10 以降を
+インストールし、`python3 --version`（Windows では `py -3 --version`）が少なくとも 3.10 を
+報告することを確認してから、再実行してください。
+
+### 実行時依存関係が不足している: click、rich
+
+エンジンはサードパーティの依存関係の大半をソースツリー内にベンダーとして同梱していますが、
+`click` と `rich` はインストーラーが選択するインタープリターからインポート可能でなければ
+なりません。いずれかが不足している場合、インストーラーはそれを示し、あなたの代わりに
+インストールすることを提案します。
+
+```text
+! Missing runtime dependencies: click rich
+```
+
+プロンプトを承認すると、インストーラーがそのインタープリターで `pip install` を実行します。
+プロンプトをスキップするには、`--yes`（PowerShell では `-Yes`）を渡すか、
+`APOTHEM_AUTO_INSTALL_DEPS=1` を設定して自動的にインストールします。拒否した場合 ——
+あるいは `pip` が利用できない、または OS のパッケージマネージャーを使いたい場合 ——
+指定されたパッケージを自分でインストールし（例えば Debian 系ホストでは `python3-click` と
+`python3-rich`、または `pip install click rich`）、その後再実行してください。
+
+### インストーラー実行後に `apothem` が見つからない
+
+インストーラーはソースツリーを `~/.apothem` に配置し、`apothem` 実行ファイルを `PATH` に
+追加しません。完了時にインストーラーが出力する呼び出し方法でエンジンを実行してください。
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+```
+
+または `PATH` エントリを必要としない npx 形式（`npx @ahmed-g-gad/apothem <command>`）を
+使用します。
+
+### `/plugin marketplace add` が失敗する
+
+`/plugin marketplace add ahmed-g-gad/apothem` はマーケットプレイスの一覧を GitHub から
+取得します。失敗した場合は、マシンが `https://github.com/ahmed-g-gad/apothem` に到達できること
+（ネットワーク、プロキシ、ファイアウォールのルール）を確認してから再試行してください。
+部分的な取得でマーケットプレイスが以前に追加されていた場合は、
+`/plugin install apothem@apothem` を実行する前に、それを削除して再追加してください。
+
+### npx が古いバージョンを提供する
+
+`npx` はダウンロードしたパッケージをキャッシュします。`npx @ahmed-g-gad/apothem --version` が
+現行リリースより古いバージョンを報告する場合は、キャッシュをクリアするか dist-tag を固定します。
+
+```bash
+npx clear-npx-cache
+npx @ahmed-g-gad/apothem@latest --version
+```
+
+### Windows で irm / iex がブロックされる
+
+PowerShell の実行ポリシーがインストーラーをブロックする場合は次のようにします。
+
+```powershell
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+irm https://apothem.ahmedgad.com/install.ps1 | iex
+```
+
+## 実行時の問題
+
+### apothem install がハーネスを見つけられない
+
+apothem doctor を実行して、検出されたハーネスディレクトリを一覧表示します。何も見つからない
+場合は、ツールがインストールされ、少なくとも一度は起動されていることを確認してください。
+
+### apothem verify がアダプターの失敗を報告する
+
+apothem install を再実行してアダプターを再マテリアライズします。問題が解消しない場合は、
+[ハーネスアダプター](/docs/harnesses)配下のアダプター固有のページを確認してください。
+
+### Claude Code でフックが発火しない
+
+~/.claude/settings.json にフックのエントリがあるかを確認して、Apothem が組み込まれていることを
+確認します。ファイルにフックが欠けている場合は、apothem install をもう一度実行してください。
+
+## ヘルプを得る
+
+- [GitHub Issues](https://github.com/ahmed-g-gad/apothem/issues) -- バグ報告
+- [GitHub Discussions](https://github.com/ahmed-g-gad/apothem/discussions) -- 質問
+- [FAQ](/docs/faq) -- よくある質問

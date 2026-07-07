@@ -1,0 +1,73 @@
+---
+title: "/research-spec"
+description: "/research-spec——将自由形式的研究问题或原始笔记构造为规范级的研究规格（可证伪的假设、范围、标准、成功指标），可供 /research-theory 使用。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**角色：** 首席研究者（构造）
+**流水线位置：** 链中
+
+将自由形式的研究问题或原始笔记构造为规范级的 `_spec/research-spec.md`——一组可检验、可证伪的假设，附带明确的范围、纳入／排除标准和成功指标——可供 `/research-theory` 使用。
+
+## 规范调用
+
+```bash
+/research-spec
+```
+
+带参数：
+
+```bash
+/research-spec [path/to/question-or-notes] [--suite-name NAME] [--quick SLUG]
+```
+
+## 输入
+
+一个自由形式的研究问题或原始笔记（由操作者内联提供或以路径形式提供）。
+
+## 输出
+
+`_spec/research-spec.md`（问题、可证伪的假设、范围、纳入／排除标准、成功指标、术语表）＋ `_inputs/handoff-manifest.yml`。`--quick` 则改为写入一份轻量级的项目本地研究简报。
+
+## 下游
+
+/research-theory（下游消费者）
+
+## 工作流阶段
+
+该命令遵循标准的 `/research` 流水线工作流：
+
+1. **加载上下文**——读取问题／笔记、规则，以及任何现有的套件状态。
+2. **构造问题**——分解为带有明确范围和纳入／排除标准的可证伪假设；通过结构化询问通道暴露每一处歧义。
+3. **设定成功指标**——陈述用于评判该研究的可度量标准。
+4. **验证输出**——确认规格是确定的（每一处权威数据缺口都通过结构化询问通道得到解决，没有任何未填写的确认占位符留下），并通过严谨性强制底线。
+5. **更新交接清单**——记录规格路径以及未解决／已解决的询问计数。
+6. **发出规格**——`_spec/research-spec.md` 外加交接清单。
+
+## 严谨性强制底线
+
+每一项所声称的贡献都被约束为独特、实质且可独立消融，以便日后能够孤立出其边际效应。所需严谨性强制底线的深度会随目标发表场所的抱负而伸缩；当该抱负未被指定时，通过结构化询问加以确认，绝不臆造。
+
+## 失败模式
+
+| 症状 | 原因 | 恢复 |
+|---------|-------|----------|
+| 未解决的假设歧义 | 问题规定不足 | 通过结构化询问暴露；不要臆造范围 |
+| 没有可度量的成功指标 | 目标被陈述为活动而非结果 | 重新构造为可检验、可证伪的结果 |
+| 缺少问题输入 | 未提供任何文字／笔记 | 内联提供或以路径形式提供研究问题 |
+
+## 示例
+
+```bash
+# Frame a question into a research spec
+/research-spec ~/notes/retrieval-latency-study.md --suite-name retrieval-latency
+
+# Lightweight project-local research brief
+/research-spec --quick retrieval-latency
+```
+
+## 交叉引用
+
+- [流水线概览](/docs/pipeline)
+- [命令参考](/docs/reference/commands)

@@ -1,0 +1,9 @@
+{
+  "argv": [
+    "harnesses",
+    "list",
+    "--help"
+  ],
+  "exit_code": 0,
+  "stdout": "Usage: main harnesses list [OPTIONS]\n\n  List all registered harness adapters.\n\nOptions:\n  -q, --quiet            Suppress informational output; only errors are emitted.\n  -v, --verbose          Emit additional diagnostic output.\n  --format [plain|json]  Output format.  [default: plain]\n  --no-color             Disable ANSI color codes in output.\n  --json                 Shorthand for --format json.\n  -h, --help             Show this message and exit.\n\n  Examples:   apothem harnesses list   apothem harnesses list --json\n\n  Related commands:   harnesses show  Show details for a specific harness\n  doctor          Run system diagnostics\n\n  Exit codes:   0  Success   1  Every adapter failed to load or report   2  At\n  least one adapter listed, at least one failed\n"
+}

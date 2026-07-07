@@ -1,0 +1,44 @@
+---
+title: "خوادم MCP"
+description: "تهيئة خوادم <bdi>Model Context Protocol</bdi> — مملوكة للمُشغِّل ومُسجَّلة عبر آلية <bdi>MCP</bdi> الأصلية لكل أداة؛ يزامن <bdi>Apothem</bdi> الجرد من الملف الشخصي المشترك لكنه لا يكتب أي مدخلات خوادم."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+خوادم <bdi>Model Context Protocol</bdi> (<bdi>MCP</bdi>) **مملوكة للمُشغِّل**.
+يحتفظ <bdi>Apothem</bdi> بجرد <bdi>MCP</bdi> في الملف الشخصي المشترك ويُسقِطه في
+سطح <bdi>MCP</bdi> الأصلي لكل أداة، لكنه لا يكتب أي مدخلات خوادم خاصة به — يبقى
+السطح ملكك لإدارته.
+
+## أين تُسجَّل خوادم MCP
+
+تُسجِّل كل أداة خوادم <bdi>MCP</bdi> عبر آليتها الأصلية الخاصة، ويحترم
+<bdi>Apothem</bdi> ذلك السطح بدلًا من الكتابة فوقه. في مُحوِّل <bdi>Claude Code</bdi>
+(واحد من كثير)، تُسجَّل الخوادم بـ <bdi>`claude mcp add`</bdi> في
+<bdi>`~/.claude.json`</bdi> (نطاق المستخدم أو المحلي) و<bdi>`.mcp.json`</bdi> على
+مستوى المشروع؛ وتُسقِط المحوِّلات الأخرى في أسطحها الأصلية الخاصة. الإعدادات
+المُدارة بواسطة <bdi>Apothem</bdi> لا تحمل أبدًا كتلة <bdi>`mcpServers`</bdi>.
+
+## إضافة خادم
+
+سجِّل خادمًا عبر الآلية الأصلية لأداتك؛ صيغة المدخل الكنسية هي مفتاح تحت
+<bdi>`mcpServers`</bdi>:
+
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/some/path"]
+    }
+  }
+}
+```
+
+يُحمِّل وقتُ تشغيل الأداة الخوادمَ المُسجَّلة عند بدء الجلسة؛ أعِد تشغيل الأداة
+لالتقاط الخوادم الجديدة.
+
+## اصطلاح التسمية
+
+تظهر أدوات <bdi>MCP</bdi> للمساعِد بصيغة <bdi>`mcp__<server>__<tool>`</bdi> وفق
+اصطلاح تسمية أدوات <bdi>MCP</bdi> القياسي في الأداة.

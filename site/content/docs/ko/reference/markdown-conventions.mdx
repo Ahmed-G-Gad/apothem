@@ -1,0 +1,36 @@
+---
+title: "Markdown 규약"
+description: "Markdown 풍미, 헤딩 구조, 코드 펜스 선언, 내부 링크 형식, 저작권 배너, 그리고 검증기 강제를 표준화합니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **저작된 모든 `.md` 아티팩트에 걸친 Markdown 형태와 서식에 대한 정규 참조.** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) 규약의 요약은 인라인 선언이며, 본 페이지는 다운스트림 기여자가 인용하는 독립형 참조입니다.
+
+---
+
+## 1. 풍미
+
+GitHub-Flavored Markdown(GFM)이 호스트 풍미입니다. 모든 아티팩트는 GitHub 웹 UI, Fumadocs 문서 사이트, 그리고 표준 Markdown 인식 편집기에서 올바르게 렌더링됩니다.
+
+## 2. 헤딩 계층
+
+파일당 H1 하나. 후속 헤딩은 레벨을 건너뛰지 않고 단조롭게 하강합니다(H2 → H3 → H4). 헤딩은 문장형 대문자 표기; ALL-CAPS 금지, Title Case Across Every Word 금지. H1은 문서의 주 제목을 담으며, 문서 사이트 내비게이션에서 문서의 앵커 그 자체입니다.
+
+## 3. 코드 블록
+
+펜스 코드 블록은 그 언어를 선언합니다(` ```python `, ` ```bash `, ` ```yaml `, ` ```json `, ` ```mermaid `). 태그가 없는 블록은 구문 강조를 억제하며 저작 드리프트를 신호합니다. [`.markdownlint.jsonc`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.jsonc)의 markdownlint MD040 규칙이 언어 태그를 강제합니다.
+
+## 4. 내부 링크
+
+내부 상호 참조는 **사이트 루트 경로**를 사용합니다(예: `[Authorship header](/docs/reference/authorship-header)`). `.md`/`.mdx` 확장자를 가진 순수 저장소 상대 경로(`/docs/foo.md`)와 동일 저장소를 가리키는 전체 URL(`https://github.com/ahmed-g-gad/apothem/blob/main/...`)은 페이지 이름 변경과 섹션 재구성에 취약하므로 사이트 내 링크에서는 피합니다.
+
+가변 ref(`main`, `master`, `latest`, `HEAD`)로 가는 외부 링크는, 링크된 콘텐츠의 안정성이 중요할 때마다 커밋 SHA 또는 릴리스 태그로 고정됩니다. 휘발성 참조는 인접한 `{/* volatile */}` 주석으로 그렇게 문서화됩니다.
+
+## 5. 저작권 배너
+
+모든 Markdown 아티팩트([`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas/header-exceptions.txt)에 열거된 예외 제외)는 [Authorship header](/docs/reference/authorship-header)에 따라 HTML 주석 변형으로 바이트 0에 정규 저작권 헤더 배너를 담습니다. 둘 다 존재하는 경우 배너는 YAML frontmatter 위에 위치합니다.
+
+## 6. 검증기
+
+[`.markdownlint.jsonc`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.jsonc)의 `markdownlint-cli2` 호출이 §§1–4 규칙의 대부분을 강제합니다. `src/apothem/conformity/file_header_grep.py`의 `file-header-grep`이 §5를 강제합니다. 둘 다 [`.pre-commit-config.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/.pre-commit-config.yaml)의 pre-commit 훅 체인과 [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml)의 CI 품질 잡에 연결되어 있습니다.

@@ -1,0 +1,31 @@
+---
+title: "CLI リファレンス"
+description: "Apothem CLI リファレンス——apothem コマンドラインインターフェースのコマンドごとの構文、オプション、終了コード。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+`apothem` コマンドラインインターフェースは、共有プロファイルからハーネスアダプターの構成を管理します。以下の各ページは 1 つのサブコマンドを記載します。その構文、オプション、動作、終了コードです。
+
+`install`、`update`、`uninstall` はそれぞれ、フラグと動作がベースコマンドと同一の連続形エイリアス（`installing`、`updating`、`uninstalling`）も受け付けます。インストールチャネル——Claude Code プラグイン、`npx`、ワンステップインストーラースクリプト——を介した更新とアンインストールは、エイリアス自体ではなく、[更新](/docs/install/updating) と [アンインストール](/docs/install/uninstalling) のインストールガイドに記載されています。
+
+## コマンド
+
+| コマンド | 説明 |
+|---------|-------------|
+| [quickstart](/docs/cli-reference/quickstart) | ガイド付き初回実行：プロファイルを確保し、書き込みをプレビューしてから、インストールします。 |
+| [install](/docs/cli-reference/install) | 共有プロファイルからハーネスアダプターの構成をインストールします（エイリアス：`installing`）。 |
+| [update](/docs/cli-reference/update) | 現在の共有プロファイルからハーネスアダプターの構成を再インストールします（エイリアス：`updating`）。 |
+| [uninstall](/docs/cli-reference/uninstall) | ハーネスアダプターの構成を削除します（エイリアス：`uninstalling`）。 |
+| [rollback](/docs/cli-reference/rollback) | ハーネスを、記録されたインストール前の状態に復元します。 |
+| [verify](/docs/cli-reference/verify) | ハーネスアダプターのインストールを検証します。 |
+| [status](/docs/cli-reference/status) | 登録された各ハーネスのインストール、検証、ドリフトの状態を報告します。 |
+| [diff](/docs/cli-reference/diff) | 単一のハーネスの保留中の構成変更をプレビューします。 |
+| [harnesses](/docs/cli-reference/harnesses) | 登録されたハーネスアダプターを一覧表示し、検査します。 |
+| [profile](/docs/cli-reference/profile) | 共有の Apothem プロファイルを管理します。 |
+| [doctor](/docs/cli-reference/doctor) | Apothem インストールのシステム診断を実行します。 |
+| [completion](/docs/cli-reference/completion) | source で読み込み可能なシェル補完スクリプトを出力します（bash、zsh、fish、powershell）。 |
+
+スラッシュコマンドと上位レベルの CLI 概要については、
+[CLI 概要](/docs/reference/cli) と [スラッシュコマンド](/docs/reference/commands)
+のリファレンスページを参照してください。

@@ -1,0 +1,93 @@
+---
+title: "Open-Claw"
+description: "Apothem harness adapter for Open-Claw (Preview)."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Vendor:** Open-Claw
+**Install name:** `open-claw`
+**Status:** Preview
+**Native config:** `~/.openclaw/openclaw.json`
+
+## Installation
+
+```bash
+apothem install --harness open-claw
+```
+
+The adapter translates the shared profile to OpenClaw's user-global config file
+and installs Apothem support cohorts under the harness root. OpenClaw's native
+config is JSON; the materializer renders JSON to match.
+
+**Files written:** `~/.openclaw/openclaw.json` and support files under
+`~/.openclaw/.apothem/support/`
+
+## Profile-to-native-config mapping
+
+The adapter reads Apothem's shared profile. OpenClaw's native skills field is a
+name allowlist (not a directory loader) and MCP is a CLI surface, so Apothem
+authors no config keys. Shared commands, skills, rules, templates, and hook
+prompts are installed as support material under `~/.openclaw/.apothem/support/`.
+
+## Compatibility notes
+
+Preview adapter. The native JSON config is the active Open-Claw surface;
+Apothem uses the documented extra skill-directory hook for skills and keeps
+other cohorts as reference material for installed guidance.
+
+## Verification
+
+```bash
+apothem verify --harness open-claw
+```
+
+The verify command confirms that:
+
+1. The native config exists at the expected path.
+2. All mandatory fields from the shared profile are present.
+3. The adapter-specific verification routine reports success.
+
+## Updating
+
+```bash
+apothem update --harness open-claw
+```
+
+Re-derives the native config from the current shared profile state.
+Run after editing `~/.config/apothem/profile.yaml` or upgrading the installed
+Apothem package.
+
+## Uninstalling
+
+```bash
+apothem uninstall --harness open-claw
+```
+
+Removes the native config files written by the adapter.
+The shared profile YAML and Apothem engine are unaffected.
+
+## Conformity gate
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| Config file not found | Re-run `apothem install --harness open-claw` |
+| Verification failed | Run `apothem update --harness open-claw`, then verify again |
+| Unexpected config content | Check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run `apothem update --harness open-claw` |
+
+## Configuration knobs
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--dry-run` | `false` | Preview install without writing files. |
+
+## See also
+
+- [All harnesses](/docs/harnesses) — the full catalog of supported tools
+- [Install guide](/docs/install) — install Apothem into this harness
+- [`apothem harnesses` reference](/docs/cli-reference/harnesses) — list and inspect adapters from the CLI

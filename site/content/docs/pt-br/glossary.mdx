@@ -1,0 +1,160 @@
+---
+title: "Glossário"
+description: "Glossário do Apothem — termos e conceitos principais."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Termos-chave usados na documentação, no código e na governança do Apothem, em
+ordem alfabética.
+
+## Adaptador
+Uma classe que implementa o protocolo `HarnessAdapter` e que traduz o perfil
+compartilhado para um formato de configuração específico de um harness. Os
+adaptadores residem um por subpacote em `src/apothem/harnesses/<name>/`. Consulte
+[Abstração de adaptador de harness](/docs/architecture/harness-adapter-abstraction).
+
+## Golden de diff de comportamento
+Um snapshot versionado em `tests/fixtures/behavior-diff/` contra o qual os
+oráculos determinísticos de instalação e de CLI são comparados byte a byte, de
+modo que uma mudança não intencional em um plano de instalação, em um cohort
+renderizado ou na saída da CLI seja detectada como desvio em vez de ser
+distribuída silenciosamente. A comparação canonicaliza os bytes que divergem
+por plataforma para que o corpus permaneça portável entre sistemas operacionais.
+
+## Cohort
+Um conjunto agrupado de artefatos sincronizados de um mesmo tipo — regras,
+comandos, skills, agentes, hooks, output-styles, schemas ou templates — que o
+motor materializa em cada harness a partir do único perfil compartilhado. Um
+perfil carrega cada cohort; cada adaptador os projeta na superfície nativa do
+seu harness.
+
+## Conformity gate
+A fração mecânica do portão de pré-emissão de quinze barras — os validadores
+verificáveis por máquina em `src/apothem/conformity/gate.py`. Executa antes de
+toda emissão de artefato; as barras avaliadas por raciocínio são analisadas na
+revisão.
+
+## Ponto de entrada
+O grupo de entry-point setuptools `apothem.harnesses` declarado em
+`pyproject.toml`. Ele espelha o registro de harnesses exatamente; um teste
+assegura que os pontos de entrada declarados sejam iguais aos adaptadores
+registrados, de modo que um adaptador correto na convenção mas não registrado
+apareça como uma regressão de cobertura.
+
+## Harness
+Uma plataforma de assistente que o Apothem suporta via um adaptador dedicado.
+Plataformas suportadas:
+
+```text
+Antigravity
+Claude Code
+CodeBuddy
+Codex
+Cursor
+Gemini CLI
+GitHub Copilot
+GLM (Z.ai)
+Hermes
+Kimi Code
+Kiro
+Open-Claw
+OpenCode
+Qwen Code
+Trae
+Windsurf
+Zed
+```
+
+Consulte [Harnesses](/docs/harnesses).
+
+## Registro de harnesses
+O catálogo em `src/apothem/lib/harness_registry.py` (dados em
+`harness_registry_data.py`) que lista cada adaptador e é **autoritativo em tempo
+de execução** — o motor resolve cada adaptador a partir dele, de modo que ele
+carrega de um checkout simples. A descoberta por convenção de sistema de
+arquivos em `src/apothem/harnesses/` é uma verificação de paridade de
+conformidade, não o resolvedor em tempo de execução.
+
+## Hook
+Um comando registrado em um evento de ciclo de vida de um harness (PreToolUse,
+PostToolUse, SessionStart, Stop). A superfície nativa de registro varia por
+harness — um arquivo de settings, um manifesto de hooks dedicado ou, quando um
+harness não expõe superfície de hook nativa, material de suporte do Apothem
+referenciado a partir da âncora de instruções. Os scripts de hook e seus
+contextos de mensagem residem em `src/apothem/hooks/`.
+
+## Materializador
+O `materialize_native_config(profile) -> str` opcional de um adaptador que
+renderiza uma configuração nativa de arquivo único a partir do perfil
+compartilhado, para harnesses cuja configuração é uma única superfície
+estruturada (por exemplo, um arquivo de settings JSON ou YAML). Os adaptadores de
+propagação de templates omitem o materializador e, em vez disso, copiam ou
+convertem cohorts conforme o manifesto de propagação.
+
+## Output-style
+Uma definição em Markdown sob `output-styles/` que molda o formato e a voz da
+resposta do assistente (por exemplo, um estilo de engenheiro conciso ou de
+auditor forense). Um dos cohorts sincronizados que um adaptador instala.
+
+## Suíte de planejamento
+Uma coleção estruturada de artefatos de planejamento (PREAMBLE.md,
+MASTER-PLAN.md, PROGRESS.md, PLAN-NOTES.md, arquivos PHASE.md por fase) produzida
+por `/plan-generate` e executada por `/plan-execute`, sob um diretório
+`.apothem/plans/` local ao projeto (uma árvore legada `.plans/` é atualizada via
+`apothem migrate-workspace`).
+
+## Portão de pré-emissão
+O bloco de aprovação de quinze barras registrado antes de um artefato ser
+emitido ou de uma saída de fase ser considerada completa. As barras mecânicas
+rodam como o conformity gate; as barras avaliadas por raciocínio são analisadas
+na revisão. Consulte
+[Portão de pré-emissão](/docs/governance/pre-emission-gate-registry).
+
+## Manifesto de propagação
+`src/apothem/lib/propagation-manifest.yaml` — declara, por adaptador de
+propagação de templates, quais cohorts ele instala e quaisquer conversões para o
+formato nativo do harness (por exemplo, converter comandos para a forma TOML de
+um harness).
+
+## Portões de prontidão para release
+Os três portões de convergência: conformidade local, integração contínua e a
+sequência de revisão de auditoria. Um release prossegue somente após os portões
+relevantes passarem.
+
+## Sequência de revisão de auditoria
+A varredura de auditoria de onze comandos cobrindo código, revisão de código,
+segurança, desempenho, arquitetura, UX, acessibilidade, documentação,
+dependências, cadeia de suprimentos e modelo de ameaças. Conduzida pelo pipeline
+de blindagem `/fortress`. Consulte
+[Sequência de revisão de auditoria](/docs/concepts/review-fortress).
+
+## Runtime autocontido
+O Apothem incorpora suas dependências Python de runtime (como `pyyaml` e
+`jsonschema`) sob `src/apothem/_vendor/`, de modo que o motor roda de um checkout
+simples. Apenas `click` e `rich` são resolvidos no momento da instalação.
+Consulte [Runtime autocontido](/docs/architecture/self-contained-runtime).
+
+## Nível de seriedade
+Um dos quatro níveis de governança (EXPLORING, PERSONAL_USE, SHARED,
+PUBLIC_LAUNCH) que determina quais controles de qualidade se aplicam. Consulte
+[Níveis de seriedade](/docs/concepts/seriousness-tiers).
+
+## Perfil compartilhado
+Um arquivo YAML validado por schema em `~/.config/apothem/profile.yaml` ou
+`--profile PATH`. Os adaptadores de harness o combinam com os cohorts
+empacotados do Apothem e derivam a configuração nativa para cada harness
+suportado.
+
+## STANDARD-CONVENTION-PIN
+O `STANDARD-CONVENTION-PIN.md` por adaptador que registra a URL da documentação
+do fornecedor, o SHA do commit, a data do snapshot e o nome de arquivo canônico e
+o schema aos quais as convenções do adaptador estão fixadas. Reverificado em uma
+cadência para que um adaptador nunca se desvie silenciosamente da superfície do
+fornecedor que ele mira.
+
+## Subárvore de suporte
+Um diretório de propriedade do Apothem que uma instalação de harness usa para os
+cohorts para os quais o harness não tem primitiva nativa (regras, hooks, skills
+ou agentes). Ele é referenciado a partir da âncora de instruções nativa do
+harness em vez de ser forçado em um diretório reservado do fornecedor.

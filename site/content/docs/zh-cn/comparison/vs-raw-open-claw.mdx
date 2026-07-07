@@ -1,0 +1,42 @@
+---
+title: "Apothem 对比原生 Open-Claw 配置"
+description: "手工维护 Open-Claw 配置，还是经由 Apothem 的共享 profile 来管理它。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Open-Claw 读取 `~/.openclaw/openclaw.json`。它的 `agents.defaults.skills` 是一个
+名称白名单（而非目录加载器），且 MCP 是一个 CLI 面，因此 Apothem 不编写任何配置
+键；它在 `~/.openclaw/.apothem/support/skills/` 下安装共享的命令群和技能群作为支持材料。
+
+## 状态
+
+**预览。** Open-Claw 适配器面向当前已文档化的配置文件和额外的技能目录面。非技能
+群仍属于 Apothem 支持材料。
+
+## 工作量对比
+
+| 任务 | 原生手工配置 | Apothem 管理 |
+| ---- | --------------- | --------------- |
+| 编写可复用技能 | 手工编辑配置和技能目录 | 在共享语料中编写一次 |
+| 让各环境的群保持一致 | 逐工具手动 | `apothem update` 时自动 |
+| 安装 / 移除配置 | 手动 | `apothem install` / `apothem uninstall` |
+| 验证配置是否正确 | 手动检查 | `apothem verify --harness open-claw` |
+
+## Apothem 管理什么
+
+Open-Claw 适配器写入 `openclaw.json`，把 Apothem 斜杠命令封装为技能，把 Apothem
+技能复制进被引用的支持目录，并把规则、模板、agents 与 hook 材料保留在 Apothem
+支持子树下。
+
+## 迁移路径
+
+1. 如果尚未创建共享 profile，运行 `apothem profile init`。
+2. 把可复用的 Open-Claw 技能或命令提示词移入共享语料。
+3. 运行 `apothem install --harness open-claw` 以渲染原生配置和支持技能目录。
+4. 运行 `apothem verify --harness open-claw` 以确认配置已落地。
+
+## 接着阅读
+
+- [Open-Claw 适配器参考](/docs/harnesses/open-claw)
+- [对比概览](/docs/comparison)

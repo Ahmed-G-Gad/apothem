@@ -1,0 +1,44 @@
+---
+title: "Server MCP"
+description: "Konfigurasi server Model Context Protocol — dimiliki operator dan didaftarkan melalui mekanisme MCP native masing-masing tool; Apothem menyinkronkan inventaris dari shared profile tetapi tidak menulis entri server apa pun."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Server Model Context Protocol (MCP) **dimiliki operator**. Apothem membawa
+inventaris MCP di dalam shared profile dan memproyeksikannya ke permukaan MCP
+native masing-masing tool, tetapi tidak menulis entri server miliknya sendiri —
+permukaan itu tetap menjadi milik Anda untuk dikelola.
+
+## Tempat server MCP didaftarkan
+
+Setiap tool mendaftarkan server MCP melalui mekanisme native-nya sendiri, dan
+Apothem menghormati permukaan itu alih-alih menimpanya. Pada adapter Claude Code
+(salah satu dari banyak), server didaftarkan dengan `claude mcp add` ke
+`~/.claude.json` (scope user atau local) dan sebuah `.mcp.json` tingkat proyek;
+adapter lain memproyeksikan ke permukaan native-nya masing-masing. Pengaturan
+terkelola Apothem tidak pernah membawa blok `mcpServers`.
+
+## Menambahkan sebuah server
+
+Daftarkan sebuah server melalui mekanisme native tool Anda; bentuk entri kanonis
+adalah satu kunci di bawah `mcpServers`:
+
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/some/path"]
+    }
+  }
+}
+```
+
+Runtime tool memuat server yang terdaftar saat sesi dimulai; mulai-ulang tool
+untuk mengambil server baru.
+
+## Konvensi penamaan
+
+Tool MCP muncul ke asisten sebagai `mcp__<server>__<tool>` sesuai konvensi
+penamaan tool-MCP standar dari tool tersebut.

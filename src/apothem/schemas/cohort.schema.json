@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://apothem.ahmedgad.com/schemas/cohort.schema.json",
+  "title": "Cohort Manifest",
+  "description": "Schema for a cohort-manifest document per design C12. A cohort is a named, downstream-consumable grouping of catalog members (skills, agents, commands, rules, hooks) drawn from the closed cohort set (core, developer, security, research, ai-engineering, full). The manifest carries a per_harness_targets contract that lets a consumer resolve, for each cohort and harness, the native plugin target WITHOUT re-deriving the mapping: it references the propagation manifest as the single source of truth. Exhaustive membership population is owned by a later phase; this schema fixes the SHAPE.",
+  "type": "object",
+  "required": ["version", "cohorts", "per_harness_targets"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "SemVer version of the cohort manifest.",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "cohorts": {
+      "type": "array",
+      "description": "The cohort entries declared by this manifest.",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/cohort" }
+    },
+    "per_harness_targets": {
+      "$ref": "#/$defs/perHarnessTargets",
+      "description": "Contract describing how a downstream consumer resolves each cohort's per-harness native plugin target. References the propagation manifest as the source of truth rather than restating the mapping."
+    }
+  },
+  "$defs": {
+    "cohort": {
+      "type": "object",
+      "required": ["id", "name", "description", "members"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Closed-set cohort identifier.",
+          "enum": ["core", "developer", "security", "research", "ai-engineering", "full"]
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable cohort name."
+        },
+        "description": {
+          "type": "string",
+          "description": "What the cohort provides and who it targets.",
+          "maxLength": 1024
+        },
+        "members": {
+          "$ref": "#/$defs/members",
+          "description": "Member names grouped by catalog item type. Each list holds stable kebab-case member identifiers."
+        }
+      }
+    },
+    "members": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "skills": { "$ref": "#/$defs/memberNameArray" },
+        "agents": { "$ref": "#/$defs/memberNameArray" },
+        "commands": { "$ref": "#/$defs/memberNameArray" },
+        "rules": { "$ref": "#/$defs/memberNameArray" },
+        "hooks": { "$ref": "#/$defs/memberNameArray" }
+      }
+    },
+    "memberNameArray": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "description": "Stable kebab-case member identifier corresponding to an artifact under src/apothem/.",
+        "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+      }
+    },
+    "perHarnessTargets": {
+      "type": "object",
+      "required": ["source", "resolution"],
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "type": "string",
+          "description": "Relative path (from src/apothem/) to the propagation manifest that is the single source of truth for per-harness native targets. A consumer resolves a cohort member's native plugin target by looking up the member's catalog item type in this manifest's `harnesses.<harness>.install` list.",
+          "const": "lib/propagation-manifest.yaml"
+        },
+        "harnesses": {
+          "type": "array",
+          "description": "The closed harness cohort whose native targets are resolvable through the source manifest.",
+          "items": {
+            "type": "string",
+            "enum": [
+              "antigravity",
+              "claude_code",
+              "codex",
+              "cursor",
+              "gemini_cli",
+              "github_copilot",
+              "hermes",
+              "open_claw",
+              "opencode",
+              "qwen_code",
+              "windsurf",
+              "codebuddy",
+              "kiro",
+              "trae",
+              "zed"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "resolution": {
+          "type": "string",
+          "description": "Human-readable note describing the resolution rule: for a given cohort member of catalog type T and a target harness H, the native plugin target is the `target` field of the entry in propagation-manifest.yaml `harnesses.H.install` whose `source` matches `T/` (e.g. `skills/`, `agents/`, `commands/`, `rules/`, `hooks/`)."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,88 @@
+---
+title: "Kiro"
+description: "Kiro（GA）向けの Apothem ツールアダプター。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**ベンダー：** AWS
+**インストール名：** `kiro`
+**ステータス：** GA
+**ネイティブ構成：** `<project>/.kiro/steering/apothem-rules.md`
+
+## インストール
+
+```bash
+apothem install --harness kiro --project /path/to/project
+```
+
+このアダプターは、共有された Apothem ルールとガバナンスサーフェスから、
+プロジェクトスコープの Kiro ステアリングファイルを 1 つ書き込みます。
+
+**書き込まれるファイル：** `<project>/.kiro/steering/apothem-rules.md`
+
+## プロファイルからネイティブ構成へのマッピング
+
+アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または
+`apothem update` の各実行時にプロジェクトのステアリングファイルをレンダリング
+します。共有プロファイルが信頼できる情報源です。生成ファイルへのプロジェクト
+ローカルの編集は、次回の同期が Apothem 管理のコンテンツを置き換える前に
+バックアップされます。
+
+## 互換性に関する注意
+
+Kiro のステアリングサーフェスは `.kiro/steering/` 下でプロジェクトスコープです。
+アダプターは `inclusion: always` のフロントマターを持つ専用の `apothem-rules.md`
+ステアリングファイルを書き込み、Kiro の操作者が作成した基盤ファイル
+（`product.md`、`tech.md`、`structure.md`）を決して上書きしません。Kiro の仕様
+（`.kiro/specs/`）とエージェントフックは操作者が所有します。Apothem はそれらを
+書き込みません。
+
+## 検証
+
+```bash
+apothem verify --harness kiro --project /path/to/project
+```
+
+verify コマンドは次のことを確認します。
+
+1. ネイティブ構成が想定パスに存在すること。
+2. 共有プロファイルのすべての必須フィールドが存在すること。
+3. アダプター固有の検証ルーチンが成功を報告すること。
+
+## 更新
+
+```bash
+apothem update --harness kiro --project /path/to/project
+```
+
+現在の共有プロファイルの状態からプロジェクトのステアリングファイルを再導出します。
+
+## アンインストール
+
+```bash
+apothem uninstall --harness kiro --project /path/to/project
+```
+
+アダプターが書き込んだネイティブ構成ファイルを削除します。
+共有プロファイルの YAML と Apothem エンジンには影響しません。
+
+## 適合ゲート
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## トラブルシューティング
+
+| 症状 | 修正 |
+|---------|-----|
+| 構成ファイルが見つからない | `apothem install --harness kiro --project /path/to/project` を再実行する |
+| 検証が失敗した | `apothem update --harness kiro --project /path/to/project` を実行し、再度検証する |
+| 予期しない構成内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、`apothem update --harness kiro --project /path/to/project` を再実行する |
+
+## 構成ノブ
+
+| フラグ | デフォルト | 説明 |
+|------|---------|-------------|
+| `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューする。 |

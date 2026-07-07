@@ -1,0 +1,35 @@
+---
+title: "Prose Conventions"
+description: "Enforce RFC 2119 modal hierarchy, prohibit marketing adjectives and hedging filler, use absolute ISO-8601 dates, and validate directive prose airtightness."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Canonical reference for prose discipline across every authored Markdown surface.** The summary at [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Conventions is the inline declaration; this page is the standalone reference downstream contributors cite.
+
+---
+
+## 1. Modal Hierarchy (RFC 2119)
+
+Directive prose uses the **RFC 2119** modal hierarchy: `MUST`, `MUST NOT`, `SHOULD`, `SHOULD NOT`, `MAY`. Each carries the binding-strength the RFC defines. Lowercase modals (`must`, `should`) carry no normative weight and are used only in narrative prose where no obligation is being declared.
+
+## 2. Forbidden Vocabulary
+
+### 2.1 Marketing adjectives
+
+The terms `powerful`, `seamless`, `robust`, `cutting-edge`, `next-generation`, `world-class`, `enterprise-grade`, and equivalents are forbidden in user-facing artifacts unless concretely substantiated with measured evidence. The substantiation cites a benchmark, a comparison, a measurement, or an external validation source.
+
+### 2.2 Hedging filler
+
+The terms `basically`, `kind of`, `sort of`, `in some sense`, `to some extent`, and equivalents are forbidden in directive text. Directive prose is binding; hedging concedes the binding force the prose claims.
+
+### 2.3 UDA airtightness
+
+The Universal-Directive-Airtightness check at `scripts/dev/validate_ecosystem.py` enforces a closed hedge lexicon (`maybe`, `might`, `could`, `should probably`, `usually`, `generally speaking`, `in most cases`, `mostly`, `typically`, `often`, `or similar`, `etc.`, `and so on`) on lines that carry binding prescription. Hedge tokens cited as the rule's own subject matter (e.g., a list of forbidden words on a forbid-list page) are exempt by the validator's definitional-marker mechanism.
+
+## 3. Date References
+
+Dates are absolute ISO-8601 (`YYYY-MM-DD`) at every reference. Relative dates (`yesterday`, `last week`, `recently`) are forbidden in artifacts that persist beyond their authoring session.
+
+## 4. Validators
+
+`scripts/dev/validate_ecosystem.py`'s UDA airtightness check is the mechanical enforcement surface for §2.3. The per-write `markdown` family of conformity-grep validators enforces the broader prose-quality bar at PreToolUse Write/Edit hook boundaries.

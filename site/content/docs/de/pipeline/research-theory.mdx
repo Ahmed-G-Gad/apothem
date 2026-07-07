@@ -1,0 +1,69 @@
+---
+title: "/research-theory"
+description: "/research-theory — Erstellt den konzeptionellen und theoretischen Rahmen für eine eingegrenzte Forschungsfrage: Theory of Change, Konstrukte mit operationalen Definitionen und ein Diagramm des konzeptionellen Modells — die Phase der theoretischen Fundierung der /research-Pipeline, zwischen /research-spec und /research-sources."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rolle:** Leitende:r Forscher:in (theoretische Fundierung)
+**Pipeline-Position:** Mitte der Kette
+
+Erstellt den grundlegenden konzeptionellen und theoretischen Rahmen für eine eingegrenzte Forschungsfrage — die A-priori-Fundierung, auf die die Phasen der systematischen Suche und Synthese zurückgehen. Jedes Konstrukt ist in der Primärtheorie verankert, und jede theoretisierte Beziehung ist in einer widerlegbaren Form formuliert.
+
+## Kanonischer Aufruf
+
+```bash
+/research-theory
+```
+
+Mit Argumenten:
+
+```bash
+/research-theory [--suite-name NAME] [--override] [--framework NAME]
+```
+
+## Eingaben
+
+Die `_spec/research-spec.md` der Suite (die eingegrenzte, falsifizierbare Fragemenge, die von `/research-spec` erzeugt wird).
+
+## Ausgaben
+
+`_inputs/theory.md` (der konzeptionelle / theoretische Rahmen, die Theory of Change / das Logikmodell, die Konstrukte mit ihren operationalen Definitionen und ein Diagramm des konzeptionellen Modells).
+
+## Nachgelagert
+
+/research-sources (nachgelagerter Verbraucher — die systematische Suche führt ihre Einschlusskriterien auf diese Konstrukte zurück).
+
+## Workflow-Phasen
+
+Der Befehl folgt dem standardmäßigen Workflow der `/research`-Pipeline:
+
+1. **Kontext laden** — `_spec/research-spec.md`, die Regeln und jeden vorhandenen Suite-Zustand lesen.
+2. **Das konzeptionelle Modell einrahmen** — Die Konstrukte und ihre operationalen Definitionen definieren; jedes in der Primärtheorie verankern.
+3. **Die Theory of Change zeichnen** — Das Logikmodell erstellen, das die Konstrukte mit den erwarteten Ergebnissen verbindet; jede Beziehung in einer widerlegbaren Form formulieren.
+4. **Das Modell diagrammieren** — Ein Diagramm des konzeptionellen Modells ausgeben, das die nachgelagerten Phasen referenzieren.
+5. **Die Ausgaben verifizieren** — Bestätigen, dass jedes Konstrukt theoretisch verankert und jede Beziehung widerlegbar ist; Mehrdeutigkeit über den Kanal der strukturierten Anfrage auflösen.
+6. **Den Rahmen ausgeben** — `_inputs/theory.md` plus das aktualisierte Übergabemanifest.
+
+## Fehlermodi
+
+| Symptom | Ursache | Behebung |
+|---------|-------|----------|
+| Dem Konstrukt fehlt eine operationale Definition | Konzept abstrakt formuliert | Das Konstrukt in messbaren Begriffen definieren; die Primärtheorie zitieren |
+| Theoretisierte Beziehung nicht widerlegbar | Beziehung als Binsenweisheit formuliert | Die Beziehung als falsifizierbare Behauptung neu formulieren |
+| Fehlende Spezifikationseingabe | `/research-spec` noch nicht ausgeführt | Zuerst `/research-spec` ausführen, um die Frage einzugrenzen |
+
+## Beispiele
+
+```bash
+# Den theoretischen Rahmen für eine eingegrenzte Frage erstellen
+/research-theory --suite-name retrieval-latency
+
+# An einen benannten theoretischen Rahmen anbinden
+/research-theory --framework "information foraging theory"
+```
+
+## Querverweise
+
+- [Pipeline-Überblick](/docs/pipeline)
+- [Befehlsreferenz](/docs/reference/commands)

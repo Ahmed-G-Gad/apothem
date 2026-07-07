@@ -1,0 +1,70 @@
+---
+title: "/research-design"
+description: "/research-design — Operacionaliza las hipótesis en predicciones comprobables y diseña el estudio (variables, controles, muestra, potencia), luego congela el plan de análisis como un preregistro."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rol:** Investigador principal (diseño del estudio)
+**Posición en la canalización:** intermedia
+
+Operacionaliza las hipótesis en predicciones comprobables y diseña el estudio o experimento —variables, controles, muestra, instrumentos, análisis de potencia, amenazas a la validez— y luego produce un preregistro que congela el plan de análisis antes de la recolección de datos.
+
+## Invocación canónica
+
+```bash
+/research-design
+```
+
+Con argumentos:
+
+```bash
+/research-design [path/to/research-suite/]
+```
+
+## Entradas
+
+`_inputs/proposal.md` (el plan de referencia de `/research-proposal`, la etapa predecesora), `_inputs/synthesis.md` (el mapa SOTA + el enunciado de la brecha) y `_spec/research-spec.md` (las hipótesis).
+
+## Salidas
+
+`_inputs/study-design.md` (predicciones operacionalizadas, especificación de variables, controles, muestra, instrumentos, análisis de potencia, amenazas a la validez) + `_inputs/preregistration.md` (el plan de análisis congelado).
+
+## Aguas abajo
+
+/research-experiment (consumidor aguas abajo)
+
+## Fases del flujo de trabajo
+
+El comando sigue el flujo de trabajo estándar de la canalización `/research`:
+
+1. **Cargar contexto** — Leer la síntesis y las hipótesis de la especificación.
+2. **Verificar la Puerta de Secuencia** — Confirmar que `_inputs/proposal.md` (y los `_inputs/synthesis.md` y `_spec/research-spec.md` previos) existe; de lo contrario, detenerse con `Blocked: run /research-proposal first`.
+3. **Diseñar el estudio** — Operacionalizar predicciones; especificar variables, controles, muestra, instrumentos, potencia; enumerar amenazas a la validez.
+4. **Preregistrar** — Congelar el plan de análisis antes de cualquier recolección de datos.
+5. **Actualizar el manifiesto de traspaso** — Registrar las rutas del diseño del estudio y del preregistro.
+6. **Emitir el diseño** — `_inputs/study-design.md` + `_inputs/preregistration.md`.
+
+## Umbral de rigor
+
+Para un estudio que conlleva comparación, el diseño fija —y preregistra— el umbral empírico: un único presupuesto unificado para todos los métodos comparados (igual tiempo de reloj y, donde sea significativo, igual recuento de evaluaciones), al menos treinta repeticiones por instancia para los métodos estocásticos, un factor de ablación que desactiva un componente a la vez, barridos de sensibilidad sobre cada parámetro y configuración automatizada en una partición de entrenamiento evaluada en una partición de prueba disjunta. La profundidad del umbral se escala a la ambición del lugar de publicación objetivo.
+
+## Modos de fallo
+
+| Síntoma | Causa | Recuperación |
+|---------|-------|----------|
+| Blocked: run /research-proposal first | Sin plan de referencia | Ejecuta `/research-proposal` para producir `_inputs/proposal.md` |
+| Diseño sin potencia suficiente | Muestra demasiado pequeña para el efecto | Vuelve a ejecutar el análisis de potencia; redimensiona la muestra |
+| Plan de análisis no congelado | Preregistro omitido | Redacta `_inputs/preregistration.md` antes de la recolección de datos |
+
+## Ejemplos
+
+```bash
+# Diseña el estudio y preregistra el plan de análisis
+/research-design path/to/research-suite/
+```
+
+## Referencias cruzadas
+
+- [Resumen de la canalización](/docs/pipeline)
+- [Referencia de comandos](/docs/reference/commands)

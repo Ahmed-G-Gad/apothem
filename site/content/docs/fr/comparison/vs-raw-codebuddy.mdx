@@ -1,0 +1,49 @@
+---
+title: "Apothem face aux règles CodeBuddy brutes"
+description: "Pourquoi faire passer les règles de projet de CodeBuddy par Apothem plutôt que d'écrire à la main des fichiers .codebuddy/rules par projet."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+CodeBuddy lit les règles de projet depuis `.codebuddy/rules/*.md`. Vous pouvez
+écrire ces fichiers à la main, par projet, pour toujours. Apothem en gère un pour
+vous et le maintient cohérent dans chaque environnement et chaque projet.
+
+## L'approche brute
+
+Écrire à la main les règles de CodeBuddy signifie :
+
+- Copier-coller les mêmes disciplines d'ingénierie dans `.codebuddy/rules/` pour
+  chaque nouveau projet.
+- Se désynchroniser à mesure que les disciplines évoluent — il n'y a pas de
+  source de vérité unique.
+- Re-dériver les mêmes conventions pour Cursor, Windsurf, Claude Code et tous les
+  autres outils que vous utilisez, car chacun a sa propre surface de règles.
+
+## L'approche d'Apothem
+
+Apothem conserve une cohorte de règles canonique dans le dépôt source et la
+projette sur la surface native de chaque environnement. Pour CodeBuddy, il
+écrit :
+
+```
+<project>/.codebuddy/rules/apothem-rules.md
+```
+
+| Préoccupation | CodeBuddy brut | Apothem |
+| --- | --- | --- |
+| Source de vérité | Les fichiers de chaque projet | Une cohorte canonique |
+| Cohérence inter-environnements | Manuel par outil | Projetée automatiquement |
+| Mises à jour | Modifier à la main chaque projet | `apothem update --harness codebuddy --project <path>` |
+| Règles propres de l'opérateur | Mêlées aux disciplines | Intactes — Apothem écrit un fichier dédié |
+| Suppression | Suppression manuelle | `apothem uninstall` avec sauvegarde horodatée |
+
+## Ce qui reste vôtre
+
+Apothem n'écrit que `apothem-rules.md`. Votre fichier de mémoire `CODEBUDDY.md`,
+vos permissions et serveurs MCP dans `.codebuddy/settings.json`, et tout autre
+fichier de règles que vous rédigez restent entièrement la propriété de
+l'opérateur. L'adaptateur reconnaît ces surfaces mais ne les modifie jamais.
+
+Consultez la [page de l'environnement CodeBuddy](/docs/harnesses/codebuddy) pour
+les commandes complètes du cycle de vie.

@@ -1,0 +1,185 @@
+---
+title: "आर्टिफ़ैक्ट रजिस्ट्रियाँ"
+description: "Apothem ईकोसिस्टम आर्टिफ़ैक्ट्स का पूर्ण परिगणन: कमांड, नियम, प्रत्यायोजित सहायक, हुक, स्किल, आउटपुट स्टाइल, आर्टिफ़ैक्ट-विकास अनुशासन, और रिक्त-आर्टिफ़ैक्ट-वर्ग घोषणाएँ।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **आर्टिफ़ैक्ट कोहॉर्ट की विहित रजिस्ट्री।** यह दस्तावेज़ कमांड, नियम, प्रत्यायोजित सहायक, हुक, स्किल, आउटपुट स्टाइल, आर्टिफ़ैक्ट-विकास अनुशासन, और रिक्त-आर्टिफ़ैक्ट-वर्ग घोषणाओं के पूर्ण परिगणन को धारण करता है; सारगर्भित तालिकाएँ यहाँ रहती हैं। प्रोजेक्ट स्रोत लेआउट संक्षिप्त always-on दृश्य प्रदान करता है।
+
+## 1. कमांड
+
+तीस कमांड `src/apothem/commands/*.md` (गैर-पुनरावर्ती) से पंजीकृत हैं। प्रत्येक कमांड एक प्रथम-श्रेणी पंजीकृत फ़ाइल है; `/plan` ऑर्केस्ट्रेटर केवल पहले-से-प्रथम-श्रेणी प्लान स्टेजों को शृंखलाबद्ध करता है और अपना कोई स्टेज लॉजिक नहीं रखता, इसलिए अब भी कोई एकाश्म डिस्पैचर नहीं है और कोई सबकमांड समूहन नहीं है। गैर-प्लान, गैर-वर्कफ़्लो कमांड:
+
+| कमांड | फ़ाइल | विवरण |
+| ------- | ---- | ----------- |
+| `/a11y-audit` | `src/apothem/commands/a11y-audit.md` | एक तैनात वेब सतह का WCAG 2.2 AA के विरुद्ध सुलभता ऑडिट, पृष्ठ-दर-पृष्ठ चला गया |
+| `/architecture-review` | `src/apothem/commands/architecture-review.md` | किसी रिपॉज़िटरी की उसके डिज़ाइन आर्टिफ़ैक्ट और विहित परत अनुशासन के विरुद्ध वास्तुकला-अखंडता समीक्षा |
+| `/code-audit` | `src/apothem/commands/code-audit.md` | छह विरोधात्मक चरणों में रिपॉज़िटरी-कॉर्पस स्कोप पर क्रॉस-फ़ाइल फ़ॉरेंसिक कोड ऑडिट |
+| `/code-review` | `src/apothem/commands/code-review.md` | `src/`, `scripts/`, और `tools/` में प्रति-फ़ाइल निष्कर्षों के साथ प्रति-फ़ाइल कोड-गुणवत्ता समीक्षा |
+| `/dependency-audit` | `src/apothem/commands/dependency-audit.md` | रिपॉज़िटरी की मैनिफ़ेस्ट फ़ाइलों में प्रति-निर्भरता (प्रत्यक्ष + सकर्मक) ऑडिट |
+| `/docs-review` | `src/apothem/commands/docs-review.md` | होस्ट डॉक्स सतह के अंतर्गत प्रत्येक Markdown पृष्ठ की दस्तावेज़ीकरण समीक्षा |
+| `/elevate` | `src/apothem/commands/elevate.md` | स्वतंत्र समीक्षक सहायकों के माध्यम से प्रत्येक प्रोजेक्ट सतह को वर्तमान SOTA तक उठाएँ, फिर `/freshify` को सौंप दें |
+| `/eval` | `src/apothem/commands/eval.md` | eval-harness स्किल पर निर्मित मॉडल-अज्ञेयवादी भाषा-मॉडल मूल्यांकन अभियान |
+| `/freshify` | `src/apothem/commands/freshify.md` | किसी प्रोजेक्ट को ताज़ा, ट्रेस-मुक्त, और उत्पादन-तैयार बनाएँ; प्रत्येक विनाशकारी चरण पुष्टि-द्वारबद्ध |
+| `/github-deploy-fresh` | `src/apothem/commands/github-deploy-fresh.md` | `/freshify` का GitHub विशेषीकरण जो `origin/main` पर एकल ताज़ा प्रथम-संस्करण रिलीज़ उत्पन्न करता है |
+| `/github-deploy-next` | `src/apothem/commands/github-deploy-next.md` | GitHub रिलीज़ सतह पर एक पूर्ण अगली-रिलीज़ चक्र को अंत-से-अंत तक चलाएँ |
+| `/perf-audit` | `src/apothem/commands/perf-audit.md` | `src/apothem/rules/performance-discipline.md` में प्रति-वर्ग प्रदर्शन बजट के विरुद्ध ऑडिट |
+| `/release-readiness` | `src/apothem/commands/release-readiness.md` | पूर्व-रिलीज़ गेट स्वीप: गुणवत्ता मैट्रिक्स, निर्भरता जोखिम, और रिलीज़-इंजीनियरिंग जाँच |
+| `/research` | `src/apothem/commands/research.md` | समानांतर स्रोत खोज और निष्कर्षण के साथ बहु-स्रोत अनुसंधान सहभागिता |
+| `/security-audit` | `src/apothem/commands/security-audit.md` | OWASP ASVS, OWASP Top 10, और CWE Top 25 के विरुद्ध सुरक्षा मुद्रा ऑडिट |
+| `/supply-chain-audit` | `src/apothem/commands/supply-chain-audit.md` | SLSA, Sigstore, और SBOM मानकों के विरुद्ध आपूर्ति-शृंखला ऑडिट |
+| `/test-suite` | `src/apothem/commands/test-suite.md` | होस्ट के अनुमोदित परीक्षण फ़्रेमवर्क के विरुद्ध व्यवहार-प्रथम परीक्षण लेखन और निष्पादन |
+| `/threat-model-audit` | `src/apothem/commands/threat-model-audit.md` | वास्तुकला, डेटा-प्रवाह, और विश्वास-सीमाओं में STRIDE और PASTA के विरुद्ध खतरा-मॉडलिंग ऑडिट |
+| `/ux-review` | `src/apothem/commands/ux-review.md` | डेवलपर-अनुभव समीक्षा: CLI एर्गोनॉमिक्स, इंस्टॉल प्रवाह, हेल्प टेक्स्ट, और एरर संदेश |
+
+### प्लान-पाइपलाइन कमांड
+
+प्लान पाइपलाइन आठ प्रथम-श्रेणी कमांड के रूप में शिप होती है — एक प्रति स्टेज, प्रत्येक को `src/apothem/commands/plan-<stage>.md` पर अपनी पंजीकृत फ़ाइल से सीधे `/plan-<stage>` के रूप में आह्वान योग्य।
+
+| कमांड | फ़ाइल | व्यवहार |
+| ------- | ---- | -------- |
+| `/plan-spec` | `src/apothem/commands/plan-spec.md` | मुक्त-रूप गद्य को स्पेक-श्रेणी `_spec/spec.md` में परिष्कृत करता है; प्रत्येक खुला प्रश्न मौन डिफ़ॉल्टिंग के बजाय संरचित-पूछताछ चैनल के माध्यम से मार्गित होता है; `--quick` `<project-root>/.apothem/plans/` के अंतर्गत एकल हल्की प्लान फ़ाइल लिखता है (`.plans/` एक समर्थित बैकवर्ड-संगत फ़ॉलबैक बना रहता है) |
+| `/plan-generate` | `src/apothem/commands/plan-generate.md` | लिखित गद्य/आवश्यकताओं से एक पूर्ण Master Plan Suite उत्पन्न करता है |
+| `/plan-review` | `src/apothem/commands/plan-review.md` | किसी मौजूदा सूट का फ़ॉरेंसिक ऑडिट — गद्य निष्ठा, आंतरिक संगति, अंतराल विश्लेषण — इंटरैक्टिव Q&A के माध्यम से परिष्कृत |
+| `/plan-design` | `src/apothem/commands/plan-design.md` | सूट की `_inputs/design.md` पर एक वास्तुकला-डिज़ाइन आर्टिफ़ैक्ट उत्पन्न करता है, प्रोन्नति से पहले पंद्रह-बार पूर्व-उत्सर्जन गेट द्वारा सत्यापित |
+| `/plan-audit` | `src/apothem/commands/plan-audit.md` | पूर्ण spec → generate → review चक्र में क्लोज़्ड-लूप ऑडिट और उपचार, शून्य निष्कर्ष शेष रहने तक या परिभाषित रिट्रीट के साथ पुनरावृत्ति-कैप पहुँचने तक लूप करता है |
+| `/plan-execute` | `src/apothem/commands/plan-execute.md` | अनुरूपता जाँच और गुणवत्ता गेटों के साथ एक चरण निष्पादित करता है — डिफ़ॉल्ट `medium` प्रयास, `PHASE.md` frontmatter में `effort:` फ़ील्ड के माध्यम से प्रति चरण अधिभावी; डिफ़ॉल्ट रूप से प्रत्येक चरण सीमा पर रुकता है, `--no-pause` (या प्रोफ़ाइल `enforcement.continuous_execution` फ़्लैग) के साथ निरंतर चरण-दर-चरण प्रगति का चयन करता है |
+| `/plan-status` | `src/apothem/commands/plan-status.md` | कार्य, चरण, और आर्टिफ़ैक्ट आयामों के विरुद्ध केवल-पठन प्रगति रिपोर्ट |
+| `/plan-amend` | `src/apothem/commands/plan-amend.md` | पूर्व हल किए गए निर्णयों को नष्ट किए बिना किसी मौजूदा सूट को संशोधित, विस्तृत, परिष्कृत, या प्रत्यावर्तित करता है; केवल प्रभावित डाउनस्ट्रीम आर्टिफ़ैक्ट्स को पुनः-व्युत्पन्न करता है |
+
+### ऑपरेटर-वर्कफ़्लो & ऑर्केस्ट्रेटर कमांड
+
+तीन कमांड अपना स्टेज लॉजिक धारण करने के बजाय एक गहन प्रक्रिया में प्रवेश करते हैं: दो ऑपरेटर-वर्कफ़्लो प्रवेश-बिंदु (प्रत्येक उसी नाम की एक सहोदर स्किल द्वारा समर्थित) तथा पतला प्लान-पाइपलाइन ऑर्केस्ट्रेटर।
+
+| कमांड | फ़ाइल | विवरण |
+| ------- | ---- | ----------- |
+| `/workflow` | `src/apothem/commands/workflow.md` | सामान्य-उद्देश्य वर्कफ़्लो-दोहन प्रवेश-बिंदु (`/goal <<mission>>`): नामित रिटर्न कॉन्ट्रैक्ट के अंतर्गत वास्तव में-स्वतंत्र बहु-सहायक गतिशील वर्कफ़्लो, किसी निष्कर्ष के टिकने से पहले refute-by-default सत्यापन, परिवर्तन लेज़र के अनुसार प्रकट किया गया मिशन-परे उपचार, और नियतात्मक आउटपुट चलाता है; बहु-सहायक डिस्पैच और स्वतः-निष्पादन ऑप्ट-इन / पुष्टि-द्वारबद्ध हैं। `workflow` स्किल द्वारा समर्थित |
+| `/projectify` | `src/apothem/commands/projectify.md` | चैट-ऐप Project उन्नयन: किसी मापनीय प्रति-प्लेटफ़ॉर्म संदर्भ बजट के भीतर, Claude Project, Custom GPT, या Gem के लिए Description / Instruction / knowledge-Files डिलिवरेबल्स को वर्तमान SOTA परिपाटियों तक लिखता है; नियतात्मक आउटपुट, ऑप्ट-इन स्वायत्तता। `projectify` स्किल द्वारा समर्थित |
+| `/plan` | `src/apothem/commands/plan.md` | प्रथम-श्रेणी प्लान स्टेजों (`plan-spec → plan-generate → plan-review → plan-design (सशर्त) → plan-execute`) को शृंखलाबद्ध करने वाला पतला ऑर्केस्ट्रेटर, प्रत्येक को पूर्व स्टेज के Handoff Manifest से पुनरारंभ करता है; कोई स्टेज लॉजिक नहीं रखता — शृंखलन ऑप्ट-इन / पुष्टि-द्वारबद्ध है (`--auto` निरंतर शृंखलाबद्ध करता है) |
+
+## 2. नियम
+
+व्यवहार नियम `src/apothem/rules/` के अंतर्गत रहते हैं — एक छोटा always-on कोर तथा एक बड़ा पथ-फ़िल्टर्ड सेट (मेल खाते आर्टिफ़ैक्ट स्पर्श पर माँग-पर-लोड)। पूर्ण प्रति-नियम परिगणन — Scope (always-on / पथ-फ़िल्टर्ड) और Implements स्तंभों के साथ — स्रोत-जनित `reference/rules.mdx` है, जो reference-inventory जनरेटर द्वारा `src/apothem/rules/*.md` से ताज़ा होता है; आधिकारिक वर्तमान सूची के लिए इसे देखें।
+
+> **CM-21 पहलू सीमांकन** (तीन नियम CM-21 को विशिष्ट गैर-अतिव्यापी पहलुओं के साथ सह-कार्यान्वित करते हैं): **रचनात्मक फ़िल्टर & संज्ञानात्मक पहचान** → `cognitive-identity.md`; **जनन कार्यप्रणाली (लेखन & पुनर्लेखन प्रोटोकॉल)** → `clean-room-generation.md`; **योजना/समीक्षा तकनीकें** → `planning-techniques.md`। प्रत्येक नियम अपना पहलू रखता है; अन्य बाहर संदर्भित करते हैं।
+
+> **Interactive-questions स्कीमा पॉइंटर।** विहित संरचित-पूछताछ आह्वान स्कीमा — आवश्यक फ़ील्ड, फ़ील्ड-सारांश तालिका, दो निष्पादन योग्य कार्यशील उदाहरण (§2.1 पर single-select और §2.2 पर multi-select) — `src/apothem/rules/interactive-questions.md` §2 "Structured-Inquiry Shape" में रहती है। डाउनस्ट्रीम आर्टिफ़ैक्ट्स §2.1 या §2.2 को आह्वान टेम्पलेट के रूप में कॉपी कर सकते हैं; प्रत्येक विकल्प का `description` बॉडी जो तीन-खंड विकल्प-एनोटेशन स्कीमा धारण करती है वह उसी फ़ाइल के §3 में निर्दिष्ट है।
+
+## 3. प्रत्यायोजित सहायक
+
+बारह स्थायी सहायक परिभाषाएँ ईकोसिस्टम के साथ शिप होती हैं; ऑर्केस्ट्रेशन नियम के टीम पैटर्न उन्हें डिस्पैच करते हैं। प्रत्येक परिभाषा नीचे सूचीबद्ध फ़ाइल पथ पर रहती है।
+
+```text
+Worker              File                                       Pattern         Model Policy
+------------------- ------------------------------------------ --------------- -------------
+Codebase Explorer   src/apothem/agents/codebase-explorer.md   Research        host-selected
+Convention Auditor  src/apothem/agents/convention-auditor.md  Audit           host-selected
+Dependency Auditor  src/apothem/agents/dependency-auditor.md  Audit           host-selected
+Fact Checker        src/apothem/agents/fact-checker.md        Audit           host-selected
+MCP Builder         src/apothem/agents/mcp-builder.md         Generation      host-selected
+Memory Auditor      src/apothem/agents/memory-auditor.md      Audit           host-selected
+Prompt Evaluator    src/apothem/agents/prompt-evaluator.md    Quality         host-selected
+Quality Gate        src/apothem/agents/quality-gate.md        Quality         host-selected
+Refactor Surgeon    src/apothem/agents/refactor-surgeon.md    Implementation  host-selected
+Research Scout      src/apothem/agents/research-scout.md      Research        host-selected
+Security Scanner    src/apothem/agents/security-scanner.md    Audit           host-selected
+Test Runner         src/apothem/agents/test-runner.md         Quality         host-selected
+```
+
+## 4. हुक
+
+प्रत्येक पंजीकृत हुक कमांड Claude Code के exec-form कमांड आकार
+(`command: "python"` तथा एक `args` ऐरे) का उपयोग करता है और या तो
+`-m apothem.hooks.dispatch` या `-m apothem.conformity.gate` को आह्वान करता है। डिस्पैचर
+ईकोसिस्टम-रूट समाधान के लिए `src/apothem/hooks/lib/resolve_root.py` को आयात करता है और
+`src/apothem/hooks/` के अंतर्गत उसके बगल में बैठने वाले दो हेल्परों को प्रत्यायोजित करता है:
+`src/apothem/hooks/emit_hook_context.py` सहायक के लिए इवेंट पेलोड को फ़ॉर्मैट करता है, और
+`src/apothem/hooks/session_start_bootstrap.py` वह SessionStart तैयारी कार्य धारण करता है जिसे
+डिस्पैचर उस इवेंट को मार्गित करते समय सौंपता है। समर्थित इवेंटों के फ़ायर होने पर सहायक को
+प्रस्तुत किए गए हुक संदेश `src/apothem/hooks/messages/` के अंतर्गत Markdown संदर्भ फ़ाइलों के
+रूप में रहते हैं — प्रति इवेंट संस्करण एक: `postcompact.md`, `precompact.md`,
+`pretooluse-bash.md`, `pretooluse-bash-plan-guard.md`, `pretooluse-conformity.md`,
+`pretooluse-dependency-guard.md`, `pretooluse-edit.md`, `pretooluse-edit-header-guard.md`,
+`pretooluse-eval-guard.md`, `pretooluse-notebookedit.md`, `pretooluse-write.md`,
+`pretooluse-write-header-guard.md`, `pretooluse-write-plan-guard.md`, `sessionstart.md`,
+`stop.md`। प्रत्येक मार्गित संदर्भ फ़ाइल को डिस्पैचर द्वारा तब लोड किया जाता है जब उसका इवेंट
+फ़ायर होता है और उसका संदर्भ तर्क `settings.json` में पंजीकृत होता है; तीन संदर्भ फ़ाइलें
+(`pretooluse-conformity.md`, `pretooluse-dependency-guard.md`, `pretooluse-eval-guard.md`)
+वर्तमान `settings.json` मार्गण प्रविष्टि के बिना उपलब्ध संस्करणों के रूप में शिप होती हैं।
+
+```text
+Event             Automates                Timeout  Purpose
+----------------- ------------------------ -------- --------------------------------------------------
+SessionStart      CM-14                    30s      Read memory, check plan state, report readiness
+PreCompact        CM-24 §2.3               30s      Verify state externalized before compaction
+PostCompact       CM-24 §6.2               30s      Restore working state after compaction
+Stop              CM-14/CM-22/CM-24/CM-26  60s      Session-end externalization
+PreToolUse        CM-7/CM-22               10s      Write/Edit/NotebookEdit validation — codebase-isolation, frontmatter, license-header, and plans-locality checks plus the conformity gate. Bash validation — git artifact isolation and plans-locality
+PostToolUse       —                        10s      Accepted by src/apothem/hooks/dispatch.py whitelist for forward compatibility; no settings.json entry currently routes this event
+UserPromptSubmit  —                        10s      Accepted by src/apothem/hooks/dispatch.py whitelist for forward compatibility; no settings.json entry currently routes this event
+Notification      —                        10s      Accepted by src/apothem/hooks/dispatch.py whitelist for forward compatibility; no settings.json entry currently routes this event
+```
+
+> **परिपाटी।** वे पंक्तियाँ जहाँ **Automates** `—` है, `dispatch.py` द्वारा स्वीकृत हैं पर `settings.json` में वायर्ड नहीं हैं; **Timeout** स्तंभ वह डिस्पैच-स्तरीय डिफ़ॉल्ट दिखाता है जो लागू होता है यदि और जब इवेंट को बाद में वायर किया जाए।
+>
+> **Timeout-मान विहित ब्लॉक।** इस तालिका का **Timeout** स्तंभ पूरे ईकोसिस्टम में हुक timeout मानों के लिए सत्य का एकमात्र स्रोत है। `settings.json` प्रति-हुक `timeout` फ़ील्ड, `site/content/docs/reference/settings-reference.mdx` § Hook Events और `site/content/docs/reference/artifact-schema.mdx` § Hooks Pipeline में मिरर तालिकाएँ, और `src/apothem/rules/persistent-conventions-vigilance.md` § Convention Awareness में नियम मार्गदर्शन सभी इस स्तंभ से व्युत्पन्न होते हैं। भावी timeout संशोधन यहाँ उतरते हैं और उपभोक्ता अगले संदर्भ पर पुनः-व्युत्पन्न करते हैं।
+
+### सेटिंग्स टेम्पलेट समीक्षा कैडेंस
+
+`settings.json` एकमात्र Claude Code टेम्पलेट है। प्रत्येक हुक कमांड
+shell-विशिष्ट रैपर के बजाय exec form का उपयोग करता है, इसलिए क्रॉस-OS व्यवहार की समीक्षा
+युग्मित टेम्पलेटों को diff करने के बजाय एक फ़ाइल के भीतर होती है। नई परमिशन प्रविष्टियाँ,
+हुक इवेंट, timeout, और स्टेटस संदेश उस फ़ाइल में परमाण्विक रूप से उतरते हैं।
+
+## 5. स्किल
+
+पुन: प्रयोज्य स्किल `src/apothem/skills/` के अंतर्गत रहती हैं, प्रति स्किल एक फ़ोल्डर।
+
+| स्किल | पथ | उपयोगकर्ता-आह्वान-योग्य | उद्देश्य |
+| ----- | ---- | -------------- | ------- |
+| Dependency Upgrade | `src/apothem/skills/dependency-upgrade/` | हाँ | चेंजलॉग-समीक्षित, पिन्ड, गेट-सत्यापित निर्भरता उन्नयन |
+| Dev Toolkit | `src/apothem/skills/dev-toolkit/` | हाँ | अनुशासित इंजीनियरिंग लूप — संरचित डीबगिंग, परीक्षण-प्रथम red-green-refactor, वर्टिकल-स्लाइस विघटन, आवश्यकता-से-इश्यू विभाजन |
+| Diagram Authoring | `src/apothem/skills/diagram-authoring/` | हाँ | घोषणात्मक आरेखों और डेटा विज़ुअलाइज़ेशन (SVG / PNG / PDF) के लिए लेखन → सत्यापन → रेंडर → निर्यात पाइपलाइन |
+| Document Authoring | `src/apothem/skills/document-authoring/` | हाँ | सत्यापित उद्धरणों और नियतात्मक typeset संकलन के साथ अनुमोदन-द्वारबद्ध दीर्घ-रूप दस्तावेज़ लेखन (आउटलाइन → ड्राफ़्ट → समीक्षा) |
+| Ecosystem Audit | `src/apothem/skills/ecosystem-audit/` | हाँ | Apothem कॉन्फ़िगरेशन ट्री का अंध ऑडिट |
+| Eval Harness | `src/apothem/skills/eval-harness/` | हाँ | स्पष्ट पास मानदंड के साथ पुनरुत्पाद्य भाषा-मॉडल मूल्यांकन हार्नेस |
+| Incident Runbook | `src/apothem/skills/incident-runbook/` | हाँ | Trigger → Diagnosis → Action → Verification → Rollback के रूप में रनबुक लेखन |
+| Multi-Source Research | `src/apothem/skills/multi-source-research/` | हाँ | फ़ैन-आउट, क्रॉस-सत्यापित, उद्धृत अनुसंधान रिपोर्ट |
+| Plan Suite | `src/apothem/skills/plan-suite/` | नहीं | `/plan` पाइपलाइन स्टेजों द्वारा उपभोग किया गया मास्टर टेम्पलेट |
+| Projectify | `src/apothem/skills/projectify/` | हाँ | चैट-ऐप Project उन्नयन — एक मापनीय प्रति-प्लेटफ़ॉर्म संदर्भ बजट के भीतर SOTA परिपाटियों तक Description / Instruction / knowledge-Files डिलिवरेबल्स |
+| Prompt Engineering | `src/apothem/skills/prompt-engineering/` | हाँ | Eval-सत्यापित संरचित प्रॉम्प्ट डिज़ाइन |
+| Refactor Extract | `src/apothem/skills/refactor-extract/` | हाँ | व्यवहार-संरक्षी निष्कर्षण रीफ़ैक्टर |
+| Secret Rotation | `src/apothem/skills/secret-rotation/` | हाँ | उजागर क्रेडेंशियल्स की सुरक्षित निवृत्ति और प्रतिस्थापन |
+| Source Synthesis | `src/apothem/skills/source-synthesis/` | हाँ | एक निश्चित स्रोत सेट को एक उद्धृत संश्लेषण में मिलाता है |
+| Surgical Guard | `src/apothem/skills/surgical-guard/` | हाँ | प्रतिक्रियाशील, diff-आधारित संपादन-पश्चात गुणवत्ता गार्ड के साथ युग्मित न्यूनतम-diff एंकर-बद्ध संपादन |
+| Test Authoring | `src/apothem/skills/test-authoring/` | हाँ | Arrange-Act-Assert अनुशासन के साथ व्यवहार-प्रथम परीक्षण लेखन |
+| Vuln Triage | `src/apothem/skills/vuln-triage/` | हाँ | सुरक्षा एडवाइज़री को गंभीरता-वर्गीकृत करता है और उपचार को मार्गित करता है |
+| Workflow | `src/apothem/skills/workflow/` | हाँ | विरोधात्मक refute-by-default सत्यापन और प्रकट किए गए मिशन-परे उपचार के साथ सामान्य-उद्देश्य बहु-सहायक वर्कफ़्लो दोहन |
+
+> **परिपाटी।** प्रत्येक पंक्ति का **पथ** एक फ़ोल्डर है; प्रवेश बिंदु उसके भीतर `SKILL.md` फ़ाइल है — उदा. `src/apothem/skills/plan-suite/SKILL.md` — प्रोजेक्ट स्रोत लेआउट में घोषित फ़ोल्डर-के-साथ-`SKILL.md` स्किल परिपाटी के अनुसार।
+
+## 6. आउटपुट स्टाइल
+
+चार आउटपुट स्टाइल `src/apothem/output-styles/` के अंतर्गत रहती हैं।
+
+| स्टाइल | फ़ाइल | उद्देश्य |
+| ----- | ---- | ------- |
+| Default | `src/apothem/output-styles/default.md` | ईकोसिस्टम-डिफ़ॉल्ट स्टाइल — एकीकृत आउटपुट परिपाटियाँ, योजना-सामग्री मार्गण, और फ़ाइल-लेखन कॉन्ट्रैक्ट |
+| Default Architect | `src/apothem/output-styles/default-architect.md` | वरिष्ठ-वास्तुकार स्वर — विश्लेषणात्मक, प्रत्यक्ष, ठोस-चालक उद्धरण |
+| Concise Engineer | `src/apothem/output-styles/concise-engineer.md` | लघु-रूप इंजीनियरिंग आउटपुट — न्यूनतम गद्य, कोड-प्रथम |
+| Forensic Auditor | `src/apothem/output-styles/forensic-auditor.md` | समीक्षा-श्रेणी मुद्रा — निष्कर्ष-दर-निष्कर्ष, स्कोरकार्ड-आकार आउटपुट, प्रति निष्कर्ष falsifier |
+
+## 7. आर्टिफ़ैक्ट विकास
+
+**अनिवार्य।** जब कोई पुन: प्रयोज्य पैटर्न, सुधार, या तकनीक पुनरावृत्त होती है (एक सत्र में 2+ इंस्टेंस, या स्मृति में पुनरावर्ती के रूप में नोट की गई), तो ईकोसिस्टम को विकसित होना चाहिए। चक्र के चार चरण हैं: किसी भी अंतःक्रिया के दौरान पैटर्न को **Detect** करें; अतिव्यापन के लिए मौजूदा स्किल, नियम, कमांड, हुक, और स्मृति को **Search** करें; मेल खाते आर्टिफ़ैक्ट को इन-प्लेस विकसित करके (प्रक्रिया, एंटी-पैटर्न, स्कोप अपडेट) या जब चिंता वास्तव में लंबकोणीय हो तब एक नया बनाकर **Act** करें; **Validate** करें कि क्रॉस-संदर्भ अब भी हल होते हैं और आश्रित आर्टिफ़ैक्ट सुसंगत रहते हैं। निर्माण पर परिष्करण को प्राथमिकता दें — नए आर्टिफ़ैक्ट रखरखाव सतह को संयोजित करते हैं। प्रत्येक आर्टिफ़ैक्ट वर्ग में अंतराल-पहचान ट्रिगरों के बंद कैटलॉग सहित पूर्ण प्रोटोकॉल के लिए `src/apothem/rules/persistent-conventions-vigilance.md` §2+§4 देखें।
+
+## 8. रिक्त आर्टिफ़ैक्ट वर्ग
+
+ईकोसिस्टम रजिस्ट्री में घोषित पर जान-बूझकर रिक्त सतहें जब तक कोई सक्रियण ट्रिगर फ़ायर न हो। प्रत्येक पंक्ति आरक्षित सतह, वर्ग को scaffold करने वाली फ़ाइल या डायरेक्टरी, और वह ट्रिगर रिकॉर्ड करती है जो पंक्ति को रिक्त-प्रमाणन से आबाद में प्रोन्नत करता है।
+
+| वर्ग | Scaffold | स्थिति | सक्रियण ट्रिगर |
+| ----- | -------- | ------ | ------------------ |
+| MCP servers | (अभी तक कोई scaffold नहीं) | रिक्त-प्रमाणन | उपयोगकर्ता-कॉन्फ़िग रूट के अंतर्गत प्रथम MCP सर्वर इंस्टॉलेशन |
+
+रिक्त-प्रमाणन एक सकारात्मक घोषणा है, अंतराल नहीं। वर्ग का scaffold (जब कोई मौजूद हो) वह विहित no-op आर्टिफ़ैक्ट है जो सक्रियण क्षण को ट्रैक करता है। रिक्त-प्रमाणन से आबाद की प्रोन्नतियाँ scaffold के प्रथम गैर-रिक्त मान के साथ प्रासंगिक रजिस्ट्री खंड में परमाण्विक रूप से उतरती हैं।

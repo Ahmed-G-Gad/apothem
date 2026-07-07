@@ -1,0 +1,85 @@
+---
+title: "依赖内联策略"
+description: "Apothem 在 src/apothem/_vendor/ 下内联哪些第三方包、哪些保留为系统前置条件，以及内联副本如何刷新。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+# 依赖内联策略
+
+## 策略
+
+Apothem 的[自包含运行时](/docs/architecture/self-contained-runtime)要求引擎的
+第三方依赖能够从源码树本身被导入。因此，每个运行时依赖都以三种方式之一处理：
+
+- **以纯 Python 源码内联**于 `src/apothem/_vendor/` 之下。引导会把该目录前置到
+  `sys.path`，排在 site-packages 之前，因此在导入解析的竞争中，内联副本会胜过
+  任何系统安装的版本。
+- **以纯 Python 垫片替换**——当上游分发包附带一个无法以可移植源码形式迁移的
+  编译扩展时。
+- **保留为有据可查的系统前置条件**——当内联所带来的负担超过其节省的开销时。
+
+放置规则是严格的：只有纯 Python 分发包才能放进 `_vendor/`。编译扩展（C、
+Rust/PyO3、Cython）是平台和 ABI 相关的，永远不属于那里。每个内联包都将其上游
+许可证文件与源码并列携带。
+
+## 内联了什么
+
+| 包 | 说明 |
+|---|---|
+| `yaml` | 纯 Python 的解析器/发射器。可选的 libyaml C 扩展是一种提速，从不是必需，因此不被携带；导入仍为 `import yaml`。 |
+| `jsonschema` | 用于 profile、配置和 golden 夹具校验的模式校验器。 |
+| `attrs`（及其 `attr` 别名） | 为 `jsonschema` 所需。 |
+| `referencing` | 为 `jsonschema` 所需。 |
+| `jsonschema_specifications` | 为 `jsonschema` 所需。 |
+| `rpds` | 一个纯 Python 垫片，而非上游分发包——见下文。 |
+| `typing_extensions` | 为内联的校验链所需。 |
+
+## `rpds` 垫片
+
+上游 `jsonschema` 依赖 `rpds-py`，一个以 Rust（PyO3）实现的持久数据结构库，它附带
+一个编译的 `.pyd`/`.so`，仅带有一层薄薄的 `.py` 封装。没有可复制的可移植纯 Python
+源码，因此它无法被内联。
+
+取而代之，`src/apothem/_vendor/rpds/` 是一个纯 Python 垫片，它精确地重新实现了
+`jsonschema` 与 `referencing` 所使用的那部分 API 子集——`HashTrieMap`、
+`HashTrieSet` 和 `List`——以内置的 `dict` / `frozenset` / `tuple` 为后端。该垫片
+遵守上游的持久性契约：变更方法返回一个新实例并保持接收者不变，消费者在将这些结构
+存储为冻结类的字段默认值时正是依赖这一点。Apothem 的模式很小，因此相对于 Rust
+实现的性能差异无关紧要。
+
+## 不内联什么
+
+- **`click`**——CLI 框架。它体量大、面向终端且广泛可得，因此保留为安装器会检查的
+  系统前置条件。
+- **`rich`**——终端渲染库，出于同样的原因保留为系统前置条件。
+- **`rpds-py`**——已编译；由上面的垫片替换。
+- **libyaml C 扩展**——可选；内联的纯 Python `yaml` 包从不需要它。
+
+安装器会在做任何事情之前，先验证 `click` 与 `rich` 在所选解释器下可导入；如果
+缺失任何一个，它会指出缺失者并提议为你安装它——在你确认下，或者通过 `--yes` /
+`APOTHEM_AUTO_INSTALL_DEPS=1` 自动安装。
+
+## 刷新一个内联包
+
+要把一个内联包更新到较新的上游版本：
+
+1. 取得目标版本的上游源码分发包。
+2. 把纯 Python 包目录复制进 `src/apothem/_vendor/`，替换先前的副本，并刷新相邻的
+   许可证文件。
+3. 更新 `src/apothem/_vendor/vendor.txt`——固定的闭包——使其中该包的
+   `name==version` 行与新的上游版本相符，并在该包的上游许可证或版权发生变化时，
+   更新根 `REUSE.toml` 中该包的 `[[annotations]]` 块。二者都必须与复制处于**同一
+   变更集**中（活的依赖项强制规定）；供应链审计员与 `reuse lint` 闸门会读取它们。
+4. 不要改动导入路径——消费者导入规范名称，而引导的 `sys.path` 优先级会完成其余
+   工作。
+5. 运行测试套件与一致性闸门；校验栈的行为由 profile 与模式校验测试覆盖。
+
+`rpds` 垫片的刷新方式不同：它跟踪其消费者所使用的 API 子集，因此一次
+`jsonschema`/`referencing` 更新会被对照该垫片已实现的表面进行检查，并且只有在出现
+新的调用点时，垫片才会增长。
+
+## 推荐的下一步
+
+**阅读[自包含运行时](/docs/architecture/self-contained-runtime)页面**，了解内联树、
+`PYTHONPATH=src` 调用模型，以及插件树引导在运行时如何契合在一起。

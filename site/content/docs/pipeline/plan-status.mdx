@@ -1,0 +1,66 @@
+---
+title: "/plan-status"
+description: "/plan-status — Read-only plan-suite progress reporter — emits status without modifying any files."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Role:** Reporter
+**Pipeline position:** read-only
+
+Read-only plan-suite progress reporter — emits status without modifying any files.
+
+## Canonical invocation
+
+```bash
+/plan-status
+```
+
+With arguments:
+
+```bash
+/plan-status [path/to/plan-suite/] [--verbose]
+```
+
+## Inputs
+
+Any plan suite at any lifecycle state — reads `PROGRESS.md`, `PLAN-NOTES.md`, `MASTER-PLAN.md`, and the `phases/` reports.
+
+## Outputs
+
+A strategic status report written to the operator's output stream. This command is read-only — it creates and modifies no files.
+
+## Downstream
+
+Used standalone for progress inspection — orthogonal to the canonical sequence, invocable read-only at any point.
+
+## Workflow phases
+
+The command is read-only — it reads the suite's tracking files and reports; it writes nothing:
+
+1. **Load context** — Read `PROGRESS.md`, `PLAN-NOTES.md`, `MASTER-PLAN.md`, and scan `phases/` for existing reports.
+2. **Assess status** — Survey the task / phase / artifact dimensions and read the Resumption Contract.
+3. **Emit the status report** — Present completion status, the phase tracker, and strategic analysis directly to the operator.
+4. **Spot-check** — With `--verbose`, grade suite health and cite spot-check evidence (markdown links, line ranges, commit SHAs) against existing files without modifying any.
+
+## Failure modes
+
+| Symptom | Cause | Recovery |
+|---------|-------|----------|
+| Required tracking file missing | Plan suite incomplete | Surface the gap as a finding; run `/plan-generate` to create the suite |
+| Malformed tracking file | Section truncated or unparseable | Name the absence / contradiction in the report; repair routes to the writeful commands |
+| Field absent or contradictory across files | Tracking drift | Report the contradiction explicitly; do not synthesize the missing value |
+
+## Examples
+
+```bash
+# Report on the most recent plan suite
+/plan-status
+
+# Verbose health-grade against a named plan suite
+/plan-status path/to/plan-suite/ --verbose
+```
+
+## Cross-references
+
+- [Pipeline overview](/docs/pipeline)
+- [Command reference](/docs/reference/commands)

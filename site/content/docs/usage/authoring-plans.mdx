@@ -1,0 +1,48 @@
+---
+title: "Authoring plans"
+description: "Author plan suites with the /plan pipeline."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+The `/plan` pipeline transforms raw prose requirements into executable,
+reviewed, quality-gated implementation plans.
+
+## The core stages
+
+The pipeline ships as eight first-class `/plan-<stage>` commands. The
+everyday flow runs five of them:
+
+1. `/plan-spec` — Refine prose into a spec-grade `_spec/spec.md`
+2. `/plan-generate` — Generate the full plan suite skeleton
+3. `/plan-review` — Forensic audit of the generated plan
+4. `/plan-execute` — Execute phases one at a time
+5. `/plan-status` — Inspect progress at any time
+
+Three stages round out the set: `/plan-design` emits an architectural-design
+artifact for architecture-bearing suites, `/plan-audit` runs a closed-loop
+spec → generate → review remediation wrap, and `/plan-amend` revises an
+existing suite without losing resolved decisions.
+
+## Quick plan (single file)
+
+```bash
+# Creates plans/YYYY-MM-DD--my-feature.md in the current project
+/plan-spec --quick my-feature
+```
+
+## Full plan suite
+
+```bash
+# Step 1 — write your requirements to prose.md, then:
+/plan-spec prose.md --suite-name my-project-plan
+/plan-generate
+/plan-review
+/plan-execute
+```
+
+## Plan lifecycle
+
+Plans transition through: `draft` -> `in-progress` -> `converged` (promote to ADR)
+or `abandoned`.
+
+See [Plans discipline](/docs/reference/plans-discipline) for the full lifecycle spec.

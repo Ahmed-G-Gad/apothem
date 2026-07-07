@@ -1,0 +1,107 @@
+---
+title: "Membuat adapter harness"
+description: "Panduan langkah demi langkah untuk membuat adapter harness Apothem baru."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Panduan ini menelusuri pembuatan adapter harness Apothem dari nol, menggunakan
+protokol `HarnessAdapter`.
+
+## Prasyarat
+
+- Python 3.10+
+- Harness asisten koding target dengan format konfigurasi yang diketahui
+- Pemahaman tentang [abstraksi adapter harness](/docs/architecture/harness-adapter-abstraction)
+
+## Langkah 1: Buat paket adapter
+
+```bash
+mkdir apothem-myadapter
+cd apothem-myadapter
+```
+
+```toml
+# pyproject.toml
+[project]
+name = "apothem-myadapter"
+version = "X.Y.Z"
+requires-python = ">=3.10"
+dependencies = ["apothem>=X.Y.Z"]  # pin the floor to the apothem release you target
+
+[project.entry-points."apothem.harnesses"]
+my-harness = "apothem_myadapter.adapter:MyHarnessAdapter"
+```
+
+## Langkah 2: Implementasikan adapter
+
+```python
+# src/apothem_myadapter/adapter.py
+from pathlib import Path
+from typing import Any
+
+from apothem.harnesses import HarnessAdapter
+
+
+class MyHarnessAdapter(HarnessAdapter):
+    """Implements the HarnessAdapter protocol for "My Harness".
+
+    First-party adapters in the apothem tree usually delegate to the
+    ``make_user_scope_adapter`` / ``make_project_scope_adapter`` factories in
+    ``apothem.harnesses._shared.wrapper_factories`` and declare their install
+    rules in ``src/apothem/lib/propagation-manifest.yaml``. Implementing the
+    protocol directly, as shown here, is the clearest way to read its surface.
+    """
+
+    @property
+    def name(self) -> str:
+        return "my-harness"
+
+    @property
+    def output_path(self) -> Path:
+        # The single native config file this adapter owns on disk.
+        return Path.home() / ".myharness" / "config.md"
+
+    def install(self, profile: dict[str, Any]) -> object:
+        # ``profile`` is the loaded shared-profile dict (rules, skills, hooks...).
+        self.output_path.parent.mkdir(parents=True, exist_ok=True)
+        self.output_path.write_text(self._render(profile), encoding="utf-8")
+        return self.output_path
+
+    def update(self, profile: dict[str, Any]) -> object:
+        return self.install(profile)  # idempotent re-materialization
+
+    def uninstall(self) -> None:
+        self.output_path.unlink(missing_ok=True)
+
+    def is_installed(self) -> bool:
+        return self.output_path.is_file()
+
+    def verify(self) -> bool:
+        return self.output_path.is_file() and self.output_path.stat().st_size > 0
+
+    def _render(self, profile: dict[str, Any]) -> str:
+        # Translate the profile into the harness's native format.
+        rules = profile.get("rules", [])
+        return "\n\n".join(str(rule) for rule in rules)
+```
+
+## Langkah 3: Pasang dan uji
+
+```bash
+pip install -e .
+apothem install --harness my-harness
+apothem verify --harness my-harness
+```
+
+## Langkah 4: Tambahkan ke dokumentasi pyproject.toml
+
+Dokumentasikan harness di `site/content/docs/harnesses/my-harness.mdx` mengikuti
+[templat halaman harness](/docs/harnesses).
+
+## Langkah 5: Ajukan untuk dimasukkan
+
+Buka pull request di repositori Apothem dengan:
+- Paket adapter (atau tautan ke sana)
+- Halaman dokumentasi
+- Uji verifikasi di `tests/packaging/test_myadapter_install.py`

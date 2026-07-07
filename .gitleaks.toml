@@ -1,0 +1,59 @@
+# SPDX-License-Identifier: MIT
+
+# Gitleaks configuration for apothem.
+#
+# Inherits the upstream default ruleset and adds project-specific allowlists
+# for example credentials and documentation snippets that intentionally
+# illustrate secret-shaped strings without carrying live secrets.
+#
+# This is the single canonical gitleaks config for the repository. Both the
+# pre-commit `gitleaks` hook (auto-discovers `.gitleaks.toml` at the repo
+# root) and the CI supply-chain-scan job (`gitleaks detect --source .`)
+# resolve this file — there is no second, divergent config under `config/`.
+
+title = "apothem gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Project-specific exemptions"
+paths = [
+  '''(?i)\.audit/.*''',
+  '''(?i)\.plans/.*''',
+  '''(?i)\.apothem/.*''',
+  '''(?i)^projects/''',
+  '''(?i)^examples/''',
+  '''(?i)^site/content/docs/.*\.mdx?$''',
+  '''(?i).*\.lock$''',
+  # Conformity-test fixtures intentionally embed secret-shaped strings
+  # (AKIA…, ghp_…, BEGIN RSA PRIVATE KEY markers) to verify the
+  # secret-leak-grep validator detects them. The literals carry the
+  # explicit `EXAMPLEFIXTURE` infix so a human reader recognizes them
+  # as fake at a glance; gitleaks is allowlisted for these paths.
+  '''(?i)tests/conformity/.*''',
+  '''(?i)tests/conformity-scenarios/.*''',
+  # The conformance/security auditor's unit tests embed high-entropy,
+  # secret-shaped fixtures (e.g. a 44-char opaque token) to verify that
+  # detect_secrets flags them. The literals are fake test data, not live
+  # secrets; gitleaks is allowlisted for this auditor test module.
+  '''(?i)tests/unit/test_auditor\.py$''',
+]
+
+regexes = [
+  # Common documentation placeholders
+  '''(?i)example[-_]?(?:api[-_]?key|token|secret|password)''',
+  '''(?i)<your[-_].+>''',
+  '''(?i)changeme''',
+  '''(?i)dummy[-_].+''',
+  # Canonical maintainer contacts. The maintainer's email, website, and
+  # GitHub handle are published identity surfaces (LICENSE, AUTHORS,
+  # SECURITY.md, the docs site); matches against these literals are
+  # intentional disclosures, not secret leaks. Each regex is anchored to
+  # the full disclosure form (bare literal, mailto:, or URL with an
+  # optional path tail) so a genuine secret that merely embeds one of
+  # these substrings is never suppressed.
+  '''(?i)^(?:mailto:)?me@ahmedgad\.com$''',
+  '''(?i)^(?:https?://)?(?:www\.)?ahmedgad\.com(?:/[\w./-]*)?$''',
+  '''(?i)^(?:@|https?://(?:www\.)?github\.com/)?ahmed-g-gad(?:/[\w./-]*)?$''',
+]

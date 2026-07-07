@@ -1,0 +1,68 @@
+---
+title: "/plan-review"
+description: "/plan-review — 기존 플랜 스위트에 대한 포렌식 감사 — 프로즈 충실도, 일관성, 품질."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**역할:** 감사자
+**파이프라인 위치:** 중간
+
+기존 플랜 스위트에 대한 포렌식 감사 — 프로즈 충실도, 일관성, 품질.
+
+## 표준 호출
+
+```bash
+/plan-review
+```
+
+인수와 함께:
+
+```bash
+/plan-review [path/to/plan-suite/] [--focus AREA] [--dry-run]
+```
+
+## 입력
+
+생성된 플랜 스위트 + `/plan-generate`에서 나온 `_inputs/handoff-manifest.yml`.
+
+## 출력
+
+`PLAN-NOTES.md`의 검토 스코어카드(`## Review Scorecards`), `PROGRESS.md`의 검토 요약, `PLAN-NOTES.md`의 발견 사항별 수정 영향 맵(대용량 지속 리포트는 `_outputs/`에), 그리고 검토 판정을 담은 보강된 `_inputs/handoff-manifest.yml`.
+
+## 하류
+
+`/plan-design`(조건부 — 아키텍처를 포함하는 스위트만) 다음 `/plan-execute`; 아키텍처를 포함하지 않는 스위트의 경우, `/plan-execute`가 검토 스코어카드를 직접 소비하여 SHARED+ 수준에서 실행을 게이트합니다.
+
+## 워크플로 페이즈
+
+이 명령은 포렌식·블라인드·라인별 감사를 수행한 다음 대화형 Q&A로 다듬습니다:
+
+1. **컨텍스트 로드** — 모든 플랜 스위트 파일(`phases/**/PHASE.md`, 인프라 파일, 리포트)과 상류 핸드오프 매니페스트를 읽습니다. 스위트가 없으면 `Blocked: run /plan-generate first`로 거부합니다.
+2. **감사** — 블라인드 검토 의무 아래에서 차원(프로즈 충실도, 내부 일관성, 완전성, 품질, 위험, 표준, 도메인, 아키텍처, 창의적 품질)을 훑습니다.
+3. **발견 사항 분류** — 발견 사항별 심각도 카운트와 함께 구조화 질의 채널을 통해 각 발견 사항을 처리(수락 · 수정 · 거부 · 보류)합니다.
+4. **사전 발행 게이트 실행** — 검토 보고서와 업데이트된 스코어카드에 대해 15바 게이트를 실행합니다. 실패 시 승격이 차단됩니다.
+5. **검토 발행** — 검토 스코어카드를 `PLAN-NOTES.md`에, 검토 요약을 `PROGRESS.md`에, 그리고 보강된 핸드오프 매니페스트를 작성합니다.
+
+## 실패 모드
+
+| 증상 | 원인 | 복구 |
+|---------|-------|----------|
+| Blocked: run /plan-generate first | 생성된 스위트 없음 | 이 명령이 감사할 스위트를 `/plan-generate`로 생성 |
+| 미해결 발견 사항 잔존 | 감사가 해결되지 않은 결함을 표면화함 | 종단 판정 전에 모든 발견 사항을 처리(수락 · 수정 · 거부 · 보류) |
+| 스코어카드 FAIL | 한 차원이 CONDITIONAL 임계값 아래로 떨어짐 | 실패한 차원을 처리하고 다시 검토 |
+
+## 예시
+
+```bash
+# Dry-run to preview the audit scope
+/plan-review --dry-run
+
+# Audit a named plan suite, focused on one area
+/plan-review path/to/plan-suite/ --focus architecture
+```
+
+## 상호 참조
+
+- [파이프라인 개요](/docs/pipeline)
+- [명령 참조](/docs/reference/commands)

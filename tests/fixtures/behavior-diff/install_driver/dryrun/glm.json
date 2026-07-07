@@ -1,0 +1,143 @@
+[
+  {
+    "detail": {
+      "capability": "agent_memory",
+      "status": "unsupported"
+    },
+    "message": "GLM is a model backend configured via Anthropic/OpenAI-compatible env; it exposes no native agent-memory surface.",
+    "operation": "capability_projection",
+    "outcome": "warning",
+    "path": "src/apothem/harnesses/glm/capabilities.yml"
+  },
+  {
+    "detail": {
+      "capability": "agents",
+      "status": "unsupported"
+    },
+    "message": "GLM is a model backend configured via Anthropic/OpenAI-compatible env; it exposes no native agent surface.",
+    "operation": "capability_projection",
+    "outcome": "warning",
+    "path": "src/apothem/harnesses/glm/capabilities.yml"
+  },
+  {
+    "detail": {
+      "capability": "commands",
+      "status": "unsupported"
+    },
+    "message": "GLM is a model backend configured via Anthropic/OpenAI-compatible env; it exposes no native command surface.",
+    "operation": "capability_projection",
+    "outcome": "warning",
+    "path": "src/apothem/harnesses/glm/capabilities.yml"
+  },
+  {
+    "detail": {
+      "capability": "hooks",
+      "status": "unsupported"
+    },
+    "message": "GLM is a model backend configured via Anthropic/OpenAI-compatible env; it exposes no native hook surface.",
+    "operation": "capability_projection",
+    "outcome": "warning",
+    "path": "src/apothem/harnesses/glm/capabilities.yml"
+  },
+  {
+    "detail": {
+      "capability": "mcp_servers",
+      "status": "unsupported"
+    },
+    "message": "GLM is a model backend configured via Anthropic/OpenAI-compatible env; it exposes no native MCP-server surface.",
+    "operation": "capability_projection",
+    "outcome": "warning",
+    "path": "src/apothem/harnesses/glm/capabilities.yml"
+  },
+  {
+    "detail": {
+      "capability": "output_styles",
+      "status": "unsupported"
+    },
+    "message": "GLM is a model backend configured via Anthropic/OpenAI-compatible env; it exposes no native output-style surface.",
+    "operation": "capability_projection",
+    "outcome": "warning",
+    "path": "src/apothem/harnesses/glm/capabilities.yml"
+  },
+  {
+    "detail": {
+      "capability": "rules",
+      "status": "unsupported"
+    },
+    "message": "GLM is a model backend configured via Anthropic/OpenAI-compatible env; it exposes no native rule surface.",
+    "operation": "capability_projection",
+    "outcome": "warning",
+    "path": "src/apothem/harnesses/glm/capabilities.yml"
+  },
+  {
+    "detail": {
+      "capability": "skills",
+      "status": "unsupported"
+    },
+    "message": "GLM is a model backend configured via Anthropic/OpenAI-compatible env; it exposes no native skill surface.",
+    "operation": "capability_projection",
+    "outcome": "warning",
+    "path": "src/apothem/harnesses/glm/capabilities.yml"
+  },
+  {
+    "detail": {
+      "capability": "statuslines",
+      "status": "unsupported"
+    },
+    "message": "GLM is a model backend configured via Anthropic/OpenAI-compatible env; it exposes no native statusline surface.",
+    "operation": "capability_projection",
+    "outcome": "warning",
+    "path": "src/apothem/harnesses/glm/capabilities.yml"
+  },
+  {
+    "detail": {
+      "capability": "sub_agent_dispatch",
+      "status": "unsupported"
+    },
+    "message": "GLM is a model backend configured via Anthropic/OpenAI-compatible env; it exposes no native sub-agent-dispatch surface.",
+    "operation": "capability_projection",
+    "outcome": "warning",
+    "path": "src/apothem/harnesses/glm/capabilities.yml"
+  },
+  {
+    "detail": {
+      "capability": "system_prompt_templates",
+      "status": "unsupported"
+    },
+    "message": "GLM is a model backend configured via Anthropic/OpenAI-compatible env; it exposes no native system-prompt-template surface.",
+    "operation": "capability_projection",
+    "outcome": "warning",
+    "path": "src/apothem/harnesses/glm/capabilities.yml"
+  },
+  {
+    "detail": {
+      "capability": "templates",
+      "status": "unsupported"
+    },
+    "message": "GLM is a model backend configured via Anthropic/OpenAI-compatible env; it exposes no native template surface.",
+    "operation": "capability_projection",
+    "outcome": "warning",
+    "path": "src/apothem/harnesses/glm/capabilities.yml"
+  },
+  {
+    "detail": {
+      "capability": "tool_surface_restrictions",
+      "status": "unsupported"
+    },
+    "message": "GLM is a model backend configured via Anthropic/OpenAI-compatible env; it exposes no native tool-surface-restriction surface.",
+    "operation": "capability_projection",
+    "outcome": "warning",
+    "path": "src/apothem/harnesses/glm/capabilities.yml"
+  },
+  {
+    "detail": {
+      "diff": "--- a/glm.toml\n+++ b/glm.toml\n@@ -0,0 +1,58 @@\n+# SPDX-License-Identifier: MIT\n+\n+# GLM (Z.ai) backend-provider configuration — operator-owned.\n+#\n+# GLM is a MODEL BACKEND, not a coding-agent tool. Z.ai ships no first-party\n+# GLM coding CLI; instead, an Anthropic-compatible or OpenAI-compatible coding\n+# agent is pointed at GLM by setting the backend base URL and an auth token.\n+# This file records both compatibility surfaces plus operator-configurable\n+# model-mapping placeholders so any compatible agent can be wired to the GLM\n+# model family. Replace every <...> placeholder; the auth token is a\n+# placeholder, never a committed secret.\n+#\n+# This file is operator-owned. GLM is a model backend, not a rule-bearing\n+# coding agent, so Apothem projects NO shared-profile instruction content here\n+# (no rules, no opted-in behaviors — a backend exposes none): the file carries\n+# only the backend wiring below. Apothem writes this clean template on install;\n+# thereafter the file is yours. Your own backend keys and edits route through\n+# the per-file confirmation gate on every subsequent `apothem install` /\n+# `apothem update` rather than being silently overwritten.\n+#\n+# Vendor surface conventions are pinned at\n+# src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md (snapshotted against the\n+# live Z.ai documentation).\n+\n+[provider]\n+# Display label for the GLM model family. No specific model id is pinned here:\n+# model ids are version-volatile, so the operator selects one from the current\n+# Z.ai catalog at install time (see the [models] table below).\n+name = \"GLM (Z.ai)\"\n+family = \"glm\"\n+docs = \"https://docs.z.ai/\"\n+\n+# Anthropic-compatible backend. Point an Anthropic-compatible coding agent at\n+# GLM by exporting these environment variables before launching the agent.\n+[backends.anthropic_compatible]\n+base_url = \"https://api.z.ai/api/anthropic\"\n+# Environment variables an operator sets so an Anthropic-compatible agent\n+# routes to GLM instead of the default Anthropic endpoint.\n+[backends.anthropic_compatible.env]\n+ANTHROPIC_BASE_URL = \"https://api.z.ai/api/anthropic\"\n+ANTHROPIC_AUTH_TOKEN = \"<YOUR_ZAI_API_KEY>\"\n+API_TIMEOUT_MS = \"<TIMEOUT_MS>\"\n+\n+# OpenAI-compatible backend. Point an OpenAI-compatible coding agent at GLM by\n+# setting its base URL to this endpoint and supplying the API key.\n+[backends.openai_compatible]\n+base_url = \"https://api.z.ai/api/coding/paas/v4\"\n+[backends.openai_compatible.env]\n+OPENAI_BASE_URL = \"https://api.z.ai/api/coding/paas/v4\"\n+OPENAI_API_KEY = \"<YOUR_ZAI_API_KEY>\"\n+\n+# Operator-configurable model-mapping placeholders. Apothem pins no model id\n+# (version-volatile); the operator fills these from the current GLM catalog at\n+# https://docs.z.ai/ so the chosen agent's logical roles map to GLM models.\n+[models]\n+default = \"<GLM_MODEL_ID>\"\n+fast = \"<GLM_FAST_MODEL_ID>\"\n+reasoning = \"<GLM_REASONING_MODEL_ID>\"\n",
+      "ownership_class": "operator-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "write_text",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/providers/glm.toml",
+    "source": "<APOTHEM_SRC>/harnesses/glm/templates/glm.toml"
+  }
+]

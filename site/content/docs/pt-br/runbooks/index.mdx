@@ -1,0 +1,21 @@
+---
+title: "Runbooks"
+description: "Runbooks do Apothem: procedimentos operacionais passo a passo para versões, configuração do publicador, habilitação do Pages, recuperação e criação de adaptadores."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Procedimentos operacionais para mantenedores. Cada runbook é um procedimento
+sequenciado e sem contexto: ele leva um estado inicial conhecido a um estado
+final verificado, escrito de modo que um colaborador competente possa segui-lo
+sem contexto prévio.
+
+## Páginas
+
+| Página | Descrição |
+|------|-------------|
+| [Habilitação do Pages](/docs/runbooks/pages-enablement) | Leva `apothem.ahmedgad.com` de uma configuração nova do GitHub Pages até uma página de destino HTTPS com `200 OK`. |
+| [Ciclo de versões](/docs/runbooks/release-cycle) | Leva uma versão `vX.Y.Z` de uma árvore de trabalho limpa até as superfícies verificadas do GitHub Release e do npm. |
+| [Configuração da conta do publicador](/docs/runbooks/publisher-account-setup) | Configura o publicador confiável do npmjs.com para `@ahmed-g-gad/apothem` e os pré-requisitos da versão no lado do GitHub. |
+| [Recuperação de versões](/docs/runbooks/release-recovery) | Restaura `ahmed-g-gad/apothem` a um estado funcional quando a sequência de transição da versão falha no meio do caminho. |
+| [Criação de um novo adaptador de ambiente](/docs/runbooks/new-harness-adapter-authoring) | Cria e publica um novo adaptador de ambiente para inclusão de primeira parte. |

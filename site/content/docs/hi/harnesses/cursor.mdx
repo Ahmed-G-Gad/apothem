@@ -1,0 +1,85 @@
+---
+title: "Cursor"
+description: "Cursor (GA) के लिए Apothem टूल अडैप्टर।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**विक्रेता:** Anysphere
+**इंस्टॉल नाम:** `cursor`
+**स्थिति:** GA
+**नेटिव कॉन्फ़िग:** प्रोजेक्ट रूट में `.cursor/rules/`
+
+## इंस्टॉलेशन
+
+```bash
+apothem install --harness cursor --project /path/to/project
+```
+
+अडैप्टर साझा Apothem नियमों और गवर्नेंस सतह से प्रोजेक्ट-स्कोप वाली एक `.mdc`
+नियम फ़ाइल रेंडर करता है।
+
+**लिखी गई फ़ाइलें:** `<project>/.cursor/rules/apothem-rules.mdc`
+
+## प्रोफ़ाइल से नेटिव कॉन्फ़िग की मैपिंग
+
+अडैप्टर Apothem की साझा प्रोफ़ाइल पढ़ता है और हर `apothem install` या
+`apothem update` रन पर प्रोजेक्ट नियम फ़ाइल रेंडर करता है। साझा प्रोफ़ाइल सत्य का
+स्रोत है; जनित फ़ाइल में प्रोजेक्ट-स्थानीय संपादनों का बैकअप अगली सिंक द्वारा
+Apothem-प्रबंधित सामग्री को बदलने से पहले ले लिया जाता है।
+
+## संगतता टिप्पणियाँ
+
+Cursor 0.45+ `.cursor/rules/` के माध्यम से प्रोजेक्ट-स्तरीय निर्देशों का समर्थन
+करता है। अडैप्टर डिफ़ॉल्ट रूप से प्रोजेक्ट-स्कोप वाली `.cursor/rules/` डायरेक्टरी
+में लिखता है; Cursor में इस अडैप्टर के प्रबंधन हेतु कोई प्रलेखित, फ़ाइल-आधारित
+उपयोगकर्ता-वैश्विक नियम पथ नहीं है।
+
+## सत्यापन
+
+```bash
+apothem verify --harness cursor --project /path/to/project
+```
+
+verify कमांड पुष्टि करता है कि:
+
+1. नेटिव कॉन्फ़िग अपेक्षित पथ पर मौजूद है।
+2. साझा प्रोफ़ाइल के सभी अनिवार्य फ़ील्ड मौजूद हैं।
+3. अडैप्टर-विशिष्ट सत्यापन रूटीन सफलता की रिपोर्ट करता है।
+
+## अपडेट करना
+
+```bash
+apothem update --harness cursor --project /path/to/project
+```
+
+मौजूदा साझा प्रोफ़ाइल स्थिति से प्रोजेक्ट नियम फ़ाइल को फिर से व्युत्पन्न करता है।
+
+## अनइंस्टॉल करना
+
+```bash
+apothem uninstall --harness cursor --project /path/to/project
+```
+
+अडैप्टर द्वारा लिखी गई नेटिव कॉन्फ़िग फ़ाइलें हटाता है।
+साझा प्रोफ़ाइल YAML और Apothem इंजन अप्रभावित रहते हैं।
+
+## अनुरूपता गेट
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## समस्या निवारण
+
+| लक्षण | समाधान |
+|---------|-----|
+| कॉन्फ़िग फ़ाइल नहीं मिली | `apothem install --harness cursor --project /path/to/project` दोबारा चलाएँ |
+| सत्यापन विफल | `apothem update --harness cursor --project /path/to/project` चलाएँ, फिर दोबारा सत्यापित करें |
+| अप्रत्याशित कॉन्फ़िग सामग्री | `~/.config/apothem/profile.yaml` या `--profile PATH` जाँचें, फिर `apothem update --harness cursor --project /path/to/project` दोबारा चलाएँ |
+
+## कॉन्फ़िगरेशन नॉब्स
+
+| फ़्लैग | डिफ़ॉल्ट | विवरण |
+|------|---------|-------------|
+| `--dry-run` | `false` | फ़ाइलें लिखे बिना इंस्टॉल का पूर्वावलोकन करें। |

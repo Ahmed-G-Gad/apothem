@@ -1,0 +1,42 @@
+---
+title: "Apothem 对比手工 Codex 配置"
+description: "手工维护 Codex 的 AGENTS.md、钩子、技能和代理，对比从 Apothem 的共享配置档案安装它们。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Codex 从 `AGENTS.md` 读取用户指令，从 `hooks.json` 或 `config.toml` 加载钩子，
+在 `agents/` 下发现自定义代理，并从共享的 Codex 技能根目录发现技能。Apothem 的
+codex 适配器会从共享配置档案安装这些表面，同时不动运维者自有的 `config.toml`
+设置。
+
+## 工作量对比
+
+| 任务 | 手工配置 | Apothem 托管 |
+| ---- | --------------- | --------------- |
+| 编写 `AGENTS.md` | 手工编辑用户指令 | 从 Codex 引导模板安装 |
+| 编写钩子 | 手写 `hooks.json` 或 TOML 钩子表 | 安装到 `~/.codex/hooks.json`，并在 `~/.codex/hooks/` 下放置 Apothem 钩子辅助文件 |
+| 编写自定义代理 | 在 `~/.codex/agents/` 下手写 TOML 文件 | 从 Apothem 的 Markdown 代理转换而来 |
+| 编写可复用命令 | 一次一个目录地手工构建技能 | 包装为 `~/.agents/skills/*/SKILL.md` |
+| 让规则与其他环境保持对齐 | 手工，逐工具 | 在 `apothem update` 时自动完成 |
+| 验证配置是否正确 | 手工检查 | `apothem verify --harness codex` |
+
+## Apothem 管理什么
+
+codex 适配器会安装 `AGENTS.md`、`hooks.json`、钩子辅助文件、转换后的自定义代理
+以及生成的技能。它不会覆盖 `~/.codex/config.toml`；模型、沙箱、审批、MCP 以及其他
+运行时偏好仍归运维者所有。
+
+## 迁移路径
+
+1. 如果你还没有创建共享配置档案，运行 `apothem profile init`。
+2. 把你现有 `AGENTS.md` 中的规则迁入共享语料库。
+3. 在 Codex 中保留现有的 `config.toml` 运行时设置，除非你选择在别处手工管理它们。
+4. 运行 `apothem install --harness codex` 来安装 Codex 原生表面。
+5. 运行 `apothem verify --harness codex` 来确认文件已落地。
+6. 之后的每次更改都使用 `apothem update --harness codex`。
+
+## 接下来阅读
+
+- [Codex 适配器参考](/docs/harnesses/codex)
+- [对比概览](/docs/comparison)

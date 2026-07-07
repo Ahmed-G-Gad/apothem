@@ -1,0 +1,68 @@
+---
+title: "/plan-generate"
+description: "/plan-generate — Generiert eine vollständige Master-Plan-Suite aus der verfassten `_spec/spec.md`."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rolle:** Generator
+**Pipeline-Position:** mittig
+
+Generiert eine vollständige Master-Plan-Suite aus der verfassten `_spec/spec.md`.
+
+## Kanonischer Aufruf
+
+```bash
+/plan-generate
+```
+
+Mit Argumenten:
+
+```bash
+/plan-generate [path/to/prose.md] [--mode NEW|OVERHAUL] [--seriousness LEVEL] [--context CONTEXT] [--mission MISSION] [--domain DOMAIN] [--dry-run]
+```
+
+## Eingaben
+
+Die verfasste `_spec/spec.md` + `_inputs/handoff-manifest.yml` aus `/plan-spec` (oder vom Operator bereitgestellte Prosa).
+
+## Ausgaben
+
+`PREAMBLE.md`, `MASTER-PLAN.md`, `PROGRESS.md`, `PLAN-NOTES.md` und die phasenweisen `phases/**/PHASE.md`-Dateien plus das erweiterte `_inputs/handoff-manifest.yml`.
+
+## Nachgelagert
+
+/plan-review oder /plan-execute (nachgelagert)
+
+## Workflow-Phasen
+
+Der Befehl generiert eine vollständige Master-Plan-Suite aus der verfassten Spezifikation:
+
+1. **Anforderungen aufnehmen** — `_spec/spec.md` und das vorgelagerte Übergabe-Manifest lesen; mit `Blocked: run /plan-spec first` verweigern, wenn die Spezifikation fehlt.
+2. **Entdecken** — Schweregrad-skalierte Entdeckung mit den Fünf Kognitiven Filtern ausführen; jede Lücke an autoritativen Daten über den strukturierten Rückfrage-Kanal auflösen.
+3. **Zerlegen** — Die Arbeit in einen azyklischen Phasengraphen mit expliziter Abhängigkeitsreihenfolge aufbrechen.
+4. **Die Suite ausgeben** — `PREAMBLE.md`, `MASTER-PLAN.md`, `PROGRESS.md`, `PLAN-NOTES.md` und jede `phases/NN-topic/PHASE.md` verfassen.
+5. **Das Pre-Emission-Gate ausführen** — Den Fünfzehn-Balken-Durchlauf gegen jedes ausgegebene Artefakt ausführen; ein Fehlschlag blockiert die Operator-Freigabe, bis er behoben ist.
+
+## Fehlermodi
+
+| Symptom | Ursache | Behebung |
+|---------|-------|----------|
+| Blocked: run /plan-spec first | Keine verfasste `_spec/spec.md` | Führe `/plan-spec` aus, um die Spezifikation zu verfassen und das Manifest auszugeben |
+| Generierung gegen eine `_inputs/`-Datei | Spezifikation noch mitten in der Elicitation | Zuerst `_inputs/forge.md` über `/plan-spec` zu `_spec/spec.md` befördern |
+| Pre-Emission-Balken schlägt fehl | Ein ausgegebenes Artefakt besteht das Gate nicht | Den fehlerhaften Balken vor der Operator-Freigabe beheben |
+
+## Beispiele
+
+```bash
+# Dry-run zur Vorschau des generierten Phasengraphen
+/plan-generate --dry-run
+
+# Eine Suite aus verfasster Prosa generieren
+/plan-generate path/to/prose.md --mode NEW
+```
+
+## Querverweise
+
+- [Pipeline-Überblick](/docs/pipeline)
+- [Befehlsreferenz](/docs/reference/commands)

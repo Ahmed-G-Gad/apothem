@@ -1,0 +1,47 @@
+---
+title: "Apothem vs. raw CodeBuddy rules"
+description: "Why route CodeBuddy's project rules through Apothem instead of hand-authoring .codebuddy/rules files per project."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+CodeBuddy reads project rules from `.codebuddy/rules/*.md`. You can author those
+files by hand, per project, forever. Apothem's codebuddy adapter renders one of
+them from the shared profile and keeps it consistent across every harness and
+every project. This page contrasts hand-maintaining that config against managing
+it with Apothem.
+
+## Effort comparison
+
+| Task | Raw hand-config | Apothem-managed |
+| ---- | --------------- | --------------- |
+| Author rules | Copy-paste the same disciplines into `.codebuddy/rules/` per project | Rendered from one shared corpus |
+| Source of truth | Each project's own files | One canonical cohort |
+| Keep rules aligned across harnesses | Re-derive per tool | Projected automatically |
+| Update the rules | Hand-edit every project | `apothem update --harness codebuddy --project <path>` |
+| Remove the config | Manual delete | `apothem uninstall` with timestamped backup |
+
+## What Apothem manages
+
+The codebuddy adapter renders the shared rules into a dedicated
+`<project>/.codebuddy/rules/apothem-rules.md` file and writes nothing else. Your
+`CODEBUDDY.md` memory file, your `.codebuddy/settings.json` permissions and MCP
+servers, and any other rules files you author stay entirely operator-owned — the
+adapter recognises those surfaces but never edits them. Every change to the
+shared rules re-renders the file on the next `apothem update`.
+
+## Migration path
+
+1. Run `apothem profile init` to create the shared profile if you have not yet.
+2. Move the disciplines from your existing `.codebuddy/rules/` files into the
+   shared corpus.
+3. Run `apothem install --harness codebuddy --project <path>` to render the
+   `apothem-rules.md` file alongside your own untouched rules.
+4. Run `apothem verify --harness codebuddy --project <path>` to confirm the
+   config landed.
+5. Use `apothem update --harness codebuddy --project <path>` for every later
+   change.
+
+## Read next
+
+- [CodeBuddy adapter reference](/docs/harnesses/codebuddy)
+- [Comparison overview](/docs/comparison)

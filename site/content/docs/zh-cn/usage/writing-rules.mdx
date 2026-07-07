@@ -1,0 +1,60 @@
+---
+title: "编写规则"
+description: "编写、限定作用域并维护 Apothem 行为规则。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+规则是位于 `src/apothem/rules/` 中、扩展名为 `.md` 的 Markdown 文件。
+
+## 规则前置元数据
+
+```yaml
+---
+name: "..."
+description: "..."
+pathFilter: ""            # empty string for always-on; a glob for path-filtered
+alwaysApply: true         # true for always-on; false for path-filtered
+---
+```
+
+## 规则作用域
+
+| 作用域 | 应用时机 |
+|-------|-------------|
+| `always-on` | 每个会话、每个文件 |
+| `path-filtered` | 仅当活动文件匹配 `path-filter` 时 |
+| `operator-selected` | 操作者在 settings.json 中显式启用 |
+
+## 示例规则
+
+```markdown
+---
+name: "python-conventions"
+description: "Python style conventions for this project"
+pathFilter: "**/*.py"
+alwaysApply: false
+---
+
+# Python conventions
+
+- Use type annotations on all public functions.
+- Maximum line length: 88 characters.
+- Prefer explicit over implicit.
+```
+
+## 将规则应用于各环境
+
+编写规则后，请更新每个已安装的环境适配器。运行 `apothem harnesses list` 查看
+已安装的集合，然后为每个环境各调用一次 update：
+
+```bash
+apothem update --harness claude-code
+apothem update --harness cursor
+```
+
+## 规则验证
+
+```bash
+python -m apothem.conformity.gate --check frontmatter
+```

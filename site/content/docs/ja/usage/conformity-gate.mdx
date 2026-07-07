@@ -1,0 +1,50 @@
+---
+title: "適合性ゲート"
+description: "Apothem の適合性ゲートを実行してエコシステムの健全性を検証します。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+`src/apothem/conformity/gate.py` の適合性ゲートは、オペレーターが作成する
+あらゆる成果物に対して 15 項目の機械的チェックを実行します。
+
+## ゲートの実行
+
+```bash
+python -m apothem.conformity.gate
+```
+
+## ゲートのバー
+
+| バー | チェック | 種別 |
+|-----|-------|------|
+| M1 | スコープの整合性 | 推論 |
+| M2 | 計画内部の分離（CM-7） | 機械的 |
+| M3 | 標準への準拠 | 推論 |
+| M4 | フロントマターの妥当性 | 機械的 |
+| M5 | 禁止フレーズなし | 機械的 |
+| M6 | 編集上の開示 | 推論 |
+| M7 | 成果物に計画参照なし | 機械的 |
+| M8 | 著作権ヘッダーの存在 | 機械的 |
+| M9 | 誠実な評価 | 推論 |
+| M10 | 命名規律 | 機械的 |
+| M11 | スプリント装置 | 推論 |
+| M12 | 正準レイアウト | 機械的 |
+| M13 | コードの作り込み | 推論 |
+| M14 | システム的参加 | 推論 |
+| M15 | 人間による著作 | 機械的 |
+
+## 対象を絞ったチェック
+
+```bash
+# 単一のチェックを実行
+python -m apothem.conformity.gate --check multi-surface-coherence
+
+# 特定のファイルに対して実行
+python -m apothem.conformity.gate src/apothem/rules/my-rule.md
+```
+
+## CI 統合
+
+ゲートは `.github/workflows/conformity.yml` を介して、プッシュごとに CI で実行
+されます。

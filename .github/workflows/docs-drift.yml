@@ -1,0 +1,130 @@
+# SPDX-License-Identifier: MIT
+
+# Documentation single-source-of-truth and stale-reference drift gate.
+#
+# Two structural documentation invariants are enforced here:
+#
+#   1. no-toplevel-docs — the documentation source of truth is the Next.js
+#      + Fumadocs site under `site/`. A bare `docs/` directory at the
+#      repository root is a competing documentation source and is forbidden.
+#      The standalone matcher `apothem.conformity.no_toplevel_docs_grep` is
+#      run in --strict mode so a root `docs/` directory fails the job.
+#
+#   2. reference-sync — the source-generated reference pages under
+#      `site/content/docs/reference/` (Fumadocs MDX) are regenerated from
+#      Apothem's own source of truth (the CLI command tree, the harness
+#      registry, the profile JSON Schema, and the rule/command/skill/agent/hook
+#      directories) by `site/scripts/update-reference-inventory.mjs`. When a
+#      documented source surface changes without the reference pages being
+#      regenerated, the pages drift. This job regenerates them and fails on any
+#      diff, naming the violation and printing the drift.
+#
+# The mjs regenerator spawns `python -m apothem.cli.reference_export`, so the
+# job provisions both Node and Python. Apothem ships as a self-contained
+# runtime: the emitter runs straight from the checked-out source tree via
+# `PYTHONPATH=src`.
+#
+# SHA-pinning policy: every `uses:` reference is pinned by 40-character commit
+# SHA followed by a `# vMAJOR.MINOR.PATCH` comment, identical to the canonical
+# policy documented in ci.yml.
+
+name: Docs Drift Gate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'site/**'
+      - 'CHANGELOG.md'
+      - '.github/workflows/docs-drift.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'site/**'
+      - 'CHANGELOG.md'
+      - '.github/workflows/docs-drift.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-drift-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  no-toplevel-docs:
+    name: no-toplevel-docs
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 5
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: "3.12"
+      - name: Forbid a top-level docs/ directory
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
+        run: |
+          set -euo pipefail
+          python -m apothem.conformity.gate --check no-toplevel-docs --strict .
+
+  reference-sync:
+    name: reference-sync
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 10
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+        with:
+          node-version-file: site/.nvmrc
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: "3.12"
+      - name: Install reference-emitter runtime dependencies
+        # The reference emitter introspects the live Click command tree, so the
+        # non-vendored third-party runtime deps (click, rich) must be importable.
+        # apothem itself runs straight from the source tree via PYTHONPATH=src.
+        run: python -m pip install click rich pyyaml jsonschema
+      - name: Install docs dependencies
+        working-directory: site
+        run: npm ci
+      - name: Regenerate source-generated reference pages
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
+        run: node site/scripts/update-reference-inventory.mjs
+      - name: Fail on reference-page drift
+        run: |
+          set -euo pipefail
+          if ! git diff --exit-code site/content/docs/reference/ site/content/docs/changelog.mdx; then
+            echo "Reference docs drifted: a documented source surface (CLI / harness-registry / profile schema / rule-command-skill-agent-hook inventory / root CHANGELOG.md) changed without regenerating the reference pages."
+            echo "Run: PYTHONPATH=src node site/scripts/update-reference-inventory.mjs and commit the result."
+            git --no-pager diff site/content/docs/reference/ site/content/docs/changelog.mdx
+            exit 1
+          fi

@@ -1,0 +1,124 @@
+---
+title: "install"
+description: "مرجع واجهة سطر الأوامر لأمر apothem install."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+يثبّت تهيئة مُحَوِّل مساعد برمجي من الملف الشخصي المشترك.
+
+## الموجز
+
+```
+apothem install --harness NAME|all [--profile PATH] [--dry-run]
+                 [--project PATH]
+                 [--quiet|-q] [--verbose|-v]
+                 [--format plain|json] [--json] [--no-color]
+```
+
+يُحمِّل الملف الشخصي المشترك ويتحقّق منه، ويختار مُحَوِّلًا مُسمّى أو مجموعة <bdi>`all`</bdi> على نطاق السجلّ بأكمله، ويتحقّق من خطّة التجسيد، ويكتب التهيئة الأصلية للمساعد البرمجي إضافةً إلى أفواج الدعم. تتطلّب المُحَوِّلات بنطاق المشروع الخيار <bdi>`--project PATH`</bdi>.
+
+يُحَلّ الاسم البديل بالصيغة المستمرّة <bdi>`apothem installing`</bdi> إلى المعالج نفسه.
+
+## معاينة نطاق التأثير
+
+يتفرّع <bdi>`install --harness all`</bdi> إلى نطاقات مختلطة: تكتب المُحَوِّلات بنطاق المشروع تحت الجذر <bdi>`--project`</bdi> المُقدَّم، بينما تكتب المُحَوِّلات بنطاق المستخدم تحت دليلك المنزلي — خارج ذلك الجذر. قبل كتابة أي ملف، يطبع الأمر الأهداف الملموسة مُجمَّعةً تحت عنوانين: تلك الموجودة داخل جذر المشروع وتلك الموجودة تحت دليلك المنزلي.
+
+عندما يكتب التحديد خارج جذر المشروع، يحرس تأكيدٌ تفاعلي عمليات الكتابة المتجذّرة في الدليل المنزلي. يتابع كلٌّ من <bdi>`--yes`</bdi>، والصدفة غير التفاعلية (بدون <bdi>TTY</bdi>)، و<bdi>`--dry-run`</bdi>، و<bdi>`--format json`</bdi> دون مطالبة؛ ولا يكتب <bdi>`--dry-run`</bdi> و<bdi>`--format json`</bdi> أي شيء. ويؤدّي رفض المطالبة إلى الإجهاض قبل كتابة أي ملف.
+
+## ملاحظات القدرات
+
+يُسقِط كل مُحَوِّل القدرات التي يدعمها مساعده البرمجي أصليًّا فقط؛ أمّا القدرات التي لا سطح أصلي لها فيُبلَّغ عنها، ولا تُسقَط بصمت. وفي الوضع <bdi>plain</bdi> يكون ذلك ملاحظةً مُجمَّعة واحدة لكل مساعد برمجي (مثلًا <bdi>`Note: <harness> - 9 capabilities not projected; pass --verbose for detail`</bdi>)؛ وتحت <bdi>`--verbose`</bdi> تطبع كل قدرة سطر تبريرها الخاص. ويحمل غلاف <bdi>`--format json`</bdi> دائمًا مصفوفة <bdi>`warnings`</bdi> الكاملة بصرف النظر عن مستوى الإسهاب.
+
+## الخيارات
+
+| الخيار | الوصف |
+|---|---|
+| `--harness NAME` | مُحَوِّل المساعد البرمجي المراد تثبيته، أو `all` للمجموعة على نطاق السجلّ بأكمله (مطلوب). شغّل <bdi>`apothem harnesses list`</bdi> للأسماء المُسجَّلة. |
+| `--profile PATH` | مسار <bdi>YAML</bdi> للملف الشخصي المشترك. القيمة الافتراضية <bdi>`~/.config/apothem/profile.yaml`</bdi>. |
+| `--dry-run` | معاينة التثبيت دون كتابة ملفات. |
+| `--project PATH` | جذر المشروع للمساعدات البرمجية بنطاق المشروع. |
+| `--quiet`, `-q` | يُخمِد المخرجات المعلوماتية؛ تُصدَر الأخطاء فقط. |
+| `--verbose`, `-v` | يطبع تبرير كل قدرة غير مُسقَطة بدلًا من الملاحظة المُجمَّعة لكل مساعد برمجي. |
+| `--format plain\|json` | تنسيق المخرجات (الافتراضي: `plain`). |
+| `--json` | اختصار لـ `--format json`. |
+| `--no-color` | يُعطِّل رموز ألوان <bdi>ANSI</bdi> في المخرجات. |
+| `-h`, `--help` | يعرض المساعدة ويخرج. |
+
+## مخرجات JSON
+
+عند تمرير <bdi>`--json`</bdi> (أو <bdi>`--format json`</bdi>)، يُكتَب مستند <bdi>JSON</bdi> واحد إلى <bdi>stdout</bdi>:
+
+```json
+{
+  "status": "success",
+  "command": "install",
+  "action": "installed",
+  "harness": "claude-code",
+  "profile_path": "C:\\Users\\Example\\.config\\apothem\\profile.yaml",
+  "project": null,
+  "files_written": ["C:\\Users\\Example\\.claude\\settings.json"],
+  "results": [],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+لـ <bdi>`--dry-run`</bdi>:
+
+```json
+{
+  "status": "dry_run",
+  "command": "install",
+  "action": "dry_run",
+  "harness": "claude-code",
+  "files_written": [],
+  "results": [],
+  "warnings": [],
+  "error": null
+}
+```
+
+تستخدم أخطاء التحقّق المتوقّعة الغلاف نفسه وتتضمّن كائن <bdi>error</bdi>:
+
+```json
+{
+  "status": "error",
+  "command": "install",
+  "harness": "all",
+  "files_written": [],
+  "error": {
+    "code": "project.required",
+    "field": "project",
+    "reason": "project-scope harnesses require --project: cursor, gemini-cli, github-copilot, windsurf.",
+    "fix": "Pass --project PATH or select only user-scope harnesses."
+  }
+}
+```
+
+## أمثلة
+
+```bash
+apothem install --harness claude-code
+apothem install --harness claude-code --dry-run
+apothem install --harness cursor --project . --profile ~/profile.yaml --json
+apothem install --harness all --project . --dry-run --json
+apothem Installing --harness claude-code   # continuous-form alias
+apothem installing --harness claude-code   # lowercase variant
+```
+
+## رموز الخروج
+
+| الرمز | المعنى |
+|---|---|
+| 0 | تم تثبيت المُحَوِّل بنجاح أو خُطِّط لـ dry-run بنظافة |
+| 1 | خطأ متوقَّع في التحقّق أو الملف الشخصي أو المساعد البرمجي أو المشروع أو المُحَوِّل |
+| 2 | تجسيد دفعي جزئي بعد عملية كتابة واحدة على الأقل |
+
+## انظر أيضًا
+
+- <bdi>`apothem installing`</bdi> — اسم بديل بالصيغة المستمرّة لهذا الأمر (مُوثَّق هنا؛ تقبل واجهة سطر الأوامر كلتا الصيغتين)
+- [apothem update](/docs/cli-reference/update) — إعادة تطبيق الملف الشخصي الحالي على مساعد برمجي
+- [apothem verify](/docs/cli-reference/verify) — تأكيد أن المُحَوِّل فعّال
+- [البدء](/docs/install) — دليل التثبيت الكامل

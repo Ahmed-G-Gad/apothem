@@ -1,0 +1,56 @@
+---
+title: "خطّاف أدنى"
+description: "مثال خطّاف <bdi>Apothem</bdi> أدنى — إطلاق فحص عند كل كتابة ملف."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+يُظهِر هذا المثال أصغر خطّاف <bdi>Apothem</bdi> ممكن: خطّاف <bdi>PreToolUse</bdi>
+يُطلَق قبل كل استدعاء لأداة <bdi>`Write`</bdi> ويُسجِّل المسار الهدف.
+
+## نص الخطّاف
+
+```python
+# src/apothem/hooks/log_writes.py
+import json, sys
+
+data = json.load(sys.stdin)
+path = data.get("tool_input", {}).get("file_path", "unknown")
+print(f"[apothem] Writing to: {path}", file=sys.stderr)
+sys.exit(0)  # exit 0 = proceed; non-zero = block
+```
+
+## التسجيل في settings.json
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python src/apothem/hooks/log_writes.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## اختبار الخطّاف
+
+أجرِ أي كتابة ملف في <bdi>Claude Code</bdi> وراقب خرج <bdi>stderr</bdi> في لوحة
+تتبّع الخطّاف.
+
+## حجب الكتابات
+
+غيِّر <bdi>`sys.exit(0)`</bdi> إلى <bdi>`sys.exit(1)`</bdi> واطبع كتلة
+<bdi>JSON</bdi> للحجب إلى <bdi>stdout</bdi>:
+
+```python
+print(json.dumps({"decision": "block", "reason": "blocked by log_writes"}))
+sys.exit(1)
+```

@@ -1,0 +1,107 @@
+---
+title: "Diagrama do pipeline de CI/CD"
+description: "Mapa visual e detalhamento por faixas dos estágios do fluxo de trabalho de build, teste, lint, segurança e publicação que controlam cada alteração de código e cada release."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**O mapa estrutural do fluxo de trabalho de build · validação · publicação que
+controla cada alteração no ecossistema do Apothem.** Este documento instala a
+superfície de visualização; os arquivos concretos de fluxo de trabalho do GitHub
+Actions e o ferramental de release chegam depois, sob a instalação de prontidão
+para produção.
+
+## Forma do pipeline
+
+```mermaid
+%%{ init: { "theme": "neutral" } }%%
+%% verified: 2026-04-27 %%
+%% provenance: pyproject.toml + scripts/dev/validate_ecosystem.py + scripts/dev/validate_hooks.py %%
+%% cross-reference: site/content/docs/developer-guide.mdx (contributor workflow) %%
+flowchart LR
+    accTitle: CI/CD pipeline shape
+    accDescr: Left-to-right flowchart of the apothem CI CD pipeline showing build, test, lint, type-check, security scan, docs build, package, sign, and publish stages with branch protection gates between them.
+    subgraph Trigger["Trigger surface"]
+        PR["Pull request opened or updated"]
+        PUSH["Push to main"]
+        TAG["Tag release vX.Y.Z"]
+    end
+    subgraph Static["Static analysis lane"]
+        LINT["Ruff lint + format check"]
+        TYPE["Mypy strict"]
+        MD["markdownlint"]
+        FRONT["Frontmatter validator"]
+    end
+    subgraph Test["Test lane"]
+        PYTEST["pytest tests/hooks"]
+        ECO["validate_ecosystem.py"]
+        CHAOS["chaos_pass.py (release lane)"]
+        BENCH["src/apothem/benchmarks/ (release lane)"]
+    end
+    subgraph Security["Security lane"]
+        SECRETS["Secret scan"]
+        SBOM["SBOM generation"]
+        LICENSE["License audit"]
+    end
+    subgraph Publish["Publish lane (tags only)"]
+        SIGN["Signed-tag verification"]
+        ATTEST["Provenance attestation"]
+        DOCS["Project website publish"]
+        RELEASE["Release notes from CHANGELOG.md"]
+    end
+    PR --> Static
+    PR --> Test
+    PR --> Security
+    PUSH --> Static
+    PUSH --> Test
+    PUSH --> Security
+    TAG --> Static
+    TAG --> Test
+    TAG --> Security
+    TAG --> Publish
+    Static --> GATE{All lanes green?}
+    Test --> GATE
+    Security --> GATE
+    GATE -->|yes| MERGE[Merge / publish]
+    GATE -->|no| BLOCK[Block · surface failures · request fix]
+    Publish --> MERGE
+```
+
+## Papéis das faixas
+
+- **Faixa de análise estática** — feedback rápido. O Ruff cobre o estilo Python e
+  um conjunto curado de regras; o mypy impõe disciplina de tipos em strict; o
+  markdownlint regula a superfície de documentação; o validador de frontmatter
+  controla a conformidade do esquema de artefatos para regras, skills,
+  trabalhadores delegados e comandos.
+- **Faixa de testes** — `pytest tests/hooks` exercita o runtime de hooks contra a
+  matriz completa de eventos; `validate_ecosystem.py` é a principal comporta
+  estrutural para a consistência entre artefatos; `chaos_pass.py` e a suíte de
+  benchmarks por classe sob `src/apothem/benchmarks/` ativam na faixa de release
+  para capturar degradação sob entradas degradadas e regressões do orçamento de
+  runtime.
+- **Faixa de segurança** — a varredura de segredos captura credenciais
+  comitadas por acidente; a geração de SBOM e as auditorias de licença controlam
+  a superfície da cadeia de suprimentos para qualquer instalação de prontidão
+  para produção.
+- **Faixa de publicação** — roda apenas em releases com tag. A verificação de tag
+  assinada confirma a procedência da branch de release; o site do projeto é
+  publicado a partir de `site/dist/` para o destino do GitHub Pages; as notas de
+  release derivam do formato Keep-A-Changelog do `CHANGELOG.md`.
+
+## Configuração concreta
+
+Os arquivos de fluxo de trabalho reais (`.github/workflows/ci.yml`,
+`.github/workflows/release.yml`, etc.) são instalados durante a construção do
+ecossistema de prontidão para produção. Este diagrama define a forma canônica que
+toda configuração futura espelha.
+
+## Referências cruzadas autoritativas
+
+- `pyproject.toml` — fonte de verdade da configuração de Ruff / mypy / pytest.
+- `scripts/dev/validate_ecosystem.py` — a principal comporta entre artefatos.
+- `scripts/dev/validate_hooks.py` — validação estrutural específica de hooks.
+- `scripts/dev/chaos_pass.py` — varredura adversarial de cada hook configurado.
+- `src/apothem/benchmarks/` — verificadores do orçamento de runtime por classe.
+- `site/content/docs/developer-guide.mdx` — o fluxo de trabalho do contribuidor voltado ao operador.
+- `CHANGELOG.md` — fonte das notas de release.

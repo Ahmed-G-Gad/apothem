@@ -1,0 +1,73 @@
+---
+title: "コアワークフロー"
+description: "Apothem の 4 つのコアワークフロー——プロファイル、ルール、計画、そして適合性ゲート。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem は 4 つのコア機能を提供します。共有のガバナンスプロファイル、ルール
+コーパス、構造化された計画パイプライン、そしてリアルタイムの適合性ゲートです。
+
+<Callout title="はじめての方へ">
+  ゼロから初回実行までのガイド付きウォークスルーは、まず
+  [入門チュートリアル](/docs/tutorials/getting-started)から始めてください。この
+  ページはセットアップ後の 4 つのコアワークフローへのクイックリファレンスです。
+</Callout>
+
+## 共有プロファイル
+
+`--profile PATH` を渡さない限り、あなたの Apothem プロファイルは
+`~/.config/apothem/profile.yaml` にあります。これは唯一の信頼できる情報源であり、
+各環境アダプターはここからネイティブ設定を導き出します。
+
+```yaml
+identity:
+  name: "Example User"
+preferences:
+  style: "concise"
+rules:
+  - "Validate external input before writing files."
+```
+
+プロファイルを作成して確認します。
+
+```bash
+apothem profile init
+apothem profile show --json
+```
+
+## 最初のルール
+
+プロファイル YAML に共有ルールを追加し、選択した環境を再物化します。それらの
+ルールに例データを含める場合は、実在の識別情報や認証情報が共有プロファイルや
+CI 実行に紛れ込まないよう、ダミーのプレースホルダーを使ってください。
+
+```bash
+apothem profile set rules '["Always include a brief summary at the end of every response."]'
+apothem update --harness claude-code
+apothem verify --harness claude-code
+```
+
+## 最初の計画
+
+`/plan` パイプラインは `apothem` バイナリ経由ではなく、あなたの
+環境内でスラッシュコマンドとして実行されます。環境を
+インストールしたら、ツールのチャットから計画を開始します。
+
+```text
+/plan-spec
+```
+
+`/plan-spec` はあなたの文章を仕様へと精錬し、`/plan-generate` は
+`<project-root>/.apothem/plans/{suite}/` の下に計画スイートを物化します。全体の流れは
+[パイプラインコマンドリファレンス](/docs/pipeline)を参照してください。
+
+## 適合性ゲート
+
+リポジトリのルートから実行します。
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+すべての機械的な適合性チェックを実行し、バーごとに合否を報告します。

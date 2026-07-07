@@ -1,0 +1,71 @@
+---
+title: "uninstall"
+description: "CLI-Referenz für den Befehl apothem uninstall."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Entfernt eine Harness-Adapterkonfiguration.
+
+## Übersicht
+
+```
+apothem uninstall --harness NAME|all [--yes] [--project PATH]
+                   [--quiet|-q] [--verbose|-v]
+                   [--format plain|json] [--json] [--no-color]
+```
+
+Entfernt die vom Adapter verwalteten Harness-Ziele. Fragt nach Bestätigung, sofern `--yes` nicht angegeben ist. Wenn ein ausgewählter Harness nicht installiert ist, wird der Befehl erfolgreich abgeschlossen (Exit 0) mit einem Hinweis „nothing to remove“.
+
+Der Alias in Verlaufsform `apothem uninstalling` wird auf denselben Handler aufgelöst.
+
+## Optionen
+
+| Option | Beschreibung |
+|---|---|
+| `--harness NAME` | Zu entfernender Harness-Adapter oder `all` für das registry-weite Set (erforderlich). |
+| `--yes` | Überspringt die Bestätigungsabfrage. |
+| `--project PATH` | Projektwurzel für Harnesses mit Projektgeltungsbereich. |
+| `--quiet`, `-q` | Unterdrückt informative Ausgaben; nur Fehler werden ausgegeben. |
+| `--verbose`, `-v` | Gibt zusätzliche Diagnoseausgaben aus. |
+| `--format plain\|json` | Ausgabeformat (Standard: `plain`). |
+| `--json` | Kurzform für `--format json`. |
+| `--no-color` | Deaktiviert ANSI-Farbcodes in der Ausgabe. |
+| `-h`, `--help` | Zeigt die Hilfe an und beendet. |
+
+## JSON-Ausgabe
+
+Wenn der Adapter installiert und erfolgreich entfernt wurde:
+
+```json
+{"action": "uninstalled", "harness": "claude-code", "output_path": "..."}
+```
+
+Wenn der Adapter nicht installiert war:
+
+```json
+{"status": "not_installed", "harness": "claude-code"}
+```
+
+## Beispiele
+
+```bash
+apothem uninstall --harness claude-code
+apothem uninstall --harness claude-code --yes
+apothem uninstall --harness cursor --project . --yes
+apothem uninstall --harness all --project . --yes
+apothem Uninstalling --harness cursor --project . --yes   # continuous-form alias
+```
+
+## Exit-Codes
+
+| Code | Bedeutung |
+|---|---|
+| 0 | Adapter deinstalliert oder war nicht installiert |
+| 1 | Harness nicht gefunden oder Benutzer hat die Bestätigungsabfrage abgebrochen |
+
+## Siehe auch
+
+- `apothem uninstalling` — Alias in Verlaufsform für diesen Befehl (hier dokumentiert; die CLI akzeptiert beide Formen)
+- [apothem install](/docs/cli-reference/install) — installiert eine Harness-Konfiguration
+- [apothem verify](/docs/cli-reference/verify) — bestätigt den Installationsstatus

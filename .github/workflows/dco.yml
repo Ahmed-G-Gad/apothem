@@ -1,0 +1,79 @@
+# SPDX-License-Identifier: MIT
+
+# DCO (Developer Certificate of Origin) enforcement.
+# Requires every PR commit to carry a "Signed-off-by: Name <email>" trailer.
+# A manual `workflow_dispatch` run is a no-op (no pull-request context to check).
+
+name: DCO
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: dco-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dco:
+    name: Require Signed-off-by
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          # Block egress: this job only checks out the repo and reads git
+          # history, so the endpoint set is small and stable. Endpoints cover
+          # action-tarball fetch + the GitHub API/clone surface checkout uses.
+          egress-policy: block
+          allowed-endpoints: >
+            github.com:443
+            api.github.com:443
+            codeload.github.com:443
+            objects.githubusercontent.com:443
+            release-assets.githubusercontent.com:443
+
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Check DCO signoff
+        env:
+          # Workflow-controlled context is passed through env, never
+          # interpolated directly into the run script (script-injection
+          # hardening per GitHub's security-hardening guidance).
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "Manual dispatch: no pull request context to validate; DCO check is a no-op here."
+            exit 0
+          fi
+          BASE="$BASE_SHA"
+          HEAD="$HEAD_SHA"
+          MISSING=0
+          while IFS= read -r commit; do
+            MSG=$(git log --format="%B" -n 1 "$commit")
+            if ! echo "$MSG" | grep -qiE "^Signed-off-by: .+ <.+>$"; then
+              echo "::error::Commit $commit is missing 'Signed-off-by:' trailer"
+              MISSING=$((MISSING + 1))
+            fi
+          done < <(git log --format="%H" "${BASE}..${HEAD}")
+          if [ "$MISSING" -gt 0 ]; then
+            echo ""
+            echo "  Run: git commit --amend --signoff"
+            echo "  or:  git rebase --signoff HEAD~N"
+            echo "  See: https://developercertificate.org"
+            exit 1
+          fi
+          echo "All commits carry Signed-off-by trailers."

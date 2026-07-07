@@ -1,0 +1,80 @@
+---
+title: "rollback"
+description: "Referensi CLI untuk perintah apothem rollback."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Memulihkan asisten-pengkodean ke keadaan sebelum pemasangan tercatatnya.
+
+## Ringkasan
+
+```
+apothem rollback --harness NAME|all [--install-id ULID | --last] [--yes]
+                 [--project PATH]
+                 [--quiet|-q] [--verbose|-v]
+                 [--format plain|json] [--json] [--no-color]
+```
+
+`rollback` merekonstruksi byte pra-pemasangan setiap asisten-pengkodean yang dipilih dari root cadangan Apothem. Perintah ini me-resolve pass pemasangan tercatat — yang terbaru secara default, atau yang dinamai oleh `--install-id` — memulihkan setiap cadangan yang ditangkap pemasangan itu, lalu menambahkan catatan `rollback` ke ledger asisten-pengkodean.
+
+Konfirmasi diminta per asisten-pengkodean kecuali `--yes` disediakan. `--install-id` dan `--last` memilih pass pemasangan dan saling eksklusif.
+
+## Opsi
+
+| Opsi | Deskripsi |
+|---|---|
+| `--harness NAME` | Adapter asisten-pengkodean yang akan di-rollback, atau `all` untuk set selingkup-registri (wajib). |
+| `--install-id ULID` | Me-rollback pass pemasangan yang dinamai. Default-nya pemasangan terbaru yang tercatat. |
+| `--last` | Me-rollback pemasangan terbaru yang tercatat (default; bentuk eksplisitnya). Saling eksklusif dengan `--install-id`. |
+| `--yes` | Melewati prompt konfirmasi per asisten-pengkodean. |
+| `--project PATH` | Root proyek untuk asisten-pengkodean berlingkup-proyek. Wajib ketika set yang dipilih mencakup adapter berlingkup-proyek. |
+| `--quiet`, `-q` | Menekan keluaran informasional; hanya kesalahan yang dipancarkan. |
+| `--verbose`, `-v` | Memancarkan keluaran diagnostik tambahan. |
+| `--format plain\|json` | Format keluaran (default: `plain`). |
+| `--json` | Singkatan untuk `--format json`. |
+| `--no-color` | Menonaktifkan kode warna ANSI dalam keluaran. |
+| `-h`, `--help` | Menampilkan bantuan dan keluar. |
+
+## Keluaran JSON
+
+```json
+{
+  "status": "success",
+  "command": "rollback",
+  "action": "rolled_back",
+  "harness": "claude-code",
+  "profile_path": null,
+  "project": null,
+  "files_written": [],
+  "results": [],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+Setiap target yang dipulihkan muncul di `results` dengan `"operation": "rollback"` dan `outcome` berupa `created` atau `updated` (dan di `files_written`). Target yang dibuat baru oleh pemasangan — tanpa byte sebelumnya untuk dipulihkan — dilaporkan dengan `"outcome": "skipped"`; pemulihan yang gagal adalah `"outcome": "error"`. Ketika tidak ada catatan pemasangan yang cocok, perintah melaporkan kesalahan `rollback.no_record` dengan `"status": "error"`.
+
+## Contoh
+
+```bash
+apothem rollback --harness claude-code --last
+apothem rollback --harness claude-code --install-id 01J9Z… --yes
+apothem rollback --harness cursor --project . --last --json
+```
+
+## Kode keluar
+
+| Kode | Arti |
+|---|---|
+| 0 | Berhasil di-rollback, atau tidak ada yang perlu dipulihkan (pemasangan tidak menangkap cadangan) |
+| 1 | Galat yang diharapkan — tidak ada catatan pemasangan, selektor yang bertentangan, asisten-pengkodean tidak dikenal, root proyek hilang, atau konfirmasi dibatalkan |
+| 2 | Pemulihan parsial setelah setidaknya satu target di-rollback |
+
+## Lihat juga
+
+- [apothem install](/docs/cli-reference/install) — memasang konfigurasi asisten-pengkodean
+- [apothem update](/docs/cli-reference/update) — memasang ulang dari profil bersama saat ini
+- [apothem uninstall](/docs/cli-reference/uninstall) — menghapus konfigurasi asisten-pengkodean
+- [apothem status](/docs/cli-reference/status) — melaporkan status pemasangan, verifikasi, dan drift

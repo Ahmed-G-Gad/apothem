@@ -1,0 +1,84 @@
+# SPDX-License-Identifier: MIT
+
+# Dependency Review — blocks pull requests that introduce dependencies with
+# known vulnerabilities or disallowed licenses, evaluated against the diff of
+# the manifest/lockfiles. Complements the weekly pip-audit and Trivy scans with
+# a PR-time gate (OpenSSF Scorecard Dependency-Update-Tool / supply-chain).
+# Ref: https://github.com/actions/dependency-review-action
+
+name: Dependency Review
+
+on:
+  # Manual dispatch renders an honest green no-op run (the dispatch-noop job
+  # below): there is no pull-request diff to review, so the review job is
+  # skipped rather than run against a missing base/head pair. The pull_request
+  # path is the real gate.
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-review-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          # Block egress: this job checks out the repo and calls the GitHub
+          # dependency-graph API through dependency-review-action. Endpoints
+          # cover action-tarball fetch + the GitHub API/clone surface only.
+          egress-policy: block
+          allowed-endpoints: >
+            github.com:443
+            api.github.com:443
+            codeload.github.com:443
+            objects.githubusercontent.com:443
+            release-assets.githubusercontent.com:443
+
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Review dependencies
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294  # v5.0.0
+        with:
+          fail-on-severity: high
+          # MIT-compatible permissive licenses only, expressed as current SPDX
+          # identifiers. This mirrors the license-audit.yml allow-only list so
+          # the two license gates agree: an unknown or copyleft license fails
+          # both, rather than dependency-review passing what license-audit
+          # rejects. An allow-list also avoids the deprecated bare `GPL-3.0`
+          # deny forms that miss the `-only` / `-or-later` SPDX variants modern
+          # package metadata declares.
+          allow-licenses: MIT, BSD-2-Clause, BSD-3-Clause, Apache-2.0, ISC, PSF-2.0, Unlicense, MPL-2.0
+          comment-summary-in-pr: never
+
+  dispatch-noop:
+    name: Manual dispatch no-op
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+      - name: No-op
+        run: |
+          echo "Manual dispatch — no pull-request diff to review; Dependency Review is a no-op here. The pull_request path is the real gate."

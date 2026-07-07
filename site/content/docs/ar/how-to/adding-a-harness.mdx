@@ -1,0 +1,78 @@
+---
+title: "إضافة بيئة"
+description: "فعّل محوّل بيئة لكي تُجسَّد تهيئتها الأصلية من الملف التعريفي المشترك."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+الهدف: فعّل بيئة إضافية لكي يُجسِّد Apothem تهيئتها الأصلية من ملفك التعريفي
+المشترك.
+
+## المتطلّبات المسبقة
+
+- ملف تعريفي مشترك في `~/.config/apothem/profile.yaml` (أنشئ واحدًا عبر
+  `apothem profile init` إن لم يكن موجودًا بعد).
+- واجهة `apothem` على `PATH` لديك. إذا ثبّتّ شجرة المصدر القائمة بذاتها،
+  فصدّر كل أمر بـ `PYTHONPATH="$HOME/.apothem/src"`
+  وشغّل `python -m apothem` بدلًا من `apothem` — أو استخدم
+  `npx @ahmed-g-gad/apothem`.
+
+## الخطوات
+
+1. اسرد البيئات المُسجَّلة وانظر أيّها مثبَّت بالفعل:
+
+   ```bash
+   apothem harnesses list
+   ```
+
+   يطبع `apothem harnesses list` كل مُعرّف مدعوم؛ والمجموعة ذاتها موجودة في
+   [قائمة البيئات](/docs/harnesses) و[سجلّ البيئات](/docs/reference/harness-registry)
+   المُولّد من المصدر. اختر مُعرّف أداتك بدلًا من تثبيت القائمة هنا — فهي
+   تنمو مع إضافة المحوّلات.
+
+2. افحص البيئة المستهدفة لتأكيد نطاقها ومسار مُخرَجها:
+
+   ```bash
+   apothem harnesses show cursor
+   ```
+
+   سطر `Scope: project` يعني أن المحوّل يُجسِّد في شجرة مشروع
+   ويتطلّب `--project PATH`؛ بينما `Scope: user` يُجسِّد في دليل تهيئة
+   بنطاق المستخدم ولا يحتاج إلى راية مشروع.
+
+3. عاين التثبيت دون كتابة ملفات:
+
+   ```bash
+   apothem install --harness cursor --dry-run
+   ```
+
+4. ثبّت البيئة. لبيئة بنطاق المستخدم:
+
+   ```bash
+   apothem install --harness claude-code
+   ```
+
+   لبيئة بنطاق المشروع، مرّر جذر المشروع:
+
+   ```bash
+   apothem install --harness cursor --project /path/to/project
+   ```
+
+   ثبّت كل بيئة مدعومة دفعة واحدة عبر `--harness all` (لا تزال البيئات
+   بنطاق المشروع تحتاج إلى `--project`؛ وتُتخطّى المُعرّفات المدرجة في
+   `exclude_harnesses` في الملف التعريفي).
+
+## التحقق
+
+```bash
+apothem verify --harness cursor
+```
+
+سطر `✓ <harness-id> is verified` يؤكّد أن الأهداف المُدارة موجودة وقابلة للتحليل.
+يقدّم `apothem doctor` رؤية النظام بأكمله عبر كل بيئة.
+
+## ذات صلة
+
+- [حرّر الملف التعريفي](/docs/how-to/editing-the-profile) لتغيير ما
+  يُجسّده المحوّل، ثم أعد تشغيل `apothem update`.
+- يغطّي [التثبيت](/docs/install) تثبيت أول تشغيل.

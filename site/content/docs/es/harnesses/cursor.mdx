@@ -1,0 +1,87 @@
+---
+title: "Cursor"
+description: "Adaptador de herramienta de Apothem para Cursor (GA)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Proveedor:** Anysphere
+**Nombre de instalación:** `cursor`
+**Estado:** GA
+**Configuración nativa:** `.cursor/rules/` en la raíz del proyecto
+
+## Instalación
+
+```bash
+apothem install --harness cursor --project /path/to/project
+```
+
+El adaptador renderiza un único archivo de reglas `.mdc` con alcance de proyecto
+a partir de las reglas compartidas de Apothem y la superficie de gobernanza.
+
+**Archivos escritos:** `<project>/.cursor/rules/apothem-rules.mdc`
+
+## Asignación del perfil a la configuración nativa
+
+El adaptador lee el perfil compartido de Apothem y renderiza el archivo de reglas
+del proyecto en cada ejecución de `apothem install` o `apothem update`. El perfil
+compartido es la fuente de verdad; las ediciones locales del proyecto al archivo
+generado se respaldan antes de que la siguiente sincronización reemplace el
+contenido gestionado por Apothem.
+
+## Notas de compatibilidad
+
+Cursor 0.45+ admite instrucciones a nivel de proyecto mediante `.cursor/rules/`. El
+adaptador escribe en el directorio `.cursor/rules/` con alcance de proyecto por
+defecto; Cursor no tiene una ruta de reglas globales de usuario basada en archivos
+documentada para que este adaptador la gestione.
+
+## Verificación
+
+```bash
+apothem verify --harness cursor --project /path/to/project
+```
+
+El comando verify confirma que:
+
+1. La configuración nativa existe en la ruta esperada.
+2. Todos los campos obligatorios del perfil compartido están presentes.
+3. La rutina de verificación específica del adaptador informa éxito.
+
+## Actualización
+
+```bash
+apothem update --harness cursor --project /path/to/project
+```
+
+Vuelve a derivar el archivo de reglas del proyecto a partir del estado actual del
+perfil compartido.
+
+## Desinstalación
+
+```bash
+apothem uninstall --harness cursor --project /path/to/project
+```
+
+Elimina los archivos de configuración nativa escritos por el adaptador.
+El YAML del perfil compartido y el motor de Apothem no se ven afectados.
+
+## Puerta de conformidad
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Solución de problemas
+
+| Síntoma | Solución |
+|---------|-----|
+| Archivo de configuración no encontrado | Vuelve a ejecutar `apothem install --harness cursor --project /path/to/project` |
+| Verificación fallida | Ejecuta `apothem update --harness cursor --project /path/to/project` y luego verifica de nuevo |
+| Contenido de configuración inesperado | Revisa `~/.config/apothem/profile.yaml` o `--profile PATH`, luego vuelve a ejecutar `apothem update --harness cursor --project /path/to/project` |
+
+## Opciones de configuración
+
+| Indicador | Por defecto | Descripción |
+|------|---------|-------------|
+| `--dry-run` | `false` | Previsualiza la instalación sin escribir archivos. |

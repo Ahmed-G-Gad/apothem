@@ -1,0 +1,47 @@
+---
+title: "Apothem مقابل تهيئة Hermes الخام"
+description: "صيانة تهيئة Hermes يدويًا مقابل إدارتها عبر الملف الشخصي المشترك لـ Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+يقرأ <bdi>Hermes</bdi> ملف `~/.hermes/config.yaml`. يكتب <bdi>Apothem</bdi> تهيئة
+<bdi>YAML</bdi> الأصلية (مُسقِطًا مخزون <bdi>MCP</bdi> الخاص بالملف الشخصي إلى
+`auxiliary.mcp`) ويثبّت مجموعات الأوامر والمهارات المشتركة تحت
+`~/.hermes/.apothem/support/skills/`. أما `skills.config` الخاص بـ <bdi>Hermes</bdi> فهو
+قائمة حزم سجلّ، لذا لا يؤلّفه <bdi>Apothem</bdi>.
+
+## الحالة
+
+**معاينة.** يستهدف محوِّل <bdi>Hermes</bdi> ملف التهيئة المُوثَّق حاليًا وسطح
+اكتشاف المهارات. تبقى المجموعات غير المهارية مواد دعم لـ <bdi>Apothem</bdi>.
+
+## مقارنة الجهد
+
+| المهمة | تهيئة يدوية خام | مُدارة بـ Apothem |
+| ---- | --------------- | --------------- |
+| تأليف مهارات قابلة لإعادة الاستخدام | تحرير التهيئة وأدلّة المهارات يدويًا | الكتابة مرّة واحدة في المتن المشترك |
+| إبقاء المجموعات متوائمة مع البيئات الأخرى | يدويًا، لكل أداة | تلقائيًا عند `apothem update` |
+| تثبيت / إزالة التهيئة | يدويًا | `apothem install` / `apothem uninstall` |
+| التحقّق من صحّة التهيئة | فحص يدوي | `apothem verify --harness hermes` |
+
+## ما يديره Apothem
+
+يكتب محوِّل <bdi>Hermes</bdi> ملف `config.yaml`، ويلفّ أوامر الشَّرطة المائلة
+الخاصة بـ <bdi>Apothem</bdi> بوصفها مهارات، وينسخ مهارات <bdi>Apothem</bdi> إلى
+دليل الدعم المُشار إليه، ويحفظ القواعد والقوالب و<bdi>agents</bdi> ومادة الـ
+<bdi>hook</bdi> تحت شجرة دعم <bdi>Apothem</bdi> الفرعية.
+
+## مسار الهجرة
+
+1. شغّل `apothem profile init` لإنشاء الملف الشخصي المشترك إن لم تكن قد فعلت بعد.
+2. انقل مهارات <bdi>Hermes</bdi> أو مُوجِّهات الأوامر القابلة لإعادة الاستخدام إلى
+   المتن المشترك.
+3. شغّل `apothem install --harness hermes` لتصيير التهيئة الأصلية ودليل مهارات
+   الدعم.
+4. شغّل `apothem verify --harness hermes` لتأكيد أن التهيئة قد هبطت.
+
+## اقرأ بعد ذلك
+
+- [مرجع محوِّل Hermes](/docs/harnesses/hermes)
+- [نظرة عامة على المقارنة](/docs/comparison)

@@ -1,0 +1,73 @@
+---
+title: "سير العمل الأساسية"
+description: "سير عمل Apothem الأساسية الأربعة — ملف التعريف، والقواعد، والخطط، وبوابة المطابقة."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+يوفّر <bdi>Apothem</bdi> أربع قدرات أساسية: ملف تعريف حوكمة مشترك، ومجموعة
+قواعد، وخط أنابيب تخطيط منظَّم، وبوابة مطابقة في الزمن الحقيقي.
+
+<Callout title="هل أنت جديد هنا؟">
+  للحصول على جولة موجَّهة من الصفر إلى أول تشغيل، ابدأ من
+  [دليل البدء](/docs/tutorials/getting-started). هذه الصفحة مرجع سريع لسير العمل
+  الأساسية الأربعة بعد أن تنتهي من الإعداد.
+</Callout>
+
+## ملف التعريف المشترك
+
+يقع ملف تعريف <bdi>Apothem</bdi> الخاص بك في `~/.config/apothem/profile.yaml` ما
+لم تمرّر `--profile PATH`. وهو مصدر الحقيقة الوحيد الذي يشتقّ منه كل محوِّل بيئة
+تهيئته الأصلية:
+
+```yaml
+identity:
+  name: "Example User"
+preferences:
+  style: "concise"
+rules:
+  - "Validate external input before writing files."
+```
+
+أنشئ ملف التعريف وافحصه:
+
+```bash
+apothem profile init
+apothem profile show --json
+```
+
+## القاعدة الأولى
+
+أضِف قواعد مشتركة إلى <bdi>YAML</bdi> ملف التعريف، ثم أعِد تجسيد البيئة المختارة.
+وعندما تتضمّن تلك القواعد بيانات أمثلة، استخدم نائبات وهمية حتى لا تقع أيّ هويّة
+أو بيانات اعتماد حقيقية في ملف تعريف مشترك أو في تشغيل <bdi>CI</bdi>.
+
+```bash
+apothem profile set rules '["Always include a brief summary at the end of every response."]'
+apothem update --harness claude-code
+apothem verify --harness claude-code
+```
+
+## الخطة الأولى
+
+يعمل خط الأنابيب `/plan` داخل أداتك البرمجية بوصفه أوامر شرطة مائلة، لا عبر ملف
+<bdi>Apothem</bdi> التنفيذي `apothem`. بمجرد تثبيت بيئة، ابدأ خطة من محادثة
+الأداة:
+
+```text
+/plan-spec
+```
+
+يصقل `/plan-spec` نثرك إلى مواصفة، ويجسّد `/plan-generate` مجموعة خطط ضمن
+`<project-root>/.apothem/plans/{suite}/`. راجع
+[مرجع أوامر خط الأنابيب](/docs/pipeline) للاطّلاع على التدفق الكامل.
+
+## بوابة المطابقة
+
+شغّلها من جذر المستودع:
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+تُجري جميع فحوص المطابقة الآلية وتُبلِّغ بالنجاح/الفشل لكل شريط.

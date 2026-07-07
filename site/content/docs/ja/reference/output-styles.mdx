@@ -1,0 +1,34 @@
+---
+title: "出力スタイル"
+description: "操作者トーンのプロファイル（シニアアーキテクト、簡潔エンジニア、フォレンジック監査者）。/output-style コマンドでセッションごとに有効化される。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+出力スタイルプロファイルは `src/apothem/output-styles/` 配下に存在し、スタイルごとの
+操作者トーンガイダンスを保持します。ホストのハーネスランタイムは、
+`/output-style <name>` を介してスタイルをセッションごとに有効化します。
+
+## 規約上のプロファイル
+
+| プロファイル | ファイル | トーン |
+|---------|------|------|
+| デフォルトアーキテクト | `src/apothem/output-styles/default-architect.md` | シニアソフトウェアアーキテクトのトーン（デフォルト） |
+| 簡潔エンジニア | `src/apothem/output-styles/concise-engineer.md` | 短文のエンジニアリングトーン |
+| フォレンジック監査者 | `src/apothem/output-styles/forensic-auditor.md` | 発見ごとの監査トーン |
+
+## Frontmatter 契約
+
+```yaml
+---
+name: <style name>
+description: <one-line tone summary>
+type: output-style
+---
+```
+
+## 新しいプロファイルの作成
+
+`src/apothem/output-styles/` 配下に規約上の frontmatter を備えた新しい `<name>.md`
+ファイルを作成し、本文でトーンを宣言し、次のセッションの開始時に
+`/output-style <name>` を呼び出して批准します。

@@ -1,0 +1,41 @@
+---
+title: "Apothem と手作業の Kiro 構成の比較"
+description: "Kiro の .kiro/steering/ 配下のステアリングファイルを手作業で維持するのと、Apothem の共有プロファイルからレンダリングするのとの比較。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Kiro は Markdown ファイルの `.kiro/steering/` ディレクトリからステアリングを読み取り
+ます。Apothem の kiro アダプターは、共有プロファイルから専用の `apothem-rules.md`
+ステアリングファイルをレンダリングします。本ページは、その構成を手作業で維持するのと
+Apothem で管理するのとを対比します。
+
+## 労力の比較
+
+| タスク | 手作業の構成 | Apothem 管理 |
+| ---- | --------------- | --------------- |
+| ステアリングルールを書く | `.kiro/steering/` 配下の各ファイルを手書き | 共有コーパスからレンダリング |
+| 基盤ファイルを触れずに保つ | `product.md` / `tech.md` / `structure.md` を上書きしないよう注意 | アダプターは `apothem-rules.md` だけを書き込む |
+| ルールを他の環境と揃えて保つ | 手作業、ツールごと | `apothem update` で自動 |
+| 構成が正しいか検証する | 手作業の検査 | `apothem verify --harness kiro` |
+
+## Apothem が管理するもの
+
+kiro アダプターは共有ルールを `inclusion: always` フロントマター付きの専用
+`apothem-rules.md` ステアリングファイルへレンダリングし、Kiro の操作者が作成した
+基盤ファイルには触れません。Kiro には PreToolUse フックがないため、ガードレールの
+意図はツール呼び出しの傍受点ではなくルールの散文に宿ります。共有ルールへの変更が
+あるたびに、次の `apothem update` でファイルが再レンダリングされます。
+
+## 移行手順
+
+1. 共有プロファイルをまだ作成していなければ、`apothem profile init` を実行します。
+2. 既存の `.kiro/steering/` のルールを共有コーパスへ移します。
+3. `apothem install --harness kiro` を実行して `apothem-rules.md` ステアリングファイルをレンダリングします。
+4. `apothem verify --harness kiro` を実行して構成が配置されたことを確認します。
+5. 以降の変更には毎回 `apothem update --harness kiro` を使います。
+
+## 次に読む
+
+- [Kiro アダプターのリファレンス](/docs/harnesses/kiro)
+- [比較の概要](/docs/comparison)

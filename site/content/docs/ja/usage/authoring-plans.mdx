@@ -1,0 +1,43 @@
+---
+title: "計画の作成"
+description: "/plan パイプラインで計画スイートを作成します。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+`/plan` パイプラインは、生の散文要件を、実行可能でレビュー済み、品質ゲートを通過した実装計画へと変換します。
+
+## コアステージ
+
+このパイプラインは 8 つの一級 `/plan-<stage>` コマンドとして提供されます。日常のフローではそのうち 5 つを実行します。
+
+1. `/plan-spec` — 散文を仕様グレードの `_spec/spec.md` へ精錬する
+2. `/plan-generate` — 完全な計画スイートのスケルトンを生成する
+3. `/plan-review` — 生成された計画のフォレンジック監査
+4. `/plan-execute` — フェーズを 1 つずつ実行する
+5. `/plan-status` — いつでも進捗を検査する
+
+3 つのステージがこのセットを補完します。`/plan-design` はアーキテクチャを伴うスイートに対してアーキテクチャ設計成果物を発出し、`/plan-audit` は閉ループの spec → generate → review 修復ラッパーを実行し、`/plan-amend` は解決済みの決定を失うことなく既存スイートを改訂します。
+
+## クイック計画（単一ファイル）
+
+```bash
+# Creates plans/YYYY-MM-DD--my-feature.md in the current project
+/plan-spec --quick my-feature
+```
+
+## 完全な計画スイート
+
+```bash
+# Step 1 — write your requirements to prose.md, then:
+/plan-spec prose.md --suite-name my-project-plan
+/plan-generate
+/plan-review
+/plan-execute
+```
+
+## 計画のライフサイクル
+
+計画は次の遷移をたどります：`draft` -> `in-progress` -> `converged`（ADR へ昇格）または `abandoned`。
+
+完全なライフサイクル仕様については [計画ディシプリン](/docs/reference/plans-discipline) を参照してください。

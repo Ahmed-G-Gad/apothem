@@ -1,0 +1,43 @@
+---
+title: "Redigir planos"
+description: "Redija suítes de plano com o pipeline /plan."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+O pipeline `/plan` transforma requisitos em prosa bruta em planos de implementação executáveis, revisados e com comportas de qualidade.
+
+## As etapas centrais
+
+O pipeline é entregue como oito comandos `/plan-<stage>` de primeira classe. O fluxo cotidiano executa cinco deles:
+
+1. `/plan-spec` — Refina a prosa em um `_spec/spec.md` com qualidade de especificação
+2. `/plan-generate` — Gera o esqueleto completo da suíte de plano
+3. `/plan-review` — Auditoria forense do plano gerado
+4. `/plan-execute` — Executa as fases uma de cada vez
+5. `/plan-status` — Inspeciona o progresso a qualquer momento
+
+Três etapas completam o conjunto: `/plan-design` emite um artefato de design arquitetural para suítes com arquitetura, `/plan-audit` executa um invólucro de remediação spec → generate → review de laço fechado, e `/plan-amend` revisa uma suíte existente sem perder as decisões resolvidas.
+
+## Plano rápido (arquivo único)
+
+```bash
+# Creates plans/YYYY-MM-DD--my-feature.md in the current project
+/plan-spec --quick my-feature
+```
+
+## Suíte de plano completa
+
+```bash
+# Step 1 — write your requirements to prose.md, then:
+/plan-spec prose.md --suite-name my-project-plan
+/plan-generate
+/plan-review
+/plan-execute
+```
+
+## Ciclo de vida do plano
+
+Os planos transitam por: `draft` -> `in-progress` -> `converged` (promovido a ADR) ou `abandoned`.
+
+Consulte [Disciplina de planos](/docs/reference/plans-discipline) para a especificação completa do ciclo de vida.

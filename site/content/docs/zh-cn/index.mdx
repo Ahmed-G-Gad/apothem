@@ -1,0 +1,63 @@
+---
+title: "Apothem 文档"
+description: "一份共享配置档案，物化到十七个harness环境中。从这里开始：安装、使用、环境覆盖、命令流水线，以及完整的参考手册。"
+machineTranslated: true
+---
+
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem 是一个与宿主无关的环境配置管理器。你在 `~/.config/apothem/profile.yaml`
+中编写一份共享配置档案，Apothem 会将其物化为十七个harness的原生配置面——
+Claude Code、Cursor、Gemini CLI、GitHub Copilot、Codex、Windsurf、Zed，
+以及已注册目录中的其余工具。
+
+Apothem 同步的单元比规则本身更广：规则、斜杠命令、技能、钩子、输出样式、设置
+（含 MCP 服务器）、模式与文档作为一个受治理的整体语料一起流转，物化为每个环境的
+原生格式；当工具没有对应的原生原语时，则放入 Apothem 自有的支持子目录中。
+
+## 初次使用？两步即可开始
+
+1. **[安装](/docs/install/quickstart)** —— 选择一条安装路径（工具原生插件与扩展、
+   `npx`，或一键脚本），运行有引导的第一步。唯一的前置条件是
+   [Node.js](https://nodejs.org/) 和系统中的 Python 3.10 或更新版本。
+2. **[完成你的首次可用运行](/docs/tutorials/getting-started)** —— 编写一份共享
+   配置档案，从中物化某个环境的原生配置，并验证结果。从头到尾约十五分钟。
+
+## Apothem 的工作原理
+
+- **一份配置档案，多种原生配置。** 你只需编写一次意图，Apothem 便将其翻译为每个
+  工具的原生配置面——不做最小公分母式的拉平。参见
+  [与宿主无关的姿态](/docs/concepts/ai-platform-agnosticism)。
+- **运行回路：规划 → 加固 → 发布。** 规划流水线（`/plan`）带着一项变更走过规格、
+  生成、复审与执行；加固流水线（`/fortress`）将该工作推进到受发布门控的状态；
+  发布门关闭回路。参见 [命令流水线](/docs/pipeline)。
+- **跨越边界依然延续的工作。** 长时间运行的工作会将其完整状态外置到项目本地的
+  `.apothem/plans/` 套件中，因此任何账户或机器上的新会话都能就地恢复它。参见
+  [可恢复的规划](/docs/concepts/resumable-planning)。
+
+## 从这里开始
+
+- **[安装](/docs/install/quickstart)** —— 各条安装路径（工具原生插件与扩展、
+  `npx`、一键脚本）以及一次有引导的首次运行。
+- **[使用](/docs/usage/getting-started)** —— 编写你的配置档案、安装到各个环境、
+  验证并更新。
+- **[环境](/docs/harnesses)** —— 十七个环境的目录，附每个工具的原生配置面及其
+  转换行为。
+- **[命令流水线](/docs/pipeline)** —— `/plan` 与 `/research` 流水线的各个阶段、
+  审计-复审序列、workflow 与 projectify 技能，以及外科级操作护栏。
+
+## 深入了解
+
+- **[概念](/docs/concepts/ai-platform-agnosticism)** —— 共享配置档案、环境适配器
+  以及物化模型。
+- **[架构](/docs/architecture)** —— 源码布局、适配器抽象、自包含运行时，以及
+  CI/CD 流水线。
+- **[参考](/docs/reference)** —— CLI、配置档案模式、规则、技能、命令、钩子，以及
+  输出样式目录。
+- **[Apothem 的对比](/docs/comparison)** —— 一份诚实、点名竞品的差异化矩阵。
+
+## 治理与安全
+
+- **[治理](/docs/governance)** —— 纪律登记册、合规闸门以及版本门面。
+- **[安全](/docs/security)** —— 供应链姿态以及安全策略。
+- **[变更日志](/docs/changelog)** —— 发布说明，当前版本优先。

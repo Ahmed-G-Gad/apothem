@@ -1,0 +1,68 @@
+---
+title: "Recette de reconstruction des ressources"
+description: "Régénérez toutes les ressources de marque en mode raster à partir des sources SVG maîtresses avec resvg et Pillow."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+La recette de reconstruction des ressources régénère chaque ressource raster à
+partir des SVG maîtres. C'est le chemin de mise à jour faisant autorité pour les
+itérations de marque.
+
+## Quand l'exécuter
+
+Exécutez la recette de reconstruction lorsque :
+
+- Le SVG maître (`assets/src/logo.svg` ou `assets/src/logo-dark.svg`) change.
+- Le maître du favicon compact (`assets/favicon.svg`) change.
+- Un maître de carte sociale (`assets/src/og-banner.svg` ou `assets/src/twitter-card.svg`) change.
+- Une nouvelle taille raster est nécessaire.
+- Vous voulez vérifier que les ressources validées correspondent toujours à la source SVG.
+
+## Script
+
+| Script | Plateforme | Chemin |
+| --- | --- | --- |
+| `rebuild-assets-resvg.py` | Tout hôte avec Python + resvg | `scripts/dev/rebuild-assets-resvg.py` |
+
+## Prérequis
+
+Le générateur rasterise chaque SVG avec [resvg](https://github.com/linebender/resvg)
+et compose les jeux raster avec [Pillow](https://python-pillow.org/) :
+
+- **Pillow :** `pip install pillow`.
+- **resvg :** téléchargez le binaire de version pour votre plateforme depuis les
+  [versions de resvg](https://github.com/linebender/resvg/releases) —
+  `resvg-win64.zip` sous Windows, `resvg-linux-x86_64.tar.gz` sous Linux, ou
+  `resvg-macos.zip` sous macOS — extrayez-le dans votre `PATH`, ou indiquez-le au
+  script avec `--resvg <path>`.
+
+## Utilisation
+
+Régénérez chaque ressource raster :
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py
+```
+
+Passez `--check-only` pour vérifier que la chaîne d'outils est disponible sans
+régénérer aucune ressource :
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py --check-only
+```
+
+Si resvg n'est pas dans votre `PATH`, indiquez le binaire au script :
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py --resvg /path/to/resvg
+```
+
+## Vérification
+
+Une exécution réussie régénère les rasters de la marque en versions claire et
+sombre, le jeu de favicon PNG/ICO, les icônes Apple touch, les images OG/Twitter,
+et reflète le sous-ensemble servi sur le web — y compris les sources du logo
+principal que le site référence — dans `site/public/`. Après la génération, lancez
+la compilation du site et inspectez la page d'accueil, le favicon de l'onglet du
+navigateur et les PNG des cartes sociales avant de publier.

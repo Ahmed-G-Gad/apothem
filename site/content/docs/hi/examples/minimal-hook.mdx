@@ -1,0 +1,54 @@
+---
+title: "न्यूनतम हुक"
+description: "न्यूनतम Apothem हुक उदाहरण — हर फ़ाइल लेखन पर एक जाँच सक्रिय करें।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+यह उदाहरण संभव सबसे छोटा Apothem हुक दिखाता है: एक PreToolUse हुक जो हर `Write`
+टूल कॉल से पहले सक्रिय होता है और लक्ष्य पथ को लॉग करता है।
+
+## हुक स्क्रिप्ट
+
+```python
+# src/apothem/hooks/log_writes.py
+import json, sys
+
+data = json.load(sys.stdin)
+path = data.get("tool_input", {}).get("file_path", "unknown")
+print(f"[apothem] Writing to: {path}", file=sys.stderr)
+sys.exit(0)  # exit 0 = proceed; non-zero = block
+```
+
+## settings.json में पंजीकरण
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python src/apothem/hooks/log_writes.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## हुक का परीक्षण
+
+Claude Code में कोई भी फ़ाइल लेखन करें और हुक ट्रेस पैनल में stderr आउटपुट देखें।
+
+## लेखन को अवरुद्ध करना
+
+`sys.exit(0)` को `sys.exit(1)` में बदलें और stdout पर एक JSON ब्लॉक प्रिंट करें:
+
+```python
+print(json.dumps({"decision": "block", "reason": "blocked by log_writes"}))
+sys.exit(1)
+```

@@ -1,0 +1,69 @@
+---
+title: "/research-experiment"
+description: "/research-experiment — Executes the designed study and captures raw data with full provenance plus a reproducibility manifest (environment, seed, protocol, version pins)."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Role:** Principal Investigator (execution)
+**Pipeline position:** mid-chain
+
+Executes the designed study or experiment and captures raw data with full provenance. Guarantees reproducibility: records the environment, seed, protocol log, and version pins so an independent party can re-run.
+
+## Canonical invocation
+
+```bash
+/research-experiment
+```
+
+With arguments:
+
+```bash
+/research-experiment [path/to/research-suite/]
+```
+
+## Inputs
+
+`_inputs/study-design.md` (the design) and `_inputs/preregistration.md` (the frozen analysis plan).
+
+## Outputs
+
+`_outputs/experiment-log.md` (the timestamped protocol trace), the raw data at a host-natural location, and `_outputs/reproducibility-manifest.md` (environment, seed, protocol, version pins).
+
+## Downstream
+
+/research-analysis (downstream consumer)
+
+## Workflow phases
+
+The command follows the standard `/research` pipeline workflow:
+
+1. **Load context** — Read the study design and the preregistration.
+2. **Verify the Sequence Gate** — Confirm `_inputs/study-design.md` exists; otherwise halt with `Blocked: run /research-design first`.
+3. **Run & record** — Execute the protocol; capture raw data with provenance; log the timestamped protocol trace.
+4. **Capture reproducibility** — Record environment, seed, protocol, and version pins.
+5. **Update the handoff manifest** — Record the data location and the reproducibility manifest.
+6. **Emit the log** — `_outputs/experiment-log.md` + raw data + `_outputs/reproducibility-manifest.md`.
+
+## Rigor floor
+
+Execution runs a pilot pass to calibrate budgets and ranges, then the full comparison under a declared compute-utilization plan (core allocation, memory ceilings, safe parallelization of independent repetitions). Each stochastic method runs its preregistered repetition regime with recorded seeds and logged hardware. An opt-in, default-off autonomous experiment loop is available: against a frozen harness it proposes a change to a single mutable target, runs it at the fixed budget, retains it only if it beats the incumbent, and journals every trial.
+
+## Failure modes
+
+| Symptom | Cause | Recovery |
+|---------|-------|----------|
+| Blocked: run /research-design first | No study design | Run `/research-design` to produce `_inputs/study-design.md` |
+| Run not reproducible | Missing seed / environment record | Record the full reproducibility manifest before proceeding |
+| Protocol deviation undocumented | Mid-run change not logged | Log the deviation in the experiment log; disclose at analysis |
+
+## Examples
+
+```bash
+# Run the designed study and capture reproducible raw data
+/research-experiment path/to/research-suite/
+```
+
+## Cross-references
+
+- [Pipeline overview](/docs/pipeline)
+- [Commands reference](/docs/reference/commands)

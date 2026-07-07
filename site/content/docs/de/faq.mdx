@@ -1,0 +1,122 @@
+---
+title: "FAQ"
+description: "Häufige Fragen zum Zweck von Apothem, den unterstützten Harnesses, der Optionalität von Plan-Suiten, der Regelanpassung, den Artefakttypen und den Speicherorten des Ökosystem-Zustands."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Häufige Fragen, geordnet nach Häufigkeit.
+
+## Was ist `apothem`?
+
+Eine portable, host-agnostische Konfiguration, die Ihr Home-
+Verzeichnis in ein Governance-, Ideenfindungs- und Automatisierungs-Framework
+für die durch Harnesses getriebene Entwicklung verwandelt. Sie vereint Verhaltensregeln,
+kreative Standards, Slash-Befehle, persistente delegierte Worker, Hooks und Skills
+zu einer einzigen kohärenten Oberfläche.
+
+## Mit welchen Harness-CLIs funktioniert es?
+
+Apothem ist harness-agnostisch. Adapter pro Harness unter
+`src/apothem/harnesses/<harness>/` projizieren das gemeinsame Profil in
+das native Konfigurationsverzeichnis jedes Werkzeugs; die kanonische Liste befindet sich unter
+[`site/content/docs/harnesses/`](/docs/harnesses) und deckt derzeit die folgenden unterstützten Harnesses ab:
+
+```text
+Claude Code, GitHub Copilot, Cursor, Gemini CLI, Codex, Windsurf, OpenCode,
+Antigravity, Open-Claw, Hermes, Qwen Code, CodeBuddy, Kiro, Trae, and Zed
+```
+
+Der Claude Code-Adapter materialisiert in `~/.claude/`; sein Hook-Dispatcher ist host-neutral —
+er löst den Ökosystem-Stamm zuerst aus `$CLAUDE_PROJECT_DIR` auf, dann aus
+`$LLM_PROJECT_DIR`, und greift dann auf `$HOME/.claude` zurück.
+
+## Muss ich die Plan-Suite-Pipeline verwenden?
+
+Nein. Die Plan-Suite-Pipeline ist eine Komponente des Ökosystems.
+Verhaltensregeln, kreative Standards, Hooks und die Validator-
+Werkzeugkette sind unabhängig voneinander nützlich.
+
+## Wie passe ich die Regeln an, ohne das Repository zu forken?
+
+Fügen Sie Ihre eigene Regeldatei unter `src/apothem/rules/<my-rule>.md`
+mit dem kanonischen Frontmatter hinzu. Der Regel-Loader erfasst jede
+Datei, die dem Muster `src/apothem/rules/*.md` entspricht.
+
+## Wie deaktiviere ich eine Regel vorübergehend?
+
+Benennen Sie die Datei entweder so um, dass sie nicht mehr dem Muster `src/apothem/rules/*.md`
+entspricht, oder verschieben Sie sie in ein benachbartes Verzeichnis, das der Loader nicht
+durchsucht.
+
+## Was ist der Unterschied zwischen Regeln, Skills und delegierten Workern?
+
+- **Regeln** steuern das Verhalten — always-on oder pfadgefilterte
+  Verpflichtungen, denen der Assistent folgt.
+- **Skills** sind wiederverwendbare, erkennbare Techniken — ein Erkennungs-
+  signal, eine Prozedur und ein Enforcement-Hook.
+- **Delegierte Worker** sind persistente Rollen mit eigenen Werkzeug-
+  einschränkungen und Systemprompts, die über das
+  Worker-Orchestrierungsprotokoll versendet werden.
+
+## Wie melde ich ein Sicherheitsproblem?
+
+Siehe `SECURITY.md`. Die unterstützten Kanäle sind GitHub Security
+Advisories und `me@ahmedgad.com`.
+
+## Wie kann ich beitragen?
+
+Siehe [Mitwirken](/docs/developer-guide). Die Kurzfassung: Lesen Sie
+`CONTRIBUTING.md`, forken Sie das Repository, öffnen Sie einen PR mit dem
+ausgefüllten kanonischen PR-Template und stellen Sie sicher, dass die zehn CI-Prüf-
+klassen bestehen.
+
+## Wo befindet sich der Ökosystem-Zustand?
+
+- **Plan-Zustand pro Suite** liegt unter `<project>/.apothem/plans/{suite}/`.
+- **Speicher pro Projekt** liegt unter `projects/{hash}/memory/`.
+- **Projektübergreifender Speicher** liegt unter `memory/`.
+- **Scratch pro Sitzung** liegt unter `<project>/.apothem/plans/{suite}/_inputs/`.
+
+## Kann ich langlaufende Arbeit in einer neuen Sitzung oder auf einem anderen Rechner fortsetzen?
+
+Ja. Langlaufende Arbeit lagert ihren vollständigen Zustand in eine projektlokale
+`.apothem/plans/`-Suite aus — einen Resumption-Vertrag plus ein Kaltstart-Protokoll —,
+sodass die Arbeit nicht in einem einzigen Chat-Verlauf lebt. Da der Zustand in
+den Dateien deines Projekts liegt, nimmt eine frische Sitzung auf einem
+beliebigen Konto oder Rechner, die auf dasselbe Projekt zeigt, die Arbeit an
+Ort und Stelle wieder auf. Apothem schiebt die Dateien nicht selbst zwischen
+Konten; sie reisen genauso, wie die Dateien deines Projekts ohnehin reisen
+(Versionskontrolle, ein geteilter Checkout, ein synchronisiertes Verzeichnis).
+Siehe [Fortsetzbare Planung](/docs/concepts/resumable-planning).
+
+## Benötigt Apothem pip?
+
+Nein — nicht für die Engine selbst. Die Engine ist ein eigenständiger Quellbaum
+mit gebündelten Abhängigkeiten — sie läuft als `python -m apothem` aus jedem
+Checkout, dem npx-Cache oder dem Plugin-Baum unter System-Python 3.10+ und
+installiert keinen ihres eigenen Codes in `site-packages` (`click` und `rich`
+sind die einzigen Interpreter-Voraussetzungen). Die eine optionale Ausnahme: Wenn
+`click` oder `rich` fehlt, bietet der Installer an, genau diese beiden per
+`pip install` für dich zu installieren — mit deiner Bestätigung oder
+`--yes` / `APOTHEM_AUTO_INSTALL_DEPS=1`. Apothems eigene Pakete werden niemals in
+`site-packages` installiert.
+
+## Wie laufen Hooks ohne ein installiertes Paket?
+
+`apothem install` materialisiert den Hook-Dispatcher und das Konformitäts-Gate
+unter dem Harness-Stamm (für Claude Code: `~/.claude/.apothem/support/hooks/` und
+`~/.claude/.apothem/support/conformity/`), und die gerenderten Hook-Einträge rufen diese
+Skripte über absolute Pfade auf. Beide sind eigenständige stdlib-Skripte, sodass die Hooks
+auf einem Rechner funktionieren, der nie ein `pip install` gesehen hat.
+
+## Wie deinstalliere ich vollständig?
+
+Führen Sie `apothem uninstall --harness <name>` für jeden installierten Harness aus, entfernen Sie
+die Engine entsprechend Ihrem Installationskanal und löschen Sie `~/.apothem/` (Backups) sowie
+`~/.config/apothem/` (Ihr Profil), wenn Sie keine Rückstände wünschen. Der
+[Deinstallationsleitfaden](/docs/install/uninstalling) führt Sie durch jeden Kanal.
+
+## Unter welcher Lizenz steht das Ökosystem?
+
+MIT — siehe `LICENSE`.

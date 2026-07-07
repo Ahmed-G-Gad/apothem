@@ -1,0 +1,46 @@
+---
+title: "Apothem versus konfigurasi manual Cursor"
+description: "Memelihara aturan MDC Cursor di bawah .cursor/rules/ dengan tangan versus merendernya dari profil bersama Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Cursor membaca aturan dalam format MDC di bawah `.cursor/rules/`. Format MDC
+membutuhkan bidang frontmatter — `description`, `globs`, dan `alwaysApply`.
+Adapter cursor Apothem merender file `.mdc` tersebut dari profil bersama.
+Halaman ini membandingkan memelihara konfigurasi itu dengan tangan terhadap
+mengelolanya dengan Apothem.
+
+## Perbandingan usaha
+
+| Tugas | Konfigurasi manual | Dikelola Apothem |
+| ---- | --------------- | --------------- |
+| Menulis aturan | Menulis tiap file `.mdc` di bawah `.cursor/rules/` dengan tangan | Dirender dari korpus bersama |
+| Menulis frontmatter MDC | Menyusun `description` / `globs` / `alwaysApply` per file dengan tangan | Dihasilkan oleh adapter |
+| Menjaga satu format aturan | Memilih dengan tangan antara aturan MDC dan satu file `.cursorrules` | Adapter hanya menulis file MDC `.cursor/rules/` |
+| Menjaga aturan selaras dengan lingkungan lain | Manual, per alat | Otomatis pada `apothem update` |
+| Memverifikasi konfigurasi sudah benar | Inspeksi manual | `apothem verify --harness cursor` |
+
+## Apa yang dikelola Apothem
+
+Adapter cursor merender aturan bersama menjadi file `.mdc` di bawah
+`.cursor/rules/`, menghasilkan frontmatter MDC yang diperlukan (`description`,
+`globs`, `alwaysApply`) untuk tiap file. Adapter hanya menulis format MDC
+berbasis direktori yang dibaca Cursor; ia tidak menulis satu file `.cursorrules`.
+Cursor tidak memiliki hook PreToolUse, sehingga maksud pagar pengaman berada di
+dalam prosa aturan.
+
+## Jalur migrasi
+
+1. Jalankan `apothem profile init` untuk membuat profil bersama jika Anda belum punya.
+2. Pindahkan aturan dari `.cursor/rules/` Anda yang ada (dan `.cursorrules` apa pun)
+   ke korpus bersama.
+3. Jalankan `apothem install --harness cursor` untuk merender file `.mdc`
+   dengan frontmatter MDC yang benar.
+4. Jalankan `apothem verify --harness cursor` untuk memastikan konfigurasi telah mendarat.
+5. Gunakan `apothem update --harness cursor` untuk setiap perubahan berikutnya.
+
+## Baca berikutnya
+
+- [Referensi adapter Cursor](/docs/harnesses/cursor)
+- [Ikhtisar perbandingan](/docs/comparison)

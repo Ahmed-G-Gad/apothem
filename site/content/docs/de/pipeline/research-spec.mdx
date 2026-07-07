@@ -1,0 +1,73 @@
+---
+title: "/research-spec"
+description: "/research-spec — Fasst eine frei formulierte Forschungsfrage oder Rohnotizen in eine spec-taugliche Forschungsspezifikation (falsifizierbare Hypothesen, Geltungsbereich, Kriterien, Erfolgsmetriken), bereit für /research-theory."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rolle:** Leitender Forscher (Rahmung)
+**Pipeline-Position:** Mitte der Kette
+
+Fasst eine frei formulierte Forschungsfrage oder Rohnotizen in eine spec-taugliche `_spec/research-spec.md` — einen prüfbaren, falsifizierbaren Hypothesensatz mit explizitem Geltungsbereich, Einschluss-/Ausschlusskriterien und Erfolgsmetriken — bereit für `/research-theory`.
+
+## Kanonischer Aufruf
+
+```bash
+/research-spec
+```
+
+Mit Argumenten:
+
+```bash
+/research-spec [path/to/question-or-notes] [--suite-name NAME] [--quick SLUG]
+```
+
+## Eingaben
+
+Eine frei formulierte Forschungsfrage oder Rohnotizen (vom Operator inline oder als Pfad bereitgestellt).
+
+## Ausgaben
+
+`_spec/research-spec.md` (Frage, falsifizierbare Hypothesen, Geltungsbereich, Einschluss-/Ausschlusskriterien, Erfolgsmetriken, Glossar) + `_inputs/handoff-manifest.yml`. `--quick` schreibt stattdessen ein leichtgewichtiges, projektlokales Forschungsbriefing.
+
+## Nachgelagert
+
+/research-theory (nachgelagerter Konsument)
+
+## Workflow-Phasen
+
+Der Befehl folgt dem standardmäßigen `/research`-Pipeline-Workflow:
+
+1. **Kontext laden** — Die Frage / Notizen, die Regeln und jeden vorhandenen Suite-Zustand lesen.
+2. **Die Frage rahmen** — In falsifizierbare Hypothesen mit explizitem Geltungsbereich und Einschluss-/Ausschlusskriterien zerlegen; jede Mehrdeutigkeit über den Kanal der strukturierten Rückfrage zutage fördern.
+3. **Erfolgsmetriken festlegen** — Die messbaren Kriterien angeben, nach denen die Forschung beurteilt wird.
+4. **Ausgaben verifizieren** — Bestätigen, dass die Spezifikation definitiv ist (jede Autoritätsdatenlücke über den Kanal der strukturierten Rückfrage aufgelöst, keine als unausgefüllter Bestätigungs-Platzhalter belassen) und die Untergrenze des Rigorositätsmandats besteht.
+5. **Das Übergabe-Manifest aktualisieren** — Den Spezifikationspfad und die Zählung offener / aufgelöster Rückfragen erfassen.
+6. **Die Spezifikation ausgeben** — `_spec/research-spec.md` plus das Übergabe-Manifest.
+
+## Rigorositätsuntergrenze
+
+Jeder behauptete Beitrag ist darauf beschränkt, eigenständig, substanziell und unabhängig ablatierbar zu sein, sodass sein marginaler Effekt später isoliert werden kann. Die Tiefe der erforderlichen Rigorositätsuntergrenze skaliert mit dem Anspruch des Zielorts der Veröffentlichung; wo dieser Anspruch nicht angegeben ist, wird er über strukturierte Rückfrage bestätigt, niemals erfunden.
+
+## Fehlermodi
+
+| Symptom | Ursache | Behebung |
+|---------|-------|----------|
+| Ungelöste Hypothesen-Mehrdeutigkeit | Frage unterspezifiziert | Über strukturierte Rückfrage zutage fördern; keinen Geltungsbereich erfinden |
+| Keine messbare Erfolgsmetrik | Ziel als Aktivität statt als Ergebnis formuliert | Als prüfbares, falsifizierbares Ergebnis neu rahmen |
+| Fehlende Frage-Eingabe | Kein Fließtext / keine Notizen bereitgestellt | Die Forschungsfrage inline oder als Pfad bereitstellen |
+
+## Beispiele
+
+```bash
+# Frame a question into a research spec
+/research-spec ~/notes/retrieval-latency-study.md --suite-name retrieval-latency
+
+# Lightweight project-local research brief
+/research-spec --quick retrieval-latency
+```
+
+## Querverweise
+
+- [Pipeline-Überblick](/docs/pipeline)
+- [Befehlsreferenz](/docs/reference/commands)

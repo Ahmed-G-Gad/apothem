@@ -1,0 +1,70 @@
+---
+title: "/research-synthesis"
+description: "/research-synthesis — Concilia las fuentes recopiladas en un mapa del estado del arte y una matriz de literatura, verifica de forma adversaria cada afirmación y enuncia la brecha de investigación explícita."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rol:** Investigador principal (síntesis)
+**Posición en la canalización:** intermedia
+
+Concilia las fuentes recopiladas en un mapa del estado del arte + matriz de literatura y enuncia la brecha de investigación explícita que aborda el trabajo. Toda afirmación que sustenta el argumento se verifica de forma adversaria frente a dos o más fuentes independientes, refutando por defecto.
+
+## Invocación canónica
+
+```bash
+/research-synthesis
+```
+
+Con argumentos:
+
+```bash
+/research-synthesis [path/to/research-suite/]
+```
+
+## Entradas
+
+`_inputs/source-ledger.md` (el índice de fuentes clasificado y cribado) más las extracciones por fuente bajo `sources/`.
+
+## Salidas
+
+`_inputs/synthesis.md` — el mapa del estado del arte, la matriz de literatura, el libro mayor de hallazgos en disputa y el enunciado explícito de la brecha en una sola frase.
+
+## Aguas abajo
+
+/research-proposal (consumidor aguas abajo)
+
+## Fases del flujo de trabajo
+
+El comando sigue el flujo de trabajo estándar de la canalización `/research`:
+
+1. **Cargar contexto** — Leer el libro mayor de fuentes y las extracciones por fuente.
+2. **Verificar la Puerta de secuencia** — Confirmar que el libro mayor de fuentes existe; de lo contrario, detenerse con `Blocked: run /research-sources first`.
+3. **Sintetizar** — Construir el mapa del estado del arte + matriz de literatura; conciliar acuerdos y contradicciones; enunciar la brecha explícita.
+4. **Verificar de forma adversaria** — Toda afirmación que sustenta el argumento se refuta por defecto frente a dos o más fuentes independientes.
+5. **Actualizar el manifiesto de traspaso** — Registrar la ruta de síntesis y el libro mayor de afirmaciones en disputa.
+6. **Emitir la síntesis** — `_inputs/synthesis.md`.
+
+## Umbral de rigor
+
+Antes de que el enunciado de la brecha quede definitivo, la síntesis concilia su terminología, sus hallazgos y sus recomendaciones frente a los corpus hermanos relacionados (coherencia entre corpus); un conflicto se registra en el libro mayor de hallazgos en disputa, nunca se armoniza en silencio. La brecha debe resolverse en una contribución distinta y parsimoniosa —no una ya cerrada por una afirmación corroborada, y no descomponible en elementos superpuestos y no distintos.
+
+## Modos de fallo
+
+| Síntoma | Causa | Recuperación |
+|---------|-------|----------|
+| Blocked: run /research-sources first | Sin libro mayor de fuentes | Ejecuta `/research-sources` para producir `_inputs/source-ledger.md` |
+| Una afirmación sobrevive sin ≥2 fuentes | Corroboración insuficiente | Márcala como en disputa o no verificable; no la afirmes |
+| Sin enunciado explícito de la brecha | A la síntesis le falta un objetivo | Vuelve a derivar la brecha en una sola frase que aborda la investigación |
+
+## Ejemplos
+
+```bash
+# Sintetizar las fuentes recopiladas en un mapa del estado del arte + brecha
+/research-synthesis path/to/research-suite/
+```
+
+## Referencias cruzadas
+
+- [Visión general de la canalización](/docs/pipeline)
+- [Referencia de comandos](/docs/reference/commands)

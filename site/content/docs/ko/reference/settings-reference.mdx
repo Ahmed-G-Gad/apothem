@@ -1,0 +1,168 @@
+---
+title: "settings.json 문서"
+description: "Apothem 생태계를 위해 Claude Code 훅 실행, 권한, 이벤트, 타임아웃, Python 런타임, 검증, 계층화된 설정 우선순위를 구성합니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **범위.** 이 문서는 **Claude Code 어댑터** 의 훅
+> 배선 파일(`settings.json`)을 설명합니다. 다른 harness 는
+> 각자의 네이티브 설정 표면을 사용합니다 — 각 어댑터의 등가
+> 구성 진입점은
+> [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses) 를 참조하세요.
+
+## 개요
+
+`settings.json` 은 Apothem 생태계를 위한 Claude Code 훅 실행을 구성합니다.
+어떤 훅이 어떤 이벤트에서 발화하는지, 그 타임아웃, 그리고 최상위
+권한 표면을 선언합니다. Claude Code 가 지원되는 모든 플랫폼에서
+`~/.claude/settings.json` 을 로드하기 때문에 Apothem 은 하나의 정규 템플릿만 배포합니다.
+
+## Python 전용 런타임
+
+구성된 각 훅은 Claude Code 의 exec 형식 명령 구조를 사용합니다.
+배포된 템플릿은 `${HARNESS_ROOT}` 토큰을 담고 있습니다.
+
+```json
+{
+  "type": "command",
+  "command": "python",
+  "args": ["${HARNESS_ROOT}/apothem/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
+}
+```
+
+`apothem install` 은 이 토큰을 harness 루트의 절대 경로
+(슬래시 형식, Windows·macOS·Linux 에서 유효)로 렌더링하므로, 설치된
+`settings.json` 은 `~/.claude/.apothem/support/hooks/dispatch.py` 에
+구체화된 디스패처를 직접 호출합니다. 디스패처와
+컨포미티 게이트(`~/.claude/.apothem/support/conformity/gate.py`, 그 옆 `~/.claude/.apothem/support/schemas/`
+에 schema 픽스처가 있음)는 모두 독립형 표준 라이브러리
+스크립트입니다 — 호스트에 임포트 가능한 `apothem` 패키지가 필요하지 않으며, 하나의
+템플릿이 모든 플랫폼을 처리합니다.
+
+## 훅 구성 Schema
+
+### 권한
+
+```json
+"permissions": {
+  "allow": ["Read", "Glob", "Grep"]
+}
+```
+
+`allow` 에 없는 도구는 호출별 명시적 승인 또는 워크스페이스 수준 권한이 필요합니다.
+읽기 전용 도구는 사전 승인되어 있으며, 쓰기 작업(`Write`, `Edit`, `NotebookEdit`,
+`Bash`)은 `PreToolUse` 검증기를 거칩니다.
+
+### 훅 이벤트
+
+> **타임아웃 값은 정규 훅 이벤트 예산을 반영합니다** — 아래 표는
+> 독자 편의를 위해 이를 재현한 것이며, 정규 출처가 우선합니다.
+
+| 이벤트 | 트리거 | 타임아웃 | 목적 | 만데이트 |
+| ----- | ------- | ------- | ------- | ------- |
+| **SessionStart** | 새 Claude Code 세션 | 30초 | 컨텍스트 초기화, 메모리 읽기, 플랜 상태 확인 | CM-14 |
+| **PreToolUse** | Write/Edit/NotebookEdit/Bash 이전 | 10초 | CM-7 준수 + frontmatter 검증 | CM-7, CM-22 |
+| **PreCompact** | 컨텍스트 압축 이전 | 30초 | 외부화되지 않은 상태를 외부화 | CM-24 §2.3 |
+| **PostCompact** | 컨텍스트 압축 이후 | 30초 | 외부화된 상태에서 재부트스트랩 | CM-24 §6.2 |
+| **Stop** | 세션 종료 | 60초 | 세션 종료 시 외부화 | CM-14/CM-22/CM-24/CM-26 |
+
+`dispatch.py` 는 이벤트 화이트리스트에 `UserPromptSubmit` 과 `Notification` 도
+추가로 받아들입니다. 둘 다 배포된 템플릿에서는 배선되어 있지 않으며, 동일한
+로케이터 + 디스패치 패턴의 matcher 블록을 추가하면 활성화됩니다.
+
+### 최상위 필드
+
+| 필드 | 목적 | 필수 |
+| ----- | ------- | -------- |
+| `permissions` | 사전 승인된 도구 이름(기본값은 읽기 전용 도구)을 나열하는 `allow` 배열을 가진 객체 | 예 |
+| `hooks` | 이벤트 이름 → `{matcher, hooks[]}` 블록 배열의 맵; 아래 **훅 이벤트** 참조 | 예 |
+| `model` | 호스트가 해석 가능한 모델 선택자. 오퍼레이터가 설정을 선택하는 경우 별칭이나 전체 식별자 모두 허용됩니다. | 선택 |
+| `defaultShell` | 도구 `Bash` 호출의 기본 셸. Apothem 은 공유 템플릿에서 이를 설정하지 않습니다. | 선택 |
+| `autoUpdatesChannel` | Claude Code 업데이트 채널. Apothem 은 공유 템플릿에서 이를 설정하지 않습니다. | 선택 |
+| `effortLevel` | 기본 추론 노력(`low`, `medium`, `high`, `max`) | 선택 |
+
+## 검증
+
+세 개의 검증기가 점점 더 엄격한 정도로 훅 표면을 다룹니다.
+
+```bash
+# 구조 + Python 위생(빠름, 오프라인)
+python scripts/dev/validate_hooks.py
+
+# 전체 생태계(구조 + frontmatter + 위임된 훅 검사)
+python scripts/dev/validate_ecosystem.py
+
+# 적대적 스윕(구성된 각 훅 명령을 저하된 입력으로 공격)
+python scripts/dev/chaos_pass.py
+```
+
+훅 또는 설정 변경을 커밋하기 전에 세 가지 모두 0으로 종료해야 합니다.
+
+단일 이벤트의 임시 스모크 테스트:
+
+```bash
+python src/apothem/hooks/dispatch.py --event-name SessionStart
+```
+
+예상 출력: `hookSpecificOutput` 을 포함하는 단일 행 JSON 엔벨로프.
+
+## 흔한 문제
+
+### SessionStart 가 타임아웃됨
+
+가장 흔하게는 `find-python` 로케이터가 Microsoft Store 심을 발견하고
+실제 인터프리터 해석에 실패하는 경우입니다. 확인하세요.
+
+```bash
+python src/apothem/hooks/dispatch.py --event-name SessionStart
+```
+
+명령이 유효한 JSON 엔벨로프를 출력하는데 Claude Code 패널에 타임아웃이 표시되면,
+`settings.json` 에서 해당 이벤트의 `timeout` 을 높이세요. 명령이 셸 수준에서 실패하면,
+실제 CPython 3.10+ 를 설치하고 그것이 PATH 에 있거나 로케이터로 발견 가능한지 확인하세요.
+
+### 모든 Write/Edit 가 차단됨
+
+`PreToolUse` 가 harness 설치 루트(Claude Code 어댑터의 경우 `~/.claude/`) 외부에 작성되는 내용 속 플랜 내부 용어를 플래그하고 있습니다.
+내용에 CM-7 위반이 없는지 검토하세요(
+`src/apothem/rules/persistent-conventions-vigilance.md` 참조). 코드베이스 산출물에는
+도메인 언어만 사용합니다.
+
+### settings.json 이 로드되지 않음
+
+Claude Code 는 `~/.claude/settings.json` 을 읽습니다. Apothem 이 기대되는
+harness 루트에 설치되었는지 확인하고 파일 변경 후 세션을 재시작하세요.
+
+### 훅이 조용히 아무 동작도 하지 않음
+
+훅 계약은 "항상 0으로 종료하고, 항상 유효한 JSON 을 방출한다"입니다. 인터프리터를
+찾을 수 없으면 로케이터가 빈 값을 반환하고 명령은 no-op 이 됩니다. `chaos_pass.py` 를 실행해
+구성된 각 훅이 유효한 엔벨로프를 반환하는지 확인하세요 — 라이브 세션이 숨길 저하된
+해석 경로를 잡아냅니다.
+
+## 계층화된 우선순위
+
+Claude Code 는 우선순위가 증가하는 순서로 세 계층을 합성하여 유효 설정 객체를
+해석합니다.
+
+| 계층 | 위치 | 커밋됨? | 근거 |
+|------|----------|------------|-----------|
+| 1. **시스템** | Claude Code 자체에 컴파일된 harness 기본값 | 해당 없음(벤더 제어) | 바닥; 모든 오퍼레이터가 동일한 기준선을 상속합니다. |
+| 2. **프로젝트** | `<harness-root>/settings.json` | ✅ 커밋됨 | 프로젝트 공유 규약: 훅, 권한, MCP 서버, 상태줄 배선. Apothem 소스 템플릿은 Claude Code 어댑터의 templates 디렉터리 안에 있습니다. |
+| 3. **사용자 로컬** | `<harness-root>/settings.local.json`(gitignored) — 리포지토리 루트에 `settings.local.example.json` 으로 템플릿화 | ❌ Gitignored | 오퍼레이터별 오버라이드: API 토큰, 머신 로컬 경로, 옵트인 기능. |
+
+상위 계층 값은 **리프 키 수준에서** 하위 계층 값을 오버라이드합니다 — 프로젝트
+계층과 사용자 로컬 계층 모두 `permissions.allow` 항목을 선언하면 합집합이
+취해지고, 둘 다 `theme` 같은 스칼라를 선언하면 사용자 로컬 값이 이깁니다. 정확한
+키별 병합 시맨틱은 Claude Code harness 가 소유합니다.
+
+### 사용자 로컬 오버라이드 만들기
+
+1. `settings.local.example.json`(리포지토리 루트)을 `<harness-root>/settings.local.json` 으로 복사합니다.
+   파일명 `settings.local.json` 은 `.gitignore` 패턴과 일치하므로 이 파일은 결코
+   버전 관리에 들어가지 않습니다.
+2. 로컬 복사본을 편집합니다 — 오버라이드할 키만 남기세요. harness 가 계층을 합성하므로
+   부재하는 키는 프로젝트 계층에서 상속됩니다.
+3. 저장하기 전에 파일이 유효한 JSON 으로 파싱되는지 확인하세요 — harness 는 세션 시작 시
+   잘못된 형식의 JSON 을 거부합니다.

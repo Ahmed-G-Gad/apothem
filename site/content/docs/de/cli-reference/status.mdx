@@ -1,0 +1,104 @@
+---
+title: "status"
+description: "CLI-Referenz für den Befehl apothem status."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Meldet den Installations-, Verifizierungs- und Drift-Zustand für jedes registrierte Harness.
+
+## Übersicht
+
+```
+apothem status [--project PATH]
+               [--quiet|-q] [--verbose|-v]
+               [--format plain|json] [--json] [--no-color]
+```
+
+`status` ist ein schreibgeschützter Inspektionsbefehl. Er durchläuft jeden registrierten Harness-Adapter und meldet drei Fakten pro Harness: ob er installiert ist, ob seine verwalteten Ziele verifiziert werden und ob die installierte Konfiguration vom geteilten Profil abgewichen ist. Er schreibt nichts auf die Festplatte.
+
+Für jedes Harness meldet `status`:
+
+| Spalte | Bedeutung |
+|---|---|
+| `installed` | Die verwaltete Konfiguration des Adapters existiert an seinem Zielpfad. |
+| `verified` | Die verwalteten Ziele des Adapters sind vorhanden und gültig. |
+| `drift` | Das Profil-Treue-Urteil (siehe unten). |
+
+Der `drift`-Wert ist einer von:
+
+| Wert | Bedeutung |
+|---|---|
+| `in-sync` | Die installierte Konfiguration trägt das frisch projizierte geteilte Profil wortgetreu. |
+| `drift` | Der Harness ist installiert, aber sein projizierter Profilinhalt stimmt nicht mehr mit dem aktuellen geteilten Profil überein. Führe `apothem install` erneut aus, um neu zu projizieren. |
+| `absent` | Der Harness ist nicht installiert, es gibt also nichts zu vergleichen. |
+| `needs-project` | Ein Harness mit Projektgeltungsbereich wurde ohne `--project` gemeldet, sodass sein Ziel nicht aufgelöst werden kann. Übergib `--project PATH`, um ihn zu inspizieren. |
+
+Drift wird gemeldet, niemals als Fehler behandelt: `status` beendet mit 0, selbst wenn ein oder mehrere Harnesses `drift` melden. Drift ist eine Tatsache über deine Einrichtung, kein Fehlschlag des Befehls.
+
+Wenn das geteilte Profil nicht geladen werden kann, wird Drift für installierte Harnesses auf `absent` herabgestuft (die installed/verified-Fakten werden weiterhin gemeldet), statt den Durchlauf abzubrechen.
+
+## Optionen
+
+| Option | Beschreibung |
+|---|---|
+| `--project PATH` | Projektwurzel für Harnesses mit Projektgeltungsbereich. Ohne sie melden Harnesses mit Projektgeltungsbereich `needs-project`. |
+| `--quiet`, `-q` | Unterdrückt informative Ausgabe; nur Fehler werden ausgegeben. |
+| `--verbose`, `-v` | Gibt zusätzliche Diagnoseausgabe aus. |
+| `--format plain\|json` | Ausgabeformat (Standard: `plain`). |
+| `--json` | Kurzform für `--format json`. |
+| `--no-color` | Deaktiviert ANSI-Farbcodes in der Ausgabe. |
+| `-h`, `--help` | Zeigt Hilfe an und beendet. |
+
+## JSON-Ausgabe
+
+Der `--json`-Umschlag trägt eine Ergebniszeile pro registriertem Harness. Jede Zeile trägt die dokumentierten Schlüssel `harness`, `installed`, `verified` und `drift`.
+
+```json
+{
+  "status": "success",
+  "command": "status",
+  "action": "status",
+  "harness": "all",
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "installed": true,
+      "verified": true,
+      "drift": "in-sync"
+    },
+    {
+      "harness": "cursor",
+      "installed": false,
+      "verified": false,
+      "drift": "needs-project"
+    }
+  ],
+  "warnings": [],
+  "error": null
+}
+```
+
+Adapterweise Fehlerisolierung: Wenn ein einzelner Adapter beim Melden seines Zustands eine Ausnahme auslöst, trägt die Zeile dieses Harnesses `outcome: "error"` und eine `message`, die übrigen Harnesses melden weiterhin normal, und der Prozess beendet mit Code 2.
+
+## Beispiele
+
+```bash
+apothem status
+apothem status --project .
+apothem status --json
+```
+
+## Exit-Codes
+
+| Code | Bedeutung |
+|---|---|
+| 0 | Zustand gemeldet (Drift wird gemeldet, ist kein Fehler) |
+| 2 | Mindestens ein Adapter konnte seinen Zustand nicht melden |
+
+## Siehe auch
+
+- [apothem verify](/docs/cli-reference/verify) — verifiziert die Installation eines einzelnen Harnesses
+- [apothem diff](/docs/cli-reference/diff) — zeigt eine Vorschau ausstehender Änderungen für einen Harness
+- [apothem harnesses](/docs/cli-reference/harnesses) — listet und inspiziert registrierte Harnesses

@@ -1,0 +1,32 @@
+---
+title: "Convenciones de commits"
+description: "Establece el formato de los mensajes de commit, el etiquetado de versiones, la disciplina de autoría humana exclusiva y la cadencia por tarea para los artefactos git y el control de versiones."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Referencia canónica para mensajes de commit de git, etiquetas de versión y disciplina de autoría.** El resumen en [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Convenciones es la declaración en línea; esta página es la referencia independiente que citan los colaboradores posteriores.
+
+---
+
+## 1. Conventional Commits
+
+Los asuntos de los commits siguen la forma de **Conventional Commits**: `<type>(<scope>): <subject>`. El conjunto cerrado de `<type>` es `{feat, fix, chore, docs, refactor, test, perf, ci, build, style, revert, release}`. El `<scope>` es la superficie que el commit toca (p. ej., `feat(conformity)`, `docs(adr)`, `fix(ci)`); el scope se omite solo para cambios transversales que no se localizan.
+
+El asunto está en modo imperativo, en minúsculas después de los dos puntos de type/scope, sin punto final y con menos de 72 caracteres. El cuerpo —separado del asunto por una línea en blanco— explica **por qué** existe el cambio, no qué cambió el diff; el diff es en sí mismo el registro canónico del qué.
+
+## 2. Disciplina de autoría (solo humana)
+
+Cada superficie de autoría en cada artefacto git (asunto del commit, cuerpo del commit, campo `Author:`, trailer `Co-Authored-By:`, trailer `Signed-off-by:`, nombre de rama, nombre de etiqueta, anotación de etiqueta, nombre de stash, cuerpo de git-notes, título de PR, descripción de PR) nombra **solo a colaboradores humanos**. El entorno de ejecución del harness nunca se atribuye a sí mismo, al modelo de lenguaje subyacente, al entorno de ejecución / entorno / IDE / extensión / proveedor, ni a ninguna otra herramienta automatizada en ninguna de esas superficies. Los patrones prohibidos incluyen `Co-Authored-By: <model-name>`, `Co-Authored-By: <noreply@*-vendor.com>`, narrativa de cuerpo como `generated with X` o `co-authored by an automated helper`, y cualquier marcador de la línea de asunto que señale autoría no humana. La especificación completa vive en [`src/apothem/rules/production-ready-prs.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/production-ready-prs.md) §6; la aplicación mecánica vive en [`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/hooks/messages/pretooluse-bash.md) Scan 3.
+
+## 3. Etiquetas de versión (versionado semántico)
+
+Las etiquetas de versión siguen el **versionado semántico** (`vMAJOR.MINOR.PATCH`). La versión anterior a la 1.0 es `0.MINOR.PATCH` según la convención preestable de la especificación; los cambios incompatibles incrementan MINOR, las correcciones de errores incrementan PATCH. La etiqueta está anotada (`git tag -a`) y firmada en el nivel de publicación según [`site/content/docs/governance/release-engineering-policy.mdx`](/docs/governance/release-engineering-policy). La versión del paquete vive en el manifiesto de origen (`pyproject.toml` `version`), y las superficies de tiempo de ejecución / portadoras de versión derivan de esos metadatos del paquete.
+
+## 4. Cadencia por tarea
+
+Los commits se realizan por tarea en seriedad SHARED+, por fase en PERSONAL_USE y son opcionales en EXPLORING. El commit de una tarea se realiza inmediatamente después de que pasan las puertas de verificación de la tarea; los commits diferidos acumulan contexto y arriesgan perder el alcance. La disciplina completa vive en [`src/apothem/rules/operational-mandates.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/operational-mandates.md) §CM-13.
+
+## 5. Validadores
+
+La cadena de hooks de pre-commit en [`.pre-commit-config.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/.pre-commit-config.yaml) aplica las puertas de calidad por escritura. La aplicación de la disciplina de autoría en el hook de bash (Scan 3 de `src/apothem/hooks/messages/pretooluse-bash.md`) detecta los trailers prohibidos y los marcadores de cuerpo antes de que se realice cualquier operación de escritura de git.

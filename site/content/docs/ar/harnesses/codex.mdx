@@ -1,0 +1,90 @@
+---
+title: "Codex"
+description: "محوّل إطار عمل Apothem لـ Codex (Beta)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**المورّد:** <bdi>OpenAI</bdi>
+**اسم التثبيت:** <bdi>`codex`</bdi>
+**الحالة:** <bdi>Beta</bdi>
+**الإعداد الأصلي:** <bdi>`~/.codex/AGENTS.md`</bdi>، و<bdi>`~/.codex/hooks.json`</bdi>،
+و<bdi>`~/.codex/hooks/`</bdi>، و<bdi>`~/.codex/agents/*.toml`</bdi>، و<bdi>`~/.agents/skills/`</bdi>
+
+## التثبيت
+
+```bash
+apothem install --harness codex
+```
+
+يثبّت المحوّل تعليمات <bdi>Codex</bdi> الأصلية وخطافاتها، ويحوّل وكلاء <bdi>Apothem</bdi>
+إلى وكلاء <bdi>TOML</bdi> الخاصة بـ<bdi>Codex</bdi>، ويغلّف مطالبات الأوامر القابلة لإعادة
+الاستخدام بوصفها مهارات <bdi>Codex</bdi>.
+
+**الملفات المكتوبة:** <bdi>`~/.codex/AGENTS.md`</bdi>، و<bdi>`~/.codex/hooks.json`</bdi>،
+و<bdi>`~/.codex/hooks/`</bdi>، و<bdi>`~/.codex/agents/*.toml`</bdi>،
+و<bdi>`~/.agents/skills/*/SKILL.md`</bdi>، وملفات الدعم تحت
+<bdi>`~/.config/apothem/{rules,templates}/`</bdi>.
+
+## تعيين الملف التعريفي إلى الإعداد الأصلي
+
+يقرأ المحوّل أفواج <bdi>Apothem</bdi> المشتركة ويثبّت كلًّا منها في سطح <bdi>Codex</bdi>
+الصحيح: التعليمات إلى <bdi>`AGENTS.md`</bdi>، والخطافات إلى <bdi>`hooks.json`</bdi> و
+<bdi>`hooks/`</bdi>، والوكلاء إلى <bdi>TOML</bdi>، والمهارات إلى <bdi>`~/.agents/skills/`</bdi>،
+وقواعد/قوالب <bdi>Markdown</bdi> غير الأصلية إلى <bdi>`~/.config/apothem/`</bdi> بوصفها مادة
+دعم.
+
+## ملاحظات التوافق
+
+يحجز <bdi>Codex</bdi> الدليل <bdi>`~/.codex/rules/`</bdi> لسياسات تنفيذ <bdi>`.rules`</bdi>.
+ولا يضع <bdi>Apothem</bdi> هناك قواعد سلوك بصيغة <bdi>Markdown</bdi>؛ بل يحتفظ بها في
+<bdi>`~/.config/apothem/`</bdi> ويشير إليها من <bdi>`AGENTS.md`</bdi> والمهارات المثبَّتة.
+
+## التحقّق
+
+```bash
+apothem verify --harness codex
+```
+
+يؤكّد أمر التحقّق ما يلي:
+
+1. وجود الإعداد الأصلي في المسار المتوقَّع.
+2. وجود جميع الحقول الإلزامية من الملف التعريفي المشترك.
+3. إبلاغ روتين التحقّق الخاص بالمحوّل عن النجاح.
+
+## التحديث
+
+```bash
+apothem update --harness codex
+```
+
+يحدّث تمهيد <bdi>Codex</bdi> والوكلاء المحوَّلين والمهارات وأفواج الدعم.
+
+## إلغاء التثبيت
+
+```bash
+apothem uninstall --harness codex
+```
+
+يزيل ملفات الإعداد الأصلية التي كتبها المحوّل. لا يتأثّر <bdi>YAML</bdi> الملف التعريفي
+المشترك ولا محرّك <bdi>Apothem</bdi>.
+
+## بوّابة المطابقة
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## استكشاف الأخطاء وإصلاحها
+
+| العَرَض | الإصلاح |
+|---------|-----|
+| ملف الإعداد غير موجود | أعد تشغيل <bdi>`apothem install --harness codex`</bdi> |
+| فشل التحقّق | شغّل <bdi>`apothem update --harness codex`</bdi>، ثم تحقّق مجدّدًا |
+| محتوى إعداد غير متوقَّع | تحقّق من <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness codex`</bdi> |
+
+## مفاتيح الضبط
+
+| العَلَم | الافتراضي | الوصف |
+|------|---------|-------------|
+| <bdi>`--dry-run`</bdi> | <bdi>`false`</bdi> | معاينة التثبيت دون كتابة ملفات. |

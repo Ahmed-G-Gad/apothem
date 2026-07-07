@@ -1,0 +1,124 @@
+---
+title: "install"
+description: "apothem install コマンドの CLI リファレンス。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+共有プロファイルからハーネスアダプターの構成をインストールします。
+
+## 構文
+
+```
+apothem install --harness NAME|all [--profile PATH] [--dry-run]
+                 [--project PATH]
+                 [--quiet|-q] [--verbose|-v]
+                 [--format plain|json] [--json] [--no-color]
+```
+
+共有プロファイルを読み込んで検証し、名前付きのアダプターまたはレジストリ全体の `all` セットを選択し、物質化計画を検証して、ハーネスのネイティブ構成とサポートコホートを書き込みます。プロジェクトスコープのアダプターには `--project PATH` が必要です。
+
+連続形のエイリアス `apothem installing` は同じハンドラーに解決されます。
+
+## 影響範囲プレビュー
+
+`install --harness all` は混在したスコープへ展開されます。プロジェクトスコープのアダプターは指定された `--project` ルートの下に書き込み、ユーザースコープのアダプターはホームディレクトリの下——つまりそのルートの外側——に書き込みます。いずれかのファイルが書き込まれる前に、コマンドは具体的なターゲットを 2 つの見出しの下にグループ化して出力します。プロジェクトルート内のものと、ホームディレクトリ下のものです。
+
+選択がプロジェクトルートの外側に書き込む場合、対話的な確認がホームを起点とする書き込みを保護します。`--yes`、非対話的シェル（TTY なし）、`--dry-run`、`--format json` はそれぞれ確認を求めずに続行します。`--dry-run` と `--format json` は何も書き込みません。プロンプトを拒否すると、いずれかのファイルが書き込まれる前に中止します。
+
+## 機能に関する注記
+
+各アダプターは、そのハーネスがネイティブにサポートする機能のみを投射します。ネイティブな表面を持たない機能は、黙って破棄されるのではなく報告されます。plain モードでは、これはハーネスごとに 1 つのグループ化された注記です（例: `Note: <harness> - 9 capabilities not projected; pass --verbose for detail`）。`--verbose` の場合、各機能は独自の理由行を出力します。`--format json` のエンベロープは、詳細度に関係なく常に完全な `warnings` 配列を保持します。
+
+## オプション
+
+| オプション | 説明 |
+|---|---|
+| `--harness NAME` | インストールするハーネスアダプター、またはレジストリ全体のセットを表す `all`（必須）。登録された名前については `apothem harnesses list` を実行してください。 |
+| `--profile PATH` | 共有プロファイル YAML へのパス。デフォルトは `~/.config/apothem/profile.yaml`。 |
+| `--dry-run` | ファイルを書き込まずにインストールをプレビューします。 |
+| `--project PATH` | プロジェクトスコープのハーネス向けのプロジェクトルート。 |
+| `--quiet`, `-q` | 情報出力を抑制します。エラーのみを出力します。 |
+| `--verbose`, `-v` | ハーネスごとのグループ化された注記の代わりに、投射されなかった各機能の理由を出力します。 |
+| `--format plain\|json` | 出力形式（デフォルト: `plain`）。 |
+| `--json` | `--format json` の省略形。 |
+| `--no-color` | 出力中の ANSI カラーコードを無効にします。 |
+| `-h`, `--help` | ヘルプを表示して終了します。 |
+
+## JSON 出力
+
+`--json`（または `--format json`）が指定されると、単一の JSON ドキュメントが stdout に書き込まれます。
+
+```json
+{
+  "status": "success",
+  "command": "install",
+  "action": "installed",
+  "harness": "claude-code",
+  "profile_path": "C:\\Users\\Example\\.config\\apothem\\profile.yaml",
+  "project": null,
+  "files_written": ["C:\\Users\\Example\\.claude\\settings.json"],
+  "results": [],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+`--dry-run` の場合:
+
+```json
+{
+  "status": "dry_run",
+  "command": "install",
+  "action": "dry_run",
+  "harness": "claude-code",
+  "files_written": [],
+  "results": [],
+  "warnings": [],
+  "error": null
+}
+```
+
+予期される検証エラーは同じエンベロープを使用し、error オブジェクトを含みます。
+
+```json
+{
+  "status": "error",
+  "command": "install",
+  "harness": "all",
+  "files_written": [],
+  "error": {
+    "code": "project.required",
+    "field": "project",
+    "reason": "project-scope harnesses require --project: cursor, gemini-cli, github-copilot, windsurf.",
+    "fix": "Pass --project PATH or select only user-scope harnesses."
+  }
+}
+```
+
+## 例
+
+```bash
+apothem install --harness claude-code
+apothem install --harness claude-code --dry-run
+apothem install --harness cursor --project . --profile ~/profile.yaml --json
+apothem install --harness all --project . --dry-run --json
+apothem Installing --harness claude-code   # continuous-form alias
+apothem installing --harness claude-code   # lowercase variant
+```
+
+## 終了コード
+
+| コード | 意味 |
+|---|---|
+| 0 | アダプターが正常にインストールされた、または dry-run が問題なく計画された |
+| 1 | 予期される検証、プロファイル、ハーネス、プロジェクト、またはアダプターのエラー |
+| 2 | 少なくとも 1 回の書き込み後の部分的なバッチ物質化 |
+
+## 関連項目
+
+- `apothem installing` — このコマンドの連続形エイリアス（ここに記載。CLI は両方の形式を受け付けます）
+- [apothem update](/docs/cli-reference/update) — 現在のプロファイルをハーネスに再適用する
+- [apothem verify](/docs/cli-reference/verify) — アダプターが有効であることを確認する
+- [はじめに](/docs/install) — 完全なインストールガイド

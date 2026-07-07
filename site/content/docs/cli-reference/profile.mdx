@@ -1,0 +1,100 @@
+---
+title: "profile"
+description: "CLI reference for the apothem profile command group."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Manage the shared Apothem profile.
+
+`profile` is a command group with four subcommands: `init`, `show`, `set`, and `edit`.
+The shared profile is the single source of truth that every harness adapter
+materializes into its native configuration.
+
+## Synopsis
+
+```
+apothem profile init [--profile PATH] [--force]
+                     [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+apothem profile show [--profile PATH] [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+apothem profile set KEY VALUE
+                     [--profile PATH] [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+apothem profile edit [--profile PATH] [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+```
+
+## Common options
+
+Every subcommand accepts the shared options below.
+
+| Option | Description |
+|---|---|
+| `--profile PATH` | Path to the shared profile YAML (defaults to the standard profile location). |
+| `--quiet`, `-q` | Suppress informational output; only errors are emitted. |
+| `--verbose`, `-v` | Emit additional diagnostic output. |
+| `--format plain\|json` | Output format (default: `plain`). |
+| `--json` | Shorthand for `--format json`. |
+| `--no-color` | Disable ANSI color codes in output. |
+| `-h`, `--help` | Show help and exit. |
+
+## Subcommands
+
+### `profile init`
+
+Create a schema-valid minimal profile scaffold at
+`~/.config/apothem/profile.yaml` or `--profile PATH`. Existing files are
+preserved unless `--force` is supplied.
+
+| Option | Description |
+|---|---|
+| `--force` | Overwrite an existing profile scaffold. |
+
+### `profile show`
+
+Display the validated, default-expanded shared profile.
+
+### `profile set KEY VALUE`
+
+Set a key in the shared profile. `KEY` is a dotted path that descends into the
+nested profile (`identity.name`, `preferences.style`, `enforcement.sprints`,
+`harnesses.<harness>.preferences.style`); a single key with no dot sets a
+top-level node. `VALUE` is stored as a literal string — bare words are not
+coerced (`no` stays `"no"`, `2024-01-01` and `1.0` stay strings) — except
+`true`/`false` (the boolean enforcement flags) and explicit `[...]`/`{...}`
+list/map input. The fully-assembled profile is validated against the schema
+before writing; an invalid set is refused and the profile on disk is unchanged.
+
+| Argument | Description |
+|---|---|
+| `KEY` | Dotted path into the profile to set (required). |
+| `VALUE` | Literal value to assign; validated before writing (required). |
+
+### `profile edit`
+
+Open the shared profile in the system editor.
+
+## Examples
+
+```bash
+apothem profile init
+apothem profile init --profile ./profile.yaml --force --json
+apothem profile show
+apothem profile show --json
+apothem profile set seriousness SHARED
+apothem profile set rules '["Use fake placeholders in examples."]'
+apothem profile edit
+```
+
+## Exit codes
+
+| Code | Meaning |
+|---|---|
+| 0 | Success (or, for `edit`, the editor exited normally) |
+| 1 | Profile missing, invalid, already exists without `--force`, or cannot be written |
+
+## See also
+
+- [apothem install](/docs/cli-reference/install) — materialize the profile into a harness
+- [apothem doctor](/docs/cli-reference/doctor) — run system-wide install diagnostics

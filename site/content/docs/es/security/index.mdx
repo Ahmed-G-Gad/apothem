@@ -1,0 +1,91 @@
+---
+title: "Seguridad"
+description: "Postura de seguridad de Apothem: objetivo de OpenSSF Scorecard, reporte de vulnerabilidades, superficies de endurecimiento."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+La postura de seguridad de Apothem se asienta sobre cinco pilares: endurecimiento de la cadena de suministro, respuesta a vulnerabilidades, protección de ramas, firma de versiones y análisis de seguridad continuo. Esta sección documenta cada superficie.
+
+## Modelo de amenazas
+
+Apothem es un materializador de configuración. Lee un perfil compartido y
+escribe archivos de configuración nativos del entorno en los directorios que
+lee cada entorno de asistente. Esa única función delimita lo
+que confía y lo que no.
+
+- **Qué confía Apothem.** El perfil compartido que tú redactas y el árbol de
+  código incluido que coloca el instalador. El perfil es tu intención
+  declarada; el motor lo trata como entrada autoritativa tras la validación
+  contra el esquema.
+- **Qué no confía Apothem.** El contenido del perfil llega al sistema de
+  archivos solo después de la validación: los fallos de esquema, los IDs de
+  entorno desconocidos, las rutas de proyecto inseguras, las fuentes de
+  manifiesto faltantes, el recorrido de objetivos y los cruces de enlaces
+  simbólicos se detienen todos antes de cualquier escritura y devuelven
+  diagnósticos estructurados con `files_written: []`.
+- **Qué nunca lleva la salida materializada.** Ningún secreto. Los
+  diagnósticos del perfil redactan las claves con apariencia de secreto y los
+  valores con forma de token antes de que lleguen a la salida en texto plano,
+  al JSON, a los registros, a los fragmentos de documentación o a las pruebas,
+  y los ejemplos públicos usan identidades y dominios ficticios de marcador de
+  posición. La configuración materializada está destinada a ser confirmada y
+  compartida; no lleva credenciales.
+- **El piso de denegación universal.** Las reglas que Apothem materializa
+  llevan un piso de denegación innegociable independientemente de cualquier
+  lista de permitidos por entorno: rutas de secretos (`.env*`, `~/.ssh/**`,
+  almacenes de credenciales), operaciones de shell destructivas (`rm -rf`,
+  `sudo`, empujes forzados a ramas protegidas) y la ejecución de entradas no
+  confiables. Ninguna lista de permitidos amplía silenciosamente este piso.
+- **Radio de impacto.** Las escrituras están acotadas a los directorios del
+  entorno y a los subárboles de soporte propiedad de Apothem. Los objetivos
+  gestionados existentes se respaldan antes del reemplazo y los directorios de
+  descubrimiento compartidos se fusionan hijo por hijo, de modo que los
+  archivos no relacionados redactados por el operador permanecen en su lugar.
+
+## Postura de seguridad en tiempo de ejecución
+
+Los comandos de ciclo de vida del entorno y de escritura de perfil validan
+antes de escribir. Los fallos de esquema del perfil, los IDs de entorno
+desconocidos, las rutas de proyecto inseguras, las fuentes de manifiesto
+faltantes, el recorrido de objetivos y los cruces de enlaces simbólicos se
+detienen antes de las escrituras en el sistema de archivos y devuelven
+diagnósticos estructurados con `files_written: []`.
+
+Las operaciones de instalación y actualización preservan los objetivos
+gestionados existentes respaldándolos antes del reemplazo. Los directorios de
+descubrimiento compartidos se fusionan hijo por hijo, de modo que los archivos
+no relacionados redactados por el operador permanecen en su lugar. `--dry-run`
+realiza la misma validación e informa los resultados planificados sin crear
+directorios ni archivos.
+
+Los diagnósticos del perfil redactan las claves con apariencia de secreto y
+los valores con forma de token antes de que lleguen a la salida en texto
+plano, a la salida JSON, a los registros, a los fragmentos de documentación o
+a las pruebas. Los ejemplos públicos usan identidades y dominios ficticios de
+marcador de posición.
+
+## Enlaces rápidos
+
+- [**Postura de OpenSSF Scorecard**](/docs/security/openssf-scorecard-target) — evidencia por comprobación y límites conocidos de la plataforma
+- [**Auditoría de webhooks**](/docs/security/webhooks-audit) — evidencia de higiene del secreto de webhook
+- [**Protección de ramas**](/docs/security/branch-protection-ruleset) — control de revisión, comprobaciones de estado y restricciones de empuje
+- [**Barrido de artefactos binarios**](/docs/security/binary-artifacts-sweep) — prueba de versión sin binarios en el código fuente
+- [Política de seguridad](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) — reporte de vulnerabilidades y versiones compatibles
+- [Insignia de OpenSSF Scorecard](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem) — puntuación en vivo
+
+## Reportar una vulnerabilidad
+
+Usa el [Reporte Privado de Vulnerabilidades](https://github.com/ahmed-g-gad/apothem/security) en la pestaña Security del repositorio. La política completa, la matriz de versiones compatibles y los plazos de respuesta están en [`SECURITY.md`](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
+
+## Pruebas de versión de la cadena de suministro
+
+Cada artefacto de versión se entrega con:
+
+- **Procedencia de compilación SLSA-3** mediante [`slsa-framework/slsa-github-generator`](https://github.com/slsa-framework/slsa-github-generator)
+- **Firmas de Sigstore** mediante [`sigstore/cosign-installer`](https://github.com/sigstore/cosign-installer)
+- **SBOM en CycloneDX** mediante [`anchore/sbom-action`](https://github.com/anchore/sbom-action)
+- **Declaraciones de procedencia de npm** mediante OIDC de Trusted Publishing en `@ahmed-g-gad/apothem`
+- **Etiquetas de git firmadas con GPG** (clave EDDSA `70396FED9C634163`)
+
+Las recetas de verificación están documentadas en línea en [Ciclo de versión](/docs/runbooks/release-cycle) y [Recuperación de versión](/docs/runbooks/release-recovery); un runbook dedicado de verificar-una-versión está en camino.

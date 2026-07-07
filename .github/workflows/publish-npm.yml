@@ -1,0 +1,124 @@
+# SPDX-License-Identifier: MIT
+
+# npm publication workflow.
+#
+# Trigger: a `v*.*.*` tag push (auto-publishes on release, in parallel with
+# release.yml's GitHub-Release job) OR a manual workflow_dispatch with an
+# explicit tag. Publishes the root npm package `@ahmed-g-gad/apothem` to
+# registry.npmjs.org for the release tag, so `npx @ahmed-g-gad/apothem`
+# resolves the released tree. The tag is the pushed ref on a tag push, or the
+# dispatch input on a manual run (`inputs.tag || github.ref_name`).
+#
+# Authentication: a scoped, granular-access `NODE_AUTH_TOKEN` (the `NPM_TOKEN`
+# secret, restricted to `@ahmed-g-gad/apothem`), combined with `--provenance`,
+# which attaches a Sigstore provenance attestation — signed from this workflow's
+# GitHub Actions OIDC identity (`id-token: write`) — linking the published
+# tarball to this run. The token is scoped to the single publish step and is
+# never passed as a process argument.
+#
+# Opt-in gate: the publish step is gated on the repository variable
+# `NPM_TRUSTED_PUBLISHING_READY`. The maintainer adds the `NPM_TOKEN` secret and
+# sets the repository variable `NPM_TRUSTED_PUBLISHING_READY` to `true`. Until
+# the variable is set, the publish step is SKIPPED — never failed — so a release
+# before npm is wired up still runs green, and a notice step records the one
+# configuration action that enables publication on the next tag.
+#
+# Idempotency: a registry version is immutable — npm rejects re-publishing an
+# existing `name@version`. So the publish step first checks whether the tagged
+# version is already on the registry and skips publication when it is, which
+# keeps a re-cut / re-tag of an already-published release green rather than
+# failing on the duplicate-version error.
+#
+# SHA-pinning policy mirrors ci.yml: every action `uses:` reference is
+# pinned by 40-character commit SHA followed by a `# vMAJOR.MINOR.PATCH`
+# version comment. Renovate (renovate.json) bumps each pinned SHA weekly.
+
+name: Publish npm
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to publish to npm (e.g. v0.0.1).
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-npm-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+
+  publish:
+    name: publish to registry.npmjs.org
+    runs-on: ubuntu-latest
+    environment: release
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write   # OIDC for npm trusted publishing + --provenance
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+      - name: Checkout release tag
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.tag || github.ref_name }}
+      - name: Set up Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+        with:
+          # Node 24 is the npm trusted-publishing runtime floor.
+          node-version: "24"
+          registry-url: https://registry.npmjs.org
+      - name: Pin npm CLI for trusted publishing
+        # The OIDC token exchange requires npm CLI 11.5.1 or newer.
+        run: npm install -g npm@11.5.1
+      - name: Validate package version matches tag
+        env:
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          expected="${RELEASE_TAG#v}"
+          actual="$(node -p "require('./package.json').version")"
+          if [ "${actual}" != "${expected}" ]; then
+            echo "::error::package.json version ${actual} does not match dispatched tag ${RELEASE_TAG}"
+            exit 1
+          fi
+          name="$(node -p "require('./package.json').name")"
+          if [ "${name}" != "@ahmed-g-gad/apothem" ]; then
+            echo "::error::package.json name ${name} is not @ahmed-g-gad/apothem"
+            exit 1
+          fi
+      - name: Publish to npm (scoped token + provenance)
+        # Authenticates with a scoped, granular-access NODE_AUTH_TOKEN and
+        # emits Sigstore build provenance from the GitHub Actions OIDC
+        # identity (id-token: write above). The token stays scoped to this
+        # single step and is never passed as a process argument. Publication is
+        # idempotent: a registry version is immutable, so if this version is
+        # already on the registry the step skips publication (a re-cut / re-tag
+        # of an already-published release stays green) rather than failing on
+        # npm's duplicate-version error.
+        if: ${{ vars.NPM_TRUSTED_PUBLISHING_READY == 'true' }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          version="$(node -p "require('./package.json').version")"
+          if npm view "@ahmed-g-gad/apothem@${version}" version >/dev/null 2>&1; then
+            echo "::notice title=npm publish skipped::@ahmed-g-gad/apothem@${version} is already published to registry.npmjs.org; an npm version is immutable, so re-publishing is a no-op. Nothing to do."
+          else
+            npm publish --provenance --access public
+          fi
+      - name: npm publish skipped (publishing not yet enabled)
+        if: ${{ vars.NPM_TRUSTED_PUBLISHING_READY != 'true' }}
+        run: |
+          echo "::notice title=npm publish skipped::Add the NPM_TOKEN secret (a granular-access token scoped to @ahmed-g-gad/apothem) and set the repository variable NPM_TRUSTED_PUBLISHING_READY=true to enable provenance-signed publication on the next tag."

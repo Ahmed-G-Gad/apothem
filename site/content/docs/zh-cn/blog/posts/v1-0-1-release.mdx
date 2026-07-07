@@ -1,0 +1,119 @@
+---
+title: "Apothem v1.0.1 —— 发布版本"
+description: "Apothem v1.0.1 现已发布 —— 一份共享配置档案物化为十七种编码助手、多条安装路径，以及一个已签名、带凭证的版本。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem v1.0.1 是这款面向编码助手的与宿主无关配置管理器的发布版本：一份共享
+配置档案、十七种编码助手、单一已签名版本，以及随版本本身附带的供应链
+证据。
+
+## 论点：一份配置档案，十七种编码助手
+
+Apothem 读取 `~/.config/apothem/profile.yaml` 处的单一共享配置档案，并把它
+物化为每种编码助手所期望的原生配置。你只需一次性编写自己的行为规则、技能、
+钩子与约定。Apothem 会把它们渲染为十七个编码助手原生目标，并保持同步。
+
+本版本中的十七个适配器：
+
+- antigravity
+- claude-code
+- codebuddy
+- codex
+- cursor
+- gemini-cli
+- github-copilot
+- glm
+- hermes
+- kimi-code
+- kiro
+- open-claw
+- opencode
+- qwen-code
+- trae
+- windsurf
+- zed
+
+往你的工作流里添加一个工具，运行一条命令，你的配置就到位了。移除一个工具，
+Apothem 会干净地卸载 —— 不留下任何遗留文件。
+
+## 安装
+
+多条安装路径，底层共用同一个 CLI：
+
+1. **Claude Code 插件** —— 在 Claude Code 内部：
+
+   ```text
+   /plugin marketplace add ahmed-g-gad/apothem
+   /plugin install apothem@apothem
+   ```
+
+2. **npx** —— 直接从 npm 包 `@ahmed-g-gad/apothem` 运行 CLI，无需安装步骤：
+
+   ```bash
+   npx @ahmed-g-gad/apothem profile init
+   npx @ahmed-g-gad/apothem install --harness all --project .
+   ```
+
+3. **一次性脚本安装器** —— 在 PATH 上放置一个自包含运行时与 `apothem`
+   启动器：
+
+   ```bash
+   curl -fsSL https://apothem.ahmedgad.com/install.sh | sh    # POSIX
+   ```
+
+   ```powershell
+   irm https://apothem.ahmedgad.com/install.ps1 | iex         # Windows
+   ```
+
+4. **工具原生插件与扩展** —— 一个 Gemini CLI 扩展
+   （`gemini extensions install https://github.com/ahmed-g-gad/apothem`）、一个
+   Qwen Code 扩展（`qwen extensions install ahmed-g-gad/apothem`）、一个
+   Codex 插件（`codex plugin marketplace add ahmed-g-gad/apothem`），以及一个
+   VS Code 系扩展（Visual Studio Marketplace，覆盖
+   VS Code 与 GitHub Copilot）。
+
+## 供应链态势
+
+[GitHub Release v1.0.1](https://github.com/ahmed-g-gad/apothem/releases/tag/v1.0.1)
+随代码一并携带了完整的证据集：
+
+- sdist 与 wheel，在发布前校验过。
+- 一份 CycloneDX SBOM。
+- 为每个产物生成的 Sigstore cosign 无密钥签名包。
+- SLSA-3 构建溯源，在发布工作流内部本身已经过验证。
+- 平台运行时归档（darwin / linux / windows），附带一份已签名的
+  `SHA256SUMS` 清单。
+
+版本标签经 GPG 签名，npm 包通过受信任发布（OIDC）发布，并自动附带溯源。
+
+## 箱内之物
+
+`apothem` CLI 暴露出你在完整配置生命周期中所需的操作者命令：
+
+- `apothem install` —— 把配置档案物化到一种编码助手或全部编码助手。
+- `apothem uninstall` —— 移除某种编码助手的已物化配置，而不触动共享配置
+  文件。
+- `apothem update` —— 在你编辑配置档案后重新物化。
+- `apothem verify` —— 检测配置档案与某种编码助手磁盘配置之间的漂移。
+- `apothem harnesses` —— 列出每个已注册的适配器。
+- `apothem profile` —— 检视并管理共享配置档案。
+- `apothem doctor` —— 诊断环境与配置问题。
+
+每个编码助手适配器都实现一个统一的 `HarnessAdapter` 协议 —— `install`、
+`uninstall`、`is_installed`、`verify` —— 因此无论底层厂商格式如何，从操作者
+的视角看，每种编码助手的行为都可预测。关于这一设计的更多内容，请阅读
+[适配器架构深度解析](/docs/blog/posts/multi-harness-adapter-design)，关于格式
+调和的更多内容，请阅读
+[跨编码助手约定收敛](/docs/blog/posts/cross-harness-convention-convergence)。
+
+## 下一步去哪里
+
+- [快速上手](/docs/install/quickstart) —— 安装并物化你的第一份配置档案。
+- [编码助手](/docs/harnesses) —— 全部十七个目标的逐适配器参考。
+- [概念](/docs/concepts) —— 配置档案模型与物化流水线。
+
+Apothem 采用 MIT 许可，并在
+[github.com/ahmed-g-gad/apothem](https://github.com/ahmed-g-gad/apothem)
+公开开发。

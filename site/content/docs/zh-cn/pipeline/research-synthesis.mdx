@@ -1,0 +1,70 @@
+---
+title: "/research-synthesis"
+description: "/research-synthesis——将收集到的来源调和为一份最新水平地图和文献矩阵，对每条论断进行对抗式验证，并陈述明确的研究空白。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**角色：** 首席研究者（综合）
+**流水线位置：** 链路中段
+
+将收集到的来源调和为一份最新水平地图＋文献矩阵，并陈述该工作所针对的明确研究空白。每条承重论断都会以默认反驳的方式，对照两个或更多独立来源进行对抗式验证。
+
+## 规范调用
+
+```bash
+/research-synthesis
+```
+
+带参数：
+
+```bash
+/research-synthesis [path/to/research-suite/]
+```
+
+## 输入
+
+`_inputs/source-ledger.md`（已排序、已筛选的来源索引）外加 `sources/` 之下的逐来源提取。
+
+## 输出
+
+`_inputs/synthesis.md`——最新水平地图、文献矩阵、有争议发现台账，以及明确的一句话研究空白陈述。
+
+## 下游
+
+/research-proposal（下游消费者）
+
+## 工作流阶段
+
+该命令遵循标准的 `/research` 流水线工作流：
+
+1. **加载上下文**——读取来源台账和逐来源提取。
+2. **验证序列门**——确认来源台账存在；否则以 `Blocked: run /research-sources first` 停止。
+3. **综合**——构建最新水平地图＋文献矩阵；调和一致与矛盾；陈述明确的空白。
+4. **对抗式验证**——每条承重论断都以默认反驳的方式对照两个或更多独立来源进行验证。
+5. **更新交接清单**——记录综合路径和有争议论断台账。
+6. **发出综合**——`_inputs/synthesis.md`。
+
+## 严谨性强制底线
+
+在空白陈述定稿之前，综合会将其术语、发现和建议对照相关的姊妹语料进行调和（跨语料一致性）；冲突会记入有争议发现台账，绝不悄然协调。空白必须归结为一项独特、简约的贡献——不是某条经佐证的论断已经填补的空白，也不能被分解为相互重叠、非独特的元素。
+
+## 失败模式
+
+| 症状 | 原因 | 恢复 |
+|---------|-------|----------|
+| Blocked: run /research-sources first | 没有来源台账 | 运行 `/research-sources` 以产出 `_inputs/source-ledger.md` |
+| 论断在不足 2 个来源支持下留存 | 佐证不足 | 标记为有争议或无法验证；不要断言 |
+| 没有明确的空白陈述 | 综合缺少目标 | 重新推导研究所针对的一句话空白 |
+
+## 示例
+
+```bash
+# 将收集到的来源综合为最新水平地图＋空白
+/research-synthesis path/to/research-suite/
+```
+
+## 交叉引用
+
+- [流水线概览](/docs/pipeline)
+- [命令参考](/docs/reference/commands)

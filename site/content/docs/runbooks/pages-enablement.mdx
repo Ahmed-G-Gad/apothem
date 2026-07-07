@@ -1,0 +1,332 @@
+---
+title: "Pages enablement runbook"
+description: "Step-by-step runbook to launch GitHub Pages with custom domain on apothem.ahmedgad.com via CNAME DNS configuration."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+This runbook drives `apothem.ahmedgad.com` from a fresh GitHub Pages
+configuration to a `200 OK` HTTPS landing page. The procedure is written
+for the operator wielding `gh` and a DNS-provider console; a competent
+new contributor follows it without prior context.
+
+The runbook is structured as a **provider-agnostic core** (the
+GitHub-side and DNS-record steps every provider shares) followed by
+**provider-specific appendices** for Namecheap, Cloudflare, Route53,
+and a generic-DNS fallback. Run the core in order; jump to the appendix
+matching the apex domain registrar / DNS host; return to the core for
+verification.
+
+The site is hosted from the public `ahmed-g-gad/apothem` repository through GitHub
+Pages with the custom-domain CNAME pointing to `ahmed-g-gad.github.io`. The
+static-site build emits to `site/dist/`; the Pages workflow lifts that build
+artifact onto the live site at every push to `main`.
+
+## 1. Prerequisites
+
+The operator confirms the following before proceeding:
+
+- **Repository state.** `ahmed-g-gad/apothem` is public, has Pages
+  enabled (Settings > Pages > Source: GitHub Actions), and the
+  `publish-static-site.yml` workflow exists at
+  `.github/workflows/publish-static-site.yml`.
+- **DNS authority.** The operator controls DNS for `ahmedgad.com` at
+  the registrar or at a delegated DNS host (Cloudflare, Route53, etc.).
+  The DNS host is identified via `dig NS ahmedgad.com +short`.
+- **Tooling.** `gh` (GitHub CLI) version 2.40 or later authenticated
+  against the `ahmed-g-gad` account; `dig` (BIND `dig` or `drill`) for DNS
+  verification; a browser for HTTPS inspection.
+- **Apex stance.** This runbook configures the **subdomain**
+  `apothem.ahmedgad.com` only. The apex `ahmedgad.com` is untouched.
+  CNAME at apex requires CNAME-flattening (Cloudflare) or ALIAS records
+  (Route53); the subdomain path avoids both classes of complication.
+
+## 2. Provider-agnostic core
+
+### 2.1 Add the custom domain to Pages
+
+```bash
+gh api -X PUT \
+  /repos/ahmed-g-gad/apothem/pages \
+  -F cname=apothem.ahmedgad.com \
+  -F https_enforced=true
+```
+
+Verify the call returned the new CNAME record:
+
+```bash
+gh api /repos/ahmed-g-gad/apothem/pages \
+  --jq '.cname, .https_enforced, .status'
+```
+
+Expected output:
+
+```text
+apothem.ahmedgad.com
+true
+built
+```
+
+The `built` status confirms the most recent Pages build succeeded. A
+`null` status means Pages has not run since the CNAME was applied —
+push a no-op commit to `main` to trigger the build.
+
+### 2.2 Confirm the CNAME file
+
+GitHub Pages receives `site/public/CNAME` through the static-site build artifact on
+every deploy. The file contains the custom domain on a single line, no scheme,
+no trailing slash:
+
+```text
+apothem.ahmedgad.com
+```
+
+The file lives at `site/public/CNAME`. Verify:
+
+```bash
+cat site/public/CNAME
+```
+
+If the file is missing, recreate it at `site/public/CNAME` and commit under
+`chore: restore Pages CNAME`.
+
+### 2.3 Add the DNS record
+
+Pages serves the custom domain when the apex DNS provider returns one
+of GitHub's four IP addresses (for apex domains) or a CNAME pointing
+to `<owner>.github.io` (for subdomains). For `apothem.ahmedgad.com`
+the record class is **CNAME**:
+
+| Field | Value |
+|-------|-------|
+| Type  | `CNAME` |
+| Host  | `apothem` (subdomain only; the registrar appends the apex) |
+| Value | `ahmed-g-gad.github.io.` (trailing dot when the registrar requires it) |
+| TTL   | `3600` (one hour; lower for faster propagation during cutover) |
+
+The exact UI flow for adding the record varies per provider; jump to
+the matching appendix below, return here when the record is saved.
+
+### 2.4 Wait for DNS propagation
+
+Propagation completes within five minutes for low-TTL records and
+within an hour for the default 3600-second TTL — provider edges may
+extend the window during a DNS-zone transfer. Track progress:
+
+```bash
+dig apothem.ahmedgad.com CNAME +short
+```
+
+Expected output:
+
+```text
+ahmed-g-gad.github.io.
+```
+
+Empty output means the record has not propagated yet. Re-run every
+30 seconds. If the record never appears after 30 minutes, return to
+the appendix matching the DNS host and verify the record is committed
+at the provider, not pending in a draft state.
+
+### 2.5 Verify HTTPS
+
+```bash
+curl -sSI https://apothem.ahmedgad.com/ | head -5
+```
+
+Expected output:
+
+```text
+HTTP/2 200
+server: GitHub.com
+content-type: text/html; charset=utf-8
+strict-transport-security: max-age=31536000
+```
+
+`HTTP/2 200` and the `server: GitHub.com` line together confirm Pages
+is serving the site under a valid TLS certificate. A `301` to the HTTPS
+URL on a plain-HTTP request also satisfies the gate; HTTPS-enforced is
+on.
+
+If `curl` returns a `526` (Cloudflare-specific invalid-certificate
+code) or `502` (bad gateway), the certificate has not yet been issued.
+Pages provisions Let's Encrypt certificates automatically once the
+CNAME resolves; allow up to 24 hours for first issuance. For
+diagnostics:
+
+```bash
+gh api /repos/ahmed-g-gad/apothem/pages \
+  --jq '.https_certificate.state, .https_certificate.description'
+```
+
+`state: approved` means issuance is complete. `state: requesting` means
+issuance is in progress; wait. Any other state requires a Pages
+restart (toggle the custom domain off and on via the API).
+
+### 2.6 Verify deep links
+
+```bash
+curl -sSI https://apothem.ahmedgad.com/architecture/ | head -3
+```
+
+Expected output:
+
+```text
+HTTP/2 200
+server: GitHub.com
+content-type: text/html; charset=utf-8
+```
+
+A `404` on a deep link means the static-site build has not picked up the page or the
+deploy has not completed. Trigger a rebuild via `gh workflow run
+publish-static-site.yml`.
+
+### 2.7 Record the verification
+
+Append a row to the operator's site-status log (or to this runbook's
+verification log if maintained inline) with the date, the operator's
+identity, and the `gh api` Pages-status output. The verification log
+is the audit trail — every Pages-config change leaves a row.
+
+## 3. Provider appendix — Namecheap
+
+Namecheap exposes DNS through the registrar's "Advanced DNS" tab. The
+operator owns `ahmedgad.com` here when the registrar's NS records
+match `dns1.registrar-servers.com` and `dns2.registrar-servers.com`
+(the Namecheap default). Verify with `dig NS ahmedgad.com +short`.
+
+Steps:
+
+1. Sign in to Namecheap; open the dashboard.
+2. Click `Domain List` in the left navigation; locate `ahmedgad.com`;
+   click `Manage`.
+3. Click the `Advanced DNS` tab.
+4. Click `Add New Record`. Choose:
+   - Type: `CNAME Record`
+   - Host: `apothem` (no apex, no trailing dot)
+   - Value: `ahmed-g-gad.github.io.` (with trailing dot)
+   - TTL: `Automatic` (Namecheap default; honors 1800 seconds)
+5. Click the green checkmark to save.
+6. Wait 5 to 10 minutes for Namecheap's edge propagation; then return
+   to the provider-agnostic core §2.4 for `dig` verification.
+
+Common failure: Namecheap's UI silently rejects CNAME records when an
+`A` record already occupies the same host. Delete the conflicting `A`
+record first; CNAME and A on the same host are mutually exclusive per
+RFC 1034.
+
+## 4. Provider appendix — Cloudflare
+
+Cloudflare DNS hosts the apex when the registrar's NS records point to
+`*.ns.cloudflare.com` (the Cloudflare default after delegation). Verify
+with `dig NS ahmedgad.com +short`.
+
+Steps:
+
+1. Sign in to Cloudflare; select the `ahmedgad.com` zone.
+2. Click `DNS` -> `Records` in the left navigation.
+3. Click `Add record`. Choose:
+   - Type: `CNAME`
+   - Name: `apothem` (Cloudflare auto-appends the apex)
+   - Target: `ahmed-g-gad.github.io` (no trailing dot in Cloudflare's UI)
+   - TTL: `Auto` (Cloudflare's default; routes through its edge)
+   - Proxy status: **DNS only** (gray cloud, not orange)
+4. Click `Save`.
+
+The proxy-status choice is load-bearing. Setting Cloudflare's proxy on
+(orange cloud) routes traffic through Cloudflare's edge before reaching
+GitHub Pages; this breaks Pages' Let's Encrypt issuance because
+Cloudflare presents its own certificate. Keep proxy off for the
+initial setup; turn proxy on later only after deciding whether to
+manage the certificate at Cloudflare's edge.
+
+5. Wait 1 to 2 minutes for Cloudflare's edge propagation; then return
+   to the provider-agnostic core §2.4.
+
+Common failure: Cloudflare strips the trailing dot from CNAME targets
+silently. The target field accepts `ahmed-g-gad.github.io` without the
+trailing dot; the resolver appends the trailing dot at query time. Do
+not type the trailing dot in Cloudflare's UI — it produces a
+double-dot record that fails to resolve.
+
+## 5. Provider appendix — Route53
+
+Route53 hosts the zone when the registrar's NS records point to four
+`awsdns-*.com` / `awsdns-*.org` / `awsdns-*.co.uk` / `awsdns-*.net`
+servers. Verify with `dig NS ahmedgad.com +short`.
+
+Steps:
+
+1. Open the AWS Console; navigate to Route53; click `Hosted zones`;
+   select the `ahmedgad.com` zone.
+2. Click `Create record`.
+3. Configure:
+   - Record name: `apothem` (Route53 auto-appends the apex)
+   - Record type: `CNAME`
+   - Value: `ahmed-g-gad.github.io` (no trailing dot)
+   - TTL: `300` (5 minutes; Route53's defaults are higher; lower the
+     TTL for faster propagation during cutover)
+   - Routing policy: `Simple routing`
+4. Click `Create records`.
+5. Wait 1 to 5 minutes for Route53 propagation; return to §2.4.
+
+Route53 supports **alias records** that resolve at query time without
+a CNAME indirection. Alias records are not used here because alias
+targets are restricted to AWS resources (CloudFront, S3, ELB, etc.)
+and `ahmed-g-gad.github.io` is not an AWS resource. CNAME is correct.
+
+Common failure: Route53's UI accepts duplicate record names with
+different routing policies; this surfaces as a healthcheck-style
+failover routing rather than a simple CNAME. Confirm `Routing policy`
+reads `Simple routing` before saving.
+
+## 6. Provider appendix — Generic DNS
+
+For DNS hosts not covered by the named appendices (most registrars'
+default DNS panels — GoDaddy, Hover, Gandi, OVH, Porkbun,
+Domains.google, Network Solutions), apply the provider-agnostic CNAME
+shape:
+
+| Field | Value |
+|-------|-------|
+| Type  | `CNAME` |
+| Host  | `apothem` (subdomain only) |
+| Value | `ahmed-g-gad.github.io.` (trailing dot — most generic panels accept it; some require it) |
+| TTL   | `3600` (or the panel's lowest available value during cutover) |
+
+The two failure classes that recur across generic panels:
+
+- **Trailing-dot inconsistency.** Some panels require the trailing dot;
+  others reject it; a few accept either. When the record fails to
+  propagate after 30 minutes, toggle the trailing dot and resave.
+- **Conflicting A record at the same host.** CNAME and A on the same
+  host violate RFC 1034 (Domain Names — Concepts and Facilities) section three on domain-name preferences. Delete the conflicting A record before
+  adding the CNAME.
+
+After the record is saved, return to §2.4 for `dig` verification.
+
+## 7. Failure recovery
+
+The Pages-enablement procedure has four documented failure modes:
+
+| Failure | Diagnostic | Recovery |
+|---|---|---|
+| `gh api .../pages` returns 404 | Pages is not enabled on the repo | `gh api -X POST /repos/ahmed-g-gad/apothem/pages -f source.branch=main -f source.path=/site` then retry §2.1 |
+| `dig` returns empty after 30 minutes | DNS record not committed at provider | Return to the matching provider appendix; verify the record is saved (not draft / pending); inspect the panel for a `Save` step missed |
+| `https_certificate.state: errored` | Pages cannot issue a certificate | Toggle the custom domain off and on at Pages settings; this re-triggers issuance. Wait up to 24 hours for the new attempt |
+| Deep-link 404 after build | Static-site build did not include the page | `gh workflow run publish-static-site.yml`; on completion verify `gh run list --workflow=publish-static-site.yml --limit=1 --json conclusion --jq '.[0].conclusion'` returns `success` |
+
+If recovery fails after one cycle of the matching diagnostic, escalate
+to the release-recovery runbook (force-push fresh history may
+have left the Pages config in an inconsistent state).
+
+## 8. Cross-references
+
+- **Spec source.** Specification §2.5 lists this runbook in the
+  Cluster 4 documentation deliverables.
+- **CNAME canonical location.** The CNAME file lives at `site/public/CNAME`
+  and is committed to the repository; Pages reads it on every build.
+- **Recovery flow.** The release-recovery runbook re-applies Pages
+  configuration from the recovery snapshot when the cutover sequence
+  fails mid-flight.
+- **Release cycle.** Every release run includes a Pages-build job that
+  verifies the site renders at the custom domain.

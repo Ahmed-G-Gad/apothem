@@ -1,0 +1,43 @@
+---
+title: "Pläne verfassen"
+description: "Verfasse Plan-Suiten mit der /plan-Pipeline."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Die `/plan`-Pipeline verwandelt rohe Prosa-Anforderungen in ausführbare, geprüfte, qualitätsgesicherte Implementierungspläne.
+
+## Die Kernstufen
+
+Die Pipeline wird als acht erstklassige `/plan-<stage>`-Befehle ausgeliefert. Der Alltagsablauf führt fünf davon aus:
+
+1. `/plan-spec` — Verfeinert Prosa zu einem spezifikationsreifen `_spec/spec.md`
+2. `/plan-generate` — Erzeugt das vollständige Gerüst der Plan-Suite
+3. `/plan-review` — Forensisches Audit des generierten Plans
+4. `/plan-execute` — Führt die Phasen eine nach der anderen aus
+5. `/plan-status` — Inspiziert den Fortschritt jederzeit
+
+Drei Stufen runden die Menge ab: `/plan-design` gibt ein Architekturdesign-Artefakt für architekturtragende Suites aus, `/plan-audit` führt eine Closed-Loop-Spec-→-Generate-→-Review-Behebungsumhüllung aus, und `/plan-amend` überarbeitet eine bestehende Suite, ohne aufgelöste Entscheidungen zu verlieren.
+
+## Schnellplan (Einzeldatei)
+
+```bash
+# Creates plans/YYYY-MM-DD--my-feature.md in the current project
+/plan-spec --quick my-feature
+```
+
+## Vollständige Plan-Suite
+
+```bash
+# Step 1 — write your requirements to prose.md, then:
+/plan-spec prose.md --suite-name my-project-plan
+/plan-generate
+/plan-review
+/plan-execute
+```
+
+## Plan-Lebenszyklus
+
+Pläne durchlaufen: `draft` -> `in-progress` -> `converged` (zu ADR befördert) oder `abandoned`.
+
+Siehe [Plan-Disziplin](/docs/reference/plans-discipline) für die vollständige Lebenszyklus-Spezifikation.

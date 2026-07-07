@@ -1,0 +1,63 @@
+---
+title: "Apothem versus framework lingkungan lain"
+description: "Bagaimana Apothem dibandingkan dengan alat konfigurasi satu-lingkungan, pengelola dotfile, dan konfigurasi manual per-alat sebagai pendekatan untuk mengelola pengaturan harness."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Halaman ini menempatkan Apothem terhadap kategori-kategori alat yang sudah
+dipakai operator untuk mengelola konfigurasi harness. Ia menamai
+kategori kemampuan, bukan produk tertentu — perbandingannya bersifat struktural
+dan berlaku terlepas dari alat mana di tiap kategori yang Anda pilih.
+
+## Kategori-kategorinya
+
+Operator yang mengelola konfigurasi asisten AI di banyak alat masuk ke salah
+satu dari empat pendekatan:
+
+1. **Konfigurasi manual per-alat.** Anda menyunting file konfigurasi native tiap
+   lingkungan dengan tangan — satu file per alat, tanpa sumber bersama.
+2. **Alat konfigurasi satu-lingkungan.** Alat yang khusus untuk satu platform
+   asisten yang mengelola konfigurasi platform itu dengan baik tetapi tidak
+   menjangkau alat-alat lain yang Anda pakai.
+3. **Pengelola dotfile serbaguna.** Alat yang memversi dan menyinkronkan file
+   konfigurasi antar mesin tetapi memperlakukan tiap file sebagai teks buram.
+4. **Pengelola konfigurasi multi-lingkungan.** Alat yang memegang satu profil
+   bersama dan merender format native tiap lingkungan darinya. Apothem ada di
+   kategori ini.
+
+## Perbandingan kemampuan
+
+| Kemampuan | Manual per-alat | Alat satu-lingkungan | Pengelola dotfile | Apothem |
+| ---------- | --------------- | ------------------- | --------------- | ------- |
+| Mencakup banyak lingkungan | Ya (dengan usaha) | Tidak (satu lingkungan) | Ya (tingkat file) | Ya (tujuh belas adapter) |
+| Sumber kebenaran tunggal yang dibagikan | Tidak | Tidak | Tidak | Ya |
+| Merender format native per lingkungan | Manual | Ya (satu lingkungan) | Tidak | Ya |
+| Pencegahan penyimpangan lintas-lingkungan | Manual | T/B | Hanya sinkronisasi file | Ya |
+| Penerjemahan format (`.mdc`, `.toml`, `.md` tersemat) | Manual | Untuk lingkungannya | Tidak | Ya |
+| Perintah verifikasi | Tidak ada | Bervariasi | Tidak ada | Ya |
+| Menambahkan lingkungan baru | Lebih banyak kerja manual | Tidak mungkin | Melacak lebih banyak file | Pasang satu adapter |
+
+## Di mana tiap pendekatan cocok
+
+**Konfigurasi manual per-alat** cocok untuk satu alat dengan konfigurasi yang
+jarang Anda ubah. Biayanya tumbuh dengan tiap alat yang Anda tambahkan dan tiap
+aturan yang Anda jaga selaras di antara mereka.
+
+**Alat satu-lingkungan** cocok untuk operator yang berkomitmen pada satu
+platform. Mereka tidak menyelesaikan masalah multi-alat — begitu Anda menambahkan
+asisten kedua, Anda kembali menjaga dua konfigurasi tetap selaras.
+
+**Pengelola dotfile** cocok untuk sinkronisasi file sembarang antar mesin.
+Mereka memindahkan byte antar mesin tetapi tidak memahami format lingkungan,
+sehingga tidak bisa merender satu profil menjadi tujuh belas bentuk native maupun
+memverifikasi salah satunya.
+
+**Apothem** cocok untuk operator yang menjalankan beberapa asisten AI dan
+menginginkan satu sumber kebenaran. Anda menulis profil sekali; Apothem merender,
+memasang, memperbarui, dan memverifikasi konfigurasi native tiap lingkungan.
+
+## Baca berikutnya
+
+- [Ikhtisar perbandingan dan matriks fitur](/docs/comparison)
+- [Adapter lingkungan](/docs/harnesses)

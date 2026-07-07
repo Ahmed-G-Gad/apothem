@@ -1,0 +1,100 @@
+---
+title: "migrate-workspace"
+description: "CLI-Referenz für den Befehl apothem migrate-workspace."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Migriert einen veralteten Workspace pro Harness in das geteilte `.apothem`-Layout.
+
+## Übersicht
+
+```
+apothem migrate-workspace [--project PATH] [--dry-run]
+                          [--quiet|-q] [--verbose|-v]
+                          [--format plain|json] [--json] [--no-color]
+```
+
+`migrate-workspace` führt ein veraltetes Datenverzeichnis pro Harness
+(`.apothem/<harness>/...`) und einen veralteten `.plans/`-Baum in das einzelne
+geteilte Arbeitsverzeichnis `.apothem/{plans,memory,learning,contexts}` zusammen.
+Die Basis ist die aufgelöste `--project`-Wurzel, sofern angegeben, andernfalls das
+aktuelle Arbeitsverzeichnis (der projektlokale Standard).
+
+Speicher, Kontexte und Lernspeicher pro Harness werden nach ID in den geteilten
+Speicher zusammengeführt; Lernsignale werden konkateniert und dedupliziert; ein
+widersprüchlicher Datensatz (gleiche ID, anderer Inhalt) wird übersprungen, nie
+überschrieben. Ein veralteter `.plans/`-Baum wird unter `.apothem/plans/`
+verschoben. Jede verbrauchte Quelle wird zuerst gesichert. Die Migration ist
+idempotent — ein erneuter Lauf auf einem bereits migrierten Baum ist ein No-op.
+
+## Optionen
+
+| Option | Beschreibung |
+|---|---|
+| `--project PATH` | Projektwurzel für Adapter mit Projektgeltungsbereich, die in einen Projektbaum statt in ein Konfigurationsverzeichnis mit Benutzergeltungsbereich materialisieren. |
+| `--dry-run` | Erkennt das veraltete Layout und meldet, was migriert würde, ohne zu schreiben. |
+| `--quiet`, `-q` | Unterdrückt informative Ausgaben; nur Fehler werden ausgegeben. |
+| `--verbose`, `-v` | Gibt zusätzliche diagnostische Ausgaben aus. |
+| `--format plain\|json` | Ausgabeformat (Standard: `plain`). |
+| `--json` | Kurzform für `--format json`. |
+| `--no-color` | Deaktiviert ANSI-Farbcodes in der Ausgabe. |
+| `-h`, `--help` | Zeigt die Hilfe an und beendet. |
+
+## JSON-Ausgabe
+
+Der `--json`-Umschlag trägt das Migrationsergebnis. Bei einer abgeschlossenen
+Migration ist `status` gleich `success` und die Nutzlast meldet die
+zusammengeführten Datensatzzahlen, ob ein `.plans/`-Baum verschoben wurde, die
+Backup-Wurzel und etwaige übersprungene Konflikte. Eine `--dry-run`-Aufrufung
+meldet stattdessen `legacy_layout_detected`.
+
+```json
+{
+  "command": "migrate-workspace",
+  "status": "success",
+  "base": "/home/example/project",
+  "migrated": true,
+  "backup_root": "/home/example/project/.apothem/.backups/01J9Z…",
+  "memory_merged": 12,
+  "contexts_merged": 4,
+  "learning_merged": 7,
+  "conflicts": [],
+  "plans_moved": true,
+  "notes": []
+}
+```
+
+Wenn kein veraltetes Layout vorhanden ist, ist `migrated` gleich `false` und
+nichts wird geschrieben. Der `--dry-run`-Umschlag lässt die Ergebniszahlen weg
+und meldet nur die Erkennung:
+
+```json
+{
+  "command": "migrate-workspace",
+  "base": "/home/example/project",
+  "dry_run": true,
+  "legacy_layout_detected": false
+}
+```
+
+## Beispiele
+
+```bash
+apothem migrate-workspace
+apothem migrate-workspace --project .
+apothem migrate-workspace --dry-run --json
+```
+
+## Exit-Codes
+
+| Code | Bedeutung |
+|---|---|
+| 0 | Migration abgeschlossen oder kein veraltetes Layout gefunden (nichts zu migrieren) |
+| 1 | Erwarteter Fehler — ein Validierungs- oder Projektwurzelfehler oder ein Migrationsfehler |
+
+## Siehe auch
+
+- [apothem install](/docs/cli-reference/install) — einen Harness aus dem geteilten Profil materialisieren
+- [apothem status](/docs/cli-reference/status) — Installations-, Verifikations- und Drift-Status melden
+- [Plans-Disziplin](/docs/reference/plans-discipline) — das geteilte `.apothem/plans/`-Layout

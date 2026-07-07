@@ -1,0 +1,7 @@
+{
+  "argv": [
+    "status"
+  ],
+  "exit_code": 0,
+  "stdout": "✗ antigravity  installed=False verified=False absent  (✗)\n✗ claude-code  installed=False verified=False absent  (✗)\n✗ codex  installed=False verified=False absent  (✗)\n- cursor needs --project (project-scope harness)\n- gemini-cli needs --project (project-scope harness)\n- github-copilot needs --project (project-scope harness)\n✗ hermes  installed=False verified=False absent  (✗)\n- kimi-code needs --project (project-scope harness)\n✗ open-claw  installed=False verified=False absent  (✗)\n✗ opencode  installed=False verified=False absent  (✗)\n✗ qwen-code  installed=False verified=False absent  (✗)\n- windsurf needs --project (project-scope harness)\n- codebuddy needs --project (project-scope harness)\n- kiro needs --project (project-scope harness)\n- trae needs --project (project-scope harness)\n- zed needs --project (project-scope harness)\n- glm needs --project (project-scope harness)\n"
+}

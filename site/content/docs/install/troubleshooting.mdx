@@ -1,0 +1,102 @@
+---
+title: "Troubleshooting"
+description: "Solutions for common Apothem installation failures and runtime issues across the plugin, npx, and installer paths."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Solutions for common Apothem install and runtime issues.
+
+## Installation issues
+
+### No Python 3.10+ found
+
+The installers and the npx shim probe `python3`, `python`, the versioned
+names (`python3.14` through `python3.10`), and `py -3` on Windows — rejecting
+Microsoft Store launcher shims — and stop with `No Python >= 3.10 found in
+PATH` when no candidate meets the 3.10 floor. Install CPython 3.10 or newer
+from python.org or your OS package repository, confirm `python3 --version`
+(or `py -3 --version` on Windows) reports at least 3.10, then re-run.
+
+### Missing runtime dependencies: click, rich
+
+The engine vendors most of its third-party dependencies inside the source
+tree, but `click` and `rich` must be importable under the interpreter the
+installer selects. When either is missing, the installer names it and offers
+to install it for you:
+
+```text
+! Missing Python prerequisites under <python>: click rich
+  Install click rich under <python> now? [y/N]
+```
+
+Accept the prompt to have the installer run `pip install` under that
+interpreter. To skip the prompt, pass `--yes` (`-Yes` on PowerShell) or set
+`APOTHEM_AUTO_INSTALL_DEPS=1` to install automatically. If you decline — or
+`pip` is unavailable, or you prefer your OS package manager — install the
+named packages yourself (for example `python3-click` and `python3-rich` on
+Debian-family hosts, or `pip install click rich`) and re-run.
+
+### `apothem` not found after running the installer
+
+The installer places the source tree at `~/.apothem` and does not add an
+`apothem` executable to your `PATH`. Run the engine through the invocation
+the installer prints at completion:
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+```
+
+or use the npx form (`npx @ahmed-g-gad/apothem <command>`), which needs no
+`PATH` entry.
+
+### `/plugin marketplace add` fails
+
+`/plugin marketplace add ahmed-g-gad/apothem` fetches the marketplace
+listing from GitHub. When it fails, confirm the machine can reach
+`https://github.com/ahmed-g-gad/apothem` (network, proxy, or firewall
+rules), then retry. If the marketplace was added earlier under a partial
+fetch, remove and re-add it before running
+`/plugin install apothem@apothem`.
+
+### npx serves a stale version
+
+`npx` caches downloaded packages. When `npx @ahmed-g-gad/apothem --version`
+reports an older version than the current release, clear the cache or pin
+the dist-tag:
+
+```bash
+npx clear-npx-cache
+npx @ahmed-g-gad/apothem@latest --version
+```
+
+### irm / iex blocked on Windows
+
+If PowerShell execution policy blocks the installer:
+
+```powershell
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+irm https://apothem.ahmedgad.com/install.ps1 | iex
+```
+
+## Runtime issues
+
+### apothem install finds no harnesses
+
+Run apothem doctor to list detected harness directories. If none are found, ensure your
+harness is installed and has been launched at least once.
+
+### apothem verify reports a failing adapter
+
+Re-run apothem install to re-materialize the adapter. If the issue persists, check the
+adapter-specific page under [Harness Adapters](/docs/harnesses).
+
+### Hooks not firing in Claude Code
+
+Confirm Apothem is wired by checking ~/.claude/settings.json for the hook entries.
+If the file is missing the hooks, run apothem install again.
+
+## Getting help
+
+- [GitHub Issues](https://github.com/ahmed-g-gad/apothem/issues) -- bug reports
+- [GitHub Discussions](https://github.com/ahmed-g-gad/apothem/discussions) -- questions
+- [FAQ](/docs/faq) -- frequently asked questions

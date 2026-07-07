@@ -1,0 +1,9 @@
+{
+  "argv": [
+    "profile",
+    "show",
+    "--help"
+  ],
+  "exit_code": 0,
+  "stdout": "Usage: main profile show [OPTIONS]\n\n  Display the current shared profile.\n\nOptions:\n  --profile PATH         Path to shared profile YAML.\n  -q, --quiet            Suppress informational output; only errors are emitted.\n  -v, --verbose          Emit additional diagnostic output.\n  --format [plain|json]  Output format.  [default: plain]\n  --no-color             Disable ANSI color codes in output.\n  --json                 Shorthand for --format json.\n  -h, --help             Show this message and exit.\n\n  Examples:   apothem profile show   apothem profile show --json\n\n  Related commands:   profile init  Create a schema-valid shared profile\n  profile set   Set a key in the shared profile   profile edit  Open the profile\n  in the system editor\n\n  Exit codes:   0  Success   1  Profile missing or invalid\n"
+}

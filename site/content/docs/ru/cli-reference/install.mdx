@@ -1,0 +1,124 @@
+---
+title: "install"
+description: "Справочник CLI для команды apothem install."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Устанавливает конфигурацию адаптера ассистента по написанию кода из общего профиля.
+
+## Сводка
+
+```
+apothem install --harness NAME|all [--profile PATH] [--dry-run]
+                 [--project PATH]
+                 [--quiet|-q] [--verbose|-v]
+                 [--format plain|json] [--json] [--no-color]
+```
+
+Загружает и проверяет общий профиль, выбирает именованный адаптер или набор `all` уровня всего реестра, проверяет план материализации и записывает нативную конфигурацию ассистента по написанию кода плюс вспомогательные когорты. Адаптеры с областью проекта требуют `--project PATH`.
+
+Псевдоним в продолженной форме `apothem installing` разрешается в тот же обработчик.
+
+## Предпросмотр радиуса воздействия
+
+`install --harness all` разветвляется на смешанные области: адаптеры с областью проекта записывают под предоставленным корнем `--project`, а адаптеры с областью пользователя записывают под вашим домашним каталогом — за пределами этого корня. Прежде чем будет записан какой-либо файл, команда выводит конкретные цели, сгруппированные под двумя заголовками: те, что находятся внутри корня проекта, и те, что находятся под вашим домашним каталогом.
+
+Когда выбор записывает за пределы корня проекта, интерактивное подтверждение защищает записи с корнем в домашнем каталоге. `--yes`, неинтерактивная оболочка (без TTY), `--dry-run` и `--format json` продолжают каждый без запроса; `--dry-run` и `--format json` ничего не записывают. Отклонение запроса прерывает выполнение до записи какого-либо файла.
+
+## Заметки о возможностях
+
+Каждый адаптер проецирует только те возможности, которые его ассистент по написанию кода поддерживает нативно; возможности без нативной поверхности сообщаются, а не отбрасываются молча. В режиме plain это одна сгруппированная заметка на каждый ассистент по написанию кода (например `Note: <harness> - 9 capabilities not projected; pass --verbose for detail`); при `--verbose` каждая возможность выводит собственную строку обоснования. Конверт `--format json` всегда несёт полный массив `warnings` независимо от уровня детализации.
+
+## Параметры
+
+| Параметр | Описание |
+|---|---|
+| `--harness NAME` | Адаптер ассистента по написанию кода для установки или `all` для набора уровня всего реестра (обязательно). Выполните `apothem harnesses list`, чтобы увидеть зарегистрированные имена. |
+| `--profile PATH` | Путь к YAML общего профиля. По умолчанию `~/.config/apothem/profile.yaml`. |
+| `--dry-run` | Предпросмотр установки без записи файлов. |
+| `--project PATH` | Корень проекта для ассистентов по написанию кода с областью проекта. |
+| `--quiet`, `-q` | Подавляет информационный вывод; выдаются только ошибки. |
+| `--verbose`, `-v` | Выводит обоснование каждой непроецированной возможности вместо сгруппированной заметки на каждый ассистент по написанию кода. |
+| `--format plain\|json` | Формат вывода (по умолчанию: `plain`). |
+| `--json` | Сокращение для `--format json`. |
+| `--no-color` | Отключает коды цвета ANSI в выводе. |
+| `-h`, `--help` | Показывает справку и завершает работу. |
+
+## Вывод JSON
+
+Когда указан `--json` (или `--format json`), в stdout записывается единственный JSON-документ:
+
+```json
+{
+  "status": "success",
+  "command": "install",
+  "action": "installed",
+  "harness": "claude-code",
+  "profile_path": "C:\\Users\\Example\\.config\\apothem\\profile.yaml",
+  "project": null,
+  "files_written": ["C:\\Users\\Example\\.claude\\settings.json"],
+  "results": [],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+Для `--dry-run`:
+
+```json
+{
+  "status": "dry_run",
+  "command": "install",
+  "action": "dry_run",
+  "harness": "claude-code",
+  "files_written": [],
+  "results": [],
+  "warnings": [],
+  "error": null
+}
+```
+
+Ожидаемые ошибки проверки используют тот же конверт и включают объект error:
+
+```json
+{
+  "status": "error",
+  "command": "install",
+  "harness": "all",
+  "files_written": [],
+  "error": {
+    "code": "project.required",
+    "field": "project",
+    "reason": "project-scope harnesses require --project: cursor, gemini-cli, github-copilot, windsurf.",
+    "fix": "Pass --project PATH or select only user-scope harnesses."
+  }
+}
+```
+
+## Примеры
+
+```bash
+apothem install --harness claude-code
+apothem install --harness claude-code --dry-run
+apothem install --harness cursor --project . --profile ~/profile.yaml --json
+apothem install --harness all --project . --dry-run --json
+apothem Installing --harness claude-code   # continuous-form alias
+apothem installing --harness claude-code   # lowercase variant
+```
+
+## Коды выхода
+
+| Код | Значение |
+|---|---|
+| 0 | Адаптер успешно установлен или dry-run спланирован без ошибок |
+| 1 | Ожидаемая ошибка проверки, профиля, ассистента по написанию кода, проекта или адаптера |
+| 2 | Частичная пакетная материализация после как минимум одной записи |
+
+## См. также
+
+- `apothem installing` — псевдоним в продолженной форме для этой команды (документирован здесь; CLI принимает обе формы)
+- [apothem update](/docs/cli-reference/update) — повторно применяет текущий профиль к ассистенту по написанию кода
+- [apothem verify](/docs/cli-reference/verify) — подтверждает, что адаптер активен
+- [Начало работы](/docs/install) — полное руководство по установке

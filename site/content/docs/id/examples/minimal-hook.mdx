@@ -1,0 +1,55 @@
+---
+title: "Hook minimal"
+description: "Contoh hook Apothem minimal — memicu sebuah pemeriksaan pada setiap penulisan berkas."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Contoh ini menunjukkan hook Apothem terkecil yang mungkin: sebuah hook PreToolUse
+yang dipicu sebelum setiap pemanggilan tool `Write` dan mencatat jalur target.
+
+## Skrip hook
+
+```python
+# src/apothem/hooks/log_writes.py
+import json, sys
+
+data = json.load(sys.stdin)
+path = data.get("tool_input", {}).get("file_path", "unknown")
+print(f"[apothem] Writing to: {path}", file=sys.stderr)
+sys.exit(0)  # exit 0 = proceed; non-zero = block
+```
+
+## Registrasi di settings.json
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python src/apothem/hooks/log_writes.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## Menguji hook
+
+Lakukan penulisan berkas apa pun di Claude Code dan amati keluaran stderr di
+panel jejak hook.
+
+## Memblokir penulisan
+
+Ubah `sys.exit(0)` menjadi `sys.exit(1)` dan cetak sebuah blok JSON ke stdout:
+
+```python
+print(json.dumps({"decision": "block", "reason": "blocked by log_writes"}))
+sys.exit(1)
+```

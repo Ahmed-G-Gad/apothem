@@ -1,0 +1,80 @@
+{
+  "name": "apothem",
+  "displayName": "Apothem",
+  "description": "Install and manage the Apothem shared profile for GitHub Copilot and the VS Code family from your workspace — one profile, materialized into the editor's native configuration surface.",
+  "version": "1.0.1",
+  "publisher": "ahmed-g-gad",
+  "license": "MIT",
+  "homepage": "https://apothem.ahmedgad.com/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ahmed-g-gad/apothem.git",
+    "directory": "vscode-extension"
+  },
+  "bugs": {
+    "url": "https://github.com/ahmed-g-gad/apothem/issues"
+  },
+  "icon": "icon.png",
+  "galleryBanner": {
+    "color": "#0B1020",
+    "theme": "dark"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "AI",
+    "Machine Learning",
+    "Other"
+  ],
+  "keywords": [
+    "copilot",
+    "ai",
+    "configuration",
+    "apothem",
+    "instructions",
+    "cursor",
+    "windsurf"
+  ],
+  "activationEvents": [],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "apothem.install",
+        "title": "Apothem: Install in this workspace",
+        "category": "Apothem"
+      },
+      {
+        "command": "apothem.verify",
+        "title": "Apothem: Verify",
+        "category": "Apothem"
+      },
+      {
+        "command": "apothem.update",
+        "title": "Apothem: Update",
+        "category": "Apothem"
+      },
+      {
+        "command": "apothem.uninstall",
+        "title": "Apothem: Uninstall",
+        "category": "Apothem"
+      },
+      {
+        "command": "apothem.doctor",
+        "title": "Apothem: Doctor",
+        "category": "Apothem"
+      }
+    ],
+    "configuration": {
+      "title": "Apothem",
+      "properties": {
+        "apothem.runner": {
+          "type": "string",
+          "default": "npx @ahmed-g-gad/apothem",
+          "description": "Command used to invoke the Apothem engine. Defaults to the npm shim; set to a local interpreter invocation (e.g. 'python -m apothem') to run from a checkout."
+        }
+      }
+    }
+  }
+}

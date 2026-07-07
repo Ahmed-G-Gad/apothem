@@ -1,0 +1,48 @@
+---
+title: "Palette de marque"
+description: "Couleurs de marque principales d'Apothem et les dix-sept couleurs de marque des environnements. La source unique de vérité est constituée des tokens de design canoniques dans assets/design-tokens.css ; le site reflète ces valeurs."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## Palette principale
+
+La palette canonique — la rampe neutre slate, la rampe d'accent emerald et les teintes
+sémantiques — appartient aux tokens de design dans
+[`assets/design-tokens.css`](https://github.com/ahmed-g-gad/apothem/blob/main/assets/design-tokens.css)
+(et son miroir `assets/design-tokens.json`). Le thème du site dans
+[`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
+reflète ces valeurs de tokens dans les variables CSS que le thème Fumadocs consomme.
+Chaque valeur ci-dessous remonte à un palier de rampe canonique.
+
+| Rôle | Token (CSS) | Mode clair | Mode sombre | Usage |
+|---|---|---|---|---|
+| Primaire | `--brand-text` | slate-900 `#0f172a` | slate-50 `#f8fafc` | Titres, texte de navigation, surfaces de lecture principales. |
+| Accent | `--sl-color-accent` | emerald-600 `#059669` | emerald-400 `#34d399` | Liens actifs, anneaux de focus, navigation sélectionnée. |
+| Texte du corps | `--brand-muted` | slate-600 `#475066` | slate-300 `#c2ccda` | Texte de prose par défaut. |
+| Fond du corps | `--brand-surface` | white `#ffffff` | slate-900 `#0f172a` | Arrière-plan par défaut. |
+| Fond de navigation | `--brand-surface-muted` | slate-50 `#f8fafc` | slate-950 `#080c15` | Bandes d'en-tête et de navigation. |
+| Fond de code | `--brand-code-bg` | slate-900 `#0f172a` | slate-950 `#080c15` | Surfaces de code en ligne / en bloc. |
+
+## Palette des environnements
+
+Les couleurs des environnements se trouvent dans
+[Couleurs des environnements](/docs/brand/harness-colors). Le mappage géométrique sur
+l'hexagone de la marque Apothem — son nœud central et son nœud terminal — est intégré à
+la section de marque. La source de vérité CSS dans
+[`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
+relie chaque token à sa variable CSS.
+
+## Usage dans la documentation
+
+La palette est reliée via la feuille de styles globale `site/app/global.css`, importée
+par la mise en page racine. Les variantes de mode clair et sombre basculent avec l'état
+de la classe `.dark` du thème.
+
+## Mises à jour
+
+La palette n'est mise à jour que lorsqu'une couleur principale change (slate / emerald)
+ou qu'un environnement ratifie un changement de couleur de marque en amont. Les
+changements par environnement se propagent de manière atomique à travers
+`site/app/global.css`, [Couleurs des environnements](/docs/brand/harness-colors)
+et chaque maître SVG affecté sous `assets/src/`.

@@ -1,0 +1,41 @@
+---
+title: "权威询问登记册——必填类别"
+description: "七个必填询问类别与自动决策豁免项，规定本助手在宿主项目上操作时必须询问还是可自行决定的内容。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **权威询问纪律的规范登记册。** 本文档承载七个必填类别目录、裁定的自动决策豁免枚举，以及绑定声明；实质性的表格与绑定存放于此，由 `src/apothem/rules/authority-inquiry.md` 操作化。
+
+在宿主项目上操作时，对下文七个类别应询问——而非臆造。询问通过结构化询问通道路由，参见 `src/apothem/rules/interactive-questions.md`。每个选项都带有三段式标注（理由／推荐／默认指针）及按 M7 的推荐标记。
+
+| 类别 | 禁止臆造 | 询问缘由 |
+| -------- | ------------------- | --------------- |
+| 身份 | 姓名、邮箱、用户名、代词、组织、租户、团队归属、角色描述 | 绑定到真实人物；创建真实世界制品（提交、PR、公开署名） |
+| 范围方向 | 哪个子树、哪个分支、哪个环境（dev/staging/prod）、哪个目标（库 vs 服务）、面向用户还是仅限内部 | 用户拥有本助手缺失的隐含上下文；静默挑选会错位 |
+| 偏好 | 格式化器、检查器、测试框架、文档生成器、CI 提供方、分支策略、提交消息惯例、发布签名、版本控制方案、许可证——*在宿主尚未确定其一之处* | 每一项都是长期承诺，抗拒静默采纳 |
+| 安全 | 密钥轮换节奏、允许的 shell、允许的网络出站、已接受风险清单、可信操作白名单、MCP 服务器认证端点细节 | 安全配置错误影响重大；静默挑选有静默泄露之险 |
+| 命名 | 在宿主无既有惯例处引入的新惯例，或在用户有隐含偏好处的名称绑定（函数、CLI 标志、子命令、配置键） | 名称是持久的；静默挑选累积为命名空间污染 |
+| 基础设施 | 端点、主机、端口、路径、区域、队列名、主题名、表名 | 绑定到真实世界资源；臆造导致真实世界故障 |
+| 版本锁定 | 哪个依赖的哪个版本，在宿主未锁定且选择事关重大之处（安全相关依赖、行为变更依赖、semver 主版本边界） | 长尾后果；静默挑选给用户增加负担 |
+
+**必填询问**（身份、范围方向、安全姿态、公共表面命名始终必填）阻塞依赖制品；发射会产生 `<USER-CONFIRM:id=<id>>` 占位符。**可选询问**用户可以沉默拒绝；本助手随后回退到推荐选项，并将该回退作为一项发现记录，以便用户看到已作出一项决定。
+
+## 1. 裁定的自动决策
+
+以下内容本助手无需询问即可决定——在变更登记账中披露为“按默认应用；如本意不同请回退”：
+
+- **纯有效性。** 语法错误、模式违规、明确无歧义的拼写错误。
+- **纯严谨性。** 民间说法 → 加引用；补充缺失日期；标记无法核实的论断。
+- **普遍安全的安全项。** `deny .env*`、`deny ~/.ssh/**` 读取、`deny rm -rf:*`、`deny sudo:*`、对受保护分支的 `deny git push --force*`、对不可信输入的 `deny eval`／`exec`。
+- **纯格式规范化。** 行尾、尾随空白、每文件单一引号风格 *在宿主有既有风格且制品偏离之处*。
+- **当修复无歧义时的内部引用修复。** 死路径 → 通过搜索发现的唯一活路径。
+
+凡在此豁免之外者皆经由询问表面。
+
+## 2. 绑定（§0.j five-direction）
+
+- **Drives →** 每个宿主项目制品的发射（按 `site/content/docs/governance/pre-emission-gate-registry.mdx`，预发射闸门在每次有意义范围的写入时触发）。每次多选项呈现都按规范通道义务经由结构化询问通道路由。`src/apothem/conformity/*-grep.py` 处的机械化部分强制执行。`src/apothem/rules/{authority-inquiry,host-discovery,disclosure-ledger,ten-dimension-check,pre-emission-gate,expertise-posture,option-annotation,definitiveness,visual-leverage,bidirectional-binding,agile-sprints,canonical-layout,code-craft-*,systemic-participation,production-ready-prs}.md` 处的逐规则强制执行。
+- **Satisfies →** 与 CM-N 轴并列、被声明为一等治理维度的对外合规轴（M = 宿主项目制品；CM = 生态系统内部制品；两者正交，两者皆适用之处皆适用）。每次会话引导都继承 M 集合作为始终在线上下文的常驻指令义务。
+- **Established by ↑** `CLAUDE.md` 本身（该登记册内在于始终在线上下文，而非派生自外部状态）。`site/content/docs/governance/outward-conformity-registry.mdx` §1 处琐碎与非琐碎阈值的裁定。
+- **Cross-bound with ↔** 对外合规登记册表格中命名的每条规则，位于 `site/content/docs/governance/outward-conformity-registry.mdx`（逐强制规定的权威正文）。`src/apothem/conformity/*-grep.py`（闸门的机械化部分强制执行）。`src/apothem/rules/interactive-questions.md`（询问表面经由该规则定义的规范通道义务路由）。

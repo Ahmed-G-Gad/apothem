@@ -1,0 +1,43 @@
+---
+title: "Apothem 대 수동 Qwen Code 구성"
+description: "Qwen Code의 설정·명령·스킬·서브에이전트를 손으로 유지하는 것 대 Apothem의 공유 프로파일에서 렌더링하는 것."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Qwen Code는 설정, 훅, `QWEN.md`, 네이티브 Markdown 명령, SKILL.md 디렉터리,
+Markdown 서브에이전트를 읽습니다. Apothem은 공유 프로파일에서 문서화된 설정
+키를 렌더링하고, Qwen Code가 지원하는 경우 공유 코호트를 Qwen 네이티브
+파일시스템 형태로 변환합니다.
+
+## 수고 비교
+
+| 작업 | 수동 구성 | Apothem 관리 |
+| ---- | --------------- | --------------- |
+| 규칙 작성 | QWEN.md와 보조 파일을 손으로 유지 | 공유 프로파일에서 렌더링 또는 참조 |
+| 훅 구성 | `settings.json` 훅 항목을 손으로 편집 | Qwen Code의 네이티브 훅 맵을 통해 설치 |
+| 명령·스킬·에이전트 작성 | 각 Qwen 디렉터리를 손으로 유지 | 공유 Apothem 코호트에서 변환 |
+| 코호트를 다른 환경과 맞춰 유지 | 수동, 도구별 | `apothem update` 시 자동 |
+| 표면 설치 / 제거 | 수동 | `apothem install` / `apothem uninstall` |
+| 구성이 올바른지 검증 | 수동 점검 | `apothem verify --harness qwen-code` |
+
+## Apothem이 관리하는 것
+
+qwen-code 어댑터는 `settings.json`을 쓰고, `QWEN.md`를 설치하며, Apothem의
+슬래시 명령을 Qwen Markdown 명령 파일로 변환하고, 스킬을 네이티브 스킬
+표면으로 복사하며, 보조 정의를 Qwen 서브에이전트로 적응시키고, Apothem 훅
+디스패처를 등록합니다. 규칙, 템플릿, 훅 소스 자료는 Apothem의 보조 서브트리
+아래에 남아 네이티브 컨텍스트에서 참조됩니다.
+
+## 마이그레이션 경로
+
+1. 아직 없다면 `apothem profile init`을 실행해 공유 프로파일을 만듭니다.
+2. 기존 Qwen Code 규칙·명령·스킬·에이전트를 공유 코퍼스로 옮깁니다.
+3. `apothem install --harness qwen-code`를 실행해 네이티브 표면을 렌더링합니다.
+4. `apothem verify --harness qwen-code`를 실행해 구성이 반영되었는지 확인합니다.
+5. 이후 모든 변경에는 `apothem update --harness qwen-code`를 사용합니다.
+
+## 다음으로 읽기
+
+- [Qwen Code 어댑터 참조](/docs/harnesses/qwen-code)
+- [비교 개요](/docs/comparison)

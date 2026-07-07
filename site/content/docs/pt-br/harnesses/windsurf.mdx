@@ -1,0 +1,87 @@
+---
+title: "Windsurf"
+description: "Adaptador de ferramenta do Apothem para o Windsurf (GA)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Fornecedor:** Codeium
+**Nome de instalação:** `windsurf`
+**Status:** GA
+**Configuração nativa:** `<project>/.devin/rules/apothem-rules.md`
+
+## Instalação
+
+```bash
+apothem install --harness windsurf --project /path/to/project
+```
+
+O adaptador grava um arquivo de regras do Windsurf com escopo de projeto a partir
+das regras compartilhadas e da superfície de governança do Apothem.
+
+**Arquivos gravados:** `<project>/.devin/rules/apothem-rules.md`
+
+## Mapeamento do perfil para a configuração nativa
+
+O adaptador lê o perfil compartilhado do Apothem e renderiza o arquivo de regras do
+projeto a cada execução de `apothem install` ou `apothem update`. O perfil
+compartilhado é a fonte de verdade; as edições locais do projeto no arquivo gerado
+são copiadas como backup antes de a próxima sincronização substituir o conteúdo
+gerenciado pelo Apothem.
+
+## Notas de compatibilidade
+
+A superfície de regras atual do Windsurf tem escopo de projeto sob
+`.devin/rules/`. Os fluxos de trabalho e as memórias locais da máquina pertencem
+ao operador; o Apothem não as grava. A forma de arquivo único `.windsurfrules`
+intencionalmente não é gravada.
+
+## Verificação
+
+```bash
+apothem verify --harness windsurf --project /path/to/project
+```
+
+O comando verify confirma que:
+
+1. A configuração nativa existe no caminho esperado.
+2. Todos os campos obrigatórios do perfil compartilhado estão presentes.
+3. A rotina de verificação específica do adaptador relata sucesso.
+
+## Atualização
+
+```bash
+apothem update --harness windsurf --project /path/to/project
+```
+
+Rederiva o arquivo de regras do projeto a partir do estado atual do perfil
+compartilhado.
+
+## Desinstalação
+
+```bash
+apothem uninstall --harness windsurf --project /path/to/project
+```
+
+Remove os arquivos de configuração nativa gravados pelo adaptador.
+O YAML do perfil compartilhado e o motor do Apothem não são afetados.
+
+## Portão de conformidade
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Solução de problemas
+
+| Sintoma | Correção |
+|---------|-----|
+| Arquivo de configuração não encontrado | Reexecute `apothem install --harness windsurf --project /path/to/project` |
+| Verificação falhou | Execute `apothem update --harness windsurf --project /path/to/project` e verifique novamente |
+| Conteúdo de configuração inesperado | Verifique `~/.config/apothem/profile.yaml` ou `--profile PATH`, depois reexecute `apothem update --harness windsurf --project /path/to/project` |
+
+## Botões de configuração
+
+| Sinalizador | Padrão | Descrição |
+|------|---------|-------------|
+| `--dry-run` | `false` | Pré-visualiza a instalação sem gravar arquivos. |

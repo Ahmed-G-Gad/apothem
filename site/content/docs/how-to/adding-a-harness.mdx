@@ -1,0 +1,77 @@
+---
+title: "Add a harness"
+description: "Enable a harness adapter so its native configuration is materialized from the shared profile."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Goal: enable one more harness so Apothem materializes that harness's native
+configuration from your shared profile.
+
+## Prerequisites
+
+- A shared profile at `~/.config/apothem/profile.yaml` (create one with
+  `apothem profile init` if it does not yet exist).
+- The `apothem` CLI on your `PATH`. If you installed the self-contained
+  source tree, prefix each command with `PYTHONPATH="$HOME/.apothem/src"`
+  and run `python -m apothem` in place of `apothem` — or use
+  `npx @ahmed-g-gad/apothem`.
+
+## Steps
+
+1. List the registered harnesses and see which are already installed:
+
+   ```bash
+   apothem harnesses list
+   ```
+
+   `apothem harnesses list` prints every supported id; the same set is in
+   the [harness list](/docs/harnesses) and the source-generated
+   [harness registry](/docs/reference/harness-registry). Pick the id for your tool
+   rather than hardcoding the list here — it grows as adapters are added.
+
+2. Inspect the target harness to confirm its scope and output path:
+
+   ```bash
+   apothem harnesses show cursor
+   ```
+
+   A `Scope: project` line means the adapter materializes into a project tree
+   and requires `--project PATH`; `Scope: user` materializes into a user-scope
+   configuration directory and needs no project flag.
+
+3. Preview the install without writing files:
+
+   ```bash
+   apothem install --harness cursor --dry-run
+   ```
+
+4. Install the harness. For a user-scope harness:
+
+   ```bash
+   apothem install --harness claude-code
+   ```
+
+   For a project-scope harness, pass the project root:
+
+   ```bash
+   apothem install --harness cursor --project /path/to/project
+   ```
+
+   Install every supported harness at once with `--harness all` (project-scope
+   harnesses still need `--project`; ids listed in `exclude_harnesses` in the
+   profile are skipped).
+
+## Verify
+
+```bash
+apothem verify --harness cursor
+```
+
+A `✓ <harness-id> is verified` line confirms the managed targets exist and parse.
+`apothem doctor` gives the whole-system view across every harness.
+
+## Related
+
+- [Edit the profile](/docs/how-to/editing-the-profile) to change what the adapter
+  materializes, then re-run `apothem update`.
+- [Installing](/docs/install) covers the first-run install.

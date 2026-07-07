@@ -1,0 +1,49 @@
+---
+title: "하니스 설정"
+description: "플랫폼용 하니스 어댑터를 추가하고 구성합니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## 하니스 어댑터 설치
+
+```bash
+apothem install --harness <name>
+```
+
+사용 가능한 이름은 [지원 하니스 목록](/docs/harnesses)을 참조하세요.
+프로젝트 범위 어댑터에는 프로젝트 경로가 필요합니다.
+
+```bash
+apothem install --harness cursor --project /path/to/project
+apothem install --harness gemini-cli --project /path/to/project
+apothem install --harness github-copilot --project /path/to/project
+apothem install --harness windsurf --project /path/to/project
+```
+
+## 여러 하니스 설치
+
+지원되는 모든 어댑터를 원할 때는 레지스트리 전체 선택자를 사용하세요. 등록된 집합에는 프로젝트 범위 어댑터가 포함되어 있으므로 프로젝트 루트를 전달합니다.
+
+```bash
+apothem install --harness claude-code
+apothem install --harness cursor --project /path/to/project
+apothem install --harness all --project /path/to/project
+```
+
+## 하니스 설정 검증
+
+```bash
+apothem verify --harness <name>
+apothem verify --harness all --project /path/to/project
+```
+
+등록된 모든 어댑터를 한 번에 확인하려면 `apothem doctor`를 실행하세요. 하니스별 설치 상태 표를 출력하며, 어댑터 중 하나라도 미설치 상태를 보고하면 0이 아닌 코드로 종료됩니다.
+
+## 설치된 하니스 보기
+
+```bash
+apothem harnesses list
+```
+
+어댑터별 세부 정보(이름, 설치 상태, 출력 경로)를 보려면 `apothem harnesses show <name>`를 전달하세요.

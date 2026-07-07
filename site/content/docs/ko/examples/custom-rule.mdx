@@ -1,0 +1,48 @@
+---
+title: "커스텀 규칙"
+description: "프로젝트를 위한 커스텀 상시-적용 규칙을 작성합니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+이 예제는 모든 파일에 걸쳐 명명 규약을 강제하는, 프로젝트별 상시-적용 규칙을
+추가합니다.
+
+## 규칙 파일
+
+```markdown
+---
+name: "kebab-filenames"
+description: "Enforce kebab-case filenames in the src/ tree"
+pathFilter: ""
+alwaysApply: true
+---
+
+# Kebab-case filenames
+
+All new files created under `src/` MUST use kebab-case naming
+(lowercase letters, digits, and hyphens only — no underscores,
+no camelCase, no PascalCase).
+
+**Correct:** `src/styles/button-group.css`, `src/components/nav-bar.css`
+**Incorrect:** `src/styles/buttonGroup.css`, `src/components/NavBar.css`
+
+When in doubt, err on the side of more hyphens.
+```
+
+이것을 harness 설치 루트 안의 `rules/kebab-filenames.md` 에 저장하세요(Claude Code 어댑터의 경우 `~/.claude/`; 그 외에는 harness 네이티브 경로로 대체하세요).
+
+## 규칙이 로드되었는지 검증하기
+
+```bash
+python -m apothem.conformity.gate --check frontmatter
+```
+
+## 각 harness 로 전파하기
+
+설치된 harness마다 업데이트 명령을 한 번씩 실행하세요:
+
+```bash
+apothem update --harness claude-code
+apothem update --harness cursor
+```

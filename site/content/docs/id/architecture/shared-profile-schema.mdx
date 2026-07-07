@@ -1,0 +1,131 @@
+---
+title: "Skema profil bersama"
+description: "Skema untuk YAML profil bersama Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Profil bersama Apothem adalah berkas YAML di
+`~/.config/apothem/profile.yaml`, atau di jalur yang diberikan dengan
+`--profile PATH`. Ia adalah sumber kebenaran semantik untuk identitas,
+preferensi, aturan bersama, penggantian per-harness, dan pengecualian harness.
+Adapter menurunkan berkas asli-harness dari profil ini dan dari cohort muatan
+Apothem yang dikemas.
+
+Model runtime-nya adalah `src/apothem/lib/profile.py`; JSON Schema-nya adalah
+`src/apothem/schemas/profile.schema.json`.
+
+## Profil valid minimal
+
+Satu-satunya bidang yang wajib adalah `identity.name`:
+
+```yaml
+identity:
+  name: "Example User"
+```
+
+## Kerangka yang ditulis oleh `profile init`
+
+`apothem profile init` menulis kerangka yang sedikit lebih lengkap — bidang
+identitas placeholder yang diharapkan dipersonalisasi oleh operator — dan
+memvalidasinya sebelum melaporkan keberhasilan:
+
+```yaml
+identity:
+  name: "Example User"
+  email: "dev@example.invalid"
+  github: "example-user"
+```
+
+Perintah ini mencetak ajakan personalisasi yang menyebut bidang-bidang ini.
+Jika sebuah identitas yang masih berupa placeholder kemudian sampai ke `install`
+atau `update`, perintah-perintah itu mencetak satu catatan informatif lalu
+melanjutkan — Apothem tidak pernah mengarang maupun terhenti karena identitas
+placeholder.
+
+## Bidang kanonis
+
+| Bidang | Wajib | Bawaan | Catatan |
+| --- | --- | --- | --- |
+| `identity.name` | Ya | tidak ada | Nama tampilan operator yang tidak kosong. |
+| `identity.role` | Tidak | `senior software engineer` | Teks peran bersama. |
+| `identity.email` | Tidak | dihilangkan | Harus berformat email saat hadir. |
+| `identity.website` | Tidak | dihilangkan | Harus berformat URI saat hadir. |
+| `identity.github` | Tidak | dihilangkan | Nama pengguna GitHub tanpa `@`. |
+| `preferences.language` | Tidak | `python` | Dinormalisasi ke huruf kecil. |
+| `preferences.style` | Tidak | `concise` | Salah satu dari `concise`, `verbose`, `balanced`. |
+| `preferences.formatter` | Tidak | dihilangkan | String tidak kosong saat hadir. |
+| `preferences.test_framework` | Tidak | dihilangkan | String tidak kosong saat hadir. |
+| `rules` | Tidak | `[]` | String unik tidak kosong; baris baru dinormalisasi ke LF. |
+| `seriousness` | Tidak | `PERSONAL_USE` | Salah satu dari `EXPLORING`, `PERSONAL_USE`, `SHARED`, `PUBLIC_LAUNCH`. |
+| `harnesses` | Tidak | `{}` | Penggantian per-harness yang diindeks oleh ID harness yang didukung. |
+| `exclude_harnesses` | Tidak | `[]` | ID harness yang didukung yang dikecualikan dari `--harness all`. |
+
+## Kunci harness
+
+Skema menerima tepat ketujuh belas ID harness ini:
+
+```text
+antigravity
+claude-code
+codebuddy
+codex
+cursor
+gemini-cli
+github-copilot
+glm
+hermes
+kimi-code
+kiro
+open-claw
+opencode
+qwen-code
+trae
+windsurf
+zed
+```
+
+Bidang tingkat atas yang tidak dikenal, kunci harness yang tidak dikenal, tipe
+nilai yang salah, pengecualian ganda, dan bidang identitas yang cacat akan gagal
+sebelum install atau update menulis. Galat yang diharapkan mencakup sebuah
+bidang, alasan, perbaikan, nilai aman yang disunting bila berguna, dan
+`files_written: []` untuk kegagalan validasi.
+
+## Dari bidang profil ke berkas asli
+
+Profil adalah *apa*-nya; adapter adalah *bagaimana*-nya. Memahami alur
+ujung-ke-ujung menjelaskan mengapa satu suntingan pada satu berkas YAML dapat
+membentuk ulang setiap harness yang terpasang.
+
+Sebuah bidang profil membawa maksud semantik, bukan cuplikan konfigurasi
+harfiah. `identity.name` adalah "siapa operatornya", bukan satu baris JSON.
+Cohort muatan yang dikemas (`commands`, `rules`, `skills`, `hooks`, `templates`,
+`statuslines`, `output-styles`, `agents`) membawa konten perilaku dalam format
+netral milik Apothem sendiri. Baik bidang maupun cohort tidak tahu seperti apa
+konfigurasi harness mana pun — pengetahuan itu hanya milik adapter.
+
+Saat Anda menjalankan `apothem update`, alurnya adalah:
+
+1. **Muat dan validasi** profil terhadap JSON Schema. Tidak ada yang ditulis
+   sampai seluruh profil valid, sehingga sebuah salah ketik tidak pernah
+   memasang setengah jadi.
+2. **Selesaikan adapter** untuk harness yang dipilih (atau `all`, dikurangi
+   `exclude_harnesses` apa pun) melalui registri pusat.
+3. **Materialisasikan** — setiap adapter membaca profil yang sama dan cohort
+   yang sama, lalu menerjemahkannya ke dialek harness-nya. Sebuah bidang seperti
+   `preferences.style` menjadi nilai konfigurasi asli pada satu harness dan
+   konteks instruksi yang dirender pada harness lain; sebuah aturan dalam
+   `rules[]` menjadi berkas `.mdc` untuk Cursor, sebuah bagian instruksi
+   seluruh-repositori untuk Copilot, atau sebuah entri pohon dukungan di tempat
+   harness tidak memiliki permukaan aturan asli.
+4. **Tulis** berkas-berkas asli — sebuah konfigurasi tunggal yang dirender,
+   sebuah cohort yang dikonversi, atau sebuah subpohon dukungan yang dirujuk
+   dari jangkar asli harness.
+
+Profil yang sama menggerakkan setiap harness, sehingga materialisasi tidak dapat
+berselisih soal maksud. Sel kapabilitas yang tidak didukung harness (atau yang
+masih menunggu penemuan) muncul sebagai peringatan terstruktur sebelum penulisan
+apa pun, alih-alih dikarang ke dalam permukaan vendor yang tidak ada. Inilah
+yang membuat jaminan satu-suntingan-banyak-harness menjadi nyata: profil
+disunting sekali, dan setiap adapter menurunkan kembali berkas aslinya dari
+sumber tunggal itu.

@@ -1,0 +1,100 @@
+---
+title: "Qwen Code"
+description: "Apothem harness adapter for Qwen Code (Beta)."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Vendor:** Alibaba Cloud
+**Install name:** `qwen-code`
+**Status:** Beta
+**Native config:** `~/.qwen/`
+
+## Installation
+
+```bash
+apothem install --harness qwen-code
+```
+
+The adapter writes Qwen Code settings, installs a `QWEN.md` context anchor,
+registers Apothem hook dispatchers, converts Apothem commands to Qwen Markdown
+command files, installs skills as SKILL.md directories, and adapts helper
+definitions as Qwen subagents.
+
+**Files written:**
+
+```text
+~/.qwen/settings.json
+~/.qwen/QWEN.md
+~/.qwen/commands/
+~/.qwen/skills/
+~/.qwen/agents/
+~/.qwen/.apothem/support/{rules,templates,hooks}/
+```
+
+## Profile-to-native-config mapping
+
+The adapter renders documented `settings.json` keys for context and hooks,
+writes `QWEN.md`, and weaves Apothem commands, skills, and helper definitions
+through Qwen Code's native discovery directories. Rules, templates, and hook
+source material remain support material under `~/.qwen/.apothem/support/`.
+
+## Compatibility notes
+
+`~/.qwen/.apothem/support/` is support material referenced by `QWEN.md` and the
+settings hook commands; it is not a vendor-owned discovery namespace.
+
+## Verification
+
+```bash
+apothem verify --harness qwen-code
+```
+
+The verify command confirms that:
+
+1. The native config exists at the expected path.
+2. All mandatory fields from the shared profile are present.
+3. The adapter-specific verification routine reports success.
+
+## Updating
+
+```bash
+apothem update --harness qwen-code
+```
+
+Refreshes `settings.json`, `QWEN.md`, native commands, skills, subagents, and
+the Apothem support tree.
+
+## Uninstalling
+
+```bash
+apothem uninstall --harness qwen-code
+```
+
+Removes the native config files written by the adapter.
+The shared profile YAML and Apothem engine are unaffected.
+
+## Conformity gate
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| Config file not found | Re-run `apothem install --harness qwen-code` |
+| Verification failed | Run `apothem update --harness qwen-code`, then verify again |
+| Unexpected config content | Check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run `apothem update --harness qwen-code` |
+
+## Configuration knobs
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--dry-run` | `false` | Preview install without writing files. |
+
+## See also
+
+- [All harnesses](/docs/harnesses) — the full catalog of supported tools
+- [Install guide](/docs/install) — install Apothem into this harness
+- [`apothem harnesses` reference](/docs/cli-reference/harnesses) — list and inspect adapters from the CLI

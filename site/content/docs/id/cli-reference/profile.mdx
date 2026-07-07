@@ -1,0 +1,101 @@
+---
+title: "profile"
+description: "Referensi CLI untuk grup perintah apothem profile."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Mengelola profil Apothem bersama.
+
+`profile` adalah grup perintah dengan empat subperintah: `init`, `show`, `set`, dan `edit`.
+Profil bersama adalah satu-satunya sumber kebenaran yang dimaterialisasikan oleh setiap adapter asisten-pengkodean
+ke dalam konfigurasi aslinya.
+
+## Ringkasan
+
+```
+apothem profile init [--profile PATH] [--force]
+                     [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+apothem profile show [--profile PATH] [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+apothem profile set KEY VALUE
+                     [--profile PATH] [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+apothem profile edit [--profile PATH] [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+```
+
+## Opsi umum
+
+Setiap subperintah menerima opsi bersama di bawah ini.
+
+| Opsi | Deskripsi |
+|---|---|
+| `--profile PATH` | Path ke YAML profil bersama (default-nya lokasi profil standar). |
+| `--quiet`, `-q` | Menekan keluaran informatif; hanya galat yang dipancarkan. |
+| `--verbose`, `-v` | Memancarkan keluaran diagnostik tambahan. |
+| `--format plain\|json` | Format keluaran (default: `plain`). |
+| `--json` | Singkatan untuk `--format json`. |
+| `--no-color` | Menonaktifkan kode warna ANSI dalam keluaran. |
+| `-h`, `--help` | Menampilkan bantuan dan keluar. |
+
+## Subperintah
+
+### `profile init`
+
+Membuat kerangka profil minimal yang valid menurut skema di
+`~/.config/apothem/profile.yaml` atau `--profile PATH`. Berkas yang sudah ada
+dipertahankan kecuali `--force` diberikan.
+
+| Opsi | Deskripsi |
+|---|---|
+| `--force` | Menimpa kerangka profil yang sudah ada. |
+
+### `profile show`
+
+Menampilkan profil bersama yang telah divalidasi dan nilai default-nya diperluas.
+
+### `profile set KEY VALUE`
+
+Menetapkan sebuah kunci di profil bersama. `KEY` adalah path bertitik yang menurun ke dalam
+profil bersarang (`identity.name`, `preferences.style`, `enforcement.sprints`,
+`harnesses.<harness>.preferences.style`); satu kunci tanpa titik menetapkan
+node tingkat-atas. `VALUE` disimpan sebagai string literal — kata polos tidak
+dikoersi (`no` tetap `"no"`, `2024-01-01` dan `1.0` tetap string) — kecuali
+`true`/`false` (flag penegakan boolean) dan input list/map eksplisit `[...]`/`{...}`.
+Profil yang dirakit penuh divalidasi terhadap skema
+sebelum penulisan; set yang tidak valid ditolak dan profil di disk tidak berubah.
+
+| Argumen | Deskripsi |
+|---|---|
+| `KEY` | Path bertitik ke dalam profil yang akan ditetapkan (wajib). |
+| `VALUE` | Nilai literal yang akan ditetapkan; divalidasi sebelum penulisan (wajib). |
+
+### `profile edit`
+
+Membuka profil bersama di editor sistem.
+
+## Contoh
+
+```bash
+apothem profile init
+apothem profile init --profile ./profile.yaml --force --json
+apothem profile show
+apothem profile show --json
+apothem profile set seriousness SHARED
+apothem profile set rules '["Use fake placeholders in examples."]'
+apothem profile edit
+```
+
+## Kode keluar
+
+| Kode | Arti |
+|---|---|
+| 0 | Berhasil (atau, untuk `edit`, editor keluar secara normal) |
+| 1 | Profil hilang, tidak valid, sudah ada tanpa `--force`, atau tidak dapat ditulis |
+
+## Lihat juga
+
+- [apothem install](/docs/cli-reference/install) — memateriallisasikan profil ke dalam asisten-pengkodean
+- [apothem doctor](/docs/cli-reference/doctor) — menjalankan diagnostik pemasangan seluruh sistem

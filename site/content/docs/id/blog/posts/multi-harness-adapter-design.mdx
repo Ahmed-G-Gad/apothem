@@ -1,0 +1,109 @@
+---
+title: "Di dalam desain adapter multi-harness"
+description: "Telaah teknis mendalam tentang protokol HarnessAdapter milik Apothem dan tiga kelas adapter yang memateriilkan satu profil menjadi tujuh belas harness."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem memateriilkan satu profil bersama menjadi tujuh belas konfigurasi
+asli-harness. Tujuh belas target, tujuh belas format vendor, tujuh belas lokasi
+pemasangan — dan satu antarmuka seragam yang diandalkan oleh operator maupun
+CLI. Tulisan ini menjelaskan bagaimana lapisan adapter menjaga kontrak itu tetap
+utuh.
+
+## Protokol HarnessAdapter
+
+Setiap adapter harness mengimplementasikan protokol struktural `HarnessAdapter`.
+Protokol adalah jahitan antara CLI dan detail spesifik-vendor. Ia mendeklarasikan
+operasi yang dipanggil CLI dan metadata yang dibaca CLI:
+
+- `name` — pengenal terdaftar dari adapter.
+- `output_path` — tempat konfigurasi yang dimateriilkan mendarat di disk.
+- `install` — merender dan menulis konfigurasi asli-harness.
+- `uninstall` — menghapus konfigurasi yang dimateriilkan, membiarkan profil
+  bersama tidak tersentuh.
+- `is_installed` — melaporkan apakah konfigurasi harness ada.
+- `verify` — mendeteksi penyimpangan antara profil dan konfigurasi di disk.
+
+Karena kontraknya berupa `typing.Protocol`, sebuah adapter memenuhinya
+berdasarkan bentuk, bukan pewarisan. CLI memuat adapter secara dinamis melalui
+`importlib.metadata` dari tabel
+`[project.entry-points."apothem.harnesses"]` di `pyproject.toml`. Menambahkan
+sebuah harness berarti menerbitkan subpaket yang memaparkan protokol — tanpa
+menyunting dispatcher inti.
+
+## Satu subpaket per adapter
+
+Setiap adapter tinggal di subpaketnya sendiri di bawah
+`src/apothem/harnesses/<name>/`:
+
+- `__init__.py` — kelas `<Name>Adapter` yang mengimplementasikan protokol dan
+  mendelegasikan ke modul aksi sejawat.
+- `install.py` / `uninstall.py` / `update.py` / `verify.py` — implementasi
+  per-aksi yang diimpor dan dipanggil oleh kelas adapter.
+- `materializer.py` — sebuah `materialize_native_config(profile) -> str` opsional
+  yang merender profil bersama menjadi teks konfigurasi asli-harness.
+
+Memecah setiap aksi ke dalam modulnya sendiri menjaga kelas adapter tetap tipis:
+ia adalah dispatcher yang menyambungkan metode protokol ke fungsi aksi. Seorang
+pembaca yang membuka `verify.py` melihat persis logika deteksi penyimpangan untuk
+satu harness itu, tanpa derau pemasangan atau pencopotan yang harus diarungi.
+
+## Tiga kelas adapter
+
+Tujuh belas harness tidak semuanya mengonsumsi konfigurasi dengan cara yang sama.
+Apothem mengurutkannya ke dalam tiga kelas menurut seberapa banyak transformasi
+yang dibutuhkan profil sebelum mencapai harness.
+
+### Kelas I — propagasi mentah
+
+Harness mengonsumsi artefak yang sama yang sudah ditulis Apothem — aturan `.md`
+datar, agents, hooks — tanpa langkah perenderan. Adapter menyalin templat mentah
+ke dalam pohon konfigurasi harness. Tidak ada `materializer.py`, karena tidak ada
+yang dirender; artefak profil itulah keluarannya.
+
+### Kelas II-A — mentah ditambah templat vendor
+
+Harness mengonsumsi artefak mentah Apothem DAN sekumpulan berkas templat
+spesifik-vendor (berkas pengaturan, manifes, atau scaffold yang dibutuhkan
+harness). Adapter menyalin artefak mentah dan templat vendor bersama-sama.
+Templat vendor tinggal di samping adapter di bawah direktori `templates/`.
+
+### Kelas II-B — dirender dari profil
+
+Harness menginginkan satu berkas konfigurasi asli yang dirender dari bidang
+terstruktur profil bersama. `materializer.py` adapter membaca profil dan
+memancarkan teks asli-harness — sebuah `config.yaml` Hermes, sebuah
+`openclaw.json` Open-Claw, sebuah `opencode.json` OpenCode, atau sebuah
+`settings.json` Qwen Code. Kelas II-B adalah tempat pekerjaan rekonsiliasi format
+terpusat;
+[telaah mendalam konvergensi konvensi](/docs/blog/posts/cross-harness-convention-convergence)
+membahasnya secara rinci.
+
+## claude-code: adapter rujukan permukaan-penuh
+
+Adapter claude-code adalah implementasi rujukan untuk permukaan konfigurasi
+terluas — aturan, agents, hooks, output-styles, pengaturan, dan direktori
+konvensi. Ia termasuk Kelas II-A: ia mempropagasi templat mentah Apothem dan
+meratakan direktori konvensi, serta mengapalkan templat pengaturan vendor di
+bawah `src/apothem/harnesses/claude_code/templates/`. Ia tidak membawa
+`materializer.py` — ia tidak merender berkas konfigurasi asli dari profil; ia
+mempropagasi artefak dan direktori konvensi secara langsung.
+
+Satu batas yang disengaja: adapter claude-code tidak mengelola `CLAUDE.md`.
+Berkas itu adalah wilayah milik operator. Apothem memateriilkan permukaan
+konfigurasi di sekitarnya — aturan, hooks, pengaturan — dan membiarkan suara
+`CLAUDE.md` milik operator sendiri tidak tersentuh. Sebuah adapter yang menimpanya
+akan menghapus instruksi proyek yang ditulis tangan pada setiap `apothem
+install`, jadi adapter menarik garis di batas direktori dan berhenti.
+
+## Mengapa keseragaman itu penting
+
+Protokol memberi operator satu model mental melintasi tujuh belas alat. `apothem
+install`, `apothem verify`, `apothem uninstall` berperilaku dengan cara yang
+sama entah targetnya merender satu berkas atau meratakan sebuah pohon direktori.
+Perbedaan vendor tinggal di dalam subpaket adapter, di balik protokol, di tempat
+yang semestinya.
+
+Baca rujukan yang ditujukan untuk operator di [Harness](/docs/harnesses) dan
+model profil di [Konsep](/docs/concepts).

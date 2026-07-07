@@ -1,0 +1,66 @@
+---
+title: "Conceptos"
+description: "Glosario que define los perfiles compartidos, los adaptadores de entorno, las reglas, los hooks, las puertas de conformidad, las habilidades y los trabajadores delegados en Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Una referencia rápida de los términos que encontrarás a lo largo de la documentación de Apothem.
+
+## Perfil compartido
+
+Un archivo YAML validado por esquema en `~/.config/apothem/profile.yaml` (anúlalo con `--profile PATH`).
+Es la única fuente de verdad de tu identidad, preferencias y configuración; cada adaptador
+de entorno lo lee durante la instalación y deriva de él la configuración nativa de ese entorno.
+
+## Adaptador de entorno
+
+Un adaptador específico de cada plataforma que traduce el perfil compartido al formato de configuración nativo de un
+entorno de ejecución de asistente concreto. Los entornos de ejecución compatibles aparecen en:
+
+```text
+Claude Code, Cursor, Gemini CLI, etc.
+```
+
+Instalar Apothem siempre significa: instalar el perfil compartido y, a continuación, materializar uno o más
+adaptadores.
+
+## Regla de comportamiento
+
+Un archivo Markdown bajo src/apothem/rules/ que se carga en cada interacción (siempre activa) o
+solo al editar archivos bajo una ruta específica (filtrada por ruta). Las reglas codifican cómo debe
+comportarse el entorno de ejecución del asistente.
+
+## Hook
+
+Un script de Python registrado en settings.json que se dispara ante eventos del ciclo de vida del entorno
+(PreToolUse, PostToolUse, SessionStart, PreCompact, Stop, PostCompact). Los hooks aplican los mandatos de conformidad
+en tiempo real antes de que la salida llegue al disco. El modelo de eventos de hooks es hoy una superficie de Claude Code;
+los adaptadores de entornos sin un mecanismo de hooks simplemente lo omiten.
+
+## Puerta de conformidad
+
+La fracción mecánica de la puerta de pre-emisión de quince barras (M1-M15): los validadores autónomos
+que deben pasar antes de emitir cualquier artefacto. La puerta de pre-emisión es el piso de calidad;
+la puerta de conformidad ejecuta sus barras verificables por máquina, y los hooks aplican barras individuales en tiempo real.
+
+## Suite de plan
+
+Un directorio estructurado en &lt;project-root&gt;/.apothem/plans/&lt;suite-name&gt;/ que contiene una especificación, un plan maestro, archivos
+PHASE.md por fase y artefactos de salida. La canalización /plan gestiona las suites de plan.
+
+## Habilidad
+
+Una técnica reutilizable e invocable mediante comando de barra, empaquetada como un archivo SKILL.md bajo
+src/apothem/skills/&lt;name&gt;/. Las habilidades amplían la superficie de comandos de barra más allá de la canalización
+/plan integrada.
+
+## Trabajador delegado
+
+Un asistente persistente y con alcance específico definido en la ruta canónica:
+
+```text
+src/apothem/agents/<name>.md
+```
+
+Los trabajadores delegados se encargan de la investigación, la auditoría, la verificación de calidad y la gestión de memoria.

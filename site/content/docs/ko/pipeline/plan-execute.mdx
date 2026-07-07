@@ -1,0 +1,70 @@
+---
+title: "/plan-execute"
+description: "/plan-execute — 적합성 점검과 함께 마스터 플랜 스위트에서 특정 페이즈를 실행합니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**역할:** 실행자
+**파이프라인 위치:** 터미널
+
+적합성 점검과 함께 마스터 플랜 스위트에서 특정 페이즈를 실행합니다.
+
+## 표준 호출
+
+```bash
+/plan-execute
+```
+
+인수와 함께:
+
+```bash
+/plan-execute [path/to/plan-suite/] [phase-id] [--dry-run]
+```
+
+## 입력
+
+생성 + 검토된 플랜 스위트; 검토된 `_inputs/handoff-manifest.yml`
+
+## 출력
+
+페이즈별 REPORT.md 파일, 코드베이스 산출물, COMPLETION.md
+
+## 하류
+
+`/code-review` — 열한 개 명령으로 이루어진 감사 포트리스 시퀀스의 표준 진입점. `/plan-execute`는 *플랜* 파이프라인의 터미널 단계입니다. 최종 페이즈가 완료되면 빌드된 코드는 검토를 위해 감사 포트리스로 인계됩니다.
+
+## 워크플로 페이즈
+
+이 명령은 표준 `/plan` 파이프라인 워크플로를 따릅니다:
+
+1. **컨텍스트 로드** — 플랜 스위트, 규칙, 재개 계약을 읽습니다.
+2. **사전 요건 검증** — 의존 페이즈가 완료되었는지 확인합니다.
+3. **태스크 실행** — 명령의 미션을 수행합니다.
+4. **출력 검증** — 선언된 모든 출력이 존재하고 품질 게이트를 통과하는지 확인합니다.
+5. **PROGRESS.md 업데이트** — 검증된 출력을 페이즈 출력 레지스트리에 기록합니다.
+6. **REPORT.md 발행** — 사전 발행 게이트의 릴리스 증빙이 기록됩니다.
+
+## 실패 모드
+
+| 증상 | 원인 | 복구 |
+|---------|-------|----------|
+| 사전 요건 미완료 | 의존 페이즈가 끝나지 않음 | 먼저 상류 페이즈를 완료한다 |
+| 품질 게이트 FAIL | 출력이 기준을 충족하지 않음 | 출력을 고치고 다시 실행한다 |
+| 입력 파일 누락 | 플랜 스위트 파일이 없음 | `/plan-generate`를 실행해 생성한다 |
+
+## 예시
+
+```bash
+# Dry-run to preview what would happen
+/plan-execute --dry-run
+
+# Execute against a named plan suite
+/plan-execute path/to/plan-suite/
+```
+
+## 상호 참조
+
+- [파이프라인 개요](/docs/pipeline)
+- [명령 참조](/docs/reference/commands)
+- [감사 포트리스 진입: `/code-review`](/docs/reference/commands) — 플랜 파이프라인이 완료되면 빌드된 코드가 들어가는 검토 시퀀스

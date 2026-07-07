@@ -1,0 +1,37 @@
+{
+  "argv": [
+    "profile",
+    "show",
+    "--json"
+  ],
+  "exit_code": 0,
+  "json": {
+    "enforcement": {
+      "agent_teams": false,
+      "continuous_execution": false,
+      "learning_loop": false,
+      "multitasking": false,
+      "sprints": false
+    },
+    "exclude_harnesses": [],
+    "harnesses": {},
+    "identity": {
+      "email": "dev@example.invalid",
+      "github": "example-user",
+      "name": "Example User",
+      "role": "senior software engineer"
+    },
+    "mcp_servers": {},
+    "preferences": {
+      "language": "python",
+      "style": "concise"
+    },
+    "rules": [],
+    "seriousness": "PERSONAL_USE",
+    "workspace": {
+      "directory_name": ".apothem",
+      "scope": "project-local"
+    }
+  },
+  "stdout": "{\"identity\": {\"name\": \"Example User\", \"role\": \"senior software engineer\", \"email\": \"dev@example.invalid\", \"github\": \"example-user\"}, \"preferences\": {\"language\": \"python\", \"style\": \"concise\"}, \"rules\": [], \"seriousness\": \"PERSONAL_USE\", \"enforcement\": {\"sprints\": false, \"agent_teams\": false, \"multitasking\": false, \"continuous_execution\": false, \"learning_loop\": false}, \"mcp_servers\": {}, \"harnesses\": {}, \"exclude_harnesses\": [], \"workspace\": {\"directory_name\": \".apothem\", \"scope\": \"project-local\"}}\n"
+}

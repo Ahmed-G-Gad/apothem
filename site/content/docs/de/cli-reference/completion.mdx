@@ -1,0 +1,73 @@
+---
+title: "completion"
+description: "CLI-Referenz für den Befehl apothem completion."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Gibt ein Shell-Vervollständigungsskript für die angeforderte Shell auf der Standardausgabe aus. Das Aktivieren der Vervollständigung ist **optional**: Dieser Befehl gibt nur das Skript aus — er bearbeitet niemals deine Shell-Startdateien. Du fügst die Ausgabe selbst der Vervollständigungsdatei der Shell hinzu.
+
+## Übersicht
+
+```
+apothem completion bash|zsh|fish|powershell
+```
+
+Das ausgegebene Skript aktiviert die `<TAB>`-Vervollständigung von `apothem`-Unterbefehlen, -Flags und — für die Option `--harness` — der registrierten Harness-IDs sowie `all`.
+
+## Unterstützte Shells
+
+| Shell | Wie das Skript erzeugt wird |
+|---|---|
+| `bash` | Clicks natives bash-Vervollständigungsskript. |
+| `zsh` | Clicks natives zsh-Vervollständigungsskript. |
+| `fish` | Clicks natives fish-Vervollständigungsskript. |
+| `powershell` | Ein `Register-ArgumentCompleter`-Snippet, das eine Brücke zu Clicks Vervollständigungsprotokoll schlägt (Click liefert kein natives PowerShell-Skript mit, daher verdrahtet dieses Snippet dasselbe Protokoll in PowerShell). |
+
+Das Anfordern jeder anderen Shell endet mit `2` samt der Liste der unterstützten Shells.
+
+## Vervollständigung je Shell aktivieren
+
+Zuerst muss der Befehl `apothem` in deinem `PATH` liegen (die Ein-Schritt-Installer legen ihn dort ab). Aktiviere die Vervollständigung dann, indem du das Skript an die Vervollständigungsdatei der Shell anhängst und die Shell neu startest:
+
+```bash
+# bash — an deine bashrc anhängen
+apothem completion bash >> ~/.bashrc
+
+# zsh — an deine zshrc anhängen
+apothem completion zsh >> ~/.zshrc
+
+# fish — in das fish-Vervollständigungsverzeichnis schreiben
+apothem completion fish > ~/.config/fish/completions/apothem.fish
+```
+
+```powershell
+# PowerShell — die Completer-Registrierung an dein Profil anhängen
+apothem completion powershell >> $PROFILE
+```
+
+Um die Vervollständigung nur für die aktuelle Sitzung auszuprobieren, ohne eine Datei zu bearbeiten, sourcest du das Skript direkt (bash/zsh): `source <(apothem completion bash)`.
+
+## Warum es optional ist
+
+Apothem bearbeitet niemals stillschweigend die Shell-Startdateien eines Operators. Die Installer geben einen einzeiligen Hinweis aus, der auf diesen Befehl verweist; der Operator entscheidet, ob er die Vervollständigung aktiviert und an welche Datei er sie anhängt. Das hält den Installationsfußabdruck vorhersehbar und reversibel — das Entfernen des angehängten Blocks deaktiviert die Vervollständigung.
+
+## Optionen
+
+| Option | Beschreibung |
+|---|---|
+| `SHELL` | Eine von `bash`, `zsh`, `fish`, `powershell` (erforderliches Positionsargument). |
+| `-h`, `--help` | Hilfe anzeigen und beenden. |
+
+## Exit-Codes
+
+| Code | Bedeutung |
+|---|---|
+| 0 | Vervollständigungsskript ausgegeben |
+| 2 | Nicht unterstützte Shell angefordert |
+
+## Siehe auch
+
+- [apothem install](/docs/cli-reference/install) — installiert eine Harness-Konfiguration
+- [apothem harnesses](/docs/cli-reference/harnesses) — die Harness-IDs, die die `--harness`-Vervollständigung anbietet
+- [CLI-Referenz](/docs/cli-reference) — alle Unterbefehle

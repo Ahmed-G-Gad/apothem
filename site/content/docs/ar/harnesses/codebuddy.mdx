@@ -1,0 +1,99 @@
+---
+title: "CodeBuddy"
+description: "محوّل إطار عمل Apothem لـ Tencent CodeBuddy (GA)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**المورّد:** <bdi>Tencent</bdi>
+**اسم التثبيت:** <bdi>`codebuddy`</bdi>
+**الحالة:** <bdi>GA</bdi>
+**الإعداد الأصلي:** <bdi>`<project>/.codebuddy/rules/apothem-rules.md`</bdi>
+
+## التثبيت
+
+```bash
+apothem install --harness codebuddy --project /path/to/project
+```
+
+يكتب المحوّل ملفّ قواعد واحدًا بنطاق المشروع من سطح القواعد والحوكمة المشترك
+لـ<bdi>Apothem</bdi>.
+
+**الملفات المكتوبة:** <bdi>`<project>/.codebuddy/rules/apothem-rules.md`</bdi>
+
+## تعيين الملف التعريفي إلى الإعداد الأصلي
+
+يقرأ المحوّل الملف التعريفي المشترك لـ<bdi>Apothem</bdi> ويصيّر ملفّ قواعد المشروع
+في كل عملية <bdi>`apothem install`</bdi> أو <bdi>`apothem update`</bdi>. يقرأ
+<bdi>CodeBuddy</bdi> كل ملفّ <bdi>`*.md`</bdi> تحت <bdi>`.codebuddy/rules/`</bdi>
+بوصفه <bdi>Markdown</bdi> مع بيانات أمامية <bdi>YAML</bdi> اختيارية
+(<bdi>`alwaysApply`</bdi>، و<bdi>`paths`</bdi>، و<bdi>`enabled`</bdi>) وفق
+[توثيق CodeBuddy Rules](https://www.codebuddy.ai/docs/ide/Rules)؛ ويحمل ملفّ
+<bdi>Apothem</bdi> القيمة <bdi>`alwaysApply: true`</bdi>، لذا يُطبَّق سطح الحوكمة
+في كل تفاعل. الملف التعريفي المشترك هو مصدر الحقيقة؛ وتُحفَظ نسخة احتياطية من
+التعديلات المحلية للمشروع على الملف المُولَّد قبل أن تستبدل المزامنة التالية المحتوى
+المُدار بواسطة <bdi>Apothem</bdi>.
+
+## ملاحظات التوافق
+
+سطح قواعد <bdi>CodeBuddy</bdi> بنطاق المشروع تحت <bdi>`.codebuddy/rules/`</bdi>. يكتب
+المحوّل ملفًّا مخصّصًا باسم <bdi>`apothem-rules.md`</bdi> يتعايش مع أي ملفات قواعد
+يكتبها المشغّل في الدليل نفسه. ملفّ ذاكرة المشروع <bdi>`CODEBUDDY.md`</bdi> و
+<bdi>`.codebuddy/settings.json`</bdi> (الأذونات، و<bdi>MCP</bdi>) يملكهما المشغّل؛
+ولا يكتبهما <bdi>Apothem</bdi>. تُذكَر المهارات والأوامر والوكلاء والخطافات بوصفها
+انضباطًا داخل ملفّ القواعد — ولا يكشف <bdi>CodeBuddy</bdi> أي سطح ملفات يملكه المحوّل
+لأجلها. اتفاقيات سطح المورّد التي يعتمد عليها المحوّل مثبّتة في
+<bdi>`src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md`</bdi>، ومأخوذة
+كلقطة مقابل توثيق <bdi>CodeBuddy</bdi> الحيّ.
+
+## التحقّق
+
+```bash
+apothem verify --harness codebuddy --project /path/to/project
+```
+
+يؤكّد أمر التحقّق ما يلي:
+
+1. وجود الإعداد الأصلي في المسار المتوقَّع.
+2. وجود ملفّ القواعد المُدار وأنّه غير فارغ.
+3. إبلاغ روتين التحقّق الخاص بالمحوّل عن النجاح.
+
+## التحديث
+
+```bash
+apothem update --harness codebuddy --project /path/to/project
+```
+
+يعيد اشتقاق ملفّ قواعد المشروع من حالة الملف التعريفي المشترك الحالية.
+<bdi>`install`</bdi> و<bdi>`update`</bdi> عمليتان عَدِيمتا الأثر التراكمي — تؤدّي
+إعادة التشغيل إلى الكتابة فوق الملف المُدار بأحدث محتوى مُصيَّر.
+
+## إلغاء التثبيت
+
+```bash
+apothem uninstall --harness codebuddy --project /path/to/project
+```
+
+يزيل ملفات الإعداد الأصلية التي كتبها المحوّل، مع إعادة تسمية ملفّ القواعد المُدار إلى
+نسخة احتياطية ذات طابع زمني. لا يتأثّر <bdi>YAML</bdi> الملف التعريفي المشترك ولا محرّك
+<bdi>Apothem</bdi>.
+
+## بوّابة المطابقة
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## استكشاف الأخطاء وإصلاحها
+
+| العَرَض | الإصلاح |
+|---------|-----|
+| ملف الإعداد غير موجود | أعد تشغيل <bdi>`apothem install --harness codebuddy --project /path/to/project`</bdi> |
+| فشل التحقّق | شغّل <bdi>`apothem update --harness codebuddy --project /path/to/project`</bdi>، ثم تحقّق مجدّدًا |
+| محتوى إعداد غير متوقَّع | تحقّق من <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness codebuddy --project /path/to/project`</bdi> |
+
+## مفاتيح الضبط
+
+| العَلَم | الافتراضي | الوصف |
+|------|---------|-------------|
+| <bdi>`--dry-run`</bdi> | <bdi>`false`</bdi> | معاينة التثبيت دون كتابة ملفات. |

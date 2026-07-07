@@ -1,0 +1,70 @@
+---
+title: "/research-design"
+description: "/research-design — Mengoperasionalkan hipotesis menjadi prediksi yang dapat diuji dan merancang studi (variabel, kontrol, sampel, daya), lalu membekukan rencana analisis sebagai praregistrasi."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Peran:** Peneliti Utama (rancangan studi)
+**Posisi pipeline:** tengah rantai
+
+Mengoperasionalkan hipotesis menjadi prediksi yang dapat diuji dan merancang studi atau eksperimen — variabel, kontrol, sampel, instrumen, analisis daya, ancaman terhadap validitas — lalu menghasilkan praregistrasi yang membekukan rencana analisis sebelum pengumpulan data.
+
+## Pemanggilan kanonis
+
+```bash
+/research-design
+```
+
+Dengan argumen:
+
+```bash
+/research-design [path/to/research-suite/]
+```
+
+## Masukan
+
+`_inputs/proposal.md` (rencana-acuan dari `/research-proposal`, tahap pendahulu), `_inputs/synthesis.md` (peta SOTA + pernyataan kesenjangan), dan `_spec/research-spec.md` (hipotesis).
+
+## Keluaran
+
+`_inputs/study-design.md` (prediksi yang dioperasionalkan, spesifikasi variabel, kontrol, sampel, instrumen, analisis daya, ancaman terhadap validitas) + `_inputs/preregistration.md` (rencana analisis yang dibekukan).
+
+## Hilir
+
+/research-experiment (konsumen hilir)
+
+## Fase alur kerja
+
+Perintah ini mengikuti alur kerja pipeline `/research` standar:
+
+1. **Muat konteks** — Baca sintesis dan hipotesis spesifikasi.
+2. **Verifikasi Gerbang Urutan** — Konfirmasi `_inputs/proposal.md` (dan `_inputs/synthesis.md` serta `_spec/research-spec.md` di hulu) ada; jika tidak, hentikan dengan `Blocked: run /research-proposal first`.
+3. **Rancang studi** — Operasionalkan prediksi; spesifikasikan variabel, kontrol, sampel, instrumen, daya; cantumkan ancaman terhadap validitas.
+4. **Praregistrasi** — Bekukan rencana analisis sebelum pengumpulan data apa pun.
+5. **Perbarui manifes serah-terima** — Catat jalur rancangan studi dan praregistrasi.
+6. **Keluarkan rancangan** — `_inputs/study-design.md` + `_inputs/preregistration.md`.
+
+## Landasan ketelitian
+
+Untuk studi yang mengandung perbandingan, rancangan menetapkan, dan mempraregistrasikan, landasan empiris: satu anggaran terpadu di seluruh metode yang dibandingkan (waktu-dinding setara dan, bila bermakna, jumlah evaluasi setara), setidaknya tiga puluh pengulangan per instans untuk metode stokastik, faktor ablasi yang menonaktifkan satu komponen setiap kali, sapuan sensitivitas atas setiap parameter, dan konfigurasi otomatis pada pembagian pelatihan yang dievaluasi pada pembagian uji yang terpisah. Kedalaman landasan berskala sesuai ambisi tempat-terbit sasaran.
+
+## Mode kegagalan
+
+| Gejala | Penyebab | Pemulihan |
+|---------|-------|----------|
+| Blocked: run /research-proposal first | Tidak ada rencana-acuan | Jalankan `/research-proposal` untuk menghasilkan `_inputs/proposal.md` |
+| Rancangan kurang daya | Sampel terlalu kecil untuk efeknya | Jalankan ulang analisis daya; ubah ukuran sampel |
+| Rencana analisis tidak dibekukan | Praregistrasi dilewati | Tulis `_inputs/preregistration.md` sebelum pengumpulan data |
+
+## Contoh
+
+```bash
+# Rancang studi dan praregistrasikan rencana analisis
+/research-design path/to/research-suite/
+```
+
+## Referensi silang
+
+- [Ikhtisar pipeline](/docs/pipeline)
+- [Referensi perintah](/docs/reference/commands)

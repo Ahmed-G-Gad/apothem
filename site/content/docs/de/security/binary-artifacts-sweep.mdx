@@ -1,0 +1,57 @@
+---
+title: "Binärartefakt-Durchlauf"
+description: "Apothem-Binärartefakt-Durchlauf — null kompilierte / gepackte Binärdateien im Quellcode verfolgt. Nachweis für die OpenSSF-Scorecard-Prüfung Binary-Artifacts."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Die OpenSSF-Scorecard-Prüfung **Binary-Artifacts** stellt sicher, dass der Quellbaum keine kompilierten / gepackten / undurchsichtigen Binärartefakte enthält. Binärdateien im Quellcode sind nicht prüfbar und bieten einen Ansatzpunkt für Lieferketten-Angriffe: Die Binärdatei bettet Code ein, den der Quellbaum nicht offenlegt, sodass Prüfer ihn vor dem Merge nicht inspizieren können.
+
+## Apothems Haltung zu Binärartefakten
+
+Apothem ist ein **reiner Python-Quellbaum** ohne kompilierte, gepackte oder undurchsichtige Binärartefakte unter Versionskontrolle. Das Repository ist von Anfang bis Ende aus dem Quellcode heraus prüfbar.
+
+## Methodik des Durchlaufs
+
+Der Durchlauf zählt die Dateitypen auf, die Scorecard als binär einstuft, und prüft dann, dass jeder davon in der Versionskontrolle fehlt:
+
+| Erweiterungsfamilie | Beschreibung | Apothem-Status |
+|---|---|---|
+| `.exe`, `.dll`, `.so`, `.dylib` | Kompilierte native Binärdateien | ✅ Null verfolgt |
+| `.bin`, `.o`, `.a`, `.lib` | Objektdateien / statische Bibliotheken | ✅ Null verfolgt |
+| `.jar`, `.war`, `.ear` | Java-Pakete | ✅ Null verfolgt |
+| `.whl`, `.egg` | Python-Distributionen | ✅ Null verfolgt (in `dist/` gebaut; per gitignore ausgeschlossen) |
+| `.tar.gz`, `.zip` (gebaute Distribution) | Komprimierte Archive mit gebauten Artefakten | ✅ Null verfolgt |
+| `.class`, `.pyc`, `.pyo` | Kompilierter Bytecode | ✅ Null verfolgt (`__pycache__/` per gitignore ausgeschlossen) |
+| `.crt`, `.pem`, `.key`, `.p12`, `.pfx` | Kryptografisches Material | ✅ Null verfolgt (in `.gitignore` verweigert) |
+
+## Zulässige Binärklassen
+
+Zwei eng gefasste Klassen von Binärartefakten SIND im Quellcode zulässig:
+
+1. **Markenressourcen** — `assets/*.png`, `assets/*.ico`, `assets/favicon.*`. Diese sind über `scripts/dev/rebuild-assets.{sh,ps1}` **deterministisch aus den SVG-Mastern** unter `assets/src/` regenerierbar. Scorecard behandelt sie gemäß seiner `image/png`-Ausnahme als legitim.
+2. **Schriftdateien** — `assets/fonts/*.ttf`, `assets/fonts/*.woff2`. Gebündelte Schriftdateien mit dokumentierten Lizenzen; gemäß der `font/*`-Ausnahme von Scorecard.
+
+Beide Klassen sind unter [`site/content/docs/brand/index.mdx`](/docs/brand) dokumentiert, und ihre Herkunft wird im Asset-Rebuild-Rezept festgehalten.
+
+## Verifizierungsbefehl
+
+```shell
+# Aus dem Wurzelverzeichnis des apothem-Repositorys:
+git ls-files | grep -E '\\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
+```
+
+Dieser Aufruf sollte **null Zeilen** zurückgeben. Ein nicht leeres Ergebnis zeigt an, dass ein Binärartefakt im Quellcode verfolgt wurde — ein Befund hoher Schwere, der die nächste Veröffentlichung blockiert.
+
+## Auditkadenz
+
+Der Durchlauf ist Teil von:
+
+- **CI je PR** — `.github/workflows/ci.yml` enthält einen Grep-Schritt für Binärartefakte.
+- **Kontrollpunkt je Veröffentlichung** — das Release-Engineering-Runbook prüft den Durchlauf vor dem Tagging.
+- **Wöchentlicher Scorecard-Lauf** — der OpenSSF-Scorecard-Workflow bestätigt erneut, dass die Prüfung besteht.
+
+## Referenzen
+
+- [OpenSSF Scorecard — Binary-Artifacts-Prüfung](https://github.com/ossf/scorecard/blob/main/docs/checks.md#binary-artifacts)
+- [`.gitignore` von Apothem](https://github.com/ahmed-g-gad/apothem/blob/main/.gitignore) — die Sperrliste, die das versehentliche Einchecken von Binärdateien verhindert

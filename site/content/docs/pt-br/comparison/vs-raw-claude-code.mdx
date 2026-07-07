@@ -1,0 +1,49 @@
+---
+title: "Apothem versus a configuração manual do Claude Code"
+description: "Manter à mão toda a árvore de configuração nativa do Claude Code versus gerenciá-la através do perfil compartilhado do Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+O Claude Code (do fabricante Anthropic) mantém sua configuração nativa em
+`~/.claude/`. O adaptador claude-code do Apothem é o adaptador de superfície
+completa: ele propaga o corpus compartilhado diretamente para essa árvore. Esta
+página contrasta manter a configuração à mão com gerenciá-la com o Apothem.
+
+## Comparação de esforço
+
+| Tarefa | Configuração manual | Gerenciada pelo Apothem |
+| ---- | --------------- | --------------- |
+| Escrever regras, agentes, comandos, skills | Editar cada superfície em `~/.claude/` à mão | Escrever uma vez no corpus compartilhado |
+| Manter output-styles e statuslines | Editar à mão por superfície | Propagados do corpus compartilhado |
+| Configurar hooks | Editar à mão as entradas de hook de `settings.json` | Propagados (PreToolUse/PostToolUse/Stop/SessionStart) |
+| Manter a configuração alinhada com outros ambientes | Manual, por ferramenta | Automático no `apothem update` |
+| Verificar se a configuração está correta | Inspeção manual | `apothem verify --harness claude-code` |
+
+## O que o Apothem gerencia
+
+O adaptador propaga regras, agentes, comandos, skills, output-styles,
+statuslines e `settings.json` para `~/.claude/`. Os hooks nativos PreToolUse,
+PostToolUse, Stop e SessionStart são configurados a partir do corpus
+compartilhado.
+
+O Apothem **não** gerencia o `CLAUDE.md` — esse arquivo é território do
+operador. Suas instruções de projeto e pessoais no `CLAUDE.md` continuam suas; o
+Apothem governa as superfícies propagadas ao redor dele.
+
+## Caminho de migração
+
+1. Execute `apothem profile init` para criar o perfil compartilhado se você
+   ainda não tiver.
+2. Mova suas regras, agentes, comandos e skills existentes de `~/.claude/` para
+   o corpus compartilhado.
+3. Deixe o `CLAUDE.md` no lugar — o Apothem não vai tocá-lo.
+4. Execute `apothem install --harness claude-code` para propagar o corpus.
+5. Execute `apothem verify --harness claude-code` para confirmar que a
+   configuração foi instalada.
+6. Use `apothem update --harness claude-code` para cada mudança posterior.
+
+## Leia a seguir
+
+- [Referência do adaptador Claude Code](/docs/harnesses/claude-code)
+- [Visão geral da comparação](/docs/comparison)

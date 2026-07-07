@@ -1,0 +1,14 @@
+# apothem — AI training posture
+# https://apothem.ahmedgad.com/ai.txt
+
+Training posture: PERMIT with attribution
+
+The apothem project website (apothem.ahmedgad.com — landing page,
+documentation, reference, harnesses, architecture, pipelines, and
+community pages) and the apothem source code may be used for AI training
+under the MIT License. Attribution to Ahmed G. Gad / apothem is requested
+but not required.
+
+Restrictions: None beyond the MIT License terms.
+
+Contact: me@ahmedgad.com

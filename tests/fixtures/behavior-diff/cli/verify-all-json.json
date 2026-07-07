@@ -1,0 +1,29 @@
+{
+  "argv": [
+    "verify",
+    "--harness",
+    "all",
+    "--json"
+  ],
+  "exit_code": 1,
+  "json": {
+    "command": "verify",
+    "error": {
+      "code": "project.required",
+      "field": "project",
+      "files_written": [],
+      "fix": "Pass --project PATH or select only user-scope harnesses.",
+      "message": "Apothem validation failed.",
+      "reason": "project-scope harnesses require --project: cursor, gemini-cli, github-copilot, kimi-code, windsurf, codebuddy, kiro, trae, zed, glm.",
+      "safe_value": null
+    },
+    "files_written": [],
+    "harness": "all",
+    "profile_path": null,
+    "project": null,
+    "results": [],
+    "status": "error",
+    "warnings": []
+  },
+  "stdout": "{\"status\": \"error\", \"command\": \"verify\", \"harness\": \"all\", \"profile_path\": null, \"project\": null, \"files_written\": [], \"results\": [], \"warnings\": [], \"error\": {\"code\": \"project.required\", \"message\": \"Apothem validation failed.\", \"field\": \"project\", \"reason\": \"project-scope harnesses require --project: cursor, gemini-cli, github-copilot, kimi-code, windsurf, codebuddy, kiro, trae, zed, glm.\", \"fix\": \"Pass --project PATH or select only user-scope harnesses.\", \"safe_value\": null, \"files_written\": []}}\n"
+}

@@ -1,0 +1,10 @@
+{
+  "title": "ब्लॉग",
+  "pages": [
+    "index",
+    "posts/v1-0-1-release",
+    "posts/multi-harness-adapter-design",
+    "posts/cross-harness-convention-convergence",
+    "..."
+  ]
+}

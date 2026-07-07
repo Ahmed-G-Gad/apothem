@@ -1,0 +1,45 @@
+---
+title: "Apothem face à la configuration manuelle de Qwen Code"
+description: "Maintenir à la main les paramètres, commandes, compétences et sous-agents de Qwen Code, face au rendu depuis le profil partagé d'Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Qwen Code lit des paramètres, des hooks, `QWEN.md`, des commandes Markdown
+natives, des répertoires SKILL.md et des sous-agents Markdown. Apothem rend les
+clés de paramètres documentées depuis le profil partagé et convertit les
+cohortes partagées vers la forme de système de fichiers native de Qwen lorsque
+Qwen Code en prend une en charge.
+
+## Comparaison des efforts
+
+| Tâche | Configuration manuelle | Géré par Apothem |
+| ---- | --------------- | --------------- |
+| Rédiger les règles | Maintenir à la main QWEN.md et les fichiers d'appui | Rendues ou référencées depuis le profil partagé |
+| Configurer les hooks | Éditer à la main les entrées de hooks de `settings.json` | Installés via la table de hooks native de Qwen Code |
+| Rédiger commandes, compétences, agents | Maintenir chaque répertoire de Qwen à la main | Convertis depuis les cohortes partagées d'Apothem |
+| Garder les cohortes alignées avec les autres environnements | Manuel, par outil | Automatique au `apothem update` |
+| Installer / retirer la surface | Manuel | `apothem install` / `apothem uninstall` |
+| Vérifier que la configuration est correcte | Inspection manuelle | `apothem verify --harness qwen-code` |
+
+## Ce qu'Apothem gère
+
+L'adaptateur qwen-code écrit `settings.json`, installe `QWEN.md`, convertit les
+commandes slash d'Apothem en fichiers de commandes Markdown de Qwen, copie les
+compétences dans la surface de compétences native, adapte les définitions
+auxiliaires en sous-agents de Qwen et enregistre les répartiteurs de hooks
+d'Apothem. Les règles, les modèles et le matériel source des hooks restent sous
+le sous-arbre d'appui d'Apothem et sont référencés depuis le contexte natif.
+
+## Chemin de migration
+
+1. Exécutez `apothem profile init` pour créer le profil partagé si vous ne l'avez pas encore fait.
+2. Déplacez les règles, commandes, compétences et agents existants de Qwen Code dans le corpus partagé.
+3. Exécutez `apothem install --harness qwen-code` pour rendre la surface native.
+4. Exécutez `apothem verify --harness qwen-code` pour confirmer que la configuration a abouti.
+5. Utilisez `apothem update --harness qwen-code` pour chaque modification ultérieure.
+
+## À lire ensuite
+
+- [Référence de l'adaptateur Qwen Code](/docs/harnesses/qwen-code)
+- [Aperçu de la comparaison](/docs/comparison)

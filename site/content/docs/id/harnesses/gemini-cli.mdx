@@ -1,0 +1,95 @@
+---
+title: "Gemini CLI"
+description: "Adaptor alat Apothem untuk Gemini CLI (GA)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Vendor:** Google
+**Nama instalasi:** `gemini-cli`
+**Status:** GA
+**Konfigurasi native:** `GEMINI.md` dan `.gemini/` lokal proyek
+
+## Instalasi
+
+```bash
+apothem install --harness gemini-cli --project /path/to/project
+```
+
+Adaptor ini berlingkup proyek. Ia memasang `GEMINI.md` proyek, mengonversi
+perintah Apothem menjadi perintah garis miring TOML Gemini, menormalkan definisi
+asisten lokal, dan menempatkan kumpulan dukungan non-native di bawah
+`.gemini/.apothem/support/`.
+
+**Berkas yang ditulis:**
+
+```text
+GEMINI.md
+.gemini/commands/*.toml
+.gemini/agents/*.md
+.gemini/skills/
+.gemini/.apothem/support/
+```
+
+## Pemetaan profil ke konfigurasi native
+
+Adaptor membaca kumpulan bersama Apothem dan merutekan masing-masing melalui
+permukaan yang kompatibel dengan Gemini. Aturan Markdown, templat, dan material
+hook tetap berada di bawah `.gemini/.apothem/support/` karena merupakan material dukungan,
+bukan direktori aturan native Gemini.
+
+## Catatan kompatibilitas
+
+`~/.gemini/` tetap menjadi wilayah berlingkup pengguna untuk perkakas yang
+menggunakan profil Gemini global. Adaptor Gemini CLI hanya menulis ke proyek yang
+diteruskan melalui `--project`.
+
+## Verifikasi
+
+```bash
+apothem verify --harness gemini-cli --project /path/to/project
+```
+
+Perintah verify memastikan bahwa:
+
+1. Konfigurasi native ada di jalur yang diharapkan.
+2. Semua bidang wajib dari profil bersama tersedia.
+3. Rutin verifikasi khusus adaptor melaporkan keberhasilan.
+
+## Pembaruan
+
+```bash
+apothem update --harness gemini-cli --project /path/to/project
+```
+
+Menyegarkan `GEMINI.md`, perintah yang dikonversi, definisi asisten lokal,
+keterampilan yang terpasang, dan pohon dukungan `.gemini/.apothem/support/`.
+
+## Pencopotan
+
+```bash
+apothem uninstall --harness gemini-cli --project /path/to/project
+```
+
+Menghapus berkas konfigurasi native yang ditulis oleh adaptor.
+YAML profil bersama dan mesin Apothem tidak terpengaruh.
+
+## Gerbang konformitas
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Pemecahan masalah
+
+| Gejala | Perbaikan |
+|---------|-----|
+| Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness gemini-cli --project /path/to/project` |
+| Verifikasi gagal | Jalankan `apothem update --harness gemini-cli --project /path/to/project`, lalu verifikasi lagi |
+| Konten konfigurasi tak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness gemini-cli --project /path/to/project` |
+
+## Tombol konfigurasi
+
+| Flag | Default | Deskripsi |
+|------|---------|-------------|
+| `--dry-run` | `false` | Pratinjau instalasi tanpa menulis berkas. |

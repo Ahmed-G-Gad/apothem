@@ -1,0 +1,104 @@
+---
+title: "status"
+description: "Referensi CLI untuk perintah apothem status."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Melaporkan status pemasangan, verifikasi, dan penyimpangan untuk setiap asisten-pengkodean yang terdaftar.
+
+## Ringkasan
+
+```
+apothem status [--project PATH]
+               [--quiet|-q] [--verbose|-v]
+               [--format plain|json] [--json] [--no-color]
+```
+
+`status` adalah perintah inspeksi hanya-baca. Perintah ini menelusuri setiap adapter asisten-pengkodean yang terdaftar dan melaporkan tiga fakta per asisten: apakah ia terpasang, apakah target yang dikelolanya terverifikasi, dan apakah konfigurasi yang terpasang telah menyimpang dari profil bersama. Ia tidak menulis apa pun ke disk.
+
+Untuk setiap asisten-pengkodean, `status` melaporkan:
+
+| Kolom | Arti |
+|---|---|
+| `installed` | Konfigurasi terkelola adapter ada di jalur targetnya. |
+| `verified` | Target terkelola adapter ada dan valid. |
+| `drift` | Putusan kesetiaan profil (lihat di bawah). |
+
+Nilai `drift` adalah salah satu dari:
+
+| Nilai | Arti |
+|---|---|
+| `in-sync` | Konfigurasi terpasang membawa profil bersama yang baru diproyeksikan secara harfiah. |
+| `drift` | Asisten-pengkodean terpasang tetapi konten profil yang diproyeksikannya tidak lagi cocok dengan profil bersama saat ini. Jalankan `apothem install` lagi untuk memproyeksikan ulang. |
+| `absent` | Asisten-pengkodean tidak terpasang, jadi tidak ada yang dibandingkan. |
+| `needs-project` | Sebuah asisten-pengkodean berlingkup-proyek dilaporkan tanpa `--project`, sehingga targetnya tidak dapat di-resolve. Berikan `--project PATH` untuk memeriksanya. |
+
+Penyimpangan dilaporkan, tidak pernah diperlakukan sebagai galat: `status` keluar dengan 0 bahkan ketika satu atau lebih asisten-pengkodean melaporkan `drift`. Penyimpangan adalah fakta tentang penyiapan Anda, bukan kegagalan perintah.
+
+Jika profil bersama tidak dapat dimuat, penyimpangan diturunkan menjadi `absent` untuk asisten-pengkodean yang terpasang (fakta installed/verified tetap dilaporkan) alih-alih membatalkan penyapuan.
+
+## Opsi
+
+| Opsi | Deskripsi |
+|---|---|
+| `--project PATH` | Root proyek untuk asisten-pengkodean berlingkup-proyek. Tanpanya, asisten-pengkodean berlingkup-proyek melaporkan `needs-project`. |
+| `--quiet`, `-q` | Menekan keluaran informatif; hanya galat yang dipancarkan. |
+| `--verbose`, `-v` | Memancarkan keluaran diagnostik tambahan. |
+| `--format plain\|json` | Format keluaran (default: `plain`). |
+| `--json` | Singkatan untuk `--format json`. |
+| `--no-color` | Menonaktifkan kode warna ANSI dalam keluaran. |
+| `-h`, `--help` | Menampilkan bantuan dan keluar. |
+
+## Keluaran JSON
+
+Amplop `--json` membawa satu baris hasil per asisten-pengkodean yang terdaftar. Setiap baris membawa kunci terdokumentasi `harness`, `installed`, `verified`, dan `drift`.
+
+```json
+{
+  "status": "success",
+  "command": "status",
+  "action": "status",
+  "harness": "all",
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "installed": true,
+      "verified": true,
+      "drift": "in-sync"
+    },
+    {
+      "harness": "cursor",
+      "installed": false,
+      "verified": false,
+      "drift": "needs-project"
+    }
+  ],
+  "warnings": [],
+  "error": null
+}
+```
+
+Isolasi kegagalan per-adapter: jika satu adapter melempar pengecualian saat melaporkan statusnya, baris asisten-pengkodean tersebut membawa `outcome: "error"` dan sebuah `message`, asisten-pengkodean yang tersisa tetap melaporkan secara normal, dan proses keluar dengan kode 2.
+
+## Contoh
+
+```bash
+apothem status
+apothem status --project .
+apothem status --json
+```
+
+## Kode keluar
+
+| Kode | Arti |
+|---|---|
+| 0 | Status dilaporkan (penyimpangan dilaporkan, bukan galat) |
+| 2 | Setidaknya satu adapter gagal melaporkan statusnya |
+
+## Lihat juga
+
+- [apothem verify](/docs/cli-reference/verify) — memverifikasi pemasangan satu asisten-pengkodean
+- [apothem diff](/docs/cli-reference/diff) — pratinjau perubahan tertunda untuk asisten-pengkodean
+- [apothem harnesses](/docs/cli-reference/harnesses) — mendaftar dan memeriksa asisten-pengkodean yang terdaftar

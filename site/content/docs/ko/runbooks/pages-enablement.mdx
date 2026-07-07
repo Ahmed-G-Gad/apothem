@@ -1,0 +1,322 @@
+---
+title: "Pages 활성화 런북"
+description: "CNAME DNS 구성을 통해 apothem.ahmedgad.com에서 사용자 지정 도메인으로 GitHub Pages를 출시하는 단계별 런북."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+이 런북은 `apothem.ahmedgad.com`을 새로운 GitHub Pages 구성에서 `200 OK`
+HTTPS 랜딩 페이지까지 이끕니다. 이 절차는 `gh`와 DNS 제공자 콘솔을 다루는
+오퍼레이터를 위해 작성되었으며, 유능한 신규 기여자는 사전 맥락 없이도 이를
+따를 수 있습니다.
+
+런북은 **제공자 비종속 코어**(모든 제공자가 공유하는 GitHub 측 단계와 DNS
+레코드 단계)에 이어, Namecheap, Cloudflare, Route53, 그리고 범용 DNS 폴백을
+위한 **제공자별 부록**으로 구성됩니다. 코어를 순서대로 실행하고, 최상위
+도메인 등록 기관 / DNS 호스트와 일치하는 부록으로 이동한 뒤, 검증을 위해
+코어로 돌아오세요.
+
+사이트는 사용자 지정 도메인 CNAME이 `ahmed-g-gad.github.io`를 가리키는 상태로,
+공개 저장소 `ahmed-g-gad/apothem`에서 GitHub Pages를 통해 호스팅됩니다.
+정적 사이트 빌드는 `site/dist/`로 출력되며, Pages 워크플로는 `main`으로의
+모든 푸시마다 그 빌드 아티팩트를 라이브 사이트로 끌어올립니다.
+
+## 1. 전제 조건
+
+오퍼레이터는 진행하기 전에 다음을 확인합니다.
+
+- **저장소 상태.** `ahmed-g-gad/apothem`이 공개되어 있고, Pages가 활성화되어
+  있으며(Settings > Pages > Source: GitHub Actions), `publish-static-site.yml`
+  워크플로가 `.github/workflows/publish-static-site.yml`에 존재한다.
+- **DNS 권한.** 오퍼레이터가 등록 기관 또는 위임된 DNS 호스트(Cloudflare,
+  Route53 등)에서 `ahmedgad.com`의 DNS를 제어한다. DNS 호스트는
+  `dig NS ahmedgad.com +short`로 식별한다.
+- **도구.** `ahmed-g-gad` 계정에 대해 인증된 `gh`(GitHub CLI) 버전 2.40
+  이상, DNS 검증용 `dig`(BIND `dig` 또는 `drill`), HTTPS 검사용 브라우저.
+- **최상위 도메인 입장.** 이 런북은 **서브도메인** `apothem.ahmedgad.com`만
+  구성합니다. 최상위 도메인 `ahmedgad.com`은 건드리지 않습니다. 최상위에서의
+  CNAME은 CNAME 평탄화(Cloudflare) 또는 ALIAS 레코드(Route53)를 요구하며,
+  서브도메인 경로는 두 부류의 복잡함을 모두 회피합니다.
+
+## 2. 제공자 비종속 코어
+
+### 2.1 사용자 지정 도메인을 Pages에 추가하기
+
+```bash
+gh api -X PUT \
+  /repos/ahmed-g-gad/apothem/pages \
+  -F cname=apothem.ahmedgad.com \
+  -F https_enforced=true
+```
+
+호출이 새 CNAME 레코드를 반환했는지 검증합니다.
+
+```bash
+gh api /repos/ahmed-g-gad/apothem/pages \
+  --jq '.cname, .https_enforced, .status'
+```
+
+예상 출력:
+
+```text
+apothem.ahmedgad.com
+true
+built
+```
+
+`built` 상태는 가장 최근 Pages 빌드가 성공했음을 확인합니다. `null` 상태는
+CNAME이 적용된 이후로 Pages가 실행되지 않았음을 의미합니다 — 빌드를
+트리거하려면 `main`에 no-op 커밋을 푸시하세요.
+
+### 2.2 CNAME 파일 확인하기
+
+GitHub Pages는 모든 배포마다 정적 사이트 빌드 아티팩트를 통해
+`site/public/CNAME`을 받습니다. 이 파일에는 사용자 지정 도메인이 한 줄에,
+스킴 없이, 끝의 슬래시 없이 담겨 있습니다.
+
+```text
+apothem.ahmedgad.com
+```
+
+이 파일은 `site/public/CNAME`에 있습니다. 검증:
+
+```bash
+cat site/public/CNAME
+```
+
+파일이 누락되었다면 `site/public/CNAME`에 다시 생성하고
+`chore: restore Pages CNAME`로 커밋하세요.
+
+### 2.3 DNS 레코드 추가하기
+
+Pages는 최상위 도메인 DNS 제공자가 GitHub의 네 IP 주소 중 하나(최상위
+도메인의 경우)나 `<owner>.github.io`를 가리키는 CNAME(서브도메인의 경우)을
+반환할 때 사용자 지정 도메인을 제공합니다. `apothem.ahmedgad.com`의 경우
+레코드 클래스는 **CNAME**입니다.
+
+| 필드 | 값 |
+|-------|-------|
+| Type  | `CNAME` |
+| Host  | `apothem`(서브도메인만; 등록 기관이 최상위를 덧붙임) |
+| Value | `ahmed-g-gad.github.io.`(등록 기관이 요구할 때 끝점 포함) |
+| TTL   | `3600`(한 시간; 전환 중 더 빠른 전파를 위해서는 낮게) |
+
+레코드를 추가하는 정확한 UI 흐름은 제공자마다 다릅니다. 아래의 일치하는
+부록으로 이동하고, 레코드가 저장되면 여기로 돌아오세요.
+
+### 2.4 DNS 전파 대기하기
+
+전파는 낮은 TTL 레코드의 경우 5분 이내에, 기본 3600초 TTL의 경우 한 시간
+이내에 완료됩니다 — DNS 영역 전송 중에는 제공자 엣지가 그 윈도를 연장할 수
+있습니다. 진행 상황을 추적합니다.
+
+```bash
+dig apothem.ahmedgad.com CNAME +short
+```
+
+예상 출력:
+
+```text
+ahmed-g-gad.github.io.
+```
+
+빈 출력은 레코드가 아직 전파되지 않았음을 의미합니다. 30초마다 다시
+실행하세요. 30분 후에도 레코드가 전혀 나타나지 않으면, 그 DNS 호스트에
+일치하는 부록으로 돌아가 레코드가 초안 상태로 보류 중이 아니라 제공자에서
+확정되었는지 검증하세요.
+
+### 2.5 HTTPS 검증하기
+
+```bash
+curl -sSI https://apothem.ahmedgad.com/ | head -5
+```
+
+예상 출력:
+
+```text
+HTTP/2 200
+server: GitHub.com
+content-type: text/html; charset=utf-8
+strict-transport-security: max-age=31536000
+```
+
+`HTTP/2 200`과 `server: GitHub.com` 행은 함께 Pages가 유효한 TLS 인증서
+아래에서 사이트를 제공하고 있음을 확인합니다. 일반 HTTP 요청에 대한 HTTPS
+URL로의 `301`도 이 게이트를 만족합니다. HTTPS 강제가 켜져 있습니다.
+
+`curl`이 `526`(Cloudflare 고유의 잘못된 인증서 코드)이나 `502`(잘못된
+게이트웨이)를 반환하면 인증서가 아직 발급되지 않은 것입니다. Pages는 CNAME이
+해석되면 Let's Encrypt 인증서를 자동으로 프로비저닝합니다. 최초 발급에는
+최대 24시간까지 허용하세요. 진단:
+
+```bash
+gh api /repos/ahmed-g-gad/apothem/pages \
+  --jq '.https_certificate.state, .https_certificate.description'
+```
+
+`state: approved`는 발급이 완료되었음을 의미합니다. `state: requesting`은
+발급이 진행 중임을 의미합니다. 기다리세요. 그 외의 어떤 상태든 Pages
+재시작이 필요합니다(API를 통해 사용자 지정 도메인을 껐다가 다시 켜기).
+
+### 2.6 딥 링크 검증하기
+
+```bash
+curl -sSI https://apothem.ahmedgad.com/architecture/ | head -3
+```
+
+예상 출력:
+
+```text
+HTTP/2 200
+server: GitHub.com
+content-type: text/html; charset=utf-8
+```
+
+딥 링크에서의 `404`는 정적 사이트 빌드가 그 페이지를 가져오지 않았거나
+배포가 완료되지 않았음을 의미합니다. `gh workflow run publish-static-site.yml`로
+재빌드를 트리거하세요.
+
+### 2.7 검증 기록하기
+
+오퍼레이터의 사이트 상태 로그(인라인으로 유지한다면 이 런북의 검증 로그)에
+날짜, 오퍼레이터의 신원, `gh api` Pages 상태 출력을 담은 행을 추가합니다.
+검증 로그는 감사 추적입니다 — 모든 Pages 구성 변경이 한 행을 남깁니다.
+
+## 3. 제공자 부록 — Namecheap
+
+Namecheap은 등록 기관의 "Advanced DNS" 탭을 통해 DNS를 노출합니다. 등록
+기관의 NS 레코드가 `dns1.registrar-servers.com`과
+`dns2.registrar-servers.com`(Namecheap 기본값)과 일치할 때, 오퍼레이터는
+여기서 `ahmedgad.com`을 소유합니다. `dig NS ahmedgad.com +short`로
+검증하세요.
+
+단계:
+
+1. Namecheap에 로그인하고 대시보드를 엽니다.
+2. 왼쪽 내비게이션의 `Domain List`를 클릭하고 `ahmedgad.com`을 찾은 뒤
+   `Manage`를 클릭합니다.
+3. `Advanced DNS` 탭을 클릭합니다.
+4. `Add New Record`를 클릭합니다. 선택:
+   - Type: `CNAME Record`
+   - Host: `apothem`(최상위 없음, 끝점 없음)
+   - Value: `ahmed-g-gad.github.io.`(끝점 포함)
+   - TTL: `Automatic`(Namecheap 기본값; 1800초를 따름)
+5. 녹색 체크 표시를 클릭하여 저장합니다.
+6. Namecheap의 엣지 전파를 위해 5~10분 기다린 뒤, `dig` 검증을 위해 제공자
+   비종속 코어 §2.4로 돌아갑니다.
+
+흔한 실패: 동일 호스트를 `A` 레코드가 이미 점유하고 있을 때 Namecheap의 UI는
+CNAME 레코드를 조용히 거부합니다. 충돌하는 `A` 레코드를 먼저 삭제하세요.
+RFC 1034에 따라 동일 호스트의 CNAME과 A는 상호 배타적입니다.
+
+## 4. 제공자 부록 — Cloudflare
+
+등록 기관의 NS 레코드가 `*.ns.cloudflare.com`(위임 후 Cloudflare 기본값)을
+가리킬 때 Cloudflare DNS가 최상위를 호스팅합니다.
+`dig NS ahmedgad.com +short`로 검증하세요.
+
+단계:
+
+1. Cloudflare에 로그인하고 `ahmedgad.com` 영역을 선택합니다.
+2. 왼쪽 내비게이션의 `DNS` -> `Records`를 클릭합니다.
+3. `Add record`를 클릭합니다. 선택:
+   - Type: `CNAME`
+   - Name: `apothem`(Cloudflare가 최상위를 자동으로 덧붙임)
+   - Target: `ahmed-g-gad.github.io`(Cloudflare의 UI에서는 끝점 없음)
+   - TTL: `Auto`(Cloudflare 기본값; 그 엣지를 통해 라우팅)
+   - Proxy status: **DNS only**(주황색이 아닌 회색 구름)
+4. `Save`를 클릭합니다.
+
+프록시 상태 선택은 핵심적입니다. Cloudflare의 프록시를 켜면(주황색 구름)
+트래픽이 GitHub Pages에 도달하기 전에 Cloudflare의 엣지를 거쳐 라우팅됩니다.
+Cloudflare가 자체 인증서를 제시하기 때문에 이는 Pages의 Let's Encrypt 발급을
+깨뜨립니다. 초기 설정에는 프록시를 꺼두고, Cloudflare의 엣지에서 인증서를
+관리할지 결정한 후에만 나중에 프록시를 켜세요.
+
+5. Cloudflare의 엣지 전파를 위해 1~2분 기다린 뒤, 제공자 비종속 코어 §2.4로
+   돌아갑니다.
+
+흔한 실패: Cloudflare는 CNAME 대상의 끝점을 조용히 제거합니다. 대상 필드는
+끝점 없는 `ahmed-g-gad.github.io`를 받아들이며, 리졸버가 쿼리 시점에 끝점을
+덧붙입니다. Cloudflare의 UI에서 끝점을 입력하지 마세요 — 그것은 해석되지
+않는 이중 점 레코드를 만듭니다.
+
+## 5. 제공자 부록 — Route53
+
+등록 기관의 NS 레코드가 네 개의 `awsdns-*.com` / `awsdns-*.org` /
+`awsdns-*.co.uk` / `awsdns-*.net` 서버를 가리킬 때 Route53이 영역을
+호스팅합니다. `dig NS ahmedgad.com +short`로 검증하세요.
+
+단계:
+
+1. AWS 콘솔을 열고 Route53으로 이동한 뒤 `Hosted zones`를 클릭하고
+   `ahmedgad.com` 영역을 선택합니다.
+2. `Create record`를 클릭합니다.
+3. 구성:
+   - Record name: `apothem`(Route53이 최상위를 자동으로 덧붙임)
+   - Record type: `CNAME`
+   - Value: `ahmed-g-gad.github.io`(끝점 없음)
+   - TTL: `300`(5분; Route53의 기본값은 더 높음; 전환 중 더 빠른 전파를
+     위해서는 TTL을 낮게)
+   - Routing policy: `Simple routing`
+4. `Create records`를 클릭합니다.
+5. Route53 전파를 위해 1~5분 기다린 뒤 §2.4로 돌아갑니다.
+
+Route53은 CNAME 간접 참조 없이 쿼리 시점에 해석되는 **별칭 레코드**를
+지원합니다. 별칭 대상은 AWS 리소스(CloudFront, S3, ELB 등)로 제한되고
+`ahmed-g-gad.github.io`는 AWS 리소스가 아니므로 여기서는 별칭 레코드를
+사용하지 않습니다. CNAME이 올바릅니다.
+
+흔한 실패: Route53의 UI는 서로 다른 라우팅 정책을 가진 중복 레코드 이름을
+받아들입니다. 이는 단순 CNAME이 아니라 헬스체크 방식의 장애 조치 라우팅으로
+나타납니다. 저장하기 전에 `Routing policy`가 `Simple routing`으로 표시되는지
+확인하세요.
+
+## 6. 제공자 부록 — 범용 DNS
+
+이름이 명시된 부록으로 다루지 않는 DNS 호스트(대부분 등록 기관의 기본 DNS
+패널 — GoDaddy, Hover, Gandi, OVH, Porkbun, Domains.google, Network
+Solutions)의 경우, 제공자 비종속 CNAME 형태를 적용하세요.
+
+| 필드 | 값 |
+|-------|-------|
+| Type  | `CNAME` |
+| Host  | `apothem`(서브도메인만) |
+| Value | `ahmed-g-gad.github.io.`(끝점 — 대부분의 범용 패널이 받아들이고, 일부는 요구함) |
+| TTL   | `3600`(또는 전환 중 패널에서 사용 가능한 가장 낮은 값) |
+
+범용 패널 전반에서 반복되는 두 가지 실패 부류:
+
+- **끝점 불일치.** 일부 패널은 끝점을 요구하고, 다른 패널은 거부하며, 소수는
+  둘 다 받아들입니다. 레코드가 30분 후에도 전파되지 않으면 끝점을 토글하고
+  다시 저장하세요.
+- **동일 호스트의 충돌하는 A 레코드.** 동일 호스트의 CNAME과 A는 RFC
+  1034(Domain Names — Concepts and Facilities)의 도메인 이름 선호도에 관한
+  제3절을 위반합니다. CNAME을 추가하기 전에 충돌하는 A 레코드를 삭제하세요.
+
+레코드가 저장된 후 `dig` 검증을 위해 §2.4로 돌아갑니다.
+
+## 7. 장애 복구
+
+Pages 활성화 절차에는 문서화된 네 가지 장애 모드가 있습니다.
+
+| 장애 | 진단 | 복구 |
+|---|---|---|
+| `gh api .../pages`가 404를 반환함 | 저장소에서 Pages가 활성화되지 않음 | `gh api -X POST /repos/ahmed-g-gad/apothem/pages -f source.branch=main -f source.path=/site` 후 §2.1 재시도 |
+| 30분 후에도 `dig`가 빈 값을 반환함 | DNS 레코드가 제공자에서 확정되지 않음 | 일치하는 제공자 부록으로 돌아가기; 레코드가 저장되었는지(초안 / 보류가 아님) 검증; 놓친 `Save` 단계가 있는지 패널 검사 |
+| `https_certificate.state: errored` | Pages가 인증서를 발급할 수 없음 | Pages 설정에서 사용자 지정 도메인을 껐다가 다시 켜기; 이는 발급을 재트리거함. 새 시도를 위해 최대 24시간 대기 |
+| 빌드 후 딥 링크 404 | 정적 사이트 빌드가 해당 페이지를 포함하지 않음 | `gh workflow run publish-static-site.yml`; 완료 시 `gh run list --workflow=publish-static-site.yml --limit=1 --json conclusion --jq '.[0].conclusion'`가 `success`를 반환하는지 검증 |
+
+일치하는 진단을 한 차례 거친 후에도 복구가 실패하면, 릴리스 복구 런북으로
+에스컬레이션하세요(새 히스토리의 강제 푸시가 Pages 구성을 불일치 상태로
+남겼을 수 있습니다).
+
+## 8. 상호 참조
+
+- **사양 출처.** 사양 §2.5는 이 런북을 Cluster 4 문서 산출물로 나열합니다.
+- **CNAME 정규 위치.** CNAME 파일은 `site/public/CNAME`에 있으며 저장소에
+  커밋됩니다. Pages는 모든 빌드에서 그것을 읽습니다.
+- **복구 흐름.** 릴리스 복구 런북은 전환 시퀀스가 중도에 실패할 때 복구
+  스냅숏에서 Pages 구성을 다시 적용합니다.
+- **릴리스 주기.** 모든 릴리스 실행에는 사이트가 사용자 지정 도메인에서
+  렌더링되는지 검증하는 Pages 빌드 작업이 포함됩니다.

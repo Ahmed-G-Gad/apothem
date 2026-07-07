@@ -1,0 +1,5 @@
+# Apothem documentation site — crawler directives.
+User-agent: *
+Allow: /
+
+Sitemap: https://apothem.ahmedgad.com/sitemap.xml

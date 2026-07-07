@@ -1,0 +1,115 @@
+---
+title: "安装器环境变量"
+description: "用环境变量控制脚本安装器（目标位置、来源、工具、配置文件、验证）。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+目标：在不编辑脚本的情况下，通过在运行前设置环境变量来驱动
+`install.sh` / `install.ps1`。
+
+## 前置条件
+
+- 一个 POSIX shell（`bash`）或 PowerShell 5.1+。
+- 这些变量在安装器开头被读取一次，因此请在同一条命令中设置它们
+  （或先导出它们），然后运行安装器。
+
+## 安装器变量
+
+| 变量 | 控制项 | 默认值 |
+| --- | --- | --- |
+| `APOTHEM_HOME` | 克隆的源码树的安装目标位置 | `$HOME/.apothem` |
+| `APOTHEM_REPO` | 要克隆的 Git 远端 | `https://github.com/ahmed-g-gad/apothem` |
+| `APOTHEM_REF` | 要检出的 Git ref；未设置时解析为最新的签名 `vMAJOR.MINOR.PATCH` 标签，标签值将其固定，`main` 选择移动分支 | 未设置（最新签名标签） |
+| `APOTHEM_ALLOW_UNVERIFIED` | 设置为 `1` 时，将标签签名验证失败从致命中止降级为警告 | `0`（验证，失败即关闭） |
+| `APOTHEM_SOURCE` | 要使用的显式本地源码树，以替代克隆 | 未设置（克隆） |
+| `APOTHEM_HARNESS` | 要安装的工具 | `claude-code` |
+| `APOTHEM_PROFILE` | 共享配置文件 YAML 的路径 | `$HOME/.config/apothem/profile.yaml` |
+| `APOTHEM_SKIP_VERIFY` | 设置为 `1` 时跳过安装后的验证步骤 | `0`（运行验证） |
+| `APOTHEM_AUTO_INSTALL_DEPS` | 设为 `1` 时，自动安装缺失的前置依赖 `click` / `rich`，不再询问 | `0`（询问；在非交互式管道中则拒绝） |
+| `APOTHEM_BIN_DIR` | 放置 `apothem` 命令 shim 的目录 | `$HOME/.local/bin`（POSIX）；`%LOCALAPPDATA%\Microsoft\WindowsApps`（Windows） |
+
+`APOTHEM_SOURCE` 优先于克隆：当其设置为一个包含 `src/apothem` 的检出时，
+安装器直接使用它，从不触及 `APOTHEM_REPO` / `APOTHEM_REF`，并跳过标签
+解析与签名验证（没有任何内容被抓取以供验证）。
+
+## 信任模型
+
+在未设置 `APOTHEM_REF` 的情况下，安装器会解析最新的签名发布标签，并在
+物化任何配置之前用 `git verify-tag` 验证其签名；未签名或被篡改的标签将
+中止安装。用 `APOTHEM_REF=<tag>` 固定一个已知发布（同样会被验证；标签
+来自[发布页面](https://github.com/ahmed-g-gad/apothem/releases)），用
+`APOTHEM_REF=main` 选择移动分支（不验证），或设置
+`APOTHEM_ALLOW_UNVERIFIED=1` 以在验证失败后带警告继续（用于隔离网络、
+本地或预签名发布的场景）。
+
+```bash title="固定、已验证的安装"
+APOTHEM_REF=vMAJOR.MINOR.PATCH bash install.sh
+```
+
+```bash title="不经验证继续（临时 / 隔离网络）"
+APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
+```
+
+## 步骤（POSIX bash）
+
+1. 安装一个非默认的工具：
+
+   ```bash
+   APOTHEM_HARNESS=cursor bash install.sh
+   ```
+
+2. 固定源 ref 与安装目标位置：
+
+   ```bash
+   APOTHEM_REF=main APOTHEM_HOME=/opt/apothem bash install.sh
+   ```
+
+3. 使用本地检出与自定义配置文件，并跳过验证：
+
+   ```bash
+   APOTHEM_SOURCE=/work/apothem \
+   APOTHEM_PROFILE=/work/profile.yaml \
+   APOTHEM_SKIP_VERIFY=1 \
+   bash install.sh
+   ```
+
+## 步骤（PowerShell）
+
+在运行安装器之前，在 `$env:` 上设置每个变量：
+
+```powershell
+$env:APOTHEM_HARNESS = 'cursor'
+pwsh -NoProfile -File install.ps1
+```
+
+```powershell
+$env:APOTHEM_REF = 'main'
+$env:APOTHEM_HOME = 'C:\opt\apothem'
+pwsh -NoProfile -File install.ps1
+```
+
+```powershell
+$env:APOTHEM_SOURCE = 'C:\work\apothem'
+$env:APOTHEM_PROFILE = 'C:\work\profile.yaml'
+$env:APOTHEM_SKIP_VERIFY = '1'
+pwsh -NoProfile -File install.ps1
+```
+
+## 验证
+
+安装器会打印 `✓ Harness <name> installed`，然后（除非
+`APOTHEM_SKIP_VERIFY=1`）打印 `✓ verify passed`。独立确认：
+
+```bash
+apothem verify --harness cursor
+```
+
+当配置文件尚不存在时，安装器会从示例创建一份并提前退出 —— 请编辑
+`$APOTHEM_PROFILE`，然后重新运行。
+
+## 相关
+
+- [安装](/docs/install) 涵盖一键网络安装。
+- [添加工具](/docs/how-to/adding-a-harness)，用于在首次安装之后通过 CLI
+  添加工具。

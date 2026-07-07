@@ -1,0 +1,42 @@
+---
+title: "Skema Frontmatter"
+description: "Panduan referensi untuk struktur blok frontmatter YAML, kunci wajib per kelas, dan aturan penegakan validator di seluruh kelas artefak."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Referensi kanonik untuk frontmatter YAML pada setiap kelas artefak.** Ringkasan di [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Konvensi adalah deklarasi inline; JSON Schema per kelas di [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) adalah kontrak yang dapat dibaca mesin; halaman ini adalah referensi mandiri yang dikutip oleh kontributor hilir.
+
+---
+
+## 1. Struktur blok frontmatter
+
+Setiap artefak membawa frontmatter YAML di bagian kepala, dibatasi oleh baris `---`. Banner header kepengarangan kanonik sesuai [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) berada di atas frontmatter pada berkas keluarga Markdown; frontmatter mengikuti tepat setelahnya.
+
+Kunci menggunakan `kebab-case`. Nilai skalar ditulis polos atau dengan tanda kutip ganda; nilai string yang mengandung titik dua, tanda pagar, atau karakter signifikan-YAML lainnya diberi tanda kutip.
+
+## 2. Bidang wajib per kelas
+
+Himpunan kunci wajib bervariasi menurut kelas artefak. Struktur otoritatif ditegakkan oleh `scripts/dev/validate_ecosystem.py` dan JSON Schema per kelas di bawah direktori `schemas/` (satu berkas skema per kelas artefak).
+
+```text
+schemas/agent.schema.json
+schemas/skill.schema.json
+schemas/command.schema.json
+schemas/output-style.schema.json
+schemas/plan.schema.json
+```
+
+| Kelas | Kunci wajib |
+|-------|---------------|
+| `CLAUDE.md` (konfigurasi root) | `name`, `version`, `updated`, `description`, `scope`, `portability` |
+| Aturan (`src/apothem/rules/*.md`) | `name`, `description`, `pathFilter`, `alwaysApply` |
+| Perintah (`src/apothem/commands/*.md`) | `name`, `version`, `updated`, `description`, `argument-hint`, `disable-model-invocation` |
+| Asisten (direktori kanonik yang ditunjukkan di bawah) | `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns`, `effort` |
+| Keterampilan (`src/apothem/skills/*/SKILL.md`) | `name`, `description`, `archetype`, `userInvocable` |
+
+Skema per kelas di [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) membawa himpunan batasan lengkap termasuk batasan tipe, format, enum, dan pola.
+
+## 3. Validator
+
+`scripts/dev/validate_ecosystem.py` menelusuri pohon artefak, menerapkan himpunan kunci wajib di atas, dan melaporkan `[FAIL]` pada artefak apa pun yang kehilangan bidang wajib. `frontmatter-grep` per-penulisan di `src/apothem/conformity/frontmatter_grep.py` menegakkan struktur yang sama pada batas hook PreToolUse Write/Edit.

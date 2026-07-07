@@ -1,0 +1,46 @@
+---
+title: "Apothem مقابل تهيئة Qwen Code اليدوية"
+description: "صيانة إعدادات Qwen Code وأوامره ومهاراته ووكلائه الفرعيين يدويًّا، مقابل تحويلها من ملف التعريف المشترك لـ Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+يقرأ <bdi>Qwen Code</bdi> الإعدادات والخطّافات و<bdi>`QWEN.md`</bdi> وأوامر
+<bdi>Markdown</bdi> الأصلية وأدلّة <bdi>SKILL.md</bdi> والوكلاء الفرعيين بصيغة
+<bdi>Markdown</bdi>. يُحوِّل <bdi>Apothem</bdi> مفاتيح الإعدادات الموثَّقة من ملف
+التعريف المشترك، ويحوّل المجموعات المشتركة إلى الشكل الأصلي لنظام ملفات
+<bdi>Qwen</bdi> حيثما يدعم <bdi>Qwen Code</bdi> ذلك.
+
+## مقارنة الجهد
+
+| المهمة | تهيئة يدوية | يديرها Apothem |
+| ---- | --------------- | --------------- |
+| كتابة القواعد | صيانة <bdi>QWEN.md</bdi> وملفّاته الداعمة يدويًّا | مُحوَّلة أو مُشار إليها من ملف التعريف المشترك |
+| تهيئة الخطّافات | تحرير مدخلات الخطّافات في <bdi>`settings.json`</bdi> يدويًّا | تُثبَّت عبر خريطة الخطّافات الأصلية لـ <bdi>Qwen Code</bdi> |
+| كتابة الأوامر والمهارات والوكلاء | صيانة كل دليل <bdi>Qwen</bdi> يدويًّا | مُحوَّلة من مجموعات <bdi>Apothem</bdi> المشتركة |
+| إبقاء المجموعات متوائمة مع البيئات الأخرى | يدويًّا، لكل أداة | تلقائيًّا عند <bdi>`apothem update`</bdi> |
+| تثبيت / إزالة السطح | يدويًّا | <bdi>`apothem install`</bdi> / <bdi>`apothem uninstall`</bdi> |
+| التحقّق من صحّة التهيئة | فحص يدوي | <bdi>`apothem verify --harness qwen-code`</bdi> |
+
+## ما الذي يديره Apothem
+
+يكتب محوِّل <bdi>qwen-code</bdi> الملف <bdi>`settings.json`</bdi>، ويثبّت
+<bdi>`QWEN.md`</bdi>، ويحوّل أوامر الشَّرطة المائلة في <bdi>Apothem</bdi> إلى ملفات
+أوامر <bdi>Markdown</bdi> الخاصة بـ <bdi>Qwen</bdi>، وينسخ المهارات إلى سطح
+المهارات الأصلي، ويُكيّف التعريفات المساعِدة كوكلاء فرعيين لـ <bdi>Qwen</bdi>،
+ويسجّل موزّعات خطّافات <bdi>Apothem</bdi>. تبقى القواعد والقوالب والمادة المصدرية
+للخطّافات تحت الشجرة الفرعية الداعمة لـ <bdi>Apothem</bdi>، ويُشار إليها من
+السياق الأصلي.
+
+## مسار الترحيل
+
+1. شغّل <bdi>`apothem profile init`</bdi> لإنشاء ملف التعريف المشترك إن لم تكن قد فعلت بعد.
+2. انقل قواعد <bdi>Qwen Code</bdi> وأوامره ومهاراته ووكلاءه الموجودين إلى الذخيرة المشتركة.
+3. شغّل <bdi>`apothem install --harness qwen-code`</bdi> لتحويل السطح الأصلي.
+4. شغّل <bdi>`apothem verify --harness qwen-code`</bdi> للتأكّد من نزول التهيئة.
+5. استخدم <bdi>`apothem update --harness qwen-code`</bdi> لكل تغيير لاحق.
+
+## اقرأ تاليًا
+
+- [مرجع محوِّل Qwen Code](/docs/harnesses/qwen-code)
+- [نظرة عامة على المقارنة](/docs/comparison)

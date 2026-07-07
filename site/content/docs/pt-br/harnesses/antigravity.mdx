@@ -1,0 +1,103 @@
+---
+title: "Antigravity"
+description: "Adaptador de ferramenta do Apothem para o Antigravity (versão prévia)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Fornecedor:** Antigravity
+**Nome de instalação:** `antigravity`
+**Status:** Versão prévia
+**Configuração nativa:** `~/.gemini/GEMINI.md` mais
+`~/.gemini/antigravity-cli/plugins/apothem/`
+
+## Instalação
+
+```bash
+apothem install --harness antigravity
+```
+
+O adaptador renderiza o perfil compartilhado em `~/.gemini/GEMINI.md` e instala
+os conjuntos de suporte do Apothem como um plugin da CLI do Antigravity.
+
+**Arquivos gravados:** `~/.gemini/GEMINI.md`,
+`~/.gemini/antigravity-cli/plugins/apothem/plugin.json`,
+`~/.gemini/antigravity-cli/plugins/apothem/skills/`,
+`~/.gemini/antigravity-cli/plugins/apothem/rules/`,
+as definições de assistentes locais convertidas dentro do plugin,
+`~/.gemini/antigravity-cli/plugins/apothem/apothem/templates/` e
+`~/.gemini/antigravity-cli/plugins/apothem/apothem/hooks/`.
+
+**Âncora de usuário compartilhada.** `~/.gemini/GEMINI.md` é também a âncora de
+escopo de usuário para as ferramentas da família Gemini. O adaptador do Antigravity
+mantém seu material extra do Apothem dentro do plugin `apothem` em
+`~/.gemini/antigravity-cli/plugins/`, de modo que não reivindica os diretórios
+genéricos de projeto do Gemini CLI.
+
+## Mapeamento do perfil para a configuração nativa
+
+O adaptador lê o perfil compartilhado do Apothem e renderiza a âncora de instruções
+mais os conjuntos de suporte a cada execução de `apothem install` ou
+`apothem update`.
+
+## Notas de compatibilidade
+
+Adaptador em versão prévia. A âncora `GEMINI.md` é conteúdo de instruções ativo; o
+plugin do Antigravity preserva as habilidades de comandos convertidas, as
+habilidades reutilizáveis, as definições de assistentes locais, as regras, os
+modelos e o material de suporte de ganchos (hooks) em um namespace próprio do
+Apothem e claro.
+Os arquivos de ganchos (hooks) não são registrados como eventos ativos de ganchos
+do Antigravity até que o adaptador disponha de uma camada de tradução de esquema
+para o `hooks.json` do Antigravity.
+
+## Verificação
+
+```bash
+apothem verify --harness antigravity
+```
+
+O comando verify confirma que:
+
+1. O arquivo de contexto nativo existe no caminho esperado.
+2. Os metadados do plugin da CLI do Antigravity do Apothem existem e declaram o
+   nome de plugin `apothem`.
+
+## Atualização
+
+```bash
+apothem update --harness antigravity
+```
+
+Rederiva a configuração nativa a partir do estado atual do perfil compartilhado.
+Execute após editar `~/.config/apothem/profile.yaml` ou atualizar o pacote do
+Apothem instalado.
+
+## Desinstalação
+
+```bash
+apothem uninstall --harness antigravity
+```
+
+Remove os arquivos de configuração nativa gravados pelo adaptador.
+O YAML do perfil compartilhado e o motor do Apothem não são afetados.
+
+## Portão de conformidade
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Solução de problemas
+
+| Sintoma | Correção |
+|---------|-----|
+| Arquivo de configuração não encontrado | Reexecute `apothem install --harness antigravity` |
+| Verificação falhou | Execute `apothem update --harness antigravity` e verifique novamente |
+| Conteúdo de configuração inesperado | Verifique `~/.config/apothem/profile.yaml` ou `--profile PATH`, depois reexecute `apothem update --harness antigravity` |
+
+## Botões de configuração
+
+| Sinalizador | Padrão | Descrição |
+|------|---------|-------------|
+| `--dry-run` | `false` | Pré-visualiza a instalação sem gravar arquivos. |

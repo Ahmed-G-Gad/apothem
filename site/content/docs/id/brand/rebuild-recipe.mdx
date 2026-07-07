@@ -1,0 +1,66 @@
+---
+title: "Resep pembangunan ulang aset"
+description: "Regenerasi semua aset merek raster dari sumber SVG master dengan resvg dan Pillow."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Resep pembangunan ulang aset meregenerasi setiap aset raster dari SVG master.
+Ini adalah jalur pembaruan otoritatif untuk iterasi merek.
+
+## Kapan menjalankannya
+
+Jalankan resep pembangunan ulang ketika:
+
+- SVG master (`assets/src/logo.svg` atau `assets/src/logo-dark.svg`) berubah.
+- Master favicon ringkas (`assets/favicon.svg`) berubah.
+- Master kartu sosial (`assets/src/og-banner.svg` atau `assets/src/twitter-card.svg`) berubah.
+- Ukuran raster baru dibutuhkan.
+- Anda ingin memverifikasi bahwa aset yang sudah di-commit masih cocok dengan sumber SVG.
+
+## Skrip
+
+| Skrip | Platform | Path |
+| --- | --- | --- |
+| `rebuild-assets-resvg.py` | Host mana pun dengan Python + resvg | `scripts/dev/rebuild-assets-resvg.py` |
+
+## Persyaratan
+
+Generator meraster setiap SVG dengan [resvg](https://github.com/linebender/resvg)
+dan menyusun set raster dengan [Pillow](https://python-pillow.org/):
+
+- **Pillow:** `pip install pillow`.
+- **resvg:** unduh binari rilis untuk platform Anda dari
+  [rilis resvg](https://github.com/linebender/resvg/releases) —
+  `resvg-win64.zip` di Windows, `resvg-linux-x86_64.tar.gz` di Linux, atau
+  `resvg-macos.zip` di macOS — ekstrak ke `PATH` Anda, atau arahkan skrip
+  ke binari tersebut dengan `--resvg <path>`.
+
+## Penggunaan
+
+Regenerasi setiap aset raster:
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py
+```
+
+Berikan `--check-only` untuk memverifikasi bahwa toolchain tersedia tanpa
+meregenerasi aset apa pun:
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py --check-only
+```
+
+Jika resvg tidak ada di `PATH` Anda, arahkan skrip ke binari tersebut:
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py --resvg /path/to/resvg
+```
+
+## Verifikasi
+
+Eksekusi yang berhasil meregenerasi raster mark terang dan gelap, set favicon
+PNG/ICO, ikon Apple touch, gambar OG/Twitter, dan mencerminkan subset yang
+disajikan di web —termasuk sumber logo hero yang dirujuk situs— ke `site/public/`.
+Setelah generasi, jalankan build situs dan periksa halaman Beranda, favicon tab
+peramban, dan PNG kartu sosial sebelum memublikasikan.

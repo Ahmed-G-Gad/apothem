@@ -1,0 +1,69 @@
+---
+title: "/research-publish"
+description: "/research-publish — Formats the paper to the venue template and assembles the submission package (supplementary, data/code availability, cover letter, ethics/COI), with a preprint/DOI plan."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Role:** Principal Investigator (publication)
+**Pipeline position:** mid-chain
+
+Formats the paper to the venue template and assembles the submission package — supplementary materials, data / code-availability statement, cover letter, ethics and conflict-of-interest declarations — plus a preprint / archival plan with a DOI and a submission checklist. The operator submits the package; the terminal successor is `/research-disseminate`, which carries the published work to its audience.
+
+## Canonical invocation
+
+```bash
+/research-publish
+```
+
+With arguments:
+
+```bash
+/research-publish [path/to/research-suite/]
+```
+
+## Inputs
+
+The paper deliverable and `_outputs/review-report.md` (the peer-review revisions).
+
+## Outputs
+
+The venue-formatted submission package at a host-natural location (the formatted manuscript + supplementary materials + data / code-availability statement + cover letter + ethics / COI declarations) + `_outputs/publication-record.md` + a submission checklist.
+
+## Downstream
+
+/research-disseminate (downstream consumer) — the operator performs the submission, then `/research-disseminate` carries the published work to its audience. When the venue returns revisions, re-run `/research-review` against the revised paper before rebuilding the package.
+
+## Workflow phases
+
+The command follows the standard `/research` pipeline workflow:
+
+1. **Load context** — Read the paper and the review report.
+2. **Verify the Sequence Gate** — Confirm `_outputs/review-report.md` exists; otherwise halt with `Blocked: run /research-review first`.
+3. **Format & package** — Apply the venue template; assemble supplementary, data/code availability, cover letter, ethics / COI declarations.
+4. **Plan the preprint / archival** — Record the preprint and DOI plan; build the submission checklist.
+5. **Update the handoff manifest** — Record the submission package and the publication record.
+6. **Emit the package** — the venue-formatted submission package + `_outputs/publication-record.md`.
+
+## Rigor floor
+
+Formatting honors staged disclosure: for a double-blind venue, author, institution, and system identity are stripped to separately-submitted metadata and restored only at the designated camera-ready stage. The archival deposit carries the venue-scaled reproducibility-evidence package (data, code, pinned environment, seeds, hardware log, per-instance results, and figures).
+
+## Failure modes
+
+| Symptom | Cause | Recovery |
+|---------|-------|----------|
+| Blocked: run /research-review first | No review report | Run `/research-review` to produce `_outputs/review-report.md` |
+| Unaddressed HIGH revision | Review finding skipped | Address the revision and re-run `/research-review` |
+| Missing data/code availability | Reproducibility surface absent | Add the data / code-availability statement before submission |
+
+## Examples
+
+```bash
+# Assemble the venue submission package
+/research-publish path/to/research-suite/
+```
+
+## Cross-references
+
+- [Pipeline overview](/docs/pipeline)
+- [Commands reference](/docs/reference/commands)

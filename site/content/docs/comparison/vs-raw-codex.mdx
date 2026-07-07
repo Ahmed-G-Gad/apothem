@@ -1,0 +1,44 @@
+---
+title: "Apothem vs raw Codex config"
+description: "Hand-maintaining Codex's AGENTS.md, hooks, skills, and agents versus installing them from Apothem's shared profile."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Codex reads user instructions from `AGENTS.md`, loads hooks from `hooks.json`
+or `config.toml`, discovers custom agents under `agents/`, and discovers skills
+from the shared Codex skills root. Apothem's codex adapter installs those
+surfaces from the shared profile while leaving operator-owned `config.toml`
+settings alone.
+
+## Effort comparison
+
+| Task | Raw hand-config | Apothem-managed |
+| ---- | --------------- | --------------- |
+| Author `AGENTS.md` | Hand-edit user instructions | Installed from the Codex bootstrap template |
+| Author hooks | Hand-write `hooks.json` or TOML hook tables | Installed to `~/.codex/hooks.json` with Apothem hook helpers under `~/.codex/hooks/` |
+| Author custom agents | Hand-write TOML files under `~/.codex/agents/` | Converted from Apothem Markdown agents |
+| Author reusable commands | Hand-build skills one directory at a time | Wrapped as `~/.agents/skills/*/SKILL.md` |
+| Keep rules aligned with other harnesses | Manual, per tool | Automatic on `apothem update` |
+| Verify the config is correct | Manual inspection | `apothem verify --harness codex` |
+
+## What Apothem manages
+
+The codex adapter installs `AGENTS.md`, `hooks.json`, hook helper files,
+converted custom agents, and generated skills. It does not overwrite
+`~/.codex/config.toml`; model, sandbox, approval, MCP, and other runtime
+preferences remain operator-owned.
+
+## Migration path
+
+1. Run `apothem profile init` to create the shared profile if you have not yet.
+2. Move the rules from your existing `AGENTS.md` into the shared corpus.
+3. Keep existing `config.toml` runtime settings in Codex unless you choose to
+   manage them manually elsewhere.
+4. Run `apothem install --harness codex` to install the Codex-native surfaces.
+5. Run `apothem verify --harness codex` to confirm the files landed.
+6. Use `apothem update --harness codex` for every later change.
+
+## Read next
+
+- [Codex adapter reference](/docs/harnesses/codex)
+- [Comparison overview](/docs/comparison)

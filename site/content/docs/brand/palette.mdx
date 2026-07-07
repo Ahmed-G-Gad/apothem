@@ -1,0 +1,36 @@
+---
+title: "Brand palette"
+description: "Apothem core brand colors and the seventeen harness brand colors. The single source of truth is the canonical design tokens at assets/design-tokens.css; the site mirrors those values."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## Core palette
+
+The canonical palette — the slate neutral ramp, the emerald accent ramp, and
+the semantic hues — is owned by the design tokens at
+[`assets/design-tokens.css`](https://github.com/ahmed-g-gad/apothem/blob/main/assets/design-tokens.css)
+(and its `assets/design-tokens.json` mirror). The site theme at
+[`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
+mirrors those token values into the CSS variables the Fumadocs theme consumes. Every value below
+traces to a canonical ramp step.
+
+| Role | Token (CSS) | Light mode | Dark mode | Use |
+|---|---|---|---|---|
+| Primary | `--brand-text` | slate-900 `#0f172a` | slate-50 `#f8fafc` | Headings, navigation text, primary reading surfaces. |
+| Accent | `--sl-color-accent` | emerald-600 `#059669` | emerald-400 `#34d399` | Active links, focus rings, selected navigation. |
+| Body text | `--brand-muted` | slate-600 `#475066` | slate-300 `#c2ccda` | Default prose text. |
+| Body ground | `--brand-surface` | white `#ffffff` | slate-900 `#0f172a` | Default background. |
+| Navigation ground | `--brand-surface-muted` | slate-50 `#f8fafc` | slate-950 `#080c15` | Header and navigation bands. |
+| Code ground | `--brand-code-bg` | slate-900 `#0f172a` | slate-950 `#080c15` | Inline / block code surfaces. |
+
+## Harness palette
+
+The harness colors live at [Harness colors](/docs/brand/harness-colors). The geometric mapping onto the Apothem mark's hexagon — its center node and terminus node — is folded into the brand section. The CSS source of truth at [`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css) wires every token to its CSS variable.
+
+## Usage in documentation
+
+The palette is wired through the global stylesheet `site/app/global.css`, imported by the root layout. Light and dark mode variants switch with the theme's `.dark` class state.
+
+## Updates
+
+The palette updates only when a core color shifts (slate / emerald) or a harness ratifies a brand-color change upstream. Per-harness changes propagate atomically across [`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css), [Harness colors](/docs/brand/harness-colors), and every affected SVG master under `assets/src/`.

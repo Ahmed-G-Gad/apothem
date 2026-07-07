@@ -1,0 +1,29 @@
+{
+  "argv": [
+    "verify",
+    "--harness",
+    "bogus",
+    "--json"
+  ],
+  "exit_code": 1,
+  "json": {
+    "command": "verify",
+    "error": {
+      "code": "harness.unknown",
+      "field": "harness",
+      "files_written": [],
+      "fix": "Use one of: antigravity, claude-code, codex, cursor, gemini-cli, github-copilot, hermes, kimi-code, open-claw, opencode, qwen-code, windsurf, codebuddy, kiro, trae, zed, glm, or use 'all' for batch lifecycle commands.",
+      "message": "Apothem validation failed.",
+      "reason": "'bogus' is not a supported harness.",
+      "safe_value": null
+    },
+    "files_written": [],
+    "harness": "bogus",
+    "profile_path": null,
+    "project": null,
+    "results": [],
+    "status": "error",
+    "warnings": []
+  },
+  "stdout": "{\"status\": \"error\", \"command\": \"verify\", \"harness\": \"bogus\", \"profile_path\": null, \"project\": null, \"files_written\": [], \"results\": [], \"warnings\": [], \"error\": {\"code\": \"harness.unknown\", \"message\": \"Apothem validation failed.\", \"field\": \"harness\", \"reason\": \"'bogus' is not a supported harness.\", \"fix\": \"Use one of: antigravity, claude-code, codex, cursor, gemini-cli, github-copilot, hermes, kimi-code, open-claw, opencode, qwen-code, windsurf, codebuddy, kiro, trae, zed, glm, or use 'all' for batch lifecycle commands.\", \"safe_value\": null, \"files_written\": []}}\n"
+}

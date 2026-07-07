@@ -1,0 +1,55 @@
+---
+title: "Usando trabalhadores delegados"
+description: "Defina e invoque trabalhadores delegados persistentes para tarefas especializadas."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Os trabalhadores delegados do Apothem são definições de trabalhadores
+persistentes e reutilizáveis armazenadas sob a árvore `src/apothem/` (o diretório
+canônico é mostrado abaixo — o nome é preservado por compatibilidade com o
+carregador do runtime):
+
+```text
+src/apothem/agents/
+```
+
+Cada trabalhador delegado codifica um papel especializado, sinais de detecção e
+um conjunto de ferramentas permitidas.
+
+## Estrutura do arquivo do trabalhador delegado
+
+```markdown
+---
+name: "my-agent"
+description: "..."
+tools: "Read, Grep, Glob"
+---
+
+# My assistant
+
+## Role
+...
+
+## Detection signals
+Matched when: ...
+
+## Workflow
+...
+```
+
+## Trabalhadores delegados integrados
+
+| Trabalhador delegado | Propósito |
+|-------|---------|
+| `codebase-explorer` | Exploração profunda da base de código |
+| `convention-auditor` | Verificação de nomenclatura e formatação |
+| `memory-auditor` | Verificação da exatidão da memória |
+| `quality-gate` | Lint, testes, verificação de tipos, varredura de segurança |
+
+## Invocando trabalhadores delegados
+
+Os trabalhadores delegados são despachados pelo orquestrador por meio da
+ferramenta de delegação que o runtime do host expõe. O orquestrador seleciona o
+trabalhador correspondente com base na descrição da tarefa e nos sinais de
+detecção.

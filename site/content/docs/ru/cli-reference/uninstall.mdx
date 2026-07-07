@@ -1,0 +1,71 @@
+---
+title: "uninstall"
+description: "Справочник CLI для команды apothem uninstall."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Удаляет конфигурацию адаптера ассистента по написанию кода.
+
+## Сводка
+
+```
+apothem uninstall --harness NAME|all [--yes] [--project PATH]
+                   [--quiet|-q] [--verbose|-v]
+                   [--format plain|json] [--json] [--no-color]
+```
+
+Удаляет управляемые адаптером цели ассистента по написанию кода. Запрашивает подтверждение, если не указан `--yes`. Если выбранный ассистент по написанию кода не установлен, команда завершается успешно (код выхода 0) с уведомлением «nothing to remove».
+
+Псевдоним в продолженной форме `apothem uninstalling` разрешается в тот же обработчик.
+
+## Параметры
+
+| Параметр | Описание |
+|---|---|
+| `--harness NAME` | Адаптер ассистента по написанию кода для удаления или `all` для набора уровня всего реестра (обязательно). |
+| `--yes` | Пропускает запрос подтверждения. |
+| `--project PATH` | Корень проекта для ассистентов по написанию кода с областью проекта. |
+| `--quiet`, `-q` | Подавляет информационный вывод; выводятся только ошибки. |
+| `--verbose`, `-v` | Выводит дополнительную диагностическую информацию. |
+| `--format plain\|json` | Формат вывода (по умолчанию: `plain`). |
+| `--json` | Сокращение для `--format json`. |
+| `--no-color` | Отключает коды цветов ANSI в выводе. |
+| `-h`, `--help` | Показывает справку и завершает работу. |
+
+## Вывод JSON
+
+Когда адаптер установлен и успешно удалён:
+
+```json
+{"action": "uninstalled", "harness": "claude-code", "output_path": "..."}
+```
+
+Когда адаптер не был установлен:
+
+```json
+{"status": "not_installed", "harness": "claude-code"}
+```
+
+## Примеры
+
+```bash
+apothem uninstall --harness claude-code
+apothem uninstall --harness claude-code --yes
+apothem uninstall --harness cursor --project . --yes
+apothem uninstall --harness all --project . --yes
+apothem Uninstalling --harness cursor --project . --yes   # continuous-form alias
+```
+
+## Коды выхода
+
+| Код | Значение |
+|---|---|
+| 0 | Адаптер удалён или не был установлен |
+| 1 | Ассистент по написанию кода не найден или пользователь прервал запрос подтверждения |
+
+## См. также
+
+- `apothem uninstalling` — псевдоним в продолженной форме для этой команды (документирован здесь; CLI принимает обе формы)
+- [apothem install](/docs/cli-reference/install) — устанавливает конфигурацию ассистента по написанию кода
+- [apothem verify](/docs/cli-reference/verify) — подтверждает статус установки

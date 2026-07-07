@@ -1,0 +1,53 @@
+---
+title: "Configuration de l'environnement"
+description: "Ajouter et configurer des adaptateurs d'environnement pour les plateformes."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## Installer un adaptateur d'environnement
+
+```bash
+apothem install --harness <name>
+```
+
+Consultez la [liste des environnements pris en charge](/docs/harnesses) pour connaître les noms disponibles.
+Les adaptateurs à portée de projet nécessitent le chemin du projet :
+
+```bash
+apothem install --harness cursor --project /path/to/project
+apothem install --harness gemini-cli --project /path/to/project
+apothem install --harness github-copilot --project /path/to/project
+apothem install --harness windsurf --project /path/to/project
+```
+
+## Installer plusieurs environnements
+
+Utilisez le sélecteur couvrant tout le registre lorsque vous voulez chaque adaptateur pris en charge. Comme
+l'ensemble enregistré inclut des adaptateurs à portée de projet, indiquez la racine du projet.
+
+```bash
+apothem install --harness claude-code
+apothem install --harness cursor --project /path/to/project
+apothem install --harness all --project /path/to/project
+```
+
+## Vérifier la configuration de l'environnement
+
+```bash
+apothem verify --harness <name>
+apothem verify --harness all --project /path/to/project
+```
+
+Pour vérifier chaque adaptateur enregistré d'un seul coup, exécutez `apothem doctor`. Il affiche
+un tableau du statut d'installation par environnement et se termine avec un code non nul si un adaptateur signale
+qu'il n'est pas installé.
+
+## Afficher les environnements installés
+
+```bash
+apothem harnesses list
+```
+
+Passez `apothem harnesses show <name>` pour obtenir le détail par adaptateur (nom, état
+d'installation et chemin de sortie).

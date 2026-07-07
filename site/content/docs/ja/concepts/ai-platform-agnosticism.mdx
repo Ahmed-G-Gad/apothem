@@ -1,0 +1,84 @@
+---
+title: "ホスト非依存の姿勢"
+description: "Apothem が共有プロファイルとハーネスアダプターを通じて、どのようにホスト非依存の姿勢を実現するか。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem は 1 つの原則を中心に設計されています。あなたのガバナンス設定は、いかなる単一の
+ハーネスよりも長く存続すべきだということです。共有 Apothem
+プロファイルは `~/.config/apothem/profile.yaml` または `--profile PATH` にある、スキーマ検証済みの
+YAML ファイルです。パッケージ化された Apothem コホートが、コマンド、ルール、スキル、フック、
+テンプレート、ステータスライン、出力スタイル、委任定義を提供します。
+`src/apothem/harnesses/<harness>/` 配下のハーネスごとのアダプターが、それらの入力を、
+サポート対象の各ハーネスが必要とするフォーマットへ変換します。
+
+```text
+Claude Code, Cursor, Gemini CLI, GitHub Copilot, Codex, Windsurf,
+OpenCode, Antigravity, Open-Claw, Hermes, Qwen Code,
+CodeBuddy, Kiro, Trae, Zed
+```
+
+## 中心となる考え方
+
+ホスト非依存とは、あなたの*意図* — あなたが誰であるか、アシスタントにどう振る舞ってほしいか、
+従うべきルール — が、いかなる単一のハーネスにも所有されない 1 つの場所に存在することを
+意味します。ハーネスはその意図を消費する、交換可能な存在です。新しいアシスタントが登場したら、
+設定を書き直すのではなく、アダプターを追加することで導入します。使っていたアシスタントが
+廃れたら、構築したガバナンスを失うことなくそれを切り捨てます。プロファイルが資産であり、
+ハーネスはレンダリング先です。ハーネスはコーディング、チャット、共同作業、リサーチ、ライティングに使えます — プロファイルはハーネスが何のためのものかに依存しません。
+
+これは意図的な反転です。一般的な道は各ツールを直接設定することですが、それでは投資がその
+ツールの寿命とフォーマットの人質になってしまいます。Apothem は設定をポータブルな資本として、
+ハーネスを使い捨て可能な端末として扱います。
+
+## 問題
+
+すべてのハーネスは独自の設定フォーマットを持っています。
+
+```text
+Claude Code:    CLAUDE.md + settings.json
+Cursor:         .cursor/rules/*.mdc
+GitHub Copilot: .github/copilot-instructions.md
+Windsurf:       .devin/rules/
+Codex:          AGENTS.md
+```
+
+Apothem がなければ、時間とともに乖離していく N 個の別々の設定ファイルを保守することになります。
+
+## Apothem の解決策
+
+```text
+One shared Apothem profile (YAML) + packaged cohorts
+    identity.name
+    preferences.style
+    rules[]
+         |
+         v
+    Adapter layer (HarnessAdapter protocol — src/apothem/harnesses/<harness>/)
+         |
+         +---> Claude Code adapter   -> ~/.claude/
+         +---> Cursor adapter        -> .cursor/rules/*.mdc
+         +---> Copilot adapter       -> .github/copilot-instructions.md
+         +---> Windsurf adapter      -> .devin/rules/
+         +---> ...
+```
+
+共有プロファイルを一度編集し、その後 `apothem update --harness <name>` または
+`apothem update --harness all --project <path>` を実行して変更を伝播します。
+`apothem harnesses list` は登録済みのセットを出力します。
+
+## なぜ「apothem」なのか
+
+この名前はアーキテクチャを表しています。幾何学において*アポテム（apothem）*とは、正多角形の
+**中心**から**いずれかの辺の中点**へ下ろした垂線です — 中心からすべての辺への単一の距離で、
+どの方向でも同一です。これがこの設計です。中心に 1 つの共有プロファイルがあり、周縁に
+17 個の等距離のハーネスがあり、すべてのマテリアライズが信頼できる情報源から同じ長さだけ
+離れています。辺が変わっても中心は変わりません。辺は中心との単一の関係を共有します。
+ドリフトは構造的に不可能です。
+
+## ポータビリティの保証
+
+`portability: universal` とマークされたルールは、サポート対象のすべてのハーネスへ翻訳可能で
+あることが保証されます。`portability: project-specific` とマークされたルールは、ルール本体に
+ハーネスごとのオーバーライドの記述が必要になる場合があります。

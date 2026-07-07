@@ -1,0 +1,67 @@
+---
+title: "/plan-review"
+description: "/plan-review — Forensic audit of an existing plan suite — prose fidelity, consistency, quality."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Role:** Auditor
+**Pipeline position:** mid
+
+Forensic audit of an existing plan suite — prose fidelity, consistency, quality.
+
+## Canonical invocation
+
+```bash
+/plan-review
+```
+
+With arguments:
+
+```bash
+/plan-review [path/to/plan-suite/] [--focus AREA] [--dry-run]
+```
+
+## Inputs
+
+Generated plan suite + `_inputs/handoff-manifest.yml` from `/plan-generate`.
+
+## Outputs
+
+Review Scorecards in `PLAN-NOTES.md` (`## Review Scorecards`), a Review Summary in `PROGRESS.md`, per-finding revision-impact maps in `PLAN-NOTES.md` (durable large reports in `_outputs/`), and the augmented `_inputs/handoff-manifest.yml` carrying the review verdict.
+
+## Downstream
+
+`/plan-design` (conditional — architecture-bearing suites only) then `/plan-execute`; for non-architecture-bearing suites, `/plan-execute` consumes the Review Scorecards directly to gate execution at SHARED+.
+
+## Workflow phases
+
+The command runs a forensic, blind, line-by-line audit then refines through interactive Q&A:
+
+1. **Load context** — Read every plan-suite file (`phases/**/PHASE.md`, infrastructure files, reports) and the upstream Handoff Manifest; refuse with `Blocked: run /plan-generate first` when the suite is absent.
+2. **Audit** — Sweep the dimensions (prose fidelity, internal consistency, completeness, quality, risk, standards, domain, architecture, creative quality) under the Blind Review Mandate.
+3. **Triage findings** — Disposition each finding (accept · revise · reject · defer) through the structured-inquiry channel with per-finding severity counts.
+4. **Run the pre-emission gate** — Run the fifteen-bar gate against the review report and updated scorecards; failure blocks promotion.
+5. **Emit the review** — Write the Review Scorecards to `PLAN-NOTES.md`, the Review Summary to `PROGRESS.md`, and the augmented Handoff Manifest.
+
+## Failure modes
+
+| Symptom | Cause | Recovery |
+|---------|-------|----------|
+| Blocked: run /plan-generate first | No generated suite | Run `/plan-generate` to produce the suite this command audits |
+| Open findings remain | Audit surfaced unresolved defects | Disposition every finding (accept · revise · reject · defer) before the terminal verdict |
+| Scorecard FAIL | A dimension falls below the CONDITIONAL threshold | Address the failing dimension and re-review |
+
+## Examples
+
+```bash
+# Dry-run to preview the audit scope
+/plan-review --dry-run
+
+# Audit a named plan suite, focused on one area
+/plan-review path/to/plan-suite/ --focus architecture
+```
+
+## Cross-references
+
+- [Pipeline overview](/docs/pipeline)
+- [Command reference](/docs/reference/commands)

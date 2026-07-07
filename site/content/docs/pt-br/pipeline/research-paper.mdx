@@ -1,0 +1,70 @@
+---
+title: "/research-paper"
+description: "/research-paper — Monta um rascunho de artigo de primeira linha (do resumo à conclusão, mais as referências) a partir da síntese, do projeto e da análise, com cada citação verificada para resolver."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Função:** Pesquisador principal (redação)
+**Posição no pipeline:** intermediária
+
+Monta um rascunho de artigo de primeira linha a partir da síntese, do projeto e da análise — resumo, introdução, trabalhos relacionados, método, resultados, discussão, limitações, conclusão, referências. Cada citação é verificada para resolver a uma fonte real; sem citações fantasmas.
+
+## Invocação canônica
+
+```bash
+/research-paper
+```
+
+Com argumentos:
+
+```bash
+/research-paper [path/to/research-suite/]
+```
+
+## Entradas
+
+`_inputs/synthesis.md` (mapa SOTA + lacuna), `_inputs/study-design.md` (método) e `_outputs/analysis.md` (resultados).
+
+## Saídas
+
+O entregável do artigo em um local natural do host (`paper/`) — resumo, introdução, trabalhos relacionados, método, resultados, discussão, limitações, conclusão, referências.
+
+## A jusante
+
+/research-review (consumidor a jusante)
+
+## Fases do fluxo de trabalho
+
+O comando segue o fluxo de trabalho padrão do pipeline `/research`:
+
+1. **Carregar o contexto** — Ler a síntese, o projeto do estudo e a análise.
+2. **Verificar o Portão de Sequência** — Confirmar que `_outputs/analysis.md` existe; caso contrário, parar com `Blocked: run /research-analysis first`.
+3. **Montar o rascunho** — Compor do resumo à conclusão; a introdução e os trabalhos relacionados baseiam-se na síntese, o método no projeto, os resultados na análise.
+4. **Verificar as citações** — Cada referência resolve a uma fonte real.
+5. **Atualizar o manifesto de repasse** — Registrar o caminho do entregável do artigo.
+6. **Emitir o artigo** — o manuscrito no local natural do host `paper/`.
+
+## Piso de rigor
+
+Sob um veículo de revisão duplo-cega, o manuscrito carrega apenas o que a política de anonimato permite: autor, instituição, financiamento e o sistema em estudo são descritos em linguagem natural do domínio sem nomeá-los, reservados a metadados submetidos separadamente para um estágio designado de desanonimização. A profundidade do relato de reprodutibilidade e estatístico escala conforme a ambição do veículo-alvo.
+
+## Modos de falha
+
+| Sintoma | Causa | Recuperação |
+|---------|-------|----------|
+| Blocked: run /research-analysis first | Sem análise | Execute `/research-analysis` para produzir `_outputs/analysis.md` |
+| Citação fantasma | A referência não resolve | Remova ou corrija a citação; nunca fabrique uma fonte |
+| Resultados exagerados | A discussão excede a análise | Restrinja as afirmações aos tamanhos de efeito analisados + ICs |
+
+## Exemplos
+
+```bash
+# Montar o rascunho do artigo a partir de síntese + projeto + análise
+/research-paper path/to/research-suite/
+```
+
+## Referências cruzadas
+
+- [Visão geral do pipeline](/docs/pipeline)
+- [Referência de comandos](/docs/reference/commands)

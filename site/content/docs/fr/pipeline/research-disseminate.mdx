@@ -1,0 +1,73 @@
+---
+title: "/research-disseminate"
+description: "/research-disseminate — Pilote la diffusion et l'impact post-acceptation : annonce du preprint, artefacts publics, dépôt d'archivage FAIR, suivi des altmetrics, la boucle de réponse / révision des relecteurs et le parcours de l'étape 2 du rapport enregistré — l'étape terminale du flux /research, après /research-publish."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rôle :** Chercheur principal (diffusion et impact)
+**Position dans le flux :** terminale
+
+Pilote la diffusion et l'impact post-acceptation. L'opérateur réalise les actions publiques ; l'étape s'arrête à un plan de diffusion prêt et ne publie jamais automatiquement.
+
+## Invocation canonique
+
+```bash
+/research-disseminate
+```
+
+Avec arguments :
+
+```bash
+/research-disseminate [--suite-name NAME] [--override] [--archive REPO] [--preprint SERVER]
+```
+
+## Entrées
+
+Le `_outputs/publication-record.md` de la suite (le paquet de la revue + l'enregistrement de soumission produits par `/research-publish`).
+
+## Sorties
+
+`_outputs/dissemination-plan.md` (l'annonce du preprint, le plan d'artefacts publics, l'enregistrement du dépôt d'archivage FAIR, le plan d'altmetrics et de suivi d'impact, la boucle de réponse / révision et le parcours de l'étape 2 du rapport enregistré).
+
+## En aval
+
+Terminale — le plan de diffusion est l'artefact final du flux. La boucle de réponse / révision des relecteurs peut réentrer dans `/research-paper` lorsqu'une révision est requise.
+
+## Phases du flux de travail
+
+La commande suit le flux de travail standard du flux `/research` :
+
+1. **Charger le contexte** — Lire `_outputs/publication-record.md`, les règles et tout état existant de la suite.
+2. **Planifier le preprint et les artefacts publics** — Rédiger l'annonce du preprint et le plan de présentation / poster / blog.
+3. **Enregistrer le dépôt d'archivage FAIR** — Planifier le dépôt des données + du code dans un dépôt FAIR avec des identifiants persistants.
+4. **Mettre en place le suivi d'impact** — Planifier les altmetrics et le suivi d'impact par rapport à la voie d'impact de la proposition.
+5. **Préparer la boucle de réponse** — Rédiger la réponse aux relecteurs et le parcours de l'étape 2 du rapport enregistré le cas échéant.
+6. **Vérifier et émettre** — Confirmer que le plan est actionnable ; émettre `_outputs/dissemination-plan.md` ainsi que le manifeste de transfert. L'opérateur réalise les actions publiques.
+
+## Seuil de rigueur
+
+Les artefacts publics portent un langage naturel du domaine ; là où la diffusion précède la dé-anonymisation, l'identité de l'auteur, de l'institution et du système est réservée à l'étape désignée. Le dépôt FAIR est le dossier de preuves de reproductibilité durable et citable, mis à l'échelle de l'ambition du lieu de publication, qui permet à une partie indépendante de reproduire l'étude.
+
+## Modes de défaillance
+
+| Symptôme | Cause | Récupération |
+|---------|-------|----------|
+| Aucun enregistrement de dépôt FAIR | Étape d'archivage ignorée | Sélectionnez un dépôt FAIR (`--archive`) et enregistrez le plan de dépôt avec des identifiants persistants |
+| Le plan tente de publier automatiquement | Limite d'étape franchie | Arrêtez-vous au plan prêt ; l'opérateur réalise chaque action publique |
+| Enregistrement de publication manquant | `/research-publish` pas encore exécuté | Exécutez d'abord `/research-publish` pour produire le paquet de la revue |
+
+## Exemples
+
+```bash
+# Planifier la diffusion après l'acceptation
+/research-disseminate --suite-name retrieval-latency
+
+# Fixer le serveur de preprint et l'archive FAIR
+/research-disseminate --preprint arXiv --archive Zenodo
+```
+
+## Références croisées
+
+- [Vue d'ensemble du flux](/docs/pipeline)
+- [Référence des commandes](/docs/reference/commands)

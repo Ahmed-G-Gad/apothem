@@ -1,0 +1,73 @@
+---
+title: "completion"
+description: "مرجع واجهة سطر الأوامر لأمر apothem completion."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+يطبع نصًّا برمجيًّا لإكمال الصدفة (shell) المطلوبة إلى الخرج القياسي. تفعيل الإكمال **اختياري**: هذا الأمر يطبع النص البرمجي فحسب — وهو لا يحرّر أبدًا ملفات بدء تشغيل صدفتك. أنت من يُلحِق الخرج بملف الإكمال الخاص بالصدفة بنفسك.
+
+## الموجز
+
+```
+apothem completion bash|zsh|fish|powershell
+```
+
+يُفعِّل النص البرمجي المُصدَر إكمال <bdi>`<TAB>`</bdi> لأوامر <bdi>`apothem`</bdi> الفرعية والأعلام، و — بالنسبة للخيار <bdi>`--harness`</bdi> — لمُعرِّفات الـ <bdi>harness</bdi> المسجَّلة إضافةً إلى <bdi>`all`</bdi>.
+
+## الأصداف المدعومة
+
+| Shell | كيفية إنتاج النص البرمجي |
+|---|---|
+| `bash` | نص إكمال <bdi>bash</bdi> الأصلي من <bdi>Click</bdi>. |
+| `zsh` | نص إكمال <bdi>zsh</bdi> الأصلي من <bdi>Click</bdi>. |
+| `fish` | نص إكمال <bdi>fish</bdi> الأصلي من <bdi>Click</bdi>. |
+| `powershell` | مقتطف <bdi>`Register-ArgumentCompleter`</bdi> يجسر إلى بروتوكول الإكمال الخاص بـ <bdi>Click</bdi> (لا يأتي <bdi>Click</bdi> بنصّ <bdi>PowerShell</bdi> أصلي، لذا يربط هذا المقتطف البروتوكول نفسه بـ <bdi>PowerShell</bdi>). |
+
+طلب أي صدفة أخرى يخرج بالرمز <bdi>`2`</bdi> مع قائمة الأصداف المدعومة.
+
+## تفعيل الإكمال لكل صدفة
+
+يجب أولًا أن يكون الأمر <bdi>`apothem`</bdi> ضمن مسارك <bdi>`PATH`</bdi> (تضعه مثبِّتات الخطوة الواحدة هناك). ثم فعِّل الإكمال بإلحاق النص البرمجي بملف الإكمال الخاص بالصدفة وإعادة تشغيل الصدفة:
+
+```bash
+# bash — append to your bashrc
+apothem completion bash >> ~/.bashrc
+
+# zsh — append to your zshrc
+apothem completion zsh >> ~/.zshrc
+
+# fish — write to the fish completions directory
+apothem completion fish > ~/.config/fish/completions/apothem.fish
+```
+
+```powershell
+# PowerShell — append the completer registration to your profile
+apothem completion powershell >> $PROFILE
+```
+
+لتجربة الإكمال للجلسة الحالية فقط دون تحرير أي ملف، نفِّذ <bdi>source</bdi> للنص البرمجي مباشرةً (bash/zsh): <bdi>`source <(apothem completion bash)`</bdi>.
+
+## لماذا هو اختياري
+
+لا يحرّر Apothem أبدًا ملفات بدء تشغيل صدفة المُشغِّل بصمت. تطبع المثبِّتات تلميحًا من سطر واحد يشير إلى هذا الأمر؛ ويقرّر المُشغِّل ما إذا كان سيُفعِّل الإكمال وإلى أي ملف يُلحِقه. هذا يُبقي بصمة التثبيت قابلةً للتنبؤ وقابلةً للعكس — فإزالة الكتلة المُلحَقة تُعطِّل الإكمال.
+
+## الخيارات
+
+| الخيار | الوصف |
+|---|---|
+| `SHELL` | واحدٌ من <bdi>`bash`</bdi>، <bdi>`zsh`</bdi>، <bdi>`fish`</bdi>، <bdi>`powershell`</bdi> (وسيط موضعي مطلوب). |
+| `-h`، `--help` | عرض التعليمات والخروج. |
+
+## رموز الخروج
+
+| الرمز | المعنى |
+|---|---|
+| 0 | تم إصدار نص الإكمال البرمجي |
+| 2 | طُلِبت صدفة غير مدعومة |
+
+## انظر أيضًا
+
+- [apothem install](/docs/cli-reference/install) — تثبيت تهيئة <bdi>harness</bdi>
+- [apothem harnesses](/docs/cli-reference/harnesses) — مُعرِّفات الـ <bdi>harness</bdi> التي يقدّمها إكمال <bdi>`--harness`</bdi>
+- [مرجع واجهة سطر الأوامر](/docs/cli-reference) — جميع الأوامر الفرعية

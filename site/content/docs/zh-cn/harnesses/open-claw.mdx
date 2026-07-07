@@ -1,0 +1,84 @@
+---
+title: "Open-Claw"
+description: "适用于 Open-Claw（预览版）的 Apothem 工具适配器。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**厂商：** Open-Claw
+**安装名称：** `open-claw`
+**状态：** 预览版
+**平台原生配置：** `~/.openclaw/openclaw.json`
+
+## 安装
+
+```bash
+apothem install --harness open-claw
+```
+
+适配器将共享配置档案翻译为 OpenClaw 的用户全局配置文件，并在工具根目录下安装
+Apothem 支持队列。OpenClaw 的原生配置是 JSON；materializer 渲染 JSON 以与之匹配。
+
+**写入的文件：** `~/.openclaw/openclaw.json` 以及 `~/.openclaw/.apothem/support/`
+下的支持文件
+
+## 配置档案到平台原生配置的映射
+
+适配器读取 Apothem 的共享配置档案。OpenClaw 的原生 skills 字段是一个名称白名单
+（而非目录加载器），而 MCP 是一个 CLI 界面，因此 Apothem 不写入任何配置键。共享
+的命令、技能、规则、模板和钩子提示作为支持材料安装在 `~/.openclaw/.apothem/support/` 下。
+
+## 兼容性说明
+
+预览版适配器。原生 JSON 配置是 Open-Claw 的活动界面；Apothem 使用文档化的额外
+skill-directory 钩子来处理技能，并将其他队列保留为已安装指引的参考材料。
+
+## 验证
+
+```bash
+apothem verify --harness open-claw
+```
+
+verify 命令确认：
+
+1. 平台原生配置存在于预期路径。
+2. 共享配置档案中所有必需字段均存在。
+3. 适配器专属的验证例程报告成功。
+
+## 更新
+
+```bash
+apothem update --harness open-claw
+```
+
+从当前的共享配置档案状态重新派生平台原生配置。
+在编辑 `~/.config/apothem/profile.yaml` 或升级已安装的 Apothem 包后运行。
+
+## 卸载
+
+```bash
+apothem uninstall --harness open-claw
+```
+
+移除适配器写入的平台原生配置文件。
+共享配置档案 YAML 和 Apothem 引擎不受影响。
+
+## 合规门
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## 故障排查
+
+| 症状 | 修复方法 |
+|---------|-----|
+| 找不到配置文件 | 重新运行 `apothem install --harness open-claw` |
+| 验证失败 | 运行 `apothem update --harness open-claw`，然后再次验证 |
+| 意外的配置内容 | 检查 `~/.config/apothem/profile.yaml` 或 `--profile PATH`，然后重新运行 `apothem update --harness open-claw` |
+
+## 配置开关
+
+| 标志 | 默认值 | 说明 |
+|------|---------|-------------|
+| `--dry-run` | `false` | 预览安装而不写入文件。 |

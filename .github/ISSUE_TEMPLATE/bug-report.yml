@@ -1,0 +1,72 @@
+# SPDX-License-Identifier: MIT
+
+name: Bug report
+description: Report a defect in Apothem
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to file a bug report. Complete every required field so the defect can be triaged efficiently.
+  - type: input
+    id: affected-version
+    attributes:
+      label: Affected version
+      description: The Apothem version on which the defect was observed. Run `python -m apothem --version` (or `apothem status`) — this works for every install path (wheel, npm shim, one-shot installer). For a source checkout, `git -C <checkout-root> rev-parse --short HEAD` gives the commit SHA.
+      placeholder: "v1.0.1 or commit abcdef0"
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Operating system and version, Python version, and the install path of the Apothem root on your host.
+      placeholder: |
+        - OS: macOS 14.4 / Ubuntu 22.04 / Windows 11 (PowerShell 7.4)
+        - Python: 3.11.8
+        - Harness + install path: claude-code @ ~/.claude (or harness + alternative path)
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: Reproduction steps
+      description: The minimal sequence that reproduces the defect, including any required configuration or fixture state.
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual behavior
+      description: What actually happened? Include any error messages or unexpected output.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Relevant log excerpts, stack traces, or hook diagnostic output. The field renders as a fenced shell block automatically.
+      render: shell
+    validations:
+      required: false
+  - type: checkboxes
+    id: pre-submission-checks
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: I have searched existing issues for this defect.
+          required: true
+        - label: I have read CONTRIBUTING.md.
+          required: true

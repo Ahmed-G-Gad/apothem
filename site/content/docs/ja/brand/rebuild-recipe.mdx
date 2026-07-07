@@ -1,0 +1,66 @@
+---
+title: "アセット再構築レシピ"
+description: "resvg と Pillow を使い、マスター SVG ソースからすべてのラスター・ブランドアセットを再生成します。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+アセット再構築レシピは、マスター SVG からすべてのラスターアセットを再生成します。
+これはブランド反復における権威ある更新パスです。
+
+## 実行するタイミング
+
+次のときに再構築レシピを実行します：
+
+- マスター SVG（`assets/src/logo.svg` または `assets/src/logo-dark.svg`）が変更されたとき。
+- コンパクトな favicon マスター（`assets/favicon.svg`）が変更されたとき。
+- ソーシャルカードのマスター（`assets/src/og-banner.svg` または `assets/src/twitter-card.svg`）が変更されたとき。
+- 新しいラスターサイズが必要なとき。
+- コミット済みのアセットが SVG ソースと一致しているか検証したいとき。
+
+## スクリプト
+
+| スクリプト | プラットフォーム | パス |
+| --- | --- | --- |
+| `rebuild-assets-resvg.py` | Python + resvg を備えた任意のホスト | `scripts/dev/rebuild-assets-resvg.py` |
+
+## 要件
+
+ジェネレーターは各 SVG を [resvg](https://github.com/linebender/resvg)
+でラスタライズし、ラスターセットを [Pillow](https://python-pillow.org/) で構成します：
+
+- **Pillow：** `pip install pillow`。
+- **resvg：** お使いのプラットフォーム向けのリリースバイナリを
+  [resvg releases](https://github.com/linebender/resvg/releases) からダウンロードします——
+  Windows では `resvg-win64.zip`、Linux では `resvg-linux-x86_64.tar.gz`、macOS では
+  `resvg-macos.zip`——これを `PATH` に展開するか、`--resvg <path>` でスクリプトに
+  その場所を指定します。
+
+## 使い方
+
+すべてのラスターアセットを再生成します：
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py
+```
+
+アセットを再生成せずにツールチェーンが利用可能かどうかを検証するには、
+`--check-only` を渡します：
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py --check-only
+```
+
+resvg が `PATH` にない場合は、スクリプトにバイナリの場所を指定します：
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py --resvg /path/to/resvg
+```
+
+## 検証
+
+成功した実行は、ライトとダークのマークラスター、favicon PNG/ICO
+セット、Apple touch アイコン、OG/Twitter 画像を再生成し、ウェブで配信される
+サブセット——サイトが参照するヒーローロゴのソースを含む——を `site/public/`
+にミラーリングします。生成後はサイトビルドを実行し、公開前にホームページ、
+ブラウザタブの favicon、ソーシャルカードの PNG を確認してください。

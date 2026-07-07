@@ -1,0 +1,124 @@
+---
+title: "install"
+description: "apothem install 명령에 대한 CLI 참조."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+공유 프로필에서 하니스 어댑터 구성을 설치합니다.
+
+## 개요
+
+```
+apothem install --harness NAME|all [--profile PATH] [--dry-run]
+                 [--project PATH]
+                 [--quiet|-q] [--verbose|-v]
+                 [--format plain|json] [--json] [--no-color]
+```
+
+공유 프로필을 로드하고 검증하며, 명명된 어댑터 또는 레지스트리 전역 `all` 집합을 선택하고, 구체화 계획을 검증한 다음, 하니스 네이티브 구성과 지원 코호트를 작성합니다. 프로젝트 범위 어댑터에는 `--project PATH`가 필요합니다.
+
+연속형 별칭 `apothem installing`은 동일한 핸들러로 해석됩니다.
+
+## 영향 범위 미리보기
+
+`install --harness all`은 혼합 범위로 팬아웃됩니다. 프로젝트 범위 어댑터는 제공된 `--project` 루트 아래에 작성하고, 사용자 범위 어댑터는 홈 디렉터리 아래——즉 해당 루트 외부——에 작성합니다. 어떤 파일이든 작성되기 전에, 명령은 구체적인 대상을 두 개의 제목 아래에 그룹화하여 출력합니다. 프로젝트 루트 내부에 있는 것과 홈 디렉터리 아래에 있는 것입니다.
+
+선택이 프로젝트 루트 외부에 작성하는 경우, 대화형 확인이 홈 기반 작성을 보호합니다. `--yes`, 비대화형 셸(TTY 없음), `--dry-run`, `--format json`은 각각 묻지 않고 진행합니다. `--dry-run`과 `--format json`은 아무것도 작성하지 않습니다. 프롬프트를 거부하면 어떤 파일도 작성되기 전에 중단됩니다.
+
+## 기능 참고 사항
+
+각 어댑터는 해당 하니스가 네이티브로 지원하는 기능만 투영합니다. 네이티브 표면이 없는 기능은 조용히 폐기되지 않고 보고됩니다. plain 모드에서는 하니스당 하나의 그룹화된 참고가 됩니다(예: `Note: <harness> - 9 capabilities not projected; pass --verbose for detail`). `--verbose`에서는 각 기능이 자체 근거 줄을 출력합니다. `--format json` 봉투는 자세함 수준과 관계없이 항상 전체 `warnings` 배열을 담습니다.
+
+## 옵션
+
+| 옵션 | 설명 |
+|---|---|
+| `--harness NAME` | 설치할 하니스 어댑터, 또는 레지스트리 전역 집합을 나타내는 `all`(필수). 등록된 이름은 `apothem harnesses list`를 실행하세요. |
+| `--profile PATH` | 공유 프로필 YAML 경로. 기본값은 `~/.config/apothem/profile.yaml`. |
+| `--dry-run` | 파일을 작성하지 않고 설치를 미리 봅니다. |
+| `--project PATH` | 프로젝트 범위 하니스의 프로젝트 루트. |
+| `--quiet`, `-q` | 정보성 출력을 억제합니다. 오류만 내보냅니다. |
+| `--verbose`, `-v` | 하니스당 그룹화된 참고 대신 투영되지 않은 각 기능의 근거를 출력합니다. |
+| `--format plain\|json` | 출력 형식(기본값: `plain`). |
+| `--json` | `--format json`의 약어. |
+| `--no-color` | 출력에서 ANSI 색상 코드를 비활성화합니다. |
+| `-h`, `--help` | 도움말을 표시하고 종료합니다. |
+
+## JSON 출력
+
+`--json`(또는 `--format json`)이 제공되면, 단일 JSON 문서가 stdout에 작성됩니다.
+
+```json
+{
+  "status": "success",
+  "command": "install",
+  "action": "installed",
+  "harness": "claude-code",
+  "profile_path": "C:\\Users\\Example\\.config\\apothem\\profile.yaml",
+  "project": null,
+  "files_written": ["C:\\Users\\Example\\.claude\\settings.json"],
+  "results": [],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+`--dry-run`의 경우:
+
+```json
+{
+  "status": "dry_run",
+  "command": "install",
+  "action": "dry_run",
+  "harness": "claude-code",
+  "files_written": [],
+  "results": [],
+  "warnings": [],
+  "error": null
+}
+```
+
+예상되는 검증 오류는 동일한 봉투를 사용하며 error 객체를 포함합니다.
+
+```json
+{
+  "status": "error",
+  "command": "install",
+  "harness": "all",
+  "files_written": [],
+  "error": {
+    "code": "project.required",
+    "field": "project",
+    "reason": "project-scope harnesses require --project: cursor, gemini-cli, github-copilot, windsurf.",
+    "fix": "Pass --project PATH or select only user-scope harnesses."
+  }
+}
+```
+
+## 예제
+
+```bash
+apothem install --harness claude-code
+apothem install --harness claude-code --dry-run
+apothem install --harness cursor --project . --profile ~/profile.yaml --json
+apothem install --harness all --project . --dry-run --json
+apothem Installing --harness claude-code   # continuous-form alias
+apothem installing --harness claude-code   # lowercase variant
+```
+
+## 종료 코드
+
+| 코드 | 의미 |
+|---|---|
+| 0 | 어댑터가 성공적으로 설치되었거나 dry-run이 문제없이 계획됨 |
+| 1 | 예상되는 검증, 프로필, 하니스, 프로젝트 또는 어댑터 오류 |
+| 2 | 적어도 한 번의 작성 후 부분적인 배치 구체화 |
+
+## 함께 보기
+
+- `apothem installing` — 이 명령의 연속형 별칭(여기에 문서화됨; CLI는 두 형식을 모두 허용함)
+- [apothem update](/docs/cli-reference/update) — 현재 프로필을 하니스에 다시 적용
+- [apothem verify](/docs/cli-reference/verify) — 어댑터가 활성화되었는지 확인
+- [시작하기](/docs/install) — 전체 설치 가이드

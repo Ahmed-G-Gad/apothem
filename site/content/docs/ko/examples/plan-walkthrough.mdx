@@ -1,0 +1,59 @@
+---
+title: "계획 워크스루"
+description: "실제 작업에 대한 /plan 파이프라인의 엔드투엔드 워크스루."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+이 예시는 간단한 작업, 즉 Apothem에 새로운 CLI 하위 명령을 추가하는 작업에 대해 전체 `/plan` 파이프라인을 단계별로 안내합니다.
+
+## 1단계: 산문 요구사항 작성
+
+`prose.md`를 생성합니다:
+
+```markdown
+Add a `apothem status` subcommand that prints the current apothem
+version, installed harnesses, and the result of `apothem verify`.
+The output should be machine-parseable (JSON with --json flag) and
+human-readable by default.
+```
+
+## 2단계: 사양으로 정련
+
+```bash
+/plan-spec prose.md --suite-name apothem-status-command
+```
+
+이는 6단계 Forge를 실행하여 명확화 질문을 던지고 `plans/apothem-status-command/_spec/spec.md`를 산출합니다.
+
+## 3단계: 계획 생성
+
+```bash
+/plan-generate
+```
+
+`plans/apothem-status-command/phases/` 아래에 PREAMBLE.md, MASTER-PLAN.md, PROGRESS.md, PLAN-NOTES.md, 그리고 페이즈별 PHASE.md 파일을 생성합니다.
+
+## 4단계: 계획 검토
+
+```bash
+/plan-review
+```
+
+산문 충실도, 일관성, 품질 점수를 포함한 포렌식 감사. 진행하기 전에 모든 FAIL 발견을 수정하세요.
+
+## 5단계: 페이즈 실행
+
+```bash
+/plan-execute    # executes the first phase, then pauses
+/plan-execute    # executes the next phase, then pauses
+...
+```
+
+## 6단계: 진행 상황 확인
+
+```bash
+/plan-status
+```
+
+현재 페이즈, 검증된 출력, 다음 동작을 보고합니다.

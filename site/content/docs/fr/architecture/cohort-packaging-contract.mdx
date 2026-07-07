@@ -1,0 +1,116 @@
+---
+title: "Contrat d'empaquetage des cohortes"
+description: "Le contrat stable, consommable en aval, pour l'empaquetage des cohortes et les manifestes de plugin — énumérer les cohortes et résoudre leurs cibles natives par environnement sans redériver la correspondance."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+# Contrat d'empaquetage des cohortes
+
+Ce document spécifie le contrat stable, consommable en aval, pour l'empaquetage
+des cohortes et les manifestes de plugin. Un consommateur lit ce contrat pour
+énumérer les cohortes et résoudre leurs cibles natives par environnement **sans
+redériver la correspondance**.
+
+## Artefacts
+
+| Artefact | Rôle |
+| -------- | ---- |
+| `src/apothem/schemas/cohort.schema.json` | Schéma JSON pour un document de manifeste de cohorte. |
+| `src/apothem/schemas/cohort-manifest.yaml` | L'instance du manifeste de cohortes — les six cohortes (`core`, `developer`, `security`, `research`, `ai-engineering`, `full`) peuplées de leurs ensembles de membres ; `full` est l'union des cinq autres. |
+| `src/apothem/schemas/plugin.schema.json` | Schéma JSON pour un manifeste de plugin par paquet (`plugin.json`). |
+| `src/apothem/lib/propagation-manifest.yaml` | **Source de vérité** pour les cibles natives par environnement. |
+
+## Forme du manifeste de cohortes
+
+Le manifeste de cohortes est un objet de niveau supérieur comportant trois clés :
+
+- `version` — chaîne SemVer du manifeste.
+- `cohorts[]` — une entrée par cohorte. Chaque entrée possède `id` (issu de
+  l'ensemble fermé `core | developer | security | research | ai-engineering |
+  full`), `name`, `description` et `members` (un objet regroupant les
+  identifiants de membres par type de catalogue : `skills` / `agents` /
+  `commands` / `rules` / `hooks`).
+- `per_harness_targets` — le contrat de résolution (ci-dessous).
+
+Chaque identifiant de membre est un nom stable en kebab-case qui correspond à un
+artefact réel sous `src/apothem/` (`skills/<name>/`, `agents/<name>.md`,
+`commands/<name>.md`, `rules/<name>.md`, ou une entrée de `hooks/`).
+
+## Énumérer les cohortes
+
+Un consommateur charge `cohort-manifest.yaml`, le valide par rapport à
+`cohort.schema.json`, puis itère sur `cohorts[]`. Pour chaque cohorte, il lit
+`members.<type>` afin d'obtenir les identifiants de membres de chaque type de
+catalogue.
+
+## Résoudre les cibles natives par environnement (sans redérivation)
+
+Le manifeste de cohortes **ne** réénonce **pas** la correspondance des
+environnements. À la place, `per_harness_targets.source` pointe vers
+`lib/propagation-manifest.yaml`, l'unique source de vérité. La règle de
+résolution :
+
+> Pour un membre de cohorte de type de catalogue `T` (l'un de `skills`, `agents`,
+> `commands`, `rules`, `hooks`) et un environnement cible `H` (l'un de ceux
+> listés dans `per_harness_targets.harnesses`), la cible native du plugin est le
+> champ `target` de l'entrée dans `lib/propagation-manifest.yaml` sous
+> `harnesses.H.install` dont le `source` correspond à `T/`.
+
+Par exemple, une skill de la cohorte `core` installée pour `claude_code` se
+résout via l'entrée `harnesses.claude_code.install` avec `source: "skills/"` en
+`target: "${HARNESS_ROOT}/skills/"`. La même skill pour `opencode` se résout en
+`${HARNESS_ROOT}/skills/` ; pour `gemini_cli` en `${PROJECT_ROOT}/.gemini/skills/`.
+Les consommateurs n'inventent jamais de cibles d'environnement — ils les
+recherchent.
+
+Les espaces réservés `${HARNESS_ROOT}` / `${PROJECT_ROOT}` sont résolus au moment
+de l'installation par chaque adaptateur d'environnement ; les consommateurs de
+cohorte traitent la `target` résolue telle quelle.
+
+## Rôle du manifeste de plugin
+
+`plugin.schema.json` décrit un `plugin.json` — un paquet auto-descriptif de
+membres de catalogue (`skills` / `commands` / `agents` / `hooks` / `rules`) avec
+un `name` requis, une `version` SemVer et une `description`. Un manifeste de
+plugin est l'unité qu'un adaptateur d'environnement matérialise dans sa surface
+de plugin native ; les cohortes sélectionnent quels membres un plugin transporte,
+et le manifeste de propagation résout où chaque membre atterrit par environnement.
+
+## Décision d'empaquetage — un paquet parapluie unique, des cohortes logiques
+
+Les cohortes sont une **couche de sélection logique** (ce manifeste), et non un
+ensemble de paquets séparés, installables indépendamment. Apothem distribue **un
+paquet parapluie unique** portant le catalogue complet ; le manifeste de cohortes
+permet à un consommateur de choisir un sous-ensemble cohérent, et le manifeste de
+propagation résout où chaque membre sélectionné atterrit par environnement.
+
+Scinder le catalogue en paquets séparés par cohorte (p. ex. un paquet par famille
+`developer` / `security` / `research`) est **réalisable sans duplication au
+niveau du dépôt** via le **patron de lien symbolique de méta-plugin** documenté
+par la surface de distribution principale : un catalogue de marketplace liste
+plusieurs plugins de cohorte, et chaque répertoire de plugin de cohorte contient
+des **liens symboliques** vers le catalogue partagé à source unique plutôt que
+des copies. Lorsqu'une cohorte est installée, l'environnement déréférence chaque
+lien symbolique intra-marketplace — copiant le contenu de la cible dans le
+*cache* de cette cohorte — de sorte que la cohorte installée est autonome, tandis
+que le **dépôt conserve une source de vérité unique câblée par des liens
+symboliques** (le câblage plutôt que la redondance, exactement comme le préfère la
+discipline de déduplication). La lecture antérieure selon laquelle les paquets de
+cohorte « dupliquent mécaniquement » le catalogue confondait la duplication du
+*cache au moment de l'installation* (la copie normale par plugin de
+l'environnement) avec la duplication du *dépôt* ; le patron de lien symbolique
+évite cette dernière.
+
+Apothem distribue actuellement **un paquet parapluie unique** parce que c'est la
+surface de distribution la plus simple, et non parce que les cohortes seraient
+mécaniquement impossibles. Adopter la forme par cohorte est un véritable
+**compromis UX et maintenance**, et non une violation de la déduplication :
+l'avantage est une expérience « n'installer que cette famille » plus fine ; les
+coûts sont la maintenance de N répertoires de liens symboliques de cohorte plus
+leurs entrées de marketplace, une surface de conformité / test / golden plus
+grande, et des copies de cache au moment de l'installation par cohorte. La couche
+de cohorte logique ci-dessus délivre déjà le résultat de *sélection* « n'installer
+que ce dont vous avez besoin » à partir du paquet unique ; l'*empaquetage* par
+cohorte est l'étape suivante dès que l'expérience d'installation plus fine est
+souhaitée.

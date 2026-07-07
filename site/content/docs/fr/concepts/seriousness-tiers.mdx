@@ -1,0 +1,38 @@
+---
+title: "Niveaux de sérieux"
+description: "Les quatre niveaux de sérieux — comment Apothem adapte la gouvernance au niveau d'engagement."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem adapte la charge de gouvernance au niveau d'engagement. Une exploration
+rapide n'a pas besoin de commits signés ; un lancement en production, oui.
+
+## Les quatre niveaux
+
+| Niveau | Quand l'utiliser | Plancher de gouvernance |
+|------|-------------|-----------------|
+| **EXPLORING** | Prototypes, expériences jetables | Lint + tests + les mandats fondamentaux (évaluation critique, raisonnement vers la meilleure solution, honnêteté directe) |
+| **PERSONAL_USE** | Outils personnels, scripts locaux | + Vérification de types + commits par phase + PROGRESS.md |
+| **SHARED** | Projets d'équipe, open source | + les vérifications en échec bloquent l'exécution + commits par tâche + documentation complète + revue parallèle |
+| **PUBLIC_LAUNCH** | Services en production, paquets publiés | + Analyses de sécurité + commits signés + semver + nouvelle revue obligatoire |
+
+## Valeur par défaut ad hoc
+
+Lorsqu'aucun niveau de sérieux n'est spécifié, Apothem retient **PERSONAL_USE**
+par défaut.
+
+## Gouvernance minimale viable
+
+Au niveau EXPLORING, trois mandats transversaux s'appliquent toujours quel que
+soit le niveau :
+- CM-1 (Évaluation critique)
+- CM-5 (Meilleure solution)
+- CM-10 (Honnêteté brutale)
+
+## Escalade de niveau
+
+Le niveau de sérieux peut être relevé en cours de projet. Lorsqu'un projet
+PERSONAL_USE passe à SHARED, exécutez le balayage local complet de préparation à
+la publication pour détecter les lacunes de gouvernance accumulées au niveau
+inférieur.

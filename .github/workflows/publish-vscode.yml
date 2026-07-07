@@ -1,0 +1,109 @@
+# SPDX-License-Identifier: MIT
+
+# VS Code extension publication workflow.
+#
+# Trigger: a `v*.*.*` tag push (publishes alongside release.yml and
+# publish-npm.yml) OR a manual workflow_dispatch with an explicit tag.
+# Packages the extension under `vscode-extension/` into a `.vsix` and publishes
+# it to the Visual Studio Marketplace, so the extension installs across VS Code
+# and GitHub Copilot.
+#
+# Authentication: the publish step is gated on the `VSCE_PAT` personal-access-
+# token secret. When the token is absent the publish step is SKIPPED — never
+# failed — so a release without the token configured still runs green and
+# produces the packaged `.vsix` artifact. The maintainer configures the
+# publisher (`ahmed-g-gad`) on the Marketplace and adds the token before the
+# first publish.
+#
+# SHA-pinning policy mirrors the other workflows: every action `uses:` reference
+# is pinned by 40-character commit SHA followed by a `# vMAJOR.MINOR.PATCH`
+# version comment.
+
+name: Publish VS Code Extension
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to package and publish (e.g. v0.0.1).
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-vscode-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+
+  publish:
+    name: package + publish (Marketplace)
+    runs-on: ubuntu-latest
+    environment: release
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: vscode-extension
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+      - name: Checkout release tag
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.tag || github.ref_name }}
+      - name: Set up Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+        with:
+          node-version: "24"
+      - name: Validate package version matches tag
+        env:
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          expected="${RELEASE_TAG#v}"
+          actual="$(node -p "require('./package.json').version")"
+          if [ "${actual}" != "${expected}" ]; then
+            echo "::error::vscode-extension/package.json version ${actual} does not match tag ${RELEASE_TAG}"
+            exit 1
+          fi
+      # vsce is pinned so release builds are reproducible; a floating @latest
+      # resolves a different toolchain on every run. Bump deliberately.
+      - name: Package .vsix
+        run: npx --yes @vscode/vsce@3.9.2 package --no-dependencies --out apothem.vsix
+      # The `secrets` context is not a valid context inside an `if:` expression
+      # (GitHub allows env / steps / github / vars / … there, not secrets), so a
+      # `if: ${{ secrets.VSCE_PAT != '' }}` gate makes the workflow fail to start.
+      # This detection step reads the token into a step-scoped env and exports
+      # only a boolean — never the token itself — that the gated steps key their
+      # `if:` on, keeping the token scoped to the single step that consumes it.
+      - name: Detect Marketplace token
+        id: token
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
+          set -euo pipefail
+          if [ -n "${VSCE_PAT:-}" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Publish to Visual Studio Marketplace
+        # vsce reads VSCE_PAT from the environment natively, so the token is
+        # never passed as a process argument (which would be visible in a
+        # process listing). The token stays scoped to this single step.
+        if: ${{ steps.token.outputs.configured == 'true' && vars.VSCODE_MARKETPLACE_READY == 'true' }}
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: npx --yes @vscode/vsce@3.9.2 publish --no-dependencies --packagePath apothem.vsix
+      - name: Marketplace publish skipped (not yet enabled)
+        if: ${{ steps.token.outputs.configured != 'true' || vars.VSCODE_MARKETPLACE_READY != 'true' }}
+        run: |
+          echo "::notice title=Marketplace publish skipped::Resolve the extension identifier (the Marketplace name 'apothem' is registered by another publisher, so the ahmed-g-gad publisher needs a unique name), add the VSCE_PAT secret, then set the repository variable VSCODE_MARKETPLACE_READY=true to enable publication on the next tag. The packaged apothem.vsix artifact was still produced."

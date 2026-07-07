@@ -1,0 +1,53 @@
+---
+title: "Настройка окружения"
+description: "Добавление и настройка адаптеров окружений для платформ написания кода."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## Установка адаптера окружения
+
+```bash
+apothem install --harness <name>
+```
+
+Доступные имена смотрите в [списке поддерживаемых окружений](/docs/harnesses).
+Адаптеры с областью действия проекта требуют указания пути к проекту:
+
+```bash
+apothem install --harness cursor --project /path/to/project
+apothem install --harness gemini-cli --project /path/to/project
+apothem install --harness github-copilot --project /path/to/project
+apothem install --harness windsurf --project /path/to/project
+```
+
+## Установка нескольких окружений
+
+Используйте селектор по всему реестру, когда вам нужен каждый поддерживаемый адаптер. Поскольку
+зарегистрированный набор включает адаптеры с областью действия проекта, передайте корень проекта.
+
+```bash
+apothem install --harness claude-code
+apothem install --harness cursor --project /path/to/project
+apothem install --harness all --project /path/to/project
+```
+
+## Проверка настройки окружения
+
+```bash
+apothem verify --harness <name>
+apothem verify --harness all --project /path/to/project
+```
+
+Чтобы проверить каждый зарегистрированный адаптер за один раз, запустите `apothem doctor`. Команда выводит
+таблицу статуса установки по каждому окружению и завершается с ненулевым кодом, если хоть один адаптер сообщает
+о том, что он не установлен.
+
+## Просмотр установленных окружений
+
+```bash
+apothem harnesses list
+```
+
+Используйте `apothem harnesses show <name>` для получения сведений по конкретному адаптеру (имя, состояние
+установки и путь вывода).

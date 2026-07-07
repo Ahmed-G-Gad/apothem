@@ -1,0 +1,73 @@
+---
+title: "completion"
+description: "apothem completion कमांड के लिए CLI संदर्भ।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+अनुरोधित shell के लिए एक shell-completion स्क्रिप्ट को stdout पर प्रिंट करता है। completion सक्षम करना **opt-in** है: यह कमांड केवल स्क्रिप्ट प्रिंट करता है — यह कभी भी आपकी shell स्टार्टअप फ़ाइलों को संपादित नहीं करता। आउटपुट को shell की completion फ़ाइल में जोड़ना आप स्वयं करते हैं।
+
+## सारांश
+
+```
+apothem completion bash|zsh|fish|powershell
+```
+
+उत्पन्न स्क्रिप्ट `apothem` सबकमांड, फ़्लैग, और — `--harness` विकल्प के लिए — पंजीकृत harness id तथा `all` के `<TAB>` completion को सक्षम करती है।
+
+## समर्थित shell
+
+| Shell | स्क्रिप्ट कैसे उत्पन्न होती है |
+|---|---|
+| `bash` | Click की मूल bash completion स्क्रिप्ट। |
+| `zsh` | Click की मूल zsh completion स्क्रिप्ट। |
+| `fish` | Click की मूल fish completion स्क्रिप्ट। |
+| `powershell` | एक `Register-ArgumentCompleter` स्निपेट जो Click के completion प्रोटोकॉल से जोड़ता है (Click कोई मूल PowerShell स्क्रिप्ट साथ नहीं देता, इसलिए यह स्निपेट उसी प्रोटोकॉल को PowerShell में जोड़ता है)। |
+
+किसी भी अन्य shell का अनुरोध करने पर यह समर्थित-shell सूची के साथ `2` से बाहर निकलता है।
+
+## प्रति shell completion सक्षम करना
+
+पहले `apothem` कमांड का आपके `PATH` पर होना आवश्यक है (वन-शॉट इंस्टॉलर इसे वहाँ रखते हैं)। फिर स्क्रिप्ट को shell की completion फ़ाइल में जोड़कर और shell को पुनः आरंभ करके completion सक्षम करें:
+
+```bash
+# bash — अपनी bashrc में जोड़ें
+apothem completion bash >> ~/.bashrc
+
+# zsh — अपनी zshrc में जोड़ें
+apothem completion zsh >> ~/.zshrc
+
+# fish — fish completions डायरेक्टरी में लिखें
+apothem completion fish > ~/.config/fish/completions/apothem.fish
+```
+
+```powershell
+# PowerShell — completer पंजीकरण को अपनी profile में जोड़ें
+apothem completion powershell >> $PROFILE
+```
+
+किसी फ़ाइल को संपादित किए बिना केवल वर्तमान सत्र के लिए completion आज़माने के लिए, स्क्रिप्ट को सीधे source करें (bash/zsh): `source <(apothem completion bash)`।
+
+## यह opt-in क्यों है
+
+Apothem किसी ऑपरेटर की shell स्टार्टअप फ़ाइलों को कभी चुपचाप संपादित नहीं करता। इंस्टॉलर इस कमांड की ओर इशारा करता एक-पंक्ति का संकेत प्रिंट करते हैं; ऑपरेटर तय करता है कि completion सक्षम करना है या नहीं और किस फ़ाइल में जोड़ना है। यह इंस्टॉल फ़ुटप्रिंट को पूर्वानुमेय और प्रतिवर्ती रखता है — जोड़े गए ब्लॉक को हटाने से completion निष्क्रिय हो जाता है।
+
+## विकल्प
+
+| विकल्प | विवरण |
+|---|---|
+| `SHELL` | `bash`, `zsh`, `fish`, `powershell` में से एक (आवश्यक स्थितीय आर्ग्युमेंट)। |
+| `-h`, `--help` | सहायता दिखाएँ और बाहर निकलें। |
+
+## निकास कोड
+
+| कोड | अर्थ |
+|---|---|
+| 0 | completion स्क्रिप्ट उत्पन्न की गई |
+| 2 | असमर्थित shell का अनुरोध किया गया |
+
+## यह भी देखें
+
+- [apothem install](/docs/cli-reference/install) — एक harness कॉन्फ़िगरेशन इंस्टॉल करें
+- [apothem harnesses](/docs/cli-reference/harnesses) — harness id जो `--harness` completion प्रदान करता है
+- [CLI संदर्भ](/docs/cli-reference) — सभी सबकमांड

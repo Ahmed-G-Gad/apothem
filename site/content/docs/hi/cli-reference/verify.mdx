@@ -1,0 +1,82 @@
+---
+title: "verify"
+description: "apothem verify कमांड के लिए CLI संदर्भ।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+किसी कोडिंग-सहायक अडैप्टर की इंस्टॉलेशन सत्यापित करता है।
+
+## सारांश
+
+```
+apothem verify --harness NAME|all [--project PATH]
+                [--quiet|-q] [--verbose|-v]
+                [--format plain|json] [--json] [--no-color]
+```
+
+प्रत्येक चयनित अडैप्टर के `verify()` कार्यान्वयन को कॉल करता है। केवल तभी 0 के साथ बाहर निकलता है जब सभी चयनित अडैप्टर रिपोर्ट करते हैं कि उनके प्रबंधित लक्ष्य मौजूद और वैध हैं।
+
+## विकल्प
+
+| विकल्प | विवरण |
+|---|---|
+| `--harness NAME` | सत्यापित किए जाने वाला कोडिंग-सहायक अडैप्टर, या संपूर्ण रजिस्ट्री समुच्चय के लिए `all` (आवश्यक)। |
+| `--project PATH` | प्रोजेक्ट-स्कोप वाले कोडिंग-सहायकों के लिए प्रोजेक्ट रूट। |
+| `--quiet`, `-q` | सूचनात्मक आउटपुट को दबाता है; केवल त्रुटियाँ उत्सर्जित होती हैं। |
+| `--verbose`, `-v` | अतिरिक्त नैदानिक आउटपुट उत्सर्जित करता है। |
+| `--format plain\|json` | आउटपुट प्रारूप (डिफ़ॉल्ट: `plain`)। |
+| `--json` | `--format json` का संक्षिप्त रूप। |
+| `--no-color` | आउटपुट में ANSI रंग कोड अक्षम करता है। |
+| `-h`, `--help` | सहायता दिखाता है और बाहर निकलता है। |
+
+## JSON आउटपुट
+
+```json
+{
+  "status": "success",
+  "command": "verify",
+  "action": "verified",
+  "harness": "claude-code",
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "unchanged",
+      "operation": "verify",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "managed targets verified",
+      "installed": true,
+      "verified": true
+    }
+  ],
+  "warnings": [],
+  "error": null,
+  "installed": true,
+  "verified": true,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+जब कोई चयनित कोडिंग-सहायक अनुपस्थित या अमान्य होता है, तो `status` `error` होता है, विफल परिणाम पंक्ति `verified: false` धारण करती है, और प्रक्रिया कोड 1 के साथ बाहर निकलती है।
+
+## उदाहरण
+
+```bash
+apothem verify --harness claude-code
+apothem verify --harness claude-code --json
+apothem verify --harness all --project .
+```
+
+## निकास कोड
+
+| कोड | अर्थ |
+|---|---|
+| 0 | कोडिंग-सहायक इंस्टॉल है |
+| 1 | कोडिंग-सहायक इंस्टॉल नहीं है |
+
+## यह भी देखें
+
+- [apothem install](/docs/cli-reference/install) — किसी कोडिंग-सहायक कॉन्फ़िगरेशन को इंस्टॉल करें
+- [apothem update](/docs/cli-reference/update) — वर्तमान प्रोफ़ाइल को एक कोडिंग-सहायक पर फिर से लागू करता है
+- [apothem doctor](/docs/install/concepts) — सिस्टम-व्यापी इंस्टॉल डायग्नोस्टिक्स

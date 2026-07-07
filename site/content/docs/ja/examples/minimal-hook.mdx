@@ -1,0 +1,55 @@
+---
+title: "最小フック"
+description: "最小の Apothem フックの例——ファイル書き込みごとにチェックを発火させる。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+この例では、可能な限り最小の Apothem フックを示します。`Write` ツールの呼び出しごとに
+その前に発火し、ターゲットパスをログに記録する PreToolUse フックです。
+
+## フックスクリプト
+
+```python
+# src/apothem/hooks/log_writes.py
+import json, sys
+
+data = json.load(sys.stdin)
+path = data.get("tool_input", {}).get("file_path", "unknown")
+print(f"[apothem] Writing to: {path}", file=sys.stderr)
+sys.exit(0)  # exit 0 = proceed; non-zero = block
+```
+
+## settings.json への登録
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python src/apothem/hooks/log_writes.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## フックのテスト
+
+Claude Code で任意のファイル書き込みを行い、フックトレースパネルで stderr 出力を
+観察します。
+
+## 書き込みのブロック
+
+`sys.exit(0)` を `sys.exit(1)` に変更し、stdout に JSON のブロックを出力します。
+
+```python
+print(json.dumps({"decision": "block", "reason": "blocked by log_writes"}))
+sys.exit(1)
+```

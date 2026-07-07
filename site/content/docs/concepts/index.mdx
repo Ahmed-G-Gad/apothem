@@ -1,0 +1,22 @@
+---
+title: "Concepts"
+description: "Apothem concepts — the ideas behind the tool: host-agnostic posture, cognitive identity, audit review, and seriousness tiers."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem is built on a handful of design ideas. This section explains them —
+why governance is platform-agnostic, how long-running work survives session and
+machine boundaries, how the assistant collaborator is framed, what the
+audit review sequence guarantees, and how governance overhead scales to the
+engagement.
+
+## Pages
+
+| Page | Description |
+|------|-------------|
+| [Host-agnostic posture](/docs/concepts/ai-platform-agnosticism) | How Apothem achieves host-agnostic posture via the shared profile and harness adapters. |
+| [Resumable planning](/docs/concepts/resumable-planning) | How working state externalizes to a project-local `.apothem/plans/` suite so long-running work survives session, account, and machine boundaries. |
+| [Audit review sequence](/docs/concepts/review-fortress) | The eleven-command quality-assurance sweep that checks production readiness. |
+| [Cognitive identity](/docs/concepts/cognitive-identity) | The Technical Co-Founder framing — how Apothem shapes assistant collaboration. |
+| [Seriousness tiers](/docs/concepts/seriousness-tiers) | The four tiers that scale governance overhead to the engagement level. |
+| [Delegated-worker architecture](/docs/concepts/agent-architecture) | How Apothem projects a single capability cohort across seventeen harnesses with divergent hook surfaces and rule formats. |

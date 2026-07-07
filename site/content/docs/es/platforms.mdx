@@ -1,0 +1,69 @@
+---
+title: "Plataformas"
+description: "Sistemas operativos, shells y scripts de instalación soportados por Apothem, además del requisito previo de Python del sistema para el entorno de ejecución autocontenido."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem entrega dos scripts de instalación que, entre ambos, cubren la matriz moderna
+de escritorios y servidores de desarrollo. No hay compilación específica de
+plataforma: el motor es un [entorno de ejecución autocontenido](/docs/architecture/self-contained-runtime)
+que se ejecuta desde su árbol de código con dependencias incorporadas, de modo que el
+soporte de plataforma es exactamente el conjunto de hosts donde uno de los dos
+instaladores puede colocar ese árbol y ejecutarlo. Las otras dos rutas de instalación
+amplían aún más la matriz: el plugin de Claude Code se ejecuta dondequiera que lo
+haga Claude Code, y la forma npx (`npx @ahmed-g-gad/apothem`) se ejecuta en cualquier
+SO con Node.js 18+.
+
+## Matriz de sistemas operativos y shells
+
+| Familia de SO | Shells soportados | Script de instalación |
+| ------------- | ----------------- | --------------------- |
+| macOS | `bash` POSIX (el bash del sistema o un bash más reciente instalado por el usuario) | `install.sh` |
+| Linux | `bash` POSIX | `install.sh` |
+| Subsistema de Windows para Linux (WSL2) | `bash` POSIX | `install.sh` |
+| BSD (FreeBSD, OpenBSD, NetBSD) | `bash` POSIX | `install.sh` |
+| Termux (Android) | `bash` POSIX | `install.sh` |
+| Contenedor Linux de ChromeOS (Crostini) | `bash` POSIX | `install.sh` |
+| Windows | Windows PowerShell 5.1+ | `install.ps1` |
+| Cualquier plataforma con PowerShell 7+ | PowerShell 7+ (multiplataforma) | `install.ps1` |
+
+Los dos scripts tienen paridad funcional entre sí. `install.sh` requiere un `bash`
+POSIX. `install.ps1` requiere Windows PowerShell 5.1 o posterior, o PowerShell 7+ en
+cualquier plataforma que el propio PowerShell 7 soporte — incluidos macOS y Linux,
+donde es una alternativa a `install.sh`.
+
+## El único requisito previo: un Python del sistema
+
+Apothem no instala paquetes de Python. Las importaciones del motor se ejecutan contra
+un intérprete que ya tienes, con el código incluido antepuesto a `PYTHONPATH`. Cada
+instalador comprueba el requisito previo antes de hacer cualquier otra cosa:
+
+- **CPython 3.10 o más reciente.** El instalador sondea `python3`, `python` y los
+  nombres con versión (`python3.14` hasta `python3.10`), aceptando el primero que
+  reporte versión ≥ 3.10. En Windows rechaza los lanzadores de la Microsoft Store y
+  el localizador `find-python` incluido aplica el mismo piso.
+- **Bibliotecas de ejecución importables.** El motor importa `click` y `rich` desde el intérprete del sistema; sus demás dependencias de terceros vienen incluidas (vendored) en el árbol de origen. El instalador verifica que ambas sean importables, nombra las que falten y ofrece instalar los prerrequisitos que falten por ti — con tu confirmación, o automáticamente con `--yes` / `APOTHEM_AUTO_INSTALL_DEPS=1`.
+- **`git`** se necesita solo para la instalación por red (el script clona el árbol de
+  código). Una instalación local desde una copia de trabajo no requiere `git`.
+
+Si el intérprete, las bibliotecas o `git` están ausentes, el instalador sale con un
+diagnóstico que nombra exactamente qué proporcionar, en lugar de adivinar o mutar tu
+entorno.
+
+## Cómo se soporta una plataforma
+
+Una plataforma está soportada cuando se cumplen ambas condiciones:
+
+1. Uno de los dos instaladores se ejecuta en ella — es decir, el host tiene un `bash`
+   POSIX (`install.sh`) o un PowerShell soportado (`install.ps1`).
+2. Un intérprete CPython 3.10+ con `click` y `rich` importables se ejecuta en ella.
+
+No hay componente compilado, ni extensión nativa, ni binario por plataforma. El mismo
+árbol de código se ejecuta dondequiera que lo haga el intérprete, de modo que la
+matriz anterior es la declaración completa y precisa del soporte — no se afirma nada
+más.
+
+## Próximo paso recomendado
+
+**Ejecuta el instalador para tu plataforma** — `curl -fsSL https://apothem.ahmedgad.com/install.sh | bash` en un shell POSIX, o `irm https://apothem.ahmedgad.com/install.ps1 | iex` en PowerShell — después de confirmar que un intérprete CPython 3.10+ está en tu PATH.

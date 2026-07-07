@@ -1,0 +1,48 @@
+---
+title: "Rule kustom"
+description: "Menulis sebuah rule selalu-aktif kustom untuk proyek Anda."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Contoh ini menambahkan sebuah rule selalu-aktif khusus-proyek yang menegakkan
+sebuah konvensi penamaan di seluruh berkas.
+
+## Berkas rule
+
+```markdown
+---
+name: "kebab-filenames"
+description: "Enforce kebab-case filenames in the src/ tree"
+pathFilter: ""
+alwaysApply: true
+---
+
+# Kebab-case filenames
+
+All new files created under `src/` MUST use kebab-case naming
+(lowercase letters, digits, and hyphens only — no underscores,
+no camelCase, no PascalCase).
+
+**Correct:** `src/styles/button-group.css`, `src/components/nav-bar.css`
+**Incorrect:** `src/styles/buttonGroup.css`, `src/components/NavBar.css`
+
+When in doubt, err on the side of more hyphens.
+```
+
+Simpan ini ke `rules/kebab-filenames.md` di dalam akar instalasi harness Anda (`~/.claude/` untuk adapter Claude Code; ganti dengan jalur native harness jika tidak).
+
+## Verifikasi rule telah dimuat
+
+```bash
+python -m apothem.conformity.gate --check frontmatter
+```
+
+## Propagasikan ke harness
+
+Jalankan perintah update satu kali per harness terpasang:
+
+```bash
+apothem update --harness claude-code
+apothem update --harness cursor
+```

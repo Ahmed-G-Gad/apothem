@@ -1,0 +1,85 @@
+---
+title: "Keamanan"
+description: "Postur keamanan Apothem — target OpenSSF Scorecard, pelaporan kerentanan, permukaan pengerasan."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Postur keamanan Apothem dibangun di atas lima pilar: pengerasan rantai pasok, respons kerentanan, proteksi branch, penandatanganan rilis, dan analisis keamanan berkelanjutan. Bagian ini mendokumentasikan setiap permukaan.
+
+## Model ancaman
+
+Apothem adalah materializer konfigurasi. Ia membaca profil bersama dan menulis
+berkas konfigurasi khusus-harness ke dalam direktori yang dibaca oleh setiap
+harness. Fungsi tunggal itu membatasi apa yang ia percayai
+dan apa yang tidak.
+
+- **Apa yang Apothem percayai.** Profil bersama yang Anda tulis dan pohon sumber
+  terbundel yang ditempatkan oleh penginstal. Profil adalah niat Anda yang
+  dideklarasikan; mesin memperlakukannya sebagai masukan otoritatif setelah
+  validasi skema.
+- **Apa yang Apothem tidak percayai.** Isi profil mencapai sistem berkas hanya
+  setelah validasi: kegagalan skema, ID harness yang tidak dikenal, jalur proyek
+  yang tidak aman, sumber manifes yang hilang, traversal target, dan penyeberangan
+  symlink semuanya berhenti sebelum penulisan apa pun dan mengembalikan diagnostik
+  terstruktur dengan `files_written: []`.
+- **Apa yang keluaran termaterialisasi tidak pernah bawa.** Tidak ada rahasia.
+  Diagnostik profil meredaksi kunci yang menyerupai rahasia dan nilai berbentuk
+  token sebelum mencapai keluaran teks polos, JSON, log, cuplikan dokumentasi,
+  atau pengujian, dan contoh publik menggunakan identitas dan domain placeholder
+  palsu. Konfigurasi termaterialisasi dimaksudkan untuk di-commit dan dibagikan;
+  ia tidak membawa kredensial.
+- **Lantai penolakan universal.** Aturan yang dimaterialisasi Apothem membawa
+  lantai penolakan yang tidak dapat ditawar terlepas dari daftar-izin per-harness
+  mana pun — jalur rahasia (`.env*`, `~/.ssh/**`, penyimpanan kredensial), operasi
+  shell destruktif (`rm -rf`, `sudo`, force-push ke branch terproteksi), dan
+  eksekusi masukan tepercaya. Tidak ada daftar-izin yang memperluas lantai ini
+  secara diam-diam.
+- **Radius dampak.** Penulisan dibatasi pada direktori harness dan subpohon
+  pendukung milik Apothem. Target terkelola yang ada dicadangkan sebelum
+  penggantian dan direktori penemuan bersama digabungkan anak-demi-anak, sehingga
+  berkas tak terkait yang ditulis operator tetap di tempatnya.
+
+## Postur keselamatan runtime
+
+Perintah siklus hidup harness dan penulisan profil memvalidasi sebelum menulis.
+Kegagalan skema profil, ID harness yang tidak dikenal, jalur proyek yang tidak
+aman, sumber manifes yang hilang, traversal target, dan penyeberangan symlink
+berhenti sebelum penulisan sistem berkas dan mengembalikan diagnostik terstruktur
+dengan `files_written: []`.
+
+Operasi pemasangan dan pembaruan mempertahankan target terkelola yang ada dengan
+mencadangkannya sebelum penggantian. Direktori penemuan bersama digabungkan
+anak-demi-anak sehingga berkas tak terkait yang ditulis operator tetap di
+tempatnya. `--dry-run` melakukan validasi yang sama dan melaporkan hasil yang
+direncanakan tanpa membuat direktori atau berkas.
+
+Diagnostik profil meredaksi kunci yang menyerupai rahasia dan nilai berbentuk
+token sebelum mencapai keluaran teks polos, keluaran JSON, log, cuplikan
+dokumentasi, atau pengujian. Contoh publik menggunakan identitas dan domain
+placeholder palsu.
+
+## Tautan cepat
+
+- [**Postur OpenSSF Scorecard**](/docs/security/openssf-scorecard-target) — bukti per-pemeriksaan dan batasan platform yang diketahui
+- [**Audit webhook**](/docs/security/webhooks-audit) — bukti higiene rahasia webhook
+- [**Proteksi branch**](/docs/security/branch-protection-ruleset) — gerbang tinjauan, pemeriksaan status, dan pembatasan push
+- [**Sapuan artefak biner**](/docs/security/binary-artifacts-sweep) — bukti rilis tanpa biner di kode sumber
+- [Kebijakan keamanan](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) — pelaporan kerentanan & versi yang didukung
+- [Lencana OpenSSF Scorecard](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem) — skor langsung
+
+## Melaporkan kerentanan
+
+Gunakan [Pelaporan Kerentanan Privat](https://github.com/ahmed-g-gad/apothem/security) pada tab Security repositori. Kebijakan lengkap, matriks versi yang didukung, dan garis waktu respons ada di [`SECURITY.md`](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
+
+## Bukti rilis rantai pasok
+
+Setiap artefak rilis dikirim dengan:
+
+- **Provenans build SLSA-3** melalui [`slsa-framework/slsa-github-generator`](https://github.com/slsa-framework/slsa-github-generator)
+- **Tanda tangan Sigstore** melalui [`sigstore/cosign-installer`](https://github.com/sigstore/cosign-installer)
+- **SBOM CycloneDX** melalui [`anchore/sbom-action`](https://github.com/anchore/sbom-action)
+- **Pernyataan provenans npm** melalui OIDC Trusted Publishing pada `@ahmed-g-gad/apothem`
+- **Tag git bertanda tangan GPG** (kunci EDDSA `70396FED9C634163`)
+
+Resep verifikasi didokumentasikan inline di [Siklus rilis](/docs/runbooks/release-cycle) dan [Pemulihan rilis](/docs/runbooks/release-recovery); runbook verifikasi-rilis khusus sedang disiapkan.

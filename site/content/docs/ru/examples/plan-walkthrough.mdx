@@ -1,0 +1,59 @@
+---
+title: "Прохождение плана"
+description: "Сквозное прохождение конвейера /plan для реальной задачи."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Этот пример проходит весь конвейер `/plan` для простой задачи: добавления новой подкоманды CLI в Apothem.
+
+## Шаг 1: Написать требования в прозе
+
+Создайте `prose.md`:
+
+```markdown
+Add a `apothem status` subcommand that prints the current apothem
+version, installed harnesses, and the result of `apothem verify`.
+The output should be machine-parseable (JSON with --json flag) and
+human-readable by default.
+```
+
+## Шаг 2: Уточнить до спецификации
+
+```bash
+/plan-spec prose.md --suite-name apothem-status-command
+```
+
+Это запускает шестифазный Forge, задаёт уточняющие вопросы и производит `plans/apothem-status-command/_spec/spec.md`.
+
+## Шаг 3: Сгенерировать план
+
+```bash
+/plan-generate
+```
+
+Производит PREAMBLE.md, MASTER-PLAN.md, PROGRESS.md, PLAN-NOTES.md и файлы PHASE.md для каждой фазы под `plans/apothem-status-command/phases/`.
+
+## Шаг 4: Проверить план
+
+```bash
+/plan-review
+```
+
+Криминалистический аудит с оценками верности прозе, согласованности и качества. Исправьте любые находки FAIL перед продолжением.
+
+## Шаг 5: Выполнить фазы
+
+```bash
+/plan-execute    # executes the first phase, then pauses
+/plan-execute    # executes the next phase, then pauses
+...
+```
+
+## Шаг 6: Проверить прогресс
+
+```bash
+/plan-status
+```
+
+Сообщает текущую фазу, проверенные выходы и следующее действие.

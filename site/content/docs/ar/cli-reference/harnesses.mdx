@@ -1,0 +1,93 @@
+---
+title: "harnesses"
+description: "مرجع واجهة سطر الأوامر لمجموعة أوامر apothem harnesses."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+يسرد مُحَوِّلات أُطُر العمل المُسجَّلة ويفحصها.
+
+<bdi>`harnesses`</bdi> مجموعة أوامر ذات أمرين فرعيين: <bdi>`list`</bdi> و<bdi>`show`</bdi>.
+
+## الموجز
+
+```
+apothem harnesses list [--quiet|-q] [--verbose|-v]
+                       [--format plain|json] [--json] [--no-color]
+apothem harnesses show NAME
+                       [--quiet|-q] [--verbose|-v]
+                       [--format plain|json] [--json] [--no-color]
+```
+
+## الأوامر الفرعية
+
+### `harnesses list`
+
+يسرد جميع مُحَوِّلات أُطُر العمل المُسجَّلة.
+
+| الخيار | الوصف |
+|---|---|
+| `--quiet`, `-q` | يُخمِد المخرجات المعلوماتية؛ تُصدَر الأخطاء فقط. |
+| `--verbose`, `-v` | يُصدِر مخرجات تشخيصية إضافية. |
+| `--format plain\|json` | تنسيق المخرجات (الافتراضي: `plain`). |
+| `--json` | اختصار لـ `--format json`. |
+| `--no-color` | يُعطِّل رموز ألوان ANSI في المخرجات. |
+| `-h`, `--help` | يعرض المساعدة ويخرج. |
+
+### `harnesses show NAME`
+
+يعرض تفاصيل مُحَوِّل إطار عمل مُحدَّد. <bdi>`NAME`</bdi> هو مُعرِّف إطار العمل
+بصيغة <bdi>kebab-case</bdi>؛ شغّل <bdi>`apothem harnesses list`</bdi> لرؤية المُعرِّفات المتاحة.
+
+| الخيار | الوصف |
+|---|---|
+| `NAME` | مُحَوِّل إطار العمل المراد فحصه (وسيط موضعي مطلوب). |
+| `--quiet`, `-q` | يُخمِد المخرجات المعلوماتية؛ تُصدَر الأخطاء فقط. |
+| `--verbose`, `-v` | يُصدِر مخرجات تشخيصية إضافية. |
+| `--format plain\|json` | تنسيق المخرجات (الافتراضي: `plain`). |
+| `--json` | اختصار لـ `--format json`. |
+| `--no-color` | يُعطِّل رموز ألوان ANSI في المخرجات. |
+| `-h`, `--help` | يعرض المساعدة ويخرج. |
+
+## أمثلة
+
+```bash
+apothem harnesses list
+apothem harnesses list --json
+apothem harnesses show claude-code
+apothem harnesses show claude-code --json
+```
+
+مُعرِّفات أُطُر العمل المُسجَّلة هي:
+
+```text
+antigravity
+claude-code
+codebuddy
+codex
+cursor
+gemini-cli
+github-copilot
+glm
+hermes
+kimi-code
+kiro
+open-claw
+opencode
+qwen-code
+trae
+windsurf
+zed
+```
+
+## رموز الخروج
+
+| الرمز | المعنى |
+|---|---|
+| 0 | نجاح |
+| 1 | لم يُعثَر على إطار العمل (`harnesses show` باسم `NAME` غير معروف) |
+
+## انظر أيضًا
+
+- [apothem doctor](/docs/cli-reference/doctor) — يشغّل تشخيصات التثبيت على مستوى النظام
+- [apothem verify](/docs/cli-reference/verify) — يفحص تثبيت إطار عمل مُحدَّد

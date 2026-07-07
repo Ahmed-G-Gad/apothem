@@ -1,0 +1,109 @@
+---
+title: "横断的マンデート登録簿（CM-1–CM-28）"
+description: "すべての対話とパイプライン操作を統制する、エコシステム内部の横断的マンデート（CM-1–CM-28）の完全な登録簿と定義。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **横断的マンデートの正規登録簿。** この文書は CM-N 登録簿の本文全体を担います。実質的な列挙はここに置かれ、`src/apothem/rules/` 配下のルールファイルによって操作可能にされます。詳細な CM-N の本文を必要とするすべてのセッションは、この文書をオンデマンドで読み込みます。
+
+## 登録簿の自己参照免除
+
+この文書こそが正規の CM-N 登録簿です——`CM-1` から `CM-28` までのトークンが*定義*される源です。これらのトークンを*登録簿自身の本文内で*言い直すことは正規であり、プラン内部用語の漏出ではありません。コードベース隔離の不変条件は、他のすべての*他の*成果物（ルール、ヘルパー、コマンド、フック、スキーマ、スクリプト、ツール、テスト、ドキュメント、README、変更ログ、コミットの件名/本文、ブランチ名、PR タイトル/説明）に対して、引き続き全力で適用されます。`CM-N` / `TM-N` / `CP-N` トークンは使わず、自然なドメイン言語のみを用います。
+
+## 名前空間
+
+`CM-N` = 構成マンデート（ここで定義、または成果物登録簿のルール行に従って `src/apothem/rules/*.md` で定義）；`TM-N` = テンプレートマンデート（`src/apothem/skills/plan-suite/master-template.md` §4 「General Mandates」、TM-1–28 で定義）；`CP-N` = コア原則（同じテンプレートの §6 「Core Principles」、CP-1–27 で定義）。プランスイートのテンプレートが正規の TM/CP 登録簿です——`/plan` コマンドはそのファイルを通じて相互参照を解決します。ヘルパー成果物（ルール、ヘルパー、コマンド、フック）は、この登録簿を参照によって引用します。
+
+## アクティベーション
+
+CM-1–10 と認知アイデンティティはすべての対話を統制します。CM-11、CM-13、CM-15、CM-16、CM-20 は `/plan` パイプライン内でのみ適用されます。CM-12、CM-14、CM-17–19、CM-21–22、CM-24–26 は普遍的に適用されます（常時有効）。CM-23、CM-27、CM-28 は、宣言されたパスフィルター範囲内で普遍的に適用されます。アドホックの既定モーダル等級：PERSONAL_USE。
+
+## CM-1–10（運用）
+
+(1) 批判的評価（→TM-10）、(2) ゼロ仮定（→TM-1）、(3) 構成駆動（→TM-2）、(4) 実装前の検索（→TM-4）、(5) 最良の解決策（→TM-7）、(6) 自己改善（→CP-20）、(7) 一貫した製品（→TM-11）、(8) ボトルネック優先のフォーカス、(9) 意思決定の速度、(10) 残酷なまでの正直さ。違反指標を含む完全な定義：`src/apothem/rules/operational-mandates.md`。
+
+## CM-7（プラン内部隔離）
+
+> これは CM-7 のコードベース側の側面です。製品完全性の側面は `src/apothem/rules/operational-mandates.md §CM-7` で**一貫した製品（→TM-11）**として記載されています。両方のラベルは同じマンデートを指します。
+
+コードベースの成果物は、プラン内部参照を**決して**含んではなりません。**禁止用語（正規ブロック——兄弟コンシューマーはこの列挙を相互参照します）：** TM-N、CM-N、CP-N、「Resumption Contract」、「Phase Output Registry」、「convention anchors」、フェーズフォルダー名、プランスイートのファイル名（PROGRESS.md、PLAN-NOTES.md、PREAMBLE、MASTER-PLAN）、モーダル等級名（EXPLORING、PERSONAL_USE、SHARED、PUBLIC_LAUNCH）。**保護される成果物：** ソースコード、テスト、構成、スキーマ、ビルドスクリプト、データ、アセット、コミットメッセージ、ブランチ名、PR タイトル/説明、README、CONTRIBUTING、API ドキュメント、変更ログ——Apothem のソースツリー外で可視のあらゆる成果物（Claude Code の `~/.claude/` のような、ハーネスごとのインストール先）。自然なドメイン言語のみ。**兄弟コンシューマー**（各自はこのブロックを再列挙する代わりに参照で引用します）：`src/apothem/hooks/messages/pretooluse-bash.md`、`src/apothem/hooks/messages/pretooluse-write.md`、`src/apothem/hooks/messages/pretooluse-edit.md`、`src/apothem/hooks/messages/pretooluse-notebookedit.md`、`src/apothem/rules/operational-mandates.md` §CM-7 違反指標。
+
+## CM-11（プラン整合性）
+
+**A — 散文の忠実度：** すべての要件は散文↔プランで追跡可能。スコアカード：PASS ≥90% STRONG/0 ABSENT。
+**B — 内部一貫性：** プランスイート内のドキュメント間の一貫性。スコアカード：PASS 100%。
+**C — ゲート：** FAIL は SHARED+ で実行をブロックします（SHARED では記録済みの根拠を伴う Product Owner のオーバーライドが許可され、PUBLIC_LAUNCH ではハードブロック）。PERSONAL_USE では助言的。
+
+## CM-12（コンテキスト管理）
+
+常にリーンなコンテキスト管理を——CM-24 ルールを参照。4 つのサブティアは下のサブ参照規約セクションで列挙されています。コンパクション規律（CM-19）がアクションを統制し、CM-12 が定常状態の規律を統制します。
+
+## CM-13（コミット）
+
+- **A — タスクごとのケイデンス：** SHARED+ ではタスクごと。PERSONAL_USE ではフェーズごと。EXPLORING では任意。
+- **B — 品質/是正コミット：** 品質ゲートの修正と是正変更は、機能作業とは分けて即座にコミットされます。
+- **C — フェーズ終了ゲート：** 未コミットの変更はフェーズ境界を越えません。CM-7 隔離はすべての git 成果物に適用されます。PUBLIC_LAUNCH では GPG 署名付きコミット（`git commit -S`）が必須。
+- **D — 人間のみの著者表示：** すべての git 成果物におけるあらゆる著者表示面（コミット件名、コミット本文、`Author:`、`Co-Authored-By:` トレーラー、`Signed-off-by:` トレーラー、ブランチ名、タグ名、タグ注釈、スタッシュ名、git-notes 本文、PR タイトル、PR 説明）は、**人間の貢献者のみ**を表示します。アシスタントは、これらの面のいずれにも、自身、基盤となる言語モデル、ランタイム / ハーネス / IDE / 拡張機能 / ベンダー、その他いかなる自動化ツールも著者として表示しません。禁止パターンは `src/apothem/rules/production-ready-prs.md` §6（Commit-Message Discipline → Human-only authorship）で列挙され機械的に強制され、マッチャーは `src/apothem/hooks/messages/pretooluse-bash.md` Scan 3 にあり、すべての git 書き込み Bash 呼び出しで発火します。
+- **E — git-mv / git-rm 対象における数値プレフィックス規律：** ファイルシステムパス上の数値プレフィックス（`NN-`）は順序を伝え、順序が本質的である場合にのみ適用されます——フェーズフォルダーのシーケンス、サブフェーズのシーケンス、ホストが発見した序数命名スキーム。兄弟シーケンスを持たないルートレベルのシングルトンは数値プレフィックスを持ちません。それを追加するのは無意味な装飾であり、存在しない順序関係を誤って示します。完全な仕様は `src/apothem/rules/canonical-layout.md` §2.1。`src/apothem/hooks/messages/pretooluse-bash.md` Scan 2 で `git mv` / `git rm` およびコミット本文のパス参照に対して機械的に強制されます。
+
+## CM-14（セッションプロトコル）
+
+**開始：** Blind Bootstrap を実行（CM-24 §6）。**終了：** Phase Exit（CM-24 §2.5）+ メモリ評価（CM-26）+ 成果物進化（CM-22 §2+§4）を実行。
+
+## CM-15–21（パイプライン）
+
+CM-15 と CM-16 はここでインライン定義されています（別個のルールなし）；CM-17–21 は成果物登録簿のルール表に従ってルールに委譲します。
+
+- **CM-15 集団的一貫性：** 変更後もプラン成果物が一貫していることを検証します。
+- **CM-16 自律実行：** SHARED+ ではフェーズ間で決して停止しません。フェーズ遷移でのコンパクションは必須（PERSONAL_USE+）。
+- **CM-17 ワーカーチーム：** 並列化可能な作業のために委任ワーカーチームを展開します——CM-25 ルールを参照。
+- **CM-18 エラー回復：** 6 つの一般クラス（CM-24 §8）；プラン実行クラスは TM-18 にあります。3 回の失敗後にエスカレートします。
+- **CM-19 コンパクション規律：** プロアクティブなコンパクショントリガー——CM-24 §3 を参照。
+- **CM-20 パイプラインオーケストレーション：** prose→[approval]→generate→[approval]→review→[approval]→execute(01→NN)。レビュー技法：`src/apothem/rules/planning-techniques.md`。
+- **CM-21 創造的品質：** 認知フィルターは品質ゲートであり、装飾ではありません。スケーリングは認知アイデンティティルール §2 に従います。
+
+## CM-22–28（ルール委譲）
+
+ルール委譲マンデートの 1 行アンカー（完全な仕様は引用ファイルに存在します）：
+
+- **CM-22 規約への警戒** — エコシステム規約とプロアクティブな成果物進化。`src/apothem/rules/persistent-conventions-vigilance.md` を参照。
+- **CM-23 大規模ファイル生成** — 単一書き込みしきい値を超えるファイルのための増分追記プロトコル。`src/apothem/rules/large-file-generation.md` を参照。
+- **CM-24 コンテキスト管理プロトコル** — 外部化、コンパクション、blind bootstrap、予算規律。`src/apothem/rules/context-management.md` を参照。
+- **CM-25 ワーカーオーケストレーション** — 展開パターン、リターンコントラクト、コンテキスト隔離。完全な仕様はワーカーオーケストレーションルールにあります（相互リンクは省略；対象ファイル名に禁止語彙が含まれます）。
+- **CM-26 自動メモリライフサイクル** — メモリ規律、トピックファイル構成、セッション終了評価。`src/apothem/rules/auto-memory.md` を参照。
+- **CM-27 クリーンアーキテクチャ層** — Domain / Application / Infrastructure / Presentation の分離。`src/apothem/rules/clean-architecture-layers.md` を参照。
+- **CM-28 Python シニアアーキテクト** — Python 成果物のための SOLID、スタイル、テスト、セキュリティのガードレール。`src/apothem/rules/code-craft-python.md` を参照。
+
+## ルール委譲式とインライン定義式のマンデート
+
+- **ルール委譲式**（完全な仕様は `src/apothem/rules/` にあります）：成果物登録簿のルール表の「Implements」列を参照。CM-1–10、CM-12、CM-14、CM-17–28 をカバーします。
+- **インライン定義式**（完全な仕様はここ、別個のルールなし）：CM-11（プラン整合性）、CM-13（コミット）、CM-15（集団的一貫性）、CM-16（自律実行）。
+
+## サブ参照規約
+
+コマンドはマンデート内の特定のサブセクションを参照するために文字接尾辞を使います。パターン：`CM-N` + 接尾辞文字 = ルールセクション。**ケーシング規約：** 大文字の接尾辞はマンデート内の構造的サブセクションを示し、小文字の接尾辞は Stewardship ティア内のより細かい指令を示します。正規のサブ参照キー対応表（登録簿内部の定義）は、下の囲みブロックに逐語的に保持されています：
+
+```text
+CM-11A = Prose Fidelity
+CM-11B = Internal Consistency
+CM-11C = Gates
+
+CM-12a = lean ingestion / demand loading (context-management §7.2)
+CM-12b = budget awareness (§7.1)
+CM-12c = budget pressure response (§7.3)
+CM-12d = per-task effort calibration (context-management §7.4 — D3 stratified taxonomy; PHASE.md frontmatter is the per-phase override surface)
+
+CM-13A = per-task commits
+CM-13B = quality / remediation commits
+CM-13C = end-of-phase commit gate
+
+CM-23A = pre-generation size assessment (§1)
+CM-23B = incremental generation protocol (§2)
+
+CM-24B = proactive externalization (§2)
+
+CM-25A = worker-team patterns (§1)
+CM-25C = return-contract enforcement (§4)
+CM-25E = isolation / non-duplication (§5)
+```

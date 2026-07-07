@@ -1,0 +1,69 @@
+---
+title: "/research-theory"
+description: "/research-theory —— 为已构建的研究问题搭建概念与理论框架：变革理论、带有操作性定义的构念，以及概念模型图——/research 流水线中的理论奠基阶段，位于 /research-spec 与 /research-sources 之间。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**角色：** 首席研究员（理论奠基）
+**流水线位置：** 链路中段
+
+为已构建的研究问题搭建基础性的概念与理论框架——这是系统性检索与综合阶段所追溯的先验依据。每个构念都以原始理论为根基，每个被理论化的关系都以可被反驳的形式表述。
+
+## 规范调用
+
+```bash
+/research-theory
+```
+
+带参数：
+
+```bash
+/research-theory [--suite-name NAME] [--override] [--framework NAME]
+```
+
+## 输入
+
+套件的 `_spec/research-spec.md`（由 `/research-spec` 产出的、已构建且可证伪的问题集）。
+
+## 输出
+
+`_inputs/theory.md`（概念 / 理论框架、变革理论 / 逻辑模型、带有操作性定义的构念，以及一份概念模型图）。
+
+## 下游
+
+/research-sources（下游消费方——系统性检索将其纳入标准追溯到这些构念）。
+
+## 工作流阶段
+
+该命令遵循标准的 `/research` 流水线工作流：
+
+1. **加载上下文** —— 读取 `_spec/research-spec.md`、规则以及任何现有的套件状态。
+2. **构建概念模型** —— 定义构念及其操作性定义；将每一个都以原始理论为根基。
+3. **绘制变革理论** —— 构建将构念与预期结果相联系的逻辑模型；将每个关系以可被反驳的形式表述。
+4. **绘制模型图** —— 发出供下游阶段引用的概念模型图。
+5. **验证输出** —— 确认每个构念都有理论根基且每个关系都可被反驳；通过结构化询问通道解决歧义。
+6. **发出框架** —— `_inputs/theory.md` 以及更新后的交接清单。
+
+## 失败模式
+
+| 症状 | 原因 | 恢复 |
+|---------|-------|----------|
+| 构念缺少操作性定义 | 概念表述得过于抽象 | 以可度量的术语定义该构念；引用原始理论 |
+| 被理论化的关系不可反驳 | 关系被表述为一句不言而喻的真理 | 将该关系重新表述为一个可证伪的主张 |
+| 缺少规范输入 | `/research-spec` 尚未运行 | 先运行 `/research-spec` 以构建问题 |
+
+## 示例
+
+```bash
+# 为已构建的问题搭建理论框架
+/research-theory --suite-name retrieval-latency
+
+# 锚定到一个具名的理论框架
+/research-theory --framework "information foraging theory"
+```
+
+## 交叉引用
+
+- [流水线概览](/docs/pipeline)
+- [命令参考](/docs/reference/commands)

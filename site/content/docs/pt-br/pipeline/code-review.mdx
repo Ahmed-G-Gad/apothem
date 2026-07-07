@@ -1,0 +1,69 @@
+---
+title: "/code-review"
+description: "/code-review — Passagem de revisão de qualidade de código por arquivo, conduzida pelo operador, através de src/, scripts/ e tools/."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Papel:** Revisor
+**Posição no pipeline:** fortaleza
+
+Passagem de revisão de qualidade de código por arquivo, conduzida pelo operador, através de src/, scripts/ e tools/.
+
+## Invocação canônica
+
+```bash
+/code-review
+```
+
+Com argumentos:
+
+```bash
+/code-review [path/to/plan-suite/] [phase-id] [--dry-run]
+```
+
+## Entradas
+
+Repositório anfitrião em qualquer estado do ciclo de vida
+
+## Saídas
+
+Achados por arquivo + log de disposição em REPORT.md
+
+## Downstream
+
+A etapa de revisão linha por linha da Sequência de Revisão de Auditoria
+
+## Fases do fluxo de trabalho
+
+O comando segue o fluxo de trabalho padrão do pipeline `/plan`:
+
+1. **Carregar contexto** — Lê a suite de plano, as regras e o Contrato de Retomada.
+2. **Verificar pré-requisitos** — Confirma que as fases de dependência estão concluídas.
+3. **Executar tarefas** — Cumpre a missão do comando.
+4. **Verificar saídas** — Confirma que todas as saídas declaradas existem e passam pelos portões de qualidade.
+5. **Atualizar PROGRESS.md** — Registra as saídas verificadas no Registro de Saídas de Fase.
+6. **Emitir REPORT.md** — Fica registrada a prova de liberação do portão de pré-emissão.
+
+## Modos de falha
+
+| Sintoma | Causa | Recuperação |
+|---------|-------|----------|
+| Pré-requisito incompleto | Fase dependente não finalizada | Conclua primeiro a fase a montante |
+| Portão de qualidade FAIL | A saída não atende aos padrões | Corrija a saída e reexecute |
+| Falta um arquivo de entrada | Arquivo da suite de plano ausente | Execute `/plan-generate` para criá-lo |
+
+## Exemplos
+
+```bash
+# Dry-run to preview what would happen
+/code-review --dry-run
+
+# Execute against a named plan suite
+/code-review path/to/plan-suite/
+```
+
+## Referências cruzadas
+
+- [Visão geral do pipeline](/docs/pipeline)
+- [Modelo de Suite de Plano Mestre](/docs/reference/commands)

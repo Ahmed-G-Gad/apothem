@@ -1,0 +1,36 @@
+---
+title: "散文约定"
+description: "强制执行 RFC 2119 情态层级，禁止营销形容词和模糊填充词，使用绝对 ISO-8601 日期，并验证指令性散文的滴水不漏。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **跨每一个受著的 Markdown 表面的散文纪律的规范性参考。** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) 约定 中的摘要是内联声明；本页是下游贡献者所引用的独立参考。
+
+---
+
+## 1. 情态层级（RFC 2119）
+
+指令性散文使用 **RFC 2119** 情态层级：`MUST`、`MUST NOT`、`SHOULD`、`SHOULD NOT`、`MAY`。每个都承载 RFC 所定义的约束强度。小写情态词（`must`、`should`）不承载任何规范性分量，仅用于不声明任何义务的叙述性散文。
+
+## 2. 禁用词汇
+
+### 2.1 营销形容词
+
+术语 `powerful`、`seamless`、`robust`、`cutting-edge`、`next-generation`、`world-class`、`enterprise-grade` 及其等价词，在面向用户的制品中被禁止，除非以可度量的证据具体佐证。佐证须引用基准测试、对比、度量或外部验证来源。
+
+### 2.2 模糊填充词
+
+术语 `basically`、`kind of`、`sort of`、`in some sense`、`to some extent` 及其等价词在指令性文本中被禁止。指令性散文是约束性的；模糊措辞会削弱散文所主张的约束力。
+
+### 2.3 UDA 滴水不漏
+
+`scripts/dev/validate_ecosystem.py` 处的通用指令滴水不漏（UDA）检查，对承载约束性规定的行强制执行一个封闭的模糊词词库（`maybe`、`might`、`could`、`should probably`、`usually`、`generally speaking`、`in most cases`、`mostly`、`typically`、`often`、`or similar`、`etc.`、`and so on`）。被作为规则本身主题而引用的模糊词（例如，在一个禁用词清单页面上的禁用词列表）通过验证器的定义标记机制获得豁免。
+
+## 3. 日期引用
+
+日期在每一处引用都采用绝对 ISO-8601（`YYYY-MM-DD`）。相对日期（`yesterday`、`last week`、`recently`）在持久存在于其著作会话之外的制品中被禁止。
+
+## 4. 验证器
+
+`scripts/dev/validate_ecosystem.py` 的 UDA 滴水不漏检查是 §2.3 的机械化强制执行表面。每次写入的 `markdown` 系列合规性 grep 验证器，在 PreToolUse Write/Edit 钩子边界上强制执行更广泛的散文质量标准。

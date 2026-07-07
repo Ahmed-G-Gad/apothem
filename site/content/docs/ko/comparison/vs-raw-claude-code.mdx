@@ -1,0 +1,45 @@
+---
+title: "Apothem 대 수동 Claude Code 구성"
+description: "Claude Code의 전체 네이티브 구성 트리를 손으로 유지하는 것과 Apothem의 공유 프로파일을 통해 관리하는 것의 비교."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Claude Code(공급사 Anthropic)는 네이티브 구성을 `~/.claude/` 아래에 보관합니다.
+Apothem의 claude-code 어댑터는 전체-표면 어댑터입니다. 공유 코퍼스를 그 트리로
+곧장 전파합니다. 이 페이지는 구성을 손으로 유지하는 것과 Apothem으로 관리하는
+것을 대비합니다.
+
+## 노력 비교
+
+| 작업 | 수동 구성 | Apothem 관리 |
+| ---- | --------------- | --------------- |
+| 규칙, 에이전트, 명령, 스킬 작성 | `~/.claude/`의 각 표면을 손으로 편집 | 공유 코퍼스에 한 번 작성 |
+| 출력 스타일과 상태줄 유지 | 표면별로 손으로 편집 | 공유 코퍼스에서 전파 |
+| 훅 구성 | `settings.json` 훅 항목을 손으로 편집 | 전파됨 (PreToolUse/PostToolUse/Stop/SessionStart) |
+| 구성을 다른 환경과 맞춰 유지 | 수동, 도구별 | `apothem update` 시 자동 |
+| 구성이 올바른지 검증 | 수동 검사 | `apothem verify --harness claude-code` |
+
+## Apothem이 관리하는 것
+
+어댑터는 규칙, 에이전트, 명령, 스킬, 출력 스타일, 상태줄, `settings.json`을
+`~/.claude/`로 전파합니다. 네이티브 PreToolUse, PostToolUse, Stop, SessionStart
+훅은 공유 코퍼스에서 구성됩니다.
+
+Apothem은 `CLAUDE.md`를 관리하지 **않습니다** — 그 파일은 운영자 소유 영역입니다.
+`CLAUDE.md`에 있는 프로젝트 및 개인 지침은 당신의 것으로 남으며, Apothem은 그
+주위의 전파된 표면들을 다스립니다.
+
+## 마이그레이션 경로
+
+1. 공유 프로파일을 아직 만들지 않았다면 `apothem profile init`을 실행합니다.
+2. 기존 `~/.claude/`의 규칙, 에이전트, 명령, 스킬을 공유 코퍼스로 옮깁니다.
+3. `CLAUDE.md`는 그대로 둡니다 — Apothem은 그것을 건드리지 않습니다.
+4. `apothem install --harness claude-code`를 실행해 코퍼스를 전파합니다.
+5. `apothem verify --harness claude-code`를 실행해 구성이 안착했는지 확인합니다.
+6. 이후의 모든 변경에는 `apothem update --harness claude-code`를 사용합니다.
+
+## 다음으로 읽기
+
+- [Claude Code 어댑터 레퍼런스](/docs/harnesses/claude-code)
+- [비교 개요](/docs/comparison)

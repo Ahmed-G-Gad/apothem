@@ -1,0 +1,65 @@
+---
+title: "新しいハーネスアダプターの作成"
+description: "新しい Apothem ハーネスアダプターを作成・公開するためのランブック。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem へのファーストパーティ組み込み、またはサードパーティパッケージとして
+新しいハーネスアダプターを作成する際は、このランブックを使用してください。
+
+## 前提条件
+
+- [HarnessAdapter プロトコル](/docs/architecture/harness-adapter-abstraction)への理解
+- 対象ハーネスの構成フォーマットの理解
+- Python 3.10+
+
+## 手順
+
+### 1. アダプターを実装する
+
+[ハーネスアダプターの作成](/docs/examples/authoring-a-harness-adapter)の例に従い、
+対象ハーネス向けに `HarnessAdapter` を実装します。
+
+### 2. ドキュメントページを書く
+
+`site/content/docs/harnesses/<slug>.mdx` を作成し、次の内容を扱います。
+
+- インストールフロー
+- プロファイルからネイティブ構成へのマッピング
+- 互換性に関する注意点
+- 検証レシピ
+- 更新・アンインストールレシピ
+- 適合性ゲートの面
+- トラブルシューティング表
+- 構成つまみの表
+
+### 3. テストを書く
+
+```bash
+tests/packaging/test_<slug>_adapter.py
+tests/unit/test_<slug>_adapter.py
+```
+
+最低限のテストカバレッジ:
+- `test_install_creates_expected_files`
+- `test_verify_passes_after_install`
+- `test_uninstall_removes_files`
+
+### 4. ローカルで検証する
+
+```bash
+apothem install --harness <slug>
+apothem verify --harness <slug>
+python -m apothem.conformity.gate --all .
+```
+
+### 5. プルリクエストを提出する
+
+次の内容を含む PR を作成します。
+
+- アダプターの実装
+- `site/content/docs/harnesses/<slug>.mdx` のドキュメントページ
+- テスト
+- `pyproject.toml` でのエントリーポイント登録
+- 変更履歴のエントリー

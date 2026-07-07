@@ -1,0 +1,47 @@
+{
+  "name": "apothem",
+  "owner": {
+    "name": "Ahmed G. Gad",
+    "email": "me@ahmedgad.com",
+    "url": "https://github.com/ahmed-g-gad"
+  },
+  "description": "Marketplace for the apothem plugin: review and audit slash-commands, research and quality agents, reusable skills, mechanical conformity hooks, and behavioral rules referenced on-demand, bundled with the self-contained apothem engine that materializes native configs for 17 AI harnesses.",
+  "version": "1.0.1",
+  "metadata": {
+    "description": "Marketplace for the apothem plugin: review and audit slash-commands, research and quality agents, reusable skills, mechanical conformity hooks, and behavioral rules referenced on-demand, bundled with the self-contained apothem engine that materializes native configs for 17 AI harnesses.",
+    "version": "1.0.1"
+  },
+  "plugins": [
+    {
+      "name": "apothem",
+      "source": "./",
+      "description": "Host-agnostic AI-harness configuration catalog: review and audit slash-commands, research and quality agents, reusable skills, mechanical conformity hooks, and behavioral rules referenced on-demand — bundled with the self-contained apothem engine that materializes native configs for 17 harnesses behind a conformity governance gate and signed releases.",
+      "author": {
+        "name": "Ahmed G. Gad",
+        "email": "me@ahmedgad.com",
+        "url": "https://github.com/ahmed-g-gad"
+      },
+      "homepage": "https://apothem.ahmedgad.com",
+      "repository": "https://github.com/ahmed-g-gad/apothem",
+      "license": "MIT",
+      "category": "productivity",
+      "keywords": [
+        "configuration",
+        "profiles",
+        "skills",
+        "agents",
+        "commands"
+      ],
+      "tags": [
+        "plan-pipeline",
+        "research-pipeline",
+        "audit-fortress",
+        "hardening",
+        "release-deploy",
+        "governance-gate",
+        "17-harnesses",
+        "signed-releases"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,100 @@
+---
+title: "发布工程策略"
+description: "关于版本管理、发布标签、弃用周期、破坏性变更和回滚流程的五项规范策略。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+五项策略规定 `apothem` 的发布方式。
+
+## 1. 语义化版本
+
+项目遵循 [语义化版本 2.0](https://semver.org/) 发布。
+版本号采用 `MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]` 的形式。
+
+| 递增 | 触发条件 |
+|------|----------|
+| **MAJOR** | 对产物模式、规约标识符（CM-N / TM-N / CP-N）或钩子契约的破坏性变更 |
+| **MINOR** | 新增规则、委派工作者、命令、技能、钩子事件，或非破坏性的模式扩展 |
+| **PATCH** | 澄清说明、反模式补充、文档修复，以及不改变行为的编辑 |
+
+候选标签采用 `vX.Y.Z-rc.N`（发布候选）
+或 `vX.Y.Z-alpha.N` / `vX.Y.Z-beta.N`（早期访问）的格式。
+
+## 2. 发布标签
+
+每次发布都会在 `main` 上落地一个形如 `vMAJOR.MINOR.PATCH`
+的签名 git 标签。该标签触发 `.github/workflows/release.yml`，
+执行构建、签名、生成 SBOM 和 SLSA-3 来源证明，并
+发布 GitHub Release 页面。
+
+标签约定：
+
+- **格式** — 严格采用 `vMAJOR.MINOR.PATCH`。无 `release-` 前缀，
+  无 `-final` 后缀。
+- **注释** — 每个标签都是注释标签（`git tag -a -s`），
+  在标签消息中携带发布说明摘要。
+- **签名** — 每个标签都经过 GPG 签名。发布工作流
+  还会为每个产物生成 Sigstore 无密钥 cosign 签名，
+  以及一份 SLSA-3 来源证明，两者均
+  附加到 GitHub Release 页面。
+
+## 3. 弃用策略
+
+当前的公共支持线是最新发布的次版本。当
+项目存在多个公共次版本时，[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
+支持版本矩阵是任何额外的
+仅关键修复支持窗口的权威来源。
+
+弃用节奏：
+
+- **公告** — 被弃用的符号或行为会在
+  弃用落地的那次发布的 `CHANGELOG.md` `### Deprecated` 章节中
+  公告。发布说明会
+  同步该弃用公告。
+- **宽限窗口** — 被弃用的符号在移除前至少
+  保留一个完整的次版本周期。
+- **移除** — 移除在 `MAJOR` 递增中落地。每个被移除的
+  符号都携带一行 `CHANGELOG.md` `### Removed`，以及一条
+  位于 [操作指南](/docs/how-to-guides) 下的迁移指南条目。
+
+## 4. 破坏性变更策略
+
+破坏性变更需要：
+
+1. **一个 RFC 问题** — 针对 `rfcs` 问题标签提出，
+   描述破坏性变更、迁移路径和
+   回滚策略。
+2. **30 天评论窗口** — RFC 在合并前至少
+   保持开放 30 天。当反馈需要时，维护者可以延长该窗口。
+3. **一次 MAJOR 递增** — 落地破坏性
+   变更的那次发布会递增 MAJOR 组件。
+4. **一份迁移指南** — 变更随附一条
+   [操作指南](/docs/how-to-guides) 条目，引导
+   操作者完成迁移。
+
+## 5. 回滚策略
+
+如果某次发布出现了阻碍采用的回归：
+
+1. **回退** — 在 `main` 上回退有问题的提交。
+2. **次版本加一重新打标签** — 一次后续发布以
+   `vMAJOR.MINOR.PATCH+1` 落地，携带回退以及任何
+   增量修复。先前的不良发布**不会**
+   从 GitHub Releases 中删除——`CHANGELOG.md` 中的一条 `### Yanked` 注释
+   记录该情况，以便可复现的
+   构建仍然保持锚定。
+3. **沟通** — 回滚会附带一条安全公告通知（当
+   涉及安全时）或一篇 Discussions 帖子（当
+   涉及可靠性时）。
+
+## 另请参阅
+
+- [CHANGELOG.md](https://github.com/ahmed-g-gad/apothem/blob/main/CHANGELOG.md)
+  — 权威的发布账本。
+- [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
+  — 支持版本矩阵和报告渠道。
+- [cicd-pipeline.md](/docs/architecture/cicd-pipeline) — 把关每次发布的各类
+  CI 检查。
+- [deployment-checklist.md](/docs/runbooks/deployment-checklist) — 每次发布的
+  生产就绪扫描。

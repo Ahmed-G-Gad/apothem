@@ -1,0 +1,97 @@
+---
+title: "Фирменные цвета окружений"
+description: "Палитра фирменных цветов по окружениям, используемая на всём сайте проекта Apothem, в знаке Apothem и в каждой архитектурной диаграмме. Единый источник истины — семнадцать фирменных цветов, один концентратор apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Канонические перечисления имя-бренда × код-цвета ниже заключены в ограждение `text`, чтобы сохранить дословные идентификаторы по окружениям, которых требует каталоговое назначение палитры.
+
+## Ядро Apothem
+
+| Токен | Светлый | Тёмный | Применение |
+|---|---|---|---|
+| `apothem-hub` | `#0F172A` | `#F1F5F9` | Центральный узел распределения («apothem») в каждой архитектурной диаграмме и центральный концентратор знака Apothem. |
+| `shared-profile` | `#10B981` | `#34D399` | Профиль-источник-истины, питающий ядро apothem. |
+
+## Палитра окружений
+
+Пятнадцать из семнадцати окружений окрашены в соответствии со своей основной
+фирменной идентичностью. Оставшиеся два — `glm` и `kimi-code` — пока не имеют
+определённого фирменного цвета; их строки добавляются, как только фирменный цвет
+задаётся вышестоящим источником, согласно шагу распространения в разделе
+[Обновления](#updates).
+
+```text
+| Token             | Light     | Dark      | Source                                                                                                                                              |
+|-------------------|-----------|-----------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
+| `antigravity`     | `#7C3AED` | `#9F67FF` | Google Antigravity deep-purple.                                                                                                                     |
+| `claude-code`     | `#CC785C` | `#E89378` | Anthropic terracotta-orange.                                                                                                                        |
+| `codebuddy`       | `#0052D9` | `#5E8EF7` | Tencent CodeBuddy blue.                                                                                                                             |
+| `codex`           | `#10A37F` | `#19C796` | OpenAI signature teal.                                                                                                                              |
+| `cursor`          | `#6E56CF` | `#9B85E3` | Cursor brand purple.                                                                                                                                |
+| `gemini-cli`      | `#4285F4` | `#6BA4F7` | Google blue (primary); the Apothem mark renders the node with all four Google brand hues `#4285F4` / `#34A853` / `#FBBC04` / `#EA4335`.             |
+| `github-copilot`  | `#0A3069` | `#5B8FE3` | GitHub Mona deep-blue.                                                                                                                              |
+| `hermes`          | `#71717A` | `#A1A1AA` | Community silver-grey.                                                                                                                              |
+| `kiro`            | `#790ECB` | `#A862DD` | Kiro violet.                                                                                                                                        |
+| `open-claw`       | `#DC2626` | `#F87171` | Community red-orange.                                                                                                                               |
+| `opencode`        | `#F59E0B` | `#FBBF24` | Community amber.                                                                                                                                    |
+| `qwen-code`       | `#FF6A00` | `#FF8C40` | Alibaba Qwen orange.                                                                                                                                |
+| `trae`            | `#FF0066` | `#FF599C` | ByteDance Trae magenta.                                                                                                                             |
+| `windsurf`        | `#0EA5E9` | `#38BDF8` | Windsurf sky-blue.                                                                                                                                  |
+| `zed`             | `#084CCF` | `#5E8BE0` | Zed Industries blue.                                                                                                                                |
+```
+
+## Обоснование именования
+
+- **`apothem-hub`** — геометрический центр, который вызывает в памяти название (апофема правильного многоугольника направлена внутрь, к его ядру).
+- **`shared-profile`** — источник выше по потоку, отличающийся от цвета любого отдельного окружения, чтобы он читался как стрелка «входа» в каждой диаграмме.
+- **Токены по окружениям** отражают slug окружения, используемый по всей кодовой базе (`harnesses/<slug>/`, ключ точки входа, аргумент `--harness <slug>` CLI). Одно слово на понятие; одна и та же строка везде.
+
+## Использование Mermaid
+
+```mermaid
+graph LR
+    P["shared profile"]:::shared-profile --> A["apothem"]:::apothem-hub
+    A --> AG["Antigravity"]:::antigravity
+    A --> CC["Claude Code"]:::claude-code
+    A --> CB["CodeBuddy"]:::codebuddy
+    A --> CO["Codex"]:::codex
+    A --> CU["Cursor"]:::cursor
+    A --> GE["Gemini CLI"]:::gemini-cli
+    A --> GC["GitHub Copilot"]:::github-copilot
+    A --> HE["Hermes"]:::hermes
+    A --> KI["Kiro"]:::kiro
+    A --> OW["Open-Claw"]:::open-claw
+    A --> OC["OpenCode"]:::opencode
+    A --> QW["Qwen Code"]:::qwen-code
+    A --> TR["Trae"]:::trae
+    A --> WI["Windsurf"]:::windsurf
+    A --> ZE["Zed"]:::zed
+
+    classDef apothem-hub fill:#0F172A,stroke:#0F172A,color:#FFFFFF
+    classDef shared-profile fill:#10B981,stroke:#10B981,color:#FFFFFF
+    classDef antigravity fill:#7C3AED,stroke:#7C3AED,color:#FFFFFF
+    classDef claude-code fill:#CC785C,stroke:#CC785C,color:#FFFFFF
+    classDef codebuddy fill:#0052D9,stroke:#0052D9,color:#FFFFFF
+    classDef codex fill:#10A37F,stroke:#10A37F,color:#FFFFFF
+    classDef cursor fill:#6E56CF,stroke:#6E56CF,color:#FFFFFF
+    classDef gemini-cli fill:#4285F4,stroke:#4285F4,color:#FFFFFF
+    classDef github-copilot fill:#0A3069,stroke:#0A3069,color:#FFFFFF
+    classDef hermes fill:#71717A,stroke:#71717A,color:#FFFFFF
+    classDef kiro fill:#790ECB,stroke:#790ECB,color:#FFFFFF
+    classDef open-claw fill:#DC2626,stroke:#DC2626,color:#FFFFFF
+    classDef opencode fill:#F59E0B,stroke:#F59E0B,color:#FFFFFF
+    classDef qwen-code fill:#FF6A00,stroke:#FF6A00,color:#FFFFFF
+    classDef trae fill:#FF0066,stroke:#FF0066,color:#FFFFFF
+    classDef windsurf fill:#0EA5E9,stroke:#0EA5E9,color:#FFFFFF
+    classDef zed fill:#084CCF,stroke:#084CCF,color:#FFFFFF
+```
+
+## Доступность
+
+Каждый токен светлого режима соответствует контрасту WCAG 2.2 AA на фоне белого текста (≥4,5 : 1) там, где контраст это позволяет без искажения фирменного цвета. Когда нативный фирменный цвет окружения сам по себе опускается ниже порога AA на фоне белого текста (особенно семейство янтарных / оранжевых токенов и семейство небесно-голубых / бирюзовых токенов, перечисленных выше), диаграммы, которым нужен контраст WCAG AA текст-на-цвете, используют **вариант тёмного режима** (приподнятый оттенок) в качестве заливки диаграммы, чтобы белый текст читался чётко. Столбец тёмного режима откалиброван именно для этой цели: каждый токен тёмного режима проходит AA на фоне белого текста.
+
+## Обновления
+
+Палитра обновляется только тогда, когда окружение ратифицирует изменение бренда выше по потоку. Изменения бренда по окружениям распространяются атомарно через `site/app/global.css`, эту страницу и каждый затронутый SVG-мастер в `assets/src/`.

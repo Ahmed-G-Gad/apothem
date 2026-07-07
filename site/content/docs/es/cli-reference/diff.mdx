@@ -1,0 +1,98 @@
+---
+title: "diff"
+description: "Referencia de la CLI para el comando apothem diff."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Previsualiza los cambios de configuración pendientes para un único harness.
+
+## Sinopsis
+
+```
+apothem diff --harness NAME [--profile PATH] [--project PATH]
+             [--quiet|-q] [--verbose|-v]
+             [--format plain|json] [--json] [--no-color]
+```
+
+`diff` es un comando de inspección de solo lectura. Ejecuta la misma materialización
+que ejecutaría el comando `install`, pero en modo de simulación: no se escribe nada en
+disco. Luego renderiza, por destino planificado, la operación, la ruta de destino, el
+resultado y (para los anclajes propiedad del operador que se fusionarían) el diff
+unificado del cambio. Es la respuesta a «¿qué haría `apothem install` con este harness
+ahora mismo?» sin realizar el cambio.
+
+Para los destinos propiedad del operador —archivos que llevan tanto tu propio contenido
+como un bloque gestionado por Apothem— el diff muestra las líneas exactas que
+cambiarían. Para otros destinos, se resumen la operación y el resultado planificados.
+
+`diff` opera sobre un único harness. A diferencia de `status`, no
+acepta `all`; pasa un nombre de harness.
+
+## Opciones
+
+| Opción | Descripción |
+|---|---|
+| `--harness NAME` | Adaptador de harness a previsualizar (requerido; un único asistente, no `all`). |
+| `--profile PATH` | Ruta al YAML del perfil compartido. Por defecto, `~/.config/apothem/profile.yaml`. |
+| `--project PATH` | Raíz del proyecto para los harness con alcance de proyecto. Requerida cuando el harness seleccionado tiene alcance de proyecto. |
+| `--quiet`, `-q` | Suprime la salida informativa; solo se emiten errores. |
+| `--verbose`, `-v` | Emite salida de diagnóstico adicional. |
+| `--format plain\|json` | Formato de salida (por defecto: `plain`). |
+| `--json` | Abreviatura de `--format json`. |
+| `--no-color` | Desactiva los códigos de color ANSI en la salida. |
+| `-h`, `--help` | Muestra la ayuda y sale. |
+
+## Salida JSON
+
+El sobre `--json` refleja el sobre de la instalación en modo de simulación. `status` es
+`dry_run`, `files_written` siempre está vacío, y el bloque `materialization` más la
+lista `results` llevan todo el detalle del destino planificado. El campo `detail.diff` de
+cada fila de resultado propiedad del operador lleva la cadena del diff unificado.
+
+```json
+{
+  "status": "dry_run",
+  "command": "diff",
+  "action": "dry_run",
+  "harness": "claude-code",
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "updated",
+      "operation": "sentinel_merge",
+      "path": "C:\\Users\\Example\\.claude\\CLAUDE.md",
+      "message": "dry run: no filesystem changes made",
+      "detail": {
+        "ownership_class": "operator-owned",
+        "diff": "--- a/CLAUDE.md\n+++ b/CLAUDE.md\n@@ ..."
+      }
+    }
+  ],
+  "warnings": [],
+  "error": null,
+  "materialization": { "...": "..." }
+}
+```
+
+## Ejemplos
+
+```bash
+apothem diff --harness claude-code
+apothem diff --harness cursor --project .
+apothem diff --harness claude-code --json
+```
+
+## Códigos de salida
+
+| Código | Significado |
+|---|---|
+| 0 | Diff informado (los cambios pendientes se informan, no son un error) |
+| 1 | Error esperado de validación, perfil, harness o proyecto |
+
+## Véase también
+
+- [apothem status](/docs/cli-reference/status) — informa el estado de instalación/verificación/deriva de cada harness
+- [apothem verify](/docs/cli-reference/verify) — verifica la instalación de un único harness
+- [apothem install](/docs/cli-reference/install) — aplica los cambios previsualizados

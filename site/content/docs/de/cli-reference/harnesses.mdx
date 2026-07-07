@@ -1,0 +1,93 @@
+---
+title: "harnesses"
+description: "CLI-Referenz für die Befehlsgruppe apothem harnesses."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Listet registrierte Harness-Adapter auf und inspiziert sie.
+
+`harnesses` ist eine Befehlsgruppe mit zwei Unterbefehlen: `list` und `show`.
+
+## Übersicht
+
+```
+apothem harnesses list [--quiet|-q] [--verbose|-v]
+                       [--format plain|json] [--json] [--no-color]
+apothem harnesses show NAME
+                       [--quiet|-q] [--verbose|-v]
+                       [--format plain|json] [--json] [--no-color]
+```
+
+## Unterbefehle
+
+### `harnesses list`
+
+Listet alle registrierten Harness-Adapter auf.
+
+| Option | Beschreibung |
+|---|---|
+| `--quiet`, `-q` | Unterdrückt informative Ausgaben; nur Fehler werden ausgegeben. |
+| `--verbose`, `-v` | Gibt zusätzliche Diagnoseausgaben aus. |
+| `--format plain\|json` | Ausgabeformat (Standard: `plain`). |
+| `--json` | Kurzform für `--format json`. |
+| `--no-color` | Deaktiviert ANSI-Farbcodes in der Ausgabe. |
+| `-h`, `--help` | Zeigt die Hilfe an und beendet. |
+
+### `harnesses show NAME`
+
+Zeigt Details zu einem bestimmten Harness-Adapter an. `NAME` ist der Harness-Bezeichner
+in kebab-case; führe `apothem harnesses list` aus, um die verfügbaren Bezeichner zu sehen.
+
+| Option | Beschreibung |
+|---|---|
+| `NAME` | Zu inspizierender Harness-Adapter (erforderliches Positionsargument). |
+| `--quiet`, `-q` | Unterdrückt informative Ausgaben; nur Fehler werden ausgegeben. |
+| `--verbose`, `-v` | Gibt zusätzliche Diagnoseausgaben aus. |
+| `--format plain\|json` | Ausgabeformat (Standard: `plain`). |
+| `--json` | Kurzform für `--format json`. |
+| `--no-color` | Deaktiviert ANSI-Farbcodes in der Ausgabe. |
+| `-h`, `--help` | Zeigt die Hilfe an und beendet. |
+
+## Beispiele
+
+```bash
+apothem harnesses list
+apothem harnesses list --json
+apothem harnesses show claude-code
+apothem harnesses show claude-code --json
+```
+
+Die registrierten Harness-IDs sind:
+
+```text
+antigravity
+claude-code
+codebuddy
+codex
+cursor
+gemini-cli
+github-copilot
+glm
+hermes
+kimi-code
+kiro
+open-claw
+opencode
+qwen-code
+trae
+windsurf
+zed
+```
+
+## Exit-Codes
+
+| Code | Bedeutung |
+|---|---|
+| 0 | Erfolg |
+| 1 | Harness nicht gefunden (`harnesses show` mit unbekanntem `NAME`) |
+
+## Siehe auch
+
+- [apothem doctor](/docs/cli-reference/doctor) — führt systemweite Installationsdiagnosen aus
+- [apothem verify](/docs/cli-reference/verify) — prüft eine bestimmte Harness-Installation

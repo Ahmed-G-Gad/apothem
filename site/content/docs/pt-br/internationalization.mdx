@@ -1,0 +1,112 @@
+---
+title: "Internacionalização (i18n)"
+description: "Como o site de documentação do Apothem declara seu conjunto de localidades, emite links de idioma alternativo hreflang, lida com a renderização da direita para a esquerda e expõe honestamente a lacuna de tradução."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Esta página documenta como o site de documentação do Apothem lida com múltiplos
+idiomas: o conjunto de localidades que declara, o mecanismo `hreflang` que emite,
+sua prontidão para a direita-para-a-esquerda e o estado honesto da tradução por localidade.
+
+## Resumo da decisão
+
+- **Plataforma: Next.js App Router + Fumadocs.** O site é construído a partir de `site/`.
+  O conjunto de localidades é declarado em `site/lib/i18n.ts`, e o
+  mecanismo de link de idioma alternativo reside em `site/lib/hreflang.ts`.
+- **Conjunto de localidades: declarado.** O Conjunto Moderno de Devs de doze localidades é
+  declarado como a fonte canônica de verdade, com o inglês como localidade de origem.
+- **Roteamento por localidade: ainda não habilitado.** Habilitar rotas prefixadas por localidade
+  em todo o conjunto enquanto só existe conteúdo em inglês criaria onze
+  rotas sem conteúdo que silenciosamente recairiam sobre a fonte em inglês. Esse é
+  o tipo de deriva silenciosa de "apenas inglês" que a disciplina de i18n proíbe, então o roteamento
+  permanece em uma única localidade até que conteúdo traduzido e revisado seja publicado.
+- **Mecanismo `hreflang`: ativo.** Cada página emite um conjunto de `<link rel="alternate">`
+  cobrindo cada localidade que tem conteúdo autorado, mais uma alternativa `x-default`.
+  As localidades ainda aguardando tradução são omitidas — nunca apontadas para a
+  alternativa em inglês — para que os mecanismos de busca sejam informados com precisão de que nenhuma
+  tradução existe.
+- **Prontidão da direita-para-a-esquerda: em vigor.** As folhas de estilo compartilhadas usam propriedades CSS
+  lógicas por toda parte, então as páginas em árabe renderizam corretamente sob `dir="rtl"`
+  assim que o conteúdo em árabe for publicado.
+- **Política de tradução automática: nada publicado sem revisão.** Nenhuma prosa de página
+  traduzida automaticamente é publicada. A tradução é semeada por máquina e condicionada à
+  revisão humana antes de qualquer localidade ser marcada como traduzida.
+
+## O conjunto de localidades
+
+O Conjunto Moderno de Devs declara doze localidades. O inglês é servido na raiz
+do site; os onze alvos são declarados para que a stack esteja pronta para internacionalização
+e a lacuna de tradução seja explícita em vez de silenciosa.
+
+| Código | Caminho | Idioma | Direção | Conteúdo |
+|------|------|----------|-----------|---------|
+| `en` | `/` | Inglês | LTR | Traduzido (origem) |
+| `zh-CN` | `/zh-cn/` | Chinês Simplificado | LTR | Pendente |
+| `es` | `/es/` | Espanhol | LTR | Pendente |
+| `pt-BR` | `/pt-br/` | Português Brasileiro | LTR | Pendente |
+| `fr` | `/fr/` | Francês | LTR | Pendente |
+| `de` | `/de/` | Alemão | LTR | Pendente |
+| `ja` | `/ja/` | Japonês | LTR | Pendente |
+| `ko` | `/ko/` | Coreano | LTR | Pendente |
+| `ru` | `/ru/` | Russo | LTR | Pendente |
+| `id` | `/id/` | Indonésio | LTR | Pendente |
+| `ar` | `/ar/` | Árabe | RTL | Pendente |
+| `hi` | `/hi/` | Hindi | LTR | Pendente |
+
+O conjunto é a única fonte de verdade; emendas a ele passam por uma
+decisão deliberada, nunca por uma edição silenciosa.
+
+## Como o `hreflang` funciona
+
+`site/lib/hreflang.ts` constrói o mapa `alternates.languages` que o Next.js
+renderiza no `<head>` de cada página. Sua construção honra uma regra: o link de
+idioma alternativo de uma localidade é emitido **apenas** quando essa localidade tem conteúdo
+autorado. Como o inglês é a única localidade traduzida hoje, cada página emite
+exatamente dois links:
+
+```html
+<link rel="alternate" hreflang="en" href="https://apothem.ahmedgad.com/..." />
+<link rel="alternate" hreflang="x-default" href="https://apothem.ahmedgad.com/..." />
+```
+
+O link `canonical` da página é sempre sua própria URL — ele nunca aponta entre
+localidades. À medida que o conteúdo de uma localidade é publicado e seu status muda para traduzido em
+`site/lib/i18n.ts`, o link `hreflang` dessa localidade começa a ser emitido automaticamente,
+e o roteamento por localidade é habilitado no mesmo conjunto de alterações.
+
+## Renderização da direita para a esquerda
+
+O árabe é a localidade da direita-para-a-esquerda do conjunto. O site está pronto para ele:
+
+- **Apenas propriedades CSS lógicas.** As folhas de estilo e componentes compartilhados usam
+  propriedades lógicas (`margin-inline-start`, `padding-inline-end`,
+  `text-align: start`, `inset-inline-start`) em vez de físicas
+  (`margin-left`, `text-align: left`). As propriedades lógicas se invertem automaticamente
+  sob `dir="rtl"`, então a mesma folha de estilo serve ambas as direções corretamente.
+- **Atributo de direção.** As páginas em árabe definem `dir="rtl"` no elemento `<html>`
+  junto com `lang="ar"` assim que o conteúdo em árabe for publicado.
+- **Conteúdo bidirecional.** Strings de direção mista — por exemplo um comando em
+  inglês dentro de um parágrafo em árabe — são envolvidas em `<bdi>` para que o trecho
+  embutido da esquerda-para-a-direita renderize corretamente dentro do fluxo da direita-para-a-esquerda.
+
+## Adicionando uma tradução
+
+Para traduzir o site para uma localidade do conjunto:
+
+1. Autore as páginas traduzidas e revisadas para essa localidade.
+2. Mude o status de conteúdo da localidade para traduzido em `site/lib/i18n.ts`.
+3. Seu link `hreflang` começa a ser emitido e suas rotas se tornam acessíveis.
+
+Mantenha a página em inglês como a fonte de verdade até que a tradução de uma localidade seja
+autorada e revisada. Nenhum conteúdo traduzido automaticamente é publicado sem revisão.
+
+## Estado atual e o caminho para um corpus traduzido
+
+Hoje o site está pronto para internacionalização, mas com conteúdo apenas em inglês. A
+infraestrutura — declaração do conjunto, o mecanismo `hreflang`, a prontidão da
+direita-para-a-esquerda com CSS lógico — está em vigor; o corpus traduzido por localidade não está.
+Um corpus totalmente traduzido é trabalho de nível de funcionalidade: as páginas de cada localidade são
+semeadas por máquina e depois revisadas por humanos, e um lançamento está pronto para
+produção em internacionalização apenas quando cada localidade ultrapassa seu limiar de revisão. Até lá,
+o conjunto é declarado, a lacuna é visível, e nenhuma tradução não revisada é publicada.

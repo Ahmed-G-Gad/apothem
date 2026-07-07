@@ -1,0 +1,53 @@
+---
+title: "Penyiapan harness"
+description: "Tambah dan konfigurasikan adaptor harness untuk platform."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## Instal adaptor harness
+
+```bash
+apothem install --harness <name>
+```
+
+Lihat [daftar harness yang didukung](/docs/harnesses) untuk nama-nama yang tersedia.
+Adaptor cakupan-proyek memerlukan jalur proyek:
+
+```bash
+apothem install --harness cursor --project /path/to/project
+apothem install --harness gemini-cli --project /path/to/project
+apothem install --harness github-copilot --project /path/to/project
+apothem install --harness windsurf --project /path/to/project
+```
+
+## Instal beberapa harness
+
+Gunakan penyeleksi seluruh-registri saat Anda menginginkan setiap adaptor yang didukung. Karena
+himpunan yang terdaftar mencakup adaptor cakupan-proyek, sertakan akar proyek.
+
+```bash
+apothem install --harness claude-code
+apothem install --harness cursor --project /path/to/project
+apothem install --harness all --project /path/to/project
+```
+
+## Verifikasi penyiapan harness
+
+```bash
+apothem verify --harness <name>
+apothem verify --harness all --project /path/to/project
+```
+
+Untuk memeriksa setiap adaptor terdaftar sekaligus, jalankan `apothem doctor`. Perintah ini mencetak
+tabel status-instal per-harness dan keluar dengan kode bukan-nol jika ada adaptor yang melaporkan
+belum-terinstal.
+
+## Lihat harness yang terpasang
+
+```bash
+apothem harnesses list
+```
+
+Gunakan `apothem harnesses show <name>` untuk detail per-adaptor (nama, status
+terpasang, dan jalur keluaran).

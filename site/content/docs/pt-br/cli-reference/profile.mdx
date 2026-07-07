@@ -1,0 +1,101 @@
+---
+title: "profile"
+description: "Referência da CLI para o grupo de comandos apothem profile."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Gerencia o perfil compartilhado do Apothem.
+
+`profile` é um grupo de comandos com quatro subcomandos: `init`, `show`, `set` e `edit`.
+O perfil compartilhado é a única fonte de verdade que cada adaptador de harness
+materializa em sua configuração nativa.
+
+## Sinopse
+
+```
+apothem profile init [--profile PATH] [--force]
+                     [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+apothem profile show [--profile PATH] [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+apothem profile set KEY VALUE
+                     [--profile PATH] [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+apothem profile edit [--profile PATH] [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+```
+
+## Opções comuns
+
+Cada subcomando aceita as opções compartilhadas abaixo.
+
+| Opção | Descrição |
+|---|---|
+| `--profile PATH` | Caminho para o YAML do perfil compartilhado (o padrão é o local padrão do perfil). |
+| `--quiet`, `-q` | Suprime a saída informativa; apenas erros são emitidos. |
+| `--verbose`, `-v` | Emite saída de diagnóstico adicional. |
+| `--format plain\|json` | Formato de saída (padrão: `plain`). |
+| `--json` | Abreviação de `--format json`. |
+| `--no-color` | Desativa os códigos de cor ANSI na saída. |
+| `-h`, `--help` | Mostra a ajuda e sai. |
+
+## Subcomandos
+
+### `profile init`
+
+Cria um esqueleto de perfil mínimo e válido segundo o esquema em
+`~/.config/apothem/profile.yaml` ou `--profile PATH`. Os arquivos existentes são
+preservados a menos que `--force` seja fornecido.
+
+| Opção | Descrição |
+|---|---|
+| `--force` | Sobrescreve um esqueleto de perfil existente. |
+
+### `profile show`
+
+Exibe o perfil compartilhado validado e com os valores padrão expandidos.
+
+### `profile set KEY VALUE`
+
+Define uma chave no perfil compartilhado. `KEY` é um caminho com pontos que desce pelo
+perfil aninhado (`identity.name`, `preferences.style`, `enforcement.sprints`,
+`harnesses.<harness>.preferences.style`); uma única chave sem ponto define um
+nó de nível superior. `VALUE` é armazenado como uma string literal — palavras simples não são
+coagidas (`no` permanece `"no"`, `2024-01-01` e `1.0` permanecem strings) — exceto
+`true`/`false` (as flags booleanas de imposição) e a entrada explícita `[...]`/`{...}`
+de lista/mapa. O perfil totalmente montado é validado contra o esquema
+antes de escrever; um set inválido é recusado e o perfil em disco permanece inalterado.
+
+| Argumento | Descrição |
+|---|---|
+| `KEY` | Caminho com pontos dentro do perfil a definir (obrigatório). |
+| `VALUE` | Valor literal a atribuir; validado antes de escrever (obrigatório). |
+
+### `profile edit`
+
+Abre o perfil compartilhado no editor do sistema.
+
+## Exemplos
+
+```bash
+apothem profile init
+apothem profile init --profile ./profile.yaml --force --json
+apothem profile show
+apothem profile show --json
+apothem profile set seriousness SHARED
+apothem profile set rules '["Use fake placeholders in examples."]'
+apothem profile edit
+```
+
+## Códigos de saída
+
+| Código | Significado |
+|---|---|
+| 0 | Sucesso (ou, para `edit`, o editor saiu normalmente) |
+| 1 | Perfil ausente, inválido, já existe sem `--force`, ou não pode ser escrito |
+
+## Veja também
+
+- [apothem install](/docs/cli-reference/install) — materializa o perfil em um harness
+- [apothem doctor](/docs/cli-reference/doctor) — executa diagnósticos de instalação em todo o sistema

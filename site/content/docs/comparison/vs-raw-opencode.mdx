@@ -1,0 +1,41 @@
+---
+title: "Apothem vs raw OpenCode config"
+description: "Hand-maintaining OpenCode config, commands, skills, and agents versus rendering them from Apothem's shared profile."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+OpenCode reads JSON config plus native commands, skills, and agents discovery
+directories. Apothem renders the JSON config with an `instructions` file list
+and converts shared cohorts into native directories where OpenCode supports
+them.
+
+## Effort comparison
+
+| Task | Raw hand-config | Apothem-managed |
+| ---- | --------------- | --------------- |
+| Author rules | Hand-edit config and support prompts | Rendered or referenced from the shared profile |
+| Author commands, skills, agents | Maintain each OpenCode directory by hand | Converted from shared Apothem cohorts |
+| Keep cohorts aligned with other harnesses | Manual, per tool | Automatic on `apothem update` |
+| Install / remove the surface | Manual | `apothem install` / `apothem uninstall` |
+| Verify the config is correct | Manual inspection | `apothem verify --harness opencode` |
+
+## What Apothem manages
+
+The opencode adapter writes `opencode.json`, converts Apothem slash commands to
+OpenCode Markdown command files, copies skills into the native skills surface,
+and adapts helper definitions as Markdown subagents. Rules, templates, and hook
+prompts remain under Apothem's support subtree; rules are referenced from the
+native `instructions` list.
+
+## Migration path
+
+1. Run `apothem profile init` to create the shared profile if you have not yet.
+2. Move existing OpenCode rules, commands, skills, and agents into the shared corpus.
+3. Run `apothem install --harness opencode` to render the native config and discovery directories.
+4. Run `apothem verify --harness opencode` to confirm the config landed.
+5. Use `apothem update --harness opencode` for every later change.
+
+## Read next
+
+- [OpenCode adapter reference](/docs/harnesses/opencode)
+- [Comparison overview](/docs/comparison)

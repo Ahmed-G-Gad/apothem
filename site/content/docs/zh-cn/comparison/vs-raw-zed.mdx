@@ -1,0 +1,42 @@
+---
+title: "Apothem 对比原生 Zed 配置"
+description: "手工维护 Zed 扁平的 .rules 指令文件，对比通过 Apothem 的共享配置档案来渲染它。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Zed 从项目根目录下一个扁平的 `.rules` 文件读取代理指令（与 `AGENTS.md` /
+`CLAUDE.md` 家族并列）。Apothem 的 zed 适配器从共享配置档案渲染该文件。本页将手工
+维护那套配置与用 Apothem 管理它作对比。
+
+## 工作量对比
+
+| 任务 | 手工配置 | Apothem 托管 |
+| ---- | --------------- | --------------- |
+| 编写指令 | 手写 `.rules` 文件 | 从共享语料库渲染 |
+| 保留先前的 `.rules` | 自己记得把它复制到一旁 | 适配器在替换前备份现有文件 |
+| 让规则与其他环境保持对齐 | 手工，逐工具 | 在 `apothem update` 时自动完成 |
+| 验证配置是否正确 | 手工检查 | `apothem verify --harness zed` |
+
+## Apothem 管理什么
+
+zed 适配器把共享规则渲染进项目根目录的扁平 `.rules` 文件。Zed 没有 PreToolUse
+钩子，因此护栏意图存活于规则正文中，而非工具调用拦截点。全局的
+`~/.config/zed/AGENTS.md` 指令文件以及 `.zed/settings.json` 的 MCP 上下文服务器块
+归操作者所有，不会被改动。每次对共享规则的更改都会在下一次 `apothem update` 时
+重新渲染该文件。
+
+## 迁移路径
+
+1. 如果你还没有创建共享配置档案，运行 `apothem profile init`。
+2. 把你现有 `.rules` 中的指令（以及你想要共享的任何项目专属
+   `AGENTS.md` 内容）迁入共享语料库。
+3. 运行 `apothem install --harness zed` 来渲染 `.rules` 文件。你先前的
+   `.rules` 会先被备份。
+4. 运行 `apothem verify --harness zed` 来确认配置已落地。
+5. 之后的每次更改都使用 `apothem update --harness zed`。
+
+## 接下来阅读
+
+- [Zed 适配器参考](/docs/harnesses/zed)
+- [对比概览](/docs/comparison)

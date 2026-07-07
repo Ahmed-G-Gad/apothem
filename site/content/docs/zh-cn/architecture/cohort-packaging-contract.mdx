@@ -1,0 +1,95 @@
+---
+title: "Cohort 打包契约"
+description: "用于 cohort 打包与插件清单的稳定、可供下游消费的契约——枚举 cohort 并解析其每个harness的原生目标，而无需重新推导映射。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+# Cohort 打包契约
+
+本文档规定了用于 cohort 打包与插件清单的稳定、可供下游消费的契约。
+消费方读取本契约即可枚举 cohort 并解析其每个harness的原生目标，
+**而无需重新推导映射**。
+
+## 工件
+
+| 工件 | 角色 |
+| -------- | ---- |
+| `src/apothem/schemas/cohort.schema.json` | cohort 清单文档的 JSON Schema。 |
+| `src/apothem/schemas/cohort-manifest.yaml` | cohort 清单实例——全部六个 cohort（`core`、`developer`、`security`、`research`、`ai-engineering`、`full`）均填充了各自的成员集合；`full` 是其他五个的并集。 |
+| `src/apothem/schemas/plugin.schema.json` | 单个 bundle 插件清单（`plugin.json`）的 JSON Schema。 |
+| `src/apothem/lib/propagation-manifest.yaml` | 每个harness原生目标的**权威来源**。 |
+
+## cohort 清单形态
+
+cohort 清单是一个顶层对象，包含三个键：
+
+- `version` — 清单的 SemVer 字符串。
+- `cohorts[]` — 每个 cohort 一条记录。每条记录包含 `id`（取自封闭集合
+  `core | developer | security | research | ai-engineering | full`）、`name`、
+  `description` 以及 `members`（一个按目录类型分组成员标识符的对象：
+  `skills` / `agents` / `commands` / `rules` / `hooks`）。
+- `per_harness_targets` — 解析契约（见下文）。
+
+每个成员标识符都是一个稳定的 kebab-case 名称，对应于 `src/apothem/`
+下的一个真实工件（`skills/<name>/`、`agents/<name>.md`、
+`commands/<name>.md`、`rules/<name>.md`，或一个 `hooks/` 条目）。
+
+## 枚举 cohort
+
+消费方加载 `cohort-manifest.yaml`，依据 `cohort.schema.json` 对其校验，
+然后遍历 `cohorts[]`。对每个 cohort，它读取 `members.<type>`
+以获取各目录类型的成员标识符。
+
+## 解析每个harness的原生目标（无需重新推导）
+
+cohort 清单**不会**重述harness映射。相反，
+`per_harness_targets.source` 指向 `lib/propagation-manifest.yaml`，
+即唯一的权威来源。解析规则：
+
+> 对于一个目录类型为 `T`（`skills`、`agents`、`commands`、`rules`、`hooks`
+> 之一）的 cohort 成员，以及一个目标harness `H`（列于
+> `per_harness_targets.harnesses` 中的某个），其原生插件目标即为
+> `lib/propagation-manifest.yaml` 中 `harnesses.H.install` 下、其 `source`
+> 匹配 `T/` 的那条记录的 `target` 字段。
+
+例如，为 `claude_code` 安装的一个 `core` cohort skill，通过
+`harnesses.claude_code.install` 中 `source: "skills/"` 的记录解析为
+`target: "${HARNESS_ROOT}/skills/"`。同一个 skill 对于 `opencode` 解析为
+`${HARNESS_ROOT}/skills/`；对于 `gemini_cli` 解析为 `${PROJECT_ROOT}/.gemini/skills/`。
+消费方从不臆造harness目标——他们去查找。
+
+`${HARNESS_ROOT}` / `${PROJECT_ROOT}` 占位符由每个harness适配器在安装时解析；
+cohort 消费方逐字采用已解析的 `target`。
+
+## 插件清单的角色
+
+`plugin.schema.json` 描述一个 `plugin.json`——一个自描述的目录成员 bundle
+（`skills` / `commands` / `agents` / `hooks` / `rules`），带有必需的 `name`、
+SemVer `version` 和 `description`。插件清单是harness适配器物化进其原生插件
+面的单元；cohort 选择一个插件携带哪些成员，而传播清单解析这些成员在每个
+harness上落地于何处。
+
+## 打包决策——一个总括 bundle，逻辑上的 cohort
+
+cohort 是一个**逻辑选择层**（即本清单），而非一组独立、可单独安装的
+bundle。Apothem **提供一个总括 bundle**，承载完整目录；cohort 清单让消费方
+挑选一个连贯的子集，而传播清单解析每个选定成员在每个harness上落地于何处。
+
+将目录拆分为分离的每 cohort bundle（例如每个 `developer` / `security` /
+`research` 家族一个 bundle）**在不引入仓库级重复的前提下是可行的**，
+方式是借助主分发面所记录的**元插件符号链接模式**：一个市场目录列出若干
+cohort 插件，而每个 cohort 插件目录中持有指向单一源头共享目录的**符号链接**，
+而非副本。当一个 cohort 被安装时，harness会解引用每个市场内的符号链接——
+将目标内容复制进该 cohort 的*缓存*——从而已安装的 cohort 是自包含的，
+而**仓库则保留一个由符号链接连接的权威来源**（以接线取代冗余，正如去重纪律
+所偏好的）。早先认为 cohort bundle "机械地重复"目录的解读，混淆了*安装时缓存*
+重复（harness正常的每插件复制）与*仓库*重复；符号链接模式避免了后者。
+
+Apothem 目前**提供一个总括 bundle**，是因为那是最简单的分发面，
+而非因为 cohort 机械上不可能。采用每 cohort 形态是一个真实的
+**UX 与维护权衡**，而非去重违规：好处是更细粒度的"只安装这个家族"体验；
+成本则是维护 N 个 cohort 符号链接目录及其市场条目、一个更大的一致性 / 测试 /
+golden 面，以及每 cohort 的安装时缓存副本。上面的逻辑 cohort 层已经从单一
+bundle 中交付了"只安装你需要的"*选择*结果；每 cohort 的*打包*则是当需要更细
+安装 UX 时的下一步。

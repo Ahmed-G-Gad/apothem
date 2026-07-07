@@ -1,0 +1,87 @@
+---
+title: "Host-agnostische Haltung"
+description: "Wie Apothem über das gemeinsame Profil und Harness-Adapter eine host-agnostische Haltung erreicht."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem ist um ein einziges Prinzip herum konzipiert: Ihre Governance-Konfiguration
+sollte jeden einzelnen Harness überdauern. Das gemeinsame Apothem-Profil
+ist eine schema-validierte YAML-Datei unter `~/.config/apothem/profile.yaml` oder
+`--profile PATH`; mitgelieferte Apothem-Kohorten stellen Befehle, Regeln, Skills,
+Hooks, Templates, Statuslines, Ausgabestile und Delegationsdefinitionen bereit.
+Adapter pro Harness unter `src/apothem/harnesses/<harness>/` übersetzen diese Eingaben in das Format,
+das jeder unterstützte Harness benötigt:
+
+```text
+Claude Code, Cursor, Gemini CLI, GitHub Copilot, Codex, Windsurf,
+OpenCode, Antigravity, Open-Claw, Hermes, Qwen Code,
+CodeBuddy, Kiro, Trae, Zed
+```
+
+## Die Kernidee
+
+Host-Agnostizismus bedeutet, dass Ihre *Absicht* — wer Sie sind, wie Assistenten sich
+verhalten sollen, die Regeln, denen sie folgen müssen — an einem Ort lebt, der keinem einzelnen Harness
+gehört. Die Harnesses sind austauschbare Konsumenten dieser Absicht. Wenn ein neuer
+Assistent erscheint, übernehmen Sie ihn, indem Sie einen Adapter hinzufügen, nicht indem Sie Ihre
+Konfiguration neu schreiben. Wenn ein von Ihnen genutzter Assistent in Ungnade fällt, lassen Sie ihn
+fallen, ohne die aufgebaute Governance zu verlieren. Das Profil ist das Kapital; der Harness
+ist ein Render-Ziel. Ein Harness kann zum Programmieren, Chatten, für die Zusammenarbeit, zur Recherche oder zum Schreiben verwendet werden — das Profil ist unabhängig davon, wofür der Harness gedacht ist.
+
+Dies ist eine bewusste Umkehrung. Der übliche Weg besteht darin, jedes Werkzeug
+direkt zu konfigurieren, was Ihre Investition an die Langlebigkeit und das Format dieses Werkzeugs
+bindet. Apothem behandelt Konfiguration als portables Kapital und den Harness als
+wegwerfbares Terminal.
+
+## Das Problem
+
+Jeder Harness hat sein eigenes Konfigurationsformat:
+
+```text
+Claude Code:    CLAUDE.md + settings.json
+Cursor:         .cursor/rules/*.mdc
+GitHub Copilot: .github/copilot-instructions.md
+Windsurf:       .devin/rules/
+Codex:          AGENTS.md
+```
+
+Ohne Apothem pflegen Sie N separate Konfigurationsdateien, die mit der Zeit auseinanderdriften.
+
+## Die Apothem-Lösung
+
+```text
+One shared Apothem profile (YAML) + packaged cohorts
+    identity.name
+    preferences.style
+    rules[]
+         |
+         v
+    Adapter layer (HarnessAdapter protocol — src/apothem/harnesses/<harness>/)
+         |
+         +---> Claude Code adapter   -> ~/.claude/
+         +---> Cursor adapter        -> .cursor/rules/*.mdc
+         +---> Copilot adapter       -> .github/copilot-instructions.md
+         +---> Windsurf adapter      -> .devin/rules/
+         +---> ...
+```
+
+Sie bearbeiten das gemeinsame Profil einmal und führen dann `apothem update --harness <name>` oder
+`apothem update --harness all --project <path>` aus, um die Änderung zu propagieren.
+`apothem harnesses list` gibt die registrierte Menge aus.
+
+## Warum „apothem"
+
+Der Name kodiert die Architektur. In der Geometrie ist eine *Apothem* das Lot
+vom **Mittelpunkt** eines regelmäßigen Vielecks zum **Mittelpunkt einer seiner Seiten** — der
+einzige Abstand vom Kern zu jeder Kante, in jeder Richtung identisch. Genau das
+ist das Design: ein gemeinsames Profil im Zentrum, siebzehn gleich weit entfernte Harnesses am
+Rand, jede Materialisierung gleich weit von der Quelle der Wahrheit entfernt. Der
+Kern ändert sich nicht, wenn sich eine Kante ändert; die Kanten teilen eine einzige Beziehung zum
+Kern. Drift ist strukturell unmöglich.
+
+## Portabilitätsgarantien
+
+Regeln, die mit `portability: universal` gekennzeichnet sind, sind garantiert in jeden
+unterstützten Harness übersetzbar. Regeln, die mit `portability: project-specific` gekennzeichnet sind, können
+eine harness-spezifische Override-Dokumentation im Regeltext erfordern.

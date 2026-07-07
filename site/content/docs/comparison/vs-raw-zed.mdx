@@ -1,0 +1,43 @@
+---
+title: "Apothem vs raw Zed config"
+description: "Hand-maintaining Zed's flat .rules instruction file versus rendering it from Apothem's shared profile."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Zed reads agent instructions from a single flat `.rules` file at the project
+root (alongside the `AGENTS.md` / `CLAUDE.md` family). Apothem's zed adapter
+renders that file from the shared profile. This page contrasts hand-maintaining
+that config against managing it with Apothem.
+
+## Effort comparison
+
+| Task | Raw hand-config | Apothem-managed |
+| ---- | --------------- | --------------- |
+| Author instructions | Hand-write the `.rules` file | Rendered from the shared corpus |
+| Preserve a prior `.rules` | Remember to copy it aside yourself | The adapter backs up the existing file before replace |
+| Keep rules aligned with other harnesses | Manual, per tool | Automatic on `apothem update` |
+| Verify the config is correct | Manual inspection | `apothem verify --harness zed` |
+
+## What Apothem manages
+
+The zed adapter renders the shared rules into the flat project-root `.rules`
+file. Zed has no PreToolUse hook, so guardrail intent lives in the rule prose
+rather than a tool-call interception point. The global `~/.config/zed/AGENTS.md`
+instruction file and the `.zed/settings.json` MCP context-server block are
+operator-owned and left untouched. Every change to the shared rules re-renders
+the file on the next `apothem update`.
+
+## Migration path
+
+1. Run `apothem profile init` to create the shared profile if you have not yet.
+2. Move the instructions from your existing `.rules` (and any project-specific
+   `AGENTS.md` content you want shared) into the shared corpus.
+3. Run `apothem install --harness zed` to render the `.rules` file. Your prior
+   `.rules` is backed up first.
+4. Run `apothem verify --harness zed` to confirm the config landed.
+5. Use `apothem update --harness zed` for every later change.
+
+## Read next
+
+- [Zed adapter reference](/docs/harnesses/zed)
+- [Comparison overview](/docs/comparison)

@@ -1,0 +1,36 @@
+---
+title: "Convenciones de Markdown"
+description: "Estandarizar el sabor de Markdown, la estructura de encabezados, las declaraciones de bloques de código, los formatos de enlaces internos, los banners de autoría y la aplicación por validadores."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Referencia canónica para la forma y el formato de Markdown en todo artefacto `.md` autorizado.** El resumen en [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Convenciones es la declaración en línea; esta página es la referencia independiente que citan los colaboradores posteriores.
+
+---
+
+## 1. Sabor
+
+GitHub-Flavored Markdown (GFM) es el sabor del host. Todo artefacto se renderiza correctamente en la interfaz web de GitHub, en el sitio de documentación de Fumadocs y en los editores estándar compatibles con Markdown.
+
+## 2. Jerarquía de encabezados
+
+Un H1 por archivo. Los encabezados subsiguientes descienden de forma monótona (H2 → H3 → H4) sin saltar niveles. Encabezados en mayúscula inicial de frase; nada de MAYÚSCULAS, nada de Mayúsculas En Cada Palabra. El H1 lleva el título principal del documento y ES el anclaje del documento en la navegación del sitio de documentación.
+
+## 3. Bloques de código
+
+Los bloques de código cercados declaran su lenguaje (` ```python `, ` ```bash `, ` ```yaml `, ` ```json `, ` ```mermaid `). Los bloques sin etiqueta suprimen el resaltado de sintaxis y señalan una deriva de autoría; la regla markdownlint MD040 en [`.markdownlint.jsonc`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.jsonc) aplica la etiqueta de lenguaje.
+
+## 4. Enlaces internos
+
+Las referencias cruzadas internas usan **rutas relativas a la raíz del sitio** (p. ej., `[Authorship header](/docs/reference/authorship-header)`). Las rutas relativas al repositorio con extensión `.md`/`.mdx` (`/docs/foo.md`) y las URL completas al mismo repositorio (`https://github.com/ahmed-g-gad/apothem/blob/main/...`) se evitan para los enlaces dentro del sitio porque resisten mal los cambios de nombre de página y las reorganizaciones de secciones.
+
+Los enlaces externos a referencias mutables (`main`, `master`, `latest`, `HEAD`) se fijan a SHA de commit o etiquetas de versión siempre que importe la estabilidad del contenido enlazado; las referencias volátiles se documentan como tales con un comentario adyacente `{/* volatile */}`.
+
+## 5. Banner de autoría
+
+Todo artefacto Markdown (con las excepciones enumeradas en [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas/header-exceptions.txt)) lleva el banner canónico de encabezado de autoría en el byte 0, en la variante de comentario HTML según [Authorship header](/docs/reference/authorship-header). El banner se sitúa por encima del frontmatter YAML cuando ambos están presentes.
+
+## 6. Validadores
+
+La invocación de `markdownlint-cli2` en [`.markdownlint.jsonc`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.jsonc) aplica el grueso de las reglas de §§1–4. El `file-header-grep` en `src/apothem/conformity/file_header_grep.py` aplica §5. Ambos están integrados en la cadena de hooks de pre-commit en [`.pre-commit-config.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/.pre-commit-config.yaml) y en el trabajo de calidad de CI en [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml).

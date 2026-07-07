@@ -1,0 +1,44 @@
+---
+title: "Apothem مقابل تهيئة Antigravity اليدوية"
+description: "صيانة السياق العام وملفات إضافة Antigravity CLI يدويًّا، مقابل إدارتها عبر ملف التعريف المشترك لـ Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+<bdi>Antigravity</bdi> بيئة نشر بيان من الفئة الأولى: يكتب <bdi>Apothem</bdi> مرساة
+السياق العامّة <bdi>`~/.gemini/GEMINI.md`</bdi> ويثبّت إضافة <bdi>Apothem</bdi> تحت
+<bdi>`~/.gemini/antigravity-cli/plugins/apothem/`</bdi>. وتقابل هذه الصفحة بين صيانة
+ذلك التخطيط يدويًّا وإدارته بـ <bdi>Apothem</bdi>.
+
+## مقارنة الجهد
+
+| المهمة | تهيئة يدوية | يديرها Apothem |
+| ---- | --------------- | --------------- |
+| كتابة القواعد | كتابة كل ملف قاعدة إضافة يدويًّا | كتابتها مرّةً واحدة في المتن المشترك |
+| الحفاظ على المطالبات القابلة لإعادة الاستخدام | نسخ مطالبات الأوامر والمهارات إلى ملفات الإضافة يدويًّا | محوَّلة أو منسوخة بوصفها مهارات إضافة |
+| الحفاظ على مادة دعم الخطّافات | نسخ مراجع الخطّافات دون توصيل فعّال يدويًّا | منسوخة تحت شجرة دعم إضافة <bdi>Apothem</bdi> |
+| إبقاء القواعد متوائمة مع البيئات الأخرى | يدويًّا، لكل أداة | تلقائيًّا عند <bdi>`apothem update`</bdi> |
+| تثبيت/إزالة التهيئة | نسخ الملفات وحذفها يدويًّا | <bdi>`apothem install`</bdi> / <bdi>`apothem uninstall`</bdi> |
+| التحقّق من صحّة التهيئة | فحص يدوي | <bdi>`apothem verify --harness antigravity`</bdi> |
+
+## ما الذي يديره Apothem
+
+يدير <bdi>Apothem</bdi> ملف السياق العامّ لـ <bdi>Antigravity</bdi>، والبيانات الوصفية
+للإضافة، ومهارات الأوامر المحوَّلة، والمهارات القابلة لإعادة الاستخدام، والوكلاء
+المحوَّلين، والقواعد، والقوالب، ومادة دعم الخطّافات. وتُحفَظ ملفات الخطّافات بوصفها
+مادة دعم؛ ولا يسجّل <bdi>Apothem</bdi> أحداث خطّافات <bdi>Antigravity</bdi> الفعّالة حتى
+يمتلك المحوِّل طبقة ترجمة مخطّط لملف <bdi>`hooks.json`</bdi> الخاصّ بـ <bdi>Antigravity</bdi>.
+
+## مسار الترحيل
+
+1. شغّل <bdi>`apothem profile init`</bdi> لإنشاء ملف التعريف المشترك إن لم تكن قد فعلت
+   بعد.
+2. انقل قواعد <bdi>Antigravity</bdi> المكتوبة يدويًّا لديك إلى المتن المشترك.
+3. شغّل <bdi>`apothem install --harness antigravity`</bdi> لنشر المتن.
+4. شغّل <bdi>`apothem verify --harness antigravity`</bdi> للتأكّد من وصول التهيئة.
+5. استخدم <bdi>`apothem update --harness antigravity`</bdi> مع كل تغيير لاحق.
+
+## اقرأ تاليًا
+
+- [مرجع محوِّل Antigravity](/docs/harnesses/antigravity)
+- [نظرة عامة على المقارنة](/docs/comparison)

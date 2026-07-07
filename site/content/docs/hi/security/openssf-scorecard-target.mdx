@@ -1,0 +1,50 @@
+---
+title: "OpenSSF Scorecard मुद्रा"
+description: "Apothem का OpenSSF Scorecard लक्ष्य और स्कोर को निरंतर बेहतर बनाए रखने के लिए उपयोग की जाने वाली साक्ष्य सतहें।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem अधिकतम OpenSSF Scorecard स्कोर का लक्ष्य रखता है, साथ ही सार्वजनिक मुखौटे को इस बारे में ईमानदार रखता है कि एक नए एकल-अनुरक्षक रिपॉज़िटरी से Scorecard क्या अनुमान लगा सकता है और क्या नहीं। यह दस्तावेज़ प्रत्येक जाँच, उसे समर्थन देने वाली साक्ष्य सतह, और मुद्रा को अद्यतन रखने वाले नियंत्रण को सूचीबद्ध करता है।
+
+लाइव स्कोर [Scorecard व्यूअर](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem) पर है; बैज [README हेडर](https://github.com/ahmed-g-gad/apothem/blob/main/README.md) में है।
+
+## प्रति-जाँच साक्ष्य मैट्रिक्स
+
+| जाँच | साक्ष्य सतह | टिप्पणियाँ |
+|---|---|---|
+| **Binary-Artifacts** | [binary-artifacts-sweep.md](/docs/security/binary-artifacts-sweep) | स्रोत में कोई निष्पादन-योग्य बाइनरी ट्रैक नहीं की जाती; उत्पन्न वितरण अभिलेखागार `dist/` में रहते हैं। |
+| **Branch-Protection** | [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) | `main` सार्वजनिक रिलीज़ पदोन्नति से पहले संरक्षित है; नया रिलीज़ कमिट उतरने के बाद फ़ोर्स-पुश और विलोपन अवरुद्ध हो जाते हैं। |
+| **CI-Tests** | [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) | Pytest मैट्रिक्स, ruff, mypy, CodeQL, Trivy, दस्तावेज़ बिल्ड, और पैकेजिंग स्मोक जाँच। |
+| **CII-Best-Practices** | OpenSSF Best Practices पंजीकरण | OpenSSF Best Practices साइट पर अनुरक्षक-पक्ष पंजीकरण आवश्यक है; इसे केवल रिपॉज़िटरी फ़ाइलों से पूरा नहीं किया जा सकता। |
+| **Code-Review** | ब्रांच सुरक्षा + CODEOWNERS | भविष्य के पुल रिक्वेस्ट के लिए लागू; समीक्षित PR के अस्तित्व में आने तक Scorecard इतिहास सीमित रहता है। |
+| **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | एक नई एकल-अनुरक्षक परियोजना बहु-संगठन योगदान इतिहास गढ़ नहीं सकती; जैसे-जैसे योगदानकर्ता जुड़ते हैं यह स्वाभाविक रूप से बेहतर होता है। |
+| **Dangerous-Workflow** | वर्कफ़्लो ऑडिट | कोई `pull_request_target` नहीं; Actions SHA-पिन की गई हैं और स्पष्ट अनुमतियों के साथ दायरे में बँधी हैं। |
+| **Dependency-Update-Tool** | [`renovate.json`](https://github.com/ahmed-g-gad/apothem/blob/main/renovate.json) | Renovate, GitHub Actions, Python मैनिफ़ेस्ट, हैश-लॉक की गई रिलीज़ आवश्यकताओं, और npm सतहों को कवर करता है, साथ ही समूहीकृत निर्भरता PR उपलब्ध रखता है। |
+| **Fuzzing** | [`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | Hypothesis प्रॉपर्टी परीक्षण पार्सर और frontmatter अपरिवर्तनीयताओं को परखते हैं; अपस्ट्रीम Scorecard, Hypothesis को फ़ज़िंग एकीकरण के रूप में श्रेय नहीं दे सकता। |
+| **License** | [LICENSE](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) | रिपॉज़िटरी रूट पर MIT लाइसेंस। |
+| **Maintained** | Git इतिहास | वर्तमान रिलीज़ कमिट और सक्रिय वर्कफ़्लो लय अनुरक्षण को प्रदर्शित करती है; बहुत नई रिपॉज़िटरी को आयु चेतावनी मिल सकती है। |
+| **Packaging** | [`.github/workflows/`](https://github.com/ahmed-g-gad/apothem/tree/main/.github/workflows) | sdist, wheel, SBOM, SLSA उद्भव, और Sigstore हस्ताक्षर उत्पन्न करने वाले Release, Pages, और npmjs.com वर्कफ़्लो। |
+| **Pinned-Dependencies** | वर्कफ़्लो ऑडिट + हैश-लॉक आवश्यकताएँ | Actions SHA-पिन की गई हैं; रिलीज़ टूलिंग इंस्टॉल `--require-hashes` का उपयोग करते हैं; केवल-वर्कफ़्लो pip टूल सटीक पिन का उपयोग करते हैं। |
+| **SAST** | [`.github/workflows/codeql.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/codeql.yml) | Python और Actions में CodeQL की `security-extended` क्वेरियाँ। |
+| **Security-Policy** | [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) | समन्वित-प्रकटीकरण नीति, समर्थित-संस्करण मैट्रिक्स, और प्रतिक्रिया समयरेखा। |
+| **Signed-Releases** | [`.github/workflows/release.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/release.yml) | Sigstore कुंजी-रहित हस्ताक्षर, SLSA उद्भव, SBOM, चेकसम, और रिलीज़ कलाकृतियाँ। |
+| **Token-Permissions** | वर्कफ़्लो ऑडिट | वर्कफ़्लो डिफ़ॉल्ट रूप से केवल-पठन अनुमतियों का उपयोग करते हैं; लेखन दायरे जॉब-स्थानीय हैं और परिनियोजन/पैकेजिंग संचालन से बँधे हैं। |
+| **Vulnerabilities** | [`.github/workflows/pip-audit.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/pip-audit.yml) + [`.github/workflows/dependency-review.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/dependency-review.yml) | साप्ताहिक भेद्यता स्कैन और SARIF अपलोड के साथ CI स्कैन; dependency-review गेट उन पुल रिक्वेस्ट को अवरुद्ध करता है जो भेद्य या अननुमत-लाइसेंस निर्भरताएँ पेश करती हैं। |
+
+## स्कोर व्याख्या
+
+Scorecard प्रत्येक जाँच को 0-10 पैमाने पर अंक देता है और समग्र स्कोर एक भारित औसत है। रिपॉज़िटरी इतिहास, तृतीय-पक्ष पंजीकरण, या योगदानकर्ता विविधता पर निर्भर नियंत्रण को अधिक-दावा करने के बजाय स्पष्ट रूप से ट्रैक किया जाता है। किसी भी फ़ाइल-नियंत्रित जाँच पर बहाव तत्काल उपचार को ट्रिगर करता है।
+
+## ताज़गी लय
+
+- **प्रति-पुश:** Scorecard वर्कफ़्लो `main` पर प्रत्येक पुश पर पुनः चलता है।
+- **साप्ताहिक:** सोमवार 02:30 UTC — अपस्ट्रीम-स्कोरिंग पद्धति में परिवर्तन + मौजूदा पिन की गई निर्भरताओं के विरुद्ध नई प्रकट भेद्यताओं को पकड़ता है।
+- **प्रति-रिलीज़:** सार्वजनिक पदोन्नति से पहले, अनुरक्षक लाइव Scorecard व्यूअर सतह को सत्यापित करता है और किसी भी प्लेटफ़ॉर्म-स्थिति सीमा को दर्ज करता है।
+
+## संदर्भ
+
+- [OpenSSF Scorecard](https://github.com/ossf/scorecard) — अपस्ट्रीम परियोजना
+- [Scorecard जाँच संदर्भ](https://github.com/ossf/scorecard/blob/main/docs/checks.md) — प्रति-जाँच अर्थविज्ञान
+- [`ossf/scorecard-action`](https://github.com/ossf/scorecard-action) — GitHub Actions रैपर
+- [SLSA फ़्रेमवर्क](https://slsa.dev/) — आपूर्ति-शृंखला स्तर (apothem SLSA-3 पर शिप होता है)

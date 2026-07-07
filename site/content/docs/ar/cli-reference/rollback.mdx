@@ -1,0 +1,80 @@
+---
+title: "rollback"
+description: "مرجع واجهة سطر الأوامر لأمر apothem rollback."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+يستعيد مساعدًا برمجيًا إلى الحالة التي كان عليها قبل تثبيته المُسجَّل.
+
+## الموجز
+
+```
+apothem rollback --harness NAME|all [--install-id ULID | --last] [--yes]
+                 [--project PATH]
+                 [--quiet|-q] [--verbose|-v]
+                 [--format plain|json] [--json] [--no-color]
+```
+
+يعيد <bdi>`rollback`</bdi> بناء البايتات السابقة للتثبيت لكلّ مساعد برمجي مُحدَّد من جذر النسخ الاحتياطي لـ <bdi>Apothem</bdi>. يُحلّ تمريرة التثبيت المُسجَّلة — الأحدث افتراضيًا، أو التي يُسمّيها <bdi>`--install-id`</bdi> — ثمّ يستعيد كلّ نسخة احتياطية التقطها ذلك التثبيت، ثمّ يُلحِق سِجلّ <bdi>`rollback`</bdi> بسجلّ المساعد البرمجي.
+
+يُطلب التأكيد لكلّ مساعد برمجي ما لم يُقدَّم <bdi>`--yes`</bdi>. يختار كلٌّ من <bdi>`--install-id`</bdi> و<bdi>`--last`</bdi> تمريرة التثبيت، وهما متنافيان.
+
+## الخيارات
+
+| الخيار | الوصف |
+|---|---|
+| `--harness NAME` | مُحَوِّل المساعد البرمجي المراد التراجع عنه، أو `all` للمجموعة على نطاق السجلّ بأكمله (مطلوب). |
+| `--install-id ULID` | التراجع عن تمريرة التثبيت المُسمّاة. يكون الافتراضي أحدث تثبيت مُسجَّل. |
+| `--last` | التراجع عن أحدث تثبيت مُسجَّل (الافتراضي؛ الصيغة الصريحة). متنافٍ مع `--install-id`. |
+| `--yes` | يتخطّى مطالبة التأكيد لكلّ مساعد برمجي. |
+| `--project PATH` | جذر المشروع للمساعدات البرمجية بنطاق المشروع. مطلوب عندما تتضمّن المجموعة المُحدَّدة مُحَوِّلات بنطاق المشروع. |
+| `--quiet`, `-q` | يُخمِد المخرجات المعلوماتية؛ تُصدَر الأخطاء فقط. |
+| `--verbose`, `-v` | يُصدِر مخرجات تشخيصية إضافية. |
+| `--format plain\|json` | تنسيق المخرجات (الافتراضي: `plain`). |
+| `--json` | اختصار لـ `--format json`. |
+| `--no-color` | يُعطِّل رموز ألوان <bdi>ANSI</bdi> في المخرجات. |
+| `-h`, `--help` | يعرض المساعدة ويخرج. |
+
+## مخرجات JSON
+
+```json
+{
+  "status": "success",
+  "command": "rollback",
+  "action": "rolled_back",
+  "harness": "claude-code",
+  "profile_path": null,
+  "project": null,
+  "files_written": [],
+  "results": [],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+يظهر كلّ هدف مُستعاد في <bdi>`results`</bdi> بقيمة <bdi>`"operation": "rollback"`</bdi> وبنتيجة <bdi>`outcome`</bdi> تساوي <bdi>`created`</bdi> أو <bdi>`updated`</bdi> (وفي <bdi>`files_written`</bdi>). يُبلَّغ عن هدفٍ أنشأه التثبيت من جديد — لا توجد بايتات سابقة لاستعادتها — بقيمة <bdi>`"outcome": "skipped"`</bdi>؛ أمّا الاستعادة الفاشلة فتكون <bdi>`"outcome": "error"`</bdi>. وعندما لا يوجد سِجلّ تثبيت مطابق، يُبلِّغ الأمر عن خطأ <bdi>`rollback.no_record`</bdi> بقيمة <bdi>`"status": "error"`</bdi>.
+
+## أمثلة
+
+```bash
+apothem rollback --harness claude-code --last
+apothem rollback --harness claude-code --install-id 01J9Z… --yes
+apothem rollback --harness cursor --project . --last --json
+```
+
+## رموز الخروج
+
+| الرمز | المعنى |
+|---|---|
+| 0 | تمّ التراجع بنجاح، أو لا شيء لاستعادته (لم يلتقط التثبيت أيّ نسخ احتياطية) |
+| 1 | خطأ مُتوقَّع — لا سِجلّ تثبيت، أو مُحدِّدات متعارضة، أو مساعد برمجي غير معروف، أو جذر مشروع مفقود، أو تأكيد أُجهِض |
+| 2 | استعادة جزئية بعد التراجع عن هدف واحد على الأقلّ |
+
+## انظر أيضًا
+
+- [apothem install](/docs/cli-reference/install) — تثبيت تهيئة مساعد برمجي
+- [apothem update](/docs/cli-reference/update) — إعادة التثبيت من الملف الشخصي المُشترك الحالي
+- [apothem uninstall](/docs/cli-reference/uninstall) — إزالة تهيئة مساعد برمجي
+- [apothem status](/docs/cli-reference/status) — الإبلاغ عن حالة التثبيت والتحقّق والانحراف

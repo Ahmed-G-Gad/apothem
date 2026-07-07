@@ -1,0 +1,138 @@
+[
+  {
+    "detail": {
+      "capability": "mcp_servers",
+      "status": "discovery-pending"
+    },
+    "message": "MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries.",
+    "operation": "capability_projection",
+    "outcome": "warning",
+    "path": "src/apothem/harnesses/codex/capabilities.yml"
+  },
+  {
+    "detail": {
+      "capability": "output_styles",
+      "status": "unsupported"
+    },
+    "message": "No Codex output-style file surface is pinned.",
+    "operation": "capability_projection",
+    "outcome": "warning",
+    "path": "src/apothem/harnesses/codex/capabilities.yml"
+  },
+  {
+    "detail": {
+      "capability": "statuslines",
+      "status": "unsupported"
+    },
+    "message": "No Codex statusline file surface is pinned.",
+    "operation": "capability_projection",
+    "outcome": "warning",
+    "path": "src/apothem/harnesses/codex/capabilities.yml"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/../.config/apothem/hooks"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/../.agents/skills/AGENTS.md"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/rules"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/commands"
+  },
+  {
+    "detail": {
+      "diff": "--- a/AGENTS.md\n+++ b/AGENTS.md\n@@ -0,0 +1,73 @@\n+<!-- BEGIN APOTHEM MANAGED BLOCK -->\n+<!-- SPDX-License-Identifier: MIT -->\n+\n+# Apothem — Codex Bootstrap\n+\n+This file is the vendor-canonical agent-instructions surface for the\n+OpenAI Codex CLI (`$CODEX_HOME/AGENTS.md`, default `~/.codex/AGENTS.md`).\n+It follows the universal AGENTS.md convention adopted across coding-agent\n+ecosystems. Apothem's governance surface is split between Codex-native\n+discovery paths and an Apothem-owned support tree for content that is not a\n+Codex-native primitive.\n+\n+## Apothem Conventions\n+\n+The Apothem-managed cohorts are installed as follows:\n+\n+- `$CODEX_HOME/agents/*.toml` — Codex custom agents converted from Apothem\n+  Markdown agents.\n+- `$CODEX_HOME/hooks.json` and `$CODEX_HOME/hooks/` — Codex lifecycle hook\n+  configuration plus Apothem hook helpers.\n+- `~/.agents/skills/*/SKILL.md` — Apothem skills plus command prompts wrapped\n+  as Codex skills.\n+- `~/.config/apothem/rules/` — Apothem Markdown rules used as reference\n+  material by this file and the installed skills.\n+- `~/.config/apothem/templates/` — plan, report, and audit templates.\n+\n+Do not place Apothem Markdown rules under `$CODEX_HOME/rules/`. Codex\n+reserves that directory for `.rules` execution-policy files, which use a\n+different format and purpose.\n+\n+## Runtime Configuration\n+\n+Codex CLI's runtime configuration lives at `$CODEX_HOME/config.toml`. Apothem\n+does not overwrite that operator-owned file; it installs instructions, hooks,\n+agents, skills, and support content through the vendor-native paths above.\n+\n+## Operator Surface\n+\n+Operators may extend project-specific instructions in project-local\n+`AGENTS.md` files. Re-run `apothem install --harness codex` to refresh this\n+user-scope bootstrap, converted agents, skills, and support cohorts.\n+\n+# Apothem Shared Profile\n+\n+Managed by Apothem from the shared profile. Edits inside the sentinels are overwritten on the next `apothem install`; change the shared profile instead.\n+\n+## Operator\n+\n+- **Name:** Golden-Corpus-Operator\n+- **Role:** release engineer\n+- **Email:** golden@corpus.invalid\n+- **Website:** https://golden.corpus.invalid\n+- **GitHub:** @golden-corpus-operator\n+\n+## Preferences\n+\n+- **Primary language:** python\n+- **Response style:** concise\n+- **Governance seriousness:** PUBLIC_LAUNCH\n+\n+## Custom Rules\n+\n+- golden-corpus-validate-input-before-write\n+\n+## Opted-in Behaviors\n+\n+- Sprint apparatus for non-trivial multi-step work\n+\n+## MCP Servers\n+\n+Configured MCP servers (materialized into the harnesses with a native MCP config surface; named here as reference for the rest):\n+- golden-corpus-srv\n+<!-- END APOTHEM MANAGED BLOCK -->\n",
+      "ownership_class": "operator-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "sentinel_merge",
+    "outcome": "created",
+    "path": "<ROOT>/AGENTS.md",
+    "source": "<APOTHEM_SRC>/harnesses/codex/templates/AGENTS.md"
+  },
+  {
+    "detail": {
+      "diff": "--- a/hooks.json\n+++ b/hooks.json\n@@ -0,0 +1,127 @@\n+{\n+  \"hooks\": {\n+    \"SessionStart\": [\n+      {\n+        \"matcher\": \"startup|resume|clear|compact\",\n+        \"hooks\": [\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"python3 \\\"<ROOT>/hooks/dispatch.py\\\" SessionStart\",\n+            \"commandWindows\": \"py -3 \\\"<ROOT>/hooks/dispatch.py\\\" SessionStart\",\n+            \"timeout\": 30,\n+            \"statusMessage\": \"Initializing session posture\"\n+          }\n+        ]\n+      }\n+    ],\n+    \"PreToolUse\": [\n+      {\n+        \"matcher\": \"Bash\",\n+        \"hooks\": [\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"python3 \\\"<ROOT>/hooks/dispatch.py\\\" PreToolUse pretooluse-bash\",\n+            \"commandWindows\": \"py -3 \\\"<ROOT>/hooks/dispatch.py\\\" PreToolUse pretooluse-bash\",\n+            \"timeout\": 10,\n+            \"statusMessage\": \"Validating shell command safety and isolation\"\n+          },\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"python3 \\\"<ROOT>/hooks/dispatch.py\\\" PreToolUse pretooluse-bash-plan-guard\",\n+            \"commandWindows\": \"py -3 \\\"<ROOT>/hooks/dispatch.py\\\" PreToolUse pretooluse-bash-plan-guard\",\n+            \"timeout\": 10,\n+            \"statusMessage\": \"Enforcing plans locality on shell redirections\"\n+          },\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"python3 \\\"<ROOT>/hooks/dispatch.py\\\" PreToolUse pretooluse-eval-guard\",\n+            \"commandWindows\": \"py -3 \\\"<ROOT>/hooks/dispatch.py\\\" PreToolUse pretooluse-eval-guard\",\n+            \"timeout\": 10,\n+            \"statusMessage\": \"Flagging unsafe dynamic evaluation or deserialization\"\n+          }\n+        ]\n+      },\n+      {\n+        \"matcher\": \"Edit|Write|apply_patch\",\n+        \"hooks\": [\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"python3 \\\"<ROOT>/hooks/dispatch.py\\\" PreToolUse pretooluse-write\",\n+            \"commandWindows\": \"py -3 \\\"<ROOT>/hooks/dispatch.py\\\" PreToolUse pretooluse-write\",\n+            \"timeout\": 10,\n+            \"statusMessage\": \"Validating write target and content\"\n+          },\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"python3 \\\"<ROOT>/hooks/dispatch.py\\\" PreToolUse pretooluse-write-header-guard\",\n+            \"commandWindows\": \"py -3 \\\"<ROOT>/hooks/dispatch.py\\\" PreToolUse pretooluse-write-header-guard\",\n+            \"timeout\": 10,\n+            \"statusMessage\": \"Injecting authorship header if missing\"\n+          },\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"python3 \\\"<ROOT>/hooks/dispatch.py\\\" PreToolUse pretooluse-write-plan-guard\",\n+            \"commandWindows\": \"py -3 \\\"<ROOT>/hooks/dispatch.py\\\" PreToolUse pretooluse-write-plan-guard\",\n+            \"timeout\": 10,\n+            \"statusMessage\": \"Enforcing plans locality on the target path\"\n+          },\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"python3 \\\"<ROOT>/hooks/dispatch.py\\\" PreToolUse pretooluse-dependency-guard\",\n+            \"commandWindows\": \"py -3 \\\"<ROOT>/hooks/dispatch.py\\\" PreToolUse pretooluse-dependency-guard\",\n+            \"timeout\": 10,\n+            \"statusMessage\": \"Flagging unpinned or untrusted dependency additions\"\n+          },\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"python3 \\\"<ROOT>/hooks/dispatch.py\\\" PreToolUse pretooluse-eval-guard\",\n+            \"commandWindows\": \"py -3 \\\"<ROOT>/hooks/dispatch.py\\\" PreToolUse pretooluse-eval-guard\",\n+            \"timeout\": 10,\n+            \"statusMessage\": \"Flagging unsafe dynamic evaluation or deserialization\"\n+          }\n+        ]\n+      }\n+    ],\n+    \"PreCompact\": [\n+      {\n+        \"matcher\": \"manual|auto\",\n+        \"hooks\": [\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"python3 \\\"<ROOT>/hooks/dispatch.py\\\" PreCompact precompact\",\n+            \"commandWindows\": \"py -3 \\\"<ROOT>/hooks/dispatch.py\\\" PreCompact precompact\",\n+            \"timeout\": 30,\n+            \"statusMessage\": \"Externalizing state before context compression\"\n+          }\n+        ]\n+      }\n+    ],\n+    \"PostCompact\": [\n+      {\n+        \"matcher\": \"manual|auto\",\n+        \"hooks\": [\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"python3 \\\"<ROOT>/hooks/dispatch.py\\\" PostCompact postcompact\",\n+            \"commandWindows\": \"py -3 \\\"<ROOT>/hooks/dispatch.py\\\" PostCompact postcompact\",\n+            \"timeout\": 30,\n+            \"statusMessage\": \"Restoring state from durable files after compaction\"\n+          }\n+        ]\n+      }\n+    ],\n+    \"Stop\": [\n+      {\n+        \"hooks\": [\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"python3 \\\"<ROOT>/hooks/dispatch.py\\\" Stop stop\",\n+            \"commandWindows\": \"py -3 \\\"<ROOT>/hooks/dispatch.py\\\" Stop stop\",\n+            \"timeout\": 60,\n+            \"statusMessage\": \"Finalizing session and externalizing state\"\n+          }\n+        ]\n+      }\n+    ]\n+  }\n+}\n",
+      "ownership_class": "operator-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "write_text",
+    "outcome": "created",
+    "path": "<ROOT>/hooks.json",
+    "source": "<APOTHEM_SRC>/harnesses/codex/templates/hooks.json"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/hooks",
+    "source": "<APOTHEM_SRC>/hooks"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/../.config/apothem/rules",
+    "source": "<APOTHEM_SRC>/rules"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/../.agents/skills",
+    "source": "<APOTHEM_SRC>/skills"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "command_skills",
+    "outcome": "created",
+    "path": "<ROOT>/../.agents/skills",
+    "source": "<APOTHEM_SRC>/commands"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "codex_agents",
+    "outcome": "created",
+    "path": "<ROOT>/agents",
+    "source": "<APOTHEM_SRC>/agents"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/../.config/apothem/templates",
+    "source": "<APOTHEM_SRC>/templates"
+  }
+]

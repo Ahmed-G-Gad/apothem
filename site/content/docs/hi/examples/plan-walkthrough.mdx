@@ -1,0 +1,59 @@
+---
+title: "योजना वॉकथ्रू"
+description: "किसी वास्तविक कार्य के लिए /plan पाइपलाइन का एंड-टू-एंड वॉकथ्रू।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+यह उदाहरण एक सरल कार्य के लिए संपूर्ण `/plan` पाइपलाइन का वॉकथ्रू करता है: Apothem में एक नया CLI सबकमांड जोड़ना।
+
+## चरण 1: गद्य आवश्यकताएँ लिखें
+
+`prose.md` बनाएँ:
+
+```markdown
+Add a `apothem status` subcommand that prints the current apothem
+version, installed harnesses, and the result of `apothem verify`.
+The output should be machine-parseable (JSON with --json flag) and
+human-readable by default.
+```
+
+## चरण 2: विनिर्देश में परिष्कृत करें
+
+```bash
+/plan-spec prose.md --suite-name apothem-status-command
+```
+
+यह छह-फ़ेज़ वाला Forge चलाता है, स्पष्टीकरण प्रश्न पूछता है, और `plans/apothem-status-command/_spec/spec.md` उत्पन्न करता है।
+
+## चरण 3: योजना उत्पन्न करें
+
+```bash
+/plan-generate
+```
+
+`plans/apothem-status-command/phases/` के अंतर्गत PREAMBLE.md, MASTER-PLAN.md, PROGRESS.md, PLAN-NOTES.md, और प्रति-फ़ेज़ PHASE.md फ़ाइलें उत्पन्न करता है।
+
+## चरण 4: योजना की समीक्षा करें
+
+```bash
+/plan-review
+```
+
+गद्य-निष्ठा, संगति, और गुणवत्ता स्कोर के साथ फोरेंसिक ऑडिट। आगे बढ़ने से पहले किसी भी FAIL निष्कर्ष को ठीक करें।
+
+## चरण 5: फ़ेज़ निष्पादित करें
+
+```bash
+/plan-execute    # executes the first phase, then pauses
+/plan-execute    # executes the next phase, then pauses
+...
+```
+
+## चरण 6: प्रगति जाँचें
+
+```bash
+/plan-status
+```
+
+वर्तमान फ़ेज़, सत्यापित आउटपुट, और अगली कार्रवाई की रिपोर्ट देता है।

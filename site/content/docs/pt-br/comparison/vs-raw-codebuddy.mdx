@@ -1,0 +1,49 @@
+---
+title: "Apothem vs. as regras brutas do CodeBuddy"
+description: "Por que encaminhar as regras de projeto do CodeBuddy através do Apothem em vez de escrever à mão arquivos .codebuddy/rules por projeto."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+O CodeBuddy lê as regras de projeto de `.codebuddy/rules/*.md`. Você pode
+escrever esses arquivos à mão, por projeto, para sempre. O Apothem gerencia um
+deles para você e o mantém consistente em cada ambiente e cada projeto.
+
+## A abordagem bruta
+
+Escrever à mão as regras do CodeBuddy significa:
+
+- Copiar e colar as mesmas disciplinas de engenharia em `.codebuddy/rules/` para
+  cada novo projeto.
+- Ficar fora de sincronia à medida que as disciplinas evoluem — não há uma única
+  fonte de verdade.
+- Re-derivar as mesmas convenções para Cursor, Windsurf, Claude Code e todas as
+  outras ferramentas que você usa, porque cada uma tem sua própria superfície de
+  regras.
+
+## A abordagem do Apothem
+
+O Apothem mantém uma coorte de regras canônica no repositório de origem e a
+projeta na superfície nativa de cada ambiente. Para o CodeBuddy ele escreve:
+
+```
+<project>/.codebuddy/rules/apothem-rules.md
+```
+
+| Aspecto | CodeBuddy bruto | Apothem |
+| --- | --- | --- |
+| Fonte de verdade | Os arquivos de cada projeto | Uma coorte canônica |
+| Consistência entre ambientes | Manual por ferramenta | Projetada automaticamente |
+| Atualizações | Editar à mão cada projeto | `apothem update --harness codebuddy --project <path>` |
+| Regras próprias do operador | Misturadas com as disciplinas | Intocadas — o Apothem escreve um arquivo dedicado |
+| Remoção | Exclusão manual | `apothem uninstall` com backup com marca de tempo |
+
+## O que continua sendo seu
+
+O Apothem escreve apenas `apothem-rules.md`. Seu arquivo de memória
+`CODEBUDDY.md`, suas permissões e servidores MCP em `.codebuddy/settings.json`, e
+quaisquer outros arquivos de regras que você escreva permanecem inteiramente do
+operador. O adaptador reconhece essas superfícies, mas nunca as edita.
+
+Consulte a [página do ambiente CodeBuddy](/docs/harnesses/codebuddy) para os
+comandos completos do ciclo de vida.

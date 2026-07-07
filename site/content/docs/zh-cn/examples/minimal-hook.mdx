@@ -1,0 +1,54 @@
+---
+title: "最小钩子"
+description: "最小 Apothem 钩子示例——在每次文件写入时触发一个检查。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+本示例展示最小可能的 Apothem 钩子：一个 PreToolUse 钩子，它在每次 `Write`
+工具调用之前触发并记录目标路径。
+
+## 钩子脚本
+
+```python
+# src/apothem/hooks/log_writes.py
+import json, sys
+
+data = json.load(sys.stdin)
+path = data.get("tool_input", {}).get("file_path", "unknown")
+print(f"[apothem] Writing to: {path}", file=sys.stderr)
+sys.exit(0)  # exit 0 = proceed; non-zero = block
+```
+
+## 在 settings.json 中注册
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python src/apothem/hooks/log_writes.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## 测试钩子
+
+在 Claude Code 中执行任意文件写入，并在钩子追踪面板中观察 stderr 输出。
+
+## 阻止写入
+
+将 `sys.exit(0)` 改为 `sys.exit(1)`，并向 stdout 打印一个 JSON 阻止块：
+
+```python
+print(json.dumps({"decision": "block", "reason": "blocked by log_writes"}))
+sys.exit(1)
+```

@@ -1,0 +1,68 @@
+---
+title: "依赖锁定清单"
+description: "依赖声明策略，涵盖 Python 运行时版本范围、开发工具链、发布工具锁文件，以及每个构建面所批准的版本下限。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> Apothem 如何声明、固定与锁定依赖的既定姿态。
+> 受众：需要理解可复现性模型的贡献者与下游消费者。
+
+## 姿态
+
+Apothem 是一个 Python CLI，拥有一组很小的运行时依赖，外加一套更庞大的
+开发、审计、发布与文档工具链。运行时依赖在 `pyproject.toml` 中使用
+保守的下限；网站提交 `site/package-lock.json`；GitHub Actions 通过
+不可变 SHA 固定并附带版本注释，由 Renovate 进行升级。
+
+| 类别 | 声明方式 | 锁定策略 |
+|---|---|---|
+| 运行时 Python 依赖 | `pyproject.toml` 中的 `[project.dependencies]` | 下限范围；不提交 Python 运行时锁文件 |
+| 开发 / 安全工具 | `[project.optional-dependencies]` extras | 下限范围；CI 安装当前匹配的版本 |
+| 发布工具 | `scripts/release/requirements-build-linux.txt` | 为发布工作流哈希锁定；由发布工具闭包生成 |
+| 仅 CI 工具 | `.github/workflows/*.yml` | 仅工作流使用的 pip 工具采用精确固定（`pip`、`bandit`、`pip-audit`、`pip-licenses`、`pyinstaller`） |
+| 文档站点 | `site/package.json` | 提交 `site/package-lock.json` 并由 `npm ci` 消费 |
+| GitHub Actions | 带版本注释的 SHA 固定 `uses:` 引用 | Renovate 提出更新；例外项携带 `action-pinning-exempt:` 标记 |
+
+## 发布批准
+
+| 面 | 已批准状态 | 理由 |
+|---|---|---|
+| 运行时依赖 | 当前下限位于 `pyproject.toml` `[project.dependencies]` | 发布前批准当前稳定下限；无已知运行时 CVE 阻断项 |
+| 开发工具 | 当前下限位于 `pyproject.toml` `dev` extra | 发布前批准最新稳定下限 |
+| 安全工具 | 当前下限位于 `pyproject.toml` `security` extra | 发布前批准当前扫描器下限 |
+| 发布工具 | 哈希锁定闭包位于 `scripts/release/requirements-build-linux.txt` | 发布工作流以 `--require-hashes` 安装；本地脚本要求 `build` 已存在，而非静默安装漂移的依赖 |
+| 文档工具 | 当前范围位于 `site/package.json`；精确解析位于 `site/package-lock.json` | 锁文件刷新后 `npm outdated` 不返回任何陈旧的文档依赖 |
+| GitHub Actions | 当前发布保留既有 SHA 固定；SLSA 可复用工作流仍是已记录的标签固定例外 | 公共 CI 重跑为绿；为避免发布面动荡，广泛的 action 大版本升级有意留给依赖自动化 PR |
+| npm 打包 | 仅手动的 `publish-npm.yml` 工作流；无自动发布触发 | 唯一的公共 npm 包是 `@ahmed-g-gad/apothem`；发布在发布就绪检查通过后运行 |
+
+## 锁定
+
+Python 锁文件由贡献者按需生成。它们不被提交，因为 Apothem 的运行时
+闭包很小，CLI 支持多个 Python 小版本，且 CI 有意演练最新匹配的
+工具版本。
+
+```sh
+# Astral uv:
+uv pip install -e ".[dev,security,release]"
+uv pip freeze > requirements.dev.lock
+
+# pip-tools:
+pip-compile --extra=dev --extra=security --extra=release -o requirements.dev.lock pyproject.toml
+
+# Plain pip:
+pip install -e ".[dev,security,release]"
+pip freeze > requirements.dev.lock
+```
+
+网站则不同：`site/package-lock.json` 被提交，且 CI 使用 `npm ci`，
+因此渲染出的文档站点拥有一个可复现的 Node 闭包。
+
+## 理由
+
+- **为什么 Python 用范围固定？** CLI 支持广泛的 Python 矩阵，CI 应在
+  用户遇到问题之前用当前工具揭示兼容性问题。
+- **为什么提交 Node 锁文件？** 网站是一个已部署的静态产物；锁文件为
+  那个公共面提供确定性的 `npm ci` 构建。
+- **为什么用 SHA 固定 Actions？** 标签是可变的；SHA 是不可变的。
+  Renovate 更新已固定的 SHA，而发布门记录任何有意的搁置。

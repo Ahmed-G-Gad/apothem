@@ -1,0 +1,100 @@
+---
+title: "Internationalization (i18n)"
+description: "How the Apothem documentation site declares its locale cohort, emits hreflang alternate-language links, and renders right-to-left across twelve languages."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+This page documents how the Apothem documentation site handles multiple
+languages: the locale cohort it declares, the `hreflang` mechanism it emits, its
+right-to-left rendering, and how each language's pages are wired into routing.
+
+## Decision summary
+
+- **Platform: Next.js App Router + Fumadocs.** The site is built from `site/`.
+  The locale cohort is declared in `site/lib/i18n.ts`, and the
+  alternate-language link mechanism lives in `site/lib/hreflang.ts`.
+- **Locale cohort: twelve languages.** The Modern Dev Cohort of twelve locales
+  is the canonical source of truth, with English as the source locale and each
+  of the eleven targets machine-seeded from the English page set; per-locale
+  human review is in progress, and `fallbackLanguage: 'en'` covers
+  any page a locale has not yet authored.
+- **Per-locale routing: enabled across the cohort.** Every locale is wired into
+  routing and reachable at its own URL prefix (`/es/`, `/zh-cn/`, …); English is
+  served at the site root.
+- **`hreflang` mechanism: active.** Every page emits a `<link rel="alternate">`
+  set covering each locale plus an `x-default` fallback, so search engines see
+  the full alternate-language cluster. The links are resolved per-file from the
+  filesystem, so a page is advertised in a locale only when that locale has it.
+- **Right-to-left rendering: active.** The shared stylesheets use logical CSS
+  properties throughout, so Arabic pages render correctly under `dir="rtl"`.
+
+## The locale cohort
+
+The Modern Dev Cohort declares twelve locales. English is served at the site
+root; the eleven targets are each machine-seeded from the English page set at
+their own URL prefix, with `fallbackLanguage: 'en'` covering any not-yet-authored
+page.
+
+| Code | Path | Language | Direction |
+|------|------|----------|-----------|
+| `en` | `/` | English | LTR |
+| `zh-CN` | `/zh-cn/` | Simplified Chinese | LTR |
+| `es` | `/es/` | Spanish | LTR |
+| `pt-BR` | `/pt-br/` | Brazilian Portuguese | LTR |
+| `fr` | `/fr/` | French | LTR |
+| `de` | `/de/` | German | LTR |
+| `ja` | `/ja/` | Japanese | LTR |
+| `ko` | `/ko/` | Korean | LTR |
+| `ru` | `/ru/` | Russian | LTR |
+| `id` | `/id/` | Indonesian | LTR |
+| `ar` | `/ar/` | Arabic | RTL |
+| `hi` | `/hi/` | Hindi | LTR |
+
+The cohort is the single source of truth; amendments to it route through a
+deliberate decision, never a silent edit.
+
+## How `hreflang` works
+
+`site/lib/hreflang.ts` builds the `alternates.languages` map that Next.js
+renders into each page's `<head>`. Its construction honors one rule: a locale's
+alternate-language link is emitted **only** when that locale has authored that
+page, resolved per-file from the filesystem (`site/lib/translated-pages.ts`). A
+fully-translated page therefore emits the complete cluster:
+
+```html
+<link rel="alternate" hreflang="en" href="https://apothem.ahmedgad.com/..." />
+<link rel="alternate" hreflang="es" href="https://apothem.ahmedgad.com/es/..." />
+<link rel="alternate" hreflang="ar" href="https://apothem.ahmedgad.com/ar/..." dir="rtl" />
+<!-- … one per cohort locale … -->
+<link rel="alternate" hreflang="x-default" href="https://apothem.ahmedgad.com/..." />
+```
+
+The page's `canonical` link is always its own URL — it never points across
+locales.
+
+## Right-to-left rendering
+
+Arabic is the cohort's right-to-left locale, and the site renders it correctly:
+
+- **Logical CSS properties only.** The shared stylesheets and components use
+  logical properties (`margin-inline-start`, `padding-inline-end`,
+  `text-align: start`, `inset-inline-start`) rather than physical ones
+  (`margin-left`, `text-align: left`). Logical properties flip automatically
+  under `dir="rtl"`, so the same stylesheet serves both directions correctly.
+- **Direction attribute.** Arabic pages set `dir="rtl"` on the `<html>` element
+  alongside `lang="ar"`.
+- **Bidirectional content.** Mixed-direction strings — for example an English
+  command inside an Arabic paragraph — are wrapped in `<bdi>` so the embedded
+  left-to-right run renders correctly within the right-to-left flow.
+
+## Adding or updating a locale
+
+The cohort and routing are driven by `site/lib/i18n.ts`:
+
+1. Author the page under `content/docs/<locale>/` mirroring the English source.
+2. Confirm the locale is listed in `ROUTED_LOCALES` (all twelve cohort locales
+   are routed today).
+3. Its `hreflang` link and routes resolve automatically from the filesystem.
+
+English remains the source of truth; each locale page mirrors its English
+counterpart's structure, links, and code samples verbatim.

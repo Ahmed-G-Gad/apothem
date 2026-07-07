@@ -1,0 +1,90 @@
+# SPDX-License-Identifier: MIT
+
+# CodeQL static-analysis (SAST) workflow. Runs GitHub's CodeQL query packs over
+# the Python source and the Actions workflows and uploads results to the Security tab.
+#
+# Cadence:
+#   - on every push to main
+#   - on every pull_request targeting main
+#   - weekly schedule (Mondays 04:00 UTC) so re-analysis happens even when
+#     no code changes — catches new query-pack rules from upstream.
+
+name: CodeQL
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - '.github/workflows/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - '.github/workflows/**'
+  schedule:
+    - cron: "0 4 * * 1"   # every Monday 04:00 UTC — re-analysis runs even when paths-filtered events would skip
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      # Required for `github/codeql-action/init` to fetch the analysis ref.
+      contents: read
+      # Required to upload SARIF results to the Code Scanning surface.
+      security-events: write
+      # Required for workflow metadata when analyzing Actions code.
+      actions: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # Apothem ships a pure-Python source surface plus GitHub Actions
+        # workflows. Analyze both — CodeQL has first-class query packs for
+        # Python (security-extended) and Actions (dangerous-workflow,
+        # token-leak, command-injection).
+        language: ["python", "actions"]
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0  # CodeQL incremental analysis benefits from history.
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@54f647b7e1bb85c95cddabcd46b0c578ec92bc1a  # v4.36.3
+        with:
+          languages: ${{ matrix.language }}
+          # Query suite (security-extended) and path scoping (vendored trees
+          # under src/apothem/_vendor/ and generated fixtures under
+          # tests/fixtures/behavior-diff/ excluded) are centralized in the config
+          # file. security-extended runs the full security catalogue at extended
+          # precision; code quality is enforced separately by ruff + mypy in CI.
+          config-file: ./.github/codeql/codeql-config.yml
+
+      - name: Autobuild
+        # Python is non-compiled; Actions is YAML — Autobuild is a no-op for
+        # both, but invoking it keeps the workflow shape canonical and
+        # forward-compatible if a compiled component is later introduced.
+        uses: github/codeql-action/autobuild@54f647b7e1bb85c95cddabcd46b0c578ec92bc1a  # v4.36.3
+
+      - name: Perform analysis
+        uses: github/codeql-action/analyze@54f647b7e1bb85c95cddabcd46b0c578ec92bc1a  # v4.36.3
+        with:
+          category: /language:${{ matrix.language }}

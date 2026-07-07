@@ -1,0 +1,43 @@
+---
+title: "Apothem vs raw Qwen Code config"
+description: "Hand-maintaining Qwen Code settings, commands, skills, and agents versus rendering them from Apothem's shared profile."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Qwen Code reads settings, hooks, `QWEN.md`, native Markdown commands,
+SKILL.md directories, and Markdown subagents. Apothem renders documented
+settings keys from the shared profile and converts shared cohorts into the
+Qwen-native filesystem shape where Qwen Code supports one.
+
+## Effort comparison
+
+| Task | Raw hand-config | Apothem-managed |
+| ---- | --------------- | --------------- |
+| Author rules | Hand-maintain QWEN.md and supporting files | Rendered or referenced from the shared profile |
+| Configure hooks | Hand-edit `settings.json` hook entries | Installed through Qwen Code's native hooks map |
+| Author commands, skills, agents | Maintain each Qwen directory by hand | Converted from shared Apothem cohorts |
+| Keep cohorts aligned with other harnesses | Manual, per tool | Automatic on `apothem update` |
+| Install / remove the surface | Manual | `apothem install` / `apothem uninstall` |
+| Verify the config is correct | Manual inspection | `apothem verify --harness qwen-code` |
+
+## What Apothem manages
+
+The qwen-code adapter writes `settings.json`, installs `QWEN.md`, converts
+Apothem slash commands to Qwen Markdown command files, copies skills into the
+native skills surface, adapts helper definitions as Qwen subagents, and
+registers Apothem hook dispatchers. Rules, templates, and hook source material
+remain under Apothem's support subtree and are referenced from the native
+context.
+
+## Migration path
+
+1. Run `apothem profile init` to create the shared profile if you have not yet.
+2. Move existing Qwen Code rules, commands, skills, and agents into the shared corpus.
+3. Run `apothem install --harness qwen-code` to render the native surface.
+4. Run `apothem verify --harness qwen-code` to confirm the config landed.
+5. Use `apothem update --harness qwen-code` for every later change.
+
+## Read next
+
+- [Qwen Code adapter reference](/docs/harnesses/qwen-code)
+- [Comparison overview](/docs/comparison)

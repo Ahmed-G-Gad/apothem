@@ -1,0 +1,113 @@
+---
+title: "작성 및 파이프라인 사용법"
+description: "콘텐츠를 명세로 다듬고, 플랜 스위트를 생성하고, 플랜을 검토하고, 단계를 실행하고, 아티팩트를 추가하고, 품질 게이트를 실행하기 위한 작업 중심 안내."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Apothem 아티팩트 작성과 플랜 파이프라인 구동**을 위한 작업 중심 안내입니다.
+각 가이드는 하나의 구체적인 질문에 답합니다.
+
+최초 실행 설정 레시피 — 도구 추가, 프로파일 편집, 설치 프로그램 구동 — 는
+대신 [사용법 레시피](/docs/how-to) 섹션을 참조하십시오.
+
+## 플랜 스위트 파이프라인
+
+### 원시 콘텐츠를 명세로 어떻게 다듬나요?
+
+원시 콘텐츠를 입력으로 하여 `/plan-spec`을 호출하십시오. Forge 역할은 여섯 개의
+변환 단계(Discovery, Meticulous Consideration, Potency Mapping, Preservation
+Verification, Expertise Application, Question-Resolution Sweep)를 실행하고
+통합된 명세를 `.apothem/plans/{suite}/_spec/spec.md`에 내보냅니다. 전체 프로토콜은
+`src/apothem/commands/plan-spec.md`를 참조하십시오.
+
+### 명세로부터 플랜 스위트를 어떻게 생성하나요?
+
+명세가 `.apothem/plans/{suite}/_spec/spec.md`에 있으면 `/plan-generate <suite-name>`을
+호출하십시오. 생성기는 정식 인프라 파일과 단계별
+`phases/NN-kebab-topic/PHASE.md` 파일을 내보냅니다.
+`src/apothem/commands/plan-generate.md`를 참조하십시오.
+
+### 생성된 플랜을 어떻게 검토하나요?
+
+`/plan-review path/to/plan-suite/`를 호출하십시오. 검토기는 여덟 개의 플래닝
+기법을 적용하고 스코어카드를 내보냅니다. 실패한 스코어카드는 해결될 때까지
+SHARED+에서 실행을 차단합니다. `src/apothem/commands/plan-review.md`를
+참조하십시오.
+
+### 플랜을 어떻게 실행하나요?
+
+`/plan-execute path/to/plan-suite/ [phase-id]`를 호출하십시오. `phase-id`가
+없으면 다음 대기 중 단계가 실행됩니다. 특정 id를 지정하면 그 단계만 실행됩니다.
+`src/apothem/commands/plan-execute.md`를 참조하십시오.
+
+### 플랜 상태를 어떻게 확인하나요?
+
+`/plan-status path/to/plan-suite/ [--verbose]`를 호출하십시오. 읽기 전용
+보고서입니다. `src/apothem/commands/plan-status.md`를 참조하십시오.
+
+## 아티팩트 작성
+
+### 새 규칙을 어떻게 추가하나요?
+
+1. `src/apothem/rules/` 아래에 kebab-case 파일명을 선택하십시오. 예:
+   `src/apothem/rules/my-new-rule.md`.
+2. 프런트매터(`name`, `description`, `type: instruction`, 선택적 `pathFilter`)를
+   작성하십시오.
+3. 정식 섹션으로 본문을 작성하십시오: Purpose, Obligations, Seriousness
+   Scaling, Anti-Patterns, Enforcement, Bindings.
+4. 규칙 코호트(`src/apothem/rules/`)에 행을 추가하십시오.
+5. `python scripts/dev/validate_ecosystem.py --check frontmatter-cohort`를
+   실행하여 검증하십시오.
+
+### 새 위임 워커를 어떻게 추가하나요?
+
+아래에 표시된 디렉터리 아래에 `my-worker.md` 형식으로 kebab-case 파일명을
+선택하십시오:
+
+```text
+src/apothem/agents/
+src/apothem/agents/my-worker.md
+```
+
+그런 다음:
+
+1. 프런트매터를 작성하십시오 — `name`, `description`, `allowedTools`,
+   `maxTurns`, `version`, 그리고 아래에 표시된 타입 마커를 포함:
+
+```text
+type: agent
+```
+
+1. 본문으로 시스템 프롬프트를 작성하십시오.
+1. 위임 워커 코호트(`src/apothem/agents/`)의 헬퍼 레지스트리에 행을 추가하십시오.
+
+### 새 훅을 어떻게 추가하나요?
+
+1. `src/apothem/hooks/messages/<event>-<scope>.md` 아래에 컨텍스트 메시지를
+   작성하십시오.
+2. `settings.json`에서 훅을 연결하십시오.
+3. 훅 파이프라인을 업데이트하십시오.
+4. `python scripts/dev/validate_ecosystem.py --check hook-validator`를
+   실행하십시오.
+
+## 품질 게이트
+
+### 로컬 품질 게이트를 어떻게 실행하나요?
+
+```bash
+python -m ruff check .
+python -m ruff format --check .
+python -m mypy
+python -m pytest -q
+python scripts/dev/validate_ecosystem.py
+python scripts/dev/chaos_pass.py
+```
+
+CI 파이프라인은 동일한 집합을 병렬로 실행합니다.
+
+### 단일 아티팩트 클래스 프런트매터를 어떻게 확인하나요?
+
+```bash
+python scripts/dev/validate_ecosystem.py --check frontmatter-cohort
+```

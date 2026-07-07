@@ -1,0 +1,60 @@
+---
+title: "Registro do portão de pré-emissão — Verificação obrigatória de quinze barras"
+description: "Verificação de conformidade obrigatória de quinze barras executada antes da emissão de escopo significativo, com mapeamentos de ação ante falha e esquema de prova de release."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Registro canônico do portão de pré-emissão de quinze barras.** Este documento carrega a tabela completa de quinze barras do portão e o bloco YAML do esquema de prova de release; a tabela substantiva e o esquema vivem aqui, operacionalizados por `src/apothem/rules/pre-emission-gate.md`.
+
+Antes de qualquer emissão de artefato de escopo significativo (segundo o limiar trivial versus não trivial em `site/content/docs/governance/outward-conformity-registry.mdx` §1), execute o portão de pré-emissão de quinze barras. Mecanize via hooks PreToolUse onde possível (os greps mecânicos em `src/apothem/conformity/*-grep.py` orquestrados por `src/apothem/conformity/gate.py`); raciocine onde a mecanização for impossível. **A falha de qualquer barra individual bloqueia a emissão; revise até que cada barra passe; emita com a prova de release do portão registrada.**
+
+| # | Barra | Tipo de verificação | Falha → ação |
+| - | --- | ---------- | ---------------- |
+| 1 | M1 agnosticismo do anfitrião | raciocinada | revisar para coincidir com as convenções do anfitrião |
+| 2 | M2 divulgação editorial | raciocinada | adicionar livro-razão de divulgação |
+| 3 | M3 dez dimensões | mista (mecânica + raciocinada) | revisar na dimensão que falha |
+| 4 | M4 autoaplicação | mecânica (prova de release presente) | registrar prova de release |
+| 5 | M5 autoridade | mecânica (grep de marcador `<USER-CONFIRM:…>`) | reencaminhar à superfície de consulta |
+| 6 | M6 perícia | raciocinada (seção de lacunas expostas presente) | expor lacunas; citar |
+| 7 | M7 anotação de opções | mecânica (o conjunto de opções carrega marcador de recomendação) | anotar |
+| 8 | M8 caráter definitivo | mecânica (grep de vocabulário evasivo) | promover a evasão a condicionais |
+| 9 | M9 alavancagem visual | raciocinada (existe diagrama onde é estrutural) | criar / atualizar diagrama |
+| 10 | M10 vínculo bidirecional | mecânica (grep de reciprocidade de vínculos) | fechar meias-arestas |
+| 11 | M11 sprints ágeis | raciocinada (aparato de sprint instanciado) | reestruturar como sprints |
+| 12 | M12 relatório de fases e layout | mecânica (grep de saída órfã) + raciocinada | criar resumo; realocar |
+| 13 | M13 ofício de código | mecânica (lint / formatação / verificação de tipos; grep de bare-except, número-mágico, código-comentado) | revisar |
+| 14 | M14 sistematicidade | raciocinada (declara montante / jusante / pares / aplicadores) | declarar; indexar |
+| 15 | M15 pronto para produção | mecânica (grep de production-ready-pr) + raciocinada | adicionar testes / documentação / CHANGELOG |
+
+## 1. Esquema de prova de release
+
+Cada execução do portão registra o resultado na trilha de trabalho do artefato (um comentário oculto, um bloco de metadados, um arquivo de registro de emissão à parte — o que as convenções do anfitrião permitirem):
+
+```yaml
+conformity-attestation:
+  artifact: <path-or-identifier>
+  ecosystem-version: <git-commit-sha-or-equivalent ratifying the rule set in force>
+  bars:
+    M1-host-agnosticism:        pass | n/a (with reason)
+    M2-editorial-disclosure:    pass | n/a
+    M3-ten-dimensions:          pass | n/a
+    M4-self-application:        pass
+    M5-authority:               pass
+    M6-expertise:               pass | n/a
+    M7-option-annotation:       pass | n/a (no option set)
+    M8-definitiveness:          pass
+    M9-visual-leverage:         pass | n/a (subject not structural)
+    M10-bidirectional-binding:  pass
+    M11-agile-sprints:          pass | n/a (trivial work)
+    M12-phase-layout:           pass | n/a
+    M13-code-craft:             pass | n/a (not code)
+    M14-systemicity:            pass
+    M15-production-ready:       pass | n/a (no host-public-surface change)
+  surfaced-gaps: []
+  unresolved-inquiries: []
+  amendments-disclosed: []
+  date: <ISO-8601>
+```
+
+As marcações `n/a` são explícitas e raciocinadas — nunca omissões silenciosas. O campo `ecosystem-version` ancora a prova de release a um estado reproduzível do ecossistema de escopo de usuário (o commit git da árvore de fontes do Apothem ativo quando o portão foi executado — p. ex., o checkout `~/.claude/` para o adaptador do Claude Code), de modo que auditorias futuras possam repetir o portão contra os mesmos corpos de regras.

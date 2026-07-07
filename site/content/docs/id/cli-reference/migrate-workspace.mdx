@@ -1,0 +1,98 @@
+---
+title: "migrate-workspace"
+description: "Referensi CLI untuk perintah apothem migrate-workspace."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Memigrasikan ruang kerja lawas per-asisten-pengkodean ke tata letak `.apothem` bersama.
+
+## Ringkasan
+
+```
+apothem migrate-workspace [--project PATH] [--dry-run]
+                          [--quiet|-q] [--verbose|-v]
+                          [--format plain|json] [--json] [--no-color]
+```
+
+`migrate-workspace` meruntuhkan direktori data lawas per-asisten-pengkodean
+(`.apothem/<harness>/...`) dan pohon `.plans/` lawas ke dalam satu direktori kerja
+bersama `.apothem/{plans,memory,learning,contexts}`. Basisnya adalah root `--project`
+yang di-resolve saat disediakan, jika tidak maka direktori kerja saat ini (default
+lokal proyek).
+
+Memori, konteks, dan penyimpanan pembelajaran per-asisten-pengkodean digabung secara
+union ke penyimpanan bersama berdasarkan id; sinyal pembelajaran dikonkatenasi dan
+dideduplikasi; sebuah rekaman yang berkonflik (id sama, isi berbeda) dilewati, tidak
+pernah ditimpa. Pohon `.plans/` lawas dipindahkan ke bawah `.apothem/plans/`. Setiap
+sumber yang dikonsumsi dicadangkan terlebih dahulu. Migrasi ini idempoten —
+menjalankannya kembali pada pohon yang sudah dimigrasi adalah operasi tanpa efek.
+
+## Opsi
+
+| Opsi | Deskripsi |
+|---|---|
+| `--project PATH` | Root proyek untuk adapter berlingkup-proyek yang materialisasi ke pohon proyek alih-alih ke direktori konfigurasi berlingkup-pengguna. |
+| `--dry-run` | Mendeteksi tata letak lawas dan melaporkan apa yang akan dimigrasi tanpa menulis. |
+| `--quiet`, `-q` | Menekan keluaran informatif; hanya error yang dikeluarkan. |
+| `--verbose`, `-v` | Mengeluarkan keluaran diagnostik tambahan. |
+| `--format plain\|json` | Format keluaran (default: `plain`). |
+| `--json` | Singkatan dari `--format json`. |
+| `--no-color` | Menonaktifkan kode warna ANSI di keluaran. |
+| `-h`, `--help` | Menampilkan bantuan dan keluar. |
+
+## Keluaran JSON
+
+Amplop `--json` membawa hasil migrasi. Pada migrasi yang selesai, `status` bernilai
+`success` dan payload melaporkan jumlah rekaman yang digabung, apakah pohon `.plans/`
+dipindahkan, root cadangan, dan konflik apa pun yang dilewati. Pemanggilan `--dry-run`
+sebagai gantinya melaporkan `legacy_layout_detected`.
+
+```json
+{
+  "command": "migrate-workspace",
+  "status": "success",
+  "base": "/home/example/project",
+  "migrated": true,
+  "backup_root": "/home/example/project/.apothem/.backups/01J9Z…",
+  "memory_merged": 12,
+  "contexts_merged": 4,
+  "learning_merged": 7,
+  "conflicts": [],
+  "plans_moved": true,
+  "notes": []
+}
+```
+
+Ketika tidak ada tata letak lawas, `migrated` bernilai `false` dan tidak ada yang
+ditulis. Amplop `--dry-run` menghilangkan jumlah hasil dan hanya melaporkan deteksi:
+
+```json
+{
+  "command": "migrate-workspace",
+  "base": "/home/example/project",
+  "dry_run": true,
+  "legacy_layout_detected": false
+}
+```
+
+## Contoh
+
+```bash
+apothem migrate-workspace
+apothem migrate-workspace --project .
+apothem migrate-workspace --dry-run --json
+```
+
+## Kode keluar
+
+| Kode | Arti |
+|---|---|
+| 0 | Migrasi selesai, atau tidak ditemukan tata letak lawas (tidak ada yang dimigrasi) |
+| 1 | Error yang diharapkan — error validasi atau root proyek, atau kegagalan migrasi |
+
+## Lihat juga
+
+- [apothem install](/docs/cli-reference/install) — materialisasi sebuah asisten-pengkodean dari profil bersama
+- [apothem status](/docs/cli-reference/status) — melaporkan status pemasangan, verifikasi, dan drift
+- [Disiplin plans](/docs/reference/plans-discipline) — tata letak `.apothem/plans/` bersama

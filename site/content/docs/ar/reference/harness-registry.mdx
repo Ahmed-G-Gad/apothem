@@ -1,0 +1,96 @@
+---
+title: "سجلّ الهارنس"
+description: "مرجع سجلّ تقني لمحوّلات هارنس Apothem المُضمَّنة."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+سجلّ الهارنس هو جرد المحوّلات المصدر-للحقيقة المُستخدَم من قِبل الـ CLI
+والوثائق واختبارات التركيبات والتحقّق من دبّوس العُرف. مصدر وقت-التشغيل
+هو <bdi>`src/apothem/lib/harness_registry.py`</bdi>؛ وكل صف أدناه قابل للتتبّع إلى ذلك
+السجلّ، وملف <bdi>`capabilities.yml`</bdi> لكل-محوّل، و
+<bdi>`STANDARD-CONVENTION-PIN.md`</bdi> لكل محوّل.
+
+## مصفوفة السجلّ
+
+| الهارنس | اسم التثبيت | النطاق | الصيغة | الأهداف | MCP | دبّوس العُرف |
+| --- | --- | --- | --- | --- | --- | --- |
+| Antigravity | <bdi>`antigravity`</bdi> | المستخدم | markdown | <bdi>`~/.gemini/GEMINI.md`</bdi>؛ <bdi>`~/.gemini/antigravity-cli/plugins/apothem/`</bdi> | بانتظار الاكتشاف | <bdi>`src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md`</bdi> |
+| Claude Code | <bdi>`claude-code`</bdi> | المستخدم | json | <bdi>`~/.claude/settings.json`</bdi>؛ <bdi>`agents`</bdi> و<bdi>`rules`</bdi> و<bdi>`skills`</bdi> و<bdi>`statuslines`</bdi> و<bdi>`output-styles`</bdi> الأصلية؛ <bdi>`~/.claude/.apothem/support/`</bdi> | أصلي | <bdi>`src/apothem/harnesses/claude_code/STANDARD-CONVENTION-PIN.md`</bdi> |
+| CodeBuddy | <bdi>`codebuddy`</bdi> | المشروع | markdown | <bdi>`<project>/.codebuddy/rules/apothem-rules.md`</bdi> | أصلي | <bdi>`src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md`</bdi> |
+| Codex | <bdi>`codex`</bdi> | المستخدم | markdown | <bdi>`~/.codex/AGENTS.md`</bdi>؛ <bdi>`hooks.json`</bdi>؛ <bdi>`hooks/`</bdi>؛ <bdi>`agents/*.toml`</bdi>؛ <bdi>`~/.agents/skills/`</bdi>؛ <bdi>`~/.config/apothem/`</bdi> | بانتظار الاكتشاف | <bdi>`src/apothem/harnesses/codex/STANDARD-CONVENTION-PIN.md`</bdi> |
+| Cursor | <bdi>`cursor`</bdi> | المشروع | mdc | <bdi>`<project>/.cursor/rules/apothem-rules.mdc`</bdi> | أصلي | <bdi>`src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md`</bdi> |
+| Gemini CLI | <bdi>`gemini-cli`</bdi> | المشروع | markdown | <bdi>`<project>/GEMINI.md`</bdi>؛ <bdi>`<project>/.gemini/{commands,skills,agents}/`</bdi> | بانتظار الاكتشاف | <bdi>`src/apothem/harnesses/gemini_cli/STANDARD-CONVENTION-PIN.md`</bdi> |
+| GitHub Copilot | <bdi>`github-copilot`</bdi> | المشروع | markdown | <bdi>`<project>/.github/copilot-instructions.md`</bdi> | غير مدعوم | <bdi>`src/apothem/harnesses/github_copilot/STANDARD-CONVENTION-PIN.md`</bdi> |
+| GLM (Z.ai) | <bdi>`glm`</bdi> | المشروع | toml | <bdi>`<project>/.apothem/providers/glm.toml`</bdi> | غير مدعوم | <bdi>`src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md`</bdi> |
+| Hermes | <bdi>`hermes`</bdi> | المستخدم | yaml | <bdi>`~/.hermes/config.yaml`</bdi>؛ <bdi>`~/.hermes/.apothem/support/`</bdi> | غير مدعوم | <bdi>`src/apothem/harnesses/hermes/STANDARD-CONVENTION-PIN.md`</bdi> |
+| Kimi Code | <bdi>`kimi-code`</bdi> | المشروع | markdown | <bdi>`<project>/AGENTS.md`</bdi>؛ <bdi>`<project>/.kimi-code/.apothem/support/`</bdi> | بانتظار الاكتشاف | <bdi>`src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md`</bdi> |
+| Kiro | <bdi>`kiro`</bdi> | المشروع | markdown | <bdi>`<project>/.kiro/steering/apothem-rules.md`</bdi> | أصلي | <bdi>`src/apothem/harnesses/kiro/STANDARD-CONVENTION-PIN.md`</bdi> |
+| Open-Claw | <bdi>`open-claw`</bdi> | المستخدم | json | <bdi>`~/.openclaw/openclaw.json`</bdi>؛ <bdi>`~/.openclaw/.apothem/support/`</bdi> | غير مدعوم | <bdi>`src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md`</bdi> |
+| OpenCode | <bdi>`opencode`</bdi> | المستخدم | json | <bdi>`~/.config/opencode/opencode.json`</bdi>؛ <bdi>`commands`</bdi> و<bdi>`skills`</bdi> و<bdi>`agents`</bdi> الأصلية؛ <bdi>`apothem/`</bdi> | أصلي | <bdi>`src/apothem/harnesses/opencode/STANDARD-CONVENTION-PIN.md`</bdi> |
+| Qwen Code | <bdi>`qwen-code`</bdi> | المستخدم | json | <bdi>`~/.qwen/settings.json`</bdi>؛ <bdi>`~/.qwen/QWEN.md`</bdi>؛ <bdi>`commands`</bdi> و<bdi>`skills`</bdi> و<bdi>`agents`</bdi> الأصلية؛ <bdi>`apothem/`</bdi> | أصلي | <bdi>`src/apothem/harnesses/qwen_code/STANDARD-CONVENTION-PIN.md`</bdi> |
+| Trae | <bdi>`trae`</bdi> | المشروع | markdown | <bdi>`<project>/.trae/rules/apothem-rules.md`</bdi> | أصلي | <bdi>`src/apothem/harnesses/trae/STANDARD-CONVENTION-PIN.md`</bdi> |
+| Windsurf | <bdi>`windsurf`</bdi> | المشروع | markdown | <bdi>`<project>/.devin/rules/apothem-rules.md`</bdi> | غير مدعوم | <bdi>`src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md`</bdi> |
+| Zed | <bdi>`zed`</bdi> | المشروع | markdown | <bdi>`<project>/.rules`</bdi> | أصلي | <bdi>`src/apothem/harnesses/zed/STANDARD-CONVENTION-PIN.md`</bdi> |
+
+## دعم كوكبة الحمولة
+
+قيم الحالة هي <bdi>`native`</bdi> و<bdi>`converted`</bdi> و<bdi>`support-tree`</bdi> و
+<bdi>`profile-projected`</bdi> و<bdi>`unsupported`</bdi> و<bdi>`not-applicable`</bdi> و
+<bdi>`discovery-pending`</bdi>.
+
+| الهارنس | حمولات أصلية أو محوّلة | حمولات شجرة-الدعم | تحذيرات غير-مدعومة أو معلّقة |
+| --- | --- | --- | --- |
+| Antigravity | أوامر وعاملون مُحوَّلون؛ مهارات أصلية، توزيع عامل-فرعي، قوالب موجِّه-النظام؛ قيود أدوات مُسقَطة-من-الملف-الشخصي | الخطّافات، القواعد، القوالب | أسطر الحالة، أنماط الإخراج؛ اكتشاف MCP والذاكرة معلّق |
+| Claude Code | أوامر مُحوَّلة؛ مهارات، خطّافات، عاملون، قواعد، أسطر حالة، أنماط إخراج، MCP، توزيع عامل-فرعي، قيود أدوات، ذاكرة أصلية | القوالب | يبقى <bdi>`CLAUDE.md`</bdi> مملوكًا للمُشغِّل؛ لا قالب موجِّه-نظام مكتوب-من-المحوّل |
+| CodeBuddy | قواعد، MCP، قوالب موجِّه-النظام، ذاكرة أصلية؛ قيود أدوات مُسقَطة-من-الملف-الشخصي | لا شيء | الأوامر، المهارات، الخطّافات، العاملون، أسطر الحالة، أنماط الإخراج، توزيع عامل-فرعي |
+| Codex | أوامر وعاملون مُحوَّلون؛ مهارات، خطّافات، توزيع عامل-فرعي، قوالب موجِّه-النظام، ذاكرة أصلية؛ قيود أدوات مُسقَطة-من-الملف-الشخصي | القواعد، القوالب | أسطر الحالة، أنماط الإخراج؛ اكتشاف MCP معلّق لأنّ Apothem لا يكتب فوق <bdi>`config.toml`</bdi> |
+| Cursor | قواعد، MCP، قوالب موجِّه-النظام أصلية؛ قيود أدوات مُسقَطة-من-الملف-الشخصي | لا شيء | الأوامر، المهارات، الخطّافات، العاملون، أسطر الحالة، أنماط الإخراج، توزيع عامل-فرعي، ذاكرة |
+| Gemini CLI | أوامر وعاملون مُحوَّلون؛ مهارات أصلية، توزيع عامل-فرعي، قوالب موجِّه-النظام؛ قيود أدوات مُسقَطة-من-الملف-الشخصي | الخطّافات، القواعد، القوالب | أسطر الحالة، أنماط الإخراج؛ اكتشاف MCP والذاكرة معلّق |
+| GitHub Copilot | قواعد وقوالب موجِّه-النظام أصلية؛ قيود أدوات مُسقَطة-من-الملف-الشخصي | لا شيء | الأوامر، المهارات، الخطّافات، العاملون، أسطر الحالة، أنماط الإخراج، MCP، توزيع عامل-فرعي، ذاكرة |
+| GLM (Z.ai) | لا شيء | لا شيء | الأوامر، المهارات، الخطّافات، العاملون، القواعد، القوالب، أسطر الحالة، أنماط الإخراج، MCP، توزيع عامل-فرعي، قيود أدوات، قوالب موجِّه-النظام، ذاكرة — GLM واجهة نموذج خلفية بلا سطح تهيئة أصلي |
+| Hermes | أوامر مُحوَّلة؛ قوالب موجِّه-النظام أصلية؛ قيود أدوات مُسقَطة-من-الملف-الشخصي | المهارات، الخطّافات، العاملون، القواعد، القوالب | أسطر الحالة، أنماط الإخراج، MCP، توزيع عامل-فرعي |
+| Kimi Code | توزيع عامل-فرعي، قوالب موجِّه-النظام، ذاكرة أصلية | الأوامر، المهارات، الخطّافات، العاملون، القواعد، القوالب | أسطر الحالة، أنماط الإخراج؛ اكتشاف MCP وقيود الأدوات معلّق |
+| Kiro | قواعد، MCP، قوالب موجِّه-النظام، ذاكرة أصلية؛ قيود أدوات مُسقَطة-من-الملف-الشخصي | لا شيء | الأوامر، المهارات، الخطّافات، العاملون، أسطر الحالة، أنماط الإخراج، توزيع عامل-فرعي |
+| Open-Claw | أوامر مُحوَّلة؛ قوالب موجِّه-النظام أصلية؛ قيود أدوات مُسقَطة-من-الملف-الشخصي | المهارات، الخطّافات، العاملون، القواعد، القوالب | أسطر الحالة، أنماط الإخراج، MCP، توزيع عامل-فرعي |
+| OpenCode | أوامر وعاملون مُحوَّلون؛ مهارات، MCP، توزيع عامل-فرعي، قوالب موجِّه-النظام أصلية؛ قيود أدوات مُسقَطة-من-الملف-الشخصي | الخطّافات، القواعد، القوالب | أسطر الحالة، أنماط الإخراج |
+| Qwen Code | أوامر وعاملون مُحوَّلون؛ مهارات، خطّافات، MCP، توزيع عامل-فرعي، قوالب موجِّه-النظام، ذاكرة أصلية؛ قيود أدوات مُسقَطة-من-الملف-الشخصي | القواعد، القوالب | أسطر الحالة، أنماط الإخراج |
+| Trae | قواعد، MCP، قوالب موجِّه-النظام أصلية؛ قيود أدوات مُسقَطة-من-الملف-الشخصي | لا شيء | الأوامر، المهارات، الخطّافات، العاملون، أسطر الحالة، أنماط الإخراج، توزيع عامل-فرعي، ذاكرة |
+| Windsurf | قواعد وقوالب موجِّه-النظام أصلية؛ قيود أدوات مُسقَطة-من-الملف-الشخصي | لا شيء | الأوامر، المهارات، الخطّافات، العاملون، أسطر الحالة، أنماط الإخراج، MCP، توزيع عامل-فرعي، ذاكرة |
+| Zed | قواعد، MCP، قوالب موجِّه-النظام أصلية؛ قيود أدوات مُسقَطة-من-الملف-الشخصي | لا شيء | الأوامر، المهارات، الخطّافات، العاملون، أسطر الحالة، أنماط الإخراج، توزيع عامل-فرعي، ذاكرة |
+
+## خطّافات التحقّق
+
+يبقى السجلّ متزامنًا عبر هذه الفحوص:
+
+| الفحص | الغرض |
+| --- | --- |
+| <bdi>`python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD`</bdi> | يؤكّد أنّ لكل محوّل دبّوس عُرف حاليًّا وأنّ السجلّ لا يزال يُعدِّد سبعة عشر محوّلًا. |
+| <bdi>`python -m apothem.conformity.gate --all .`</bdi> | يُشغِّل فحوص مطابقة الوثائق والتنفيذ. |
+| <bdi>`python -m pytest`</bdi> | يُمرِّن اختبارات تركيبات السجلّ واختبارات عقد المحوّل. |
+
+## مرجع محوّل الهارنس المولَّد
+
+{/* apothem:generated-reference:start */}
+
+| Harness | Scope | Format | Target paths |
+| --- | --- | --- | --- |
+| Antigravity (`antigravity`) | user | markdown | `~/.gemini/GEMINI.md`<br />`~/.gemini/antigravity-cli/plugins/apothem/` |
+| Claude Code (`claude-code`) | user | json | `~/.claude/.apothem/support/{templates,hooks,conformity,schemas}/`<br />`~/.claude/settings.json`<br />`~/.claude/{agents,rules,skills,statuslines,output-styles}/` |
+| CodeBuddy (`codebuddy`) | project | markdown | `<project>/.codebuddy/rules/apothem-rules.md` |
+| Codex (`codex`) | user | markdown | `~/.agents/skills/`<br />`~/.codex/AGENTS.md`<br />`~/.codex/agents/*.toml`<br />`~/.codex/hooks.json`<br />`~/.codex/hooks/`<br />`~/.config/apothem/{rules,templates}/` |
+| Cursor (`cursor`) | project | mdc | `<project>/.cursor/rules/apothem-rules.mdc` |
+| Gemini CLI (`gemini-cli`) | project | markdown | `<project>/.gemini/.apothem/support/`<br />`<project>/.gemini/{commands,skills,agents}/`<br />`<project>/GEMINI.md` |
+| GitHub Copilot (`github-copilot`) | project | markdown | `<project>/.github/copilot-instructions.md` |
+| GLM (Z.ai) (`glm`) | project | toml | `<project>/.apothem/providers/glm.toml` |
+| Hermes (`hermes`) | user | yaml | `~/.hermes/.apothem/support/`<br />`~/.hermes/config.yaml` |
+| Kimi Code (`kimi-code`) | project | markdown | `<project>/.kimi-code/.apothem/support/`<br />`<project>/AGENTS.md` |
+| Kiro (`kiro`) | project | markdown | `<project>/.kiro/steering/apothem-rules.md` |
+| Open-Claw (`open-claw`) | user | json | `~/.openclaw/.apothem/support/`<br />`~/.openclaw/openclaw.json` |
+| OpenCode (`opencode`) | user | json | `~/.config/opencode/.apothem/support/`<br />`~/.config/opencode/opencode.json`<br />`~/.config/opencode/{commands,skills,agents}/` |
+| Qwen Code (`qwen-code`) | user | json | `~/.qwen/.apothem/support/`<br />`~/.qwen/QWEN.md`<br />`~/.qwen/settings.json`<br />`~/.qwen/{commands,skills,agents}/` |
+| Trae (`trae`) | project | markdown | `<project>/.trae/rules/apothem-rules.md` |
+| Windsurf (`windsurf`) | project | markdown | `<project>/.devin/rules/apothem-rules.md` |
+| Zed (`zed`) | project | markdown | `<project>/.rules` |
+
+{/* apothem:generated-reference:end */}

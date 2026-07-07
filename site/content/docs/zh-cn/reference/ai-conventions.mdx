@@ -1,0 +1,138 @@
+---
+title: "多面工具约定"
+description: "用于跨聊天、IDE 补全与 PR 审查运行时进行多面harness配置与一致性的规范性参考。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **面向下游贡献者的规范性参考。** 本文档镜像项目规范的多面工具约定章节（规范 §0.6 + §2.8 + §4.7）；它是随发布仓库一同提供的独立参考。架构理由记录于 [ADR-0003](/docs/architecture)。
+
+---
+
+## 1. 为什么是复数
+
+现代工程面会被多个harness运行时所触及——聊天控制台、IDE 内补全引擎、结对编程伙伴，以及拉取请求审查器。每个运行时都读取各自的规范配置文件。如果项目只提供其中一个文件，其余运行时就会针对未声明的约定悄悄各行其是；缺失的仓库内记忆会立即外泄。
+
+缺失某个面的代价是**机器生成代码中的无声漂移**——这是最糟糕的一类缺陷，因为它在无形中累积。每个机器生成的产物都会加重分歧；等到人类审查者发现矛盾时，代码库已经携带了数周不一致的约定。
+
+按部署现实而言，编码运行时配置是复数的。发布的生态系统**必须**为聊天控制台运行时提供一份行为记忆文件，**并且**为 IDE 内补全运行时提供一份仓库范围的指令文件。这两个面**必须**相互一致——没有矛盾、没有漂移——并且**必须**共同编码相同的纪律。
+
+---
+
+## 2. 一致性契约
+
+每个在范围内（§3）的约定面都是一个表达项目单一约定规范的*通道*。该规范被分解为：
+
+- **共享章节** — 计划纪律、结构化询问（或面等价物）、作者署名头、命名、反模式、模态层级。它们**必须**出现在每个必需的面中，并且**必须**在各面之间语义等价。
+- **面专属章节** — 能力框定、工具调用模式、代码生成与聊天的差异。它们在各面之间**可以**不同，但**不得**与共享章节相矛盾。
+
+`multi-surface-coherence` 验证器（§7）在每次 CI 运行和预提交时运行，断言该契约。
+
+这两个（或更多）面是表达同一个*规范*的不同*通道*。共享章节**必须**在各面之间匹配——在语义上，并在可能时也在词面上。面专属章节**不得**与共享章节相矛盾。
+
+---
+
+## 3. 范围内的各面
+
+| 面 | 路径 | 是否必需？ | 受众 |
+|---|---|---|---|
+| `AGENTS.md` | 仓库根目录（和/或 `.codex/AGENTS.md`） | **MUST** | 支持 AGENTS 的编码运行时 |
+| `CLAUDE.md` | 仓库根目录（和/或 `.claude/CLAUDE.md`） | **MUST** | Claude Code |
+| 以 `.github/` 为根的指令文件 | 以 `.github/` 为根的指令文件 | **MUST** | IDE 内补全运行时 |
+| 以 `site/content/docs/architecture/` 为根的助手清单 | 仓库根目录 | **MAY**（经由结构化询问通道选择启用） | 多助手编排平台 |
+| `.cursorrules` | 仓库根目录 | **MAY**（选择启用） | IDE 内编辑器运行时 |
+| `.windsurfrules` | 仓库根目录 | **MAY**（选择启用） | IDE 内伴侣运行时 |
+
+对于本次协作，操作者选择启用了由固定夹具记录的可选助手面。未使用的厂商专属根配置是有意缺席的；只有当某个工具是本仓库的活跃编辑面时，才会添加该工具专属的配置文件。
+
+---
+
+## 4. IDE 内指令文件的章节清单
+
+以 `.github/` 为根的仓库范围指令文件**必须**按此顺序包含以下章节（每个章节使用下方的确切标题文本；章节正文是撰写出来的，而非模板套印，但每个都**必须**覆盖所列声明）：
+
+1. **Project Context** — 一段话：本仓库是什么、谁在使用它、它的顶层形态。具体；不要营销。
+2. **Coding Conventions** — 命名、模态层级、frontmatter、markdown 风格，以及在偏离默认值时的语言专属风格要点。
+{/* REUSE-IgnoreStart */}
+3. **File Headers** — 运行时生成的每个文件**必须**以符合 [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) 的规范单行 `SPDX-License-Identifier: MIT` 起始，使用与文件类型匹配的注释变体。指向 `scripts/inject-header.*` 与 `site/content/docs/reference/authorship-header.mdx`。
+{/* REUSE-IgnoreEnd */}
+4. **Plans Discipline** — 运行时**不得**生成会写入工具配置目录（例如 `~/.claude/plans/` 或 `~/.codex/.plans/`）或任何其他全局计划位置的代码或脚本。计划产物按 [`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline) 进入 `<project-root>/.apothem/plans/`（旧的 `<project-root>/.plans/` 树通过 `apothem migrate-workspace` 升级）。
+5. **Structured Inquiry Behavior** — 当运行时不确定时，它**不得**悄悄捏造。它应插入一个清晰标记的澄清块（例如 `# TODO(clarify): <question>` 注释），并在面允许的地方于聊天中浮现该问题。不得发明 API、不得发明模型名称、不得发明文件路径。
+6. **Forbidden Patterns** — 明确的禁止事项：不要营销形容词、不要含糊填充词、不要 console.log 调试残渣、不要硬编码指向用户主目录的绝对路径、不要提交机密、不要提交 `.apothem/plans/`（或旧的 `.plans/`）下的文件、不要与规范的项目指令文件相矛盾。
+7. **Output Format** — 生成的代码/文本符合统一的对话式输出约定：确定性、统一分节、密度、摘要纪律、引用。对于代码：有文档的公共面、在语言支持类型处带类型、在存在测试脚手架处经过测试。
+8. **Review Checklist** — 审查者（人类或处于 PR 审查模式的运行时）在批准前**必须**核实的内容：头存在、命名合规、无 `.apothem/plans/` 写入、与规范项目指令文件无矛盾、验证器在本地通过。
+9. **Pointers** — 指向 `AGENTS.md`、`CLAUDE.md`、`site/content/docs/reference/plans-discipline.mdx`、`site/content/docs/reference/authorship-header.mdx`、本约定文档、`schemas/` 和 `CONTRIBUTING.md` 的链接。
+
+该文件按 [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) §2 以规范的作者署名头 SPDX 行（Markdown 变体）起始——按项目所选的头可见性策略可见或不可见。
+
+IDE 内指令文件**不是** `AGENTS.md` 或 `CLAUDE.md` 的逐字副本。`AGENTS.md` 是规范的项目指令面，`CLAUDE.md` 为 Claude Code 镜像它，而 IDE 内指令文件则为编辑器内代码补全运行时发声，该运行时发出开发者接受或拒绝的建议。*信息*（纪律、约定、反模式）是相同的；*框定*则不同。
+
+---
+
+## 5. 声明清单参考
+
+位于 [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml) 的固定夹具列举了每个共享声明。示例条目：
+
+```yaml
+- id: plans.location
+  claim: "Planning artifacts live at <project-root>/.apothem/plans/, never inside a harness configuration directory."
+  required-in: [AGENTS.md, CLAUDE.md, .github/copilot-instructions.md]
+  optional-in: [site/content/docs/architecture/agents.mdx, .cursorrules]
+- id: header.canonical
+  claim: "Every applicable new file begins with the canonical authorship-header banner per site/content/docs/reference/authorship-header.mdx."
+  required-in: [AGENTS.md, CLAUDE.md, .github/copilot-instructions.md]
+- id: ambiguity.resolution
+  claim: "Ambiguity is surfaced via the structured-inquiry channel or a clearly-marked TODO(clarify); never silently invented."
+  required-in: [AGENTS.md, CLAUDE.md, .github/copilot-instructions.md]
+# ... (one entry per shared claim)
+```
+
+验证器解析每个面，尝试找到每个声明的面存在性（通过标题层级 + 正文关键词提取），并在任何缺失或矛盾时失败。
+
+---
+
+## 6. 调和规则
+
+当检测到两个面在某个共享声明上相矛盾时，默认的调和方式是：
+
+> `AGENTS.md` 是规范的项目之声。任何相矛盾的面都会被重写，以面合适的框定镜像 `AGENTS.md` 的语义。
+
+仅当带有明确的、文件内 `<!-- coherence-override: <claim-id> -->` 标记并指向一份解释该刻意分歧的 ADR 时，才允许面专属的覆盖。该覆盖标记本身被列举在验证器的允许清单中，并出现在 CI 报告中。
+
+对于本仓库，所批准的调和策略是 **`agents-md-wins`**：`AGENTS.md` 是规范的，每个活跃的工具镜像都保持语义等价。
+
+---
+
+## 7. 验证器
+
+三个验证器共同实现该一致性契约：
+
+```text
+- in-IDE-instructions-presence    (src/apothem/conformity/copilot_instructions_presence_grep.py)
+- multi-surface-coherence         (src/apothem/conformity/multi_surface_coherence_grep.py)
+- license-author-consistency      (src/apothem/conformity/license_author_consistency_grep.py)
+```
+
+- 第一个断言 IDE 内指令文件存在、可解析、包含 §4 中列举的每个规范章节，并以规范的作者署名横幅起始。
+- 第二个解析每个面的规范章节；断言共享章节在规范化比较器（不区分大小写、容忍空白、允许词面改写但要求在固定夹具定义的声明清单上语义等价）下相互一致。
+- 第三个断言 LICENSE 的版权行与规范横幅的 "Copyright (c)" 行指名同一位作者。
+
+---
+
+## 8. 面生命周期
+
+- **添加一个面。** 操作者经由结构化询问通道，或经由随后的 `make surfaces-add <name>` 选择启用。生成器依据声明清单撰写该面、运行验证器，并在需要面专属覆盖时归档一份 ADR。
+- **移除一个面。** 结构化询问确认移除，ADR 记录理由，验证器的 required-in 清单被修订。
+- **漂移检测。** 任何偏离声明清单的提交都会被预提交 / CI 拒绝；该提交的作者重写该面以恢复一致性。
+
+---
+
+## 另请参阅
+
+- [ADR-0003](/docs/architecture) — 架构理由，考虑过的替代方案。
+- [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml) — 规范的声明清单固定夹具。
+- [`AGENTS.md`](https://github.com/ahmed-g-gad/apothem/blob/main/AGENTS.md) — 规范的项目之声。
+- [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) — Claude Code 镜像。
+- [`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline) — 计划纪律共享声明的规范参考。
+- [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) — 作者署名头共享声明的规范参考。
+- 项目规范 §0.6 + §2.8 + §4.7 — 此处镜像的完整规范文本。

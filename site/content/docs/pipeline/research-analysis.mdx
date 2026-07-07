@@ -1,0 +1,69 @@
+---
+title: "/research-analysis"
+description: "/research-analysis — Analyzes the raw data per the preregistered plan: planned tests, effect sizes with confidence intervals, robustness checks, and disclosed deviations."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Role:** Principal Investigator (analysis)
+**Pipeline position:** mid-chain
+
+Analyzes the raw data per the preregistered plan — runs the planned statistical tests, reports effect sizes with confidence intervals (not p-values alone), applies multiple-comparison correction where applicable, runs robustness / sensitivity checks, and discloses every deviation from preregistration.
+
+## Canonical invocation
+
+```bash
+/research-analysis
+```
+
+With arguments:
+
+```bash
+/research-analysis [path/to/research-suite/]
+```
+
+## Inputs
+
+The raw data at the host-natural location the experiment stage recorded, plus `_inputs/preregistration.md` (the frozen analysis plan).
+
+## Outputs
+
+`_outputs/analysis.md` (the preregistered tests with effect sizes and CIs, the multiple-comparison correction, the robustness checks, and disclosed deviations) + figures / tables at a host-natural location.
+
+## Downstream
+
+/research-paper (downstream consumer)
+
+## Workflow phases
+
+The command follows the standard `/research` pipeline workflow:
+
+1. **Load context** — Read the raw data and the preregistration.
+2. **Verify the Sequence Gate** — Confirm the experiment outputs exist; otherwise halt with `Blocked: run /research-experiment first`.
+3. **Analyze** — Run the preregistered tests; report effect sizes + CIs; correct for multiple comparisons; run robustness / sensitivity checks.
+4. **Disclose deviations** — Record every departure from the preregistered plan.
+5. **Update the handoff manifest** — Record the analysis path and the figures / tables.
+6. **Emit the analysis** — `_outputs/analysis.md` + figures / tables.
+
+## Rigor floor
+
+Stochastic results are reported as best, mean, median, standard deviation, and worst across repetitions, with convergence curves and distribution plots. Comparisons use nonparametric tests — a paired signed-rank test pairwise, an omnibus rank test with post-hoc correction across methods — reported with a stochastic-superiority effect size and a critical-difference diagram. A result advances to the paper only when it clears the advancement gate: it beats its comparators convincingly and significantly, and the clearance is logged in an auditable runbook.
+
+## Failure modes
+
+| Symptom | Cause | Recovery |
+|---------|-------|----------|
+| Blocked: run /research-experiment first | No raw data | Run `/research-experiment` to produce the data + log |
+| p-value reported without effect size | Incomplete statistical reporting | Report effect sizes + confidence intervals |
+| Undisclosed analysis deviation | Plan departed silently | Disclose the deviation against the preregistration |
+
+## Examples
+
+```bash
+# Analyze the raw data per the preregistered plan
+/research-analysis path/to/research-suite/
+```
+
+## Cross-references
+
+- [Pipeline overview](/docs/pipeline)
+- [Commands reference](/docs/reference/commands)

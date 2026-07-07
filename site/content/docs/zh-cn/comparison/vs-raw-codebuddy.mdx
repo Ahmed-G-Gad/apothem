@@ -1,0 +1,43 @@
+---
+title: "Apothem 对比原生 CodeBuddy 规则"
+description: "为什么要让 CodeBuddy 的项目规则经由 Apothem 处理，而不是逐项目手写 .codebuddy/rules 文件。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+CodeBuddy 从 `.codebuddy/rules/*.md` 读取项目规则。你可以逐项目、永久地手写这些
+文件。Apothem 替你管理其中之一，并使它在每个环境和每个项目间保持一致。
+
+## 原生方式
+
+手写 CodeBuddy 规则意味着：
+
+- 为每个新项目把相同的工程纪律复制粘贴到 `.codebuddy/rules/` 中。
+- 随着纪律演进而逐渐失步——没有单一的真相来源。
+- 为 Cursor、Windsurf、Claude Code 以及你使用的其他每个工具重新推导相同的约定，
+  因为每个工具都有自己的规则面。
+
+## Apothem 方式
+
+Apothem 在源仓库中保留一份规范的规则群，并把它投影到每个环境的原生面。对于
+CodeBuddy，它写入：
+
+```
+<project>/.codebuddy/rules/apothem-rules.md
+```
+
+| 关注点 | 原生 CodeBuddy | Apothem |
+| --- | --- | --- |
+| 真相来源 | 每个项目各自的文件 | 一份规范的规则群 |
+| 跨环境一致性 | 逐工具手动 | 自动投影 |
+| 更新 | 逐项目手动编辑 | `apothem update --harness codebuddy --project <path>` |
+| 操作者自己的规则 | 与纪律混在一起 | 不受影响——Apothem 写入一个专用文件 |
+| 移除 | 手动删除 | `apothem uninstall`，带有带时间戳的备份 |
+
+## 什么仍属于你
+
+Apothem 只写入 `apothem-rules.md`。你的 `CODEBUDDY.md` 记忆文件、你的
+`.codebuddy/settings.json` 权限与 MCP 服务器，以及你编写的任何其他规则文件，
+都完全归操作者所有。适配器识别这些面，但从不编辑它们。
+
+完整的生命周期命令见 [CodeBuddy 环境页面](/docs/harnesses/codebuddy)。

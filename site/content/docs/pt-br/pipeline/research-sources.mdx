@@ -1,0 +1,73 @@
+---
+title: "/research-sources"
+description: "/research-sources — Coleta sistemática de fontes: decompõe a especificação em subconsultas, dispara a descoberta em paralelo, filtra e classifica, e extrai por fonte em um livro-razão de fontes classificado."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Papel:** Pesquisador principal (coleta de fontes)
+**Posição no pipeline:** meio da cadeia
+
+Coleta sistemática de fontes — decompõe a especificação de pesquisa em subconsultas, dispara em paralelo a descoberta de fontes e a extração por fonte, deduplica, classifica por autoridade / atualidade / relevância, filtra contra os critérios de inclusão da especificação e registra a procedência de cada fonte sobrevivente.
+
+## Invocação canônica
+
+```bash
+/research-sources
+```
+
+Com argumentos:
+
+```bash
+/research-sources [path/to/research-suite/] [--depth N]
+```
+
+## Entradas
+
+`_inputs/theory.md` (o arcabouço conceitual / teórico de `/research-theory`, o estágio predecessor) mais `_spec/research-spec.md` (a especificação de pesquisa aprovada de `/research-spec`).
+
+## Saídas
+
+`sources/<id>.md` (uma extração com procedência por fonte sobrevivente) + `_inputs/source-ledger.md` (o índice de fontes classificado, filtrado e deduplicado com um índice de citações).
+
+## A jusante
+
+/research-synthesis (consumidor a jusante)
+
+## Fases do fluxo de trabalho
+
+O comando segue o fluxo de trabalho padrão do pipeline `/research`:
+
+1. **Carregar contexto** — Ler a especificação de pesquisa e seus critérios de inclusão / exclusão.
+2. **Verificar o Portão de sequência** — Confirmar que `_inputs/theory.md` (e a especificação `_spec/research-spec.md` aprovada) existe; caso contrário, parar com `Blocked: run /research-theory first`.
+3. **Descobrir e extrair** — Decompor em subconsultas, disparar a descoberta, deduplicar, classificar, filtrar e extrair por fonte com procedência.
+4. **Verificar saídas** — Confirmar que cada fonte sobrevivente esteja citada e filtrada contra os critérios da especificação.
+5. **Atualizar o manifesto de transferência** — Registrar o livro-razão de fontes e os caminhos de extração por fonte.
+6. **Emitir o livro-razão** — As extrações de `sources/` mais `_inputs/source-ledger.md`.
+
+## Piso de rigor
+
+Além do livro-razão de fontes, este estágio constrói um livro-razão de procedência de comparadores: as linhas de base do estado da arte mais próximas e recentes contra as quais o estudo será executado, cada uma verificada em uma fonte recuperável e registrada com sua procedência e alcançabilidade. Um comparador que não pode ser confirmado ou obtido é marcado como tal e nunca fabricado (R1, R4).
+
+## Modos de falha
+
+| Sintoma | Causa | Recuperação |
+|---------|-------|----------|
+| Blocked: run /research-theory first | Sem fundamentação teórica | Execute `/research-theory` para produzir `_inputs/theory.md` |
+| Fonte falha nos critérios de inclusão | Fonte fora de escopo ou de baixa autoridade | Filtre-a; registre a justificativa de exclusão no livro-razão |
+| Citação fabricada | Fonte adivinhada, não obtida | Nunca invente uma fonte; uma citação adivinhada é um achado |
+
+## Exemplos
+
+```bash
+# Coletar fontes para uma suíte de pesquisa enquadrada
+/research-sources path/to/research-suite/
+
+# Disparo de descoberta mais profundo
+/research-sources path/to/research-suite/ --depth N
+```
+
+## Referências cruzadas
+
+- [Visão geral do pipeline](/docs/pipeline)
+- [Referência de comandos](/docs/reference/commands)

@@ -1,0 +1,48 @@
+---
+title: "Apothem versus konfigurasi Codex manual"
+description: "Memelihara AGENTS.md, hook, skill, dan agen Codex dengan tangan versus memasangnya dari profil bersama Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Codex membaca instruksi pengguna dari `AGENTS.md`, memuat hook dari `hooks.json`
+atau `config.toml`, menemukan agen kustom di bawah `agents/`, dan menemukan skill
+dari root skill Codex bersama. Adapter codex dari Apothem memasang permukaan-
+permukaan itu dari profil bersama sambil membiarkan pengaturan `config.toml`
+milik operator.
+
+## Perbandingan upaya
+
+| Tugas | Konfigurasi manual | Dikelola Apothem |
+| ---- | --------------- | --------------- |
+| Menulis `AGENTS.md` | Menyunting instruksi pengguna dengan tangan | Dipasang dari templat bootstrap Codex |
+| Menulis hook | Menulis `hooks.json` atau tabel hook TOML dengan tangan | Dipasang ke `~/.codex/hooks.json` dengan pembantu hook Apothem di bawah `~/.codex/hooks/` |
+| Menulis agen kustom | Menulis file TOML di bawah `~/.codex/agents/` dengan tangan | Dikonversi dari agen Markdown Apothem |
+| Menulis perintah yang dapat dipakai ulang | Membangun skill dengan tangan, satu direktori per kali | Dibungkus sebagai `~/.agents/skills/*/SKILL.md` |
+| Menjaga aturan selaras dengan lingkungan lain | Manual, per alat | Otomatis saat `apothem update` |
+| Memverifikasi konfigurasi sudah benar | Inspeksi manual | `apothem verify --harness codex` |
+
+## Apa yang dikelola Apothem
+
+Adapter codex memasang `AGENTS.md`, `hooks.json`, file pembantu hook, agen kustom
+yang dikonversi, dan skill yang dihasilkan. Ia tidak menimpa
+`~/.codex/config.toml`; model, sandbox, persetujuan, MCP, dan preferensi runtime
+lainnya tetap milik operator.
+
+## Jalur migrasi
+
+1. Jalankan `apothem profile init` untuk membuat profil bersama jika Anda belum
+   memilikinya.
+2. Pindahkan aturan dari `AGENTS.md` Anda yang ada ke korpus bersama.
+3. Pertahankan pengaturan runtime `config.toml` yang ada di Codex kecuali Anda
+   memilih mengelolanya dengan tangan di tempat lain.
+4. Jalankan `apothem install --harness codex` untuk memasang permukaan native
+   Codex.
+5. Jalankan `apothem verify --harness codex` untuk memastikan file sudah
+   terpasang.
+6. Gunakan `apothem update --harness codex` untuk setiap perubahan berikutnya.
+
+## Baca berikutnya
+
+- [Referensi adapter Codex](/docs/harnesses/codex)
+- [Ikhtisar perbandingan](/docs/comparison)

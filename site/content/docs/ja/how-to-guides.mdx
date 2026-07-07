@@ -1,0 +1,115 @@
+---
+title: "作成 & パイプラインのハウツー"
+description: "コンテンツを仕様へ洗練し、プランスイートを生成し、プランをレビューし、フェーズを実行し、アーティファクトを追加し、品質ゲートを実行するための、タスク指向のウォークスルー。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Apothem アーティファクトの作成とプランパイプラインの操作** のための、
+タスク指向のウォークスルー。各ガイドは一つの具体的な問いに答えます。
+
+初回セットアップのレシピ —— ハーネスの追加、プロファイルの編集、
+インストーラーの操作 —— については、代わりに [ハウツーレシピ](/docs/how-to)
+セクションを参照してください。
+
+## プランスイートのパイプライン
+
+### 生のコンテンツを仕様へ洗練するには?
+
+生のコンテンツを入力として `/plan-spec` を起動します。Forge の役割が
+6 つの変換フェーズ(Discovery、Meticulous Consideration、Potency Mapping、
+Preservation Verification、Expertise Application、Question-Resolution Sweep)
+を実行し、統合された仕様を `.apothem/plans/{suite}/_spec/spec.md` に出力します。
+完全なプロトコルについては `src/apothem/commands/plan-spec.md` を参照してください。
+
+### 仕様からプランスイートを生成するには?
+
+仕様が `.apothem/plans/{suite}/_spec/spec.md` に置かれたら、
+`/plan-generate <suite-name>` を起動します。ジェネレーターは正規の
+インフラファイルと、フェーズごとの `phases/NN-kebab-topic/PHASE.md`
+ファイルを出力します。`src/apothem/commands/plan-generate.md` を参照してください。
+
+### 生成されたプランをレビューするには?
+
+`/plan-review path/to/plan-suite/` を起動します。レビュアーは 8 つの
+プランニング手法を適用し、スコアカードを出力します。失敗したスコアカードは、
+解決されるまで SHARED+ で実行をブロックします。
+`src/apothem/commands/plan-review.md` を参照してください。
+
+### プランを実行するには?
+
+`/plan-execute path/to/plan-suite/ [phase-id]` を起動します。`phase-id`
+なしでは、次の保留中フェーズが実行されます。特定の id を指定すると、
+そのフェーズのみが実行されます。`src/apothem/commands/plan-execute.md`
+を参照してください。
+
+### プランの状況を確認するには?
+
+`/plan-status path/to/plan-suite/ [--verbose]` を起動します。読み取り
+専用のレポートです。`src/apothem/commands/plan-status.md` を参照してください。
+
+## アーティファクトの作成
+
+### 新しいルールを追加するには?
+
+1. `src/apothem/rules/` 配下に kebab-case のファイル名を選びます。例:
+   `src/apothem/rules/my-new-rule.md`。
+2. フロントマター(`name`、`description`、`type:
+   instruction`、任意の `pathFilter`)を作成します。
+3. 正規のセクション(Purpose、Obligations、Seriousness Scaling、
+   Anti-Patterns、Enforcement、Bindings)で本文を書きます。
+4. ルールコホート（`src/apothem/rules/`）に行を追加します。
+5. `python scripts/dev/validate_ecosystem.py --check
+   frontmatter-cohort` を実行して検証します。
+
+### 新しい委任ワーカーを追加するには?
+
+下記のディレクトリ配下に、`my-worker.md` の形式で kebab-case の
+ファイル名を選びます:
+
+```text
+src/apothem/agents/
+src/apothem/agents/my-worker.md
+```
+
+次に:
+
+1. フロントマターを作成します —— `name`、`description`、`allowedTools`、
+   `maxTurns`、`version`、および下記のタイプマーカーを含みます:
+
+```text
+type: agent
+```
+
+1. システムプロンプトを本文として書きます。
+1. 委任ワーカーコホート（`src/apothem/agents/`）のヘルパーレジストリに行を追加します。
+
+### 新しいフックを追加するには?
+
+1. `src/apothem/hooks/messages/<event>-<scope>.md` 配下にコンテキスト
+   メッセージを作成します。
+2. `settings.json` でフックを接続します。
+3. フックパイプラインを更新します。
+4. `python scripts/dev/validate_ecosystem.py --check
+   hook-validator` を実行します。
+
+## 品質ゲート
+
+### ローカルの品質ゲートを実行するには?
+
+```bash
+python -m ruff check .
+python -m ruff format --check .
+python -m mypy
+python -m pytest -q
+python scripts/dev/validate_ecosystem.py
+python scripts/dev/chaos_pass.py
+```
+
+CI パイプラインは同じセットを並行して実行します。
+
+### 単一のアーティファクトクラスのフロントマターを確認するには?
+
+```bash
+python scripts/dev/validate_ecosystem.py --check frontmatter-cohort
+```

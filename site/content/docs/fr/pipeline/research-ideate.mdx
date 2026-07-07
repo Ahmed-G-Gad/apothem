@@ -1,0 +1,69 @@
+---
+title: "/research-ideate"
+description: "/research-ideate — Formule l'espace du problème à partir d'une graine de domaine : balayage des opportunités et lacunes, balayage des hypothèses antérieures invalidées et génération classée de questions de recherche candidates — l'étape initiale du pipeline /research, qui alimente /research-spec."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rôle :** Chercheur principal (formulation du problème)
+**Position dans le pipeline :** initiale
+
+Formule l'espace du problème à partir de zéro — balayage des opportunités et lacunes, balayage des hypothèses antérieures invalidées et génération de questions de recherche candidates avec classement — l'étape d'entrée du pipeline `/research`. Chaque candidate est cadrée face à un ancrage théorique a priori, fondée sur les travaux antérieurs et énoncée sous une forme falsifiable, prête pour `/research-spec`.
+
+## Invocation canonique
+
+```bash
+/research-ideate
+```
+
+Avec des arguments :
+
+```bash
+/research-ideate [path/to/domain-notes] [--suite-name NAME] [--override] [--domain NAME]
+```
+
+## Entrées
+
+Une graine de domaine — des notes de domaine en format libre (fournies par l'opérateur en ligne ou sous forme de chemin), ou un simple nom `--domain` lorsqu'on part de zéro.
+
+## Sorties
+
+`_inputs/ideation.md` (l'espace du problème cadré, le balayage des opportunités et lacunes, le balayage des hypothèses antérieures invalidées et la liste classée de questions candidates) ainsi que le Manifeste de Transfert dans le dossier de la suite de recherche.
+
+## En aval
+
+/research-spec (consommateur en aval — cadre la candidate choisie en une spécification falsifiable).
+
+## Phases du flux de travail
+
+La commande suit le flux de travail standard du pipeline `/research` :
+
+1. **Charger le contexte** — Lire la graine de domaine, les règles et tout état de suite existant.
+2. **Balayer l'espace des opportunités et lacunes** — Cartographier ce qui est étudié, ce qui est contesté et ce qui reste sans réponse dans le domaine.
+3. **Balayer les hypothèses antérieures invalidées** — Faire émerger les hypothèses déjà réfutées par les travaux antérieurs pour que la liste ne reparcoure pas un terrain déjà résolu.
+4. **Générer et classer les candidates** — Produire des questions de recherche candidates, chacune énoncée sous une forme falsifiable, classées par traitabilité et impact.
+5. **Vérifier les sorties** — Confirmer que chaque candidate est fondée sur les travaux antérieurs primaires et réfutable ; résoudre chaque ambiguïté via le canal de consultation structurée.
+6. **Émettre la liste d'idéation** — `_inputs/ideation.md` ainsi que le manifeste de transfert.
+
+## Modes de défaillance
+
+| Symptôme | Cause | Récupération |
+|---------|-------|----------|
+| Aucune candidate falsifiable | Graine de domaine trop large ou purement descriptive | Restreindre le domaine via une consultation structurée ; recadrer les candidates en questions réfutables |
+| La candidate reformule une hypothèse antérieure invalidée | Le balayage des travaux antérieurs a été ignoré | Exécuter le balayage des hypothèses antérieures invalidées ; abandonner ou recadrer la candidate qui se chevauche |
+| Graine de domaine manquante | Aucune note ni `--domain` fournie | Fournir des notes de domaine en ligne / sous forme de chemin, ou passer `--domain NAME` |
+
+## Exemples
+
+```bash
+# Balayer un domaine et générer des questions candidates classées
+/research-ideate ~/notes/retrieval-systems.md --suite-name retrieval-latency
+
+# Démarrer à partir d'un simple nom de domaine
+/research-ideate --domain "vector-index recall under drift"
+```
+
+## Références croisées
+
+- [Vue d'ensemble du pipeline](/docs/pipeline)
+- [Référence des commandes](/docs/reference/commands)

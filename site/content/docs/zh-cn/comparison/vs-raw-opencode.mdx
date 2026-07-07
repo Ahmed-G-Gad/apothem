@@ -1,0 +1,40 @@
+---
+title: "Apothem 对比手工 OpenCode 配置"
+description: "手工维护 OpenCode 的配置、命令、技能和代理，对比通过 Apothem 的共享配置档案来渲染它们。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+OpenCode 读取 JSON 配置以及原生的命令、技能和代理发现目录。Apothem 渲染带有
+`instructions` 文件列表的 JSON 配置，并在 OpenCode 支持的地方把共享语料库转换为
+原生目录。
+
+## 工作量对比
+
+| 任务 | 手工配置 | Apothem 托管 |
+| ---- | --------------- | --------------- |
+| 编写规则 | 手工编辑配置和支持提示 | 从共享配置档案渲染或引用 |
+| 编写命令、技能、代理 | 手工维护每个 OpenCode 目录 | 从共享的 Apothem 语料库转换 |
+| 让语料库与其他环境保持对齐 | 手工，逐工具 | 在 `apothem update` 时自动完成 |
+| 安装／移除配置表面 | 手工 | `apothem install` / `apothem uninstall` |
+| 验证配置是否正确 | 手工检查 | `apothem verify --harness opencode` |
+
+## Apothem 管理什么
+
+opencode 适配器写入 `opencode.json`，把 Apothem 斜杠命令转换为 OpenCode 的
+Markdown 命令文件，把技能复制到原生技能表面，并把辅助定义改写为 Markdown 子代理。
+规则、模板和钩子提示保留在 Apothem 的支持子树下；规则从原生 `instructions` 列表中
+被引用。
+
+## 迁移路径
+
+1. 如果你还没有创建共享配置档案，运行 `apothem profile init`。
+2. 把现有的 OpenCode 规则、命令、技能和代理迁入共享语料库。
+3. 运行 `apothem install --harness opencode` 来渲染原生配置和发现目录。
+4. 运行 `apothem verify --harness opencode` 来确认配置已落地。
+5. 之后的每次更改都使用 `apothem update --harness opencode`。
+
+## 接下来阅读
+
+- [OpenCode 适配器参考](/docs/harnesses/opencode)
+- [对比概览](/docs/comparison)

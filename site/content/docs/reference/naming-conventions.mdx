@@ -1,0 +1,31 @@
+---
+title: "Naming Conventions"
+description: "Prescribe kebab-case filenames, frontmatter key format, branch naming with type prefixes, and numeric prefix semantics for ordered artifact sequences."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Canonical reference for filename, identifier, and branch-name shape across the ecosystem.** The summary at [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Conventions is the inline declaration; this page is the standalone reference downstream contributors cite.
+
+---
+
+## 1. Filesystem Names
+
+Files and folders use **kebab-case** by default. Identifiers carry no spaces, no underscores, and no camel-case.
+
+The canonical-uppercase exceptions are reserved for the publication-surface singletons every contributor recognizes on first encounter: `CLAUDE.md`, `README.md`, `LICENSE`, `CHANGELOG.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md`, and the plan-suite singletons (`MASTER-PLAN.md`, `PROGRESS.md`, `PHASE.md`, `SKILL.md`, `VERSION`). Every other file uses kebab-case.
+
+## 2. Frontmatter Keys
+
+YAML frontmatter keys use `kebab-case` (e.g., `argument-hint`, `disable-model-invocation`). The kebab-case rule applies uniformly across rules, commands, delegated workers, skills, and `CLAUDE.md` itself.
+
+## 3. Branch Names
+
+Branches follow `<type>/<short-description>` with type drawn from the closed set `{feat, fix, chore, docs, refactor, test, perf, ci, build, style, revert, release}`. The description is kebab-case and under fifty characters.
+
+## 4. Numeric Prefixes
+
+Numeric prefixes (`NN-`) on filesystem paths convey ordering and apply only where ordering is intrinsic — phase folders, sub-phase folders, migration scripts, and any other artifact class whose sequence is part of the contract. Root-level singletons that have no sibling sequence carry no numeric prefix; adding one mis-signals an ordering relationship that does not exist. The full discipline lives at [`src/apothem/rules/canonical-layout.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/canonical-layout.md) §2.1.
+
+## 5. Validators
+
+The naming-grep at `src/apothem/conformity/naming_grep.py` is the mechanical enforcement surface. CI invokes it via `make validate`.

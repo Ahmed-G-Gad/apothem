@@ -1,0 +1,84 @@
+---
+title: "quickstart"
+description: "مرجع واجهة سطر الأوامر لأمر التشغيل الأول الموجَّه apothem quickstart."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+تشغيل أول موجَّه: يتأكّد من وجود ملف شخصي، ويعاين عمليات الكتابة، ثم يثبّت.
+
+## الموجز
+
+```
+apothem quickstart [--harness NAME|all] [--project PATH] [--profile PATH]
+                   [--yes] [--quiet|-q] [--verbose|-v]
+                   [--format plain|json] [--json] [--no-color]
+```
+
+<bdi>`quickstart`</bdi> هو نقطة الدخول الموجَّهة الوحيدة لمشغّل جديد. في تدفّق خطّي واحد، فإنه: (1) يتأكّد من وجود ملف شخصي مشترك — مُنشئًا ملفًا شخصيًّا مبدئيًّا مع تنبيهٍ للتخصيص إن لم يُعثَر على أي ملف؛ (2) يعاين الملفات الملموسة التي ستكتبها المساعدات البرمجية المختارة، مُجمَّعةً حسب جذر المشروع مقابل دليلك المنزلي؛ (3) يطلب التأكيد؛ (4) يثبّت بمخرجات ملاحظات القدرات المُجمَّعة والمُنقّاة من الضجيج؛ و(5) يطبع الأوامر التالية المُوصى بها.
+
+وهو يُركِّب اللبنات نفسها التي يستخدمها أمر <bdi>`install`</bdi> — ولا يعيد تنفيذها. يكون <bdi>`--harness`</bdi> افتراضيًّا <bdi>`all`</bdi> و<bdi>`--project`</bdi> الدليل الحالي.
+
+## السلوك
+
+- **الملف الشخصي** — إذا لم يكن لمسار الملف الشخصي المُحَلّ ملفٌ، يعرض <bdi>`quickstart`</bdi> إنشاء ملف شخصي مبدئي (يُنشئه تلقائيًّا تحت <bdi>`--yes`</bdi>، أو صدفة غير تفاعلية، أو <bdi>`--format json`</bdi>) ويُسمّي حقول الهوية النائبة المراد تخصيصها.
+- **المعاينة + التأكيد** — قبل أي كتابة، تُسرَد الأهداف تحت عنوانين (جذر المشروع مقابل دليلك المنزلي)؛ ويؤكّد تشغيلٌ تفاعلي قبل الكتابة خارج المشروع. يتابع كلٌّ من <bdi>`--yes`</bdi>، والصدفة غير التفاعلية، و<bdi>`--format json`</bdi> دون مطالبة. ويؤدّي الرفض إلى الإجهاض قبل أي كتابة.
+- **التثبيت** — تُلخَّص القدرات التي لا يدعمها مساعد برمجي أصليًّا في ملاحظة مُجمَّعة واحدة لكل مساعد برمجي (مرّر <bdi>`--verbose`</bdi> للتفصيل لكل قدرة)؛ وتكون المجموعة الكاملة دائمًا في مصفوفة <bdi>`warnings`</bdi> الخاصّة بـ <bdi>`--format json`</bdi>.
+- **الخطوة التالية** — تُسمّي مخرجات الطرفية الأوامر التالية (<bdi>`apothem verify …`</bdi>، <bdi>`apothem doctor`</bdi>).
+
+## الخيارات
+
+| الخيار | الوصف |
+|---|---|
+| `--harness NAME` | مُحَوِّل المساعد البرمجي المراد تثبيته، أو `all` للمجموعة على نطاق السجلّ بأكمله (الافتراضي: `all`). |
+| `--profile PATH` | مسار <bdi>YAML</bdi> للملف الشخصي المشترك. القيمة الافتراضية <bdi>`~/.config/apothem/profile.yaml`</bdi>. |
+| `--project PATH` | جذر المشروع للمساعدات البرمجية بنطاق المشروع. القيمة الافتراضية الدليل الحالي. |
+| `--yes` | يُشغّل التسلسل الموجَّه الكامل بشكل غير تفاعلي (يتخطّى كل مطالبة). |
+| `--quiet`, `-q` | يُخمِد المخرجات المعلوماتية؛ تُصدَر الأخطاء فقط. |
+| `--verbose`, `-v` | يطبع تبرير كل قدرة غير مُسقَطة بدلًا من الملاحظة المُجمَّعة. |
+| `--format plain\|json` | تنسيق المخرجات (الافتراضي: `plain`). |
+| `--json` | اختصار لـ `--format json`. |
+| `--no-color` | يُعطِّل رموز ألوان <bdi>ANSI</bdi> في المخرجات. |
+| `-h`, `--help` | يعرض المساعدة ويخرج. |
+
+## مخرجات JSON
+
+يُصدِر <bdi>`--format json`</bdi> مستندًا واحدًا يُلخّص كل خطوة موجَّهة:
+
+```json
+{
+  "status": "success",
+  "command": "quickstart",
+  "profile_path": "C:\\Users\\Example\\.config\\apothem\\profile.yaml",
+  "steps": [
+    {"step": "profile", "outcome": "created", "path": "…", "placeholder_identity": ["name", "email", "github"]},
+    {"step": "install", "status": "success", "harness": "all", "files_written": ["…"], "warnings": [], "results": []},
+    {"step": "recommend", "next": ["apothem verify --harness all --project .", "apothem doctor"]}
+  ],
+  "recommended_next": ["apothem verify --harness all --project .", "apothem doctor"]
+}
+```
+
+## أمثلة
+
+```bash
+apothem quickstart
+apothem quickstart --harness all --project . --yes
+apothem quickstart --harness claude-code
+apothem quickstart --json
+```
+
+## رموز الخروج
+
+| الرمز | المعنى |
+|---|---|
+| 0 | اكتمل التشغيل الموجَّه |
+| 1 | خطأ متوقَّع في التحقّق أو الملف الشخصي أو المساعد البرمجي أو المشروع أو المُحَوِّل |
+| 2 | تجسيد دفعي جزئي بعد عملية كتابة واحدة على الأقل |
+
+## انظر أيضًا
+
+- [apothem install](/docs/cli-reference/install) — تجسيد مساعد برمجي من الملف الشخصي المشترك
+- [apothem verify](/docs/cli-reference/verify) — تأكيد أن التثبيت فعّال
+- [apothem doctor](/docs/cli-reference/doctor) — سلامة البيئة والتثبيت
+- [البدء](/docs/install) — دليل التثبيت الكامل

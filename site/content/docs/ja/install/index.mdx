@@ -1,0 +1,342 @@
+---
+title: "インストール"
+description: "Apothem のインストール概要 —— 8 つのインストールチャネル。それぞれに前提条件、コピーしてすぐ使える 1 つのコマンド、そして検証ステップが付きます：Claude Code プラグイン、npm シム、ワンショットインストーラー、VS Code 系の拡張機能、3 つのコマンドラインブートストラップ拡張機能、そして直接エンジン。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem は 2 分以内にインストールでき、既存のハーネス構成と並んで動作します。
+どの経路も同じ自己完結型エンジンを実行します——ソースツリーはベンダリングした
+依存関係を携え、システムの Python 3.10 以降上でチェックアウトから実行されます
+（[自己完結型ランタイム](/docs/architecture/self-contained-runtime)を参照）。
+
+**すべての経路が共有する 2 つの前提条件：** `PATH` 上のシステム **Python 3.10 以降** と、
+そのもとでインポート可能な `click` および `rich` パッケージです。npm シムとツール
+プラグインの経路は、`npx` を実行するために追加で **Node.js 18 以降** を必要とします。
+以下の各チャネルの節では、その正確な前提条件、コピーしてすぐ使える 1 つのコマンド、
+そして検証ステップを繰り返し示します。
+
+## チャネルを選ぶ
+
+8 つのインストールチャネルが利用できます。すでにあなたが使っている方法に合わせて選んでください。
+
+| # | チャネル | 提供内容 | 前提条件 |
+|---|---------|----------|---------------|
+| 1 | [Claude Code プラグイン](#1-claude-code-plugin) | Claude Code 内の完全なハーネス | Claude Code · Python 3.10+ |
+| 2 | [npm シム (`npx`)](#2-npm-shim-npx) | 完全なハーネス、任意のツール | Node 18+ · Python 3.10+ |
+| 3 | [ワンショットインストーラー](#3-one-shot-installers) | 完全なハーネス + `apothem` コマンド | Python 3.10+（ネットワークインストールには `git`） |
+| 4 | [VS Code 系拡張機能](#4-vs-code-family-extension) | エディターからの完全なハーネス | VS Code · Node 18+ · Python 3.10+ |
+| 5 | [コマンドラインブートストラップ（拡張機能ホスト）](#5-command-line-bootstrap-extension-host) | エンジンを実行するブートストラップ | そのホストツール · Node 18+ · Python 3.10+ |
+| 6 | [コマンドラインブートストラップ（`qwen-code` ホスト）](#6-command-line-bootstrap-qwen-code-host) | エンジンを実行するブートストラップ | そのホストツール · Node 18+ · Python 3.10+ |
+| 7 | [コマンドラインブートストラップ（プラグインホスト）](#7-command-line-bootstrap-plugin-host) | エンジンを実行するブートストラップ | そのホストツール · Node 18+ · Python 3.10+ |
+| 8 | [直接エンジン (`python -m apothem`)](#8-direct-engine-python--m-apothem) | チェックアウトからの完全なハーネス | Python 3.10+（`click`、`rich`） |
+
+<Callout title="どのチャネルが完全なハーネスを提供するか">
+  npm シム (2)、ワンショットインストーラー (3)、直接エンジン (8) は、それ自体で
+  任意のハーネス向けに同期ユニット全体をマテリアライズします。3 つのコマンドライン
+  拡張機能 (5–7) は、エンジン（`npx @ahmed-g-gad/apothem install`）へシェルアウトして
+  完全なハーネスをマテリアライズする小さな**ブートストラップ**をインストールします
+  ——それらはエントリーポイントであり、それ自体が完全な提供物ではありません。Claude Code
+  プラグイン (1) と VS Code 系拡張機能 (4) はエンジンを携え、それを直接実行します。
+</Callout>
+
+どの経路も冪等です。再実行は安全で、同じ状態へ収束します。
+
+## 1. Claude Code プラグイン
+
+**前提条件：** Claude Code、および `PATH` 上のシステム Python 3.10+。
+
+プラグイン経路は完全に Claude Code の内部で動作します。Apothem のエンジンを、
+そのスラッシュコマンド、委任ワーカー、スキル、ルール、フックとともにパッケージ化し、
+すべてプラグインの自己完結型ツリーから実行できます。
+
+```text title="Inside Claude Code"
+/plugin marketplace add ahmed-g-gad/apothem
+/plugin install apothem@apothem
+```
+
+インストール後、Apothem のコマンド一式（`/plan-spec`、`/code-review`、
+`/security-audit` など）、同梱の委任ワーカー、そしてスキルが、すべての Claude Code
+セッションで利用可能になります。コマンドの完全なカタログは
+[スラッシュコマンド](/docs/reference/commands)を参照してください。
+
+**検証：** Claude Code 内で `/plugin` を実行し、**apothem** がインストール済みとして
+一覧に表示されることを確認するか、ターミナルからドリフトレポートを確認します。
+
+```bash title="Verify"
+npx @ahmed-g-gad/apothem verify --harness claude-code
+```
+
+## 2. npm シム (`npx`)
+
+**前提条件：** Node.js 18+（`npx` 用）と `PATH` 上のシステム Python 3.10+。
+シムはインタープリターを見つけ、すべての CLI コマンドを同梱のエンジンへ転送します
+——システムに恒久的に何も配置しません。
+
+```bash title="npx"
+npx @ahmed-g-gad/apothem install --harness claude-code
+```
+
+リポジトリから直接実行することもできます。
+
+```bash title="npx from the repository"
+npx github:ahmed-g-gad/apothem install --harness claude-code
+```
+
+[CLI リファレンス](/docs/cli-reference)のすべてのコマンドがこの形式で動作します。
+`apothem` を `npx @ahmed-g-gad/apothem` に置き換えてください。これは OpenCode を
+はじめ、独立したプラグインや拡張機能のレジストリを公開しないその他すべてのツールの
+インストール経路でもあります——Apothem はそれらをネイティブな設定ディレクトリへ
+直接同期します（`npx @ahmed-g-gad/apothem install --harness opencode`）。
+
+**検証：**
+
+```bash title="Verify"
+npx @ahmed-g-gad/apothem --version
+npx @ahmed-g-gad/apothem verify --harness claude-code
+```
+
+## 3. ワンショットインストーラー
+
+**前提条件：** `PATH` 上のシステム Python 3.10+（インストーラーは `click` / `rich` の
+前提条件をあなたのために追加することを提案します）。`git` は、ソースをクローンする
+ネットワークインストールの場合にのみ必要です。
+
+インストーラースクリプトは、署名された最新のリリースタグを解決し、その署名を検証し、
+Apothem のソースツリーをそのタグで `~/.apothem` に配置し、プロファイルが存在しない
+場合はスタータープロファイルを作成し、最初のハーネスをマテリアライズして結果を検証します。
+再実行は冪等です——既存のツリーは解決されたタグへ再チェックアウトされ、ハーネスは
+再マテリアライズされます。タグ固定の検証済みインストールがデフォルトかつ推奨の経路です。
+
+```bash title="macOS · Linux · WSL2 · BSD — latest signed tag, verified"
+curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
+```
+
+```powershell title="Windows · PowerShell — latest signed tag, verified"
+irm https://apothem.ahmedgad.com/install.ps1 | iex
+```
+
+同じスクリプトはチェックアウトの `scripts/installer/` 配下にも同梱されています
+——`install`、`uninstall`、`update` の `.sh`、`.ps1`、`.bat` 形式で——ので、
+クローン後に直接実行できます。
+
+```bash title="From a checkout"
+APOTHEM_HARNESS=claude-code sh scripts/installer/install.sh                                 # POSIX
+$env:APOTHEM_HARNESS = 'claude-code'; pwsh -NoProfile -File scripts/installer/install.ps1   # Windows
+```
+
+### トラストモデル
+
+`APOTHEM_REF` を設定しない場合、インストーラーは最も高い `vMAJOR.MINOR.PATCH`
+リリースタグを解決し、*それ*をチェックアウトします——動き続ける `main` ブランチでは
+決してありません。どの設定もマテリアライズする前に、フェッチされたタグの署名が
+`git verify-tag` で検証されます。署名のない、改ざんされた、または検証不能なタグは、
+何も書き込む前にインストールを中止します。特定のリリースに固定するには `APOTHEM_REF`
+を使います。
+
+```bash title="Pinned, verified install"
+APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/install.sh)"
+```
+
+`vMAJOR.MINOR.PATCH` を
+[リリースページ](https://github.com/ahmed-g-gad/apothem/releases)のタグに
+置き換えてください。
+
+2 つの明示的なオーバーライドがデフォルトを緩めます。`APOTHEM_REF=main` は
+動き続けるブランチを（検証せずに）チェックアウトし、`APOTHEM_ALLOW_UNVERIFIED=1` は
+検証の失敗を警告へ格下げして続行します——エアギャップ、ローカル、または事前署名済み
+リリースでの使用向けです。`APOTHEM_SOURCE` によるローカルチェックアウトは何も
+フェッチせず、検証をスキップします。
+
+エンジンはその後、配置されたツリーから直接、自己完結型ランタイムとして実行されます
+——サードパーティ依存関係はソースツリーの内部にベンダリングされているため、
+パッケージレジストリは一切関与しません。
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+```
+
+両方のスクリプトは同じ設定用環境変数（`APOTHEM_HOME`、`APOTHEM_REPO`、
+`APOTHEM_REF`、`APOTHEM_ALLOW_UNVERIFIED`、`APOTHEM_SOURCE`、`APOTHEM_HARNESS`、
+`APOTHEM_PROFILE`、`APOTHEM_SKIP_VERIFY`、`APOTHEM_AUTO_INSTALL_DEPS`）を読み取ります。
+完全な表は
+[インストーラーの環境変数](/docs/how-to/installer-environment-variables)を、
+`python -m` の呼び出しモデルの仕組みは
+[自己完結型ランタイム](/docs/architecture/self-contained-runtime)を参照してください。
+
+**`apothem` コマンド。** インストールが成功すると、インストーラーは同梱のエンジンへ
+転送する `apothem` シムを書き込みます——POSIX では `$HOME/.local/bin` へ、Windows では
+`%LOCALAPPDATA%\Microsoft\WindowsApps`（デフォルトの Windows `PATH` にすでにある
+ユーザーディレクトリ）へ。インストーラーはあなたの `PATH` を編集しません。そのディレクトリが
+`PATH` 上にあれば、手動の `PYTHONPATH` なしで `apothem <command>` を直接実行できます。
+
+**検証：**
+
+```bash title="Verify"
+apothem verify --harness claude-code
+
+# or, before the shim is on PATH, from the bundled source:
+PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
+```
+
+## 4. VS Code 系拡張機能
+
+**前提条件：** VS Code、Node.js 18+、および `PATH` 上のシステム Python 3.10+。
+
+**Apothem** 拡張機能は
+[Visual Studio Marketplace](https://marketplace.visualstudio.com/)
+からインストールできます——1 つの拡張機能で VS Code とそのエディター内コンパニオン
+アシスタント面をカバーします。そのパレットコマンド（`Apothem: Install`、`Verify`、
+`Update`、`Uninstall`、`Doctor`）は、設定されたランナー（デフォルトでは
+`npx @ahmed-g-gad/apothem`。`apothem.runner` 設定をローカルチェックアウトに向ければ
+ソースから実行できます）を通して同じエンジンを実行します。
+
+**検証：** エディターのコマンドパレットから **Apothem: Verify** コマンドを実行するか、
+ターミナルから実行します。
+
+```bash title="Verify"
+npx @ahmed-g-gad/apothem verify --harness claude-code
+```
+
+## 5. コマンドラインブートストラップ（拡張機能ホスト）
+
+**前提条件：** そのホストのコマンドラインツール、Node.js 18+、および `PATH` 上の
+システム Python 3.10+。
+
+Apothem をリポジトリから直接、拡張機能としてインストールします——コマンドは正確な
+ホストとハーネスの slug を携えます。
+
+```bash title="Install the extension"
+gemini extensions install https://github.com/ahmed-g-gad/apothem
+```
+
+この拡張機能は、それ自体が完全なインストールではなく**ブートストラップ**です：Apothem
+のコンテキストファイルを読み込み、エンジン（`npx @ahmed-g-gad/apothem`）へシェルアウト
+する `/apothem` コマンドを追加します。それを通してインストールを実行し、完全なハーネスを
+マテリアライズしてください。
+
+```bash title="Materialize the full harness"
+npx @ahmed-g-gad/apothem install --harness gemini-cli --project .
+```
+
+**検証：**
+
+```bash title="Verify"
+npx @ahmed-g-gad/apothem verify --harness gemini-cli --project .
+```
+
+## 6. コマンドラインブートストラップ（`qwen-code` ホスト）
+
+**前提条件：** そのホストのコマンドラインツール、Node.js 18+、および `PATH` 上の
+システム Python 3.10+。
+
+Apothem をリポジトリから直接、`--harness qwen-code` 拡張機能としてインストールします。
+
+```bash title="Install the extension"
+qwen extensions install ahmed-g-gad/apothem
+```
+
+チャネル 5 の拡張機能と同様、これは**ブートストラップ**です：Apothem のコンテキスト
+ファイルを読み込み、エンジンへシェルアウトします。それを通してインストールを実行し、
+完全なハーネスをマテリアライズしてください。
+
+```bash title="Materialize the full harness"
+npx @ahmed-g-gad/apothem install --harness qwen-code
+```
+
+**検証：**
+
+```bash title="Verify"
+npx @ahmed-g-gad/apothem verify --harness qwen-code
+```
+
+## 7. コマンドラインブートストラップ（プラグインホスト）
+
+**前提条件：** そのホストのコマンドラインツール、Node.js 18+、および `PATH` 上の
+システム Python 3.10+。
+
+リポジトリをプラグインマーケットプレイスとして追加し、次にプラグインをインストール
+します——コマンドは正確なホストとハーネスの slug を携えます。
+
+```bash title="Install the plugin"
+codex plugin marketplace add ahmed-g-gad/apothem
+codex plugin add apothem@apothem
+```
+
+チャネル 5 とチャネル 6 の拡張機能と同様、これはエンジンへシェルアウトする
+**ブートストラップ**です。それを通してインストールを実行し、完全なハーネスを
+マテリアライズしてください。
+
+```bash title="Materialize the full harness"
+npx @ahmed-g-gad/apothem install --harness codex
+```
+
+**検証：**
+
+```bash title="Verify"
+npx @ahmed-g-gad/apothem verify --harness codex
+```
+
+## 8. 直接エンジン (`python -m apothem`)
+
+**前提条件：** `click` と `rich` パッケージがインポート可能なシステム Python 3.10+、
+加えてリポジトリのチェックアウト。Node.js は不要です。
+
+自己完結型エンジンをクローンから直接実行します——ソースツリーはベンダリングした
+依存関係を携えているため、`PYTHONPATH=src` がセットアップのすべてです。
+
+```bash title="Direct engine"
+git clone https://github.com/ahmed-g-gad/apothem
+cd apothem
+PYTHONPATH=src python -m apothem install --harness claude-code
+```
+
+**検証：**
+
+```bash title="Verify"
+PYTHONPATH=src python -m apothem verify --harness claude-code
+```
+
+## 任意のインストールを検証する
+
+上記の各チャネルは、それぞれ独自の検証コマンドを示しています。2 つの汎用形式は
+次のとおりです。
+
+```bash title="Installer path"
+PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
+```
+
+```bash title="npx path"
+npx @ahmed-g-gad/apothem verify --harness claude-code
+```
+
+ハーネス名をインストールしたアダプターに置き換えてください。対応するすべての名前は
+[ハーネス一覧](/docs/harnesses)を参照してください。登録済みの各アダプターを一目で
+確認するには、同じ形式で `apothem doctor`（または `npx @ahmed-g-gad/apothem doctor`）
+を実行します。プラグイン経路の場合は、Claude Code 内で `/plugin` を実行し、
+**apothem** がインストール済みとして一覧に表示されることを確認してください。
+
+## 前提条件の一覧
+
+- **Python 3.10 以降** —— エンジンを実行する各経路がこれを探します
+  （`python3`、`python`、バージョン付きの名前、Windows では `py -3`）。
+- そのインタープリターで **`click` と `rich` がインポート可能であること** ——
+  エンジンがベンダリングしていない 2 つのターミナル向け依存関係です。インストーラーは
+  両方をチェックし、欠けているものを示し、あなたの代わりにインストールすることを
+  提案します——あなたの確認を得て、または `--yes`（PowerShell では `-Yes`）あるいは
+  `APOTHEM_AUTO_INSTALL_DEPS=1` で自動的に。
+- **Node.js 18 以降** —— npm シムとツールプラグインの経路のみ。
+- **Git** —— インストーラー経路のみ。ネットワーク形式の場合のみ必要です
+  （スクリプトがソースをクローンします。ローカルチェックアウトにはクローンは不要です）。
+- **Claude Code** —— プラグイン経路のみ。**VS Code** と各コマンドラインブートストラップ
+  自身のホストツールは、それぞれのチャネル (4–7) の場合にのみ必要です。
+
+## 次のガイド
+
+| 目標 | ガイド |
+|------|-------|
+| 最短のセットアップ | [クイックスタート](/docs/install/quickstart) |
+| ハーネスの追加 | [ハーネスのセットアップ](/docs/install/harness-setup) |
+| 更新 | [更新](/docs/install/updating) |
+| アンインストール | [アンインストール](/docs/install/uninstalling) |
+| 何かが失敗した | [トラブルシューティング](/docs/install/troubleshooting) |

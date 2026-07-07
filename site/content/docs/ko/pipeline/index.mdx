@@ -1,0 +1,131 @@
+---
+title: "파이프라인 명령"
+description: "Apothem 파이프라인 명령 참조 — /plan 흐름과 감사 명령 카탈로그."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem은 아키텍처를 인식하는 `/plan` 파이프라인, 13단계 `/research`
+파이프라인, 그리고 11개 명령의 감사 시퀀스를 제공합니다 — 이로써 모든
+프로젝트에 원시 산문에서 다축으로 검토된 프로덕션 수준 코드로, 그리고 원시
+아이디어에서 보급되고 동료 심사를 받은 논문으로 이어지는 구조화된 경로를
+제공합니다.
+
+## 파이프라인 개요
+
+```mermaid
+flowchart LR
+    accTitle: Plan pipeline command flow
+    accDescr: Left-to-right flowchart of the apothem plan pipeline from the spec stage through the generate and review stages, then through a conditional architecture-bearing decision that either runs the design stage or skips directly to the execute stage. The orthogonal audit stage wraps the spec-through-review span as a closed remediation loop.
+    A[/plan-spec] --> B[/plan-generate]
+    B --> C[/plan-review]
+    AUD[/plan-audit<br/>orthogonal: wraps spec → review] -.->|closed-loop remediation| A
+    C --> Q{Architecture-bearing suite?}
+    Q -->|yes| F[/plan-design<br/>emit _inputs/design.md]
+    Q -->|no| D[/plan-execute]
+    F --> D
+    D --> E[/plan-status]
+    D --> G[Audit review sequence]
+    G --> H[Completion milestone]
+```
+
+## 플래닝 단계
+
+이 파이프라인은 단계마다 하나씩 8개의 일급 슬래시 명령으로 제공되며, 각각
+`/plan-<stage>`로 독립적으로 호출할 수 있습니다.
+
+| 단계 | 역할 | 위치 |
+|-------|------|----------|
+| [/plan-spec](/docs/pipeline/plan-spec) | 포지 — 산문에서 명세로 | 첫 단계 |
+| [/plan-generate](/docs/pipeline/plan-generate) | 생성기 — 명세에서 플랜 스위트로 | 중간 |
+| [/plan-review](/docs/pipeline/plan-review) | 감사자 — 포렌식 플랜 감사 | 중간 |
+| [/plan-design](/docs/pipeline/plan-design) | 아키텍트 — 아키텍처를 지닌 스위트를 위한 `_inputs/design.md` | 조건부 게이트 |
+| [/plan-execute](/docs/pipeline/plan-execute) | 실행기 — 페이즈 실행 | 종단 |
+| [/plan-status](/docs/pipeline/plan-status) | 보고기 — 읽기 전용 상태 | 읽기 전용 |
+| [/plan-audit](/docs/pipeline/plan-audit) | 가디언 — spec → generate → review의 닫힌 루프 래퍼 | 직교(실행 전) |
+| /plan-amend | 스튜어드 — 기존 스위트의 재진입형 수정 | 재진입형 |
+
+`/plan-audit`은 선형 흐름에 직교하며, 그 안의 한 단계가 아닙니다. 이것은
+`/plan-spec → /plan-generate → /plan-review`를 단일 닫힌 루프로 감싸고,
+누락된 상류 단계만 실행하며, 발견 사항을 능동적으로 시정하고, 스위트를
+`/plan-execute`에 준비된 상태로 남깁니다. 이는 아래의 감사 검토 시퀀스와
+구별됩니다. 후자는 플랜 스위트가 아니라 실행된 코드베이스를 감사합니다.
+
+`/plan-design`은 보편적인 의례가 아닙니다. `/plan-review`는 스위트가
+아키텍처를 지닌 표면을 변경하는지 분류합니다. 그렇다면 `/plan-design`은
+`/plan-execute`와 `/architecture-review`가 소비하는 설계 추적을 출력합니다.
+그렇지 않다면 검토된 스위트는 곧바로 실행으로 넘어갑니다.
+
+## 리서치 파이프라인
+
+리서치 파이프라인은 단계마다 하나씩 13개의 일급 슬래시 명령으로 제공되며,
+각각 `/research-<stage>`로 독립적으로 호출할 수 있고, 시퀀스 게이트와 핸드오프
+매니페스트로 연결되며, 10가지 엄정성 명령(권위 있는 출처, 재현성,
+반증 가능성, 인용 무결성, 사전 등록, 윤리/이해 상충, 통계적 엄정성,
+오픈 사이언스/FAIR, 보고 지침 준수, 이론적 근거/영향) 아래에 있습니다.
+
+```mermaid
+flowchart LR
+    accTitle: Research pipeline command flow
+    accDescr: Left-to-right flowchart of the apothem research pipeline from the ideate stage through spec, theory, sources, synthesis, proposal, study design, experiment, analysis, paper, and peer review to publish and disseminate, with a revision loop from review back to paper.
+    RI[/research-ideate] --> RS[/research-spec]
+    RS --> RT[/research-theory]
+    RT --> RSO[/research-sources]
+    RSO --> RSY[/research-synthesis]
+    RSY --> RPR[/research-proposal]
+    RPR --> RD[/research-design]
+    RD --> RE[/research-experiment]
+    RE --> RA[/research-analysis]
+    RA --> RP[/research-paper]
+    RP --> RR[/research-review]
+    RR --> RPU[/research-publish]
+    RPU --> RDI[/research-disseminate]
+    RR -.->|revision loop| RP
+```
+
+| 단계 | 역할 | 위치 |
+|-------|------|----------|
+| [/research-ideate](/docs/pipeline/research-ideate) | 문제 정식화 — 도메인 시드에서 후보 질문 | 첫 단계 |
+| [/research-spec](/docs/pipeline/research-spec) | 질문 틀 잡기 — 반증 가능한 가설 + 범위 | 중간 |
+| [/research-theory](/docs/pipeline/research-theory) | 개념 프레임워크 + 변화 이론 | 중간 |
+| [/research-sources](/docs/pipeline/research-sources) | 체계적 출처 수집 | 중간 |
+| [/research-synthesis](/docs/pipeline/research-synthesis) | SOTA 맵 + 격차 분석 | 중간 |
+| [/research-proposal](/docs/pipeline/research-proposal) | 목표 + 실현 가능성 + 영향 + 사전 등록 계획 | 중간 |
+| [/research-design](/docs/pipeline/research-design) | 연구 설계 + 사전 등록 | 중간 |
+| [/research-experiment](/docs/pipeline/research-experiment) | 실행 + 기록, 재현 가능 | 중간 |
+| [/research-analysis](/docs/pipeline/research-analysis) | 결과 + 통계 | 중간 |
+| [/research-paper](/docs/pipeline/research-paper) | 최상위 논문 초안 | 중간 |
+| [/research-review](/docs/pipeline/research-review) | 동료 심사 수준의 비평 | 중간 |
+| [/research-publish](/docs/pipeline/research-publish) | 게재처 패키지 + 제출 | 중간 |
+| [/research-disseminate](/docs/pipeline/research-disseminate) | 보급 + 영향 + FAIR 아카이빙 | 종단 |
+
+`/research` 래핑된 워크플로 오케스트레이터는 이 단계들을 원시 질문에서 출판된
+논문까지 구동하며(이 자체는 단계가 아닙니다), 다음 단계가 그 위에 구축하기
+전에 각 단계의 출력을 독립적으로 확인합니다. `--quick`은 일회성 인용 보고서를
+위해 `/research-sources` + `/research-synthesis`만 실행합니다.
+
+경험적 단계(출처, 설계, 실험, 분석)와 저술 단계(논문, 심사, 게재, 확산)는
+추가로 엄밀성을 운영화하는 표면 — 공정한 다중 방법 비교, 비교 대상 출처
+정보, 실험 프로그램 스캐폴드, 컴퓨트 활용 계획, 옵트인 자율 실험 루프,
+완료 정의 진출 게이트, 그리고 단계적 공개를 동반한 맹검 — 을 활용하며,
+이는 10가지 명령을 확장하지 않으면서 운영 세부를 더합니다.
+
+## 감사 검토 시퀀스
+
+`/audit` 래핑된 워크플로 오케스트레이터는 아래 11개 차원 전체를 단일 병렬 패스로 일소합니다 — `/plan`과 `/research`의 감사 요새 대응물입니다 — 그리고 중복을 제거하고 심각도로 트리아지된 단일 발견 보고서를 종합합니다(보고 전용; 시정은 `/elevate`로 라우팅됩니다). 각 차원은 개별적으로도 호출할 수 있습니다.
+
+`/fortress` 래핑된 워크플로 오케스트레이터는 `/audit`가 보고하는 루프를 닫습니다: `/audit`를 통해 탐지하고, 각 발견을 검증하며, 살아남은 각 항목을 그 소유 표면에서 시정하고, 경계가 있는 루프에서 재감사하며, 결과를 `/release-readiness` 게이트로 통과시킵니다 — `/plan`과 `/research`의 프로덕션 강화 대응물입니다.
+
+| 명령 | 품질 영역 |
+|---------|--------------|
+| [/code-review](/docs/pipeline/code-review) | 코드 품질 |
+| [/code-audit](/docs/pipeline/code-audit) | 코드 코퍼스 |
+| [/security-audit](/docs/pipeline/security-audit) | OWASP / ASVS |
+| [/perf-audit](/docs/pipeline/perf-audit) | 성능 |
+| [/architecture-review](/docs/pipeline/architecture-review) | 아키텍처 |
+| [/ux-review](/docs/pipeline/ux-review) | 개발자 경험 |
+| [/a11y-audit](/docs/pipeline/a11y-audit) | 접근성 |
+| [/docs-review](/docs/pipeline/docs-review) | 문서 |
+| [/dependency-audit](/docs/pipeline/dependency-audit) | 의존성 |
+| [/supply-chain-audit](/docs/pipeline/supply-chain-audit) | 공급망 |
+| [/threat-model-audit](/docs/pipeline/threat-model-audit) | 위협 모델 |

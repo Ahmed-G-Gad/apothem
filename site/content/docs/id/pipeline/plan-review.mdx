@@ -1,0 +1,68 @@
+---
+title: "/plan-review"
+description: "/plan-review — Audit forensik suite plan yang ada — fidelitas prosa, konsistensi, kualitas."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Peran:** Auditor
+**Posisi pipeline:** tengah
+
+Audit forensik suite plan yang ada — fidelitas prosa, konsistensi, kualitas.
+
+## Pemanggilan kanonik
+
+```bash
+/plan-review
+```
+
+Dengan argumen:
+
+```bash
+/plan-review [path/to/plan-suite/] [--focus AREA] [--dry-run]
+```
+
+## Masukan
+
+Suite plan yang dihasilkan + `_inputs/handoff-manifest.yml` dari `/plan-generate`.
+
+## Keluaran
+
+Kartu Skor Tinjauan di `PLAN-NOTES.md` (`## Review Scorecards`), sebuah Ringkasan Tinjauan di `PROGRESS.md`, peta dampak-revisi per-temuan di `PLAN-NOTES.md` (laporan besar yang awet di `_outputs/`), dan `_inputs/handoff-manifest.yml` yang diperkaya membawa putusan tinjauan.
+
+## Hilir
+
+`/plan-design` (kondisional — hanya suite yang mengandung arsitektur) lalu `/plan-execute`; untuk suite yang tidak mengandung arsitektur, `/plan-execute` mengonsumsi Kartu Skor Tinjauan secara langsung untuk menggerbang eksekusi pada SHARED+.
+
+## Fase alur kerja
+
+Perintah ini menjalankan audit forensik, buta, baris demi baris lalu menyempurnakan melalui tanya-jawab interaktif:
+
+1. **Memuat konteks** — Membaca setiap berkas suite plan (`phases/**/PHASE.md`, berkas infrastruktur, laporan) dan Manifes Serah-Terima hulu; menolak dengan `Blocked: run /plan-generate first` ketika suite tidak ada.
+2. **Audit** — Menyapu dimensi (fidelitas prosa, konsistensi internal, kelengkapan, kualitas, risiko, standar, domain, arsitektur, kualitas kreatif) di bawah Mandat Tinjauan Buta.
+3. **Pilah temuan** — Mendisposisikan setiap temuan (terima · revisi · tolak · tunda) melalui kanal kueri terstruktur dengan jumlah keparahan per-temuan.
+4. **Jalankan gerbang pra-emisi** — Menjalankan gerbang lima belas batang terhadap laporan tinjauan dan kartu skor yang diperbarui; kegagalan memblokir promosi.
+5. **Pancarkan tinjauan** — Menulis Kartu Skor Tinjauan ke `PLAN-NOTES.md`, Ringkasan Tinjauan ke `PROGRESS.md`, dan Manifes Serah-Terima yang diperkaya.
+
+## Mode kegagalan
+
+| Gejala | Penyebab | Pemulihan |
+|---------|-------|----------|
+| Blocked: run /plan-generate first | Tidak ada suite yang dihasilkan | Jalankan `/plan-generate` untuk menghasilkan suite yang diaudit perintah ini |
+| Temuan terbuka tersisa | Audit memunculkan cacat yang belum terselesaikan | Disposisikan setiap temuan (terima · revisi · tolak · tunda) sebelum putusan terminal |
+| Kartu skor FAIL | Sebuah dimensi jatuh di bawah ambang CONDITIONAL | Tangani dimensi yang gagal dan tinjau ulang |
+
+## Contoh
+
+```bash
+# Dry-run untuk mempratinjau cakupan audit
+/plan-review --dry-run
+
+# Audit suite plan bernama, terfokus pada satu area
+/plan-review path/to/plan-suite/ --focus architecture
+```
+
+## Referensi silang
+
+- [Ikhtisar pipeline](/docs/pipeline)
+- [Referensi perintah](/docs/reference/commands)

@@ -1,0 +1,32 @@
+---
+title: "Conventions de nommage"
+description: "Prescrit les noms de fichiers en kebab-case, le format des clés de frontmatter, le nommage des branches avec préfixes de type et la sémantique des préfixes numériques pour les séquences d'artefacts ordonnées."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Référence canonique pour la forme des noms de fichiers, des identifiants et des noms de branches dans tout l'écosystème.** Le résumé dans [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Conventions est la déclaration en ligne ; cette page est la référence autonome que les contributeurs en aval citent.
+
+---
+
+## 1. Noms du système de fichiers
+
+Les fichiers et dossiers utilisent **kebab-case** par défaut. Les identifiants ne comportent ni espaces, ni traits de soulignement, ni camel-case.
+
+Les exceptions canoniques en majuscules sont réservées aux fichiers singletons de la surface de publication que chaque contributeur reconnaît dès la première rencontre : `CLAUDE.md`, `README.md`, `LICENSE`, `CHANGELOG.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md`, et les singletons de la suite de plans (`MASTER-PLAN.md`, `PROGRESS.md`, `PHASE.md`, `SKILL.md`, `VERSION`). Tous les autres fichiers utilisent kebab-case.
+
+## 2. Clés de frontmatter
+
+Les clés du frontmatter YAML utilisent `kebab-case` (par exemple, `argument-hint`, `disable-model-invocation`). La règle kebab-case s'applique uniformément à travers les règles, les commandes, les travailleurs délégués, les compétences et `CLAUDE.md` lui-même.
+
+## 3. Noms de branches
+
+Les branches suivent `<type>/<short-description>` avec le type tiré de l'ensemble fermé `{feat, fix, chore, docs, refactor, test, perf, ci, build, style, revert, release}`. La description est en kebab-case et fait moins de cinquante caractères.
+
+## 4. Préfixes numériques
+
+Les préfixes numériques (`NN-`) sur les chemins du système de fichiers transmettent l'ordre et ne s'appliquent que là où l'ordre est intrinsèque — dossiers de phase, dossiers de sous-phase, scripts de migration, et toute autre classe d'artefact dont la séquence fait partie du contrat. Les singletons au niveau racine qui n'ont pas de séquence de pairs ne portent pas de préfixe numérique ; en ajouter un signale à tort une relation d'ordre qui n'existe pas. La discipline complète réside dans [`src/apothem/rules/canonical-layout.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/canonical-layout.md) §2.1.
+
+## 5. Validateurs
+
+Le naming-grep dans `src/apothem/conformity/naming_grep.py` est la surface d'application mécanique. La CI l'invoque via `make validate`.

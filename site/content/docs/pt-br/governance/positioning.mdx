@@ -1,0 +1,301 @@
+---
+title: "Posicionamento"
+description: "Compreenda o Apothem como governança de ratificação de artefatos com quinze mandatos, disciplina de entrada por canal canônico e arquitetura criativa de identidade cognitiva para o desenvolvimento conduzido por assistentes."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Público:** avaliadores decidindo se devem adotar o `apothem` para trabalho de produção conduzido por assistentes.
+> **Duração:** ~12 minutos para ler de ponta a ponta. Lê-se por seção, ponto a ponto.
+> **Propósito:** enquadrar o que o `apothem` realmente É, o que NÃO é, e por que a resposta para "o que este projeto distribui?" é estruturalmente diferente da resposta que a maioria dos projetos de ferramentas para assistentes dá.
+
+---
+
+## §1. Tese
+
+O `apothem` é **governança de ratificação de artefatos**, empacotada como um binário.
+
+O enquadramento convencional das ferramentas para assistentes é o **ajuste de prompts**: um prompt de sistema, uma seleção de modelo, uma estratégia de janela de contexto, uma pequena biblioteca de slash-commands e um monte de folclore de engenharia de prompts. Sob esse enquadramento, o ponto de alavancagem do operador é a prosa que ele entrega ao modelo. Quando o modelo se comporta mal, a recuperação é editar a prosa. O artefato que o projeto distribui é o conjunto de prompts.
+
+O `apothem` rejeita esse enquadramento.
+
+O ponto de alavancagem de um assistente operando contra uma base de código real não é a prosa que o operador entrega ao modelo — é o **artefato que o modelo está prestes a emitir**. Esse artefato vai aterrissar num repositório, ser commitado, ser revisado, ser mergeado, ser implantado, ser citado por artefatos descendentes, ser herdado por contribuidores futuros. Sua qualidade é uma propriedade irreversível à jusante que o prompt não pode reparar retroativamente. Editar o prompt depois que um commit malformado aterrissa é um imposto sobre o operador, não uma recuperação do artefato.
+
+A disciplina que este projeto codifica é a **inversão**: cada emissão passa por um portão estruturado, acordado e mecanicamente verificado **antes** de sair das mãos do assistente. O portão aplica quinze mandatos que abrangem descoberta do anfitrião, divulgação, dez dimensões de qualidade, higiene de autoridade, incorporação de expertise, anotação de opções, definitividade, alavancagem visual, vinculação bidirecional, aparato de sprint ágil, disposição canônica, ofício de código, participação sistêmica e prontidão para produção. Cada mandato é uma **regra** com um escopo filtrado por caminho e um corpo que operacionaliza uma classe de falha específica. Cada falha de portão é um achado estrutural que o assistente traz à tona — nunca uma degradação silenciosa.
+
+O corpus de regras É o produto. O binário `apothem` é o seu **empacotamento** — uma superfície de distribuição que carrega o corpus até a raiz de configuração de usuário de cada operador e o registra como a postura operacional do assistente. O empacotamento é substituível; o corpus é o ativo de cauda longa.
+
+Um projeto que adota o `apothem` não adota um prompt. Adota um **regime de governança**. Cada artefato que o assistente emite no repositório anfitrião — código, testes, configuração, esquemas, documentação, runbooks, mensagens de commit, nomes de branch — atende ao mesmo padrão de quinze barras. O ponto de alavancagem do operador desloca-se de "o que devo dizer ao assistente?" para "quais mandatos restringem esta emissão, e que evidência o portão exige?". O deslocamento é estrutural, não estilístico.
+
+Este documento enquadra por que o corpus é o ativo que sustenta a carga, percorre os quinze mandatos com suas âncoras de arquivo de regra, e traz à tona as duas disciplinas transversais (manejo de entrada por canal canônico e arquitetura criativa de identidade cognitiva) que ligam o corpus num todo coerente.
+
+---
+
+## §2. Arquitetura de três pilares
+
+O corpus repousa sobre três pilares. Cada pilar é uma superfície separável com sua própria especificação canônica; cada pilar reforça os outros dois.
+
+### Pilar A — O registro de mandatos (M1–M15 + CM-1..CM-28)
+
+O registro de mandatos é a superfície de governança do **eixo externo**. **M1–M15** governam cada artefato que o assistente produz num projeto anfitrião: descoberta do anfitrião, divulgação, dez dimensões de qualidade, autoridade, expertise, anotação de opções, definitividade, alavancagem visual, vinculação bidirecional, sprints ágeis, disposição canônica, ofício de código, participação sistêmica e prontidão para produção. O registro é canonizado como o registro de quinze mandatos e operacionalizado pelos arquivos de regra enumerados em §3 abaixo.
+
+**CM-1..CM-28** são as contrapartes do **eixo interno** — mandatos operacionais que governam a disciplina de interação do assistente (avaliação crítica, zero suposições, buscar-antes-de-implementar, avaliação da melhor solução, honestidade brutal, velocidade de decisão, foco no gargalo primeiro, produto coerente, e mais vinte entradas cobrindo localidade de planos, administração de contexto, orquestração do trabalho delegado, geração de arquivos grandes e ciclo de vida da memória). O eixo interno é canonizado na regra de mandatos operacionais e em `site/content/docs/governance/cross-cutting-mandates.mdx`.
+
+Cada emissão passa pelos dois eixos. O portão em `src/apothem/rules/pre-emission-gate.md` executa as quinze barras mecânicas e racionais por emissão e registra um bloco de verificação no rastro de trabalho do artefato.
+
+### Pilar B — A disciplina de canal canônico
+
+A disciplina de canal canônico vincula **como o assistente solicita a entrada do operador**. Prompts em formato livre estão aposentados em todo o ecossistema; cada escolha roteia pelo canal de consulta estruturada com um esquema estruturado de anotação de opções (justificativa + recomendação + ponteiro-padrão por opção), uma taxonomia de recomendação fechada, um piso de confirmação de operação destrutiva por arquivo, e uma varredura heurística que captura a deriva de prompt conversacional em toda superfície governada. A especificação completa vive em `src/apothem/rules/interactive-questions.md` com a profundidade carregada nos companheiros filtrados por caminho `src/apothem/rules/interactive-questions-canonical-shapes.md` e `src/apothem/rules/interactive-questions-sweep-matchers.md`.
+
+A alavancagem da disciplina é a **auditabilidade da decisão**. Cada escolha volitiva do operador carrega a evidência que o assistente considerou, a recomendação que o assistente emitiu, e a justificativa fundamentada em impulsionadores concretos. Seis meses após a escolha, um auditor lendo o livro-razão de divulgação pode reconstruir a fronteira de decisão sem consultar a memória do operador.
+
+### Pilar C — A taxonomia de identidade cognitiva
+
+A taxonomia de identidade cognitiva vincula **como o assistente pensa**. Cinco filtros cognitivos sequenciais (Expurgo do Óbvio, Exílio de Domínio, Prensa de Inversão, Explosão Combinatória, Exigência Estética) compõem uma cadência criativa aplicada a cada saída substantiva. Seis técnicas de ideação (Sabotador Histórico, Paradoxo da Restrição, Lente de Sistemas Vivos, Narrativa de Segunda Ordem, Enquadramento do Vilão, Zoom de 100 Anos) disparam em sinais de detecção quando a abordagem padrão produziu um resultado insatisfatório. Sete eixos de amplitude (Arquitetura, Concorrência, Desempenho, Segurança, Testes, Ferramental, Observabilidade) constituem a superfície de profundidade contra a qual cada decisão não trivial atesta. A especificação completa vive em `src/apothem/rules/cognitive-identity.md` com a profundidade carregada no companheiro filtrado por caminho `src/apothem/rules/cognitive-identity-techniques.md`.
+
+A alavancagem da taxonomia é a **novidade estrutural**. O filtro de Expurgo do Óbvio descarta a resposta de primeira ideia que todos buscam; a Prensa de Inversão exige que ao menos uma suposição invertida sobreviva na saída final; a Exigência Estética rejeita formas funcionais-mas-esquecíveis. O resultado é um assistente que produz saídas pelas quais os operadores param e releem — não porque a prosa seja decorada, mas porque a escolha estrutural é não óbvia de um modo que, uma vez visto, parece inevitável.
+
+### Como os pilares se reforçam mutuamente
+
+Os três pilares **sustentam a carga mutuamente**. O registro de mandatos (Pilar A) define o que o artefato deve satisfazer. A disciplina de canal canônico (Pilar B) define como a entrada do operador adentra a superfície de decisão que produz o artefato. A taxonomia de identidade cognitiva (Pilar C) define a cadência criativa que dá ao artefato sua forma. Remover qualquer um dos pilares colapsa os outros dois: um registro sem um canal canônico produz artefatos silenciosamente padronizados que parecem conformes mas ocultam decisões estruturais; um canal canônico sem profundidade cognitiva produz saídas corretamente roteadas mas de forma genérica; uma cadência cognitiva sem um registro produz artefatos esteticamente elegantes que falham na integração com o projeto anfitrião.
+
+---
+
+## §3. Percurso pelo registro de mandatos
+
+O registro de quinze mandatos é a superfície canônica de governança do eixo externo. Cada linha abaixo nomeia o mandato, seu escopo operacional e o arquivo de regra que carrega a especificação canônica. Cada arquivo de regra é filtrado por caminho para as classes de artefato que governa e carregado por demanda no contexto operacional do assistente quando essas classes são tocadas.
+
+### M1 — Agnosticismo quanto ao projeto anfitrião e descoberta de convenções
+
+**Escopo.** Tudo o que o assistente produz num projeto anfitrião é moldado pelo que o projeto anfitrião já é — sua pilha, linguagem, framework, toolchain, formatador, linter, framework de testes, gerador de documentação, estratégia de branch, convenção de mensagem de commit, disposição, nomenclatura, política de fixação de dependências. Cada uma é **descoberta** da fonte autoritativa da verdade do anfitrião (manifestos, lock files, arquivos irmãos de tipo comparável, documentos de convenção no nível do repositório) e **honrada**. Onde o anfitrião é silencioso sobre uma convenção que o assistente deve adotar, o silêncio vem à tona como uma consulta autoritativa — nunca resolvido por escolher silenciosamente um padrão interno.
+
+**Especificação canônica.** `src/apothem/rules/host-discovery.md` (com catálogo de manifestos por linguagem em `src/apothem/rules/host-discovery-manifests.md`).
+
+**Por que importa.** A emissão do assistente é **indistinguível de uma que um contribuidor de longa data do projeto anfitrião teria escrito**. A deriva de convenção é uma falha estrutural, não uma preferência estilística.
+
+### M2 — Disciplina editorial e emendas divulgadas
+
+**Escopo.** Cada mudança de escopo significativo carrega um **livro-razão de divulgação** explícito — o que foi pedido, o que foi emendado, o que foi estendido, o que foi refinado, o que foi adiado. Cumprimento excessivo silencioso ("fez exatamente o que foi pedido, mesmo que estivesse errado") e extrapolação silenciosa ("ampliou o escopo da mudança sem avisar") são ambos falhas. Cada emenda carrega uma justificativa no padrão acadêmico / técnico (referência citada, RFC, documentação de fornecedor, precedente de arquivo irmão, padrão nomeado da literatura).
+
+**Especificação canônica.** `src/apothem/rules/disclosure-ledger.md` (com catálogo de classes de marcador em `src/apothem/rules/disclosure-ledger-markers.md`).
+
+**Por que importa.** Um diff que silenciosamente corrige um bug adjacente enquanto implementa a mudança solicitada é uma emenda não divulgada. Um revisor seis meses depois não consegue distinguir a correção deliberada da deriva. O livro-razão é a superfície de auditoria e recuperação.
+
+### M3 — As dez dimensões de qualidade
+
+**Escopo.** Cada artefato é avaliado contra dez dimensões de qualidade antes da emissão: rigor científico, consistência / coerência / integração / validade, configurabilidade / não redundância / consolidação, legibilidade / intuição / limpeza, orfandade / obsolescência, estruturalidade / sistemicidade / uniformidade / abrangência, arquitetura, uniformidade de nomenclatura, referenciamento acadêmico / técnico, e exemplos / testes / docstrings / documentação. Um único artefato falhando em múltiplas dimensões é **multiplicativo**, não aditivo — um artefato que é obsoleto E órfão E nomeado de forma inconsistente E não documentado é candidato à retração, não ao reparo.
+
+**Especificação canônica.** `src/apothem/rules/ten-dimension-check.md` (com corpos por dimensão em `src/apothem/rules/ten-dimension-check-dimensions.md`).
+
+**Por que importa.** A qualidade é decomponível. Nomear as dez dimensões torna cada uma auditável e trazível à tona isoladamente; achados ambíguos de "isto parece fraco" tornam-se específicos: "dimensão 5 obsolescência: a referência na linha 42 aponta para um arquivo movido".
+
+### M4 — Autoaplicação — portão de pré-emissão
+
+**Escopo.** Cada artefato passa por um **portão de pré-emissão de quinze barras** antes da emissão. As barras mecânicas (M2, M5, M7, M8, M10, M13, M15) carregam matchers executáveis em `src/apothem/conformity/*-grep.py` orquestrados por `src/apothem/conformity/gate.py`. As barras racionais (M1, M3, M6, M9, M11, M12, M14) são avaliadas pelo assistente operante e registradas no bloco de verificação. A falha de uma única barra bloqueia a emissão; a iteração continua até que cada barra passe.
+
+**Especificação canônica.** `src/apothem/rules/pre-emission-gate.md` (com a tabela completa de barras em `src/apothem/rules/pre-emission-gate-bars.md`).
+
+**Por que importa.** A qualidade é uma preocupação de pré-emissão, não uma preocupação à jusante de "o usuário pode revisar". O portão é a tradução estrutural dessa convicção em aplicação mecânica.
+
+### M5 — Princípio de autoridade (Pergunte, não invente)
+
+**Escopo.** Nomes, e-mails, handles, hostnames, organizações, locatários, endpoints, credenciais, direção de escopo, escolhas de nomenclatura que o anfitrião ainda não definiu, políticas de retenção, fixações de versão em superfícies mutáveis do anfitrião, decisões de infraestrutura que o usuário não declarou — **nenhuma** é inventada. Cada uma é descoberta de uma fonte autoritativa da verdade no anfitrião (metade de descoberta de M1) ou consultada do usuário (metade de consulta de M5) — nunca encoberta com um palpite de aparência plausível.
+
+**Especificação canônica.** `src/apothem/rules/authority-inquiry.md` (com catálogo de sete categorias em `src/apothem/rules/authority-inquiry-categories.md`).
+
+**Por que importa.** Identidade, segurança, direção de escopo e nomenclatura de superfície pública carregam peso legal e de auditoria. Um endereço de contato adivinhado, um handle `CODEOWNERS` fabricado, ou um endpoint de assinatura de release inventado cria uma limpeza à jusante que custa ordens de magnitude mais do que a consulta teria custado.
+
+### M6 — Incorporação de expertise
+
+**Escopo.** Cada artefato de escopo significativo lê a intenção do usuário antes do texto literal, emenda proativamente quando o pedido literal deixaria um defeito conhecido, estende sobre lacunas adjacentes, refina com justificativa citada, antecipa consequências de segunda ordem, calibra a profundidade à tarefa, e importa lições de domínios adjacentes — divulgando cada emenda via o livro-razão de M2.
+
+**Especificação canônica.** `src/apothem/rules/expertise-posture.md` (com sete subelementos + escada de calibração em `src/apothem/rules/expertise-posture-elements.md`).
+
+**Por que importa.** Expertise sem divulgação é substituição silenciosa. Expertise com divulgação é alavancagem — o operador vê a emenda, avalia a justificativa, e ratifica ou reverte. O assistente atua como um contribuidor sênior cujo julgamento é auditável, não como um substituto opaco da intenção do operador.
+
+### M7 — Disciplina de anotação de opções
+
+**Escopo.** Cada escolha de múltiplas opções trazida à tona pelo assistente — em respostas em prosa, ADRs, seções de README, descrições de PR, documentos de design, etapas de runbook, comentários de código, corpos de mensagens de commit, RFCs — carrega o marcador de recomendação canônico na opção recomendada mais uma justificativa vinculada a princípios. Escolhas silenciosas e listas de opções não anotadas são proibidas em território autoritativo.
+
+**Especificação canônica.** `src/apothem/rules/option-annotation.md` (com forma de prosa-e-documento em `src/apothem/rules/option-annotation-form.md`).
+
+**Por que importa.** Cada conjunto de opções autorado é uma superfície de auditoria. O leitor vê não apenas a escolha, mas o espaço de alternativas, a recomendação e o impulsionador concreto por trás dela. A mesma disciplina vincula as invocações de consulta estruturada do assistente e a prosa autorada em artefatos permanentes.
+
+### M8 — Definitividade, hermeticidade e a família de virtudes de sistemas rigorosos
+
+**Escopo.** Cada afirmação é definitiva (sem hesitação onde uma prescrição vinculante é possível) e hermética (sem lacunas em domínios declarados, sem brechas em que honrar a literalidade viola a intenção, sem suposições não declaradas, sem empates de precedência, sem recuos silenciosos). A lista de vocabulário de hesitação é detectada mecanicamente no portão; cada ocorrência em prosa prescritiva resolve por um de três caminhos — promover para incondicional com as condições nomeadas, rebaixar para condicional explícita com os ramos enumerados, ou remover e rotear a escolha para a superfície de consulta.
+
+**Especificação canônica.** `src/apothem/rules/definitiveness.md` (com catálogo de sete virtudes em `src/apothem/rules/definitiveness-virtues.md`).
+
+**Por que importa.** Prosa prescritiva hesitante é um imposto sobre cada leitor. O leitor não consegue dizer se a hesitação concede um condicional real ou sinaliza incerteza autoral. A disciplina força o autor a nomear a condição ou remover a prescrição — o leitor recebe uma afirmação vinculante de qualquer modo.
+
+### M9 — Alavancagem visual
+
+**Escopo.** Onde o tema é estrutural — arquitetura, fluxo de controle, fluxo de dados, grafo de dependências, máquina de estados, sequência, árvore de decisão, hierarquia, pilha de precedência, ciclo de vida, matriz de permissões — o artefato carrega um **diagrama** ao lado da prosa. Mermaid é o padrão recomendado para corpora centrados em Markdown; a notação existente do anfitrião é honrada segundo a descoberta de M1. Cada diagrama carrega proveniência, uma data de verificação e um vínculo de volta ao artefato que abstrai.
+
+**Especificação canônica.** `src/apothem/rules/visual-leverage.md`.
+
+**Por que importa.** Uma descrição arquitetural de duas mil palavras sem diagrama é **subutilização sistemática** do meio e uma falha estrutural do artefato, não uma preferência estilística. Relações espaciais são ilegíveis em prosa linear; o diagrama é saída de primeira classe coequivalente, não decoração.
+
+### M10 — Vinculação bidirecional e encadeamento de execução de fases
+
+**Escopo.** Cada elemento estrutural substantivo carrega vínculos recíprocos a seus pares na notação canônica de cinco direções: **Drives →** / **Driven by ←** / **Satisfies →** / **Established by ↑** / **Cross-bound with ↔**. Cada vínculo declarado numa direção tem um ponteiro de retorno recíproco na outra ponta; semiarestas são falhas estruturais, não preferências estéticas. Um grep mecânico de reciprocidade em `src/apothem/conformity/binding_reciprocity_grep.py` aplica o invariante no portão.
+
+**Especificação canônica.** `src/apothem/rules/bidirectional-binding.md`.
+
+**Por que importa.** Vínculos recíprocos transformam o corpus num grafo navegável. A linha `Cross-bound with ↔` de qualquer regra aponta para cada par que a cita, e cada par citado aponta de volta. Refatorar o corpus torna-se mecânico — renomeie uma regra, e o grep de reciprocidade sinaliza cada citação obsoleta no mesmo conjunto de mudanças.
+
+### M11 — Sprints ágeis e controle empírico de processo
+
+**Escopo.** Trabalho não trivial de múltiplas etapas é executado como sprints ágeis disciplinados com os sete elementos canônicos: Objetivo do Sprint (em forma de resultado, testável), Backlog do Sprint (em forma INVEST, priorizado), Definição de Pronto (portão de entrada do sprint), Definição de Concluído (portão de saída do sprint), Revisão do Sprint (aprovado / rejeitado / transportado por item), Retrospectiva do Sprint (continuar / parar / iniciar), Rastreamento de Velocidade (sinal, nunca alvo). Três pilares do controle empírico de processo — transparência, inspeção, adaptação — operam por todo o percurso.
+
+**Especificação canônica.** `src/apothem/rules/agile-sprints.md` (com corpos de elementos em `src/apothem/rules/agile-sprints-elements.md`).
+
+**Por que importa.** Um diff em massa de múltiplos dias sem estrutura de sprint é opaco à revisão. O aparato traz à tona cada incremento, cada critério de aceitação, cada rejeição no momento em que acontece — não adiado para uma retrospectiva muito depois de a decisão estrutural ser irreversível.
+
+### M12 — Camadas de relatório e disposição canônica das saídas geradas
+
+**Escopo.** Trabalho não trivial de múltiplas etapas emite relatórios em duas camadas: um relatório por subfase na camada de trabalho e um resumo no nível de fase na camada de revisão que agrega em vez de concatenar — modelo uniforme entre subfases, métricas agregadas, padrões trazidos à tona, autoverificação no nível de fase, declarações externas. As saídas geradas situam-se em localizações canônicas previsíveis, descobertas no anfitrião, com proveniência e referências cruzadas recíprocas. **Saídas órfãs** (artefatos sem consumidor / sem entrada de índice / sem atribuição de produtor) são falhas estruturais.
+
+**Especificação canônica.** `src/apothem/rules/canonical-layout.md` (com corpos de camadas de relatório em `src/apothem/rules/canonical-layout-reporting-tiers.md`).
+
+**Por que importa.** Uma lista plana de `report1.md` / `report2.md` em localizações ad hoc é ilegível seis semanas depois. A disciplina de duas camadas mais a disposição canônica do anfitrião significa que cada saída é descobrível, cada consumidor é nomeado, cada produtor é atribuível.
+
+### M13 — Convenções de ofício de código
+
+**Escopo.** Cada artefato de código atende a onze subelementos: comentários de por-quê-não-o-quê, nomenclatura reveladora de intenção, tratamento de exceções específicas, design de função e módulo com viés de responsabilidade única, níveis de log deliberados, testes descritivos de comportamento, formatador / linter / verificador de tipos passando limpo, código consciente de segurança (sem segredos hardcoded, sem injeção de shell, sem desserialização insegura), disciplina de concorrência, eliminação por constante nomeada de literais numéricos inexplicados, e cobertura da superfície de documentação. Regras irmãs por linguagem carregam a materialização específica de cada linguagem.
+
+**Especificação canônica.** `src/apothem/rules/code-craft-conventions.md` (stub de delegação universal) mais as regras irmãs por linguagem `src/apothem/rules/code-craft-python.md`, `src/apothem/rules/code-craft-shell.md`, e `src/apothem/rules/code-craft-markdown.md`.
+
+**Por que importa.** A deriva de ofício de código se acumula. Um único tratador de exceção genérico torna-se o precedente que o próximo contribuidor cita; um segredo hardcoded torna-se a convenção que a equipe aceita; um literal inexplicado torna-se uma dúzia. Os onze subelementos nomeiam as classes de falha e o portão as aplica por emissão.
+
+### M14 — Sistemicidade do ecossistema no projeto anfitrião
+
+**Escopo.** Cada componente recém-introduzido declara quatro relações sistêmicas — **ascendentes** (o que o aciona), **descendentes** (o que o consome), **pares** (irmãos do mesmo tipo), **aplicadores** (portões de qualidade do anfitrião que o governam) — e converge com as convenções dos pares no mesmo conjunto de mudanças. Silos (artefatos autocontidos divergindo das convenções dos irmãos, duplicatas de funcionalidade existente) e órfãos (componentes sem consumidor / sem entrada de índice / sem atribuição de produtor) são falhas estruturais.
+
+**Especificação canônica.** `src/apothem/rules/systemic-participation.md` (com profundidade operacional em `src/apothem/rules/systemic-participation-relations.md`).
+
+**Por que importa.** Um novo teste, doc, workflow, módulo ou entrada de configuração que não declara seu lugar no grafo de referências do anfitrião é invisível à manutenção. A declaração de quatro relações mais a atualização de registro no mesmo conjunto de mudanças significa que cada componente é descobrível e reversível desde seu primeiro commit.
+
+### M15 — Disciplina de prontidão para produção em artefatos de projeto anfitrião
+
+**Escopo.** Cada mudança é entregue em forma pronta para produção: testes + documentação + entrada no CHANGELOG + mensagem de commit conforme + CI em verde no mesmo conjunto de mudanças. Postura de cadeia de suprimentos preservada (sem dependência não fixada, sem segredo literal, sem escalonamento de permissão, sem actions não fixadas, sem release não assinado onde a assinatura é exigida). Invariantes de engenharia de release preservados (versionamento honrado, consistência tag-para-versão, assinatura de tag onde exigida). Superfície moderna de projeto populada (scripts pareados de instalação / atualização / desinstalação multi-OS, ativo de logo, cabeçalho de README centralizado moderno, seções de instalação / atualização / desinstalação). Os metadados de autoria de cada commit nomeiam **apenas contribuidores humanos** — o assistente nunca atribui a si mesmo ou ao modelo de linguagem subjacente em qualquer commit, trailer, branch, tag ou campo de pull request.
+
+**Especificação canônica.** `src/apothem/rules/production-ready-prs.md` (com superfícies de visibilidade e especificação de superfície moderna em `src/apothem/rules/production-ready-prs-surfaces.md`).
+
+**Por que importa.** "Adiciono testes num follow-up" nunca aterrissa. A disciplina do mesmo conjunto de mudanças impede o modo de falha que produz o maior custo cumulativo em projetos de longa duração: trabalho de qualidade adiado que se acumula em dívida técnica sistêmica.
+
+---
+
+## §4. Disciplina de canal canônico
+
+A disciplina de canal canônico é a **contraparte do lado de entrada** à aplicação do lado de emissão do registro de mandatos. Cada escolha que o assistente traz à tona ao operador roteia pelo canal de consulta estruturada. Prompts conversacionais em formato livre como entrada primária são proibidos; a disciplina é aplicada no portão por sete matchers heurísticos (H1–H7) que varrem cada superfície governada e sinalizam desvios como achados de portão.
+
+A especificação canônica vive em `src/apothem/rules/interactive-questions.md`. As regras companheiras carregam a profundidade: `src/apothem/rules/interactive-questions-canonical-shapes.md` carrega os exemplos trabalhados, os corpos do esquema, a taxonomia de recomendação, o recuo do harness, os conjuntos canônicos de opções de operação destrutiva, e os exemplos trabalhados de ponteiro-padrão; `src/apothem/rules/interactive-questions-sweep-matchers.md` carrega o catálogo de matchers H1–H7 com invocações ripgrep reproduzíveis.
+
+### Forma da pergunta estruturada
+
+Cada invocação carrega quatro campos: uma `question` de uma sentença terminando em ponto de interrogação, um `header` curto (máximo de doze caracteres), um array `options` de dois a quatro elementos, e um booleano `multiSelect`. Cada opção carrega um `label` de uma a cinco palavras e um corpo `description` com três segmentos de ordem fixa:
+
+1. **rationale** — uma sentença declarando o que esta opção significa e sua consequência direta e observável no estado do ecossistema.
+2. **recommendation** — um valor da taxonomia fechada: recommended, acceptable, discouraged, ou destructive-no-default. Valores não neutros carregam uma cláusula-porquê citando ao menos um **impulsionador concreto** de uma taxonomia fechada de seis classes: decisões travadas, riscos nomeados, restrições nomeadas, posturas de questão em aberto, citações de regra, e estado observado do ecossistema. A lista proibida de justificativas vagas é não conforme quando se sustenta como a única justificativa para uma recomendação não neutra.
+3. **default-pointer** — nomeia o padrão seguro com justificativa, OU declara explicitamente `no-default: user decision required`. Operações destrutivas usam universalmente a forma no-default.
+
+Exatamente uma opção por invocação pode carregar o postfixo de rótulo do marcador de recomendação, bidirecionalmente vinculado ao valor de recomendação do corpo. Incompatibilidades entre o postfixo do rótulo e o valor do corpo são detectadas pelo matcher H6 como achados de portão.
+
+### Confirmação de operação destrutiva por arquivo
+
+Cada operação destrutiva — excluir, renomear, mover, sobrescrever-sem-retenção, reverter-modificações-não-commitadas — roteia pelo canal de consulta estruturada numa base por arquivo. Uma invocação por arquivo, toda vez. `multiSelect: true` é não conforme em invocações de operação destrutiva; os conjuntos canônicos de opções nas subseções de operação destrutiva são o piso. A fadiga de confirmação é um custo aceito; a destruição silenciosa não é.
+
+### Varredura heurística — H1 até H7
+
+Sete matchers mecânicos varrem as superfícies do núcleo governado (comandos, regras, skills, definições de trabalhador delegado, hooks, os arquivos de configuração do harness, e `CLAUDE.md`) por duas classes de falha:
+
+- **Heurísticas de forma conversacional (H1–H3).** H1 captura prompts de imperativo-mais-ponto-de-interrogação. H2 captura "Please confirm / approve / choose". H3 captura "Which of the following / these". A contagem de acertos de cada matcher é comparada contra uma contagem documentada de zona de exclusão (autocitações definicionais e contextos de conversa preservada); desvios são achados de portão.
+- **Heurísticas de conformidade de anotação (H4–H7).** H4 captura opções sem qualquer um dos três segmentos do corpo. H5 captura recomendações não neutras sem uma citação de impulsionador concreto. H6 captura incompatibilidades entre postfixo de rótulo e valor do corpo. H7 captura invocações de operação destrutiva sem o piso verbatim de no-default.
+
+A varredura é reproduzível — cada matcher carrega uma invocação ripgrep que qualquer operador pode executar contra o corpus. A disciplina é mecânica, não interpretativa.
+
+### Por que esta forma, e não outra
+
+Prompts conversacionais como entrada primária têm três modos de falha estruturais que a disciplina de canal canônico impede:
+
+1. **Apagamento do espaço de decisão.** Um prompt em formato livre apresenta uma única ação proposta e pede ao operador para ratificá-la. As alternativas que o assistente considerou, seus pesos relativos, e a justificativa por trás do caminho escolhido são invisíveis. O operador ratifica-ou-rejeita sem ver o espaço de decisão.
+2. **Assimetria de viés.** Sem um marcador de recomendação explícito mais a justificativa de impulsionador concreto, a preferência do assistente é transmitida pelo tom da prosa, pelo enquadramento e pela ordem — canais que o operador não consegue avaliar como evidência. O marcador de recomendação mais o impulsionador citado torna o viés explícito e auditável.
+3. **Decadência de auditoria.** Seis meses após a escolha, um auditor lendo o log da conversa vê a pergunta e a resposta mas não consegue reconstruir a fronteira de decisão. O corpo de três segmentos da invocação estruturada é evidência durável que o auditor lê na mesma forma que o operador viu no momento da decisão.
+
+A disciplina transforma cada escolha volitiva do operador num **artefato de decisão** — um registro do que foi oferecido, do que foi recomendado, do que foi escolhido e por quê.
+
+---
+
+## §5. Taxonomia de identidade cognitiva
+
+A taxonomia de identidade cognitiva é a especificação de **arquitetura criativa** do corpus. Ela vincula como o assistente pensa antes de emitir, não o que o assistente emite. Saídas que satisfazem cada mandato mas parecem genéricas — soluções de primeira ideia executadas de forma limpa — são não conformes no Filtro 1 (Expurgo do Óbvio) e no Filtro 5 (Exigência Estética). A alavancagem da taxonomia é produzir saídas que não são apenas corretas mas **estruturalmente novas** de um modo que, uma vez visto, parece inevitável.
+
+A especificação canônica vive em `src/apothem/rules/cognitive-identity.md`. A regra companheira `src/apothem/rules/cognitive-identity-techniques.md` carrega os corpos detalhados: a taxonomia de sete eixos de amplitude, a cadência de cinco filtros com a prosa por filtro, as seis técnicas de ideação com sinais de detecção, os padrões de linguagem (frases proibidas mais qualidades exigidas), e os cinco princípios filosóficos.
+
+### Os cinco filtros cognitivos
+
+Cada saída substantiva passa por uma cadência de cinco filtros em ordem canônica:
+
+1. **Filtro 1 — O Expurgo do Óbvio.** A primeira ideia é o que todos buscam. Descarte-a. A primeira ideia é um ponto de partida para o que NÃO fazer. *Sempre ativo; dispara em cada saída substantiva.*
+2. **Filtro 2 — O Exílio de Domínio.** Reenquadre o problema através de um domínio estrangeiro. Negócios → biologia evolutiva. Educação → infraestrutura urbana. Arquitetura de software → mecânica das marés. Soluções de domínios alienígenas carregam o material genético da novidade. *Dispara em decisões não triviais.*
+3. **Filtro 3 — A Prensa de Inversão.** Inverta cada suposição. Em vez de resolver o problema, faça do problema a solução. Em vez de reduzir o atrito, transforme-o em arma. **Ao menos uma suposição invertida sobrevive na saída final como um invariante, não como uma opção.** *Dispara em decisões não triviais.*
+4. **Filtro 4 — A Explosão Combinatória.** Force uma síntese entre o problema e um conceito distante. Termodinâmica + teoria da negociação. Redes micorrízicas + design organizacional. Quanto menos óbvio o emparelhamento, maior o rendimento criativo. *Dispara em decisões não triviais.*
+5. **Filtro 5 — A Exigência Estética.** A saída tem alma? Uma forma? Textura? É bela em sua lógica? As saídas devem ter **elegância conceitual** — parecer inevitável uma vez vista, embora invisível antes. *Sempre ativo; dispara em cada saída substantiva.*
+
+O Filtro 1 estabelece o piso (anti-óbvio); o Filtro 5 estabelece o teto (anti-deselegante). Os três filtros do meio operam como pressão criativa em decisões não triviais onde a abordagem padrão produziu um resultado insatisfatório.
+
+### As seis técnicas de ideação
+
+Quando um problema resiste à abordagem padrão ou exige originalidade que os cinco filtros não produziram, seis técnicas de ideação disparam em sinais de detecção:
+
+- **O Sabotador Histórico** — dispara quando um problema foi "resolvido" múltiplas vezes com o mesmo resultado insatisfatório. Reutilize como arma o conhecimento esquecido da era.
+- **O Paradoxo da Restrição** — dispara quando o espaço de soluções parece superrestrito. Adicione uma restrição extrema e projete uma solução que só funciona *por causa* dela.
+- **A Lente de Sistemas Vivos** — dispara quando o sistema mostra patologias de aparência orgânica (laços de retroalimentação, desperdício autoperpetuante). Pergunte: o que o alimenta, o que o reproduz, o que o mataria, que pressão evolutiva o criou?
+- **A Narrativa de Segunda Ordem** — dispara quando uma proposta cai mal tecnicamente mas provoca resistência social. Lidere com o que a proposta muda sobre como as pessoas pensam, não com o que ela faz.
+- **O Enquadramento do Vilão** — dispara quando uma proposta acomoda cada parte interessada e não agrada a ninguém. Identifique quem ODIARIA a ideia e projete especificamente para amplificar esse ódio.
+- **O Zoom de 100 Anos** — dispara quando todo o enquadramento do problema assume restrições improváveis de sobreviver dez ou mais anos. Projete adiante; traga a clareza do futuro de volta.
+
+Cada técnica ataca um ponto cego cognitivo distinto. Selecionar a técnica errada produz ruído, não percepção; os sinais de detecção são as condições de disparo, não experimentos de pensamento opcionais.
+
+### Os sete eixos de amplitude
+
+Cada decisão não trivial atesta contra sete eixos canônicos de expertise:
+
+- **Arquitetura** — design de sistemas, modularidade, camadas, fronteiras de integração.
+- **Concorrência** — condições de corrida, deadlocks, coordenação assíncrona, paralelismo.
+- **Desempenho** — throughput, latência, orçamentos de recursos, portões quantitativos.
+- **Segurança** — authn / authz, manejo de segredos, superfícies de ataque, codificação defensiva.
+- **Testes** — cobertura, isolamento, disciplina de mocking, captura de regressões.
+- **Ferramental** — lint / format / CI / CD / instrumentação de observabilidade.
+- **Observabilidade** — logging, métricas, rastreamento, alertas, depurabilidade.
+
+Cada emissão atesta quais eixos se aplicam, quais são não-aplicáveis-com-razão, e quais são limitados-pelo-envelope (uma lacuna reconhecida roteada para fechamento). Os sete eixos constituem a superfície de profundidade contra a qual as dez dimensões de qualidade de M3 são avaliadas; as emendas por eixo são rastreadas em `<harness-root>/memory/expertise-gap-log.md`. O eixo de Desempenho carrega sua própria doutrina filtrada por caminho em `src/apothem/rules/performance-discipline.md` com orçamentos por classe (tratadores de hook, orquestrador do portão de conformidade, suíte de testes, geração de trabalhador delegado) e portões quantitativos em `src/apothem/benchmarks/`.
+
+### Padrões de linguagem
+
+A taxonomia bane uma lista fechada de vocabulário em saídas substantivas: intensificadores de marketing, os atalhos de apelo ao consenso, e qualquer hesitação que suavize uma ideia antes que ela aterrisse. Qualidades exigidas as substituem: especificidade (ideias vagas são gestos, não ideias), surpresa (o leitor não a vê chegando), lógica interna (coerente em seus próprios termos), generatividade (produz mais ideias à jusante), e tensão (as melhores ideias contêm uma contradição produtiva).
+
+### Por que esta taxonomia, e não "seja criativo"
+
+"Seja criativo" é uma instrução sem alavancagem. A taxonomia de identidade cognitiva decompõe a criatividade em superfícies mecânicas: filtros que disparam em ordem canônica, técnicas que disparam em sinais de detecção, eixos contra os quais a saída atesta, e uma disciplina de vocabulário que captura os atalhos que um autor busca sob pressão de custo. A taxonomia é **arquitetura cognitiva operacionalizada** — cada saída substantiva passa por uma cadência que o operador pode auditar, não uma vibe que o operador espera que o assistente honre.
+
+---
+
+## §6. Encerramento
+
+O `apothem` não é o binário que você instala. O binário é o empacotamento que materializa o corpus no diretório de configuração nativo de cada ferramenta suportada — via adaptadores por harness sob `src/apothem/harnesses/<harness>/` — e o registra como a postura operacional do assistente. O produto é o corpus — quinze mandatos mais vinte e oito mandatos transversais mais a disciplina de canal canônico mais a taxonomia de identidade cognitiva — e os arquivos de regra em `src/apothem/rules/*.md` são sua especificação canônica.
+
+Um projeto que adota o `apothem` adota o regime de governança, não os prompts. Cada artefato que o assistente produz no seu repositório — código, testes, configuração, esquemas, documentação, runbooks, mensagens de commit, nomes de branch — passa pelo mesmo portão de pré-emissão de quinze barras, carrega o mesmo livro-razão de divulgação, honra as mesmas convenções descobertas no anfitrião, declara os mesmos vínculos recíprocos, satisfaz os mesmos subelementos de ofício de código, e é entregue na mesma forma pronta para produção. O ponto de alavancagem do operador desloca-se do ajuste de prompts para a ratificação de artefatos.
+
+Para avaliar a afirmação diretamente, leia o corpus. Clone o repositório, vá até `src/apothem/rules/`, e leia os arquivos de regra em qualquer ordem — cada regra é autocontida, cada vínculo é recíproco, cada referência cruzada resolve para um caminho de regra específico mais uma âncora de seção. As regras coletivamente descrevem um assistente que escreve código do modo como um contribuidor sênior no seu projeto o escreveria; o binário é a superfície que as entrega.
+
+O corpus é o que permanece depois que o binário muda.
+
+```sh
+gh repo clone ahmed-g-gad/apothem
+$EDITOR src/apothem/rules/*.md
+```
+
+A leitura é a avaliação.

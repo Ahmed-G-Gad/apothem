@@ -1,0 +1,73 @@
+---
+title: "/research-sources"
+description: "/research-sources — Collecte systématique de sources : décompose la spécification en sous-requêtes, déploie la découverte en parallèle, filtre et classe, puis extrait par source dans un registre de sources classé."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rôle :** Investigateur principal (collecte de sources)
+**Position dans le pipeline :** intermédiaire
+
+Collecte systématique de sources — décompose la spécification de recherche en sous-requêtes, déploie en parallèle la découverte de sources et l'extraction par source, déduplique, classe par autorité / récence / pertinence, filtre par rapport aux critères d'inclusion de la spécification et enregistre la provenance de chaque source retenue.
+
+## Invocation canonique
+
+```bash
+/research-sources
+```
+
+Avec des arguments :
+
+```bash
+/research-sources [path/to/research-suite/] [--depth N]
+```
+
+## Entrées
+
+`_inputs/theory.md` (le cadre conceptuel / théorique issu de `/research-theory`, l'étape précédente) plus `_spec/research-spec.md` (la spécification de recherche approuvée issue de `/research-spec`).
+
+## Sorties
+
+`sources/<id>.md` (une extraction avec provenance par source retenue) + `_inputs/source-ledger.md` (l'index de sources classé, filtré et dédupliqué avec un index de citations).
+
+## En aval
+
+/research-synthesis (consommateur en aval)
+
+## Phases du flux de travail
+
+La commande suit le flux de travail standard du pipeline `/research` :
+
+1. **Charger le contexte** — Lire la spécification de recherche et ses critères d'inclusion / d'exclusion.
+2. **Vérifier la Porte de séquence** — Confirmer que `_inputs/theory.md` (et la spécification `_spec/research-spec.md` approuvée) existe ; sinon, s'arrêter avec `Blocked: run /research-theory first`.
+3. **Découvrir et extraire** — Décomposer en sous-requêtes, déployer la découverte, dédupliquer, classer, filtrer et extraire par source avec provenance.
+4. **Vérifier les sorties** — Confirmer que chaque source retenue est citée et filtrée par rapport aux critères de la spécification.
+5. **Mettre à jour le manifeste de transfert** — Enregistrer le registre de sources et les chemins d'extraction par source.
+6. **Émettre le registre** — Les extractions de `sources/` plus `_inputs/source-ledger.md`.
+
+## Seuil de rigueur
+
+Au-delà du registre de sources, cette étape construit un registre de provenance des comparateurs : les références de l'état de l'art les plus récentes et les plus proches contre lesquelles l'étude sera exécutée, chacune vérifiée jusqu'à une source récupérable et consignée avec sa provenance et son accessibilité. Un comparateur qui ne peut être confirmé ni récupéré est marqué comme tel et n'est jamais fabriqué (R1, R4).
+
+## Modes de défaillance
+
+| Symptôme | Cause | Récupération |
+|---------|-------|----------|
+| Blocked: run /research-theory first | Aucun ancrage théorique | Exécutez `/research-theory` pour produire `_inputs/theory.md` |
+| Source ne satisfaisant pas les critères d'inclusion | Source hors périmètre ou de faible autorité | Filtrez-la ; enregistrez le motif d'exclusion dans le registre |
+| Citation fabriquée | Source devinée, non récupérée | N'inventez jamais de source ; une citation devinée est un constat |
+
+## Exemples
+
+```bash
+# Collecter les sources pour une suite de recherche cadrée
+/research-sources path/to/research-suite/
+
+# Déploiement de découverte plus profond
+/research-sources path/to/research-suite/ --depth N
+```
+
+## Références croisées
+
+- [Vue d'ensemble du pipeline](/docs/pipeline)
+- [Référence des commandes](/docs/reference/commands)

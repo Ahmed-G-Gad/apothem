@@ -1,0 +1,50 @@
+---
+title: "Apothem vs. rohe Hermes-Konfiguration"
+description: "Die Hermes-Konfiguration von Hand pflegen versus sie über Apothems gemeinsames Profil verwalten."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Hermes liest `~/.hermes/config.yaml`. Apothem schreibt die native
+YAML-Konfiguration (projiziert das MCP-Inventar des Profils in `auxiliary.mcp`)
+und installiert gemeinsame Befehls- und Skill-Kohorten unter
+`~/.hermes/.apothem/support/skills/`. Hermes' eigenes `skills.config` ist eine Liste von
+Registry-Paketen, daher schreibt Apothem es nicht.
+
+## Status
+
+**Vorschau.** Der Hermes-Adapter zielt auf die aktuell dokumentierte
+Konfigurationsdatei und die Skill-Erkennungsfläche. Nicht-Skill-Kohorten bleiben
+Apothem-Unterstützungsmaterial.
+
+## Aufwandsvergleich
+
+| Aufgabe | Rohe Handkonfiguration | Apothem-verwaltet |
+| ---- | --------------- | --------------- |
+| Wiederverwendbare Skills schreiben | Konfiguration und Skill-Verzeichnisse von Hand bearbeiten | Einmal im gemeinsamen Korpus schreiben |
+| Kohorten mit anderen Harnesses abgestimmt halten | Manuell, pro Werkzeug | Automatisch bei `apothem update` |
+| Konfiguration installieren / entfernen | Manuell | `apothem install` / `apothem uninstall` |
+| Prüfen, ob die Konfiguration korrekt ist | Manuelle Inspektion | `apothem verify --harness hermes` |
+
+## Was Apothem verwaltet
+
+Der Hermes-Adapter schreibt `config.yaml`, verpackt Apothems Slash-Befehle als
+Skills, kopiert Apothem-Skills in das referenzierte Unterstützungsverzeichnis und
+hält Regeln, Templates, Agents und Hook-Material unter dem
+Apothem-Unterstützungsteilbaum.
+
+## Migrationspfad
+
+1. Führe `apothem profile init` aus, um das gemeinsame Profil zu erstellen, falls
+   noch nicht geschehen.
+2. Verschiebe wiederverwendbare Hermes-Skills oder Befehls-Prompts in den
+   gemeinsamen Korpus.
+3. Führe `apothem install --harness hermes` aus, um die native Konfiguration und
+   das Unterstützungs-Skill-Verzeichnis zu rendern.
+4. Führe `apothem verify --harness hermes` aus, um zu bestätigen, dass die
+   Konfiguration gelandet ist.
+
+## Als Nächstes lesen
+
+- [Hermes-Adapter-Referenz](/docs/harnesses/hermes)
+- [Vergleichsüberblick](/docs/comparison)

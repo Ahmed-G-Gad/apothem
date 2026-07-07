@@ -1,0 +1,267 @@
+[
+  {
+    "detail": {
+      "capability": "mcp_servers",
+      "status": "discovery-pending"
+    },
+    "message": "MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries.",
+    "operation": "capability_projection",
+    "outcome": "warning",
+    "path": "src/apothem/harnesses/claude_code/capabilities.yml"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/src"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/conformity"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/schemas"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/hooks"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/config"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/scripts"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/tools"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/lib"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/templates"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/docs"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/tests"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/packaging"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/mcp"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/examples"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/assets"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/site"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/public"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/commands"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/statuslines/__init__.py"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/rules/AGENTS.md"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/skills/AGENTS.md"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/agents/AGENTS.md"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/statuslines/AGENTS.md"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/output-styles/AGENTS.md"
+  },
+  {
+    "detail": {
+      "diff": "--- a/settings.json\n+++ b/settings.json\n@@ -0,0 +1,351 @@\n+{\n+  \"permissions\": {\n+    \"allow\": [\n+      \"Read\",\n+      \"Glob\",\n+      \"Grep\",\n+      \"Bash(git log:*)\"\n+    ],\n+    \"deny\": [\n+      \"Read(.env*)\",\n+      \"Read(**/.env)\",\n+      \"Read(**/.env.*)\",\n+      \"Read(~/.ssh/**)\",\n+      \"Read(**/.audit/**)\",\n+      \"Read(**/__pycache__/**)\",\n+      \"Read(**/.mypy_cache/**)\",\n+      \"Read(**/.pytest_cache/**)\",\n+      \"Read(**/.ruff_cache/**)\",\n+      \"Read(**/.tox/**)\",\n+      \"Read(**/.venv/**)\",\n+      \"Read(**/node_modules/**)\",\n+      \"Read(**/dist/**)\",\n+      \"Read(**/build/**)\",\n+      \"Read(**/site/dist/**)\",\n+      \"Bash(rm -rf /:*)\",\n+      \"Bash(rm -rf /*:*)\",\n+      \"Bash(rm -rf ~:*)\",\n+      \"Bash(rm -rf ~/:*)\",\n+      \"Bash(sudo:*)\",\n+      \"Bash(git push --force:*)\",\n+      \"Bash(git push --force-with-lease:*)\",\n+      \"Bash(git push -f:*)\",\n+      \"Bash(eval:*)\",\n+      \"Bash(exec:*)\"\n+    ]\n+  },\n+  \"hooks\": {\n+    \"SessionStart\": [\n+      {\n+        \"matcher\": \"*\",\n+        \"hooks\": [\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"${PYTHON_BIN}\",\n+            \"timeout\": 30,\n+            \"statusMessage\": \"Initializing session posture\",\n+            \"args\": [\n+              \"<ROOT>/.apothem/support/hooks/dispatch.py\",\n+              \"SessionStart\"\n+            ]\n+          }\n+        ]\n+      }\n+    ],\n+    \"PreToolUse\": [\n+      {\n+        \"matcher\": \"Write\",\n+        \"hooks\": [\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"${PYTHON_BIN}\",\n+            \"timeout\": 10,\n+            \"statusMessage\": \"Validating write target and content\",\n+            \"args\": [\n+              \"<ROOT>/.apothem/support/hooks/dispatch.py\",\n+              \"PreToolUse\",\n+              \"pretooluse-write\"\n+            ]\n+          },\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"${PYTHON_BIN}\",\n+            \"timeout\": 10,\n+            \"statusMessage\": \"Injecting authorship header if missing\",\n+            \"args\": [\n+              \"<ROOT>/.apothem/support/hooks/dispatch.py\",\n+              \"PreToolUse\",\n+              \"pretooluse-write-header-guard\"\n+            ]\n+          },\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"${PYTHON_BIN}\",\n+            \"timeout\": 10,\n+            \"statusMessage\": \"Enforcing plans locality on the target path\",\n+            \"args\": [\n+              \"<ROOT>/.apothem/support/hooks/dispatch.py\",\n+              \"PreToolUse\",\n+              \"pretooluse-write-plan-guard\"\n+            ]\n+          },\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"${PYTHON_BIN}\",\n+            \"timeout\": 10,\n+            \"statusMessage\": \"Flagging unpinned or untrusted dependency additions\",\n+            \"args\": [\n+              \"<ROOT>/.apothem/support/hooks/dispatch.py\",\n+              \"PreToolUse\",\n+              \"pretooluse-dependency-guard\"\n+            ]\n+          },\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"${PYTHON_BIN}\",\n+            \"timeout\": 10,\n+            \"statusMessage\": \"Flagging unsafe dynamic evaluation or deserialization\",\n+            \"args\": [\n+              \"<ROOT>/.apothem/support/hooks/dispatch.py\",\n+              \"PreToolUse\",\n+              \"pretooluse-eval-guard\"\n+            ]\n+          },\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"${PYTHON_BIN}\",\n+            \"timeout\": 10,\n+            \"statusMessage\": \"Running conformity checks on proposed content\",\n+            \"args\": [\n+              \"<ROOT>/.apothem/support/conformity/gate.py\",\n+              \"--hook\"\n+            ]\n+          }\n+        ]\n+      },\n+      {\n+        \"matcher\": \"Edit\",\n+        \"hooks\": [\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"${PYTHON_BIN}\",\n+            \"timeout\": 10,\n+            \"statusMessage\": \"Validating edit target and content\",\n+            \"args\": [\n+              \"<ROOT>/.apothem/support/hooks/dispatch.py\",\n+              \"PreToolUse\",\n+              \"pretooluse-edit\"\n+            ]\n+          },\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"${PYTHON_BIN}\",\n+            \"timeout\": 10,\n+            \"statusMessage\": \"Injecting authorship header on file creation\",\n+            \"args\": [\n+              \"<ROOT>/.apothem/support/hooks/dispatch.py\",\n+              \"PreToolUse\",\n+              \"pretooluse-edit-header-guard\"\n+            ]\n+          },\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"${PYTHON_BIN}\",\n+            \"timeout\": 10,\n+            \"statusMessage\": \"Enforcing plans locality on the target path\",\n+            \"args\": [\n+              \"<ROOT>/.apothem/support/hooks/dispatch.py\",\n+              \"PreToolUse\",\n+              \"pretooluse-write-plan-guard\"\n+            ]\n+          },\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"${PYTHON_BIN}\",\n+            \"timeout\": 10,\n+            \"statusMessage\": \"Flagging unpinned or untrusted dependency additions\",\n+            \"args\": [\n+              \"<ROOT>/.apothem/support/hooks/dispatch.py\",\n+              \"PreToolUse\",\n+              \"pretooluse-dependency-guard\"\n+            ]\n+          },\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"${PYTHON_BIN}\",\n+            \"timeout\": 10,\n+            \"statusMessage\": \"Flagging unsafe dynamic evaluation or deserialization\",\n+            \"args\": [\n+              \"<ROOT>/.apothem/support/hooks/dispatch.py\",\n+              \"PreToolUse\",\n+              \"pretooluse-eval-guard\"\n+            ]\n+          },\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"${PYTHON_BIN}\",\n+            \"timeout\": 10,\n+            \"statusMessage\": \"Running conformity checks on proposed content\",\n+            \"args\": [\n+              \"<ROOT>/.apothem/support/conformity/gate.py\",\n+              \"--hook\"\n+            ]\n+          }\n+        ]\n+      },\n+      {\n+        \"matcher\": \"NotebookEdit\",\n+        \"hooks\": [\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"${PYTHON_BIN}\",\n+            \"timeout\": 10,\n+            \"statusMessage\": \"Validating notebook cell content\",\n+            \"args\": [\n+              \"<ROOT>/.apothem/support/hooks/dispatch.py\",\n+              \"PreToolUse\",\n+              \"pretooluse-notebookedit\"\n+            ]\n+          },\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"${PYTHON_BIN}\",\n+            \"timeout\": 10,\n+            \"statusMessage\": \"Enforcing plans locality on the notebook path\",\n+            \"args\": [\n+              \"<ROOT>/.apothem/support/hooks/dispatch.py\",\n+              \"PreToolUse\",\n+              \"pretooluse-write-plan-guard\"\n+            ]\n+          }\n+        ]\n+      },\n+      {\n+        \"matcher\": \"Bash\",\n+        \"hooks\": [\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"${PYTHON_BIN}\",\n+            \"timeout\": 10,\n+            \"statusMessage\": \"Validating shell command safety and isolation\",\n+            \"args\": [\n+              \"<ROOT>/.apothem/support/hooks/dispatch.py\",\n+              \"PreToolUse\",\n+              \"pretooluse-bash\"\n+            ]\n+          },\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"${PYTHON_BIN}\",\n+            \"timeout\": 10,\n+            \"statusMessage\": \"Enforcing plans locality on shell redirections\",\n+            \"args\": [\n+              \"<ROOT>/.apothem/support/hooks/dispatch.py\",\n+              \"PreToolUse\",\n+              \"pretooluse-bash-plan-guard\"\n+            ]\n+          },\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"${PYTHON_BIN}\",\n+            \"timeout\": 10,\n+            \"statusMessage\": \"Flagging unsafe dynamic evaluation or deserialization\",\n+            \"args\": [\n+              \"<ROOT>/.apothem/support/hooks/dispatch.py\",\n+              \"PreToolUse\",\n+              \"pretooluse-eval-guard\"\n+            ]\n+          }\n+        ]\n+      },\n+      {\n+        \"matcher\": \"AskUserQuestion\",\n+        \"hooks\": [\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"${PYTHON_BIN}\",\n+            \"timeout\": 10,\n+            \"statusMessage\": \"Validating the (Recommended) option marker\",\n+            \"args\": [\n+              \"<ROOT>/.apothem/support/hooks/dispatch.py\",\n+              \"PreToolUse\",\n+              \"pretooluse-askuserquestion-recommended\"\n+            ]\n+          }\n+        ]\n+      }\n+    ],\n+    \"PostToolUse\": [\n+      {\n+        \"matcher\": \"*\",\n+        \"hooks\": [\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"${PYTHON_BIN}\",\n+            \"timeout\": 10,\n+            \"statusMessage\": \"Tracking activity for proactive-compaction advisory\",\n+            \"args\": [\n+              \"<ROOT>/.apothem/support/hooks/dispatch.py\",\n+              \"PostToolUse\",\n+              \"posttooluse-proactive-compaction\"\n+            ]\n+          }\n+        ]\n+      }\n+    ],\n+    \"PreCompact\": [\n+      {\n+        \"matcher\": \"*\",\n+        \"hooks\": [\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"${PYTHON_BIN}\",\n+            \"timeout\": 30,\n+            \"statusMessage\": \"Externalizing state before context compression\",\n+            \"args\": [\n+              \"<ROOT>/.apothem/support/hooks/dispatch.py\",\n+              \"PreCompact\",\n+              \"precompact\"\n+            ]\n+          }\n+        ]\n+      }\n+    ],\n+    \"PostCompact\": [\n+      {\n+        \"matcher\": \"*\",\n+        \"hooks\": [\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"${PYTHON_BIN}\",\n+            \"timeout\": 30,\n+            \"statusMessage\": \"Restoring state from durable files after compaction\",\n+            \"args\": [\n+              \"<ROOT>/.apothem/support/hooks/dispatch.py\",\n+              \"PostCompact\",\n+              \"postcompact\"\n+            ]\n+          }\n+        ]\n+      }\n+    ],\n+    \"Stop\": [\n+      {\n+        \"matcher\": \"*\",\n+        \"hooks\": [\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"${PYTHON_BIN}\",\n+            \"timeout\": 60,\n+            \"statusMessage\": \"Finalizing session and externalizing state\",\n+            \"args\": [\n+              \"<ROOT>/.apothem/support/hooks/dispatch.py\",\n+              \"Stop\",\n+              \"stop\"\n+            ]\n+          }\n+        ]\n+      }\n+    ]\n+  }\n+}\n",
+      "ownership_class": "operator-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "write_text",
+    "outcome": "created",
+    "path": "<ROOT>/settings.json",
+    "source": "<APOTHEM_SRC>/harnesses/claude_code/templates/settings.json"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/agents",
+    "source": "<APOTHEM_SRC>/agents"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "command_skills",
+    "outcome": "created",
+    "path": "<ROOT>/skills",
+    "source": "<APOTHEM_SRC>/commands"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/rules",
+    "source": "<APOTHEM_SRC>/rules"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/skills",
+    "source": "<APOTHEM_SRC>/skills"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/support/templates",
+    "source": "<APOTHEM_SRC>/templates"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/support/hooks",
+    "source": "<APOTHEM_SRC>/hooks"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/support/conformity",
+    "source": "<APOTHEM_SRC>/conformity"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/support/schemas",
+    "source": "<APOTHEM_SRC>/schemas"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/statuslines",
+    "source": "<APOTHEM_SRC>/statuslines"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/output-styles",
+    "source": "<APOTHEM_SRC>/output-styles"
+  }
+]

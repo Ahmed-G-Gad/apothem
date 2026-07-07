@@ -1,0 +1,100 @@
+---
+title: "Perbandingan"
+description: "Cara mengevaluasi Apothem dibandingkan konfigurasi harness yang dipelihara secara manual dan pendekatan konfigurasi lainnya, dengan matriks fitur dan halaman per harness."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem adalah pengelola konfigurasi AI-harness yang tidak bergantung pada
+host. Satu profil bersama di `~/.config/apothem/profile.yaml` dimaterialisasikan
+ke tujuh belas permukaan konfigurasi native-harness. Bagian ini membingkai cara
+mengevaluasi Apothem dibandingkan alternatif yang sudah Anda gunakan.
+
+## Bagaimana Apothem dibandingkan
+
+Alat lain menyelesaikan bagian-bagian berdekatan dari masalah ini. Pengelola
+konfigurasi berbasis berkas seperti **chezmoi** dan **GNU Stow** menempatkan atau
+membuat templat berkas tetapi tidak pernah menerjemahkan satu sumber ke
+konfigurasi *native* setiap harness. CLI sinkronisasi aturan antaralat
+seperti **rulesync** memang menghasilkan berkas native per alat di lebih banyak
+alat daripada tujuh belas milik Apothem, dan unit yang disinkronkan pun setara
+luasnya. Pembeda Apothem adalah **disiplin tata kelola dan siklus hidup yang
+didistribusikan di sekitar sinkronisasi** — gerbang kesesuaian mekanis, alur
+deterministik, benteng audit, dan siklus hidup yang dapat dibalik dan
+terverifikasi.
+
+| Kemampuan | Apothem | Pengelola konfig. berkas (chezmoi, Stow) | Sinkronisasi aturan antaralat (rulesync) | Konfig. native per alat |
+| ---------- | :-----: | :----------------------------------: | :-----------------------------: | :--------------------: |
+| Satu sumber ke skema native banyak alat | Ya — tujuh belas adapter harness | Tidak — salin / tautan simbolik, tanpa terjemahan | Ya | Tidak — satu alat |
+| Unit yang disinkronkan | aturan, skill, hook, perintah slash, MCP | berkas sembarang | aturan, ignore, MCP, perintah, subagen, skill, hook, izin | — |
+| Korpus tata kelola (aturan perilaku plus gerbang kesesuaian mekanis) | Ya — `python -m apothem.conformity.gate` | Tidak | Tidak | Tidak |
+| Alur perencanaan dan riset deterministik | Ya — dari `/plan-spec` ke `/plan-execute`, `/research` tiga belas tahap | Tidak | Tidak | Tidak |
+| Benteng audit yang mendeteksi dan memperbaiki | Ya — sapuan sebelas perintah, loop audit-ulang `/fortress` | Tidak | Tidak | Tidak |
+| Rilis yang diperkuat terhadap rantai pasok | Ya — SBOM, Sigstore, SLSA, target Scorecard | Tidak | bervariasi | Tidak |
+| Siklus hidup yang dapat dibalik dan terverifikasi | Ya — cadangan, `apothem verify --json`, pencopotan tanpa yatim | bervariasi | bervariasi | — |
+
+Di mana pesaing lebih kuat, ia disebut namanya: **rulesync** menjangkau lebih
+banyak alat dan membawa unit sinkronisasi yang setara luasnya, dan beberapa alat
+sinkronisasi mematerialisasikan skema native. Apothem menukar jumlah alat mentah
+dengan disiplin tata kelola, audit, dan siklus hidup yang didistribusikan di
+sekitar sinkronisasi — gerbang kesesuaian, alur deterministik `/plan` dan
+`/research`, benteng audit sebelas perintah, memori tahan lama, dan siklus hidup
+yang dapat dibalik dan terverifikasi — yang tidak dibawa oleh alat sinkronisasi
+aturan.
+
+## Cara membandingkan
+
+Bandingkan di sepanjang tiga sumbu:
+
+1. **Sumber kebenaran.** Di mana aturan, pekerja terdelegasi, perintah, dan pengaturan Anda
+   tinggal? Apothem memelihara satu korpus bersama dan merender format native
+   setiap harness darinya. Konfigurasi yang dipelihara manual menyimpan satu
+   salinan per alat.
+2. **Biaya penyimpangan.** Apa yang terjadi saat Anda mengubah satu aturan?
+   Apothem menyebarkan perubahan ke setiap harness terpasang saat menjalankan
+   `apothem update`. Konfigurasi yang dipelihara manual menuntut penyuntingan
+   berkas native setiap alat secara terpisah dan menjaganya selaras dari ingatan.
+3. **Verifikasi.** Bagaimana Anda tahu setiap harness terkonfigurasi dengan
+   benar? Apothem menyertakan `apothem verify --harness <name>` dan
+   `apothem doctor`. Konfigurasi yang dipelihara manual tidak punya verifikasi
+   bawaan.
+
+## Matriks fitur
+
+Matriks ini mempertentangkan Apothem dengan dua alternatif yang pertama kali
+diandalkan operator: memelihara secara manual konfigurasi native setiap harness
+dan mengelola berkas-berkas itu melalui pengelola dotfiles serbaguna.
+
+| Kemampuan | Konfig. dipelihara manual | Pengelola dotfiles | Apothem |
+| ---------- | ---------------------- | --------------- | ------- |
+| Satu sumber kebenaran bersama | Tidak (satu salinan per alat) | Tidak (melacak berkas, bukan profil) | Ya (satu profil) |
+| Merender format native-harness | Manual | Tidak | Ya (materializer per adapter) |
+| Pencegahan penyimpangan lintas-harness | Penyelarasan manual | Hanya sinkronisasi berkas | Ya (`apothem update`) |
+| Instalasi/pencopotan per harness | Manual | Sebagian (tautan/salin) | Ya (`install` / `uninstall`) |
+| Verifikasi bawaan | Tidak ada | Tidak ada | Ya (`verify` / `doctor`) |
+| Terjemahan format per alat | Tidak ada | Tidak ada | Ya (`.mdc`, `.toml`, `.md` tersemat) |
+| Tujuh belas harness dari satu masukan | Tidak | Tidak | Ya |
+
+## Halaman perbandingan
+
+- [Apothem dibandingkan framework harness lainnya](/docs/comparison/vs-other-harness-frameworks)
+- [vs antigravity mentah](/docs/comparison/vs-raw-antigravity)
+- [vs claude-code mentah](/docs/comparison/vs-raw-claude-code)
+- [vs codebuddy mentah](/docs/comparison/vs-raw-codebuddy)
+- [vs codex mentah](/docs/comparison/vs-raw-codex)
+- [vs cursor mentah](/docs/comparison/vs-raw-cursor)
+- [vs gemini-cli mentah](/docs/comparison/vs-raw-gemini-cli)
+- [vs github-copilot mentah](/docs/comparison/vs-raw-github-copilot)
+- [vs glm mentah](/docs/comparison/vs-raw-glm)
+- [vs hermes mentah](/docs/comparison/vs-raw-hermes)
+- [vs kimi-code mentah](/docs/comparison/vs-raw-kimi-code)
+- [vs kiro mentah](/docs/comparison/vs-raw-kiro)
+- [vs open-claw mentah](/docs/comparison/vs-raw-open-claw)
+- [vs opencode mentah](/docs/comparison/vs-raw-opencode)
+- [vs qwen-code mentah](/docs/comparison/vs-raw-qwen-code)
+- [vs trae mentah](/docs/comparison/vs-raw-trae)
+- [vs windsurf mentah](/docs/comparison/vs-raw-windsurf)
+- [vs zed mentah](/docs/comparison/vs-raw-zed)
+
+Untuk detail adapter per harness, lihat bagian
+[adapter harness](/docs/harnesses).

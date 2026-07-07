@@ -1,0 +1,68 @@
+---
+title: "/plan-generate"
+description: "/plan-generate — Menghasilkan Master Plan Suite lengkap dari `_spec/spec.md` yang ditulis."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Peran:** Generator
+**Posisi pipeline:** tengah
+
+Menghasilkan Master Plan Suite lengkap dari `_spec/spec.md` yang ditulis.
+
+## Pemanggilan kanonik
+
+```bash
+/plan-generate
+```
+
+Dengan argumen:
+
+```bash
+/plan-generate [path/to/prose.md] [--mode NEW|OVERHAUL] [--seriousness LEVEL] [--context CONTEXT] [--mission MISSION] [--domain DOMAIN] [--dry-run]
+```
+
+## Masukan
+
+`_spec/spec.md` yang ditulis + `_inputs/handoff-manifest.yml` dari `/plan-spec` (atau prosa yang disediakan operator).
+
+## Keluaran
+
+`PREAMBLE.md`, `MASTER-PLAN.md`, `PROGRESS.md`, `PLAN-NOTES.md`, dan berkas `phases/**/PHASE.md` per-fase, ditambah `_inputs/handoff-manifest.yml` yang diperkaya.
+
+## Hilir
+
+/plan-review atau /plan-execute (hilir)
+
+## Fase alur kerja
+
+Perintah ini menghasilkan Master Plan Suite lengkap dari spec yang ditulis:
+
+1. **Mengonsumsi persyaratan** — Membaca `_spec/spec.md` dan Manifes Serah-Terima hulu; menolak dengan `Blocked: run /plan-spec first` ketika spec tidak ada.
+2. **Menemukan** — Menjalankan penemuan berskala-keseriusan dengan Lima Filter Kognitif; menyelesaikan setiap kesenjangan data-otoritatif melalui kanal kueri terstruktur.
+3. **Menguraikan** — Memecah pekerjaan menjadi grafik fase asiklik dengan urutan dependensi eksplisit.
+4. **Memancarkan suite** — Menulis `PREAMBLE.md`, `MASTER-PLAN.md`, `PROGRESS.md`, `PLAN-NOTES.md`, dan setiap `phases/NN-topic/PHASE.md`.
+5. **Menjalankan gerbang pra-emisi** — Menjalankan sapuan lima belas batang terhadap setiap artefak yang dipancarkan; kegagalan memblokir persetujuan-pengguna hingga terselesaikan.
+
+## Mode kegagalan
+
+| Gejala | Penyebab | Pemulihan |
+|---------|-------|----------|
+| Blocked: run /plan-spec first | Tidak ada `_spec/spec.md` yang ditulis | Jalankan `/plan-spec` untuk menulis spec dan memancarkan Manifes |
+| Pembuatan terhadap berkas `_inputs/` | Spec masih di tengah elisitasi | Promosikan `_inputs/forge.md` ke `_spec/spec.md` melalui `/plan-spec` lebih dulu |
+| Batang pra-emisi gagal | Sebuah artefak yang dipancarkan gagal gerbang | Perbaiki batang yang gagal sebelum persetujuan-pengguna |
+
+## Contoh
+
+```bash
+# Dry-run untuk mempratinjau grafik fase yang dihasilkan
+/plan-generate --dry-run
+
+# Hasilkan suite dari prosa yang ditulis
+/plan-generate path/to/prose.md --mode NEW
+```
+
+## Referensi silang
+
+- [Ikhtisar pipeline](/docs/pipeline)
+- [Referensi perintah](/docs/reference/commands)

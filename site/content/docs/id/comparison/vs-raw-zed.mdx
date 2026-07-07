@@ -1,0 +1,46 @@
+---
+title: "Apothem versus konfigurasi Zed manual"
+description: "Memelihara file instruksi datar .rules Zed dengan tangan versus merendernya dari profil bersama Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Zed membaca instruksi agen dari satu file datar `.rules` di akar proyek
+(berdampingan dengan keluarga `AGENTS.md` / `CLAUDE.md`). Adapter zed Apothem
+merender file itu dari profil bersama. Halaman ini mempertentangkan pemeliharaan
+konfigurasi itu dengan tangan terhadap pengelolaannya dengan Apothem.
+
+## Perbandingan upaya
+
+| Tugas | Konfigurasi manual | Dikelola Apothem |
+| ---- | --------------- | --------------- |
+| Menulis instruksi | Menulis file `.rules` dengan tangan | Dirender dari korpus bersama |
+| Mempertahankan `.rules` sebelumnya | Ingat untuk menyalinnya ke samping sendiri | Adapter mencadangkan file yang ada sebelum mengganti |
+| Menjaga aturan selaras dengan lingkungan lain | Manual, per alat | Otomatis saat `apothem update` |
+| Memverifikasi konfigurasi sudah benar | Inspeksi manual | `apothem verify --harness zed` |
+
+## Apa yang dikelola Apothem
+
+Adapter zed merender aturan bersama ke dalam file datar `.rules` di akar proyek.
+Zed tidak memiliki hook PreToolUse, jadi maksud pagar pengaman hidup di dalam
+prosa aturan alih-alih di titik penyergapan panggilan alat. File instruksi global
+`~/.config/zed/AGENTS.md` dan blok server konteks MCP dari `.zed/settings.json`
+dimiliki operator dan dibiarkan tak tersentuh. Setiap perubahan pada aturan
+bersama merender ulang file pada `apothem update` berikutnya.
+
+## Jalur migrasi
+
+1. Jalankan `apothem profile init` untuk membuat profil bersama jika Anda belum
+   memilikinya.
+2. Pindahkan instruksi dari `.rules` Anda yang ada (dan konten `AGENTS.md` khusus
+   proyek apa pun yang ingin Anda bagikan) ke korpus bersama.
+3. Jalankan `apothem install --harness zed` untuk merender file `.rules`. `.rules`
+   Anda sebelumnya dicadangkan terlebih dahulu.
+4. Jalankan `apothem verify --harness zed` untuk memastikan konfigurasi sudah
+   terpasang.
+5. Gunakan `apothem update --harness zed` untuk setiap perubahan berikutnya.
+
+## Baca berikutnya
+
+- [Referensi adapter Zed](/docs/harnesses/zed)
+- [Ikhtisar perbandingan](/docs/comparison)

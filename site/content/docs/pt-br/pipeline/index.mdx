@@ -1,0 +1,137 @@
+---
+title: "Comandos do pipeline"
+description: "Referência de comandos do pipeline do Apothem — o fluxo /plan e o catálogo de comandos de auditoria."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+O Apothem traz um pipeline `/plan` consciente da arquitetura, um pipeline
+`/research` de treze estágios, além de uma sequência de auditoria de onze
+comandos — dando a cada projeto um caminho estruturado da prosa bruta até código
+de nível de produção revisado em múltiplos eixos, e de uma ideia bruta até um
+artigo disseminado e revisado por pares.
+
+## Visão geral do pipeline
+
+```mermaid
+flowchart LR
+    accTitle: Plan pipeline command flow
+    accDescr: Left-to-right flowchart of the apothem plan pipeline from the spec stage through the generate and review stages, then through a conditional architecture-bearing decision that either runs the design stage or skips directly to the execute stage. The orthogonal audit stage wraps the spec-through-review span as a closed remediation loop.
+    A[/plan-spec] --> B[/plan-generate]
+    B --> C[/plan-review]
+    AUD[/plan-audit<br/>orthogonal: wraps spec → review] -.->|closed-loop remediation| A
+    C --> Q{Architecture-bearing suite?}
+    Q -->|yes| F[/plan-design<br/>emit _inputs/design.md]
+    Q -->|no| D[/plan-execute]
+    F --> D
+    D --> E[/plan-status]
+    D --> G[Audit review sequence]
+    G --> H[Completion milestone]
+```
+
+## Os estágios de planejamento
+
+O pipeline é entregue como oito slash commands de primeira classe, um por
+estágio — cada um invocável de forma independente como `/plan-<stage>`.
+
+| Estágio | Papel | Posição |
+|-------|------|----------|
+| [/plan-spec](/docs/pipeline/plan-spec) | Forja — da prosa à especificação | Inicial |
+| [/plan-generate](/docs/pipeline/plan-generate) | Gerador — da especificação à suíte de plano | Intermediário |
+| [/plan-review](/docs/pipeline/plan-review) | Auditor — auditoria forense do plano | Intermediário |
+| [/plan-design](/docs/pipeline/plan-design) | Arquiteto — `_inputs/design.md` para suítes com arquitetura | Portão condicional |
+| [/plan-execute](/docs/pipeline/plan-execute) | Executor — execução de fases | Terminal |
+| [/plan-status](/docs/pipeline/plan-status) | Relator — status somente leitura | Somente leitura |
+| [/plan-audit](/docs/pipeline/plan-audit) | Guardião — envoltório de ciclo fechado de spec → generate → review | Ortogonal (pré-execução) |
+| /plan-amend | Administrador — emenda reentrante de uma suíte existente | Reentrante |
+
+`/plan-audit` é ortogonal ao fluxo linear, não um estágio dentro dele. Ele
+envolve `/plan-spec → /plan-generate → /plan-review` como um único ciclo
+fechado, executa apenas os estágios anteriores ausentes, remedia ativamente as
+descobertas e deixa a suíte pronta para `/plan-execute`. É distinto da sequência
+de auditoria abaixo, que audita uma base de código já executada em vez de uma
+suíte de plano.
+
+`/plan-design` não é uma cerimônia universal. `/plan-review` classifica se a
+suíte altera superfícies com arquitetura. Se sim, `/plan-design` emite o rastro
+de design que `/plan-execute` e `/architecture-review` consomem. Se não, a suíte
+revisada segue diretamente para a execução.
+
+## O pipeline de pesquisa
+
+O pipeline de pesquisa é entregue como treze slash commands de primeira classe,
+um por estágio — cada um invocável de forma independente como
+`/research-<stage>`, encadeados por um Portão de Sequência e um Manifesto de
+Repasse, sob dez mandatos de rigor (fontes autoritativas, reprodutibilidade,
+falsificabilidade, integridade de citações, pré-registro, ética / conflitos,
+rigor estatístico, ciência aberta / FAIR, conformidade com diretrizes de
+reporte, fundamentação teórica / impacto).
+
+```mermaid
+flowchart LR
+    accTitle: Research pipeline command flow
+    accDescr: Left-to-right flowchart of the apothem research pipeline from the ideate stage through spec, theory, sources, synthesis, proposal, study design, experiment, analysis, paper, and peer review to publish and disseminate, with a revision loop from review back to paper.
+    RI[/research-ideate] --> RS[/research-spec]
+    RS --> RT[/research-theory]
+    RT --> RSO[/research-sources]
+    RSO --> RSY[/research-synthesis]
+    RSY --> RPR[/research-proposal]
+    RPR --> RD[/research-design]
+    RD --> RE[/research-experiment]
+    RE --> RA[/research-analysis]
+    RA --> RP[/research-paper]
+    RP --> RR[/research-review]
+    RR --> RPU[/research-publish]
+    RPU --> RDI[/research-disseminate]
+    RR -.->|revision loop| RP
+```
+
+| Estágio | Papel | Posição |
+|-------|------|----------|
+| [/research-ideate](/docs/pipeline/research-ideate) | Formular o problema — questões candidatas a partir de uma semente de domínio | Inicial |
+| [/research-spec](/docs/pipeline/research-spec) | Enquadrar a questão — hipóteses falsificáveis + escopo | Intermediário |
+| [/research-theory](/docs/pipeline/research-theory) | Arcabouço conceitual + teoria da mudança | Intermediário |
+| [/research-sources](/docs/pipeline/research-sources) | Coleta sistemática de fontes | Intermediário |
+| [/research-synthesis](/docs/pipeline/research-synthesis) | Mapa do SOTA + análise de lacunas | Intermediário |
+| [/research-proposal](/docs/pipeline/research-proposal) | Objetivos + viabilidade + impacto + plano de pré-registro | Intermediário |
+| [/research-design](/docs/pipeline/research-design) | Design do estudo + pré-registro | Intermediário |
+| [/research-experiment](/docs/pipeline/research-experiment) | Executar + registrar, reproduzível | Intermediário |
+| [/research-analysis](/docs/pipeline/research-analysis) | Resultados + estatística | Intermediário |
+| [/research-paper](/docs/pipeline/research-paper) | Rascunho de artigo de alto nível | Intermediário |
+| [/research-review](/docs/pipeline/research-review) | Crítica de nível revisão por pares | Intermediário |
+| [/research-publish](/docs/pipeline/research-publish) | Pacote para o veículo + submissão | Intermediário |
+| [/research-disseminate](/docs/pipeline/research-disseminate) | Disseminação + impacto + arquivamento FAIR | Terminal |
+
+O orquestrador de fluxo de trabalho encapsulado `/research` impulsiona esses
+estágios da questão bruta ao artigo publicado (ele próprio não é um estágio),
+verificando a saída de cada estágio de forma independente antes que o próximo
+estágio se baseie nela; `--quick` executa apenas `/research-sources` +
+`/research-synthesis` para um relatório citado de passagem única.
+
+Os estágios empíricos (fontes, projeto, experimento, análise) e os estágios de
+redação (artigo, revisão, publicação, disseminação) recorrem, além disso, a
+superfícies que operacionalizam o rigor — comparação multimétodo justa,
+procedência de comparadores, um andaime de programa de experimentos, um plano de
+utilização de computação, um laço autônomo de experimento opcional, um portão de
+avanço com definição de pronto, e cegamento com divulgação em estágios — que
+adicionam detalhe operacional aos dez mandatos sem estendê-los.
+
+## Sequência de auditoria
+
+O orquestrador de fluxo de trabalho encapsulado `/audit` varre todas as onze dimensões abaixo como uma única passagem paralela — o análogo de auditoria-fortaleza de `/plan` e `/research` — sintetizando um único relatório de descobertas deduplicado e classificado por severidade (somente reporte; a remediação é roteada para `/elevate`). Cada dimensão também é invocável individualmente.
+
+O orquestrador de fluxo de trabalho encapsulado `/fortress` fecha o ciclo que `/audit` reporta: ele detecta via `/audit`, verifica cada descoberta, remedia cada sobrevivente em sua superfície proprietária, reaudita em um ciclo limitado e passa o resultado pelo portão `/release-readiness` — o análogo de endurecimento de produção de `/plan` e `/research`.
+
+| Comando | Área de qualidade |
+|---------|--------------|
+| [/code-review](/docs/pipeline/code-review) | Qualidade do código |
+| [/code-audit](/docs/pipeline/code-audit) | Corpus de código |
+| [/security-audit](/docs/pipeline/security-audit) | OWASP / ASVS |
+| [/perf-audit](/docs/pipeline/perf-audit) | Desempenho |
+| [/architecture-review](/docs/pipeline/architecture-review) | Arquitetura |
+| [/ux-review](/docs/pipeline/ux-review) | Experiência do desenvolvedor |
+| [/a11y-audit](/docs/pipeline/a11y-audit) | Acessibilidade |
+| [/docs-review](/docs/pipeline/docs-review) | Documentação |
+| [/dependency-audit](/docs/pipeline/dependency-audit) | Dependências |
+| [/supply-chain-audit](/docs/pipeline/supply-chain-audit) | Cadeia de suprimentos |
+| [/threat-model-audit](/docs/pipeline/threat-model-audit) | Modelo de ameaças |

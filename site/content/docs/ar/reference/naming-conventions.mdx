@@ -1,0 +1,32 @@
+---
+title: "اصطلاحات التسمية"
+description: "تحدّد أسماء الملفات بصيغة kebab-case، وتنسيق مفاتيح frontmatter، وتسمية الفروع بادئات النوع، ودلالات البادئات الرقمية لتسلسلات المُخرَجات المُرتَّبة."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **مرجع قانوني لشكل أسماء الملفات والمُعرِّفات وأسماء الفروع عبر المنظومة بأكملها.** الملخّص في [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) الاصطلاحات هو الإعلان المُضمَّن؛ وهذه الصفحة هي المرجع المستقل الذي يستشهد به المساهمون اللاحقون.
+
+---
+
+## 1. أسماء نظام الملفات
+
+تستخدم الملفات والمجلّدات صيغة **<bdi>kebab-case</bdi>** افتراضيًّا. لا تحمل المُعرِّفات مسافات ولا شرطات سفلية ولا صيغة camelCase.
+
+تُحجَز استثناءات الأحرف الكبيرة القانونية لملفات سطح النشر الفردية التي يتعرّف عليها كل مساهم من أول لقاء: <bdi>`CLAUDE.md`</bdi>، و<bdi>`README.md`</bdi>، و<bdi>`LICENSE`</bdi>، و<bdi>`CHANGELOG.md`</bdi>، و<bdi>`SECURITY.md`</bdi>، و<bdi>`CODE_OF_CONDUCT.md`</bdi>، و<bdi>`CONTRIBUTING.md`</bdi>، وملفات مجموعة الخطّة الفردية (<bdi>`MASTER-PLAN.md`</bdi>، و<bdi>`PROGRESS.md`</bdi>، و<bdi>`PHASE.md`</bdi>، و<bdi>`SKILL.md`</bdi>، و<bdi>`VERSION`</bdi>). وكل ملف آخر يستخدم <bdi>kebab-case</bdi>.
+
+## 2. مفاتيح frontmatter
+
+تستخدم مفاتيح <bdi>YAML frontmatter</bdi> صيغة <bdi>`kebab-case`</bdi> (مثل <bdi>`argument-hint`</bdi>، و<bdi>`disable-model-invocation`</bdi>). تنطبق قاعدة <bdi>kebab-case</bdi> بشكل موحّد عبر القواعد والأوامر والعمّال المُفوَّضين والمهارات و<bdi>`CLAUDE.md`</bdi> نفسه.
+
+## 3. أسماء الفروع
+
+تتبع الفروع الصيغة <bdi>`<type>/<short-description>`</bdi> مع نوع مأخوذ من المجموعة المغلقة <bdi>`{feat, fix, chore, docs, refactor, test, perf, ci, build, style, revert, release}`</bdi>. والوصف بصيغة <bdi>kebab-case</bdi> وأقلّ من خمسين حرفًا.
+
+## 4. البادئات الرقمية
+
+تنقل البادئات الرقمية (<bdi>`NN-`</bdi>) على مسارات نظام الملفات الترتيب، وتنطبق فقط حيث يكون الترتيب جوهريًّا — مجلّدات المراحل، ومجلّدات المراحل الفرعية، وبرامج الترحيل النصّية، وأي فئة مُخرَجات أخرى يكون تسلسلها جزءًا من العقد. أمّا الملفات الفردية على مستوى الجذر التي لا تملك تسلسلًا شقيقًا فلا تحمل بادئةً رقمية؛ وإضافة واحدة تشير خطأً إلى علاقة ترتيب غير موجودة. ويوجد الانضباط الكامل في [`src/apothem/rules/canonical-layout.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/canonical-layout.md) §2.1.
+
+## 5. أدوات التحقّق
+
+إنّ <bdi>naming-grep</bdi> في <bdi>`src/apothem/conformity/naming_grep.py`</bdi> هو سطح الإنفاذ الميكانيكي. ويستدعيه التكامل المستمرّ عبر <bdi>`make validate`</bdi>.

@@ -1,0 +1,118 @@
+---
+title: "Authoring & pipeline how-tos"
+description: "Task-oriented walkthroughs for refining content into specs, generating plan suites, reviewing plans, executing phases, adding artifacts, and running quality gates."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Task-oriented walkthroughs for **authoring Apothem artifacts and driving the
+plan pipeline**. Each guide answers a single concrete question.
+
+For first-run setup recipes — adding a harness, editing the profile, driving
+the installer — see the [How-to recipes](/docs/how-to) section instead.
+
+## Plan-suite pipeline
+
+### How do I refine raw content into a spec?
+
+Invoke `/plan-spec` with the raw content as input. The Forge
+role runs six transformation phases (Discovery, Meticulous
+Consideration, Potency Mapping, Preservation Verification,
+Expertise Application, Question-Resolution Sweep) and emits the
+consolidated spec at `.apothem/plans/{suite}/_spec/spec.md`. See
+`src/apothem/commands/plan-spec.md` for the full protocol.
+
+### How do I generate a plan suite from a spec?
+
+Invoke `/plan-generate <suite-name>` once the spec lives at
+`.apothem/plans/{suite}/_spec/spec.md`. The generator emits the canonical
+infrastructure files plus the per-phase
+`phases/NN-kebab-topic/PHASE.md` files. See
+`src/apothem/commands/plan-generate.md`.
+
+### How do I review a generated plan?
+
+Invoke `/plan-review path/to/plan-suite/`. The reviewer applies
+the eight planning techniques and emits scorecards. Failing
+scorecards block execution at SHARED+ until resolved. See
+`src/apothem/commands/plan-review.md`.
+
+### How do I execute a plan?
+
+Invoke `/plan-execute path/to/plan-suite/ [phase-id]`. Without a
+`phase-id`, the next pending phase runs. With a specific id,
+only that phase runs. See `src/apothem/commands/plan-execute.md`.
+
+### How do I check plan status?
+
+Invoke `/plan-status path/to/plan-suite/ [--verbose]`. Read-only
+report. See `src/apothem/commands/plan-status.md`.
+
+## Authoring artifacts
+
+### How do I add a new rule?
+
+1. Pick a kebab-case file name under `src/apothem/rules/`, e.g.
+   `src/apothem/rules/my-new-rule.md`.
+2. Author the frontmatter (`name`, `description`, `pathFilter`,
+   `alwaysApply`).
+3. Write the body with the canonical sections: Purpose,
+   Obligations, Seriousness Scaling, Anti-Patterns, Enforcement,
+   Bindings.
+4. Run `python scripts/dev/validate_ecosystem.py --check
+   frontmatter-cohort` to verify.
+
+The rule loader is glob-based — it picks up every file matching
+`src/apothem/rules/*.md`, so no registry entry is needed; dropping the
+canonically-named file into the directory is the whole registration.
+
+### How do I add a new delegated worker?
+
+Pick a kebab-case file name under the directory shown below, using the
+form `my-worker.md`:
+
+```text
+src/apothem/agents/
+src/apothem/agents/my-worker.md
+```
+
+Then:
+
+1. Author the frontmatter — including `name`, `version`, `updated`,
+   `description`, `tools`, `disallowedTools`, `maxTurns`, and
+   `effort`.
+
+2. Write the system prompt as the body.
+
+The delegated-worker cohort is glob-loaded from `src/apothem/agents/*.md`, so the
+canonically-named file is picked up on placement — there is no registry table to
+edit.
+
+### How do I add a new hook?
+
+1. Author a context message under
+   `src/apothem/hooks/messages/<event>-<scope>.md`.
+2. Wire the hook in `settings.json`.
+3. Update the hooks pipeline.
+4. Run `python scripts/dev/validate_ecosystem.py --check
+   hook-validator`.
+
+## Quality gates
+
+### How do I run the local quality gates?
+
+```bash
+python -m ruff check .
+python -m ruff format --check .
+python -m mypy
+python -m pytest -q
+python scripts/dev/validate_ecosystem.py
+python scripts/dev/chaos_pass.py
+```
+
+The CI pipeline runs the same set in parallel.
+
+### How do I check a single artifact-class frontmatter?
+
+```bash
+python scripts/dev/validate_ecosystem.py --check frontmatter-cohort
+```

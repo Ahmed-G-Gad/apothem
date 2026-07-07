@@ -1,0 +1,7 @@
+[
+  {
+    "mode": "sentinel_merge",
+    "source": "<APOTHEM_SRC>/harnesses/cursor/templates/apothem-rules.mdc",
+    "target": "<ROOT>/.cursor/rules/apothem-rules.mdc"
+  }
+]

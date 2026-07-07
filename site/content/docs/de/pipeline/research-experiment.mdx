@@ -1,0 +1,70 @@
+---
+title: "/research-experiment"
+description: "/research-experiment — Führt die entworfene Studie aus und erfasst Rohdaten mit vollständiger Herkunft sowie ein Reproduzierbarkeitsmanifest (Umgebung, Seed, Protokoll, Versions-Pins)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rolle:** Leitende:r Forscher:in (Ausführung)
+**Pipeline-Position:** Mitte der Kette
+
+Führt die entworfene Studie oder das entworfene Experiment aus und erfasst Rohdaten mit vollständiger Herkunft. Garantiert Reproduzierbarkeit: zeichnet Umgebung, Seed, Protokollprotokoll und Versions-Pins auf, sodass eine unabhängige Partei die Ausführung wiederholen kann.
+
+## Kanonischer Aufruf
+
+```bash
+/research-experiment
+```
+
+Mit Argumenten:
+
+```bash
+/research-experiment [path/to/research-suite/]
+```
+
+## Eingaben
+
+`_inputs/study-design.md` (der Entwurf) und `_inputs/preregistration.md` (der eingefrorene Analyseplan).
+
+## Ausgaben
+
+`_outputs/experiment-log.md` (die zeitgestempelte Protokollspur), die Rohdaten an einem host-natürlichen Ort und `_outputs/reproducibility-manifest.md` (Umgebung, Seed, Protokoll, Versions-Pins).
+
+## Nachgelagert
+
+/research-analysis (nachgelagerter Verbraucher)
+
+## Workflow-Phasen
+
+Der Befehl folgt dem standardmäßigen Workflow der `/research`-Pipeline:
+
+1. **Kontext laden** — Den Studienentwurf und die Präregistrierung lesen.
+2. **Das Sequenz-Gate prüfen** — Bestätigen, dass `_inputs/study-design.md` existiert; andernfalls mit `Blocked: run /research-design first` anhalten.
+3. **Ausführen und aufzeichnen** — Das Protokoll ausführen; Rohdaten mit Herkunft erfassen; die zeitgestempelte Protokollspur aufzeichnen.
+4. **Reproduzierbarkeit erfassen** — Umgebung, Seed, Protokoll und Versions-Pins aufzeichnen.
+5. **Das Übergabemanifest aktualisieren** — Den Datenort und das Reproduzierbarkeitsmanifest aufzeichnen.
+6. **Das Protokoll ausgeben** — `_outputs/experiment-log.md` + Rohdaten + `_outputs/reproducibility-manifest.md`.
+
+## Rigorositätsuntergrenze
+
+Die Ausführung startet mit einem Pilotdurchlauf, um Budgets und Wertebereiche zu kalibrieren, dann den vollständigen Vergleich unter einem deklarierten Plan zur Rechenauslastung (Kernzuweisung, Speicherobergrenzen, sichere Parallelisierung unabhängiger Wiederholungen). Jede stochastische Methode durchläuft ihr präregistriertes Wiederholungsregime mit aufgezeichneten Seeds und protokollierter Hardware. Eine optionale, standardmäßig ausgeschaltete autonome Experimentschleife steht bereit: Gegen ein eingefrorenes Harness schlägt sie eine Änderung an einem einzigen veränderlichen Ziel vor, führt sie beim festgelegten Budget aus, behält sie nur, wenn sie den Amtsinhaber schlägt, und journalisiert jeden Versuch.
+
+## Fehlermodi
+
+| Symptom | Ursache | Behebung |
+|---------|-------|----------|
+| Blocked: run /research-design first | Kein Studienentwurf | `/research-design` ausführen, um `_inputs/study-design.md` zu erzeugen |
+| Ausführung nicht reproduzierbar | Fehlende Seed-/Umgebungsaufzeichnung | Das vollständige Reproduzierbarkeitsmanifest aufzeichnen, bevor fortgefahren wird |
+| Protokollabweichung nicht dokumentiert | Änderung während der Ausführung nicht protokolliert | Die Abweichung im Experimentprotokoll festhalten; bei der Analyse offenlegen |
+
+## Beispiele
+
+```bash
+# Die entworfene Studie ausführen und reproduzierbare Rohdaten erfassen
+/research-experiment path/to/research-suite/
+```
+
+## Querverweise
+
+- [Pipeline-Überblick](/docs/pipeline)
+- [Befehlsreferenz](/docs/reference/commands)

@@ -1,0 +1,40 @@
+---
+title: "Authoritative Inquiry Registry — Required Categories"
+description: "Seven required inquiry categories and auto-decision carve-outs governing what the assistant must ask vs. decide when operating on host projects."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Canonical registry of the authoritative-inquiry discipline.** This document carries the seven required-category catalog, the carved-out auto-decisions enumeration, and the bindings declaration; the substantive tables and bindings live here, operationalized by `src/apothem/rules/authority-inquiry.md`.
+
+When operating on a host project, inquire — do not invent — on the seven categories below. Inquiries route through the structured-inquiry channel per `src/apothem/rules/interactive-questions.md`. Each option carries the three-segment annotation (rationale / recommendation / default-pointer) and a recommended marker per M7.
+
+| Category | Forbidden to invent | Inquire because |
+| -------- | ------------------- | --------------- |
+| Identity | Names, emails, handles, pronouns, organizations, tenants, team affiliations, role descriptions | Bind to a real person; create real-world artifacts (commits, PRs, public attribution) |
+| Scope direction | Which subtree, which branch, which environment (dev/staging/prod), which target (libraries vs services), which user-facing vs internal-only | The user has implicit context the assistant lacks; silent picks misalign |
+| Preference | Formatter, linter, test framework, documentation generator, CI provider, branch strategy, commit-message convention, release-signing, versioning scheme, license — *where the host has not settled on one* | Each is a long-lived commitment that resists silent adoption |
+| Security | Secret-rotation cadence, allowed shells, allowed network egress, accepted-risks list, trusted-action allowlist, MCP-server auth endpoint specifics | Security misconfiguration is high-impact; silent picks risk silent breach |
+| Naming | A new convention introduced where the host has none, or a name binding (function, CLI flag, subcommand, config key) where the user has implicit preferences | Names are durable; silent picks compound into namespace pollution |
+| Infrastructure | Endpoints, hosts, ports, paths, regions, queue names, topic names, table names | Bind to real-world resources; invention causes real-world failures |
+| Version pins | Which version of which dependency, where the host has not pinned and the choice matters (security-relevant deps, behavioral-shift deps, semver-major boundaries) | Long-tail consequences; silent picks burden the user |
+
+**Required inquiries** (Identity, Scope direction, Security posture, Naming-of-public-surfaces are always required) block dependent artifacts; emission produces `<USER-CONFIRM:id=<id>>` placeholders. **Optional inquiries** the user may decline by silence; the assistant then falls back to the recommended option and records the fallback as a finding so the user sees a decision was made.
+
+## 1. Carved-Out Auto-Decisions
+
+The following the assistant decides without inquiry — disclosed in the change ledger as "applied by default; revert if intended otherwise":
+
+- **Pure validity.** Syntax errors, schema violations, unambiguous typos.
+- **Pure rigor.** Folklore → cited; missing dates added; unverifiable claims marked.
+- **Universally-safe security.** `deny .env*`, `deny ~/.ssh/**` reads, `deny rm -rf:*`, `deny sudo:*`, `deny git push --force*` to protected branches, `deny eval`/`exec` on untrusted input.
+- **Pure formatting normalization.** EOL, trailing whitespace, single quote-style per file *where the host has an established style and the artifact diverges*.
+- **Internal reference repair where the fix is unambiguous.** Dead path → unique live path discovered by search.
+
+Anything outside this carve-out goes through the inquiry surface.
+
+## 2. Bindings (§0.j five-direction)
+
+- **Drives →** Every host-project artifact emission (the pre-emission gate fires on every meaningful-scope write per `site/content/docs/governance/pre-emission-gate-registry.mdx`). Every multi-option presentation routes through the structured-inquiry channel per the canonical-channel obligation. The mechanical-fraction enforcement at `src/apothem/conformity/*-grep.py`. The per-rule enforcement at `src/apothem/rules/{authority-inquiry,host-discovery,disclosure-ledger,ten-dimension-check,pre-emission-gate,expertise-posture,option-annotation,definitiveness,visual-leverage,bidirectional-binding,agile-sprints,canonical-layout,code-craft-*,systemic-participation,production-ready-prs}.md`.
+- **Satisfies →** The outward-conformity axis declared as a first-class governance dimension alongside the CM-N axis (M = host-project artifacts; CM = ecosystem-internal artifacts; both orthogonal, both apply where both apply). The standing-directives obligation that every session bootstrap inherits the M-set as always-on context.
+- **Established by ↑** `CLAUDE.md` itself (the registry is intrinsic to the always-on context, not derived from external state). The trivial-vs-non-trivial threshold ratification at `site/content/docs/governance/outward-conformity-registry.mdx` §1.
+- **Cross-bound with ↔** Each rule named in the outward-conformity registry table at `site/content/docs/governance/outward-conformity-registry.mdx` (the canonical per-mandate body). `src/apothem/conformity/*-grep.py` (the mechanical-fraction enforcement of the gate). `src/apothem/rules/interactive-questions.md` (the inquiry surface routes through the canonical-channel obligation that rule defines).

@@ -1,0 +1,1 @@
+{"harness": "github_copilot", "install_id": "<INSTALL_ID>", "kind": "install", "root": "<ROOT>", "targets": [{"mode": "sentinel_merge", "ownership_class": "operator-owned", "path": "<ROOT>/.github/copilot-instructions.md"}], "timestamp": "<TIMESTAMP>"}

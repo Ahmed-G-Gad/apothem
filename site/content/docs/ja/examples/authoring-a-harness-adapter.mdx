@@ -1,0 +1,107 @@
+---
+title: "ハーネスアダプターの作成"
+description: "新しい Apothem ハーネスアダプターをゼロから作成するためのステップバイステップガイド。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+このガイドでは、`HarnessAdapter` プロトコルを使用して、Apothem ハーネス
+アダプターをゼロから作成する手順を説明します。
+
+## 前提条件
+
+- Python 3.10+
+- 設定形式が分かっている、対象のハーネス
+- [ハーネスアダプター抽象化](/docs/architecture/harness-adapter-abstraction)の理解
+
+## ステップ 1：アダプターパッケージを作成する
+
+```bash
+mkdir apothem-myadapter
+cd apothem-myadapter
+```
+
+```toml
+# pyproject.toml
+[project]
+name = "apothem-myadapter"
+version = "X.Y.Z"
+requires-python = ">=3.10"
+dependencies = ["apothem>=X.Y.Z"]  # pin the floor to the apothem release you target
+
+[project.entry-points."apothem.harnesses"]
+my-harness = "apothem_myadapter.adapter:MyHarnessAdapter"
+```
+
+## ステップ 2：アダプターを実装する
+
+```python
+# src/apothem_myadapter/adapter.py
+from pathlib import Path
+from typing import Any
+
+from apothem.harnesses import HarnessAdapter
+
+
+class MyHarnessAdapter(HarnessAdapter):
+    """Implements the HarnessAdapter protocol for "My Harness".
+
+    First-party adapters in the apothem tree usually delegate to the
+    ``make_user_scope_adapter`` / ``make_project_scope_adapter`` factories in
+    ``apothem.harnesses._shared.wrapper_factories`` and declare their install
+    rules in ``src/apothem/lib/propagation-manifest.yaml``. Implementing the
+    protocol directly, as shown here, is the clearest way to read its surface.
+    """
+
+    @property
+    def name(self) -> str:
+        return "my-harness"
+
+    @property
+    def output_path(self) -> Path:
+        # The single native config file this adapter owns on disk.
+        return Path.home() / ".myharness" / "config.md"
+
+    def install(self, profile: dict[str, Any]) -> object:
+        # ``profile`` is the loaded shared-profile dict (rules, skills, hooks...).
+        self.output_path.parent.mkdir(parents=True, exist_ok=True)
+        self.output_path.write_text(self._render(profile), encoding="utf-8")
+        return self.output_path
+
+    def update(self, profile: dict[str, Any]) -> object:
+        return self.install(profile)  # idempotent re-materialization
+
+    def uninstall(self) -> None:
+        self.output_path.unlink(missing_ok=True)
+
+    def is_installed(self) -> bool:
+        return self.output_path.is_file()
+
+    def verify(self) -> bool:
+        return self.output_path.is_file() and self.output_path.stat().st_size > 0
+
+    def _render(self, profile: dict[str, Any]) -> str:
+        # Translate the profile into the harness's native format.
+        rules = profile.get("rules", [])
+        return "\n\n".join(str(rule) for rule in rules)
+```
+
+## ステップ 3：インストールしてテストする
+
+```bash
+pip install -e .
+apothem install --harness my-harness
+apothem verify --harness my-harness
+```
+
+## ステップ 4：pyproject.toml ドキュメントに追加する
+
+[ハーネスページテンプレート](/docs/harnesses)に従って、
+`site/content/docs/harnesses/my-harness.mdx` にハーネスを記載します。
+
+## ステップ 5：取り込みのために提出する
+
+Apothem リポジトリで、次を含むプルリクエストを開きます：
+- アダプターパッケージ（またはそれへのリンク）
+- ドキュメントページ
+- `tests/packaging/test_myadapter_install.py` にある検証テスト

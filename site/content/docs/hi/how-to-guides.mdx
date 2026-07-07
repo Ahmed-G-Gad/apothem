@@ -1,0 +1,117 @@
+---
+title: "रचना और पाइपलाइन कैसे-करें"
+description: "सामग्री को विनिर्देशों में परिष्कृत करने, प्लान सूट उत्पन्न करने, प्लान की समीक्षा करने, चरण निष्पादित करने, आर्टिफ़ैक्ट जोड़ने, और गुणवत्ता द्वार चलाने के लिए कार्य-उन्मुख विवरण।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Apothem आर्टिफ़ैक्ट रचने और
+प्लान पाइपलाइन चलाने** के लिए कार्य-उन्मुख विवरण। प्रत्येक मार्गदर्शिका एक ठोस प्रश्न का उत्तर देती है।
+
+पहले-रन सेटअप नुस्खों — किसी टूल को जोड़ना, प्रोफ़ाइल संपादित करना, इंस्टॉलर
+चलाना — के लिए इसके बजाय [कैसे-करें नुस्खे](/docs/how-to) अनुभाग देखें।
+
+## प्लान-सूट पाइपलाइन
+
+### मैं रॉ सामग्री को विनिर्देश में कैसे परिष्कृत करूँ?
+
+रॉ सामग्री को इनपुट के रूप में देकर `/plan-spec` आह्वान करें। Forge
+भूमिका छह रूपांतरण चरण (खोज, सूक्ष्म
+विचार, क्षमता मानचित्रण, संरक्षण सत्यापन,
+विशेषज्ञता अनुप्रयोग, प्रश्न-समाधान झाड़ू) चलाती है और संयोजित विनिर्देश को
+`.apothem/plans/{suite}/_spec/spec.md` पर उत्सर्जित करती है। पूर्ण प्रोटोकॉल के लिए
+`src/apothem/commands/plan-spec.md` देखें।
+
+### मैं किसी विनिर्देश से प्लान सूट कैसे उत्पन्न करूँ?
+
+विनिर्देश `.apothem/plans/{suite}/_spec/spec.md` पर रहने के बाद
+`/plan-generate <suite-name>` आह्वान करें। जनरेटर केननिकल
+अवसंरचना फ़ाइलें साथ ही प्रति-चरण
+`phases/NN-kebab-topic/PHASE.md` फ़ाइलें उत्सर्जित करता है। देखें
+`src/apothem/commands/plan-generate.md`।
+
+### मैं किसी उत्पन्न प्लान की समीक्षा कैसे करूँ?
+
+`/plan-review path/to/plan-suite/` आह्वान करें। समीक्षक
+आठ योजना तकनीकें लागू करता है और स्कोरकार्ड उत्सर्जित करता है। विफल
+स्कोरकार्ड SHARED+ पर निष्पादन को तब तक रोकते हैं जब तक हल न हों। देखें
+`src/apothem/commands/plan-review.md`।
+
+### मैं किसी प्लान को कैसे निष्पादित करूँ?
+
+`/plan-execute path/to/plan-suite/ [phase-id]` आह्वान करें। बिना
+`phase-id` के, अगला लंबित चरण चलता है। एक विशिष्ट id के साथ,
+केवल वह चरण चलता है। देखें `src/apothem/commands/plan-execute.md`।
+
+### मैं प्लान स्थिति कैसे जाँचूँ?
+
+`/plan-status path/to/plan-suite/ [--verbose]` आह्वान करें। केवल-पढ़ने वाली
+रिपोर्ट। देखें `src/apothem/commands/plan-status.md`।
+
+## आर्टिफ़ैक्ट रचना
+
+### मैं एक नया नियम कैसे जोड़ूँ?
+
+1. `src/apothem/rules/` के अंतर्गत एक kebab-case फ़ाइल नाम चुनें, उदा.
+   `src/apothem/rules/my-new-rule.md`।
+2. फ़्रंटमैटर रचें (`name`, `description`, `type:
+   instruction`, वैकल्पिक `pathFilter`)।
+3. केननिकल अनुभागों के साथ मुख्य भाग लिखें: उद्देश्य,
+   दायित्व, गंभीरता मापन, एंटी-पैटर्न, प्रवर्तन,
+   बाइंडिंग।
+4. नियम कोहॉर्ट (`src/apothem/rules/`) में एक पंक्ति जोड़ें।
+5. सत्यापित करने के लिए `python scripts/dev/validate_ecosystem.py --check
+   frontmatter-cohort` चलाएँ।
+
+### मैं एक नया डेलीगेटेड वर्कर कैसे जोड़ूँ?
+
+नीचे दिखाई गई निर्देशिका के अंतर्गत एक kebab-case फ़ाइल नाम चुनें,
+`my-worker.md` रूप का उपयोग करते हुए:
+
+```text
+src/apothem/agents/
+src/apothem/agents/my-worker.md
+```
+
+फिर:
+
+1. फ़्रंटमैटर रचें — जिसमें `name`, `description`,
+   `allowedTools`, `maxTurns`, `version`, और नीचे दिखाया गया टाइप मार्कर
+   शामिल हों:
+
+```text
+type: agent
+```
+
+1. मुख्य भाग के रूप में सिस्टम प्रॉम्प्ट लिखें।
+1. प्रत्यायोजित-वर्कर कोहॉर्ट (`src/apothem/agents/`) में हेल्पर रजिस्ट्री में एक पंक्ति जोड़ें।
+
+### मैं एक नया हुक कैसे जोड़ूँ?
+
+1. `src/apothem/hooks/messages/<event>-<scope>.md` के अंतर्गत एक संदर्भ संदेश
+   रचें।
+2. `settings.json` में हुक को वायर करें।
+3. हुक्स पाइपलाइन अपडेट करें।
+4. `python scripts/dev/validate_ecosystem.py --check
+   hook-validator` चलाएँ।
+
+## गुणवत्ता द्वार
+
+### मैं स्थानीय गुणवत्ता द्वार कैसे चलाऊँ?
+
+```bash
+python -m ruff check .
+python -m ruff format --check .
+python -m mypy
+python -m pytest -q
+python scripts/dev/validate_ecosystem.py
+python scripts/dev/chaos_pass.py
+```
+
+CI पाइपलाइन उसी समुच्चय को समानांतर में चलाती है।
+
+### मैं एकल आर्टिफ़ैक्ट-वर्ग फ़्रंटमैटर कैसे जाँचूँ?
+
+```bash
+python scripts/dev/validate_ecosystem.py --check frontmatter-cohort
+```

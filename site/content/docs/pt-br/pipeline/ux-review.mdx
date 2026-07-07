@@ -1,0 +1,69 @@
+---
+title: "/ux-review"
+description: "/ux-review — Revisão de experiência do desenvolvedor sobre a ergonomia da CLI, a documentação e a integração inicial."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Papel:** Revisor de UX
+**Posição no pipeline:** fortaleza
+
+Revisão de experiência do desenvolvedor sobre a ergonomia da CLI, a documentação e a integração inicial.
+
+## Invocação canônica
+
+```bash
+/ux-review
+```
+
+Com argumentos:
+
+```bash
+/ux-review [path/to/plan-suite/] [phase-id] [--dry-run]
+```
+
+## Entradas
+
+Repositório hospedeiro em qualquer estado do ciclo de vida
+
+## Saídas
+
+Achados de UX + REPORT.md
+
+## A jusante
+
+A etapa de revisão de UX da Sequência de Auditoria de Revisão
+
+## Fases do fluxo de trabalho
+
+O comando segue o fluxo de trabalho padrão do pipeline `/plan`:
+
+1. **Carregar contexto** — Ler a suíte de plano, as regras e o Contrato de Retomada.
+2. **Verificar pré-requisitos** — Confirmar que as fases dependentes estão concluídas.
+3. **Executar tarefas** — Cumprir a missão do comando.
+4. **Verificar saídas** — Confirmar que todas as saídas declaradas existem e passam nas comportas de qualidade.
+5. **Atualizar PROGRESS.md** — Registrar as saídas verificadas no Registro de Saídas de Fase.
+6. **Emitir REPORT.md** — Prova de publicação da comporta de pré-emissão registrada.
+
+## Modos de falha
+
+| Sintoma | Causa | Recuperação |
+|---------|-------|----------|
+| Pré-requisito incompleto | Fase dependente não finalizada | Conclua primeiro a fase a montante |
+| Comporta de qualidade FAIL | A saída não atende aos padrões | Corrija a saída e reexecute |
+| Falta um arquivo de entrada | Arquivo da suíte de plano ausente | Execute `/plan-generate` para criá-lo |
+
+## Exemplos
+
+```bash
+# Dry-run to preview what would happen
+/ux-review --dry-run
+
+# Execute against a named plan suite
+/ux-review path/to/plan-suite/
+```
+
+## Referências cruzadas
+
+- [Visão geral do pipeline](/docs/pipeline)
+- [Modelo de Suíte de Plano Mestra](/docs/reference/commands)

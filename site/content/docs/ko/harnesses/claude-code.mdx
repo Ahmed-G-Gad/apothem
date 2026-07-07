@@ -1,0 +1,102 @@
+---
+title: "Claude Code"
+description: "Claude Code(GA)를 위한 Apothem 하니스 어댑터."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**공급업체:** Anthropic
+**설치 이름:** `claude-code`
+**상태:** GA
+**네이티브 구성:** `~/.claude/`
+
+## 설치
+
+```bash
+apothem install --harness claude-code
+```
+
+`claude-code` 어댑터는 공유 Apothem 코퍼스를 Claude Code의 네이티브 발견 트리에
+설치합니다. Markdown 에이전트, 규칙, 스킬, 출력 스타일, 상태 표시줄 헬퍼, 설정은
+각각의 네이티브 위치에 설치됩니다. 명령 프롬프트는 추가로 스킬로 래핑되어 재사용
+가능한 워크플로가 현재 Claude Code 스킬 표면을 통해 계속 보이도록 합니다.
+
+**작성되는 파일:** `~/.claude/` 아래의 `settings.json`, `agents/`, `rules/`,
+`skills/`, `statuslines/`, `output-styles/` 및 `apothem/` 지원 하위 트리
+(`apothem/hooks/`, `apothem/conformity/`, `apothem/schemas/`,
+`apothem/templates/`). 명령 파일은 자식 스킬 디렉터리로 변환됩니다. 훅 디스패처와
+적합성 게이트는 구체화된 사본에서 실행됩니다. `settings.json`의 훅 항목은
+`~/.claude/.apothem/support/hooks/dispatch.py`와 `~/.claude/.apothem/support/conformity/gate.py`를
+절대 경로로 호출하므로, 호스트에 가져올 수 있는 `apothem` 패키지가 필요하지
+않습니다.
+
+이 어댑터는 `CLAUDE.md`를 관리하지 **않습니다**. 그 파일은 운영자가 소유한
+영역입니다. Apothem 거버넌스 표면은 구체화된 `CLAUDE.md`가 아니라 전파된 `rules/`
+트리와 SessionStart 훅을 통해 Claude Code에 도달합니다.
+
+## 프로필에서 네이티브 구성으로의 매핑
+
+`apothem install` 또는 `apothem update`를 실행할 때마다 어댑터는 전파 매니페스트에
+따라 공유 `apothem` 코퍼스를 `~/.claude/`로 전파합니다. 어댑터는 가능한 경우 네이티브
+디렉터리를 직접 사용하고 명령 프롬프트를 스킬 폴더로 변환합니다. 기존의 Apothem 관리
+대상인 일치하는 자식은 교체 전에 백업됩니다. 관련 없는, 운영자가 작성한 항목은
+보존됩니다. `settings.json`은 병합되어 운영자가 작성한 키가 계속 복구 가능하도록
+합니다.
+
+## 호환성 참고 사항
+
+어떤 변환도 발생하지 않습니다. 설치는 프로필이 올바른 형식인지, settings.json의 모든 훅 바인딩이 해석 가능한지 검증합니다.
+
+Claude Code는 모든 세션 시작 시 settings.json의 모든 훅 바인딩을 적용합니다. 각 어댑터는 자체 네이티브 하니스에 대해 검증됩니다 — 특권을 가진 "참조" 하니스는 존재하지 않습니다.
+
+## 검증
+
+```bash
+apothem verify --harness claude-code
+```
+
+verify 명령은 다음을 확인합니다.
+
+1. 네이티브 구성이 예상 경로에 존재합니다.
+2. 공유 프로필의 모든 필수 필드가 존재합니다.
+3. 어댑터별 검증 루틴이 성공을 보고합니다.
+
+## 업데이트
+
+```bash
+apothem update --harness claude-code
+```
+
+현재 공유 프로필에서 네이티브 구성을 다시 도출합니다. 설치된 `apothem` 패키지가
+업데이트된 후에 실행하여, 전파된 규약 표면(에이전트, 규칙, 스킬, 상태 표시줄, 출력
+스타일)이 새 버전을 반영하도록 합니다. `CLAUDE.md`는 운영자가 소유하며 어댑터가 절대
+건드리지 않습니다.
+
+## 제거
+
+```bash
+apothem uninstall --harness claude-code
+```
+
+어댑터가 작성한 네이티브 구성 파일을 제거합니다.
+설치된 `apothem` 패키지와 소스 저장소는 영향을 받지 않습니다.
+
+## 적합성 게이트
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## 문제 해결
+
+| 증상 | 해결 |
+|---------|-----|
+| 구성 파일을 찾을 수 없음 | `apothem install --harness claude-code`를 다시 실행 |
+| 검증 실패 | `apothem update --harness claude-code`를 실행한 다음 다시 검증 |
+| 예기치 않은 구성 내용 | `apothem update`를 다시 실행. 진실의 원천은 공유 `apothem` 프로필이며 `~/.claude/`가 아님 |
+
+## 구성 노브
+
+| 플래그 | 기본값 | 설명 |
+|------|---------|-------------|
+| `--dry-run` | `false` | 파일을 작성하지 않고 설치를 미리 봅니다. |

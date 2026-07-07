@@ -1,0 +1,76 @@
+---
+title: "Platforms"
+description: "Supported operating systems, shells, and installer scripts for Apothem, plus the system Python prerequisite for the self-contained runtime."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem ships two installer scripts that, between them, cover the modern
+developer desktop and server matrix. There is no platform-specific build:
+the engine is a [self-contained runtime](/docs/architecture/self-contained-runtime)
+that runs from its source tree with vendored dependencies, so platform
+support is exactly the set of hosts where one of the two installers can
+place that tree and run it. The other install paths widen the matrix
+further: the tool-native plugins and extensions run wherever their host tool
+does, and the npx form (`npx @ahmed-g-gad/apothem`) runs on any OS with
+Node.js 18+.
+
+## Operating system and shell matrix
+
+| OS family | Supported shells | Installer script |
+| --------- | ---------------- | ---------------- |
+| macOS | POSIX `bash` (the system bash or a newer user-installed bash) | `install.sh` |
+| Linux | POSIX `bash` | `install.sh` |
+| Windows Subsystem for Linux (WSL2) | POSIX `bash` | `install.sh` |
+| BSD (FreeBSD, OpenBSD, NetBSD) | POSIX `bash` | `install.sh` |
+| Termux (Android) | POSIX `bash` | `install.sh` |
+| ChromeOS Linux container (Crostini) | POSIX `bash` | `install.sh` |
+| Windows | Windows PowerShell 5.1+ | `install.ps1` |
+| Any platform with PowerShell 7+ | PowerShell 7+ (cross-platform) | `install.ps1` |
+
+The two scripts are functional parity to each other. `install.sh` requires a
+POSIX `bash`. `install.ps1` requires Windows PowerShell 5.1 or later, or
+PowerShell 7+ on any platform PowerShell 7 itself supports — including
+macOS and Linux, where it is an alternative to `install.sh`.
+
+## The one prerequisite: a system Python
+
+Apothem installs no Python packages. The engine imports run against an
+interpreter you already have, with the bundled source prepended to
+`PYTHONPATH`. Each installer checks the prerequisite before doing anything
+else:
+
+- **CPython 3.10 or newer.** The installer probes `python3`, `python`, and
+  the versioned names (`python3.14` down to `python3.10`), accepting the
+  first that reports version ≥ 3.10. On Windows it rejects the Microsoft
+  Store launcher shims and the bundled `find-python` locator applies the
+  same floor.
+- **Runtime libraries importable.** The engine imports `click` and `rich`
+  from the system interpreter; its remaining third-party dependencies are
+  vendored inside the source tree. The installer verifies both are
+  importable under the chosen interpreter, names any that is missing, and
+  offers to install the missing prerequisites for you — with your
+  confirmation, or automatically with `--yes` / `APOTHEM_AUTO_INSTALL_DEPS=1`.
+- **`git`** is needed only for the network install (the script clones the
+  source tree). A local install from a checkout does not require `git`.
+
+If the interpreter, the libraries, or `git` are absent, the installer exits
+with a diagnostic naming exactly what to provide, rather than guessing or
+mutating your environment.
+
+## How a platform is supported
+
+A platform is supported when both hold:
+
+1. One of the two installers runs on it — meaning the host has a POSIX
+   `bash` (`install.sh`) or a supported PowerShell (`install.ps1`).
+2. A CPython 3.10+ interpreter with `click` and `rich` importable runs
+   on it.
+
+There is no compiled component, no native extension, and no per-platform
+binary. The same source tree runs everywhere the interpreter does, so the
+matrix above is the complete, accurate statement of support — nothing more
+is claimed.
+
+## Recommended Next Step
+
+**Run the installer for your platform** — `curl -fsSL https://apothem.ahmedgad.com/install.sh | bash` on a POSIX shell, or `irm https://apothem.ahmedgad.com/install.ps1 | iex` on PowerShell — after confirming a CPython 3.10+ interpreter is on your PATH.

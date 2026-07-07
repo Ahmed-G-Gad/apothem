@@ -1,0 +1,84 @@
+---
+title: "quickstart"
+description: "Référence de la CLI pour la commande de première exécution guidée apothem quickstart."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Première exécution guidée : s'assure qu'un profil existe, prévisualise les écritures, puis installe.
+
+## Synopsis
+
+```
+apothem quickstart [--harness NAME|all] [--project PATH] [--profile PATH]
+                   [--yes] [--quiet|-q] [--verbose|-v]
+                   [--format plain|json] [--json] [--no-color]
+```
+
+`quickstart` est l'unique point d'entrée guidé pour un nouvel opérateur. Dans un flux linéaire, il : (1) s'assure qu'un profil partagé existe — en créant un profil de départ avec une invitation à le personnaliser si aucun n'est trouvé ; (2) prévisualise les fichiers concrets que les harness sélectionnés écriront, regroupés par racine du projet par rapport à votre répertoire personnel ; (3) demande confirmation ; (4) installe avec la sortie des notes de capacités regroupée et débarrassée du bruit ; et (5) imprime les commandes suivantes recommandées.
+
+Il compose les mêmes briques que celles qu'utilise la commande `install` — il ne les réimplémente pas. `--harness` vaut `all` par défaut et `--project` le répertoire courant.
+
+## Comportement
+
+- **Profil** — si le chemin de profil résolu ne comporte pas de fichier, `quickstart` propose de créer un profil de départ (le crée automatiquement avec `--yes`, dans un shell non interactif ou avec `--format json`) et nomme les champs d'identité d'espace réservé à personnaliser.
+- **Prévisualiser + confirmer** — avant toute écriture, les cibles sont listées sous deux en-têtes (racine du projet par rapport à votre répertoire personnel) ; une exécution interactive confirme avant d'écrire en dehors du projet. `--yes`, un shell non interactif et `--format json` poursuivent sans demander. Refuser interrompt avant toute écriture.
+- **Installer** — les capacités qu'un harness ne prend pas en charge nativement sont résumées en une note regroupée par harness (passez `--verbose` pour le détail par capacité) ; l'ensemble complet figure toujours dans le tableau warnings de `--format json`.
+- **Étape suivante** — la sortie du terminal nomme les commandes ultérieures (`apothem verify …`, `apothem doctor`).
+
+## Options
+
+| Option | Description |
+|---|---|
+| `--harness NAME` | Adaptateur de harness à installer, ou `all` pour l'ensemble de tout le registre (par défaut : `all`). |
+| `--profile PATH` | Chemin vers le YAML du profil partagé. Par défaut `~/.config/apothem/profile.yaml`. |
+| `--project PATH` | Racine du projet pour les harness à portée de projet. Par défaut le répertoire courant. |
+| `--yes` | Exécute la séquence guidée complète de façon non interactive (ignore chaque invite). |
+| `--quiet`, `-q` | Supprime la sortie informative ; seules les erreurs sont émises. |
+| `--verbose`, `-v` | Imprime la justification de chaque capacité non projetée au lieu de la note regroupée. |
+| `--format plain\|json` | Format de sortie (par défaut : `plain`). |
+| `--json` | Raccourci pour `--format json`. |
+| `--no-color` | Désactive les codes de couleur ANSI dans la sortie. |
+| `-h`, `--help` | Affiche l'aide et quitte. |
+
+## Sortie JSON
+
+`--format json` émet un document unique qui résume chaque étape guidée :
+
+```json
+{
+  "status": "success",
+  "command": "quickstart",
+  "profile_path": "C:\\Users\\Example\\.config\\apothem\\profile.yaml",
+  "steps": [
+    {"step": "profile", "outcome": "created", "path": "…", "placeholder_identity": ["name", "email", "github"]},
+    {"step": "install", "status": "success", "harness": "all", "files_written": ["…"], "warnings": [], "results": []},
+    {"step": "recommend", "next": ["apothem verify --harness all --project .", "apothem doctor"]}
+  ],
+  "recommended_next": ["apothem verify --harness all --project .", "apothem doctor"]
+}
+```
+
+## Exemples
+
+```bash
+apothem quickstart
+apothem quickstart --harness all --project . --yes
+apothem quickstart --harness claude-code
+apothem quickstart --json
+```
+
+## Codes de sortie
+
+| Code | Signification |
+|---|---|
+| 0 | Exécution guidée terminée |
+| 1 | Erreur attendue de validation, de profil, de harness, de projet ou d'adaptateur |
+| 2 | Matérialisation partielle du lot après au moins une écriture |
+
+## Voir aussi
+
+- [apothem install](/docs/cli-reference/install) — matérialise un harness à partir du profil partagé
+- [apothem verify](/docs/cli-reference/verify) — confirme qu'une installation est active
+- [apothem doctor](/docs/cli-reference/doctor) — santé de l'environnement et de l'installation
+- [Premiers pas](/docs/install) — guide d'installation complet

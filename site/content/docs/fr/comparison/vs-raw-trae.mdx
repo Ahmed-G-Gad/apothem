@@ -1,0 +1,42 @@
+---
+title: "Apothem face à la configuration manuelle de Trae"
+description: "Maintenir à la main les règles de Trae sous .trae/rules/ face à les rendre depuis le profil partagé d'Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Trae lit les règles depuis un répertoire `.trae/rules/` dont les ancres du fournisseur
+sont `project_rules.md` et `user_rules.md`. L'adaptateur trae d'Apothem rend un fichier
+`apothem-rules.md` dédié dans ce répertoire à partir du profil partagé. Cette page
+oppose la maintenance manuelle de cette configuration à sa gestion avec Apothem.
+
+## Comparaison de l'effort
+
+| Tâche | Configuration manuelle | Géré par Apothem |
+| ---- | --------------- | --------------- |
+| Écrire des règles | Écrire à la main chaque fichier sous `.trae/rules/` | Rendues depuis le corpus partagé |
+| Garder la surface d'Apothem séparée | Penser à ne pas surcharger `project_rules.md` | L'adaptateur écrit un `apothem-rules.md` dédié |
+| Garder les règles alignées avec d'autres environnements | Manuel, par outil | Automatique lors de `apothem update` |
+| Vérifier que la configuration est correcte | Inspection manuelle | `apothem verify --harness trae` |
+
+## Ce qu'Apothem gère
+
+L'adaptateur trae rend les règles partagées dans un fichier `apothem-rules.md` dédié
+sous `.trae/rules/` et laisse intactes les ancres `project_rules.md` et
+`user_rules.md` détenues par l'opérateur. Trae n'a pas de hook PreToolUse, l'intention
+de garde-fou réside donc dans la prose des règles plutôt que dans un point
+d'interception des appels d'outil. Chaque modification des règles partagées rend à
+nouveau le fichier lors du prochain `apothem update`.
+
+## Chemin de migration
+
+1. Exécutez `apothem profile init` pour créer le profil partagé si vous ne l'avez pas encore.
+2. Déplacez les règles de vos fichiers `.trae/rules/` existants vers le corpus partagé.
+3. Exécutez `apothem install --harness trae` pour rendre le fichier `apothem-rules.md`.
+4. Exécutez `apothem verify --harness trae` pour confirmer que la configuration a été installée.
+5. Utilisez `apothem update --harness trae` pour chaque modification ultérieure.
+
+## À lire ensuite
+
+- [Référence de l'adaptateur Trae](/docs/harnesses/trae)
+- [Aperçu de la comparaison](/docs/comparison)

@@ -1,0 +1,69 @@
+---
+title: "/research-paper"
+description: "/research-paper — Assembles a top-tier paper draft (abstract through conclusion plus references) from the synthesis, design, and analysis, with every citation verified to resolve."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Role:** Principal Investigator (authoring)
+**Pipeline position:** mid-chain
+
+Assembles a top-tier paper draft from the synthesis, design, and analysis — abstract, introduction, related work, method, results, discussion, limitations, conclusion, references. Every citation is verified to resolve to a real source; no phantom citations.
+
+## Canonical invocation
+
+```bash
+/research-paper
+```
+
+With arguments:
+
+```bash
+/research-paper [path/to/research-suite/]
+```
+
+## Inputs
+
+`_inputs/synthesis.md` (SOTA map + gap), `_inputs/study-design.md` (method), and `_outputs/analysis.md` (results).
+
+## Outputs
+
+The paper deliverable at a host-natural location (`paper/`) — abstract, introduction, related work, method, results, discussion, limitations, conclusion, references.
+
+## Downstream
+
+/research-review (downstream consumer)
+
+## Workflow phases
+
+The command follows the standard `/research` pipeline workflow:
+
+1. **Load context** — Read the synthesis, the study design, and the analysis.
+2. **Verify the Sequence Gate** — Confirm `_outputs/analysis.md` exists; otherwise halt with `Blocked: run /research-analysis first`.
+3. **Assemble the draft** — Compose abstract through conclusion; the introduction and related work draw on the synthesis, the method on the design, the results on the analysis.
+4. **Verify citations** — Every reference resolves to a real source.
+5. **Update the handoff manifest** — Record the paper deliverable path.
+6. **Emit the paper** — the manuscript at the host-natural `paper/` location.
+
+## Rigor floor
+
+Under a double-blind venue the manuscript carries only what the anonymity policy permits: author, institution, funding, and the system under study are described in natural domain language without naming them, held out to separately-submitted metadata for a designated de-anonymization stage. The depth of the reproducibility and statistical reporting scales to the target-venue ambition.
+
+## Failure modes
+
+| Symptom | Cause | Recovery |
+|---------|-------|----------|
+| Blocked: run /research-analysis first | No analysis | Run `/research-analysis` to produce `_outputs/analysis.md` |
+| Phantom citation | Reference does not resolve | Remove or correct the citation; never fabricate a source |
+| Results overstated | Discussion exceeds the analysis | Constrain claims to the analyzed effect sizes + CIs |
+
+## Examples
+
+```bash
+# Assemble the paper draft from synthesis + design + analysis
+/research-paper path/to/research-suite/
+```
+
+## Cross-references
+
+- [Pipeline overview](/docs/pipeline)
+- [Commands reference](/docs/reference/commands)

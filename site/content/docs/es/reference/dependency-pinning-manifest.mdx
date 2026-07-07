@@ -1,0 +1,76 @@
+---
+title: "Manifiesto de fijación de dependencias"
+description: "Política de declaración de dependencias que abarca los rangos del entorno de ejecución de Python, las herramientas de desarrollo, los archivos de bloqueo de las herramientas de publicación y los pisos de versión ratificados para cada superficie de compilación."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> Postura ratificada sobre cómo Apothem declara, fija y bloquea dependencias.
+> Audiencia: colaboradores y consumidores posteriores que necesitan entender el
+> modelo de reproducibilidad.
+
+## Postura
+
+Apothem es una CLI de Python con un conjunto pequeño de dependencias de tiempo
+de ejecución más una cadena de herramientas más amplia de desarrollo, auditoría,
+publicación y documentación. Las dependencias de tiempo de ejecución usan
+límites inferiores conservadores en `pyproject.toml`; el sitio web confirma
+`site/package-lock.json`; las GitHub Actions se fijan por SHA inmutable con
+comentarios de versión y se actualizan mediante Renovate.
+
+| Clase | Declaración | Política de bloqueo |
+|---|---|---|
+| Dependencias de tiempo de ejecución de Python | `[project.dependencies]` en `pyproject.toml` | Rangos con límite inferior; sin bloqueo de tiempo de ejecución de Python confirmado |
+| Herramientas de desarrollo / seguridad | extras de `[project.optional-dependencies]` | Rangos con límite inferior; CI instala las versiones coincidentes actuales |
+| Herramientas de publicación | `scripts/release/requirements-build-linux.txt` | Bloqueado por hash para los flujos de trabajo de publicación; generado a partir del cierre de herramientas de publicación |
+| Herramientas solo de CI | `.github/workflows/*.yml` | Las herramientas pip exclusivas del flujo de trabajo usan fijaciones exactas (`pip`, `bandit`, `pip-audit`, `pip-licenses`, `pyinstaller`) |
+| Sitio de documentación | `site/package.json` | `site/package-lock.json` confirmado y consumido por `npm ci` |
+| GitHub Actions | Referencias `uses:` fijadas por SHA con comentarios de versión | Renovate propone actualizaciones; las excepciones llevan marcadores `action-pinning-exempt:` |
+
+## Ratificación de publicación
+
+| Superficie | Estado ratificado | Justificación |
+|---|---|---|
+| Dependencias de tiempo de ejecución | Los límites inferiores actuales viven en `pyproject.toml` `[project.dependencies]` | Pisos estables actuales ratificados antes de la publicación; sin bloqueo conocido por CVE de tiempo de ejecución |
+| Herramientas de desarrollo | Los límites inferiores actuales viven en el extra `dev` de `pyproject.toml` | Pisos estables más recientes ratificados antes de la publicación |
+| Herramientas de seguridad | Los límites inferiores actuales viven en el extra `security` de `pyproject.toml` | Pisos de escáner actuales ratificados antes de la publicación |
+| Herramientas de publicación | El cierre bloqueado por hash vive en `scripts/release/requirements-build-linux.txt` | El flujo de trabajo de publicación instala con `--require-hashes`; los scripts locales requieren que `build` ya existan en lugar de instalar silenciosamente dependencias cambiantes |
+| Herramientas de documentación | Los rangos actuales viven en `site/package.json`; la resolución exacta vive en `site/package-lock.json` | `npm outdated` no devuelve ninguna dependencia de documentación obsoleta tras refrescar el archivo de bloqueo |
+| GitHub Actions | Se conservan las fijaciones por SHA existentes para la publicación actual; el flujo de trabajo reutilizable de SLSA sigue siendo la excepción documentada fijada por etiqueta | La reejecución de CI pública está en verde; las actualizaciones amplias de versión mayor de actions se dejan intencionadamente a las PR de automatización de dependencias para evitar agitación en la superficie de publicación |
+| Empaquetado de npm | Flujo de trabajo `publish-npm.yml` solo manual; sin disparador de publicación automática | El único paquete npm público es `@ahmed-g-gad/apothem`; la publicación se ejecuta tras superar la preparación para la publicación |
+
+## Bloqueo
+
+Los archivos de bloqueo de Python se generan bajo demanda por el colaborador.
+No se confirman porque el cierre de tiempo de ejecución de Apothem es pequeño,
+la CLI admite múltiples versiones menores de Python y CI ejercita
+intencionadamente las versiones de herramientas coincidentes más recientes.
+
+```sh
+# Astral uv:
+uv pip install -e ".[dev,security,release]"
+uv pip freeze > requirements.dev.lock
+
+# pip-tools:
+pip-compile --extra=dev --extra=security --extra=release -o requirements.dev.lock pyproject.toml
+
+# Plain pip:
+pip install -e ".[dev,security,release]"
+pip freeze > requirements.dev.lock
+```
+
+El sitio web es diferente: `site/package-lock.json` se confirma y CI usa
+`npm ci`, de modo que el sitio de documentación renderizado tiene un cierre de
+Node reproducible.
+
+## Justificación
+
+- **¿Por qué fijaciones por rango para Python?** La CLI admite una matriz de
+  Python amplia y CI debería revelar problemas de compatibilidad con las
+  herramientas actuales antes de que los usuarios los encuentren.
+- **¿Por qué un bloqueo de Node confirmado?** El sitio web es un artefacto
+  estático desplegado; el archivo de bloqueo da compilaciones `npm ci`
+  deterministas para esa superficie pública.
+- **¿Por qué Actions fijadas por SHA?** Las etiquetas son mutables; los SHA son
+  inmutables. Renovate actualiza los SHA fijados, mientras que la puerta de
+  publicación registra cualquier retención intencionada.

@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: MIT
+
+name: CI
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: step-security/harden-runner@v2.10
+        with:
+          egress-policy: block
+      - uses: actions/checkout@v4
+      - run: echo "hello"
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@v4
+      - run: ruff check .

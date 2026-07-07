@@ -1,0 +1,57 @@
+---
+title: "Registry der externen Konformität — Bei Operationen an Host-Projekten"
+description: "Registry der fünfzehn Mandate (M1–M15), die die Konformitätsanforderungen für alle in Host-Projekten erzeugten Artefakte festlegt, quergemappt mit den ökosystem-internen Mandaten."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Kanonisches Register der fünfzehn Produktionsmandate.** Dieses Dokument trägt die vollständige Registry der fünfzehn Mandate (M1–M15), die Ratifizierung der Trivial-vs.-Nicht-trivial-Schwelle, die M↔CM-Quermapping-Richtlinie und das Mandats-Einführungsprotokoll; die substanziellen Aufzählungen leben hier, operationalisiert durch die mandatsspezifischen Regeldateien.
+
+Wenn dieses Ökosystem ein beliebiges Artefakt in einem Host-Projekt erzeugt, bearbeitet, überarbeitet, nachrüstet, erweitert oder entfernt (das Aufrufziel des Benutzers — Git-Repository, Dokumentationsbaum, Forschungskorpus, Infrastruktur-Manifest, Notizblock), erfüllt jedes erzeugte Artefakt die unten deklarierte **Fünfzehn-Mandate-Latte (M1–M15)**. Dies ist nicht verhandelbar und gilt für jede Oberfläche des Ökosystems (Helfer, Assistent, Befehl, Hook, Antwort, Diff, Nachricht). Die Durchsetzung erfolgt durch das Vor-Emissions-Gate (siehe `site/content/docs/governance/pre-emission-gate-registry.mdx`); die Durchsetzung des mechanischen Anteils lebt in `src/apothem/conformity/*-grep.py`, orchestriert durch `src/apothem/conformity/gate.py`.
+
+Die fünfzehn Mandate operieren **neben** den CM-N-Mandaten gemäß der Parallel-Vokabular-Richtlinie (siehe `site/content/docs/governance/cross-cutting-mandates.mdx`); M und CM sind orthogonale Governance-Dimensionen (M ist die externe Achse — Host-Projekt-Artefakte; CM ist die interne Achse — ökosystem-interne Artefakte). Jede unten aufgeführte Regel ist die kanonische Heimat ihres Mandats; diese Registry ist der Index.
+
+| ID | Mandat | Einzeilige Zusammenfassung | Kanonische Regel |
+| -- | ------- | ---------------- | -------------- |
+| M1 | Host-Projekt-Agnostizismus | Entdecke Stack / Formatter / Linter / Layout / Idiome des Hosts; ehre sie; lege Schweigen als Anfrage gemäß M5 mit M7-Annotation offen | `src/apothem/rules/host-discovery.md` |
+| M2 | Redaktionelle Disziplin | Lege jede Änderung / Erweiterung / Verfeinerung mit Begründung offen; keine stille Überkonformität, keine stille Grenzüberschreitung | `src/apothem/rules/disclosure-ledger.md` |
+| M3 | Zehn Qualitätsdimensionen | Jedes Artefakt besteht die Zehn-Punkte-Prüfung (Strenge, Kohärenz, Konfigurierbarkeit, Lesbarkeit, Verwaistheit, Strukturalität, Architektur, Benennung, wissenschaftliche Referenzierung, Beispiele/Tests/Doku) | `src/apothem/rules/ten-dimension-check.md` |
+| M4 | Selbstanwendung | Führe das Fünfzehn-Punkte-Vor-Emissions-Gate vor jeder Emission von bedeutsamem Umfang aus; protokolliere den Veröffentlichungsnachweis | `src/apothem/rules/pre-emission-gate.md` |
+| M5 | Autoritätsprinzip | Frage nach, erfinde nicht; Identitäts- / Geltungsbereichs- / Präferenz- / Sicherheits- / Benennungs- / Infrastruktur- / Versions-Pinning-Daten werden nie erfunden | `src/apothem/rules/authority-inquiry.md` |
+| M6 | Expertise-Einbindung | Lies die Absicht, ändere proaktiv, erweitere bei benachbarten Lücken, verfeinere mit zitierter Begründung, antizipiere Folgen zweiter Ordnung | `src/apothem/rules/expertise-posture.md` |
+| M7 | Optionsannotation | Jede Mehrfach-Optionswahl trägt eine Empfehlungsmarkierung plus eine prinzipiengebundene Begründung; stille Auswahlen sind in autoritativem Terrain verboten | `src/apothem/rules/option-annotation.md` |
+| M8 | Endgültigkeit und Lückenlosigkeit | Kein Zaudern, wo eine bindende Vorschrift möglich ist; kein „es kommt darauf an“ ohne aufgezählte Zweige; jeder Vertrag hat Vor- / Nach- / Fehlerbedingungen | `src/apothem/rules/definitiveness.md` |
+| M9 | Visuelle Hebelwirkung | Strukturelle Thematik trägt ein Diagramm der aktuellen Realität (Mermaid als Standard) mit Herkunft + Verifizierungsdatum | `src/apothem/rules/visual-leverage.md` |
+| M10 | Bidirektionale Bindung | Substanzielle strukturelle Elemente deklarieren reziproke Bindungen (Drives → / Driven by ← / Satisfies → / Established by ↑ / Cross-bound with ↔) | `src/apothem/rules/bidirectional-binding.md` |
+| M11 | Agile Sprints | Nicht-triviale mehrstufige Arbeit läuft als disziplinierte Sprints (Ziel / Backlog / DoR / DoD / Review / Retrospektive) | `src/apothem/rules/agile-sprints.md` |
+| M12 | Phasenberichte und kanonisches Layout | Mehrphasige Arbeit erzeugt Berichte je Unterphase + eine Zusammenfassung auf Phasenebene; Ausgaben im kanonischen Layout | `src/apothem/rules/canonical-layout.md` |
+| M13 | Code-Handwerk | Warum-nicht-was-Kommentare; absichtsoffenbarende Namen mit Einheiten; typisierte Ausnahmebehandlung; benannte Konstanten; ehre Linter / Formatter / Typprüfer des Hosts | `src/apothem/rules/code-craft-{python,shell,markdown,conventions}.md` (pro Sprache) |
+| M14 | Ökosystem-Systemizität | Neue Komponenten deklarieren Vorgänger / Nachfolger / Geschwister / Durchsetzer; in Host-Registern indexiert; keine Silos, keine Waisen eingeführt | `src/apothem/rules/systemic-participation.md` |
+| M15 | Produktionsreife Form | Code-Änderungen werden mit Tests + Doku + CHANGELOG-Eintrag + konformer Commit-Nachricht + grünem CI im selben Änderungssatz ausgeliefert | `src/apothem/rules/production-ready-prs.md` |
+
+## 1. Trivial-vs.-Nicht-trivial-Schwelle (festgelegt)
+
+Die Schwelle, die triviale von nicht-trivialer Arbeit trennt — nicht-triviale Arbeit löst den M11- + M12-Apparat aus — ist ein **Hybrid aus Zeilenanzahl + Geltungsbereich**: eine Änderung ist trivial, wenn sie eine Einzeldatei-Bearbeitung von ≤ 5 Zeilen ist UND keine Änderung der öffentlichen API-Oberfläche einführt UND keine Verhaltensänderung. Alles andere ist nicht-trivial. Einmalig festgelegt gemäß der Einmal-festlegen-Disziplin von M5; die Schwelle lebt hier auf Benutzerebene und wird nur durch eine explizite Projekt-Geltungsbereichs-Deklaration überschrieben, die die Host-Entdeckung von M1 ehrt (z. B. eine `<project>/.claude/CLAUDE.md` für Claude Code oder die äquivalente projektweise Oberfläche für ein anderes harness).
+
+## 2. M↔CM-Quermapping
+
+Jeder M-nummerierte Regelkörper deklariert sein CM-N-Quermapping inline (in seiner `Cross-bound with ↔`-Bindung) unter Verwendung der Parallel-Vokabular-Richtlinie: Wo ein M-Mandat seinen nächstgelegenen CM-N-Analogon hat, gelten beide Regeln, wo beide gelten (keine Substitution). Die Mappings sind den Regelkörpern intrinsisch; diese Registry fasst die Achsen-Richtlinie zusammen, ohne die Mapping-Tabelle zu duplizieren.
+
+## 3. Mandats-Einführungsprotokoll
+
+Das Hinzufügen eines neuen M-nummerierten Mandats (z. B. eines künftigen M16) ist eine **gebündelte Änderung**. Das Bündel erreicht die Registry nur, wenn jede untenstehende Komponente im selben Änderungssatz vorhanden ist. Stille Hinzufügungen — eine neue M-Zeile in der Registry-Tabelle ohne das unterstützende Bündel — erzeugen eine Drift der Mandats-Achse und sind gemäß der M14-System-Teilhabe nicht-konform.
+
+| Erforderliche Komponente | Zweck | Wo sie landet |
+| ------------------ | ------- | -------------- |
+| **Mandatszeile in der Registry-Tabelle** | Benennt das Mandat, seine einzeilige Zusammenfassung, seine kanonische Regel | Die Tabelle dieser Registry oben |
+| **CM-N-Quermapping-Zelle** | Deklariert das nächstgelegene CM-N-Analogon (oder markiert `(no direct CM-N analog)` als neue Achse) gemäß der Parallel-Vokabular-Richtlinie von §2 | Die `Cross-bound with ↔`-Zeile der neuen Regel |
+| **Kanonischer Regelkörper** | Die substanzielle Spezifikation des Mandats (Vorbedingungen / Erforderliches Verhalten / Offenlegungsoberfläche / Fehleranzeichen / Fünf-Richtungs-Bindungen) | `src/apothem/rules/<mandate-name>.md` |
+| **Vor-Emissions-Gate-Zeile** | Benennt die Prüfart der Latte (mechanisch / begründet / gemischt) und ihre `Failure → action` | Die Registry-Tabelle des Vor-Emissions-Gates (`site/content/docs/governance/pre-emission-gate-registry.mdx`) |
+| **Durchsetzungsoberfläche** | Entweder ein mechanisches grep in `src/apothem/conformity/<name>-grep.py`, orchestriert durch `gate.py`, ODER eine explizite Deklaration einer begründeten Latte mit dem Selbstprüfungs-Anker des Betreibers | `src/apothem/conformity/` (mechanisch) oder die als `reasoned` markierte Gate-Zeile (Selbstprüfung des Betreibers) |
+| **Konformitäts-Fixture** | Ein Fixture unter `tests/conformity-scenarios/fixtures/F-<N>-<name>/`, das die Fehlermodi des Mandats erprobt; die Mandatsliste des Prüfers wird aktualisiert, um die neue Latte einzuschließen | `tests/conformity-scenarios/` |
+| **Aktualisierung des Veröffentlichungsnachweis-Schemas** | Der `bars:`-Block des Veröffentlichungsnachweises erhält die neue Zeile; die Veröffentlichungsnachweis-Blöcke bestehender Artefakte behandeln die neue Zeile als `n/a (with reason: pre-mandate-N artifact)`, bis sie neu auditiert werden | `site/content/docs/governance/pre-emission-gate-registry.mdx` §1 Schema |
+| **Offenlegungs-Hauptbuch-Eintrag** | Protokolliert die Einführung des Mandats mit einer Begründung, die in einem konkreten Treiber verankert ist (beobachtete Musterwiederholung; offengelegte Sicherheitslücke; Fähigkeit, die die bestehenden fünfzehn nicht abdecken) | Der Commit-Körper des Änderungssatzes oder die PR-Beschreibung gemäß `src/apothem/rules/disclosure-ledger.md` |
+
+**Anwendungsdisziplin.** Ein Mandatsvorschlag, der ohne das Bündel ankommt, wird beim Review abgelehnt; der Vorschlagende vervollständigt entweder das Bündel oder stuft den Vorschlag zu einer Erweiterung eines bestehenden Mandats herab. Die bestehenden fünfzehn Mandate wurden gemeinsam als externe Achse der Spezifikation angenommen; künftige Hinzufügungen ehren dieselbe Alle-Komponenten-oder-keine-Komponente-Annahmekadenz, statt stückweise zu landen.
+
+**Herabstufungs- / Außerdienststellungsprotokoll.** Wenn ein etabliertes M-N als redundant mit einem bestehenden CM-N oder mit einem anderen M-N befunden wird (die Quermapping-Abdeckungskarte im Körper der materialisierenden Regel zeigt `direct`-Adjazenz in beiden Richtungen), ist die Herabstufung die symmetrische Umkehrung: die Registry-Zeile wird außer Dienst gestellt, die Gate-Zeile wird außer Dienst gestellt, die kanonische Regel wird außer Dienst gestellt (mit dem Inhalt gemäß `src/apothem/rules/clean-room-generation.md` §3 Neuschreibe-Protokoll in die absorbierende Regel eingefaltet), das Konformitäts-Fixture wird außer Dienst gestellt, der `bars:`-Block des Veröffentlichungsnachweis-Schemas lässt die Zeile fallen, und der Änderungssatz wird im Offenlegungs-Hauptbuch mit der Zitierung der absorbierenden Regel protokolliert. Die Herabstufung bewahrt dieselbe Alle-Komponenten-oder-keine-Komponente-Invariante.

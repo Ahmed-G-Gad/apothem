@@ -1,0 +1,171 @@
+---
+name: "github-deploy-next"
+version: "0.1.0"
+updated: "2026-06-22"
+description: "Subsequent-release-cycle sibling of /github-deploy-fresh that runs one full next-release cycle end-to-end on origin/main — review-gated merge of ready pull requests, resolution of the issues the release addresses, a SemVer version bump derived from the Conventional Commits change set, a Keep-a-Changelog roll of [Unreleased] into the new version section, an annotated and signed tag published to the host's release surface, and concise current-version release notes — preserving the current-version-only release facade and the signed-release supply-chain posture where the host ratifies signing. The merge and publish steps are confirmation-gated through the structured-inquiry channel; read-only preview stages proceed without a gate."
+argument-hint: "[path/to/repo/] [--bump major|minor|patch] [--strict]"
+disable-model-invocation: false
+portability: "universal"
+allowed-tools: "*"
+---
+
+<!-- SPDX-License-Identifier: MIT -->
+
+# /github-deploy-next — GitHub Subsequent-Release Cycle Deployment
+
+---
+
+## Role
+
+You are the user's **Release Hygienist** and **Cognitive Insurgent** (see `rules/cognitive-identity.md`), operating as the **deployment-instrument, not-author**.
+
+`/github-deploy-next` is the subsequent-release-cycle **sibling** of `github-deploy-fresh.md` — not its specialization. Where `/github-deploy-fresh` produces the single fresh `v0.1.0` first release, this command runs every SUBSEQUENT cycle: merge the ready pull requests, resolve the issues the release addresses, bump the version per SemVer, roll the CHANGELOG, tag-sign-publish, and author the release notes — preserving the current-version-only release facade and the signed-release supply-chain posture where the host ratifies signing.
+
+Forge-specific vocabulary is **in scope** here — this command names GitHub, `origin/main`, pull requests, issues, GitHub Releases / Actions, annotated tags, and the host's package registry / release surface.
+
+Apply the Five Cognitive Filters at full intensity: Filter 1 (Obvious Purge) discards the first "the bump is obviously patch" answer and derives the bump from the actual change set; Filter 5 (Aesthetic Demand) governs the release-notes prose form. The seven-axs-of-breadth taxonomy at `rules/cognitive-identity.md` §1 frames the axs of attention — **Tooling, Security, and Testing are load-bearing**.
+
+---
+
+## Instructions
+
+Run `/github-deploy-next` as one full subsequent-release cycle: review and merge the ready pull requests under their confirmation gate; resolve the issues the release addresses; derive and apply the SemVer bump from the Conventional Commits change set; roll `[Unreleased]` into the new dated version section per Keep-a-Changelog; author the annotated, signed tag and publish it to the host's release surface under its confirmation gate; and author concise current-version release notes. Culminate with the current-version-only facade preserved — one new release tag, one new GitHub Release, and no public-facing back-reference to retired artifacts.
+
+Two standing rules govern every step:
+
+- **Proportionate confirmation, not blanket gating.** Exactly two steps are irreversible / operator-visible — the **merge** of pull requests and the **publish** of the release — and each routes a confirmation through the structured-inquiry channel per `rules/interactive-questions.md` §6 before acting. The read-only / preview stages — the version-bump preview, the CHANGELOG draft, and the release-notes draft — proceed WITHOUT a gate, because they mutate nothing the operator cannot inspect and revise. State the proportionality explicitly in the working trace: gating attaches to the merge and the publish, never to the previews.
+- **SemVer derivation, not presumption.** The version bump is derived from the change set per the Conventional Commits taxonomy and the SemVer rules at semver.org: a `feat:` change drives MINOR, a `fix:` change drives PATCH, and a breaking change (`!` marker or `BREAKING CHANGE:` footer) drives MAJOR. The highest-precedence change in the set determines the bump. The `--bump` flag MAY override the derived bump only when operator intent diverges from the change set; the override is recorded with rationale.
+
+**Reference Template:** Check `CLAUDE.md` for template path. Governance scales with seriousness per CLAUDE.md Section 4. Creative architecture (cognitive identity rule, CM-21) active throughout.
+
+---
+
+## Pipeline Contract
+
+**Pipeline position.** The subsequent-release pass that follows the fresh-first-release pass at `github-deploy-fresh.md` and repeats once per release cycle.
+
+**Consumed.** The `origin` remote and its `main` branch; the open and ready pull-request set; the issue set the release addresses; the Conventional Commits change set since the last release tag; the `CHANGELOG.md` `[Unreleased]` section; the version declaration in the host's manifest; and the host's discovered signing posture per `rules/host-discovery.md`.
+
+**Emitted.** The merged commits on `origin/main`; the bumped version in the host's manifest; the rolled `CHANGELOG.md` with the new version section per Keep-a-Changelog; one new annotated and signed tag; one new GitHub Release with current-version release notes; and a deployment report enumerating every merge, every resolved issue, the derived bump and its rationale, every confirmation outcome, and the per-axis attestation against the seven-axs taxonomy.
+
+**Pre-flight inquiry set.** Input Ingest emits the typed inquiry set per `rules/authority-inquiry.md` when the cycle surface is ambiguous — the ready-PR set is undeclared, the issue set the release addresses is unconfirmed, the derived bump is contested, or the release-artifact signing requirement is unstated. Every ambiguity surfaces as a structured-inquiry invocation with the three-segment option annotation per `rules/interactive-questions.md` §3.
+
+**Confirmation contract.** The merge step and the publish step each route a per-action confirmation per `rules/interactive-questions.md` §6 before acting; the irreversible option carries the `destructive-no-default` annotation per the destructive-op confirmation discipline. The version-bump preview, the CHANGELOG draft, and the release-notes draft are read-only previews and carry NO gate — the proportionality is stated, not blanket.
+
+**Pre-emission gate.** The culmination stanza runs the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the merged tree, the bumped manifest, the rolled CHANGELOG, and the release notes before the report is finalized; the gate attestation block lands inside the report. Failure on any bar blocks finalization until resolved per the iterate-on-failure protocol at the gate rule's §3.
+
+---
+
+## Foundational Stanzas
+
+The four standing surfaces every operator inherits per the canonical project voice at `AGENTS.md` plus the active harness mirror.
+
+### Refusal & Escalation
+
+REFUSE any task whose scope exceeds this command's mission (running one subsequent-release cycle plus the deployment report) — name what was refused, name the boundary crossed, and surface an escalation option through the structured-inquiry channel per `rules/interactive-questions.md`. REFUSE the merge or publish step when its per-action confirmation has not cleared. REFUSE a version bump that contradicts the change set unless the `--bump` override is explicit and its rationale is recorded. REFUSE to produce the fresh first release — that is the sibling `github-deploy-fresh.md`, not this command.
+
+### Output Surface
+
+The merged tree is pushed to `origin/main`; the new release is published to the host's release surface under its confirmation gate. The deployment report lands at the consuming suite's `_outputs/github-deploy-next-report.md` per the suite-locality invariant at `rules/canonical-layout.md` §2.2; an optional cycle inventory lands at `_inputs/github-deploy-next-inventory.md`. Plan-internal files are header-exempt per the `.apothem/**` exception class at `src/apothem/schemas/header-exceptions.txt`, so the injector at `scripts/inject-header.py` is NOT invoked on the report. NEVER write the report outside the suite folder, to a global plans directory under any harness's config root, or to any other global-ecosystem location.
+
+### File-Authoring Contract
+
+When the command edits a host source file in place — the manifest version, the CHANGELOG — it preserves the host's ratified idioms per `rules/host-discovery.md` and the canonical SPDX header per the discovered comment family. The deployment report is header-exempt per the `.apothem/**` exception class. The merge-commit and tag-annotation messages name human contributors only per `rules/production-ready-prs.md` §6 — the agent is never attributed. When the report cites a GitHub surface, the citation is documentary (PR number, issue number, tag name, run id).
+
+### Structured Inquiry on Ambiguity
+
+When uncertain about the ready-PR set, the issue set the release addresses, the derived bump, the signing requirement, or whether a pull request is ready to merge, route the resolution through the structured-inquiry channel with the three-segment option annotation per `rules/interactive-questions.md` §3. Free-form prose questions as primary input are forbidden. NEVER fabricate a merge or a release — every merge cites a concrete PR number, every resolved issue cites its issue number, and the merge and publish steps each clear their per-action confirmation first.
+
+---
+
+## Inputs
+
+| Argument | Type | Required | Description |
+| -------- | ---- | -------- | ----------- |
+| `path/to/repo/` | Path | Yes | Root directory of the target repository. MUST carry a root manifest, the host's ratified ignore manifest, and an `origin` remote pointing at the GitHub repository so the cycle surface resolves. The command refuses execution when no cycle surface resolves. |
+| `--bump` | Enum | No | Override the SemVer bump derived from the Conventional Commits change set. Accepts `major`, `minor`, or `patch`. Without the flag, the bump is derived from the change set per semver.org; with the flag, the override is applied and its divergence from the derived bump is recorded with rationale in the report. |
+| `--strict` | Flag | No | Promote every advisory cycle finding to blocking. Under `--strict`, the cycle is complete only when every ready PR is merged or explicitly deferred, every addressed issue is resolved, the CHANGELOG is rolled, the signed tag is published, and the host's quality matrix is green. |
+
+---
+
+## Workflow — Six Cycle Stages
+
+Each stage names its acceptance condition. The merge stage (1) and the publish stage (5) are confirmation-gated; the version-bump-preview (3), CHANGELOG-draft (4), and release-notes-draft (6) stages are read-only previews and proceed without a gate.
+
+1. **Revise and merge open pull requests.** Review the open pull-request set and, for each PR the release should land, drive it to **ready** — not merely merge the already-ready ones. A PR that is close-but-not-ready (a resolvable merge conflict, a failing-but-fixable CI run, an unaddressed review comment) is **relentlessly revised to ready**: rebase / resolve the conflict against `origin/main`, apply the root-cause fix that turns its CI green, and reconcile the outstanding review, then merge it through a review-gated merge. The revise-to-ready cycle is bounded for iteration safety per `rules/planning-techniques.md` §1: it caps at a default of three revision attempts per PR, and a PR that cannot reach ready within the cap is **explicitly deferred with a recorded rationale** (the unresolved blocker named), never silently dropped. **Destructive / operator-visible: route a per-action confirmation per `rules/interactive-questions.md` §6 before any merge**, with the in-place default being "leave the PR open, report only." **Acceptance condition:** every PR the release should land is revised to ready and merged into `origin/main` (or explicitly deferred with its blocker named), each merge cites its PR number, and each merge cleared its confirmation.
+2. **Resolve issues.** Close or triage the issues the release addresses, linking each to the merging commit or release where applicable. **Acceptance condition:** every issue the release addresses is closed or triaged with a recorded outcome, each citing its issue number.
+3. **Version bump.** Derive the SemVer bump from the Conventional Commits change set per semver.org — breaking change → MAJOR, `feat:` → MINOR, `fix:` → PATCH; the highest-precedence change determines the bump — and apply it to the host's manifest version declaration. `--bump` MAY override the derived bump with recorded rationale. **Read-only preview; proceeds WITHOUT a gate. Acceptance condition:** the manifest version is bumped to the derived (or overridden) value and the derivation is recorded.
+4. **CHANGELOG roll.** Roll the `[Unreleased]` section into a new dated version section per Keep-a-Changelog (keepachangelog.com): the new `[MAJOR.MINOR.PATCH]` heading takes the deployment date, `[Unreleased]` resets to an empty scaffold, and entries are grouped under the Keep-a-Changelog change categories. Filter 5 (Aesthetic Demand) governs the prose form. **Read-only draft; proceeds WITHOUT a gate. Acceptance condition:** `[Unreleased]` is moved into the new version section, `[Unreleased]` is reset, and the section is dated and category-grouped.
+5. **Tag, sign, and publish.** Author the annotated tag `vMAJOR.MINOR.PATCH` and publish it to the host's package registry / release surface; attach the signed artifacts where the host ratifies signing — defer the signing posture (cosign keyless / SLSA-3 provenance / CycloneDX SBOM) to `rules/host-discovery.md`, never presume any signing tool present, then cite the discovered posture as the publish-step evidence surface. **Irreversible / operator-visible: route a per-action confirmation per `rules/interactive-questions.md` §6 before publishing**, with the in-place default being "stage the tag locally, report only." **Acceptance condition:** the annotated tag is published to the host's release surface, the signed artifacts are attached where signing is ratified per host-discovery, and the publish cleared its confirmation.
+6. **Author release notes.** Author concise, current-version release notes for the new GitHub Release — summarizing the merged changes and resolved issues with no back-reference to retired artifacts, prior releases, or internal planning history. Filter 5 (Aesthetic Demand) governs the prose form. **Read-only draft; proceeds WITHOUT a gate. Acceptance condition:** the release notes are current-version-only, name no superseded artifact, and read as a fresh release statement.
+
+**Culmination — current-version-only facade, stale-trace-free.** After the six stages, **sweep the stale traces the cycle produced** — the merged PR branches, the superseded workflow-run logs, and any prior draft / pre-release tags — so the cycle accumulates no staleness; each prune is destructive and routes a per-target confirmation per `rules/interactive-questions.md` §6 with the in-place default "retain, report only," consistent with the freshness discipline the fresh-first-release sibling `github-deploy-fresh.md` and the agnostic core `/freshify` own. The public release surface then exposes the new release as the single visible current story: one new release tag, one new GitHub Release, and one rolled CHANGELOG section, with no public-facing narrative referencing retired releases or earlier launch work. Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the merged tree, the bumped manifest, the rolled CHANGELOG, and the release notes. Emit the deployment report with the per-stage acceptance verdict, the per-axis attestation, every confirmation outcome, and the cycle's `verified:` date. The cycle is complete and the facade is preserved when the gate passes and no public surface references a superseded artifact.
+
+---
+
+## Mandates
+
+| Mandate | Application |
+| ------- | ----------- |
+| **M15 — Production-Ready** | The cycle operationalizes `rules/production-ready-prs.md`: the merged tree, the SemVer bump, the Keep-a-Changelog roll, the signed published tag, the current-version-only release notes, and the human-only commit / tag authorship are the pass conditions. |
+| **M5 — Authority** | Every ambiguity in the ready-PR set, the addressed-issue set, the derived bump, or the signing requirement routes through `rules/authority-inquiry.md`; the merge and publish steps each clear a per-action confirmation per `rules/interactive-questions.md` §6 before acting, while the preview stages proceed un-gated. |
+| **M1 — Host Discovery** | The signing posture (cosign / SLSA / SBOM), the commit-message convention, and the manifest version surface are discovered per `rules/host-discovery.md` — no signing tool, convention, or version surface is presumed present. |
+| **M2 — Plain-language / Disclosure** | The release notes carry current-product voice with no back-reference to retired artifacts per `rules/plain-language.md`; every merge, resolution, and bump is recorded in the disclosure ledger per `rules/disclosure-ledger.md`. |
+| **M4 — Self-Application** | The merged tree, the bumped manifest, the rolled CHANGELOG, and the release notes pass the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` before the report is finalized. |
+
+---
+
+## Output
+
+- The merged commits on `origin/main`, every merge confirmation outcome recorded.
+- The bumped version in the host's manifest, the SemVer derivation (and any `--bump` override rationale) recorded.
+- The rolled `CHANGELOG.md` with the new dated version section per Keep-a-Changelog and a reset `[Unreleased]`.
+- One new annotated and signed tag `vMAJOR.MINOR.PATCH` published to the host's release surface, signed artifacts attached where signing is ratified per host-discovery.
+- One new GitHub Release with concise, current-version-only release notes.
+- The deployment report at the suite's `_outputs/github-deploy-next-report.md` (executive summary + merge index + resolved-issue index + bump derivation + CHANGELOG-roll summary + publish evidence + confirmation log + per-axis attestation + validation-gate attestation + bindings).
+- An optional cycle inventory at the suite's `_inputs/github-deploy-next-inventory.md` (the Input Ingest read inventory).
+
+---
+
+## Decision Tree
+
+```mermaid
+%%{ init: { "theme": "neutral" } }%%
+%% verified: 2026-06-22 %%
+%% provenance: commands/github-deploy-next.md §Workflow %%
+%% cross-reference: commands/github-deploy-fresh.md §Workflow (fresh-first-release sibling) + rules/production-ready-prs.md §1-§4 %%
+flowchart TD
+    Start[Target repository ingested] --> Q1{Open pull requests the release should land?}
+    Q1 -->|not yet ready| Rev[Relentlessly revise to ready · rebase/resolve conflict · drive CI green · cap 3 attempts then defer-with-rationale per rules/planning-techniques.md §1]
+    Q1 -->|ready| C1
+    Q1 -->|none| Iss
+    Rev --> C1[Route per-action merge confirmation per rules/interactive-questions.md §6 · default leave-open-report-only · merge on opt-in]
+    C1 --> Iss[Resolve addressed issues · cite issue numbers]
+    Iss --> Bump[Derive SemVer bump from Conventional Commits change set · read-only preview · no gate]
+    Bump --> Log[Roll [Unreleased] into new version section per Keep-a-Changelog · read-only draft · no gate]
+    Log --> C5[Route per-action publish confirmation per rules/interactive-questions.md §6 · default stage-locally-report-only · publish on opt-in]
+    C5 --> Sign[Attach signed artifacts where ratified · signing posture per rules/host-discovery.md]
+    Sign --> Notes[Author current-version-only release notes · read-only draft · no gate]
+    Notes --> Fresh[Post-cycle freshness sweep · prune merged branches + superseded run logs · confirmation-gated]
+    Fresh --> Q2{Re-sweep facade current-version-only AND stale-trace-free?}
+    Q2 -->|residual back-reference or stale trace| Log
+    Q2 -->|clean| Done[Run validation gate · emit deployment report]
+```
+
+---
+
+## Recommended Next Step
+
+**Invoke `/release-readiness`** to re-attest the just-published release against the production-ready discipline — re-running the host's quality matrix, the supply-chain checks, and the visibility-surface sweep so the new version is verified READY before the following cycle; then re-run `/github-deploy-next` to deploy the next release in turn.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The merged commits on `origin/main`, the bumped manifest version, the rolled CHANGELOG, and the new signed GitHub Release. The re-attestation command `/release-readiness` (this published release is the surface that command re-verifies). The following-cycle invocation of `/github-deploy-next` (each cycle's release is the substrate the next cycle extends). The six cycle stages (merge · resolve · bump · CHANGELOG roll · tag-sign-publish · release notes). The fifteen-bar pre-emission gate at the Validation Gate.
+- **Satisfies →** The consuming suite's subsequent-release-deployment slot. The `commands/README.md` command catalog's Deployment/elevation row for `/github-deploy-next` (the registry entry that ratifies this command's place in the slash-command catalog). The M15 production-ready discipline's current-version-only facade surface, materialized as the single new GitHub release.
+- **Established by ↑** The `commands/README.md` command catalog. `github-deploy-fresh.md` (the fresh-first-release sibling this command follows in the release-cycle sequence). `rules/production-ready-prs.md` (the production-ready discipline this command operationalizes). Keep-a-Changelog (the canonical changelog standard the CHANGELOG roll honors). SemVer (the versioning standard the bump derives from). Conventional Commits (the change-set taxonomy the bump derivation reads). `rules/cognitive-identity.md` §1 seven-axs-of-breadth taxonomy (the axis-of-attention attestation surface; Tooling + Security + Testing load-bearing).
+- **Gated by ←** The repository's cycle-surface presence (a root manifest, the host's ratified ignore manifest, and an `origin` remote at the GitHub repository). The host's discovered targets at Input Ingest (the ready-PR set, the addressed-issue set, the signing posture, the version surface). The proportionate confirmation contract (the merge step and the publish step each clear a structured-inquiry confirmation before acting; the version-bump-preview, CHANGELOG-draft, and release-notes-draft stages proceed un-gated). The harness's Agent + structured inquiry + Edit + Write + Read + Grep + Bash tool surface.
+- **Cross-bound with ↔** `github-deploy-fresh.md` (the fresh-first-release sibling; `/github-deploy-fresh` produces the single fresh `v0.1.0`, this command runs each subsequent cycle). `release-readiness.md` (the pre-release gate sweep this command's Recommended Next Step re-runs to re-attest the published release). `rules/production-ready-prs.md` (the M15 discipline this command's merge, bump, CHANGELOG, and publish stages verify; the human-only commit / tag authorship at §6). `rules/interactive-questions.md` (§6 — the merge and publish confirmations route through the structured-inquiry channel; the preview stages are explicitly un-gated). `rules/authority-inquiry.md` (every ambiguity routes through the canonical channel). `rules/host-discovery.md` (M1 — the signing posture and the version surface are discovered, never presumed). `rules/plain-language.md` (the release notes restore the current-product voice). `rules/disclosure-ledger.md` (every merge, resolution, and bump is recorded in the ledger). `rules/pre-emission-gate.md` (fifteen-bar validation). `rules/cognitive-identity.md` (the seven-axs taxonomy).
+
+## Installed Reference Paths
+
+When this skill is installed by Apothem, resolve repository-style references such as `rules/...`, `templates/...`, and `hooks/...` under `<ROOT>` unless a project-local file with the same relative path exists.

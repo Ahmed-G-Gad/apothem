@@ -1,0 +1,46 @@
+---
+title: "ブランドパレット"
+description: "Apothem のコアブランドカラーと、17 種類の工具ブランドカラー。単一の事実の源は assets/design-tokens.css にある正規のデザイントークンです。サイトはそれらの値をミラーします。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## コアパレット
+
+正規のパレット——スレートのニュートラルランプ、エメラルドのアクセントランプ、および
+セマンティックな色相——は、
+[`assets/design-tokens.css`](https://github.com/ahmed-g-gad/apothem/blob/main/assets/design-tokens.css)
+（およびそのミラーである `assets/design-tokens.json`）のデザイントークンが所有します。
+[`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
+のサイトテーマは、これらのトークン値を Fumadocs テーマが消費する CSS 変数にミラー
+します。以下の各値は、正規のランプステップにトレースされます。
+
+| 役割 | トークン（CSS） | ライトモード | ダークモード | 用途 |
+|---|---|---|---|---|
+| プライマリ | `--brand-text` | slate-900 `#0f172a` | slate-50 `#f8fafc` | 見出し、ナビゲーションテキスト、主要な読み取り面。 |
+| アクセント | `--sl-color-accent` | emerald-600 `#059669` | emerald-400 `#34d399` | アクティブなリンク、フォーカスリング、選択されたナビゲーション。 |
+| 本文テキスト | `--brand-muted` | slate-600 `#475066` | slate-300 `#c2ccda` | デフォルトの本文テキスト。 |
+| 本文の地色 | `--brand-surface` | white `#ffffff` | slate-900 `#0f172a` | デフォルトの背景。 |
+| ナビゲーションの地色 | `--brand-surface-muted` | slate-50 `#f8fafc` | slate-950 `#080c15` | ヘッダーおよびナビゲーションの帯。 |
+| コードの地色 | `--brand-code-bg` | slate-900 `#0f172a` | slate-950 `#080c15` | インライン/ブロックのコード面。 |
+
+## 工具パレット
+
+工具のカラーは[工具カラー](/docs/brand/harness-colors)にあります。Apothem マークの
+六角形——その中心ノードと終端ノード——へのジオメトリックマッピングは、ブランド
+セクションに折り込まれています。
+[`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
+の CSS 事実の源が、各トークンをその CSS 変数に配線します。
+
+## ドキュメントでの使用
+
+パレットはグローバルスタイルシート `site/app/global.css` を通じて配線され、ルート
+レイアウトによってインポートされます。ライトモードとダークモードのバリアントは、
+テーマの `.dark` クラスの状態に応じて切り替わります。
+
+## 更新
+
+パレットは、コアカラー（slate / emerald）が変化したとき、または工具が上流でブランド
+カラーの変更を承認したときにのみ更新されます。工具ごとの変更は、
+`site/app/global.css`、[工具カラー](/docs/brand/harness-colors)、および
+`assets/src/` 配下の影響を受けるすべての SVG マスターにわたって原子的に伝播します。

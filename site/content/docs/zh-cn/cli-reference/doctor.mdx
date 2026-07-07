@@ -1,0 +1,52 @@
+---
+title: "doctor"
+description: "apothem doctor 命令的 CLI 参考。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+为 Apothem 安装运行系统诊断。
+
+## 概要
+
+```
+apothem doctor [--quiet|-q] [--verbose|-v]
+               [--format plain|json] [--json] [--no-color]
+```
+
+检查 Apothem 安装并报告每个已注册环境适配器的状态。当存在共享配置文件时，会依据
+随附的 schema 对其进行校验——而不仅仅是检查其是否存在——因此格式错误的配置文件会
+作为诊断失败暴露出来，而非绿色的"已找到"。JSON 输出包含一个 `profile_valid` 字段
+（`true` / `false`，当不存在配置文件时为 `null`）以及校验失败时的 `profile_error`
+字段。所有检查通过时退出码为 0，当有一个或多个环境未安装，或存在的配置文件未通过
+schema 校验时退出码为 1。
+
+## 选项
+
+| 选项 | 描述 |
+|---|---|
+| `--quiet`, `-q` | 抑制信息性输出；仅发出错误。 |
+| `--verbose`, `-v` | 发出额外的诊断输出。 |
+| `--format plain\|json` | 输出格式（默认：`plain`）。 |
+| `--json` | `--format json` 的简写。 |
+| `--no-color` | 禁用输出中的 ANSI 颜色代码。 |
+| `-h`, `--help` | 显示帮助并退出。 |
+
+## 示例
+
+```bash
+apothem doctor
+apothem doctor --json
+```
+
+## 退出码
+
+| 代码 | 含义 |
+|---|---|
+| 0 | 所有检查通过 |
+| 1 | 某个环境未安装，或存在的配置文件未通过 schema 校验 |
+
+## 另请参阅
+
+- [apothem harnesses](/docs/cli-reference/harnesses) — 列出并检查已注册的环境
+- [apothem verify](/docs/cli-reference/verify) — 检查特定环境的安装

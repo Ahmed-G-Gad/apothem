@@ -1,0 +1,48 @@
+---
+title: "Deinstallieren"
+description: "Apothem entfernen und Harness-Konfigurationen bereinigen."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## Zuerst die Harness-Konfigurationen entfernen
+
+Bevor Sie Apothem deinstallieren, entfernen Sie jede Harness-Adapter-Konfiguration, um
+Ihre Werkzeuge in einem sauberen Zustand zu hinterlassen. Führen Sie `apothem harnesses list` aus, um zu sehen,
+welche Adapter derzeit installiert sind, und entfernen Sie sie dann einzeln oder verwenden Sie
+den registry-weiten Selektor:
+
+```bash
+apothem uninstall --harness claude-code
+apothem uninstall --harness cursor --project /path/to/project
+apothem uninstall --harness all --project /path/to/project --yes
+```
+
+Verwenden Sie `--yes`, um die Bestätigungsabfrage pro Harness zu überspringen.
+
+## Die Engine entfernen
+
+Die Entfernung richtet sich nach dem von Ihnen verwendeten Installationskanal:
+
+- **Claude Code-Plugin** — entfernen Sie das Plugin innerhalb von Claude Code:
+  `/plugin uninstall apothem@apothem` (der Marketplace-Eintrag kann mit
+  `/plugin marketplace remove ahmed-g-gad/apothem` entfernt werden).
+- **npx** — nichts zu entfernen; `npx` läuft aus seinem Cache. Leeren Sie ihn mit
+  `npm cache clean --force`, wenn Sie die zwischengespeicherte Kopie loswerden möchten.
+- **Einmal-Installer** — führen Sie das passende Deinstallationsskript aus dem
+  Checkout aus: `scripts/installer/uninstall.sh` (POSIX) oder
+  `scripts/installer/uninstall.ps1` (PowerShell). Beide bestätigen vor dem
+  Entfernen und verweigern unsichere Ziele.
+- **Backups und Zustand** — Installations-Backups liegen unter `~/.apothem/backups/`;
+  löschen Sie `~/.apothem/`, sobald Sie sie nicht mehr benötigen.
+
+## Was NICHT entfernt wird
+
+- Das gemeinsame Profil-YAML unter `~/.config/apothem/profile.yaml` oder
+  `--profile PATH` wird durch `apothem uninstall` niemals entfernt.
+- Nicht zugehörige, vom Operator erstellte Dateien in Harness-Verzeichnissen bleiben erhalten.
+- Plan-Suiten unter `<project>/.apothem/plans/` (und dem veralteten `<project>/.plans/`) sind nicht betroffen.
+
+Um einen Harness-Stamm vollständig zu bereinigen, entfernen Sie den harness-nativen Pfad, der auf den
+[Harness-Referenzseiten](/docs/harnesses) dokumentiert ist, nachdem Sie sich vergewissert haben, dass Sie
+alle benutzerdefinierten Regeln, Helfer oder Profildateien gesichert haben, die Sie behalten möchten.

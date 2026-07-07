@@ -1,0 +1,89 @@
+---
+title: "Konvergensi konvensi lintas lingkungan"
+description: "Bagaimana Apothem menjaga satu alur kerja operator tetap konsisten di tujuh belas lingkungan meskipun format konfigurasi dan permukaan enforcement dari tiap vendor berbeda-beda."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Tujuh belas lingkungan, tujuh belas pendapat tentang di mana konfigurasi tinggal
+dan bentuk apa yang diambilnya. Tugas Apothem adalah membuat alur kerja operator
+terasa identik di semuanya — Anda menulis konvensi sekali, dan konvensi itu
+berperilaku sama, baik Anda menjangkau Claude Code, Cursor, maupun Gemini CLI.
+Tulisan ini membahas dua divergensi yang direkonsiliasi Apothem: format
+konfigurasi dan permukaan enforcement.
+
+## Divergensi format
+
+Setiap lingkungan membaca aturannya dari bentuk berkas yang berbeda. Profil
+Apothem menyimpan maksud operator dalam satu bentuk netral; setiap adaptor
+merender maksud itu ke dalam bentuk yang diharapkan lingkungannya.
+
+| Bentuk | Lingkungan (contoh) | Apa yang dikeluarkan Apothem |
+| --- | --- | --- |
+| Berkas aturan `.md` datar dalam sebuah direktori | claude-code, windsurf, trae | Berkas aturan mentah yang disalin ke dalam pohon aturan lingkungan |
+| Aturan `.mdc` Cursor | cursor | Satu set aturan `.mdc` yang membawa header metadata yang diharapkan Cursor |
+| Dokumen instruksi berkas tunggal | codex, gemini-cli, github-copilot, zed | Satu dokumen tergabung —`AGENTS.md`, `GEMINI.md`, `copilot-instructions.md`, `.rules`— dirakit dari set aturan profil |
+
+Lingkungan `.md` datar mengambil aturan apa adanya. Lingkungan `.mdc`
+membutuhkan header metadata Cursor yang dibungkus di sekitar setiap aturan.
+Lingkungan berkas tunggal membutuhkan seluruh set aturan diratakan ke dalam satu
+dokumen dengan urutan bagian yang stabil, sehingga operator membaca konvensi yang
+sama dalam urutan yang sama tanpa memandang targetnya. Profil netral adalah satu
+sumber kebenaran; divergensi sepenuhnya tinggal di langkah render setiap adaptor.
+
+## Urutan bagian adalah jangkar konvergensi
+
+Meratakan banyak aturan ke dalam satu dokumen berisiko mengocoknya antar
+lingkungan, sehingga konvensi yang sama mendarat dalam urutan yang berbeda di
+`AGENTS.md` dibandingkan di `GEMINI.md`. Apothem mematok urutan pada level
+profil: set aturan memiliki urutan yang dideklarasikan, dan setiap adaptor berkas
+tunggal menelusurinya dalam urutan itu. Operator yang menghafal «konvensi
+penamaan datang sebelum konvensi commit» di satu lingkungan menemukan urutan yang
+sama di setiap lingkungan lain. Konvergensi bukan kebetulan dari render —
+melainkan properti yang dipatok oleh profil.
+
+## Divergensi enforcement
+
+Format konfigurasi adalah paruh yang terlihat. Paruh yang lebih sulit adalah
+enforcement: bagaimana sebuah konvensi dimintai pertanggungjawaban pada saat
+operator (atau agen) bertindak.
+
+### Hook PreToolUse native
+
+claude-code, codex, dan qwen-code memaparkan permukaan hook native. Sebuah hook
+PreToolUse menyala sebelum panggilan alat dieksekusi, memeriksanya, lalu
+memblokir atau menulis ulangnya. Ini adalah enforcement waktu nyata: aturan
+terhadap penulisan artefak perencanaan ke lokasi global menjadi sebuah hook yang
+menolak penulisan sebelum menyentuh disk. Apothem mematerialisasikan hook-hook
+ini langsung ke konfigurasi hook lingkungan, sehingga konvensi ditegakkan oleh
+runtime lingkungan.
+
+### Disiplin berbasis wrapper di lingkungan lain
+
+Lingkungan yang tersisa tidak memaparkan permukaan hook pra-eksekusi setara yang
+dimiliki Apothem. Apothem tidak dapat memasang gerbang waktu jalan di tempat
+lingkungan tidak menawarkan soket untuknya. Sebagai gantinya, konvensi dibawa
+sebagai teks instruksi dalam konfigurasi yang dimaterialisasikan — agen membaca
+aturan dan terikat olehnya, tetapi tidak ada mekanisme waktu jalan yang mencegat
+tindakan yang melanggar. Apothem membuat perbedaannya eksplisit alih-alih
+berpura-pura bahwa paritas itu ada: konvensi yang ditopang hook dan konvensi yang
+ditopang instruksi bukanlah jaminan yang sama, dan operator melihat lingkungan
+mana yang menegakkan pada waktu jalan dan mana yang bergantung pada disiplin
+instruksi.
+
+## Apa arti konvergensi dalam praktik
+
+Operator menulis satu konvensi. Apothem merendernya ke dalam tujuh belas format
+dan melekatkan enforcement terkuat yang didukung setiap lingkungan — hook native
+di tempat permukaannya ada, teks instruksi di tempat yang tidak ada. Alur kerja
+berkonvergensi; jaminannya dinyatakan secara jujur per lingkungan.
+
+Inilah mengapa `apothem verify` penting di seluruh lini: di tempat tidak ada hook
+waktu jalan yang dapat menangkap penyimpangan, operator menjalankan `verify`
+untuk mendeteksi konfigurasi lingkungan yang telah menyimpang dari profil.
+Perintah verify adalah jaring pengaman konvergensi bagi setiap lingkungan yang
+tidak memiliki enforcement native.
+
+Baca permukaan enforcement per lingkungan di [Lingkungan](/docs/harnesses) dan
+mekanika adaptor di
+[telaah mendalam desain adaptor](/docs/blog/posts/multi-harness-adapter-design).

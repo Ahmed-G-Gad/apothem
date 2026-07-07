@@ -1,0 +1,94 @@
+---
+title: "Codex"
+description: "Apothem harness adapter for Codex (Beta)."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Vendor:** OpenAI
+**Install name:** `codex`
+**Status:** Beta
+**Native config:** `~/.codex/AGENTS.md`, `~/.codex/hooks.json`,
+`~/.codex/hooks/`, `~/.codex/agents/*.toml`, and `~/.agents/skills/`
+
+## Installation
+
+```bash
+apothem install --harness codex
+```
+
+The adapter installs Codex-native instructions and hooks, converts Apothem
+agents to Codex TOML agents, and wraps reusable command prompts as Codex
+skills.
+
+**Files written:** `~/.codex/AGENTS.md`, `~/.codex/hooks.json`,
+`~/.codex/hooks/`, `~/.codex/agents/*.toml`,
+`~/.agents/skills/*/SKILL.md`, and support files under
+`~/.config/apothem/{rules,templates}/`.
+
+## Profile-to-native-config mapping
+
+The adapter reads Apothem's shared cohorts and installs each into the correct
+Codex surface: instructions to `AGENTS.md`, hooks to `hooks.json` and
+`hooks/`, agents to TOML, skills to `~/.agents/skills/`, and non-native
+Markdown rules/templates to `~/.config/apothem/` as support material.
+
+## Compatibility notes
+
+Codex reserves `~/.codex/rules/` for `.rules` execution policies. Apothem does
+not place Markdown behavioral rules there; it keeps them in `~/.config/apothem/`
+and references them from `AGENTS.md` and installed skills.
+
+## Verification
+
+```bash
+apothem verify --harness codex
+```
+
+The verify command confirms that:
+
+1. The native config exists at the expected path.
+2. All mandatory fields from the shared profile are present.
+3. The adapter-specific verification routine reports success.
+
+## Updating
+
+```bash
+apothem update --harness codex
+```
+
+Refreshes the Codex bootstrap, converted agents, skills, and support cohorts.
+
+## Uninstalling
+
+```bash
+apothem uninstall --harness codex
+```
+
+Removes the native config files written by the adapter.
+The shared profile YAML and Apothem engine are unaffected.
+
+## Conformity gate
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| Config file not found | Re-run `apothem install --harness codex` |
+| Verification failed | Run `apothem update --harness codex`, then verify again |
+| Unexpected config content | Check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run `apothem update --harness codex` |
+
+## Configuration knobs
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--dry-run` | `false` | Preview install without writing files. |
+
+## See also
+
+- [All harnesses](/docs/harnesses) — the full catalog of supported tools
+- [Install guide](/docs/install) — install Apothem into this harness
+- [`apothem harnesses` reference](/docs/cli-reference/harnesses) — list and inspect adapters from the CLI

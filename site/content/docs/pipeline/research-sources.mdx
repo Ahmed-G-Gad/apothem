@@ -1,0 +1,72 @@
+---
+title: "/research-sources"
+description: "/research-sources — Systematic source collection: decomposes the spec into sub-queries, fans out parallel discovery, screens and ranks, and extracts per source into a ranked source ledger."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Role:** Principal Investigator (source collection)
+**Pipeline position:** mid-chain
+
+Systematic source collection — decomposes the research spec into sub-queries, fans out parallel source discovery and per-source extraction, dedups, ranks by authority / recency / relevance, screens against the spec's inclusion criteria, and records provenance for each surviving source.
+
+## Canonical invocation
+
+```bash
+/research-sources
+```
+
+With arguments:
+
+```bash
+/research-sources [path/to/research-suite/] [--depth N]
+```
+
+## Inputs
+
+`_inputs/theory.md` (the conceptual / theoretical framework from `/research-theory`, the predecessor stage) plus `_spec/research-spec.md` (the approved research spec from `/research-spec`).
+
+## Outputs
+
+`sources/<id>.md` (one provenance-bearing extraction per surviving source) + `_inputs/source-ledger.md` (the ranked, screened, deduplicated source index with a citation index).
+
+## Downstream
+
+/research-synthesis (downstream consumer)
+
+## Workflow phases
+
+The command follows the standard `/research` pipeline workflow:
+
+1. **Load context** — Read the research spec and its inclusion / exclusion criteria.
+2. **Verify the Sequence Gate** — Confirm `_inputs/theory.md` (and the approved `_spec/research-spec.md`) exists; otherwise halt with `Blocked: run /research-theory first`.
+3. **Discover & extract** — Decompose into sub-queries, fan out discovery, dedup, rank, screen, and extract per source with provenance.
+4. **Verify outputs** — Confirm every surviving source is cited and screened against the spec criteria.
+5. **Update the handoff manifest** — Record the source ledger and per-source extraction paths.
+6. **Emit the ledger** — `sources/` extractions plus `_inputs/source-ledger.md`.
+
+## Rigor floor
+
+Beyond the source ledger, this stage builds a comparator provenance ledger: the nearest-recent state-of-the-art baselines the study will run against, each verified to a retrievable source and recorded with its provenance and reachability. A comparator that cannot be confirmed or fetched is marked as such and never fabricated (R1, R4).
+
+## Failure modes
+
+| Symptom | Cause | Recovery |
+|---------|-------|----------|
+| Blocked: run /research-theory first | No theoretical grounding | Run `/research-theory` to produce `_inputs/theory.md` |
+| Source fails inclusion criteria | Off-scope or low-authority source | Screen out; record the exclusion rationale in the ledger |
+| Fabricated citation | Source guessed, not fetched | Never invent a source; a guessed citation is a finding |
+
+## Examples
+
+```bash
+# Collect sources for a framed research suite
+/research-sources path/to/research-suite/
+
+# Deeper discovery fan-out
+/research-sources path/to/research-suite/ --depth N
+```
+
+## Cross-references
+
+- [Pipeline overview](/docs/pipeline)
+- [Commands reference](/docs/reference/commands)

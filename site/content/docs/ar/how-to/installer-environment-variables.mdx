@@ -1,0 +1,117 @@
+---
+title: "متغيّرات بيئة المثبّت"
+description: "تحكّم في مثبّت النصوص (الوجهة، المصدر، البيئة، الملف التعريفي، التحقق) عبر متغيّرات البيئة."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+الهدف: شغّل `install.sh` / `install.ps1` دون تحرير النص عبر تعيين متغيّرات
+البيئة قبل تشغيله.
+
+## المتطلّبات المسبقة
+
+- صدفة POSIX (`bash`) أو PowerShell 5.1+.
+- تُقرأ المتغيّرات مرة واحدة في أعلى المثبّت، لذا عيّنها في الأمر
+  ذاته (أو صدّرها أولًا)، ثم شغّل المثبّت.
+
+## متغيّرات المثبّت
+
+| المتغيّر | يتحكّم في | الافتراضي |
+| --- | --- | --- |
+| `APOTHEM_HOME` | وجهة تثبيت شجرة المصدر المستنسخة | `$HOME/.apothem` |
+| `APOTHEM_REPO` | المستودع البعيد لاستنساخه | `https://github.com/ahmed-g-gad/apothem` |
+| `APOTHEM_REF` | مرجع Git لسحبه؛ عدم التعيين يحلّ أحدث وسم موقّع `vMAJOR.MINOR.PATCH`، وقيمة وسم تثبّته، و`main` يختار الفرع المتحرّك | غير مُعيَّن (أحدث وسم موقّع) |
+| `APOTHEM_ALLOW_UNVERIFIED` | يخفّض فشل التحقق من توقيع الوسم من إجهاض قاتل إلى تحذير عند تعيينه إلى `1` | `0` (تحقق، فشل-مُغلق) |
+| `APOTHEM_SOURCE` | شجرة مصدر محلية صريحة لاستخدامها بدلًا من الاستنساخ | غير مُعيَّن (استنساخ) |
+| `APOTHEM_HARNESS` | البيئة المراد تثبيتها | `claude-code` |
+| `APOTHEM_PROFILE` | مسار ملف YAML التعريفي المشترك | `$HOME/.config/apothem/profile.yaml` |
+| `APOTHEM_SKIP_VERIFY` | تخطّي خطوة التحقق بعد التثبيت عند تعيينه إلى `1` | `0` (يُشغَّل التحقق) |
+| `APOTHEM_AUTO_INSTALL_DEPS` | يثبّت تلقائيًّا المتطلّبين الناقصين `click` / `rich` دون سؤال عند ضبطه على `1` | `0` (يسأل، أو يرفض في أنبوب غير تفاعلي) |
+| `APOTHEM_BIN_DIR` | دليل وضع اختصار أمر `apothem` | `$HOME/.local/bin` (POSIX)؛ `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) |
+
+يأخذ `APOTHEM_SOURCE` الأسبقية على الاستنساخ: عند تعيينه إلى سحب يحتوي
+على `src/apothem`، يستخدمه المثبّت مباشرة، ولا يمسّ
+`APOTHEM_REPO` / `APOTHEM_REF`، ويتخطّى حلّ الوسم والتحقق من
+التوقيع (لا شيء يُجلَب للتحقق منه).
+
+## نموذج الثقة
+
+مع عدم تعيين `APOTHEM_REF`، يحلّ المثبّت أحدث وسم إصدار موقّع
+ويتحقّق من توقيعه عبر `git verify-tag` قبل تجسيد أيّ
+تهيئة؛ ويُجهَض التثبيت عند وسم غير موقّع أو مُتلاعَب به. ثبّت إصدارًا معروفًا
+عبر `APOTHEM_REF=<tag>` (يُتحقَّق منه أيضًا؛ وسم من
+[صفحة الإصدارات](https://github.com/ahmed-g-gad/apothem/releases))، أو اختر
+الفرع المتحرّك عبر `APOTHEM_REF=main` (غير مُتحقَّق منه)، أو عيّن
+`APOTHEM_ALLOW_UNVERIFIED=1` للمضيّ قدمًا بعد فشل التحقق مع
+تحذير (للاستخدام المعزول عن الشبكة، أو المحلي، أو قبل توقيع الإصدار).
+
+```bash title="تثبيت مثبَّت ومُتحقَّق منه"
+APOTHEM_REF=vMAJOR.MINOR.PATCH bash install.sh
+```
+
+```bash title="المضيّ دون تحقق (مؤقت / معزول عن الشبكة)"
+APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
+```
+
+## الخطوات (POSIX bash)
+
+1. ثبّت بيئة غير افتراضية:
+
+   ```bash
+   APOTHEM_HARNESS=cursor bash install.sh
+   ```
+
+2. ثبّت مرجع المصدر ووجهة التثبيت:
+
+   ```bash
+   APOTHEM_REF=main APOTHEM_HOME=/opt/apothem bash install.sh
+   ```
+
+3. استخدم سحبًا محليًا وملفًا تعريفيًا مخصّصًا، مع تخطّي التحقق:
+
+   ```bash
+   APOTHEM_SOURCE=/work/apothem \
+   APOTHEM_PROFILE=/work/profile.yaml \
+   APOTHEM_SKIP_VERIFY=1 \
+   bash install.sh
+   ```
+
+## الخطوات (PowerShell)
+
+عيّن كل متغيّر على `$env:` قبل تشغيل المثبّت:
+
+```powershell
+$env:APOTHEM_HARNESS = 'cursor'
+pwsh -NoProfile -File install.ps1
+```
+
+```powershell
+$env:APOTHEM_REF = 'main'
+$env:APOTHEM_HOME = 'C:\opt\apothem'
+pwsh -NoProfile -File install.ps1
+```
+
+```powershell
+$env:APOTHEM_SOURCE = 'C:\work\apothem'
+$env:APOTHEM_PROFILE = 'C:\work\profile.yaml'
+$env:APOTHEM_SKIP_VERIFY = '1'
+pwsh -NoProfile -File install.ps1
+```
+
+## التحقق
+
+يطبع المثبّت `✓ Harness <name> installed`، ثم (ما لم يُعيَّن
+`APOTHEM_SKIP_VERIFY=1`) `✓ verify passed`. أكّد بشكل مستقل:
+
+```bash
+apothem verify --harness cursor
+```
+
+عندما لا يكون الملف التعريفي موجودًا بعد، ينشئ المثبّت واحدًا من المثال
+ويخرج مبكرًا — حرّر `$APOTHEM_PROFILE`، ثم أعد التشغيل.
+
+## ذات صلة
+
+- يغطّي [التثبيت](/docs/install) التثبيت الشبكي بأمر واحد.
+- يغطّي [أضف بيئة](/docs/how-to/adding-a-harness) إضافة البيئات عبر واجهة سطر
+  الأوامر بعد التثبيت الأول.

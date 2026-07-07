@@ -1,0 +1,82 @@
+---
+title: "verify"
+description: "Справочник CLI для команды apothem verify."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Проверяет установку адаптера ассистента по написанию кода.
+
+## Сводка
+
+```
+apothem verify --harness NAME|all [--project PATH]
+                [--quiet|-q] [--verbose|-v]
+                [--format plain|json] [--json] [--no-color]
+```
+
+Вызывает реализацию `verify()` каждого выбранного адаптера. Завершается с кодом 0 только тогда, когда все выбранные адаптеры сообщают, что их управляемые цели присутствуют и действительны.
+
+## Параметры
+
+| Параметр | Описание |
+|---|---|
+| `--harness NAME` | Адаптер ассистента по написанию кода для проверки или `all` для набора всего реестра (обязательно). |
+| `--project PATH` | Корень проекта для ассистентов по написанию кода с областью видимости проекта. |
+| `--quiet`, `-q` | Подавляет информационный вывод; выводятся только ошибки. |
+| `--verbose`, `-v` | Выводит дополнительные диагностические данные. |
+| `--format plain\|json` | Формат вывода (по умолчанию: `plain`). |
+| `--json` | Сокращение для `--format json`. |
+| `--no-color` | Отключает ANSI-коды цвета в выводе. |
+| `-h`, `--help` | Показывает справку и завершает работу. |
+
+## Вывод JSON
+
+```json
+{
+  "status": "success",
+  "command": "verify",
+  "action": "verified",
+  "harness": "claude-code",
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "unchanged",
+      "operation": "verify",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "managed targets verified",
+      "installed": true,
+      "verified": true
+    }
+  ],
+  "warnings": [],
+  "error": null,
+  "installed": true,
+  "verified": true,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+Когда любой выбранный ассистент по написанию кода отсутствует или недействителен, `status` равен `error`, сбойная строка результата несёт `verified: false`, а процесс завершается с кодом 1.
+
+## Примеры
+
+```bash
+apothem verify --harness claude-code
+apothem verify --harness claude-code --json
+apothem verify --harness all --project .
+```
+
+## Коды выхода
+
+| Код | Значение |
+|---|---|
+| 0 | Ассистент по написанию кода установлен |
+| 1 | Ассистент по написанию кода не установлен |
+
+## См. также
+
+- [apothem install](/docs/cli-reference/install) — установить конфигурацию ассистента по написанию кода
+- [apothem update](/docs/cli-reference/update) — повторно применяет текущий профиль к ассистенту по написанию кода
+- [apothem doctor](/docs/install/concepts) — общесистемная диагностика установки

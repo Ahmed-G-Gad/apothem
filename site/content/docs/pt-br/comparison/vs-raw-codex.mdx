@@ -1,0 +1,48 @@
+---
+title: "Apothem versus a configuração manual do Codex"
+description: "Manter à mão o AGENTS.md, os hooks, as skills e os agentes do Codex versus instalá-los a partir do perfil compartilhado do Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+O Codex lê as instruções do usuário do `AGENTS.md`, carrega hooks de `hooks.json`
+ou `config.toml`, descobre agentes personalizados em `agents/` e descobre skills
+a partir da raiz compartilhada de skills do Codex. O adaptador codex do Apothem
+instala essas superfícies a partir do perfil compartilhado, deixando intactos os
+ajustes de `config.toml` que pertencem ao operador.
+
+## Comparação de esforço
+
+| Tarefa | Configuração manual | Gerenciada pelo Apothem |
+| ---- | --------------- | --------------- |
+| Escrever `AGENTS.md` | Editar à mão as instruções do usuário | Instalado a partir do modelo de bootstrap do Codex |
+| Escrever hooks | Escrever à mão `hooks.json` ou tabelas de hook TOML | Instalado em `~/.codex/hooks.json` com os auxiliares de hook do Apothem em `~/.codex/hooks/` |
+| Escrever agentes personalizados | Escrever à mão arquivos TOML em `~/.codex/agents/` | Convertidos dos agentes Markdown do Apothem |
+| Escrever comandos reutilizáveis | Construir skills à mão, um diretório por vez | Empacotados como `~/.agents/skills/*/SKILL.md` |
+| Manter as regras alinhadas com outros ambientes | Manual, por ferramenta | Automático no `apothem update` |
+| Verificar se a configuração está correta | Inspeção manual | `apothem verify --harness codex` |
+
+## O que o Apothem gerencia
+
+O adaptador codex instala `AGENTS.md`, `hooks.json`, os arquivos auxiliares de
+hook, os agentes personalizados convertidos e as skills geradas. Ele não
+sobrescreve `~/.codex/config.toml`; o modelo, o sandbox, a aprovação, o MCP e
+outras preferências de tempo de execução continuam pertencendo ao operador.
+
+## Caminho de migração
+
+1. Execute `apothem profile init` para criar o perfil compartilhado se você
+   ainda não tiver.
+2. Mova as regras do seu `AGENTS.md` existente para o corpus compartilhado.
+3. Mantenha os ajustes de tempo de execução do `config.toml` existente no Codex,
+   a menos que você escolha gerenciá-los à mão em outro lugar.
+4. Execute `apothem install --harness codex` para instalar as superfícies
+   nativas do Codex.
+5. Execute `apothem verify --harness codex` para confirmar que os arquivos foram
+   instalados.
+6. Use `apothem update --harness codex` para cada mudança posterior.
+
+## Leia a seguir
+
+- [Referência do adaptador Codex](/docs/harnesses/codex)
+- [Visão geral da comparação](/docs/comparison)

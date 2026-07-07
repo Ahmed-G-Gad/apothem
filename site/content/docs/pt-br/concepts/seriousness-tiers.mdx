@@ -1,0 +1,35 @@
+---
+title: "Níveis de seriedade"
+description: "Os quatro níveis de seriedade — como o Apothem escala a governança ao nível de engajamento."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+O Apothem escala a sobrecarga de governança conforme o nível de engajamento. Uma exploração
+rápida não precisa de commits assinados; um lançamento em produção precisa.
+
+## Os quatro níveis
+
+| Nível | Quando usar | Piso de governança |
+|------|-------------|-----------------|
+| **EXPLORING** | Protótipos, experimentos descartáveis | Lint + testes + os mandatos centrais (avaliação crítica, raciocínio pela melhor solução, honestidade direta) |
+| **PERSONAL_USE** | Ferramentas pessoais, scripts locais | + Verificação de tipos + commits por fase + PROGRESS.md |
+| **SHARED** | Projetos de equipe, código aberto | + verificações reprovadas bloqueiam a execução + commits por tarefa + documentação completa + revisão paralela |
+| **PUBLIC_LAUNCH** | Serviços em produção, pacotes publicados | + Varreduras de segurança + commits assinados + semver + rerrevisão obrigatória |
+
+## Padrão ad-hoc
+
+Quando nenhum nível de seriedade é especificado, o Apothem usa por padrão **PERSONAL_USE**.
+
+## Governança mínima viável
+
+No nível EXPLORING, três mandatos transversais sempre se aplicam, independentemente do nível:
+- CM-1 (Avaliação Crítica)
+- CM-5 (Melhor Solução)
+- CM-10 (Honestidade Brutal)
+
+## Escalonamento de nível
+
+O nível de seriedade pode ser escalonado no meio do projeto. Quando um projeto PERSONAL_USE
+evolui para SHARED, execute a varredura local completa de prontidão para lançamento a fim de detectar
+quaisquer lacunas de governança acumuladas no nível inferior.

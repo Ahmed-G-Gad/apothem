@@ -1,0 +1,34 @@
+---
+title: "أنماط الإخراج"
+description: "ملفّات نبرة المُشغِّل (مهندس أوّل، مهندس مُقتضَب، مُدقِّق جنائي) تُفعَّل لكل جلسة عبر أمر <bdi>/output-style</bdi>."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+تعيش ملفّات نمط-الإخراج تحت <bdi>`src/apothem/output-styles/`</bdi> وتحمل إرشاد
+نبرة المُشغِّل لكل نمط. ويُفعِّل وقتُ تشغيل مساعِد الترميز المُضيف نمطًا على أساس
+كل جلسة عبر <bdi>`/output-style <name>`</bdi>.
+
+## الملفّات الكنسية
+
+| الملف | الملف | النبرة |
+|---------|------|------|
+| المهندس الافتراضي | <bdi>`src/apothem/output-styles/default-architect.md`</bdi> | نبرة مهندس برمجيات أوّل (الافتراضي) |
+| المهندس المُقتضَب | <bdi>`src/apothem/output-styles/concise-engineer.md`</bdi> | نبرة هندسية قصيرة |
+| المُدقِّق الجنائي | <bdi>`src/apothem/output-styles/forensic-auditor.md`</bdi> | نبرة تدقيق نتيجةً-بنتيجة |
+
+## عقد frontmatter
+
+```yaml
+---
+name: <style name>
+description: <one-line tone summary>
+type: output-style
+---
+```
+
+## تأليف ملفّ جديد
+
+أنشِئ ملفًّا جديدًا <bdi>`<name>.md`</bdi> تحت <bdi>`src/apothem/output-styles/`</bdi>
+مع <bdi>frontmatter</bdi> كنسي، وأعلِن النبرة في المتن، وصادِق عليه باستدعاء
+<bdi>`/output-style <name>`</bdi> في بداية جلستك التالية.

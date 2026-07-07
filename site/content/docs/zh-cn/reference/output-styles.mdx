@@ -1,0 +1,32 @@
+---
+title: "输出风格"
+description: "操作者语气配置（资深架构师、简洁工程师、取证审计员），通过 /output-style 命令按会话激活。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+输出风格配置存放于 `src/apothem/output-styles/` 下，承载每种风格的操作者语气
+指引。宿主harness运行时通过 `/output-style <name>` 按会话激活某个风格。
+
+## 规范配置
+
+| 配置 | 文件 | 语气 |
+|---------|------|------|
+| 默认架构师 | `src/apothem/output-styles/default-architect.md` | 资深软件架构师语气（默认） |
+| 简洁工程师 | `src/apothem/output-styles/concise-engineer.md` | 简短工程语气 |
+| 取证审计员 | `src/apothem/output-styles/forensic-auditor.md` | 逐条发现的审计语气 |
+
+## Frontmatter 契约
+
+```yaml
+---
+name: <style name>
+description: <one-line tone summary>
+type: output-style
+---
+```
+
+## 编写新配置
+
+在 `src/apothem/output-styles/` 下创建一个带规范 frontmatter 的新 `<name>.md`
+文件，在正文中声明语气，并在下次会话开始时通过 `/output-style <name>` 加以批准。

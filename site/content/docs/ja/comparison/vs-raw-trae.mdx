@@ -1,0 +1,41 @@
+---
+title: "Apothem と手作業の Trae 構成の比較"
+description: "Trae の .trae/rules/ 配下のルールを手作業で維持するのと、Apothem の共有プロファイルからレンダリングするのとの比較。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Trae は `.trae/rules/` ディレクトリからルールを読み取り、そのベンダーアンカーは
+`project_rules.md` と `user_rules.md` です。Apothem の trae アダプターは、共有
+プロファイルからそのディレクトリ内に専用の `apothem-rules.md` ファイルをレンダリング
+します。本ページは、その構成を手作業で維持するのと Apothem で管理するのとを対比します。
+
+## 労力の比較
+
+| タスク | 手作業の構成 | Apothem 管理 |
+| ---- | --------------- | --------------- |
+| ルールを書く | `.trae/rules/` 配下の各ファイルを手書き | 共有コーパスからレンダリング |
+| Apothem の表面を分離して保つ | `project_rules.md` を過負荷にしないよう注意 | アダプターが専用の `apothem-rules.md` を書き込む |
+| ルールを他の環境と揃えて保つ | 手作業、ツールごと | `apothem update` で自動 |
+| 構成が正しいか検証する | 手作業の検査 | `apothem verify --harness trae` |
+
+## Apothem が管理するもの
+
+trae アダプターは共有ルールを `.trae/rules/` 配下の専用の `apothem-rules.md` ファイル
+へレンダリングし、操作者が所有する `project_rules.md` と `user_rules.md` のアンカーは
+触れずに残します。Trae には PreToolUse フックがないため、ガードレールの意図はツール
+呼び出しの傍受点ではなくルールの散文に宿ります。共有ルールへの変更があるたびに、
+次の `apothem update` でファイルが再レンダリングされます。
+
+## 移行手順
+
+1. 共有プロファイルをまだ作成していなければ、`apothem profile init` を実行します。
+2. 既存の `.trae/rules/` ファイルのルールを共有コーパスへ移します。
+3. `apothem install --harness trae` を実行して `apothem-rules.md` ファイルをレンダリングします。
+4. `apothem verify --harness trae` を実行して構成が配置されたことを確認します。
+5. 以降の変更には毎回 `apothem update --harness trae` を使います。
+
+## 次に読む
+
+- [Trae アダプターのリファレンス](/docs/harnesses/trae)
+- [比較の概要](/docs/comparison)

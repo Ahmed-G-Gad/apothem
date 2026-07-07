@@ -1,0 +1,52 @@
+---
+title: "Harness setup"
+description: "Add and configure harness adapters for platforms."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## Install a harness adapter
+
+```bash
+apothem install --harness <name>
+```
+
+See the [supported harness list](/docs/harnesses) for available names.
+Project-scope adapters require the project path:
+
+```bash
+apothem install --harness cursor --project /path/to/project
+apothem install --harness gemini-cli --project /path/to/project
+apothem install --harness github-copilot --project /path/to/project
+apothem install --harness windsurf --project /path/to/project
+```
+
+## Install multiple harnesses
+
+Use the registry-wide selector when you want every supported adapter. Because
+the registered set includes project-scope adapters, pass the project root.
+
+```bash
+apothem install --harness claude-code
+apothem install --harness cursor --project /path/to/project
+apothem install --harness all --project /path/to/project
+```
+
+## Verify harness setup
+
+```bash
+apothem verify --harness <name>
+apothem verify --harness all --project /path/to/project
+```
+
+To check every registered adapter in one shot, run `apothem doctor`. It prints
+a per-harness install-status table and exits non-zero if any adapter reports
+not-installed.
+
+## View installed harnesses
+
+```bash
+apothem harnesses list
+```
+
+Pass `apothem harnesses show <name>` for per-adapter detail (name, installed
+state, and output path).

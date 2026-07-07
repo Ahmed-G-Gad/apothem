@@ -1,0 +1,54 @@
+---
+title: "Menggunakan pekerja terdelegasi"
+description: "Definisikan dan panggil pekerja terdelegasi persisten untuk tugas-tugas terspesialisasi."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Pekerja terdelegasi Apothem adalah definisi pekerja yang persisten dan dapat
+dipakai ulang yang disimpan di bawah pohon `src/apothem/` (direktori kanonis
+ditampilkan di bawah — nama dipertahankan demi kompatibilitas dengan pemuat
+runtime):
+
+```text
+src/apothem/agents/
+```
+
+Setiap pekerja terdelegasi mengodekan sebuah peran terspesialisasi, sinyal
+deteksi, dan sebuah set tool yang diizinkan.
+
+## Struktur berkas pekerja terdelegasi
+
+```markdown
+---
+name: "my-agent"
+description: "..."
+tools: "Read, Grep, Glob"
+---
+
+# My assistant
+
+## Role
+...
+
+## Detection signals
+Matched when: ...
+
+## Workflow
+...
+```
+
+## Pekerja terdelegasi bawaan
+
+| Pekerja terdelegasi | Tujuan |
+|-------|---------|
+| `codebase-explorer` | Eksplorasi codebase mendalam |
+| `convention-auditor` | Verifikasi penamaan dan pemformatan |
+| `memory-auditor` | Verifikasi keakuratan memori |
+| `quality-gate` | Lint, tes, type-check, pemindaian keamanan |
+
+## Memanggil pekerja terdelegasi
+
+Pekerja terdelegasi didispatch oleh orkestrator melalui tool delegasi yang
+diekspos oleh runtime host. Orkestrator memilih pekerja terdelegasi yang cocok
+berdasarkan deskripsi tugas dan sinyal deteksi.

@@ -1,0 +1,73 @@
+---
+title: "completion"
+description: "Referência da CLI para o comando apothem completion."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Imprime na saída padrão um script de autocompletar para o shell solicitado. Habilitar o autocompletar é **opcional**: este comando apenas imprime o script — ele nunca edita os arquivos de inicialização do seu shell. Você mesmo anexa a saída ao arquivo de autocompletar do shell.
+
+## Sinopse
+
+```
+apothem completion bash|zsh|fish|powershell
+```
+
+O script emitido habilita o autocompletar com `<TAB>` dos subcomandos e opções do `apothem` e — para a opção `--harness` — dos ids de harness registrados mais `all`.
+
+## Shells suportados
+
+| Shell | Como o script é produzido |
+|---|---|
+| `bash` | O script nativo de autocompletar bash do Click. |
+| `zsh` | O script nativo de autocompletar zsh do Click. |
+| `fish` | O script nativo de autocompletar fish do Click. |
+| `powershell` | Um trecho `Register-ArgumentCompleter` que faz a ponte com o protocolo de autocompletar do Click (o Click não traz nenhum script nativo de PowerShell, então este trecho liga o mesmo protocolo ao PowerShell). |
+
+Solicitar qualquer outro shell sai com `2` junto à lista de shells suportados.
+
+## Habilitando o autocompletar por shell
+
+Primeiro, o comando `apothem` precisa estar no seu `PATH` (os instaladores de um único passo o colocam lá). Em seguida, habilite o autocompletar anexando o script ao arquivo de autocompletar do shell e reiniciando o shell:
+
+```bash
+# bash — anexar ao seu bashrc
+apothem completion bash >> ~/.bashrc
+
+# zsh — anexar ao seu zshrc
+apothem completion zsh >> ~/.zshrc
+
+# fish — gravar no diretório de autocompletares do fish
+apothem completion fish > ~/.config/fish/completions/apothem.fish
+```
+
+```powershell
+# PowerShell — anexar o registro do completador ao seu profile
+apothem completion powershell >> $PROFILE
+```
+
+Para experimentar o autocompletar apenas na sessão atual sem editar nenhum arquivo, faça source do script diretamente (bash/zsh): `source <(apothem completion bash)`.
+
+## Por que é opcional
+
+O Apothem nunca edita silenciosamente os arquivos de inicialização do shell de um operador. Os instaladores imprimem uma dica de uma linha apontando para este comando; o operador decide se habilita o autocompletar e a qual arquivo anexá-lo. Isso mantém a pegada de instalação previsível e reversível — remover o bloco anexado desabilita o autocompletar.
+
+## Opções
+
+| Opção | Descrição |
+|---|---|
+| `SHELL` | Um de `bash`, `zsh`, `fish`, `powershell` (argumento posicional obrigatório). |
+| `-h`, `--help` | Mostrar a ajuda e sair. |
+
+## Códigos de saída
+
+| Código | Significado |
+|---|---|
+| 0 | Script de autocompletar emitido |
+| 2 | Shell não suportado solicitado |
+
+## Veja também
+
+- [apothem install](/docs/cli-reference/install) — instala uma configuração de harness
+- [apothem harnesses](/docs/cli-reference/harnesses) — os ids de harness que o autocompletar de `--harness` oferece
+- [Referência da CLI](/docs/cli-reference) — todos os subcomandos

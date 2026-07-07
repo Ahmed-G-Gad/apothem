@@ -1,0 +1,80 @@
+---
+title: "update"
+description: "apothem update コマンドの CLI リファレンス。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+現在の共有プロファイルからハーネスアダプターの構成を再インストールします。
+
+## 構文
+
+```
+apothem update --harness NAME|all [--profile PATH] [--dry-run]
+                [--project PATH]
+                [--quiet|-q] [--verbose|-v]
+                [--format plain|json] [--json] [--no-color]
+```
+
+`update` は現在の共有プロファイルからハーネスの出力を再物質化します。`install` と同じプロファイル検証、`--harness all` の選択、プロジェクトスコープのチェック、dry-run の動作、および JSON 信封を使用します。
+
+連続形のエイリアス `apothem updating` は同じハンドラーに解決されます。
+
+## オプション
+
+| オプション | 説明 |
+|---|---|
+| `--harness NAME` | 更新するハーネスアダプター、またはレジストリ全体のセットを表す `all`（必須）。 |
+| `--profile PATH` | 共有プロファイル YAML へのパス。デフォルトは `~/.config/apothem/profile.yaml`。 |
+| `--dry-run` | ファイルを書き込まずに更新をプレビューします。 |
+| `--project PATH` | プロジェクトスコープのハーネス向けのプロジェクトルート。選択したハーネスのセットにプロジェクトスコープのアダプターが含まれる場合は必須です。 |
+| `--quiet`, `-q` | 情報出力を抑制します。エラーのみが出力されます。 |
+| `--verbose`, `-v` | 追加の診断出力を出力します。 |
+| `--format plain\|json` | 出力形式（デフォルト：`plain`）。 |
+| `--json` | `--format json` の短縮形。 |
+| `--no-color` | 出力内の ANSI カラーコードを無効にします。 |
+| `-h`, `--help` | ヘルプを表示して終了します。 |
+
+## JSON 出力
+
+```json
+{
+  "status": "success",
+  "command": "update",
+  "action": "updated",
+  "harness": "claude-code",
+  "profile_path": "C:\\Users\\Example\\.config\\apothem\\profile.yaml",
+  "project": null,
+  "files_written": [],
+  "results": [],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+`--dry-run` は `status: "dry_run"` と `files_written: []` を返します。
+
+## 例
+
+```bash
+apothem update --harness claude-code
+apothem update --harness claude-code --dry-run
+apothem update --harness all --project . --dry-run --json
+apothem Updating --harness claude-code   # continuous-form alias
+apothem updating --harness claude-code   # lowercase variant
+```
+
+## 終了コード
+
+| コード | 意味 |
+|---|---|
+| 0 | アダプターが正常に更新されたか、dry-run がクリーンに計画された |
+| 1 | 予期される検証、プロファイル、ハーネス、プロジェクト、またはアダプターのエラー |
+| 2 | 少なくとも 1 回の書き込み後の部分的なバッチ物質化 |
+
+## 関連項目
+
+- `apothem updating` — このコマンドの連続形のエイリアス（ここで文書化。CLI は両方の形式を受け付けます）
+- [apothem install](/docs/cli-reference/install) — 初回インストール
+- [更新ガイド](/docs/install/updating) — インストーラーごとの更新パス

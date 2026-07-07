@@ -1,0 +1,36 @@
+---
+title: "Markdown 規約"
+description: "Markdown のフレーバー、見出し構造、コードフェンス宣言、内部リンク形式、著作者署名バナー、およびバリデーターによる強制を標準化します。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **すべての著された `.md` 制作物にわたる Markdown の形態と書式の規範的参照。** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) 規約 の要約はインライン宣言であり、本ページは下流のコントリビューターが引用する独立した参照です。
+
+---
+
+## 1. フレーバー
+
+GitHub-Flavored Markdown（GFM）がホストのフレーバーです。すべての制作物は、GitHub の Web UI、Fumadocs ドキュメントサイト、および標準的な Markdown 対応エディターで正しくレンダリングされます。
+
+## 2. 見出しの階層
+
+ファイルごとに H1 は 1 つ。後続の見出しはレベルを飛ばさずに単調に下降します（H2 → H3 → H4）。見出しは文頭のみ大文字（sentence-case）にします。ALL-CAPS は使わず、Title Case Across Every Word も使いません。H1 はドキュメントの主タイトルを担い、ドキュメントサイトのナビゲーションにおけるドキュメントのアンカーそのものです。
+
+## 3. コードブロック
+
+フェンスされたコードブロックは言語を宣言します（` ```python `、` ```bash `、` ```yaml `、` ```json `、` ```mermaid `）。タグなしのブロックはシンタックスハイライトを抑制し、著作のドリフトを示します。[`.markdownlint.jsonc`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.jsonc) の markdownlint MD040 ルールが言語タグを強制します。
+
+## 4. 内部リンク
+
+内部の相互参照には**サイトルートパス**を使用します（例: `[Authorship header](/docs/reference/authorship-header)`）。`.md`/`.mdx` 拡張子付きの素のリポジトリ相対パス（`/docs/foo.md`）や同一リポジトリへの完全 URL（`https://github.com/ahmed-g-gad/apothem/blob/main/...`）は、ページのリネームやセクションの再編成に弱いため、サイト内リンクでは避けます。
+
+可変な参照（`main`、`master`、`latest`、`HEAD`）への外部リンクは、リンク先の内容の安定性が重要な場合は常にコミット SHA またはリリースタグに固定されます。揮発性の参照は、隣接する `{/* volatile */}` コメントでその旨を記録します。
+
+## 5. 著作者署名バナー
+
+すべての Markdown 制作物（[`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas/header-exceptions.txt) に列挙された例外を除く）は、[Authorship header](/docs/reference/authorship-header) に従い、HTML コメント形式で、バイト 0 に規範的な著作者署名ヘッダーバナーを持ちます。両方が存在する場合、バナーは YAML frontmatter の上に置かれます。
+
+## 6. バリデーター
+
+[`.markdownlint.jsonc`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.jsonc) の `markdownlint-cli2` 呼び出しが §§1–4 のルールの大半を強制します。`src/apothem/conformity/file_header_grep.py` の `file-header-grep` が §5 を強制します。両者は [`.pre-commit-config.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/.pre-commit-config.yaml) のプリコミットフックチェーンと [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) の CI 品質ジョブに組み込まれています。

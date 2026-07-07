@@ -1,0 +1,71 @@
+---
+title: "依存関係ピン留めマニフェスト"
+description: "Python ランタイムの範囲、開発ツール、リリースツールのロックファイル、各ビルド面に対する承認済みのバージョン下限を網羅する依存関係宣言ポリシー。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> Apothem が依存関係をどのように宣言・ピン留め・ロックするかについての承認済みの姿勢。
+> 対象読者：再現性モデルを理解する必要があるコントリビューターおよび下流の利用者。
+
+## 姿勢
+
+Apothem は、小さなランタイム依存関係のセットに加えて、より大規模な開発・監査・
+リリース・ドキュメントのツールチェーンを備えた Python CLI です。ランタイム依存関係は
+`pyproject.toml` で保守的な下限を使用します。ウェブサイトは
+`site/package-lock.json` をコミットします。GitHub Actions はバージョンコメント付きで
+不変の SHA によってピン留めされ、Renovate によって更新されます。
+
+| クラス | 宣言 | ロックポリシー |
+|---|---|---|
+| ランタイム Python 依存関係 | `pyproject.toml` 内の `[project.dependencies]` | 下限の範囲。コミットされる Python ランタイムロックはなし |
+| 開発 / セキュリティツール | `[project.optional-dependencies]` の extras | 下限の範囲。CI は現在一致するバージョンをインストール |
+| リリースツール | `scripts/release/requirements-build-linux.txt` | リリースワークフロー向けにハッシュロック。リリースツールのクロージャから生成 |
+| CI 専用ツール | `.github/workflows/*.yml` | ワークフロー専用の pip ツールは厳密なピン（`pip`、`bandit`、`pip-audit`、`pip-licenses`、`pyinstaller`）を使用 |
+| ドキュメントサイト | `site/package.json` | `site/package-lock.json` をコミットし、`npm ci` が消費 |
+| GitHub Actions | バージョンコメント付きの SHA ピン `uses:` 参照 | Renovate が更新を提案。例外は `action-pinning-exempt:` マーカーを携帯 |
+
+## リリース承認
+
+| 面 | 承認済みの状態 | 根拠 |
+|---|---|---|
+| ランタイム依存関係 | 現在の下限は `pyproject.toml` `[project.dependencies]` に存在 | リリース前に承認された現在の安定下限。既知のランタイム CVE 阻害要因なし |
+| 開発ツール | 現在の下限は `pyproject.toml` の `dev` extra に存在 | リリース前に承認された最新の安定下限 |
+| セキュリティツール | 現在の下限は `pyproject.toml` の `security` extra に存在 | リリース前に承認された現在のスキャナー下限 |
+| リリースツール | ハッシュロックされたクロージャは `scripts/release/requirements-build-linux.txt` に存在 | リリースワークフローは `--require-hashes` でインストール。ローカルスクリプトは、変動する依存関係を黙ってインストールするのではなく、`build` がすでに存在することを要求 |
+| ドキュメントツール | 現在の範囲は `site/package.json` に存在し、厳密な解決は `site/package-lock.json` に存在 | ロックファイルの更新後、`npm outdated` は陳腐化したドキュメント依存関係を返さない |
+| GitHub Actions | 現在のリリースでは既存の SHA ピンを保持。SLSA 再利用可能ワークフローは、文書化されたタグピンの例外のまま | 公開 CI の再実行はグリーン。リリース面の動揺を避けるため、action のメジャー版の広範なアップグレードは意図的に依存関係自動化 PR に委ねられる |
+| npm パッケージング | 手動のみの `publish-npm.yml` ワークフロー。自動リリーストリガーなし | 唯一の公開 npm パッケージは `@ahmed-g-gad/apothem`。公開はリリース準備が通過した後に実行 |
+
+## ロック
+
+Python のロックファイルは、コントリビューターによってオンデマンドで生成されます。
+Apothem のランタイムクロージャが小さく、CLI が複数の Python マイナーバージョンを
+サポートし、CI が意図的に最新の一致するツールバージョンを演習するため、これらは
+コミットされません。
+
+```sh
+# Astral uv:
+uv pip install -e ".[dev,security,release]"
+uv pip freeze > requirements.dev.lock
+
+# pip-tools:
+pip-compile --extra=dev --extra=security --extra=release -o requirements.dev.lock pyproject.toml
+
+# Plain pip:
+pip install -e ".[dev,security,release]"
+pip freeze > requirements.dev.lock
+```
+
+ウェブサイトは異なります。`site/package-lock.json` がコミットされ、CI は `npm ci`
+を使用するため、レンダリングされるドキュメントサイトには再現可能な Node
+クロージャがあります。
+
+## 根拠
+
+- **なぜ Python に範囲ピンか？** CLI は広範な Python マトリックスをサポートしており、
+  CI はユーザーが遭遇する前に、現在のツールとの互換性の問題を明らかにすべきです。
+- **なぜコミットされる Node ロックか？** ウェブサイトはデプロイされる静的成果物です。
+  ロックファイルは、その公開面に対して決定論的な `npm ci` ビルドをもたらします。
+- **なぜ SHA ピンの Actions か？** タグは可変ですが、SHA は不変です。Renovate は
+  ピン留めされた SHA を更新し、リリースゲートは意図的な保留をすべて記録します。

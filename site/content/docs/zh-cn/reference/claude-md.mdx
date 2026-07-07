@@ -1,0 +1,41 @@
+---
+title: "`CLAUDE.md`"
+description: "始终加载的生态系统配置，为每次交互提供基线上下文，包含七个部分，涵盖计划套件、身份、目录、治理层级、指令、强制要求和注册表。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+`CLAUDE.md` 是始终加载的生态系统配置。宿主
+harness运行时会在每次交互时加载它，因此其内容是
+其他每个工件所扩展的*基线上下文*。
+
+## 各部分
+
+| 部分 | 用途 |
+|---------|---------|
+| §1 计划套件 | 命名主计划套件模板和八个 `/plan-<stage>` 命令 |
+| §2 认知身份与软件架构 | 声明高级软件架构师角色和创造性姿态 |
+| §3 工件目录 | 各类别的磁盘根目录（规则、命令、技能、委托工作者等） |
+| §4 严肃度分级治理 | 四层级分级视角（EXPLORING / PERSONAL_USE / SHARED / PUBLIC_LAUNCH） |
+| §5 操作指令 | 问题解决、战略发现、沟通框架 |
+| §6 横切强制要求 | CM-N 注册表（CM-1 至 CM-28） |
+| §7 注册表 | 命令、规则、委托工作者、钩子、技能、演进、空类别的子注册表 |
+
+## 强制要求标识符约定
+
+三个前缀承载不同的含义：
+
+- **CM-N** — 配置强制要求，在规则集（`src/apothem/rules/operational-mandates.md`
+  及各强制规定对应的规则文件）中定义。
+- **TM-N** — 模板强制要求，在
+  `src/apothem/skills/plan-suite/master-template.md` §4 中定义。
+- **CP-N** — 核心原则，在同一模板的 §6 中定义。
+
+计划套件模板是规范的 TM/CP 注册表；`/plan`
+流水线各阶段通过该文件解析交叉引用。
+
+## 另请参阅
+
+- [规则](/docs/reference/rules) —— 将 CM-1 至 CM-28 操作化的规则文件。
+- [命令](/docs/reference/commands) —— §1 计划套件锚点命名的 `/plan` 流水线阶段。
+- [钩子](/docs/reference/hooks) —— 强制执行 CM-7、CM-22 和 CM-24 的钩子层。

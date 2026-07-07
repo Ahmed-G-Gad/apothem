@@ -1,0 +1,70 @@
+---
+title: "/research-paper"
+description: "/research-paper — Assemble un brouillon d'article de premier plan (du résumé à la conclusion plus les références) à partir de la synthèse, de la conception et de l'analyse, chaque citation étant vérifiée pour qu'elle se résolve."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rôle :** Chercheur principal (rédaction)
+**Position dans le pipeline :** intermédiaire
+
+Assemble un brouillon d'article de premier plan à partir de la synthèse, de la conception et de l'analyse — résumé, introduction, travaux connexes, méthode, résultats, discussion, limites, conclusion, références. Chaque citation est vérifiée pour qu'elle se résolve vers une source réelle ; aucune citation fantôme.
+
+## Invocation canonique
+
+```bash
+/research-paper
+```
+
+Avec des arguments :
+
+```bash
+/research-paper [path/to/research-suite/]
+```
+
+## Entrées
+
+`_inputs/synthesis.md` (carte SOTA + lacune), `_inputs/study-design.md` (méthode) et `_outputs/analysis.md` (résultats).
+
+## Sorties
+
+Le livrable de l'article à un emplacement naturel de l'hôte (`paper/`) — résumé, introduction, travaux connexes, méthode, résultats, discussion, limites, conclusion, références.
+
+## En aval
+
+/research-review (consommateur en aval)
+
+## Phases du flux de travail
+
+La commande suit le flux de travail standard du pipeline `/research` :
+
+1. **Charger le contexte** — Lire la synthèse, la conception de l'étude et l'analyse.
+2. **Vérifier la barrière de séquence** — Confirmer que `_outputs/analysis.md` existe ; sinon, s'arrêter avec `Blocked: run /research-analysis first`.
+3. **Assembler le brouillon** — Composer du résumé à la conclusion ; l'introduction et les travaux connexes s'appuient sur la synthèse, la méthode sur la conception, les résultats sur l'analyse.
+4. **Vérifier les citations** — Chaque référence se résout vers une source réelle.
+5. **Mettre à jour le manifeste de transfert** — Enregistrer le chemin du livrable de l'article.
+6. **Émettre l'article** — le manuscrit à l'emplacement naturel de l'hôte `paper/`.
+
+## Seuil de rigueur
+
+Sous un lieu de publication en double aveugle, le manuscrit ne porte que ce que la politique d'anonymat autorise : l'auteur, l'institution, le financement et le système étudié sont décrits dans un langage naturel du domaine sans les nommer, réservés à des métadonnées soumises séparément pour une étape de dé-anonymisation désignée. La profondeur du rapport de reproductibilité et du rapport statistique évolue avec l'ambition du lieu de publication visé.
+
+## Modes de défaillance
+
+| Symptôme | Cause | Récupération |
+|---------|-------|----------|
+| Blocked: run /research-analysis first | Aucune analyse | Exécutez `/research-analysis` pour produire `_outputs/analysis.md` |
+| Citation fantôme | La référence ne se résout pas | Supprimez ou corrigez la citation ; ne fabriquez jamais de source |
+| Résultats surévalués | La discussion dépasse l'analyse | Limitez les affirmations aux tailles d'effet analysées + les IC |
+
+## Exemples
+
+```bash
+# Assembler le brouillon de l'article à partir de la synthèse + la conception + l'analyse
+/research-paper path/to/research-suite/
+```
+
+## Références croisées
+
+- [Vue d'ensemble du pipeline](/docs/pipeline)
+- [Référence des commandes](/docs/reference/commands)

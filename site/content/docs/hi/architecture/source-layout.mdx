@@ -1,0 +1,55 @@
+---
+title: "स्रोत लेआउट"
+description: "Apothem src/ लेआउट का उपयोग क्यों करता है और वृक्ष कैसे व्यवस्थित है।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem ने [PyPA src-layout](https://packaging.python.org/en/latest/discussions/src-layout-vs-flat-layout/) को अपनाया, सभी आयात-योग्य Python को `src/apothem/` के अंतर्गत रखते हुए।
+
+## src-layout क्यों
+
+- **आयात पृथक्करण।** `import apothem` केवल तभी हल होता है जब `src/` पथ पर हो
+  (इंजन `PYTHONPATH=src python -m apothem` के रूप में चलता है), जो किसी असंबंधित
+  डायरेक्टरी से कार्यशील वृक्ष के आकस्मिक आयात को रोकता है।
+- **स्व-निहित रनटाइम।** Apothem सीधे किसी चेकआउट से चलता है, इसकी निर्भरताएँ
+  `src/apothem/_vendor/` के अंतर्गत अंतर्निहित होती हैं — किसी इंस्टॉल चरण की
+  आवश्यकता नहीं। src-layout उस आयात-योग्य सतह को रिपॉज़िटरी के टूलिंग, परीक्षणों,
+  और स्क्रिप्ट से साफ़-सुथरे ढंग से पृथक रखता है।
+- **स्वच्छ वितरण।** वही लेआउट एक सुगठित sdist और wheel (और एक वैकल्पिक
+  `pip install -e .` एडिटेबल इंस्टॉल) उत्पन्न करता है जिसकी विषय-वस्तु ठीक उसी से
+  मेल खाती है जो शिप होती है, बिना किसी भटके शीर्ष-स्तरीय मॉड्यूल के रिसाव के।
+
+## वृक्ष संरचना
+
+```
+src/apothem/
+    agents/         persistent agent definitions (*.md)
+    audit/          inventory and provenance tools
+    benchmarks/     performance benchmarks
+    cli/            Click CLI (quickstart, install, update, uninstall, verify, status, diff, rollback, harnesses, profile, doctor, completion)
+    commands/       slash command definitions (*.md)
+    conformity/     mechanical gate checkers (*-grep.py)
+    harnesses/      one sub-package per harness adapter (17 adapters)
+    hooks/          hook dispatcher + message files
+    lib/            shared Python library
+    output-styles/  output-style definitions (*.md)
+    rules/          behavioral rules (*.md)
+    schemas/        YAML/JSON schemas
+    skills/         reusable skill templates (folder/SKILL.md)
+    statuslines/    status-line config (*.json)
+    templates/      reusable template artifacts
+```
+
+## आयात-योग्य बनाम कॉन्फ़िगरेशन आर्टिफ़ैक्ट
+
+`src/apothem/` के अंतर्गत कई आइटम Markdown कॉन्फ़िगरेशन आर्टिफ़ैक्ट हैं, Python मॉड्यूल नहीं।
+आयात-योग्य Python सतह है:
+
+- `src/apothem/cli/` (`apothem` एंट्री पॉइंट के रूप में उजागर Click CLI)
+- `src/apothem/harnesses/` (17 हार्नेस अडैप्टर उप-पैकेज)
+- `src/apothem/lib/` (साझा लाइब्रेरी: प्रोफ़ाइल, रजिस्ट्री, मूर्तीकारक, प्रसार)
+- `src/apothem/hooks/` (dispatch.py, lib/)
+- `src/apothem/conformity/` (यांत्रिक grep स्क्रिप्ट)
+- `src/apothem/audit/` (इन्वेंट्री स्क्रिप्ट)
+- `src/apothem/benchmarks/` (प्रदर्शन बेंचमार्क ड्राइवर)

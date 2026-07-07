@@ -1,0 +1,84 @@
+---
+title: "quickstart"
+description: "Referencia de la CLI para el comando guiado de primera ejecución apothem quickstart."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Primera ejecución guiada: asegura que exista un perfil, previsualiza las escrituras y luego instala.
+
+## Sinopsis
+
+```
+apothem quickstart [--harness NAME|all] [--project PATH] [--profile PATH]
+                   [--yes] [--quiet|-q] [--verbose|-v]
+                   [--format plain|json] [--json] [--no-color]
+```
+
+`quickstart` es el único punto de entrada guiado para un operador nuevo. En un flujo lineal: (1) asegura que exista un perfil compartido — creando un perfil inicial con un aviso para personalizarlo si no se encuentra ninguno; (2) previsualiza los archivos concretos que escribirán los harness seleccionados, agrupados por raíz del proyecto frente a tu directorio de inicio; (3) pide confirmación; (4) instala con la salida de notas de capacidades agrupada y sin ruido; y (5) imprime los comandos siguientes recomendados.
+
+Compone los mismos bloques de construcción que usa el comando `install` — no los reimplementa. `--harness` tiene por defecto `all` y `--project` el directorio actual.
+
+## Comportamiento
+
+- **Perfil** — si la ruta de perfil resuelta no tiene archivo, `quickstart` ofrece crear un perfil inicial (lo crea automáticamente con `--yes`, en un shell no interactivo o con `--format json`) y nombra los campos de identidad de marcador de posición a personalizar.
+- **Previsualizar + confirmar** — antes de cualquier escritura, los destinos se listan bajo dos encabezados (raíz del proyecto frente a tu directorio de inicio); una ejecución interactiva confirma antes de escribir fuera del proyecto. `--yes`, un shell no interactivo y `--format json` continúan sin preguntar. Rechazar aborta antes de cualquier escritura.
+- **Instalar** — las capacidades que un harness no admite de forma nativa se resumen como una nota agrupada por harness (pasa `--verbose` para el detalle por capacidad); el conjunto completo siempre está en el arreglo warnings de `--format json`.
+- **Paso siguiente** — la salida del terminal nombra los comandos posteriores (`apothem verify …`, `apothem doctor`).
+
+## Opciones
+
+| Opción | Descripción |
+|---|---|
+| `--harness NAME` | Adaptador de harness a instalar, o `all` para el conjunto de todo el registro (por defecto: `all`). |
+| `--profile PATH` | Ruta al YAML del perfil compartido. Por defecto es `~/.config/apothem/profile.yaml`. |
+| `--project PATH` | Raíz del proyecto para los harness con alcance de proyecto. Por defecto es el directorio actual. |
+| `--yes` | Ejecuta la secuencia guiada completa de forma no interactiva (omite cada indicación). |
+| `--quiet`, `-q` | Suprime la salida informativa; solo se emiten errores. |
+| `--verbose`, `-v` | Imprime la justificación de cada capacidad no proyectada en lugar de la nota agrupada. |
+| `--format plain\|json` | Formato de salida (por defecto: `plain`). |
+| `--json` | Abreviatura de `--format json`. |
+| `--no-color` | Desactiva los códigos de color ANSI en la salida. |
+| `-h`, `--help` | Muestra la ayuda y sale. |
+
+## Salida JSON
+
+`--format json` emite un único documento que resume cada paso guiado:
+
+```json
+{
+  "status": "success",
+  "command": "quickstart",
+  "profile_path": "C:\\Users\\Example\\.config\\apothem\\profile.yaml",
+  "steps": [
+    {"step": "profile", "outcome": "created", "path": "…", "placeholder_identity": ["name", "email", "github"]},
+    {"step": "install", "status": "success", "harness": "all", "files_written": ["…"], "warnings": [], "results": []},
+    {"step": "recommend", "next": ["apothem verify --harness all --project .", "apothem doctor"]}
+  ],
+  "recommended_next": ["apothem verify --harness all --project .", "apothem doctor"]
+}
+```
+
+## Ejemplos
+
+```bash
+apothem quickstart
+apothem quickstart --harness all --project . --yes
+apothem quickstart --harness claude-code
+apothem quickstart --json
+```
+
+## Códigos de salida
+
+| Código | Significado |
+|---|---|
+| 0 | Ejecución guiada completada |
+| 1 | Error esperado de validación, perfil, harness, proyecto o adaptador |
+| 2 | Materialización parcial del lote tras al menos una escritura |
+
+## Véase también
+
+- [apothem install](/docs/cli-reference/install) — materializa un harness a partir del perfil compartido
+- [apothem verify](/docs/cli-reference/verify) — confirma que una instalación está activa
+- [apothem doctor](/docs/cli-reference/doctor) — salud del entorno y de la instalación
+- [Primeros pasos](/docs/install) — guía de instalación completa

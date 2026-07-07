@@ -1,0 +1,54 @@
+---
+title: "Proteksi branch"
+description: "Proteksi branch Apothem pada main — gerbang tinjauan, gating melalui pemeriksaan status, dan pembatasan push."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Branch `main` Apothem dilindungi oleh proteksi branch GitHub setelah commit rilis baru tunggal dipublikasikan. Proteksi ini menegakkan disiplin set-perubahan yang dideklarasikan di `rules/production-ready-prs.md` dan memasok pemeriksaan **Branch-Protection** serta **Code-Review** OpenSSF Scorecard untuk pekerjaan mendatang.
+
+## Deklarasi set aturan
+
+| Pengaturan | Nilai | Alasan |
+|---|---|---|
+| **Target** | `main` | Melindungi branch default publik. |
+| **Status penegakan** | `active` | Bukan mode uji-coba. |
+| **Wajibkan pull request sebelum merge** | ✅ | Push langsung ke `main` diblokir. |
+| **Tinjauan persetujuan yang diperlukan** | **1** | Gerbang tinjauan manusia minimum untuk proyek pemelihara-tunggal baru. |
+| **Buang persetujuan usang pada commit baru** | ✅ | Force-push setelah persetujuan memicu ulang tinjauan. |
+| **Wajibkan tinjauan dari Code Owners** | Ditunda | Mengaktifkan ini sebelum pemelihara kedua bergabung dapat membuat PR pemelihara-tunggal menemui jalan buntu. |
+| **Wajibkan persetujuan atas push yang dapat ditinjau paling baru** | ✅ | Commit yang di-push paling baru harus membawa persetujuan. |
+| **Resolusi percakapan yang diperlukan** | ✅ | Thread tinjauan yang terbuka memblokir merge. |
+| **Wajibkan pemeriksaan status lulus** | ✅ | Workflow CI + Scorecard + CodeQL + pip-audit. |
+| **Pemeriksaan status yang diperlukan** | Pemeriksaan inti saat ini | Daftar yang diperlukan disegarkan dari commit rilis hijau terbaru. |
+| **Wajibkan branch dalam keadaan terkini** | ✅ | Mencegah regresi merge usang. |
+| **Wajibkan commit yang ditandatangani** | Direkomendasikan | Commit rilis lokal ditandatangani; penegakan penuh menunggu hingga dokumentasi onboarding kontributor menjelaskan penyiapan SSH/GPG. |
+| **Wajibkan riwayat linear** | ✅ | Menjaga riwayat publik garis-tunggal tetap dapat dipahami. |
+| **Blokir force-push** | ✅ | Penulisan ulang riwayat pada `main` diblokir. |
+| **Izinkan penghapusan** | ❌ | Branch `main` tidak dapat dihapus. |
+
+## Batasan pemelihara-tunggal
+
+GitHub tidak mengizinkan berkas repositori membuat riwayat tinjauan manusia. Oleh karena itu repositori menerapkan proteksi branch terkuat yang tidak menemui jalan buntu untuk model pemeliharanya saat ini: satu tinjauan persetujuan, pembuangan tinjauan usang, persetujuan push terbaru, resolusi percakapan, pemeriksaan status, riwayat linear, serta tanpa penghapusan branch atau force-push. Ketika pemelihara kedua bergabung, tinjauan CODEOWNERS dan minimum dua peninjau akan menjadi pengaturan yang lebih kuat.
+
+## Persyaratan pemeriksaan status
+
+Empat pemeriksaan status gating-keras yang dideklarasikan di atas:
+
+- **`ci`** — matriks pengujian lengkap + ruff + mypy + bandit + Trivy + pip-audit pada pohon dependensi yang teresolusi
+- **`Scorecard`** — eksekusi OpenSSF Scorecard tanpa regresi per-pemeriksaan
+- **`CodeQL`** — paket kueri `security-extended` untuk `python` + `actions`
+- **`pip-audit`** — pemindaian kerentanan mingguan + per-PR terhadap pohon dependensi yang teresolusi
+
+Workflow lain mana pun boleh melaporkan status, tetapi hasilnya tidak melakukan gating terhadap merge kecuali dipromosikan ke dalam daftar pemeriksaan yang diperlukan.
+
+## Irama audit
+
+Berkas ini ditinjau pada setiap audit keamanan dan pada setiap checkpoint rekayasa rilis. Penyimpangan antara berkas ini dan konfigurasi proteksi branch yang sebenarnya merupakan temuan dengan keparahan tinggi.
+
+## Referensi
+
+- [OpenSSF Scorecard — Branch-Protection check](https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection)
+- [GitHub — About protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
+- [Apothem CODEOWNERS](https://github.com/ahmed-g-gad/apothem/blob/main/.github/CODEOWNERS) — kepemilikan tinjauan dengan cakupan per-jalur
+- `rules/production-ready-prs.md` §1 — disiplin set-perubahan-yang-sama yang ditegakkan oleh set aturan ini

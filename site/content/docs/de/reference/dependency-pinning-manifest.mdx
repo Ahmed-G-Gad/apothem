@@ -1,0 +1,77 @@
+---
+title: "Manifest zur Abhängigkeitsfixierung"
+description: "Richtlinie zur Abhängigkeitsdeklaration, die Python-Laufzeitbereiche, Entwicklungswerkzeuge, Lock-Dateien der Release-Werkzeuge und ratifizierte Versionsuntergrenzen für jede Build-Oberfläche abdeckt."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> Ratifizierte Haltung dazu, wie Apothem Abhängigkeiten deklariert, fixiert und
+> sperrt.
+> Zielgruppe: Mitwirkende und nachgelagerte Konsumenten, die das
+> Reproduzierbarkeitsmodell verstehen müssen.
+
+## Haltung
+
+Apothem ist eine Python-CLI mit einem kleinen Satz an Laufzeitabhängigkeiten plus
+einer umfangreicheren Werkzeugkette für Entwicklung, Audit, Release und
+Dokumentation. Laufzeitabhängigkeiten verwenden konservative Untergrenzen in
+`pyproject.toml`; die Website committet `site/package-lock.json`; GitHub Actions
+werden per unveränderlichem SHA mit Versionskommentaren fixiert und von Renovate
+aktualisiert.
+
+| Klasse | Deklaration | Lock-Richtlinie |
+|---|---|---|
+| Python-Laufzeitabhängigkeiten | `[project.dependencies]` in `pyproject.toml` | Untergrenzenbereiche; kein committeter Python-Laufzeit-Lock |
+| Entwicklungs- / Sicherheitswerkzeuge | `[project.optional-dependencies]`-Extras | Untergrenzenbereiche; CI installiert die aktuell passenden Versionen |
+| Release-Werkzeuge | `scripts/release/requirements-build-linux.txt` | Hash-gesperrt für Release-Workflows; aus der Hülle der Release-Werkzeuge erzeugt |
+| Nur-CI-Werkzeuge | `.github/workflows/*.yml` | Workflow-eigene pip-Werkzeuge verwenden exakte Fixierungen (`pip`, `bandit`, `pip-audit`, `pip-licenses`, `pyinstaller`) |
+| Dokumentationsseite | `site/package.json` | `site/package-lock.json` committet und von `npm ci` konsumiert |
+| GitHub Actions | SHA-fixierte `uses:`-Referenzen mit Versionskommentaren | Renovate schlägt Aktualisierungen vor; Ausnahmen tragen `action-pinning-exempt:`-Markierungen |
+
+## Release-Ratifizierung
+
+| Oberfläche | Ratifizierter Zustand | Begründung |
+|---|---|---|
+| Laufzeitabhängigkeiten | Aktuelle Untergrenzen leben in `pyproject.toml` `[project.dependencies]` | Aktuelle stabile Untergrenzen vor dem Release ratifiziert; kein bekannter Laufzeit-CVE-Blocker |
+| Entwicklungswerkzeuge | Aktuelle Untergrenzen leben im `dev`-Extra von `pyproject.toml` | Neueste stabile Untergrenzen vor dem Release ratifiziert |
+| Sicherheitswerkzeuge | Aktuelle Untergrenzen leben im `security`-Extra von `pyproject.toml` | Aktuelle Scanner-Untergrenzen vor dem Release ratifiziert |
+| Release-Werkzeuge | Die hash-gesperrte Hülle lebt in `scripts/release/requirements-build-linux.txt` | Der Release-Workflow installiert mit `--require-hashes`; lokale Skripte verlangen, dass `build` bereits vorhanden sind, statt schwankende Abhängigkeiten stillschweigend zu installieren |
+| Dokumentationswerkzeuge | Aktuelle Bereiche leben in `site/package.json`; die exakte Auflösung lebt in `site/package-lock.json` | `npm outdated` liefert nach der Lock-Datei-Aktualisierung keine veraltete Dokumentationsabhängigkeit |
+| GitHub Actions | Bestehende SHA-Fixierungen werden für das aktuelle Release beibehalten; der wiederverwendbare SLSA-Workflow bleibt die dokumentierte Tag-fixierte Ausnahme | Der öffentliche CI-Neulauf ist grün; breite Major-Upgrades von Actions werden absichtlich den Abhängigkeits-Automatisierungs-PRs überlassen, um Aufruhr an der Release-Oberfläche zu vermeiden |
+| npm-Paketierung | Nur manueller `publish-npm.yml`-Workflow; kein automatischer Release-Auslöser | Das einzige öffentliche npm-Paket ist `@ahmed-g-gad/apothem`; die Veröffentlichung läuft, nachdem die Release-Bereitschaft bestanden ist |
+
+## Sperrung
+
+Python-Lock-Dateien werden vom Mitwirkenden bei Bedarf erzeugt. Sie werden nicht
+committet, weil Apothems Laufzeithülle klein ist, die CLI mehrere
+Python-Nebenversionen unterstützt und CI absichtlich die neuesten passenden
+Werkzeugversionen ausübt.
+
+```sh
+# Astral uv:
+uv pip install -e ".[dev,security,release]"
+uv pip freeze > requirements.dev.lock
+
+# pip-tools:
+pip-compile --extra=dev --extra=security --extra=release -o requirements.dev.lock pyproject.toml
+
+# Plain pip:
+pip install -e ".[dev,security,release]"
+pip freeze > requirements.dev.lock
+```
+
+Die Website ist anders: `site/package-lock.json` wird committet und CI verwendet
+`npm ci`, sodass die gerenderte Dokumentationsseite eine reproduzierbare
+Node-Hülle hat.
+
+## Begründung
+
+- **Warum Bereichsfixierungen für Python?** Die CLI unterstützt eine breite
+  Python-Matrix, und CI sollte Kompatibilitätsprobleme mit aktuellen Werkzeugen
+  aufdecken, bevor Nutzer auf sie stoßen.
+- **Warum ein committeter Node-Lock?** Die Website ist ein bereitgestelltes
+  statisches Artefakt; die Lock-Datei liefert deterministische `npm ci`-Builds
+  für diese öffentliche Oberfläche.
+- **Warum SHA-fixierte Actions?** Tags sind veränderlich; SHAs sind
+  unveränderlich. Renovate aktualisiert die fixierten SHAs, während die
+  Release-Schranke jeden absichtlichen Aufschub festhält.

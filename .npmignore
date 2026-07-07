@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: MIT
+
+# Defense-in-depth only: npm gives the package.json "files" allowlist
+# precedence over a root .npmignore, so paths matched by "files" cannot be
+# re-excluded here. The authoritative bytecode/cache excludes are the "!"
+# negation patterns inside the "files" field itself (verified via
+# `npm pack --dry-run`). These lines only take effect if the "files"
+# allowlist is ever removed.
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/

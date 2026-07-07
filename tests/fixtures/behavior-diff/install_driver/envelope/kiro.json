@@ -1,0 +1,20 @@
+{
+  "changed": true,
+  "counts": {
+    "created": 4,
+    "error": 0,
+    "skipped": 0,
+    "unchanged": 0,
+    "updated": 0,
+    "warning": 8
+  },
+  "dry_run": false,
+  "files_written": [
+    "<ROOT>/.apothem/contexts/fragments.json",
+    "<ROOT>/.apothem/learning/signals.jsonl",
+    "<ROOT>/.apothem/memory/records.json",
+    "<ROOT>/.kiro/steering/apothem-rules.md"
+  ],
+  "harness": "kiro",
+  "warnings": 8
+}

@@ -1,0 +1,29 @@
+---
+title: "설정"
+description: "도구 권한, 훅 배선, 환경 변수, 상태 표시줄 템플릿을 다루는 settings.json 내 Claude Code harness 구성."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+`settings.json`은 Claude Code harness 구성을 담습니다. 훅 배선, 도구 권한, 환경
+변수, 상태 표시줄 설정입니다.
+
+전체 정규 참조는
+[settings-reference.md](/docs/reference/settings-reference)에 있습니다. 이 페이지는 계약을
+요약하고 더 깊은 참조를 가리킵니다.
+
+## 섹션
+
+| 섹션 | 목적 |
+|---------|---------|
+| `permissions` | 매처별 도구 화이트리스트 및 블랙리스트 |
+| `hooks` | 이벤트를 키로 하는 훅 명령 테이블(정규 배선) |
+| `env` | 세션별 환경 변수 |
+| `statusLine` | 호스트가 렌더링하는 상태 표시줄 템플릿 |
+
+## 단일 템플릿 불변식
+
+Claude Code 어댑터는 `settings.json` 템플릿 하나만 출하합니다. 훅 명령은 셸별
+명령 문자열 대신 exec 형식(`command`과 `args`)을 사용하므로, OS 간 동작이 단일
+파일 안에서 검토됩니다. 새 권한 항목과 훅 이벤트는 그 파일에 원자적으로
+안착합니다.

@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+
+# Purpose: apothem CLI binary. Dispatches `apothem <subcommand>` to
+#          the matching shell script in the release-archive root first
+#          (install.sh, update.sh, uninstall.sh), then falls back to
+#          scripts/installer/ inside a source checkout. Two metadata
+#          subcommands are served inline: --help and --version.
+# Sibling: scripts/apothem.ps1 (PowerShell parity); scripts/apothem.cmd
+#          (Windows CMD wrapper that delegates to the PowerShell sibling).
+
+set -euo pipefail
+IFS=$'\n\t'
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly SCRIPT_DIR
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+readonly REPO_ROOT
+readonly PYPROJECT="${REPO_ROOT}/pyproject.toml"
+
+usage() {
+    cat <<'EOF'
+Usage: apothem <subcommand> [options]
+
+Subcommands:
+  install       Install or re-install apothem (idempotent)
+  update        Check for upstream updates; --apply to fast-forward
+  uninstall     Uninstall apothem (with confirmation prompt and timestamped backup default)
+  --help        Show this help text
+  --version     Show installed version
+
+Documentation: https://apothem.ahmedgad.com
+Source: https://github.com/ahmed-g-gad/apothem
+EOF
+}
+
+print_version() {
+    local version
+    if [ ! -r "${PYPROJECT}" ]; then
+        printf 'apothem: pyproject.toml unreadable at %s\n' "${PYPROJECT}" >&2
+        exit 2
+    fi
+    version="$(awk -F'"' '/^version *= *"/ {print $2; exit}' "${PYPROJECT}")"
+    if [ -z "${version}" ]; then
+        printf 'apothem: version field absent from %s\n' "${PYPROJECT}" >&2
+        exit 2
+    fi
+    printf 'apothem %s\n' "${version}"
+}
+
+dispatch() {
+    local script="$1"
+    shift
+    local target="${REPO_ROOT}/${script}"
+    if [ ! -x "${target}" ] && [ ! -r "${target}" ]; then
+        target="${REPO_ROOT}/scripts/installer/${script}"
+    fi
+    if [ ! -x "${target}" ] && [ ! -r "${target}" ]; then
+        printf 'apothem: %s missing at %s\n' "${script}" "${target}" >&2
+        exit 2
+    fi
+    exec bash "${target}" "$@"
+}
+
+main() {
+    if [ "$#" -eq 0 ]; then
+        usage
+        exit 0
+    fi
+    local sub="$1"
+    shift
+    case "${sub}" in
+        install)            dispatch install.sh    "$@" ;;
+        update)             dispatch update.sh     "$@" ;;
+        uninstall)          dispatch uninstall.sh  "$@" ;;
+        -h|--help|help)     usage ;;
+        -V|--version)       print_version ;;
+        *)
+            printf 'apothem: unknown subcommand %q\n\n' "${sub}" >&2
+            usage >&2
+            exit 64
+            ;;
+    esac
+}
+
+main "$@"

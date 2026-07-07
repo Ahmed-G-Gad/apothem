@@ -1,0 +1,11 @@
+{
+  "title": "예제",
+  "pages": [
+    "index",
+    "custom-rule",
+    "minimal-hook",
+    "authoring-a-harness-adapter",
+    "plan-walkthrough",
+    "..."
+  ]
+}

@@ -1,0 +1,82 @@
+---
+title: "verify"
+description: "مرجع واجهة سطر الأوامر لأمر apothem verify."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+يتحقّق من تثبيت محوّل مساعد برمجي.
+
+## الموجز
+
+```
+apothem verify --harness NAME|all [--project PATH]
+                [--quiet|-q] [--verbose|-v]
+                [--format plain|json] [--json] [--no-color]
+```
+
+يستدعي تنفيذ <bdi>`verify()`</bdi> لكل محوّل مُحدَّد. لا يخرج بالرمز <bdi>0</bdi> إلّا حين تُبلِّغ جميع المحوّلات المُحدَّدة بأنّ أهدافها المُدارة موجودة وصالحة.
+
+## الخيارات
+
+| الخيار | الوصف |
+|---|---|
+| <bdi>`--harness NAME`</bdi> | محوّل المساعد البرمجي المراد التحقّق منه، أو <bdi>`all`</bdi> للمجموعة الكاملة من السجلّ (إلزامي). |
+| <bdi>`--project PATH`</bdi> | جذر المشروع للمساعدات البرمجية على نطاق المشروع. |
+| <bdi>`--quiet`</bdi>، <bdi>`-q`</bdi> | يكتم المخرجات المعلوماتية؛ ولا تصدر سوى الأخطاء. |
+| <bdi>`--verbose`</bdi>، <bdi>`-v`</bdi> | يصدر مخرجات تشخيصية إضافية. |
+| <bdi>`--format plain\|json`</bdi> | تنسيق المخرجات (الافتراضي: <bdi>`plain`</bdi>). |
+| <bdi>`--json`</bdi> | اختصار لـ<bdi>`--format json`</bdi>. |
+| <bdi>`--no-color`</bdi> | يعطّل رموز ألوان <bdi>ANSI</bdi> في المخرجات. |
+| <bdi>`-h`</bdi>، <bdi>`--help`</bdi> | يعرض المساعدة ويخرج. |
+
+## مخرجات JSON
+
+```json
+{
+  "status": "success",
+  "command": "verify",
+  "action": "verified",
+  "harness": "claude-code",
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "unchanged",
+      "operation": "verify",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "managed targets verified",
+      "installed": true,
+      "verified": true
+    }
+  ],
+  "warnings": [],
+  "error": null,
+  "installed": true,
+  "verified": true,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+عندما يكون أيُّ مساعد برمجي مُحدَّد مفقودًا أو غير صالح، تكون قيمة <bdi>`status`</bdi> هي <bdi>`error`</bdi>، ويحمل صفّ النتيجة الفاشل <bdi>`verified: false`</bdi>، وتخرج العملية بالرمز <bdi>1</bdi>.
+
+## أمثلة
+
+```bash
+apothem verify --harness claude-code
+apothem verify --harness claude-code --json
+apothem verify --harness all --project .
+```
+
+## رموز الخروج
+
+| الرمز | المعنى |
+|---|---|
+| 0 | المساعد البرمجي مثبَّت |
+| 1 | المساعد البرمجي غير مثبَّت |
+
+## انظر أيضًا
+
+- [apothem install](/docs/cli-reference/install) — تثبيت إعداد مساعد برمجي
+- [apothem update](/docs/cli-reference/update) — إعادة تطبيق الملف الشخصي الحالي على مساعد برمجي
+- [apothem doctor](/docs/install/concepts) — تشخيص التثبيت على مستوى النظام

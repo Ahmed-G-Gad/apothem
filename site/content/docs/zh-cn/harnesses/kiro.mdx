@@ -1,0 +1,83 @@
+---
+title: "Kiro"
+description: "适用于 Kiro（GA）的 Apothem 工具适配器。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**厂商：** AWS
+**安装名称：** `kiro`
+**状态：** GA
+**平台原生配置：** `<project>/.kiro/steering/apothem-rules.md`
+
+## 安装
+
+```bash
+apothem install --harness kiro --project /path/to/project
+```
+
+该适配器根据共享的 Apothem 规则与治理界面，写入一个项目级的 Kiro 引导文件。
+
+**写入的文件：** `<project>/.kiro/steering/apothem-rules.md`
+
+## 配置档案到平台原生配置的映射
+
+适配器读取 Apothem 的共享配置档案，并在每次 `apothem install` 或 `apothem update`
+运行时渲染项目引导文件。共享配置档案是事实来源；在下一次同步替换 Apothem
+托管的内容之前，对生成文件的项目本地编辑会被备份。
+
+## 兼容性说明
+
+Kiro 的引导界面在 `.kiro/steering/` 下，属于项目级。适配器写入一个带有
+`inclusion: always` 前置元数据的专用 `apothem-rules.md` 引导文件，并且绝不
+覆盖 Kiro 由操作者编写的基础文件（`product.md`、`tech.md`、`structure.md`）。
+Kiro 规格（`.kiro/specs/`）和智能体钩子由操作者拥有；Apothem 不写入它们。
+
+## 验证
+
+```bash
+apothem verify --harness kiro --project /path/to/project
+```
+
+verify 命令确认：
+
+1. 平台原生配置存在于预期路径。
+2. 共享配置档案中的所有必填字段都已存在。
+3. 适配器特定的验证例程报告成功。
+
+## 更新
+
+```bash
+apothem update --harness kiro --project /path/to/project
+```
+
+从当前的共享配置档案状态重新派生项目引导文件。
+
+## 卸载
+
+```bash
+apothem uninstall --harness kiro --project /path/to/project
+```
+
+移除适配器写入的平台原生配置文件。
+共享配置档案 YAML 和 Apothem 引擎不受影响。
+
+## 合规门
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## 故障排查
+
+| 症状 | 修复方法 |
+|---------|-----|
+| 找不到配置文件 | 重新运行 `apothem install --harness kiro --project /path/to/project` |
+| 验证失败 | 运行 `apothem update --harness kiro --project /path/to/project`，然后再次验证 |
+| 意外的配置内容 | 检查 `~/.config/apothem/profile.yaml` 或 `--profile PATH`，然后重新运行 `apothem update --harness kiro --project /path/to/project` |
+
+## 配置开关
+
+| 标志 | 默认值 | 说明 |
+|------|---------|-------------|
+| `--dry-run` | `false` | 预览安装而不写入文件。 |

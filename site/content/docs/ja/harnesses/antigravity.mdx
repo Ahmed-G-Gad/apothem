@@ -1,0 +1,99 @@
+---
+title: "Antigravity"
+description: "Antigravity（プレビュー）向けの Apothem ツールアダプター。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**ベンダー：** Antigravity
+**インストール名：** `antigravity`
+**ステータス：** プレビュー
+**ネイティブ構成：** `~/.gemini/GEMINI.md` および
+`~/.gemini/antigravity-cli/plugins/apothem/`
+
+## インストール
+
+```bash
+apothem install --harness antigravity
+```
+
+アダプターは共有プロファイルを `~/.gemini/GEMINI.md` にレンダリングし、
+Apothem のサポート套組を Antigravity CLI プラグインとしてインストールします。
+
+**書き込まれるファイル：** `~/.gemini/GEMINI.md`、
+`~/.gemini/antigravity-cli/plugins/apothem/plugin.json`、
+`~/.gemini/antigravity-cli/plugins/apothem/skills/`、
+`~/.gemini/antigravity-cli/plugins/apothem/rules/`、
+プラグイン内に変換されたローカルヘルパー定義、
+`~/.gemini/antigravity-cli/plugins/apothem/apothem/templates/`、および
+`~/.gemini/antigravity-cli/plugins/apothem/apothem/hooks/`。
+
+**共有ユーザーアンカー。** `~/.gemini/GEMINI.md` は Gemini ファミリーのツールの
+ユーザースコープのアンカーでもあります。Antigravity アダプターは、追加の Apothem
+素材を `~/.gemini/antigravity-cli/plugins/` 下の `apothem` プラグイン内に
+保持するため、汎用的な Gemini CLI のプロジェクトディレクトリを占有しません。
+
+## プロファイルからネイティブ構成へのマッピング
+
+アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または
+`apothem update` の各実行時に、指示アンカーとサポート套組をレンダリングします。
+
+## 互換性に関する注意
+
+プレビュー版アダプター。`GEMINI.md` アンカーはアクティブな指示コンテンツです。
+Antigravity プラグインは、変換されたコマンドスキル、再利用可能なスキル、ローカル
+ヘルパー定義、ルール、テンプレート、およびフックのサポート素材を、明確な
+Apothem 所有の名前空間に保持します。
+フックファイルは、アダプターが Antigravity の `hooks.json` 向けのスキーマ変換
+レイヤーを持つまで、アクティブな Antigravity フックイベントとして登録されません。
+
+## 検証
+
+```bash
+apothem verify --harness antigravity
+```
+
+verify コマンドは次のことを確認します。
+
+1. ネイティブコンテキストファイルが想定パスに存在すること。
+2. Apothem Antigravity CLI プラグインのメタデータが存在し、`apothem`
+   プラグイン名を宣言していること。
+
+## 更新
+
+```bash
+apothem update --harness antigravity
+```
+
+現在の共有プロファイルの状態からネイティブ構成を再導出します。
+`~/.config/apothem/profile.yaml` を編集した後、またはインストール済みの Apothem
+パッケージをアップグレードした後に実行してください。
+
+## アンインストール
+
+```bash
+apothem uninstall --harness antigravity
+```
+
+アダプターが書き込んだネイティブ構成ファイルを削除します。
+共有プロファイルの YAML と Apothem エンジンには影響しません。
+
+## 適合ゲート
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## トラブルシューティング
+
+| 症状 | 修正 |
+|---------|-----|
+| 構成ファイルが見つからない | `apothem install --harness antigravity` を再実行する |
+| 検証が失敗した | `apothem update --harness antigravity` を実行し、再度検証する |
+| 予期しない構成内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、`apothem update --harness antigravity` を再実行する |
+
+## 構成ノブ
+
+| フラグ | デフォルト | 説明 |
+|------|---------|-------------|
+| `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューする。 |

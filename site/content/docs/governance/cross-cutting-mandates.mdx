@@ -1,0 +1,108 @@
+---
+title: "Cross-Cutting Mandates Registry (CM-1–CM-28)"
+description: "Complete registry and definitions of ecosystem-internal cross-cutting mandates (CM-1–CM-28) governing all interactions and pipeline operations."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Canonical registry of the cross-cutting mandates.** This document carries the full body of the CM-N registry; the substantive enumerations live here, operationalized by the rule files under `src/apothem/rules/`. Every session that needs the detailed CM-N body loads this document on demand.
+
+## Registry self-reference exemption
+
+This document IS the canonical CM-N registry — it is the source where `CM-1` through `CM-28` tokens are *defined*. Restating these tokens *inside the registry's own body* is canonical, not a leak of plan-internal terminology. The codebase-isolation invariant continues to apply with full force to every *other* artifact (rules, helpers, commands, hooks, schemas, scripts, tools, tests, docs, README, changelogs, commit subjects/bodies, branch names, PR titles/descriptions): no `CM-N` / `TM-N` / `CP-N` tokens, natural domain language only.
+
+## Namespaces
+
+`CM-N` = config mandate (defined here, or in `src/apothem/rules/*.md` per the artifact-registries rules row); `TM-N` = template mandate (defined in `src/apothem/skills/plan-suite/master-template.md` §4 "General Mandates", TM-1–28); `CP-N` = core principle (defined in the same template §6 "Core Principles", CP-1–27). The plan-suite template is the canonical TM/CP registry — `/plan` commands resolve cross-references through that file. Helper artifacts (rules, helpers, commands, hooks) cite this registry by reference.
+
+## Activation
+
+CM-1–10 + cognitive identity govern all interactions. CM-11, CM-13, CM-15, CM-16, CM-20 apply within the `/plan` pipeline only. CM-12, CM-14, CM-17–19, CM-21–22, CM-24–26 apply universally (always-on). CM-23, CM-27, CM-28 apply universally within their declared path-filter scope. Ad-hoc default seriousness: PERSONAL_USE.
+
+## CM-1–10 (Operational)
+
+(1) Critical Evaluation (→TM-10), (2) Zero Assumptions (→TM-1), (3) Configuration-Driven (→TM-2), (4) Search Before Implement (→TM-4), (5) Best Solution (→TM-7), (6) Self-Improvement (→CP-20), (7) Coherent Product (→TM-11), (8) Bottleneck-First Focus, (9) Decision Velocity, (10) Brutal Honesty. Full definitions with violation indicators: `src/apothem/rules/operational-mandates.md`.
+
+## CM-7 (Plan-Internal Isolation)
+
+> This is the codebase-facing facet of CM-7; the product-completeness facet is documented as **Coherent Product (→TM-11)** in `src/apothem/rules/operational-mandates.md §CM-7`. Both labels refer to the same mandate.
+
+Codebase artifacts must NEVER contain plan-internal references. **Forbidden terms (canonical block — sibling consumers cross-reference this enumeration):** TM-N, CM-N, CP-N, "Resumption Contract", "Phase Output Registry", "convention anchors", phase folder names, plan-suite file names (PROGRESS.md, PLAN-NOTES.md, PREAMBLE, MASTER-PLAN), seriousness level names (EXPLORING, PERSONAL_USE, SHARED, PUBLIC_LAUNCH). **Protected artifacts:** source code, tests, configs, schemas, build scripts, data, assets, commit messages, branch names, PR titles/descriptions, README, CONTRIBUTING, API docs, changelogs — any artifact visible outside the Apothem source tree (the per-harness install destinations such as `~/.claude/` for Claude Code). Natural domain language only. **Sibling consumers** (each cites this block by reference rather than re-enumerating): `src/apothem/hooks/messages/pretooluse-bash.md`, `src/apothem/hooks/messages/pretooluse-write.md`, `src/apothem/hooks/messages/pretooluse-edit.md`, `src/apothem/hooks/messages/pretooluse-notebookedit.md`, `src/apothem/rules/operational-mandates.md` §CM-7 violation indicators.
+
+## CM-11 (Plan Integrity)
+
+**A — Prose Fidelity:** Every requirement traceable prose↔plan. Scorecard: PASS ≥90% STRONG/0 ABSENT.
+**B — Internal Consistency:** Cross-document coherence within the plan suite. Scorecard: PASS 100%.
+**C — Gates:** FAIL blocks execution at SHARED+ (Product Owner override permitted at SHARED with logged rationale; hard block at PUBLIC_LAUNCH). Advisory at PERSONAL_USE.
+
+## CM-12 (Context Stewardship)
+
+Lean context management at all times — see CM-24 rule. Four sub-tiers are enumerated in the Sub-Reference Convention section below. Compaction discipline (CM-19) governs the action; CM-12 governs the steady-state discipline.
+
+## CM-13 (Commits)
+
+- **A — Per-task cadence:** Per-task at SHARED+. Per-phase at PERSONAL_USE. Optional at EXPLORING.
+- **B — Quality/remediation commits:** Quality gate fixes and remediation changes committed immediately, separate from feature work.
+- **C — End-of-phase gate:** No uncommitted changes cross phase boundaries. CM-7 isolation applies to all git artifacts. At PUBLIC_LAUNCH: GPG-signed commits (`git commit -S`) required.
+- **D — Human-only authorship:** Every authorship surface in every git artifact (commit subject, commit body, `Author:`, `Co-Authored-By:` trailer, `Signed-off-by:` trailer, branch name, tag name, tag annotation, stash name, git-notes body, PR title, PR description) names **human contributors only**. The assistant never attributes itself, the underlying language model, the runtime / harness / IDE / extension / vendor, or any other automated tool to any of those surfaces. Forbidden patterns are enumerated and mechanically enforced at `src/apothem/rules/production-ready-prs.md` §6 (Commit-Message Discipline → Human-only authorship), with the matcher at `src/apothem/hooks/messages/pretooluse-bash.md` Scan 3 firing on every git-write Bash invocation.
+- **E — Numeric-prefix discipline on git-mv / git-rm targets:** Numeric prefixes (`NN-`) on filesystem paths convey ordering and apply only where ordering is intrinsic — phase-folder sequences, sub-phase sequences, host-discovered ordinal-naming schemes. Root-level singletons that have no sibling sequence carry no numeric prefix; adding one is meaningless decoration that mis-signals an ordering relationship that does not exist. Full specification at `src/apothem/rules/canonical-layout.md` §2.1. Mechanically enforced at `src/apothem/hooks/messages/pretooluse-bash.md` Scan 2 on `git mv` / `git rm` and on commit-body path references.
+
+## CM-14 (Session Protocols)
+
+**Start:** Execute Blind Bootstrap (CM-24 §6). **End:** Execute Phase Exit (CM-24 §2.5) + memory evaluation (CM-26) + artifact evolution (CM-22 §2+§4).
+
+## CM-15–21 (Pipeline)
+
+CM-15 and CM-16 are inline-defined here (no separate rule); CM-17–21 delegate to rules per the artifact-registries rules table.
+
+- **CM-15 Collective Coherence:** Verify plan artifacts remain coherent after modification.
+- **CM-16 Autonomous Execution:** At SHARED+, never stop between phases. Compaction mandatory at phase transitions (PERSONAL_USE+).
+- **CM-17 Worker Teams:** Deploy delegated-worker teams for parallelizable work — see CM-25 rule.
+- **CM-18 Error Recovery:** Six general classes (CM-24 §8); plan-execution classes in TM-18. Escalate after 3 failures.
+- **CM-19 Compaction Discipline:** Proactive compaction triggers — see CM-24 §3.
+- **CM-20 Pipeline Orchestration:** prose→[approval]→generate→[approval]→review→[approval]→execute(01→NN). Review techniques: `src/apothem/rules/planning-techniques.md`.
+- **CM-21 Creative Quality:** Cognitive filters are quality gates, not decoration. Scaling per cognitive identity rule, §2.
+
+## CM-22–28 (Rule-Delegated)
+
+One-line anchors for the rule-delegated mandates (full specifications live in the cited files):
+
+- **CM-22 Conventions Vigilance** — ecosystem conventions and proactive artifact evolution. See `src/apothem/rules/persistent-conventions-vigilance.md`.
+- **CM-23 Large File Generation** — incremental-append protocol for files above the single-write threshold. See `src/apothem/rules/large-file-generation.md`.
+- **CM-24 Context Stewardship Protocol** — externalization, compaction, blind bootstrap, and budget discipline. See `src/apothem/rules/context-management.md`.
+- **CM-25 Worker Orchestration** — deployment patterns, return contracts, context isolation. Full specification at the worker-orchestration rule (cross-link omitted; target filename contains forbidden vocabulary).
+- **CM-26 Auto Memory Lifecycle** — memory discipline, topic-file organization, session-end evaluation. See `src/apothem/rules/auto-memory.md`.
+- **CM-27 Clean Architecture Layers** — Domain / Application / Infrastructure / Presentation separation. See `src/apothem/rules/clean-architecture-layers.md`.
+- **CM-28 Python Senior Architect** — SOLID, style, testing, and security guardrails for Python artifacts. See `src/apothem/rules/code-craft-python.md`.
+
+## Rule-Delegated vs. Inline-Defined Mandates
+
+- **Rule-delegated** (full specification in `src/apothem/rules/`): see the artifact-registries rules table "Implements" column. Covers CM-1–10, CM-12, CM-14, CM-17–28.
+- **Inline-defined** (full specification here, no separate rule): CM-11 (Plan Integrity), CM-13 (Commits), CM-15 (Collective Coherence), CM-16 (Autonomous Execution).
+
+## Sub-Reference Convention
+
+Commands use lettered suffixes to reference specific subsections within mandates. Pattern: `CM-N` + suffix letter = rule section. **Casing convention:** Uppercase suffixes denote structural subsections within a mandate; lowercase suffixes denote finer-grained directives within a Stewardship tier. The canonical sub-reference key-mapping table (registry-internal definitions) is preserved verbatim in the fenced block below:
+
+```text
+CM-11A = Prose Fidelity
+CM-11B = Internal Consistency
+CM-11C = Gates
+
+CM-12a = lean ingestion / demand loading (context-management §7.2)
+CM-12b = budget awareness (§7.1)
+CM-12c = budget pressure response (§7.3)
+CM-12d = per-task effort calibration (context-management §7.4 — D3 stratified taxonomy; PHASE.md frontmatter is the per-phase override surface)
+
+CM-13A = per-task commits
+CM-13B = quality / remediation commits
+CM-13C = end-of-phase commit gate
+
+CM-23A = pre-generation size assessment (§1)
+CM-23B = incremental generation protocol (§2)
+
+CM-24B = proactive externalization (§2)
+
+CM-25A = worker-team patterns (§1)
+CM-25C = return-contract enforcement (§4)
+CM-25E = isolation / non-duplication (§5)
+```

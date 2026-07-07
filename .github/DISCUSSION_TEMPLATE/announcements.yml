@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: MIT
+
+title: Announcement
+labels:
+  - announcement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for official Apothem project announcements.
+  - type: textarea
+    id: announcement
+    attributes:
+      label: Announcement
+      description: Share the announcement details.
+    validations:
+      required: true

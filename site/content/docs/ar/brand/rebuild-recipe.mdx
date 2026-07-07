@@ -1,0 +1,67 @@
+---
+title: "وصفة إعادة بناء الأصول"
+description: "إعادة توليد جميع أصول العلامة النقطية من مصادر SVG الرئيسية باستخدام resvg وPillow."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+تُعيد وصفة إعادة بناء الأصول توليد كل أصل نقطي من ملفات <bdi>SVG</bdi> الرئيسية.
+وهي مسار التحديث المرجعي لتكرارات العلامة.
+
+## متى تُشغَّل
+
+شغِّل وصفة إعادة البناء عندما:
+
+- يتغيّر ملف <bdi>SVG</bdi> الرئيسي (<bdi>`assets/src/logo.svg`</bdi> أو <bdi>`assets/src/logo-dark.svg`</bdi>).
+- يتغيّر ملف <bdi>favicon</bdi> المضغوط الرئيسي (<bdi>`assets/favicon.svg`</bdi>).
+- يتغيّر ملف بطاقة اجتماعية رئيسي (<bdi>`assets/src/og-banner.svg`</bdi> أو <bdi>`assets/src/twitter-card.svg`</bdi>).
+- يلزم حجم نقطي جديد.
+- تريد التحقُّق من أن الأصول المُلتزَم بها لا تزال مطابقة لمصدر <bdi>SVG</bdi>.
+
+## السكربت
+
+| السكربت | المنصّة | المسار |
+| --- | --- | --- |
+| <bdi>`rebuild-assets-resvg.py`</bdi> | أي مضيف به Python + resvg | <bdi>`scripts/dev/rebuild-assets-resvg.py`</bdi> |
+
+## المتطلبات
+
+يُنقِّط المولِّد كل ملف <bdi>SVG</bdi> باستخدام [resvg](https://github.com/linebender/resvg)
+ويؤلِّف المجموعات النقطية باستخدام [Pillow](https://python-pillow.org/):
+
+- **Pillow:** `pip install pillow`.
+- **resvg:** نزِّل ثنائي الإصدار الخاص بمنصّتك من
+  [إصدارات resvg](https://github.com/linebender/resvg/releases) —
+  <bdi>`resvg-win64.zip`</bdi> على Windows، أو <bdi>`resvg-linux-x86_64.tar.gz`</bdi> على Linux، أو
+  <bdi>`resvg-macos.zip`</bdi> على macOS — واستخرجه إلى <bdi>`PATH`</bdi>، أو وجِّه السكربت
+  إليه عبر <bdi>`--resvg <path>`</bdi>.
+
+## الاستخدام
+
+أعِد توليد كل أصل نقطي:
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py
+```
+
+مرِّر <bdi>`--check-only`</bdi> للتحقُّق من توفُّر سلسلة الأدوات دون إعادة توليد
+أي أصول:
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py --check-only
+```
+
+إن لم يكن resvg موجودًا على <bdi>`PATH`</bdi>، فوجِّه السكربت إلى الثنائي:
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py --resvg /path/to/resvg
+```
+
+## التحقُّق
+
+يُعيد التشغيل الناجح توليد العلامات النقطية الفاتحة والداكنة، ومجموعة
+<bdi>favicon</bdi> بصيغتي <bdi>PNG/ICO</bdi>، وأيقونات <bdi>Apple touch</bdi>،
+وصور <bdi>OG/Twitter</bdi>، ويعكس المجموعة الفرعية المُقدَّمة على الويب — بما في
+ذلك مصادر شعار البطل (hero) التي يُحيل إليها الموقع — إلى <bdi>`site/public/`</bdi>.
+بعد التوليد، شغِّل بناء الموقع وافحص الصفحة الرئيسية، و<bdi>favicon</bdi> تبويب
+المتصفّح، وملفات <bdi>PNG</bdi> للبطاقات الاجتماعية قبل النشر.

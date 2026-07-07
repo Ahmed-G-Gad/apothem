@@ -1,0 +1,92 @@
+---
+title: "Sécurité"
+description: "Posture de sécurité d'Apothem : objectif OpenSSF Scorecard, signalement de vulnérabilités, surfaces de durcissement."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+La posture de sécurité d'Apothem repose sur cinq piliers : durcissement de la chaîne d'approvisionnement, réponse aux vulnérabilités, protection des branches, signature des versions et analyse de sécurité continue. Cette section documente chaque surface.
+
+## Modèle de menace
+
+Apothem est un matérialisateur de configuration. Il lit un profil partagé et
+écrit des fichiers de configuration natifs de l'environnement dans les
+répertoires que lit chaque environnement d'assistant. Cette
+unique fonction délimite ce à quoi il fait confiance et ce à quoi il ne fait
+pas confiance.
+
+- **Ce à quoi Apothem fait confiance.** Le profil partagé que vous rédigez et
+  l'arborescence de code fournie placée par l'installateur. Le profil est votre
+  intention déclarée ; le moteur le traite comme une entrée faisant autorité
+  après validation par rapport au schéma.
+- **Ce à quoi Apothem ne fait pas confiance.** Le contenu du profil n'atteint
+  le système de fichiers qu'après validation : les échecs de schéma, les
+  identifiants d'environnement inconnus, les chemins de projet non sécurisés,
+  les sources de manifeste manquantes, le parcours de cible et les traversées
+  de lien symbolique s'arrêtent tous avant toute écriture et renvoient des
+  diagnostics structurés avec `files_written: []`.
+- **Ce que la sortie matérialisée ne transporte jamais.** Aucun secret. Les
+  diagnostics du profil expurgent les clés ressemblant à des secrets et les
+  valeurs en forme de jeton avant qu'elles n'atteignent la sortie en texte
+  brut, le JSON, les journaux, les extraits de documentation ou les tests, et
+  les exemples publics utilisent des identités et des domaines fictifs servant
+  d'espaces réservés. La configuration matérialisée est destinée à être
+  validée et partagée ; elle ne transporte aucun identifiant.
+- **Le socle de refus universel.** Les règles qu'Apothem matérialise portent
+  un socle de refus non négociable quelle que soit toute liste d'autorisation
+  propre à un environnement : chemins de secrets (`.env*`, `~/.ssh/**`, magasins
+  d'identifiants), opérations shell destructrices (`rm -rf`, `sudo`, poussées
+  forcées vers des branches protégées) et exécution d'entrées non fiables.
+  Aucune liste d'autorisation n'élargit silencieusement ce socle.
+- **Rayon d'impact.** Les écritures sont limitées aux répertoires de
+  l'environnement et aux sous-arborescences de support détenues par Apothem.
+  Les cibles gérées existantes sont sauvegardées avant remplacement et les
+  répertoires de découverte partagés sont fusionnés enfant par enfant, de sorte
+  que les fichiers sans rapport rédigés par l'opérateur restent en place.
+
+## Posture de sécurité à l'exécution
+
+Les commandes de cycle de vie de l'environnement et d'écriture de profil
+valident avant d'écrire. Les échecs de schéma de profil, les identifiants
+d'environnement inconnus, les chemins de projet non sécurisés, les sources de
+manifeste manquantes, le parcours de cible et les traversées de lien symbolique
+s'arrêtent avant les écritures sur le système de fichiers et renvoient des
+diagnostics structurés avec `files_written: []`.
+
+Les opérations d'installation et de mise à jour préservent les cibles gérées
+existantes en les sauvegardant avant remplacement. Les répertoires de
+découverte partagés sont fusionnés enfant par enfant, de sorte que les fichiers
+sans rapport rédigés par l'opérateur restent en place. `--dry-run` effectue la
+même validation et signale les résultats prévus sans créer de répertoires ni de
+fichiers.
+
+Les diagnostics du profil expurgent les clés ressemblant à des secrets et les
+valeurs en forme de jeton avant qu'elles n'atteignent la sortie en texte brut,
+la sortie JSON, les journaux, les extraits de documentation ou les tests. Les
+exemples publics utilisent des identités et des domaines fictifs servant
+d'espaces réservés.
+
+## Liens rapides
+
+- [**Posture OpenSSF Scorecard**](/docs/security/openssf-scorecard-target) — preuve par contrôle et limites connues de la plateforme
+- [**Audit des webhooks**](/docs/security/webhooks-audit) — preuve d'hygiène du secret de webhook
+- [**Protection des branches**](/docs/security/branch-protection-ruleset) — contrôle de revue, vérifications de statut et restrictions de poussée
+- [**Balayage des artefacts binaires**](/docs/security/binary-artifacts-sweep) — preuve de version sans binaire dans le code source
+- [Politique de sécurité](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) — signalement de vulnérabilités et versions prises en charge
+- [Badge OpenSSF Scorecard](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem) — score en direct
+
+## Signaler une vulnérabilité
+
+Utilisez le [Signalement Privé de Vulnérabilités](https://github.com/ahmed-g-gad/apothem/security) dans l'onglet Security du dépôt. La politique complète, la matrice des versions prises en charge et les délais de réponse se trouvent dans [`SECURITY.md`](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
+
+## Preuves de version de la chaîne d'approvisionnement
+
+Chaque artefact de version est livré avec :
+
+- **Provenance de build SLSA-3** via [`slsa-framework/slsa-github-generator`](https://github.com/slsa-framework/slsa-github-generator)
+- **Signatures Sigstore** via [`sigstore/cosign-installer`](https://github.com/sigstore/cosign-installer)
+- **SBOM CycloneDX** via [`anchore/sbom-action`](https://github.com/anchore/sbom-action)
+- **Déclarations de provenance npm** via OIDC de Trusted Publishing sur `@ahmed-g-gad/apothem`
+- **Étiquettes git signées avec GPG** (clé EDDSA `70396FED9C634163`)
+
+Les recettes de vérification sont documentées en ligne dans [Cycle de version](/docs/runbooks/release-cycle) et [Récupération de version](/docs/runbooks/release-recovery) ; un runbook dédié de vérification d'une version est à venir.

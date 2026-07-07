@@ -1,0 +1,67 @@
+---
+title: "/threat-model-audit"
+description: "/threat-model-audit——针对 STRIDE + PASTA 方法论的威胁建模审计。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**角色：** 威胁建模者
+**流水线位置：** 堡垒
+
+针对 STRIDE + PASTA 方法论的威胁建模审计。
+
+## 规范调用
+
+```bash
+/threat-model-audit
+```
+
+带参数：
+
+```bash
+/threat-model-audit [path/to/target/] [--dry-run]
+```
+
+## 输入
+
+宿主仓库架构与数据流。
+
+## 输出
+
+一份去重、按严重程度分级的威胁建模发现报告（仅报告；修复交由 `/fortress` / `/elevate`）。
+
+## 下游
+
+审计审查序列的威胁建模维度——由 `/audit` 并行巡览，并由 `/fortress` 修复。
+
+## 工作流阶段
+
+该命令在宿主仓库上运行一次威胁建模审计：
+
+1. **测绘攻击面** — 枚举架构、入口点、信任边界和数据流。
+2. **建模威胁** — 对每个边界和资产应用 STRIDE + PASTA 方法论。
+3. **分级发现** — 按严重程度对每项威胁排序，并附具体驱动因素的理由。
+4. **发出报告** — 综合出去重、按严重程度分级的发现（仅报告）。
+
+## 失败模式
+
+| 症状 | 原因 | 恢复 |
+|---------|-------|----------|
+| 没有架构面 | 目标没有可发现的数据流边界 | 将审计指向一个具备可测绘入口点和信任边界的仓库 |
+| 未定位的发现 | 威胁未附定位即被断言 | 附上受影响的资产／边界以及它未通过的方法论格 |
+| 期望修复 | 审计仅报告 | 将发现交由 `/fortress`（修复）或 `/elevate` |
+
+## 示例
+
+```bash
+# 试运行以预览审计范围
+/threat-model-audit --dry-run
+
+# 审计一个目标仓库
+/threat-model-audit path/to/target/
+```
+
+## 交叉引用
+
+- [流水线概览](/docs/pipeline)
+- [命令参考](/docs/reference/commands)

@@ -1,0 +1,117 @@
+---
+title: "Configuração da conta do publicador"
+description: "Configure o publicador confiável do npmjs.com para @ahmed-g-gad/apothem e os pré-requisitos de versão do lado do GitHub."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Este runbook configura o lado do publicador da superfície de versões. A história
+de distribuição tem um único registro: o pacote npm com escopo
+`@ahmed-g-gad/apothem` no npmjs.com, publicado pelo fluxo de trabalho
+`publish-npm.yml` despachado manualmente depois que os fluxos de trabalho de
+GitHub Release, Pages, CI, conformity e harness estiverem verdes. Todos os demais
+artefatos são distribuídos na própria página do GitHub Release e não precisam de
+nenhuma conta de publicador externa.
+
+## Mapa de identidade
+
+| Superfície | Conta | Identidade do pacote |
+|---|---|---|
+| GitHub | `ahmed-g-gad` | `ahmed-g-gad/apothem` |
+| npm (npmjs.com) | `ahmed-g-gad` | `@ahmed-g-gad/apothem` |
+
+O proprietário do GitHub pode mudar no futuro. A lógica do fluxo de trabalho e do
+instalador lê `github.repository`, `github.repository_owner` ou
+`APOTHEM_GITHUB_REPOSITORY` onde uma plataforma permite a resolução dinâmica. O
+identificador do pacote do registro permanece estável porque os usuários instalam
+o nome do pacote, não o nome da conta do mantenedor.
+
+## npm (npmjs.com)
+
+1. Faça login em `https://www.npmjs.com/` como `ahmed-g-gad`.
+2. Habilite a autenticação de dois fatores na conta.
+3. Confirme o nome do pacote com escopo:
+
+   ```bash
+   npm view @ahmed-g-gad/apothem name
+   ```
+
+   Um `404` significa que o pacote com escopo ainda não foi publicado. Qualquer
+   outra resposta do pacote deve corresponder a este repositório e a esta conta
+   antes da publicação.
+4. Crie o pacote no npm se a interface exigir um primeiro registro de pacote.
+   Mantenha o nome com escopo: `@ahmed-g-gad/apothem`.
+5. Configure a Publicação Confiável (Trusted Publishing) para
+   `@ahmed-g-gad/apothem` a partir do GitHub Actions:
+   - Proprietário do GitHub: `ahmed-g-gad`
+   - Repositório: `apothem`
+   - Nome do arquivo do fluxo de trabalho: `publish-npm.yml`
+   - Ambiente: `npmjs`
+   - Ação permitida: `npm publish`.
+6. No GitHub, verifique se o ambiente `npmjs` existe em `ahmed-g-gad/apothem` e
+   se exige aprovação manual para a implantação.
+7. Mantenha a superfície do npm em um único pacote de registro público:
+   `@ahmed-g-gad/apothem` no npmjs.com.
+8. Confirme a prontidão para a versão:
+
+   ```bash title="Release readiness"
+   bash scripts/release/check-release-ready.sh <release-tag>
+   ```
+
+9. Execute `Publish — npm` (`publish-npm.yml`) na aba GitHub Actions com
+   `tag=<release-tag>` e aprove a implantação do ambiente `npmjs`.
+10. Verifique o pacote no ar:
+
+    ```bash title="npm verification"
+    npm view @ahmed-g-gad/apothem version
+    npx @ahmed-g-gad/apothem@<version> --version
+    ```
+
+Nenhum segredo `NPM_TOKEN`, nome de usuário ou senha é necessário. O fluxo de
+trabalho publica por meio da npm Trusted Publishing (OIDC) com a versão do Node e
+o piso de OIDC da CLI do npm fixados dentro de
+`.github/workflows/publish-npm.yml`. Ele executa `npm publish --access public`
+contra o npmjs.com; o npm emite automaticamente a procedência (provenance) para
+pacotes públicos publicados a partir de um fluxo de trabalho público do GitHub
+Actions. Um `404` do registro durante o `PUT` significa que o publicador
+confiável do lado do npm, o escopo do pacote ou a autorização da conta ainda não
+estão alinhados; corrija as configurações do pacote npm antes de tentar o fluxo
+de trabalho novamente.
+
+Referências: [Publicadores confiáveis do npm](https://docs.npmjs.com/trusted-publishers/), [procedência do npm](https://docs.npmjs.com/generating-provenance-statements/) e [escopos do npm](https://docs.npmjs.com/about-scopes/).
+
+## Pré-requisitos de versão do lado do GitHub
+
+As superfícies de versão restantes são nativas do GitHub e se autenticam com o
+`GITHUB_TOKEN` com escopo de repositório; nenhuma conta externa está envolvida.
+
+1. **GitHub Release.** `.github/workflows/release.yml` é executado na tag de
+   versão e precisa apenas de sua permissão local de tarefa `contents: write`.
+   Confirme que o arquivo do fluxo de trabalho está presente em `main` antes de
+   criar a tag.
+2. **Domínio personalizado do Pages.** O site de documentação é implantado por
+   meio do `publish-static-site.yml` no domínio personalizado
+   `apothem.ahmedgad.com`. O domínio, o DNS e a imposição de HTTPS são
+   estabelecidos pelo [runbook de habilitação do Pages](/docs/runbooks/pages-enablement);
+   verifique:
+
+   ```bash title="Pages verification"
+   gh api repos/ahmed-g-gad/apothem/pages --jq '.cname, .https_enforced'
+   curl -sSI https://apothem.ahmedgad.com/ | head -n 1
+   ```
+
+3. **Instaladores de script.** `install.sh` e `install.ps1` são servidos a partir
+   do site do Pages (`https://apothem.ahmedgad.com/install.sh` e
+   `https://apothem.ahmedgad.com/install.ps1`). Eles são publicados pela mesma
+   implantação do Pages; nenhuma conta ou token separado é necessário.
+
+## Matriz de verificação
+
+Após a configuração, cada superfície de publicador responde à sua verificação
+canônica:
+
+| Superfície | Verificação |
+|---|---|
+| npmjs.com | `npm view @ahmed-g-gad/apothem version` retorna a versão publicada |
+| GitHub Release | `gh release view <release-tag> --json assets --jq '.assets[].name'` lista sdist, wheel, SBOM, pacotes cosign, procedência e arquivos de plataforma |
+| Pages | `curl -sSI https://apothem.ahmedgad.com/` retorna `200` no domínio personalizado |

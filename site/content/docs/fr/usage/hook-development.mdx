@@ -1,0 +1,55 @@
+---
+title: "Développement de hooks"
+description: "Créez et enregistrez des hooks dans le pipeline de hooks d'Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Les hooks sont des commandes shell qui se déclenchent sur les événements du
+harness. Ils appliquent la conformité, injectent du contexte et exécutent des
+portes de qualité sans intervention de l'opérateur.
+
+## Événements de hook
+
+| Événement | Quand il se déclenche |
+|-------|--------------|
+| `PreToolUse` | Avant chaque appel d'outil |
+| `PostToolUse` | Après chaque appel d'outil |
+| `SessionStart` | À l'amorçage de la session |
+| `PreCompact` | Avant la compaction du contexte |
+| `PostCompact` | Après la compaction du contexte |
+| `Stop` | À la fin de la session |
+
+## Fichiers de message de hook
+
+Chaque hook possède un fichier de message correspondant dans
+`src/apothem/hooks/messages/<event>-<name>.md` qui fournit du contexte à
+l'assistant au moment où le hook se déclenche.
+
+## Enregistrer un hook
+
+Ajoutez la commande du hook à `settings.json` :
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python src/apothem/hooks/my-check.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## Le répartiteur de hooks
+
+Tous les hooks transitent par `src/apothem/hooks/dispatch.py`, qui convertit
+toute erreur de hook en une enveloppe fail-open afin que les hooks ne bloquent
+jamais le harness.

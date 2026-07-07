@@ -1,0 +1,87 @@
+{
+  "argv": [
+    "doctor",
+    "--json"
+  ],
+  "exit_code": 1,
+  "json": {
+    "all_ok": false,
+    "harnesses": [
+      {
+        "installed": false,
+        "name": "antigravity"
+      },
+      {
+        "installed": false,
+        "name": "claude-code"
+      },
+      {
+        "installed": false,
+        "name": "codex"
+      },
+      {
+        "installed": false,
+        "name": "cursor"
+      },
+      {
+        "installed": false,
+        "name": "gemini-cli"
+      },
+      {
+        "installed": false,
+        "name": "github-copilot"
+      },
+      {
+        "installed": false,
+        "name": "hermes"
+      },
+      {
+        "installed": false,
+        "name": "kimi-code"
+      },
+      {
+        "installed": false,
+        "name": "open-claw"
+      },
+      {
+        "installed": false,
+        "name": "opencode"
+      },
+      {
+        "installed": false,
+        "name": "qwen-code"
+      },
+      {
+        "installed": false,
+        "name": "windsurf"
+      },
+      {
+        "installed": false,
+        "name": "codebuddy"
+      },
+      {
+        "installed": false,
+        "name": "kiro"
+      },
+      {
+        "installed": false,
+        "name": "trae"
+      },
+      {
+        "installed": false,
+        "name": "zed"
+      },
+      {
+        "installed": false,
+        "name": "glm"
+      }
+    ],
+    "platform": "<PLATFORM>",
+    "profile_exists": false,
+    "profile_path": "<HOME>/.config/apothem/profile.yaml",
+    "profile_valid": null,
+    "python": "<PYVER>",
+    "version": "<VERSION>"
+  },
+  "stdout": "{\"version\": \"<VERSION>\", \"python\": \"<PYVER>\", \"platform\": \"<PLATFORM>\", \"profile_path\": \"<HOME>/.config/apothem/profile.yaml\", \"profile_exists\": false, \"profile_valid\": null, \"harnesses\": [{\"name\": \"antigravity\", \"installed\": false}, {\"name\": \"claude-code\", \"installed\": false}, {\"name\": \"codex\", \"installed\": false}, {\"name\": \"cursor\", \"installed\": false}, {\"name\": \"gemini-cli\", \"installed\": false}, {\"name\": \"github-copilot\", \"installed\": false}, {\"name\": \"hermes\", \"installed\": false}, {\"name\": \"kimi-code\", \"installed\": false}, {\"name\": \"open-claw\", \"installed\": false}, {\"name\": \"opencode\", \"installed\": false}, {\"name\": \"qwen-code\", \"installed\": false}, {\"name\": \"windsurf\", \"installed\": false}, {\"name\": \"codebuddy\", \"installed\": false}, {\"name\": \"kiro\", \"installed\": false}, {\"name\": \"trae\", \"installed\": false}, {\"name\": \"zed\", \"installed\": false}, {\"name\": \"glm\", \"installed\": false}], \"all_ok\": false}\n"
+}

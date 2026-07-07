@@ -1,0 +1,73 @@
+---
+title: "/research-sources"
+description: "/research-sources——系统性来源收集：将规格拆解为子查询，并行扇出发现，筛选并排序，再逐来源提取为一份排序的来源台账。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**角色：** 首席研究者（来源收集）
+**流水线位置：** 链路中段
+
+系统性来源收集——将研究规格拆解为子查询，并行扇出来源发现和逐来源提取，去重，按权威性／时效性／相关性排序，对照规格的纳入标准进行筛选，并为每个留存的来源记录出处。
+
+## 规范调用
+
+```bash
+/research-sources
+```
+
+带参数：
+
+```bash
+/research-sources [path/to/research-suite/] [--depth N]
+```
+
+## 输入
+
+`_inputs/theory.md`（来自前序阶段 `/research-theory` 的概念／理论框架）外加 `_spec/research-spec.md`（来自 `/research-spec` 的已批准研究规格）。
+
+## 输出
+
+`sources/<id>.md`（每个留存来源一份带出处的提取）＋ `_inputs/source-ledger.md`（带引用索引的、已排序、已筛选、已去重的来源索引）。
+
+## 下游
+
+/research-synthesis（下游消费者）
+
+## 工作流阶段
+
+该命令遵循标准的 `/research` 流水线工作流：
+
+1. **加载上下文**——读取研究规格及其纳入／排除标准。
+2. **验证序列门**——确认 `_inputs/theory.md`（以及已批准的 `_spec/research-spec.md`）存在；否则以 `Blocked: run /research-theory first` 停止。
+3. **发现与提取**——拆解为子查询，扇出发现，去重，排序，筛选，并逐来源带出处提取。
+4. **验证输出**——确认每个留存来源都已被引用并对照规格标准筛选。
+5. **更新交接清单**——记录来源台账和逐来源提取路径。
+6. **发出台账**——`sources/` 提取外加 `_inputs/source-ledger.md`。
+
+## 严谨性强制底线
+
+除来源台账之外，本阶段还会构建一份对照者出处台账：本研究将与之运行对照的最近的现有最新水平基线，每一个都经过验证可解析到一个可检索的来源，并连同其出处与可达性一并记录。无法确认或无法抓取的对照者会被如此标记，绝不凭空编造（R1、R4）。
+
+## 失败模式
+
+| 症状 | 原因 | 恢复 |
+|---------|-------|----------|
+| Blocked: run /research-theory first | 没有理论基础 | 运行 `/research-theory` 以产出 `_inputs/theory.md` |
+| 来源未通过纳入标准 | 离题或低权威性来源 | 筛除；在台账中记录排除理由 |
+| 捏造的引用 | 凭空猜测、未实际抓取的来源 | 切勿凭空编造来源；猜测的引用属于一处发现 |
+
+## 示例
+
+```bash
+# 为一个已框定的研究套件收集来源
+/research-sources path/to/research-suite/
+
+# 更深的发现扇出
+/research-sources path/to/research-suite/ --depth N
+```
+
+## 交叉引用
+
+- [流水线概览](/docs/pipeline)
+- [命令参考](/docs/reference/commands)

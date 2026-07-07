@@ -1,0 +1,40 @@
+---
+title: "Apothem dibandingkan konfigurasi Gemini CLI manual"
+description: "Memelihara secara manual berkas aturan GEMINI.md milik Gemini CLI dibandingkan merendernya dari profil bersama Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Gemini CLI membaca satu berkas aturan `GEMINI.md`. Adaptor gemini-cli milik
+Apothem merendernya dari profil bersama. Halaman ini mengontraskan pemeliharaan
+konfigurasi itu secara manual dengan mengelolanya menggunakan Apothem.
+
+## Perbandingan upaya
+
+| Tugas | Konfigurasi manual | Dikelola Apothem |
+| ---- | --------------- | --------------- |
+| Menulis aturan | Menyunting satu `GEMINI.md` secara manual | Dirender: aturan bersama disematkan ke dalam `GEMINI.md` |
+| Menjaga aturan tetap selaras dengan lingkungan lain | Manual, per alat | Otomatis saat `apothem update` |
+| Memasang / menghapus konfigurasi | Menulis dan menghapus `GEMINI.md` secara manual | `apothem install` / `apothem uninstall` |
+| Memverifikasi konfigurasi sudah benar | Inspeksi manual | `apothem verify --harness gemini-cli` |
+
+## Apa yang dikelola Apothem
+
+Adaptor gemini-cli menyematkan aturan bersama ke dalam satu `GEMINI.md`. Gemini
+CLI tidak memiliki hook PreToolUse, jadi maksud pagar pengaman diekspresikan
+dalam prosa aturan alih-alih sebuah titik intersepsi pemanggilan alat. Setiap
+perubahan pada aturan bersama merender ulang `GEMINI.md` pada `apothem update`
+berikutnya.
+
+## Jalur migrasi
+
+1. Jalankan `apothem profile init` untuk membuat profil bersama jika belum punya.
+2. Pindahkan aturan dari `GEMINI.md` Anda yang ada ke korpus bersama.
+3. Jalankan `apothem install --harness gemini-cli` untuk merender dan menulis `GEMINI.md`.
+4. Jalankan `apothem verify --harness gemini-cli` untuk memastikan konfigurasi terpasang.
+5. Gunakan `apothem update --harness gemini-cli` untuk setiap perubahan berikutnya.
+
+## Baca berikutnya
+
+- [Referensi adaptor Gemini CLI](/docs/harnesses/gemini-cli)
+- [Ikhtisar perbandingan](/docs/comparison)

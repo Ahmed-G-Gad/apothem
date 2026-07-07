@@ -1,0 +1,123 @@
+---
+title: "FAQ"
+description: "Pertanyaan umum tentang tujuan Apothem, harness yang didukung, opsionalitas suite-rencana, kustomisasi aturan, jenis artefak, dan lokasi state ekosistem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Pertanyaan umum, dalam urutan frekuensi.
+
+## Apa itu `apothem`?
+
+Sebuah konfigurasi portabel dan agnostik-host yang mengubah direktori home
+Anda menjadi kerangka kerja tata kelola, ideasi, dan otomasi
+untuk pengembangan yang dikendalikan asisten-pengkodean. Ia memadukan aturan perilaku,
+standar kreatif, perintah garis-miring, pekerja terdelegasi yang persisten, hook, dan skill
+menjadi satu permukaan yang koheren.
+
+## CLI asisten-pengkodean mana saja yang didukungnya?
+
+Apothem bersifat agnostik-harness. Adaptor per-harness di bawah
+`src/apothem/harnesses/<harness>/` memproyeksikan profil bersama ke dalam
+direktori konfigurasi native setiap peralatan; daftar kanonis berada di
+[`site/content/docs/harnesses/`](/docs/harnesses) dan saat ini mencakup harness yang didukung berikut:
+
+```text
+Claude Code, GitHub Copilot, Cursor, Gemini CLI, Codex, Windsurf, OpenCode,
+Antigravity, Open-Claw, Hermes, Qwen Code, CodeBuddy, Kiro, Trae, Zed,
+GLM (Z.ai), and Kimi Code
+```
+
+Adaptor Claude Code memateri ke dalam `~/.claude/`; dispatcher hook-nya bersifat netral-host —
+ia me-resolve akar ekosistem dari `$CLAUDE_PROJECT_DIR` terlebih dahulu, lalu
+`$LLM_PROJECT_DIR`, kemudian jatuh kembali ke `$HOME/.claude`.
+
+## Apakah saya perlu menggunakan pipeline suite-rencana?
+
+Tidak. Pipeline suite-rencana adalah salah satu komponen ekosistem.
+Aturan perilaku, standar kreatif, hook, dan rangkaian peralatan validator
+berguna secara independen.
+
+## Bagaimana saya mengustomisasi aturan tanpa mem-fork repositori?
+
+Tambahkan berkas aturan Anda sendiri di bawah `src/apothem/rules/<my-rule>.md`
+dengan frontmatter kanonis. Pemuat aturan mengambil setiap
+berkas yang cocok dengan pola `src/apothem/rules/*.md`.
+
+## Bagaimana saya menonaktifkan aturan untuk sementara?
+
+Bisa dengan mengganti nama berkas keluar dari pola `src/apothem/rules/*.md`
+atau memindahkannya ke direktori saudara yang tidak dipindai
+pemuat.
+
+## Apa perbedaan antara aturan, skill, dan pekerja terdelegasi?
+
+- **Aturan** mengatur perilaku — kewajiban selalu-aktif atau terfilter-jalur
+  yang diikuti asisten.
+- **Skill** adalah teknik yang dapat dideteksi dan digunakan kembali — sebuah sinyal
+  deteksi, sebuah prosedur, dan sebuah hook penegakan.
+- **Pekerja terdelegasi** adalah peran persisten dengan pembatasan peralatan
+  dan prompt sistemnya sendiri, dikirim melalui
+  protokol orkestrasi-pekerja.
+
+## Bagaimana saya melaporkan masalah keamanan?
+
+Lihat `SECURITY.md`. Kanal yang didukung adalah GitHub Security
+Advisories dan `me@ahmedgad.com`.
+
+## Bagaimana saya berkontribusi?
+
+Lihat [Kontribusi](/docs/developer-guide). Versi singkatnya: baca
+`CONTRIBUTING.md`, fork repositori, buka PR dengan
+templat PR kanonis terisi, dan pastikan sepuluh kelas pemeriksaan CI
+lolos.
+
+## Di mana state ekosistem berada?
+
+- **State rencana per-suite** berada di bawah `<project>/.apothem/plans/{suite}/`.
+- **Memori per-proyek** berada di bawah `projects/{hash}/memory/`.
+- **Memori lintas-proyek** berada di bawah `memory/`.
+- **Scratch per-sesi** berada di bawah `<project>/.apothem/plans/{suite}/_inputs/`.
+
+## Bisakah saya melanjutkan pekerjaan jangka panjang di sesi baru atau di mesin lain?
+
+Bisa. Pekerjaan jangka panjang mengeksternalisasi seluruh state-nya ke sebuah
+suite `.apothem/plans/` lokal-proyek — sebuah kontrak pelanjutan plus sebuah protokol
+mulai-dingin — sehingga pekerjaan itu tidak berada di dalam satu riwayat obrolan.
+Karena state-nya ada di berkas-berkas proyek Anda, sesi baru pada akun atau
+mesin mana pun yang diarahkan ke proyek yang sama melanjutkan pekerjaan di tempat.
+Apothem tidak mendorong berkas-berkas itu antar-akun sendiri; mereka berpindah
+dengan cara berkas proyek Anda sudah berpindah (kontrol versi, sebuah checkout
+bersama, sebuah direktori tersinkronisasi). Lihat
+[Perencanaan yang dapat dilanjutkan](/docs/concepts/resumable-planning).
+
+## Apakah Apothem memerlukan pip?
+
+Tidak — tidak untuk engine itu sendiri. Engine adalah pohon sumber mandiri dengan
+dependensi yang divendor — ia berjalan sebagai `python -m apothem` dari checkout
+mana pun, cache npx, atau pohon plugin pada Python sistem 3.10+, dan tidak
+menginstal kode miliknya sendiri ke dalam `site-packages` (`click` dan `rich`
+adalah satu-satunya prasyarat interpreter). Satu-satunya pengecualian opsional:
+jika `click` atau `rich` tidak ada, installer menawarkan untuk menjalankan
+`pip install` hanya untuk keduanya bagi Anda — dengan konfirmasi Anda, atau
+`--yes` / `APOTHEM_AUTO_INSTALL_DEPS=1`. Paket milik Apothem sendiri tidak pernah
+diinstal ke dalam `site-packages`.
+
+## Bagaimana hook berjalan tanpa paket yang terinstal?
+
+`apothem install` memateri dispatcher hook dan gerbang konformitas
+di bawah akar harness (untuk Claude Code: `~/.claude/.apothem/support/hooks/` dan
+`~/.claude/.apothem/support/conformity/`), dan entri hook yang dirender memanggil skrip-skrip
+tersebut melalui jalur absolut. Keduanya adalah skrip stdlib mandiri, sehingga hook
+bekerja pada mesin yang belum pernah melihat `pip install`.
+
+## Bagaimana saya mencopot sepenuhnya?
+
+Jalankan `apothem uninstall --harness <name>` untuk setiap harness terpasang, hapus
+engine sesuai kanal instalasi Anda, dan hapus `~/.apothem/` (cadangan) plus
+`~/.config/apothem/` (profil Anda) jika Anda ingin nol residu. 
+[Panduan pencopotan](/docs/install/uninstalling) memandu setiap kanal.
+
+## Lisensi apa yang digunakan ekosistem ini?
+
+MIT — lihat `LICENSE`.

@@ -1,0 +1,91 @@
+---
+title: "Zed"
+description: "محوّل إطار عمل Apothem لـ Zed (GA)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**المورّد:** <bdi>Zed Industries</bdi>
+**اسم التثبيت:** <bdi>`zed`</bdi>
+**الحالة:** <bdi>GA</bdi>
+**الإعداد الأصلي:** <bdi>`<project>/.rules`</bdi>
+
+## التثبيت
+
+```bash
+apothem install --harness zed --project /path/to/project
+```
+
+يكتب المحوّل ملفّ تعليمات <bdi>Zed</bdi> واحدًا بنطاق المشروع من سطح القواعد
+والحوكمة المشترك لـ<bdi>Apothem</bdi>. يقرأ <bdi>Zed</bdi> ملفًّا مسطّحًا واحدًا
+باسم <bdi>`.rules`</bdi> في جذر المشروع (إلى جانب عائلة <bdi>`AGENTS.md`</bdi> /
+<bdi>`CLAUDE.md`</bdi>) بوصفه تعليمات؛ ولا يوجد دليل قواعد لكل أداة، لذا يحطّ سطح
+<bdi>Apothem</bdi> بأكمله في هذا الملف الواحد.
+
+**الملفات المكتوبة:** <bdi>`<project>/.rules`</bdi>
+
+## تعيين الملف التعريفي إلى الإعداد الأصلي
+
+يقرأ المحوّل الملف التعريفي المشترك لـ<bdi>Apothem</bdi> ويصيّر ملفّ
+<bdi>`.rules`</bdi> للمشروع في كل عملية <bdi>`apothem install`</bdi> أو
+<bdi>`apothem update`</bdi>. الملف التعريفي المشترك هو مصدر الحقيقة؛ وتُحفَظ نسخة
+احتياطية من أي ملفّ <bdi>`.rules`</bdi> موجود مسبقًا (أو التعديلات المحلية للمشروع
+على الملف المُولَّد) قبل أن تستبدل المزامنة التالية المحتوى المُدار بواسطة
+<bdi>Apothem</bdi>.
+
+## ملاحظات التوافق
+
+سطح التعليمات الحالي لـ<bdi>Zed</bdi> هو ملفّ <bdi>`.rules`</bdi> المسطّح في جذر
+المشروع. ملفّ التعليمات العام <bdi>`~/.config/zed/AGENTS.md`</bdi> وكتلة خوادم سياق
+<bdi>MCP</bdi> (<bdi>`context_servers`</bdi> في <bdi>`.zed/settings.json`</bdi>)
+يملكهما المشغّل؛ ولا يكتبهما <bdi>Apothem</bdi>.
+
+## التحقّق
+
+```bash
+apothem verify --harness zed --project /path/to/project
+```
+
+يؤكّد أمر التحقّق ما يلي:
+
+1. وجود الإعداد الأصلي في المسار المتوقَّع.
+2. وجود جميع الحقول الإلزامية من الملف التعريفي المشترك.
+3. إبلاغ روتين التحقّق الخاص بالمحوّل عن النجاح.
+
+## التحديث
+
+```bash
+apothem update --harness zed --project /path/to/project
+```
+
+يعيد اشتقاق ملفّ <bdi>`.rules`</bdi> للمشروع من حالة الملف التعريفي المشترك الحالية.
+
+## إلغاء التثبيت
+
+```bash
+apothem uninstall --harness zed --project /path/to/project
+```
+
+يزيل ملفّ الإعداد الأصلي الذي كتبه المحوّل، مع إعادة تسميته أولًا إلى نسخة احتياطية
+ذات طابع زمني. لا يتأثّر <bdi>YAML</bdi> الملف التعريفي المشترك ولا محرّك
+<bdi>Apothem</bdi>.
+
+## بوّابة المطابقة
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## استكشاف الأخطاء وإصلاحها
+
+| العَرَض | الإصلاح |
+|---------|-----|
+| ملف الإعداد غير موجود | أعد تشغيل <bdi>`apothem install --harness zed --project /path/to/project`</bdi> |
+| فشل التحقّق | شغّل <bdi>`apothem update --harness zed --project /path/to/project`</bdi>، ثم تحقّق مجدّدًا |
+| محتوى إعداد غير متوقَّع | تحقّق من <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness zed --project /path/to/project`</bdi> |
+
+## مفاتيح الضبط
+
+| العَلَم | الافتراضي | الوصف |
+|------|---------|-------------|
+| <bdi>`--dry-run`</bdi> | <bdi>`false`</bdi> | معاينة التثبيت دون كتابة ملفات. |

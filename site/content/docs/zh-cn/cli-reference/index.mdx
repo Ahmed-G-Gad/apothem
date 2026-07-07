@@ -1,0 +1,31 @@
+---
+title: "CLI 参考"
+description: "Apothem CLI 参考——apothem 命令行界面的每命令概要、选项和退出码。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+`apothem` 命令行界面从共享配置文件管理harness适配器配置。下面每个页面记录一个子命令：其概要、选项、行为和退出码。
+
+`install`、`update` 和 `uninstall` 各自还接受一个连续式别名（`installing`、`updating`、`uninstalling`），在标志和行为上与基础命令完全相同。通过安装渠道——Claude Code 插件、`npx` 和一次性安装脚本——进行更新和卸载，记录在 [更新](/docs/install/updating) 和 [卸载](/docs/install/uninstalling) 安装指南中，而不是由别名本身记录。
+
+## 命令
+
+| 命令 | 描述 |
+|---------|-------------|
+| [quickstart](/docs/cli-reference/quickstart) | 引导式首次运行：确保有配置文件，预览写入，然后安装。 |
+| [install](/docs/cli-reference/install) | 从共享配置文件安装某个harness适配器配置（别名：`installing`）。 |
+| [update](/docs/cli-reference/update) | 从当前共享配置文件重新安装某个harness适配器配置（别名：`updating`）。 |
+| [uninstall](/docs/cli-reference/uninstall) | 移除某个harness适配器配置（别名：`uninstalling`）。 |
+| [rollback](/docs/cli-reference/rollback) | 将某个harness恢复到其记录的安装之前的状态。 |
+| [verify](/docs/cli-reference/verify) | 校验某个harness适配器安装。 |
+| [status](/docs/cli-reference/status) | 报告每个已注册harness的安装、校验和漂移状态。 |
+| [diff](/docs/cli-reference/diff) | 预览单个harness的待定配置更改。 |
+| [harnesses](/docs/cli-reference/harnesses) | 列出并查看已注册的harness适配器。 |
+| [profile](/docs/cli-reference/profile) | 管理共享的 Apothem 配置文件。 |
+| [doctor](/docs/cli-reference/doctor) | 运行 Apothem 安装的系统诊断。 |
+| [completion](/docs/cli-reference/completion) | 输出可 source 的 shell 补全脚本（bash、zsh、fish、powershell）。 |
+
+有关斜杠命令和更高层的 CLI 概览，请参阅
+[CLI 概览](/docs/reference/cli) 和 [斜杠命令](/docs/reference/commands)
+参考页面。

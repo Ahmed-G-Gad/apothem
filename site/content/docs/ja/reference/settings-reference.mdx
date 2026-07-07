@@ -1,0 +1,168 @@
+---
+title: "settings.json ドキュメント"
+description: "Apothem エコシステム向けに、Claude Code のフック実行・権限・イベント・タイムアウト・Python ランタイム・検証・レイヤー化された設定の優先順位を構成します。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **対象範囲。** 本ドキュメントは **Claude Code アダプタ** のフック
+> 配線ファイル（`settings.json`）について説明します。他の harness は
+> それぞれ独自のネイティブ設定面を使用します — 各アダプタの等価な
+> 構成エントリーポイントについては
+> [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses) を参照してください。
+
+## 概要
+
+`settings.json` は、Apothem エコシステム向けに Claude Code のフック実行を構成します。
+どのフックがどのイベントで発火するか、それらのタイムアウト、およびトップレベルの
+権限面を宣言します。Claude Code はサポート対象の全プラットフォームで
+`~/.claude/settings.json` を読み込むため、Apothem は単一の正規テンプレートのみを同梱します。
+
+## Python 専用ランタイム
+
+構成された各フックは、Claude Code の exec 形式のコマンド構造を使用します。
+同梱テンプレートは `${HARNESS_ROOT}` トークンを保持します。
+
+```json
+{
+  "type": "command",
+  "command": "python",
+  "args": ["${HARNESS_ROOT}/apothem/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
+}
+```
+
+`apothem install` はこのトークンを harness ルートの絶対パス
+（フォワードスラッシュ形式。Windows・macOS・Linux で有効）にレンダリングするため、
+インストール済みの `settings.json` は `~/.claude/.apothem/support/hooks/dispatch.py` に
+マテリアライズされたディスパッチャを直接呼び出します。ディスパッチャと
+コンフォーミティゲート（`~/.claude/.apothem/support/conformity/gate.py`。その schema
+フィクスチャは隣の `~/.claude/.apothem/support/schemas/` にあります）は、いずれも標準ライブラリ
+のスタンドアロンスクリプトです — ホスト上にインポート可能な `apothem` パッケージは不要で、
+1 つのテンプレートがすべてのプラットフォームに対応します。
+
+## フック構成スキーマ
+
+### 権限
+
+```json
+"permissions": {
+  "allow": ["Read", "Glob", "Grep"]
+}
+```
+
+`allow` にないツールは、呼び出しごとの明示的な承認、またはワークスペースレベルの権限を必要とします。
+読み取り専用ツールは事前承認されています。書き込み操作（`Write`、`Edit`、`NotebookEdit`、
+`Bash`）は `PreToolUse` バリデータを通過します。
+
+### フックイベント
+
+> **タイムアウト値は正規のフックイベント予算を反映します** — 下表は
+> 読者の便宜のために再掲したものです。正規のソースが支配します。
+
+| イベント | トリガー | タイムアウト | 目的 | マンデート |
+| ----- | ------- | ------- | ------- | ------- |
+| **SessionStart** | 新しい Claude Code セッション | 30 秒 | コンテキスト初期化、メモリ読み取り、プラン状態チェック | CM-14 |
+| **PreToolUse** | Write/Edit/NotebookEdit/Bash の前 | 10 秒 | CM-7 準拠 + frontmatter の検証 | CM-7、CM-22 |
+| **PreCompact** | コンテキスト圧縮の前 | 30 秒 | 未外部化の状態を外部化 | CM-24 §2.3 |
+| **PostCompact** | コンテキスト圧縮の後 | 30 秒 | 外部化された状態から再ブートストラップ | CM-24 §6.2 |
+| **Stop** | セッション終了 | 60 秒 | セッション終了時の外部化 | CM-14/CM-22/CM-24/CM-26 |
+
+`dispatch.py` はイベントホワイトリストに `UserPromptSubmit` と `Notification` も
+追加で受け付けます。いずれも同梱テンプレートでは配線されていません。同じ
+ロケーター + ディスパッチパターンの matcher ブロックを追加すると有効化できます。
+
+### トップレベルフィールド
+
+| フィールド | 目的 | 必須 |
+| ----- | ------- | -------- |
+| `permissions` | 事前承認されたツール名（デフォルトは読み取り専用ツール）を列挙する `allow` 配列を持つオブジェクト | はい |
+| `hooks` | イベント名 → `{matcher, hooks[]}` ブロック配列のマップ。下記の **フックイベント** を参照 | はい |
+| `model` | ホストで解決可能なモデルセレクタ。オペレータが設定する場合、エイリアスでも完全な識別子でも許容されます。 | 任意 |
+| `defaultShell` | ツール `Bash` 呼び出しのデフォルトシェル。Apothem は共有テンプレートでこれを設定しません。 | 任意 |
+| `autoUpdatesChannel` | Claude Code の更新チャンネル。Apothem は共有テンプレートでこれを設定しません。 | 任意 |
+| `effortLevel` | デフォルトの推論エフォート（`low`、`medium`、`high`、`max`） | 任意 |
+
+## 検証
+
+3 つのバリデータが、厳格さを増しながらフック面をカバーします。
+
+```bash
+# 構造 + Python 衛生（高速・オフライン）
+python scripts/dev/validate_hooks.py
+
+# エコシステム全体（構造 + frontmatter + 委譲フックチェック）
+python scripts/dev/validate_ecosystem.py
+
+# 敵対的スイープ（構成済みの各フックコマンドを劣化した入力で攻撃）
+python scripts/dev/chaos_pass.py
+```
+
+フックまたは設定の変更をコミットする前に、3 つすべてが 0 で終了する必要があります。
+
+単一イベントのアドホックなスモークテスト：
+
+```bash
+python src/apothem/hooks/dispatch.py --event-name SessionStart
+```
+
+期待される出力：`hookSpecificOutput` を含む単一行の JSON エンベロープ。
+
+## よくある問題
+
+### SessionStart がタイムアウトする
+
+最も一般的なのは、`find-python` ロケーターが Microsoft Store のシムを検出し、
+実際のインタープリタの解決に失敗しているケースです。確認してください。
+
+```bash
+python src/apothem/hooks/dispatch.py --event-name SessionStart
+```
+
+コマンドが有効な JSON エンベロープを出力するのに Claude Code パネルにタイムアウトが表示される場合は、
+`settings.json` でそのイベントの `timeout` を引き上げてください。コマンドがシェルレベルで失敗する場合は、
+本物の CPython 3.10+ をインストールし、それが PATH 上にあるかロケーターで検出可能であることを確認してください。
+
+### すべての Write/Edit がブロックされる
+
+`PreToolUse` が、harness のインストールルート（Claude Code アダプタでは `~/.claude/`）の外に書き込まれる内容の中のプラン内部用語をフラグしています。
+内容に CM-7 違反がないか確認してください（
+`src/apothem/rules/persistent-conventions-vigilance.md` を参照）。コードベース成果物には
+ドメイン言語のみを使用します。
+
+### settings.json が読み込まれない
+
+Claude Code は `~/.claude/settings.json` を読み込みます。Apothem が期待される
+harness ルートにインストールされていることを確認し、ファイル変更後にセッションを再起動してください。
+
+### フックが静かに何もしない
+
+フックの契約は「常に 0 で終了し、常に有効な JSON を出力する」です。インタープリタを
+特定できない場合、ロケーターは空を返し、コマンドは no-op になります。`chaos_pass.py` を実行して、
+構成済みの各フックが有効なエンベロープを返すことを確認してください — ライブセッションでは隠れてしまう
+劣化した解決パスを捕捉します。
+
+## レイヤー化された優先順位
+
+Claude Code は、優先順位の昇順で 3 つのレイヤーを合成することで、有効な設定オブジェクトを
+解決します。
+
+| 段階 | 場所 | コミットされる？ | 根拠 |
+|------|----------|------------|-----------|
+| 1. **システム** | Claude Code 自体にコンパイルされた harness のデフォルト値 | 該当なし（ベンダー管理） | 床。すべてのオペレータが同じベースラインを継承します。 |
+| 2. **プロジェクト** | `<harness-root>/settings.json` | ✅ コミットされる | プロジェクト共有の規約：フック、権限、MCP サーバー、ステータスラインの配線。Apothem ソースのテンプレートは Claude Code アダプタの templates ディレクトリ内にあります。 |
+| 3. **ユーザーローカル** | `<harness-root>/settings.local.json`（gitignored）— リポジトリルートに `settings.local.example.json` としてテンプレート化 | ❌ Gitignored | オペレータ固有のオーバーライド：API トークン、マシンローカルのパス、オプトイン機能。 |
+
+上位段階の値は **リーフキーレベルで** 下位段階の値を上書きします — プロジェクト
+レイヤーとユーザーローカルレイヤーの両方が `permissions.allow` エントリを宣言する場合は和集合が
+取られます。両方が `theme` のようなスカラーを宣言する場合は、ユーザーローカルの値が勝ちます。正確な
+キーごとのマージセマンティクスは Claude Code harness が所有します。
+
+### ユーザーローカルオーバーライドの作成
+
+1. `settings.local.example.json`（リポジトリルート）を `<harness-root>/settings.local.json` にコピーします。
+   ファイル名 `settings.local.json` は `.gitignore` パターンに一致するため、このファイルは決して
+   バージョン管理に入りません。
+2. ローカルコピーを編集します — オーバーライドするキーのみを残します。harness がレイヤーを合成するため、
+   不在のキーはプロジェクトレイヤーから継承されます。
+3. 保存前にファイルが有効な JSON としてパースされることを確認してください — harness はセッション開始時に
+   不正な形式の JSON を拒否します。

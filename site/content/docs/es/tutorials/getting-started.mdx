@@ -1,0 +1,222 @@
+---
+title: "Primeros pasos: de cero a un entorno funcional"
+description: "Un recorrido completo desde una máquina vacía hasta una configuración de entorno materializada y verificada."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Este tutorial te guía a través de toda tu primera configuración de Apothem.
+Empiezas sin nada instalado y terminas con una configuración de entorno real
+—generada a partir de un perfil que escribiste, verificada y confirmada como
+funcional—. Calcula unos quince minutos. Cada comando de abajo es real y se
+puede copiar y pegar.
+
+<Callout title="¿Ya tienes la configuración?">
+  Si solo quieres una referencia concisa de los cuatro comandos principales,
+  consulta [Flujos de trabajo principales](/docs/usage/getting-started). Esta
+  página es el recorrido guiado de cero a la primera ejecución.
+</Callout>
+
+Al terminar tendrás:
+
+1. Apothem instalado desde el instalador por script.
+2. El perfil compartido que dirige cada entorno, editado.
+3. La configuración nativa de un entorno, materializada.
+4. Esa configuración verificada y una primera ejecución funcional confirmada.
+
+Usaremos **Claude Code** como entorno de ejemplo a lo largo del tutorial, porque
+es el predeterminado del instalador. Los mismos pasos se aplican a cualquier
+entorno admitido: cambia el nombre cuando llegues a la
+[lista de entornos](/docs/harnesses).
+
+## Lo que necesitas primero
+
+- Un shell tipo Unix (macOS, Linux o WSL). El instalador de PowerShell cubre
+  Windows; este tutorial muestra la vía de `bash`.
+- Python 3.10 o más reciente en tu `PATH`. Compruébalo con `python3 --version`.
+- Las dos bibliotecas de runtime que el motor importa de tu intérprete: `click` y `rich`. El resto de la pila (`pyyaml`, `jsonschema`) viene incluida (vendored) en el árbol, así que solo estas dos deben poder importarse. El instalador las comprueba, nombra las que falten y ofrece instalarlas por ti, para que confirmes y continúes.
+
+Apothem se distribuye como un árbol de código fuente empaquetado en lugar de un
+paquete publicado: no hay un paso `pip install`. El instalador clona el árbol y
+ejecuta el motor directamente desde él.
+
+## Paso 1 — Instalar Apothem
+
+Ejecuta el instalador de red:
+
+```bash
+curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
+```
+
+El instalador realiza estos pasos:
+
+1. **Comprobación de requisitos previos.** El instalador localiza un intérprete Python 3.10+ real y confirma que las dos bibliotecas de runtime (`click` y `rich`) son importables. Si falta una, la nombra y ofrece instalarla por ti — o establece `APOTHEM_AUTO_INSTALL_DEPS=1` para instalar sin preguntar.
+2. **Colocación del código fuente.** El árbol empaquetado se clona en
+   `~/.apothem` (anúlalo con la variable de entorno `APOTHEM_HOME`). Una nueva
+   ejecución actualiza el clon existente en lugar de duplicarlo.
+3. **Inicialización del perfil.** Si aún no tienes un perfil, el instalador
+   copia el perfil de ejemplo a `~/.config/apothem/profile.yaml`, y luego **se
+   detiene y te pide que lo edites** antes de continuar. Esto es intencionado:
+   el ejemplo usa datos de identidad de marcador de posición, y deberías hacerlo
+   tuyo antes de escribir cualquier configuración de entorno. Lo haremos en el
+   Paso 2.
+
+Puedes dirigir la instalación con variables de entorno. Las que es más probable
+que uses:
+
+```bash
+# Install a different harness as the default, and point at a project profile.
+APOTHEM_HARNESS=cursor \
+APOTHEM_PROFILE="$HOME/.config/apothem/profile.yaml" \
+  curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
+```
+
+Otras variables reconocidas son `APOTHEM_REPO` y `APOTHEM_REF` (qué remoto
+clonar y qué ref de git descargar; sin definir resuelve y verifica la última
+etiqueta de versión firmada, define una etiqueta para fijarla o `main` para la
+rama en movimiento), `APOTHEM_ALLOW_UNVERIFIED=1` (degrada un fallo de
+verificación de la firma de la etiqueta a una advertencia), `APOTHEM_SOURCE`
+(usa un checkout local existente en lugar de clonar) y `APOTHEM_SKIP_VERIFY=1`
+(omite la verificación posterior a la instalación, que sí queremos ejecutar, así
+que déjala sin definir).
+
+Cuando el instalador termina una ejecución completa imprime un banner que muestra
+cómo invocar el motor. Coloca un shim `apothem` en tu `PATH` (POSIX:
+`$HOME/.local/bin`; Windows: `%LOCALAPPDATA%\Microsoft\WindowsApps`), de modo que
+una vez que ese directorio esté en el `PATH` ejecutas el motor directamente:
+
+```bash
+apothem <command>
+```
+
+Si el shim no pudo colocarse —o su directorio aún no está en el `PATH`— el banner
+imprime una alternativa autocontenida que no necesita ningún shim:
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>
+```
+
+El resto de este tutorial escribe `apothem <command>`; si estás usando la forma
+alternativa, antepón el prefijo exacto que imprimió el banner de tu instalador.
+
+## Paso 2 — Haz tuyo el perfil
+
+El perfil compartido en `~/.config/apothem/profile.yaml` es la única fuente de
+verdad. Cada adaptador de entorno lo lee y deriva de él la configuración nativa
+de ese entorno. Edítalo una vez y cada entorno que instales se mantiene
+coherente.
+
+Ábrelo en el editor del motor, o en cualquier editor de texto:
+
+```bash
+apothem profile edit
+```
+
+Un perfil mínimo y válido tiene este aspecto:
+
+```yaml
+identity:
+  name: "Example User"
+preferences:
+  style: "concise"
+rules:
+  - "Validate external input before writing files."
+```
+
+Reemplaza el `name` de marcador de posición por el tuyo, y añade cualquier regla
+que quieras que cada entorno aplique. Mantén los valores de ejemplo ficticios: el
+perfil está pensado para poder compartirse de forma segura.
+
+Confirma que el motor vuelve a leer tus ediciones sin problemas:
+
+```bash
+apothem profile show --json
+```
+
+Si el YAML está malformado, aquí es donde lo verás: corrígelo y vuelve a
+ejecutar antes de continuar.
+
+## Paso 3 — Materializar una configuración de entorno
+
+El instalador ya materializó el entorno predeterminado durante el Paso 1. Para
+hacerlo de forma explícita —o para materializar un segundo entorno— ejecuta
+`install`:
+
+```bash
+apothem install --harness claude-code
+```
+
+Esto lee tu perfil y escribe la configuración nativa de Claude Code. Para ver
+cada entorno al que puedes apuntar:
+
+```bash
+apothem harnesses list
+```
+
+Algunos entornos son de ámbito de proyecto en lugar de ámbito de usuario, y esos
+necesitan una ruta `--project` para que el adaptador sepa dónde escribir:
+
+```bash
+apothem install --harness cursor --project .
+```
+
+## Paso 4 — Verificar y confirmar una primera ejecución
+
+Materializar es solo la mitad de la historia. Ahora confirma que la configuración
+se aplicó correctamente:
+
+```bash
+apothem verify --harness claude-code
+```
+
+`verify` comprueba que los archivos de configuración esperados del entorno
+existen y coinciden con lo que declara el perfil. Una ejecución limpia significa
+que la materialización tuvo éxito.
+
+Para una comprobación de salud de toda la máquina en cada adaptador registrado,
+ejecuta:
+
+```bash
+apothem doctor
+```
+
+`doctor` informa del estado de instalación de cada adaptador y sale con un código
+distinto de cero si algún adaptador registrado informa de que no está instalado:
+una puerta útil en un script de configuración.
+
+**Tu primera ejecución.** Abre la herramienta que acabas de
+configurar —Claude Code, en nuestro ejemplo— e inicia una sesión en cualquier
+proyecto. Las reglas y preferencias que escribiste en el perfil ya forman parte
+del comportamiento de esa herramienta. Esa es la primera ejecución funcional: el
+perfil que editaste en el Paso 2 está dando forma a una sesión real.
+
+## Lo que construiste
+
+Partiendo de una máquina vacía, instalaste Apothem, escribiste un perfil
+compartido, materializaste a partir de él la configuración nativa de un entorno,
+verificaste el resultado y lo confirmaste como funcional. El perfil es el
+artefacto duradero: cámbialo una vez y vuelve a ejecutar
+`apothem update --harness <name>` para empujar el cambio a cualquier entorno.
+
+## Hacia dónde seguir
+
+- **Añade otra herramienta.** La [lista de entornos](/docs/harnesses) cubre cada
+  plataforma admitida y su nombre de adaptador. Repite el Paso 3 con un nuevo
+  `--harness`.
+- **Profundiza en una sola tarea.** Las [guías prácticas](/docs/how-to) son
+  recetas centradas en tareas para escribir reglas, crear planes y ejecutar la
+  puerta de conformidad.
+- **Consulta detalles concretos.** La [referencia](/docs/harnesses) documenta
+  cada adaptador, el esquema del perfil y toda la superficie de la CLI.
+- **Planifica trabajo que sobrevive a una sesión.** [La planificación
+  reanudable](/docs/concepts/resumable-planning) explica cómo Apothem
+  externaliza el trabajo de larga duración a una suite `.apothem/plans/` local
+  del proyecto, de modo que una sesión nueva en cualquier máquina lo reanuda en
+  su sitio.
+
+## Próximo paso recomendado
+
+**Ejecuta `apothem doctor`** para comprobar tu configuración — informa del estado
+de cada adaptador registrado, de modo que el entorno que acabas de instalar
+aparece como correcto mientras el resto aparece como aún-no-instalado — antes de
+pasar a añadir más entornos.

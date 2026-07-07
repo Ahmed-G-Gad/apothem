@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://apothem.ahmedgad.com/schemas/plugin.schema.json",
+  "title": "Plugin Manifest",
+  "description": "Schema for a Claude Code plugin manifest (.claude-plugin/plugin.json). Component fields carry plugin-root-relative paths beginning with './': 'commands' and 'agents' enumerate explicit markdown files so documentation files beside them are never registered as components; 'skills' names directories whose immediate children each carry a SKILL.md entry point.",
+  "type": "object",
+  "required": ["name", "version", "description"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Unique kebab-case plugin identifier.",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "version": {
+      "type": "string",
+      "description": "SemVer version of the plugin. Pins the plugin so consumers receive updates only when it changes.",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "description": {
+      "type": "string",
+      "description": "Capability-led description of what the plugin provides.",
+      "maxLength": 1024
+    },
+    "author": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "url": { "type": "string", "format": "uri" }
+      }
+    },
+    "homepage": {
+      "type": "string",
+      "format": "uri",
+      "description": "Plugin homepage or documentation URL."
+    },
+    "repository": {
+      "type": "string",
+      "format": "uri",
+      "description": "Source repository URL."
+    },
+    "license": {
+      "type": "string",
+      "description": "SPDX license identifier."
+    },
+    "keywords": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Tags for plugin discovery."
+    },
+    "commands": {
+      "$ref": "#/$defs/componentPathArray",
+      "description": "Explicit plugin-root-relative paths to command markdown files."
+    },
+    "agents": {
+      "$ref": "#/$defs/componentPathArray",
+      "description": "Explicit plugin-root-relative paths to agent markdown files."
+    },
+    "skills": {
+      "$ref": "#/$defs/componentPathArray",
+      "description": "Plugin-root-relative skill directories containing <name>/SKILL.md entries."
+    },
+    "hooks": {
+      "type": "string",
+      "pattern": "^\\./",
+      "description": "Plugin-root-relative path to a hooks.json configuration."
+    }
+  },
+  "$defs": {
+    "componentPathArray": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "pattern": "^\\./",
+        "description": "Plugin-root-relative path beginning with './'."
+      }
+    }
+  }
+}

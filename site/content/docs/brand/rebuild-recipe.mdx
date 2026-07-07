@@ -1,0 +1,65 @@
+---
+title: "Asset Rebuild Recipe"
+description: "Regenerate all raster brand assets from the master SVG sources with resvg and Pillow."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+The asset rebuild recipe regenerates every raster asset from the master SVGs.
+It is the authoritative update path for brand iterations.
+
+## When to run
+
+Run the rebuild recipe when:
+
+- The master SVG (`assets/src/logo.svg` or `assets/src/logo-dark.svg`) changes.
+- The compact favicon master (`assets/favicon.svg`) changes.
+- A social-card master (`assets/src/og-banner.svg` or `assets/src/twitter-card.svg`) changes.
+- A new raster size is needed.
+- You want to verify that the committed assets still match the SVG source.
+
+## Script
+
+| Script | Platform | Path |
+| --- | --- | --- |
+| `rebuild-assets-resvg.py` | Any host with Python + resvg | `scripts/dev/rebuild-assets-resvg.py` |
+
+## Requirements
+
+The generator rasterizes each SVG with [resvg](https://github.com/linebender/resvg)
+and composes the raster sets with [Pillow](https://python-pillow.org/):
+
+- **Pillow:** `pip install pillow`.
+- **resvg:** download the release binary for your platform from the
+  [resvg releases](https://github.com/linebender/resvg/releases) —
+  `resvg-win64.zip` on Windows, `resvg-linux-x86_64.tar.gz` on Linux, or
+  `resvg-macos.zip` on macOS — extract it onto your `PATH`, or point the script
+  at it with `--resvg <path>`.
+
+## Usage
+
+Regenerate every raster asset:
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py
+```
+
+Pass `--check-only` to verify the toolchain is available without regenerating
+any assets:
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py --check-only
+```
+
+If resvg is not on your `PATH`, point the script at the binary:
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py --resvg /path/to/resvg
+```
+
+## Verification
+
+A successful run regenerates the light and dark mark rasters, favicon PNG/ICO
+set, Apple touch icons, OG/Twitter images, and mirrors the web-served subset —
+including the hero logo sources the site references — into `site/public/`.
+After generation, run the site build and inspect the Home page, browser tab
+favicon, and social-card PNGs before publishing.

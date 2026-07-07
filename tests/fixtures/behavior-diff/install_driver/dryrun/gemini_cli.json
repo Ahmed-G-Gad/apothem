@@ -1,0 +1,137 @@
+[
+  {
+    "detail": {
+      "capability": "agent_memory",
+      "status": "discovery-pending"
+    },
+    "message": "The current adapter pin does not identify durable memory.",
+    "operation": "capability_projection",
+    "outcome": "warning",
+    "path": "src/apothem/harnesses/gemini_cli/capabilities.yml"
+  },
+  {
+    "detail": {
+      "capability": "mcp_servers",
+      "status": "discovery-pending"
+    },
+    "message": "MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries.",
+    "operation": "capability_projection",
+    "outcome": "warning",
+    "path": "src/apothem/harnesses/gemini_cli/capabilities.yml"
+  },
+  {
+    "detail": {
+      "capability": "output_styles",
+      "status": "unsupported"
+    },
+    "message": "No Gemini CLI output-style file surface is pinned.",
+    "operation": "capability_projection",
+    "outcome": "warning",
+    "path": "src/apothem/harnesses/gemini_cli/capabilities.yml"
+  },
+  {
+    "detail": {
+      "capability": "statuslines",
+      "status": "unsupported"
+    },
+    "message": "No Gemini CLI statusline file surface is pinned.",
+    "operation": "capability_projection",
+    "outcome": "warning",
+    "path": "src/apothem/harnesses/gemini_cli/capabilities.yml"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/skills/AGENTS.md"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/.gemini/apothem/templates"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/.gemini/apothem/hooks"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/.gemini/apothem/rules"
+  },
+  {
+    "detail": {
+      "diff": "--- a/GEMINI.md\n+++ b/GEMINI.md\n@@ -0,0 +1,71 @@\n+<!-- BEGIN APOTHEM MANAGED BLOCK -->\n+<!-- SPDX-License-Identifier: MIT -->\n+\n+# Apothem — Gemini CLI Bootstrap\n+\n+This file is materialised by `apothem install --harness gemini-cli --project <path>` and lands at `<project>/GEMINI.md`, the vendor-canonical project-context surface. Analogous to the project `CLAUDE.md` anchor, this file is read by `gemini-cli` at every session start in this project.\n+\n+The gemini-cli adapter is project-scope only. User-scope `~/.gemini/` is already claimed by the antigravity adapter (which writes `~/.gemini/GEMINI.md` as its anchor); the gemini-cli adapter sidesteps the namespace collision by materialising under `<project>/` exclusively.\n+\n+## What Apothem governs in this project\n+\n+Apothem propagates a shared governance and convention surface across every supported AI harness in this project's host environment. Inside `gemini-cli`, the surface manifests at the project root as native Gemini files plus an Apothem support tree:\n+\n+- `<project>/GEMINI.md` — this file; the vendor-discovered project-context anchor.\n+- `<project>/.gemini/commands/*.toml` — Gemini slash commands converted from Apothem command prompts.\n+- `<project>/.gemini/agents/*.md` — local Gemini subagents normalized from Apothem agents.\n+- `<project>/.gemini/skills/*/SKILL.md` — Apothem skills where a skill surface is available.\n+- `<project>/.gemini/.apothem/support/rules/` — Apothem Markdown rules used as reference material.\n+- `<project>/.gemini/.apothem/support/templates/` — plan, report, and audit templates.\n+- `<project>/.gemini/.apothem/support/hooks/` — hook messages and helper scripts retained as support material.\n+\n+Do not treat `.gemini/.apothem/support/` as a\n+Gemini-native discovery namespace. They are Apothem-owned support trees\n+referenced by this bootstrap, generated commands, and installed skills.\n+\n+## Engineering disciplines in force\n+\n+Apothem's foundational mandates apply uniformly across every harness, including gemini-cli:\n+\n+- **Plans-Locality.** Plan-suite artefacts (PROGRESS.md, PLAN-NOTES.md, PHASE.md, REPORT.md) live under `<project>/.apothem/plans/{suite}/` — the sole canonical home; a legacy `<project>/.plans/` tree upgrades via `apothem migrate-workspace`. They never land in a global plans directory or any other global-ecosystem location.\n+- **Authority hygiene.** Never fabricate identity, scope, security posture, or version-pin data. Surface ambiguity via the canonical structured-inquiry channel; the operator chooses.\n+- **Definitiveness.** Hedging vocabulary (`maybe`, `might`, `usually`, `generally`, `typically`, `probably`) is eliminated where binding prescription is possible. Pre / post / failure conditions are stated on every contract.\n+- **Production-ready discipline.** Every change ships in production-ready form — tests, docs, CHANGELOG entry, conformant commit message, CI green — in the same change-set.\n+- **Plain-language.** Codebase artefacts and user-facing prose read as natural domain language with zero trace of internal planning structure.\n+- **Observe-decide-act discipline.** Tool use runs as a loop — observe the current state, decide the next move from what was observed, then act — never an edit before a read or a result asserted before a check. Independent reads and searches run together in one pass, not one per turn; the loop closes on a verifiable condition (a gate green, a read confirmed), never a fixed number of tries. Advisory, never an auto-applied behavior.\n+\n+## Refreshing the file\n+\n+Re-run `apothem install --harness gemini-cli --project <this-project-root>` to refresh the Apothem managed block in this `GEMINI.md`, the converted native entries, and the support cohorts. The install folds Apothem's content into a sentinel-delimited managed block in `GEMINI.md` and preserves any operator prose outside the sentinels verbatim; the converted `.gemini/` entries are Apothem-owned and replaced in place while unrelated operator files are left untouched; it is idempotent. The companion `apothem uninstall --harness gemini-cli --project <this-project-root>` strips the managed block from `GEMINI.md` (leaving operator prose in place; the file is removed only when nothing but the block remained), backing the prior file up under the Apothem backup root (`~/.apothem/backups/<timestamp>/gemini_cli/`) first. `apothem verify --harness gemini-cli --project <this-project-root>` checks the file is present and non-empty.\n+\n+# Apothem Shared Profile\n+\n+Managed by Apothem from the shared profile. Edits inside the sentinels are overwritten on the next `apothem install`; change the shared profile instead.\n+\n+## Operator\n+\n+- **Name:** Golden-Corpus-Operator\n+- **Role:** release engineer\n+- **Email:** golden@corpus.invalid\n+- **Website:** https://golden.corpus.invalid\n+- **GitHub:** @golden-corpus-operator\n+\n+## Preferences\n+\n+- **Primary language:** python\n+- **Response style:** concise\n+- **Governance seriousness:** PUBLIC_LAUNCH\n+\n+## Custom Rules\n+\n+- golden-corpus-validate-input-before-write\n+\n+## Opted-in Behaviors\n+\n+- Sprint apparatus for non-trivial multi-step work\n+\n+## MCP Servers\n+\n+Configured MCP servers (materialized into the harnesses with a native MCP config surface; named here as reference for the rest):\n+- golden-corpus-srv\n+<!-- END APOTHEM MANAGED BLOCK -->\n",
+      "ownership_class": "operator-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "sentinel_merge",
+    "outcome": "created",
+    "path": "<ROOT>/GEMINI.md",
+    "source": "<APOTHEM_SRC>/harnesses/gemini_cli/templates/GEMINI.md"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "gemini_commands",
+    "outcome": "created",
+    "path": "<ROOT>/.gemini/commands",
+    "source": "<APOTHEM_SRC>/commands"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/.gemini/skills",
+    "source": "<APOTHEM_SRC>/skills"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "gemini_agents",
+    "outcome": "created",
+    "path": "<ROOT>/.gemini/agents",
+    "source": "<APOTHEM_SRC>/agents"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/.gemini/.apothem/support/rules",
+    "source": "<APOTHEM_SRC>/rules"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/.gemini/.apothem/support/templates",
+    "source": "<APOTHEM_SRC>/templates"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/.gemini/.apothem/support/hooks",
+    "source": "<APOTHEM_SRC>/hooks"
+  }
+]

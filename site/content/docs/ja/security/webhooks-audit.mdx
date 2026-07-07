@@ -1,0 +1,39 @@
+---
+title: "Webhook 監査"
+description: "Apothem Webhook 監査——シークレットローテーション、スコープ最小化、Scorecard Webhooks チェックの証跡。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+OpenSSF Scorecard の **Webhooks** チェックは、リポジトリの webhook が共有シークレットを使用して配信表面を認証していることを検証します——シークレットがないと、webhook の URL を知った攻撃者がイベントをリプレイしたり偽造したりできます。
+
+## Apothem の webhook 姿勢
+
+| Webhook 表面 | 状態 | シークレットローテーション周期 |
+|---|---|---|
+| **リポジトリ webhook** | リポジトリレベルでは何も構成されていません。 | 該当なし |
+| **組織 webhook** | 組織レベルでは何も構成されていません。 | 該当なし |
+| **ワークフローイベント** | GitHub 管理。Webhooks チェックの対象外。 | 該当なし |
+
+Apothem は現在、**外部 webhook 表面をゼロ**で運用しています。すべてのイベント駆動型統合は GitHub ネイティブのワークフロー（CI、Scorecard、CodeQL、pip-audit）を使用しており、これらは Scorecard Webhooks チェックの対象外です。
+
+## 今後の webhook ガバナンス
+
+Apothem が webhook 表面を増やす場合（例：Discord / Matrix のリリース通知、下流コンシューマーのビルドトリガー）、オペレーターは**必ず**次を行わなければなりません。
+
+1. **高エントロピーのシークレットを生成する**（≥ 32 バイト、暗号学的にランダム）。
+2. **シークレットをリポジトリの暗号化シークレット表面に保存する**——ソースコードには絶対に置かず、ワークフロー YAML にも絶対に置かない。
+3. **シークレットを使って webhook を構成する**ことで、GitHub が配信のたびに `X-Hub-Signature-256` ヘッダーに署名するようにする。
+4. **受信エンドポイントで署名を検証する**。定数時間比較を使用する。
+5. **シークレットをローテーションする**。12 か月ごと、または侵害が疑われてから 24 時間以内。
+6. **この監査ファイルに webhook を記録する**。その目的、受信エンドポイント、ローテーション日を含める。
+
+## 監査周期
+
+このファイルは、すべての `/security-audit` パスごとに、およびすべてのリリースエンジニアリングのプレカットオーバーチェックポイントで確認されます。ドリフト（例：ここにエントリのない webhook 表面が導入された場合）は HIGH 重大度の発見事項です。
+
+## 参考資料
+
+- [OpenSSF Scorecard — Webhooks チェック](https://github.com/ossf/scorecard/blob/main/docs/checks.md#webhooks)
+- [GitHub — Webhook セキュリティ](https://docs.github.com/en/webhooks/using-webhooks/securing-your-webhooks)
+- [Apothem セキュリティポリシー](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)

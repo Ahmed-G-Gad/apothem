@@ -1,0 +1,65 @@
+---
+title: "Membuat adapter harness baru"
+description: "Runbook untuk membuat dan menerbitkan adapter harness Apothem baru."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Gunakan runbook ini saat membuat adapter harness baru untuk disertakan secara
+bawaan di Apothem atau sebagai paket pihak ketiga.
+
+## Prasyarat
+
+- Keakraban dengan [protokol HarnessAdapter](/docs/architecture/harness-adapter-abstraction)
+- Pemahaman tentang format konfigurasi harness target
+- Python 3.10+
+
+## Langkah
+
+### 1. Implementasikan adapter
+
+Ikuti contoh [Membuat adapter harness](/docs/examples/authoring-a-harness-adapter)
+untuk mengimplementasikan `HarnessAdapter` bagi harness target.
+
+### 2. Tulis halaman dokumentasi
+
+Buat `site/content/docs/harnesses/<slug>.mdx` yang mencakup:
+
+- Alur instalasi
+- Pemetaan profil ke konfigurasi native
+- Catatan kompatibilitas
+- Resep verifikasi
+- Resep pembaruan dan pencopotan
+- Permukaan gerbang kesesuaian
+- Tabel pemecahan masalah
+- Tabel kenop konfigurasi
+
+### 3. Tulis pengujian
+
+```bash
+tests/packaging/test_<slug>_adapter.py
+tests/unit/test_<slug>_adapter.py
+```
+
+Cakupan pengujian minimum:
+- `test_install_creates_expected_files`
+- `test_verify_passes_after_install`
+- `test_uninstall_removes_files`
+
+### 4. Verifikasi secara lokal
+
+```bash
+apothem install --harness <slug>
+apothem verify --harness <slug>
+python -m apothem.conformity.gate --all .
+```
+
+### 5. Kirim pull request
+
+Buka PR dengan:
+
+- Implementasi adapter
+- Halaman dokumentasi di `site/content/docs/harnesses/<slug>.mdx`
+- Pengujian
+- Registrasi titik masuk di `pyproject.toml`
+- Entri changelog

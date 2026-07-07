@@ -1,0 +1,48 @@
+---
+title: "Desinstalación"
+description: "Elimina Apothem y limpia las configuraciones de entorno."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## Elimina primero las configuraciones de entorno
+
+Antes de desinstalar Apothem, elimina la configuración de cada adaptador de entorno para dejar
+tus herramientas en un estado limpio. Ejecuta `apothem harnesses list` para ver
+qué adaptadores están instalados actualmente y, a continuación, elimínalos de uno en uno o usa
+el selector de todo el registro:
+
+```bash
+apothem uninstall --harness claude-code
+apothem uninstall --harness cursor --project /path/to/project
+apothem uninstall --harness all --project /path/to/project --yes
+```
+
+Pasa `--yes` para omitir la solicitud de confirmación por entorno.
+
+## Elimina el motor
+
+La eliminación se corresponde con el canal de instalación que usaste:
+
+- **Plugin de Claude Code**: elimina el plugin desde dentro de Claude Code:
+  `/plugin uninstall apothem@apothem` (la entrada del marketplace se puede eliminar
+  con `/plugin marketplace remove ahmed-g-gad/apothem`).
+- **npx**: no hay nada que eliminar; `npx` se ejecuta desde su caché. Bórrala con
+  `npm cache clean --force` si quieres que la copia en caché desaparezca.
+- **Instalador de un solo paso**: ejecuta el script de desinstalación correspondiente desde el
+  checkout: `scripts/installer/uninstall.sh` (POSIX) o
+  `scripts/installer/uninstall.ps1` (PowerShell). Ambos confirman antes de
+  eliminar y rechazan objetivos inseguros.
+- **Copias de seguridad y estado**: las copias de seguridad de la instalación viven bajo `~/.apothem/backups/`;
+  elimina `~/.apothem/` cuando ya no las necesites.
+
+## Lo que NO se elimina
+
+- El YAML del perfil compartido en `~/.config/apothem/profile.yaml` o
+  `--profile PATH` nunca lo elimina `apothem uninstall`.
+- Los archivos no relacionados creados por el operador en los directorios de entorno se conservan.
+- Las suites de plan bajo `<project>/.apothem/plans/` (y el heredado `<project>/.plans/`) no se ven afectadas.
+
+Para limpiar por completo la raíz de un entorno, elimina la ruta nativa del entorno documentada en
+las [páginas de referencia de entornos](/docs/harnesses) después de confirmar que has hecho copia de seguridad de
+cualquier regla, ayudante o archivo de perfil personalizado que quieras conservar.

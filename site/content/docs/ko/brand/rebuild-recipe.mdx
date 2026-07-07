@@ -1,0 +1,66 @@
+---
+title: "에셋 재빌드 레시피"
+description: "resvg와 Pillow를 사용해 마스터 SVG 소스로부터 모든 래스터 브랜드 에셋을 다시 생성합니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+에셋 재빌드 레시피는 마스터 SVG로부터 모든 래스터 에셋을 다시 생성합니다.
+이는 브랜드 반복을 위한 권위 있는 업데이트 경로입니다.
+
+## 실행 시점
+
+다음과 같은 경우 재빌드 레시피를 실행하세요:
+
+- 마스터 SVG(`assets/src/logo.svg` 또는 `assets/src/logo-dark.svg`)가 변경될 때.
+- 컴팩트 favicon 마스터(`assets/favicon.svg`)가 변경될 때.
+- 소셜 카드 마스터(`assets/src/og-banner.svg` 또는 `assets/src/twitter-card.svg`)가 변경될 때.
+- 새로운 래스터 크기가 필요할 때.
+- 커밋된 에셋이 여전히 SVG 소스와 일치하는지 검증하고 싶을 때.
+
+## 스크립트
+
+| 스크립트 | 플랫폼 | 경로 |
+| --- | --- | --- |
+| `rebuild-assets-resvg.py` | Python + resvg가 있는 모든 호스트 | `scripts/dev/rebuild-assets-resvg.py` |
+
+## 요구 사항
+
+이 생성기는 [resvg](https://github.com/linebender/resvg)로 각 SVG를
+래스터화하고 [Pillow](https://python-pillow.org/)로 래스터 세트를 구성합니다:
+
+- **Pillow:** `pip install pillow`.
+- **resvg:** [resvg 릴리스](https://github.com/linebender/resvg/releases)에서
+  사용 중인 플랫폼용 릴리스 바이너리 — Windows는 `resvg-win64.zip`, Linux는
+  `resvg-linux-x86_64.tar.gz`, macOS는 `resvg-macos.zip` — 를 다운로드하여
+  `PATH`에 추출하거나, `--resvg <path>`로 스크립트가 해당 위치를 가리키도록
+  하세요.
+
+## 사용법
+
+모든 래스터 에셋을 다시 생성:
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py
+```
+
+에셋을 다시 생성하지 않고 툴체인이 사용 가능한지 검증하려면 `--check-only`를
+전달하세요:
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py --check-only
+```
+
+resvg가 `PATH`에 없으면 스크립트가 바이너리를 가리키도록 하세요:
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py --resvg /path/to/resvg
+```
+
+## 검증
+
+성공적인 실행은 라이트 및 다크 마크 래스터, favicon PNG/ICO 세트, Apple touch
+아이콘, OG/Twitter 이미지를 다시 생성하고, 웹에서 제공되는 하위 집합 — 사이트가
+참조하는 히어로 로고 소스를 포함하여 — 을 `site/public/`으로 미러링합니다. 생성
+후에는 사이트 빌드를 실행하고, 게시하기 전에 홈 페이지, 브라우저 탭 favicon, 소셜
+카드 PNG를 점검하세요.

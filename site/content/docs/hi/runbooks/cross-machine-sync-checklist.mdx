@@ -1,0 +1,162 @@
+---
+title: "क्रॉस-मशीन सिंक सत्यापन चेकलिस्ट"
+description: "यह पुष्टि करने की सत्यापन प्रक्रिया कि Claude Code एडॉप्टर एक नए होस्ट पर पूर्ण पोर्टेबिलिटी जाँचों के साथ सही ढंग से इंस्टॉल, सत्यापित और अनइंस्टॉल होता है।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **दायरा।** यह चेकलिस्ट एक नए दूसरे होस्ट पर **Claude Code एडॉप्टर** की इंस्टॉल / अनइंस्टॉल पोर्टेबिलिटी परत को सत्यापित करती है। अन्य उपकरणों के पास [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses) के अंतर्गत प्रलेखित अपनी स्वयं की प्रति-होस्ट सत्यापन रेसिपी होती हैं। पथ `~/.claude/` Claude Code एडॉप्टर के लिए कैनोनिकल इंस्टॉल गंतव्य है; किसी भिन्न उपकरण को सत्यापित करते समय एडॉप्टर-नेटिव पथ को प्रतिस्थापित करें।
+
+> **एक नए दूसरे होस्ट पर इंस्टॉल / अनइंस्टॉल पोर्टेबिलिटी परत का ऑपरेटर-संचालित सत्यापन।** प्रकाशन स्तर (`vX.Y.Z`) एक ही Windows होस्ट पर लिखा गया था; मल्टी-होस्ट अपरिवर्तनीय के वज़न रखने से पहले `~/.claude/` पोर्टेबिलिटी दावे (`CLAUDE.md` `portability: universal`) को एक दूसरे होस्ट पर एंड-टू-एंड अभ्यास की आवश्यकता है। यह चेकलिस्ट कैनोनिकल दूसरे-होस्ट सत्यापन रेसिपी (Claude Code एडॉप्टर) है।
+
+---
+
+## 1. दूसरे होस्ट पर पूर्व-शर्तें
+
+सत्यापन शुरू करने से पहले दूसरे होस्ट पर चलाएँ:
+
+| आइटम | कमांड | अपेक्षित |
+|------|---------|----------|
+| Git इंस्टॉल है | `git --version` | Git 2.40+ |
+| Python 3.10+ उपलब्ध | `python3 --version` (POSIX) या `py -3 --version` (Windows) | 3.10 / 3.11 / 3.12 / 3.13 |
+| GitHub प्रमाणीकरण (वैकल्पिक, प्रमाणित क्लोन / API जाँचों के लिए) | `gh auth status` | प्रमाणित वर्कफ़्लो का उपयोग करते समय रिपॉज़िटरी के अधिकृत खाते से लॉग इन |
+| Shell उपलब्ध | `bash --version` (POSIX) या `pwsh --version` (Windows) | Bash 4+ या PowerShell 7+ |
+| कोई पूर्व-मौजूदा `~/.claude/` निर्देशिका नहीं | `ls ~/.claude 2>&1` | "No such file or directory" — यदि मौजूद हो, तो आगे बढ़ने से पहले बैकअप लें |
+
+## 2. क्लोन-और-इंस्टॉल सत्यापन
+
+दूसरे होस्ट पर निष्पादित करें:
+
+```bash
+# Clone the published repo to ~/.claude (the install destination)
+git clone https://github.com/ahmed-g-gad/apothem.git ~/.claude
+cd ~/.claude
+
+# (POSIX path) Run scripts/installer/install.sh dry-run first
+bash scripts/installer/install.sh --dry-run                                    # exit 0; Quick Start banner
+
+# (POSIX path) Run scripts/installer/install.sh for real
+bash scripts/installer/install.sh                                               # exit 0; sentinel-file check; idempotent
+
+# (Windows path) PowerShell parallel
+pwsh -File scripts/installer/install.ps1 -DryRun                                # exit 0; Quick Start banner
+pwsh -File scripts/installer/install.ps1                                        # exit 0
+```
+
+प्रत्येक कमांड का एग्ज़िट कोड और stdout बैनर कैप्चर करें। `<second-host>/.audit/cross-machine-clone-install.md` पर रिकॉर्ड करें।
+
+## 3. चार-तत्व अनुशासन (`src/apothem/rules/production-ready-prs.md` §8.3 के अनुसार)
+
+दूसरे होस्ट पर चारों अपरिवर्तनीयों में से प्रत्येक को सत्यापित करें:
+
+### 3.1 सेंटिनल-फ़ाइल सुरक्षा
+
+```bash
+# Re-run installer at the same destination.
+bash scripts/installer/install.sh                                               # POSIX
+pwsh -File scripts/installer/install.ps1                                        # Windows
+```
+
+**अपेक्षित:** इंस्टॉलर मौजूदा मान्य `~/.claude/` (सेंटिनल फ़ाइल मौजूद) का पता लगाता है, पुनः-इंस्टॉल या डुप्लिकेट करने के बजाय फ़ास्ट-फ़ॉरवर्ड करता है; एग्ज़िट कोड 0।
+
+### 3.2 पूर्व-शर्त-जाँचित
+
+```bash
+# Temporarily move git out of PATH.
+PATH=/usr/bin:/bin bash scripts/installer/install.sh                            # POSIX (no git)
+```
+
+**अपेक्षित:** इंस्टॉलर चलने से मना करता है; स्पष्ट "git not found" डायग्नोस्टिक जारी करता है; एग्ज़िट कोड गैर-शून्य।
+
+### 3.3 आइडेमपोटेंट पुनः-रन
+
+```bash
+# Run installer N times back-to-back.
+for i in 1 2 3 4 5; do bash scripts/installer/install.sh; done                  # POSIX
+1..5 | ForEach-Object { pwsh -File scripts/installer/install.ps1 }              # Windows
+```
+
+**अपेक्षित:** प्रत्येक आह्वान एग्ज़िट कोड 0 के साथ बाहर निकलता है; पहले आह्वान के बाद कोई दुष्प्रभाव नहीं; कोई डुप्लिकेट फ़ाइलें नहीं; कोई shell-profile RC डुप्लिकेशन नहीं।
+
+### 3.4 पर्यावरण चर के माध्यम से कॉन्फ़िगर करने योग्य
+
+```bash
+# Install to a non-default location.
+CLAUDE_PROJECT_DIR=/tmp/alt-claude bash scripts/installer/install.sh            # POSIX
+$env:CLAUDE_PROJECT_DIR='C:\tmp\alt-claude'; pwsh -File scripts/installer/install.ps1   # Windows
+```
+
+**अपेक्षित:** इंस्टॉलर पर्यावरण चर का सम्मान करता है; `~/.claude/` संशोधित नहीं होता; वैकल्पिक गंतव्य में अपेक्षित लेआउट होता है।
+
+## 4. वैलिडेटर-सूट सत्यापन (इंस्टॉल-के-बाद)
+
+```bash
+cd ~/.claude
+make validate                                                 # 50 conformity validators
+make headers-doctor                                           # file-header-grep → passed:true
+make ai-surfaces-doctor                                       # multi-surface-coherence → passed:true
+make plans-doctor                                             # no-global-plans + plans-discipline-language
+make lint                                                     # ruff + mypy
+make test                                                     # pytest 265/265
+```
+
+**अपेक्षित:** प्रत्येक गेट हरा। एग्ज़िट कोड + सारांश पंक्तियाँ कैप्चर करें।
+
+## 5. अनइंस्टॉल सत्यापन
+
+```bash
+# POSIX path — interactive uninstall
+bash scripts/installer/uninstall.sh                           # answers: "y" to confirm
+ls ~/.claude 2>&1                                             # "No such file or directory"
+
+# Re-install from clone, then uninstall non-interactively
+git clone https://github.com/ahmed-g-gad/apothem.git ~/.claude
+bash scripts/installer/uninstall.sh --yes
+ls ~/.claude 2>&1                                             # "No such file or directory"
+```
+
+**अपेक्षित:** इंटरैक्टिव प्रवाह संकेत देता है; `--yes` बैच रन के लिए संकेत को छोड़ देता है; दोनों प्रवाह `~/.claude/` को स्वच्छ रूप से हटा देते हैं; संबद्ध shell-profile पर्यावरण-चर संदर्भ साफ़ हो जाते हैं।
+
+## 6. सुरक्षा-गार्ड सत्यापन
+
+```bash
+# Run uninstall against a path that fails the sentinel-file check.
+mkdir -p /tmp/not-a-claude-install
+CLAUDE_PROJECT_DIR=/tmp/not-a-claude-install bash scripts/installer/uninstall.sh --yes
+```
+
+**अपेक्षित:** अनइंस्टॉलर मना करता है; "sentinel-file missing; refusing to remove unsafe target" डायग्नोस्टिक जारी करता है; एग्ज़िट कोड गैर-शून्य। पथ को छुआ नहीं गया।
+
+```bash
+# Run uninstall against $HOME, /, or empty path.
+CLAUDE_PROJECT_DIR=$HOME bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
+CLAUDE_PROJECT_DIR=/ bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
+CLAUDE_PROJECT_DIR='' bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
+```
+
+**अपेक्षित:** प्रत्येक स्पष्ट "unsafe target" डायग्नोस्टिक के साथ मना करता है; कोई भी फ़ाइल सिस्टम को नहीं छूता।
+
+## 7. रिपोर्टिंग
+
+दूसरे-होस्ट रन के बाद, परिणामों को यहाँ कैप्चर करें:
+
+- `<second-host>/.audit/cross-machine-clone-install.md` (क्लोन + इंस्टॉल कमांड परिणाम)
+- `<second-host>/.audit/cross-machine-validators.md` (खंड 4 वैलिडेटर परिणाम)
+- `<second-host>/.audit/cross-machine-uninstall.md` (खंड 5–6 अनइंस्टॉल + सुरक्षा परिणाम)
+
+निष्कर्षों को मेंटेनर के सामने प्रस्तुत करें:
+
+- ✅ सभी चार-तत्व अनुशासन अपरिवर्तनीय कायम रहते हैं + सभी वैलिडेटर गेट हरे + सभी अनइंस्टॉल सुरक्षा-गार्ड ने असुरक्षित लक्ष्यों को मना कर दिया → प्रकाशन का `portability: universal` दावा एंड-टू-एंड सत्यापित होता है
+- ❌ कोई भी विफलता → विफल खंड + कैप्चर किए गए आउटपुट के साथ `https://github.com/ahmed-g-gad/apothem/issues/new` पर एक इश्यू दर्ज करें; मेंटेनर ट्राइएज करता है
+
+## 8. स्वीकृति मानदंड
+
+- [ ] §1 पूर्व-शर्तें पूरी
+- [ ] §2 क्लोन-और-इंस्टॉल POSIX और Windows दोनों शेल पर सफल होता है
+- [ ] §3 चार-तत्व अनुशासन कायम रहता है (सेंटिनल-फ़ाइल सुरक्षा; पूर्व-शर्त-जाँचित; आइडेमपोटेंट; पर्यावरण-चर कॉन्फ़िगर करने योग्य)
+- [ ] §4 प्रत्येक वैलिडेटर गेट हरा
+- [ ] §5 इंटरैक्टिव अनइंस्टॉल सफल होता है; `--yes` बिना संकेत के सफल होता है
+- [ ] §6 प्रत्येक सुरक्षा-गार्ड अस्वीकृति सक्रिय होती है
+- [ ] §7 परिणाम प्रलेखित ऑडिट पथों पर कैप्चर किए गए
+
+जब एक नए दूसरे होस्ट पर उपरोक्त प्रत्येक चेकबॉक्स पर निशान लग जाता है, तो क्रॉस-मशीन सिंक फ़ॉलो-ऑन (COMPLETION.md §7 बाध्यकारी-अवरोध) बंद हो जाता है।

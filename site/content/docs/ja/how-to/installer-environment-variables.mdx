@@ -1,0 +1,119 @@
+---
+title: "インストーラーの環境変数"
+description: "環境変数でスクリプトインストーラー(宛先、ソース、ハーネス、プロファイル、検証)を制御します。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+目標: 実行前に環境変数を設定することで、スクリプトを編集せずに
+`install.sh` / `install.ps1` を操作します。
+
+## 前提条件
+
+- POSIX シェル(`bash`)または PowerShell 5.1 以上。
+- 変数はインストーラーの先頭で一度だけ読み込まれるため、同じコマンド内で
+  設定する(または先にエクスポートする)うえでインストーラーを実行します。
+
+## インストーラーの変数
+
+| 変数 | 制御する対象 | デフォルト |
+| --- | --- | --- |
+| `APOTHEM_HOME` | クローンしたソースツリーのインストール先 | `$HOME/.apothem` |
+| `APOTHEM_REPO` | クローン元の Git リモート | `https://github.com/ahmed-g-gad/apothem` |
+| `APOTHEM_REF` | チェックアウトする Git の ref。未設定なら最新の署名付き `vMAJOR.MINOR.PATCH` タグを解決し、タグ値で固定でき、`main` で移動するブランチを選択します | 未設定(最新の署名付きタグ) |
+| `APOTHEM_ALLOW_UNVERIFIED` | `1` を設定すると、タグ署名検証の失敗を致命的な中断から警告へと格下げします | `0`(検証する。フェイルクローズ) |
+| `APOTHEM_SOURCE` | クローンの代わりに使用する明示的なローカルソースツリー | 未設定(クローンする) |
+| `APOTHEM_HARNESS` | インストールするハーネス | `claude-code` |
+| `APOTHEM_PROFILE` | 共有プロファイル YAML へのパス | `$HOME/.config/apothem/profile.yaml` |
+| `APOTHEM_SKIP_VERIFY` | `1` を設定すると、インストール後の検証手順をスキップします | `0`(検証を実行する) |
+| `APOTHEM_AUTO_INSTALL_DEPS` | `1` に設定すると、不足している前提条件 `click` / `rich` を確認なしで自動インストールします | `0`（確認する。非対話パイプでは拒否） |
+| `APOTHEM_BIN_DIR` | 配置される `apothem` コマンドの shim のディレクトリ | `$HOME/.local/bin`（POSIX）；`%LOCALAPPDATA%\Microsoft\WindowsApps`（Windows） |
+
+`APOTHEM_SOURCE` はクローンよりも優先されます。`src/apothem` を含む
+チェックアウトに設定されている場合、インストーラーはそれを直接使用し、
+`APOTHEM_REPO` / `APOTHEM_REF` には一切触れず、タグ解決と署名検証を
+スキップします(検証すべき取得物が何もありません)。
+
+## 信頼モデル
+
+`APOTHEM_REF` が設定されていない場合、インストーラーは最新の署名付き
+リリースタグを解決し、いかなる構成を生成する前に `git verify-tag` で
+その署名を検証します。署名されていない、または改ざんされたタグは
+インストールを中断させます。`APOTHEM_REF=<tag>` で既知のリリースを
+固定する(これも検証されます。タグは [リリースページ](https://github.com/ahmed-g-gad/apothem/releases) のもの)、`APOTHEM_REF=main` で移動する
+ブランチを選択する(検証なし)、あるいは `APOTHEM_ALLOW_UNVERIFIED=1` を
+設定して検証失敗を警告とともに通過させる(エアギャップ環境、ローカル、
+署名前のリリースでの利用)、のいずれかが可能です。
+
+```bash title="固定・検証済みのインストール"
+APOTHEM_REF=vMAJOR.MINOR.PATCH bash install.sh
+```
+
+```bash title="検証なしで続行(暫定 / エアギャップ環境)"
+APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
+```
+
+## 手順(POSIX bash)
+
+1. デフォルト以外のハーネスをインストールします:
+
+   ```bash
+   APOTHEM_HARNESS=cursor bash install.sh
+   ```
+
+2. ソースの ref とインストール先を固定します:
+
+   ```bash
+   APOTHEM_REF=main APOTHEM_HOME=/opt/apothem bash install.sh
+   ```
+
+3. ローカルチェックアウトとカスタムプロファイルを使用し、検証をスキップします:
+
+   ```bash
+   APOTHEM_SOURCE=/work/apothem \
+   APOTHEM_PROFILE=/work/profile.yaml \
+   APOTHEM_SKIP_VERIFY=1 \
+   bash install.sh
+   ```
+
+## 手順(PowerShell)
+
+インストーラーを実行する前に、各変数を `$env:` に設定します:
+
+```powershell
+$env:APOTHEM_HARNESS = 'cursor'
+pwsh -NoProfile -File install.ps1
+```
+
+```powershell
+$env:APOTHEM_REF = 'main'
+$env:APOTHEM_HOME = 'C:\opt\apothem'
+pwsh -NoProfile -File install.ps1
+```
+
+```powershell
+$env:APOTHEM_SOURCE = 'C:\work\apothem'
+$env:APOTHEM_PROFILE = 'C:\work\profile.yaml'
+$env:APOTHEM_SKIP_VERIFY = '1'
+pwsh -NoProfile -File install.ps1
+```
+
+## 検証
+
+インストーラーは `✓ Harness <name> installed` を出力し、続いて
+(`APOTHEM_SKIP_VERIFY=1` でない限り)`✓ verify passed` を出力します。
+独立して確認します:
+
+```bash
+apothem verify --harness cursor
+```
+
+プロファイルがまだ存在しなかった場合、インストーラーはサンプルから
+一つ作成して早期に終了します —— `$APOTHEM_PROFILE` を編集してから
+再実行してください。
+
+## 関連
+
+- [インストール](/docs/install) は、ワンショットのネットワークインストールを
+  扱います。
+- 初回インストール後に CLI を通じてハーネスを追加するには、[ハーネスを追加する](/docs/how-to/adding-a-harness) を参照してください。

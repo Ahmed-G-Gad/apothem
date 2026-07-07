@@ -1,0 +1,67 @@
+---
+title: "/threat-model-audit"
+description: "/threat-model-audit — Pass audit pemodelan ancaman terhadap metodologi STRIDE + PASTA."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Peran:** Pemodel ancaman
+**Posisi pipeline:** benteng
+
+Pass audit pemodelan ancaman terhadap metodologi STRIDE + PASTA.
+
+## Pemanggilan kanonik
+
+```bash
+/threat-model-audit
+```
+
+Dengan argumen:
+
+```bash
+/threat-model-audit [path/to/target/] [--dry-run]
+```
+
+## Masukan
+
+Arsitektur dan aliran data repositori host.
+
+## Keluaran
+
+Laporan temuan model-ancaman yang dideduplikasi dan dipilah berdasarkan keparahan (hanya-laporan; remediasi dirutekan ke `/fortress` / `/elevate`).
+
+## Hilir
+
+Dimensi model-ancaman dari urutan tinjauan audit — disapu secara paralel oleh `/audit` dan diremediasi oleh `/fortress`.
+
+## Fase alur kerja
+
+Perintah ini menjalankan pass audit pemodelan-ancaman atas repositori host:
+
+1. **Memetakan permukaan** — Mencantumkan arsitektur, titik masuk, batas kepercayaan, dan aliran data.
+2. **Memodelkan ancaman** — Menerapkan metodologi STRIDE + PASTA pada setiap batas dan aset.
+3. **Memilah temuan** — Memeringkat setiap ancaman berdasarkan keparahan dengan alasan pendorong konkret.
+4. **Memancarkan laporan** — Menyintesis temuan yang dideduplikasi dan dipilah berdasarkan keparahan (hanya-laporan).
+
+## Mode kegagalan
+
+| Gejala | Penyebab | Pemulihan |
+|---------|-------|----------|
+| Tidak ada permukaan arsitektur | Target tidak punya batas aliran-data yang dapat ditemukan | Arahkan audit ke repositori dengan titik masuk dan batas kepercayaan yang dapat dipetakan |
+| Temuan tanpa lingkup | Ancaman diklaim tanpa lokus | Lampirkan aset / batas terdampak dan sel metodologi yang gagal |
+| Remediasi diharapkan | Audit hanya-laporan | Rutekan temuan ke `/fortress` (remediasi) atau `/elevate` |
+
+## Contoh
+
+```bash
+# Dry-run untuk mempratinjau cakupan audit
+/threat-model-audit --dry-run
+
+# Audit sebuah repositori target
+/threat-model-audit path/to/target/
+```
+
+## Referensi silang
+
+- [Ikhtisar pipeline](/docs/pipeline)
+- [Referensi perintah](/docs/reference/commands)

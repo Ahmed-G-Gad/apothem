@@ -1,0 +1,70 @@
+---
+title: "/plan-execute"
+description: "/plan-execute——在符合性检查下，从主计划套件中执行某一具体阶段。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**角色：** 执行者
+**流水线位置：** 终端
+
+在符合性检查下，从主计划套件中执行某一具体阶段。
+
+## 规范调用
+
+```bash
+/plan-execute
+```
+
+带参数：
+
+```bash
+/plan-execute [path/to/plan-suite/] [phase-id] [--dry-run]
+```
+
+## 输入
+
+已生成 + 已审查的计划套件；已审查的 `_inputs/handoff-manifest.yml`
+
+## 输出
+
+各阶段的 REPORT.md 文件、代码库制品、COMPLETION.md
+
+## 下游
+
+`/code-review`——十一命令审计堡垒序列的规范入口点。`/plan-execute` 是*计划*流水线的终端阶段；当最终阶段完成时，构建好的代码交接给审计堡垒进行审查。
+
+## 工作流阶段
+
+该命令遵循标准的 `/plan` 流水线工作流：
+
+1. **加载上下文** — 读取计划套件、规则和恢复契约。
+2. **验证前置条件** — 确认依赖阶段已完成。
+3. **执行任务** — 履行命令使命。
+4. **验证输出** — 确认所有声明的输出存在并通过质量门。
+5. **更新 PROGRESS.md** — 在阶段输出登记表中记录已验证的输出。
+6. **生成 REPORT.md** — 记录预发出门的发布凭证。
+
+## 失败模式
+
+| 症状 | 原因 | 恢复 |
+|---------|-------|----------|
+| 前置条件未完成 | 依赖阶段尚未结束 | 先完成上游阶段 |
+| 质量门 FAIL | 输出不达标 | 修复输出并重新运行 |
+| 缺失输入文件 | 计划套件文件缺失 | 运行 `/plan-generate` 以创建它 |
+
+## 示例
+
+```bash
+# Dry-run to preview what would happen
+/plan-execute --dry-run
+
+# Execute against a named plan suite
+/plan-execute path/to/plan-suite/
+```
+
+## 交叉引用
+
+- [流水线概览](/docs/pipeline)
+- [命令参考](/docs/reference/commands)
+- [堡垒审计入口：`/code-review`](/docs/reference/commands) — 计划流水线完成后构建好的代码进入的审查序列

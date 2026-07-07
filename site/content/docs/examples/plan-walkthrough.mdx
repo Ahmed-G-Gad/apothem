@@ -1,0 +1,62 @@
+---
+title: "Plan walkthrough"
+description: "End-to-end walkthrough of the /plan pipeline for a real task."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+This example walks through the full `/plan` pipeline for a simple task:
+adding a new CLI subcommand to Apothem.
+
+## Step 1: Write prose requirements
+
+Create `prose.md`:
+
+```markdown
+Add a `apothem status` subcommand that prints the current apothem
+version, installed harnesses, and the result of `apothem verify`.
+The output should be machine-parseable (JSON with --json flag) and
+human-readable by default.
+```
+
+## Step 2: Refine to spec
+
+```bash
+/plan-spec prose.md --suite-name apothem-status-command
+```
+
+This runs the six-phase Forge, asking clarifying questions and producing
+`plans/apothem-status-command/_spec/spec.md`.
+
+## Step 3: Generate the plan
+
+```bash
+/plan-generate
+```
+
+Produces PREAMBLE.md, MASTER-PLAN.md, PROGRESS.md, PLAN-NOTES.md, and
+per-phase PHASE.md files under `plans/apothem-status-command/phases/`.
+
+## Step 4: Review the plan
+
+```bash
+/plan-review
+```
+
+Forensic audit with prose-fidelity, consistency, and quality scores.
+Fix any FAIL findings before proceeding.
+
+## Step 5: Execute phases
+
+```bash
+/plan-execute    # executes the first phase, then pauses
+/plan-execute    # executes the next phase, then pauses
+...
+```
+
+## Step 6: Check progress
+
+```bash
+/plan-status
+```
+
+Reports current phase, verified outputs, and next action.

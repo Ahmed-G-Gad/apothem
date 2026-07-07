@@ -1,0 +1,96 @@
+---
+title: "Couleurs de marque des environnements"
+description: "Palette de couleurs de marque par environnement utilisée sur tout le site web du projet Apothem, dans le logo Apothem et dans chaque diagramme d'architecture. Une source de vérité unique — dix-sept couleurs de marque, un concentrateur apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Les énumérations canoniques nom-de-marque × code-couleur ci-dessous sont encadrées dans une clôture `text` afin de préserver les identifiants littéraux par environnement requis par la vocation de catalogue de la palette.
+
+## Cœur d'Apothem
+
+| Jeton | Clair | Sombre | Usage |
+|---|---|---|---|
+| `apothem-hub` | `#0F172A` | `#F1F5F9` | Le nœud central de distribution (« apothem ») dans chaque diagramme d'architecture et le concentrateur central du logo Apothem. |
+| `shared-profile` | `#10B981` | `#34D399` | Le profil source-de-vérité qui alimente le cœur d'apothem. |
+
+## Palette des environnements
+
+Quinze des dix-sept environnements sont colorés pour correspondre à leur identité
+de marque principale. Les deux restants — `glm` et `kimi-code` — n'ont pas encore
+de couleur de marque définie ; leurs lignes sont ajoutées une fois la couleur de
+marque amont fixée, selon l'étape de propagation décrite sous [Mises à jour](#updates).
+
+```text
+| Token             | Light     | Dark      | Source                                                                                                                                              |
+|-------------------|-----------|-----------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
+| `antigravity`     | `#7C3AED` | `#9F67FF` | Google Antigravity deep-purple.                                                                                                                     |
+| `claude-code`     | `#CC785C` | `#E89378` | Anthropic terracotta-orange.                                                                                                                        |
+| `codebuddy`       | `#0052D9` | `#5E8EF7` | Tencent CodeBuddy blue.                                                                                                                             |
+| `codex`           | `#10A37F` | `#19C796` | OpenAI signature teal.                                                                                                                              |
+| `cursor`          | `#6E56CF` | `#9B85E3` | Cursor brand purple.                                                                                                                                |
+| `gemini-cli`      | `#4285F4` | `#6BA4F7` | Google blue (primary); the Apothem mark renders the node with all four Google brand hues `#4285F4` / `#34A853` / `#FBBC04` / `#EA4335`.             |
+| `github-copilot`  | `#0A3069` | `#5B8FE3` | GitHub Mona deep-blue.                                                                                                                              |
+| `hermes`          | `#71717A` | `#A1A1AA` | Community silver-grey.                                                                                                                              |
+| `kiro`            | `#790ECB` | `#A862DD` | Kiro violet.                                                                                                                                        |
+| `open-claw`       | `#DC2626` | `#F87171` | Community red-orange.                                                                                                                               |
+| `opencode`        | `#F59E0B` | `#FBBF24` | Community amber.                                                                                                                                    |
+| `qwen-code`       | `#FF6A00` | `#FF8C40` | Alibaba Qwen orange.                                                                                                                                |
+| `trae`            | `#FF0066` | `#FF599C` | ByteDance Trae magenta.                                                                                                                             |
+| `windsurf`        | `#0EA5E9` | `#38BDF8` | Windsurf sky-blue.                                                                                                                                  |
+| `zed`             | `#084CCF` | `#5E8BE0` | Zed Industries blue.                                                                                                                                |
+```
+
+## Justification des noms
+
+- **`apothem-hub`** — le centre géométrique que le nom évoque (l'apothème d'un polygone régulier pointe vers l'intérieur, vers son cœur).
+- **`shared-profile`** — la source amont, distincte de la couleur de tout environnement isolé afin qu'elle se lise comme la flèche d'« entrée » dans chaque diagramme.
+- **Les jetons par environnement** reflètent le slug d'environnement utilisé dans toute la base de code (`harnesses/<slug>/`, la clé du point d'entrée, l'argument `--harness <slug>` de la CLI). Un mot par concept ; la même chaîne partout.
+
+## Utilisation de Mermaid
+
+```mermaid
+graph LR
+    P["shared profile"]:::shared-profile --> A["apothem"]:::apothem-hub
+    A --> AG["Antigravity"]:::antigravity
+    A --> CC["Claude Code"]:::claude-code
+    A --> CB["CodeBuddy"]:::codebuddy
+    A --> CO["Codex"]:::codex
+    A --> CU["Cursor"]:::cursor
+    A --> GE["Gemini CLI"]:::gemini-cli
+    A --> GC["GitHub Copilot"]:::github-copilot
+    A --> HE["Hermes"]:::hermes
+    A --> KI["Kiro"]:::kiro
+    A --> OW["Open-Claw"]:::open-claw
+    A --> OC["OpenCode"]:::opencode
+    A --> QW["Qwen Code"]:::qwen-code
+    A --> TR["Trae"]:::trae
+    A --> WI["Windsurf"]:::windsurf
+    A --> ZE["Zed"]:::zed
+
+    classDef apothem-hub fill:#0F172A,stroke:#0F172A,color:#FFFFFF
+    classDef shared-profile fill:#10B981,stroke:#10B981,color:#FFFFFF
+    classDef antigravity fill:#7C3AED,stroke:#7C3AED,color:#FFFFFF
+    classDef claude-code fill:#CC785C,stroke:#CC785C,color:#FFFFFF
+    classDef codebuddy fill:#0052D9,stroke:#0052D9,color:#FFFFFF
+    classDef codex fill:#10A37F,stroke:#10A37F,color:#FFFFFF
+    classDef cursor fill:#6E56CF,stroke:#6E56CF,color:#FFFFFF
+    classDef gemini-cli fill:#4285F4,stroke:#4285F4,color:#FFFFFF
+    classDef github-copilot fill:#0A3069,stroke:#0A3069,color:#FFFFFF
+    classDef hermes fill:#71717A,stroke:#71717A,color:#FFFFFF
+    classDef kiro fill:#790ECB,stroke:#790ECB,color:#FFFFFF
+    classDef open-claw fill:#DC2626,stroke:#DC2626,color:#FFFFFF
+    classDef opencode fill:#F59E0B,stroke:#F59E0B,color:#FFFFFF
+    classDef qwen-code fill:#FF6A00,stroke:#FF6A00,color:#FFFFFF
+    classDef trae fill:#FF0066,stroke:#FF0066,color:#FFFFFF
+    classDef windsurf fill:#0EA5E9,stroke:#0EA5E9,color:#FFFFFF
+    classDef zed fill:#084CCF,stroke:#084CCF,color:#FFFFFF
+```
+
+## Accessibilité
+
+Chaque jeton en mode clair satisfait au contraste WCAG 2.2 AA face à du texte blanc (≥4,5 : 1) là où le contraste le permet sans dénaturer la couleur de marque. Lorsque la couleur de marque native d'un environnement passe sous le seuil AA face à du texte blanc à elle seule (notamment la famille ambre / orange et la famille bleu ciel / sarcelle de jetons énumérée ci-dessus), les diagrammes qui ont besoin d'un contraste WCAG AA texte-sur-couleur utilisent la **variante en mode sombre** (la teinte rehaussée) comme remplissage du diagramme afin que le texte blanc se lise nettement. La colonne du mode sombre est calibrée à cette fin : chaque jeton en mode sombre dépasse le seuil AA face à du texte blanc.
+
+## Mises à jour
+
+La palette n'est mise à jour que lorsqu'un environnement ratifie un changement de marque en amont. Les changements de marque par environnement se propagent de manière atomique à travers `site/app/global.css`, cette page et chaque master SVG concerné sous `assets/src/`.

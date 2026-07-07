@@ -1,0 +1,71 @@
+---
+title: "uninstall"
+description: "Referencia de la CLI para el comando apothem uninstall."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Elimina la configuración de un adaptador de harness.
+
+## Sinopsis
+
+```
+apothem uninstall --harness NAME|all [--yes] [--project PATH]
+                   [--quiet|-q] [--verbose|-v]
+                   [--format plain|json] [--json] [--no-color]
+```
+
+Elimina los destinos del harness gestionados por el adaptador. Solicita confirmación a menos que se proporcione `--yes`. Si un harness seleccionado no está instalado, el comando se completa correctamente (salida 0) con un aviso de "nothing to remove".
+
+El alias en forma continua `apothem uninstalling` se resuelve al mismo manejador.
+
+## Opciones
+
+| Opción | Descripción |
+|---|---|
+| `--harness NAME` | Adaptador de harness a eliminar, o `all` para el conjunto de todo el registro (obligatorio). |
+| `--yes` | Omite la solicitud de confirmación. |
+| `--project PATH` | Raíz del proyecto para los harness con alcance de proyecto. |
+| `--quiet`, `-q` | Suprime la salida informativa; solo se emiten errores. |
+| `--verbose`, `-v` | Emite salida de diagnóstico adicional. |
+| `--format plain\|json` | Formato de salida (por defecto: `plain`). |
+| `--json` | Abreviatura de `--format json`. |
+| `--no-color` | Desactiva los códigos de color ANSI en la salida. |
+| `-h`, `--help` | Muestra la ayuda y sale. |
+
+## Salida JSON
+
+Cuando el adaptador está instalado y se elimina correctamente:
+
+```json
+{"action": "uninstalled", "harness": "claude-code", "output_path": "..."}
+```
+
+Cuando el adaptador no estaba instalado:
+
+```json
+{"status": "not_installed", "harness": "claude-code"}
+```
+
+## Ejemplos
+
+```bash
+apothem uninstall --harness claude-code
+apothem uninstall --harness claude-code --yes
+apothem uninstall --harness cursor --project . --yes
+apothem uninstall --harness all --project . --yes
+apothem Uninstalling --harness cursor --project . --yes   # continuous-form alias
+```
+
+## Códigos de salida
+
+| Código | Significado |
+|---|---|
+| 0 | Adaptador desinstalado, o no estaba instalado |
+| 1 | Harness no encontrado, o el usuario abortó la solicitud de confirmación |
+
+## Véase también
+
+- `apothem uninstalling` — alias en forma continua de este comando (documentado aquí; la CLI acepta ambas formas)
+- [apothem install](/docs/cli-reference/install) — instala una configuración de harness
+- [apothem verify](/docs/cli-reference/verify) — confirma el estado de la instalación

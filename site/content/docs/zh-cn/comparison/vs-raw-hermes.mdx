@@ -1,0 +1,41 @@
+---
+title: "Apothem 对比原生 Hermes 配置"
+description: "手工维护 Hermes 配置，还是经由 Apothem 的共享 profile 来管理它。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Hermes 读取 `~/.hermes/config.yaml`。Apothem 写入原生 YAML 配置（把 profile 的 MCP
+清单投影到 `auxiliary.mcp`），并在 `~/.hermes/.apothem/support/skills/` 下安装共享的命令群和
+技能群。Hermes 自己的 `skills.config` 是一个注册表包列表，因此 Apothem 不编写它。
+
+## 状态
+
+**预览。** Hermes 适配器面向当前已文档化的配置文件和技能发现面。非技能群仍属于
+Apothem 支持材料。
+
+## 工作量对比
+
+| 任务 | 原生手工配置 | Apothem 管理 |
+| ---- | --------------- | --------------- |
+| 编写可复用技能 | 手工编辑配置和技能目录 | 在共享语料中编写一次 |
+| 让各环境的群保持一致 | 逐工具手动 | `apothem update` 时自动 |
+| 安装 / 移除配置 | 手动 | `apothem install` / `apothem uninstall` |
+| 验证配置是否正确 | 手动检查 | `apothem verify --harness hermes` |
+
+## Apothem 管理什么
+
+Hermes 适配器写入 `config.yaml`，把 Apothem 斜杠命令封装为技能，把 Apothem 技能复制
+进被引用的支持目录，并把规则、模板、agents 与 hook 材料保留在 Apothem 支持子树下。
+
+## 迁移路径
+
+1. 如果尚未创建共享 profile，运行 `apothem profile init`。
+2. 把可复用的 Hermes 技能或命令提示词移入共享语料。
+3. 运行 `apothem install --harness hermes` 以渲染原生配置和支持技能目录。
+4. 运行 `apothem verify --harness hermes` 以确认配置已落地。
+
+## 接着阅读
+
+- [Hermes 适配器参考](/docs/harnesses/hermes)
+- [对比概览](/docs/comparison)

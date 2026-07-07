@@ -1,0 +1,422 @@
+---
+title: "आर्टिफ़ैक्ट स्कीमा विनिर्देश"
+description: "Apothem स्रोत वृक्ष में सभी आर्टिफ़ैक्ट प्रकारों के लिए कैनोनिकल YAML frontmatter स्कीमा और अनिवार्य फ़ील्ड, प्रति-वर्ग टेम्पलेट और सत्यापन नियमों के साथ।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**सभी Apothem ईकोसिस्टम आर्टिफ़ैक्ट्स के लिए कैनोनिकल YAML frontmatter और अनिवार्य फ़ील्ड।**
+
+## अवलोकन
+
+Apothem स्रोत वृक्ष में सभी आर्टिफ़ैक्ट (`src/apothem/` और
+मूल कॉन्फ़िगरेशन सतह के अंतर्गत) में अपने आर्टिफ़ैक्ट प्रकार के लिए विशिष्ट
+अनिवार्य और वैकल्पिक फ़ील्ड के साथ एक YAML frontmatter ब्लॉक
+(`---` सीमांकक के बीच) अवश्य होना चाहिए। यह दस्तावेज़ प्रत्येक प्रकार के लिए
+कैनोनिकल स्कीमा परिभाषित करता है।
+
+**सार्वभौमिक नियम:**
+
+- Frontmatter YAML 1.2 अनुपालक है
+- सभी स्ट्रिंग मान दोहरे उद्धरण चिह्नों का उपयोग करते हैं जब तक कि खाली न हों
+- फ़ील्ड क्रम: अनिवार्य फ़ील्ड पहले, वैकल्पिक फ़ील्ड प्रासंगिकता के अनुसार समूहित
+- frontmatter में टिप्पणियाँ स्पेस के साथ `#` का उपयोग करती हैं: `# comment`
+- पथ मान सापेक्ष होने चाहिए (कोई अग्रणी `/` नहीं) और क्रॉस-प्लेटफ़ॉर्म संगतता के लिए फ़ॉरवर्ड स्लैश (`/`) का उपयोग करें
+
+**संस्करण परिपाटी (आर्टिफ़ैक्ट प्रकारों में सार्वभौमिक):**
+
+- `version` **सिमेंटिक** है (`MAJOR.MINOR.PATCH`)। ब्रेकिंग स्कीमा या कॉन्ट्रैक्ट परिवर्तनों के लिए MAJOR बढ़ाएँ; अतिरिक्त गैर-ब्रेकिंग परिवर्तनों (नई वैकल्पिक फ़ील्ड, अतिरिक्त अनुभाग, अतिरिक्त एंटी-पैटर्न) के लिए MINOR; स्पष्टीकरण, स्वरूपण सुधार, या व्यवहार परिवर्तन के बिना केवल-दस्तावेज़ संपादन के लिए PATCH।
+- `updated` सबसे हाल के संपादन की **ISO 8601 तिथि** (`YYYY-MM-DD`) है। यह प्रत्येक `version` बढ़ोतरी के साथ बदलनी चाहिए और गैर-संस्करण-बढ़ोतरी लिंक ताज़गी के लिए स्वतंत्र रूप से अपडेट की जा सकती है।
+- नए आर्टिफ़ैक्ट `v0.Y.Z` पर बीज रूप में शुरू होते हैं। `vX.Y.Z` में प्रोन्नति इंगित करती है कि आर्टिफ़ैक्ट का कॉन्ट्रैक्ट सार्वजनिक प्रतिबद्धता बनने के लिए पर्याप्त स्थिर है।
+
+---
+
+## स्कीमा: नियम
+
+**पथ पैटर्न:** `src/apothem/rules/*.md`
+
+**उद्देश्य:** व्यवहारगत अधिदेश और परिचालन निर्देश।
+
+### अनिवार्य फ़ील्ड
+
+```yaml
+---
+name: "kebab-case-identifier"
+description: "One-line description"
+pathFilter: "**/*.py, **/*.toml"
+alwaysApply: true | false
+---
+```
+
+| फ़ील्ड | प्रकार | उद्देश्य | उदाहरण |
+| ----- | ---- | ------- | ------- |
+| `name` | string | मशीन-पठनीय पहचानकर्ता | `"operational-mandates"` |
+| `version` | string | सिमेंटिक संस्करण | `"X.Y.Z"` |
+| `updated` | string (ISO 8601) | अंतिम अपडेट तिथि | `"2026-04-20"` |
+| `description` | string | रजिस्ट्रियों के लिए एक-पंक्ति विवरण | `"Operational mandates CM-1–10"` |
+| `scope` | enum | `always-on` (सर्वत्र लागू) या `path-filtered` (फ़ाइल पथ पर सशर्त) | `"always-on"` |
+| `portability` | enum | परिवेश संगतता गारंटी | `"universal"` |
+
+### वैकल्पिक फ़ील्ड (यदि लागू हो)
+
+Rules carry no optional frontmatter fields, and — unlike other artifact classes — no `version` / `updated` / `scope` / `portability` fields either. The four mandatory fields above are the complete rule frontmatter contract enforced by `frontmatter_grep`.
+
+### उदाहरण
+
+```yaml
+---
+name: "operational-mandates"
+description: "Behavioral definitions for CM-1 through CM-10: violation indicators and recovery actions"
+pathFilter: ""
+alwaysApply: true
+---
+
+# Rule: Operational Mandates
+...
+```
+
+---
+
+## स्कीमा: कमांड
+
+**पथ पैटर्न:** `src/apothem/commands/*.md`
+
+**उद्देश्य:** स्लैश कमांड परिभाषाएँ (`/plan-execute`, `/freshify`, आदि)।
+
+### अनिवार्य फ़ील्ड
+
+```yaml
+---
+name: "command-name"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "What this command does"
+argument-hint: "[argument-pattern]"
+disable-model-invocation: true | false
+portability: "universal"
+allowed-tools: "*"
+---
+```
+
+| फ़ील्ड | प्रकार | उद्देश्य | उदाहरण |
+| ----- | ---- | ------- | ------- |
+| `name` | string | कमांड नाम (अग्रणी `/` के बिना) | `"plan-execute"` |
+| `version` | string | सिमेंटिक संस्करण | `"X.Y.Z"` |
+| `updated` | string (ISO 8601) | अंतिम अपडेट तिथि | `"2026-04-20"` |
+| `description` | string | संक्षिप्त विवरण | `"Executes a phase with quality gates"` |
+| `argument-hint` | string | उपयोग पैटर्न या यदि कोई न हो तो `"[args...]"` | `"[path/to/plan] [phase-id]"` |
+| `disable-model-invocation` | boolean | यदि true, तो कमांड किसी कोडिंग-सहायक रनटाइम द्वारा कॉल किए जाने के लिए नहीं है | `true` |
+
+### वैकल्पिक फ़ील्ड
+
+Commands carry no optional frontmatter fields — the eight mandatory fields above are the complete command frontmatter contract enforced by `command.schema.json` (`additionalProperties: false`).
+
+### उदाहरण
+
+```yaml
+---
+name: "plan-execute"
+version: "X.Y.Z"
+updated: "2026-04-20"
+description: "Executes a specific phase from a Master Plan Suite with conformity checking and quality gates"
+argument-hint: "[path/to/plan-suite/] [phase-id] [--dry-run]"
+disable-model-invocation: true
+portability: "universal"
+allowed-tools: "*"
+---
+
+# /plan-execute — Execute a Specific Phase
+...
+```
+
+---
+
+## स्कीमा: सहायक
+
+**पथ पैटर्न:**
+
+```text
+src/apothem/agents/*.md
+```
+
+**उद्देश्य:** समानांतर अन्वेषण, ऑडिटिंग, और गुणवत्ता गेटों के लिए
+स्थायी सहायक परिभाषाएँ।
+
+### अनिवार्य फ़ील्ड
+
+```yaml
+---
+name: "agent-name"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "What this agent specializes in"
+tools: "Tool1, Tool2, Tool3"
+disallowedTools: "Write, Edit"
+maxTurns: 20
+effort: "high" | "medium" | "low"
+---
+```
+
+| फ़ील्ड | प्रकार | उद्देश्य | उदाहरण |
+| ----- | ---- | ------- | ------- |
+| `name` | string | सहायक पहचानकर्ता | `"codebase-explorer"` |
+| `version` | string | सिमेंटिक संस्करण | `"X.Y.Z"` |
+| `updated` | string (ISO 8601) | अंतिम अपडेट तिथि | `"2026-04-20"` |
+| `description` | string | विशेषज्ञता विवरण | `"Deep codebase exploration"` |
+| `tools` | string (अल्पविराम-पृथक) | अनुमत उपकरण | `"Read, Glob, Grep, Bash"` |
+| `disallowedTools` | string (अल्पविराम-पृथक) | निषिद्ध उपकरण | `"Write, Edit, TodoWrite"` |
+| `maxTurns` | integer | अधिकतम संवाद चक्र (सामान्य 5–20; 20 से अधिक मानों के लिए इनलाइन औचित्य टिप्पणी आवश्यक) | `20` |
+| `effort` | enum | गणनात्मक दायरा | `"high"` |
+
+### वैकल्पिक फ़ील्ड
+
+```yaml
+permissionMode: "default"       # Permission handling
+memory: true | false                    # If true, agent retains memory across sessions
+pattern: "Research" | "Audit" | "Implementation" | "Quality"  # Agent team pattern
+portability: "universal"
+```
+
+### उदाहरण
+
+```yaml
+---
+name: "codebase-explorer"
+version: "X.Y.Z"
+updated: "2026-04-20"
+description: "Deep codebase exploration — find patterns, trace dependencies, discover conventions, map architecture"
+tools: "Read, Glob, Grep, Bash"
+disallowedTools: "Write, Edit, TodoWrite"
+maxTurns: 20
+effort: "high"
+permissionMode: "default"
+memory: false
+portability: "universal"
+---
+
+You are a codebase exploration specialist...
+```
+
+---
+
+## स्कीमा: स्किल
+
+**पथ पैटर्न:** `src/apothem/skills/*/SKILL.md`
+
+**उद्देश्य:** पहचान संकेतों और निष्पादन प्रक्रियाओं के साथ
+पुन: प्रयोज्य तकनीक परिभाषाएँ।
+
+### अनिवार्य फ़ील्ड
+
+```yaml
+---
+name: "skill-name"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "What this skill teaches"
+archetype: "workflow-template"
+userInvocable: true | false
+disable-model-invocation: true | false
+allowed-tools: "Read, Write, Glob"
+---
+```
+
+| फ़ील्ड | प्रकार | उद्देश्य | उदाहरण |
+| ----- | ---- | ------- | ------- |
+| `name` | string | स्किल पहचानकर्ता | `"plan-suite"` |
+| `version` | string | सिमेंटिक संस्करण | `"X.Y.Z"` |
+| `updated` | string (ISO 8601) | अंतिम अपडेट तिथि | `"2026-04-20"` |
+| `description` | string | स्किल क्या प्रदान करती है | `"Master Plan Suite template"` |
+| `user-invocable` | boolean | यदि true, तो उपयोगकर्ता इस स्किल का स्पष्ट रूप से अनुरोध कर सकता है | `false` |
+
+### वैकल्पिक फ़ील्ड
+
+```yaml
+argument-hint: "[args...]"                           # Usage pattern if userInvocable
+effort: "low" | "medium" | "high" | "xhigh" | "max" # Optional effort level
+```
+
+### उदाहरण
+
+```yaml
+---
+name: "ecosystem-audit"
+version: "X.Y.Z"
+updated: "2026-04-20"
+description: "Comprehensive blind audit of the apothem ecosystem"
+archetype: "audit-template"
+userInvocable: true
+disable-model-invocation: true
+allowed-tools: "Read, Write, Edit, Glob, Grep, Bash"
+argument-hint: "[--focus area] [--fix]"
+effort: "max"
+---
+
+## Purpose
+...
+```
+
+---
+
+## स्कीमा: हुक
+
+**पथ पैटर्न:** `settings.json` का `hooks` ब्लॉक तथा
+`src/apothem/hooks/` के अंतर्गत Python कार्यान्वयन।
+
+**उद्देश्य:** घटना-ट्रिगर सत्यापनकर्ता और स्थिति-प्रबंधन हैंडलर घोषित करना
+जिन्हें होस्ट सुपरिभाषित जीवनचक्र बिंदुओं पर आह्वान करता है।
+
+### सेटिंग्स-फ़ाइल स्कीमा
+
+`hooks` शीर्ष-स्तरीय कुंजी घटना नामों को मैचर ब्लॉकों के सरणियों से मैप करती है:
+
+```json
+"hooks": {
+  "<EventName>": [
+    {
+      "matcher": "<pattern>",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "python",
+          "args": ["-m", "apothem.hooks.dispatch", "<EventName>", "<message-name>"],
+          "timeout": <seconds>,
+          "statusMessage": "<short human-readable label>"
+        }
+      ]
+    }
+  ]
+}
+```
+
+| फ़ील्ड | प्रकार | उद्देश्य | उदाहरण |
+| ----- | ---- | ------- | ------- |
+| `matcher` | string | उपकरण-नाम पैटर्न (या उपकरण-अज्ञेय घटनाओं के लिए `"*"`) | `"Write"` |
+| `hooks[].type` | literal `"command"` | आज समर्थित एकमात्र हुक हैंडलर प्रकार | `"command"` |
+| `hooks[].command` | string | निष्पादन योग्य कमांड; Apothem `python` का उपयोग करता है | `"python"` |
+| `hooks[].args` | array of strings | `-m apothem.hooks.dispatch` या `-m apothem.conformity.gate` का आह्वान करने वाले एक्सेक-फ़ॉर्म तर्क | `["-m", "apothem.hooks.dispatch", "SessionStart"]` |
+| `hooks[].timeout` | integer seconds | होस्ट द्वारा हुक को मारने से पहले अधिकतम रनटाइम | `30` |
+| `hooks[].statusMessage` | string | होस्ट UI में दिखाया गया संक्षिप्त लेबल | `"Session start"` |
+
+### आवश्यक घटनाएँ
+
+शिप किए गए टेम्पलेट निम्नलिखित घटनाएँ पंजीकृत करते हैं। सत्यापनकर्ताओं के
+PASS रिपोर्ट करने के लिए सभी पाँच आवश्यक हैं:
+
+> **टाइमआउट मान कैनोनिकल हुक-इवेंट बजट को प्रतिबिंबित करते हैं** — नीचे दी गई तालिका
+> उन्हें पाठक की सुविधा के लिए पुनरुत्पादित करती है; कैनोनिकल स्रोत शासन करता है।
+
+| घटना | सामान्य टाइमआउट | उद्देश्य |
+| ----- | --------------- | ------- |
+| `SessionStart` | 30 सेकंड | स्मृति पढ़ें, प्लान स्थिति जाँचें, तत्परता रिपोर्ट करें |
+| `PreToolUse` | 10 सेकंड | सामग्री-पृथक्करण नीतियों + frontmatter के लिए राइट सत्यापित करें |
+| `PreCompact` | 30 सेकंड | संदर्भ संपीडन से पहले स्थिति बाह्यीकृत होना सत्यापित करें |
+| `PostCompact` | 30 सेकंड | संदर्भ संपीडन के बाद कार्यशील स्थिति पुनर्स्थापित करें |
+| `Stop` | 60 सेकंड | सत्र-अंत बाह्यीकरण — पुनरारंभ स्थिति, आउटपुट, निर्णय |
+
+`dispatch.py` अग्रगामी संगतता के लिए अपनी घटना श्वेतसूची पर `UserPromptSubmit`
+और `Notification` को भी स्वीकार करता है; शिप किए गए टेम्पलेट में इनमें से कोई भी
+वायर्ड नहीं है। सक्षम करने के लिए उसी एक्सेक-फ़ॉर्म पैटर्न के साथ एक मैचर ब्लॉक जोड़ें।
+
+### Python परत
+
+प्रत्येक हुक कमांड उसी Python डिस्पैचर के माध्यम से मार्गित होती है:
+
+| फ़ाइल | भूमिका |
+| ---- | ---- |
+| `src/apothem/hooks/dispatch.py` | `SessionStart` को `session_start_bootstrap.main()` तथा प्रत्येक अन्य श्वेतसूचीबद्ध घटना को `emit_hook_context.main()` पर मार्गित करता है। हमेशा 0 के साथ बाहर निकलता है। |
+| `src/apothem/hooks/session_start_bootstrap.py` | सत्र-आरंभ हुक स्क्रिप्ट — स्मृति और प्लान-सूट सारांश संदर्भ उत्सर्जित करती है। |
+| `src/apothem/hooks/emit_hook_context.py` | डिफ़ॉल्ट हुक एमिटर — पंजीकृत `--context-file` पेलोड वहन करते हुए एक वैध एनवेलप लिखता है। |
+| `src/apothem/hooks/messages/*.md` | `--context-file` द्वारा संदर्भित स्थैतिक संदर्भ पेलोड। |
+
+### सत्यापन
+
+`scripts/dev/validate_hooks.py` हुक कॉन्ट्रैक्ट लागू करता है:
+
+- `settings.json` JSON के रूप में पार्स होता है और प्रत्येक आवश्यक घटना घोषित करता है।
+- तीनों Python स्क्रिप्ट मौजूद हैं और वैध Python के रूप में पार्स होती हैं।
+- `--context-file` तर्कों द्वारा संदर्भित सभी संदेश फ़ाइलें मौजूद हैं।
+- `src/apothem/hooks/**.py` में कोई हार्डकोडेड निरपेक्ष उपयोगकर्ता पथ (`C:\Users\...` आदि) प्रकट नहीं होते।
+- `src/apothem/hooks/` और `scripts/` के अंतर्गत शेल आर्टिफ़ैक्ट्स अनुमोदित लोकेटर / बूटस्ट्रैप स्टब तक सीमित हैं।
+
+---
+
+## स्कीमा: CLAUDE.md
+
+**पथ:** `CLAUDE.md` (मूल)
+
+**उद्देश्य:** वैश्विक ईकोसिस्टम कॉन्फ़िगरेशन अनुक्रमणिका।
+
+### अनिवार्य YAML Frontmatter
+
+```yaml
+---
+name: "CLAUDE"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "Global Claude Code ecosystem configuration and mandate index"
+scope: "always-on"
+portability: "universal"
+---
+```
+
+### आवश्यक अनुभाग (क्रम में)
+
+1. **§1 Plan Suite** — टेम्पलेट स्थान का संदर्भ
+2. **§2 Cognitive Identity** — रचनात्मक वास्तुकला अधिदेश
+3. **§3 Artifact Directories** — पथ और उद्देश्यों की तालिका
+4. **§4 Seriousness-Scaled Governance** — चार स्तर परिभाषा
+5. **§5 Operational Directives** — समस्या-समाधान, संचार सिद्धांत
+6. **§6 Cross-Cutting Mandates** — CM-1–28 अवलोकन
+7. **§7 Registries** — आर्टिफ़ैक्ट्स की तालिकाएँ:
+   - 7.1 Commands
+   - 7.2 Rules
+   - 7.3 Helpers
+   - 7.4 Hooks
+   - 7.5 Skills
+   - 7.6 Artifact Evolution
+
+---
+
+## सत्यापन चेकलिस्ट
+
+प्रत्येक आर्टिफ़ैक्ट को इन जाँचों को संतुष्ट करना चाहिए:
+
+### Frontmatter सत्यापन
+
+- [ ] YAML वाक्यविन्यास रूप से वैध है (कोई पार्सिंग त्रुटि नहीं)
+- [ ] आर्टिफ़ैक्ट प्रकार के लिए सभी अनिवार्य फ़ील्ड मौजूद हैं
+- [ ] `name` kebab-case परिपाटी का अनुसरण करता है
+- [ ] `version` सिमेंटिक है (`MAJOR.MINOR.PATCH`)
+- [ ] `updated` ISO 8601 तिथि प्रारूप (`YYYY-MM-DD`) है
+- [ ] `description` गैर-खाली स्ट्रिंग, एकल पंक्ति है
+- [ ] वैकल्पिक फ़ील्ड अपेक्षित enum मानों से मेल खाते हैं (यदि लागू हो)
+- [ ] फ़ील्ड नामों में कोई टाइपो नहीं (स्कीमा से कैनोनिकल नामों का उपयोग करें)
+- [ ] कोई अतिरिक्त खाली स्थान या स्वरूपण समस्या नहीं
+
+### सामग्री सत्यापन
+
+- [ ] सामग्री नई पंक्ति पर समापन `---` के तुरंत बाद शुरू होती है
+- [ ] कोई प्लान-आंतरिक संदर्भ नहीं (CM-7 अनुपालन)
+- [ ] क्रॉस-संदर्भ हल होते हैं (यदि अन्य आर्टिफ़ैक्ट्स सूचीबद्ध हों)
+- [ ] लिंक फ़ॉरवर्ड स्लैश के साथ सापेक्ष पथों का उपयोग करते हैं
+
+### पोर्टेबिलिटी सत्यापन
+
+- [ ] कोई हार्डकोडेड निरपेक्ष पथ नहीं (सापेक्ष का उपयोग करें)
+- [ ] सार्वभौमिक-दायरा आर्टिफ़ैक्ट्स में कोई Windows-विशिष्ट वाक्यविन्यास नहीं
+- [ ] पथ विभाजक फ़ॉरवर्ड स्लैश का उपयोग करते हैं
+- [ ] परिवेश चर प्लेटफ़ॉर्म-अज्ञेय प्रारूप (`${VAR}` या उपकरण-नेटिव) का उपयोग करते हैं
+
+---
+
+## टिप्पणियाँ
+
+- **संगति बतौर सुरक्षा:** कैनोनिकल frontmatter स्वचालित सत्यापन,
+  टूलिंग, और क्रॉस-आर्टिफ़ैक्ट पुष्टिकरण को सक्षम करता है। विचलन तेज़ी से
+  संचित होते हैं।
+- **पोर्टेबिलिटी घोषणा:** सभी आर्टिफ़ैक्ट सार्वभौमिक नहीं हो सकते। बाधाओं को
+  स्पष्ट रूप से घोषित करें — मौन बग शिप करने से बेहतर है किसी चेतावनी को दस्तावेज़ करना।
+- **नामों के लिए Kebab-case:** URL, स्क्रिप्ट, और कमांड-लाइन संदर्भों में
+  उपयोग करना आसान। नामों के लिए स्पेस, अंडरस्कोर, और camelCase से बचें।
+- **संस्करण बढ़ोतरी स्वच्छता:** प्रत्येक व्यवहार-परिवर्तक संपादन को `version` और `updated` को एक साथ बढ़ाना चाहिए। शुद्ध स्वरूपण या टाइपो सुधार PATCH बढ़ाते हैं; नए वैकल्पिक अनुभाग या एंटी-पैटर्न MINOR बढ़ाते हैं; संरचनात्मक पुनर्गठन या कॉन्ट्रैक्ट परिवर्तन MAJOR बढ़ाते हैं।

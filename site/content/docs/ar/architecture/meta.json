@@ -1,0 +1,16 @@
+{
+  "title": "البنية",
+  "pages": [
+    "index",
+    "source-layout",
+    "shared-profile-schema",
+    "harness-adapter-abstraction",
+    "cohort-packaging-contract",
+    "installation-workflow",
+    "self-contained-runtime",
+    "vendoring-strategy",
+    "agents",
+    "cicd-pipeline",
+    "..."
+  ]
+}

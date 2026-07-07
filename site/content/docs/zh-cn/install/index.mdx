@@ -1,0 +1,313 @@
+---
+title: "安装"
+description: "Apothem 安装概览 —— 八条安装渠道，每条都有其前置条件、一条可复制即用的命令和一个验证步骤：Claude Code 插件、npm 垫片、一键安装器、VS Code 系扩展、三个命令行引导扩展，以及直接引擎。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem 可在两分钟内完成安装，并与你现有的工具配置并存。每条路径运行的都是同一个
+自包含引擎 ——源代码树携带其 vendored 依赖，可从检出目录在系统 Python 3.10 或
+更新版本上运行（参见 [自包含运行时](/docs/architecture/self-contained-runtime)）。
+
+**两个前置条件为每条路径共有：** `PATH` 上的系统 **Python 3.10 或更新版本**，并且
+`click` 与 `rich` 包在其下可导入。npm 垫片路径和工具插件路径还额外需要
+**Node.js 18 或更新版本** 来运行 `npx`。下面每条渠道各自的小节会重复列出其确切的
+前置条件、一条可复制即用的命令和一个验证步骤。
+
+## 选择一条渠道
+
+共有八条安装渠道。按你已有的工作方式来挑选。
+
+| # | 渠道 | 交付内容 | 前置条件 |
+|---|---------|----------|---------------|
+| 1 | [Claude Code 插件](#1-claude-code-plugin) | Claude Code 中的完整 harness | Claude Code · Python 3.10+ |
+| 2 | [npm 垫片（`npx`）](#2-npm-shim-npx) | 完整 harness，任何工具 | Node 18+ · Python 3.10+ |
+| 3 | [一键安装器](#3-one-shot-installers) | 完整 harness + 一个 `apothem` 命令 | Python 3.10+（网络安装需 `git`） |
+| 4 | [VS Code 系扩展](#4-vs-code-family-extension) | 从编辑器交付完整 harness | VS Code · Node 18+ · Python 3.10+ |
+| 5 | [命令行引导（扩展宿主）](#5-command-line-bootstrap-extension-host) | 运行引擎的引导入口 | 其宿主工具 · Node 18+ · Python 3.10+ |
+| 6 | [命令行引导（`qwen-code` 宿主）](#6-command-line-bootstrap-qwen-code-host) | 运行引擎的引导入口 | 其宿主工具 · Node 18+ · Python 3.10+ |
+| 7 | [命令行引导（插件宿主）](#7-command-line-bootstrap-plugin-host) | 运行引擎的引导入口 | 其宿主工具 · Node 18+ · Python 3.10+ |
+| 8 | [直接引擎（`python -m apothem`）](#8-direct-engine-python--m-apothem) | 从检出目录交付完整 harness | Python 3.10+（`click`、`rich`） |
+
+<Callout title="哪些渠道交付完整 harness">
+  npm 垫片（2）、一键安装器（3）和直接引擎（8）会自行为任何 harness 物化整个
+  同步单元。三个命令行扩展（5–7）安装一个小型 **引导入口**，它会外壳调用引擎
+  （`npx @ahmed-g-gad/apothem install`）来物化完整的 harness ——它们本身只是入口，
+  而非完整交付。Claude Code 插件（1）与 VS Code 系扩展（4）携带引擎并直接运行它。
+</Callout>
+
+每条路径都是幂等的：重新运行是安全的，并收敛到同一状态。
+
+## 1. Claude Code 插件
+
+**前置条件：** Claude Code，以及 `PATH` 上的系统 Python 3.10+。
+
+插件路径完全在 Claude Code 内部运行。它将 Apothem 引擎与其斜杠命令、受托工作者、
+技能、规则和钩子打包在一起，全部可从自包含的插件目录树中运行：
+
+```text title="Inside Claude Code"
+/plugin marketplace add ahmed-g-gad/apothem
+/plugin install apothem@apothem
+```
+
+安装之后，Apothem 命令集（`/plan-spec`、`/code-review`、`/security-audit`
+及其余命令）、随附的受托工作者以及技能将在每个 Claude Code 会话中可用。完整命令
+目录见 [斜杠命令](/docs/reference/commands)。
+
+**验证：** 在 Claude Code 内运行 `/plugin` 并确认 **apothem** 列为已安装，或从
+终端检查漂移报告：
+
+```bash title="Verify"
+npx @ahmed-g-gad/apothem verify --harness claude-code
+```
+
+## 2. npm 垫片（`npx`）
+
+**前置条件：** Node.js 18+（用于 `npx`）以及 `PATH` 上的系统 Python 3.10+。
+垫片会定位解释器，并把每条 CLI 命令转发给随附的引擎 ——不会在你的系统上永久
+放置任何内容。
+
+```bash title="npx"
+npx @ahmed-g-gad/apothem install --harness claude-code
+```
+
+它也可直接从仓库运行：
+
+```bash title="npx from the repository"
+npx github:ahmed-g-gad/apothem install --harness claude-code
+```
+
+[CLI 参考](/docs/cli-reference) 中的每条命令都能以这种形式工作；将 `apothem`
+替换为 `npx @ahmed-g-gad/apothem` 即可。这同样是 OpenCode 以及其他所有未提供
+独立插件或扩展注册表的工具的安装路径 ——Apothem 会直接将它们同步到各自的原生
+配置目录（`npx @ahmed-g-gad/apothem install --harness opencode`）。
+
+**验证：**
+
+```bash title="Verify"
+npx @ahmed-g-gad/apothem --version
+npx @ahmed-g-gad/apothem verify --harness claude-code
+```
+
+## 3. 一键安装器
+
+**前置条件：** `PATH` 上的系统 Python 3.10+（安装器会主动为你添加 `click` /
+`rich` 前置依赖）；仅克隆源码的网络安装才需要 `git`。
+
+安装脚本会解析最新的已签名发布标签，验证其签名，将 Apothem 源代码树在该标签处
+放置到 `~/.apothem`，在不存在配置档案时创建一个起始档案，物化你的第一个 harness，
+并验证结果。重新运行是幂等的：已存在的源码树会被重新检出到解析出的标签，harness
+也会被重新物化。锁定标签的已验证安装是默认且推荐的路径。
+
+```bash title="macOS · Linux · WSL2 · BSD — latest signed tag, verified"
+curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
+```
+
+```powershell title="Windows · PowerShell — latest signed tag, verified"
+irm https://apothem.ahmedgad.com/install.ps1 | iex
+```
+
+同样的脚本随检出附带于 `scripts/installer/` 下 ——`install`、`uninstall` 与
+`update` 各有 `.sh`、`.ps1` 与 `.bat` 形式 ——因此你可以在克隆后直接运行它们：
+
+```bash title="From a checkout"
+APOTHEM_HARNESS=claude-code sh scripts/installer/install.sh                                 # POSIX
+$env:APOTHEM_HARNESS = 'claude-code'; pwsh -NoProfile -File scripts/installer/install.ps1   # Windows
+```
+
+### 信任模型
+
+在未设置 `APOTHEM_REF` 时，安装器会解析最高的 `vMAJOR.MINOR.PATCH` 发布标签
+并检出 *该标签* ——绝不会检出移动中的 `main` 分支。在物化任何配置之前，会用
+`git verify-tag` 验证所取标签的签名；未签名、被篡改或无法验证的标签会在写入
+任何内容之前中止安装。用 `APOTHEM_REF` 固定到某个具体版本：
+
+```bash title="Pinned, verified install"
+APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/install.sh)"
+```
+
+将 `vMAJOR.MINOR.PATCH` 替换为
+[发布页面](https://github.com/ahmed-g-gad/apothem/releases) 上的某个标签。
+
+两个显式覆盖项会放宽默认行为：`APOTHEM_REF=main` 会检出移动中的分支（不验证），
+`APOTHEM_ALLOW_UNVERIFIED=1` 会把验证失败降级为警告并继续 ——用于离线、本地或
+预签名版本的场景。通过 `APOTHEM_SOURCE` 使用本地检出则不会下载任何内容并跳过
+验证。
+
+随后引擎会作为自包含运行时直接从放置好的源码树中运行 ——它的第三方依赖被 vendored
+在源码树内，因此不涉及任何软件包注册表：
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+```
+
+两个脚本读取相同的配置环境变量（`APOTHEM_HOME`、`APOTHEM_REPO`、`APOTHEM_REF`、
+`APOTHEM_ALLOW_UNVERIFIED`、`APOTHEM_SOURCE`、`APOTHEM_HARNESS`、
+`APOTHEM_PROFILE`、`APOTHEM_SKIP_VERIFY`、`APOTHEM_AUTO_INSTALL_DEPS`）；完整表格见
+[安装脚本环境变量](/docs/how-to/installer-environment-variables)，
+理解 `python -m` 调用模型如何工作见
+[自包含运行时](/docs/architecture/self-contained-runtime)。
+
+**`apothem` 命令。** 成功安装后，安装器会写入一个转发给随附引擎的 `apothem`
+垫片 ——POSIX 写入 `$HOME/.local/bin`，Windows 写入
+`%LOCALAPPDATA%\Microsoft\WindowsApps`（一个已在 Windows 默认 `PATH` 上的用户
+目录）。安装器绝不编辑你的 `PATH`。一旦该目录在 `PATH` 上，你就可以直接运行
+`apothem <command>`，无需手动设置 `PYTHONPATH`。
+
+**验证：**
+
+```bash title="Verify"
+apothem verify --harness claude-code
+
+# or, before the shim is on PATH, from the bundled source:
+PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
+```
+
+## 4. VS Code 系扩展
+
+**前置条件：** VS Code、Node.js 18+，以及 `PATH` 上的系统 Python 3.10+。
+
+**Apothem** 扩展可从
+[Visual Studio Marketplace](https://marketplace.visualstudio.com/) 安装 ——一个
+扩展即覆盖 VS Code 及其编辑器内的伴随助手界面。它的命令面板命令（`Apothem: Install`、
+`Verify`、`Update`、`Uninstall`、`Doctor`）通过所配置的运行器执行同一个引擎
+（默认是 `npx @ahmed-g-gad/apothem`；将 `apothem.runner` 设置指向本地检出即可
+从源码运行）。
+
+**验证：** 从编辑器命令面板运行 **Apothem: Verify** 命令，或从终端运行：
+
+```bash title="Verify"
+npx @ahmed-g-gad/apothem verify --harness claude-code
+```
+
+## 5. 命令行引导（扩展宿主）
+
+**前置条件：** 其宿主命令行工具、Node.js 18+，以及 `PATH` 上的系统 Python 3.10+。
+
+直接从仓库将 Apothem 作为扩展安装 ——命令携带确切的宿主与 harness slug：
+
+```bash title="Install the extension"
+gemini extensions install https://github.com/ahmed-g-gad/apothem
+```
+
+该扩展本身是一个 **引导入口**，而非完整安装：它加载一个 Apothem 上下文文件，并
+添加一个外壳调用引擎（`npx @ahmed-g-gad/apothem`）的 `/apothem` 命令。通过它运行
+安装来物化完整的 harness：
+
+```bash title="Materialize the full harness"
+npx @ahmed-g-gad/apothem install --harness gemini-cli --project .
+```
+
+**验证：**
+
+```bash title="Verify"
+npx @ahmed-g-gad/apothem verify --harness gemini-cli --project .
+```
+
+## 6. 命令行引导（`qwen-code` 宿主）
+
+**前置条件：** 其宿主命令行工具、Node.js 18+，以及 `PATH` 上的系统 Python 3.10+。
+
+直接从仓库将 Apothem 作为 `--harness qwen-code` 扩展安装：
+
+```bash title="Install the extension"
+qwen extensions install ahmed-g-gad/apothem
+```
+
+与渠道 5 的扩展一样，这是一个 **引导入口**：它加载一个 Apothem 上下文文件并外壳
+调用引擎。通过它运行安装来物化完整的 harness：
+
+```bash title="Materialize the full harness"
+npx @ahmed-g-gad/apothem install --harness qwen-code
+```
+
+**验证：**
+
+```bash title="Verify"
+npx @ahmed-g-gad/apothem verify --harness qwen-code
+```
+
+## 7. 命令行引导（插件宿主）
+
+**前置条件：** 其宿主命令行工具、Node.js 18+，以及 `PATH` 上的系统 Python 3.10+。
+
+将仓库添加为插件市场，然后安装插件 ——命令携带确切的宿主与 harness slug：
+
+```bash title="Install the plugin"
+codex plugin marketplace add ahmed-g-gad/apothem
+codex plugin add apothem@apothem
+```
+
+与渠道 5 和渠道 6 的扩展一样，这是一个外壳调用引擎的 **引导入口**。通过它运行
+安装来物化完整的 harness：
+
+```bash title="Materialize the full harness"
+npx @ahmed-g-gad/apothem install --harness codex
+```
+
+**验证：**
+
+```bash title="Verify"
+npx @ahmed-g-gad/apothem verify --harness codex
+```
+
+## 8. 直接引擎（`python -m apothem`）
+
+**前置条件：** 系统 Python 3.10+ 且 `click` 与 `rich` 包可导入，外加仓库的一份
+检出。无需 Node.js。
+
+直接从克隆运行自包含引擎 ——源代码树携带其 vendored 依赖，因此 `PYTHONPATH=src`
+即是全部配置：
+
+```bash title="Direct engine"
+git clone https://github.com/ahmed-g-gad/apothem
+cd apothem
+PYTHONPATH=src python -m apothem install --harness claude-code
+```
+
+**验证：**
+
+```bash title="Verify"
+PYTHONPATH=src python -m apothem verify --harness claude-code
+```
+
+## 验证任何安装
+
+上面每条渠道都各自指明了它的验证命令。两种通用形式是：
+
+```bash title="Installer path"
+PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
+```
+
+```bash title="npx path"
+npx @ahmed-g-gad/apothem verify --harness claude-code
+```
+
+将 harness 名替换为你所安装的适配器；所有受支持的名称见
+[harness 列表](/docs/harnesses)。要一目了然地检查每个已注册的适配器，以相同形式运行
+`apothem doctor`（或 `npx @ahmed-g-gad/apothem doctor`）。对于插件路径，在 Claude Code
+内运行 `/plugin` 并确认 **apothem** 列为已安装。
+
+## 前置条件一览
+
+- **Python 3.10 或更高版本** ——每条运行引擎的路径都会探测它（`python3`、
+  `python`、带版本号的名称，以及 Windows 上的 `py -3`）。
+- **在该解释器下可导入 `click` 和 `rich`** ——这是引擎未 vendored 的两个面向终端的
+  依赖。安装器会检查二者，指出任何缺失的依赖，并主动为你安装 ——经你确认，或
+  通过 `--yes`（在 PowerShell 上为 `-Yes`）或 `APOTHEM_AUTO_INSTALL_DEPS=1`
+  自动进行。
+- **Node.js 18 或更高版本** ——仅 npm 垫片路径和工具插件路径需要。
+- **Git** ——仅安装器路径需要，且仅用于网络形式（脚本会克隆源码；本地检出
+  无需克隆）。
+- **Claude Code** ——仅插件路径需要。**VS Code** 以及每个命令行引导各自的宿主
+  工具仅在其对应渠道（4–7）时需要。
+
+## 后续指南
+
+| 目标 | 指南 |
+|------|-------|
+| 最短的安装流程 | [快速开始](/docs/install/quickstart) |
+| 添加一个 harness | [harness 配置](/docs/install/harness-setup) |
+| 更新 | [更新](/docs/install/updating) |
+| 卸载 | [卸载](/docs/install/uninstalling) |
+| 出错了 | [疑难排解](/docs/install/troubleshooting) |

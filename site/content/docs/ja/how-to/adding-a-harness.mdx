@@ -1,0 +1,81 @@
+---
+title: "ハーネスを追加する"
+description: "ハーネスアダプターを有効化し、そのネイティブ構成を共有プロファイルから生成します。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+目標: もう一つハーネスを有効化し、共有プロファイルからそのハーネスの
+ネイティブ構成を Apothem に生成させます。
+
+## 前提条件
+
+- `~/.config/apothem/profile.yaml` にある共有プロファイル(まだ存在しない
+  場合は `apothem profile init` で作成します)。
+- `PATH` 上の `apothem` CLI。自己完結型のソースツリーをインストールした
+  場合は、各コマンドの前に `PYTHONPATH="$HOME/.apothem/src"` を付け、
+  `apothem` の代わりに `python -m apothem` を実行します —— あるいは
+  `npx @ahmed-g-gad/apothem` を使用します。
+
+## 手順
+
+1. 登録済みのハーネスを一覧表示し、すでにインストール済みのものを確認します:
+
+   ```bash
+   apothem harnesses list
+   ```
+
+   `apothem harnesses list` はサポートされているすべての id を出力します。
+   同じ一覧は [ハーネス一覧](/docs/harnesses) と、ソースから生成される
+   [ハーネスレジストリ](/docs/reference/harness-registry) にもあります。
+   一覧をここにハードコードするのではなく、お使いのツールに対応する id を
+   選んでください —— アダプターが追加されるにつれて一覧は増えていきます。
+
+2. 対象のハーネスを調べ、そのスコープと出力先パスを確認します:
+
+   ```bash
+   apothem harnesses show cursor
+   ```
+
+   `Scope: project` という行は、アダプターがプロジェクトツリーへ生成し、
+   `--project PATH` を必要とすることを意味します。`Scope: user` は、
+   ユーザースコープの構成ディレクトリへ生成し、プロジェクトフラグを
+   必要としません。
+
+3. ファイルを書き込まずにインストールをプレビューします:
+
+   ```bash
+   apothem install --harness cursor --dry-run
+   ```
+
+4. ハーネスをインストールします。ユーザースコープのハーネスの場合:
+
+   ```bash
+   apothem install --harness claude-code
+   ```
+
+   プロジェクトスコープのハーネスの場合は、プロジェクトルートを渡します:
+
+   ```bash
+   apothem install --harness cursor --project /path/to/project
+   ```
+
+   `--harness all` で、サポートされているすべてのハーネスを一度に
+   インストールできます(プロジェクトスコープのハーネスには依然として
+   `--project` が必要です。プロファイルの `exclude_harnesses` に列挙された
+   id はスキップされます)。
+
+## 検証
+
+```bash
+apothem verify --harness cursor
+```
+
+`✓ <harness-id> is verified` という行は、管理対象のターゲットが存在し、
+パースできることを確認します。`apothem doctor` は、全ハーネスにわたる
+システム全体のビューを提供します。
+
+## 関連
+
+- アダプターが生成する内容を変更するには [プロファイルを編集する](/docs/how-to/editing-the-profile) を行い、その後 `apothem update` を再実行します。
+- [インストール](/docs/install) は初回インストールを扱います。

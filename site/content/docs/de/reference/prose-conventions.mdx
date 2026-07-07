@@ -1,0 +1,36 @@
+---
+title: "Prosa-Konventionen"
+description: "Erzwingt die modale RFC-2119-Hierarchie, verbietet Marketing-Adjektive und ausweichendes Füllmaterial, verwendet absolute ISO-8601-Daten und validiert die Lückenlosigkeit direktiver Prosa."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Kanonische Referenz für die Prosa-Disziplin über jede verfasste Markdown-Oberfläche.** Die Zusammenfassung in [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Konventionen ist die Inline-Deklaration; diese Seite ist die eigenständige Referenz, die nachgelagerte Mitwirkende zitieren.
+
+---
+
+## 1. Modale Hierarchie (RFC 2119)
+
+Direktive Prosa verwendet die modale **RFC-2119**-Hierarchie: `MUST`, `MUST NOT`, `SHOULD`, `SHOULD NOT`, `MAY`. Jedes trägt die Bindungsstärke, die der RFC definiert. Kleingeschriebene Modale (`must`, `should`) tragen kein normatives Gewicht und werden nur in erzählender Prosa verwendet, in der keine Verpflichtung deklariert wird.
+
+## 2. Verbotenes Vokabular
+
+### 2.1 Marketing-Adjektive
+
+Die Begriffe `powerful`, `seamless`, `robust`, `cutting-edge`, `next-generation`, `world-class`, `enterprise-grade` und Äquivalente sind in benutzerseitigen Artefakten verboten, sofern sie nicht konkret mit gemessenen Belegen untermauert werden. Die Untermauerung zitiert einen Benchmark, einen Vergleich, eine Messung oder eine externe Validierungsquelle.
+
+### 2.2 Ausweichendes Füllmaterial
+
+Die Begriffe `basically`, `kind of`, `sort of`, `in some sense`, `to some extent` und Äquivalente sind in direktivem Text verboten. Direktive Prosa ist bindend; ausweichendes Füllmaterial gibt die Bindungskraft preis, die die Prosa beansprucht.
+
+### 2.3 UDA-Lückenlosigkeit
+
+Die Prüfung der universellen Direktiv-Lückenlosigkeit (UDA) in `scripts/dev/validate_ecosystem.py` erzwingt ein geschlossenes Ausweich-Lexikon (`maybe`, `might`, `could`, `should probably`, `usually`, `generally speaking`, `in most cases`, `mostly`, `typically`, `often`, `or similar`, `etc.`, `and so on`) auf Zeilen, die eine bindende Vorschrift tragen. Ausweich-Token, die als das eigene Thema der Regel zitiert werden (z. B. eine Liste verbotener Wörter auf einer Verbotslisten-Seite), sind durch den Definitionsmarker-Mechanismus des Validators ausgenommen.
+
+## 3. Datumsangaben
+
+Daten sind an jeder Stelle absolut nach ISO-8601 (`YYYY-MM-DD`). Relative Daten (`yesterday`, `last week`, `recently`) sind in Artefakten verboten, die über ihre Verfassungs-Sitzung hinaus bestehen.
+
+## 4. Validatoren
+
+Die UDA-Lückenlosigkeitsprüfung von `scripts/dev/validate_ecosystem.py` ist die mechanische Durchsetzungsoberfläche für §2.3. Die Pro-Schreibvorgang-`markdown`-Familie der conformity-grep-Validatoren erzwingt den breiteren Prosa-Qualitätsmaßstab an den Grenzen der PreToolUse-Write/Edit-Hooks.

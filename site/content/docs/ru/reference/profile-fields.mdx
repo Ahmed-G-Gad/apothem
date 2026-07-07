@@ -1,0 +1,403 @@
+---
+title: "Поля профиля"
+description: "Справочник, генерируемый из исходников, по каждому полю схемы общего профиля Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Каждое поле ниже генерируется из канонической JSON-схемы профиля
+`src/apothem/schemas/profile.schema.json`. Таблица — единый источник истины о
+том, что может объявлять общий профиль. Отредактируйте схему, затем
+сгенерируйте заново.
+
+## Сгенерированный справочник по полям профиля
+
+{/* apothem:generated-reference:start */}
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `enforcement` | object | no | Opt-in toggles for shipped behaviors that ship default-off; every flag defaults false and a clean install imposes none of them. |
+| `enforcement.agent_teams` | boolean | no | Opt in to parallel agent-team dispatch for parallelizable work. |
+| `enforcement.continuous_execution` | boolean | no | Opt in to continuous multi-step advancement across natural boundaries. |
+| `enforcement.learning_loop` | boolean | no | Opt in to continuous-learning capture and pattern promotion. |
+| `enforcement.multitasking` | boolean | no | Opt in to parallel multi-task execution. |
+| `enforcement.sprints` | boolean | no | Opt in to the sprint apparatus for non-trivial multi-step work. |
+| `exclude_harnesses` | array | no | Supported public harness ids skipped by batch lifecycle commands. |
+| `harnesses` | object | no | Per-harness overrides keyed by supported public harness id. |
+| `harnesses.antigravity` | object | no | Canonical profile fields overridden for one harness. |
+| `harnesses.antigravity.enforcement` | object | no | Opt-in toggles for shipped behaviors that ship default-off; every flag defaults false and a clean install imposes none of them. |
+| `harnesses.antigravity.enforcement.agent_teams` | boolean | no | Opt in to parallel agent-team dispatch for parallelizable work. |
+| `harnesses.antigravity.enforcement.continuous_execution` | boolean | no | Opt in to continuous multi-step advancement across natural boundaries. |
+| `harnesses.antigravity.enforcement.learning_loop` | boolean | no | Opt in to continuous-learning capture and pattern promotion. |
+| `harnesses.antigravity.enforcement.multitasking` | boolean | no | Opt in to parallel multi-task execution. |
+| `harnesses.antigravity.enforcement.sprints` | boolean | no | Opt in to the sprint apparatus for non-trivial multi-step work. |
+| `harnesses.antigravity.identity` | object | no | Optional identity fields overridden for one harness. |
+| `harnesses.antigravity.identity.email` | string | no | — |
+| `harnesses.antigravity.identity.github` | string | no | — |
+| `harnesses.antigravity.identity.name` | string | no | — |
+| `harnesses.antigravity.identity.role` | string | no | — |
+| `harnesses.antigravity.identity.website` | string | no | — |
+| `harnesses.antigravity.mcp_servers` | object | no | MCP server inventory keyed by server name: the canonical cross-harness portability surface for Model Context Protocol servers. |
+| `harnesses.antigravity.preferences` | object | no | Workflow and interaction preferences shared across harnesses. |
+| `harnesses.antigravity.preferences.formatter` | string | no | Preferred code formatter. |
+| `harnesses.antigravity.preferences.language` | string | no | Primary programming language in lower-case semantic form. |
+| `harnesses.antigravity.preferences.style` | string | no | Preferred AI response style. |
+| `harnesses.antigravity.preferences.test_framework` | string | no | Preferred test framework. |
+| `harnesses.antigravity.rules` | array | no | Additional rules shared with capable harnesses. |
+| `harnesses.antigravity.seriousness` | string | no | Governance seriousness tier. |
+| `harnesses.claude-code` | object | no | Canonical profile fields overridden for one harness. |
+| `harnesses.claude-code.enforcement` | object | no | Opt-in toggles for shipped behaviors that ship default-off; every flag defaults false and a clean install imposes none of them. |
+| `harnesses.claude-code.enforcement.agent_teams` | boolean | no | Opt in to parallel agent-team dispatch for parallelizable work. |
+| `harnesses.claude-code.enforcement.continuous_execution` | boolean | no | Opt in to continuous multi-step advancement across natural boundaries. |
+| `harnesses.claude-code.enforcement.learning_loop` | boolean | no | Opt in to continuous-learning capture and pattern promotion. |
+| `harnesses.claude-code.enforcement.multitasking` | boolean | no | Opt in to parallel multi-task execution. |
+| `harnesses.claude-code.enforcement.sprints` | boolean | no | Opt in to the sprint apparatus for non-trivial multi-step work. |
+| `harnesses.claude-code.identity` | object | no | Optional identity fields overridden for one harness. |
+| `harnesses.claude-code.identity.email` | string | no | — |
+| `harnesses.claude-code.identity.github` | string | no | — |
+| `harnesses.claude-code.identity.name` | string | no | — |
+| `harnesses.claude-code.identity.role` | string | no | — |
+| `harnesses.claude-code.identity.website` | string | no | — |
+| `harnesses.claude-code.mcp_servers` | object | no | MCP server inventory keyed by server name: the canonical cross-harness portability surface for Model Context Protocol servers. |
+| `harnesses.claude-code.preferences` | object | no | Workflow and interaction preferences shared across harnesses. |
+| `harnesses.claude-code.preferences.formatter` | string | no | Preferred code formatter. |
+| `harnesses.claude-code.preferences.language` | string | no | Primary programming language in lower-case semantic form. |
+| `harnesses.claude-code.preferences.style` | string | no | Preferred AI response style. |
+| `harnesses.claude-code.preferences.test_framework` | string | no | Preferred test framework. |
+| `harnesses.claude-code.rules` | array | no | Additional rules shared with capable harnesses. |
+| `harnesses.claude-code.seriousness` | string | no | Governance seriousness tier. |
+| `harnesses.codebuddy` | object | no | Canonical profile fields overridden for one harness. |
+| `harnesses.codebuddy.enforcement` | object | no | Opt-in toggles for shipped behaviors that ship default-off; every flag defaults false and a clean install imposes none of them. |
+| `harnesses.codebuddy.enforcement.agent_teams` | boolean | no | Opt in to parallel agent-team dispatch for parallelizable work. |
+| `harnesses.codebuddy.enforcement.continuous_execution` | boolean | no | Opt in to continuous multi-step advancement across natural boundaries. |
+| `harnesses.codebuddy.enforcement.learning_loop` | boolean | no | Opt in to continuous-learning capture and pattern promotion. |
+| `harnesses.codebuddy.enforcement.multitasking` | boolean | no | Opt in to parallel multi-task execution. |
+| `harnesses.codebuddy.enforcement.sprints` | boolean | no | Opt in to the sprint apparatus for non-trivial multi-step work. |
+| `harnesses.codebuddy.identity` | object | no | Optional identity fields overridden for one harness. |
+| `harnesses.codebuddy.identity.email` | string | no | — |
+| `harnesses.codebuddy.identity.github` | string | no | — |
+| `harnesses.codebuddy.identity.name` | string | no | — |
+| `harnesses.codebuddy.identity.role` | string | no | — |
+| `harnesses.codebuddy.identity.website` | string | no | — |
+| `harnesses.codebuddy.mcp_servers` | object | no | MCP server inventory keyed by server name: the canonical cross-harness portability surface for Model Context Protocol servers. |
+| `harnesses.codebuddy.preferences` | object | no | Workflow and interaction preferences shared across harnesses. |
+| `harnesses.codebuddy.preferences.formatter` | string | no | Preferred code formatter. |
+| `harnesses.codebuddy.preferences.language` | string | no | Primary programming language in lower-case semantic form. |
+| `harnesses.codebuddy.preferences.style` | string | no | Preferred AI response style. |
+| `harnesses.codebuddy.preferences.test_framework` | string | no | Preferred test framework. |
+| `harnesses.codebuddy.rules` | array | no | Additional rules shared with capable harnesses. |
+| `harnesses.codebuddy.seriousness` | string | no | Governance seriousness tier. |
+| `harnesses.codex` | object | no | Canonical profile fields overridden for one harness. |
+| `harnesses.codex.enforcement` | object | no | Opt-in toggles for shipped behaviors that ship default-off; every flag defaults false and a clean install imposes none of them. |
+| `harnesses.codex.enforcement.agent_teams` | boolean | no | Opt in to parallel agent-team dispatch for parallelizable work. |
+| `harnesses.codex.enforcement.continuous_execution` | boolean | no | Opt in to continuous multi-step advancement across natural boundaries. |
+| `harnesses.codex.enforcement.learning_loop` | boolean | no | Opt in to continuous-learning capture and pattern promotion. |
+| `harnesses.codex.enforcement.multitasking` | boolean | no | Opt in to parallel multi-task execution. |
+| `harnesses.codex.enforcement.sprints` | boolean | no | Opt in to the sprint apparatus for non-trivial multi-step work. |
+| `harnesses.codex.identity` | object | no | Optional identity fields overridden for one harness. |
+| `harnesses.codex.identity.email` | string | no | — |
+| `harnesses.codex.identity.github` | string | no | — |
+| `harnesses.codex.identity.name` | string | no | — |
+| `harnesses.codex.identity.role` | string | no | — |
+| `harnesses.codex.identity.website` | string | no | — |
+| `harnesses.codex.mcp_servers` | object | no | MCP server inventory keyed by server name: the canonical cross-harness portability surface for Model Context Protocol servers. |
+| `harnesses.codex.preferences` | object | no | Workflow and interaction preferences shared across harnesses. |
+| `harnesses.codex.preferences.formatter` | string | no | Preferred code formatter. |
+| `harnesses.codex.preferences.language` | string | no | Primary programming language in lower-case semantic form. |
+| `harnesses.codex.preferences.style` | string | no | Preferred AI response style. |
+| `harnesses.codex.preferences.test_framework` | string | no | Preferred test framework. |
+| `harnesses.codex.rules` | array | no | Additional rules shared with capable harnesses. |
+| `harnesses.codex.seriousness` | string | no | Governance seriousness tier. |
+| `harnesses.cursor` | object | no | Canonical profile fields overridden for one harness. |
+| `harnesses.cursor.enforcement` | object | no | Opt-in toggles for shipped behaviors that ship default-off; every flag defaults false and a clean install imposes none of them. |
+| `harnesses.cursor.enforcement.agent_teams` | boolean | no | Opt in to parallel agent-team dispatch for parallelizable work. |
+| `harnesses.cursor.enforcement.continuous_execution` | boolean | no | Opt in to continuous multi-step advancement across natural boundaries. |
+| `harnesses.cursor.enforcement.learning_loop` | boolean | no | Opt in to continuous-learning capture and pattern promotion. |
+| `harnesses.cursor.enforcement.multitasking` | boolean | no | Opt in to parallel multi-task execution. |
+| `harnesses.cursor.enforcement.sprints` | boolean | no | Opt in to the sprint apparatus for non-trivial multi-step work. |
+| `harnesses.cursor.identity` | object | no | Optional identity fields overridden for one harness. |
+| `harnesses.cursor.identity.email` | string | no | — |
+| `harnesses.cursor.identity.github` | string | no | — |
+| `harnesses.cursor.identity.name` | string | no | — |
+| `harnesses.cursor.identity.role` | string | no | — |
+| `harnesses.cursor.identity.website` | string | no | — |
+| `harnesses.cursor.mcp_servers` | object | no | MCP server inventory keyed by server name: the canonical cross-harness portability surface for Model Context Protocol servers. |
+| `harnesses.cursor.preferences` | object | no | Workflow and interaction preferences shared across harnesses. |
+| `harnesses.cursor.preferences.formatter` | string | no | Preferred code formatter. |
+| `harnesses.cursor.preferences.language` | string | no | Primary programming language in lower-case semantic form. |
+| `harnesses.cursor.preferences.style` | string | no | Preferred AI response style. |
+| `harnesses.cursor.preferences.test_framework` | string | no | Preferred test framework. |
+| `harnesses.cursor.rules` | array | no | Additional rules shared with capable harnesses. |
+| `harnesses.cursor.seriousness` | string | no | Governance seriousness tier. |
+| `harnesses.gemini-cli` | object | no | Canonical profile fields overridden for one harness. |
+| `harnesses.gemini-cli.enforcement` | object | no | Opt-in toggles for shipped behaviors that ship default-off; every flag defaults false and a clean install imposes none of them. |
+| `harnesses.gemini-cli.enforcement.agent_teams` | boolean | no | Opt in to parallel agent-team dispatch for parallelizable work. |
+| `harnesses.gemini-cli.enforcement.continuous_execution` | boolean | no | Opt in to continuous multi-step advancement across natural boundaries. |
+| `harnesses.gemini-cli.enforcement.learning_loop` | boolean | no | Opt in to continuous-learning capture and pattern promotion. |
+| `harnesses.gemini-cli.enforcement.multitasking` | boolean | no | Opt in to parallel multi-task execution. |
+| `harnesses.gemini-cli.enforcement.sprints` | boolean | no | Opt in to the sprint apparatus for non-trivial multi-step work. |
+| `harnesses.gemini-cli.identity` | object | no | Optional identity fields overridden for one harness. |
+| `harnesses.gemini-cli.identity.email` | string | no | — |
+| `harnesses.gemini-cli.identity.github` | string | no | — |
+| `harnesses.gemini-cli.identity.name` | string | no | — |
+| `harnesses.gemini-cli.identity.role` | string | no | — |
+| `harnesses.gemini-cli.identity.website` | string | no | — |
+| `harnesses.gemini-cli.mcp_servers` | object | no | MCP server inventory keyed by server name: the canonical cross-harness portability surface for Model Context Protocol servers. |
+| `harnesses.gemini-cli.preferences` | object | no | Workflow and interaction preferences shared across harnesses. |
+| `harnesses.gemini-cli.preferences.formatter` | string | no | Preferred code formatter. |
+| `harnesses.gemini-cli.preferences.language` | string | no | Primary programming language in lower-case semantic form. |
+| `harnesses.gemini-cli.preferences.style` | string | no | Preferred AI response style. |
+| `harnesses.gemini-cli.preferences.test_framework` | string | no | Preferred test framework. |
+| `harnesses.gemini-cli.rules` | array | no | Additional rules shared with capable harnesses. |
+| `harnesses.gemini-cli.seriousness` | string | no | Governance seriousness tier. |
+| `harnesses.github-copilot` | object | no | Canonical profile fields overridden for one harness. |
+| `harnesses.github-copilot.enforcement` | object | no | Opt-in toggles for shipped behaviors that ship default-off; every flag defaults false and a clean install imposes none of them. |
+| `harnesses.github-copilot.enforcement.agent_teams` | boolean | no | Opt in to parallel agent-team dispatch for parallelizable work. |
+| `harnesses.github-copilot.enforcement.continuous_execution` | boolean | no | Opt in to continuous multi-step advancement across natural boundaries. |
+| `harnesses.github-copilot.enforcement.learning_loop` | boolean | no | Opt in to continuous-learning capture and pattern promotion. |
+| `harnesses.github-copilot.enforcement.multitasking` | boolean | no | Opt in to parallel multi-task execution. |
+| `harnesses.github-copilot.enforcement.sprints` | boolean | no | Opt in to the sprint apparatus for non-trivial multi-step work. |
+| `harnesses.github-copilot.identity` | object | no | Optional identity fields overridden for one harness. |
+| `harnesses.github-copilot.identity.email` | string | no | — |
+| `harnesses.github-copilot.identity.github` | string | no | — |
+| `harnesses.github-copilot.identity.name` | string | no | — |
+| `harnesses.github-copilot.identity.role` | string | no | — |
+| `harnesses.github-copilot.identity.website` | string | no | — |
+| `harnesses.github-copilot.mcp_servers` | object | no | MCP server inventory keyed by server name: the canonical cross-harness portability surface for Model Context Protocol servers. |
+| `harnesses.github-copilot.preferences` | object | no | Workflow and interaction preferences shared across harnesses. |
+| `harnesses.github-copilot.preferences.formatter` | string | no | Preferred code formatter. |
+| `harnesses.github-copilot.preferences.language` | string | no | Primary programming language in lower-case semantic form. |
+| `harnesses.github-copilot.preferences.style` | string | no | Preferred AI response style. |
+| `harnesses.github-copilot.preferences.test_framework` | string | no | Preferred test framework. |
+| `harnesses.github-copilot.rules` | array | no | Additional rules shared with capable harnesses. |
+| `harnesses.github-copilot.seriousness` | string | no | Governance seriousness tier. |
+| `harnesses.glm` | object | no | Canonical profile fields overridden for one harness. |
+| `harnesses.glm.enforcement` | object | no | Opt-in toggles for shipped behaviors that ship default-off; every flag defaults false and a clean install imposes none of them. |
+| `harnesses.glm.enforcement.agent_teams` | boolean | no | Opt in to parallel agent-team dispatch for parallelizable work. |
+| `harnesses.glm.enforcement.continuous_execution` | boolean | no | Opt in to continuous multi-step advancement across natural boundaries. |
+| `harnesses.glm.enforcement.learning_loop` | boolean | no | Opt in to continuous-learning capture and pattern promotion. |
+| `harnesses.glm.enforcement.multitasking` | boolean | no | Opt in to parallel multi-task execution. |
+| `harnesses.glm.enforcement.sprints` | boolean | no | Opt in to the sprint apparatus for non-trivial multi-step work. |
+| `harnesses.glm.identity` | object | no | Optional identity fields overridden for one harness. |
+| `harnesses.glm.identity.email` | string | no | — |
+| `harnesses.glm.identity.github` | string | no | — |
+| `harnesses.glm.identity.name` | string | no | — |
+| `harnesses.glm.identity.role` | string | no | — |
+| `harnesses.glm.identity.website` | string | no | — |
+| `harnesses.glm.mcp_servers` | object | no | MCP server inventory keyed by server name: the canonical cross-harness portability surface for Model Context Protocol servers. |
+| `harnesses.glm.preferences` | object | no | Workflow and interaction preferences shared across harnesses. |
+| `harnesses.glm.preferences.formatter` | string | no | Preferred code formatter. |
+| `harnesses.glm.preferences.language` | string | no | Primary programming language in lower-case semantic form. |
+| `harnesses.glm.preferences.style` | string | no | Preferred AI response style. |
+| `harnesses.glm.preferences.test_framework` | string | no | Preferred test framework. |
+| `harnesses.glm.rules` | array | no | Additional rules shared with capable harnesses. |
+| `harnesses.glm.seriousness` | string | no | Governance seriousness tier. |
+| `harnesses.hermes` | object | no | Canonical profile fields overridden for one harness. |
+| `harnesses.hermes.enforcement` | object | no | Opt-in toggles for shipped behaviors that ship default-off; every flag defaults false and a clean install imposes none of them. |
+| `harnesses.hermes.enforcement.agent_teams` | boolean | no | Opt in to parallel agent-team dispatch for parallelizable work. |
+| `harnesses.hermes.enforcement.continuous_execution` | boolean | no | Opt in to continuous multi-step advancement across natural boundaries. |
+| `harnesses.hermes.enforcement.learning_loop` | boolean | no | Opt in to continuous-learning capture and pattern promotion. |
+| `harnesses.hermes.enforcement.multitasking` | boolean | no | Opt in to parallel multi-task execution. |
+| `harnesses.hermes.enforcement.sprints` | boolean | no | Opt in to the sprint apparatus for non-trivial multi-step work. |
+| `harnesses.hermes.identity` | object | no | Optional identity fields overridden for one harness. |
+| `harnesses.hermes.identity.email` | string | no | — |
+| `harnesses.hermes.identity.github` | string | no | — |
+| `harnesses.hermes.identity.name` | string | no | — |
+| `harnesses.hermes.identity.role` | string | no | — |
+| `harnesses.hermes.identity.website` | string | no | — |
+| `harnesses.hermes.mcp_servers` | object | no | MCP server inventory keyed by server name: the canonical cross-harness portability surface for Model Context Protocol servers. |
+| `harnesses.hermes.preferences` | object | no | Workflow and interaction preferences shared across harnesses. |
+| `harnesses.hermes.preferences.formatter` | string | no | Preferred code formatter. |
+| `harnesses.hermes.preferences.language` | string | no | Primary programming language in lower-case semantic form. |
+| `harnesses.hermes.preferences.style` | string | no | Preferred AI response style. |
+| `harnesses.hermes.preferences.test_framework` | string | no | Preferred test framework. |
+| `harnesses.hermes.rules` | array | no | Additional rules shared with capable harnesses. |
+| `harnesses.hermes.seriousness` | string | no | Governance seriousness tier. |
+| `harnesses.kimi-code` | object | no | Canonical profile fields overridden for one harness. |
+| `harnesses.kimi-code.enforcement` | object | no | Opt-in toggles for shipped behaviors that ship default-off; every flag defaults false and a clean install imposes none of them. |
+| `harnesses.kimi-code.enforcement.agent_teams` | boolean | no | Opt in to parallel agent-team dispatch for parallelizable work. |
+| `harnesses.kimi-code.enforcement.continuous_execution` | boolean | no | Opt in to continuous multi-step advancement across natural boundaries. |
+| `harnesses.kimi-code.enforcement.learning_loop` | boolean | no | Opt in to continuous-learning capture and pattern promotion. |
+| `harnesses.kimi-code.enforcement.multitasking` | boolean | no | Opt in to parallel multi-task execution. |
+| `harnesses.kimi-code.enforcement.sprints` | boolean | no | Opt in to the sprint apparatus for non-trivial multi-step work. |
+| `harnesses.kimi-code.identity` | object | no | Optional identity fields overridden for one harness. |
+| `harnesses.kimi-code.identity.email` | string | no | — |
+| `harnesses.kimi-code.identity.github` | string | no | — |
+| `harnesses.kimi-code.identity.name` | string | no | — |
+| `harnesses.kimi-code.identity.role` | string | no | — |
+| `harnesses.kimi-code.identity.website` | string | no | — |
+| `harnesses.kimi-code.mcp_servers` | object | no | MCP server inventory keyed by server name: the canonical cross-harness portability surface for Model Context Protocol servers. |
+| `harnesses.kimi-code.preferences` | object | no | Workflow and interaction preferences shared across harnesses. |
+| `harnesses.kimi-code.preferences.formatter` | string | no | Preferred code formatter. |
+| `harnesses.kimi-code.preferences.language` | string | no | Primary programming language in lower-case semantic form. |
+| `harnesses.kimi-code.preferences.style` | string | no | Preferred AI response style. |
+| `harnesses.kimi-code.preferences.test_framework` | string | no | Preferred test framework. |
+| `harnesses.kimi-code.rules` | array | no | Additional rules shared with capable harnesses. |
+| `harnesses.kimi-code.seriousness` | string | no | Governance seriousness tier. |
+| `harnesses.kiro` | object | no | Canonical profile fields overridden for one harness. |
+| `harnesses.kiro.enforcement` | object | no | Opt-in toggles for shipped behaviors that ship default-off; every flag defaults false and a clean install imposes none of them. |
+| `harnesses.kiro.enforcement.agent_teams` | boolean | no | Opt in to parallel agent-team dispatch for parallelizable work. |
+| `harnesses.kiro.enforcement.continuous_execution` | boolean | no | Opt in to continuous multi-step advancement across natural boundaries. |
+| `harnesses.kiro.enforcement.learning_loop` | boolean | no | Opt in to continuous-learning capture and pattern promotion. |
+| `harnesses.kiro.enforcement.multitasking` | boolean | no | Opt in to parallel multi-task execution. |
+| `harnesses.kiro.enforcement.sprints` | boolean | no | Opt in to the sprint apparatus for non-trivial multi-step work. |
+| `harnesses.kiro.identity` | object | no | Optional identity fields overridden for one harness. |
+| `harnesses.kiro.identity.email` | string | no | — |
+| `harnesses.kiro.identity.github` | string | no | — |
+| `harnesses.kiro.identity.name` | string | no | — |
+| `harnesses.kiro.identity.role` | string | no | — |
+| `harnesses.kiro.identity.website` | string | no | — |
+| `harnesses.kiro.mcp_servers` | object | no | MCP server inventory keyed by server name: the canonical cross-harness portability surface for Model Context Protocol servers. |
+| `harnesses.kiro.preferences` | object | no | Workflow and interaction preferences shared across harnesses. |
+| `harnesses.kiro.preferences.formatter` | string | no | Preferred code formatter. |
+| `harnesses.kiro.preferences.language` | string | no | Primary programming language in lower-case semantic form. |
+| `harnesses.kiro.preferences.style` | string | no | Preferred AI response style. |
+| `harnesses.kiro.preferences.test_framework` | string | no | Preferred test framework. |
+| `harnesses.kiro.rules` | array | no | Additional rules shared with capable harnesses. |
+| `harnesses.kiro.seriousness` | string | no | Governance seriousness tier. |
+| `harnesses.open-claw` | object | no | Canonical profile fields overridden for one harness. |
+| `harnesses.open-claw.enforcement` | object | no | Opt-in toggles for shipped behaviors that ship default-off; every flag defaults false and a clean install imposes none of them. |
+| `harnesses.open-claw.enforcement.agent_teams` | boolean | no | Opt in to parallel agent-team dispatch for parallelizable work. |
+| `harnesses.open-claw.enforcement.continuous_execution` | boolean | no | Opt in to continuous multi-step advancement across natural boundaries. |
+| `harnesses.open-claw.enforcement.learning_loop` | boolean | no | Opt in to continuous-learning capture and pattern promotion. |
+| `harnesses.open-claw.enforcement.multitasking` | boolean | no | Opt in to parallel multi-task execution. |
+| `harnesses.open-claw.enforcement.sprints` | boolean | no | Opt in to the sprint apparatus for non-trivial multi-step work. |
+| `harnesses.open-claw.identity` | object | no | Optional identity fields overridden for one harness. |
+| `harnesses.open-claw.identity.email` | string | no | — |
+| `harnesses.open-claw.identity.github` | string | no | — |
+| `harnesses.open-claw.identity.name` | string | no | — |
+| `harnesses.open-claw.identity.role` | string | no | — |
+| `harnesses.open-claw.identity.website` | string | no | — |
+| `harnesses.open-claw.mcp_servers` | object | no | MCP server inventory keyed by server name: the canonical cross-harness portability surface for Model Context Protocol servers. |
+| `harnesses.open-claw.preferences` | object | no | Workflow and interaction preferences shared across harnesses. |
+| `harnesses.open-claw.preferences.formatter` | string | no | Preferred code formatter. |
+| `harnesses.open-claw.preferences.language` | string | no | Primary programming language in lower-case semantic form. |
+| `harnesses.open-claw.preferences.style` | string | no | Preferred AI response style. |
+| `harnesses.open-claw.preferences.test_framework` | string | no | Preferred test framework. |
+| `harnesses.open-claw.rules` | array | no | Additional rules shared with capable harnesses. |
+| `harnesses.open-claw.seriousness` | string | no | Governance seriousness tier. |
+| `harnesses.opencode` | object | no | Canonical profile fields overridden for one harness. |
+| `harnesses.opencode.enforcement` | object | no | Opt-in toggles for shipped behaviors that ship default-off; every flag defaults false and a clean install imposes none of them. |
+| `harnesses.opencode.enforcement.agent_teams` | boolean | no | Opt in to parallel agent-team dispatch for parallelizable work. |
+| `harnesses.opencode.enforcement.continuous_execution` | boolean | no | Opt in to continuous multi-step advancement across natural boundaries. |
+| `harnesses.opencode.enforcement.learning_loop` | boolean | no | Opt in to continuous-learning capture and pattern promotion. |
+| `harnesses.opencode.enforcement.multitasking` | boolean | no | Opt in to parallel multi-task execution. |
+| `harnesses.opencode.enforcement.sprints` | boolean | no | Opt in to the sprint apparatus for non-trivial multi-step work. |
+| `harnesses.opencode.identity` | object | no | Optional identity fields overridden for one harness. |
+| `harnesses.opencode.identity.email` | string | no | — |
+| `harnesses.opencode.identity.github` | string | no | — |
+| `harnesses.opencode.identity.name` | string | no | — |
+| `harnesses.opencode.identity.role` | string | no | — |
+| `harnesses.opencode.identity.website` | string | no | — |
+| `harnesses.opencode.mcp_servers` | object | no | MCP server inventory keyed by server name: the canonical cross-harness portability surface for Model Context Protocol servers. |
+| `harnesses.opencode.preferences` | object | no | Workflow and interaction preferences shared across harnesses. |
+| `harnesses.opencode.preferences.formatter` | string | no | Preferred code formatter. |
+| `harnesses.opencode.preferences.language` | string | no | Primary programming language in lower-case semantic form. |
+| `harnesses.opencode.preferences.style` | string | no | Preferred AI response style. |
+| `harnesses.opencode.preferences.test_framework` | string | no | Preferred test framework. |
+| `harnesses.opencode.rules` | array | no | Additional rules shared with capable harnesses. |
+| `harnesses.opencode.seriousness` | string | no | Governance seriousness tier. |
+| `harnesses.qwen-code` | object | no | Canonical profile fields overridden for one harness. |
+| `harnesses.qwen-code.enforcement` | object | no | Opt-in toggles for shipped behaviors that ship default-off; every flag defaults false and a clean install imposes none of them. |
+| `harnesses.qwen-code.enforcement.agent_teams` | boolean | no | Opt in to parallel agent-team dispatch for parallelizable work. |
+| `harnesses.qwen-code.enforcement.continuous_execution` | boolean | no | Opt in to continuous multi-step advancement across natural boundaries. |
+| `harnesses.qwen-code.enforcement.learning_loop` | boolean | no | Opt in to continuous-learning capture and pattern promotion. |
+| `harnesses.qwen-code.enforcement.multitasking` | boolean | no | Opt in to parallel multi-task execution. |
+| `harnesses.qwen-code.enforcement.sprints` | boolean | no | Opt in to the sprint apparatus for non-trivial multi-step work. |
+| `harnesses.qwen-code.identity` | object | no | Optional identity fields overridden for one harness. |
+| `harnesses.qwen-code.identity.email` | string | no | — |
+| `harnesses.qwen-code.identity.github` | string | no | — |
+| `harnesses.qwen-code.identity.name` | string | no | — |
+| `harnesses.qwen-code.identity.role` | string | no | — |
+| `harnesses.qwen-code.identity.website` | string | no | — |
+| `harnesses.qwen-code.mcp_servers` | object | no | MCP server inventory keyed by server name: the canonical cross-harness portability surface for Model Context Protocol servers. |
+| `harnesses.qwen-code.preferences` | object | no | Workflow and interaction preferences shared across harnesses. |
+| `harnesses.qwen-code.preferences.formatter` | string | no | Preferred code formatter. |
+| `harnesses.qwen-code.preferences.language` | string | no | Primary programming language in lower-case semantic form. |
+| `harnesses.qwen-code.preferences.style` | string | no | Preferred AI response style. |
+| `harnesses.qwen-code.preferences.test_framework` | string | no | Preferred test framework. |
+| `harnesses.qwen-code.rules` | array | no | Additional rules shared with capable harnesses. |
+| `harnesses.qwen-code.seriousness` | string | no | Governance seriousness tier. |
+| `harnesses.trae` | object | no | Canonical profile fields overridden for one harness. |
+| `harnesses.trae.enforcement` | object | no | Opt-in toggles for shipped behaviors that ship default-off; every flag defaults false and a clean install imposes none of them. |
+| `harnesses.trae.enforcement.agent_teams` | boolean | no | Opt in to parallel agent-team dispatch for parallelizable work. |
+| `harnesses.trae.enforcement.continuous_execution` | boolean | no | Opt in to continuous multi-step advancement across natural boundaries. |
+| `harnesses.trae.enforcement.learning_loop` | boolean | no | Opt in to continuous-learning capture and pattern promotion. |
+| `harnesses.trae.enforcement.multitasking` | boolean | no | Opt in to parallel multi-task execution. |
+| `harnesses.trae.enforcement.sprints` | boolean | no | Opt in to the sprint apparatus for non-trivial multi-step work. |
+| `harnesses.trae.identity` | object | no | Optional identity fields overridden for one harness. |
+| `harnesses.trae.identity.email` | string | no | — |
+| `harnesses.trae.identity.github` | string | no | — |
+| `harnesses.trae.identity.name` | string | no | — |
+| `harnesses.trae.identity.role` | string | no | — |
+| `harnesses.trae.identity.website` | string | no | — |
+| `harnesses.trae.mcp_servers` | object | no | MCP server inventory keyed by server name: the canonical cross-harness portability surface for Model Context Protocol servers. |
+| `harnesses.trae.preferences` | object | no | Workflow and interaction preferences shared across harnesses. |
+| `harnesses.trae.preferences.formatter` | string | no | Preferred code formatter. |
+| `harnesses.trae.preferences.language` | string | no | Primary programming language in lower-case semantic form. |
+| `harnesses.trae.preferences.style` | string | no | Preferred AI response style. |
+| `harnesses.trae.preferences.test_framework` | string | no | Preferred test framework. |
+| `harnesses.trae.rules` | array | no | Additional rules shared with capable harnesses. |
+| `harnesses.trae.seriousness` | string | no | Governance seriousness tier. |
+| `harnesses.windsurf` | object | no | Canonical profile fields overridden for one harness. |
+| `harnesses.windsurf.enforcement` | object | no | Opt-in toggles for shipped behaviors that ship default-off; every flag defaults false and a clean install imposes none of them. |
+| `harnesses.windsurf.enforcement.agent_teams` | boolean | no | Opt in to parallel agent-team dispatch for parallelizable work. |
+| `harnesses.windsurf.enforcement.continuous_execution` | boolean | no | Opt in to continuous multi-step advancement across natural boundaries. |
+| `harnesses.windsurf.enforcement.learning_loop` | boolean | no | Opt in to continuous-learning capture and pattern promotion. |
+| `harnesses.windsurf.enforcement.multitasking` | boolean | no | Opt in to parallel multi-task execution. |
+| `harnesses.windsurf.enforcement.sprints` | boolean | no | Opt in to the sprint apparatus for non-trivial multi-step work. |
+| `harnesses.windsurf.identity` | object | no | Optional identity fields overridden for one harness. |
+| `harnesses.windsurf.identity.email` | string | no | — |
+| `harnesses.windsurf.identity.github` | string | no | — |
+| `harnesses.windsurf.identity.name` | string | no | — |
+| `harnesses.windsurf.identity.role` | string | no | — |
+| `harnesses.windsurf.identity.website` | string | no | — |
+| `harnesses.windsurf.mcp_servers` | object | no | MCP server inventory keyed by server name: the canonical cross-harness portability surface for Model Context Protocol servers. |
+| `harnesses.windsurf.preferences` | object | no | Workflow and interaction preferences shared across harnesses. |
+| `harnesses.windsurf.preferences.formatter` | string | no | Preferred code formatter. |
+| `harnesses.windsurf.preferences.language` | string | no | Primary programming language in lower-case semantic form. |
+| `harnesses.windsurf.preferences.style` | string | no | Preferred AI response style. |
+| `harnesses.windsurf.preferences.test_framework` | string | no | Preferred test framework. |
+| `harnesses.windsurf.rules` | array | no | Additional rules shared with capable harnesses. |
+| `harnesses.windsurf.seriousness` | string | no | Governance seriousness tier. |
+| `harnesses.zed` | object | no | Canonical profile fields overridden for one harness. |
+| `harnesses.zed.enforcement` | object | no | Opt-in toggles for shipped behaviors that ship default-off; every flag defaults false and a clean install imposes none of them. |
+| `harnesses.zed.enforcement.agent_teams` | boolean | no | Opt in to parallel agent-team dispatch for parallelizable work. |
+| `harnesses.zed.enforcement.continuous_execution` | boolean | no | Opt in to continuous multi-step advancement across natural boundaries. |
+| `harnesses.zed.enforcement.learning_loop` | boolean | no | Opt in to continuous-learning capture and pattern promotion. |
+| `harnesses.zed.enforcement.multitasking` | boolean | no | Opt in to parallel multi-task execution. |
+| `harnesses.zed.enforcement.sprints` | boolean | no | Opt in to the sprint apparatus for non-trivial multi-step work. |
+| `harnesses.zed.identity` | object | no | Optional identity fields overridden for one harness. |
+| `harnesses.zed.identity.email` | string | no | — |
+| `harnesses.zed.identity.github` | string | no | — |
+| `harnesses.zed.identity.name` | string | no | — |
+| `harnesses.zed.identity.role` | string | no | — |
+| `harnesses.zed.identity.website` | string | no | — |
+| `harnesses.zed.mcp_servers` | object | no | MCP server inventory keyed by server name: the canonical cross-harness portability surface for Model Context Protocol servers. |
+| `harnesses.zed.preferences` | object | no | Workflow and interaction preferences shared across harnesses. |
+| `harnesses.zed.preferences.formatter` | string | no | Preferred code formatter. |
+| `harnesses.zed.preferences.language` | string | no | Primary programming language in lower-case semantic form. |
+| `harnesses.zed.preferences.style` | string | no | Preferred AI response style. |
+| `harnesses.zed.preferences.test_framework` | string | no | Preferred test framework. |
+| `harnesses.zed.rules` | array | no | Additional rules shared with capable harnesses. |
+| `harnesses.zed.seriousness` | string | no | Governance seriousness tier. |
+| `identity` | object | yes | Operator identity fields shared across harnesses. |
+| `identity.email` | string | no | Operator email address. |
+| `identity.github` | string | no | GitHub username without @. |
+| `identity.name` | string | yes | Operator display name. |
+| `identity.role` | string | no | Operator role presented to capable harnesses. |
+| `identity.website` | string | no | Operator personal or project website URL. |
+| `mcp_servers` | object | no | MCP server inventory keyed by server name: the canonical cross-harness portability surface for Model Context Protocol servers. |
+| `preferences` | object | no | Workflow and interaction preferences shared across harnesses. |
+| `preferences.formatter` | string | no | Preferred code formatter. |
+| `preferences.language` | string | no | Primary programming language in lower-case semantic form. |
+| `preferences.style` | string | no | Preferred AI response style. |
+| `preferences.test_framework` | string | no | Preferred test framework. |
+| `rules` | array | no | Additional rules shared with capable harnesses. |
+| `schema_version` | integer | no | Optional profile-schema version; defaults to the current version (1) when absent. Version-less profiles remain valid. A profile stamped with a version greater than the engine supports is rejected with an upgrade-the-engine diagnostic before validation. |
+| `seriousness` | string | no | Governance seriousness tier. |
+| `workspace` | object | no | Where Apothem keeps its shared, gitignored working directory (plans, memory, learning, contexts). One directory shared across every harness; never per-harness. |
+| `workspace.directory_name` | string | no | Name of the shared working directory. A single path component (no separator, no drive specifier). Defaults to '.apothem'. |
+| `workspace.scope` | string | no | Where the working directory is rooted. 'project-local' places &lt;project-root&gt;/&lt;directory_name&gt;/ (default); 'user-home' places ~/&lt;directory_name&gt;/. |
+
+{/* apothem:generated-reference:end */}

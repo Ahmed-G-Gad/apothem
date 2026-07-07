@@ -1,0 +1,30 @@
+---
+title: "مرجع واجهة سطر الأوامر"
+description: "مرجع واجهة سطر الأوامر لـ Apothem — موجز لكل أمر، والخيارات، ورموز الخروج لواجهة سطر الأوامر apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+تدير واجهة سطر الأوامر <bdi>`apothem`</bdi> تهيئات مُحَوِّلات المساعد البرمجي من الملف الشخصي المشترك. تُوثِّق كل صفحة أدناه أمرًا فرعيًّا واحدًا: موجزه، وخياراته، وسلوكه، ورموز خروجه.
+
+يقبل كلٌّ من <bdi>`install`</bdi> و<bdi>`update`</bdi> و<bdi>`uninstall`</bdi> أيضًا اسمًا بديلًا بالصيغة المستمرّة (<bdi>`installing`</bdi>، <bdi>`updating`</bdi>، <bdi>`uninstalling`</bdi>) مطابقًا في الخيارات والسلوك للأمر الأساسي. أمّا التحديث وإلغاء التثبيت عبر قنوات التثبيت — مُلحَق <bdi>Claude Code</bdi>، و<bdi>`npx`</bdi>، وبرامج المُثبِّت ذات الخطوة الواحدة — فمُوثَّقان في دليلَي التثبيت [التحديث](/docs/install/updating) و[إلغاء التثبيت](/docs/install/uninstalling)، لا عبر الأسماء البديلة نفسها.
+
+## الأوامر
+
+| الأمر | الوصف |
+|---------|-------------|
+| [quickstart](/docs/cli-reference/quickstart) | تشغيل أول موجَّه: يضمن وجود ملف شخصي، ويعاين عمليات الكتابة، ثم يثبّت. |
+| [install](/docs/cli-reference/install) | يثبّت تهيئة مُحَوِّل مساعد برمجي من الملف الشخصي المشترك (الاسم البديل: `installing`). |
+| [update](/docs/cli-reference/update) | يعيد تثبيت تهيئة مُحَوِّل مساعد برمجي من الملف الشخصي المشترك الحالي (الاسم البديل: `updating`). |
+| [uninstall](/docs/cli-reference/uninstall) | يزيل تهيئة مُحَوِّل مساعد برمجي (الاسم البديل: `uninstalling`). |
+| [rollback](/docs/cli-reference/rollback) | يستعيد مساعدًا برمجيًا إلى الحالة التي كان عليها قبل تثبيته المُسجَّل. |
+| [verify](/docs/cli-reference/verify) | يتحقّق من تثبيت مُحَوِّل مساعد برمجي. |
+| [status](/docs/cli-reference/status) | يبلّغ عن حالة التثبيت والتحقّق والانحراف لكل مساعد برمجي مُسجَّل. |
+| [diff](/docs/cli-reference/diff) | يعاين تغييرات التهيئة المعلَّقة لمساعد برمجي واحد. |
+| [harnesses](/docs/cli-reference/harnesses) | يسرد مُحَوِّلات المساعد البرمجي المُسجَّلة ويفحصها. |
+| [profile](/docs/cli-reference/profile) | يدير الملف الشخصي المشترك لـ Apothem. |
+| [doctor](/docs/cli-reference/doctor) | يشغّل تشخيصات النظام لتثبيت Apothem. |
+| [completion](/docs/cli-reference/completion) | يُخرِج برنامج إكمال صدفة قابلًا للتحميل عبر source (bash، zsh، fish، powershell). |
+
+للحصول على الأوامر المائلة (slash) ونظرة عامة على واجهة سطر الأوامر بمستوى أعلى، راجع صفحتَي المرجع
+[نظرة عامة على واجهة سطر الأوامر](/docs/reference/cli) و[الأوامر المائلة](/docs/reference/commands).

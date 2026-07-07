@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: MIT
+
+title: Idea
+labels:
+  - idea
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have an idea for Apothem? Share it here.
+  - type: textarea
+    id: idea
+    attributes:
+      label: Idea
+      description: Describe your idea.
+    validations:
+      required: true
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Why would this be valuable? What problem does it solve?
+    validations:
+      required: false

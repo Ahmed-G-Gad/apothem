@@ -1,0 +1,43 @@
+---
+title: "Apothem مقابل تهيئة OpenCode اليدوية"
+description: "صيانة تهيئة OpenCode وأوامرها ومهاراتها ووكلائها يدويًّا، مقابل تصييرها من ملف التعريف المشترك لـ Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+يقرأ <bdi>OpenCode</bdi> تهيئة <bdi>JSON</bdi> إضافةً إلى أدلّة اكتشاف الأوامر والمهارات
+والوكلاء الأصلية. ويصيّر <bdi>Apothem</bdi> تهيئة <bdi>JSON</bdi> مع قائمة ملفّات
+<bdi>`instructions`</bdi>، ويحوّل المتون المشتركة إلى أدلّة أصلية حيثما يدعمها
+<bdi>OpenCode</bdi>.
+
+## مقارنة الجهد
+
+| المهمة | تهيئة يدوية | يديرها Apothem |
+| ---- | --------------- | --------------- |
+| كتابة القواعد | تحرير التهيئة ومطالبات الدعم يدويًّا | مُصيَّرة أو مُشار إليها من ملف التعريف المشترك |
+| كتابة الأوامر والمهارات والوكلاء | صيانة كلّ دليل <bdi>OpenCode</bdi> يدويًّا | محوَّلة من متون <bdi>Apothem</bdi> المشتركة |
+| إبقاء المتون متوائمة مع البيئات الأخرى | يدويًّا، لكل أداة | تلقائيًّا عند <bdi>`apothem update`</bdi> |
+| تثبيت/إزالة السطح | يدويًّا | <bdi>`apothem install`</bdi> / <bdi>`apothem uninstall`</bdi> |
+| التحقّق من صحّة التهيئة | فحص يدوي | <bdi>`apothem verify --harness opencode`</bdi> |
+
+## ما الذي يديره Apothem
+
+يكتب محوِّل <bdi>opencode</bdi> ملفّ <bdi>`opencode.json`</bdi>، ويحوّل أوامر الشَّرطة
+المائلة في <bdi>Apothem</bdi> إلى ملفّات أوامر <bdi>Markdown</bdi> الخاصّة بـ
+<bdi>OpenCode</bdi>، وينسخ المهارات إلى سطح المهارات الأصلي، ويكيّف التعريفات المساعِدة
+بوصفها وكلاء فرعيين بصيغة <bdi>Markdown</bdi>. وتبقى القواعد والقوالب ومطالبات الخطّافات
+تحت شجرة دعم <bdi>Apothem</bdi>؛ ويُشار إلى القواعد من قائمة <bdi>`instructions`</bdi>
+الأصلية.
+
+## مسار الترحيل
+
+1. شغّل <bdi>`apothem profile init`</bdi> لإنشاء ملف التعريف المشترك إن لم تكن قد فعلت بعد.
+2. انقل قواعد <bdi>OpenCode</bdi> وأوامرها ومهاراتها ووكلاءها الموجودة إلى المتن المشترك.
+3. شغّل <bdi>`apothem install --harness opencode`</bdi> لتصيير التهيئة الأصلية وأدلّة الاكتشاف.
+4. شغّل <bdi>`apothem verify --harness opencode`</bdi> للتأكّد من وصول التهيئة.
+5. استخدم <bdi>`apothem update --harness opencode`</bdi> مع كل تغيير لاحق.
+
+## اقرأ تاليًا
+
+- [مرجع محوِّل OpenCode](/docs/harnesses/opencode)
+- [نظرة عامة على المقارنة](/docs/comparison)

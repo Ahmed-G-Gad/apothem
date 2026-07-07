@@ -1,0 +1,69 @@
+---
+title: "/ux-review"
+description: "/ux-review — Developer-Experience-Review der CLI-Ergonomie, der Dokumentation und des Onboardings."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rolle:** UX-Prüfer
+**Pipeline-Position:** Festung
+
+Developer-Experience-Review der CLI-Ergonomie, der Dokumentation und des Onboardings.
+
+## Kanonischer Aufruf
+
+```bash
+/ux-review
+```
+
+Mit Argumenten:
+
+```bash
+/ux-review [path/to/plan-suite/] [phase-id] [--dry-run]
+```
+
+## Eingaben
+
+Host-Repository in einem beliebigen Lebenszyklus-Zustand
+
+## Ausgaben
+
+UX-Befunde + REPORT.md
+
+## Nachgelagert
+
+Die UX-Review-Stufe der Audit-Review-Sequenz
+
+## Workflow-Phasen
+
+Der Befehl folgt dem Standard-Workflow der `/plan`-Pipeline:
+
+1. **Kontext laden** — Plan-Suite, Regeln und Wiederaufnahme-Vertrag lesen.
+2. **Voraussetzungen prüfen** — Bestätigen, dass abhängige Phasen abgeschlossen sind.
+3. **Aufgaben ausführen** — Die Mission des Befehls erfüllen.
+4. **Ausgaben prüfen** — Bestätigen, dass alle deklarierten Ausgaben existieren und die Qualitätstore bestehen.
+5. **PROGRESS.md aktualisieren** — Verifizierte Ausgaben im Phasen-Ausgaberegister erfassen.
+6. **REPORT.md ausgeben** — Freigabenachweis des Pre-Emission-Tors erfasst.
+
+## Fehlermodi
+
+| Symptom | Ursache | Behebung |
+|---------|-------|----------|
+| Voraussetzung unvollständig | Abhängige Phase nicht beendet | Zuerst die vorgelagerte Phase abschließen |
+| Qualitätstor FAIL | Ausgabe erfüllt die Standards nicht | Ausgabe korrigieren und erneut ausführen |
+| Eingabedatei fehlt | Plan-Suite-Datei fehlt | `/plan-generate` ausführen, um sie zu erstellen |
+
+## Beispiele
+
+```bash
+# Dry-run to preview what would happen
+/ux-review --dry-run
+
+# Execute against a named plan suite
+/ux-review path/to/plan-suite/
+```
+
+## Querverweise
+
+- [Pipeline-Überblick](/docs/pipeline)
+- [Master-Plan-Suite-Vorlage](/docs/reference/commands)

@@ -1,0 +1,93 @@
+---
+title: "Hermes"
+description: "Adaptador de ferramenta do Apothem para Hermes (Prévia)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Fornecedor:** Hermes
+**Nome de instalação:** `hermes`
+**Status:** Prévia
+**Configuração nativa:** `~/.hermes/config.yaml`
+
+## Instalação
+
+```bash
+apothem install --harness hermes
+```
+
+O adaptador traduz o perfil compartilhado para o arquivo de configuração global
+de usuário do Hermes Agent e instala os conjuntos de suporte do Apothem sob a
+raiz da ferramenta.
+
+**Arquivos escritos:** `~/.hermes/config.yaml` e arquivos de suporte sob
+`~/.hermes/.apothem/support/`
+
+## Mapeamento de perfil para configuração nativa
+
+O adaptador lê o perfil compartilhado do Apothem e renderiza a configuração YAML
+nativa. A superfície de habilidades própria do Hermes é `skills.config`
+— pacotes de registro instaláveis que o Hermes expõe automaticamente como
+comandos de barra dinâmicos — que o Apothem não escreve. Em vez disso, o Apothem
+entrega o conteúdo compartilhado de comandos e habilidades como material de
+suporte sob `~/.hermes/.apothem/support/`, referenciado a partir da âncora de instruções
+nativa. Definições auxiliares, regras, modelos e prompts de hook permanecem
+igualmente como material de suporte sob `~/.hermes/.apothem/support/`.
+
+## Notas de compatibilidade
+
+Adaptador em prévia. A configuração YAML nativa é a superfície ativa do Hermes;
+o Apothem usa o hook documentado de diretório de habilidades externo para
+habilidades e mantém os demais conjuntos como material de referência para a
+orientação instalada.
+
+## Verificação
+
+```bash
+apothem verify --harness hermes
+```
+
+O comando verify confirma que:
+
+1. A configuração nativa existe no caminho esperado.
+2. Todos os campos obrigatórios do perfil compartilhado estão presentes.
+3. A rotina de verificação específica do adaptador relata sucesso.
+
+## Atualização
+
+```bash
+apothem update --harness hermes
+```
+
+Rederiva a configuração nativa a partir do estado atual do perfil compartilhado.
+Execute após editar `~/.config/apothem/profile.yaml` ou atualizar o pacote do
+Apothem instalado.
+
+## Desinstalação
+
+```bash
+apothem uninstall --harness hermes
+```
+
+Remove os arquivos de configuração nativa escritos pelo adaptador.
+O YAML do perfil compartilhado e o motor do Apothem não são afetados.
+
+## Portão de conformidade
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Solução de problemas
+
+| Sintoma | Correção |
+|---------|-----|
+| Arquivo de configuração não encontrado | Reexecute `apothem install --harness hermes` |
+| Verificação falhou | Execute `apothem update --harness hermes` e verifique novamente |
+| Conteúdo de configuração inesperado | Verifique `~/.config/apothem/profile.yaml` ou `--profile PATH`, depois reexecute `apothem update --harness hermes` |
+
+## Ajustes de configuração
+
+| Flag | Padrão | Descrição |
+|------|---------|-------------|
+| `--dry-run` | `false` | Pré-visualiza a instalação sem escrever arquivos. |

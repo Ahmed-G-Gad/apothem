@@ -1,0 +1,42 @@
+---
+title: "Esquema del Frontmatter"
+description: "Guía de referencia para la estructura del bloque de frontmatter YAML, las claves obligatorias por clase y las reglas de aplicación del validador en las distintas clases de artefacto."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Referencia canónica del frontmatter YAML en cada clase de artefacto.** El resumen en [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Convenciones es la declaración en línea; los JSON Schemas por clase en [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) son el contrato legible por máquina; esta página es la referencia independiente que citan los colaboradores posteriores.
+
+---
+
+## 1. Estructura del bloque de frontmatter
+
+Cada artefacto lleva frontmatter YAML al inicio, delimitado por líneas `---`. El banner canónico de encabezado de autoría según [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) se sitúa por encima del frontmatter en los archivos de la familia Markdown; el frontmatter va inmediatamente después.
+
+Las claves usan `kebab-case`. Los valores escalares van desnudos o entre comillas dobles; los valores de cadena que contienen dos puntos, almohadillas u otros caracteres significativos para YAML se entrecomillan.
+
+## 2. Campos obligatorios por clase
+
+El conjunto de claves obligatorias varía según la clase de artefacto. La estructura autoritativa la aplican `scripts/dev/validate_ecosystem.py` y los JSON Schemas por clase bajo el directorio `schemas/` (un archivo de esquema por clase de artefacto).
+
+```text
+schemas/agent.schema.json
+schemas/skill.schema.json
+schemas/command.schema.json
+schemas/output-style.schema.json
+schemas/plan.schema.json
+```
+
+| Clase | Claves obligatorias |
+|-------|---------------|
+| `CLAUDE.md` (configuración raíz) | `name`, `version`, `updated`, `description`, `scope`, `portability` |
+| Reglas (`src/apothem/rules/*.md`) | `name`, `description`, `pathFilter`, `alwaysApply` |
+| Comandos (`src/apothem/commands/*.md`) | `name`, `version`, `updated`, `description`, `argument-hint`, `disable-model-invocation` |
+| Asistentes (directorio canónico mostrado abajo) | `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns`, `effort` |
+| Habilidades (`src/apothem/skills/*/SKILL.md`) | `name`, `description`, `archetype`, `userInvocable` |
+
+Los esquemas por clase en [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) llevan el conjunto completo de restricciones, incluidas las de tipo, formato, enum y patrón.
+
+## 3. Validadores
+
+`scripts/dev/validate_ecosystem.py` recorre el árbol de artefactos, aplica los conjuntos de claves obligatorias anteriores e informa `[FAIL]` en cualquier artefacto al que le falte un campo obligatorio. El `frontmatter-grep` por escritura en `src/apothem/conformity/frontmatter_grep.py` aplica la misma estructura en los límites del hook PreToolUse Write/Edit.

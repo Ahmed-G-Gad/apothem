@@ -1,0 +1,119 @@
+---
+title: "Guides pratiques de rédaction et de pipeline"
+description: "Procédures pas à pas orientées tâches pour affiner du contenu en spécifications, générer des suites de plans, relire des plans, exécuter des phases, ajouter des artefacts et exécuter des portes de qualité."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Procédures pas à pas orientées tâches pour **rédiger des artefacts Apothem et
+piloter le pipeline de plans**. Chaque guide répond à une question concrète
+unique.
+
+Pour les recettes de configuration initiale — ajouter un environnement, modifier
+le profil, piloter l'installateur — consultez plutôt la section
+[Recettes pratiques](/docs/how-to).
+
+## Pipeline de suite de plans
+
+### Comment affiner du contenu brut en une spécification ?
+
+Invoquez `/plan-spec` avec le contenu brut en entrée. Le rôle Forge exécute six
+phases de transformation (Découverte, Considération méticuleuse, Cartographie de
+la puissance, Vérification de la préservation, Application de l'expertise,
+Balayage de résolution des questions) et émet la spécification consolidée à
+`.apothem/plans/{suite}/_spec/spec.md`. Voir
+`src/apothem/commands/plan-spec.md` pour le protocole complet.
+
+### Comment générer une suite de plans à partir d'une spécification ?
+
+Invoquez `/plan-generate <suite-name>` une fois que la spécification se trouve à
+`.apothem/plans/{suite}/_spec/spec.md`. Le générateur émet les fichiers d'infrastructure
+canoniques plus les fichiers
+`phases/NN-kebab-topic/PHASE.md` par phase. Voir
+`src/apothem/commands/plan-generate.md`.
+
+### Comment relire un plan généré ?
+
+Invoquez `/plan-review path/to/plan-suite/`. Le relecteur applique les huit
+techniques de planification et émet des fiches de score. Les fiches de score en
+échec bloquent l'exécution à SHARED+ jusqu'à résolution. Voir
+`src/apothem/commands/plan-review.md`.
+
+### Comment exécuter un plan ?
+
+Invoquez `/plan-execute path/to/plan-suite/ [phase-id]`. Sans `phase-id`, la
+prochaine phase en attente s'exécute. Avec un identifiant spécifique, seule cette
+phase s'exécute. Voir `src/apothem/commands/plan-execute.md`.
+
+### Comment vérifier l'état d'un plan ?
+
+Invoquez `/plan-status path/to/plan-suite/ [--verbose]`. Rapport en lecture
+seule. Voir `src/apothem/commands/plan-status.md`.
+
+## Rédaction d'artefacts
+
+### Comment ajouter une nouvelle règle ?
+
+1. Choisissez un nom de fichier en kebab-case sous `src/apothem/rules/`, p. ex.
+   `src/apothem/rules/my-new-rule.md`.
+2. Rédigez le frontmatter (`name`, `description`, `type:
+   instruction`, `pathFilter` en option).
+3. Rédigez le corps avec les sections canoniques : Purpose,
+   Obligations, Seriousness Scaling, Anti-Patterns, Enforcement,
+   Bindings.
+4. Ajoutez une ligne à la cohorte de règles (`src/apothem/rules/`).
+5. Exécutez `python scripts/dev/validate_ecosystem.py --check
+   frontmatter-cohort` pour vérifier.
+
+### Comment ajouter un nouveau worker délégué ?
+
+Choisissez un nom de fichier en kebab-case sous le répertoire indiqué
+ci-dessous, en utilisant la forme `my-worker.md` :
+
+```text
+src/apothem/agents/
+src/apothem/agents/my-worker.md
+```
+
+Puis :
+
+1. Rédigez le frontmatter — y compris `name`, `description`,
+   `allowedTools`, `maxTurns`, `version`, et le marqueur de type indiqué
+   ci-dessous :
+
+```text
+type: agent
+```
+
+1. Rédigez le system prompt comme corps.
+1. Ajoutez une ligne au registre des auxiliaires dans la cohorte de workers délégués (`src/apothem/agents/`).
+
+### Comment ajouter un nouveau hook ?
+
+1. Rédigez un message de contexte sous
+   `src/apothem/hooks/messages/<event>-<scope>.md`.
+2. Câblez le hook dans `settings.json`.
+3. Mettez à jour le pipeline de hooks.
+4. Exécutez `python scripts/dev/validate_ecosystem.py --check
+   hook-validator`.
+
+## Portes de qualité
+
+### Comment exécuter les portes de qualité locales ?
+
+```bash
+python -m ruff check .
+python -m ruff format --check .
+python -m mypy
+python -m pytest -q
+python scripts/dev/validate_ecosystem.py
+python scripts/dev/chaos_pass.py
+```
+
+Le pipeline de CI exécute le même ensemble en parallèle.
+
+### Comment vérifier le frontmatter d'une seule classe d'artefacts ?
+
+```bash
+python scripts/dev/validate_ecosystem.py --check frontmatter-cohort
+```

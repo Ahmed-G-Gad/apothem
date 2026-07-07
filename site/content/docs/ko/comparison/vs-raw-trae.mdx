@@ -1,0 +1,41 @@
+---
+title: "Apothem 대 수동 Trae 구성"
+description: ".trae/rules/ 아래의 Trae 규칙을 손으로 유지하는 것과 Apothem의 공유 프로파일에서 렌더링하는 것의 비교."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Trae는 벤더 앵커가 `project_rules.md`와 `user_rules.md`인 `.trae/rules/` 디렉터리에서
+규칙을 읽습니다. Apothem의 trae 어댑터는 공유 프로파일에서 해당 디렉터리에 전용
+`apothem-rules.md` 파일을 렌더링합니다. 이 페이지는 그 구성을 손으로 유지하는 것과
+Apothem으로 관리하는 것을 대비합니다.
+
+## 노력 비교
+
+| 작업 | 수동 구성 | Apothem 관리 |
+| ---- | --------------- | --------------- |
+| 규칙 작성 | `.trae/rules/` 아래 각 파일을 손으로 작성 | 공유 코퍼스에서 렌더링 |
+| Apothem 표면을 분리해서 유지 | `project_rules.md`를 과부하시키지 않도록 기억 | 어댑터가 전용 `apothem-rules.md`를 작성 |
+| 규칙을 다른 환경과 맞춰 유지 | 수동, 도구별 | `apothem update` 시 자동 |
+| 구성이 올바른지 검증 | 수동 검사 | `apothem verify --harness trae` |
+
+## Apothem이 관리하는 것
+
+trae 어댑터는 공유 규칙을 `.trae/rules/` 아래 전용 `apothem-rules.md` 파일로
+렌더링하고, 운영자가 소유한 `project_rules.md`와 `user_rules.md` 앵커는 건드리지 않은
+채로 둡니다. Trae에는 PreToolUse 훅이 없으므로 가드레일 의도는 도구 호출 가로채기
+지점이 아니라 규칙 산문 안에 존재합니다. 공유 규칙에 대한 모든 변경은 다음
+`apothem update` 시 파일을 다시 렌더링합니다.
+
+## 마이그레이션 경로
+
+1. 공유 프로파일을 아직 만들지 않았다면 `apothem profile init`을 실행합니다.
+2. 기존 `.trae/rules/` 파일의 규칙을 공유 코퍼스로 옮깁니다.
+3. `apothem install --harness trae`를 실행해 `apothem-rules.md` 파일을 렌더링합니다.
+4. `apothem verify --harness trae`를 실행해 구성이 안착했는지 확인합니다.
+5. 이후의 모든 변경에는 `apothem update --harness trae`를 사용합니다.
+
+## 다음으로 읽기
+
+- [Trae 어댑터 레퍼런스](/docs/harnesses/trae)
+- [비교 개요](/docs/comparison)

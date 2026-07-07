@@ -1,0 +1,49 @@
+---
+title: "Konformitätsgate"
+description: "Führe das Apothem-Konformitätsgate aus, um die Gesundheit des Ökosystems zu prüfen."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Das Konformitätsgate unter `src/apothem/conformity/gate.py` führt fünfzehn
+mechanische Prüfungen gegen jedes Artefakt aus, das der Operator verfasst.
+
+## Das Gate ausführen
+
+```bash
+python -m apothem.conformity.gate
+```
+
+## Gate-Balken
+
+| Balken | Prüfung | Art |
+|-----|-------|------|
+| M1 | Bereichsabgleich | Begründet |
+| M2 | Plan-interne Isolation (CM-7) | Mechanisch |
+| M3 | Standardkonformität | Begründet |
+| M4 | Frontmatter-Gültigkeit | Mechanisch |
+| M5 | Keine verbotenen Formulierungen | Mechanisch |
+| M6 | Redaktionelle Offenlegung | Begründet |
+| M7 | Keine Planverweise in Artefakten | Mechanisch |
+| M8 | Urheberschafts-Header vorhanden | Mechanisch |
+| M9 | Ehrliche Bewertung | Begründet |
+| M10 | Benennungsdisziplin | Mechanisch |
+| M11 | Sprint-Apparat | Begründet |
+| M12 | Kanonisches Layout | Mechanisch |
+| M13 | Code-Handwerk | Begründet |
+| M14 | Systemische Teilnahme | Begründet |
+| M15 | Menschliche Urheberschaft | Mechanisch |
+
+## Gezielte Prüfungen
+
+```bash
+# Eine einzelne Prüfung ausführen
+python -m apothem.conformity.gate --check multi-surface-coherence
+
+# Gegen eine bestimmte Datei ausführen
+python -m apothem.conformity.gate src/apothem/rules/my-rule.md
+```
+
+## CI-Integration
+
+Das Gate läuft in der CI über `.github/workflows/conformity.yml` bei jedem Push.

@@ -1,0 +1,168 @@
+---
+title: "Documentación de settings.json"
+description: "Configura la ejecución de hooks de Claude Code, permisos, eventos, tiempos de espera, runtime de Python, validación y precedencia de ajustes por capas para el ecosistema Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Alcance.** Este documento describe el archivo de cableado de hooks
+> (`settings.json`) del **adaptador de Claude Code**. Otros harness
+> usan sus propias superficies de ajustes nativas — consulta
+> [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses) para conocer el
+> punto de entrada de configuración equivalente de cada adaptador.
+
+## Visión general
+
+`settings.json` configura la ejecución de hooks de Claude Code para el ecosistema Apothem.
+Declara qué hooks se disparan en qué eventos, sus tiempos de espera y la superficie
+de permisos de nivel superior. Apothem distribuye una única plantilla canónica porque Claude Code
+carga `~/.claude/settings.json` en todas las plataformas compatibles.
+
+## Runtime solo Python
+
+Cada hook configurado usa la forma de comando exec de Claude Code. La
+plantilla distribuida lleva el token `${HARNESS_ROOT}`:
+
+```json
+{
+  "type": "command",
+  "command": "python",
+  "args": ["${HARNESS_ROOT}/apothem/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
+}
+```
+
+`apothem install` renderiza el token a la ruta absoluta de la raíz del harness
+(forma con barra diagonal, válida en Windows, macOS y Linux), de modo que el
+`settings.json` instalado invoca directamente el despachador materializado en
+`~/.claude/.apothem/support/hooks/dispatch.py`. El despachador y la
+puerta de conformidad (`~/.claude/.apothem/support/conformity/gate.py`, con sus fixtures de schema
+junto a él en `~/.claude/.apothem/support/schemas/`) son scripts autónomos de la biblioteca
+estándar — no se requiere ningún paquete `apothem` importable en el host, y una sola
+plantilla sirve para cada plataforma.
+
+## Esquema de configuración de hooks
+
+### Permisos
+
+```json
+"permissions": {
+  "allow": ["Read", "Glob", "Grep"]
+}
+```
+
+Las herramientas que no están en `allow` requieren aprobación explícita por llamada o permiso a nivel de espacio de trabajo.
+Las herramientas de solo lectura están preaprobadas; las operaciones de escritura (`Write`, `Edit`, `NotebookEdit`,
+`Bash`) pasan por el validador `PreToolUse`.
+
+### Eventos de hooks
+
+> **Los valores de tiempo de espera reflejan los presupuestos canónicos de eventos de hook** — la tabla a continuación
+> los reproduce para comodidad del lector; la fuente canónica prevalece.
+
+| Evento | Disparador | Tiempo de espera | Propósito | Mandato |
+| ----- | ------- | ------- | ------- | ------- |
+| **SessionStart** | Nueva sesión de Claude Code | 30 segundos | Inicializar contexto, leer memoria, comprobar estado del plan | CM-14 |
+| **PreToolUse** | Antes de Write/Edit/NotebookEdit/Bash | 10 segundos | Validar conformidad CM-7 + frontmatter | CM-7, CM-22 |
+| **PreCompact** | Antes de la compactación de contexto | 30 segundos | Externalizar el estado no externalizado | CM-24 §2.3 |
+| **PostCompact** | Después de la compactación de contexto | 30 segundos | Reiniciar el arranque desde el estado externalizado | CM-24 §6.2 |
+| **Stop** | Salida de la sesión | 60 segundos | Externalización al final de la sesión | CM-14/CM-22/CM-24/CM-26 |
+
+`dispatch.py` acepta además `UserPromptSubmit` y `Notification` en su lista
+blanca de eventos. Ninguno está cableado en las plantillas distribuidas; añade un bloque matcher con el mismo
+patrón de localizador + despacho para habilitarlo.
+
+### Campos de nivel superior
+
+| Campo | Propósito | Requerido |
+| ----- | ------- | -------- |
+| `permissions` | Objeto con un array `allow` que lista los nombres de herramientas preaprobadas (herramientas de solo lectura por defecto) | sí |
+| `hooks` | Mapa de nombre de evento → array de bloques `{matcher, hooks[]}`; ver **Eventos de hooks** abajo | sí |
+| `model` | Selector de modelo resoluble por el host. Se acepta un alias o un identificador completo cuando el operador elige establecer uno. | opcional |
+| `defaultShell` | Shell por defecto para las llamadas a la herramienta `Bash`. Apothem no establece esto en la plantilla compartida. | opcional |
+| `autoUpdatesChannel` | Canal de actualización de Claude Code. Apothem no establece esto en la plantilla compartida. | opcional |
+| `effortLevel` | Esfuerzo de razonamiento por defecto (`low`, `medium`, `high`, `max`) | opcional |
+
+## Validación
+
+Tres validadores cubren la superficie de hooks, con rigor creciente:
+
+```bash
+# Estructural + higiene de Python (rápido, offline)
+python scripts/dev/validate_hooks.py
+
+# Ecosistema completo (estructura + frontmatter + comprobaciones de hooks delegadas)
+python scripts/dev/validate_ecosystem.py
+
+# Barrido adversarial (azota cada comando de hook configurado con entradas degradadas)
+python scripts/dev/chaos_pass.py
+```
+
+Los tres deben salir con 0 antes de hacer commit de cambios en hooks o ajustes.
+
+Prueba de humo ad-hoc de un solo evento:
+
+```bash
+python src/apothem/hooks/dispatch.py --event-name SessionStart
+```
+
+Salida esperada: un sobre JSON de una sola línea que contiene `hookSpecificOutput`.
+
+## Problemas comunes
+
+### SessionStart agota el tiempo de espera
+
+Lo más común es que el localizador `find-python` esté descubriendo el shim de Microsoft Store y
+no logre resolver un intérprete real. Verifica:
+
+```bash
+python src/apothem/hooks/dispatch.py --event-name SessionStart
+```
+
+Si el comando imprime un sobre JSON válido pero el panel de Claude Code muestra un tiempo de espera agotado,
+aumenta el `timeout` del evento en `settings.json`. Si el comando falla a nivel de shell,
+instala un CPython 3.10+ real y asegúrate de que esté en el PATH o sea descubrible por el localizador.
+
+### Cada Write/Edit queda bloqueado
+
+`PreToolUse` está marcando términos internos de plan en contenido que se escribe fuera de la raíz de instalación del harness (`~/.claude/` para el adaptador de Claude Code).
+Revisa el contenido en busca de violaciones de CM-7 (ver
+`src/apothem/rules/persistent-conventions-vigilance.md`). Solo lenguaje de dominio para
+los artefactos del código base.
+
+### settings.json no se carga
+
+Claude Code lee `~/.claude/settings.json`. Verifica que Apothem se instaló en la
+raíz del harness esperada y reinicia la sesión después de cambiar el archivo.
+
+### Los hooks no hacen nada en silencio
+
+El contrato de un hook es "siempre salir con 0, siempre emitir JSON válido". Si no se puede localizar
+el intérprete, el localizador devuelve vacío y el comando se convierte en una no-operación. Ejecuta `chaos_pass.py`
+para confirmar que cada hook configurado devuelve un sobre válido — captura las rutas de resolución
+degradadas que una sesión en vivo ocultaría.
+
+## Precedencia por capas
+
+Claude Code resuelve el objeto de ajustes efectivo componiendo tres capas en
+orden creciente de precedencia:
+
+| Nivel | Ubicación | ¿Versionado? | Justificación |
+|------|----------|------------|-----------|
+| 1. **Sistema** | Valores por defecto del harness compilados dentro del propio Claude Code | n/a (controlado por el proveedor) | El piso; todo operador hereda la misma línea base. |
+| 2. **Proyecto** | `<harness-root>/settings.json` | ✅ Versionado | Convenciones compartidas del proyecto: hooks, permisos, servidores MCP, cableado de la barra de estado. La plantilla del código fuente de Apothem vive dentro del directorio de templates del adaptador de Claude Code. |
+| 3. **Local de usuario** | `<harness-root>/settings.local.json` (gitignored) — plantillado como `settings.local.example.json` en la raíz del repositorio | ❌ Gitignored | Anulaciones específicas del operador: tokens de API, rutas locales de la máquina, funciones opt-in. |
+
+Los valores de nivel superior anulan los de nivel inferior **a nivel de clave hoja** — cuando
+tanto la capa de proyecto como la local de usuario declaran una entrada `permissions.allow`, se toma la
+unión; cuando ambas declaran un escalar como `theme`, gana el valor local de usuario. La semántica
+exacta de fusión por clave es propiedad del harness de Claude Code.
+
+### Crear una anulación local de usuario
+
+1. Copia `settings.local.example.json` (raíz del repositorio) a `<harness-root>/settings.local.json`.
+   El nombre de archivo `settings.local.json` coincide con el patrón de `.gitignore`, así que el archivo nunca
+   aterriza en el control de versiones.
+2. Edita la copia local — conserva solo las claves a anular; el harness compone las capas,
+   así que las claves ausentes heredan de la capa de proyecto.
+3. Verifica que el archivo se analiza como JSON válido antes de guardar — el harness rechaza
+   JSON mal formado al inicio de la sesión.

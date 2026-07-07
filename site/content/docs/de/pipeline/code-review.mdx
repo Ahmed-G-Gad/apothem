@@ -1,0 +1,69 @@
+---
+title: "/code-review"
+description: "/code-review — Operatorgesteuerter Code-Qualitäts-Review-Durchlauf pro Datei über src/, scripts/ und tools/."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rolle:** Prüfer
+**Pipeline-Position:** Festung
+
+Operatorgesteuerter Code-Qualitäts-Review-Durchlauf pro Datei über src/, scripts/ und tools/.
+
+## Kanonischer Aufruf
+
+```bash
+/code-review
+```
+
+Mit Argumenten:
+
+```bash
+/code-review [path/to/plan-suite/] [phase-id] [--dry-run]
+```
+
+## Eingaben
+
+Host-Repository in einem beliebigen Lebenszyklus-Zustand
+
+## Ausgaben
+
+Befunde pro Datei + Dispositionsprotokoll in REPORT.md
+
+## Nachgelagert
+
+Die Zeile-für-Zeile-Review-Stufe der Audit-Prüfsequenz
+
+## Workflow-Phasen
+
+Der Befehl folgt dem standardmäßigen `/plan`-Pipeline-Workflow:
+
+1. **Kontext laden** — Liest die Plan-Suite, die Regeln und den Wiederaufnahme-Vertrag.
+2. **Voraussetzungen prüfen** — Bestätigt, dass die Abhängigkeitsphasen abgeschlossen sind.
+3. **Aufgaben ausführen** — Erfüllt die Mission des Befehls.
+4. **Ausgaben verifizieren** — Bestätigt, dass alle deklarierten Ausgaben existieren und die Qualitätstore bestehen.
+5. **PROGRESS.md aktualisieren** — Verzeichnet die verifizierten Ausgaben im Phasen-Ausgaberegister.
+6. **REPORT.md ausgeben** — Der Freigabenachweis des Pre-Emission-Tors wird verzeichnet.
+
+## Fehlermodi
+
+| Symptom | Ursache | Behebung |
+|---------|-------|----------|
+| Voraussetzung unvollständig | Abhängige Phase nicht abgeschlossen | Schließe zuerst die vorgelagerte Phase ab |
+| Qualitätstor FAIL | Die Ausgabe erfüllt die Standards nicht | Behebe die Ausgabe und führe erneut aus |
+| Fehlende Eingabedatei | Plan-Suite-Datei fehlt | Führe `/plan-generate` aus, um sie zu erstellen |
+
+## Beispiele
+
+```bash
+# Dry-run to preview what would happen
+/code-review --dry-run
+
+# Execute against a named plan suite
+/code-review path/to/plan-suite/
+```
+
+## Querverweise
+
+- [Pipeline-Überblick](/docs/pipeline)
+- [Master-Plan-Suite-Vorlage](/docs/reference/commands)

@@ -1,0 +1,99 @@
+---
+title: "Antigravity"
+description: "Antigravity (पूर्वावलोकन) के लिए Apothem टूल अडैप्टर।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**विक्रेता:** Antigravity
+**इंस्टॉल नाम:** `antigravity`
+**स्थिति:** पूर्वावलोकन
+**नेटिव कॉन्फ़िग:** `~/.gemini/GEMINI.md` के साथ
+`~/.gemini/antigravity-cli/plugins/apothem/`
+
+## इंस्टॉलेशन
+
+```bash
+apothem install --harness antigravity
+```
+
+अडैप्टर साझा प्रोफ़ाइल को `~/.gemini/GEMINI.md` पर रेंडर करता है और Apothem
+सहायता समुच्चयों को एक Antigravity CLI प्लगइन के रूप में इंस्टॉल करता है।
+
+**लिखी गई फ़ाइलें:** `~/.gemini/GEMINI.md`,
+`~/.gemini/antigravity-cli/plugins/apothem/plugin.json`,
+`~/.gemini/antigravity-cli/plugins/apothem/skills/`,
+`~/.gemini/antigravity-cli/plugins/apothem/rules/`,
+प्लगइन के भीतर परिवर्तित स्थानीय सहायक परिभाषाएँ,
+`~/.gemini/antigravity-cli/plugins/apothem/apothem/templates/`, और
+`~/.gemini/antigravity-cli/plugins/apothem/apothem/hooks/`.
+
+**साझा उपयोक्ता एंकर।** `~/.gemini/GEMINI.md` Gemini-परिवार के टूल्स के लिए
+उपयोक्ता-स्तरीय एंकर भी है। Antigravity अडैप्टर अपनी अतिरिक्त Apothem सामग्री को
+`~/.gemini/antigravity-cli/plugins/` के अंतर्गत `apothem` प्लगइन के भीतर रखता है,
+ताकि वह सामान्य Gemini CLI प्रोजेक्ट डायरेक्टरियों पर दावा न करे।
+
+## प्रोफ़ाइल से नेटिव कॉन्फ़िग में मानचित्रण
+
+अडैप्टर Apothem की साझा प्रोफ़ाइल पढ़ता है और प्रत्येक `apothem install` या
+`apothem update` रन पर निर्देश एंकर के साथ सहायता समुच्चय रेंडर करता है।
+
+## संगतता टिप्पणियाँ
+
+पूर्वावलोकन अडैप्टर। `GEMINI.md` एंकर सक्रिय निर्देश सामग्री है; Antigravity
+प्लगइन परिवर्तित कमांड कौशल, पुन: प्रयोज्य कौशल, स्थानीय सहायक परिभाषाएँ, नियम,
+टेम्पलेट और हुक सहायता सामग्री को एक स्पष्ट, Apothem-स्वामित्व वाले नेमस्पेस में
+संरक्षित रखता है।
+जब तक अडैप्टर के पास Antigravity के `hooks.json` के लिए एक स्कीमा अनुवाद परत नहीं
+हो जाती, तब तक हुक फ़ाइलें सक्रिय Antigravity हुक इवेंट के रूप में पंजीकृत नहीं होतीं।
+
+## सत्यापन
+
+```bash
+apothem verify --harness antigravity
+```
+
+verify कमांड पुष्टि करता है कि:
+
+1. नेटिव संदर्भ फ़ाइल अपेक्षित पथ पर मौजूद है।
+2. Apothem Antigravity CLI प्लगइन मेटाडेटा मौजूद है और `apothem` प्लगइन नाम घोषित
+   करता है।
+
+## अपडेट करना
+
+```bash
+apothem update --harness antigravity
+```
+
+वर्तमान साझा प्रोफ़ाइल स्थिति से नेटिव कॉन्फ़िग को पुनः व्युत्पन्न करता है।
+`~/.config/apothem/profile.yaml` को संपादित करने के बाद या इंस्टॉल किए गए Apothem
+पैकेज को अपग्रेड करने के बाद चलाएँ।
+
+## अनइंस्टॉल करना
+
+```bash
+apothem uninstall --harness antigravity
+```
+
+अडैप्टर द्वारा लिखी गई नेटिव कॉन्फ़िग फ़ाइलों को हटाता है।
+साझा प्रोफ़ाइल YAML और Apothem इंजन अप्रभावित रहते हैं।
+
+## अनुरूपता द्वार
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## समस्या निवारण
+
+| लक्षण | समाधान |
+|---------|-----|
+| कॉन्फ़िग फ़ाइल नहीं मिली | `apothem install --harness antigravity` पुनः चलाएँ |
+| सत्यापन विफल रहा | `apothem update --harness antigravity` चलाएँ, फिर पुनः सत्यापित करें |
+| अप्रत्याशित कॉन्फ़िग सामग्री | `~/.config/apothem/profile.yaml` या `--profile PATH` जाँचें, फिर `apothem update --harness antigravity` पुनः चलाएँ |
+
+## कॉन्फ़िगरेशन नॉब
+
+| फ़्लैग | डिफ़ॉल्ट | विवरण |
+|------|---------|-------------|
+| `--dry-run` | `false` | फ़ाइलें लिखे बिना इंस्टॉलेशन का पूर्वावलोकन करें। |

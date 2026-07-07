@@ -1,0 +1,42 @@
+---
+title: "Apothem 대 원시 Windsurf 구성"
+description: ".devin/rules/ 아래에서 Windsurf의 규칙을 직접 손으로 유지하는 것과 apothem의 공유 프로파일에서 렌더링하는 것의 비교."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Windsurf는 `.devin/rules/` 디렉터리에서 규칙을 읽습니다. Apothem의 windsurf
+어댑터는 디렉터리 기반 규칙을 공유 프로파일에서 렌더링합니다. 이 페이지는 그
+구성을 직접 손으로 유지하는 것과 apothem으로 관리하는 것을 대비합니다.
+
+## 노력 비교
+
+| 작업 | 원시 수동 구성 | Apothem 관리 |
+| ---- | --------------- | --------------- |
+| 규칙 작성 | `.windsurf/rules/` 아래 각 파일을 직접 작성 | 공유 코퍼스에서 렌더링 |
+| 단일 규칙 형식 유지 | `.windsurf/rules/`와 단일 `.windsurfrules` 파일 사이에서 직접 선택 | 어댑터는 `.devin/rules/`만 작성 |
+| 다른 환경과 규칙 정렬 유지 | 수동, 도구별 | `apothem update` 시 자동 |
+| 구성이 올바른지 검증 | 수동 검사 | `apothem verify --harness windsurf` |
+
+## apothem이 관리하는 것
+
+windsurf 어댑터는 공유 규칙을 `.devin/rules/` 디렉터리로 렌더링하며, 단일
+파일 `.windsurfrules`는 작성하지 않습니다. Windsurf에는 PreToolUse 훅이 없으므로,
+가드레일 의도는 도구 호출 가로채기 지점이 아니라 규칙 산문 안에 존재합니다. 공유
+규칙에 대한 모든 변경은 다음 `apothem update` 시 디렉터리를 다시 렌더링합니다.
+
+## 마이그레이션 경로
+
+1. 아직 공유 프로파일을 만들지 않았다면 `apothem profile init`을 실행합니다.
+2. 기존 `.windsurf/rules/`(및 단일 파일 `.windsurfrules`)의 규칙을 공유
+   코퍼스로 옮깁니다.
+3. `apothem install --harness windsurf`를 실행해 `.devin/rules/` 디렉터리를
+   렌더링합니다.
+4. `apothem verify --harness windsurf`를 실행해 구성이 적용되었는지
+   확인합니다.
+5. 이후 모든 변경에는 `apothem update --harness windsurf`를 사용합니다.
+
+## 다음으로 읽기
+
+- [Windsurf 어댑터 참조](/docs/harnesses/windsurf)
+- [비교 개요](/docs/comparison)

@@ -1,0 +1,70 @@
+---
+title: "/research-design"
+description: "/research-design —— 将假设操作化为可检验的预测并设计研究（变量、对照、样本、检验力），然后将分析计划冻结为一份预注册。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**角色：** 首席研究员（研究设计）
+**流水线位置：** 链路中段
+
+将假设操作化为可检验的预测，并设计研究或实验——变量、对照、样本、仪器、检验力分析、效度威胁——然后生成一份预注册，在数据收集之前冻结分析计划。
+
+## 规范调用
+
+```bash
+/research-design
+```
+
+带参数：
+
+```bash
+/research-design [path/to/research-suite/]
+```
+
+## 输入
+
+`_inputs/proposal.md`（来自前序阶段 `/research-proposal` 的记录方案）、`_inputs/synthesis.md`（SOTA 图谱 + 缺口陈述）与 `_spec/research-spec.md`（假设）。
+
+## 输出
+
+`_inputs/study-design.md`（操作化的预测、变量规范、对照、样本、仪器、检验力分析、效度威胁）+ `_inputs/preregistration.md`（冻结的分析计划）。
+
+## 下游
+
+/research-experiment（下游消费方）
+
+## 工作流阶段
+
+该命令遵循标准的 `/research` 流水线工作流：
+
+1. **加载上下文** —— 读取综合结果与规范中的假设。
+2. **校验顺序门** —— 确认 `_inputs/proposal.md`（以及上游的 `_inputs/synthesis.md` 与 `_spec/research-spec.md`）存在；否则以 `Blocked: run /research-proposal first` 停止。
+3. **设计研究** —— 操作化预测；规定变量、对照、样本、仪器、检验力；枚举效度威胁。
+4. **预注册** —— 在任何数据收集之前冻结分析计划。
+5. **更新交接清单** —— 记录研究设计与预注册的路径。
+6. **发出设计** —— `_inputs/study-design.md` + `_inputs/preregistration.md`。
+
+## 严谨性强制底线
+
+对于承载对照的研究，设计会固定并预注册经验底线：所有受比较方法共用一份统一预算（等同的挂钟时间，并在有意义之处等同的评估次数），随机方法每个实例至少三十次重复，一个每次禁用一个组件的消融因子，对每个参数的敏感性扫查，以及在训练划分上自动配置、在互不相交的测试划分上评估。底线深度随目标发表场所的抱负而伸缩。
+
+## 失败模式
+
+| 症状 | 原因 | 恢复 |
+|---------|-------|----------|
+| Blocked: run /research-proposal first | 没有记录方案 | 运行 `/research-proposal` 以生成 `_inputs/proposal.md` |
+| 检验力不足的设计 | 样本量对效应而言太小 | 重新运行检验力分析；调整样本量 |
+| 分析计划未冻结 | 预注册被跳过 | 在数据收集之前撰写 `_inputs/preregistration.md` |
+
+## 示例
+
+```bash
+# 设计研究并预注册分析计划
+/research-design path/to/research-suite/
+```
+
+## 交叉引用
+
+- [流水线概览](/docs/pipeline)
+- [命令参考](/docs/reference/commands)

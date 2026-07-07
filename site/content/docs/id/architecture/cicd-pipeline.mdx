@@ -1,0 +1,104 @@
+---
+title: "Diagram pipeline CI/CD"
+description: "Peta visual dan rincian per jalur dari tahap alur kerja build, uji, lint, keamanan, dan publikasi yang mengawal setiap perubahan kode dan rilis."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Peta struktural alur kerja build · validasi · publikasi yang mengawal setiap
+perubahan pada ekosistem Apothem.** Dokumen ini memasang permukaan visualisasi;
+berkas alur kerja GitHub Actions yang konkret dan perkakas rilis hadir kemudian
+di bawah pemasangan kesiapan produksi.
+
+## Bentuk pipeline
+
+```mermaid
+%%{ init: { "theme": "neutral" } }%%
+%% verified: 2026-04-27 %%
+%% provenance: pyproject.toml + scripts/dev/validate_ecosystem.py + scripts/dev/validate_hooks.py %%
+%% cross-reference: site/content/docs/developer-guide.mdx (contributor workflow) %%
+flowchart LR
+    accTitle: CI/CD pipeline shape
+    accDescr: Left-to-right flowchart of the apothem CI CD pipeline showing build, test, lint, type-check, security scan, docs build, package, sign, and publish stages with branch protection gates between them.
+    subgraph Trigger["Trigger surface"]
+        PR["Pull request opened or updated"]
+        PUSH["Push to main"]
+        TAG["Tag release vX.Y.Z"]
+    end
+    subgraph Static["Static analysis lane"]
+        LINT["Ruff lint + format check"]
+        TYPE["Mypy strict"]
+        MD["markdownlint"]
+        FRONT["Frontmatter validator"]
+    end
+    subgraph Test["Test lane"]
+        PYTEST["pytest tests/hooks"]
+        ECO["validate_ecosystem.py"]
+        CHAOS["chaos_pass.py (release lane)"]
+        BENCH["src/apothem/benchmarks/ (release lane)"]
+    end
+    subgraph Security["Security lane"]
+        SECRETS["Secret scan"]
+        SBOM["SBOM generation"]
+        LICENSE["License audit"]
+    end
+    subgraph Publish["Publish lane (tags only)"]
+        SIGN["Signed-tag verification"]
+        ATTEST["Provenance attestation"]
+        DOCS["Project website publish"]
+        RELEASE["Release notes from CHANGELOG.md"]
+    end
+    PR --> Static
+    PR --> Test
+    PR --> Security
+    PUSH --> Static
+    PUSH --> Test
+    PUSH --> Security
+    TAG --> Static
+    TAG --> Test
+    TAG --> Security
+    TAG --> Publish
+    Static --> GATE{All lanes green?}
+    Test --> GATE
+    Security --> GATE
+    GATE -->|yes| MERGE[Merge / publish]
+    GATE -->|no| BLOCK[Block · surface failures · request fix]
+    Publish --> MERGE
+```
+
+## Peran jalur
+
+- **Jalur analisis statis** — umpan balik cepat. Ruff mencakup gaya Python dan
+  satu set aturan yang dikurasi; mypy menegakkan disiplin tipe pada strict;
+  markdownlint mengatur permukaan dokumentasi; validator frontmatter mengawal
+  kepatuhan skema artefak untuk aturan, skill, pekerja yang didelegasikan, dan
+  perintah.
+- **Jalur uji** — `pytest tests/hooks` menjalankan runtime hook terhadap matriks
+  peristiwa lengkap; `validate_ecosystem.py` adalah gerbang struktural utama
+  untuk konsistensi lintas-artefak; `chaos_pass.py` dan suite benchmark per-kelas
+  di bawah `src/apothem/benchmarks/` aktif pada jalur rilis untuk menangkap
+  degradasi di bawah masukan yang terdegradasi dan regresi anggaran runtime.
+- **Jalur keamanan** — pemindaian rahasia menangkap kredensial yang tidak sengaja
+  di-commit; pembuatan SBOM dan audit lisensi mengawal permukaan rantai pasok
+  untuk setiap pemasangan kesiapan produksi.
+- **Jalur publikasi** — berjalan hanya pada rilis bertag. Verifikasi tag yang
+  ditandatangani memastikan asal-usul cabang rilis; situs web proyek
+  dipublikasikan dari `site/dist/` ke target GitHub Pages; catatan rilis berasal
+  dari format Keep-A-Changelog `CHANGELOG.md`.
+
+## Konfigurasi konkret
+
+Berkas alur kerja yang sebenarnya (`.github/workflows/ci.yml`,
+`.github/workflows/release.yml`, dst.) dipasang selama pembangunan ekosistem
+kesiapan produksi. Diagram ini mendefinisikan bentuk kanonik yang dicerminkan
+oleh setiap konfigurasi mendatang.
+
+## Referensi silang otoritatif
+
+- `pyproject.toml` — sumber kebenaran konfigurasi Ruff / mypy / pytest.
+- `scripts/dev/validate_ecosystem.py` — gerbang lintas-artefak utama.
+- `scripts/dev/validate_hooks.py` — validasi struktural khusus hook.
+- `scripts/dev/chaos_pass.py` — sapuan adversarial pada setiap hook yang dikonfigurasi.
+- `src/apothem/benchmarks/` — verifikator anggaran runtime per-kelas.
+- `site/content/docs/developer-guide.mdx` — alur kerja kontributor yang berorientasi operator.
+- `CHANGELOG.md` — sumber catatan rilis.

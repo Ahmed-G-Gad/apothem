@@ -1,0 +1,162 @@
+---
+title: "Lista de verificación de sincronización entre máquinas"
+description: "Procedimiento de verificación para confirmar que el adaptador de Claude Code se instala, valida y desinstala correctamente en un host nuevo, con comprobaciones completas de portabilidad."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Alcance.** Esta lista de verificación comprueba la capa de portabilidad de instalación / desinstalación del **adaptador de Claude Code** en un segundo host nuevo. Las demás herramientas tienen sus propias recetas de verificación por host documentadas en [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses). La ruta `~/.claude/` es el destino de instalación canónico del adaptador de Claude Code; sustituye la ruta nativa del adaptador al validar otra herramienta.
+
+> **Verificación dirigida por el operador de la capa de portabilidad de instalación / desinstalación en un segundo host nuevo.** El nivel de publicación (`vX.Y.Z`) se creó en un único host Windows; la afirmación de portabilidad de `~/.claude/` (`CLAUDE.md` `portability: universal`) necesita un ejercicio de extremo a extremo en un segundo host antes de que la invariante multi-host tenga peso. Esta lista de verificación es la receta canónica de verificación en el segundo host (adaptador de Claude Code).
+
+---
+
+## 1. Condiciones previas en el segundo host
+
+Ejecuta en el segundo host antes de iniciar la verificación:
+
+| Elemento | Comando | Esperado |
+|------|---------|----------|
+| Git instalado | `git --version` | Git 2.40+ |
+| Python 3.10+ disponible | `python3 --version` (POSIX) o `py -3 --version` (Windows) | 3.10 / 3.11 / 3.12 / 3.13 |
+| Autenticación de GitHub (opcional, para clonado autenticado / comprobaciones de API) | `gh auth status` | Sesión iniciada con la cuenta autorizada del repositorio al usar flujos de trabajo autenticados |
+| Shell disponible | `bash --version` (POSIX) o `pwsh --version` (Windows) | Bash 4+ o PowerShell 7+ |
+| Sin directorio `~/.claude/` preexistente | `ls ~/.claude 2>&1` | "No such file or directory" — si está presente, haz una copia de seguridad antes de continuar |
+
+## 2. Verificación de clonado e instalación
+
+Ejecuta en el segundo host:
+
+```bash
+# Clone the published repo to ~/.claude (the install destination)
+git clone https://github.com/ahmed-g-gad/apothem.git ~/.claude
+cd ~/.claude
+
+# (POSIX path) Run scripts/installer/install.sh dry-run first
+bash scripts/installer/install.sh --dry-run                                    # exit 0; Quick Start banner
+
+# (POSIX path) Run scripts/installer/install.sh for real
+bash scripts/installer/install.sh                                               # exit 0; sentinel-file check; idempotent
+
+# (Windows path) PowerShell parallel
+pwsh -File scripts/installer/install.ps1 -DryRun                                # exit 0; Quick Start banner
+pwsh -File scripts/installer/install.ps1                                        # exit 0
+```
+
+Captura el código de salida y el banner de stdout de cada comando. Registra en `<second-host>/.audit/cross-machine-clone-install.md`.
+
+## 3. La disciplina de los cuatro elementos (según `src/apothem/rules/production-ready-prs.md` §8.3)
+
+Verifica cada una de las cuatro invariantes en el segundo host:
+
+### 3.1 Seguridad del archivo centinela
+
+```bash
+# Re-run installer at the same destination.
+bash scripts/installer/install.sh                                               # POSIX
+pwsh -File scripts/installer/install.ps1                                        # Windows
+```
+
+**Esperado:** El instalador detecta un `~/.claude/` válido existente (archivo centinela presente), avanza rápido en lugar de reinstalar o duplicar; código de salida 0.
+
+### 3.2 Comprobación de prerrequisitos
+
+```bash
+# Temporarily move git out of PATH.
+PATH=/usr/bin:/bin bash scripts/installer/install.sh                            # POSIX (no git)
+```
+
+**Esperado:** El instalador se niega a ejecutarse; emite un diagnóstico explícito "git not found"; código de salida distinto de cero.
+
+### 3.3 Reejecución idempotente
+
+```bash
+# Run installer N times back-to-back.
+for i in 1 2 3 4 5; do bash scripts/installer/install.sh; done                  # POSIX
+1..5 | ForEach-Object { pwsh -File scripts/installer/install.ps1 }              # Windows
+```
+
+**Esperado:** Cada invocación sale con 0; sin efectos secundarios tras la primera invocación; sin archivos duplicados; sin duplicación de RC del shell-profile.
+
+### 3.4 Configurable mediante variables de entorno
+
+```bash
+# Install to a non-default location.
+CLAUDE_PROJECT_DIR=/tmp/alt-claude bash scripts/installer/install.sh            # POSIX
+$env:CLAUDE_PROJECT_DIR='C:\tmp\alt-claude'; pwsh -File scripts/installer/install.ps1   # Windows
+```
+
+**Esperado:** El instalador respeta la variable de entorno; `~/.claude/` NO se modifica; el destino alternativo contiene el diseño esperado.
+
+## 4. Verificación del conjunto de validadores (post-instalación)
+
+```bash
+cd ~/.claude
+make validate                                                 # 50 conformity validators
+make headers-doctor                                           # file-header-grep → passed:true
+make ai-surfaces-doctor                                       # multi-surface-coherence → passed:true
+make plans-doctor                                             # no-global-plans + plans-discipline-language
+make lint                                                     # ruff + mypy
+make test                                                     # pytest 265/265
+```
+
+**Esperado:** Todas las puertas en verde. Captura los códigos de salida + líneas de resumen.
+
+## 5. Verificación de la desinstalación
+
+```bash
+# POSIX path — interactive uninstall
+bash scripts/installer/uninstall.sh                           # answers: "y" to confirm
+ls ~/.claude 2>&1                                             # "No such file or directory"
+
+# Re-install from clone, then uninstall non-interactively
+git clone https://github.com/ahmed-g-gad/apothem.git ~/.claude
+bash scripts/installer/uninstall.sh --yes
+ls ~/.claude 2>&1                                             # "No such file or directory"
+```
+
+**Esperado:** El flujo interactivo solicita confirmación; `--yes` omite la solicitud en ejecuciones por lotes; ambos flujos dejan `~/.claude/` limpiamente eliminado; las referencias a variables de entorno del shell-profile asociadas quedan limpias.
+
+## 6. Verificación de las salvaguardas de seguridad
+
+```bash
+# Run uninstall against a path that fails the sentinel-file check.
+mkdir -p /tmp/not-a-claude-install
+CLAUDE_PROJECT_DIR=/tmp/not-a-claude-install bash scripts/installer/uninstall.sh --yes
+```
+
+**Esperado:** El desinstalador se niega; emite el diagnóstico "sentinel-file missing; refusing to remove unsafe target"; código de salida distinto de cero. La ruta NO fue tocada.
+
+```bash
+# Run uninstall against $HOME, /, or empty path.
+CLAUDE_PROJECT_DIR=$HOME bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
+CLAUDE_PROJECT_DIR=/ bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
+CLAUDE_PROJECT_DIR='' bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
+```
+
+**Esperado:** Cada una se niega con un diagnóstico explícito de "unsafe target"; ninguna toca el sistema de archivos.
+
+## 7. Reporte
+
+Tras la ejecución en el segundo host, captura los resultados en:
+
+- `<second-host>/.audit/cross-machine-clone-install.md` (resultados de los comandos de clonado + instalación)
+- `<second-host>/.audit/cross-machine-validators.md` (resultados de los validadores de la Sección 4)
+- `<second-host>/.audit/cross-machine-uninstall.md` (resultados de desinstalación + seguridad de las Secciones 5–6)
+
+Comunica los hallazgos al mantenedor:
+
+- ✅ todas las invariantes de la disciplina de los cuatro elementos se cumplen + todas las puertas de validadores en verde + todas las salvaguardas de seguridad de la desinstalación rechazaron los objetivos inseguros → la afirmación `portability: universal` de la publicación queda verificada de extremo a extremo
+- ❌ cualquier fallo → abre una incidencia en `https://github.com/ahmed-g-gad/apothem/issues/new` con la sección que falló + la salida capturada; el mantenedor la clasifica
+
+## 8. Criterios de aceptación
+
+- [ ] §1 condiciones previas cumplidas
+- [ ] §2 el clonado e instalación tiene éxito tanto en shells POSIX como en Windows
+- [ ] §3 la disciplina de los cuatro elementos se cumple (seguridad del archivo centinela; comprobación de prerrequisitos; idempotente; configurable mediante variable de entorno)
+- [ ] §4 todas las puertas de validadores en verde
+- [ ] §5 la desinstalación interactiva tiene éxito; `--yes` tiene éxito sin solicitud
+- [ ] §6 cada rechazo de salvaguarda de seguridad se dispara
+- [ ] §7 resultados capturados en las rutas de auditoría documentadas
+
+Cuando cada casilla anterior esté marcada en un segundo host nuevo, el seguimiento de la sincronización entre máquinas (COMPLETION.md §7 restricción vinculante) queda cerrado.

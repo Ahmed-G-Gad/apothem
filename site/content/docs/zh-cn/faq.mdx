@@ -1,0 +1,76 @@
+---
+title: "常见问题"
+description: "关于 Apothem 的用途、受支持的工具、计划套件的可选性、规则定制、制品类型以及生态系统状态位置的常见问题。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+常见问题，按频率排序。
+
+## `apothem` 是什么？
+
+一种可移植、与宿主无关的配置，它将你的主目录变成一个面向harness驱动开发的治理、构思和自动化框架。它将行为规则、创意标准、斜杠命令、持久的受托工作者、钩子和技能整合到一个连贯统一的界面中。
+
+## 它能与哪些harness CLI 配合使用？
+
+Apothem 与工具无关。`src/apothem/harnesses/<harness>/` 下按工具划分的适配器将共享配置档案投射到每个工具的原生配置目录；规范列表见[`site/content/docs/harnesses/`](/docs/harnesses)，目前涵盖以下受支持的工具：
+
+```text
+Claude Code, GitHub Copilot, Cursor, Gemini CLI, Codex, Windsurf, OpenCode,
+Antigravity, Open-Claw, Hermes, Qwen Code, CodeBuddy, Kiro, Trae, and Zed
+```
+
+Claude Code 适配器具现化到 `~/.claude/`；其钩子调度器与宿主无关——它先从 `$CLAUDE_PROJECT_DIR` 解析生态系统根目录，然后是 `$LLM_PROJECT_DIR`，最后回退到 `$HOME/.claude`。
+
+## 我必须使用计划套件流水线吗？
+
+不必。计划套件流水线只是生态系统的一个组成部分。行为规则、创意标准、钩子和校验器工具链都是各自独立可用的。
+
+## 如何在不分叉仓库的情况下定制规则？
+
+在 `src/apothem/rules/<my-rule>.md` 下添加你自己的规则文件，并带上规范的 frontmatter。规则加载器会拾取每个匹配 `src/apothem/rules/*.md` 模式的文件。
+
+## 如何临时禁用某条规则？
+
+要么将该文件重命名到 `src/apothem/rules/*.md` 模式之外，要么将其移动到加载器不扫描的同级目录中。
+
+## 规则、技能和受托工作者有什么区别？
+
+- **规则**治理行为——助手所遵循的始终启用或路径过滤的义务。
+- **技能**是可复用的可检测技术——一个检测信号、一套流程，以及一个强制执行钩子。
+- **受托工作者**是持久的角色，拥有各自的工具限制和系统提示，通过工作者编排协议进行调度。
+
+## 如何报告安全问题？
+
+参见 `SECURITY.md`。受支持的渠道是 GitHub Security Advisories 和 `me@ahmedgad.com`。
+
+## 如何参与贡献？
+
+参见[参与贡献](/docs/developer-guide)。简而言之：阅读 `CONTRIBUTING.md`，分叉仓库，使用填好的规范 PR 模板开启一个 PR，并确保十类 CI 检查全部通过。
+
+## 生态系统状态保存在哪里？
+
+- **每个套件的计划状态**位于 `<project>/.apothem/plans/{suite}/` 下。
+- **每个项目的记忆**位于 `projects/{hash}/memory/` 下。
+- **跨项目记忆**位于 `memory/` 下。
+- **每个会话的临时草稿**位于 `<project>/.apothem/plans/{suite}/_inputs/` 下。
+
+## 我能在新会话或另一台机器上接续长时间运行的工作吗？
+
+可以。长时间运行的工作会把它的完整状态外置到一个项目本地的 `.apothem/plans/` 套件中——一份续作契约外加一套冷启动协议——因此该工作并不存在于某一段聊天历史里。由于状态就在你项目的文件中，任何账户或机器上指向同一项目的全新会话都能就地接续该工作。Apothem 本身不会在账户之间推送这些文件；它们以你项目文件本就采用的方式流转（版本控制、共享检出、同步目录）。参见[可续作规划](/docs/concepts/resumable-planning)。
+
+## Apothem 需要 pip 吗？
+
+不需要——引擎本身不需要。引擎是一个自包含的源代码树，内含随附的依赖——它可以从任何检出目录、npx 缓存或插件树，以 `python -m apothem` 在系统 Python 3.10+ 上运行，并且不会把自己的任何代码安装到 `site-packages` 中（`click` 和 `rich` 是仅有的解释器先决条件）。唯一的可选例外是：如果缺少 `click` 或 `rich`，安装器会主动提出仅为这两者运行 `pip install`——需经你确认，或通过 `--yes` / `APOTHEM_AUTO_INSTALL_DEPS=1` 自动进行。Apothem 自己的软件包永远不会被安装到 `site-packages` 中。
+
+## 钩子如何在没有已安装软件包的情况下运行？
+
+`apothem install` 会在工具根目录下具现化钩子调度器和合规闸门（对于 Claude Code 为：`~/.claude/.apothem/support/hooks/` 和 `~/.claude/.apothem/support/conformity/`），而渲染出的钩子条目通过绝对路径调用这些脚本。两者都是独立的标准库脚本，因此即便在一台从未执行过 `pip install` 的机器上，这些钩子也能工作。
+
+## 如何彻底卸载？
+
+对每个已安装的工具运行 `apothem uninstall --harness <name>`，按你的安装渠道移除引擎，如果你想做到零残留，再删除 `~/.apothem/`（备份）以及 `~/.config/apothem/`（你的配置档案）。[卸载指南](/docs/install/uninstalling)对每个渠道都有详细说明。
+
+## 生态系统采用什么许可证？
+
+MIT——参见 `LICENSE`。

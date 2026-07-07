@@ -1,0 +1,70 @@
+---
+title: "/research-paper"
+description: "/research-paper —— 依据综合、设计与分析组装一份顶级论文草稿（从摘要到结论以及参考文献），并验证每条引用均可解析。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**角色：** 首席研究员（撰写）
+**流水线位置：** 链中
+
+依据综合、设计与分析组装一份顶级论文草稿——摘要、引言、相关工作、方法、结果、讨论、局限、结论、参考文献。每条引用都经过验证可解析到真实来源；不存在虚构引用。
+
+## 标准调用
+
+```bash
+/research-paper
+```
+
+带参数：
+
+```bash
+/research-paper [path/to/research-suite/]
+```
+
+## 输入
+
+`_inputs/synthesis.md`（SOTA 图谱 + 缺口）、`_inputs/study-design.md`（方法）以及 `_outputs/analysis.md`（结果）。
+
+## 输出
+
+位于宿主自然位置（`paper/`）的论文交付物——摘要、引言、相关工作、方法、结果、讨论、局限、结论、参考文献。
+
+## 下游
+
+/research-review（下游消费者）
+
+## 工作流阶段
+
+该命令遵循标准的 `/research` 流水线工作流：
+
+1. **加载上下文** —— 读取综合、研究设计与分析。
+2. **验证序列闸门** —— 确认 `_outputs/analysis.md` 存在；否则以 `Blocked: run /research-analysis first` 中止。
+3. **组装草稿** —— 编写从摘要到结论的内容；引言与相关工作取材于综合，方法取材于设计，结果取材于分析。
+4. **验证引用** —— 每条参考文献都解析到真实来源。
+5. **更新交接清单** —— 记录论文交付物的路径。
+6. **产出论文** —— 位于宿主自然 `paper/` 位置的手稿。
+
+## 严谨性强制底线
+
+在双盲发表场所下，手稿仅承载匿名政策所允许的内容：作者、机构、资助方以及所研究的系统以自然的领域语言描述而不点名，留待单独提交的元数据在指定的去匿名化阶段处理。可复现性与统计报告的深度随目标发表场所的抱负而伸缩。
+
+## 故障模式
+
+| 症状 | 原因 | 恢复 |
+|---------|-------|----------|
+| Blocked: run /research-analysis first | 无分析 | 运行 `/research-analysis` 以生成 `_outputs/analysis.md` |
+| 虚构引用 | 参考文献无法解析 | 移除或更正该引用；切勿捏造来源 |
+| 结果夸大 | 讨论超出了分析范围 | 将主张约束在已分析的效应量 + 置信区间之内 |
+
+## 示例
+
+```bash
+# 依据综合 + 设计 + 分析组装论文草稿
+/research-paper path/to/research-suite/
+```
+
+## 交叉引用
+
+- [流水线概览](/docs/pipeline)
+- [命令参考](/docs/reference/commands)

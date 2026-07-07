@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 220" role="img" aria-labelledby="title desc">
+  <title id="title">Apothem</title>
+  <desc id="desc">The emerald apothem measures itself from the center to the top edge, then five quiet apothems fan out to the other edges in a gentle loop — one center reaching every destination. Static for reduced-motion.</desc>
+  <defs>
+    <linearGradient id="apo-emerald-anim" x1="110" y1="110" x2="110" y2="40.7" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#059669"/>
+      <stop offset="1" stop-color="#6ee7b7"/>
+    </linearGradient>
+  </defs>
+  <style>
+    @media (prefers-reduced-motion: no-preference) {
+      .ring { stroke-dasharray: 435.4; stroke-dashoffset: 435.4; animation: trace 3.6s ease-in-out infinite; }
+      .name { stroke-dasharray: 69.3; stroke-dashoffset: 69.3; animation: draw 3.6s ease-in-out infinite; }
+      .q { stroke-dasharray: 69.3; stroke-dashoffset: 69.3; animation: fan 3.6s ease-in-out infinite; }
+      .q1 { animation-delay: .12s; } .q2 { animation-delay: .2s; } .q3 { animation-delay: .28s; }
+      .q4 { animation-delay: .36s; } .q5 { animation-delay: .44s; }
+      .term { transform-box: fill-box; transform-origin: center; animation: beat 3.6s ease-in-out infinite; }
+      .source { transform-box: fill-box; transform-origin: center; animation: spark 3.6s ease-in-out infinite; }
+      @keyframes trace { 0% { stroke-dashoffset: 435.4; } 50%, 78% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 435.4; } }
+      @keyframes draw { 0% { stroke-dashoffset: 69.3; } 38%, 74% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 69.3; } }
+      @keyframes fan { 0%, 14% { stroke-dashoffset: 69.3; } 50%, 74% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 69.3; } }
+      @keyframes beat { 0%, 32% { opacity: 0; transform: scale(.6); } 54%, 74% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.6); } }
+      @keyframes spark { 0%, 8% { opacity: 0; transform: scale(.4); } 26%, 74% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.4); } }
+    }
+  </style>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <circle class="ring" cx="110" cy="110" r="69.3" stroke="#94a3b8" stroke-width="2.5" opacity="0.5"/>
+    <polygon points="190,110 150,179.3 70,179.3 30,110 70,40.7 150,40.7" stroke="#cbd5e1" stroke-width="10"/>
+    <g stroke="#64748b" stroke-width="4" opacity="0.85">
+      <line class="q q1" x1="110" y1="110" x2="170" y2="75.35"/>
+      <line class="q q2" x1="110" y1="110" x2="170" y2="144.65"/>
+      <line class="q q3" x1="110" y1="110" x2="110" y2="179.3"/>
+      <line class="q q4" x1="110" y1="110" x2="50" y2="144.65"/>
+      <line class="q q5" x1="110" y1="110" x2="50" y2="75.35"/>
+    </g>
+    <line class="name" x1="110" y1="110" x2="110" y2="40.7" stroke="url(#apo-emerald-anim)" stroke-width="9"/>
+  </g>
+  <g fill="#64748b" opacity="0.85">
+    <circle cx="170" cy="75.35" r="4"/><circle cx="170" cy="144.65" r="4"/><circle cx="110" cy="179.3" r="4"/><circle cx="50" cy="144.65" r="4"/><circle cx="50" cy="75.35" r="4"/>
+  </g>
+  <circle cx="110" cy="110" r="8" fill="#cbd5e1"/>
+  <circle class="source" cx="110" cy="110" r="3.5" fill="#34d399"/>
+  <circle class="term" cx="110" cy="40.7" r="7" fill="#34d399"/>
+</svg>

@@ -1,0 +1,60 @@
+---
+title: "Registri Gerbang Pra-Emisi — Pemeriksaan Wajib Lima Belas Bilah"
+description: "Pemeriksaan konformitas wajib lima belas bilah yang dijalankan sebelum emisi berlingkup-berarti, dengan pemetaan aksi-saat-gagal dan skema bukti-rilis."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Registri kanonis gerbang pra-emisi lima belas bilah.** Dokumen ini membawa tabel gerbang lima belas bilah lengkap dan blok YAML skema bukti-rilis; tabel substantif dan skema berada di sini, dioperasionalkan oleh `src/apothem/rules/pre-emission-gate.md`.
+
+Sebelum emisi artefak berlingkup-berarti apa pun (sesuai ambang sepele-vs-tak-sepele di `site/content/docs/governance/outward-conformity-registry.mdx` §1), jalankan gerbang pra-emisi lima belas bilah. Mekanisasi melalui hook PreToolUse di mana memungkinkan (grep mekanis di `src/apothem/conformity/*-grep.py` yang diorkestrasi oleh `src/apothem/conformity/gate.py`); bernalar di mana mekanisasi mustahil. **Kegagalan bilah tunggal apa pun memblokir emisi; revisi hingga setiap bilah lolos; emisikan dengan bukti-rilis gerbang tercatat.**
+
+| # | Bilah | Jenis pemeriksaan | Gagal → aksi |
+| - | --- | ---------- | ---------------- |
+| 1 | M1 keagnostikan inang | bernalar | revisi agar cocok dengan konvensi inang |
+| 2 | M2 pengungkapan editorial | bernalar | tambahkan buku-besar pengungkapan |
+| 3 | M3 sepuluh dimensi | campuran (mekanis + bernalar) | revisi pada dimensi yang gagal |
+| 4 | M4 penerapan-diri | mekanis (bukti-rilis hadir) | catat bukti-rilis |
+| 5 | M5 otoritas | mekanis (grep placeholder `<USER-CONFIRM:…>`) | rutekan-ulang ke permukaan pertanyaan |
+| 6 | M6 keahlian | bernalar (bagian celah-tersurfaced hadir) | surfacing celah; kutip |
+| 7 | M7 anotasi opsi | mekanis (himpunan opsi membawa penanda rekomendasi) | anotasi |
+| 8 | M8 ketegasan | mekanis (grep kosakata mengelak) | naikkan pengelakan menjadi kondisional |
+| 9 | M9 daya-ungkit visual | bernalar (diagram ada di mana struktural) | buat / segarkan diagram |
+| 10 | M10 ikatan dua-arah | mekanis (grep timbal-balik ikatan) | tutup separuh-tepi |
+| 11 | M11 sprint agile | bernalar (aparat sprint diinstansiasi) | strukturkan-ulang sebagai sprint |
+| 12 | M12 pelaporan fase & tata-letak | mekanis (grep keluaran-yatim) + bernalar | buat ringkasan; relokasi |
+| 13 | M13 kriya kode | mekanis (lint / format / cek-tipe; grep bare-except, angka-ajaib, kode-terkomentari) | revisi |
+| 14 | M14 sistematisitas | bernalar (mendeklarasikan hulu / hilir / sejawat / penegak) | deklarasi; indeks |
+| 15 | M15 siap-produksi | mekanis (grep production-ready-pr) + bernalar | tambahkan uji / dokumentasi / CHANGELOG |
+
+## 1. Skema Bukti-Rilis
+
+Setiap jalannya gerbang mencatat hasil dalam jejak-kerja artefak (komentar tersembunyi, blok metadata, berkas log-emisi terpisah — apa pun yang diizinkan konvensi inang):
+
+```yaml
+conformity-attestation:
+  artifact: <path-or-identifier>
+  ecosystem-version: <git-commit-sha-or-equivalent ratifying the rule set in force>
+  bars:
+    M1-host-agnosticism:        pass | n/a (with reason)
+    M2-editorial-disclosure:    pass | n/a
+    M3-ten-dimensions:          pass | n/a
+    M4-self-application:        pass
+    M5-authority:               pass
+    M6-expertise:               pass | n/a
+    M7-option-annotation:       pass | n/a (no option set)
+    M8-definitiveness:          pass
+    M9-visual-leverage:         pass | n/a (subject not structural)
+    M10-bidirectional-binding:  pass
+    M11-agile-sprints:          pass | n/a (trivial work)
+    M12-phase-layout:           pass | n/a
+    M13-code-craft:             pass | n/a (not code)
+    M14-systemicity:            pass
+    M15-production-ready:       pass | n/a (no host-public-surface change)
+  surfaced-gaps: []
+  unresolved-inquiries: []
+  amendments-disclosed: []
+  date: <ISO-8601>
+```
+
+Penanda `n/a` bersifat eksplisit dan bernalar — tidak pernah lewatan-sunyi. Bidang `ecosystem-version` menjangkar bukti-rilis ke keadaan ekosistem berlingkup-pengguna yang dapat direproduksi (commit git pohon-sumber Apothem yang aktif saat gerbang dijalankan — mis. checkout `~/.claude/` untuk adaptor Claude Code), sehingga audit mendatang dapat memutar-ulang gerbang terhadap badan aturan yang sama.

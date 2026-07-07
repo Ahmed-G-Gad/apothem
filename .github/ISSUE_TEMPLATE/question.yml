@@ -1,0 +1,41 @@
+# SPDX-License-Identifier: MIT
+
+name: Question
+description: Ask a question that is not a bug report or a feature request
+title: "[Question]: "
+labels: ["question", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template only for questions that need an actionable answer or a clarification of an existing artifact. Open-ended discussion threads belong in [Discussions](https://github.com/ahmed-g-gad/apothem/discussions).
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: State the question in one or two sentences. The clearer the question, the faster the answer.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Link the rule, skill, command, hook, or agent the question relates to (paths under the Apothem root such as `src/apothem/rules/host-discovery.md` or `src/apothem/skills/plan-suite/SKILL.md`). Quote the relevant excerpt where helpful.
+    validations:
+      required: true
+  - type: textarea
+    id: prior-attempts
+    attributes:
+      label: What you have already tried
+      description: Describe the searches you ran (Grep / Glob / docs reading), the experiments you attempted, or the prior issues / discussions you reviewed. This avoids duplicate work and helps the responder pick up where you stopped.
+    validations:
+      required: false
+  - type: checkboxes
+    id: pre-submission-checks
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: I have searched existing issues and discussions for this question.
+          required: true
+        - label: I have considered whether [Discussions](https://github.com/ahmed-g-gad/apothem/discussions) is the better venue for this thread.
+          required: true

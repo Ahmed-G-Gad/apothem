@@ -1,0 +1,124 @@
+---
+title: "install"
+description: "apothem install 命令的 CLI 参考。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+从共享配置文件安装某个harness适配器配置。
+
+## 概要
+
+```
+apothem install --harness NAME|all [--profile PATH] [--dry-run]
+                 [--project PATH]
+                 [--quiet|-q] [--verbose|-v]
+                 [--format plain|json] [--json] [--no-color]
+```
+
+加载并校验共享配置文件，选择某个具名适配器或注册表范围内的 `all` 集合，校验物化计划，并写入harness原生配置以及支持队列。项目范围的适配器需要 `--project PATH`。
+
+连续式别名 `apothem installing` 解析到同一处理程序。
+
+## 影响范围预览
+
+`install --harness all` 会扇出到混合范围：项目范围的适配器写入所提供的 `--project` 根目录之下，而用户范围的适配器写入你的主目录之下——也就是该根目录之外。在写入任何文件之前，该命令会打印分组在两个标题下的具体目标：位于项目根目录内的目标，以及位于你主目录下的目标。
+
+当所选内容会写入项目根目录之外时，一个交互式确认会守护这些以主目录为根的写入。`--yes`、非交互式 shell（无 TTY）、`--dry-run` 和 `--format json` 各自会在不提示的情况下继续；`--dry-run` 和 `--format json` 不写入任何内容。拒绝该提示会在写入任何文件之前中止。
+
+## 能力说明
+
+每个适配器只投射其harness原生支持的能力；没有原生表面的能力会被报告，而不是被静默丢弃。在 plain 模式下，这是每个harness一条分组说明（例如 `Note: <harness> - 9 capabilities not projected; pass --verbose for detail`）；在 `--verbose` 下，每项能力都会打印自己的理由行。无论详细程度如何，`--format json` 信封始终携带完整的 `warnings` 数组。
+
+## 选项
+
+| 选项 | 描述 |
+|---|---|
+| `--harness NAME` | 要安装的harness适配器，或用 `all` 表示注册表范围的集合（必填）。运行 `apothem harnesses list` 查看已注册的名称。 |
+| `--profile PATH` | 共享配置文件 YAML 的路径。默认为 `~/.config/apothem/profile.yaml`。 |
+| `--dry-run` | 预览安装而不写入文件。 |
+| `--project PATH` | 项目范围harness的项目根目录。 |
+| `--quiet`, `-q` | 抑制信息性输出；仅发出错误。 |
+| `--verbose`, `-v` | 打印每个未投射能力的理由，而不是分组的每harness说明。 |
+| `--format plain\|json` | 输出格式（默认：`plain`）。 |
+| `--json` | `--format json` 的简写。 |
+| `--no-color` | 在输出中禁用 ANSI 颜色码。 |
+| `-h`, `--help` | 显示帮助并退出。 |
+
+## JSON 输出
+
+当提供 `--json`（或 `--format json`）时，会向 stdout 写入单个 JSON 文档：
+
+```json
+{
+  "status": "success",
+  "command": "install",
+  "action": "installed",
+  "harness": "claude-code",
+  "profile_path": "C:\\Users\\Example\\.config\\apothem\\profile.yaml",
+  "project": null,
+  "files_written": ["C:\\Users\\Example\\.claude\\settings.json"],
+  "results": [],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+对于 `--dry-run`：
+
+```json
+{
+  "status": "dry_run",
+  "command": "install",
+  "action": "dry_run",
+  "harness": "claude-code",
+  "files_written": [],
+  "results": [],
+  "warnings": [],
+  "error": null
+}
+```
+
+预期的校验错误使用同一信封并包含一个 error 对象：
+
+```json
+{
+  "status": "error",
+  "command": "install",
+  "harness": "all",
+  "files_written": [],
+  "error": {
+    "code": "project.required",
+    "field": "project",
+    "reason": "project-scope harnesses require --project: cursor, gemini-cli, github-copilot, windsurf.",
+    "fix": "Pass --project PATH or select only user-scope harnesses."
+  }
+}
+```
+
+## 示例
+
+```bash
+apothem install --harness claude-code
+apothem install --harness claude-code --dry-run
+apothem install --harness cursor --project . --profile ~/profile.yaml --json
+apothem install --harness all --project . --dry-run --json
+apothem Installing --harness claude-code   # continuous-form alias
+apothem installing --harness claude-code   # lowercase variant
+```
+
+## 退出码
+
+| 码 | 含义 |
+|---|---|
+| 0 | 适配器成功安装，或 dry-run 干净地完成规划 |
+| 1 | 预期的校验、配置文件、harness、项目或适配器错误 |
+| 2 | 至少一次写入之后的部分批量物化 |
+
+## 另请参阅
+
+- `apothem installing` — 此命令的连续式别名（此处有文档说明；CLI 接受两种形式）
+- [apothem update](/docs/cli-reference/update) — 将当前配置文件重新应用到某个harness
+- [apothem verify](/docs/cli-reference/verify) — 确认适配器已生效
+- [快速上手](/docs/install) — 完整安装指南

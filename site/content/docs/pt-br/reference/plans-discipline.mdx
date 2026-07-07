@@ -1,0 +1,197 @@
+---
+title: "Disciplina de planos — Memória de trabalho efêmera e local ao projeto"
+description: "Gerencie a memória de trabalho efêmera e local ao projeto em .apothem/plans/ (uma árvore legada .plans/ é atualizada via apothem migrate-workspace) com esquema de frontmatter, transições de ciclo de vida, promoção para ADR e aplicação por meio de hooks e validadores."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Referência normativa canônica para colaboradores posteriores.** Este documento espelha a seção de Disciplina de planos da especificação do projeto (Especificação §3); é a referência independente que acompanha o repositório publicado. A disciplina introduzida aqui é fundamental; cada diretiva abaixo é um `MUST` (DEVE), salvo marcação explícita em contrário. A justificativa arquitetural está registrada em [ADR-0001](/docs/reference/plans-discipline).
+
+---
+
+## 1. Definição e limites
+
+Um **plano** é qualquer artefato de trabalho deliberado e transitório produzido durante o raciocínio sobre um projeto, incluindo mas não se limitando a:
+
+- Esboços de arquitetura, percursos de projeto de sistema, decomposições de componentes.
+- Estruturas analíticas de trabalho, listas de tarefas de várias etapas, árvores de decomposição.
+- Estratégias de refatoração, percursos de migração, sequências de implantação.
+- Diários de depuração, registros de hipóteses, notas de reprodução.
+- Notas de exploração, resumos de spike, rascunhos de prompt, transcrições do harness mantidas para uso posterior.
+- Qualquer documento escrito *para pensar com ele*, não *para entregar*.
+
+Os planos são categoricamente distintos destas classes adjacentes:
+
+| Artefato | Ciclo de vida | Localização | Versionado? |
+|---|---|---|---|
+| **Plano** | Memória de trabalho transitória | `<project-root>/.apothem/plans/` (único lar canônico) — uma árvore legada `<project-root>/.plans/` é atualizada via `apothem migrate-workspace` | **Nunca** (gitignored) |
+| **ADR** (Registro de Decisão de Arquitetura) | Permanente, decisivo | diretório de ADR ratificado pelo projeto | Sempre |
+| **Descrição de Issue / PR** | Vinculado ao rastreador | GitHub / equivalente | n/a (rastreador) |
+| **Arquivo de instruções do harness** (nome de arquivo canônico por harness) | Configuração de comportamento duradoura | `<harness-config-root>/` (local ao projeto ou de escopo de usuário conforme o harness) | Sempre (no repositório) |
+| **Código** | Resultado executado de um plano | onde quer que o código viva | Sempre |
+
+Os planos precedem os ADRs. Quando um plano converge para uma decisão duradoura, a decisão é **promovida** a um ADR (§4 Ciclo de vida); o plano em si é arquivado ou descartado.
+
+---
+
+## 2. Localização, visibilidade e nomenclatura
+
+- **Caminho.** `<project-root>/.apothem/plans/` é o único lar canônico. Uma árvore legada `<project-root>/.plans/` não é mais canônica — atualize-a com `apothem migrate-workspace` (§5). **Não** um diretório de configuração do harness (por exemplo `~/.claude/plans/`, `~/.claude/.plans/` ou `~/.codex/.plans/`). **Não** uma pasta de rascunhos da área de trabalho. **Não** `~/notes/`. **Não** `tmp/plans/`.
+- **Visibilidade.** A pasta é registrada no `.gitignore` do projeto conforme o trecho canônico de §6. O ambiente de execução do harness **DEVE** verificar que esta entrada esteja presente antes de qualquer escrita; se ausente, ele anexa a entrada com um comentário de cabeçalho de uma linha e o link para este documento.
+- **Convenção de nome de arquivo.** `YYYY-MM-DD--<kebab-case-slug>.md`. Para espaços de trabalho maiores, subcategorize em `.apothem/plans/<area>/YYYY-MM-DD--<slug>.md`.
+  - Exemplos: `.apothem/plans/2026-04-30--auth-refactor-strategy.md`, `.apothem/plans/api/2026-04-30--rate-limit-rollout.md`.
+- **Índice.** Um `.apothem/plans/INDEX.md` opcional (também gitignored) pode agregar links e status; se presente, o ambiente de execução do harness o mantém a cada escrita de plano.
+- **Arquivamento.** Planos convergidos ou abandonados são realocados para `.apothem/plans/_archive/`. Nunca excluídos sem confirmação explícita por consulta estruturada.
+- **Cabeçalho de autoria nos planos.** Os planos estão **isentos** da linha SPDX do cabeçalho de autoria (conforme [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) §Lista de exceções). São efêmeros gitignored; aplicar um marcador de procedência permanente à memória de trabalho transitória é um erro de categoria. O frontmatter (§3) carrega a procedência do plano.
+
+---
+
+## 3. Esquema de frontmatter (validado)
+
+Todo arquivo de plano carrega:
+
+```yaml
+---
+title: <human-readable title>
+project: <git-remote-url-or-canonical-local-path>
+created: <ISO-8601 timestamp>
+updated: <ISO-8601 timestamp>
+status: draft | in-progress | converged | abandoned
+tags: [<kebab>, ...]
+supersedes: <prior-plan-relative-path or null>
+promotes-to: <ADR path or null>
+---
+```
+
+Um JSON Schema para os planos vive em [`src/apothem/schemas/plan.schema.json`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/plan.schema.json). O comando de barra `/plan` (e o validador `plans-discipline-language`) valida contra ele a cada escrita.
+
+---
+
+## 4. Ciclo de vida e fluxo de promoção
+
+1. **Rascunho (Draft)** — criação inicial; `status: draft`.
+2. **Em andamento (In-progress)** — iterado ativamente; `status: in-progress`; `updated` atualizado a cada edição material.
+3. **Convergência (Convergence)** — uma decisão duradoura cristaliza:
+   1. Extraia a decisão para um novo ADR na localização de ADR ratificada pelo projeto.
+   2. Defina o `promotes-to` do plano para o caminho do ADR.
+   3. Defina `status: converged`.
+   4. Opcionalmente mova para `.apothem/plans/_archive/`.
+4. **Abandono (Abandonment)** — direção abandonada; `status: abandoned`; arquive ou, com consulta estruturada explícita, descarte.
+5. **Substituição (Supersession)** — quando um novo plano substitui um mais antigo, defina o `supersedes` do novo plano para o caminho do plano antigo, e defina o `status` do plano antigo de acordo.
+
+A promoção é o *único* caminho pelo qual o conteúdo de um plano se torna duradouro, versionado e visível para os colegas de equipe. **Nenhum plano jamais migra integralmente para o código-fonte versionado.**
+
+---
+
+## 5. Protocolo de migração — Única, de um diretório de planos do harness para um `.apothem/plans/` por projeto
+
+> **Nota.** Este protocolo se aplica a projetos posteriores que adotam a Disciplina de planos pela primeira vez, onde os artefatos de planejamento anteriores vivem dentro de um diretório de configuração do harness (por exemplo `~/.claude/plans/`, `~/.claude/.plans/` ou o caminho equivalente para outro harness). O caso recursivo para o ecossistema em si é resolvido fazendo gitignore do estado de planos local ao harness em vez de migrá-lo fisicamente para o código-fonte.
+
+> **Ferramentas.** Para projetos já no layout legado — uma árvore irmã `<project-root>/.plans/` mais armazenamentos `<project-root>/.apothem/<harness>/{memory,contexts,learning}` por harness — o comando `apothem migrate-workspace` colapsa ambos no diretório de trabalho compartilhado `<project-root>/.apothem/{plans,memory,learning,contexts}`. O comando é idempotente e não destrutivo: faz backup de cada fonte que consome, move `.plans/` para `.apothem/plans/`, faz união-mesclagem dos armazenamentos de memória e contexto por harness, concatena-desduplica os sinais de aprendizado e nunca sobrescreve um registro conflitante. Execute `apothem migrate-workspace --dry-run` para pré-visualizar as movimentações primeiro.
+
+A migração é idempotente e reversível até o momento da remoção do diretório de planos local ao harness (após o que um tarball de backup em `./.audit/plans-backup-<timestamp>.tar.gz` fornece o artefato de reversão). Os exemplos abaixo usam `~/.claude/plans/`; substitua pelo caminho equivalente para o harness ativo.
+
+**Etapa 1 — Inventário.** Cada arquivo sob o diretório de planos local ao harness é enumerado e classificado como `plan-artifact (quarantined)`.
+
+**Etapa 2 — Mapa de procedência.** Um registro de procedência é construído para cada plano, com um projeto de destino inferido e uma pontuação de confiança derivada do campo `project` do frontmatter, sinais de varredura do corpo (URLs de repositórios, nomes de pacotes, caminhos absolutos) e pistas contextuais.
+
+**Etapa 3 — Confirmação de mapeamento.** O mapa completo é apresentado ao operador como uma única consulta estruturada consolidada (ou uma sequência rigorosamente agrupada quando a contagem de arquivos excede um tamanho confortável para um único prompt). Para cada plano, o operador escolhe entre:
+
+- **Confirmar (Confirm)** o projeto de destino inferido.
+- **Reatribuir (Reassign)** a um projeto diferente (a opção apresenta a lista de projetos conhecidos do operador).
+- **Adiar (Defer)** — mover para `~/.claude/.audit/orphan-plans/<original-name>` para classificação posterior.
+- **Descartar (Discard)** — apenas com uma consulta estruturada explícita e confirmada separadamente (isto é destrutivo).
+
+Quando a confiança é `high` para muitos planos, o prompt oferece um recurso de *confirmar-todos-os-de-alta-confiança* para comprimir as idas e voltas, ainda expondo cada decisão individual no registro.
+
+**Etapa 4 — Preparação do projeto antes da movimentação.** Para cada projeto de destino único:
+
+1. Verifique que a raiz do projeto exista e seja legível.
+2. Verifique que é um repositório git (para raízes não git, exponha pelo canal de consulta estruturada se prosseguir, inicializar ou pular).
+3. Garanta que `<project-root>/.apothem/plans/` exista; crie com `mkdir -p` se não.
+4. Verifique que o `.gitignore` do projeto contenha o trecho canônico de §6; se ausente, anexe-o com um comentário de cabeçalho creditando esta migração.
+5. Verifique que `<project-root>/.apothem/plans/` ainda não esteja rastreado pelo git; se estiver (um erro de um colaborador anterior), exponha pelo canal de consulta estruturada com as opções *parar-de-rastrear-e-manter*, *parar-de-rastrear-e-remover-do-histórico*, *abortar*.
+
+**Etapa 5 — Movimentação.** Para cada emparelhamento confirmado plano → destino:
+
+1. Calcule o nome de arquivo de destino: se a fonte tiver frontmatter, normalize conforme §3; caso contrário, envolva o corpo com frontmatter (status `draft`, campo project definido, created a partir do mtime, tags `[migrated]`) e renomeie para `YYYY-MM-DD--<slug>.md`.
+2. Se existir uma colisão de nomes no destino, anexe `-imported-<unix-timestamp>` e registre a renomeação.
+3. Copie o arquivo (preservando mtime), verifique que o SHA-256 corresponda no destino, então desvincule a fonte.
+4. Anexe uma entrada a `<project-root>/.apothem/plans/_migration-manifest.md` (também gitignored) registrando: o caminho original local ao harness, o caminho de destino, o SHA-256 original, o timestamp e a resposta de consulta estruturada que autorizou esta movimentação.
+
+**Etapa 6 — Verificação.** Após todas as movimentações:
+
+1. Confirme que o diretório de planos local ao harness esteja vazio (os planos órfãos, se houver, estão dentro do diretório de auditoria/quarentena daquele harness, fora do diretório que será excluído em breve).
+2. Confirme que cada projeto de destino tenha um `.apothem/plans/` populado e um manifesto.
+3. Faça uma verificação por amostragem via SHA-256 de que o conteúdo migrado corresponde aos originais.
+
+**Etapa 7 — Tarball e remoção.** Crie `./.audit/plans-backup-<ISO-timestamp>.tar.gz` contendo toda a árvore de planos local ao harness anterior à movimentação (extraída de um snapshot temporário tirado na Etapa 1). Então, por meio de uma consulta estruturada final confirmando a prontidão, remova o diretório de planos local ao harness agora vazio.
+
+**Etapa 8 — Registro de auditoria.** Emita `./.audit/plans-migration.md` resumindo cada movimentação, cada arquivo adiado, cada descarte, cada renomeação por colisão e cada anexo ao gitignore.
+
+---
+
+## 6. Trecho de `.gitignore` posterior (canônico, copiar-colar)
+
+Todo projeto que adota este ecossistema **DEVE** adicionar o seguinte bloco ao seu `.gitignore`:
+
+```text
+# Apothem working directory (project-local shared state: plans, memory,
+# learning, contexts; gitignored — never committed). The sole canonical plans
+# home is `.apothem/plans/`.
+# See: <repo-url>/blob/main/site/content/docs/reference/plans-discipline.mdx
+# Ignore the CONTENTS of this directory (not the directory) so the
+# `.keep` negation below can take effect.
+.apothem/*
+!.apothem/.keep
+```
+
+A isenção opcional `.keep` preserva a existência do diretório em ferramentas que podam caminhos vazios, sem vazar conteúdo. Se incluir `.keep` é decidido por projeto pelo canal de consulta estruturada na primeira invocação de `/plan`. As linhas `.apothem/*` + `!.apothem/.keep` são o trecho canônico; um projeto que ainda carrega uma árvore legada `<project-root>/.plans/` executa `apothem migrate-workspace` (§5) para atualizá-la para `.apothem/plans/`.
+
+---
+
+## 7. Mecanismos de autoaplicação
+
+A disciplina deve sobreviver a cada sessão futura. As seguintes superfícies de aplicação são obrigatórias e estão codificadas no ecossistema publicado:
+
+1. **`AGENTS.md` e superfícies de instrução espelho** — bloco de comportamento obrigatório de nível superior declarando: *"Os artefatos de planejamento são escritos em `<project-root>/.apothem/plans/` — o único lar canônico de planos (uma árvore legada `<project-root>/.plans/` é atualizada via `apothem migrate-workspace`) — nunca em qualquer diretório de configuração do harness (por exemplo `~/.codex/` ou `~/.claude/`) e nunca em uma localização global. Esta regra é inegociável; cite §3 da especificação do projeto em cada decisão relacionada."* Este bloco é detectado pelo validador `plans-discipline-language`.
+2. **Arquivo de instruções no repositório por harness** — espelha a mesma diretiva no enquadramento apropriado para a superfície de instrução daquele harness (§4 *Disciplina de planos*); detectado pelo mesmo validador em cada superfície de harness registrada.
+3. **Estilo de saída padrão** — quando uma resposta produziria conteúdo em forma de plano (estratégia de várias etapas, decomposição, percurso de projeto, diário de depuração), o estilo roteia o artefato para uma escrita em `.apothem/plans/` local ao projeto em vez de imprimi-lo-e-descartá-lo inline. O estilo instrui explicitamente: *"Se nenhuma raiz de projeto for descobrível, pare com uma consulta estruturada perguntando ao operador onde planejar."*
+4. **Cada prompt de trabalhador delegado** — carrega uma estrofe de *Superfície de saída* nomeando `.apothem/plans/` como o destino de qualquer artefato de planejamento, e uma estrofe de *Antipadrão* nomeando os diretórios de planos locais ao harness como proibidos.
+5. **Um comando de barra `/plan` dedicado** — aceita um slug + corpo, escreve em `<project-root>/.apothem/plans/YYYY-MM-DD--<slug>.md` com o frontmatter correto, garante que o `.gitignore` do destino esteja correto, recusa-se a escrever em caminhos de harness-config-root.
+6. **Um hook `pre-tool-use` — `plan-write-guard`** — intercepta cada chamada de ferramenta de escrita de arquivo. Se o caminho de destino corresponde a uma localização de planos local ao harness (por exemplo `~/.claude/plans/...` ou `~/.codex/.plans/...`) ou qualquer outro caminho global do ecossistema que a heurística identifique como em forma de plano, o hook bloqueia a escrita e levanta uma consulta estruturada propondo o redirecionamento para o `.plans/` do projeto atual.
+7. **Validadores de CI** — `no-global-plans` faz a build falhar se a memória de trabalho de planos versionada reaparecer na árvore publicada; `plans-discipline-language` falha se a diretiva canônica desaparecer de qualquer arquivo de instruções de harness registrado ou do estilo de saída padrão. As superfícies de destino canônicas do validador (preservadas como contratos do sistema de arquivos) estão listadas no bloco cercado abaixo.
+
+```text
+AGENTS.md
+CLAUDE.md
+.github/copilot-instructions.md
+```
+
+8. **Hooks de pre-commit** — espelham o acima localmente para que a disciplina seja aplicada antes que qualquer commit aterrisse.
+
+---
+
+## 8. Antipadrões (categoricamente proibidos)
+
+- Escrever planos dentro de um diretório de configuração do harness (por exemplo `~/.claude/plans/` ou `~/.codex/.plans/`) ou qualquer outra localização global.
+- Versionar planos no histórico git de um projeto (hooks de tempo de commit deveriam rejeitar isto).
+- Misturar planos com ADRs (ciclos de vida diferentes, localizações diferentes, status de versionamento diferente).
+- Planos sem frontmatter, planos sem nomes de arquivo com prefixo de data, planos sem um campo `project`.
+- Planos entre projetos (um plano, dois projetos). Divida-os — um plano por projeto.
+- Compartilhar planos entre máquinas por meio de uma sincronização de configuração do harness (p. ex. `~/.claude` para Claude Code) — um argumento estrutural para manter os planos locais ao projeto: o repositório do projeto *é* o mecanismo de sincronização, nas raras ocasiões em que os planos merecem ser compartilhados — e esse mérito é em si um sinal de que o conteúdo deveria ser promovido a um ADR.
+- Conteúdo de plano embutido dentro de prompts de trabalhadores delegados, corpos de habilidades ou estilos de saída. Essas superfícies são *configuração de comportamento duradoura*; os planos são *memória de trabalho transitória*.
+- Aplicar a linha SPDX do cabeçalho de autoria a um arquivo de plano (os planos são isentos por design — §2, [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) §Lista de exceções).
+
+---
+
+## Veja também
+
+- [ADR-0001](/docs/reference/plans-discipline) — justificativa arquitetural, alternativas consideradas, compensações aceitas.
+- [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) — a disciplina da linha SPDX do cabeçalho de autoria (os planos são categoricamente isentos).
+- A página de convenções do harness — convenções do harness multi-superfície (a Disciplina de planos aparece como uma afirmação compartilhada em cada arquivo de instruções de harness registrado e em cada superfície opcional aceita). Caminho:
+
+```text
+site/content/docs/reference/ai-conventions.mdx
+```
+- Especificação do projeto §3 — o texto canônico completo espelhado aqui.

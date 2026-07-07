@@ -1,0 +1,47 @@
+---
+title: "アンインストール"
+description: "Apothem を削除し、ハーネス設定をクリーンアップする。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## 最初にハーネス設定を削除する
+
+Apothem をアンインストールする前に、各ハーネスアダプターの設定を削除して、
+ツールをクリーンな状態にしておきます。現在どのアダプターがインストールされているかを確認するには
+`apothem harnesses list` を実行し、それから 1 つずつ削除するか、レジストリ全体のセレクターを
+使用します。
+
+```bash
+apothem uninstall --harness claude-code
+apothem uninstall --harness cursor --project /path/to/project
+apothem uninstall --harness all --project /path/to/project --yes
+```
+
+ハーネスごとの確認プロンプトをスキップするには `--yes` を渡します。
+
+## エンジンを削除する
+
+削除方法は、使用したインストールチャネルに対応します。
+
+- **Claude Code プラグイン** — Claude Code 内からプラグインを削除します。
+  `/plugin uninstall apothem@apothem`（マーケットプレイスのエントリは
+  `/plugin marketplace remove ahmed-g-gad/apothem` で削除できます）。
+- **npx** — 削除するものはありません。`npx` はキャッシュから実行されます。キャッシュされたコピーを
+  消したい場合は `npm cache clean --force` でクリアしてください。
+- **ワンショットインストーラー** — チェックアウトから対応するアンインストールスクリプトを
+  実行します。`scripts/installer/uninstall.sh`（POSIX）または
+  `scripts/installer/uninstall.ps1`（PowerShell）。どちらも削除前に確認し、安全でない対象を拒否します。
+- **バックアップと状態** — インストールのバックアップは `~/.apothem/backups/` にあります。
+  不要になったら `~/.apothem/` を削除してください。
+
+## 削除されないもの
+
+- `~/.config/apothem/profile.yaml` または `--profile PATH` にある共有プロファイル YAML は、
+  `apothem uninstall` によって削除されることはありません。
+- ハーネスディレクトリ内の、無関係なオペレーター作成ファイルは保持されます。
+- `<project>/.apothem/plans/`（および旧来の `<project>/.plans/`）配下のプランスイートは影響を受けません。
+
+ハーネスルートを完全にクリーンアップするには、保持したいカスタムルール、ヘルパー、または
+プロファイルファイルをバックアップしたことを確認したうえで、[ハーネスリファレンスページ](/docs/harnesses)に
+記載されているハーネスネイティブのパスを削除してください。

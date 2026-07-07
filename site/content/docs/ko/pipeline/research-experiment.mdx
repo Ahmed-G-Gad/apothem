@@ -1,0 +1,70 @@
+---
+title: "/research-experiment"
+description: "/research-experiment — 설계된 연구를 실행하고 완전한 출처를 갖춘 원시 데이터를 캡처하며, 재현성 매니페스트(환경, 시드, 프로토콜, 버전 고정)를 함께 생성합니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**역할:** 책임 연구원(실행)
+**파이프라인 위치:** 체인 중간
+
+설계된 연구 또는 실험을 실행하고 완전한 출처를 갖춘 원시 데이터를 캡처합니다. 재현성을 보장합니다. 독립적인 제3자가 다시 실행할 수 있도록 환경, 시드, 프로토콜 로그, 버전 고정을 기록합니다.
+
+## 표준 호출
+
+```bash
+/research-experiment
+```
+
+인수와 함께:
+
+```bash
+/research-experiment [path/to/research-suite/]
+```
+
+## 입력
+
+`_inputs/study-design.md`(설계)와 `_inputs/preregistration.md`(고정된 분석 계획).
+
+## 출력
+
+`_outputs/experiment-log.md`(타임스탬프가 찍힌 프로토콜 추적), 호스트에 자연스러운 위치의 원시 데이터, 그리고 `_outputs/reproducibility-manifest.md`(환경, 시드, 프로토콜, 버전 고정).
+
+## 다운스트림
+
+/research-analysis(다운스트림 소비자)
+
+## 워크플로 단계
+
+이 명령은 표준 `/research` 파이프라인 워크플로를 따릅니다.
+
+1. **컨텍스트 로드** — 연구 설계와 사전 등록을 읽습니다.
+2. **순서 게이트 검증** — `_inputs/study-design.md`가 존재하는지 확인합니다. 그렇지 않으면 `Blocked: run /research-design first`로 중단합니다.
+3. **실행 및 기록** — 프로토콜을 실행하고, 출처와 함께 원시 데이터를 캡처하며, 타임스탬프가 찍힌 프로토콜 추적을 기록합니다.
+4. **재현성 캡처** — 환경, 시드, 프로토콜, 버전 고정을 기록합니다.
+5. **핸드오프 매니페스트 업데이트** — 데이터 위치와 재현성 매니페스트를 기록합니다.
+6. **로그 발행** — `_outputs/experiment-log.md` + 원시 데이터 + `_outputs/reproducibility-manifest.md`.
+
+## 최저 엄밀성 기준
+
+실행은 예산과 범위를 보정하기 위한 예비 패스를 먼저 수행한 다음, 선언된 컴퓨트 활용 계획(코어 할당, 메모리 상한, 독립 반복의 안전한 병렬화) 아래에서 전체 비교를 수행합니다. 각 확률적 방법은 시드를 기록하고 하드웨어를 로깅한 채로 사전 등록된 반복 체제를 실행합니다. 옵트인, 기본 꺼짐의 자율 실험 루프를 사용할 수 있습니다. 즉, 동결된 하니스에 대해 단일 가변 대상에 대한 변경을 제안하고, 고정된 예산에서 실행하며, 현직(incumbent)을 능가할 때만 유지하고, 모든 시도를 저널링합니다.
+
+## 실패 모드
+
+| 증상 | 원인 | 복구 |
+|---------|-------|----------|
+| Blocked: run /research-design first | 연구 설계 없음 | `/research-design`을 실행하여 `_inputs/study-design.md`를 생성합니다 |
+| 실행을 재현할 수 없음 | 시드 / 환경 기록 누락 | 진행하기 전에 완전한 재현성 매니페스트를 기록합니다 |
+| 프로토콜 편차가 문서화되지 않음 | 실행 중간의 변경이 기록되지 않음 | 실험 로그에 편차를 기록하고 분석 시 공개합니다 |
+
+## 예시
+
+```bash
+# 설계된 연구를 실행하고 재현 가능한 원시 데이터를 캡처합니다
+/research-experiment path/to/research-suite/
+```
+
+## 상호 참조
+
+- [파이프라인 개요](/docs/pipeline)
+- [명령 참조](/docs/reference/commands)

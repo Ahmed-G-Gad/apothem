@@ -1,0 +1,64 @@
+# SPDX-License-Identifier: MIT
+#
+# OpenSSF Security Insights — machine-readable security metadata for Apothem.
+# Specification: https://security-insights.openssf.org/ (schema v2.2.0).
+# Refresh header.last-updated / header.last-reviewed whenever the security
+# posture below changes. Vulnerability reporting and the signing-key
+# fingerprint are documented in SECURITY.md and .well-known/security.txt at the
+# repository root.
+
+header:
+  schema-version: 2.2.0
+  last-updated: '2026-07-06'
+  last-reviewed: '2026-07-06'
+  url: https://raw.githubusercontent.com/ahmed-g-gad/apothem/main/SECURITY-INSIGHTS.yml
+  comment: |
+    Single-repository Security Insights file: it carries both a project and a
+    repository section for the one canonical Apothem repository.
+
+project:
+  name: Apothem
+  homepage: https://apothem.ahmedgad.com
+  administrators:
+    - name: Ahmed G. Gad
+      affiliation: Independent
+      email: me@ahmedgad.com
+      social: https://github.com/ahmed-g-gad
+      primary: true
+  repositories:
+    - name: apothem
+      url: https://github.com/ahmed-g-gad/apothem
+      comment: |
+        The single canonical repository for the Apothem engine, harness
+        adapters, plugins, one-shot installers, and documentation site.
+  vulnerability-reporting:
+    reports-accepted: true
+    bug-bounty-available: false
+    comment: |
+      Report privately through the process documented in SECURITY.md. Apothem
+      practises coordinated disclosure and runs no public bug bounty.
+
+repository:
+  url: https://github.com/ahmed-g-gad/apothem
+  status: active
+  accepts-change-request: true
+  accepts-automated-change-request: true
+  core-team:
+    - name: Ahmed G. Gad
+      affiliation: Independent
+      email: me@ahmedgad.com
+      social: https://github.com/ahmed-g-gad
+      primary: true
+  license:
+    url: https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE
+    expression: MIT
+  security:
+    assessments:
+      self:
+        comment: |
+          No independent third-party security assessment has been performed.
+          Automated supply-chain and code-security controls run in CI: OpenSSF
+          Scorecard, CodeQL, zizmor, pip-audit, dependency-review, Trivy and
+          gitleaks scanning, a REUSE/license-compatibility audit, and DCO.
+          Each tagged release ships a CycloneDX SBOM with cosign signatures and
+          SLSA provenance attached to the GitHub Release.

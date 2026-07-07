@@ -1,0 +1,76 @@
+---
+title: "자주 묻는 질문"
+description: "Apothem의 목적, 지원되는 하니스, 플랜 스위트의 선택적 사용, 규칙 사용자 지정, 아티팩트 유형, 에코시스템 상태 위치에 대한 일반적인 질문."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+빈도 순으로 정렬한 일반적인 질문입니다.
+
+## `apothem`이란 무엇인가요?
+
+홈 디렉터리를 하니스 주도 개발을 위한 거버넌스, 아이디어 발상, 자동화 프레임워크로 바꾸는 이식 가능하고 호스트에 구애받지 않는 구성입니다. 행위 규칙, 창의 기준, 슬래시 명령, 영속적 위임 작업자, 훅, 스킬을 하나의 일관된 표면으로 결합합니다.
+
+## 어떤 하니스 CLI와 함께 작동하나요?
+
+Apothem은 하니스에 구애받지 않습니다. `src/apothem/harnesses/<harness>/` 아래의 하니스별 어댑터가 공유 프로필을 각 도구의 네이티브 구성 디렉터리로 투영합니다. 표준 목록은 [`site/content/docs/harnesses/`](/docs/harnesses)에 있으며 현재 다음의 지원되는 하니스를 다룹니다.
+
+```text
+Claude Code, GitHub Copilot, Cursor, Gemini CLI, Codex, Windsurf, OpenCode,
+Antigravity, Open-Claw, Hermes, Qwen Code, CodeBuddy, Kiro, Trae, and Zed
+```
+
+Claude Code 어댑터는 `~/.claude/`로 구체화됩니다. 그 훅 디스패처는 호스트 중립적입니다 — 에코시스템 루트를 먼저 `$CLAUDE_PROJECT_DIR`에서, 그다음 `$LLM_PROJECT_DIR`에서 해석하고, 그 후 `$HOME/.claude`로 폴백합니다.
+
+## 플랜 스위트 파이프라인을 반드시 사용해야 하나요?
+
+아니요. 플랜 스위트 파이프라인은 에코시스템의 한 구성 요소입니다. 행위 규칙, 창의 기준, 훅, 검증기 도구 체인은 독립적으로 유용합니다.
+
+## 저장소를 포크하지 않고 규칙을 사용자 지정하려면 어떻게 하나요?
+
+표준 프런트매터와 함께 `src/apothem/rules/<my-rule>.md` 아래에 직접 규칙 파일을 추가하세요. 규칙 로더는 `src/apothem/rules/*.md` 패턴과 일치하는 모든 파일을 가져옵니다.
+
+## 규칙을 일시적으로 비활성화하려면 어떻게 하나요?
+
+`src/apothem/rules/*.md` 패턴 밖으로 파일 이름을 바꾸거나, 로더가 스캔하지 않는 형제 디렉터리로 이동하세요.
+
+## 규칙, 스킬, 위임 작업자의 차이는 무엇인가요?
+
+- **규칙**은 동작을 관장합니다 — 어시스턴트가 따르는 상시 적용 또는 경로 필터링 의무입니다.
+- **스킬**은 재사용 가능한 감지 가능 기법입니다 — 감지 신호, 절차, 강제 훅으로 구성됩니다.
+- **위임 작업자**는 고유한 도구 제한과 시스템 프롬프트를 가진 영속적 역할로, 작업자 오케스트레이션 프로토콜을 통해 디스패치됩니다.
+
+## 보안 문제를 신고하려면 어떻게 하나요?
+
+`SECURITY.md`를 참조하세요. 지원되는 채널은 GitHub Security Advisories와 `me@ahmedgad.com`입니다.
+
+## 어떻게 기여하나요?
+
+[기여하기](/docs/developer-guide)를 참조하세요. 요약하자면, `CONTRIBUTING.md`를 읽고, 저장소를 포크하고, 표준 PR 템플릿을 채워 PR을 열고, 10가지 CI 검사 클래스가 통과하는지 확인하세요.
+
+## 에코시스템 상태는 어디에 저장되나요?
+
+- **스위트별 플랜 상태**는 `<project>/.apothem/plans/{suite}/` 아래에 있습니다.
+- **프로젝트별 메모리**는 `projects/{hash}/memory/` 아래에 있습니다.
+- **프로젝트 간 메모리**는 `memory/` 아래에 있습니다.
+- **세션별 스크래치**는 `<project>/.apothem/plans/{suite}/_inputs/` 아래에 있습니다.
+
+## 오래 걸리는 작업을 새 세션이나 다른 머신에서 이어서 할 수 있나요?
+
+네. 오래 걸리는 작업은 자신의 전체 상태를 프로젝트 로컬 `.apothem/plans/` 스위트로 외부화합니다 — 재개 계약과 콜드 스타트 프로토콜의 묶음입니다 — 따라서 작업은 하나의 채팅 기록 안에 머무르지 않습니다. 상태가 프로젝트의 파일 안에 있으므로, 같은 프로젝트를 가리키는 어떤 계정이나 머신에서의 새 세션이든 작업을 그 자리에서 이어서 합니다. Apothem 자체가 계정 사이에서 파일을 밀어 주지는 않습니다. 파일은 프로젝트의 파일이 이미 이동하는 방식대로 이동합니다(버전 관리, 공유 체크아웃, 동기화된 디렉터리). [재개 가능한 플래닝](/docs/concepts/resumable-planning)을 참조하세요.
+
+## Apothem에 pip가 필요한가요?
+
+아니요 — 엔진 자체에는 필요하지 않습니다. 엔진은 벤더링된 종속성을 갖춘 자체 완결형 소스 트리입니다 — 시스템 Python 3.10+에서 어떤 체크아웃, npx 캐시, 또는 플러그인 트리에서든 `python -m apothem`으로 실행되며, 자신의 코드는 `site-packages`에 전혀 설치하지 않습니다(`click`과 `rich`만이 유일한 인터프리터 전제 조건입니다). 유일한 선택적 예외: `click`이나 `rich`가 없으면, 설치 프로그램이 바로 그 둘만 `pip install`하도록 제안합니다 — 당신의 확인을 거치거나, `--yes` / `APOTHEM_AUTO_INSTALL_DEPS=1`로. Apothem 자체 패키지는 결코 `site-packages`에 설치되지 않습니다.
+
+## 설치된 패키지 없이 훅이 어떻게 실행되나요?
+
+`apothem install`은 하니스 루트 아래에 훅 디스패처와 적합성 게이트를 구체화하며(Claude Code의 경우: `~/.claude/.apothem/support/hooks/`와 `~/.claude/.apothem/support/conformity/`), 렌더링된 훅 항목은 절대 경로로 해당 스크립트를 호출합니다. 둘 다 독립형 표준 라이브러리 스크립트이므로, `pip install`을 한 번도 본 적 없는 머신에서도 훅이 작동합니다.
+
+## 완전히 제거하려면 어떻게 하나요?
+
+설치된 각 하니스에 대해 `apothem uninstall --harness <name>`을 실행하고, 설치 채널에 따라 엔진을 제거한 다음, 잔여물이 전혀 없기를 원하면 `~/.apothem/`(백업)과 `~/.config/apothem/`(프로필)을 삭제하세요. [제거 가이드](/docs/install/uninstalling)가 각 채널을 안내합니다.
+
+## 에코시스템은 어떤 라이선스를 따르나요?
+
+MIT — `LICENSE`를 참조하세요.

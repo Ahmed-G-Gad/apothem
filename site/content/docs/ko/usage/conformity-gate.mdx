@@ -1,0 +1,50 @@
+---
+title: "적합성 게이트"
+description: "Apothem 적합성 게이트를 실행하여 생태계 상태를 검증합니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+`src/apothem/conformity/gate.py`의 적합성 게이트는 운영자가 작성하는 모든
+산출물에 대해 15가지 기계적 검사를 실행합니다.
+
+## 게이트 실행
+
+```bash
+python -m apothem.conformity.gate
+```
+
+## 게이트 바
+
+| 바 | 검사 | 종류 |
+|-----|-------|------|
+| M1 | 범위 정렬 | 추론 |
+| M2 | 계획 내부 격리(CM-7) | 기계적 |
+| M3 | 표준 준수 | 추론 |
+| M4 | 프런트매터 유효성 | 기계적 |
+| M5 | 금지 문구 없음 | 기계적 |
+| M6 | 편집 공개 | 추론 |
+| M7 | 산출물에 계획 참조 없음 | 기계적 |
+| M8 | 저작권 헤더 존재 | 기계적 |
+| M9 | 정직한 평가 | 추론 |
+| M10 | 명명 규율 | 기계적 |
+| M11 | 스프린트 장치 | 추론 |
+| M12 | 정규 레이아웃 | 기계적 |
+| M13 | 코드 장인정신 | 추론 |
+| M14 | 시스템적 참여 | 추론 |
+| M15 | 인간 저작 | 기계적 |
+
+## 표적 검사
+
+```bash
+# 단일 검사 실행
+python -m apothem.conformity.gate --check multi-surface-coherence
+
+# 특정 파일에 대해 실행
+python -m apothem.conformity.gate src/apothem/rules/my-rule.md
+```
+
+## CI 통합
+
+게이트는 `.github/workflows/conformity.yml`을 통해 푸시할 때마다 CI에서
+실행됩니다.

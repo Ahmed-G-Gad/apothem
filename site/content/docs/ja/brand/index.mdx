@@ -1,0 +1,53 @@
+---
+title: "ブランドガイドライン"
+description: "一貫したブランド適用のための Apothem のブランド命名規律、ロゴバリアント、カラーパレット、アセットガイドライン。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem は二形態のブランド規律を用います。
+
+| 形態 | 用途 | 例 |
+|---|---|---|
+| **Apothem** | 表示形態——すべての本文、見出し、UI、ドキュメント | Apothem vX.Y.Z、Install Apothem |
+| **apothem** | 識別子形態——CLI コマンド、パッケージ名、ファイルパス | npx @ahmed-g-gad/apothem、apothem install |
+
+決して使わないこと：Apothem（先頭一文字のみ大文字）、apothem（ハイフン付き）、APOTHEM（全大文字）。
+
+## タグライン
+
+> 一つの共有プロファイル。十七のハーネス。再発明はなし。
+
+## ロゴ
+
+Apothem マークは apothem の編み模様モチーフを用います。ライトとダークのバリアントは
+`assets/logo.svg` と `assets/logo-dark.svg` で利用できます。横並びのロックアップは
+`assets/logo-wordmark.svg` と `assets/logo-wordmark-dark.svg` にあります。
+
+ブラウザのファビコンは、完全な編み模様マークではなく、意図的にコンパクトな
+`assets/favicon.svg` モノグラムを用います。16px では、モノグラムの方がブラウザの
+タブやピン留め面でより鮮明です。
+
+許可される用途とクリアスペース要件については[ロゴの使用](/docs/brand/logo-usage)を
+参照してください。
+
+## パレット
+
+完全な色の仕様については[パレット](/docs/brand/palette)を参照してください。
+
+## 環境カラー
+
+mermaid 図、環境ページ、アダプターのステータス指標で用いられる環境ごとのブランド
+カラー表については[環境カラー](/docs/brand/harness-colors)を参照してください。
+
+## アセットパレットの根拠
+
+Apothem マークの周縁ノードは装飾的なジオメトリです——環境の数をエンコードせずに
+ハブアンドスポークのアーキテクチャを想起させるため、アダプターが追加されても
+マークは安定したままです。環境パレットの色の割り当ては[環境カラー](/docs/brand/harness-colors)に
+あります。アクセシビリティの姿勢と面ごとの伝播規則は、そのページに記載されています。
+
+## アセットの再ビルド
+
+マスター SVG からラスターアセットを再生成する手順については[再ビルドの手順](/docs/brand/rebuild-recipe)を
+参照してください。

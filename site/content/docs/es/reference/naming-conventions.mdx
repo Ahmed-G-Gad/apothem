@@ -1,0 +1,32 @@
+---
+title: "Convenciones de nomenclatura"
+description: "Prescribe nombres de archivo en kebab-case, formato de claves de frontmatter, nomenclatura de ramas con prefijos de tipo y la semántica de los prefijos numéricos para secuencias de artefactos ordenadas."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Referencia canónica para la forma de los nombres de archivo, identificadores y ramas en todo el ecosistema.** El resumen en [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Convenciones es la declaración en línea; esta página es la referencia independiente que citan los colaboradores posteriores.
+
+---
+
+## 1. Nombres del sistema de archivos
+
+Los archivos y carpetas usan **kebab-case** por defecto. Los identificadores no llevan espacios, ni guiones bajos, ni camel-case.
+
+Las excepciones canónicas en mayúsculas se reservan para los archivos singleton de la superficie de publicación que todo colaborador reconoce en su primer encuentro: `CLAUDE.md`, `README.md`, `LICENSE`, `CHANGELOG.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md` y los singleton de la suite de planes (`MASTER-PLAN.md`, `PROGRESS.md`, `PHASE.md`, `SKILL.md`, `VERSION`). Todos los demás archivos usan kebab-case.
+
+## 2. Claves de frontmatter
+
+Las claves del frontmatter YAML usan `kebab-case` (por ejemplo, `argument-hint`, `disable-model-invocation`). La regla kebab-case se aplica de manera uniforme en reglas, comandos, trabajadores delegados, habilidades y el propio `CLAUDE.md`.
+
+## 3. Nombres de ramas
+
+Las ramas siguen `<type>/<short-description>` con el tipo tomado del conjunto cerrado `{feat, fix, chore, docs, refactor, test, perf, ci, build, style, revert, release}`. La descripción es kebab-case y de menos de cincuenta caracteres.
+
+## 4. Prefijos numéricos
+
+Los prefijos numéricos (`NN-`) en las rutas del sistema de archivos transmiten el orden y se aplican solo donde el orden es intrínseco — carpetas de fase, carpetas de subfase, scripts de migración y cualquier otra clase de artefacto cuya secuencia forme parte del contrato. Los singleton a nivel raíz que no tienen una secuencia de hermanos no llevan prefijo numérico; añadir uno señala erróneamente una relación de orden que no existe. La disciplina completa reside en [`src/apothem/rules/canonical-layout.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/canonical-layout.md) §2.1.
+
+## 5. Validadores
+
+El naming-grep en `src/apothem/conformity/naming_grep.py` es la superficie de aplicación mecánica. CI lo invoca mediante `make validate`.

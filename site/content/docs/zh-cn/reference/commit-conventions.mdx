@@ -1,0 +1,32 @@
+---
+title: "提交约定"
+description: "为 git 制品和版本控制确立提交消息格式、发布打标签、仅限人类的作者身份纪律以及按任务的节奏。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **关于 git 提交消息、发布标签和作者身份纪律的规范参考。** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) 约定中的摘要是内联声明；本页是下游贡献者引用的独立参考。
+
+---
+
+## 1. Conventional Commits
+
+提交主题遵循 **Conventional Commits** 的形态：`<type>(<scope>): <subject>`。封闭的 `<type>` 集合为 `{feat, fix, chore, docs, refactor, test, perf, ci, build, style, revert, release}`。`<scope>` 是提交所触及的表面（例如 `feat(conformity)`、`docs(adr)`、`fix(ci)`）；只有对于不可局部化的横切变更才省略 scope。
+
+主题为祈使语气，在 type/scope 冒号之后小写，无结尾句号，且少于 72 个字符。正文——以空行与主题分隔——解释变更存在的**原因**，而非 diff 改了什么；diff 本身就是“改了什么”的规范记录。
+
+## 2. 作者身份纪律（仅限人类）
+
+每个 git 制品中的每个作者身份表面（提交主题、提交正文、`Author:` 字段、`Co-Authored-By:` 尾注、`Signed-off-by:` 尾注、分支名、标签名、标签注释、暂存名、git-notes 正文、PR 标题、PR 描述）都仅命名**人类贡献者**。harness运行时绝不把自身、底层语言模型、运行时/工具/IDE/扩展/厂商或任何其他自动化工具归属到这些表面中的任何一个。被禁止的模式包括 `Co-Authored-By: <model-name>`、`Co-Authored-By: <noreply@*-vendor.com>`、形如 `generated with X` 或 `co-authored by an automated helper` 的正文叙述，以及任何标示非人类作者身份的主题行标记。完整规范见 [`src/apothem/rules/production-ready-prs.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/production-ready-prs.md) §6；机制性执行见 [`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/hooks/messages/pretooluse-bash.md) 扫描 3。
+
+## 3. 发布标签（语义化版本）
+
+发布标签遵循**语义化版本**（`vMAJOR.MINOR.PATCH`）。1.0 之前的版本按规范的预稳定约定为 `0.MINOR.PATCH`；破坏性变更递增 MINOR，缺陷修复递增 PATCH。标签是带注释的（`git tag -a`），并按发布层级签名，详见 [`site/content/docs/governance/release-engineering-policy.mdx`](/docs/governance/release-engineering-policy)。包版本存放于源清单（`pyproject.toml` 的 `version`），运行时/承载版本的表面均从该包元数据派生。
+
+## 4. 按任务的节奏
+
+在 SHARED+ 严肃度下提交按任务落地，在 PERSONAL_USE 下按阶段落地，在 EXPLORING 下可选。一个任务的提交在该任务的验证门通过后立即落地；推迟的提交会累积上下文并冒着丢失范围的风险。完整纪律见 [`src/apothem/rules/operational-mandates.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/operational-mandates.md) §CM-13。
+
+## 5. 校验器
+
+[`.pre-commit-config.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/.pre-commit-config.yaml) 处的 pre-commit 钩子链执行按写入的质量门。bash 钩子处的作者身份纪律执行（`src/apothem/hooks/messages/pretooluse-bash.md` 的扫描 3）会在任何 git 写入操作落地之前捕获被禁止的尾注和正文标记。

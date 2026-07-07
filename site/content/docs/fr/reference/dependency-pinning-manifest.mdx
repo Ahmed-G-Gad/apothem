@@ -1,0 +1,78 @@
+---
+title: "Manifeste d'épinglage des dépendances"
+description: "Politique de déclaration des dépendances couvrant les plages de l'environnement d'exécution Python, l'outillage de développement, les fichiers de verrouillage de l'outillage de publication et les planchers de version ratifiés pour chaque surface de build."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> Posture ratifiée sur la manière dont Apothem déclare, épingle et verrouille ses
+> dépendances.
+> Public : contributeurs et consommateurs en aval qui doivent comprendre le
+> modèle de reproductibilité.
+
+## Posture
+
+Apothem est une CLI Python avec un petit ensemble de dépendances d'exécution,
+auxquelles s'ajoute une chaîne d'outils plus vaste de développement, d'audit, de
+publication et de documentation. Les dépendances d'exécution utilisent des
+bornes inférieures prudentes dans `pyproject.toml` ; le site web valide
+`site/package-lock.json` ; les GitHub Actions sont épinglées par SHA immuable
+avec des commentaires de version et sont mises à niveau par Renovate.
+
+| Classe | Déclaration | Politique de verrouillage |
+|---|---|---|
+| Dépendances d'exécution Python | `[project.dependencies]` dans `pyproject.toml` | Plages à borne inférieure ; aucun verrou d'exécution Python validé |
+| Outillage de développement / sécurité | extras de `[project.optional-dependencies]` | Plages à borne inférieure ; la CI installe les versions correspondantes actuelles |
+| Outillage de publication | `scripts/release/requirements-build-linux.txt` | Verrouillé par hash pour les flux de publication ; généré à partir de la fermeture de l'outillage de publication |
+| Outils propres à la CI | `.github/workflows/*.yml` | Les outils pip propres au flux de travail utilisent des épinglages exacts (`pip`, `bandit`, `pip-audit`, `pip-licenses`, `pyinstaller`) |
+| Site de documentation | `site/package.json` | `site/package-lock.json` validé et consommé par `npm ci` |
+| GitHub Actions | Références `uses:` épinglées par SHA avec commentaires de version | Renovate propose des mises à jour ; les exceptions portent des marqueurs `action-pinning-exempt:` |
+
+## Ratification de publication
+
+| Surface | État ratifié | Justification |
+|---|---|---|
+| Dépendances d'exécution | Les bornes inférieures actuelles vivent dans `pyproject.toml` `[project.dependencies]` | Planchers stables actuels ratifiés avant la publication ; aucun bloqueur CVE d'exécution connu |
+| Outillage de développement | Les bornes inférieures actuelles vivent dans l'extra `dev` de `pyproject.toml` | Derniers planchers stables ratifiés avant la publication |
+| Outillage de sécurité | Les bornes inférieures actuelles vivent dans l'extra `security` de `pyproject.toml` | Planchers de scanner actuels ratifiés avant la publication |
+| Outillage de publication | La fermeture verrouillée par hash vit dans `scripts/release/requirements-build-linux.txt` | Le flux de publication installe avec `--require-hashes` ; les scripts locaux exigent que `build` existent déjà au lieu d'installer silencieusement des dépendances mouvantes |
+| Outillage de documentation | Les plages actuelles vivent dans `site/package.json` ; la résolution exacte vit dans `site/package-lock.json` | `npm outdated` ne renvoie aucune dépendance de documentation obsolète après l'actualisation du fichier de verrouillage |
+| GitHub Actions | Les épinglages SHA existants sont conservés pour la publication actuelle ; le flux de travail réutilisable SLSA reste l'exception documentée épinglée par tag | La réexécution de la CI publique est verte ; les mises à niveau larges de version majeure des actions sont intentionnellement laissées aux PR d'automatisation des dépendances pour éviter le brassage de la surface de publication |
+| Empaquetage npm | Flux de travail `publish-npm.yml` manuel uniquement ; aucun déclencheur de publication automatique | Le seul paquet npm public est `@ahmed-g-gad/apothem` ; la publication s'exécute une fois la préparation à la publication réussie |
+
+## Verrouillage
+
+Les fichiers de verrouillage Python sont générés à la demande par le
+contributeur. Ils ne sont pas validés parce que la fermeture d'exécution
+d'Apothem est petite, que la CLI prend en charge plusieurs versions mineures de
+Python et que la CI exerce intentionnellement les versions d'outillage
+correspondantes les plus récentes.
+
+```sh
+# Astral uv:
+uv pip install -e ".[dev,security,release]"
+uv pip freeze > requirements.dev.lock
+
+# pip-tools:
+pip-compile --extra=dev --extra=security --extra=release -o requirements.dev.lock pyproject.toml
+
+# Plain pip:
+pip install -e ".[dev,security,release]"
+pip freeze > requirements.dev.lock
+```
+
+Le site web est différent : `site/package-lock.json` est validé et la CI utilise
+`npm ci`, de sorte que le site de documentation rendu possède une fermeture Node
+reproductible.
+
+## Justification
+
+- **Pourquoi des épinglages par plage pour Python ?** La CLI prend en charge une
+  large matrice Python et la CI devrait révéler les problèmes de compatibilité
+  avec l'outillage actuel avant que les utilisateurs ne les rencontrent.
+- **Pourquoi un verrou Node validé ?** Le site web est un artefact statique
+  déployé ; le fichier de verrouillage donne des builds `npm ci` déterministes
+  pour cette surface publique.
+- **Pourquoi des Actions épinglées par SHA ?** Les tags sont mutables ; les SHA
+  sont immuables. Renovate met à jour les SHA épinglés, tandis que la porte de
+  publication consigne toute retenue intentionnelle.

@@ -1,0 +1,120 @@
+---
+title: "공유 프로파일 스키마"
+description: "Apothem 공유 프로파일 YAML의 스키마."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem 공유 프로파일은 `~/.config/apothem/profile.yaml`에 있는 YAML 파일이거나,
+`--profile PATH`로 제공된 경로에 있는 파일입니다. 이는 정체성, 선호, 공유 규칙,
+하니스별 재정의, 하니스 제외에 대한 의미상의 정보원입니다. 어댑터는 이 프로파일과
+패키징된 Apothem 페이로드 cohort로부터 하니스 네이티브 파일을 파생시킵니다.
+
+런타임 모델은 `src/apothem/lib/profile.py`이고, JSON 스키마는
+`src/apothem/schemas/profile.schema.json`입니다.
+
+## 최소한의 유효 프로파일
+
+유일한 필수 필드는 `identity.name`입니다:
+
+```yaml
+identity:
+  name: "Example User"
+```
+
+## `profile init`가 작성하는 스캐폴드
+
+`apothem profile init`은 약간 더 충실한 스캐폴드 — 운영자가 개인화하리라 기대되는
+플레이스홀더 정체성 필드 — 를 작성하고, 성공을 보고하기 전에 그것을 검증합니다:
+
+```yaml
+identity:
+  name: "Example User"
+  email: "dev@example.invalid"
+  github: "example-user"
+```
+
+이 명령은 이 필드들을 짚어주는 개인화 권유를 출력합니다. 여전히 플레이스홀더 상태인
+정체성이 나중에 `install`이나 `update`에 도달하면, 그 명령들은 안내성 주석 하나를
+출력하고 진행합니다 — Apothem은 결코 플레이스홀더 정체성을 지어내지 않으며 그로 인해
+멈추지도 않습니다.
+
+## 정규 필드
+
+| 필드 | 필수 | 기본값 | 비고 |
+| --- | --- | --- | --- |
+| `identity.name` | 예 | 없음 | 비어 있지 않은 운영자 표시 이름. |
+| `identity.role` | 아니요 | `senior software engineer` | 공유 역할 텍스트. |
+| `identity.email` | 아니요 | 생략됨 | 존재할 경우 이메일 형식이어야 합니다. |
+| `identity.website` | 아니요 | 생략됨 | 존재할 경우 URI 형식이어야 합니다. |
+| `identity.github` | 아니요 | 생략됨 | `@`가 없는 GitHub 사용자명. |
+| `preferences.language` | 아니요 | `python` | 소문자로 정규화됩니다. |
+| `preferences.style` | 아니요 | `concise` | `concise`, `verbose`, `balanced` 중 하나. |
+| `preferences.formatter` | 아니요 | 생략됨 | 존재할 경우 비어 있지 않은 문자열. |
+| `preferences.test_framework` | 아니요 | 생략됨 | 존재할 경우 비어 있지 않은 문자열. |
+| `rules` | 아니요 | `[]` | 고유한 비어 있지 않은 문자열; 줄바꿈은 LF로 정규화됩니다. |
+| `seriousness` | 아니요 | `PERSONAL_USE` | `EXPLORING`, `PERSONAL_USE`, `SHARED`, `PUBLIC_LAUNCH` 중 하나. |
+| `harnesses` | 아니요 | `{}` | 지원되는 하니스 ID를 키로 하는 하니스별 재정의. |
+| `exclude_harnesses` | 아니요 | `[]` | `--harness all`에서 제외되는 지원 하니스 ID. |
+
+## 하니스 키
+
+스키마는 정확히 이 열일곱 개의 하니스 ID를 받아들입니다:
+
+```text
+antigravity
+claude-code
+codebuddy
+codex
+cursor
+gemini-cli
+github-copilot
+glm
+hermes
+kimi-code
+kiro
+open-claw
+opencode
+qwen-code
+trae
+windsurf
+zed
+```
+
+알 수 없는 최상위 필드, 알 수 없는 하니스 키, 잘못된 값 유형, 중복된 제외, 그리고
+잘못된 형식의 정체성 필드는 install이나 update가 쓰기 전에 실패합니다. 예상되는
+오류에는 필드, 사유, 수정 방법, 유용한 경우 편집된 안전한 값, 그리고 검증 실패에 대한
+`files_written: []`이 포함됩니다.
+
+## 프로파일 필드에서 네이티브 파일로
+
+프로파일은 *무엇*이고, 어댑터는 *어떻게*입니다. 끝에서 끝까지의 흐름을 이해하면, 단일
+YAML 파일에 대한 한 번의 편집이 설치된 모든 하니스를 어떻게 재형성할 수 있는지가
+설명됩니다.
+
+프로파일 필드는 문자 그대로의 구성 스니펫이 아니라 의미상의 의도를 실어 나릅니다.
+`identity.name`은 "운영자가 누구인가"이지, JSON 한 줄이 아닙니다. 패키징된 페이로드
+cohort(`commands`, `rules`, `skills`, `hooks`, `templates`, `statuslines`,
+`output-styles`, `agents`)는 Apothem 자체의 중립적 형식으로 행위 콘텐츠를 실어
+나릅니다. 필드도 cohort도 어떤 하니스의 구성이 어떻게 생겼는지 알지 못합니다 — 그
+지식은 오직 어댑터에게만 속합니다.
+
+`apothem update`를 실행하면 흐름은 다음과 같습니다:
+
+1. JSON 스키마에 대해 프로파일을 **로드하고 검증합니다**. 프로파일 전체가 유효해지기
+   전까지는 아무것도 쓰이지 않으므로, 오타가 절반만 설치하는 일은 결코 없습니다.
+2. 중앙 레지스트리를 통해 선택된 하니스(또는 `all`에서 임의의 `exclude_harnesses`를
+   뺀 것)에 대해 **어댑터를 해석합니다**.
+3. **구체화합니다** — 각 어댑터는 동일한 프로파일과 동일한 cohort를 읽고, 그것들을
+   자신의 하니스 방언으로 번역합니다. `preferences.style` 같은 필드는 한 하니스에서는
+   네이티브 구성 값이 되고 다른 하니스에서는 렌더링된 지시 컨텍스트가 됩니다.
+   `rules[]`의 한 규칙은 Cursor에는 `.mdc` 파일이, Copilot에는 저장소 전체 지시의 한
+   절이, 또는 하니스에 네이티브 규칙 표면이 없는 경우에는 지원 트리 항목이 됩니다.
+4. 네이티브 파일을 **씁니다** — 렌더링된 단일 구성, 변환된 cohort, 또는 하니스의
+   네이티브 앵커에서 참조되는 지원 하위 트리.
+
+동일한 프로파일이 모든 하니스를 구동하므로, 구체화 결과들이 의도에 대해 서로 어긋날 수
+없습니다. 하니스가 지원하지 않는(또는 여전히 발견 대기 중인) 능력 셀은, 존재하지 않는
+벤더 표면으로 지어내어지는 대신, 어떤 쓰기보다도 먼저 구조화된 경고로 떠오릅니다. 이것이
+한-번의-편집-여러-하니스 보장을 실재하게 만드는 것입니다: 프로파일은 한 번 편집되고,
+각 어댑터는 그 단일 정보원으로부터 자신의 네이티브 파일을 재파생합니다.

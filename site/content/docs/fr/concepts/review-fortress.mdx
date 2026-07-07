@@ -1,0 +1,63 @@
+---
+title: "Séquence d'audit et de revue"
+description: "La séquence d'audit à onze commandes qui vérifie Apothem avant la publication."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+La séquence d'audit et de revue est le balayage d'assurance qualité à onze
+commandes qui vérifie un projet avant la publication. Chaque commande audite un
+domaine de qualité et émet des constats qui doivent être corrigés ou
+explicitement statués.
+
+Deux orchestrateurs canoniques pilotent ces onze dimensions. `/audit` les exécute
+en parallèle en une seule passe en lecture seule — il produit un rapport de
+constats dédupliqué et trié par sévérité, et ne modifie jamais le code source.
+`/fortress` est la boucle fermée de remédiation (détecter → vérifier → remédier →
+ré-auditer → porte) qui durcit un projet jusqu'à un état régi par la porte de
+publication. Chaque dimension reste également invocable individuellement.
+
+## Les onze domaines d'audit
+
+| Commande | Axe | Standard |
+|---------|------|----------|
+| /code-review | Qualité du code | Revue d'artisanat fichier par fichier |
+| /code-audit | Corpus de code | Investigation inter-fichiers |
+| /security-audit | Sécurité | OWASP ASVS v4 + Top 10 |
+| /perf-audit | Performance | Core Web Vitals + méthode USE |
+| /architecture-review | Architecture | Conformité de l'artefact de conception |
+| /ux-review | Expérience développeur | Ergonomie de la CLI + prise en main |
+| /a11y-audit | Accessibilité | WCAG 2.2 AA |
+| /docs-review | Documentation | Qualité sur dix dimensions |
+| /dependency-audit | Dépendances | Licence + CVE + fraîcheur |
+| /supply-chain-audit | Chaîne d'approvisionnement | SLSA + Sigstore + SBOM |
+| /threat-model-audit | Modèle de menaces | STRIDE + PASTA |
+
+## Portes de préparation à la publication
+
+La séquence contribue aux portes de préparation à la publication :
+
+- **Porte locale :** les vérifications de conformité locales passent.
+- **Porte GitHub** (pré-bascule) : vérification côté GitHub — workflows de CI
+  au vert sur chaque commit, chaque vérification.
+- **Porte d'audit :** séquence de revue complète terminée — les onze domaines
+  audités, les constats statués, les points de vigilance documentés.
+
+## Boucle de remédiation
+
+Les commandes d'audit sont en lecture seule : elles font remonter des constats,
+n'appliquent jamais de correctifs. La remédiation passe par `/fortress`, la boucle
+fermée qui suit le motif d'itération jusqu'au vert : les constats sont triés et
+vérifiés, les correctifs sont appliqués sur la surface propriétaire de chaque
+constat, l'audit est ré-exécuté, et la boucle se poursuit jusqu'à ce que les
+constats soient résolus et que la porte de publication passe. L'élévation de tout
+le dépôt au meilleur standard actuel passe par `/elevate`.
+
+## Pourquoi la séquence existe
+
+La qualité logicielle se dégrade sur plusieurs dimensions à la fois. Une seule
+revue peut manquer des défauts situés entre la qualité du code, la sécurité, la
+performance, l'architecture, l'accessibilité, la documentation, la posture des
+dépendances et la posture de la chaîne d'approvisionnement. La séquence d'audit
+applique ces lentilles séparément afin que la porte de publication voie le
+profil de risque complet.

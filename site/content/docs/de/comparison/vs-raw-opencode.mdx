@@ -1,0 +1,42 @@
+---
+title: "Apothem im Vergleich zur manuellen OpenCode-Konfiguration"
+description: "Die Konfiguration, Befehle, Skills und Agenten von OpenCode von Hand pflegen, verglichen mit dem Rendern aus dem geteilten Profil von Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+OpenCode liest eine JSON-Konfiguration sowie native Erkennungsverzeichnisse für
+Befehle, Skills und Agenten. Apothem rendert die JSON-Konfiguration mit einer
+`instructions`-Dateiliste und konvertiert die geteilten Korpora dort in native
+Verzeichnisse, wo OpenCode sie unterstützt.
+
+## Aufwandsvergleich
+
+| Aufgabe | Manuelle Konfiguration | Von Apothem verwaltet |
+| ---- | --------------- | --------------- |
+| Regeln schreiben | Konfiguration und unterstützende Prompts von Hand bearbeiten | Aus dem geteilten Profil gerendert oder referenziert |
+| Befehle, Skills, Agenten schreiben | Jedes OpenCode-Verzeichnis von Hand pflegen | Aus den geteilten Apothem-Korpora konvertiert |
+| Korpora mit anderen Umgebungen ausgerichtet halten | Manuell, pro Werkzeug | Automatisch bei `apothem update` |
+| Die Oberfläche installieren / entfernen | Manuell | `apothem install` / `apothem uninstall` |
+| Verifizieren, dass die Konfiguration korrekt ist | Manuelle Inspektion | `apothem verify --harness opencode` |
+
+## Was Apothem verwaltet
+
+Der opencode-Adapter schreibt `opencode.json`, konvertiert Apothem-Slash-Befehle in
+OpenCode-Markdown-Befehlsdateien, kopiert die Skills in die native Skills-Oberfläche
+und adaptiert Hilfsdefinitionen als Markdown-Subagenten. Regeln, Vorlagen und
+Hook-Prompts verbleiben unter dem Hilfsbaum von Apothem; Regeln werden aus der nativen
+`instructions`-Liste referenziert.
+
+## Migrationspfad
+
+1. Führen Sie `apothem profile init` aus, um das geteilte Profil zu erstellen, falls noch nicht geschehen.
+2. Verschieben Sie die vorhandenen OpenCode-Regeln, -Befehle, -Skills und -Agenten in das geteilte Korpus.
+3. Führen Sie `apothem install --harness opencode` aus, um die native Konfiguration und die Erkennungsverzeichnisse zu rendern.
+4. Führen Sie `apothem verify --harness opencode` aus, um zu bestätigen, dass die Konfiguration angekommen ist.
+5. Verwenden Sie `apothem update --harness opencode` für jede spätere Änderung.
+
+## Als Nächstes lesen
+
+- [OpenCode-Adapter-Referenz](/docs/harnesses/opencode)
+- [Vergleichsüberblick](/docs/comparison)

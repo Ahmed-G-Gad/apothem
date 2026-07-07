@@ -1,0 +1,34 @@
+---
+title: "Estilos de saída"
+description: "Perfis de tom de operador (Arquiteto Sênior, Engenheiro Conciso, Auditor Forense) ativados por sessão via comando /output-style."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Os perfis de estilo de saída vivem sob `src/apothem/output-styles/` e carregam a
+orientação de tom de operador por estilo. O runtime do harness
+host ativa um estilo por sessão via `/output-style <name>`.
+
+## Perfis canônicos
+
+| Perfil | Arquivo | Tom |
+|---------|------|------|
+| Arquiteto padrão | `src/apothem/output-styles/default-architect.md` | Tom de Arquiteto de Software Sênior (padrão) |
+| Engenheiro conciso | `src/apothem/output-styles/concise-engineer.md` | Tom de engenharia de formato curto |
+| Auditor forense | `src/apothem/output-styles/forensic-auditor.md` | Tom de auditoria achado por achado |
+
+## Contrato de frontmatter
+
+```yaml
+---
+name: <style name>
+description: <one-line tone summary>
+type: output-style
+---
+```
+
+## Criar um novo perfil
+
+Crie um novo arquivo `<name>.md` sob `src/apothem/output-styles/` com o
+frontmatter canônico, declare o tom no corpo e ratifique invocando
+`/output-style <name>` no início da sua próxima sessão.

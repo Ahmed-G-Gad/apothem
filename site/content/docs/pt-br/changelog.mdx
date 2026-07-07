@@ -1,0 +1,87 @@
+---
+title: "Changelog"
+description: "CHANGELOG do Apothem — notas de lançamento curadas, seguidas pelos grupos do Keep-a-Changelog para versões subsequentes."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+As notas de lançamento abaixo são injetadas a partir do `CHANGELOG.md` da raiz no
+momento da build por `node site/scripts/update-reference-inventory.mjs`; o arquivo
+raiz é a única fonte de verdade.
+
+{/* apothem:changelog:start */}
+
+# Changelog — Apothem
+
+All notable changes to this project are documented in this file.
+
+This changelog follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
+and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.0.1] - 2026-07-07
+
+Apothem is a host-agnostic AI-harness configuration manager: one governed shared
+profile materializes into the native configuration of seventeen assistant
+harnesses behind a conformity governance gate and signed, reproducible releases.
+
+### Added
+
+- **Shared-profile model.** One governed profile at
+  `~/.config/apothem/profile.yaml` is the single source for the synced unit —
+  rules, slash-commands, skills, hooks, output-styles, settings, schemas, docs,
+  and MCP servers — plus the wrapped-workflow orchestrators that drive whole
+  missions end to end (`/plan`, `/research`, `/audit`, and the `/fortress`
+  closed-loop production-hardening pipeline).
+- **Seventeen harness adapters.** Antigravity, Claude Code, CodeBuddy, Codex,
+  Cursor, Gemini CLI, GitHub Copilot, Hermes, Kimi Code, Kiro, Open-Claw,
+  OpenCode, Qwen Code, Trae, Windsurf, Zed, and GLM (Z.ai) each install, verify,
+  update, and uninstall through a shared, reversible adapter contract that emits
+  the tool's native file layout. Installs back up existing targets before
+  replacement; uninstalls reverse cleanly with zero orphans.
+- **CLI.** `quickstart`, `install`, `uninstall`, `update`, `verify`, `status`,
+  `diff`, `rollback`, `migrate-workspace`, `harnesses`, `profile`, `doctor`, and
+  `completion`, with dry-run reporting, drift detection, and structured JSON
+  output (`--format json`). The engine is self-contained — the source tree
+  carries its vendored dependencies and runs from a checkout as
+  `python -m apothem` on system Python 3.10+.
+- **Conformity governance gate.** A pre-emission validator suite checks the
+  synced unit — authorship headers, frontmatter contracts, naming, determinism,
+  cross-references, and harness capability coverage, including a cross-file
+  binding-reciprocity validator that keeps every rule cross-binding closed at
+  its cited peer — before any surface is materialized.
+- **Install paths.** The Claude Code plugin
+  (`/plugin marketplace add ahmed-g-gad/apothem`), a Gemini CLI extension, a
+  Qwen Code extension, a Codex plugin, a VS Code-family extension on the Visual
+  Studio Marketplace, the npm shim (`npx @ahmed-g-gad/apothem <command>`), and
+  the one-shot POSIX and PowerShell installers (`install.sh` / `install.ps1`)
+  with matching update and uninstall scripts.
+
+### Changed
+
+- **Unified install layout.** Materialized machinery (hooks, the conformity
+  gate, schemas, templates) and non-native cohorts (rules, skills, agents)
+  install under a single Apothem-owned `.apothem/support/` tree inside each
+  harness's configuration root, so each profile carries one Apothem-owned dotted
+  directory rather than two similarly-named siblings.
+- **Leaner always-on rules tier.** The always-loaded behavioral rules were
+  consolidated to twenty-eight, with situational depth moved into demand-loaded
+  companion rules, so a session — or a fleet of sub-agents — ingests fewer
+  tokens up front while every discipline still fires where it applies.
+
+### Security
+
+- Every release attaches an sdist, a wheel, SHA-256 checksums, Sigstore cosign
+  signatures, SLSA build provenance, and a CycloneDX SBOM as verification
+  evidence; the npm package publishes with Sigstore build provenance signed
+  from the GitHub Actions OIDC identity, and a conformity validator holds every
+  release workflow to a provenance-signed, pinned publish path.
+- The pipeline gates every change on lint, tests, type checks, a documentation
+  build, CodeQL, OpenSSF Scorecard, dependency review, a scheduled OSV
+  vulnerability scan, and supply-chain checks before publication. The one-shot
+  installers pin their `click` / `rich` prerequisites to the engine's declared
+  constraints and document an inspect-first alternative to the pipe-to-shell
+  one-liner.
+
+[1.0.1]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.0.1
+
+{/* apothem:changelog:end */}

@@ -1,0 +1,67 @@
+---
+title: "Apothem face aux autres cadres d'environnements"
+description: "Comment Apothem se compare aux outils de configuration mono-environnement, aux gestionnaires de dotfiles et à la configuration manuelle par outil, en tant qu'approches de gestion des configurations d'assistants par IA."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Cette page situe Apothem face aux catégories d'outils que les opérateurs
+utilisent déjà pour gérer la configuration des assistants par
+IA. Elle nomme des catégories de capacités, et non des produits précis — la
+comparaison est structurelle et s'applique quel que soit l'outil de chaque
+catégorie auquel vous recourez.
+
+## Les catégories
+
+Les opérateurs qui gèrent la configuration d'assistants par IA à travers
+plusieurs outils relèvent de l'une de quatre approches :
+
+1. **Configuration manuelle par outil.** Vous éditez à la main le fichier de
+   configuration natif de chaque environnement — un fichier par outil, sans
+   source partagée.
+2. **Outils de configuration mono-environnement.** Un outil dédié à une
+   plateforme d'assistant qui gère bien la configuration de cette plateforme
+   mais n'atteint pas les autres outils que vous utilisez.
+3. **Gestionnaires de dotfiles polyvalents.** Un outil qui versionne et
+   synchronise des fichiers de configuration entre machines mais traite chaque
+   fichier comme du texte opaque.
+4. **Gestionnaires de configuration multi-environnements.** Un outil qui détient
+   un seul profil partagé et en rend le format natif de chaque environnement.
+   Apothem appartient à cette catégorie.
+
+## Comparaison des capacités
+
+| Capacité | Manuelle par outil | Outil mono-environnement | Gestionnaire de dotfiles | Apothem |
+| ---------- | --------------- | ------------------- | --------------- | ------- |
+| Couvre de nombreux environnements | Oui (au prix d'efforts) | Non (un environnement) | Oui (au niveau fichier) | Oui (dix-sept adaptateurs) |
+| Source de vérité unique et partagée | Non | Non | Non | Oui |
+| Rend les formats natifs par environnement | Manuel | Oui (un environnement) | Non | Oui |
+| Prévention de la dérive inter-environnements | Manuelle | S/O | Synchro de fichiers seulement | Oui |
+| Traduction de format (`.mdc`, `.toml`, `.md` embarqué) | Manuelle | Pour son environnement | Non | Oui |
+| Commande de vérification | Aucune | Variable | Aucune | Oui |
+| Ajouter un nouvel environnement | Davantage de travail manuel | Impossible | Suivre plus de fichiers | Installer un adaptateur |
+
+## Où chaque approche convient
+
+**La configuration manuelle par outil** convient à un seul outil dont la
+configuration change rarement. Le coût croît avec chaque outil ajouté et chaque
+règle que vous gardez alignée entre eux.
+
+**Les outils mono-environnement** conviennent aux opérateurs engagés sur une
+plateforme. Ils ne résolvent pas le problème multi-outils — dès que vous ajoutez
+un deuxième assistant, vous revenez à maintenir deux configurations alignées.
+
+**Les gestionnaires de dotfiles** conviennent à la synchronisation entre
+machines de fichiers arbitraires. Ils déplacent des octets entre machines mais
+ne comprennent pas les formats d'environnement, donc ils ne peuvent ni rendre un
+profil en dix-sept formes natives ni en vérifier aucune.
+
+**Apothem** convient aux opérateurs qui exécutent plusieurs assistants par IA et
+veulent une source de vérité unique. Vous écrivez le profil une fois ; Apothem
+rend, installe, met à jour et vérifie la configuration native de chaque
+environnement.
+
+## À lire ensuite
+
+- [Aperçu de la comparaison et matrice de fonctionnalités](/docs/comparison)
+- [Adaptateurs d'environnement](/docs/harnesses)

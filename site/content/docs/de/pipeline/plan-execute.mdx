@@ -1,0 +1,70 @@
+---
+title: "/plan-execute"
+description: "/plan-execute — Führt eine bestimmte Phase aus einer Master-Plan-Suite mit Konformitätsprüfung aus."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rolle:** Ausführer
+**Pipeline-Position:** terminal
+
+Führt eine bestimmte Phase aus einer Master-Plan-Suite mit Konformitätsprüfung aus.
+
+## Kanonischer Aufruf
+
+```bash
+/plan-execute
+```
+
+Mit Argumenten:
+
+```bash
+/plan-execute [path/to/plan-suite/] [phase-id] [--dry-run]
+```
+
+## Eingaben
+
+Generierte + geprüfte Plan-Suite; geprüfte `_inputs/handoff-manifest.yml`
+
+## Ausgaben
+
+REPORT.md-Dateien pro Phase, Codebasis-Artefakte, COMPLETION.md
+
+## Nachgelagert
+
+`/code-review` — der kanonische Einstiegspunkt der elf Befehle umfassenden Audit-Festungssequenz. `/plan-execute` ist die terminale Stufe der *Plan*-Pipeline; wenn die finale Phase abgeschlossen ist, wird der gebaute Code zur Prüfung an die Audit-Festung übergeben.
+
+## Workflow-Phasen
+
+Der Befehl folgt dem standardmäßigen `/plan`-Pipeline-Workflow:
+
+1. **Kontext laden** — Liest die Plan-Suite, die Regeln und den Wiederaufnahme-Vertrag.
+2. **Voraussetzungen prüfen** — Bestätigt, dass die Abhängigkeitsphasen abgeschlossen sind.
+3. **Aufgaben ausführen** — Erfüllt die Mission des Befehls.
+4. **Ausgaben verifizieren** — Bestätigt, dass alle deklarierten Ausgaben existieren und die Qualitätstore bestehen.
+5. **PROGRESS.md aktualisieren** — Verzeichnet die verifizierten Ausgaben im Phasen-Ausgaberegister.
+6. **REPORT.md ausgeben** — Der Freigabenachweis des Pre-Emission-Tors wird verzeichnet.
+
+## Fehlermodi
+
+| Symptom | Ursache | Behebung |
+|---------|-------|----------|
+| Voraussetzung unvollständig | Abhängige Phase nicht abgeschlossen | Schließe zuerst die vorgelagerte Phase ab |
+| Qualitätstor FAIL | Die Ausgabe erfüllt die Standards nicht | Behebe die Ausgabe und führe erneut aus |
+| Fehlende Eingabedatei | Plan-Suite-Datei fehlt | Führe `/plan-generate` aus, um sie zu erstellen |
+
+## Beispiele
+
+```bash
+# Dry-run to preview what would happen
+/plan-execute --dry-run
+
+# Execute against a named plan suite
+/plan-execute path/to/plan-suite/
+```
+
+## Querverweise
+
+- [Pipeline-Überblick](/docs/pipeline)
+- [Befehlsreferenz](/docs/reference/commands)
+- [Audit-Festungs-Einstieg: `/code-review`](/docs/reference/commands) — die Prüfsequenz, in die der gebaute Code eintritt, sobald die Plan-Pipeline abgeschlossen ist

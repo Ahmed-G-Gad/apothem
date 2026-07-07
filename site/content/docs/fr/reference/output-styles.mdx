@@ -1,0 +1,34 @@
+---
+title: "Styles de sortie"
+description: "Profils de ton d'opérateur (Architecte Senior, Ingénieur Concis, Auditeur Forensique) activés par session via la commande /output-style."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Les profils de style de sortie se trouvent sous `src/apothem/output-styles/` et
+portent les consignes de ton d'opérateur par style. Le runtime de l'assistant de
+codage hôte active un style par session via `/output-style <name>`.
+
+## Profils canoniques
+
+| Profil | Fichier | Ton |
+|---------|------|------|
+| Architecte par défaut | `src/apothem/output-styles/default-architect.md` | Ton d'Architecte Logiciel Senior (par défaut) |
+| Ingénieur concis | `src/apothem/output-styles/concise-engineer.md` | Ton d'ingénierie au format court |
+| Auditeur forensique | `src/apothem/output-styles/forensic-auditor.md` | Ton d'audit constat par constat |
+
+## Contrat de frontmatter
+
+```yaml
+---
+name: <style name>
+description: <one-line tone summary>
+type: output-style
+---
+```
+
+## Rédiger un nouveau profil
+
+Créez un nouveau fichier `<name>.md` sous `src/apothem/output-styles/` avec le
+frontmatter canonique, déclarez le ton dans le corps, et ratifiez-le en invoquant
+`/output-style <name>` au début de votre prochaine session.

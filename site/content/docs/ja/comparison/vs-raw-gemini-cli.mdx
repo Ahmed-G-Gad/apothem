@@ -1,0 +1,39 @@
+---
+title: "Apothem 対 Gemini CLI の手動設定"
+description: "Gemini CLI の GEMINI.md ルールファイルを手作業で保守する場合と、Apothem の共有プロファイルからレンダリングする場合の比較。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Gemini CLI は単一の `GEMINI.md` ルールファイルを読み取ります。Apothem の
+gemini-cli アダプターは、それを共有プロファイルからレンダリングします。このページ
+では、その設定を手作業で保守する場合と、Apothem で管理する場合を対比します。
+
+## 労力の比較
+
+| タスク | 手動設定 | Apothem による管理 |
+| ---- | --------------- | --------------- |
+| ルールの記述 | 1 つの `GEMINI.md` を手作業で編集 | レンダリング：共有ルールを `GEMINI.md` に埋め込み |
+| 他の環境とルールを揃え続ける | 手作業、ツールごと | `apothem update` 時に自動 |
+| 設定のインストール／削除 | `GEMINI.md` を手作業で記述・削除 | `apothem install` / `apothem uninstall` |
+| 設定が正しいか検証する | 手作業での確認 | `apothem verify --harness gemini-cli` |
+
+## Apothem が管理するもの
+
+gemini-cli アダプターは、共有ルールを単一の `GEMINI.md` に埋め込みます。Gemini CLI
+には PreToolUse フックがないため、ガードレールの意図はツール呼び出しの傍受点では
+なくルールの文章で表現されます。共有ルールへの変更はすべて、次回の `apothem update`
+時に `GEMINI.md` を再レンダリングします。
+
+## 移行パス
+
+1. まだ共有プロファイルを作成していない場合は、`apothem profile init` を実行して作成します。
+2. 既存の `GEMINI.md` のルールを共有コーパスに移します。
+3. `apothem install --harness gemini-cli` を実行して `GEMINI.md` をレンダリングし書き込みます。
+4. `apothem verify --harness gemini-cli` を実行して設定が配置されたことを確認します。
+5. 以降の変更ごとに `apothem update --harness gemini-cli` を使用します。
+
+## 次に読む
+
+- [Gemini CLI アダプターのリファレンス](/docs/harnesses/gemini-cli)
+- [比較の概要](/docs/comparison)

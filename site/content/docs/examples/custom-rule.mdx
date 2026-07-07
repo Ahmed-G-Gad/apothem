@@ -1,0 +1,59 @@
+---
+title: "Custom rule"
+description: "Authoring a custom always-on rule for your project."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+This example adds a project-specific always-on rule that enforces a naming
+convention across all files.
+
+## Rule file
+
+```markdown
+---
+name: "kebab-filenames"
+description: "Enforce kebab-case filenames in the src/ tree"
+pathFilter: ""
+alwaysApply: true
+---
+
+# Kebab-case filenames
+
+All new files created under `src/` MUST use kebab-case naming
+(lowercase letters, digits, and hyphens only — no underscores,
+no camelCase, no PascalCase).
+
+**Correct:** `src/styles/button-group.css`, `src/components/nav-bar.css`
+**Incorrect:** `src/styles/buttonGroup.css`, `src/components/NavBar.css`
+
+When in doubt, err on the side of more hyphens.
+```
+
+Save this to `rules/kebab-filenames.md` inside your harness install root (`~/.claude/` for the Claude Code adapter; substitute the harness-native path otherwise).
+
+## Verify the rule is well-formed
+
+Run the frontmatter validator against the rule file you just wrote:
+
+```bash
+python -m apothem.conformity.gate --check frontmatter-grep rules/kebab-filenames.md
+```
+
+A well-formed rule reports a clean pass:
+
+```json
+{
+  "orchestrator": "conformity-gate",
+  "passed": true,
+  "grep_count": 1
+}
+```
+
+## Propagate to harnesses
+
+Run the update command once per installed harness:
+
+```bash
+apothem update --harness claude-code
+apothem update --harness cursor
+```

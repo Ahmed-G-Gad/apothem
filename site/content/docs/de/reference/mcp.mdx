@@ -1,0 +1,45 @@
+---
+title: "MCP-Server"
+description: "Konfiguration der Model-Context-Protocol-Server — betreibereigen und über den nativen MCP-Mechanismus jedes Tools registriert; Apothem synchronisiert das Inventar aus dem geteilten Profil, legt aber keine Server-Einträge an."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Model-Context-Protocol-(MCP-)Server sind **betreibereigen**. Apothem führt das
+MCP-Inventar im geteilten Profil und projiziert es in die native MCP-Oberfläche
+jedes Tools, legt aber keine eigenen Server-Einträge an — die Oberfläche bleibt
+in Ihrer Verwaltung.
+
+## Wo MCP-Server registriert werden
+
+Jedes Tool registriert MCP-Server über seinen eigenen nativen Mechanismus, und
+Apothem respektiert diese Oberfläche, statt sie zu überschreiben. Beim Claude
+Code Adapter (einer von vielen) registrieren sich Server mit `claude mcp add` in
+`~/.claude.json` (Benutzer- oder lokaler Geltungsbereich) und einer
+projektbezogenen `.mcp.json`; andere Adapter projizieren in ihre eigenen nativen
+Oberflächen. Die von Apothem verwalteten Einstellungen tragen niemals einen
+`mcpServers`-Block.
+
+## Einen Server hinzufügen
+
+Registrieren Sie einen Server über den nativen Mechanismus Ihres Tools; die
+kanonische Eintragsform ist ein Schlüssel unter `mcpServers`:
+
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/some/path"]
+    }
+  }
+}
+```
+
+Das Runtime des Tools lädt die registrierten Server beim Sitzungsstart; starten
+Sie das Tool neu, um neue Server zu übernehmen.
+
+## Namenskonvention
+
+MCP-Werkzeuge erscheinen dem Assistenten als `mcp__<server>__<tool>` gemäß der
+standardmäßigen MCP-Werkzeug-Namenskonvention des Tools.

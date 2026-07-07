@@ -1,0 +1,37 @@
+---
+title: "Ernsthaftigkeitsstufen"
+description: "Die vier Ernsthaftigkeitsstufen — wie Apothem die Governance an das Engagement-Niveau anpasst."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem skaliert den Governance-Aufwand am Engagement-Niveau. Eine schnelle
+Erkundung braucht keine signierten Commits; ein Produktiv-Launch schon.
+
+## Die vier Stufen
+
+| Stufe | Wann zu verwenden | Governance-Mindestmaß |
+|------|-------------|-----------------|
+| **EXPLORING** | Prototypen, Wegwerf-Experimente | Lint + Tests + die Kernmandate (kritische Bewertung, Best-Solution-Argumentation, direkte Ehrlichkeit) |
+| **PERSONAL_USE** | Persönliche Werkzeuge, lokale Skripte | + Typprüfung + Commits je Phase + PROGRESS.md |
+| **SHARED** | Teamprojekte, Open Source | + fehlschlagende Prüfungen blockieren die Ausführung + Commits je Aufgabe + vollständige Dokumentation + parallele Prüfung |
+| **PUBLIC_LAUNCH** | Produktivdienste, veröffentlichte Pakete | + Sicherheitsscans + signierte Commits + SemVer + verpflichtende Nachprüfung |
+
+## Ad-hoc-Standard
+
+Wenn keine Ernsthaftigkeitsstufe angegeben ist, fällt Apothem auf
+**PERSONAL_USE** zurück.
+
+## Minimal tragfähige Governance
+
+Bei EXPLORING gelten stets drei übergreifende Mandate, unabhängig von der Stufe:
+- CM-1 (Kritische Bewertung)
+- CM-5 (Beste Lösung)
+- CM-10 (Schonungslose Ehrlichkeit)
+
+## Stufen-Eskalation
+
+Die Ernsthaftigkeitsstufe kann mitten im Projekt eskaliert werden. Wenn ein
+PERSONAL_USE-Projekt zu SHARED aufsteigt, führe den vollständigen lokalen
+Release-Reife-Durchlauf aus, um etwaige Governance-Lücken aufzuspüren, die sich
+auf der niedrigeren Stufe angesammelt haben.

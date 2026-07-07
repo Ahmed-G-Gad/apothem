@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: MIT
+
+name: CI
+on: [push]
+jobs:
+  not-first:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: step-security/harden-runner@v2
+        with:
+          egress-policy: block
+      - run: echo "checkout ran before harden-runner"
+  bad-policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: step-security/harden-runner@v2
+        with:
+          egress-policy: log
+      - uses: actions/checkout@v4

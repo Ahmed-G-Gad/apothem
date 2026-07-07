@@ -1,0 +1,128 @@
+---
+title: "Apothem v1.0.1 — लॉन्च रिलीज़"
+description: "Apothem v1.0.1 उपलब्ध है — एक साझा प्रोफ़ाइल सत्रह AI सहायक हार्नेस में मूर्त होती है, कई इंस्टॉल पथ, और एक हस्ताक्षरित, अनुप्रमाणित रिलीज़।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem v1.0.1 AI सहायक हार्नेस के लिए होस्ट-अज्ञेय कॉन्फ़िगरेशन प्रबंधक की लॉन्च
+रिलीज़ है: एक साझा प्रोफ़ाइल, सत्रह हार्नेस, एकल हस्ताक्षरित संस्करण, और
+रिलीज़ के साथ ही संलग्न आपूर्ति-शृंखला प्रमाण।
+
+## थीसिस: एक प्रोफ़ाइल, सत्रह हार्नेस
+
+Apothem `~/.config/apothem/profile.yaml` पर एक साझा प्रोफ़ाइल पढ़ता है और उसे
+उस मूल कॉन्फ़िगरेशन में मूर्त करता है जिसकी प्रत्येक हार्नेस अपेक्षा करती है।
+आप अपने व्यवहार-नियम, स्किल, हुक और परिपाटियाँ एक ही बार लिखते हैं। Apothem
+उन्हें सत्रह हार्नेस-मूल लक्ष्यों में रेंडर करता है और उन्हें समकालिक रखता है।
+
+इस रिलीज़ में सत्रह अडैप्टर:
+
+- antigravity
+- claude-code
+- codebuddy
+- codex
+- cursor
+- gemini-cli
+- github-copilot
+- glm
+- hermes
+- kimi-code
+- kiro
+- open-claw
+- opencode
+- qwen-code
+- trae
+- windsurf
+- zed
+
+अपने वर्कफ़्लो में एक टूल जोड़ें, एक कमांड चलाएँ, और आपकी कॉन्फ़िगरेशन वहाँ है।
+एक टूल हटाएँ, और Apothem उसे साफ़-सुथरे ढंग से अनइंस्टॉल करता है — पीछे कोई
+अनाथ फ़ाइल नहीं छोड़ता।
+
+## इंस्टॉल
+
+कई इंस्टॉल पथ, नीचे एक ही CLI:
+
+1. **Claude Code प्लगइन** — Claude Code के भीतर:
+
+   ```text
+   /plugin marketplace add ahmed-g-gad/apothem
+   /plugin install apothem@apothem
+   ```
+
+2. **npx** — CLI को सीधे npm पैकेज `@ahmed-g-gad/apothem` से चलाएँ, बिना किसी
+   इंस्टॉल चरण के:
+
+   ```bash
+   npx @ahmed-g-gad/apothem profile init
+   npx @ahmed-g-gad/apothem install --harness all --project .
+   ```
+
+3. **एक-शॉट स्क्रिप्ट इंस्टॉलर** — एक स्व-निहित रनटाइम और `apothem` लॉन्चर को
+   PATH पर रखता है:
+
+   ```bash
+   curl -fsSL https://apothem.ahmedgad.com/install.sh | sh    # POSIX
+   ```
+
+   ```powershell
+   irm https://apothem.ahmedgad.com/install.ps1 | iex         # Windows
+   ```
+
+4. **टूल-मूल प्लगइन और एक्सटेंशन** — एक Gemini CLI एक्सटेंशन
+   (`gemini extensions install https://github.com/ahmed-g-gad/apothem`), एक
+   Qwen Code एक्सटेंशन (`qwen extensions install ahmed-g-gad/apothem`), एक
+   Codex प्लगइन (`codex plugin marketplace add ahmed-g-gad/apothem`), और एक
+   VS Code-परिवार एक्सटेंशन (Visual Studio Marketplace, जो
+   VS Code और GitHub Copilot को कवर करता है)।
+
+## आपूर्ति-शृंखला मुद्रा
+
+[GitHub Release v1.0.1](https://github.com/ahmed-g-gad/apothem/releases/tag/v1.0.1)
+कोड के साथ पूर्ण प्रमाण-समुच्चय वहन करती है:
+
+- sdist और wheel, प्रकाशन से पहले जाँचे गए।
+- एक CycloneDX SBOM।
+- प्रत्येक आर्टिफ़ैक्ट के लिए Sigstore cosign कीलेस हस्ताक्षर बंडल।
+- SLSA-3 बिल्ड उद्गम, रिलीज़ वर्कफ़्लो के भीतर ही सत्यापित।
+- प्लेटफ़ॉर्म-वार रनटाइम आर्काइव (darwin / linux / windows) एक हस्ताक्षरित
+  `SHA256SUMS` मैनिफ़ेस्ट के साथ।
+
+रिलीज़ टैग GPG-हस्ताक्षरित है, और npm पैकेज Trusted Publishing (OIDC) के माध्यम
+से स्वचालित उद्गम के साथ प्रकाशित होता है।
+
+## डिब्बे में क्या है
+
+`apothem` CLI वे ऑपरेटर कमांड उजागर करती है जिनकी आपको पूर्ण कॉन्फ़िगरेशन
+जीवनचक्र के लिए ज़रूरत है:
+
+- `apothem install` — प्रोफ़ाइल को एक हार्नेस में या उन सभी में मूर्त करता है।
+- `apothem uninstall` — किसी हार्नेस की मूर्त कॉन्फ़िगरेशन हटाता है, साझा
+  प्रोफ़ाइल को अछूता छोड़ते हुए।
+- `apothem update` — प्रोफ़ाइल संपादित करने के बाद पुनः मूर्त करता है।
+- `apothem verify` — प्रोफ़ाइल और किसी हार्नेस की डिस्क-पर मौजूद कॉन्फ़िगरेशन
+  के बीच विचलन का पता लगाता है।
+- `apothem harnesses` — प्रत्येक पंजीकृत अडैप्टर को सूचीबद्ध करता है।
+- `apothem profile` — साझा प्रोफ़ाइल का निरीक्षण और प्रबंधन करता है।
+- `apothem doctor` — पर्यावरण और कॉन्फ़िगरेशन की समस्याओं का निदान करता है।
+
+प्रत्येक हार्नेस अडैप्टर एक समान `HarnessAdapter` प्रोटोकॉल लागू करता है —
+`install`, `uninstall`, `is_installed`, `verify` — ताकि नीचे जो भी विक्रेता
+प्रारूप हो, ऑपरेटर की कुर्सी से प्रत्येक हार्नेस पूर्वानुमेय ढंग से व्यवहार करे।
+डिज़ाइन के बारे में अधिक पढ़ें
+[अडैप्टर आर्किटेक्चर गहन-विश्लेषण](/docs/blog/posts/multi-harness-adapter-design)
+में, और प्रारूप-समाधान के बारे में
+[हार्नेस-पार परिपाटी अभिसरण](/docs/blog/posts/cross-harness-convention-convergence)
+में।
+
+## आगे कहाँ जाएँ
+
+- [क्विकस्टार्ट](/docs/install/quickstart) — अपनी पहली प्रोफ़ाइल इंस्टॉल और
+  मूर्त करें।
+- [हार्नेस](/docs/harnesses) — सभी सत्रह लक्ष्यों के लिए प्रति-अडैप्टर संदर्भ।
+- [संकल्पनाएँ](/docs/concepts) — प्रोफ़ाइल मॉडल और मूर्तीकरण पाइपलाइन।
+
+Apothem MIT-लाइसेंस-प्राप्त है और
+[github.com/ahmed-g-gad/apothem](https://github.com/ahmed-g-gad/apothem) पर
+खुले में विकसित किया जाता है।

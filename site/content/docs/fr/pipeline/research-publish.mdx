@@ -1,0 +1,70 @@
+---
+title: "/research-publish"
+description: "/research-publish — Formate l'article selon le modèle de la revue et assemble le dossier de soumission (matériel supplémentaire, disponibilité des données/du code, lettre de présentation, éthique/conflit d'intérêts), avec un plan de préprint/DOI."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rôle :** Investigateur principal (publication)
+**Position dans le pipeline :** milieu de chaîne
+
+Formate l'article selon le modèle de la revue et assemble le dossier de soumission — matériel supplémentaire, déclaration de disponibilité des données / du code, lettre de présentation, déclarations d'éthique et de conflit d'intérêts — ainsi qu'un plan de préprint / d'archivage avec un DOI et une liste de contrôle de soumission. L'opérateur soumet le dossier ; le successeur terminal est `/research-disseminate`, qui porte le travail publié vers son public.
+
+## Invocation canonique
+
+```bash
+/research-publish
+```
+
+Avec des arguments :
+
+```bash
+/research-publish [path/to/research-suite/]
+```
+
+## Entrées
+
+Le livrable de l'article et `_outputs/review-report.md` (les révisions de l'évaluation par les pairs).
+
+## Sorties
+
+Le dossier de soumission formaté pour la revue à un emplacement naturel de l'hôte (le manuscrit formaté + le matériel supplémentaire + la déclaration de disponibilité des données / du code + la lettre de présentation + les déclarations d'éthique / de conflit d'intérêts) + `_outputs/publication-record.md` + une liste de contrôle de soumission.
+
+## En aval
+
+/research-disseminate (consommateur en aval) — l'opérateur effectue la soumission, puis `/research-disseminate` porte le travail publié vers son public. Lorsque la revue retourne des révisions, réexécutez `/research-review` sur l'article révisé avant de reconstruire le dossier.
+
+## Phases du flux de travail
+
+La commande suit le flux de travail standard du pipeline `/research` :
+
+1. **Charger le contexte** — Lire l'article et le rapport d'évaluation.
+2. **Vérifier la Porte de séquence** — Confirmer que `_outputs/review-report.md` existe ; sinon, s'arrêter avec `Blocked: run /research-review first`.
+3. **Formater et empaqueter** — Appliquer le modèle de la revue ; assembler le matériel supplémentaire, la disponibilité des données/du code, la lettre de présentation, les déclarations d'éthique / de conflit d'intérêts.
+4. **Planifier le préprint / l'archivage** — Enregistrer le plan de préprint et de DOI ; construire la liste de contrôle de soumission.
+5. **Mettre à jour le manifeste de transfert** — Enregistrer le dossier de soumission et le registre de publication.
+6. **Émettre le dossier** — Le dossier de soumission formaté pour la revue + `_outputs/publication-record.md`.
+
+## Seuil de rigueur
+
+Le formatage honore la divulgation par étapes : pour un lieu de publication en double aveugle, l'identité de l'auteur, de l'institution et du système est réduite à des métadonnées soumises séparément et restaurée seulement à l'étape désignée de version prête pour l'impression. Le dépôt d'archivage porte le dossier de preuves de reproductibilité mis à l'échelle du lieu de publication (données, code, environnement épinglé, graines, journal du matériel, résultats par instance et figures).
+
+## Modes de défaillance
+
+| Symptôme | Cause | Récupération |
+|---------|-------|----------|
+| Blocked: run /research-review first | Aucun rapport d'évaluation | Exécutez `/research-review` pour produire `_outputs/review-report.md` |
+| Révision HIGH non traitée | Constat d'évaluation ignoré | Traitez la révision et réexécutez `/research-review` |
+| Disponibilité des données/du code manquante | Surface de reproductibilité absente | Ajoutez la déclaration de disponibilité des données / du code avant la soumission |
+
+## Exemples
+
+```bash
+# Assembler le dossier de soumission de la revue
+/research-publish path/to/research-suite/
+```
+
+## Références croisées
+
+- [Vue d'ensemble du pipeline](/docs/pipeline)
+- [Référence des commandes](/docs/reference/commands)

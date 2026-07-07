@@ -1,0 +1,76 @@
+---
+title: "工具适配器"
+description: "Apothem 工具适配器——一个共享配置档案，十七个受支持的目标。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem 内置十七个工具适配器。每个适配器在平台支持的情况下将同一份共享套组转换为平台原生文件，在平台不支持的情况下则转换为 Apothem 自有的支持树。
+
+## 受支持的工具
+
+受支持的注册表恰好包含十七个适配器。请将这些精确的安装名称与 `--harness` 一起使用，或使用 `all` 来选择确定性的注册表集合：
+
+```text
+antigravity
+claude-code
+codebuddy
+codex
+cursor
+gemini-cli
+github-copilot
+glm
+hermes
+kimi-code
+kiro
+open-claw
+opencode
+qwen-code
+trae
+windsurf
+zed
+```
+
+详细的注册表矩阵、目标路径、能力状态、MCP 支持以及约定锚定证据见[技术注册表参考](/docs/reference/harness-registry)。
+
+## 安装多个工具
+
+安装单个工具，或使用 `all` 以确定性顺序选择整个注册表。项目作用域的工具需要 `--project PATH`；这包括 `all`，因为注册表同时包含用户作用域和项目作用域的目标。
+
+```bash
+apothem install --harness claude-code
+apothem install --harness cursor --project /path/to/project
+apothem install --harness gemini-cli --project /path/to/project
+apothem install --harness all --project /path/to/project
+```
+
+## 验证你的安装
+
+逐个验证每个工具适配器，或调用 `apothem doctor` 以获取覆盖每个已注册适配器、按适配器划分的安装状态汇总：
+
+```bash
+apothem verify --harness claude-code
+apothem verify --harness all --project /path/to/project
+apothem doctor
+```
+
+## 适配器的工作原理
+
+每个适配器都实现了通过 setuptools 入口点注册的 `HarnessAdapter` 协议。在安装时，CLI 加载并校验共享 YAML 配置档案，通过注册表解析适配器，校验具现化方案，然后将平台原生配置写入工具的原生用户或项目位置。在更新时，它从当前的配置档案状态重新派生。
+
+```
+profile.yaml + packaged cohorts
+    identity / preferences / rules
+    commands / skills / delegated definitions / hooks / templates
+         |
+         +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/antigravity-cli/plugins/apothem/
+         +-- claude-code    --> ~/.claude/ native folders + ~/.claude/.apothem/support/
+         +-- codex          --> ~/.codex/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
+         +-- cursor         --> <project>/.cursor/rules/*.mdc
+         +-- gemini-cli     --> <project>/GEMINI.md + <project>/.gemini/
+         +-- github-copilot --> <project>/.github/copilot-instructions.md
+         +-- windsurf       --> <project>/.devin/rules/
+         +-- ...
+```
+
+协议规范参见[工具适配器抽象](/docs/architecture/harness-adapter-abstraction)。

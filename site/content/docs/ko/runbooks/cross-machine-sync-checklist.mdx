@@ -1,0 +1,162 @@
+---
+title: "머신 간 동기화 검증 체크리스트"
+description: "Claude Code 어댑터가 새 호스트에서 올바르게 설치·검증·제거되는지 완전한 이식성 검사와 함께 확인하는 검증 절차."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **범위.** 이 체크리스트는 새 두 번째 호스트에서 **Claude Code 어댑터**의 설치 / 제거 이식성 레이어를 검증합니다. 다른 도구에는 [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses) 아래에 문서화된 호스트별 검증 레시피가 있습니다. 경로 `~/.claude/`는 Claude Code 어댑터의 표준 설치 대상입니다. 다른 도구를 검증할 때는 해당 어댑터 고유의 경로로 대체하세요.
+
+> **새 두 번째 호스트에서 설치 / 제거 이식성 레이어에 대한 오퍼레이터 주도 검증.** 게시 계층(`vX.Y.Z`)은 단일 Windows 호스트에서 작성되었습니다. `~/.claude/` 이식성 주장(`CLAUDE.md` `portability: universal`)은 다중 호스트 불변식이 무게를 갖기 전에 두 번째 호스트에서 엔드 투 엔드로 실행되어야 합니다. 이 체크리스트는 표준 두 번째 호스트 검증 레시피(Claude Code 어댑터)입니다.
+
+---
+
+## 1. 두 번째 호스트의 사전 조건
+
+검증을 시작하기 전에 두 번째 호스트에서 실행하세요:
+
+| 항목 | 명령 | 예상 |
+|------|---------|----------|
+| Git 설치됨 | `git --version` | Git 2.40+ |
+| Python 3.10+ 사용 가능 | `python3 --version`(POSIX) 또는 `py -3 --version`(Windows) | 3.10 / 3.11 / 3.12 / 3.13 |
+| GitHub 인증(선택, 인증된 클론 / API 검사용) | `gh auth status` | 인증된 워크플로를 사용할 때 리포지토리의 승인된 계정으로 로그인됨 |
+| Shell 사용 가능 | `bash --version`(POSIX) 또는 `pwsh --version`(Windows) | Bash 4+ 또는 PowerShell 7+ |
+| 기존 `~/.claude/` 디렉터리 없음 | `ls ~/.claude 2>&1` | "No such file or directory" — 존재하면 진행 전에 백업 |
+
+## 2. 클론 및 설치 검증
+
+두 번째 호스트에서 실행하세요:
+
+```bash
+# Clone the published repo to ~/.claude (the install destination)
+git clone https://github.com/ahmed-g-gad/apothem.git ~/.claude
+cd ~/.claude
+
+# (POSIX path) Run scripts/installer/install.sh dry-run first
+bash scripts/installer/install.sh --dry-run                                    # exit 0; Quick Start banner
+
+# (POSIX path) Run scripts/installer/install.sh for real
+bash scripts/installer/install.sh                                               # exit 0; sentinel-file check; idempotent
+
+# (Windows path) PowerShell parallel
+pwsh -File scripts/installer/install.ps1 -DryRun                                # exit 0; Quick Start banner
+pwsh -File scripts/installer/install.ps1                                        # exit 0
+```
+
+각 명령의 종료 코드와 stdout 배너를 캡처하세요. `<second-host>/.audit/cross-machine-clone-install.md`에 기록하세요.
+
+## 3. 4요소 규율 (`src/apothem/rules/production-ready-prs.md` §8.3에 따름)
+
+두 번째 호스트에서 네 가지 불변식을 각각 검증하세요:
+
+### 3.1 센티넬 파일 안전성
+
+```bash
+# Re-run installer at the same destination.
+bash scripts/installer/install.sh                                               # POSIX
+pwsh -File scripts/installer/install.ps1                                        # Windows
+```
+
+**예상:** 설치 프로그램이 기존의 유효한 `~/.claude/`(센티넬 파일 존재)를 감지하고, 재설치나 중복 대신 빠른 전진(fast-forward)을 수행한다. 종료 코드 0.
+
+### 3.2 사전 조건 검사됨
+
+```bash
+# Temporarily move git out of PATH.
+PATH=/usr/bin:/bin bash scripts/installer/install.sh                            # POSIX (no git)
+```
+
+**예상:** 설치 프로그램이 실행을 거부하고 명시적인 "git not found" 진단을 출력한다. 종료 코드는 0이 아니다.
+
+### 3.3 멱등한 재실행
+
+```bash
+# Run installer N times back-to-back.
+for i in 1 2 3 4 5; do bash scripts/installer/install.sh; done                  # POSIX
+1..5 | ForEach-Object { pwsh -File scripts/installer/install.ps1 }              # Windows
+```
+
+**예상:** 모든 호출이 종료 코드 0으로 종료된다. 첫 호출 이후 부작용 없음. 중복 파일 없음. shell-profile RC 중복 없음.
+
+### 3.4 환경 변수로 구성 가능
+
+```bash
+# Install to a non-default location.
+CLAUDE_PROJECT_DIR=/tmp/alt-claude bash scripts/installer/install.sh            # POSIX
+$env:CLAUDE_PROJECT_DIR='C:\tmp\alt-claude'; pwsh -File scripts/installer/install.ps1   # Windows
+```
+
+**예상:** 설치 프로그램이 환경 변수를 존중한다. `~/.claude/`는 수정되지 않는다. 대체 대상에는 예상되는 레이아웃이 포함된다.
+
+## 4. 검증기 스위트 검증 (설치 후)
+
+```bash
+cd ~/.claude
+make validate                                                 # 50 conformity validators
+make headers-doctor                                           # file-header-grep → passed:true
+make ai-surfaces-doctor                                       # multi-surface-coherence → passed:true
+make plans-doctor                                             # no-global-plans + plans-discipline-language
+make lint                                                     # ruff + mypy
+make test                                                     # pytest 265/265
+```
+
+**예상:** 모든 게이트가 녹색. 종료 코드 + 요약 줄을 캡처하세요.
+
+## 5. 제거 검증
+
+```bash
+# POSIX path — interactive uninstall
+bash scripts/installer/uninstall.sh                           # answers: "y" to confirm
+ls ~/.claude 2>&1                                             # "No such file or directory"
+
+# Re-install from clone, then uninstall non-interactively
+git clone https://github.com/ahmed-g-gad/apothem.git ~/.claude
+bash scripts/installer/uninstall.sh --yes
+ls ~/.claude 2>&1                                             # "No such file or directory"
+```
+
+**예상:** 대화형 흐름이 프롬프트를 표시한다. `--yes`는 배치 실행을 위해 프롬프트를 건너뛴다. 두 흐름 모두 `~/.claude/`를 깨끗하게 제거한다. 관련 shell-profile 환경 변수 참조가 정리된다.
+
+## 6. 안전 가드 검증
+
+```bash
+# Run uninstall against a path that fails the sentinel-file check.
+mkdir -p /tmp/not-a-claude-install
+CLAUDE_PROJECT_DIR=/tmp/not-a-claude-install bash scripts/installer/uninstall.sh --yes
+```
+
+**예상:** 제거 프로그램이 거부하고 "sentinel-file missing; refusing to remove unsafe target" 진단을 출력한다. 종료 코드는 0이 아니다. 해당 경로는 건드려지지 않았다.
+
+```bash
+# Run uninstall against $HOME, /, or empty path.
+CLAUDE_PROJECT_DIR=$HOME bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
+CLAUDE_PROJECT_DIR=/ bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
+CLAUDE_PROJECT_DIR='' bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
+```
+
+**예상:** 각각이 명시적인 "unsafe target" 진단으로 거부한다. 어느 것도 파일 시스템을 건드리지 않는다.
+
+## 7. 보고
+
+두 번째 호스트 실행 후 결과를 다음 위치에 캡처하세요:
+
+- `<second-host>/.audit/cross-machine-clone-install.md`(클론 + 설치 명령 결과)
+- `<second-host>/.audit/cross-machine-validators.md`(4절 검증기 결과)
+- `<second-host>/.audit/cross-machine-uninstall.md`(5~6절 제거 + 안전 결과)
+
+발견 사항을 유지 관리자에게 전달하세요:
+
+- ✅ 4요소 규율 불변식이 모두 성립 + 모든 검증기 게이트가 녹색 + 모든 제거 안전 가드가 안전하지 않은 대상을 거부 → 게시물의 `portability: universal` 주장이 엔드 투 엔드로 검증됨
+- ❌ 어떤 실패라도 → 실패한 절 + 캡처된 출력을 첨부하여 `https://github.com/ahmed-g-gad/apothem/issues/new`에 이슈를 제출하세요. 유지 관리자가 분류합니다
+
+## 8. 수용 기준
+
+- [ ] §1 사전 조건 충족
+- [ ] §2 POSIX 및 Windows 셸 모두에서 클론과 설치 성공
+- [ ] §3 4요소 규율 성립(센티넬 파일 안전성; 사전 조건 검사됨; 멱등; 환경 변수로 구성 가능)
+- [ ] §4 모든 검증기 게이트가 녹색
+- [ ] §5 대화형 제거 성공; `--yes`가 프롬프트 없이 성공
+- [ ] §6 모든 안전 가드 거부가 발동
+- [ ] §7 결과가 문서화된 감사 경로에 캡처됨
+
+새 두 번째 호스트에서 위의 각 체크박스가 모두 체크되면, 머신 간 동기화 후속 작업(COMPLETION.md §7 제약 병목)이 종료됩니다.

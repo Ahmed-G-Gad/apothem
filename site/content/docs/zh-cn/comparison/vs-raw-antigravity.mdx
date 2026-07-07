@@ -1,0 +1,41 @@
+---
+title: "Apothem 对比手工 Antigravity 配置"
+description: "手工维护 Antigravity CLI 的全局上下文和插件文件，对比通过 Apothem 的共享配置档案来管理它们。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Antigravity 是一个 I 类清单传播环境：Apothem 会写入全局的 `~/.gemini/GEMINI.md`
+上下文锚点，并在 `~/.gemini/antigravity-cli/plugins/apothem/` 下安装一个 Apothem
+插件。本页将手工维护那套布局与用 Apothem 管理它作对比。
+
+## 工作量对比
+
+| 任务 | 手工配置 | Apothem 托管 |
+| ---- | --------------- | --------------- |
+| 编写规则 | 手写每个插件规则文件 | 在共享语料库中写一次 |
+| 保留可复用提示 | 手工把命令提示和技能复制进插件文件 | 转换或复制为插件技能 |
+| 保留钩子支持材料 | 手工复制钩子引用而不做有效接线 | 复制到 Apothem 插件支持树下 |
+| 让规则与其他环境保持对齐 | 手工，逐工具 | 在 `apothem update` 时自动完成 |
+| 安装／移除配置 | 手工复制和删除文件 | `apothem install` / `apothem uninstall` |
+| 验证配置是否正确 | 手工检查 | `apothem verify --harness antigravity` |
+
+## Apothem 管理什么
+
+Apothem 管理 Antigravity 的全局上下文文件、插件元数据、转换后的命令技能、可复用
+技能、转换后的代理、规则、模板以及钩子支持材料。钩子文件以支持材料的形式保留；
+在适配器拥有针对 Antigravity `hooks.json` 的模式翻译层之前，Apothem 不会注册有效
+的 Antigravity 钩子事件。
+
+## 迁移路径
+
+1. 如果你还没有创建共享配置档案，运行 `apothem profile init`。
+2. 把你现有手写的 Antigravity 规则迁入共享语料库。
+3. 运行 `apothem install --harness antigravity` 来传播语料库。
+4. 运行 `apothem verify --harness antigravity` 来确认配置已落地。
+5. 之后的每次更改都使用 `apothem update --harness antigravity`。
+
+## 接下来阅读
+
+- [Antigravity 适配器参考](/docs/harnesses/antigravity)
+- [对比概览](/docs/comparison)

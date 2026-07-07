@@ -1,0 +1,70 @@
+---
+title: "/plan-audit"
+description: "/plan-audit — Closed-Loop-Wächter der /plan-Pipeline — umhüllt spec → generate → review und behebt Befunde aktiv, bis die Suite ein geprüftes, befundfreies Ganzes ist."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rolle:** Wächter
+**Pipeline-Position:** umhüllend / orthogonal (vor der Ausführung)
+
+Closed-Loop-Wächter der `/plan`-Pipeline. Während `/plan-review` eine generierte Suite meldet und verfeinert, umhüllt `/plan-audit` den vorgelagerten Zyklus (`/plan-spec → /plan-generate → /plan-review`) und treibt die Suite zu einem geprüften, befundfreien Ganzen — es führt nur die fehlenden vorgelagerten Stufen aus, auditiert das Ergebnis, behebt mechanisch lösbare Befunde an Ort und Stelle, legt Ermessensgabelungen über den Kanal der strukturierten Inquiry offen und schleift, bis die Suite sauber ist oder ein begrenzter Rückzug auslöst. Es führt niemals Phasen-Implementierungsarbeit aus; es lässt die Suite bereit für `/plan-execute`.
+
+## Kanonischer Aufruf
+
+```bash
+/plan-audit
+```
+
+Mit Argumenten:
+
+```bash
+/plan-audit [suite-path] [--from spec|generate|review] [--remediate] [--cap N] [--maintenance] [--dry-run]
+```
+
+## Eingaben
+
+Das `_spec/spec.md` der Ziel-Suite, `_inputs/handoff-manifest.yml`, die Infrastrukturdateien, `phases/**/PHASE.md` und alle vorhandenen Phasenberichte.
+
+## Ausgaben
+
+Ein persistenter, begrenzter Bericht unter `<suite>/_outputs/audit-report-<YYYY-MM-DD>.md`; ein aktualisiertes Übergabe-Manifest, das das Befundfrei-Verdikt, die Anzahl offener Befunde, das Behebungs-Hauptbuch und etwaige Wartungs-Umleitungen trägt; und ein von null verschiedener Endstatus, wenn Restbefunde verbleiben.
+
+## Pipeline-Position
+
+`/plan-audit` ist **orthogonal** zur linearen Pipeline, keine Stufe darin. Die kanonische lineare Sequenz ist `/plan-spec → /plan-generate → /plan-review → /plan-design` (bedingt, nur architekturtragende Suites) `→ /plan-execute`. `/plan-audit` umfasst `/plan-spec → /plan-generate → /plan-review` als einzige Closed-Loop-Umhüllung, die an jedem Punkt aufgerufen werden kann: Sie inspiziert den Zustand und führt nur die fehlenden Stufen aus. Sie unterscheidet sich von der Festungs-Audit-Kette (Eintritt bei `/code-review`, terminal bei `/threat-model-audit`), die eine ausgeführte Codebasis statt einer Plan-Suite auditiert.
+
+## Workflow-Phasen
+
+1. **Ziel auflösen** — Löst die Suite aus dem Argument auf oder wählt die zuletzt geänderte Suite unter `.apothem/plans/` (`.plans/` ist ein unterstützter abwärtskompatibler Fallback) und nennt die Auflösung.
+2. **Stufe bewerten** — Erkennt, welche Artefakte existieren (spec-bereit / generiert / geprüft / ausgeführt), und nennt die kleinste Lücke zu einem geprüften, ausführbaren Ganzen.
+3. **Zu einem prüfbaren Ganzen bringen** — Führt nur die fehlenden vorgelagerten Stufen aus und delegiert an den kanonischen Befehl jeder Lücke; führt eine erfüllte Stufe niemals nur zum Auffrischen der Prosa erneut aus.
+4. **Forensisches Audit** — Wendet die Audit-Dimensionen von `/plan-review`, den Planungstechnik-Katalog und das Fünfzehn-Stäbe-Pre-Emission-Tor an.
+5. **Aktive Behebung** — Behebt mechanische Befunde an Ort und Stelle; legt Ermessensgabelungen über den Kanal der strukturierten Inquiry offen; leitet legitim außerhalb des Umfangs liegende Arbeit an eine geschwisterliche `*-maintenance`-Suite um.
+6. **Schleife mit Obergrenze und Rückzug** — Wiederholt Auditieren-und-Beheben, bis keine offenen Befunde verbleiben, begrenzt durch eine Iterationsobergrenze (Standard 3) mit einem definierten Rückzug bei Erschöpfung der Obergrenze.
+
+## Fehlermodi
+
+| Symptom | Ursache | Behebung |
+|---------|-------|----------|
+| Obergrenze erschöpft mit Restbefunden | Befunde innerhalb der Iterationsobergrenze nicht lösbar | Prüfe den Audit-Bericht; leite geeignete Posten an eine `*-maintenance`-Suite um; erhöhe `--cap` nur mit Begründung |
+| Ermessensgabelung ungelöst | Ein Befund erfordert eine Richtlinien-/Umfangs-/Autoritätsentscheidung | Beantworte den Prompt der strukturierten Inquiry; die Schleife wählt niemals stillschweigend |
+| Maßgebliche spec fehlt | Kein `_spec/spec.md` | Die Umhüllung leitet zu `/plan-spec` um, um es zu verfassen |
+| Qualitätstor FAIL | Ausgabe erfüllt die Standards nicht | Die Behebung korrigiert die Grundursache und auditiert die berührten Loci erneut |
+
+## Beispiele
+
+```bash
+# Dry-run: report detected suite, stage, planned audit dimensions, would-write targets
+/plan-audit --dry-run
+
+# Audit and actively remediate a named suite, capping the loop at 2 iterations
+/plan-audit path/to/plan-suite/ --remediate --cap 2
+```
+
+## Querverweise
+
+- [Pipeline-Überblick](/docs/pipeline)
+- [/plan-review](/docs/pipeline/plan-review)
+- [/plan-execute](/docs/pipeline/plan-execute)
+- [Master-Plan-Suite-Vorlage](/docs/reference/commands)

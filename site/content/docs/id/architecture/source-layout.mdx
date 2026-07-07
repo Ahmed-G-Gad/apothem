@@ -1,0 +1,55 @@
+---
+title: "Tata letak sumber"
+description: "Mengapa Apothem menggunakan tata letak src/ dan bagaimana pohon ini diorganisasikan."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem mengadopsi [src-layout PyPA](https://packaging.python.org/en/latest/discussions/src-layout-vs-flat-layout/), menempatkan semua Python yang dapat diimpor di bawah `src/apothem/`.
+
+## Mengapa src-layout
+
+- **Isolasi impor.** `import apothem` hanya bisa di-resolve saat `src/` ada di path
+  (mesin berjalan sebagai `PYTHONPATH=src python -m apothem`), mencegah impor
+  pohon kerja yang tidak disengaja dari direktori yang tidak berkaitan.
+- **Runtime mandiri.** Apothem berjalan langsung dari checkout dengan dependensinya
+  di-vendor di bawah `src/apothem/_vendor/` — tanpa perlu langkah instalasi.
+  src-layout menjaga permukaan yang dapat diimpor itu terpisah rapi dari perkakas,
+  pengujian, dan skrip repositori.
+- **Distribusi yang bersih.** Tata letak yang sama menghasilkan sdist dan wheel yang
+  terbentuk baik (serta instalasi editable `pip install -e .` opsional) yang isinya
+  persis cocok dengan apa yang dikirim, tanpa modul tingkat-atas yang tercecer masuk.
+
+## Struktur pohon
+
+```
+src/apothem/
+    agents/         persistent agent definitions (*.md)
+    audit/          inventory and provenance tools
+    benchmarks/     performance benchmarks
+    cli/            Click CLI (quickstart, install, update, uninstall, verify, status, diff, rollback, harnesses, profile, doctor, completion)
+    commands/       slash command definitions (*.md)
+    conformity/     mechanical gate checkers (*-grep.py)
+    harnesses/      one sub-package per harness adapter (17 adapters)
+    hooks/          hook dispatcher + message files
+    lib/            shared Python library
+    output-styles/  output-style definitions (*.md)
+    rules/          behavioral rules (*.md)
+    schemas/        YAML/JSON schemas
+    skills/         reusable skill templates (folder/SKILL.md)
+    statuslines/    status-line config (*.json)
+    templates/      reusable template artifacts
+```
+
+## Artefak yang dapat diimpor vs. artefak konfigurasi
+
+Banyak item di bawah `src/apothem/` adalah artefak konfigurasi Markdown, bukan
+modul Python. Permukaan Python yang dapat diimpor adalah:
+
+- `src/apothem/cli/` (Click CLI yang diekspos sebagai titik masuk `apothem`)
+- `src/apothem/harnesses/` (17 subpaket adapter harness)
+- `src/apothem/lib/` (pustaka bersama: profil, registri, materializer, propagasi)
+- `src/apothem/hooks/` (dispatch.py, lib/)
+- `src/apothem/conformity/` (skrip grep mekanis)
+- `src/apothem/audit/` (skrip inventaris)
+- `src/apothem/benchmarks/` (driver tolok ukur kinerja)

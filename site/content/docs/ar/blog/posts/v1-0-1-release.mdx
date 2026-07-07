@@ -1,0 +1,126 @@
+---
+title: "Apothem v1.0.1 — إصدار الإطلاق"
+description: "أصبح Apothem v1.0.1 متاحًا — ملف تعريف مشترك واحد يُجسَّد في سبع عشرة أداة برمجية، ومسارات تثبيت متعددة، وإصدار موقَّع ومُوثَّق."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+‏<bdi>Apothem v1.0.1</bdi> هو إصدار الإطلاق من مدير التهيئة غير المرتبط بالمضيف
+للأدوات البرمجية: ملف تعريف مشترك واحد، وسبع عشرة أداة برمجية، ونسخة موقَّعة
+وحيدة، وأدلّة سلسلة التوريد المرفقة بالإصدار نفسه.
+
+## الأطروحة: ملف تعريف واحد، سبعة عشر إطار عمل
+
+يقرأ <bdi>Apothem</bdi> ملف تعريف مشتركًا واحدًا في
+<bdi>`~/.config/apothem/profile.yaml`</bdi> ويُجسِّده في التهيئة الأصليّة التي
+يتوقَّعها كلُّ إطار عمل. تكتب قواعد سلوكك ومهاراتك وخطّافاتك واصطلاحاتك مرّةً
+واحدة. ويعرضها <bdi>Apothem</bdi> في سبعة عشر هدفًا أصليًّا لإطار العمل ويُبقيها
+متزامنة.
+
+المحوِّلات السبعة عشر في هذا الإصدار:
+
+- antigravity
+- claude-code
+- codebuddy
+- codex
+- cursor
+- gemini-cli
+- github-copilot
+- glm
+- hermes
+- kimi-code
+- kiro
+- open-claw
+- opencode
+- qwen-code
+- trae
+- windsurf
+- zed
+
+أضِف أداةً إلى سير عملك، وشغِّل أمرًا واحدًا، وستجد تهيئتك في مكانها. أزِل أداةً،
+فيُلغي <bdi>Apothem</bdi> تثبيتها بنظافة — دون ترك ملفّات يتيمة وراءه.
+
+## التثبيت
+
+مسارات تثبيت متعددة، وفي الأسفل <bdi>CLI</bdi> واحدة:
+
+1. **مُلحَق <bdi>Claude Code</bdi>** — داخل <bdi>Claude Code</bdi>:
+
+   ```text
+   /plugin marketplace add ahmed-g-gad/apothem
+   /plugin install apothem@apothem
+   ```
+
+2. ‏**<bdi>npx</bdi>** — شغِّل الـ<bdi>CLI</bdi> مباشرةً من حزمة <bdi>npm</bdi>
+   باسم <bdi>`@ahmed-g-gad/apothem`</bdi> دون خطوة تثبيت:
+
+   ```bash
+   npx @ahmed-g-gad/apothem profile init
+   npx @ahmed-g-gad/apothem install --harness all --project .
+   ```
+
+3. **مُثبِّت سكربت بخطوة واحدة** — يضع زمن تشغيل مكتفيًا ذاتيًا والمُشغِّل
+   <bdi>`apothem`</bdi> على الـ<bdi>PATH</bdi>:
+
+   ```bash
+   curl -fsSL https://apothem.ahmedgad.com/install.sh | sh    # POSIX
+   ```
+
+   ```powershell
+   irm https://apothem.ahmedgad.com/install.ps1 | iex         # Windows
+   ```
+
+4. **مُلحَقات وامتدادات أصليّة للأدوات** — امتداد <bdi>Gemini CLI</bdi>
+   (<bdi>`gemini extensions install https://github.com/ahmed-g-gad/apothem`</bdi>)،
+   وامتداد <bdi>Qwen Code</bdi> (<bdi>`qwen extensions install ahmed-g-gad/apothem`</bdi>)،
+   ومُلحَق <bdi>Codex</bdi> (<bdi>`codex plugin marketplace add ahmed-g-gad/apothem`</bdi>)،
+   وامتداد من عائلة <bdi>VS Code</bdi> (على <bdi>Visual Studio Marketplace</bdi>،
+   يغطّي <bdi>VS Code</bdi> و<bdi>GitHub Copilot</bdi>).
+
+## وضعيّة سلسلة التوريد
+
+يحمل [إصدار <bdi>GitHub Release v1.0.1</bdi>](https://github.com/ahmed-g-gad/apothem/releases/tag/v1.0.1)
+مجموعة الأدلّة الكاملة إلى جانب الشفرة:
+
+- ‏<bdi>sdist</bdi> و<bdi>wheel</bdi>، مُتحقَّق منهما قبل النشر.
+- قائمة موادّ برمجيّة <bdi>CycloneDX SBOM</bdi>.
+- حزم توقيع بلا مفتاح من <bdi>Sigstore cosign</bdi> لكلّ مُنتَج.
+- مَنشأ بناء <bdi>SLSA-3</bdi>، مُتحقَّق منه داخل سير عمل الإصدار نفسه.
+- أرشيفات زمن التشغيل لكلّ منصّة (<bdi>darwin / linux / windows</bdi>) مع بيان
+  <bdi>`SHA256SUMS`</bdi> موقَّع.
+
+وَسم الإصدار موقَّع بـ<bdi>GPG</bdi>، وتُنشَر حزمة <bdi>npm</bdi> عبر النشر
+الموثوق (<bdi>OIDC</bdi>) مع مَنشأ تلقائي.
+
+## ما في الصندوق
+
+تُتيح الـ<bdi>CLI</bdi> الخاصّة بـ<bdi>`apothem`</bdi> أوامر المُشغِّل التي
+تحتاجها لدورة حياة التهيئة الكاملة:
+
+- ‏<bdi>`apothem install`</bdi> — يُجسِّد ملف التعريف في إطار عمل واحد أو فيها
+  كلّها.
+- ‏<bdi>`apothem uninstall`</bdi> — يُزيل التهيئة المُجسَّدة لإطار عمل ما، مع
+  ترك ملف التعريف المشترك دون مساس.
+- ‏<bdi>`apothem update`</bdi> — يُعيد التجسيد بعد أن تُحرِّر ملف التعريف.
+- ‏<bdi>`apothem verify`</bdi> — يكشف الانحراف بين ملف التعريف وتهيئة إطار عمل
+  ما على القرص.
+- ‏<bdi>`apothem harnesses`</bdi> — يسرد كلّ محوِّل مُسجَّل.
+- ‏<bdi>`apothem profile`</bdi> — يفحص ملف التعريف المشترك ويُديره.
+- ‏<bdi>`apothem doctor`</bdi> — يُشخِّص مشكلات البيئة والتهيئة.
+
+ينفِّذ كلُّ محوِّل إطار عمل بروتوكولًا موحَّدًا هو <bdi>`HarnessAdapter`</bdi> —
+‏<bdi>`install`</bdi> و<bdi>`uninstall`</bdi> و<bdi>`is_installed`</bdi>
+و<bdi>`verify`</bdi> — بحيث يتصرّف كلُّ إطار عمل على نحوٍ متوقَّع من مقعد
+المُشغِّل بصرف النظر عن صيغة المُورِّد في الأسفل. اقرأ المزيد عن التصميم في
+[الغوص العميق في معماريّة المحوِّل](/docs/blog/posts/multi-harness-adapter-design)،
+وعن توفيق الصيغ في
+[تقارب الاصطلاحات عبر أطر العمل](/docs/blog/posts/cross-harness-convention-convergence).
+
+## إلى أين بعد ذلك
+
+- [البدء السريع](/docs/install/quickstart) — ثبِّت ملف تعريفك الأول وجسِّده.
+- [أطر العمل](/docs/harnesses) — مرجع لكلّ محوِّل للأهداف السبعة عشر جميعها.
+- [المفاهيم](/docs/concepts) — نموذج ملف التعريف وخطّ تجسيده.
+
+‏<bdi>Apothem</bdi> مُرخَّص برخصة <bdi>MIT</bdi> ويُطوَّر في العلن على
+[github.com/ahmed-g-gad/apothem](https://github.com/ahmed-g-gad/apothem).

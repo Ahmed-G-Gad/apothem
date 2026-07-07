@@ -1,0 +1,67 @@
+---
+title: "/threat-model-audit"
+description: "/threat-model-audit — Passagem de auditoria de modelagem de ameaças frente às metodologias STRIDE + PASTA."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Papel:** Modelador de ameaças
+**Posição no pipeline:** fortaleza
+
+Passagem de auditoria de modelagem de ameaças frente às metodologias STRIDE + PASTA.
+
+## Invocação canônica
+
+```bash
+/threat-model-audit
+```
+
+Com argumentos:
+
+```bash
+/threat-model-audit [path/to/target/] [--dry-run]
+```
+
+## Entradas
+
+Arquitetura e fluxos de dados do repositório anfitrião.
+
+## Saídas
+
+Um relatório de achados de modelagem de ameaças, deduplicado e triado por gravidade (somente relatório; a remediação é encaminhada a `/fortress` / `/elevate`).
+
+## Downstream
+
+A dimensão de modelo de ameaças da sequência de revisão de auditoria — varrida em paralelo por `/audit` e remediada por `/fortress`.
+
+## Fases do fluxo de trabalho
+
+O comando executa uma passagem de auditoria de modelagem de ameaças sobre o repositório anfitrião:
+
+1. **Mapear a superfície** — Enumera a arquitetura, os pontos de entrada, os limites de confiança e os fluxos de dados.
+2. **Modelar ameaças** — Aplica as metodologias STRIDE + PASTA a cada limite e ativo.
+3. **Triar achados** — Ordena cada ameaça por gravidade com uma justificativa de motor concreto.
+4. **Emitir o relatório** — Sintetiza os achados deduplicados e triados por gravidade (somente relatório).
+
+## Modos de falha
+
+| Sintoma | Causa | Recuperação |
+|---------|-------|----------|
+| Sem superfície de arquitetura | O alvo não tem limites de fluxo de dados detectáveis | Aponte a auditoria para um repositório com pontos de entrada e limites de confiança mapeáveis |
+| Achado sem escopo | Ameaça afirmada sem um lócus | Anexe o ativo / limite afetado e a célula da metodologia que ele falha |
+| Remediação esperada | A auditoria é somente relatório | Encaminhe os achados a `/fortress` (remediação) ou `/elevate` |
+
+## Exemplos
+
+```bash
+# Dry-run para pré-visualizar o escopo da auditoria
+/threat-model-audit --dry-run
+
+# Auditar um repositório alvo
+/threat-model-audit path/to/target/
+```
+
+## Referências cruzadas
+
+- [Visão geral do pipeline](/docs/pipeline)
+- [Referência de comandos](/docs/reference/commands)

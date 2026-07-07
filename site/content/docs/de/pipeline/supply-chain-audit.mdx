@@ -1,0 +1,69 @@
+---
+title: "/supply-chain-audit"
+description: "/supply-chain-audit — Lieferketten-Audit gegen die Standards SLSA + Sigstore + SBOM."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rolle:** Lieferketten-Auditor
+**Pipeline-Position:** Festung
+
+Lieferketten-Audit gegen die Standards SLSA + Sigstore + SBOM.
+
+## Kanonischer Aufruf
+
+```bash
+/supply-chain-audit
+```
+
+Mit Argumenten:
+
+```bash
+/supply-chain-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+```
+
+## Eingaben
+
+Release-Pipeline des Host-Repositorys
+
+## Ausgaben
+
+Lieferketten-Befunde + REPORT.md
+
+## Nachgelagert
+
+Die supply-chain-audit-Stufe der Audit-Prüfsequenz
+
+## Workflow-Phasen
+
+Der Befehl folgt dem standardmäßigen `/plan`-Pipeline-Workflow:
+
+1. **Kontext laden** — Liest die Plan-Suite, die Regeln und den Wiederaufnahme-Vertrag.
+2. **Voraussetzungen prüfen** — Bestätigt, dass die Abhängigkeitsphasen abgeschlossen sind.
+3. **Aufgaben ausführen** — Erfüllt die Mission des Befehls.
+4. **Ausgaben verifizieren** — Bestätigt, dass alle deklarierten Ausgaben existieren und die Qualitätstore bestehen.
+5. **PROGRESS.md aktualisieren** — Verzeichnet die verifizierten Ausgaben im Phasen-Ausgaberegister.
+6. **REPORT.md ausgeben** — Der Freigabenachweis des Pre-Emission-Tors wird verzeichnet.
+
+## Fehlermodi
+
+| Symptom | Ursache | Behebung |
+|---------|-------|----------|
+| Voraussetzung unvollständig | Abhängige Phase nicht abgeschlossen | Schließe zuerst die vorgelagerte Phase ab |
+| Qualitätstor FAIL | Die Ausgabe erfüllt die Standards nicht | Behebe die Ausgabe und führe erneut aus |
+| Fehlende Eingabedatei | Plan-Suite-Datei fehlt | Führe `/plan-generate` aus, um sie zu erstellen |
+
+## Beispiele
+
+```bash
+# Dry-run to preview what would happen
+/supply-chain-audit --dry-run
+
+# Execute against a named plan suite
+/supply-chain-audit path/to/plan-suite/
+```
+
+## Querverweise
+
+- [Pipeline-Überblick](/docs/pipeline)
+- [Master-Plan-Suite-Vorlage](/docs/reference/commands)

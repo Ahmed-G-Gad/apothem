@@ -1,0 +1,72 @@
+---
+title: "Platform"
+description: "Sistem operasi, shell, dan skrip pemasang yang didukung untuk Apothem, plus prasyarat Python sistem untuk runtime mandiri."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem menyertakan dua skrip pemasang yang, di antaranya, mencakup matriks
+desktop dan server pengembang modern. Tidak ada build spesifik-platform:
+mesin adalah [runtime mandiri](/docs/architecture/self-contained-runtime)
+yang berjalan dari pohon-sumbernya dengan dependensi tervendor, jadi dukungan
+platform persis himpunan host di mana salah satu dari dua pemasang dapat
+menempatkan pohon itu dan menjalankannya. Dua jalur pemasangan lain memperluas matriks
+lebih jauh: plugin dan ekstensi native-alat berjalan di mana pun alat host-nya
+berjalan, dan bentuk npx (`npx @ahmed-g-gad/apothem`) berjalan pada OS mana pun
+dengan Node.js 18+.
+
+## Matriks sistem operasi dan shell
+
+| Keluarga OS | Shell yang didukung | Skrip pemasang |
+| --------- | ---------------- | ---------------- |
+| macOS | POSIX `bash` (bash sistem atau bash yang lebih baru terpasang-pengguna) | `install.sh` |
+| Linux | POSIX `bash` | `install.sh` |
+| Windows Subsystem for Linux (WSL2) | POSIX `bash` | `install.sh` |
+| BSD (FreeBSD, OpenBSD, NetBSD) | POSIX `bash` | `install.sh` |
+| Termux (Android) | POSIX `bash` | `install.sh` |
+| Kontainer Linux ChromeOS (Crostini) | POSIX `bash` | `install.sh` |
+| Windows | Windows PowerShell 5.1+ | `install.ps1` |
+| Platform mana pun dengan PowerShell 7+ | PowerShell 7+ (lintas-platform) | `install.ps1` |
+
+Kedua skrip memiliki paritas fungsional satu sama lain. `install.sh` memerlukan
+`bash` POSIX. `install.ps1` memerlukan Windows PowerShell 5.1 atau lebih baru, atau
+PowerShell 7+ pada platform mana pun yang didukung PowerShell 7 itu sendiri — termasuk
+macOS dan Linux, di mana ia menjadi alternatif bagi `install.sh`.
+
+## Satu prasyarat: Python sistem
+
+Apothem tidak memasang paket Python apa pun. Impor mesin berjalan terhadap
+interpreter yang sudah Anda miliki, dengan sumber terbundel diawalkan ke
+`PYTHONPATH`. Setiap pemasang memeriksa prasyarat sebelum melakukan hal
+lainnya:
+
+- **CPython 3.10 atau lebih baru.** Pemasang menyelidiki `python3`, `python`, dan
+  nama berversi (`python3.14` turun ke `python3.10`), menerima yang
+  pertama yang melaporkan versi ≥ 3.10. Pada Windows ia menolak shim peluncur
+  Microsoft Store dan pelokasi `find-python` terbundel menerapkan
+  batas bawah yang sama.
+- **Pustaka runtime dapat diimpor.** Mesin mengimpor `click` dan `rich` dari interpreter sistem; dependensi pihak ketiga lainnya disertakan (vendored) di dalam pohon sumber. Pemasang memverifikasi keduanya dapat diimpor, menyebut yang mana pun yang hilang, dan menawarkan untuk memasang prasyarat yang hilang untuk Anda — dengan konfirmasi Anda, atau otomatis dengan `--yes` / `APOTHEM_AUTO_INSTALL_DEPS=1`.
+- **`git`** hanya diperlukan untuk pemasangan jaringan (skrip mengklon
+  pohon-sumber). Pemasangan lokal dari checkout tidak memerlukan `git`.
+
+Jika interpreter, pustaka, atau `git` tidak ada, pemasang keluar
+dengan diagnostik yang menyebut persis apa yang harus disediakan, ketimbang menebak atau
+mengubah lingkungan Anda.
+
+## Bagaimana sebuah platform didukung
+
+Sebuah platform didukung ketika keduanya terpenuhi:
+
+1. Salah satu dari dua pemasang berjalan padanya — artinya host memiliki
+   `bash` POSIX (`install.sh`) atau PowerShell yang didukung (`install.ps1`).
+2. Interpreter CPython 3.10+ dengan `click` dan `rich` dapat diimpor berjalan
+   padanya.
+
+Tidak ada komponen terkompilasi, tidak ada ekstensi native, dan tidak ada biner
+per-platform. Pohon-sumber yang sama berjalan di mana pun interpreter berjalan, jadi
+matriks di atas adalah pernyataan dukungan yang lengkap dan akurat — tidak ada lebih
+yang diklaim.
+
+## Langkah Berikutnya yang Disarankan
+
+**Jalankan pemasang untuk platform Anda** — `curl -fsSL https://apothem.ahmedgad.com/install.sh | bash` pada shell POSIX, atau `irm https://apothem.ahmedgad.com/install.ps1 | iex` pada PowerShell — setelah memastikan interpreter CPython 3.10+ ada pada PATH Anda.

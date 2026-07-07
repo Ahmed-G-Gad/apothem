@@ -1,0 +1,163 @@
+---
+title: "Checklist de implantação"
+description: "Checklist de verificação prévia para implantar ou compartilhar o ecossistema Apothem"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Etapas de verificação prévia antes de implantar o ecossistema Apothem em uma
+máquina nova, compartilhá-lo com outras pessoas ou tratá-lo como pronto para produção.
+
+---
+
+## 1. Validade do YAML
+
+- [ ] Todos os arquivos de regras são analisados sem erros de YAML — o bloco de frontmatter abre com `---`, fecha com `---` e não contém conteúdo órfão fora do bloco
+- [ ] Todos os arquivos de trabalhadores delegados são analisados sem erros de YAML
+- [ ] Todos os arquivos de comando são analisados sem erros de YAML
+- [ ] Todos os arquivos `SKILL.md` de skills são analisados sem erros de YAML
+
+**Verificação:** `python scripts/dev/validate_ecosystem.py` analisa o
+frontmatter de cada artefato e sinaliza erros de YAML + campos obrigatórios ausentes. Para detecção
+ad hoc de itens de lista órfãos: `rg -n "^- " src/apothem/rules/*.md`.
+
+---
+
+## 2. Completude do frontmatter
+
+Para cada tipo de artefato, verifique se os campos obrigatórios estão presentes:
+
+### Regras (`src/apothem/rules/*.md`)
+
+- [ ] `name` — identificador em kebab-case que corresponde ao nome do arquivo
+- [ ] `version` — semver `MAJOR.MINOR.PATCH` (por exemplo, `"X.Y.Z"`)
+- [ ] `updated` — data ISO 8601 (por exemplo, `"2026-04-20"`)
+- [ ] `description` — resumo de uma única frase
+- [ ] `scope` — `"always-on"` ou `"path-filtered"`
+- [ ] `portability` — `"universal"`, `"universal-with-windows-caveats"`, `"unix-only"` ou `"windows-only"`
+- [ ] `pathFilter` — presente e com uma string glob válida para regras filtradas por caminho; ausente para regras sempre ativas
+
+### Comandos (`src/apothem/commands/*.md`)
+
+- [ ] `name` — nome do comando em kebab-case
+- [ ] `version`, `updated`, `description`, `argument-hint` presentes
+- [ ] `disable-model-invocation` presente e intencional (`true` para comandos somente de orientação)
+- [ ] `effort`, `portability` revisados onde estiverem presentes (opcionais conforme o schema)
+
+### Trabalhadores delegados
+
+Caminho:
+
+```text
+src/apothem/agents/*.md
+```
+
+- [ ] `name`, `version`, `updated`, `description` presentes
+- [ ] `tools` — lista separada por vírgulas de ferramentas permitidas
+- [ ] `disallowedTools` — lista explicitamente as ferramentas não permitidas
+- [ ] `maxTurns` — definido (com comentário de justificativa se > 10)
+- [ ] `permissionMode` — **NÃO deve ser `"bypassPermissions"`** — use `"default"`
+- [ ] `memory: false` a menos que a memória persistente seja intencional
+
+### Skills (`src/apothem/skills/*/SKILL.md`)
+
+- [ ] `name`, `version`, `updated`, `description` presentes
+- [ ] `user-invocable` — declarado (true/false)
+
+---
+
+## 3. Segurança
+
+- [ ] **Nenhum trabalhador delegado usa `permissionMode: "bypassPermissions"`** — isso ignora a confirmação interativa para operações Write/Bash
+- [ ] As listas de `tools` do trabalhador são mínimas — apenas as ferramentas que o trabalhador genuinamente requer
+- [ ] Trabalhadores com acesso a `Bash` são justificados e têm limites de maxTurns
+- [ ] Nenhum caminho, token ou segredo embutido em qualquer artefato
+- [ ] Os hooks em `settings.json` têm timeouts razoáveis (≤ 60 segundos) e não executam código arbitrário a partir da entrada do usuário
+
+---
+
+## 4. Integridade das referências cruzadas
+
+- [ ] Cada regra listada na tabela `src/apothem/rules/` existe em disco no caminho indicado
+- [ ] Cada comando listado na tabela `src/apothem/commands/` existe em disco
+- [ ] Cada trabalhador delegado listado na tabela de registro `src/apothem/agents/` existe em disco
+- [ ] Cada skill listada na tabela `src/apothem/skills/` existe em disco
+- [ ] Cada hook na tabela `src/apothem/hooks/` tem uma entrada correspondente em `settings.json`
+- [ ] Todos os arquivos `src/apothem/rules/*.md` referenciados pela coluna `Implements` de CLAUDE.md existem
+
+---
+
+## 5. Cobertura de mandatos
+
+- [ ] Cada CM-N referenciado em CLAUDE.md tem um local de aplicação (um arquivo de regra ou uma definição inline explícita)
+- [ ] Nenhum arquivo de regra contradiz outro (especialmente em torno do escalonamento de seriedade)
+- [ ] A delineação de três facetas do CM-21 é respeitada — nenhuma regra reivindica a propriedade da faceta CM-21 de outra regra
+
+---
+
+## 6. Testes de fumaça funcionais
+
+Execute primeiro a superfície de validação em Python — ela é rápida, offline e captura
+regressões estruturais:
+
+- [ ] `pytest tests` — testes unitários do runtime de hooks, todos em verde
+- [ ] `python scripts/dev/validate_hooks.py` — estrutura de hooks + verificação de higiene somente-Python passou
+- [ ] `python scripts/dev/validate_ecosystem.py` — árvore completa + frontmatter + verificações de hooks delegados passaram
+- [ ] `python scripts/dev/chaos_pass.py` — cada comando de hook configurado retorna um envelope JSON válido sob entradas degradadas
+
+Depois, cenários ao vivo:
+
+- [ ] `/plan-spec --interactive` (ou `/plan-spec <sample-file>`) — completa a ingestão/esclarecimento sem erros em nível de comando
+- [ ] `/plan-generate --dry-run` — produz a prévia da estrutura sem escrever arquivos
+- [ ] `/plan-status` em uma suíte de plano completa — retorna contagens de fase precisas
+- [ ] Despacho de trabalhador delegado: o trabalhador `codebase-explorer` invocado com um escopo pequeno conclui dentro de maxTurns e retorna saída estruturada
+
+---
+
+## 7. Atualidade da documentação
+
+- [ ] `CHANGELOG.md` (na raiz do ecossistema) reflete cada mudança de artefato desde a última versão publicada; a seção da próxima versão é preenchida antes de a tag aterrissar, ou cada mudança já está cortada em uma seção publicada
+- [ ] `site/content/docs/developer-guide.mdx` descreve com precisão a estrutura atual dos artefatos
+- [ ] `site/content/docs/reference/artifact-schema.mdx` corresponde aos campos de frontmatter realmente presentes nos artefatos
+- [ ] `site/content/docs/reference/settings-reference.mdx` corresponde à configuração de hooks real em `settings.json`
+- [ ] `README.md` é consistente com a árvore em disco
+
+---
+
+## 8. Portabilidade (se compartilhar com outras pessoas)
+
+- [ ] Todos os caminhos nos comandos de hook são agnósticos de ambiente ou usam expansão de `~`
+- [ ] Os comandos de hook usam a forma exec e evitam strings de comando específicas de shell
+- [ ] Nenhum caminho embutido `C:\Users\username` ou `/home/username` em qualquer artefato
+- [ ] `settings.json` usa uma única tabela de cobertura de eventos de hook e o caminho canônico do módulo de despacho
+
+---
+
+## 9. Alinhamento de versão
+
+- [ ] A `version` de CLAUDE.md é a mais alta de qualquer artefato na árvore (ou igual à versão do artefato mais recentemente atualizado, por convenção)
+- [ ] A `version` de cada artefato corresponde ao semver indicado (`MAJOR.MINOR.PATCH`)
+- [ ] CHANGELOG.md contém exatamente a entrada de versão da versão-alvo antes do tagging
+- [ ] O campo `updated` de cada artefato está na data da sua última edição que altera o comportamento, ou depois dela
+- [ ] Nenhum artefato carrega uma `version` inferior à versão em que foi tocado pela última vez (sem regressões)
+- [ ] `src/apothem/skills/plan-suite/SKILL.md` e `src/apothem/skills/plan-suite/master-template.md` estão fixados na mesma linha de versão de template
+
+---
+
+## Assinatura
+
+| Categoria de verificação | Status | Notas |
+| -------------- | ------ | ----- |
+| Validade do YAML | | |
+| Completude do frontmatter | | |
+| Segurança | | |
+| Integridade das referências cruzadas | | |
+| Cobertura de mandatos | | |
+| Testes de fumaça funcionais | | |
+| Atualidade da documentação | | |
+| Portabilidade | | |
+| Alinhamento de versão | | |
+
+**Implantação aprovada por:** ___________________
+**Data:** ___________________
+**Versão do ecossistema implantada:** ___________________

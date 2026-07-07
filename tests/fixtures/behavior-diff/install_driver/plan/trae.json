@@ -1,0 +1,7 @@
+[
+  {
+    "mode": "sentinel_merge",
+    "source": "<APOTHEM_SRC>/harnesses/trae/templates/apothem-rules.md",
+    "target": "<ROOT>/.trae/rules/apothem-rules.md"
+  }
+]

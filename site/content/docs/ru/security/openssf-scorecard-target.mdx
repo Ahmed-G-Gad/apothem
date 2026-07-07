@@ -1,0 +1,50 @@
+---
+title: "Позиция по OpenSSF Scorecard"
+description: "Целевой показатель OpenSSF Scorecard для Apothem и поверхности доказательств, используемые для непрерывного улучшения оценки."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem стремится к максимальной оценке OpenSSF Scorecard, сохраняя при этом честность публичного фасада относительно того, что Scorecard может и не может вывести из нового репозитория с единственным сопровождающим. Этот документ перечисляет каждую проверку, поверхность доказательств, которая её подкрепляет, и контроль, поддерживающий позицию в актуальном состоянии.
+
+Текущая оценка доступна в [просмотрщике Scorecard](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem); значок находится в [заголовке README](https://github.com/ahmed-g-gad/apothem/blob/main/README.md).
+
+## Матрица доказательств по проверкам
+
+| Проверка | Поверхность доказательств | Примечания |
+|---|---|---|
+| **Binary-Artifacts** | [binary-artifacts-sweep.md](/docs/security/binary-artifacts-sweep) | В исходниках не отслеживается ни одного исполняемого бинарного файла; сгенерированные дистрибутивные архивы остаются в `dist/`. |
+| **Branch-Protection** | [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) | `main` защищена до продвижения к публичному выпуску; форс-пуши и удаления блокируются после того, как коммит нового выпуска приземлился. |
+| **CI-Tests** | [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) | Матрица Pytest, ruff, mypy, CodeQL, Trivy, сборка документации и дымовые проверки упаковки. |
+| **CII-Best-Practices** | Регистрация в OpenSSF Best Practices | Требует регистрации со стороны сопровождающего на сайте OpenSSF Best Practices; это нельзя выполнить только файлами репозитория. |
+| **Code-Review** | Защита веток + CODEOWNERS | Применяется к будущим pull request'ам; история Scorecard остаётся ограниченной, пока не появятся отрецензированные PR. |
+| **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | Новый проект с единственным сопровождающим не может сфабриковать историю вкладов от множества организаций; это улучшается естественно по мере присоединения участников. |
+| **Dangerous-Workflow** | Аудит рабочих процессов | Нет `pull_request_target`; Actions закреплены по SHA и ограничены явными разрешениями. |
+| **Dependency-Update-Tool** | [`renovate.json`](https://github.com/ahmed-g-gad/apothem/blob/main/renovate.json) | Renovate охватывает GitHub Actions, Python-манифесты, требования выпуска с захэшированной блокировкой и поверхности npm, сохраняя при этом доступными сгруппированные PR зависимостей. |
+| **Fuzzing** | [`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | Тесты свойств Hypothesis проверяют инварианты парсера и frontmatter; вышестоящий Scorecard может не засчитать Hypothesis как интеграцию фаззинга. |
+| **License** | [LICENSE](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) | Лицензия MIT в корне репозитория. |
+| **Maintained** | История Git | Коммит текущего выпуска и активная частота рабочих процессов демонстрируют сопровождение; очень новые репозитории могут получить предупреждение о возрасте. |
+| **Packaging** | [`.github/workflows/`](https://github.com/ahmed-g-gad/apothem/tree/main/.github/workflows) | Рабочие процессы Release, Pages и npmjs.com, производящие sdist, wheel, SBOM, происхождение SLSA и подписи Sigstore. |
+| **Pinned-Dependencies** | Аудит рабочих процессов + требования с захэшированной блокировкой | Actions закреплены по SHA; установки инструментов выпуска используют `--require-hashes`; pip-инструменты только для рабочих процессов используют точные закрепления. |
+| **SAST** | [`.github/workflows/codeql.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/codeql.yml) | Запросы `security-extended` CodeQL по Python и Actions. |
+| **Security-Policy** | [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) | Политика координированного раскрытия, матрица поддерживаемых версий и временная шкала реагирования. |
+| **Signed-Releases** | [`.github/workflows/release.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/release.yml) | Бесключевые подписи Sigstore, происхождение SLSA, SBOM, контрольные суммы и артефакты выпуска. |
+| **Token-Permissions** | Аудит рабочих процессов | Рабочие процессы по умолчанию используют разрешения только для чтения; области записи локальны для задания и привязаны к операциям развёртывания/упаковки. |
+| **Vulnerabilities** | [`.github/workflows/pip-audit.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/pip-audit.yml) + [`.github/workflows/dependency-review.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/dependency-review.yml) | Еженедельное сканирование уязвимостей и сканирование CI с загрузкой SARIF; гейт dependency-review блокирует pull request'ы, вводящие уязвимые или зависимости с недопустимыми лицензиями. |
+
+## Интерпретация оценки
+
+Scorecard оценивает каждую проверку по шкале от 0 до 10, а общая оценка — это взвешенное среднее. Контроли, зависящие от истории репозитория, сторонней регистрации или разнообразия участников, отслеживаются явно, а не завышаются. Дрейф по любой проверке, контролируемой файлами, запускает немедленное исправление.
+
+## Частота обновления
+
+- **При каждом push:** рабочий процесс Scorecard перезапускается при каждом push в `main`.
+- **Еженедельно:** по понедельникам в 02:30 UTC — улавливает изменения в вышестоящей методологии оценки + новые уязвимости, раскрытые против существующих закреплённых зависимостей.
+- **При каждом выпуске:** перед публичным продвижением сопровождающий проверяет поверхность текущего просмотрщика Scorecard и фиксирует любые ограничения состояния платформы.
+
+## Ссылки
+
+- [OpenSSF Scorecard](https://github.com/ossf/scorecard) — вышестоящий проект
+- [Справочник проверок Scorecard](https://github.com/ossf/scorecard/blob/main/docs/checks.md) — семантика каждой проверки
+- [`ossf/scorecard-action`](https://github.com/ossf/scorecard-action) — обёртка GitHub Actions
+- [Фреймворк SLSA](https://slsa.dev/) — уровни цепочки поставок (apothem поставляется на уровне SLSA-3)

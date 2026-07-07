@@ -1,0 +1,69 @@
+---
+title: "/security-audit"
+description: "/security-audit — Audit postur keamanan menyeluruh terhadap rilis OWASP ASVS terkini dan OWASP Top 10."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Peran:** Auditor keamanan
+**Posisi pipeline:** benteng
+
+Audit postur keamanan menyeluruh terhadap rilis OWASP ASVS terkini dan OWASP Top 10.
+
+## Pemanggilan kanonik
+
+```bash
+/security-audit
+```
+
+Dengan argumen:
+
+```bash
+/security-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+```
+
+## Masukan
+
+Repositori host pada keadaan siklus hidup mana pun
+
+## Keluaran
+
+Temuan keamanan + REPORT.md
+
+## Hilir
+
+Tahap security-audit dari Urutan Tinjauan Audit
+
+## Fase alur kerja
+
+Perintah ini mengikuti alur kerja pipeline `/plan` standar:
+
+1. **Memuat konteks** — Membaca suite plan, aturan, dan Kontrak Pelanjutan.
+2. **Memverifikasi prasyarat** — Memastikan fase dependensi telah selesai.
+3. **Mengeksekusi tugas** — Menjalankan misi perintah.
+4. **Memverifikasi keluaran** — Memastikan semua keluaran yang dideklarasikan ada dan lulus gerbang kualitas.
+5. **Memperbarui PROGRESS.md** — Mencatat keluaran terverifikasi di Registri Keluaran Fase.
+6. **Memancarkan REPORT.md** — Bukti rilis gerbang pra-emisi dicatat.
+
+## Mode kegagalan
+
+| Gejala | Penyebab | Pemulihan |
+|---------|-------|----------|
+| Prasyarat tidak lengkap | Fase dependen belum selesai | Selesaikan dulu fase hulu |
+| Gerbang kualitas FAIL | Keluaran tidak memenuhi standar | Perbaiki keluaran dan jalankan ulang |
+| File masukan hilang | File suite plan tidak ada | Jalankan `/plan-generate` untuk membuatnya |
+
+## Contoh
+
+```bash
+# Dry-run to preview what would happen
+/security-audit --dry-run
+
+# Execute against a named plan suite
+/security-audit path/to/plan-suite/
+```
+
+## Referensi silang
+
+- [Ikhtisar pipeline](/docs/pipeline)
+- [Templat Master Plan Suite](/docs/reference/commands)

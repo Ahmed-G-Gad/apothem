@@ -1,0 +1,5 @@
+exit_code: 2
+passed: false
+rule: HEADER_MALFORMED
+context_substr: authorship header found but not in canonical form for variant 'hash'
+rationale: SPDX line carries GPL-3.0 instead of MIT; the byte-exact comparison against the canonical fixture's 'SPDX-License-Identifier: MIT' line fails; matcher rejects.

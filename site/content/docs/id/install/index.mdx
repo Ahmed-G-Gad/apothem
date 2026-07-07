@@ -1,0 +1,352 @@
+---
+title: "Instalasi"
+description: "Ikhtisar instalasi Apothem — delapan kanal instalasi, masing-masing dengan prasyaratnya, satu perintah siap-salin, dan langkah verifikasi: plugin Claude Code, shim npm, pemasang satu langkah, ekstensi keluarga VS Code, tiga ekstensi bootstrap baris-perintah, dan mesin langsung."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem terpasang dalam waktu kurang dari dua menit dan berjalan berdampingan
+dengan konfigurasi harness Anda yang sudah ada. Setiap jalur menjalankan mesin
+mandiri yang sama — pohon sumber membawa dependensi yang di-vendor dan berjalan
+dari sebuah checkout pada Python sistem 3.10 atau yang lebih baru (lihat
+[runtime mandiri](/docs/architecture/self-contained-runtime)).
+
+**Dua prasyarat dibagikan oleh setiap jalur:** **Python 3.10 atau lebih baru**
+di sistem pada `PATH`, dengan paket `click` dan `rich` yang dapat diimpor di
+bawahnya. Jalur shim-npm dan plugin-alat tambahan membutuhkan **Node.js 18 atau
+lebih baru** untuk menjalankan `npx`. Bagian tiap kanal di bawah mengulang
+prasyarat persisnya, satu perintah siap-salin, dan langkah verifikasi.
+
+## Pilih sebuah kanal
+
+Delapan kanal instalasi tersedia. Pilih berdasarkan cara Anda sudah bekerja.
+
+| # | Kanal | Menghadirkan | Prasyarat |
+|---|-------|--------------|-----------|
+| 1 | [Plugin Claude Code](#1-plugin-claude-code) | Harness lengkap di Claude Code | Claude Code · Python 3.10+ |
+| 2 | [Shim npm (`npx`)](#2-shim-npm-npx) | Harness lengkap, alat apa pun | Node 18+ · Python 3.10+ |
+| 3 | [Pemasang satu langkah](#3-pemasang-satu-langkah) | Harness lengkap + perintah `apothem` | Python 3.10+ (`git` untuk instalasi jaringan) |
+| 4 | [Ekstensi keluarga VS Code](#4-ekstensi-keluarga-vs-code) | Harness lengkap dari editor | VS Code · Node 18+ · Python 3.10+ |
+| 5 | [Bootstrap baris-perintah (host ekstensi)](#5-bootstrap-baris-perintah-host-ekstensi) | Bootstrap yang menjalankan mesin | Alat host-nya · Node 18+ · Python 3.10+ |
+| 6 | [Bootstrap baris-perintah (host `qwen-code`)](#6-bootstrap-baris-perintah-host-qwen-code) | Bootstrap yang menjalankan mesin | Alat host-nya · Node 18+ · Python 3.10+ |
+| 7 | [Bootstrap baris-perintah (host plugin)](#7-bootstrap-baris-perintah-host-plugin) | Bootstrap yang menjalankan mesin | Alat host-nya · Node 18+ · Python 3.10+ |
+| 8 | [Mesin langsung (`python -m apothem`)](#8-mesin-langsung-python--m-apothem) | Harness lengkap dari checkout | Python 3.10+ (`click`, `rich`) |
+
+<Callout title="Kanal mana yang menghadirkan harness lengkap">
+  Shim npm (2), pemasang satu langkah (3), dan mesin langsung (8)
+  memmaterialisasikan seluruh unit tersinkron untuk harness apa pun secara
+  mandiri. Tiga ekstensi baris-perintah (5–7) memasang sebuah **bootstrap**
+  kecil yang memanggil mesin (`npx @ahmed-g-gad/apothem install`) untuk
+  memmaterialisasikan harness lengkap — keduanya adalah titik masuk, bukan
+  penghantaran penuh dengan sendirinya. Plugin Claude Code (1) dan ekstensi
+  keluarga VS Code (4) membawa mesin dan menjalankannya langsung.
+</Callout>
+
+Setiap jalur idempoten: menjalankan ulang aman dan konvergen ke keadaan yang
+sama.
+
+## 1. Plugin Claude Code
+
+**Prasyarat:** Claude Code, dan Python sistem 3.10+ pada `PATH`.
+
+Jalur plugin berjalan sepenuhnya di dalam Claude Code. Ia mengemas mesin Apothem
+bersama perintah slash-nya, worker terdelegasi, skill, aturan, dan hook, semuanya
+dapat dijalankan dari pohon plugin mandiri:
+
+```text title="Inside Claude Code"
+/plugin marketplace add ahmed-g-gad/apothem
+/plugin install apothem@apothem
+```
+
+Setelah instalasi, set perintah Apothem (`/plan-spec`, `/code-review`,
+`/security-audit`, dan lainnya), worker terdelegasi yang disertakan, dan skill
+tersedia di setiap sesi Claude Code. Lihat
+[Perintah slash](/docs/reference/commands) untuk katalog perintah lengkap.
+
+**Verifikasi:** jalankan `/plugin` di dalam Claude Code dan konfirmasikan
+**apothem** tercantum sebagai terpasang, atau periksa laporan penyimpangan dari
+terminal:
+
+```bash title="Verify"
+npx @ahmed-g-gad/apothem verify --harness claude-code
+```
+
+## 2. Shim npm (`npx`)
+
+**Prasyarat:** Node.js 18+ (untuk `npx`) dan Python sistem 3.10+ pada `PATH`.
+Shim menemukan interpreter dan meneruskan setiap perintah CLI ke mesin yang
+disertakan — tidak ada yang ditempatkan secara permanen di sistem Anda.
+
+```bash title="npx"
+npx @ahmed-g-gad/apothem install --harness claude-code
+```
+
+Ia juga berjalan langsung dari repositori:
+
+```bash title="npx from the repository"
+npx github:ahmed-g-gad/apothem install --harness claude-code
+```
+
+Setiap perintah dalam [referensi CLI](/docs/cli-reference) bekerja dalam bentuk
+ini; ganti `apothem` dengan `npx @ahmed-g-gad/apothem`. Ini juga merupakan jalur
+instalasi untuk OpenCode dan setiap alat lain yang tidak mengekspos registri
+plugin atau ekstensi terpisah — Apothem menyinkronkannya langsung ke dalam
+direktori konfigurasi native-nya
+(`npx @ahmed-g-gad/apothem install --harness opencode`).
+
+**Verifikasi:**
+
+```bash title="Verify"
+npx @ahmed-g-gad/apothem --version
+npx @ahmed-g-gad/apothem verify --harness claude-code
+```
+
+## 3. Pemasang satu langkah
+
+**Prasyarat:** Python sistem 3.10+ pada `PATH` (pemasang menawarkan untuk
+menambahkan prasyarat `click` / `rich` untuk Anda); `git` hanya dibutuhkan untuk
+instalasi jaringan yang mengkloning sumber.
+
+Skrip pemasang menyelesaikan tag rilis bertanda-tangan terbaru, memverifikasi
+tanda tangannya, menempatkan pohon sumber Apothem di `~/.apothem` pada tag
+tersebut, membuat profil awal bila belum ada, memmaterialisasikan harness pertama
+Anda, dan memverifikasi hasilnya. Menjalankan ulang bersifat idempoten: pohon
+yang ada diperiksa-ulang ke tag yang diselesaikan dan harness dimaterialisasikan
+ulang. Instalasi terverifikasi yang dipatok-tag adalah jalur bawaan dan yang
+direkomendasikan.
+
+```bash title="macOS · Linux · WSL2 · BSD — latest signed tag, verified"
+curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
+```
+
+```powershell title="Windows · PowerShell — latest signed tag, verified"
+irm https://apothem.ahmedgad.com/install.ps1 | iex
+```
+
+Skrip yang sama dikirim dalam sebuah checkout di bawah `scripts/installer/` —
+`install`, `uninstall`, dan `update` dalam bentuk `.sh`, `.ps1`, dan `.bat` —
+sehingga Anda dapat menjalankannya langsung setelah mengkloning:
+
+```bash title="From a checkout"
+APOTHEM_HARNESS=claude-code sh scripts/installer/install.sh                                 # POSIX
+$env:APOTHEM_HARNESS = 'claude-code'; pwsh -NoProfile -File scripts/installer/install.ps1   # Windows
+```
+
+### Model kepercayaan
+
+Tanpa `APOTHEM_REF` yang ditetapkan, pemasang menyelesaikan tag rilis
+`vMAJOR.MINOR.PATCH` tertinggi dan mengunduh *tag itu* — bukan branch `main` yang
+terus bergerak. Sebelum konfigurasi apa pun dimaterialisasikan, tanda tangan tag
+yang diambil diverifikasi dengan `git verify-tag`; tag yang tidak bertanda-tangan,
+dirusak, atau tidak dapat diverifikasi membatalkan instalasi sebelum apa pun
+ditulis. Sematkan rilis tertentu dengan `APOTHEM_REF`:
+
+```bash title="Pinned, verified install"
+APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/install.sh)"
+```
+
+Ganti `vMAJOR.MINOR.PATCH` dengan tag dari
+[halaman rilis](https://github.com/ahmed-g-gad/apothem/releases).
+
+Dua penggantian eksplisit melonggarkan perilaku bawaan: `APOTHEM_REF=main`
+mengunduh branch yang bergerak (tanpa verifikasi), dan
+`APOTHEM_ALLOW_UNVERIFIED=1` menurunkan kegagalan verifikasi menjadi peringatan
+dan melanjutkan — untuk penggunaan air-gapped, lokal, atau pra-rilis-tertanda.
+Checkout lokal melalui `APOTHEM_SOURCE` tidak mengambil apa pun dan melewati
+verifikasi.
+
+Mesin kemudian berjalan langsung dari pohon yang ditempatkan sebagai runtime
+mandiri — dependensi pihak-ketiganya di-vendor di dalam pohon sumber, sehingga
+tidak ada registri paket yang terlibat:
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+```
+
+Kedua skrip membaca variabel lingkungan konfigurasi yang sama
+(`APOTHEM_HOME`, `APOTHEM_REPO`, `APOTHEM_REF`, `APOTHEM_ALLOW_UNVERIFIED`,
+`APOTHEM_SOURCE`, `APOTHEM_HARNESS`, `APOTHEM_PROFILE`,
+`APOTHEM_SKIP_VERIFY`, `APOTHEM_AUTO_INSTALL_DEPS`); lihat
+[Variabel lingkungan pemasang](/docs/how-to/installer-environment-variables)
+untuk tabel lengkap dan
+[Runtime mandiri](/docs/architecture/self-contained-runtime) untuk memahami cara
+kerja model pemanggilan `python -m`.
+
+**Perintah `apothem`.** Setelah instalasi berhasil, pemasang menulis sebuah shim
+`apothem` yang meneruskan ke mesin yang disertakan — POSIX ke dalam
+`$HOME/.local/bin`, Windows ke dalam `%LOCALAPPDATA%\Microsoft\WindowsApps`
+(sebuah direktori pengguna yang sudah ada pada `PATH` bawaan Windows). Pemasang
+tidak pernah menyunting `PATH` Anda. Setelah direktori itu ada di `PATH` Anda
+menjalankan `apothem <command>` langsung, tanpa `PYTHONPATH` manual.
+
+**Verifikasi:**
+
+```bash title="Verify"
+apothem verify --harness claude-code
+
+# or, before the shim is on PATH, from the bundled source:
+PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
+```
+
+## 4. Ekstensi keluarga VS Code
+
+**Prasyarat:** VS Code, Node.js 18+, dan Python sistem 3.10+ pada `PATH`.
+
+Ekstensi **Apothem** dipasang dari
+[Visual Studio Marketplace](https://marketplace.visualstudio.com/) — satu
+ekstensi mencakup VS Code dan permukaan asisten pendampingnya di dalam editor.
+Perintah paletnya (`Apothem: Install`, `Verify`, `Update`, `Uninstall`,
+`Doctor`) menjalankan mesin yang sama melalui runner yang dikonfigurasi
+(`npx @ahmed-g-gad/apothem` secara bawaan; arahkan pengaturan `apothem.runner`
+ke checkout lokal untuk berjalan dari sumber).
+
+**Verifikasi:** jalankan perintah **Apothem: Verify** dari palet perintah editor,
+atau dari terminal:
+
+```bash title="Verify"
+npx @ahmed-g-gad/apothem verify --harness claude-code
+```
+
+## 5. Bootstrap baris-perintah (host ekstensi)
+
+**Prasyarat:** alat baris-perintah host-nya, Node.js 18+, dan Python sistem
+3.10+ pada `PATH`.
+
+Pasang Apothem sebagai ekstensi langsung dari repositori — perintahnya membawa
+slug host dan harness yang persis:
+
+```bash title="Install the extension"
+gemini extensions install https://github.com/ahmed-g-gad/apothem
+```
+
+Ekstensi ini adalah sebuah **bootstrap**, bukan instalasi penuh dengan
+sendirinya: ia memuat berkas konteks Apothem dan menambahkan perintah `/apothem`
+yang memanggil mesin (`npx @ahmed-g-gad/apothem`). Materialisasikan harness
+lengkap dengan menjalankan instalasi melaluinya:
+
+```bash title="Materialize the full harness"
+npx @ahmed-g-gad/apothem install --harness gemini-cli --project .
+```
+
+**Verifikasi:**
+
+```bash title="Verify"
+npx @ahmed-g-gad/apothem verify --harness gemini-cli --project .
+```
+
+## 6. Bootstrap baris-perintah (host `qwen-code`)
+
+**Prasyarat:** alat baris-perintah host-nya, Node.js 18+, dan Python sistem
+3.10+ pada `PATH`.
+
+Pasang Apothem sebagai ekstensi `--harness qwen-code` langsung dari repositori:
+
+```bash title="Install the extension"
+qwen extensions install ahmed-g-gad/apothem
+```
+
+Seperti ekstensi kanal-5, ini adalah sebuah **bootstrap**: ia memuat berkas
+konteks Apothem dan memanggil mesin. Materialisasikan harness lengkap dengan
+menjalankan instalasi melaluinya:
+
+```bash title="Materialize the full harness"
+npx @ahmed-g-gad/apothem install --harness qwen-code
+```
+
+**Verifikasi:**
+
+```bash title="Verify"
+npx @ahmed-g-gad/apothem verify --harness qwen-code
+```
+
+## 7. Bootstrap baris-perintah (host plugin)
+
+**Prasyarat:** alat baris-perintah host-nya, Node.js 18+, dan Python sistem
+3.10+ pada `PATH`.
+
+Tambahkan repositori sebagai marketplace plugin, lalu pasang plugin-nya —
+perintahnya membawa slug host dan harness yang persis:
+
+```bash title="Install the plugin"
+codex plugin marketplace add ahmed-g-gad/apothem
+codex plugin add apothem@apothem
+```
+
+Seperti ekstensi kanal-5 dan kanal-6, ini adalah sebuah **bootstrap** yang
+memanggil mesin. Materialisasikan harness lengkap dengan menjalankan instalasi
+melaluinya:
+
+```bash title="Materialize the full harness"
+npx @ahmed-g-gad/apothem install --harness codex
+```
+
+**Verifikasi:**
+
+```bash title="Verify"
+npx @ahmed-g-gad/apothem verify --harness codex
+```
+
+## 8. Mesin langsung (`python -m apothem`)
+
+**Prasyarat:** Python sistem 3.10+ dengan paket `click` dan `rich` yang dapat
+diimpor, plus sebuah checkout repositori. Node.js tidak diperlukan.
+
+Jalankan mesin mandiri langsung dari sebuah klon — pohon sumber membawa
+dependensi yang di-vendor, sehingga `PYTHONPATH=src` adalah seluruh penyiapannya:
+
+```bash title="Direct engine"
+git clone https://github.com/ahmed-g-gad/apothem
+cd apothem
+PYTHONPATH=src python -m apothem install --harness claude-code
+```
+
+**Verifikasi:**
+
+```bash title="Verify"
+PYTHONPATH=src python -m apothem verify --harness claude-code
+```
+
+## Verifikasi instalasi apa pun
+
+Setiap kanal di atas menyebut perintah verifikasinya sendiri. Dua bentuk
+umumnya adalah:
+
+```bash title="Installer path"
+PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
+```
+
+```bash title="npx path"
+npx @ahmed-g-gad/apothem verify --harness claude-code
+```
+
+Ganti nama harness dengan adapter mana pun yang Anda pasang; lihat
+[daftar harness](/docs/harnesses) untuk semua nama yang didukung. Untuk memeriksa
+setiap adapter terdaftar sekilas, jalankan `apothem doctor` (atau
+`npx @ahmed-g-gad/apothem doctor`) dalam bentuk yang sama. Untuk jalur plugin,
+jalankan `/plugin` di dalam Claude Code dan konfirmasikan **apothem** tercantum
+sebagai terpasang.
+
+## Prasyarat sekilas
+
+- **Python 3.10 atau lebih baru** — setiap jalur yang menjalankan mesin
+  mencarinya (`python3`, `python`, nama berversi, dan `py -3` di Windows).
+- **`click` dan `rich` dapat diimpor** di bawah interpreter itu — dua dependensi
+  berhadapan-terminal yang tidak di-vendor mesin. Pemasang memeriksa keduanya,
+  menyebut apa pun yang hilang, dan menawarkan untuk memasangnya untuk Anda —
+  dengan konfirmasi Anda, atau secara otomatis dengan `--yes` (`-Yes` di
+  PowerShell) atau `APOTHEM_AUTO_INSTALL_DEPS=1`.
+- **Node.js 18 atau lebih baru** — hanya jalur shim-npm dan plugin-alat.
+- **Git** — hanya jalur pemasang, dan hanya untuk bentuk jaringan (skrip
+  mengkloning sumber; checkout lokal tidak memerlukan kloning).
+- **Claude Code** — hanya jalur plugin. **VS Code** dan alat host tiap bootstrap
+  baris-perintah hanya dibutuhkan untuk kanalnya masing-masing (4–7).
+
+## Panduan berikutnya
+
+| Tujuan | Panduan |
+|------|-------|
+| Pengaturan tersingkat | [Mulai cepat](/docs/install/quickstart) |
+| Menambah harness | [Penyiapan harness](/docs/install/harness-setup) |
+| Memperbarui | [Pembaruan](/docs/install/updating) |
+| Mencopot | [Pencopotan](/docs/install/uninstalling) |
+| Ada yang gagal | [Pemecahan masalah](/docs/install/troubleshooting) |

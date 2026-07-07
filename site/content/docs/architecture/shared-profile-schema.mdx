@@ -1,0 +1,124 @@
+---
+title: "Shared profile schema"
+description: "Schema for the Apothem shared profile YAML."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+The shared Apothem profile is a YAML file at
+`~/.config/apothem/profile.yaml`, or at the path supplied with
+`--profile PATH`. It is the semantic source of truth for identity,
+preferences, shared rules, per-harness overrides, and harness exclusions.
+Adapters derive harness-native files from this profile and the packaged
+Apothem payload cohorts.
+
+The runtime model is `src/apothem/lib/profile.py`; the JSON Schema is
+`src/apothem/schemas/profile.schema.json`.
+
+## Minimal valid profile
+
+The only required field is `identity.name`:
+
+```yaml
+identity:
+  name: "Example User"
+```
+
+## Scaffold written by `profile init`
+
+`apothem profile init` writes a slightly fuller scaffold — placeholder identity
+fields the operator is expected to personalize — and validates it before
+reporting success:
+
+```yaml
+identity:
+  name: "Example User"
+  email: "dev@example.invalid"
+  github: "example-user"
+```
+
+The command prints a personalize nudge naming these fields. If a
+still-placeholder identity later reaches `install` or `update`, those commands
+print one advisory note and proceed — Apothem never fabricates or blocks on a
+placeholder identity.
+
+## Canonical fields
+
+| Field | Required | Default | Notes |
+| --- | --- | --- | --- |
+| `identity.name` | Yes | none | Non-empty operator display name. |
+| `identity.role` | No | `senior software engineer` | Shared role text. |
+| `identity.email` | No | omitted | Must be email-formatted when present. |
+| `identity.website` | No | omitted | Must be URI-formatted when present. |
+| `identity.github` | No | omitted | GitHub username without `@`. |
+| `preferences.language` | No | `python` | Normalized to lower case. |
+| `preferences.style` | No | `concise` | One of `concise`, `verbose`, `balanced`. |
+| `preferences.formatter` | No | omitted | Non-empty string when present. |
+| `preferences.test_framework` | No | omitted | Non-empty string when present. |
+| `rules` | No | `[]` | Unique non-empty strings; newlines normalize to LF. |
+| `seriousness` | No | `PERSONAL_USE` | One of `EXPLORING`, `PERSONAL_USE`, `SHARED`, `PUBLIC_LAUNCH`. |
+| `harnesses` | No | `{}` | Per-harness overrides keyed by supported harness ID. |
+| `exclude_harnesses` | No | `[]` | Supported harness IDs excluded from `--harness all`. |
+
+## Harness keys
+
+The schema accepts exactly these seventeen harness IDs:
+
+```text
+antigravity
+claude-code
+codebuddy
+codex
+cursor
+gemini-cli
+github-copilot
+glm
+hermes
+kimi-code
+kiro
+open-claw
+opencode
+qwen-code
+trae
+windsurf
+zed
+```
+
+Unknown top-level fields, unknown harness keys, wrong value types, duplicate
+exclusions, and malformed identity fields fail before install or update writes.
+Expected errors include a field, reason, fix, redacted safe value when useful,
+and `files_written: []` for validation failures.
+
+## From profile field to native file
+
+The profile is the *what*; the adapters are the *how*. Understanding the
+end-to-end flow explains why a single edit to one YAML file can re-shape every
+installed harness.
+
+A profile field carries semantic intent, not a literal config snippet.
+`identity.name` is "who the operator is," not a line of JSON. The packaged
+payload cohorts (`commands`, `rules`, `skills`, `hooks`, `templates`,
+`statuslines`, `output-styles`, `agents`) carry behavioral content in
+Apothem's own neutral format. Neither the field nor the cohort knows what any
+harness's config looks like — that knowledge belongs only to the adapters.
+
+When you run `apothem update`, the flow is:
+
+1. **Load and validate** the profile against the JSON Schema. Nothing is
+   written until the whole profile is valid, so a typo never half-installs.
+2. **Resolve adapters** for the selected harness (or `all`, minus any
+   `exclude_harnesses`) through the central registry.
+3. **Materialize** — each adapter reads the same profile and the same cohorts,
+   then translates them into its harness's dialect. A field like
+   `preferences.style` becomes a native config value in one harness and
+   rendered instruction context in another; a rule in `rules[]` becomes a
+   `.mdc` file for Cursor, a section of repo-wide instructions for Copilot, or
+   a support-tree entry where the harness has no native rules surface.
+4. **Write** the native files — a rendered single config, a converted cohort,
+   or a support subtree referenced from the harness's native anchor.
+
+The same profile drives every harness, so the materializations cannot disagree
+about intent. Capability cells the harness does not support (or that are still
+discovery-pending) surface as structured warnings before any write rather than
+being invented into a vendor surface that does not exist. This is what makes
+the one-edit-many-harnesses guarantee real: the profile is edited once, and
+each adapter re-derives its native files from that single source.

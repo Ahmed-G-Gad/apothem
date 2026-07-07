@@ -1,0 +1,62 @@
+---
+title: "ディレクトリ階層ツリー"
+description: "Apothem ソースツリー構造の視覚的なマップ。エコシステム設定アーティファクト、ランタイム層、そしてルール・コマンド・スキル・委譲ワーカー・フック・サポートファイルの配置を示します。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Mermaid グラフとしてレンダリングされた Apothem ソースツリーの正規構造マップ。**
+`src/apothem/harnesses/<harness>/` 配下の各 per-harness アダプターは、このツリーを
+その harness のネイティブ設定ディレクトリ（例: Claude Code の場合は `~/.claude/`）へ
+投影します。`CLAUDE.md` 第 7 節で宣言されたすべてのアーティファクトクラスは、
+ここにその居場所を持ちます。ランタイム状態ディレクトリ（マシンローカル・gitignore 済み）
+は方向付けのために含めていますが、エコシステム設定アーティファクトを含むことは決してありません。
+
+## レイアウト
+
+```mermaid
+%%{ init: { "theme": "neutral" } }%%
+%% verified: 2026-06-16 %%
+%% provenance: README.md (Quick Start · Location) %%
+%% cross-reference: site/content/docs/architecture/source-layout.mdx (Directory Layout summary) %%
+graph TD
+    accTitle: Apothem repository layout tree
+    accDescr: Top-down tree showing every top-level directory of the apothem repository with its purpose and key contents as a comprehensive navigation reference for contributors.
+    ROOT["apothem source tree<br/>(materializes into the harness config<br/>directory — e.g. ~/.claude/ for Claude Code)"]
+    ROOT --> CONFIG_FILES["Config files<br/>CLAUDE.md · README.md · CHANGELOG.md<br/>settings.json<br/>pyproject.toml · .gitignore · .markdownlint.json"]
+    ROOT --> RULES["src/apothem/rules/<br/>(.md files)"]
+    ROOT --> COMMANDS["commands/<br/>(slash-command bodies)"]
+    ROOT --> SKILLS["src/apothem/skills/<br/>{skill}/SKILL.md"]
+    ROOT --> AGENTS["src/apothem/agents/<br/>(flat *.md entry points)"]
+    ROOT --> HOOKS["src/apothem/hooks/"]
+    HOOKS --> HOOKS_LIB["lib/<br/>bootstrap.{ps1,sh}<br/>find-python.{ps1,sh}<br/>resolve_root.py"]
+    HOOKS --> HOOKS_MSGS["messages/<br/>(static context per event)"]
+    HOOKS --> HOOKS_PY["dispatch.py<br/>session_start_bootstrap.py<br/>emit_hook_context.py"]
+    ROOT --> TOOLS["scripts/<br/>validate_hooks.py<br/>validate_ecosystem.py<br/>chaos_pass.py<br/>src/apothem/benchmarks/<br/>lib/"]
+    ROOT --> TESTS["tests/hooks/<br/>(pytest coverage)"]
+    ROOT --> DOCS["site/content/docs/<br/>reference/ · architecture/<br/>governance/ · harnesses/<br/>runbooks/ · developer-guide.mdx"]
+    ROOT --> MEMORY["memory/<br/>MEMORY.md (index)<br/>promotion-ledger.md<br/>expertise-gap-log.md<br/>{topic}.md files"]
+    ROOT --> PLANS["plans/<br/>(per-suite folders<br/>PREAMBLE · MASTER-PLAN<br/>per-phase directories<br/>_spec/ · _inputs/ scratch tiers)"]
+    ROOT --> PROJECTS["projects/<br/>{hash}/<br/>memory/ · sessions/<br/>(per-project runtime state)"]
+    ROOT --> RUNTIME["runtime-data/<br/>history.jsonl · backups/<br/>(machine-local · gitignored)"]
+    classDef cfg fill:#fff5d6,stroke:#aa8800
+    classDef runtime fill:#e8f0ff,stroke:#3366aa,stroke-dasharray: 4 2
+    class CONFIG_FILES,RULES,COMMANDS,SKILLS,AGENTS,HOOKS,HOOKS_LIB,HOOKS_MSGS,HOOKS_PY,TOOLS,TESTS,DOCS,MEMORY cfg
+    class PLANS,PROJECTS,RUNTIME runtime
+```
+
+## 図の読み方
+
+- **塗りつぶしの黄色ノード**はエコシステム設定です。バージョン管理され、検証され、
+  意図的に書かれています。
+- **破線の青色ノード**はランタイム層です。マシンローカルな状態、および構造規約には
+  従うものの出荷される設定の一部ではない per-suite / per-project アーティファクトです。
+- 矢印の向きは包含関係を示し、データフローではありません。各子は親の直下の
+  サブディレクトリです。
+
+## 権威ある相互参照
+
+- `CLAUDE.md` 第 3 節 — 完全なアーティファクト・ディレクトリ表。
+- `CLAUDE.md` 第 7 節 — レジストリ（コマンド、ルール、委譲ワーカー、スキル、フック）。
+- `site/content/docs/architecture/source-layout.mdx` — 叙述的なディレクトリ概要。
+- `README.md` Quick Start — オペレーター向けの概要。

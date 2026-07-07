@@ -1,0 +1,60 @@
+---
+title: "doctor"
+description: "CLI reference for the apothem doctor command."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Run system diagnostics for the Apothem installation. Where
+[`apothem verify`](/docs/cli-reference/verify) checks a single named harness,
+`doctor` surveys the whole installation in one pass — every registered
+adapter's install status plus the shared profile's schema validity.
+
+## Synopsis
+
+```
+apothem doctor [--quiet|-q] [--verbose|-v]
+               [--format plain|json] [--json] [--no-color]
+```
+
+Checks the Apothem installation and reports the status of each registered
+harness adapter. When a shared profile is present, it is validated against the
+packaged schema — not merely checked for existence — so a malformed profile is
+surfaced as a diagnostic failure rather than a green "found". The JSON output
+carries a `profile_valid` field (`true` / `false`, or `null` when no profile is
+present) and a `profile_error` field when validation fails. Exits 0 when all
+checks pass; 1 when a harness is not installed or the profile is present but
+fails schema validation.
+
+## Options
+
+| Option | Description |
+|---|---|
+| `--quiet`, `-q` | Suppress informational output; only errors are emitted. |
+| `--verbose`, `-v` | Emit additional diagnostic output. |
+| `--format plain\|json` | Output format (default: `plain`). |
+| `--json` | Shorthand for `--format json`. |
+| `--no-color` | Disable ANSI color codes in output. |
+| `-h`, `--help` | Show help and exit. |
+
+## Examples
+
+```bash
+apothem doctor
+apothem doctor --json
+```
+
+The default `plain` format prints human-readable diagnostics; `--json`
+(equivalent to `--format json`) emits a machine-readable document on stdout,
+suitable for piping into other tooling.
+
+## Exit codes
+
+| Code | Meaning |
+|---|---|
+| 0 | All checks passed |
+| 1 | A harness is not installed, or a present profile failed schema validation |
+
+## See also
+
+- [apothem harnesses](/docs/cli-reference/harnesses) — list and inspect registered harnesses
+- [apothem verify](/docs/cli-reference/verify) — check a specific harness installation

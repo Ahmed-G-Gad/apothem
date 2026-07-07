@@ -1,0 +1,82 @@
+---
+title: "verify"
+description: "apothem verify 命令的 CLI 参考。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+验证某个harness适配器的安装。
+
+## 概要
+
+```
+apothem verify --harness NAME|all [--project PATH]
+                [--quiet|-q] [--verbose|-v]
+                [--format plain|json] [--json] [--no-color]
+```
+
+调用每个选定适配器的 `verify()` 实现。仅当所有选定的适配器都报告其托管目标存在且有效时才以 0 退出。
+
+## 选项
+
+| 选项 | 描述 |
+|---|---|
+| `--harness NAME` | 要验证的harness适配器，或用 `all` 表示整个注册表的集合（必填）。 |
+| `--project PATH` | 项目范围harness的项目根目录。 |
+| `--quiet`, `-q` | 抑制信息性输出；仅发出错误。 |
+| `--verbose`, `-v` | 发出额外的诊断输出。 |
+| `--format plain\|json` | 输出格式（默认：`plain`）。 |
+| `--json` | `--format json` 的简写。 |
+| `--no-color` | 禁用输出中的 ANSI 颜色代码。 |
+| `-h`, `--help` | 显示帮助并退出。 |
+
+## JSON 输出
+
+```json
+{
+  "status": "success",
+  "command": "verify",
+  "action": "verified",
+  "harness": "claude-code",
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "unchanged",
+      "operation": "verify",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "managed targets verified",
+      "installed": true,
+      "verified": true
+    }
+  ],
+  "warnings": [],
+  "error": null,
+  "installed": true,
+  "verified": true,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+当任何选定的harness缺失或无效时，`status` 为 `error`，失败的结果行带有 `verified: false`，进程以代码 1 退出。
+
+## 示例
+
+```bash
+apothem verify --harness claude-code
+apothem verify --harness claude-code --json
+apothem verify --harness all --project .
+```
+
+## 退出码
+
+| 代码 | 含义 |
+|---|---|
+| 0 | harness已安装 |
+| 1 | harness未安装 |
+
+## 另请参阅
+
+- [apothem install](/docs/cli-reference/install) — 安装harness配置
+- [apothem update](/docs/cli-reference/update) — 将当前配置文件重新应用到某个harness
+- [apothem doctor](/docs/install/concepts) — 系统级安装诊断

@@ -1,0 +1,50 @@
+---
+title: "Postur OpenSSF Scorecard"
+description: "Target OpenSSF Scorecard milik Apothem dan permukaan bukti yang digunakan untuk menjaga skor terus membaik."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem membidik skor OpenSSF Scorecard maksimum sambil menjaga fasad publik tetap jujur tentang apa yang dapat dan tidak dapat disimpulkan Scorecard dari repositori baru dengan pemelihara tunggal. Dokumen ini mencantumkan setiap pemeriksaan, permukaan bukti yang mendukungnya, dan kontrol yang menjaga postur tetap mutakhir.
+
+Skor langsung ada di [penampil Scorecard](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem); lencananya ada di [header README](https://github.com/ahmed-g-gad/apothem/blob/main/README.md).
+
+## Matriks bukti per pemeriksaan
+
+| Pemeriksaan | Permukaan bukti | Catatan |
+|---|---|---|
+| **Binary-Artifacts** | [binary-artifacts-sweep.md](/docs/security/binary-artifacts-sweep) | Tidak ada biner yang dapat dieksekusi yang dilacak dalam sumber; arsip distribusi yang dihasilkan tetap berada di `dist/`. |
+| **Branch-Protection** | [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) | `main` dilindungi sebelum promosi ke rilis publik; force-push dan penghapusan diblokir setelah commit rilis baru mendarat. |
+| **CI-Tests** | [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) | Matriks Pytest, ruff, mypy, CodeQL, Trivy, build dokumentasi, dan pemeriksaan asap pengemasan. |
+| **CII-Best-Practices** | Pendaftaran OpenSSF Best Practices | Memerlukan pendaftaran di sisi pemelihara pada situs OpenSSF Best Practices; ini tidak dapat diselesaikan hanya dengan berkas repositori. |
+| **Code-Review** | Perlindungan branch + CODEOWNERS | Diberlakukan untuk pull request mendatang; riwayat Scorecard tetap terbatas hingga ada PR yang ditinjau. |
+| **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | Proyek baru dengan pemelihara tunggal tidak dapat memalsukan riwayat kontribusi multi-organisasi; ini membaik secara alami seiring bergabungnya kontributor. |
+| **Dangerous-Workflow** | Audit alur kerja | Tanpa `pull_request_target`; Actions disematkan per SHA dan dicakup dengan izin eksplisit. |
+| **Dependency-Update-Tool** | [`renovate.json`](https://github.com/ahmed-g-gad/apothem/blob/main/renovate.json) | Renovate mencakup GitHub Actions, manifes Python, persyaratan rilis yang dikunci-hash, dan permukaan npm sambil menjaga PR dependensi yang dikelompokkan tetap tersedia. |
+| **Fuzzing** | [`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | Tes properti Hypothesis melatih invarian parser dan frontmatter; Scorecard hulu mungkin tidak mengakui Hypothesis sebagai integrasi fuzzing. |
+| **License** | [LICENSE](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) | Lisensi MIT di akar repositori. |
+| **Maintained** | Riwayat Git | Commit rilis saat ini dan kadens alur kerja yang aktif menunjukkan pemeliharaan; repositori yang sangat baru mungkin menerima peringatan usia. |
+| **Packaging** | [`.github/workflows/`](https://github.com/ahmed-g-gad/apothem/tree/main/.github/workflows) | Alur kerja Release, Pages, dan npmjs.com yang menghasilkan sdist, wheel, SBOM, provenans SLSA, dan tanda tangan Sigstore. |
+| **Pinned-Dependencies** | Audit alur kerja + persyaratan yang dikunci-hash | Actions disematkan per SHA; instalasi alat rilis menggunakan `--require-hashes`; alat pip khusus alur kerja menggunakan penyematan yang tepat. |
+| **SAST** | [`.github/workflows/codeql.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/codeql.yml) | Kueri `security-extended` CodeQL di Python dan Actions. |
+| **Security-Policy** | [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) | Kebijakan pengungkapan terkoordinasi, matriks versi yang didukung, dan lini masa respons. |
+| **Signed-Releases** | [`.github/workflows/release.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/release.yml) | Tanda tangan keyless Sigstore, provenans SLSA, SBOM, checksum, dan artefak rilis. |
+| **Token-Permissions** | Audit alur kerja | Alur kerja secara default menggunakan izin baca-saja; cakupan tulis bersifat lokal-job dan terikat pada operasi penyebaran/pengemasan. |
+| **Vulnerabilities** | [`.github/workflows/pip-audit.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/pip-audit.yml) + [`.github/workflows/dependency-review.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/dependency-review.yml) | Pemindaian kerentanan mingguan dan pemindaian CI dengan unggahan SARIF; gerbang dependency-review memblokir pull request yang memperkenalkan dependensi yang rentan atau berlisensi tidak diizinkan. |
+
+## Interpretasi skor
+
+Scorecard menilai setiap pemeriksaan pada skala 0–10 dan skor keseluruhan adalah rata-rata tertimbang. Kontrol yang bergantung pada riwayat repositori, pendaftaran pihak ketiga, atau keragaman kontributor dilacak secara eksplisit alih-alih diklaim berlebihan. Penyimpangan pada pemeriksaan apa pun yang dikontrol-berkas memicu remediasi segera.
+
+## Kadens penyegaran
+
+- **Per push:** alur kerja Scorecard dijalankan ulang pada setiap push ke `main`.
+- **Mingguan:** Senin 02:30 UTC — menangkap perubahan dalam metodologi penilaian hulu + kerentanan baru yang diungkap terhadap dependensi tersemat yang ada.
+- **Per rilis:** sebelum promosi publik, pemelihara memverifikasi permukaan penampil Scorecard langsung dan mencatat batasan keadaan platform apa pun.
+
+## Referensi
+
+- [OpenSSF Scorecard](https://github.com/ossf/scorecard) — proyek hulu
+- [Referensi pemeriksaan Scorecard](https://github.com/ossf/scorecard/blob/main/docs/checks.md) — semantik per pemeriksaan
+- [`ossf/scorecard-action`](https://github.com/ossf/scorecard-action) — pembungkus GitHub Actions
+- [Kerangka kerja SLSA](https://slsa.dev/) — tingkat rantai pasokan (apothem dikirim pada SLSA-3)

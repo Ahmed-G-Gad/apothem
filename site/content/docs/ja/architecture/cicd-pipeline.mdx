@@ -1,0 +1,103 @@
+---
+title: "CI/CD パイプライン図"
+description: "あらゆるコード変更とリリースを門にかけるビルド・テスト・lint・セキュリティ・公開のワークフロー段階の視覚マップとレーン分解。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Apothem エコシステムへのあらゆる変更を門にかける、ビルド · 検証 · 公開
+ワークフローの構造マップです。** 本ドキュメントは可視化の表面を設置します。
+具体的な GitHub Actions のワークフローファイルとリリースツールは、後に
+本番準備のインストールのもとで配置されます。
+
+## パイプラインの形
+
+```mermaid
+%%{ init: { "theme": "neutral" } }%%
+%% verified: 2026-04-27 %%
+%% provenance: pyproject.toml + scripts/dev/validate_ecosystem.py + scripts/dev/validate_hooks.py %%
+%% cross-reference: site/content/docs/developer-guide.mdx (contributor workflow) %%
+flowchart LR
+    accTitle: CI/CD pipeline shape
+    accDescr: Left-to-right flowchart of the apothem CI CD pipeline showing build, test, lint, type-check, security scan, docs build, package, sign, and publish stages with branch protection gates between them.
+    subgraph Trigger["Trigger surface"]
+        PR["Pull request opened or updated"]
+        PUSH["Push to main"]
+        TAG["Tag release vX.Y.Z"]
+    end
+    subgraph Static["Static analysis lane"]
+        LINT["Ruff lint + format check"]
+        TYPE["Mypy strict"]
+        MD["markdownlint"]
+        FRONT["Frontmatter validator"]
+    end
+    subgraph Test["Test lane"]
+        PYTEST["pytest tests/hooks"]
+        ECO["validate_ecosystem.py"]
+        CHAOS["chaos_pass.py (release lane)"]
+        BENCH["src/apothem/benchmarks/ (release lane)"]
+    end
+    subgraph Security["Security lane"]
+        SECRETS["Secret scan"]
+        SBOM["SBOM generation"]
+        LICENSE["License audit"]
+    end
+    subgraph Publish["Publish lane (tags only)"]
+        SIGN["Signed-tag verification"]
+        ATTEST["Provenance attestation"]
+        DOCS["Project website publish"]
+        RELEASE["Release notes from CHANGELOG.md"]
+    end
+    PR --> Static
+    PR --> Test
+    PR --> Security
+    PUSH --> Static
+    PUSH --> Test
+    PUSH --> Security
+    TAG --> Static
+    TAG --> Test
+    TAG --> Security
+    TAG --> Publish
+    Static --> GATE{All lanes green?}
+    Test --> GATE
+    Security --> GATE
+    GATE -->|yes| MERGE[Merge / publish]
+    GATE -->|no| BLOCK[Block · surface failures · request fix]
+    Publish --> MERGE
+```
+
+## レーンの役割
+
+- **静的解析レーン** —— 高速なフィードバック。Ruff は Python のスタイルと
+  厳選されたルールセットを扱います。mypy は strict で型の規律を強制します。
+  markdownlint はドキュメント表面を取り締まります。frontmatter バリデーターは、
+  ルール・スキル・委任されたワーカー・コマンドのアーティファクトスキーマ準拠を
+  門にかけます。
+- **テストレーン** —— `pytest tests/hooks` はフックランタイムを完全な
+  イベントマトリクスに対して走らせます。`validate_ecosystem.py` は
+  アーティファクト横断の整合性に対する主要な構造ゲートです。`chaos_pass.py` と
+  `src/apothem/benchmarks/` 配下のクラス別ベンチマークスイートは、劣化した入力下
+  での退化と実行時予算のリグレッションを捕捉するため、リリースレーンで起動します。
+- **セキュリティレーン** —— シークレットスキャンは誤ってコミットされた認証情報を
+  捕捉します。SBOM 生成とライセンス監査は、あらゆる本番準備インストールに対して
+  サプライチェーンの表面を門にかけます。
+- **公開レーン** —— タグ付きリリースのみで実行されます。署名済みタグの検証は
+  リリースブランチの来歴を確認します。プロジェクトのウェブサイトは
+  `site/dist/` から GitHub Pages のターゲットへ公開されます。リリースノートは
+  `CHANGELOG.md` の Keep-A-Changelog 形式から派生します。
+
+## 具体的な構成
+
+実際のワークフローファイル（`.github/workflows/ci.yml`、
+`.github/workflows/release.yml` など）は、本番準備エコシステムの構築の際に
+インストールされます。この図は、将来のあらゆる構成が反映する正規の形を定義します。
+
+## 権威ある相互参照
+
+- `pyproject.toml` —— Ruff / mypy / pytest 構成の真実の源。
+- `scripts/dev/validate_ecosystem.py` —— 主要なアーティファクト横断ゲート。
+- `scripts/dev/validate_hooks.py` —— フック固有の構造検証。
+- `scripts/dev/chaos_pass.py` —— 構成された各フックへの敵対的スイープ。
+- `src/apothem/benchmarks/` —— クラス別の実行時予算検証器。
+- `site/content/docs/developer-guide.mdx` —— オペレーター向けの貢献者ワークフロー。
+- `CHANGELOG.md` —— リリースノートの源。

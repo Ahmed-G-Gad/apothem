@@ -1,0 +1,56 @@
+---
+title: "Outward Conformity Registry — When Operating on Host Projects"
+description: "Fifteen-mandate registry (M1–M15) specifying conformity requirements for all artifacts generated in host projects, cross-mapped with ecosystem-internal mandates."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Canonical registry of the fifteen production mandates.** This document carries the full fifteen-mandate registry (M1–M15), the trivial-vs-non-trivial threshold ratification, the M↔CM cross-mapping policy, and the mandate-introduction protocol; the substantive enumerations live here, operationalized by the per-mandate rule files.
+
+When this ecosystem generates, edits, reworks, retrofits, extends, or removes any artifact in a host project (the user's invocation target — git repo, doc tree, research corpus, infrastructure manifest, scratchpad), every produced artifact meets the **fifteen-mandate bar (M1–M15)** declared below. This is non-negotiable and applies to every ecosystem surface (skill, assistant, command, hook, response, diff, message). Enforcement is the pre-emission gate (see `site/content/docs/governance/pre-emission-gate-registry.mdx`); mechanical-fraction enforcement lives at `src/apothem/conformity/*-grep.py` orchestrated by `src/apothem/conformity/gate.py`.
+
+The fifteen mandates operate **alongside** the CM-N mandates per the parallel-vocabulary policy (see `site/content/docs/governance/cross-cutting-mandates.mdx`); M and CM are orthogonal governance dimensions (M is the outward axis — host-project artifacts; CM is the inward axis — ecosystem-internal artifacts). Each rule listed below is the canonical home for its mandate; this registry is the index.
+
+| ID | Mandate | One-line summary | Canonical rule |
+| -- | ------- | ---------------- | -------------- |
+| M1 | Host-Project Agnosticism | Discover host's stack / formatter / linter / layout / idioms; honor them; surface silence as inquiry per M5 with M7 annotation | `src/apothem/rules/host-discovery.md` |
+| M2 | Editorial Discipline | Disclose every amendment / extension / refinement with rationale; no silent over-compliance, no silent over-reach | `src/apothem/rules/disclosure-ledger.md` |
+| M3 | Ten Quality Dimensions | Every artifact passes the ten-bar check (rigor, coherence, configurability, readability, orphanism, structurality, architecture, naming, scholarly referencing, examples/tests/docs) | `src/apothem/rules/ten-dimension-check.md` |
+| M4 | Self-Application | Run the fifteen-bar pre-emission gate before every emission of meaningful scope; record the release proof | `src/apothem/rules/pre-emission-gate.md` |
+| M5 | Authority Principle | Inquire, do not invent; identity / scope / preference / security / naming / infra / version-pin data are never fabricated | `src/apothem/rules/authority-inquiry.md` |
+| M6 | Expertise Incorporation | Read intent, amend proactively, extend on adjacent gaps, refine with cited rationale, anticipate second-order consequences | `src/apothem/rules/expertise-posture.md` |
+| M7 | Option Annotation | Every multi-option choice carries a recommended marker plus principle-linked rationale; silent picks forbidden in authoritative territory | `src/apothem/rules/option-annotation.md` |
+| M8 | Definitiveness & Airtightness | No hedging where binding prescription is possible; no "it depends" without enumerated branches; every contract has pre / post / failure conditions | `src/apothem/rules/definitiveness.md` |
+| M9 | Visual Leverage | Structural subject matter carries a current-reality diagram (Mermaid default) with provenance + verification date | `src/apothem/rules/visual-leverage.md` |
+| M10 | Bidirectional Binding | Substantive structural elements declare reciprocal bindings (Drives → / Driven by ← / Satisfies → / Established by ↑ / Cross-bound with ↔) | `src/apothem/rules/bidirectional-binding.md` |
+| M11 | Agile Sprints | Non-trivial multi-step work runs as disciplined sprints (Goal / Backlog / DoR / DoD / Review / Retrospective) | `src/apothem/rules/agile-sprints.md` |
+| M12 | Phase Reporting & Canonical Layout | Multi-phase work emits per-sub-phase reports + phase-level rollup; outputs at canonical layout | `src/apothem/rules/canonical-layout.md` |
+| M13 | Code Craft | Why-not-what comments; intent-revealing names with units; typed exception handling; named constants; honor host's lint / format / type-check | `src/apothem/rules/code-craft-{python,shell,markdown,conventions}.md` (per-language) |
+| M14 | Ecosystem Systemicity | New components declare upstream / downstream / peers / enforcers; indexed in host registries; no silos, no orphans introduced | `src/apothem/rules/systemic-participation.md` |
+| M15 | Production-Ready Form | Code changes ship with tests + docs + CHANGELOG entry + conformant commit message + CI green in the same change-set | `src/apothem/rules/production-ready-prs.md` |
+
+## 1. Trivial-vs-Non-Trivial Threshold (settled)
+
+The threshold separating trivial from non-trivial work — non-trivial work triggers the M11 + M12 apparatus — is **line-count + scope hybrid**: a change is trivial when it is a single-file edit of ≤ 5 lines AND introduces no public-API surface change AND no behavioral shift. Anything else is non-trivial. Settled once per the M5 settle-once discipline; the threshold lives here at user scope and is overridden only by an explicit project-scope declaration honoring M1 host-discovery (e.g. a `<project>/.claude/CLAUDE.md` for Claude Code, or the equivalent per-project surface for another harness).
+
+## 2. M↔CM Cross-Mapping
+
+Each M-numbered rule body declares its CM-N cross-mapping inline (in its `Cross-bound with ↔` binding) using the parallel-vocabulary policy: where an M-mandate has a closest CM-N analog, both rules apply where both apply (no substitution). The mappings are intrinsic to the rule bodies; this registry summarizes the axis policy without duplicating the mapping table.
+
+## 3. Mandate-Introduction Protocol
+
+Adding a new M-numbered mandate (e.g., a future M16) is a **bundled change**. The bundle reaches the registry only when every component below is present in the same change-set. Silent additions — a new M-row in the registry table without the supporting bundle — produce mandate-axis drift and are non-conformant per M14 systemic-participation.
+
+| Required component | Purpose | Where it lands |
+| ------------------ | ------- | -------------- |
+| **Mandate row in registry table** | Names the mandate, its one-line summary, its canonical rule | This registry's table above |
+| **CM-N cross-mapping cell** | Declares the closest CM-N analog (or marks `(no direct CM-N analog)` as new-axis) per the §2 parallel-vocabulary policy | The new rule's `Cross-bound with ↔` line |
+| **Canonical rule body** | The mandate's substantive specification (Pre-conditions / Required behavior / Disclosure surface / Failure tells / Bindings five-direction) | `src/apothem/rules/<mandate-name>.md` |
+| **Pre-emission gate row** | Names the bar's check kind (mechanical / reasoned / mixed) and its `Failure → action` | The pre-emission gate registry table (`site/content/docs/governance/pre-emission-gate-registry.mdx`) |
+| **Enforcement surface** | Either a mechanical grep at `src/apothem/conformity/<name>-grep.py` orchestrated by `gate.py`, OR an explicit reasoned-bar declaration with the operator self-check anchor | `src/apothem/conformity/` (mechanical) or the gate row marked `reasoned` (operator self-check) |
+| **Conformity fixture** | A fixture under `tests/conformity-scenarios/fixtures/F-<N>-<name>/` exercising the mandate's failure modes; verifier's mandate-list updated to include the new bar | `tests/conformity-scenarios/` |
+| **Release-proof schema update** | The release-proof `bars:` block gains the new row; existing artifacts' release-proof blocks treat the new row as `n/a (with reason: pre-mandate-N artifact)` until re-audited | `site/content/docs/governance/pre-emission-gate-registry.mdx` §1 schema |
+| **Disclosure ledger entry** | Records the mandate's introduction with rationale grounded in a concrete driver (observed pattern recurrence; security gap exposed; capability the existing fifteen do not cover) | The change-set's commit body or PR description per `src/apothem/rules/disclosure-ledger.md` |
+
+**Application discipline.** A mandate proposal that arrives without the bundle is rejected at review; the proposer either completes the bundle or downgrades the proposal to an extension of an existing mandate. The existing fifteen mandates were adopted together as the spec's outward axis; future additions honor the same all-components-or-no-component adoption cadence rather than landing piecemeal.
+
+**Demotion / retirement protocol.** When an established M-N is found redundant with an existing CM-N or with another M-N (the cross-mapping coverage map at the materializing-rule's body shows `direct` adjacency in both directions), the demotion is the symmetric inverse: the registry row is retired, the gate row is retired, the canonical rule is retired (with content folded into the absorbing rule per `src/apothem/rules/clean-room-generation.md` §3 Re-Writing Protocol), the conformity fixture is retired, the release-proof schema's `bars:` block drops the row, and the change-set is recorded in the disclosure ledger with the absorbing-rule citation. Demotion preserves the same all-components-or-no-component invariant.

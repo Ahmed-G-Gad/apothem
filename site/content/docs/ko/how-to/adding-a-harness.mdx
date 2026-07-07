@@ -1,0 +1,80 @@
+---
+title: "도구 추가하기"
+description: "도구 어댑터를 활성화하여 공유 프로파일로부터 그 네이티브 구성이 머티리얼라이즈되도록 합니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+목표: 도구를 하나 더 활성화하여 Apothem이 공유 프로파일로부터 그 도구의
+네이티브 구성을 머티리얼라이즈하도록 합니다.
+
+## 사전 요건
+
+- `~/.config/apothem/profile.yaml`에 공유 프로파일(아직 없다면
+  `apothem profile init`으로 생성).
+- `PATH`에 등록된 `apothem` CLI. 자체 포함 소스 트리를 설치했다면 각 커맨드
+  앞에 `PYTHONPATH="$HOME/.apothem/src"`를 붙이고 `apothem` 대신
+  `python -m apothem`을 실행하십시오 — 또는 `npx @ahmed-g-gad/apothem`을
+  사용하십시오.
+
+## 단계
+
+1. 등록된 도구 목록을 보고 이미 설치된 것이 무엇인지 확인합니다:
+
+   ```bash
+   apothem harnesses list
+   ```
+
+   `apothem harnesses list`는 지원되는 모든 id를 출력합니다. 동일한 집합이
+   [도구 목록](/docs/harnesses)과 소스 생성
+   [도구 레지스트리](/docs/reference/harness-registry)에 있습니다. 여기에
+   목록을 하드코딩하는 대신 사용하는 도구의 id를 선택하십시오 — 어댑터가
+   추가됨에 따라 목록이 늘어납니다.
+
+2. 대상 도구를 점검하여 범위와 출력 경로를 확인합니다:
+
+   ```bash
+   apothem harnesses show cursor
+   ```
+
+   `Scope: project` 줄은 어댑터가 프로젝트 트리로 머티리얼라이즈하며
+   `--project PATH`가 필요함을 의미합니다. `Scope: user`는 사용자 범위
+   구성 디렉터리로 머티리얼라이즈하며 프로젝트 플래그가 필요 없습니다.
+
+3. 파일을 쓰지 않고 설치를 미리 봅니다:
+
+   ```bash
+   apothem install --harness cursor --dry-run
+   ```
+
+4. 도구를 설치합니다. 사용자 범위 도구의 경우:
+
+   ```bash
+   apothem install --harness claude-code
+   ```
+
+   프로젝트 범위 도구의 경우 프로젝트 루트를 전달합니다:
+
+   ```bash
+   apothem install --harness cursor --project /path/to/project
+   ```
+
+   `--harness all`로 지원되는 모든 도구를 한 번에 설치합니다(프로젝트 범위
+   도구는 여전히 `--project`가 필요하며, 프로파일의 `exclude_harnesses`에
+   나열된 id는 건너뜁니다).
+
+## 검증
+
+```bash
+apothem verify --harness cursor
+```
+
+`✓ <harness-id> is verified` 줄은 관리되는 대상이 존재하며 파싱됨을 확인합니다.
+`apothem doctor`는 모든 도구에 걸친 전체 시스템 뷰를 제공합니다.
+
+## 관련 항목
+
+- 어댑터가 머티리얼라이즈하는 내용을 변경하려면
+  [프로파일 편집하기](/docs/how-to/editing-the-profile) 후 `apothem update`를
+  다시 실행하십시오.
+- [설치하기](/docs/install)는 최초 실행 설치를 다룹니다.

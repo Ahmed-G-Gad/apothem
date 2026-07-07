@@ -1,0 +1,36 @@
+---
+title: "Konvensi prosa"
+description: "Menerapkan hierarki modal RFC 2119, melarang kata sifat pemasaran dan pengisi mengelak, menggunakan tanggal ISO-8601 absolut, dan memvalidasi kerapatan prosa direktif."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Referensi kanonis untuk disiplin prosa di setiap permukaan Markdown yang ditulis.** Ringkasan di [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Konvensi adalah deklarasi inline; halaman ini adalah referensi mandiri yang dikutip kontributor hilir.
+
+---
+
+## 1. Hierarki modal (RFC 2119)
+
+Prosa direktif menggunakan hierarki modal **RFC 2119**: `MUST`, `MUST NOT`, `SHOULD`, `SHOULD NOT`, `MAY`. Masing-masing membawa kekuatan mengikat yang didefinisikan RFC. Modal huruf kecil (`must`, `should`) tidak membawa bobot normatif dan hanya digunakan dalam prosa naratif di mana tidak ada kewajiban yang dideklarasikan.
+
+## 2. Kosakata terlarang
+
+### 2.1 Kata sifat pemasaran
+
+Istilah `powerful`, `seamless`, `robust`, `cutting-edge`, `next-generation`, `world-class`, `enterprise-grade`, dan padanannya dilarang dalam artefak yang menghadap pengguna kecuali didukung secara konkret dengan bukti terukur. Pembuktian mengutip benchmark, perbandingan, pengukuran, atau sumber validasi eksternal.
+
+### 2.2 Pengisi mengelak
+
+Istilah `basically`, `kind of`, `sort of`, `in some sense`, `to some extent`, dan padanannya dilarang dalam teks direktif. Prosa direktif bersifat mengikat; pengisi mengelak menyerahkan kekuatan mengikat yang diklaim prosa.
+
+### 2.3 Kerapatan UDA
+
+Pemeriksaan kerapatan direktif universal (UDA) di `scripts/dev/validate_ecosystem.py` menerapkan leksikon mengelak tertutup (`maybe`, `might`, `could`, `should probably`, `usually`, `generally speaking`, `in most cases`, `mostly`, `typically`, `often`, `or similar`, `etc.`, `and so on`) pada baris yang membawa preskripsi mengikat. Token mengelak yang dikutip sebagai subjek aturan itu sendiri (mis., daftar kata terlarang pada halaman daftar-larangan) dikecualikan oleh mekanisme penanda definisional validator.
+
+## 3. Referensi tanggal
+
+Tanggal adalah ISO-8601 absolut (`YYYY-MM-DD`) pada setiap referensi. Tanggal relatif (`yesterday`, `last week`, `recently`) dilarang dalam artefak yang bertahan di luar sesi penulisannya.
+
+## 4. Validator
+
+Pemeriksaan kerapatan UDA dari `scripts/dev/validate_ecosystem.py` adalah permukaan penegakan mekanis untuk §2.3. Keluarga `markdown` validator conformity-grep per-tulis menegakkan standar kualitas prosa yang lebih luas pada batas hook PreToolUse Write/Edit.

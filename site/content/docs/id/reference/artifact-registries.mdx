@@ -1,0 +1,185 @@
+---
+title: "Registri Artefak"
+description: "Enumerasi lengkap artefak ekosistem Apothem: command, rule, pembantu terdelegasi, hook, skill, output style, disiplin evolusi artefak, dan deklarasi kelas-artefak-kosong."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Registri kanonis kohort artefak.** Dokumen ini membawa enumerasi lengkap command, rule, pembantu terdelegasi, hook, skill, output style, disiplin evolusi-artefak, dan deklarasi kelas-artefak-kosong; tabel substantifnya hidup di sini. Tata letak sumber proyek menyediakan tampilan always-on yang dipadatkan.
+
+## 1. Command
+
+Tiga puluh command terdaftar dari `src/apothem/commands/*.md` (non-rekursif). Setiap command adalah berkas terdaftar kelas-satu; orkestrator `/plan` hanya merangkai stage plan yang sudah kelas-satu dan tidak membawa logika stage miliknya sendiri, jadi tetap tidak ada dispatcher monolitik dan tidak ada pengelompokan subcommand. Command non-plan, non-workflow:
+
+| Command | Berkas | Deskripsi |
+| ------- | ---- | ----------- |
+| `/a11y-audit` | `src/apothem/commands/a11y-audit.md` | Audit aksesibilitas suatu permukaan web yang ter-deploy terhadap WCAG 2.2 AA, ditelusuri halaman demi halaman |
+| `/architecture-review` | `src/apothem/commands/architecture-review.md` | Tinjauan integritas-arsitektur sebuah repositori terhadap artefak desainnya dan disiplin lapisan kanonis |
+| `/code-audit` | `src/apothem/commands/code-audit.md` | Audit kode forensik lintas-berkas pada cakupan korpus-repositori melintasi enam fase adversarial |
+| `/code-review` | `src/apothem/commands/code-review.md` | Tinjauan kualitas-kode per-berkas di `src/`, `scripts/`, dan `tools/` dengan temuan per-berkas |
+| `/dependency-audit` | `src/apothem/commands/dependency-audit.md` | Audit per-dependensi (langsung + transitif) melintasi berkas manifes repositori |
+| `/docs-review` | `src/apothem/commands/docs-review.md` | Tinjauan dokumentasi atas setiap halaman Markdown di bawah permukaan docs host |
+| `/elevate` | `src/apothem/commands/elevate.md` | Mengangkat setiap permukaan proyek ke SOTA terkini melalui pembantu kritik independen, lalu menyerahkan ke `/freshify` |
+| `/eval` | `src/apothem/commands/eval.md` | Kampanye evaluasi model-bahasa yang agnostik-model dibangun di atas skill eval-harness |
+| `/freshify` | `src/apothem/commands/freshify.md` | Membuat proyek segar, bebas-jejak, dan siap-produksi; setiap langkah destruktif digerbangi-konfirmasi |
+| `/github-deploy-fresh` | `src/apothem/commands/github-deploy-fresh.md` | Spesialisasi GitHub dari `/freshify` yang menghasilkan satu rilis versi-pertama yang segar di `origin/main` |
+| `/github-deploy-next` | `src/apothem/commands/github-deploy-next.md` | Menjalankan satu siklus rilis-berikutnya penuh dari ujung ke ujung pada permukaan rilis GitHub |
+| `/perf-audit` | `src/apothem/commands/perf-audit.md` | Audit terhadap anggaran kinerja per-kelas di `src/apothem/rules/performance-discipline.md` |
+| `/release-readiness` | `src/apothem/commands/release-readiness.md` | Sapuan gerbang pra-rilis: matriks kualitas, risiko dependensi, dan pemeriksaan rekayasa-rilis |
+| `/research` | `src/apothem/commands/research.md` | Keterlibatan riset multi-sumber dengan penemuan dan ekstraksi sumber paralel |
+| `/security-audit` | `src/apothem/commands/security-audit.md` | Audit postur keamanan terhadap OWASP ASVS, OWASP Top 10, dan CWE Top 25 |
+| `/supply-chain-audit` | `src/apothem/commands/supply-chain-audit.md` | Audit rantai-pasok terhadap standar SLSA, Sigstore, dan SBOM |
+| `/test-suite` | `src/apothem/commands/test-suite.md` | Penulisan dan eksekusi tes yang mengutamakan-perilaku terhadap framework tes host yang disahkan |
+| `/threat-model-audit` | `src/apothem/commands/threat-model-audit.md` | Audit pemodelan-ancaman terhadap STRIDE dan PASTA melintasi arsitektur, alur-data, dan batas-kepercayaan |
+| `/ux-review` | `src/apothem/commands/ux-review.md` | Tinjauan pengalaman-developer: ergonomi CLI, alur instalasi, teks bantuan, dan pesan error |
+
+### Command pipeline-plan
+
+Pipeline plan dikirimkan sebagai delapan command kelas-satu — satu per stage, masing-masing dapat diinvokasi langsung sebagai `/plan-<stage>` dari berkas terdaftarnya sendiri di `src/apothem/commands/plan-<stage>.md`.
+
+| Command | Berkas | Perilaku |
+| ------- | ---- | -------- |
+| `/plan-spec` | `src/apothem/commands/plan-spec.md` | Memperhalus prosa bebas-bentuk menjadi `_spec/spec.md` berkelas-spek; setiap pertanyaan terbuka dirutekan melalui kanal inkuiri-terstruktur alih-alih pen-default-an diam-diam; `--quick` menulis satu berkas plan ringan di bawah `<project-root>/.apothem/plans/` (`.plans/` tetap menjadi fallback kompatibilitas-mundur yang didukung) |
+| `/plan-generate` | `src/apothem/commands/plan-generate.md` | Menghasilkan Master Plan Suite lengkap dari prosa/requirement yang ditulis |
+| `/plan-review` | `src/apothem/commands/plan-review.md` | Audit forensik atas suite yang sudah ada — fidelitas prosa, konsistensi internal, analisis celah — diperhalus melalui Q&A interaktif |
+| `/plan-design` | `src/apothem/commands/plan-design.md` | Menghasilkan artefak desain-arsitektur di `_inputs/design.md` suite, divalidasi oleh gerbang pra-emisi lima-belas-bar sebelum promosi |
+| `/plan-audit` | `src/apothem/commands/plan-audit.md` | Audit loop-tertutup dan remediasi melintasi siklus penuh spec → generate → review, berulang hingga nol temuan tersisa atau batas-iterasi dengan retret terdefinisi tercapai |
+| `/plan-execute` | `src/apothem/commands/plan-execute.md` | Mengeksekusi sebuah fase dengan pemeriksaan konformitas dan gerbang kualitas — effort `medium` default, dapat ditimpa per fase via field `effort:` di frontmatter `PHASE.md`; berhenti di setiap batas fase secara default, dengan `--no-pause` (atau flag profil `enforcement.continuous_execution`) memilih untuk maju kontinu fase-ke-fase |
+| `/plan-status` | `src/apothem/commands/plan-status.md` | Laporan progres baca-saja terhadap dimensi tugas, fase, dan artefak |
+| `/plan-amend` | `src/apothem/commands/plan-amend.md` | Mengamandemen, memperluas, memperhalus, atau membatalkan suite yang sudah ada tanpa menghancurkan keputusan terselesaikan sebelumnya; menderivasi-ulang hanya artefak hilir yang terdampak |
+
+### Command alur-kerja-operator & orkestrator
+
+Tiga command memasuki suatu prosedur mendalam alih-alih membawa logika stage miliknya sendiri: dua titik-masuk alur-kerja-operator (masing-masing didukung oleh skill saudara dengan nama yang sama) ditambah orkestrator pipeline-plan yang tipis.
+
+| Command | Berkas | Deskripsi |
+| ------- | ---- | ----------- |
+| `/workflow` | `src/apothem/commands/workflow.md` | Titik-masuk pemanfaatan-alur-kerja serbaguna (`/goal <<mission>>`): menggerakkan alur-kerja dinamis multi-agen yang genuinely-independen di bawah kontrak-return bernama, verifikasi refute-by-default sebelum suatu temuan bertahan, remediasi melampaui-misi yang diungkap per ledger perubahan, dan output deterministik; dispatch multi-agen dan eksekusi-otomatis bersifat opt-in / digerbangi-konfirmasi. Didukung oleh skill `workflow` |
+| `/projectify` | `src/apothem/commands/projectify.md` | Elevasi Project aplikasi-chat: menulis deliverable Description / Instruction / knowledge-Files untuk sebuah Claude Project, Custom GPT, atau Gem ke konvensi SOTA terkini, dalam anggaran konteks per-platform yang terukur; output deterministik, otonomi opt-in. Didukung oleh skill `projectify` |
+| `/plan` | `src/apothem/commands/plan.md` | Orkestrator tipis yang merangkai stage plan kelas-satu (`plan-spec → plan-generate → plan-review → plan-design (kondisional) → plan-execute`), melanjutkan masing-masing dari Handoff Manifest stage sebelumnya; tidak membawa logika stage — perangkaian bersifat opt-in / digerbangi-konfirmasi (`--auto` merangkai secara kontinu) |
+
+## 2. Rule
+
+Rule perilaku hidup di bawah `src/apothem/rules/` — inti always-on yang kecil ditambah himpunan ter-filter-jalur yang lebih besar (dimuat-sesuai-kebutuhan saat sentuhan artefak yang cocok). Enumerasi per-rule lengkap — dengan kolom Scope (always-on / ter-filter-jalur) dan Implements — adalah `reference/rules.mdx` yang dihasilkan-dari-sumber, disegarkan dari `src/apothem/rules/*.md` oleh generator reference-inventory; konsultasikan untuk daftar terkini yang otoritatif.
+
+> **Delineasi facet CM-21** (tiga rule co-mengimplementasikan CM-21 dengan facet berbeda non-tumpang-tindih): **filter kreatif & identitas kognitif** → `cognitive-identity.md`; **metodologi generasi (protokol penulisan & penulisan-ulang)** → `clean-room-generation.md`; **teknik perencanaan/tinjauan** → `planning-techniques.md`. Setiap rule memiliki facet-nya; yang lain merujuk keluar.
+
+> **Pointer skema interactive-questions.** Skema invokasi inkuiri-terstruktur kanonis — field yang diperlukan, tabel ringkasan-field, dua contoh kerja yang dapat dieksekusi (single-select di §2.1 dan multi-select di §2.2) — hidup di `src/apothem/rules/interactive-questions.md` §2 "Structured-Inquiry Shape". Artefak hilir boleh menyalin §2.1 atau §2.2 sebagai template invokasi; skema anotasi-opsi tiga-segmen yang dibawa setiap body `description` opsi dispesifikasikan di §3 berkas yang sama.
+
+## 3. Pembantu Terdelegasi
+
+Dua belas definisi pekerja persisten dikirimkan bersama ekosistem; pola tim rule orkestrasi mendispatch kepadanya. Setiap definisi hidup di jalur berkas yang tercantum di bawah.
+
+```text
+Pembantu             Berkas                                     Pola            Kebijakan Model
+------------------- ------------------------------------------ --------------- -------------
+Codebase Explorer   src/apothem/agents/codebase-explorer.md   Research        dipilih-host
+Convention Auditor  src/apothem/agents/convention-auditor.md  Audit           dipilih-host
+Dependency Auditor  src/apothem/agents/dependency-auditor.md  Audit           dipilih-host
+Fact Checker        src/apothem/agents/fact-checker.md        Audit           dipilih-host
+MCP Builder         src/apothem/agents/mcp-builder.md         Generation      dipilih-host
+Memory Auditor      src/apothem/agents/memory-auditor.md      Audit           dipilih-host
+Prompt Evaluator    src/apothem/agents/prompt-evaluator.md    Quality         dipilih-host
+Quality Gate        src/apothem/agents/quality-gate.md        Quality         dipilih-host
+Refactor Surgeon    src/apothem/agents/refactor-surgeon.md    Implementation  dipilih-host
+Research Scout      src/apothem/agents/research-scout.md      Research        dipilih-host
+Security Scanner    src/apothem/agents/security-scanner.md    Audit           dipilih-host
+Test Runner         src/apothem/agents/test-runner.md         Quality         dipilih-host
+```
+
+## 4. Hook
+
+Setiap command hook terdaftar menggunakan bentuk command exec-form Claude Code
+(`command: "python"` ditambah array `args`) dan menginvokasi entah
+`-m apothem.hooks.dispatch` atau `-m apothem.conformity.gate`. Dispatcher
+mengimpor `src/apothem/hooks/lib/resolve_root.py` untuk resolusi root-ekosistem dan
+mendelegasikan ke dua helper yang berada di sampingnya di bawah `src/apothem/hooks/` itu sendiri:
+`src/apothem/hooks/emit_hook_context.py` memformat payload event untuk asisten, dan
+`src/apothem/hooks/session_start_bootstrap.py` membawa kerja persiapan SessionStart yang
+dilimpahkan dispatcher saat ia merutekan event itu. Pesan hook yang dimunculkan ke
+asisten saat event yang didukung terpicu hidup sebagai berkas konteks Markdown di bawah
+`src/apothem/hooks/messages/` — satu per varian event: `postcompact.md`, `precompact.md`,
+`pretooluse-bash.md`, `pretooluse-bash-plan-guard.md`, `pretooluse-conformity.md`,
+`pretooluse-dependency-guard.md`, `pretooluse-edit.md`, `pretooluse-edit-header-guard.md`,
+`pretooluse-eval-guard.md`, `pretooluse-notebookedit.md`, `pretooluse-write.md`,
+`pretooluse-write-header-guard.md`, `pretooluse-write-plan-guard.md`, `sessionstart.md`,
+`stop.md`. Setiap berkas konteks yang dirutekan dimuat oleh dispatcher saat event-nya terpicu
+dan argumen konteksnya terdaftar di `settings.json`; tiga berkas konteks
+(`pretooluse-conformity.md`, `pretooluse-dependency-guard.md`, `pretooluse-eval-guard.md`)
+dikirim sebagai varian tersedia tanpa entri perutean `settings.json` saat ini.
+
+```text
+Event             Mengotomatiskan          Timeout  Tujuan
+----------------- ------------------------ -------- --------------------------------------------------
+SessionStart      CM-14                    30s      Baca memori, periksa state plan, laporkan kesiapan
+PreCompact        CM-24 §2.3               30s      Verifikasi state ter-eksternalisasi sebelum kompaksi
+PostCompact       CM-24 §6.2               30s      Pulihkan working state setelah kompaksi
+Stop              CM-14/CM-22/CM-24/CM-26  60s      Eksternalisasi akhir-sesi
+PreToolUse        CM-7/CM-22               10s      Validasi Write/Edit/NotebookEdit — pemeriksaan isolasi-codebase, frontmatter, lisensi-header, dan lokalitas-plan plus gerbang konformitas. Validasi Bash — isolasi artefak git dan lokalitas-plan
+PostToolUse       —                        10s      Diterima oleh whitelist src/apothem/hooks/dispatch.py untuk kompatibilitas-maju; tidak ada entri settings.json yang saat ini merutekan event ini
+UserPromptSubmit  —                        10s      Diterima oleh whitelist src/apothem/hooks/dispatch.py untuk kompatibilitas-maju; tidak ada entri settings.json yang saat ini merutekan event ini
+Notification      —                        10s      Diterima oleh whitelist src/apothem/hooks/dispatch.py untuk kompatibilitas-maju; tidak ada entri settings.json yang saat ini merutekan event ini
+```
+
+> **Konvensi.** Baris di mana **Mengotomatiskan** adalah `—` diterima oleh `dispatch.py` tetapi tidak terhubung di `settings.json`; kolom **Timeout** menampilkan default tingkat-dispatch yang berlaku jika dan ketika event itu kemudian dihubungkan.
+>
+> **Blok kanonis nilai-timeout.** Kolom **Timeout** tabel ini adalah satu-satunya sumber kebenaran untuk nilai timeout hook di seluruh ekosistem. Field `timeout` per-hook `settings.json`, tabel cermin di `site/content/docs/reference/settings-reference.mdx` § Hook Events dan `site/content/docs/reference/artifact-schema.mdx` § Hooks Pipeline, dan panduan rule di `src/apothem/rules/persistent-conventions-vigilance.md` § Convention Awareness semuanya berasal dari kolom ini. Revisi timeout di masa depan mendarat di sini dan konsumen menderivasi-ulang pada reference berikutnya.
+
+### Kadensi Tinjauan Template Settings
+
+`settings.json` adalah satu-satunya template Claude Code. Setiap command hook menggunakan
+exec form alih-alih wrapper spesifik-shell, jadi perilaku lintas-OS ditinjau
+di dalam satu berkas alih-alih dengan men-diff template berpasangan. Entri permission baru,
+event hook, timeout, dan pesan status mendarat di berkas itu secara atomik.
+
+## 5. Skill
+
+Skill yang dapat digunakan-ulang hidup di bawah `src/apothem/skills/`, satu folder per skill.
+
+| Skill | Jalur | Dapat-Diinvokasi-Pengguna | Tujuan |
+| ----- | ---- | -------------- | ------- |
+| Dependency Upgrade | `src/apothem/skills/dependency-upgrade/` | Ya | Upgrade dependensi yang ditinjau-changelog, dipin, terverifikasi-gerbang |
+| Dev Toolkit | `src/apothem/skills/dev-toolkit/` | Ya | Loop rekayasa berdisiplin — debugging terstruktur, test-first red-green-refactor, dekomposisi vertical-slice, pemecahan requirement-ke-issue |
+| Diagram Authoring | `src/apothem/skills/diagram-authoring/` | Ya | Pipeline author → validasi → render → ekspor untuk diagram deklaratif dan visualisasi data (SVG / PNG / PDF) |
+| Document Authoring | `src/apothem/skills/document-authoring/` | Ya | Penulisan dokumen bentuk-panjang yang digerbangi-persetujuan (outline → draf → tinjauan) dengan sitasi terverifikasi dan kompilasi typeset deterministik |
+| Ecosystem Audit | `src/apothem/skills/ecosystem-audit/` | Ya | Audit buta atas pohon konfigurasi Apothem |
+| Eval Harness | `src/apothem/skills/eval-harness/` | Ya | Harness evaluasi model-bahasa yang dapat-direproduksi dengan kriteria-lulus eksplisit |
+| Incident Runbook | `src/apothem/skills/incident-runbook/` | Ya | Penulisan runbook sebagai Trigger → Diagnosis → Action → Verification → Rollback |
+| Multi-Source Research | `src/apothem/skills/multi-source-research/` | Ya | Laporan riset yang difan-out, terverifikasi-silang, tersitasi |
+| Plan Suite | `src/apothem/skills/plan-suite/` | Tidak | Template master yang dikonsumsi oleh stage pipeline `/plan` |
+| Projectify | `src/apothem/skills/projectify/` | Ya | Elevasi Project aplikasi-chat — deliverable Description / Instruction / knowledge-Files ke konvensi SOTA dalam anggaran konteks per-platform yang terukur |
+| Prompt Engineering | `src/apothem/skills/prompt-engineering/` | Ya | Desain prompt terstruktur yang tervalidasi-eval |
+| Refactor Extract | `src/apothem/skills/refactor-extract/` | Ya | Refactor ekstraksi yang mempertahankan-perilaku |
+| Secret Rotation | `src/apothem/skills/secret-rotation/` | Ya | Pemensiunan dan penggantian kredensial terekspos yang aman |
+| Source Synthesis | `src/apothem/skills/source-synthesis/` | Ya | Merekonsiliasi himpunan sumber tetap menjadi satu sintesis tersitasi |
+| Surgical Guard | `src/apothem/skills/surgical-guard/` | Ya | Penyuntingan terikat-anchor minimal-diff dipasangkan dengan penjaga kualitas pasca-suntingan reaktif berbasis-diff |
+| Test Authoring | `src/apothem/skills/test-authoring/` | Ya | Penulisan tes yang mengutamakan-perilaku dengan disiplin Arrange-Act-Assert |
+| Vuln Triage | `src/apothem/skills/vuln-triage/` | Ya | Mengklasifikasi-tingkat-keparahan advisori keamanan dan merutekan remediasi |
+| Workflow | `src/apothem/skills/workflow/` | Ya | Pemanfaatan alur-kerja multi-agen serbaguna dengan verifikasi adversarial refute-by-default dan remediasi melampaui-misi yang diungkap |
+
+> **Konvensi.** **Jalur** setiap baris adalah sebuah folder; titik masuknya adalah berkas `SKILL.md` di dalamnya — mis. `src/apothem/skills/plan-suite/SKILL.md` — per konvensi skill folder-dengan-`SKILL.md` yang dideklarasikan di tata letak sumber proyek.
+
+## 6. Output Style
+
+Empat output style hidup di bawah `src/apothem/output-styles/`.
+
+| Style | Berkas | Tujuan |
+| ----- | ---- | ------- |
+| Default | `src/apothem/output-styles/default.md` | Style default-ekosistem — konvensi output terpadu, perutean konten-perencanaan, dan kontrak penulisan-berkas |
+| Default Architect | `src/apothem/output-styles/default-architect.md` | Nada arsitek-senior — analitis, langsung, sitasi penggerak-konkret |
+| Concise Engineer | `src/apothem/output-styles/concise-engineer.md` | Output rekayasa bentuk-pendek — prosa minimum, mengutamakan-kode |
+| Forensic Auditor | `src/apothem/output-styles/forensic-auditor.md` | Postur kelas-tinjauan — output temuan-demi-temuan, berbentuk-scorecard, falsifier per temuan |
+
+## 7. Evolusi Artefak
+
+**Wajib.** Ketika suatu pola, koreksi, atau teknik yang dapat digunakan-ulang berulang (2+ instans dalam satu sesi, atau dicatat di memori sebagai berulang), ekosistem harus berevolusi. Siklusnya memiliki empat langkah: **Detect** pola selama interaksi apa pun; **Search** skill, rule, command, hook, dan memori yang ada untuk tumpang-tindih; **Act** dengan mengevolusi artefak yang cocok di-tempat (perbarui prosedur, anti-pola, scope) atau membuat yang baru ketika kepentingannya genuinely ortogonal; **Validate** bahwa referensi-silang masih ter-resolve dan artefak dependen tetap konsisten. Lebih suka perhalusan daripada pembuatan — artefak baru memajemukkan permukaan pemeliharaan. Lihat `src/apothem/rules/persistent-conventions-vigilance.md` §2+§4 untuk protokol lengkap termasuk katalog tertutup pemicu deteksi-celah di seluruh kelas artefak.
+
+## 8. Kelas Artefak Kosong
+
+Permukaan yang dideklarasikan dalam registri ekosistem tetapi sengaja kosong sampai suatu pemicu aktivasi terpicu. Setiap baris mencatat permukaan tercadang, berkas atau direktori yang men-scaffold kelas itu, dan pemicu yang mempromosikan baris dari kosong-atest ke terpopulasi.
+
+| Kelas | Scaffold | Status | Pemicu aktivasi |
+| ----- | -------- | ------ | ------------------ |
+| MCP server | (belum ada scaffold) | kosong-atest | Instalasi MCP server pertama di bawah root user-config |
+
+Kosong-atest adalah deklarasi positif, bukan celah. Scaffold kelas (ketika ada) adalah artefak no-op kanonis yang melacak momen aktivasi. Promosi dari kosong-atest ke terpopulasi mendarat di seksi registri yang relevan secara atomik dengan nilai non-kosong pertama scaffold.

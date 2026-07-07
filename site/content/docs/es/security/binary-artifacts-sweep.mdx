@@ -1,0 +1,57 @@
+---
+title: "Barrido de artefactos binarios"
+description: "Barrido de artefactos binarios de Apothem: cero binarios compilados / empaquetados rastreados en el código fuente. Evidencia de la verificación Binary-Artifacts de OpenSSF Scorecard."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+La verificación **Binary-Artifacts** de OpenSSF Scorecard comprueba que el árbol de código fuente no contenga ningún artefacto binario compilado / empaquetado / opaco. Los binarios en el código fuente no son auditables y proporcionan un punto de apoyo para ataques a la cadena de suministro: el binario incrusta código que el árbol de fuentes no expone, por lo que los revisores no pueden inspeccionarlo antes de fusionar.
+
+## La postura de Apothem ante los artefactos binarios
+
+Apothem es un **árbol de código fuente Python puro** sin ningún artefacto binario compilado, empaquetado u opaco rastreado en el control de versiones. El repositorio es auditable de extremo a extremo desde el código fuente.
+
+## Metodología del barrido
+
+El barrido enumera los tipos de archivo que Scorecard considera binarios y luego verifica que cada uno esté ausente del control de versiones:
+
+| Familia de extensiones | Descripción | Estado en Apothem |
+|---|---|---|
+| `.exe`, `.dll`, `.so`, `.dylib` | Binarios nativos compilados | ✅ Cero rastreados |
+| `.bin`, `.o`, `.a`, `.lib` | Archivos objeto / bibliotecas estáticas | ✅ Cero rastreados |
+| `.jar`, `.war`, `.ear` | Paquetes Java | ✅ Cero rastreados |
+| `.whl`, `.egg` | Distribuciones Python | ✅ Cero rastreados (se compilan en `dist/`; ignorados por gitignore) |
+| `.tar.gz`, `.zip` (distribución compilada) | Archivos comprimidos que contienen artefactos compilados | ✅ Cero rastreados |
+| `.class`, `.pyc`, `.pyo` | Bytecode compilado | ✅ Cero rastreados (`__pycache__/` ignorado por gitignore) |
+| `.crt`, `.pem`, `.key`, `.p12`, `.pfx` | Material criptográfico | ✅ Cero rastreados (denegado en `.gitignore`) |
+
+## Clases de binarios permitidas
+
+Dos clases acotadas de artefactos binarios SÍ se permiten en el código fuente:
+
+1. **Recursos de marca** — `assets/*.png`, `assets/*.ico`, `assets/favicon.*`. Estos son **regenerables de forma determinista** a partir de los maestros SVG en `assets/src/` mediante `scripts/dev/rebuild-assets.{sh,ps1}`. Scorecard los considera legítimos según su exención `image/png`.
+2. **Archivos de fuentes tipográficas** — `assets/fonts/*.ttf`, `assets/fonts/*.woff2`. Archivos de fuentes empaquetados con licencias documentadas; según la exención `font/*` de Scorecard.
+
+Ambas clases están documentadas en [`site/content/docs/brand/index.mdx`](/docs/brand) y su procedencia queda registrada en la receta de reconstrucción de recursos.
+
+## Comando de verificación
+
+```shell
+# Desde la raíz del repositorio apothem:
+git ls-files | grep -E '\\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
+```
+
+Esta invocación debería devolver **cero líneas**. Un resultado no vacío indica que un artefacto binario quedó rastreado en el código fuente: un hallazgo de severidad ALTA que bloquea la siguiente publicación.
+
+## Cadencia de auditoría
+
+El barrido forma parte de:
+
+- **CI por cada PR** — `.github/workflows/ci.yml` incluye un paso de grep de artefactos binarios.
+- **Punto de control por cada publicación** — el runbook de ingeniería de publicaciones verifica el barrido antes de etiquetar.
+- **Ejecución semanal de Scorecard** — el flujo de trabajo de OpenSSF Scorecard reconfirma que la verificación pasa.
+
+## Referencias
+
+- [OpenSSF Scorecard — verificación Binary-Artifacts](https://github.com/ossf/scorecard/blob/main/docs/checks.md#binary-artifacts)
+- [`.gitignore` de Apothem](https://github.com/ahmed-g-gad/apothem/blob/main/.gitignore) — la lista de denegación que evita el registro accidental de binarios

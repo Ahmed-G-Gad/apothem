@@ -1,0 +1,87 @@
+---
+title: "프로파일 편집하기"
+description: "공유 프로파일을 변경하고 설치된 모든 도구를 다시 머티리얼라이즈합니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+목표: 공유 프로파일의 값을 변경하고 설치한 모든 도구에 푸시합니다.
+
+## 사전 요건
+
+- `PATH`에 등록된 `apothem` CLI(또는 자체 포함 형식:
+  `PYTHONPATH="$HOME/.apothem/src"`를 접두하고 `python -m apothem` 실행, 또는
+  `npx @ahmed-g-gad/apothem` 사용).
+- `~/.config/apothem/profile.yaml`의 프로파일. 없다면 `apothem profile init`으로
+  생성하십시오.
+
+## 프로파일 형태
+
+프로파일은 단일 YAML 문서입니다. 최상위 키는 다음과 같습니다:
+
+- `identity` (필수) — `name`, 그리고 선택적으로 `role`, `email`, `website`,
+  `github`.
+- `preferences` — `language`, `style`(`concise` / `verbose` / `balanced`),
+  `formatter`, `test_framework`.
+- `rules` — 역량 있는 도구와 공유되는 추가 규칙 문자열 목록.
+- `seriousness` — `EXPLORING`, `PERSONAL_USE`, `SHARED`, `PUBLIC_LAUNCH` 중 하나.
+- `enforcement` — 옵트인 토글(`sprints`, `agent_teams`, `multitasking`,
+  `continuous_execution`, `learning_loop`), 모든 플래그 기본 비활성.
+- `harnesses` — 도구 id로 키가 지정된 도구별 재정의.
+- `exclude_harnesses` — 일괄(`--harness all`) 커맨드가 건너뛰는 도구 id.
+
+## 단계
+
+1. 현재 프로파일을 점검합니다:
+
+   ```bash
+   apothem profile show
+   ```
+
+2. 편집합니다. 시스템 편집기에서 엽니다:
+
+   ```bash
+   apothem profile edit
+   ```
+
+   또는 명령줄에서 단일 점 표기 키를 설정합니다. 값은 그대로 저장되며
+   (`true`/`false`와 명시적 `[..]`/`{..}` 입력은 예외), 쓰기 전에 프로파일이
+   스키마에 대해 검증됩니다 — 잘못된 설정은 거부되고 디스크의 프로파일은
+   변경되지 않습니다:
+
+   ```bash
+   apothem profile set seriousness SHARED
+   apothem profile set identity.name "Ada Lovelace"
+   ```
+
+3. 변경이 도구의 네이티브 구성에 도달하도록 도구를 다시 머티리얼라이즈합니다.
+   사용자 범위 도구의 경우:
+
+   ```bash
+   apothem update --harness claude-code
+   ```
+
+   프로젝트 범위 도구의 경우 프로젝트 루트를 전달합니다. 설치된 모든 도구를
+   새로 고치려면 `all`을 사용합니다:
+
+   ```bash
+   apothem update --harness cursor --project /path/to/project
+   apothem update --harness all --project /path/to/project
+   ```
+
+## 검증
+
+```bash
+apothem profile show
+apothem verify --harness all
+```
+
+`profile show`는 편집 내용을 반영합니다. `verify`는 머티리얼라이즈된 구성이
+업데이트된 프로파일과 일치함을 확인합니다.
+
+## 관련 항목
+
+- 다시 머티리얼라이즈하기 전에 새 도구를 프로파일 제어 하에 두려면
+  [도구 추가하기](/docs/how-to/adding-a-harness)를 참조하십시오.
+- [업데이트하기](/docs/install/updating)는 다시 머티리얼라이즈하는 단계와 함께
+  엔진을 업그레이드하는 것을 다룹니다.

@@ -1,0 +1,73 @@
+---
+title: "/research-spec"
+description: "/research-spec — Enmarca una pregunta de investigación de forma libre o notas en bruto en una especificación de investigación de grado spec (hipótesis falsables, alcance, criterios, métricas de éxito) lista para /research-theory."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rol:** Investigador principal (enmarcado)
+**Posición en la canalización:** mitad de la cadena
+
+Enmarca una pregunta de investigación de forma libre o notas en bruto en un `_spec/research-spec.md` de grado spec — un conjunto de hipótesis comprobables y falsables con alcance explícito, criterios de inclusión / exclusión y métricas de éxito — listo para `/research-theory`.
+
+## Invocación canónica
+
+```bash
+/research-spec
+```
+
+Con argumentos:
+
+```bash
+/research-spec [path/to/question-or-notes] [--suite-name NAME] [--quick SLUG]
+```
+
+## Entradas
+
+Una pregunta de investigación de forma libre o notas en bruto (proporcionadas por el operador en línea o como una ruta).
+
+## Salidas
+
+`_spec/research-spec.md` (pregunta, hipótesis falsables, alcance, criterios de inclusión / exclusión, métricas de éxito, glosario) + `_inputs/handoff-manifest.yml`. `--quick` escribe en su lugar un informe de investigación ligero y local del proyecto.
+
+## Aguas abajo
+
+/research-theory (consumidor aguas abajo)
+
+## Fases del flujo de trabajo
+
+El comando sigue el flujo de trabajo estándar de la canalización `/research`:
+
+1. **Cargar contexto** — Leer la pregunta / notas, las reglas y cualquier estado existente de la suite.
+2. **Enmarcar la pregunta** — Descomponer en hipótesis falsables con alcance explícito y criterios de inclusión / exclusión; sacar a la superficie cada ambigüedad por el canal de consulta estructurada.
+3. **Definir métricas de éxito** — Establecer los criterios medibles con los que se juzgará la investigación.
+4. **Verificar las salidas** — Confirmar que la especificación es definitiva (toda brecha de datos de autoridad resuelta por el canal de consulta estructurada, ninguna dejada como un marcador de posición de confirmación sin rellenar) y que pasa el umbral del mandato de rigor.
+5. **Actualizar el manifiesto de traspaso** — Registrar la ruta de la especificación y los recuentos de consultas abiertas / resueltas.
+6. **Emitir la especificación** — `_spec/research-spec.md` más el manifiesto de traspaso.
+
+## Umbral de rigor
+
+Cada contribución reivindicada se restringe a ser distinta, sustancial y ablacionable de forma independiente, para que su efecto marginal pueda aislarse después. La profundidad del umbral de rigor requerido se escala a la ambición del lugar de publicación objetivo; donde esa ambición no está especificada, se confirma por el canal de consulta estructurada, nunca se inventa.
+
+## Modos de fallo
+
+| Síntoma | Causa | Recuperación |
+|---------|-------|----------|
+| Ambigüedad de hipótesis sin resolver | Pregunta poco especificada | Sacar a la superficie por consulta estructurada; no inventar alcance |
+| Ninguna métrica de éxito medible | Objetivo planteado como actividad, no como resultado | Reenmarcar como un resultado comprobable y falsable |
+| Entrada de pregunta faltante | No se proporcionó prosa / notas | Proporcionar la pregunta de investigación en línea o como una ruta |
+
+## Ejemplos
+
+```bash
+# Frame a question into a research spec
+/research-spec ~/notes/retrieval-latency-study.md --suite-name retrieval-latency
+
+# Lightweight project-local research brief
+/research-spec --quick retrieval-latency
+```
+
+## Referencias cruzadas
+
+- [Resumen de la canalización](/docs/pipeline)
+- [Referencia de comandos](/docs/reference/commands)

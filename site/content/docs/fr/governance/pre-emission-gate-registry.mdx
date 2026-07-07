@@ -1,0 +1,60 @@
+---
+title: "Registre du portail de pré-émission — Vérification obligatoire à quinze barres"
+description: "Vérification de conformité obligatoire à quinze barres exécutée avant l'émission de portée significative, avec correspondances action-en-cas-d'échec et schéma de preuve de release."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Registre canonique du portail de pré-émission à quinze barres.** Ce document porte le tableau complet à quinze barres du portail et le bloc YAML du schéma de preuve de release ; le tableau substantiel et le schéma vivent ici, opérationnalisés par `src/apothem/rules/pre-emission-gate.md`.
+
+Avant toute émission d'artefact de portée significative (selon le seuil trivial vs non trivial dans `site/content/docs/governance/outward-conformity-registry.mdx` §1), exécute le portail de pré-émission à quinze barres. Mécanise via les hooks PreToolUse là où c'est possible (les greps mécaniques dans `src/apothem/conformity/*-grep.py` orchestrés par `src/apothem/conformity/gate.py`) ; raisonne là où la mécanisation est impossible. **L'échec d'une seule barre bloque l'émission ; révise jusqu'à ce que chaque barre passe ; émets avec la preuve de release du portail enregistrée.**
+
+| # | Barre | Type de vérification | Échec → action |
+| - | --- | ---------- | ---------------- |
+| 1 | M1 agnosticisme de l'hôte | raisonnée | réviser pour correspondre aux conventions de l'hôte |
+| 2 | M2 divulgation éditoriale | raisonnée | ajouter le grand livre de divulgation |
+| 3 | M3 dix dimensions | mixte (mécanique + raisonnée) | réviser sur la dimension défaillante |
+| 4 | M4 auto-application | mécanique (preuve de release présente) | enregistrer la preuve de release |
+| 5 | M5 autorité | mécanique (grep de marqueur `<USER-CONFIRM:…>`) | réacheminer vers la surface de demande |
+| 6 | M6 expertise | raisonnée (section des lacunes exposées présente) | exposer les lacunes ; citer |
+| 7 | M7 annotation d'options | mécanique (l'ensemble d'options porte un marqueur de recommandation) | annoter |
+| 8 | M8 caractère définitif | mécanique (grep de vocabulaire évasif) | promouvoir l'évasion en conditionnels |
+| 9 | M9 levier visuel | raisonnée (un diagramme existe là où c'est structurel) | créer / actualiser le diagramme |
+| 10 | M10 liaison bidirectionnelle | mécanique (grep de réciprocité de liaison) | fermer les demi-arêtes |
+| 11 | M11 sprints agiles | raisonnée (appareil de sprint instancié) | restructurer en sprints |
+| 12 | M12 rapport de phases et disposition | mécanique (grep de sortie orpheline) + raisonnée | créer le récapitulatif ; relocaliser |
+| 13 | M13 artisanat du code | mécanique (lint / formatage / vérification de types ; grep de bare-except, nombre-magique, code-commenté) | réviser |
+| 14 | M14 systématicité | raisonnée (déclare amont / aval / pairs / applicateurs) | déclarer ; indexer |
+| 15 | M15 prêt pour la production | mécanique (grep de production-ready-pr) + raisonnée | ajouter tests / documentation / CHANGELOG |
+
+## 1. Schéma de preuve de release
+
+Chaque exécution du portail enregistre le résultat dans la trace de travail de l'artefact (un commentaire masqué, un bloc de métadonnées, un fichier de journal d'émission distinct — ce que permettent les conventions de l'hôte) :
+
+```yaml
+conformity-attestation:
+  artifact: <path-or-identifier>
+  ecosystem-version: <git-commit-sha-or-equivalent ratifying the rule set in force>
+  bars:
+    M1-host-agnosticism:        pass | n/a (with reason)
+    M2-editorial-disclosure:    pass | n/a
+    M3-ten-dimensions:          pass | n/a
+    M4-self-application:        pass
+    M5-authority:               pass
+    M6-expertise:               pass | n/a
+    M7-option-annotation:       pass | n/a (no option set)
+    M8-definitiveness:          pass
+    M9-visual-leverage:         pass | n/a (subject not structural)
+    M10-bidirectional-binding:  pass
+    M11-agile-sprints:          pass | n/a (trivial work)
+    M12-phase-layout:           pass | n/a
+    M13-code-craft:             pass | n/a (not code)
+    M14-systemicity:            pass
+    M15-production-ready:       pass | n/a (no host-public-surface change)
+  surfaced-gaps: []
+  unresolved-inquiries: []
+  amendments-disclosed: []
+  date: <ISO-8601>
+```
+
+Les marques `n/a` sont explicites et raisonnées — jamais des omissions silencieuses. Le champ `ecosystem-version` ancre la preuve de release à un état reproductible de l'écosystème de portée utilisateur (le commit git de l'arbre des sources d'Apothem actif au moment de l'exécution du portail — p. ex. le checkout `~/.claude/` pour l'adaptateur Claude Code), afin que de futurs audits puissent rejouer le portail contre les mêmes corps de règles.

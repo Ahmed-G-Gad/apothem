@@ -1,0 +1,117 @@
+[
+  {
+    "detail": {
+      "capability": "output_styles",
+      "status": "unsupported"
+    },
+    "message": "No Qwen Code output-style file surface is pinned.",
+    "operation": "capability_projection",
+    "outcome": "warning",
+    "path": "src/apothem/harnesses/qwen_code/capabilities.yml"
+  },
+  {
+    "detail": {
+      "capability": "statuslines",
+      "status": "unsupported"
+    },
+    "message": "No Qwen Code statusline file surface is pinned.",
+    "operation": "capability_projection",
+    "outcome": "warning",
+    "path": "src/apothem/harnesses/qwen_code/capabilities.yml"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/skills/AGENTS.md"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/apothem/templates"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/apothem/hooks"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "sweep_stale",
+    "outcome": "unchanged",
+    "path": "<ROOT>/apothem/rules"
+  },
+  {
+    "detail": {
+      "diff": "--- a/QWEN.md\n+++ b/QWEN.md\n@@ -0,0 +1,64 @@\n+<!-- BEGIN APOTHEM MANAGED BLOCK -->\n+<!-- SPDX-License-Identifier: MIT -->\n+\n+# Apothem — Qwen Code Bootstrap\n+\n+This file is the user-scope context anchor installed by Apothem for Qwen Code.\n+The native JSON settings file remains `~/.qwen/settings.json`; Apothem writes\n+that file from the shared profile, registers native hook dispatchers, and\n+installs reusable Apothem cohorts into Qwen Code's native discovery surfaces\n+where they exist.\n+\n+## Apothem Cohorts\n+\n+Resolve Apothem's native Qwen Code cohorts at:\n+\n+- `~/.qwen/commands/` contains slash commands converted to Qwen Markdown\n+  command files.\n+- `~/.qwen/skills/` contains reusable SKILL.md skill directories.\n+- `~/.qwen/agents/` contains local subagents adapted to Qwen Code's Markdown\n+  agent frontmatter.\n+\n+Resolve Apothem support paths as follows:\n+\n+- `~/.qwen/.apothem/support/rules/` contains behavioral rules and path-filtered\n+  conventions.\n+- `~/.qwen/.apothem/support/templates/` contains plan and report templates.\n+- `~/.qwen/.apothem/support/hooks/` contains hook messages and helper scripts\n+  used by the `settings.json` hook commands.\n+\n+Use the support subtrees as reference material when Qwen Code does not expose a\n+matching file-based primitive. Do not treat them as a vendor-owned configuration\n+namespace.\n+\n+# Apothem Shared Profile\n+\n+Managed by Apothem from the shared profile. Edits inside the sentinels are overwritten on the next `apothem install`; change the shared profile instead.\n+\n+## Operator\n+\n+- **Name:** Golden-Corpus-Operator\n+- **Role:** release engineer\n+- **Email:** golden@corpus.invalid\n+- **Website:** https://golden.corpus.invalid\n+- **GitHub:** @golden-corpus-operator\n+\n+## Preferences\n+\n+- **Primary language:** python\n+- **Response style:** concise\n+- **Governance seriousness:** PUBLIC_LAUNCH\n+\n+## Custom Rules\n+\n+- golden-corpus-validate-input-before-write\n+\n+## Opted-in Behaviors\n+\n+- Sprint apparatus for non-trivial multi-step work\n+\n+## MCP Servers\n+\n+Configured MCP servers (materialized into the harnesses with a native MCP config surface; named here as reference for the rest):\n+- golden-corpus-srv\n+<!-- END APOTHEM MANAGED BLOCK -->\n",
+      "ownership_class": "operator-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "sentinel_merge",
+    "outcome": "created",
+    "path": "<ROOT>/QWEN.md",
+    "source": "<APOTHEM_SRC>/harnesses/qwen_code/templates/QWEN.md"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/skills",
+    "source": "<APOTHEM_SRC>/skills"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "markdown_commands",
+    "outcome": "created",
+    "path": "<ROOT>/commands",
+    "source": "<APOTHEM_SRC>/commands"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "qwen_agents",
+    "outcome": "created",
+    "path": "<ROOT>/agents",
+    "source": "<APOTHEM_SRC>/agents"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/support/rules",
+    "source": "<APOTHEM_SRC>/rules"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/support/templates",
+    "source": "<APOTHEM_SRC>/templates"
+  },
+  {
+    "detail": {
+      "ownership_class": "apothem-owned"
+    },
+    "message": "dry run: no filesystem changes made",
+    "operation": "merge_tree_entries",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/support/hooks",
+    "source": "<APOTHEM_SRC>/hooks"
+  }
+]

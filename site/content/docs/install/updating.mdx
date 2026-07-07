@@ -1,0 +1,86 @@
+---
+title: "Updating"
+description: "Update Apothem and harness adapters."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## Update the Claude Code plugin
+
+Refresh the marketplace listing, then update the plugin from the `/plugin`
+menu inside Claude Code:
+
+```text title="Inside Claude Code"
+/plugin marketplace update apothem
+```
+
+Open `/plugin`, select **apothem**, and choose the update action when a newer
+plugin version is listed.
+
+## npx always runs the current release
+
+`npx @ahmed-g-gad/apothem` resolves the current published package on each
+run, so there is nothing to update. When a stale npx cache serves an older
+copy, pin the dist-tag explicitly:
+
+```bash
+npx @ahmed-g-gad/apothem@latest --version
+```
+
+## Update an installer-based setup
+
+Re-run the installer — it is idempotent and fast-forwards an existing tree —
+or run the dedicated update script:
+
+```bash title="macOS · Linux · WSL2 · BSD"
+bash scripts/installer/update.sh
+```
+
+```powershell title="Windows · PowerShell"
+pwsh -NoProfile -File scripts/installer/update.ps1
+```
+
+The update script re-checks-out the source tree at `APOTHEM_HOME` (default
+`~/.apothem`) to `APOTHEM_REF` — unset resolves the latest signed
+`vMAJOR.MINOR.PATCH` release tag, a tag value pins it, and `main` selects the
+moving branch. It verifies the tag's signature with `git verify-tag` before
+re-materializing; an unsigned or tampered tag aborts unless
+`APOTHEM_ALLOW_UNVERIFIED=1` downgrades the abort to a warning. A signed tag
+whose maintainer public key is missing from the local keyring aborts with
+key-import guidance pointing at the fingerprint published in
+[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
+It then
+re-materializes the harness named by `APOTHEM_HARNESS` by running
+`apothem update` from the refreshed tree (the harness defaults per the
+[installer environment variables](/docs/how-to/installer-environment-variables)
+table). It requires a prior install: when
+no tree exists at `APOTHEM_HOME` and `APOTHEM_SOURCE` is unset, it exits with
+a message directing you to the installer first.
+
+## Re-materialize harness output
+
+After updating the engine or editing `~/.config/apothem/profile.yaml`,
+re-derive the installed harness config. User-scope adapters do not need
+`--project`; project-scope adapters do.
+
+```bash
+apothem update --harness claude-code
+apothem update --harness cursor --project /path/to/project
+apothem update --harness all --project /path/to/project
+```
+
+Run the same command with `--dry-run --json` when you need a machine-readable
+preview with no filesystem writes.
+
+## Current command boundary
+
+`apothem update` updates harness output only. The CLI does not implement
+`update --self`, `update --check`, or `update --apply`; update the engine
+itself through the channel you installed with — the `/plugin` flow, a fresh
+`npx` run, or the installer/update scripts above.
+
+## Check the engine version
+
+```bash
+apothem --version
+npx @ahmed-g-gad/apothem --version
+```

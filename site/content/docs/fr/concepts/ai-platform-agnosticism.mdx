@@ -1,0 +1,87 @@
+---
+title: "Posture indépendante de l'hôte"
+description: "Comment Apothem atteint une posture indépendante de l'hôte via le profil partagé et les adaptateurs d'environnement."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem est conçu autour d'un principe unique : votre configuration de gouvernance
+doit survivre à n'importe quel environnement d'exécution d'assistant. Le profil partagé Apothem
+est un fichier YAML validé par schéma à `~/.config/apothem/profile.yaml` ou
+`--profile PATH` ; les cohortes Apothem packagées fournissent commandes, règles, compétences,
+hooks, modèles, lignes d'état, styles de sortie et définitions de délégation.
+Des adaptateurs par environnement sous `src/apothem/harnesses/<harness>/` traduisent ces entrées vers le format
+requis par chaque environnement pris en charge :
+
+```text
+Claude Code, Cursor, Gemini CLI, GitHub Copilot, Codex, Windsurf,
+OpenCode, Antigravity, Open-Claw, Hermes, Qwen Code,
+CodeBuddy, Kiro, Trae, Zed
+```
+
+## L'idée centrale
+
+L'indépendance vis-à-vis de l'hôte signifie que votre *intention* — qui vous êtes, comment vous voulez que les assistants se
+comportent, les règles qu'ils doivent suivre — réside en un seul endroit qu'aucun environnement
+ne possède. Les environnements sont des consommateurs interchangeables de cette intention. Quand un nouvel
+assistant arrive, vous l'adoptez en ajoutant un adaptateur, et non en réécrivant votre
+configuration. Quand un assistant que vous utilisiez tombe en disgrâce, vous l'abandonnez
+sans perdre la gouvernance que vous avez bâtie. Le profil est l'actif ; l'environnement
+est une cible de rendu. Un environnement peut servir au développement, à la discussion, au travail collaboratif, à la recherche ou à la rédaction — le profil est indépendant de l'usage auquel l'environnement est destiné.
+
+C'est une inversion délibérée. La voie habituelle consiste à configurer chaque outil
+directement, ce qui rend votre investissement otage de la longévité et du format de cet outil.
+Apothem traite la configuration comme un capital portable et l'environnement comme un
+terminal jetable.
+
+## Le problème
+
+Chaque environnement a son propre format de configuration :
+
+```text
+Claude Code:    CLAUDE.md + settings.json
+Cursor:         .cursor/rules/*.mdc
+GitHub Copilot: .github/copilot-instructions.md
+Windsurf:       .devin/rules/
+Codex:          AGENTS.md
+```
+
+Sans Apothem, vous maintenez N fichiers de configuration distincts qui divergent avec le temps.
+
+## La solution Apothem
+
+```text
+One shared Apothem profile (YAML) + packaged cohorts
+    identity.name
+    preferences.style
+    rules[]
+         |
+         v
+    Adapter layer (HarnessAdapter protocol — src/apothem/harnesses/<harness>/)
+         |
+         +---> Claude Code adapter   -> ~/.claude/
+         +---> Cursor adapter        -> .cursor/rules/*.mdc
+         +---> Copilot adapter       -> .github/copilot-instructions.md
+         +---> Windsurf adapter      -> .devin/rules/
+         +---> ...
+```
+
+Vous éditez le profil partagé une fois, puis exécutez `apothem update --harness <name>` ou
+`apothem update --harness all --project <path>` pour propager le changement.
+`apothem harnesses list` affiche l'ensemble enregistré.
+
+## Pourquoi « apothem »
+
+Le nom encode l'architecture. En géométrie, un *apothème* est la perpendiculaire
+allant du **centre** d'un polygone régulier au **milieu de l'un de ses côtés** — la
+distance unique du cœur jusqu'à chaque bord, identique dans toutes les directions. C'est
+là le principe de conception : un profil partagé au centre, dix-sept environnements équidistants sur le
+périmètre, chaque matérialisation à la même distance de la source de vérité. Le
+cœur ne change pas quand un bord change ; les bords partagent une relation unique avec
+le cœur. La dérive est structurellement impossible.
+
+## Garanties de portabilité
+
+Les règles marquées `portability: universal` sont garanties traduisibles vers chaque
+environnement pris en charge. Les règles marquées `portability: project-specific` peuvent nécessiter
+une documentation de remplacement par environnement dans le corps de la règle.

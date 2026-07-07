@@ -1,0 +1,32 @@
+---
+title: "命名規則"
+description: "kebab-case のファイル名、frontmatter キーの形式、タイプ接頭辞付きのブランチ命名、および順序付き成果物シーケンスの数字接頭辞のセマンティクスを規定します。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **エコシステム全体でのファイル名、識別子、ブランチ名の形に関する正規リファレンス。** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) 規約の要約はインライン宣言であり、本ページは下流のコントリビューターが引用する独立したリファレンスです。
+
+---
+
+## 1. ファイルシステム名
+
+ファイルとフォルダーはデフォルトで **kebab-case** を使用します。識別子にスペース、アンダースコア、キャメルケースは含めません。
+
+正規の大文字例外は、どのコントリビューターも初見で認識する公開表面のシングルトンファイルに予約されています。`CLAUDE.md`、`README.md`、`LICENSE`、`CHANGELOG.md`、`SECURITY.md`、`CODE_OF_CONDUCT.md`、`CONTRIBUTING.md`、およびプランスイートのシングルトン（`MASTER-PLAN.md`、`PROGRESS.md`、`PHASE.md`、`SKILL.md`、`VERSION`）です。その他のすべてのファイルは kebab-case を使用します。
+
+## 2. frontmatter キー
+
+YAML frontmatter のキーは `kebab-case` を使用します（例: `argument-hint`、`disable-model-invocation`）。kebab-case の規則は、ルール、コマンド、委譲ワーカー、スキル、および `CLAUDE.md` 自体にわたって一様に適用されます。
+
+## 3. ブランチ名
+
+ブランチは `<type>/<short-description>` に従い、タイプは閉集合 `{feat, fix, chore, docs, refactor, test, perf, ci, build, style, revert, release}` から取ります。説明は kebab-case で、50 文字未満です。
+
+## 4. 数字接頭辞
+
+ファイルシステムパス上の数字接頭辞（`NN-`）は順序を伝え、順序が本質的である場所——フェーズフォルダー、サブフェーズフォルダー、マイグレーションスクリプト、およびシーケンスが契約の一部であるその他の成果物クラス——にのみ適用されます。兄弟シーケンスを持たないルートレベルのシングルトンには数字接頭辞を付けません。付けると、存在しない順序関係を誤って示すことになります。完全な規律は [`src/apothem/rules/canonical-layout.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/canonical-layout.md) §2.1 にあります。
+
+## 5. バリデーター
+
+`src/apothem/conformity/naming_grep.py` の naming-grep が機械的な強制実行表面です。CI は `make validate` を介してこれを呼び出します。

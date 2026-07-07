@@ -1,0 +1,53 @@
+---
+title: "Branch protection"
+description: "Apothem branch protection on main — review gate, status-check gating, and push restrictions."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem's `main` branch is protected by GitHub branch protection after the single fresh release commit is published. The protection enforces the change-set discipline declared at `rules/production-ready-prs.md` and feeds the OpenSSF Scorecard **Branch-Protection** and **Code-Review** checks for future work.
+
+## Ruleset declaration
+
+| Setting | Value | Rationale |
+|---|---|---|
+| **Target** | `main` | Protects the public default branch. |
+| **Enforcement status** | `active` | Not in dry-run mode. |
+| **Require pull request before merging** | ✅ | Direct pushes to `main` blocked. |
+| **Required approving reviews** | **1** | Minimum human-review gate for a new solo-maintainer project. |
+| **Dismiss stale approvals on new commits** | ✅ | A force-push after approval re-triggers review. |
+| **Require review from Code Owners** | Deferred | Enabling this before a second maintainer joins can deadlock solo-maintainer PRs. |
+| **Require approval of the most recent reviewable push** | ✅ | The latest pushed commit must carry approval. |
+| **Required conversation resolution** | ✅ | Open review threads block merge. |
+| **Require status checks to pass** | ✅ | CI workflow + Scorecard + CodeQL + pip-audit. |
+| **Required status checks** | Current core checks | The required list is refreshed from the latest green release commit. |
+| **Require branches to be up to date** | ✅ | Prevents stale-merge regressions. |
+| **Require signed commits** | Recommended | Local release commits are signed; full enforcement waits until contributor onboarding documents SSH/GPG setup. |
+| **Require linear history** | ✅ | Keeps the single-line public history understandable. |
+| **Block force-pushes** | ✅ | History rewrite on `main` is blocked. |
+| **Allow deletion** | ❌ | The `main` branch cannot be deleted. |
+
+## Solo-maintainer constraint
+
+GitHub does not let repository files create human review history. The repository therefore applies the strongest non-deadlocking branch protection for its current maintainer model: one approving review, stale-review dismissal, latest-push approval, conversation resolution, status checks, linear history, and no branch deletion or force-push. When a second maintainer joins, CODEOWNERS review and a two-reviewer minimum become the stronger setting.
+
+## Status-check requirements
+
+The four hard-gating status checks declared above:
+
+- **`ci`** — full test matrix + ruff + mypy + bandit + Trivy + pip-audit on the resolved dependency tree
+- **`Scorecard`** — OpenSSF Scorecard run with no per-check regression
+- **`CodeQL`** — `security-extended` query packs for `python` + `actions`
+- **`pip-audit`** — weekly + per-PR vulnerability scan against the resolved dep tree
+
+Any other workflow may report status, but its outcome does not gate merge unless it is promoted into the required-check list.
+
+## Audit cadence
+
+This file is reviewed on every security audit and at every release-engineering checkpoint. Drift between this file and the actual branch protection configuration is a high-severity finding.
+
+## References
+
+- [OpenSSF Scorecard — Branch-Protection check](https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection)
+- [GitHub — About protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
+- [Apothem CODEOWNERS](https://github.com/ahmed-g-gad/apothem/blob/main/.github/CODEOWNERS) — path-scoped review ownership
+- `rules/production-ready-prs.md` §1 — same-change-set discipline this ruleset enforces

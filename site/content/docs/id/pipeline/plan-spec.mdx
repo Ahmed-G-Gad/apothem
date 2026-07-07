@@ -1,0 +1,69 @@
+---
+title: "/plan-spec"
+description: "/plan-spec — Memoles prosa bebas atau catatan mentah menjadi spesifikasi `_spec/spec.md` tingkat spec yang siap untuk `/plan-generate`."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Peran:** Forge
+**Posisi pipeline:** kepala
+
+Memoles prosa bebas atau catatan mentah menjadi spesifikasi `_spec/spec.md` tingkat spec yang siap untuk `/plan-generate`.
+
+## Pemanggilan kanonik
+
+```bash
+/plan-spec
+```
+
+Dengan argumen:
+
+```bash
+/plan-spec [path/to/prose-source] [--suite-name NAME] [--refine-existing] [--standalone] [--quick SLUG [--tag TAG]]
+```
+
+## Masukan
+
+Prosa bentuk-bebas, catatan mentah, atau persyaratan ad-hoc (disediakan operator secara inline atau sebagai path).
+
+## Keluaran
+
+`_spec/spec.md` (spec yang dipromosikan) + `_inputs/handoff-manifest.yml`. `--quick` justru menulis satu berkas plan ringan yang lokal-proyek di `<project-root>/.apothem/plans/<YYYY-MM-DD>--<kebab-slug>.md`.
+
+## Hilir
+
+/plan-generate (konsumen hilir)
+
+## Fase alur kerja
+
+Forge menjalankan enam fase transformasi (spec dipromosikan dari `_inputs/forge.md` ke `_spec/spec.md` pada G4):
+
+1. **Penemuan & Ekstraksi** — Membaca prosa / catatan dan mengekstrak setiap persyaratan, keputusan, dan kendala.
+2. **Pertimbangan Cermat** — Menalar setiap permukaan; memunculkan setiap kontradiksi melalui kanal kueri terstruktur.
+3. **Pemetaan Potensi** — Memetakan setiap persyaratan ke daya ungkitnya di hilir.
+4. **Verifikasi Pelestarian** — Menjalankan gerbang pra-emisi lima belas batang (G4) terhadap spec kandidat sebelum promosi.
+5. **Penerapan Keahlian** — Menerapkan keahlian domain; mencatat temuan kesenjangan-keahlian.
+6. **Sapuan Penyelesaian-Pertanyaan** — Menyelesaikan setiap kueri terbuka di seluruh gerbang G0–G5, lalu memancarkan `_spec/spec.md` plus Manifes Serah-Terima.
+
+## Mode kegagalan
+
+| Gejala | Penyebab | Pemulihan |
+|---------|-------|----------|
+| Masukan prosa hilang | Tidak ada prosa / catatan yang disediakan | Sediakan prosa bentuk-bebas secara inline atau sebagai path |
+| Kontradiksi tak terselesaikan | Prosa membawa persyaratan yang berbenturan | Berhenti di G3 (Pra-amendemen); selesaikan melalui kueri terstruktur, jangan pernah diam-diam |
+| Spec gagal gerbang | Sebuah batang pra-emisi gagal di G4 | Perbaiki batang yang gagal sebelum promosi dari `_inputs/forge.md` |
+
+## Contoh
+
+```bash
+# Tempa catatan mentah menjadi spesifikasi setara-spec
+/plan-spec ~/notes/feature.md --suite-name my-feature
+
+# Berkas plan ringan yang lokal-proyek (melewati elisitasi Forge)
+/plan-spec --quick my-feature
+```
+
+## Referensi silang
+
+- [Ikhtisar pipeline](/docs/pipeline)
+- [Referensi perintah](/docs/reference/commands)

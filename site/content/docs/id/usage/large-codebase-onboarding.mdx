@@ -1,0 +1,45 @@
+---
+title: "Orientasi basis kode besar"
+description: "Daftar periksa penyiapan basis kode besar untuk Apothem: hierarki konteks, skill, hook, pencarian simbol, dan irama tinjauan."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Gunakan halaman ini ketika sebuah repositori terlalu luas untuk satu prompt,
+pemindaian seluruh pohon mahal, atau setiap layanan memiliki perintah build dan
+uji sendiri.
+
+## Mulai di sini
+
+1. Pasang atau perbarui adaptor lingkungan target, lalu jalankan `apothem verify --harness <name>`.
+2. Jaga permukaan konteks akar tetap pendek: peta proyek, perintah penting, dan hanya penunjuk.
+3. Letakkan konvensi lokal di samping kode ketika lingkungan target mendukung konteks berlapis.
+4. Pindahkan prosedur khusus ke `skills/`, `rules/`, atau dokumen perintah dengan filter jalur.
+5. Gunakan pekerja terdelegasi hanya-baca untuk eksplorasi luas, lalu bawa kembali sekumpulan temuan ringkas sebelum menyunting.
+6. Tambahkan pengecualian cache, hasil generasi, build, dan vendor ke permukaan abai lingkungan di tempat yang terdokumentasi.
+7. Gunakan LSP atau perkakas simbol bila tersedia; jika tidak, gunakan `rg`, jalur yang dipersempit, dan cakupan berkas eksplisit.
+8. Jalankan perintah lint atau uji tersempit yang mencakup kode yang disentuh; jalankan gerbang penuh sebelum rilis.
+
+## Peta praktik
+
+| Praktik | Ikatan Apothem |
+|----------|-----------------|
+| Konteks ramping yang selalu dimuat | `src/apothem/rules/token-budget-discipline.md` menjaga aturan selalu-aktif tetap pendek; berkas konteks akar seharusnya hanya membawa penunjuk dan jebakan penting. |
+| Keahlian sesuai permintaan | `src/apothem/skills/README.md` mendefinisikan konvensi `SKILL.md`; aturan pendamping yang difilter jalur menjaga prosedur sempit tetap di luar konteks dasar. |
+| Konteks berlapis | Setiap baris lingkungan mendeklarasikan `layered_context_surface` di `src/apothem/harnesses/<name>/capabilities.yml`; `STANDARD-CONVENTION-PIN.md` tetap menjadi otoritas baris. |
+| Eksplorasi terisolasi | [Panduan pekerja terdelegasi](/docs/usage/using-agents) mengikat jendela konteks terpisah dan kontrak pengembalian ringkas. |
+| Navigasi simbol | `lsp_symbol_navigation` adalah sel kapabilitas yang dilacak. Baris tetap `tracked-gap` hingga permukaan plugin atau perkakas yang didukung vendor disematkan. |
+| Permukaan abai | `context_ignore_surface` mencatat mekanisme pengecualian yang terdokumentasi. Adaptor Claude Code memproyeksikan pengecualian hasil generasi dan cache melalui `permissions.deny` di `settings.json`. |
+| Pembelajaran hook | Hook kelas-lolos tetap senyap. Temuan berulang dirutekan melalui siklus evolusi artefak di `src/apothem/rules/persistent-conventions-vigilance.md`. |
+| Tinjauan berkala | Jalankan tinjauan konfigurasi setiap tiga hingga enam bulan, dan setelah perubahan besar lingkungan atau model, menggunakan irama rencana `*-maintenance`. |
+
+## Catatan pemeliharaan
+
+Baris kapabilitas lingkungan yang dapat dibaca mesin membawa empat sel basis kode besar:
+`context_ignore_surface`, `layered_context_surface`, `lsp_symbol_navigation`,
+dan `hook_learning_capture`. Jaga sel-sel itu tetap sinkron dengan `STANDARD-CONVENTION-PIN.md`
+saudaranya setiap kali sebuah permukaan vendor berubah.
+
+Rujukan sumber:
+[praktik basis kode besar](https://claude.com/blog/how-claude-code-works-in-large-codebases-best-practices-and-where-to-start),
+[izin pengaturan](https://docs.anthropic.com/en/docs/claude-code/settings).

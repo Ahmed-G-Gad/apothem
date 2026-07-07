@@ -1,0 +1,95 @@
+---
+title: "Gemini CLI"
+description: "محوّل أداة Apothem لـ Gemini CLI (إصدار عام)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**المورّد:** <bdi>Google</bdi>
+**اسم التثبيت:** <bdi>`gemini-cli`</bdi>
+**الحالة:** إصدار عام
+**الإعداد الأصلي:** <bdi>`GEMINI.md`</bdi> و<bdi>`.gemini/`</bdi> المحلّيان للمشروع
+
+## التثبيت
+
+```bash
+apothem install --harness gemini-cli --project /path/to/project
+```
+
+نطاق المحوّل هو المشروع. يثبّت ملفّ <bdi>`GEMINI.md`</bdi> الخاص بالمشروع، ويحوّل
+أوامر <bdi>Apothem</bdi> إلى أوامر شرطة مائلة بصيغة <bdi>TOML</bdi> خاصّة
+بـ<bdi>Gemini</bdi>، ويطبّع تعريفات المساعِدات المحلّية، ويضع مجموعات الدعم غير
+الأصلية تحت <bdi>`.gemini/.apothem/support/`</bdi>.
+
+**الملفات المكتوبة:**
+
+```text
+GEMINI.md
+.gemini/commands/*.toml
+.gemini/agents/*.md
+.gemini/skills/
+.gemini/.apothem/support/
+```
+
+## تعيين الملف التعريفي إلى الإعداد الأصلي
+
+يقرأ المحوّل مجموعات <bdi>Apothem</bdi> المشتركة ويوجّه كلّ واحدة منها عبر سطح
+متوافق مع <bdi>Gemini</bdi>. تبقى قواعد <bdi>Markdown</bdi> والقوالب ومادّة الخطافات
+تحت <bdi>`.gemini/.apothem/support/`</bdi> لأنّها مادّة دعم، وليست دليل قواعد أصلي
+لـ<bdi>Gemini</bdi>.
+
+## ملاحظات التوافق
+
+يبقى <bdi>`~/.gemini/`</bdi> منطقةً على نطاق المستخدم للأدوات التي تستخدم ملفًا
+تعريفيًا عامًّا لـ<bdi>Gemini</bdi>. لا يكتب محوّل <bdi>Gemini CLI</bdi> إلا في
+المشروع المُمرَّر عبر <bdi>`--project`</bdi>.
+
+## التحقّق
+
+```bash
+apothem verify --harness gemini-cli --project /path/to/project
+```
+
+يؤكّد أمر التحقّق ما يلي:
+
+1. وجود الإعداد الأصلي في المسار المتوقَّع.
+2. وجود جميع الحقول الإلزامية من الملف التعريفي المشترك.
+3. إبلاغ روتين التحقّق الخاص بالمحوّل بالنجاح.
+
+## التحديث
+
+```bash
+apothem update --harness gemini-cli --project /path/to/project
+```
+
+يحدّث <bdi>`GEMINI.md`</bdi>، والأوامر المُحوَّلة، وتعريفات المساعِدات المحلّية،
+والمهارات المثبّتة، وشجرة الدعم <bdi>`.gemini/.apothem/support/`</bdi>.
+
+## إلغاء التثبيت
+
+```bash
+apothem uninstall --harness gemini-cli --project /path/to/project
+```
+
+يزيل ملفات الإعداد الأصلي التي كتبها المحوّل.
+لا يتأثّر ملفّ <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
+
+## بوّابة المطابقة
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## استكشاف الأخطاء وإصلاحها
+
+| العَرَض | الإصلاح |
+|---------|-----|
+| ملف الإعداد غير موجود | أعد تشغيل <bdi>`apothem install --harness gemini-cli --project /path/to/project`</bdi> |
+| فشل التحقّق | شغّل <bdi>`apothem update --harness gemini-cli --project /path/to/project`</bdi>، ثم تحقّق مجدّدًا |
+| محتوى إعداد غير متوقَّع | تحقّق من <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness gemini-cli --project /path/to/project`</bdi> |
+
+## مفاتيح الضبط
+
+| العَلَم | الافتراضي | الوصف |
+|------|---------|-------------|
+| <bdi>`--dry-run`</bdi> | <bdi>`false`</bdi> | معاينة التثبيت دون كتابة ملفات. |

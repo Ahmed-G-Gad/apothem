@@ -1,0 +1,90 @@
+---
+title: "プロファイルを編集する"
+description: "共有プロファイルを変更し、インストール済みの全ハーネスを再生成します。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+目標: 共有プロファイルの値を変更し、それをインストール済みの全ハーネスへ
+反映させます。
+
+## 前提条件
+
+- `PATH` 上の `apothem` CLI(または自己完結型の形式: `PYTHONPATH="$HOME/.apothem/src"` を前に付けて `python -m apothem` を実行するか、`npx @ahmed-g-gad/apothem` を使用)。
+- `~/.config/apothem/profile.yaml` にあるプロファイル。存在しない場合は
+  `apothem profile init` で作成してください。
+
+## プロファイルの形
+
+プロファイルは単一の YAML ドキュメントです。そのトップレベルのキーは
+次のとおりです:
+
+- `identity`(必須)—— `name`、加えて任意の `role`、`email`、`website`、
+  `github`。
+- `preferences` —— `language`、`style`(`concise` / `verbose` / `balanced`)、
+  `formatter`、`test_framework`。
+- `rules` —— 対応するハーネスと共有される追加ルール文字列のリスト。
+- `seriousness` —— `EXPLORING`、`PERSONAL_USE`、`SHARED`、`PUBLIC_LAUNCH`
+  のいずれか。
+- `enforcement` —— オプトインのトグル(`sprints`、`agent_teams`、
+  `multitasking`、`continuous_execution`、`learning_loop`)。すべての
+  フラグはデフォルトでオフです。
+- `harnesses` —— ハーネス id をキーとするハーネスごとのオーバーライド。
+- `exclude_harnesses` —— 一括(`--harness all`)コマンドでスキップされる
+  ハーネス id。
+
+## 手順
+
+1. 現在のプロファイルを調べます:
+
+   ```bash
+   apothem profile show
+   ```
+
+2. 編集します。システムエディターで開きます:
+
+   ```bash
+   apothem profile edit
+   ```
+
+   あるいは、コマンドラインから単一のドット区切りキーを設定します。値は
+   そのまま(リテラルに)保存され(`true`/`false` および明示的な
+   `[..]`/`{..}` 入力は例外)、書き込みの前にプロファイルがスキーマに対して
+   検証されます —— 無効な設定は拒否され、ディスク上のプロファイルは
+   変更されません:
+
+   ```bash
+   apothem profile set seriousness SHARED
+   apothem profile set identity.name "Ada Lovelace"
+   ```
+
+3. 変更がネイティブ構成に届くよう、ハーネスを再生成します。
+   ユーザースコープのハーネスの場合:
+
+   ```bash
+   apothem update --harness claude-code
+   ```
+
+   プロジェクトスコープのハーネスの場合は、プロジェクトルートを渡します。
+   インストール済みの全ハーネスを更新するには `all` を使用します:
+
+   ```bash
+   apothem update --harness cursor --project /path/to/project
+   apothem update --harness all --project /path/to/project
+   ```
+
+## 検証
+
+```bash
+apothem profile show
+apothem verify --harness all
+```
+
+`profile show` は編集内容を反映します。`verify` は、生成された構成が
+更新後のプロファイルと一致することを確認します。
+
+## 関連
+
+- 再生成の前に新しいハーネスをプロファイル管理下に置くには、[ハーネスを追加する](/docs/how-to/adding-a-harness) を行います。
+- [更新](/docs/install/updating) は、再生成の手順と並行してエンジンを
+  アップグレードする方法を扱います。

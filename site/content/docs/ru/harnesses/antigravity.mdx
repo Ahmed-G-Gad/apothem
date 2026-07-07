@@ -1,0 +1,100 @@
+---
+title: "Antigravity"
+description: "Адаптер инструмента Apothem для Antigravity (предварительная версия)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Поставщик:** Antigravity
+**Имя установки:** `antigravity`
+**Статус:** Предварительная версия
+**Нативная конфигурация:** `~/.gemini/GEMINI.md` плюс
+`~/.gemini/antigravity-cli/plugins/apothem/`
+
+## Установка
+
+```bash
+apothem install --harness antigravity
+```
+
+Адаптер рендерит общий профиль в `~/.gemini/GEMINI.md` и устанавливает наборы
+поддержки Apothem в виде плагина Antigravity CLI.
+
+**Записанные файлы:** `~/.gemini/GEMINI.md`,
+`~/.gemini/antigravity-cli/plugins/apothem/plugin.json`,
+`~/.gemini/antigravity-cli/plugins/apothem/skills/`,
+`~/.gemini/antigravity-cli/plugins/apothem/rules/`,
+преобразованные определения локальных помощников внутри плагина,
+`~/.gemini/antigravity-cli/plugins/apothem/apothem/templates/` и
+`~/.gemini/antigravity-cli/plugins/apothem/apothem/hooks/`.
+
+**Общий пользовательский якорь.** `~/.gemini/GEMINI.md` также является
+пользовательским якорем для инструментов семейства Gemini. Адаптер Antigravity
+хранит свой дополнительный материал Apothem внутри плагина `apothem` в
+`~/.gemini/antigravity-cli/plugins/`, поэтому не претендует на общие каталоги
+проектов Gemini CLI.
+
+## Сопоставление профиля с нативной конфигурацией
+
+Адаптер читает общий профиль Apothem и рендерит якорь инструкций плюс наборы
+поддержки при каждом запуске `apothem install` или `apothem update`.
+
+## Заметки о совместимости
+
+Адаптер в предварительной версии. Якорь `GEMINI.md` — это активное содержимое
+инструкций; плагин Antigravity сохраняет преобразованные навыки команд,
+переиспользуемые навыки, определения локальных помощников, правила, шаблоны и
+материал поддержки хуков в чётком, принадлежащем Apothem пространстве имён.
+Файлы хуков не регистрируются как активные события хуков Antigravity, пока адаптер
+не получит слой трансляции схемы для `hooks.json` Antigravity.
+
+## Проверка
+
+```bash
+apothem verify --harness antigravity
+```
+
+Команда verify подтверждает, что:
+
+1. Нативный файл контекста существует по ожидаемому пути.
+2. Метаданные плагина Apothem Antigravity CLI существуют и объявляют имя плагина
+   `apothem`.
+
+## Обновление
+
+```bash
+apothem update --harness antigravity
+```
+
+Повторно выводит нативную конфигурацию из текущего состояния общего профиля.
+Запускайте после редактирования `~/.config/apothem/profile.yaml` или обновления
+установленного пакета Apothem.
+
+## Удаление
+
+```bash
+apothem uninstall --harness antigravity
+```
+
+Удаляет файлы нативной конфигурации, записанные адаптером.
+YAML общего профиля и движок Apothem не затрагиваются.
+
+## Шлюз соответствия
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Устранение неполадок
+
+| Симптом | Исправление |
+|---------|-----|
+| Файл конфигурации не найден | Повторно запустите `apothem install --harness antigravity` |
+| Проверка не пройдена | Запустите `apothem update --harness antigravity`, затем проверьте снова |
+| Неожиданное содержимое конфигурации | Проверьте `~/.config/apothem/profile.yaml` или `--profile PATH`, затем повторно запустите `apothem update --harness antigravity` |
+
+## Регуляторы конфигурации
+
+| Флаг | По умолчанию | Описание |
+|------|---------|-------------|
+| `--dry-run` | `false` | Предпросмотр установки без записи файлов. |

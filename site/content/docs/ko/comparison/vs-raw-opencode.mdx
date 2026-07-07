@@ -1,0 +1,40 @@
+---
+title: "Apothem 대 수동 OpenCode 구성"
+description: "OpenCode의 구성, 명령, 스킬, 에이전트를 손으로 유지하는 것과 Apothem의 공유 프로파일에서 렌더링하는 것의 비교."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+OpenCode는 JSON 구성과 함께 명령, 스킬, 에이전트의 네이티브 발견 디렉터리를
+읽습니다. Apothem은 `instructions` 파일 목록이 포함된 JSON 구성을 렌더링하고,
+OpenCode가 지원하는 곳에서는 공유 코퍼스를 네이티브 디렉터리로 변환합니다.
+
+## 노력 비교
+
+| 작업 | 수동 구성 | Apothem 관리 |
+| ---- | --------------- | --------------- |
+| 규칙 작성 | 구성과 지원 프롬프트를 손으로 편집 | 공유 프로파일에서 렌더링 또는 참조 |
+| 명령, 스킬, 에이전트 작성 | 각 OpenCode 디렉터리를 손으로 유지 | 공유 Apothem 코퍼스에서 변환 |
+| 코퍼스를 다른 환경과 맞춰 유지 | 수동, 도구별 | `apothem update` 시 자동 |
+| 표면 설치 / 제거 | 수동 | `apothem install` / `apothem uninstall` |
+| 구성이 올바른지 검증 | 수동 검사 | `apothem verify --harness opencode` |
+
+## Apothem이 관리하는 것
+
+opencode 어댑터는 `opencode.json`을 작성하고, Apothem 슬래시 명령을 OpenCode의
+Markdown 명령 파일로 변환하며, 스킬을 네이티브 스킬 표면으로 복사하고, 보조 정의를
+Markdown 서브에이전트로 적응시킵니다. 규칙, 템플릿, 훅 프롬프트는 Apothem의 지원
+서브트리 아래에 남습니다. 규칙은 네이티브 `instructions` 목록에서 참조됩니다.
+
+## 마이그레이션 경로
+
+1. 공유 프로파일을 아직 만들지 않았다면 `apothem profile init`을 실행합니다.
+2. 기존 OpenCode 규칙, 명령, 스킬, 에이전트를 공유 코퍼스로 옮깁니다.
+3. `apothem install --harness opencode`를 실행해 네이티브 구성과 발견 디렉터리를 렌더링합니다.
+4. `apothem verify --harness opencode`를 실행해 구성이 안착했는지 확인합니다.
+5. 이후의 모든 변경에는 `apothem update --harness opencode`를 사용합니다.
+
+## 다음으로 읽기
+
+- [OpenCode 어댑터 레퍼런스](/docs/harnesses/opencode)
+- [비교 개요](/docs/comparison)

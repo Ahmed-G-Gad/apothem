@@ -1,0 +1,67 @@
+---
+title: "Рецепт пересборки ресурсов"
+description: "Пересоздание всех растровых бренд-ресурсов из мастер-источников SVG с помощью resvg и Pillow."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Рецепт пересборки ресурсов пересоздаёт каждый растровый ресурс из мастер-SVG.
+Это авторитетный путь обновления для итераций бренда.
+
+## Когда запускать
+
+Запускайте рецепт пересборки, когда:
+
+- Мастер-SVG (`assets/src/logo.svg` или `assets/src/logo-dark.svg`) изменяется.
+- Мастер компактного favicon (`assets/favicon.svg`) изменяется.
+- Мастер социальной карточки (`assets/src/og-banner.svg` или `assets/src/twitter-card.svg`) изменяется.
+- Требуется новый растровый размер.
+- Вы хотите проверить, что зафиксированные ресурсы по-прежнему соответствуют источнику SVG.
+
+## Скрипт
+
+| Скрипт | Платформа | Путь |
+| --- | --- | --- |
+| `rebuild-assets-resvg.py` | Любой хост с Python + resvg | `scripts/dev/rebuild-assets-resvg.py` |
+
+## Требования
+
+Генератор растрирует каждый SVG с помощью [resvg](https://github.com/linebender/resvg)
+и составляет наборы растров с помощью [Pillow](https://python-pillow.org/):
+
+- **Pillow:** `pip install pillow`.
+- **resvg:** скачайте релизный бинарный файл для вашей платформы со страницы
+  [релизов resvg](https://github.com/linebender/resvg/releases) —
+  `resvg-win64.zip` в Windows, `resvg-linux-x86_64.tar.gz` в Linux или
+  `resvg-macos.zip` в macOS — распакуйте его в ваш `PATH` либо укажите на него
+  скрипту через `--resvg <path>`.
+
+## Использование
+
+Пересоздайте каждый растровый ресурс:
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py
+```
+
+Передайте `--check-only`, чтобы проверить доступность инструментальной цепочки,
+не пересоздавая ни одного ресурса:
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py --check-only
+```
+
+Если resvg отсутствует в вашем `PATH`, укажите скрипту на бинарный файл:
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py --resvg /path/to/resvg
+```
+
+## Проверка
+
+Успешный запуск пересоздаёт растры светлого и тёмного знака, набор favicon
+PNG/ICO, иконки Apple touch, изображения OG/Twitter и зеркалирует подмножество,
+обслуживаемое в вебе, — включая источники главного логотипа, на которые ссылается
+сайт, — в `site/public/`. После генерации запустите сборку сайта и перед
+публикацией осмотрите главную страницу, favicon вкладки браузера и PNG социальных
+карточек.

@@ -1,0 +1,49 @@
+---
+title: "قاعدة مخصّصة"
+description: "تأليف قاعدة دائمة مخصّصة لمشروعك."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+يضيف هذا المثال قاعدة دائمة خاصّة بالمشروع تفرض اصطلاح تسمية عبر كل الملفات.
+
+## ملف القاعدة
+
+```markdown
+---
+name: "kebab-filenames"
+description: "Enforce kebab-case filenames in the src/ tree"
+pathFilter: ""
+alwaysApply: true
+---
+
+# Kebab-case filenames
+
+All new files created under `src/` MUST use kebab-case naming
+(lowercase letters, digits, and hyphens only — no underscores,
+no camelCase, no PascalCase).
+
+**Correct:** `src/styles/button-group.css`, `src/components/nav-bar.css`
+**Incorrect:** `src/styles/buttonGroup.css`, `src/components/NavBar.css`
+
+When in doubt, err on the side of more hyphens.
+```
+
+احفظ هذا في <bdi>`rules/kebab-filenames.md`</bdi> داخل جذر تثبيت <bdi>harness</bdi>
+الخاص بك (<bdi>`~/.claude/`</bdi> لمُحوِّل <bdi>Claude Code</bdi>؛ استبدِل مسار
+<bdi>harness</bdi> الأصلي خلاف ذلك).
+
+## تحقّق من تحميل القاعدة
+
+```bash
+python -m apothem.conformity.gate --check frontmatter
+```
+
+## النشر إلى الـ<bdi>harness</bdi>
+
+شغِّل أمر التحديث مرّة واحدة لكل <bdi>harness</bdi> مُثبَّت:
+
+```bash
+apothem update --harness claude-code
+apothem update --harness cursor
+```

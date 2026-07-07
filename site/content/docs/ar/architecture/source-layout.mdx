@@ -1,0 +1,55 @@
+---
+title: "تخطيط المصدر"
+description: "لماذا يستخدم Apothem تخطيط src/ وكيف تُنظَّم الشجرة."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+اعتمد <bdi>Apothem</bdi> [تخطيط src من PyPA](https://packaging.python.org/en/latest/discussions/src-layout-vs-flat-layout/)، واضعًا كل شيفرة <bdi>Python</bdi> القابلة للاستيراد تحت <bdi>`src/apothem/`</bdi>.
+
+## لماذا تخطيط src
+
+- **عزل الاستيراد.** لا يُحَل <bdi>`import apothem`</bdi> إلا عندما يكون <bdi>`src/`</bdi> في المسار
+  (يعمل المحرك بصيغة <bdi>`PYTHONPATH=src python -m apothem`</bdi>)، مما يمنع الاستيراد
+  العَرَضي لشجرة العمل من دليل غير ذي صلة.
+- **زمن تشغيل مكتفٍ ذاتيًا.** يعمل <bdi>Apothem</bdi> مباشرةً من نسخة مسحوبة مع اعتماديّاته
+  المُضمَّنة تحت <bdi>`src/apothem/_vendor/`</bdi> — دون الحاجة إلى خطوة تثبيت.
+  يُبقي تخطيط <bdi>src</bdi> ذلك السطح القابل للاستيراد منفصلًا بوضوح عن أدوات المستودع
+  واختباراته وبرامجه النصّية.
+- **توزيع نظيف.** يُنتِج التخطيط نفسه <bdi>sdist</bdi> و<bdi>wheel</bdi> سليمَي التكوين
+  (وتثبيتًا قابلًا للتعديل اختياريًا عبر <bdi>`pip install -e .`</bdi>) يطابق محتواهما بدقّة
+  ما يُشحَن فعلًا، دون تسرُّب أي وحدات دخيلة على المستوى الأعلى.
+
+## بنية الشجرة
+
+```
+src/apothem/
+    agents/         persistent agent definitions (*.md)
+    audit/          inventory and provenance tools
+    benchmarks/     performance benchmarks
+    cli/            Click CLI (quickstart, install, update, uninstall, verify, status, diff, rollback, harnesses, profile, doctor, completion)
+    commands/       slash command definitions (*.md)
+    conformity/     mechanical gate checkers (*-grep.py)
+    harnesses/      one sub-package per harness adapter (17 adapters)
+    hooks/          hook dispatcher + message files
+    lib/            shared Python library
+    output-styles/  output-style definitions (*.md)
+    rules/          behavioral rules (*.md)
+    schemas/        YAML/JSON schemas
+    skills/         reusable skill templates (folder/SKILL.md)
+    statuslines/    status-line config (*.json)
+    templates/      reusable template artifacts
+```
+
+## المُخرَجات القابلة للاستيراد مقابل مُخرَجات التهيئة
+
+كثير من العناصر تحت <bdi>`src/apothem/`</bdi> هي مُخرَجات تهيئة بصيغة <bdi>Markdown</bdi>، لا
+وحدات <bdi>Python</bdi>. سطح <bdi>Python</bdi> القابل للاستيراد هو:
+
+- <bdi>`src/apothem/cli/`</bdi> (واجهة <bdi>Click CLI</bdi> المُتاحة كنقطة دخول <bdi>`apothem`</bdi>)
+- <bdi>`src/apothem/harnesses/`</bdi> (الحزم الفرعية لمُحَوِّلات إطار العمل السبعة عشر)
+- <bdi>`src/apothem/lib/`</bdi> (المكتبة المشتركة: الملف الشخصي، السجلّ، المُجسِّد، الانتشار)
+- <bdi>`src/apothem/hooks/`</bdi> (<bdi>dispatch.py</bdi>، <bdi>lib/</bdi>)
+- <bdi>`src/apothem/conformity/`</bdi> (برامج <bdi>grep</bdi> النصّية الميكانيكية)
+- <bdi>`src/apothem/audit/`</bdi> (برامج الجرد النصّية)
+- <bdi>`src/apothem/benchmarks/`</bdi> (مُشغِّلات قياس الأداء)

@@ -1,0 +1,60 @@
+# SPDX-License-Identifier: MIT
+
+cff-version: 1.2.0
+message: "If you use Apothem in your research or tooling, please cite it using the metadata below."
+title: "Apothem"
+type: software
+abstract: >
+  Apothem is a host-agnostic AI harness configuration manager. It provides
+  a unified shared-profile schema and a set of harness adapters that materialize
+  per-harness configuration files from a single source of truth, enabling
+  consistent AI assistant behavior across seventeen AI assistant harnesses —
+  among them Claude Code, Cursor, Gemini CLI, and GitHub Copilot.
+version: "1.0.1"
+date-released: "2026-07-06"
+license: MIT
+url: "https://github.com/ahmed-g-gad/apothem"
+repository-code: "https://github.com/ahmed-g-gad/apothem"
+keywords:
+  - ai
+  - llm
+  - developer-tools
+  - claude-code
+  - cursor
+  - gemini-cli
+  - github-copilot
+  - harness
+  - configuration-management
+  - automation
+authors:
+  - family-names: "Gad"
+    given-names: "Ahmed G."
+    email: "me@ahmedgad.com"
+    website: "https://ahmedgad.com"
+# TODO(clarify): add a `doi:` field (and a matching `identifiers:` entry) once
+# the v1.0.1 tag is deposited to an archival registry such as Zenodo. The DOI is
+# an operator-minted value that cannot be derived from the repository; until the
+# deposit exists, citations resolve through the repository URL above.
+preferred-citation:
+  type: software
+  title: "Apothem: Host-agnostic AI Harness Configuration Manager"
+  authors:
+    - family-names: "Gad"
+      given-names: "Ahmed G."
+      email: "me@ahmedgad.com"
+  version: "1.0.1"
+  license: MIT
+  url: "https://github.com/ahmed-g-gad/apothem"
+  repository-code: "https://github.com/ahmed-g-gad/apothem"
+  date-released: "2026-07-06"
+  keywords:
+    - ai
+    - llm
+    - developer-tools
+    - claude-code
+    - harness
+    - configuration-management
+  abstract: >
+    Apothem is a host-agnostic AI harness configuration manager that
+    materializes one shared profile into the native configuration of seventeen
+    AI assistant harnesses.

@@ -1,0 +1,59 @@
+---
+title: "Recorrido de un plan"
+description: "Recorrido de extremo a extremo del pipeline /plan para una tarea real."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Este ejemplo recorre el pipeline `/plan` completo para una tarea sencilla: añadir un nuevo subcomando de la CLI a Apothem.
+
+## Paso 1: Escribir requisitos en prosa
+
+Crea `prose.md`:
+
+```markdown
+Add a `apothem status` subcommand that prints the current apothem
+version, installed harnesses, and the result of `apothem verify`.
+The output should be machine-parseable (JSON with --json flag) and
+human-readable by default.
+```
+
+## Paso 2: Refinar a especificación
+
+```bash
+/plan-spec prose.md --suite-name apothem-status-command
+```
+
+Esto ejecuta el Forge de seis fases, formula preguntas aclaratorias y produce `plans/apothem-status-command/_spec/spec.md`.
+
+## Paso 3: Generar el plan
+
+```bash
+/plan-generate
+```
+
+Produce PREAMBLE.md, MASTER-PLAN.md, PROGRESS.md, PLAN-NOTES.md y los archivos PHASE.md por fase bajo `plans/apothem-status-command/phases/`.
+
+## Paso 4: Revisar el plan
+
+```bash
+/plan-review
+```
+
+Auditoría forense con puntuaciones de fidelidad a la prosa, consistencia y calidad. Corrige cualquier hallazgo FAIL antes de continuar.
+
+## Paso 5: Ejecutar las fases
+
+```bash
+/plan-execute    # executes the first phase, then pauses
+/plan-execute    # executes the next phase, then pauses
+...
+```
+
+## Paso 6: Comprobar el progreso
+
+```bash
+/plan-status
+```
+
+Informa de la fase actual, las salidas verificadas y la siguiente acción.

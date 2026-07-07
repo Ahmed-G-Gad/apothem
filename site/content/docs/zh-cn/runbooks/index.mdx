@@ -1,0 +1,20 @@
+---
+title: "运维手册"
+description: "Apothem 运维手册——面向发布、发布者配置、Pages 启用、恢复以及适配器编写的分步操作流程。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+面向维护者的操作流程。每份运维手册都是一套有序、无需上下文的流程：
+它将一个已知的起始状态推进到一个经过验证的结束状态，写法做到让一位
+有能力的贡献者无需任何先验背景即可逐步照做。
+
+## 页面
+
+| 页面 | 描述 |
+|------|-------------|
+| [Pages 启用](/docs/runbooks/pages-enablement) | 将 `apothem.ahmedgad.com` 从全新的 GitHub Pages 配置推进到一个返回 `200 OK` 的 HTTPS 着陆页。 |
+| [发布周期](/docs/runbooks/release-cycle) | 将一次 `vX.Y.Z` 发布从干净的工作区推进到经过验证的 GitHub Release 与 npm 配置面。 |
+| [发布者账户配置](/docs/runbooks/publisher-account-setup) | 为 `@ahmed-g-gad/apothem` 配置 npmjs.com 受信任发布者，以及 GitHub 侧的发布前置条件。 |
+| [发布恢复](/docs/runbooks/release-recovery) | 当发布切换序列中途失败时，将 `ahmed-g-gad/apothem` 恢复到可工作状态。 |
+| [编写新的环境适配器](/docs/runbooks/new-harness-adapter-authoring) | 编写并发布一个新的环境适配器以纳入官方一方支持。 |

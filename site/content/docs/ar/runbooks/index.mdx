@@ -1,0 +1,20 @@
+---
+title: "أدلّة التشغيل"
+description: "أدلّة تشغيل Apothem — إجراءات تشغيلية خطوة بخطوة للإصدارات، وإعداد الناشر، وتفعيل Pages، والاستعادة، وتأليف المحوِّلات."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+إجراءات تشغيلية للمشرفين. كل دليل تشغيل هو إجراء متسلسل ومستقل عن السياق:
+يقود حالة بداية معروفة إلى حالة نهاية مُتحقَّق منها، ومكتوب بحيث يستطيع
+مساهم كفء اتّباعه دون سياق مسبق.
+
+## الصفحات
+
+| الصفحة | الوصف |
+|------|-------------|
+| [تفعيل Pages](/docs/runbooks/pages-enablement) | يقود <bdi>`apothem.ahmedgad.com`</bdi> من تهيئة <bdi>GitHub Pages</bdi> جديدة إلى صفحة هبوط <bdi>HTTPS</bdi> تُرجع <bdi>`200 OK`</bdi>. |
+| [دورة الإصدار](/docs/runbooks/release-cycle) | يقود إصدار <bdi>`vX.Y.Z`</bdi> من شجرة عمل نظيفة إلى أسطح <bdi>GitHub Release</bdi> و<bdi>npm</bdi> المُتحقَّق منها. |
+| [إعداد حساب الناشر](/docs/runbooks/publisher-account-setup) | يهيّئ الناشر الموثوق على <bdi>npmjs.com</bdi> لـ <bdi>`@ahmed-g-gad/apothem`</bdi> ومتطلّبات الإصدار المسبقة على جانب <bdi>GitHub</bdi>. |
+| [استعادة الإصدار](/docs/runbooks/release-recovery) | يستعيد <bdi>`ahmed-g-gad/apothem`</bdi> إلى حالة عاملة حين يفشل تسلسل تبديل الإصدار في منتصف الطريق. |
+| [تأليف محوِّل بيئة جديد](/docs/runbooks/new-harness-adapter-authoring) | ألِّف وانشُر محوِّل بيئة جديدًا لإدراجه ضمن الطرف الأول. |

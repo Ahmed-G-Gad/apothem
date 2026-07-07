@@ -1,0 +1,301 @@
+---
+title: "Positionierung"
+description: "Verstehe Apothem als Artefakt-Ratifizierungs-Governance mit fünfzehn Mandaten, kanonischer Kanal-Eingabedisziplin und kognitiver Identitäts-Kreativarchitektur für assistentengetriebene Entwicklung."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Zielgruppe:** Evaluatoren, die entscheiden, ob sie `apothem` für produktive assistentengetriebene Arbeit übernehmen.
+> **Länge:** ~12 Minuten Lesezeit von Anfang bis Ende. Abschnitt für Abschnitt überfliegbar.
+> **Zweck:** rahmen, was `apothem` tatsächlich IST, was es NICHT ist, und warum die Antwort auf „Was verteilt dieses Projekt?“ strukturell anders ausfällt als die Antwort, die die meisten Assistenten-Werkzeugprojekte geben.
+
+---
+
+## §1. These
+
+`apothem` ist **Artefakt-Ratifizierungs-Governance**, paketiert als Binärdatei.
+
+Die konventionelle Rahmung von Assistenten-Werkzeugen ist **Prompt-Tuning**: ein System-Prompt, eine Modellauswahl, eine Kontextfenster-Strategie, eine kleine Bibliothek von Slash-Befehlen und ein Haufen Prompt-Engineering-Folklore. Unter dieser Rahmung ist der Hebelpunkt des Betreibers die Prosa, die er dem Modell übergibt. Wenn das Modell sich fehlverhält, besteht die Wiederherstellung darin, die Prosa zu bearbeiten. Das Artefakt, das das Projekt verteilt, ist der Prompt-Satz.
+
+`apothem` weist diese Rahmung zurück.
+
+Der Hebelpunkt eines Assistenten, der gegen eine reale Codebasis operiert, ist nicht die Prosa, die der Betreiber dem Modell übergibt — es ist das **Artefakt, das das Modell gleich emittieren wird**. Dieses Artefakt landet in einem Repository, wird committet, wird reviewt, wird gemergt, wird deployt, wird von nachgelagerten Artefakten zitiert, wird von künftigen Mitwirkenden geerbt. Seine Qualität ist eine nachgelagert-irreversible Eigenschaft, die der Prompt nicht rückwirkend reparieren kann. Den Prompt zu bearbeiten, nachdem ein fehlerhafter Commit gelandet ist, ist eine Steuer auf den Betreiber, keine Wiederherstellung des Artefakts.
+
+Die Disziplin, die dieses Projekt kodiert, ist **Inversion**: jede Emission durchläuft ein strukturiertes, vereinbartes, mechanisch geprüftes Gate, **bevor** sie die Hände des Assistenten verlässt. Das Gate erzwingt fünfzehn Mandate, die Host-Entdeckung, Offenlegung, zehn Qualitätsdimensionen, Autoritätshygiene, Expertise-Einbindung, Optionsannotation, Endgültigkeit, visuelle Hebelwirkung, bidirektionale Bindung, Agile-Sprint-Apparatur, kanonisches Layout, Code-Handwerk, System-Teilhabe und Produktionsreife umspannen. Jedes Mandat ist eine **Regel** mit einem pfadgefilterten Geltungsbereich und einem Körper, der eine spezifische Fehlerklasse operationalisiert. Jeder Gate-Fehler ist ein strukturelles Befund, das der Assistent offenlegt — nie eine stille Verschlechterung.
+
+Der Regelkorpus IST das Produkt. Die Binärdatei `apothem` ist seine **Paketierung** — eine Verteilungsoberfläche, die den Korpus zur Benutzer-Konfigurationswurzel jedes Betreibers trägt und ihn als die Betriebshaltung des Assistenten registriert. Die Paketierung ist ersetzbar; der Korpus ist das langlebige Asset.
+
+Ein Projekt, das `apothem` übernimmt, übernimmt keinen Prompt. Es übernimmt ein **Governance-Regime**. Jedes Artefakt, das der Assistent im Host-Repository emittiert — Code, Tests, Konfiguration, Schemas, Dokumentation, Runbooks, Commit-Nachrichten, Branch-Namen — erfüllt dieselbe Fünfzehn-Punkte-Latte. Der Hebelpunkt des Betreibers verschiebt sich von „Was soll ich dem Assistenten sagen?“ zu „Welche Mandate beschränken diese Emission, und welchen Nachweis verlangt das Gate?“. Die Verschiebung ist strukturell, nicht stilistisch.
+
+Dieses Dokument rahmt, warum der Korpus das tragende Asset ist, geht die fünfzehn Mandate mit ihren Regeldatei-Ankern durch und legt die beiden querschneidenden Disziplinen (kanonische Kanal-Eingabebehandlung und kognitive Identitäts-Kreativarchitektur) offen, die den Korpus zu einem kohärenten Ganzen binden.
+
+---
+
+## §2. Drei-Säulen-Architektur
+
+Der Korpus ruht auf drei Säulen. Jede Säule ist eine separierbare Oberfläche mit ihrer eigenen kanonischen Spezifikation; jede Säule verstärkt die beiden anderen.
+
+### Säule A — Das Mandats-Register (M1–M15 + CM-1..CM-28)
+
+Das Mandats-Register ist die **äußere-Achsen**-Governance-Oberfläche. **M1–M15** regeln jedes Artefakt, das der Assistent in einem Host-Projekt erzeugt: Host-Entdeckung, Offenlegung, zehn Qualitätsdimensionen, Autorität, Expertise, Optionsannotation, Endgültigkeit, visuelle Hebelwirkung, bidirektionale Bindung, Agile Sprints, kanonisches Layout, Code-Handwerk, System-Teilhabe und Produktionsreife. Das Register ist als die Fünfzehn-Mandate-Registry kanonisiert und durch die in §3 unten aufgezählten Regeldateien operationalisiert.
+
+**CM-1..CM-28** sind die **innere-Achsen**-Gegenstücke — operative Mandate, die die Interaktionsdisziplin des Assistenten regeln (kritische Bewertung, Null-Annahmen, Suche-vor-Implementierung, Beste-Lösung-Bewertung, brutale Ehrlichkeit, Entscheidungsgeschwindigkeit, Engpass-zuerst-Fokus, kohärentes Produkt und zwanzig weitere Einträge zu Plan-Lokalität, Kontext-Verwaltung, Orchestrierung delegierter Arbeit, Großdatei-Generierung und Gedächtnis-Lebenszyklus). Die innere Achse ist in der Operational-Mandates-Regel und `site/content/docs/governance/cross-cutting-mandates.mdx` kanonisiert.
+
+Jede Emission durchläuft beide Achsen. Das Gate bei `src/apothem/rules/pre-emission-gate.md` führt die fünfzehn mechanischen und begründeten Punkte pro Emission aus und protokolliert einen Verifizierungsblock in der Arbeitsspur des Artefakts.
+
+### Säule B — Die kanonische Kanal-Disziplin
+
+Die kanonische Kanal-Disziplin bindet, **wie der Assistent Betreiber-Eingaben einholt**. Freiformulierte Prompts werden ökosystemweit außer Dienst gestellt; jede Wahl wird durch den strukturierten Anfragekanal mit einem strukturierten Optionsannotations-Schema (Begründung + Empfehlung + Standard-Zeiger pro Option), einer geschlossenen Empfehlungstaxonomie, einer Bestätigungsschwelle für destruktive Operationen je Datei und einem heuristischen Durchlauf geleitet, der konversationelle Prompt-Drift über jede regulierte Oberfläche hinweg abfängt. Die vollständige Spezifikation lebt bei `src/apothem/rules/interactive-questions.md`, mit Tiefe getragen an den pfadgefilterten Begleitern `src/apothem/rules/interactive-questions-canonical-shapes.md` und `src/apothem/rules/interactive-questions-sweep-matchers.md`.
+
+Die Hebelwirkung der Disziplin ist **Entscheidungs-Auditierbarkeit**. Jede betreiberwillkürliche Wahl trägt den Nachweis, den der Assistent erwogen hat, die Empfehlung, die der Assistent ausgesprochen hat, und die in konkreten Treibern verankerte Begründung. Sechs Monate nach der Wahl kann ein Auditor, der das Offenlegungs-Hauptbuch liest, die Entscheidungsgrenze rekonstruieren, ohne das Gedächtnis des Betreibers zu konsultieren.
+
+### Säule C — Die kognitive Identitäts-Taxonomie
+
+Die kognitive Identitäts-Taxonomie bindet, **wie der Assistent denkt**. Fünf sequenzielle kognitive Filter (Reinigung des Offensichtlichen, Domänen-Exil, Inversionspresse, Kombinatorische Explosion, Ästhetische Forderung) bilden eine kreative Kadenz, die bei jeder substanziellen Ausgabe angewandt wird. Sechs Ideationstechniken (Historischer Saboteur, Beschränkungsparadox, Lebende-Systeme-Linse, Zweitordnungs-Narrativ, Schurken-Rahmen, 100-Jahre-Zoom) feuern bei Erkennungssignalen, wenn der Standardansatz ein unbefriedigendes Ergebnis hervorgebracht hat. Sieben Breitenachsen (Architektur, Nebenläufigkeit, Performance, Sicherheit, Testen, Werkzeuge, Beobachtbarkeit) bilden die Tiefenoberfläche, gegen die jede nicht-triviale Entscheidung attestiert. Die vollständige Spezifikation lebt bei `src/apothem/rules/cognitive-identity.md`, mit Tiefe getragen am pfadgefilterten Begleiter `src/apothem/rules/cognitive-identity-techniques.md`.
+
+Die Hebelwirkung der Taxonomie ist **strukturelle Neuartigkeit**. Der Filter „Reinigung des Offensichtlichen“ verwirft die Erste-Idee-Antwort, nach der jeder greift; die Inversionspresse verlangt, dass mindestens eine invertierte Annahme in die Endausgabe überlebt; die Ästhetische Forderung weist funktionale-aber-vergessliche Formen zurück. Das Ergebnis ist ein Assistent, der Ausgaben produziert, bei denen Betreiber innehalten und erneut lesen — nicht weil die Prosa verziert ist, sondern weil die strukturelle Wahl auf eine Weise nicht-offensichtlich ist, die, einmal gesehen, unvermeidlich wirkt.
+
+### Wie die Säulen einander verstärken
+
+Die drei Säulen sind **wechselseitig tragend**. Das Mandats-Register (Säule A) definiert, was das Artefakt erfüllen muss. Die kanonische Kanal-Disziplin (Säule B) definiert, wie Betreiber-Eingaben in die Entscheidungsoberfläche eintreten, die das Artefakt produziert. Die kognitive Identitäts-Taxonomie (Säule C) definiert die kreative Kadenz, die dem Artefakt seine Form gibt. Das Entfernen einer einzigen Säule lässt die beiden anderen zusammenbrechen: ein Register ohne kanonischen Kanal produziert still standardisierte Artefakte, die konform aussehen, aber strukturelle Entscheidungen verbergen; ein kanonischer Kanal ohne kognitive Tiefe produziert korrekt geleitete, aber generisch geformte Ausgaben; eine kognitive Kadenz ohne Register produziert ästhetisch-elegante Artefakte, die an der Integration mit dem Host-Projekt scheitern.
+
+---
+
+## §3. Durchgang durch das Mandats-Register
+
+Das Fünfzehn-Mandate-Register ist die kanonische äußere-Achsen-Governance-Oberfläche. Jede Zeile unten benennt das Mandat, seinen operativen Geltungsbereich und die Regeldatei, die die kanonische Spezifikation trägt. Jede Regeldatei ist auf die Artefaktklassen pfadgefiltert, die sie regelt, und wird bei Bedarf in den Betriebskontext des Assistenten geladen, wenn diese Klassen berührt werden.
+
+### M1 — Host-Projekt-Agnostizismus & Konventionsentdeckung
+
+**Geltungsbereich.** Was der Assistent in einem Host-Projekt produziert, ist davon geformt, was das Host-Projekt bereits ist — sein Stack, seine Sprache, sein Framework, seine Toolchain, sein Formatter, sein Linter, sein Test-Framework, sein Dokumentationsgenerator, seine Branch-Strategie, seine Commit-Nachrichten-Konvention, sein Layout, seine Benennung, seine Abhängigkeits-Pinning-Richtlinie. Jede einzelne wird aus der autoritativen Quelle der Wahrheit des Hosts **entdeckt** (Manifeste, Lock-Dateien, Geschwisterdateien vergleichbarer Art, Repository-weite Konventionsdokumente) und **geehrt**. Wo der Host bei einer Konvention schweigt, die der Assistent übernehmen muss, wird das Schweigen als autoritative Anfrage offengelegt — nie durch stilles Wählen eines internen Standards aufgelöst.
+
+**Kanonische Spezifikation.** `src/apothem/rules/host-discovery.md` (mit dem sprachspezifischen Manifest-Katalog bei `src/apothem/rules/host-discovery-manifests.md`).
+
+**Warum es zählt.** Die Emission des Assistenten ist **ununterscheidbar von einer, die ein langjähriger Mitwirkender des Host-Projekts geschrieben hätte**. Konventionsdrift ist ein struktureller Fehler, keine stilistische Vorliebe.
+
+### M2 — Redaktionelle Disziplin & offengelegte Änderungen
+
+**Geltungsbereich.** Jede Änderung von bedeutsamem Umfang trägt ein explizites **Offenlegungs-Hauptbuch** — was verlangt wurde, was geändert wurde, was erweitert wurde, was verfeinert wurde, was aufgeschoben wurde. Stille Überkonformität („tat genau, was verlangt war, obwohl es falsch war“) und stille Grenzüberschreitung („weitete den Änderungsumfang aus, ohne es zu sagen“) sind beide Fehler. Jede Änderung trägt eine Begründung auf dem wissenschaftlichen / technischen Niveau (zitierte Referenz, RFC, Anbieterdokumentation, Geschwisterdatei-Präzedenzfall, benanntes Muster aus der Literatur).
+
+**Kanonische Spezifikation.** `src/apothem/rules/disclosure-ledger.md` (mit dem Markierungsklassen-Katalog bei `src/apothem/rules/disclosure-ledger-markers.md`).
+
+**Warum es zählt.** Ein Diff, der still einen benachbarten Fehler behebt, während er die angeforderte Änderung implementiert, ist eine nicht offengelegte Änderung. Ein Reviewer sechs Monate später kann die bewusste Behebung nicht von der Drift unterscheiden. Das Hauptbuch ist die Audit-und-Wiederherstellungs-Oberfläche.
+
+### M3 — Die zehn Qualitätsdimensionen
+
+**Geltungsbereich.** Jedes Artefakt wird vor der Emission gegen zehn Qualitätsdimensionen bewertet: wissenschaftliche Strenge, Konsistenz / Kohärenz / Integration / Validität, Konfigurierbarkeit / Redundanzfreiheit / Konsolidierung, Lesbarkeit / Intuition / Sauberkeit, Verwaistheit / Veraltung, Strukturalität / Systemizität / Uniformität / Vollständigkeit, Architektur, Benennungsuniformität, wissenschaftliche / technische Referenzierung und Beispiele / Tests / Docstrings / Dokumentation. Ein einzelnes Artefakt, das mehrere Dimensionen verfehlt, ist **multiplikativ**, nicht additiv — ein Artefakt, das veraltet UND verwaist UND inkonsistent benannt UND undokumentiert ist, ist ein Kandidat für Rückzug, nicht für Reparatur.
+
+**Kanonische Spezifikation.** `src/apothem/rules/ten-dimension-check.md` (mit den Dimensionskörpern bei `src/apothem/rules/ten-dimension-check-dimensions.md`).
+
+**Warum es zählt.** Qualität ist zerlegbar. Die Benennung der zehn Dimensionen macht jede einzelne auditierbar und isoliert offenlegbar; mehrdeutige „das sieht schwach aus“-Befunde werden zu spezifischen „Dimension 5 Veraltung: Referenz bei Zeile 42 zeigt auf eine verschobene Datei“.
+
+### M4 — Selbstanwendung — Vor-Emissions-Gate
+
+**Geltungsbereich.** Jedes Artefakt durchläuft vor der Emission ein **Fünfzehn-Punkte-Vor-Emissions-Gate**. Mechanische Punkte (M2, M5, M7, M8, M10, M13, M15) tragen ausführbare Matcher bei `src/apothem/conformity/*-grep.py`, orchestriert durch `src/apothem/conformity/gate.py`. Begründete Punkte (M1, M3, M6, M9, M11, M12, M14) werden vom operierenden Assistenten bewertet und im Verifizierungsblock protokolliert. Ein einzelner Punktfehler blockiert die Emission; die Iteration setzt sich fort, bis jeder Punkt besteht.
+
+**Kanonische Spezifikation.** `src/apothem/rules/pre-emission-gate.md` (mit der vollständigen Punkttabelle bei `src/apothem/rules/pre-emission-gate-bars.md`).
+
+**Warum es zählt.** Qualität ist eine Vor-Emissions-Angelegenheit, keine nachgelagerte „der Benutzer kann es überarbeiten“-Angelegenheit. Das Gate ist die strukturelle Übersetzung dieser Überzeugung in mechanische Durchsetzung.
+
+### M5 — Autoritätsprinzip (Frage nach, erfinde nicht)
+
+**Geltungsbereich.** Namen, E-Mails, Handles, Hostnamen, Organisationen, Mandanten, Endpunkte, Zugangsdaten, Geltungsbereichsrichtung, Benennungswahlen, die der Host noch nicht festgelegt hat, Aufbewahrungsrichtlinien, Versions-Pins auf host-veränderlichen Oberflächen, Infrastrukturentscheidungen, die der Benutzer nicht deklariert hat — **keine** wird erfunden. Jede wird entweder aus einer autoritativen Quelle der Wahrheit im Host entdeckt (M1-Entdeckungshälfte) oder vom Benutzer erfragt (M5-Anfragehälfte) — nie mit einer plausibel aussehenden Vermutung überpinselt.
+
+**Kanonische Spezifikation.** `src/apothem/rules/authority-inquiry.md` (mit dem Sieben-Kategorien-Katalog bei `src/apothem/rules/authority-inquiry-categories.md`).
+
+**Warum es zählt.** Identität, Sicherheit, Geltungsbereichsrichtung und öffentliche-Oberflächen-Benennung tragen rechtliches und auditierendes Gewicht. Eine erratene Kontaktadresse, ein fabrizierter `CODEOWNERS`-Handle oder ein erfundener Release-Signierungs-Endpunkt erzeugt nachgelagerte Aufräumarbeit, die um Größenordnungen mehr kostet, als die Anfrage gekostet hätte.
+
+### M6 — Expertise-Einbindung
+
+**Geltungsbereich.** Jedes Artefakt von bedeutsamem Umfang liest die Absicht des Benutzers vor dem wörtlichen Text, ändert proaktiv, wenn die wörtliche Anforderung einen bekannten Defekt hinterlassen würde, erweitert bei benachbarten Lücken, verfeinert mit zitierter Begründung, antizipiert Folgen zweiter Ordnung, kalibriert die Tiefe zur Aufgabe und importiert Lektionen aus benachbarten Domänen — jede Änderung über das M2-Hauptbuch offenlegend.
+
+**Kanonische Spezifikation.** `src/apothem/rules/expertise-posture.md` (mit sieben Unterelementen + Kalibrierungsleiter bei `src/apothem/rules/expertise-posture-elements.md`).
+
+**Warum es zählt.** Expertise ohne Offenlegung ist stille Übersteuerung. Expertise mit Offenlegung ist Hebelwirkung — der Betreiber sieht die Änderung, bewertet die Begründung und ratifiziert oder revertiert. Der Assistent handelt als ein erfahrener Mitwirkender, dessen Urteil auditierbar ist, nicht als undurchsichtiger Ersatz für die Absicht des Betreibers.
+
+### M7 — Optionsannotations-Disziplin
+
+**Geltungsbereich.** Jede vom Assistenten offengelegte Mehrfach-Optionswahl — in Prosa-Antworten, ADRs, README-Abschnitten, PR-Beschreibungen, Designdokumenten, Runbook-Schritten, Code-Kommentaren, Commit-Nachrichten-Körpern, RFCs — trägt die kanonische Empfehlungsmarkierung auf der empfohlenen Option plus eine prinzipiengebundene Begründung. Stille Auswahlen und nicht annotierte Optionslisten sind in autoritativem Terrain verboten.
+
+**Kanonische Spezifikation.** `src/apothem/rules/option-annotation.md` (mit der Prosa-und-Dokument-Form bei `src/apothem/rules/option-annotation-form.md`).
+
+**Warum es zählt.** Jeder verfasste Optionssatz ist eine Audit-Oberfläche. Der Leser sieht nicht nur die Wahl, sondern den Alternativraum, die Empfehlung und den konkreten Treiber dahinter. Dieselbe Disziplin bindet die strukturierten Anfrage-Aufrufe des Assistenten und die in permanente Artefakte verfasste Prosa.
+
+### M8 — Endgültigkeit, Lückenlosigkeit und die Familie der Rigorose-Systeme-Tugenden
+
+**Geltungsbereich.** Jede Aussage ist endgültig (kein Zaudern, wo eine bindende Vorschrift möglich ist) und lückenlos (keine Lücken in deklarierten Domänen, keine Schlupflöcher, wo wörtliches Befolgen die Absicht verletzt, keine unausgesprochenen Annahmen, keine Präzedenz-Gleichstände, keine stillen Rückfalloptionen). Die Zauder-Vokabularliste wird mechanisch am Gate erkannt; jedes Vorkommen in vorschreibender Prosa wird auf einem von drei Pfaden aufgelöst — zu unbedingt mit benannten Bedingungen befördern, zu explizitem Konditional mit aufgezählten Zweigen herabstufen, oder entfernen und die Wahl zur Anfrageoberfläche leiten.
+
+**Kanonische Spezifikation.** `src/apothem/rules/definitiveness.md` (mit dem Sieben-Tugenden-Katalog bei `src/apothem/rules/definitiveness-virtues.md`).
+
+**Warum es zählt.** Gezauderte vorschreibende Prosa ist eine Steuer auf jeden Leser. Der Leser kann nicht erkennen, ob das Zaudern ein reales Konditional einräumt oder Autoren-Unsicherheit signalisiert. Die Disziplin zwingt den Autor, die Bedingung zu benennen oder die Vorschrift zu entfernen — der Leser erhält so oder so eine bindende Aussage.
+
+### M9 — Visuelle Hebelwirkung
+
+**Geltungsbereich.** Wo die Thematik strukturell ist — Architektur, Kontrollfluss, Datenfluss, Abhängigkeitsgraph, Zustandsmaschine, Sequenz, Entscheidungsbaum, Hierarchie, Präzedenz-Stapel, Lebenszyklus, Berechtigungsmatrix — trägt das Artefakt ein **Diagramm** neben der Prosa. Mermaid ist der empfohlene Standard für Markdown-zentrische Korpora; die bestehende Notation des Hosts wird gemäß der M1-Entdeckung geehrt. Jedes Diagramm trägt Herkunft, ein Verifizierungsdatum und eine Bindung zurück zum Artefakt, das es abstrahiert.
+
+**Kanonische Spezifikation.** `src/apothem/rules/visual-leverage.md`.
+
+**Warum es zählt.** Eine zweitausend-Wörter-Architekturbeschreibung ohne Diagramm ist **systematische Unternutzung** des Mediums und ein struktureller Fehler des Artefakts, keine stilistische Vorliebe. Räumliche Beziehungen sind in linearer Prosa unleserlich; das Diagramm ist gleichrangige erstklassige Ausgabe, keine Dekoration.
+
+### M10 — Bidirektionale Bindung & Phasenausführungs-Verkettung
+
+**Geltungsbereich.** Jedes substanzielle strukturelle Element trägt reziproke Bindungen zu seinen Geschwistern in der kanonischen Fünf-Richtungs-Notation: **Drives →** / **Driven by ←** / **Satisfies →** / **Established by ↑** / **Cross-bound with ↔**. Jede in einer Richtung deklarierte Bindung hat einen reziproken Rückzeiger am anderen Ende; Halbkanten sind strukturelle Fehler, keine ästhetischen Vorlieben. Ein mechanisches Reziprozitäts-Grep bei `src/apothem/conformity/binding_reciprocity_grep.py` erzwingt die Invariante am Gate.
+
+**Kanonische Spezifikation.** `src/apothem/rules/bidirectional-binding.md`.
+
+**Warum es zählt.** Reziproke Bindungen verwandeln den Korpus in einen navigierbaren Graphen. Die `Cross-bound with ↔`-Zeile jeder Regel zeigt auf jeden Peer, der sie zitiert, und jeder zitierte Peer zeigt zurück. Das Refactoring des Korpus wird mechanisch — benenne eine Regel um, das Reziprozitäts-Grep markiert jede veraltete Zitierung im selben Änderungssatz.
+
+### M11 — Agile Sprints & empirische Prozesssteuerung
+
+**Geltungsbereich.** Nicht-triviale mehrstufige Arbeit läuft als disziplinierte Agile Sprints mit den sieben kanonischen Elementen: Sprint-Ziel (ergebnisgeformt, testbar), Sprint-Backlog (INVEST-geformt, priorisiert), Definition of Ready (Sprint-Eintritts-Gate), Definition of Done (Sprint-Austritts-Gate), Sprint-Review (angenommen / abgelehnt / übertragen pro Element), Sprint-Retrospektive (fortsetzen / stoppen / starten), Velocity-Tracking (Signal, nie Ziel). Drei Säulen der empirischen Prozesssteuerung — Transparenz, Inspektion, Anpassung — operieren durchgängig.
+
+**Kanonische Spezifikation.** `src/apothem/rules/agile-sprints.md` (mit den Elementkörpern bei `src/apothem/rules/agile-sprints-elements.md`).
+
+**Warum es zählt.** Ein mehrtägiger Massen-Diff ohne Sprint-Struktur ist für das Review undurchsichtig. Die Apparatur legt jedes Inkrement, jedes Akzeptanzkriterium, jede Ablehnung in dem Moment offen, in dem sie geschieht — nicht aufgeschoben auf eine Retrospektive lange nachdem die strukturelle Entscheidung irreversibel ist.
+
+### M12 — Berichtsebenen & kanonisches Layout erzeugter Ausgaben
+
+**Geltungsbereich.** Nicht-triviale mehrstufige Arbeit erzeugt zweistufiges Berichtswesen: einen Bericht je Unterphase auf der Arbeitsebene und eine Zusammenfassung auf Phasenebene auf der Review-Ebene, die aggregiert statt verkettet — uniformes Template über Unterphasen, aggregierte Metriken, hervorgebrachte Muster, Selbstprüfung auf Phasenebene, äußere Deklarationen. Erzeugte Ausgaben sitzen an vorhersagbaren, host-entdeckten kanonischen Orten mit Herkunft und reziproken Querverweisen. **Verwaiste Ausgaben** (Artefakte ohne Verbraucher / ohne Index-Eintrag / ohne Erzeuger-Zuordnung) sind strukturelle Fehler.
+
+**Kanonische Spezifikation.** `src/apothem/rules/canonical-layout.md` (mit den Berichtsebenen-Körpern bei `src/apothem/rules/canonical-layout-reporting-tiers.md`).
+
+**Warum es zählt.** Eine flache Liste von `report1.md` / `report2.md` an ad-hoc-Orten ist sechs Wochen später unleserlich. Die zweistufige Disziplin plus host-kanonisches Layout bedeutet, dass jede Ausgabe auffindbar ist, jeder Verbraucher benannt ist, jeder Erzeuger zuordenbar ist.
+
+### M13 — Code-Handwerk-Konventionen
+
+**Geltungsbereich.** Jedes Code-Artefakt erfüllt elf Unterelemente: Warum-nicht-was-Kommentierung, absichtsoffenbarende Benennung, spezifische Ausnahmebehandlung, Funktions- und Modul-Design mit Einzelverantwortungs-Tendenz, absichtsvolle Logging-Stufen, verhaltensbeschreibendes Testen, sauberes Bestehen von Formatter / Linter / Typprüfer, sicherheitsbewusster Code (keine fest codierten Geheimnisse, keine Shell-Injektion, keine unsichere Deserialisierung), Nebenläufigkeitsdisziplin, benannte-Konstanten-Eliminierung unerklärter numerischer Literale und Abdeckung der Dokumentationsoberfläche. Sprachspezifische Geschwisterregeln tragen die sprachspezifische Materialisierung.
+
+**Kanonische Spezifikation.** `src/apothem/rules/code-craft-conventions.md` (Universal-Delegations-Stub) plus die sprachspezifischen Geschwisterregeln `src/apothem/rules/code-craft-python.md`, `src/apothem/rules/code-craft-shell.md` und `src/apothem/rules/code-craft-markdown.md`.
+
+**Warum es zählt.** Code-Handwerk-Drift häuft sich an. Ein einzelner blanker Ausnahmebehandler wird zum Präzedenzfall, den der nächste Mitwirkende zitiert; ein fest codiertes Geheimnis wird zur Konvention, die das Team akzeptiert; ein unerklärtes Literal wird zu einem Dutzend. Die elf Unterelemente benennen die Fehlerklassen, und das Gate erzwingt sie pro Emission.
+
+### M14 — Ökosystem-Systemizität im Host-Projekt
+
+**Geltungsbereich.** Jede neu eingeführte Komponente deklariert vier systemische Relationen — **Vorgänger** (was sie auslöst), **Nachfolger** (was sie verbraucht), **Geschwister** (Geschwister derselben Art), **Durchsetzer** (Host-Qualitäts-Gates, die sie regeln) — und konvergiert im selben Änderungssatz mit Geschwisterkonventionen. Silos (eigenständige Artefakte, die von Geschwisterkonventionen abweichen, Duplikate bestehender Funktionalität) und Waisen (Komponenten ohne Verbraucher / ohne Index-Eintrag / ohne Erzeuger-Zuordnung) sind strukturelle Fehler.
+
+**Kanonische Spezifikation.** `src/apothem/rules/systemic-participation.md` (mit operativer Tiefe bei `src/apothem/rules/systemic-participation-relations.md`).
+
+**Warum es zählt.** Ein neuer Test, ein neues Doc, ein neuer Workflow, ein neues Modul oder ein neuer Konfigurationseintrag, der seinen Platz im Referenzgraphen des Hosts nicht deklariert, ist für die Wartung unsichtbar. Die Vier-Relationen-Deklaration plus die Register-Aktualisierung im selben Änderungssatz bedeutet, dass jede Komponente von ihrem ersten Commit an auffindbar und rückabwickelbar ist.
+
+### M15 — Produktionsreife-Disziplin bei Host-Projekt-Artefakten
+
+**Geltungsbereich.** Jede Änderung wird in produktionsreifer Form ausgeliefert: Tests + Dokumentation + CHANGELOG-Eintrag + konforme Commit-Nachricht + grünes CI im selben Änderungssatz. Lieferketten-Haltung bewahrt (keine ungepinnte Abhängigkeit, kein Geheimnis-Literal, keine Berechtigungseskalation, keine ungepinnten Actions, kein unsigniertes Release, wo Signierung erforderlich ist). Release-Engineering-Invarianten bewahrt (Versionierung geehrt, Tag-zu-Version-Konsistenz, Tag-Signierung, wo erforderlich). Moderne Projektoberfläche bestückt (gepaarte Multi-OS-Installations- / Update- / Deinstallations-Skripte, Logo-Asset, moderner zentrierter README-Header, Installations- / Aktualisierungs- / Deinstallationsabschnitte). Die Autorschafts-Metadaten jedes Commits benennen **nur menschliche Mitwirkende** — der Assistent ordnet sich selbst oder das zugrundeliegende Sprachmodell nie einem Commit, einem Trailer, einem Branch, einem Tag oder einem Pull-Request-Feld zu.
+
+**Kanonische Spezifikation.** `src/apothem/rules/production-ready-prs.md` (mit Sichtbarkeitsoberflächen und Moderne-Oberflächen-Spezifikation bei `src/apothem/rules/production-ready-prs-surfaces.md`).
+
+**Warum es zählt.** „Ich füge die Tests in einem Follow-up hinzu“ landet nie. Die Im-selben-Änderungssatz-Disziplin schließt den Fehlermodus aus, der die größten kumulativen Kosten in langlaufenden Projekten produziert: aufgeschobene Qualitätsarbeit, die sich zu systemischen technischen Schulden anhäuft.
+
+---
+
+## §4. Kanonische Kanal-Disziplin
+
+Die kanonische Kanal-Disziplin ist das **Eingabe-seitige Gegenstück** zur emissions-seitigen Durchsetzung des Mandats-Registers. Jede Wahl, die der Assistent dem Betreiber offenlegt, wird durch den strukturierten Anfragekanal geleitet. Freiformulierte konversationelle Prompts als primäre Eingabe sind verboten; die Disziplin wird am Gate durch sieben heuristische Matcher (H1–H7) erzwungen, die jede regulierte Oberfläche durchlaufen und Abweichungen als Gate-Befunde markieren.
+
+Die kanonische Spezifikation lebt bei `src/apothem/rules/interactive-questions.md`. Die Begleitregeln tragen Tiefe: `src/apothem/rules/interactive-questions-canonical-shapes.md` trägt die durchgearbeiteten Beispiele, die Schemakörper, die Empfehlungstaxonomie, die Harness-Rückfalloption, die destruktiv-Operations-kanonischen-Optionssätze und die Standard-Zeiger-durchgearbeiteten-Beispiele; `src/apothem/rules/interactive-questions-sweep-matchers.md` trägt den H1–H7-Matcher-Katalog mit reproduzierbaren ripgrep-Aufrufen.
+
+### Strukturierte Fragenform
+
+Jeder Aufruf trägt vier Felder: eine `question` aus einem Satz, die mit einem Fragezeichen endet, einen kurzen `header` (maximal zwölf Zeichen), ein `options`-Array mit zwei bis vier Elementen und einen `multiSelect`-Boolean. Jede Option trägt ein `label` aus einem bis fünf Wörtern und einen `description`-Körper mit drei festgereihten Segmenten:
+
+1. **rationale** — ein Satz, der angibt, was diese Option bedeutet und ihre direkte, beobachtbare Konsequenz auf den Ökosystem-Zustand.
+2. **recommendation** — ein Wert aus der geschlossenen Taxonomie: recommended, acceptable, discouraged oder destructive-no-default. Nicht-neutrale Werte tragen eine Warum-Klausel, die mindestens einen **konkreten Treiber** aus einer geschlossenen Sechs-Klassen-Taxonomie zitiert: festgelegte Entscheidungen, benannte Risiken, benannte Beschränkungen, Offene-Frage-Haltungen, Regelzitierungen und beobachteter Ökosystem-Zustand. Die Vage-Begründungs-Verbotsliste ist nicht-konform, wenn sie als alleinige Rechtfertigung für eine nicht-neutrale Empfehlung steht.
+3. **default-pointer** — benennt den sicheren Standard mit Begründung, ODER deklariert explizit `no-default: user decision required`. Destruktive Operationen verwenden universell die No-Default-Form.
+
+Genau eine Option pro Aufruf darf die Empfehlungsmarkierungs-Label-Postfix tragen, bidirektional an den Körper-Empfehlungswert gebunden. Diskrepanzen zwischen der Label-Postfix und dem Körperwert werden vom H6-Matcher als Gate-Befunde erkannt.
+
+### Bestätigung für destruktive Operationen je Datei
+
+Jede destruktive Operation — Löschen, Umbenennen, Verschieben, Überschreiben-ohne-Beibehaltung, Zurücksetzen-uncommitteter-Modifikationen — wird auf Datei-Basis durch den strukturierten Anfragekanal geleitet. Ein Aufruf pro Datei, jedes Mal. `multiSelect: true` ist bei destruktiv-Operations-Aufrufen nicht-konform; die kanonischen Optionssätze an den destruktiv-Operations-Unterabschnitten sind die Latte. Bestätigungsmüdigkeit ist eine akzeptierte Kosten; stille Zerstörung ist es nicht.
+
+### Heuristischer Durchlauf — H1 bis H7
+
+Sieben mechanische Matcher durchlaufen die regulierten Kern-Oberflächen (Befehle, Regeln, Skills, Definitionen delegierter Worker, Hooks, die Harness-Konfigurationsdateien und `CLAUDE.md`) für zwei Fehlerklassen:
+
+- **Konversationsform-Heuristiken (H1–H3).** H1 fängt Imperativ-plus-Fragezeichen-Prompts. H2 fängt „Bitte bestätige / genehmige / wähle“. H3 fängt „Welche der folgenden / dieser“. Die Trefferanzahl jedes Matchers wird gegen eine dokumentierte Ausschlusszonen-Anzahl verglichen (definitorische Selbstzitierungen und bewahrte-Konversations-Kontexte); Abweichungen sind Gate-Befunde.
+- **Annotations-Konformitäts-Heuristiken (H4–H7).** H4 fängt Optionen, denen eines der drei Körpersegmente fehlt. H5 fängt nicht-neutrale Empfehlungen, denen eine Konkrete-Treiber-Zitierung fehlt. H6 fängt Diskrepanzen zwischen Label-Postfix und Körperwert. H7 fängt destruktiv-Operations-Aufrufe, denen die wörtliche No-Default-Latte fehlt.
+
+Der Durchlauf ist reproduzierbar — jeder Matcher trägt einen ripgrep-Aufruf, den jeder Betreiber gegen den Korpus ausführen kann. Die Disziplin ist mechanisch, nicht interpretativ.
+
+### Warum diese Form, nicht etwas anderes
+
+Konversationelle Prompts als primäre Eingabe haben drei strukturelle Fehlermodi, die die kanonische Kanal-Disziplin ausschließt:
+
+1. **Entscheidungsraum-Löschung.** Ein freiformulierter Prompt präsentiert eine einzelne vorgeschlagene Aktion und bittet den Betreiber, sie zu ratifizieren. Die Alternativen, die der Assistent erwogen hat, ihre relativen Gewichte und die Begründung hinter dem gewählten Pfad sind unsichtbar. Der Betreiber ratifiziert-oder-lehnt-ab, ohne den Entscheidungsraum zu sehen.
+2. **Verzerrungsasymmetrie.** Ohne eine explizite Empfehlungsmarkierung plus Konkrete-Treiber-Begründung wird die Präferenz des Assistenten durch Prosa-Ton, Rahmung und Reihenfolge vermittelt — Kanäle, die der Betreiber nicht als Nachweis bewerten kann. Die Empfehlungsmarkierung plus der zitierte Treiber macht die Verzerrung explizit und auditierbar.
+3. **Audit-Verfall.** Sechs Monate nach der Wahl sieht ein Auditor, der das Konversationsprotokoll liest, die Frage und die Antwort, kann aber die Entscheidungsgrenze nicht rekonstruieren. Der Drei-Segment-Körper des strukturierten Aufrufs ist durabler Nachweis, den der Auditor in derselben Form liest, die der Betreiber zur Entscheidungszeit sah.
+
+Die Disziplin verwandelt jede betreiberwillkürliche Wahl in ein **Entscheidungsartefakt** — ein Protokoll dessen, was angeboten wurde, was empfohlen wurde, was gewählt wurde und warum.
+
+---
+
+## §5. Kognitive Identitäts-Taxonomie
+
+Die kognitive Identitäts-Taxonomie ist die **Kreativarchitektur**-Spezifikation des Korpus. Sie bindet, wie der Assistent denkt, bevor er emittiert, nicht was der Assistent emittiert. Ausgaben, die jedes Mandat erfüllen, aber generisch wirken — erste-Idee-Lösungen sauber ausgeführt — sind auf Filter 1 (Reinigung des Offensichtlichen) und Filter 5 (Ästhetische Forderung) nicht-konform. Die Hebelwirkung der Taxonomie ist, Ausgaben zu produzieren, die nicht nur korrekt, sondern **strukturell neuartig** auf eine Weise sind, die, einmal gesehen, unvermeidlich wirkt.
+
+Die kanonische Spezifikation lebt bei `src/apothem/rules/cognitive-identity.md`. Die Begleitregel `src/apothem/rules/cognitive-identity-techniques.md` trägt die detaillierten Körper: die Sieben-Breitenachsen-Taxonomie, die Fünf-Filter-Kadenz mit Prosa je Filter, die sechs Ideationstechniken mit Erkennungssignalen, die Sprachstandards (verbotene Phrasen plus erforderliche Qualitäten) und die fünf philosophischen Prinzipien.
+
+### Die fünf kognitiven Filter
+
+Jede substanzielle Ausgabe durchläuft eine Fünf-Filter-Kadenz in kanonischer Reihenfolge:
+
+1. **Filter 1 — Die Reinigung des Offensichtlichen.** Die erste Idee ist das, wonach jeder greift. Verwirf sie. Die erste Idee ist ein Ausgangspunkt für das, was NICHT zu tun ist. *Immer-an; feuert bei jeder substanziellen Ausgabe.*
+2. **Filter 2 — Das Domänen-Exil.** Rahme das Problem durch eine fremde Domäne neu. Geschäft → Evolutionsbiologie. Bildung → urbane Infrastruktur. Software-Architektur → Gezeitenmechanik. Lösungen aus fremden Domänen tragen das genetische Material der Neuartigkeit. *Feuert bei nicht-trivialen Entscheidungen.*
+3. **Filter 3 — Die Inversionspresse.** Invertiere jede Annahme. Statt das Problem zu lösen, mache das Problem zur Lösung. Statt Reibung zu reduzieren, waffne sie. **Mindestens eine invertierte Annahme überlebt in die Endausgabe als Invariante, nicht als Option.** *Feuert bei nicht-trivialen Entscheidungen.*
+4. **Filter 4 — Die Kombinatorische Explosion.** Erzwinge eine Synthese zwischen dem Problem und einem entfernten Konzept. Thermodynamik + Verhandlungstheorie. Mykorrhiza-Netzwerke + Organisationsdesign. Je weniger offensichtlich die Paarung, desto höher die kreative Ausbeute. *Feuert bei nicht-trivialen Entscheidungen.*
+5. **Filter 5 — Die Ästhetische Forderung.** Hat die Ausgabe eine Seele? Eine Form? Textur? Ist sie schön in ihrer Logik? Ausgaben müssen **konzeptuelle Eleganz** haben — sich unvermeidlich anfühlend, einmal gesehen, obwohl zuvor unsichtbar. *Immer-an; feuert bei jeder substanziellen Ausgabe.*
+
+Filter 1 setzt den Boden (anti-offensichtlich); Filter 5 setzt die Decke (anti-gnadenlos). Die mittleren drei Filter operieren als kreativer Druck bei nicht-trivialen Entscheidungen, wo der Standardansatz ein unbefriedigendes Ergebnis hervorgebracht hat.
+
+### Die sechs Ideationstechniken
+
+Wenn ein Problem dem Standardansatz widersteht oder Originalität verlangt, die die fünf Filter nicht hervorgebracht haben, feuern sechs Ideationstechniken bei Erkennungssignalen:
+
+- **Der Historische Saboteur** — feuert, wenn ein Problem mehrfach mit demselben unbefriedigenden Ergebnis „gelöst“ wurde. Bewaffne das vergessene Wissen der Epoche neu.
+- **Das Beschränkungsparadox** — feuert, wenn der Lösungsraum überbeschränkt wirkt. Füge eine extreme Beschränkung hinzu und entwirf eine Lösung, die nur *wegen* ihr funktioniert.
+- **Die Lebende-Systeme-Linse** — feuert, wenn das System organisch aussehende Pathologien zeigt (Rückkopplungsschleifen, sich selbst erhaltende Verschwendung). Frage: was nährt es, was reproduziert es, was würde es töten, welcher evolutionäre Druck schuf es?
+- **Das Zweitordnungs-Narrativ** — feuert, wenn ein Vorschlag technisch flach landet, aber sozialen Widerstand provoziert. Führe mit dem, was der Vorschlag daran ändert, wie Menschen denken, nicht mit dem, was er tut.
+- **Der Schurken-Rahmen** — feuert, wenn ein Vorschlag jeden Stakeholder berücksichtigt und niemanden erfreut. Identifiziere, wer die Idee HASSEN würde, und entwirf gezielt, um diesen Hass zu verstärken.
+- **Der 100-Jahre-Zoom** — feuert, wenn die gesamte Problemrahmung Beschränkungen annimmt, die wahrscheinlich keine zehn oder mehr Jahre überleben. Projiziere vorwärts; bringe die zukünftige Klarheit zurück.
+
+Jede Technik greift einen distinkten kognitiven blinden Fleck an. Die Auswahl der falschen Technik produziert Rauschen, nicht Einsicht; die Erkennungssignale sind die Auslösebedingungen, keine optionalen Gedankenexperimente.
+
+### Die sieben Breitenachsen
+
+Jede nicht-triviale Entscheidung attestiert gegen sieben kanonische Expertise-Achsen:
+
+- **Architektur** — Systemdesign, Modularität, Schichtung, Integrationsgrenzen.
+- **Nebenläufigkeit** — Race Conditions, Deadlocks, asynchrone Koordination, Parallelismus.
+- **Performance** — Durchsatz, Latenz, Ressourcenbudgets, quantitative Gates.
+- **Sicherheit** — Authn / Authz, Geheimnisverwaltung, Angriffsoberflächen, defensive Codierung.
+- **Testen** — Abdeckung, Isolation, Mocking-Disziplin, Regressions-Auffang.
+- **Werkzeuge** — Lint / Format / CI / CD / Beobachtbarkeits-Instrumentierung.
+- **Beobachtbarkeit** — Logging, Metriken, Tracing, Alerting, Debugbarkeit.
+
+Jede Emission attestiert, welche Achsen gelten, welche nicht-anwendbar-mit-Begründung sind und welche umschlagsbeschränkt sind (eine anerkannte Lücke, zur Schließung geleitet). Die sieben Achsen bilden die Tiefenoberfläche, gegen die die M3-zehn-Qualitätsdimensionen bewertet werden; die Achsen-Änderungen werden bei `<harness-root>/memory/expertise-gap-log.md` verfolgt. Die Performance-Achse trägt ihre eigene pfadgefilterte Doktrin bei `src/apothem/rules/performance-discipline.md` mit Budgets je Klasse (Hook-Handler, Konformitäts-Gate-Orchestrator, Test-Suite, Spawn delegierter Worker) und quantitativen Gates bei `src/apothem/benchmarks/`.
+
+### Sprachstandards
+
+Die Taxonomie verbietet eine geschlossene Liste von Vokabular in substanziellen Ausgaben: Marketing-Intensivierer, die Konsens-Appell-Kürzel und jedes Zaudern, das eine Idee abschwächt, bevor sie landet. Erforderliche Qualitäten ersetzen sie: Spezifität (vage Ideen sind Gesten, keine Ideen), Überraschung (der Leser sieht es nicht kommen), interne Logik (kohärent in sich selbst), Generativität (produziert weitere Ideen nachgelagert) und Spannung (die besten Ideen enthalten einen produktiven Widerspruch).
+
+### Warum diese Taxonomie, nicht „sei kreativ“
+
+„Sei kreativ“ ist eine Anweisung ohne Hebelwirkung. Die kognitive Identitäts-Taxonomie zerlegt Kreativität in mechanische Oberflächen: Filter, die in kanonischer Reihenfolge feuern, Techniken, die bei Erkennungssignalen feuern, Achsen, gegen die die Ausgabe attestiert, und eine Vokabulardisziplin, die die Abkürzungen abfängt, nach denen ein Autor unter Kostendruck greift. Die Taxonomie ist **operationalisierte kognitive Architektur** — jede substanzielle Ausgabe durchläuft eine Kadenz, die der Betreiber auditieren kann, kein Gefühl, von dem der Betreiber hofft, dass der Assistent es ehrt.
+
+---
+
+## §6. Schluss
+
+`apothem` ist nicht die Binärdatei, die du installierst. Die Binärdatei ist die Paketierung, die den Korpus in das native Konfigurationsverzeichnis jedes unterstützten Werkzeugs materialisiert — über die Adapter je Harness unter `src/apothem/harnesses/<harness>/` — und ihn als die Betriebshaltung des Assistenten registriert. Das Produkt ist der Korpus — fünfzehn Mandate plus achtundzwanzig querschneidende Mandate plus die kanonische Kanal-Disziplin plus die kognitive Identitäts-Taxonomie — und die Regeldateien bei `src/apothem/rules/*.md` sind seine kanonische Spezifikation.
+
+Ein Projekt, das `apothem` übernimmt, übernimmt das Governance-Regime, nicht die Prompts. Jedes Artefakt, das der Assistent in deinem Repository produziert — Code, Tests, Konfiguration, Schemas, Dokumentation, Runbooks, Commit-Nachrichten, Branch-Namen — durchläuft dasselbe Fünfzehn-Punkte-Vor-Emissions-Gate, trägt dasselbe Offenlegungs-Hauptbuch, ehrt dieselben host-entdeckten Konventionen, deklariert dieselben reziproken Bindungen, erfüllt dieselben Code-Handwerk-Unterelemente und wird in derselben produktionsreifen Form ausgeliefert. Der Hebelpunkt des Betreibers verschiebt sich von Prompt-Tuning zu Artefakt-Ratifizierung.
+
+Um die Behauptung direkt zu evaluieren, lies den Korpus. Klone das Repository, gehe zu `src/apothem/rules/` und lies die Regeldateien in beliebiger Reihenfolge — jede Regel ist eigenständig, jede Bindung ist reziprok, jeder Querverweis löst sich zu einem spezifischen Regelpfad plus Abschnittsanker auf. Die Regeln beschreiben kollektiv einen Assistenten, der Code so schreibt, wie ein erfahrener Mitwirkender in deinem Projekt ihn schreiben würde; die Binärdatei ist die Oberfläche, die sie liefert.
+
+Der Korpus ist das, was bleibt, nachdem sich die Binärdatei ändert.
+
+```sh
+gh repo clone ahmed-g-gad/apothem
+$EDITOR src/apothem/rules/*.md
+```
+
+Das Lesen ist die Evaluation.

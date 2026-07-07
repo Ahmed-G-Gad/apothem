@@ -1,0 +1,89 @@
+---
+title: "تحرير الملف التعريفي"
+description: "غيّر الملف التعريفي المشترك وأعد تجسيد كل بيئة مثبَّتة."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+الهدف: غيّر قيمة في الملف التعريفي المشترك وادفعها إلى كل بيئة ثبّتّها.
+
+## المتطلّبات المسبقة
+
+- واجهة `apothem` على `PATH` لديك (أو الصورة القائمة بذاتها: صدّر بـ
+  `PYTHONPATH="$HOME/.apothem/src"` وشغّل `python -m apothem`، أو استخدم
+  `npx @ahmed-g-gad/apothem`).
+- ملف تعريفي في `~/.config/apothem/profile.yaml`. أنشئ واحدًا عبر
+  `apothem profile init` إن كان مفقودًا.
+
+## شكل الملف التعريفي
+
+الملف التعريفي مستند YAML واحد. مفاتيحه عالية المستوى:
+
+- `identity` (مطلوب) — `name`، بالإضافة إلى اختيارية `role`، `email`، `website`،
+  `github`.
+- `preferences` — `language`، `style` (`concise` / `verbose` / `balanced`),
+  `formatter`، `test_framework`.
+- `rules` — قائمة بسلاسل قواعد إضافية تُشارَك مع البيئات القادرة.
+- `seriousness` — واحد من `EXPLORING`، `PERSONAL_USE`، `SHARED`,
+  `PUBLIC_LAUNCH`.
+- `enforcement` — مفاتيح تشغيل اختيارية (`sprints`، `agent_teams`، `multitasking`,
+  `continuous_execution`، `learning_loop`)، وكل راية معطّلة افتراضيًا.
+- `harnesses` — تجاوزات لكل بيئة مفهرسة بمُعرّف البيئة.
+- `exclude_harnesses` — مُعرّفات بيئات تتخطّاها الأوامر الدفعية
+  (`--harness all`).
+
+## الخطوات
+
+1. افحص الملف التعريفي الحالي:
+
+   ```bash
+   apothem profile show
+   ```
+
+2. حرّره. افتحه في محرّر نظامك:
+
+   ```bash
+   apothem profile edit
+   ```
+
+   أو عيّن مفتاحًا منقّطًا واحدًا من سطر الأوامر. تُخزَّن القيمة
+   حرفيًا (باستثناء `true`/`false` والإدخال الصريح `[..]`/`{..}`، فهذه تُحلَّل) ويُتحقّق من
+   الملف التعريفي مقابل المخطط قبل الكتابة — يُرفض التعيين غير الصالح ويبقى
+   الملف التعريفي على القرص دون تغيير:
+
+   ```bash
+   apothem profile set seriousness SHARED
+   apothem profile set identity.name "Ada Lovelace"
+   ```
+
+3. أعد تجسيد البيئات لكي يصل التغيير إلى تهيئتها الأصلية.
+   لبيئة بنطاق المستخدم:
+
+   ```bash
+   apothem update --harness claude-code
+   ```
+
+   لبيئة بنطاق المشروع، مرّر جذر المشروع؛ استخدم `all` لتحديث
+   كل بيئة مثبَّتة:
+
+   ```bash
+   apothem update --harness cursor --project /path/to/project
+   apothem update --harness all --project /path/to/project
+   ```
+
+## التحقق
+
+```bash
+apothem profile show
+apothem verify --harness all
+```
+
+يعكس `profile show` تحريرك؛ ويؤكّد `verify` أن التهيئة المُجسَّدة تطابق
+الملف التعريفي المحدَّث.
+
+## ذات صلة
+
+- [أضف بيئة](/docs/how-to/adding-a-harness) لإخضاع بيئة جديدة لتحكّم
+  الملف التعريفي قبل إعادة التجسيد.
+- يغطّي [التحديث](/docs/install/updating) ترقية المحرّك جنبًا إلى جنب مع
+  خطوة إعادة التجسيد.

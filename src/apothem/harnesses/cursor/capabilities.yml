@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: MIT
+
+# Per rules/agent-capability-discipline.md §1 / §3 / §7 and the matrix
+# companion §3. Cursor ratifies MCP via ~/.cursor/mcp.json (user-scope)
+# plus project-level .cursor/mcp.json; rules surface as MDC files under
+# .cursor/rules/. The adapter delivers a single project rules file and
+# does not dispatch sub-agents or author command/skill/hook cohorts;
+# the Cursor plugin mechanism that could host those is operator-driven.
+
+mcp_servers:
+  - user-scope-~/.cursor/mcp.json
+  - project-scope-.cursor/mcp.json
+# Operator-owned MCP surface: the adapter recognizes it but authors no entries.
+mcp_servers_authored: false
+sub_agent_dispatch: false
+custom_command_support: "no"
+recommended_postfix_rendering: "plain-text"
+long_context_compaction: "profile-managed"
+context_ignore_surface: "not-documented-in-current-pin"
+layered_context_surface: ".cursor/rules MDC files"
+lsp_symbol_navigation: "tracked-gap-no-adapter-owned-LSP-surface"
+hook_learning_capture: "artifact-evolution-cycle"
+standard_convention_pin: "STANDARD-CONVENTION-PIN.md"
+# web-fetch / browser-retrieval surface — the backing capability dimension for
+# rules/source-accessibility.md step 1 ("retrieve through the host's browser /
+# fetch capability"). Vendor-confirmed PARTIAL (Cursor `@Web` user-invoked
+# search; no documented autonomous fetch tool). The evidence triple
+# (vendor-doc-url, snapshot-id, snapshot-date) lives at its canonical home,
+# STANDARD-CONVENTION-PIN.md "Web-Fetch / Browser-Retrieval Surface", per
+# rules/agent-capability-discipline-matrix.md §1A.
+web_fetch: "partial"
+tool_surface_restrictions:
+  - secrets-paths
+  - destructive-shell-ops
+  - network-write-unsigned
+system_prompt_template_path: "templates/apothem-rules.mdc"
+agent_memory_surface: "n/a"

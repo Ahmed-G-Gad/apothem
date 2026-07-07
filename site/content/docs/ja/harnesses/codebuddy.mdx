@@ -1,0 +1,99 @@
+---
+title: "CodeBuddy"
+description: "Tencent CodeBuddy（GA）向けの Apothem ハーネスアダプター。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**ベンダー：** Tencent
+**インストール名：** `codebuddy`
+**ステータス：** GA
+**ネイティブ設定：** `<project>/.codebuddy/rules/apothem-rules.md`
+
+## インストール
+
+```bash
+apothem install --harness codebuddy --project /path/to/project
+```
+
+アダプターは、共有された Apothem のルールおよびガバナンス面から、プロジェクト
+スコープのルールファイルを 1 つ書き込みます。
+
+**書き込まれるファイル：** `<project>/.codebuddy/rules/apothem-rules.md`
+
+## プロファイルからネイティブ設定へのマッピング
+
+アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または
+`apothem update` の実行のたびにプロジェクトルールファイルをレンダリングします。
+CodeBuddy は、`.codebuddy/rules/` 配下のすべての `*.md` ファイルを、任意の YAML
+フロントマター（`alwaysApply`、`paths`、`enabled`）付きの Markdown として読み取り
+ます。詳細は
+[CodeBuddy Rules ドキュメント](https://www.codebuddy.ai/docs/ide/Rules) を参照して
+ください。Apothem のファイルは `alwaysApply: true` を携えているため、ガバナンス面は
+すべてのやり取りで適用されます。共有プロファイルが真実の源です。生成されたファイルへ
+のプロジェクトローカルな編集は、次回の同期が Apothem 管理下のコンテンツを置き換える
+前にバックアップされます。
+
+## 互換性に関する注意
+
+CodeBuddy のルール面は `.codebuddy/rules/` 配下でプロジェクトスコープになっています。
+アダプターは専用の `apothem-rules.md` ファイルを書き込み、これは同じディレクトリで
+オペレーターが作成した任意のルールファイルと共存します。`CODEBUDDY.md` プロジェクト
+メモリファイルと `.codebuddy/settings.json`（権限、MCP）はオペレーターの所有物であり、
+Apothem はそれらを書き込みません。スキル、コマンド、エージェント、フックは、ルール
+ファイル内で規律として参照されます。CodeBuddy はそれらのためのアダプター所有のファイル
+面を公開しません。アダプターが依拠するベンダー面の規約は、
+`src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` にピン留めされており、
+最新の CodeBuddy ドキュメントに対してスナップショットされています。
+
+## 検証
+
+```bash
+apothem verify --harness codebuddy --project /path/to/project
+```
+
+verify コマンドは、次のことを確認します。
+
+1. ネイティブ設定が期待されるパスに存在すること。
+2. 管理対象のルールファイルが存在し、空でないこと。
+3. アダプター固有の検証ルーチンが成功を報告すること。
+
+## 更新
+
+```bash
+apothem update --harness codebuddy --project /path/to/project
+```
+
+現在の共有プロファイルの状態からプロジェクトルールファイルを再導出します。`install`
+と `update` は冪等です。再実行すると、管理対象ファイルが最新のレンダリング済みコンテ
+ンツで上書きされます。
+
+## アンインストール
+
+```bash
+apothem uninstall --harness codebuddy --project /path/to/project
+```
+
+アダプターによって書き込まれたネイティブ設定ファイルを削除し、管理対象のルールファイル
+をタイムスタンプ付きのバックアップにリネームします。共有プロファイルの YAML と Apothem
+エンジンは影響を受けません。
+
+## 適合ゲート
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## トラブルシューティング
+
+| 症状 | 対処 |
+|---------|-----|
+| 設定ファイルが見つからない | `apothem install --harness codebuddy --project /path/to/project` を再実行する |
+| 検証に失敗した | `apothem update --harness codebuddy --project /path/to/project` を実行してから、再度検証する |
+| 予期しない設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、`apothem update --harness codebuddy --project /path/to/project` を再実行する |
+
+## 設定ノブ
+
+| フラグ | デフォルト | 説明 |
+|------|---------|-------------|
+| `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューする。 |

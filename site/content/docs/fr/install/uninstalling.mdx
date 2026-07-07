@@ -1,0 +1,48 @@
+---
+title: "Désinstallation"
+description: "Supprimer Apothem et nettoyer les configurations d'environnement."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## Supprimer d'abord les configurations d'environnement
+
+Avant de désinstaller Apothem, supprimez la configuration de chaque adaptateur d'environnement pour laisser
+vos outils dans un état propre. Exécutez `apothem harnesses list` pour voir
+quels adaptateurs sont actuellement installés, puis supprimez-les un par un ou utilisez
+le sélecteur couvrant tout le registre :
+
+```bash
+apothem uninstall --harness claude-code
+apothem uninstall --harness cursor --project /path/to/project
+apothem uninstall --harness all --project /path/to/project --yes
+```
+
+Passez `--yes` pour ignorer l'invite de confirmation par environnement.
+
+## Supprimer le moteur
+
+La suppression correspond au canal d'installation que vous avez utilisé :
+
+- **Plugin Claude Code** — supprimez le plugin depuis l'intérieur de Claude Code :
+  `/plugin uninstall apothem@apothem` (l'entrée du marketplace peut être supprimée
+  avec `/plugin marketplace remove ahmed-g-gad/apothem`).
+- **npx** — rien à supprimer ; `npx` s'exécute depuis son cache. Videz-le avec
+  `npm cache clean --force` si vous voulez supprimer la copie en cache.
+- **Installeur en une commande** — exécutez le script de désinstallation correspondant depuis le
+  dépôt extrait : `scripts/installer/uninstall.sh` (POSIX) ou
+  `scripts/installer/uninstall.ps1` (PowerShell). Les deux demandent confirmation avant
+  de supprimer et refusent les cibles dangereuses.
+- **Sauvegardes et état** — les sauvegardes d'installation se trouvent sous `~/.apothem/backups/` ;
+  supprimez `~/.apothem/` lorsque vous n'en avez plus besoin.
+
+## Ce qui n'est PAS supprimé
+
+- Le profil partagé YAML à `~/.config/apothem/profile.yaml` ou
+  `--profile PATH` n'est jamais supprimé par `apothem uninstall`.
+- Les fichiers sans rapport écrits par l'opérateur dans les répertoires d'environnement sont préservés.
+- Les suites de planification sous `<project>/.apothem/plans/` (et l'ancien `<project>/.plans/`) ne sont pas affectées.
+
+Pour nettoyer entièrement la racine d'un environnement, supprimez le chemin natif de l'environnement documenté sur les
+[pages de référence des environnements](/docs/harnesses) après avoir confirmé que vous avez sauvegardé
+toutes les règles, utilitaires ou fichiers de profil personnalisés que vous souhaitez conserver.

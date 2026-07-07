@@ -1,0 +1,47 @@
+---
+title: "Apothem vs raw Kimi Code config"
+description: "Hand-maintaining Kimi Code's project-root AGENTS.md and .kimi-code/ support files versus rendering them from Apothem's shared profile."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Kimi Code reads project-root `AGENTS.md` as its instruction file and keeps
+project configuration under `<project>/.kimi-code/`, including the
+operator-owned `.kimi-code/mcp.json` MCP surface. You can author that
+instruction file and its supporting cohorts by hand, per project, forever.
+Apothem's kimi-code adapter renders the governance surface into `AGENTS.md` as a
+managed block from the shared profile and keeps it consistent across every
+harness and every project. This page contrasts hand-maintaining that config
+against managing it with Apothem.
+
+## Effort comparison
+
+| Task | Raw hand-config | Apothem-managed |
+| ---- | --------------- | --------------- |
+| Author the `AGENTS.md` instruction surface | Hand-write and re-sync per project | One managed block rendered from the shared profile |
+| Keep rules, commands, skills, agents in sync | Manual copy per project | Materialized under `<project>/.kimi-code/.apothem/support/` on every install |
+| Preserve operator prose on refresh | Manual merge | Sentinel-delimited block; operator prose outside it is preserved |
+| Keep rules aligned with other harnesses | Manual, per tool | Automatic on `apothem update` |
+| Verify the config is correct | Manual inspection | `apothem verify --harness kimi-code` |
+
+## What Apothem manages
+
+The kimi-code adapter renders the shared rules and governance surface into the
+project-root `AGENTS.md` managed block and installs the commands, skills, hooks,
+agents, rules, and templates cohorts under `.kimi-code/.apothem/support/`. It does not
+author `.kimi-code/mcp.json`; the MCP surface stays operator-owned. The rendered
+instruction surface drives the project directly. Every change to the shared
+rules re-renders the files on the next `apothem update`.
+
+## Migration path
+
+1. Run `apothem profile init` to create the shared profile if you have not yet.
+2. Move the rules from your existing `AGENTS.md` into the shared corpus.
+3. Run `apothem install --harness kimi-code` to render the `AGENTS.md`
+   instruction surface and the `.kimi-code/.apothem/support/` support tree.
+4. Run `apothem verify --harness kimi-code` to confirm the config landed.
+5. Use `apothem update --harness kimi-code` for every later change.
+
+## Read next
+
+- [Kimi Code adapter reference](/docs/harnesses/kimi-code)
+- [Comparison overview](/docs/comparison)

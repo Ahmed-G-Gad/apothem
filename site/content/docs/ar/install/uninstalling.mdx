@@ -1,0 +1,48 @@
+---
+title: "إلغاء التثبيت"
+description: "إزالة Apothem وتنظيف إعدادات أُطُر العمل."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## أزِل إعدادات أُطُر العمل أولًا
+
+قبل إلغاء تثبيت Apothem، أزِل إعداد كل محوّل إطار عمل لترك
+أدواتك البرمجية في حالة نظيفة. شغّل `apothem harnesses list` لمعرفة
+المحوّلات المُثبَّتة حاليًا، ثم أزِلها واحدًا تلو الآخر أو استخدم
+المُحدِّد الذي يشمل السجلّ بأكمله:
+
+```bash
+apothem uninstall --harness claude-code
+apothem uninstall --harness cursor --project /path/to/project
+apothem uninstall --harness all --project /path/to/project --yes
+```
+
+مرّر `--yes` لتخطّي مُطالبة التأكيد لكل إطار عمل.
+
+## أزِل المحرّك
+
+تتطابق الإزالة مع قناة التثبيت التي استخدمتها:
+
+- **مُلحَق Claude Code** — أزِل المُلحَق من داخل Claude Code:
+  `/plugin uninstall apothem@apothem` (يمكن إزالة إدخال السوق
+  بـ `/plugin marketplace remove ahmed-g-gad/apothem`).
+- **npx** — لا شيء لإزالته؛ يعمل `npx` من ذاكرته المؤقتة. امسحها بـ
+  `npm cache clean --force` إن أردت إزالة النسخة المخزّنة مؤقتًا.
+- **المُثبِّت أحادي اللقطة** — شغّل نص إلغاء التثبيت المطابق من
+  نسخة العمل: `scripts/installer/uninstall.sh` (POSIX) أو
+  `scripts/installer/uninstall.ps1` (PowerShell). كلاهما يؤكّد قبل
+  الإزالة ويرفض الأهداف غير الآمنة.
+- **النُسَخ الاحتياطية والحالة** — تقع نُسَخ التثبيت الاحتياطية ضمن `~/.apothem/backups/`؛
+  احذف `~/.apothem/` بمجرّد عدم حاجتك إليها.
+
+## ما الذي لا يُزال
+
+- لا يُزال أبدًا الملف التعريفي المشترك بصيغة YAML الموجود في `~/.config/apothem/profile.yaml` أو
+  عبر `--profile PATH` عند تنفيذ `apothem uninstall`.
+- تُحفَظ الملفات غير ذات الصلة التي أنشأها المُشغّل في أدلّة أُطُر العمل.
+- لا تتأثّر حِزَم الخطط الموجودة ضمن `<project>/.apothem/plans/` (والمسار القديم `<project>/.plans/`).
+
+لتنظيف جذر إطار العمل تنظيفًا كاملًا، أزِل المسار الأصلي لإطار العمل المُوثَّق في
+[صفحات مرجع أُطُر العمل](/docs/harnesses) بعد التأكّد من أنّك نسخت احتياطيًا
+أي قواعد أو مساعِدات أو ملفات تعريفية مخصّصة تريد الاحتفاظ بها.

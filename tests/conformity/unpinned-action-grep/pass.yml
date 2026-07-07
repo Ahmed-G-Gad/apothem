@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: MIT
+
+name: Sample workflow with SHA-pinned actions
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c
+      - uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57
+      - uses: ./local-action
+      - run: python -m build

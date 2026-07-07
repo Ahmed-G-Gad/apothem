@@ -1,0 +1,70 @@
+---
+title: "/research-experiment"
+description: "/research-experiment — Executa o estudo projetado e captura dados brutos com proveniência completa, além de um manifesto de reprodutibilidade (ambiente, semente, protocolo, fixação de versões)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Papel:** Pesquisador Principal (execução)
+**Posição no pipeline:** intermediária
+
+Executa o estudo ou experimento projetado e captura dados brutos com proveniência completa. Garante a reprodutibilidade: registra o ambiente, a semente, o registro do protocolo e a fixação de versões para que uma parte independente possa reexecutar.
+
+## Invocação canônica
+
+```bash
+/research-experiment
+```
+
+Com argumentos:
+
+```bash
+/research-experiment [path/to/research-suite/]
+```
+
+## Entradas
+
+`_inputs/study-design.md` (o projeto) e `_inputs/preregistration.md` (o plano de análise congelado).
+
+## Saídas
+
+`_outputs/experiment-log.md` (o rastro do protocolo com carimbo de data/hora), os dados brutos em um local natural do host e `_outputs/reproducibility-manifest.md` (ambiente, semente, protocolo, fixação de versões).
+
+## Downstream
+
+/research-analysis (consumidor downstream)
+
+## Fases do fluxo de trabalho
+
+O comando segue o fluxo de trabalho padrão do pipeline `/research`:
+
+1. **Carregar o contexto** — Lê o projeto do estudo e o pré-registro.
+2. **Verificar o Portão de Sequência** — Confirma que `_inputs/study-design.md` existe; caso contrário, interrompe com `Blocked: run /research-design first`.
+3. **Executar e registrar** — Executa o protocolo; captura dados brutos com proveniência; registra o rastro do protocolo com carimbo de data/hora.
+4. **Capturar a reprodutibilidade** — Registra o ambiente, a semente, o protocolo e a fixação de versões.
+5. **Atualizar o manifesto de transferência** — Registra a localização dos dados e o manifesto de reprodutibilidade.
+6. **Emitir o registro** — `_outputs/experiment-log.md` + dados brutos + `_outputs/reproducibility-manifest.md`.
+
+## Piso de rigor
+
+A execução faz uma passagem-piloto para calibrar orçamentos e faixas, e em seguida a comparação completa sob um plano declarado de utilização de computação (alocação de núcleos, tetos de memória, paralelização segura de repetições independentes). Cada método estocástico executa seu regime de repetições pré-registrado com sementes registradas e hardware anotado. Um laço autônomo de experimento, opcional e desligado por padrão, está disponível: contra um arcabouço congelado, ele propõe uma mudança em um único alvo mutável, executa-a com o orçamento fixo, retém-na somente se superar o titular e registra em diário cada tentativa.
+
+## Modos de falha
+
+| Sintoma | Causa | Recuperação |
+|---------|-------|----------|
+| Blocked: run /research-design first | Sem projeto do estudo | Execute `/research-design` para produzir `_inputs/study-design.md` |
+| Execução não reproduzível | Falta o registro da semente / ambiente | Registre o manifesto de reprodutibilidade completo antes de prosseguir |
+| Desvio de protocolo não documentado | Mudança em meio à execução não registrada | Registre o desvio no registro do experimento; divulgue na análise |
+
+## Exemplos
+
+```bash
+# Execute o estudo projetado e capture dados brutos reproduzíveis
+/research-experiment path/to/research-suite/
+```
+
+## Referências cruzadas
+
+- [Visão geral do pipeline](/docs/pipeline)
+- [Referência de comandos](/docs/reference/commands)

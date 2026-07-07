@@ -1,0 +1,25 @@
+---
+title: "المرجع"
+description: "سِجلٌّ قابلٌ للتصفُّح لأصناف الأثَر مع المسارات والتخطيطات على القُرص للقواعد والأوامر والمهارات والعُمّال المُفوَّضين والخطّافات وخوادم MCP والإعدادات وأنماط الإخراج."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+مرجعٌ لكلّ صنف من أصناف الأثَر. يصف كلّ صفحة غرض الصنف، وتخطيطه على القُرص، وعقد <bdi>frontmatter</bdi>، والسِّجلّ الذي يُعدِّد كلّ مثيل.
+
+تظهر أدناه مساراتٌ نسبيةٌ إلى المستودع؛ ويُمَوضِع كلّ مُحوِّل هذه المسارات في دليل تهيئته الأصلي (مثلًا <bdi>`~/.claude/`</bdi> لمُحوِّل Claude Code — راجِع [<bdi>`site/content/docs/harnesses/<harness>.mdx`</bdi>](/docs/harnesses) للوجهات الخاصّة بكلّ إطار عمل).
+
+| الصنف | الصفحة | مسار المصدر النسبي إلى المستودع |
+|-------|------|--------------|
+| <bdi>`CLAUDE.md`</bdi> | [<bdi>CLAUDE.md</bdi>](/docs/reference/claude-md) | <bdi>`CLAUDE.md`</bdi> |
+| القواعد | [القواعد](/docs/reference/rules) | <bdi>`src/apothem/rules/`</bdi> |
+| الأوامر | [الأوامر](/docs/reference/commands) | <bdi>`src/apothem/commands/`</bdi> |
+| المهارات | [المهارات](/docs/reference/skills) | <bdi>`src/apothem/skills/`</bdi> |
+| العُمّال المُفوَّضون | [صفحة المرجع](/docs/reference/agents) | راجِع كتلة <bdi>canonical-paths</bdi> |
+| الخطّافات | [الخطّافات](/docs/reference/hooks) | <bdi>`src/apothem/hooks/`</bdi> |
+| خوادم MCP | [خوادم MCP](/docs/reference/mcp) | الملف التعريفي المشترك — <bdi>`mcp_servers`</bdi> |
+| الإعدادات | [الإعدادات](/docs/reference/settings) | <bdi>`src/apothem/harnesses/claude_code/templates/settings.json`</bdi> |
+| أنماط الإخراج | [أنماط الإخراج](/docs/reference/output-styles) | <bdi>`src/apothem/output-styles/`</bdi> |
+| سِجلّ أُطُر العمل | [سِجلّ أُطُر العمل](/docs/reference/harness-registry) | <bdi>`src/apothem/lib/harness_registry.py`</bdi> |
+
+يعيش السِّجلّ القانوني الكامل عبر حِزَم الأثَر (<bdi>`rules/`</bdi>، و<bdi>`commands/`</bdi>، و<bdi>`skills/`</bdi>، و<bdi>`agents/`</bdi>، و<bdi>`hooks/`</bdi>). تَعكِس هذه الصفحة ذلك السِّجلّ في صورةٍ قابلةٍ للتصفُّح.

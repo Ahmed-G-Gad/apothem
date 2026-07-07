@@ -1,0 +1,82 @@
+---
+title: "verify"
+description: "Referencia de la CLI para el comando apothem verify."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Verifica la instalación de un adaptador de harness.
+
+## Sinopsis
+
+```
+apothem verify --harness NAME|all [--project PATH]
+                [--quiet|-q] [--verbose|-v]
+                [--format plain|json] [--json] [--no-color]
+```
+
+Llama a la implementación `verify()` de cada adaptador seleccionado. Sale con 0 solo cuando todos los adaptadores seleccionados informan que sus destinos gestionados están presentes y son válidos.
+
+## Opciones
+
+| Opción | Descripción |
+|---|---|
+| `--harness NAME` | Adaptador de harness a verificar, o `all` para el conjunto de todo el registro (obligatorio). |
+| `--project PATH` | Raíz del proyecto para los harness con alcance de proyecto. |
+| `--quiet`, `-q` | Suprime la salida informativa; solo se emiten errores. |
+| `--verbose`, `-v` | Emite salida de diagnóstico adicional. |
+| `--format plain\|json` | Formato de salida (por defecto: `plain`). |
+| `--json` | Abreviatura de `--format json`. |
+| `--no-color` | Desactiva los códigos de color ANSI en la salida. |
+| `-h`, `--help` | Muestra la ayuda y sale. |
+
+## Salida JSON
+
+```json
+{
+  "status": "success",
+  "command": "verify",
+  "action": "verified",
+  "harness": "claude-code",
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "unchanged",
+      "operation": "verify",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "managed targets verified",
+      "installed": true,
+      "verified": true
+    }
+  ],
+  "warnings": [],
+  "error": null,
+  "installed": true,
+  "verified": true,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+Cuando cualquier harness seleccionado falta o no es válido, `status` es `error`, la fila de resultado que falla lleva `verified: false` y el proceso sale con el código 1.
+
+## Ejemplos
+
+```bash
+apothem verify --harness claude-code
+apothem verify --harness claude-code --json
+apothem verify --harness all --project .
+```
+
+## Códigos de salida
+
+| Código | Significado |
+|---|---|
+| 0 | El harness está instalado |
+| 1 | El harness no está instalado |
+
+## Véase también
+
+- [apothem install](/docs/cli-reference/install) — instala una configuración de harness
+- [apothem update](/docs/cli-reference/update) — vuelve a aplicar el perfil actual a un harness
+- [apothem doctor](/docs/install/concepts) — diagnóstico de instalación de todo el sistema

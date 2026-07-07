@@ -1,0 +1,93 @@
+---
+title: "harnesses"
+description: "apothem harnesses कमांड समूह के लिए CLI संदर्भ।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+पंजीकृत हार्नेस अडैप्टरों को सूचीबद्ध और निरीक्षण करता है।
+
+`harnesses` दो सबकमांड वाला एक कमांड समूह है: `list` और `show`।
+
+## सारांश
+
+```
+apothem harnesses list [--quiet|-q] [--verbose|-v]
+                       [--format plain|json] [--json] [--no-color]
+apothem harnesses show NAME
+                       [--quiet|-q] [--verbose|-v]
+                       [--format plain|json] [--json] [--no-color]
+```
+
+## सबकमांड
+
+### `harnesses list`
+
+सभी पंजीकृत हार्नेस अडैप्टरों को सूचीबद्ध करता है।
+
+| विकल्प | विवरण |
+|---|---|
+| `--quiet`, `-q` | सूचनात्मक आउटपुट को दबाता है; केवल त्रुटियाँ उत्सर्जित होती हैं। |
+| `--verbose`, `-v` | अतिरिक्त डायग्नोस्टिक आउटपुट उत्सर्जित करता है। |
+| `--format plain\|json` | आउटपुट प्रारूप (डिफ़ॉल्ट: `plain`)। |
+| `--json` | `--format json` का संक्षिप्त रूप। |
+| `--no-color` | आउटपुट में ANSI रंग कोड को अक्षम करता है। |
+| `-h`, `--help` | सहायता दिखाता है और बाहर निकलता है। |
+
+### `harnesses show NAME`
+
+किसी विशिष्ट हार्नेस अडैप्टर के विवरण दिखाता है। `NAME` kebab-case हार्नेस
+पहचानकर्ता है; उपलब्ध पहचानकर्ताओं को देखने के लिए `apothem harnesses list` चलाएँ।
+
+| विकल्प | विवरण |
+|---|---|
+| `NAME` | निरीक्षण करने हेतु हार्नेस अडैप्टर (आवश्यक स्थितिगत तर्क)। |
+| `--quiet`, `-q` | सूचनात्मक आउटपुट को दबाता है; केवल त्रुटियाँ उत्सर्जित होती हैं। |
+| `--verbose`, `-v` | अतिरिक्त डायग्नोस्टिक आउटपुट उत्सर्जित करता है। |
+| `--format plain\|json` | आउटपुट प्रारूप (डिफ़ॉल्ट: `plain`)। |
+| `--json` | `--format json` का संक्षिप्त रूप। |
+| `--no-color` | आउटपुट में ANSI रंग कोड को अक्षम करता है। |
+| `-h`, `--help` | सहायता दिखाता है और बाहर निकलता है। |
+
+## उदाहरण
+
+```bash
+apothem harnesses list
+apothem harnesses list --json
+apothem harnesses show claude-code
+apothem harnesses show claude-code --json
+```
+
+पंजीकृत हार्नेस ID हैं:
+
+```text
+antigravity
+claude-code
+codebuddy
+codex
+cursor
+gemini-cli
+github-copilot
+glm
+hermes
+kimi-code
+kiro
+open-claw
+opencode
+qwen-code
+trae
+windsurf
+zed
+```
+
+## निकास कोड
+
+| कोड | अर्थ |
+|---|---|
+| 0 | सफलता |
+| 1 | हार्नेस नहीं मिला (अज्ञात `NAME` के साथ `harnesses show`) |
+
+## यह भी देखें
+
+- [apothem doctor](/docs/cli-reference/doctor) — सिस्टम-व्यापी इंस्टॉल डायग्नोस्टिक्स चलाता है
+- [apothem verify](/docs/cli-reference/verify) — किसी विशिष्ट हार्नेस इंस्टॉलेशन की जाँच करता है

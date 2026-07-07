@@ -1,0 +1,70 @@
+---
+title: "/research-publish"
+description: "/research-publish — Memformat makalah ke templat venue dan merakit paket pengajuan (suplemen, ketersediaan data/kode, surat pengantar, etika/konflik kepentingan), dengan rencana preprint/DOI."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Peran:** Peneliti utama (publikasi)
+**Posisi pipeline:** tengah rantai
+
+Memformat makalah ke templat venue dan merakit paket pengajuan — materi suplemen, pernyataan ketersediaan data / kode, surat pengantar, deklarasi etika dan konflik kepentingan — ditambah rencana preprint / pengarsipan dengan DOI dan daftar periksa pengajuan. Operator mengajukan paket; penerus terminalnya adalah `/research-disseminate`, yang membawa karya yang dipublikasikan ke audiensnya.
+
+## Pemanggilan kanonik
+
+```bash
+/research-publish
+```
+
+Dengan argumen:
+
+```bash
+/research-publish [path/to/research-suite/]
+```
+
+## Masukan
+
+Keluaran makalah dan `_outputs/review-report.md` (revisi tinjauan sejawat).
+
+## Keluaran
+
+Paket pengajuan terformat venue di lokasi yang natural bagi host (naskah terformat + materi suplemen + pernyataan ketersediaan data / kode + surat pengantar + deklarasi etika / konflik kepentingan) + `_outputs/publication-record.md` + daftar periksa pengajuan.
+
+## Hilir
+
+/research-disseminate (konsumen hilir) — operator melakukan pengajuan, lalu `/research-disseminate` membawa karya yang dipublikasikan ke audiensnya. Ketika venue mengembalikan revisi, jalankan ulang `/research-review` terhadap makalah yang direvisi sebelum membangun ulang paket.
+
+## Fase alur kerja
+
+Perintah ini mengikuti alur kerja pipeline `/research` standar:
+
+1. **Memuat konteks** — Membaca makalah dan laporan tinjauan.
+2. **Memverifikasi Gerbang Urutan** — Memastikan `_outputs/review-report.md` ada; jika tidak, berhenti dengan `Blocked: run /research-review first`.
+3. **Memformat & mengemas** — Menerapkan templat venue; merakit suplemen, ketersediaan data/kode, surat pengantar, deklarasi etika / konflik kepentingan.
+4. **Merencanakan preprint / pengarsipan** — Mencatat rencana preprint dan DOI; menyusun daftar periksa pengajuan.
+5. **Memperbarui manifes serah terima** — Mencatat paket pengajuan dan catatan publikasi.
+6. **Memancarkan paket** — Paket pengajuan terformat venue + `_outputs/publication-record.md`.
+
+## Landasan ketelitian
+
+Pemformatan menghormati pengungkapan bertahap: untuk tempat-terbit tunanetra-ganda, identitas penulis, institusi, dan sistem dilucuti menjadi metadata yang diajukan terpisah dan dipulihkan hanya pada tahap camera-ready yang ditetapkan. Deposit arsip membawa paket bukti-reproduksibilitas yang berskala-tempat-terbit (data, kode, lingkungan tersemat, seed, log perangkat keras, hasil per-instans, dan gambar).
+
+## Mode kegagalan
+
+| Gejala | Penyebab | Pemulihan |
+|---------|-------|----------|
+| Blocked: run /research-review first | Tidak ada laporan tinjauan | Jalankan `/research-review` untuk menghasilkan `_outputs/review-report.md` |
+| Revisi HIGH belum ditangani | Temuan tinjauan dilewati | Tangani revisi dan jalankan ulang `/research-review` |
+| Ketersediaan data/kode hilang | Permukaan reproduksibilitas tidak ada | Tambahkan pernyataan ketersediaan data / kode sebelum pengajuan |
+
+## Contoh
+
+```bash
+# Rakit paket pengajuan venue
+/research-publish path/to/research-suite/
+```
+
+## Referensi silang
+
+- [Ikhtisar pipeline](/docs/pipeline)
+- [Referensi perintah](/docs/reference/commands)

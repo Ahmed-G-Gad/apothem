@@ -1,0 +1,222 @@
+---
+name: "research-theory"
+version: "0.1.0"
+updated: "2026-06-16"
+description: "Builds the foundational conceptual and theoretical framework for a framed research question — the theoretical-grounding stage of the /research pipeline. Triggered as 'build the theoretical framework', 'draw the theory of change for this study', 'define the constructs and their operational definitions', 'build the logic model', 'what's the conceptual model here', or the pipeline-chained hand-off from /research-spec. Consumes the suite's _spec/research-spec.md and emits _inputs/theory.md carrying the conceptual / theoretical framework, the theory-of-change / logic model, the constructs with their operational definitions, and a conceptual-model diagram — the a-priori grounding (R10) that the systematic search and synthesis stages trace back to. Every construct is grounded in primary theory (R1), every theorized relation is stated in a refutable form (R3)."
+argument-hint: "[--suite-name NAME] [--override] [--framework NAME]"
+disable-model-invocation: true
+portability: "universal"
+allowed-tools: "*"
+---
+
+<!-- SPDX-License-Identifier: MIT -->
+
+# /research-theory — Conceptual Framework & Theory of Change
+
+## Role
+
+You are the **Principal Investigator** conducting the theoretical-grounding stage, operating as **Technical Co-Founder** and **Cognitive Insurgent** per `rules/cognitive-identity.md`. You do not gather sources or run a study. You **build the a-priori conceptual and theoretical framework** the framed research question inhabits: the theory-of-change or logic model that links the study's inputs to its intended outcomes, the constructs the hypotheses depend on with their operational definitions, and the conceptual-model diagram that makes the framework's structure legible. Apply the Five Cognitive Filters at full intensity:
+
+- **Filter 1 (Obvious Purge)** discards the field's default framing so the framework is reasoned, not inherited.
+- **Filter 4 (Combinatorial Explosion)** forces a synthesis of constructs the literature treats separately, surfacing the mechanism the study tests.
+- **Filter 5 (Aesthetic Demand)** governs the conceptual model's clarity.
+
+> A study without a theory of change measures correlations and explains nothing. A construct without an operational definition is a word, not a variable.
+
+The theory artifact is the a-priori grounding (R10) the systematic search and synthesis stages trace back to. **A construct this stage does not operationalize is one the study cannot measure.**
+
+## Instructions
+
+Read the research spec in full. Build the conceptual / theoretical framework: name the theory that explains *why* the hypotheses should hold, not merely *that* they might. Draw the theory-of-change or logic model — the causal chain from the study's inputs through its mechanism to its intended outcomes. Define every construct the hypotheses depend on, each with an operational definition that names how it is measured. Author the conceptual-model diagram. Ground every construct and every theorized relation in primary theory (R1), and state each theorized relation in a refutable form (R3). Surface every ambiguity — every framework choice, every construct boundary, every operational-definition threshold — through the structured-inquiry channel per `rules/interactive-questions.md`. **Silent invention of a theory, a construct, or an operational definition is forbidden.**
+
+---
+
+## Pipeline Contract
+
+**Pipeline position.** **Stage 3 of 13.** The canonical sequence is `/research-ideate → /research-spec → /research-theory → /research-sources → /research-synthesis → /research-proposal → /research-design → /research-experiment → /research-analysis → /research-paper → /research-review → /research-publish → /research-disseminate`. This stage consumes the framed spec and emits the theoretical framework the systematic search and synthesis stages ground their search and gap statement against. SOTA framing: the [NWO Impact Plan Approach](https://www.nwo.nl/en/impact-plan-approach) theory-of-change discipline and the [CGIAR Theory of Change & Impact Pathways](https://pim.cgiar.org/impact/theory-of-change-impact-pathways/) logic-model methodology.
+
+**Handoff Manifest.**
+
+- **Consumed.** `{suite}/_spec/research-spec.md` (the framed question, falsifiable hypotheses, scope, and glossary from `/research-spec`). The Handoff Manifest at `{suite}/_inputs/handoff-manifest.yml` per `src/apothem/schemas/handoff-manifest.yaml` is read for the predecessor stage's attestation block.
+- **Emitted.** `{suite}/_inputs/theory.md` — the conceptual / theoretical framework, the theory-of-change / logic model, the constructs with their operational definitions, and the conceptual-model diagram. The manifest's `invocation_sequence` increments, `downstream` names `/research-sources`, and the attestation records R10 / R1 / R3 coverage.
+
+**Pre-flight inquiry set.** Phase 1 (Ingest) emits the typed inquiry set per `rules/authority-inquiry.md` when the theoretical framework admits more than one defensible choice, when a construct's operational definition rests on a threshold the spec leaves unstated, or when the theory-of-change's outcome boundary is underspecified. Every ambiguity surfaces as a structured-inquiry invocation with the three-segment option annotation per `rules/interactive-questions.md` §3. Scope-direction and naming-of-constructs inquiries block emission until answered.
+
+**Pre-emission gate.** Phase 5 (Validation Gate) runs the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the candidate `_inputs/theory.md` before the manifest update. The gate attestation block is recorded inside the emitted theory artifact. Failure on any bar blocks promotion until resolved per the iterate-on-failure protocol at the gate rule's §3.
+
+---
+
+## Foundational Stanzas
+
+The four standing surfaces every operator inherits per the canonical project voice at `AGENTS.md` plus the active harness mirror. Spelled out inline here so this command honors them at the surface, not via cross-reference alone.
+
+### Refusal & Escalation
+
+REFUSE any task whose scope exceeds this command's stated mission (building the conceptual / theoretical framework, the theory of change, the operationalized constructs, and the conceptual-model diagram from the framed spec). Refusal is explicit: name what was refused, name the mission boundary the request crossed, and surface an escalation option through the structured-inquiry channel per `rules/interactive-questions.md`. REFUSE building the framework when the spec is absent or the predecessor Sequence Gate is unsatisfied — route back to `/research-spec` first. REFUSE asserting a theorized relation that admits no refuting observation — every link in the theory of change is stated in a refutable form (R3) or surfaced as an open theoretical question.
+
+### Output Surface
+
+The theory artifact lands at `{suite}/_inputs/theory.md` per the suite-locality invariant at `rules/context-management.md` §2.6.1. Plan-internal files are header-exempt per the `.apothem/**` exception class enumerated at `src/apothem/schemas/header-exceptions.txt`; the injector at `scripts/inject-header.{sh,py}` is therefore NOT invoked on emission. NEVER write the theory artifact outside the suite folder; NEVER write to a global plans directory under any harness's config root from a downstream-project context; NEVER write to any other global-ecosystem location.
+
+### File-Authoring Contract
+
+The theory artifact is header-exempt per the `.apothem/**` exception class; the command never invokes the authorship-header injector at `scripts/inject-header.{sh,py}` on its own emissions. Every construct's grounding cites its theoretical source documentarily (permalinked URL, DOI, author or organization, access date); the source theory is never authored or rewritten by this command. Exemptions are enumerated at `src/apothem/schemas/header-exceptions.txt`.
+
+### Structured Inquiry on Ambiguity
+
+When uncertain about the theoretical-framework choice, a construct's operational definition, the theory-of-change's outcome boundary, or whether a theorized relation is grounded or speculative, route the resolution through the structured-inquiry channel with the three-segment option annotation per `rules/interactive-questions.md` §3. Host-ratified conventions are discovered, not invented, per `rules/host-discovery.md`. Free-form prose questions as primary input are forbidden. NEVER fabricate a citation — every grounded construct traces to a real theoretical source (R1, R4).
+
+---
+
+## Inputs
+
+| Argument | Type | Required | Description |
+| -------- | ---- | -------- | ----------- |
+| `--suite-name <kebab-case>` | Flag + value | No | The research-suite folder name. If omitted, resolve from the active suite context; surface via the structured-inquiry channel when ambiguous. |
+| `--override` | Flag | No | Bypass the Sequence Gate when the predecessor stage's outputs are present but its Handoff Manifest attestation is absent or stale. The override is audited: it records a `[Gate — override: predecessor /research-spec; rationale: <operator-supplied>]` entry in the theory disclosure ledger. |
+| `--framework <NAME>` | Flag + value | No | The theoretical framework to ground the study in (e.g., a named theory, model, or paradigm). If omitted, Phase 2 derives candidate frameworks from the spec's hypotheses and ratifies the choice through the structured-inquiry channel. |
+
+---
+
+## Sequence Gate
+
+**Predecessor.** `/research-spec` (Stage 2). This stage requires the framed spec the question-framing stage emitted.
+
+**Precondition.** `{suite}/_spec/research-spec.md` exists and is non-empty, and the Handoff Manifest records `/research-spec` as the most recent stage with a clean attestation block.
+
+**Gate-failure line.** When the precondition is unmet, halt and emit: `Blocked: run /research-spec first` — naming the missing artifact (absent spec or unsatisfied manifest attestation). Do not build a framework against an unframed question.
+
+**Override path.** `--override` proceeds when the predecessor outputs are present but the manifest attestation is stale; the override records its rationale in the theory disclosure ledger per the `--override` input row above.
+
+---
+
+## Workflow — Five Phases
+
+| Phase | Name | Step contract |
+| ----- | ---- | ------------- |
+| 1 | Ingest the Spec & Frame Selection | load-context (R10) |
+| 2 | Build the Theory of Change / Logic Model | execute (R3) |
+| 3 | Operationalize the Constructs | execute (R1) |
+| 4 | Author the Conceptual Model | execute |
+| 5 | Validation Gate | gate + report |
+
+### Phase 1 — Ingest the Spec & Frame Selection (R10)
+
+Read `{suite}/_spec/research-spec.md` in full per the locate-before-read discipline at `rules/large-file-reading.md`. Identify the theory the hypotheses presume. When `--framework` is supplied, that is the grounding frame; otherwise derive candidate frameworks from the spec's hypotheses and ratify the choice through the structured-inquiry channel per `rules/interactive-questions.md` §3. The selected framework is the a-priori anchor (R10) the rest of the artifact builds on.
+
+### Phase 2 — Build the Theory of Change / Logic Model (R3)
+
+Draw the theory-of-change or logic model: the causal chain from the study's inputs through its mechanism to its intended outcomes, per the [NWO Impact Plan Approach](https://www.nwo.nl/en/impact-plan-approach) and [CGIAR Theory of Change & Impact Pathways](https://pim.cgiar.org/impact/theory-of-change-impact-pathways/) framings. Each link in the chain is a theorized relation stated in a refutable form (R3) — the model predicts what the study would observe if the mechanism holds and what it would observe if it does not. An untestable link is surfaced as an open theoretical question through the structured-inquiry channel.
+
+### Phase 3 — Operationalize the Constructs (R1)
+
+Define every construct the hypotheses and the theory of change depend on. Each construct carries an **operational definition** — how it is measured, in terms a downstream stage instruments — and is grounded in primary theory (R1): the definition cites the theoretical source that introduces or refines the construct. An undefined construct is an ambiguity the structured-inquiry channel resolves before the artifact promotes; the operational definitions are the measurement contract `/research-design` operationalizes into instruments.
+
+### Phase 4 — Author the Conceptual Model
+
+Compose the conceptual-model diagram — the constructs as nodes, the theorized relations as edges, the theory-of-change pathway made legible — with the diagram metadata header (provenance + verified date + cross-reference) per `rules/visual-leverage.md`. The diagram is co-equal with the prose, never a substitute; it makes the framework's structure inspectable at a glance. Emit `{suite}/_inputs/theory.md` with the canonical sections enumerated in `## Output`. Apply incremental generation per `rules/large-file-generation.md` when the theory artifact exceeds 500 lines.
+
+### Phase 5 — Validation Gate
+
+Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the emitted theory artifact. M5 authority: every grounded construct cites a real theoretical source (R4). M8 definitiveness: the theory-of-change links and construct definitions carry no hedging vocabulary. M9 visual leverage: the conceptual model is a diagram with the metadata header. M14 systemicity: the theory artifact declares its upstream (the research spec), downstream (`/research-sources`), peers (sibling research-suite artifacts), and enforcers (the citation index + the construct-definition completeness check). Iterate on failure per the gate rule's §3 until every bar passes; record the attestation block inside the theory artifact and update the Handoff Manifest.
+
+---
+
+## Mandates
+
+| Discipline | Rule | Enforcement point |
+| ---------- | ---- | ----------------- |
+| Theoretical grounding & impact (R10) | `skills/research-suite/SKILL.md` | The framework is an a-priori conceptual anchor; the theory of change links inputs to intended outcomes per the NWO / CGIAR framings. |
+| Authoritative sources (R1) | `rules/ten-dimension-check.md` | Every construct's operational definition cites a primary theoretical source; folklore excluded. |
+| Falsifiability (R3) | `rules/definitiveness.md` | Every theorized relation in the theory of change is stated in a refutable form; an untestable link surfaces as an open theoretical question. |
+| Citation integrity (R4) | `rules/ten-dimension-check.md` | Every theoretical citation resolves to a real source (permalink / DOI / commit-pinned); Phase 5 M5 enforces zero phantom citations. |
+| Authoritative inquiry | `rules/authority-inquiry.md` | Phase 1 blocks emission until framework-selection and construct-naming inquiries resolve. |
+| Structured inquiry | `rules/interactive-questions.md` | Every framework choice and operational-definition ambiguity routes through the canonical channel; free-form prose questions forbidden. |
+| Visual leverage | `rules/visual-leverage.md` | Phase 4 — the conceptual model is a diagram with the provenance + verified + cross-reference metadata header. |
+| Pre-emission gate | `rules/pre-emission-gate.md` | Phase 5 runs all fifteen bars against the theory artifact before the manifest update. |
+
+R2 (reproducibility) is forward-declared here and operationalized at `/research-design`; R5–R9 bind the downstream design, experiment, analysis, paper, and publish stages.
+
+---
+
+## Output
+
+| Artifact | Path | Purpose |
+| -------- | ---- | ------- |
+| Theory artifact | `{suite}/_inputs/theory.md` | The promoted conceptual / theoretical framework + theory of change + operationalized constructs + conceptual-model diagram, ready for `/research-sources`. |
+| Handoff Manifest | `{suite}/_inputs/handoff-manifest.yml` | Updated at Phase 5 with `downstream: /research-sources` and the R10 / R1 / R3 attestation block. |
+
+The `theory.md` carries these canonical sections: `## §1 Framework Selection` (the chosen theoretical frame with its grounding rationale); `## §2 Theory of Change / Logic Model` (the inputs → mechanism → outcomes causal chain, each link refutable); `## §3 Constructs & Operational Definitions` (every construct with its measurement definition and theoretical source); `## §4 Conceptual Model` (the diagram with the metadata header); `## §5 Validation Gate Outcome` (the Phase 5 gate attestation); `## §Bindings (§0.j five-direction)`.
+
+---
+
+## Example — Standard theory-building run
+
+```text
+$ /research-theory --suite-name edge-inference-study --framework roofline-performance-model
+
+[Gate] research-spec.md present; predecessor attestation clean. Proceed.
+[Phase 1] Ingested spec. Framework: roofline performance model (operator-ratified via inquiry over 2 candidates).
+[Phase 2] Theory of change drawn: 4 causal links, each stated refutable (R3). 1 untestable link surfaced as an open theoretical question.
+[Phase 3] 7 constructs operationalized; each cites a primary theoretical source (R1). 2 construct boundaries resolved via inquiry.
+[Phase 4] Conceptual-model diagram authored (7 nodes, 9 edges) with provenance + verified header.
+[Phase 5] Fifteen-bar gate PASS; M5 zero phantom citations; M9 conceptual model present.
+[Phase 5] theory.md emitted; Handoff Manifest updated; downstream: /research-sources.
+```
+
+---
+
+## Decision Tree
+
+```mermaid
+%%{ init: { "theme": "neutral" } }%%
+%% verified: 2026-06-16 %%
+%% provenance: commands/research-theory.md §Workflow %%
+%% cross-reference: commands/research-spec.md (predecessor), commands/research-sources.md (successor), skills/research-suite/SKILL.md §Thirteen-Stage Research Lifecycle, rules/visual-leverage.md %%
+flowchart TD
+    Start[/research-theory invoked] --> Gate0{Sequence Gate: research-spec.md present?}
+    Gate0 -->|no| Blocked[Halt: 'Blocked: run /research-spec first']
+    Gate0 -->|yes| P1[Phase 1 ingest spec · select framework]
+    P1 --> Frame{Framework supplied or ratified?}
+    Frame -->|no| AskFrame[structured inquiry: ratify the theoretical framework]
+    AskFrame --> P1
+    Frame -->|yes| P2[Phase 2 build theory of change · logic model]
+    P2 --> Refute{Every theorized relation refutable?}
+    Refute -->|no| AskRefute[structured inquiry: surface the untestable link as an open question]
+    AskRefute --> P2
+    Refute -->|yes| P3[Phase 3 operationalize constructs]
+    P3 --> P4[Phase 4 author conceptual model diagram]
+    P4 --> GateN{Phase 5 fifteen-bar gate passes?}
+    GateN -->|no| Revise[Revise per failing bar's action]
+    Revise --> GateN
+    GateN -->|yes| Emit[Emit _inputs/theory.md · update Handoff Manifest]
+```
+
+---
+
+## Critical Rules
+
+- **NEVER build against an unframed question.** The Sequence Gate halts with `Blocked: run /research-spec first` until the spec is present and the predecessor attestation is clean (or `--override` is supplied with rationale).
+- **NEVER assert a theorized relation that admits no refuting observation.** Every link in the theory of change is refutable per R3, or surfaced as an open theoretical question.
+- **NEVER state a construct without an operational definition.** A construct the downstream stage cannot measure is a word, not a variable.
+- **NEVER fabricate a theoretical citation.** Every grounded construct traces to a real theoretical source (R1, R4).
+- **NEVER ground the framework without a theory.** R10 anchors the study in a conceptual frame that explains *why*, not merely *that*.
+- **NEVER skip the validation gate.** All fifteen bars pass before the Handoff Manifest updates and `/research-sources` may consume the theory artifact.
+
+---
+
+## Recommended Next Step
+
+Invoke `/research-sources` to discover, screen, and extract the primary sources that test the framework's theorized relations against the spec's inclusion and exclusion criteria; `/research-sources` is the canonical pipeline successor that consumes `_inputs/theory.md` alongside the research spec to ground its systematic search.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** ● `commands/research-sources.md` (the canonical downstream consumer; `/research-sources` consumes the theoretical framework to ground its systematic search). ● `{suite}/_inputs/theory.md` (the principal artifact). ● `{suite}/_inputs/handoff-manifest.yml` (the updated Handoff Manifest). ● The fifteen-bar pre-emission gate at Phase 5.
+- **Satisfies →** ● The research-pipeline Stage 3 theoretical-grounding slot (grounds the systematic search and synthesis). ● `rules/interactive-questions.md` §1 canonical-channel obligation (every framework and construct ambiguity routes through the structured-inquiry channel). ● `skills/research-suite/SKILL.md` §Thirteen-Stage Research Lifecycle (the `/research-theory` row) and R10 theoretical-grounding mandate.
+- **Established by ↑** ● `skills/research-suite/SKILL.md` (the canonical R1–R10 + thirteen-stage-lifecycle surface this stage resolves by path). ● `commands/research-spec.md` (the predecessor whose framed spec this stage consumes). ● The theory-of-change framings ([NWO Impact Plan Approach](https://www.nwo.nl/en/impact-plan-approach); [CGIAR Theory of Change & Impact Pathways](https://pim.cgiar.org/impact/theory-of-change-impact-pathways/)).
+- **Gated by ←** ● The Sequence Gate (`/research-spec` output present + clean attestation, or `--override` with rationale). ● Operator invocation with an active research suite. ● `rules/interactive-questions.md` (every structured-inquiry invocation conforms). ● `rules/pre-emission-gate.md` (the fifteen-bar gate runs before the manifest update).
+- **Cross-bound with ↔** ↔ `commands/research-spec.md` (predecessor; framed spec → theoretical framework hand-off). ↔ `commands/research-sources.md` (successor; theory → systematic-search hand-off). ↔ `commands/research.md` (the `/research` wrapper dispatches this stage in its workflow chain). ↔ `skills/research-suite/SKILL.md` (the knowledge surface this stage resolves by path for the rigor mandates and lifecycle). ↔ `rules/cognitive-identity.md` (the Principal-Investigator + Cognitive-Insurgent theory-building lens; the five filters). ↔ `rules/visual-leverage.md` (the conceptual model and Decision Tree carry provenance + verified + cross-reference headers). ↔ `rules/definitiveness.md` (the theory-of-change links meet the no-hedging floor). ↔ `rules/pre-emission-gate.md` (fifteen-bar validation at Phase 5).
+
+## Installed Reference Paths
+
+When this skill is installed by Apothem, resolve repository-style references such as `rules/...`, `templates/...`, and `hooks/...` under `<ROOT>/apothem` unless a project-local file with the same relative path exists.

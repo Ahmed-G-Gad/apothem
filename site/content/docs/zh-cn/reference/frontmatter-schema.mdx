@@ -1,0 +1,42 @@
+---
+title: "Frontmatter Schema"
+description: "YAML frontmatter 块结构、逐类必填键以及跨制品类型校验器强制规则的参考指南。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **每个制品类型上 YAML frontmatter 的规范化参考。** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) 约定中的摘要是内联声明；[`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) 下的逐类 JSON Schema 是机器可读契约；本页是下游贡献者所引用的独立参考。
+
+---
+
+## 1. Frontmatter 块结构
+
+每个制品在头部都携带 YAML frontmatter，由 `---` 行分隔。每个 [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) 的规范化作者头横幅位于 Markdown 系列文件上 frontmatter 的上方；frontmatter 紧随其后。
+
+键使用 `kebab-case`。标量值要么裸写，要么用双引号；包含冒号、井号或其他 YAML 显著字符的字符串值需加引号。
+
+## 2. 逐类必填字段
+
+必填键集合因制品类型而异。权威结构由 `scripts/dev/validate_ecosystem.py` 与 `schemas/` 目录下的逐类 JSON Schema（每个制品类型一个 schema 文件）强制执行。
+
+```text
+schemas/agent.schema.json
+schemas/skill.schema.json
+schemas/command.schema.json
+schemas/output-style.schema.json
+schemas/plan.schema.json
+```
+
+| 类型 | 必填键 |
+|-------|---------------|
+| `CLAUDE.md`（根配置） | `name`、`version`、`updated`、`description`、`scope`、`portability` |
+| 规则（`src/apothem/rules/*.md`） | `name`、`description`、`pathFilter`、`alwaysApply` |
+| 命令（`src/apothem/commands/*.md`） | `name`、`version`、`updated`、`description`、`argument-hint`、`disable-model-invocation` |
+| 助手（下方所示规范目录） | `name`、`version`、`updated`、`description`、`tools`、`disallowedTools`、`maxTurns`、`effort` |
+| 技能（`src/apothem/skills/*/SKILL.md`） | `name`、`description`、`archetype`、`userInvocable` |
+
+[`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) 下的逐类 schema 携带完整约束集，包括类型、格式、枚举与模式限制。
+
+## 3. 校验器
+
+`scripts/dev/validate_ecosystem.py` 遍历制品树，应用上述必填键集合，并对任何缺少必填字段的制品报告 `[FAIL]`。`src/apothem/conformity/frontmatter_grep.py` 的逐次写入 `frontmatter-grep` 在 PreToolUse Write/Edit 钩子边界处强制执行相同结构。

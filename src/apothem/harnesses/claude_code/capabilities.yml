@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: MIT
+
+# Per rules/agent-capability-discipline.md §1 / §3 / §7. The claude_code
+# harness ratifies every cohort capability: MCP via `claude mcp add` into
+# ~/.claude.json (user/local scope) + project-level .mcp.json — NOT
+# settings.json (confirmed live 2026-05-31); sub-agents in ~/.claude/agents/;
+# auto-memory at ~/.claude/projects/<project>/memory/; system-prompt projects
+# through CLAUDE.md (operator-owned; adapter does not manage). Apothem names
+# the native MCP surface but does not author MCP server entries.
+
+mcp_servers:
+  - claude.json-user-local-scope-via-claude-mcp-add
+  - project-level-.mcp.json
+# Operator-owned MCP surface: the adapter recognizes it but authors no entries.
+mcp_servers_authored: false
+sub_agent_dispatch: true
+custom_command_support: "yes"
+recommended_postfix_rendering: "plain-text"
+long_context_compaction: "profile-managed"
+context_ignore_surface: "settings.json permissions {allow, ask, deny}"
+layered_context_surface: "CLAUDE.md hierarchy plus propagated convention dirs"
+lsp_symbol_navigation: "tracked-gap-no-adapter-owned-LSP-surface"
+hook_learning_capture: "artifact-evolution-cycle"
+standard_convention_pin: "STANDARD-CONVENTION-PIN.md"
+# web-fetch / browser-retrieval surface — the backing capability dimension for
+# rules/source-accessibility.md step 1 ("retrieve through the host's browser /
+# fetch capability"). Vendor-confirmed: Claude Code ships built-in WebFetch and
+# WebSearch tools (the CLI surface of the `web_fetch_*` / `web_search_*` server
+# tools). Evidence triple — vendor-doc-url:
+# https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-fetch-tool
+# (the prior docs.claude.com path 302-redirects here); snapshot-id: living MDX
+# (no immutable commit; living-docs host); snapshot-date: 2026-06-21. Canonical
+# evidence home is STANDARD-CONVENTION-PIN.md per
+# rules/agent-capability-discipline-matrix.md §1A; pin refresh tracked as a
+# follow-up to fold this triple into the pin's evidence chain.
+web_fetch: "yes"
+tool_surface_restrictions:
+  - secrets-paths
+  - destructive-shell-ops
+  - network-write-unsigned
+system_prompt_template_path: "n/a"
+agent_memory_surface: "~/.claude/projects/<project>/memory/ (auto-memory) plus CLAUDE.md"

@@ -1,0 +1,9 @@
+{
+  "argv": [
+    "verify",
+    "--harness",
+    "bogus"
+  ],
+  "exit_code": 1,
+  "stdout": "Error: Apothem validation failed.\nField: harness\nReason: 'bogus' is not a supported harness.\nFix: Use one of: antigravity, claude-code, codex, cursor, gemini-cli, github-copilot, hermes, kimi-code, open-claw, opencode, qwen-code, windsurf, codebuddy, kiro, trae, zed, glm, or use 'all' for batch lifecycle commands.\nFiles written: none.\n"
+}

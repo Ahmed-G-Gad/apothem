@@ -1,0 +1,93 @@
+---
+title: "harnesses"
+description: "Справочник CLI для группы команд apothem harnesses."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Перечисляет и инспектирует зарегистрированные адаптеры окружений.
+
+`harnesses` — это группа команд с двумя подкомандами: `list` и `show`.
+
+## Сводка
+
+```
+apothem harnesses list [--quiet|-q] [--verbose|-v]
+                       [--format plain|json] [--json] [--no-color]
+apothem harnesses show NAME
+                       [--quiet|-q] [--verbose|-v]
+                       [--format plain|json] [--json] [--no-color]
+```
+
+## Подкоманды
+
+### `harnesses list`
+
+Перечисляет все зарегистрированные адаптеры окружений.
+
+| Параметр | Описание |
+|---|---|
+| `--quiet`, `-q` | Подавляет информационный вывод; выдаются только ошибки. |
+| `--verbose`, `-v` | Выдаёт дополнительный диагностический вывод. |
+| `--format plain\|json` | Формат вывода (по умолчанию: `plain`). |
+| `--json` | Сокращение для `--format json`. |
+| `--no-color` | Отключает коды цвета ANSI в выводе. |
+| `-h`, `--help` | Показывает справку и завершает работу. |
+
+### `harnesses show NAME`
+
+Показывает сведения о конкретном адаптере окружения. `NAME` — это идентификатор
+окружения в kebab-case; выполните `apothem harnesses list`, чтобы увидеть доступные идентификаторы.
+
+| Параметр | Описание |
+|---|---|
+| `NAME` | Адаптер окружения для инспекции (обязательный позиционный аргумент). |
+| `--quiet`, `-q` | Подавляет информационный вывод; выдаются только ошибки. |
+| `--verbose`, `-v` | Выдаёт дополнительный диагностический вывод. |
+| `--format plain\|json` | Формат вывода (по умолчанию: `plain`). |
+| `--json` | Сокращение для `--format json`. |
+| `--no-color` | Отключает коды цвета ANSI в выводе. |
+| `-h`, `--help` | Показывает справку и завершает работу. |
+
+## Примеры
+
+```bash
+apothem harnesses list
+apothem harnesses list --json
+apothem harnesses show claude-code
+apothem harnesses show claude-code --json
+```
+
+Зарегистрированные идентификаторы окружений:
+
+```text
+antigravity
+claude-code
+codebuddy
+codex
+cursor
+gemini-cli
+github-copilot
+glm
+hermes
+kimi-code
+kiro
+open-claw
+opencode
+qwen-code
+trae
+windsurf
+zed
+```
+
+## Коды выхода
+
+| Код | Значение |
+|---|---|
+| 0 | Успех |
+| 1 | Окружение не найдено (`harnesses show` с неизвестным `NAME`) |
+
+## См. также
+
+- [apothem doctor](/docs/cli-reference/doctor) — запускает общесистемную диагностику установки
+- [apothem verify](/docs/cli-reference/verify) — проверяет установку конкретного окружения

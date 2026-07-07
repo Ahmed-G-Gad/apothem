@@ -1,0 +1,45 @@
+---
+title: "Apothem im Vergleich zur manuellen Qwen-Code-Konfiguration"
+description: "Die Einstellungen, Befehle, Skills und Subagenten von Qwen Code von Hand pflegen gegenüber dem Rendern aus Apothems geteiltem Profil."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Qwen Code liest Einstellungen, Hooks, `QWEN.md`, native Markdown-Befehle,
+SKILL.md-Verzeichnisse und Markdown-Subagenten. Apothem rendert die
+dokumentierten Einstellungsschlüssel aus dem geteilten Profil und konvertiert
+geteilte Kohorten in die native Dateisystemform von Qwen, wo Qwen Code eine
+unterstützt.
+
+## Aufwandsvergleich
+
+| Aufgabe | Manuelle Konfiguration | Von Apothem verwaltet |
+| ---- | --------------- | --------------- |
+| Regeln verfassen | QWEN.md und die Hilfsdateien von Hand pflegen | Aus dem geteilten Profil gerendert oder referenziert |
+| Hooks konfigurieren | Die Hook-Einträge in `settings.json` von Hand bearbeiten | Über die native Hook-Tabelle von Qwen Code installiert |
+| Befehle, Skills, Agenten verfassen | Jedes Qwen-Verzeichnis von Hand pflegen | Aus den geteilten Apothem-Kohorten konvertiert |
+| Kohorten mit anderen Umgebungen ausgerichtet halten | Manuell, pro Werkzeug | Automatisch bei `apothem update` |
+| Die Oberfläche installieren / entfernen | Manuell | `apothem install` / `apothem uninstall` |
+| Prüfen, ob die Konfiguration korrekt ist | Manuelle Inspektion | `apothem verify --harness qwen-code` |
+
+## Was Apothem verwaltet
+
+Der qwen-code-Adapter schreibt `settings.json`, installiert `QWEN.md`,
+konvertiert die Slash-Befehle von Apothem in Qwen-Markdown-Befehlsdateien,
+kopiert Skills in die native Skills-Oberfläche, passt Hilfsdefinitionen als
+Qwen-Subagenten an und registriert die Hook-Dispatcher von Apothem. Regeln,
+Vorlagen und das Hook-Quellmaterial verbleiben unter Apothems Hilfsteilbaum und
+werden aus dem nativen Kontext referenziert.
+
+## Migrationspfad
+
+1. Führe `apothem profile init` aus, um das geteilte Profil zu erstellen, falls noch nicht geschehen.
+2. Verschiebe die vorhandenen Regeln, Befehle, Skills und Agenten von Qwen Code in das geteilte Korpus.
+3. Führe `apothem install --harness qwen-code` aus, um die native Oberfläche zu rendern.
+4. Führe `apothem verify --harness qwen-code` aus, um zu bestätigen, dass die Konfiguration angekommen ist.
+5. Verwende `apothem update --harness qwen-code` für jede spätere Änderung.
+
+## Als Nächstes lesen
+
+- [Qwen-Code-Adapter-Referenz](/docs/harnesses/qwen-code)
+- [Vergleichsüberblick](/docs/comparison)

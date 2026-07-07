@@ -1,0 +1,53 @@
+---
+title: "Configuración del entorno"
+description: "Añade y configura adaptadores de entorno para plataformas."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## Instala un adaptador de entorno
+
+```bash
+apothem install --harness <name>
+```
+
+Consulta la [lista de entornos compatibles](/docs/harnesses) para ver los nombres disponibles.
+Los adaptadores de ámbito de proyecto requieren la ruta del proyecto:
+
+```bash
+apothem install --harness cursor --project /path/to/project
+apothem install --harness gemini-cli --project /path/to/project
+apothem install --harness github-copilot --project /path/to/project
+apothem install --harness windsurf --project /path/to/project
+```
+
+## Instala varios entornos
+
+Usa el selector de todo el registro cuando quieras todos los adaptadores compatibles. Como
+el conjunto registrado incluye adaptadores de ámbito de proyecto, indica la raíz del proyecto.
+
+```bash
+apothem install --harness claude-code
+apothem install --harness cursor --project /path/to/project
+apothem install --harness all --project /path/to/project
+```
+
+## Verifica la configuración del entorno
+
+```bash
+apothem verify --harness <name>
+apothem verify --harness all --project /path/to/project
+```
+
+Para comprobar todos los adaptadores registrados de una sola vez, ejecuta `apothem doctor`. Imprime
+una tabla del estado de instalación por entorno y sale con un código distinto de cero si algún adaptador
+informa de que no está instalado.
+
+## Consulta los entornos instalados
+
+```bash
+apothem harnesses list
+```
+
+Usa `apothem harnesses show <name>` para obtener detalles por adaptador (nombre, estado de
+instalación y ruta de salida).

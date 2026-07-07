@@ -1,0 +1,90 @@
+---
+title: "Zed"
+description: "Zed（GA）向けの Apothem ハーネスアダプター。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**ベンダー：** Zed Industries
+**インストール名：** `zed`
+**ステータス：** GA
+**ネイティブ設定：** `<project>/.rules`
+
+## インストール
+
+```bash
+apothem install --harness zed --project /path/to/project
+```
+
+アダプターは、共有された Apothem のルールおよびガバナンス面から、プロジェクト
+スコープの Zed 指示ファイルを 1 つ書き込みます。Zed はプロジェクトルートにある
+単一のフラットな `.rules` ファイル（`AGENTS.md` / `CLAUDE.md` ファミリと並ぶ）を
+指示として読み取ります。ツールごとのルールディレクトリはないため、Apothem 面
+全体がこの 1 つのファイルに収まります。
+
+**書き込まれるファイル：** `<project>/.rules`
+
+## プロファイルからネイティブ設定へのマッピング
+
+アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または
+`apothem update` の実行のたびにプロジェクト `.rules` ファイルをレンダリングします。
+共有プロファイルが真実の源です。既存の `.rules`（または生成されたファイルへの
+プロジェクトローカルな編集）は、次回の同期が Apothem 管理下のコンテンツを置き換える
+前にバックアップされます。
+
+## 互換性に関する注意
+
+Zed の現在の指示面は、プロジェクトルートのフラットな `.rules` ファイルです。
+グローバルな `~/.config/zed/AGENTS.md` 指示ファイルと MCP コンテキストサーバー
+ブロック（`.zed/settings.json` の `context_servers`）はオペレーターの所有物であり、
+Apothem はそれらを書き込みません。
+
+## 検証
+
+```bash
+apothem verify --harness zed --project /path/to/project
+```
+
+verify コマンドは、次のことを確認します。
+
+1. ネイティブ設定が期待されるパスに存在すること。
+2. 共有プロファイルのすべての必須フィールドが存在すること。
+3. アダプター固有の検証ルーチンが成功を報告すること。
+
+## 更新
+
+```bash
+apothem update --harness zed --project /path/to/project
+```
+
+現在の共有プロファイルの状態からプロジェクト `.rules` ファイルを再導出します。
+
+## アンインストール
+
+```bash
+apothem uninstall --harness zed --project /path/to/project
+```
+
+アダプターによって書き込まれたネイティブ設定ファイルを削除し、まずタイムスタンプ
+付きのバックアップにリネームします。共有プロファイルの YAML と Apothem エンジンは
+影響を受けません。
+
+## 適合ゲート
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## トラブルシューティング
+
+| 症状 | 対処 |
+|---------|-----|
+| 設定ファイルが見つからない | `apothem install --harness zed --project /path/to/project` を再実行する |
+| 検証に失敗した | `apothem update --harness zed --project /path/to/project` を実行してから、再度検証する |
+| 予期しない設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、`apothem update --harness zed --project /path/to/project` を再実行する |
+
+## 設定ノブ
+
+| フラグ | デフォルト | 説明 |
+|------|---------|-------------|
+| `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューする。 |

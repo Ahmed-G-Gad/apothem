@@ -1,0 +1,65 @@
+---
+title: "تأليف محوّل بيئة جديد"
+description: "دليل تشغيلي لتأليف ونشر محوّل بيئة جديد لـ Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+استخدم هذا الدليل التشغيلي عند تأليف محوّل بيئة جديد ليُدرَج بشكل أصيل في
+<bdi>Apothem</bdi> أو كحزمة طرف ثالث.
+
+## المتطلّبات المسبقة
+
+- الإلمام بـ [بروتوكول <bdi>HarnessAdapter</bdi>](/docs/architecture/harness-adapter-abstraction)
+- فهم صيغة تهيئة البيئة المستهدفة
+- <bdi>Python 3.10+</bdi>
+
+## الخطوات
+
+### 1. نفِّذ المحوّل
+
+اتبع مثال [تأليف محوّل بيئة](/docs/examples/authoring-a-harness-adapter)
+لتنفيذ `HarnessAdapter` للبيئة المستهدفة.
+
+### 2. اكتب صفحة التوثيق
+
+أنشئ `site/content/docs/harnesses/<slug>.mdx` يغطّي:
+
+- تدفّق التثبيت
+- تخطيط الملف التعريفي إلى التهيئة الأصلية
+- محاذير التوافق
+- وصفات التحقّق
+- وصفات التحديث وإلغاء التثبيت
+- سطح بوّابة المطابقة
+- جدول استكشاف الأخطاء وإصلاحها
+- جدول مقابض التهيئة
+
+### 3. اكتب الاختبارات
+
+```bash
+tests/packaging/test_<slug>_adapter.py
+tests/unit/test_<slug>_adapter.py
+```
+
+الحد الأدنى لتغطية الاختبارات:
+- `test_install_creates_expected_files`
+- `test_verify_passes_after_install`
+- `test_uninstall_removes_files`
+
+### 4. تحقّق محليًا
+
+```bash
+apothem install --harness <slug>
+apothem verify --harness <slug>
+python -m apothem.conformity.gate --all .
+```
+
+### 5. قدِّم طلب السحب
+
+افتح <bdi>PR</bdi> يتضمّن:
+
+- تنفيذ المحوّل
+- صفحة التوثيق في `site/content/docs/harnesses/<slug>.mdx`
+- الاختبارات
+- تسجيل نقطة الدخول في `pyproject.toml`
+- مدخل في سجلّ التغييرات

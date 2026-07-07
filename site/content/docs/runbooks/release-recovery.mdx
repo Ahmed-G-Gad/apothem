@@ -1,0 +1,105 @@
+---
+title: "Release-recovery runbook"
+description: "Recovery procedures for restoring the repository when a release sequence fails mid-flight, with stage-by-stage diagnostics."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+This runbook restores `ahmed-g-gad/apothem` to a working state when a
+clean-slate-in-place release sequence fails mid-flight. The public repository is
+not deleted or recreated during the release. Recovery depends on the
+release-specific history safety tag, the maintainer's local clone, and
+downstream package-manager state.
+
+## 1. Stage taxonomy
+
+| Stage | Action | Failure mode | Recovery path |
+|---|---|---|---|
+| 1 | Capture and push the history safety tag | The tag is missing, unsigned, or points at the wrong graph | Recreate the tag from the pre-squash merge point before moving `main` |
+| 2 | Verify CI, audit fortress, package state, and changelog | Any gate fails | Stop; fix locally; do not move `main` |
+| 3 | Move `main` to the signed single release commit | Force-with-lease fails, the commit is unsigned, or the commit message is wrong | Reset local `main` to the intended signed commit and retry with a fresh lease |
+| 4 | Publish GitHub Release, Pages, npm, and metadata | A publisher or verification surface fails | Keep the release commit; rerun only the failed publisher after recording the failure |
+
+Every recovery action is idempotent. Running it on a clean state is a no-op;
+running it on a partial state restores the expected post-stage condition.
+
+## 2. Safety-tag recovery
+
+Verify the safety tag before any history rewrite:
+
+```bash
+git fetch origin --tags
+git show --summary --show-signature <history-safety-tag>
+git merge-base --is-ancestor origin/main <history-safety-tag>
+```
+
+Expected: the tag exists, signature verification succeeds when the tag is
+signed, and the full pre-squash graph is reachable from the tag. If the tag is
+missing locally but present remotely, fetch it. If it is missing remotely, stop
+the release and recreate it before touching `main`:
+
+```bash
+git tag -s <history-safety-tag> <pre-squash-commit>
+git push origin <history-safety-tag>
+```
+
+## 3. Main-branch recovery
+
+Diagnose the public `main` state:
+
+```bash
+gh api repos/ahmed-g-gad/apothem/commits/main \
+  --jq '.sha, .commit.message, .commit.verification.verified, .commit.verification.reason'
+```
+
+Expected after the cutover: the message is exactly
+`release: Apothem <release-version>` and `verification.verified` is `true`.
+
+If the force-with-lease push failed before changing GitHub, leave the remote as
+is, fetch it, rebuild the signed release commit locally, and retry only after
+the lease matches:
+
+```bash
+git fetch origin main
+git push --force-with-lease=main:<expected-remote-sha> origin main
+```
+
+If the push landed with an unsigned or unverified commit, fix the local signing
+configuration, re-create the release commit from the same tree, and force-push
+again with a lease. Do not delete the safety tag.
+
+## 4. Publisher recovery
+
+Each publisher is retried independently after the GitHub release commit is
+verified:
+
+| Surface | Diagnostic | Recovery |
+|---|---|---|
+| GitHub Release | `gh release view <release-tag> --json tagName,isDraft,isPrerelease,assets` | Delete only a malformed draft; otherwise upload missing assets with `gh release upload --clobber` |
+| Release tag | `git ls-remote origin refs/tags/<release-tag>` and `git tag -v <release-tag>` | Re-tag from the same SHA with `-a -s` if the tag is missing or unsigned; never reuse a tag name for a different commit |
+| npm | `npm view @ahmed-g-gad/apothem version` and `npx @ahmed-g-gad/apothem@<version> --version` | Rerun `publish-npm.yml` for `<release-tag>` after confirming npm Trusted Publishing for `@ahmed-g-gad/apothem` |
+| Pages | `gh run list --workflow=publish-static-site.yml --limit=1` and `curl -sSI https://apothem.ahmedgad.com/` | Rerun `publish-static-site.yml`; verify the CNAME still resolves to `ahmed-g-gad.github.io` |
+| GitHub metadata | `gh repo view ahmed-g-gad/apothem --json description,homepageUrl,repositoryTopics,visibility` | Patch description, homepage, and topics in place; do not recreate the repo |
+
+## 5. Rollback
+
+Rollback is last resort. Prefer targeted publisher recovery first. If the
+single release commit must be backed out, restore `main` from the safety tag:
+
+```bash
+git fetch origin --tags
+git switch main
+git reset --hard <history-safety-tag>
+git push --force-with-lease origin main
+```
+
+After rollback, re-run CI, re-apply branch protection if GitHub reports drift,
+and log the rollback as a release-blocking incident. Retain the release tag only
+if the release artifacts remain valid; otherwise delete the malformed release
+and tag before retrying.
+
+## 6. Cross-references
+
+- Pages configuration: `site/content/docs/runbooks/pages-enablement.mdx`.
+- Release procedure: `site/content/docs/runbooks/release-cycle.mdx`.
+- Package recipes: `packaging/README.md`.
+- Recovery anchor: the release-specific history safety tag.

@@ -1,0 +1,86 @@
+---
+title: "Cursor"
+description: "Adaptor alat Apothem untuk Cursor (GA)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Vendor:** Anysphere
+**Nama instalasi:** `cursor`
+**Status:** GA
+**Konfigurasi native:** `.cursor/rules/` di akar proyek
+
+## Instalasi
+
+```bash
+apothem install --harness cursor --project /path/to/project
+```
+
+Adaptor merender satu berkas aturan `.mdc` dengan cakupan proyek dari aturan
+bersama Apothem dan permukaan tata kelola.
+
+**Berkas yang ditulis:** `<project>/.cursor/rules/apothem-rules.mdc`
+
+## Pemetaan profil ke konfigurasi native
+
+Adaptor membaca profil bersama Apothem dan merender berkas aturan proyek pada
+setiap kali `apothem install` atau `apothem update` dijalankan. Profil bersama
+adalah sumber kebenaran; suntingan lokal proyek pada berkas yang dihasilkan
+dicadangkan sebelum sinkronisasi berikutnya mengganti konten yang dikelola
+Apothem.
+
+## Catatan kompatibilitas
+
+Cursor 0.45+ mendukung instruksi tingkat proyek melalui `.cursor/rules/`. Adaptor
+menulis ke direktori `.cursor/rules/` dengan cakupan proyek secara bawaan; Cursor
+tidak memiliki jalur aturan global pengguna berbasis berkas yang terdokumentasi
+untuk dikelola oleh adaptor ini.
+
+## Verifikasi
+
+```bash
+apothem verify --harness cursor --project /path/to/project
+```
+
+Perintah verify mengonfirmasi bahwa:
+
+1. Konfigurasi native ada di jalur yang diharapkan.
+2. Semua bidang wajib dari profil bersama hadir.
+3. Rutin verifikasi khusus adaptor melaporkan keberhasilan.
+
+## Pembaruan
+
+```bash
+apothem update --harness cursor --project /path/to/project
+```
+
+Menurunkan ulang berkas aturan proyek dari keadaan profil bersama saat ini.
+
+## Menghapus instalasi
+
+```bash
+apothem uninstall --harness cursor --project /path/to/project
+```
+
+Menghapus berkas konfigurasi native yang ditulis oleh adaptor.
+YAML profil bersama dan mesin Apothem tidak terpengaruh.
+
+## Gerbang konformitas
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Pemecahan masalah
+
+| Gejala | Perbaikan |
+|---------|-----|
+| Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness cursor --project /path/to/project` |
+| Verifikasi gagal | Jalankan `apothem update --harness cursor --project /path/to/project`, lalu verifikasi lagi |
+| Konten konfigurasi tidak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness cursor --project /path/to/project` |
+
+## Tombol konfigurasi
+
+| Tanda | Bawaan | Deskripsi |
+|------|---------|-------------|
+| `--dry-run` | `false` | Pratinjau instalasi tanpa menulis berkas. |

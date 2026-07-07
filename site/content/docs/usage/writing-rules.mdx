@@ -1,0 +1,62 @@
+---
+title: "Writing rules"
+description: "Author, scope, and maintain Apothem behavioral rules."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Rules are Markdown files in `src/apothem/rules/` with `.md` extension.
+
+## Rule frontmatter
+
+```yaml
+---
+name: "..."
+description: "..."
+pathFilter: ""            # empty string for always-on; a glob for path-filtered
+alwaysApply: true         # true for always-on; false for path-filtered
+---
+```
+
+## Rule scopes
+
+A rule's scope is set by two frontmatter fields, `alwaysApply` and
+`pathFilter`:
+
+| `alwaysApply` | `pathFilter` | When applied |
+|---------------|--------------|--------------|
+| `true` | `""` (empty) | Always-on: every session, every file |
+| `false` | a glob like `"**/*.py"` | Path-filtered: only when the active file matches the glob |
+
+## Example rule
+
+```markdown
+---
+name: "python-conventions"
+description: "Python style conventions for this project"
+pathFilter: "**/*.py"
+alwaysApply: false
+---
+
+# Python conventions
+
+- Use type annotations on all public functions.
+- Maximum line length: 88 characters.
+- Prefer explicit over implicit.
+```
+
+## Applying rules to harnesses
+
+After writing a rule, update each installed harness adapter. Run
+`apothem harnesses list` to see the installed set, then call update once per
+harness:
+
+```bash
+apothem update --harness claude-code
+apothem update --harness cursor
+```
+
+## Rule validation
+
+```bash
+python -m apothem.conformity.gate --check frontmatter
+```

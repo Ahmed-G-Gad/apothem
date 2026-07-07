@@ -1,0 +1,124 @@
+---
+title: "FAQ"
+description: "Common questions about Apothem's purpose, supported harnesses, plan-suite optionality, rule customization, artifact types, and ecosystem state locations."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Common questions, in order of frequency.
+
+## What is `apothem`?
+
+Apothem is a host-agnostic configuration manager for coding-assistant harnesses. You author one
+shared profile, and Apothem materializes it into each tool's native
+configuration surface — pairing behavioral rules, creative standards, slash
+commands, persistent delegated workers, hooks, and skills into a single
+governed corpus that stays consistent across every harness.
+
+## Which assistant harnesses does it work with?
+
+Apothem is harness-agnostic. Per-harness adapters under
+`src/apothem/harnesses/<harness>/` project the shared profile into
+each tool's native config directory. The runtime harness registry is the
+authoritative source for the supported set; the
+[harness pages](/docs/harnesses) document each one. The registry currently
+covers the following supported harnesses:
+
+```text
+Claude Code, GitHub Copilot, Cursor, Gemini CLI, Codex, Windsurf, OpenCode,
+Antigravity, Open-Claw, Hermes, Qwen Code, CodeBuddy, Kiro, Trae, Zed,
+GLM (Z.ai), and Kimi Code
+```
+
+The Claude Code adapter materializes into `~/.claude/`; its hook dispatcher is host-neutral —
+it resolves the ecosystem root from `$CLAUDE_PROJECT_DIR` first, then
+`$LLM_PROJECT_DIR`, then falls back to `$HOME/.claude`.
+
+## Do I need to use the plan-suite pipeline?
+
+No. The plan-suite pipeline is one component of the ecosystem.
+Behavioral rules, creative standards, hooks, and the validator
+toolchain are independently useful.
+
+## How do I customize the rules without forking the repository?
+
+Add your own rule file under `src/apothem/rules/<my-rule>.md`
+with the canonical frontmatter. The rule loader picks up every
+file matching the `src/apothem/rules/*.md` pattern.
+
+## How do I disable a rule temporarily?
+
+Either rename the file out of the `src/apothem/rules/*.md`
+pattern or move it to a sibling directory the loader does not
+scan.
+
+## What's the difference between rules, skills, and delegated workers?
+
+- **Rules** govern behavior — always-on or path-filtered
+  obligations the assistant follows.
+- **Skills** are reusable detectable techniques — a detection
+  signal, a procedure, and an enforcement hook.
+- **Delegated workers** are persistent roles with their own tool
+  restrictions and system prompts, dispatched via the
+  worker-orchestration protocol.
+
+## How do I report a security issue?
+
+See `SECURITY.md`. The supported channels are GitHub Security
+Advisories and `me@ahmedgad.com`.
+
+## How do I contribute?
+
+See [Contributing](/docs/developer-guide). The short version: read
+`CONTRIBUTING.md`, fork the repository, open a PR with the
+canonical PR template populated, and make sure the CI checks pass — the
+[developer guide](/docs/developer-guide) lists the gates a PR must clear.
+
+## Where does ecosystem state live?
+
+- **Per-suite plan state** lives under `<project>/.apothem/plans/{suite}/`.
+- **Per-project memory** lives under the harness config root, at
+  `projects/{hash}/memory/` (for Claude Code: `~/.claude/projects/{hash}/memory/`).
+- **Cross-project memory** lives under that same harness config root, at
+  `memory/` (for Claude Code: `~/.claude/memory/`).
+- **Per-session scratch** lives under `<project>/.apothem/plans/{suite}/_inputs/`.
+
+## Can I pick up long-running work in a new session or on another machine?
+
+Yes. Long-running work externalizes its full state to a project-local
+`.apothem/plans/` suite — a resumption contract plus a cold-start protocol — so the
+work does not live inside one chat history. Because the state is in your
+project's files, a fresh session on any account or machine pointed at the same
+project resumes the work in place. Apothem does not push the files between
+accounts itself; they travel the way your project's files already travel
+(version control, a shared checkout, a synced directory). See
+[Resumable planning](/docs/concepts/resumable-planning).
+
+## Does Apothem need pip?
+
+No — not for the engine itself. The engine is a self-contained source tree
+with vendored dependencies — it runs as `python -m apothem` from any
+checkout, the npx cache, or the plugin tree on system Python 3.10+, and
+installs none of its own code into `site-packages` (`click` and `rich` are
+the only interpreter prerequisites). The one optional exception: if `click`
+or `rich` is missing, the installer offers to `pip install` just those two
+for you — with your confirmation, or `--yes` / `APOTHEM_AUTO_INSTALL_DEPS=1`.
+Apothem's own packages are never installed into `site-packages`.
+
+## How do hooks run without an installed package?
+
+`apothem install` materializes the hook dispatcher and the conformity gate
+under the harness root (for Claude Code: `~/.claude/.apothem/support/hooks/` and
+`~/.claude/.apothem/support/conformity/`), and the rendered hook entries invoke those
+scripts by absolute path. Both are standalone stdlib scripts, so the hooks
+work on a machine that has never seen `pip install`.
+
+## How do I uninstall completely?
+
+Run `apothem uninstall --harness <name>` for each installed harness, remove
+the engine per your install channel, and delete `~/.apothem/` (backups) plus
+`~/.config/apothem/` (your profile) if you want zero residue. The
+[uninstalling guide](/docs/install/uninstalling) walks each channel.
+
+## What license is the ecosystem under?
+
+MIT — see `LICENSE`.

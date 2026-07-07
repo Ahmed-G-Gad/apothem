@@ -1,0 +1,60 @@
+---
+title: "Registry des Vor-Emissions-Gates — Verpflichtende Fünfzehn-Balken-Prüfung"
+description: "Verpflichtende Fünfzehn-Balken-Konformitätsprüfung, die vor der Emission von bedeutsamem Umfang ausgeführt wird, mit Fehler-Aktion-Zuordnungen und Release-Nachweis-Schema."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Kanonisches Register des Fünfzehn-Balken-Vor-Emissions-Gates.** Dieses Dokument trägt die vollständige Fünfzehn-Balken-Gate-Tabelle und den YAML-Block des Release-Nachweis-Schemas; die substanzielle Tabelle und das Schema leben hier, operationalisiert durch `src/apothem/rules/pre-emission-gate.md`.
+
+Vor jeder Artefakt-Emission von bedeutsamem Umfang (gemäß der Trivial-vs.-Nicht-trivial-Schwelle in `site/content/docs/governance/outward-conformity-registry.mdx` §1) führe das Fünfzehn-Balken-Vor-Emissions-Gate aus. Mechanisiere über PreToolUse-Hooks, wo möglich (die mechanischen Greps in `src/apothem/conformity/*-grep.py`, orchestriert von `src/apothem/conformity/gate.py`); räsoniere, wo Mechanisierung unmöglich ist. **Das Versagen eines einzelnen Balkens blockiert die Emission; revidiere, bis jeder Balken besteht; emittiere mit aufgezeichnetem Gate-Release-Nachweis.**
+
+| # | Balken | Prüfungsart | Versagen → Aktion |
+| - | --- | ---------- | ---------------- |
+| 1 | M1 Host-Agnostizismus | räsoniert | revidieren, um den Host-Konventionen zu entsprechen |
+| 2 | M2 redaktionelle Offenlegung | räsoniert | Offenlegungs-Ledger hinzufügen |
+| 3 | M3 zehn Dimensionen | gemischt (mechanisch + räsoniert) | auf der versagenden Dimension revidieren |
+| 4 | M4 Selbstanwendung | mechanisch (Release-Nachweis vorhanden) | Release-Nachweis aufzeichnen |
+| 5 | M5 Autorität | mechanisch (`<USER-CONFIRM:…>`-Platzhalter-Grep) | zur Rückfrageoberfläche umleiten |
+| 6 | M6 Expertise | räsoniert (Abschnitt aufgedeckter Lücken vorhanden) | Lücken aufdecken; zitieren |
+| 7 | M7 Optionsannotation | mechanisch (Optionssatz trägt Empfehlungsmarkierung) | annotieren |
+| 8 | M8 Bestimmtheit | mechanisch (Grep für ausweichendes Vokabular) | das Ausweichen zu Konditionalen heben |
+| 9 | M9 visuelle Hebelwirkung | räsoniert (Diagramm vorhanden, wo strukturell) | Diagramm erstellen / aktualisieren |
+| 10 | M10 bidirektionale Bindung | mechanisch (Binding-Reziprozitäts-Grep) | Halb-Kanten schließen |
+| 11 | M11 agile Sprints | räsoniert (Sprint-Apparat instanziiert) | als Sprints umstrukturieren |
+| 12 | M12 Phasenbericht und Layout | mechanisch (Waisen-Output-Grep) + räsoniert | Zusammenfassung erstellen; umlagern |
+| 13 | M13 Code-Handwerk | mechanisch (Lint / Formatierung / Typprüfung; Grep für bare-except, Magic-Number, auskommentierten Code) | revidieren |
+| 14 | M14 Systematizität | räsoniert (deklariert vorgelagert / nachgelagert / Peers / Durchsetzer) | deklarieren; indexieren |
+| 15 | M15 produktionsreif | mechanisch (production-ready-pr-Grep) + räsoniert | Tests / Dokumentation / CHANGELOG hinzufügen |
+
+## 1. Release-Nachweis-Schema
+
+Jeder Gate-Lauf zeichnet das Ergebnis in der Arbeitsspur des Artefakts auf (ein verborgener Kommentar, ein Metadatenblock, eine separate Emissions-Log-Datei — was auch immer die Host-Konventionen erlauben):
+
+```yaml
+conformity-attestation:
+  artifact: <path-or-identifier>
+  ecosystem-version: <git-commit-sha-or-equivalent ratifying the rule set in force>
+  bars:
+    M1-host-agnosticism:        pass | n/a (with reason)
+    M2-editorial-disclosure:    pass | n/a
+    M3-ten-dimensions:          pass | n/a
+    M4-self-application:        pass
+    M5-authority:               pass
+    M6-expertise:               pass | n/a
+    M7-option-annotation:       pass | n/a (no option set)
+    M8-definitiveness:          pass
+    M9-visual-leverage:         pass | n/a (subject not structural)
+    M10-bidirectional-binding:  pass
+    M11-agile-sprints:          pass | n/a (trivial work)
+    M12-phase-layout:           pass | n/a
+    M13-code-craft:             pass | n/a (not code)
+    M14-systemicity:            pass
+    M15-production-ready:       pass | n/a (no host-public-surface change)
+  surfaced-gaps: []
+  unresolved-inquiries: []
+  amendments-disclosed: []
+  date: <ISO-8601>
+```
+
+`n/a`-Markierungen sind explizit und begründet — niemals stille Auslassungen. Das Feld `ecosystem-version` verankert den Release-Nachweis an einem reproduzierbaren Zustand des Ökosystems im Benutzerbereich (der aktive Git-Commit des Apothem-Quellbaums beim Gate-Lauf — z. B. der `~/.claude/`-Checkout für den Claude Code Adapter), sodass künftige Audits das Gate gegen dieselben Regelkörper erneut abspielen können.

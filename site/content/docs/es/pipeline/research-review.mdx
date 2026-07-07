@@ -1,0 +1,70 @@
+---
+title: "/research-review"
+description: "/research-review — Crítica adversarial de nivel de revisión por pares del artículo: una tarjeta de puntuación del revisor de siete ejes (novedad, rigor, reproducibilidad, claridad, ética, revisión estadística, conformidad con las directrices de presentación de informes) más una lista de revisiones obligatorias clasificada por gravedad."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rol:** Investigador principal (revisión por pares)
+**Posición en la canalización:** mitad de la cadena
+
+Somete el artículo a una crítica adversarial de nivel de revisión por pares frente a los estándares del lugar de publicación: novedad, rigor, reproducibilidad, claridad, ética, revisión estadística y conformidad con las directrices de presentación de informes. Emite una tarjeta de puntuación del revisor de **siete ejes** más una lista de revisiones obligatorias clasificada por gravedad, con una justificación de motor concreto por hallazgo. Refutación por defecto.
+
+## Invocación canónica
+
+```bash
+/research-review
+```
+
+Con argumentos:
+
+```bash
+/research-review [path/to/research-suite/]
+```
+
+## Entradas
+
+El entregable del artículo en la ubicación natural del host que registró la etapa del artículo.
+
+## Salidas
+
+`_outputs/review-report.md` — la tarjeta de puntuación del revisor de **siete ejes** (novedad · rigor · reproducibilidad · claridad · ética · revisión estadística · conformidad con las directrices de presentación de informes), la lista de revisiones obligatorias clasificada por gravedad (HIGH / MEDIUM / LOW) con una justificación de motor concreto por hallazgo, el paquete de reproducibilidad y el veredicto de reejecución, la auditoría de integridad de citas, y el veredicto general `accept · minor-revision · major-revision · reject`.
+
+## Aguas abajo
+
+/research-publish (consumidor aguas abajo). Un veredicto de `major-revision` o `reject` activa el bucle de revisión de vuelta a `/research-paper` para atender las revisiones obligatorias antes de la nueva revisión.
+
+## Fases del flujo de trabajo
+
+El comando sigue el flujo de trabajo estándar de la canalización `/research`:
+
+1. **Cargar el contexto** — Leer el entregable del artículo.
+2. **Verificar la Compuerta de secuencia** — Confirmar que el artículo existe; de lo contrario, detenerse con `Blocked: run /research-paper first`.
+3. **Revisar adversarialmente** — Puntuar los siete ejes (novedad · rigor · reproducibilidad · claridad · ética · revisión estadística · conformidad con las directrices de presentación de informes); ejecutar la reejecución de reproducibilidad y la auditoría de integridad de citas; refutación por defecto; localizar defectos concretos con evidencia.
+4. **Clasificar las revisiones** — Ordenar las revisiones obligatorias HIGH / MEDIUM / LOW con una justificación de motor concreto.
+5. **Actualizar el manifiesto de traspaso** — Registrar el informe de revisión y el veredicto de la tarjeta de puntuación.
+6. **Emitir la revisión** — `_outputs/review-report.md`.
+
+## Umbral de rigor
+
+La revisión puntúa las afirmaciones empíricas frente al listón de la compuerta de avance —replicación adecuada, significancia no paramétrica con un tamaño del efecto y rangos de diferencia crítica, y paridad de presupuesto entre los métodos comparados— y trata el veredicto como una compuerta de avance explícita: un artículo avanza solo cuando supera el listón del lugar de publicación de forma convincente y significativa, con la superación registrada. Bajo un lugar de publicación de doble ciego, el revisor también señala cualquier fuga de identidad como un defecto de anonimización.
+
+## Modos de fallo
+
+| Síntoma | Causa | Recuperación |
+|---------|-------|----------|
+| Blocked: run /research-paper first | No hay artículo | Ejecuta `/research-paper` para producir el manuscrito |
+| Puntuación caritativa | El revisor asumió el mejor caso | Refutación por defecto; puntúa según la evidencia presente |
+| Hallazgo sin justificación | Revisión afirmada, no justificada | Adjunta una justificación de motor concreto a cada hallazgo |
+
+## Ejemplos
+
+```bash
+# Revisa el artículo por pares y emite una tarjeta de puntuación del revisor
+/research-review path/to/research-suite/
+```
+
+## Referencias cruzadas
+
+- [Resumen de la canalización](/docs/pipeline)
+- [Referencia de comandos](/docs/reference/commands)

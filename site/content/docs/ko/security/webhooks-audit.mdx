@@ -1,0 +1,39 @@
+---
+title: "웹훅 감사"
+description: "Apothem 웹훅 감사 — 시크릿 순환, 범위 최소화, Scorecard Webhooks 검사 증거."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+OpenSSF Scorecard의 **Webhooks** 검사는 저장소 웹훅이 공유 시크릿을 사용해 전달 표면을 인증하는지 검증합니다 — 시크릿이 없으면 웹훅 URL을 알아낸 공격자가 이벤트를 재생하거나 위조할 수 있습니다.
+
+## Apothem의 웹훅 자세
+
+| 웹훅 표면 | 상태 | 시크릿 순환 주기 |
+|---|---|---|
+| **저장소 웹훅** | 저장소 수준에서 구성된 것이 없습니다. | 해당 없음 |
+| **조직 웹훅** | 조직 수준에서 구성된 것이 없습니다. | 해당 없음 |
+| **워크플로 이벤트** | GitHub 관리; Webhooks 검사 대상 아님. | 해당 없음 |
+
+Apothem은 현재 **외부 웹훅 표면을 0개** 운영합니다. 모든 이벤트 기반 통합은 GitHub 네이티브 워크플로(CI, Scorecard, CodeQL, pip-audit)를 사용하며, 이들은 Scorecard Webhooks 검사 대상이 아닙니다.
+
+## 향후 웹훅 거버넌스
+
+Apothem이 웹훅 표면을 늘릴 때(예: Discord / Matrix 릴리스 알림, 다운스트림 소비자 빌드 트리거), 운영자는 반드시 다음을 수행해야 합니다:
+
+1. **고엔트로피 시크릿을 생성합니다**(≥ 32바이트, 암호학적으로 무작위).
+2. **시크릿을 저장소의 암호화된 시크릿 표면에 저장합니다** — 소스에 절대 두지 않고, 워크플로 YAML에도 절대 두지 않습니다.
+3. **시크릿으로 웹훅을 구성합니다**. 그러면 GitHub가 매 전달마다 `X-Hub-Signature-256` 헤더에 서명합니다.
+4. **수신 엔드포인트에서 서명을 검증합니다**. 상수 시간 비교를 사용합니다.
+5. **시크릿을 순환합니다**. 12개월마다, 또는 침해가 의심되면 24시간 이내에.
+6. **이 감사 파일에 웹훅을 문서화합니다**. 그 목적, 수신 엔드포인트, 순환 날짜를 포함합니다.
+
+## 감사 주기
+
+이 파일은 모든 `/security-audit` 통과 시점과 모든 릴리스 엔지니어링 사전 전환 체크포인트에서 검토됩니다. 드리프트(예: 여기 항목 없이 도입된 웹훅 표면)는 HIGH 심각도 발견 사항입니다.
+
+## 참조
+
+- [OpenSSF Scorecard — Webhooks 검사](https://github.com/ossf/scorecard/blob/main/docs/checks.md#webhooks)
+- [GitHub — 웹훅 보안](https://docs.github.com/en/webhooks/using-webhooks/securing-your-webhooks)
+- [Apothem 보안 정책](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)

@@ -1,0 +1,83 @@
+---
+title: "Einen Harness hinzufügen"
+description: "Aktiviere einen Harness-Adapter, damit seine native Konfiguration aus dem gemeinsamen Profil materialisiert wird."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Ziel: einen weiteren Harness aktivieren, damit Apothem die native Konfiguration
+dieses Harness aus deinem gemeinsamen Profil materialisiert.
+
+## Voraussetzungen
+
+- Ein gemeinsames Profil unter `~/.config/apothem/profile.yaml` (erstelle eines
+  mit `apothem profile init`, falls es noch nicht existiert).
+- Die `apothem`-CLI in deinem `PATH`. Wenn du den eigenständigen Quellbaum
+  installiert hast, stelle jedem Befehl `PYTHONPATH="$HOME/.apothem/src"` voran
+  und führe `python -m apothem` anstelle von `apothem` aus — oder verwende
+  `npx @ahmed-g-gad/apothem`.
+
+## Schritte
+
+1. Liste die registrierten Harnesses auf und sieh nach, welche bereits
+   installiert sind:
+
+   ```bash
+   apothem harnesses list
+   ```
+
+   `apothem harnesses list` gibt jede unterstützte ID aus; derselbe Satz steht in
+   der [Harness-Liste](/docs/harnesses) und in der quellgenerierten
+   [Harness-Registry](/docs/reference/harness-registry). Wähle die ID für dein
+   Werkzeug, statt die Liste hier fest zu codieren — sie wächst, sobald Adapter
+   hinzugefügt werden.
+
+2. Untersuche den Ziel-Harness, um seinen Geltungsbereich und Ausgabepfad zu
+   bestätigen:
+
+   ```bash
+   apothem harnesses show cursor
+   ```
+
+   Eine Zeile `Scope: project` bedeutet, dass der Adapter in einen Projektbaum
+   materialisiert und `--project PATH` benötigt; `Scope: user` materialisiert in
+   ein Konfigurationsverzeichnis im Benutzer-Geltungsbereich und braucht kein
+   Projekt-Flag.
+
+3. Sieh dir die Installation in der Vorschau an, ohne Dateien zu schreiben:
+
+   ```bash
+   apothem install --harness cursor --dry-run
+   ```
+
+4. Installiere den Harness. Für einen Harness im Benutzer-Geltungsbereich:
+
+   ```bash
+   apothem install --harness claude-code
+   ```
+
+   Für einen Harness im Projekt-Geltungsbereich gib den Projektstamm an:
+
+   ```bash
+   apothem install --harness cursor --project /path/to/project
+   ```
+
+   Installiere jeden unterstützten Harness auf einmal mit `--harness all`
+   (Harnesses im Projekt-Geltungsbereich benötigen weiterhin `--project`; in
+   `exclude_harnesses` im Profil aufgeführte IDs werden übersprungen).
+
+## Verifizieren
+
+```bash
+apothem verify --harness cursor
+```
+
+Eine Zeile `✓ <harness-id> is verified` bestätigt, dass die verwalteten Ziele
+existieren und geparst werden. `apothem doctor` liefert die Gesamtsystemansicht
+über jedes Harness hinweg.
+
+## Verwandtes
+
+- [Das Profil bearbeiten](/docs/how-to/editing-the-profile), um zu ändern, was
+  der Adapter materialisiert, und führe anschließend `apothem update` erneut aus.
+- [Installieren](/docs/install) behandelt die Erstinstallation.

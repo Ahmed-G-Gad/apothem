@@ -1,0 +1,96 @@
+---
+title: "Registre des environnements"
+description: "Référence technique du registre des adaptateurs d'environnement intégrés d'Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Le registre des environnements est l'inventaire d'adaptateurs faisant office de source de
+vérité, utilisé par la CLI, la documentation, les tests de fixtures et la validation des
+ancres de convention. La source à l'exécution est `src/apothem/lib/harness_registry.py` ;
+chaque ligne ci-dessous est traçable jusqu'à ce registre, jusqu'au `capabilities.yml` de
+chaque adaptateur et jusqu'au `STANDARD-CONVENTION-PIN.md` de chaque adaptateur.
+
+## Matrice du registre
+
+| Environnement | Nom d'installation | Portée | Format | Cibles | MCP | Ancre de convention |
+| --- | --- | --- | --- | --- | --- | --- |
+| Antigravity | `antigravity` | user | markdown | `~/.gemini/GEMINI.md` ; `~/.gemini/antigravity-cli/plugins/apothem/` | discovery-pending | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
+| Claude Code | `claude-code` | user | json | `~/.claude/settings.json` ; `agents`, `rules`, `skills`, `statuslines`, `output-styles` natifs ; `~/.claude/.apothem/support/` | native | `src/apothem/harnesses/claude_code/STANDARD-CONVENTION-PIN.md` |
+| CodeBuddy | `codebuddy` | project | markdown | `<project>/.codebuddy/rules/apothem-rules.md` | native | `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` |
+| Codex | `codex` | user | markdown | `~/.codex/AGENTS.md` ; `hooks.json` ; `hooks/` ; `agents/*.toml` ; `~/.agents/skills/` ; `~/.config/apothem/` | discovery-pending | `src/apothem/harnesses/codex/STANDARD-CONVENTION-PIN.md` |
+| Cursor | `cursor` | project | mdc | `<project>/.cursor/rules/apothem-rules.mdc` | native | `src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md` |
+| Gemini CLI | `gemini-cli` | project | markdown | `<project>/GEMINI.md` ; `<project>/.gemini/{commands,skills,agents}/` | discovery-pending | `src/apothem/harnesses/gemini_cli/STANDARD-CONVENTION-PIN.md` |
+| GitHub Copilot | `github-copilot` | project | markdown | `<project>/.github/copilot-instructions.md` | unsupported | `src/apothem/harnesses/github_copilot/STANDARD-CONVENTION-PIN.md` |
+| GLM (Z.ai) | `glm` | project | toml | `<project>/.apothem/providers/glm.toml` | unsupported | `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md` |
+| Hermes | `hermes` | user | yaml | `~/.hermes/config.yaml` ; `~/.hermes/.apothem/support/` | unsupported | `src/apothem/harnesses/hermes/STANDARD-CONVENTION-PIN.md` |
+| Kimi Code | `kimi-code` | project | markdown | `<project>/.kimi-code/.apothem/support/` ; `<project>/AGENTS.md` | discovery-pending | `src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md` |
+| Kiro | `kiro` | project | markdown | `<project>/.kiro/steering/apothem-rules.md` | native | `src/apothem/harnesses/kiro/STANDARD-CONVENTION-PIN.md` |
+| Open-Claw | `open-claw` | user | json | `~/.openclaw/openclaw.json` ; `~/.openclaw/.apothem/support/` | unsupported | `src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md` |
+| OpenCode | `opencode` | user | json | `~/.config/opencode/opencode.json` ; `commands`, `skills`, `agents` natifs ; `.apothem/support/` | native | `src/apothem/harnesses/opencode/STANDARD-CONVENTION-PIN.md` |
+| Qwen Code | `qwen-code` | user | json | `~/.qwen/settings.json` ; `~/.qwen/QWEN.md` ; `commands`, `skills`, `agents` natifs ; `.apothem/support/` | native | `src/apothem/harnesses/qwen_code/STANDARD-CONVENTION-PIN.md` |
+| Trae | `trae` | project | markdown | `<project>/.trae/rules/apothem-rules.md` | native | `src/apothem/harnesses/trae/STANDARD-CONVENTION-PIN.md` |
+| Windsurf | `windsurf` | project | markdown | `<project>/.devin/rules/apothem-rules.md` | unsupported | `src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md` |
+| Zed | `zed` | project | markdown | `<project>/.rules` | native | `src/apothem/harnesses/zed/STANDARD-CONVENTION-PIN.md` |
+
+## Prise en charge des cohortes de charge utile
+
+Les valeurs d'état sont `native`, `converted`, `support-tree`,
+`profile-projected`, `unsupported`, `not-applicable` et
+`discovery-pending`.
+
+| Environnement | Charges utiles natives ou converties | Charges utiles en arborescence de support | Avertissements non pris en charge ou en attente |
+| --- | --- | --- | --- |
+| Antigravity | commandes et travailleurs délégués convertis ; compétences, répartition de sous-travailleurs et modèles de prompt système natifs ; restrictions d'outils projetées depuis le profil | hooks, règles, modèles | barres d'état, styles de sortie ; découverte de MCP et de mémoire en attente |
+| Claude Code | commandes converties ; compétences, hooks, travailleurs délégués, règles, barres d'état, styles de sortie, MCP, répartition de sous-travailleurs, restrictions d'outils et mémoire natifs | modèles | `CLAUDE.md` reste détenu par l'opérateur ; aucun modèle de prompt système écrit par l'adaptateur |
+| CodeBuddy | règles, MCP, modèles de prompt système et mémoire natifs ; restrictions d'outils projetées depuis le profil | aucune | commandes, compétences, hooks, travailleurs délégués, barres d'état, styles de sortie, répartition de sous-travailleurs |
+| Codex | commandes et travailleurs délégués convertis ; compétences, hooks, répartition de sous-travailleurs, modèles de prompt système et mémoire natifs ; restrictions d'outils projetées depuis le profil | règles, modèles | barres d'état, styles de sortie ; découverte de MCP en attente car Apothem n'écrase pas `config.toml` |
+| Cursor | règles, MCP et modèles de prompt système natifs ; restrictions d'outils projetées depuis le profil | aucune | commandes, compétences, hooks, travailleurs délégués, barres d'état, styles de sortie, répartition de sous-travailleurs, mémoire |
+| Gemini CLI | commandes et travailleurs délégués convertis ; compétences, répartition de sous-travailleurs et modèles de prompt système natifs ; restrictions d'outils projetées depuis le profil | hooks, règles, modèles | barres d'état, styles de sortie ; découverte de MCP et de mémoire en attente |
+| GitHub Copilot | règles et modèles de prompt système natifs ; restrictions d'outils projetées depuis le profil | aucune | commandes, compétences, hooks, travailleurs délégués, barres d'état, styles de sortie, MCP, répartition de sous-travailleurs, mémoire |
+| GLM (Z.ai) | aucune | aucune | commandes, compétences, hooks, travailleurs délégués, règles, modèles, barres d'état, styles de sortie, MCP, répartition de sous-travailleurs, restrictions d'outils, modèles de prompt système, mémoire — GLM est un backend de modèle sans surface de configuration native |
+| Hermes | commandes converties ; modèles de prompt système natifs ; restrictions d'outils projetées depuis le profil | compétences, hooks, travailleurs délégués, règles, modèles | barres d'état, styles de sortie, MCP, répartition de sous-travailleurs |
+| Kimi Code | répartition de sous-travailleurs, modèles de prompt système et mémoire natifs | commandes, compétences, hooks, travailleurs délégués, règles, modèles | barres d'état, styles de sortie ; découverte de MCP et de restrictions d'outils en attente |
+| Kiro | règles, MCP, modèles de prompt système et mémoire natifs ; restrictions d'outils projetées depuis le profil | aucune | commandes, compétences, hooks, travailleurs délégués, barres d'état, styles de sortie, répartition de sous-travailleurs |
+| Open-Claw | commandes converties ; modèles de prompt système natifs ; restrictions d'outils projetées depuis le profil | compétences, hooks, travailleurs délégués, règles, modèles | barres d'état, styles de sortie, MCP, répartition de sous-travailleurs |
+| OpenCode | commandes et travailleurs délégués convertis ; compétences, MCP, répartition de sous-travailleurs et modèles de prompt système natifs ; restrictions d'outils projetées depuis le profil | hooks, règles, modèles | barres d'état, styles de sortie |
+| Qwen Code | commandes et travailleurs délégués convertis ; compétences, hooks, MCP, répartition de sous-travailleurs, modèles de prompt système et mémoire natifs ; restrictions d'outils projetées depuis le profil | règles, modèles | barres d'état, styles de sortie |
+| Trae | règles, MCP et modèles de prompt système natifs ; restrictions d'outils projetées depuis le profil | aucune | commandes, compétences, hooks, travailleurs délégués, barres d'état, styles de sortie, répartition de sous-travailleurs, mémoire |
+| Windsurf | règles et modèles de prompt système natifs ; restrictions d'outils projetées depuis le profil | aucune | commandes, compétences, hooks, travailleurs délégués, barres d'état, styles de sortie, MCP, répartition de sous-travailleurs, mémoire |
+| Zed | règles, MCP et modèles de prompt système natifs ; restrictions d'outils projetées depuis le profil | aucune | commandes, compétences, hooks, travailleurs délégués, barres d'état, styles de sortie, répartition de sous-travailleurs, mémoire |
+
+## Hooks de validation
+
+Le registre reste synchronisé grâce à ces vérifications :
+
+| Vérification | Objectif |
+| --- | --- |
+| `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | Confirme que chaque adaptateur possède une ancre de convention à jour et que le registre énumère toujours dix-sept adaptateurs. |
+| `python -m apothem.conformity.gate --all .` | Exécute les vérifications de conformité de la documentation et de l'implémentation. |
+| `python -m pytest` | Exécute les tests de fixtures du registre et les tests de contrat des adaptateurs. |
+
+## Référence générée des adaptateurs d'environnement
+
+{/* apothem:generated-reference:start */}
+
+| Harness | Scope | Format | Target paths |
+| --- | --- | --- | --- |
+| Antigravity (`antigravity`) | user | markdown | `~/.gemini/GEMINI.md`<br />`~/.gemini/antigravity-cli/plugins/apothem/` |
+| Claude Code (`claude-code`) | user | json | `~/.claude/.apothem/support/{templates,hooks,conformity,schemas}/`<br />`~/.claude/settings.json`<br />`~/.claude/{agents,rules,skills,statuslines,output-styles}/` |
+| CodeBuddy (`codebuddy`) | project | markdown | `<project>/.codebuddy/rules/apothem-rules.md` |
+| Codex (`codex`) | user | markdown | `~/.agents/skills/`<br />`~/.codex/AGENTS.md`<br />`~/.codex/agents/*.toml`<br />`~/.codex/hooks.json`<br />`~/.codex/hooks/`<br />`~/.config/apothem/{rules,templates}/` |
+| Cursor (`cursor`) | project | mdc | `<project>/.cursor/rules/apothem-rules.mdc` |
+| Gemini CLI (`gemini-cli`) | project | markdown | `<project>/.gemini/.apothem/support/`<br />`<project>/.gemini/{commands,skills,agents}/`<br />`<project>/GEMINI.md` |
+| GitHub Copilot (`github-copilot`) | project | markdown | `<project>/.github/copilot-instructions.md` |
+| GLM (Z.ai) (`glm`) | project | toml | `<project>/.apothem/providers/glm.toml` |
+| Hermes (`hermes`) | user | yaml | `~/.hermes/.apothem/support/`<br />`~/.hermes/config.yaml` |
+| Kimi Code (`kimi-code`) | project | markdown | `<project>/.kimi-code/.apothem/support/`<br />`<project>/AGENTS.md` |
+| Kiro (`kiro`) | project | markdown | `<project>/.kiro/steering/apothem-rules.md` |
+| Open-Claw (`open-claw`) | user | json | `~/.openclaw/.apothem/support/`<br />`~/.openclaw/openclaw.json` |
+| OpenCode (`opencode`) | user | json | `~/.config/opencode/.apothem/support/`<br />`~/.config/opencode/opencode.json`<br />`~/.config/opencode/{commands,skills,agents}/` |
+| Qwen Code (`qwen-code`) | user | json | `~/.qwen/.apothem/support/`<br />`~/.qwen/QWEN.md`<br />`~/.qwen/settings.json`<br />`~/.qwen/{commands,skills,agents}/` |
+| Trae (`trae`) | project | markdown | `<project>/.trae/rules/apothem-rules.md` |
+| Windsurf (`windsurf`) | project | markdown | `<project>/.devin/rules/apothem-rules.md` |
+| Zed (`zed`) | project | markdown | `<project>/.rules` |
+
+{/* apothem:generated-reference:end */}

@@ -1,0 +1,25 @@
+---
+title: "Referencia"
+description: "Registro navegable de clases de artefacto con rutas y disposiciones en disco para reglas, comandos, skills, trabajadores delegados, hooks, servidores MCP, ajustes y estilos de salida."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Referencia por clase de artefacto. Cada página describe el propósito de la clase, su disposición en disco, el contrato de frontmatter y el registro que lista cada instancia.
+
+Abajo se muestran rutas relativas al repositorio; cada adaptador las materializa en su directorio de configuración nativo (p. ej. `~/.claude/` para el adaptador de Claude Code; consulta [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses) para los destinos de cada harness).
+
+| Clase | Página | Ruta de origen relativa al repositorio |
+|-------|------|--------------|
+| `CLAUDE.md` | [CLAUDE.md](/docs/reference/claude-md) | `CLAUDE.md` |
+| Reglas | [Reglas](/docs/reference/rules) | `src/apothem/rules/` |
+| Comandos | [Comandos](/docs/reference/commands) | `src/apothem/commands/` |
+| Skills | [Skills](/docs/reference/skills) | `src/apothem/skills/` |
+| Trabajadores delegados | [página de referencia](/docs/reference/agents) | ver el bloque canonical-paths |
+| Hooks | [Hooks](/docs/reference/hooks) | `src/apothem/hooks/` |
+| Servidores MCP | [Servidores MCP](/docs/reference/mcp) | perfil compartido — `mcp_servers` |
+| Ajustes | [Ajustes](/docs/reference/settings) | `src/apothem/harnesses/claude_code/templates/settings.json` |
+| Estilos de salida | [Estilos de salida](/docs/reference/output-styles) | `src/apothem/output-styles/` |
+| Registro de harness | [Registro de harness](/docs/reference/harness-registry) | `src/apothem/lib/harness_registry.py` |
+
+El registro canónico completo vive en las cohortes de artefactos (`rules/`, `commands/`, `skills/`, `agents/`, `hooks/`). Esta página refleja ese registro en una forma navegable.

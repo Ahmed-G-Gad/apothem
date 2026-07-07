@@ -1,0 +1,71 @@
+---
+title: "uninstall"
+description: "apothem uninstall 命令的 CLI 参考。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+移除某个harness适配器配置。
+
+## 概要
+
+```
+apothem uninstall --harness NAME|all [--yes] [--project PATH]
+                   [--quiet|-q] [--verbose|-v]
+                   [--format plain|json] [--json] [--no-color]
+```
+
+移除适配器所管理的harness目标。除非提供 `--yes`，否则会提示确认。如果所选harness未安装，该命令会成功（退出码 0）并给出“nothing to remove”提示。
+
+连续式别名 `apothem uninstalling` 解析到同一处理程序。
+
+## 选项
+
+| 选项 | 描述 |
+|---|---|
+| `--harness NAME` | 要移除的harness适配器，或用 `all` 表示注册表范围的集合（必填）。 |
+| `--yes` | 跳过确认提示。 |
+| `--project PATH` | 项目范围harness的项目根目录。 |
+| `--quiet`, `-q` | 抑制信息性输出；仅发出错误。 |
+| `--verbose`, `-v` | 发出额外的诊断输出。 |
+| `--format plain\|json` | 输出格式（默认：`plain`）。 |
+| `--json` | `--format json` 的简写。 |
+| `--no-color` | 在输出中禁用 ANSI 颜色码。 |
+| `-h`, `--help` | 显示帮助并退出。 |
+
+## JSON 输出
+
+当适配器已安装并成功移除时：
+
+```json
+{"action": "uninstalled", "harness": "claude-code", "output_path": "..."}
+```
+
+当适配器未安装时：
+
+```json
+{"status": "not_installed", "harness": "claude-code"}
+```
+
+## 示例
+
+```bash
+apothem uninstall --harness claude-code
+apothem uninstall --harness claude-code --yes
+apothem uninstall --harness cursor --project . --yes
+apothem uninstall --harness all --project . --yes
+apothem Uninstalling --harness cursor --project . --yes   # continuous-form alias
+```
+
+## 退出码
+
+| 码 | 含义 |
+|---|---|
+| 0 | 适配器已卸载，或本就未安装 |
+| 1 | 未找到harness，或用户中止了确认提示 |
+
+## 另请参阅
+
+- `apothem uninstalling` — 此命令的连续式别名（此处有文档说明；CLI 接受两种形式）
+- [apothem install](/docs/cli-reference/install) — 安装某个harness配置
+- [apothem verify](/docs/cli-reference/verify) — 确认安装状态

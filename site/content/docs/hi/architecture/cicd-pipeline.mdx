@@ -1,0 +1,104 @@
+---
+title: "CI/CD पाइपलाइन आरेख"
+description: "बिल्ड, टेस्ट, lint, सुरक्षा और प्रकाशन वर्कफ़्लो चरणों का दृश्य मानचित्र और लेन-विभाजन, जो हर कोड परिवर्तन और रिलीज़ को गेट करते हैं।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**बिल्ड · सत्यापन · प्रकाशन वर्कफ़्लो का संरचनात्मक मानचित्र, जो Apothem
+पारिस्थितिकी-तंत्र के हर परिवर्तन को गेट करता है।** यह दस्तावेज़ दृश्यांकन सतह
+संस्थापित करता है; ठोस GitHub Actions वर्कफ़्लो फ़ाइलें और रिलीज़ उपकरण बाद में
+उत्पादन-तत्परता संस्थापन के अंतर्गत उतरते हैं।
+
+## पाइपलाइन का आकार
+
+```mermaid
+%%{ init: { "theme": "neutral" } }%%
+%% verified: 2026-04-27 %%
+%% provenance: pyproject.toml + scripts/dev/validate_ecosystem.py + scripts/dev/validate_hooks.py %%
+%% cross-reference: site/content/docs/developer-guide.mdx (contributor workflow) %%
+flowchart LR
+    accTitle: CI/CD pipeline shape
+    accDescr: Left-to-right flowchart of the apothem CI CD pipeline showing build, test, lint, type-check, security scan, docs build, package, sign, and publish stages with branch protection gates between them.
+    subgraph Trigger["Trigger surface"]
+        PR["Pull request opened or updated"]
+        PUSH["Push to main"]
+        TAG["Tag release vX.Y.Z"]
+    end
+    subgraph Static["Static analysis lane"]
+        LINT["Ruff lint + format check"]
+        TYPE["Mypy strict"]
+        MD["markdownlint"]
+        FRONT["Frontmatter validator"]
+    end
+    subgraph Test["Test lane"]
+        PYTEST["pytest tests/hooks"]
+        ECO["validate_ecosystem.py"]
+        CHAOS["chaos_pass.py (release lane)"]
+        BENCH["src/apothem/benchmarks/ (release lane)"]
+    end
+    subgraph Security["Security lane"]
+        SECRETS["Secret scan"]
+        SBOM["SBOM generation"]
+        LICENSE["License audit"]
+    end
+    subgraph Publish["Publish lane (tags only)"]
+        SIGN["Signed-tag verification"]
+        ATTEST["Provenance attestation"]
+        DOCS["Project website publish"]
+        RELEASE["Release notes from CHANGELOG.md"]
+    end
+    PR --> Static
+    PR --> Test
+    PR --> Security
+    PUSH --> Static
+    PUSH --> Test
+    PUSH --> Security
+    TAG --> Static
+    TAG --> Test
+    TAG --> Security
+    TAG --> Publish
+    Static --> GATE{All lanes green?}
+    Test --> GATE
+    Security --> GATE
+    GATE -->|yes| MERGE[Merge / publish]
+    GATE -->|no| BLOCK[Block · surface failures · request fix]
+    Publish --> MERGE
+```
+
+## लेन की भूमिकाएँ
+
+- **स्थैतिक विश्लेषण लेन** — त्वरित प्रतिक्रिया। Ruff Python शैली और एक संक्षेपित
+  नियम-समुच्चय को कवर करता है; mypy strict पर प्रकार-अनुशासन लागू करता है;
+  markdownlint दस्तावेज़ीकरण सतह की निगरानी करता है; frontmatter सत्यापक नियमों,
+  स्किल्स, प्रत्यायोजित कर्मियों और कमांडों के लिए आर्टिफ़ैक्ट-स्कीमा अनुपालन को
+  गेट करता है।
+- **टेस्ट लेन** — `pytest tests/hooks` hook रनटाइम को पूर्ण इवेंट-मैट्रिक्स के
+  विरुद्ध चलाता है; `validate_ecosystem.py` आर्टिफ़ैक्ट-अंतर संगति के लिए प्राथमिक
+  संरचनात्मक गेट है; `chaos_pass.py` और `src/apothem/benchmarks/` के अंतर्गत
+  प्रति-वर्ग बेंचमार्क सुइट क्षीण इनपुट के अंतर्गत अवनति और रनटाइम-बजट प्रतिगमन को
+  पकड़ने हेतु रिलीज़ लेन पर सक्रिय होते हैं।
+- **सुरक्षा लेन** — सीक्रेट स्कैन आकस्मिक रूप से कमिट किए गए प्रमाण-पत्रों को
+  पकड़ता है; SBOM निर्माण और लाइसेंस ऑडिट किसी भी उत्पादन-तत्परता संस्थापन के लिए
+  आपूर्ति-शृंखला सतह को गेट करते हैं।
+- **प्रकाशन लेन** — केवल टैग किए गए रिलीज़ों पर चलती है। हस्ताक्षरित-टैग सत्यापन
+  रिलीज़-शाखा के उद्गम की पुष्टि करता है; परियोजना की वेबसाइट `site/dist/` से
+  GitHub Pages लक्ष्य पर प्रकाशित होती है; रिलीज़ नोट्स `CHANGELOG.md` के
+  Keep-A-Changelog प्रारूप से व्युत्पन्न होते हैं।
+
+## ठोस विन्यास
+
+वास्तविक वर्कफ़्लो फ़ाइलें (`.github/workflows/ci.yml`,
+`.github/workflows/release.yml`, आदि) उत्पादन-तत्परता पारिस्थितिकी-तंत्र के
+निर्माण के दौरान संस्थापित होती हैं। यह आरेख वह विहित आकार परिभाषित करता है जिसे
+हर भविष्य का विन्यास प्रतिबिंबित करता है।
+
+## आधिकारिक प्रति-संदर्भ
+
+- `pyproject.toml` — Ruff / mypy / pytest विन्यास का सत्य-स्रोत।
+- `scripts/dev/validate_ecosystem.py` — प्राथमिक आर्टिफ़ैक्ट-अंतर गेट।
+- `scripts/dev/validate_hooks.py` — hook-विशिष्ट संरचनात्मक सत्यापन।
+- `scripts/dev/chaos_pass.py` — प्रत्येक विन्यस्त hook का प्रतिकूल स्वीप।
+- `src/apothem/benchmarks/` — प्रति-वर्ग रनटाइम-बजट सत्यापक।
+- `site/content/docs/developer-guide.mdx` — संचालक-मुखी योगदानकर्ता वर्कफ़्लो।
+- `CHANGELOG.md` — रिलीज़-नोट स्रोत।

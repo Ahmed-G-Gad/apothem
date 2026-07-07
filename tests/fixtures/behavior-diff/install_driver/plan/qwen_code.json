@@ -1,0 +1,37 @@
+[
+  {
+    "mode": "sentinel_merge",
+    "source": "<APOTHEM_SRC>/harnesses/qwen_code/templates/QWEN.md",
+    "target": "<ROOT>/QWEN.md"
+  },
+  {
+    "mode": "merge_tree_entries",
+    "source": "<APOTHEM_SRC>/skills",
+    "target": "<ROOT>/skills"
+  },
+  {
+    "mode": "markdown_commands",
+    "source": "<APOTHEM_SRC>/commands",
+    "target": "<ROOT>/commands"
+  },
+  {
+    "mode": "qwen_agents",
+    "source": "<APOTHEM_SRC>/agents",
+    "target": "<ROOT>/agents"
+  },
+  {
+    "mode": "merge_tree_entries",
+    "source": "<APOTHEM_SRC>/rules",
+    "target": "<ROOT>/.apothem/support/rules"
+  },
+  {
+    "mode": "merge_tree_entries",
+    "source": "<APOTHEM_SRC>/templates",
+    "target": "<ROOT>/.apothem/support/templates"
+  },
+  {
+    "mode": "merge_tree_entries",
+    "source": "<APOTHEM_SRC>/hooks",
+    "target": "<ROOT>/.apothem/support/hooks"
+  }
+]

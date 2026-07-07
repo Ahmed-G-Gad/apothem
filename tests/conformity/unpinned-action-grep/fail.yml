@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: MIT
+
+name: Sample workflow with floating-tag action refs
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@main
+      - uses: actions/cache@latest
+      - uses: docker/build-push-action@v5.1.0
+      - run: python -m build

@@ -1,0 +1,59 @@
+---
+title: "Audit review sequence"
+description: "The eleven-command audit sequence that checks Apothem before release."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+The audit review sequence is the eleven-command quality-assurance sweep
+that checks a project before release. Each command audits one quality area and
+emits findings that must be fixed or explicitly dispositioned.
+
+Two canonical orchestrators drive these eleven dimensions. `/audit` runs them
+in parallel as a single report-only pass — it surfaces a deduplicated,
+severity-triaged findings report and never edits source. `/fortress` is the
+closed remediation loop (detect → verify → remediate → re-audit → gate) that
+hardens a project to a release-gated state. Each dimension also stays
+individually invocable.
+
+## The eleven audit areas
+
+| Command | Axis | Standard |
+|---------|------|----------|
+| /code-review | Code quality | Per-file craft review |
+| /code-audit | Code corpus | Cross-file forensics |
+| /security-audit | Security | OWASP ASVS v4 + Top 10 |
+| /perf-audit | Performance | Core Web Vitals + USE method |
+| /architecture-review | Architecture | Design artifact conformance |
+| /ux-review | Dev experience | CLI ergonomics + onboarding |
+| /a11y-audit | Accessibility | WCAG 2.2 AA |
+| /docs-review | Documentation | Ten-dimension quality |
+| /dependency-audit | Dependencies | License + CVE + freshness |
+| /supply-chain-audit | Supply chain | SLSA + Sigstore + SBOM |
+| /threat-model-audit | Threat model | STRIDE + PASTA |
+
+## Release-readiness gates
+
+The sequence contributes to the release-readiness gates:
+
+- **Local gate:** Local conformity checks pass.
+- **GitHub gate** (pre-cutover): GitHub-side verification — CI workflows green on every
+  commit, every check.
+- **Audit gate:** Full review sequence complete — all eleven areas
+  audited, findings dispositioned, watch items documented.
+
+## Remediation loop
+
+The audit commands are report-only: they surface findings, never apply fixes.
+Remediation runs through `/fortress`, the closed loop that follows the
+iterate-until-green pattern — findings are triaged and verified, fixes are
+applied at each finding's owning surface, the audit is re-run, and the loop
+continues until the findings clear and the release gate passes. Whole-repo
+elevation to current best-practice runs through `/elevate`.
+
+## Why the sequence exists
+
+Software quality degrades across several dimensions at once. A single review
+can miss defects that sit between code quality, security, performance,
+architecture, accessibility, documentation, dependency posture, and supply
+chain posture. The audit sequence applies those lenses separately so the
+release gate sees the full risk profile.

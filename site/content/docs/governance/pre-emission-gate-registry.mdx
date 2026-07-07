@@ -1,0 +1,59 @@
+---
+title: "Pre-Emission Gate Registry — Mandatory Fifteen-Bar Check"
+description: "Mandatory fifteen-bar conformity check run before emission of meaningful scope, with failure-action mappings and release-proof schema."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Canonical registry of the fifteen-bar pre-emission gate.** This document carries the full fifteen-bar gate table and the release-proof schema YAML block; the substantive table and schema live here, operationalized by `src/apothem/rules/pre-emission-gate.md`.
+
+Before any artifact emission of meaningful scope (per the trivial-vs-non-trivial threshold at `site/content/docs/governance/outward-conformity-registry.mdx` §1), run the fifteen-bar pre-emission gate. Mechanise via PreToolUse hooks where possible (the mechanical greps at `src/apothem/conformity/*-grep.py` orchestrated by `src/apothem/conformity/gate.py`); reason through where mechanisation is impossible. **Failure of any single bar blocks emission; revise until every bar passes; emit with the gate release-proof recorded.**
+
+| # | Bar | Check kind | Failure → action |
+| - | --- | ---------- | ---------------- |
+| 1 | M1 host agnosticism | reasoned | revise to match host conventions |
+| 2 | M2 editorial disclosure | reasoned | add disclosure ledger |
+| 3 | M3 ten dimensions | mixed (mechanical + reasoned) | revise on failing dimension |
+| 4 | M4 self-application | mechanical (release-proof present) | record release-proof |
+| 5 | M5 authority | mechanical (`<USER-CONFIRM:…>` placeholder grep) | re-route to inquiry surface |
+| 6 | M6 expertise | reasoned (surfaced-gaps section present) | surface gaps; cite |
+| 7 | M7 option annotation | mechanical (option set carries recommended marker) | annotate |
+| 8 | M8 definitiveness | mechanical (hedging vocabulary grep) | promote hedging to conditionals |
+| 9 | M9 visual leverage | reasoned (diagram exists where structural) | author / refresh diagram |
+| 10 | M10 bidirectional binding | mechanical (binding-reciprocity grep) | close half-edges |
+| 11 | M11 agile sprints | reasoned (sprint apparatus instantiated) | restructure as sprints |
+| 12 | M12 phase reporting & layout | mechanical (orphan-output grep) + reasoned | author rollup; relocate |
+| 13 | M13 code craft | mechanical (lint / format / type-check; bare-except, magic-number, commented-out grep) | revise |
+| 14 | M14 systemicity | reasoned (declares upstream / downstream / peers / enforcers) | declare; index |
+| 15 | M15 production-ready | mechanical (production-ready-pr grep) + reasoned | add tests / docs / CHANGELOG |
+
+## 1. Release-Proof Schema
+
+Every gate run records the result in the artifact's working trace (a hidden comment, a metadata block, a separate emission-log file — whichever the host's conventions allow):
+
+```yaml
+conformity-attestation:
+  artifact: <path-or-identifier>
+  ecosystem-version: <git-commit-sha-or-equivalent ratifying the rule set in force>
+  bars:
+    M1-host-agnosticism:        pass | n/a (with reason)
+    M2-editorial-disclosure:    pass | n/a
+    M3-ten-dimensions:          pass | n/a
+    M4-self-application:        pass
+    M5-authority:               pass
+    M6-expertise:               pass | n/a
+    M7-option-annotation:       pass | n/a (no option set)
+    M8-definitiveness:          pass
+    M9-visual-leverage:         pass | n/a (subject not structural)
+    M10-bidirectional-binding:  pass
+    M11-agile-sprints:          pass | n/a (trivial work)
+    M12-phase-layout:           pass | n/a
+    M13-code-craft:             pass | n/a (not code)
+    M14-systemicity:            pass
+    M15-production-ready:       pass | n/a (no host-public-surface change)
+  surfaced-gaps: []
+  unresolved-inquiries: []
+  amendments-disclosed: []
+  date: <ISO-8601>
+```
+
+`n/a` markings are explicit and reasoned — never silent skips. The `ecosystem-version` field anchors the release proof to a reproducible state of the user-scope ecosystem (the active Apothem source-tree git commit when the gate ran — e.g. the `~/.claude/` checkout for the Claude Code adapter), so future audits can replay the gate against the same rule bodies.

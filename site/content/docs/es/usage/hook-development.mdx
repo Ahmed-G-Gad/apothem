@@ -1,0 +1,55 @@
+---
+title: "Desarrollo de hooks"
+description: "Crea y registra hooks en la canalización de hooks de Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Los hooks son comandos de shell que se disparan en eventos del harness. Ejecutan
+comprobaciones de conformidad, inyectan contexto y corren puertas de calidad sin
+intervención del operador.
+
+## Eventos de hook
+
+| Evento | Cuándo se dispara |
+|-------|--------------|
+| `PreToolUse` | Antes de cada llamada de herramienta |
+| `PostToolUse` | Después de cada llamada de herramienta |
+| `SessionStart` | En el arranque de la sesión |
+| `PreCompact` | Antes de la compactación del contexto |
+| `PostCompact` | Después de la compactación del contexto |
+| `Stop` | Al final de la sesión |
+
+## Archivos de mensaje de hook
+
+Cada hook tiene un archivo de mensaje correspondiente en
+`src/apothem/hooks/messages/<event>-<name>.md` que proporciona contexto al
+asistente en el momento en que el hook se dispara.
+
+## Registrar un hook
+
+Agrega el comando del hook a `settings.json`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python src/apothem/hooks/my-check.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## El despachador de hooks
+
+Todos los hooks se enrutan a través de `src/apothem/hooks/dispatch.py`, que
+convierte cualquier error de hook en un sobre fail-open para que los hooks nunca
+bloqueen el harness.

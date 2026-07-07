@@ -1,0 +1,54 @@
+---
+title: "ハーネスのセットアップ"
+description: "プラットフォーム向けのハーネスアダプターを追加・設定する。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## ハーネスアダプターをインストールする
+
+```bash
+apothem install --harness <name>
+```
+
+利用可能な名前については[サポート対象ハーネス一覧](/docs/harnesses)を参照してください。
+プロジェクトスコープのアダプターにはプロジェクトパスが必要です。
+
+```bash
+apothem install --harness cursor --project /path/to/project
+apothem install --harness gemini-cli --project /path/to/project
+apothem install --harness github-copilot --project /path/to/project
+apothem install --harness windsurf --project /path/to/project
+```
+
+## 複数のハーネスをインストールする
+
+サポートされているすべてのアダプターを対象にしたい場合は、レジストリ全体のセレクターを
+使用します。登録済みのセットにはプロジェクトスコープのアダプターが含まれるため、
+プロジェクトルートを渡してください。
+
+```bash
+apothem install --harness claude-code
+apothem install --harness cursor --project /path/to/project
+apothem install --harness all --project /path/to/project
+```
+
+## ハーネスのセットアップを検証する
+
+```bash
+apothem verify --harness <name>
+apothem verify --harness all --project /path/to/project
+```
+
+登録済みのすべてのアダプターを一度に確認するには、`apothem doctor` を実行します。
+ハーネスごとのインストール状況の表を出力し、いずれかのアダプターが未インストールを
+報告した場合は非ゼロで終了します。
+
+## インストール済みのハーネスを表示する
+
+```bash
+apothem harnesses list
+```
+
+アダプターごとの詳細（名前、インストール状態、出力パス）については
+`apothem harnesses show <name>` を渡してください。

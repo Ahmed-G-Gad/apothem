@@ -1,0 +1,168 @@
+---
+title: "settings.json-Dokumentation"
+description: "Konfigurieren Sie die Hook-Ausführung von Claude Code, Berechtigungen, Ereignisse, Timeouts, die Python-Laufzeit, Validierung und die geschichtete Einstellungspräzedenz für das Apothem-Ökosystem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Geltungsbereich.** Dieses Dokument beschreibt die Hook-Verdrahtungsdatei
+> (`settings.json`) des **Claude Code Adapters**. Andere harness
+> verwenden ihre eigenen nativen Einstellungsoberflächen — siehe
+> [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses) für den
+> äquivalenten Konfigurations-Einstiegspunkt jedes Adapters.
+
+## Überblick
+
+`settings.json` konfiguriert die Hook-Ausführung von Claude Code für das Apothem-Ökosystem.
+Sie deklariert, welche Hooks bei welchen Ereignissen auslösen, ihre Timeouts und die
+Berechtigungsoberfläche der obersten Ebene. Apothem liefert eine einzige kanonische Vorlage aus, weil Claude Code
+`~/.claude/settings.json` auf allen unterstützten Plattformen lädt.
+
+## Reine Python-Laufzeit
+
+Jeder konfigurierte Hook verwendet die exec-Befehlsform von Claude Code. Die
+ausgelieferte Vorlage trägt das Token `${HARNESS_ROOT}`:
+
+```json
+{
+  "type": "command",
+  "command": "python",
+  "args": ["${HARNESS_ROOT}/apothem/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
+}
+```
+
+`apothem install` rendert das Token zum absoluten Pfad der harness-Wurzel
+(Schrägstrich-Form, gültig unter Windows, macOS und Linux), sodass die installierte
+`settings.json` den unter `~/.claude/.apothem/support/hooks/dispatch.py` materialisierten
+Dispatcher direkt aufruft. Der Dispatcher und das
+Konformitätsgatter (`~/.claude/.apothem/support/conformity/gate.py`, mit seinen Schema-Fixtures
+daneben unter `~/.claude/.apothem/support/schemas/`) sind eigenständige Standardbibliotheks-Skripte
+— auf dem Host wird kein importierbares `apothem`-Paket benötigt, und eine einzige
+Vorlage bedient jede Plattform.
+
+## Hook-Konfigurationsschema
+
+### Berechtigungen
+
+```json
+"permissions": {
+  "allow": ["Read", "Glob", "Grep"]
+}
+```
+
+Werkzeuge, die nicht in `allow` stehen, erfordern eine explizite Genehmigung pro Aufruf oder eine Berechtigung auf Arbeitsbereichsebene.
+Nur-Lese-Werkzeuge sind vorab genehmigt; Schreiboperationen (`Write`, `Edit`, `NotebookEdit`,
+`Bash`) durchlaufen den `PreToolUse`-Validator.
+
+### Hook-Ereignisse
+
+> **Die Timeout-Werte spiegeln die kanonischen Hook-Ereignis-Budgets wider** — die Tabelle unten
+> reproduziert sie zur Bequemlichkeit des Lesers; die kanonische Quelle ist maßgeblich.
+
+| Ereignis | Auslöser | Timeout | Zweck | Mandat |
+| ----- | ------- | ------- | ------- | ------- |
+| **SessionStart** | Neue Claude Code Sitzung | 30 Sekunden | Kontext initialisieren, Speicher lesen, Planzustand prüfen | CM-14 |
+| **PreToolUse** | Vor Write/Edit/NotebookEdit/Bash | 10 Sekunden | CM-7-Konformität + Frontmatter validieren | CM-7, CM-22 |
+| **PreCompact** | Vor der Kontextkompaktierung | 30 Sekunden | Nicht externalisierten Zustand externalisieren | CM-24 §2.3 |
+| **PostCompact** | Nach der Kontextkompaktierung | 30 Sekunden | Aus dem externalisierten Zustand neu hochfahren | CM-24 §6.2 |
+| **Stop** | Sitzungsende | 60 Sekunden | Externalisierung am Sitzungsende | CM-14/CM-22/CM-24/CM-26 |
+
+`dispatch.py` akzeptiert zusätzlich `UserPromptSubmit` und `Notification` auf seiner
+Ereignis-Whitelist. Keines davon ist in den ausgelieferten Vorlagen verdrahtet; fügen Sie einen Matcher-Block mit demselben
+Lokalisierer- + Dispatch-Muster hinzu, um es zu aktivieren.
+
+### Felder der obersten Ebene
+
+| Feld | Zweck | Erforderlich |
+| ----- | ------- | -------- |
+| `permissions` | Objekt mit einem `allow`-Array, das vorab genehmigte Werkzeugnamen auflistet (standardmäßig Nur-Lese-Werkzeuge) | ja |
+| `hooks` | Karte von Ereignisname → Array von `{matcher, hooks[]}`-Blöcken; siehe **Hook-Ereignisse** unten | ja |
+| `model` | Vom Host auflösbarer Modellselektor. Ein Alias oder eine vollständige Kennung ist akzeptabel, wenn der Operator eine festlegt. | optional |
+| `defaultShell` | Standard-Shell für Aufrufe des `Bash`-Werkzeugs. Apothem setzt dies nicht in der gemeinsamen Vorlage. | optional |
+| `autoUpdatesChannel` | Aktualisierungskanal von Claude Code. Apothem setzt dies nicht in der gemeinsamen Vorlage. | optional |
+| `effortLevel` | Standard-Schlussfolgerungsaufwand (`low`, `medium`, `high`, `max`) | optional |
+
+## Validierung
+
+Drei Validatoren decken die Hook-Oberfläche mit zunehmender Strenge ab:
+
+```bash
+# Strukturell + Python-Hygiene (schnell, offline)
+python scripts/dev/validate_hooks.py
+
+# Vollständiges Ökosystem (Struktur + Frontmatter + delegierte Hook-Prüfungen)
+python scripts/dev/validate_ecosystem.py
+
+# Adversarialer Durchlauf (überflutet jeden konfigurierten Hook-Befehl mit degradierten Eingaben)
+python scripts/dev/chaos_pass.py
+```
+
+Alle drei müssen mit 0 beenden, bevor Hook- oder Einstellungsänderungen committet werden.
+
+Ad-hoc-Rauchtest eines einzelnen Ereignisses:
+
+```bash
+python src/apothem/hooks/dispatch.py --event-name SessionStart
+```
+
+Erwartete Ausgabe: ein einzeiliger JSON-Umschlag, der `hookSpecificOutput` enthält.
+
+## Häufige Probleme
+
+### SessionStart läuft in ein Timeout
+
+Am häufigsten entdeckt der `find-python`-Lokalisierer den Microsoft-Store-Shim und
+scheitert daran, einen echten Interpreter aufzulösen. Überprüfen Sie:
+
+```bash
+python src/apothem/hooks/dispatch.py --event-name SessionStart
+```
+
+Wenn der Befehl einen gültigen JSON-Umschlag ausgibt, das Claude Code Panel aber ein Timeout zeigt,
+erhöhen Sie das `timeout` des Ereignisses in `settings.json`. Wenn der Befehl auf Shell-Ebene fehlschlägt,
+installieren Sie ein echtes CPython 3.10+ und stellen Sie sicher, dass es im PATH steht oder vom Lokalisierer auffindbar ist.
+
+### Jedes Write/Edit wird blockiert
+
+`PreToolUse` markiert planinterne Begriffe in Inhalten, die außerhalb der harness-Installationswurzel geschrieben werden (`~/.claude/` für den Claude Code Adapter).
+Überprüfen Sie den Inhalt auf CM-7-Verstöße (siehe
+`src/apothem/rules/persistent-conventions-vigilance.md`). Nur Domänensprache für
+Codebasis-Artefakte.
+
+### settings.json wird nicht geladen
+
+Claude Code liest `~/.claude/settings.json`. Überprüfen Sie, ob Apothem in die
+erwartete harness-Wurzel installiert wurde, und starten Sie die Sitzung nach dem Ändern der Datei neu.
+
+### Hooks tun stillschweigend nichts
+
+Der Hook-Vertrag lautet „immer mit 0 beenden, immer gültiges JSON ausgeben". Wenn der Interpreter nicht
+lokalisiert werden kann, gibt der Lokalisierer leer zurück und der Befehl wird zur No-Op. Führen Sie `chaos_pass.py` aus,
+um zu bestätigen, dass jeder konfigurierte Hook einen gültigen Umschlag zurückgibt — es fängt degradierte Auflösungspfade
+ab, die eine Live-Sitzung verbergen würde.
+
+## Geschichtete Präzedenz
+
+Claude Code löst das effektive Einstellungsobjekt auf, indem es drei Schichten in
+aufsteigender Präzedenzordnung zusammensetzt:
+
+| Stufe | Speicherort | Committet? | Begründung |
+|------|----------|------------|-----------|
+| 1. **System** | In Claude Code selbst kompilierte harness-Standardwerte | n/v (herstellergesteuert) | Die Untergrenze; jeder Operator erbt dieselbe Basislinie. |
+| 2. **Projekt** | `<harness-root>/settings.json` | ✅ Committet | Projektgeteilte Konventionen: Hooks, Berechtigungen, MCP-Server, Statuszeilen-Verdrahtung. Die Apothem-Quellvorlage liegt im templates-Verzeichnis des Claude Code Adapters. |
+| 3. **Benutzerlokal** | `<harness-root>/settings.local.json` (gitignored) — als `settings.local.example.json` in der Repository-Wurzel vorlagiert | ❌ Gitignored | Operatorspezifische Überschreibungen: API-Token, maschinenlokale Pfade, Opt-in-Funktionen. |
+
+Werte höherer Stufe überschreiben Werte niedrigerer Stufe **auf Blattschlüssel-Ebene** — wenn
+sowohl die Projekt- als auch die Benutzerlokal-Schicht einen `permissions.allow`-Eintrag deklarieren, wird die
+Vereinigung gebildet; wenn beide einen Skalar wie `theme` deklarieren, gewinnt der benutzerlokale Wert. Die exakte
+Zusammenführungssemantik pro Schlüssel gehört dem Claude Code harness.
+
+### Eine benutzerlokale Überschreibung erstellen
+
+1. Kopieren Sie `settings.local.example.json` (Repository-Wurzel) nach `<harness-root>/settings.local.json`.
+   Der Dateiname `settings.local.json` entspricht dem `.gitignore`-Muster, sodass die Datei niemals
+   in der Versionskontrolle landet.
+2. Bearbeiten Sie die lokale Kopie — behalten Sie nur die zu überschreibenden Schlüssel; der harness setzt die Schichten zusammen,
+   sodass fehlende Schlüssel von der Projektschicht erben.
+3. Überprüfen Sie, ob die Datei als gültiges JSON geparst wird, bevor Sie speichern — der harness lehnt
+   fehlerhaftes JSON beim Sitzungsstart ab.

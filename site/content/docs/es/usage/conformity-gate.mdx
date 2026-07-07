@@ -1,0 +1,49 @@
+---
+title: "Puerta de conformidad"
+description: "Ejecuta la puerta de conformidad de Apothem para verificar la salud del ecosistema."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+La puerta de conformidad en `src/apothem/conformity/gate.py` ejecuta quince
+comprobaciones mecánicas contra cada artefacto que escribe el operador.
+
+## Ejecutar la puerta
+
+```bash
+python -m apothem.conformity.gate
+```
+
+## Barras de la puerta
+
+| Barra | Comprobación | Tipo |
+|-----|-------|------|
+| M1 | Alineación de alcance | Razonada |
+| M2 | Aislamiento interno del plan (CM-7) | Mecánica |
+| M3 | Cumplimiento de estándares | Razonada |
+| M4 | Validez del frontmatter | Mecánica |
+| M5 | Sin frases prohibidas | Mecánica |
+| M6 | Divulgación editorial | Razonada |
+| M7 | Sin referencias de plan en los artefactos | Mecánica |
+| M8 | Encabezado de autoría presente | Mecánica |
+| M9 | Evaluación honesta | Razonada |
+| M10 | Disciplina de nombrado | Mecánica |
+| M11 | Aparato de sprint | Razonada |
+| M12 | Disposición canónica | Mecánica |
+| M13 | Artesanía del código | Razonada |
+| M14 | Participación sistémica | Razonada |
+| M15 | Autoría humana | Mecánica |
+
+## Comprobaciones dirigidas
+
+```bash
+# Ejecutar una sola comprobación
+python -m apothem.conformity.gate --check multi-surface-coherence
+
+# Ejecutar contra un archivo específico
+python -m apothem.conformity.gate src/apothem/rules/my-rule.md
+```
+
+## Integración con CI
+
+La puerta se ejecuta en CI mediante `.github/workflows/conformity.yml` en cada push.

@@ -1,0 +1,95 @@
+---
+title: "Qwen Code"
+description: "محوّل أداة Apothem لـ Qwen Code (إصدار تجريبي)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**المورّد:** <bdi>Alibaba Cloud</bdi>
+**اسم التثبيت:** <bdi>`qwen-code`</bdi>
+**الحالة:** إصدار تجريبي
+**الإعداد الأصلي:** <bdi>`~/.qwen/`</bdi>
+
+## التثبيت
+
+```bash
+apothem install --harness qwen-code
+```
+
+يكتب المحوّل إعدادات <bdi>Qwen Code</bdi>، ويثبّت مرساة سياق <bdi>`QWEN.md`</bdi>،
+ويسجّل موزّعات الخطافات الخاصّة بـ<bdi>Apothem</bdi>، ويحوّل أوامر <bdi>Apothem</bdi>
+إلى ملفات أوامر <bdi>Qwen</bdi> بصيغة <bdi>Markdown</bdi>، ويثبّت المهارات بوصفها
+أدلّة <bdi>SKILL.md</bdi>، ويكيّف تعريفات المساعِدات بوصفها وكلاء فرعيّين لـ<bdi>Qwen</bdi>.
+
+**الملفات المكتوبة:**
+
+```text
+~/.qwen/settings.json
+~/.qwen/QWEN.md
+~/.qwen/commands/
+~/.qwen/skills/
+~/.qwen/agents/
+~/.qwen/.apothem/support/{rules,templates,hooks}/
+```
+
+## تعيين الملف التعريفي إلى الإعداد الأصلي
+
+يجسّد المحوّل مفاتيح <bdi>`settings.json`</bdi> المُوثَّقة للسياق والخطافات، ويكتب
+<bdi>`QWEN.md`</bdi>، وينسج أوامر <bdi>Apothem</bdi> ومهاراتها وتعريفات مساعِداتها عبر
+أدلّة الاكتشاف الأصلية لـ<bdi>Qwen Code</bdi>. وتبقى القواعد والقوالب ومادّة مصدر
+الخطافات مادّةَ دعم تحت <bdi>`~/.qwen/.apothem/support/`</bdi>.
+
+## ملاحظات التوافق
+
+<bdi>`~/.qwen/.apothem/support/`</bdi> هي مادّة دعم يشير إليها <bdi>`QWEN.md`</bdi> وأوامر
+الخطافات في الإعدادات؛ وهي ليست مساحة أسماء اكتشاف يملكها المورّد.
+
+## التحقّق
+
+```bash
+apothem verify --harness qwen-code
+```
+
+يؤكّد أمر التحقّق ما يلي:
+
+1. وجود الإعداد الأصلي في المسار المتوقَّع.
+2. وجود جميع الحقول الإلزامية من الملف التعريفي المشترك.
+3. إبلاغ روتين التحقّق الخاص بالمحوّل عن النجاح.
+
+## التحديث
+
+```bash
+apothem update --harness qwen-code
+```
+
+يحدّث <bdi>`settings.json`</bdi> و<bdi>`QWEN.md`</bdi> والأوامر الأصلية والمهارات
+والوكلاء الفرعيّين وشجرة دعم <bdi>Apothem</bdi>.
+
+## إلغاء التثبيت
+
+```bash
+apothem uninstall --harness qwen-code
+```
+
+يزيل ملفات الإعداد الأصلي التي كتبها المحوّل.
+لا يتأثّر ملفّ <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
+
+## بوّابة المطابقة
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## استكشاف الأخطاء وإصلاحها
+
+| العَرَض | الإصلاح |
+|---------|-----|
+| ملف الإعداد غير موجود | أعد تشغيل <bdi>`apothem install --harness qwen-code`</bdi> |
+| فشل التحقّق | شغّل <bdi>`apothem update --harness qwen-code`</bdi>، ثم تحقّق مجدّدًا |
+| محتوى إعداد غير متوقَّع | تحقّق من <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness qwen-code`</bdi> |
+
+## مفاتيح الضبط
+
+| العَلَم | الافتراضي | الوصف |
+|------|---------|-------------|
+| <bdi>`--dry-run`</bdi> | <bdi>`false`</bdi> | معاينة التثبيت دون كتابة ملفات. |

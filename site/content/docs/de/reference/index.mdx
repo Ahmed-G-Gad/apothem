@@ -1,0 +1,25 @@
+---
+title: "Referenz"
+description: "Navigierbares Register der Artefaktklassen mit Pfaden und Plattenlayouts für Regeln, Befehle, Skills, delegierte Worker, Hooks, MCP-Server, Einstellungen und Ausgabestile."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Referenz pro Artefaktklasse. Jede Seite beschreibt den Zweck der Klasse, ihr Plattenlayout, den Frontmatter-Vertrag und das Register, das jede Instanz auflistet.
+
+Unten werden repository-relative Pfade gezeigt; jeder Adapter materialisiert sie in sein natives Konfigurationsverzeichnis (z. B. `~/.claude/` für den Claude Code Adapter — siehe [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses) für die jeweiligen Harness-Ziele).
+
+| Klasse | Seite | Repository-relativer Quellpfad |
+|-------|------|--------------|
+| `CLAUDE.md` | [CLAUDE.md](/docs/reference/claude-md) | `CLAUDE.md` |
+| Regeln | [Regeln](/docs/reference/rules) | `src/apothem/rules/` |
+| Befehle | [Befehle](/docs/reference/commands) | `src/apothem/commands/` |
+| Skills | [Skills](/docs/reference/skills) | `src/apothem/skills/` |
+| Delegierte Worker | [Referenzseite](/docs/reference/agents) | siehe canonical-paths-Block |
+| Hooks | [Hooks](/docs/reference/hooks) | `src/apothem/hooks/` |
+| MCP-Server | [MCP-Server](/docs/reference/mcp) | gemeinsames Profil — `mcp_servers` |
+| Einstellungen | [Einstellungen](/docs/reference/settings) | `src/apothem/harnesses/claude_code/templates/settings.json` |
+| Ausgabestile | [Ausgabestile](/docs/reference/output-styles) | `src/apothem/output-styles/` |
+| Harness-Register | [Harness-Register](/docs/reference/harness-registry) | `src/apothem/lib/harness_registry.py` |
+
+Das vollständige kanonische Register erstreckt sich über die Artefaktkohorten (`rules/`, `commands/`, `skills/`, `agents/`, `hooks/`). Diese Seite spiegelt dieses Register in navigierbarer Form wider.

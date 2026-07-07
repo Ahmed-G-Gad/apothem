@@ -1,0 +1,113 @@
+---
+title: "Runbook zur Release-Wiederherstellung"
+description: "Wiederherstellungsverfahren zum Zurücksetzen des Repositorys, wenn eine Release-Sequenz mitten im Ablauf fehlschlägt, mit stufenweisen Diagnosen."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Dieses Runbook stellt `ahmed-g-gad/apothem` in einen funktionsfähigen Zustand
+zurück, wenn eine Release-Sequenz nach dem Prinzip „reiner Tisch an Ort und
+Stelle" mitten im Ablauf fehlschlägt. Das öffentliche Repository wird während
+des Releases weder gelöscht noch neu erstellt. Die Wiederherstellung hängt vom
+release-spezifischen Verlaufssicherungs-Tag, dem lokalen Klon des Maintainers und
+dem nachgelagerten Paketmanager-Zustand ab.
+
+## 1. Stufentaxonomie
+
+| Stufe | Aktion | Fehlermodus | Wiederherstellungspfad |
+|---|---|---|---|
+| 1 | Verlaufssicherungs-Tag erfassen und pushen | Das Tag fehlt, ist unsigniert oder zeigt auf den falschen Graphen | Das Tag aus dem Merge-Punkt vor dem Squash neu erstellen, bevor `main` verschoben wird |
+| 2 | CI, Audit-Festung, Paketzustand und Changelog verifizieren | Irgendein Gate schlägt fehl | Stoppen; lokal beheben; `main` nicht verschieben |
+| 3 | `main` auf den einzelnen signierten Release-Commit verschieben | Force-with-lease schlägt fehl, der Commit ist unsigniert oder die Commit-Nachricht ist falsch | Lokalen `main` auf den vorgesehenen signierten Commit zurücksetzen und mit einem frischen Lease erneut versuchen |
+| 4 | GitHub Release, Pages, npm und Metadaten veröffentlichen | Ein Publisher oder eine Verifizierungsfläche schlägt fehl | Den Release-Commit behalten; nur den fehlgeschlagenen Publisher nach Protokollierung des Fehlers erneut ausführen |
+
+Jede Wiederherstellungsaktion ist idempotent. Sie auf einem sauberen Zustand
+auszuführen ist ein No-op; sie auf einem partiellen Zustand auszuführen, stellt
+die erwartete Bedingung nach der Stufe wieder her.
+
+## 2. Wiederherstellung des Sicherungs-Tags
+
+Verifizieren Sie das Sicherungs-Tag vor jedem Umschreiben des Verlaufs:
+
+```bash
+git fetch origin --tags
+git show --summary --show-signature <history-safety-tag>
+git merge-base --is-ancestor origin/main <history-safety-tag>
+```
+
+Erwartet: Das Tag existiert, die Signaturverifizierung gelingt, wenn das Tag
+signiert ist, und der vollständige Graph vor dem Squash ist vom Tag aus
+erreichbar. Wenn das Tag lokal fehlt, aber remote vorhanden ist, holen Sie es.
+Wenn es remote fehlt, stoppen Sie das Release und erstellen Sie es neu, bevor Sie
+`main` berühren:
+
+```bash
+git tag -s <history-safety-tag> <pre-squash-commit>
+git push origin <history-safety-tag>
+```
+
+## 3. Wiederherstellung des Hauptbranches
+
+Diagnostizieren Sie den öffentlichen `main`-Zustand:
+
+```bash
+gh api repos/ahmed-g-gad/apothem/commits/main \
+  --jq '.sha, .commit.message, .commit.verification.verified, .commit.verification.reason'
+```
+
+Erwartet nach der Umstellung: Die Nachricht lautet exakt
+`release: Apothem <release-version>` und `verification.verified` ist `true`.
+
+Wenn der Force-with-lease-Push fehlschlug, bevor GitHub geändert wurde, lassen
+Sie das Remote unverändert, holen Sie es, bauen Sie den signierten
+Release-Commit lokal neu auf und versuchen Sie es erst erneut, nachdem das Lease
+übereinstimmt:
+
+```bash
+git fetch origin main
+git push --force-with-lease=main:<expected-remote-sha> origin main
+```
+
+Wenn der Push mit einem unsignierten oder nicht verifizierten Commit gelandet
+ist, korrigieren Sie die lokale Signierkonfiguration, erstellen Sie den
+Release-Commit aus demselben Baum neu und führen Sie erneut einen Force-Push mit
+einem Lease aus. Löschen Sie das Sicherungs-Tag nicht.
+
+## 4. Publisher-Wiederherstellung
+
+Jeder Publisher wird unabhängig erneut versucht, nachdem der GitHub-Release-Commit
+verifiziert ist:
+
+| Fläche | Diagnose | Wiederherstellung |
+|---|---|---|
+| GitHub Release | `gh release view <release-tag> --json tagName,isDraft,isPrerelease,assets` | Löschen Sie nur einen fehlerhaften Entwurf; laden Sie andernfalls fehlende Assets mit `gh release upload --clobber` hoch |
+| Release-Tag | `git ls-remote origin refs/tags/<release-tag>` und `git tag -v <release-tag>` | Taggen Sie erneut vom selben SHA mit `-a -s`, wenn das Tag fehlt oder unsigniert ist; verwenden Sie niemals einen Tag-Namen für einen anderen Commit wieder |
+| npm | `npm view @ahmed-g-gad/apothem version` und `npx @ahmed-g-gad/apothem@<version> --version` | Führen Sie `publish-npm.yml` für `<release-tag>` erneut aus, nachdem Sie npm Trusted Publishing für `@ahmed-g-gad/apothem` bestätigt haben |
+| Pages | `gh run list --workflow=publish-static-site.yml --limit=1` und `curl -sSI https://apothem.ahmedgad.com/` | Führen Sie `publish-static-site.yml` erneut aus; verifizieren Sie, dass der CNAME weiterhin auf `ahmed-g-gad.github.io` auflöst |
+| GitHub-Metadaten | `gh repo view ahmed-g-gad/apothem --json description,homepageUrl,repositoryTopics,visibility` | Patchen Sie Beschreibung, Homepage und Themen an Ort und Stelle; erstellen Sie das Repository nicht neu |
+
+## 5. Rollback
+
+Der Rollback ist das letzte Mittel. Bevorzugen Sie zuerst die gezielte
+Publisher-Wiederherstellung. Wenn der einzelne Release-Commit zurückgenommen
+werden muss, stellen Sie `main` aus dem Sicherungs-Tag wieder her:
+
+```bash
+git fetch origin --tags
+git switch main
+git reset --hard <history-safety-tag>
+git push --force-with-lease origin main
+```
+
+Führen Sie nach dem Rollback die CI erneut aus, wenden Sie den Branch-Schutz
+erneut an, wenn GitHub eine Abweichung meldet, und protokollieren Sie den
+Rollback als release-blockierenden Vorfall. Behalten Sie das Release-Tag nur,
+wenn die Release-Artefakte gültig bleiben; löschen Sie andernfalls das
+fehlerhafte Release und Tag, bevor Sie es erneut versuchen.
+
+## 6. Querverweise
+
+- Pages-Konfiguration: `site/content/docs/runbooks/pages-enablement.mdx`.
+- Release-Verfahren: `site/content/docs/runbooks/release-cycle.mdx`.
+- Paketierungs-Rezepte: `packaging/README.md`.
+- Wiederherstellungsanker: das release-spezifische Verlaufssicherungs-Tag.

@@ -1,0 +1,25 @@
+---
+title: "संदर्भ"
+description: "नियमों, कमांड, स्किल, प्रत्यायोजित वर्कर, हुक, MCP सर्वर, सेटिंग्स, और आउटपुट शैलियों के पथ एवं ऑन-डिस्क लेआउट के साथ कलाकृति-वर्गों की नेविगेट-योग्य रजिस्ट्री।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+प्रति-कलाकृति-वर्ग संदर्भ। प्रत्येक पृष्ठ वर्ग के उद्देश्य, ऑन-डिस्क लेआउट, frontmatter अनुबंध, और प्रत्येक उदाहरण को सूचीबद्ध करने वाली रजिस्ट्री का वर्णन करता है।
+
+नीचे रिपॉज़िटरी-सापेक्ष पथ दिखाए गए हैं; प्रत्येक अडैप्टर इन्हें अपनी मूल कॉन्फ़िगरेशन डायरेक्टरी में मूर्त रूप देता है (उदा. Claude Code अडैप्टर के लिए `~/.claude/` — प्रति-हार्नेस गंतव्यों के लिए [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses) देखें)।
+
+| वर्ग | पृष्ठ | रिपॉज़िटरी-सापेक्ष स्रोत पथ |
+|-------|------|--------------|
+| `CLAUDE.md` | [CLAUDE.md](/docs/reference/claude-md) | `CLAUDE.md` |
+| नियम | [नियम](/docs/reference/rules) | `src/apothem/rules/` |
+| कमांड | [कमांड](/docs/reference/commands) | `src/apothem/commands/` |
+| स्किल | [स्किल](/docs/reference/skills) | `src/apothem/skills/` |
+| प्रत्यायोजित वर्कर | [संदर्भ पृष्ठ](/docs/reference/agents) | canonical-paths ब्लॉक देखें |
+| हुक | [हुक](/docs/reference/hooks) | `src/apothem/hooks/` |
+| MCP सर्वर | [MCP सर्वर](/docs/reference/mcp) | साझा प्रोफ़ाइल — `mcp_servers` |
+| सेटिंग्स | [सेटिंग्स](/docs/reference/settings) | `src/apothem/harnesses/claude_code/templates/settings.json` |
+| आउटपुट शैलियाँ | [आउटपुट शैलियाँ](/docs/reference/output-styles) | `src/apothem/output-styles/` |
+| हार्नेस रजिस्ट्री | [हार्नेस रजिस्ट्री](/docs/reference/harness-registry) | `src/apothem/lib/harness_registry.py` |
+
+संपूर्ण विहित रजिस्ट्री आर्टिफ़ैक्ट कोहॉर्ट (`rules/`, `commands/`, `skills/`, `agents/`, `hooks/`) में रहती है। यह पृष्ठ उस रजिस्ट्री को एक नेविगेट-योग्य रूप में प्रतिबिंबित करता है।

@@ -1,0 +1,49 @@
+---
+title: "Apothem vs. las reglas de CodeBuddy en bruto"
+description: "Por qué encaminar las reglas de proyecto de CodeBuddy a través de Apothem en lugar de escribir a mano archivos .codebuddy/rules por proyecto."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+CodeBuddy lee las reglas de proyecto desde `.codebuddy/rules/*.md`. Puedes
+escribir esos archivos a mano, por proyecto, para siempre. Apothem gestiona uno
+de ellos por ti y lo mantiene consistente en cada entorno y cada proyecto.
+
+## El enfoque en bruto
+
+Escribir a mano las reglas de CodeBuddy significa:
+
+- Copiar y pegar las mismas disciplinas de ingeniería en `.codebuddy/rules/`
+  para cada nuevo proyecto.
+- Quedarse desincronizado a medida que las disciplinas evolucionan: no hay una
+  única fuente de verdad.
+- Volver a derivar las mismas convenciones para Cursor, Windsurf, Claude Code y
+  todas las demás herramientas que uses, porque cada una tiene su propia
+  superficie de reglas.
+
+## El enfoque de Apothem
+
+Apothem mantiene una cohorte de reglas canónica en el repositorio de origen y la
+proyecta en la superficie nativa de cada entorno. Para CodeBuddy escribe:
+
+```
+<project>/.codebuddy/rules/apothem-rules.md
+```
+
+| Aspecto | CodeBuddy en bruto | Apothem |
+| --- | --- | --- |
+| Fuente de verdad | Los archivos de cada proyecto | Una cohorte canónica |
+| Consistencia entre entornos | Manual por herramienta | Proyectada automáticamente |
+| Actualizaciones | Editar a mano cada proyecto | `apothem update --harness codebuddy --project <path>` |
+| Reglas propias del operador | Mezcladas con las disciplinas | Intactas: Apothem escribe un archivo dedicado |
+| Eliminación | Borrado manual | `apothem uninstall` con copia de seguridad con marca de tiempo |
+
+## Qué sigue siendo tuyo
+
+Apothem escribe solo `apothem-rules.md`. Tu archivo de memoria `CODEBUDDY.md`,
+tus permisos y servidores MCP en `.codebuddy/settings.json`, y cualquier otro
+archivo de reglas que escribas permanecen enteramente propiedad del operador. El
+adaptador reconoce esas superficies pero nunca las edita.
+
+Consulta la [página del entorno CodeBuddy](/docs/harnesses/codebuddy) para los
+comandos completos del ciclo de vida.

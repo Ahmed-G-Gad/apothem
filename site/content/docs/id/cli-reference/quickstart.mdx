@@ -1,0 +1,84 @@
+---
+title: "quickstart"
+description: "Referensi CLI untuk perintah jalankan-pertama terpandu apothem quickstart."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Jalankan-pertama terpandu: memastikan sebuah profil ada, melakukan pratinjau penulisan, lalu memasang.
+
+## Ringkasan
+
+```
+apothem quickstart [--harness NAME|all] [--project PATH] [--profile PATH]
+                   [--yes] [--quiet|-q] [--verbose|-v]
+                   [--format plain|json] [--json] [--no-color]
+```
+
+`quickstart` adalah satu-satunya titik masuk terpandu bagi operator baru. Dalam satu alur linear, ia: (1) memastikan sebuah profil bersama ada — membuat profil awal dengan dorongan untuk personalisasi jika tidak ada yang ditemukan; (2) melakukan pratinjau file konkret yang akan ditulis oleh asisten-pengkodean terpilih, dikelompokkan menurut akar proyek versus direktori beranda Anda; (3) meminta konfirmasi; (4) memasang dengan keluaran catatan kapabilitas yang dikelompokkan dan bebas-bising; dan (5) mencetak perintah lanjutan yang direkomendasikan.
+
+Ia menyusun blok pembangun yang sama dengan yang digunakan perintah `install` — ia tidak mengimplementasikannya ulang. `--harness` secara default `all` dan `--project` ke direktori saat ini.
+
+## Perilaku
+
+- **Profil** — jika jalur profil yang teratasi tidak memiliki file, `quickstart` menawarkan untuk membuat profil awal (membuat otomatis di bawah `--yes`, shell non-interaktif, atau `--format json`) dan menyebutkan bidang identitas placeholder yang perlu dipersonalisasi.
+- **Pratinjau + konfirmasi** — sebelum penulisan apa pun, target dicantumkan di bawah dua judul (akar proyek versus direktori beranda Anda); jalannya interaktif mengonfirmasi sebelum menulis di luar proyek. `--yes`, shell non-interaktif, dan `--format json` melanjutkan tanpa meminta. Menolak akan membatalkan sebelum penulisan apa pun.
+- **Pasang** — kapabilitas yang tidak didukung secara native oleh suatu asisten-pengkodean diringkas sebagai satu catatan yang dikelompokkan per asisten-pengkodean (berikan `--verbose` untuk detail per kapabilitas); set lengkap selalu ada dalam array warnings pada `--format json`.
+- **Langkah berikutnya** — keluaran terminal menyebutkan perintah lanjutan (`apothem verify …`, `apothem doctor`).
+
+## Opsi
+
+| Opsi | Deskripsi |
+|---|---|
+| `--harness NAME` | Adapter asisten-pengkodean yang akan dipasang, atau `all` untuk set selingkup-registri (default: `all`). |
+| `--profile PATH` | Jalur ke YAML profil bersama. Default-nya `~/.config/apothem/profile.yaml`. |
+| `--project PATH` | Akar proyek untuk asisten-pengkodean berlingkup-proyek. Default-nya direktori saat ini. |
+| `--yes` | Menjalankan urutan terpandu penuh secara non-interaktif (lewati setiap prompt). |
+| `--quiet`, `-q` | Menekan keluaran informasional; hanya kesalahan yang dipancarkan. |
+| `--verbose`, `-v` | Mencetak alasan setiap kapabilitas yang tidak diproyeksikan alih-alih catatan yang dikelompokkan. |
+| `--format plain\|json` | Format keluaran (default: `plain`). |
+| `--json` | Singkatan untuk `--format json`. |
+| `--no-color` | Menonaktifkan kode warna ANSI dalam keluaran. |
+| `-h`, `--help` | Menampilkan bantuan dan keluar. |
+
+## Keluaran JSON
+
+`--format json` memancarkan satu dokumen tunggal yang meringkas setiap langkah terpandu:
+
+```json
+{
+  "status": "success",
+  "command": "quickstart",
+  "profile_path": "C:\\Users\\Example\\.config\\apothem\\profile.yaml",
+  "steps": [
+    {"step": "profile", "outcome": "created", "path": "…", "placeholder_identity": ["name", "email", "github"]},
+    {"step": "install", "status": "success", "harness": "all", "files_written": ["…"], "warnings": [], "results": []},
+    {"step": "recommend", "next": ["apothem verify --harness all --project .", "apothem doctor"]}
+  ],
+  "recommended_next": ["apothem verify --harness all --project .", "apothem doctor"]
+}
+```
+
+## Contoh
+
+```bash
+apothem quickstart
+apothem quickstart --harness all --project . --yes
+apothem quickstart --harness claude-code
+apothem quickstart --json
+```
+
+## Kode keluar
+
+| Kode | Arti |
+|---|---|
+| 0 | Jalannya terpandu selesai |
+| 1 | Kesalahan validasi, profil, asisten-pengkodean, proyek, atau adapter yang diharapkan |
+| 2 | Materialisasi batch parsial setelah setidaknya satu penulisan |
+
+## Lihat juga
+
+- [apothem install](/docs/cli-reference/install) — mematerialisasi suatu asisten-pengkodean dari profil bersama
+- [apothem verify](/docs/cli-reference/verify) — mengonfirmasi suatu pemasangan aktif
+- [apothem doctor](/docs/cli-reference/doctor) — kesehatan lingkungan dan pemasangan
+- [Memulai](/docs/install) — panduan pemasangan lengkap

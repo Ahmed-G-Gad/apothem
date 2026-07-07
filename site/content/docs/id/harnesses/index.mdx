@@ -1,0 +1,90 @@
+---
+title: "Adaptor harness"
+description: "Adaptor harness Apothem — satu profil bersama, tujuh belas target yang didukung."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem menyertakan tujuh belas adaptor harness bawaan. Setiap adaptor menerjemahkan
+kohor bersama yang sama menjadi berkas native-platform di tempat platform mendukungnya
+dan pohon dukungan milik-Apothem di tempat yang tidak.
+
+## Harness yang didukung
+
+Registri yang didukung berisi tepat tujuh belas adaptor. Gunakan nama instal
+yang tepat ini dengan `--harness`, atau gunakan `all` untuk himpunan registri
+deterministik:
+
+```text
+antigravity
+claude-code
+codebuddy
+codex
+cursor
+gemini-cli
+github-copilot
+glm
+hermes
+kimi-code
+kiro
+open-claw
+opencode
+qwen-code
+trae
+windsurf
+zed
+```
+
+Matriks registri terperinci, jalur target, status kapabilitas, dukungan MCP,
+dan bukti convention-pin berada di [referensi registri teknis](/docs/reference/harness-registry).
+
+## Instal beberapa harness
+
+Instal satu harness, atau gunakan `all` untuk memilih registri dalam urutan
+deterministik. Harness cakupan-proyek memerlukan `--project PATH`; itu termasuk `all`
+karena registri mencakup target cakupan-pengguna maupun cakupan-proyek.
+
+```bash
+apothem install --harness claude-code
+apothem install --harness cursor --project /path/to/project
+apothem install --harness gemini-cli --project /path/to/project
+apothem install --harness all --project /path/to/project
+```
+
+## Verifikasi instalasi Anda
+
+Verifikasi setiap adaptor harness satu per satu, atau panggil `apothem doctor` untuk
+ringkasan status-instal per-adaptor di seluruh adaptor yang terdaftar:
+
+```bash
+apothem verify --harness claude-code
+apothem verify --harness all --project /path/to/project
+apothem doctor
+```
+
+## Cara kerja adaptor
+
+Setiap adaptor mengimplementasikan protokol `HarnessAdapter` yang terdaftar melalui
+entry-point setuptools. Saat instalasi, CLI memuat dan memvalidasi profil
+YAML bersama, me-resolve adaptor melalui registri, memvalidasi
+rencana materialisasi, dan menulis konfigurasi native-platform ke lokasi
+pengguna atau proyek native harness. Saat pemutakhiran, ia menurunkan-ulang dari state
+profil saat ini.
+
+```
+profile.yaml + packaged cohorts
+    identity / preferences / rules
+    commands / skills / delegated definitions / hooks / templates
+         |
+         +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/antigravity-cli/plugins/apothem/
+         +-- claude-code    --> ~/.claude/ native folders + ~/.claude/.apothem/support/
+         +-- codex          --> ~/.codex/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
+         +-- cursor         --> <project>/.cursor/rules/*.mdc
+         +-- gemini-cli     --> <project>/GEMINI.md + <project>/.gemini/
+         +-- github-copilot --> <project>/.github/copilot-instructions.md
+         +-- windsurf       --> <project>/.devin/rules/
+         +-- ...
+```
+
+Lihat [Abstraksi adaptor harness](/docs/architecture/harness-adapter-abstraction)
+untuk spesifikasi protokol.

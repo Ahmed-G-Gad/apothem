@@ -1,0 +1,70 @@
+---
+title: "/research-design"
+description: "/research-design — Operationalisiert die Hypothesen zu testbaren Vorhersagen und entwirft die Studie (Variablen, Kontrollen, Stichprobe, Teststärke), dann friert es den Analyseplan als Präregistrierung ein."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rolle:** Leitende:r Forscher:in (Studiendesign)
+**Pipeline-Position:** Mitte der Kette
+
+Operationalisiert die Hypothesen zu testbaren Vorhersagen und entwirft die Studie oder das Experiment — Variablen, Kontrollen, Stichprobe, Instrumente, Teststärkeanalyse, Bedrohungen der Validität — und erstellt dann eine Präregistrierung, die den Analyseplan vor der Datenerhebung einfriert.
+
+## Kanonischer Aufruf
+
+```bash
+/research-design
+```
+
+Mit Argumenten:
+
+```bash
+/research-design [path/to/research-suite/]
+```
+
+## Eingaben
+
+`_inputs/proposal.md` (der Plan von Bestand aus `/research-proposal`, dem Vorgängerschritt), `_inputs/synthesis.md` (die SOTA-Karte + die Lückenaussage) und `_spec/research-spec.md` (die Hypothesen).
+
+## Ausgaben
+
+`_inputs/study-design.md` (operationalisierte Vorhersagen, Variablenspezifikation, Kontrollen, Stichprobe, Instrumente, Teststärkeanalyse, Bedrohungen der Validität) + `_inputs/preregistration.md` (der eingefrorene Analyseplan).
+
+## Nachgelagert
+
+/research-experiment (nachgelagerter Konsument)
+
+## Workflow-Phasen
+
+Der Befehl folgt dem Standard-Workflow der `/research`-Pipeline:
+
+1. **Kontext laden** — Die Synthese und die Hypothesen der Spezifikation lesen.
+2. **Das Sequenz-Gate prüfen** — Bestätigen, dass `_inputs/proposal.md` (und die vorgelagerten `_inputs/synthesis.md` und `_spec/research-spec.md`) existiert; andernfalls mit `Blocked: run /research-proposal first` anhalten.
+3. **Die Studie entwerfen** — Vorhersagen operationalisieren; Variablen, Kontrollen, Stichprobe, Instrumente, Teststärke spezifizieren; Bedrohungen der Validität aufzählen.
+4. **Präregistrieren** — Den Analyseplan vor jeglicher Datenerhebung einfrieren.
+5. **Das Übergabe-Manifest aktualisieren** — Die Pfade von Studiendesign und Präregistrierung erfassen.
+6. **Das Design ausgeben** — `_inputs/study-design.md` + `_inputs/preregistration.md`.
+
+## Rigorositätsuntergrenze
+
+Für eine vergleichstragende Studie legt das Design die empirische Untergrenze fest und präregistriert sie: ein einheitliches Budget über alle verglichenen Methoden hinweg (gleiche Wall-Clock-Zeit und, wo sinnvoll, gleiche Auswertungsanzahl), mindestens dreißig Wiederholungen pro Instanz für stochastische Methoden, ein Ablationsfaktor, der jeweils eine Komponente deaktiviert, Sensitivitäts-Sweeps über jeden Parameter und eine automatisierte Konfiguration auf einem Trainings-Split, ausgewertet auf einem disjunkten Test-Split. Die Tiefe der Untergrenze skaliert mit dem Anspruch des Zielorts der Veröffentlichung.
+
+## Fehlermodi
+
+| Symptom | Ursache | Wiederherstellung |
+|---------|-------|----------|
+| Blocked: run /research-proposal first | Kein Plan von Bestand | Führen Sie `/research-proposal` aus, um `_inputs/proposal.md` zu erzeugen |
+| Unterpowertes Design | Stichprobe zu klein für den Effekt | Führen Sie die Teststärkeanalyse erneut aus; passen Sie die Stichprobengröße an |
+| Analyseplan nicht eingefroren | Präregistrierung übersprungen | Verfassen Sie `_inputs/preregistration.md` vor der Datenerhebung |
+
+## Beispiele
+
+```bash
+# Die Studie entwerfen und den Analyseplan präregistrieren
+/research-design path/to/research-suite/
+```
+
+## Querverweise
+
+- [Pipeline-Überblick](/docs/pipeline)
+- [Befehlsreferenz](/docs/reference/commands)

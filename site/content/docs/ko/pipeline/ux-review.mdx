@@ -1,0 +1,69 @@
+---
+title: "/ux-review"
+description: "/ux-review — CLI 인체공학, 문서, 온보딩에 대한 개발자 경험 검토."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**역할:** UX 검토자
+**파이프라인 위치:** 요새
+
+CLI 인체공학, 문서, 온보딩에 대한 개발자 경험 검토.
+
+## 정규 호출
+
+```bash
+/ux-review
+```
+
+인자와 함께:
+
+```bash
+/ux-review [path/to/plan-suite/] [phase-id] [--dry-run]
+```
+
+## 입력
+
+생명 주기의 어떤 상태에 있는 호스트 저장소
+
+## 출력
+
+UX 발견 + REPORT.md
+
+## 하류
+
+감사 검토 시퀀스의 UX 검토 단계
+
+## 워크플로 페이즈
+
+이 명령은 표준 `/plan` 파이프라인 워크플로를 따릅니다:
+
+1. **컨텍스트 로드** — 계획 스위트, 규칙, 재개 계약을 읽습니다.
+2. **전제 조건 검증** — 의존 페이즈가 완료되었는지 확인합니다.
+3. **작업 실행** — 명령의 임무를 수행합니다.
+4. **출력 검증** — 선언된 모든 출력이 존재하며 품질 게이트를 통과하는지 확인합니다.
+5. **PROGRESS.md 갱신** — 검증된 출력을 페이즈 출력 레지스트리에 기록합니다.
+6. **REPORT.md 발행** — 사전 발행 게이트의 릴리스 증명을 기록합니다.
+
+## 실패 모드
+
+| 증상 | 원인 | 복구 |
+|---------|-------|----------|
+| 전제 조건 미완료 | 의존 페이즈가 끝나지 않음 | 먼저 상류 페이즈를 완료한다 |
+| 품질 게이트 FAIL | 출력이 표준을 충족하지 않음 | 출력을 수정하고 다시 실행한다 |
+| 입력 파일 누락 | 계획 스위트 파일 부재 | `/plan-generate`를 실행하여 생성한다 |
+
+## 예시
+
+```bash
+# Dry-run to preview what would happen
+/ux-review --dry-run
+
+# Execute against a named plan suite
+/ux-review path/to/plan-suite/
+```
+
+## 상호 참조
+
+- [파이프라인 개요](/docs/pipeline)
+- [마스터 플랜 스위트 템플릿](/docs/reference/commands)

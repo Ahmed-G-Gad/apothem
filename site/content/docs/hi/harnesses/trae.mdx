@@ -1,0 +1,86 @@
+---
+title: "Trae"
+description: "Trae (GA) के लिए Apothem हार्नेस एडॉप्टर।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**विक्रेता:** ByteDance
+**इंस्टॉल नाम:** `trae`
+**स्थिति:** GA
+**नेटिव कॉन्फ़िग:** `<project>/.trae/rules/apothem-rules.md`
+
+## इंस्टॉलेशन
+
+```bash
+apothem install --harness trae --project /path/to/project
+```
+
+एडॉप्टर साझा Apothem नियम और गवर्नेंस सतह से एक प्रोजेक्ट-स्कोप्ड Trae नियम फ़ाइल लिखता
+है।
+
+**लिखी गई फ़ाइलें:** `<project>/.trae/rules/apothem-rules.md`
+
+## प्रोफ़ाइल-से-नेटिव-कॉन्फ़िग मैपिंग
+
+एडॉप्टर Apothem की साझा प्रोफ़ाइल पढ़ता है और प्रत्येक `apothem install` या
+`apothem update` रन पर प्रोजेक्ट नियम फ़ाइल को रेंडर करता है। साझा प्रोफ़ाइल सत्य का
+स्रोत है; उत्पन्न फ़ाइल पर प्रोजेक्ट-स्थानीय संपादनों का बैकअप अगले सिंक द्वारा
+Apothem-प्रबंधित सामग्री को प्रतिस्थापित करने से पहले लिया जाता है।
+
+## संगतता टिप्पणियाँ
+
+Trae की वर्तमान नियम सतह `.trae/rules/` के अंतर्गत प्रोजेक्ट-स्कोप्ड है। एडॉप्टर एक
+समर्पित `apothem-rules.md` फ़ाइल लिखता है जो ऑपरेटर के स्वामित्व वाले `project_rules.md`
+और `user_rules.md` एंकरों के साथ सह-अस्तित्व में रहती है और उन्हें कभी अधिलेखित नहीं
+करती। `.trae/mcp.json` टूल-सर्वर सतह और `.trae/skills/` स्किल सतह ऑपरेटर के स्वामित्व
+में हैं; Apothem उन्हें नहीं लिखता।
+
+## सत्यापन
+
+```bash
+apothem verify --harness trae --project /path/to/project
+```
+
+verify कमांड पुष्टि करता है कि:
+
+1. नेटिव कॉन्फ़िग अपेक्षित पथ पर मौजूद है।
+2. साझा प्रोफ़ाइल के सभी अनिवार्य फ़ील्ड मौजूद हैं।
+3. एडॉप्टर-विशिष्ट सत्यापन रूटीन सफलता की रिपोर्ट करता है।
+
+## अपडेट करना
+
+```bash
+apothem update --harness trae --project /path/to/project
+```
+
+वर्तमान साझा प्रोफ़ाइल स्थिति से प्रोजेक्ट नियम फ़ाइल को फिर से व्युत्पन्न करता है।
+
+## अनइंस्टॉल करना
+
+```bash
+apothem uninstall --harness trae --project /path/to/project
+```
+
+एडॉप्टर द्वारा लिखी गई नेटिव कॉन्फ़िग फ़ाइलों को हटाता है।
+साझा प्रोफ़ाइल YAML और Apothem इंजन अप्रभावित रहते हैं।
+
+## कन्फ़ॉर्मिटी गेट
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## समस्या निवारण
+
+| लक्षण | समाधान |
+|---------|-----|
+| कॉन्फ़िग फ़ाइल नहीं मिली | `apothem install --harness trae --project /path/to/project` को फिर से चलाएँ |
+| सत्यापन विफल | `apothem update --harness trae --project /path/to/project` चलाएँ, फिर दोबारा सत्यापित करें |
+| अप्रत्याशित कॉन्फ़िग सामग्री | `~/.config/apothem/profile.yaml` या `--profile PATH` जाँचें, फिर `apothem update --harness trae --project /path/to/project` को फिर से चलाएँ |
+
+## कॉन्फ़िगरेशन नॉब
+
+| फ़्लैग | डिफ़ॉल्ट | विवरण |
+|------|---------|-------------|
+| `--dry-run` | `false` | फ़ाइलें लिखे बिना इंस्टॉल का पूर्वावलोकन करें। |

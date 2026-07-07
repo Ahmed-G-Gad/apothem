@@ -1,0 +1,36 @@
+---
+title: "اصطلاحات النثر"
+description: "تَفرض تسلسل الصِّيَغ الإلزامية وفق RFC 2119، وتحظر الصفات التسويقية والحشو المُتهرِّب، وتستخدم تواريخ ISO-8601 المطلقة، وتتحقّق من إحكام النثر التوجيهي."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **مرجع كنسي لانضباط النثر عبر كل سطح <bdi>Markdown</bdi> مكتوب.** الملخّص في [<bdi>`CLAUDE.md`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) <bdi>§4</bdi> الاصطلاحات هو الإعلان المُضمَّن؛ وهذه الصفحة هي المرجع المستقل الذي يستشهد به المساهمون في المراحل اللاحقة.
+
+---
+
+## 1. تسلسل الصِّيَغ الإلزامية (RFC 2119)
+
+يستخدم النثر التوجيهي تسلسل الصِّيَغ الإلزامية وفق <bdi>**RFC 2119**</bdi>: <bdi>`MUST`</bdi>، و<bdi>`MUST NOT`</bdi>، و<bdi>`SHOULD`</bdi>، و<bdi>`SHOULD NOT`</bdi>، و<bdi>`MAY`</bdi>. يحمل كلٌّ منها قوة الإلزام التي يُعرِّفها الـ<bdi>RFC</bdi>. لا تحمل الصِّيَغ بالأحرف الصغيرة (<bdi>`must`</bdi>، و<bdi>`should`</bdi>) أي وزن معياري، وتُستخدَم فقط في النثر السردي حيث لا يُعلَن أي التزام.
+
+## 2. المفردات المحظورة
+
+### 2.1 الصفات التسويقية
+
+المصطلحات <bdi>`powerful`</bdi>، و<bdi>`seamless`</bdi>، و<bdi>`robust`</bdi>، و<bdi>`cutting-edge`</bdi>، و<bdi>`next-generation`</bdi>، و<bdi>`world-class`</bdi>، و<bdi>`enterprise-grade`</bdi> وما يكافئها محظورة في المُنتَجات المُوجَّهة للمستخدم ما لم تُسنَد بشكل ملموس بأدلّة مُقاسة. يستشهد الإسناد بمعيار قياس، أو مقارنة، أو قياس، أو مصدر تحقُّق خارجي.
+
+### 2.2 الحشو المُتهرِّب
+
+المصطلحات <bdi>`basically`</bdi>، و<bdi>`kind of`</bdi>، و<bdi>`sort of`</bdi>، و<bdi>`in some sense`</bdi>، و<bdi>`to some extent`</bdi> وما يكافئها محظورة في النص التوجيهي. النثر التوجيهي مُلزِم؛ والحشو المُتهرِّب يتنازل عن قوة الإلزام التي يدّعيها النثر.
+
+### 2.3 إحكام <bdi>UDA</bdi>
+
+يَفرض فحص إحكام التوجيهات العام (<bdi>UDA</bdi>) عند <bdi>`scripts/dev/validate_ecosystem.py`</bdi> مُعجمًا مُغلَقًا من ألفاظ التهرُّب (<bdi>`maybe`</bdi>، و<bdi>`might`</bdi>، و<bdi>`could`</bdi>، و<bdi>`should probably`</bdi>، و<bdi>`usually`</bdi>، و<bdi>`generally speaking`</bdi>، و<bdi>`in most cases`</bdi>، و<bdi>`mostly`</bdi>، و<bdi>`typically`</bdi>، و<bdi>`often`</bdi>، و<bdi>`or similar`</bdi>، و<bdi>`etc.`</bdi>، و<bdi>`and so on`</bdi>) على الأسطر التي تحمل وصفًا مُلزِمًا. أمّا رموز التهرُّب المُستشهَد بها بوصفها موضوع القاعدة نفسها (مثلًا، قائمة بالكلمات المحظورة في صفحة قائمة محظورات) فمُعفاة بآلية العلامة التعريفية للمُتحقِّق.
+
+## 3. الإشارات إلى التواريخ
+
+التواريخ مطلقة بصيغة <bdi>ISO-8601</bdi> (<bdi>`YYYY-MM-DD`</bdi>) في كل إشارة. التواريخ النسبية (<bdi>`yesterday`</bdi>، و<bdi>`last week`</bdi>، و<bdi>`recently`</bdi>) محظورة في المُنتَجات التي تستمرّ بعد جلسة كتابتها.
+
+## 4. المُتحقِّقات
+
+فحص إحكام <bdi>UDA</bdi> في <bdi>`scripts/dev/validate_ecosystem.py`</bdi> هو سطح الإنفاذ الآلي للقسم <bdi>§2.3</bdi>. تَفرض عائلة مُتحقِّقات <bdi>conformity-grep</bdi> من نوع <bdi>`markdown`</bdi> العاملة عند كل كتابة معيارَ جودة النثر الأوسع عند حدود خطّافات <bdi>PreToolUse Write/Edit</bdi>.

@@ -1,0 +1,69 @@
+---
+title: "/plan-spec"
+description: "/plan-spec — Affine de la prose libre ou des notes brutes en une spécification `_spec/spec.md` de niveau spec prête pour `/plan-generate`."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rôle :** Forge
+**Position dans le pipeline :** tête
+
+Affine de la prose libre ou des notes brutes en une spécification `_spec/spec.md` de niveau spec prête pour `/plan-generate`.
+
+## Invocation canonique
+
+```bash
+/plan-spec
+```
+
+Avec des arguments :
+
+```bash
+/plan-spec [path/to/prose-source] [--suite-name NAME] [--refine-existing] [--standalone] [--quick SLUG [--tag TAG]]
+```
+
+## Entrées
+
+Prose libre, notes brutes ou exigences ad hoc (fournies par l'opérateur en ligne ou via un chemin).
+
+## Sorties
+
+`_spec/spec.md` (la spec promue) + `_inputs/handoff-manifest.yml`. `--quick` écrit à la place un unique fichier de plan léger local au projet à `<project-root>/.apothem/plans/<YYYY-MM-DD>--<kebab-slug>.md`.
+
+## En aval
+
+/plan-generate (consommateur en aval)
+
+## Phases du flux de travail
+
+La Forge exécute six phases de transformation (la spec est promue de `_inputs/forge.md` vers `_spec/spec.md` à G4) :
+
+1. **Découverte et extraction** — Lire la prose / les notes et extraire chaque exigence, décision et contrainte.
+2. **Considération méticuleuse** — Raisonner sur chaque surface ; faire émerger chaque contradiction via le canal d'interrogation structurée.
+3. **Cartographie de la puissance** — Associer chaque exigence à son levier en aval.
+4. **Vérification de la préservation** — Exécuter la porte de pré-émission à quinze barres (G4) sur la spec candidate avant la promotion.
+5. **Application de l'expertise** — Appliquer l'expertise du domaine ; consigner les constats de lacune d'expertise.
+6. **Balayage de résolution des questions** — Résoudre chaque interrogation ouverte à travers les portes G0–G5, puis émettre `_spec/spec.md` ainsi que le manifeste de transfert.
+
+## Modes de défaillance
+
+| Symptôme | Cause | Récupération |
+|---------|-------|----------|
+| Entrée de prose manquante | Aucune prose / note fournie | Fournissez la prose libre en ligne ou via un chemin |
+| Contradiction non résolue | La prose porte des exigences conflictuelles | Arrêt à G3 (Pré-amendement) ; résolvez via interrogation structurée, jamais silencieusement |
+| La spec échoue à la porte | Une barre de pré-émission échoue à G4 | Corrigez la barre défaillante avant la promotion depuis `_inputs/forge.md` |
+
+## Exemples
+
+```bash
+# Forger des notes brutes en une spécification de niveau spec
+/plan-spec ~/notes/feature.md --suite-name my-feature
+
+# Fichier de plan léger local au projet (contourne l'élicitation de la Forge)
+/plan-spec --quick my-feature
+```
+
+## Références croisées
+
+- [Aperçu du pipeline](/docs/pipeline)
+- [Référence des commandes](/docs/reference/commands)

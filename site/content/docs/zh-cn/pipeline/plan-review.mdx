@@ -1,0 +1,68 @@
+---
+title: "/plan-review"
+description: "/plan-review——对现有计划套件进行取证式审计——文本忠实度、一致性、质量。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**角色：** 审计员
+**流水线位置：** 中段
+
+对现有计划套件进行取证式审计——文本忠实度、一致性、质量。
+
+## 规范调用
+
+```bash
+/plan-review
+```
+
+带参数：
+
+```bash
+/plan-review [path/to/plan-suite/] [--focus AREA] [--dry-run]
+```
+
+## 输入
+
+来自 `/plan-generate` 的已生成计划套件 + `_inputs/handoff-manifest.yml`。
+
+## 输出
+
+`PLAN-NOTES.md` 中的审查评分卡（`## Review Scorecards`）、`PROGRESS.md` 中的审查摘要、`PLAN-NOTES.md` 中逐发现的修订影响图（大型持久报告置于 `_outputs/`），以及承载审查裁决的、已增补的 `_inputs/handoff-manifest.yml`。
+
+## 下游
+
+`/plan-design`（有条件——仅限承载架构的套件）随后 `/plan-execute`；对于不承载架构的套件，`/plan-execute` 直接消费审查评分卡，以在 SHARED+ 门控执行。
+
+## 工作流阶段
+
+该命令运行一次取证式、盲审式、逐行的审计，随后通过交互式问答进行细化：
+
+1. **加载上下文** — 读取每个计划套件文件（`phases/**/PHASE.md`、基础设施文件、报告）以及上游交接清单；当套件缺失时以 `Blocked: run /plan-generate first` 拒绝。
+2. **审计** — 在盲审强制要求下巡览各维度（文本忠实度、内部一致性、完整性、质量、风险、标准、领域、架构、创造性质量）。
+3. **分级发现** — 通过结构化询问通道对每项发现作出处置（accept · revise · reject · defer），并附逐发现的严重程度计数。
+4. **运行预发出门** — 针对审查报告和更新后的评分卡运行十五条门；失败则阻断晋级。
+5. **发出审查** — 将审查评分卡写入 `PLAN-NOTES.md`、将审查摘要写入 `PROGRESS.md`，并写出增补后的交接清单。
+
+## 失败模式
+
+| 症状 | 原因 | 恢复 |
+|---------|-------|----------|
+| Blocked: run /plan-generate first | 没有已生成的套件 | 运行 `/plan-generate` 以产出本命令所审计的套件 |
+| 仍有未决发现 | 审计暴露了未解决的缺陷 | 在终态裁决之前对每项发现作出处置（accept · revise · reject · defer） |
+| 评分卡 FAIL | 某一维度低于 CONDITIONAL 阈值 | 处理未达标的维度并重新审查 |
+
+## 示例
+
+```bash
+# 试运行以预览审计范围
+/plan-review --dry-run
+
+# 审计指定计划套件，聚焦单一领域
+/plan-review path/to/plan-suite/ --focus architecture
+```
+
+## 交叉引用
+
+- [流水线概览](/docs/pipeline)
+- [命令参考](/docs/reference/commands)

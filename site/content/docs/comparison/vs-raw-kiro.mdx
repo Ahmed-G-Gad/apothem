@@ -1,0 +1,42 @@
+---
+title: "Apothem vs raw Kiro config"
+description: "Hand-maintaining Kiro's steering files under .kiro/steering/ versus rendering them from Apothem's shared profile."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Kiro reads steering from a `.kiro/steering/` directory of Markdown files.
+Apothem's kiro adapter renders a dedicated `apothem-rules.md` steering file
+from the shared profile. This page contrasts hand-maintaining that config
+against managing it with Apothem.
+
+## Effort comparison
+
+| Task | Raw hand-config | Apothem-managed |
+| ---- | --------------- | --------------- |
+| Author steering rules | Hand-write each file under `.kiro/steering/` | Rendered from the shared corpus |
+| Keep foundation files untouched | Remember not to overwrite `product.md` / `tech.md` / `structure.md` | The adapter writes only `apothem-rules.md` |
+| Keep rules aligned with other harnesses | Manual, per tool | Automatic on `apothem update` |
+| Verify the config is correct | Manual inspection | `apothem verify --harness kiro` |
+
+## What Apothem manages
+
+The kiro adapter renders the shared rules into a dedicated `apothem-rules.md`
+steering file with `inclusion: always` front matter and does not touch Kiro's
+operator-authored foundation files. Kiro has no PreToolUse hook, so guardrail
+intent lives in the rule prose rather than a tool-call interception point.
+Every change to the shared rules re-renders the file on the next
+`apothem update`.
+
+## Migration path
+
+1. Run `apothem profile init` to create the shared profile if you have not yet.
+2. Move the rules from your existing `.kiro/steering/` into the shared corpus.
+3. Run `apothem install --harness kiro` to render the `apothem-rules.md`
+   steering file.
+4. Run `apothem verify --harness kiro` to confirm the config landed.
+5. Use `apothem update --harness kiro` for every later change.
+
+## Read next
+
+- [Kiro adapter reference](/docs/harnesses/kiro)
+- [Comparison overview](/docs/comparison)

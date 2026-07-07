@@ -1,0 +1,16 @@
+{
+  "name": "apothem",
+  "interface": {
+    "displayName": "Apothem"
+  },
+  "plugins": [
+    {
+      "name": "apothem",
+      "source": {
+        "source": "local",
+        "path": "./plugins/apothem"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+---
+title: "Gerbang kesesuaian"
+description: "Jalankan gerbang kesesuaian Apothem untuk memverifikasi kesehatan ekosistem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Gerbang kesesuaian di `src/apothem/conformity/gate.py` menjalankan lima belas
+pemeriksaan mekanis terhadap setiap artefak yang ditulis operator.
+
+## Menjalankan gerbang
+
+```bash
+python -m apothem.conformity.gate
+```
+
+## Bilah gerbang
+
+| Bilah | Pemeriksaan | Jenis |
+|-----|-------|------|
+| M1 | Penyelarasan cakupan | Penalaran |
+| M2 | Isolasi internal rencana (CM-7) | Mekanis |
+| M3 | Kepatuhan standar | Penalaran |
+| M4 | Validitas frontmatter | Mekanis |
+| M5 | Tanpa frasa terlarang | Mekanis |
+| M6 | Pengungkapan editorial | Penalaran |
+| M7 | Tanpa rujukan rencana di artefak | Mekanis |
+| M8 | Header kepengarangan ada | Mekanis |
+| M9 | Penilaian jujur | Penalaran |
+| M10 | Disiplin penamaan | Mekanis |
+| M11 | Perangkat sprint | Penalaran |
+| M12 | Tata letak kanonis | Mekanis |
+| M13 | Keterampilan kode | Penalaran |
+| M14 | Partisipasi sistemik | Penalaran |
+| M15 | Kepengarangan manusia | Mekanis |
+
+## Pemeriksaan tertarget
+
+```bash
+# Menjalankan satu pemeriksaan
+python -m apothem.conformity.gate --check multi-surface-coherence
+
+# Menjalankan terhadap berkas tertentu
+python -m apothem.conformity.gate src/apothem/rules/my-rule.md
+```
+
+## Integrasi CI
+
+Gerbang berjalan di CI melalui `.github/workflows/conformity.yml` pada setiap push.

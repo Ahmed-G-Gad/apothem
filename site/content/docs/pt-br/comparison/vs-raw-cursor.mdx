@@ -1,0 +1,47 @@
+---
+title: "Apothem versus a configuração manual do Cursor"
+description: "Manter à mão as regras MDC do Cursor sob .cursor/rules/ versus renderizá-las a partir do perfil compartilhado do Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+O Cursor lê regras no formato MDC sob `.cursor/rules/`. O formato MDC exige
+campos de frontmatter — `description`, `globs` e `alwaysApply`. O adaptador de
+cursor do Apothem renderiza esses arquivos `.mdc` a partir do perfil
+compartilhado. Esta página contrasta manter essa configuração à mão com
+gerenciá-la com o Apothem.
+
+## Comparação de esforço
+
+| Tarefa | Configuração manual | Gerenciada pelo Apothem |
+| ---- | --------------- | --------------- |
+| Escrever regras | Escrever à mão cada arquivo `.mdc` sob `.cursor/rules/` | Renderizadas a partir do corpus compartilhado |
+| Escrever o frontmatter MDC | Redigir à mão `description` / `globs` / `alwaysApply` por arquivo | Gerado pelo adaptador |
+| Manter um único formato de regras | Escolher à mão entre regras MDC e um único arquivo `.cursorrules` | O adaptador escreve apenas arquivos MDC de `.cursor/rules/` |
+| Manter as regras alinhadas com outros ambientes | Manual, por ferramenta | Automático com `apothem update` |
+| Verificar se a configuração está correta | Inspeção manual | `apothem verify --harness cursor` |
+
+## O que o Apothem gerencia
+
+O adaptador de cursor renderiza as regras compartilhadas em arquivos `.mdc` sob
+`.cursor/rules/`, gerando o frontmatter MDC exigido (`description`, `globs`,
+`alwaysApply`) para cada arquivo. O adaptador escreve apenas o formato MDC
+baseado em diretórios que o Cursor lê; ele não escreve um único arquivo
+`.cursorrules`.
+O Cursor não tem um hook PreToolUse, então a intenção das barreiras de proteção
+vive na prosa das regras.
+
+## Caminho de migração
+
+1. Execute `apothem profile init` para criar o perfil compartilhado se ainda não o tiver.
+2. Mova as regras do seu `.cursor/rules/` existente (e qualquer `.cursorrules`)
+   para o corpus compartilhado.
+3. Execute `apothem install --harness cursor` para renderizar os arquivos `.mdc`
+   com o frontmatter MDC correto.
+4. Execute `apothem verify --harness cursor` para confirmar que a configuração aterrissou.
+5. Use `apothem update --harness cursor` para cada mudança posterior.
+
+## Leia a seguir
+
+- [Referência do adaptador do Cursor](/docs/harnesses/cursor)
+- [Visão geral da comparação](/docs/comparison)

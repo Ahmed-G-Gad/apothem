@@ -1,0 +1,70 @@
+---
+title: "/research-synthesis"
+description: "/research-synthesis — Mendamaikan sumber yang terkumpul menjadi peta mutakhir dan matriks literatur, memverifikasi setiap klaim secara adversarial, dan menyatakan celah penelitian yang eksplisit."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Peran:** Peneliti utama (sintesis)
+**Posisi pipeline:** tengah rantai
+
+Mendamaikan sumber yang terkumpul menjadi peta mutakhir + matriks literatur dan menyatakan celah penelitian eksplisit yang ditangani oleh pekerjaan ini. Setiap klaim penopang diverifikasi secara adversarial terhadap dua sumber independen atau lebih, dengan menyangkal secara default.
+
+## Pemanggilan kanonik
+
+```bash
+/research-synthesis
+```
+
+Dengan argumen:
+
+```bash
+/research-synthesis [path/to/research-suite/]
+```
+
+## Masukan
+
+`_inputs/source-ledger.md` (indeks sumber yang diperingkat dan disaring) ditambah ekstraksi per sumber di bawah `sources/`.
+
+## Keluaran
+
+`_inputs/synthesis.md` — peta mutakhir, matriks literatur, buku besar temuan yang diperdebatkan, dan pernyataan celah eksplisit dalam satu kalimat.
+
+## Hilir
+
+/research-proposal (konsumen hilir)
+
+## Fase alur kerja
+
+Perintah ini mengikuti alur kerja pipeline `/research` standar:
+
+1. **Memuat konteks** — Membaca buku besar sumber dan ekstraksi per sumber.
+2. **Memverifikasi Gerbang Urutan** — Memastikan buku besar sumber ada; jika tidak, berhenti dengan `Blocked: run /research-sources first`.
+3. **Menyintesis** — Membangun peta mutakhir + matriks literatur; mendamaikan kesepakatan dan kontradiksi; menyatakan celah eksplisit.
+4. **Memverifikasi secara adversarial** — Setiap klaim penopang disangkal secara default terhadap dua sumber independen atau lebih.
+5. **Memperbarui manifes serah terima** — Mencatat jalur sintesis dan buku besar klaim yang diperdebatkan.
+6. **Memancarkan sintesis** — `_inputs/synthesis.md`.
+
+## Landasan ketelitian
+
+Sebelum pernyataan celah difinalkan, sintesis mendamaikan terminologi, temuan, dan rekomendasinya terhadap korpus saudara terkait (koherensi lintas-korpus); sebuah konflik dicatat dalam buku besar temuan yang diperdebatkan, tidak pernah diselaraskan secara diam-diam. Celah harus terselesaikan menjadi kontribusi yang khas dan parsimonis — bukan yang sudah ditutup oleh klaim yang dikuatkan, dan tidak dapat diuraikan menjadi elemen-elemen tumpang tindih yang tidak khas.
+
+## Mode kegagalan
+
+| Gejala | Penyebab | Pemulihan |
+|---------|-------|----------|
+| Blocked: run /research-sources first | Tidak ada buku besar sumber | Jalankan `/research-sources` untuk menghasilkan `_inputs/source-ledger.md` |
+| Klaim bertahan tanpa ≥2 sumber | Penguatan tidak memadai | Tandai sebagai diperdebatkan atau tak terverifikasi; jangan menegaskan |
+| Tidak ada pernyataan celah eksplisit | Sintesis tidak memiliki target | Turunkan ulang celah satu kalimat yang ditangani penelitian |
+
+## Contoh
+
+```bash
+# Sintesiskan sumber yang terkumpul menjadi peta mutakhir + celah
+/research-synthesis path/to/research-suite/
+```
+
+## Referensi silang
+
+- [Ikhtisar pipeline](/docs/pipeline)
+- [Referensi perintah](/docs/reference/commands)

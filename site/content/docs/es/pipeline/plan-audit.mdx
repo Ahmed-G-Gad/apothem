@@ -1,0 +1,70 @@
+---
+title: "/plan-audit"
+description: "/plan-audit — Guardián de bucle cerrado del pipeline /plan — envuelve spec → generate → review y remedia activamente los hallazgos hasta que la suite es un todo revisado y con cero hallazgos."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rol:** Guardián
+**Posición en el pipeline:** envolvente / ortogonal (previa a la ejecución)
+
+Guardián de bucle cerrado del pipeline `/plan`. Mientras `/plan-review` reporta y refina una suite generada, `/plan-audit` envuelve el ciclo aguas arriba (`/plan-spec → /plan-generate → /plan-review`) y lleva la suite a un todo revisado y con cero hallazgos: ejecuta solo las etapas aguas arriba que faltan, audita el resultado, corrige en el lugar los hallazgos resolubles mecánicamente, expone las bifurcaciones de criterio a través del canal de inquiry estructurada y repite el bucle hasta que la suite está limpia o se dispara un repliegue acotado. Nunca ejecuta trabajo de implementación de fase; deja la suite lista para `/plan-execute`.
+
+## Invocación canónica
+
+```bash
+/plan-audit
+```
+
+Con argumentos:
+
+```bash
+/plan-audit [suite-path] [--from spec|generate|review] [--remediate] [--cap N] [--maintenance] [--dry-run]
+```
+
+## Entradas
+
+El `_spec/spec.md` de la suite objetivo, `_inputs/handoff-manifest.yml`, los archivos de infraestructura, `phases/**/PHASE.md` y cualquier reporte de fase existente.
+
+## Salidas
+
+Un reporte persistente y acotado en `<suite>/_outputs/audit-report-<YYYY-MM-DD>.md`; un manifiesto de traspaso actualizado que lleva el veredicto de cero hallazgos, el conteo de hallazgos abiertos, el libro mayor de remediación y cualquier reencaminamiento de mantenimiento; y un estado terminal distinto de cero cuando quedan hallazgos residuales.
+
+## Posición en el pipeline
+
+`/plan-audit` es **ortogonal** al pipeline lineal, no una etapa dentro de él. La secuencia lineal canónica es `/plan-spec → /plan-generate → /plan-review → /plan-design` (condicional, solo suites con arquitectura) `→ /plan-execute`. `/plan-audit` abarca `/plan-spec → /plan-generate → /plan-review` como un único envoltorio de bucle cerrado que puede invocarse en cualquier punto: inspecciona el estado y ejecuta solo las etapas que faltan. Es distinto de la cadena de auditoría de fortaleza (entrada en `/code-review`, terminal en `/threat-model-audit`), que audita una base de código ejecutada en lugar de una suite de plan.
+
+## Fases del flujo de trabajo
+
+1. **Resolver el objetivo** — Resuelve la suite a partir del argumento, o elige la suite modificada más recientemente bajo `.apothem/plans/` (`.plans/` es un respaldo retrocompatible admitido) y declara la resolución.
+2. **Evaluar la etapa** — Detecta qué artefactos existen (spec lista / generada / revisada / ejecutada) y nombra la brecha más pequeña hacia un todo revisado y ejecutable.
+3. **Llevar a un todo revisable** — Ejecuta solo las etapas aguas arriba que faltan, delegando en el comando canónico de cada brecha; nunca reejecutes una etapa satisfecha solo para refrescar la prosa.
+4. **Auditoría forense** — Aplica las dimensiones de auditoría de `/plan-review`, el catálogo de técnicas de planificación y la compuerta de pre-emisión de quince barras.
+5. **Remediación activa** — Corrige los hallazgos mecánicos en el lugar; expone las bifurcaciones de criterio a través del canal de inquiry estructurada; reencamina el trabajo legítimamente fuera de alcance a una suite hermana `*-maintenance`.
+6. **Bucle con tope y repliegue** — Repite auditar-y-remediar hasta que no queden hallazgos abiertos, acotado por un tope de iteraciones (por defecto 3) con un repliegue definido al agotar el tope.
+
+## Modos de fallo
+
+| Síntoma | Causa | Recuperación |
+|---------|-------|----------|
+| Tope agotado con hallazgos residuales | Hallazgos no resolubles dentro del tope de iteraciones | Revisa el reporte de auditoría; reencamina los ítems elegibles a una suite `*-maintenance`; eleva `--cap` solo con justificación |
+| Bifurcación de criterio sin resolver | Un hallazgo requiere una decisión de política/alcance/autoridad | Responde el prompt de inquiry estructurada; el bucle nunca elige en silencio |
+| Falta una spec autoritativa | No hay `_spec/spec.md` | El envoltorio reencamina a `/plan-spec` para redactarla |
+| Compuerta de calidad FAIL | La salida no cumple los estándares | La remediación corrige la causa raíz y reaudita los loci tocados |
+
+## Ejemplos
+
+```bash
+# Dry-run: report detected suite, stage, planned audit dimensions, would-write targets
+/plan-audit --dry-run
+
+# Audit and actively remediate a named suite, capping the loop at 2 iterations
+/plan-audit path/to/plan-suite/ --remediate --cap 2
+```
+
+## Referencias cruzadas
+
+- [Visión general del pipeline](/docs/pipeline)
+- [/plan-review](/docs/pipeline/plan-review)
+- [/plan-execute](/docs/pipeline/plan-execute)
+- [Plantilla de Suite de Plan Maestra](/docs/reference/commands)

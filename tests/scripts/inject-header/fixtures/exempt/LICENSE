@@ -1,0 +1,15 @@
+Test fixture for the header-injector exemption test suite.
+
+This file's name (LICENSE, no extension) resolves to the `exempt`
+variant family at the injector's variant_family_for() resolver: the
+basename does not appear in BASENAME_VARIANT and there is no suffix to
+look up in SUFFIX_VARIANT, so the injector returns VARIANT_EXEMPT and
+treats the file as not-applicable. The file therefore needs no banner
+of its own; injecting one would be a category error per the spec's
+LICENSE-exemption rule.
+
+Copyright text: Copyright (c) Ahmed G. Gad — present here so the
+license-author-consistency check (a downstream validator) can verify
+the LICENSE's copyright holder agrees with the canonical banner's
+author identity, even though this LICENSE is exempt from the banner
+itself.

@@ -1,0 +1,68 @@
+---
+title: "/plan-review"
+description: "/plan-review——既存のプランスイートに対するフォレンジック監査——プローズの忠実度、一貫性、品質。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**役割：** 監査者
+**パイプライン位置：** 中間
+
+既存のプランスイートに対するフォレンジック監査——プローズの忠実度、一貫性、品質。
+
+## 正規の呼び出し
+
+```bash
+/plan-review
+```
+
+引数付き：
+
+```bash
+/plan-review [path/to/plan-suite/] [--focus AREA] [--dry-run]
+```
+
+## 入力
+
+生成済みのプランスイート + `/plan-generate` からの `_inputs/handoff-manifest.yml`。
+
+## 出力
+
+`PLAN-NOTES.md` 内のレビュースコアカード（`## Review Scorecards`）、`PROGRESS.md` 内のレビューサマリー、`PLAN-NOTES.md` 内の所見ごとの改訂影響マップ（大規模な永続レポートは `_outputs/` に）、およびレビュー判定を備えた拡張済みの `_inputs/handoff-manifest.yml`。
+
+## 下流
+
+`/plan-design`（条件付き —— アーキテクチャを伴うスイートのみ）に続いて `/plan-execute`。アーキテクチャを伴わないスイートでは、`/plan-execute` がレビュースコアカードを直接消費し、SHARED+ で実行をゲートします。
+
+## ワークフローのフェーズ
+
+このコマンドはフォレンジックでブラインドな行単位の監査を実行し、その後に対話型 Q&A で精緻化します。
+
+1. **コンテキストの読み込み** — すべてのプランスイートファイル（`phases/**/PHASE.md`、インフラファイル、レポート）と上流のハンドオフマニフェストを読み取ります。スイートが存在しない場合は `Blocked: run /plan-generate first` で拒否します。
+2. **監査** — ブラインドレビューマンデートのもとで各次元（プローズの忠実度、内部一貫性、網羅性、品質、リスク、標準、ドメイン、アーキテクチャ、創造的品質）を走査します。
+3. **所見の振り分け** — 構造化問い合わせチャネルを通じて各所見を処理（accept · revise · reject · defer）し、所見ごとの重大度を集計します。
+4. **事前発出ゲートの実行** — レビューレポートと更新されたスコアカードに対して 15 バーのゲートを実行します。失敗はプロモーションをブロックします。
+5. **レビューの発行** — レビュースコアカードを `PLAN-NOTES.md` に、レビューサマリーを `PROGRESS.md` に、そして拡張済みのハンドオフマニフェストを書き込みます。
+
+## 失敗モード
+
+| 症状 | 原因 | 復旧 |
+|---------|-------|----------|
+| Blocked: run /plan-generate first | 生成済みのスイートがない | `/plan-generate` を実行して、このコマンドが監査するスイートを作成する |
+| 未解決の所見が残る | 監査が未解決の欠陥を表面化した | 終端の判定の前に、各所見を処理（accept · revise · reject · defer）する |
+| スコアカード FAIL | ある次元が CONDITIONAL の閾値を下回る | 失敗した次元に対応して再レビューする |
+
+## 例
+
+```bash
+# 監査範囲をプレビューするためのドライラン
+/plan-review --dry-run
+
+# 指定したプランスイートを 1 つの領域に絞って監査する
+/plan-review path/to/plan-suite/ --focus architecture
+```
+
+## 相互参照
+
+- [パイプラインの概要](/docs/pipeline)
+- [コマンドリファレンス](/docs/reference/commands)

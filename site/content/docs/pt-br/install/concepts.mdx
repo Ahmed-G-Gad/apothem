@@ -1,0 +1,66 @@
+---
+title: "Conceitos"
+description: "Glossário que define perfis compartilhados, adaptadores de harness, regras, hooks, portões de conformidade, skills e trabalhadores delegados no Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Uma referência rápida para os termos que você encontrará ao longo da documentação do Apothem.
+
+## Perfil compartilhado
+
+Um arquivo YAML validado por schema em `~/.config/apothem/profile.yaml` (substitua com `--profile PATH`).
+Ele é a única fonte da verdade para sua identidade, preferências e configuração; cada adaptador de
+harness o lê na instalação e deriva dele a configuração nativa desse harness.
+
+## Adaptador de harness
+
+Um adaptador por plataforma que traduz o perfil compartilhado para o formato de configuração nativo de um
+harness específico. Os runtimes suportados estão listados em:
+
+```text
+Claude Code, Cursor, Gemini CLI, etc.
+```
+
+Instalar o Apothem sempre significa: instalar o perfil compartilhado e então materializar um ou mais
+adaptadores.
+
+## Regra comportamental
+
+Um arquivo Markdown sob src/apothem/rules/ que é carregado em toda interação (sempre ativo) ou
+apenas ao editar arquivos sob um caminho específico (filtrado por caminho). As regras codificam como o
+harness deve se comportar.
+
+## Hook
+
+Um script Python registrado em settings.json que dispara em eventos do ciclo de vida do harness
+(PreToolUse, PostToolUse, SessionStart, PreCompact, Stop, PostCompact). Os hooks impõem mandatos de conformidade
+em tempo real antes que a saída chegue ao disco. O modelo de eventos de hook é uma superfície do Claude Code
+hoje; adaptadores para harnesses sem um mecanismo de hook simplesmente o omitem.
+
+## Portão de conformidade
+
+A fração mecânica do portão de pré-emissão de quinze barras (M1-M15) — os validadores autônomos
+que devem passar antes que qualquer artefato seja emitido. O portão de pré-emissão é o piso de qualidade; o
+portão de conformidade executa suas barras verificáveis por máquina, e os hooks impõem barras individuais em tempo real.
+
+## Suíte de planejamento
+
+Um diretório estruturado em &lt;project-root&gt;/.apothem/plans/&lt;suite-name&gt;/ contendo um spec, um plano mestre, arquivos
+PHASE.md por fase e artefatos de saída. O pipeline /plan gerencia suítes de planejamento.
+
+## Skill
+
+Uma técnica reutilizável, invocável por slash-command, empacotada como um arquivo SKILL.md sob
+src/apothem/skills/&lt;name&gt;/. As skills estendem a superfície de slash-command além do pipeline
+/plan integrado.
+
+## Trabalhador delegado
+
+Um assistente persistente, de escopo definido, declarado no caminho canônico:
+
+```text
+src/apothem/agents/<name>.md
+```
+
+Os trabalhadores delegados cuidam de pesquisa, auditoria, verificação de qualidade e gerenciamento de memória.

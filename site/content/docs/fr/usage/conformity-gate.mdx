@@ -1,0 +1,49 @@
+---
+title: "Porte de conformité"
+description: "Exécutez la porte de conformité d'Apothem pour vérifier la santé de l'écosystème."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+La porte de conformité dans `src/apothem/conformity/gate.py` exécute quinze
+vérifications mécaniques sur chaque artefact que l'opérateur rédige.
+
+## Exécuter la porte
+
+```bash
+python -m apothem.conformity.gate
+```
+
+## Barres de la porte
+
+| Barre | Vérification | Type |
+|-----|-------|------|
+| M1 | Alignement de la portée | Raisonnée |
+| M2 | Isolation interne du plan (CM-7) | Mécanique |
+| M3 | Conformité aux normes | Raisonnée |
+| M4 | Validité du frontmatter | Mécanique |
+| M5 | Aucune formulation interdite | Mécanique |
+| M6 | Divulgation éditoriale | Raisonnée |
+| M7 | Aucune référence de plan dans les artefacts | Mécanique |
+| M8 | En-tête de paternité présent | Mécanique |
+| M9 | Évaluation honnête | Raisonnée |
+| M10 | Discipline de nommage | Mécanique |
+| M11 | Dispositif de sprint | Raisonnée |
+| M12 | Disposition canonique | Mécanique |
+| M13 | Soin du code | Raisonnée |
+| M14 | Participation systémique | Raisonnée |
+| M15 | Paternité humaine | Mécanique |
+
+## Vérifications ciblées
+
+```bash
+# Exécuter une seule vérification
+python -m apothem.conformity.gate --check multi-surface-coherence
+
+# Exécuter sur un fichier spécifique
+python -m apothem.conformity.gate src/apothem/rules/my-rule.md
+```
+
+## Intégration CI
+
+La porte s'exécute en CI via `.github/workflows/conformity.yml` à chaque push.

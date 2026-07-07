@@ -1,0 +1,72 @@
+---
+title: "/research-spec"
+description: "/research-spec — Frames a free-form research question or raw notes into a spec-grade research spec (falsifiable hypotheses, scope, criteria, success metrics) ready for /research-theory."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Role:** Principal Investigator (framing)
+**Pipeline position:** mid-chain
+
+Frames a free-form research question or raw notes into a spec-grade `_spec/research-spec.md` — a testable, falsifiable hypothesis set with explicit scope, inclusion / exclusion criteria, and success metrics — ready for `/research-theory`.
+
+## Canonical invocation
+
+```bash
+/research-spec
+```
+
+With arguments:
+
+```bash
+/research-spec [path/to/question-or-notes] [--suite-name NAME] [--quick SLUG]
+```
+
+## Inputs
+
+A free-form research question or raw notes (operator-supplied inline or as a path).
+
+## Outputs
+
+`_spec/research-spec.md` (question, falsifiable hypotheses, scope, inclusion / exclusion criteria, success metrics, glossary) + `_inputs/handoff-manifest.yml`. `--quick` writes a lightweight project-local research brief instead.
+
+## Downstream
+
+/research-theory (downstream consumer)
+
+## Workflow phases
+
+The command follows the standard `/research` pipeline workflow:
+
+1. **Load context** — Read the question / notes, the rules, and any existing suite state.
+2. **Frame the question** — Decompose into falsifiable hypotheses with explicit scope and inclusion / exclusion criteria; surface every ambiguity via the structured-inquiry channel.
+3. **Set success metrics** — State the measurable criteria by which the research will be judged.
+4. **Verify outputs** — Confirm the spec is definitive (every authority-data gap resolved through the structured-inquiry channel, none left as an unfilled confirmation placeholder) and passes the rigor-mandate floor.
+5. **Update the handoff manifest** — Record the spec path and the open / resolved inquiry counts.
+6. **Emit the spec** — `_spec/research-spec.md` plus the handoff manifest.
+
+## Rigor floor
+
+Each claimed contribution is constrained to be distinct, substantial, and independently ablatable, so its marginal effect can later be isolated. The depth of the required rigor floor scales to the target-venue ambition; where that ambition is unspecified it is confirmed through structured inquiry, never invented.
+
+## Failure modes
+
+| Symptom | Cause | Recovery |
+|---------|-------|----------|
+| Unresolved hypothesis ambiguity | Question under-specified | Surface via structured inquiry; do not invent scope |
+| No measurable success metric | Goal stated as activity, not outcome | Re-frame as a testable, falsifiable outcome |
+| Missing question input | No prose / notes supplied | Supply the research question inline or as a path |
+
+## Examples
+
+```bash
+# Frame a question into a research spec
+/research-spec ~/notes/retrieval-latency-study.md --suite-name retrieval-latency
+
+# Lightweight project-local research brief
+/research-spec --quick retrieval-latency
+```
+
+## Cross-references
+
+- [Pipeline overview](/docs/pipeline)
+- [Commands reference](/docs/reference/commands)

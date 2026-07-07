@@ -1,0 +1,45 @@
+---
+title: "로고 사용"
+description: "변형, 래스터 크기, 여백 요구 사항, 허용된 사용과 금지된 사용을 포함한 로고 사용 규칙."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## 변형
+
+| 변형 | 파일 | 사용 사례 |
+|---|---|---|
+| 마크, 밝은 표면 | `assets/logo.svg` | README 헤더, 사이트 히어로, 다이어그램, 밝은 배경 |
+| 마크, 어두운 표면 | `assets/logo-dark.svg` | 사이트 히어로와 어두운 배경 |
+| 워드마크, 밝은 표면 | `assets/logo-wordmark.svg` | 브랜드 이름이 마크와 함께 표시되어야 하는 넓은 록업 |
+| 워드마크, 어두운 표면 | `assets/logo-wordmark-dark.svg` | 어두운 표면 위의 넓은 록업 |
+| 브라우저 파비콘 | `assets/favicon.svg`, `assets/favicon.ico`, `assets/favicon-16x16.png`, `assets/favicon-32x32.png` | 브라우저 탭과 ICO 폴백 소비자 |
+| Apple 터치 아이콘 | `assets/apple-touch-icon-180.png` | iOS 북마크 |
+| 소셜 카드 | `assets/og-banner-1200x630.png`, `assets/twitter-card.png`, `assets/social-preview.svg` | Open Graph, Twitter/X, GitHub 리포지토리 미리보기 표면 |
+
+## 래스터 크기
+
+사전 생성된 마크 래스터는 16, 32, 64, 128, 192, 256, 512, 1024px로 제공됩니다.
+밝은 변형과 어두운 변형 모두 제공되지만, 192px 래스터는 예외로 밝은 변형만
+제공됩니다(PWA `purpose: "any"` 설치 아이콘). 파비콘은 전체 위브 마크가 아니라
+단순화된 모노그램을 사용하므로 브라우저 탭 크기에서도 판독 가능한 상태를
+유지합니다.
+
+## 여백
+
+모든 측면에서 로고 높이의 1/4에 해당하는 최소 여백을 유지하세요.
+로고를 판독하기 어렵게 만드는 배경 위에 두지 마세요.
+파비콘 모노그램은 작은 정사각형 표면에만 사용하세요. 마크가 숨 쉴 공간이 충분한
+모든 곳에서는 전체 마크 또는 워드마크를 사용하세요.
+
+## 허용된 사용
+
+- Apothem 웹사이트 또는 리포지토리로 링크하기
+- Apothem에 관한 통합 문서와 블로그 게시물
+- Apothem을 참조하는 프레젠테이션
+
+## 금지된 사용
+
+- 로고의 모양, 비율, 또는 위브 모티프를 수정하는 것
+- 허가 없이 로고를 사용해 공식 보증을 암시하는 것
+- 새로운 합성 마크를 만드는 방식으로 로고를 다른 마크와 결합하는 것

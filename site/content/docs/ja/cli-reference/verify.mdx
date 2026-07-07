@@ -1,0 +1,82 @@
+---
+title: "verify"
+description: "apothem verify コマンドの CLI リファレンス。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+ハーネスのアダプターのインストールを検証します。
+
+## 構文
+
+```
+apothem verify --harness NAME|all [--project PATH]
+                [--quiet|-q] [--verbose|-v]
+                [--format plain|json] [--json] [--no-color]
+```
+
+選択された各アダプターの `verify()` 実装を呼び出します。選択されたすべてのアダプターが、管理対象が存在し有効であると報告した場合にのみ、0 で終了します。
+
+## オプション
+
+| オプション | 説明 |
+|---|---|
+| `--harness NAME` | 検証するハーネスのアダプター、またはレジストリ全体の集合を表す `all`（必須）。 |
+| `--project PATH` | プロジェクト範囲のハーネス向けのプロジェクトルート。 |
+| `--quiet`, `-q` | 情報出力を抑制します。エラーのみを発行します。 |
+| `--verbose`, `-v` | 追加の診断出力を発行します。 |
+| `--format plain\|json` | 出力形式（デフォルト：`plain`）。 |
+| `--json` | `--format json` の短縮形。 |
+| `--no-color` | 出力中の ANSI カラーコードを無効にします。 |
+| `-h`, `--help` | ヘルプを表示して終了します。 |
+
+## JSON 出力
+
+```json
+{
+  "status": "success",
+  "command": "verify",
+  "action": "verified",
+  "harness": "claude-code",
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "unchanged",
+      "operation": "verify",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "managed targets verified",
+      "installed": true,
+      "verified": true
+    }
+  ],
+  "warnings": [],
+  "error": null,
+  "installed": true,
+  "verified": true,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+選択されたハーネスのいずれかが見つからないか無効な場合、`status` は `error` になり、失敗した結果行は `verified: false` を持ち、プロセスはコード 1 で終了します。
+
+## 例
+
+```bash
+apothem verify --harness claude-code
+apothem verify --harness claude-code --json
+apothem verify --harness all --project .
+```
+
+## 終了コード
+
+| コード | 意味 |
+|---|---|
+| 0 | ハーネスがインストールされている |
+| 1 | ハーネスがインストールされていない |
+
+## 関連項目
+
+- [apothem install](/docs/cli-reference/install) — ハーネスの構成をインストールする
+- [apothem update](/docs/cli-reference/update) — 現在のプロファイルをハーネスに再適用する
+- [apothem doctor](/docs/install/concepts) — システム全体のインストール診断

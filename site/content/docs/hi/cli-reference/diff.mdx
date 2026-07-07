@@ -1,0 +1,98 @@
+---
+title: "diff"
+description: "apothem diff कमांड के लिए CLI संदर्भ।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+किसी एकल कोडिंग-सहायक के लिए लंबित कॉन्फ़िगरेशन परिवर्तनों का पूर्वावलोकन करें।
+
+## सारांश
+
+```
+apothem diff --harness NAME [--profile PATH] [--project PATH]
+             [--quiet|-q] [--verbose|-v]
+             [--format plain|json] [--json] [--no-color]
+```
+
+`diff` एक केवल-पढ़ने योग्य निरीक्षण कमांड है। यह वही मटेरियलाइज़ेशन चलाता है जो
+`install` कमांड चलाता, लेकिन ड्राई-रन मोड में — डिस्क पर कुछ भी नहीं लिखा जाता। फिर यह,
+प्रत्येक नियोजित लक्ष्य के अनुसार, ऑपरेशन, लक्ष्य पथ, परिणाम, और (उन ऑपरेटर-स्वामित्व
+वाले एंकर के लिए जिन्हें मर्ज किया जाएगा) परिवर्तन का एकीकृत diff रेंडर करता है। यह
+परिवर्तन किए बिना इस प्रश्न का उत्तर है कि "इस समय `apothem install` इस कोडिंग-सहायक के
+साथ क्या करेगा?"।
+
+ऑपरेटर-स्वामित्व वाले लक्ष्यों के लिए — वे फ़ाइलें जो आपकी अपनी सामग्री और एक
+Apothem-प्रबंधित ब्लॉक दोनों धारण करती हैं — diff उन सटीक पंक्तियों को दिखाता है जो
+बदलेंगी। अन्य लक्ष्यों के लिए, नियोजित ऑपरेशन और परिणाम का सारांश दिया जाता है।
+
+`diff` एकल कोडिंग-सहायक पर कार्य करता है। `status` के विपरीत, यह `all` स्वीकार नहीं
+करता; एक कोडिंग-सहायक नाम पास करें।
+
+## विकल्प
+
+| विकल्प | विवरण |
+|---|---|
+| `--harness NAME` | पूर्वावलोकन करने योग्य कोडिंग-सहायक अडैप्टर (आवश्यक; एकल कोडिंग-सहायक, `all` नहीं)। |
+| `--profile PATH` | साझा प्रोफ़ाइल YAML का पथ। डिफ़ॉल्ट `~/.config/apothem/profile.yaml`। |
+| `--project PATH` | परियोजना-स्कोप्ड कोडिंग-सहायकों के लिए परियोजना रूट। चयनित कोडिंग-सहायक के परियोजना-स्कोप्ड होने पर आवश्यक। |
+| `--quiet`, `-q` | सूचनात्मक आउटपुट को दबाता है; केवल त्रुटियाँ निकाली जाती हैं। |
+| `--verbose`, `-v` | अतिरिक्त नैदानिक आउटपुट निकालता है। |
+| `--format plain\|json` | आउटपुट प्रारूप (डिफ़ॉल्ट: `plain`)। |
+| `--json` | `--format json` का संक्षिप्त रूप। |
+| `--no-color` | आउटपुट में ANSI रंग कोड अक्षम करता है। |
+| `-h`, `--help` | सहायता दिखाता है और बाहर निकलता है। |
+
+## JSON आउटपुट
+
+`--json` एनवेलप ड्राई-रन install एनवेलप को प्रतिबिंबित करता है। `status` `dry_run` होता
+है, `files_written` हमेशा खाली रहता है, और `materialization` ब्लॉक तथा `results` सूची
+पूर्ण नियोजित-लक्ष्य विवरण धारण करते हैं। प्रत्येक ऑपरेटर-स्वामित्व वाली परिणाम पंक्ति का
+`detail.diff` फ़ील्ड एकीकृत diff स्ट्रिंग धारण करता है।
+
+```json
+{
+  "status": "dry_run",
+  "command": "diff",
+  "action": "dry_run",
+  "harness": "claude-code",
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "updated",
+      "operation": "sentinel_merge",
+      "path": "C:\\Users\\Example\\.claude\\CLAUDE.md",
+      "message": "dry run: no filesystem changes made",
+      "detail": {
+        "ownership_class": "operator-owned",
+        "diff": "--- a/CLAUDE.md\n+++ b/CLAUDE.md\n@@ ..."
+      }
+    }
+  ],
+  "warnings": [],
+  "error": null,
+  "materialization": { "...": "..." }
+}
+```
+
+## उदाहरण
+
+```bash
+apothem diff --harness claude-code
+apothem diff --harness cursor --project .
+apothem diff --harness claude-code --json
+```
+
+## निकास कोड
+
+| कोड | अर्थ |
+|---|---|
+| 0 | diff रिपोर्ट किया गया (लंबित परिवर्तन रिपोर्ट किए जाते हैं, त्रुटि नहीं) |
+| 1 | अपेक्षित सत्यापन, प्रोफ़ाइल, कोडिंग-सहायक, या परियोजना त्रुटि |
+
+## यह भी देखें
+
+- [apothem status](/docs/cli-reference/status) — प्रत्येक कोडिंग-सहायक के लिए इंस्टॉल/सत्यापन/बहाव की स्थिति रिपोर्ट करें
+- [apothem verify](/docs/cli-reference/verify) — एकल कोडिंग-सहायक इंस्टॉलेशन सत्यापित करें
+- [apothem install](/docs/cli-reference/install) — पूर्वावलोकन किए गए परिवर्तन लागू करें

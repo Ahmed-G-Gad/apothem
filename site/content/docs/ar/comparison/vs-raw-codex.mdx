@@ -1,0 +1,46 @@
+---
+title: "Apothem مقابل تهيئة Codex اليدوية"
+description: "صيانة AGENTS.md وخطّافات Codex ومهاراته ووكلائه يدويًّا، مقابل تثبيتها من ملف التعريف المشترك لـ Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+يقرأ <bdi>Codex</bdi> تعليمات المستخدم من <bdi>`AGENTS.md`</bdi>، ويحمّل الخطّافات من
+<bdi>`hooks.json`</bdi> أو <bdi>`config.toml`</bdi>، ويكتشف الوكلاء المخصّصين تحت
+<bdi>`agents/`</bdi>، ويكتشف المهارات من جذر مهارات <bdi>Codex</bdi> المشترك. ويثبّت
+محوِّل <bdi>codex</bdi> في <bdi>Apothem</bdi> تلك الأسطح من ملف التعريف المشترك مع ترك
+إعدادات <bdi>`config.toml`</bdi> المملوكة للمشغّل دون مساس.
+
+## مقارنة الجهد
+
+| المهمة | تهيئة يدوية | يديرها Apothem |
+| ---- | --------------- | --------------- |
+| كتابة <bdi>`AGENTS.md`</bdi> | تحرير تعليمات المستخدم يدويًّا | مثبَّت من قالب إقلاع <bdi>Codex</bdi> |
+| كتابة الخطّافات | كتابة <bdi>`hooks.json`</bdi> أو جداول خطّافات <bdi>TOML</bdi> يدويًّا | مثبَّت في <bdi>`~/.codex/hooks.json`</bdi> مع مساعِدات خطّافات <bdi>Apothem</bdi> تحت <bdi>`~/.codex/hooks/`</bdi> |
+| كتابة الوكلاء المخصّصين | كتابة ملفات <bdi>TOML</bdi> تحت <bdi>`~/.codex/agents/`</bdi> يدويًّا | محوَّلة من وكلاء <bdi>Markdown</bdi> في <bdi>Apothem</bdi> |
+| كتابة أوامر قابلة لإعادة الاستخدام | بناء المهارات يدويًّا، دليلًا تلو الآخر | مغلّفة بصيغة <bdi>`~/.agents/skills/*/SKILL.md`</bdi> |
+| إبقاء القواعد متوائمة مع البيئات الأخرى | يدويًّا، لكل أداة | تلقائيًّا عند <bdi>`apothem update`</bdi> |
+| التحقّق من صحّة التهيئة | فحص يدوي | <bdi>`apothem verify --harness codex`</bdi> |
+
+## ما الذي يديره Apothem
+
+يثبّت محوِّل <bdi>codex</bdi> الملفّ <bdi>`AGENTS.md`</bdi> و<bdi>`hooks.json`</bdi> وملفات
+مساعِدات الخطّافات والوكلاء المخصّصين المحوَّلين والمهارات المولَّدة. ولا يكتب فوق
+<bdi>`~/.codex/config.toml`</bdi>؛ إذ يبقى النموذج وصندوق الحماية والموافقة و<bdi>MCP</bdi>
+وسائر تفضيلات وقت التشغيل مملوكةً للمشغّل.
+
+## مسار الترحيل
+
+1. شغّل <bdi>`apothem profile init`</bdi> لإنشاء ملف التعريف المشترك إن لم تكن قد فعلت
+   بعد.
+2. انقل القواعد من <bdi>`AGENTS.md`</bdi> القائم لديك إلى المتن المشترك.
+3. أبقِ إعدادات وقت التشغيل القائمة في <bdi>`config.toml`</bdi> ضمن <bdi>Codex</bdi> ما لم
+   تختر إدارتها يدويًّا في مكان آخر.
+4. شغّل <bdi>`apothem install --harness codex`</bdi> لتثبيت أسطح <bdi>Codex</bdi> الأصلية.
+5. شغّل <bdi>`apothem verify --harness codex`</bdi> للتأكّد من وصول الملفات.
+6. استخدم <bdi>`apothem update --harness codex`</bdi> مع كل تغيير لاحق.
+
+## اقرأ تاليًا
+
+- [مرجع محوِّل Codex](/docs/harnesses/codex)
+- [نظرة عامة على المقارنة](/docs/comparison)

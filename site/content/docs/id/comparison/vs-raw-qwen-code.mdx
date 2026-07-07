@@ -1,0 +1,44 @@
+---
+title: "Apothem versus konfigurasi manual Qwen Code"
+description: "Memelihara pengaturan, perintah, keterampilan, dan subagen Qwen Code dengan tangan versus merendernya dari profil bersama Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Qwen Code membaca pengaturan, hook, `QWEN.md`, perintah Markdown native,
+direktori SKILL.md, dan subagen Markdown. Apothem merender kunci pengaturan yang
+terdokumentasi dari profil bersama dan mengonversi kelompok bersama menjadi
+bentuk sistem file native Qwen di mana Qwen Code mendukungnya.
+
+## Perbandingan usaha
+
+| Tugas | Konfigurasi manual | Dikelola Apothem |
+| ---- | --------------- | --------------- |
+| Menulis aturan | Memelihara QWEN.md dan file pendukung dengan tangan | Dirender atau dirujuk dari profil bersama |
+| Mengonfigurasi hook | Menyunting entri hook `settings.json` dengan tangan | Dipasang melalui peta hook native Qwen Code |
+| Menulis perintah, keterampilan, agen | Memelihara tiap direktori Qwen dengan tangan | Dikonversi dari kelompok bersama Apothem |
+| Menjaga kelompok selaras dengan lingkungan lain | Manual, per alat | Otomatis pada `apothem update` |
+| Memasang / menghapus permukaan | Manual | `apothem install` / `apothem uninstall` |
+| Memverifikasi konfigurasi sudah benar | Inspeksi manual | `apothem verify --harness qwen-code` |
+
+## Apa yang dikelola Apothem
+
+Adapter qwen-code menulis `settings.json`, memasang `QWEN.md`, mengonversi
+perintah garis miring Apothem menjadi file perintah Markdown Qwen, menyalin
+keterampilan ke permukaan keterampilan native, mengadaptasi definisi pembantu
+sebagai subagen Qwen, dan mendaftarkan dispatcher hook Apothem. Aturan, templat,
+dan material sumber hook tetap berada di subpohon pendukung Apothem dan dirujuk
+dari konteks native.
+
+## Jalur migrasi
+
+1. Jalankan `apothem profile init` untuk membuat profil bersama jika Anda belum punya.
+2. Pindahkan aturan, perintah, keterampilan, dan agen Qwen Code yang ada ke korpus bersama.
+3. Jalankan `apothem install --harness qwen-code` untuk merender permukaan native.
+4. Jalankan `apothem verify --harness qwen-code` untuk memastikan konfigurasi telah mendarat.
+5. Gunakan `apothem update --harness qwen-code` untuk setiap perubahan berikutnya.
+
+## Baca berikutnya
+
+- [Referensi adapter Qwen Code](/docs/harnesses/qwen-code)
+- [Ikhtisar perbandingan](/docs/comparison)

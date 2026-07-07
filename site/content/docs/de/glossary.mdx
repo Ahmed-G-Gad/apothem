@@ -1,0 +1,157 @@
+---
+title: "Glossar"
+description: "Apothem-Glossar — wichtige Begriffe und Konzepte."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Wichtige Begriffe, die in Apothems Dokumentation, Code und Governance verwendet
+werden, in alphabetischer Reihenfolge.
+
+## Adapter
+Eine Klasse, die das `HarnessAdapter`-Protokoll implementiert und das gemeinsame
+Profil in ein harness-spezifisches Konfigurationsformat übersetzt. Adapter liegen
+je einer pro Subpaket unter `src/apothem/harnesses/<name>/`. Siehe
+[Harness-Adapter-Abstraktion](/docs/architecture/harness-adapter-abstraction).
+
+## Audit-Review-Sequenz
+Der elf Befehle umfassende Audit-Durchlauf, der Code, Code-Review, Sicherheit,
+Performance, Architektur, UX, Barrierefreiheit, Dokumentation, Abhängigkeiten,
+Lieferkette und Bedrohungsmodell abdeckt. Angetrieben von der
+`/fortress`-Härtungs-Pipeline. Siehe
+[Audit-Review-Sequenz](/docs/concepts/review-fortress).
+
+## Behavior-Diff-Golden
+Ein festgeschriebener Snapshot in `tests/fixtures/behavior-diff/`, gegen den die
+deterministischen Install- und CLI-Orakel byteweise verglichen werden, sodass eine
+unbeabsichtigte Änderung an einem Install-Plan, einer gerenderten Kohorte oder einer
+CLI-Ausgabe als Drift erkannt wird, statt still auszuliefern. Der Vergleich
+kanonisiert plattformdivergente Bytes, damit der Korpus über Betriebssysteme hinweg
+portabel bleibt.
+
+## Konformitäts-Gate
+Der mechanische Anteil des fünfzehnstufigen Pre-Emission-Gates — die maschinell
+prüfbaren Validatoren unter `src/apothem/conformity/gate.py`. Läuft vor jeder
+Artefakt-Ausgabe; die abwägungsbasierten Stufen werden im Review bewertet.
+
+## Kohorte
+Eine gruppierte Menge synchronisierter Artefakte einer Art — Regeln, Commands,
+Skills, Agents, Hooks, Output-Styles, Schemas oder Templates —, die die Engine aus
+dem einzigen gemeinsamen Profil in jeden Harness materialisiert. Ein Profil trägt
+jede Kohorte; jeder Adapter projiziert sie in die native Oberfläche seines Harness.
+
+## Einstiegspunkt
+Die in `pyproject.toml` deklarierte setuptools-Einstiegspunkt-Gruppe
+`apothem.harnesses`. Sie spiegelt die Harness-Registry exakt wider; ein Test
+sichert zu, dass die deklarierten Einstiegspunkte den registrierten Adaptern
+entsprechen, sodass ein konventionskonformer, aber nicht registrierter Adapter als
+Abdeckungsregression zutage tritt.
+
+## Harness
+Eine Assistenzplattform, die Apothem über einen dedizierten Adapter unterstützt.
+Unterstützte Plattformen:
+
+```text
+Antigravity
+Claude Code
+CodeBuddy
+Codex
+Cursor
+Gemini CLI
+GitHub Copilot
+GLM (Z.ai)
+Hermes
+Kimi Code
+Kiro
+Open-Claw
+OpenCode
+Qwen Code
+Trae
+Windsurf
+Zed
+```
+
+Siehe [Harnesses](/docs/harnesses).
+
+## Harness-Registry
+Der Katalog unter `src/apothem/lib/harness_registry.py` (Daten in
+`harness_registry_data.py`), der jeden Adapter auflistet und **zur Laufzeit
+maßgeblich** ist — die Engine löst jeden Adapter daraus auf, sodass sie aus einem
+schlichten Checkout lädt. Die Dateisystem-Konventions-Erkennung unter
+`src/apothem/harnesses/` ist eine Konformitäts-Paritätsprüfung, nicht der
+Laufzeit-Resolver.
+
+## Hook
+Ein Befehl, der bei einem Harness-Lebenszyklus-Ereignis registriert ist
+(PreToolUse, PostToolUse, SessionStart, Stop). Die native Registrierungsoberfläche
+variiert je Harness — eine Settings-Datei, ein dediziertes Hooks-Manifest oder, wo
+ein Harness keine native Hook-Oberfläche bereitstellt, vom Anweisungsanker
+referenziertes Apothem-Unterstützungsmaterial. Hook-Skripte und ihre
+Nachrichtenkontexte liegen unter `src/apothem/hooks/`.
+
+## Materializer
+Ein optionales `materialize_native_config(profile) -> str` eines Adapters, das aus
+dem gemeinsamen Profil eine native Einzeldatei-Konfiguration rendert, für Harnesses,
+deren Konfiguration eine einzige strukturierte Oberfläche ist (z. B. eine JSON- oder
+YAML-Settings-Datei). Template-Propagations-Adapter lassen den Materializer weg und
+kopieren oder konvertieren stattdessen Kohorten gemäß dem Propagation-Manifest.
+
+## Output-Style
+Eine Markdown-Definition unter `output-styles/`, die das Antwortformat und den Ton
+des Assistenten formt (zum Beispiel ein Concise-Engineer- oder
+Forensic-Auditor-Stil). Eine der synchronisierten Kohorten, die ein Adapter
+installiert.
+
+## Plan-Suite
+Eine strukturierte Sammlung von Planungsartefakten (PREAMBLE.md, MASTER-PLAN.md,
+PROGRESS.md, PLAN-NOTES.md, phasenbezogene PHASE.md-Dateien), die von
+`/plan-generate` erzeugt und von `/plan-execute` ausgeführt wird, unter einem
+projektlokalen `.apothem/plans/`-Verzeichnis (ein veralteter `.plans/`-Baum wird via
+`apothem migrate-workspace` hochgestuft).
+
+## Pre-Emission-Gate
+Der fünfzehnstufige Freigabeblock, der erfasst wird, bevor ein Artefakt ausgegeben
+oder eine Phasenausgabe als abgeschlossen gilt. Die mechanischen Stufen laufen als
+Konformitäts-Gate; die abwägungsbasierten Stufen werden im Review bewertet. Siehe
+[Pre-Emission-Gate](/docs/governance/pre-emission-gate-registry).
+
+## Propagation-Manifest
+`src/apothem/lib/propagation-manifest.yaml` — deklariert je
+Template-Propagations-Adapter, welche Kohorten er installiert und welche
+harness-nativen Formatkonvertierungen (zum Beispiel die Konvertierung von Commands
+in die TOML-Form eines Harness) anfallen.
+
+## Release-Bereitschafts-Gates
+Die drei Konvergenz-Gates: lokale Konformität, Continuous Integration und die
+Audit-Review-Sequenz. Ein Release läuft erst weiter, nachdem die relevanten Gates
+bestanden wurden.
+
+## Eigenständige Laufzeit
+Apothem vendored seine Laufzeit-Python-Abhängigkeiten (wie `pyyaml` und
+`jsonschema`) unter `src/apothem/_vendor/`, sodass die Engine aus einem schlichten
+Checkout läuft. Nur `click` und `rich` werden zur Installationszeit aufgelöst. Siehe
+[Eigenständige Laufzeit](/docs/architecture/self-contained-runtime).
+
+## Ernsthaftigkeitsstufe
+Eine von vier Governance-Ebenen (EXPLORING, PERSONAL_USE, SHARED, PUBLIC_LAUNCH),
+die bestimmt, welche Qualitätskontrollen gelten. Siehe
+[Ernsthaftigkeitsstufen](/docs/concepts/seriousness-tiers).
+
+## Gemeinsames Profil
+Eine schema-validierte YAML-Datei unter `~/.config/apothem/profile.yaml` oder
+`--profile PATH`. Harness-Adapter kombinieren sie mit den mitgelieferten
+Apothem-Kohorten und leiten native Konfigurationen für jeden unterstützten Harness
+ab.
+
+## STANDARD-CONVENTION-PIN
+Die adapterspezifische `STANDARD-CONVENTION-PIN.md`, die die URL der
+Vendor-Dokumentation, den Commit-SHA, das Snapshot-Datum sowie den kanonischen
+Dateinamen und das Schema erfasst, auf die die Konventionen des Adapters
+festgeschrieben sind. In einem Turnus neu verifiziert, sodass ein Adapter niemals
+still von der Vendor-Oberfläche abdriftet, auf die er zielt.
+
+## Unterstützungs-Teilbaum
+Ein Apothem-eigenes Verzeichnis, das eine Harness-Installation für Kohorten nutzt,
+für die der Harness kein natives Primitiv hat (Regeln, Hooks, Skills oder Agents).
+Es wird vom nativen Anweisungsanker des Harness referenziert, statt in ein
+vendor-reserviertes Verzeichnis gezwängt zu werden.

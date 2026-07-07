@@ -1,0 +1,39 @@
+---
+title: "Apothem 对比手工 Trae 配置"
+description: "手工维护 Trae 在 .trae/rules/ 下的规则，对比通过 Apothem 的共享配置档案来渲染它们。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Trae 从 `.trae/rules/` 目录读取规则，其供应商锚点为 `project_rules.md` 和
+`user_rules.md`。Apothem 的 trae 适配器从共享配置档案在该目录中渲染一个专用的
+`apothem-rules.md` 文件。本页将手工维护那套配置与用 Apothem 管理它作对比。
+
+## 工作量对比
+
+| 任务 | 手工配置 | Apothem 托管 |
+| ---- | --------------- | --------------- |
+| 编写规则 | 在 `.trae/rules/` 下手写每个文件 | 从共享语料库渲染 |
+| 让 Apothem 表面保持独立 | 记得不要让 `project_rules.md` 过载 | 适配器写入一个专用的 `apothem-rules.md` |
+| 让规则与其他环境保持对齐 | 手工，逐工具 | 在 `apothem update` 时自动完成 |
+| 验证配置是否正确 | 手工检查 | `apothem verify --harness trae` |
+
+## Apothem 管理什么
+
+trae 适配器把共享规则渲染进 `.trae/rules/` 下一个专用的 `apothem-rules.md` 文件，
+并保持操作者拥有的 `project_rules.md` 和 `user_rules.md` 锚点不受触碰。Trae 没有
+PreToolUse 钩子，因此防护意图寄居于规则散文中，而非工具调用拦截点。共享规则的每次
+更改都会在下一次 `apothem update` 时重新渲染该文件。
+
+## 迁移路径
+
+1. 如果你还没有创建共享配置档案，运行 `apothem profile init`。
+2. 把现有 `.trae/rules/` 文件中的规则迁入共享语料库。
+3. 运行 `apothem install --harness trae` 来渲染 `apothem-rules.md` 文件。
+4. 运行 `apothem verify --harness trae` 来确认配置已落地。
+5. 之后的每次更改都使用 `apothem update --harness trae`。
+
+## 接下来阅读
+
+- [Trae 适配器参考](/docs/harnesses/trae)
+- [对比概览](/docs/comparison)

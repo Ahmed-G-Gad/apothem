@@ -1,0 +1,47 @@
+---
+title: "自定义规则"
+description: "为你的项目编写一条自定义常驻规则。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+本示例添加一条项目特定的常驻规则，在所有文件中强制执行某命名约定。
+
+## 规则文件
+
+```markdown
+---
+name: "kebab-filenames"
+description: "Enforce kebab-case filenames in the src/ tree"
+pathFilter: ""
+alwaysApply: true
+---
+
+# Kebab-case filenames
+
+All new files created under `src/` MUST use kebab-case naming
+(lowercase letters, digits, and hyphens only — no underscores,
+no camelCase, no PascalCase).
+
+**Correct:** `src/styles/button-group.css`, `src/components/nav-bar.css`
+**Incorrect:** `src/styles/buttonGroup.css`, `src/components/NavBar.css`
+
+When in doubt, err on the side of more hyphens.
+```
+
+将其保存到 harness 安装根目录内的 `rules/kebab-filenames.md`（Claude Code 适配器为 `~/.claude/`；否则替换为相应的 harness 原生路径）。
+
+## 验证规则已加载
+
+```bash
+python -m apothem.conformity.gate --check frontmatter
+```
+
+## 传播到各 harness
+
+为每个已安装的 harness 各运行一次更新命令：
+
+```bash
+apothem update --harness claude-code
+apothem update --harness cursor
+```

@@ -1,0 +1,82 @@
+# SPDX-License-Identifier: MIT
+
+# Cross-platform OS × Python matrix workflow.
+#
+# Fifteen-cell matrix (3 OS × 5 Python) running pytest with xdist-driven
+# parallelism per cell. Complements ci.yml's `quality` job (2 OS × 5 Python =
+# 10 cells with the full lint + format + type-check + ecosystem-validator
+# slate) by adding macOS coverage and isolating the test suite for
+# expanded interpreter / OS reach.
+#
+# Each cell delegates to the reusable workflow at
+# `.github/workflows/reusable-python-setup.yml`, which performs harden-runner
+# + checkout + setup-python + dependency install + the caller-supplied
+# pytest invocation. The reusable workflow declares its own `permissions:`
+# block (contents: read) and per-job timeout-minutes; this workflow's
+# top-level `permissions:` baseline is identical and per-cell timeouts
+# are passed through.
+#
+# fail-fast: false — one cell's failure surfaces all 15 results rather than
+# cancelling siblings on first red. Cross-platform regressions otherwise
+# hide behind the first-OS failure.
+#
+# SHA-pinning policy: this workflow contains no direct action references
+# (every `uses:` resolves to the in-repo reusable workflow). The reusable
+# workflow honours the canonical SHA-pinning policy documented in ci.yml.
+
+name: CI Matrix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - '.github/workflows/ci-matrix.yml'
+      - '.github/workflows/reusable-python-setup.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - '.github/workflows/ci-matrix.yml'
+      - '.github/workflows/reusable-python-setup.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-matrix-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  test-matrix:
+    name: pytest / ${{ matrix.os }} / py${{ matrix.python-version }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        python-version:
+          - "3.10"
+          - "3.11"
+          - "3.12"
+          - "3.13"
+          - "3.14"
+    uses: ./.github/workflows/reusable-python-setup.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+      runs-on: ${{ matrix.os }}
+      install-extras: dev
+      cache-key-suffix: ci-matrix
+      run-command: python -m pytest -n auto --color=yes
+      egress-policy: audit
+      timeout-minutes: 90

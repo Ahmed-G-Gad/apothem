@@ -1,0 +1,41 @@
+---
+title: "Apothem 对比手工 Qwen Code 配置"
+description: "手工维护 Qwen Code 的设置、命令、技能与子代理，相较于从 Apothem 的共享配置档案渲染它们。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Qwen Code 读取设置、钩子、`QWEN.md`、原生 Markdown 命令、SKILL.md
+目录以及 Markdown 子代理。Apothem 从共享配置档案渲染有文档记录的设置键，
+并在 Qwen Code 支持的情况下，把共享群组转换为 Qwen 原生的文件系统形态。
+
+## 工夫对比
+
+| 任务 | 手工配置 | Apothem 管理 |
+| ---- | --------------- | --------------- |
+| 编写规则 | 手工维护 QWEN.md 及其支撑文件 | 从共享配置档案渲染或引用 |
+| 配置钩子 | 手工编辑 `settings.json` 钩子条目 | 通过 Qwen Code 的原生钩子映射安装 |
+| 编写命令、技能、代理 | 逐个手工维护每个 Qwen 目录 | 从共享的 Apothem 群组转换 |
+| 让群组与其他环境保持对齐 | 手工，逐工具 | 在 `apothem update` 时自动完成 |
+| 安装 / 移除该配置面 | 手工 | `apothem install` / `apothem uninstall` |
+| 验证配置是否正确 | 手工检查 | `apothem verify --harness qwen-code` |
+
+## Apothem 管理什么
+
+qwen-code 适配器写入 `settings.json`，安装 `QWEN.md`，把 Apothem 斜杠命令
+转换为 Qwen 的 Markdown 命令文件，把技能复制到原生技能面，将辅助定义适配为
+Qwen 子代理，并注册 Apothem 钩子分发器。规则、模板和钩子源材料仍保留在
+Apothem 的支撑子树下，并从原生上下文中加以引用。
+
+## 迁移路径
+
+1. 若尚未创建共享配置档案，运行 `apothem profile init` 来创建它。
+2. 把已有的 Qwen Code 规则、命令、技能和代理移入共享语料库。
+3. 运行 `apothem install --harness qwen-code` 来渲染原生配置面。
+4. 运行 `apothem verify --harness qwen-code` 来确认配置已落地。
+5. 此后每次变更都使用 `apothem update --harness qwen-code`。
+
+## 接下来阅读
+
+- [Qwen Code 适配器参考](/docs/harnesses/qwen-code)
+- [对比概览](/docs/comparison)

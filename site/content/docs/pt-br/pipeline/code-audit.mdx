@@ -1,0 +1,69 @@
+---
+title: "/code-audit"
+description: "/code-audit — Auditoria forense de código entre arquivos na escala do corpus do repositório."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Papel:** Auditor
+**Posição no pipeline:** fortaleza
+
+Auditoria forense de código entre arquivos na escala do corpus do repositório.
+
+## Invocação canônica
+
+```bash
+/code-audit
+```
+
+Com argumentos:
+
+```bash
+/code-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+```
+
+## Entradas
+
+Repositório hospedeiro em qualquer estado do ciclo de vida
+
+## Saídas
+
+Achados em nível de corpus + REPORT.md
+
+## A jusante
+
+A etapa de auditoria forense de código da Sequência de Auditoria de Revisão
+
+## Fases do fluxo de trabalho
+
+O comando segue o fluxo de trabalho padrão do pipeline `/plan`:
+
+1. **Carregar contexto** — Ler a suíte de plano, as regras e o Contrato de Retomada.
+2. **Verificar pré-requisitos** — Confirmar que as fases dependentes estão concluídas.
+3. **Executar tarefas** — Cumprir a missão do comando.
+4. **Verificar saídas** — Confirmar que todas as saídas declaradas existem e passam nas comportas de qualidade.
+5. **Atualizar PROGRESS.md** — Registrar as saídas verificadas no Registro de Saídas de Fase.
+6. **Emitir REPORT.md** — Prova de publicação da comporta de pré-emissão registrada.
+
+## Modos de falha
+
+| Sintoma | Causa | Recuperação |
+|---------|-------|----------|
+| Pré-requisito incompleto | Fase dependente não finalizada | Conclua primeiro a fase a montante |
+| Comporta de qualidade FAIL | A saída não atende aos padrões | Corrija a saída e reexecute |
+| Falta um arquivo de entrada | Arquivo da suíte de plano ausente | Execute `/plan-generate` para criá-lo |
+
+## Exemplos
+
+```bash
+# Dry-run to preview what would happen
+/code-audit --dry-run
+
+# Execute against a named plan suite
+/code-audit path/to/plan-suite/
+```
+
+## Referências cruzadas
+
+- [Visão geral do pipeline](/docs/pipeline)
+- [Modelo de Suíte de Plano Mestra](/docs/reference/commands)

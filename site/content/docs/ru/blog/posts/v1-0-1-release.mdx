@@ -1,0 +1,131 @@
+---
+title: "Apothem v1.0.1 — выпуск запуска"
+description: "Apothem v1.0.1 доступен — один общий профиль, материализуемый в семнадцать окружений ИИ-ассистентов, несколько путей установки и подписанный, заверенный выпуск."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem v1.0.1 — это выпуск запуска host-агностичного менеджера конфигурации для
+окружений ИИ-ассистентов: один общий профиль, семнадцать окружений,
+единственная подписанная версия и доказательства цепочки
+поставок, приложенные к самому выпуску.
+
+## Тезис: один профиль, семнадцать окружений
+
+Apothem читает один общий профиль по адресу `~/.config/apothem/profile.yaml` и
+материализует его в нативную конфигурацию, которую ожидает каждое окружение. Вы
+пишете свои правила поведения, навыки, хуки и соглашения один раз. Apothem
+рендерит их в семнадцать нативных для окружения целей и поддерживает их
+синхронизированными.
+
+Семнадцать адаптеров в этом выпуске:
+
+- antigravity
+- claude-code
+- codebuddy
+- codex
+- cursor
+- gemini-cli
+- github-copilot
+- glm
+- hermes
+- kimi-code
+- kiro
+- open-claw
+- opencode
+- qwen-code
+- trae
+- windsurf
+- zed
+
+Добавьте инструмент в свой рабочий процесс, выполните одну команду — и ваша
+конфигурация на месте. Уберите инструмент, и Apothem удалит его начисто — не
+оставляя файлов-сирот.
+
+## Установка
+
+Несколько путей установки, один CLI под капотом:
+
+1. **Плагин Claude Code** — внутри Claude Code:
+
+   ```text
+   /plugin marketplace add ahmed-g-gad/apothem
+   /plugin install apothem@apothem
+   ```
+
+2. **npx** — запустите CLI напрямую из npm-пакета `@ahmed-g-gad/apothem`, без
+   шага установки:
+
+   ```bash
+   npx @ahmed-g-gad/apothem profile init
+   npx @ahmed-g-gad/apothem install --harness all --project .
+   ```
+
+3. **Скриптовый установщик в один шаг** — помещает самодостаточную среду
+   выполнения и лаунчер `apothem` в PATH:
+
+   ```bash
+   curl -fsSL https://apothem.ahmedgad.com/install.sh | sh    # POSIX
+   ```
+
+   ```powershell
+   irm https://apothem.ahmedgad.com/install.ps1 | iex         # Windows
+   ```
+
+4. **Нативные плагины и расширения инструментов** — расширение Gemini CLI
+   (`gemini extensions install https://github.com/ahmed-g-gad/apothem`),
+   расширение Qwen Code (`qwen extensions install ahmed-g-gad/apothem`), плагин
+   Codex (`codex plugin marketplace add ahmed-g-gad/apothem`) и расширение
+   семейства VS Code (Visual Studio Marketplace, охватывающее
+   VS Code и GitHub Copilot).
+
+## Положение цепочки поставок
+
+[GitHub Release v1.0.1](https://github.com/ahmed-g-gad/apothem/releases/tag/v1.0.1)
+несёт полный набор доказательств рядом с кодом:
+
+- sdist и wheel, проверенные перед публикацией.
+- SBOM в формате CycloneDX.
+- Бесключевые пакеты подписи Sigstore cosign для каждого артефакта.
+- Происхождение сборки SLSA-3, проверенное внутри самого рабочего процесса
+  выпуска.
+- Архивы платформенной среды выполнения (darwin / linux / windows) с
+  подписанным манифестом `SHA256SUMS`.
+
+Тег выпуска подписан GPG, а npm-пакет публикуется через Trusted Publishing
+(OIDC) с автоматическим происхождением.
+
+## Что в коробке
+
+CLI `apothem` предоставляет команды оператора, нужные вам для полного
+жизненного цикла конфигурации:
+
+- `apothem install` — материализует профиль в одно окружение или во все.
+- `apothem uninstall` — удаляет материализованную конфигурацию окружения,
+  оставляя общий профиль нетронутым.
+- `apothem update` — повторно материализует после того, как вы отредактировали
+  профиль.
+- `apothem verify` — обнаруживает расхождение между профилем и конфигурацией
+  окружения на диске.
+- `apothem harnesses` — выводит список каждого зарегистрированного адаптера.
+- `apothem profile` — просматривает общий профиль и управляет им.
+- `apothem doctor` — диагностирует проблемы окружения и конфигурации.
+
+Каждый адаптер окружения реализует единообразный протокол `HarnessAdapter` —
+`install`, `uninstall`, `is_installed`, `verify` — так что каждое окружение ведёт
+себя предсказуемо с места оператора, независимо от формата поставщика под ним.
+Подробнее об устройстве читайте в
+[техническом разборе архитектуры адаптера](/docs/blog/posts/multi-harness-adapter-design),
+а о согласовании форматов — в
+[конвергенции соглашений между окружениями](/docs/blog/posts/cross-harness-convention-convergence).
+
+## Куда двигаться дальше
+
+- [Быстрый старт](/docs/install/quickstart) — установите и материализуйте свой
+  первый профиль.
+- [Окружения](/docs/harnesses) — справочник по адаптерам для всех семнадцати
+  целей.
+- [Концепции](/docs/concepts) — модель профиля и конвейер материализации.
+
+Apothem распространяется под лицензией MIT и разрабатывается открыто на
+[github.com/ahmed-g-gad/apothem](https://github.com/ahmed-g-gad/apothem).

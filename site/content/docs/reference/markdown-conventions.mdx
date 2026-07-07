@@ -1,0 +1,37 @@
+---
+title: "Markdown Conventions"
+description: "Standardize Markdown flavor, heading structure, code fence declarations, internal link formats, authorship banners, and validator enforcement."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Canonical reference for Markdown shape and formatting across every authored `.md` artifact.** The summary at [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Conventions is the inline declaration; this page is the standalone reference downstream contributors cite.
+
+---
+
+## 1. Flavor
+
+GitHub-Flavored Markdown (GFM) is the host flavor. Every artifact renders correctly on GitHub's web UI, in the Fumadocs documentation site, and in standard Markdown-aware editors.
+
+## 2. Heading Hierarchy
+
+One H1 per file. Subsequent headings descend monotonically (H2 → H3 → H4) without skipping levels. Sentence-case headings; no ALL-CAPS, no Title Case Across Every Word. The H1 carries the document's primary title and IS the document's anchor in the docs-site nav.
+
+## 3. Code Blocks
+
+Fenced code blocks declare their language (` ```python `, ` ```bash `, ` ```yaml `, ` ```json `, ` ```mermaid `). Untagged blocks suppress syntax highlighting and signal authoring drift; the markdownlint MD040 rule at [`.markdownlint.jsonc`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.jsonc) enforces the language tag.
+
+## 4. Internal Links
+
+Internal cross-references use **site-root paths** (e.g., `[Authorship header](/docs/reference/authorship-header)`). Bare repository-relative paths with a `.md`/`.mdx` extension (`/docs/foo.md`) and full URLs to the same repo (`https://github.com/ahmed-g-gad/apothem/blob/main/...`) are avoided for in-site links because they resist page renames and section reorganizations.
+
+These `/docs/...` site-root paths — and the `/<locale>/docs/...` form for the non-default cohort locales — are resolved against the on-disk page set under `site/content/docs/` by the `link-check` validator: `/docs/a/b` maps to `site/content/docs/a/b.mdx` or the folder index `site/content/docs/a/b/index.mdx`, and the locale form maps under the `site/content/docs/<locale>/` subtree. A link to a removed or renamed route resolves to neither file and is caught as a dead route (a user-facing 404) at the conformity gate rather than only by the site build.
+
+External links to mutable refs (`main`, `master`, `latest`, `HEAD`) are pinned to commit SHAs or release tags whenever the linked content's stability matters; volatile references are documented as such with a `{/* volatile */}` adjacent comment.
+
+## 5. Authorship Banner
+
+Every Markdown artifact (with the exceptions enumerated at [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas/header-exceptions.txt)) carries the canonical authorship-header banner at byte 0, in the HTML-comment variant per [Authorship header](/docs/reference/authorship-header). The banner sits above the YAML frontmatter where both are present.
+
+## 6. Validators
+
+The `markdownlint-cli2` invocation at [`.markdownlint.jsonc`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.jsonc) enforces the bulk of the rules in §§1–4. The `file-header-grep` at `src/apothem/conformity/file_header_grep.py` enforces §5. The `link-check` validator at `src/apothem/conformity/link_check.py` enforces the §4 link-resolution discipline — it resolves relative links against the source file's directory and `/docs/...` (and `/<locale>/docs/...`) site routes against the `site/content/docs/` page set, flagging any that resolve to no page on disk. All are wired into the pre-commit hook chain at [`.pre-commit-config.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/.pre-commit-config.yaml) and the CI quality job at [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml).

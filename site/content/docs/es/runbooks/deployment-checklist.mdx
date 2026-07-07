@@ -1,0 +1,163 @@
+---
+title: "Lista de verificación de despliegue"
+description: "Lista de verificación previa para desplegar o compartir el ecosistema Apothem"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Pasos de verificación previos al despliegue del ecosistema Apothem en una
+máquina nueva, a su uso compartido con otras personas o a tratarlo como apto para producción.
+
+---
+
+## 1. Validez de YAML
+
+- [ ] Todos los archivos de reglas se analizan sin errores de YAML — el bloque de frontmatter abre con `---`, cierra con `---` y no contiene contenido huérfano fuera del bloque
+- [ ] Todos los archivos de trabajadores delegados se analizan sin errores de YAML
+- [ ] Todos los archivos de comandos se analizan sin errores de YAML
+- [ ] Todos los archivos `SKILL.md` de habilidades se analizan sin errores de YAML
+
+**Verificación:** `python scripts/dev/validate_ecosystem.py` analiza el
+frontmatter de cada artefacto y marca los errores de YAML y los campos requeridos ausentes. Para detectar
+ad hoc elementos de lista huérfanos: `rg -n "^- " src/apothem/rules/*.md`.
+
+---
+
+## 2. Completitud del frontmatter
+
+Para cada tipo de artefacto, verifica que los campos requeridos estén presentes:
+
+### Reglas (`src/apothem/rules/*.md`)
+
+- [ ] `name` — identificador en kebab-case que coincide con el nombre del archivo
+- [ ] `version` — semver `MAJOR.MINOR.PATCH` (p. ej., `"X.Y.Z"`)
+- [ ] `updated` — fecha ISO 8601 (p. ej., `"2026-04-20"`)
+- [ ] `description` — resumen de una sola frase
+- [ ] `scope` — `"always-on"` o `"path-filtered"`
+- [ ] `portability` — `"universal"`, `"universal-with-windows-caveats"`, `"unix-only"` o `"windows-only"`
+- [ ] `pathFilter` — presente y con una cadena glob válida para las reglas filtradas por ruta; ausente para las reglas siempre activas
+
+### Comandos (`src/apothem/commands/*.md`)
+
+- [ ] `name` — nombre del comando en kebab-case
+- [ ] `version`, `updated`, `description`, `argument-hint` presentes
+- [ ] `disable-model-invocation` presente e intencional (`true` para comandos solo de orientación)
+- [ ] `effort`, `portability` revisados donde estén presentes (opcionales según el schema)
+
+### Trabajadores delegados
+
+Ruta:
+
+```text
+src/apothem/agents/*.md
+```
+
+- [ ] `name`, `version`, `updated`, `description` presentes
+- [ ] `tools` — lista separada por comas de las herramientas permitidas
+- [ ] `disallowedTools` — enumera explícitamente las herramientas no permitidas
+- [ ] `maxTurns` — establecido (con comentario justificativo si es > 10)
+- [ ] `permissionMode` — **NO debe ser `"bypassPermissions"`** — usa `"default"`
+- [ ] `memory: false` salvo que la memoria persistente sea intencional
+
+### Habilidades (`src/apothem/skills/*/SKILL.md`)
+
+- [ ] `name`, `version`, `updated`, `description` presentes
+- [ ] `user-invocable` — declarado (true/false)
+
+---
+
+## 3. Seguridad
+
+- [ ] **Ningún trabajador delegado usa `permissionMode: "bypassPermissions"`** — esto omite la confirmación interactiva para operaciones Write/Bash
+- [ ] Las listas de `tools` del trabajador son mínimas — solo las herramientas que el trabajador realmente requiere
+- [ ] Los trabajadores con acceso a `Bash` están justificados y tienen límites de maxTurns
+- [ ] No hay rutas, tokens ni secretos codificados de forma fija en ningún artefacto
+- [ ] Los hooks en `settings.json` tienen tiempos de espera razonables (≤ 60 segundos) y no ejecutan código arbitrario procedente de la entrada del usuario
+
+---
+
+## 4. Integridad de las referencias cruzadas
+
+- [ ] Cada regla listada en la tabla `src/apothem/rules/` existe en disco en la ruta indicada
+- [ ] Cada comando listado en la tabla `src/apothem/commands/` existe en disco
+- [ ] Cada trabajador delegado listado en la tabla del registro `src/apothem/agents/` existe en disco
+- [ ] Cada habilidad listada en la tabla `src/apothem/skills/` existe en disco
+- [ ] Cada hook en la tabla `src/apothem/hooks/` tiene una entrada correspondiente en `settings.json`
+- [ ] Todos los archivos `src/apothem/rules/*.md` referenciados por la columna `Implements` de CLAUDE.md existen
+
+---
+
+## 5. Cobertura de mandatos
+
+- [ ] Cada CM-N referenciado en CLAUDE.md tiene una ubicación de aplicación (ya sea un archivo de regla o una definición inline explícita)
+- [ ] Ningún archivo de regla contradice a otro (especialmente en torno al escalado de seriedad)
+- [ ] Se respeta la delineación de tres facetas de CM-21 — ninguna regla reclama la propiedad de la faceta CM-21 de otra regla
+
+---
+
+## 6. Pruebas de humo funcionales
+
+Ejecuta primero la superficie de validación de Python — es rápida, sin conexión y detecta
+regresiones estructurales:
+
+- [ ] `pytest tests` — pruebas unitarias del runtime de hooks, todas en verde
+- [ ] `python scripts/dev/validate_hooks.py` — estructura de hooks + comprobación de higiene solo de Python superada
+- [ ] `python scripts/dev/validate_ecosystem.py` — árbol completo + frontmatter + comprobaciones de hooks delegados superadas
+- [ ] `python scripts/dev/chaos_pass.py` — cada comando de hook configurado devuelve un sobre JSON válido bajo entradas degradadas
+
+Luego, escenarios en vivo:
+
+- [ ] `/plan-spec --interactive` (o `/plan-spec <sample-file>`) — completa la ingesta/aclaración sin errores a nivel de comando
+- [ ] `/plan-generate --dry-run` — produce una vista previa de la estructura sin escribir archivos
+- [ ] `/plan-status` sobre una suite de plan completa — devuelve recuentos de fases precisos
+- [ ] Despacho de trabajadores delegados: el trabajador `codebase-explorer` invocado con un alcance pequeño se completa dentro de maxTurns y devuelve salida estructurada
+
+---
+
+## 7. Vigencia de la documentación
+
+- [ ] `CHANGELOG.md` (en la raíz del ecosistema) refleja cada cambio de artefacto desde la última versión publicada; la sección de la próxima versión está poblada antes de que aterrice la etiqueta, o cada cambio ya está cortado en una sección publicada
+- [ ] `site/content/docs/developer-guide.mdx` describe con precisión la estructura actual de los artefactos
+- [ ] `site/content/docs/reference/artifact-schema.mdx` coincide con los campos de frontmatter realmente presentes en los artefactos
+- [ ] `site/content/docs/reference/settings-reference.mdx` coincide con la configuración de hooks real en `settings.json`
+- [ ] `README.md` es coherente con el árbol en disco
+
+---
+
+## 8. Portabilidad (si se comparte con otras personas)
+
+- [ ] Todas las rutas en los comandos de hooks son agnósticas respecto al entorno o usan expansión de `~`
+- [ ] Los comandos de hooks usan la forma exec y evitan cadenas de comandos específicas de un shell
+- [ ] No hay rutas codificadas de forma fija `C:\Users\username` ni `/home/username` en ningún artefacto
+- [ ] `settings.json` usa una única tabla de cobertura de eventos de hooks y la ruta canónica del módulo de despacho
+
+---
+
+## 9. Alineación de versiones
+
+- [ ] La `version` de CLAUDE.md es la más alta de cualquier artefacto del árbol (o igual a la versión del artefacto más recientemente actualizado, por convención)
+- [ ] La `version` de cada artefacto coincide con el semver indicado (`MAJOR.MINOR.PATCH`)
+- [ ] CHANGELOG.md contiene exactamente la entrada de la versión objetivo antes del etiquetado
+- [ ] El campo `updated` de cada artefacto está en la fecha de su última edición que cambia el comportamiento, o después
+- [ ] Ningún artefacto lleva una `version` inferior a la versión en la que se modificó por última vez (sin regresiones)
+- [ ] `src/apothem/skills/plan-suite/SKILL.md` y `src/apothem/skills/plan-suite/master-template.md` están fijados a la misma línea de versión de plantilla
+
+---
+
+## Aprobación
+
+| Categoría de comprobación | Estado | Notas |
+| -------------- | ------ | ----- |
+| Validez de YAML | | |
+| Completitud del frontmatter | | |
+| Seguridad | | |
+| Integridad de las referencias cruzadas | | |
+| Cobertura de mandatos | | |
+| Pruebas de humo funcionales | | |
+| Vigencia de la documentación | | |
+| Portabilidad | | |
+| Alineación de versiones | | |
+
+**Despliegue aprobado por:** ___________________
+**Fecha:** ___________________
+**Versión del ecosistema desplegada:** ___________________

@@ -1,0 +1,351 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash(git log:*)"
+    ],
+    "deny": [
+      "Read(.env*)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(~/.ssh/**)",
+      "Read(**/.audit/**)",
+      "Read(**/__pycache__/**)",
+      "Read(**/.mypy_cache/**)",
+      "Read(**/.pytest_cache/**)",
+      "Read(**/.ruff_cache/**)",
+      "Read(**/.tox/**)",
+      "Read(**/.venv/**)",
+      "Read(**/node_modules/**)",
+      "Read(**/dist/**)",
+      "Read(**/build/**)",
+      "Read(**/site/dist/**)",
+      "Bash(rm -rf /:*)",
+      "Bash(rm -rf /*:*)",
+      "Bash(rm -rf ~:*)",
+      "Bash(rm -rf ~/:*)",
+      "Bash(sudo:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push --force-with-lease:*)",
+      "Bash(git push -f:*)",
+      "Bash(eval:*)",
+      "Bash(exec:*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${PYTHON_BIN}",
+            "timeout": 30,
+            "statusMessage": "Initializing session posture",
+            "args": [
+              "<ROOT>/.apothem/support/hooks/dispatch.py",
+              "SessionStart"
+            ]
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${PYTHON_BIN}",
+            "timeout": 10,
+            "statusMessage": "Validating write target and content",
+            "args": [
+              "<ROOT>/.apothem/support/hooks/dispatch.py",
+              "PreToolUse",
+              "pretooluse-write"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "${PYTHON_BIN}",
+            "timeout": 10,
+            "statusMessage": "Injecting authorship header if missing",
+            "args": [
+              "<ROOT>/.apothem/support/hooks/dispatch.py",
+              "PreToolUse",
+              "pretooluse-write-header-guard"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "${PYTHON_BIN}",
+            "timeout": 10,
+            "statusMessage": "Enforcing plans locality on the target path",
+            "args": [
+              "<ROOT>/.apothem/support/hooks/dispatch.py",
+              "PreToolUse",
+              "pretooluse-write-plan-guard"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "${PYTHON_BIN}",
+            "timeout": 10,
+            "statusMessage": "Flagging unpinned or untrusted dependency additions",
+            "args": [
+              "<ROOT>/.apothem/support/hooks/dispatch.py",
+              "PreToolUse",
+              "pretooluse-dependency-guard"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "${PYTHON_BIN}",
+            "timeout": 10,
+            "statusMessage": "Flagging unsafe dynamic evaluation or deserialization",
+            "args": [
+              "<ROOT>/.apothem/support/hooks/dispatch.py",
+              "PreToolUse",
+              "pretooluse-eval-guard"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "${PYTHON_BIN}",
+            "timeout": 10,
+            "statusMessage": "Running conformity checks on proposed content",
+            "args": [
+              "<ROOT>/.apothem/support/conformity/gate.py",
+              "--hook"
+            ]
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${PYTHON_BIN}",
+            "timeout": 10,
+            "statusMessage": "Validating edit target and content",
+            "args": [
+              "<ROOT>/.apothem/support/hooks/dispatch.py",
+              "PreToolUse",
+              "pretooluse-edit"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "${PYTHON_BIN}",
+            "timeout": 10,
+            "statusMessage": "Injecting authorship header on file creation",
+            "args": [
+              "<ROOT>/.apothem/support/hooks/dispatch.py",
+              "PreToolUse",
+              "pretooluse-edit-header-guard"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "${PYTHON_BIN}",
+            "timeout": 10,
+            "statusMessage": "Enforcing plans locality on the target path",
+            "args": [
+              "<ROOT>/.apothem/support/hooks/dispatch.py",
+              "PreToolUse",
+              "pretooluse-write-plan-guard"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "${PYTHON_BIN}",
+            "timeout": 10,
+            "statusMessage": "Flagging unpinned or untrusted dependency additions",
+            "args": [
+              "<ROOT>/.apothem/support/hooks/dispatch.py",
+              "PreToolUse",
+              "pretooluse-dependency-guard"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "${PYTHON_BIN}",
+            "timeout": 10,
+            "statusMessage": "Flagging unsafe dynamic evaluation or deserialization",
+            "args": [
+              "<ROOT>/.apothem/support/hooks/dispatch.py",
+              "PreToolUse",
+              "pretooluse-eval-guard"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "${PYTHON_BIN}",
+            "timeout": 10,
+            "statusMessage": "Running conformity checks on proposed content",
+            "args": [
+              "<ROOT>/.apothem/support/conformity/gate.py",
+              "--hook"
+            ]
+          }
+        ]
+      },
+      {
+        "matcher": "NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${PYTHON_BIN}",
+            "timeout": 10,
+            "statusMessage": "Validating notebook cell content",
+            "args": [
+              "<ROOT>/.apothem/support/hooks/dispatch.py",
+              "PreToolUse",
+              "pretooluse-notebookedit"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "${PYTHON_BIN}",
+            "timeout": 10,
+            "statusMessage": "Enforcing plans locality on the notebook path",
+            "args": [
+              "<ROOT>/.apothem/support/hooks/dispatch.py",
+              "PreToolUse",
+              "pretooluse-write-plan-guard"
+            ]
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${PYTHON_BIN}",
+            "timeout": 10,
+            "statusMessage": "Validating shell command safety and isolation",
+            "args": [
+              "<ROOT>/.apothem/support/hooks/dispatch.py",
+              "PreToolUse",
+              "pretooluse-bash"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "${PYTHON_BIN}",
+            "timeout": 10,
+            "statusMessage": "Enforcing plans locality on shell redirections",
+            "args": [
+              "<ROOT>/.apothem/support/hooks/dispatch.py",
+              "PreToolUse",
+              "pretooluse-bash-plan-guard"
+            ]
+          },
+          {
+            "type": "command",
+            "command": "${PYTHON_BIN}",
+            "timeout": 10,
+            "statusMessage": "Flagging unsafe dynamic evaluation or deserialization",
+            "args": [
+              "<ROOT>/.apothem/support/hooks/dispatch.py",
+              "PreToolUse",
+              "pretooluse-eval-guard"
+            ]
+          }
+        ]
+      },
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${PYTHON_BIN}",
+            "timeout": 10,
+            "statusMessage": "Validating the (Recommended) option marker",
+            "args": [
+              "<ROOT>/.apothem/support/hooks/dispatch.py",
+              "PreToolUse",
+              "pretooluse-askuserquestion-recommended"
+            ]
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${PYTHON_BIN}",
+            "timeout": 10,
+            "statusMessage": "Tracking activity for proactive-compaction advisory",
+            "args": [
+              "<ROOT>/.apothem/support/hooks/dispatch.py",
+              "PostToolUse",
+              "posttooluse-proactive-compaction"
+            ]
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${PYTHON_BIN}",
+            "timeout": 30,
+            "statusMessage": "Externalizing state before context compression",
+            "args": [
+              "<ROOT>/.apothem/support/hooks/dispatch.py",
+              "PreCompact",
+              "precompact"
+            ]
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${PYTHON_BIN}",
+            "timeout": 30,
+            "statusMessage": "Restoring state from durable files after compaction",
+            "args": [
+              "<ROOT>/.apothem/support/hooks/dispatch.py",
+              "PostCompact",
+              "postcompact"
+            ]
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${PYTHON_BIN}",
+            "timeout": 60,
+            "statusMessage": "Finalizing session and externalizing state",
+            "args": [
+              "<ROOT>/.apothem/support/hooks/dispatch.py",
+              "Stop",
+              "stop"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,81 @@
+---
+title: "Actualización"
+description: "Actualiza Apothem y los adaptadores de entorno."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## Actualiza el plugin de Claude Code
+
+Refresca la entrada del marketplace y luego actualiza el plugin desde el menú `/plugin`
+dentro de Claude Code:
+
+```text title="Inside Claude Code"
+/plugin marketplace update apothem
+```
+
+Abre `/plugin`, selecciona **apothem** y elige la acción de actualización cuando aparezca
+listada una versión más reciente del plugin.
+
+## npx siempre ejecuta la versión actual
+
+`npx @ahmed-g-gad/apothem` resuelve el paquete publicado actual en cada
+ejecución, así que no hay nada que actualizar. Cuando una caché obsoleta de npx sirve una copia
+más antigua, fija explícitamente la dist-tag:
+
+```bash
+npx @ahmed-g-gad/apothem@latest --version
+```
+
+## Actualiza una instalación basada en el instalador
+
+Vuelve a ejecutar el instalador —es idempotente y avanza un árbol existente—
+o ejecuta el script de actualización dedicado:
+
+```bash title="macOS · Linux · WSL2 · BSD"
+bash scripts/installer/update.sh
+```
+
+```powershell title="Windows · PowerShell"
+pwsh -NoProfile -File scripts/installer/update.ps1
+```
+
+El script de actualización vuelve a hacer checkout del árbol de código en `APOTHEM_HOME` (por defecto
+`~/.apothem`) hacia `APOTHEM_REF`: sin definir resuelve la última etiqueta de versión firmada
+`vMAJOR.MINOR.PATCH`, un valor de etiqueta la fija, y `main` selecciona la rama móvil. Verifica la
+firma de la etiqueta con `git verify-tag` antes de re-materializar; una etiqueta sin firmar o
+manipulada aborta a menos que `APOTHEM_ALLOW_UNVERIFIED=1` rebaje el aborto a una advertencia. Luego
+re-materializa el entorno nombrado por `APOTHEM_HARNESS` ejecutando `apothem update` desde el árbol
+refrescado (el entorno toma sus valores por defecto según la tabla de
+[variables de entorno del instalador](/docs/how-to/installer-environment-variables)). Requiere una instalación previa: cuando
+no existe ningún árbol en `APOTHEM_HOME` y `APOTHEM_SOURCE` está sin definir, sale con
+un mensaje que te dirige primero al instalador.
+
+## Re-materializa la salida del entorno
+
+Después de actualizar el motor o de editar `~/.config/apothem/profile.yaml`,
+vuelve a derivar la configuración del entorno instalado. Los adaptadores de ámbito de usuario no necesitan
+`--project`; los de ámbito de proyecto sí.
+
+```bash
+apothem update --harness claude-code
+apothem update --harness cursor --project /path/to/project
+apothem update --harness all --project /path/to/project
+```
+
+Ejecuta el mismo comando con `--dry-run --json` cuando necesites una vista previa legible
+por máquina sin escrituras en el sistema de archivos.
+
+## Límite actual del comando
+
+`apothem update` actualiza únicamente la salida del entorno. La CLI no implementa
+`update --self`, `update --check` ni `update --apply`; actualiza el motor
+en sí a través del canal con el que lo instalaste: el flujo de `/plugin`, una nueva
+ejecución de `npx` o los scripts de instalación/actualización de arriba.
+
+## Comprueba la versión del motor
+
+```bash
+apothem --version
+npx @ahmed-g-gad/apothem --version
+```

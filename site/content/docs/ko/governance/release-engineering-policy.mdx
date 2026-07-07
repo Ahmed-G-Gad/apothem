@@ -1,0 +1,102 @@
+---
+title: "릴리스 엔지니어링 정책"
+description: "버전 관리, 릴리스 태그 지정, 지원 중단 주기, 호환성을 깨는 변경, 롤백 절차에 관한 다섯 가지 표준 정책."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+다섯 가지 정책이 `apothem` 의 릴리스 방식을 규정합니다.
+
+## 1. 시맨틱 버저닝
+
+이 프로젝트는 [시맨틱 버저닝 2.0](https://semver.org/) 에 따라 배포됩니다.
+버전 번호는 `MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]` 형식을 따릅니다.
+
+| 증가 | 트리거 |
+|------|--------|
+| **MAJOR** | 아티팩트 스키마, 맨데이트 식별자(CM-N / TM-N / CP-N), 또는 훅 계약에 대한 호환성을 깨는 변경 |
+| **MINOR** | 새로운 규칙, 위임 작업자, 명령, 스킬, 훅 이벤트, 또는 호환성을 깨지 않는 스키마 확장 |
+| **PATCH** | 명확화, 안티패턴 추가, 문서 수정, 그리고 동작을 변경하지 않는 편집 |
+
+후보 태그는 `vX.Y.Z-rc.N`(릴리스 후보)
+또는 `vX.Y.Z-alpha.N` / `vX.Y.Z-beta.N`(조기 액세스) 형식을 사용합니다.
+
+## 2. 릴리스 태그
+
+모든 릴리스는 `main` 에 `vMAJOR.MINOR.PATCH` 형식의 서명된 git 태그를
+배치합니다. 이 태그는 `.github/workflows/release.yml` 을 트리거하며,
+빌드, 서명, SBOM 및 SLSA-3 출처 생성을 수행하고
+GitHub Release 페이지를 게시합니다.
+
+태그 규칙:
+
+- **형식** — 정확히 `vMAJOR.MINOR.PATCH`. `release-` 접두사 없음,
+  `-final` 접미사 없음.
+- **주석** — 모든 태그는 주석 태그(`git tag -a -s`)이며,
+  태그 메시지에 릴리스 노트 요약을 담습니다.
+- **서명** — 모든 태그는 GPG 서명됩니다. 릴리스 워크플로는
+  추가로 각 아티팩트에 대한 Sigstore 키리스 cosign 서명과
+  SLSA-3 출처 릴리스 증명을 생성하며, 둘 다
+  GitHub Release 페이지에 첨부됩니다.
+
+## 3. 지원 중단 정책
+
+현재 공개 지원 라인은 가장 최근에 릴리스된 마이너 버전입니다. 프로젝트에
+여러 공개 마이너 버전이 있는 경우,
+[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
+의 지원 버전 매트릭스가 추가적인 중요 수정 전용 지원 기간에 대한
+신뢰할 수 있는 출처가 됩니다.
+
+지원 중단 주기:
+
+- **공지** — 지원 중단되는 심볼이나 동작은 해당 지원 중단이 포함된
+  릴리스의 `CHANGELOG.md` `### Deprecated` 섹션에서
+  공지됩니다. 릴리스 노트는
+  이 지원 중단 공지를 반영합니다.
+- **유예 기간** — 지원 중단된 심볼은 제거 전에
+  최소 한 번의 완전한 마이너 주기 동안 사용 가능한 상태로 유지됩니다.
+- **제거** — 제거는 `MAJOR` 증가에서 이루어집니다. 제거되는 각
+  심볼은 `CHANGELOG.md` `### Removed` 줄과
+  [사용법 가이드](/docs/how-to-guides) 아래의 마이그레이션 가이드 항목을 동반합니다.
+
+## 4. 호환성을 깨는 변경 정책
+
+호환성을 깨는 변경에는 다음이 필요합니다:
+
+1. **RFC 이슈** — `rfcs` 이슈 레이블에 대해 열리며,
+   호환성을 깨는 변경, 마이그레이션 경로, 롤백 전략을
+   설명합니다.
+2. **30일 코멘트 기간** — RFC는 병합 전 최소
+   30일 동안 열려 있습니다. 피드백이 필요할 때 메인테이너는
+   기간을 연장할 수 있습니다.
+3. **MAJOR 증가** — 호환성을 깨는 변경을 도입하는 릴리스는
+   MAJOR 구성 요소를 증가시킵니다.
+4. **마이그레이션 가이드** — 변경은 운영자를 마이그레이션 과정으로
+   안내하는 [사용법 가이드](/docs/how-to-guides) 항목과 함께
+   제공됩니다.
+
+## 5. 롤백 정책
+
+릴리스가 채택을 막는 회귀를 보일 경우:
+
+1. **되돌리기** — 문제가 되는 커밋이 `main` 에서 되돌려집니다.
+2. **릴리스 플러스 원 재태그** — 후속 릴리스가
+   `vMAJOR.MINOR.PATCH+1` 로 배치되어 되돌리기와 함께 부수적인
+   증분 수정을 포함합니다. 이전의 결함 릴리스는 GitHub Releases에서
+   **삭제되지 않습니다** — `CHANGELOG.md` 의 `### Yanked` 주석이
+   이 상황을 문서화하여 재현 가능한 빌드가
+   고정된 상태로 유지되도록 합니다.
+3. **커뮤니케이션** — 롤백에는 security-advisories 공지(
+   보안 관련 시) 또는 Discussions 게시물(
+   신뢰성 관련 시)이 동반됩니다.
+
+## 참고
+
+- [CHANGELOG.md](https://github.com/ahmed-g-gad/apothem/blob/main/CHANGELOG.md)
+  — 표준 릴리스 원장.
+- [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
+  — 지원 버전 매트릭스 및 보고 채널.
+- [cicd-pipeline.md](/docs/architecture/cicd-pipeline) — 모든 릴리스를
+  게이트하는 CI 검사 클래스.
+- [deployment-checklist.md](/docs/runbooks/deployment-checklist) — 릴리스별
+  프로덕션 준비 점검.

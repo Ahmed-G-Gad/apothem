@@ -1,0 +1,66 @@
+---
+title: "/threat-model-audit"
+description: "/threat-model-audit — Threat-modeling audit pass against STRIDE + PASTA methodologies."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Role:** Threat modeler
+**Pipeline position:** fortress
+
+Threat-modeling audit pass against STRIDE + PASTA methodologies.
+
+## Canonical invocation
+
+```bash
+/threat-model-audit
+```
+
+With arguments:
+
+```bash
+/threat-model-audit [path/to/target/] [--dry-run]
+```
+
+## Inputs
+
+Host repository architecture and data flows.
+
+## Outputs
+
+A deduplicated, severity-triaged threat-model findings report (report-only; remediation routes to `/fortress` / `/elevate`).
+
+## Downstream
+
+The threat-model dimension of the audit review sequence — swept in parallel by `/audit` and remediated by `/fortress`.
+
+## Workflow phases
+
+The command runs a threat-modeling audit pass over the host repository:
+
+1. **Map the surface** — Enumerate the architecture, entry points, trust boundaries, and data flows.
+2. **Model threats** — Apply the STRIDE + PASTA methodologies to each boundary and asset.
+3. **Triage findings** — Rank each threat by severity with a concrete-driver rationale.
+4. **Emit the report** — Synthesize the deduplicated, severity-triaged findings (report-only).
+
+## Failure modes
+
+| Symptom | Cause | Recovery |
+|---------|-------|----------|
+| No architecture surface | Target has no discoverable data-flow boundaries | Point the audit at a repository with mappable entry points and trust boundaries |
+| Unscoped finding | Threat asserted without a locus | Attach the affected asset / boundary and the methodology cell it fails |
+| Remediation expected | Audit is report-only | Route the findings to `/fortress` (remediation) or `/elevate` |
+
+## Examples
+
+```bash
+# Dry-run to preview the audit scope
+/threat-model-audit --dry-run
+
+# Audit a target repository
+/threat-model-audit path/to/target/
+```
+
+## Cross-references
+
+- [Pipeline overview](/docs/pipeline)
+- [Command reference](/docs/reference/commands)

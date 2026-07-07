@@ -1,0 +1,106 @@
+---
+title: "编写工具适配器"
+description: "从零编写一个新的 Apothem 工具适配器的分步指南。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+本指南讲解如何使用 `HarnessAdapter` 协议从零创建一个 Apothem 工具适配器。
+
+## 前置条件
+
+- Python 3.10+
+- 一个配置格式已知的目标助手工具
+- 理解[工具适配器抽象](/docs/architecture/harness-adapter-abstraction)
+
+## 第 1 步：创建适配器包
+
+```bash
+mkdir apothem-myadapter
+cd apothem-myadapter
+```
+
+```toml
+# pyproject.toml
+[project]
+name = "apothem-myadapter"
+version = "X.Y.Z"
+requires-python = ">=3.10"
+dependencies = ["apothem>=X.Y.Z"]  # pin the floor to the apothem release you target
+
+[project.entry-points."apothem.harnesses"]
+my-harness = "apothem_myadapter.adapter:MyHarnessAdapter"
+```
+
+## 第 2 步：实现适配器
+
+```python
+# src/apothem_myadapter/adapter.py
+from pathlib import Path
+from typing import Any
+
+from apothem.harnesses import HarnessAdapter
+
+
+class MyHarnessAdapter(HarnessAdapter):
+    """Implements the HarnessAdapter protocol for "My Harness".
+
+    First-party adapters in the apothem tree usually delegate to the
+    ``make_user_scope_adapter`` / ``make_project_scope_adapter`` factories in
+    ``apothem.harnesses._shared.wrapper_factories`` and declare their install
+    rules in ``src/apothem/lib/propagation-manifest.yaml``. Implementing the
+    protocol directly, as shown here, is the clearest way to read its surface.
+    """
+
+    @property
+    def name(self) -> str:
+        return "my-harness"
+
+    @property
+    def output_path(self) -> Path:
+        # The single native config file this adapter owns on disk.
+        return Path.home() / ".myharness" / "config.md"
+
+    def install(self, profile: dict[str, Any]) -> object:
+        # ``profile`` is the loaded shared-profile dict (rules, skills, hooks...).
+        self.output_path.parent.mkdir(parents=True, exist_ok=True)
+        self.output_path.write_text(self._render(profile), encoding="utf-8")
+        return self.output_path
+
+    def update(self, profile: dict[str, Any]) -> object:
+        return self.install(profile)  # idempotent re-materialization
+
+    def uninstall(self) -> None:
+        self.output_path.unlink(missing_ok=True)
+
+    def is_installed(self) -> bool:
+        return self.output_path.is_file()
+
+    def verify(self) -> bool:
+        return self.output_path.is_file() and self.output_path.stat().st_size > 0
+
+    def _render(self, profile: dict[str, Any]) -> str:
+        # Translate the profile into the harness's native format.
+        rules = profile.get("rules", [])
+        return "\n\n".join(str(rule) for rule in rules)
+```
+
+## 第 3 步：安装并测试
+
+```bash
+pip install -e .
+apothem install --harness my-harness
+apothem verify --harness my-harness
+```
+
+## 第 4 步：添加到 pyproject.toml 文档
+
+按照[工具页面模板](/docs/harnesses)在
+`site/content/docs/harnesses/my-harness.mdx` 中记录该工具。
+
+## 第 5 步：提交以纳入
+
+在 Apothem 仓库提交一个拉取请求，包含：
+- 适配器包（或指向它的链接）
+- 文档页面
+- 位于 `tests/packaging/test_myadapter_install.py` 的验证测试

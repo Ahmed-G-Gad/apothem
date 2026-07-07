@@ -1,0 +1,92 @@
+---
+title: "profile"
+description: "apothem profile コマンドグループの CLI リファレンス。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+共有 Apothem プロファイルを管理します。
+
+`profile` は、4 つのサブコマンドを持つコマンドグループです: `init`、`show`、`set`、`edit`。
+共有プロファイルは単一の信頼できる情報源であり、各ハーネスアダプターが
+それを各自のネイティブ構成へと物質化します。
+
+## 構文
+
+```
+apothem profile init [--profile PATH] [--force]
+                     [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+apothem profile show [--profile PATH] [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+apothem profile set KEY VALUE
+                     [--profile PATH] [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+apothem profile edit [--profile PATH] [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+```
+
+## 共通オプション
+
+各サブコマンドは、下記の共有オプションを受け付けます。
+
+| オプション | 説明 |
+|---|---|
+| `--profile PATH` | 共有プロファイル YAML へのパス（デフォルトは標準のプロファイル場所）。 |
+| `--quiet`, `-q` | 情報出力を抑制し、エラーのみを発します。 |
+| `--verbose`, `-v` | 追加の診断出力を発します。 |
+| `--format plain\|json` | 出力形式（デフォルト: `plain`）。 |
+| `--json` | `--format json` の短縮形。 |
+| `--no-color` | 出力中の ANSI カラーコードを無効にします。 |
+| `-h`, `--help` | ヘルプを表示して終了します。 |
+
+## サブコマンド
+
+### `profile init`
+
+`~/.config/apothem/profile.yaml` または `--profile PATH` に、スキーマに準拠した最小限のプロファイルの足場を作成します。`--force` を指定しない限り、既存のファイルは保持されます。
+
+| オプション | 説明 |
+|---|---|
+| `--force` | 既存のプロファイルの足場を上書きします。 |
+
+### `profile show`
+
+検証済みで、デフォルト値が展開された共有プロファイルを表示します。
+
+### `profile set KEY VALUE`
+
+共有プロファイル内のキーを設定します。`KEY` はドット区切りのパスで、ネストされたプロファイル内を下降します（`identity.name`、`preferences.style`、`enforcement.sprints`、`harnesses.<harness>.preferences.style`）。ドットを含まない単一のキーは、トップレベルのノードを設定します。`VALUE` はリテラル文字列として保存されます——裸の語は強制変換されません（`no` は `"no"` のまま、`2024-01-01` と `1.0` は文字列のまま）——ただし `true`/`false`（ブール型の強制フラグ）と、明示的な `[...]`/`{...}` のリスト/マップ入力は例外です。完全に組み立てられたプロファイルは、書き込み前にスキーマに対して検証されます。無効な set は拒否され、ディスク上のプロファイルは変更されません。
+
+| 引数 | 説明 |
+|---|---|
+| `KEY` | 設定するプロファイルへのドット区切りパス（必須）。 |
+| `VALUE` | 割り当てるリテラル値。書き込み前に検証されます（必須）。 |
+
+### `profile edit`
+
+システムエディターで共有プロファイルを開きます。
+
+## 例
+
+```bash
+apothem profile init
+apothem profile init --profile ./profile.yaml --force --json
+apothem profile show
+apothem profile show --json
+apothem profile set seriousness SHARED
+apothem profile set rules '["Use fake placeholders in examples."]'
+apothem profile edit
+```
+
+## 終了コード
+
+| コード | 意味 |
+|---|---|
+| 0 | 成功（または、`edit` の場合はエディターが正常に終了した） |
+| 1 | プロファイルが見つからない、無効、`--force` なしで既に存在する、または書き込めない |
+
+## 関連項目
+
+- [apothem install](/docs/cli-reference/install) — プロファイルをハーネスへ物質化する
+- [apothem doctor](/docs/cli-reference/doctor) — システム全体のインストール診断を実行する

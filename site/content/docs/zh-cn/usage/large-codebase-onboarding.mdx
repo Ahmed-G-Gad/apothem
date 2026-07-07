@@ -1,0 +1,43 @@
+---
+title: "大型代码库上手"
+description: "Apothem 的大型代码库设置清单：上下文层级、技能、钩子、符号搜索以及评审节奏。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+当一个仓库过于庞杂、单条提示难以覆盖，全树扫描代价高昂，或每个服务都有自己的构建和测试命令时，请使用本页。
+
+## 从这里开始
+
+1. 安装或更新目标环境适配器，然后运行 `apothem verify --harness <name>`。
+2. 保持根上下文面简短：仅放项目地图、关键命令和指针。
+3. 当目标环境支持分层上下文时，把本地约定放在代码旁边。
+4. 把专门的流程移入带路径过滤器的 `skills/`、`rules/` 或命令文档中。
+5. 使用只读的委派工作者进行广泛探索，然后在编辑前带回一组紧凑的发现。
+6. 在有文档记载的地方，把缓存、生成产物、构建产物和供应商目录的排除项加入环境的忽略面。
+7. 在可用时使用 LSP 或符号工具；否则使用 `rg`、收窄的路径和明确的文件范围。
+8. 运行覆盖所触代码的最窄 lint 或测试命令；发布前运行完整的门禁。
+
+## 实践对照表
+
+| 实践 | Apothem 绑定 |
+|----------|-----------------|
+| 精简的常驻加载上下文 | `src/apothem/rules/token-budget-discipline.md` 让常驻规则保持简短；根上下文文件应只携带指针和关键陷阱。 |
+| 按需专长 | `src/apothem/skills/README.md` 定义了 `SKILL.md` 约定；按路径过滤的伴随规则把狭窄流程排除在基线上下文之外。 |
+| 分层上下文 | 每个环境行在 `src/apothem/harnesses/<name>/capabilities.yml` 中声明 `layered_context_surface`；`STANDARD-CONVENTION-PIN.md` 仍是该行的权威。 |
+| 隔离探索 | [委派工作者指南](/docs/usage/using-agents) 绑定独立的上下文窗口和紧凑的返回契约。 |
+| 符号导航 | `lsp_symbol_navigation` 是一个被跟踪的能力单元格。在固定一个有厂商支持的插件或工具面之前，这些行保持 `tracked-gap`。 |
+| 忽略面 | `context_ignore_surface` 记录有文档记载的排除机制。Claude Code 适配器通过 `settings.json` 的 `permissions.deny` 投射生成产物和缓存的排除项。 |
+| 钩子学习 | 通过类的钩子保持静默。反复出现的发现通过 `src/apothem/rules/persistent-conventions-vigilance.md` 中的制品演进周期来路由。 |
+| 周期性评审 | 每三到六个月运行一次配置评审，并在重大环境或模型变更之后运行，使用 `*-maintenance` 计划节奏。 |
+
+## 维护备注
+
+机器可读的环境能力行携带四个大型代码库单元格：
+`context_ignore_surface`、`layered_context_surface`、`lsp_symbol_navigation`
+以及 `hook_learning_capture`。每当厂商面发生变化时，请让这些单元格与同级的
+`STANDARD-CONVENTION-PIN.md` 保持同步。
+
+来源参考：
+[大型代码库实践](https://claude.com/blog/how-claude-code-works-in-large-codebases-best-practices-and-where-to-start)、
+[设置权限](https://docs.anthropic.com/en/docs/claude-code/settings)。

@@ -1,0 +1,68 @@
+---
+title: "/dependency-audit"
+description: "/dependency-audit — Per-dependency audit pass (direct + transitive) for license, CVE, and freshness."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Role:** Dep auditor
+**Pipeline position:** fortress
+
+Per-dependency audit pass (direct + transitive) for license, CVE, and freshness.
+
+## Canonical invocation
+
+```bash
+/dependency-audit
+```
+
+With arguments:
+
+```bash
+/dependency-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+```
+
+## Inputs
+
+Host repository dependency manifests
+
+## Outputs
+
+Dependency findings + REPORT.md
+
+## Downstream
+
+The dependency-audit stage of the Audit Review Sequence
+
+## Workflow phases
+
+The command follows the standard `/plan` pipeline workflow:
+
+1. **Load context** — Read plan suite, rules, and Resumption Contract.
+2. **Verify prerequisites** — Confirm dependency phases complete.
+3. **Execute tasks** — Perform the command mission.
+4. **Verify outputs** — Confirm all declared outputs exist and pass quality gates.
+5. **Update PROGRESS.md** — Record verified outputs in the Phase Output Registry.
+6. **Emit REPORT.md** — Pre-emission gate release proof recorded.
+
+## Failure modes
+
+| Symptom | Cause | Recovery |
+|---------|-------|----------|
+| Prerequisite incomplete | Dependent phase not finished | Complete upstream phase first |
+| Quality gate FAIL | Output does not meet standards | Fix the output and re-run |
+| Missing input file | Plan suite file absent | Run `/plan-generate` to create it |
+
+## Examples
+
+```bash
+# Dry-run to preview what would happen
+/dependency-audit --dry-run
+
+# Execute against a named plan suite
+/dependency-audit path/to/plan-suite/
+```
+
+## Cross-references
+
+- [Pipeline overview](/docs/pipeline)
+- [Master Plan Suite Template](/docs/reference/commands)

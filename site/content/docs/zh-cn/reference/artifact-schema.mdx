@@ -1,0 +1,411 @@
+---
+title: "制品 Schema 规范"
+description: "Apothem 源码树中所有制品类型的规范化 YAML frontmatter schema 与必填字段，附逐类模板与校验规则。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**所有 Apothem 生态系统制品的规范化 YAML frontmatter 与必填字段。**
+
+## 概述
+
+Apothem 源码树中（位于 `src/apothem/` 与根配置界面下）的所有制品都必须包含一个
+YAML frontmatter 块（位于 `---` 分隔符之间），其中携带特定于该制品类型的
+必填字段与可选字段。本文档定义每种类型的规范化 schema。
+
+**通用规则：**
+
+- frontmatter 符合 YAML 1.2
+- 除空值外，所有字符串值均使用双引号
+- 字段顺序：必填字段在前，可选字段按相关性分组
+- frontmatter 中的注释使用带空格的 `#`：`# comment`
+- 路径值必须为相对路径（无前导 `/`）并使用正斜杠（`/`）以保证跨平台兼容性
+
+**版本约定（跨制品类型通用）：**
+
+- `version` 为**语义化版本**（`MAJOR.MINOR.PATCH`）。schema 或契约的破坏性变更递增 MAJOR；新增式非破坏性变更（新增可选字段、新增章节、新增反模式）递增 MINOR；澄清、格式修复或无行为变更的纯文档编辑递增 PATCH。
+- `updated` 为最近一次编辑的 **ISO 8601 日期**（`YYYY-MM-DD`）。它必须随每次 `version` 递增而变化，也可在不递增版本的链接刷新时独立更新。
+- 新制品以 `v0.Y.Z` 起始。提升至 `vX.Y.Z` 表示该制品的契约已稳定到足以作为公开承诺。
+
+---
+
+## Schema：规则
+
+**路径模式：** `src/apothem/rules/*.md`
+
+**用途：** 行为性强制规定与运行指令。
+
+### 必填字段
+
+```yaml
+---
+name: "kebab-case-identifier"
+description: "One-line description"
+pathFilter: "**/*.py, **/*.toml"
+alwaysApply: true | false
+---
+```
+
+| 字段 | 类型 | 用途 | 示例 |
+| ----- | ---- | ------- | ------- |
+| `name` | string | 机器可读标识符 | `"operational-mandates"` |
+| `version` | string | 语义化版本 | `"X.Y.Z"` |
+| `updated` | string (ISO 8601) | 最近更新日期 | `"2026-04-20"` |
+| `description` | string | 供注册表使用的单行描述 | `"Operational mandates CM-1–10"` |
+| `scope` | enum | `always-on`（处处适用）或 `path-filtered`（以文件路径为条件） | `"always-on"` |
+| `portability` | enum | 环境兼容性保证 | `"universal"` |
+
+### 可选字段（如适用）
+
+Rules carry no optional frontmatter fields, and — unlike other artifact classes — no `version` / `updated` / `scope` / `portability` fields either. The four mandatory fields above are the complete rule frontmatter contract enforced by `frontmatter_grep`.
+
+### 示例
+
+```yaml
+---
+name: "operational-mandates"
+description: "Behavioral definitions for CM-1 through CM-10: violation indicators and recovery actions"
+pathFilter: ""
+alwaysApply: true
+---
+
+# Rule: Operational Mandates
+...
+```
+
+---
+
+## Schema：命令
+
+**路径模式：** `src/apothem/commands/*.md`
+
+**用途：** 斜杠命令定义（`/plan-execute`、`/freshify` 等）。
+
+### 必填字段
+
+```yaml
+---
+name: "command-name"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "What this command does"
+argument-hint: "[argument-pattern]"
+disable-model-invocation: true | false
+portability: "universal"
+allowed-tools: "*"
+---
+```
+
+| 字段 | 类型 | 用途 | 示例 |
+| ----- | ---- | ------- | ------- |
+| `name` | string | 命令名称（不含前导 `/`） | `"plan-execute"` |
+| `version` | string | 语义化版本 | `"X.Y.Z"` |
+| `updated` | string (ISO 8601) | 最近更新日期 | `"2026-04-20"` |
+| `description` | string | 简短描述 | `"Executes a phase with quality gates"` |
+| `argument-hint` | string | 用法模式，若无则填 `"[args...]"` | `"[path/to/plan] [phase-id]"` |
+| `disable-model-invocation` | boolean | 若为 true，则该命令不应由harness运行时调用 | `true` |
+
+### 可选字段
+
+Commands carry no optional frontmatter fields — the eight mandatory fields above are the complete command frontmatter contract enforced by `command.schema.json` (`additionalProperties: false`).
+
+### 示例
+
+```yaml
+---
+name: "plan-execute"
+version: "X.Y.Z"
+updated: "2026-04-20"
+description: "Executes a specific phase from a Master Plan Suite with conformity checking and quality gates"
+argument-hint: "[path/to/plan-suite/] [phase-id] [--dry-run]"
+disable-model-invocation: true
+portability: "universal"
+allowed-tools: "*"
+---
+
+# /plan-execute — Execute a Specific Phase
+...
+```
+
+---
+
+## Schema：助手
+
+**路径模式：**
+
+```text
+src/apothem/agents/*.md
+```
+
+**用途：** 用于并行探索、审计与质量门控的持久化助手定义。
+
+### 必填字段
+
+```yaml
+---
+name: "agent-name"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "What this agent specializes in"
+tools: "Tool1, Tool2, Tool3"
+disallowedTools: "Write, Edit"
+maxTurns: 20
+effort: "high" | "medium" | "low"
+---
+```
+
+| 字段 | 类型 | 用途 | 示例 |
+| ----- | ---- | ------- | ------- |
+| `name` | string | 助手标识符 | `"codebase-explorer"` |
+| `version` | string | 语义化版本 | `"X.Y.Z"` |
+| `updated` | string (ISO 8601) | 最近更新日期 | `"2026-04-20"` |
+| `description` | string | 专长描述 | `"Deep codebase exploration"` |
+| `tools` | string（逗号分隔） | 允许的工具 | `"Read, Glob, Grep, Bash"` |
+| `disallowedTools` | string（逗号分隔） | 禁用的工具 | `"Write, Edit, TodoWrite"` |
+| `maxTurns` | integer | 最大会话轮次（通常 5–20；超过 20 的值需附内联说明注释） | `20` |
+| `effort` | enum | 计算范围 | `"high"` |
+
+### 可选字段
+
+```yaml
+permissionMode: "default"       # Permission handling
+memory: true | false                    # If true, agent retains memory across sessions
+pattern: "Research" | "Audit" | "Implementation" | "Quality"  # Agent team pattern
+portability: "universal"
+```
+
+### 示例
+
+```yaml
+---
+name: "codebase-explorer"
+version: "X.Y.Z"
+updated: "2026-04-20"
+description: "Deep codebase exploration — find patterns, trace dependencies, discover conventions, map architecture"
+tools: "Read, Glob, Grep, Bash"
+disallowedTools: "Write, Edit, TodoWrite"
+maxTurns: 20
+effort: "high"
+permissionMode: "default"
+memory: false
+portability: "universal"
+---
+
+You are a codebase exploration specialist...
+```
+
+---
+
+## Schema：技能
+
+**路径模式：** `src/apothem/skills/*/SKILL.md`
+
+**用途：** 携带检测信号与执行流程的可复用技术定义。
+
+### 必填字段
+
+```yaml
+---
+name: "skill-name"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "What this skill teaches"
+archetype: "workflow-template"
+userInvocable: true | false
+disable-model-invocation: true | false
+allowed-tools: "Read, Write, Glob"
+---
+```
+
+| 字段 | 类型 | 用途 | 示例 |
+| ----- | ---- | ------- | ------- |
+| `name` | string | 技能标识符 | `"plan-suite"` |
+| `version` | string | 语义化版本 | `"X.Y.Z"` |
+| `updated` | string (ISO 8601) | 最近更新日期 | `"2026-04-20"` |
+| `description` | string | 该技能提供的内容 | `"Master Plan Suite template"` |
+| `user-invocable` | boolean | 若为 true，用户可显式请求该技能 | `false` |
+
+### 可选字段
+
+```yaml
+argument-hint: "[args...]"                           # Usage pattern if userInvocable
+effort: "low" | "medium" | "high" | "xhigh" | "max" # Optional effort level
+```
+
+### 示例
+
+```yaml
+---
+name: "ecosystem-audit"
+version: "X.Y.Z"
+updated: "2026-04-20"
+description: "Comprehensive blind audit of the apothem ecosystem"
+archetype: "audit-template"
+userInvocable: true
+disable-model-invocation: true
+allowed-tools: "Read, Write, Edit, Glob, Grep, Bash"
+argument-hint: "[--focus area] [--fix]"
+effort: "max"
+---
+
+## Purpose
+...
+```
+
+---
+
+## Schema：钩子
+
+**路径模式：** `settings.json` 的 `hooks` 块，加上 `src/apothem/hooks/` 下的
+Python 实现。
+
+**用途：** 声明事件触发的校验器与状态管理处理器，由宿主在明确定义的生命周期点调用。
+
+### 设置文件 Schema
+
+顶层 `hooks` 键将事件名称映射到匹配器块的数组：
+
+```json
+"hooks": {
+  "<EventName>": [
+    {
+      "matcher": "<pattern>",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "python",
+          "args": ["-m", "apothem.hooks.dispatch", "<EventName>", "<message-name>"],
+          "timeout": <seconds>,
+          "statusMessage": "<short human-readable label>"
+        }
+      ]
+    }
+  ]
+}
+```
+
+| 字段 | 类型 | 用途 | 示例 |
+| ----- | ---- | ------- | ------- |
+| `matcher` | string | 工具名称模式（或对工具无关事件填 `"*"`） | `"Write"` |
+| `hooks[].type` | 字面量 `"command"` | 当前唯一支持的钩子处理器类型 | `"command"` |
+| `hooks[].command` | string | 可执行命令；Apothem 使用 `python` | `"python"` |
+| `hooks[].args` | string 数组 | 调用 `-m apothem.hooks.dispatch` 或 `-m apothem.conformity.gate` 的 exec 形式参数 | `["-m", "apothem.hooks.dispatch", "SessionStart"]` |
+| `hooks[].timeout` | integer 秒 | 宿主终止钩子前的最大运行时长 | `30` |
+| `hooks[].statusMessage` | string | 宿主界面显示的简短标签 | `"Session start"` |
+
+### 必需事件
+
+随附模板注册以下事件。这五个事件全部必需，校验器才会报告 PASS：
+
+> **超时值镜像规范的钩子事件预算** — 下表为方便读者而复现这些值；以规范的来源为准。
+
+| 事件 | 典型超时 | 用途 |
+| ----- | --------------- | ------- |
+| `SessionStart` | 30 秒 | 读取内存、检查 plan 状态、报告就绪情况 |
+| `PreToolUse` | 10 秒 | 校验写入是否符合内容隔离策略 + frontmatter |
+| `PreCompact` | 30 秒 | 在上下文压缩前验证状态已外部化 |
+| `PostCompact` | 30 秒 | 在上下文压缩后恢复工作状态 |
+| `Stop` | 60 秒 | 会话结束的外部化 — 恢复状态、输出、决策 |
+
+`dispatch.py` 也在其事件白名单中接受 `UserPromptSubmit` 与 `Notification` 以备
+向前兼容；这两者在随附模板中均未接线。添加一个采用相同 exec 形式模式的匹配器块
+即可启用。
+
+### Python 层
+
+每个钩子命令都通过同一个 Python 调度器路由：
+
+| 文件 | 角色 |
+| ---- | ---- |
+| `src/apothem/hooks/dispatch.py` | 将 `SessionStart` 路由到 `session_start_bootstrap.main()`，将其他每个白名单事件路由到 `emit_hook_context.main()`。始终以 0 退出。 |
+| `src/apothem/hooks/session_start_bootstrap.py` | 会话启动钩子脚本 — 发出内存与 plan 套件摘要上下文。 |
+| `src/apothem/hooks/emit_hook_context.py` | 默认钩子发射器 — 写出携带已注册 `--context-file` 载荷的有效信封。 |
+| `src/apothem/hooks/messages/*.md` | 由 `--context-file` 引用的静态上下文载荷。 |
+
+### 校验
+
+`scripts/dev/validate_hooks.py` 强制执行钩子契约：
+
+- `settings.json` 可解析为 JSON 并声明每个必需事件。
+- 全部三个 Python 脚本均存在且可解析为有效 Python。
+- 所有由 `--context-file` 参数引用的消息文件均存在。
+- `src/apothem/hooks/**.py` 中不出现硬编码的绝对用户路径（`C:\Users\...` 等）。
+- `src/apothem/hooks/` 与 `scripts/` 下的 shell 制品仅限于已批准的定位器 / 引导桩。
+
+---
+
+## Schema：CLAUDE.md
+
+**路径：** `CLAUDE.md`（根目录）
+
+**用途：** 全局生态系统配置索引。
+
+### 必填 YAML frontmatter
+
+```yaml
+---
+name: "CLAUDE"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "Global Claude Code ecosystem configuration and mandate index"
+scope: "always-on"
+portability: "universal"
+---
+```
+
+### 必需章节（按顺序）
+
+1. **§1 Plan 套件** — 引用模板位置
+2. **§2 认知身份** — 创造性架构强制规定
+3. **§3 制品目录** — 路径与用途表
+4. **§4 严肃度分级治理** — 四级定义
+5. **§5 运行指令** — 问题解决、沟通原则
+6. **§6 横切强制规定** — CM-1–28 概览
+7. **§7 注册表** — 制品表：
+   - 7.1 命令
+   - 7.2 规则
+   - 7.3 助手
+   - 7.4 钩子
+   - 7.5 技能
+   - 7.6 制品演进
+
+---
+
+## 校验清单
+
+每个制品都必须满足以下检查：
+
+### Frontmatter 校验
+
+- [ ] YAML 语法有效（无解析错误）
+- [ ] 该制品类型的所有必填字段都已存在
+- [ ] `name` 遵循 kebab-case 约定
+- [ ] `version` 为语义化（`MAJOR.MINOR.PATCH`）
+- [ ] `updated` 为 ISO 8601 日期格式（`YYYY-MM-DD`）
+- [ ] `description` 为非空字符串、单行
+- [ ] 可选字段匹配预期的枚举值（如适用）
+- [ ] 字段名无拼写错误（使用 schema 中的规范名称）
+- [ ] 无多余空白或格式问题
+
+### 内容校验
+
+- [ ] 内容紧接在闭合 `---` 之后另起一行开始
+- [ ] 无 plan 内部引用（符合 CM-7）
+- [ ] 交叉引用可解析（若列出其他制品）
+- [ ] 链接使用带正斜杠的相对路径
+
+### 可移植性校验
+
+- [ ] 无硬编码绝对路径（使用相对路径）
+- [ ] universal 范围的制品中无 Windows 特定语法
+- [ ] 路径分隔符使用正斜杠
+- [ ] 环境变量使用平台无关格式（`${VAR}` 或工具原生格式）
+
+---
+
+## 注记
+
+- **一致性即安全性：** 规范化的 frontmatter 使自动化校验、工具化与跨制品验证成为可能。偏差会迅速累积。
+- **可移植性声明：** 并非所有制品都能做到 universal。显式声明约束 —— 记录一条注意事项胜过交付一个无声的缺陷。
+- **名称用 kebab-case：** 便于在 URL、脚本与命令行环境中使用。名称应避免空格、下划线与 camelCase。
+- **版本递增卫生：** 每次改变行为的编辑都必须同时递增 `version` 与 `updated`。纯格式或拼写修复递增 PATCH；新增可选章节或反模式递增 MINOR；结构性重组或契约变更递增 MAJOR。

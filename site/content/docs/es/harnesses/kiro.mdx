@@ -1,0 +1,90 @@
+---
+title: "Kiro"
+description: "Adaptador de herramienta de Apothem para Kiro (GA)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Proveedor:** AWS
+**Nombre de instalación:** `kiro`
+**Estado:** GA
+**Configuración nativa:** `<project>/.kiro/steering/apothem-rules.md`
+
+## Instalación
+
+```bash
+apothem install --harness kiro --project /path/to/project
+```
+
+El adaptador escribe un archivo de dirección (steering) de Kiro con alcance de
+proyecto a partir de las reglas compartidas de Apothem y la superficie de
+gobernanza.
+
+**Archivos escritos:** `<project>/.kiro/steering/apothem-rules.md`
+
+## Asignación del perfil a la configuración nativa
+
+El adaptador lee el perfil compartido de Apothem y renderiza el archivo de
+dirección del proyecto en cada ejecución de `apothem install` o `apothem update`.
+El perfil compartido es la fuente de verdad; las ediciones locales del proyecto al
+archivo generado se respaldan antes de que la siguiente sincronización reemplace el
+contenido gestionado por Apothem.
+
+## Notas de compatibilidad
+
+La superficie de dirección de Kiro tiene alcance de proyecto bajo
+`.kiro/steering/`. El adaptador escribe un archivo de dirección dedicado
+`apothem-rules.md` con el front matter `inclusion: always` y nunca sobrescribe los
+archivos de base escritos por el operador de Kiro (`product.md`, `tech.md`,
+`structure.md`). Las especificaciones de Kiro (`.kiro/specs/`) y los enlaces
+(hooks) de asistentes pertenecen al operador; Apothem no los escribe.
+
+## Verificación
+
+```bash
+apothem verify --harness kiro --project /path/to/project
+```
+
+El comando verify confirma que:
+
+1. La configuración nativa existe en la ruta esperada.
+2. Todos los campos obligatorios del perfil compartido están presentes.
+3. La rutina de verificación específica del adaptador informa de éxito.
+
+## Actualización
+
+```bash
+apothem update --harness kiro --project /path/to/project
+```
+
+Vuelve a derivar el archivo de dirección del proyecto a partir del estado actual
+del perfil compartido.
+
+## Desinstalación
+
+```bash
+apothem uninstall --harness kiro --project /path/to/project
+```
+
+Elimina los archivos de configuración nativa escritos por el adaptador.
+El YAML del perfil compartido y el motor de Apothem no se ven afectados.
+
+## Puerta de conformidad
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Solución de problemas
+
+| Síntoma | Solución |
+|---------|-----|
+| No se encuentra el archivo de configuración | Vuelve a ejecutar `apothem install --harness kiro --project /path/to/project` |
+| La verificación falló | Ejecuta `apothem update --harness kiro --project /path/to/project` y luego verifica de nuevo |
+| Contenido de configuración inesperado | Revisa `~/.config/apothem/profile.yaml` o `--profile PATH`, luego vuelve a ejecutar `apothem update --harness kiro --project /path/to/project` |
+
+## Opciones de configuración
+
+| Indicador | Predeterminado | Descripción |
+|------|---------|-------------|
+| `--dry-run` | `false` | Previsualiza la instalación sin escribir archivos. |

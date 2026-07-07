@@ -1,0 +1,25 @@
+---
+title: "リファレンス"
+description: "ルール、コマンド、スキル、委任ワーカー、フック、MCP サーバー、設定、出力スタイルのパスとディスク上レイアウトを備えた、ナビゲート可能な成果物クラスのレジストリ。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+成果物クラスごとのリファレンス。各ページは、そのクラスの目的、ディスク上のレイアウト、frontmatter 契約、およびすべてのインスタンスを列挙するレジストリを記述します。
+
+以下にはリポジトリ相対のパスを示します。各アダプターはこれらをそのネイティブ設定ディレクトリにマテリアライズします（例：Claude Code アダプターの `~/.claude/` —— ハーネスごとの宛先については [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses) を参照）。
+
+| クラス | ページ | リポジトリ相対のソースパス |
+|-------|------|--------------|
+| `CLAUDE.md` | [CLAUDE.md](/docs/reference/claude-md) | `CLAUDE.md` |
+| ルール | [ルール](/docs/reference/rules) | `src/apothem/rules/` |
+| コマンド | [コマンド](/docs/reference/commands) | `src/apothem/commands/` |
+| スキル | [スキル](/docs/reference/skills) | `src/apothem/skills/` |
+| 委任ワーカー | [リファレンスページ](/docs/reference/agents) | canonical-paths ブロックを参照 |
+| フック | [フック](/docs/reference/hooks) | `src/apothem/hooks/` |
+| MCP サーバー | [MCP サーバー](/docs/reference/mcp) | 共有プロファイル —— `mcp_servers` |
+| 設定 | [設定](/docs/reference/settings) | `src/apothem/harnesses/claude_code/templates/settings.json` |
+| 出力スタイル | [出力スタイル](/docs/reference/output-styles) | `src/apothem/output-styles/` |
+| ハーネスレジストリ | [ハーネスレジストリ](/docs/reference/harness-registry) | `src/apothem/lib/harness_registry.py` |
+
+完全な正規レジストリは、アーティファクトコホート（`rules/`、`commands/`、`skills/`、`agents/`、`hooks/`）にまたがって存在します。本ページはそのレジストリをナビゲート可能な形で鏡映します。

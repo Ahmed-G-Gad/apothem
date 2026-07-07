@@ -1,0 +1,60 @@
+---
+title: "사전 발행 게이트 레지스트리 — 필수 열다섯 항목 검사"
+description: "의미 있는 범위의 발행 이전에 실행되는 필수 열다섯 항목 적합성 검사. 실패-동작 매핑과 릴리스 증명 스키마를 수반한다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **열다섯 항목 사전 발행 게이트의 정규 레지스트리.** 이 문서는 완전한 열다섯 항목 게이트 표와 릴리스 증명 스키마 YAML 블록을 담습니다. 실질적인 표와 스키마는 여기에 있으며, `src/apothem/rules/pre-emission-gate.md`에 의해 운용됩니다.
+
+의미 있는 범위의 아티팩트 발행 이전에(`site/content/docs/governance/outward-conformity-registry.mdx` §1의 사소함 대 비사소함 임계값에 따라) 열다섯 항목 사전 발행 게이트를 실행하라. 가능한 곳에서는 PreToolUse 훅으로 기계화하고(`src/apothem/conformity/gate.py`가 편성하는 `src/apothem/conformity/*-grep.py`의 기계적 grep), 기계화가 불가능한 곳에서는 추론한다. **단 한 항목의 실패도 발행을 차단한다; 모든 항목이 통과할 때까지 수정하라; 게이트 릴리스 증명을 기록하여 발행하라.**
+
+| # | 항목 | 검사 종류 | 실패 → 동작 |
+| - | --- | ---------- | ---------------- |
+| 1 | M1 호스트 무관성 | 추론 | 호스트 관례에 맞도록 수정 |
+| 2 | M2 편집적 공개 | 추론 | 공개 원장 추가 |
+| 3 | M3 열 가지 차원 | 혼합(기계적 + 추론) | 실패한 차원에서 수정 |
+| 4 | M4 자기 적용 | 기계적(릴리스 증명 존재) | 릴리스 증명 기록 |
+| 5 | M5 권위 | 기계적(`<USER-CONFIRM:…>` 자리표시자 grep) | 질의 표면으로 재라우팅 |
+| 6 | M6 전문성 | 추론(표면화된 공백 섹션 존재) | 공백 표면화; 인용 |
+| 7 | M7 선택지 주석 | 기계적(선택지 집합이 권장 표시를 수반) | 주석 부여 |
+| 8 | M8 확정성 | 기계적(모호 어휘 grep) | 모호 표현을 조건문으로 승격 |
+| 9 | M9 시각적 지렛대 | 추론(구조적인 곳에 다이어그램 존재) | 다이어그램 작성／갱신 |
+| 10 | M10 양방향 바인딩 | 기계적(바인딩 상호성 grep) | 반쪽 간선 닫기 |
+| 11 | M11 애자일 스프린트 | 추론(스프린트 장치 인스턴스화됨) | 스프린트로 재구성 |
+| 12 | M12 단계 보고 및 레이아웃 | 기계적(고아 출력 grep) + 추론 | 롤업 작성; 재배치 |
+| 13 | M13 코드 장인정신 | 기계적(린트／포맷／타입 검사; bare-except, 매직 넘버, 주석 처리 코드 grep) | 수정 |
+| 14 | M14 체계성 | 추론(상류／하류／동위／집행자 선언) | 선언; 색인화 |
+| 15 | M15 프로덕션 준비 | 기계적(production-ready-pr grep) + 추론 | 테스트／문서／CHANGELOG 추가 |
+
+## 1. 릴리스 증명 스키마
+
+각 게이트 실행은 아티팩트의 작업 자취(숨김 주석, 메타데이터 블록, 별도의 발행 로그 파일 — 호스트의 관례가 허용하는 것)에 결과를 기록합니다:
+
+```yaml
+conformity-attestation:
+  artifact: <path-or-identifier>
+  ecosystem-version: <git-commit-sha-or-equivalent ratifying the rule set in force>
+  bars:
+    M1-host-agnosticism:        pass | n/a (with reason)
+    M2-editorial-disclosure:    pass | n/a
+    M3-ten-dimensions:          pass | n/a
+    M4-self-application:        pass
+    M5-authority:               pass
+    M6-expertise:               pass | n/a
+    M7-option-annotation:       pass | n/a (no option set)
+    M8-definitiveness:          pass
+    M9-visual-leverage:         pass | n/a (subject not structural)
+    M10-bidirectional-binding:  pass
+    M11-agile-sprints:          pass | n/a (trivial work)
+    M12-phase-layout:           pass | n/a
+    M13-code-craft:             pass | n/a (not code)
+    M14-systemicity:            pass
+    M15-production-ready:       pass | n/a (no host-public-surface change)
+  surfaced-gaps: []
+  unresolved-inquiries: []
+  amendments-disclosed: []
+  date: <ISO-8601>
+```
+
+`n/a` 표시는 명시적이고 추론된 것입니다 — 결코 침묵하는 생략이 아닙니다. `ecosystem-version` 필드는 릴리스 증명을 사용자 범위 생태계의 재현 가능한 상태(게이트가 실행될 때 활성이던 Apothem 소스 트리의 git 커밋 — 예컨대 Claude Code 어댑터의 `~/.claude/` 체크아웃)에 고정하여, 향후 감사가 동일한 규칙 본문에 대해 게이트를 재현할 수 있게 합니다.

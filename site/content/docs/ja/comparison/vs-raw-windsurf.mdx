@@ -1,0 +1,44 @@
+---
+title: "Apothem と素の Windsurf 構成の比較"
+description: ".devin/rules/ で Windsurf のルールを手作業で保守するのと、apothem の共有プロファイルからレンダリングするのとの比較。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Windsurf は `.devin/rules/` ディレクトリからルールを読み込みます。Apothem の
+windsurf アダプターは、ディレクトリベースのルールを共有プロファイルから
+レンダリングします。このページでは、その構成を手作業で保守する場合と apothem で
+管理する場合を対比します。
+
+## 手間の比較
+
+| タスク | 素の手作業構成 | Apothem 管理 |
+| ---- | --------------- | --------------- |
+| ルールを書く | `.windsurf/rules/` 配下の各ファイルを手書き | 共有コーパスからレンダリング |
+| ルール形式を 1 つに保つ | `.windsurf/rules/` と単一ファイル `.windsurfrules` の間を手で選ぶ | アダプターは `.devin/rules/` のみを書き込む |
+| 他の環境とルールを揃える | 手動、ツールごと | `apothem update` で自動 |
+| 構成が正しいか検証する | 手動の検査 | `apothem verify --harness windsurf` |
+
+## apothem が管理するもの
+
+windsurf アダプターは共有ルールを `.devin/rules/` ディレクトリへ
+レンダリングし、単一ファイルの `.windsurfrules` は書き込みません。Windsurf には
+PreToolUse フックがないため、ガードレールの意図はツール呼び出しの傍受地点では
+なくルールの文章の中に存在します。共有ルールへの変更はすべて、次の
+`apothem update` でディレクトリを再レンダリングします。
+
+## 移行パス
+
+1. 共有プロファイルをまだ作成していなければ `apothem profile init` を実行します。
+2. 既存の `.windsurf/rules/`（および任意の単一ファイル `.windsurfrules`）から
+   ルールを共有コーパスへ移します。
+3. `apothem install --harness windsurf` を実行して `.devin/rules/`
+   ディレクトリをレンダリングします。
+4. `apothem verify --harness windsurf` を実行して構成が反映されたことを
+   確認します。
+5. 以降の変更にはすべて `apothem update --harness windsurf` を使います。
+
+## 次に読む
+
+- [Windsurf アダプターリファレンス](/docs/harnesses/windsurf)
+- [比較の概要](/docs/comparison)

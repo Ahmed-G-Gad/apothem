@@ -1,0 +1,108 @@
+---
+title: "Claude Code"
+description: "Adaptador de entorno de Apothem para Claude Code (GA)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Proveedor:** Anthropic
+**Nombre de instalación:** `claude-code`
+**Estado:** GA
+**Configuración nativa:** `~/.claude/`
+
+## Instalación
+
+```bash
+apothem install --harness claude-code
+```
+
+El adaptador `claude-code` instala el conjunto compartido de Apothem en el árbol
+de descubrimiento nativo de Claude Code. Los agentes Markdown, las reglas, las
+skills, los estilos de salida, los asistentes de barra de estado y los ajustes se
+instalan en sus ubicaciones nativas; los prompts de comando se envuelven además
+como skills para que los flujos de trabajo reutilizables permanezcan visibles a
+través de la superficie de skills actual de Claude Code.
+
+**Archivos escritos:** `settings.json`, `agents/`, `rules/`, `skills/`,
+`statuslines/`, `output-styles/` y el subárbol de soporte `apothem/`
+(`apothem/hooks/`, `apothem/conformity/`, `apothem/schemas/`,
+`apothem/templates/`) bajo `~/.claude/`. Los archivos de comando se convierten en
+directorios de skill hijos. El despachador de hooks y la puerta de conformidad se
+ejecutan desde sus copias materializadas: las entradas de hook de `settings.json`
+invocan `~/.claude/.apothem/support/hooks/dispatch.py` y
+`~/.claude/.apothem/support/conformity/gate.py` por ruta absoluta, por lo que no se necesita
+ningún paquete `apothem` importable en el host.
+
+El adaptador **no** gestiona `CLAUDE.md`: ese archivo es territorio propiedad del
+operador. La superficie de gobernanza de Apothem alcanza Claude Code a través del
+árbol `rules/` propagado y del hook SessionStart, no a través de un `CLAUDE.md`
+materializado.
+
+## Mapeo de perfil a configuración nativa
+
+En cada `apothem install` o `apothem update`, el adaptador propaga el conjunto
+compartido `apothem` a `~/.claude/` según el manifiesto de propagación. El
+adaptador usa directorios nativos directamente donde es posible y convierte los
+prompts de comando en carpetas de skill. Los hijos coincidentes gestionados por
+Apothem que ya existen se respaldan antes de su reemplazo; las entradas no
+relacionadas creadas por el operador se conservan. `settings.json` se fusiona para
+que las claves creadas por el operador sigan siendo recuperables.
+
+## Notas de compatibilidad
+
+No ocurre ninguna traducción. La instalación valida que el perfil esté bien formado y que todos los enlaces de hook en settings.json sean resolubles.
+
+Claude Code aplica todos los enlaces de hook de settings.json en cada inicio de sesión. Cada adaptador se verifica frente a su propio entorno nativo: no existe un entorno «de referencia» privilegiado.
+
+## Verificación
+
+```bash
+apothem verify --harness claude-code
+```
+
+El comando verify confirma que:
+
+1. La configuración nativa existe en la ruta esperada.
+2. Todos los campos obligatorios del perfil compartido están presentes.
+3. La rutina de verificación específica del adaptador informa éxito.
+
+## Actualización
+
+```bash
+apothem update --harness claude-code
+```
+
+Vuelve a derivar la configuración nativa a partir del perfil compartido actual.
+Ejecútalo después de actualizar el paquete `apothem` instalado, para que la
+superficie de convenciones propagada (agentes, reglas, skills, barras de estado,
+estilos de salida) refleje la nueva versión. `CLAUDE.md` es propiedad del operador
+y el adaptador nunca lo toca.
+
+## Desinstalación
+
+```bash
+apothem uninstall --harness claude-code
+```
+
+Elimina los archivos de configuración nativa escritos por el adaptador.
+El paquete `apothem` instalado y el repositorio de origen no se ven afectados.
+
+## Puerta de conformidad
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Resolución de problemas
+
+| Síntoma | Solución |
+|---------|-----|
+| No se encuentra el archivo de configuración | Vuelve a ejecutar `apothem install --harness claude-code` |
+| La verificación falló | Ejecuta `apothem update --harness claude-code` y vuelve a verificar |
+| Contenido de configuración inesperado | Vuelve a ejecutar `apothem update`; el perfil compartido `apothem` es la fuente de verdad, no `~/.claude/` |
+
+## Parámetros de configuración
+
+| Flag | Predeterminado | Descripción |
+|------|---------|-------------|
+| `--dry-run` | `false` | Previsualiza la instalación sin escribir archivos. |

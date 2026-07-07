@@ -1,0 +1,162 @@
+---
+title: "跨主机同步验证清单"
+description: "用于在全新主机上确认 Claude Code 适配器正确安装、验证并卸载的验证流程，包含完整的可移植性检查。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **范围。** 本清单用于在全新的第二台主机上验证 **Claude Code 适配器**的安装 / 卸载可移植性层。其他工具有各自的逐主机验证方案，记录在 [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses) 下。路径 `~/.claude/` 是 Claude Code 适配器的标准安装目标；在验证其他工具时请替换为该工具原生的路径。
+
+> **由操作员驱动、在全新第二台主机上验证安装 / 卸载可移植性层。** 发布层（`vX.Y.Z`）是在单台 Windows 主机上编写的；`~/.claude/` 可移植性声明（`CLAUDE.md` `portability: universal`）需要在第二台主机上完成端到端验证，多主机不变量才具有分量。本清单是标准的第二台主机验证方案（Claude Code 适配器）。
+
+---
+
+## 1. 第二台主机的前置条件
+
+在开始验证之前先在第二台主机上运行：
+
+| 项目 | 命令 | 预期 |
+|------|---------|----------|
+| 已安装 Git | `git --version` | Git 2.40+ |
+| 可用的 Python 3.10+ | `python3 --version`（POSIX）或 `py -3 --version`（Windows） | 3.10 / 3.11 / 3.12 / 3.13 |
+| GitHub 认证（可选，用于经认证的克隆 / API 检查） | `gh auth status` | 使用经认证的工作流时，以仓库授权账户登录 |
+| 可用的 Shell | `bash --version`（POSIX）或 `pwsh --version`（Windows） | Bash 4+ 或 PowerShell 7+ |
+| 不存在已有的 `~/.claude/` 目录 | `ls ~/.claude 2>&1` | "No such file or directory" — 如已存在，请先备份再继续 |
+
+## 2. 克隆并安装验证
+
+在第二台主机上执行：
+
+```bash
+# Clone the published repo to ~/.claude (the install destination)
+git clone https://github.com/ahmed-g-gad/apothem.git ~/.claude
+cd ~/.claude
+
+# (POSIX path) Run scripts/installer/install.sh dry-run first
+bash scripts/installer/install.sh --dry-run                                    # exit 0; Quick Start banner
+
+# (POSIX path) Run scripts/installer/install.sh for real
+bash scripts/installer/install.sh                                               # exit 0; sentinel-file check; idempotent
+
+# (Windows path) PowerShell parallel
+pwsh -File scripts/installer/install.ps1 -DryRun                                # exit 0; Quick Start banner
+pwsh -File scripts/installer/install.ps1                                        # exit 0
+```
+
+记录每条命令的退出码和 stdout 横幅。记录至 `<second-host>/.audit/cross-machine-clone-install.md`。
+
+## 3. 四要素纪律（参见 `src/apothem/rules/production-ready-prs.md` §8.3）
+
+在第二台主机上验证以下四个不变量中的每一个：
+
+### 3.1 哨兵文件安全
+
+```bash
+# Re-run installer at the same destination.
+bash scripts/installer/install.sh                                               # POSIX
+pwsh -File scripts/installer/install.ps1                                        # Windows
+```
+
+**预期：** 安装程序检测到已存在的有效 `~/.claude/`（存在哨兵文件），执行快进而非重新安装或重复安装；退出码 0。
+
+### 3.2 前置条件检查
+
+```bash
+# Temporarily move git out of PATH.
+PATH=/usr/bin:/bin bash scripts/installer/install.sh                            # POSIX (no git)
+```
+
+**预期：** 安装程序拒绝运行；发出明确的 "git not found" 诊断；退出码非零。
+
+### 3.3 幂等重复运行
+
+```bash
+# Run installer N times back-to-back.
+for i in 1 2 3 4 5; do bash scripts/installer/install.sh; done                  # POSIX
+1..5 | ForEach-Object { pwsh -File scripts/installer/install.ps1 }              # Windows
+```
+
+**预期：** 每次调用都退出码 0；首次调用之后无副作用；无重复文件；无 shell-profile RC 重复。
+
+### 3.4 可通过环境变量配置
+
+```bash
+# Install to a non-default location.
+CLAUDE_PROJECT_DIR=/tmp/alt-claude bash scripts/installer/install.sh            # POSIX
+$env:CLAUDE_PROJECT_DIR='C:\tmp\alt-claude'; pwsh -File scripts/installer/install.ps1   # Windows
+```
+
+**预期：** 安装程序遵循该环境变量；`~/.claude/` 不被修改；备用目标包含预期的布局。
+
+## 4. 校验器套件验证（安装后）
+
+```bash
+cd ~/.claude
+make validate                                                 # 50 conformity validators
+make headers-doctor                                           # file-header-grep → passed:true
+make ai-surfaces-doctor                                       # multi-surface-coherence → passed:true
+make plans-doctor                                             # no-global-plans + plans-discipline-language
+make lint                                                     # ruff + mypy
+make test                                                     # pytest 265/265
+```
+
+**预期：** 每道关卡通过。记录退出码与摘要行。
+
+## 5. 卸载验证
+
+```bash
+# POSIX path — interactive uninstall
+bash scripts/installer/uninstall.sh                           # answers: "y" to confirm
+ls ~/.claude 2>&1                                             # "No such file or directory"
+
+# Re-install from clone, then uninstall non-interactively
+git clone https://github.com/ahmed-g-gad/apothem.git ~/.claude
+bash scripts/installer/uninstall.sh --yes
+ls ~/.claude 2>&1                                             # "No such file or directory"
+```
+
+**预期：** 交互流程会提示；`--yes` 在批量运行时跳过提示；两种流程都能将 `~/.claude/` 干净地移除；配套的 shell-profile 环境变量引用被清理。
+
+## 6. 安全护栏验证
+
+```bash
+# Run uninstall against a path that fails the sentinel-file check.
+mkdir -p /tmp/not-a-claude-install
+CLAUDE_PROJECT_DIR=/tmp/not-a-claude-install bash scripts/installer/uninstall.sh --yes
+```
+
+**预期：** 卸载程序拒绝执行；发出 "sentinel-file missing; refusing to remove unsafe target" 诊断；退出码非零。该路径未被触碰。
+
+```bash
+# Run uninstall against $HOME, /, or empty path.
+CLAUDE_PROJECT_DIR=$HOME bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
+CLAUDE_PROJECT_DIR=/ bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
+CLAUDE_PROJECT_DIR='' bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
+```
+
+**预期：** 每条都以明确的 "unsafe target" 诊断拒绝；均不触碰文件系统。
+
+## 7. 报告
+
+完成第二台主机的运行后，将结果记录至：
+
+- `<second-host>/.audit/cross-machine-clone-install.md`（克隆 + 安装命令结果）
+- `<second-host>/.audit/cross-machine-validators.md`（第 4 节校验器结果）
+- `<second-host>/.audit/cross-machine-uninstall.md`（第 5–6 节卸载 + 安全结果）
+
+向维护者反馈发现：
+
+- ✅ 四要素纪律的全部不变量成立 + 全部校验器关卡通过 + 全部卸载安全护栏均拒绝不安全目标 → 发布的 `portability: universal` 声明已端到端验证
+- ❌ 任何失败 → 在 `https://github.com/ahmed-g-gad/apothem/issues/new` 提交工单，附上失败的章节 + 捕获的输出；由维护者分类处理
+
+## 8. 验收标准
+
+- [ ] §1 前置条件已满足
+- [ ] §2 克隆并安装在 POSIX 和 Windows 两种 Shell 上均成功
+- [ ] §3 四要素纪律成立（哨兵文件安全；前置条件检查；幂等；可通过环境变量配置）
+- [ ] §4 每道校验器关卡通过
+- [ ] §5 交互式卸载成功；`--yes` 无需提示即成功
+- [ ] §6 每道安全护栏拒绝均触发
+- [ ] §7 结果已记录至文档中的审计路径
+
+当上述每一项在全新第二台主机上都被勾选时，跨主机同步后续事项（COMPLETION.md §7 约束瓶颈）即告关闭。

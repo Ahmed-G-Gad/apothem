@@ -1,0 +1,59 @@
+---
+title: "计划演练"
+description: "针对真实任务的 /plan 流水线端到端演练。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+本示例针对一个简单任务演练完整的 `/plan` 流水线：向 Apothem 添加一个新的 CLI 子命令。
+
+## 第 1 步：编写散文需求
+
+创建 `prose.md`：
+
+```markdown
+Add a `apothem status` subcommand that prints the current apothem
+version, installed harnesses, and the result of `apothem verify`.
+The output should be machine-parseable (JSON with --json flag) and
+human-readable by default.
+```
+
+## 第 2 步：精炼为规格
+
+```bash
+/plan-spec prose.md --suite-name apothem-status-command
+```
+
+这会运行六阶段的 Forge，提出澄清问题并产出 `plans/apothem-status-command/_spec/spec.md`。
+
+## 第 3 步：生成计划
+
+```bash
+/plan-generate
+```
+
+在 `plans/apothem-status-command/phases/` 下产出 PREAMBLE.md、MASTER-PLAN.md、PROGRESS.md、PLAN-NOTES.md 以及各阶段的 PHASE.md 文件。
+
+## 第 4 步：审查计划
+
+```bash
+/plan-review
+```
+
+带有散文保真度、一致性与质量评分的取证审计。在继续之前修复任何 FAIL 发现。
+
+## 第 5 步：执行阶段
+
+```bash
+/plan-execute    # executes the first phase, then pauses
+/plan-execute    # executes the next phase, then pauses
+...
+```
+
+## 第 6 步：检查进度
+
+```bash
+/plan-status
+```
+
+报告当前阶段、已验证的输出以及下一步行动。

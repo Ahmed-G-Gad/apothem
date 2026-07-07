@@ -1,0 +1,34 @@
+---
+title: "Apothem 对比手动配置 Gemini CLI"
+description: "手动维护 Gemini CLI 的 GEMINI.md 规则文件，对比从 Apothem 的共享配置文件渲染它。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Gemini CLI 读取单个 `GEMINI.md` 规则文件。Apothem 的 gemini-cli 适配器从共享配置文件渲染它。本页将手动维护该配置与用 Apothem 管理它进行对比。
+
+## 工作量对比
+
+| 任务 | 手动配置 | 由 Apothem 管理 |
+| ---- | --------------- | --------------- |
+| 编写规则 | 手动编辑一个 `GEMINI.md` | 渲染：将共享规则嵌入到 `GEMINI.md` 中 |
+| 与其他环境保持规则对齐 | 手动，逐个工具 | 在 `apothem update` 时自动完成 |
+| 安装 / 移除配置 | 手动编写并删除 `GEMINI.md` | `apothem install` / `apothem uninstall` |
+| 验证配置是否正确 | 手动检查 | `apothem verify --harness gemini-cli` |
+
+## Apothem 管理什么
+
+gemini-cli 适配器将共享规则嵌入到单个 `GEMINI.md` 中。Gemini CLI 没有 PreToolUse 钩子，因此防护意图通过规则文本而非工具调用拦截点来表达。对共享规则的每次更改都会在下一次 `apothem update` 时重新渲染 `GEMINI.md`。
+
+## 迁移路径
+
+1. 如果你还没有创建共享配置文件，运行 `apothem profile init` 来创建。
+2. 将你现有 `GEMINI.md` 中的规则移入共享语料库。
+3. 运行 `apothem install --harness gemini-cli` 来渲染并写入 `GEMINI.md`。
+4. 运行 `apothem verify --harness gemini-cli` 来确认配置已落地。
+5. 之后每次更改都使用 `apothem update --harness gemini-cli`。
+
+## 接下来阅读
+
+- [Gemini CLI 适配器参考](/docs/harnesses/gemini-cli)
+- [比较概览](/docs/comparison)

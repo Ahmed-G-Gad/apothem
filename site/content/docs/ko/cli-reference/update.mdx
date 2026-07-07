@@ -1,0 +1,80 @@
+---
+title: "update"
+description: "apothem update 명령에 대한 CLI 참조."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+현재 공유 프로필에서 하니스 어댑터 구성을 다시 설치합니다.
+
+## 개요
+
+```
+apothem update --harness NAME|all [--profile PATH] [--dry-run]
+                [--project PATH]
+                [--quiet|-q] [--verbose|-v]
+                [--format plain|json] [--json] [--no-color]
+```
+
+`update`는 현재 공유 프로필에서 하니스 출력을 다시 구체화합니다. `install`과 동일한 프로필 검증, `--harness all` 선택, 프로젝트 범위 확인, dry-run 동작, JSON 봉투를 사용합니다.
+
+연속형 별칭 `apothem updating`은 동일한 핸들러로 해석됩니다.
+
+## 옵션
+
+| 옵션 | 설명 |
+|---|---|
+| `--harness NAME` | 업데이트할 하니스 어댑터, 또는 레지스트리 전역 집합을 나타내는 `all`(필수). |
+| `--profile PATH` | 공유 프로필 YAML 경로. 기본값은 `~/.config/apothem/profile.yaml`. |
+| `--dry-run` | 파일을 작성하지 않고 업데이트를 미리 봅니다. |
+| `--project PATH` | 프로젝트 범위 하니스의 프로젝트 루트. 선택한 하니스 집합에 프로젝트 범위 어댑터가 포함되면 필수입니다. |
+| `--quiet`, `-q` | 정보성 출력을 억제합니다. 오류만 출력됩니다. |
+| `--verbose`, `-v` | 추가 진단 출력을 내보냅니다. |
+| `--format plain\|json` | 출력 형식(기본값: `plain`). |
+| `--json` | `--format json`의 약식. |
+| `--no-color` | 출력에서 ANSI 색상 코드를 비활성화합니다. |
+| `-h`, `--help` | 도움말을 표시하고 종료합니다. |
+
+## JSON 출력
+
+```json
+{
+  "status": "success",
+  "command": "update",
+  "action": "updated",
+  "harness": "claude-code",
+  "profile_path": "C:\\Users\\Example\\.config\\apothem\\profile.yaml",
+  "project": null,
+  "files_written": [],
+  "results": [],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+`--dry-run`은 `status: "dry_run"`과 `files_written: []`을 반환합니다.
+
+## 예시
+
+```bash
+apothem update --harness claude-code
+apothem update --harness claude-code --dry-run
+apothem update --harness all --project . --dry-run --json
+apothem Updating --harness claude-code   # continuous-form alias
+apothem updating --harness claude-code   # lowercase variant
+```
+
+## 종료 코드
+
+| 코드 | 의미 |
+|---|---|
+| 0 | 어댑터가 성공적으로 업데이트되었거나 dry-run이 깔끔하게 계획됨 |
+| 1 | 예상되는 검증, 프로필, 하니스, 프로젝트 또는 어댑터 오류 |
+| 2 | 최소 한 번의 쓰기 후 부분 일괄 구체화 |
+
+## 함께 보기
+
+- `apothem updating` — 이 명령의 연속형 별칭(여기에 문서화됨; CLI는 두 형식을 모두 허용함)
+- [apothem install](/docs/cli-reference/install) — 초기 설치
+- [업데이트 가이드](/docs/install/updating) — 설치 프로그램별 업데이트 경로

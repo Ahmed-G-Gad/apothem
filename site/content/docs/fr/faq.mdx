@@ -1,0 +1,122 @@
+---
+title: "FAQ"
+description: "Questions courantes sur la finalité d'Apothem, les environnements pris en charge, le caractère optionnel des suites de planification, la personnalisation des règles, les types d'artefacts et l'emplacement de l'état de l'écosystème."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Questions courantes, par ordre de fréquence.
+
+## Qu'est-ce qu'`apothem` ?
+
+Une configuration portable et indépendante de l'hôte qui transforme votre répertoire
+personnel en un cadre de gouvernance, d'idéation et d'automatisation
+pour le développement piloté par harness. Elle associe règles comportementales,
+standards créatifs, commandes slash, travailleurs délégués persistants, hooks et compétences
+en une seule surface cohérente.
+
+## Avec quelles CLI de harness fonctionne-t-il ?
+
+Apothem est indépendant de l'environnement. Des adaptateurs par environnement sous
+`src/apothem/harnesses/<harness>/` projettent le profil partagé dans
+le répertoire de configuration natif de chaque outil ; la liste canonique se trouve à
+[`site/content/docs/harnesses/`](/docs/harnesses) et couvre actuellement les environnements pris en charge suivants :
+
+```text
+Claude Code, GitHub Copilot, Cursor, Gemini CLI, Codex, Windsurf, OpenCode,
+Antigravity, Open-Claw, Hermes, Qwen Code, CodeBuddy, Kiro, Trae, and Zed
+```
+
+L'adaptateur Claude Code se matérialise dans `~/.claude/` ; son répartiteur de hooks est neutre vis-à-vis de l'hôte —
+il résout la racine de l'écosystème d'abord depuis `$CLAUDE_PROJECT_DIR`, puis
+`$LLM_PROJECT_DIR`, et se rabat enfin sur `$HOME/.claude`.
+
+## Dois-je utiliser le pipeline des suites de planification ?
+
+Non. Le pipeline des suites de planification est un composant de l'écosystème.
+Les règles comportementales, les standards créatifs, les hooks et la chaîne d'outils de validation
+sont utiles indépendamment.
+
+## Comment personnaliser les règles sans forker le dépôt ?
+
+Ajoutez votre propre fichier de règle sous `src/apothem/rules/<my-rule>.md`
+avec le frontmatter canonique. Le chargeur de règles récupère chaque
+fichier correspondant au motif `src/apothem/rules/*.md`.
+
+## Comment désactiver une règle temporairement ?
+
+Renommez le fichier en dehors du motif `src/apothem/rules/*.md`
+ou déplacez-le vers un répertoire frère que le chargeur n'analyse pas.
+
+## Quelle est la différence entre règles, compétences et travailleurs délégués ?
+
+- **Les règles** régissent le comportement — obligations toujours actives ou filtrées par chemin
+  que l'assistant suit.
+- **Les compétences** sont des techniques détectables réutilisables — un signal de
+  détection, une procédure et un hook d'application.
+- **Les travailleurs délégués** sont des rôles persistants dotés de leurs propres restrictions d'outils
+  et invites système, déployés via le protocole
+  d'orchestration des travailleurs.
+
+## Comment signaler un problème de sécurité ?
+
+Voir `SECURITY.md`. Les canaux pris en charge sont les GitHub Security
+Advisories et `me@ahmedgad.com`.
+
+## Comment contribuer ?
+
+Voir [Contribuer](/docs/developer-guide). En bref : lisez
+`CONTRIBUTING.md`, forkez le dépôt, ouvrez une PR avec le
+modèle de PR canonique renseigné, et assurez-vous que les dix classes de
+vérifications CI réussissent.
+
+## Où se trouve l'état de l'écosystème ?
+
+- **L'état de planification par suite** se trouve sous `<project>/.apothem/plans/{suite}/`.
+- **La mémoire par projet** se trouve sous `projects/{hash}/memory/`.
+- **La mémoire inter-projets** se trouve sous `memory/`.
+- **Le brouillon par session** se trouve sous `<project>/.apothem/plans/{suite}/_inputs/`.
+
+## Puis-je reprendre un travail de longue haleine dans une nouvelle session ou sur une autre machine ?
+
+Oui. Un travail de longue haleine externalise son état complet vers une suite
+`.apothem/plans/` locale au projet — un contrat de reprise plus un protocole de
+démarrage à froid —, de sorte que le travail ne réside pas à l'intérieur d'un
+seul historique de conversation. Comme l'état se trouve dans les fichiers de
+votre projet, une nouvelle session sur n'importe quel compte ou machine pointant
+vers le même projet reprend le travail sur place. Apothem ne pousse pas
+lui-même les fichiers entre comptes ; ils circulent de la manière dont les
+fichiers de votre projet circulent déjà (contrôle de version, une copie de
+travail partagée, un répertoire synchronisé). Voir
+[Planification reprenable](/docs/concepts/resumable-planning).
+
+## Apothem a-t-il besoin de pip ?
+
+Non — pas pour le moteur lui-même. Le moteur est une arborescence source autonome
+avec des dépendances intégrées — il s'exécute comme `python -m apothem` depuis
+n'importe quel dépôt extrait, le cache npx ou l'arborescence du plugin sur un
+Python système 3.10+, et n'installe aucune partie de son propre code dans
+`site-packages` (`click` et `rich` sont les seuls prérequis de l'interpréteur).
+La seule exception facultative : si `click` ou `rich` est manquant, l'installeur
+propose de lancer `pip install` pour ces deux-là seulement à votre place — avec
+votre confirmation, ou `--yes` / `APOTHEM_AUTO_INSTALL_DEPS=1`. Les propres
+paquets d'Apothem ne sont jamais installés dans `site-packages`.
+
+## Comment les hooks s'exécutent-ils sans paquet installé ?
+
+`apothem install` matérialise le répartiteur de hooks et le portail de conformité
+sous la racine de l'environnement (pour Claude Code : `~/.claude/.apothem/support/hooks/` et
+`~/.claude/.apothem/support/conformity/`), et les entrées de hook rendues invoquent ces
+scripts par chemin absolu. Les deux sont des scripts autonomes de la bibliothèque standard, donc les hooks
+fonctionnent sur une machine qui n'a jamais vu `pip install`.
+
+## Comment désinstaller complètement ?
+
+Exécutez `apothem uninstall --harness <name>` pour chaque environnement installé, supprimez
+le moteur selon votre canal d'installation, et supprimez `~/.apothem/` (sauvegardes) ainsi que
+`~/.config/apothem/` (votre profil) si vous voulez zéro résidu. Le
+[guide de désinstallation](/docs/install/uninstalling) détaille chaque canal.
+
+## Sous quelle licence est l'écosystème ?
+
+MIT — voir `LICENSE`.

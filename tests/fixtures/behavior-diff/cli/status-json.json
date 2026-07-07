@@ -1,0 +1,123 @@
+{
+  "argv": [
+    "status",
+    "--json"
+  ],
+  "exit_code": 0,
+  "json": {
+    "action": "status",
+    "command": "status",
+    "error": null,
+    "files_written": [],
+    "harness": "all",
+    "profile_path": "<HOME>/.config/apothem/profile.yaml",
+    "project": null,
+    "results": [
+      {
+        "drift": "absent",
+        "harness": "antigravity",
+        "installed": false,
+        "verified": false
+      },
+      {
+        "drift": "absent",
+        "harness": "claude-code",
+        "installed": false,
+        "verified": false
+      },
+      {
+        "drift": "absent",
+        "harness": "codex",
+        "installed": false,
+        "verified": false
+      },
+      {
+        "drift": "needs-project",
+        "harness": "cursor",
+        "installed": false,
+        "verified": false
+      },
+      {
+        "drift": "needs-project",
+        "harness": "gemini-cli",
+        "installed": false,
+        "verified": false
+      },
+      {
+        "drift": "needs-project",
+        "harness": "github-copilot",
+        "installed": false,
+        "verified": false
+      },
+      {
+        "drift": "absent",
+        "harness": "hermes",
+        "installed": false,
+        "verified": false
+      },
+      {
+        "drift": "needs-project",
+        "harness": "kimi-code",
+        "installed": false,
+        "verified": false
+      },
+      {
+        "drift": "absent",
+        "harness": "open-claw",
+        "installed": false,
+        "verified": false
+      },
+      {
+        "drift": "absent",
+        "harness": "opencode",
+        "installed": false,
+        "verified": false
+      },
+      {
+        "drift": "absent",
+        "harness": "qwen-code",
+        "installed": false,
+        "verified": false
+      },
+      {
+        "drift": "needs-project",
+        "harness": "windsurf",
+        "installed": false,
+        "verified": false
+      },
+      {
+        "drift": "needs-project",
+        "harness": "codebuddy",
+        "installed": false,
+        "verified": false
+      },
+      {
+        "drift": "needs-project",
+        "harness": "kiro",
+        "installed": false,
+        "verified": false
+      },
+      {
+        "drift": "needs-project",
+        "harness": "trae",
+        "installed": false,
+        "verified": false
+      },
+      {
+        "drift": "needs-project",
+        "harness": "zed",
+        "installed": false,
+        "verified": false
+      },
+      {
+        "drift": "needs-project",
+        "harness": "glm",
+        "installed": false,
+        "verified": false
+      }
+    ],
+    "status": "success",
+    "warnings": []
+  },
+  "stdout": "{\"status\": \"success\", \"command\": \"status\", \"action\": \"status\", \"harness\": \"all\", \"profile_path\": \"<HOME>/.config/apothem/profile.yaml\", \"project\": null, \"files_written\": [], \"results\": [{\"harness\": \"antigravity\", \"installed\": false, \"verified\": false, \"drift\": \"absent\"}, {\"harness\": \"claude-code\", \"installed\": false, \"verified\": false, \"drift\": \"absent\"}, {\"harness\": \"codex\", \"installed\": false, \"verified\": false, \"drift\": \"absent\"}, {\"harness\": \"cursor\", \"installed\": false, \"verified\": false, \"drift\": \"needs-project\"}, {\"harness\": \"gemini-cli\", \"installed\": false, \"verified\": false, \"drift\": \"needs-project\"}, {\"harness\": \"github-copilot\", \"installed\": false, \"verified\": false, \"drift\": \"needs-project\"}, {\"harness\": \"hermes\", \"installed\": false, \"verified\": false, \"drift\": \"absent\"}, {\"harness\": \"kimi-code\", \"installed\": false, \"verified\": false, \"drift\": \"needs-project\"}, {\"harness\": \"open-claw\", \"installed\": false, \"verified\": false, \"drift\": \"absent\"}, {\"harness\": \"opencode\", \"installed\": false, \"verified\": false, \"drift\": \"absent\"}, {\"harness\": \"qwen-code\", \"installed\": false, \"verified\": false, \"drift\": \"absent\"}, {\"harness\": \"windsurf\", \"installed\": false, \"verified\": false, \"drift\": \"needs-project\"}, {\"harness\": \"codebuddy\", \"installed\": false, \"verified\": false, \"drift\": \"needs-project\"}, {\"harness\": \"kiro\", \"installed\": false, \"verified\": false, \"drift\": \"needs-project\"}, {\"harness\": \"trae\", \"installed\": false, \"verified\": false, \"drift\": \"needs-project\"}, {\"harness\": \"zed\", \"installed\": false, \"verified\": false, \"drift\": \"needs-project\"}, {\"harness\": \"glm\", \"installed\": false, \"verified\": false, \"drift\": \"needs-project\"}], \"warnings\": [], \"error\": null}\n"
+}

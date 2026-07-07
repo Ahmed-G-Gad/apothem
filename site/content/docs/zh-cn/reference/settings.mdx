@@ -1,0 +1,24 @@
+---
+title: "设置"
+description: "settings.json 中的 Claude Code harness 配置，涵盖工具权限、钩子接线、环境变量和状态行模板。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+`settings.json` 承载 Claude Code harness 的配置：钩子接线、工具权限、环境变量和状态行设置。
+
+完整的规范参考位于
+[settings-reference.md](/docs/reference/settings-reference)。本页概述该契约并指向更深入的参考。
+
+## 各节
+
+| 节 | 用途 |
+|---------|---------|
+| `permissions` | 每个匹配器的工具白名单与黑名单 |
+| `hooks` | 事件键控的钩子命令表（规范接线） |
+| `env` | 每会话环境变量 |
+| `statusLine` | 宿主渲染的状态行模板 |
+
+## 单模板不变式
+
+Claude Code 适配器只发布一个 `settings.json` 模板。钩子命令使用 exec 形式（`command` 加 `args`），而非特定于 shell 的命令字符串，因此跨操作系统行为在同一个文件中审查。新的权限条目和钩子事件原子地落入该文件。

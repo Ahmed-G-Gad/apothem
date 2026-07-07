@@ -1,0 +1,167 @@
+---
+title: "install"
+description: "CLI reference for the apothem install command."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Install a harness adapter configuration from the shared profile.
+
+## Synopsis
+
+```
+apothem install --harness NAME|all [--profile PATH] [--dry-run]
+                 [--clean|--fresh] [--yes] [--project PATH]
+                 [--quiet|-q] [--verbose|-v]
+                 [--format plain|json] [--json] [--no-color]
+```
+
+Loads and validates the shared profile, selects a named adapter or the
+registry-wide `all` set, validates the materialization plan, and writes
+harness-native configuration plus support cohorts. Project-scope adapters
+require `--project PATH`.
+
+The continuous-form alias `apothem installing` resolves to the same handler.
+
+## Blast-radius preview
+
+`install --harness all` fans out into mixed scopes: project-scope adapters write
+under the supplied `--project` root, while user-scope adapters write under your
+home directory — outside that root. Before any file is written, the command
+prints the concrete targets grouped under two headings: those inside the project
+root and those under your home directory.
+
+When the selection writes outside the project root, an interactive confirmation
+guards the home-rooted writes. `--yes`, a non-interactive shell (no TTY),
+`--dry-run`, and `--format json` each proceed without prompting. Only `--dry-run`
+writes nothing; `--format json` skips the preview and the confirmation prompt but
+still performs the writes. Declining the prompt aborts before any file is written.
+
+## Capability notes
+
+Each adapter projects only the capabilities its harness supports natively;
+capabilities with no native surface are reported, not silently dropped. In plain
+mode this is a single grouped note per harness (for example
+`Note: <harness> - 9 capabilities not projected; pass --verbose for detail`);
+under `--verbose` each capability prints its own rationale line. The
+`--format json` envelope always carries the full `warnings` array regardless of
+verbosity.
+
+## Options
+
+| Option | Description |
+|---|---|
+| `--harness NAME` | Harness adapter to install, or `all` for the registry-wide set (required). Run `apothem harnesses list` for registered names. |
+| `--profile PATH` | Path to shared profile YAML. Defaults to `~/.config/apothem/profile.yaml`. |
+| `--dry-run` | Preview install without writing files. |
+| `--clean`, `--fresh` | Opt-in clean slate: back up and remove the prior per-harness install state before installing. |
+| `--yes` | Skip per-target confirmation during a clean-slate removal (required for non-interactive `--clean` runs). |
+| `--project PATH` | Project root for project-scope harnesses. |
+| `--quiet`, `-q` | Suppress informational output; only errors are emitted. |
+| `--verbose`, `-v` | Print each non-projected capability's rationale instead of the grouped per-harness note. |
+| `--format plain\|json` | Output format (default: `plain`). |
+| `--json` | Shorthand for `--format json`. |
+| `--no-color` | Disable ANSI color codes in output. |
+| `-h`, `--help` | Show help and exit. |
+
+## JSON output
+
+When `--json` (or `--format json`) is supplied, a single JSON document
+is written to stdout:
+
+```json
+{
+  "status": "success",
+  "command": "install",
+  "action": "installed",
+  "harness": "claude-code",
+  "profile_path": "C:\\Users\\Example\\.config\\apothem\\profile.yaml",
+  "project": null,
+  "files_written": ["C:\\Users\\Example\\.claude\\settings.json"],
+  "results": [],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+For `--dry-run`:
+
+```json
+{
+  "status": "dry_run",
+  "command": "install",
+  "action": "dry_run",
+  "harness": "claude-code",
+  "files_written": [],
+  "results": [],
+  "warnings": [],
+  "error": null
+}
+```
+
+When `--clean` is supplied, the envelope additionally carries a `clean` object
+describing the removal phase — the per-target disposition list, whether the run
+was a preview, and the timestamped backup directory (`null` in a dry run):
+
+```json
+{
+  "clean": {
+    "dry_run": true,
+    "backup_dir": null,
+    "targets": [
+      {
+        "path": "C:\\Users\\Example\\.claude",
+        "present": true,
+        "removed": false,
+        "skipped_reason": null
+      }
+    ]
+  }
+}
+```
+
+A clean dry run previews both phases in one document: the removal preview under
+`clean` and the fresh-write preview under `results`.
+
+Expected validation errors use the same envelope and include an error object:
+
+```json
+{
+  "status": "error",
+  "command": "install",
+  "harness": "all",
+  "files_written": [],
+  "error": {
+    "code": "project.required",
+    "field": "project",
+    "reason": "project-scope harnesses require --project: cursor, gemini-cli, github-copilot, kimi-code, windsurf, codebuddy, kiro, trae, zed, glm.",
+    "fix": "Pass --project PATH or select only user-scope harnesses."
+  }
+}
+```
+
+## Examples
+
+```bash
+apothem install --harness claude-code
+apothem install --harness claude-code --dry-run
+apothem install --harness cursor --project . --profile ~/profile.yaml --json
+apothem install --harness all --project . --dry-run --json
+apothem Installing --harness claude-code   # continuous-form alias
+apothem installing --harness claude-code   # lowercase variant
+```
+
+## Exit codes
+
+| Code | Meaning |
+|---|---|
+| 0 | Adapter installed successfully or dry-run planned cleanly |
+| 1 | Expected validation, profile, harness, project, or adapter error |
+| 2 | Partial batch materialization after at least one write |
+
+## See also
+
+- `apothem installing` — continuous-form alias for this command (documented here; the CLI accepts both forms)
+- [apothem update](/docs/cli-reference/update) — re-apply current profile to a harness
+- [apothem verify](/docs/cli-reference/verify) — confirm adapter is live
+- [Getting Started](/docs/install) — full installation guide

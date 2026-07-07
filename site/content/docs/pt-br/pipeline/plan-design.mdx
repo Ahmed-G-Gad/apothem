@@ -1,0 +1,136 @@
+---
+title: "/plan-design"
+description: "/plan-design — Produz um artefato abrangente de projeto arquitetural em `_inputs/design.md`."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Papel:** Arquiteto
+**Posição no pipeline:** condicional, pós-revisão, pré-execução
+
+Produz o artefato de projeto arquitetural em `_inputs/design.md` quando uma suite
+de plano tem trabalho com arquitetura. É intencionalmente condicional: uma suite
+de prosa, documentação, metadados ou fixtures restritas vai de `/plan-review`
+direto para `/plan-execute`; uma suite que altera componentes, interfaces,
+esquemas, fluxo de dados, adaptadores, topologia de publicação, limites de
+segurança ou comportamento em tempo de execução passa primeiro por
+`/plan-design`.
+
+## Invocação canônica
+
+```bash
+/plan-design path/to/plan-suite/
+```
+
+Com argumentos:
+
+```bash
+/plan-design [path/to/plan-suite/] [--refine-existing] [--dry-run]
+```
+
+## Entradas
+
+Suite de plano revisada + `_spec/spec.md` + `_inputs/handoff-manifest.yml` +
+cartões de pontuação de revisão PASS de `/plan-review`.
+
+## Saídas
+
+`_inputs/design.md` mais um `_inputs/handoff-manifest.yml` aumentado que carrega
+o caminho do artefato de projeto, o resultado da comporta de projeto, o resultado
+da cobertura de sete eixos e o resumo da Matriz de Vinculação Bidirecional.
+
+## Comporta de aplicabilidade
+
+Execute `/plan-design` quando ao menos uma fase posterior declarar ou implicar:
+
+- Alterações de disposição de fonte, de limite de pacote, de limite de adaptador
+  ou de limite de módulo.
+- Interfaces públicas, protocolos, esquemas, contratos de configuração ou
+  comportamento da CLI.
+- Fluxo de dados entre componentes, ordenação de ciclo de vida, transições de
+  estado ou arestas de dependência.
+- Arquitetura de segurança, desempenho, concorrência, observabilidade,
+  implantação, publicação ou cadeia de suprimentos.
+- Uma passagem posterior de `/architecture-review` que deve rastrear a
+  implementação de volta a um artefato de projeto.
+
+Pule `/plan-design` quando a suite se limitar a edições de texto, atualizações de
+inventário gerado, atualizações restritas de fixtures, correções pontuais de
+documentação ou outro trabalho cuja implementação possa ser verificada sem uma
+superfície de rastreamento arquitetural. O caminho de pulo é explícito:
+`/plan-review` registra a classificação de não-arquitetura e, em seguida,
+`/plan-execute` continua a partir da suite de plano revisada.
+
+## Jusante
+
+`/plan-execute` consome o artefato de projeto para fases com arquitetura.
+`/architecture-review` consome o mesmo artefato durante a Sequência de Revisão de
+Auditoria. Se `_inputs/design.md` estiver ausente para trabalho com arquitetura,
+a revisão de arquitetura para e reencaminha a suite de volta por `/plan-design`.
+
+## Fases do fluxo de trabalho
+
+O comando segue seis fases de transformação específicas de arquitetura:
+
+1. **Ingestão de entrada** — Lê a suite revisada, os cartões de pontuação, as
+   saídas de fase e o manifesto de repasse; bloqueia diante de evidência de
+   revisão ausente ou falha em SHARED+.
+2. **Decomposição arquitetural** — Percorre Arquitetura, Concorrência,
+   Desempenho, Segurança, Testes, Tooling e Observabilidade; identifica
+   componentes, arestas e questões arquiteturais abertas.
+3. **Projeto de interface de componentes** — Define interfaces públicas,
+   contratos de protocolo, esquemas, invariantes, modos de falha e limites de
+   inversão de dependência.
+4. **Ratificação de vinculações entre componentes** — Fecha cada aresta a
+   montante, a jusante, irmã, de critério e de âncora; emite uma Matriz de
+   Vinculação Bidirecional quando o grafo de componentes cruza o limiar da
+   matriz.
+5. **Emissão do artefato de projeto** — Escreve `_inputs/design.md` com seções de
+   componentes, diagramas, registros de decisão, resultado de validação e
+   vinculações.
+6. **Comporta de validação do projeto** — Executa a comporta de pré-emissão de
+   quinze barras; atualiza `_inputs/handoff-manifest.yml` apenas após o projeto
+   passar.
+
+## Forma do artefato de projeto
+
+O `_inputs/design.md` emitido contém:
+
+- Resumo executivo com contagem de componentes e cobertura de sete eixos.
+- Uma seção por componente principal, ordenada das superfícies internas de
+  domínio para os adaptadores e superfícies de operador externos.
+- Diagramas Mermaid de arquitetura, sequência, estado ou dependência onde a
+  estrutura seria ambígua de outro modo.
+- Registros de decisão arquitetural resolvidos com alternativas, compensações e
+  notas de reversibilidade.
+- Resultado da comporta de validação e Matriz de Vinculação Bidirecional quando
+  aplicável.
+- As próprias vinculações de cinco direções do artefato para as superfícies de
+  planejamento a montante e a jusante.
+
+## Modos de falha
+
+| Sintoma | Causa | Recuperação |
+|---------|-------|----------|
+| Pré-requisito incompleto | Fase dependente não concluída | Conclua primeiro a fase a montante |
+| Comporta de qualidade FAIL | A saída não atende aos padrões | Corrija a saída e reexecute |
+| Falta a suite revisada | Suite de plano ou cartões de revisão ausentes | Execute `/plan-generate`, depois `/plan-review` |
+| Suite de não-arquitetura | Nenhuma fase precisa de uma superfície de rastreamento arquitetural | Registre o pulo e continue para `/plan-execute` |
+| Revisão de arquitetura bloqueia | `_inputs/design.md` ausente para implementação com arquitetura | Execute `/plan-design`, depois reexecute `/architecture-review` |
+
+## Exemplos
+
+```bash
+# Dry-run para pré-visualizar aplicabilidade, contagem de componentes e questões abertas
+/plan-design --dry-run
+
+# Emite o projeto para uma suite com arquitetura nomeada
+/plan-design path/to/plan-suite/
+```
+
+## Referências cruzadas
+
+- [Visão geral do pipeline](/docs/pipeline)
+- [/plan-execute](/docs/pipeline/plan-execute)
+- [/architecture-review](/docs/pipeline/architecture-review)
+- [Modelo de Suite de Plano Mestra](/docs/reference/commands)

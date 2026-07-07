@@ -1,0 +1,350 @@
+---
+title: "Runbook zur Pages-Aktivierung"
+description: "Schritt-für-Schritt-Runbook zum Starten von GitHub Pages mit benutzerdefinierter Domain auf apothem.ahmedgad.com über CNAME-DNS-Konfiguration."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Dieses Runbook führt `apothem.ahmedgad.com` von einer frischen
+GitHub-Pages-Konfiguration zu einer HTTPS-Landingpage mit `200 OK`. Die
+Prozedur ist für den Operator geschrieben, der `gh` und die Konsole eines
+DNS-Anbieters bedient; ein kompetenter neuer Mitwirkender folgt ihr ohne
+Vorwissen.
+
+Das Runbook ist als **anbieterunabhängiger Kern** strukturiert (die
+GitHub-seitigen Schritte und DNS-Datensatzschritte, die jeder Anbieter teilt),
+gefolgt von **anbieterspezifischen Anhängen** für Namecheap, Cloudflare,
+Route53 und einen generischen DNS-Fallback. Führen Sie den Kern der Reihe nach
+aus; springen Sie zum Anhang, der zum Registrar der Root-Domain / zum DNS-Host
+passt; kehren Sie zur Verifizierung zum Kern zurück.
+
+Die Site wird aus dem öffentlichen Repository `ahmed-g-gad/apothem` über GitHub
+Pages gehostet, wobei der CNAME der benutzerdefinierten Domain auf
+`ahmed-g-gad.github.io` zeigt. Der Build der statischen Site gibt nach
+`site/dist/` aus; der Pages-Workflow hebt dieses Build-Artefakt bei jedem Push
+auf `main` auf die Live-Site.
+
+## 1. Voraussetzungen
+
+Der Operator bestätigt Folgendes, bevor er fortfährt:
+
+- **Repository-Zustand.** `ahmed-g-gad/apothem` ist öffentlich, hat Pages
+  aktiviert (Settings > Pages > Source: GitHub Actions) und der Workflow
+  `publish-static-site.yml` existiert unter
+  `.github/workflows/publish-static-site.yml`.
+- **DNS-Autorität.** Der Operator kontrolliert das DNS für `ahmedgad.com` beim
+  Registrar oder bei einem delegierten DNS-Host (Cloudflare, Route53 usw.).
+  Der DNS-Host wird über `dig NS ahmedgad.com +short` identifiziert.
+- **Werkzeuge.** `gh` (GitHub CLI) Version 2.40 oder neuer, gegen das Konto
+  `ahmed-g-gad` authentifiziert; `dig` (BIND-`dig` oder `drill`) für die
+  DNS-Verifizierung; ein Browser für die HTTPS-Inspektion.
+- **Root-Domain-Haltung.** Dieses Runbook konfiguriert ausschließlich die
+  **Subdomain** `apothem.ahmedgad.com`. Die Root-Domain `ahmedgad.com` bleibt
+  unangetastet. Ein CNAME auf der Root-Domain erfordert CNAME-Flattening
+  (Cloudflare) oder ALIAS-Datensätze (Route53); der Subdomain-Pfad vermeidet
+  beide Komplikationsklassen.
+
+## 2. Anbieterunabhängiger Kern
+
+### 2.1 Fügen Sie die benutzerdefinierte Domain zu Pages hinzu
+
+```bash
+gh api -X PUT \
+  /repos/ahmed-g-gad/apothem/pages \
+  -F cname=apothem.ahmedgad.com \
+  -F https_enforced=true
+```
+
+Verifizieren Sie, dass der Aufruf den neuen CNAME-Datensatz zurückgegeben hat:
+
+```bash
+gh api /repos/ahmed-g-gad/apothem/pages \
+  --jq '.cname, .https_enforced, .status'
+```
+
+Erwartete Ausgabe:
+
+```text
+apothem.ahmedgad.com
+true
+built
+```
+
+Der Status `built` bestätigt, dass der jüngste Pages-Build erfolgreich war.
+Ein Status `null` bedeutet, dass Pages seit der Anwendung des CNAME nicht
+gelaufen ist — pushen Sie einen No-op-Commit auf `main`, um den Build
+auszulösen.
+
+### 2.2 Bestätigen Sie die CNAME-Datei
+
+GitHub Pages empfängt `site/public/CNAME` bei jedem Deployment über das
+Build-Artefakt der statischen Site. Die Datei enthält die benutzerdefinierte
+Domain in einer einzelnen Zeile, ohne Schema, ohne abschließenden Schrägstrich:
+
+```text
+apothem.ahmedgad.com
+```
+
+Die Datei liegt unter `site/public/CNAME`. Verifizieren:
+
+```bash
+cat site/public/CNAME
+```
+
+Falls die Datei fehlt, erstellen Sie sie unter `site/public/CNAME` neu und
+committen Sie unter `chore: restore Pages CNAME`.
+
+### 2.3 Fügen Sie den DNS-Datensatz hinzu
+
+Pages bedient die benutzerdefinierte Domain, wenn der DNS-Anbieter der
+Root-Domain eine von GitHubs vier IP-Adressen zurückgibt (für Root-Domains)
+oder einen CNAME, der auf `<owner>.github.io` zeigt (für Subdomains). Für
+`apothem.ahmedgad.com` ist die Datensatzklasse **CNAME**:
+
+| Feld | Wert |
+|-------|-------|
+| Typ  | `CNAME` |
+| Host  | `apothem` (nur Subdomain; der Registrar hängt die Root-Domain an) |
+| Wert | `ahmed-g-gad.github.io.` (abschließender Punkt, wenn der Registrar ihn verlangt) |
+| TTL   | `3600` (eine Stunde; niedriger für schnellere Propagierung während der Umstellung) |
+
+Der genaue UI-Ablauf zum Hinzufügen des Datensatzes variiert je Anbieter;
+springen Sie zum passenden Anhang unten und kehren Sie hierher zurück, sobald
+der Datensatz gespeichert ist.
+
+### 2.4 Warten Sie auf die DNS-Propagierung
+
+Die Propagierung ist bei Datensätzen mit niedriger TTL innerhalb von fünf
+Minuten und bei der Standard-TTL von 3600 Sekunden innerhalb einer Stunde
+abgeschlossen — Edge-Knoten des Anbieters können das Fenster während eines
+DNS-Zonentransfers verlängern. Verfolgen Sie den Fortschritt:
+
+```bash
+dig apothem.ahmedgad.com CNAME +short
+```
+
+Erwartete Ausgabe:
+
+```text
+ahmed-g-gad.github.io.
+```
+
+Eine leere Ausgabe bedeutet, dass sich der Datensatz noch nicht propagiert hat.
+Führen Sie alle 30 Sekunden erneut aus. Falls der Datensatz nach 30 Minuten
+nie erscheint, kehren Sie zum Anhang zurück, der zum DNS-Host passt, und
+verifizieren Sie, dass der Datensatz beim Anbieter festgeschrieben ist und
+nicht in einem Entwurfszustand aussteht.
+
+### 2.5 Verifizieren Sie HTTPS
+
+```bash
+curl -sSI https://apothem.ahmedgad.com/ | head -5
+```
+
+Erwartete Ausgabe:
+
+```text
+HTTP/2 200
+server: GitHub.com
+content-type: text/html; charset=utf-8
+strict-transport-security: max-age=31536000
+```
+
+`HTTP/2 200` und die Zeile `server: GitHub.com` bestätigen zusammen, dass
+Pages die Site unter einem gültigen TLS-Zertifikat bedient. Ein `301` zur
+HTTPS-URL bei einer reinen HTTP-Anfrage erfüllt das Gate ebenfalls;
+erzwungenes HTTPS ist aktiv.
+
+Wenn `curl` einen `526` (Cloudflare-spezifischer Code für ungültiges
+Zertifikat) oder einen `502` (Bad Gateway) zurückgibt, wurde das Zertifikat
+noch nicht ausgestellt. Pages stellt Let's-Encrypt-Zertifikate automatisch
+bereit, sobald der CNAME auflöst; rechnen Sie für die Erstausstellung mit bis
+zu 24 Stunden. Zur Diagnose:
+
+```bash
+gh api /repos/ahmed-g-gad/apothem/pages \
+  --jq '.https_certificate.state, .https_certificate.description'
+```
+
+`state: approved` bedeutet, dass die Ausstellung abgeschlossen ist.
+`state: requesting` bedeutet, dass die Ausstellung läuft; warten Sie. Jeder
+andere Zustand erfordert einen Pages-Neustart (schalten Sie die
+benutzerdefinierte Domain über die API aus und wieder ein).
+
+### 2.6 Verifizieren Sie Deep Links
+
+```bash
+curl -sSI https://apothem.ahmedgad.com/architecture/ | head -3
+```
+
+Erwartete Ausgabe:
+
+```text
+HTTP/2 200
+server: GitHub.com
+content-type: text/html; charset=utf-8
+```
+
+Ein `404` auf einem Deep Link bedeutet, dass der Build der statischen Site die
+Seite nicht aufgenommen hat oder das Deployment nicht abgeschlossen ist. Lösen
+Sie über `gh workflow run publish-static-site.yml` einen Rebuild aus.
+
+### 2.7 Erfassen Sie die Verifizierung
+
+Hängen Sie eine Zeile an das Site-Status-Log des Operators an (oder an das
+Verifizierungsprotokoll dieses Runbooks, falls inline gepflegt) mit dem Datum,
+der Identität des Operators und der `gh api`-Pages-Statusausgabe. Das
+Verifizierungsprotokoll ist der Audit-Pfad — jede Pages-Konfigurationsänderung
+hinterlässt eine Zeile.
+
+## 3. Anbieter-Anhang — Namecheap
+
+Namecheap stellt DNS über den Tab „Advanced DNS" des Registrars bereit. Der
+Operator besitzt `ahmedgad.com` hier, wenn die NS-Datensätze des Registrars
+mit `dns1.registrar-servers.com` und `dns2.registrar-servers.com` (der
+Namecheap-Standard) übereinstimmen. Verifizieren Sie mit
+`dig NS ahmedgad.com +short`.
+
+Schritte:
+
+1. Melden Sie sich bei Namecheap an; öffnen Sie das Dashboard.
+2. Klicken Sie auf `Domain List` in der linken Navigation; suchen Sie
+   `ahmedgad.com`; klicken Sie auf `Manage`.
+3. Klicken Sie auf den Tab `Advanced DNS`.
+4. Klicken Sie auf `Add New Record`. Wählen Sie:
+   - Type: `CNAME Record`
+   - Host: `apothem` (keine Root-Domain, kein abschließender Punkt)
+   - Value: `ahmed-g-gad.github.io.` (mit abschließendem Punkt)
+   - TTL: `Automatic` (Namecheap-Standard; honoriert 1800 Sekunden)
+5. Klicken Sie auf das grüne Häkchen zum Speichern.
+6. Warten Sie 5 bis 10 Minuten auf Namecheaps Edge-Propagierung; kehren Sie
+   dann zum anbieterunabhängigen Kern §2.4 für die `dig`-Verifizierung zurück.
+
+Häufiger Fehler: Namecheaps UI weist CNAME-Datensätze stillschweigend zurück,
+wenn ein `A`-Datensatz bereits denselben Host belegt. Löschen Sie zuerst den
+konfliktierenden `A`-Datensatz; CNAME und A auf demselben Host schließen sich
+laut RFC 1034 gegenseitig aus.
+
+## 4. Anbieter-Anhang — Cloudflare
+
+Cloudflare DNS hostet die Root-Domain, wenn die NS-Datensätze des Registrars
+auf `*.ns.cloudflare.com` zeigen (der Cloudflare-Standard nach der
+Delegierung). Verifizieren Sie mit `dig NS ahmedgad.com +short`.
+
+Schritte:
+
+1. Melden Sie sich bei Cloudflare an; wählen Sie die Zone `ahmedgad.com`.
+2. Klicken Sie auf `DNS` -> `Records` in der linken Navigation.
+3. Klicken Sie auf `Add record`. Wählen Sie:
+   - Type: `CNAME`
+   - Name: `apothem` (Cloudflare hängt die Root-Domain automatisch an)
+   - Target: `ahmed-g-gad.github.io` (kein abschließender Punkt in Cloudflares UI)
+   - TTL: `Auto` (Cloudflare-Standard; routet über seine Edge)
+   - Proxy status: **DNS only** (graue Wolke, nicht orange)
+4. Klicken Sie auf `Save`.
+
+Die Wahl des Proxy-Status ist tragend. Den Cloudflare-Proxy einzuschalten
+(orange Wolke) routet den Verkehr über Cloudflares Edge, bevor er GitHub Pages
+erreicht; dies bricht die Let's-Encrypt-Ausstellung von Pages, weil Cloudflare
+sein eigenes Zertifikat präsentiert. Halten Sie den Proxy für die
+Erstkonfiguration aus; schalten Sie ihn erst später ein, nachdem Sie
+entschieden haben, ob das Zertifikat an Cloudflares Edge verwaltet werden soll.
+
+5. Warten Sie 1 bis 2 Minuten auf Cloudflares Edge-Propagierung; kehren Sie
+   dann zum anbieterunabhängigen Kern §2.4 zurück.
+
+Häufiger Fehler: Cloudflare entfernt den abschließenden Punkt von
+CNAME-Zielen stillschweigend. Das Zielfeld akzeptiert `ahmed-g-gad.github.io`
+ohne den abschließenden Punkt; der Resolver hängt den abschließenden Punkt zur
+Abfragezeit an. Tippen Sie den abschließenden Punkt nicht in Cloudflares UI —
+das erzeugt einen Doppelpunkt-Datensatz, der nicht auflöst.
+
+## 5. Anbieter-Anhang — Route53
+
+Route53 hostet die Zone, wenn die NS-Datensätze des Registrars auf vier
+`awsdns-*.com` / `awsdns-*.org` / `awsdns-*.co.uk` / `awsdns-*.net`-Server
+zeigen. Verifizieren Sie mit `dig NS ahmedgad.com +short`.
+
+Schritte:
+
+1. Öffnen Sie die AWS-Konsole; navigieren Sie zu Route53; klicken Sie auf
+   `Hosted zones`; wählen Sie die Zone `ahmedgad.com`.
+2. Klicken Sie auf `Create record`.
+3. Konfigurieren Sie:
+   - Record name: `apothem` (Route53 hängt die Root-Domain automatisch an)
+   - Record type: `CNAME`
+   - Value: `ahmed-g-gad.github.io` (kein abschließender Punkt)
+   - TTL: `300` (5 Minuten; Route53s Standardwerte sind höher; senken Sie die
+     TTL für schnellere Propagierung während der Umstellung)
+   - Routing policy: `Simple routing`
+4. Klicken Sie auf `Create records`.
+5. Warten Sie 1 bis 5 Minuten auf die Route53-Propagierung; kehren Sie zu §2.4
+   zurück.
+
+Route53 unterstützt **Alias-Datensätze**, die zur Abfragezeit ohne
+CNAME-Indirektion auflösen. Alias-Datensätze werden hier nicht verwendet, weil
+Alias-Ziele auf AWS-Ressourcen beschränkt sind (CloudFront, S3, ELB usw.) und
+`ahmed-g-gad.github.io` keine AWS-Ressource ist. CNAME ist korrekt.
+
+Häufiger Fehler: Route53s UI akzeptiert doppelte Datensatznamen mit
+unterschiedlichen Routing-Richtlinien; dies äußert sich als ein
+Healthcheck-artiges Failover-Routing statt eines einfachen CNAME. Bestätigen
+Sie, dass `Routing policy` `Simple routing` lautet, bevor Sie speichern.
+
+## 6. Anbieter-Anhang — Generisches DNS
+
+Für DNS-Hosts, die nicht von den benannten Anhängen abgedeckt sind (die
+Standard-DNS-Panels der meisten Registrare — GoDaddy, Hover, Gandi, OVH,
+Porkbun, Domains.google, Network Solutions), wenden Sie die
+anbieterunabhängige CNAME-Form an:
+
+| Feld | Wert |
+|-------|-------|
+| Typ  | `CNAME` |
+| Host  | `apothem` (nur Subdomain) |
+| Wert | `ahmed-g-gad.github.io.` (abschließender Punkt — die meisten generischen Panels akzeptieren ihn; einige verlangen ihn) |
+| TTL   | `3600` (oder der niedrigste verfügbare Wert des Panels während der Umstellung) |
+
+Die zwei Fehlerklassen, die über generische Panels hinweg wiederkehren:
+
+- **Inkonsistenz des abschließenden Punkts.** Einige Panels verlangen den
+  abschließenden Punkt; andere weisen ihn zurück; einige wenige akzeptieren
+  beides. Wenn sich der Datensatz nach 30 Minuten nicht propagiert,
+  schalten Sie den abschließenden Punkt um und speichern Sie erneut.
+- **Konfliktierender A-Datensatz auf demselben Host.** CNAME und A auf
+  demselben Host verstoßen gegen RFC 1034 (Domain Names — Concepts and
+  Facilities) Abschnitt drei über Domainnamen-Präferenzen. Löschen Sie den
+  konfliktierenden A-Datensatz, bevor Sie den CNAME hinzufügen.
+
+Nachdem der Datensatz gespeichert ist, kehren Sie zu §2.4 für die
+`dig`-Verifizierung zurück.
+
+## 7. Fehlerbehebung
+
+Die Prozedur zur Pages-Aktivierung hat vier dokumentierte Fehlermodi:
+
+| Fehler | Diagnose | Behebung |
+|---|---|---|
+| `gh api .../pages` gibt 404 zurück | Pages ist auf dem Repo nicht aktiviert | `gh api -X POST /repos/ahmed-g-gad/apothem/pages -f source.branch=main -f source.path=/site`, dann §2.1 erneut versuchen |
+| `dig` gibt nach 30 Minuten leer zurück | Der DNS-Datensatz ist beim Anbieter nicht festgeschrieben | Kehren Sie zum passenden Anbieter-Anhang zurück; verifizieren Sie, dass der Datensatz gespeichert ist (nicht Entwurf / ausstehend); inspizieren Sie das Panel auf einen verpassten `Save`-Schritt |
+| `https_certificate.state: errored` | Pages kann kein Zertifikat ausstellen | Schalten Sie die benutzerdefinierte Domain in den Pages-Einstellungen aus und wieder ein; dies löst die Ausstellung erneut aus. Warten Sie bis zu 24 Stunden auf den neuen Versuch |
+| Deep-Link-404 nach dem Build | Der Build der statischen Site hat die Seite nicht eingeschlossen | `gh workflow run publish-static-site.yml`; verifizieren Sie nach Abschluss, dass `gh run list --workflow=publish-static-site.yml --limit=1 --json conclusion --jq '.[0].conclusion'` `success` zurückgibt |
+
+Wenn die Behebung nach einem Zyklus der passenden Diagnose fehlschlägt,
+eskalieren Sie zum Runbook zur Release-Wiederherstellung (ein erzwungener
+Push frischer Historie kann die Pages-Konfiguration in einem inkonsistenten
+Zustand hinterlassen haben).
+
+## 8. Querverweise
+
+- **Spezifikationsquelle.** Spezifikation §2.5 listet dieses Runbook in den
+  Dokumentationsergebnissen von Cluster 4.
+- **Kanonischer CNAME-Speicherort.** Die CNAME-Datei liegt unter
+  `site/public/CNAME` und ist im Repository festgeschrieben; Pages liest sie
+  bei jedem Build.
+- **Wiederherstellungsfluss.** Das Runbook zur Release-Wiederherstellung
+  wendet die Pages-Konfiguration aus dem Wiederherstellungs-Snapshot erneut an,
+  wenn die Umstellungssequenz mitten im Vorgang fehlschlägt.
+- **Release-Zyklus.** Jeder Release-Lauf enthält einen Pages-Build-Job, der
+  verifiziert, dass die Site unter der benutzerdefinierten Domain gerendert
+  wird.

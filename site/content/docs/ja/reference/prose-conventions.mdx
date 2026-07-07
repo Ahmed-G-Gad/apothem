@@ -1,0 +1,36 @@
+---
+title: "散文の規約"
+description: "RFC 2119 のモーダル階層を強制し、マーケティング形容詞とぼかしフィラーを禁止し、絶対的な ISO-8601 日付を使用し、指令的散文の隙のなさを検証する。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **すべての受著された Markdown 面にわたる散文規律の規範的リファレンス。** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) 規約 の要約はインライン宣言であり、本ページは下流の貢献者が引用する独立したリファレンスです。
+
+---
+
+## 1. モーダル階層（RFC 2119）
+
+指令的散文は **RFC 2119** のモーダル階層を使用します：`MUST`、`MUST NOT`、`SHOULD`、`SHOULD NOT`、`MAY`。それぞれが RFC の定義する拘束強度を担います。小文字のモーダル（`must`、`should`）は規範的な重みを持たず、いかなる義務も宣言されない叙述的散文においてのみ使用されます。
+
+## 2. 禁止語彙
+
+### 2.1 マーケティング形容詞
+
+`powerful`、`seamless`、`robust`、`cutting-edge`、`next-generation`、`world-class`、`enterprise-grade` という用語とその等価語は、測定された証拠で具体的に裏付けられない限り、ユーザー向け制作物では禁止されます。裏付けは、ベンチマーク、比較、計測、または外部の検証ソースを引用します。
+
+### 2.2 ぼかしフィラー
+
+`basically`、`kind of`、`sort of`、`in some sense`、`to some extent` という用語とその等価語は、指令的テキストでは禁止されます。指令的散文は拘束的です。ぼかし表現は、散文が主張する拘束力を譲り渡してしまいます。
+
+### 2.3 UDA の隙のなさ
+
+`scripts/dev/validate_ecosystem.py` の汎用指令隙のなさ（UDA）チェックは、拘束的な規定を担う行に対して、閉じたぼかし語彙集（`maybe`、`might`、`could`、`should probably`、`usually`、`generally speaking`、`in most cases`、`mostly`、`typically`、`often`、`or similar`、`etc.`、`and so on`）を強制します。ルール自体の主題として引用されるぼかしトークン（例えば、禁止語リストのページにおける禁止語の一覧）は、検証器の定義マーカー機構によって免除されます。
+
+## 3. 日付の参照
+
+日付はすべての参照で絶対的な ISO-8601（`YYYY-MM-DD`）です。相対日付（`yesterday`、`last week`、`recently`）は、著作セッションを超えて持続する制作物では禁止されます。
+
+## 4. 検証器
+
+`scripts/dev/validate_ecosystem.py` の UDA 隙のなさチェックは、§2.3 の機械的強制実行面です。書き込みごとの `markdown` 系の conformity-grep 検証器は、PreToolUse Write/Edit フックの境界でより広範な散文品質基準を強制します。

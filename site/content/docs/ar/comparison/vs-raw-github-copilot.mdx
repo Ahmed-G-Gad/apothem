@@ -1,0 +1,42 @@
+---
+title: "Apothem مقابل تهيئة GitHub Copilot الخام"
+description: "صيانة ملف copilot-instructions.md الخاص بـ GitHub Copilot يدويًا مقابل رسمه من ملف تعريف Apothem المشترك."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+يقرأ <bdi>GitHub Copilot</bdi> تعليماته من `.github/copilot-instructions.md`.
+يرسم محوِّل <bdi>github-copilot</bdi> في <bdi>Apothem</bdi> ذلك الملف من ملف
+التعريف المشترك. تقابل هذه الصفحة بين صيانة تلك التهيئة يدويًا وإدارتها مع
+<bdi>Apothem</bdi>.
+
+## مقارنة الجهد
+
+| المهمة | تهيئة يدوية خام | مُدارة بـ Apothem |
+| ---- | --------------- | --------------- |
+| تأليف التعليمات | تحرير `.github/copilot-instructions.md` يدويًا | مرسومة: القواعد المشتركة مضمَّنة في الملف |
+| إبقاء التعليمات متوائمة مع بيئات أخرى | يدويًا، لكل أداة | تلقائيًا عند `apothem update` |
+| تثبيت / إزالة التهيئة | كتابة الملف وحذفه يدويًا | `apothem install` / `apothem uninstall` |
+| التحقّق من صحة التهيئة | فحص يدوي | `apothem verify --harness github-copilot` |
+
+## ما الذي يديره Apothem
+
+يضمّن محوِّل <bdi>github-copilot</bdi> القواعد المشتركة في
+`.github/copilot-instructions.md`. يعمل <bdi>Copilot</bdi> بوصفه امتداد
+<bdi>IDE</bdi> ولا يكشف عن خطّافات لاستدعاء الأدوات، لذا يُحمَل قصد المتراس
+بالكامل في التعليمات المرسومة. كل تغيير في القواعد المشتركة يعيد رسم الملف عند
+`apothem update` التالي.
+
+## مسار الترحيل
+
+1. شغّل `apothem profile init` لإنشاء ملف التعريف المشترك إن لم تكن قد فعلت بعد.
+2. انقل محتوى `.github/copilot-instructions.md` الحالي لديك إلى المجموعة
+   المشتركة.
+3. شغّل `apothem install --harness github-copilot` لرسم ملف التعليمات.
+4. شغّل `apothem verify --harness github-copilot` للتأكد من أن التهيئة قد حُطّت.
+5. استخدم `apothem update --harness github-copilot` لكل تغيير لاحق.
+
+## اقرأ بعد ذلك
+
+- [مرجع محوِّل GitHub Copilot](/docs/harnesses/github-copilot)
+- [نظرة عامة على المقارنة](/docs/comparison)

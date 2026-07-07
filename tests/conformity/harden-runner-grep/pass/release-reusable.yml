@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: MIT
+
+# Reusable-workflow caller exemption fixture (operator-ratified 2026-05-19).
+# The `provenance` job invokes a SLSA reusable workflow at the JOB level via
+# `uses:` and declares NO `steps:` block. harden-runner is a step-level action
+# and cannot apply to reusable-workflow callers; the matcher allow-lists this
+# shape per .plans/apothem-source-elevation/PLAN-NOTES.md §3.4. The build job
+# below carries a conformant harden-runner step to exercise the standard path.
+name: Release-reusable-caller
+on:
+  push:
+    tags: ['v*']
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: step-security/harden-runner@v2.10.1
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@v4
+      - run: python -m build
+  provenance:
+    needs: [build]
+    permissions:
+      actions: read
+      id-token: write
+      contents: write
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
+    with:
+      base64-subjects: dummy

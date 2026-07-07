@@ -1,0 +1,185 @@
+---
+title: "Artefakt-Registries"
+description: "Vollständige Aufzählung der Apothem-Ökosystem-Artefakte: Commands, Regeln, delegierte Worker, Hooks, Skills, Output-Styles, Disziplin der Artefaktevolution und Deklarationen leerer Artefaktklassen."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Kanonisches Register der Artefakt-Kohorten.** Dieses Dokument trägt die vollständigen Aufzählungen von Commands, Regeln, delegierten Workern, Hooks, Skills, Output-Styles, der Disziplin der Artefaktevolution und den Deklarationen leerer Artefaktklassen; die substanziellen Tabellen leben hier. Das Quell-Layout des Projekts liefert die verdichtete, stets geladene Ansicht.
+
+## 1. Commands
+
+Dreißig Commands werden aus `src/apothem/commands/*.md` registriert (nicht rekursiv). Jeder Command ist eine erstklassige registrierte Datei; der `/plan`-Orchestrator verkettet nur die bereits erstklassigen Plan-Stages und trägt keine eigene Stage-Logik, sodass es weiterhin keinen monolithischen Dispatcher und keine Subcommand-Gruppierung gibt. Die Nicht-Plan-, Nicht-Workflow-Commands:
+
+| Command | Datei | Beschreibung |
+| ------- | ---- | ----------- |
+| `/a11y-audit` | `src/apothem/commands/a11y-audit.md` | Barrierefreiheits-Audit einer bereitgestellten Web-Oberfläche gegen WCAG 2.2 AA, Seite für Seite durchlaufen |
+| `/architecture-review` | `src/apothem/commands/architecture-review.md` | Review der architektonischen Integrität eines Repositorys gegen sein Design-Artefakt und die kanonische Schichten-Disziplin |
+| `/code-audit` | `src/apothem/commands/code-audit.md` | Dateiübergreifendes forensisches Code-Audit auf Ebene des Repository-Korpus über sechs adversarische Phasen |
+| `/code-review` | `src/apothem/commands/code-review.md` | Code-Qualitäts-Review pro Datei über `src/`, `scripts/` und `tools/` mit Befunden pro Datei |
+| `/dependency-audit` | `src/apothem/commands/dependency-audit.md` | Audit pro Abhängigkeit (direkt + transitiv) über die Manifest-Dateien des Repositorys |
+| `/docs-review` | `src/apothem/commands/docs-review.md` | Dokumentations-Review jeder Markdown-Seite unter der Host-Docs-Oberfläche |
+| `/elevate` | `src/apothem/commands/elevate.md` | Hebt jede Projekt-Oberfläche über unabhängige Kritik-Worker auf den aktuellen SOTA-Stand und übergibt dann an `/freshify` |
+| `/eval` | `src/apothem/commands/eval.md` | Modellagnostische Evaluationskampagne für Sprachmodelle, aufgebaut auf dem Eval-Harness-Skill |
+| `/freshify` | `src/apothem/commands/freshify.md` | Macht ein Projekt frisch, spurenfrei und produktionsreif; jeder destruktive Schritt ist bestätigungsgesteuert |
+| `/github-deploy-fresh` | `src/apothem/commands/github-deploy-fresh.md` | GitHub-Spezialisierung von `/freshify`, die einen einzigen frischen Erstversions-Release auf `origin/main` erzeugt |
+| `/github-deploy-next` | `src/apothem/commands/github-deploy-next.md` | Führt einen vollständigen Folge-Release-Zyklus von Anfang bis Ende auf der GitHub-Release-Oberfläche aus |
+| `/perf-audit` | `src/apothem/commands/perf-audit.md` | Audit gegen die Performance-Budgets pro Klasse in `src/apothem/rules/performance-discipline.md` |
+| `/release-readiness` | `src/apothem/commands/release-readiness.md` | Sweep des Pre-Release-Gates: Qualitätsmatrix, Abhängigkeitsrisiko und Release-Engineering-Prüfungen |
+| `/research` | `src/apothem/commands/research.md` | Recherche aus mehreren Quellen mit paralleler Quellenerkennung und -extraktion |
+| `/security-audit` | `src/apothem/commands/security-audit.md` | Audit der Sicherheitslage gegen OWASP ASVS, OWASP Top 10 und CWE Top 25 |
+| `/supply-chain-audit` | `src/apothem/commands/supply-chain-audit.md` | Lieferketten-Audit gegen SLSA, Sigstore und SBOM-Standards |
+| `/test-suite` | `src/apothem/commands/test-suite.md` | Verhaltensorientierte Testerstellung und -ausführung gegen das ratifizierte Test-Framework des Hosts |
+| `/threat-model-audit` | `src/apothem/commands/threat-model-audit.md` | Bedrohungsmodellierungs-Audit gegen STRIDE und PASTA über Architektur, Datenfluss und Vertrauensgrenzen |
+| `/ux-review` | `src/apothem/commands/ux-review.md` | Entwicklererfahrungs-Review: CLI-Ergonomie, Install-Ablauf, Hilfetexte und Fehlermeldungen |
+
+### Plan-Pipeline-Commands
+
+Die Plan-Pipeline wird als acht erstklassige Commands ausgeliefert — einer pro Stage, jeder direkt als `/plan-<stage>` aus seiner eigenen registrierten Datei unter `src/apothem/commands/plan-<stage>.md` aufrufbar.
+
+| Command | Datei | Verhalten |
+| ------- | ---- | -------- |
+| `/plan-spec` | `src/apothem/commands/plan-spec.md` | Verfeinert freie Prosa zu einer spezifikationsreifen `_spec/spec.md`; jede offene Frage läuft über den Strukturierte-Inquiry-Kanal statt durch stilles Standardisieren; `--quick` schreibt eine einzelne leichtgewichtige Plan-Datei unter `<project-root>/.apothem/plans/` (`.plans/` bleibt ein unterstützter Abwärtskompatibilitäts-Fallback) |
+| `/plan-generate` | `src/apothem/commands/plan-generate.md` | Generiert eine vollständige Master-Plan-Suite aus verfasster Prosa/Anforderungen |
+| `/plan-review` | `src/apothem/commands/plan-review.md` | Forensisches Audit einer bestehenden Suite — Prosatreue, interne Konsistenz, Lückenanalyse — verfeinert über interaktive Q&A |
+| `/plan-design` | `src/apothem/commands/plan-design.md` | Erzeugt ein Architektur-Design-Artefakt unter `_inputs/design.md` der Suite, validiert durch das fünfzehnbalkige Pre-Emission-Gate vor der Promotion |
+| `/plan-audit` | `src/apothem/commands/plan-audit.md` | Audit und Remediation im geschlossenen Kreislauf über den vollständigen Zyklus Spec → Generate → Review, in Schleife bis null Befunde verbleiben oder eine Iterationsobergrenze mit definiertem Rückzug erreicht ist |
+| `/plan-execute` | `src/apothem/commands/plan-execute.md` | Führt eine Phase mit Konformitätsprüfung und Qualitäts-Gates aus — Standard-Aufwand `medium`, pro Phase überschreibbar über ein `effort:`-Feld in der `PHASE.md`-Frontmatter; hält standardmäßig an jeder Phasengrenze an, wobei `--no-pause` (oder das Profil-Flag `enforcement.continuous_execution`) das kontinuierliche Vorrücken von Phase zu Phase aktiviert |
+| `/plan-status` | `src/apothem/commands/plan-status.md` | Schreibgeschützter Fortschrittsbericht gegen die Dimensionen Aufgabe, Phase und Artefakt |
+| `/plan-amend` | `src/apothem/commands/plan-amend.md` | Ergänzt, erweitert, verfeinert oder revidiert eine bestehende Suite, ohne zuvor getroffene Entscheidungen zu zerstören; leitet nur die betroffenen nachgelagerten Artefakte neu ab |
+
+### Operator-Workflow- & Orchestrator-Commands
+
+Drei Commands treten in eine tiefe Prozedur ein, statt eigene Stage-Logik zu tragen: zwei Operator-Workflow-Einstiegspunkte (jeweils gestützt durch einen gleichnamigen Begleit-Skill) plus den schlanken Plan-Pipeline-Orchestrator.
+
+| Command | Datei | Beschreibung |
+| ------- | ---- | ----------- |
+| `/workflow` | `src/apothem/commands/workflow.md` | Allzweck-Einstiegspunkt zur Workflow-Steuerung (`/goal <<mission>>`): treibt genuin unabhängige, dynamische Multi-Worker-Workflows unter benannten Return-Verträgen, Verifikation per Widerlegung-by-Default vor dem Überleben eines Befunds, über die Mission hinausgehende Remediation, offengelegt im Änderungs-Ledger, und deterministische Ausgabe; Multi-Worker-Dispatch und Auto-Ausführung sind opt-in / bestätigungsgesteuert. Gestützt durch den `workflow`-Skill |
+| `/projectify` | `src/apothem/commands/projectify.md` | Elevation eines Chat-App-Projekts: verfasst die Deliverables Description / Instruction / knowledge-Files für ein Claude Project, Custom GPT oder Gem zu aktuellen SOTA-Konventionen, innerhalb eines messbaren Kontextbudgets pro Plattform; deterministische Ausgabe, opt-in Autonomie. Gestützt durch den `projectify`-Skill |
+| `/plan` | `src/apothem/commands/plan.md` | Schlanker Orchestrator, der die erstklassigen Plan-Stages verkettet (`plan-spec → plan-generate → plan-review → plan-design (bedingt) → plan-execute`) und jede aus dem Handoff-Manifest der vorherigen Stage fortsetzt; trägt keine Stage-Logik — die Verkettung ist opt-in / bestätigungsgesteuert (`--auto` verkettet kontinuierlich) |
+
+## 2. Regeln
+
+Verhaltensregeln leben unter `src/apothem/rules/` — ein kleiner, stets geladener Kern plus ein größerer, pfadgefilterter Satz (bei passenden Artefaktberührungen bedarfsgeladen). Die vollständige Aufzählung pro Regel — mit den Spalten Scope (stets geladen / pfadgefiltert) und Implements — ist die quellgenerierte `reference/rules.mdx`, aktualisiert aus `src/apothem/rules/*.md` durch den Reference-Inventory-Generator; konsultiere sie für die maßgebliche aktuelle Liste.
+
+> **CM-21-Facettenabgrenzung** (drei Regeln implementieren CM-21 gemeinsam mit verschiedenen, nicht überlappenden Facetten): **kreative Filter & kognitive Identität** → `cognitive-identity.md`; **Generierungsmethodik (Schreib- & Umschreib-Protokolle)** → `clean-room-generation.md`; **Planungs-/Review-Techniken** → `planning-techniques.md`. Jede Regel besitzt ihre Facette; die anderen verweisen darauf.
+
+> **Verweis auf das Interactive-Questions-Schema.** Das kanonische Invocation-Schema der strukturierten Inquiry — Pflichtfelder, Feldübersichtstabelle, zwei ausführbare durchgearbeitete Beispiele (Single-Select bei §2.1 und Multi-Select bei §2.2) — lebt unter `src/apothem/rules/interactive-questions.md` §2 „Structured-Inquiry Shape". Nachgelagerte Artefakte dürfen §2.1 oder §2.2 als Invocation-Vorlagen kopieren; das dreiteilige Option-Annotation-Schema, das der `description`-Body jeder Option trägt, ist im §3 derselben Datei spezifiziert.
+
+## 3. Delegierte Worker
+
+Zwölf persistente Worker-Definitionen werden mit dem Ökosystem ausgeliefert; die Team-Muster der Orchestrierungsregel disponieren zu ihnen. Jede Definition lebt unter dem unten aufgeführten Dateipfad.
+
+```text
+Worker              File                                       Pattern         Model Policy
+------------------- ------------------------------------------ --------------- -------------
+Codebase Explorer   src/apothem/agents/codebase-explorer.md   Research        host-selected
+Convention Auditor  src/apothem/agents/convention-auditor.md  Audit           host-selected
+Dependency Auditor  src/apothem/agents/dependency-auditor.md  Audit           host-selected
+Fact Checker        src/apothem/agents/fact-checker.md        Audit           host-selected
+MCP Builder         src/apothem/agents/mcp-builder.md         Generation      host-selected
+Memory Auditor      src/apothem/agents/memory-auditor.md      Audit           host-selected
+Prompt Evaluator    src/apothem/agents/prompt-evaluator.md    Quality         host-selected
+Quality Gate        src/apothem/agents/quality-gate.md        Quality         host-selected
+Refactor Surgeon    src/apothem/agents/refactor-surgeon.md    Implementation  host-selected
+Research Scout      src/apothem/agents/research-scout.md      Research        host-selected
+Security Scanner    src/apothem/agents/security-scanner.md    Audit           host-selected
+Test Runner         src/apothem/agents/test-runner.md         Quality         host-selected
+```
+
+## 4. Hooks
+
+Jeder registrierte Hook-Command verwendet die Exec-Form-Command-Gestalt von Claude Code
+(`command: "python"` plus ein `args`-Array) und ruft entweder
+`-m apothem.hooks.dispatch` oder `-m apothem.conformity.gate` auf. Der Dispatcher
+importiert `src/apothem/hooks/lib/resolve_root.py` für die Auflösung der Ökosystem-Wurzel und
+delegiert an zwei Helfer, die daneben unter `src/apothem/hooks/` selbst liegen:
+`src/apothem/hooks/emit_hook_context.py` formatiert Event-Payloads für den Assistenten und
+`src/apothem/hooks/session_start_bootstrap.py` trägt die SessionStart-Vorbereitungsarbeit, die der
+Dispatcher übergibt, wenn er dieses Event routet. Die dem Assistenten beim Auslösen der
+unterstützten Events angezeigten Hook-Nachrichten leben als Markdown-Kontextdateien unter
+`src/apothem/hooks/messages/` — eine pro Event-Variante: `postcompact.md`, `precompact.md`,
+`pretooluse-bash.md`, `pretooluse-bash-plan-guard.md`, `pretooluse-conformity.md`,
+`pretooluse-dependency-guard.md`, `pretooluse-edit.md`, `pretooluse-edit-header-guard.md`,
+`pretooluse-eval-guard.md`, `pretooluse-notebookedit.md`, `pretooluse-write.md`,
+`pretooluse-write-header-guard.md`, `pretooluse-write-plan-guard.md`, `sessionstart.md`,
+`stop.md`. Jede geroutete Kontextdatei wird vom Dispatcher geladen, wenn ihr Event auslöst
+und ihr Kontextargument in `settings.json` registriert ist; drei Kontextdateien
+(`pretooluse-conformity.md`, `pretooluse-dependency-guard.md`, `pretooluse-eval-guard.md`)
+werden als verfügbare Varianten ohne aktuellen `settings.json`-Routing-Eintrag ausgeliefert.
+
+```text
+Event             Automates                Timeout  Purpose
+----------------- ------------------------ -------- --------------------------------------------------
+SessionStart      CM-14                    30s      Read memory, check plan state, report readiness
+PreCompact        CM-24 §2.3               30s      Verify state externalized before compaction
+PostCompact       CM-24 §6.2               30s      Restore working state after compaction
+Stop              CM-14/CM-22/CM-24/CM-26  60s      Session-end externalization
+PreToolUse        CM-7/CM-22               10s      Write/Edit/NotebookEdit validation — codebase-isolation, frontmatter, license-header, and plans-locality checks plus the conformity gate. Bash validation — git artifact isolation and plans-locality
+PostToolUse       —                        10s      Accepted by src/apothem/hooks/dispatch.py whitelist for forward compatibility; no settings.json entry currently routes this event
+UserPromptSubmit  —                        10s      Accepted by src/apothem/hooks/dispatch.py whitelist for forward compatibility; no settings.json entry currently routes this event
+Notification      —                        10s      Accepted by src/apothem/hooks/dispatch.py whitelist for forward compatibility; no settings.json entry currently routes this event
+```
+
+> **Konvention.** Zeilen, in denen **Automates** `—` ist, werden von `dispatch.py` akzeptiert, aber nicht in `settings.json` verdrahtet; die Spalte **Timeout** zeigt den Dispatch-Level-Standard, der gilt, falls und wenn das Event später verdrahtet wird.
+>
+> **Kanonischer Block der Timeout-Werte.** Die Spalte **Timeout** dieser Tabelle ist die einzige Quelle der Wahrheit für Hook-Timeout-Werte im gesamten Ökosystem. Die `timeout`-Felder pro Hook in `settings.json`, die Spiegeltabellen in `site/content/docs/reference/settings-reference.mdx` § Hook Events und `site/content/docs/reference/artifact-schema.mdx` § Hooks Pipeline sowie die Regelanleitung in `src/apothem/rules/persistent-conventions-vigilance.md` § Convention Awareness leiten sich alle aus dieser Spalte ab. Künftige Timeout-Revisionen landen hier und die Konsumenten leiten beim nächsten Verweis neu ab.
+
+### Review-Kadenz der Settings-Vorlage
+
+`settings.json` ist die einzige Claude Code Vorlage. Jeder Hook-Command verwendet
+Exec-Form statt eines shell-spezifischen Wrappers, sodass plattformübergreifendes Verhalten
+innerhalb einer Datei überprüft wird statt durch das Vergleichen gepaarter Vorlagen. Neue Permission-Einträge,
+Hook-Events, Timeouts und Statusmeldungen landen atomar in dieser Datei.
+
+## 5. Skills
+
+Wiederverwendbare Skills leben unter `src/apothem/skills/`, einen Ordner pro Skill.
+
+| Skill | Pfad | Benutzeraufrufbar | Zweck |
+| ----- | ---- | -------------- | ------- |
+| Dependency Upgrade | `src/apothem/skills/dependency-upgrade/` | Ja | Changelog-geprüfte, gepinnte, Gate-verifizierte Abhängigkeits-Upgrades |
+| Dev Toolkit | `src/apothem/skills/dev-toolkit/` | Ja | Disziplinierte Engineering-Schleifen — strukturiertes Debugging, test-first Red-Green-Refactor, Vertical-Slice-Zerlegung, Aufschlüsselung von Anforderung zu Issue |
+| Diagram Authoring | `src/apothem/skills/diagram-authoring/` | Ja | Author → Validate → Render → Export-Pipeline für deklarative Diagramme und Datenvisualisierungen (SVG / PNG / PDF) |
+| Document Authoring | `src/apothem/skills/document-authoring/` | Ja | Freigabegesteuerte Erstellung langer Dokumente (Outline → Draft → Review) mit verifizierten Zitaten und einem deterministischen Satz-Compile |
+| Ecosystem Audit | `src/apothem/skills/ecosystem-audit/` | Ja | Blindes Audit des Apothem-Konfigurationsbaums |
+| Eval Harness | `src/apothem/skills/eval-harness/` | Ja | Reproduzierbare Sprachmodell-Evaluations-Harnesses mit expliziten Bestehenskriterien |
+| Incident Runbook | `src/apothem/skills/incident-runbook/` | Ja | Runbook-Erstellung als Trigger → Diagnosis → Action → Verification → Rollback |
+| Multi-Source Research | `src/apothem/skills/multi-source-research/` | Ja | Aufgefächerte, querverifizierte, zitierte Rechercheberichte |
+| Plan Suite | `src/apothem/skills/plan-suite/` | Nein | Master-Vorlage, die von den `/plan`-Pipeline-Stages konsumiert wird |
+| Projectify | `src/apothem/skills/projectify/` | Ja | Chat-App-Projekt-Elevation — die Deliverables Description / Instruction / knowledge-Files zu SOTA-Konventionen innerhalb eines messbaren Kontextbudgets pro Plattform |
+| Prompt Engineering | `src/apothem/skills/prompt-engineering/` | Ja | Eval-validiertes strukturiertes Prompt-Design |
+| Refactor Extract | `src/apothem/skills/refactor-extract/` | Ja | Verhaltenserhaltende Extraktions-Refactorings |
+| Secret Rotation | `src/apothem/skills/secret-rotation/` | Ja | Sichere Außerbetriebnahme und Ersetzung exponierter Anmeldedaten |
+| Source Synthesis | `src/apothem/skills/source-synthesis/` | Ja | Versöhnt einen fixen Quellensatz zu einer zitierten Synthese |
+| Surgical Guard | `src/apothem/skills/surgical-guard/` | Ja | Minimal-Diff-, ankergebundenes Editieren, gepaart mit einem reaktiven, diff-basierten Post-Edit-Qualitäts-Guard |
+| Test Authoring | `src/apothem/skills/test-authoring/` | Ja | Verhaltensorientierte Testerstellung mit Arrange-Act-Assert-Disziplin |
+| Vuln Triage | `src/apothem/skills/vuln-triage/` | Ja | Schweregrad-klassifiziert Sicherheitshinweise und leitet die Remediation weiter |
+| Workflow | `src/apothem/skills/workflow/` | Ja | Allzweck-Multi-Worker-Workflow-Steuerung mit adversarischer Widerlegung-by-Default-Verifikation und offengelegter, über die Mission hinausgehender Remediation |
+
+> **Konvention.** Der **Pfad** jeder Zeile ist ein Ordner; der Einstiegspunkt ist die Datei `SKILL.md` darin — z. B. `src/apothem/skills/plan-suite/SKILL.md` — gemäß der Ordner-mit-`SKILL.md`-Skill-Konvention, deklariert im Quell-Layout des Projekts.
+
+## 6. Output-Styles
+
+Vier Output-Styles leben unter `src/apothem/output-styles/`.
+
+| Style | Datei | Zweck |
+| ----- | ---- | ------- |
+| Default | `src/apothem/output-styles/default.md` | Ökosystem-Standardstil — vereinheitlichte Ausgabekonventionen, Routing von Planungsinhalten und der Datei-Erstellungs-Vertrag |
+| Default Architect | `src/apothem/output-styles/default-architect.md` | Senior-Architect-Ton — analytisch, direkt, Zitate konkreter Treiber |
+| Concise Engineer | `src/apothem/output-styles/concise-engineer.md` | Kurzform-Engineering-Ausgabe — minimale Prosa, Code zuerst |
+| Forensic Auditor | `src/apothem/output-styles/forensic-auditor.md` | Review-Klasse-Haltung — Befund für Befund, scorecard-förmige Ausgabe, Falsifizierer pro Befund |
+
+## 7. Artefaktevolution
+
+**Verpflichtend.** Wenn ein wiederverwendbares Muster, eine Korrektur oder eine Technik wiederkehrt (2+ Instanzen in einer Session oder im Gedächtnis als wiederkehrend vermerkt), muss das Ökosystem sich weiterentwickeln. Der Zyklus hat vier Schritte: **Detect** des Musters während jeder Interaktion; **Search** bestehender Skills, Regeln, Commands, Hooks und Gedächtnis nach Überlappung; **Act** durch In-Place-Weiterentwicklung des passenden Artefakts (Aktualisierung von Prozedur, Anti-Mustern, Scope) oder Erstellung eines neuen, wenn das Anliegen genuin orthogonal ist; **Validate**, dass Querverweise weiterhin auflösen und abhängige Artefakte konsistent bleiben. Bevorzuge Verfeinerung gegenüber Erstellung — neue Artefakte vergrößern die Wartungsoberfläche. Siehe `src/apothem/rules/persistent-conventions-vigilance.md` §2+§4 für das vollständige Protokoll einschließlich des geschlossenen Katalogs von Lückenerkennungs-Triggern über jede Artefaktklasse.
+
+## 8. Leere Artefaktklassen
+
+Oberflächen, die in der Ökosystem-Registry deklariert, aber absichtlich leer sind, bis ein Aktivierungs-Trigger auslöst. Jede Zeile verzeichnet die reservierte Oberfläche, die Datei oder das Verzeichnis, das die Klasse gerüstet, und den Trigger, der die Zeile von Leer-Attestierung zu Befüllt befördert.
+
+| Klasse | Gerüst | Status | Aktivierungs-Trigger |
+| ----- | -------- | ------ | ------------------ |
+| MCP-Server | (noch kein Gerüst) | leer-attestiert | Erste MCP-Server-Installation unter der User-Config-Wurzel |
+
+Leer-Attestierung ist eine positive Deklaration, keine Lücke. Das Gerüst der Klasse (sofern eines existiert) ist das kanonische No-op-Artefakt, das den Aktivierungsmoment verfolgt. Promotionen von Leer-Attestierung zu Befüllt landen atomar mit dem ersten nicht-leeren Wert des Gerüsts im relevanten Registry-Abschnitt.

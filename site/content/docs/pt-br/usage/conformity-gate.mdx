@@ -1,0 +1,49 @@
+---
+title: "Portão de conformidade"
+description: "Execute o portão de conformidade do Apothem para verificar a saúde do ecossistema."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+O portão de conformidade em `src/apothem/conformity/gate.py` executa quinze
+verificações mecânicas contra cada artefato que o operador escreve.
+
+## Executando o portão
+
+```bash
+python -m apothem.conformity.gate
+```
+
+## Barras do portão
+
+| Barra | Verificação | Tipo |
+|-----|-------|------|
+| M1 | Alinhamento de escopo | Raciocinada |
+| M2 | Isolamento interno do plano (CM-7) | Mecânica |
+| M3 | Conformidade com padrões | Raciocinada |
+| M4 | Validade do frontmatter | Mecânica |
+| M5 | Sem frases proibidas | Mecânica |
+| M6 | Divulgação editorial | Raciocinada |
+| M7 | Sem referências de plano nos artefatos | Mecânica |
+| M8 | Cabeçalho de autoria presente | Mecânica |
+| M9 | Avaliação honesta | Raciocinada |
+| M10 | Disciplina de nomenclatura | Mecânica |
+| M11 | Aparato de sprint | Raciocinada |
+| M12 | Disposição canônica | Mecânica |
+| M13 | Arte do código | Raciocinada |
+| M14 | Participação sistêmica | Raciocinada |
+| M15 | Autoria humana | Mecânica |
+
+## Verificações direcionadas
+
+```bash
+# Executar uma única verificação
+python -m apothem.conformity.gate --check multi-surface-coherence
+
+# Executar contra um arquivo específico
+python -m apothem.conformity.gate src/apothem/rules/my-rule.md
+```
+
+## Integração com CI
+
+O portão é executado no CI via `.github/workflows/conformity.yml` a cada push.

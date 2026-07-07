@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" role="img" aria-labelledby="title desc">
+  <title id="title">Apothem avatar</title>
+  <desc id="desc">The Apothem mark — six apothems fanning from one shared center to every edge midpoint, the top one bold emerald — on a dark tile, for repository avatars.</desc>
+  <defs>
+    <linearGradient id="apo-emerald-av" x1="210" y1="210" x2="210" y2="80.1" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#059669"/>
+      <stop offset="1" stop-color="#6ee7b7"/>
+    </linearGradient>
+  </defs>
+  <rect width="420" height="420" rx="92" fill="#0f172a"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="210" cy="210" r="129.9" stroke="#94a3b8" stroke-width="4.5" opacity="0.5"/>
+    <polygon points="360,210 285,339.9 135,339.9 60,210 135,80.1 285,80.1" stroke="#cbd5e1" stroke-width="19"/>
+    <g stroke="#64748b" stroke-width="7.5" opacity="0.85">
+      <line x1="210" y1="210" x2="322.5" y2="145.05"/>
+      <line x1="210" y1="210" x2="322.5" y2="274.95"/>
+      <line x1="210" y1="210" x2="210" y2="339.9"/>
+      <line x1="210" y1="210" x2="97.5" y2="274.95"/>
+      <line x1="210" y1="210" x2="97.5" y2="145.05"/>
+    </g>
+    <line x1="210" y1="210" x2="210" y2="80.1" stroke="url(#apo-emerald-av)" stroke-width="17"/>
+  </g>
+  <g fill="#64748b" opacity="0.85">
+    <circle cx="322.5" cy="145.05" r="7.5"/><circle cx="322.5" cy="274.95" r="7.5"/><circle cx="210" cy="339.9" r="7.5"/><circle cx="97.5" cy="274.95" r="7.5"/><circle cx="97.5" cy="145.05" r="7.5"/>
+  </g>
+  <circle cx="210" cy="210" r="15" fill="#cbd5e1"/>
+  <circle cx="210" cy="210" r="6.5" fill="#34d399"/>
+  <circle cx="210" cy="80.1" r="13" fill="#34d399"/>
+</svg>

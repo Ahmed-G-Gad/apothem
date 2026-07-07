@@ -1,0 +1,80 @@
+---
+title: "rollback"
+description: "apothem rollback 命令的 CLI 参考。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+将某个harness恢复到其记录的安装之前的状态。
+
+## 概要
+
+```
+apothem rollback --harness NAME|all [--install-id ULID | --last] [--yes]
+                 [--project PATH]
+                 [--quiet|-q] [--verbose|-v]
+                 [--format plain|json] [--json] [--no-color]
+```
+
+`rollback` 会从 Apothem 备份根目录重建每个所选harness在安装前的字节。它会解析记录的安装过程——默认取最新的一次，或由 `--install-id` 指定的那一次——恢复该安装捕获的每个备份，然后向harness账本追加一条 `rollback` 记录。
+
+除非提供 `--yes`，否则会按harness逐一提示确认。`--install-id` 和 `--last` 用于选择安装过程，二者互斥。
+
+## 选项
+
+| 选项 | 描述 |
+|---|---|
+| `--harness NAME` | 要回滚的harness适配器，或用 `all` 表示注册表范围的集合（必填）。 |
+| `--install-id ULID` | 回滚指定的安装过程。默认为最新记录的安装。 |
+| `--last` | 回滚最新记录的安装（默认值；显式写法）。与 `--install-id` 互斥。 |
+| `--yes` | 跳过按harness的确认提示。 |
+| `--project PATH` | 项目范围harness的项目根目录。当所选集合包含项目范围适配器时为必填。 |
+| `--quiet`, `-q` | 抑制信息性输出；仅发出错误。 |
+| `--verbose`, `-v` | 发出额外的诊断输出。 |
+| `--format plain\|json` | 输出格式（默认：`plain`）。 |
+| `--json` | `--format json` 的简写。 |
+| `--no-color` | 在输出中禁用 ANSI 颜色码。 |
+| `-h`, `--help` | 显示帮助并退出。 |
+
+## JSON 输出
+
+```json
+{
+  "status": "success",
+  "command": "rollback",
+  "action": "rolled_back",
+  "harness": "claude-code",
+  "profile_path": null,
+  "project": null,
+  "files_written": [],
+  "results": [],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+每个被恢复的目标都会出现在 `results` 中，带有 `"operation": "rollback"`，且 `outcome` 为 `created` 或 `updated`（并出现在 `files_written` 中）。对于安装时全新创建、没有先前字节可恢复的目标，报告为 `"outcome": "skipped"`；恢复失败则为 `"outcome": "error"`。当不存在匹配的安装记录时，该命令报告 `rollback.no_record` 错误，并带有 `"status": "error"`。
+
+## 示例
+
+```bash
+apothem rollback --harness claude-code --last
+apothem rollback --harness claude-code --install-id 01J9Z… --yes
+apothem rollback --harness cursor --project . --last --json
+```
+
+## 退出码
+
+| 码 | 含义 |
+|---|---|
+| 0 | 成功回滚，或无内容可恢复（该安装未捕获任何备份） |
+| 1 | 预期的错误——无安装记录、选择器冲突、未知harness、缺少项目根目录，或确认被中止 |
+| 2 | 在至少一个目标回滚之后的部分恢复 |
+
+## 另请参阅
+
+- [apothem install](/docs/cli-reference/install) — 安装某个harness配置
+- [apothem update](/docs/cli-reference/update) — 从当前共享配置文件重新安装
+- [apothem uninstall](/docs/cli-reference/uninstall) — 移除某个harness配置
+- [apothem status](/docs/cli-reference/status) — 报告安装、校验和漂移状态

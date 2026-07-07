@@ -1,0 +1,77 @@
+---
+title: "Flux de travail principaux"
+description: "Les quatre flux de travail principaux d'Apothem — profil, règles, plans et la porte de conformité."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem fournit quatre capacités principales : un profil de gouvernance partagé,
+un corpus de règles, un pipeline de planification structuré et une porte de
+conformité en temps réel.
+
+<Callout title="Nouveau ici ?">
+  Pour une visite guidée de zéro à la première exécution, commencez par le
+  [tutoriel de prise en main](/docs/tutorials/getting-started). Cette page est
+  une référence rapide aux quatre flux de travail principaux une fois votre
+  installation terminée.
+</Callout>
+
+## Le profil partagé
+
+Votre profil Apothem se trouve dans `~/.config/apothem/profile.yaml`, sauf si
+vous passez `--profile PATH`. C'est l'unique source de vérité dont chaque
+adaptateur d'environnement dérive sa configuration native :
+
+```yaml
+identity:
+  name: "Example User"
+preferences:
+  style: "concise"
+rules:
+  - "Validate external input before writing files."
+```
+
+Créez et inspectez le profil :
+
+```bash
+apothem profile init
+apothem profile show --json
+```
+
+## Première règle
+
+Ajoutez des règles partagées au YAML du profil, puis re-matérialisez
+l'environnement sélectionné. Lorsque ces règles incluent des données d'exemple,
+utilisez des valeurs fictives afin qu'aucune identité ni aucun identifiant réel
+ne se retrouve dans un profil partagé ou une exécution de CI.
+
+```bash
+apothem profile set rules '["Always include a brief summary at the end of every response."]'
+apothem update --harness claude-code
+apothem verify --harness claude-code
+```
+
+## Premier plan
+
+Le pipeline `/plan` s'exécute à l'intérieur de votre outil sous
+forme de commandes slash, et non via le binaire `apothem`. Une fois un
+environnement installé, lancez un plan depuis le chat de l'outil :
+
+```text
+/plan-spec
+```
+
+`/plan-spec` affine votre prose en une spécification, et `/plan-generate`
+matérialise une suite de plans sous `<project-root>/.apothem/plans/{suite}/`. Consultez la
+[référence des commandes du pipeline](/docs/pipeline) pour le flux complet.
+
+## Porte de conformité
+
+Exécutez depuis la racine du dépôt :
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+Exécute toutes les vérifications mécaniques de conformité et rapporte
+réussite/échec par barre.

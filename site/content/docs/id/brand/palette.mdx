@@ -1,0 +1,45 @@
+---
+title: "Palet merek"
+description: "Warna merek inti Apothem dan tujuh belas warna merek harness. Satu-satunya sumber kebenaran adalah token desain kanonik di assets/design-tokens.css; situs mencerminkan nilai-nilai tersebut."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## Palet inti
+
+Palet kanonik — ramp netral slate, ramp aksen emerald, dan rona semantik — dimiliki oleh
+token desain di
+[`assets/design-tokens.css`](https://github.com/ahmed-g-gad/apothem/blob/main/assets/design-tokens.css)
+(dan cerminnya `assets/design-tokens.json`). Tema situs di
+[`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
+mencerminkan nilai-nilai token tersebut ke dalam variabel CSS yang dikonsumsi tema
+Fumadocs. Setiap nilai di bawah ini terlacak ke satu langkah ramp kanonik.
+
+| Peran | Token (CSS) | Mode terang | Mode gelap | Penggunaan |
+|---|---|---|---|---|
+| Primer | `--brand-text` | slate-900 `#0f172a` | slate-50 `#f8fafc` | Judul, teks navigasi, permukaan baca utama. |
+| Aksen | `--sl-color-accent` | emerald-600 `#059669` | emerald-400 `#34d399` | Tautan aktif, cincin fokus, navigasi terpilih. |
+| Teks isi | `--brand-muted` | slate-600 `#475066` | slate-300 `#c2ccda` | Teks prosa default. |
+| Latar isi | `--brand-surface` | white `#ffffff` | slate-900 `#0f172a` | Latar belakang default. |
+| Latar navigasi | `--brand-surface-muted` | slate-50 `#f8fafc` | slate-950 `#080c15` | Pita header dan navigasi. |
+| Latar kode | `--brand-code-bg` | slate-900 `#0f172a` | slate-950 `#080c15` | Permukaan kode sebaris / blok. |
+
+## Palet harness
+
+Warna harness berada di [Warna harness](/docs/brand/harness-colors). Pemetaan geometris
+ke heksagon mark Apothem — node pusat dan node terminalnya — dilipat ke dalam bagian
+merek. Sumber kebenaran CSS di
+[`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
+menghubungkan setiap token ke variabel CSS-nya.
+
+## Penggunaan dalam dokumentasi
+
+Palet dihubungkan melalui lembar gaya global `site/app/global.css`, yang diimpor oleh tata
+letak akar. Varian mode terang dan gelap beralih sesuai status kelas `.dark` tema.
+
+## Pembaruan
+
+Palet diperbarui hanya ketika warna inti bergeser (slate / emerald) atau sebuah harness
+meratifikasi perubahan warna merek di hulu. Perubahan per-harness merambat secara atomik
+melintasi `site/app/global.css`, [Warna harness](/docs/brand/harness-colors), dan
+setiap master SVG terdampak di bawah `assets/src/`.

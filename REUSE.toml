@@ -1,0 +1,462 @@
+# SPDX-License-Identifier: MIT
+
+# REUSE.toml — REUSE 3.0 file-level licensing declaration for Apothem.
+# https://reuse.software/spec/
+#
+# Files with inline SPDX headers (Python source, shell scripts) are
+# self-covered; this file covers the remainder of the tree.
+
+version = 1
+
+# ---------------------------------------------------------------------------
+# Tree-wide copyright baseline (machine-readable projection of the LICENSE
+# copyright instrument)
+#
+# The project's File Headers discipline carries a single
+# `SPDX-License-Identifier: MIT` line per applicable file and NO per-file
+# copyright line — the root LICENSE is the canonical copyright instrument.
+# REUSE 3.3 compliance, however, requires copyright information for every
+# tracked file. This catch-all supplies that copyright as the lowest-precedence
+# baseline: it is the FIRST [[annotations]] table, so every more-specific table
+# below overrides it (REUSE.toml resolves multiple matches by "last matching
+# table wins"). In particular, the vendored-dependency tables further down keep
+# each subtree's TRUE upstream copyright, and the typing_extensions table keeps
+# the PSF license — those win over this baseline. Per-file inline SPDX license
+# lines continue to supply each file's license under default `closest`
+# precedence; this table only fills in the copyright the one-line-header
+# convention omits.
+# ---------------------------------------------------------------------------
+
+[[annotations]]
+path = ["**"]
+SPDX-FileCopyrightText = "2026 Ahmed G. Gad <me@ahmedgad.com>"
+SPDX-License-Identifier = "MIT"
+
+# ---------------------------------------------------------------------------
+# Root documentation and metadata
+# ---------------------------------------------------------------------------
+
+[[annotations]]
+path = [
+  "README.md",
+  "CHANGELOG.md",
+  "CONTRIBUTING.md",
+  "CODE_OF_CONDUCT.md",
+  "SECURITY.md",
+  "SUPPORT.md",
+  "AUTHORS",
+  "CITATION.cff",
+]
+SPDX-FileCopyrightText = "2026 Ahmed G. Gad <me@ahmedgad.com>"
+SPDX-License-Identifier = "MIT"
+
+# ---------------------------------------------------------------------------
+# License file (exempt from header requirement; covered here for completeness)
+# ---------------------------------------------------------------------------
+
+[[annotations]]
+path = ["LICENSE"]
+SPDX-FileCopyrightText = "2026 Ahmed G. Gad <me@ahmedgad.com>"
+SPDX-License-Identifier = "MIT"
+
+# ---------------------------------------------------------------------------
+# Build and tooling configuration
+# ---------------------------------------------------------------------------
+
+[[annotations]]
+path = [
+  "pyproject.toml",
+  "Makefile",
+  "renovate.json",
+  ".pre-commit-config.yaml",
+  "REUSE.toml",
+]
+SPDX-FileCopyrightText = "2026 Ahmed G. Gad <me@ahmedgad.com>"
+SPDX-License-Identifier = "MIT"
+
+# ---------------------------------------------------------------------------
+# GitHub Actions workflows
+# ---------------------------------------------------------------------------
+
+[[annotations]]
+path = [".github/workflows/*.yml"]
+SPDX-FileCopyrightText = "2026 Ahmed G. Gad <me@ahmedgad.com>"
+SPDX-License-Identifier = "MIT"
+
+# ---------------------------------------------------------------------------
+# Documentation site source (Next.js/Fumadocs)
+# ---------------------------------------------------------------------------
+
+[[annotations]]
+path = ["site/**"]
+SPDX-FileCopyrightText = "2026 Ahmed G. Gad <me@ahmedgad.com>"
+SPDX-License-Identifier = "MIT"
+
+# ---------------------------------------------------------------------------
+# Schemas and data files
+# ---------------------------------------------------------------------------
+
+[[annotations]]
+path = [
+  "src/apothem/schemas/*.json",
+  "src/apothem/schemas/*.yaml",
+]
+SPDX-FileCopyrightText = "2026 Ahmed G. Gad <me@ahmedgad.com>"
+SPDX-License-Identifier = "MIT"
+
+# ---------------------------------------------------------------------------
+# Harness adapter README and template files
+# ---------------------------------------------------------------------------
+
+[[annotations]]
+path = [
+  "src/apothem/harnesses/*/README.md",
+  "src/apothem/harnesses/antigravity/templates/*.json",
+  "src/apothem/harnesses/claude_code/templates/*.json",
+  "src/apothem/harnesses/codex/templates/*.json",
+]
+SPDX-FileCopyrightText = "2026 Ahmed G. Gad <me@ahmedgad.com>"
+SPDX-License-Identifier = "MIT"
+
+# ---------------------------------------------------------------------------
+# Examples
+# ---------------------------------------------------------------------------
+
+[[annotations]]
+path = ["examples/**"]
+SPDX-FileCopyrightText = "2026 Ahmed G. Gad <me@ahmedgad.com>"
+SPDX-License-Identifier = "MIT"
+
+# ---------------------------------------------------------------------------
+# Assets (SVG, PNG, CSS, JS)
+# ---------------------------------------------------------------------------
+
+[[annotations]]
+path = [
+  "assets/**",
+]
+SPDX-FileCopyrightText = "2026 Ahmed G. Gad <me@ahmedgad.com>"
+SPDX-License-Identifier = "MIT"
+
+# ---------------------------------------------------------------------------
+# Node package and Claude Code plugin metadata (JSON; comment-incapable)
+# ---------------------------------------------------------------------------
+
+[[annotations]]
+path = [
+  "package.json",
+  "package-lock.json",
+  ".claude-plugin/plugin.json",
+  ".claude-plugin/marketplace.json",
+]
+SPDX-FileCopyrightText = "2026 Ahmed G. Gad <me@ahmedgad.com>"
+SPDX-License-Identifier = "MIT"
+
+# ---------------------------------------------------------------------------
+# Test fixtures and data
+# ---------------------------------------------------------------------------
+
+[[annotations]]
+path = [
+  "tests/**/*.yaml",
+  "tests/**/*.json",
+  "tests/**/*.txt",
+  "tests/**/*.md",
+]
+SPDX-FileCopyrightText = "2026 Ahmed G. Gad <me@ahmedgad.com>"
+SPDX-License-Identifier = "MIT"
+
+# ---------------------------------------------------------------------------
+# Keep / gitkeep markers (zero-content placeholders)
+# ---------------------------------------------------------------------------
+
+[[annotations]]
+path = ["**/.keep", "**/.gitkeep"]
+SPDX-FileCopyrightText = "2026 Ahmed G. Gad <me@ahmedgad.com>"
+SPDX-License-Identifier = "MIT"
+
+# ---------------------------------------------------------------------------
+# Apothem working directory (.apothem/) — gitignored ephemera, never shipped.
+# The canonical project-local working dir (plans, memory, session scratch)
+# now lives under `.apothem/`; `.gitignore` ignores `.apothem/*` and re-includes
+# only `!.apothem/.keep`. Making the `.apothem/.keep` marker committable forces
+# REUSE to descend into `.apothem/`. Session-local scratch there (deterministic
+# transform-record scripts, the generation harvest) may carry SPDX tokens in its
+# CONTENT. This override declares the whole tree apothem's MIT work and overrides
+# any in-content SPDX expression so the gitignored ephemera never trips reuse.
+# A fresh clone contains only `.apothem/.keep`, so this annotation is vacuous
+# downstream.
+#
+# The legacy `.plans/**` annotation is retained for any working tree an operator
+# has not yet upgraded with `apothem migrate-workspace`; it is vacuous on a
+# fresh clone (which carries no `.plans/` tree at all).
+# ---------------------------------------------------------------------------
+
+[[annotations]]
+path = [".apothem/**"]
+precedence = "override"
+SPDX-FileCopyrightText = "2026 Ahmed G. Gad <me@ahmedgad.com>"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = [".plans/**"]
+precedence = "override"
+SPDX-FileCopyrightText = "2026 Ahmed G. Gad <me@ahmedgad.com>"
+SPDX-License-Identifier = "MIT"
+
+# ---------------------------------------------------------------------------
+# Harness wiring metadata (JSON; comment-incapable)
+# ---------------------------------------------------------------------------
+
+[[annotations]]
+path = [
+  "examples/harnesses/claude-code/native-install/settings.json",
+  "examples/harnesses/claude-code/settings.local.example.json",
+  "src/apothem/statuslines/conformity.json",
+]
+SPDX-FileCopyrightText = "2026 Ahmed G. Gad <me@ahmedgad.com>"
+SPDX-License-Identifier = "MIT"
+
+# ---------------------------------------------------------------------------
+# GitHub-tier metadata (CODEOWNERS, FUNDING, CodeQL config, Copilot instructions)
+# ---------------------------------------------------------------------------
+
+[[annotations]]
+path = [
+  ".github/CODEOWNERS",
+  ".github/FUNDING.yml",
+  ".github/copilot-instructions.md",
+]
+SPDX-FileCopyrightText = "2026 Ahmed G. Gad <me@ahmedgad.com>"
+SPDX-License-Identifier = "MIT"
+
+# ---------------------------------------------------------------------------
+# Root dotfiles (gitleaks, markdownlint, shellcheck configs)
+# ---------------------------------------------------------------------------
+
+[[annotations]]
+path = [
+  ".gitleaks.toml",
+  ".markdownlint.json",
+  ".shellcheckrc",
+]
+SPDX-FileCopyrightText = "2026 Ahmed G. Gad <me@ahmedgad.com>"
+SPDX-License-Identifier = "MIT"
+
+# ---------------------------------------------------------------------------
+# Windows batch installer shims (3-line shims that defer to .ps1 siblings)
+# ---------------------------------------------------------------------------
+
+[[annotations]]
+path = [
+  "scripts/installer/install.bat",
+  "scripts/installer/update.bat",
+  "scripts/installer/uninstall.bat",
+]
+SPDX-FileCopyrightText = "2026 Ahmed G. Gad <me@ahmedgad.com>"
+SPDX-License-Identifier = "MIT"
+
+# ---------------------------------------------------------------------------
+# Package-internal data tables (audit deprecated-token list, known-project list,
+# canonical authorship-banner fixture, schema-header exception list)
+# ---------------------------------------------------------------------------
+
+[[annotations]]
+path = [
+  "src/apothem/audit/deprecated-tokens.txt",
+  "src/apothem/audit/known-projects.txt",
+  "src/apothem/schemas/header-exceptions.txt",
+  "src/apothem/schemas/authorship-header.txt",
+]
+SPDX-FileCopyrightText = "2026 Ahmed G. Gad <me@ahmedgad.com>"
+SPDX-License-Identifier = "MIT"
+
+# ---------------------------------------------------------------------------
+# Output-styles catalog (markdown templates rendered by the harness)
+# ---------------------------------------------------------------------------
+
+[[annotations]]
+path = ["src/apothem/output-styles/*.md"]
+SPDX-FileCopyrightText = "2026 Ahmed G. Gad <me@ahmedgad.com>"
+SPDX-License-Identifier = "MIT"
+
+# ---------------------------------------------------------------------------
+# Statusline render driver (Python; covered by package-source annotation pattern)
+# ---------------------------------------------------------------------------
+
+[[annotations]]
+path = ["src/apothem/statuslines/render.py"]
+SPDX-FileCopyrightText = "2026 Ahmed G. Gad <me@ahmedgad.com>"
+SPDX-License-Identifier = "MIT"
+
+# ---------------------------------------------------------------------------
+# Conformity-test fixtures (intentionally exhibit malformed-header patterns;
+# the F-13/F-14 fixture sets are the test surface for the file-header validator
+# and the header-form grep matcher — their non-compliance IS the test content)
+# ---------------------------------------------------------------------------
+
+[[annotations]]
+precedence = "override"
+path = ["tests/conformity-scenarios/fixtures/**"]
+SPDX-FileCopyrightText = "2026 Ahmed G. Gad <me@ahmedgad.com>"
+SPDX-License-Identifier = "MIT"
+
+# ---------------------------------------------------------------------------
+# Comment-incapable / convention-only metadata files
+#
+# JSON has no comment syntax; .mailmap is a git-managed mapping with no header
+# convention. These carry no inline SPDX line, so REUSE.toml is their sole
+# licensing surface.
+# ---------------------------------------------------------------------------
+
+[[annotations]]
+path = [
+  ".github/security/vex.openvex.json",
+  ".vscode/settings.json",
+  ".mailmap",
+]
+SPDX-FileCopyrightText = "2026 Ahmed G. Gad <me@ahmedgad.com>"
+SPDX-License-Identifier = "MIT"
+
+# ---------------------------------------------------------------------------
+# SPDX-discussion files — precedence override
+#
+# These files legitimately contain the literal text `SPDX-License-Identifier:`
+# inside prose, docstrings, code comments, or test/fixture content that
+# DISCUSSES the authorship-header convention (the root agent-instruction
+# surfaces, the header-injector, the conformity matchers that grep for the
+# marker, the header-form test fixtures, the hook-message contexts, the doc
+# pages on the header convention). `reuse lint` parses each such occurrence as
+# an in-file SPDX expression and reports it as malformed.
+#
+# Per the REUSE 3.3 specification, licensing information declared as part of
+# documentation or command output is handled with `precedence = "override"`
+# so the REUSE.toml annotation is authoritative and the in-prose text is not
+# parsed as a real declaration. The list is enumerated explicitly (never a
+# broad source glob) so the override never masks a genuinely malformed header
+# on a real source file — only the files that demonstrably discuss the
+# convention are covered. Refresh this list when a new file begins discussing
+# the SPDX header in its body.
+# ---------------------------------------------------------------------------
+
+[[annotations]]
+precedence = "override"
+path = [
+  ".github/copilot-instructions.md",
+  "AGENTS.md",
+  "CLAUDE.md",
+  "scripts/dev/regenerate-completions.ps1",
+  "scripts/dev/regenerate-completions.sh",
+  "scripts/inject-header.py",
+  "site/content/docs/reference/ai-conventions.mdx",
+  "site/content/docs/reference/authorship-header.mdx",
+  "site/scripts/update-reference-inventory.mjs",
+  "src/apothem/audit/build_inventory.py",
+  "src/apothem/audit/scan_header_coverage.py",
+  "src/apothem/commands/test-suite.md",
+  "src/apothem/conformity/copilot_instructions_presence_grep.py",
+  "src/apothem/conformity/determinism_grep.py",
+  "src/apothem/conformity/file_header_grep.py",
+  "src/apothem/conformity/license_author_consistency_grep.py",
+  "src/apothem/conformity/orphan_output_grep.py",
+  "src/apothem/hooks/messages/pretooluse-edit-header-guard.md",
+  "src/apothem/hooks/messages/pretooluse-write-header-guard.md",
+  "src/apothem/rules/agents-md-convention.md",
+  "src/apothem/skills/incident-runbook/SKILL.md",
+  "src/apothem/skills/test-authoring/SKILL.md",
+  "tests/commands/plan-spec-quick/test_quick_writes_to_project_local_plans.py",
+  "tests/conformity-scenarios/fixtures/F-14-header-form/expected/sample-malformed-spdx.verdict.txt",
+  "tests/conformity/copilot-instructions-presence/conftest.py",
+  "tests/conformity/file-header/conftest.py",
+  "tests/conformity/test_schema_anchor_resolution.py",
+  "tests/fixtures/multi-surface-claims.yaml",
+  "tests/hooks/header-inject-guard/conftest.py",
+  "tests/integration/test_installer_verify_tag.py",
+  "tests/scripts/inject-header/test_emit_patch_diff_format.py",
+  "tests/scripts/inject-header/test_fix_in_place_idempotent.py",
+  "tests/scripts/inject-header/test_frontmatter_preserved.py",
+  "tests/unit/test_adapter_discovery.py",
+  "tests/unit/test_conformity_gate_orchestration.py",
+  "tests/unit/test_module_invocation.py",
+  "tests/unit/test_powershell_completion.py",
+]
+SPDX-FileCopyrightText = "2026 Ahmed G. Gad <me@ahmedgad.com>"
+SPDX-License-Identifier = "MIT"
+
+# ---------------------------------------------------------------------------
+# DX-1 behavior-diff golden corpus (tests/fixtures/behavior-diff/**).
+#
+# Generated oracle for the install_driver decomposition: rendered native
+# files, dry-run envelopes, plans, and ledger JSONL captured per adapter by a
+# capture script under the project-local `.apothem/plans/` working tree (the
+# gitignored generation harvest). Some rendered files
+# are byte-identical copies of real source files that already carry their own
+# header line; the override forces uniform MIT attribution so the generated
+# corpus stays REUSE-clean without editing the captured bytes (editing them
+# would defeat the byte-identical behavior oracle).
+# ---------------------------------------------------------------------------
+[[annotations]]
+path = ["tests/fixtures/behavior-diff/**"]
+precedence = "override"
+SPDX-FileCopyrightText = "2026 Ahmed G. Gad <me@ahmedgad.com>"
+SPDX-License-Identifier = "MIT"
+
+# ---------------------------------------------------------------------------
+# Vendored third-party dependency closure (src/apothem/_vendor/).
+#
+# Each subtree keeps its TRUE upstream license + copyright — not Apothem's.
+# Exact versions are pinned in src/apothem/_vendor/vendor.txt; refresh both this
+# block and vendor.txt in the SAME change-set on any re-vendor.
+# ---------------------------------------------------------------------------
+
+# attrs (and its `attr` import alias) — MIT, Hynek Schlawack.
+[[annotations]]
+path = [
+  "src/apothem/_vendor/attr/**",
+  "src/apothem/_vendor/attrs/**",
+  "src/apothem/_vendor/attr.LICENSE",
+  "src/apothem/_vendor/attrs.LICENSE",
+]
+SPDX-FileCopyrightText = "2015 Hynek Schlawack and the attrs contributors"
+SPDX-License-Identifier = "MIT"
+
+# jsonschema + referencing + jsonschema_specifications — MIT, Julian Berman.
+[[annotations]]
+path = [
+  "src/apothem/_vendor/jsonschema/**",
+  "src/apothem/_vendor/referencing/**",
+  "src/apothem/_vendor/jsonschema_specifications/**",
+  "src/apothem/_vendor/jsonschema.LICENSE",
+  "src/apothem/_vendor/referencing.LICENSE",
+  "src/apothem/_vendor/jsonschema_specifications.LICENSE",
+]
+SPDX-FileCopyrightText = "2013 Julian Berman and the jsonschema/referencing contributors"
+SPDX-License-Identifier = "MIT"
+
+# PyYAML (the `yaml` package) — MIT, Kirill Simonov / Ingy döt Net.
+[[annotations]]
+path = [
+  "src/apothem/_vendor/yaml/**",
+  "src/apothem/_vendor/yaml.LICENSE",
+]
+SPDX-FileCopyrightText = "2006-2016 Kirill Simonov; 2017 Ingy döt Net"
+SPDX-License-Identifier = "MIT"
+
+# typing_extensions — Python Software Foundation License.
+[[annotations]]
+path = [
+  "src/apothem/_vendor/typing_extensions.py",
+  "src/apothem/_vendor/typing_extensions.LICENSE",
+]
+SPDX-FileCopyrightText = "Python Software Foundation"
+SPDX-License-Identifier = "PSF-2.0"
+
+# The apothem-authored rpds shim + _vendor bootstrap + vendor.txt — MIT, Apothem.
+[[annotations]]
+path = [
+  "src/apothem/_vendor/__init__.py",
+  "src/apothem/_vendor/rpds/**",
+  "src/apothem/_vendor/vendor.txt",
+]
+SPDX-FileCopyrightText = "2026 Ahmed G. Gad <me@ahmedgad.com>"
+SPDX-License-Identifier = "MIT"

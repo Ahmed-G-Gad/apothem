@@ -1,0 +1,70 @@
+---
+title: "/research-design"
+description: "/research-design — Opérationnalise les hypothèses en prédictions testables et conçoit l'étude (variables, contrôles, échantillon, puissance), puis gèle le plan d'analyse sous forme de préenregistrement."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rôle :** Investigateur principal (conception de l'étude)
+**Position dans le pipeline :** intermédiaire
+
+Opérationnalise les hypothèses en prédictions testables et conçoit l'étude ou l'expérience — variables, contrôles, échantillon, instruments, analyse de puissance, menaces à la validité — puis produit un préenregistrement qui gèle le plan d'analyse avant la collecte des données.
+
+## Invocation canonique
+
+```bash
+/research-design
+```
+
+Avec arguments :
+
+```bash
+/research-design [path/to/research-suite/]
+```
+
+## Entrées
+
+`_inputs/proposal.md` (le plan de référence issu de `/research-proposal`, l'étape précédente), `_inputs/synthesis.md` (la carte SOTA + l'énoncé de la lacune) et `_spec/research-spec.md` (les hypothèses).
+
+## Sorties
+
+`_inputs/study-design.md` (prédictions opérationnalisées, spécification des variables, contrôles, échantillon, instruments, analyse de puissance, menaces à la validité) + `_inputs/preregistration.md` (le plan d'analyse gelé).
+
+## En aval
+
+/research-experiment (consommateur en aval)
+
+## Phases du flux de travail
+
+La commande suit le flux de travail standard du pipeline `/research` :
+
+1. **Charger le contexte** — Lire la synthèse et les hypothèses de la spécification.
+2. **Vérifier la Porte de Séquence** — Confirmer que `_inputs/proposal.md` (et les `_inputs/synthesis.md` et `_spec/research-spec.md` en amont) existe ; sinon, s'arrêter avec `Blocked: run /research-proposal first`.
+3. **Concevoir l'étude** — Opérationnaliser les prédictions ; spécifier variables, contrôles, échantillon, instruments, puissance ; énumérer les menaces à la validité.
+4. **Préenregistrer** — Geler le plan d'analyse avant toute collecte de données.
+5. **Mettre à jour le manifeste de passation** — Enregistrer les chemins de la conception de l'étude et du préenregistrement.
+6. **Émettre la conception** — `_inputs/study-design.md` + `_inputs/preregistration.md`.
+
+## Seuil de rigueur
+
+Pour une étude porteuse de comparaison, la conception fixe, et préenregistre, le seuil empirique : un budget unifié unique pour toutes les méthodes comparées (temps d'exécution égal et, là où c'est pertinent, nombre d'évaluations égal), au moins trente répétitions par instance pour les méthodes stochastiques, un facteur d'ablation qui désactive un composant à la fois, des balayages de sensibilité sur chaque paramètre, et une configuration automatisée sur une partition d'entraînement évaluée sur une partition de test disjointe. La profondeur du seuil évolue avec l'ambition du lieu de publication visé.
+
+## Modes de défaillance
+
+| Symptôme | Cause | Récupération |
+|---------|-------|----------|
+| Blocked: run /research-proposal first | Pas de plan de référence | Exécutez `/research-proposal` pour produire `_inputs/proposal.md` |
+| Conception sous-puissante | Échantillon trop petit pour l'effet | Réexécutez l'analyse de puissance ; redimensionnez l'échantillon |
+| Plan d'analyse non gelé | Préenregistrement omis | Rédigez `_inputs/preregistration.md` avant la collecte des données |
+
+## Exemples
+
+```bash
+# Concevez l'étude et préenregistrez le plan d'analyse
+/research-design path/to/research-suite/
+```
+
+## Références croisées
+
+- [Aperçu du pipeline](/docs/pipeline)
+- [Référence des commandes](/docs/reference/commands)

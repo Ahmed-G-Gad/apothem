@@ -1,0 +1,48 @@
+---
+title: "Regra personalizada"
+description: "Criar uma regra permanente personalizada para o seu projeto."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Este exemplo adiciona uma regra permanente específica do projeto que impõe uma
+convenção de nomenclatura em todos os arquivos.
+
+## Arquivo da regra
+
+```markdown
+---
+name: "kebab-filenames"
+description: "Enforce kebab-case filenames in the src/ tree"
+pathFilter: ""
+alwaysApply: true
+---
+
+# Kebab-case filenames
+
+All new files created under `src/` MUST use kebab-case naming
+(lowercase letters, digits, and hyphens only — no underscores,
+no camelCase, no PascalCase).
+
+**Correct:** `src/styles/button-group.css`, `src/components/nav-bar.css`
+**Incorrect:** `src/styles/buttonGroup.css`, `src/components/NavBar.css`
+
+When in doubt, err on the side of more hyphens.
+```
+
+Salve isto em `rules/kebab-filenames.md` dentro da raiz de instalação do seu harness (`~/.claude/` para o adaptador do Claude Code; substitua pelo caminho nativo do harness caso contrário).
+
+## Verifique se a regra foi carregada
+
+```bash
+python -m apothem.conformity.gate --check frontmatter
+```
+
+## Propagar para os harnesses
+
+Execute o comando de atualização uma vez por harness instalado:
+
+```bash
+apothem update --harness claude-code
+apothem update --harness cursor
+```

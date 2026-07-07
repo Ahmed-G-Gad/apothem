@@ -1,0 +1,85 @@
+---
+title: "Cursor"
+description: "محوّل أداة Apothem لـ Cursor (إصدار عام)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**المورّد:** <bdi>Anysphere</bdi>
+**اسم التثبيت:** <bdi>`cursor`</bdi>
+**الحالة:** إصدار عام
+**الإعداد الأصلي:** <bdi>`.cursor/rules/`</bdi> في جذر المشروع
+
+## التثبيت
+
+```bash
+apothem install --harness cursor --project /path/to/project
+```
+
+يجسّد المحوّل ملف قواعد <bdi>`.mdc`</bdi> وحيدًا على نطاق المشروع انطلاقًا من قواعد
+<bdi>Apothem</bdi> المشتركة وسطح الحَوكمة.
+
+**الملفات المكتوبة:** <bdi>`<project>/.cursor/rules/apothem-rules.mdc`</bdi>
+
+## تعيين الملف التعريفي إلى الإعداد الأصلي
+
+يقرأ المحوّل الملف التعريفي المشترك لـ<bdi>Apothem</bdi> ويجسّد ملف قواعد المشروع
+في كل عملية <bdi>`apothem install`</bdi> أو <bdi>`apothem update`</bdi>. الملف
+التعريفي المشترك هو مصدر الحقيقة؛ وتُنسَخ احتياطيًا التعديلات المحلّية للمشروع على
+الملف المُولَّد قبل أن تستبدل المزامنة التالية المحتوى الذي يديره <bdi>Apothem</bdi>.
+
+## ملاحظات التوافق
+
+يدعم <bdi>Cursor 0.45+</bdi> التعليمات على مستوى المشروع عبر
+<bdi>`.cursor/rules/`</bdi>. يكتب المحوّل افتراضيًا إلى دليل
+<bdi>`.cursor/rules/`</bdi> على نطاق المشروع؛ ولا يملك <bdi>Cursor</bdi> مسارًا
+موثّقًا قائمًا على الملفات للقواعد العامّة على نطاق المستخدم كي يديره هذا المحوّل.
+
+## التحقّق
+
+```bash
+apothem verify --harness cursor --project /path/to/project
+```
+
+يؤكّد أمر التحقّق ما يلي:
+
+1. وجود الإعداد الأصلي في المسار المتوقَّع.
+2. وجود جميع الحقول الإلزامية من الملف التعريفي المشترك.
+3. إبلاغ روتين التحقّق الخاص بالمحوّل بالنجاح.
+
+## التحديث
+
+```bash
+apothem update --harness cursor --project /path/to/project
+```
+
+يعيد اشتقاق ملف قواعد المشروع من الحالة الراهنة للملف التعريفي المشترك.
+
+## إلغاء التثبيت
+
+```bash
+apothem uninstall --harness cursor --project /path/to/project
+```
+
+يزيل ملفات الإعداد الأصلي التي كتبها المحوّل.
+لا يتأثّر ملفّ <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
+
+## بوّابة المطابقة
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## استكشاف الأخطاء وإصلاحها
+
+| العَرَض | الإصلاح |
+|---------|-----|
+| ملف الإعداد غير موجود | أعد تشغيل <bdi>`apothem install --harness cursor --project /path/to/project`</bdi> |
+| فشل التحقّق | شغّل <bdi>`apothem update --harness cursor --project /path/to/project`</bdi>، ثم تحقّق مجدّدًا |
+| محتوى إعداد غير متوقَّع | تحقّق من <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness cursor --project /path/to/project`</bdi> |
+
+## مفاتيح الضبط
+
+| العَلَم | الافتراضي | الوصف |
+|------|---------|-------------|
+| <bdi>`--dry-run`</bdi> | <bdi>`false`</bdi> | معاينة التثبيت دون كتابة ملفات. |

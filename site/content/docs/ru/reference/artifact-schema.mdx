@@ -1,0 +1,428 @@
+---
+title: "Спецификация схемы артефактов"
+description: "Каноническая схема YAML-фронтматтера и обязательные поля для всех типов артефактов в дереве исходников Apothem, с шаблонами по классам и правилами валидации."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Канонический YAML-фронтматтер и обязательные поля для всех артефактов экосистемы Apothem.**
+
+## Обзор
+
+Все артефакты в дереве исходников Apothem (под `src/apothem/` и на корневой
+конфигурационной поверхности) должны включать блок YAML-фронтматтера
+(между разделителями `---`) с обязательными и необязательными полями,
+специфичными для их типа артефакта. Этот документ определяет каноническую
+схему для каждого типа.
+
+**Универсальные правила:**
+
+- Фронтматтер совместим с YAML 1.2
+- Все строковые значения используют двойные кавычки, если не пусты
+- Порядок полей: обязательные поля первыми, необязательные сгруппированы по релевантности
+- Комментарии во фронтматтере используют `#` с пробелом: `# comment`
+- Значения путей должны быть относительными (без ведущего `/`) и использовать прямые слеши (`/`) для кроссплатформенной совместимости
+
+**Соглашение о версионировании (универсальное для всех типов артефактов):**
+
+- `version` — **семантическая** (`MAJOR.MINOR.PATCH`). Поднимайте MAJOR при ломающих изменениях схемы или контракта; MINOR при аддитивных несовместимо-неломающих изменениях (новые необязательные поля, дополнительные секции, дополнительные антипаттерны); PATCH при уточнениях, исправлениях форматирования или правках только в документации без изменения поведения.
+- `updated` — **дата по ISO 8601** (`YYYY-MM-DD`) самой последней правки. Она должна меняться при каждом поднятии `version` и может обновляться независимо при обновлении ссылок без поднятия версии.
+- Новые артефакты начинаются с `v0.Y.Z`. Продвижение до `vX.Y.Z` означает, что контракт артефакта достаточно стабилен, чтобы быть публичным обязательством.
+
+---
+
+## Схема: Правила
+
+**Шаблон пути:** `src/apothem/rules/*.md`
+
+**Назначение:** Поведенческие мандаты и операционные директивы.
+
+### Обязательные поля
+
+```yaml
+---
+name: "kebab-case-identifier"
+description: "One-line description"
+pathFilter: "**/*.py, **/*.toml"
+alwaysApply: true | false
+---
+```
+
+| Поле | Тип | Назначение | Пример |
+| ----- | ---- | ------- | ------- |
+| `name` | string | Машиночитаемый идентификатор | `"operational-mandates"` |
+| `version` | string | Семантическая версия | `"X.Y.Z"` |
+| `updated` | string (ISO 8601) | Дата последнего обновления | `"2026-04-20"` |
+| `description` | string | Однострочное описание для реестров | `"Operational mandates CM-1–10"` |
+| `scope` | enum | `always-on` (применяется везде) или `path-filtered` (зависит от пути файла) | `"always-on"` |
+| `portability` | enum | Гарантия совместимости со средой | `"universal"` |
+
+### Необязательные поля (если применимо)
+
+Rules carry no optional frontmatter fields, and — unlike other artifact classes — no `version` / `updated` / `scope` / `portability` fields either. The four mandatory fields above are the complete rule frontmatter contract enforced by `frontmatter_grep`.
+
+### Пример
+
+```yaml
+---
+name: "operational-mandates"
+description: "Behavioral definitions for CM-1 through CM-10: violation indicators and recovery actions"
+pathFilter: ""
+alwaysApply: true
+---
+
+# Rule: Operational Mandates
+...
+```
+
+---
+
+## Схема: Команды
+
+**Шаблон пути:** `src/apothem/commands/*.md`
+
+**Назначение:** Определения слеш-команд (`/plan-execute`, `/freshify` и т. д.).
+
+### Обязательные поля
+
+```yaml
+---
+name: "command-name"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "What this command does"
+argument-hint: "[argument-pattern]"
+disable-model-invocation: true | false
+portability: "universal"
+allowed-tools: "*"
+---
+```
+
+| Поле | Тип | Назначение | Пример |
+| ----- | ---- | ------- | ------- |
+| `name` | string | Имя команды (без ведущего `/`) | `"plan-execute"` |
+| `version` | string | Семантическая версия | `"X.Y.Z"` |
+| `updated` | string (ISO 8601) | Дата последнего обновления | `"2026-04-20"` |
+| `description` | string | Короткое описание | `"Executes a phase with quality gates"` |
+| `argument-hint` | string | Шаблон использования или `"[args...]"`, если нет | `"[path/to/plan] [phase-id]"` |
+| `disable-model-invocation` | boolean | Если true, команда не предназначена для вызова рантаймом ассистента-кодировщика | `true` |
+
+### Необязательные поля
+
+Commands carry no optional frontmatter fields — the eight mandatory fields above are the complete command frontmatter contract enforced by `command.schema.json` (`additionalProperties: false`).
+
+### Пример
+
+```yaml
+---
+name: "plan-execute"
+version: "X.Y.Z"
+updated: "2026-04-20"
+description: "Executes a specific phase from a Master Plan Suite with conformity checking and quality gates"
+argument-hint: "[path/to/plan-suite/] [phase-id] [--dry-run]"
+disable-model-invocation: true
+portability: "universal"
+allowed-tools: "*"
+---
+
+# /plan-execute — Execute a Specific Phase
+...
+```
+
+---
+
+## Схема: Помощники
+
+**Шаблон пути:**
+
+```text
+src/apothem/agents/*.md
+```
+
+**Назначение:** Постоянные определения помощников для параллельного
+исследования, аудита и контроля качества.
+
+### Обязательные поля
+
+```yaml
+---
+name: "agent-name"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "What this agent specializes in"
+tools: "Tool1, Tool2, Tool3"
+disallowedTools: "Write, Edit"
+maxTurns: 20
+effort: "high" | "medium" | "low"
+---
+```
+
+| Поле | Тип | Назначение | Пример |
+| ----- | ---- | ------- | ------- |
+| `name` | string | Идентификатор помощника | `"codebase-explorer"` |
+| `version` | string | Семантическая версия | `"X.Y.Z"` |
+| `updated` | string (ISO 8601) | Дата последнего обновления | `"2026-04-20"` |
+| `description` | string | Описание специализации | `"Deep codebase exploration"` |
+| `tools` | string (через запятую) | Разрешённые инструменты | `"Read, Glob, Grep, Bash"` |
+| `disallowedTools` | string (через запятую) | Запрещённые инструменты | `"Write, Edit, TodoWrite"` |
+| `maxTurns` | integer | Максимальное число ходов диалога (обычно 5–20; значения выше 20 требуют встроенного комментария-обоснования) | `20` |
+| `effort` | enum | Вычислительный масштаб | `"high"` |
+
+### Необязательные поля
+
+```yaml
+permissionMode: "default"       # Permission handling
+memory: true | false                    # If true, agent retains memory across sessions
+pattern: "Research" | "Audit" | "Implementation" | "Quality"  # Agent team pattern
+portability: "universal"
+```
+
+### Пример
+
+```yaml
+---
+name: "codebase-explorer"
+version: "X.Y.Z"
+updated: "2026-04-20"
+description: "Deep codebase exploration — find patterns, trace dependencies, discover conventions, map architecture"
+tools: "Read, Glob, Grep, Bash"
+disallowedTools: "Write, Edit, TodoWrite"
+maxTurns: 20
+effort: "high"
+permissionMode: "default"
+memory: false
+portability: "universal"
+---
+
+You are a codebase exploration specialist...
+```
+
+---
+
+## Схема: Навыки
+
+**Шаблон пути:** `src/apothem/skills/*/SKILL.md`
+
+**Назначение:** Переиспользуемые определения техник с сигналами обнаружения и
+процедурами выполнения.
+
+### Обязательные поля
+
+```yaml
+---
+name: "skill-name"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "What this skill teaches"
+archetype: "workflow-template"
+userInvocable: true | false
+disable-model-invocation: true | false
+allowed-tools: "Read, Write, Glob"
+---
+```
+
+| Поле | Тип | Назначение | Пример |
+| ----- | ---- | ------- | ------- |
+| `name` | string | Идентификатор навыка | `"plan-suite"` |
+| `version` | string | Семантическая версия | `"X.Y.Z"` |
+| `updated` | string (ISO 8601) | Дата последнего обновления | `"2026-04-20"` |
+| `description` | string | Что предоставляет навык | `"Master Plan Suite template"` |
+| `user-invocable` | boolean | Если true, пользователь может явно запросить этот навык | `false` |
+
+### Необязательные поля
+
+```yaml
+argument-hint: "[args...]"                           # Usage pattern if userInvocable
+effort: "low" | "medium" | "high" | "xhigh" | "max" # Optional effort level
+```
+
+### Пример
+
+```yaml
+---
+name: "ecosystem-audit"
+version: "X.Y.Z"
+updated: "2026-04-20"
+description: "Comprehensive blind audit of the apothem ecosystem"
+archetype: "audit-template"
+userInvocable: true
+disable-model-invocation: true
+allowed-tools: "Read, Write, Edit, Glob, Grep, Bash"
+argument-hint: "[--focus area] [--fix]"
+effort: "max"
+---
+
+## Purpose
+...
+```
+
+---
+
+## Схема: Хуки
+
+**Шаблон пути:** блок `hooks` в `settings.json` плюс реализации на Python под
+`src/apothem/hooks/`.
+
+**Назначение:** Объявить запускаемые по событиям валидаторы и обработчики
+управления состоянием, которые хост вызывает в чётко определённых точках
+жизненного цикла.
+
+### Схема файла настроек
+
+Ключ верхнего уровня `hooks` сопоставляет имена событий с массивами блоков-сопоставителей:
+
+```json
+"hooks": {
+  "<EventName>": [
+    {
+      "matcher": "<pattern>",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "python",
+          "args": ["-m", "apothem.hooks.dispatch", "<EventName>", "<message-name>"],
+          "timeout": <seconds>,
+          "statusMessage": "<short human-readable label>"
+        }
+      ]
+    }
+  ]
+}
+```
+
+| Поле | Тип | Назначение | Пример |
+| ----- | ---- | ------- | ------- |
+| `matcher` | string | Шаблон имени инструмента (или `"*"` для инструмент-независимых событий) | `"Write"` |
+| `hooks[].type` | литерал `"command"` | Единственный поддерживаемый сегодня тип обработчика хука | `"command"` |
+| `hooks[].command` | string | Исполняемая команда; Apothem использует `python` | `"python"` |
+| `hooks[].args` | массив строк | Аргументы exec-формы, вызывающие `-m apothem.hooks.dispatch` или `-m apothem.conformity.gate` | `["-m", "apothem.hooks.dispatch", "SessionStart"]` |
+| `hooks[].timeout` | integer секунд | Максимальное время выполнения, прежде чем хост остановит хук | `30` |
+| `hooks[].statusMessage` | string | Короткая метка, отображаемая в UI хоста | `"Session start"` |
+
+### Обязательные события
+
+Поставляемые шаблоны регистрируют следующие события. Все пять обязательны,
+чтобы валидаторы сообщили PASS:
+
+> **Значения таймаутов отражают канонические бюджеты событий хуков** — таблица ниже
+> воспроизводит их для удобства читателя; канонический источник имеет приоритет.
+
+| Событие | Типичный таймаут | Назначение |
+| ----- | --------------- | ------- |
+| `SessionStart` | 30 секунд | Чтение памяти, проверка состояния плана, отчёт о готовности |
+| `PreToolUse` | 10 секунд | Валидация записей на политики изоляции контента + фронтматтер |
+| `PreCompact` | 30 секунд | Проверка, что состояние внешнено перед сжатием контекста |
+| `PostCompact` | 30 секунд | Восстановление рабочего состояния после сжатия контекста |
+| `Stop` | 60 секунд | Внешнение в конце сессии — состояние возобновления, выходы, решения |
+
+`dispatch.py` также принимает `UserPromptSubmit` и `Notification` в своём
+белом списке событий для прямой совместимости; ни одно из них не подключено в
+поставляемых шаблонах. Добавьте блок-сопоставитель с тем же паттерном
+exec-формы, чтобы включить.
+
+### Слой Python
+
+Каждая команда хука проходит через один и тот же диспетчер Python:
+
+| Файл | Роль |
+| ---- | ---- |
+| `src/apothem/hooks/dispatch.py` | Маршрутизирует `SessionStart` в `session_start_bootstrap.main()`, а все остальные события из белого списка — в `emit_hook_context.main()`. Всегда завершается с кодом 0. |
+| `src/apothem/hooks/session_start_bootstrap.py` | Скрипт хука начала сессии — выдаёт память и сводный контекст пакета плана. |
+| `src/apothem/hooks/emit_hook_context.py` | Дефолтный эмиттер хуков — пишет корректный конверт, несущий зарегистрированную полезную нагрузку `--context-file`. |
+| `src/apothem/hooks/messages/*.md` | Статическая полезная нагрузка контекста, на которую ссылается `--context-file`. |
+
+### Валидация
+
+`scripts/dev/validate_hooks.py` обеспечивает контракт хуков:
+
+- `settings.json` парсится как JSON и объявляет каждое обязательное событие.
+- Все три скрипта Python существуют и парсятся как корректный Python.
+- Все файлы сообщений, на которые ссылаются аргументы `--context-file`, существуют.
+- Захардкоженные абсолютные пользовательские пути (`C:\Users\...` и т. п.) не встречаются в `src/apothem/hooks/**.py`.
+- Шелл-артефакты под `src/apothem/hooks/` и `scripts/` ограничены утверждёнными заглушками-локаторами / загрузчиками.
+
+---
+
+## Схема: CLAUDE.md
+
+**Путь:** `CLAUDE.md` (корень)
+
+**Назначение:** Глобальный индекс конфигурации экосистемы.
+
+### Обязательный YAML-фронтматтер
+
+```yaml
+---
+name: "CLAUDE"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "Global Claude Code ecosystem configuration and mandate index"
+scope: "always-on"
+portability: "universal"
+---
+```
+
+### Обязательные секции (по порядку)
+
+1. **§1 Пакет плана** — Ссылка на расположение шаблона
+2. **§2 Когнитивная идентичность** — Мандат творческой архитектуры
+3. **§3 Каталоги артефактов** — Таблица путей и назначений
+4. **§4 Управление по шкале серьёзности** — Определение четырёх уровней
+5. **§5 Операционные директивы** — Принципы решения задач, коммуникации
+6. **§6 Сквозные мандаты** — Обзор CM-1–28
+7. **§7 Реестры** — Таблицы артефактов:
+   - 7.1 Команды
+   - 7.2 Правила
+   - 7.3 Помощники
+   - 7.4 Хуки
+   - 7.5 Навыки
+   - 7.6 Эволюция артефактов
+
+---
+
+## Чек-лист валидации
+
+Каждый артефакт должен удовлетворять этим проверкам:
+
+### Валидация фронтматтера
+
+- [ ] YAML синтаксически корректен (без ошибок парсинга)
+- [ ] Все обязательные поля присутствуют для типа артефакта
+- [ ] `name` следует соглашению kebab-case
+- [ ] `version` семантическая (`MAJOR.MINOR.PATCH`)
+- [ ] `updated` в формате даты ISO 8601 (`YYYY-MM-DD`)
+- [ ] `description` — непустая однострочная строка
+- [ ] Необязательные поля соответствуют ожидаемым значениям enum (если применимо)
+- [ ] Нет опечаток в именах полей (используйте канонические имена из схемы)
+- [ ] Нет лишних пробелов или проблем с форматированием
+
+### Валидация контента
+
+- [ ] Контент начинается сразу после закрывающего `---` на новой строке
+- [ ] Нет ссылок внутри плана (соответствие CM-7)
+- [ ] Перекрёстные ссылки разрешаются (если перечисляются другие артефакты)
+- [ ] Ссылки используют относительные пути с прямыми слешами
+
+### Валидация переносимости
+
+- [ ] Нет захардкоженных абсолютных путей (используйте относительные)
+- [ ] Нет специфичного для Windows синтаксиса в артефактах с областью universal
+- [ ] Разделители путей используют прямые слеши
+- [ ] Переменные окружения используют платформо-независимый формат (`${VAR}` или нативный для инструмента)
+
+---
+
+## Заметки
+
+- **Согласованность как безопасность:** Канонический фронтматтер позволяет
+  автоматическую валидацию, инструментарий и межартефактную проверку.
+  Отклонения накапливаются быстро.
+- **Декларация переносимости:** Не все артефакты могут быть universal.
+  Объявляйте ограничения явно — лучше задокументировать оговорку, чем
+  поставить молчаливый баг.
+- **kebab-case для имён:** Удобно использовать в URL, скриптах и контекстах
+  командной строки. Избегайте пробелов, подчёркиваний и camelCase в именах.
+- **Гигиена поднятия версии:** Каждая правка, меняющая поведение, должна
+  поднимать `version` и `updated` вместе. Чисто форматирующие или исправляющие
+  опечатки правки поднимают PATCH; новые необязательные секции или антипаттерны
+  поднимают MINOR; структурная реорганизация или изменения контракта поднимают MAJOR.

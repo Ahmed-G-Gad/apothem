@@ -1,0 +1,56 @@
+---
+title: "Minimaler Hook"
+description: "Minimales Apothem-Hook-Beispiel — eine Prüfung bei jedem Dateischreiben auslösen."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Dieses Beispiel zeigt den kleinstmöglichen Apothem-Hook: einen PreToolUse-Hook,
+der vor jedem `Write`-Werkzeugaufruf auslöst und den Zielpfad protokolliert.
+
+## Hook-Skript
+
+```python
+# src/apothem/hooks/log_writes.py
+import json, sys
+
+data = json.load(sys.stdin)
+path = data.get("tool_input", {}).get("file_path", "unknown")
+print(f"[apothem] Writing to: {path}", file=sys.stderr)
+sys.exit(0)  # exit 0 = proceed; non-zero = block
+```
+
+## Registrierung in settings.json
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python src/apothem/hooks/log_writes.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## Den Hook testen
+
+Führen Sie in Claude Code ein beliebiges Dateischreiben aus und beobachten Sie
+die stderr-Ausgabe im Hook-Trace-Panel.
+
+## Schreibvorgänge blockieren
+
+Ändern Sie `sys.exit(0)` in `sys.exit(1)` und geben Sie einen JSON-Block auf
+stdout aus:
+
+```python
+print(json.dumps({"decision": "block", "reason": "blocked by log_writes"}))
+sys.exit(1)
+```

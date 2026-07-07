@@ -1,0 +1,9 @@
+{
+  "argv": [
+    "profile",
+    "edit",
+    "--help"
+  ],
+  "exit_code": 0,
+  "stdout": "Usage: main profile edit [OPTIONS]\n\n  Open the shared profile in the system editor.\n\nOptions:\n  --profile PATH         Path to shared profile YAML.\n  -q, --quiet            Suppress informational output; only errors are emitted.\n  -v, --verbose          Emit additional diagnostic output.\n  --format [plain|json]  Output format.  [default: plain]\n  --no-color             Disable ANSI color codes in output.\n  --json                 Shorthand for --format json.\n  -h, --help             Show this message and exit.\n\n  Examples:   apothem profile edit\n\n  Related commands:   profile show  Display the shared profile   profile set\n  Set a key in the shared profile\n\n  Exit codes:   0  Editor exited normally\n"
+}

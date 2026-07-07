@@ -1,0 +1,73 @@
+---
+title: "/research-sources"
+description: "/research-sources — Pengumpulan sumber sistematis: menguraikan spesifikasi menjadi subkueri, mengipas penemuan secara paralel, menyaring dan memeringkat, lalu mengekstrak per sumber menjadi buku besar sumber yang diperingkat."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Peran:** Peneliti utama (pengumpulan sumber)
+**Posisi pipeline:** tengah rantai
+
+Pengumpulan sumber sistematis — menguraikan spesifikasi penelitian menjadi subkueri, mengipas penemuan sumber dan ekstraksi per sumber secara paralel, menghilangkan duplikat, memeringkat berdasarkan otoritas / kebaruan / relevansi, menyaring terhadap kriteria inklusi spesifikasi, dan mencatat asal-usul setiap sumber yang lolos.
+
+## Pemanggilan kanonik
+
+```bash
+/research-sources
+```
+
+Dengan argumen:
+
+```bash
+/research-sources [path/to/research-suite/] [--depth N]
+```
+
+## Masukan
+
+`_inputs/theory.md` (kerangka konseptual / teoretis dari `/research-theory`, tahap pendahulu) ditambah `_spec/research-spec.md` (spesifikasi penelitian yang disetujui dari `/research-spec`).
+
+## Keluaran
+
+`sources/<id>.md` (satu ekstraksi bermuatan asal-usul per sumber yang lolos) + `_inputs/source-ledger.md` (indeks sumber yang diperingkat, disaring, dan dideduplikasi dengan indeks sitasi).
+
+## Hilir
+
+/research-synthesis (konsumen hilir)
+
+## Fase alur kerja
+
+Perintah ini mengikuti alur kerja pipeline `/research` standar:
+
+1. **Memuat konteks** — Membaca spesifikasi penelitian dan kriteria inklusi / eksklusinya.
+2. **Memverifikasi Gerbang Urutan** — Memastikan `_inputs/theory.md` (dan `_spec/research-spec.md` yang disetujui) ada; jika tidak, berhenti dengan `Blocked: run /research-theory first`.
+3. **Menemukan & mengekstrak** — Menguraikan menjadi subkueri, mengipas penemuan, menghilangkan duplikat, memeringkat, menyaring, dan mengekstrak per sumber dengan asal-usul.
+4. **Memverifikasi keluaran** — Memastikan setiap sumber yang lolos disitasi dan disaring terhadap kriteria spesifikasi.
+5. **Memperbarui manifes serah terima** — Mencatat buku besar sumber dan jalur ekstraksi per sumber.
+6. **Memancarkan buku besar** — Ekstraksi `sources/` ditambah `_inputs/source-ledger.md`.
+
+## Landasan ketelitian
+
+Di luar buku besar sumber, tahap ini membangun buku besar asal-usul komparator: garis-dasar mutakhir terkini terdekat yang akan menjadi lawan studi, masing-masing diverifikasi terhadap sumber yang dapat diambil dan dicatat dengan asal-usul serta keterjangkauannya. Sebuah komparator yang tidak dapat dikonfirmasi atau diambil ditandai demikian dan tidak pernah direkayasa (R1, R4).
+
+## Mode kegagalan
+
+| Gejala | Penyebab | Pemulihan |
+|---------|-------|----------|
+| Blocked: run /research-theory first | Tidak ada landasan teoretis | Jalankan `/research-theory` untuk menghasilkan `_inputs/theory.md` |
+| Sumber gagal kriteria inklusi | Sumber di luar lingkup atau berotoritas rendah | Saring keluar; catat alasan eksklusi di buku besar |
+| Sitasi rekaan | Sumber ditebak, bukan diambil | Jangan pernah mengarang sumber; sitasi yang ditebak adalah sebuah temuan |
+
+## Contoh
+
+```bash
+# Kumpulkan sumber untuk suite penelitian yang telah dibingkai
+/research-sources path/to/research-suite/
+
+# Kipas penemuan yang lebih dalam
+/research-sources path/to/research-suite/ --depth N
+```
+
+## Referensi silang
+
+- [Ikhtisar pipeline](/docs/pipeline)
+- [Referensi perintah](/docs/reference/commands)

@@ -1,0 +1,70 @@
+---
+title: "/research-review"
+description: "/research-review — Critique adversariale de niveau évaluation par les pairs de l'article : une grille de notation de l'évaluateur à sept axes (nouveauté, rigueur, reproductibilité, clarté, éthique, revue statistique, conformité aux directives de rapport) plus une liste de révisions obligatoires triée par gravité."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rôle :** Chercheur principal (évaluation par les pairs)
+**Position dans le pipeline :** milieu de chaîne
+
+Soumet l'article à une critique adversariale de niveau évaluation par les pairs au regard des normes du lieu de publication — nouveauté, rigueur, reproductibilité, clarté, éthique, revue statistique et conformité aux directives de rapport. Émet une grille de notation de l'évaluateur à **sept axes** ainsi qu'une liste de révisions obligatoires triée par gravité, avec une justification à moteur concret par constatation. Réfutation par défaut.
+
+## Invocation canonique
+
+```bash
+/research-review
+```
+
+Avec des arguments :
+
+```bash
+/research-review [path/to/research-suite/]
+```
+
+## Entrées
+
+Le livrable de l'article à l'emplacement naturel de l'hôte enregistré par l'étape de l'article.
+
+## Sorties
+
+`_outputs/review-report.md` — la grille de notation de l'évaluateur à **sept axes** (nouveauté · rigueur · reproductibilité · clarté · éthique · revue statistique · conformité aux directives de rapport), la liste de révisions obligatoires triée par gravité (HIGH / MEDIUM / LOW) avec une justification à moteur concret par constatation, le verdict du paquet de reproductibilité et de la réexécution, l'audit d'intégrité des citations, et le verdict global `accept · minor-revision · major-revision · reject`.
+
+## En aval
+
+/research-publish (consommateur en aval). Un verdict `major-revision` ou `reject` enclenche la boucle de révision vers `/research-paper` pour traiter les révisions obligatoires avant une nouvelle évaluation.
+
+## Phases du flux de travail
+
+La commande suit le flux de travail standard du pipeline `/research` :
+
+1. **Charger le contexte** — Lire le livrable de l'article.
+2. **Vérifier la Porte de séquence** — Confirmer que l'article existe ; sinon, s'arrêter avec `Blocked: run /research-paper first`.
+3. **Évaluer de manière adversariale** — Noter les sept axes (nouveauté · rigueur · reproductibilité · clarté · éthique · revue statistique · conformité aux directives de rapport) ; exécuter la réexécution de reproductibilité et l'audit d'intégrité des citations ; réfutation par défaut ; localiser les défauts concrets avec des preuves.
+4. **Trier les révisions** — Classer les révisions obligatoires HIGH / MEDIUM / LOW avec une justification à moteur concret.
+5. **Mettre à jour le manifeste de transfert** — Consigner le rapport d'évaluation et le verdict de la grille de notation.
+6. **Émettre l'évaluation** — `_outputs/review-report.md`.
+
+## Seuil de rigueur
+
+L'évaluation note les affirmations empiriques au regard de la barre de la porte d'avancement — réplication adéquate, significativité non paramétrique assortie d'une taille d'effet et de rangs de différence critique, et parité de budget entre les méthodes comparées — et traite le verdict comme une porte d'avancement explicite : un article n'avance que lorsqu'il bat la barre du lieu de publication de manière convaincante et significative, avec le franchissement consigné. Sous un lieu de publication en double aveugle, l'évaluateur signale aussi toute fuite d'identité comme un défaut d'anonymisation.
+
+## Modes de défaillance
+
+| Symptôme | Cause | Récupération |
+|---------|-------|----------|
+| Blocked: run /research-paper first | Aucun article | Exécutez `/research-paper` pour produire le manuscrit |
+| Notation indulgente | L'évaluateur a supposé le meilleur cas | Réfutation par défaut ; notez d'après les preuves présentes |
+| Constatation sans justification | Révision affirmée, non justifiée | Joignez une justification à moteur concret à chaque constatation |
+
+## Exemples
+
+```bash
+# Évaluez l'article par les pairs et émettez une grille de notation de l'évaluateur
+/research-review path/to/research-suite/
+```
+
+## Références croisées
+
+- [Aperçu du pipeline](/docs/pipeline)
+- [Référence des commandes](/docs/reference/commands)

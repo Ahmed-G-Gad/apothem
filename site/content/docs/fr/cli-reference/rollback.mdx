@@ -1,0 +1,80 @@
+---
+title: "rollback"
+description: "Référence de la CLI pour la commande apothem rollback."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Restaure un harness à l'état précédant son installation enregistrée.
+
+## Synopsis
+
+```
+apothem rollback --harness NAME|all [--install-id ULID | --last] [--yes]
+                 [--project PATH]
+                 [--quiet|-q] [--verbose|-v]
+                 [--format plain|json] [--json] [--no-color]
+```
+
+`rollback` reconstruit les octets de chaque harness sélectionné tels qu'ils étaient avant l'installation, à partir de la racine de sauvegarde d'Apothem. Elle résout la passe d'installation enregistrée — la plus récente par défaut, ou celle nommée par `--install-id` —, restaure chaque sauvegarde que cette installation a capturée, puis ajoute un enregistrement `rollback` au registre du harness.
+
+La confirmation est demandée par harness à moins que `--yes` ne soit fourni. `--install-id` et `--last` sélectionnent la passe d'installation et sont mutuellement exclusifs.
+
+## Options
+
+| Option | Description |
+|---|---|
+| `--harness NAME` | Adaptateur de harness à restaurer, ou `all` pour l'ensemble de tout le registre (obligatoire). |
+| `--install-id ULID` | Restaure la passe d'installation nommée. Par défaut : l'installation enregistrée la plus récente. |
+| `--last` | Restaure l'installation enregistrée la plus récente (la valeur par défaut ; la forme explicite). Mutuellement exclusif avec `--install-id`. |
+| `--yes` | Ignore l'invite de confirmation par harness. |
+| `--project PATH` | Racine du projet pour les harness à portée de projet. Obligatoire lorsque l'ensemble sélectionné inclut des adaptateurs à portée de projet. |
+| `--quiet`, `-q` | Supprime la sortie informative ; seules les erreurs sont émises. |
+| `--verbose`, `-v` | Émet une sortie de diagnostic supplémentaire. |
+| `--format plain\|json` | Format de sortie (par défaut : `plain`). |
+| `--json` | Raccourci pour `--format json`. |
+| `--no-color` | Désactive les codes de couleur ANSI dans la sortie. |
+| `-h`, `--help` | Affiche l'aide et quitte. |
+
+## Sortie JSON
+
+```json
+{
+  "status": "success",
+  "command": "rollback",
+  "action": "rolled_back",
+  "harness": "claude-code",
+  "profile_path": null,
+  "project": null,
+  "files_written": [],
+  "results": [],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+Chaque cible restaurée apparaît dans `results` avec `"operation": "rollback"` et un `outcome` valant `created` ou `updated` (et dans `files_written`). Une cible que l'installation a créée de toutes pièces — sans octets antérieurs à restaurer — est signalée avec `"outcome": "skipped"` ; une restauration échouée vaut `"outcome": "error"`. Lorsqu'aucun enregistrement d'installation correspondant n'existe, la commande signale une erreur `rollback.no_record` avec `"status": "error"`.
+
+## Exemples
+
+```bash
+apothem rollback --harness claude-code --last
+apothem rollback --harness claude-code --install-id 01J9Z… --yes
+apothem rollback --harness cursor --project . --last --json
+```
+
+## Codes de sortie
+
+| Code | Signification |
+|---|---|
+| 0 | Restauration réussie, ou rien à restaurer (l'installation n'a capturé aucune sauvegarde) |
+| 1 | Erreur attendue — aucun enregistrement d'installation, sélecteurs en conflit, harness inconnu, racine de projet manquante ou confirmation annulée |
+| 2 | Restauration partielle après qu'au moins une cible a été restaurée |
+
+## Voir aussi
+
+- [apothem install](/docs/cli-reference/install) — installe une configuration de harness
+- [apothem update](/docs/cli-reference/update) — réinstalle à partir du profil partagé actuel
+- [apothem uninstall](/docs/cli-reference/uninstall) — supprime une configuration de harness
+- [apothem status](/docs/cli-reference/status) — rapporte l'état d'installation, de vérification et de dérive

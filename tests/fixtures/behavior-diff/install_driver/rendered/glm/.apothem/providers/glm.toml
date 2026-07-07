@@ -1,0 +1,58 @@
+# SPDX-License-Identifier: MIT
+
+# GLM (Z.ai) backend-provider configuration — operator-owned.
+#
+# GLM is a MODEL BACKEND, not a coding-agent tool. Z.ai ships no first-party
+# GLM coding CLI; instead, an Anthropic-compatible or OpenAI-compatible coding
+# agent is pointed at GLM by setting the backend base URL and an auth token.
+# This file records both compatibility surfaces plus operator-configurable
+# model-mapping placeholders so any compatible agent can be wired to the GLM
+# model family. Replace every <...> placeholder; the auth token is a
+# placeholder, never a committed secret.
+#
+# This file is operator-owned. GLM is a model backend, not a rule-bearing
+# coding agent, so Apothem projects NO shared-profile instruction content here
+# (no rules, no opted-in behaviors — a backend exposes none): the file carries
+# only the backend wiring below. Apothem writes this clean template on install;
+# thereafter the file is yours. Your own backend keys and edits route through
+# the per-file confirmation gate on every subsequent `apothem install` /
+# `apothem update` rather than being silently overwritten.
+#
+# Vendor surface conventions are pinned at
+# src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md (snapshotted against the
+# live Z.ai documentation).
+
+[provider]
+# Display label for the GLM model family. No specific model id is pinned here:
+# model ids are version-volatile, so the operator selects one from the current
+# Z.ai catalog at install time (see the [models] table below).
+name = "GLM (Z.ai)"
+family = "glm"
+docs = "https://docs.z.ai/"
+
+# Anthropic-compatible backend. Point an Anthropic-compatible coding agent at
+# GLM by exporting these environment variables before launching the agent.
+[backends.anthropic_compatible]
+base_url = "https://api.z.ai/api/anthropic"
+# Environment variables an operator sets so an Anthropic-compatible agent
+# routes to GLM instead of the default Anthropic endpoint.
+[backends.anthropic_compatible.env]
+ANTHROPIC_BASE_URL = "https://api.z.ai/api/anthropic"
+ANTHROPIC_AUTH_TOKEN = "<YOUR_ZAI_API_KEY>"
+API_TIMEOUT_MS = "<TIMEOUT_MS>"
+
+# OpenAI-compatible backend. Point an OpenAI-compatible coding agent at GLM by
+# setting its base URL to this endpoint and supplying the API key.
+[backends.openai_compatible]
+base_url = "https://api.z.ai/api/coding/paas/v4"
+[backends.openai_compatible.env]
+OPENAI_BASE_URL = "https://api.z.ai/api/coding/paas/v4"
+OPENAI_API_KEY = "<YOUR_ZAI_API_KEY>"
+
+# Operator-configurable model-mapping placeholders. Apothem pins no model id
+# (version-volatile); the operator fills these from the current GLM catalog at
+# https://docs.z.ai/ so the chosen agent's logical roles map to GLM models.
+[models]
+default = "<GLM_MODEL_ID>"
+fast = "<GLM_FAST_MODEL_ID>"
+reasoning = "<GLM_REASONING_MODEL_ID>"

@@ -1,0 +1,101 @@
+---
+title: "migrate-workspace"
+description: "Référence de la CLI pour la commande apothem migrate-workspace."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Migre un espace de travail hérité par harness vers la disposition partagée `.apothem`.
+
+## Synopsis
+
+```
+apothem migrate-workspace [--project PATH] [--dry-run]
+                          [--quiet|-q] [--verbose|-v]
+                          [--format plain|json] [--json] [--no-color]
+```
+
+`migrate-workspace` regroupe un répertoire de données hérité par harness
+(`.apothem/<harness>/...`) et une arborescence `.plans/` héritée dans l'unique
+répertoire de travail partagé `.apothem/{plans,memory,learning,contexts}`. La base
+est la racine `--project` résolue lorsqu'elle est fournie, sinon le répertoire de
+travail courant (la valeur par défaut locale au projet).
+
+La mémoire, les contextes et les magasins d'apprentissage par harness fusionnent
+par union dans le magasin partagé par id ; les signaux d'apprentissage sont
+concaténés et dédupliqués ; un enregistrement en conflit (même id, corps
+différent) est ignoré, jamais écrasé. Une arborescence `.plans/` héritée est
+déplacée sous `.apothem/plans/`. Chaque source consommée est sauvegardée au
+préalable. La migration est idempotente — la réexécuter sur une arborescence déjà
+migrée est une opération sans effet.
+
+## Options
+
+| Option | Description |
+|---|---|
+| `--project PATH` | Racine de projet pour les adaptateurs à portée de projet qui se matérialisent dans une arborescence de projet plutôt que dans un répertoire de configuration à portée d'utilisateur. |
+| `--dry-run` | Détecte la disposition héritée et signale ce qui serait migré sans écrire. |
+| `--quiet`, `-q` | Supprime la sortie informative ; seules les erreurs sont émises. |
+| `--verbose`, `-v` | Émet une sortie de diagnostic supplémentaire. |
+| `--format plain\|json` | Format de sortie (par défaut : `plain`). |
+| `--json` | Raccourci pour `--format json`. |
+| `--no-color` | Désactive les codes de couleur ANSI dans la sortie. |
+| `-h`, `--help` | Affiche l'aide et quitte. |
+
+## Sortie JSON
+
+L'enveloppe `--json` porte le résultat de la migration. Sur une migration
+terminée, `status` vaut `success` et la charge utile rapporte les décomptes
+d'enregistrements fusionnés, si une arborescence `.plans/` a été déplacée, la
+racine de sauvegarde et tout conflit ignoré. Une invocation `--dry-run` rapporte
+plutôt `legacy_layout_detected`.
+
+```json
+{
+  "command": "migrate-workspace",
+  "status": "success",
+  "base": "/home/example/project",
+  "migrated": true,
+  "backup_root": "/home/example/project/.apothem/.backups/01J9Z…",
+  "memory_merged": 12,
+  "contexts_merged": 4,
+  "learning_merged": 7,
+  "conflicts": [],
+  "plans_moved": true,
+  "notes": []
+}
+```
+
+Lorsqu'aucune disposition héritée n'est présente, `migrated` vaut `false` et rien
+n'est écrit. L'enveloppe `--dry-run` omet les décomptes de résultats et ne
+rapporte que la détection :
+
+```json
+{
+  "command": "migrate-workspace",
+  "base": "/home/example/project",
+  "dry_run": true,
+  "legacy_layout_detected": false
+}
+```
+
+## Exemples
+
+```bash
+apothem migrate-workspace
+apothem migrate-workspace --project .
+apothem migrate-workspace --dry-run --json
+```
+
+## Codes de sortie
+
+| Code | Signification |
+|---|---|
+| 0 | Migration terminée, ou aucune disposition héritée trouvée (rien à migrer) |
+| 1 | Erreur attendue — une erreur de validation ou de racine de projet, ou un échec de migration |
+
+## Voir aussi
+
+- [apothem install](/docs/cli-reference/install) — matérialise un harness à partir du profil partagé
+- [apothem status](/docs/cli-reference/status) — signale l'état d'installation, de vérification et de dérive
+- [Discipline des plans](/docs/reference/plans-discipline) — la disposition partagée `.apothem/plans/`

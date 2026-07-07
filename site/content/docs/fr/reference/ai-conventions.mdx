@@ -1,0 +1,138 @@
+---
+title: "Conventions d'environnement multi-surface"
+description: "Référence normative canonique pour la configuration et la cohérence des harness multi-surface entre les environnements d'exécution de chat, d'autocomplétion dans l'IDE et de revue de PR."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Référence normative canonique pour les contributeurs en aval.** Ce document reflète les sections Conventions d'environnement multi-surface de la spécification du projet (Spécification §0.6 + §2.8 + §4.7) ; c'est la référence autonome livrée avec le dépôt publié. La justification architecturale est consignée dans [ADR-0003](/docs/architecture).
+
+---
+
+## 1. Pourquoi le pluriel
+
+Une surface d'ingénierie moderne est touchée par plusieurs environnements d'exécution de harness — consoles de chat, moteurs d'autocomplétion dans l'IDE, compagnons de programmation en binôme et réviseurs de pull requests. Chacun lit son propre fichier de configuration canonique. Si le projet ne livre qu'un seul de ces fichiers, les environnements restants improvisent en silence contre des conventions non déclarées ; la mémoire interne au dépôt qui manque fuit immédiatement.
+
+Le coût d'une surface absente est la **dérive silencieuse dans le code généré par la machine** — le pire type de défaut, car il s'accumule de manière invisible. Chaque artefact généré par la machine aggrave la divergence ; le temps qu'un réviseur humain repère la contradiction, la base de code charrie déjà des semaines de conventions incohérentes.
+
+La configuration de l'environnement de programmation est plurielle par la réalité du déploiement. L'écosystème publié **DOIT** livrer un fichier de mémoire de comportement pour l'environnement de la console de chat **ET** un fichier d'instructions à portée de dépôt pour l'environnement d'autocomplétion dans l'IDE. Les deux surfaces **DOIVENT** être mutuellement cohérentes — sans contradiction, sans dérive — et **DOIVENT** encoder conjointement les mêmes disciplines.
+
+---
+
+## 2. Le contrat de cohérence
+
+Chaque surface de conventions dans le périmètre (§3) est un *canal* qui exprime la spécification unique de conventions du projet. La spécification est décomposée en :
+
+- **Sections partagées** — Discipline des plans, enquête structurée (ou équivalent de surface), En-tête de paternité, Nommage, Anti-patrons, Hiérarchie modale. Elles **DOIVENT** apparaître dans chaque surface requise et **DOIVENT** être sémantiquement équivalentes entre les surfaces.
+- **Sections propres à la surface** — cadrages de capacité, motifs d'appel d'outils, différences entre génération de code et chat. Elles **PEUVENT** différer d'une surface à l'autre, mais **NE DOIVENT PAS** contredire les sections partagées.
+
+Le validateur `multi-surface-coherence` (§7) s'exécute à chaque exécution de CI et au pre-commit, affirmant le contrat.
+
+Les deux (ou plusieurs) surfaces sont des *canaux* distincts exprimant une seule *spécification*. Les sections partagées **DOIVENT** correspondre — sémantiquement et, lorsque c'est possible, aussi lexicalement — entre les surfaces. Les sections propres à la surface **NE DOIVENT PAS** contredire les sections partagées.
+
+---
+
+## 3. Surfaces dans le périmètre
+
+| Surface | Chemin | Obligatoire ? | Public |
+|---|---|---|---|
+| `AGENTS.md` | racine du dépôt (et/ou `.codex/AGENTS.md`) | **MUST** | environnements de programmation compatibles AGENTS |
+| `CLAUDE.md` | racine du dépôt (et/ou `.claude/CLAUDE.md`) | **MUST** | Claude Code |
+| fichier d'instructions sous `.github/` | fichier d'instructions sous `.github/` | **MUST** | environnement d'autocomplétion dans l'IDE |
+| manifeste d'assistants sous `site/content/docs/architecture/` | racine du dépôt | **MAY** (activation optionnelle via le canal d'enquête structurée) | plateformes d'orchestration multi-assistant |
+| `.cursorrules` | racine du dépôt | **MAY** (activation optionnelle) | environnement d'éditeur dans l'IDE |
+| `.windsurfrules` | racine du dépôt | **MAY** (activation optionnelle) | environnement compagnon dans l'IDE |
+
+Pour cette mission, l'opérateur a opté pour les surfaces d'assistant optionnelles enregistrées par la fixture. Les configurations racine propres à un fournisseur non utilisées sont volontairement absentes ; un fichier de configuration propre à un outil n'est ajouté que lorsque cet outil est une surface d'édition active pour ce dépôt.
+
+---
+
+## 4. Liste des sections du fichier d'instructions dans l'IDE
+
+Le fichier d'instructions à portée de dépôt sous `.github/` **DOIT** contenir, dans cet ordre, les sections suivantes (chacune avec le texte d'en-tête exact ci-dessous ; les corps de section sont rédigés, et non estampillés par gabarit, mais chacun **DOIT** couvrir les affirmations listées) :
+
+1. **Project Context** — un paragraphe : ce qu'est ce dépôt, qui l'utilise, sa forme de haut niveau. Concret ; sans marketing.
+2. **Coding Conventions** — nommage, hiérarchie modale, frontmatter, style markdown, points de style propres au langage là où ils divergent des valeurs par défaut.
+{/* REUSE-IgnoreStart */}
+3. **File Headers** — chaque fichier que l'environnement génère **DOIT** commencer par la ligne canonique unique `SPDX-License-Identifier: MIT` conformément à [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header), dans la variante de commentaire correspondant au type de fichier. Pointeur vers `scripts/inject-header.*` et `site/content/docs/reference/authorship-header.mdx`.
+{/* REUSE-IgnoreEnd */}
+4. **Plans Discipline** — l'environnement **NE DOIT PAS** générer de code ni de scripts qui écrivent dans un répertoire de configuration de l'environnement (par exemple `~/.claude/plans/` ou `~/.codex/.plans/`) ni dans tout autre emplacement global de plans. Les artefacts de planification vont dans `<project-root>/.apothem/plans/` (une arborescence `<project-root>/.plans/` héritée est mise à niveau via `apothem migrate-workspace`) conformément à [`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline).
+5. **Structured Inquiry Behavior** — lorsque l'environnement est incertain, il **NE DOIT PAS** fabriquer en silence. À la place, il insère un bloc de clarification clairement marqué (p. ex., un commentaire `# TODO(clarify): <question>`) et fait remonter la question dans le chat là où la surface le permet. Pas d'API inventées, pas de noms de modèle inventés, pas de chemins de fichier inventés.
+6. **Forbidden Patterns** — interdits explicites : pas d'adjectifs marketing, pas de remplissage évasif, pas de détritus de débogage console.log, pas de chemins absolus codés en dur vers le home de l'utilisateur, pas de secrets commités, pas de fichiers commités sous `.apothem/plans/` (ou l'ancien `.plans/`), pas de contradiction avec le fichier canonique d'instructions du projet.
+7. **Output Format** — le code/la prose généré se conforme aux conventions unifiées de sortie conversationnelle : caractère définitif, sectionnement uniforme, densité, discipline de synthèse, citations. Pour le code : surface publique documentée, typée là où le langage prend en charge les types, testée là où existe un échafaudage de tests.
+8. **Review Checklist** — ce qu'un réviseur (humain ou environnement en mode revue de PR) **DOIT** vérifier avant d'approuver : en-tête présent, nommage conforme, pas d'écritures dans `.apothem/plans/`, pas de contradictions avec le fichier canonique d'instructions du projet, validateurs au vert en local.
+9. **Pointers** — liens vers `AGENTS.md`, `CLAUDE.md`, `site/content/docs/reference/plans-discipline.mdx`, `site/content/docs/reference/authorship-header.mdx`, ce document de conventions, `schemas/` et `CONTRIBUTING.md`.
+
+Le fichier commence par la ligne SPDX de l'en-tête de paternité canonique (variante Markdown) conformément à [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) §2 — visible ou invisible selon la politique de visibilité des en-têtes choisie par le projet.
+
+Le fichier d'instructions dans l'IDE **n'est pas** une copie textuelle d'`AGENTS.md` ni de `CLAUDE.md`. `AGENTS.md` est la surface canonique d'instructions du projet, `CLAUDE.md` la reflète pour Claude Code, et le fichier d'instructions dans l'IDE est formulé pour un environnement d'autocomplétion de code dans l'éditeur qui émet des suggestions qu'un développeur accepte ou rejette. L'*information* (disciplines, conventions, anti-patrons) est identique ; le *cadrage* diffère.
+
+---
+
+## 5. Référence de la liste d'affirmations
+
+La fixture à [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml) énumère chaque affirmation partagée. Entrées d'exemple :
+
+```yaml
+- id: plans.location
+  claim: "Planning artifacts live at <project-root>/.apothem/plans/, never inside a harness configuration directory."
+  required-in: [AGENTS.md, CLAUDE.md, .github/copilot-instructions.md]
+  optional-in: [site/content/docs/architecture/agents.mdx, .cursorrules]
+- id: header.canonical
+  claim: "Every applicable new file begins with the canonical authorship-header banner per site/content/docs/reference/authorship-header.mdx."
+  required-in: [AGENTS.md, CLAUDE.md, .github/copilot-instructions.md]
+- id: ambiguity.resolution
+  claim: "Ambiguity is surfaced via the structured-inquiry channel or a clearly-marked TODO(clarify); never silently invented."
+  required-in: [AGENTS.md, CLAUDE.md, .github/copilot-instructions.md]
+# ... (one entry per shared claim)
+```
+
+Le validateur analyse chaque surface, tente de trouver la présence de chaque affirmation dans la surface (via la hiérarchie des en-têtes + l'extraction de mots-clés du corps) et échoue à la moindre absence ou contradiction.
+
+---
+
+## 6. Règle de réconciliation
+
+Lorsque deux surfaces sont détectées comme se contredisant sur une affirmation partagée, la réconciliation par défaut est :
+
+> `AGENTS.md` est la voix canonique du projet. Toute surface contradictoire est réécrite pour refléter la sémantique d'`AGENTS.md` dans un cadrage adapté à la surface.
+
+Un remplacement propre à la surface n'est permis qu'avec un marqueur explicite et interne au fichier `<!-- coherence-override: <claim-id> -->` qui pointe vers un ADR expliquant la divergence délibérée. Le marqueur de remplacement est lui-même énuméré dans la liste d'autorisation du validateur et apparaît dans le rapport de CI.
+
+Pour ce dépôt, la stratégie de réconciliation ratifiée est **`agents-md-wins`** : `AGENTS.md` est canonique, et chaque miroir d'environnement actif reste sémantiquement équivalent.
+
+---
+
+## 7. Validateurs
+
+Trois validateurs co-implémentent le contrat de cohérence :
+
+```text
+- in-IDE-instructions-presence    (src/apothem/conformity/copilot_instructions_presence_grep.py)
+- multi-surface-coherence         (src/apothem/conformity/multi_surface_coherence_grep.py)
+- license-author-consistency      (src/apothem/conformity/license_author_consistency_grep.py)
+```
+
+- Le premier affirme que le fichier d'instructions dans l'IDE existe, s'analyse, contient chaque section canonique énumérée au §4 et commence par la bannière de paternité canonique.
+- Le second analyse les sections canoniques de chaque surface ; affirme que les sections partagées sont mutuellement cohérentes sous un comparateur normalisé (insensible à la casse, tolérant aux espaces, autorisant la paraphrase lexicale mais exigeant l'équivalence sémantique sur la liste d'affirmations définie par la fixture).
+- Le troisième affirme que la ligne de copyright du LICENSE et la ligne « Copyright (c) » de la bannière canonique nomment le même auteur.
+
+---
+
+## 8. Cycle de vie de la surface
+
+- **Ajouter une surface.** L'opérateur y opte via le canal d'enquête structurée ou via un `make surfaces-add <name>` ultérieur. Le générateur rédige la surface contre la liste d'affirmations, exécute le validateur et dépose un ADR si un remplacement propre à la surface est nécessaire.
+- **Retirer une surface.** L'enquête structurée confirme le retrait, un ADR consigne la justification, la liste required-in du validateur est modifiée.
+- **Détection de dérive.** Tout commit qui s'écarte de la liste d'affirmations est rejeté par le pre-commit / la CI ; l'auteur du commit réécrit la surface pour rétablir la cohérence.
+
+---
+
+## Voir aussi
+
+- [ADR-0003](/docs/architecture) — justification architecturale, alternatives envisagées.
+- [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml) — la fixture canonique de la liste d'affirmations.
+- [`AGENTS.md`](https://github.com/ahmed-g-gad/apothem/blob/main/AGENTS.md) — la voix canonique du projet.
+- [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) — le miroir de Claude Code.
+- [`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline) — la référence canonique de l'affirmation partagée Discipline des plans.
+- [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) — la référence canonique de l'affirmation partagée En-tête de paternité.
+- Spécification du projet §0.6 + §2.8 + §4.7 — le texte canonique complet reflété ici.

@@ -1,0 +1,101 @@
+---
+title: "Comparação"
+description: "Como avaliar o Apothem frente à configuração de harness mantida à mão e a outras abordagens de configuração, com uma matriz de recursos e páginas por harness."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+O Apothem é um gerenciador de configuração de harness de IA agnóstico ao
+host. Um único perfil compartilhado em `~/.config/apothem/profile.yaml` é
+materializado em dezessete superfícies de configuração nativas de harness. Esta
+seção enquadra como avaliar o Apothem frente às alternativas que você já usa.
+
+## Como o Apothem se compara
+
+Outras ferramentas resolvem fatias adjacentes deste problema. Os gerenciadores
+de configuração baseados em arquivos, como **chezmoi** e **GNU Stow**, colocam
+ou modelam arquivos, mas nunca traduzem uma fonte para a configuração *nativa*
+de cada ferramenta. As CLIs de sincronização de regras entre
+ferramentas, como **rulesync**, de fato geram arquivos nativos por ferramenta em
+mais ferramentas do que as dezessete do Apothem, e uma unidade sincronizada
+comparavelmente ampla. A distinção do Apothem é a **disciplina de governança e
+ciclo de vida distribuída em torno da sincronização** — um portão mecânico de
+conformidade, fluxos deterministas, uma fortaleza de auditoria e um ciclo de
+vida reversível e verificado.
+
+| Capacidade | Apothem | Gerenciadores de config. de arquivos (chezmoi, Stow) | Sincronização de regras entre ferramentas (rulesync) | Config. nativa por ferramenta |
+| ---------- | :-----: | :----------------------------------: | :-----------------------------: | :--------------------: |
+| Uma fonte para os esquemas nativos de muitas ferramentas | Sim — dezessete adaptadores de harness | Não — cópia / link simbólico, sem tradução | Sim | Não — uma única ferramenta |
+| Unidade sincronizada | regras, habilidades, hooks, comandos de barra, MCP | arquivos arbitrários | regras, ignore, MCP, comandos, subagentes, habilidades, hooks, permissões | — |
+| Corpus de governança (regras de comportamento mais um portão mecânico de conformidade) | Sim — `python -m apothem.conformity.gate` | Não | Não | Não |
+| Fluxos deterministas de planejamento e investigação | Sim — de `/plan-spec` a `/plan-execute`, `/research` de treze etapas | Não | Não | Não |
+| Fortaleza de auditoria que detecta e remedia | Sim — varredura de onze comandos, laço de reauditoria `/fortress` | Não | Não | Não |
+| Versões reforçadas frente à cadeia de suprimentos | Sim — SBOM, Sigstore, SLSA, alvo Scorecard | Não | varia | Não |
+| Ciclo de vida reversível e verificado | Sim — backup, `apothem verify --json`, desinstalação sem órfãos | varia | varia | — |
+
+Onde um concorrente é mais forte, ele é nomeado: **rulesync** alcança mais
+ferramentas e carrega uma unidade sincronizada comparavelmente ampla, e várias
+ferramentas de sincronização materializam esquemas nativos. O Apothem troca a
+contagem bruta de ferramentas pela disciplina de governança, auditoria e ciclo
+de vida distribuída em torno da sincronização — um portão de conformidade,
+fluxos deterministas `/plan` e `/research`, uma fortaleza de auditoria de onze
+comandos, memória durável e um ciclo de vida reversível e verificado — que uma
+ferramenta de sincronização de regras não carrega.
+
+## Como comparar
+
+Compare ao longo de três eixos:
+
+1. **Fonte da verdade.** Onde vivem suas regras, subagentes, comandos e
+   configurações? O Apothem mantém um único corpus compartilhado e renderiza a
+   partir dele o formato nativo de cada harness. A configuração mantida à mão
+   guarda uma cópia por ferramenta.
+2. **Custo do desvio.** O que acontece quando você muda uma regra? O Apothem
+   propaga a mudança para cada harness instalado ao executar `apothem update`.
+   A configuração mantida à mão exige editar o arquivo nativo de cada ferramenta
+   separadamente e mantê-los alinhados de memória.
+3. **Verificação.** Como você sabe que cada harness está corretamente
+   configurado? O Apothem inclui `apothem verify --harness <name>` e
+   `apothem doctor`. A configuração mantida à mão não tem verificação
+   incorporada.
+
+## Matriz de recursos
+
+A matriz contrasta o Apothem com as duas alternativas às quais os operadores
+recorrem primeiro: manter à mão a configuração nativa de cada harness e
+gerenciar esses arquivos por meio de um gerenciador de dotfiles de propósito
+geral.
+
+| Capacidade | Config. mantida à mão | Gerenciador de dotfiles | Apothem |
+| ---------- | ---------------------- | --------------- | ------- |
+| Uma única fonte da verdade compartilhada | Não (uma cópia por ferramenta) | Não (rastreia arquivos, não um perfil) | Sim (um perfil) |
+| Renderiza formatos nativos de harness | Manual | Não | Sim (materializador por adaptador) |
+| Prevenção de desvio entre harnesses | Alinhamento manual | Apenas sincronização de arquivos | Sim (`apothem update`) |
+| Instalação/desinstalação por harness | Manual | Parcial (link/cópia) | Sim (`install` / `uninstall`) |
+| Verificação incorporada | Nenhuma | Nenhuma | Sim (`verify` / `doctor`) |
+| Tradução de formato por ferramenta | Nenhuma | Nenhuma | Sim (`.mdc`, `.toml`, `.md` incorporado) |
+| Dezessete harnesses a partir de uma única entrada | Não | Não | Sim |
+
+## Páginas de comparação
+
+- [Apothem frente a outros frameworks de harness](/docs/comparison/vs-other-harness-frameworks)
+- [vs antigravity puro](/docs/comparison/vs-raw-antigravity)
+- [vs claude-code puro](/docs/comparison/vs-raw-claude-code)
+- [vs codebuddy puro](/docs/comparison/vs-raw-codebuddy)
+- [vs codex puro](/docs/comparison/vs-raw-codex)
+- [vs cursor puro](/docs/comparison/vs-raw-cursor)
+- [vs gemini-cli puro](/docs/comparison/vs-raw-gemini-cli)
+- [vs github-copilot puro](/docs/comparison/vs-raw-github-copilot)
+- [vs glm puro](/docs/comparison/vs-raw-glm)
+- [vs hermes puro](/docs/comparison/vs-raw-hermes)
+- [vs kimi-code puro](/docs/comparison/vs-raw-kimi-code)
+- [vs kiro puro](/docs/comparison/vs-raw-kiro)
+- [vs open-claw puro](/docs/comparison/vs-raw-open-claw)
+- [vs opencode puro](/docs/comparison/vs-raw-opencode)
+- [vs qwen-code puro](/docs/comparison/vs-raw-qwen-code)
+- [vs trae puro](/docs/comparison/vs-raw-trae)
+- [vs windsurf puro](/docs/comparison/vs-raw-windsurf)
+- [vs zed puro](/docs/comparison/vs-raw-zed)
+
+Para o detalhe dos adaptadores por harness, consulte a seção de
+[adaptadores de harness](/docs/harnesses).

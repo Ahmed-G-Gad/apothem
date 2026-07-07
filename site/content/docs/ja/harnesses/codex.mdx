@@ -1,0 +1,89 @@
+---
+title: "Codex"
+description: "Codex（Beta）向けの Apothem ハーネスアダプター。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**ベンダー：** OpenAI
+**インストール名：** `codex`
+**ステータス：** Beta
+**ネイティブ設定：** `~/.codex/AGENTS.md`、`~/.codex/hooks.json`、
+`~/.codex/hooks/`、`~/.codex/agents/*.toml`、および `~/.agents/skills/`
+
+## インストール
+
+```bash
+apothem install --harness codex
+```
+
+アダプターは Codex ネイティブの指示とフックをインストールし、Apothem エージェントを
+Codex TOML エージェントに変換し、再利用可能なコマンドプロンプトを Codex スキルとして
+ラップします。
+
+**書き込まれるファイル：** `~/.codex/AGENTS.md`、`~/.codex/hooks.json`、
+`~/.codex/hooks/`、`~/.codex/agents/*.toml`、
+`~/.agents/skills/*/SKILL.md`、および `~/.config/apothem/{rules,templates}/`
+配下のサポートファイル。
+
+## プロファイルからネイティブ設定へのマッピング
+
+アダプターは Apothem の共有コホートを読み取り、それぞれを正しい Codex 面にインストール
+します。指示は `AGENTS.md` へ、フックは `hooks.json` と `hooks/` へ、エージェントは
+TOML へ、スキルは `~/.agents/skills/` へ、そしてネイティブでない Markdown ルール/
+テンプレートはサポート資料として `~/.config/apothem/` へインストールされます。
+
+## 互換性に関する注意
+
+Codex は `~/.codex/rules/` を `.rules` 実行ポリシー用に予約しています。Apothem はそこに
+Markdown の動作ルールを配置しません。それらを `~/.config/apothem/` に保持し、
+`AGENTS.md` とインストール済みスキルから参照します。
+
+## 検証
+
+```bash
+apothem verify --harness codex
+```
+
+verify コマンドは、次のことを確認します。
+
+1. ネイティブ設定が期待されるパスに存在すること。
+2. 共有プロファイルのすべての必須フィールドが存在すること。
+3. アダプター固有の検証ルーチンが成功を報告すること。
+
+## 更新
+
+```bash
+apothem update --harness codex
+```
+
+Codex のブートストラップ、変換済みエージェント、スキル、サポートコホートを更新します。
+
+## アンインストール
+
+```bash
+apothem uninstall --harness codex
+```
+
+アダプターによって書き込まれたネイティブ設定ファイルを削除します。
+共有プロファイルの YAML と Apothem エンジンは影響を受けません。
+
+## 適合ゲート
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## トラブルシューティング
+
+| 症状 | 対処 |
+|---------|-----|
+| 設定ファイルが見つからない | `apothem install --harness codex` を再実行する |
+| 検証に失敗した | `apothem update --harness codex` を実行してから、再度検証する |
+| 予期しない設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、`apothem update --harness codex` を再実行する |
+
+## 設定ノブ
+
+| フラグ | デフォルト | 説明 |
+|------|---------|-------------|
+| `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューする。 |

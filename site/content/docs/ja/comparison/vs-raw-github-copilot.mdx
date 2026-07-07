@@ -1,0 +1,43 @@
+---
+title: "Apothem と素の GitHub Copilot 構成の比較"
+description: "GitHub Copilot の copilot-instructions.md を手作業で保守するのと、Apothem の共有プロファイルからレンダリングするのとの比較。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+GitHub Copilot は `.github/copilot-instructions.md` から指示を読み込みます。
+Apothem の github-copilot アダプターは、そのファイルを共有プロファイルから
+レンダリングします。このページでは、その構成を手作業で保守する場合と Apothem で
+管理する場合を対比します。
+
+## 手間の比較
+
+| タスク | 素の手作業構成 | Apothem 管理 |
+| ---- | --------------- | --------------- |
+| 指示を書く | `.github/copilot-instructions.md` を手で編集 | レンダリング：共有ルールをファイルに埋め込み |
+| 他の環境と指示を揃える | 手動、ツールごと | `apothem update` で自動 |
+| 構成のインストール / 削除 | ファイルを手で書き込み・削除 | `apothem install` / `apothem uninstall` |
+| 構成が正しいか検証する | 手動の検査 | `apothem verify --harness github-copilot` |
+
+## Apothem が管理するもの
+
+github-copilot アダプターは共有ルールを `.github/copilot-instructions.md` に
+埋め込みます。Copilot は IDE 拡張として動作し、ツール呼び出しのフックを公開
+しないため、ガードレールの意図はレンダリングされた指示の中で完全に担われます。
+共有ルールへの変更はすべて、次の `apothem update` でファイルを再レンダリング
+します。
+
+## 移行パス
+
+1. 共有プロファイルをまだ作成していなければ `apothem profile init` を実行します。
+2. 既存の `.github/copilot-instructions.md` の内容を共有コーパスへ移します。
+3. `apothem install --harness github-copilot` を実行して指示ファイルを
+   レンダリングします。
+4. `apothem verify --harness github-copilot` を実行して構成が反映されたことを
+   確認します。
+5. 以降の変更にはすべて `apothem update --harness github-copilot` を使います。
+
+## 次に読む
+
+- [GitHub Copilot アダプターリファレンス](/docs/harnesses/github-copilot)
+- [比較の概要](/docs/comparison)

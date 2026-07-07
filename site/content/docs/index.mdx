@@ -1,0 +1,75 @@
+---
+title: "Apothem documentation"
+description: "One shared profile, materialized into seventeen harnesses. Start here for install, usage, harness coverage, the command pipeline, and the full reference."
+---
+
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem is a host-agnostic harness configuration manager. You author one
+shared profile at `~/.config/apothem/profile.yaml`, and Apothem materializes it
+into the native configuration surface of seventeen harnesses — Claude Code,
+Cursor, Gemini CLI, GitHub Copilot, Codex, Windsurf, Zed, and the rest of the
+registered catalog.
+
+The unit Apothem syncs is wider than rules alone: rules, slash-commands,
+skills, hooks, output-styles, settings (with MCP servers), schemas, and docs
+travel together as one governed corpus,
+materialized into each harness's native format or an Apothem-owned support
+subtree where the tool has no matching primitive.
+
+## New here? Start in two steps
+
+1. **[Install](/docs/install/quickstart)** — pick an install path (tool-native
+   plugins and extensions, `npx`, or one-shot scripts) and run the guided first
+   step. Every path needs system Python 3.10 or newer (with `click` and `rich`);
+   the `npx` and extension channels additionally need
+   [Node.js](https://nodejs.org/) 18 or newer.
+2. **[Get to your first working run](/docs/tutorials/getting-started)** — author
+   a shared profile, materialize a harness's native configuration from it, and
+   verify the result. About fifteen minutes, end to end.
+
+## How Apothem works
+
+- **One profile, many native configs.** You author intent once; Apothem
+  translates it into each tool's native configuration surface — no
+  lowest-common-denominator flattening. See
+  [Host-agnostic posture](/docs/concepts/ai-platform-agnosticism).
+- **The operating loop: plan → harden → ship.** A planning pipeline (`/plan`)
+  carries a change through spec, generation, review, and execution; a hardening
+  pipeline (`/fortress`) drives that work to a release-gated state; the release
+  gate closes the loop. See [the command pipeline](/docs/pipeline).
+- **Work that survives boundaries.** Long-running work externalizes its full
+  state to a project-local `.apothem/plans/` suite, so a fresh session on any account or
+  machine resumes it in place. See
+  [Resumable planning](/docs/concepts/resumable-planning).
+
+## Start here
+
+- **[Install](/docs/install/quickstart)** — the install paths (tool-native
+  plugins and extensions, `npx`, one-shot scripts) and a guided first run.
+- **[Usage](/docs/usage/getting-started)** — author your profile, install
+  across harnesses, verify, and update.
+- **[Harnesses](/docs/harnesses)** — the seventeen-harness catalog with each
+  tool's native surface and conversion behavior.
+- **[The command pipeline](/docs/pipeline)** — the `/plan` and `/research`
+  pipeline stages and the audit-review sequence, with the `/audit` and
+  `/fortress` orchestrators that wrap them.
+
+## Go deeper
+
+- **[Concepts](/docs/concepts/ai-platform-agnosticism)** — the shared profile,
+  harness adapters, and the materialization model.
+- **[Architecture](/docs/architecture)** — source layout, the adapter
+  abstraction, the self-contained runtime, and the CI/CD pipeline.
+- **[Reference](/docs/reference)** — the CLI, the profile schema, the rules,
+  skills, commands, hooks, and output-styles catalogs.
+- **[How Apothem compares](/docs/comparison)** — an honest, named-peer
+  differentiation matrix.
+
+## Governance and security
+
+- **[Governance](/docs/governance)** — the discipline registry, conformity
+  gate, and release facade.
+- **[Security](/docs/security)** — the supply-chain posture and the security
+  policy.
+- **[Changelog](/docs/changelog)** — release notes, current-version-first.

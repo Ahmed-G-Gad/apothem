@@ -1,0 +1,90 @@
+---
+title: "Codex"
+description: "Adaptateur d'environnement Apothem pour Codex (Bêta)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Éditeur :** OpenAI
+**Nom d'installation :** `codex`
+**Statut :** Bêta
+**Configuration native :** `~/.codex/AGENTS.md`, `~/.codex/hooks.json`,
+`~/.codex/hooks/`, `~/.codex/agents/*.toml` et `~/.agents/skills/`
+
+## Installation
+
+```bash
+apothem install --harness codex
+```
+
+L'adaptateur installe les instructions et les hooks natifs de Codex, convertit les
+agents d'Apothem en agents TOML de Codex et enveloppe les prompts de commandes
+réutilisables sous forme de skills Codex.
+
+**Fichiers écrits :** `~/.codex/AGENTS.md`, `~/.codex/hooks.json`,
+`~/.codex/hooks/`, `~/.codex/agents/*.toml`,
+`~/.agents/skills/*/SKILL.md`, et fichiers de support sous
+`~/.config/apothem/{rules,templates}/`.
+
+## Mappage du profil vers la configuration native
+
+L'adaptateur lit les cohortes partagées d'Apothem et installe chacune dans la bonne
+surface de Codex : les instructions vers `AGENTS.md`, les hooks vers `hooks.json` et
+`hooks/`, les agents en TOML, les skills vers `~/.agents/skills/`, et les
+règles/modèles Markdown non natifs vers `~/.config/apothem/` comme matériel de support.
+
+## Notes de compatibilité
+
+Codex réserve `~/.codex/rules/` aux politiques d'exécution `.rules`. Apothem n'y place
+pas de règles de comportement en Markdown ; il les conserve dans `~/.config/apothem/` et
+les référence depuis `AGENTS.md` et les skills installées.
+
+## Vérification
+
+```bash
+apothem verify --harness codex
+```
+
+La commande verify confirme que :
+
+1. La configuration native existe au chemin attendu.
+2. Tous les champs obligatoires du profil partagé sont présents.
+3. La routine de vérification spécifique à l'adaptateur signale un succès.
+
+## Mise à jour
+
+```bash
+apothem update --harness codex
+```
+
+Rafraîchit le bootstrap de Codex, les agents convertis, les skills et les cohortes de
+support.
+
+## Désinstallation
+
+```bash
+apothem uninstall --harness codex
+```
+
+Supprime les fichiers de configuration native écrits par l'adaptateur. Le YAML du profil
+partagé et le moteur d'Apothem ne sont pas affectés.
+
+## Porte de conformité
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Dépannage
+
+| Symptôme | Correctif |
+|---------|-----|
+| Fichier de configuration introuvable | Réexécutez `apothem install --harness codex` |
+| La vérification a échoué | Exécutez `apothem update --harness codex`, puis vérifiez à nouveau |
+| Contenu de configuration inattendu | Vérifiez `~/.config/apothem/profile.yaml` ou `--profile PATH`, puis réexécutez `apothem update --harness codex` |
+
+## Paramètres de configuration
+
+| Flag | Par défaut | Description |
+|------|---------|-------------|
+| `--dry-run` | `false` | Prévisualise l'installation sans écrire de fichiers. |

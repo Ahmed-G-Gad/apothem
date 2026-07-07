@@ -1,0 +1,60 @@
+---
+title: "Sequência de auditoria de revisão"
+description: "A sequência de auditoria de onze comandos que verifica o Apothem antes do lançamento."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+A sequência de auditoria de revisão é a varredura de garantia de qualidade de onze comandos
+que verifica um projeto antes do lançamento. Cada comando audita uma área de qualidade e
+emite achados que precisam ser corrigidos ou explicitamente tratados.
+
+Dois orquestradores canônicos conduzem essas onze dimensões. `/audit` as executa em
+paralelo como uma única passada somente-relatório — produz um relatório de achados
+deduplicado e triado por severidade, e nunca edita o código-fonte. `/fortress` é o
+laço fechado de remediação (detectar → verificar → remediar → reauditar → portão) que
+endurece um projeto até um estado regido pelo portão de lançamento. Cada dimensão
+também continua invocável individualmente.
+
+## As onze áreas de auditoria
+
+| Comando | Eixo | Padrão |
+|---------|------|----------|
+| /code-review | Qualidade de código | Revisão artesanal por arquivo |
+| /code-audit | Corpus de código | Forense entre arquivos |
+| /security-audit | Segurança | OWASP ASVS v4 + Top 10 |
+| /perf-audit | Desempenho | Core Web Vitals + método USE |
+| /architecture-review | Arquitetura | Conformidade com o artefato de design |
+| /ux-review | Experiência do desenvolvedor | Ergonomia da CLI + onboarding |
+| /a11y-audit | Acessibilidade | WCAG 2.2 AA |
+| /docs-review | Documentação | Qualidade em dez dimensões |
+| /dependency-audit | Dependências | Licença + CVE + atualidade |
+| /supply-chain-audit | Cadeia de suprimentos | SLSA + Sigstore + SBOM |
+| /threat-model-audit | Modelo de ameaças | STRIDE + PASTA |
+
+## Portões de prontidão para lançamento
+
+A sequência contribui para os portões de prontidão para lançamento:
+
+- **Portão local:** As verificações locais de conformidade passam.
+- **Portão do GitHub** (pré-cutover): Verificação do lado do GitHub — fluxos de trabalho de CI verdes em cada
+  commit, em cada verificação.
+- **Portão de auditoria:** Sequência completa de revisão concluída — todas as onze áreas
+  auditadas, achados tratados, itens de atenção documentados.
+
+## Ciclo de remediação
+
+Os comandos de auditoria são somente-relatório: apresentam achados, nunca aplicam
+correções. A remediação corre através de `/fortress`, o laço fechado que segue o padrão
+de iterar-até-ficar-verde: os achados são triados e verificados, as correções são
+aplicadas na superfície proprietária de cada achado, a auditoria é reexecutada, e o
+ciclo continua até que os achados se resolvam e o portão de lançamento passe. A
+elevação de todo o repositório à melhor prática atual corre através de `/elevate`.
+
+## Por que a sequência existe
+
+A qualidade do software degrada em várias dimensões ao mesmo tempo. Uma única revisão
+pode deixar passar defeitos que ficam entre qualidade de código, segurança, desempenho,
+arquitetura, acessibilidade, documentação, postura de dependências e postura da cadeia de
+suprimentos. A sequência de auditoria aplica essas lentes separadamente para que o
+portão de lançamento veja o perfil de risco completo.

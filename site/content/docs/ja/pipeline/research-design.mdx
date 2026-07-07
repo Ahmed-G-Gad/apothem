@@ -1,0 +1,70 @@
+---
+title: "/research-design"
+description: "/research-design —— 仮説を検証可能な予測へと操作化し、研究を設計（変数、対照、サンプル、検出力）したうえで、分析計画を事前登録として凍結する。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**役割：** 主任研究者（研究設計）
+**パイプライン上の位置：** 中段
+
+仮説を検証可能な予測へと操作化し、研究または実験を設計します——変数、対照、サンプル、計測器具、検出力分析、妥当性への脅威——そのうえで、データ収集の前に分析計画を凍結する事前登録を生成します。
+
+## 標準的な呼び出し
+
+```bash
+/research-design
+```
+
+引数付き：
+
+```bash
+/research-design [path/to/research-suite/]
+```
+
+## 入力
+
+`_inputs/proposal.md`（前段階である `/research-proposal` からの記録計画）、`_inputs/synthesis.md`（SOTA マップ + ギャップ記述）、および `_spec/research-spec.md`（仮説）。
+
+## 出力
+
+`_inputs/study-design.md`（操作化された予測、変数の仕様、対照、サンプル、計測器具、検出力分析、妥当性への脅威）+ `_inputs/preregistration.md`（凍結された分析計画）。
+
+## 下流
+
+/research-experiment（下流の消費者）
+
+## ワークフローの各段階
+
+このコマンドは標準的な `/research` パイプラインのワークフローに従います。
+
+1. **コンテキストの読み込み** —— 統合結果と仕様の仮説を読み取る。
+2. **シーケンスゲートの検証** —— `_inputs/proposal.md`（および上流の `_inputs/synthesis.md` と `_spec/research-spec.md`）が存在することを確認する。さもなくば `Blocked: run /research-proposal first` で停止する。
+3. **研究の設計** —— 予測を操作化する。変数、対照、サンプル、計測器具、検出力を規定する。妥当性への脅威を列挙する。
+4. **事前登録** —— いかなるデータ収集の前にも分析計画を凍結する。
+5. **引き継ぎマニフェストの更新** —— 研究設計と事前登録のパスを記録する。
+6. **設計の発出** —— `_inputs/study-design.md` + `_inputs/preregistration.md`。
+
+## 厳密性の下限
+
+比較を伴う研究では、設計は経験的下限を固定し、事前登録します。すなわち、比較されるすべての手法にわたる単一の統一予算（同等のウォールクロック時間、および意味がある場合は同等の評価回数）、確率的手法についてはインスタンスあたり少なくとも 30 回の反復、一度に 1 つのコンポーネントを無効化するアブレーション因子、各パラメータにわたる感度スイープ、そして訓練用分割での自動構成を互いに素なテスト用分割で評価すること。下限の深さは、対象とする発表先の野心に応じてスケールします。
+
+## 失敗モード
+
+| 症状 | 原因 | 回復 |
+|---------|-------|----------|
+| Blocked: run /research-proposal first | 記録計画がない | `/research-proposal` を実行して `_inputs/proposal.md` を生成する |
+| 検出力不足の設計 | 効果に対してサンプルが小さすぎる | 検出力分析を再実行する。サンプルサイズを調整する |
+| 分析計画が凍結されていない | 事前登録がスキップされた | データ収集の前に `_inputs/preregistration.md` を作成する |
+
+## 例
+
+```bash
+# 研究を設計し、分析計画を事前登録する
+/research-design path/to/research-suite/
+```
+
+## 相互参照
+
+- [パイプライン概要](/docs/pipeline)
+- [コマンドリファレンス](/docs/reference/commands)

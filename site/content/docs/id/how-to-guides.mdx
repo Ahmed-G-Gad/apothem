@@ -1,0 +1,117 @@
+---
+title: "Cara-pakai penulisan & pipeline"
+description: "Panduan berorientasi-tugas untuk memperhalus konten menjadi spec, membangkitkan plan suite, meninjau rencana, mengeksekusi fase, menambah artefak, dan menjalankan gerbang mutu."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Panduan berorientasi-tugas untuk **menulis artefak Apothem dan menjalankan
+pipeline rencana**. Setiap panduan menjawab satu pertanyaan konkret.
+
+Untuk resep pengaturan jalankan-pertama — menambah perkakas, menyunting profil, menjalankan
+pemasang — lihat bagian [Resep cara-pakai](/docs/how-to) sebagai gantinya.
+
+## Pipeline plan-suite
+
+### Bagaimana saya memperhalus konten mentah menjadi spec?
+
+Panggil `/plan-spec` dengan konten mentah sebagai masukan. Peran Forge
+menjalankan enam fase transformasi (Discovery, Meticulous
+Consideration, Potency Mapping, Preservation Verification,
+Expertise Application, Question-Resolution Sweep) dan memancarkan
+spec terkonsolidasi di `.apothem/plans/{suite}/_spec/spec.md`. Lihat
+`src/apothem/commands/plan-spec.md` untuk protokol lengkap.
+
+### Bagaimana saya membangkitkan plan suite dari spec?
+
+Panggil `/plan-generate <suite-name>` setelah spec berada di
+`.apothem/plans/{suite}/_spec/spec.md`. Pembangkit memancarkan berkas
+infrastruktur kanonik plus berkas per-fase
+`phases/NN-kebab-topic/PHASE.md`. Lihat
+`src/apothem/commands/plan-generate.md`.
+
+### Bagaimana saya meninjau rencana yang dibangkitkan?
+
+Panggil `/plan-review path/to/plan-suite/`. Peninjau menerapkan
+delapan teknik perencanaan dan memancarkan kartu-skor. Kartu-skor
+yang gagal memblokir eksekusi pada SHARED+ sampai diselesaikan. Lihat
+`src/apothem/commands/plan-review.md`.
+
+### Bagaimana saya mengeksekusi rencana?
+
+Panggil `/plan-execute path/to/plan-suite/ [phase-id]`. Tanpa
+`phase-id`, fase tertunda berikutnya berjalan. Dengan id spesifik,
+hanya fase itu yang berjalan. Lihat `src/apothem/commands/plan-execute.md`.
+
+### Bagaimana saya memeriksa status rencana?
+
+Panggil `/plan-status path/to/plan-suite/ [--verbose]`. Laporan
+hanya-baca. Lihat `src/apothem/commands/plan-status.md`.
+
+## Menulis artefak
+
+### Bagaimana saya menambah aturan baru?
+
+1. Pilih nama berkas kebab-case di bawah `src/apothem/rules/`, mis.
+   `src/apothem/rules/my-new-rule.md`.
+2. Tulis frontmatter (`name`, `description`, `type:
+   instruction`, opsional `pathFilter`).
+3. Tulis badan dengan bagian kanonik: Purpose,
+   Obligations, Seriousness Scaling, Anti-Patterns, Enforcement,
+   Bindings.
+4. Tambahkan baris ke kohort rules (`src/apothem/rules/`).
+5. Jalankan `python scripts/dev/validate_ecosystem.py --check
+   frontmatter-cohort` untuk memverifikasi.
+
+### Bagaimana saya menambah pekerja-terdelegasi baru?
+
+Pilih nama berkas kebab-case di bawah direktori yang ditunjukkan di bawah, menggunakan
+bentuk `my-worker.md`:
+
+```text
+src/apothem/agents/
+src/apothem/agents/my-worker.md
+```
+
+Lalu:
+
+1. Tulis frontmatter — termasuk `name`, `description`,
+   `allowedTools`, `maxTurns`, `version`, dan penanda type yang ditunjukkan
+   di bawah:
+
+```text
+type: agent
+```
+
+1. Tulis system prompt sebagai badan.
+1. Tambahkan baris ke registri pembantu di kohort pekerja-terdelegasi (`src/apothem/agents/`).
+
+### Bagaimana saya menambah hook baru?
+
+1. Tulis pesan konteks di bawah
+   `src/apothem/hooks/messages/<event>-<scope>.md`.
+2. Hubungkan hook di `settings.json`.
+3. Perbarui hooks pipeline.
+4. Jalankan `python scripts/dev/validate_ecosystem.py --check
+   hook-validator`.
+
+## Gerbang mutu
+
+### Bagaimana saya menjalankan gerbang mutu lokal?
+
+```bash
+python -m ruff check .
+python -m ruff format --check .
+python -m mypy
+python -m pytest -q
+python scripts/dev/validate_ecosystem.py
+python scripts/dev/chaos_pass.py
+```
+
+Pipeline CI menjalankan himpunan yang sama secara paralel.
+
+### Bagaimana saya memeriksa frontmatter satu kelas-artefak?
+
+```bash
+python scripts/dev/validate_ecosystem.py --check frontmatter-cohort
+```

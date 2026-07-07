@@ -1,0 +1,52 @@
+---
+title: "हार्नेस सेटअप"
+description: "प्लेटफ़ॉर्म के लिए हार्नेस एडॉप्टर जोड़ें और कॉन्फ़िगर करें।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## हार्नेस एडॉप्टर इंस्टॉल करें
+
+```bash
+apothem install --harness <name>
+```
+
+उपलब्ध नामों के लिए [समर्थित हार्नेस सूची](/docs/harnesses) देखें।
+प्रोजेक्ट-स्कोप एडॉप्टर के लिए प्रोजेक्ट पथ आवश्यक है:
+
+```bash
+apothem install --harness cursor --project /path/to/project
+apothem install --harness gemini-cli --project /path/to/project
+apothem install --harness github-copilot --project /path/to/project
+apothem install --harness windsurf --project /path/to/project
+```
+
+## एकाधिक हार्नेस इंस्टॉल करें
+
+जब आप हर समर्थित एडॉप्टर चाहते हों तो रजिस्ट्री-व्यापी सेलेक्टर का उपयोग करें। चूँकि
+पंजीकृत समुच्चय में प्रोजेक्ट-स्कोप एडॉप्टर शामिल होते हैं, प्रोजेक्ट रूट पास करें।
+
+```bash
+apothem install --harness claude-code
+apothem install --harness cursor --project /path/to/project
+apothem install --harness all --project /path/to/project
+```
+
+## हार्नेस सेटअप सत्यापित करें
+
+```bash
+apothem verify --harness <name>
+apothem verify --harness all --project /path/to/project
+```
+
+हर पंजीकृत एडॉप्टर को एक ही बार में जाँचने के लिए, `apothem doctor` चलाएँ। यह
+प्रति-हार्नेस इंस्टॉल-स्थिति तालिका प्रिंट करता है और यदि कोई एडॉप्टर
+इंस्टॉल-नहीं की रिपोर्ट करता है तो शून्य-इतर के साथ बाहर निकलता है।
+
+## इंस्टॉल किए गए हार्नेस देखें
+
+```bash
+apothem harnesses list
+```
+
+प्रति-एडॉप्टर विवरण (नाम, इंस्टॉल अवस्था और आउटपुट पथ) के लिए `apothem harnesses show <name>` पास करें।

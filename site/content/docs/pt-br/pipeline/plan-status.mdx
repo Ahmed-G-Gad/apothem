@@ -1,0 +1,67 @@
+---
+title: "/plan-status"
+description: "/plan-status — Reportador de progresso de suite de plano somente leitura — emite o status sem modificar nenhum arquivo."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Papel:** Reportador
+**Posição no pipeline:** somente leitura
+
+Reportador de progresso de suite de plano somente leitura — emite o status sem modificar nenhum arquivo.
+
+## Invocação canônica
+
+```bash
+/plan-status
+```
+
+Com argumentos:
+
+```bash
+/plan-status [path/to/plan-suite/] [--verbose]
+```
+
+## Entradas
+
+Qualquer suite de plano em qualquer estado do ciclo de vida — lê `PROGRESS.md`, `PLAN-NOTES.md`, `MASTER-PLAN.md` e os relatórios de `phases/`.
+
+## Saídas
+
+Um relatório estratégico de status escrito no fluxo de saída do operador. Este comando é somente leitura — não cria nem modifica nenhum arquivo.
+
+## Downstream
+
+Usado de forma autônoma para inspeção do progresso — ortogonal à sequência canônica, invocável em modo somente leitura a qualquer momento.
+
+## Fases do fluxo de trabalho
+
+O comando é somente leitura — lê os arquivos de rastreamento da suite e reporta; não escreve nada:
+
+1. **Carregar contexto** — Lê `PROGRESS.md`, `PLAN-NOTES.md`, `MASTER-PLAN.md` e varre `phases/` em busca de relatórios existentes.
+2. **Avaliar o status** — Examina as dimensões de tarefa / fase / artefato e lê o Contrato de Retomada.
+3. **Emitir o relatório de status** — Apresenta o status de conclusão, o rastreador de fases e a análise estratégica diretamente ao operador.
+4. **Verificação por amostragem** — Com `--verbose`, atribui uma nota à saúde da suite e cita evidências de verificação por amostragem (links markdown, intervalos de linhas, SHAs de commit) contra os arquivos existentes sem modificar nenhum.
+
+## Modos de falha
+
+| Sintoma | Causa | Recuperação |
+|---------|-------|----------|
+| Arquivo de rastreamento obrigatório ausente | Suite de plano incompleta | Trazer a lacuna à tona como um achado; execute `/plan-generate` para criar a suite |
+| Arquivo de rastreamento malformado | Seção truncada ou não analisável | Nomeie a ausência / contradição no relatório; o reparo é encaminhado aos comandos com gravação |
+| Campo ausente ou contraditório entre arquivos | Deriva de rastreamento | Reporte a contradição explicitamente; não sintetize o valor ausente |
+
+## Exemplos
+
+```bash
+# Reportar sobre a suite de plano mais recente
+/plan-status
+
+# Nota de saúde detalhada contra uma suite de plano nomeada
+/plan-status path/to/plan-suite/ --verbose
+```
+
+## Referências cruzadas
+
+- [Visão geral do pipeline](/docs/pipeline)
+- [Referência de comandos](/docs/reference/commands)

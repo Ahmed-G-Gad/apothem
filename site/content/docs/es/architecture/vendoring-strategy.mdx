@@ -1,0 +1,105 @@
+---
+title: "Estrategia de internalización de dependencias"
+description: "Qué paquetes de terceros internaliza Apothem bajo src/apothem/_vendor/, cuáles quedan como prerrequisitos del sistema y cómo se refrescan las copias internalizadas."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+# Estrategia de internalización de dependencias
+
+## Política
+
+El [runtime autocontenido](/docs/architecture/self-contained-runtime) de
+Apothem requiere que las dependencias de terceros del motor sean importables
+desde el propio árbol de código. Por eso, cada dependencia de runtime se maneja
+de una de tres maneras:
+
+- **Internalizada como código Python puro** bajo `src/apothem/_vendor/`. El
+  bootstrap antepone ese directorio a `sys.path`, por delante de site-packages,
+  de modo que la copia internalizada gana la carrera de resolución de imports
+  frente a cualquier versión instalada en el sistema.
+- **Reemplazada por un shim en Python puro** cuando la distribución original
+  incluye una extensión compilada que no puede viajar como código portable.
+- **Mantenida como un prerrequisito del sistema documentado** cuando
+  internalizar implicaría más superficie de la que ahorra.
+
+La regla de ubicación es estricta: solo las distribuciones en Python puro viven
+en `_vendor/`. Una extensión compilada (C, Rust/PyO3, Cython) es específica de
+la plataforma y la ABI, y nunca pertenece allí. Cada paquete internalizado lleva
+su archivo de licencia original junto al código fuente.
+
+## Qué se internaliza
+
+| Paquete | Notas |
+|---|---|
+| `yaml` | El parser/emisor en Python puro. La extensión C opcional libyaml es una aceleración, nunca un requisito, y no se incluye; los imports siguen siendo `import yaml`. |
+| `jsonschema` | El validador de esquemas usado para la validación del profile, la configuración y las golden fixtures. |
+| `attrs` (y su alias `attr`) | Requerido por `jsonschema`. |
+| `referencing` | Requerido por `jsonschema`. |
+| `jsonschema_specifications` | Requerido por `jsonschema`. |
+| `rpds` | Un shim en Python puro, no la distribución original — ver más abajo. |
+| `typing_extensions` | Requerido por la cadena de validación internalizada. |
+
+## El shim `rpds`
+
+El `jsonschema` original depende de `rpds-py`, una biblioteca de estructuras de
+datos persistentes implementada en Rust (PyO3) que incluye un `.pyd`/`.so`
+compilado con solo un fino envoltorio `.py`. No hay código fuente portable en
+Python puro para copiar, así que no puede internalizarse.
+
+En su lugar, `src/apothem/_vendor/rpds/` es un shim en Python puro que
+reimplementa exactamente el subconjunto de la API que `jsonschema` y
+`referencing` ejercitan — `HashTrieMap`, `HashTrieSet` y `List` — respaldado por
+los tipos integrados `dict` / `frozenset` / `tuple`. El shim honra el contrato de
+persistencia original: los métodos mutadores devuelven una nueva instancia y
+dejan el receptor sin cambios, algo de lo que dependen los consumidores cuando
+almacenan estas estructuras como valores por defecto de campos de clases
+congeladas. Los esquemas de Apothem son pequeños, por lo que la diferencia de
+rendimiento frente a la implementación en Rust es irrelevante.
+
+## Qué no se internaliza
+
+- **`click`** — el framework de la CLI. Es grande, está orientado al terminal y
+  es ampliamente disponible, así que sigue siendo un prerrequisito del sistema
+  que los instaladores comprueban.
+- **`rich`** — la biblioteca de renderizado de terminal, mantenida como
+  prerrequisito del sistema por las mismas razones.
+- **`rpds-py`** — compilado; reemplazado por el shim de arriba.
+- **La extensión C libyaml** — opcional; el paquete `yaml` en Python puro
+  internalizado nunca la requiere.
+
+Los instaladores verifican que `click` y `rich` sean importables bajo el
+intérprete seleccionado antes de hacer cualquier cosa; si falta alguno, lo
+nombran y ofrecen instalártelo — con tu confirmación, o automáticamente con
+`--yes` / `APOTHEM_AUTO_INSTALL_DEPS=1`.
+
+## Refrescar un paquete internalizado
+
+Para actualizar un paquete internalizado a una versión original más reciente:
+
+1. Obtén la distribución de código fuente original en la versión objetivo.
+2. Copia el directorio del paquete en Python puro dentro de
+   `src/apothem/_vendor/`, reemplazando la copia anterior, y refresca el archivo
+   de licencia adyacente.
+3. Actualiza `src/apothem/_vendor/vendor.txt` — el cierre fijado — para que su
+   línea `name==version` del paquete coincida con la nueva versión original, y
+   actualiza el bloque `[[annotations]]` del paquete en el `REUSE.toml` raíz si
+   su licencia o copyright originales cambiaron. Ambos son obligatorios en el
+   **mismo conjunto de cambios** que la copia (el mandato de dependencias vivas);
+   los auditores de la cadena de suministro y el gate de `reuse lint` los leen.
+4. Deja intactas las rutas de import — los consumidores importan los nombres
+   canónicos y la precedencia de `sys.path` del bootstrap hace el resto.
+5. Ejecuta la suite de pruebas y el gate de conformidad; el comportamiento de la
+   pila de validación está cubierto por las pruebas de validación del profile y
+   del esquema.
+
+El shim `rpds` se refresca de otra forma: sigue el subconjunto de la API que
+usan sus consumidores, así que una actualización de `jsonschema`/`referencing`
+se comprueba contra la superficie implementada del shim, y el shim solo crece
+cuando aparece un nuevo punto de llamada.
+
+## Próximo paso recomendado
+
+**Lee la página del [runtime autocontenido](/docs/architecture/self-contained-runtime)**
+para ver cómo el árbol internalizado, el modelo de invocación `PYTHONPATH=src` y
+el bootstrap del árbol del plugin encajan en tiempo de ejecución.

@@ -1,0 +1,67 @@
+---
+title: "एसेट पुनर्निर्माण रेसिपी"
+description: "resvg और Pillow के साथ मास्टर SVG स्रोतों से सभी रास्टर ब्रांड एसेट को पुनर्जनित करें।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+एसेट पुनर्निर्माण रेसिपी मास्टर SVG से प्रत्येक रास्टर एसेट को पुनर्जनित करती है।
+यह ब्रांड पुनरावृत्तियों के लिए आधिकारिक अपडेट पथ है।
+
+## कब चलाएँ
+
+पुनर्निर्माण रेसिपी तब चलाएँ जब:
+
+- मास्टर SVG (`assets/src/logo.svg` या `assets/src/logo-dark.svg`) बदल जाए।
+- कॉम्पैक्ट favicon मास्टर (`assets/favicon.svg`) बदल जाए।
+- कोई सोशल-कार्ड मास्टर (`assets/src/og-banner.svg` या `assets/src/twitter-card.svg`) बदल जाए।
+- किसी नए रास्टर आकार की आवश्यकता हो।
+- आप यह सत्यापित करना चाहें कि कमिट किए गए एसेट अभी भी SVG स्रोत से मेल खाते हैं।
+
+## स्क्रिप्ट
+
+| स्क्रिप्ट | प्लेटफ़ॉर्म | पथ |
+| --- | --- | --- |
+| `rebuild-assets-resvg.py` | Python + resvg वाला कोई भी होस्ट | `scripts/dev/rebuild-assets-resvg.py` |
+
+## आवश्यकताएँ
+
+जनरेटर प्रत्येक SVG को [resvg](https://github.com/linebender/resvg) के साथ
+रास्टराइज़ करता है और रास्टर सेट को [Pillow](https://python-pillow.org/) के साथ
+संयोजित करता है:
+
+- **Pillow:** `pip install pillow`।
+- **resvg:** अपने प्लेटफ़ॉर्म के लिए रिलीज़ बाइनरी को
+  [resvg रिलीज़](https://github.com/linebender/resvg/releases) से डाउनलोड करें —
+  Windows पर `resvg-win64.zip`, Linux पर `resvg-linux-x86_64.tar.gz`, या macOS पर
+  `resvg-macos.zip` — इसे अपने `PATH` पर एक्सट्रैक्ट करें, या `--resvg <path>` के
+  साथ स्क्रिप्ट को उस पर इंगित करें।
+
+## उपयोग
+
+प्रत्येक रास्टर एसेट को पुनर्जनित करें:
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py
+```
+
+किसी भी एसेट को पुनर्जनित किए बिना यह सत्यापित करने के लिए कि टूलचेन उपलब्ध है,
+`--check-only` पास करें:
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py --check-only
+```
+
+यदि resvg आपके `PATH` पर नहीं है, तो स्क्रिप्ट को बाइनरी पर इंगित करें:
+
+```bash
+python scripts/dev/rebuild-assets-resvg.py --resvg /path/to/resvg
+```
+
+## सत्यापन
+
+एक सफल रन लाइट और डार्क मार्क रास्टर, favicon PNG/ICO सेट, Apple touch आइकन,
+OG/Twitter छवियाँ पुनर्जनित करता है, और वेब-सर्व्ड सबसेट को — जिसमें वे हीरो लोगो
+स्रोत भी शामिल हैं जिन्हें साइट संदर्भित करती है — `site/public/` में मिरर करता है।
+जनरेशन के बाद, साइट बिल्ड चलाएँ और प्रकाशित करने से पहले होम पेज, ब्राउज़र टैब
+favicon, और सोशल-कार्ड PNG का निरीक्षण करें।

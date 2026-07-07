@@ -1,0 +1,133 @@
+---
+title: "Esquema del perfil compartido"
+description: "Esquema del YAML del perfil compartido de Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+El perfil compartido de Apothem es un archivo YAML en
+`~/.config/apothem/profile.yaml`, o en la ruta proporcionada con
+`--profile PATH`. Es la fuente semántica de verdad para la identidad, las
+preferencias, las reglas compartidas, las anulaciones por entorno y las
+exclusiones de entornos. Los adaptadores derivan los archivos nativos de cada
+entorno a partir de este perfil y de los cohorts de carga útil empaquetados de
+Apothem.
+
+El modelo en tiempo de ejecución es `src/apothem/lib/profile.py`; el JSON
+Schema es `src/apothem/schemas/profile.schema.json`.
+
+## Perfil válido mínimo
+
+El único campo obligatorio es `identity.name`:
+
+```yaml
+identity:
+  name: "Example User"
+```
+
+## Andamiaje escrito por `profile init`
+
+`apothem profile init` escribe un andamiaje algo más completo — campos de
+identidad de marcador de posición que se espera que el operador personalice — y
+lo valida antes de informar que tuvo éxito:
+
+```yaml
+identity:
+  name: "Example User"
+  email: "dev@example.invalid"
+  github: "example-user"
+```
+
+El comando imprime un aviso de personalización que nombra estos campos. Si una
+identidad que sigue siendo un marcador de posición llega más tarde a `install`
+o `update`, esos comandos imprimen una nota informativa y continúan — Apothem
+nunca fabrica ni se bloquea ante una identidad de marcador de posición.
+
+## Campos canónicos
+
+| Campo | Obligatorio | Predeterminado | Notas |
+| --- | --- | --- | --- |
+| `identity.name` | Sí | ninguno | Nombre de visualización del operador no vacío. |
+| `identity.role` | No | `senior software engineer` | Texto de rol compartido. |
+| `identity.email` | No | omitido | Debe tener formato de correo electrónico cuando esté presente. |
+| `identity.website` | No | omitido | Debe tener formato de URI cuando esté presente. |
+| `identity.github` | No | omitido | Nombre de usuario de GitHub sin `@`. |
+| `preferences.language` | No | `python` | Normalizado a minúsculas. |
+| `preferences.style` | No | `concise` | Uno de `concise`, `verbose`, `balanced`. |
+| `preferences.formatter` | No | omitido | Cadena no vacía cuando esté presente. |
+| `preferences.test_framework` | No | omitido | Cadena no vacía cuando esté presente. |
+| `rules` | No | `[]` | Cadenas no vacías únicas; los saltos de línea se normalizan a LF. |
+| `seriousness` | No | `PERSONAL_USE` | Uno de `EXPLORING`, `PERSONAL_USE`, `SHARED`, `PUBLIC_LAUNCH`. |
+| `harnesses` | No | `{}` | Anulaciones por entorno indexadas por el ID de entorno compatible. |
+| `exclude_harnesses` | No | `[]` | IDs de entorno compatibles excluidos de `--harness all`. |
+
+## Claves de entorno
+
+El esquema acepta exactamente estos diecisiete IDs de entorno:
+
+```text
+antigravity
+claude-code
+codebuddy
+codex
+cursor
+gemini-cli
+github-copilot
+glm
+hermes
+kimi-code
+kiro
+open-claw
+opencode
+qwen-code
+trae
+windsurf
+zed
+```
+
+Los campos de nivel superior desconocidos, las claves de entorno desconocidas,
+los tipos de valor incorrectos, las exclusiones duplicadas y los campos de
+identidad malformados fallan antes de que install o update escriban. Los errores
+esperados incluyen un campo, una razón, una corrección, un valor seguro
+redactado cuando resulta útil y `files_written: []` para los fallos de
+validación.
+
+## Del campo del perfil al archivo nativo
+
+El perfil es el *qué*; los adaptadores son el *cómo*. Entender el flujo de
+extremo a extremo explica por qué una sola edición de un único archivo YAML
+puede remodelar cada entorno instalado.
+
+Un campo del perfil porta una intención semántica, no un fragmento de
+configuración literal. `identity.name` es «quién es el operador», no una línea
+de JSON. Los cohorts de carga útil empaquetados (`commands`, `rules`, `skills`,
+`hooks`, `templates`, `statuslines`, `output-styles`, `agents`) portan
+contenido de comportamiento en el formato neutral propio de Apothem. Ni el campo
+ni el cohort saben cómo es la configuración de ningún entorno — ese conocimiento
+pertenece solo a los adaptadores.
+
+Cuando ejecutas `apothem update`, el flujo es:
+
+1. **Cargar y validar** el perfil contra el JSON Schema. No se escribe nada
+   hasta que todo el perfil sea válido, de modo que un error de tipeo nunca
+   instala a medias.
+2. **Resolver los adaptadores** para el entorno seleccionado (o `all`, menos
+   cualquier `exclude_harnesses`) a través del registro central.
+3. **Materializar** — cada adaptador lee el mismo perfil y los mismos cohorts,
+   y luego los traduce al dialecto de su entorno. Un campo como
+   `preferences.style` se convierte en un valor de configuración nativo en un
+   entorno y en contexto de instrucción renderizado en otro; una regla en
+   `rules[]` se convierte en un archivo `.mdc` para Cursor, en una sección de
+   instrucciones de todo el repositorio para Copilot, o en una entrada de árbol
+   de soporte donde el entorno no tiene una superficie de reglas nativa.
+4. **Escribir** los archivos nativos — una sola configuración renderizada, un
+   cohort convertido o un subárbol de soporte referenciado desde el ancla nativa
+   del entorno.
+
+El mismo perfil impulsa cada entorno, de modo que las materializaciones no
+pueden discrepar sobre la intención. Las celdas de capacidad que el entorno no
+admite (o que aún están pendientes de descubrimiento) emergen como advertencias
+estructuradas antes de cualquier escritura, en lugar de ser inventadas en una
+superficie de proveedor que no existe. Esto es lo que hace real la garantía de
+una-edición-muchos-entornos: el perfil se edita una vez, y cada adaptador
+re-deriva sus archivos nativos a partir de esa única fuente.

@@ -1,0 +1,183 @@
+# SPDX-License-Identifier: MIT
+
+# Reusable Python setup + run workflow.
+#
+# DRY-out for the canonical Python-setup + dependency-install block that
+# every quality / coverage / docs / publish workflow in this repository
+# would otherwise duplicate. Callers invoke this workflow at the job
+# level via `uses: ./.github/workflows/reusable-python-setup.yml` and
+# supply the setup dimensions plus the post-setup command to execute.
+#
+# Inputs
+# ------
+#   python-version       Python interpreter version to set up (e.g. "3.12").
+#                        Required. Forwarded to actions/setup-python.
+#   cache-key-suffix     Optional discriminator appended to the pip cache key
+#                        so callers with divergent dependency sets do not
+#                        collide on a shared cache entry. Defaults to "default".
+#   install-extras       Optional extras spec for the editable install
+#                        (e.g. "dev", "dev,docs"). Defaults to "dev". An
+#                        empty string installs without extras.
+#   runs-on              Optional runner label override (e.g. "macos-latest").
+#                        Defaults to "ubuntu-latest".
+#   run-command          Optional shell command executed after dependency
+#                        install. Defaults to no-op so the workflow can be
+#                        used as a pure setup probe.
+#   egress-policy        Optional harden-runner egress policy. Defaults to
+#                        "audit"; callers in publish workflows may escalate
+#                        to "block" once the audit window closes.
+#
+# Outputs
+# -------
+#   python-path          Absolute path to the resolved interpreter, surfaced
+#                        from actions/setup-python so callers chaining
+#                        downstream jobs can reuse the same toolchain.
+#   cache-hit            Whether the pip cache hit (`true`/`false`), forwarded
+#                        from actions/setup-python's `cache-hit` output.
+#
+# SHA-pinning policy: every `uses:` reference is pinned by 40-character
+# commit SHA followed by a `# vMAJOR.MINOR.PATCH` comment, identical to
+# the canonical policy documented in ci.yml.
+
+name: Reusable Python Setup
+
+on:
+  workflow_dispatch:
+    inputs:
+      python-version:
+        description: Python interpreter version to set up.
+        required: false
+        type: string
+        default: "3.12"
+      cache-key-suffix:
+        description: Discriminator appended to the pip cache key.
+        required: false
+        type: string
+        default: default
+      install-extras:
+        description: Extras spec for the editable install (e.g. "dev,docs").
+        required: false
+        type: string
+        default: dev
+      runs-on:
+        description: Runner label.
+        required: false
+        type: string
+        default: ubuntu-latest
+      run-command:
+        description: Optional shell command executed after dependency install.
+        required: false
+        type: string
+        default: ""
+      egress-policy:
+        description: harden-runner egress policy ("audit" or "block").
+        required: false
+        type: string
+        default: audit
+  workflow_call:
+    inputs:
+      python-version:
+        description: Python interpreter version to set up.
+        required: true
+        type: string
+      cache-key-suffix:
+        description: Discriminator appended to the pip cache key.
+        required: false
+        type: string
+        default: default
+      install-extras:
+        description: Extras spec for the editable install (e.g. "dev,docs").
+        required: false
+        type: string
+        default: dev
+      runs-on:
+        description: Runner label.
+        required: false
+        type: string
+        default: ubuntu-latest
+      run-command:
+        description: Optional shell command executed after dependency install.
+        required: false
+        type: string
+        default: ""
+      egress-policy:
+        description: harden-runner egress policy ("audit" or "block").
+        required: false
+        type: string
+        default: audit
+      timeout-minutes:
+        description: Per-job timeout ceiling (minutes).
+        required: false
+        type: number
+        default: 30
+    outputs:
+      python-path:
+        description: Absolute path to the resolved Python interpreter.
+        value: ${{ jobs.setup-and-run.outputs.python-path }}
+      cache-hit:
+        description: Whether the pip cache hit on this invocation.
+        value: ${{ jobs.setup-and-run.outputs.cache-hit }}
+
+permissions:
+  contents: read
+
+# Single-sourced pip pin (CVE-2026-6357 closes on pip >=26.1). One value per
+# workflow file; scripts/dev/check_pip_pin_drift.py fails the build if any
+# workflow's PIP_PIN_VERSION diverges from the canonical pin.
+env:
+  PIP_PIN_VERSION: "26.1.2"
+
+jobs:
+  setup-and-run:
+    name: setup-and-run / ${{ inputs.runs-on }} / py${{ inputs.python-version }}
+    runs-on: ${{ inputs.runs-on }}
+    timeout-minutes: ${{ inputs.timeout-minutes || 30 }}
+    outputs:
+      python-path: ${{ steps.setup-python.outputs.python-path }}
+      cache-hit: ${{ steps.setup-python.outputs.cache-hit }}
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: ${{ inputs.egress-policy }}
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        id: setup-python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: ${{ inputs.python-version }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install dependencies
+        shell: bash
+        env:
+          INSTALL_EXTRAS: ${{ inputs.install-extras }}
+          CACHE_KEY_SUFFIX: ${{ inputs.cache-key-suffix }}
+        run: |
+          set -euo pipefail
+          echo "::group::pip pin"
+          python -m pip install "pip==${PIP_PIN_VERSION}"
+          echo "::endgroup::"
+          echo "::group::editable install (extras='${INSTALL_EXTRAS}', suffix='${CACHE_KEY_SUFFIX}')"
+          if [ -z "${INSTALL_EXTRAS}" ]; then
+            python -m pip install -e "."
+          else
+            python -m pip install -e ".[${INSTALL_EXTRAS}]"
+          fi
+          echo "::endgroup::"
+      - name: Run caller command
+        if: ${{ inputs.run-command != '' }}
+        shell: bash
+        env:
+          # The caller-supplied command is passed through an env var, never
+          # interpolated directly into the run body (script-injection
+          # hardening per GitHub's security-hardening guidance and the repo's
+          # own env-indirection convention at dco.yml). `bash -c` runs the
+          # value with the workflow's shell settings preserved.
+          RUN_COMMAND: ${{ inputs.run-command }}
+        run: |
+          set -euo pipefail
+          bash -c "$RUN_COMMAND"

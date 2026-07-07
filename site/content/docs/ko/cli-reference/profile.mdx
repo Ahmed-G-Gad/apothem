@@ -1,0 +1,101 @@
+---
+title: "profile"
+description: "apothem profile 명령 그룹에 대한 CLI 참조."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+공유 Apothem 프로필을 관리합니다.
+
+`profile`은 네 개의 하위 명령을 가진 명령 그룹입니다: `init`, `show`, `set`, `edit`.
+공유 프로필은 단일 진실 공급원이며, 각 하니스 어댑터가
+이를 자신의 네이티브 구성으로 구체화합니다.
+
+## 개요
+
+```
+apothem profile init [--profile PATH] [--force]
+                     [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+apothem profile show [--profile PATH] [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+apothem profile set KEY VALUE
+                     [--profile PATH] [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+apothem profile edit [--profile PATH] [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+```
+
+## 공통 옵션
+
+각 하위 명령은 아래의 공유 옵션을 받습니다.
+
+| 옵션 | 설명 |
+|---|---|
+| `--profile PATH` | 공유 프로필 YAML 경로(기본값은 표준 프로필 위치). |
+| `--quiet`, `-q` | 정보성 출력을 억제하고 오류만 발행합니다. |
+| `--verbose`, `-v` | 추가 진단 출력을 발행합니다. |
+| `--format plain\|json` | 출력 형식(기본값: `plain`). |
+| `--json` | `--format json`의 단축형. |
+| `--no-color` | 출력에서 ANSI 색상 코드를 비활성화합니다. |
+| `-h`, `--help` | 도움말을 표시하고 종료합니다. |
+
+## 하위 명령
+
+### `profile init`
+
+`~/.config/apothem/profile.yaml` 또는 `--profile PATH`에 스키마에 유효한
+최소 프로필 스캐폴드를 생성합니다. `--force`를 제공하지 않는 한 기존 파일은
+보존됩니다.
+
+| 옵션 | 설명 |
+|---|---|
+| `--force` | 기존 프로필 스캐폴드를 덮어씁니다. |
+
+### `profile show`
+
+검증되고 기본값이 확장된 공유 프로필을 표시합니다.
+
+### `profile set KEY VALUE`
+
+공유 프로필에서 키를 설정합니다. `KEY`는 중첩된 프로필로 내려가는 점-구분 경로입니다
+(`identity.name`, `preferences.style`, `enforcement.sprints`,
+`harnesses.<harness>.preferences.style`). 점이 없는 단일 키는 최상위
+노드를 설정합니다. `VALUE`는 리터럴 문자열로 저장됩니다 — 맨 단어는
+강제 변환되지 않습니다(`no`는 `"no"`로 유지되고, `2024-01-01`과 `1.0`은 문자열로 유지됨) — 단
+`true`/`false`(불리언 강제 플래그)와 명시적인 `[...]`/`{...}` 리스트/맵 입력은
+예외입니다. 완전히 조립된 프로필은 기록 전에 스키마에 대해 검증됩니다.
+유효하지 않은 set은 거부되고 디스크의 프로필은 변경되지 않습니다.
+
+| 인수 | 설명 |
+|---|---|
+| `KEY` | 설정할 프로필 내의 점-구분 경로(필수). |
+| `VALUE` | 할당할 리터럴 값; 기록 전에 검증됨(필수). |
+
+### `profile edit`
+
+시스템 편집기에서 공유 프로필을 엽니다.
+
+## 예시
+
+```bash
+apothem profile init
+apothem profile init --profile ./profile.yaml --force --json
+apothem profile show
+apothem profile show --json
+apothem profile set seriousness SHARED
+apothem profile set rules '["Use fake placeholders in examples."]'
+apothem profile edit
+```
+
+## 종료 코드
+
+| 코드 | 의미 |
+|---|---|
+| 0 | 성공(또는 `edit`의 경우 편집기가 정상적으로 종료됨) |
+| 1 | 프로필이 없음, 유효하지 않음, `--force` 없이 이미 존재함, 또는 기록할 수 없음 |
+
+## 함께 보기
+
+- [apothem install](/docs/cli-reference/install) — 프로필을 하니스로 구체화합니다
+- [apothem doctor](/docs/cli-reference/doctor) — 시스템 전역 설치 진단을 실행합니다

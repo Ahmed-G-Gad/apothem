@@ -1,0 +1,57 @@
+---
+title: "二进制制品扫描"
+description: "Apothem 二进制制品扫描——源码中不跟踪任何编译/打包的二进制文件。OpenSSF Scorecard Binary-Artifacts 检查的证据。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+OpenSSF Scorecard 的 **Binary-Artifacts** 检查会验证源码树中不携带任何编译/打包/不透明的二进制制品。源码中的二进制文件无法审计，并为供应链攻击提供了立足点：二进制文件嵌入了源码树未呈现的代码，因此评审者在合并前无法检查它。
+
+## Apothem 的二进制制品态势
+
+Apothem 是一个**纯 Python 源码树**，版本控制中不跟踪任何编译、打包或不透明的二进制制品。该仓库可从源码端到端地审计。
+
+## 扫描方法
+
+扫描会枚举 Scorecard 视为二进制的文件类型，然后验证每一类都不在版本控制中：
+
+| 扩展名族 | 说明 | Apothem 状态 |
+|---|---|---|
+| `.exe`、`.dll`、`.so`、`.dylib` | 编译的原生二进制文件 | ✅ 零跟踪 |
+| `.bin`、`.o`、`.a`、`.lib` | 目标文件 / 静态库 | ✅ 零跟踪 |
+| `.jar`、`.war`、`.ear` | Java 包 | ✅ 零跟踪 |
+| `.whl`、`.egg` | Python 分发包 | ✅ 零跟踪（构建到 `dist/`；已被 gitignore 忽略） |
+| `.tar.gz`、`.zip`（构建分发） | 携带构建制品的压缩归档 | ✅ 零跟踪 |
+| `.class`、`.pyc`、`.pyo` | 编译的字节码 | ✅ 零跟踪（`__pycache__/` 已被 gitignore 忽略） |
+| `.crt`、`.pem`、`.key`、`.p12`、`.pfx` | 加密材料 | ✅ 零跟踪（在 `.gitignore` 中被拒绝） |
+
+## 允许的二进制类别
+
+源码中**确实**允许两类范围狭窄的二进制制品：
+
+1. **品牌资产** —— `assets/*.png`、`assets/*.ico`、`assets/favicon.*`。这些可通过 `scripts/dev/rebuild-assets.{sh,ps1}` 从 `assets/src/` 的 SVG 母版**确定性地重新生成**。Scorecard 依据其 `image/png` 豁免将这些视为合法。
+2. **字体文件** —— `assets/fonts/*.ttf`、`assets/fonts/*.woff2`。带有书面许可证的捆绑字体文件；依据 Scorecard 的 `font/*` 豁免。
+
+这两类都记录在 [`site/content/docs/brand/index.mdx`](/docs/brand) 中，其来源记录在资产重建配方里。
+
+## 验证命令
+
+```shell
+# 从 apothem 仓库根目录：
+git ls-files | grep -E '\\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
+```
+
+此调用应返回**零行**。非空结果表示源码中跟踪了某个二进制制品——这是一项会阻塞下一次发布的高严重性发现。
+
+## 审计节奏
+
+该扫描属于以下环节的一部分：
+
+- **每次 PR 的 CI** —— `.github/workflows/ci.yml` 包含一个二进制制品 grep 步骤。
+- **每次发布检查点** —— 发布工程运行手册在打标签前验证该扫描。
+- **每周 Scorecard 运行** —— OpenSSF Scorecard 工作流重新确认该检查通过。
+
+## 参考资料
+
+- [OpenSSF Scorecard —— Binary-Artifacts 检查](https://github.com/ossf/scorecard/blob/main/docs/checks.md#binary-artifacts)
+- [Apothem `.gitignore`](https://github.com/ahmed-g-gad/apothem/blob/main/.gitignore) —— 防止意外签入二进制文件的拒绝列表

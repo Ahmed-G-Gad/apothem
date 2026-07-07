@@ -1,0 +1,55 @@
+---
+title: "Hook-Entwicklung"
+description: "Verfasse und registriere Hooks in der Apothem-Hook-Pipeline."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Hooks sind Shell-Befehle, die bei Harness-Ereignissen ausgelöst werden. Sie
+erzwingen Konformität, injizieren Kontext und führen Qualitätsgates ohne
+Eingreifen des Operators aus.
+
+## Hook-Ereignisse
+
+| Ereignis | Wann es ausgelöst wird |
+|-------|--------------|
+| `PreToolUse` | Vor jedem Tool-Aufruf |
+| `PostToolUse` | Nach jedem Tool-Aufruf |
+| `SessionStart` | Beim Sitzungsstart |
+| `PreCompact` | Vor der Kontextverdichtung |
+| `PostCompact` | Nach der Kontextverdichtung |
+| `Stop` | Am Sitzungsende |
+
+## Hook-Nachrichtendateien
+
+Jeder Hook hat eine zugehörige Nachrichtendatei unter
+`src/apothem/hooks/messages/<event>-<name>.md`, die dem Assistenten in dem
+Moment Kontext bereitstellt, in dem der Hook ausgelöst wird.
+
+## Einen Hook registrieren
+
+Füge den Hook-Befehl zur `settings.json` hinzu:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python src/apothem/hooks/my-check.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## Der Hook-Dispatcher
+
+Alle Hooks werden über `src/apothem/hooks/dispatch.py` geleitet, der jeden
+Hook-Fehler in einen Fail-Open-Umschlag umwandelt, sodass Hooks den Harness nie
+blockieren.

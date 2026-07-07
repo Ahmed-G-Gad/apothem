@@ -1,0 +1,42 @@
+---
+title: "Frontmatter-Schema"
+description: "Referenzleitfaden für die Struktur des YAML-Frontmatter-Blocks, die pro Klasse erforderlichen Schlüssel und die Validator-Durchsetzungsregeln über die Artefaktklassen hinweg."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Kanonische Referenz für YAML-Frontmatter auf jeder Artefaktklasse.** Die Zusammenfassung in [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Konventionen ist die Inline-Deklaration; die JSON Schemas pro Klasse in [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) sind der maschinenlesbare Vertrag; diese Seite ist die eigenständige Referenz, die nachgelagerte Mitwirkende zitieren.
+
+---
+
+## 1. Struktur des Frontmatter-Blocks
+
+Jedes Artefakt trägt am Kopf YAML-Frontmatter, durch `---`-Zeilen abgegrenzt. Das kanonische Autorschaftskopf-Banner gemäß [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) steht über dem Frontmatter bei Dateien der Markdown-Familie; das Frontmatter folgt unmittelbar danach.
+
+Schlüssel verwenden `kebab-case`. Skalare Werte sind entweder bloß oder in doppelte Anführungszeichen gesetzt; Zeichenkettenwerte, die Doppelpunkte, Rautezeichen oder andere YAML-signifikante Zeichen enthalten, werden in Anführungszeichen gesetzt.
+
+## 2. Erforderliche Felder pro Klasse
+
+Der Satz erforderlicher Schlüssel variiert je nach Artefaktklasse. Die maßgebliche Struktur wird durch `scripts/dev/validate_ecosystem.py` und die JSON Schemas pro Klasse unter dem Verzeichnis `schemas/` (eine Schemadatei pro Artefaktklasse) durchgesetzt.
+
+```text
+schemas/agent.schema.json
+schemas/skill.schema.json
+schemas/command.schema.json
+schemas/output-style.schema.json
+schemas/plan.schema.json
+```
+
+| Klasse | Erforderliche Schlüssel |
+|-------|---------------|
+| `CLAUDE.md` (Stammkonfiguration) | `name`, `version`, `updated`, `description`, `scope`, `portability` |
+| Regeln (`src/apothem/rules/*.md`) | `name`, `description`, `pathFilter`, `alwaysApply` |
+| Befehle (`src/apothem/commands/*.md`) | `name`, `version`, `updated`, `description`, `argument-hint`, `disable-model-invocation` |
+| Assistenten (kanonisches Verzeichnis unten gezeigt) | `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns`, `effort` |
+| Fähigkeiten (`src/apothem/skills/*/SKILL.md`) | `name`, `description`, `archetype`, `userInvocable` |
+
+Die Schemas pro Klasse in [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) tragen den vollständigen Satz von Einschränkungen, einschließlich Typ-, Format-, Enum- und Muster-Restriktionen.
+
+## 3. Validatoren
+
+`scripts/dev/validate_ecosystem.py` durchläuft den Artefaktbaum, wendet die obigen Sätze erforderlicher Schlüssel an und meldet `[FAIL]` bei jedem Artefakt, dem ein erforderliches Feld fehlt. Der `frontmatter-grep` pro Schreibvorgang in `src/apothem/conformity/frontmatter_grep.py` setzt dieselbe Struktur an den PreToolUse-Write/Edit-Hook-Grenzen durch.

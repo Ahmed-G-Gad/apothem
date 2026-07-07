@@ -1,0 +1,73 @@
+---
+title: "/research-disseminate"
+description: "/research-disseminate — Conduz a disseminação e o impacto pós-aceitação: anúncio do preprint, artefatos públicos, depósito de arquivamento FAIR, acompanhamento de altmetrics, o laço de réplica / revisão dos revisores e o caminho da fase 2 do relatório registrado — a etapa terminal do fluxo /research, após /research-publish."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Papel:** Pesquisador principal (disseminação e impacto)
+**Posição no fluxo:** terminal
+
+Conduz a disseminação e o impacto pós-aceitação. O operador realiza as ações públicas; a etapa para em um plano de disseminação pronto e nunca publica automaticamente.
+
+## Invocação canônica
+
+```bash
+/research-disseminate
+```
+
+Com argumentos:
+
+```bash
+/research-disseminate [--suite-name NAME] [--override] [--archive REPO] [--preprint SERVER]
+```
+
+## Entradas
+
+O `_outputs/publication-record.md` do conjunto (o pacote do veículo + o registro de submissão produzidos por `/research-publish`).
+
+## Saídas
+
+`_outputs/dissemination-plan.md` (o anúncio do preprint, o plano de artefatos públicos, o registro do depósito de arquivamento FAIR, o plano de altmetrics e acompanhamento de impacto, o laço de réplica / revisão e o caminho da fase 2 do relatório registrado).
+
+## A jusante
+
+Terminal — o plano de disseminação é o artefato final do fluxo. O laço de réplica / revisão dos revisores pode reentrar no `/research-paper` quando uma revisão é necessária.
+
+## Fases do fluxo de trabalho
+
+O comando segue o fluxo de trabalho padrão do fluxo `/research`:
+
+1. **Carregar contexto** — Ler `_outputs/publication-record.md`, as regras e qualquer estado existente do conjunto.
+2. **Planejar o preprint e os artefatos públicos** — Esboçar o anúncio do preprint e o plano de palestra / pôster / blog.
+3. **Registrar o depósito de arquivamento FAIR** — Planejar o depósito de dados + código em um repositório FAIR com identificadores persistentes.
+4. **Configurar o acompanhamento de impacto** — Planejar altmetrics e o acompanhamento de impacto em relação à via de impacto da proposta.
+5. **Preparar o laço de réplica** — Esboçar a réplica dos revisores e o caminho da fase 2 do relatório registrado quando aplicável.
+6. **Verificar e emitir** — Confirmar que o plano é acionável; emitir `_outputs/dissemination-plan.md` mais o manifesto de transferência. O operador realiza as ações públicas.
+
+## Piso de rigor
+
+Os artefatos públicos carregam linguagem natural do domínio; onde a disseminação precede a desanonimização, autor, instituição e identidade do sistema são reservados para o estágio designado. O depósito FAIR é o pacote de evidências de reprodutibilidade durável e citável, escalonado à ambição do veículo, que permite a uma parte independente reproduzir o estudo.
+
+## Modos de falha
+
+| Sintoma | Causa | Recuperação |
+|---------|-------|----------|
+| Sem registro de depósito FAIR | Etapa de arquivamento pulada | Selecione um repositório FAIR (`--archive`) e registre o plano de depósito com identificadores persistentes |
+| O plano tenta publicar automaticamente | Limite da etapa ultrapassado | Pare no plano pronto; o operador realiza cada ação pública |
+| Falta o registro de publicação | `/research-publish` ainda não foi executado | Execute `/research-publish` primeiro para produzir o pacote do veículo |
+
+## Exemplos
+
+```bash
+# Planejar a disseminação após a aceitação
+/research-disseminate --suite-name retrieval-latency
+
+# Fixar o servidor de preprint e o arquivo FAIR
+/research-disseminate --preprint arXiv --archive Zenodo
+```
+
+## Referências cruzadas
+
+- [Visão geral do fluxo](/docs/pipeline)
+- [Referência de comandos](/docs/reference/commands)

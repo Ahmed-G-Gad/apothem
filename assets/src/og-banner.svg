@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Apothem — Open Graph card</title>
+  <desc id="desc">The Apothem mark beside the product promise on a dark Open Graph card.</desc>
+  <defs>
+    <linearGradient id="apo-emerald-og" x1="110" y1="110" x2="110" y2="40.7" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#059669"/>
+      <stop offset="1" stop-color="#6ee7b7"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="#080c15"/>
+  <rect x="72" y="72" width="1056" height="486" rx="28" fill="#0f172a" stroke="#333c50" stroke-width="2"/>
+  <g transform="translate(153 183) scale(1.2)" stroke-linecap="round" stroke-linejoin="round">
+    <g fill="none">
+      <circle cx="110" cy="110" r="69.3" stroke="#94a3b8" stroke-width="2.5" opacity="0.5"/>
+      <polygon points="190,110 150,179.3 70,179.3 30,110 70,40.7 150,40.7" stroke="#cbd5e1" stroke-width="10"/>
+      <g stroke="#64748b" stroke-width="4" opacity="0.85">
+        <line x1="110" y1="110" x2="170" y2="75.35"/>
+        <line x1="110" y1="110" x2="170" y2="144.65"/>
+        <line x1="110" y1="110" x2="110" y2="179.3"/>
+        <line x1="110" y1="110" x2="50" y2="144.65"/>
+        <line x1="110" y1="110" x2="50" y2="75.35"/>
+      </g>
+      <line x1="110" y1="110" x2="110" y2="40.7" stroke="url(#apo-emerald-og)" stroke-width="9"/>
+    </g>
+    <g fill="#64748b" opacity="0.85">
+      <circle cx="170" cy="75.35" r="4"/><circle cx="170" cy="144.65" r="4"/><circle cx="110" cy="179.3" r="4"/><circle cx="50" cy="144.65" r="4"/><circle cx="50" cy="75.35" r="4"/>
+    </g>
+    <circle cx="110" cy="110" r="8" fill="#cbd5e1"/>
+    <circle cx="110" cy="110" r="3.5" fill="#34d399"/>
+    <circle cx="110" cy="40.7" r="7" fill="#34d399"/>
+  </g>
+  <g font-family="Inter, Segoe UI, Arial, sans-serif">
+    <text x="498" y="212" font-size="86" font-weight="780" letter-spacing="-1.5" fill="#f8fafc">Apothem</text>
+    <text x="498" y="274" font-size="33" font-weight="650" fill="#c2ccda">one profile, every harness</text>
+    <text x="498" y="334" font-size="28" font-weight="450" fill="#94a2b8">Materialize rules, skills, commands, hooks,</text>
+    <text x="498" y="372" font-size="28" font-weight="450" fill="#94a2b8">and agents into seventeen native tool configs.</text>
+  </g>
+  <g text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="20" font-weight="650">
+    <rect x="498" y="448" width="152" height="42" rx="8" fill="#1c2434" stroke="#333c50"/><text x="574" y="476" fill="#c2ccda">17 harnesses</text>
+    <rect x="674" y="448" width="192" height="42" rx="8" fill="#1c2434" stroke="#333c50"/><text x="770" y="476" fill="#c2ccda">conformity gate</text>
+    <rect x="890" y="448" width="188" height="42" rx="8" fill="#1c2434" stroke="#333c50"/><text x="984" y="476" fill="#c2ccda">signed releases</text>
+  </g>
+</svg>

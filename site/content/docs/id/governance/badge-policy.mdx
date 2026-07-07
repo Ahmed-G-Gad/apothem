@@ -1,0 +1,125 @@
+---
+title: "Kebijakan lencana"
+description: "Menentukan sumber lencana dinamis dan statis untuk README, mencakup status alur kerja native GitHub, JSON endpoint shields.io, dan bentuk lencana statis."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Dokumen ini adalah referensi kanonis untuk strip lencana README dan
+infrastruktur yang menerbitkan sumber data dinamisnya. Setiap lencana di README
+proyek diselesaikan melalui salah satu dari tiga bentuk yang ditentukan di
+sini; lencana baru yang ditambahkan di masa depan mengikuti bentuk yang sama
+atau ditolak saat tinjauan.
+
+## 1. Latar belakang
+
+URL statis `https://img.shields.io/badge/X-Y-Z` tidak pernah berubah dengan
+sendirinya, sehingga menyimpang dari keadaan sebenarnya proyek — lencana
+`release-vN-blue` tetap menampilkan `vN` lama setelah `vN+1` dirilis. Oleh
+karena itu kebijakan ini mensyaratkan bentuk dinamis untuk setiap nilai yang
+bergerak, dan mencadangkan lencana statis untuk himpunan kecil nilai (lisensi,
+versi target Python) yang jarang berubah, di mana bentuk statis bersifat jujur.
+
+## 2. Arsitektur
+
+Tiga bentuk mencakup setiap lencana dalam proyek:
+
+1. **Lencana status alur kerja native GitHub.** URL lencana alur kerja
+   memiliki bentuk
+   `https://github.com/<owner>/<repo>/actions/workflows/<file>/badge.svg` dan
+   mencerminkan eksekusi terbaru pada branch default. GitHub menyajikan lencana
+   dari metadata publik repositori.
+2. **Lencana endpoint shields.io.** Lencana endpoint shields.io menyelesaikan
+   URL `https://img.shields.io/endpoint?url=<published-json>` di mana JSON
+   sesuai dengan skema endpoint shields.io (`schemaVersion`, `label`,
+   `message`, `color`). JSON yang diterbitkan berada di
+   `apothem.ahmedgad.com/badges/*.json`; isinya dihasilkan oleh alur kerja CI
+   pada setiap eksekusi CI yang berhasil. Lencana endpoint menjaga metrik di
+   bawah penerbitan yang dikendalikan proyek, bukan penyimpanan pihak ketiga
+   yang dapat berubah.
+3. **Lencana statis shields.io.** Lencana statis memiliki bentuk
+   `https://img.shields.io/badge/<label>-<message>-<color>` tanpa sumber data
+   reaktif. Dicadangkan untuk nilai yang benar-benar jarang berubah
+   (pengenal lisensi, versi target Python).
+
+Penerbitan metrik proyek melalui Gist publik dikecualikan berdasarkan desain.
+Endpoint shields.io di atas domain yang dikendalikan proyek adalah pengganti
+kanonis.
+
+## 3. Spesifikasi per lencana
+
+| Lencana | Bentuk | Sumber | Bentuk URL |
+|---|---|---|---|
+| Status CI | Native GitHub | `.github/workflows/ci.yml` | `https://github.com/ahmed-g-gad/apothem/actions/workflows/ci.yml/badge.svg?branch=main` |
+| Commit terakhir | Native GitHub | metadata repositori | `https://img.shields.io/github/last-commit/ahmed-g-gad/apothem` |
+| Lisensi | Statis shields.io | `LICENSE` (MIT) | `https://img.shields.io/badge/License-MIT-yellow.svg` |
+| Rilis terbaru | Endpoint shields.io | `badges/release.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/release.json` |
+| Cakupan | Endpoint shields.io | `badges/coverage.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/coverage.json` |
+| Keamanan | Endpoint shields.io | `badges/security.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/security.json` |
+| Rantai pasokan | Endpoint shields.io | `badges/supply-chain.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/supply-chain.json` |
+| Dokumentasi | Endpoint shields.io | `badges/docs.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/docs.json` |
+| Versi Python | Statis shields.io | `pyproject.toml` `python_requires` | `https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white` |
+
+CodeQL berjalan sebagai alur kerja khusus `.github/workflows/codeql.yml` yang
+menganalisis permukaan Python dan Actions; job security-scan di `ci.yml` hanya
+menjalankan bandit, menyerahkan penerbitan SARIF CodeQL ke `codeql.yml`.
+Lencana keamanan mengonsumsi JSON endpoint yang diterbitkan oleh alur kerja
+badges alih-alih lencana alur kerja native GitHub, sehingga tetap stabil di
+seluruh topologi pemindai yang mendasarinya.
+
+## 4. Mekanisme penerbitan JSON
+
+JSON endpoint diproduksi oleh `.github/workflows/badges.yml`. Alur kerja
+tersebut:
+
+- Dipicu pada `workflow_run` setelah alur kerja `ci` selesai (dan pada
+  `workflow_dispatch` manual untuk penerbitan ulang tanpa eksekusi CI).
+- Menyelesaikan tag terbaru dari `git describe --tags --abbrev=0` dan
+  kesimpulan CI induk dari peristiwa `workflow_run`.
+- Menghasilkan setiap JSON melalui `jq -n` agar keluaran benar-benar cocok
+  dengan skema endpoint shields.io (`schemaVersion: 1`, ditambah `label`,
+  `message`, `color`).
+- Memvalidasi setiap JSON yang dikeluarkan dengan `jq -e` sebelum diunggah.
+- Mengunggah direktori sebagai artefak alur kerja bernama `badges`.
+
+Penyebaran artefak ke `apothem.ahmedgad.com/badges/` ditangani oleh
+`.github/workflows/publish-static-site.yml`. Selama pembangunan situs, alur
+kerja tersebut mengunduh artefak `badges` sukses terbaru dan menyimpannya
+sementara di bawah `site/dist/badges/`. Jika artefak tidak ada atau telah
+kedaluwarsa, situs tetap disebarkan dan mencatat artefak lencana yang hilang di
+log alur kerja alih-alih menerbitkan JSON yang rusak.
+
+## 5. Protokol pemeliharaan
+
+Tambahkan lencana baru dengan menentukan bentuknya terlebih dahulu:
+
+- Jika lencana mencerminkan keadaan jalannya alur kerja CI, lebih suka bentuk
+  native GitHub. URL lencana ditetapkan oleh file alur kerja; tidak diperlukan
+  infrastruktur penerbitan.
+- Jika lencana mencerminkan metrik (hitungan, persentase, string versi, label
+  bertingkat) yang diperbarui dari waktu ke waktu, gunakan bentuk endpoint
+  shields.io. Tambahkan langkah pembuatan JSON ke
+  `.github/workflows/badges.yml` di samping lima yang sudah ada dan tambahkan
+  URL konsumen `apothem.ahmedgad.com/badges/<name>.json` ke strip lencana
+  README.
+- Jika lencana mencerminkan nilai yang benar-benar jarang berubah (lisensi,
+  target bahasa, mode tata kelola), gunakan bentuk statis shields.io.
+  Dokumentasikan irama perubahan dalam tabel per lencana di file ini saat
+  menambahkan lencana.
+
+Pensiunkan lencana dengan menghapusnya dari README terlebih dahulu, lalu
+menghapus langkah pembuatan JSON-nya dari alur kerja badges, lalu menghapus
+barisnya dari tabel per lencana di atas. Jaga agar penghapusan tetap atomik
+sehingga README tidak pernah merujuk artefak JSON yang tidak diproduksi oleh
+alur kerja.
+
+## 6. Referensi silang
+
+- Alur kerja CI yang keadaan jalannya dicerminkan oleh lencana CI native
+  GitHub: `.github/workflows/ci.yml`.
+- Alur kerja badges yang menerbitkan JSON endpoint:
+  `.github/workflows/badges.yml`.
+- Domain situs statis yang menyajikan JSON:
+  `apothem.ahmedgad.com`.
+- Referensi skema endpoint shields.io:
+  [https://shields.io/badges/endpoint-badge](https://shields.io/badges/endpoint-badge).

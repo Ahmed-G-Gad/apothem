@@ -1,0 +1,4 @@
+{
+  "name": "F-13 exempt sample",
+  "purpose": "JSON files have no comment syntax and match the **/*.json glob in src/apothem/schemas/header-exceptions.txt; the injector skips this file and produces zero diff."
+}

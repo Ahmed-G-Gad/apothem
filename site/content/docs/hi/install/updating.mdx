@@ -1,0 +1,82 @@
+---
+title: "अपडेट करना"
+description: "Apothem और हार्नेस एडॉप्टर अपडेट करें।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## Claude Code प्लगइन अपडेट करें
+
+मार्केटप्लेस लिस्टिंग रिफ़्रेश करें, फिर Claude Code के भीतर `/plugin`
+मेन्यू से प्लगइन अपडेट करें:
+
+```text title="Inside Claude Code"
+/plugin marketplace update apothem
+```
+
+`/plugin` खोलें, **apothem** चुनें, और जब कोई नया प्लगइन संस्करण सूचीबद्ध हो तो
+अपडेट क्रिया चुनें।
+
+## npx हमेशा वर्तमान रिलीज़ चलाता है
+
+`npx @ahmed-g-gad/apothem` हर रन पर वर्तमान प्रकाशित पैकेज को रिज़ॉल्व करता है,
+इसलिए अपडेट करने के लिए कुछ नहीं है। जब कोई बासी npx कैश पुरानी प्रति परोसे,
+तो dist-tag को स्पष्ट रूप से पिन करें:
+
+```bash
+npx @ahmed-g-gad/apothem@latest --version
+```
+
+## इंस्टॉलर-आधारित सेटअप अपडेट करें
+
+इंस्टॉलर को फिर से चलाएँ — यह आइडेम्पोटेंट है और मौजूदा ट्री को फ़ास्ट-फ़ॉरवर्ड करता है —
+या समर्पित अपडेट स्क्रिप्ट चलाएँ:
+
+```bash title="macOS · Linux · WSL2 · BSD"
+bash scripts/installer/update.sh
+```
+
+```powershell title="Windows · PowerShell"
+pwsh -NoProfile -File scripts/installer/update.ps1
+```
+
+अपडेट स्क्रिप्ट `APOTHEM_HOME` (डिफ़ॉल्ट `~/.apothem`) पर स्रोत ट्री को
+`APOTHEM_REF` पर फिर से चेक-आउट करती है — अनसेट होने पर नवीनतम हस्ताक्षरित
+`vMAJOR.MINOR.PATCH` रिलीज़ टैग रिज़ॉल्व होता है, एक टैग मान इसे पिन करता है, और `main` गतिमान
+ब्रांच का चयन करता है। यह फिर से-मटेरियलाइज़ करने से पहले `git verify-tag` के साथ टैग के हस्ताक्षर को
+सत्यापित करती है; एक अहस्ताक्षरित या छेड़छाड़ किया गया टैग तब तक निरस्त कर देता है जब तक
+`APOTHEM_ALLOW_UNVERIFIED=1` निरस्तीकरण को चेतावनी में डाउनग्रेड न कर दे। यह फिर
+रिफ़्रेश किए गए ट्री से `apothem update` चलाकर `APOTHEM_HARNESS` द्वारा नामित हार्नेस को फिर से-मटेरियलाइज़ करती है (हार्नेस का डिफ़ॉल्ट
+[इंस्टॉलर एनवायरनमेंट वेरिएबल्स](/docs/how-to/installer-environment-variables)
+तालिका के अनुसार होता है)। इसके लिए पूर्व इंस्टॉल आवश्यक है: जब
+`APOTHEM_HOME` पर कोई ट्री मौजूद न हो और `APOTHEM_SOURCE` अनसेट हो, तो यह
+आपको पहले इंस्टॉलर की ओर निर्देशित करने वाले संदेश के साथ बाहर निकलती है।
+
+## हार्नेस आउटपुट फिर से-मटेरियलाइज़ करें
+
+इंजन को अपडेट करने या `~/.config/apothem/profile.yaml` को संपादित करने के बाद,
+इंस्टॉल किए गए हार्नेस कॉन्फ़िग को फिर से व्युत्पन्न करें। यूज़र-स्कोप एडॉप्टर को
+`--project` की आवश्यकता नहीं होती; प्रोजेक्ट-स्कोप एडॉप्टर को होती है।
+
+```bash
+apothem update --harness claude-code
+apothem update --harness cursor --project /path/to/project
+apothem update --harness all --project /path/to/project
+```
+
+जब आपको बिना किसी फ़ाइलसिस्टम लेखन के मशीन-पठनीय
+पूर्वावलोकन की आवश्यकता हो तो वही कमांड `--dry-run --json` के साथ चलाएँ।
+
+## वर्तमान कमांड सीमा
+
+`apothem update` केवल हार्नेस आउटपुट अपडेट करता है। CLI
+`update --self`, `update --check`, या `update --apply` को लागू नहीं करता; इंजन को
+स्वयं उसी चैनल के माध्यम से अपडेट करें जिससे आपने इंस्टॉल किया था — `/plugin` फ़्लो, एक ताज़ा
+`npx` रन, या ऊपर दी गई इंस्टॉलर/अपडेट स्क्रिप्ट।
+
+## इंजन संस्करण जाँचें
+
+```bash
+apothem --version
+npx @ahmed-g-gad/apothem --version
+```

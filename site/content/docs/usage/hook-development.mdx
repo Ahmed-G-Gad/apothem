@@ -1,0 +1,52 @@
+---
+title: "Hook development"
+description: "Author and register hooks in the Apothem hook pipeline."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Hooks are shell commands that fire on harness events. They enforce conformity,
+inject context, and run quality gates without operator intervention.
+
+## Hook events
+
+| Event | When it fires |
+|-------|--------------|
+| `PreToolUse` | Before every tool call |
+| `PostToolUse` | After every tool call |
+| `SessionStart` | At session bootstrap |
+| `PreCompact` | Before context compaction |
+| `PostCompact` | After context compaction |
+| `Stop` | At session end |
+
+## Hook message files
+
+Each hook has a corresponding message file at
+`src/apothem/hooks/messages/<event>-<name>.md` that provides
+context to the assistant at the moment the hook fires.
+
+## Registering a hook
+
+Add the hook command to `settings.json`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python src/apothem/hooks/my-check.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## The hook dispatcher
+
+All hooks route through `src/apothem/hooks/dispatch.py`, which converts any
+hook error to a fail-open envelope so hooks never block the harness.

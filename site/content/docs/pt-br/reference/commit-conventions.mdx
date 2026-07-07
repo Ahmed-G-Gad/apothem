@@ -1,0 +1,32 @@
+---
+title: "Convenções de commit"
+description: "Estabelece o formato das mensagens de commit, a marcação de versões, a disciplina de autoria exclusivamente humana e a cadência por tarefa para artefatos git e controle de versão."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Referência canônica para mensagens de commit do git, tags de versão e disciplina de autoria.** O resumo em [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Convenções é a declaração em linha; esta página é a referência independente que os contribuidores posteriores citam.
+
+---
+
+## 1. Conventional Commits
+
+Os assuntos de commit seguem a forma **Conventional Commits**: `<type>(<scope>): <subject>`. O conjunto fechado de `<type>` é `{feat, fix, chore, docs, refactor, test, perf, ci, build, style, revert, release}`. O `<scope>` é a superfície que o commit toca (por exemplo, `feat(conformity)`, `docs(adr)`, `fix(ci)`); o scope é omitido apenas para mudanças transversais que não se localizam.
+
+O assunto está no modo imperativo, em minúsculas após os dois-pontos de type/scope, sem ponto final e com menos de 72 caracteres. O corpo — separado do assunto por uma linha em branco — explica **por que** a mudança existe, não o que o diff alterou; o diff é em si o registro canônico do quê.
+
+## 2. Disciplina de autoria (somente humana)
+
+Cada superfície de autoria em cada artefato git (assunto do commit, corpo do commit, campo `Author:`, trailer `Co-Authored-By:`, trailer `Signed-off-by:`, nome de branch, nome de tag, anotação de tag, nome de stash, corpo do git-notes, título de PR, descrição de PR) nomeia **apenas contribuidores humanos**. O ambiente de execução do harness nunca atribui a si mesmo, ao modelo de linguagem subjacente, ao ambiente de execução / ferramenta / IDE / extensão / fornecedor, ou a qualquer outra ferramenta automatizada, nenhuma dessas superfícies. Os padrões proibidos incluem `Co-Authored-By: <model-name>`, `Co-Authored-By: <noreply@*-vendor.com>`, narrativa de corpo como `generated with X` ou `co-authored by an automated helper`, e qualquer marcador na linha de assunto que sinalize autoria não humana. A especificação completa vive em [`src/apothem/rules/production-ready-prs.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/production-ready-prs.md) §6; a aplicação mecânica vive em [`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/hooks/messages/pretooluse-bash.md) Scan 3.
+
+## 3. Tags de versão (versionamento semântico)
+
+As tags de versão seguem o **versionamento semântico** (`vMAJOR.MINOR.PATCH`). A versão pré-1.0 é `0.MINOR.PATCH` conforme a convenção pré-estável da especificação; mudanças incompatíveis incrementam MINOR, correções de bugs incrementam PATCH. A tag é anotada (`git tag -a`) e assinada no nível de publicação conforme [`site/content/docs/governance/release-engineering-policy.mdx`](/docs/governance/release-engineering-policy). A versão do pacote vive no manifesto de origem (`pyproject.toml` `version`), e as superfícies de tempo de execução / portadoras de versão derivam desses metadados do pacote.
+
+## 4. Cadência por tarefa
+
+Os commits são feitos por tarefa em seriedade SHARED+, por fase em PERSONAL_USE e opcionais em EXPLORING. O commit de uma tarefa é feito imediatamente após as portas de verificação da tarefa passarem; commits adiados acumulam contexto e arriscam perder o escopo. A disciplina completa vive em [`src/apothem/rules/operational-mandates.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/operational-mandates.md) §CM-13.
+
+## 5. Validadores
+
+A cadeia de hooks de pre-commit em [`.pre-commit-config.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/.pre-commit-config.yaml) aplica as portas de qualidade por escrita. A aplicação da disciplina de autoria no hook de bash (Scan 3 de `src/apothem/hooks/messages/pretooluse-bash.md`) detecta os trailers proibidos e os marcadores de corpo antes que qualquer operação de escrita do git seja realizada.

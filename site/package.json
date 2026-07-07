@@ -1,0 +1,50 @@
+{
+  "name": "apothem-site",
+  "version": "1.0.1",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "reference-inventory": "node scripts/update-reference-inventory.mjs",
+    "predev": "node scripts/update-reference-inventory.mjs",
+    "dev": "next dev",
+    "prebuild": "node scripts/update-reference-inventory.mjs && node scripts/build-llms-txt.mjs",
+    "build": "next build",
+    "postbuild": "node scripts/export-to-dist.mjs",
+    "start": "next start",
+    "test": "node --test --experimental-strip-types lib/search-index-core.test.mjs",
+    "check:search-index": "node scripts/check-search-index-sizes.mjs",
+    "ia": "node scripts/author-ia.mjs",
+    "ia:check": "node scripts/author-ia.mjs --check",
+    "postinstall": "fumadocs-mdx"
+  },
+  "dependencies": {
+    "@orama/tokenizers": "3.1.18",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "fumadocs-core": "16.10.2",
+    "fumadocs-mdx": "15.0.12",
+    "fumadocs-ui": "16.10.2",
+    "lucide-react": "^1.18.0",
+    "next": "16.2.9",
+    "radix-ui": "^1.5.0",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "tailwind-merge": "^3.4.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.1",
+    "@types/mdx": "^2.0.14",
+    "@types/node": "^25.9.3",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "tailwindcss": "4.3.1",
+    "typescript": "^6.0.3"
+  },
+  "overrides": {
+    "postcss": "^8.5.10"
+  }
+}

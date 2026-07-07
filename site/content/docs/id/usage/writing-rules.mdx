@@ -1,0 +1,61 @@
+---
+title: "Menulis aturan"
+description: "Tulis, batasi cakupan, dan pelihara aturan perilaku Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Aturan adalah berkas Markdown di `src/apothem/rules/` dengan ekstensi `.md`.
+
+## Frontmatter aturan
+
+```yaml
+---
+name: "..."
+description: "..."
+pathFilter: ""            # empty string for always-on; a glob for path-filtered
+alwaysApply: true         # true for always-on; false for path-filtered
+---
+```
+
+## Cakupan aturan
+
+| Cakupan | Kapan diterapkan |
+|-------|-------------|
+| `always-on` | Setiap sesi, setiap berkas |
+| `path-filtered` | Hanya ketika berkas aktif cocok dengan `path-filter` |
+| `operator-selected` | Operator mengaktifkannya secara eksplisit di settings.json |
+
+## Contoh aturan
+
+```markdown
+---
+name: "python-conventions"
+description: "Python style conventions for this project"
+pathFilter: "**/*.py"
+alwaysApply: false
+---
+
+# Python conventions
+
+- Use type annotations on all public functions.
+- Maximum line length: 88 characters.
+- Prefer explicit over implicit.
+```
+
+## Menerapkan aturan ke harness
+
+Setelah menulis aturan, perbarui setiap adapter harness yang terpasang.
+Jalankan `apothem harnesses list` untuk melihat himpunan yang terpasang, lalu
+panggil update sekali untuk tiap harness:
+
+```bash
+apothem update --harness claude-code
+apothem update --harness cursor
+```
+
+## Validasi aturan
+
+```bash
+python -m apothem.conformity.gate --check frontmatter
+```

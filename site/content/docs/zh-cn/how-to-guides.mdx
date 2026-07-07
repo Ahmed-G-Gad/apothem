@@ -1,0 +1,110 @@
+---
+title: "编写与流水线操作指南"
+description: "面向任务的演练：将内容精炼为规格、生成计划套件、审查计划、执行阶段、添加工件以及运行质量闸门。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+面向任务的演练，用于 **编写 Apothem 工件并驱动计划流水线**。每篇指南
+回答一个具体问题。
+
+关于首次运行的设置指南 —— 添加工具、编辑配置文件、驱动安装器 ——
+请改看 [操作指南](/docs/how-to) 章节。
+
+## 计划套件流水线
+
+### 如何将原始内容精炼为规格？
+
+以原始内容作为输入调用 `/plan-spec`。Forge 角色会运行六个转换阶段
+（发现、细致考量、效力映射、保留验证、专长应用、问题求解扫描），并在
+`.apothem/plans/{suite}/_spec/spec.md` 产出整合后的规格。完整协议参见
+`src/apothem/commands/plan-spec.md`。
+
+### 如何从规格生成计划套件？
+
+一旦规格位于 `.apothem/plans/{suite}/_spec/spec.md`，就调用
+`/plan-generate <suite-name>`。生成器会产出规范的基础设施文件以及每个
+阶段的 `phases/NN-kebab-topic/PHASE.md` 文件。参见
+`src/apothem/commands/plan-generate.md`。
+
+### 如何审查已生成的计划？
+
+调用 `/plan-review path/to/plan-suite/`。审查者会应用八项规划技法并产出
+评分卡。在 SHARED+ 层级，不通过的评分卡会阻断执行，直至解决为止。参见
+`src/apothem/commands/plan-review.md`。
+
+### 如何执行一个计划？
+
+调用 `/plan-execute path/to/plan-suite/ [phase-id]`。不带 `phase-id` 时，
+运行下一个待处理的阶段。带特定 id 时，仅运行那个阶段。参见
+`src/apothem/commands/plan-execute.md`。
+
+### 如何检查计划状态？
+
+调用 `/plan-status path/to/plan-suite/ [--verbose]`。只读报告。参见
+`src/apothem/commands/plan-status.md`。
+
+## 编写工件
+
+### 如何添加新规则？
+
+1. 在 `src/apothem/rules/` 下选取一个 kebab-case 文件名，例如
+   `src/apothem/rules/my-new-rule.md`。
+2. 编写前置元数据（`name`、`description`、`type:
+   instruction`、可选的 `pathFilter`）。
+3. 用规范章节撰写正文：用途、义务、严肃度分级、反模式、强制执行、
+   绑定。
+4. 在规则集（`src/apothem/rules/`）中添加一行。
+5. 运行 `python scripts/dev/validate_ecosystem.py --check
+   frontmatter-cohort` 进行验证。
+
+### 如何添加新的委托工作者？
+
+在下方所示目录下选取一个 kebab-case 文件名，采用 `my-worker.md` 形式：
+
+```text
+src/apothem/agents/
+src/apothem/agents/my-worker.md
+```
+
+然后：
+
+1. 编写前置元数据 —— 包括 `name`、`description`、
+   `allowedTools`、`maxTurns`、`version`，以及下方所示的类型标记：
+
+```text
+type: agent
+```
+
+1. 将系统提示词作为正文撰写。
+1. 在委托工作者集（`src/apothem/agents/`）的辅助器注册表中添加一行。
+
+### 如何添加新钩子？
+
+1. 在 `src/apothem/hooks/messages/<event>-<scope>.md` 下编写一条上下文
+   消息。
+2. 在 `settings.json` 中接入该钩子。
+3. 更新钩子流水线。
+4. 运行 `python scripts/dev/validate_ecosystem.py --check
+   hook-validator`。
+
+## 质量闸门
+
+### 如何运行本地质量闸门？
+
+```bash
+python -m ruff check .
+python -m ruff format --check .
+python -m mypy
+python -m pytest -q
+python scripts/dev/validate_ecosystem.py
+python scripts/dev/chaos_pass.py
+```
+
+CI 流水线会并行运行相同的这一组。
+
+### 如何检查单个工件类的前置元数据？
+
+```bash
+python scripts/dev/validate_ecosystem.py --check frontmatter-cohort
+```

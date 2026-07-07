@@ -1,0 +1,30 @@
+---
+title: "Referensi CLI"
+description: "Referensi CLI Apothem — sinopsis per-perintah, opsi, dan kode keluar untuk antarmuka baris perintah apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Antarmuka baris perintah `apothem` mengelola konfigurasi adapter asisten-pengkodean dari profil bersama. Setiap halaman di bawah mendokumentasikan satu subperintah: sinopsisnya, opsinya, perilakunya, dan kode keluarnya.
+
+Masing-masing dari `install`, `update`, dan `uninstall` juga menerima alias bentuk-kontinu (`installing`, `updating`, `uninstalling`) yang identik dalam flag dan perilaku dengan perintah dasarnya. Memperbarui dan mencopot pemasangan melalui kanal pemasangan — plugin Claude Code, `npx`, dan skrip pemasang satu-langkah — didokumentasikan dalam panduan pemasangan [Memperbarui](/docs/install/updating) dan [Mencopot pemasangan](/docs/install/uninstalling), bukan oleh alias itu sendiri.
+
+## Perintah
+
+| Perintah | Deskripsi |
+|---------|-------------|
+| [quickstart](/docs/cli-reference/quickstart) | Pengoperasian pertama terpandu: memastikan adanya profil, mempratinjau penulisan, lalu memasang. |
+| [install](/docs/cli-reference/install) | Memasang konfigurasi adapter asisten-pengkodean dari profil bersama (alias: `installing`). |
+| [update](/docs/cli-reference/update) | Memasang ulang konfigurasi adapter asisten-pengkodean dari profil bersama saat ini (alias: `updating`). |
+| [uninstall](/docs/cli-reference/uninstall) | Menghapus konfigurasi adapter asisten-pengkodean (alias: `uninstalling`). |
+| [rollback](/docs/cli-reference/rollback) | Memulihkan asisten-pengkodean ke keadaan sebelum pemasangan tercatatnya. |
+| [verify](/docs/cli-reference/verify) | Memverifikasi pemasangan adapter asisten-pengkodean. |
+| [status](/docs/cli-reference/status) | Melaporkan status pemasangan, verifikasi, dan penyimpangan untuk setiap asisten-pengkodean yang terdaftar. |
+| [diff](/docs/cli-reference/diff) | Mempratinjau perubahan konfigurasi yang tertunda untuk satu asisten-pengkodean. |
+| [harnesses](/docs/cli-reference/harnesses) | Mendaftar dan memeriksa adapter asisten-pengkodean yang terdaftar. |
+| [profile](/docs/cli-reference/profile) | Mengelola profil bersama Apothem. |
+| [doctor](/docs/cli-reference/doctor) | Menjalankan diagnostik sistem untuk pemasangan Apothem. |
+| [completion](/docs/cli-reference/completion) | Memancarkan skrip pelengkapan-otomatis shell yang dapat di-source (bash, zsh, fish, powershell). |
+
+Untuk perintah slash dan ikhtisar CLI tingkat-lebih-tinggi, lihat halaman referensi
+[Ikhtisar CLI](/docs/reference/cli) dan [Perintah slash](/docs/reference/commands).

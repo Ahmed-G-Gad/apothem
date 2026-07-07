@@ -1,0 +1,130 @@
+---
+title: "Apothem v1.0.1 —— ローンチリリース"
+description: "Apothem v1.0.1 が利用可能になりました —— 1 つの共有プロファイルを 17 の AI アシスタントハーネスへマテリアライズし、複数のインストール経路と、署名・証明されたリリースを備えています。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem v1.0.1 は、AI アシスタントハーネス向けのホスト非依存な構成マネージャー
+のローンチリリースです。1 つの共有プロファイル、17 のハーネス、
+単一の署名付きバージョン、そしてリリースそのものに添付されたサプライチェーンの
+証跡を備えています。
+
+## 主張：1 つのプロファイル、17 のハーネス
+
+Apothem は `~/.config/apothem/profile.yaml` にある単一の共有プロファイルを読み、
+各ハーネスが期待するネイティブ設定へとそれをマテリアライズします。あなたは、自分の振る舞いの
+ルール、スキル、フック、慣習を一度だけ書きます。Apothem はそれらを 17 の
+ハーネスネイティブなターゲットへとレンダリングし、同期を保ち続けます。
+
+このリリースの 17 のアダプター：
+
+- antigravity
+- claude-code
+- codebuddy
+- codex
+- cursor
+- gemini-cli
+- github-copilot
+- glm
+- hermes
+- kimi-code
+- kiro
+- open-claw
+- opencode
+- qwen-code
+- trae
+- windsurf
+- zed
+
+ワークフローにツールを 1 つ追加し、コマンドを 1 つ実行すれば、あなたの設定は
+そこにあります。ツールを取り除けば、Apothem はきれいにアンインストールします
+—— 取り残された孤立ファイルを残しません。
+
+## インストール
+
+複数のインストール経路、その下には 1 つの CLI：
+
+1. **Claude Code プラグイン** —— Claude Code の内部で：
+
+   ```text
+   /plugin marketplace add ahmed-g-gad/apothem
+   /plugin install apothem@apothem
+   ```
+
+2. **npx** —— npm パッケージ `@ahmed-g-gad/apothem` から CLI を直接実行し、
+   インストール手順は不要です：
+
+   ```bash
+   npx @ahmed-g-gad/apothem profile init
+   npx @ahmed-g-gad/apothem install --harness all --project .
+   ```
+
+3. **ワンショットのスクリプトインストーラー** —— 自己完結したランタイムと
+   `apothem` ランチャーを PATH 上に配置します：
+
+   ```bash
+   curl -fsSL https://apothem.ahmedgad.com/install.sh | sh    # POSIX
+   ```
+
+   ```powershell
+   irm https://apothem.ahmedgad.com/install.ps1 | iex         # Windows
+   ```
+
+4. **ツールネイティブなプラグインと拡張機能** —— Gemini CLI 拡張機能
+   （`gemini extensions install https://github.com/ahmed-g-gad/apothem`）、
+   Qwen Code 拡張機能（`qwen extensions install ahmed-g-gad/apothem`）、
+   Codex プラグイン（`codex plugin marketplace add ahmed-g-gad/apothem`）、
+   そして VS Code 系の拡張機能（Visual Studio Marketplace。
+   VS Code と GitHub Copilot をカバー）。
+
+## サプライチェーンの姿勢
+
+[GitHub Release v1.0.1](https://github.com/ahmed-g-gad/apothem/releases/tag/v1.0.1)
+は、コードとともに完全な証跡セットを携えています：
+
+- sdist と wheel。公開前に検査済み。
+- CycloneDX SBOM。
+- すべての成果物に対する Sigstore cosign のキーレス署名バンドル。
+- SLSA-3 ビルド来歴。リリースワークフローの内部そのもので検証済み。
+- プラットフォームランタイムアーカイブ（darwin / linux / windows）。署名付き
+  `SHA256SUMS` マニフェスト付き。
+
+リリースタグは GPG 署名され、npm パッケージは Trusted Publishing（OIDC）を通じて
+自動的な来歴付きで公開されます。
+
+## 箱の中身
+
+`apothem` CLI は、構成のライフサイクル全体に必要なオペレーター向けコマンドを
+公開します：
+
+- `apothem install` —— プロファイルを 1 つのハーネス、またはそのすべてへ
+  マテリアライズします。
+- `apothem uninstall` —— ハーネスのマテリアライズされた設定を取り除き、共有プロファイル
+  には手を触れません。
+- `apothem update` —— プロファイルを編集した後に再マテリアライズします。
+- `apothem verify` —— プロファイルとハーネスのディスク上の設定とのあいだの
+  ドリフトを検出します。
+- `apothem harnesses` —— 登録されたすべてのアダプターを一覧表示します。
+- `apothem profile` —— 共有プロファイルを検査し管理します。
+- `apothem doctor` —— 環境と構成の問題を診断します。
+
+各ハーネスアダプターは、統一された `HarnessAdapter` プロトコル ——
+`install`、`uninstall`、`is_installed`、`verify` —— を実装します。そのため、
+下層のベンダー形式がどうであれ、オペレーターの席から見ると、どのハーネスも
+予測どおりに振る舞います。設計についての詳細は
+[アダプターアーキテクチャの深掘り](/docs/blog/posts/multi-harness-adapter-design)
+を、形式の調停についての詳細は
+[ハーネス横断の慣習収束](/docs/blog/posts/cross-harness-convention-convergence)
+をお読みください。
+
+## 次にどこへ
+
+- [クイックスタート](/docs/install/quickstart) —— 最初のプロファイルを
+  インストールしてマテリアライズします。
+- [ハーネス](/docs/harnesses) —— 17 のターゲットすべてのアダプター別リファレンス。
+- [概念](/docs/concepts) —— プロファイルモデルとマテリアライズパイプライン。
+
+Apothem は MIT ライセンスで、
+[github.com/ahmed-g-gad/apothem](https://github.com/ahmed-g-gad/apothem)
+にて公開の場で開発されています。

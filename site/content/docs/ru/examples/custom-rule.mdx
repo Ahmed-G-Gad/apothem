@@ -1,0 +1,48 @@
+---
+title: "Пользовательское правило"
+description: "Создание пользовательского постоянного правила для вашего проекта."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Этот пример добавляет специфичное для проекта постоянное правило, которое
+обеспечивает соблюдение конвенции именования во всех файлах.
+
+## Файл правила
+
+```markdown
+---
+name: "kebab-filenames"
+description: "Enforce kebab-case filenames in the src/ tree"
+pathFilter: ""
+alwaysApply: true
+---
+
+# Kebab-case filenames
+
+All new files created under `src/` MUST use kebab-case naming
+(lowercase letters, digits, and hyphens only — no underscores,
+no camelCase, no PascalCase).
+
+**Correct:** `src/styles/button-group.css`, `src/components/nav-bar.css`
+**Incorrect:** `src/styles/buttonGroup.css`, `src/components/NavBar.css`
+
+When in doubt, err on the side of more hyphens.
+```
+
+Сохраните это в `rules/kebab-filenames.md` внутри корня установки вашего harness (`~/.claude/` для адаптера Claude Code; иначе подставьте нативный путь harness).
+
+## Проверьте, что правило загружено
+
+```bash
+python -m apothem.conformity.gate --check frontmatter
+```
+
+## Распространить на harness'ы
+
+Запустите команду обновления по одному разу на каждый установленный harness:
+
+```bash
+apothem update --harness claude-code
+apothem update --harness cursor
+```

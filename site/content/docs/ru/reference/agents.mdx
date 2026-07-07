@@ -1,0 +1,80 @@
+---
+title: "Помощники"
+description: "Постоянные работники-помощники для исследования, аудита, качества и оркестрации с контрактами frontmatter и протоколами изоляции при развёртывании."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Постоянные помощники существуют как плоские файлы в каноническом каталоге
+помощников с суффиксом `<name>.md`. Канонический путь:
+
+```text
+src/apothem/agents/
+```
+
+Каждый помощник — это роль исследования, аудита, качества или оркестрации со
+своими ограничениями инструментов и системным промптом.
+
+| Помощник | Файл | Паттерн | Политика модели |
+|-------|------|---------|--------------|
+| Codebase Explorer | см. путь к манифесту ниже | Исследование | выбирается хостом |
+| Convention Auditor | см. путь к манифесту ниже | Аудит | выбирается хостом |
+| Quality Gate | см. путь к манифесту ниже | Качество | выбирается хостом |
+| Memory Auditor | см. путь к манифесту ниже | Аудит | выбирается хостом |
+
+Канонические пути к манифестам:
+
+```text
+src/apothem/agents/codebase-explorer.md
+src/apothem/agents/convention-auditor.md
+src/apothem/agents/quality-gate.md
+src/apothem/agents/memory-auditor.md
+```
+
+## Контракт frontmatter
+
+```yaml
+---
+name: <agent name>
+version: <semver>
+updated: <YYYY-MM-DD>
+description: <one-line role>
+tools: <comma-separated tool list>
+disallowedTools: <comma-separated deny list>
+maxTurns: <integer>
+---
+```
+
+## Оркестрация
+
+Развёртывание помощников, протокол параллельного запуска, обеспечение
+контрактов возврата и дисциплина изоляции находятся в правиле оркестрации.
+Дерево диспетчеризации по работникам находится в правиле паттернов оркестрации,
+§Decision Tree. Канонические пути:
+
+```text
+src/apothem/rules/agent-orchestration.md
+src/apothem/rules/agent-orchestration-patterns.md
+```
+
+## Сгенерированный инвентарь агентов
+
+{/* apothem:generated-reference:start */}
+
+| Name | Description | Source |
+| --- | --- | --- |
+| `README` | Persistent agent definitions — the reusable sub-agent specifications the harness materializes whenever the orchestrator deploys a research, audit, or quality team. Each agent is a | [`src/apothem/agents/README.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/agents/README.md) |
+| `codebase-explorer` | Read-only codebase exploration — exhaustively find every instance of a pattern, trace call/import dependencies, discover host conventions, map architecture and layering. Use when the query is 'where is X used', 'find all callers of Y', 'what convention does this repo follow for Z', 'map the module structure', or 'trace what depends on this file' — never for edits, never for design. Works through Grep / Glob / Read plus read-only Bash and returns evidence-cited findings (path + line + snippet) exhaustive within the declared scope; reports gaps rather than guessing. | [`src/apothem/agents/codebase-explorer.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/agents/codebase-explorer.md) |
+| `convention-auditor` | Read-only conventions auditor: verify naming (kebab-case files, snake_case Python, frontmatter keys), cross-reference resolution (dead rule/skill/agent paths, broken anchors, half-edge bindings), formatting standards (SPDX header presence, frontmatter contract), and ecosystem coherence (orphan artifacts, sibling-convention drift, registry gaps). Dispatch when a change touches multiple rules/skills/agents/commands and you need a binary PASS/FINDING verdict per instance with file+line+expected+actual evidence — e.g. 'audit naming across the harness adapters', 'check every new rule resolves its Bindings cross-refs', 'verify the skills cohort matches the kebab-case + SKILL.md convention'. Read-only: never fixes, never runs shell. Conventions are owned upstream and verified against, never re-derived; every finding cites severity + evidence. | [`src/apothem/agents/convention-auditor.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/agents/convention-auditor.md) |
+| `dependency-auditor` | Read-only dependency-tree risk audit — flags unpinned, stale, duplicate, and known-vulnerable dependencies with manifest/lockfile evidence. Use when auditing supply-chain risk, before a release cut, after adding a dependency, or when a CVE/advisory lands. Detects the ecosystem via host-discovery: npm (package.json + package-lock/yarn/pnpm), pip (pyproject/requirements + lock), cargo (Cargo.toml + Cargo.lock), go (go.mod + go.sum). Runs npm audit / pip-audit / cargo audit / govulncheck and returns a risk-ranked table (known-vulnerable → unpinned → duplicate → stale) with per-row evidence; never widens a pin or escalates a scope — gaps surface as inquiry. | [`src/apothem/agents/dependency-auditor.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/agents/dependency-auditor.md) |
+| `fact-checker` | Read-only adversarial claim verification — decompose input into atomic claims, seek ≥2 independent sources, attempt refutation, assign cited verdicts (supported / refuted / unverifiable) with quoted evidence and confidence. Use when a claim needs proof before it ships: a benchmark or statistic in docs/copy, a 'X is faster/safer than Y' assertion, a citation that names an RFC or spec, a release note, or any factual claim a reviewer would challenge. Routes external claims through WebSearch / WebFetch and repository claims through Read / Glob / Grep; defaults to refuted-or-unverifiable when evidence is insufficient, never a charitable supported. | [`src/apothem/agents/fact-checker.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/agents/fact-checker.md) |
+| `mcp-builder` | Scaffold a Model Context Protocol (MCP) server skeleton from a tool/resource contract — contract-first, well-typed tools, minimal surface. Use when: 'build an MCP server for &lt;API&gt;', 'scaffold MCP tools from this spec', 'wire FastMCP/TypeScript-SDK tool definitions', 'add a tool that exposes &lt;resource&gt; over MCP'. Detection: tool names + argument shapes + return types + resource URIs are stated or derivable. Selects the SDK via host-discovery (FastMCP for Python, the TypeScript SDK for Node), emits one typed tool definition per contract entry plus a list-tools smoke test, and scaffolds nothing speculative. Not for: tuning, securing, or load-testing an existing server (those surface as adjacent gaps). | [`src/apothem/agents/mcp-builder.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/agents/mcp-builder.md) |
+| `memory-auditor` | Read-only memory-file auditor: cross-reference every claim in the harness memory tier (MEMORY.md index + topic files under `<harness-root>/projects/{hash}/memory/` and `<harness-root>/memory/`) against actual filesystem state — file/line/rule counts (glob and count), referenced paths (do they exist?), rule scope labels (match `pathFilter` frontmatter?), dates (against frontmatter `updated:` or `mtime`, never the system clock), and cross-reference matrices. Dispatch when MEMORY.md or a topic file may have drifted from reality and you need a per-claim PASS/FAIL verdict with contradicting evidence — e.g. 'audit MEMORY.md after the rules cohort was renamed', 'verify the memory index counts match the current ecosystem', 'check the debugging topic file for stale references to deleted artifacts'. Existence + name match only; never re-audit an artifact's internal correctness (convention-auditor's scope). Read-only: never writes, never fixes. | [`src/apothem/agents/memory-auditor.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/agents/memory-auditor.md) |
+| `prompt-evaluator` | Read-only rubric scoring of a prompt's output set — score each output against each named criterion (PASS/FAIL with cited evidence), aggregate per-criterion pass-rate, flag regressions against a baseline, and name recurring failure modes. Use when prompt or model outputs need a reproducible verdict before they ship: comparing a reprompted variant against the prior version, gating a system-prompt change, judging an LLM-as-judge eval set, scoring few-shot outputs against acceptance criteria, or proving a quality claim a reviewer would challenge. Requires an explicit rubric — an absent or underspecified rubric blocks scoring and routes as inquiry; never invents a criterion or threshold, never scores charitably. | [`src/apothem/agents/prompt-evaluator.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/agents/prompt-evaluator.md) |
+| `quality-gate` | Read-only quality-gate runner — discovers the host's lint / type-check / test / security / build commands, runs them in the correct order (build → type-check → tests+lint+security in parallel), and returns a per-gate PASS/FAIL verdict with file+line+error evidence. Reports, never fixes. Dispatch as a Quality team before a release cut, after a multi-file change, or to confirm a fix is green — e.g. 'run the full quality matrix and tell me what fails', 'gate this branch before I push', 'is the test suite green and the types clean?'. Detects tooling via host-discovery (ruff/eslint/markdownlint, mypy/tsc/pyright, pytest/jest/cargo test/go test, bandit/npm audit/gitleaks); never assumes a stack. | [`src/apothem/agents/quality-gate.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/agents/quality-gate.md) |
+| `refactor-surgeon` | Scoped, behavior-preserving refactor of a named target — extract the behavioral contract, re-derive clean-room (never edit in place), name the one deficiency removed, verify regression via the host's own tests. Dispatch on a single named target with a clear refactor intent — e.g. 'extract the duplicated validation in src/apothem/cli/install.py into a helper', 'untangle the nested conditionals in materializer.py without changing output', 'rename the god-object methods in adapter.py to reveal intent'. Touches only the named target; adjacent gaps surface as findings, never as edits. Behavior, contracts, and side effects are identical before and after; a behavior change is a defect. | [`src/apothem/agents/refactor-surgeon.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/agents/refactor-surgeon.md) |
+| `research-scout` | Read-only source discovery and ranking — decompose a research question into facets, fan out parallel web queries, rank candidates by authority, recency, and relevance, and return a deduplicated ranked source list. Use when a question needs sources before it can be answered: 'find the authoritative spec/RFC for X', 'what are the primary sources on Y', 'gather current references for a docs/copy claim', 'survey the landscape before a deep dive'. Fans external facets through WebSearch / WebFetch and any in-repo corpus through Read / Glob / Grep. Discovery and ranking only — never fabricates a URL, never synthesizes; claim verification and combination route to the fact-checker / source-synthesis surface. | [`src/apothem/agents/research-scout.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/agents/research-scout.md) |
+| `security-scanner` | Read-only secret, SAST-pattern, and config-risk sweep — a coarse first-pass that surfaces candidates fast and routes deep scanning to the host's CI scanners. Use when a security review is requested, before a release cut, after touching auth/crypto/IO surfaces, or when a secret may have been committed. Greps for credential literals (key/token/password/private-key/certificate, committed `.env` values), injection surfaces (`shell=True` on untrusted input, string-formatted SQL, command interpolation), unsafe-eval (`eval`/`exec`/`Invoke-Expression`), unsafe deserialization (`pickle.loads`, `yaml.load` without `SafeLoader`), and config risk (over-broad CI `permissions:`, unpinned Actions `uses:`, network egress). Routes known-vulnerable dependencies to the dependency-auditor agent, CVE/advisory triage to the vuln-triage skill, and leaked-credential rotation to the secret-rotation skill. | [`src/apothem/agents/security-scanner.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/agents/security-scanner.md) |
+| `test-runner` | Read-only test-suite runner — discovers the host's test command, runs it, and triages every failure by root cause with test+file+line+assertion evidence. Reports, never fixes. Dispatch as a Research/Quality team member after a code change, before a release cut, or to confirm a fix is green — e.g. 'run the tests and tell me what's failing and why', 'is the suite green on this branch?', 'triage the failures in the auth module'. Detects the runner via host-discovery (pytest/jest/cargo test/go test/Makefile target from the manifest + CI config); never assumes pytest. | [`src/apothem/agents/test-runner.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/agents/test-runner.md) |
+
+{/* apothem:generated-reference:end */}

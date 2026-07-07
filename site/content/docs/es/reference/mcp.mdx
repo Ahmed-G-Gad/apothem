@@ -1,0 +1,46 @@
+---
+title: "Servidores MCP"
+description: "Configuración de servidores Model Context Protocol — propiedad del operador y registrados a través del mecanismo MCP nativo de cada herramienta; Apothem sincroniza el inventario desde el perfil compartido pero no crea entradas de servidor."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Los servidores Model Context Protocol (MCP) son **propiedad del operador**.
+Apothem mantiene el inventario MCP en el perfil compartido y lo proyecta en la
+superficie MCP nativa de cada herramienta, pero no crea entradas de servidor
+propias — la superficie sigue siendo tuya para administrar.
+
+## Dónde se registran los servidores MCP
+
+Cada herramienta registra los servidores MCP mediante su propio mecanismo
+nativo, y Apothem respeta esa superficie en lugar de sobrescribirla. En el
+adaptador de Claude Code (uno entre muchos), los servidores se registran con
+`claude mcp add` en `~/.claude.json` (ámbito de usuario o local) y un `.mcp.json`
+a nivel de proyecto; otros adaptadores proyectan en sus propias superficies
+nativas. La configuración gestionada por Apothem nunca lleva un bloque
+`mcpServers`.
+
+## Añadir un servidor
+
+Registra un servidor mediante el mecanismo nativo de tu herramienta; la forma de
+entrada canónica es una clave bajo `mcpServers`:
+
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/some/path"]
+    }
+  }
+}
+```
+
+El runtime de la herramienta carga los servidores registrados al inicio de la
+sesión; reinicia la herramienta para tomar los nuevos servidores.
+
+## Convención de nomenclatura
+
+Las herramientas MCP se presentan al asistente como `mcp__<server>__<tool>`
+según la convención estándar de nomenclatura de herramientas MCP de la
+herramienta.

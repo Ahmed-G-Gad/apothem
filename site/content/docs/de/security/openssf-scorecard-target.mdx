@@ -1,0 +1,50 @@
+---
+title: "OpenSSF-Scorecard-Haltung"
+description: "Apothems OpenSSF-Scorecard-Ziel und die Nachweisoberflächen, die genutzt werden, um die Bewertung kontinuierlich zu verbessern."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem strebt die maximale OpenSSF-Scorecard-Bewertung an und hält dabei die öffentliche Fassade ehrlich darüber, was Scorecard aus einem neuen Repository mit einzelnem Betreuer ableiten kann und was nicht. Dieses Dokument zählt jede Prüfung auf, die Nachweisoberfläche, die sie untermauert, sowie die Kontrolle, die die Haltung aktuell hält.
+
+Die Live-Bewertung steht im [Scorecard-Viewer](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem); das Abzeichen befindet sich im [README-Kopf](https://github.com/ahmed-g-gad/apothem/blob/main/README.md).
+
+## Nachweismatrix je Prüfung
+
+| Prüfung | Nachweisoberfläche | Hinweise |
+|---|---|---|
+| **Binary-Artifacts** | [binary-artifacts-sweep.md](/docs/security/binary-artifacts-sweep) | Keine ausführbaren Binärdateien werden im Quellcode verfolgt; generierte Distributionsarchive verbleiben in `dist/`. |
+| **Branch-Protection** | [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) | `main` ist vor der Beförderung zu einer öffentlichen Veröffentlichung geschützt; Force-Pushes und Löschungen werden blockiert, nachdem der Commit der neuen Veröffentlichung gelandet ist. |
+| **CI-Tests** | [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) | Pytest-Matrix, ruff, mypy, CodeQL, Trivy, Doku-Build und Packaging-Smoke-Checks. |
+| **CII-Best-Practices** | OpenSSF-Best-Practices-Registrierung | Erfordert eine Registrierung seitens des Betreuers auf der OpenSSF-Best-Practices-Website; dies lässt sich nicht allein durch Repository-Dateien erledigen. |
+| **Code-Review** | Branch-Schutz + CODEOWNERS | Für künftige Pull Requests erzwungen; der Scorecard-Verlauf bleibt begrenzt, bis überprüfte PRs existieren. |
+| **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | Ein neues Projekt mit einzelnem Betreuer kann keinen organisationsübergreifenden Beitragsverlauf fabrizieren; dies verbessert sich natürlich, sobald Mitwirkende hinzukommen. |
+| **Dangerous-Workflow** | Workflow-Audit | Kein `pull_request_target`; Actions sind per SHA gepinnt und mit expliziten Berechtigungen eingegrenzt. |
+| **Dependency-Update-Tool** | [`renovate.json`](https://github.com/ahmed-g-gad/apothem/blob/main/renovate.json) | Renovate deckt GitHub Actions, Python-Manifeste, hash-verriegelte Veröffentlichungsanforderungen und npm-Oberflächen ab und hält dabei gruppierte Abhängigkeits-PRs verfügbar. |
+| **Fuzzing** | [`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | Hypothesis-Eigenschaftstests prüfen die Invarianten des Parsers und des Frontmatters; die vorgelagerte Scorecard erkennt Hypothesis möglicherweise nicht als Fuzzing-Integration an. |
+| **License** | [LICENSE](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) | MIT-Lizenz im Repository-Wurzelverzeichnis. |
+| **Maintained** | Git-Verlauf | Der Commit der aktuellen Veröffentlichung und die aktive Workflow-Kadenz belegen die Wartung; sehr neue Repositorys erhalten möglicherweise eine Altershinweis-Warnung. |
+| **Packaging** | [`.github/workflows/`](https://github.com/ahmed-g-gad/apothem/tree/main/.github/workflows) | Release-, Pages- und npmjs.com-Workflows, die das sdist, das Wheel, die SBOM, die SLSA-Provenienz und die Sigstore-Signaturen erzeugen. |
+| **Pinned-Dependencies** | Workflow-Audit + hash-verriegelte Anforderungen | Actions sind per SHA gepinnt; Installationen der Veröffentlichungswerkzeuge nutzen `--require-hashes`; nur in Workflows verwendete pip-Werkzeuge nutzen exakte Pins. |
+| **SAST** | [`.github/workflows/codeql.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/codeql.yml) | `security-extended`-Abfragen von CodeQL über Python und Actions. |
+| **Security-Policy** | [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) | Richtlinie zur koordinierten Offenlegung, Matrix der unterstützten Versionen und Reaktionszeitplan. |
+| **Signed-Releases** | [`.github/workflows/release.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/release.yml) | Schlüssellose Sigstore-Signaturen, SLSA-Provenienz, SBOM, Prüfsummen und Veröffentlichungsartefakte. |
+| **Token-Permissions** | Workflow-Audit | Workflows nutzen standardmäßig schreibgeschützte Berechtigungen; Schreibbereiche sind job-lokal und an Bereitstellungs-/Packaging-Operationen gebunden. |
+| **Vulnerabilities** | [`.github/workflows/pip-audit.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/pip-audit.yml) + [`.github/workflows/dependency-review.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/dependency-review.yml) | Wöchentlicher Schwachstellen-Scan und CI-Scan mit SARIF-Upload; das Dependency-Review-Gate blockiert Pull Requests, die verwundbare oder mit unzulässigen Lizenzen versehene Abhängigkeiten einführen. |
+
+## Bewertungsinterpretation
+
+Scorecard bewertet jede Prüfung auf einer Skala von 0 bis 10, und die Gesamtbewertung ist ein gewichteter Mittelwert. Kontrollen, die vom Repository-Verlauf, von einer Drittregistrierung oder von der Vielfalt der Mitwirkenden abhängen, werden explizit verfolgt statt überbeansprucht. Eine Drift bei einer dateigesteuerten Prüfung löst sofortige Behebung aus.
+
+## Aktualisierungskadenz
+
+- **Pro Push:** Der Scorecard-Workflow läuft bei jedem Push auf `main` erneut.
+- **Wöchentlich:** Montags um 02:30 UTC — erfasst Änderungen in der vorgelagerten Bewertungsmethodik + neu offengelegte Schwachstellen gegen bestehende gepinnte Abhängigkeiten.
+- **Pro Veröffentlichung:** Vor der öffentlichen Beförderung verifiziert der Betreuer die Live-Scorecard-Viewer-Oberfläche und vermerkt etwaige Plattformzustands-Limits.
+
+## Referenzen
+
+- [OpenSSF Scorecard](https://github.com/ossf/scorecard) — vorgelagertes Projekt
+- [Scorecard-Prüfungsreferenz](https://github.com/ossf/scorecard/blob/main/docs/checks.md) — Semantik je Prüfung
+- [`ossf/scorecard-action`](https://github.com/ossf/scorecard-action) — GitHub-Actions-Wrapper
+- [SLSA-Framework](https://slsa.dev/) — Lieferketten-Stufen (apothem wird auf SLSA-3 ausgeliefert)

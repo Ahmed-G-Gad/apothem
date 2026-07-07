@@ -1,0 +1,222 @@
+---
+title: "Primeiros passos: do zero a um harness funcional"
+description: "Um passo a passo completo de uma máquina vazia até uma configuração de harness materializada e verificada."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Este tutorial o guia por toda a sua primeira configuração do Apothem. Você
+começa sem nada instalado e termina com uma configuração de harness real —
+gerada a partir de um perfil que você escreveu, verificada e confirmada como
+funcional. Calcule cerca de quinze minutos. Cada comando abaixo é real e pode
+ser copiado e colado.
+
+<Callout title="Já está configurado?">
+  Se você só quer uma referência concisa dos quatro comandos principais,
+  consulte [Fluxos de trabalho principais](/docs/usage/getting-started). Esta
+  página é o passo a passo guiado do zero à primeira execução.
+</Callout>
+
+Ao terminar você terá:
+
+1. O Apothem instalado a partir do instalador por script.
+2. O perfil compartilhado que dirige cada harness, editado.
+3. A configuração nativa de um harness, materializada.
+4. Essa configuração verificada e uma primeira execução funcional confirmada.
+
+Usaremos o **Claude Code** como harness de exemplo ao longo do tutorial, porque
+ele é o padrão do instalador. Os mesmos passos se aplicam a qualquer harness
+suportado: troque o nome quando chegar à [lista de harnesses](/docs/harnesses).
+
+## O que você precisa primeiro
+
+- Um shell tipo Unix (macOS, Linux ou WSL). O instalador do PowerShell cobre o
+  Windows; este tutorial mostra a via do `bash`.
+- Python 3.10 ou mais recente no seu `PATH`. Verifique com `python3 --version`.
+- As duas bibliotecas de runtime que o motor importa do seu interpretador: `click` e `rich`. O restante da pilha (`pyyaml`, `jsonschema`) vem embutido (vendored) na árvore, então apenas essas duas precisam ser importáveis. O instalador as verifica, nomeia as que faltarem e oferece instalá-las para você, para que confirme e continue.
+
+O Apothem é distribuído como uma árvore de código-fonte empacotada em vez de um
+pacote publicado: não há um passo `pip install`. O instalador clona a árvore e
+executa o motor diretamente a partir dela.
+
+## Etapa 1 — Instalar o Apothem
+
+Execute o instalador de rede:
+
+```bash
+curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
+```
+
+O instalador realiza estas etapas:
+
+1. **Verificação de pré-requisitos.** O instalador localiza um interpretador Python 3.10+ real e confirma que as duas bibliotecas de runtime (`click` e `rich`) são importáveis. Se uma estiver faltando, ele a nomeia e oferece instalá-la para você — ou defina `APOTHEM_AUTO_INSTALL_DEPS=1` para instalar sem perguntar.
+2. **Colocação do código-fonte.** A árvore empacotada é clonada em `~/.apothem`
+   (substitua com a variável de ambiente `APOTHEM_HOME`). Uma nova execução
+   atualiza o clone existente em vez de duplicá-lo.
+3. **Inicialização do perfil.** Se você ainda não tem um perfil, o instalador
+   copia o perfil de exemplo para `~/.config/apothem/profile.yaml` e então
+   **para e pede que você o edite** antes de continuar. Isso é intencional: o
+   exemplo usa dados de identidade de marcador de posição, e você deve torná-lo
+   seu antes de gravar qualquer configuração de harness. Faremos isso na Etapa
+   2.
+
+Você pode dirigir a instalação com variáveis de ambiente. As que você tem mais
+probabilidade de usar:
+
+```bash
+# Install a different harness as the default, and point at a project profile.
+APOTHEM_HARNESS=cursor \
+APOTHEM_PROFILE="$HOME/.config/apothem/profile.yaml" \
+  curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
+```
+
+Outras variáveis reconhecidas são `APOTHEM_REPO` e `APOTHEM_REF` (qual remoto
+clonar e qual ref de git baixar; sem definir, resolve e verifica a última
+etiqueta de versão assinada, defina uma etiqueta para fixá-la ou `main` para a
+branch em movimento), `APOTHEM_ALLOW_UNVERIFIED=1` (rebaixa uma falha de
+verificação da assinatura da etiqueta para um aviso), `APOTHEM_SOURCE` (usa um
+checkout local existente em vez de clonar) e `APOTHEM_SKIP_VERIFY=1` (ignora a
+verificação pós-instalação, que de fato queremos executar, então deixe-a sem
+definir).
+
+Quando o instalador termina uma execução completa, ele imprime um banner que
+mostra como invocar o motor. Ele coloca um atalho `apothem` no seu `PATH`
+(POSIX: `$HOME/.local/bin`; Windows: `%LOCALAPPDATA%\Microsoft\WindowsApps`),
+de modo que, assim que esse diretório estiver no `PATH`, você executa o motor
+diretamente:
+
+```bash
+apothem <command>
+```
+
+Se o atalho não pôde ser colocado — ou se o diretório dele ainda não está no
+`PATH` — o banner imprime uma alternativa autocontida que não precisa de atalho:
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>
+```
+
+O restante deste tutorial escreve `apothem <command>`; se você estiver na forma
+alternativa, anteponha o prefixo exato que o banner do instalador imprimiu.
+
+## Etapa 2 — Torne o perfil seu
+
+O perfil compartilhado em `~/.config/apothem/profile.yaml` é a única fonte da
+verdade. Cada adaptador de harness o lê e deriva dele a configuração nativa
+desse harness. Edite-o uma vez e cada harness que você instalar permanece
+coerente.
+
+Abra-o no editor do motor, ou em qualquer editor de texto:
+
+```bash
+apothem profile edit
+```
+
+Um perfil mínimo e válido se parece com isto:
+
+```yaml
+identity:
+  name: "Example User"
+preferences:
+  style: "concise"
+rules:
+  - "Validate external input before writing files."
+```
+
+Substitua o `name` de marcador de posição pelo seu e adicione qualquer regra que
+você queira que cada harness aplique. Mantenha os valores de exemplo fictícios:
+o perfil foi pensado para poder ser compartilhado com segurança.
+
+Confirme que o motor relê suas edições sem problemas:
+
+```bash
+apothem profile show --json
+```
+
+Se o YAML estiver malformado, é aqui que você verá isso: corrija e execute
+novamente antes de continuar.
+
+## Etapa 3 — Materializar uma configuração de harness
+
+O instalador já materializou o harness padrão durante a Etapa 1. Para fazê-lo
+de forma explícita — ou para materializar um segundo harness — execute
+`install`:
+
+```bash
+apothem install --harness claude-code
+```
+
+Isso lê seu perfil e grava a configuração nativa do Claude Code. Para ver cada
+harness para o qual você pode apontar:
+
+```bash
+apothem harnesses list
+```
+
+Alguns harnesses são de escopo de projeto em vez de escopo de usuário, e esses
+precisam de um caminho `--project` para que o adaptador saiba onde gravar:
+
+```bash
+apothem install --harness cursor --project .
+```
+
+## Etapa 4 — Verificar e confirmar uma primeira execução
+
+Materializar é apenas metade da história. Agora confirme que a configuração foi
+aplicada corretamente:
+
+```bash
+apothem verify --harness claude-code
+```
+
+`verify` verifica que os arquivos de configuração esperados do harness existem
+e correspondem ao que o perfil declara. Uma execução limpa significa que a
+materialização teve sucesso.
+
+Para uma verificação de saúde de toda a máquina em cada adaptador registrado,
+execute:
+
+```bash
+apothem doctor
+```
+
+`doctor` relata o estado de instalação de cada adaptador e sai com um código
+diferente de zero se algum adaptador registrado relatar que não está instalado:
+um portão útil em um script de configuração.
+
+**Sua primeira execução.** Abra a ferramenta que você acabou de
+configurar — o Claude Code, no nosso exemplo — e inicie uma sessão em qualquer
+projeto. As regras e preferências que você escreveu no perfil já fazem parte do
+comportamento dessa ferramenta. Essa é a primeira execução funcional: o perfil
+que você editou na Etapa 2 está moldando uma sessão real.
+
+## O que você construiu
+
+Partindo de uma máquina vazia, você instalou o Apothem, escreveu um perfil
+compartilhado, materializou a partir dele a configuração nativa de um harness,
+verificou o resultado e o confirmou como funcional. O perfil é o artefato
+durável: mude-o uma vez e execute novamente
+`apothem update --harness <name>` para empurrar a mudança para qualquer
+harness.
+
+## Para onde seguir
+
+- **Adicione outra ferramenta.** A [lista de harnesses](/docs/harnesses) cobre
+  cada plataforma suportada e seu nome de adaptador. Repita a Etapa 3 com um
+  novo `--harness`.
+- **Aprofunde-se em uma única tarefa.** Os [guias práticos](/docs/how-to) são
+  receitas focadas em tarefas para escrever regras, criar planos e executar o
+  portão de conformidade.
+- **Consulte detalhes concretos.** A [referência](/docs/harnesses) documenta
+  cada adaptador, o esquema do perfil e toda a superfície da CLI.
+- **Planeje trabalho que sobrevive a uma sessão.** [Planejamento retomável](/docs/concepts/resumable-planning)
+  explica como o Apothem externaliza o trabalho de longa duração para uma suíte
+  `.apothem/plans/` local do projeto, de modo que uma nova sessão em qualquer
+  máquina o retoma no lugar.
+
+## Próximo passo recomendado
+
+**Execute `apothem doctor`** para verificar sua configuração — ele relata o
+estado de cada adaptador registrado, de modo que o harness que você acabou de
+instalar apareça como saudável enquanto os demais aparecem como ainda não
+instalados — antes de você passar a adicionar mais harnesses.

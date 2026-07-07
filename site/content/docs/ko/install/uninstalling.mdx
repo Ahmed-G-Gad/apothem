@@ -1,0 +1,43 @@
+---
+title: "제거"
+description: "Apothem을 제거하고 하니스 구성을 정리합니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## 하니스 구성을 먼저 제거하세요
+
+Apothem을 제거하기 전에 각 하니스 어댑터 구성을 제거하여 하니스를 깨끗한 상태로 두세요. `apothem harnesses list`를 실행하여 현재 설치된 어댑터를 확인한 다음, 하나씩 제거하거나 레지스트리 전체 선택자를 사용하세요.
+
+```bash
+apothem uninstall --harness claude-code
+apothem uninstall --harness cursor --project /path/to/project
+apothem uninstall --harness all --project /path/to/project --yes
+```
+
+하니스별 확인 프롬프트를 건너뛰려면 `--yes`를 전달하세요.
+
+## 엔진 제거
+
+제거는 사용한 설치 채널과 일치합니다.
+
+- **Claude Code 플러그인** — Claude Code 내부에서 플러그인을 제거하세요:
+  `/plugin uninstall apothem@apothem` (마켓플레이스 항목은
+  `/plugin marketplace remove ahmed-g-gad/apothem`으로 제거할 수 있습니다).
+- **npx** — 제거할 것이 없습니다. `npx`는 캐시에서 실행됩니다. 캐시된 사본을 없애려면
+  `npm cache clean --force`로 지우세요.
+- **원샷 설치 프로그램** — 체크아웃에서 해당하는 제거 스크립트를 실행하세요:
+  `scripts/installer/uninstall.sh`(POSIX) 또는
+  `scripts/installer/uninstall.ps1`(PowerShell). 둘 다 제거 전에 확인을 받으며
+  안전하지 않은 대상은 거부합니다.
+- **백업 및 상태** — 설치 백업은 `~/.apothem/backups/` 아래에 있습니다.
+  더 이상 필요하지 않으면 `~/.apothem/`을 삭제하세요.
+
+## 제거되지 않는 것
+
+- `~/.config/apothem/profile.yaml` 또는 `--profile PATH`의 공유 프로필 YAML은
+  `apothem uninstall`에 의해 절대 제거되지 않습니다.
+- 하니스 디렉터리에 있는 관련 없는 운영자 작성 파일은 보존됩니다.
+- `<project>/.apothem/plans/`(및 레거시 `<project>/.plans/`) 아래의 플랜 스위트는 영향을 받지 않습니다.
+
+하니스 루트를 완전히 정리하려면, 보관하려는 사용자 지정 규칙, 헬퍼, 또는 프로필 파일을 백업했는지 확인한 후 [하니스 참조 페이지](/docs/harnesses)에 문서화된 하니스 네이티브 경로를 제거하세요.

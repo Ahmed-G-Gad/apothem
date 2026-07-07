@@ -1,0 +1,92 @@
+---
+title: "工具适配器注册表"
+description: "内置 Apothem 工具适配器的技术注册表参考。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+工具适配器注册表是 CLI、文档、固件测试与约定锚点校验所使用的权威适配器清单。
+运行时源是 `src/apothem/lib/harness_registry.py`；下表中的每一行都可追溯到该注册表、
+各适配器的 `capabilities.yml` 以及每个适配器的 `STANDARD-CONVENTION-PIN.md`。
+
+## 注册表矩阵
+
+| 工具 | 安装名称 | 作用域 | 格式 | 目标 | MCP | 约定锚点 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Antigravity | `antigravity` | user | markdown | `~/.gemini/GEMINI.md`；`~/.gemini/antigravity-cli/plugins/apothem/` | discovery-pending | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
+| Claude Code | `claude-code` | user | json | `~/.claude/settings.json`；原生 `agents`、`rules`、`skills`、`statuslines`、`output-styles`；`~/.claude/.apothem/support/` | native | `src/apothem/harnesses/claude_code/STANDARD-CONVENTION-PIN.md` |
+| CodeBuddy | `codebuddy` | project | markdown | `<project>/.codebuddy/rules/apothem-rules.md` | native | `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` |
+| Codex | `codex` | user | markdown | `~/.codex/AGENTS.md`；`hooks.json`；`hooks/`；`agents/*.toml`；`~/.agents/skills/`；`~/.config/apothem/` | discovery-pending | `src/apothem/harnesses/codex/STANDARD-CONVENTION-PIN.md` |
+| Cursor | `cursor` | project | mdc | `<project>/.cursor/rules/apothem-rules.mdc` | native | `src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md` |
+| Gemini CLI | `gemini-cli` | project | markdown | `<project>/GEMINI.md`；`<project>/.gemini/{commands,skills,agents}/` | discovery-pending | `src/apothem/harnesses/gemini_cli/STANDARD-CONVENTION-PIN.md` |
+| GitHub Copilot | `github-copilot` | project | markdown | `<project>/.github/copilot-instructions.md` | unsupported | `src/apothem/harnesses/github_copilot/STANDARD-CONVENTION-PIN.md` |
+| GLM (Z.ai) | `glm` | project | toml | `<project>/.apothem/providers/glm.toml` | unsupported | `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md` |
+| Hermes | `hermes` | user | yaml | `~/.hermes/config.yaml`；`~/.hermes/.apothem/support/` | unsupported | `src/apothem/harnesses/hermes/STANDARD-CONVENTION-PIN.md` |
+| Kimi Code | `kimi-code` | project | markdown | `<project>/AGENTS.md`；`<project>/.kimi-code/.apothem/support/` | discovery-pending | `src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md` |
+| Kiro | `kiro` | project | markdown | `<project>/.kiro/steering/apothem-rules.md` | native | `src/apothem/harnesses/kiro/STANDARD-CONVENTION-PIN.md` |
+| Open-Claw | `open-claw` | user | json | `~/.openclaw/openclaw.json`；`~/.openclaw/.apothem/support/` | unsupported | `src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md` |
+| OpenCode | `opencode` | user | json | `~/.config/opencode/opencode.json`；原生 `commands`、`skills`、`agents`；`apothem/` | native | `src/apothem/harnesses/opencode/STANDARD-CONVENTION-PIN.md` |
+| Qwen Code | `qwen-code` | user | json | `~/.qwen/settings.json`；`~/.qwen/QWEN.md`；原生 `commands`、`skills`、`agents`；`apothem/` | native | `src/apothem/harnesses/qwen_code/STANDARD-CONVENTION-PIN.md` |
+| Trae | `trae` | project | markdown | `<project>/.trae/rules/apothem-rules.md` | native | `src/apothem/harnesses/trae/STANDARD-CONVENTION-PIN.md` |
+| Windsurf | `windsurf` | project | markdown | `<project>/.devin/rules/apothem-rules.md` | unsupported | `src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md` |
+| Zed | `zed` | project | markdown | `<project>/.rules` | native | `src/apothem/harnesses/zed/STANDARD-CONVENTION-PIN.md` |
+
+## 套件队列支持
+
+状态值为 `native`、`converted`、`support-tree`、`profile-projected`、`unsupported`、`not-applicable` 和 `discovery-pending`。
+
+| 工具 | 原生或已转换套件 | 支持树套件 | 不支持或待处理警告 |
+| --- | --- | --- | --- |
+| Antigravity | 已转换的命令与委托工作者；原生技能、子工作者调度、系统提示模板；按配置档案投射的工具限制 | 钩子、规则、模板 | 状态栏、输出风格；MCP 与记忆发现待处理 |
+| Claude Code | 已转换的命令；原生技能、钩子、委托工作者、规则、状态栏、输出风格、MCP、子工作者调度、工具限制、记忆 | 模板 | `CLAUDE.md` 仍归操作者所有；不存在适配器写入的系统提示模板 |
+| CodeBuddy | 原生规则、MCP、系统提示模板、记忆；按配置档案投射的工具限制 | 无 | 命令、技能、钩子、委托工作者、状态栏、输出风格、子工作者调度 |
+| Codex | 已转换的命令与委托工作者；原生技能、钩子、子工作者调度、系统提示模板、记忆；按配置档案投射的工具限制 | 规则、模板 | 状态栏、输出风格；因 Apothem 不覆盖 `config.toml`，MCP 发现待处理 |
+| Cursor | 原生规则、MCP、系统提示模板；按配置档案投射的工具限制 | 无 | 命令、技能、钩子、委托工作者、状态栏、输出风格、子工作者调度、记忆 |
+| Gemini CLI | 已转换的命令与委托工作者；原生技能、子工作者调度、系统提示模板；按配置档案投射的工具限制 | 钩子、规则、模板 | 状态栏、输出风格；MCP 与记忆发现待处理 |
+| GitHub Copilot | 原生规则与系统提示模板；按配置档案投射的工具限制 | 无 | 命令、技能、钩子、委托工作者、状态栏、输出风格、MCP、子工作者调度、记忆 |
+| GLM (Z.ai) | 无 | 无 | 命令、技能、钩子、委托工作者、规则、模板、状态栏、输出风格、MCP、子工作者调度、工具限制、系统提示模板、记忆——GLM 是一个无原生配置面的模型后端 |
+| Hermes | 已转换的命令；原生系统提示模板；按配置档案投射的工具限制 | 技能、钩子、委托工作者、规则、模板 | 状态栏、输出风格、MCP、子工作者调度 |
+| Kimi Code | 原生子工作者调度、系统提示模板、记忆 | 命令、技能、钩子、委托工作者、规则、模板 | 状态栏、输出风格；MCP 与工具限制发现待处理 |
+| Kiro | 原生规则、MCP、系统提示模板、记忆；按配置档案投射的工具限制 | 无 | 命令、技能、钩子、委托工作者、状态栏、输出风格、子工作者调度 |
+| Open-Claw | 已转换的命令；原生系统提示模板；按配置档案投射的工具限制 | 技能、钩子、委托工作者、规则、模板 | 状态栏、输出风格、MCP、子工作者调度 |
+| OpenCode | 已转换的命令与委托工作者；原生技能、MCP、子工作者调度、系统提示模板；按配置档案投射的工具限制 | 钩子、规则、模板 | 状态栏、输出风格 |
+| Qwen Code | 已转换的命令与委托工作者；原生技能、钩子、MCP、子工作者调度、系统提示模板、记忆；按配置档案投射的工具限制 | 规则、模板 | 状态栏、输出风格 |
+| Trae | 原生规则、MCP、系统提示模板；按配置档案投射的工具限制 | 无 | 命令、技能、钩子、委托工作者、状态栏、输出风格、子工作者调度、记忆 |
+| Windsurf | 原生规则与系统提示模板；按配置档案投射的工具限制 | 无 | 命令、技能、钩子、委托工作者、状态栏、输出风格、MCP、子工作者调度、记忆 |
+| Zed | 原生规则、MCP、系统提示模板；按配置档案投射的工具限制 | 无 | 命令、技能、钩子、委托工作者、状态栏、输出风格、子工作者调度、记忆 |
+
+## 校验钩子
+
+注册表通过以下检查保持同步：
+
+| 检查 | 用途 |
+| --- | --- |
+| `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | 确认每个适配器都有当前的约定锚点，且注册表仍然枚举十七个适配器。 |
+| `python -m apothem.conformity.gate --all .` | 运行文档与实现的合规性检查。 |
+| `python -m pytest` | 执行注册表固件测试与适配器契约测试。 |
+
+## 生成的工具适配器参考
+
+{/* apothem:generated-reference:start */}
+
+| Harness | Scope | Format | Target paths |
+| --- | --- | --- | --- |
+| Antigravity (`antigravity`) | user | markdown | `~/.gemini/GEMINI.md`<br />`~/.gemini/antigravity-cli/plugins/apothem/` |
+| Claude Code (`claude-code`) | user | json | `~/.claude/.apothem/support/{templates,hooks,conformity,schemas}/`<br />`~/.claude/settings.json`<br />`~/.claude/{agents,rules,skills,statuslines,output-styles}/` |
+| CodeBuddy (`codebuddy`) | project | markdown | `<project>/.codebuddy/rules/apothem-rules.md` |
+| Codex (`codex`) | user | markdown | `~/.agents/skills/`<br />`~/.codex/AGENTS.md`<br />`~/.codex/agents/*.toml`<br />`~/.codex/hooks.json`<br />`~/.codex/hooks/`<br />`~/.config/apothem/{rules,templates}/` |
+| Cursor (`cursor`) | project | mdc | `<project>/.cursor/rules/apothem-rules.mdc` |
+| Gemini CLI (`gemini-cli`) | project | markdown | `<project>/.gemini/.apothem/support/`<br />`<project>/.gemini/{commands,skills,agents}/`<br />`<project>/GEMINI.md` |
+| GitHub Copilot (`github-copilot`) | project | markdown | `<project>/.github/copilot-instructions.md` |
+| GLM (Z.ai) (`glm`) | project | toml | `<project>/.apothem/providers/glm.toml` |
+| Hermes (`hermes`) | user | yaml | `~/.hermes/.apothem/support/`<br />`~/.hermes/config.yaml` |
+| Kimi Code (`kimi-code`) | project | markdown | `<project>/.kimi-code/.apothem/support/`<br />`<project>/AGENTS.md` |
+| Kiro (`kiro`) | project | markdown | `<project>/.kiro/steering/apothem-rules.md` |
+| Open-Claw (`open-claw`) | user | json | `~/.openclaw/.apothem/support/`<br />`~/.openclaw/openclaw.json` |
+| OpenCode (`opencode`) | user | json | `~/.config/opencode/.apothem/support/`<br />`~/.config/opencode/opencode.json`<br />`~/.config/opencode/{commands,skills,agents}/` |
+| Qwen Code (`qwen-code`) | user | json | `~/.qwen/.apothem/support/`<br />`~/.qwen/QWEN.md`<br />`~/.qwen/settings.json`<br />`~/.qwen/{commands,skills,agents}/` |
+| Trae (`trae`) | project | markdown | `<project>/.trae/rules/apothem-rules.md` |
+| Windsurf (`windsurf`) | project | markdown | `<project>/.devin/rules/apothem-rules.md` |
+| Zed (`zed`) | project | markdown | `<project>/.rules` |
+
+{/* apothem:generated-reference:end */}

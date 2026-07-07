@@ -1,0 +1,124 @@
+---
+title: "install"
+description: "apothem install कमांड के लिए CLI संदर्भ।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+साझा प्रोफ़ाइल से एक कोडिंग-सहायक अडैप्टर कॉन्फ़िगरेशन इंस्टॉल करता है।
+
+## सारांश
+
+```
+apothem install --harness NAME|all [--profile PATH] [--dry-run]
+                 [--project PATH]
+                 [--quiet|-q] [--verbose|-v]
+                 [--format plain|json] [--json] [--no-color]
+```
+
+साझा प्रोफ़ाइल को लोड और मान्य करता है, एक नामित अडैप्टर या रजिस्ट्री-व्यापी `all` सेट चुनता है, मूर्तिकरण योजना को मान्य करता है, और कोडिंग-सहायक मूल कॉन्फ़िगरेशन के साथ-साथ सहायक कोहोर्ट लिखता है। परियोजना-स्कोप्ड अडैप्टरों को `--project PATH` की आवश्यकता होती है।
+
+सतत-रूप उपनाम `apothem installing` उसी हैंडलर पर रिज़ॉल्व होता है।
+
+## प्रभाव-त्रिज्या पूर्वावलोकन
+
+`install --harness all` मिश्रित स्कोप में फैनआउट होता है: परियोजना-स्कोप्ड अडैप्टर प्रदान किए गए `--project` रूट के नीचे लिखते हैं, जबकि उपयोगकर्ता-स्कोप्ड अडैप्टर आपकी होम डायरेक्टरी के नीचे — उस रूट के बाहर — लिखते हैं। किसी भी फ़ाइल को लिखने से पहले, यह कमांड ठोस लक्ष्यों को दो शीर्षकों के अंतर्गत समूहीकृत करके प्रिंट करता है: वे जो परियोजना रूट के भीतर हैं और वे जो आपकी होम डायरेक्टरी के नीचे हैं।
+
+जब चयन परियोजना रूट के बाहर लिखता है, तो एक इंटरैक्टिव पुष्टि होम-रूटेड राइट्स की रक्षा करती है। `--yes`, एक गैर-इंटरैक्टिव shell (कोई TTY नहीं), `--dry-run`, और `--format json` प्रत्येक बिना पूछे आगे बढ़ते हैं; `--dry-run` और `--format json` कुछ भी नहीं लिखते। प्रॉम्प्ट को अस्वीकार करना किसी भी फ़ाइल को लिखने से पहले निरस्त कर देता है।
+
+## क्षमता टिप्पणियाँ
+
+प्रत्येक अडैप्टर केवल उन्हीं क्षमताओं को प्रक्षेपित करता है जिन्हें उसका कोडिंग-सहायक मूल रूप से समर्थन करता है; बिना मूल सतह वाली क्षमताएँ चुपचाप गिराई नहीं जातीं, बल्कि रिपोर्ट की जाती हैं। plain मोड में यह प्रति कोडिंग-सहायक एक एकल समूहीकृत टिप्पणी है (उदाहरण के लिए `Note: <harness> - 9 capabilities not projected; pass --verbose for detail`); `--verbose` के तहत प्रत्येक क्षमता अपनी स्वयं की औचित्य पंक्ति प्रिंट करती है। `--format json` एनवेलप वर्बोसिटी की परवाह किए बिना हमेशा पूर्ण `warnings` ऐरे ले जाता है।
+
+## विकल्प
+
+| विकल्प | विवरण |
+|---|---|
+| `--harness NAME` | इंस्टॉल करने के लिए कोडिंग-सहायक अडैप्टर, या रजिस्ट्री-व्यापी सेट के लिए `all` (आवश्यक)। पंजीकृत नामों के लिए `apothem harnesses list` चलाएँ। |
+| `--profile PATH` | साझा प्रोफ़ाइल YAML का पथ। डिफ़ॉल्ट `~/.config/apothem/profile.yaml` है। |
+| `--dry-run` | फ़ाइलें लिखे बिना इंस्टॉल का पूर्वावलोकन करता है। |
+| `--project PATH` | परियोजना-स्कोप्ड कोडिंग-सहायकों के लिए परियोजना रूट। |
+| `--quiet`, `-q` | सूचनात्मक आउटपुट को दबाता है; केवल त्रुटियाँ उत्सर्जित होती हैं। |
+| `--verbose`, `-v` | प्रति कोडिंग-सहायक समूहीकृत टिप्पणी के बजाय प्रत्येक गैर-प्रक्षेपित क्षमता का औचित्य प्रिंट करता है। |
+| `--format plain\|json` | आउटपुट प्रारूप (डिफ़ॉल्ट: `plain`)। |
+| `--json` | `--format json` का संक्षिप्त रूप। |
+| `--no-color` | आउटपुट में ANSI रंग कोड को अक्षम करता है। |
+| `-h`, `--help` | सहायता दिखाता है और बाहर निकलता है। |
+
+## JSON आउटपुट
+
+जब `--json` (या `--format json`) प्रदान किया जाता है, तो stdout पर एक एकल JSON दस्तावेज़ लिखा जाता है:
+
+```json
+{
+  "status": "success",
+  "command": "install",
+  "action": "installed",
+  "harness": "claude-code",
+  "profile_path": "C:\\Users\\Example\\.config\\apothem\\profile.yaml",
+  "project": null,
+  "files_written": ["C:\\Users\\Example\\.claude\\settings.json"],
+  "results": [],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+`--dry-run` के लिए:
+
+```json
+{
+  "status": "dry_run",
+  "command": "install",
+  "action": "dry_run",
+  "harness": "claude-code",
+  "files_written": [],
+  "results": [],
+  "warnings": [],
+  "error": null
+}
+```
+
+अपेक्षित मान्यता त्रुटियाँ उसी एनवेलप का उपयोग करती हैं और एक error ऑब्जेक्ट शामिल करती हैं:
+
+```json
+{
+  "status": "error",
+  "command": "install",
+  "harness": "all",
+  "files_written": [],
+  "error": {
+    "code": "project.required",
+    "field": "project",
+    "reason": "project-scope harnesses require --project: cursor, gemini-cli, github-copilot, windsurf.",
+    "fix": "Pass --project PATH or select only user-scope harnesses."
+  }
+}
+```
+
+## उदाहरण
+
+```bash
+apothem install --harness claude-code
+apothem install --harness claude-code --dry-run
+apothem install --harness cursor --project . --profile ~/profile.yaml --json
+apothem install --harness all --project . --dry-run --json
+apothem Installing --harness claude-code   # continuous-form alias
+apothem installing --harness claude-code   # lowercase variant
+```
+
+## निकास कोड
+
+| कोड | अर्थ |
+|---|---|
+| 0 | अडैप्टर सफलतापूर्वक इंस्टॉल हुआ या dry-run साफ़-सुथरे ढंग से योजनाबद्ध हुआ |
+| 1 | अपेक्षित मान्यता, प्रोफ़ाइल, कोडिंग-सहायक, परियोजना, या अडैप्टर त्रुटि |
+| 2 | कम से कम एक राइट के बाद आंशिक बैच मूर्तिकरण |
+
+## यह भी देखें
+
+- `apothem installing` — इस कमांड का सतत-रूप उपनाम (यहाँ प्रलेखित; CLI दोनों रूपों को स्वीकार करता है)
+- [apothem update](/docs/cli-reference/update) — वर्तमान प्रोफ़ाइल को एक कोडिंग-सहायक पर फिर से लागू करता है
+- [apothem verify](/docs/cli-reference/verify) — पुष्टि करता है कि अडैप्टर सक्रिय है
+- [शुरुआत करना](/docs/install) — पूर्ण इंस्टॉलेशन गाइड

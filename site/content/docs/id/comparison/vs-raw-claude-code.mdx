@@ -1,0 +1,50 @@
+---
+title: "Apothem versus konfigurasi Claude Code manual"
+description: "Memelihara seluruh pohon konfigurasi native Claude Code dengan tangan versus mengelolanya melalui profil bersama Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Claude Code (dari pembuat Anthropic) menyimpan konfigurasi native-nya di bawah
+`~/.claude/`. Adapter claude-code dari Apothem adalah adapter permukaan-penuh:
+ia menyebarkan korpus bersama langsung ke pohon itu. Halaman ini
+mempertentangkan pemeliharaan konfigurasi dengan tangan terhadap pengelolaannya
+dengan Apothem.
+
+## Perbandingan upaya
+
+| Tugas | Konfigurasi manual | Dikelola Apothem |
+| ---- | --------------- | --------------- |
+| Menulis aturan, agen, perintah, skill | Menyunting tiap permukaan di `~/.claude/` dengan tangan | Menulis sekali di korpus bersama |
+| Memelihara output-style dan statusline | Menyunting dengan tangan per permukaan | Disebarkan dari korpus bersama |
+| Mengonfigurasi hook | Menyunting entri hook `settings.json` dengan tangan | Disebarkan (PreToolUse/PostToolUse/Stop/SessionStart) |
+| Menjaga konfigurasi selaras dengan lingkungan lain | Manual, per alat | Otomatis saat `apothem update` |
+| Memverifikasi konfigurasi sudah benar | Inspeksi manual | `apothem verify --harness claude-code` |
+
+## Apa yang dikelola Apothem
+
+Adapter menyebarkan aturan, agen, perintah, skill, output-style, statusline, dan
+`settings.json` ke `~/.claude/`. Hook native PreToolUse, PostToolUse, Stop, dan
+SessionStart dikonfigurasi dari korpus bersama.
+
+Apothem **tidak** mengelola `CLAUDE.md` — file itu adalah wilayah milik operator.
+Instruksi proyek dan pribadi Anda di `CLAUDE.md` tetap milik Anda; Apothem
+mengatur permukaan-permukaan yang disebarkan di sekitarnya.
+
+## Jalur migrasi
+
+1. Jalankan `apothem profile init` untuk membuat profil bersama jika Anda belum
+   memilikinya.
+2. Pindahkan aturan, agen, perintah, dan skill yang ada di `~/.claude/` ke
+   korpus bersama.
+3. Biarkan `CLAUDE.md` di tempatnya — Apothem tidak akan menyentuhnya.
+4. Jalankan `apothem install --harness claude-code` untuk menyebarkan korpus.
+5. Jalankan `apothem verify --harness claude-code` untuk memastikan konfigurasi
+   sudah terpasang.
+6. Gunakan `apothem update --harness claude-code` untuk setiap perubahan
+   berikutnya.
+
+## Baca berikutnya
+
+- [Referensi adapter Claude Code](/docs/harnesses/claude-code)
+- [Ikhtisar perbandingan](/docs/comparison)

@@ -1,0 +1,358 @@
+---
+title: "Installation"
+description: "Aperçu de l'installation d'Apothem — huit canaux d'installation, chacun avec ses prérequis, une commande prête à copier et une étape de vérification : le plugin Claude Code, le shim npm, les installateurs en une seule étape, l'extension de la famille VS Code, les trois extensions d'amorçage en ligne de commande et le moteur direct."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem s'installe en moins de deux minutes et fonctionne aux côtés de votre
+configuration d'environnement existante. Chaque voie exécute le même moteur
+autonome — l'arborescence de code source porte ses dépendances vendorisées et
+s'exécute depuis un checkout sur Python 3.10 ou plus récent du système (voir
+[le runtime autonome](/docs/architecture/self-contained-runtime)).
+
+**Deux prérequis sont partagés par chaque voie :** **Python 3.10 ou plus récent**
+du système sur le `PATH`, avec les paquets `click` et `rich` importables sous
+lui. Les voies du shim npm et des plugins d'outils ont en plus besoin de
+**Node.js 18 ou plus récent** pour exécuter `npx`. La section propre à chaque
+canal ci-dessous répète ses prérequis exacts, une commande prête à copier et une
+étape de vérification.
+
+## Choisir un canal
+
+Huit canaux d'installation sont disponibles. Choisissez selon la façon dont vous
+travaillez déjà.
+
+| # | Canal | Fournit | Prérequis |
+|---|-------|---------|-----------|
+| 1 | [Plugin Claude Code](#1-claude-code-plugin) | Environnement complet dans Claude Code | Claude Code · Python 3.10+ |
+| 2 | [Shim npm (`npx`)](#2-npm-shim-npx) | Environnement complet, tout outil | Node 18+ · Python 3.10+ |
+| 3 | [Installateurs en une seule étape](#3-one-shot-installers) | Environnement complet + une commande `apothem` | Python 3.10+ (`git` pour une installation réseau) |
+| 4 | [Extension de la famille VS Code](#4-vs-code-family-extension) | Environnement complet depuis l'éditeur | VS Code · Node 18+ · Python 3.10+ |
+| 5 | [Amorçage en ligne de commande (hôte à extensions)](#5-command-line-bootstrap-extension-host) | Amorçage qui exécute le moteur | Son outil hôte · Node 18+ · Python 3.10+ |
+| 6 | [Amorçage en ligne de commande (hôte `qwen-code`)](#6-command-line-bootstrap-qwen-code-host) | Amorçage qui exécute le moteur | Son outil hôte · Node 18+ · Python 3.10+ |
+| 7 | [Amorçage en ligne de commande (hôte à plugins)](#7-command-line-bootstrap-plugin-host) | Amorçage qui exécute le moteur | Son outil hôte · Node 18+ · Python 3.10+ |
+| 8 | [Moteur direct (`python -m apothem`)](#8-direct-engine-python--m-apothem) | Environnement complet depuis un checkout | Python 3.10+ (`click`, `rich`) |
+
+<Callout title="Quels canaux fournissent l'environnement complet">
+  Le shim npm (2), les installateurs en une seule étape (3) et le moteur direct
+  (8) matérialisent à eux seuls l'ensemble de l'unité synchronisée pour n'importe
+  quel environnement. Les trois extensions en ligne de commande (5–7) installent
+  un petit **amorçage** qui délègue au moteur (`npx @ahmed-g-gad/apothem install`)
+  pour matérialiser l'environnement complet — elles sont le point d'entrée, pas la
+  livraison complète à elles seules. Le plugin Claude Code (1) et l'extension de
+  la famille VS Code (4) portent le moteur et l'exécutent directement.
+</Callout>
+
+Chaque voie est idempotente : relancer est sûr et converge vers le même état.
+
+## 1. Plugin Claude Code
+
+**Prérequis :** Claude Code, et Python 3.10+ du système sur le `PATH`.
+
+La voie du plugin s'exécute entièrement à l'intérieur de Claude Code. Elle
+regroupe le moteur d'Apothem avec ses commandes slash, ses workers délégués, ses
+skills, ses règles et ses hooks, tous exécutables depuis l'arborescence
+autonome du plugin :
+
+```text title="Inside Claude Code"
+/plugin marketplace add ahmed-g-gad/apothem
+/plugin install apothem@apothem
+```
+
+Après l'installation, l'ensemble des commandes d'Apothem (`/plan-spec`,
+`/code-review`, `/security-audit` et le reste), les workers délégués inclus et
+les skills sont disponibles dans chaque session Claude Code. Consultez
+[Commandes slash](/docs/reference/commands) pour le catalogue complet des
+commandes.
+
+**Vérifiez :** exécutez `/plugin` dans Claude Code et confirmez qu'**apothem**
+apparaît comme installé, ou consultez le rapport de dérive depuis un terminal :
+
+```bash title="Verify"
+npx @ahmed-g-gad/apothem verify --harness claude-code
+```
+
+## 2. Shim npm (`npx`)
+
+**Prérequis :** Node.js 18+ (pour `npx`) et Python 3.10+ du système sur le
+`PATH`. Le shim localise l'interpréteur et transmet chaque commande de la CLI au
+moteur inclus — rien n'est placé de façon permanente sur votre système.
+
+```bash title="npx"
+npx @ahmed-g-gad/apothem install --harness claude-code
+```
+
+Il s'exécute aussi directement depuis le dépôt :
+
+```bash title="npx from the repository"
+npx github:ahmed-g-gad/apothem install --harness claude-code
+```
+
+Chaque commande de la [référence de la CLI](/docs/cli-reference) fonctionne sous
+cette forme ; remplacez `apothem` par `npx @ahmed-g-gad/apothem`. C'est aussi la
+voie d'installation pour OpenCode et tout autre outil qui n'expose aucun registre
+de plugins ou d'extensions distinct — Apothem les synchronise directement dans
+leur répertoire de configuration natif
+(`npx @ahmed-g-gad/apothem install --harness opencode`).
+
+**Vérifiez :**
+
+```bash title="Verify"
+npx @ahmed-g-gad/apothem --version
+npx @ahmed-g-gad/apothem verify --harness claude-code
+```
+
+## 3. Installateurs en une seule étape
+
+**Prérequis :** Python 3.10+ du système sur le `PATH` (l'installateur propose
+d'ajouter les prérequis `click` / `rich` pour vous) ; `git` n'est nécessaire que
+pour une installation réseau qui clone le code source.
+
+Les scripts d'installation résolvent la dernière étiquette de version signée,
+vérifient sa signature, placent l'arborescence de code source d'Apothem dans
+`~/.apothem` à cette étiquette, créent un profil initial lorsqu'aucun n'existe,
+matérialisent votre premier environnement et vérifient le résultat. Relancer est
+idempotent : une arborescence existante est repositionnée sur l'étiquette
+résolue et l'environnement est rematérialisé. L'installation vérifiée épinglée à
+l'étiquette est la voie par défaut et recommandée.
+
+```bash title="macOS · Linux · WSL2 · BSD — latest signed tag, verified"
+curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
+```
+
+```powershell title="Windows · PowerShell — latest signed tag, verified"
+irm https://apothem.ahmedgad.com/install.ps1 | iex
+```
+
+Les mêmes scripts sont livrés dans un checkout sous `scripts/installer/` —
+`install`, `uninstall` et `update` sous les formes `.sh`, `.ps1` et `.bat` — de
+sorte que vous pouvez les exécuter directement après le clonage :
+
+```bash title="From a checkout"
+APOTHEM_HARNESS=claude-code sh scripts/installer/install.sh                                 # POSIX
+$env:APOTHEM_HARNESS = 'claude-code'; pwsh -NoProfile -File scripts/installer/install.ps1   # Windows
+```
+
+### Modèle de confiance
+
+Sans `APOTHEM_REF` défini, l'installateur résout l'étiquette de version
+`vMAJOR.MINOR.PATCH` la plus élevée et télécharge *celle-ci* — jamais la branche
+`main` mouvante. Avant de matérialiser toute configuration, la signature de
+l'étiquette récupérée est vérifiée avec `git verify-tag` ; une étiquette non
+signée, altérée ou non vérifiable interrompt l'installation avant qu'aucune
+écriture n'ait lieu. Épinglez une version précise avec `APOTHEM_REF` :
+
+```bash title="Pinned, verified install"
+APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/install.sh)"
+```
+
+Remplacez `vMAJOR.MINOR.PATCH` par une étiquette de la
+[page des versions](https://github.com/ahmed-g-gad/apothem/releases).
+
+Deux dérogations explicites assouplissent le comportement par défaut :
+`APOTHEM_REF=main` télécharge la branche mouvante (non vérifiée) et
+`APOTHEM_ALLOW_UNVERIFIED=1` rétrograde un échec de vérification en avertissement
+et poursuit — pour un usage hors ligne, local ou avec des versions pré-signées.
+Un checkout local via `APOTHEM_SOURCE` ne télécharge rien et ignore la
+vérification.
+
+Le moteur s'exécute alors directement depuis l'arborescence placée comme un
+runtime autonome — ses dépendances tierces sont vendorisées dans l'arborescence
+de code source, de sorte qu'aucun registre de paquets n'intervient :
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+```
+
+Les deux scripts lisent les mêmes variables d'environnement de configuration
+(`APOTHEM_HOME`, `APOTHEM_REPO`, `APOTHEM_REF`, `APOTHEM_ALLOW_UNVERIFIED`,
+`APOTHEM_SOURCE`, `APOTHEM_HARNESS`, `APOTHEM_PROFILE`,
+`APOTHEM_SKIP_VERIFY`, `APOTHEM_AUTO_INSTALL_DEPS`) ; consultez
+[Variables d'environnement de l'installateur](/docs/how-to/installer-environment-variables)
+pour le tableau complet et
+[Runtime autonome](/docs/architecture/self-contained-runtime) pour comprendre le
+fonctionnement du modèle d'invocation `python -m`.
+
+**La commande `apothem`.** Après une installation réussie, l'installateur écrit
+un shim `apothem` qui délègue au moteur inclus — sous POSIX dans
+`$HOME/.local/bin`, sous Windows dans `%LOCALAPPDATA%\Microsoft\WindowsApps` (un
+répertoire utilisateur déjà présent sur le `PATH` Windows par défaut).
+L'installateur ne modifie jamais votre `PATH`. Une fois le répertoire sur le
+`PATH`, vous exécutez `apothem <command>` directement, sans `PYTHONPATH` manuel.
+
+**Vérifiez :**
+
+```bash title="Verify"
+apothem verify --harness claude-code
+
+# ou, avant que le shim soit sur le PATH, depuis le code source inclus :
+PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
+```
+
+## 4. Extension de la famille VS Code
+
+**Prérequis :** VS Code, Node.js 18+, et Python 3.10+ du système sur le `PATH`.
+
+L'extension **Apothem** s'installe depuis le
+[Visual Studio Marketplace](https://marketplace.visualstudio.com/) — une seule
+extension couvre VS Code et sa surface d'assistant compagnon dans l'éditeur. Ses
+commandes de palette (`Apothem: Install`, `Verify`, `Update`, `Uninstall`,
+`Doctor`) exécutent le même moteur via le lanceur configuré
+(`npx @ahmed-g-gad/apothem` par défaut ; pointez le paramètre `apothem.runner`
+vers un checkout local pour exécuter depuis le code source).
+
+**Vérifiez :** exécutez la commande **Apothem: Verify** depuis la palette de
+commandes de l'éditeur, ou depuis un terminal :
+
+```bash title="Verify"
+npx @ahmed-g-gad/apothem verify --harness claude-code
+```
+
+## 5. Amorçage en ligne de commande (hôte à extensions)
+
+**Prérequis :** son outil hôte en ligne de commande, Node.js 18+, et Python
+3.10+ du système sur le `PATH`.
+
+Installez Apothem comme extension directement depuis le dépôt — la commande porte
+le slug exact de l'hôte et de l'environnement :
+
+```bash title="Install the extension"
+gemini extensions install https://github.com/ahmed-g-gad/apothem
+```
+
+Cette extension est un **amorçage**, pas l'installation complète à elle seule :
+elle charge un fichier de contexte Apothem et ajoute une commande `/apothem` qui
+délègue au moteur (`npx @ahmed-g-gad/apothem`). Matérialisez l'environnement
+complet en exécutant l'installation par son intermédiaire :
+
+```bash title="Materialize the full harness"
+npx @ahmed-g-gad/apothem install --harness gemini-cli --project .
+```
+
+**Vérifiez :**
+
+```bash title="Verify"
+npx @ahmed-g-gad/apothem verify --harness gemini-cli --project .
+```
+
+## 6. Amorçage en ligne de commande (hôte `qwen-code`)
+
+**Prérequis :** son outil hôte en ligne de commande, Node.js 18+, et Python
+3.10+ du système sur le `PATH`.
+
+Installez Apothem comme extension `--harness qwen-code` directement depuis le
+dépôt :
+
+```bash title="Install the extension"
+qwen extensions install ahmed-g-gad/apothem
+```
+
+Comme l'extension du canal 5, ceci est un **amorçage** : il charge un fichier de
+contexte Apothem et délègue au moteur. Matérialisez l'environnement complet en
+exécutant l'installation par son intermédiaire :
+
+```bash title="Materialize the full harness"
+npx @ahmed-g-gad/apothem install --harness qwen-code
+```
+
+**Vérifiez :**
+
+```bash title="Verify"
+npx @ahmed-g-gad/apothem verify --harness qwen-code
+```
+
+## 7. Amorçage en ligne de commande (hôte à plugins)
+
+**Prérequis :** son outil hôte en ligne de commande, Node.js 18+, et Python
+3.10+ du système sur le `PATH`.
+
+Ajoutez le dépôt comme marketplace de plugins, puis installez le plugin — la
+commande porte le slug exact de l'hôte et de l'environnement :
+
+```bash title="Install the plugin"
+codex plugin marketplace add ahmed-g-gad/apothem
+codex plugin add apothem@apothem
+```
+
+Comme les extensions des canaux 5 et 6, ceci est un **amorçage** qui délègue au
+moteur. Matérialisez l'environnement complet en exécutant l'installation par son
+intermédiaire :
+
+```bash title="Materialize the full harness"
+npx @ahmed-g-gad/apothem install --harness codex
+```
+
+**Vérifiez :**
+
+```bash title="Verify"
+npx @ahmed-g-gad/apothem verify --harness codex
+```
+
+## 8. Moteur direct (`python -m apothem`)
+
+**Prérequis :** Python 3.10+ du système avec les paquets `click` et `rich`
+importables, plus un checkout du dépôt. Aucun Node.js requis.
+
+Exécutez le moteur autonome directement depuis un clone — l'arborescence de code
+source porte ses dépendances vendorisées, de sorte que `PYTHONPATH=src` est toute
+la configuration :
+
+```bash title="Direct engine"
+git clone https://github.com/ahmed-g-gad/apothem
+cd apothem
+PYTHONPATH=src python -m apothem install --harness claude-code
+```
+
+**Vérifiez :**
+
+```bash title="Verify"
+PYTHONPATH=src python -m apothem verify --harness claude-code
+```
+
+## Vérifier n'importe quelle installation
+
+Chaque canal ci-dessus nomme sa propre commande de vérification. Les deux formes
+générales sont :
+
+```bash title="Installer path"
+PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
+```
+
+```bash title="npx path"
+npx @ahmed-g-gad/apothem verify --harness claude-code
+```
+
+Remplacez le nom de l'environnement par l'adaptateur que vous avez installé ;
+consultez la [liste des environnements](/docs/harnesses) pour tous les noms pris
+en charge. Pour vérifier chaque adaptateur enregistré d'un coup d'œil, exécutez
+`apothem doctor` (ou `npx @ahmed-g-gad/apothem doctor`) de la même façon. Pour la
+voie du plugin, exécutez `/plugin` dans Claude Code et confirmez qu'**apothem**
+apparaît comme installé.
+
+## Prérequis en un coup d'œil
+
+- **Python 3.10 ou ultérieur** — chaque voie qui exécute le moteur le recherche
+  (`python3`, `python`, les noms versionnés et `py -3` sous Windows).
+- **`click` et `rich` importables** sous cet interpréteur — les deux dépendances
+  orientées terminal que le moteur ne vendorise pas. Les installateurs vérifient
+  les deux, nomment ce qui manque et proposent de l'installer pour vous — avec
+  votre confirmation, ou automatiquement avec `--yes` (`-Yes` sous PowerShell) ou
+  `APOTHEM_AUTO_INSTALL_DEPS=1`.
+- **Node.js 18 ou ultérieur** — voies du shim npm et des plugins d'outils
+  uniquement.
+- **Git** — voie de l'installateur uniquement, et seulement pour la forme réseau
+  (le script clone le code source ; un checkout local n'a pas besoin de clonage).
+- **Claude Code** — voie du plugin uniquement. **VS Code** et l'outil hôte propre
+  à chaque amorçage en ligne de commande ne sont nécessaires que pour leur propre
+  canal (4–7).
+
+## Guides suivants
+
+| Objectif | Guide |
+|------|-------|
+| Configuration la plus courte | [Démarrage rapide](/docs/install/quickstart) |
+| Ajouter un environnement | [Configuration d'environnement](/docs/install/harness-setup) |
+| Mettre à jour | [Mise à jour](/docs/install/updating) |
+| Désinstaller | [Désinstallation](/docs/install/uninstalling) |
+| Un problème est survenu | [Dépannage](/docs/install/troubleshooting) |

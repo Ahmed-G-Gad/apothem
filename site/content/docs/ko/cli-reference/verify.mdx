@@ -1,0 +1,82 @@
+---
+title: "verify"
+description: "apothem verify 명령에 대한 CLI 참조."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+하니스 어댑터 설치를 검증합니다.
+
+## 개요
+
+```
+apothem verify --harness NAME|all [--project PATH]
+                [--quiet|-q] [--verbose|-v]
+                [--format plain|json] [--json] [--no-color]
+```
+
+선택된 각 어댑터의 `verify()` 구현을 호출합니다. 선택된 모든 어댑터가 관리 대상이 존재하고 유효하다고 보고할 때만 0으로 종료합니다.
+
+## 옵션
+
+| 옵션 | 설명 |
+|---|---|
+| `--harness NAME` | 검증할 하니스 어댑터, 또는 레지스트리 전체 집합을 나타내는 `all`(필수). |
+| `--project PATH` | 프로젝트 범위 하니스의 프로젝트 루트. |
+| `--quiet`, `-q` | 정보성 출력을 억제하고 오류만 내보냅니다. |
+| `--verbose`, `-v` | 추가 진단 출력을 내보냅니다. |
+| `--format plain\|json` | 출력 형식(기본값: `plain`). |
+| `--json` | `--format json`의 약어. |
+| `--no-color` | 출력에서 ANSI 색상 코드를 비활성화합니다. |
+| `-h`, `--help` | 도움말을 표시하고 종료합니다. |
+
+## JSON 출력
+
+```json
+{
+  "status": "success",
+  "command": "verify",
+  "action": "verified",
+  "harness": "claude-code",
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "unchanged",
+      "operation": "verify",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "managed targets verified",
+      "installed": true,
+      "verified": true
+    }
+  ],
+  "warnings": [],
+  "error": null,
+  "installed": true,
+  "verified": true,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+선택된 하니스 중 하나라도 누락되거나 유효하지 않으면 `status`는 `error`가 되고, 실패한 결과 행은 `verified: false`를 가지며, 프로세스는 코드 1로 종료합니다.
+
+## 예제
+
+```bash
+apothem verify --harness claude-code
+apothem verify --harness claude-code --json
+apothem verify --harness all --project .
+```
+
+## 종료 코드
+
+| 코드 | 의미 |
+|---|---|
+| 0 | 하니스가 설치됨 |
+| 1 | 하니스가 설치되지 않음 |
+
+## 함께 보기
+
+- [apothem install](/docs/cli-reference/install) — 하니스 구성 설치
+- [apothem update](/docs/cli-reference/update) — 현재 프로필을 하니스에 다시 적용
+- [apothem doctor](/docs/install/concepts) — 시스템 전체 설치 진단

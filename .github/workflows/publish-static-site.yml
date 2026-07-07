@@ -1,0 +1,188 @@
+# SPDX-License-Identifier: MIT
+
+# Publish the Apothem project website to apothem.ahmedgad.com.
+#
+# The website is a comprehensive nine-section facade (marketing landing
+# page, documentation, reference, harnesses, architecture, pipelines,
+# project, community, brand) — NOT a docs-only destination.
+#
+# Triggers on every push to main (canonical fast-path) and on a manual
+# workflow_dispatch (re-run without a code change). Builds the Next.js
+# + Fumadocs website from site/, then copies the canonical install / update /
+# uninstall scripts from scripts/installer/ into site/dist/ so the
+# network-install one-liners (https://apothem.ahmedgad.com/install.sh and
+# siblings) resolve. The served install scripts are always the canonical source
+# — they are not committed under the build-output tree. The Next.js static
+# export copies site/public/CNAME into the build output verbatim, so the apex
+# hostname is served without an extra step.
+# Deployment runs through the official GitHub Pages Actions toolchain —
+# actions/configure-pages, actions/upload-pages-artifact,
+# actions/deploy-pages — with OIDC + minimum permissions.
+#
+# Mechanism: GitHub Pages. The apothem.ahmedgad.com CNAME is committed
+# at site/public/CNAME (the canonical Pages signal). The badges CI workflow
+# (.github/workflows/badges.yml) uploads its shields.io endpoint JSONs
+# as a separate `badges` artifact; the build job below fetches the latest
+# successful badges run via the gh CLI and stages it under
+# site/dist/badges/,
+# so https://apothem.ahmedgad.com/badges/*.json resolve. Badge fetch is
+# best-effort — an absent or expired artifact never fails the deploy.
+#
+# SHA-pinning policy mirrors ci.yml: every action `uses:` reference is
+# pinned by 40-character commit SHA followed by a `# vMAJOR.MINOR.PATCH`
+# version comment. Renovate (renovate.json) bumps each
+# pinned SHA weekly.
+
+name: Static Site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'scripts/installer/**'
+      - '.github/workflows/publish-static-site.yml'
+  workflow_dispatch:
+
+# Least-privilege at the workflow root: the build job only reads the repo and
+# the badges artifact. The pages:write + id-token:write grants live solely on
+# the deploy job below, so the build job (which runs npm ci, node scripts, and
+# shell steps over third-party code) never inherits deploy authority it does
+# not use. Mirrors ci.yml's "per-job overrides escalate only where justified".
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read     # gh run download — fetch the badges artifact
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+        with:
+          node-version-file: site/.nvmrc
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Install website-build dependencies
+        working-directory: site
+        run: npm ci
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: "3.12"
+
+      - name: Install reference-emitter runtime dependencies
+        # npm run build runs the source reference emitter, which introspects the
+        # live Click tree; the non-vendored runtime deps (click, rich) must import.
+        run: python -m pip install click rich pyyaml jsonschema
+
+      - name: Unit-test the per-locale search-index transform
+        # Node's built-in test runner (no JS test framework is installed). Guards
+        # the single point that can silently drop a page from a locale's search
+        # index (lib/search-index-core.ts `pageToIndex`), including its
+        # intentional fail-fast throw on a page with no structured data.
+        working-directory: site
+        run: node --test --experimental-strip-types lib/search-index-core.test.mjs
+
+      - name: Build project website
+        working-directory: site
+        run: npm run build
+
+      - name: Assert per-locale search indices present and under the Pages limit
+        # Durable guard for the search refactor: a single combined Orama index
+        # exceeded GitHub Pages' 100 MB per-file limit and the CDN silently
+        # refused to serve it, breaking search. The index is now split one file
+        # per routed locale; this step fails the deploy if any of the twelve
+        # per-locale indices is missing, empty, or at/over the 100 MB cap.
+        working-directory: site
+        run: node scripts/check-search-index-sizes.mjs
+
+      - name: Fetch latest badge endpoint JSONs into site/dist/badges/
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # Best-effort per the header contract: the lookup itself must not fail
+          # the deploy. Under `set -e` a bare assignment inherits the command's
+          # exit status, so a `gh run list` API hiccup / rate-limit / auth error
+          # would otherwise kill the whole Pages publish. `|| true` degrades a
+          # failed lookup to an empty run_id, which routes to the no-badges branch.
+          run_id="$(gh run list --workflow='Badges' --status=success \
+            --limit=1 --json databaseId --jq '.[0].databaseId // empty' || true)"
+          if [ -n "${run_id}" ] \
+            && gh run download "${run_id}" --name badges --dir site/dist/badges; then
+            echo "Badge JSONs fetched from Badges run ${run_id}."
+          else
+            echo "Badge artifact unavailable; site ships without badges/." >&2
+          fi
+
+      - name: Sync canonical install scripts into site/dist/
+        run: |
+          set -euo pipefail
+          for name in install update uninstall; do
+            for ext in sh ps1 bat; do
+              [ -f "scripts/installer/${name}.${ext}" ] \
+                && cp "scripts/installer/${name}.${ext}" "site/dist/${name}.${ext}" \
+                || true
+            done
+          done
+
+      - name: Validate synced shell scripts
+        run: shellcheck --severity=error site/dist/*.sh
+
+      - name: Validate synced PowerShell scripts
+        shell: pwsh
+        run: |
+          $findings = Invoke-ScriptAnalyzer -Path site/dist/ -Settings PSScriptAnalyzerSettings.psd1 -Severity Error,Warning -ExcludeRule PSUseBOMForUnicodeEncodedFile,PSAvoidUsingWriteHost,PSUseShouldProcessForStateChangingFunctions
+          if ($findings) {
+            $findings | Format-Table -AutoSize
+            exit 1
+          }
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d  # v6.0.0
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9  # v5.0.0
+        with:
+          path: site/dist/
+
+  deploy:
+    name: deploy
+    needs: [build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      pages: write       # deploy-pages needs to publish the artifact
+      id-token: write    # OIDC for tokenless deploy authentication
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+      - name: Deploy to GitHub Pages
+        id: pages
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128  # v5.0.0

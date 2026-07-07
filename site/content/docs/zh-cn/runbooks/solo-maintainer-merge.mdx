@@ -1,0 +1,82 @@
+---
+title: "单人维护者 PR 合并仪式"
+description: "在分支保护与 enforce_admins 规则会让单人维护者陷入死锁时，自行合并拉取请求的仪式。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **在项目的分支保护不变式下自行合并 PR 的规范参考。** 当维护者是唯一拥有写入权限的贡献者时，GitHub 的分支保护规则 `enforce_admins=true` + `required_approving_review_count=1` 会造成自合并死锁，本页记录了它的解决方法。
+
+---
+
+## 1. 死锁
+
+仓库的 `main` 分支带有这组保护设置：
+
+- `required_pull_request_reviews.required_approving_review_count: 1`
+- `enforce_admins: true`
+
+这些规则对多维护者场景是正确的（每次变更都通过经同行评审的 PR 抵达 `main`；管理员也不被豁免）。它们却为单人维护者带来死锁：GitHub 的策略不允许对你自己创建的 PR 自我批准，而 `enforce_admins=true` 阻止了 `gh pr merge --admin` 对评审批准要求的覆盖。
+
+存在三条解决路径：
+
+| 路径 | 何时使用 |
+|------|-------------|
+| **临时切换仪式（本仓库的规范做法）** | 单人维护者自合并的默认做法；在合并窗口之外保持保护不变式 |
+| 配置一个具备写入权限的 CI 机器人身份 | 仅在即将引入多维护者时采用；机器人批准削弱了保护所要求的人工评审意图 |
+| 永久设置 `required_approving_review_count: 0` | 仅在仓库将无限期保持单人维护者时采用；这会逆转保护的评审意图 |
+
+本仓库将**临时切换仪式**确立为规范路径。另外两条是有记录的应急出口，而非默认做法。
+
+## 2. 临时切换仪式
+
+该仪式的不变式：仪式开始时的保护状态等于结束时的保护状态。放松只存在于合并窗口之内。
+
+手动形式：
+
+```bash
+# 1. 打开 PR、推送分支，等待 CI 变绿。
+gh pr create --base main --head <feature-branch> --title "..." --body "..."
+gh pr checks <pr-number>            # poll until all green
+
+# 2. 将批准人数放松为 0。
+gh api repos/<owner>/<repo>/branches/main/protection/required_pull_request_reviews \
+    -X PATCH -F required_approving_review_count=0
+
+# 3. 以管理员覆盖进行 squash 合并（此时管理员覆盖会成功，因为评审批准
+#    要求是 enforce_admins 拒绝的唯一阻碍）。
+gh pr merge <pr-number> --squash --delete-branch --admin
+
+# 4. 将批准人数恢复为 1。
+gh api repos/<owner>/<repo>/branches/main/protection/required_pull_request_reviews \
+    -X PATCH -F required_approving_review_count=1
+```
+
+封装形式：见 [`scripts/dev/admin_merge.py`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/dev/admin_merge.py)，这是一个原子化的 Python 封装器，它在单次非交互序列中执行步骤 2 → 3 → 4，并在步骤 3 失败时以 `try` / `finally` 提供回滚安全保障。
+
+```bash
+python scripts/dev/admin_merge.py <pr-number>
+```
+
+## 3. 不变式
+
+- **切换窗口最小化。** 步骤 2 → 3 → 4 在单次非交互序列中执行。保护仅在合并 API 调用持续期间处于放松状态——在每次观察到的运行中都不到一秒。
+- **恢复是无条件的。** 即使步骤 3 失败，步骤 4 也会运行（封装器的 `try` / `finally` 子句确保在任何退出路径上都会恢复）。一次失败的合并尝试不会让保护保持在放松状态。
+- **CI 门禁全程保留。** `required_status_checks` 不受切换影响；合并仍要求已配置的状态检查上下文为绿色。
+- **审计轨迹可见。** `gh pr merge --admin` 注记出现在 PR 的合并元数据中；保护 API 的切换出现在仓库审计日志中维护者的身份名下。
+
+## 4. 何时不应使用该仪式
+
+该仪式用于**自合并**维护者自己的 PR。当有同行评审者可用时（一个拥有写入权限的贡献者），标准的 `gh pr review --approve` + `gh pr merge --squash --delete-branch` 路径才是正确的，仪式则不再必要。
+
+如果仓库引入了第二位维护者，请退役该仪式：标准的 PR 评审流程无需任何切换即可恢复保护所要求的人工评审意图。
+
+## 5. 审计一次过往运行
+
+每次仪式调用都会落在三个持久化表面上，供操作员事后查验：
+
+- **PR 的合并元数据。** `gh pr view <pr-number> --json mergedBy,mergedAt,mergeCommit` 返回合并执行者、合并时间戳，以及 squash 提交的 SHA。`mergedBy` 执行者与运行步骤 3 的维护者身份相匹配。
+- **仓库的审计日志。** `gh api /repos/<owner>/<repo>/actions/runs --jq '.workflow_runs[] | select(.event=="push")'` 将合并后的 CI 运行与合并提交相关联；仓库的保护规则审计日志（通过 Settings → Branches 界面查看 `gh api /repos/<owner>/<repo>/branches/main/protection` 历史）显示括住合并窗口的步骤 2 与步骤 4 切换。
+- **维护者的 git 历史。** `git log main --merges --first-parent` 列出 `main` 上每一个 squash 合并提交，并在提交主题中带有对应的 PR 编号（按 `gh pr merge --squash` 默认的 `(#<pr-number>)` 后缀），让操作员可以将任何过往落地追溯回它的 PR 与仪式调用。
+
+当 `scripts/dev/admin_merge.py` 是入口点时，它的非交互日志（stdout）会依次列出三个保护 API 调用与一个合并 API 调用；将封装器通过管道送入 `tee` 即可捕获每次运行的审计片段，而不依赖 GitHub 侧的日志保留。

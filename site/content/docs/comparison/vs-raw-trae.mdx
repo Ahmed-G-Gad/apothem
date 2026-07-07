@@ -1,0 +1,42 @@
+---
+title: "Apothem vs raw Trae config"
+description: "Hand-maintaining Trae's rules under .trae/rules/ versus rendering them from Apothem's shared profile."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Trae reads rules from a `.trae/rules/` directory whose vendor anchors are
+`project_rules.md` and `user_rules.md`. Apothem's trae adapter renders a
+dedicated `apothem-rules.md` file in that directory from the shared profile.
+This page contrasts hand-maintaining that config against managing it with
+Apothem.
+
+## Effort comparison
+
+| Task | Raw hand-config | Apothem-managed |
+| ---- | --------------- | --------------- |
+| Author rules | Hand-write each file under `.trae/rules/` | Rendered from the shared corpus |
+| Keep the Apothem surface separate | Remember not to overload `project_rules.md` | The adapter writes a dedicated `apothem-rules.md` |
+| Keep rules aligned with other harnesses | Manual, per tool | Automatic on `apothem update` |
+| Verify the config is correct | Manual inspection | `apothem verify --harness trae` |
+
+## What Apothem manages
+
+The trae adapter renders the shared rules into a dedicated `apothem-rules.md`
+file under `.trae/rules/` and leaves the operator-owned `project_rules.md` and
+`user_rules.md` anchors untouched. Trae has no PreToolUse hook, so guardrail
+intent lives in the rule prose rather than a tool-call interception point.
+Every change to the shared rules re-renders the file on the next
+`apothem update`.
+
+## Migration path
+
+1. Run `apothem profile init` to create the shared profile if you have not yet.
+2. Move the rules from your existing `.trae/rules/` files into the shared corpus.
+3. Run `apothem install --harness trae` to render the `apothem-rules.md` file.
+4. Run `apothem verify --harness trae` to confirm the config landed.
+5. Use `apothem update --harness trae` for every later change.
+
+## Read next
+
+- [Trae adapter reference](/docs/harnesses/trae)
+- [Comparison overview](/docs/comparison)

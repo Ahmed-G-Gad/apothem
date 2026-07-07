@@ -1,0 +1,109 @@
+---
+title: "سجلّ التفويضات الشاملة (CM-1–CM-28)"
+description: "السجلّ والتعريفات الكاملة للتفويضات الشاملة الداخلية للنظام البيئي (CM-1–CM-28) التي تحكم جميع التفاعلات وعمليات خطّ الأنابيب."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **مرافق كانوني لِـ <bdi>`CLAUDE.md`</bdi> §10.** يحمل هذا المستند المتن الكامل لسجلّ التفويضات الشاملة. يحتفظ <bdi>`CLAUDE.md`</bdi> بسطر المرساة + المؤشّر؛ أمّا التعدادات الجوهرية فتعيش هنا. كل جلسة تحتاج إلى متن <bdi>CM-N</bdi> المفصّل تُحمّل هذا المستند عند الطلب.
+
+## استثناء الإشارة-الذاتية للسجلّ
+
+هذا المستند هو سجلّ <bdi>CM-N</bdi> الكانوني — وهو المصدر الذي تُعرَّف فيه الرموز من <bdi>`CM-1`</bdi> إلى <bdi>`CM-28`</bdi>. إعادة ذكر هذه الرموز *داخل متن السجلّ نفسه* أمر كانوني، لا تسرّب للمصطلحات الداخلية للخطّة. تستمرّ ثابتة عزل-قاعدة-الشيفرة بالسريان بكامل قوّتها على كل أثر *آخر* (rules، helper، command، hook، schema، script، tool، test، docs، README، changelog، عناوين/متون الـ commit، أسماء الفروع، عناوين/أوصاف الـ PR): بلا رموز <bdi>`CM-N`</bdi> / <bdi>`TM-N`</bdi> / <bdi>`CP-N`</bdi>، لغة مجال طبيعية فقط.
+
+## فضاءات الأسماء
+
+<bdi>`CM-N`</bdi> = config mandate (مُعرَّف هنا، أو في <bdi>`src/apothem/rules/*.md`</bdi> وفق صفّ rules في سجلّات الآثار)؛ <bdi>`TM-N`</bdi> = template mandate (مُعرَّف في <bdi>`src/apothem/skills/plan-suite/master-template.md`</bdi> §4 "General Mandates"، <bdi>TM-1–28</bdi>)؛ <bdi>`CP-N`</bdi> = core principle (مُعرَّف في القالب نفسه §6 "Core Principles"، <bdi>CP-1–27</bdi>). قالب plan-suite هو سجلّ <bdi>TM/CP</bdi> الكانوني — تَحُلّ أوامر <bdi>`/plan`</bdi> الإشارات-المتقاطعة عبر ذلك الملفّ. تستشهد الآثار المساعِدة (rules، helper، command، hook) بهذا السجلّ بالإحالة.
+
+## التفعيل
+
+تحكم <bdi>CM-1–10</bdi> + الهوية المعرفية جميع التفاعلات. تسري <bdi>CM-11، CM-13، CM-15، CM-16، CM-20</bdi> داخل خطّ أنابيب <bdi>`/plan`</bdi> فقط. تسري <bdi>CM-12، CM-14، CM-17–19، CM-21–22، CM-24–26</bdi> بشكل شامل (دائمة-التشغيل). تسري <bdi>CM-23، CM-27، CM-28</bdi> بشكل شامل ضمن نطاق path-filter المُعلَن لها. الجدّية الافتراضية المرتجلة: <bdi>PERSONAL_USE</bdi>.
+
+## CM-1–10 (تشغيلية)
+
+(1) التقييم النقدي (←<bdi>TM-10</bdi>)، (2) صفر افتراضات (←<bdi>TM-1</bdi>)، (3) مدفوعة-بالإعداد (←<bdi>TM-2</bdi>)، (4) ابحث قبل التنفيذ (←<bdi>TM-4</bdi>)، (5) الحلّ الأمثل (←<bdi>TM-7</bdi>)، (6) التحسين-الذاتي (←<bdi>CP-20</bdi>)، (7) منتج متماسك (←<bdi>TM-11</bdi>)، (8) التركيز على عنق-الزجاجة أوّلًا، (9) سرعة القرار، (10) الصدق القاسي. التعريفات الكاملة مع مؤشّرات المخالفة: <bdi>`src/apothem/rules/operational-mandates.md`</bdi>.
+
+## CM-7 (العزل الداخلي للخطّة)
+
+> هذا هو الوجه المُواجِه لقاعدة-الشيفرة من <bdi>CM-7</bdi>؛ أمّا وجه اكتمال-المنتج فمُوثَّق بوصفه **منتج متماسك (←<bdi>TM-11</bdi>)** في <bdi>`src/apothem/rules/operational-mandates.md §CM-7`</bdi>. يشير كلا الوصمَين إلى التفويض نفسه.
+
+يجب ألّا تحتوي آثار قاعدة-الشيفرة أبدًا على إشارات داخلية للخطّة. **المصطلحات المحظورة (الكتلة الكانونية — يُحيل المستهلكون الأشقّاء على هذا التعداد بالإحالة):** <bdi>TM-N</bdi>، <bdi>CM-N</bdi>، <bdi>CP-N</bdi>، "Resumption Contract"، "Phase Output Registry"، "convention anchors"، أسماء مجلّدات الأطوار، أسماء ملفّات plan-suite (<bdi>PROGRESS.md، PLAN-NOTES.md، PREAMBLE، MASTER-PLAN</bdi>)، أسماء مستويات الجدّية (<bdi>EXPLORING، PERSONAL_USE، SHARED، PUBLIC_LAUNCH</bdi>). **الآثار المحمية:** الشيفرة المصدرية، الاختبارات، الإعدادات، الـ schemas، سكربتات البناء، البيانات، الأصول، رسائل الـ commit، أسماء الفروع، عناوين/أوصاف الـ PR، README، CONTRIBUTING، وثائق الـ API، الـ changelogs — أيّ أثر مرئيّ خارج شجرة مصدر Apothem (وجهات التثبيت لكلّ harness مثل <bdi>`~/.claude/`</bdi> لـ Claude Code). لغة مجال طبيعية فقط. **المستهلكون الأشقّاء** (يستشهد كلٌّ منهم بهذه الكتلة بالإحالة بدلًا من إعادة التعداد): <bdi>`src/apothem/hooks/messages/pretooluse-bash.md`</bdi>، <bdi>`src/apothem/hooks/messages/pretooluse-write.md`</bdi>، <bdi>`src/apothem/hooks/messages/pretooluse-edit.md`</bdi>، <bdi>`src/apothem/hooks/messages/pretooluse-notebookedit.md`</bdi>، <bdi>`src/apothem/rules/operational-mandates.md`</bdi> §CM-7 مؤشّرات المخالفة.
+
+## CM-11 (سلامة الخطّة)
+
+**A — الوفاء بالنصّ:** كل متطلَّب قابل للتتبّع نصّ↔خطّة. بطاقة النتائج: <bdi>PASS</bdi> ≥90% <bdi>STRONG</bdi>/0 <bdi>ABSENT</bdi>.
+**B — الاتّساق الداخلي:** التماسك عبر-المستندات داخل plan-suite. بطاقة النتائج: <bdi>PASS</bdi> 100%.
+**C — البوّابات:** <bdi>FAIL</bdi> تحجب التنفيذ عند <bdi>SHARED+</bdi> (يُسمح بتجاوز Product Owner عند <bdi>SHARED</bdi> مع تسجيل المبرّر؛ حجب صلب عند <bdi>PUBLIC_LAUNCH</bdi>). استشارية عند <bdi>PERSONAL_USE</bdi>.
+
+## CM-12 (رعاية السياق)
+
+إدارة سياق رشيقة في كل وقت — راجع rule <bdi>CM-24</bdi>. تُعدَّد أربع طبقات-فرعية في قسم اصطلاح الإشارة-الفرعية أدناه. تحكم انضباط الضغط (<bdi>CM-19</bdi>) الإجراء؛ يحكم <bdi>CM-12</bdi> انضباط الحالة-المستقرّة.
+
+## CM-13 (عمليات الـ Commit)
+
+- **A — إيقاع لكلّ-مهمّة:** لكلّ-مهمّة عند <bdi>SHARED+</bdi>. لكلّ-طور عند <bdi>PERSONAL_USE</bdi>. اختياري عند <bdi>EXPLORING</bdi>.
+- **B — عمليات commit للجودة/المعالجة:** تُلتزم إصلاحات بوّابة الجودة وتغييرات المعالجة فورًا، منفصلة عن عمل الميزة.
+- **C — بوّابة نهاية-الطور:** لا تغييرات غير-مُلتزَمة تعبر حدود الأطوار. ينطبق عزل <bdi>CM-7</bdi> على جميع آثار git. عند <bdi>PUBLIC_LAUNCH</bdi>: تُطلَب عمليات commit موقّعة-بـ GPG (<bdi>`git commit -S`</bdi>).
+- **D — التأليف-البشري-فقط:** كل سطح تأليف في كل أثر git (عنوان الـ commit، متن الـ commit، <bdi>`Author:`</bdi>، مذيّل <bdi>`Co-Authored-By:`</bdi>، مذيّل <bdi>`Signed-off-by:`</bdi>، اسم الفرع، اسم الوسم، تعليق الوسم، اسم الـ stash، متن git-notes، عنوان الـ PR، وصف الـ PR) يسمّي **المساهمين البشر فقط**. لا ينسب المساعد أبدًا نفسه، أو النموذج اللغوي الأساس، أو الـ runtime / harness / IDE / الإضافة / المورّد، أو أيّ أداة آلية أخرى إلى أيٍّ من تلك الأسطح. الأنماط المحظورة مُعدَّدة ومُنفَّذة آليًّا في <bdi>`src/apothem/rules/production-ready-prs.md`</bdi> §6 (انضباط رسالة-الـ Commit ← التأليف-البشري-فقط)، مع الـ matcher في <bdi>`src/apothem/hooks/messages/pretooluse-bash.md`</bdi> Scan 3 الذي يُطلَق عند كل استدعاء Bash بكتابة-git.
+- **E — انضباط البادئة-الرقمية على أهداف git-mv / git-rm:** تنقل البادئات الرقمية (<bdi>`NN-`</bdi>) على مسارات نظام-الملفّات الترتيبَ، وتنطبق فقط حيث يكون الترتيب جوهريًّا — تسلسلات مجلّدات-الأطوار، تسلسلات الأطوار-الفرعية، مخطّطات التسمية-الترتيبية المكتشَفة-من-المضيف. المفردات على مستوى-الجذر التي لا تملك تسلسلًا شقيقًا لا تحمل بادئة رقمية؛ وإضافتها زخرف بلا معنًى يُشير خطأً إلى علاقة ترتيب غير موجودة. المواصفة الكاملة في <bdi>`src/apothem/rules/canonical-layout.md`</bdi> §2.1. مُنفَّذة آليًّا في <bdi>`src/apothem/hooks/messages/pretooluse-bash.md`</bdi> Scan 2 على <bdi>`git mv`</bdi> / <bdi>`git rm`</bdi> وعلى إشارات المسار في متن الـ commit.
+
+## CM-14 (بروتوكولات الجلسة)
+
+**البدء:** نفّذ Blind Bootstrap (<bdi>CM-24</bdi> §6). **الإنهاء:** نفّذ Phase Exit (<bdi>CM-24</bdi> §2.5) + تقييم الذاكرة (<bdi>CM-26</bdi>) + تطوّر الأثر (<bdi>CM-22</bdi> §2+§4).
+
+## CM-15–21 (خطّ الأنابيب)
+
+<bdi>CM-15</bdi> و<bdi>CM-16</bdi> مُعرَّفان-بشكل-مضمَّن هنا (بلا rule منفصل)؛ تفوّض <bdi>CM-17–21</bdi> إلى rules وفق جدول rules في سجلّات الآثار.
+
+- **CM-15 التماسك الجماعي:** تحقّق من بقاء آثار الخطّة متماسكة بعد التعديل.
+- **CM-16 التنفيذ المستقلّ:** عند <bdi>SHARED+</bdi>، لا تتوقّف أبدًا بين الأطوار. الضغط إلزامي عند انتقالات الأطوار (<bdi>PERSONAL_USE+</bdi>).
+- **CM-17 فِرَق العاملين:** انشر فِرَق العاملين-المُفوَّضين للعمل القابل-للتوازي — راجع rule <bdi>CM-25</bdi>.
+- **CM-18 التعافي من الأخطاء:** ستّ فئات عامّة (<bdi>CM-24</bdi> §8)؛ فئات تنفيذ-الخطّة في <bdi>TM-18</bdi>. صعّد بعد 3 إخفاقات.
+- **CM-19 انضباط الضغط:** مُحفِّزات ضغط استباقية — راجع <bdi>CM-24</bdi> §3.
+- **CM-20 تنسيق خطّ الأنابيب:** نصّ←[موافقة]←generate←[موافقة]←review←[موافقة]←execute(01←NN). تقنيات الـ review: <bdi>`src/apothem/rules/planning-techniques.md`</bdi>.
+- **CM-21 الجودة الإبداعية:** المرشّحات المعرفية بوّابات جودة، لا زخرف. التحجيم وفق rule الهوية المعرفية، §2.
+
+## CM-22–28 (مُفوَّضة-لـ rule)
+
+مراسٍ من سطر واحد للتفويضات المُفوَّضة-لـ rule (المواصفات الكاملة تعيش في الملفّات المستشهَد بها):
+
+- **CM-22 يقظة الاصطلاحات** — اصطلاحات النظام البيئي وتطوّر الأثر الاستباقي. راجع <bdi>`src/apothem/rules/persistent-conventions-vigilance.md`</bdi>.
+- **CM-23 توليد الملفّات الكبيرة** — بروتوكول الإلحاق-التدريجي للملفّات فوق عتبة الكتابة-المنفردة. راجع <bdi>`src/apothem/rules/large-file-generation.md`</bdi>.
+- **CM-24 بروتوكول رعاية السياق** — التخريج، الضغط، blind bootstrap، وانضباط الميزانية. راجع <bdi>`src/apothem/rules/context-management.md`</bdi>.
+- **CM-25 تنسيق العاملين** — أنماط النشر، عقود-الإرجاع، عزل السياق. المواصفة الكاملة في rule تنسيق-العاملين (حُذف الرابط-المتقاطع؛ اسم ملفّ الهدف يحتوي على مصطلحات محظورة).
+- **CM-26 دورة-حياة الذاكرة التلقائية** — انضباط الذاكرة، تنظيم ملفّات-الموضوع، تقييم نهاية-الجلسة. راجع <bdi>`src/apothem/rules/auto-memory.md`</bdi>.
+- **CM-27 طبقات العمارة النظيفة** — فصل Domain / Application / Infrastructure / Presentation. راجع <bdi>`src/apothem/rules/clean-architecture-layers.md`</bdi>.
+- **CM-28 مهندس Python الأقدم** — حواجز SOLID والأسلوب والاختبار والأمان لآثار Python. راجع <bdi>`src/apothem/rules/code-craft-python.md`</bdi>.
+
+## التفويضات المُفوَّضة-لـ rule مقابل المُعرَّفة-بشكل-مضمَّن
+
+- **مُفوَّضة-لـ rule** (المواصفة الكاملة في <bdi>`src/apothem/rules/`</bdi>): راجع عمود "Implements" في جدول rules لسجلّات الآثار. تغطّي <bdi>CM-1–10، CM-12، CM-14، CM-17–28</bdi>.
+- **مُعرَّفة-بشكل-مضمَّن** (المواصفة الكاملة هنا، بلا rule منفصل): <bdi>CM-11</bdi> (سلامة الخطّة)، <bdi>CM-13</bdi> (عمليات الـ Commit)، <bdi>CM-15</bdi> (التماسك الجماعي)، <bdi>CM-16</bdi> (التنفيذ المستقلّ).
+
+## اصطلاح الإشارة-الفرعية
+
+تستخدم الأوامر لواحق حرفية للإشارة إلى أقسام فرعية محدّدة داخل التفويضات. النمط: <bdi>`CM-N`</bdi> + حرف اللاحقة = قسم rule. **اصطلاح حالة الأحرف:** تدلّ اللواحق الكبيرة على أقسام فرعية بنيوية داخل التفويض؛ وتدلّ اللواحق الصغيرة على توجيهات أدقّ داخل طبقة رعاية. يُحفَظ جدول تعيين-مفاتيح الإشارة-الفرعية الكانوني (التعريفات الداخلية للسجلّ) حرفيًّا في الكتلة المُسيَّجة أدناه:
+
+```text
+CM-11A = Prose Fidelity
+CM-11B = Internal Consistency
+CM-11C = Gates
+
+CM-12a = lean ingestion / demand loading (context-management §7.2)
+CM-12b = budget awareness (§7.1)
+CM-12c = budget pressure response (§7.3)
+CM-12d = per-task effort calibration (context-management §7.4 — D3 stratified taxonomy; PHASE.md frontmatter is the per-phase override surface)
+
+CM-13A = per-task commits
+CM-13B = quality / remediation commits
+CM-13C = end-of-phase commit gate
+
+CM-23A = pre-generation size assessment (§1)
+CM-23B = incremental generation protocol (§2)
+
+CM-24B = proactive externalization (§2)
+
+CM-25A = worker-team patterns (§1)
+CM-25C = return-contract enforcement (§4)
+CM-25E = isolation / non-duplication (§5)
+```

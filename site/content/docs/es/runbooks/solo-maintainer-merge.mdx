@@ -1,0 +1,82 @@
+---
+title: "Ceremonia de fusión de PR para mantenedor único"
+description: "Ceremonia para autofusionar pull requests cuando las reglas de protección de rama y enforce_admins bloquearían a un mantenedor único."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Referencia canónica para autofusionar PR bajo el invariante de protección de rama del proyecto.** Cuando el mantenedor es el único contribuyente con acceso de escritura, las reglas de protección de rama de GitHub `enforce_admins=true` + `required_approving_review_count=1` crean un bloqueo de autofusión cuya resolución documenta esta página.
+
+---
+
+## 1. El bloqueo
+
+La rama `main` del repositorio lleva este conjunto de protección:
+
+- `required_pull_request_reviews.required_approving_review_count: 1`
+- `enforce_admins: true`
+
+Estas reglas son correctas para escenarios con varios mantenedores (cada cambio llega a `main` a través de un PR revisado por pares; los administradores no quedan exentos). Producen un bloqueo para los mantenedores únicos: la política de GitHub no permite la autoaprobación de un PR que tú mismo creaste, y `enforce_admins=true` bloquea la anulación `gh pr merge --admin` del requisito de aprobación de revisión.
+
+Existen tres rutas de resolución:
+
+| Ruta | Cuándo usarla |
+|------|-------------|
+| **Ceremonia de alternancia temporal (canónica para este repositorio)** | Predeterminada para autofusiones de mantenedor único; preserva el invariante de protección fuera de la ventana de fusión |
+| Aprovisionar una identidad de bot de CI con acceso de escritura | Adóptala solo si la incorporación de varios mantenedores es inminente; la aprobación por bot socava la intención de revisión humana de la protección |
+| Establecer permanentemente `required_approving_review_count: 0` | Adóptala solo si el repositorio seguirá siendo de mantenedor único indefinidamente; revierte la intención de revisión de la protección |
+
+Este repositorio ratifica la **ceremonia de alternancia temporal** como la ruta canónica. Las otras dos son vías de escape documentadas, no la opción predeterminada.
+
+## 2. La ceremonia de alternancia temporal
+
+El invariante de la ceremonia: el estado de protección al inicio de la ceremonia es igual al estado de protección al final. La relajación vive únicamente dentro de la ventana de fusión.
+
+Forma manual:
+
+```bash
+# 1. Open the PR, push branch, wait for CI green.
+gh pr create --base main --head <feature-branch> --title "..." --body "..."
+gh pr checks <pr-number>            # poll until all green
+
+# 2. Relax approver-count to 0.
+gh api repos/<owner>/<repo>/branches/main/protection/required_pull_request_reviews \
+    -X PATCH -F required_approving_review_count=0
+
+# 3. Squash-merge with admin override (admin override now succeeds because the
+#    review-approval requirement is the only block enforce_admins refuses).
+gh pr merge <pr-number> --squash --delete-branch --admin
+
+# 4. Restore approver-count to 1.
+gh api repos/<owner>/<repo>/branches/main/protection/required_pull_request_reviews \
+    -X PATCH -F required_approving_review_count=1
+```
+
+Forma envuelta: consulta [`scripts/dev/admin_merge.py`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/dev/admin_merge.py) para ver el envoltorio atómico de Python que ejecuta los pasos 2 → 3 → 4 en una sola secuencia no interactiva con seguridad de reversión mediante `try` / `finally` ante un fallo en el paso 3.
+
+```bash
+python scripts/dev/admin_merge.py <pr-number>
+```
+
+## 3. Invariantes
+
+- **Ventana de alternancia minimizada.** Los pasos 2 → 3 → 4 se ejecutan en una sola secuencia no interactiva. La protección está en su estado relajado solo durante la llamada a la API de fusión: menos de un segundo en cada ejecución observada.
+- **La restauración es incondicional.** El paso 4 se ejecuta incluso cuando el paso 3 falla (la cláusula `try` / `finally` del envoltorio garantiza la restauración por cualquier ruta de salida). Un intento de fusión fallido no deja la protección relajada.
+- **El control de CI se preserva en todo momento.** `required_status_checks` no se ve afectado por la alternancia; la fusión sigue requiriendo que los contextos de verificación de estado configurados estén en verde.
+- **Rastro de auditoría visible.** La anotación `gh pr merge --admin` aparece en los metadatos de fusión del PR; las alternancias de la API de protección aparecen en el registro de auditoría del repositorio bajo la identidad del mantenedor.
+
+## 4. Cuándo NO usar la ceremonia
+
+La ceremonia es para la **autofusión** de los PR del propio mantenedor. Cuando hay un revisor par disponible (un contribuyente con acceso de escritura), la ruta estándar `gh pr review --approve` + `gh pr merge --squash --delete-branch` es la correcta y la ceremonia resulta innecesaria.
+
+Si el repositorio incorpora a un segundo mantenedor, retira la ceremonia: el flujo estándar de revisión de PR restaura la intención de revisión humana de la protección sin ninguna alternancia.
+
+## 5. Auditar una ejecución pasada
+
+Cada invocación de la ceremonia deja huella en tres superficies duraderas que un operador puede inspeccionar a posteriori:
+
+- **Los metadatos de fusión del PR.** `gh pr view <pr-number> --json mergedBy,mergedAt,mergeCommit` devuelve el actor de la fusión, la marca de tiempo de la fusión y el SHA del commit de squash. El actor `mergedBy` coincide con la identidad del mantenedor que ejecutó el paso 3.
+- **El registro de auditoría del repositorio.** `gh api /repos/<owner>/<repo>/actions/runs --jq '.workflow_runs[] | select(.event=="push")'` correlaciona la ejecución de CI posterior a la fusión con el commit de fusión; el registro de auditoría de las reglas de protección del repositorio (historial de `gh api /repos/<owner>/<repo>/branches/main/protection` a través de la interfaz Settings → Branches) muestra las alternancias del paso 2 y del paso 4 delimitando la ventana de fusión.
+- **El historial de git del mantenedor.** `git log main --merges --first-parent` enumera cada commit de squash-merge en `main` con el número de PR correspondiente en el asunto del commit (sufijo `(#<pr-number>)` según el valor predeterminado de `gh pr merge --squash`), lo que permite al operador rastrear cualquier aterrizaje pasado hasta su PR y su invocación de ceremonia.
+
+Cuando `scripts/dev/admin_merge.py` es el punto de entrada, su registro no interactivo (stdout) nombra las tres llamadas a la API de protección y la llamada a la API de fusión en secuencia; canalizar el envoltorio a `tee` captura un fragmento de auditoría por ejecución sin depender de la retención del registro del lado de GitHub.

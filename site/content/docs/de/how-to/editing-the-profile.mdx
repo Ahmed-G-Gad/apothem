@@ -1,0 +1,92 @@
+---
+title: "Das Profil bearbeiten"
+description: "Ändere das gemeinsame Profil und materialisiere jeden installierten Harness erneut."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Ziel: einen Wert im gemeinsamen Profil ändern und ihn in jedes Harness
+ausspielen, den du installiert hast.
+
+## Voraussetzungen
+
+- Die `apothem`-CLI in deinem `PATH` (oder die eigenständige Form: stelle
+  `PYTHONPATH="$HOME/.apothem/src"` voran und führe `python -m apothem` aus, oder
+  verwende `npx @ahmed-g-gad/apothem`).
+- Ein Profil unter `~/.config/apothem/profile.yaml`. Erstelle eines mit
+  `apothem profile init`, falls es fehlt.
+
+## Die Profilstruktur
+
+Das Profil ist ein einzelnes YAML-Dokument. Seine Schlüssel der obersten Ebene:
+
+- `identity` (erforderlich) — `name`, plus optional `role`, `email`, `website`,
+  `github`.
+- `preferences` — `language`, `style` (`concise` / `verbose` / `balanced`),
+  `formatter`, `test_framework`.
+- `rules` — eine Liste zusätzlicher Regel-Strings, die mit fähigen Harnesses
+  geteilt werden.
+- `seriousness` — eines von `EXPLORING`, `PERSONAL_USE`, `SHARED`,
+  `PUBLIC_LAUNCH`.
+- `enforcement` — Opt-in-Schalter (`sprints`, `agent_teams`, `multitasking`,
+  `continuous_execution`, `learning_loop`), jedes Flag standardmäßig aus.
+- `harnesses` — Überschreibungen je Harness, indexiert nach Harness-ID.
+- `exclude_harnesses` — Harness-IDs, die von Stapelbefehlen (`--harness all`)
+  übersprungen werden.
+
+## Schritte
+
+1. Inspiziere das aktuelle Profil:
+
+   ```bash
+   apothem profile show
+   ```
+
+2. Bearbeite es. Öffne es in deinem System-Editor:
+
+   ```bash
+   apothem profile edit
+   ```
+
+   Oder setze einen einzelnen Punkt-Schlüssel von der Kommandozeile aus. Der Wert
+   wird wörtlich gespeichert (mit Ausnahme von `true`/`false` und explizitem
+   `[..]`/`{..}`-Input, die geparst werden), und das Profil wird vor dem Schreiben gegen das Schema
+   validiert — ein ungültiges Setzen wird abgelehnt und das Profil auf dem
+   Datenträger bleibt unverändert:
+
+   ```bash
+   apothem profile set seriousness SHARED
+   apothem profile set identity.name "Ada Lovelace"
+   ```
+
+3. Materialisiere die Harnesses erneut, damit die Änderung ihre native
+   Konfiguration erreicht. Für einen Harness im Benutzer-Geltungsbereich:
+
+   ```bash
+   apothem update --harness claude-code
+   ```
+
+   Für einen Harness im Projekt-Geltungsbereich gib den Projektstamm an; verwende
+   `all`, um jeden installierten Harness aufzufrischen:
+
+   ```bash
+   apothem update --harness cursor --project /path/to/project
+   apothem update --harness all --project /path/to/project
+   ```
+
+## Verifizieren
+
+```bash
+apothem profile show
+apothem verify --harness all
+```
+
+`profile show` spiegelt deine Bearbeitung wider; `verify` bestätigt, dass die
+materialisierte Konfiguration mit dem aktualisierten Profil übereinstimmt.
+
+## Verwandtes
+
+- [Einen Harness hinzufügen](/docs/how-to/adding-a-harness), um einen neuen
+  Harness vor dem erneuten Materialisieren unter Profilkontrolle zu bringen.
+- [Aktualisieren](/docs/install/updating) behandelt das Upgrade der Engine
+  zusammen mit dem erneuten Materialisieren.

@@ -1,0 +1,60 @@
+---
+title: "预发射闸门登记册——必填十五项检查"
+description: "在有意义范围的发射之前运行的必填十五项合规检查，附带失败-动作映射与发布证明模式。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **十五项预发布闸门的规范登记册。** 本文档承载完整的十五项闸门表格与发布证明模式 YAML 块；实质性的表格与模式存放于此，由 `src/apothem/rules/pre-emission-gate.md` 操作化。
+
+在任何有意义范围的制品发射之前（按 `site/content/docs/governance/outward-conformity-registry.mdx` §1 的琐碎与非琐碎阈值），运行十五项预发射闸门。在可能之处经由 PreToolUse 钩子机械化（`src/apothem/conformity/*-grep.py` 处的机械 grep，由 `src/apothem/conformity/gate.py` 编排）；在机械化不可行之处则进行推理。**任一项失败即阻塞发射；修订直至每一项通过；发射时记录闸门发布证明。**
+
+| # | 项 | 检查类型 | 失败 → 动作 |
+| - | --- | ---------- | ---------------- |
+| 1 | M1 宿主无关性 | 推理 | 修订以匹配宿主惯例 |
+| 2 | M2 编辑披露 | 推理 | 添加披露登记账 |
+| 3 | M3 十维度 | 混合（机械 + 推理） | 在失败维度上修订 |
+| 4 | M4 自应用 | 机械（发布证明存在） | 记录发布证明 |
+| 5 | M5 权威 | 机械（`<USER-CONFIRM:…>` 占位符 grep） | 重新路由至询问表面 |
+| 6 | M6 专业 | 推理（已呈现缺口章节存在） | 呈现缺口；引用 |
+| 7 | M7 选项标注 | 机械（选项集带有推荐标记） | 标注 |
+| 8 | M8 确定性 | 机械（含糊词汇 grep） | 将含糊措辞提升为条件式 |
+| 9 | M9 视觉杠杆 | 推理（在结构性之处存在图示） | 编写／刷新图示 |
+| 10 | M10 双向绑定 | 机械（绑定互惠 grep） | 闭合半边 |
+| 11 | M11 敏捷冲刺 | 推理（冲刺装置已实例化） | 重构为冲刺 |
+| 12 | M12 阶段报告与布局 | 机械（孤儿输出 grep）+ 推理 | 编写汇总；重新定位 |
+| 13 | M13 代码工艺 | 机械（检查／格式化／类型检查；裸 except、魔法数字、注释掉代码 grep） | 修订 |
+| 14 | M14 系统性 | 推理（声明上游／下游／同侪／强制者） | 声明；编入索引 |
+| 15 | M15 生产就绪 | 机械（生产就绪-pr grep）+ 推理 | 添加测试／文档／CHANGELOG |
+
+## 1. 发布证明模式
+
+每次闸门运行都将结果记录在制品的工作轨迹中（隐藏注释、元数据块、独立的发射日志文件——以宿主惯例所允许者为准）：
+
+```yaml
+conformity-attestation:
+  artifact: <path-or-identifier>
+  ecosystem-version: <git-commit-sha-or-equivalent ratifying the rule set in force>
+  bars:
+    M1-host-agnosticism:        pass | n/a (with reason)
+    M2-editorial-disclosure:    pass | n/a
+    M3-ten-dimensions:          pass | n/a
+    M4-self-application:        pass
+    M5-authority:               pass
+    M6-expertise:               pass | n/a
+    M7-option-annotation:       pass | n/a (no option set)
+    M8-definitiveness:          pass
+    M9-visual-leverage:         pass | n/a (subject not structural)
+    M10-bidirectional-binding:  pass
+    M11-agile-sprints:          pass | n/a (trivial work)
+    M12-phase-layout:           pass | n/a
+    M13-code-craft:             pass | n/a (not code)
+    M14-systemicity:            pass
+    M15-production-ready:       pass | n/a (no host-public-surface change)
+  surfaced-gaps: []
+  unresolved-inquiries: []
+  amendments-disclosed: []
+  date: <ISO-8601>
+```
+
+`n/a` 标记是显式且经过推理的——绝非静默跳过。`ecosystem-version` 字段将发布证明锚定到用户范围生态系统的可复现状态（闸门运行时活动的 Apothem 源码树 git 提交——例如 Claude Code 适配器的 `~/.claude/` 检出），以便未来的审计能对照相同的规则正文重放闸门。

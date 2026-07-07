@@ -1,0 +1,44 @@
+---
+title: "Apothem と手作業の Zed 構成の比較"
+description: "Zed の扁平な .rules 指示ファイルを手作業で維持するのと、Apothem の共有プロファイルから生成するのとの比較。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Zed はプロジェクトルートにある単一の扁平な `.rules` ファイルからエージェント指示を
+読み込みます（`AGENTS.md` / `CLAUDE.md` 系列の隣）。Apothem の zed アダプターは
+そのファイルを共有プロファイルから生成します。本ページは、その構成を手作業で維持
+するのと Apothem で管理するのとを対比します。
+
+## 労力の比較
+
+| タスク | 手作業の構成 | Apothem 管理 |
+| ---- | --------------- | --------------- |
+| 指示を書く | `.rules` ファイルを手書き | 共有コーパスから生成 |
+| 以前の `.rules` を保つ | 自分でわきへコピーするのを忘れないようにする | アダプターが置き換え前に既存ファイルをバックアップ |
+| ルールを他の環境と揃えて保つ | 手作業、ツールごと | `apothem update` で自動 |
+| 構成が正しいか検証する | 手作業の検査 | `apothem verify --harness zed` |
+
+## Apothem が管理するもの
+
+zed アダプターは共有ルールをプロジェクトルートの扁平な `.rules` ファイルへ生成します。
+Zed には PreToolUse フックがないため、ガードレールの意図はツール呼び出しの傍受点では
+なくルール本文の中に存在します。グローバルの `~/.config/zed/AGENTS.md` 指示ファイルと
+`.zed/settings.json` の MCP コンテキストサーバーブロックはオペレーター所有であり、
+手を加えられません。共有ルールへの変更はすべて、次の `apothem update` 時にファイルを
+再生成します。
+
+## 移行手順
+
+1. 共有プロファイルをまだ作成していなければ、`apothem profile init` を実行します。
+2. 既存の `.rules` の指示（および共有したいプロジェクト固有の `AGENTS.md`
+   コンテンツ）を共有コーパスへ移します。
+3. `apothem install --harness zed` を実行して `.rules` ファイルを生成します。
+   以前の `.rules` は先にバックアップされます。
+4. `apothem verify --harness zed` を実行して構成が配置されたことを確認します。
+5. 以降の変更には毎回 `apothem update --harness zed` を使います。
+
+## 次に読む
+
+- [Zed アダプターのリファレンス](/docs/harnesses/zed)
+- [比較の概要](/docs/comparison)

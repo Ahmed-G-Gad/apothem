@@ -1,0 +1,42 @@
+---
+title: "Схема Frontmatter"
+description: "Справочное руководство по структуре блока frontmatter YAML, обязательным ключам для каждого класса и правилам применения валидатора по классам артефактов."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Каноническая справка по frontmatter YAML для каждого класса артефактов.** Сводка в [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Соглашения — это встроенное объявление; JSON Schema по классам в [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) — машиночитаемый контракт; эта страница — самостоятельный справочник, на который ссылаются нижестоящие участники.
+
+---
+
+## 1. Структура блока frontmatter
+
+Каждый артефакт несёт frontmatter YAML в начале, ограниченный строками `---`. Канонический баннер заголовка авторства согласно [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) располагается над frontmatter в файлах семейства Markdown; frontmatter следует сразу за ним.
+
+Ключи используют `kebab-case`. Скалярные значения либо без кавычек, либо в двойных кавычках; строковые значения, содержащие двоеточия, знаки решётки или другие значимые для YAML символы, заключаются в кавычки.
+
+## 2. Обязательные поля по классам
+
+Набор обязательных ключей зависит от класса артефакта. Авторитетную структуру обеспечивают `scripts/dev/validate_ecosystem.py` и JSON Schema по классам в каталоге `schemas/` (один файл схемы на класс артефакта).
+
+```text
+schemas/agent.schema.json
+schemas/skill.schema.json
+schemas/command.schema.json
+schemas/output-style.schema.json
+schemas/plan.schema.json
+```
+
+| Класс | Обязательные ключи |
+|-------|---------------|
+| `CLAUDE.md` (корневая конфигурация) | `name`, `version`, `updated`, `description`, `scope`, `portability` |
+| Правила (`src/apothem/rules/*.md`) | `name`, `description`, `pathFilter`, `alwaysApply` |
+| Команды (`src/apothem/commands/*.md`) | `name`, `version`, `updated`, `description`, `argument-hint`, `disable-model-invocation` |
+| Ассистенты (канонический каталог показан ниже) | `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns`, `effort` |
+| Навыки (`src/apothem/skills/*/SKILL.md`) | `name`, `description`, `archetype`, `userInvocable` |
+
+Схемы по классам в [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) несут полный набор ограничений, включая ограничения типа, формата, enum и шаблона.
+
+## 3. Валидаторы
+
+`scripts/dev/validate_ecosystem.py` обходит дерево артефактов, применяет приведённые выше наборы обязательных ключей и сообщает `[FAIL]` по любому артефакту, в котором отсутствует обязательное поле. Пописьменный `frontmatter-grep` в `src/apothem/conformity/frontmatter_grep.py` обеспечивает ту же структуру на границах хука PreToolUse Write/Edit.

@@ -1,0 +1,64 @@
+---
+title: "Secuencia de revisión y auditoría"
+description: "La secuencia de auditoría de once comandos que revisa Apothem antes del lanzamiento."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+La secuencia de revisión y auditoría es el barrido de aseguramiento de calidad de
+once comandos que revisa un proyecto antes del lanzamiento. Cada comando audita un
+área de calidad y emite hallazgos que deben corregirse o resolverse de forma
+explícita.
+
+Dos orquestadores canónicos impulsan estas once dimensiones. `/audit` las ejecuta
+en paralelo como una sola pasada de solo-informe — produce un informe de hallazgos
+deduplicado y clasificado por severidad, y nunca edita el código fuente.
+`/fortress` es el bucle cerrado de remediación (detectar → verificar → remediar →
+reauditar → compuerta) que endurece un proyecto hasta un estado regido por la
+compuerta de lanzamiento. Cada dimensión también sigue siendo invocable por
+separado.
+
+## Las once áreas de auditoría
+
+| Comando | Eje | Estándar |
+|---------|-----|----------|
+| /code-review | Calidad del código | Revisión de oficio por archivo |
+| /code-audit | Corpus de código | Análisis forense entre archivos |
+| /security-audit | Seguridad | OWASP ASVS v4 + Top 10 |
+| /perf-audit | Rendimiento | Core Web Vitals + método USE |
+| /architecture-review | Arquitectura | Conformidad con el artefacto de diseño |
+| /ux-review | Experiencia de desarrollo | Ergonomía de la CLI + incorporación |
+| /a11y-audit | Accesibilidad | WCAG 2.2 AA |
+| /docs-review | Documentación | Calidad en diez dimensiones |
+| /dependency-audit | Dependencias | Licencia + CVE + frescura |
+| /supply-chain-audit | Cadena de suministro | SLSA + Sigstore + SBOM |
+| /threat-model-audit | Modelo de amenazas | STRIDE + PASTA |
+
+## Compuertas de preparación para el lanzamiento
+
+La secuencia contribuye a las compuertas de preparación para el lanzamiento:
+
+- **Compuerta local:** las comprobaciones locales de conformidad pasan.
+- **Compuerta de GitHub** (previa al corte): verificación del lado de GitHub —
+  flujos de trabajo de CI en verde en cada commit, en cada comprobación.
+- **Compuerta de auditoría:** secuencia de revisión completa — las once áreas
+  auditadas, hallazgos resueltos, elementos a vigilar documentados.
+
+## Ciclo de remediación
+
+Los comandos de auditoría son de solo-informe: presentan hallazgos, nunca aplican
+correcciones. La remediación se ejecuta a través de `/fortress`, el bucle cerrado
+que sigue el patrón de iterar-hasta-verde: los hallazgos se clasifican y verifican,
+las correcciones se aplican en la superficie propietaria de cada hallazgo, se vuelve
+a ejecutar la auditoría y el ciclo continúa hasta que los hallazgos se resuelven y
+la compuerta de lanzamiento pasa. La elevación de todo el repositorio al mejor
+estándar actual se ejecuta a través de `/elevate`.
+
+## Por qué existe la secuencia
+
+La calidad del software se degrada a lo largo de varias dimensiones a la vez. Una
+sola revisión puede pasar por alto defectos que se sitúan entre la calidad del
+código, la seguridad, el rendimiento, la arquitectura, la accesibilidad, la
+documentación, la postura de dependencias y la postura de la cadena de suministro. La
+secuencia de auditoría aplica esas lentes por separado para que la compuerta de
+lanzamiento vea el perfil de riesgo completo.

@@ -1,0 +1,66 @@
+---
+title: "Konzepte"
+description: "Glossar mit Definitionen für gemeinsame Profile, Harness-Adapter, Regeln, Hooks, Konformitäts-Gates, Skills und delegierte Worker in Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Eine Kurzreferenz für die Begriffe, denen du in der gesamten Apothem-Dokumentation begegnest.
+
+## Gemeinsames Profil
+
+Eine schema-validierte YAML-Datei unter `~/.config/apothem/profile.yaml` (mit `--profile PATH` überschreibbar).
+Sie ist die einzige Quelle der Wahrheit für deine Identität, Präferenzen und Konfiguration; jeder
+Harness-Adapter liest sie bei der Installation und leitet daraus die native Konfiguration dieses Harness ab.
+
+## Harness-Adapter
+
+Ein plattformspezifischer Adapter, der das gemeinsame Profil in das native Konfigurationsformat eines
+bestimmten Harness übersetzt. Die unterstützten Harnesses sind aufgeführt in:
+
+```text
+Claude Code, Cursor, Gemini CLI, etc.
+```
+
+Apothem zu installieren bedeutet immer: das gemeinsame Profil installieren und anschließend einen oder mehrere
+Adapter materialisieren.
+
+## Verhaltensregel
+
+Eine Markdown-Datei unter src/apothem/rules/, die bei jeder Interaktion geladen wird (always-on) oder
+nur beim Bearbeiten von Dateien unter einem bestimmten Pfad (pfadgefiltert). Regeln kodifizieren, wie sich der
+Harness verhalten soll.
+
+## Hook
+
+Ein Python-Skript, das in settings.json registriert ist und bei Harness-Lebenszyklus-Ereignissen
+ausgelöst wird (PreToolUse, PostToolUse, SessionStart, PreCompact, Stop, PostCompact). Hooks erzwingen Konformitäts-
+Mandate in Echtzeit, bevor die Ausgabe die Festplatte erreicht. Das Hook-Ereignismodell ist heute eine Claude Code-Oberfläche;
+Adapter für Harnesses ohne Hook-Mechanismus lassen es einfach weg.
+
+## Konformitäts-Gate
+
+Der mechanische Anteil des fünfzehnstufigen Pre-Emission-Gates (M1-M15) — die eigenständigen Validatoren,
+die bestehen müssen, bevor ein Artefakt ausgegeben wird. Das Pre-Emission-Gate ist die Qualitätsuntergrenze; das
+Konformitäts-Gate führt seine maschinell prüfbaren Stufen aus, und Hooks erzwingen einzelne Stufen in Echtzeit.
+
+## Plan-Suite
+
+Ein strukturiertes Verzeichnis unter &lt;project-root&gt;/.apothem/plans/&lt;suite-name&gt;/, das eine Spezifikation, einen Masterplan, phasenbezogene
+PHASE.md-Dateien und Ausgabeartefakte enthält. Die /plan-Pipeline verwaltet Plan-Suiten.
+
+## Skill
+
+Eine wiederverwendbare, per Slash-Befehl aufrufbare Technik, gebündelt als SKILL.md-Datei unter
+src/apothem/skills/&lt;name&gt;/. Skills erweitern die Slash-Befehl-Oberfläche über die integrierte
+/plan-Pipeline hinaus.
+
+## Delegierter Worker
+
+Ein persistenter, zweckgebundener Assistent, definiert am kanonischen Pfad:
+
+```text
+src/apothem/agents/<name>.md
+```
+
+Delegierte Worker übernehmen Recherche, Auditing, Qualitätsprüfung und Speicherverwaltung.

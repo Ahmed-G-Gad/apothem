@@ -1,0 +1,106 @@
+---
+title: "徽章策略"
+description: "为 README 指定动态与静态徽章来源，涵盖 GitHub 原生工作流状态、shields.io 端点 JSON 以及静态徽章形式。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+本文档是 README 徽章条与发布其动态数据源的基础设施的权威参考。项目
+README 中的每个徽章都通过此处指定的三种形式之一解析；未来新增的徽章
+遵循相同的形式，否则在评审时被拒绝。
+
+## 1. 背景
+
+静态 `https://img.shields.io/badge/X-Y-Z` URL 永远不会自行变化，因此
+它们会偏离项目的真实状态——一个 `release-vN-blue` 徽章在 `vN+1` 发布很久
+之后仍然显示 `vN`。因此本策略要求每个会变动的值都采用动态形式，并将
+静态徽章保留给那一小组很少变化、静态形式诚实可靠的值（许可证、Python
+目标版本）。
+
+## 2. 架构
+
+三种形式涵盖项目中的每个徽章：
+
+1. **GitHub 原生工作流状态徽章。** 工作流的徽章 URL 形如
+   `https://github.com/<owner>/<repo>/actions/workflows/<file>/badge.svg`，
+   反映默认分支上的最新运行。GitHub 从仓库的公共元数据中提供该徽章。
+2. **shields.io 端点徽章。** shields.io 端点徽章解析一个
+   `https://img.shields.io/endpoint?url=<published-json>` URL，其中 JSON
+   符合 shields.io 端点模式（`schemaVersion`、`label`、`message`、`color`）。
+   发布的 JSON 位于 `apothem.ahmedgad.com/badges/*.json`；其内容由
+   CI 工作流在每次成功的 CI 运行时生成。端点徽章将指标保持在项目可控的
+   发布之下，而非第三方可变存储中。
+3. **shields.io 静态徽章。** 静态徽章形如
+   `https://img.shields.io/badge/<label>-<message>-<color>`，没有
+   响应式数据源。保留给确实很少变化的值（许可证标识符、Python 目标版本）。
+
+项目指标的 Public-Gist 发布按设计被排除。基于项目可控域名的 Shields.io
+端点是规范化的替代方案。
+
+## 3. 逐徽章规范
+
+| 徽章 | 形式 | 来源 | URL 形状 |
+|---|---|---|---|
+| CI 状态 | GitHub 原生 | `.github/workflows/ci.yml` | `https://github.com/ahmed-g-gad/apothem/actions/workflows/ci.yml/badge.svg?branch=main` |
+| 最近提交 | GitHub 原生 | 仓库元数据 | `https://img.shields.io/github/last-commit/ahmed-g-gad/apothem` |
+| 许可证 | shields.io 静态 | `LICENSE`（MIT） | `https://img.shields.io/badge/License-MIT-yellow.svg` |
+| 最新发布 | shields.io 端点 | `badges/release.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/release.json` |
+| 覆盖率 | shields.io 端点 | `badges/coverage.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/coverage.json` |
+| 安全 | shields.io 端点 | `badges/security.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/security.json` |
+| 供应链 | shields.io 端点 | `badges/supply-chain.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/supply-chain.json` |
+| 文档 | shields.io 端点 | `badges/docs.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/docs.json` |
+| Python 版本 | shields.io 静态 | `pyproject.toml` `python_requires` | `https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white` |
+
+CodeQL 作为专用的 `.github/workflows/codeql.yml` 工作流运行，分析 Python 与
+Actions 两个面；`ci.yml` 中的 security-scan 作业仅运行 bandit，将 CodeQL 的
+SARIF 发布交由 `codeql.yml` 完成。安全徽章消费由 badges 工作流发布的端点
+JSON，而非 GitHub 原生工作流徽章，从而在底层扫描器拓扑变化时保持稳定。
+
+## 4. JSON 发布机制
+
+端点 JSON 由 `.github/workflows/badges.yml` 生成。该工作流：
+
+- 在 `ci` 工作流完成后由 `workflow_run` 触发（并在手动 `workflow_dispatch`
+  时触发，用于无 CI 运行的重新发布）。
+- 从 `git describe --tags --abbrev=0` 解析最新标签，并从 `workflow_run`
+  事件解析父级 CI 结论。
+- 通过 `jq -n` 生成每个 JSON，使输出严格匹配 shields.io 端点模式
+  （`schemaVersion: 1`，加上 `label`、`message`、`color`）。
+- 在上传前用 `jq -e` 验证每个发出的 JSON。
+- 将该目录作为名为 `badges` 的工作流制品上传。
+
+将制品部署到 `apothem.ahmedgad.com/badges/` 由
+`.github/workflows/publish-static-site.yml` 处理。在站点构建期间，该工作流
+下载最新成功的 `badges` 制品并将其暂存到 `site/dist/badges/` 下。如果制品
+缺失或过期，站点仍然部署，并在工作流日志中记录缺失的徽章制品，而不是
+发布损坏的 JSON。
+
+## 5. 维护协议
+
+新增徽章时先决定其形式：
+
+- 如果徽章反映 CI 工作流的运行状态，优先选择 GitHub 原生形式。徽章的
+  URL 由工作流文件固定；无需发布基础设施。
+- 如果徽章反映一个随时间更新的指标（计数、百分比、版本字符串、分级
+  标签），使用 shields.io 端点形式。在 `.github/workflows/badges.yml` 中
+  现有的五个旁边添加一个 JSON 生成步骤，并将
+  `apothem.ahmedgad.com/badges/<name>.json` 消费者 URL 添加到 README
+  徽章条。
+- 如果徽章反映一个确实很少变化的值（许可证、语言目标、治理模式），
+  使用 shields.io 静态形式。新增徽章时在本文件的逐徽章表格中记录其
+  变化节奏。
+
+退役徽章时先将其从 README 中移除，然后从 badges 工作流中移除其 JSON
+生成步骤，再从上方的逐徽章表格中移除其行。保持删除原子化，使 README
+永远不引用工作流不生成的 JSON 制品。
+
+## 6. 交叉引用
+
+- GitHub 原生 CI 徽章反映其运行状态的 CI 工作流：
+  `.github/workflows/ci.yml`。
+- 发布端点 JSON 的 badges 工作流：
+  `.github/workflows/badges.yml`。
+- 提供 JSON 的静态站点域名：
+  `apothem.ahmedgad.com`。
+- shields.io 端点模式参考：
+  [https://shields.io/badges/endpoint-badge](https://shields.io/badges/endpoint-badge)。

@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: MIT
+
+# Canonical .gitattributes — conformant fixture for gitattributes-presence-grep.
+
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.svg text
+
+plans/ export-ignore
+tests/ export-ignore
+.github/ export-ignore
+
+*.py linguist-detectable=true

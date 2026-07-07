@@ -1,0 +1,163 @@
+---
+title: "デプロイチェックリスト"
+description: "Apothem エコシステムをデプロイまたは共有する前の事前検証チェックリスト"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem エコシステムを新しいマシンにデプロイする、他者と共有する、または
+本番運用可能とみなす前の事前検証ステップです。
+
+---
+
+## 1. YAML の妥当性
+
+- [ ] すべてのルールファイルが YAML エラーなくパースされる — frontmatter ブロックが `---` で開き、`---` で閉じ、ブロック外に孤立したコンテンツがない
+- [ ] すべての委任ワーカーファイルが YAML エラーなくパースされる
+- [ ] すべてのコマンドファイルが YAML エラーなくパースされる
+- [ ] すべてのスキル `SKILL.md` ファイルが YAML エラーなくパースされる
+
+**検証方法:** `python scripts/dev/validate_ecosystem.py` は各アーティファクトの
+frontmatter をパースし、YAML エラーと欠落している必須フィールドをフラグ付けします。
+孤立したリスト項目をその場で検出するには: `rg -n "^- " src/apothem/rules/*.md`。
+
+---
+
+## 2. frontmatter の完全性
+
+各アーティファクト種別について、必須フィールドが存在することを確認します。
+
+### ルール（`src/apothem/rules/*.md`）
+
+- [ ] `name` — ファイル名に一致する kebab-case 識別子
+- [ ] `version` — semver `MAJOR.MINOR.PATCH`（例: `"X.Y.Z"`）
+- [ ] `updated` — ISO 8601 日付（例: `"2026-04-20"`）
+- [ ] `description` — 1 文の要約
+- [ ] `scope` — `"always-on"` または `"path-filtered"`
+- [ ] `portability` — `"universal"`、`"universal-with-windows-caveats"`、`"unix-only"`、または `"windows-only"`
+- [ ] `pathFilter` — パスフィルタールールでは存在し、有効な glob 文字列であること。常時オンのルールでは存在しないこと
+
+### コマンド（`src/apothem/commands/*.md`）
+
+- [ ] `name` — kebab-case のコマンド名
+- [ ] `version`、`updated`、`description`、`argument-hint` が存在
+- [ ] `disable-model-invocation` が存在し意図的である（ガイダンス専用コマンドでは `true`）
+- [ ] `effort`、`portability` を、存在する場合はレビュー済み（schema 上は任意）
+
+### 委任ワーカー
+
+パス:
+
+```text
+src/apothem/agents/*.md
+```
+
+- [ ] `name`、`version`、`updated`、`description` が存在
+- [ ] `tools` — 許可されたツールのカンマ区切りリスト
+- [ ] `disallowedTools` — 許可されていないツールを明示的に列挙
+- [ ] `maxTurns` — 設定済み（> 10 の場合は理由コメント付き）
+- [ ] `permissionMode` — **`"bypassPermissions"` であってはならない** — `"default"` を使用
+- [ ] `memory: false`（永続メモリを意図する場合を除く）
+
+### スキル（`src/apothem/skills/*/SKILL.md`）
+
+- [ ] `name`、`version`、`updated`、`description` が存在
+- [ ] `user-invocable` — 宣言済み（true/false）
+
+---
+
+## 3. セキュリティ
+
+- [ ] **どの委任ワーカーも `permissionMode: "bypassPermissions"` を使用していない** — これは Write/Bash 操作の対話的確認をバイパスします
+- [ ] ワーカーの `tools` リストは最小限である — ワーカーが本当に必要とするツールのみ
+- [ ] `Bash` アクセスを持つワーカーには正当な理由があり、maxTurns の上限が設定されている
+- [ ] いずれのアーティファクトにもハードコードされたパス、トークン、シークレットがない
+- [ ] `settings.json` のフックは妥当なタイムアウト（≤ 60 秒）を持ち、ユーザー入力からの任意コードを実行しない
+
+---
+
+## 4. 相互参照の整合性
+
+- [ ] `src/apothem/rules/` テーブルに記載された各ルールが、記載されたパスにディスク上に存在する
+- [ ] `src/apothem/commands/` テーブルに記載された各コマンドがディスク上に存在する
+- [ ] `src/apothem/agents/` レジストリテーブルに記載された各委任ワーカーがディスク上に存在する
+- [ ] `src/apothem/skills/` テーブルに記載された各スキルがディスク上に存在する
+- [ ] `src/apothem/hooks/` テーブルの各フックが `settings.json` に対応するエントリを持つ
+- [ ] CLAUDE.md の `Implements` 列で参照されるすべての `src/apothem/rules/*.md` ファイルが存在する
+
+---
+
+## 5. 指令カバレッジ
+
+- [ ] CLAUDE.md で参照される各 CM-N に施行場所がある（ルールファイルまたは明示的なインライン定義のいずれか）
+- [ ] どのルールファイルも他のルールファイルと矛盾しない（特に重大度スケーリングの周辺で）
+- [ ] CM-21 の 3 つのファセットの境界が尊重されている — どのルールも他のルールの CM-21 ファセットの所有権を主張しない
+
+---
+
+## 6. 機能スモークテスト
+
+まず Python 検証サーフェスを実行します — 高速・オフラインで、構造的なリグレッションを
+捕捉します。
+
+- [ ] `pytest tests` — フックランタイムのユニットテスト、すべてグリーン
+- [ ] `python scripts/dev/validate_hooks.py` — フック構造 + Python のみの衛生チェックがパス
+- [ ] `python scripts/dev/validate_ecosystem.py` — ツリー全体 + frontmatter + 委任フックチェックがパス
+- [ ] `python scripts/dev/chaos_pass.py` — 設定された各フックコマンドが、劣化した入力の下で有効な JSON エンベロープを返す
+
+次にライブシナリオ:
+
+- [ ] `/plan-spec --interactive`（または `/plan-spec <sample-file>`）— コマンドレベルのエラーなく取り込み/明確化を完了する
+- [ ] `/plan-generate --dry-run` — ファイルを書き込まずに構造プレビューを生成する
+- [ ] 完全なプランスイートに対する `/plan-status` — 正確なフェーズ数を返す
+- [ ] 委任ワーカーのディスパッチ: 小さなスコープで呼び出された `codebase-explorer` ワーカーが maxTurns 内に完了し、構造化された出力を返す
+
+---
+
+## 7. ドキュメントの最新性
+
+- [ ] `CHANGELOG.md`（エコシステムのルート）が、前回リリース以降のすべてのアーティファクト変更を反映している。次のリリースのセクションがタグの着地前に記入されているか、すべての変更がすでにリリース済みセクションに切り出されている
+- [ ] `site/content/docs/developer-guide.mdx` が現在のアーティファクト構造を正確に記述している
+- [ ] `site/content/docs/reference/artifact-schema.mdx` が、アーティファクトに実際に存在する frontmatter フィールドと一致している
+- [ ] `site/content/docs/reference/settings-reference.mdx` が、`settings.json` の実際のフック設定と一致している
+- [ ] `README.md` がディスク上のツリーと整合している
+
+---
+
+## 8. 移植性（他者と共有する場合）
+
+- [ ] フックコマンド内のすべてのパスが環境非依存であるか、`~` 展開を使用している
+- [ ] フックコマンドが exec 形式を使用し、シェル固有のコマンド文字列を避けている
+- [ ] いずれのアーティファクトにもハードコードされた `C:\Users\username` または `/home/username` パスがない
+- [ ] `settings.json` が単一のフックイベントカバレッジテーブルと正規のディスパッチモジュールパスを使用している
+
+---
+
+## 9. バージョンの整合
+
+- [ ] CLAUDE.md の `version` がツリー内のいずれのアーティファクトよりも高い（または慣例上、最も最近バンプされたアーティファクトのバージョンと等しい）
+- [ ] 各アーティファクトの `version` が記載された semver（`MAJOR.MINOR.PATCH`）と一致している
+- [ ] CHANGELOG.md がタグ付けの前に、対象バージョンのリリースエントリをちょうど含んでいる
+- [ ] 各アーティファクトの `updated` フィールドが、最後の動作変更編集の日付以降である
+- [ ] どのアーティファクトも、最後に触れられたバージョンより低い `version` を持っていない（リグレッションなし）
+- [ ] `src/apothem/skills/plan-suite/SKILL.md` と `src/apothem/skills/plan-suite/master-template.md` が同じテンプレートバージョンラインにピン留めされている
+
+---
+
+## サインオフ
+
+| チェックカテゴリ | ステータス | 備考 |
+| -------------- | ------ | ----- |
+| YAML の妥当性 | | |
+| frontmatter の完全性 | | |
+| セキュリティ | | |
+| 相互参照の整合性 | | |
+| 指令カバレッジ | | |
+| 機能スモークテスト | | |
+| ドキュメントの最新性 | | |
+| 移植性 | | |
+| バージョンの整合 | | |
+
+**デプロイ承認者:** ___________________
+**日付:** ___________________
+**デプロイされたエコシステムバージョン:** ___________________

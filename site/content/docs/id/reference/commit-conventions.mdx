@@ -1,0 +1,32 @@
+---
+title: "Konvensi commit"
+description: "Menetapkan format pesan commit, penandaan rilis, disiplin kepengarangan khusus-manusia, dan kadensi per-tugas untuk artefak git dan kontrol versi."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Referensi kanonik untuk pesan commit git, tag rilis, dan disiplin kepengarangan.** Ringkasan di [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Konvensi adalah deklarasi inline; halaman ini adalah referensi mandiri yang dikutip kontributor hilir.
+
+---
+
+## 1. Conventional Commits
+
+Subjek commit mengikuti bentuk **Conventional Commits**: `<type>(<scope>): <subject>`. Himpunan tertutup `<type>` adalah `{feat, fix, chore, docs, refactor, test, perf, ci, build, style, revert, release}`. `<scope>` adalah permukaan yang disentuh commit (mis., `feat(conformity)`, `docs(adr)`, `fix(ci)`); scope dihilangkan hanya untuk perubahan lintas-bidang yang tidak terlokalisasi.
+
+Subjek bermodus imperatif, huruf kecil setelah titik dua type/scope, tanpa titik di akhir, dan kurang dari 72 karakter. Body — dipisahkan dari subjek oleh satu baris kosong — menjelaskan **mengapa** perubahan itu ada, bukan apa yang diubah diff; diff itu sendiri adalah catatan kanonik tentang apa.
+
+## 2. Disiplin kepengarangan (khusus-manusia)
+
+Setiap permukaan kepengarangan di setiap artefak git (subjek commit, body commit, bidang `Author:`, trailer `Co-Authored-By:`, trailer `Signed-off-by:`, nama branch, nama tag, anotasi tag, nama stash, body git-notes, judul PR, deskripsi PR) menamai **hanya kontributor manusia**. Harness tidak pernah mengatribusikan dirinya sendiri, model bahasa yang mendasarinya, runtime / lingkungan / IDE / ekstensi / vendor, atau alat otomatis lainnya, ke salah satu permukaan tersebut. Pola yang dilarang mencakup `Co-Authored-By: <model-name>`, `Co-Authored-By: <noreply@*-vendor.com>`, narasi body seperti `generated with X` atau `co-authored by an automated helper`, dan setiap penanda baris-subjek yang menandakan kepengarangan non-manusia. Spesifikasi lengkap berada di [`src/apothem/rules/production-ready-prs.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/production-ready-prs.md) §6; penegakan mekanis berada di [`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/hooks/messages/pretooluse-bash.md) Scan 3.
+
+## 3. Tag rilis (Semantic Versioning)
+
+Tag rilis mengikuti **Semantic Versioning** (`vMAJOR.MINOR.PATCH`). Versi pra-1.0 adalah `0.MINOR.PATCH` sesuai konvensi pra-stabil dari spesifikasi; perubahan yang merusak menaikkan MINOR, perbaikan bug menaikkan PATCH. Tag dianotasi (`git tag -a`) dan ditandatangani pada tingkat publikasi sesuai [`site/content/docs/governance/release-engineering-policy.mdx`](/docs/governance/release-engineering-policy). Versi paket berada di manifes sumber (`pyproject.toml` `version`), dan permukaan runtime / pembawa-versi diturunkan dari metadata paket tersebut.
+
+## 4. Kadensi per-tugas
+
+Commit dilakukan per-tugas pada keseriusan SHARED+, per-fase pada PERSONAL_USE, dan opsional pada EXPLORING. Commit suatu tugas dilakukan segera setelah gerbang verifikasi tugas lolos; commit yang ditunda menumpuk konteks dan berisiko kehilangan cakupan. Disiplin lengkap berada di [`src/apothem/rules/operational-mandates.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/operational-mandates.md) §CM-13.
+
+## 5. Validator
+
+Rantai hook pre-commit di [`.pre-commit-config.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/.pre-commit-config.yaml) menegakkan gerbang kualitas per-tulis. Penegakan disiplin kepengarangan di hook bash (Scan 3 dari `src/apothem/hooks/messages/pretooluse-bash.md`) menangkap trailer dan penanda body yang dilarang sebelum operasi tulis git apa pun dilakukan.

@@ -1,0 +1,73 @@
+---
+title: "/research-proposal"
+description: "/research-proposal — Transforma a lacuna sintetizada e o arcabouço teórico em um plano mestre financiável e revisável: objetivos SMART, registro de viabilidade e riscos, via de impacto, plano de pré-registro e seleção da diretriz de relato EQUATOR — a etapa de proposta do fluxo /research, entre /research-synthesis e /research-design."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Papel:** Investigador Principal (plano mestre)
+**Posição no fluxo:** meio da cadeia
+
+Transforma a lacuna sintetizada e o arcabouço teórico em um plano mestre financiável e revisável. A viabilidade ética é levantada logo no início, e o plano de pré-registro e a seleção da diretriz de relato são fixados antes de qualquer projeto de estudo ser operacionalizado.
+
+## Invocação canônica
+
+```bash
+/research-proposal
+```
+
+Com argumentos:
+
+```bash
+/research-proposal [--suite-name NAME] [--override] [--guideline NAME] [--prereg-registry NAME]
+```
+
+## Entradas
+
+O arquivo `_inputs/synthesis.md` da suíte (o mapa SOTA + a análise da lacuna) e `_inputs/theory.md` (o arcabouço conceitual).
+
+## Saídas
+
+`_inputs/proposal.md` (a hierarquia de objetivos SMART, a avaliação de viabilidade, o registro de recursos / cronograma / riscos, a via de impacto, o plano de pré-registro e a pré-seleção da diretriz de relato EQUATOR).
+
+## A jusante
+
+/research-design (consumidor a jusante — operacionaliza a proposta em um projeto de estudo congelado e pré-registrado).
+
+## Fases do fluxo de trabalho
+
+O comando segue o fluxo de trabalho padrão do fluxo `/research`:
+
+1. **Carregar o contexto** — Ler `_inputs/synthesis.md` e `_inputs/theory.md`, as regras e qualquer estado existente da suíte.
+2. **Construir a hierarquia de objetivos SMART** — Transformar a lacuna em objetivos específicos, mensuráveis, alcançáveis, relevantes e com prazo definido.
+3. **Avaliar viabilidade e risco** — Construir o registro de recursos / cronograma / riscos; levantar a viabilidade ética logo no início.
+4. **Planejar o pré-registro e o relato** — Selecionar o registro, redigir o plano de pré-registro e pré-selecionar a diretriz de relato EQUATOR.
+5. **Mapear a via de impacto** — Rastrear como os objetivos, uma vez cumpridos, produzem impacto a jusante.
+6. **Verificar e emitir** — Confirmar que os objetivos são testáveis e o plano reproduzível; emitir `_inputs/proposal.md` mais o manifesto de transferência.
+
+## Piso de rigor
+
+A ambição do veículo-alvo define não apenas a escolha da diretriz de relato, mas a profundidade do piso de rigor que os estágios de projeto e experimento a jusante devem superar — piso de replicação, paridade de orçamento, ajuste em partições disjuntas e significância com um tamanho de efeito — além do pacote de evidências de reprodutibilidade que o entregável carregará.
+
+## Modos de falha
+
+| Sintoma | Causa | Recuperação |
+|---------|-------|----------|
+| O objetivo não é mensurável | O objetivo foi declarado como atividade, não como resultado | Reformular como um objetivo SMART com uma métrica de sucesso explícita |
+| Sem plano de pré-registro | A etapa de pré-registro foi pulada | Selecionar um registro e redigir o plano antes de prosseguir para `/research-design` |
+| Entrada de síntese ausente | `/research-synthesis` ainda não foi executado | Executar `/research-synthesis` primeiro para produzir a análise da lacuna |
+
+## Exemplos
+
+```bash
+# Transforma a lacuna em um plano mestre financiável
+/research-proposal --suite-name retrieval-latency
+
+# Fixa a diretriz de relato e o registro de pré-registro
+/research-proposal --guideline PRISMA --prereg-registry OSF
+```
+
+## Referências cruzadas
+
+- [Visão geral do fluxo](/docs/pipeline)
+- [Referência de comandos](/docs/reference/commands)

@@ -1,0 +1,69 @@
+---
+title: "/docs-review"
+description: "/docs-review — 산문 규약과 10차원 품질 표준에 대한 문서 검토 패스."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**역할:** 문서 검토자
+**파이프라인 위치:** 포트리스
+
+산문 규약과 10차원 품질 표준에 대한 문서 검토 패스.
+
+## 표준 호출
+
+```bash
+/docs-review
+```
+
+인수와 함께:
+
+```bash
+/docs-review [path/to/plan-suite/] [phase-id] [--dry-run]
+```
+
+## 입력
+
+호스트 리포지토리의 문서 표면
+
+## 출력
+
+문서 발견 사항 + REPORT.md
+
+## 하류
+
+감사 검토 시퀀스의 문서 검토 단계
+
+## 워크플로 페이즈
+
+이 명령은 표준 `/plan` 파이프라인 워크플로를 따릅니다:
+
+1. **컨텍스트 로드** — 플랜 스위트, 규칙, 재개 계약을 읽습니다.
+2. **사전 요건 검증** — 의존 페이즈가 완료되었는지 확인합니다.
+3. **태스크 실행** — 명령의 미션을 수행합니다.
+4. **출력 검증** — 선언된 모든 출력이 존재하고 품질 게이트를 통과하는지 확인합니다.
+5. **PROGRESS.md 업데이트** — 검증된 출력을 페이즈 출력 레지스트리에 기록합니다.
+6. **REPORT.md 발행** — 사전 발행 게이트의 릴리스 증빙이 기록됩니다.
+
+## 실패 모드
+
+| 증상 | 원인 | 복구 |
+|---------|-------|----------|
+| 사전 요건 미완료 | 의존 페이즈가 끝나지 않음 | 먼저 상류 페이즈를 완료한다 |
+| 품질 게이트 FAIL | 출력이 기준을 충족하지 않음 | 출력을 고치고 다시 실행한다 |
+| 입력 파일 누락 | 플랜 스위트 파일이 없음 | `/plan-generate`를 실행해 생성한다 |
+
+## 예시
+
+```bash
+# Dry-run to preview what would happen
+/docs-review --dry-run
+
+# Execute against a named plan suite
+/docs-review path/to/plan-suite/
+```
+
+## 상호 참조
+
+- [파이프라인 개요](/docs/pipeline)
+- [마스터 플랜 스위트 템플릿](/docs/reference/commands)

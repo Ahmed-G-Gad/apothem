@@ -1,0 +1,35 @@
+---
+title: "卸载"
+description: "移除 Apothem 并清理工具配置。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## 先移除工具配置
+
+在卸载 Apothem 之前，先移除每个工具适配器的配置，让你的harness回到干净的状态。运行 `apothem harnesses list` 查看当前已安装了哪些适配器，然后逐个移除，或使用面向整个注册表的选择器：
+
+```bash
+apothem uninstall --harness claude-code
+apothem uninstall --harness cursor --project /path/to/project
+apothem uninstall --harness all --project /path/to/project --yes
+```
+
+传入 `--yes` 可跳过每个工具的确认提示。
+
+## 移除引擎
+
+移除方式与你使用的安装渠道一致：
+
+- **Claude Code 插件**——在 Claude Code 内部移除该插件：`/plugin uninstall apothem@apothem`（marketplace 条目可通过 `/plugin marketplace remove ahmed-g-gad/apothem` 移除）。
+- **npx**——无需移除；`npx` 从其缓存中运行。如果你想清除缓存的副本，使用 `npm cache clean --force`。
+- **一键安装脚本**——从检出目录运行对应的卸载脚本：`scripts/installer/uninstall.sh`（POSIX）或 `scripts/installer/uninstall.ps1`（PowerShell）。两者在移除前都会确认，并拒绝处理不安全的目标。
+- **备份与状态**——安装备份位于 `~/.apothem/backups/` 下；当你不再需要它们时，删除 `~/.apothem/`。
+
+## 不会被移除的内容
+
+- 位于 `~/.config/apothem/profile.yaml` 的共享配置 YAML 或 `--profile PATH` 永远不会被 `apothem uninstall` 移除。
+- 工具目录中与之无关、由操作者编写的文件会被保留。
+- `<project>/.apothem/plans/`（以及旧版 `<project>/.plans/`）下的计划套件不受影响。
+
+要彻底清理某个工具的根目录，请在确认你已备份所有想要保留的自定义规则、辅助文件或配置文件之后，移除[工具参考页面](/docs/harnesses)上记录的工具原生路径。

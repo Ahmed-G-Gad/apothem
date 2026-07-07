@@ -1,0 +1,54 @@
+---
+title: "Protection de branche"
+description: "Protection de branche d'Apothem sur main — porte de revue, contrôle par vérifications de statut et restrictions de push."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+La branche `main` d'Apothem est protégée par la protection de branche de GitHub après la publication de l'unique commit de release neuf. La protection applique la discipline d'ensemble de modifications déclarée dans `rules/production-ready-prs.md` et alimente les vérifications **Branch-Protection** et **Code-Review** d'OpenSSF Scorecard pour les travaux futurs.
+
+## Déclaration du jeu de règles
+
+| Paramètre | Valeur | Justification |
+|---|---|---|
+| **Cible** | `main` | Protège la branche par défaut publique. |
+| **Statut d'application** | `active` | N'est pas en mode simulation. |
+| **Exiger une pull request avant la fusion** | ✅ | Les pushes directs vers `main` sont bloqués. |
+| **Revues d'approbation requises** | **1** | Porte minimale de revue humaine pour un nouveau projet à mainteneur unique. |
+| **Rejeter les approbations obsolètes sur les nouveaux commits** | ✅ | Un force-push après approbation redéclenche la revue. |
+| **Exiger une revue des Code Owners** | Reporté | Activer ceci avant l'arrivée d'un deuxième mainteneur peut bloquer les PR à mainteneur unique. |
+| **Exiger l'approbation du push révisable le plus récent** | ✅ | Le dernier commit poussé doit porter une approbation. |
+| **Résolution de conversation requise** | ✅ | Les fils de revue ouverts bloquent la fusion. |
+| **Exiger que les vérifications de statut réussissent** | ✅ | Workflow CI + Scorecard + CodeQL + pip-audit. |
+| **Vérifications de statut requises** | Vérifications cœur actuelles | La liste requise est rafraîchie depuis le dernier commit de release au vert. |
+| **Exiger que les branches soient à jour** | ✅ | Empêche les régressions par fusion obsolète. |
+| **Exiger des commits signés** | Recommandé | Les commits de release locaux sont signés ; l'application complète attend que la documentation d'intégration des contributeurs décrive la configuration SSH/GPG. |
+| **Exiger un historique linéaire** | ✅ | Garde l'historique public à ligne unique compréhensible. |
+| **Bloquer les force-pushes** | ✅ | La réécriture d'historique sur `main` est bloquée. |
+| **Autoriser la suppression** | ❌ | La branche `main` ne peut pas être supprimée. |
+
+## Contrainte de mainteneur unique
+
+GitHub ne permet pas aux fichiers du dépôt de créer un historique de revue humaine. Le dépôt applique donc la protection de branche la plus forte qui ne crée pas de blocage pour son modèle de mainteneur actuel : une revue d'approbation, rejet des revues obsolètes, approbation du dernier push, résolution de conversation, vérifications de statut, historique linéaire, et aucune suppression de branche ni force-push. Lorsqu'un deuxième mainteneur rejoindra, la revue CODEOWNERS et un minimum de deux relecteurs deviendront le réglage le plus fort.
+
+## Exigences des vérifications de statut
+
+Les quatre vérifications de statut à contrôle strict déclarées ci-dessus :
+
+- **`ci`** — matrice de tests complète + ruff + mypy + bandit + Trivy + pip-audit sur l'arbre de dépendances résolu
+- **`Scorecard`** — exécution d'OpenSSF Scorecard sans régression par vérification
+- **`CodeQL`** — packs de requêtes `security-extended` pour `python` + `actions`
+- **`pip-audit`** — analyse de vulnérabilités hebdomadaire + par PR contre l'arbre de dépendances résolu
+
+Tout autre workflow peut rapporter un statut, mais son résultat ne contrôle pas la fusion à moins qu'il ne soit promu dans la liste des vérifications requises.
+
+## Cadence d'audit
+
+Ce fichier est revu à chaque audit de sécurité et à chaque point de contrôle d'ingénierie de release. La dérive entre ce fichier et la configuration réelle de protection de branche est un constat de haute sévérité.
+
+## Références
+
+- [OpenSSF Scorecard — Branch-Protection check](https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection)
+- [GitHub — About protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
+- [Apothem CODEOWNERS](https://github.com/ahmed-g-gad/apothem/blob/main/.github/CODEOWNERS) — propriété de revue à portée par chemin
+- `rules/production-ready-prs.md` §1 — discipline de même ensemble de modifications que ce jeu de règles applique

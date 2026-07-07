@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">apothem favicon</title>
+  <desc id="desc">A solid apothem hexagon with its emerald apothem, sized for browser-tab legibility.</desc>
+  <rect width="64" height="64" rx="14" fill="#0f172a"/>
+  <polygon points="49,32 38.5,50.2 25.5,50.2 15,32 25.5,13.8 38.5,13.8" fill="none" stroke="#cbd5e1" stroke-width="4.5" stroke-linejoin="round"/>
+  <line x1="32" y1="32" x2="32" y2="13.8" stroke="#34d399" stroke-width="5.5" stroke-linecap="round"/>
+  <circle cx="32" cy="32" r="2.6" fill="#cbd5e1"/>
+  <circle cx="32" cy="13.8" r="3.4" fill="#34d399"/>
+</svg>

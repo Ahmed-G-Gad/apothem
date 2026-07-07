@@ -1,0 +1,138 @@
+---
+title: "マルチサーフェスハーネス規約"
+description: "チャット・IDE 補完・PR レビューのランタイムをまたいだ、マルチサーフェスのハーネス構成と整合性のための、規範的かつ規約上の参照。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **下流のコントリビューター向けの、規範的かつ規約上の参照。** 本ドキュメントは、プロジェクト仕様のマルチサーフェスハーネス規約セクション（仕様 §0.6 + §2.8 + §4.7）を反映したものであり、公開リポジトリに同梱される独立した参照です。アーキテクチャ上の根拠は [ADR-0003](/docs/architecture) に記録されています。
+
+---
+
+## 1. なぜ複数なのか
+
+現代のエンジニアリングサーフェスは、複数のハーネス——チャットコンソール、IDE 内補完エンジン、ペアプログラミングの相棒、プルリクエストのレビュアー——によって触れられます。各ランタイムはそれぞれ独自の規約上の構成ファイルを読み取ります。プロジェクトがそうしたファイルを 1 つしか提供しない場合、残りのランタイムは宣言されていない規約に対して暗黙のうちに即興で動き、欠落したリポジトリ内メモリは直ちに漏れ出します。
+
+サーフェスが欠落するコストは、**機械生成コードにおける静かなドリフト**です——目に見えず蓄積するため、最悪の種類の欠陥です。機械生成されるすべての成果物が乖離を増幅させ、人間のレビュアーが矛盾に気づくころには、コードベースはすでに数週間分の一貫しない規約を抱え込んでいます。
+
+ハーネスランタイムの構成は、デプロイの現実によって複数形です。公開されるエコシステムは、チャットコンソールランタイム向けの振る舞いメモリファイル**および** IDE 内補完ランタイム向けのリポジトリ範囲の指示ファイルを提供**しなければなりません**。これら 2 つのサーフェスは相互に整合していなければならず（MUST）——矛盾もドリフトもなく——共同で同一のディシプリンをエンコードしていなければなりません（MUST）。
+
+---
+
+## 2. 整合性契約
+
+スコープ内（§3）のすべての規約サーフェスは、プロジェクトの単一の規約仕様を表現する*チャネル*です。仕様は次のように分解されます。
+
+- **共有セクション** — プランディシプリン、構造化照会（またはサーフェス等価物）、著作者ヘッダー、命名、アンチパターン、モーダル階層。これらはすべての必須サーフェスに出現しなければならず（MUST）、サーフェスをまたいで意味的に等価でなければなりません（MUST）。
+- **サーフェス固有セクション** — 能力のフレーミング、ツール呼び出しパターン、コード生成とチャットの差異。これらはサーフェスをまたいで異なってもよい（MAY）が、共有セクションと矛盾してはなりません（MUST NOT）。
+
+`multi-surface-coherence` バリデーター（§7）は、すべての CI 実行時およびプリコミット時に実行され、契約をアサートします。
+
+これら 2 つ（またはそれ以上）のサーフェスは、1 つの*仕様*を表現する別個の*チャネル*です。共有セクションはサーフェスをまたいで一致しなければなりません（MUST）——意味的に、そして可能な場合には字句的にも。サーフェス固有セクションは共有セクションと矛盾してはなりません（MUST NOT）。
+
+---
+
+## 3. スコープ内のサーフェス
+
+| サーフェス | パス | 必須か？ | 対象 |
+|---|---|---|---|
+| `AGENTS.md` | リポジトリルート（および／または `.codex/AGENTS.md`） | **MUST** | AGENTS 対応のハーネス |
+| `CLAUDE.md` | リポジトリルート（および／または `.claude/CLAUDE.md`） | **MUST** | Claude Code |
+| `.github/` 起点の指示ファイル | `.github/` 起点の指示ファイル | **MUST** | IDE 内補完ランタイム |
+| `site/content/docs/architecture/` 起点のヘルパーマニフェスト | リポジトリルート | **MAY**（構造化照会チャネル経由のオプトイン） | マルチヘルパーのオーケストレーションプラットフォーム |
+| `.cursorrules` | リポジトリルート | **MAY**（オプトイン） | IDE 内エディターランタイム |
+| `.windsurfrules` | リポジトリルート | **MAY**（オプトイン） | IDE 内コンパニオンランタイム |
+
+この案件では、オペレーターはフィクスチャが記録したオプションの支援ツールサーフェスにオプトインしました。使用されないベンダー固有のルート構成は意図的に存在しません。ツール固有の構成ファイルは、そのツールが本リポジトリの能動的な編集サーフェスである場合にのみ追加されます。
+
+---
+
+## 4. IDE 内指示ファイルのセクションリスト
+
+`.github/` 配下のリポジトリ範囲の指示ファイルは、この順序で次のセクションを含まなければなりません（MUST）（各セクションは下記の正確な見出しテキストを用いる。セクション本文はテンプレートで打ち出すのではなく執筆するが、各セクションは列挙された主張をカバーしなければならない MUST）。
+
+1. **Project Context** — 一段落：このリポジトリが何か、誰が使うか、トップレベルの形。具体的に；マーケティングは不要。
+2. **Coding Conventions** — 命名、モーダル階層、frontmatter、markdown スタイル、デフォルトから逸脱する箇所の言語固有のスタイルポイント。
+{/* REUSE-IgnoreStart */}
+3. **File Headers** — ランタイムが生成するすべてのファイルは、[`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) に従って、ファイルタイプに合致するコメントバリアントで、規約上の単一の `SPDX-License-Identifier: MIT` 行で始まらなければなりません（MUST）。`scripts/inject-header.*` および `site/content/docs/reference/authorship-header.mdx` へのポインター。
+{/* REUSE-IgnoreEnd */}
+4. **Plans Discipline** — ランタイムは、ハーネス構成ディレクトリ（例：`~/.claude/plans/` や `~/.codex/.plans/`）またはその他のグローバルなプランの場所に書き込むコードやスクリプトを生成してはなりません（MUST NOT）。計画成果物は、[`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline) に従って `<project-root>/.apothem/plans/` に格納されます（レガシーの `<project-root>/.plans/` ツリーは `apothem migrate-workspace` でアップグレードします）。
+5. **Structured Inquiry Behavior** — ランタイムが不確かなとき、暗黙のうちに捏造してはなりません（MUST NOT）。代わりに、明確にマークされた明確化ブロック（例：`# TODO(clarify): <question>` コメント）を挿入し、サーフェスが許す場所ではチャットで質問を浮上させます。API の発明なし、モデル名の発明なし、ファイルパスの発明なし。
+6. **Forbidden Patterns** — 明示的な禁止事項：マーケティング形容詞なし、ぼかしの埋め草なし、console.log のデバッグ残骸なし、ユーザーホームへのハードコードされた絶対パスなし、シークレットのコミットなし、`.apothem/plans/`（または旧来の `.plans/`）配下のファイルのコミットなし、規約上のプロジェクト指示ファイルとの矛盾なし。
+7. **Output Format** — 生成されるコード／散文は、統一された会話的出力規約に準拠します：明確性、均一なセクション分け、密度、要約ディシプリン、引用。コードについては：文書化された公開サーフェス、言語が型をサポートする場合は型付け、テストの足場が存在する場合はテスト済み。
+8. **Review Checklist** — レビュアー（人間、または PR レビューモードのランタイム）が承認前に検証しなければならない（MUST）こと：ヘッダーの存在、命名の準拠、`.apothem/plans/` への書き込みなし、規約上のプロジェクト指示ファイルとの矛盾なし、バリデーターがローカルでグリーン。
+9. **Pointers** — `AGENTS.md`、`CLAUDE.md`、`site/content/docs/reference/plans-discipline.mdx`、`site/content/docs/reference/authorship-header.mdx`、本規約ドキュメント、`schemas/`、`CONTRIBUTING.md` へのリンク。
+
+このファイルは、[`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) §2 に従って、規約上の著作者ヘッダー SPDX 行（Markdown バリアント）で始まります——プロジェクトが選択したヘッダー可視性ポリシーに応じて可視または不可視。
+
+IDE 内指示ファイルは、`AGENTS.md` や `CLAUDE.md` の逐語的なコピー**ではありません**。`AGENTS.md` は規約上のプロジェクト指示サーフェスであり、`CLAUDE.md` はそれを Claude Code 向けに反映し、IDE 内指示ファイルは、開発者が受け入れるか拒否するかを選ぶ提案を発するエディター内コード補完ランタイム向けに声を与えられています。*情報*（ディシプリン、規約、アンチパターン）は同一であり、*フレーミング*が異なります。
+
+---
+
+## 5. 主張リストの参照
+
+[`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml) のフィクスチャは、各共有主張を列挙します。サンプルエントリ：
+
+```yaml
+- id: plans.location
+  claim: "Planning artifacts live at <project-root>/.apothem/plans/, never inside a harness configuration directory."
+  required-in: [AGENTS.md, CLAUDE.md, .github/copilot-instructions.md]
+  optional-in: [site/content/docs/architecture/agents.mdx, .cursorrules]
+- id: header.canonical
+  claim: "Every applicable new file begins with the canonical authorship-header banner per site/content/docs/reference/authorship-header.mdx."
+  required-in: [AGENTS.md, CLAUDE.md, .github/copilot-instructions.md]
+- id: ambiguity.resolution
+  claim: "Ambiguity is surfaced via the structured-inquiry channel or a clearly-marked TODO(clarify); never silently invented."
+  required-in: [AGENTS.md, CLAUDE.md, .github/copilot-instructions.md]
+# ... (one entry per shared claim)
+```
+
+バリデーターは各サーフェスをパースし、各主張のサーフェス内での存在（見出し階層 + 本文キーワード抽出による）を見つけようと試み、いずれかの欠落または矛盾があれば失敗します。
+
+---
+
+## 6. 調停ルール
+
+共有主張について 2 つのサーフェスが矛盾していると検出された場合、デフォルトの調停は次のとおりです。
+
+> `AGENTS.md` は規約上のプロジェクトの声です。矛盾するサーフェスは、`AGENTS.md` のセマンティクスをサーフェスに適したフレーミングで反映するよう書き直されます。
+
+サーフェス固有のオーバーライドは、意図的な乖離を説明する ADR を指し示す、明示的なファイル内マーカー `<!-- coherence-override: <claim-id> -->` がある場合にのみ許可されます。オーバーライドマーカーはバリデーターの許可リストに自身が列挙され、CI レポートに浮上します。
+
+本リポジトリにおいて、批准された調停戦略は **`agents-md-wins`** です：`AGENTS.md` が規約上正準であり、能動的なすべてのハーネスミラーは意味的に等価のままです。
+
+---
+
+## 7. バリデーター
+
+3 つのバリデーターが整合性契約を共同実装します。
+
+```text
+- in-IDE-instructions-presence    (src/apothem/conformity/copilot_instructions_presence_grep.py)
+- multi-surface-coherence         (src/apothem/conformity/multi_surface_coherence_grep.py)
+- license-author-consistency      (src/apothem/conformity/license_author_consistency_grep.py)
+```
+
+- 1 つ目は、IDE 内指示ファイルが存在し、パースでき、§4 に列挙されたすべての規約上のセクションを含み、規約上の著作者バナーで始まることをアサートします。
+- 2 つ目は、各サーフェスの規約上のセクションをパースし、共有セクションが正規化された比較器の下で相互に一貫していることをアサートします（大文字小文字を区別せず、空白に寛容、字句的なパラフレーズを許容するが、フィクスチャ定義の主張リストにおける意味的等価を要求する）。
+- 3 つ目は、LICENSE の著作権行と規約上のバナーの "Copyright (c)" 行が同一の著作者を指名していることをアサートします。
+
+---
+
+## 8. サーフェスのライフサイクル
+
+- **サーフェスを追加する。** オペレーターは構造化照会チャネル経由、またはその後の `make surfaces-add <name>` 経由でオプトインします。ジェネレーターは主張リストに対してサーフェスを執筆し、バリデーターを実行し、サーフェス固有のオーバーライドが必要なら ADR をファイリングします。
+- **サーフェスを削除する。** 構造化照会が削除を確認し、ADR が根拠を記録し、バリデーターの required-in リストが修正されます。
+- **ドリフト検出。** 主張リストから逸脱するコミットは、プリコミット／ CI によって拒否されます。コミットの作者は、整合性を回復するためにサーフェスを書き直します。
+
+---
+
+## 関連項目
+
+- [ADR-0003](/docs/architecture) — アーキテクチャ上の根拠、検討された代替案。
+- [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml) — 規約上の主張リストフィクスチャ。
+- [`AGENTS.md`](https://github.com/ahmed-g-gad/apothem/blob/main/AGENTS.md) — 規約上のプロジェクトの声。
+- [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) — Claude Code ミラー。
+- [`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline) — プランディシプリン共有主張の規約上の参照。
+- [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) — 著作者ヘッダー共有主張の規約上の参照。
+- プロジェクト仕様 §0.6 + §2.8 + §4.7 — ここに反映された完全な規約上のテキスト。

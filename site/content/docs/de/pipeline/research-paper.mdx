@@ -1,0 +1,70 @@
+---
+title: "/research-paper"
+description: "/research-paper — Stellt aus Synthese, Design und Analyse einen erstklassigen Paper-Entwurf zusammen (von der Zusammenfassung bis zum Fazit plus Referenzen), wobei jede Zitation auf Auflösbarkeit geprüft wird."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rolle:** Hauptforscher (Verfassen)
+**Position in der Pipeline:** mittig
+
+Stellt aus Synthese, Design und Analyse einen erstklassigen Paper-Entwurf zusammen — Zusammenfassung, Einleitung, verwandte Arbeiten, Methode, Ergebnisse, Diskussion, Einschränkungen, Fazit, Referenzen. Jede Zitation wird geprüft, dass sie sich auf eine echte Quelle auflöst; keine Phantomzitationen.
+
+## Kanonischer Aufruf
+
+```bash
+/research-paper
+```
+
+Mit Argumenten:
+
+```bash
+/research-paper [path/to/research-suite/]
+```
+
+## Eingaben
+
+`_inputs/synthesis.md` (SOTA-Karte + Lücke), `_inputs/study-design.md` (Methode) und `_outputs/analysis.md` (Ergebnisse).
+
+## Ausgaben
+
+Das Paper-Artefakt an einem host-natürlichen Ort (`paper/`) — Zusammenfassung, Einleitung, verwandte Arbeiten, Methode, Ergebnisse, Diskussion, Einschränkungen, Fazit, Referenzen.
+
+## Nachgelagert
+
+/research-review (nachgelagerter Konsument)
+
+## Workflow-Phasen
+
+Der Befehl folgt dem standardmäßigen `/research`-Pipeline-Workflow:
+
+1. **Kontext laden** — Synthese, Studiendesign und Analyse lesen.
+2. **Das Sequenz-Gate prüfen** — Bestätigen, dass `_outputs/analysis.md` existiert; andernfalls mit `Blocked: run /research-analysis first` anhalten.
+3. **Den Entwurf zusammenstellen** — Von der Zusammenfassung bis zum Fazit verfassen; Einleitung und verwandte Arbeiten stützen sich auf die Synthese, die Methode auf das Design, die Ergebnisse auf die Analyse.
+4. **Zitationen prüfen** — Jede Referenz löst sich auf eine echte Quelle auf.
+5. **Das Übergabe-Manifest aktualisieren** — Den Pfad des Paper-Artefakts erfassen.
+6. **Das Paper ausgeben** — das Manuskript am host-natürlichen `paper/`-Ort.
+
+## Rigorositätsuntergrenze
+
+Bei einem doppelblinden Publikationsort trägt das Manuskript nur, was die Anonymitätsrichtlinie zulässt: Autor, Institution, Förderung und das untersuchte System werden in natürlicher Fachsprache beschrieben, ohne sie zu benennen, und für eine dafür vorgesehene De-Anonymisierungsstufe in separat eingereichte Metadaten ausgelagert. Die Tiefe der Reproduzierbarkeits- und statistischen Berichterstattung skaliert mit dem Anspruch des Zielorts der Veröffentlichung.
+
+## Fehlermodi
+
+| Symptom | Ursache | Behebung |
+|---------|-------|----------|
+| Blocked: run /research-analysis first | Keine Analyse | Führen Sie `/research-analysis` aus, um `_outputs/analysis.md` zu erzeugen |
+| Phantomzitation | Referenz löst sich nicht auf | Entfernen oder korrigieren Sie die Zitation; erfinden Sie niemals eine Quelle |
+| Überzeichnete Ergebnisse | Die Diskussion geht über die Analyse hinaus | Beschränken Sie die Aussagen auf die analysierten Effektgrößen + KIs |
+
+## Beispiele
+
+```bash
+# Den Paper-Entwurf aus Synthese + Design + Analyse zusammenstellen
+/research-paper path/to/research-suite/
+```
+
+## Querverweise
+
+- [Pipeline-Überblick](/docs/pipeline)
+- [Befehlsreferenz](/docs/reference/commands)

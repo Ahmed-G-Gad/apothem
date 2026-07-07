@@ -1,0 +1,117 @@
+---
+title: "Guias de autoria e pipeline"
+description: "Tutoriais orientados a tarefas para refinar conteúdo em especificações, gerar suítes de planos, revisar planos, executar fases, adicionar artefatos e executar portões de qualidade."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Tutoriais orientados a tarefas para **criar artefatos do Apothem e operar o
+pipeline de planos**. Cada guia responde a uma única pergunta concreta.
+
+Para receitas de configuração inicial — adicionar uma ferramenta, editar o perfil, operar
+o instalador — consulte a seção [Receitas práticas](/docs/how-to).
+
+## Pipeline da suíte de planos
+
+### Como refino conteúdo bruto em uma especificação?
+
+Invoque `/plan-spec` com o conteúdo bruto como entrada. O papel Forge
+executa seis fases de transformação (Descoberta, Consideração
+Meticulosa, Mapeamento de Potência, Verificação de Preservação,
+Aplicação de Expertise, Varredura de Resolução de Perguntas) e emite a
+especificação consolidada em `.apothem/plans/{suite}/_spec/spec.md`. Consulte
+`src/apothem/commands/plan-spec.md` para o protocolo completo.
+
+### Como gero uma suíte de planos a partir de uma especificação?
+
+Invoque `/plan-generate <suite-name>` uma vez que a especificação resida em
+`.apothem/plans/{suite}/_spec/spec.md`. O gerador emite os arquivos de
+infraestrutura canônicos mais os arquivos por fase
+`phases/NN-kebab-topic/PHASE.md`. Consulte
+`src/apothem/commands/plan-generate.md`.
+
+### Como reviso um plano gerado?
+
+Invoque `/plan-review path/to/plan-suite/`. O revisor aplica
+as oito técnicas de planejamento e emite scorecards. Scorecards
+reprovados bloqueiam a execução em SHARED+ até serem resolvidos. Consulte
+`src/apothem/commands/plan-review.md`.
+
+### Como executo um plano?
+
+Invoque `/plan-execute path/to/plan-suite/ [phase-id]`. Sem um
+`phase-id`, a próxima fase pendente é executada. Com um id específico,
+apenas essa fase é executada. Consulte `src/apothem/commands/plan-execute.md`.
+
+### Como verifico o status do plano?
+
+Invoque `/plan-status path/to/plan-suite/ [--verbose]`. Relatório somente
+leitura. Consulte `src/apothem/commands/plan-status.md`.
+
+## Criando artefatos
+
+### Como adiciono uma nova regra?
+
+1. Escolha um nome de arquivo kebab-case sob `src/apothem/rules/`, por exemplo
+   `src/apothem/rules/my-new-rule.md`.
+2. Escreva o frontmatter (`name`, `description`, `type:
+   instruction`, `pathFilter` opcional).
+3. Escreva o corpo com as seções canônicas: Propósito,
+   Obrigações, Escalonamento de Seriedade, Anti-Padrões, Aplicação,
+   Vínculos.
+4. Adicione uma linha ao conjunto de regras (`src/apothem/rules/`).
+5. Execute `python scripts/dev/validate_ecosystem.py --check
+   frontmatter-cohort` para verificar.
+
+### Como adiciono um novo trabalhador delegado?
+
+Escolha um nome de arquivo kebab-case sob o diretório mostrado abaixo, usando a
+forma `my-worker.md`:
+
+```text
+src/apothem/agents/
+src/apothem/agents/my-worker.md
+```
+
+Então:
+
+1. Escreva o frontmatter — incluindo `name`, `description`,
+   `allowedTools`, `maxTurns`, `version`, e o marcador de tipo mostrado
+   abaixo:
+
+```text
+type: agent
+```
+
+1. Escreva o prompt de sistema como o corpo.
+1. Adicione uma linha ao registro de auxiliares no conjunto de trabalhadores delegados (`src/apothem/agents/`).
+
+### Como adiciono um novo hook?
+
+1. Escreva uma mensagem de contexto sob
+   `src/apothem/hooks/messages/<event>-<scope>.md`.
+2. Conecte o hook em `settings.json`.
+3. Atualize a pipeline de hooks.
+4. Execute `python scripts/dev/validate_ecosystem.py --check
+   hook-validator`.
+
+## Portões de qualidade
+
+### Como executo os portões de qualidade locais?
+
+```bash
+python -m ruff check .
+python -m ruff format --check .
+python -m mypy
+python -m pytest -q
+python scripts/dev/validate_ecosystem.py
+python scripts/dev/chaos_pass.py
+```
+
+O pipeline de CI executa o mesmo conjunto em paralelo.
+
+### Como verifico o frontmatter de uma única classe de artefato?
+
+```bash
+python scripts/dev/validate_ecosystem.py --check frontmatter-cohort
+```

@@ -1,0 +1,101 @@
+---
+title: "Dependency vendoring strategy"
+description: "Which third-party packages Apothem vendors under src/apothem/_vendor/, which stay system prerequisites, and how vendored copies are refreshed."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+# Dependency Vendoring Strategy
+
+## Policy
+
+Apothem's [self-contained runtime](/docs/architecture/self-contained-runtime)
+requires the engine's third-party dependencies to be importable from the
+source tree itself. Each runtime dependency is therefore handled one of
+three ways:
+
+- **Vendored as pure-Python source** under `src/apothem/_vendor/`. The
+  bootstrap prepends that directory to `sys.path` ahead of site-packages,
+  so the vendored copy wins the import resolution race over any
+  system-installed version.
+- **Replaced by a pure-Python shim** when the upstream distribution ships a
+  compiled extension that cannot travel as portable source.
+- **Kept as a documented system prerequisite** when vendoring would carry
+  more surface than it saves.
+
+The placement rule is strict: only pure-Python distributions live in
+`_vendor/`. A compiled extension (C, Rust/PyO3, Cython) is platform- and
+ABI-specific and never belongs there. Every vendored package carries its
+upstream license file alongside the source.
+
+## What is vendored
+
+| Package | Notes |
+|---|---|
+| `yaml` | The pure-Python parser/emitter. The optional libyaml C extension is a speedup, never a requirement, and is not carried; imports stay `import yaml`. |
+| `jsonschema` | The schema validator used for profile, config, and golden-fixture validation. |
+| `attrs` (and its `attr` alias) | Required by `jsonschema`. |
+| `referencing` | Required by `jsonschema`. |
+| `jsonschema_specifications` | Required by `jsonschema`. |
+| `rpds` | A pure-Python shim, not the upstream distribution — see below. |
+| `typing_extensions` | Required by the vendored validation chain. |
+
+## The `rpds` shim
+
+Upstream `jsonschema` depends on `rpds-py`, a persistent-data-structures
+library implemented in Rust (PyO3) that ships a compiled `.pyd`/`.so` with
+only a thin `.py` wrapper. There is no portable pure-Python source to copy,
+so it cannot be vendored.
+
+Instead, `src/apothem/_vendor/rpds/` is a pure-Python shim that
+reimplements exactly the API subset `jsonschema` and `referencing`
+exercise — `HashTrieMap`, `HashTrieSet`, and `List` — backed by builtin
+`dict` / `frozenset` / `tuple`. The shim honors the upstream persistence
+contract: mutating methods return a new instance and leave the receiver
+unchanged, which the consumers rely on when storing these structures as
+frozen-class field defaults. Apothem's schemas are small, so the
+performance difference against the Rust implementation is irrelevant.
+
+## What is not vendored
+
+- **`click`** — the CLI framework. It is large, terminal-facing, and
+  broadly available, so it remains a system prerequisite the installers
+  check for.
+- **`rich`** — the terminal-rendering library, kept as a system
+  prerequisite for the same reasons.
+- **`rpds-py`** — compiled; replaced by the shim above.
+- **The libyaml C extension** — optional; the vendored pure-Python `yaml`
+  package never requires it.
+
+The installers verify that `click` and `rich` are importable under the
+selected interpreter before doing anything else; if either is missing they
+name it and offer to install it for you — with your confirmation, or
+automatically with `--yes` / `APOTHEM_AUTO_INSTALL_DEPS=1`.
+
+## Refreshing a vendored package
+
+To update a vendored package to a newer upstream version:
+
+1. Fetch the upstream source distribution at the target version.
+2. Copy the pure-Python package directory into `src/apothem/_vendor/`,
+   replacing the previous copy, and refresh the adjacent license file.
+3. Update `src/apothem/_vendor/vendor.txt` — the pinned closure — so its
+   `name==version` line for the package matches the new upstream version, and
+   update the package's `[[annotations]]` block in the root `REUSE.toml` if its
+   upstream license or copyright changed. Both are required in the **same
+   change-set** as the copy (the living-dependencies mandate); the supply-chain
+   auditors and the `reuse lint` gate read them.
+4. Leave import paths untouched — consumers import the canonical names and
+   the bootstrap's `sys.path` precedence does the rest.
+5. Run the test suite and the conformity gate; the validation stack's
+   behavior is covered by the profile- and schema-validation tests.
+
+The `rpds` shim is refreshed differently: it tracks the API subset its
+consumers use, so a `jsonschema`/`referencing` update is checked against
+the shim's implemented surface, and the shim grows only when a new call
+site appears.
+
+## Recommended Next Step
+
+**Read the [self-contained runtime](/docs/architecture/self-contained-runtime)
+page** for how the vendored tree, the `PYTHONPATH=src` invocation model,
+and the plugin-tree bootstrap fit together at run time.

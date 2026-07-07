@@ -1,0 +1,91 @@
+---
+title: "profile"
+description: "apothem profile 命令组的 CLI 参考。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+管理共享的 Apothem 配置文件。
+
+`profile` 是一个命令组，包含四个子命令：`init`、`show`、`set` 和 `edit`。
+共享配置文件是单一事实来源，每个harness适配器都将其物化为各自的原生配置。
+
+## 概要
+
+```
+apothem profile init [--profile PATH] [--force]
+                     [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+apothem profile show [--profile PATH] [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+apothem profile set KEY VALUE
+                     [--profile PATH] [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+apothem profile edit [--profile PATH] [--quiet|-q] [--verbose|-v]
+                     [--format plain|json] [--json] [--no-color]
+```
+
+## 通用选项
+
+每个子命令都接受下列共享选项。
+
+| 选项 | 描述 |
+|---|---|
+| `--profile PATH` | 共享配置文件 YAML 的路径（默认为标准配置文件位置）。 |
+| `--quiet`, `-q` | 抑制信息性输出；仅发出错误。 |
+| `--verbose`, `-v` | 发出额外的诊断输出。 |
+| `--format plain\|json` | 输出格式（默认：`plain`）。 |
+| `--json` | `--format json` 的简写。 |
+| `--no-color` | 在输出中禁用 ANSI 颜色码。 |
+| `-h`, `--help` | 显示帮助并退出。 |
+
+## 子命令
+
+### `profile init`
+
+在 `~/.config/apothem/profile.yaml` 或 `--profile PATH` 处创建一个符合模式的最小配置文件脚手架。除非提供 `--force`，否则会保留现有文件。
+
+| 选项 | 描述 |
+|---|---|
+| `--force` | 覆盖现有的配置文件脚手架。 |
+
+### `profile show`
+
+显示经过校验、默认值已展开的共享配置文件。
+
+### `profile set KEY VALUE`
+
+在共享配置文件中设置一个键。`KEY` 是一个点分路径，会逐层下降到嵌套的配置文件中（`identity.name`、`preferences.style`、`enforcement.sprints`、`harnesses.<harness>.preferences.style`）；不含点的单个键设置一个顶层节点。`VALUE` 作为字面字符串存储——裸词不会被强制转换（`no` 保持为 `"no"`，`2024-01-01` 和 `1.0` 保持为字符串）——但 `true`/`false`（布尔型强制执行标志）以及显式的 `[...]`/`{...}` 列表/映射输入除外。在写入之前，完整组装的配置文件会针对模式进行校验；无效的设置会被拒绝，磁盘上的配置文件保持不变。
+
+| 参数 | 描述 |
+|---|---|
+| `KEY` | 要设置的、进入配置文件的点分路径（必填）。 |
+| `VALUE` | 要赋的字面值；写入前会被校验（必填）。 |
+
+### `profile edit`
+
+在系统编辑器中打开共享配置文件。
+
+## 示例
+
+```bash
+apothem profile init
+apothem profile init --profile ./profile.yaml --force --json
+apothem profile show
+apothem profile show --json
+apothem profile set seriousness SHARED
+apothem profile set rules '["Use fake placeholders in examples."]'
+apothem profile edit
+```
+
+## 退出码
+
+| 码 | 含义 |
+|---|---|
+| 0 | 成功（或者，对于 `edit`，编辑器正常退出） |
+| 1 | 配置文件缺失、无效、在没有 `--force` 时已存在，或无法写入 |
+
+## 另请参阅
+
+- [apothem install](/docs/cli-reference/install) — 将配置文件物化到某个harness
+- [apothem doctor](/docs/cli-reference/doctor) — 运行系统范围的安装诊断

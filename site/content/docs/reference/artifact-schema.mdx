@@ -1,0 +1,434 @@
+---
+title: "Artifact Schema Specification"
+description: "Canonical YAML frontmatter schema and required fields for all artifact types in the Apothem source tree, with per-class templates and validation rules."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Per-class YAML frontmatter templates and required fields for all Apothem ecosystem artifacts.**
+
+> **Source of truth.** The machine-readable, gate-enforced contract is the
+> per-class JSON Schemas under [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas)
+> (`agent.schema.json`, `command.schema.json`, `skill.schema.json`, …), each
+> declaring `additionalProperties` so the conformity gate rejects unknown keys.
+> This page and [`frontmatter-schema.mdx`](/docs/reference/frontmatter-schema)
+> are the two human-readable projections of those schemas — this page carries
+> the per-class **templates and worked examples**, frontmatter-schema the terse
+> **required-key index**. Where a page disagrees with the JSON Schemas, the
+> schemas win.
+
+## Overview
+
+All artifacts in the Apothem source tree (under `src/apothem/` and the
+root configuration surface) must include a YAML frontmatter block
+(between `---` delimiters) with mandatory and optional fields specific
+to their artifact type. This document defines the canonical schema for
+each type.
+
+**Universal Rules:**
+
+- Frontmatter is YAML 1.2 compliant
+- All string values use double quotes unless empty
+- Field order: mandatory fields first, optional fields grouped by relevance
+- Comments in frontmatter use `#` with space: `# comment`
+- Path values must be relative (no leading `/`) and use forward slashes (`/`) for cross-platform compatibility
+
+**Versioning Convention (versioned artifact classes — commands, helpers, skills, CLAUDE.md):**
+
+- `version` is **semantic** (`MAJOR.MINOR.PATCH`). Bump MAJOR for breaking schema or contract changes; MINOR for additive non-breaking changes (new optional fields, additional sections, additional anti-patterns); PATCH for clarifications, formatting fixes, or doc-only edits without behavior change.
+- `updated` is the **ISO 8601 date** (`YYYY-MM-DD`) of the most recent edit. It must change with every `version` bump and may be updated independently for non-version-bumping link refreshes.
+- New artifacts seed at `v0.Y.Z`. Promotion to `vX.Y.Z` indicates the artifact's contract is stable enough to be a public commitment.
+
+---
+
+## Schema: Rules
+
+**Path pattern:** `src/apothem/rules/*.md`
+
+**Purpose:** Behavioral mandates and operational directives.
+
+### Mandatory Fields
+
+```yaml
+---
+name: "kebab-case-identifier"
+description: "One-line description"
+pathFilter: "**/*.py, **/*.toml"
+alwaysApply: true | false
+---
+```
+
+| Field | Type | Purpose | Example |
+| ----- | ---- | ------- | ------- |
+| `name` | string | Machine-readable identifier | `"operational-mandates"` |
+| `description` | string | One-line description for registries | `"Operational mandates CM-1–10"` |
+| `pathFilter` | string | Comma-separated glob list scoping a path-filtered rule; the empty string (`""`) on always-on rules | `"**/*.py, **/*.toml"` |
+| `alwaysApply` | boolean | `true` for always-on rules (loaded everywhere); `false` for path-filtered rules (loaded when `pathFilter` matches) | `true` |
+
+### Optional Fields
+
+Rules carry no optional frontmatter fields, and — unlike other artifact classes — no `version` / `updated` / `scope` / `portability` fields either. The four mandatory fields above are the complete rule frontmatter contract enforced by `frontmatter_grep`.
+
+### Example
+
+```yaml
+---
+name: "operational-mandates"
+description: "Behavioral definitions for CM-1 through CM-10: violation indicators and recovery actions"
+pathFilter: ""
+alwaysApply: true
+---
+
+# Rule: Operational Mandates
+...
+```
+
+---
+
+## Schema: Commands
+
+**Path pattern:** `src/apothem/commands/*.md`
+
+**Purpose:** Slash command definitions (`/plan-execute`, `/freshify`, etc.).
+
+### Mandatory Fields
+
+```yaml
+---
+name: "command-name"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "What this command does"
+argument-hint: "[argument-pattern]"
+disable-model-invocation: true | false
+portability: "universal"
+allowed-tools: "*"
+---
+```
+
+| Field | Type | Purpose | Example |
+| ----- | ---- | ------- | ------- |
+| `name` | string | Command name (without leading `/`) | `"plan-execute"` |
+| `version` | string | Semantic version | `"X.Y.Z"` |
+| `updated` | string (ISO 8601) | Last update date | `"2026-04-20"` |
+| `description` | string | Short description | `"Executes a phase with quality gates"` |
+| `argument-hint` | string | Usage pattern or `"[args...]"` if none | `"[path/to/plan] [phase-id]"` |
+| `disable-model-invocation` | boolean | If true, command is not meant to be called by a harness | `true` |
+| `portability` | string | Portability classification across harness adapters | `"universal"` |
+| `allowed-tools` | string | Comma-separated tool list, or `"*"` for the full surface | `"*"` |
+
+### Optional Fields
+
+Commands carry no optional frontmatter fields — the eight mandatory fields above are the complete command frontmatter contract enforced by `command.schema.json` (`additionalProperties: false`).
+
+### Example
+
+```yaml
+---
+name: "plan-execute"
+version: "X.Y.Z"
+updated: "2026-04-20"
+description: "Executes a specific phase from a Master Plan Suite with conformity checking and quality gates"
+argument-hint: "[path/to/plan-suite/] [phase-id] [--dry-run]"
+disable-model-invocation: true
+portability: "universal"
+allowed-tools: "*"
+---
+
+# /plan-execute — Execute a Specific Phase
+...
+```
+
+---
+
+## Schema: Helpers
+
+**Path pattern:**
+
+```text
+src/apothem/agents/*.md
+```
+
+**Purpose:** Persistent helper definitions for parallel exploration,
+auditing, and quality gates.
+
+### Mandatory Fields
+
+```yaml
+---
+name: "agent-name"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "What this agent specializes in"
+tools: "Tool1, Tool2, Tool3"
+disallowedTools: "Write, Edit"
+maxTurns: 20
+effort: "high" | "medium" | "low"
+---
+```
+
+| Field | Type | Purpose | Example |
+| ----- | ---- | ------- | ------- |
+| `name` | string | Helper identifier | `"codebase-explorer"` |
+| `version` | string | Semantic version | `"X.Y.Z"` |
+| `updated` | string (ISO 8601) | Last update date | `"2026-04-20"` |
+| `description` | string | Specialization description | `"Deep codebase exploration"` |
+| `tools` | string (comma-separated) | Allowed tools | `"Read, Glob, Grep, Bash"` |
+| `disallowedTools` | string (comma-separated) | Prohibited tools | `"Write, Edit, TodoWrite"` |
+| `maxTurns` | integer | Maximum conversation turns (typical 5–20; values above 20 require an inline rationale comment) | `20` |
+| `effort` | enum | Computational scope | `"high"` |
+
+### Optional Fields
+
+```yaml
+permissionMode: "default"       # Permission handling
+memory: true | false                    # If true, agent retains memory across sessions
+pattern: "Research" | "Audit" | "Implementation" | "Quality"  # Agent team pattern
+portability: "universal"
+```
+
+### Example
+
+```yaml
+---
+name: "codebase-explorer"
+version: "X.Y.Z"
+updated: "2026-04-20"
+description: "Deep codebase exploration — find patterns, trace dependencies, discover conventions, map architecture"
+tools: "Read, Glob, Grep, Bash"
+disallowedTools: "Write, Edit, TodoWrite"
+maxTurns: 20
+effort: "high"
+permissionMode: "default"
+memory: false
+portability: "universal"
+---
+
+You are a codebase exploration specialist...
+```
+
+---
+
+## Schema: Skills
+
+**Path pattern:** `src/apothem/skills/*/SKILL.md`
+
+**Purpose:** Reusable technique definitions with detection signals and
+execution procedures.
+
+### Mandatory Fields
+
+```yaml
+---
+name: "skill-name"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "What this skill teaches"
+archetype: "workflow-template"
+userInvocable: true | false
+disable-model-invocation: true | false
+allowed-tools: "Read, Write, Glob"
+---
+```
+
+| Field | Type | Purpose | Example |
+| ----- | ---- | ------- | ------- |
+| `name` | string | Skill identifier | `"plan-suite"` |
+| `version` | string | Semantic version | `"X.Y.Z"` |
+| `updated` | string (ISO 8601) | Last update date | `"2026-04-20"` |
+| `description` | string | What the skill provides | `"Master Plan Suite template"` |
+| `archetype` | string | Shape class, a kebab-case `<class>-template` identifier | `"workflow-template"` |
+| `userInvocable` | boolean | If true, user can explicitly request this skill | `false` |
+| `disable-model-invocation` | boolean | If true, the skill is reached only by explicit invocation | `true` |
+| `allowed-tools` | string | Comma-separated tool list, or `"*"` for the full surface | `"Read, Write, Glob"` |
+
+### Optional Fields
+
+```yaml
+argument-hint: "[args...]"                           # Usage pattern if userInvocable
+effort: "low" | "medium" | "high" | "xhigh" | "max" # Optional effort level
+```
+
+### Example
+
+```yaml
+---
+name: "ecosystem-audit"
+version: "X.Y.Z"
+updated: "2026-04-20"
+description: "Comprehensive blind audit of the apothem ecosystem"
+archetype: "audit-template"
+userInvocable: true
+disable-model-invocation: true
+allowed-tools: "Read, Write, Edit, Glob, Grep, Bash"
+argument-hint: "[--focus area] [--fix]"
+effort: "max"
+---
+
+## Purpose
+...
+```
+
+---
+
+## Schema: Hooks
+
+**Path pattern:** `settings.json` `hooks` block plus the Python
+implementations under `src/apothem/hooks/`.
+
+**Purpose:** Declare event-triggered validators and state-management handlers
+that the host invokes at well-defined lifecycle points.
+
+### Settings-File Schema
+
+The `hooks` top-level key maps event names to arrays of matcher blocks:
+
+```json
+"hooks": {
+  "<EventName>": [
+    {
+      "matcher": "<pattern>",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "python",
+          "args": ["-m", "apothem.hooks.dispatch", "<EventName>", "<message-name>"],
+          "timeout": <seconds>,
+          "statusMessage": "<short human-readable label>"
+        }
+      ]
+    }
+  ]
+}
+```
+
+| Field | Type | Purpose | Example |
+| ----- | ---- | ------- | ------- |
+| `matcher` | string | Tool-name pattern (or `"*"` for tool-agnostic events) | `"Write"` |
+| `hooks[].type` | literal `"command"` | The only supported hook handler type today | `"command"` |
+| `hooks[].command` | string | Executable command; Apothem uses `python` | `"python"` |
+| `hooks[].args` | array of strings | Exec-form arguments invoking `-m apothem.hooks.dispatch` or `-m apothem.conformity.gate` | `["-m", "apothem.hooks.dispatch", "SessionStart"]` |
+| `hooks[].timeout` | integer seconds | Maximum runtime before the host kills the hook | `30` |
+| `hooks[].statusMessage` | string | Short label surfaced in the host UI | `"Session start"` |
+
+### Required Events
+
+The shipped templates register the following events. All five are required for
+the validators to report PASS:
+
+> **Timeout values mirror the canonical hook-event budgets** — the table below
+> reproduces them for reader convenience; the canonical source governs.
+
+| Event | Typical Timeout | Purpose |
+| ----- | --------------- | ------- |
+| `SessionStart` | 30 seconds | Read memory, check plan state, report readiness |
+| `PreToolUse` | 10 seconds | Validate writes for content-isolation policies + frontmatter |
+| `PreCompact` | 30 seconds | Verify state externalized before context compaction |
+| `PostCompact` | 30 seconds | Restore working state after context compaction |
+| `Stop` | 60 seconds | Session-end externalization — resumption state, outputs, decisions |
+
+`dispatch.py` also accepts `UserPromptSubmit` and `Notification` on its event
+whitelist for forward compatibility; neither is wired in the shipped
+templates. Add a matcher block with the same exec-form pattern to enable.
+
+### Python Layer
+
+Every hook command routes through the same Python dispatcher:
+
+| File | Role |
+| ---- | ---- |
+| `src/apothem/hooks/dispatch.py` | Routes `SessionStart` to `session_start_bootstrap.main()` and every other whitelisted event to `emit_hook_context.main()`. Always exits 0. |
+| `src/apothem/hooks/session_start_bootstrap.py` | Session-start hook script — emits memory and plan-suite summary context. |
+| `src/apothem/hooks/emit_hook_context.py` | Default hook emitter — writes a valid envelope carrying the registered `--context-file` payload. |
+| `src/apothem/hooks/messages/*.md` | Static context payload referenced by `--context-file`. |
+
+### Validation
+
+`scripts/dev/validate_hooks.py` enforces the hook contract:
+
+- `settings.json` parses as JSON and declares every required event.
+- All three Python scripts exist and parse as valid Python.
+- All message files referenced by `--context-file` arguments exist.
+- No hardcoded absolute user paths (`C:\Users\...` etc.) appear in `src/apothem/hooks/**.py`.
+- Shell artifacts under `src/apothem/hooks/` and `scripts/` are limited to the approved locator / bootstrap stubs.
+
+---
+
+## Schema: CLAUDE.md
+
+**Path:** `CLAUDE.md` (root)
+
+**Purpose:** Global ecosystem configuration index.
+
+### Mandatory YAML Frontmatter
+
+```yaml
+---
+name: "CLAUDE"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "Global Claude Code ecosystem configuration and mandate index"
+scope: "always-on"
+portability: "universal"
+---
+```
+
+### Required Sections (in order)
+
+1. **§1 Plan Suite** — Reference to template location
+2. **§2 Cognitive Identity** — Creative architecture mandate
+3. **§3 Artifact Directories** — Table of paths and purposes
+4. **§4 Seriousness-Scaled Governance** — Four levels definition
+5. **§5 Operational Directives** — Problem-solving, communication principles
+6. **§6 Cross-Cutting Mandates** — CM-1–28 overview
+7. **§7 Registries** — Tables of artifacts:
+   - 7.1 Commands
+   - 7.2 Rules
+   - 7.3 Helpers
+   - 7.4 Hooks
+   - 7.5 Skills
+   - 7.6 Artifact Evolution
+
+---
+
+## Validation Checklist
+
+Every artifact must satisfy these checks:
+
+### Frontmatter Validation
+
+- [ ] YAML is syntactically valid (no parsing errors)
+- [ ] All mandatory fields present for artifact type
+- [ ] `name` follows kebab-case convention
+- [ ] `version` is semantic (`MAJOR.MINOR.PATCH`)
+- [ ] `updated` is ISO 8601 date format (`YYYY-MM-DD`)
+- [ ] `description` is non-empty string, single line
+- [ ] Optional fields match expected enum values (if applicable)
+- [ ] No typos in field names (use canonical names from schema)
+- [ ] No extra whitespace or formatting issues
+
+### Content Validation
+
+- [ ] Content begins immediately after closing `---` on new line
+- [ ] No plan-internal references (CM-7 compliance)
+- [ ] Cross-references resolve (if listing other artifacts)
+- [ ] Links use relative paths with forward slashes
+
+### Portability Validation
+
+- [ ] No hardcoded absolute paths (use relative)
+- [ ] No Windows-specific syntax in universal-scope artifacts
+- [ ] Path separators use forward slashes
+- [ ] Environment variables use platform-agnostic format (`${VAR}` or tool-native)
+
+---
+
+## Notes
+
+- **Consistency as Security:** Canonical frontmatter enables automated
+  validation, tooling, and cross-artifact verification. Deviations compound
+  quickly.
+- **Portability Declaration:** Not all artifacts can be universal. Declare
+  constraints explicitly — better to document a caveat than ship a silent bug.
+- **Kebab-case for Names:** Easy to use in URLs, scripts, and command-line
+  contexts. Avoid spaces, underscores, and camelCase for names.
+- **Version Bump Hygiene:** Every behavior-changing edit must bump `version` and `updated` together. Pure formatting or typo fixes bump PATCH; new optional sections or anti-patterns bump MINOR; structural reorganization or contract changes bump MAJOR.

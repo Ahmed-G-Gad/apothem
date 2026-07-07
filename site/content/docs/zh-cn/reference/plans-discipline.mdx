@@ -1,0 +1,197 @@
+---
+title: "计划规范——项目本地的临时工作记忆"
+description: "在 .apothem/plans/ 中管理项目本地的临时工作记忆（旧版 .plans/ 树通过 apothem migrate-workspace 升级），包含 frontmatter 模式、生命周期转换、提升为 ADR，以及通过钩子和校验器进行强制执行。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **面向下游贡献者的规范性参考。** 本文档镜像项目规范的计划规范章节（规范 §3）；它是随发布仓库一同提供的独立参考。这里引入的规范是基础性的；除非明确另行标注，下面每条指令都是 `MUST`（必须）。架构理由记录于 [ADR-0001](/docs/reference/plans-discipline)。
+
+---
+
+## 1. 定义与边界
+
+**计划**是在对项目进行推理过程中产生的任何有意的、临时的工作产物，包括但不限于：
+
+- 架构草图、系统设计演练、组件分解。
+- 工作分解结构、多步骤任务列表、分解树。
+- 重构策略、迁移演练、上线序列。
+- 调试日志、假设记录、复现笔记。
+- 探索笔记、spike 总结、prompt 草稿、为后续使用而保留的harness对话记录。
+- 任何为*思考*而写、而非为*交付*而写的文档。
+
+计划与以下相邻类别有本质区别：
+
+| 产物 | 生命周期 | 位置 | 是否提交？ |
+|---|---|---|---|
+| **计划** | 临时工作记忆 | `<project-root>/.apothem/plans/`（唯一的规范归属位置）——旧版 `<project-root>/.plans/` 树通过 `apothem migrate-workspace` 升级 | **从不**（被 gitignore） |
+| **ADR**（架构决策记录） | 永久、决定性 | 项目批准的 ADR 目录 | 始终 |
+| **Issue / PR 描述** | 绑定于追踪器 | GitHub / 等效平台 | 不适用（追踪器） |
+| **Harness 指令文件**（每个 harness 的规范文件名） | 持久的行为配置 | `<harness-config-root>/`（视 harness 而定为项目本地或用户范围） | 始终（在仓库中） |
+| **代码** | 计划的执行结果 | 代码所在之处 | 始终 |
+
+计划先于 ADR。当一个计划收敛为持久决策时，该决策被**提升**为 ADR（§4 生命周期）；计划本身则归档或丢弃。
+
+---
+
+## 2. 位置、可见性与命名
+
+- **路径。** `<project-root>/.apothem/plans/` 是唯一的规范归属位置。旧版 `<project-root>/.plans/` 树不再是规范的——请用 `apothem migrate-workspace`（§5）升级它。**不是** harness 配置目录（例如 `~/.claude/plans/`、`~/.claude/.plans/` 或 `~/.codex/.plans/`）。**不是**桌面草稿文件夹。**不是** `~/notes/`。**不是** `tmp/plans/`。
+- **可见性。** 该文件夹按 §6 的规范代码片段注册在项目的 `.gitignore` 中。harness运行时**必须**在任何写入之前验证该条目存在；若缺失，则附加该条目，并带上一行头部注释和指向本文档的链接。
+- **文件名约定。** `YYYY-MM-DD--<kebab-case-slug>.md`。对于较大的工作区，在 `.apothem/plans/<area>/YYYY-MM-DD--<slug>.md` 下进行子分类。
+  - 示例：`.apothem/plans/2026-04-30--auth-refactor-strategy.md`、`.apothem/plans/api/2026-04-30--rate-limit-rollout.md`。
+- **索引。** 可选的 `.apothem/plans/INDEX.md`（同样被 gitignore）可以聚合链接和状态；若存在，harness运行时在每次计划写入时维护它。
+- **归档。** 已收敛或已废弃的计划迁移到 `.apothem/plans/_archive/`。未经明确的结构化询问确认，从不删除。
+- **计划上的作者署名头。** 计划**豁免**于作者署名头 SPDX 行（见 [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) §豁免清单）。它们是被 gitignore 的临时产物；将永久溯源标记应用于临时工作记忆是一种类别错误。Frontmatter（§3）携带计划的溯源信息。
+
+---
+
+## 3. Frontmatter 模式（已校验）
+
+每个计划文件都携带：
+
+```yaml
+---
+title: <human-readable title>
+project: <git-remote-url-or-canonical-local-path>
+created: <ISO-8601 timestamp>
+updated: <ISO-8601 timestamp>
+status: draft | in-progress | converged | abandoned
+tags: [<kebab>, ...]
+supersedes: <prior-plan-relative-path or null>
+promotes-to: <ADR path or null>
+---
+```
+
+计划的 JSON Schema 位于 [`src/apothem/schemas/plan.schema.json`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/plan.schema.json)。`/plan` 斜杠命令（以及 `plans-discipline-language` 校验器）在每次写入时根据它进行校验。
+
+---
+
+## 4. 生命周期与提升工作流
+
+1. **草稿（Draft）** — 初始创建；`status: draft`。
+2. **进行中（In-progress）** — 正在主动迭代；`status: in-progress`；每次实质性编辑时刷新 `updated`。
+3. **收敛（Convergence）** — 一个持久决策成型：
+   1. 将该决策提取到项目批准的 ADR 位置上的新 ADR 中。
+   2. 将计划的 `promotes-to` 设为该 ADR 路径。
+   3. 设置 `status: converged`。
+   4. 可选地移至 `.apothem/plans/_archive/`。
+4. **废弃（Abandonment）** — 方向被放弃；`status: abandoned`；归档，或经明确的结构化询问后丢弃。
+5. **取代（Supersession）** — 当一个新计划替代一个旧计划时，将新计划的 `supersedes` 设为旧计划的路径，并相应地设置旧计划的 `status`。
+
+提升是计划内容变为持久、受版本控制、对队友可见的*唯一*途径。**任何计划都绝不整体迁移进已提交的源代码。**
+
+---
+
+## 5. 迁移协议——一次性，从 harness 计划目录到每项目 `.apothem/plans/`
+
+> **注意。** 本协议适用于首次采用计划规范的下游项目，即先前的计划产物位于某个 harness 配置目录中（例如 `~/.claude/plans/`、`~/.claude/.plans/`，或另一个 harness 的等效路径）。生态系统本身的递归情形通过 gitignore harness 本地的计划状态来解决，而非将其物理迁移进源代码。
+
+> **工具。** 对于已处于旧版布局的项目——一棵同级 `<project-root>/.plans/` 树外加每个 harness 的 `<project-root>/.apothem/<harness>/{memory,contexts,learning}` 存储——`apothem migrate-workspace` 命令将两者折叠进共享的工作目录 `<project-root>/.apothem/{plans,memory,learning,contexts}`。该命令是幂等且非破坏性的：它为每个所消费的源做备份，将 `.plans/` 移动到 `.apothem/plans/`，并集合并每个 harness 的内存与上下文存储，连接去重学习信号，且从不覆盖冲突的记录。先运行 `apothem migrate-workspace --dry-run` 以预览这些移动。
+
+迁移是幂等的，并且在 harness 本地计划目录被移除之前可逆（之后，位于 `./.audit/plans-backup-<timestamp>.tar.gz` 的备份 tar 包提供回滚产物）。下面的示例使用 `~/.claude/plans/`；请替换为当前 harness 的等效路径。
+
+**步骤 1 — 清点。** 枚举 harness 本地计划目录下的每个文件，并归类为 `plan-artifact (quarantined)`（计划产物，已隔离）。
+
+**步骤 2 — 溯源映射。** 为每个计划构建一条溯源记录，包含一个推断出的目标项目和一个置信度分数，分数源自 frontmatter `project` 字段、正文扫描信号（仓库 URL、包名、绝对路径）以及上下文线索。
+
+**步骤 3 — 映射确认。** 完整的映射作为单个合并的结构化询问呈现给操作者（当文件数量超过单个提示舒适的大小时，呈现为一个紧凑批处理的序列）。对于每个计划，操作者在以下选项中选择：
+
+- **确认（Confirm）**推断出的目标项目。
+- **重新分配（Reassign）**到不同的项目（该选项呈现操作者已知的项目列表）。
+- **延后（Defer）** — 移至 `~/.claude/.audit/orphan-plans/<original-name>` 以便后续整理。
+- **丢弃（Discard）** — 仅在明确的、单独确认的结构化询问下（此操作具有破坏性）。
+
+当许多计划的置信度为 `high` 时，提示会提供一个*确认全部高置信度*的便捷选项，以压缩往返次数，同时仍在日志中呈现每个单独的决策。
+
+**步骤 4 — 移动前的项目准备。** 对于每个唯一的目标项目：
+
+1. 验证项目根目录存在且可读。
+2. 验证它是一个 git 仓库（对于非 git 根目录，通过结构化询问通道确认是否继续、初始化或跳过）。
+3. 确保 `<project-root>/.apothem/plans/` 存在；若不存在，用 `mkdir -p` 创建。
+4. 验证项目的 `.gitignore` 包含 §6 中的规范代码片段；若缺失，附加它，并带上一行头部注释注明此次迁移。
+5. 验证 `<project-root>/.apothem/plans/` 尚未被 git 跟踪；若已被跟踪（先前贡献者的失误），通过结构化询问通道呈现，选项为*取消跟踪并保留*、*取消跟踪并从历史中移除*、*中止*。
+
+**步骤 5 — 移动。** 对于每个已确认的计划 → 目标配对：
+
+1. 计算目标文件名：若源文件有 frontmatter，按 §3 规范化；否则用 frontmatter（状态 `draft`、设置 project 字段、从 mtime 取 created、标签 `[migrated]`）包裹正文，并重命名为 `YYYY-MM-DD--<slug>.md`。
+2. 若目标处存在名称冲突，附加 `-imported-<unix-timestamp>` 并记录该重命名。
+3. 复制文件（保留 mtime），验证目标处的 SHA-256 匹配，然后取消链接源文件。
+4. 向 `<project-root>/.apothem/plans/_migration-manifest.md`（同样被 gitignore）追加一条记录，记录：原始 harness 本地路径、目标路径、原始 SHA-256、时间戳、授权此次移动的结构化询问回答。
+
+**步骤 6 — 验证。** 所有移动完成后：
+
+1. 确认 harness 本地计划目录为空（孤立计划若有，则位于该 harness 即将删除目录之外的审计/隔离目录中）。
+2. 确认每个目标项目都有一个已填充的 `.apothem/plans/` 和一个清单。
+3. 通过 SHA-256 抽查，确认迁移后的内容与原件匹配。
+
+**步骤 7 — 打包与移除。** 创建 `./.audit/plans-backup-<ISO-timestamp>.tar.gz`，包含整个移动前的 harness 本地计划树（从步骤 1 拍摄的临时快照中提取）。然后，经一次确认就绪的最终结构化询问，移除现已为空的 harness 本地计划目录。
+
+**步骤 8 — 审计记录。** 发出 `./.audit/plans-migration.md`，总结每次移动、每个延后的文件、每次丢弃、每次冲突重命名以及每次 gitignore 附加。
+
+---
+
+## 6. 下游 `.gitignore` 代码片段（规范，复制粘贴）
+
+每个采用本生态系统的项目都**必须**将以下代码块添加到其 `.gitignore`：
+
+```text
+# Apothem working directory (project-local shared state: plans, memory,
+# learning, contexts; gitignored — never committed). The sole canonical plans
+# home is `.apothem/plans/`.
+# See: <repo-url>/blob/main/site/content/docs/reference/plans-discipline.mdx
+# Ignore the CONTENTS of this directory (not the directory) so the
+# `.keep` negation below can take effect.
+.apothem/*
+!.apothem/.keep
+```
+
+可选的 `.keep` 例外项在会修剪空路径的工具中保留目录的存在性，同时不泄露内容。是否包含 `.keep` 在首次调用 `/plan` 时通过结构化询问通道按项目决定。`.apothem/*` + `!.apothem/.keep` 行即为规范代码片段；仍带有旧版 `<project-root>/.plans/` 树的项目运行 `apothem migrate-workspace`（§5）将其升级到 `.apothem/plans/`。
+
+---
+
+## 7. 自我强制机制
+
+该规范必须在未来的每个会话中存续。以下强制面是强制性的，并编码在已发布的生态系统中：
+
+1. **`AGENTS.md` 与镜像指令面** — 顶层强制行为块，声明：*"计划产物写入 `<project-root>/.apothem/plans/`——唯一的规范计划归属位置（旧版 `<project-root>/.plans/` 树通过 `apothem migrate-workspace` 升级）——绝不写入任何 harness 配置目录（例如 `~/.codex/` 或 `~/.claude/`），也绝不写入全局位置。此规则不可协商；在每个相关决策上引用项目规范 §3。"* 此块由 `plans-discipline-language` 校验器检测。
+2. **每个 harness 的仓库内指令文件** — 以适合该 harness 指令面的措辞镜像同一指令（§4 *计划规范*）；由同一校验器在每个已注册 harness 面上检测。
+3. **默认输出样式** — 当一个回复会产生计划形态的内容（多步骤策略、分解、设计演练、调试日志）时，该样式将产物路由到项目本地的 `.apothem/plans/` 写入，而非内联打印后丢弃。该样式明确指示：*"若没有可发现的项目根目录，则以一个结构化询问停下，询问操作者在何处规划。"*
+4. **每个委派工作者提示** — 携带一个*输出面*段落，将 `.apothem/plans/` 命名为任何计划产物的目标；并携带一个*反模式*段落，将 harness 本地计划目录命名为禁止。
+5. **专用的 `/plan` 斜杠命令** — 接受一个 slug + 正文，写入 `<project-root>/.apothem/plans/YYYY-MM-DD--<slug>.md` 并带正确的 frontmatter，确保目标的 `.gitignore` 正确，拒绝写入 harness-config-root 路径。
+6. **一个 `pre-tool-use` 钩子——`plan-write-guard`** — 拦截每个文件写入工具调用。若目标路径匹配一个 harness 本地计划位置（例如 `~/.claude/plans/...` 或 `~/.codex/.plans/...`），或启发式识别为计划形态的任何其他全局生态系统路径，钩子将阻止该写入，并提出一个结构化询问，建议重定向到当前项目的 `.apothem/plans/`。
+7. **CI 校验器** — 若已提交的计划工作记忆在已发布的树中重新出现，`no-global-plans` 使构建失败；若规范指令从任何已注册的 harness 指令文件或默认输出样式中消失，`plans-discipline-language` 使其失败。该校验器的规范目标面（作为文件系统契约保留）列于下面的代码块中。
+
+```text
+AGENTS.md
+CLAUDE.md
+.github/copilot-instructions.md
+```
+
+8. **预提交钩子** — 在本地镜像上述机制，使该规范在任何提交落地之前得到强制执行。
+
+---
+
+## 8. 反模式（绝对禁止）
+
+- 将计划写入 harness 配置目录（例如 `~/.claude/plans/` 或 `~/.codex/.plans/`）或任何其他全局位置。
+- 将计划提交到项目的 git 历史（提交时钩子应拒绝此操作）。
+- 将计划与 ADR 混在一起（不同的生命周期、不同的位置、不同的提交状态）。
+- 没有 frontmatter 的计划、没有日期前缀文件名的计划、没有 `project` 字段的计划。
+- 跨项目计划（一个计划，两个项目）。拆分它们——每个项目一个计划。
+- 通过 harness 配置同步（例如 Claude Code 的 `~/.claude`）跨机器共享计划——这是保持计划项目本地化的一个结构性论据：在计划值得共享的罕见场合，项目仓库*就是*同步机制——而这种"值得共享"本身就是一个信号，表明该内容应被提升为 ADR。
+- 嵌入在委派工作者提示、技能正文或输出样式内部的计划内容。那些面是*持久的行为配置*；计划是*临时工作记忆*。
+- 将作者署名头 SPDX 行应用于计划文件（计划按设计豁免——§2、[`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) §豁免清单）。
+
+---
+
+## 另见
+
+- [ADR-0001](/docs/reference/plans-discipline) — 架构理由、所考虑的替代方案、所接受的权衡。
+- [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) — 作者署名头 SPDX 行规范（计划按类别豁免）。
+- harness约定页 — 多面harness约定（计划规范作为一个共享声明出现在每个已注册的 harness 指令文件以及每个选用的可选面中）。路径：
+
+```text
+site/content/docs/reference/ai-conventions.mdx
+```
+- 项目规范 §3 — 此处镜像的完整规范文本。

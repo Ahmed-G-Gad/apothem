@@ -1,0 +1,167 @@
+---
+title: "快速开始"
+description: "安装 Apothem、编写配置档案、物化你的第一个环境并验证它 —— 一份可复制粘贴的导览，附预期输出。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+这是从零到一个已验证环境配置的快速路径：安装、编写共享配置档案、物化一个工具的
+原生配置、确认它，并做出你的第一次编辑。每条命令都是真实且可复制粘贴运行的，
+每一步都会展示一次干净运行所打印的内容。安装本身在两分钟内完成；编辑配置档案
+是唯一可以花费你愿意花的时间的部分。
+
+读完之后，你将拥有一份由你自己编写的配置档案生成的可用环境配置 ——并且你会知道
+那条把配置档案变更推送回每个工具的命令。
+
+<Callout title="想要慢节奏、有讲解的版本？">
+  [入门教程](/docs/tutorials/getting-started) 在同样的范围内逐步讲解，对每一步
+  及其重要性给出更多解释。本页是简洁、以输出为先的导览。
+</Callout>
+
+你将使用 **Claude Code** 作为示例环境 ——它是安装脚本的默认环境。在任何一步替换
+适配器名称即可指向另一个工具；[环境列表](/docs/harnesses) 列出了所有受支持的
+名称。
+
+## 1. 安装 Apothem
+
+Apothem 以自包含运行时的形式发布 ——引擎直接从其源码树中运行，依赖已内置。一条
+命令即可获取源码、放置引擎并物化你的第一个环境：
+
+```bash title="macOS · Linux · WSL2"
+curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
+```
+
+```powershell title="Windows · PowerShell 7+"
+irm https://apothem.ahmedgad.com/install.ps1 | iex
+```
+
+安装脚本要求系统中有可导入 `click` 和 `rich` 的 Python 3.10+，网络形式还需要
+`git`。它会检查前置条件，将引擎放置在 `~/.apothem` 下，并在完成时打印针对你
+所用 shell 的确切引擎调用方式：
+
+```text
+Apothem installed.
+Run the engine with:
+
+  apothem <command>
+```
+
+<Callout title="`apothem` 命令">
+  安装脚本会在你的 `PATH` 上放置一个 `apothem` 垫片（shim），因此你可以直接以
+  `apothem <command>` 运行引擎。如果该垫片的目录尚未在 `PATH` 上，横幅会打印一个
+  无需垫片的自包含回退方式 ——
+  `PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>` ——把你的横幅所
+  打印的确切前缀加在每条命令之前。
+</Callout>
+
+[安装指南](/docs/install) 介绍了其余安装路径 ——Claude Code 插件
+（`/plugin marketplace add ahmed-g-gad/apothem`，然后
+`/plugin install apothem@apothem`）、VS Code 系编辑器与其他工具原生扩展，
+以及按需的 npx 形式（`npx @ahmed-g-gad/apothem <command>`）——以及环境变量选项。
+
+## 2. 创建共享配置档案
+
+`apothem profile init` 会把符合模式的最小配置档案写入
+`~/.config/apothem/profile.yaml`。当你在别处保存项目专用或 CI 专用的配置档案时，
+传入 `--profile PATH`。
+
+```bash
+apothem profile init
+apothem profile show --json
+```
+
+脚手架使用伪造的占位身份数据，在安装任何环境输出之前编辑它是安全的。
+`show --json` 会回读并报告已验证的配置档案：
+
+```json
+{
+  "identity": {
+    "name": "Example User",
+    "email": "dev@example.invalid",
+    "github": "example-user"
+  }
+}
+```
+
+这里也是格式错误的编辑显形之处 ——如果 YAML 无效，`show` 会在此报告，早于任何
+环境配置被写入。用 `apothem profile edit`（在你的编辑器中打开它）让配置档案
+成为你自己的，或就地设置单个键：
+
+```bash
+apothem profile set identity.name "Your Name"
+```
+
+## 3. 安装环境适配器
+
+物化你主要工具的适配器。这会读取你的配置档案并写入该工具的原生配置：
+
+```bash
+apothem install --harness claude-code
+```
+
+```text
+Installed claude-code.
+Wrote: ~/.claude/settings.json
+```
+
+项目作用域的适配器写入项目内部而非你的主目录，因此它们需要一个
+`--project PATH`。用 `--dry-run` 预览任何安装而不写入文件：
+
+```bash
+apothem install --harness cursor --project . --dry-run
+apothem install --harness cursor --project .
+```
+
+用 `--harness all` 一次性安装整个由注册表支持的集合。由于该选择会同时写入
+项目作用域和用户作用域的文件，命令会按位置分组打印具体目标，并在写入项目根目录
+之外的内容前进行确认：
+
+```bash
+apothem install --harness all --project .
+```
+
+所有受支持的名称见 [完整环境列表](/docs/harnesses)，完整选项集见
+[install 参考](/docs/cli-reference/install)。
+
+## 4. 验证
+
+物化只是工作的一半 ——`verify` 会确认环境的预期配置文件已落地并与配置档案所声明的
+相符：
+
+```bash
+apothem verify --harness claude-code
+```
+
+```text
+claude-code: managed targets verified.
+```
+
+如果配置缺失或发生漂移，`verify` 会以非零状态退出，因此它在配置脚本中也兼作闸门。
+要在每个已注册适配器上做一次全机健康检查，运行：
+
+```bash
+apothem doctor
+```
+
+`doctor` 会报告每个适配器的安装状态，并在任何已注册的适配器报告未安装时以非零
+状态退出。
+
+## 5. 你的第一次运行
+
+打开你刚配置好的工具 ——本例中是 Claude Code ——并在任意项目中启动一个会话。
+你在第 2 步写入配置档案的规则与偏好现已成为该工具行为的一部分。这就是可用的
+首次运行：一份配置档案，塑造一次真实的会话。
+
+当你之后修改配置档案时，无需重新安装即可重新应用：
+
+```bash
+apothem update --harness claude-code
+```
+
+## 后续步骤
+
+- [添加更多环境](/docs/install/harness-setup) —— 对每个工具重复第 3 步。
+- [编写你的第一条规则](/docs/usage/writing-rules) —— 每个环境都继承的单元。
+- [编写一个计划](/docs/usage/authoring-plans) —— 通过确定性的计划流水线驱动一整个
+  任务。
+- [CLI 参考](/docs/cli-reference) —— 每个命令、选项和退出码。

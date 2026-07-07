@@ -1,0 +1,179 @@
+---
+title: "クイックスタート"
+description: "Apothem をインストールし、プロファイルを定義し、最初の環境を物化して検証する — 期待される出力付きの、コピー＆ペースト用ウォークスルー。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+これはゼロから検証済みの環境構成までの最短経路です——インストールし、共有
+プロファイルを定義し、あるツールのネイティブ設定を物化し、それを確認し、
+最初の編集を行います。各コマンドは実在し、コピー＆ペーストでき、各ステップは
+クリーンな実行が何を出力するかを示します。インストール自体は 2 分足らずで
+完了します。プロファイルの編集だけは、あなたが望むだけ時間をかけられる部分です。
+
+最後には、自分で書いたプロファイルから生成された動作する環境構成が手元に
+あり、プロファイルの変更をすべてのツールへ反映させる 1 つのコマンドも
+分かるようになります。
+
+<Callout title="ナレーション付きの、ゆっくりした版が欲しいですか？">
+  [入門チュートリアル](/docs/tutorials/getting-started)は、同じ範囲を、各ステップと
+  それがなぜ重要なのかをより詳しく説明しながら進みます。このページは簡潔で
+  出力指向のウォークスルーです。
+</Callout>
+
+例として **Claude Code** を環境に使います——インストーラーのデフォルトです。
+どのステップでもアダプター名を変えれば別のツールを指せます。対応するすべての名前は
+[環境一覧](/docs/harnesses)にあります。
+
+## 1. Apothem のインストール
+
+Apothem は自己完結型ランタイムとして配布されます——エンジンは依存関係を組み込んだ
+ソースコードツリーから直接実行されます。1 つのコマンドでソースコードをダウンロードし、
+エンジンを配置し、最初の環境を物化します。
+
+```bash title="macOS · Linux · WSL2"
+curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
+```
+
+```powershell title="Windows · PowerShell 7+"
+irm https://apothem.ahmedgad.com/install.ps1 | iex
+```
+
+インストーラーは、`click` と `rich` がインポート可能なシステムの Python 3.10+ と、
+ネットワーク形式の場合は `git` を必要とします。前提条件をチェックし、エンジンを
+`~/.apothem` に配置し、完了時にあなたのシェル向けの正確なエンジン呼び出しを出力します。
+
+```text
+Apothem installed.
+Run the engine with:
+
+  apothem <command>
+```
+
+<Callout title="`apothem` コマンド">
+  インストーラーは `apothem` の shim を `PATH` 上に配置するため、エンジンを直接
+  `apothem <command>` として実行します。shim のディレクトリがまだ `PATH` 上にない
+  場合、バナーは shim を必要としない自己完結型のフォールバック——
+  `PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>`——を出力します。
+  バナーが出力した正確なプレフィックスを各コマンドの前に付けてください。
+</Callout>
+
+[インストールガイド](/docs/install)では、他のインストール経路——Claude Code
+プラグイン（`/plugin marketplace add ahmed-g-gad/apothem` の後に
+`/plugin install apothem@apothem`）、VS Code 系列およびその他のツールネイティブな
+拡張機能、そして npx によるオンデマンド形式（`npx @ahmed-g-gad/apothem <command>`）
+——を、環境変数オプションとともに扱います。
+
+## 2. 共有プロファイルの作成
+
+`apothem profile init` は、有効な最小限のプロファイルを
+`~/.config/apothem/profile.yaml` に書き込みます。プロジェクト固有または CI 固有の
+プロファイルを別の場所で管理する場合は `--profile PATH` を渡します。
+
+```bash
+apothem profile init
+apothem profile show --json
+```
+
+このスケルトンはプレースホルダーのダミー識別情報を使っており、いずれかの環境出力を
+インストールする前に編集しても安全です。`show --json` はそれを再読み込みし、
+検証済みのプロファイルを報告します。
+
+```json
+{
+  "identity": {
+    "name": "Example User",
+    "email": "dev@example.invalid",
+    "github": "example-user"
+  }
+}
+```
+
+不正な編集が表面化するのもここです。YAML が無効な場合、`show` はこの時点で——
+どの環境設定も書き込む前に——それを報告します。`apothem profile edit`（エディターで
+開きます）でプロファイルを自分のものにするか、その場で 1 つのキーを設定します。
+
+```bash
+apothem profile set identity.name "Your Name"
+```
+
+## 3. 環境アダプターのインストール
+
+主に使う環境のアダプターを物化します。これはあなたのプロファイルを
+読み取り、そのツールのネイティブ設定を書き込みます。
+
+```bash
+apothem install --harness claude-code
+```
+
+```text
+Installed claude-code.
+Wrote: ~/.claude/settings.json
+```
+
+プロジェクトスコープのアダプターは、ホームディレクトリではなくプロジェクトの内部に
+書き込むため、`--project PATH` が必要です。ファイルを書き込まずにあらゆる
+インストールをプレビューするには `--dry-run` を使います。
+
+```bash
+apothem install --harness cursor --project . --dry-run
+apothem install --harness cursor --project .
+```
+
+レジストリに裏打ちされた完全なセットを一度にインストールするには `--harness all`
+を使います。この選択はプロジェクトスコープとユーザースコープの両方のファイルを
+書き込むため、コマンドは具体的な出力先を場所別にグループ化して表示し、プロジェクトの
+ルート外へ書き込む前に確認を求めます。
+
+```bash
+apothem install --harness all --project .
+```
+
+対応するすべての名前は[環境の完全一覧](/docs/harnesses)を、完全なオプション一式は
+[install リファレンス](/docs/cli-reference/install)を参照してください。
+
+## 4. 検証
+
+物化は仕事の半分にすぎません。`verify` は、環境の期待される設定ファイルが書き込まれ、
+プロファイルが宣言する内容と一致していることを確認します。
+
+```bash
+apothem verify --harness claude-code
+```
+
+```text
+claude-code: managed targets verified.
+```
+
+`verify` は設定が欠けている、またはドリフトしている場合に非ゼロのコードで終了する
+ため、セットアップスクリプトのゲートとしても機能します。登録済みの各アダプターに
+対するマシン全体のヘルスチェックには、次を実行します。
+
+```bash
+apothem doctor
+```
+
+`doctor` は各アダプターのインストール状態を報告し、登録済みのいずれかのアダプターが
+未インストールと報告した場合は非ゼロのコードで終了します。
+
+## 5. 初回実行
+
+設定したばかりの環境——この例では Claude Code——を開き、任意の
+プロジェクトでセッションを開始します。ステップ 2 でプロファイルに書いたルールと
+設定は、すでにそのツールの動作の一部です。それが最初の動作する実行です——1 つの
+プロファイルが、実際のセッションを形作っています。
+
+後でプロファイルを変更したときは、再インストールせずに再適用します。
+
+```bash
+apothem update --harness claude-code
+```
+
+## 次のステップ
+
+- [さらに環境を追加する](/docs/install/harness-setup) —— ツールごとにステップ 3 を
+  繰り返します。
+- [最初のルールを書く](/docs/usage/writing-rules) —— すべての環境が継承する単位です。
+- [プランを作成する](/docs/usage/authoring-plans) —— 完全なミッションを決定的な
+  計画パイプラインに通します。
+- [CLI リファレンス](/docs/cli-reference) —— すべてのコマンド、オプション、終了コード。

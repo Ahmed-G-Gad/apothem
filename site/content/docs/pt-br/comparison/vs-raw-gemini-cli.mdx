@@ -1,0 +1,40 @@
+---
+title: "Apothem frente à configuração manual do Gemini CLI"
+description: "Manter à mão o arquivo de regras GEMINI.md do Gemini CLI frente a renderizá-lo a partir do perfil compartilhado do Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+O Gemini CLI lê um único arquivo de regras `GEMINI.md`. O adaptador de gemini-cli
+do Apothem o renderiza a partir do perfil compartilhado. Esta página contrasta
+manter essa configuração à mão com gerenciá-la com o Apothem.
+
+## Comparação de esforço
+
+| Tarefa | Configuração manual | Gerenciada pelo Apothem |
+| ---- | --------------- | --------------- |
+| Escrever regras | Editar à mão um único `GEMINI.md` | Renderizadas: regras compartilhadas embutidas em `GEMINI.md` |
+| Manter as regras alinhadas com outros ambientes | Manual, por ferramenta | Automático no `apothem update` |
+| Instalar / remover a configuração | Escrever e excluir `GEMINI.md` à mão | `apothem install` / `apothem uninstall` |
+| Verificar se a configuração está correta | Inspeção manual | `apothem verify --harness gemini-cli` |
+
+## O que o Apothem gerencia
+
+O adaptador de gemini-cli embute as regras compartilhadas em um único `GEMINI.md`.
+O Gemini CLI não tem um hook PreToolUse, então a intenção das barreiras de
+proteção é expressa na prosa das regras em vez de em um ponto de interceptação de
+chamada de ferramenta. Cada mudança nas regras compartilhadas re-renderiza
+`GEMINI.md` no próximo `apothem update`.
+
+## Caminho de migração
+
+1. Execute `apothem profile init` para criar o perfil compartilhado se ainda não tiver.
+2. Mova as regras do seu `GEMINI.md` existente para o corpus compartilhado.
+3. Execute `apothem install --harness gemini-cli` para renderizar e gravar `GEMINI.md`.
+4. Execute `apothem verify --harness gemini-cli` para confirmar que a configuração aterrissou.
+5. Use `apothem update --harness gemini-cli` para cada mudança posterior.
+
+## Leia a seguir
+
+- [Referência do adaptador do Gemini CLI](/docs/harnesses/gemini-cli)
+- [Visão geral da comparação](/docs/comparison)

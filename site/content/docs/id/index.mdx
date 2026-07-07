@@ -1,0 +1,77 @@
+---
+title: "Dokumentasi Apothem"
+description: "Satu profil bersama, dimaterialisasikan ke dalam tujuh belas harness. Mulai di sini: instalasi, penggunaan, cakupan harness, alur perintah, dan referensi lengkap."
+machineTranslated: true
+---
+
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem adalah pengelola konfigurasi harness yang tidak bergantung pada host.
+Anda menulis satu profil bersama di `~/.config/apothem/profile.yaml`, dan Apothem
+mematerialisasikannya ke permukaan konfigurasi native dari tujuh belas harness:
+Claude Code, Cursor, Gemini CLI, GitHub Copilot, Codex, Windsurf,
+Zed, dan sisa katalog yang terdaftar.
+
+Unit yang disinkronkan Apothem lebih luas daripada aturan saja: aturan,
+perintah slash, skill, hook, output-style, pengaturan (dengan server MCP), skema,
+dan dokumentasi mengalir bersama sebagai satu korpus terkelola, dimaterialisasikan
+ke format native setiap harness atau ke subpohon dukungan milik Apothem ketika alat
+tidak memiliki primitif yang setara.
+
+## Baru di sini? Mulai dalam dua langkah
+
+1. **[Instalasi](/docs/install/quickstart)** — pilih satu jalur instalasi (plugin
+   dan ekstensi native-alat, `npx`, atau skrip satu langkah) dan jalankan langkah
+   pertama yang terpandu. Satu-satunya prasyarat adalah
+   [Node.js](https://nodejs.org/) dan Python 3.10 atau yang lebih baru di sistem.
+2. **[Capai eksekusi pertama yang berhasil](/docs/tutorials/getting-started)** —
+   tulis sebuah profil bersama, materialisasikan konfigurasi native sebuah
+   harness darinya, lalu verifikasi hasilnya. Sekitar lima belas menit, dari
+   awal sampai akhir.
+
+## Cara kerja Apothem
+
+- **Satu profil, banyak konfigurasi native.** Anda menulis maksud sekali; Apothem
+  menerjemahkannya ke permukaan konfigurasi native setiap alat — tanpa perataan ke
+  penyebut persekutuan terkecil. Lihat
+  [postur tidak bergantung pada host](/docs/concepts/ai-platform-agnosticism).
+- **Lingkar operasi: rencanakan → perkuat → kirim.** Alur perencanaan (`/plan`)
+  membawa sebuah perubahan melalui spesifikasi, generasi, tinjauan, dan eksekusi;
+  alur penguatan (`/fortress`) mendorong pekerjaan itu ke keadaan tergerbang-rilis;
+  gerbang rilis menutup lingkar. Lihat [alur perintah](/docs/pipeline).
+- **Pekerjaan yang bertahan melintasi batas.** Pekerjaan jangka panjang
+  mengeksternalkan seluruh keadaannya ke suite `.apothem/plans/` lokal-proyek, sehingga
+  sesi baru di akun atau mesin mana pun melanjutkannya di tempat. Lihat
+  [perencanaan yang dapat dilanjutkan](/docs/concepts/resumable-planning).
+
+## Mulai di sini
+
+- **[Instalasi](/docs/install/quickstart)** — jalur-jalur instalasi (plugin dan
+  ekstensi native-alat, `npx`, skrip satu langkah) dan eksekusi pertama yang
+  terpandu.
+- **[Penggunaan](/docs/usage/getting-started)** — tulis profil Anda, pasang ke
+  semua harness, verifikasi, dan perbarui.
+- **[Harness](/docs/harnesses)** — katalog tujuh belas harness dengan
+  permukaan native setiap alat dan perilaku konversinya.
+- **[Alur perintah](/docs/pipeline)** — tahap-tahap alur `/plan` dan `/research`,
+  urutan audit-tinjau, skill workflow dan projectify, serta pengaman untuk
+  manipulasi bedah.
+
+## Pelajari lebih dalam
+
+- **[Konsep](/docs/concepts/ai-platform-agnosticism)** — profil bersama, adapter
+  harness, dan model materialisasi.
+- **[Arsitektur](/docs/architecture)** — struktur kode sumber, abstraksi adapter,
+  runtime mandiri, dan alur CI/CD.
+- **[Referensi](/docs/reference)** — CLI, skema profil, aturan, skill, perintah,
+  hook, dan katalog gaya keluaran.
+- **[Bagaimana Apothem dibandingkan](/docs/comparison)** — matriks diferensiasi
+  yang jujur dengan pesaing yang disebut namanya.
+
+## Tata kelola dan keamanan
+
+- **[Tata kelola](/docs/governance)** — registri disiplin, gerbang kesesuaian,
+  dan fasad versi.
+- **[Keamanan](/docs/security)** — postur rantai pasok dan kebijakan keamanan.
+- **[Catatan perubahan](/docs/changelog)** — catatan rilis, versi saat ini lebih
+  dahulu.

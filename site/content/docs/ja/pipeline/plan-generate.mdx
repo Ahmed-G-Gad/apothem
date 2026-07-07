@@ -1,0 +1,68 @@
+---
+title: "/plan-generate"
+description: "/plan-generate——作成済みの `_spec/spec.md` から完全なマスタープランスイートを生成します。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**役割：** ジェネレーター
+**パイプライン位置：** 中間
+
+作成済みの `_spec/spec.md` から完全なマスタープランスイートを生成します。
+
+## 正規の呼び出し
+
+```bash
+/plan-generate
+```
+
+引数付き：
+
+```bash
+/plan-generate [path/to/prose.md] [--mode NEW|OVERHAUL] [--seriousness LEVEL] [--context CONTEXT] [--mission MISSION] [--domain DOMAIN] [--dry-run]
+```
+
+## 入力
+
+`/plan-spec` からの、作成済みの `_spec/spec.md` + `_inputs/handoff-manifest.yml`（または操作者が提供した散文）。
+
+## 出力
+
+`PREAMBLE.md`、`MASTER-PLAN.md`、`PROGRESS.md`、`PLAN-NOTES.md`、およびフェーズごとの `phases/**/PHASE.md` ファイル、加えて拡張済みの `_inputs/handoff-manifest.yml`。
+
+## 下流
+
+/plan-review または /plan-execute（下流）
+
+## ワークフローのフェーズ
+
+このコマンドは、作成済みの仕様から完全なマスタープランスイートを生成します。
+
+1. **要件の取り込み** — `_spec/spec.md` と上流のハンドオフマニフェストを読み取ります。仕様が存在しない場合は `Blocked: run /plan-spec first` で拒否します。
+2. **発見** — 5 つの認知フィルターを用いて重大度に応じた発見を実行し、すべての権威データのギャップを構造化問い合わせチャネルを通じて解決します。
+3. **分解** — 作業を、明示的な依存順序を持つ非循環のフェーズグラフへと分解します。
+4. **スイートの発行** — `PREAMBLE.md`、`MASTER-PLAN.md`、`PROGRESS.md`、`PLAN-NOTES.md`、およびすべての `phases/NN-topic/PHASE.md` を作成します。
+5. **事前発出ゲートの実行** — 発行されたすべての成果物に対して 15 バーのスイープを実行します。失敗は、解決されるまでユーザー承認をブロックします。
+
+## 失敗モード
+
+| 症状 | 原因 | 復旧 |
+|---------|-------|----------|
+| Blocked: run /plan-spec first | 作成済みの `_spec/spec.md` がない | `/plan-spec` を実行して仕様を作成し、マニフェストを発行する |
+| `_inputs/` ファイルに対する生成 | 仕様がまだ引き出しの途中 | まず `/plan-spec` で `_inputs/forge.md` を `_spec/spec.md` へ昇格する |
+| 事前発出バーが失敗 | 発行された成果物がゲートを通らない | ユーザー承認の前に、失敗したバーを修正する |
+
+## 例
+
+```bash
+# 生成されるフェーズグラフをプレビューするためのドライラン
+/plan-generate --dry-run
+
+# 作成済みの散文からスイートを生成する
+/plan-generate path/to/prose.md --mode NEW
+```
+
+## 相互参照
+
+- [パイプラインの概要](/docs/pipeline)
+- [コマンドリファレンス](/docs/reference/commands)

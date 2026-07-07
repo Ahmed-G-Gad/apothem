@@ -1,0 +1,43 @@
+---
+title: "تأليف الخُطط"
+description: "ألِّف حُزَم الخُطط باستخدام خط أنابيب /plan."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+يُحوِّل خط أنابيب <bdi>`/plan`</bdi> متطلّبات النثر الخام إلى خُطط تنفيذٍ قابلةٍ للتنفيذ ومُراجَعةٍ ومحكومةٍ ببوابات الجودة.
+
+## الأطوار الأساسية
+
+يُشحَن خط الأنابيب على هيئة ثمانية أوامر <bdi>`/plan-<stage>`</bdi> من الدرجة الأولى. ويُشغِّل التدفّق اليومي خمسةً منها:
+
+1. <bdi>`/plan-spec`</bdi> — تُنقِّح النثر إلى <bdi>`_spec/spec.md`</bdi> بدرجة المواصفة
+2. <bdi>`/plan-generate`</bdi> — تُولِّد هيكل حزمة الخطّة كاملًا
+3. <bdi>`/plan-review`</bdi> — تدقيقٌ جنائي للخطّة المُولَّدة
+4. <bdi>`/plan-execute`</bdi> — تُنفِّذ الأطوار طورًا تلو الآخر
+5. <bdi>`/plan-status`</bdi> — تفحص التقدُّم في أيّ وقت
+
+تُكمِل ثلاثة أطوار المجموعة: يُصدِر <bdi>`/plan-design`</bdi> أثَر تصميمٍ معماري للحزم الحاملة للمعمارية، ويُشغِّل <bdi>`/plan-audit`</bdi> مُلفِّف معالجةٍ ذا حلقة مغلقة <bdi>spec → generate → review</bdi>، ويُراجِع <bdi>`/plan-amend`</bdi> حزمةً قائمةً دون فقدان القرارات المحلولة.
+
+## خطّة سريعة (ملفّ واحد)
+
+```bash
+# Creates plans/YYYY-MM-DD--my-feature.md in the current project
+/plan-spec --quick my-feature
+```
+
+## حزمة خطّة كاملة
+
+```bash
+# Step 1 — write your requirements to prose.md, then:
+/plan-spec prose.md --suite-name my-project-plan
+/plan-generate
+/plan-review
+/plan-execute
+```
+
+## دورة حياة الخطّة
+
+تنتقل الخُطط عبر: <bdi>`draft`</bdi> -> <bdi>`in-progress`</bdi> -> <bdi>`converged`</bdi> (تُرقَّى إلى <bdi>ADR</bdi>) أو <bdi>`abandoned`</bdi>.
+
+راجِع [انضباط الخُطط](/docs/reference/plans-discipline) للحصول على مواصفة دورة الحياة الكاملة.

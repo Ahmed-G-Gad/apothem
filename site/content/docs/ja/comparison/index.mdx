@@ -1,0 +1,86 @@
+---
+title: "比較"
+description: "手作業で保守するハーネス構成や他の構成アプローチに対して Apothem をどう評価するか。機能マトリクスとハーネスごとのページ付き。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem はホストに依存しない AI ハーネス構成マネージャーです。`~/.config/apothem/profile.yaml`
+にある 1 つの共有プロファイルが、17 のハーネスネイティブな構成面へマテリアライズされます。この
+セクションでは、すでにあなたが使っている代替手段に対して Apothem をどう評価するかを
+枠組みとして示します。
+
+## Apothem の比較
+
+他のツールはこの問題の隣接する一部を解決します。**chezmoi** や **GNU Stow** の
+ようなファイルベースの構成マネージャーはファイルを配置またはテンプレート化しますが、
+1 つのソースを各ハーネスの*ネイティブ*設定へ翻訳することは決して
+ありません。**rulesync** のようなツール間ルール同期 CLI は、多くのツールで
+Apothem の 17 よりも多いツールでツールごとのネイティブファイルを生成し、同期される単位も同等に広くなっています。Apothem の特徴は、**同期の周りに配布されるガバナンスとライフサイクルの規律**です——機械的なコンフォーミティゲート、決定的なパイプライン、監査フォートレス、そして可逆で検証済みのライフサイクル。
+
+| 能力 | Apothem | ファイル構成マネージャー (chezmoi, Stow) | ツール間ルール同期 (rulesync) | ツールごとのネイティブ構成 |
+| ---------- | :-----: | :----------------------------------: | :-----------------------------: | :--------------------: |
+| 1 つのソースを多くのツールのネイティブスキーマへ | はい — 17 のハーネスアダプター | いいえ — コピー / シンボリックリンク、翻訳なし | はい | いいえ — 単一ツール |
+| 同期される単位 | ルール、スキル、フック、スラッシュコマンド、MCP | 任意のファイル | ルール、無視、MCP、コマンド、サブエージェント、スキル、フック、権限 | — |
+| 統治コーパス（動作ルールに加えて機械的なコンフォーミティゲート） | はい — `python -m apothem.conformity.gate` | いいえ | いいえ | いいえ |
+| 決定的な計画・調査パイプライン | はい — `/plan-spec` から `/plan-execute`、13 ステージの `/research` | いいえ | いいえ | いいえ |
+| 検出して是正する監査フォートレス | はい — 11 コマンドの走査、`/fortress` の再監査ループ | いいえ | いいえ | いいえ |
+| サプライチェーンに対して強化されたリリース | はい — SBOM、Sigstore、SLSA、Scorecard ターゲット | いいえ | 場合による | いいえ |
+| 可逆かつ検証済みのライフサイクル | はい — バックアップ、`apothem verify --json`、孤児なしのアンインストール | 場合による | 場合による | — |
+
+競合がより強い箇所では、それを名指しします。**rulesync** はより多くのツールに到達し、同等に広い同期単位を備え、いくつかのツールは同期でネイティブスキーマをマテリアライズします。Apothem は、生のツール数を、同期の周りに配布されるガバナンス・監査・ライフサイクルの規律——コンフォーミティゲート、決定的な `/plan` と `/research` のパイプライン、11 コマンドの監査フォートレス、永続的なメモリ、そして可逆で検証済みのライフサイクル——と引き換えにしており、これはルール同期ツールが備えていないものです。
+
+## どう比較するか
+
+3 つの軸に沿って比較します。
+
+1. **真実の源。** あなたのルール、エージェント、コマンド、設定はどこにあるか？
+   Apothem は単一の共有コーパスを保持し、そこから各ハーネスのネイティブ形式を
+   レンダリングします。手作業の構成はツールごとにコピーを保持します。
+2. **ドリフトのコスト。** ルールを 1 つ変更したとき何が起こるか？ Apothem は
+   `apothem update` を実行すると、変更をインストール済みの各ハーネスへ伝播します。
+   手作業の構成は、各ツールのネイティブファイルを個別に編集し、記憶を頼りに
+   整合を保つことを要求します。
+3. **検証。** 各ハーネスが正しく構成されていることをどう知るか？ Apothem には
+   `apothem verify --harness <name>` と `apothem doctor` が同梱されています。
+   手作業の構成には組み込みの検証がありません。
+
+## 機能マトリクス
+
+このマトリクスは、オペレーターが最初に頼る 2 つの代替手段に対して Apothem を
+対比します——各ハーネスのネイティブ設定を手作業で保守すること、そしてそれらのファイルを
+汎用の dotfiles マネージャーで管理することです。
+
+| 能力 | 手作業で保守する構成 | dotfiles マネージャー | Apothem |
+| ---------- | ---------------------- | --------------- | ------- |
+| 単一の共有された真実の源 | いいえ（ツールごとに 1 コピー） | いいえ（プロファイルではなくファイルを追跡） | はい（1 つのプロファイル） |
+| ハーネスのネイティブ形式をレンダリング | 手動 | いいえ | はい（アダプターごとのマテリアライザー） |
+| ハーネス間のドリフト防止 | 手動での整合 | ファイル同期のみ | はい（`apothem update`） |
+| ハーネスごとのインストール／アンインストール | 手動 | 部分的（リンク／コピー） | はい（`install` / `uninstall`） |
+| 組み込みの検証 | なし | なし | はい（`verify` / `doctor`） |
+| ツールごとの形式翻訳 | なし | なし | はい（`.mdc`、`.toml`、埋め込み `.md`） |
+| 1 つの入力から 17 のハーネス | いいえ | いいえ | はい |
+
+## 比較ページ
+
+- [Apothem と他のハーネスフレームワークの比較](/docs/comparison/vs-other-harness-frameworks)
+- [vs 素の antigravity](/docs/comparison/vs-raw-antigravity)
+- [vs 素の claude-code](/docs/comparison/vs-raw-claude-code)
+- [vs 素の codebuddy](/docs/comparison/vs-raw-codebuddy)
+- [vs 素の codex](/docs/comparison/vs-raw-codex)
+- [vs 素の cursor](/docs/comparison/vs-raw-cursor)
+- [vs 素の gemini-cli](/docs/comparison/vs-raw-gemini-cli)
+- [vs 素の github-copilot](/docs/comparison/vs-raw-github-copilot)
+- [vs 素の glm](/docs/comparison/vs-raw-glm)
+- [vs 素の hermes](/docs/comparison/vs-raw-hermes)
+- [vs 素の kimi-code](/docs/comparison/vs-raw-kimi-code)
+- [vs 素の kiro](/docs/comparison/vs-raw-kiro)
+- [vs 素の open-claw](/docs/comparison/vs-raw-open-claw)
+- [vs 素の opencode](/docs/comparison/vs-raw-opencode)
+- [vs 素の qwen-code](/docs/comparison/vs-raw-qwen-code)
+- [vs 素の trae](/docs/comparison/vs-raw-trae)
+- [vs 素の windsurf](/docs/comparison/vs-raw-windsurf)
+- [vs 素の zed](/docs/comparison/vs-raw-zed)
+
+ハーネスごとのアダプターの詳細は、[ハーネスアダプター](/docs/harnesses)セクションを
+参照してください。

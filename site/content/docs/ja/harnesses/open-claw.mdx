@@ -1,0 +1,89 @@
+---
+title: "Open-Claw"
+description: "Open-Claw（プレビュー）向けの Apothem ハーネスアダプター。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**ベンダー：** Open-Claw
+**インストール名：** `open-claw`
+**ステータス：** プレビュー
+**ネイティブ設定：** `~/.openclaw/openclaw.json`
+
+## インストール
+
+```bash
+apothem install --harness open-claw
+```
+
+アダプターは共有プロファイルを OpenClaw のユーザーグローバル設定ファイルに翻訳し、
+ハーネスルート配下に Apothem サポートコホートをインストールします。OpenClaw の
+ネイティブ設定は JSON です。materializer はそれに合わせて JSON をレンダリングします。
+
+**書き込まれるファイル：** `~/.openclaw/openclaw.json` および `~/.openclaw/.apothem/support/`
+配下のサポートファイル
+
+## プロファイルからネイティブ設定へのマッピング
+
+アダプターは Apothem の共有プロファイルを読み取ります。OpenClaw のネイティブ skills
+フィールドは名前の許可リスト（ディレクトリローダーではない）であり、MCP は CLI 面で
+あるため、Apothem は設定キーを書き込みません。共有されたコマンド、スキル、ルール、
+テンプレート、フックプロンプトは、`~/.openclaw/.apothem/support/` 配下にサポート資料として
+インストールされます。
+
+## 互換性に関する注意
+
+プレビュー版アダプターです。ネイティブの JSON 設定が Open-Claw のアクティブな面です。
+Apothem はスキルに対して文書化された追加の skill-directory フックを使用し、その他の
+コホートはインストール済みガイダンスのための参照資料として保持します。
+
+## 検証
+
+```bash
+apothem verify --harness open-claw
+```
+
+verify コマンドは、次のことを確認します。
+
+1. ネイティブ設定が期待されるパスに存在すること。
+2. 共有プロファイルのすべての必須フィールドが存在すること。
+3. アダプター固有の検証ルーチンが成功を報告すること。
+
+## 更新
+
+```bash
+apothem update --harness open-claw
+```
+
+現在の共有プロファイルの状態からネイティブ設定を再導出します。
+`~/.config/apothem/profile.yaml` を編集した後、またはインストール済みの Apothem
+パッケージをアップグレードした後に実行します。
+
+## アンインストール
+
+```bash
+apothem uninstall --harness open-claw
+```
+
+アダプターによって書き込まれたネイティブ設定ファイルを削除します。
+共有プロファイルの YAML と Apothem エンジンは影響を受けません。
+
+## 適合ゲート
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## トラブルシューティング
+
+| 症状 | 対処 |
+|---------|-----|
+| 設定ファイルが見つからない | `apothem install --harness open-claw` を再実行する |
+| 検証に失敗した | `apothem update --harness open-claw` を実行してから、再度検証する |
+| 予期しない設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、`apothem update --harness open-claw` を再実行する |
+
+## 設定ノブ
+
+| フラグ | デフォルト | 説明 |
+|------|---------|-------------|
+| `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューする。 |

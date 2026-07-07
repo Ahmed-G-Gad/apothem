@@ -1,0 +1,68 @@
+---
+title: "/code-review"
+description: "/code-review — Operator-driven per-file code-quality review pass across src/, scripts/, and tools/."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Role:** Reviewer
+**Pipeline position:** fortress
+
+Operator-driven per-file code-quality review pass across src/, scripts/, and tools/.
+
+## Canonical invocation
+
+```bash
+/code-review
+```
+
+With arguments:
+
+```bash
+/code-review [path/to/plan-suite/] [phase-id] [--dry-run]
+```
+
+## Inputs
+
+Host repository at any lifecycle state
+
+## Outputs
+
+Per-file findings + disposition log in REPORT.md
+
+## Downstream
+
+The line-by-line review stage of the Audit Review Sequence
+
+## Workflow phases
+
+The command follows the standard `/plan` pipeline workflow:
+
+1. **Load context** — Read plan suite, rules, and Resumption Contract.
+2. **Verify prerequisites** — Confirm dependency phases complete.
+3. **Execute tasks** — Perform the command mission.
+4. **Verify outputs** — Confirm all declared outputs exist and pass quality gates.
+5. **Update PROGRESS.md** — Record verified outputs in the Phase Output Registry.
+6. **Emit REPORT.md** — Pre-emission gate release proof recorded.
+
+## Failure modes
+
+| Symptom | Cause | Recovery |
+|---------|-------|----------|
+| Prerequisite incomplete | Dependent phase not finished | Complete upstream phase first |
+| Quality gate FAIL | Output does not meet standards | Fix the output and re-run |
+| Missing input file | Plan suite file absent | Run `/plan-generate` to create it |
+
+## Examples
+
+```bash
+# Dry-run to preview what would happen
+/code-review --dry-run
+
+# Execute against a named plan suite
+/code-review path/to/plan-suite/
+```
+
+## Cross-references
+
+- [Pipeline overview](/docs/pipeline)
+- [Master Plan Suite Template](/docs/reference/commands)

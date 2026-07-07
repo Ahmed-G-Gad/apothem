@@ -1,0 +1,70 @@
+---
+title: "/plan-audit"
+description: "/plan-audit — /plan パイプラインの閉ループ守護者——spec → generate → review をラップし、スイートがレビュー済みかつ発見ゼロの全体になるまで発見を能動的に修復します。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**役割：** 守護者
+**パイプライン位置：** ラップ / 直交（実行前）
+
+`/plan` パイプラインの閉ループ守護者。`/plan-review` が生成済みスイートを報告して精錬するのに対し、`/plan-audit` は上流サイクル（`/plan-spec → /plan-generate → /plan-review`）をラップし、スイートをレビュー済みかつ発見ゼロの全体へ駆動します——欠落している上流ステージだけを実行し、結果を監査し、機械的に解決可能な発見をその場で修正し、判断の分岐を構造化照会チャネルを通じて提示し、スイートが清浄になるか有界の退避が発火するまでループします。フェーズ実装作業を実行することは決してありません。スイートを `/plan-execute` へ渡せる状態にします。
+
+## 正規の呼び出し
+
+```bash
+/plan-audit
+```
+
+引数付き：
+
+```bash
+/plan-audit [suite-path] [--from spec|generate|review] [--remediate] [--cap N] [--maintenance] [--dry-run]
+```
+
+## 入力
+
+対象スイートの `_spec/spec.md`、`_inputs/handoff-manifest.yml`、インフラファイル、`phases/**/PHASE.md`、および既存のフェーズレポート。
+
+## 出力
+
+`<suite>/_outputs/audit-report-<YYYY-MM-DD>.md` に置かれる永続的で有界なレポート。発見ゼロの裁定、未解決の発見数、修復台帳、およびあらゆるメンテナンスルーティングを携える、更新された交接マニフェスト。残存する発見が残る場合は非ゼロの終了ステータス。
+
+## パイプライン位置
+
+`/plan-audit` は線形パイプラインに対して**直交**であり、その中の 1 ステージではありません。正規の線形シーケンスは `/plan-spec → /plan-generate → /plan-review → /plan-design`（条件付き、アーキテクチャを伴うスイートのみ）`→ /plan-execute` です。`/plan-audit` は `/plan-spec → /plan-generate → /plan-review` を任意の地点で呼び出せる単一の閉ループラッパーとして包含します。状態を検査し、欠落しているステージだけを実行します。これは要塞監査チェーン（`/code-review` で入り、`/threat-model-audit` で終端する）とは別物で、後者は計画スイートではなく実行済みコードベースを監査します。
+
+## ワークフローのフェーズ
+
+1. **対象の解決** — 引数からスイートを解決するか、`.apothem/plans/` 配下で最も最近変更されたスイートを選択し（`.plans/` はサポートされる後方互換フォールバックです）、その解決を明示します。
+2. **ステージの評価** — どの成果物が存在するか（spec 準備済み / 生成済み / レビュー済み / 実行済み）を検出し、レビュー済みで実行可能な全体に至る最小の欠落を命名します。
+3. **レビュー可能な全体へ持ち込む** — 欠落している上流ステージだけを実行し、各欠落を正規のコマンドへ委譲します。散文を刷新するためだけに、満たされたステージを再実行することは決してありません。
+4. **フォレンジック監査** — `/plan-review` の監査次元、計画技術カタログ、十五バーの事前発行ゲートを適用します。
+5. **能動的修復** — 機械的な発見をその場で修正し、判断の分岐を構造化照会チャネルを通じて提示し、正当に範囲外の作業を兄弟の `*-maintenance` スイートへルーティングします。
+6. **上限と退避を伴うループ** — 未解決の発見が残らなくなるまで監査-と-修復を繰り返し、反復上限（デフォルト 3）で有界とし、上限を使い果たした時に定義済みの退避を行います。
+
+## 失敗モード
+
+| 症状 | 原因 | 回復 |
+|---------|-------|----------|
+| 上限を使い果たしても残存する発見がある | 発見が反復上限内では解決できない | 監査レポートを確認し、適格な項目を `*-maintenance` スイートへルーティングし、理由がある場合のみ `--cap` を引き上げる |
+| 判断の分岐が未解決 | ある発見がポリシー/範囲/権限の決定を必要とする | 構造化照会プロンプトに回答する。ループは決して暗黙に選択しない |
+| 権威ある spec の欠落 | `_spec/spec.md` がない | ラッパーが `/plan-spec` へルーティングして作成する |
+| 品質ゲート FAIL | 出力が基準を満たさない | 修復が根本原因を修正し、触れた位置を再監査する |
+
+## 例
+
+```bash
+# Dry-run: report detected suite, stage, planned audit dimensions, would-write targets
+/plan-audit --dry-run
+
+# Audit and actively remediate a named suite, capping the loop at 2 iterations
+/plan-audit path/to/plan-suite/ --remediate --cap 2
+```
+
+## 相互参照
+
+- [パイプライン概要](/docs/pipeline)
+- [/plan-review](/docs/pipeline/plan-review)
+- [/plan-execute](/docs/pipeline/plan-execute)
+- [マスタープランスイートテンプレート](/docs/reference/commands)

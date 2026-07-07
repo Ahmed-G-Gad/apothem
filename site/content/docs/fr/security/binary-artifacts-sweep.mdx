@@ -1,0 +1,57 @@
+---
+title: "Balayage des artefacts binaires"
+description: "Balayage des artefacts binaires d'Apothem — zéro binaire compilé / empaqueté suivi dans le code source. Preuve pour la vérification Binary-Artifacts d'OpenSSF Scorecard."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+La vérification **Binary-Artifacts** d'OpenSSF Scorecard confirme que l'arborescence du code source ne contient aucun artefact binaire compilé / empaqueté / opaque. Les binaires présents dans le code source ne sont pas auditables et offrent un point d'appui pour les attaques de chaîne d'approvisionnement : le binaire intègre du code que l'arborescence source ne révèle pas, de sorte que les relecteurs ne peuvent pas l'inspecter avant la fusion.
+
+## La posture d'Apothem face aux artefacts binaires
+
+Apothem est une **arborescence de code source en pur Python** sans aucun artefact binaire compilé, empaqueté ou opaque suivi dans le contrôle de version. Le dépôt est auditable de bout en bout à partir du code source.
+
+## Méthodologie du balayage
+
+Le balayage énumère les types de fichiers que Scorecard considère comme binaires, puis vérifie que chacun est absent du contrôle de version :
+
+| Famille d'extensions | Description | Statut Apothem |
+|---|---|---|
+| `.exe`, `.dll`, `.so`, `.dylib` | Binaires natifs compilés | ✅ Zéro suivi |
+| `.bin`, `.o`, `.a`, `.lib` | Fichiers objets / bibliothèques statiques | ✅ Zéro suivi |
+| `.jar`, `.war`, `.ear` | Paquets Java | ✅ Zéro suivi |
+| `.whl`, `.egg` | Distributions Python | ✅ Zéro suivi (compilées dans `dist/` ; ignorées par gitignore) |
+| `.tar.gz`, `.zip` (distribution compilée) | Archives compressées contenant des artefacts compilés | ✅ Zéro suivi |
+| `.class`, `.pyc`, `.pyo` | Bytecode compilé | ✅ Zéro suivi (`__pycache__/` ignoré par gitignore) |
+| `.crt`, `.pem`, `.key`, `.p12`, `.pfx` | Matériel cryptographique | ✅ Zéro suivi (refusé dans `.gitignore`) |
+
+## Classes de binaires autorisées
+
+Deux classes restreintes d'artefacts binaires SONT autorisées dans le code source :
+
+1. **Ressources de marque** — `assets/*.png`, `assets/*.ico`, `assets/favicon.*`. Elles sont **régénérables de façon déterministe** à partir des maîtres SVG situés dans `assets/src/` via `scripts/dev/rebuild-assets.{sh,ps1}`. Scorecard les considère comme légitimes au titre de son exemption `image/png`.
+2. **Fichiers de police** — `assets/fonts/*.ttf`, `assets/fonts/*.woff2`. Fichiers de police empaquetés avec des licences documentées ; au titre de l'exemption `font/*` de Scorecard.
+
+Les deux classes sont documentées dans [`site/content/docs/brand/index.mdx`](/docs/brand) et leur provenance est consignée dans la recette de reconstruction des ressources.
+
+## Commande de vérification
+
+```shell
+# Depuis la racine du dépôt apothem :
+git ls-files | grep -E '\\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
+```
+
+Cette invocation devrait renvoyer **zéro ligne**. Un résultat non vide indique qu'un artefact binaire a été suivi dans le code source — un constat de gravité ÉLEVÉE qui bloque la prochaine publication.
+
+## Cadence d'audit
+
+Le balayage fait partie de :
+
+- **CI par PR** — `.github/workflows/ci.yml` inclut une étape de grep des artefacts binaires.
+- **Point de contrôle par publication** — le runbook d'ingénierie de publication vérifie le balayage avant l'étiquetage.
+- **Exécution hebdomadaire de Scorecard** — le flux de travail OpenSSF Scorecard reconfirme que la vérification passe.
+
+## Références
+
+- [OpenSSF Scorecard — vérification Binary-Artifacts](https://github.com/ossf/scorecard/blob/main/docs/checks.md#binary-artifacts)
+- [`.gitignore` d'Apothem](https://github.com/ahmed-g-gad/apothem/blob/main/.gitignore) — la liste de refus qui empêche l'enregistrement accidentel de binaires

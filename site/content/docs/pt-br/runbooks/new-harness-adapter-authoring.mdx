@@ -1,0 +1,65 @@
+---
+title: "Criação de um novo adaptador de ambiente"
+description: "Manual operacional para criar e publicar um novo adaptador de ambiente do Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Use este manual operacional ao criar um novo adaptador de ambiente para inclusão
+nativa no Apothem ou como um pacote de terceiros.
+
+## Pré-requisitos
+
+- Familiaridade com o [protocolo HarnessAdapter](/docs/architecture/harness-adapter-abstraction)
+- Compreensão do formato de configuração do ambiente de destino
+- Python 3.10+
+
+## Passos
+
+### 1. Implemente o adaptador
+
+Siga o exemplo [Criação de um adaptador de ambiente](/docs/examples/authoring-a-harness-adapter)
+para implementar `HarnessAdapter` para o ambiente de destino.
+
+### 2. Escreva a página de documentação
+
+Crie `site/content/docs/harnesses/<slug>.mdx` cobrindo:
+
+- Fluxo de instalação
+- Mapeamento do perfil para a configuração nativa
+- Ressalvas de compatibilidade
+- Receitas de verificação
+- Receitas de atualização e desinstalação
+- Superfície da porta de conformidade
+- Tabela de resolução de problemas
+- Tabela de ajustes de configuração
+
+### 3. Escreva os testes
+
+```bash
+tests/packaging/test_<slug>_adapter.py
+tests/unit/test_<slug>_adapter.py
+```
+
+Cobertura mínima de testes:
+- `test_install_creates_expected_files`
+- `test_verify_passes_after_install`
+- `test_uninstall_removes_files`
+
+### 4. Verifique localmente
+
+```bash
+apothem install --harness <slug>
+apothem verify --harness <slug>
+python -m apothem.conformity.gate --all .
+```
+
+### 5. Envie o pull request
+
+Abra um PR com:
+
+- A implementação do adaptador
+- A página de documentação em `site/content/docs/harnesses/<slug>.mdx`
+- Os testes
+- O registro do ponto de entrada em `pyproject.toml`
+- Uma entrada no registro de alterações

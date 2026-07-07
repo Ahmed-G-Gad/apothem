@@ -1,0 +1,8 @@
+{
+  "argv": [
+    "profile",
+    "init"
+  ],
+  "exit_code": 0,
+  "stdout": "✓ Initialized profile at <HOME>/.config/apothem/profile.yaml\nPersonalize your profile before installing: the identity fields (name, email, github) still hold scaffold placeholders. Edit <HOME>/.config/apothem/profile.yaml or run 'apothem profile set identity.name \"Your Name\"'.\n"
+}

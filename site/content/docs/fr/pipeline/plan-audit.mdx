@@ -1,0 +1,70 @@
+---
+title: "/plan-audit"
+description: "/plan-audit — Gardien en boucle fermée du pipeline /plan — enveloppe spec → generate → review et remédie activement aux constats jusqu'à ce que la suite soit un tout revu, sans aucun constat."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rôle :** Gardien
+**Position dans le pipeline :** enveloppante / orthogonale (pré-exécution)
+
+Gardien en boucle fermée du pipeline `/plan`. Là où `/plan-review` rapporte et affine une suite générée, `/plan-audit` enveloppe le cycle amont (`/plan-spec → /plan-generate → /plan-review`) et conduit la suite jusqu'à un tout revu, sans aucun constat — n'exécutant que les étapes amont manquantes, auditant le résultat, corrigeant sur place les constats mécaniquement résolubles, exposant les bifurcations de jugement à travers le canal d'inquiry structurée, et bouclant jusqu'à ce que la suite soit propre ou qu'un repli borné se déclenche. Elle n'exécute jamais le travail d'implémentation de phase ; elle laisse la suite prête pour `/plan-execute`.
+
+## Invocation canonique
+
+```bash
+/plan-audit
+```
+
+Avec arguments :
+
+```bash
+/plan-audit [suite-path] [--from spec|generate|review] [--remediate] [--cap N] [--maintenance] [--dry-run]
+```
+
+## Entrées
+
+Le `_spec/spec.md` de la suite cible, `_inputs/handoff-manifest.yml`, les fichiers d'infrastructure, `phases/**/PHASE.md` et tout rapport de phase existant.
+
+## Sorties
+
+Un rapport persistant et borné dans `<suite>/_outputs/audit-report-<YYYY-MM-DD>.md` ; un manifeste de passation mis à jour portant le verdict de zéro constat, le décompte des constats ouverts, le registre de remédiation et tout réacheminement de maintenance ; et un statut terminal non nul lorsqu'il subsiste des constats résiduels.
+
+## Position dans le pipeline
+
+`/plan-audit` est **orthogonal** au pipeline linéaire, et non une étape en son sein. La séquence linéaire canonique est `/plan-spec → /plan-generate → /plan-review → /plan-design` (conditionnelle, suites porteuses d'architecture uniquement) `→ /plan-execute`. `/plan-audit` englobe `/plan-spec → /plan-generate → /plan-review` comme un unique enveloppeur en boucle fermée pouvant être invoqué à tout moment : il inspecte l'état et n'exécute que les étapes manquantes. Il se distingue de la chaîne d'audit de forteresse (entrée à `/code-review`, terminale à `/threat-model-audit`), qui audite une base de code exécutée plutôt qu'une suite de planification.
+
+## Phases du flux de travail
+
+1. **Résoudre la cible** — Résout la suite à partir de l'argument, ou choisit la suite la plus récemment modifiée sous `.apothem/plans/` (`.plans/` est une solution de repli rétrocompatible prise en charge) et énonce la résolution.
+2. **Évaluer l'étape** — Détecte quels artefacts existent (spec prête / générée / revue / exécutée) et nomme le plus petit écart vers un tout revu et exécutable.
+3. **Amener à un tout revisable** — N'exécute que les étapes amont manquantes, en déléguant à la commande canonique de chaque écart ; ne relance jamais une étape satisfaite uniquement pour rafraîchir la prose.
+4. **Audit forensique** — Applique les dimensions d'audit de `/plan-review`, le catalogue des techniques de planification et la porte de pré-émission à quinze barreaux.
+5. **Remédiation active** — Corrige les constats mécaniques sur place ; expose les bifurcations de jugement à travers le canal d'inquiry structurée ; réachemine le travail légitimement hors périmètre vers une suite sœur `*-maintenance`.
+6. **Boucle avec plafond et repli** — Répète auditer-et-remédier jusqu'à ce qu'il ne reste aucun constat ouvert, borné par un plafond d'itérations (3 par défaut) avec un repli défini à l'épuisement du plafond.
+
+## Modes de défaillance
+
+| Symptôme | Cause | Récupération |
+|---------|-------|----------|
+| Plafond épuisé avec constats résiduels | Constats non résolubles dans le plafond d'itérations | Examinez le rapport d'audit ; réacheminez les éléments éligibles vers une suite `*-maintenance` ; relevez `--cap` uniquement avec justification |
+| Bifurcation de jugement non résolue | Un constat requiert une décision de politique/périmètre/autorité | Répondez à l'invite d'inquiry structurée ; la boucle ne choisit jamais en silence |
+| Spec faisant autorité manquante | Pas de `_spec/spec.md` | L'enveloppeur réachemine vers `/plan-spec` pour la rédiger |
+| Porte qualité FAIL | La sortie ne respecte pas les standards | La remédiation corrige la cause racine et réaudite les loci touchés |
+
+## Exemples
+
+```bash
+# Dry-run: report detected suite, stage, planned audit dimensions, would-write targets
+/plan-audit --dry-run
+
+# Audit and actively remediate a named suite, capping the loop at 2 iterations
+/plan-audit path/to/plan-suite/ --remediate --cap 2
+```
+
+## Références croisées
+
+- [Vue d'ensemble du pipeline](/docs/pipeline)
+- [/plan-review](/docs/pipeline/plan-review)
+- [/plan-execute](/docs/pipeline/plan-execute)
+- [Modèle de Suite de Plan Maître](/docs/reference/commands)

@@ -1,0 +1,122 @@
+---
+title: "バッジポリシー"
+description: "GitHub ネイティブのワークフローステータス、shields.io エンドポイント JSON、静的バッジ形式を網羅し、README 用の動的バッジソースと静的バッジソースを指定する。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+このドキュメントは、README のバッジ帯と、その動的データソースを公開する
+インフラストラクチャの正規リファレンスです。プロジェクトの README にある
+すべてのバッジは、ここで指定された 3 つの形式のいずれかを通じて解決されます。
+将来追加される新しいバッジは、同じ形式に従うか、レビューで却下されます。
+
+## 1. 背景
+
+静的な `https://img.shields.io/badge/X-Y-Z` の URL は自分では決して変化しない
+ため、プロジェクトの実際の状態から乖離します — `release-vN-blue` バッジは、
+`vN+1` が出荷された後も長く `vN` を表示し続けます。したがってポリシーは、
+動くすべての値に対して動的な形式を要求し、静的な形式が誠実である、めったに
+変化しない小さな値の集合（ライセンス、Python のターゲットバージョン）に
+静的バッジを留保します。
+
+## 2. アーキテクチャ
+
+3 つの形式がプロジェクトのすべてのバッジを網羅します。
+
+1. **GitHub ネイティブのワークフローステータスバッジ。** ワークフローのバッジ
+   URL は
+   `https://github.com/<owner>/<repo>/actions/workflows/<file>/badge.svg`
+   の形をとり、デフォルトブランチ上の最新の実行を反映します。GitHub は
+   リポジトリの公開メタデータからバッジを提供します。
+2. **shields.io エンドポイントバッジ。** shields.io エンドポイントバッジは、
+   JSON が shields.io エンドポイントスキーマ（`schemaVersion`、`label`、
+   `message`、`color`）に準拠する
+   `https://img.shields.io/endpoint?url=<published-json>` の URL を解決します。
+   公開された JSON は `apothem.ahmedgad.com/badges/*.json` にあり、その内容は
+   成功したすべての CI 実行で CI ワークフローによって生成されます。
+   エンドポイントバッジは、メトリクスをサードパーティの可変ストアではなく、
+   プロジェクトが管理する公開のもとに保ちます。
+3. **shields.io 静的バッジ。** 静的バッジは、リアクティブなデータソースを
+   持たない `https://img.shields.io/badge/<label>-<message>-<color>` の形を
+   とります。本当にめったに変化しない値（ライセンス識別子、Python の
+   ターゲットバージョン）のために留保されます。
+
+プロジェクトのメトリクスのパブリック Gist による公開は、設計上除外されます。
+プロジェクトが管理するドメイン上の shields.io エンドポイントが正規の代替です。
+
+## 3. バッジごとの仕様
+
+| バッジ | 形式 | ソース | URL の形 |
+|---|---|---|---|
+| CI ステータス | GitHub ネイティブ | `.github/workflows/ci.yml` | `https://github.com/ahmed-g-gad/apothem/actions/workflows/ci.yml/badge.svg?branch=main` |
+| 最終コミット | GitHub ネイティブ | リポジトリメタデータ | `https://img.shields.io/github/last-commit/ahmed-g-gad/apothem` |
+| ライセンス | shields.io 静的 | `LICENSE`（MIT） | `https://img.shields.io/badge/License-MIT-yellow.svg` |
+| 最新リリース | shields.io エンドポイント | `badges/release.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/release.json` |
+| カバレッジ | shields.io エンドポイント | `badges/coverage.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/coverage.json` |
+| セキュリティ | shields.io エンドポイント | `badges/security.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/security.json` |
+| サプライチェーン | shields.io エンドポイント | `badges/supply-chain.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/supply-chain.json` |
+| ドキュメント | shields.io エンドポイント | `badges/docs.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/docs.json` |
+| Python バージョン | shields.io 静的 | `pyproject.toml` `python_requires` | `https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white` |
+
+CodeQL は Python と Actions のサーフェスを解析する専用の
+`.github/workflows/codeql.yml` ワークフローとして実行されます。`ci.yml` の
+security-scan ジョブは bandit のみを実行し、CodeQL の SARIF 公開は
+`codeql.yml` に委ねられます。セキュリティバッジは GitHub ネイティブの
+ワークフローバッジではなく、badges ワークフローが公開するエンドポイント
+JSON を消費するため、基盤となるスキャナートポロジーをまたいで安定して
+保たれます。
+
+## 4. JSON 公開メカニズム
+
+エンドポイント JSON は `.github/workflows/badges.yml` によって生成されます。
+このワークフローは次のことを行います。
+
+- `ci` ワークフローの完了後に `workflow_run` でトリガーされます（また、CI
+  実行なしで再公開するための手動の `workflow_dispatch` でもトリガーされます）。
+- 最新のタグを `git describe --tags --abbrev=0` から、親の CI 結論を
+  `workflow_run` イベントから解決します。
+- 出力が shields.io エンドポイントスキーマ（`schemaVersion: 1` に加えて
+  `label`、`message`、`color`）に厳密に一致するよう、`jq -n` で各 JSON を
+  生成します。
+- アップロード前に `jq -e` で各出力 JSON を検証します。
+- ディレクトリを `badges` という名前のワークフローアーティファクトとして
+  アップロードします。
+
+アーティファクトの `apothem.ahmedgad.com/badges/` への展開は
+`.github/workflows/publish-static-site.yml` が処理します。サイトのビルド中、
+そのワークフローは最新の成功した `badges` アーティファクトをダウンロードし、
+`site/dist/badges/` の下にステージングします。アーティファクトが存在しないか
+期限切れの場合でも、サイトは引き続き展開され、壊れた JSON を公開する代わりに、
+欠落しているバッジアーティファクトをワークフローログに記録します。
+
+## 5. メンテナンスプロトコル
+
+新しいバッジを追加するには、まず形式を決定します。
+
+- バッジが CI ワークフローの実行状態を反映する場合は、GitHub ネイティブの
+  形式を優先します。バッジの URL はワークフローファイルによって固定され、
+  公開インフラストラクチャは不要です。
+- バッジが時間とともに更新されるメトリクス（カウント、パーセンテージ、
+  バージョン文字列、段階付けされたラベル）を反映する場合は、shields.io
+  エンドポイント形式を使用します。`.github/workflows/badges.yml` の既存の
+  5 つの隣に JSON 生成ステップを追加し、`apothem.ahmedgad.com/badges/<name>.json`
+  のコンシューマ URL を README のバッジ帯に追加します。
+- バッジが本当にめったに変化しない値（ライセンス、言語ターゲット、ガバナンス
+  モード）を反映する場合は、shields.io 静的形式を使用します。バッジを追加する
+  ときに、このファイルのバッジごとのテーブルに変更頻度を記録します。
+
+バッジを廃止するには、まず README から削除し、次に badges ワークフローから
+その JSON 生成ステップを削除し、その後に上記のバッジごとのテーブルからその
+行を削除します。README がワークフローの生成しない JSON アーティファクトを
+決して参照しないよう、削除をアトミックに保ちます。
+
+## 6. クロスリファレンス
+
+- GitHub ネイティブの CI バッジが実行状態を反映する CI ワークフロー:
+  `.github/workflows/ci.yml`。
+- エンドポイント JSON を公開する badges ワークフロー:
+  `.github/workflows/badges.yml`。
+- JSON を提供する静的サイトのドメイン:
+  `apothem.ahmedgad.com`。
+- shields.io エンドポイントスキーマのリファレンス:
+  [https://shields.io/badges/endpoint-badge](https://shields.io/badges/endpoint-badge)。

@@ -1,0 +1,76 @@
+---
+title: "Plateformes"
+description: "Systèmes d'exploitation, shells et scripts d'installation pris en charge pour Apothem, plus le prérequis Python système pour le runtime autonome."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem fournit deux scripts d'installation qui, ensemble, couvrent la matrice
+moderne des postes de travail et serveurs de développement. Il n'y a pas de
+build spécifique à une plateforme : le moteur est un
+[runtime autonome](/docs/architecture/self-contained-runtime) qui s'exécute
+depuis son arborescence source avec des dépendances embarquées, de sorte que la
+prise en charge des plateformes correspond exactement à l'ensemble des hôtes où
+l'un des deux installateurs peut placer cette arborescence et l'exécuter. Les
+autres chemins d'installation élargissent encore la matrice : les plugins et
+extensions natifs des outils s'exécutent partout où leur outil hôte s'exécute,
+et la forme npx (`npx @ahmed-g-gad/apothem`) s'exécute sur tout système
+d'exploitation doté de Node.js 18+.
+
+## Matrice des systèmes d'exploitation et des shells
+
+| Famille d'OS | Shells pris en charge | Script d'installation |
+| --------- | ---------------- | ---------------- |
+| macOS | POSIX `bash` (le bash système ou un bash plus récent installé par l'utilisateur) | `install.sh` |
+| Linux | POSIX `bash` | `install.sh` |
+| Sous-système Windows pour Linux (WSL2) | POSIX `bash` | `install.sh` |
+| BSD (FreeBSD, OpenBSD, NetBSD) | POSIX `bash` | `install.sh` |
+| Termux (Android) | POSIX `bash` | `install.sh` |
+| Conteneur Linux ChromeOS (Crostini) | POSIX `bash` | `install.sh` |
+| Windows | Windows PowerShell 5.1+ | `install.ps1` |
+| Toute plateforme avec PowerShell 7+ | PowerShell 7+ (multiplateforme) | `install.ps1` |
+
+Les deux scripts sont fonctionnellement à parité l'un avec l'autre.
+`install.sh` requiert un `bash` POSIX. `install.ps1` requiert Windows PowerShell
+5.1 ou ultérieur, ou PowerShell 7+ sur toute plateforme prise en charge par
+PowerShell 7 lui-même — y compris macOS et Linux, où il constitue une
+alternative à `install.sh`.
+
+## Le seul prérequis : un Python système
+
+Apothem n'installe aucun paquet Python. Les imports du moteur s'exécutent contre
+un interpréteur que vous possédez déjà, la source embarquée étant ajoutée en
+tête de `PYTHONPATH`. Chaque installateur vérifie le prérequis avant toute autre
+chose :
+
+- **CPython 3.10 ou plus récent.** L'installateur sonde `python3`, `python` et
+  les noms versionnés (`python3.14` jusqu'à `python3.10`), acceptant le premier
+  qui rapporte une version ≥ 3.10. Sous Windows, il rejette les passerelles du
+  lanceur du Microsoft Store et le localisateur `find-python` embarqué applique
+  le même plancher.
+- **Bibliothèques de runtime importables.** Le moteur importe `click` et `rich` depuis l'interpréteur système ; ses autres dépendances tierces sont intégrées (vendored) dans l'arborescence source. L'installateur vérifie que les deux sont importables, nomme celles qui manquent et propose d'installer les prérequis manquants pour vous — avec votre confirmation, ou automatiquement avec `--yes` / `APOTHEM_AUTO_INSTALL_DEPS=1`.
+- **`git`** n'est nécessaire que pour l'installation réseau (le script clone
+  l'arborescence source). Une installation locale depuis une copie ne requiert
+  pas `git`.
+
+Si l'interpréteur, les bibliothèques ou `git` sont absents, l'installateur se
+termine avec un diagnostic nommant précisément ce qu'il faut fournir, plutôt que
+de deviner ou de modifier votre environnement.
+
+## Comment une plateforme est prise en charge
+
+Une plateforme est prise en charge lorsque les deux conditions tiennent :
+
+1. L'un des deux installateurs s'y exécute — autrement dit l'hôte dispose d'un
+   `bash` POSIX (`install.sh`) ou d'un PowerShell pris en charge
+   (`install.ps1`).
+2. Un interpréteur CPython 3.10+ avec `click` et `rich` importables s'y exécute.
+
+Il n'y a pas de composant compilé, pas d'extension native et pas de binaire par
+plateforme. La même arborescence source s'exécute partout où l'interpréteur
+s'exécute, de sorte que la matrice ci-dessus est l'énoncé complet et exact de la
+prise en charge — rien de plus n'est revendiqué.
+
+## Prochaine étape recommandée
+
+**Exécutez l'installateur de votre plateforme** — `curl -fsSL https://apothem.ahmedgad.com/install.sh | bash` sur un shell POSIX, ou `irm https://apothem.ahmedgad.com/install.ps1 | iex` sur PowerShell — après avoir confirmé qu'un interpréteur CPython 3.10+ est sur votre PATH.

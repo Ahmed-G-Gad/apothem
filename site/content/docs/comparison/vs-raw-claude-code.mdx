@@ -1,0 +1,46 @@
+---
+title: "Apothem vs raw Claude Code config"
+description: "Hand-maintaining Claude Code's full native config tree versus managing it through Apothem's shared profile."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Claude Code (vendor Anthropic) keeps its native config under `~/.claude/`.
+Apothem's claude-code adapter is the full-surface adapter: it propagates the
+shared corpus straight into that tree. This page contrasts hand-maintaining the
+config against managing it with Apothem.
+
+## Effort comparison
+
+| Task | Raw hand-config | Apothem-managed |
+| ---- | --------------- | --------------- |
+| Author rules, agents, commands, skills | Edit each surface in `~/.claude/` by hand | Write once in the shared corpus |
+| Maintain output-styles and statuslines | Hand-edit per surface | Propagated from the shared corpus |
+| Configure hooks | Hand-edit `settings.json` hook entries | Propagated (PreToolUse/PostToolUse/Stop/SessionStart) |
+| Keep config aligned with other harnesses | Manual, per tool | Automatic on `apothem update` |
+| Verify the config is correct | Manual inspection | `apothem verify --harness claude-code` |
+
+## What Apothem manages
+
+The adapter propagates rules, agents, commands, skills, output-styles,
+statuslines, and `settings.json` into `~/.claude/`.
+The native PreToolUse, PostToolUse, Stop, and SessionStart hooks are configured
+from the shared corpus.
+
+Apothem does **not** manage `CLAUDE.md` — that file is operator-owned territory.
+Your project and personal instructions in `CLAUDE.md` stay yours; Apothem
+governs the propagated surfaces around it.
+
+## Migration path
+
+1. Run `apothem profile init` to create the shared profile if you have not yet.
+2. Move your existing `~/.claude/` rules, agents, commands, and skills into the
+   shared corpus.
+3. Leave `CLAUDE.md` in place — Apothem will not touch it.
+4. Run `apothem install --harness claude-code` to propagate the corpus.
+5. Run `apothem verify --harness claude-code` to confirm the config landed.
+6. Use `apothem update --harness claude-code` for every later change.
+
+## Read next
+
+- [Claude Code adapter reference](/docs/harnesses/claude-code)
+- [Comparison overview](/docs/comparison)

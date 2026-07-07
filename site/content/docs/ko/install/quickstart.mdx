@@ -1,0 +1,169 @@
+---
+title: "퀵스타트"
+description: "Apothem을 설치하고, 프로파일을 정의하고, 첫 환경을 물화한 뒤 검증합니다 — 예상 출력이 함께 담긴 복사·붙여넣기 워크스루."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+이것은 영(zero)에서 검증된 환경 구성까지의 가장 빠른 경로입니다 — 설치하고, 공유
+프로파일을 정의하고, 한 도구의 네이티브 설정을 물화한 뒤 확인합니다. 각 명령은
+실제로 동작하며 복사·붙여넣기할 수 있고, 각 단계는 깨끗한 실행이 무엇을 출력하는지
+보여줍니다. 약 5분으로 잡으세요.
+
+<Callout title="내레이션이 있는 느긋한 버전을 원하시나요?">
+  [시작하기 튜토리얼](/docs/tutorials/getting-started)은 같은 범위를, 각 단계와 그것이
+  왜 중요한지를 더 많이 설명하며 진행합니다. 이 페이지는 간결하고 출력 중심의
+  워크스루입니다.
+</Callout>
+
+예시 환경으로 **Claude Code**를 사용합니다 — 설치 프로그램의 기본값입니다. 어떤
+단계에서든 어댑터 이름을 바꿔 다른 도구를 가리킬 수 있습니다. 지원되는 모든 이름은
+[환경 목록](/docs/harnesses)에 있습니다.
+
+## 1. Apothem 설치
+
+Apothem은 자체 완결형 런타임으로 배포됩니다 — 엔진은 종속성이 내장된 소스 코드
+트리에서 직접 실행됩니다. 하나의 명령이 소스 코드를 다운로드하고, 엔진을 배치하고,
+첫 환경을 물화합니다.
+
+```bash title="macOS · Linux · WSL2"
+curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
+```
+
+```powershell title="Windows · PowerShell 7+"
+irm https://apothem.ahmedgad.com/install.ps1 | iex
+```
+
+설치 프로그램은 `click`과 `rich`를 임포트할 수 있는 시스템 Python 3.10+와, 네트워크
+형식의 경우 `git`을 필요로 합니다. 사전 요구 사항을 확인하고, 엔진을 `~/.apothem`에
+배치하며, 완료 시 당신의 셸에 맞는 정확한 엔진 호출을 출력합니다.
+
+```text
+Apothem installed.
+Run the engine with:
+
+  apothem <command>
+```
+
+<Callout title="`apothem` 명령">
+  설치 프로그램은 `apothem` shim을 당신의 `PATH`에 배치하므로, 엔진을
+  `apothem <command>`로 직접 실행합니다. shim의 디렉터리가 아직 `PATH`에 없다면,
+  배너는 shim이 필요 없는 자체 완결형 대체 방법 —
+  `PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>` — 을 출력합니다.
+  배너가 출력한 정확한 접두사를 각 명령 앞에 붙이세요.
+</Callout>
+
+[설치 가이드](/docs/install)는 다른 설치 경로 — Claude Code 플러그인
+(`/plugin marketplace add ahmed-g-gad/apothem` 후 `/plugin install apothem@apothem`),
+VS Code 계열 및 기타 도구 네이티브 확장, 그리고 npx 온디맨드 형식
+(`npx @ahmed-g-gad/apothem <command>`) — 을 환경 변수 옵션과 함께 다룹니다.
+
+## 2. 공유 프로파일 생성
+
+`apothem profile init`은 유효한 최소 프로파일을 `~/.config/apothem/profile.yaml`에
+씁니다. 프로젝트별 또는 CI별 프로파일을 다른 위치에서 유지할 때는 `--profile PATH`를
+전달하세요.
+
+```bash
+apothem profile init
+apothem profile show --json
+```
+
+이 스켈레톤은 플레이스홀더의 더미 식별 정보를 사용하며, 어떤 환경 출력을 설치하기
+전에 편집해도 안전합니다. `show --json`은 이를 다시 읽어 검증된 프로파일을 보고합니다.
+
+```json
+{
+  "identity": {
+    "name": "Example User",
+    "email": "dev@example.invalid",
+    "github": "example-user"
+  }
+}
+```
+
+잘못된 편집이 드러나는 곳도 여기입니다. YAML이 유효하지 않으면, `show`가 이 시점에서 —
+어떤 환경 설정을 쓰기 전에 — 그것을 보고합니다. `apothem profile edit`(에디터에서
+엽니다)로 프로파일을 당신의 것으로 만들거나, 그 자리에서 키 하나를 설정하세요.
+
+```bash
+apothem profile set identity.name "Your Name"
+```
+
+## 3. 환경 어댑터 설치
+
+주로 사용하는 프로그래밍 도구의 어댑터를 물화합니다. 이것은 당신의 프로파일을 읽어
+그 도구의 네이티브 설정을 씁니다.
+
+```bash
+apothem install --harness claude-code
+```
+
+```text
+Installed claude-code.
+Wrote: ~/.claude/settings.json
+```
+
+프로젝트 스코프 어댑터는 홈 디렉터리가 아닌 프로젝트 내부에 쓰므로, `--project PATH`가
+필요합니다. 파일을 쓰지 않고 어떤 설치든 미리 보려면 `--dry-run`을 사용하세요.
+
+```bash
+apothem install --harness cursor --project . --dry-run
+apothem install --harness cursor --project .
+```
+
+레지스트리가 뒷받침하는 전체 세트를 한 번에 설치하려면 `--harness all`을 사용하세요.
+이 선택은 프로젝트 스코프와 사용자 스코프 파일을 모두 쓰므로, 명령은 구체적인 대상을
+위치별로 묶어 출력하고 프로젝트 루트 밖으로 쓰기 전에 확인을 요청합니다.
+
+```bash
+apothem install --harness all --project .
+```
+
+지원되는 모든 이름은 [전체 환경 목록](/docs/harnesses)을, 전체 옵션 세트는
+[install 레퍼런스](/docs/cli-reference/install)를 참조하세요.
+
+## 4. 검증
+
+물화는 작업의 절반일 뿐입니다. `verify`는 환경의 예상 설정 파일이 쓰였고 프로파일이
+선언한 내용과 일치하는지 확인합니다.
+
+```bash
+apothem verify --harness claude-code
+```
+
+```text
+claude-code: managed targets verified.
+```
+
+`verify`는 설정이 누락되었거나 드리프트된 경우 0이 아닌 코드로 종료하므로, 설정
+스크립트의 게이트 역할도 합니다. 등록된 각 어댑터에 대한 머신 전체 헬스 체크는 다음을
+실행하세요.
+
+```bash
+apothem doctor
+```
+
+`doctor`는 각 어댑터의 설치 상태를 보고하며, 등록된 어댑터 중 하나라도 미설치로
+보고하면 0이 아닌 코드로 종료합니다.
+
+## 5. 첫 실행
+
+방금 구성한 프로그래밍 도구 — 이 예에서는 Claude Code — 를 열고 아무 프로젝트에서나
+세션을 시작하세요. 2단계에서 프로파일에 작성한 규칙과 설정은 이미 그 도구 동작의
+일부입니다. 그것이 첫 번째 동작하는 실행입니다 — 하나의 프로파일이 실제 세션을
+형성합니다.
+
+나중에 프로파일을 변경할 때는 재설치 없이 다시 적용하세요.
+
+```bash
+apothem update --harness claude-code
+```
+
+## 다음 단계
+
+- [환경 더 추가하기](/docs/install/harness-setup) — 도구마다 3단계를 반복합니다.
+- [첫 규칙 작성하기](/docs/usage/writing-rules) — 모든 환경이 상속하는 단위입니다.
+- [플랜 만들기](/docs/usage/authoring-plans) — 완전한 미션을 결정적 계획 파이프라인에
+  통과시킵니다.
+- [CLI 레퍼런스](/docs/cli-reference) — 모든 명령, 옵션, 종료 코드.

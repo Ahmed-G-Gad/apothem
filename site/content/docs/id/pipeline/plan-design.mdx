@@ -1,0 +1,130 @@
+---
+title: "/plan-design"
+description: "/plan-design — Menghasilkan artefak desain arsitektur yang komprehensif di `_inputs/design.md`."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Peran:** Arsitek
+**Posisi pipeline:** kondisional, pasca-tinjau, pra-eksekusi
+
+Menghasilkan artefak desain arsitektur di `_inputs/design.md` ketika suite
+rencana memiliki pekerjaan ber-arsitektur. Ini sengaja dibuat kondisional: suite
+prosa, dokumentasi, metadata, atau fixture sempit berlanjut dari `/plan-review`
+langsung ke `/plan-execute`; suite yang mengubah komponen, antarmuka, skema,
+aliran data, adapter, topologi rilis, batas keamanan, atau perilaku runtime
+melewati `/plan-design` terlebih dahulu.
+
+## Pemanggilan kanonis
+
+```bash
+/plan-design path/to/plan-suite/
+```
+
+Dengan argumen:
+
+```bash
+/plan-design [path/to/plan-suite/] [--refine-existing] [--dry-run]
+```
+
+## Masukan
+
+Suite rencana yang ditinjau + `_spec/spec.md` + `_inputs/handoff-manifest.yml` +
+kartu skor tinjauan PASS dari `/plan-review`.
+
+## Keluaran
+
+`_inputs/design.md` ditambah `_inputs/handoff-manifest.yml` yang diperkaya yang
+membawa jalur artefak desain, hasil gerbang desain, hasil cakupan tujuh sumbu,
+dan ringkasan Matriks Pengikatan Dua-Arah.
+
+## Gerbang penerapan
+
+Jalankan `/plan-design` ketika setidaknya satu fase hilir menyatakan atau
+menyiratkan:
+
+- Perubahan tata-letak sumber, batas paket, batas adapter, atau batas modul.
+- Antarmuka publik, protokol, skema, kontrak konfigurasi, atau perilaku CLI.
+- Aliran data antar-komponen, pengurutan siklus-hidup, transisi keadaan, atau
+  tepi dependensi.
+- Arsitektur keamanan, kinerja, konkurensi, observabilitas, penyebaran, rilis,
+  atau rantai pasok.
+- Lintasan `/architecture-review` berikutnya yang harus menelusuri implementasi
+  kembali ke sebuah artefak desain.
+
+Lewati `/plan-design` ketika suite terbatas pada suntingan teks, penyegaran
+inventaris yang dihasilkan, pembaruan fixture sempit, perbaikan dokumentasi
+sekali pakai, atau pekerjaan lain yang implementasinya dapat diverifikasi tanpa
+permukaan jejak arsitektur. Jalur lewat bersifat eksplisit: `/plan-review`
+mencatat klasifikasi non-arsitektur, lalu `/plan-execute` melanjutkan dari suite
+rencana yang ditinjau.
+
+## Hilir
+
+`/plan-execute` mengonsumsi artefak desain untuk fase ber-arsitektur.
+`/architecture-review` mengonsumsi artefak yang sama selama Urutan Tinjauan
+Audit. Jika `_inputs/design.md` tidak ada untuk pekerjaan ber-arsitektur,
+tinjauan arsitektur berhenti dan mengarahkan-ulang suite kembali melalui
+`/plan-design`.
+
+## Fase alur kerja
+
+Perintah ini mengikuti enam fase transformasi khusus-arsitektur:
+
+1. **Penyerapan masukan** — Membaca suite yang ditinjau, kartu skor, keluaran
+   fase, dan manifes serah-terima; memblokir pada bukti tinjauan yang hilang atau
+   gagal di SHARED+.
+2. **Dekomposisi arsitektur** — Menelusuri Arsitektur, Konkurensi, Kinerja,
+   Keamanan, Pengujian, Tooling, dan Observabilitas; mengidentifikasi komponen,
+   tepi, dan pertanyaan arsitektur terbuka.
+3. **Desain antarmuka komponen** — Mendefinisikan antarmuka publik, kontrak
+   protokol, skema, invarian, mode kegagalan, dan batas inversi dependensi.
+4. **Ratifikasi pengikatan antar-komponen** — Menutup setiap tepi hulu, hilir,
+   sejajar, kriteria, dan jangkar; mengeluarkan Matriks Pengikatan Dua-Arah
+   ketika graf komponen melewati ambang matriks.
+5. **Pengeluaran artefak desain** — Menulis `_inputs/design.md` dengan bagian
+   komponen, diagram, rekaman keputusan, hasil validasi, dan pengikatan.
+6. **Gerbang validasi desain** — Menjalankan gerbang pra-pengeluaran lima-belas
+   palang; memperbarui `_inputs/handoff-manifest.yml` hanya setelah desain lolos.
+
+## Bentuk artefak desain
+
+`_inputs/design.md` yang dikeluarkan berisi:
+
+- Ringkasan eksekutif dengan hitungan komponen dan cakupan tujuh sumbu.
+- Satu bagian per komponen utama, diurutkan dari permukaan domain dalam menuju
+  adapter dan permukaan operator luar.
+- Diagram Mermaid arsitektur, urutan, keadaan, atau dependensi di tempat
+  strukturnya akan ambigu jika tidak digambarkan.
+- Rekaman keputusan arsitektur yang telah final dengan alternatif, kompromi, dan
+  catatan reversibilitas.
+- Hasil gerbang validasi dan Matriks Pengikatan Dua-Arah bila berlaku.
+- Pengikatan lima-arah artefak itu sendiri menuju permukaan perencanaan hulu dan
+  hilir.
+
+## Mode kegagalan
+
+| Gejala | Penyebab | Pemulihan |
+|---------|-------|----------|
+| Prasyarat tak lengkap | Fase dependen belum selesai | Selesaikan dulu fase hulu |
+| Gerbang kualitas FAIL | Keluaran tidak memenuhi standar | Perbaiki keluaran dan jalankan ulang |
+| Suite yang ditinjau hilang | Suite rencana atau kartu skor tinjauan tidak ada | Jalankan `/plan-generate`, lalu `/plan-review` |
+| Suite non-arsitektur | Tidak ada fase yang membutuhkan permukaan jejak arsitektur | Catat lewat dan lanjutkan ke `/plan-execute` |
+| Tinjauan arsitektur memblokir | `_inputs/design.md` tidak ada untuk implementasi ber-arsitektur | Jalankan `/plan-design`, lalu jalankan-ulang `/architecture-review` |
+
+## Contoh
+
+```bash
+# Dry-run untuk mempratinjau penerapan, hitungan komponen, dan pertanyaan terbuka
+/plan-design --dry-run
+
+# Keluarkan desain untuk suite ber-arsitektur yang dinamai
+/plan-design path/to/plan-suite/
+```
+
+## Referensi silang
+
+- [Gambaran umum pipeline](/docs/pipeline)
+- [/plan-execute](/docs/pipeline/plan-execute)
+- [/architecture-review](/docs/pipeline/architecture-review)
+- [Templat Suite Rencana Induk](/docs/reference/commands)

@@ -1,0 +1,70 @@
+---
+title: "/research-analysis"
+description: "/research-analysis — Menganalisis data mentah sesuai rencana prapendaftaran: uji yang direncanakan, ukuran efek dengan interval kepercayaan, pemeriksaan ketangguhan, dan deviasi yang diungkapkan."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Peran:** Peneliti utama (analisis)
+**Posisi pipeline:** tengah-rantai
+
+Menganalisis data mentah sesuai rencana prapendaftaran — menjalankan uji statistik yang direncanakan, melaporkan ukuran efek dengan interval kepercayaan (bukan hanya nilai p), menerapkan koreksi perbandingan ganda jika berlaku, menjalankan pemeriksaan ketangguhan / sensitivitas, dan mengungkapkan setiap deviasi dari prapendaftaran.
+
+## Pemanggilan kanonis
+
+```bash
+/research-analysis
+```
+
+Dengan argumen:
+
+```bash
+/research-analysis [path/to/research-suite/]
+```
+
+## Masukan
+
+Data mentah di lokasi alami host yang dicatat oleh tahap eksperimen, ditambah `_inputs/preregistration.md` (rencana analisis yang dibekukan).
+
+## Keluaran
+
+`_outputs/analysis.md` (uji terprapendaftar dengan ukuran efek dan IK, koreksi perbandingan ganda, pemeriksaan ketangguhan, dan deviasi yang diungkapkan) + gambar / tabel di lokasi alami host.
+
+## Hilir
+
+/research-paper (konsumen hilir)
+
+## Fase alur kerja
+
+Perintah ini mengikuti alur kerja pipeline `/research` standar:
+
+1. **Muat konteks** — Baca data mentah dan prapendaftaran.
+2. **Verifikasi Gerbang Urutan** — Konfirmasi bahwa keluaran eksperimen ada; jika tidak, hentikan dengan `Blocked: run /research-experiment first`.
+3. **Analisis** — Jalankan uji terprapendaftar; laporkan ukuran efek + IK; koreksi perbandingan ganda; jalankan pemeriksaan ketangguhan / sensitivitas.
+4. **Ungkapkan deviasi** — Catat setiap penyimpangan dari rencana terprapendaftar.
+5. **Perbarui manifes serah terima** — Catat jalur analisis dan gambar / tabel.
+6. **Pancarkan analisis** — `_outputs/analysis.md` + gambar / tabel.
+
+## Landasan ketelitian
+
+Hasil stokastik dilaporkan sebagai terbaik, rerata, median, simpangan baku, dan terburuk lintas pengulangan, dengan kurva konvergensi dan plot distribusi. Perbandingan memakai uji nonparametrik — uji peringkat-bertanda berpasangan secara pasangan-demi-pasangan, uji peringkat omnibus dengan koreksi pasca-hoc lintas metode — dilaporkan dengan ukuran efek superioritas-stokastik dan diagram perbedaan-kritis. Sebuah hasil naik ke makalah hanya ketika ia melampaui gerbang-kenaikan: ia mengungguli komparatornya secara meyakinkan dan signifikan, dan pelolosan itu terlog dalam buku-jalan yang dapat diaudit.
+
+## Mode kegagalan
+
+| Gejala | Penyebab | Pemulihan |
+|---------|-------|----------|
+| Blocked: run /research-experiment first | Tidak ada data mentah | Jalankan `/research-experiment` untuk menghasilkan data + log |
+| Nilai p dilaporkan tanpa ukuran efek | Pelaporan statistik tidak lengkap | Laporkan ukuran efek + interval kepercayaan |
+| Deviasi analisis yang tidak diungkapkan | Rencana menyimpang secara diam-diam | Ungkapkan deviasi terhadap prapendaftaran |
+
+## Contoh
+
+```bash
+# Menganalisis data mentah sesuai rencana prapendaftaran
+/research-analysis path/to/research-suite/
+```
+
+## Referensi silang
+
+- [Ikhtisar pipeline](/docs/pipeline)
+- [Referensi perintah](/docs/reference/commands)

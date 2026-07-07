@@ -1,0 +1,41 @@
+---
+title: "`CLAUDE.md`"
+description: "A configuração do ecossistema, sempre carregada, que fornece contexto de base a cada interação, com sete seções cobrindo o conjunto de planejamento, identidade, diretórios, níveis de governança, diretivas, mandatos e registros."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+`CLAUDE.md` é a configuração do ecossistema que é sempre carregada. O runtime do
+harness anfitrião o carrega em cada interação, então seu
+conteúdo é o *contexto de base* que todo outro artefato estende.
+
+## Seções
+
+| Seção | Propósito |
+|---------|---------|
+| §1 Conjunto de planejamento | Nomeia o modelo mestre do conjunto de planejamento e os oito comandos `/plan-<stage>` |
+| §2 Identidade cognitiva e arquitetura de software | Declara o papel de Arquiteto de Software Sênior e a postura criativa |
+| §3 Diretórios de artefatos | Raízes em disco por classe (regras, comandos, habilidades, trabalhadores delegados, etc.) |
+| §4 Governança escalada por seriedade | Lente de escalonamento de quatro níveis (EXPLORING / PERSONAL_USE / SHARED / PUBLIC_LAUNCH) |
+| §5 Diretivas operacionais | Frameworks de resolução de problemas, descoberta estratégica e comunicação |
+| §6 Mandatos transversais | O registro CM-N (CM-1 até CM-28) |
+| §7 Registros | Sub-registros para comandos, regras, trabalhadores delegados, hooks, habilidades, evolução e classes vazias |
+
+## Convenções de identificador de mandato
+
+Três prefixos carregam significados distintos:
+
+- **CM-N** — mandato de configuração, definido no conjunto de regras
+  (`src/apothem/rules/operational-mandates.md` e os arquivos de regra de cada mandato).
+- **TM-N** — mandato de modelo, definido em
+  `src/apothem/skills/plan-suite/master-template.md` §4.
+- **CP-N** — princípio central, definido no mesmo modelo §6.
+
+O modelo do conjunto de planejamento é o registro canônico de TM/CP; as etapas do
+pipeline `/plan` resolvem as referências cruzadas através desse arquivo.
+
+## Veja também
+
+- [Regras](/docs/reference/rules) — os arquivos de regra que operacionalizam CM-1 até CM-28.
+- [Comandos](/docs/reference/commands) — as etapas do pipeline `/plan` que a âncora do §1 Conjunto de planejamento nomeia.
+- [Hooks](/docs/reference/hooks) — a camada de hooks que aplica CM-7, CM-22 e CM-24.

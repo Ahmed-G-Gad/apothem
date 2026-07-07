@@ -1,0 +1,80 @@
+---
+title: "rollback"
+description: "CLI-Referenz für den Befehl apothem rollback."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Stellt einen Harness in den Zustand vor seiner aufgezeichneten Installation zurück.
+
+## Übersicht
+
+```
+apothem rollback --harness NAME|all [--install-id ULID | --last] [--yes]
+                 [--project PATH]
+                 [--quiet|-q] [--verbose|-v]
+                 [--format plain|json] [--json] [--no-color]
+```
+
+`rollback` rekonstruiert für jeden ausgewählten Harness die Bytes von vor der Installation aus der Apothem-Backup-Wurzel. Es löst den aufgezeichneten Installationsdurchlauf auf — standardmäßig den neuesten oder den durch `--install-id` benannten —, stellt jedes von dieser Installation erfasste Backup wieder her und hängt anschließend einen `rollback`-Eintrag an das Harness-Ledger an.
+
+Pro Harness wird nach Bestätigung gefragt, sofern `--yes` nicht angegeben ist. `--install-id` und `--last` wählen den Installationsdurchlauf aus und schließen sich gegenseitig aus.
+
+## Optionen
+
+| Option | Beschreibung |
+|---|---|
+| `--harness NAME` | Zurückzusetzender Harness-Adapter oder `all` für das registry-weite Set (erforderlich). |
+| `--install-id ULID` | Setzt den benannten Installationsdurchlauf zurück. Standardmäßig die neueste aufgezeichnete Installation. |
+| `--last` | Setzt die neueste aufgezeichnete Installation zurück (der Standard; die explizite Form). Schließt sich mit `--install-id` gegenseitig aus. |
+| `--yes` | Überspringt die Bestätigungsabfrage pro Harness. |
+| `--project PATH` | Projektwurzel für Harnesses mit Projektgeltungsbereich. Erforderlich, wenn das ausgewählte Set Adapter mit Projektgeltungsbereich enthält. |
+| `--quiet`, `-q` | Unterdrückt informative Ausgaben; nur Fehler werden ausgegeben. |
+| `--verbose`, `-v` | Gibt zusätzliche Diagnoseausgaben aus. |
+| `--format plain\|json` | Ausgabeformat (Standard: `plain`). |
+| `--json` | Kurzform für `--format json`. |
+| `--no-color` | Deaktiviert ANSI-Farbcodes in der Ausgabe. |
+| `-h`, `--help` | Zeigt die Hilfe an und beendet. |
+
+## JSON-Ausgabe
+
+```json
+{
+  "status": "success",
+  "command": "rollback",
+  "action": "rolled_back",
+  "harness": "claude-code",
+  "profile_path": null,
+  "project": null,
+  "files_written": [],
+  "results": [],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+Jedes wiederhergestellte Ziel erscheint in `results` mit `"operation": "rollback"` und einem `outcome` von `created` oder `updated` (und in `files_written`). Ein Ziel, das die Installation neu angelegt hat — ohne vorherige Bytes zum Wiederherstellen —, wird mit `"outcome": "skipped"` gemeldet; eine fehlgeschlagene Wiederherstellung ist `"outcome": "error"`. Wenn kein passender Installationseintrag existiert, meldet der Befehl einen `rollback.no_record`-Fehler mit `"status": "error"`.
+
+## Beispiele
+
+```bash
+apothem rollback --harness claude-code --last
+apothem rollback --harness claude-code --install-id 01J9Z… --yes
+apothem rollback --harness cursor --project . --last --json
+```
+
+## Exit-Codes
+
+| Code | Bedeutung |
+|---|---|
+| 0 | Erfolgreich zurückgesetzt oder nichts wiederherzustellen (die Installation hat keine Backups erfasst) |
+| 1 | Erwarteter Fehler — kein Installationseintrag, widersprüchliche Selektoren, unbekannter Harness, fehlende Projektwurzel oder abgebrochene Bestätigung |
+| 2 | Teilweise Wiederherstellung, nachdem mindestens ein Ziel zurückgesetzt wurde |
+
+## Siehe auch
+
+- [apothem install](/docs/cli-reference/install) — installiert eine Harness-Konfiguration
+- [apothem update](/docs/cli-reference/update) — Neuinstallation aus dem aktuellen geteilten Profil
+- [apothem uninstall](/docs/cli-reference/uninstall) — entfernt eine Harness-Konfiguration
+- [apothem status](/docs/cli-reference/status) — meldet Installations-, Verifizierungs- und Drift-Status

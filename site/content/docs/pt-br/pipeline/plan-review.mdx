@@ -1,0 +1,68 @@
+---
+title: "/plan-review"
+description: "/plan-review — Auditoria forense de uma suite de plano existente — fidelidade da prosa, consistência, qualidade."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Papel:** Auditor
+**Posição no pipeline:** intermediária
+
+Auditoria forense de uma suite de plano existente — fidelidade da prosa, consistência, qualidade.
+
+## Invocação canônica
+
+```bash
+/plan-review
+```
+
+Com argumentos:
+
+```bash
+/plan-review [path/to/plan-suite/] [--focus AREA] [--dry-run]
+```
+
+## Entradas
+
+Suite de plano gerada + `_inputs/handoff-manifest.yml` de `/plan-generate`.
+
+## Saídas
+
+Cartões de pontuação de revisão em `PLAN-NOTES.md` (`## Review Scorecards`), um Resumo de Revisão em `PROGRESS.md`, mapas de impacto de revisão por achado em `PLAN-NOTES.md` (relatórios grandes e duráveis em `_outputs/`) e o `_inputs/handoff-manifest.yml` aumentado que carrega o veredicto da revisão.
+
+## Downstream
+
+`/plan-design` (condicional — apenas suites com arquitetura) e, em seguida, `/plan-execute`; para suites sem arquitetura, `/plan-execute` consome os Cartões de pontuação de revisão diretamente para condicionar a execução em SHARED+.
+
+## Fases do fluxo de trabalho
+
+O comando executa uma auditoria forense, cega e linha por linha, e depois refina por meio de perguntas e respostas interativas:
+
+1. **Carregar contexto** — Lê cada arquivo da suite de plano (`phases/**/PHASE.md`, arquivos de infraestrutura, relatórios) e o Manifesto de Transferência a montante; recusa com `Blocked: run /plan-generate first` quando a suite está ausente.
+2. **Auditar** — Varre as dimensões (fidelidade da prosa, consistência interna, completude, qualidade, risco, padrões, domínio, arquitetura, qualidade criativa) sob o Mandato de Revisão Cega.
+3. **Triar achados** — Dispõe cada achado (aceitar · revisar · rejeitar · adiar) pelo canal de consulta estruturada com contagens de gravidade por achado.
+4. **Executar o portão de pré-emissão** — Executa o portão de quinze barras contra o relatório de revisão e os cartões de pontuação atualizados; a falha bloqueia a promoção.
+5. **Emitir a revisão** — Escreve os Cartões de pontuação de revisão em `PLAN-NOTES.md`, o Resumo de Revisão em `PROGRESS.md` e o Manifesto de Transferência aumentado.
+
+## Modos de falha
+
+| Sintoma | Causa | Recuperação |
+|---------|-------|----------|
+| Blocked: run /plan-generate first | Nenhuma suite gerada | Execute `/plan-generate` para produzir a suite que este comando audita |
+| Achados em aberto permanecem | A auditoria revelou defeitos não resolvidos | Disponha cada achado (aceitar · revisar · rejeitar · adiar) antes do veredicto terminal |
+| Cartão de pontuação FAIL | Uma dimensão fica abaixo do limiar CONDITIONAL | Trate a dimensão em falha e reexamine |
+
+## Exemplos
+
+```bash
+# Dry-run para pré-visualizar o escopo da auditoria
+/plan-review --dry-run
+
+# Auditar uma suite de plano nomeada, focada em uma área
+/plan-review path/to/plan-suite/ --focus architecture
+```
+
+## Referências cruzadas
+
+- [Visão geral do pipeline](/docs/pipeline)
+- [Referência de comandos](/docs/reference/commands)

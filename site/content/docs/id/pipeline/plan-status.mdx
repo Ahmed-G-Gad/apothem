@@ -1,0 +1,67 @@
+---
+title: "/plan-status"
+description: "/plan-status — Pelapor progres suite plan hanya-baca — memancarkan status tanpa memodifikasi berkas apa pun."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Peran:** Pelapor
+**Posisi pipeline:** hanya-baca
+
+Pelapor progres suite plan hanya-baca — memancarkan status tanpa memodifikasi berkas apa pun.
+
+## Pemanggilan kanonik
+
+```bash
+/plan-status
+```
+
+Dengan argumen:
+
+```bash
+/plan-status [path/to/plan-suite/] [--verbose]
+```
+
+## Masukan
+
+Suite plan apa pun dalam keadaan siklus hidup apa pun — membaca `PROGRESS.md`, `PLAN-NOTES.md`, `MASTER-PLAN.md`, dan laporan `phases/`.
+
+## Keluaran
+
+Laporan status strategis yang ditulis ke aliran keluaran operator. Perintah ini hanya-baca — tidak membuat dan tidak memodifikasi berkas apa pun.
+
+## Hilir
+
+Digunakan secara mandiri untuk inspeksi progres — ortogonal terhadap urutan kanonik, dapat dipanggil secara hanya-baca pada titik mana pun.
+
+## Fase alur kerja
+
+Perintah ini hanya-baca — membaca berkas pelacakan suite dan melapor; tidak menulis apa pun:
+
+1. **Memuat konteks** — Membaca `PROGRESS.md`, `PLAN-NOTES.md`, `MASTER-PLAN.md`, dan memindai `phases/` untuk laporan yang ada.
+2. **Menilai status** — Mensurvei dimensi tugas / fase / artefak dan membaca Kontrak Pelanjutan.
+3. **Memancarkan laporan status** — Menyajikan status penyelesaian, pelacak fase, dan analisis strategis langsung ke operator.
+4. **Pemeriksaan acak** — Dengan `--verbose`, menilai kesehatan suite dan mengutip bukti pemeriksaan acak (tautan markdown, rentang baris, SHA commit) terhadap berkas yang ada tanpa memodifikasi apa pun.
+
+## Mode kegagalan
+
+| Gejala | Penyebab | Pemulihan |
+|---------|-------|----------|
+| Berkas pelacakan wajib hilang | Suite plan tidak lengkap | Munculkan kesenjangan sebagai temuan; jalankan `/plan-generate` untuk membuat suite |
+| Berkas pelacakan rusak | Bagian terpotong atau tak dapat diurai | Sebutkan ketiadaan / kontradiksi dalam laporan; perbaikan dirutekan ke perintah penulis |
+| Field absen atau kontradiktif antar berkas | Penyimpangan pelacakan | Laporkan kontradiksi secara eksplisit; jangan menyintesis nilai yang hilang |
+
+## Contoh
+
+```bash
+# Laporkan suite plan paling baru
+/plan-status
+
+# Penilaian kesehatan verbose terhadap suite plan bernama
+/plan-status path/to/plan-suite/ --verbose
+```
+
+## Referensi silang
+
+- [Ikhtisar pipeline](/docs/pipeline)
+- [Referensi perintah](/docs/reference/commands)

@@ -1,0 +1,44 @@
+---
+title: "大規模コードベースのオンボーディング"
+description: "Apothem の大規模コードベース向けセットアップチェックリスト：コンテキスト階層、スキル、フック、シンボル検索、レビューの頻度。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+リポジトリが 1 回のプロンプトには広すぎる場合、全ツリー走査が高コストな場合、
+あるいは各サービスが独自のビルド・テストコマンドを持つ場合に、このページを使ってください。
+
+## ここから始める
+
+1. 対象環境のアダプターをインストールまたは更新し、`apothem verify --harness <name>` を実行します。
+2. ルートのコンテキスト面は短く保ちます。プロジェクトマップ、重要なコマンド、ポインタのみにします。
+3. 対象環境が階層化コンテキストをサポートする場合は、ローカルな規約をコードのそばに置きます。
+4. 専門的な手順は、パスフィルター付きの `skills/`、`rules/`、またはコマンドドキュメントへ移します。
+5. 広範な探索には読み取り専用の委任ワーカーを使い、編集前にコンパクトな所見の集合を持ち帰ります。
+6. 文書化されている箇所では、キャッシュ・生成物・ビルド・ベンダーの除外を環境の無視面に追加します。
+7. 利用可能なら LSP やシンボルツールを使い、そうでなければ `rg`、絞り込んだパス、明示的なファイル範囲を使います。
+8. 触れたコードを覆う最も狭い lint またはテストコマンドを実行し、リリース前に完全なゲートを実行します。
+
+## 実践対照表
+
+| 実践 | Apothem の結びつき |
+|----------|-----------------|
+| 軽量な常時ロードのコンテキスト | `src/apothem/rules/token-budget-discipline.md` が常時オンのルールを短く保ちます。ルートのコンテキストファイルはポインタと重要な落とし穴のみを担うべきです。 |
+| オンデマンドの専門知識 | `src/apothem/skills/README.md` が `SKILL.md` 規約を定義します。パスフィルター付きの伴走ルールが、狭い手順を基底コンテキストの外に保ちます。 |
+| 階層化コンテキスト | 各環境の行は `src/apothem/harnesses/<name>/capabilities.yml` で `layered_context_surface` を宣言します。`STANDARD-CONVENTION-PIN.md` がその行の権威であり続けます。 |
+| 隔離された探索 | [委任ワーカーガイド](/docs/usage/using-agents) は、別個のコンテキストウィンドウとコンパクトな返却契約を結びつけます。 |
+| シンボルナビゲーション | `lsp_symbol_navigation` は追跡対象の能力セルです。ベンダーがサポートするプラグインまたはツール面が固定されるまで、行は `tracked-gap` のままです。 |
+| 無視面 | `context_ignore_surface` が文書化された除外メカニズムを記録します。Claude Code アダプターは、`settings.json` の `permissions.deny` を通じて生成物とキャッシュの除外を投射します。 |
+| フック学習 | 通過クラスのフックは沈黙を保ちます。繰り返し現れる所見は、`src/apothem/rules/persistent-conventions-vigilance.md` の成果物進化サイクルを通じてルーティングされます。 |
+| 定期レビュー | 3〜6 か月ごと、および主要な環境やモデルの変更後に、`*-maintenance` 計画の頻度を用いて構成レビューを実行します。 |
+
+## メンテナンスメモ
+
+機械可読の環境能力行は、4 つの大規模コードベースセルを携えます。
+`context_ignore_surface`、`layered_context_surface`、`lsp_symbol_navigation`、
+そして `hook_learning_capture` です。ベンダー面が変化するたびに、これらのセルを兄弟の
+`STANDARD-CONVENTION-PIN.md` と同期させてください。
+
+出典：
+[大規模コードベースの実践](https://claude.com/blog/how-claude-code-works-in-large-codebases-best-practices-and-where-to-start)、
+[設定の権限](https://docs.anthropic.com/en/docs/claude-code/settings)。

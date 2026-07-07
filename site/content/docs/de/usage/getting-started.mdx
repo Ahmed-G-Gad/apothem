@@ -1,0 +1,77 @@
+---
+title: "Kern-Workflows"
+description: "Die vier Kern-Workflows von Apothem — Profil, Regeln, Pläne und das Konformitätsgate."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem bietet vier Kernfähigkeiten: ein gemeinsames Governance-Profil, einen
+Regelkorpus, eine strukturierte Planungs-Pipeline und ein Konformitätsgate in
+Echtzeit.
+
+<Callout title="Neu hier?">
+  Für eine geführte Tour von null bis zum ersten Lauf beginne mit dem
+  [Erste-Schritte-Tutorial](/docs/tutorials/getting-started). Diese Seite ist
+  eine Schnellreferenz zu den vier Kern-Workflows, sobald du eingerichtet bist.
+</Callout>
+
+## Das gemeinsame Profil
+
+Dein Apothem-Profil liegt unter `~/.config/apothem/profile.yaml`, sofern du
+nicht `--profile PATH` übergibst. Es ist die einzige Quelle der Wahrheit, aus der
+jeder Harness-Adapter seine native Konfiguration ableitet:
+
+```yaml
+identity:
+  name: "Example User"
+preferences:
+  style: "concise"
+rules:
+  - "Validate external input before writing files."
+```
+
+Erstelle und prüfe das Profil:
+
+```bash
+apothem profile init
+apothem profile show --json
+```
+
+## Erste Regel
+
+Füge dem Profil-YAML gemeinsame Regeln hinzu und materialisiere anschließend den
+ausgewählten Harness neu. Enthalten diese Regeln Beispieldaten, verwende fiktive
+Platzhalter, damit keine echte Identität und keine echten Anmeldedaten in einem
+geteilten Profil oder einem CI-Lauf landen.
+
+```bash
+apothem profile set rules '["Always include a brief summary at the end of every response."]'
+apothem update --harness claude-code
+apothem verify --harness claude-code
+```
+
+## Erster Plan
+
+Die `/plan`-Pipeline läuft innerhalb deines Harness als
+Slash-Befehle, nicht über die `apothem`-Binärdatei. Sobald ein Harness
+installiert ist, starte einen Plan aus dem Chat des Werkzeugs:
+
+```text
+/plan-spec
+```
+
+`/plan-spec` verfeinert deinen Fließtext zu einer Spezifikation, und
+`/plan-generate` materialisiert eine Plan-Suite unter
+`<project-root>/.apothem/plans/{suite}/`. Den vollständigen Ablauf findest du in der
+[Pipeline-Befehlsreferenz](/docs/pipeline).
+
+## Konformitätsgate
+
+Vom Repository-Stammverzeichnis ausführen:
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+Führt alle mechanischen Konformitätsprüfungen aus und meldet bestanden/nicht
+bestanden pro Schranke.

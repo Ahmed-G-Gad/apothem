@@ -1,0 +1,69 @@
+---
+title: "/code-audit"
+description: "/code-audit — Audit kode forensik lintas-berkas pada skala korpus repositori."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Peran:** Auditor
+**Posisi pipeline:** benteng
+
+Audit kode forensik lintas-berkas pada skala korpus repositori.
+
+## Pemanggilan kanonis
+
+```bash
+/code-audit
+```
+
+Dengan argumen:
+
+```bash
+/code-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+```
+
+## Masukan
+
+Repositori hos pada keadaan siklus-hidup mana pun
+
+## Keluaran
+
+Temuan tingkat-korpus + REPORT.md
+
+## Hilir
+
+Tahap audit kode forensik dari Urutan Audit Tinjauan
+
+## Fase alur kerja
+
+Perintah ini mengikuti alur kerja pipeline `/plan` standar:
+
+1. **Muat konteks** — Membaca suite rencana, aturan, dan Kontrak Pelanjutan.
+2. **Verifikasi prasyarat** — Memastikan fase dependen telah selesai.
+3. **Jalankan tugas** — Menjalankan misi perintah.
+4. **Verifikasi keluaran** — Memastikan semua keluaran yang dideklarasikan ada dan lolos gerbang kualitas.
+5. **Perbarui PROGRESS.md** — Mencatat keluaran terverifikasi dalam Registri Keluaran Fase.
+6. **Keluarkan REPORT.md** — Bukti rilis gerbang pra-pengeluaran tercatat.
+
+## Mode kegagalan
+
+| Gejala | Penyebab | Pemulihan |
+|---------|-------|----------|
+| Prasyarat belum lengkap | Fase dependen belum selesai | Selesaikan dulu fase hulu |
+| Gerbang kualitas FAIL | Keluaran tidak memenuhi standar | Perbaiki keluaran dan jalankan ulang |
+| Berkas masukan hilang | Berkas suite rencana tidak ada | Jalankan `/plan-generate` untuk membuatnya |
+
+## Contoh
+
+```bash
+# Dry-run to preview what would happen
+/code-audit --dry-run
+
+# Execute against a named plan suite
+/code-audit path/to/plan-suite/
+```
+
+## Referensi silang
+
+- [Gambaran umum pipeline](/docs/pipeline)
+- [Templat Suite Rencana Induk](/docs/reference/commands)

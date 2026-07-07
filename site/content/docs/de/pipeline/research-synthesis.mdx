@@ -1,0 +1,70 @@
+---
+title: "/research-synthesis"
+description: "/research-synthesis — Gleicht die gesammelten Quellen zu einer Landkarte des Stands der Technik und einer Literaturmatrix ab, verifiziert jede Behauptung adversarial und benennt die explizite Forschungslücke."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rolle:** Hauptforscher (Synthese)
+**Pipeline-Position:** Mitte der Kette
+
+Gleicht die gesammelten Quellen zu einer Landkarte des Stands der Technik + Literaturmatrix ab und benennt die explizite Forschungslücke, die die Arbeit schließt. Jede tragende Behauptung wird adversarial gegen zwei oder mehr unabhängige Quellen verifiziert, standardmäßig widerlegend.
+
+## Kanonischer Aufruf
+
+```bash
+/research-synthesis
+```
+
+Mit Argumenten:
+
+```bash
+/research-synthesis [path/to/research-suite/]
+```
+
+## Eingaben
+
+`_inputs/source-ledger.md` (der gereihte, gesiebte Quellenindex) plus die Extraktionen pro Quelle unter `sources/`.
+
+## Ausgaben
+
+`_inputs/synthesis.md` — die Landkarte des Stands der Technik, die Literaturmatrix, das Register der umstrittenen Befunde und die explizite Lückenaussage in einem einzigen Satz.
+
+## Stromabwärts
+
+/research-proposal (Verbraucher stromabwärts)
+
+## Workflow-Phasen
+
+Der Befehl folgt dem standardmäßigen Workflow der `/research`-Pipeline:
+
+1. **Kontext laden** — Das Quellenregister und die Extraktionen pro Quelle lesen.
+2. **Das Sequenz-Gate verifizieren** — Bestätigen, dass das Quellenregister existiert; andernfalls mit `Blocked: run /research-sources first` anhalten.
+3. **Synthetisieren** — Die Landkarte des Stands der Technik + Literaturmatrix aufbauen; Übereinstimmungen und Widersprüche abgleichen; die explizite Lücke benennen.
+4. **Adversarial verifizieren** — Jede tragende Behauptung wird standardmäßig gegen zwei oder mehr unabhängige Quellen widerlegt.
+5. **Das Übergabemanifest aktualisieren** — Den Synthesepfad und das Register der umstrittenen Behauptungen festhalten.
+6. **Die Synthese ausgeben** — `_inputs/synthesis.md`.
+
+## Rigorositätsuntergrenze
+
+Bevor die Lückenaussage endgültig festgelegt wird, gleicht die Synthese ihre Terminologie, Befunde und Empfehlungen gegen verwandte Schwesterkorpora ab (korpusübergreifende Kohärenz); ein Konflikt wird im Register der umstrittenen Befunde festgehalten, niemals stillschweigend harmonisiert. Die Lücke muss sich zu einem eigenständigen, sparsamen Beitrag auflösen — nicht zu einem, der bereits durch eine bestätigte Behauptung geschlossen ist, und nicht zerlegbar in überlappende, nicht-eigenständige Elemente.
+
+## Fehlermodi
+
+| Symptom | Ursache | Behebung |
+|---------|-------|----------|
+| Blocked: run /research-sources first | Kein Quellenregister | Führen Sie `/research-sources` aus, um `_inputs/source-ledger.md` zu erzeugen |
+| Eine Behauptung überlebt ohne ≥2 Quellen | Unzureichende Untermauerung | Als umstritten oder nicht verifizierbar markieren; nicht behaupten |
+| Keine explizite Lückenaussage | Der Synthese fehlt ein Ziel | Die Lücke in einem einzigen Satz neu ableiten, die die Forschung schließt |
+
+## Beispiele
+
+```bash
+# Die gesammelten Quellen zu einer Landkarte des Stands der Technik + Lücke synthetisieren
+/research-synthesis path/to/research-suite/
+```
+
+## Querverweise
+
+- [Pipeline-Übersicht](/docs/pipeline)
+- [Befehlsreferenz](/docs/reference/commands)

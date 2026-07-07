@@ -1,0 +1,94 @@
+---
+title: "ハーネスレジストリ"
+description: "組み込み Apothem ハーネスアダプターの技術レジストリリファレンス。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+ハーネスレジストリは、CLI、ドキュメント、フィクスチャテスト、規約ピン検証で使用される
+信頼できる唯一の情報源（source-of-truth）としてのアダプターインベントリです。ランタイムの
+ソースは `src/apothem/lib/harness_registry.py` であり、以下の各行はそのレジストリ、各
+アダプターの `capabilities.yml`、および各アダプターの `STANDARD-CONVENTION-PIN.md` まで
+追跡できます。
+
+## レジストリマトリクス
+
+| ハーネス | インストール名 | スコープ | フォーマット | ターゲット | MCP | 規約ピン |
+| --- | --- | --- | --- | --- | --- | --- |
+| Antigravity | `antigravity` | user | markdown | `~/.gemini/GEMINI.md`; `~/.gemini/antigravity-cli/plugins/apothem/` | discovery-pending | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
+| Claude Code | `claude-code` | user | json | `~/.claude/settings.json`; ネイティブの `agents`、`rules`、`skills`、`statuslines`、`output-styles`; `~/.claude/.apothem/support/` | native | `src/apothem/harnesses/claude_code/STANDARD-CONVENTION-PIN.md` |
+| CodeBuddy | `codebuddy` | project | markdown | `<project>/.codebuddy/rules/apothem-rules.md` | native | `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` |
+| Codex | `codex` | user | markdown | `~/.codex/AGENTS.md`; `hooks.json`; `hooks/`; `agents/*.toml`; `~/.agents/skills/`; `~/.config/apothem/` | discovery-pending | `src/apothem/harnesses/codex/STANDARD-CONVENTION-PIN.md` |
+| Cursor | `cursor` | project | mdc | `<project>/.cursor/rules/apothem-rules.mdc` | native | `src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md` |
+| Gemini CLI | `gemini-cli` | project | markdown | `<project>/GEMINI.md`; `<project>/.gemini/{commands,skills,agents}/` | discovery-pending | `src/apothem/harnesses/gemini_cli/STANDARD-CONVENTION-PIN.md` |
+| GitHub Copilot | `github-copilot` | project | markdown | `<project>/.github/copilot-instructions.md` | unsupported | `src/apothem/harnesses/github_copilot/STANDARD-CONVENTION-PIN.md` |
+| GLM (Z.ai) | `glm` | project | toml | `<project>/.apothem/providers/glm.toml` | unsupported | `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md` |
+| Hermes | `hermes` | user | yaml | `~/.hermes/config.yaml`; `~/.hermes/.apothem/support/` | unsupported | `src/apothem/harnesses/hermes/STANDARD-CONVENTION-PIN.md` |
+| Kimi Code | `kimi-code` | project | markdown | `<project>/.kimi-code/.apothem/support/`; `<project>/AGENTS.md` | discovery-pending | `src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md` |
+| Kiro | `kiro` | project | markdown | `<project>/.kiro/steering/apothem-rules.md` | native | `src/apothem/harnesses/kiro/STANDARD-CONVENTION-PIN.md` |
+| Open-Claw | `open-claw` | user | json | `~/.openclaw/openclaw.json`; `~/.openclaw/.apothem/support/` | unsupported | `src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md` |
+| OpenCode | `opencode` | user | json | `~/.config/opencode/opencode.json`; ネイティブの `commands`、`skills`、`agents`; `.apothem/support/` | native | `src/apothem/harnesses/opencode/STANDARD-CONVENTION-PIN.md` |
+| Qwen Code | `qwen-code` | user | json | `~/.qwen/settings.json`; `~/.qwen/QWEN.md`; ネイティブの `commands`、`skills`、`agents`; `.apothem/support/` | native | `src/apothem/harnesses/qwen_code/STANDARD-CONVENTION-PIN.md` |
+| Trae | `trae` | project | markdown | `<project>/.trae/rules/apothem-rules.md` | native | `src/apothem/harnesses/trae/STANDARD-CONVENTION-PIN.md` |
+| Windsurf | `windsurf` | project | markdown | `<project>/.devin/rules/apothem-rules.md` | unsupported | `src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md` |
+| Zed | `zed` | project | markdown | `<project>/.rules` | native | `src/apothem/harnesses/zed/STANDARD-CONVENTION-PIN.md` |
+
+## ペイロードコホートのサポート
+
+ステータス値は `native`、`converted`、`support-tree`、`profile-projected`、`unsupported`、`not-applicable`、`discovery-pending` です。
+
+| ハーネス | ネイティブまたは変換済みペイロード | サポートツリーペイロード | 未サポートまたは保留中の警告 |
+| --- | --- | --- | --- |
+| Antigravity | 変換済みのコマンドと委任ワーカー；ネイティブのスキル、サブワーカーディスパッチ、システムプロンプトテンプレート；プロファイルから投射されたツール制限 | フック、ルール、テンプレート | ステータスライン、出力スタイル；MCP とメモリの発見は保留中 |
+| Claude Code | 変換済みのコマンド；ネイティブのスキル、フック、委任ワーカー、ルール、ステータスライン、出力スタイル、MCP、サブワーカーディスパッチ、ツール制限、メモリ | テンプレート | `CLAUDE.md` は引き続きオペレーターの所有；アダプターが書き込むシステムプロンプトテンプレートはなし |
+| CodeBuddy | ネイティブのルール、MCP、システムプロンプトテンプレート、メモリ；プロファイルから投射されたツール制限 | なし | コマンド、スキル、フック、委任ワーカー、ステータスライン、出力スタイル、サブワーカーディスパッチ |
+| Codex | 変換済みのコマンドと委任ワーカー；ネイティブのスキル、フック、サブワーカーディスパッチ、システムプロンプトテンプレート、メモリ；プロファイルから投射されたツール制限 | ルール、テンプレート | ステータスライン、出力スタイル；Apothem は `config.toml` を上書きしないため MCP の発見は保留中 |
+| Cursor | ネイティブのルール、MCP、システムプロンプトテンプレート；プロファイルから投射されたツール制限 | なし | コマンド、スキル、フック、委任ワーカー、ステータスライン、出力スタイル、サブワーカーディスパッチ、メモリ |
+| Gemini CLI | 変換済みのコマンドと委任ワーカー；ネイティブのスキル、サブワーカーディスパッチ、システムプロンプトテンプレート；プロファイルから投射されたツール制限 | フック、ルール、テンプレート | ステータスライン、出力スタイル；MCP とメモリの発見は保留中 |
+| GitHub Copilot | ネイティブのルールとシステムプロンプトテンプレート；プロファイルから投射されたツール制限 | なし | コマンド、スキル、フック、委任ワーカー、ステータスライン、出力スタイル、MCP、サブワーカーディスパッチ、メモリ |
+| GLM (Z.ai) | なし | なし | コマンド、スキル、フック、委任ワーカー、ルール、テンプレート、ステータスライン、出力スタイル、MCP、サブワーカーディスパッチ、ツール制限、システムプロンプトテンプレート、メモリ —— GLM はネイティブな設定面を持たないモデルバックエンドです |
+| Hermes | 変換済みのコマンド；ネイティブのシステムプロンプトテンプレート；プロファイルから投射されたツール制限 | スキル、フック、委任ワーカー、ルール、テンプレート | ステータスライン、出力スタイル、MCP、サブワーカーディスパッチ |
+| Kimi Code | ネイティブのサブワーカーディスパッチ、システムプロンプトテンプレート、メモリ | コマンド、スキル、フック、委任ワーカー、ルール、テンプレート | ステータスライン、出力スタイル；MCP とツール制限の発見は保留中 |
+| Kiro | ネイティブのルール、MCP、システムプロンプトテンプレート、メモリ；プロファイルから投射されたツール制限 | なし | コマンド、スキル、フック、委任ワーカー、ステータスライン、出力スタイル、サブワーカーディスパッチ |
+| Open-Claw | 変換済みのコマンド；ネイティブのシステムプロンプトテンプレート；プロファイルから投射されたツール制限 | スキル、フック、委任ワーカー、ルール、テンプレート | ステータスライン、出力スタイル、MCP、サブワーカーディスパッチ |
+| OpenCode | 変換済みのコマンドと委任ワーカー；ネイティブのスキル、MCP、サブワーカーディスパッチ、システムプロンプトテンプレート；プロファイルから投射されたツール制限 | フック、ルール、テンプレート | ステータスライン、出力スタイル |
+| Qwen Code | 変換済みのコマンドと委任ワーカー；ネイティブのスキル、フック、MCP、サブワーカーディスパッチ、システムプロンプトテンプレート、メモリ；プロファイルから投射されたツール制限 | ルール、テンプレート | ステータスライン、出力スタイル |
+| Trae | ネイティブのルール、MCP、システムプロンプトテンプレート；プロファイルから投射されたツール制限 | なし | コマンド、スキル、フック、委任ワーカー、ステータスライン、出力スタイル、サブワーカーディスパッチ、メモリ |
+| Windsurf | ネイティブのルールとシステムプロンプトテンプレート；プロファイルから投射されたツール制限 | なし | コマンド、スキル、フック、委任ワーカー、ステータスライン、出力スタイル、MCP、サブワーカーディスパッチ、メモリ |
+| Zed | ネイティブのルール、MCP、システムプロンプトテンプレート；プロファイルから投射されたツール制限 | なし | コマンド、スキル、フック、委任ワーカー、ステータスライン、出力スタイル、サブワーカーディスパッチ、メモリ |
+
+## 検証フック
+
+レジストリは次のチェックを通じて同期が保たれます。
+
+| チェック | 目的 |
+| --- | --- |
+| `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | 各アダプターが最新の規約ピンを持ち、レジストリが依然として 17 個のアダプターを列挙していることを確認します。 |
+| `python -m apothem.conformity.gate --all .` | ドキュメントと実装の準拠性チェックを実行します。 |
+| `python -m pytest` | レジストリのフィクスチャテストとアダプターの契約テストを実行します。 |
+
+## 生成されたハーネスアダプターリファレンス
+
+{/* apothem:generated-reference:start */}
+
+| Harness | Scope | Format | Target paths |
+| --- | --- | --- | --- |
+| Antigravity (`antigravity`) | user | markdown | `~/.gemini/GEMINI.md`<br />`~/.gemini/antigravity-cli/plugins/apothem/` |
+| Claude Code (`claude-code`) | user | json | `~/.claude/.apothem/support/{templates,hooks,conformity,schemas}/`<br />`~/.claude/settings.json`<br />`~/.claude/{agents,rules,skills,statuslines,output-styles}/` |
+| CodeBuddy (`codebuddy`) | project | markdown | `<project>/.codebuddy/rules/apothem-rules.md` |
+| Codex (`codex`) | user | markdown | `~/.agents/skills/`<br />`~/.codex/AGENTS.md`<br />`~/.codex/agents/*.toml`<br />`~/.codex/hooks.json`<br />`~/.codex/hooks/`<br />`~/.config/apothem/{rules,templates}/` |
+| Cursor (`cursor`) | project | mdc | `<project>/.cursor/rules/apothem-rules.mdc` |
+| Gemini CLI (`gemini-cli`) | project | markdown | `<project>/.gemini/.apothem/support/`<br />`<project>/.gemini/{commands,skills,agents}/`<br />`<project>/GEMINI.md` |
+| GitHub Copilot (`github-copilot`) | project | markdown | `<project>/.github/copilot-instructions.md` |
+| GLM (Z.ai) (`glm`) | project | toml | `<project>/.apothem/providers/glm.toml` |
+| Hermes (`hermes`) | user | yaml | `~/.hermes/.apothem/support/`<br />`~/.hermes/config.yaml` |
+| Kimi Code (`kimi-code`) | project | markdown | `<project>/.kimi-code/.apothem/support/`<br />`<project>/AGENTS.md` |
+| Kiro (`kiro`) | project | markdown | `<project>/.kiro/steering/apothem-rules.md` |
+| Open-Claw (`open-claw`) | user | json | `~/.openclaw/.apothem/support/`<br />`~/.openclaw/openclaw.json` |
+| OpenCode (`opencode`) | user | json | `~/.config/opencode/.apothem/support/`<br />`~/.config/opencode/opencode.json`<br />`~/.config/opencode/{commands,skills,agents}/` |
+| Qwen Code (`qwen-code`) | user | json | `~/.qwen/.apothem/support/`<br />`~/.qwen/QWEN.md`<br />`~/.qwen/settings.json`<br />`~/.qwen/{commands,skills,agents}/` |
+| Trae (`trae`) | project | markdown | `<project>/.trae/rules/apothem-rules.md` |
+| Windsurf (`windsurf`) | project | markdown | `<project>/.devin/rules/apothem-rules.md` |
+| Zed (`zed`) | project | markdown | `<project>/.rules` |
+
+{/* apothem:generated-reference:end */}

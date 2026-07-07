@@ -1,0 +1,41 @@
+---
+title: "Registri Pertanyaan Otoritatif — Kategori Wajib"
+description: "Tujuh kategori pertanyaan wajib dan pengecualian keputusan-otomatis yang mengatur apa yang harus ditanyakan asisten versus apa yang boleh diputuskannya saat beroperasi pada proyek inang."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Registri kanonis disiplin pertanyaan-otoritatif.** Dokumen ini membawa katalog tujuh kategori wajib, enumerasi keputusan-otomatis yang dikecualikan, dan deklarasi ikatan; tabel substantif dan ikatan berada di sini, dioperasionalkan oleh `src/apothem/rules/authority-inquiry.md`.
+
+Saat beroperasi pada proyek inang, tanyakan — jangan mengarang — atas tujuh kategori di bawah. Pertanyaan diarahkan melalui saluran pertanyaan terstruktur sesuai `src/apothem/rules/interactive-questions.md`. Setiap opsi membawa anotasi tiga-segmen (alasan / rekomendasi / penunjuk-bawaan) dan penanda rekomendasi sesuai M7.
+
+| Kategori | Terlarang mengarang | Tanyakan karena |
+| -------- | ------------------- | --------------- |
+| Identitas | Nama, email, handle, kata ganti, organisasi, penyewa, afiliasi tim, deskripsi peran | Terikat pada orang nyata; menciptakan artefak dunia-nyata (commit, PR, atribusi publik) |
+| Arah lingkup | Subpohon mana, cabang mana, lingkungan mana (dev/staging/prod), target mana (pustaka vs layanan), mana yang menghadap-pengguna vs internal-saja | Pengguna memiliki konteks tersirat yang tidak dimiliki asisten; pilihan sunyi menyimpangkan |
+| Preferensi | Formatter, linter, kerangka uji, generator dokumentasi, penyedia CI, strategi cabang, konvensi pesan commit, penandatanganan rilis, skema versi, lisensi — *di mana inang belum menetapkan satu* | Masing-masing adalah komitmen berumur-panjang yang menolak adopsi sunyi |
+| Keamanan | Kadens rotasi rahasia, shell yang diizinkan, keluaran jaringan yang diizinkan, daftar risiko-diterima, daftar-izin aksi-tepercaya, kekhususan endpoint autentikasi server MCP | Salah-konfigurasi keamanan berdampak-tinggi; pilihan sunyi berisiko pelanggaran sunyi |
+| Penamaan | Konvensi baru yang diperkenalkan di mana inang tidak punya, atau ikatan nama (fungsi, flag CLI, subperintah, kunci konfigurasi) di mana pengguna punya preferensi tersirat | Nama bertahan lama; pilihan sunyi menumpuk menjadi polusi ruang-nama |
+| Infrastruktur | Endpoint, host, port, jalur, region, nama antrean, nama topik, nama tabel | Terikat pada sumber daya dunia-nyata; mengarang menyebabkan kegagalan dunia-nyata |
+| Penyematan versi | Versi mana dari dependensi mana, di mana inang belum menyemat dan pilihannya berarti (dependensi relevan-keamanan, dependensi pergeseran-perilaku, batas semver-major) | Konsekuensi ekor-panjang; pilihan sunyi membebani pengguna |
+
+**Pertanyaan wajib** (Identitas, Arah lingkup, Postur keamanan, Penamaan permukaan-publik selalu wajib) memblokir artefak dependen; emisi menghasilkan placeholder `<USER-CONFIRM:id=<id>>`. **Pertanyaan opsional** boleh ditolak pengguna dengan diam; asisten lalu mundur ke opsi yang direkomendasikan dan mencatat kemunduran itu sebagai temuan agar pengguna melihat bahwa sebuah keputusan telah dibuat.
+
+## 1. Keputusan-Otomatis yang Dikecualikan
+
+Berikut ini diputuskan asisten tanpa pertanyaan — diungkapkan dalam buku-besar perubahan sebagai "diterapkan secara bawaan; kembalikan jika maksudnya berbeda":
+
+- **Validitas murni.** Galat sintaks, pelanggaran skema, salah-ketik yang jelas.
+- **Ketelitian murni.** Cerita-rakyat → dikutip; tanggal yang hilang ditambahkan; klaim tak-terverifikasi ditandai.
+- **Keamanan yang aman-universal.** `deny .env*`, `deny ~/.ssh/**` baca, `deny rm -rf:*`, `deny sudo:*`, `deny git push --force*` ke cabang terlindungi, `deny eval`/`exec` pada masukan tak-tepercaya.
+- **Normalisasi pemformatan murni.** EOL, spasi-akhir, gaya tanda-kutip tunggal per berkas *di mana inang punya gaya yang mapan dan artefak menyimpang*.
+- **Perbaikan rujukan internal di mana perbaikannya jelas.** Jalur mati → jalur hidup unik yang ditemukan lewat pencarian.
+
+Apa pun di luar pengecualian ini melewati permukaan pertanyaan.
+
+## 2. Ikatan (§0.j five-direction)
+
+- **Drives →** Setiap emisi artefak proyek-inang (gerbang pra-emisi memicu pada setiap penulisan berlingkup-berarti sesuai `site/content/docs/governance/pre-emission-gate-registry.mdx`). Setiap penyajian multi-opsi diarahkan melalui saluran pertanyaan terstruktur sesuai kewajiban saluran-kanonis. Penegakan fraksi mekanis di `src/apothem/conformity/*-grep.py`. Penegakan per-rule di `src/apothem/rules/{authority-inquiry,host-discovery,disclosure-ledger,ten-dimension-check,pre-emission-gate,expertise-posture,option-annotation,definitiveness,visual-leverage,bidirectional-binding,agile-sprints,canonical-layout,code-craft-*,systemic-participation,production-ready-prs}.md`.
+- **Satisfies →** Sumbu konformitas eksternal yang dideklarasikan sebagai dimensi tata-kelola kelas-pertama di samping sumbu CM-N (M = artefak proyek inang; CM = artefak internal-ekosistem; keduanya ortogonal, keduanya berlaku di mana keduanya berlaku). Kewajiban arahan-tetap bahwa setiap bootstrap sesi mewarisi himpunan M sebagai konteks selalu-aktif.
+- **Established by ↑** `CLAUDE.md` itu sendiri (registri ini intrinsik pada konteks selalu-aktif, bukan diturunkan dari keadaan eksternal). Ratifikasi ambang sepele-vs-tak-sepele di `site/content/docs/governance/outward-conformity-registry.mdx` §1.
+- **Cross-bound with ↔** Setiap rule yang dinamai dalam tabel registri konformitas eksternal di `site/content/docs/governance/outward-conformity-registry.mdx` (badan kanonis per-mandat). `src/apothem/conformity/*-grep.py` (penegakan fraksi mekanis dari gerbang). `src/apothem/rules/interactive-questions.md` (permukaan pertanyaan diarahkan melalui kewajiban saluran-kanonis yang didefinisikan rule itu).

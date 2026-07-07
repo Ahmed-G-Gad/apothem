@@ -1,0 +1,83 @@
+---
+title: "Cross-harness convention convergence"
+description: "How Apothem keeps one operator workflow consistent across seventeen harnesses despite divergent vendor config formats and enforcement surfaces."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Seventeen harnesses, seventeen opinions about where configuration lives and what
+shape it takes. Apothem's job is to make the operator's workflow feel identical
+across all of them — you author conventions once, and they behave the same
+whether you reach for Claude Code or Cursor or Gemini CLI. This post covers the
+two divergences Apothem reconciles: config format and enforcement surface.
+
+## The format divergence
+
+Each harness reads its rules from a different file shape. Apothem's profile
+holds the operator's intent in one neutral form; each adapter renders that
+intent into the shape its harness expects.
+
+| Shape | Harnesses (examples) | What Apothem emits |
+| --- | --- | --- |
+| Flat `.md` rule files in a directory | claude-code, windsurf, trae | Raw rule files copied into the harness's rules tree |
+| Cursor `.mdc` rules | cursor | A `.mdc` rule set carrying the metadata header Cursor expects |
+| Single-file instruction document | codex, gemini-cli, github-copilot, zed | One concatenated document — `AGENTS.md`, `GEMINI.md`, `copilot-instructions.md`, `.rules` — assembled from the profile's rule set |
+
+A flat-`.md` harness takes the rules verbatim. A `.mdc` harness needs the
+Cursor metadata header wrapped around each rule. A single-file harness needs
+the whole rule set flattened into one document with stable section ordering so
+the operator reads the same conventions in the same sequence regardless of
+target. The neutral profile is the single source of truth; the divergence lives
+entirely in each adapter's rendering step.
+
+## Section ordering is the convergence anchor
+
+Flattening many rules into one document risks shuffling them between harnesses,
+so the same conventions land in a different order in `AGENTS.md` than in
+`GEMINI.md`. Apothem fixes the ordering at the profile level: the rule set has a
+declared sequence, and every single-file adapter walks it in that order. The
+operator who memorizes "naming conventions come before commit conventions" in
+one harness finds the same sequence in every other. Convergence is not an
+accident of rendering — it is a property the profile pins.
+
+## The enforcement divergence
+
+Config format is the visible half. The harder half is enforcement: how a
+convention is held to account at the moment the operator (or the agent) acts.
+
+### Native PreToolUse hooks
+
+claude-code, codex, and qwen-code expose native hook surfaces. A PreToolUse hook
+fires before a tool call executes, inspects it, and blocks or rewrites it. This
+is real-time enforcement: a rule against writing planning artifacts to a global
+location becomes a hook that rejects the write before it touches disk. Apothem
+materializes these hooks into the harness's hook configuration directly, so the
+convention is enforced by the harness runtime.
+
+### Wrapper-based discipline elsewhere
+
+The remaining harnesses expose no equivalent pre-execution hook surface that
+Apothem owns. Apothem
+cannot install a runtime gate where the harness offers no socket for one.
+Instead, the convention is carried as instruction text in the materialized
+config — the agent reads the rule and is bound by it, but no runtime mechanism
+intercepts a violating action. Apothem makes the difference explicit rather
+than pretending parity exists: a hook-backed convention and an
+instruction-backed convention are not the same guarantee, and the operator
+sees which harnesses enforce at runtime and which rely on instruction
+discipline.
+
+## What convergence means in practice
+
+The operator writes one convention. Apothem renders it into seventeen formats and
+attaches the strongest enforcement each harness supports — a native hook where
+the surface exists, instruction text where it does not. The workflow converges;
+the guarantees are stated honestly per harness.
+
+This is why `apothem verify` matters across the board: where no runtime hook
+can catch drift, the operator runs `verify` to detect a harness config that has
+drifted from the profile. The verify command is the convergence backstop for
+every harness that lacks native enforcement.
+
+Read the per-harness enforcement surface at [Harnesses](/docs/harnesses) and the
+adapter mechanics in
+[the adapter design deep-dive](/docs/blog/posts/multi-harness-adapter-design).

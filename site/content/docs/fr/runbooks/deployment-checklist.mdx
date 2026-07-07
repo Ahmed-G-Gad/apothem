@@ -1,0 +1,163 @@
+---
+title: "Liste de contrôle de déploiement"
+description: "Liste de contrôle de vérification préalable pour déployer ou partager l'écosystème Apothem"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Étapes de vérification préalables au déploiement de l'écosystème Apothem sur une
+nouvelle machine, à son partage avec d'autres ou à son traitement comme prêt pour la production.
+
+---
+
+## 1. Validité du YAML
+
+- [ ] Tous les fichiers de règles s'analysent sans erreur YAML — le bloc frontmatter ouvre par `---`, ferme par `---` et ne contient aucun contenu orphelin en dehors du bloc
+- [ ] Tous les fichiers de travailleurs délégués s'analysent sans erreur YAML
+- [ ] Tous les fichiers de commande s'analysent sans erreur YAML
+- [ ] Tous les fichiers `SKILL.md` de compétences s'analysent sans erreur YAML
+
+**Vérification :** `python scripts/dev/validate_ecosystem.py` analyse le
+frontmatter de chaque artefact et signale les erreurs YAML et les champs requis manquants. Pour une détection
+ad hoc des éléments de liste orphelins : `rg -n "^- " src/apothem/rules/*.md`.
+
+---
+
+## 2. Complétude du frontmatter
+
+Pour chaque type d'artefact, vérifiez que les champs requis sont présents :
+
+### Règles (`src/apothem/rules/*.md`)
+
+- [ ] `name` — identifiant en kebab-case correspondant au nom du fichier
+- [ ] `version` — semver `MAJOR.MINOR.PATCH` (p. ex. `"X.Y.Z"`)
+- [ ] `updated` — date ISO 8601 (p. ex. `"2026-04-20"`)
+- [ ] `description` — résumé d'une seule phrase
+- [ ] `scope` — `"always-on"` ou `"path-filtered"`
+- [ ] `portability` — `"universal"`, `"universal-with-windows-caveats"`, `"unix-only"` ou `"windows-only"`
+- [ ] `pathFilter` — présent et chaîne glob valide pour les règles filtrées par chemin ; absent pour les règles toujours actives
+
+### Commandes (`src/apothem/commands/*.md`)
+
+- [ ] `name` — nom de commande en kebab-case
+- [ ] `version`, `updated`, `description`, `argument-hint` présents
+- [ ] `disable-model-invocation` présent et intentionnel (`true` pour les commandes purement indicatives)
+- [ ] `effort`, `portability` revus là où ils sont présents (optionnels selon le schema)
+
+### Travailleurs délégués
+
+Chemin :
+
+```text
+src/apothem/agents/*.md
+```
+
+- [ ] `name`, `version`, `updated`, `description` présents
+- [ ] `tools` — liste séparée par des virgules des outils autorisés
+- [ ] `disallowedTools` — liste explicitement les outils interdits
+- [ ] `maxTurns` — défini (avec un commentaire de justification si > 10)
+- [ ] `permissionMode` — **ne doit PAS être `"bypassPermissions"`** — utilisez `"default"`
+- [ ] `memory: false` sauf si la mémoire persistante est intentionnelle
+
+### Compétences (`src/apothem/skills/*/SKILL.md`)
+
+- [ ] `name`, `version`, `updated`, `description` présents
+- [ ] `user-invocable` — déclaré (true/false)
+
+---
+
+## 3. Sécurité
+
+- [ ] **Aucun travailleur délégué n'utilise `permissionMode: "bypassPermissions"`** — cela contourne la confirmation interactive des opérations Write/Bash
+- [ ] Les listes `tools` du travailleur sont minimales — uniquement les outils dont le travailleur a réellement besoin
+- [ ] Les travailleurs disposant d'un accès `Bash` sont justifiés et ont des limites maxTurns
+- [ ] Aucun chemin, jeton ou secret codé en dur dans un quelconque artefact
+- [ ] Les hooks dans `settings.json` ont des délais d'attente raisonnables (≤ 60 secondes) et n'exécutent pas de code arbitraire issu de l'entrée utilisateur
+
+---
+
+## 4. Intégrité des références croisées
+
+- [ ] Chaque règle listée dans le tableau `src/apothem/rules/` existe sur le disque au chemin indiqué
+- [ ] Chaque commande listée dans le tableau `src/apothem/commands/` existe sur le disque
+- [ ] Chaque travailleur délégué listé dans le tableau de registre `src/apothem/agents/` existe sur le disque
+- [ ] Chaque compétence listée dans le tableau `src/apothem/skills/` existe sur le disque
+- [ ] Chaque hook du tableau `src/apothem/hooks/` a une entrée correspondante dans `settings.json`
+- [ ] Tous les fichiers `src/apothem/rules/*.md` référencés par la colonne `Implements` de CLAUDE.md existent
+
+---
+
+## 5. Couverture des mandats
+
+- [ ] Chaque CM-N référencé dans CLAUDE.md a un emplacement d'application (soit un fichier de règle, soit une définition inline explicite)
+- [ ] Aucun fichier de règle n'en contredit un autre (en particulier autour de la mise à l'échelle du sérieux)
+- [ ] La délimitation en trois facettes de CM-21 est respectée — aucune règle ne revendique la propriété de la facette CM-21 d'une autre règle
+
+---
+
+## 6. Tests de fumée fonctionnels
+
+Exécutez d'abord la surface de validation Python — elle est rapide, hors ligne et détecte les
+régressions structurelles :
+
+- [ ] `pytest tests` — tests unitaires du runtime des hooks, tous au vert
+- [ ] `python scripts/dev/validate_hooks.py` — structure des hooks + contrôle d'hygiène Python uniquement réussis
+- [ ] `python scripts/dev/validate_ecosystem.py` — arbre complet + frontmatter + contrôles des hooks délégués réussis
+- [ ] `python scripts/dev/chaos_pass.py` — chaque commande de hook configurée renvoie une enveloppe JSON valide sous des entrées dégradées
+
+Ensuite, des scénarios en direct :
+
+- [ ] `/plan-spec --interactive` (ou `/plan-spec <sample-file>`) — termine l'ingestion/clarification sans erreur au niveau commande
+- [ ] `/plan-generate --dry-run` — produit un aperçu de structure sans écrire de fichiers
+- [ ] `/plan-status` sur une suite de plan complète — renvoie des décomptes de phases exacts
+- [ ] Répartition de travailleur délégué : le travailleur `codebase-explorer` invoqué avec une petite portée se termine dans maxTurns et renvoie une sortie structurée
+
+---
+
+## 7. Actualité de la documentation
+
+- [ ] `CHANGELOG.md` (à la racine de l'écosystème) reflète chaque modification d'artefact depuis la dernière version publiée ; la section de la prochaine version est renseignée avant la pose du tag, ou chaque modification est déjà intégrée à une section publiée
+- [ ] `site/content/docs/developer-guide.mdx` décrit précisément la structure actuelle des artefacts
+- [ ] `site/content/docs/reference/artifact-schema.mdx` correspond aux champs frontmatter réellement présents dans les artefacts
+- [ ] `site/content/docs/reference/settings-reference.mdx` correspond à la configuration réelle des hooks dans `settings.json`
+- [ ] `README.md` est cohérent avec l'arbre sur le disque
+
+---
+
+## 8. Portabilité (en cas de partage avec d'autres)
+
+- [ ] Tous les chemins dans les commandes de hook sont indépendants de l'environnement ou utilisent l'expansion de `~`
+- [ ] Les commandes de hook utilisent la forme exec et évitent les chaînes de commande propres à un shell
+- [ ] Aucun chemin codé en dur `C:\Users\username` ou `/home/username` dans un quelconque artefact
+- [ ] `settings.json` utilise un seul tableau de couverture des événements de hook et le chemin canonique du module de répartition
+
+---
+
+## 9. Alignement des versions
+
+- [ ] La `version` de CLAUDE.md est la plus élevée de tout artefact de l'arbre (ou égale à la version de l'artefact le plus récemment incrémenté, par convention)
+- [ ] La `version` de chaque artefact correspond au semver indiqué (`MAJOR.MINOR.PATCH`)
+- [ ] CHANGELOG.md contient exactement l'entrée de version pour la version cible avant le tagging
+- [ ] Le champ `updated` de chaque artefact est à la date de sa dernière modification changeant le comportement, ou après
+- [ ] Aucun artefact ne porte une `version` inférieure à la version à laquelle il a été touché pour la dernière fois (aucune régression)
+- [ ] `src/apothem/skills/plan-suite/SKILL.md` et `src/apothem/skills/plan-suite/master-template.md` sont épinglés à la même ligne de version de modèle
+
+---
+
+## Validation
+
+| Catégorie de contrôle | Statut | Notes |
+| -------------- | ------ | ----- |
+| Validité du YAML | | |
+| Complétude du frontmatter | | |
+| Sécurité | | |
+| Intégrité des références croisées | | |
+| Couverture des mandats | | |
+| Tests de fumée fonctionnels | | |
+| Actualité de la documentation | | |
+| Portabilité | | |
+| Alignement des versions | | |
+
+**Déploiement approuvé par :** ___________________
+**Date :** ___________________
+**Version de l'écosystème déployée :** ___________________

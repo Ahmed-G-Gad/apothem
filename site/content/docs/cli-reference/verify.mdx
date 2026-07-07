@@ -1,0 +1,94 @@
+---
+title: "verify"
+description: "CLI reference for the apothem verify command."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Verify a harness adapter installation.
+
+## Synopsis
+
+```
+apothem verify --harness NAME|all [--profile PATH] [--project PATH]
+                [--quiet|-q] [--verbose|-v]
+                [--format plain|json] [--json] [--no-color]
+```
+
+Calls each selected adapter's `verify()` implementation. Exits 0 only when all
+selected adapters report their managed targets are present and valid. Without
+`--profile` the check is **structural** — every managed target must be present
+and valid. With `--profile` the check additionally requires **profile
+fidelity**, so a present-but-drifted install fails verify, answering "is THIS
+profile faithfully installed?" rather than merely "does it exist?".
+
+A `--harness all` sweep honors the profile's `exclude_harnesses` — the same
+exclusions the `install`/`update` batch applied — so verify never reports a
+deliberately excluded harness as missing. The exclusions come from
+`--profile` when given, otherwise from the default profile; an unreadable or
+absent default degrades to the full registry.
+
+## Options
+
+| Option | Description |
+|---|---|
+| `--harness NAME` | Harness adapter to verify, or `all` for the registry-wide set (required). |
+| `--profile PATH` | Shared profile YAML to check fidelity against. Without it, the check is purely structural. |
+| `--project PATH` | Project root for project-scope harnesses. |
+| `--quiet`, `-q` | Suppress informational output; only errors are emitted. |
+| `--verbose`, `-v` | Emit additional diagnostic output. |
+| `--format plain\|json` | Output format (default: `plain`). |
+| `--json` | Shorthand for `--format json`. |
+| `--no-color` | Disable ANSI color codes in output. |
+| `-h`, `--help` | Show help and exit. |
+
+## JSON output
+
+```json
+{
+  "status": "success",
+  "command": "verify",
+  "action": "verified",
+  "harness": "claude-code",
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "unchanged",
+      "operation": "verify",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "managed targets verified",
+      "installed": true,
+      "verified": true
+    }
+  ],
+  "warnings": [],
+  "error": null,
+  "installed": true,
+  "verified": true,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+When any selected harness is missing or invalid, `status` is `error`, the
+failing result row carries `verified: false`, and the process exits with code 1.
+
+## Examples
+
+```bash
+apothem verify --harness claude-code
+apothem verify --harness claude-code --json
+apothem verify --harness all --project .
+```
+
+## Exit codes
+
+| Code | Meaning |
+|---|---|
+| 0 | Harness verified — all managed targets present and valid |
+| 1 | Harness not verified — managed targets missing or invalid |
+
+## See also
+
+- [apothem install](/docs/cli-reference/install) — install a harness configuration
+- [apothem update](/docs/cli-reference/update) — re-apply current profile to a harness
+- [apothem doctor](/docs/cli-reference/doctor) — system-wide install diagnostics

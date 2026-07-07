@@ -1,0 +1,92 @@
+---
+title: "Gemini CLI"
+description: "Gemini CLI(GA)용 Apothem 도구 어댑터."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**공급업체:** Google
+**설치 이름:** `gemini-cli`
+**상태:** GA
+**네이티브 구성:** 프로젝트 로컬 `GEMINI.md` 및 `.gemini/`
+
+## 설치
+
+```bash
+apothem install --harness gemini-cli --project /path/to/project
+```
+
+이 어댑터는 프로젝트 범위입니다. 프로젝트 `GEMINI.md`를 설치하고, Apothem
+명령을 Gemini TOML 슬래시 명령으로 변환하며, 로컬 도우미 정의를 정규화하고,
+네이티브가 아닌 지원 세트를 `.gemini/.apothem/support/` 아래에 배치합니다.
+
+**작성되는 파일:**
+
+```text
+GEMINI.md
+.gemini/commands/*.toml
+.gemini/agents/*.md
+.gemini/skills/
+.gemini/.apothem/support/
+```
+
+## 프로필에서 네이티브 구성으로의 매핑
+
+어댑터는 Apothem의 공유 세트를 읽고 각 세트를 Gemini 호환 표면을 통해
+라우팅합니다. Markdown 규칙, 템플릿, 후크 자료는 Gemini 네이티브 규칙 디렉터리가
+아니라 지원 자료이므로 `.gemini/.apothem/support/` 아래에 남습니다.
+
+## 호환성 참고 사항
+
+`~/.gemini/`는 전역 Gemini 프로필을 사용하는 도구를 위한 사용자 범위 영역으로
+남습니다. Gemini CLI 어댑터는 `--project`로 전달된 프로젝트에만 작성합니다.
+
+## 검증
+
+```bash
+apothem verify --harness gemini-cli --project /path/to/project
+```
+
+verify 명령은 다음을 확인합니다:
+
+1. 네이티브 구성이 예상 경로에 존재합니다.
+2. 공유 프로필의 모든 필수 필드가 존재합니다.
+3. 어댑터 고유의 검증 루틴이 성공을 보고합니다.
+
+## 업데이트
+
+```bash
+apothem update --harness gemini-cli --project /path/to/project
+```
+
+`GEMINI.md`, 변환된 명령, 로컬 도우미 정의, 설치된 스킬, 그리고
+`.gemini/.apothem/support/` 지원 트리를 새로 고칩니다.
+
+## 제거
+
+```bash
+apothem uninstall --harness gemini-cli --project /path/to/project
+```
+
+어댑터가 작성한 네이티브 구성 파일을 제거합니다.
+공유 프로필 YAML과 Apothem 엔진은 영향을 받지 않습니다.
+
+## 적합성 게이트
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## 문제 해결
+
+| 증상 | 수정 |
+|---------|-----|
+| 구성 파일을 찾을 수 없음 | `apothem install --harness gemini-cli --project /path/to/project`를 다시 실행 |
+| 검증 실패 | `apothem update --harness gemini-cli --project /path/to/project`를 실행한 후 다시 검증 |
+| 예기치 않은 구성 내용 | `~/.config/apothem/profile.yaml` 또는 `--profile PATH`를 확인한 후 `apothem update --harness gemini-cli --project /path/to/project`를 다시 실행 |
+
+## 구성 노브
+
+| 플래그 | 기본값 | 설명 |
+|------|---------|-------------|
+| `--dry-run` | `false` | 파일을 작성하지 않고 설치를 미리 봅니다. |

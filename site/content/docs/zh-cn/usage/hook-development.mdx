@@ -1,0 +1,52 @@
+---
+title: "钩子开发"
+description: "在 Apothem 钩子流水线中编写并注册钩子。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+钩子是在环境事件上触发的 shell 命令。它们无需操作者介入即可执行合规检查、注入
+上下文并运行质量闸门。
+
+## 钩子事件
+
+| 事件 | 触发时机 |
+|-------|--------------|
+| `PreToolUse` | 每次工具调用之前 |
+| `PostToolUse` | 每次工具调用之后 |
+| `SessionStart` | 会话引导启动时 |
+| `PreCompact` | 上下文压缩之前 |
+| `PostCompact` | 上下文压缩之后 |
+| `Stop` | 会话结束时 |
+
+## 钩子消息文件
+
+每个钩子在 `src/apothem/hooks/messages/<event>-<name>.md` 都有一个对应的消息
+文件，它会在钩子触发的那一刻向助手提供上下文。
+
+## 注册钩子
+
+将钩子命令添加到 `settings.json`：
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python src/apothem/hooks/my-check.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## 钩子分发器
+
+所有钩子都经由 `src/apothem/hooks/dispatch.py` 路由，它会将任何钩子错误转换为
+失败开放（fail-open）信封，从而使钩子永不阻塞环境。

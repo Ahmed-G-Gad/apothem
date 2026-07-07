@@ -1,0 +1,55 @@
+---
+title: "소스 레이아웃"
+description: "Apothem이 왜 src/ 레이아웃을 사용하는지, 그리고 트리가 어떻게 구성되어 있는지."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem은 [PyPA src-layout](https://packaging.python.org/en/latest/discussions/src-layout-vs-flat-layout/)을 채택하여, 임포트 가능한 모든 Python을 `src/apothem/` 아래에 배치합니다.
+
+## 왜 src-layout인가
+
+- **임포트 격리.** `import apothem`은 `src/`가 경로에 있을 때만 해석되므로
+  (엔진은 `PYTHONPATH=src python -m apothem`으로 실행됩니다), 관련 없는
+  디렉터리에서 작업 트리를 우발적으로 임포트하는 것을 방지합니다.
+- **자체 완결형 런타임.** Apothem은 의존성을 `src/apothem/_vendor/` 아래에
+  벤더링한 상태로 체크아웃에서 직접 실행됩니다 — 설치 단계가 필요하지 않습니다.
+  src-layout은 그 임포트 가능한 표면을 저장소의 도구, 테스트, 스크립트로부터
+  깔끔하게 분리해 둡니다.
+- **깔끔한 배포.** 동일한 레이아웃은 그 내용이 배포되는 것과 정확히 일치하는
+  잘 구성된 sdist와 wheel(그리고 선택적 `pip install -e .` 편집 가능 설치)을
+  생성하며, 최상위 모듈이 흘러 들어가는 일이 없습니다.
+
+## 트리 구조
+
+```
+src/apothem/
+    agents/         persistent agent definitions (*.md)
+    audit/          inventory and provenance tools
+    benchmarks/     performance benchmarks
+    cli/            Click CLI (quickstart, install, update, uninstall, verify, status, diff, rollback, harnesses, profile, doctor, completion)
+    commands/       slash command definitions (*.md)
+    conformity/     mechanical gate checkers (*-grep.py)
+    harnesses/      one sub-package per harness adapter (17 adapters)
+    hooks/          hook dispatcher + message files
+    lib/            shared Python library
+    output-styles/  output-style definitions (*.md)
+    rules/          behavioral rules (*.md)
+    schemas/        YAML/JSON schemas
+    skills/         reusable skill templates (folder/SKILL.md)
+    statuslines/    status-line config (*.json)
+    templates/      reusable template artifacts
+```
+
+## 임포트 가능 아티팩트 vs. 구성 아티팩트
+
+`src/apothem/` 아래의 많은 항목은 Python 모듈이 아니라 Markdown 구성 아티팩트입니다.
+임포트 가능한 Python 표면은 다음과 같습니다.
+
+- `src/apothem/cli/` (`apothem` 진입점으로 노출되는 Click CLI)
+- `src/apothem/harnesses/` (17개의 하니스 어댑터 서브패키지)
+- `src/apothem/lib/` (공유 라이브러리: 프로필, 레지스트리, 머티리얼라이저, 전파)
+- `src/apothem/hooks/` (dispatch.py, lib/)
+- `src/apothem/conformity/` (기계적 grep 스크립트)
+- `src/apothem/audit/` (인벤토리 스크립트)
+- `src/apothem/benchmarks/` (성능 벤치마크 드라이버)

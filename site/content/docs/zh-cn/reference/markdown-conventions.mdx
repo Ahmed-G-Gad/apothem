@@ -1,0 +1,36 @@
+---
+title: "Markdown 约定"
+description: "统一 Markdown 风味、标题结构、代码围栏声明、内部链接格式、作者署名横幅以及验证器强制执行。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **跨每一个受著的 `.md` 制品的 Markdown 形态与格式的规范性参考。** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) 约定 中的摘要是内联声明；本页是下游贡献者所引用的独立参考。
+
+---
+
+## 1. 风味
+
+GitHub 风味 Markdown（GFM）是宿主风味。每个制品都能在 GitHub 的网页界面、Fumadocs 文档站点以及标准的 Markdown 感知编辑器中正确渲染。
+
+## 2. 标题层级
+
+每个文件一个 H1。后续标题单调下降（H2 → H3 → H4），不跳级。标题采用句首大写；不用 ALL-CAPS，不用 Title Case Across Every Word。H1 承载文档的主标题，并且就是文档在文档站点导航中的锚点。
+
+## 3. 代码块
+
+围栏代码块声明其语言（` ```python `、` ```bash `、` ```yaml `、` ```json `、` ```mermaid `）。未加标签的块会抑制语法高亮，并发出著作偏移的信号；[`.markdownlint.jsonc`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.jsonc) 中的 markdownlint MD040 规则强制语言标签。
+
+## 4. 内部链接
+
+内部交叉引用使用**站点根路径**（例如 `[Authorship header](/docs/reference/authorship-header)`）。带有 `.md`/`.mdx` 扩展名的裸仓库相对路径（`/docs/foo.md`）以及指向同一仓库的完整 URL（`https://github.com/ahmed-g-gad/apothem/blob/main/...`）在站内链接中被避免，因为它们经不起页面重命名和章节重组。
+
+指向可变引用（`main`、`master`、`latest`、`HEAD`）的外部链接，在所链内容的稳定性至关重要时，会被固定到提交 SHA 或发布标签；易变引用以相邻的 `{/* volatile */}` 注释标注为此。
+
+## 5. 作者署名横幅
+
+每个 Markdown 制品（[`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas/header-exceptions.txt) 中枚举的例外除外）都在字节 0 处携带规范的作者署名头横幅，采用 HTML 注释变体，遵循 [Authorship header](/docs/reference/authorship-header)。当两者同时存在时，该横幅位于 YAML frontmatter 之上。
+
+## 6. 验证器
+
+[`.markdownlint.jsonc`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.jsonc) 中的 `markdownlint-cli2` 调用强制执行 §§1–4 的大部分规则。`src/apothem/conformity/file_header_grep.py` 处的 `file-header-grep` 强制执行 §5。两者都接入了 [`.pre-commit-config.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/.pre-commit-config.yaml) 的预提交钩子链以及 [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) 的 CI 质量作业。

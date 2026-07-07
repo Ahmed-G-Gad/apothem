@@ -1,0 +1,104 @@
+---
+title: "status"
+description: "apothem status 命令的 CLI 参考。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+报告每个已注册harness的安装、校验和漂移状态。
+
+## 概要
+
+```
+apothem status [--project PATH]
+               [--quiet|-q] [--verbose|-v]
+               [--format plain|json] [--json] [--no-color]
+```
+
+`status` 是一个只读的检查命令。它会遍历每个已注册的harness适配器，并为每个harness报告三项事实：它是否已安装、其受管目标是否通过校验，以及已安装的配置是否已偏离共享配置文件。它不向磁盘写入任何内容。
+
+对于每个harness，`status` 报告：
+
+| 列 | 含义 |
+|---|---|
+| `installed` | 适配器的受管配置存在于其目标路径。 |
+| `verified` | 适配器的受管目标存在且有效。 |
+| `drift` | 配置文件保真度判定（见下文）。 |
+
+`drift` 值是以下之一：
+
+| 值 | 含义 |
+|---|---|
+| `in-sync` | 已安装的配置逐字携带了刚刚投射的共享配置文件。 |
+| `drift` | 该harness已安装，但其投射的配置文件内容不再与当前共享配置文件匹配。重新运行 `apothem install` 以重新投射。 |
+| `absent` | 该harness未安装，因此没有可比较的内容。 |
+| `needs-project` | 报告了一个项目范围的harness却未提供 `--project`，因此无法解析其目标。传入 `--project PATH` 以检查它。 |
+
+漂移会被报告，但从不视为错误：即便一个或多个harness报告 `drift`，`status` 仍以 0 退出。漂移是关于你的设置的一项事实，而非该命令的失败。
+
+如果无法加载共享配置文件，对于已安装的harness，漂移会降级为 `absent`（installed/verified 事实仍会被报告），而不会中止整个遍历。
+
+## 选项
+
+| 选项 | 描述 |
+|---|---|
+| `--project PATH` | 项目范围harness的项目根目录。不提供时，项目范围的harness报告 `needs-project`。 |
+| `--quiet`, `-q` | 抑制信息性输出；仅发出错误。 |
+| `--verbose`, `-v` | 发出额外的诊断输出。 |
+| `--format plain\|json` | 输出格式（默认：`plain`）。 |
+| `--json` | `--format json` 的简写。 |
+| `--no-color` | 在输出中禁用 ANSI 颜色码。 |
+| `-h`, `--help` | 显示帮助并退出。 |
+
+## JSON 输出
+
+`--json` 信封为每个已注册的harness携带一行结果。每一行携带已记录的键 `harness`、`installed`、`verified` 和 `drift`。
+
+```json
+{
+  "status": "success",
+  "command": "status",
+  "action": "status",
+  "harness": "all",
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "installed": true,
+      "verified": true,
+      "drift": "in-sync"
+    },
+    {
+      "harness": "cursor",
+      "installed": false,
+      "verified": false,
+      "drift": "needs-project"
+    }
+  ],
+  "warnings": [],
+  "error": null
+}
+```
+
+每适配器故障隔离：如果某个适配器在报告其状态时抛出异常，该harness的行会携带 `outcome: "error"` 和一条 `message`，其余harness仍正常报告，进程以代码 2 退出。
+
+## 示例
+
+```bash
+apothem status
+apothem status --project .
+apothem status --json
+```
+
+## 退出码
+
+| 码 | 含义 |
+|---|---|
+| 0 | 已报告状态（漂移会被报告，而非错误） |
+| 2 | 至少一个适配器未能报告其状态 |
+
+## 另请参阅
+
+- [apothem verify](/docs/cli-reference/verify) — 校验单个harness安装
+- [apothem diff](/docs/cli-reference/diff) — 预览某个harness的待定更改
+- [apothem harnesses](/docs/cli-reference/harnesses) — 列出并检查已注册的harness

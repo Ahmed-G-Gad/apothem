@@ -1,0 +1,69 @@
+---
+title: "/code-audit"
+description: "/code-audit — Dateiübergreifendes forensisches Code-Audit auf Repository-Korpus-Ebene."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rolle:** Auditor
+**Pipeline-Position:** Festung
+
+Dateiübergreifendes forensisches Code-Audit auf Repository-Korpus-Ebene.
+
+## Kanonischer Aufruf
+
+```bash
+/code-audit
+```
+
+Mit Argumenten:
+
+```bash
+/code-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+```
+
+## Eingaben
+
+Host-Repository in einem beliebigen Lebenszyklus-Zustand
+
+## Ausgaben
+
+Befunde auf Korpus-Ebene + REPORT.md
+
+## Nachgelagert
+
+Die forensische Code-Audit-Stufe der Audit-Review-Sequenz
+
+## Workflow-Phasen
+
+Der Befehl folgt dem Standard-Workflow der `/plan`-Pipeline:
+
+1. **Kontext laden** — Plan-Suite, Regeln und Wiederaufnahme-Vertrag lesen.
+2. **Voraussetzungen prüfen** — Bestätigen, dass abhängige Phasen abgeschlossen sind.
+3. **Aufgaben ausführen** — Die Mission des Befehls erfüllen.
+4. **Ausgaben prüfen** — Bestätigen, dass alle deklarierten Ausgaben existieren und die Qualitätstore bestehen.
+5. **PROGRESS.md aktualisieren** — Verifizierte Ausgaben im Phasen-Ausgaberegister erfassen.
+6. **REPORT.md ausgeben** — Freigabenachweis des Pre-Emission-Tors erfasst.
+
+## Fehlermodi
+
+| Symptom | Ursache | Behebung |
+|---------|-------|----------|
+| Voraussetzung unvollständig | Abhängige Phase nicht beendet | Zuerst die vorgelagerte Phase abschließen |
+| Qualitätstor FAIL | Ausgabe erfüllt die Standards nicht | Ausgabe korrigieren und erneut ausführen |
+| Eingabedatei fehlt | Plan-Suite-Datei fehlt | `/plan-generate` ausführen, um sie zu erstellen |
+
+## Beispiele
+
+```bash
+# Dry-run to preview what would happen
+/code-audit --dry-run
+
+# Execute against a named plan suite
+/code-audit path/to/plan-suite/
+```
+
+## Querverweise
+
+- [Pipeline-Überblick](/docs/pipeline)
+- [Master-Plan-Suite-Vorlage](/docs/reference/commands)

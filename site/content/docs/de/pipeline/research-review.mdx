@@ -1,0 +1,70 @@
+---
+title: "/research-review"
+description: "/research-review — Adversarielle Kritik des Artikels auf Peer-Review-Niveau: eine siebenachsige Gutachter-Bewertungskarte (Neuheit, Strenge, Reproduzierbarkeit, Klarheit, Ethik, statistische Begutachtung, Konformität mit Berichtsrichtlinien) plus eine nach Schweregrad triagierte Liste erforderlicher Überarbeitungen."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rolle:** Leitender Forscher (Peer-Review)
+**Pipeline-Position:** Kettenmitte
+
+Unterzieht den Artikel einer adversariellen Kritik auf Peer-Review-Niveau gegen die Standards des Veröffentlichungsorts — Neuheit, Strenge, Reproduzierbarkeit, Klarheit, Ethik, statistische Begutachtung und Konformität mit Berichtsrichtlinien. Gibt eine **siebenachsige** Gutachter-Bewertungskarte sowie eine nach Schweregrad triagierte Liste erforderlicher Überarbeitungen aus, mit einer Begründung mit konkretem Treiber pro Befund. Widerlegung als Standard.
+
+## Kanonischer Aufruf
+
+```bash
+/research-review
+```
+
+Mit Argumenten:
+
+```bash
+/research-review [path/to/research-suite/]
+```
+
+## Eingaben
+
+Das Artikel-Liefergut am hostnatürlichen Ort, den die Artikel-Phase aufgezeichnet hat.
+
+## Ausgaben
+
+`_outputs/review-report.md` — die **siebenachsige** Gutachter-Bewertungskarte (Neuheit · Strenge · Reproduzierbarkeit · Klarheit · Ethik · statistische Begutachtung · Konformität mit Berichtsrichtlinien), die nach Schweregrad (HIGH / MEDIUM / LOW) triagierte Liste erforderlicher Überarbeitungen mit einer Begründung mit konkretem Treiber pro Befund, das Reproduzierbarkeitspaket und das Wiederholungs-Urteil, das Audit der Zitationsintegrität und das Gesamturteil `accept · minor-revision · major-revision · reject`.
+
+## Nachgelagert
+
+/research-publish (nachgelagerter Konsument). Ein `major-revision`- oder `reject`-Urteil treibt die Überarbeitungsschleife zurück zu `/research-paper`, um die erforderlichen Überarbeitungen vor einer erneuten Begutachtung umzusetzen.
+
+## Workflow-Phasen
+
+Der Befehl folgt dem Standard-Workflow der `/research`-Pipeline:
+
+1. **Kontext laden** — Das Artikel-Liefergut lesen.
+2. **Das Sequenz-Tor prüfen** — Bestätigen, dass der Artikel existiert; andernfalls mit `Blocked: run /research-paper first` anhalten.
+3. **Adversariell begutachten** — Die sieben Achsen bewerten (Neuheit · Strenge · Reproduzierbarkeit · Klarheit · Ethik · statistische Begutachtung · Konformität mit Berichtsrichtlinien); die Reproduzierbarkeits-Wiederholung und das Audit der Zitationsintegrität durchführen; Widerlegung als Standard; konkrete Mängel mit Belegen verorten.
+4. **Überarbeitungen triagieren** — Die erforderlichen Überarbeitungen mit einer Begründung mit konkretem Treiber als HIGH / MEDIUM / LOW einstufen.
+5. **Das Übergabe-Manifest aktualisieren** — Den Begutachtungsbericht und das Urteil der Bewertungskarte festhalten.
+6. **Die Begutachtung ausgeben** — `_outputs/review-report.md`.
+
+## Rigorositätsuntergrenze
+
+Die Begutachtung bewertet die empirischen Behauptungen gegen die Latte des Vorrückungs-Gates — angemessene Replikation, nichtparametrische Signifikanz mit einer Effektstärke und Rängen der kritischen Differenz sowie Budgetparität über die verglichenen Methoden hinweg — und behandelt das Urteil als ein explizites Vorrückungs-Gate: Ein Paper rückt nur dann vor, wenn es die Latte des Publikationsorts überzeugend und signifikant schlägt, mit protokollierter Freigabe. Bei einem doppelblinden Publikationsort markiert der Gutachter zudem jedes Identitätsleck als Anonymisierungsmangel.
+
+## Fehlermodi
+
+| Symptom | Ursache | Behebung |
+|---------|-------|----------|
+| Blocked: run /research-paper first | Kein Artikel | Führen Sie `/research-paper` aus, um das Manuskript zu erzeugen |
+| Wohlwollende Bewertung | Gutachter ging vom besten Fall aus | Widerlegung als Standard; bewerten Sie anhand der vorhandenen Belege |
+| Befund ohne Begründung | Überarbeitung behauptet, nicht begründet | Fügen Sie jedem Befund eine Begründung mit konkretem Treiber bei |
+
+## Beispiele
+
+```bash
+# Den Artikel per Peer-Review begutachten und eine Gutachter-Bewertungskarte ausgeben
+/research-review path/to/research-suite/
+```
+
+## Querverweise
+
+- [Pipeline-Überblick](/docs/pipeline)
+- [Befehlsreferenz](/docs/reference/commands)

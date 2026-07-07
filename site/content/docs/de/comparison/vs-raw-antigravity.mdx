@@ -1,0 +1,49 @@
+---
+title: "Apothem im Vergleich zur manuellen Antigravity-Konfiguration"
+description: "Den globalen Kontext und die Plugin-Dateien von Antigravity CLI von Hand pflegen, verglichen mit ihrer Verwaltung über das geteilte Profil von Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Antigravity ist eine Manifest-Propagationsumgebung der Klasse I: Apothem schreibt
+den globalen Kontextanker `~/.gemini/GEMINI.md` und installiert ein
+Apothem-Plugin unter `~/.gemini/antigravity-cli/plugins/apothem/`. Diese Seite
+stellt das Pflegen dieses Layouts von Hand der Verwaltung mit Apothem gegenüber.
+
+## Aufwandsvergleich
+
+| Aufgabe | Manuelle Konfiguration | Von Apothem verwaltet |
+| ---- | --------------- | --------------- |
+| Regeln schreiben | Jede Plugin-Regeldatei von Hand schreiben | Einmal im geteilten Korpus schreiben |
+| Wiederverwendbare Prompts bewahren | Befehlsprompts und Skills von Hand in Plugin-Dateien kopieren | In Plugin-Skills konvertiert oder kopiert |
+| Hook-Hilfsmaterial bewahren | Hook-Referenzen ohne aktive Verdrahtung von Hand kopieren | Unter den Plugin-Hilfsbaum von Apothem kopiert |
+| Regeln mit anderen Umgebungen ausgerichtet halten | Manuell, pro Werkzeug | Automatisch bei `apothem update` |
+| Konfiguration installieren / entfernen | Dateien von Hand kopieren und löschen | `apothem install` / `apothem uninstall` |
+| Verifizieren, dass die Konfiguration korrekt ist | Manuelle Inspektion | `apothem verify --harness antigravity` |
+
+## Was Apothem verwaltet
+
+Apothem verwaltet die globale Kontextdatei von Antigravity, die Plugin-Metadaten,
+die konvertierten Befehls-Skills, die wiederverwendbaren Skills, die
+konvertierten Agenten, die Regeln, die Vorlagen und das Hook-Hilfsmaterial. Die
+Hook-Dateien werden als Hilfsmaterial aufbewahrt; Apothem registriert keine
+aktiven Antigravity-Hook-Ereignisse, bis der Adapter eine
+Schemaübersetzungsschicht für die Antigravity-`hooks.json` besitzt.
+
+## Migrationspfad
+
+1. Führen Sie `apothem profile init` aus, um das geteilte Profil zu erstellen,
+   falls noch nicht geschehen.
+2. Verschieben Sie Ihre von Hand geschriebenen Antigravity-Regeln in das geteilte
+   Korpus.
+3. Führen Sie `apothem install --harness antigravity` aus, um das Korpus zu
+   propagieren.
+4. Führen Sie `apothem verify --harness antigravity` aus, um zu bestätigen, dass
+   die Konfiguration angekommen ist.
+5. Verwenden Sie `apothem update --harness antigravity` für jede spätere
+   Änderung.
+
+## Als Nächstes lesen
+
+- [Antigravity-Adapter-Referenz](/docs/harnesses/antigravity)
+- [Vergleichsüberblick](/docs/comparison)

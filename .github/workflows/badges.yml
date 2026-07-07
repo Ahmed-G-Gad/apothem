@@ -1,0 +1,143 @@
+# SPDX-License-Identifier: MIT
+
+# Publish dynamic badge endpoint JSONs.
+#
+# Triggers after the CI workflow completes. Generates per-badge JSON files
+# conforming to the shields.io endpoint schema (schemaVersion / label /
+# message / color), stages them under badges/, and uploads them as the
+# `badges` artifact. The static-site workflow (publish-static-site.yml)
+# fetches the latest successful run's `badges` artifact and stages it
+# under site/dist/badges/, so https://apothem.ahmedgad.com/badges/*.json
+# resolve.
+#
+# SHA-pinning policy mirrors ci.yml: every action `uses:` reference is
+# pinned by 40-character commit SHA followed by a `# vMAJOR.MINOR.PATCH`
+# version comment. Renovate (renovate.json) bumps each pinned
+# SHA weekly.
+
+name: Badges
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: badges-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  publish-badges:
+    name: publish-badges
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    timeout-minutes: 10
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+          # git describe needs the tag refs; the default shallow checkout
+          # fetches none, so the release badge would read "unreleased" forever.
+          fetch-tags: true
+
+      - name: Resolve current release tag
+        id: release
+        run: |
+          tag="$(git describe --tags --abbrev=0 2>/dev/null || echo 'unreleased')"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve CI conclusion
+        id: ci
+        env:
+          WORKFLOW_RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+        run: |
+          conclusion="${WORKFLOW_RUN_CONCLUSION}"
+          if [ -z "${conclusion}" ]; then conclusion="manual"; fi
+          echo "conclusion=${conclusion}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate badge JSONs
+        env:
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          CI_CONCLUSION: ${{ steps.ci.outputs.conclusion }}
+        run: |
+          set -euo pipefail
+          mkdir -p badges
+
+          # release.json — latest tag, blue when present, lightgrey when unreleased
+          if [ "${RELEASE_TAG}" = "unreleased" ]; then
+            release_color="lightgrey"
+          else
+            release_color="blue"
+          fi
+          jq -n \
+            --arg label "release" \
+            --arg message "${RELEASE_TAG}" \
+            --arg color "${release_color}" \
+            '{schemaVersion:1, label:$label, message:$message, color:$color}' \
+            > badges/release.json
+
+          # coverage.json — points readers at the CI artifact because coverage
+          # percentage extraction is not part of this endpoint contract yet.
+          jq -n \
+            '{schemaVersion:1, label:"coverage", message:"see ci", color:"informational"}' \
+            > badges/coverage.json
+
+          # security.json — CodeQL + bandit live in the security-scan job of
+          # ci.yml; this badge mirrors the parent workflow's conclusion until a
+          # dedicated SARIF-derived endpoint is wired.
+          case "${CI_CONCLUSION}" in
+            success) sec_color="brightgreen"; sec_msg="passing" ;;
+            manual)  sec_color="informational"; sec_msg="manual" ;;
+            *)       sec_color="red"; sec_msg="${CI_CONCLUSION}" ;;
+          esac
+          jq -n \
+            --arg label "security" \
+            --arg message "${sec_msg}" \
+            --arg color "${sec_color}" \
+            '{schemaVersion:1, label:$label, message:$message, color:$color}' \
+            > badges/security.json
+
+          # supply-chain.json — Trivy + pip-audit run in ci.yml; mirrors the
+          # parent workflow's conclusion until per-scanner outputs are surfaced.
+          jq -n \
+            --arg label "supply chain" \
+            --arg message "${sec_msg}" \
+            --arg color "${sec_color}" \
+            '{schemaVersion:1, label:$label, message:$message, color:$color}' \
+            > badges/supply-chain.json
+
+          # docs.json — Next.js + Fumadocs docs build runs in ci.yml; mirrors the parent
+          # workflow's conclusion.
+          jq -n \
+            --arg label "docs" \
+            --arg message "${sec_msg}" \
+            --arg color "${sec_color}" \
+            '{schemaVersion:1, label:$label, message:$message, color:$color}' \
+            > badges/docs.json
+
+      - name: Verify generated JSONs
+        run: |
+          set -euo pipefail
+          for f in release coverage security supply-chain docs; do
+            jq -e '.schemaVersion == 1 and .label and .message and .color' \
+              "badges/${f}.json" > /dev/null
+          done
+
+      - name: Upload badge artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: badges
+          path: badges/
+          if-no-files-found: error
+          retention-days: 14

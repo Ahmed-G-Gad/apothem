@@ -1,0 +1,89 @@
+---
+title: "Menyunting profil"
+description: "Ubah profil bersama dan wujudkan-ulang setiap perkakas yang terpasang."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Tujuan: ubah sebuah nilai di profil bersama dan dorong ke setiap perkakas yang
+telah Anda pasang.
+
+## Prasyarat
+
+- CLI `apothem` pada `PATH` Anda (atau bentuk mandiri: awali dengan
+  `PYTHONPATH="$HOME/.apothem/src"` dan jalankan `python -m apothem`, atau gunakan
+  `npx @ahmed-g-gad/apothem`).
+- Sebuah profil di `~/.config/apothem/profile.yaml`. Buat satu dengan
+  `apothem profile init` jika tidak ada.
+
+## Bentuk profil
+
+Profil adalah satu dokumen YAML tunggal. Kunci tingkat-atasnya:
+
+- `identity` (wajib) — `name`, plus opsional `role`, `email`, `website`,
+  `github`.
+- `preferences` — `language`, `style` (`concise` / `verbose` / `balanced`),
+  `formatter`, `test_framework`.
+- `rules` — daftar string aturan tambahan yang dibagikan dengan perkakas yang mampu.
+- `seriousness` — salah satu dari `EXPLORING`, `PERSONAL_USE`, `SHARED`,
+  `PUBLIC_LAUNCH`.
+- `enforcement` — sakelar ikut-serta (`sprints`, `agent_teams`, `multitasking`,
+  `continuous_execution`, `learning_loop`), setiap flag default-mati.
+- `harnesses` — penimpaan per-perkakas yang dikunci oleh id perkakas.
+- `exclude_harnesses` — id perkakas yang dilewati oleh command batch (`--harness all`).
+
+## Langkah-langkah
+
+1. Periksa profil saat ini:
+
+   ```bash
+   apothem profile show
+   ```
+
+2. Sunting profil itu. Buka di editor sistem Anda:
+
+   ```bash
+   apothem profile edit
+   ```
+
+   Atau atur satu kunci bertitik dari baris perintah. Nilai disimpan
+   secara harfiah (kecuali `true`/`false` dan masukan eksplisit `[..]`/`{..}`, yang di-parse) dan
+   profil divalidasi terhadap skema sebelum penulisan — set yang tidak valid
+   ditolak dan profil pada disk tidak berubah:
+
+   ```bash
+   apothem profile set seriousness SHARED
+   apothem profile set identity.name "Ada Lovelace"
+   ```
+
+3. Wujudkan-ulang perkakas agar perubahan mencapai konfigurasi native-nya.
+   Untuk perkakas bercakupan-pengguna:
+
+   ```bash
+   apothem update --harness claude-code
+   ```
+
+   Untuk perkakas bercakupan-proyek, berikan akar proyek; gunakan `all` untuk menyegarkan
+   setiap perkakas yang terpasang:
+
+   ```bash
+   apothem update --harness cursor --project /path/to/project
+   apothem update --harness all --project /path/to/project
+   ```
+
+## Verifikasi
+
+```bash
+apothem profile show
+apothem verify --harness all
+```
+
+`profile show` mencerminkan suntingan Anda; `verify` memastikan konfigurasi yang diwujudkan
+cocok dengan profil yang diperbarui.
+
+## Terkait
+
+- [Menambah perkakas](/docs/how-to/adding-a-harness) untuk membawa perkakas baru di bawah
+  kendali profil sebelum mewujudkan-ulang.
+- [Memperbarui](/docs/install/updating) mencakup pemutakhiran mesin bersama langkah
+  wujudkan-ulang.

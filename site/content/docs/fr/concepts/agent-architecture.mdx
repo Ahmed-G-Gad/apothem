@@ -1,0 +1,157 @@
+---
+title: "Architecture des agents"
+description: "Comment Apothem projette une cohorte unique de capacités agentiques sur dix-sept environnements IA aux surfaces de hooks et aux formats de règles divergents."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Ceci est une page de spécification technique destinée aux développeurs. Elle
+emploie le vocabulaire interne d'Apothem — classes d'adaptateurs,
+materializers, manifeste de propagation, convergence des conventions entre
+pairs — sans l'édulcorer pour un public général.
+
+Apothem lit un profil partagé unique (`~/.config/apothem/profile.yaml`) et
+matérialise la configuration native de dix-sept adaptateurs enregistrés. Les
+environnements ne partagent pas de modèle commun de capacités agentiques :
+certains exposent des hooks avant l'appel d'outil, certains exécutent des
+règles depuis des fichiers `.md` plats, certains intègrent chaque règle dans
+un unique fichier d'instructions, et certains rendent une configuration pilotée
+par le profil au moment de l'installation. Cette page cartographie cette
+divergence et la discipline qu'Apothem y applique.
+
+## Matrice des capacités agentiques par environnement
+
+La matrice ci-dessous couvre les dix-sept environnements. Colonnes : la surface
+de hook PreToolUse exposée par chaque environnement, le format utilisé par
+Apothem pour activer les règles, la classe d'adaptateur (voir [Classes
+d'adaptateurs](#adapter-classes-explained)), et si l'adaptateur rend une
+configuration native via un materializer.
+
+
+| Environnement | Surface de hook PreToolUse | Format d'activation des règles | Classe d'adaptateur | Materializer |
+|---------|-------------------------|------------------------|---------------|--------------|
+| antigravity | Surface de hook native existante ; matériel de support Apothem uniquement | `GEMINI.md` plus règles de plugin Antigravity CLI | Classe I | aucun |
+| claude-code | PreToolUse / PostToolUse / Stop / SessionStart natifs | règles plates `.md` sous `rules/` | Classe II-A | aucun (modèles de settings éditeur) |
+| codebuddy | Aucune | fichier de règles de projet `.codebuddy/rules/apothem-rules.md` | Classe I | aucun |
+| codex | Hooks de cycle de vie natifs `hooks.json` | `AGENTS.md` plus règles de support référencées par les skills installées | Classe I | aucun |
+| cursor | Aucune | règles d'espace de travail `.mdc` (frontmatter MDC : `description` / `globs` / `alwaysApply`) | Classe I | aucun |
+| gemini-cli | Aucune | règles intégrées dans un unique `GEMINI.md` | Classe I | aucun |
+| github-copilot | Aucune (extension IDE, pas de hooks d'appel d'outil) | règles dans `.github/copilot-instructions.md` | Classe I | aucun |
+| glm | Aucune (backend de modèle ; pas de surface d'outil d'agent) | `.apothem/providers/glm.toml` configuration de fournisseur backend (pas de cohorte de règles) | Classe I | aucun |
+| hermes | Matériel de support uniquement | `config.yaml` plus répertoire de skills externe | Classe II-B | `config.yaml` |
+| kimi-code | Aucune | `AGENTS.md` plus règles de support sous `.kimi-code/.apothem/support/` | Classe I | aucun |
+| kiro | Aucune (les hooks d'agent Kiro sont hors du périmètre de l'adaptateur) | fichier de steering `.kiro/steering/apothem-rules.md` | Classe I | aucun |
+| open-claw | Matériel de support uniquement | `openclaw.json` plus répertoire de skills supplémentaire | Classe II-B | `openclaw.json` |
+| opencode | Matériel de support uniquement | JSON rendu depuis le profil plus commandes, skills et agents natifs | Classe II-B | `opencode.json` |
+| qwen-code | PreToolUse / Stop / SessionStart natifs | `QWEN.md` plus commandes, skills et agents natifs | Classe II-B | `settings.json` / `QWEN.md` |
+| trae | Aucune | fichier de règles de projet `.trae/rules/apothem-rules.md` | Classe I | aucun |
+| windsurf | Aucune | règles dans `.devin/rules/` | Classe I | aucun |
+| zed | Aucune | fichier plat `.rules` à la racine du projet | Classe I | aucun |
+
+
+Remarques sur la matrice :
+
+- **claude-code** est l'adaptateur de référence. Il porte des hooks natifs
+  PreToolUse, PostToolUse, Stop et SessionStart et fournit des modèles de
+  settings éditeur. Il ne gère délibérément
+  pas `CLAUDE.md` — ce fichier relève du territoire de l'opérateur.
+- **codex** installe des hooks de cycle de vie natifs via `hooks.json`,
+  convertit les agents en TOML, encapsule les prompts de commandes comme
+  skills Codex, et laisse `config.toml` à la propriété de l'opérateur.
+- **antigravity** conserve `~/.gemini/GEMINI.md` comme ancre de contexte
+  global et installe un plugin Apothem sous
+  `~/.gemini/antigravity-cli/plugins/apothem/`. Les fichiers de hooks sont
+  conservés comme matériel de support jusqu'à ce que l'adaptateur prenne en
+  charge la traduction du schéma de hooks d'Antigravity.
+- **cursor** active les règles via des fichiers `.mdc` portant le frontmatter
+  MDC éditeur (`description`, `globs`, `alwaysApply`) ; l'adaptateur n'écrit
+  aucun fichier unique `.cursorrules`.
+- **windsurf** utilise `.devin/rules/` ; l'adaptateur n'écrit aucun fichier
+  unique `.windsurfrules`.
+- **hermes** et **open-claw** rendent des fichiers de configuration natifs et
+  câblent les répertoires de skills de support Apothem via le paramètre de
+  répertoire de skills documenté par chaque environnement. Les cohortes
+  partagées non prises en charge restent sous des sous-arborescences de
+  support détenues par Apothem.
+- **qwen-code** rend les clés `settings.json` documentées pour le contexte et
+  le dispatch de hooks, puis utilise les répertoires de commandes, skills et
+  agents natifs de Qwen.
+
+## Discipline d'orchestration inter-environnements
+
+Apothem applique la **convergence des conventions entre pairs** : le même
+workflow invocable par l'opérateur est projeté dans l'idiome natif de chaque
+environnement plutôt que forcé dans un format partagé unique. Une règle qui
+s'active comme fichier plat `.md` sous claude-code devient une règle d'espace
+de travail `.mdc` sous cursor, une section intégrée de `GEMINI.md` sous
+gemini-cli, et une référence concaténée dans le `QWEN.md` de qwen-code plus
+des répertoires de découverte natifs — la même intention, le dialecte de
+chaque environnement.
+
+La cohorte maîtresse canonique se trouve à :
+
+```
+src/apothem/{rules,commands,skills,agents,output-styles,hooks,conformity,statuslines}/
+```
+
+Chaque adaptateur propage un sous-ensemble de cette cohorte. Le sous-ensemble
+par environnement est déclaré dans
+`src/apothem/lib/propagation-manifest.yaml` ; le manifeste est l'unique source
+de vérité quant aux artefacts qui atteignent quel environnement et sous quelle
+forme. Un adaptateur n'invente jamais d'artefacts hors du manifeste, et le
+manifeste n'assigne jamais à un environnement un artefact dont il n'a pas la
+surface pour l'héberger.
+
+## Les classes d'adaptateurs expliquées
+
+Apothem classe les adaptateurs en trois classes selon la façon dont ils
+traduisent le profil partagé en sortie native de l'environnement.
+
+- **Classe I — propagation brute.** L'adaptateur copie les artefacts de la
+  cohorte maîtresse canonique (un sous-ensemble déclaré dans le manifeste)
+  directement dans l'emplacement de configuration de l'environnement sans
+  étape de rendu. Il n'y a pas de materializer. antigravity, codebuddy, codex,
+  cursor, gemini-cli, github-copilot, glm, kimi-code, kiro, trae, windsurf et zed sont de
+  Classe I.
+- **Classe II-A — brut + modèles de settings liés à l'éditeur.** L'adaptateur
+  propage les artefacts en mode brut et gère en plus des modèles de settings
+  spécifiques à l'éditeur liés au schéma de l'éditeur. claude-code est de
+  Classe II-A.
+- **Classe II-B — materializer à surface unique rendue depuis le profil.**
+  L'adaptateur rend le profil partagé en une unique surface de configuration
+  native via un materializer. hermes, open-claw, opencode et qwen-code sont de
+  Classe II-B.
+
+## Comportement au moment du materializer
+
+La distinction de classe se manifeste au moment du materializer — lorsqu'un
+opérateur exécute la CLI sur un environnement :
+
+- `apothem install --harness <H>` propage le sous-ensemble du manifeste pour
+  `<H>` et, pour les adaptateurs de Classe II-A / II-B, rend la configuration
+  native de l'environnement.
+- `apothem verify --harness <H>` vérifie la configuration installée par
+  rapport à ce que le profil actuel produirait et signale toute dérive.
+- `apothem doctor` rapporte l'état par environnement sur chaque adaptateur
+  enregistré — installé / absent / dérivé.
+
+Voir la [référence CLI](/docs/cli-reference) pour les surfaces de commandes
+complètes.
+
+## Taxonomie de la divergence
+
+Les dix-sept environnements divergent selon trois axes. Chaque différence par
+environnement de la matrice se ramène à l'un d'entre eux.
+
+
+| Axe | Plage observée sur les dix-sept environnements |
+|------|---------------------------------------------|
+| Surface de hook | Multi-événements natifs (claude-code, codex, qwen-code) → matériel de hook de support uniquement (antigravity, gemini-cli, hermes, open-claw, opencode) → aucune (codebuddy, cursor, github-copilot, glm, kimi-code, kiro, trae, windsurf, zed) |
+| Format d'activation des règles | `.md` plat (claude-code) → règles de plugin (antigravity) → espace de travail `.mdc` (cursor) → règles de répertoire (codebuddy, trae, windsurf) → fichier de steering (kiro) → fichier plat à la racine du projet (zed) → fichier intégré unique (codex, gemini-cli, github-copilot, kimi-code) → matériel de support référencé par la configuration (hermes, open-claw, opencode, qwen-code) → configuration de fournisseur backend (glm) |
+| Classe d'adaptateur | Classe I propagation brute → Classe II-A brut + settings éditeur → Classe II-B surface unique rendue depuis le profil |
+
+
+Le travail d'Apothem consiste à maintenir constante une intention d'opérateur
+cohérente tandis que ces trois axes varient par environnement. Le manifeste de
+propagation et le contrat de classe d'adaptateur sont les deux mécanismes qui
+maintiennent cette intention stable à travers la divergence.

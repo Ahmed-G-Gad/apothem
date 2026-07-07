@@ -1,0 +1,53 @@
+---
+title: "Harness-Einrichtung"
+description: "Harness-Adapter für Plattformen hinzufügen und konfigurieren."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## Einen Harness-Adapter installieren
+
+```bash
+apothem install --harness <name>
+```
+
+Verfügbare Namen finden Sie in der [Liste der unterstützten Harnesses](/docs/harnesses).
+Adapter mit Projektbereich erfordern den Projektpfad:
+
+```bash
+apothem install --harness cursor --project /path/to/project
+apothem install --harness gemini-cli --project /path/to/project
+apothem install --harness github-copilot --project /path/to/project
+apothem install --harness windsurf --project /path/to/project
+```
+
+## Mehrere Harnesses installieren
+
+Verwenden Sie den registry-weiten Selektor, wenn Sie jeden unterstützten Adapter wünschen. Da
+die registrierte Menge Adapter mit Projektbereich enthält, geben Sie den Projektstamm an.
+
+```bash
+apothem install --harness claude-code
+apothem install --harness cursor --project /path/to/project
+apothem install --harness all --project /path/to/project
+```
+
+## Harness-Einrichtung überprüfen
+
+```bash
+apothem verify --harness <name>
+apothem verify --harness all --project /path/to/project
+```
+
+Um jeden registrierten Adapter in einem Durchgang zu prüfen, führen Sie `apothem doctor` aus. Es gibt
+eine Installationsstatus-Tabelle pro Harness aus und beendet sich mit einem Code ungleich null, wenn ein Adapter
+als nicht installiert gemeldet wird.
+
+## Installierte Harnesses anzeigen
+
+```bash
+apothem harnesses list
+```
+
+Verwenden Sie `apothem harnesses show <name>` für Details pro Adapter (Name, Installations-
+status und Ausgabepfad).

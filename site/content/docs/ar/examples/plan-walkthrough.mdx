@@ -1,0 +1,59 @@
+---
+title: "جولةٌ إرشادية في الخطّة"
+description: "جولةٌ إرشادية طرفًا-إلى-طرف في خط أنابيب /plan لمهمّةٍ حقيقية."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+يَعبُر هذا المثال خط أنابيب <bdi>`/plan`</bdi> الكامل لمهمّةٍ بسيطة: إضافة أمرٍ فرعي جديد لواجهة سطر الأوامر إلى <bdi>Apothem</bdi>.
+
+## الخطوة 1: اكتب متطلّبات النثر
+
+أنشِئ <bdi>`prose.md`</bdi>:
+
+```markdown
+Add a `apothem status` subcommand that prints the current apothem
+version, installed harnesses, and the result of `apothem verify`.
+The output should be machine-parseable (JSON with --json flag) and
+human-readable by default.
+```
+
+## الخطوة 2: نقِّح إلى مواصفة
+
+```bash
+/plan-spec prose.md --suite-name apothem-status-command
+```
+
+يُشغِّل هذا <bdi>Forge</bdi> ذا الأطوار الستّة، ويطرح أسئلة استيضاح، ويُنتِج <bdi>`plans/apothem-status-command/_spec/spec.md`</bdi>.
+
+## الخطوة 3: ولِّد الخطّة
+
+```bash
+/plan-generate
+```
+
+يُنتِج <bdi>PREAMBLE.md</bdi> و<bdi>MASTER-PLAN.md</bdi> و<bdi>PROGRESS.md</bdi> و<bdi>PLAN-NOTES.md</bdi> وملفّات <bdi>PHASE.md</bdi> لكلّ طور تحت <bdi>`plans/apothem-status-command/phases/`</bdi>.
+
+## الخطوة 4: راجِع الخطّة
+
+```bash
+/plan-review
+```
+
+تدقيقٌ جنائي بدرجات الوفاء للنثر والاتّساق والجودة. أصلِح أيّ نتيجة <bdi>FAIL</bdi> قبل المتابعة.
+
+## الخطوة 5: نفِّذ الأطوار
+
+```bash
+/plan-execute    # executes the first phase, then pauses
+/plan-execute    # executes the next phase, then pauses
+...
+```
+
+## الخطوة 6: تحقّق من التقدُّم
+
+```bash
+/plan-status
+```
+
+يُبلِّغ عن الطور الحالي، والمُخرَجات المُتحقَّق منها، والإجراء التالي.

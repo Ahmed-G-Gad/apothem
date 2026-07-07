@@ -1,0 +1,61 @@
+---
+title: "ルールの記述"
+description: "Apothem の動作ルールの作成、スコープ設定、保守を行います。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+ルールは `src/apothem/rules/` 内にある拡張子 `.md` の Markdown ファイルです。
+
+## ルールのフロントマター
+
+```yaml
+---
+name: "..."
+description: "..."
+pathFilter: ""            # empty string for always-on; a glob for path-filtered
+alwaysApply: true         # true for always-on; false for path-filtered
+---
+```
+
+## ルールのスコープ
+
+| スコープ | 適用されるとき |
+|-------|-------------|
+| `always-on` | すべてのセッション、すべてのファイル |
+| `path-filtered` | アクティブなファイルが `path-filter` に一致する場合のみ |
+| `operator-selected` | オペレーターが settings.json で明示的に有効化したとき |
+
+## ルールの例
+
+```markdown
+---
+name: "python-conventions"
+description: "Python style conventions for this project"
+pathFilter: "**/*.py"
+alwaysApply: false
+---
+
+# Python conventions
+
+- Use type annotations on all public functions.
+- Maximum line length: 88 characters.
+- Prefer explicit over implicit.
+```
+
+## 各環境へのルールの適用
+
+ルールを記述したら、インストール済みの各環境アダプターを更新します。
+`apothem harnesses list` を実行してインストール済みのセットを確認し、環境ごとに
+update を 1 回ずつ呼び出します。
+
+```bash
+apothem update --harness claude-code
+apothem update --harness cursor
+```
+
+## ルールの検証
+
+```bash
+python -m apothem.conformity.gate --check frontmatter
+```

@@ -1,0 +1,113 @@
+---
+title: "Inside the multi-harness adapter design"
+description: "A technical deep-dive on Apothem's HarnessAdapter protocol and the three adapter classes that materialize one profile into seventeen harnesses."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem materializes one shared profile into seventeen harness-native
+configurations. Seventeen targets, seventeen vendor formats, seventeen install
+locations — and one uniform interface the operator and the CLI both rely on.
+This post explains how the adapter layer holds that contract together.
+
+## The HarnessAdapter protocol
+
+Every harness adapter implements a structural `HarnessAdapter` protocol. The
+protocol is the seam between the CLI and the vendor-specific details. It
+declares the operations the CLI invokes and the metadata the CLI reads:
+
+- `name` — the adapter's registered identifier.
+- `output_path` — where the materialized config lands on disk.
+- `install` — render and write the harness-native config.
+- `uninstall` — remove the materialized config, leaving the shared profile
+  untouched.
+- `is_installed` — report whether the harness's config is present.
+- `verify` — detect drift between the profile and the on-disk config.
+
+Because the contract is a `typing.Protocol`, an adapter satisfies it by shape,
+not by inheritance. At runtime the CLI resolves every adapter from a static
+registry — the `HARNESS_REGISTRY` table in
+`src/apothem/lib/harness_registry_data.py`, which `harness_registry.py` declares
+*authoritative at runtime* — so a plain checkout loads every adapter without any
+installed entry-point metadata on `sys.path`. The
+`[project.entry-points."apothem.harnesses"]` table in `pyproject.toml` and the
+filesystem `discover_adapters()` sweep are a conformance parity check, not the
+runtime resolver: a test asserts the discovered adapter set equals the static
+registry, so a convention-correct but unregistered adapter surfaces as a
+coverage regression rather than silently resolving. Adding a harness therefore
+means registering it in the registry data (and mirroring it in the entry-points
+table for packaging parity) — the parity test fails loudly if either is missed.
+
+## One sub-package per adapter
+
+Each adapter lives in its own sub-package under
+`src/apothem/harnesses/<name>/`:
+
+- `__init__.py` — the `<Name>Adapter` class that implements the protocol and
+  delegates to the sibling action modules.
+- `install.py` / `uninstall.py` / `update.py` / `verify.py` — the per-action
+  implementations the adapter class imports and calls.
+- `materializer.py` — an optional `materialize_native_config(profile) -> str`
+  that renders the shared profile into the harness's native config text.
+
+Splitting each action into its own module keeps the adapter class thin: it is a
+dispatcher that wires the protocol methods to the action functions. A reader
+opening `verify.py` sees exactly the drift-detection logic for that one
+harness, with no install or uninstall noise to wade through.
+
+## Three adapter classes
+
+The seventeen harnesses do not all consume configuration the same way. Apothem
+sorts them into three classes by how much transformation the profile needs
+before it reaches the harness.
+
+### Class I — raw propagation
+
+The harness consumes the same artifacts Apothem already authors — flat `.md`
+rules, agents, hooks — with no rendering step. The adapter copies the raw
+templates into the harness's config tree. There is no `materializer.py`,
+because nothing is rendered; the profile's artifacts are the output.
+
+### Class II-A — raw plus vendor templates
+
+The harness consumes Apothem's raw artifacts AND a set of vendor-specific
+template files (settings, manifest, or scaffold files the harness requires).
+The adapter copies the raw artifacts and the vendor templates together. The
+vendor templates live alongside the adapter under a `templates/` directory.
+
+### Class II-B — profile-rendered
+
+The harness wants a single native config file rendered from the shared
+profile's structured fields. The adapter's `materializer.py` reads the profile
+and emits the harness-native text — a Hermes `config.yaml`, an Open-Claw
+`openclaw.json`, an OpenCode `opencode.json`, or a Qwen Code `settings.json`.
+Class II-B is where the format reconciliation work concentrates;
+[the convention-convergence deep-dive](/docs/blog/posts/cross-harness-convention-convergence)
+covers it in detail.
+
+## claude-code: the full-surface reference adapter
+
+The claude-code adapter is the reference implementation for the widest config
+surface — rules, agents, hooks, output-styles, settings, and convention
+directories. It belongs to Class II-A: it propagates Apothem's raw templates
+and flattens the convention directories, and it ships vendor settings templates
+under `src/apothem/harnesses/claude_code/templates/`. It carries no
+`materializer.py` — it does not render a native config file from the profile;
+it propagates artifacts and convention directories directly.
+
+One deliberate boundary: the claude-code adapter does not manage `CLAUDE.md`.
+That file is operator-owned territory. Apothem materializes the surrounding
+config surface — the rules, the hooks, the settings — and leaves the operator's
+own `CLAUDE.md` voice untouched. An adapter that overwrote it would erase
+hand-authored project instructions on every `apothem install`, so the adapter
+draws the line at the directory boundary and stops.
+
+## Why the uniformity matters
+
+The protocol gives the operator one mental model across seventeen tools.
+`apothem install`, `apothem verify`, `apothem uninstall` behave the same way
+whether the target renders a single file or flattens a directory tree. The
+vendor differences live inside the adapter sub-packages, behind the protocol,
+where they belong.
+
+Read the operator-facing reference at [Harnesses](/docs/harnesses) and the
+profile model at [Concepts](/docs/concepts).

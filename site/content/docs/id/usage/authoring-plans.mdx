@@ -1,0 +1,43 @@
+---
+title: "Menulis rencana"
+description: "Tulis suite rencana dengan pipeline /plan."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Pipeline `/plan` mengubah persyaratan prosa mentah menjadi rencana implementasi yang dapat dieksekusi, ditinjau, dan terjamin kualitas.
+
+## Tahap inti
+
+Pipeline ini dikirim sebagai delapan perintah `/plan-<stage>` kelas-satu. Alur sehari-hari menjalankan lima di antaranya:
+
+1. `/plan-spec` — Menyempurnakan prosa menjadi `_spec/spec.md` setara-spesifikasi
+2. `/plan-generate` — Menghasilkan kerangka suite rencana yang lengkap
+3. `/plan-review` — Audit forensik atas rencana yang dihasilkan
+4. `/plan-execute` — Mengeksekusi fase satu per satu
+5. `/plan-status` — Memeriksa kemajuan kapan saja
+
+Tiga tahap melengkapi set ini: `/plan-design` mengeluarkan artefak desain arsitektural untuk suite ber-arsitektur, `/plan-audit` menjalankan pembungkus remediasi spec → generate → review lingkar-tertutup, dan `/plan-amend` merevisi suite yang ada tanpa kehilangan keputusan yang telah diselesaikan.
+
+## Rencana cepat (berkas tunggal)
+
+```bash
+# Creates plans/YYYY-MM-DD--my-feature.md in the current project
+/plan-spec --quick my-feature
+```
+
+## Suite rencana penuh
+
+```bash
+# Step 1 — write your requirements to prose.md, then:
+/plan-spec prose.md --suite-name my-project-plan
+/plan-generate
+/plan-review
+/plan-execute
+```
+
+## Siklus hidup rencana
+
+Rencana bertransisi melalui: `draft` -> `in-progress` -> `converged` (dipromosikan menjadi ADR) atau `abandoned`.
+
+Lihat [Disiplin rencana](/docs/reference/plans-discipline) untuk spesifikasi siklus hidup lengkap.

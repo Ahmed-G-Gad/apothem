@@ -1,0 +1,41 @@
+---
+title: "Frontmatter Schema"
+description: "Reference guide for YAML frontmatter block structure, per-class required keys, and validator enforcement rules across artifact classes."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Canonical reference for YAML frontmatter on every artifact class.** The summary at [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Conventions is the inline declaration; the per-class JSON Schemas at [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) (`additionalProperties` rejects unknown keys) are the machine-readable contract and win on any disagreement. This page is the required-key index, and [`artifact-schema.mdx`](/docs/reference/artifact-schema) carries the per-class templates and worked examples — both are human-readable projections of those schemas.
+
+---
+
+## 1. Frontmatter Block Shape
+
+Every artifact carries YAML frontmatter at the head, delimited by `---` lines. The canonical authorship-header banner per [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) sits above the frontmatter on Markdown-family files; the frontmatter follows immediately after.
+
+Keys use `kebab-case`. Scalar values are either bare or double-quoted; string values containing colons, hash marks, or other YAML-significant characters are quoted.
+
+## 2. Per-Class Required Fields
+
+The required-key set varies by artifact class. The authoritative shape is enforced by `scripts/dev/validate_ecosystem.py` and the per-class JSON Schemas under the `schemas/` directory (one schema file per artifact class).
+
+```text
+schemas/agent.schema.json
+schemas/skill.schema.json
+schemas/command.schema.json
+schemas/output-style.schema.json
+schemas/plan.schema.json
+```
+
+| Class | Required keys |
+|-------|---------------|
+| `CLAUDE.md` (root config) | `name`, `version`, `updated`, `description`, `scope`, `portability` |
+| Rules (`src/apothem/rules/*.md`) | `name`, `description`, `pathFilter`, `alwaysApply` |
+| Commands (`src/apothem/commands/*.md`) | `name`, `version`, `updated`, `description`, `argument-hint`, `disable-model-invocation`, `portability`, `allowed-tools` |
+| Delegated workers (canonical directory shown below) | `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns`, `effort` |
+| Skills (`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools` |
+
+Per-class schemas at [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) carry the full constraint set including type, format, enum, and pattern restrictions.
+
+## 3. Validators
+
+`scripts/dev/validate_ecosystem.py` walks the artifact tree, applies the required-key sets above, and reports `[FAIL]` on any artifact missing a required field. The per-write `frontmatter-grep` at `src/apothem/conformity/frontmatter_grep.py` enforces the same shape at PreToolUse Write/Edit hook boundaries.

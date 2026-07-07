@@ -1,0 +1,127 @@
+---
+title: "Apothem v1.0.1 — 출시 릴리스"
+description: "Apothem v1.0.1이 출시되었습니다 — 하나의 공유 프로필을 열일곱 개의 AI 어시스턴트 하니스로 머티리얼라이즈하고, 여러 설치 경로와 서명·증명된 릴리스를 제공합니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem v1.0.1은 AI 어시스턴트 하니스를 위한 호스트 비종속 구성 관리자의 출시
+릴리스입니다. 하나의 공유 프로필, 열일곱 개의 하니스, 단일 서명된
+버전, 그리고 릴리스 자체에 첨부된 공급망 증거를 제공합니다.
+
+## 논지: 하나의 프로필, 열일곱 개의 하니스
+
+Apothem은 `~/.config/apothem/profile.yaml`에 있는 단일 공유 프로필을 읽고,
+각 하니스가 기대하는 네이티브 구성으로 그것을 머티리얼라이즈합니다. 당신은 자신의 동작
+규칙, 스킬, 훅, 관례를 한 번만 작성합니다. Apothem은 그것들을 열일곱 개의
+하니스 네이티브 대상으로 렌더링하고 동기 상태로 유지합니다.
+
+이번 릴리스의 열일곱 개 어댑터:
+
+- antigravity
+- claude-code
+- codebuddy
+- codex
+- cursor
+- gemini-cli
+- github-copilot
+- glm
+- hermes
+- kimi-code
+- kiro
+- open-claw
+- opencode
+- qwen-code
+- trae
+- windsurf
+- zed
+
+워크플로에 도구를 하나 추가하고 명령을 하나 실행하면, 당신의 구성이 그곳에
+있습니다. 도구를 제거하면 Apothem이 깔끔하게 제거합니다 — 남겨진 고아 파일
+없이.
+
+## 설치
+
+여러 설치 경로, 그 아래에는 하나의 CLI:
+
+1. **Claude Code 플러그인** — Claude Code 내부에서:
+
+   ```text
+   /plugin marketplace add ahmed-g-gad/apothem
+   /plugin install apothem@apothem
+   ```
+
+2. **npx** — npm 패키지 `@ahmed-g-gad/apothem`에서 CLI를 직접 실행하며, 설치
+   단계가 없습니다:
+
+   ```bash
+   npx @ahmed-g-gad/apothem profile init
+   npx @ahmed-g-gad/apothem install --harness all --project .
+   ```
+
+3. **원샷 스크립트 설치 프로그램** — 자체 완결형 런타임과 `apothem` 런처를
+   PATH에 배치합니다:
+
+   ```bash
+   curl -fsSL https://apothem.ahmedgad.com/install.sh | sh    # POSIX
+   ```
+
+   ```powershell
+   irm https://apothem.ahmedgad.com/install.ps1 | iex         # Windows
+   ```
+
+4. **도구 네이티브 플러그인과 확장** — Gemini CLI 확장
+   (`gemini extensions install https://github.com/ahmed-g-gad/apothem`),
+   Qwen Code 확장 (`qwen extensions install ahmed-g-gad/apothem`),
+   Codex 플러그인 (`codex plugin marketplace add ahmed-g-gad/apothem`), 그리고
+   VS Code 계열 확장 (Visual Studio Marketplace. VS Code와 GitHub
+   Copilot을 포괄).
+
+## 공급망 자세
+
+[GitHub Release v1.0.1](https://github.com/ahmed-g-gad/apothem/releases/tag/v1.0.1)
+은 코드와 함께 전체 증거 세트를 담고 있습니다:
+
+- sdist와 wheel. 게시 전에 확인됨.
+- CycloneDX SBOM.
+- 모든 아티팩트에 대한 Sigstore cosign 키리스 서명 번들.
+- SLSA-3 빌드 출처. 릴리스 워크플로 내부 자체에서 검증됨.
+- 플랫폼 런타임 아카이브 (darwin / linux / windows). 서명된 `SHA256SUMS`
+  매니페스트 포함.
+
+릴리스 태그는 GPG로 서명되며, npm 패키지는 Trusted Publishing(OIDC)을 통해
+자동 출처와 함께 게시됩니다.
+
+## 상자 안에 든 것
+
+`apothem` CLI는 전체 구성 수명 주기에 필요한 운영자 명령을 노출합니다:
+
+- `apothem install` — 프로필을 하나의 하니스 또는 그 전체로 머티리얼라이즈합니다.
+- `apothem uninstall` — 하니스의 머티리얼라이즈된 구성을 제거하며, 공유 프로필은
+  건드리지 않습니다.
+- `apothem update` — 프로필을 편집한 후 다시 머티리얼라이즈합니다.
+- `apothem verify` — 프로필과 하니스의 디스크 상 구성 사이의 드리프트를
+  탐지합니다.
+- `apothem harnesses` — 등록된 모든 어댑터를 나열합니다.
+- `apothem profile` — 공유 프로필을 검사하고 관리합니다.
+- `apothem doctor` — 환경과 구성 문제를 진단합니다.
+
+각 하니스 어댑터는 균일한 `HarnessAdapter` 프로토콜 — `install`,
+`uninstall`, `is_installed`, `verify` — 을 구현하므로, 아래에 깔린 벤더
+형식과 무관하게 모든 하니스가 운영자의 자리에서 예측 가능하게 동작합니다.
+설계에 대한 자세한 내용은
+[어댑터 아키텍처 심층 분석](/docs/blog/posts/multi-harness-adapter-design)
+에서, 형식 조정에 대한 자세한 내용은
+[하니스 간 관례 수렴](/docs/blog/posts/cross-harness-convention-convergence)
+에서 읽어 보세요.
+
+## 다음으로 갈 곳
+
+- [빠른 시작](/docs/install/quickstart) — 첫 번째 프로필을 설치하고
+  머티리얼라이즈하세요.
+- [하니스](/docs/harnesses) — 열일곱 개 대상 전체에 대한 어댑터별 레퍼런스.
+- [개념](/docs/concepts) — 프로필 모델과 머티리얼라이즈 파이프라인.
+
+Apothem은 MIT 라이선스를 따르며
+[github.com/ahmed-g-gad/apothem](https://github.com/ahmed-g-gad/apothem)
+에서 공개적으로 개발됩니다.

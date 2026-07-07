@@ -1,0 +1,73 @@
+---
+title: "/research-disseminate"
+description: "/research-disseminate — 게재 승인 이후의 확산과 영향력을 추진합니다: 프리프린트 공지, 공개 산출물, FAIR 아카이브 기탁, altmetrics 추적, 심사자 반론 / 수정 루프, 그리고 등록 보고서 2단계 경로 — /research 파이프라인의 종결 단계이며 /research-publish 다음에 옵니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**역할:** 책임 연구자(확산 및 영향력)
+**파이프라인 위치:** 종결
+
+게재 승인 이후의 확산과 영향력을 추진합니다. 공개 작업은 운영자가 수행합니다. 이 단계는 준비된 확산 계획에서 멈추며 결코 자동으로 게시하지 않습니다.
+
+## 표준 호출
+
+```bash
+/research-disseminate
+```
+
+인자 포함:
+
+```bash
+/research-disseminate [--suite-name NAME] [--override] [--archive REPO] [--preprint SERVER]
+```
+
+## 입력
+
+스위트의 `_outputs/publication-record.md`(`/research-publish`가 생성한 게재처 패키지 + 제출 기록).
+
+## 출력
+
+`_outputs/dissemination-plan.md`(프리프린트 공지, 공개 산출물 계획, FAIR 아카이브 기탁 기록, altmetrics 및 영향력 추적 계획, 반론 / 수정 루프, 그리고 등록 보고서 2단계 경로).
+
+## 하류
+
+종결 — 확산 계획은 파이프라인의 최종 산출물입니다. 심사자 반론 / 수정 루프는 수정이 필요한 경우 `/research-paper`로 다시 진입할 수 있습니다.
+
+## 워크플로 단계
+
+이 명령은 표준 `/research` 파이프라인 워크플로를 따릅니다:
+
+1. **컨텍스트 로드** — `_outputs/publication-record.md`, 규칙, 그리고 기존 스위트 상태를 읽습니다.
+2. **프리프린트와 공개 산출물 계획** — 프리프린트 공지와 발표 / 포스터 / 블로그 계획을 작성합니다.
+3. **FAIR 아카이브 기탁 기록** — 데이터 + 코드를 영구 식별자가 있는 FAIR 저장소에 기탁할 계획을 세웁니다.
+4. **영향력 추적 설정** — 제안서의 영향력 경로에 대해 altmetrics와 영향력 추적을 계획합니다.
+5. **반론 루프 준비** — 심사자 반론과 해당하는 경우 등록 보고서 2단계 경로를 작성합니다.
+6. **검증 및 발행** — 계획이 실행 가능한지 확인하고 `_outputs/dissemination-plan.md`와 인계 매니페스트를 발행합니다. 공개 작업은 운영자가 수행합니다.
+
+## 최저 엄밀성 기준
+
+공개 산출물은 자연스러운 도메인 언어를 담습니다. 확산이 익명 해제보다 앞서는 경우, 저자, 소속 기관, 시스템 신원은 지정된 단계를 위해 보류됩니다. FAIR 기탁은 게재처 야심에 맞춰 조정된, 독립적인 제3자가 연구를 재현할 수 있게 하는 지속적이고 인용 가능한 재현성 증거 패키지입니다.
+
+## 실패 모드
+
+| 증상 | 원인 | 복구 |
+|---------|-------|----------|
+| FAIR 기탁 기록 없음 | 아카이브 단계 생략 | FAIR 저장소(`--archive`)를 선택하고 영구 식별자가 있는 기탁 계획을 기록 |
+| 계획이 자동 게시를 시도 | 단계 경계를 넘어섬 | 준비된 계획에서 멈춤; 모든 공개 작업은 운영자가 수행 |
+| 게재 기록 누락 | `/research-publish`를 아직 실행하지 않음 | 먼저 `/research-publish`를 실행하여 게재처 패키지를 생성 |
+
+## 예제
+
+```bash
+# 승인 후 확산 계획
+/research-disseminate --suite-name retrieval-latency
+
+# 프리프린트 서버와 FAIR 아카이브 고정
+/research-disseminate --preprint arXiv --archive Zenodo
+```
+
+## 상호 참조
+
+- [파이프라인 개요](/docs/pipeline)
+- [명령 참조](/docs/reference/commands)

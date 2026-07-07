@@ -1,0 +1,36 @@
+---
+title: "Convenciones de prosa"
+description: "Impone la jerarquía modal RFC 2119, prohíbe los adjetivos de marketing y el relleno evasivo, usa fechas ISO-8601 absolutas y valida la hermeticidad de la prosa directiva."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Referencia canónica para la disciplina de prosa en cada superficie Markdown redactada.** El resumen en [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Convenciones es la declaración en línea; esta página es la referencia independiente que citan los contribuidores aguas abajo.
+
+---
+
+## 1. Jerarquía modal (RFC 2119)
+
+La prosa directiva usa la jerarquía modal **RFC 2119**: `MUST`, `MUST NOT`, `SHOULD`, `SHOULD NOT`, `MAY`. Cada uno lleva la fuerza vinculante que define el RFC. Los modales en minúscula (`must`, `should`) no llevan peso normativo y se usan solo en prosa narrativa donde no se declara ninguna obligación.
+
+## 2. Vocabulario prohibido
+
+### 2.1 Adjetivos de marketing
+
+Los términos `powerful`, `seamless`, `robust`, `cutting-edge`, `next-generation`, `world-class`, `enterprise-grade` y equivalentes están prohibidos en los artefactos de cara al usuario a menos que se sustenten concretamente con evidencia medida. La sustanciación cita un benchmark, una comparación, una medición o una fuente de validación externa.
+
+### 2.2 Relleno evasivo
+
+Los términos `basically`, `kind of`, `sort of`, `in some sense`, `to some extent` y equivalentes están prohibidos en el texto directivo. La prosa directiva es vinculante; el relleno evasivo concede la fuerza vinculante que la prosa reclama.
+
+### 2.3 Hermeticidad UDA
+
+La verificación de hermeticidad universal de directivas (UDA) en `scripts/dev/validate_ecosystem.py` impone un léxico cerrado de evasivas (`maybe`, `might`, `could`, `should probably`, `usually`, `generally speaking`, `in most cases`, `mostly`, `typically`, `often`, `or similar`, `etc.`, `and so on`) en las líneas que llevan una prescripción vinculante. Los tokens evasivos citados como el propio tema de la regla (por ejemplo, una lista de palabras prohibidas en una página de lista de prohibidos) quedan exentos por el mecanismo de marcador definicional del validador.
+
+## 3. Referencias de fecha
+
+Las fechas son ISO-8601 absolutas (`YYYY-MM-DD`) en cada referencia. Las fechas relativas (`yesterday`, `last week`, `recently`) están prohibidas en los artefactos que persisten más allá de su sesión de autoría.
+
+## 4. Validadores
+
+La verificación de hermeticidad UDA de `scripts/dev/validate_ecosystem.py` es la superficie de imposición mecánica para §2.3. La familia `markdown` de validadores conformity-grep por escritura impone el estándar de calidad de prosa más amplio en los límites de los hooks PreToolUse Write/Edit.

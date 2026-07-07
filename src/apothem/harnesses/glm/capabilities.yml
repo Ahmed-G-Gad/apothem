@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: MIT
+
+# Per rules/agent-capability-discipline.md §1 / §3 / §7. GLM (Z.ai) is a
+# model backend, not a coding-agent tool: Z.ai ships no native GLM coding CLI.
+# An Anthropic-compatible or OpenAI-compatible agent points at GLM by setting
+# backend environment variables. The adapter writes a single Apothem-owned
+# provider config file under .apothem/providers/ and authors no coding-agent
+# cohort (rules, commands, skills, agents, hooks), because a model backend
+# exposes none. Every cell of the registry capability matrix is therefore
+# `unsupported`; the dossier fields below carry the model-backend sentinel
+# `not-applicable-model-backend` where an axis does not apply to a backend.
+
+# No MCP file surface exists: GLM is a backend endpoint, not an agent that
+# hosts MCP servers. Empty list per the registry's unsupported mcp_servers cell.
+mcp_servers: []
+mcp_servers_authored: false
+sub_agent_dispatch: false
+custom_command_support: "no"
+recommended_postfix_rendering: "not-applicable-model-backend"
+long_context_compaction: "profile-managed"
+context_ignore_surface: "not-applicable-model-backend"
+layered_context_surface: ".apothem/providers/glm.toml backend config (no agent context surface)"
+lsp_symbol_navigation: "not-applicable-model-backend"
+hook_learning_capture: "artifact-evolution-cycle"
+standard_convention_pin: "STANDARD-CONVENTION-PIN.md"
+# web-fetch / browser-retrieval surface — the backing capability dimension for
+# rules/source-accessibility.md step 1. GLM is a model backend with no agent
+# tool surface to discover against the pin.
+web_fetch: "not-applicable-model-backend"
+tool_surface_restrictions:
+  - secrets-paths
+  - destructive-shell-ops
+  - network-write-unsigned
+system_prompt_template_path: "templates/glm.toml"
+agent_memory_surface: "not-applicable-model-backend (no agent runtime owned by the backend)"

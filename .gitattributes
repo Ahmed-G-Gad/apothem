@@ -1,0 +1,46 @@
+# SPDX-License-Identifier: MIT
+
+# Auto-detect text files and normalize line endings to LF on commit.
+* text=auto eol=lf
+
+# Force LF for script files across all platforms.
+*.sh   text eol=lf
+*.bash text eol=lf
+*.py   text eol=lf
+*.md   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.toml text eol=lf
+*.json text eol=lf
+*.txt  text eol=lf
+*.cfg  text eol=lf
+*.ini  text eol=lf
+
+# Windows-specific script files keep CRLF.
+*.bat  text eol=crlf
+*.ps1  text eol=crlf
+*.cmd  text eol=crlf
+
+# Binary assets — no line-ending normalization.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.svg   text
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.eot   binary
+*.otf   binary
+*.pdf   binary
+*.zip   binary
+*.tar   binary
+*.gz    binary
+*.whl   binary
+
+# Export-ignore — developer-only / ephemeral trees omitted from source archives.
+.plans/  export-ignore
+.apothem/  export-ignore
+tests/   export-ignore
+.github/ export-ignore

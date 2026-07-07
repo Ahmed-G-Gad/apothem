@@ -1,0 +1,42 @@
+---
+title: "MCP servers"
+description: "Model Context Protocol server configuration — operator-owned and registered through each tool's native MCP mechanism; Apothem syncs the inventory from the shared profile but authors no server entries."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Model Context Protocol (MCP) servers are **operator-owned**. Apothem carries the
+MCP inventory in the shared profile and projects it into each tool's native MCP
+surface, but it authors no server entries of its own — the surface stays yours to
+manage.
+
+## Where MCP servers register
+
+Each tool registers MCP servers through its own native mechanism, and Apothem
+honors that surface rather than overwriting it. On the Claude Code adapter (one of
+many), servers register with `claude mcp add` into `~/.claude.json` (user or local
+scope) and a project-level `.mcp.json`; other adapters project into their own
+native surfaces. Apothem's managed settings never carry an `mcpServers` block.
+
+## Adding a server
+
+Register a server through your tool's native mechanism; the canonical entry shape
+is one key under `mcpServers`:
+
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/some/path"]
+    }
+  }
+}
+```
+
+The tool's runtime loads the registered servers on session start; restart
+the tool to pick up new servers.
+
+## Naming convention
+
+MCP tools surface to the assistant as `mcp__<server>__<tool>` per
+the tool's standard MCP-tool naming convention.

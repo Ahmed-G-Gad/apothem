@@ -1,0 +1,157 @@
+---
+title: "Authorship Header — Per-File SPDX License Line"
+description: "Define and enforce per-file SPDX license identifier markers using canonical single-line headers in the appropriate comment syntax for each filetype."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+{/* REUSE-IgnoreStart */}
+
+> **Canonical normative reference for downstream contributors.** This document mirrors the project specification's Authorship & File-Header sections (Spec §0.5 + §4.6); it is the standalone reference that ships with the published repo. The architectural rationale is recorded at [ADR-0002](/docs/reference/authorship-header).
+
+---
+
+## 1. The Canonical Header Line
+
+Every applicable file in the ecosystem MUST begin with a single canonical SPDX license-identifier line, in the comment syntax of its filetype family. The line is the file's machine-readable license marker; its presence is non-negotiable for non-exempt files, and its content is governed by a single source of truth, not improvised per file. The full copyright instrument lives once at the repository-root [`LICENSE`](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) file — it is not duplicated into every source file.
+
+### 1.1 Information Content (Invariant)
+
+The canonical content is exactly one line:
+
+1. `SPDX-License-Identifier: MIT` — the machine-readable license marker per the [REUSE specification](https://reuse.software/spec/) maintained by the FSFE; parsed without ambiguity by the SPDX toolchain (`reuse lint`, `scancode`), Linux-kernel tooling, and downstream license-scanners. It carries no visual border and no per-file copyright, website, email, or GitHub lines — per-file provenance is the single SPDX line by design (see §4).
+
+### 1.2 The Reference Form (`#`-Comment Family)
+
+The canonical text — written here in its `#`-comment-syntax form — is the source of truth at [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt):
+
+```text
+# SPDX-License-Identifier: MIT
+```
+
+This text is the **only** authoritative source. The `file-header` validator (§7) runs against this byte-exact fixture. Any drift between a file's header line and this fixture (under syntax substitution per §2) is a CI failure.
+
+---
+
+## 2. Per-Filetype Variants (Byte-Exact)
+
+The line's *information content* is invariant; only its *comment syntax* varies per filetype. The full per-filetype variant table:
+
+| Filetype family | Comment syntax | Variant rendering |
+|---|---|---|
+| `#` family — `.sh`, `.bash`, `.zsh`, `.py`, `.rb`, `.pl`, `.ps1`, `.yml`, `.yaml`, `.toml`, `.cff`, `.gitignore`, `.gitattributes`, `.editorconfig`, `.shellcheckrc`, `.env.example`, `Makefile`, `Dockerfile`, `Procfile`, `CODEOWNERS`, `PKGBUILD`, extensionless shell entrypoints such as `scripts/apothem` | `#` line-comment | `# SPDX-License-Identifier: MIT` |
+| `//` family — `.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`, `.go`, `.rs`, `.java`, `.kt`, `.swift`, `.c`, `.cc`, `.cpp`, `.h`, `.hpp`, `.cs`, `.scala`, `.dart`, `.jsonc` | `//` line-comment | `// SPDX-License-Identifier: MIT` |
+| Block-comment family — `.html`, `.htm`, `.md`, `.markdown`, `.xml`, `.vue` (template region), `.php` (template region) | `<!-- ... -->` | `<!-- SPDX-License-Identifier: MIT -->` |
+| MDX (`.mdx`) | `{/* ... */}` (JSX expression comment) | `{/* SPDX-License-Identifier: MIT */}` |
+| C-block family — `.css`, `.scss`, `.less`, `.sql` (`/* */`) | `/* ... */` | `/* SPDX-License-Identifier: MIT */` |
+| `;` family — `.ini`, `.cfg`, some `.lisp`/`.scm` | `;` line-comment | `; SPDX-License-Identifier: MIT` |
+| `--` family — `.sql`, `.lua`, `.hs`, `.elm`, `.ada` | `--` line-comment | `-- SPDX-License-Identifier: MIT` |
+| Lockfile / generated / JSON | none / not applicable | **Exempt.** See §3 Exception List. |
+
+**Markdown variant (canonical rendering):**
+
+```markdown
+<!-- SPDX-License-Identifier: MIT -->
+```
+
+The HTML-comment (or MDX `{/* */}`) wrapper renders invisibly, so the rendered surface stays clean while the in-source license marker remains machine-readable across filetypes.
+
+---
+
+## 3. Exception List (Categorically Exempt)
+
+The following classes are **exempt** from the SPDX header line. The `file-header` validator's applicability check returns `not-applicable` for these:
+
+- **`LICENSE`** — itself the legal instrument; carries the authoritative copyright line which the `license-author-consistency` validator confirms is present.
+- **`*.svg` assets** — XML comments are brittle for line-comment markers, so SVG provenance is carried by the asset README and generated raster outputs.
+- **`CHANGELOG.md`** — format-bound release-notes document; the SPDX line appears as a single HTML-comment above the changelog header, not interleaved into the format.
+- **JSON files (`.json`)** — JSON has no comment syntax. Where attribution is required for a JSON config, place a sibling `<file>.NOTICE.md`.
+- **Lockfiles** — `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `Cargo.lock`, `Pipfile.lock`, `poetry.lock`, `go.sum`, etc. (machine-managed).
+- **Generated files** — anything with a `# Generated by ...` or `// Generated by ...` marker, or anything matching `.gitattributes` `linguist-generated=true`.
+- **Vendored third-party content** — files under `vendor/`, `third_party/`, `node_modules/`. These carry the upstream's own license/notice; injecting our marker over upstream attribution is a license violation.
+- **`.audit/` files** — gitignored ephemera; out of scope of the published tree.
+- **Plan files (`<project-root>/.apothem/plans/**`, and the legacy `<project-root>/.plans/**`)** — gitignored ephemera; provenance is the plan's frontmatter (see [`plans-discipline.md`](/docs/reference/plans-discipline) §3).
+- **Empty markers** — `.keep`, `.gitkeep`, etc. (semantically zero-byte).
+- **Binary files** of any kind.
+
+The exception list is itself encoded as a regex/glob list at [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt) and is the input to the validator's applicability check. Amendments require a structured inquiry and a new ADR.
+
+---
+
+## 4. License Interaction
+
+The SPDX line declares the project's license machine-readably; the LICENSE file declares it authoritatively:
+
+- **`SPDX-License-Identifier: MIT`** — the machine-readable license marker per the [REUSE specification](https://reuse.software/spec/) and SPDX standard. Automated license scanners parse this line directly; the SPDX expression syntax is cross-compatible with `reuse lint`, scancode-toolkit, FOSSology, and Linux-kernel license-tooling.
+
+{/* REUSE-IgnoreEnd */}
+- **Repository-root [`LICENSE`](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE)** — the authoritative legal instrument carrying the full MIT terms and the copyright holder. It is the single home for the copyright statement; per-file headers reference it implicitly through the shared SPDX identifier rather than restating copyright in every file.
+
+**Single-line form.** Per-file provenance is the single SPDX line; the copyright instrument lives once at the root LICENSE. Bordered multi-line banner boxes (copyright, website, email, contact lines wrapped in a ruled frame) are rejected by the validator: they duplicate contact and copyright metadata in every file without adding anything the machine-readable license marker does not already provide to REUSE/SPDX/SBOM tooling. The byte-exact fixture at `src/apothem/schemas/authorship-header.txt` carries the single-line form; the validator runs against this fixture.
+
+**Cross-references.** LICENSE file (MIT) — the legal instrument controls in case of conflict. ADR-0006 documents the banner-narrowing ratification rationale.
+
+---
+
+## 5. Insertion Position
+
+- The SPDX line is the **first content** of the file, with one and only one exception: a shebang line (`#!/usr/bin/env bash`, `#!/usr/bin/env python3`, etc.), which always remains line 1; the SPDX line begins on line 2.
+- For Markdown / MDX files with YAML frontmatter, the SPDX comment sits at the very top, the YAML frontmatter follows, then the H1 and body. The rendered output begins with an invisible comment, then the frontmatter is parsed by tooling, then the visible content flows.
+- A single blank line separates the SPDX line from the next content (frontmatter `---`, shebang's successor, H1, etc.).
+
+---
+
+## 6. Header Visibility Policy
+
+For Markdown files specifically, the SPDX line is **invisible by default** — wrapped in `<!-- ... -->` (or `{/* */}` for MDX), source-visible only. This is the right policy for README, CONTRIBUTING, CLAUDE.md, supported-harness instruction files, skill SKILL.md, command bodies, output-styles, and doc pages. A **visible** rendering (the SPDX line as a plain-text or fenced block at the top of the output) is permitted for stand-alone reference documents that benefit from immediately readable provenance; the policy is set per file class in `src/apothem/schemas/header-visibility.yaml` (default *invisible*), with a file-scope override marker `<!-- header-visibility: visible -->` permitted immediately after the line.
+
+---
+
+## 7. The Injector — `scripts/inject-header.{sh,py}`
+
+A deterministic CLI that:
+
+- Takes one or more file paths (or globs).
+- Determines applicability via the exception list (§3).
+- Detects the existing header state (canonical / malformed / absent), stripping any non-canonical banner block it finds so re-runs are idempotent.
+- Renders the correct SPDX variant per filetype (§2).
+- Inserts at the correct position (§5), respecting shebangs and frontmatter.
+- Operates in three modes: `fix-in-place` (writes), `emit-patch` (prints unified diff), `check` (exit-non-zero on any divergence — used by CI).
+- Idempotent: running twice is a no-op.
+
+The injector is invoked by the Make targets that scaffold new files with the SPDX line pre-inserted (`make headers-fix` and the `make new-*` scaffolds) and by the pre-commit hook in `--fix` mode.
+
+---
+
+## 8. The Validator — `file-header` (CI)
+
+Lives at [`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py). For every file in the working tree, the validator looks up its applicability (per §3) and, if applicable, asserts the canonical SPDX line is present at the file's head — ahead of all other content, with the only allowed pre-line content being a shebang (§5).
+
+Backed by the byte-exact fixture at [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt). Reports per-file diff and aggregate coverage % in the CI summary. Fails the build on any divergence.
+
+---
+
+## 9. Self-Enforcement Mechanisms
+
+The discipline must survive every future session and every future contributor. Mandatory enforcement surfaces:
+
+1. **`src/apothem/schemas/authorship-header.txt`** — the byte-exact canonical fixture; one source of truth.
+2. **`scripts/inject-header.{sh,py}`** — the mechanical injector (§7).
+3. **`file-header` CI validator** (§8) — fails the build on any divergence.
+4. **Pre-commit hook** — runs the validator with `--fix` on staged files, wired to the injector.
+5. **`CLAUDE.md` mandatory-behavior block** — instructs the assistant to inject the canonical SPDX line whenever creating an applicable file.
+6. **The supported-harness instruction file** at the canonical `.github/` path — instructs the harness to do the same on file generation.
+7. **PreToolUse hooks** at `src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md` — intercept Write/Edit tool calls on applicable paths so the SPDX line is injected at file creation rather than discovered as a CI failure later.
+8. **PR template checkbox** — contributor-facing assertion that every new file carries the canonical SPDX line.
+9. **This document** (`site/content/docs/reference/authorship-header.mdx`) — canonical, normative explainer.
+
+---
+
+## See Also
+
+- [ADR-0002](/docs/reference/authorship-header) — architectural rationale, alternatives considered.
+- [ADR-0006](/docs/reference/authorship-header) — banner-narrowing ratification.
+- [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt) — the byte-exact canonical fixture.
+- [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt) — the exception list (regex/glob form).
+- [`scripts/inject-header.py`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.py) and [`scripts/inject-header.sh`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.sh) — the injector.
+- [`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py) — the validator.
+- Project specification §0.5 + §4.6 — the canonical text mirrored here.

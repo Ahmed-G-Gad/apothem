@@ -1,0 +1,89 @@
+---
+title: "Kiro"
+description: "Apothem-Werkzeugadapter für Kiro (GA)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Anbieter:** AWS
+**Installationsname:** `kiro`
+**Status:** GA
+**Native Konfiguration:** `<project>/.kiro/steering/apothem-rules.md`
+
+## Installation
+
+```bash
+apothem install --harness kiro --project /path/to/project
+```
+
+Der Adapter schreibt aus den gemeinsamen Apothem-Regeln und der
+Governance-Oberfläche eine projektgebundene Kiro-Steering-Datei.
+
+**Geschriebene Dateien:** `<project>/.kiro/steering/apothem-rules.md`
+
+## Zuordnung von Profil zu nativer Konfiguration
+
+Der Adapter liest Apothems gemeinsames Profil und rendert die Steering-Datei des
+Projekts bei jedem Lauf von `apothem install` oder `apothem update`. Das gemeinsame
+Profil ist die Quelle der Wahrheit; projektlokale Änderungen an der generierten
+Datei werden gesichert, bevor die nächste Synchronisierung den von Apothem
+verwalteten Inhalt ersetzt.
+
+## Kompatibilitätshinweise
+
+Kiros Steering-Oberfläche ist projektgebunden unter `.kiro/steering/`. Der Adapter
+schreibt eine eigene Steering-Datei `apothem-rules.md` mit dem Front Matter
+`inclusion: always` und überschreibt niemals die vom Operator verfassten
+Grundlagendateien von Kiro (`product.md`, `tech.md`, `structure.md`).
+Kiro-Spezifikationen (`.kiro/specs/`) und Assistenten-Hooks gehören dem Operator;
+Apothem schreibt sie nicht.
+
+## Verifizierung
+
+```bash
+apothem verify --harness kiro --project /path/to/project
+```
+
+Der verify-Befehl bestätigt, dass:
+
+1. Die native Konfiguration am erwarteten Pfad existiert.
+2. Alle Pflichtfelder aus dem gemeinsamen Profil vorhanden sind.
+3. Die adapterspezifische Verifizierungsroutine Erfolg meldet.
+
+## Aktualisierung
+
+```bash
+apothem update --harness kiro --project /path/to/project
+```
+
+Leitet die Steering-Datei des Projekts aus dem aktuellen Zustand des gemeinsamen
+Profils neu ab.
+
+## Deinstallation
+
+```bash
+apothem uninstall --harness kiro --project /path/to/project
+```
+
+Entfernt die vom Adapter geschriebenen nativen Konfigurationsdateien.
+Das YAML des gemeinsamen Profils und der Apothem-Motor bleiben unberührt.
+
+## Konformitätstor
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Fehlerbehebung
+
+| Symptom | Behebung |
+|---------|-----|
+| Konfigurationsdatei nicht gefunden | `apothem install --harness kiro --project /path/to/project` erneut ausführen |
+| Verifizierung fehlgeschlagen | `apothem update --harness kiro --project /path/to/project` ausführen, dann erneut verifizieren |
+| Unerwarteter Konfigurationsinhalt | `~/.config/apothem/profile.yaml` oder `--profile PATH` prüfen, dann `apothem update --harness kiro --project /path/to/project` erneut ausführen |
+
+## Konfigurationsschalter
+
+| Flag | Standard | Beschreibung |
+|------|---------|-------------|
+| `--dry-run` | `false` | Installation in der Vorschau anzeigen, ohne Dateien zu schreiben. |

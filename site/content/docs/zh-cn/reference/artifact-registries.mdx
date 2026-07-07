@@ -1,0 +1,185 @@
+---
+title: "制品注册表"
+description: "Apothem 生态系统制品的完整枚举：命令、规则、委托工作者、钩子、技能、输出风格、制品演进纪律，以及空制品类声明。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **制品集的规范登记册。** 本文档承载命令、规则、委托工作者、钩子、技能、输出风格、制品演进纪律以及空制品类声明的完整枚举；实质性表格存放于此。项目源代码布局提供了精简的常驻视图。
+
+## 1. 命令
+
+从 `src/apothem/commands/*.md`（非递归）注册了三十个命令。每个命令都是一等的已注册文件；`/plan` 编排器仅串联本已是一等的 plan 阶段，自身不携带任何阶段逻辑，因此仍然没有单体调度器，也没有子命令分组。非 plan、非 workflow 的命令：
+
+| 命令 | 文件 | 说明 |
+| ------- | ---- | ----------- |
+| `/a11y-audit` | `src/apothem/commands/a11y-audit.md` | 逐页针对 WCAG 2.2 AA 对已部署的 Web 界面进行无障碍审计 |
+| `/architecture-review` | `src/apothem/commands/architecture-review.md` | 针对设计制品与规范分层纪律对仓库进行架构完整性审查 |
+| `/code-audit` | `src/apothem/commands/code-audit.md` | 以仓库语料库为范围、贯穿六个对抗性阶段的跨文件取证式代码审计 |
+| `/code-review` | `src/apothem/commands/code-review.md` | 跨 `src/`、`scripts/` 与 `tools/` 的逐文件代码质量审查，给出逐文件发现 |
+| `/dependency-audit` | `src/apothem/commands/dependency-audit.md` | 跨仓库清单文件的逐依赖审计（直接 + 传递） |
+| `/docs-review` | `src/apothem/commands/docs-review.md` | 对宿主文档界面下每一个 Markdown 页面的文档审查 |
+| `/elevate` | `src/apothem/commands/elevate.md` | 通过独立的批评工作者将每个项目界面提升至当前 SOTA，随后移交给 `/freshify` |
+| `/eval` | `src/apothem/commands/eval.md` | 基于 eval-harness 技能构建的模型无关的语言模型评估活动 |
+| `/freshify` | `src/apothem/commands/freshify.md` | 将项目渲染为崭新、无痕迹、可投产；每个破坏性步骤均需确认门控 |
+| `/github-deploy-fresh` | `src/apothem/commands/github-deploy-fresh.md` | `/freshify` 的 GitHub 专门化版本，在 `origin/main` 上产出单个崭新的首版发布 |
+| `/github-deploy-next` | `src/apothem/commands/github-deploy-next.md` | 在 GitHub 发布界面上端到端运行一次完整的下一发布周期 |
+| `/perf-audit` | `src/apothem/commands/perf-audit.md` | 针对 `src/apothem/rules/performance-discipline.md` 中的逐类性能预算进行审计 |
+| `/release-readiness` | `src/apothem/commands/release-readiness.md` | 发布前门控扫描：质量矩阵、依赖风险与发布工程检查 |
+| `/research` | `src/apothem/commands/research.md` | 带有并行源发现与提取的多源研究任务 |
+| `/security-audit` | `src/apothem/commands/security-audit.md` | 针对 OWASP ASVS、OWASP Top 10 与 CWE Top 25 的安全态势审计 |
+| `/supply-chain-audit` | `src/apothem/commands/supply-chain-audit.md` | 针对 SLSA、Sigstore 与 SBOM 标准的供应链审计 |
+| `/test-suite` | `src/apothem/commands/test-suite.md` | 针对宿主已批准的测试框架进行行为优先的测试编写与执行 |
+| `/threat-model-audit` | `src/apothem/commands/threat-model-audit.md` | 跨架构、数据流与信任边界，针对 STRIDE 与 PASTA 进行威胁建模审计 |
+| `/ux-review` | `src/apothem/commands/ux-review.md` | 开发者体验审查：CLI 人体工学、安装流程、帮助文本与错误消息 |
+
+### Plan 流水线命令
+
+plan 流水线作为八个一等命令交付——每个阶段一个，可从其各自的已注册文件 `src/apothem/commands/plan-<stage>.md` 直接以 `/plan-<stage>` 调用。
+
+| 命令 | 文件 | 行为 |
+| ------- | ---- | -------- |
+| `/plan-spec` | `src/apothem/commands/plan-spec.md` | 将自由形式的散文细化为规范级的 `_spec/spec.md`；每个开放问题都通过结构化询问通道路由，而非静默默认；`--quick` 在 `<project-root>/.apothem/plans/` 下写入单个轻量级 plan 文件（`.plans/` 仍是受支持的向后兼容回退） |
+| `/plan-generate` | `src/apothem/commands/plan-generate.md` | 从已撰写的散文/需求生成一个完整的主计划套件 |
+| `/plan-review` | `src/apothem/commands/plan-review.md` | 对现有套件的取证式审计——散文保真度、内部一致性、缺口分析——通过交互式问答细化 |
+| `/plan-design` | `src/apothem/commands/plan-design.md` | 在套件的 `_inputs/design.md` 处产出架构设计制品，在提升前由十五栏预发射门验证 |
+| `/plan-audit` | `src/apothem/commands/plan-audit.md` | 跨完整的 spec → generate → review 周期进行闭环审计与修复，循环直到零发现，或达到带有既定退避的迭代上限 |
+| `/plan-execute` | `src/apothem/commands/plan-execute.md` | 在一致性检查与质量门下执行某阶段——默认 `medium` 强度，可通过 `PHASE.md` frontmatter 中的 `effort:` 字段按阶段覆盖；默认在每个阶段边界处停止，使用 `--no-pause`（或配置文件的 `enforcement.continuous_execution` 标志）可选择阶段到阶段的连续推进 |
+| `/plan-status` | `src/apothem/commands/plan-status.md` | 针对任务、阶段与制品维度的只读进度报告 |
+| `/plan-amend` | `src/apothem/commands/plan-amend.md` | 在不摧毁先前已解决的决策的前提下，修订、扩展、细化或回退现有套件；仅重新推导受影响的下游制品 |
+
+### 操作员工作流与编排器命令
+
+三个命令进入一套深度流程，而非自带阶段逻辑：两个操作员工作流入口点（各由同名的配套技能支持），外加薄型 plan 流水线编排器。
+
+| 命令 | 文件 | 说明 |
+| ------- | ---- | ----------- |
+| `/workflow` | `src/apothem/commands/workflow.md` | 通用工作流驾驭入口点（`/goal <<mission>>`）：在命名返回契约下驱动真正独立的多工作者动态工作流、在任何发现存活前进行默认证伪的验证、按变更账本披露的超越任务的修复，以及确定性输出；多工作者派遣与自动执行为可选/确认门控。由 `workflow` 技能支持 |
+| `/projectify` | `src/apothem/commands/projectify.md` | 聊天应用项目提升：在可测量的逐平台上下文预算内，将 Claude Project、Custom GPT 或 Gem 的 Description / Instruction / 知识 Files 交付物撰写至当前 SOTA 约定；确定性输出，可选自主性。由 `projectify` 技能支持 |
+| `/plan` | `src/apothem/commands/plan.md` | 串联各一等 plan 阶段（`plan-spec → plan-generate → plan-review → plan-design（条件性）→ plan-execute`）的薄型编排器，每个阶段都从前一阶段的交接清单恢复；不携带阶段逻辑——串联为可选/确认门控（`--auto` 连续串联） |
+
+## 2. 规则
+
+行为规则存放于 `src/apothem/rules/` 下——一个小型的常驻核心加上一个较大的路径过滤集合（在匹配的制品触及时按需加载）。完整的逐规则枚举——带有 Scope（常驻 / 路径过滤）与 Implements 列——是源生成的 `reference/rules.mdx`，由参考清单生成器从 `src/apothem/rules/*.md` 刷新；权威的当前清单请查阅它。
+
+> **CM-21 切面划分**（三条规则以彼此不重叠的不同切面共同实现 CM-21）：**创意过滤器与认知身份** → `cognitive-identity.md`；**生成方法论（撰写与重写协议）** → `clean-room-generation.md`；**计划/审查技术** → `planning-techniques.md`。每条规则各拥其切面；其余规则向外引用。
+
+> **交互式询问 schema 指针。** 规范的结构化询问调用 schema——必填字段、字段摘要表、两个可执行的示例（§2.1 单选与 §2.2 多选）——存放于 `src/apothem/rules/interactive-questions.md` §2 "Structured-Inquiry Shape"。下游制品可复制 §2.1 或 §2.2 作为调用模板；每个选项的 `description` 主体所承载的三段式选项注释 schema 在同一文件的 §3 中规定。
+
+## 3. 委托工作者
+
+生态系统随附十二个持久化工作者定义；编排规则的团队模式向它们派遣。每个定义存放于下方列出的文件路径。
+
+```text
+Worker              File                                       Pattern         Model Policy
+------------------- ------------------------------------------ --------------- -------------
+Codebase Explorer   src/apothem/agents/codebase-explorer.md   Research        host-selected
+Convention Auditor  src/apothem/agents/convention-auditor.md  Audit           host-selected
+Dependency Auditor  src/apothem/agents/dependency-auditor.md  Audit           host-selected
+Fact Checker        src/apothem/agents/fact-checker.md        Audit           host-selected
+MCP Builder         src/apothem/agents/mcp-builder.md         Generation      host-selected
+Memory Auditor      src/apothem/agents/memory-auditor.md      Audit           host-selected
+Prompt Evaluator    src/apothem/agents/prompt-evaluator.md    Quality         host-selected
+Quality Gate        src/apothem/agents/quality-gate.md        Quality         host-selected
+Refactor Surgeon    src/apothem/agents/refactor-surgeon.md    Implementation  host-selected
+Research Scout      src/apothem/agents/research-scout.md      Research        host-selected
+Security Scanner    src/apothem/agents/security-scanner.md    Audit           host-selected
+Test Runner         src/apothem/agents/test-runner.md         Quality         host-selected
+```
+
+## 4. 钩子
+
+每个已注册的钩子命令都使用 Claude Code 的 exec 形式命令形态
+（`command: "python"` 加上 `args` 数组），并调用
+`-m apothem.hooks.dispatch` 或 `-m apothem.conformity.gate`。调度器
+导入 `src/apothem/hooks/lib/resolve_root.py` 用于生态系统根解析，并
+委托给与其并列于 `src/apothem/hooks/` 之下的两个辅助程序：
+`src/apothem/hooks/emit_hook_context.py` 为助手格式化事件载荷，而
+`src/apothem/hooks/session_start_bootstrap.py` 承载调度器在路由该事件时移交的
+SessionStart 准备工作。在受支持的事件触发时呈现给
+助手的钩子消息，作为 Markdown 上下文文件存放于
+`src/apothem/hooks/messages/` 之下——每个事件变体一个：`postcompact.md`、`precompact.md`、
+`pretooluse-bash.md`、`pretooluse-bash-plan-guard.md`、`pretooluse-conformity.md`、
+`pretooluse-dependency-guard.md`、`pretooluse-edit.md`、`pretooluse-edit-header-guard.md`、
+`pretooluse-eval-guard.md`、`pretooluse-notebookedit.md`、`pretooluse-write.md`、
+`pretooluse-write-header-guard.md`、`pretooluse-write-plan-guard.md`、`sessionstart.md`、
+`stop.md`。每个被路由的上下文文件在其事件触发且其上下文实参在 `settings.json` 中注册时
+由调度器加载；三个上下文文件
+（`pretooluse-conformity.md`、`pretooluse-dependency-guard.md`、`pretooluse-eval-guard.md`）
+作为可用变体交付，但当前在 `settings.json` 中没有路由条目。
+
+```text
+Event             Automates                Timeout  Purpose
+----------------- ------------------------ -------- --------------------------------------------------
+SessionStart      CM-14                    30s      Read memory, check plan state, report readiness
+PreCompact        CM-24 §2.3               30s      Verify state externalized before compaction
+PostCompact       CM-24 §6.2               30s      Restore working state after compaction
+Stop              CM-14/CM-22/CM-24/CM-26  60s      Session-end externalization
+PreToolUse        CM-7/CM-22               10s      Write/Edit/NotebookEdit validation — codebase-isolation, frontmatter, license-header, and plans-locality checks plus the conformity gate. Bash validation — git artifact isolation and plans-locality
+PostToolUse       —                        10s      Accepted by src/apothem/hooks/dispatch.py whitelist for forward compatibility; no settings.json entry currently routes this event
+UserPromptSubmit  —                        10s      Accepted by src/apothem/hooks/dispatch.py whitelist for forward compatibility; no settings.json entry currently routes this event
+Notification      —                        10s      Accepted by src/apothem/hooks/dispatch.py whitelist for forward compatibility; no settings.json entry currently routes this event
+```
+
+> **约定。** **Automates** 为 `—` 的行被 `dispatch.py` 接受但未在 `settings.json` 中接线；**Timeout** 列展示在该事件日后接线时适用的调度级默认值。
+>
+> **超时值规范块。** 本表的 **Timeout** 列是生态系统中钩子超时值的单一真相源。`settings.json` 中的逐钩子 `timeout` 字段、`site/content/docs/reference/settings-reference.mdx` § Hook Events 和 `site/content/docs/reference/artifact-schema.mdx` § Hooks Pipeline 中的镜像表，以及 `src/apothem/rules/persistent-conventions-vigilance.md` § Convention Awareness 中的规则指导，全部源自此列。未来的超时修订落在此处，消费方在下次引用时重新推导。
+
+### 设置模板审查节奏
+
+`settings.json` 是单一的 Claude Code 模板。每个钩子命令使用
+exec 形式而非特定于 shell 的包装器，因此跨 OS 行为
+在单个文件内审查，而非通过对比成对模板。新的权限条目、
+钩子事件、超时与状态消息原子性地落入该文件。
+
+## 5. 技能
+
+可复用技能存放于 `src/apothem/skills/` 之下，每个技能一个文件夹。
+
+| 技能 | 路径 | 用户可调用 | 用途 |
+| ----- | ---- | -------------- | ------- |
+| Dependency Upgrade | `src/apothem/skills/dependency-upgrade/` | 是 | 经更新日志审查、固定版本、门验证的依赖升级 |
+| Dev Toolkit | `src/apothem/skills/dev-toolkit/` | 是 | 有纪律的工程循环——结构化调试、测试优先的红-绿-重构、垂直切片分解、需求到议题的拆解 |
+| Diagram Authoring | `src/apothem/skills/diagram-authoring/` | 是 | 声明式图表与数据可视化的撰写 → 验证 → 渲染 → 导出流水线（SVG / PNG / PDF） |
+| Document Authoring | `src/apothem/skills/document-authoring/` | 是 | 经批准门控的长篇文档撰写（大纲 → 草稿 → 审查），带有经验证的引用与确定性排版编译 |
+| Ecosystem Audit | `src/apothem/skills/ecosystem-audit/` | 是 | 对 Apothem 配置树的盲审 |
+| Eval Harness | `src/apothem/skills/eval-harness/` | 是 | 带有明确通过标准的可复现语言模型评估框架 |
+| Incident Runbook | `src/apothem/skills/incident-runbook/` | 是 | 以触发 → 诊断 → 行动 → 验证 → 回滚形式撰写的运行手册 |
+| Multi-Source Research | `src/apothem/skills/multi-source-research/` | 是 | 扇出、交叉验证、带引用的研究报告 |
+| Plan Suite | `src/apothem/skills/plan-suite/` | 否 | 由 `/plan` 流水线各阶段消费的主模板 |
+| Projectify | `src/apothem/skills/projectify/` | 是 | 聊天应用项目提升——在可测量的逐平台上下文预算内，将 Description / Instruction / 知识 Files 交付物提升至 SOTA 约定 |
+| Prompt Engineering | `src/apothem/skills/prompt-engineering/` | 是 | 经评估验证的结构化提示词设计 |
+| Refactor Extract | `src/apothem/skills/refactor-extract/` | 是 | 保持行为的提取重构 |
+| Secret Rotation | `src/apothem/skills/secret-rotation/` | 是 | 安全地退役并替换已泄露的凭据 |
+| Source Synthesis | `src/apothem/skills/source-synthesis/` | 是 | 将固定的源集合调和为单个带引用的综合 |
+| Surgical Guard | `src/apothem/skills/surgical-guard/` | 是 | 最小差异、锚定边界的编辑，配以反应式的、基于差异的编辑后质量守卫 |
+| Test Authoring | `src/apothem/skills/test-authoring/` | 是 | 行为优先的测试编写，遵循 Arrange-Act-Assert 纪律 |
+| Vuln Triage | `src/apothem/skills/vuln-triage/` | 是 | 对安全公告进行严重性分类并路由修复 |
+| Workflow | `src/apothem/skills/workflow/` | 是 | 通用多工作者工作流驾驭，带有对抗性的默认证伪验证与披露的超越任务修复 |
+
+> **约定。** 每行的 **Path** 是一个文件夹；入口点是其内部的 `SKILL.md` 文件——例如 `src/apothem/skills/plan-suite/SKILL.md`——遵循项目源代码布局中声明的文件夹带 `SKILL.md` 的技能约定。
+
+## 6. 输出风格
+
+四个输出风格存放于 `src/apothem/output-styles/` 之下。
+
+| 风格 | 文件 | 用途 |
+| ----- | ---- | ------- |
+| Default | `src/apothem/output-styles/default.md` | 生态系统默认风格——统一的输出约定、计划内容路由与文件撰写契约 |
+| Default Architect | `src/apothem/output-styles/default-architect.md` | 资深架构师语气——分析性、直接、具体驱动因素引用 |
+| Concise Engineer | `src/apothem/output-styles/concise-engineer.md` | 短格式工程输出——最少散文、代码优先 |
+| Forensic Auditor | `src/apothem/output-styles/forensic-auditor.md` | 审查类姿态——逐发现、记分卡形态的输出、每发现一个证伪者 |
+
+## 7. 制品演进
+
+**强制性。** 当一个可复用的模式、纠正或技术反复出现（一次会话中 2 次以上，或在记忆中被标注为反复出现）时，生态系统必须演进。该周期有四个步骤：在任何交互期间**检测**模式；**搜索**现有的技能、规则、命令、钩子与记忆以寻找重叠；通过就地演进匹配的制品（更新流程、反模式、范围）或在该关注点确实正交时创建新制品来**行动**；**验证**交叉引用仍然可解析且依赖制品保持一致。优先细化而非创建——新制品会累加维护面。完整协议（包括跨每个制品类的封闭式缺口检测触发器目录）参见 `src/apothem/rules/persistent-conventions-vigilance.md` §2+§4。
+
+## 8. 空制品类
+
+在生态系统注册表中已声明但在激活触发器触发之前刻意留空的界面。每行记录保留的界面、为该类搭建脚手架的文件或目录，以及将该行从空声明提升为已填充的触发器。
+
+| 类 | 脚手架 | 状态 | 激活触发器 |
+| ----- | -------- | ------ | ------------------ |
+| MCP 服务器 | （尚无脚手架） | 空声明 | 用户配置根下的首次 MCP 服务器安装 |
+
+空声明是一种正向声明，而非缺口。该类的脚手架（如有）是追踪激活时刻的规范无操作制品。从空声明到已填充的提升，与脚手架的首个非空值原子性地落入相关注册表小节。

@@ -1,0 +1,358 @@
+# SPDX-License-Identifier: MIT
+
+[build-system]
+# Modern setuptools builds wheels natively; a separate "wheel" requirement is
+# no longer part of the recommended configuration on packaging.python.org.
+requires      = ["setuptools>=77.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "apothem"
+version = "1.0.1"
+description = "Host-agnostic AI-harness configuration manager: one shared profile materializes native configs for seventeen AI assistant harnesses, syncing rules, slash-commands, skills, hooks, output-styles, settings, schemas, docs, and MCP servers behind a conformity governance gate and signed releases."
+requires-python = ">=3.10"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE", "LICENSES/MIT.txt"]
+dependencies = [
+    # Pinned exactly: the CLI shell-completion scripts are Click-generated, and
+    # the byte-identical behavior-diff golden (completion-fish.json) is only
+    # stable against a fixed Click — 8.4.1 and 8.4.2 emit different `string
+    # split` delimiters. Relax once the behavior-diff oracle normalizes the
+    # Click-generated completion blocks.
+    "click==8.4.2",
+    "rich>=15.0.0",
+    "pyyaml>=6.0.3",
+    "jsonschema>=4.26.0",
+]
+authors = [
+    { name = "Ahmed G. Gad", email = "me@ahmedgad.com" },
+]
+maintainers = [
+    { name = "Ahmed G. Gad", email = "me@ahmedgad.com" },
+]
+keywords = ["agent", "agnostic", "ai", "ai-assistant", "ai-harness", "antigravity", "apothem", "automation", "claude-code", "code-assistant", "codebuddy", "codex", "config-manager", "configuration-management", "conformity", "cursor", "developer-tools", "dotfiles", "ecosystem", "gemini-cli", "github-copilot", "glm", "governance", "harness", "hermes", "hooks", "host-agnostic", "kimi-code", "kiro", "llm", "mcp", "open-claw", "opencode", "orchestration", "qwen-code", "skills", "slash-commands", "trae", "windsurf", "zed"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Utilities",
+    "Environment :: Console",
+]
+
+[project.urls]
+# Homepage points at the marketing landing of the comprehensive project
+# website. Documentation points at the website's documentation section
+# (day-to-day user guides). Source / Issues / Discussions / Changelog /
+# Security route at the canonical GitHub surfaces.
+Homepage      = "https://apothem.ahmedgad.com/"
+Documentation = "https://apothem.ahmedgad.com/docs/usage/"
+Reference     = "https://apothem.ahmedgad.com/docs/reference/"
+Architecture  = "https://apothem.ahmedgad.com/docs/architecture/"
+Repository    = "https://github.com/ahmed-g-gad/apothem"
+Issues        = "https://github.com/ahmed-g-gad/apothem/issues"
+Discussions   = "https://github.com/ahmed-g-gad/apothem/discussions"
+Changelog     = "https://github.com/ahmed-g-gad/apothem/blob/main/CHANGELOG.md"
+Security      = "https://github.com/ahmed-g-gad/apothem/security"
+Brand         = "https://apothem.ahmedgad.com/docs/brand/"
+Funding       = "https://github.com/sponsors/ahmed-g-gad"
+
+# Console scripts are intentionally absent: apothem installs as a per-harness
+# plugin and runs directly on the system Python interpreter. The engine CLI
+# is invoked through the module surface (`python -m apothem`), and harness
+# hook entries invoke the materialized dispatcher and conformity gate by
+# absolute script path under the harness root, so no console-script shims
+# or importable site-packages install are required on the host.
+
+[project.entry-points."apothem.harnesses"]
+claude-code    = "apothem.harnesses.claude_code:ClaudeCodeAdapter"
+cursor         = "apothem.harnesses.cursor:CursorAdapter"
+gemini-cli     = "apothem.harnesses.gemini_cli:GeminiCliAdapter"
+github-copilot = "apothem.harnesses.github_copilot:GitHubCopilotAdapter"
+codex          = "apothem.harnesses.codex:CodexAdapter"
+windsurf       = "apothem.harnesses.windsurf:WindsurfAdapter"
+opencode       = "apothem.harnesses.opencode:OpenCodeAdapter"
+antigravity    = "apothem.harnesses.antigravity:AntigravityAdapter"
+open-claw      = "apothem.harnesses.open_claw:OpenClawAdapter"
+hermes         = "apothem.harnesses.hermes:HermesAdapter"
+qwen-code      = "apothem.harnesses.qwen_code:QwenCodeAdapter"
+kimi-code      = "apothem.harnesses.kimi_code:KimiCodeAdapter"
+codebuddy      = "apothem.harnesses.codebuddy:CodeBuddyAdapter"
+kiro           = "apothem.harnesses.kiro:KiroAdapter"
+trae           = "apothem.harnesses.trae:TraeAdapter"
+zed            = "apothem.harnesses.zed:ZedAdapter"
+glm            = "apothem.harnesses.glm:GlmAdapter"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# Single source of truth for the project version: the ``[project] version``
+# field above (per ``rules/dynamism.md`` §f + §Single-Source). Every other
+# version-bearing surface derives from it dynamically: the runtime
+# ``apothem.__version__`` resolves it via ``importlib.metadata.version`` at
+# import time, README badges via the shields.io GitHub-release endpoint, and
+# the docs site via its build-time export. A prior ``dynamic = ["version"]`` + ``attr =
+# "apothem.__version__"`` wiring was circular (the build attribute pointed at
+# a runtime ``importlib.metadata`` lookup that is unresolvable in an isolated
+# build env, producing ``0.0.0+unknown`` artifacts).
+
+[tool.setuptools.package-data]
+# Bundle non-Python schema and fixture files with the wheel so runtime
+# consumers can resolve them via importlib.resources regardless of the
+# install location.
+"apothem.schemas"     = ["*.json", "*.yaml", "*.txt", "*.md"]
+# Hook library ships cross-platform shell stubs alongside the Python
+# dispatcher (bootstrap.{sh,ps1}, find-python.{sh,ps1}, find-pwsh.{sh,ps1})
+# plus the per-event Markdown context fixtures consumed by the dispatcher.
+"apothem.hooks"       = ["lib/*.sh", "lib/*.ps1", "messages/*.md"]
+# Statusline renderer ships the shell shims plus the conformity-posture
+# data file and the operator-facing reference Markdown.
+"apothem.statuslines" = ["*.sh", "*.ps1", "*.md", "*.json"]
+# Shared lib package ships the propagation manifest YAML so harness adapters
+# can load it via importlib.resources regardless of install location.
+"apothem.lib"         = ["*.yaml"]
+# Vendored runtime data (critical C5). The jsonschema validator loads the
+# meta-schemas at runtime to validate the profile schema: the per-draft
+# metaschema.json AND the EXTENSIONLESS vocabulary files under
+# schemas/<draft>/vocabularies/ (e.g. .../draft202012/vocabularies/core). Both
+# the recursive `schemas/**/*` glob and these globs reach the non-package
+# `schemas/` subtree from its parent package, so a built wheel/sdist ships them
+# — without them a manual `pip install <wheel>` crashes on first profile
+# validation. Upstream LICENSE files and typing stubs ship alongside for
+# license compliance and type completeness.
+"apothem._vendor"                           = ["*.LICENSE", ".keep"]
+"apothem._vendor.jsonschema_specifications" = ["schemas/**/*"]
+# The vendored jsonschema benchmark corpus (benchmarks/**/*.json) is upstream
+# performance-test material, not runtime data — it is deliberately excluded from
+# the packaged artifacts to keep the wheel/sdist minimal.
+"apothem._vendor.attr"                      = ["*.pyi", "py.typed"]
+"apothem._vendor.attrs"                     = ["*.pyi", "py.typed"]
+"apothem._vendor.referencing"               = ["*.pyi", "py.typed"]
+# Harness adapter packages ship registry payloads beside their Python modules:
+# templates for render/write sources, capabilities.yml for the capability
+# matrix, and STANDARD-CONVENTION-PIN.md for convention evidence. These MUST
+# bundle in both wheel and sdist artifacts so install, verify, docs, and
+# release-readiness checks operate from the same registry-backed payload set.
+"apothem.harnesses.antigravity"    = ["capabilities.yml", "STANDARD-CONVENTION-PIN.md", "templates/*"]
+"apothem.harnesses.claude_code"    = ["capabilities.yml", "STANDARD-CONVENTION-PIN.md", "templates/*"]
+"apothem.harnesses.codex"          = ["capabilities.yml", "STANDARD-CONVENTION-PIN.md", "templates/*"]
+"apothem.harnesses.cursor"         = ["capabilities.yml", "STANDARD-CONVENTION-PIN.md", "templates/*"]
+"apothem.harnesses.gemini_cli"     = ["capabilities.yml", "STANDARD-CONVENTION-PIN.md", "templates/*"]
+"apothem.harnesses.github_copilot" = ["capabilities.yml", "STANDARD-CONVENTION-PIN.md", "templates/*"]
+"apothem.harnesses.hermes"         = ["capabilities.yml", "STANDARD-CONVENTION-PIN.md"]
+"apothem.harnesses.open_claw"      = ["capabilities.yml", "STANDARD-CONVENTION-PIN.md"]
+"apothem.harnesses.opencode"       = ["capabilities.yml", "STANDARD-CONVENTION-PIN.md"]
+"apothem.harnesses.qwen_code"      = ["capabilities.yml", "STANDARD-CONVENTION-PIN.md", "templates/*"]
+"apothem.harnesses.kimi_code"      = ["capabilities.yml", "STANDARD-CONVENTION-PIN.md", "templates/*"]
+"apothem.harnesses.windsurf"       = ["capabilities.yml", "STANDARD-CONVENTION-PIN.md", "templates/*"]
+"apothem.harnesses.codebuddy"      = ["capabilities.yml", "STANDARD-CONVENTION-PIN.md", "templates/*"]
+"apothem.harnesses.kiro"           = ["capabilities.yml", "STANDARD-CONVENTION-PIN.md", "templates/*"]
+"apothem.harnesses.trae"           = ["capabilities.yml", "STANDARD-CONVENTION-PIN.md", "templates/*"]
+"apothem.harnesses.zed"            = ["capabilities.yml", "STANDARD-CONVENTION-PIN.md", "templates/*"]
+"apothem.harnesses.glm"            = ["capabilities.yml", "STANDARD-CONVENTION-PIN.md", "templates/*"]
+# The top-level content directories — agents, slash-commands, behavioral
+# rules, skills, output styles, and plan-suite templates — are Markdown
+# payloads with no __init__.py, so they bundle under the `apothem`
+# package key with directory-relative globs rather than as sub-packages.
+"apothem"             = [
+    # PEP 561 inline-type marker: apothem is type-checked under mypy --strict,
+    # so the wheel/sdist ships py.typed to surface its types to importers.
+    "py.typed",
+    "agents/*.md",
+    "commands/*.md",
+    "commands/**/*.md",
+    "rules/*.md",
+    "skills/**/*.md",
+    "output-styles/*.md",
+    "templates/*.md",
+]
+
+[project.optional-dependencies]
+dev = [
+    # Floor at 0.15.20: 0.15.17 introduced (and 0.15.20 removed) rule RUF076,
+    # so pinning past the removal keeps selector behavior stable across
+    # contributor environments.
+    "ruff>=0.15.20",
+    "mypy>=2.1.0",
+    "types-PyYAML>=6.0.12.20260518",
+    "types-jsonschema>=4.26.0.20260518",
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "pytest-xdist>=3.8.0",
+    # Hypothesis ratifies the property-test surface that feeds the OpenSSF
+    # Scorecard Fuzzing check. Property tests at tests/property/ exercise
+    # invariants (round-trip, idempotence, schema-validity) across
+    # auto-generated inputs across the search space.
+    # Floor below 6.156.0: that release begins the Rust-internals migration
+    # (native wheels; source builds need a Rust toolchain). Verify wheel
+    # coverage for every CI OS/arch target before floating past it.
+    "hypothesis>=6.155.7",
+]
+security = [
+    "bandit[toml]>=1.9.4",
+]
+release = [
+    "build>=1.5.0",
+]
+
+[tool.bandit]
+# Project-wide bandit policy. Skips the heuristic findings whose
+# patterns are intrinsic to admin-tooling work and not actual security
+# concerns: assert statements (pytest idiom), subprocess calls with
+# locally-constructed argv, partial-path executable lookup (`git`,
+# `python`), fail-open try/except/pass in the dispatcher.
+exclude_dirs = ["tests", ".plans", ".apothem", "projects", "memory", "examples", "backups", "src/apothem/_vendor", "*/_vendor/*"]
+skips = [
+    "B101",  # assert_used — covered by ruff S101 + per-file ignores
+    "B110",  # try_except_pass — fail-open dispatcher pattern (intentional)
+    "B112",  # try_except_continue — fail-open per-matcher isolation (intentional, mirrors B110)
+    "B404",  # blacklist_subprocess_import — admin tooling needs subprocess
+    "B603",  # subprocess_without_shell_equals_true — argv is locally-constructed
+    "B607",  # start_process_with_partial_path — `git`, `python` resolved by PATH
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+extend-exclude = [
+    "backups",
+    "cache",
+    "debug",
+    "downloads",
+    "file-history",
+    "ide",
+    ".plans",
+    ".apothem",
+    "plugins",
+    "projects",
+    "session-env",
+    "sessions",
+    "shell-snapshots",
+    "statsig",
+    "todos",
+    "tests/conformity-scenarios/fixtures",
+    # The install_driver behavior-diff golden corpus is a frozen, generated
+    # oracle (rendered native config copies + ledger/plan snapshots); it is
+    # captured verbatim, not apothem-authored source, so it is not linted.
+    "tests/fixtures/behavior-diff",
+    # Vendored upstream trees ship verbatim into the plugin runtime; they are
+    # not apothem-authored source, so they are excluded from linting.
+    "src/apothem/_vendor",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "N", "S", "C4", "ANN", "PT", "FA", "PTH", "RET", "RUF"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# Pytest's expected idiom: assertions are the test harness's primary
+# verification mechanism, so suppress the security-rule that flags
+# them as "use of assert". The S603 entry covers test-side subprocess
+# invocations of locally-resolved scripts via sys.executable; the
+# argv vectors are constructed in-test from fixed paths. The S607 entry
+# covers test-side `git` invocations resolved via PATH (the no-global-
+# plans-grep self-tests use `git init` / `git config` / `git add` /
+# `git commit` against ephemeral tmp_path repos).
+"tests/**/*.py" = ["S101", "S603", "S607", "ANN001", "ANN002", "ANN201", "ANN202", "N802"]
+# Conformity fixtures intentionally exhibit the patterns the
+# corresponding mechanical greps detect (bare-except, hard-coded
+# sentinel literals, fail-open swallow). The fixture files are
+# the test surface for the validators; the rules are observed
+# in the fixture's pass/fail counterparts, not authored in
+# real source.
+"tests/conformity/**" = ["E722", "S105", "S110", "F841", "BLE001"]
+# The hook entrypoints (dispatch.py, emit_hook_context.py, and
+# session_start_bootstrap.py) manipulate sys.path before importing
+# local helpers, so import-sort and module-import-at-top rules cannot
+# apply uniformly. The fail-open try/except/pass (S110) is intentional
+# per the dispatcher's contract: hook context is advisory and must
+# never block the underlying tool call.
+"src/apothem/hooks/dispatch.py"                = ["E402", "I001", "S110"]
+"src/apothem/hooks/emit_hook_context.py"       = ["E402", "I001"]
+"src/apothem/hooks/session_start_bootstrap.py" = ["E402", "I001"]
+# Tooling scripts invoke subprocesses with controlled, internally-
+# constructed argument vectors. The S603 / S607 security rules
+# generalize to "untrusted input" but the inputs here are always
+# locally-derived paths and python interpreter discovery results.
+"scripts/dev/audit_all.py"                                    = ["S603"]
+"scripts/dev/auto_update.py"                                  = ["S603", "S607"]
+"scripts/dev/chaos_pass.py"                                   = ["S603"]
+"src/apothem/conformity/production_ready_pr_grep.py"   = ["S603"]
+"src/apothem/conformity/semver_stability_grep.py"      = ["S603", "S607"]
+"src/apothem/conformity/agents_md_coverage_grep.py"    = ["S603", "S607"]
+# `_PASS` is a label string ("[PASS]"), not a credential. The
+# heuristic security-rule pattern-matches on the variable name.
+"src/apothem/lib/reporter.py" = ["S105"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+# import-mode = importlib + consider_namespace_packages lets sibling test
+# directories reuse the same test_NAME.py basenames (e.g., the validator
+# self-tests at tests/conformity/file-header/ and the injector self-tests
+# at tests/scripts/inject-header/ both ship a test_exempt_*.py). Without
+# consider_namespace_packages the duplicate basenames collide under
+# parallel (-n auto) collection and crash an xdist worker.
+addopts = "-ra --strict-markers --import-mode=importlib -n auto"
+consider_namespace_packages = true
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+files = ["src/apothem/cli", "src/apothem/harnesses", "src/apothem/lib", "src/apothem/conformity"]
+mypy_path = "src"
+explicit_package_bases = true
+exclude = ["tests/conformity", "src/apothem/_vendor"]
+
+# Tests use pytest fixtures and dynamic monkeypatching; strict typing would
+# produce excessive false positives without adding safety. We still type-check
+# them with relaxed settings so obvious regressions are caught.
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+warn_return_any = false
+
+[tool.coverage.run]
+# Engine-scoped: the runtime surface the tool actually executes (CLI + the
+# seventeen harness adapters + the lib core + the hook/statusline runtime). Conformity
+# matchers and the audit/reference dev-tools are deliberately out of scope so the
+# coverage figure is the honest engine signal, not one inflated by the
+# heavily-fixtured conformity self-test corpora.
+source = [
+    "src/apothem/cli",
+    "src/apothem/harnesses",
+    "src/apothem/lib",
+    "src/apothem/hooks",
+    "src/apothem/statuslines",
+]
+branch = true
+omit = [
+    "*/benchmarks/*",
+    "*/_vendor/*",
+]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+exclude_lines = [
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "\\.\\.\\.",
+]

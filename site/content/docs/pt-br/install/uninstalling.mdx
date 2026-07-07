@@ -1,0 +1,48 @@
+---
+title: "Desinstalação"
+description: "Remova o Apothem e limpe as configurações de ferramenta."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## Remova primeiro as configurações de ferramenta
+
+Antes de desinstalar o Apothem, remova a configuração de cada adaptador de ferramenta para deixar
+suas ferramentas em um estado limpo. Execute `apothem harnesses list` para ver
+quais adaptadores estão atualmente instalados e, em seguida, remova-os um a um ou use
+o seletor abrangente do registro:
+
+```bash
+apothem uninstall --harness claude-code
+apothem uninstall --harness cursor --project /path/to/project
+apothem uninstall --harness all --project /path/to/project --yes
+```
+
+Passe `--yes` para pular o prompt de confirmação por ferramenta.
+
+## Remova o engine
+
+A remoção corresponde ao canal de instalação que você usou:
+
+- **Plugin do Claude Code** — remova o plugin de dentro do Claude Code:
+  `/plugin uninstall apothem@apothem` (a entrada do marketplace pode ser removida
+  com `/plugin marketplace remove ahmed-g-gad/apothem`).
+- **npx** — nada a remover; o `npx` executa a partir de seu cache. Limpe-o com
+  `npm cache clean --force` se você quiser eliminar a cópia em cache.
+- **Instalador de execução única** — execute o script de desinstalação correspondente a partir do
+  checkout: `scripts/installer/uninstall.sh` (POSIX) ou
+  `scripts/installer/uninstall.ps1` (PowerShell). Ambos confirmam antes de
+  remover e recusam alvos inseguros.
+- **Backups e estado** — os backups de instalação ficam sob `~/.apothem/backups/`;
+  exclua `~/.apothem/` quando você não precisar mais deles.
+
+## O que NÃO é removido
+
+- O YAML do perfil compartilhado em `~/.config/apothem/profile.yaml` ou
+  `--profile PATH` nunca é removido por `apothem uninstall`.
+- Arquivos não relacionados criados pelo operador em diretórios de ferramenta são preservados.
+- As suítes de planejamento sob `<project>/.apothem/plans/` (e o legado `<project>/.plans/`) não são afetadas.
+
+Para limpar completamente uma raiz de ferramenta, remova o caminho nativo da ferramenta documentado nas
+[páginas de referência de ferramentas](/docs/harnesses) após confirmar que você fez backup de
+quaisquer regras, helpers ou arquivos de perfil personalizados que deseja manter.

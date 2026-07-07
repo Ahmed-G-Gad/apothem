@@ -1,0 +1,56 @@
+---
+title: "Binary artifacts sweep"
+description: "Apothem binary-artifacts sweep — zero compiled / packaged binaries tracked in source. OpenSSF Scorecard Binary-Artifacts check evidence."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+The OpenSSF Scorecard **Binary-Artifacts** check verifies that the source tree carries zero compiled / packaged / opaque binary artifacts. Binaries in source are unauditable and provide a foothold for supply-chain attacks: the binary embeds code the source tree does not surface, so reviewers cannot inspect it before merge.
+
+## Apothem's binary-artifacts posture
+
+Apothem is a **pure Python source tree** with zero compiled, packaged, or opaque binary artifacts tracked in version control. The repository is auditable end-to-end from source.
+
+## Sweep methodology
+
+The sweep enumerates the file types Scorecard considers binary, then verifies each is absent from version control:
+
+| Extension family | Description | Apothem status |
+|---|---|---|
+| `.exe`, `.dll`, `.so`, `.dylib` | Compiled native binaries | ✅ Zero tracked |
+| `.bin`, `.o`, `.a`, `.lib` | Object files / static libraries | ✅ Zero tracked |
+| `.jar`, `.war`, `.ear` | Java packages | ✅ Zero tracked |
+| `.whl`, `.egg` | Python distributions | ✅ Zero tracked (built into `dist/`; gitignored) |
+| `.tar.gz`, `.zip` (built dist) | Compressed archives carrying built artifacts | ✅ Zero tracked |
+| `.class`, `.pyc`, `.pyo` | Compiled bytecode | ✅ Zero tracked (`__pycache__/` gitignored) |
+| `.crt`, `.pem`, `.key`, `.p12`, `.pfx` | Cryptographic material | ✅ Zero tracked (denied at `.gitignore`) |
+
+## Permitted binary classes
+
+Two narrow classes of binary artifacts ARE permitted in source:
+
+1. **Brand assets** — `assets/*.png`, `assets/*.ico`, `assets/favicon.*`. These are **deterministically regenerable** from the SVG masters at `assets/src/` via `scripts/dev/rebuild-assets.{sh,ps1}`. Scorecard treats these as legitimate per its `image/png` exemption.
+2. **Font files** — `assets/fonts/*.ttf`, `assets/fonts/*.woff2`. Bundled font files with documented licenses; per Scorecard's `font/*` exemption.
+
+Both classes are documented at [`site/content/docs/brand/index.mdx`](/docs/brand) and their provenance is recorded in the asset-rebuild recipe.
+
+## Verification command
+
+```shell
+# From the apothem repository root:
+git ls-files | grep -E '\\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
+```
+
+This invocation should return **zero lines**. A non-empty result indicates a binary artifact was tracked in source — a HIGH-severity finding that blocks the next release.
+
+## Audit cadence
+
+The sweep is part of:
+
+- **Per-PR CI** — `.github/workflows/ci.yml` includes a binary-artifacts grep step.
+- **Per-release checkpoint** — the release-engineering runbook verifies the sweep before tagging.
+- **Weekly Scorecard run** — the OpenSSF Scorecard workflow re-confirms the check passes.
+
+## References
+
+- [OpenSSF Scorecard — Binary-Artifacts check](https://github.com/ossf/scorecard/blob/main/docs/checks.md#binary-artifacts)
+- [Apothem `.gitignore`](https://github.com/ahmed-g-gad/apothem/blob/main/.gitignore) — the denylist that prevents accidental binary check-in

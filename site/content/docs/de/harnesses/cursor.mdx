@@ -1,0 +1,87 @@
+---
+title: "Cursor"
+description: "Apothem-Werkzeugadapter für Cursor (GA)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Anbieter:** Anysphere
+**Installationsname:** `cursor`
+**Status:** GA
+**Native Konfiguration:** `.cursor/rules/` im Projektstammverzeichnis
+
+## Installation
+
+```bash
+apothem install --harness cursor --project /path/to/project
+```
+
+Der Adapter rendert aus den gemeinsam genutzten Apothem-Regeln und der
+Governance-Oberfläche eine einzelne `.mdc`-Regeldatei mit Projektumfang.
+
+**Geschriebene Dateien:** `<project>/.cursor/rules/apothem-rules.mdc`
+
+## Zuordnung des Profils zur nativen Konfiguration
+
+Der Adapter liest das gemeinsam genutzte Apothem-Profil und rendert die
+Projekt-Regeldatei bei jedem `apothem install`- oder `apothem update`-Lauf. Das
+gemeinsam genutzte Profil ist die Quelle der Wahrheit; projektlokale Änderungen an
+der generierten Datei werden gesichert, bevor die nächste Synchronisierung den von
+Apothem verwalteten Inhalt ersetzt.
+
+## Kompatibilitätshinweise
+
+Cursor 0.45+ unterstützt Anweisungen auf Projektebene über `.cursor/rules/`. Der
+Adapter schreibt standardmäßig in das Verzeichnis `.cursor/rules/` mit
+Projektumfang; Cursor verfügt über keinen dokumentierten, dateibasierten Pfad für
+benutzerweite globale Regeln, den dieser Adapter verwalten könnte.
+
+## Verifizierung
+
+```bash
+apothem verify --harness cursor --project /path/to/project
+```
+
+Der Befehl verify bestätigt, dass:
+
+1. Die native Konfiguration unter dem erwarteten Pfad vorhanden ist.
+2. Alle Pflichtfelder aus dem gemeinsam genutzten Profil vorhanden sind.
+3. Die adapterspezifische Verifizierungsroutine Erfolg meldet.
+
+## Aktualisierung
+
+```bash
+apothem update --harness cursor --project /path/to/project
+```
+
+Leitet die Projekt-Regeldatei aus dem aktuellen Zustand des gemeinsam genutzten
+Profils neu ab.
+
+## Deinstallation
+
+```bash
+apothem uninstall --harness cursor --project /path/to/project
+```
+
+Entfernt die vom Adapter geschriebenen nativen Konfigurationsdateien.
+Das YAML des gemeinsam genutzten Profils und die Apothem-Engine bleiben unberührt.
+
+## Konformitätsschranke
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Fehlerbehebung
+
+| Symptom | Behebung |
+|---------|-----|
+| Konfigurationsdatei nicht gefunden | Führen Sie `apothem install --harness cursor --project /path/to/project` erneut aus |
+| Verifizierung fehlgeschlagen | Führen Sie `apothem update --harness cursor --project /path/to/project` aus und verifizieren Sie dann erneut |
+| Unerwarteter Konfigurationsinhalt | Prüfen Sie `~/.config/apothem/profile.yaml` oder `--profile PATH` und führen Sie dann `apothem update --harness cursor --project /path/to/project` erneut aus |
+
+## Konfigurationsschalter
+
+| Flag | Standard | Beschreibung |
+|------|---------|-------------|
+| `--dry-run` | `false` | Vorschau der Installation ohne Schreiben von Dateien. |

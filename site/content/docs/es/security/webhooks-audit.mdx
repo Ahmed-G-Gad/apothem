@@ -1,0 +1,39 @@
+---
+title: "Auditoría de webhooks"
+description: "Auditoría de webhooks de Apothem — rotación de secretos, minimización de alcance y evidencia de la verificación Webhooks de Scorecard."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+La verificación **Webhooks** de OpenSSF Scorecard comprueba que los webhooks del repositorio usen un secreto compartido para autenticar la superficie de entrega — sin él, un atacante que conozca la URL del webhook puede reproducir o falsificar eventos.
+
+## La postura de webhooks de Apothem
+
+| Superficie de webhook | Estado | Cadencia de rotación de secretos |
+|---|---|---|
+| **Webhooks del repositorio** | Ninguno configurado a nivel de repositorio. | n/d |
+| **Webhooks de la organización** | Ninguno configurado a nivel de organización. | n/d |
+| **Eventos de flujo de trabajo** | Gestionados por GitHub; no sujetos a la verificación Webhooks. | n/d |
+
+Apothem actualmente opera **cero superficies de webhook externas**. Cada integración basada en eventos usa flujos de trabajo nativos de GitHub (CI, Scorecard, CodeQL, pip-audit) que no están sujetos a la verificación Webhooks de Scorecard.
+
+## Gobernanza futura de webhooks
+
+Cuando Apothem incorpore superficies de webhook (p. ej., notificaciones de lanzamiento de Discord / Matrix, disparadores de compilación de consumidores aguas abajo), el operador DEBE:
+
+1. **Generar un secreto de alta entropía** (≥ 32 bytes, criptográficamente aleatorio).
+2. **Almacenar el secreto en la superficie de secretos cifrados del repositorio** — nunca en el código fuente, nunca en el YAML del flujo de trabajo.
+3. **Configurar el webhook con el secreto** para que GitHub firme el encabezado `X-Hub-Signature-256` en cada entrega.
+4. **Verificar la firma en el endpoint receptor** usando una comparación de tiempo constante.
+5. **Rotar el secreto** cada 12 meses O dentro de las 24 horas posteriores a cualquier sospecha de compromiso.
+6. **Documentar el webhook** en este archivo de auditoría con su propósito, endpoint receptor y fecha de rotación.
+
+## Cadencia de auditoría
+
+Este archivo se revisa en cada pasada de `/security-audit` y en cada punto de control previo al corte de la ingeniería de lanzamiento. La deriva (p. ej., una superficie de webhook introducida sin una entrada aquí) es un hallazgo de severidad HIGH.
+
+## Referencias
+
+- [OpenSSF Scorecard — verificación Webhooks](https://github.com/ossf/scorecard/blob/main/docs/checks.md#webhooks)
+- [GitHub — Seguridad de webhooks](https://docs.github.com/en/webhooks/using-webhooks/securing-your-webhooks)
+- [Política de Seguridad de Apothem](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)

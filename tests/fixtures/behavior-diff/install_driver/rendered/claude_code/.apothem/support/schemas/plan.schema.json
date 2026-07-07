@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://apothem.ahmedgad.com/schemas/plan.schema.json",
+  "title": "Plan",
+  "description": "Frontmatter schema for downstream-project plan files (per spec §3.3). Consumed by /plan-spec --quick to validate plan-frontmatter at authoring time.",
+  "type": "object",
+  "required": ["title", "project", "created", "updated", "status", "tags", "supersedes", "promotes-to"],
+  "additionalProperties": true,
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Human-readable plan title."
+    },
+    "project": {
+      "type": "string",
+      "description": "Project identifier the plan belongs to."
+    },
+    "created": {
+      "type": "string",
+      "description": "ISO 8601 date the plan was created.",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "updated": {
+      "type": "string",
+      "description": "ISO 8601 date of the plan's last update.",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "status": {
+      "type": "string",
+      "description": "Lifecycle state of the plan.",
+      "enum": ["draft", "in-progress", "converged", "abandoned", "superseded"]
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Discovery tags."
+    },
+    "supersedes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Identifiers of prior plans this plan supersedes."
+    },
+    "promotes-to": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Identifiers of downstream artifacts (typically ADRs) this plan promotes to on convergence."
+    }
+  }
+}

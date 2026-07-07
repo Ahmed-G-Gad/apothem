@@ -1,0 +1,93 @@
+---
+title: "Modifier le profil"
+description: "Modifier le profil partagé et re-matérialiser chaque environnement installé."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Objectif : modifier une valeur dans le profil partagé et la propager vers chaque
+environnement que vous avez installé.
+
+## Prérequis
+
+- La CLI `apothem` sur votre `PATH` (ou la forme autonome : préfixez par
+  `PYTHONPATH="$HOME/.apothem/src"` et exécutez `python -m apothem`, ou utilisez
+  `npx @ahmed-g-gad/apothem`).
+- Un profil à `~/.config/apothem/profile.yaml`. Créez-en un avec
+  `apothem profile init` s'il est absent.
+
+## La structure du profil
+
+Le profil est un unique document YAML. Ses clés de premier niveau :
+
+- `identity` (requis) — `name`, plus `role`, `email`, `website`,
+  `github` en option.
+- `preferences` — `language`, `style` (`concise` / `verbose` / `balanced`),
+  `formatter`, `test_framework`.
+- `rules` — une liste de chaînes de règles supplémentaires partagées avec les
+  environnements capables.
+- `seriousness` — l'une des valeurs `EXPLORING`, `PERSONAL_USE`, `SHARED`,
+  `PUBLIC_LAUNCH`.
+- `enforcement` — bascules opt-in (`sprints`, `agent_teams`, `multitasking`,
+  `continuous_execution`, `learning_loop`), chaque drapeau désactivé par défaut.
+- `harnesses` — surcharges par environnement indexées par identifiant
+  d'environnement.
+- `exclude_harnesses` — identifiants d'environnements ignorés par les commandes
+  en lot (`--harness all`).
+
+## Étapes
+
+1. Inspectez le profil actuel :
+
+   ```bash
+   apothem profile show
+   ```
+
+2. Modifiez-le. Ouvrez-le dans l'éditeur de votre système :
+
+   ```bash
+   apothem profile edit
+   ```
+
+   Ou définissez une seule clé pointée depuis la ligne de commande. La valeur
+   est stockée littéralement (sauf les entrées `true`/`false` et `[..]`/`{..}`
+   explicites, qui sont analysées) et le profil est validé par rapport au schéma avant
+   l'écriture — une affectation invalide est refusée et le profil sur disque
+   reste inchangé :
+
+   ```bash
+   apothem profile set seriousness SHARED
+   apothem profile set identity.name "Ada Lovelace"
+   ```
+
+3. Re-matérialisez les environnements pour que la modification atteigne leur
+   configuration native. Pour un environnement au niveau utilisateur :
+
+   ```bash
+   apothem update --harness claude-code
+   ```
+
+   Pour un environnement au niveau projet, passez la racine du projet ; utilisez
+   `all` pour rafraîchir chaque environnement installé :
+
+   ```bash
+   apothem update --harness cursor --project /path/to/project
+   apothem update --harness all --project /path/to/project
+   ```
+
+## Vérifier
+
+```bash
+apothem profile show
+apothem verify --harness all
+```
+
+`profile show` reflète votre modification ; `verify` confirme que la
+configuration matérialisée correspond au profil mis à jour.
+
+## Connexes
+
+- [Ajouter un environnement](/docs/how-to/adding-a-harness) pour placer un
+  nouvel environnement sous le contrôle du profil avant de re-matérialiser.
+- [Mise à jour](/docs/install/updating) couvre la mise à niveau du moteur en
+  parallèle de l'étape de re-matérialisation.

@@ -1,0 +1,112 @@
+---
+title: "Claude Code"
+description: "Apothem harness adapter for Claude Code (GA)."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Vendor:** Anthropic
+**Install name:** `claude-code`
+**Status:** GA
+**Native config:** `~/.claude/`
+
+## Installation
+
+```bash
+apothem install --harness claude-code
+```
+
+The `claude-code` adapter installs the shared Apothem corpus into Claude
+Code's native discovery tree. Markdown agents, rules, skills, output styles,
+statusline helpers, and settings are installed in their native locations;
+command prompts are additionally wrapped as skills so reusable workflows stay
+visible through the current Claude Code skill surface.
+
+**Files written:** `settings.json`, `agents/`, `rules/`, `skills/`,
+`statuslines/`, `output-styles/`, and the `.apothem/support/` support subtree
+(`.apothem/support/hooks/`, `.apothem/support/conformity/`,
+`.apothem/support/schemas/`, `.apothem/support/templates/`) under `~/.claude/`.
+Command files are converted into
+child skill directories. The hook dispatcher and conformity gate run from
+their materialized copies — `settings.json` hook entries invoke
+`~/.claude/.apothem/support/hooks/dispatch.py` and
+`~/.claude/.apothem/support/conformity/gate.py` by absolute path, so no importable
+`apothem` package is needed on the host.
+
+The adapter does **not** manage `CLAUDE.md` — that file is operator-owned
+territory. The Apothem governance surface reaches Claude Code through the
+propagated `rules/` tree and the SessionStart hook, not through a rendered
+`CLAUDE.md`.
+
+## Profile-to-native-config mapping
+
+On every `apothem install` or `apothem update`, the adapter propagates the
+shared `apothem` corpus into `~/.claude/` per the propagation manifest. The
+adapter uses native directories directly where possible and converts command
+prompts into skill folders. Existing matching Apothem-managed children are
+backed up before replacement; unrelated operator-authored entries are
+preserved. `settings.json` is merged so operator-authored keys remain
+recoverable.
+
+## Compatibility notes
+
+No translation occurs. Install validates that the profile is well-formed and all hook bindings in settings.json are resolvable.
+
+Claude Code applies all hook bindings in settings.json on every session start. Each adapter is verified against its own native harness — there is no privileged "reference" harness.
+
+## Verification
+
+```bash
+apothem verify --harness claude-code
+```
+
+The verify command confirms that:
+
+1. The native config exists at the expected path.
+2. All mandatory fields from the shared profile are present.
+3. The adapter-specific verification routine reports success.
+
+## Updating
+
+```bash
+apothem update --harness claude-code
+```
+
+Re-derives the native config from the current shared profile. Run after the
+installed `apothem` package is updated, so the propagated convention surface
+(agents, rules, skills, statuslines, output-styles) reflects the new
+version. `CLAUDE.md` is operator-owned and is never touched by the adapter.
+
+## Uninstalling
+
+```bash
+apothem uninstall --harness claude-code
+```
+
+Removes the native config files written by the adapter.
+The installed `apothem` package and source repository are unaffected.
+
+## Conformity gate
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| Config file not found | Re-run `apothem install --harness claude-code` |
+| Verification failed | Run `apothem update --harness claude-code`, then verify again |
+| Unexpected config content | Re-run `apothem update`; the shared `apothem` profile is the source of truth, not `~/.claude/` |
+
+## Configuration knobs
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--dry-run` | `false` | Preview install without writing files. |
+
+## See also
+
+- [All harnesses](/docs/harnesses) — the full catalog of supported tools
+- [Install guide](/docs/install) — install Apothem into this harness
+- [`apothem harnesses` reference](/docs/cli-reference/harnesses) — list and inspect adapters from the CLI

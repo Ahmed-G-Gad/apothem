@@ -1,0 +1,163 @@
+---
+title: "部署检查清单"
+description: "在部署或共享 Apothem 生态系统之前的飞行前验证检查清单"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+在将 Apothem 生态系统部署到新机器、与他人共享或将其视为可投入生产之前的
+飞行前验证步骤。
+
+---
+
+## 1. YAML 有效性
+
+- [ ] 所有规则文件均无 YAML 错误地解析——frontmatter 块以 `---` 开头、以 `---` 结尾，且块外无孤立内容
+- [ ] 所有受托工作者文件均无 YAML 错误地解析
+- [ ] 所有命令文件均无 YAML 错误地解析
+- [ ] 所有技能 `SKILL.md` 文件均无 YAML 错误地解析
+
+**验证方法：** `python scripts/dev/validate_ecosystem.py` 解析每个制品的
+frontmatter，并标记 YAML 错误和缺失的必填字段。如需临时
+检测孤立列表项：`rg -n "^- " src/apothem/rules/*.md`。
+
+---
+
+## 2. Frontmatter 完整性
+
+对于每种制品类型，验证必填字段是否存在：
+
+### 规则（`src/apothem/rules/*.md`）
+
+- [ ] `name`——与文件名匹配的 kebab-case 标识符
+- [ ] `version`——语义化版本 `MAJOR.MINOR.PATCH`（例如 `"X.Y.Z"`）
+- [ ] `updated`——ISO 8601 日期（例如 `"2026-04-20"`）
+- [ ] `description`——单句摘要
+- [ ] `scope`——`"always-on"` 或 `"path-filtered"`
+- [ ] `portability`——`"universal"`、`"universal-with-windows-caveats"`、`"unix-only"` 或 `"windows-only"`
+- [ ] `pathFilter`——对于路径过滤规则，存在且为有效的 glob 字符串；对于始终启用的规则则不存在
+
+### 命令（`src/apothem/commands/*.md`）
+
+- [ ] `name`——kebab-case 命令名
+- [ ] `version`、`updated`、`description`、`argument-hint` 存在
+- [ ] `disable-model-invocation` 存在且有意为之（对于仅供指引的命令为 `true`）
+- [ ] 在存在的情况下审查 `effort`、`portability`（按 schema 为可选）
+
+### 受托工作者
+
+路径：
+
+```text
+src/apothem/agents/*.md
+```
+
+- [ ] `name`、`version`、`updated`、`description` 存在
+- [ ] `tools`——允许使用的工具的逗号分隔列表
+- [ ] `disallowedTools`——明确列出不允许使用的工具
+- [ ] `maxTurns`——已设置（若 > 10 则附带理由注释）
+- [ ] `permissionMode`——**不得为 `"bypassPermissions"`**——使用 `"default"`
+- [ ] `memory: false`，除非有意启用持久内存
+
+### 技能（`src/apothem/skills/*/SKILL.md`）
+
+- [ ] `name`、`version`、`updated`、`description` 存在
+- [ ] `user-invocable`——已声明（true/false）
+
+---
+
+## 3. 安全性
+
+- [ ] **没有任何受托工作者使用 `permissionMode: "bypassPermissions"`**——这会绕过对 Write/Bash 操作的交互式确认
+- [ ] 工作者的 `tools` 列表保持最小化——只包含工作者确实需要的工具
+- [ ] 具有 `Bash` 访问权限的工作者有正当理由，并设有 maxTurns 限制
+- [ ] 任何制品中均无硬编码的路径、令牌或密钥
+- [ ] `settings.json` 中的钩子设置了合理的超时时间（≤ 60 秒），且不会执行来自用户输入的任意代码
+
+---
+
+## 4. 交叉引用完整性
+
+- [ ] `src/apothem/rules/` 表中列出的每条规则都按所述路径存在于磁盘上
+- [ ] `src/apothem/commands/` 表中列出的每条命令都存在于磁盘上
+- [ ] `src/apothem/agents/` 注册表中列出的每个受托工作者都存在于磁盘上
+- [ ] `src/apothem/skills/` 表中列出的每项技能都存在于磁盘上
+- [ ] `src/apothem/hooks/` 表中的每个钩子在 `settings.json` 中都有对应的条目
+- [ ] CLAUDE.md `Implements` 列引用的所有 `src/apothem/rules/*.md` 文件均存在
+
+---
+
+## 5. 准则覆盖
+
+- [ ] CLAUDE.md 中引用的每个 CM-N 都有执行位置（规则文件或显式内联定义）
+- [ ] 没有任何规则文件与另一规则文件相矛盾（尤其是在严肃性分级方面）
+- [ ] 遵守 CM-21 三方面划分——没有任何规则声称拥有另一规则的 CM-21 方面
+
+---
+
+## 6. 功能冒烟测试
+
+首先运行 Python 验证面——它快速、离线，并能捕获
+结构性回归：
+
+- [ ] `pytest tests`——钩子运行时的单元测试，全部通过
+- [ ] `python scripts/dev/validate_hooks.py`——钩子结构 + 仅 Python 的卫生检查通过
+- [ ] `python scripts/dev/validate_ecosystem.py`——完整树 + frontmatter + 受托钩子检查通过
+- [ ] `python scripts/dev/chaos_pass.py`——每个已配置的钩子命令在降级输入下都返回有效的 JSON 信封
+
+然后是实时场景：
+
+- [ ] `/plan-spec --interactive`（或 `/plan-spec <sample-file>`）——完成摄取/澄清而无命令级错误
+- [ ] `/plan-generate --dry-run`——生成结构预览而不写入文件
+- [ ] 对完整的计划套件执行 `/plan-status`——返回准确的阶段计数
+- [ ] 受托工作者调度：以小范围调用 `codebase-explorer` 工作者，在 maxTurns 内完成并返回结构化输出
+
+---
+
+## 7. 文档时效性
+
+- [ ] `CHANGELOG.md`（位于生态系统根目录）反映了自上次发布以来的每项制品变更；下一个发布版本的条目在标签落地之前已填充，或每项变更都已切入某个已发布的版本条目
+- [ ] `site/content/docs/developer-guide.mdx` 准确描述了当前的制品结构
+- [ ] `site/content/docs/reference/artifact-schema.mdx` 与制品中实际存在的 frontmatter 字段相符
+- [ ] `site/content/docs/reference/settings-reference.mdx` 与 `settings.json` 中的实际钩子配置相符
+- [ ] `README.md` 与磁盘上的树保持一致
+
+---
+
+## 8. 可移植性（如果与他人共享）
+
+- [ ] 钩子命令中的所有路径都与环境无关或使用 `~` 展开
+- [ ] 钩子命令使用 exec 形式，并避免特定于 shell 的命令字符串
+- [ ] 任何制品中均无硬编码的 `C:\Users\username` 或 `/home/username` 路径
+- [ ] `settings.json` 使用单一的钩子事件覆盖表和规范的调度模块路径
+
+---
+
+## 9. 版本对齐
+
+- [ ] CLAUDE.md 的 `version` 是树中任何制品里最高的（或按惯例等于最近一次提升版本的制品的版本）
+- [ ] 每个制品的 `version` 都与所述语义化版本（`MAJOR.MINOR.PATCH`）相符
+- [ ] 打标签前，CHANGELOG.md 恰好包含目标版本的发布条目
+- [ ] 每个制品的 `updated` 字段处于其最后一次行为变更编辑的日期之时或之后
+- [ ] 没有任何制品携带低于其最后一次改动时所处版本的 `version`（无回退）
+- [ ] `src/apothem/skills/plan-suite/SKILL.md` 和 `src/apothem/skills/plan-suite/master-template.md` 固定在同一模板版本线上
+
+---
+
+## 签字确认
+
+| 检查类别 | 状态 | 备注 |
+| -------------- | ------ | ----- |
+| YAML 有效性 | | |
+| Frontmatter 完整性 | | |
+| 安全性 | | |
+| 交叉引用完整性 | | |
+| 准则覆盖 | | |
+| 功能冒烟测试 | | |
+| 文档时效性 | | |
+| 可移植性 | | |
+| 版本对齐 | | |
+
+**部署批准人：** ___________________
+**日期：** ___________________
+**部署的生态系统版本：** ___________________

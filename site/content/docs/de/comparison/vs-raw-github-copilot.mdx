@@ -1,0 +1,45 @@
+---
+title: "Apothem vs. rohe GitHub-Copilot-Konfiguration"
+description: "GitHub Copilots copilot-instructions.md von Hand pflegen versus sie aus Apothems gemeinsamem Profil rendern."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+GitHub Copilot liest seine Anweisungen aus `.github/copilot-instructions.md`.
+Apothems github-copilot-Adapter rendert diese Datei aus dem gemeinsamen Profil.
+Diese Seite stellt die manuelle Pflege dieser Konfiguration der Verwaltung mit
+Apothem gegenüber.
+
+## Aufwandsvergleich
+
+| Aufgabe | Rohe Handkonfiguration | Von Apothem verwaltet |
+| ---- | --------------- | --------------- |
+| Anweisungen verfassen | `.github/copilot-instructions.md` von Hand bearbeiten | Gerendert: gemeinsame Regeln in die Datei eingebettet |
+| Anweisungen mit anderen Harnesses ausgerichtet halten | Manuell, pro Werkzeug | Automatisch bei `apothem update` |
+| Konfiguration installieren / entfernen | Die Datei von Hand schreiben und löschen | `apothem install` / `apothem uninstall` |
+| Prüfen, ob die Konfiguration korrekt ist | Manuelle Inspektion | `apothem verify --harness github-copilot` |
+
+## Was Apothem verwaltet
+
+Der github-copilot-Adapter bettet die gemeinsamen Regeln in
+`.github/copilot-instructions.md` ein. Copilot arbeitet als IDE-Erweiterung und
+stellt keine Hooks für Werkzeugaufrufe bereit, daher wird die Schutzabsicht
+vollständig in den gerenderten Anweisungen getragen. Jede Änderung an den
+gemeinsamen Regeln rendert die Datei beim nächsten `apothem update` neu.
+
+## Migrationspfad
+
+1. Führe `apothem profile init` aus, um das gemeinsame Profil zu erstellen, falls
+   noch nicht geschehen.
+2. Verschiebe den Inhalt deiner bestehenden `.github/copilot-instructions.md` in
+   den gemeinsamen Korpus.
+3. Führe `apothem install --harness github-copilot` aus, um die Anweisungsdatei
+   zu rendern.
+4. Führe `apothem verify --harness github-copilot` aus, um zu bestätigen, dass
+   die Konfiguration angekommen ist.
+5. Verwende `apothem update --harness github-copilot` für jede spätere Änderung.
+
+## Weiterlesen
+
+- [GitHub-Copilot-Adapter-Referenz](/docs/harnesses/github-copilot)
+- [Vergleichsübersicht](/docs/comparison)

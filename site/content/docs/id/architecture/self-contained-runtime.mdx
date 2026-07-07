@@ -1,0 +1,125 @@
+---
+title: "Runtime mandiri"
+description: "Bagaimana mesin Apothem berjalan dari checkout mana pun — dependensi yang diinternalkan, model invokasi PYTHONPATH=src, dan bootstrap pohon plugin."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+# Runtime mandiri
+
+Mesin Apothem adalah runtime mandiri: ia berjalan tanpa registri, langsung dari
+checkout mana pun atau pohon sumber yang ditempatkan, karena dependensi pihak
+ketiganya bepergian bersamanya. Dua bagian membuat itu berhasil — sebuah pohon
+dependensi yang diinternalkan dan sebuah model invokasi `python -m` yang tidak
+membutuhkan skrip konsol yang terpasang.
+
+## Pohon dependensi yang diinternalkan
+
+Tumpukan validasi dan serialisasi diinternalkan sebagai sumber Python murni di
+bawah `src/apothem/_vendor/`, setiap paket berdampingan dengan berkas lisensi
+hulunya:
+
+- `yaml` (parser/emitter Python murni; ekstensi C libyaml opsional tidak
+  dibawa)
+- `jsonschema`, dengan rantai dependensinya `attrs` (dan aliasnya `attr`),
+  `referencing`, serta `jsonschema_specifications`
+- `rpds` — sebuah shim Python murni yang mengimplementasikan ulang permukaan
+  `HashTrieMap`, `HashTrieSet`, dan `List` yang dipakai `jsonschema` dan
+  `referencing`, didukung oleh tipe bawaan, sehingga tumpukan berjalan dengan nol
+  ekstensi terkompilasi
+- `typing_extensions`
+
+Salinan yang diinternalkan diutamakan di atas versi mana pun yang terpasang di
+sistem: bootstrap menempatkan direktori vendor di depan `sys.path`, mendahului
+site-packages. Kebijakan seleksi — apa yang diinternalkan, apa yang tidak, dan
+bagaimana paket yang diinternalkan disegarkan — didokumentasikan dalam
+[strategi internalisasi dependensi](/docs/architecture/vendoring-strategy).
+
+Dua dependensi tetap di luar pohon: **`click`** dan **`rich`**, pustaka
+berorientasi terminal yang diimpor CLI. Keduanya harus dapat diimpor di bawah
+interpreter yang menjalankan mesin; pemasang memeriksa keduanya, menamai mana pun
+yang hilang, dan menawarkan untuk memasangnya bagi Anda — dengan konfirmasi Anda,
+atau secara otomatis dengan `--yes` / `APOTHEM_AUTO_INSTALL_DEPS=1`.
+
+## Model invokasi `python -m`
+
+Apothem dengan sengaja tidak mendeklarasikan skrip konsol di `pyproject.toml` —
+skrip konsol hanya ada ketika manajer paket menempatkannya di `PATH`, dan runtime
+mandiri tidak pernah mengasumsikan adanya satu pun. Sebagai gantinya, mesin
+memiliki dua permukaan invokasi:
+
+| Permukaan | Invokasi | Konteks |
+| ------- | ---------- | ------- |
+| CLI mesin | `python -m apothem <command>` | Sebuah pohon sumber dengan `src/` pada `PYTHONPATH` (checkout, cache npx, pohon plugin) |
+| Runtime hook | `python "<harness-root>/apothem/hooks/dispatch.py" <event>` | Salinan termaterialisasi di bawah akar harness, melalui jalur absolut |
+
+- `python -m apothem` menjalankan `src/apothem/__main__.py`, yang memanggil
+  `apothem.cli:main` — grup perintah Click.
+- Entri hook dalam `settings.json` / `hooks.json` yang termaterialisasi
+  memanggil dispatcher (dan, untuk Claude Code, gerbang konformitas di
+  `<harness-root>/apothem/conformity/gate.py`) melalui jalur skrip absolut.
+  Keduanya adalah skrip stdlib mandiri yang mem-bootstrap `sys.path`-nya sendiri,
+  dan fixture skema gerbang bepergian di sampingnya di
+  `<harness-root>/apothem/schemas/`, sehingga hook berjalan **tanpa paket
+  `apothem` yang dapat diimpor di host**. Templat membawa token `${HARNESS_ROOT}`
+  yang dirender `apothem install` menjadi jalur akar harness sebenarnya dalam
+  bentuk garis miring depan.
+- Dari checkout sumber, bentuk modul
+  `python -m apothem.hooks.dispatch` dan
+  `python -m apothem.conformity.gate` menjalankan kode yang sama untuk
+  pengembangan.
+
+Direktori paket menjadi dapat diimpor dengan menempatkan direktori `src/` dari
+checkout di depan `PYTHONPATH`:
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+```
+
+Inilah persis invokasi yang dicetak pemasang sekali-jalan saat selesai.
+
+## Bootstrap pohon plugin
+
+Plugin Claude Code membundel mesin di bawah `<plugin_root>/lib/apothem`
+ketimbang bergantung pada `PYTHONPATH`. Modul bootstrap
+`apothem.lib.plugin_bootstrap` mengekspos `bootstrap_syspath`, yang secara
+idempoten menempatkan `<plugin_root>/lib` dan direktori vendor di depan
+`sys.path` agar `import apothem` dan setiap dependensi yang diinternalkan
+teratasi dari pohon plugin. Pohon yang cacat (tidak ada `lib/`) memunculkan
+`PluginBootstrapError` ketimbang diam-diam mengimpor salinan sistem yang usang.
+
+## Apa yang ditempatkan pemasang di disk
+
+Pemasang berbasis skrip menempatkan klon git dari pohon sumber di `~/.apothem`
+(dapat ditimpa dengan `APOTHEM_HOME`) dan menjalankan mesin darinya — tidak ada
+paket Python yang dipasang ke `site-packages` di luar tawaran prasyarat opsional
+`click` / `rich`. Klon tersebut adalah repositori lengkap, termasuk suite
+pengujian dan situs dokumentasi yang tidak pernah diimpor runtime, karena dua
+alasan yang disengaja: mesin **memateralisasi cohort-nya** — aturan, keterampilan,
+perintah, dan templat — langsung dari pohon ke setiap harness, sehingga pohon
+adalah sumber kebenaran yang hidup dan bukan hanya sebuah runtime; dan direktori
+`.git` tetap di tempatnya sehingga `apothem update` melakukan fast-forward klon
+yang ada alih-alih mengunduh ulang.
+
+Tata letak jalankan-dari-sumber ini adalah pola yang sama yang dipakai alat seperti
+`nvm`, `pyenv`, dan `oh-my-zsh` — beberapa megabita sumber ditambah riwayat, dapat
+dihapus dalam satu langkah dengan pencopot pasang (tidak ada keadaan sistem yang
+perlu dibatalkan). Jejak yang lebih ramping — checkout dangkal atau jarang yang
+menghilangkan `tests/` dan `site/` — dimungkinkan, tetapi akan menukar jalur
+pembaruan di tempat, terverifikasi tanda tangan, berbasis `git`; tata letak saat
+ini lebih mengutamakan pembaruan yang sederhana dan dapat diverifikasi ketimbang
+disk minimal.
+
+## Bagaimana runtime menemukan Python
+
+Pemasang sekali-jalan dan shim npx menemukan interpreter dengan cara yang sama:
+menyelidiki `python3`, `python`, nama berversi (`python3.14` hingga
+`python3.10`), dan `py -3` pada Windows; menolak shim peluncur Microsoft Store;
+dan menerima kandidat pertama yang melaporkan versi 3.10 atau lebih baru. Ketika
+dijalankan dari pohon sumber, pemasang memakai ulang pelokasi terbundel
+`hooks/lib/find-python`, yang menerapkan batas bawah yang sama.
+
+## Langkah Berikutnya yang Direkomendasikan
+
+**Jalankan `python -m apothem --help`** dengan direktori `src/` dari checkout
+pada `PYTHONPATH` untuk memastikan jalur CLI mandiri teratasi di host Anda.

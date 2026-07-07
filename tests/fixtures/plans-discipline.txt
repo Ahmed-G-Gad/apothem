@@ -1,0 +1,1 @@
+Planning artifacts are written to <project-root>/.apothem/plans/, never to any harness configuration directory (for example ~/.codex/ or ~/.claude/) and never to a global location. This rule is non-negotiable; cite §3 of the project spec on every related decision.

@@ -1,0 +1,39 @@
+---
+title: "Audit webhook"
+description: "Audit webhook Apothem — rotasi rahasia, minimalisasi lingkup, dan bukti pemeriksaan Webhooks Scorecard."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Pemeriksaan **Webhooks** OpenSSF Scorecard memverifikasi bahwa webhook repositori menggunakan rahasia bersama untuk mengautentikasi permukaan pengiriman — tanpanya, penyerang yang mengetahui URL webhook dapat memutar ulang atau memalsukan peristiwa.
+
+## Postur webhook Apothem
+
+| Permukaan webhook | Status | Irama rotasi rahasia |
+|---|---|---|
+| **Webhook repositori** | Tidak ada yang dikonfigurasi di tingkat repositori. | t/a |
+| **Webhook organisasi** | Tidak ada yang dikonfigurasi di tingkat organisasi. | t/a |
+| **Peristiwa alur kerja** | Dikelola GitHub; tidak tunduk pada pemeriksaan Webhooks. | t/a |
+
+Apothem saat ini mengoperasikan **nol permukaan webhook eksternal**. Setiap integrasi berbasis peristiwa menggunakan alur kerja asli GitHub (CI, Scorecard, CodeQL, pip-audit) yang tidak tunduk pada pemeriksaan Webhooks Scorecard.
+
+## Tata kelola webhook ke depan
+
+Ketika Apothem menumbuhkan permukaan webhook (mis., notifikasi rilis Discord / Matrix, pemicu build konsumen hilir), operator HARUS:
+
+1. **Membuat rahasia berentropi tinggi** (≥ 32 byte, acak secara kriptografis).
+2. **Menyimpan rahasia di permukaan rahasia terenkripsi repositori** — tidak pernah di sumber, tidak pernah di YAML alur kerja.
+3. **Mengonfigurasi webhook dengan rahasia tersebut** agar GitHub menandatangani header `X-Hub-Signature-256` pada setiap pengiriman.
+4. **Memverifikasi tanda tangan di endpoint penerima** menggunakan perbandingan waktu-konstan.
+5. **Merotasi rahasia** setiap 12 bulan ATAU dalam 24 jam setelah dugaan kompromi apa pun.
+6. **Mendokumentasikan webhook** dalam berkas audit ini beserta tujuannya, endpoint penerima, dan tanggal rotasinya.
+
+## Irama audit
+
+Berkas ini ditinjau pada setiap pass `/security-audit` dan pada setiap titik pemeriksaan pra-cutover rekayasa rilis. Penyimpangan (mis., permukaan webhook yang diperkenalkan tanpa entri di sini) merupakan temuan severitas HIGH.
+
+## Referensi
+
+- [OpenSSF Scorecard — pemeriksaan Webhooks](https://github.com/ossf/scorecard/blob/main/docs/checks.md#webhooks)
+- [GitHub — Keamanan webhook](https://docs.github.com/en/webhooks/using-webhooks/securing-your-webhooks)
+- [Kebijakan Keamanan Apothem](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)

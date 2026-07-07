@@ -1,0 +1,57 @@
+---
+title: "对外合规登记册——在宿主项目上操作时"
+description: "十五条强制规定登记册（M1–M15），规定在宿主项目中生成的所有制品的合规要求，并与生态系统内部强制规定交叉映射。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **十五条生产强制规定的规范登记册。** 本文档承载完整的十五条强制规定登记册（M1–M15）、琐碎与非琐碎阈值的裁定、M↔CM 交叉映射策略以及强制规定引入协议；实质性的枚举内容存放于此，由各强制规定对应的规则文件操作化。
+
+当本生态系统在宿主项目（用户的调用目标——git 仓库、文档树、研究语料库、基础设施清单、便笺）中生成、编辑、重做、改造、扩展或移除任何制品时，每个产出的制品都满足下文声明的**十五条强制规定标准（M1–M15）**。这是不可协商的，并适用于每个生态系统表面（辅助件、助手、命令、钩子、响应、差异、消息）。强制执行通过预发射闸门进行（参见 `site/content/docs/governance/pre-emission-gate-registry.mdx`）；机械化部分的强制执行存放于 `src/apothem/conformity/*-grep.py`，由 `src/apothem/conformity/gate.py` 编排。
+
+这十五条强制规定按照并行词汇策略与 CM-N 强制规定**并行**运作（参见 `site/content/docs/governance/cross-cutting-mandates.mdx`）；M 与 CM 是正交的治理维度（M 是对外轴——宿主项目制品；CM 是对内轴——生态系统内部制品）。下文列出的每条规则都是其强制规定的权威归宿；本登记册是索引。
+
+| ID | 强制规定 | 一句话摘要 | 权威规则 |
+| -- | ------- | ---------------- | -------------- |
+| M1 | 宿主项目无关性 | 发现宿主的技术栈／格式化器／检查器／布局／惯用法；遵循它们；按 M5 将沉默作为询问浮现，并附 M7 标注 | `src/apothem/rules/host-discovery.md` |
+| M2 | 编辑纪律 | 披露每一次修订／扩展／精炼并附理由；不得静默过度遵从，不得静默越界 | `src/apothem/rules/disclosure-ledger.md` |
+| M3 | 十大质量维度 | 每个制品通过十项检查（严谨性、连贯性、可配置性、可读性、孤立性、结构性、架构、命名、学术引用、示例／测试／文档） | `src/apothem/rules/ten-dimension-check.md` |
+| M4 | 自我适用 | 在每次有意义范围的发射前运行十五项预发射闸门；记录发布证明 | `src/apothem/rules/pre-emission-gate.md` |
+| M5 | 权威原则 | 询问，不臆造；身份／范围／偏好／安全／命名／基础设施／版本锁定数据永不捏造 | `src/apothem/rules/authority-inquiry.md` |
+| M6 | 专业知识融入 | 读取意图，主动修订，在相邻缺口处扩展，以引用理由精炼，预判二阶后果 | `src/apothem/rules/expertise-posture.md` |
+| M7 | 选项标注 | 每个多选项选择都带有推荐标记加原则关联理由；在权威领域禁止静默挑选 | `src/apothem/rules/option-annotation.md` |
+| M8 | 确定性与严密性 | 在可作出约束性规定之处不得含糊；不得在未枚举分支的情况下说“视情况而定”；每个契约都有前置／后置／失败条件 | `src/apothem/rules/definitiveness.md` |
+| M9 | 视觉杠杆 | 结构性主题承载反映当前实况的图示（默认 Mermaid），附来源与验证日期 | `src/apothem/rules/visual-leverage.md` |
+| M10 | 双向绑定 | 实质性结构元素声明互惠绑定（Drives → ／ Driven by ← ／ Satisfies → ／ Established by ↑ ／ Cross-bound with ↔） | `src/apothem/rules/bidirectional-binding.md` |
+| M11 | 敏捷冲刺 | 非琐碎的多步工作作为有纪律的冲刺运行（目标／待办／就绪定义／完成定义／评审／回顾） | `src/apothem/rules/agile-sprints.md` |
+| M12 | 阶段报告与规范布局 | 多阶段工作产出每个子阶段的报告加阶段级汇总；输出位于规范布局 | `src/apothem/rules/canonical-layout.md` |
+| M13 | 代码工艺 | 说明“为何而非何事”的注释；揭示意图且带单位的命名；类型化的异常处理；具名常量；遵循宿主的检查／格式化／类型检查 | `src/apothem/rules/code-craft-{python,shell,markdown,conventions}.md`（按语言） |
+| M14 | 生态系统系统性 | 新组件声明上游／下游／同级／执行者；在宿主登记册中编入索引；不引入孤岛、不引入孤儿 | `src/apothem/rules/systemic-participation.md` |
+| M15 | 生产就绪形态 | 代码变更在同一变更集中随附测试加文档加 CHANGELOG 条目加合规提交消息加 CI 通过 | `src/apothem/rules/production-ready-prs.md` |
+
+## 1. 琐碎与非琐碎阈值（已确定）
+
+区分琐碎与非琐碎工作的阈值——非琐碎工作触发 M11 加 M12 装置——是**行数加范围的混合**：当一次变更是 ≤ 5 行的单文件编辑，且不引入公共 API 表面变更，也无行为变化时，该变更为琐碎。其余皆为非琐碎。按 M5 的一次确定纪律确定一次；该阈值在此处以用户范围存放，仅被遵循 M1 宿主发现的显式项目范围声明所覆盖（例如 Claude Code 的 `<project>/.claude/CLAUDE.md`，或另一harness的等效逐项目表面）。
+
+## 2. M↔CM 交叉映射
+
+每条 M 编号规则正文按并行词汇策略在其 `Cross-bound with ↔` 绑定中内联声明其 CM-N 交叉映射：当某条 M 强制规定有最接近的 CM-N 类比时，两条规则在两者皆适用之处都适用（不替换）。这些映射内在于规则正文；本登记册概述轴策略而不重复映射表。
+
+## 3. 强制规定引入协议
+
+新增一条 M 编号强制规定（例如未来的 M16）是一次**捆绑变更**。只有当下方每个组件都出现在同一变更集中时，该捆绑才进入登记册。静默新增——在登记册表格中加入新的 M 行而无支撑捆绑——会产生强制规定轴漂移，并按 M14 系统参与性判定为不合规。
+
+| 所需组件 | 用途 | 落地位置 |
+| ------------------ | ------- | -------------- |
+| **登记册表格中的强制规定行** | 命名该强制规定、其一句话摘要、其权威规则 | 上方本登记册的表格 |
+| **CM-N 交叉映射单元格** | 按 §2 并行词汇策略声明最接近的 CM-N 类比（或标记 `(no direct CM-N analog)` 作为新轴） | 新规则的 `Cross-bound with ↔` 行 |
+| **权威规则正文** | 该强制规定的实质性规范（前置条件／所需行为／披露表面／失败征兆／五向绑定） | `src/apothem/rules/<mandate-name>.md` |
+| **预发射闸门行** | 命名该项检查的种类（机械／推理／混合）及其 `Failure → action` | 预发射闸门登记册表格（`site/content/docs/governance/pre-emission-gate-registry.mdx`） |
+| **强制执行表面** | 要么是位于 `src/apothem/conformity/<name>-grep.py`、由 `gate.py` 编排的机械化 grep，要么是带有操作者自检锚点的显式推理项声明 | `src/apothem/conformity/`（机械）或标记为 `reasoned` 的闸门行（操作者自检） |
+| **合规夹具** | 位于 `tests/conformity-scenarios/fixtures/F-<N>-<name>/` 下、演练该强制规定失败模式的夹具；验证器的强制规定清单更新以纳入新项 | `tests/conformity-scenarios/` |
+| **发布证明模式更新** | 发布证明的 `bars:` 块新增该行；现有制品的发布证明块将新行视为 `n/a (with reason: pre-mandate-N artifact)`，直至重新审计 | `site/content/docs/governance/pre-emission-gate-registry.mdx` §1 模式 |
+| **披露登记账条目** | 按扎根于具体驱动因素（观察到的模式复现；暴露的安全缺口；现有十五条未覆盖的能力）的理由记录该强制规定的引入 | 变更集的提交正文或 PR 描述，按 `src/apothem/rules/disclosure-ledger.md` |
+
+**适用纪律。** 没有捆绑就到来的强制规定提案在评审时被拒；提案者要么补全捆绑，要么将提案降级为对现有强制规定的扩展。现有十五条强制规定作为规范的对外轴一起被采纳；未来的新增遵循同样的“全部组件或不增加组件”的采纳节奏，而非零敲碎打地落地。
+
+**降级／退役协议。** 当某条既有 M-N 被发现与某条现有 CM-N 或另一条 M-N 冗余（在物化规则正文处的交叉映射覆盖图在两个方向上都显示 `direct` 邻接）时，降级是其对称的逆过程：登记册行退役，闸门行退役，权威规则退役（其内容按 `src/apothem/rules/clean-room-generation.md` §3 重写协议折入吸收方规则），合规夹具退役，发布证明模式的 `bars:` 块去掉该行，变更集附带吸收方规则引用记录于披露登记账。降级保持同样的“全部组件或不增加组件”的不变量。

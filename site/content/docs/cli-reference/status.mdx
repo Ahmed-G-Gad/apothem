@@ -1,0 +1,117 @@
+---
+title: "status"
+description: "CLI reference for the apothem status command."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Report install, verify, and drift state for every registered harness.
+
+## Synopsis
+
+```
+apothem status [--profile PATH] [--project PATH]
+               [--quiet|-q] [--verbose|-v]
+               [--format plain|json] [--json] [--no-color]
+```
+
+`status` is a read-only inspection command. It iterates every registered
+harness adapter and reports three facts per harness: whether it is installed,
+whether its managed targets verify, and whether the installed configuration has
+drifted from the shared profile. It writes nothing to disk.
+
+For each harness, `status` reports:
+
+| Column | Meaning |
+|---|---|
+| `installed` | The adapter's managed config exists at its target path. |
+| `verified` | The adapter's managed targets are present and valid. |
+| `drift` | The profile-fidelity verdict (see below). |
+
+The `drift` value is one of:
+
+| Value | Meaning |
+|---|---|
+| `in-sync` | The installed configuration carries the freshly-projected shared profile verbatim. |
+| `drift` | The harness is installed but its projected profile content no longer matches the current shared profile. Re-run `apothem install` to re-project. |
+| `absent` | The harness is not installed, so there is nothing to compare. |
+| `needs-project` | A project-scope harness was reported without `--project`, so its target cannot be resolved. Pass `--project PATH` to inspect it. |
+| `unknown` | The default profile could not be loaded, so an installed harness has no baseline to compare against. Fix the profile to restore the drift verdict. |
+
+Drift is reported, never treated as an error: `status` exits 0 even when one or
+more harnesses report `drift`. Drift is a fact about your setup, not a failure
+of the command.
+
+If the default shared profile cannot be loaded, drift degrades to `unknown`
+for installed harnesses (the installed/verified facts are still reported)
+rather than aborting the sweep. An explicit `--profile` that cannot be loaded
+is a user error and aborts with a structured error instead.
+
+## Options
+
+| Option | Description |
+|---|---|
+| `--profile PATH` | Shared profile YAML that selects the drift baseline. Without it, the default profile (`~/.config/apothem/profile.yaml`) is used. |
+| `--project PATH` | Project root for project-scope harnesses. Without it, project-scope harnesses report `needs-project`. |
+| `--quiet`, `-q` | Suppress informational output; only errors are emitted. |
+| `--verbose`, `-v` | Emit additional diagnostic output. |
+| `--format plain\|json` | Output format (default: `plain`). |
+| `--json` | Shorthand for `--format json`. |
+| `--no-color` | Disable ANSI color codes in output. |
+| `-h`, `--help` | Show help and exit. |
+
+## JSON output
+
+The `--json` envelope carries one result row per registered harness. Each row
+carries the documented keys `harness`, `installed`, `verified`, and `drift`.
+
+```json
+{
+  "status": "success",
+  "command": "status",
+  "action": "status",
+  "harness": "all",
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "installed": true,
+      "verified": true,
+      "drift": "in-sync"
+    },
+    {
+      "harness": "cursor",
+      "installed": false,
+      "verified": false,
+      "drift": "needs-project"
+    }
+  ],
+  "warnings": [],
+  "error": null
+}
+```
+
+Per-adapter failure isolation: if a single adapter raises while reporting its
+status, that harness's row carries `outcome: "error"` and a `message`, the
+remaining harnesses still report normally, and the process exits with code 2.
+
+## Examples
+
+```bash
+apothem status
+apothem status --project .
+apothem status --json
+```
+
+## Exit codes
+
+| Code | Meaning |
+|---|---|
+| 0 | Status reported (drift is reported, not an error) |
+| 1 | Expected validation error (invalid `--profile`, or a `--project` path that does not exist) |
+| 2 | At least one adapter failed to report its status |
+
+## See also
+
+- [apothem verify](/docs/cli-reference/verify) — verify a single harness installation
+- [apothem diff](/docs/cli-reference/diff) — preview pending changes for a harness
+- [apothem harnesses](/docs/cli-reference/harnesses) — list and inspect registered harnesses

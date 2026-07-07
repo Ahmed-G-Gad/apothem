@@ -1,0 +1,71 @@
+---
+title: "uninstall"
+description: "apothem uninstall コマンドの CLI リファレンス。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+ハーネスアダプターの構成を削除します。
+
+## 構文
+
+```
+apothem uninstall --harness NAME|all [--yes] [--project PATH]
+                   [--quiet|-q] [--verbose|-v]
+                   [--format plain|json] [--json] [--no-color]
+```
+
+アダプターが管理するハーネスのターゲットを削除します。`--yes` が指定されない限り確認を求めます。選択したハーネスがインストールされていない場合、コマンドは成功し（終了コード 0）、「nothing to remove」の通知を表示します。
+
+連続形のエイリアス `apothem uninstalling` は同じハンドラーに解決されます。
+
+## オプション
+
+| オプション | 説明 |
+|---|---|
+| `--harness NAME` | 削除するハーネスアダプター、またはレジストリ全体の集合を表す `all`（必須）。 |
+| `--yes` | 確認プロンプトをスキップします。 |
+| `--project PATH` | プロジェクトスコープのハーネス用のプロジェクトルート。 |
+| `--quiet`, `-q` | 情報出力を抑制し、エラーのみを出力します。 |
+| `--verbose`, `-v` | 追加の診断出力を発行します。 |
+| `--format plain\|json` | 出力形式（デフォルト: `plain`）。 |
+| `--json` | `--format json` の省略形。 |
+| `--no-color` | 出力の ANSI カラーコードを無効にします。 |
+| `-h`, `--help` | ヘルプを表示して終了します。 |
+
+## JSON 出力
+
+アダプターがインストールされ、正常に削除された場合:
+
+```json
+{"action": "uninstalled", "harness": "claude-code", "output_path": "..."}
+```
+
+アダプターがインストールされていなかった場合:
+
+```json
+{"status": "not_installed", "harness": "claude-code"}
+```
+
+## 例
+
+```bash
+apothem uninstall --harness claude-code
+apothem uninstall --harness claude-code --yes
+apothem uninstall --harness cursor --project . --yes
+apothem uninstall --harness all --project . --yes
+apothem Uninstalling --harness cursor --project . --yes   # continuous-form alias
+```
+
+## 終了コード
+
+| コード | 意味 |
+|---|---|
+| 0 | アダプターをアンインストールした、またはインストールされていなかった |
+| 1 | ハーネスが見つからない、またはユーザーが確認プロンプトを中止した |
+
+## 関連項目
+
+- `apothem uninstalling` — このコマンドの連続形エイリアス（ここで文書化。CLI は両方の形式を受け付けます）
+- [apothem install](/docs/cli-reference/install) — ハーネス構成をインストールします
+- [apothem verify](/docs/cli-reference/verify) — インストール状態を確認します

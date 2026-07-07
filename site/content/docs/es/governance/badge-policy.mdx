@@ -1,0 +1,130 @@
+---
+title: "Política de insignias"
+description: "Especifica las fuentes de insignias dinámicas y estáticas para el README, cubriendo el estado de flujo de trabajo nativo de GitHub, el JSON de endpoint de shields.io y las formas de insignia estática."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Este documento es la referencia canónica para la franja de insignias del
+README y la infraestructura que publica sus fuentes de datos dinámicas. Cada
+insignia del README del proyecto se resuelve a través de una de las tres
+formas especificadas aquí; las insignias nuevas que se añadan en el futuro
+siguen las mismas formas o se rechazan en la revisión.
+
+## 1. Antecedentes
+
+Las URL estáticas `https://img.shields.io/badge/X-Y-Z` nunca cambian por sí
+solas, por lo que se alejan del estado real del proyecto: una insignia
+`release-vN-blue` sigue mostrando `vN` mucho después de que se publique
+`vN+1`. Por ello, la política exige formas dinámicas para cada valor que se
+mueve y reserva las insignias estáticas para el pequeño conjunto de valores
+(licencia, versión objetivo de Python) que rara vez cambian, donde la forma
+estática es honesta.
+
+## 2. Arquitectura
+
+Tres formas cubren cada insignia del proyecto:
+
+1. **Insignias de estado de flujo de trabajo nativas de GitHub.** La URL de
+   insignia de un flujo de trabajo tiene la forma
+   `https://github.com/<owner>/<repo>/actions/workflows/<file>/badge.svg` y
+   refleja la ejecución más reciente en la rama predeterminada. GitHub sirve
+   la insignia desde los metadatos públicos del repositorio.
+2. **Insignias de endpoint de shields.io.** Una insignia de endpoint de
+   shields.io resuelve una URL
+   `https://img.shields.io/endpoint?url=<published-json>` donde el JSON se
+   ajusta al esquema de endpoint de shields.io (`schemaVersion`, `label`,
+   `message`, `color`). El JSON publicado vive en
+   `apothem.ahmedgad.com/badges/*.json`; su contenido lo genera un flujo de
+   trabajo de CI en cada ejecución de CI exitosa. Las insignias de endpoint
+   mantienen las métricas bajo una publicación controlada por el proyecto en
+   lugar de un almacén mutable de terceros.
+3. **Insignias estáticas de shields.io.** Una insignia estática tiene la
+   forma `https://img.shields.io/badge/<label>-<message>-<color>` sin fuente
+   de datos reactiva. Reservada para valores que genuinamente rara vez
+   cambian (identificador de licencia, versión objetivo de Python).
+
+La publicación de métricas del proyecto en Gists públicos se excluye por
+diseño. Los endpoints de shields.io sobre el dominio controlado por el
+proyecto son el sustituto canónico.
+
+## 3. Especificación por insignia
+
+| Insignia | Forma | Fuente | Forma de la URL |
+|---|---|---|---|
+| Estado de CI | Nativa de GitHub | `.github/workflows/ci.yml` | `https://github.com/ahmed-g-gad/apothem/actions/workflows/ci.yml/badge.svg?branch=main` |
+| Último commit | Nativa de GitHub | metadatos del repositorio | `https://img.shields.io/github/last-commit/ahmed-g-gad/apothem` |
+| Licencia | Estática de shields.io | `LICENSE` (MIT) | `https://img.shields.io/badge/License-MIT-yellow.svg` |
+| Última versión | Endpoint de shields.io | `badges/release.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/release.json` |
+| Cobertura | Endpoint de shields.io | `badges/coverage.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/coverage.json` |
+| Seguridad | Endpoint de shields.io | `badges/security.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/security.json` |
+| Cadena de suministro | Endpoint de shields.io | `badges/supply-chain.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/supply-chain.json` |
+| Documentación | Endpoint de shields.io | `badges/docs.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/docs.json` |
+| Versión de Python | Estática de shields.io | `pyproject.toml` `python_requires` | `https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white` |
+
+CodeQL se ejecuta como un flujo de trabajo dedicado `.github/workflows/codeql.yml`
+que analiza las superficies de Python y Actions; el trabajo security-scan de
+`ci.yml` ejecuta solo bandit, dejando la publicación de SARIF de CodeQL a
+`codeql.yml`. La insignia de seguridad consume el JSON de endpoint publicado
+por el flujo de trabajo de badges en lugar de una insignia de flujo de trabajo
+nativa de GitHub, manteniéndose estable a través de la topología del escáner
+subyacente.
+
+## 4. Mecanismo de publicación de JSON
+
+Los JSON de endpoint son producidos por `.github/workflows/badges.yml`. El
+flujo de trabajo:
+
+- Se activa con `workflow_run` después de que el flujo de trabajo `ci` se
+  completa (y con `workflow_dispatch` manual para volver a publicar sin una
+  ejecución de CI).
+- Resuelve la última etiqueta desde `git describe --tags --abbrev=0` y la
+  conclusión de CI padre desde el evento `workflow_run`.
+- Genera cada JSON mediante `jq -n` para que la salida coincida estrictamente
+  con el esquema de endpoint de shields.io (`schemaVersion: 1`, más `label`,
+  `message`, `color`).
+- Valida cada JSON emitido con `jq -e` antes de subirlo.
+- Sube el directorio como un artefacto de flujo de trabajo llamado `badges`.
+
+El despliegue de los artefactos a `apothem.ahmedgad.com/badges/` lo maneja
+`.github/workflows/publish-static-site.yml`. Durante la construcción del
+sitio, ese flujo de trabajo descarga el artefacto `badges` exitoso más
+reciente y lo prepara bajo `site/dist/badges/`. Si el artefacto está ausente
+o ha caducado, el sitio sigue desplegándose y registra el artefacto de
+insignia faltante en los registros del flujo de trabajo en lugar de publicar
+JSON roto.
+
+## 5. Protocolo de mantenimiento
+
+Añade una nueva insignia decidiendo primero su forma:
+
+- Si la insignia refleja el estado de ejecución de un flujo de trabajo de CI,
+  prefiere la forma nativa de GitHub. La URL de la insignia está fijada por el
+  archivo del flujo de trabajo; no se necesita infraestructura de publicación.
+- Si la insignia refleja una métrica (un conteo, un porcentaje, una cadena de
+  versión, una etiqueta graduada) que se actualiza con el tiempo, usa la forma
+  de endpoint de shields.io. Añade un paso de generación de JSON a
+  `.github/workflows/badges.yml` junto a los cinco existentes y añade la URL
+  consumidora `apothem.ahmedgad.com/badges/<name>.json` a la franja de
+  insignias del README.
+- Si la insignia refleja un valor que genuinamente rara vez cambia (licencia,
+  objetivo de lenguaje, modo de gobernanza), usa la forma estática de
+  shields.io. Documenta la cadencia de cambio en la tabla por insignia de este
+  archivo al añadir la insignia.
+
+Retira una insignia eliminándola primero del README, luego eliminando su paso
+de generación de JSON del flujo de trabajo de badges, y después eliminando su
+fila de la tabla por insignia de arriba. Mantén la eliminación atómica para
+que el README nunca haga referencia a un artefacto JSON que el flujo de
+trabajo no produce.
+
+## 6. Referencias cruzadas
+
+- El flujo de trabajo de CI cuyo estado de ejecución refleja la insignia de CI
+  nativa de GitHub: `.github/workflows/ci.yml`.
+- El flujo de trabajo de badges que publica los JSON de endpoint:
+  `.github/workflows/badges.yml`.
+- El dominio del sitio estático que sirve los JSON:
+  `apothem.ahmedgad.com`.
+- La referencia del esquema de endpoint de shields.io:
+  [https://shields.io/badges/endpoint-badge](https://shields.io/badges/endpoint-badge).

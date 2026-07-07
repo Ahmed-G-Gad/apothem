@@ -1,0 +1,73 @@
+---
+title: "/research-proposal"
+description: "/research-proposal — Transforme la lacune synthétisée et le cadre théorique en un plan de référence finançable et révisable : objectifs SMART, registre de faisabilité et de risques, voie d'impact, plan de préenregistrement et sélection de la ligne directrice de publication EQUATOR — l'étape de proposition du pipeline /research, entre /research-synthesis et /research-design."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rôle :** Chercheur principal (plan de référence)
+**Position dans le pipeline :** milieu de chaîne
+
+Transforme la lacune synthétisée et le cadre théorique en un plan de référence finançable et révisable. La faisabilité éthique est soulevée d'emblée, et le plan de préenregistrement ainsi que la sélection de la ligne directrice de publication sont fixés avant que tout plan d'étude ne soit opérationnalisé.
+
+## Invocation canonique
+
+```bash
+/research-proposal
+```
+
+Avec des arguments :
+
+```bash
+/research-proposal [--suite-name NAME] [--override] [--guideline NAME] [--prereg-registry NAME]
+```
+
+## Entrées
+
+Le fichier `_inputs/synthesis.md` de la suite (la carte SOTA + l'analyse de la lacune) et `_inputs/theory.md` (le cadre conceptuel).
+
+## Sorties
+
+`_inputs/proposal.md` (la hiérarchie des objectifs SMART, l'évaluation de faisabilité, le registre des ressources / du calendrier / des risques, la voie d'impact, le plan de préenregistrement et la présélection de la ligne directrice de publication EQUATOR).
+
+## En aval
+
+/research-design (consommateur en aval — opérationnalise la proposition en un plan d'étude figé et préenregistré).
+
+## Phases du flux de travail
+
+La commande suit le flux de travail standard du pipeline `/research` :
+
+1. **Charger le contexte** — Lire `_inputs/synthesis.md` et `_inputs/theory.md`, les règles et tout état existant de la suite.
+2. **Construire la hiérarchie des objectifs SMART** — Transformer la lacune en objectifs spécifiques, mesurables, atteignables, pertinents et temporellement définis.
+3. **Évaluer la faisabilité et le risque** — Construire le registre des ressources / du calendrier / des risques ; soulever la faisabilité éthique d'emblée.
+4. **Planifier le préenregistrement et la publication** — Sélectionner le registre, rédiger le plan de préenregistrement et présélectionner la ligne directrice de publication EQUATOR.
+5. **Cartographier la voie d'impact** — Retracer comment les objectifs, une fois atteints, produisent un impact en aval.
+6. **Vérifier et émettre** — Confirmer que les objectifs sont testables et le plan reproductible ; émettre `_inputs/proposal.md` ainsi que le manifeste de passation.
+
+## Seuil de rigueur
+
+L'ambition du lieu de publication visé fixe non seulement le choix de la ligne directrice de publication, mais aussi la profondeur du seuil de rigueur que les étapes de conception et d'expérience en aval doivent franchir — seuil de réplication, parité de budget, réglage sur des partitions disjointes et significativité assortie d'une taille d'effet — ainsi que le dossier de preuves de reproductibilité que le livrable portera.
+
+## Modes d'échec
+
+| Symptôme | Cause | Remède |
+|---------|-------|----------|
+| L'objectif n'est pas mesurable | L'objectif est énoncé comme une activité, non comme un résultat | Le reformuler en un objectif SMART assorti d'une métrique de réussite explicite |
+| Aucun plan de préenregistrement | L'étape de préenregistrement a été omise | Sélectionner un registre et rédiger le plan avant de passer à `/research-design` |
+| Entrée de synthèse manquante | `/research-synthesis` n'a pas encore été exécuté | Exécuter d'abord `/research-synthesis` pour produire l'analyse de la lacune |
+
+## Exemples
+
+```bash
+# Transforme la lacune en un plan de référence finançable
+/research-proposal --suite-name retrieval-latency
+
+# Fixe la ligne directrice de publication et le registre de préenregistrement
+/research-proposal --guideline PRISMA --prereg-registry OSF
+```
+
+## Références croisées
+
+- [Aperçu du pipeline](/docs/pipeline)
+- [Référence des commandes](/docs/reference/commands)

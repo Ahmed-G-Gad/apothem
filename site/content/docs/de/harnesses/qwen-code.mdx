@@ -1,0 +1,97 @@
+---
+title: "Qwen Code"
+description: "Apothem-Werkzeugadapter für Qwen Code (Beta)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Anbieter:** Alibaba Cloud
+**Installationsname:** `qwen-code`
+**Status:** Beta
+**Native Konfiguration:** `~/.qwen/`
+
+## Installation
+
+```bash
+apothem install --harness qwen-code
+```
+
+Der Adapter schreibt die Qwen-Code-Einstellungen, installiert einen
+`QWEN.md`-Kontextanker, registriert Apothems Hook-Dispatcher, konvertiert
+Apothem-Befehle in Qwen-Markdown-Befehlsdateien, installiert Fähigkeiten als
+SKILL.md-Verzeichnisse und passt Helferdefinitionen als Qwen-Subagenten an.
+
+**Geschriebene Dateien:**
+
+```text
+~/.qwen/settings.json
+~/.qwen/QWEN.md
+~/.qwen/commands/
+~/.qwen/skills/
+~/.qwen/agents/
+~/.qwen/.apothem/support/{rules,templates,hooks}/
+```
+
+## Zuordnung von Profil zu nativer Konfiguration
+
+Der Adapter rendert die dokumentierten `settings.json`-Schlüssel für Kontext und
+Hooks, schreibt `QWEN.md` und verwebt Apothem-Befehle, -Fähigkeiten und
+-Helferdefinitionen durch die nativen Erkennungsverzeichnisse von Qwen Code. Regeln,
+Vorlagen und das Hook-Quellmaterial verbleiben als Unterstützungsmaterial unter
+`~/.qwen/.apothem/support/`.
+
+## Kompatibilitätshinweise
+
+`~/.qwen/.apothem/support/` ist Unterstützungsmaterial, das von `QWEN.md` und den
+Hook-Befehlen der Einstellungen referenziert wird; es ist kein
+herstellereigener Erkennungs-Namensraum.
+
+## Verifizierung
+
+```bash
+apothem verify --harness qwen-code
+```
+
+Der verify-Befehl bestätigt, dass:
+
+1. Die native Konfiguration am erwarteten Pfad existiert.
+2. Alle Pflichtfelder aus dem gemeinsamen Profil vorhanden sind.
+3. Die adapterspezifische Verifizierungsroutine Erfolg meldet.
+
+## Aktualisierung
+
+```bash
+apothem update --harness qwen-code
+```
+
+Aktualisiert `settings.json`, `QWEN.md`, die nativen Befehle, Fähigkeiten,
+Subagenten und den Apothem-Unterstützungsbaum.
+
+## Deinstallation
+
+```bash
+apothem uninstall --harness qwen-code
+```
+
+Entfernt die vom Adapter geschriebenen nativen Konfigurationsdateien.
+Das YAML des gemeinsamen Profils und der Apothem-Motor bleiben unberührt.
+
+## Konformitätstor
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Fehlerbehebung
+
+| Symptom | Behebung |
+|---------|-----|
+| Konfigurationsdatei nicht gefunden | `apothem install --harness qwen-code` erneut ausführen |
+| Verifizierung fehlgeschlagen | `apothem update --harness qwen-code` ausführen, dann erneut verifizieren |
+| Unerwarteter Konfigurationsinhalt | `~/.config/apothem/profile.yaml` oder `--profile PATH` prüfen, dann `apothem update --harness qwen-code` erneut ausführen |
+
+## Konfigurationsschalter
+
+| Flag | Standard | Beschreibung |
+|------|---------|-------------|
+| `--dry-run` | `false` | Installation in der Vorschau anzeigen, ohne Dateien zu schreiben. |

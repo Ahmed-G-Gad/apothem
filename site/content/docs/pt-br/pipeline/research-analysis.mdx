@@ -1,0 +1,70 @@
+---
+title: "/research-analysis"
+description: "/research-analysis — Analisa os dados brutos conforme o plano pré-registrado: testes planejados, tamanhos de efeito com intervalos de confiança, verificações de robustez e desvios divulgados."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Papel:** Investigador principal (análise)
+**Posição no pipeline:** meio da cadeia
+
+Analisa os dados brutos conforme o plano pré-registrado — executa os testes estatísticos planejados, reporta tamanhos de efeito com intervalos de confiança (não apenas valores p), aplica correção para comparações múltiplas onde aplicável, executa verificações de robustez / sensibilidade e divulga cada desvio em relação ao pré-registro.
+
+## Invocação canônica
+
+```bash
+/research-analysis
+```
+
+Com argumentos:
+
+```bash
+/research-analysis [path/to/research-suite/]
+```
+
+## Entradas
+
+Os dados brutos no local natural do host que a etapa de experimento registrou, mais `_inputs/preregistration.md` (o plano de análise congelado).
+
+## Saídas
+
+`_outputs/analysis.md` (os testes pré-registrados com tamanhos de efeito e ICs, a correção para comparações múltiplas, as verificações de robustez e os desvios divulgados) + figuras / tabelas em um local natural do host.
+
+## A jusante
+
+/research-paper (consumidor a jusante)
+
+## Fases do fluxo de trabalho
+
+O comando segue o fluxo de trabalho padrão do pipeline `/research`:
+
+1. **Carregar o contexto** — Ler os dados brutos e o pré-registro.
+2. **Verificar a Comporta de sequência** — Confirmar que as saídas do experimento existem; caso contrário, interromper com `Blocked: run /research-experiment first`.
+3. **Analisar** — Executar os testes pré-registrados; reportar tamanhos de efeito + ICs; corrigir para comparações múltiplas; executar verificações de robustez / sensibilidade.
+4. **Divulgar os desvios** — Registrar cada afastamento do plano pré-registrado.
+5. **Atualizar o manifesto de transferência** — Registrar o caminho da análise e as figuras / tabelas.
+6. **Emitir a análise** — `_outputs/analysis.md` + figuras / tabelas.
+
+## Piso de rigor
+
+Os resultados estocásticos são reportados como melhor, média, mediana, desvio padrão e pior entre as repetições, com curvas de convergência e gráficos de distribuição. As comparações usam testes não paramétricos — um teste pareado de postos com sinal aos pares, um teste ômnibus de postos com correção post-hoc entre métodos — reportados com um tamanho de efeito de superioridade estocástica e um diagrama de diferença crítica. Um resultado avança para o artigo somente quando supera o portão de avanço: ele vence seus comparadores de forma convincente e significativa, e a aprovação é registrada em um runbook auditável.
+
+## Modos de falha
+
+| Sintoma | Causa | Recuperação |
+|---------|-------|----------|
+| Blocked: run /research-experiment first | Sem dados brutos | Execute `/research-experiment` para produzir os dados + o log |
+| Valor p reportado sem tamanho de efeito | Relato estatístico incompleto | Reporte tamanhos de efeito + intervalos de confiança |
+| Desvio de análise não divulgado | O plano se afastou silenciosamente | Divulgue o desvio em relação ao pré-registro |
+
+## Exemplos
+
+```bash
+# Analisar os dados brutos conforme o plano pré-registrado
+/research-analysis path/to/research-suite/
+```
+
+## Referências cruzadas
+
+- [Visão geral do pipeline](/docs/pipeline)
+- [Referência de comandos](/docs/reference/commands)

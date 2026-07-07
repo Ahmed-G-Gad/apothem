@@ -1,0 +1,418 @@
+---
+title: "Especificação do esquema de artefatos"
+description: "Esquema canônico de frontmatter YAML e campos obrigatórios para todos os tipos de artefato na árvore de fontes do Apothem, com modelos por classe e regras de validação."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Frontmatter YAML canônico e campos obrigatórios para todos os artefatos do ecossistema Apothem.**
+
+## Visão geral
+
+Todos os artefatos na árvore de fontes do Apothem (sob `src/apothem/` e a
+superfície de configuração raiz) devem incluir um bloco de frontmatter YAML
+(entre os delimitadores `---`) com campos obrigatórios e opcionais específicos
+do seu tipo de artefato. Este documento define o esquema canônico de cada tipo.
+
+**Regras universais:**
+
+- O frontmatter está em conformidade com YAML 1.2
+- Todos os valores de string usam aspas duplas, exceto quando vazios
+- Ordem dos campos: campos obrigatórios primeiro, opcionais agrupados por relevância
+- Comentários no frontmatter usam `#` com espaço: `# comment`
+- Os valores de caminho devem ser relativos (sem `/` inicial) e usar barras (`/`) para compatibilidade multiplataforma
+
+**Convenção de versionamento (universal entre os tipos de artefato):**
+
+- `version` é **semântica** (`MAJOR.MINOR.PATCH`). Incremente MAJOR para mudanças de quebra no esquema ou no contrato; MINOR para mudanças aditivas não disruptivas (novos campos opcionais, seções adicionais, antipadrões adicionais); PATCH para esclarecimentos, correções de formatação ou edições somente de documentação sem mudança de comportamento.
+- `updated` é a **data ISO 8601** (`YYYY-MM-DD`) da edição mais recente. Deve mudar a cada incremento de `version` e pode ser atualizada de forma independente para atualizações de links que não incrementam a versão.
+- Os artefatos novos iniciam em `v0.Y.Z`. A promoção para `vX.Y.Z` indica que o contrato do artefato é estável o suficiente para ser um compromisso público.
+
+---
+
+## Esquema: regras
+
+**Padrão de caminho:** `src/apothem/rules/*.md`
+
+**Propósito:** Mandatos de comportamento e diretivas operacionais.
+
+### Campos obrigatórios
+
+```yaml
+---
+name: "kebab-case-identifier"
+description: "One-line description"
+pathFilter: "**/*.py, **/*.toml"
+alwaysApply: true | false
+---
+```
+
+| Campo | Tipo | Propósito | Exemplo |
+| ----- | ---- | ------- | ------- |
+| `name` | string | Identificador legível por máquina | `"operational-mandates"` |
+| `version` | string | Versão semântica | `"X.Y.Z"` |
+| `updated` | string (ISO 8601) | Data da última atualização | `"2026-04-20"` |
+| `description` | string | Descrição de uma linha para os registros | `"Operational mandates CM-1–10"` |
+| `scope` | enum | `always-on` (aplica-se em todos os lugares) ou `path-filtered` (condicional ao caminho do arquivo) | `"always-on"` |
+| `portability` | enum | Garantia de compatibilidade do ambiente | `"universal"` |
+
+### Campos opcionais (se aplicável)
+
+Rules carry no optional frontmatter fields, and — unlike other artifact classes — no `version` / `updated` / `scope` / `portability` fields either. The four mandatory fields above are the complete rule frontmatter contract enforced by `frontmatter_grep`.
+
+### Exemplo
+
+```yaml
+---
+name: "operational-mandates"
+description: "Behavioral definitions for CM-1 through CM-10: violation indicators and recovery actions"
+pathFilter: ""
+alwaysApply: true
+---
+
+# Rule: Operational Mandates
+...
+```
+
+---
+
+## Esquema: comandos
+
+**Padrão de caminho:** `src/apothem/commands/*.md`
+
+**Propósito:** Definições de comandos de barra (`/plan-execute`, `/freshify`, etc.).
+
+### Campos obrigatórios
+
+```yaml
+---
+name: "command-name"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "What this command does"
+argument-hint: "[argument-pattern]"
+disable-model-invocation: true | false
+portability: "universal"
+allowed-tools: "*"
+---
+```
+
+| Campo | Tipo | Propósito | Exemplo |
+| ----- | ---- | ------- | ------- |
+| `name` | string | Nome do comando (sem o `/` inicial) | `"plan-execute"` |
+| `version` | string | Versão semântica | `"X.Y.Z"` |
+| `updated` | string (ISO 8601) | Data da última atualização | `"2026-04-20"` |
+| `description` | string | Descrição curta | `"Executes a phase with quality gates"` |
+| `argument-hint` | string | Padrão de uso, ou `"[args...]"` se não houver | `"[path/to/plan] [phase-id]"` |
+| `disable-model-invocation` | boolean | Se true, o comando não deve ser chamado por um ambiente de execução de harness | `true` |
+
+### Campos opcionais
+
+Commands carry no optional frontmatter fields — the eight mandatory fields above are the complete command frontmatter contract enforced by `command.schema.json` (`additionalProperties: false`).
+
+### Exemplo
+
+```yaml
+---
+name: "plan-execute"
+version: "X.Y.Z"
+updated: "2026-04-20"
+description: "Executes a specific phase from a Master Plan Suite with conformity checking and quality gates"
+argument-hint: "[path/to/plan-suite/] [phase-id] [--dry-run]"
+disable-model-invocation: true
+portability: "universal"
+allowed-tools: "*"
+---
+
+# /plan-execute — Execute a Specific Phase
+...
+```
+
+---
+
+## Esquema: assistentes
+
+**Padrão de caminho:**
+
+```text
+src/apothem/agents/*.md
+```
+
+**Propósito:** Definições de assistentes persistentes para exploração paralela,
+auditoria e portões de qualidade.
+
+### Campos obrigatórios
+
+```yaml
+---
+name: "agent-name"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "What this agent specializes in"
+tools: "Tool1, Tool2, Tool3"
+disallowedTools: "Write, Edit"
+maxTurns: 20
+effort: "high" | "medium" | "low"
+---
+```
+
+| Campo | Tipo | Propósito | Exemplo |
+| ----- | ---- | ------- | ------- |
+| `name` | string | Identificador do assistente | `"codebase-explorer"` |
+| `version` | string | Versão semântica | `"X.Y.Z"` |
+| `updated` | string (ISO 8601) | Data da última atualização | `"2026-04-20"` |
+| `description` | string | Descrição da especialização | `"Deep codebase exploration"` |
+| `tools` | string (separado por vírgulas) | Ferramentas permitidas | `"Read, Glob, Grep, Bash"` |
+| `disallowedTools` | string (separado por vírgulas) | Ferramentas proibidas | `"Write, Edit, TodoWrite"` |
+| `maxTurns` | integer | Máximo de turnos de conversa (tipicamente 5–20; valores acima de 20 exigem um comentário de justificativa em linha) | `20` |
+| `effort` | enum | Escopo computacional | `"high"` |
+
+### Campos opcionais
+
+```yaml
+permissionMode: "default"       # Permission handling
+memory: true | false                    # If true, agent retains memory across sessions
+pattern: "Research" | "Audit" | "Implementation" | "Quality"  # Agent team pattern
+portability: "universal"
+```
+
+### Exemplo
+
+```yaml
+---
+name: "codebase-explorer"
+version: "X.Y.Z"
+updated: "2026-04-20"
+description: "Deep codebase exploration — find patterns, trace dependencies, discover conventions, map architecture"
+tools: "Read, Glob, Grep, Bash"
+disallowedTools: "Write, Edit, TodoWrite"
+maxTurns: 20
+effort: "high"
+permissionMode: "default"
+memory: false
+portability: "universal"
+---
+
+You are a codebase exploration specialist...
+```
+
+---
+
+## Esquema: habilidades
+
+**Padrão de caminho:** `src/apothem/skills/*/SKILL.md`
+
+**Propósito:** Definições de técnicas reutilizáveis com sinais de detecção e
+procedimentos de execução.
+
+### Campos obrigatórios
+
+```yaml
+---
+name: "skill-name"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "What this skill teaches"
+archetype: "workflow-template"
+userInvocable: true | false
+disable-model-invocation: true | false
+allowed-tools: "Read, Write, Glob"
+---
+```
+
+| Campo | Tipo | Propósito | Exemplo |
+| ----- | ---- | ------- | ------- |
+| `name` | string | Identificador da habilidade | `"plan-suite"` |
+| `version` | string | Versão semântica | `"X.Y.Z"` |
+| `updated` | string (ISO 8601) | Data da última atualização | `"2026-04-20"` |
+| `description` | string | O que a habilidade fornece | `"Master Plan Suite template"` |
+| `user-invocable` | boolean | Se true, o usuário pode solicitar explicitamente esta habilidade | `false` |
+
+### Campos opcionais
+
+```yaml
+argument-hint: "[args...]"                           # Usage pattern if userInvocable
+effort: "low" | "medium" | "high" | "xhigh" | "max" # Optional effort level
+```
+
+### Exemplo
+
+```yaml
+---
+name: "ecosystem-audit"
+version: "X.Y.Z"
+updated: "2026-04-20"
+description: "Comprehensive blind audit of the apothem ecosystem"
+archetype: "audit-template"
+userInvocable: true
+disable-model-invocation: true
+allowed-tools: "Read, Write, Edit, Glob, Grep, Bash"
+argument-hint: "[--focus area] [--fix]"
+effort: "max"
+---
+
+## Purpose
+...
+```
+
+---
+
+## Esquema: hooks
+
+**Padrão de caminho:** O bloco `hooks` de `settings.json` mais as implementações
+em Python sob `src/apothem/hooks/`.
+
+**Propósito:** Declarar validadores acionados por eventos e manipuladores de
+gerenciamento de estado que o host invoca em pontos do ciclo de vida bem definidos.
+
+### Esquema do arquivo de configuração
+
+A chave de nível superior `hooks` mapeia nomes de evento para arranjos de blocos de matcher:
+
+```json
+"hooks": {
+  "<EventName>": [
+    {
+      "matcher": "<pattern>",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "python",
+          "args": ["-m", "apothem.hooks.dispatch", "<EventName>", "<message-name>"],
+          "timeout": <seconds>,
+          "statusMessage": "<short human-readable label>"
+        }
+      ]
+    }
+  ]
+}
+```
+
+| Campo | Tipo | Propósito | Exemplo |
+| ----- | ---- | ------- | ------- |
+| `matcher` | string | Padrão de nome de ferramenta (ou `"*"` para eventos agnósticos de ferramenta) | `"Write"` |
+| `hooks[].type` | literal `"command"` | O único tipo de manipulador de hook suportado hoje | `"command"` |
+| `hooks[].command` | string | Comando executável; o Apothem usa `python` | `"python"` |
+| `hooks[].args` | arranjo de strings | Argumentos em forma exec que invocam `-m apothem.hooks.dispatch` ou `-m apothem.conformity.gate` | `["-m", "apothem.hooks.dispatch", "SessionStart"]` |
+| `hooks[].timeout` | integer em segundos | Tempo máximo de execução antes de o host encerrar o hook | `30` |
+| `hooks[].statusMessage` | string | Rótulo curto exibido na interface do host | `"Session start"` |
+
+### Eventos obrigatórios
+
+Os modelos distribuídos registram os seguintes eventos. Todos os cinco são
+obrigatórios para que os validadores reportem PASS:
+
+> **Os valores de timeout espelham os orçamentos canônicos de evento de hook** — a tabela
+> abaixo os reproduz por conveniência do leitor; a fonte canônica prevalece.
+
+| Evento | Timeout típico | Propósito |
+| ----- | --------------- | ------- |
+| `SessionStart` | 30 segundos | Lê a memória, verifica o estado do plan, reporta a prontidão |
+| `PreToolUse` | 10 segundos | Valida as escritas quanto a políticas de isolamento de conteúdo + frontmatter |
+| `PreCompact` | 30 segundos | Verifica se o estado foi externalizado antes da compactação do contexto |
+| `PostCompact` | 30 segundos | Restaura o estado de trabalho após a compactação do contexto |
+| `Stop` | 60 segundos | Externalização ao fim da sessão — estado de retomada, saídas, decisões |
+
+`dispatch.py` também aceita `UserPromptSubmit` e `Notification` em sua lista de
+permissões de eventos para compatibilidade futura; nenhum está conectado nos
+modelos distribuídos. Adicione um bloco de matcher com o mesmo padrão de forma
+exec para habilitar.
+
+### Camada Python
+
+Cada comando de hook é roteado pelo mesmo despachante Python:
+
+| Arquivo | Papel |
+| ---- | ---- |
+| `src/apothem/hooks/dispatch.py` | Roteia `SessionStart` para `session_start_bootstrap.main()` e todos os demais eventos da lista de permissões para `emit_hook_context.main()`. Sempre sai com 0. |
+| `src/apothem/hooks/session_start_bootstrap.py` | Script de hook de início de sessão — emite o contexto de resumo de memória e da suíte de plan. |
+| `src/apothem/hooks/emit_hook_context.py` | Emissor de hook padrão — escreve um envelope válido que carrega a carga útil registrada de `--context-file`. |
+| `src/apothem/hooks/messages/*.md` | Carga útil de contexto estática referenciada por `--context-file`. |
+
+### Validação
+
+`scripts/dev/validate_hooks.py` impõe o contrato do hook:
+
+- `settings.json` analisa como JSON e declara cada evento obrigatório.
+- Os três scripts Python existem e analisam como Python válido.
+- Todos os arquivos de mensagem referenciados por argumentos `--context-file` existem.
+- Não aparecem caminhos absolutos de usuário codificados (`C:\Users\...` etc.) em `src/apothem/hooks/**.py`.
+- Os artefatos de shell sob `src/apothem/hooks/` e `scripts/` limitam-se aos stubs aprovados de localizador / inicialização.
+
+---
+
+## Esquema: CLAUDE.md
+
+**Caminho:** `CLAUDE.md` (raiz)
+
+**Propósito:** Índice global de configuração do ecossistema.
+
+### Frontmatter YAML obrigatório
+
+```yaml
+---
+name: "CLAUDE"
+version: "MAJOR.MINOR.PATCH"
+updated: "YYYY-MM-DD"
+description: "Global Claude Code ecosystem configuration and mandate index"
+scope: "always-on"
+portability: "universal"
+---
+```
+
+### Seções obrigatórias (em ordem)
+
+1. **§1 Suíte de plan** — Referência à localização do modelo
+2. **§2 Identidade cognitiva** — Mandato de arquitetura criativa
+3. **§3 Diretórios de artefatos** — Tabela de caminhos e propósitos
+4. **§4 Governança escalada por seriedade** — Definição dos quatro níveis
+5. **§5 Diretivas operacionais** — Resolução de problemas, princípios de comunicação
+6. **§6 Mandatos transversais** — Visão geral de CM-1–28
+7. **§7 Registros** — Tabelas de artefatos:
+   - 7.1 Comandos
+   - 7.2 Regras
+   - 7.3 Assistentes
+   - 7.4 Hooks
+   - 7.5 Habilidades
+   - 7.6 Evolução de artefatos
+
+---
+
+## Lista de verificação de validação
+
+Cada artefato deve satisfazer estas verificações:
+
+### Validação do frontmatter
+
+- [ ] O YAML é sintaticamente válido (sem erros de análise)
+- [ ] Todos os campos obrigatórios do tipo de artefato estão presentes
+- [ ] `name` segue a convenção kebab-case
+- [ ] `version` é semântica (`MAJOR.MINOR.PATCH`)
+- [ ] `updated` está no formato de data ISO 8601 (`YYYY-MM-DD`)
+- [ ] `description` é uma string não vazia, de uma única linha
+- [ ] Os campos opcionais correspondem aos valores de enumeração esperados (se aplicável)
+- [ ] Não há erros de digitação nos nomes dos campos (use os nomes canônicos do esquema)
+- [ ] Não há espaços em branco nem problemas de formatação adicionais
+
+### Validação do conteúdo
+
+- [ ] O conteúdo começa imediatamente após o `---` de fechamento em uma nova linha
+- [ ] Não há referências internas ao plan (conformidade com CM-7)
+- [ ] As referências cruzadas se resolvem (se listar outros artefatos)
+- [ ] Os links usam caminhos relativos com barras
+
+### Validação de portabilidade
+
+- [ ] Não há caminhos absolutos codificados (use relativos)
+- [ ] Não há sintaxe específica de Windows em artefatos de escopo universal
+- [ ] Os separadores de caminho usam barras
+- [ ] As variáveis de ambiente usam um formato agnóstico de plataforma (`${VAR}` ou nativo da ferramenta)
+
+---
+
+## Notas
+
+- **A consistência como segurança:** O frontmatter canônico habilita a validação automatizada, as ferramentas e a verificação entre artefatos. As desvios se acumulam rapidamente.
+- **Declaração de portabilidade:** Nem todos os artefatos podem ser universais. Declare as restrições explicitamente — é melhor documentar uma ressalva do que enviar um bug silencioso.
+- **Kebab-case para os nomes:** Fácil de usar em URLs, scripts e contextos de linha de comando. Evite espaços, sublinhados e camelCase nos nomes.
+- **Higiene do incremento de versão:** Cada edição que muda o comportamento deve incrementar `version` e `updated` juntos. Correções puras de formatação ou digitação incrementam PATCH; novas seções opcionais ou antipadrões incrementam MINOR; reorganização estrutural ou mudanças de contrato incrementam MAJOR.

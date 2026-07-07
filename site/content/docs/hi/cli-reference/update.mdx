@@ -1,0 +1,80 @@
+---
+title: "update"
+description: "apothem update कमांड के लिए CLI संदर्भ।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+वर्तमान साझा प्रोफ़ाइल से एक कोडिंग-सहायक अडैप्टर कॉन्फ़िगरेशन को फिर से इंस्टॉल करता है।
+
+## सारांश
+
+```
+apothem update --harness NAME|all [--profile PATH] [--dry-run]
+                [--project PATH]
+                [--quiet|-q] [--verbose|-v]
+                [--format plain|json] [--json] [--no-color]
+```
+
+`update` वर्तमान साझा प्रोफ़ाइल से कोडिंग-सहायक आउटपुट को फिर से मूर्तिकृत करता है। यह `install` के समान प्रोफ़ाइल मान्यकरण, `--harness all` चयन, परियोजना-स्कोप जाँच, dry-run व्यवहार, और JSON लिफ़ाफ़े का उपयोग करता है।
+
+सतत-रूप उपनाम `apothem updating` उसी हैंडलर पर रिज़ॉल्व होता है।
+
+## विकल्प
+
+| विकल्प | विवरण |
+|---|---|
+| `--harness NAME` | अपडेट करने के लिए कोडिंग-सहायक अडैप्टर, या रजिस्ट्री-व्यापी सेट के लिए `all` (आवश्यक)। |
+| `--profile PATH` | साझा प्रोफ़ाइल YAML का पथ। डिफ़ॉल्ट `~/.config/apothem/profile.yaml`। |
+| `--dry-run` | फ़ाइलें लिखे बिना अपडेट का पूर्वावलोकन करें। |
+| `--project PATH` | परियोजना-स्कोप्ड कोडिंग-सहायकों के लिए परियोजना रूट। आवश्यक जब चयनित कोडिंग-सहायक सेट में परियोजना-स्कोप्ड अडैप्टर शामिल हों। |
+| `--quiet`, `-q` | सूचनात्मक आउटपुट को दबाता है; केवल त्रुटियाँ ही दी जाती हैं। |
+| `--verbose`, `-v` | अतिरिक्त निदान आउटपुट देता है। |
+| `--format plain\|json` | आउटपुट प्रारूप (डिफ़ॉल्ट: `plain`)। |
+| `--json` | `--format json` का संक्षिप्त रूप। |
+| `--no-color` | आउटपुट में ANSI रंग कोड अक्षम करता है। |
+| `-h`, `--help` | सहायता दिखाता है और बाहर निकलता है। |
+
+## JSON आउटपुट
+
+```json
+{
+  "status": "success",
+  "command": "update",
+  "action": "updated",
+  "harness": "claude-code",
+  "profile_path": "C:\\Users\\Example\\.config\\apothem\\profile.yaml",
+  "project": null,
+  "files_written": [],
+  "results": [],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+`--dry-run` `status: "dry_run"` और `files_written: []` लौटाता है।
+
+## उदाहरण
+
+```bash
+apothem update --harness claude-code
+apothem update --harness claude-code --dry-run
+apothem update --harness all --project . --dry-run --json
+apothem Updating --harness claude-code   # continuous-form alias
+apothem updating --harness claude-code   # lowercase variant
+```
+
+## निकास कोड
+
+| कोड | अर्थ |
+|---|---|
+| 0 | अडैप्टर सफलतापूर्वक अपडेट हुआ या dry-run साफ़-सुथरे ढंग से नियोजित हुआ |
+| 1 | अपेक्षित मान्यकरण, प्रोफ़ाइल, कोडिंग-सहायक, परियोजना, या अडैप्टर त्रुटि |
+| 2 | कम से कम एक लेखन के बाद आंशिक बैच मूर्तिकरण |
+
+## यह भी देखें
+
+- `apothem updating` — इस कमांड के लिए सतत-रूप उपनाम (यहाँ प्रलेखित; CLI दोनों रूप स्वीकार करता है)
+- [apothem install](/docs/cli-reference/install) — आरंभिक इंस्टॉल
+- [अपडेट मार्गदर्शिका](/docs/install/updating) — प्रति-इंस्टॉलर अपडेट पथ

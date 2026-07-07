@@ -1,0 +1,80 @@
+---
+title: "update"
+description: "مرجع واجهة سطر الأوامر لأمر apothem update."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+يعيد تثبيت تهيئة مُحَوِّل مساعد برمجي من الملف الشخصي المشترك الحالي.
+
+## الموجز
+
+```
+apothem update --harness NAME|all [--profile PATH] [--dry-run]
+                [--project PATH]
+                [--quiet|-q] [--verbose|-v]
+                [--format plain|json] [--json] [--no-color]
+```
+
+يعيد <bdi>`update`</bdi> تجسيد مخرجات المساعد البرمجي من الملف الشخصي المشترك الحالي. ويستخدم التحقّق نفسه من الملف الشخصي، والاختيار بالخيار <bdi>`--harness all`</bdi>، وفحص نطاق المشروع، وسلوك <bdi>`--dry-run`</bdi>، وغلاف <bdi>JSON</bdi> كما في <bdi>`install`</bdi>.
+
+يُحَلّ الاسم البديل بالصيغة المستمرّة <bdi>`apothem updating`</bdi> إلى المعالج نفسه.
+
+## الخيارات
+
+| الخيار | الوصف |
+|---|---|
+| `--harness NAME` | مُحَوِّل المساعد البرمجي المراد تحديثه، أو `all` للمجموعة على نطاق السجلّ بأكمله (مطلوب). |
+| `--profile PATH` | مسار <bdi>YAML</bdi> للملف الشخصي المشترك. القيمة الافتراضية <bdi>`~/.config/apothem/profile.yaml`</bdi>. |
+| `--dry-run` | معاينة التحديث دون كتابة ملفات. |
+| `--project PATH` | جذر المشروع للمساعدات البرمجية بنطاق المشروع. مطلوب عندما تتضمّن مجموعة المساعدات البرمجية المُختارة مُحَوِّلات بنطاق المشروع. |
+| `--quiet`, `-q` | يُخمِد المخرجات المعلوماتية؛ تُصدَر الأخطاء فقط. |
+| `--verbose`, `-v` | يُصدر مخرجات تشخيصية إضافية. |
+| `--format plain\|json` | تنسيق المخرجات (الافتراضي: `plain`). |
+| `--json` | اختصار لـ `--format json`. |
+| `--no-color` | يُعطِّل رموز ألوان <bdi>ANSI</bdi> في المخرجات. |
+| `-h`, `--help` | يعرض المساعدة ويخرج. |
+
+## مخرجات JSON
+
+```json
+{
+  "status": "success",
+  "command": "update",
+  "action": "updated",
+  "harness": "claude-code",
+  "profile_path": "C:\\Users\\Example\\.config\\apothem\\profile.yaml",
+  "project": null,
+  "files_written": [],
+  "results": [],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+يُرجِع <bdi>`--dry-run`</bdi> القيمة <bdi>`status: "dry_run"`</bdi> و<bdi>`files_written: []`</bdi>.
+
+## أمثلة
+
+```bash
+apothem update --harness claude-code
+apothem update --harness claude-code --dry-run
+apothem update --harness all --project . --dry-run --json
+apothem Updating --harness claude-code   # continuous-form alias
+apothem updating --harness claude-code   # lowercase variant
+```
+
+## رموز الخروج
+
+| الرمز | المعنى |
+|---|---|
+| 0 | تم تحديث المُحَوِّل بنجاح أو خُطِّط لـ dry-run بنظافة |
+| 1 | خطأ متوقَّع في التحقّق أو الملف الشخصي أو المساعد البرمجي أو المشروع أو المُحَوِّل |
+| 2 | تجسيد دفعي جزئي بعد عملية كتابة واحدة على الأقل |
+
+## انظر أيضًا
+
+- <bdi>`apothem updating`</bdi> — اسم بديل بالصيغة المستمرّة لهذا الأمر (مُوثَّق هنا؛ تقبل واجهة سطر الأوامر كلتا الصيغتين)
+- [apothem install](/docs/cli-reference/install) — التثبيت الأوّلي
+- [دليل التحديث](/docs/install/updating) — مسارات التحديث لكل مُثبِّت

@@ -1,0 +1,197 @@
+/* SPDX-License-Identifier: MIT */
+
+/*
+ * apothem design tokens — the single machine-readable source of truth.
+ *
+ * Dark-mode-first: :root carries the primitive ramps plus the dark-surface
+ * semantic aliases; the prefers-color-scheme: light block remaps only the
+ * semantic aliases. Consumers (docs, site, future surfaces) reference the
+ * --apothem-* semantic tokens, never raw ramp steps, so a theme shift is one
+ * alias edit, not a find-replace across hex literals.
+ *
+ * Naming: --apothem-{category}-{name}-{step} for primitives,
+ *         --apothem-{role}                    for semantic aliases.
+ * The mark itself (assets/logo.svg) and DESIGN-SYSTEM.md cite these tokens.
+ */
+
+:root {
+  /* ----- Primitive ramp: slate (neutral) -------------------------------- */
+  --apothem-color-slate-50: #f8fafc;
+  --apothem-color-slate-100: #eef2f7;
+  --apothem-color-slate-200: #dce3ec;
+  --apothem-color-slate-300: #c2ccda;
+  --apothem-color-slate-400: #94a2b8;
+  --apothem-color-slate-500: #65748c;
+  --apothem-color-slate-600: #475066;
+  --apothem-color-slate-700: #333c50;
+  --apothem-color-slate-800: #1c2434;
+  --apothem-color-slate-900: #0f172a;
+  --apothem-color-slate-950: #080c15;
+
+  /* ----- Primitive ramp: emerald (accent) ------------------------------- */
+  --apothem-color-emerald-50: #ecfdf5;
+  --apothem-color-emerald-100: #d1fae5;
+  --apothem-color-emerald-200: #a7f3d0;
+  --apothem-color-emerald-300: #6ee7b7;
+  --apothem-color-emerald-400: #34d399;
+  --apothem-color-emerald-500: #10b981;
+  --apothem-color-emerald-600: #059669;
+  --apothem-color-emerald-700: #047857;
+  --apothem-color-emerald-800: #065f46;
+  --apothem-color-emerald-900: #064e3b;
+  --apothem-color-emerald-950: #022c22;
+
+  /* ----- Primitive ramps: semantic hues --------------------------------- */
+  --apothem-color-amber-400: #fbbf24;
+  --apothem-color-amber-500: #f59e0b;
+  --apothem-color-amber-700: #b45309;
+  --apothem-color-red-400: #f87171;
+  --apothem-color-red-500: #ef4444;
+  --apothem-color-red-700: #b91c1c;
+  --apothem-color-sky-400: #7dd3fc;
+  --apothem-color-sky-500: #38bdf8;
+  --apothem-color-sky-700: #0369a1;
+
+  /* ----- Semantic aliases (dark-mode-first defaults) -------------------- */
+  --apothem-surface: var(--apothem-color-slate-900);
+  --apothem-surface-raised: var(--apothem-color-slate-800);
+  --apothem-surface-sunken: var(--apothem-color-slate-950);
+  --apothem-border: var(--apothem-color-slate-700);
+  --apothem-border-strong: var(--apothem-color-slate-600);
+  --apothem-text: var(--apothem-color-slate-50);
+  --apothem-text-muted: var(--apothem-color-slate-300);
+  --apothem-text-subtle: var(--apothem-color-slate-400);
+
+  /* Accent has two roles per mode: a graphic fill (>=3:1) and a text/link  */
+  /* color (>=4.5:1). Dark surfaces use the lighter steps for both.         */
+  --apothem-accent-graphic: var(--apothem-color-emerald-400);
+  --apothem-accent-text: var(--apothem-color-emerald-400);
+  --apothem-accent-strong: var(--apothem-color-emerald-500);
+
+  --apothem-success: var(--apothem-color-emerald-400);
+  --apothem-warning: var(--apothem-color-amber-400);
+  --apothem-danger: var(--apothem-color-red-400);
+  --apothem-info: var(--apothem-color-sky-400);
+
+  /* ----- Typography ----------------------------------------------------- */
+  /* System UI stack — no embedded font payload, deterministic everywhere.  */
+  --apothem-font-sans: "Inter", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --apothem-font-mono: "JetBrains Mono", "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+
+  /* Modular scale, ratio 1.250 (major third), 1rem base. */
+  --apothem-font-size-0: 0.75rem;   /* 12px — fine print, chips           */
+  --apothem-font-size-1: 0.875rem;  /* 14px — secondary / captions        */
+  --apothem-font-size-2: 1rem;      /* 16px — body base                   */
+  --apothem-font-size-3: 1.25rem;   /* 20px — lead / h4                   */
+  --apothem-font-size-4: 1.5625rem; /* 25px — h3                          */
+  --apothem-font-size-5: 1.9531rem; /* 31px — h2                          */
+  --apothem-font-size-6: 2.4414rem; /* 39px — h1                          */
+  --apothem-font-size-7: 3.0518rem; /* 49px — display                     */
+
+  --apothem-font-weight-regular: 450;
+  --apothem-font-weight-medium: 550;
+  --apothem-font-weight-semibold: 650;
+  --apothem-font-weight-bold: 760;
+
+  --apothem-leading-tight: 1.15;
+  --apothem-leading-snug: 1.35;
+  --apothem-leading-normal: 1.5;
+  --apothem-leading-relaxed: 1.7;
+
+  --apothem-tracking-tight: -0.01em;
+  --apothem-tracking-normal: 0;
+  --apothem-tracking-wide: 0.02em;
+
+  /* ----- Spacing — base 0.25rem (4px), index N == N x base -------------- */
+  --apothem-space-1: 0.25rem;   /* 4px  */
+  --apothem-space-2: 0.5rem;    /* 8px  */
+  --apothem-space-3: 0.75rem;   /* 12px */
+  --apothem-space-4: 1rem;      /* 16px */
+  --apothem-space-6: 1.5rem;    /* 24px */
+  --apothem-space-8: 2rem;      /* 32px */
+  --apothem-space-12: 3rem;     /* 48px */
+  --apothem-space-16: 4rem;     /* 64px */
+
+  /* ----- Radius --------------------------------------------------------- */
+  --apothem-radius-0: 0;
+  --apothem-radius-1: 0.25rem;  /* 4px  — chips, inline code           */
+  --apothem-radius-2: 0.5rem;   /* 8px  — buttons, inputs              */
+  --apothem-radius-3: 0.75rem;  /* 12px — cards                        */
+  --apothem-radius-4: 1.25rem;  /* 20px — panels, hero surfaces        */
+  --apothem-radius-full: 9999px;
+
+  /* ----- Elevation — dark-first: low-alpha black + hairline top inset --- */
+  --apothem-shadow-0: none;
+  --apothem-shadow-1: 0 1px 0 0 rgb(255 255 255 / 0.03), 0 1px 2px 0 rgb(0 0 0 / 0.35);
+  --apothem-shadow-2: 0 1px 0 0 rgb(255 255 255 / 0.04), 0 4px 10px -2px rgb(0 0 0 / 0.45);
+  --apothem-shadow-3: 0 1px 0 0 rgb(255 255 255 / 0.05), 0 10px 24px -6px rgb(0 0 0 / 0.5);
+  --apothem-shadow-4: 0 1px 0 0 rgb(255 255 255 / 0.06), 0 24px 60px -12px rgb(0 0 0 / 0.6);
+}
+
+/* ----- Light-mode semantic remap --------------------------------------- */
+/* Only the aliases shift; the primitive ramps and scales are mode-stable.  */
+@media (prefers-color-scheme: light) {
+  :root {
+    --apothem-surface: var(--apothem-color-slate-50);
+    --apothem-surface-raised: #ffffff;
+    --apothem-surface-sunken: var(--apothem-color-slate-100);
+    --apothem-border: var(--apothem-color-slate-200);
+    --apothem-border-strong: var(--apothem-color-slate-300);
+    --apothem-text: var(--apothem-color-slate-900);
+    --apothem-text-muted: var(--apothem-color-slate-600);
+    --apothem-text-subtle: var(--apothem-color-slate-500);
+
+    --apothem-accent-graphic: var(--apothem-color-emerald-600);
+    --apothem-accent-text: var(--apothem-color-emerald-700);
+    --apothem-accent-strong: var(--apothem-color-emerald-700);
+
+    --apothem-success: var(--apothem-color-emerald-700);
+    --apothem-warning: var(--apothem-color-amber-700);
+    --apothem-danger: var(--apothem-color-red-700);
+    --apothem-info: var(--apothem-color-sky-700);
+
+    /* Light surfaces need softer, cooler shadows than dark ones. */
+    --apothem-shadow-1: 0 1px 2px 0 rgb(15 23 42 / 0.06);
+    --apothem-shadow-2: 0 4px 10px -2px rgb(15 23 42 / 0.08);
+    --apothem-shadow-3: 0 10px 24px -6px rgb(15 23 42 / 0.1);
+    --apothem-shadow-4: 0 24px 60px -12px rgb(15 23 42 / 0.12);
+  }
+}
+
+/* Explicit theme attributes override the media query when a consumer pins a */
+/* theme (e.g. a docs framework toggle). These mirror the blocks above.      */
+[data-theme="light"] {
+  --apothem-surface: var(--apothem-color-slate-50);
+  --apothem-surface-raised: #ffffff;
+  --apothem-surface-sunken: var(--apothem-color-slate-100);
+  --apothem-border: var(--apothem-color-slate-200);
+  --apothem-border-strong: var(--apothem-color-slate-300);
+  --apothem-text: var(--apothem-color-slate-900);
+  --apothem-text-muted: var(--apothem-color-slate-600);
+  --apothem-text-subtle: var(--apothem-color-slate-500);
+  --apothem-accent-graphic: var(--apothem-color-emerald-600);
+  --apothem-accent-text: var(--apothem-color-emerald-700);
+  --apothem-accent-strong: var(--apothem-color-emerald-700);
+  --apothem-success: var(--apothem-color-emerald-700);
+  --apothem-warning: var(--apothem-color-amber-700);
+  --apothem-danger: var(--apothem-color-red-700);
+  --apothem-info: var(--apothem-color-sky-700);
+}
+
+[data-theme="dark"] {
+  --apothem-surface: var(--apothem-color-slate-900);
+  --apothem-surface-raised: var(--apothem-color-slate-800);
+  --apothem-surface-sunken: var(--apothem-color-slate-950);
+  --apothem-border: var(--apothem-color-slate-700);
+  --apothem-border-strong: var(--apothem-color-slate-600);
+  --apothem-text: var(--apothem-color-slate-50);
+  --apothem-text-muted: var(--apothem-color-slate-300);
+  --apothem-text-subtle: var(--apothem-color-slate-400);
+  --apothem-accent-graphic: var(--apothem-color-emerald-400);
+  --apothem-accent-text: var(--apothem-color-emerald-400);
+  --apothem-accent-strong: var(--apothem-color-emerald-500);
+  --apothem-success: var(--apothem-color-emerald-400);
+  --apothem-warning: var(--apothem-color-amber-400);
+  --apothem-danger: var(--apothem-color-red-400);
+  --apothem-info: var(--apothem-color-sky-400);
+}

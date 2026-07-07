@@ -1,0 +1,25 @@
+{
+  "title": "المقارنة",
+  "pages": [
+    "index",
+    "vs-other-harness-frameworks",
+    "vs-raw-claude-code",
+    "vs-raw-cursor",
+    "vs-raw-gemini-cli",
+    "vs-raw-github-copilot",
+    "vs-raw-codex",
+    "vs-raw-windsurf",
+    "vs-raw-zed",
+    "vs-raw-opencode",
+    "vs-raw-qwen-code",
+    "vs-raw-kiro",
+    "vs-raw-trae",
+    "vs-raw-codebuddy",
+    "vs-raw-antigravity",
+    "vs-raw-hermes",
+    "vs-raw-open-claw",
+    "vs-raw-kimi-code",
+    "vs-raw-glm",
+    "..."
+  ]
+}

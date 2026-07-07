@@ -1,0 +1,80 @@
+---
+title: "Añadir un entorno"
+description: "Habilita un adaptador de entorno para que su configuración nativa se materialice desde el perfil compartido."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Objetivo: habilitar un entorno más para que Apothem materialice la configuración
+nativa de ese entorno desde tu perfil compartido.
+
+## Requisitos previos
+
+- Un perfil compartido en `~/.config/apothem/profile.yaml` (crea uno con
+  `apothem profile init` si aún no existe).
+- La CLI `apothem` en tu `PATH`. Si instalaste el árbol de código fuente
+  autocontenido, antepone a cada comando `PYTHONPATH="$HOME/.apothem/src"` y ejecuta
+  `python -m apothem` en lugar de `apothem` — o usa `npx @ahmed-g-gad/apothem`.
+
+## Pasos
+
+1. Lista los entornos registrados y comprueba cuáles ya están instalados:
+
+   ```bash
+   apothem harnesses list
+   ```
+
+   `apothem harnesses list` imprime cada id soportado; el mismo conjunto está en
+   la [lista de entornos](/docs/harnesses) y en el
+   [registro de entornos](/docs/reference/harness-registry) generado desde el código.
+   Elige el id de tu herramienta en lugar de codificar la lista aquí — crece a medida
+   que se añaden adaptadores.
+
+2. Inspecciona el entorno objetivo para confirmar su alcance y ruta de salida:
+
+   ```bash
+   apothem harnesses show cursor
+   ```
+
+   Una línea `Scope: project` significa que el adaptador materializa dentro de un
+   árbol de proyecto y requiere `--project PATH`; `Scope: user` materializa en un
+   directorio de configuración de ámbito de usuario y no necesita el indicador de
+   proyecto.
+
+3. Previsualiza la instalación sin escribir archivos:
+
+   ```bash
+   apothem install --harness cursor --dry-run
+   ```
+
+4. Instala el entorno. Para un entorno de ámbito de usuario:
+
+   ```bash
+   apothem install --harness claude-code
+   ```
+
+   Para un entorno de ámbito de proyecto, pasa la raíz del proyecto:
+
+   ```bash
+   apothem install --harness cursor --project /path/to/project
+   ```
+
+   Instala todos los entornos soportados de una vez con `--harness all` (los entornos
+   de ámbito de proyecto aún necesitan `--project`; los ids listados en
+   `exclude_harnesses` en el perfil se omiten).
+
+## Verificar
+
+```bash
+apothem verify --harness cursor
+```
+
+Una línea `✓ <harness-id> is verified` confirma que los destinos gestionados existen
+y se analizan correctamente. `apothem doctor` ofrece la vista de todo el sistema en
+cada entorno.
+
+## Relacionado
+
+- [Editar el perfil](/docs/how-to/editing-the-profile) para cambiar lo que el
+  adaptador materializa, y luego vuelve a ejecutar `apothem update`.
+- [Instalación](/docs/install) cubre la instalación de primera ejecución.

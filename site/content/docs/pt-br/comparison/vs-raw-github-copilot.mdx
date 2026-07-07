@@ -1,0 +1,45 @@
+---
+title: "Apothem vs. configuração bruta do GitHub Copilot"
+description: "Manter à mão o copilot-instructions.md do GitHub Copilot versus renderizá-lo a partir do perfil compartilhado do Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+O GitHub Copilot lê suas instruções de `.github/copilot-instructions.md`. O
+adaptador github-copilot do Apothem renderiza esse arquivo a partir do perfil
+compartilhado. Esta página contrasta a manutenção manual dessa configuração com
+o gerenciamento dela pelo Apothem.
+
+## Comparação de esforço
+
+| Tarefa | Configuração bruta à mão | Gerenciada pelo Apothem |
+| ---- | --------------- | --------------- |
+| Escrever instruções | Editar à mão `.github/copilot-instructions.md` | Renderizada: regras compartilhadas embutidas no arquivo |
+| Manter as instruções alinhadas com outros ambientes | Manual, por ferramenta | Automático no `apothem update` |
+| Instalar / remover a configuração | Escrever e excluir o arquivo à mão | `apothem install` / `apothem uninstall` |
+| Verificar se a configuração está correta | Inspeção manual | `apothem verify --harness github-copilot` |
+
+## O que o Apothem gerencia
+
+O adaptador github-copilot embute as regras compartilhadas em
+`.github/copilot-instructions.md`. O Copilot opera como uma extensão de IDE e não
+expõe hooks de chamada de ferramenta, então a intenção de proteção é carregada
+inteiramente nas instruções renderizadas. Cada mudança nas regras compartilhadas
+re-renderiza o arquivo no próximo `apothem update`.
+
+## Caminho de migração
+
+1. Execute `apothem profile init` para criar o perfil compartilhado, caso ainda
+   não tenha.
+2. Mova o conteúdo do seu `.github/copilot-instructions.md` existente para o
+   corpus compartilhado.
+3. Execute `apothem install --harness github-copilot` para renderizar o arquivo
+   de instruções.
+4. Execute `apothem verify --harness github-copilot` para confirmar que a
+   configuração foi aplicada.
+5. Use `apothem update --harness github-copilot` para cada mudança posterior.
+
+## Leia a seguir
+
+- [Referência do adaptador GitHub Copilot](/docs/harnesses/github-copilot)
+- [Visão geral da comparação](/docs/comparison)

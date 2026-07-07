@@ -1,0 +1,67 @@
+---
+title: "Concepts"
+description: "Glossaire définissant les profils partagés, les adaptateurs d'environnement, les règles, les hooks, les portails de conformité, les compétences et les travailleurs délégués dans Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Une référence rapide des termes que vous rencontrerez tout au long de la documentation d'Apothem.
+
+## Profil partagé
+
+Un fichier YAML validé par schéma à `~/.config/apothem/profile.yaml` (remplacé
+par `--profile PATH`). C'est la source de vérité unique de votre identité, de vos
+préférences et de votre configuration ; chaque adaptateur d'environnement le lit
+à l'installation et en dérive la configuration native de cet environnement.
+
+## Adaptateur d'environnement
+
+Un adaptateur propre à chaque plateforme qui traduit le profil partagé vers le format de configuration natif d'un
+environnement d'exécution d'assistant spécifique. Les environnements pris en charge sont listés dans :
+
+```text
+Claude Code, Cursor, Gemini CLI, etc.
+```
+
+Installer Apothem signifie toujours : installer le profil partagé, puis matérialiser un ou plusieurs
+adaptateurs.
+
+## Règle comportementale
+
+Un fichier Markdown sous src/apothem/rules/ qui est chargé à chaque interaction (toujours actif) ou
+seulement lors de l'édition de fichiers sous un chemin spécifique (filtré par chemin). Les règles codifient la manière dont
+l'environnement d'exécution de l'assistant doit se comporter.
+
+## Hook
+
+Un script Python enregistré dans settings.json qui se déclenche sur les événements du cycle de vie de l'environnement
+(PreToolUse, PostToolUse, SessionStart, PreCompact, Stop, PostCompact). Les hooks appliquent les exigences de conformité
+en temps réel avant que la sortie n'atteigne le disque. Le modèle d'événements de hook est aujourd'hui une surface propre à Claude Code ;
+les adaptateurs pour les environnements dépourvus de mécanisme de hook l'omettent simplement.
+
+## Portail de conformité
+
+La fraction mécanique du portail de pré-émission à quinze barres (M1-M15) — les validateurs autonomes
+qui doivent réussir avant l'émission de tout artefact. Le portail de pré-émission est le seuil de qualité ;
+le portail de conformité exécute ses barres vérifiables par machine, et les hooks appliquent les barres individuelles en temps réel.
+
+## Suite de planification
+
+Un répertoire structuré à &lt;project-root&gt;/.apothem/plans/&lt;suite-name&gt;/ contenant une spécification, un plan maître, des fichiers
+PHASE.md par phase, et des artefacts de sortie. Le pipeline /plan gère les suites de planification.
+
+## Skill
+
+Une technique réutilisable, invocable par commande slash, regroupée dans un fichier SKILL.md sous
+src/apothem/skills/&lt;name&gt;/. Les skills étendent la surface des commandes slash au-delà du pipeline
+/plan intégré.
+
+## Travailleur délégué
+
+Un assistant persistant, au périmètre dédié, défini au chemin canonique :
+
+```text
+src/apothem/agents/<name>.md
+```
+
+Les travailleurs délégués prennent en charge la recherche, l'audit, le contrôle qualité et la gestion de la mémoire.

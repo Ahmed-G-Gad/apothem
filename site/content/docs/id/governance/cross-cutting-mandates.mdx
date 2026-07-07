@@ -1,0 +1,109 @@
+---
+title: "Registri Mandat Lintas-Sektoral (CM-1–CM-28)"
+description: "Registri dan definisi lengkap mandat lintas-sektoral internal-ekosistem (CM-1–CM-28) yang mengatur semua interaksi dan operasi pipeline."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Registri kanonis mandat lintas-sektoral.** Dokumen ini membawa isi lengkap registri CM-N; enumerasi substantif berada di sini, dioperasionalkan oleh berkas-berkas rule di bawah `src/apothem/rules/`. Setiap sesi yang membutuhkan isi CM-N terperinci memuat dokumen ini sesuai permintaan.
+
+## Pengecualian referensi-mandiri registri
+
+Dokumen ini ADALAH registri CM-N kanonis — ini adalah sumber tempat token `CM-1` hingga `CM-28` *didefinisikan*. Menyatakan kembali token-token ini *di dalam isi registri itu sendiri* bersifat kanonis, bukan kebocoran terminologi internal-rencana. Invarian isolasi-basis-kode terus berlaku dengan kekuatan penuh pada setiap artefak *lainnya* (rules, helper, command, hook, schema, script, tool, test, docs, README, changelog, subjek/isi commit, nama cabang, judul/deskripsi PR): tanpa token `CM-N` / `TM-N` / `CP-N`, hanya bahasa domain natural.
+
+## Namespace
+
+`CM-N` = config mandate (didefinisikan di sini, atau di `src/apothem/rules/*.md` sesuai baris rules registri-artefak); `TM-N` = template mandate (didefinisikan di `src/apothem/skills/plan-suite/master-template.md` §4 "General Mandates", TM-1–28); `CP-N` = core principle (didefinisikan di template yang sama §6 "Core Principles", CP-1–27). Template plan-suite adalah registri TM/CP kanonis — command `/plan` menyelesaikan referensi-silang melalui berkas itu. Artefak helper (rules, helper, command, hook) mengutip registri ini dengan referensi.
+
+## Aktivasi
+
+CM-1–10 + identitas kognitif mengatur semua interaksi. CM-11, CM-13, CM-15, CM-16, CM-20 berlaku hanya dalam pipeline `/plan`. CM-12, CM-14, CM-17–19, CM-21–22, CM-24–26 berlaku universal (selalu-aktif). CM-23, CM-27, CM-28 berlaku universal dalam cakupan path-filter yang dideklarasikannya. Seriusitas default ad-hoc: PERSONAL_USE.
+
+## CM-1–10 (Operasional)
+
+(1) Evaluasi Kritis (→TM-10), (2) Nol Asumsi (→TM-1), (3) Berbasis-Konfigurasi (→TM-2), (4) Cari Sebelum Mengimplementasi (→TM-4), (5) Solusi Terbaik (→TM-7), (6) Perbaikan-Diri (→CP-20), (7) Produk Koheren (→TM-11), (8) Fokus Bottleneck-Dahulu, (9) Kecepatan Keputusan, (10) Kejujuran Brutal. Definisi lengkap dengan indikator pelanggaran: `src/apothem/rules/operational-mandates.md`.
+
+## CM-7 (Isolasi Internal-Rencana)
+
+> Ini adalah faset menghadap-basis-kode dari CM-7; faset kelengkapan-produk didokumentasikan sebagai **Produk Koheren (→TM-11)** di `src/apothem/rules/operational-mandates.md §CM-7`. Kedua label merujuk ke mandat yang sama.
+
+Artefak basis-kode TIDAK PERNAH boleh memuat referensi internal-rencana. **Istilah terlarang (blok kanonis — konsumen sejenis mereferensikan-silang enumerasi ini):** TM-N, CM-N, CP-N, "Resumption Contract", "Phase Output Registry", "convention anchors", nama folder fase, nama berkas plan-suite (PROGRESS.md, PLAN-NOTES.md, PREAMBLE, MASTER-PLAN), nama tingkat seriusitas (EXPLORING, PERSONAL_USE, SHARED, PUBLIC_LAUNCH). **Artefak terlindungi:** kode sumber, test, config, schema, script build, data, aset, pesan commit, nama cabang, judul/deskripsi PR, README, CONTRIBUTING, dokumen API, changelog — setiap artefak yang terlihat di luar pohon sumber Apothem (tujuan instalasi per-harness seperti `~/.claude/` untuk Claude Code). Hanya bahasa domain natural. **Konsumen sejenis** (masing-masing mengutip blok ini dengan referensi alih-alih meng-enumerasi ulang): `src/apothem/hooks/messages/pretooluse-bash.md`, `src/apothem/hooks/messages/pretooluse-write.md`, `src/apothem/hooks/messages/pretooluse-edit.md`, `src/apothem/hooks/messages/pretooluse-notebookedit.md`, `src/apothem/rules/operational-mandates.md` §CM-7 indikator pelanggaran.
+
+## CM-11 (Integritas Rencana)
+
+**A — Kesetiaan Prosa:** Setiap kebutuhan dapat ditelusuri prosa↔rencana. Kartu skor: PASS ≥90% STRONG/0 ABSENT.
+**B — Konsistensi Internal:** Koherensi lintas-dokumen dalam plan-suite. Kartu skor: PASS 100%.
+**C — Gerbang:** FAIL memblokir eksekusi di SHARED+ (penimpaan Product Owner diizinkan di SHARED dengan rasional tercatat; blok keras di PUBLIC_LAUNCH). Bersifat anjuran di PERSONAL_USE.
+
+## CM-12 (Penatalayanan Konteks)
+
+Manajemen konteks ramping setiap saat — lihat rule CM-24. Empat sub-tier dienumerasi di bagian Konvensi Sub-Referensi di bawah. Disiplin kompaksi (CM-19) mengatur tindakan; CM-12 mengatur disiplin keadaan-mantap.
+
+## CM-13 (Commit)
+
+- **A — Irama per-tugas:** Per-tugas di SHARED+. Per-fase di PERSONAL_USE. Opsional di EXPLORING.
+- **B — Commit kualitas/remediasi:** Perbaikan gerbang kualitas dan perubahan remediasi di-commit segera, terpisah dari pekerjaan fitur.
+- **C — Gerbang akhir-fase:** Tidak ada perubahan tak-ter-commit yang melintasi batas fase. Isolasi CM-7 berlaku untuk semua artefak git. Di PUBLIC_LAUNCH: commit bertanda-tangan-GPG (`git commit -S`) diperlukan.
+- **D — Kepengarangan-hanya-manusia:** Setiap permukaan kepengarangan di setiap artefak git (subjek commit, isi commit, `Author:`, trailer `Co-Authored-By:`, trailer `Signed-off-by:`, nama cabang, nama tag, anotasi tag, nama stash, isi git-notes, judul PR, deskripsi PR) menamai **hanya kontributor manusia**. Asisten tidak pernah menyematkan dirinya, model bahasa yang mendasari, runtime / harness / IDE / ekstensi / vendor, atau alat otomatis lainnya ke permukaan-permukaan tersebut. Pola terlarang dienumerasi dan ditegakkan secara mekanis di `src/apothem/rules/production-ready-prs.md` §6 (Disiplin Pesan-Commit → Kepengarangan-hanya-manusia), dengan matcher di `src/apothem/hooks/messages/pretooluse-bash.md` Scan 3 yang menyala pada setiap invokasi Bash penulisan-git.
+- **E — Disiplin awalan-numerik pada target git-mv / git-rm:** Awalan numerik (`NN-`) pada path sistem-berkas menyampaikan pengurutan dan hanya berlaku di tempat pengurutan bersifat intrinsik — sekuens folder-fase, sekuens sub-fase, skema penamaan-ordinal yang ditemukan-host. Singleton tingkat-root yang tidak memiliki sekuens sejenis tidak membawa awalan numerik; menambahkannya adalah dekorasi tanpa makna yang salah-menyinyalkan hubungan pengurutan yang tidak ada. Spesifikasi lengkap di `src/apothem/rules/canonical-layout.md` §2.1. Ditegakkan secara mekanis di `src/apothem/hooks/messages/pretooluse-bash.md` Scan 2 pada `git mv` / `git rm` dan pada referensi path isi-commit.
+
+## CM-14 (Protokol Sesi)
+
+**Mulai:** Jalankan Blind Bootstrap (CM-24 §6). **Selesai:** Jalankan Phase Exit (CM-24 §2.5) + evaluasi memori (CM-26) + evolusi artefak (CM-22 §2+§4).
+
+## CM-15–21 (Pipeline)
+
+CM-15 dan CM-16 didefinisikan-inline di sini (tanpa rule terpisah); CM-17–21 mendelegasikan ke rules sesuai tabel rules registri-artefak.
+
+- **CM-15 Koherensi Kolektif:** Verifikasi artefak rencana tetap koheren setelah modifikasi.
+- **CM-16 Eksekusi Otonom:** Di SHARED+, jangan pernah berhenti di antara fase. Kompaksi wajib pada transisi fase (PERSONAL_USE+).
+- **CM-17 Tim Pekerja:** Terapkan tim pekerja-terdelegasi untuk pekerjaan yang dapat-diparalelkan — lihat rule CM-25.
+- **CM-18 Pemulihan Galat:** Enam kelas umum (CM-24 §8); kelas eksekusi-rencana di TM-18. Eskalasi setelah 3 kegagalan.
+- **CM-19 Disiplin Kompaksi:** Pemicu kompaksi proaktif — lihat CM-24 §3.
+- **CM-20 Orkestrasi Pipeline:** prosa→[persetujuan]→generate→[persetujuan]→review→[persetujuan]→execute(01→NN). Teknik review: `src/apothem/rules/planning-techniques.md`.
+- **CM-21 Kualitas Kreatif:** Filter kognitif adalah gerbang kualitas, bukan dekorasi. Penskalaan sesuai rule identitas kognitif, §2.
+
+## CM-22–28 (Terdelegasi-Rule)
+
+Jangkar satu-baris untuk mandat terdelegasi-rule (spesifikasi lengkap berada di berkas yang dikutip):
+
+- **CM-22 Kewaspadaan Konvensi** — konvensi ekosistem dan evolusi artefak proaktif. Lihat `src/apothem/rules/persistent-conventions-vigilance.md`.
+- **CM-23 Generasi Berkas Besar** — protokol penambahan-inkremental untuk berkas di atas ambang penulisan-tunggal. Lihat `src/apothem/rules/large-file-generation.md`.
+- **CM-24 Protokol Penatalayanan Konteks** — eksternalisasi, kompaksi, blind bootstrap, dan disiplin anggaran. Lihat `src/apothem/rules/context-management.md`.
+- **CM-25 Orkestrasi Pekerja** — pola penerapan, kontrak-balik, isolasi konteks. Spesifikasi lengkap di rule orkestrasi-pekerja (taut-silang dihilangkan; nama berkas target memuat terminologi terlarang).
+- **CM-26 Siklus-Hidup Memori Otomatis** — disiplin memori, organisasi berkas-topik, evaluasi akhir-sesi. Lihat `src/apothem/rules/auto-memory.md`.
+- **CM-27 Lapisan Arsitektur Bersih** — pemisahan Domain / Application / Infrastructure / Presentation. Lihat `src/apothem/rules/clean-architecture-layers.md`.
+- **CM-28 Arsitek Senior Python** — pagar pengaman SOLID, gaya, pengujian, dan keamanan untuk artefak Python. Lihat `src/apothem/rules/code-craft-python.md`.
+
+## Mandat Terdelegasi-Rule vs. Didefinisikan-Inline
+
+- **Terdelegasi-rule** (spesifikasi lengkap di `src/apothem/rules/`): lihat kolom "Implements" tabel rules registri-artefak. Mencakup CM-1–10, CM-12, CM-14, CM-17–28.
+- **Didefinisikan-inline** (spesifikasi lengkap di sini, tanpa rule terpisah): CM-11 (Integritas Rencana), CM-13 (Commit), CM-15 (Koherensi Kolektif), CM-16 (Eksekusi Otonom).
+
+## Konvensi Sub-Referensi
+
+Command menggunakan akhiran berhuruf untuk mereferensikan subbagian tertentu dalam mandat. Pola: `CM-N` + huruf akhiran = bagian rule. **Konvensi kapitalisasi:** Akhiran huruf-besar menandakan subbagian struktural dalam suatu mandat; akhiran huruf-kecil menandakan direktif lebih-halus dalam suatu tier Penatalayanan. Tabel pemetaan-kunci sub-referensi kanonis (definisi internal-registri) dipertahankan verbatim dalam blok berpagar di bawah:
+
+```text
+CM-11A = Prose Fidelity
+CM-11B = Internal Consistency
+CM-11C = Gates
+
+CM-12a = lean ingestion / demand loading (context-management §7.2)
+CM-12b = budget awareness (§7.1)
+CM-12c = budget pressure response (§7.3)
+CM-12d = per-task effort calibration (context-management §7.4 — D3 stratified taxonomy; PHASE.md frontmatter is the per-phase override surface)
+
+CM-13A = per-task commits
+CM-13B = quality / remediation commits
+CM-13C = end-of-phase commit gate
+
+CM-23A = pre-generation size assessment (§1)
+CM-23B = incremental generation protocol (§2)
+
+CM-24B = proactive externalization (§2)
+
+CM-25A = worker-team patterns (§1)
+CM-25C = return-contract enforcement (§4)
+CM-25E = isolation / non-duplication (§5)
+```

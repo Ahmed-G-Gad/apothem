@@ -1,0 +1,36 @@
+---
+title: "산문 규약"
+description: "RFC 2119 모달 계층을 강제하고, 마케팅 형용사와 모호한 군더더기를 금지하며, 절대 ISO-8601 날짜를 사용하고, 지시적 산문의 빈틈없음을 검증합니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **모든 작성된 Markdown 표면에 걸친 산문 규율을 위한 정규 참조.** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) 규약의 요약은 인라인 선언이며, 이 페이지는 하류 기여자가 인용하는 독립 참조입니다.
+
+---
+
+## 1. 모달 계층(RFC 2119)
+
+지시적 산문은 **RFC 2119** 모달 계층을 사용합니다: `MUST`, `MUST NOT`, `SHOULD`, `SHOULD NOT`, `MAY`. 각각 RFC가 정의하는 구속 강도를 담습니다. 소문자 모달(`must`, `should`)은 규범적 무게를 담지 않으며, 어떤 의무도 선언되지 않는 서술적 산문에서만 사용됩니다.
+
+## 2. 금지 어휘
+
+### 2.1 마케팅 형용사
+
+`powerful`, `seamless`, `robust`, `cutting-edge`, `next-generation`, `world-class`, `enterprise-grade` 및 그 동등어는 측정된 증거로 구체적으로 입증되지 않는 한 사용자 대면 산출물에서 금지됩니다. 입증은 벤치마크, 비교, 측정, 또는 외부 검증 소스를 인용합니다.
+
+### 2.2 모호한 군더더기
+
+`basically`, `kind of`, `sort of`, `in some sense`, `to some extent` 및 그 동등어는 지시적 텍스트에서 금지됩니다. 지시적 산문은 구속력이 있습니다. 모호한 표현은 산문이 주장하는 구속력을 양보합니다.
+
+### 2.3 UDA 빈틈없음
+
+`scripts/dev/validate_ecosystem.py`의 범용 지시 빈틈없음(UDA) 검사는 구속적 규정을 담은 줄에 대해 닫힌 모호어 어휘집(`maybe`, `might`, `could`, `should probably`, `usually`, `generally speaking`, `in most cases`, `mostly`, `typically`, `often`, `or similar`, `etc.`, `and so on`)을 강제합니다. 규칙 자체의 주제로 인용된 모호어 토큰(예: 금지어 목록 페이지의 금지어 목록)은 검증기의 정의 마커 메커니즘에 의해 면제됩니다.
+
+## 3. 날짜 참조
+
+날짜는 모든 참조에서 절대 ISO-8601(`YYYY-MM-DD`)입니다. 상대 날짜(`yesterday`, `last week`, `recently`)는 작성 세션을 넘어 지속되는 산출물에서 금지됩니다.
+
+## 4. 검증기
+
+`scripts/dev/validate_ecosystem.py`의 UDA 빈틈없음 검사는 §2.3의 기계적 강제 실행 표면입니다. 쓰기마다 실행되는 `markdown` 계열 conformity-grep 검증기는 PreToolUse Write/Edit 훅 경계에서 더 넓은 산문 품질 기준을 강제합니다.

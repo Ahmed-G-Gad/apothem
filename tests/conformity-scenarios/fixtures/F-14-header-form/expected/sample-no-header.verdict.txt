@@ -1,0 +1,5 @@
+exit_code: 2
+passed: false
+rule: HEADER_ABSENT
+context_substr: authorship header absent; expected variant 'hash' at line 1
+rationale: No AUTHOR_MARK within the 60-line scan budget; matcher reports header-absent for the .py file's hash variant.

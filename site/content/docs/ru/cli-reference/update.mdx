@@ -1,0 +1,80 @@
+---
+title: "update"
+description: "Справочник CLI для команды apothem update."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Переустанавливает конфигурацию адаптера ассистента по написанию кода из текущего общего профиля.
+
+## Сводка
+
+```
+apothem update --harness NAME|all [--profile PATH] [--dry-run]
+                [--project PATH]
+                [--quiet|-q] [--verbose|-v]
+                [--format plain|json] [--json] [--no-color]
+```
+
+`update` повторно материализует вывод ассистента по написанию кода из текущего общего профиля. Она использует ту же проверку профиля, выбор `--harness all`, проверку области проекта, поведение dry-run и оболочку JSON, что и `install`.
+
+Псевдоним в продолженной форме `apothem updating` разрешается в тот же обработчик.
+
+## Параметры
+
+| Параметр | Описание |
+|---|---|
+| `--harness NAME` | Адаптер ассистента по написанию кода для обновления или `all` для набора уровня всего реестра (обязательно). |
+| `--profile PATH` | Путь к общему профилю YAML. По умолчанию `~/.config/apothem/profile.yaml`. |
+| `--dry-run` | Предпросмотр обновления без записи файлов. |
+| `--project PATH` | Корень проекта для ассистентов по написанию кода с областью проекта. Обязателен, когда выбранный набор ассистентов включает адаптеры с областью проекта. |
+| `--quiet`, `-q` | Подавляет информационный вывод; выводятся только ошибки. |
+| `--verbose`, `-v` | Выводит дополнительную диагностическую информацию. |
+| `--format plain\|json` | Формат вывода (по умолчанию: `plain`). |
+| `--json` | Сокращение для `--format json`. |
+| `--no-color` | Отключает ANSI-коды цвета в выводе. |
+| `-h`, `--help` | Показывает справку и завершает работу. |
+
+## Вывод JSON
+
+```json
+{
+  "status": "success",
+  "command": "update",
+  "action": "updated",
+  "harness": "claude-code",
+  "profile_path": "C:\\Users\\Example\\.config\\apothem\\profile.yaml",
+  "project": null,
+  "files_written": [],
+  "results": [],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+`--dry-run` возвращает `status: "dry_run"` и `files_written: []`.
+
+## Примеры
+
+```bash
+apothem update --harness claude-code
+apothem update --harness claude-code --dry-run
+apothem update --harness all --project . --dry-run --json
+apothem Updating --harness claude-code   # continuous-form alias
+apothem updating --harness claude-code   # lowercase variant
+```
+
+## Коды выхода
+
+| Код | Значение |
+|---|---|
+| 0 | Адаптер успешно обновлён или dry-run спланирован без ошибок |
+| 1 | Ожидаемая ошибка проверки, профиля, ассистента по написанию кода, проекта или адаптера |
+| 2 | Частичная пакетная материализация после хотя бы одной записи |
+
+## См. также
+
+- `apothem updating` — псевдоним в продолженной форме для этой команды (документирован здесь; CLI принимает обе формы)
+- [apothem install](/docs/cli-reference/install) — первоначальная установка
+- [Руководство по обновлению](/docs/install/updating) — пути обновления для каждого установщика

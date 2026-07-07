@@ -1,0 +1,25 @@
+---
+title: "参考"
+description: "可导航的制品类别登记表，含规则、命令、技能、委派工作者、钩子、MCP 服务器、设置以及输出样式的路径与磁盘布局。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+按制品类别的参考。每个页面描述该类别的用途、磁盘布局、frontmatter 契约，以及列出每个实例的登记表。
+
+下面展示的是相对于仓库的路径；每个适配器将它们物化到其原生配置目录中（例如 Claude Code 适配器的 `~/.claude/` —— 关于各 harness 的目的地，参见 [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses)）。
+
+| 类别 | 页面 | 相对仓库的源路径 |
+|-------|------|--------------|
+| `CLAUDE.md` | [CLAUDE.md](/docs/reference/claude-md) | `CLAUDE.md` |
+| 规则 | [规则](/docs/reference/rules) | `src/apothem/rules/` |
+| 命令 | [命令](/docs/reference/commands) | `src/apothem/commands/` |
+| 技能 | [技能](/docs/reference/skills) | `src/apothem/skills/` |
+| 委派工作者 | [参考页面](/docs/reference/agents) | 见 canonical-paths 块 |
+| 钩子 | [钩子](/docs/reference/hooks) | `src/apothem/hooks/` |
+| MCP 服务器 | [MCP 服务器](/docs/reference/mcp) | 共享配置档案 —— `mcp_servers` |
+| 设置 | [设置](/docs/reference/settings) | `src/apothem/harnesses/claude_code/templates/settings.json` |
+| 输出样式 | [输出样式](/docs/reference/output-styles) | `src/apothem/output-styles/` |
+| Harness 登记表 | [Harness 登记表](/docs/reference/harness-registry) | `src/apothem/lib/harness_registry.py` |
+
+完整的规范登记表分布于各制品集（`rules/`、`commands/`、`skills/`、`agents/`、`hooks/`）中。本页以可导航的形式镜像该登记表。

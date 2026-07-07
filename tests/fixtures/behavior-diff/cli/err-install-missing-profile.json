@@ -1,0 +1,9 @@
+{
+  "argv": [
+    "install",
+    "--harness",
+    "claude-code"
+  ],
+  "exit_code": 1,
+  "stdout": "Error: Apothem validation failed.\nProfile: <HOME>/.config/apothem/profile.yaml\nField: profile\nReason: profile file does not exist\nFix: Run 'apothem profile init' or pass --profile PATH.\nFiles written: none.\n"
+}

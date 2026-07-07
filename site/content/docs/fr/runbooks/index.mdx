@@ -1,0 +1,21 @@
+---
+title: "Runbooks"
+description: "Runbooks d'Apothem — procédures opérationnelles pas à pas pour les versions, la configuration du publieur, l'activation de Pages, la récupération et la rédaction d'adaptateurs."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Procédures opérationnelles pour les mainteneurs. Chaque runbook est une
+procédure séquencée et sans contexte : elle mène un état initial connu à un état
+final vérifié, rédigée de sorte qu'un contributeur compétent puisse la suivre
+sans contexte préalable.
+
+## Pages
+
+| Page | Description |
+|------|-------------|
+| [Activation de Pages](/docs/runbooks/pages-enablement) | Mène `apothem.ahmedgad.com` d'une configuration GitHub Pages neuve à une page d'accueil HTTPS renvoyant `200 OK`. |
+| [Cycle de version](/docs/runbooks/release-cycle) | Mène une version `vX.Y.Z` d'un arbre de travail propre jusqu'aux surfaces vérifiées de GitHub Release et de npm. |
+| [Configuration du compte du publieur](/docs/runbooks/publisher-account-setup) | Configure le publieur de confiance npmjs.com pour `@ahmed-g-gad/apothem` ainsi que les prérequis de version côté GitHub. |
+| [Récupération de version](/docs/runbooks/release-recovery) | Restaure `ahmed-g-gad/apothem` à un état fonctionnel lorsque la séquence de bascule de version échoue en cours de route. |
+| [Rédaction d'un nouvel adaptateur d'environnement](/docs/runbooks/new-harness-adapter-authoring) | Rédigez et publiez un nouvel adaptateur d'environnement en vue de son inclusion en première partie. |

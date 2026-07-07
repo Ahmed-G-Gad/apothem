@@ -1,0 +1,69 @@
+---
+title: "/research-theory"
+description: "/research-theory — Construye el marco conceptual y teórico de una pregunta de investigación enmarcada: teoría del cambio, constructos con definiciones operativas y un diagrama de modelo conceptual — la etapa de fundamentación teórica de la canalización /research, entre /research-spec y /research-sources."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rol:** Investigador Principal (fundamentación teórica)
+**Posición en la canalización:** intermedia
+
+Construye el marco conceptual y teórico fundamental para una pregunta de investigación enmarcada — la fundamentación a priori a la que las etapas de búsqueda sistemática y síntesis remiten. Cada constructo se ancla en la teoría primaria y cada relación teorizada se enuncia en una forma refutable.
+
+## Invocación canónica
+
+```bash
+/research-theory
+```
+
+Con argumentos:
+
+```bash
+/research-theory [--suite-name NAME] [--override] [--framework NAME]
+```
+
+## Entradas
+
+El `_spec/research-spec.md` de la suite (el conjunto de preguntas enmarcadas y falsables producido por `/research-spec`).
+
+## Salidas
+
+`_inputs/theory.md` (el marco conceptual / teórico, la teoría del cambio / modelo lógico, los constructos con sus definiciones operativas y un diagrama de modelo conceptual).
+
+## Aguas abajo
+
+/research-sources (consumidor aguas abajo — la búsqueda sistemática remite sus criterios de inclusión a estos constructos).
+
+## Fases del flujo de trabajo
+
+El comando sigue el flujo de trabajo estándar de la canalización `/research`:
+
+1. **Cargar el contexto** — Lee `_spec/research-spec.md`, las reglas y cualquier estado existente de la suite.
+2. **Enmarcar el modelo conceptual** — Define los constructos y sus definiciones operativas; ancla cada uno en la teoría primaria.
+3. **Trazar la teoría del cambio** — Construye el modelo lógico que vincula los constructos con los resultados esperados; enuncia cada relación en una forma refutable.
+4. **Diagramar el modelo** — Emite un diagrama de modelo conceptual que las etapas posteriores referencian.
+5. **Verificar las salidas** — Confirma que cada constructo está anclado en la teoría y que cada relación es refutable; resuelve la ambigüedad a través del canal de consulta estructurada.
+6. **Emitir el marco** — `_inputs/theory.md` más el manifiesto de transferencia actualizado.
+
+## Modos de fallo
+
+| Síntoma | Causa | Recuperación |
+|---------|-------|----------|
+| El constructo carece de una definición operativa | Concepto enunciado de forma abstracta | Define el constructo en términos medibles; cita la teoría primaria |
+| La relación teorizada no es refutable | Relación enunciada como una verdad evidente | Reenuncia la relación como una afirmación falsable |
+| Falta la entrada de especificación | `/research-spec` aún no se ha ejecutado | Ejecuta primero `/research-spec` para enmarcar la pregunta |
+
+## Ejemplos
+
+```bash
+# Construye el marco teórico para una pregunta enmarcada
+/research-theory --suite-name retrieval-latency
+
+# Ancla a un marco teórico con nombre
+/research-theory --framework "information foraging theory"
+```
+
+## Referencias cruzadas
+
+- [Resumen de la canalización](/docs/pipeline)
+- [Referencia de comandos](/docs/reference/commands)

@@ -1,0 +1,34 @@
+---
+title: "Стили вывода"
+description: "Профили тона оператора (Senior Architect, Concise Engineer, Forensic Auditor), активируемые посессионно через команду /output-style."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Профили стиля вывода находятся под `src/apothem/output-styles/` и несут
+рекомендации по тону оператора для каждого стиля. Runtime хост-ассистента
+программирования активирует стиль посессионно через `/output-style <name>`.
+
+## Канонические профили
+
+| Профиль | Файл | Тон |
+|---------|------|------|
+| Архитектор по умолчанию | `src/apothem/output-styles/default-architect.md` | Тон Senior Software Architect (по умолчанию) |
+| Лаконичный инженер | `src/apothem/output-styles/concise-engineer.md` | Краткий инженерный тон |
+| Криминалистический аудитор | `src/apothem/output-styles/forensic-auditor.md` | Тон аудита находка за находкой |
+
+## Контракт frontmatter
+
+```yaml
+---
+name: <style name>
+description: <one-line tone summary>
+type: output-style
+---
+```
+
+## Создание нового профиля
+
+Создайте новый файл `<name>.md` под `src/apothem/output-styles/` с каноническим
+frontmatter, объявите тон в теле и ратифицируйте, вызвав `/output-style <name>`
+в начале вашей следующей сессии.

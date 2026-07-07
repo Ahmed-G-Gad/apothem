@@ -1,0 +1,104 @@
+---
+title: "status"
+description: "Referencia de la CLI para el comando apothem status."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Informa el estado de instalación, verificación y deriva de cada harness registrado.
+
+## Sinopsis
+
+```
+apothem status [--project PATH]
+               [--quiet|-q] [--verbose|-v]
+               [--format plain|json] [--json] [--no-color]
+```
+
+`status` es un comando de inspección de solo lectura. Itera cada adaptador de harness registrado e informa tres hechos por asistente: si está instalado, si sus destinos gestionados se verifican y si la configuración instalada se ha desviado del perfil compartido. No escribe nada en disco.
+
+Para cada harness, `status` informa:
+
+| Columna | Significado |
+|---|---|
+| `installed` | La configuración gestionada del adaptador existe en su ruta de destino. |
+| `verified` | Los destinos gestionados del adaptador están presentes y son válidos. |
+| `drift` | El veredicto de fidelidad del perfil (ver abajo). |
+
+El valor de `drift` es uno de:
+
+| Valor | Significado |
+|---|---|
+| `in-sync` | La configuración instalada lleva textualmente el perfil compartido recién proyectado. |
+| `drift` | El harness está instalado pero su contenido de perfil proyectado ya no coincide con el perfil compartido actual. Vuelve a ejecutar `apothem install` para reproyectar. |
+| `absent` | El harness no está instalado, por lo que no hay nada que comparar. |
+| `needs-project` | Se informó un harness con alcance de proyecto sin `--project`, por lo que su destino no puede resolverse. Pasa `--project PATH` para inspeccionarlo. |
+
+La deriva se informa, nunca se trata como un error: `status` sale con 0 incluso cuando uno o más harness informan `drift`. La deriva es un hecho sobre tu configuración, no un fallo del comando.
+
+Si el perfil compartido no puede cargarse, la deriva se degrada a `absent` para los harness instalados (los hechos installed/verified aún se informan) en lugar de abortar el barrido.
+
+## Opciones
+
+| Opción | Descripción |
+|---|---|
+| `--project PATH` | Raíz del proyecto para los harness con alcance de proyecto. Sin ella, los harness con alcance de proyecto informan `needs-project`. |
+| `--quiet`, `-q` | Suprime la salida informativa; solo se emiten errores. |
+| `--verbose`, `-v` | Emite salida de diagnóstico adicional. |
+| `--format plain\|json` | Formato de salida (por defecto: `plain`). |
+| `--json` | Abreviatura de `--format json`. |
+| `--no-color` | Desactiva los códigos de color ANSI en la salida. |
+| `-h`, `--help` | Muestra la ayuda y sale. |
+
+## Salida JSON
+
+El sobre `--json` lleva una fila de resultado por cada harness registrado. Cada fila lleva las claves documentadas `harness`, `installed`, `verified` y `drift`.
+
+```json
+{
+  "status": "success",
+  "command": "status",
+  "action": "status",
+  "harness": "all",
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "installed": true,
+      "verified": true,
+      "drift": "in-sync"
+    },
+    {
+      "harness": "cursor",
+      "installed": false,
+      "verified": false,
+      "drift": "needs-project"
+    }
+  ],
+  "warnings": [],
+  "error": null
+}
+```
+
+Aislamiento de fallos por adaptador: si un único adaptador lanza una excepción al informar su estado, la fila de ese harness lleva `outcome: "error"` y un `message`, los asistentes restantes siguen informando con normalidad y el proceso sale con el código 2.
+
+## Ejemplos
+
+```bash
+apothem status
+apothem status --project .
+apothem status --json
+```
+
+## Códigos de salida
+
+| Código | Significado |
+|---|---|
+| 0 | Estado informado (la deriva se informa, no es un error) |
+| 2 | Al menos un adaptador no pudo informar su estado |
+
+## Véase también
+
+- [apothem verify](/docs/cli-reference/verify) — verifica la instalación de un único harness
+- [apothem diff](/docs/cli-reference/diff) — previsualiza los cambios pendientes de un harness
+- [apothem harnesses](/docs/cli-reference/harnesses) — lista e inspecciona los harness registrados

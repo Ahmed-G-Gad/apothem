@@ -1,0 +1,51 @@
+---
+title: "Apothem vs. aturan CodeBuddy mentah"
+description: "Mengapa mengalirkan aturan proyek CodeBuddy melalui Apothem alih-alih menulis tangan berkas .codebuddy/rules per proyek."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+CodeBuddy membaca aturan proyek dari `.codebuddy/rules/*.md`. Anda dapat menulis
+berkas-berkas itu dengan tangan, per proyek, selamanya. Apothem mengelola salah
+satunya untuk Anda dan menjaganya konsisten di setiap lingkungan dan setiap
+proyek.
+
+## Pendekatan mentah
+
+Menulis tangan aturan CodeBuddy berarti:
+
+- Menyalin-tempel disiplin rekayasa yang sama ke `.codebuddy/rules/` untuk setiap
+  proyek baru.
+- Menjadi tidak sinkron saat disiplin berkembang — tidak ada satu sumber
+  kebenaran.
+- Menurunkan ulang konvensi yang sama untuk Cursor, Windsurf, Claude Code, dan
+  setiap alat lain yang Anda gunakan, karena masing-masing punya permukaan
+  aturannya sendiri.
+
+## Pendekatan Apothem
+
+Apothem menyimpan satu kohort aturan kanonis di repositori sumber dan
+memproyeksikannya ke permukaan native setiap lingkungan. Untuk CodeBuddy ia
+menulis:
+
+```
+<project>/.codebuddy/rules/apothem-rules.md
+```
+
+| Perhatian | CodeBuddy mentah | Apothem |
+| --- | --- | --- |
+| Sumber kebenaran | Berkas tiap proyek | Satu kohort kanonis |
+| Konsistensi lintas lingkungan | Manual per alat | Diproyeksikan otomatis |
+| Pembaruan | Sunting tangan tiap proyek | `apothem update --harness codebuddy --project <path>` |
+| Aturan operator sendiri | Tercampur dengan disiplin | Tak tersentuh — Apothem menulis berkas khusus |
+| Penghapusan | Hapus manual | `apothem uninstall` dengan cadangan bertanda waktu |
+
+## Apa yang tetap milik Anda
+
+Apothem hanya menulis `apothem-rules.md`. Berkas memori `CODEBUDDY.md` Anda,
+izin dan server MCP Anda di `.codebuddy/settings.json`, serta berkas aturan lain
+mana pun yang Anda tulis tetap sepenuhnya milik operator. Adaptor mengenali
+permukaan-permukaan itu tetapi tidak pernah menyuntingnya.
+
+Lihat [halaman lingkungan CodeBuddy](/docs/harnesses/codebuddy) untuk perintah
+siklus hidup lengkap.

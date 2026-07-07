@@ -1,0 +1,42 @@
+---
+title: "Frontmatter スキーマ"
+description: "YAML frontmatter ブロックの構造、クラスごとの必須キー、および制品クラス全体にわたる検証器の強制ルールのリファレンスガイド。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **すべての制品クラスにおける YAML frontmatter の規範的リファレンス。** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) 規約の要約はインライン宣言です。[`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) のクラスごとの JSON Schema は機械可読な契約です。本ページは下流の貢献者が参照する独立したリファレンスです。
+
+---
+
+## 1. Frontmatter ブロックの構造
+
+各制品はヘッダーに YAML frontmatter を携え、`---` 行で区切られます。[`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) に基づく規範的な作者ヘッダーバナーは、Markdown 系のファイルでは frontmatter の上に置かれ、frontmatter はその直後に続きます。
+
+キーは `kebab-case` を使用します。スカラー値は裸書きか二重引用符のいずれかです。コロン、ハッシュマーク、その他 YAML で意味を持つ文字を含む文字列値は引用符で囲みます。
+
+## 2. クラスごとの必須フィールド
+
+必須キーの集合は制品クラスによって異なります。権威ある構造は `scripts/dev/validate_ecosystem.py` と `schemas/` ディレクトリ配下のクラスごとの JSON Schema（制品クラスごとに 1 つのスキーマファイル）によって強制されます。
+
+```text
+schemas/agent.schema.json
+schemas/skill.schema.json
+schemas/command.schema.json
+schemas/output-style.schema.json
+schemas/plan.schema.json
+```
+
+| クラス | 必須キー |
+|-------|---------------|
+| `CLAUDE.md`（ルート構成） | `name`、`version`、`updated`、`description`、`scope`、`portability` |
+| ルール（`src/apothem/rules/*.md`） | `name`、`description`、`pathFilter`、`alwaysApply` |
+| コマンド（`src/apothem/commands/*.md`） | `name`、`version`、`updated`、`description`、`argument-hint`、`disable-model-invocation` |
+| 助手（下記の規範的ディレクトリ） | `name`、`version`、`updated`、`description`、`tools`、`disallowedTools`、`maxTurns`、`effort` |
+| スキル（`src/apothem/skills/*/SKILL.md`） | `name`、`description`、`archetype`、`userInvocable` |
+
+[`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) のクラスごとのスキーマは、型・形式・enum・パターン制約を含む完全な制約集合を携えます。
+
+## 3. 検証器
+
+`scripts/dev/validate_ecosystem.py` は制品ツリーを走査し、上記の必須キー集合を適用して、必須フィールドを欠くいずれの制品にも `[FAIL]` を報告します。`src/apothem/conformity/frontmatter_grep.py` の書き込みごとの `frontmatter-grep` は、PreToolUse Write/Edit フックの境界で同じ構造を強制します。

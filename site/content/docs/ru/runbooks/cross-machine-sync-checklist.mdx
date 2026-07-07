@@ -1,0 +1,162 @@
+---
+title: "Контрольный список проверки межмашинной синхронизации"
+description: "Процедура проверки, подтверждающая, что адаптер Claude Code корректно устанавливается, проверяется и удаляется на новом хосте, с полными проверками переносимости."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Область применения.** Этот контрольный список проверяет слой переносимости установки / удаления **адаптера Claude Code** на новом втором хосте. У других инструментов есть собственные рецепты проверки для каждого хоста, задокументированные в [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses). Путь `~/.claude/` — это каноническое место установки адаптера Claude Code; при проверке другого инструмента подставьте путь, нативный для соответствующего адаптера.
+
+> **Управляемая оператором проверка слоя переносимости установки / удаления на новом втором хосте.** Уровень публикации (`vX.Y.Z`) был создан на единственном хосте Windows; утверждение о переносимости `~/.claude/` (`CLAUDE.md` `portability: universal`) требует сквозного прогона на втором хосте, прежде чем многохостовой инвариант обретёт вес. Этот контрольный список — канонический рецепт проверки на втором хосте (адаптер Claude Code).
+
+---
+
+## 1. Предварительные условия на втором хосте
+
+Выполните на втором хосте перед началом проверки:
+
+| Пункт | Команда | Ожидается |
+|------|---------|----------|
+| Git установлен | `git --version` | Git 2.40+ |
+| Python 3.10+ доступен | `python3 --version` (POSIX) или `py -3 --version` (Windows) | 3.10 / 3.11 / 3.12 / 3.13 |
+| Аутентификация GitHub (опционально, для аутентифицированного клонирования / проверок API) | `gh auth status` | Выполнен вход под авторизованной учётной записью репозитория при использовании аутентифицированных рабочих процессов |
+| Shell доступен | `bash --version` (POSIX) или `pwsh --version` (Windows) | Bash 4+ или PowerShell 7+ |
+| Нет существующего каталога `~/.claude/` | `ls ~/.claude 2>&1` | "No such file or directory" — если присутствует, сделайте резервную копию перед продолжением |
+
+## 2. Проверка клонирования и установки
+
+Выполните на втором хосте:
+
+```bash
+# Clone the published repo to ~/.claude (the install destination)
+git clone https://github.com/ahmed-g-gad/apothem.git ~/.claude
+cd ~/.claude
+
+# (POSIX path) Run scripts/installer/install.sh dry-run first
+bash scripts/installer/install.sh --dry-run                                    # exit 0; Quick Start banner
+
+# (POSIX path) Run scripts/installer/install.sh for real
+bash scripts/installer/install.sh                                               # exit 0; sentinel-file check; idempotent
+
+# (Windows path) PowerShell parallel
+pwsh -File scripts/installer/install.ps1 -DryRun                                # exit 0; Quick Start banner
+pwsh -File scripts/installer/install.ps1                                        # exit 0
+```
+
+Зафиксируйте код выхода и баннер stdout каждой команды. Запишите в `<second-host>/.audit/cross-machine-clone-install.md`.
+
+## 3. Дисциплина четырёх элементов (согласно `src/apothem/rules/production-ready-prs.md` §8.3)
+
+Проверьте каждый из четырёх инвариантов на втором хосте:
+
+### 3.1 Безопасность файла-сторожа
+
+```bash
+# Re-run installer at the same destination.
+bash scripts/installer/install.sh                                               # POSIX
+pwsh -File scripts/installer/install.ps1                                        # Windows
+```
+
+**Ожидается:** Установщик обнаруживает существующий действительный `~/.claude/` (файл-сторож присутствует), выполняет быструю перемотку (fast-forward) вместо переустановки или дублирования; код выхода 0.
+
+### 3.2 Проверка предусловий
+
+```bash
+# Temporarily move git out of PATH.
+PATH=/usr/bin:/bin bash scripts/installer/install.sh                            # POSIX (no git)
+```
+
+**Ожидается:** Установщик отказывается запускаться; выдаёт явную диагностику «git not found»; код выхода ненулевой.
+
+### 3.3 Идемпотентный повторный запуск
+
+```bash
+# Run installer N times back-to-back.
+for i in 1 2 3 4 5; do bash scripts/installer/install.sh; done                  # POSIX
+1..5 | ForEach-Object { pwsh -File scripts/installer/install.ps1 }              # Windows
+```
+
+**Ожидается:** Каждый вызов завершается с кодом 0; никаких побочных эффектов после первого вызова; никаких дублирующихся файлов; никакого дублирования RC shell-profile.
+
+### 3.4 Настраивается через переменные окружения
+
+```bash
+# Install to a non-default location.
+CLAUDE_PROJECT_DIR=/tmp/alt-claude bash scripts/installer/install.sh            # POSIX
+$env:CLAUDE_PROJECT_DIR='C:\tmp\alt-claude'; pwsh -File scripts/installer/install.ps1   # Windows
+```
+
+**Ожидается:** Установщик учитывает переменную окружения; `~/.claude/` НЕ изменяется; альтернативное место назначения содержит ожидаемую структуру.
+
+## 4. Проверка набора валидаторов (после установки)
+
+```bash
+cd ~/.claude
+make validate                                                 # 50 conformity validators
+make headers-doctor                                           # file-header-grep → passed:true
+make ai-surfaces-doctor                                       # multi-surface-coherence → passed:true
+make plans-doctor                                             # no-global-plans + plans-discipline-language
+make lint                                                     # ruff + mypy
+make test                                                     # pytest 265/265
+```
+
+**Ожидается:** Каждый шлюз зелёный. Зафиксируйте коды выхода + строки сводки.
+
+## 5. Проверка удаления
+
+```bash
+# POSIX path — interactive uninstall
+bash scripts/installer/uninstall.sh                           # answers: "y" to confirm
+ls ~/.claude 2>&1                                             # "No such file or directory"
+
+# Re-install from clone, then uninstall non-interactively
+git clone https://github.com/ahmed-g-gad/apothem.git ~/.claude
+bash scripts/installer/uninstall.sh --yes
+ls ~/.claude 2>&1                                             # "No such file or directory"
+```
+
+**Ожидается:** Интерактивный поток запрашивает подтверждение; `--yes` пропускает запрос для пакетных запусков; оба потока оставляют `~/.claude/` чисто удалённым; связанные ссылки на переменные окружения shell-profile очищаются.
+
+## 6. Проверка защитных ограждений безопасности
+
+```bash
+# Run uninstall against a path that fails the sentinel-file check.
+mkdir -p /tmp/not-a-claude-install
+CLAUDE_PROJECT_DIR=/tmp/not-a-claude-install bash scripts/installer/uninstall.sh --yes
+```
+
+**Ожидается:** Деинсталлятор отказывается; выдаёт диагностику «sentinel-file missing; refusing to remove unsafe target»; код выхода ненулевой. Путь НЕ был затронут.
+
+```bash
+# Run uninstall against $HOME, /, or empty path.
+CLAUDE_PROJECT_DIR=$HOME bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
+CLAUDE_PROJECT_DIR=/ bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
+CLAUDE_PROJECT_DIR='' bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
+```
+
+**Ожидается:** Каждая отказывает с явной диагностикой «unsafe target»; ни одна не затрагивает файловую систему.
+
+## 7. Отчётность
+
+После прогона на втором хосте зафиксируйте результаты в:
+
+- `<second-host>/.audit/cross-machine-clone-install.md` (результаты команд клонирования + установки)
+- `<second-host>/.audit/cross-machine-validators.md` (результаты валидаторов из Раздела 4)
+- `<second-host>/.audit/cross-machine-uninstall.md` (результаты удаления + безопасности из Разделов 5–6)
+
+Доведите выводы до сопровождающего:
+
+- ✅ все инварианты дисциплины четырёх элементов выполняются + все шлюзы валидаторов зелёные + все защитные ограждения безопасности удаления отвергли небезопасные цели → утверждение `portability: universal` публикации проверено сквозным образом
+- ❌ любой сбой → заведите задачу на `https://github.com/ahmed-g-gad/apothem/issues/new` с указанием сбойного раздела + захваченного вывода; сопровождающий выполняет сортировку
+
+## 8. Критерии приёмки
+
+- [ ] §1 предварительные условия выполнены
+- [ ] §2 клонирование и установка проходят успешно как в оболочках POSIX, так и Windows
+- [ ] §3 дисциплина четырёх элементов выполняется (безопасность файла-сторожа; проверка предусловий; идемпотентность; настраивается через переменную окружения)
+- [ ] §4 каждый шлюз валидатора зелёный
+- [ ] §5 интерактивное удаление проходит успешно; `--yes` проходит успешно без запроса
+- [ ] §6 каждый отказ защитного ограждения безопасности срабатывает
+- [ ] §7 результаты зафиксированы по задокументированным путям аудита
+
+Когда каждый флажок выше отмечен на новом втором хосте, сопровождающая задача межмашинной синхронизации (COMPLETION.md §7 связывающее ограничение) считается закрытой.

@@ -1,0 +1,130 @@
+---
+title: "Eigenständige Laufzeitumgebung"
+description: "Wie die Engine von Apothem aus jedem Checkout läuft — internalisierte Abhängigkeiten, das PYTHONPATH=src-Aufrufmodell und der Bootstrap des Plugin-Baums."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+# Eigenständige Laufzeitumgebung
+
+Die Engine von Apothem ist eine eigenständige Laufzeitumgebung: Sie läuft ohne
+Registry, direkt aus jedem Checkout oder abgelegten Quellbaum, weil ihre
+Drittanbieter-Abhängigkeiten mit ihr reisen. Zwei Bausteine machen das möglich —
+ein internalisierter Abhängigkeitsbaum und ein `python -m`-Aufrufmodell, das
+keine installierten Konsolenskripte benötigt.
+
+## Internalisierter Abhängigkeitsbaum
+
+Der Validierungs- und Serialisierungs-Stack ist als reiner Python-Quellcode unter
+`src/apothem/_vendor/` internalisiert, jedes Paket neben seiner ursprünglichen
+Lizenzdatei:
+
+- `yaml` (der reine Python-Parser/-Emitter; die optionale libyaml-C-Erweiterung
+  wird nicht mitgeführt)
+- `jsonschema` mit seiner Abhängigkeitskette `attrs` (und seinem `attr`-Alias),
+  `referencing` und `jsonschema_specifications`
+- `rpds` — ein reiner Python-Shim, der die von `jsonschema` und `referencing`
+  verwendete `HashTrieMap`-, `HashTrieSet`- und `List`-Oberfläche neu
+  implementiert, gestützt auf eingebaute Typen, sodass der Stack mit null
+  kompilierten Erweiterungen läuft
+- `typing_extensions`
+
+Internalisierte Kopien haben Vorrang vor jeder systemweit installierten Version:
+Der Bootstrap stellt das Vendor-Verzeichnis dem `sys.path` voran, vor
+site-packages. Die Auswahlrichtlinie — was internalisiert wird, was nicht und wie
+internalisierte Pakete aktualisiert werden — ist in der
+[Strategie zur Abhängigkeits-Internalisierung](/docs/architecture/vendoring-strategy)
+dokumentiert.
+
+Zwei Abhängigkeiten bleiben außerhalb des Baums: **`click`** und **`rich`**, die
+terminalseitigen Bibliotheken, die die CLI importiert. Sie müssen unter dem
+Interpreter importierbar sein, der die Engine ausführt; die Installer prüfen
+beide, benennen jede fehlende und bieten an, sie für dich zu installieren — mit
+deiner Bestätigung oder automatisch mit `--yes` /
+`APOTHEM_AUTO_INSTALL_DEPS=1`.
+
+## Das `python -m`-Aufrufmodell
+
+Apothem deklariert absichtlich keine Konsolenskripte in `pyproject.toml` —
+Konsolenskripte existieren nur, wenn ein Paketmanager sie auf den `PATH` legt, und
+die eigenständige Laufzeitumgebung setzt nie einen voraus. Die Engine hat
+stattdessen zwei Aufrufoberflächen:
+
+| Oberfläche | Aufruf | Kontext |
+| ------- | ---------- | ------- |
+| Engine-CLI | `python -m apothem <command>` | Ein Quellbaum mit `src/` auf dem `PYTHONPATH` (Checkout, npx-Cache, Plugin-Baum) |
+| Hook-Laufzeit | `python "<harness-root>/apothem/hooks/dispatch.py" <event>` | Die materialisierte Kopie unter der Harness-Wurzel, per absolutem Pfad |
+
+- `python -m apothem` führt `src/apothem/__main__.py` aus, das
+  `apothem.cli:main` aufruft — die Click-Befehlsgruppe.
+- Hook-Einträge in der materialisierten `settings.json` / `hooks.json` rufen den
+  Dispatcher (und, für Claude Code, das Konformitäts-Gate unter
+  `<harness-root>/apothem/conformity/gate.py`) per absolutem Skriptpfad auf. Beide
+  sind eigenständige stdlib-Skripte, die ihren eigenen `sys.path` bootstrappen,
+  und die Schema-Fixtures des Gates reisen neben ihm in
+  `<harness-root>/apothem/schemas/`, sodass Hooks **ohne importierbares
+  `apothem`-Paket auf dem Host** laufen. Die Templates tragen ein
+  `${HARNESS_ROOT}`-Token, das `apothem install` zum echten Harness-Wurzelpfad in
+  Vorwärtsschrägstrich-Form rendert.
+- Aus einem Quell-Checkout führen die Modulformen
+  `python -m apothem.hooks.dispatch` und
+  `python -m apothem.conformity.gate` denselben Code für die Entwicklung aus.
+
+Das Paketverzeichnis wird importierbar, indem das `src/`-Verzeichnis des Checkouts
+dem `PYTHONPATH` vorangestellt wird:
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+```
+
+Genau diesen Aufruf gibt der Einschritt-Installer bei Abschluss aus.
+
+## Bootstrap des Plugin-Baums
+
+Das Claude Code-Plugin bündelt die Engine unter `<plugin_root>/lib/apothem`,
+anstatt sich auf `PYTHONPATH` zu verlassen. Das Bootstrap-Modul
+`apothem.lib.plugin_bootstrap` stellt `bootstrap_syspath` bereit, das idempotent
+`<plugin_root>/lib` und das Vendor-Verzeichnis dem `sys.path` voranstellt, sodass
+`import apothem` und jede internalisierte Abhängigkeit aus dem Plugin-Baum
+aufgelöst werden. Ein fehlerhafter Baum (fehlendes `lib/`) löst
+`PluginBootstrapError` aus, statt stillschweigend eine veraltete Systemkopie zu
+importieren.
+
+## Was der Installer auf die Festplatte legt
+
+Die Skript-Installer legen einen git-Klon des Quellbaums unter `~/.apothem` ab
+(überschreibbar mit `APOTHEM_HOME`) und führen die Engine daraus aus — über das
+optionale `click`-/`rich`-Voraussetzungsangebot hinaus werden keine Python-Pakete
+in `site-packages` installiert. Der Klon ist das vollständige Repository,
+einschließlich der Testsuite und der Dokumentations-Website, die die Laufzeit nie
+importiert, aus zwei bewussten Gründen: Die Engine **materialisiert ihre
+Kohorten** — Regeln, Skills, Befehle und Templates — direkt aus dem Baum in jeden
+Harness, sodass der Baum die lebendige Quelle der Wahrheit ist und nicht nur eine
+Laufzeitumgebung; und das `.git`-Verzeichnis bleibt an Ort und Stelle, damit
+`apothem update` den bestehenden Klon per Fast-Forward aktualisiert, statt erneut
+herunterzuladen.
+
+Dieses Aus-Quelltext-Ausführen-Layout ist dasselbe Muster, das Werkzeuge wie
+`nvm`, `pyenv` und `oh-my-zsh` verwenden — wenige Megabyte Quellcode plus Verlauf,
+in einem einzigen Schritt mit dem Uninstaller entfernbar (es gibt keinen
+Systemzustand rückgängig zu machen). Ein schlankerer Fußabdruck — ein flacher oder
+spärlicher Checkout, der `tests/` und `site/` weglässt — ist möglich, würde aber
+den vor Ort durchgeführten, signaturgeprüften, `git`-basierten Aktualisierungspfad
+preisgeben; das aktuelle Layout bevorzugt eine einfache, verifizierbare
+Aktualisierung gegenüber minimalem Speicherplatz.
+
+## Wie die Laufzeit Python findet
+
+Die Einschritt-Installer und der npx-Shim lokalisieren einen Interpreter auf
+dieselbe Weise: Sie sondieren `python3`, `python`, die versionierten Namen
+(`python3.14` bis `python3.10`) und `py -3` unter Windows; sie weisen die
+Microsoft Store-Launcher-Shims zurück; und akzeptieren den ersten Kandidaten, der
+Version 3.10 oder neuer meldet. Bei Ausführung aus einem Quellbaum verwenden die
+Installer den gebündelten `hooks/lib/find-python`-Locator wieder, der dieselbe
+Untergrenze anwendet.
+
+## Empfohlener nächster Schritt
+
+**Führe `python -m apothem --help`** mit dem `src/`-Verzeichnis des Checkouts auf
+dem `PYTHONPATH` aus, um zu bestätigen, dass sich der Pfad der eigenständigen CLI
+auf deinem Host auflöst.

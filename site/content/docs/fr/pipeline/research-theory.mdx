@@ -1,0 +1,69 @@
+---
+title: "/research-theory"
+description: "/research-theory — Construit le cadre conceptuel et théorique d'une question de recherche cadrée : théorie du changement, construits avec définitions opérationnelles et un diagramme de modèle conceptuel — l'étape de fondement théorique du pipeline /research, entre /research-spec et /research-sources."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rôle :** Investigateur principal (fondement théorique)
+**Position dans le pipeline :** intermédiaire
+
+Construit le cadre conceptuel et théorique fondamental d'une question de recherche cadrée — le fondement a priori auquel les étapes de recherche systématique et de synthèse se rapportent. Chaque construit est ancré dans la théorie primaire et chaque relation théorisée est énoncée sous une forme réfutable.
+
+## Invocation canonique
+
+```bash
+/research-theory
+```
+
+Avec arguments :
+
+```bash
+/research-theory [--suite-name NAME] [--override] [--framework NAME]
+```
+
+## Entrées
+
+Le `_spec/research-spec.md` de la suite (l'ensemble de questions cadrées et falsifiables produit par `/research-spec`).
+
+## Sorties
+
+`_inputs/theory.md` (le cadre conceptuel / théorique, la théorie du changement / modèle logique, les construits avec leurs définitions opérationnelles, et un diagramme de modèle conceptuel).
+
+## En aval
+
+/research-sources (consommateur en aval — la recherche systématique rapporte ses critères d'inclusion à ces construits).
+
+## Phases du flux de travail
+
+La commande suit le flux de travail standard du pipeline `/research` :
+
+1. **Charger le contexte** — Lire `_spec/research-spec.md`, les règles et tout état existant de la suite.
+2. **Cadrer le modèle conceptuel** — Définir les construits et leurs définitions opérationnelles ; ancrer chacun dans la théorie primaire.
+3. **Tracer la théorie du changement** — Construire le modèle logique reliant les construits aux résultats attendus ; énoncer chaque relation sous une forme réfutable.
+4. **Diagrammer le modèle** — Émettre un diagramme de modèle conceptuel que les étapes en aval référencent.
+5. **Vérifier les sorties** — Confirmer que chaque construit est ancré dans la théorie et que chaque relation est réfutable ; résoudre l'ambiguïté via le canal de requête structurée.
+6. **Émettre le cadre** — `_inputs/theory.md` plus le manifeste de transfert mis à jour.
+
+## Modes de défaillance
+
+| Symptôme | Cause | Récupération |
+|---------|-------|----------|
+| Le construit n'a pas de définition opérationnelle | Concept énoncé de manière abstraite | Définir le construit en termes mesurables ; citer la théorie primaire |
+| La relation théorisée n'est pas réfutable | Relation énoncée comme un truisme | Réénoncer la relation comme une affirmation falsifiable |
+| Entrée de spécification manquante | `/research-spec` pas encore exécuté | Exécuter d'abord `/research-spec` pour cadrer la question |
+
+## Exemples
+
+```bash
+# Construire le cadre théorique d'une question cadrée
+/research-theory --suite-name retrieval-latency
+
+# Ancrer à un cadre théorique nommé
+/research-theory --framework "information foraging theory"
+```
+
+## Renvois
+
+- [Aperçu du pipeline](/docs/pipeline)
+- [Référence des commandes](/docs/reference/commands)

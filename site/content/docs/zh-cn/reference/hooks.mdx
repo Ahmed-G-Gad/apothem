@@ -1,0 +1,69 @@
+---
+title: "钩子"
+description: "在 SessionStart、PreToolUse 和 Stop 上触发的工具事件处理器，加载用于强制执行 git 隔离和计划纪律的消息上下文。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+钩子在工具事件上触发，并加载助手将其视为附加系统提示词的消息上下文。接线位于
+Claude Code 的 `settings.json` 钩子块、Codex 的 `hooks.json` 钩子文件
+以及 Qwen Code 的 `settings.json` 钩子映射中。
+
+| 事件 | 超时 | 用途 |
+|-------|--------:|---------|
+| SessionStart | 30 秒 | 读取内存、检查计划状态、报告就绪情况 |
+| PreCompact | 30 秒 | 在压缩前验证状态已外部化 |
+| PostCompact | 30 秒 | 压缩后恢复工作状态 |
+| Stop | 60 秒 | 会话结束时的外部化 |
+| PreToolUse (Bash) | 10 秒 | Bash 校验——git 产物隔离 |
+| PreToolUse (Write/Edit/NotebookEdit/apply_patch) | 10 秒 | 计划引用隔离、frontmatter 检查 |
+
+## 分发器
+
+已安装的钩子条目通过绝对脚本路径调用分发器。设置模板携带 `${HARNESS_ROOT}` 令牌——
+`python "${HARNESS_ROOT}/apothem/hooks/dispatch.py" <event> [<message-name>]`
+——安装程序在安装时将其渲染为 harness 根目录的真实路径
+（Claude Code 和 Qwen Code 将分发器物化于
+`<harness-root>/apothem/hooks/` 下；Codex 则在 `<harness-root>/hooks/` 下）。
+分发器是一个独立的标准库脚本：它会自行引导 `sys.path`，
+因此宿主上无需可导入的 `apothem` 包。从源码检出运行时，模块形式
+`python -m apothem.hooks.dispatch <event>`（配合 `PYTHONPATH=src`）
+为开发运行相同的代码。分发器加载
+`hooks/lib/resolve_root.py` 进行生态根目录解析，并委托给
+`hooks/emit_hook_context.py` 和 `hooks/session_start_bootstrap.py`。
+
+## 消息上下文
+
+每个事件的 Markdown 上下文位于 `src/apothem/hooks/messages/` 下：
+
+- `postcompact.md`、`precompact.md`、`stop.md`
+- `pretooluse-bash.md`、`pretooluse-write.md`、`pretooluse-edit.md`、
+  `pretooluse-notebookedit.md`
+
+每个上下文文件在其事件触发且其上下文参数在设置文件中注册时由分发器加载。
+
+## 生成的钩子消息清单
+
+{/* apothem:generated-reference:start */}
+
+| Name | Description | Source |
+| --- | --- | --- |
+| `postcompact` | Post-compaction Blind Bootstrap (CM-24 §6.2). Restore working state from durable files; conversation context is now compressed. | [`src/apothem/hooks/messages/postcompact.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/postcompact.md) |
+| `posttooluse-proactive-compaction` | Proactive-compaction tracker for PostToolUse tool calls. | [`src/apothem/hooks/messages/posttooluse-proactive-compaction.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/posttooluse-proactive-compaction.md) |
+| `precompact` | Pre-compaction protocol (CM-24 §2.3). Externalize all in-conversation state BEFORE the harness compresses context. | [`src/apothem/hooks/messages/precompact.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/precompact.md) |
+| `pretooluse-askuserquestion-recommended` | Call-time `(Recommended)`-marker guard for `AskUserQuestion` tool calls. | [`src/apothem/hooks/messages/pretooluse-askuserquestion-recommended.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-askuserquestion-recommended.md) |
+| `pretooluse-bash-plan-guard` | Plans-Discipline write guard for Bash tool calls (companion to `pretooluse-write-plan-guard.md`). | [`src/apothem/hooks/messages/pretooluse-bash-plan-guard.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-bash-plan-guard.md) |
+| `pretooluse-bash` | CM-7 git-artifact isolation + M12 numeric-prefix discipline + M15 human-only authorship. | [`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-bash.md) |
+| `pretooluse-conformity` | &gt; Advisory: this hook reports; it does not block. Mechanical enforcement runs in CI. | [`src/apothem/hooks/messages/pretooluse-conformity.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-conformity.md) |
+| `pretooluse-dependency-guard` | Dependency-manifest supply-chain guard (advisory). | [`src/apothem/hooks/messages/pretooluse-dependency-guard.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-dependency-guard.md) |
+| `pretooluse-edit-header-guard` | SPDX-header inject guard for Edit tool calls. | [`src/apothem/hooks/messages/pretooluse-edit-header-guard.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-edit-header-guard.md) |
+| `pretooluse-edit` | Codebase isolation (Edit scope). | [`src/apothem/hooks/messages/pretooluse-edit.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-edit.md) |
+| `pretooluse-eval-guard` | Dynamic-eval / unsafe-deserialization guard — advisory prompt-injection defense. | [`src/apothem/hooks/messages/pretooluse-eval-guard.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-eval-guard.md) |
+| `pretooluse-notebookedit` | Codebase isolation (notebook scope). | [`src/apothem/hooks/messages/pretooluse-notebookedit.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-notebookedit.md) |
+| `pretooluse-write-header-guard` | SPDX-header inject guard for Write tool calls. | [`src/apothem/hooks/messages/pretooluse-write-header-guard.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-write-header-guard.md) |
+| `pretooluse-write-plan-guard` | Plans-Discipline write guard for Write / Edit / NotebookEdit tool calls. | [`src/apothem/hooks/messages/pretooluse-write-plan-guard.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-write-plan-guard.md) |
+| `pretooluse-write` | Codebase isolation + frontmatter compliance. | [`src/apothem/hooks/messages/pretooluse-write.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/pretooluse-write.md) |
+| `sessionstart` | Session-start conformity posture. | [`src/apothem/hooks/messages/sessionstart.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/sessionstart.md) |
+| `stop` | Session-end protocol (CM-14 + CM-24 §2.5 + CM-26 + CM-22 §2/§4). | [`src/apothem/hooks/messages/stop.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/hooks/messages/stop.md) |
+
+{/* apothem:generated-reference:end */}

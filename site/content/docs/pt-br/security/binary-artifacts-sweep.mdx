@@ -1,0 +1,57 @@
+---
+title: "Varredura de artefatos binários"
+description: "Varredura de artefatos binários do Apothem — zero binários compilados / empacotados rastreados no código-fonte. Evidência da verificação Binary-Artifacts do OpenSSF Scorecard."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+A verificação **Binary-Artifacts** do OpenSSF Scorecard confirma que a árvore de código-fonte não carrega nenhum artefato binário compilado / empacotado / opaco. Binários no código-fonte não são auditáveis e fornecem um ponto de apoio para ataques à cadeia de suprimentos: o binário incorpora código que a árvore de fontes não expõe, de modo que os revisores não conseguem inspecioná-lo antes do merge.
+
+## A postura do Apothem quanto a artefatos binários
+
+O Apothem é uma **árvore de código-fonte Python puro** sem nenhum artefato binário compilado, empacotado ou opaco rastreado no controle de versão. O repositório é auditável de ponta a ponta a partir do código-fonte.
+
+## Metodologia da varredura
+
+A varredura enumera os tipos de arquivo que o Scorecard considera binários e, em seguida, verifica que cada um está ausente do controle de versão:
+
+| Família de extensões | Descrição | Status no Apothem |
+|---|---|---|
+| `.exe`, `.dll`, `.so`, `.dylib` | Binários nativos compilados | ✅ Zero rastreados |
+| `.bin`, `.o`, `.a`, `.lib` | Arquivos-objeto / bibliotecas estáticas | ✅ Zero rastreados |
+| `.jar`, `.war`, `.ear` | Pacotes Java | ✅ Zero rastreados |
+| `.whl`, `.egg` | Distribuições Python | ✅ Zero rastreados (compiladas em `dist/`; ignoradas pelo gitignore) |
+| `.tar.gz`, `.zip` (distribuição compilada) | Arquivos comprimidos que carregam artefatos compilados | ✅ Zero rastreados |
+| `.class`, `.pyc`, `.pyo` | Bytecode compilado | ✅ Zero rastreados (`__pycache__/` ignorado pelo gitignore) |
+| `.crt`, `.pem`, `.key`, `.p12`, `.pfx` | Material criptográfico | ✅ Zero rastreados (negado no `.gitignore`) |
+
+## Classes de binários permitidas
+
+Duas classes restritas de artefatos binários SÃO permitidas no código-fonte:
+
+1. **Recursos de marca** — `assets/*.png`, `assets/*.ico`, `assets/favicon.*`. Esses são **deterministicamente regeneráveis** a partir dos mestres SVG em `assets/src/` via `scripts/dev/rebuild-assets.{sh,ps1}`. O Scorecard os trata como legítimos conforme sua isenção `image/png`.
+2. **Arquivos de fonte** — `assets/fonts/*.ttf`, `assets/fonts/*.woff2`. Arquivos de fonte empacotados com licenças documentadas; conforme a isenção `font/*` do Scorecard.
+
+Ambas as classes estão documentadas em [`site/content/docs/brand/index.mdx`](/docs/brand) e sua procedência fica registrada na receita de reconstrução de recursos.
+
+## Comando de verificação
+
+```shell
+# A partir da raiz do repositório apothem:
+git ls-files | grep -E '\\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
+```
+
+Esta invocação deve retornar **zero linhas**. Um resultado não vazio indica que um artefato binário foi rastreado no código-fonte — um achado de severidade ALTA que bloqueia o próximo lançamento.
+
+## Cadência de auditoria
+
+A varredura faz parte de:
+
+- **CI por PR** — o `.github/workflows/ci.yml` inclui uma etapa de grep de artefatos binários.
+- **Ponto de verificação por lançamento** — o runbook de engenharia de lançamento verifica a varredura antes de etiquetar.
+- **Execução semanal do Scorecard** — o fluxo de trabalho do OpenSSF Scorecard reconfirma que a verificação passa.
+
+## Referências
+
+- [OpenSSF Scorecard — verificação Binary-Artifacts](https://github.com/ossf/scorecard/blob/main/docs/checks.md#binary-artifacts)
+- [`.gitignore` do Apothem](https://github.com/ahmed-g-gad/apothem/blob/main/.gitignore) — a lista de negação que evita o check-in acidental de binários

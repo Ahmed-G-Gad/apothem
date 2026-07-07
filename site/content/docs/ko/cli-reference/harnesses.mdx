@@ -1,0 +1,93 @@
+---
+title: "harnesses"
+description: "apothem harnesses 명령 그룹에 대한 CLI 참조."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+등록된 하니스 어댑터를 나열하고 검사합니다.
+
+`harnesses`는 두 개의 하위 명령을 가진 명령 그룹입니다: `list`와 `show`.
+
+## 개요
+
+```
+apothem harnesses list [--quiet|-q] [--verbose|-v]
+                       [--format plain|json] [--json] [--no-color]
+apothem harnesses show NAME
+                       [--quiet|-q] [--verbose|-v]
+                       [--format plain|json] [--json] [--no-color]
+```
+
+## 하위 명령
+
+### `harnesses list`
+
+등록된 모든 하니스 어댑터를 나열합니다.
+
+| 옵션 | 설명 |
+|---|---|
+| `--quiet`, `-q` | 정보성 출력을 억제합니다. 오류만 내보냅니다. |
+| `--verbose`, `-v` | 추가 진단 출력을 내보냅니다. |
+| `--format plain\|json` | 출력 형식(기본값: `plain`). |
+| `--json` | `--format json`의 약어. |
+| `--no-color` | 출력에서 ANSI 색상 코드를 비활성화합니다. |
+| `-h`, `--help` | 도움말을 표시하고 종료합니다. |
+
+### `harnesses show NAME`
+
+특정 하니스 어댑터의 세부 정보를 표시합니다. `NAME`은 kebab-case 하니스
+식별자입니다. 사용 가능한 식별자를 보려면 `apothem harnesses list`를 실행하세요.
+
+| 옵션 | 설명 |
+|---|---|
+| `NAME` | 검사할 하니스 어댑터(필수 위치 인수). |
+| `--quiet`, `-q` | 정보성 출력을 억제합니다. 오류만 내보냅니다. |
+| `--verbose`, `-v` | 추가 진단 출력을 내보냅니다. |
+| `--format plain\|json` | 출력 형식(기본값: `plain`). |
+| `--json` | `--format json`의 약어. |
+| `--no-color` | 출력에서 ANSI 색상 코드를 비활성화합니다. |
+| `-h`, `--help` | 도움말을 표시하고 종료합니다. |
+
+## 예제
+
+```bash
+apothem harnesses list
+apothem harnesses list --json
+apothem harnesses show claude-code
+apothem harnesses show claude-code --json
+```
+
+등록된 하니스 ID는 다음과 같습니다:
+
+```text
+antigravity
+claude-code
+codebuddy
+codex
+cursor
+gemini-cli
+github-copilot
+glm
+hermes
+kimi-code
+kiro
+open-claw
+opencode
+qwen-code
+trae
+windsurf
+zed
+```
+
+## 종료 코드
+
+| 코드 | 의미 |
+|---|---|
+| 0 | 성공 |
+| 1 | 하니스를 찾을 수 없음(알 수 없는 `NAME`을 사용한 `harnesses show`) |
+
+## 참고
+
+- [apothem doctor](/docs/cli-reference/doctor) — 시스템 전역 설치 진단을 실행합니다
+- [apothem verify](/docs/cli-reference/verify) — 특정 하니스 설치를 확인합니다

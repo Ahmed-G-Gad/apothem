@@ -1,0 +1,99 @@
+---
+title: "CodeBuddy"
+description: "Apothem-Harness-Adapter für Tencent CodeBuddy (GA)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Anbieter:** Tencent
+**Installationsname:** `codebuddy`
+**Status:** GA
+**Native Konfiguration:** `<project>/.codebuddy/rules/apothem-rules.md`
+
+## Installation
+
+```bash
+apothem install --harness codebuddy --project /path/to/project
+```
+
+Der Adapter schreibt eine Regeldatei mit Projektgeltungsbereich aus der gemeinsamen
+Regel- und Governance-Oberfläche von Apothem.
+
+**Geschriebene Dateien:** `<project>/.codebuddy/rules/apothem-rules.md`
+
+## Zuordnung von Profil zu nativer Konfiguration
+
+Der Adapter liest das gemeinsame Profil von Apothem und rendert die Projekt-Regeldatei
+bei jeder Ausführung von `apothem install` oder `apothem update`. CodeBuddy liest jede
+`*.md`-Datei unter `.codebuddy/rules/` als Markdown mit optionalem YAML-Frontmatter
+(`alwaysApply`, `paths`, `enabled`) gemäß der
+[CodeBuddy-Rules-Dokumentation](https://www.codebuddy.ai/docs/ide/Rules); die Datei von
+Apothem trägt `alwaysApply: true`, sodass die Governance-Oberfläche bei jeder
+Interaktion angewendet wird. Das gemeinsame Profil ist die Quelle der Wahrheit;
+projektlokale Änderungen an der generierten Datei werden gesichert, bevor die nächste
+Synchronisierung den von Apothem verwalteten Inhalt ersetzt.
+
+## Kompatibilitätshinweise
+
+Die Regel-Oberfläche von CodeBuddy hat Projektgeltungsbereich unter
+`.codebuddy/rules/`. Der Adapter schreibt eine dedizierte `apothem-rules.md`-Datei, die
+neben allen vom Betreiber im selben Verzeichnis verfassten Regeldateien koexistiert.
+Die Projektgedächtnis-Datei `CODEBUDDY.md` und `.codebuddy/settings.json`
+(Berechtigungen, MCP) gehören dem Betreiber; Apothem schreibt sie nicht. Skills,
+Befehle, Agents und Hooks werden als Disziplin innerhalb der Regeldatei referenziert —
+CodeBuddy stellt für sie keine vom Adapter verwaltete Dateioberfläche bereit. Die
+Konventionen der Anbieter-Oberfläche, auf die sich der Adapter stützt, sind in
+`src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` fixiert und gegen die
+aktuelle CodeBuddy-Dokumentation als Snapshot erfasst.
+
+## Verifizierung
+
+```bash
+apothem verify --harness codebuddy --project /path/to/project
+```
+
+Der Befehl verify bestätigt, dass:
+
+1. Die native Konfiguration am erwarteten Pfad existiert.
+2. Die verwaltete Regeldatei vorhanden und nicht leer ist.
+3. Die adapterspezifische Verifizierungsroutine Erfolg meldet.
+
+## Aktualisierung
+
+```bash
+apothem update --harness codebuddy --project /path/to/project
+```
+
+Leitet die Projekt-Regeldatei aus dem aktuellen Zustand des gemeinsamen Profils neu ab.
+`install` und `update` sind idempotent — eine erneute Ausführung überschreibt die
+verwaltete Datei mit dem zuletzt gerenderten Inhalt.
+
+## Deinstallation
+
+```bash
+apothem uninstall --harness codebuddy --project /path/to/project
+```
+
+Entfernt die vom Adapter geschriebenen nativen Konfigurationsdateien und benennt die
+verwaltete Regeldatei in ein mit Zeitstempel versehenes Backup um. Das YAML des
+gemeinsamen Profils und die Apothem-Engine bleiben unberührt.
+
+## Konformitäts-Gate
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Fehlerbehebung
+
+| Symptom | Behebung |
+|---------|-----|
+| Konfigurationsdatei nicht gefunden | Führen Sie `apothem install --harness codebuddy --project /path/to/project` erneut aus |
+| Verifizierung fehlgeschlagen | Führen Sie `apothem update --harness codebuddy --project /path/to/project` aus und verifizieren Sie erneut |
+| Unerwarteter Konfigurationsinhalt | Prüfen Sie `~/.config/apothem/profile.yaml` oder `--profile PATH` und führen Sie `apothem update --harness codebuddy --project /path/to/project` erneut aus |
+
+## Konfigurationsschalter
+
+| Flag | Standard | Beschreibung |
+|------|---------|-------------|
+| `--dry-run` | `false` | Installation vorschauen, ohne Dateien zu schreiben. |

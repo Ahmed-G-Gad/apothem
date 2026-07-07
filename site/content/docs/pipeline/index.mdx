@@ -1,0 +1,133 @@
+---
+title: "Pipeline commands"
+description: "Apothem pipeline command reference — the /plan flow and audit command catalog."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem ships an architecture-aware `/plan` pipeline, a thirteen-stage
+`/research` pipeline, plus an eleven-command audit sequence — giving every
+project a structured path from raw prose to production-grade,
+multi-axis-reviewed code, and from a raw idea to a disseminated, peer-reviewed
+paper.
+
+## Pipeline overview
+
+```mermaid
+flowchart LR
+    accTitle: Plan pipeline command flow
+    accDescr: Left-to-right flowchart of the apothem plan pipeline from the spec stage through the generate and review stages, then through a conditional architecture-bearing decision that either runs the design stage or skips directly to the execute stage. The orthogonal audit stage wraps the spec-through-review span as a closed remediation loop.
+    A[/plan-spec] --> B[/plan-generate]
+    B --> C[/plan-review]
+    AUD[/plan-audit<br/>orthogonal: wraps spec → review] -.->|closed-loop remediation| A
+    C --> Q{Architecture-bearing suite?}
+    Q -->|yes| F[/plan-design<br/>emit _inputs/design.md]
+    Q -->|no| D[/plan-execute]
+    F --> D
+    D --> E[/plan-status]
+    D --> G[Audit review sequence]
+    G --> H[Completion milestone]
+```
+
+## The planning stages
+
+The pipeline ships as eight first-class slash commands, one per stage — each
+independently invocable as `/plan-<stage>`.
+
+| Stage | Role | Position |
+|-------|------|----------|
+| [/plan-spec](/docs/pipeline/plan-spec) | Forge — prose to spec | Head |
+| [/plan-generate](/docs/pipeline/plan-generate) | Generator — spec to plan suite | Mid-chain |
+| [/plan-review](/docs/pipeline/plan-review) | Auditor — forensic plan audit | Mid-chain |
+| [/plan-design](/docs/pipeline/plan-design) | Architect — `_inputs/design.md` for architecture-bearing suites | Conditional gate |
+| [/plan-execute](/docs/pipeline/plan-execute) | Executor — phase execution | Terminal |
+| [/plan-status](/docs/pipeline/plan-status) | Reporter — read-only status | Read-only |
+| [/plan-audit](/docs/pipeline/plan-audit) | Guardian — closed-loop wrap of spec → generate → review | Orthogonal (pre-execute) |
+| /plan-amend | Steward — re-entrant amendment of an existing suite | Re-entrant |
+
+`/plan-audit` is orthogonal to the linear flow, not a stage within it. It wraps
+`/plan-spec → /plan-generate → /plan-review` as a single closed loop, runs only
+the missing upstream stages, actively remediates findings, and leaves the suite
+ready for `/plan-execute`. It is distinct from the audit review sequence below,
+which audits an executed codebase rather than a plan suite.
+
+`/plan-design` is not a universal ceremony. `/plan-review` classifies whether
+the suite changes architecture-bearing surfaces. If yes, `/plan-design` emits
+the design trace that `/plan-execute` and `/architecture-review` consume. If no,
+the reviewed suite moves directly into execution.
+
+## The research pipeline
+
+The research pipeline ships as thirteen first-class slash commands, one per
+stage — each independently invocable as `/research-<stage>`, chained by a
+Sequence Gate and a Handoff Manifest, under ten rigor mandates (authoritative
+sources, reproducibility, falsifiability, citation integrity, preregistration,
+ethics / conflicts, statistical rigor, open-science / FAIR, reporting-guideline
+conformance, theoretical grounding / impact).
+
+```mermaid
+flowchart LR
+    accTitle: Research pipeline command flow
+    accDescr: Left-to-right flowchart of the apothem research pipeline from the ideate stage through spec, theory, sources, synthesis, proposal, study design, experiment, analysis, paper, and peer review to publish and disseminate, with a revision loop from review back to paper.
+    RI[/research-ideate] --> RS[/research-spec]
+    RS --> RT[/research-theory]
+    RT --> RSO[/research-sources]
+    RSO --> RSY[/research-synthesis]
+    RSY --> RPR[/research-proposal]
+    RPR --> RD[/research-design]
+    RD --> RE[/research-experiment]
+    RE --> RA[/research-analysis]
+    RA --> RP[/research-paper]
+    RP --> RR[/research-review]
+    RR --> RPU[/research-publish]
+    RPU --> RDI[/research-disseminate]
+    RR -.->|revision loop| RP
+```
+
+| Stage | Role | Position |
+|-------|------|----------|
+| [/research-ideate](/docs/pipeline/research-ideate) | Formulate the problem — candidate questions from a domain seed | Head |
+| [/research-spec](/docs/pipeline/research-spec) | Frame the question — falsifiable hypotheses + scope | Mid-chain |
+| [/research-theory](/docs/pipeline/research-theory) | Conceptual framework + theory-of-change | Mid-chain |
+| [/research-sources](/docs/pipeline/research-sources) | Systematic source collection | Mid-chain |
+| [/research-synthesis](/docs/pipeline/research-synthesis) | SOTA map + gap analysis | Mid-chain |
+| [/research-proposal](/docs/pipeline/research-proposal) | Objectives + feasibility + impact + preregistration plan | Mid-chain |
+| [/research-design](/docs/pipeline/research-design) | Study design + preregistration | Mid-chain |
+| [/research-experiment](/docs/pipeline/research-experiment) | Run + record, reproducible | Mid-chain |
+| [/research-analysis](/docs/pipeline/research-analysis) | Results + statistics | Mid-chain |
+| [/research-paper](/docs/pipeline/research-paper) | Top-tier paper draft | Mid-chain |
+| [/research-review](/docs/pipeline/research-review) | Peer-review-grade critique | Mid-chain |
+| [/research-publish](/docs/pipeline/research-publish) | Venue package + submission | Mid-chain |
+| [/research-disseminate](/docs/pipeline/research-disseminate) | Dissemination + impact + FAIR archival | Terminal |
+
+The `/research` wrapped-workflow orchestrator drives these stages from raw
+question to published paper (it is not itself a stage), checking each stage's
+output independently before the next stage builds on it; `--quick` runs
+`/research-sources` + `/research-synthesis` only for a single-shot cited report.
+
+The empirical stages (sources, design, experiment, analysis) and the writing
+stages (paper, review, publish, disseminate) additionally draw on
+operationalizing rigor surfaces — fair multi-method comparison, comparator
+provenance, an experiment-program scaffold, a compute-utilization plan, an
+opt-in autonomous experiment loop, a definition-of-done advancement gate, and
+blinding with staged disclosure — that add operational detail to the ten
+mandates without extending them.
+
+## Audit review sequence
+
+The `/audit` wrapped-workflow orchestrator sweeps all eleven dimensions below as a single parallel pass — the audit-fortress analogue of `/plan` and `/research` — synthesizing one deduplicated, severity-triaged findings report (report-only; remediation routes to `/elevate`). Each dimension is also individually invocable.
+
+The `/fortress` wrapped-workflow orchestrator closes the loop `/audit` reports: it detects through `/audit`, verifies each finding, remediates every survivor at its owning surface, re-audits in a bounded loop, and gates the result through `/release-readiness` — the production-hardening analogue of `/plan` and `/research`.
+
+| Command | Quality area |
+|---------|--------------|
+| [/code-review](/docs/pipeline/code-review) | Code quality |
+| [/code-audit](/docs/pipeline/code-audit) | Code corpus |
+| [/security-audit](/docs/pipeline/security-audit) | OWASP / ASVS |
+| [/perf-audit](/docs/pipeline/perf-audit) | Performance |
+| [/architecture-review](/docs/pipeline/architecture-review) | Architecture |
+| [/ux-review](/docs/pipeline/ux-review) | Developer experience |
+| [/a11y-audit](/docs/pipeline/a11y-audit) | Accessibility |
+| [/docs-review](/docs/pipeline/docs-review) | Documentation |
+| [/dependency-audit](/docs/pipeline/dependency-audit) | Dependencies |
+| [/supply-chain-audit](/docs/pipeline/supply-chain-audit) | Supply chain |
+| [/threat-model-audit](/docs/pipeline/threat-model-audit) | Threat model |

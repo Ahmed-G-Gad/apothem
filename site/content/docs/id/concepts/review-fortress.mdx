@@ -1,0 +1,61 @@
+---
+title: "Urutan audit peninjauan"
+description: "Urutan audit sebelas-command yang memeriksa Apothem sebelum rilis."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Urutan audit peninjauan adalah sapuan penjaminan-mutu sebelas-command
+yang memeriksa sebuah proyek sebelum rilis. Setiap command mengaudit satu area mutu dan
+memunculkan temuan yang harus diperbaiki atau ditangani secara eksplisit.
+
+Dua orkestrator kanonik menggerakkan kesebelas dimensi ini. `/audit` menjalankannya
+secara paralel sebagai satu lintasan hanya-laporan — ia menghasilkan laporan temuan
+yang terdeduplikasi dan tertriase menurut tingkat keparahan, dan tidak pernah
+menyunting kode sumber. `/fortress` adalah loop remediasi tertutup (deteksi →
+verifikasi → remediasi → audit-ulang → gerbang) yang mengeraskan proyek hingga
+keadaan yang diatur gerbang-rilis. Setiap dimensi juga tetap dapat dipanggil secara
+terpisah.
+
+## Sebelas area audit
+
+| Command | Sumbu | Standar |
+|---------|------|----------|
+| /code-review | Kualitas kode | Tinjauan kriya per-berkas |
+| /code-audit | Korpus kode | Forensik lintas-berkas |
+| /security-audit | Keamanan | OWASP ASVS v4 + Top 10 |
+| /perf-audit | Performa | Core Web Vitals + metode USE |
+| /architecture-review | Arsitektur | Kesesuaian artefak desain |
+| /ux-review | Pengalaman pengembang | Ergonomi CLI + onboarding |
+| /a11y-audit | Aksesibilitas | WCAG 2.2 AA |
+| /docs-review | Dokumentasi | Mutu sepuluh-dimensi |
+| /dependency-audit | Dependensi | Lisensi + CVE + kesegaran |
+| /supply-chain-audit | Rantai pasok | SLSA + Sigstore + SBOM |
+| /threat-model-audit | Model ancaman | STRIDE + PASTA |
+
+## Gerbang kesiapan-rilis
+
+Urutan ini berkontribusi pada gerbang kesiapan-rilis:
+
+- **Gerbang lokal:** Pemeriksaan kesesuaian lokal lolos.
+- **Gerbang GitHub** (pra-cutover): Verifikasi sisi-GitHub — alur kerja CI hijau pada setiap
+  commit, setiap pemeriksaan.
+- **Gerbang audit:** Urutan peninjauan penuh selesai — kesebelas area
+  diaudit, temuan ditangani, butir pengawasan terdokumentasi.
+
+## Loop remediasi
+
+Command audit bersifat hanya-laporan: ia memunculkan temuan, tidak pernah
+menerapkan perbaikan. Remediasi berjalan melalui `/fortress`, loop tertutup yang
+mengikuti pola iterasi-hingga-hijau: temuan ditriase dan diverifikasi, perbaikan
+diterapkan pada permukaan pemilik setiap temuan, audit dijalankan ulang, dan loop
+berlanjut sampai temuan bersih dan gerbang rilis lolos. Elevasi seluruh-repositori
+ke praktik-terbaik saat ini berjalan melalui `/elevate`.
+
+## Mengapa urutan ini ada
+
+Mutu perangkat lunak menurun di sepanjang beberapa dimensi sekaligus. Satu peninjauan tunggal
+dapat melewatkan cacat yang berada di antara kualitas kode, keamanan, performa,
+arsitektur, aksesibilitas, dokumentasi, postur dependensi, dan postur rantai
+pasok. Urutan audit menerapkan lensa-lensa itu secara terpisah sehingga
+gerbang rilis melihat profil risiko secara penuh.

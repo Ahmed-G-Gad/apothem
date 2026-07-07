@@ -1,0 +1,60 @@
+---
+title: "규칙 작성"
+description: "Apothem 동작 규칙을 작성하고, 범위를 지정하고, 유지 관리합니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+규칙은 `src/apothem/rules/`에 있는 `.md` 확장자의 Markdown 파일입니다.
+
+## 규칙 프런트매터
+
+```yaml
+---
+name: "..."
+description: "..."
+pathFilter: ""            # empty string for always-on; a glob for path-filtered
+alwaysApply: true         # true for always-on; false for path-filtered
+---
+```
+
+## 규칙 범위
+
+| 범위 | 적용 시점 |
+|-------|-------------|
+| `always-on` | 모든 세션, 모든 파일 |
+| `path-filtered` | 활성 파일이 `path-filter`와 일치할 때만 |
+| `operator-selected` | 운영자가 settings.json에서 명시적으로 활성화 |
+
+## 예시 규칙
+
+```markdown
+---
+name: "python-conventions"
+description: "Python style conventions for this project"
+pathFilter: "**/*.py"
+alwaysApply: false
+---
+
+# Python conventions
+
+- Use type annotations on all public functions.
+- Maximum line length: 88 characters.
+- Prefer explicit over implicit.
+```
+
+## 규칙을 하네스에 적용
+
+규칙을 작성한 후 설치된 각 하네스 어댑터를 업데이트하세요. `apothem harnesses list`를
+실행하여 설치된 집합을 확인한 다음, 하네스마다 한 번씩 update를 호출합니다:
+
+```bash
+apothem update --harness claude-code
+apothem update --harness cursor
+```
+
+## 규칙 검증
+
+```bash
+python -m apothem.conformity.gate --check frontmatter
+```

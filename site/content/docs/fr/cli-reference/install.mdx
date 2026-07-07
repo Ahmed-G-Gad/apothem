@@ -1,0 +1,124 @@
+---
+title: "install"
+description: "Référence de la CLI pour la commande apothem install."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Installe la configuration d'un adaptateur de harness à partir du profil partagé.
+
+## Synopsis
+
+```
+apothem install --harness NAME|all [--profile PATH] [--dry-run]
+                 [--project PATH]
+                 [--quiet|-q] [--verbose|-v]
+                 [--format plain|json] [--json] [--no-color]
+```
+
+Charge et valide le profil partagé, sélectionne un adaptateur nommé ou l'ensemble `all` de tout le registre, valide le plan de matérialisation, et écrit la configuration native du harness ainsi que les cohortes de support. Les adaptateurs à portée de projet nécessitent `--project PATH`.
+
+L'alias en forme continue `apothem installing` se résout vers le même gestionnaire.
+
+## Aperçu du rayon d'impact
+
+`install --harness all` se ramifie en portées mixtes : les adaptateurs à portée de projet écrivent sous la racine `--project` fournie, tandis que les adaptateurs à portée d'utilisateur écrivent sous votre répertoire personnel — en dehors de cette racine. Avant qu'un fichier ne soit écrit, la commande affiche les cibles concrètes regroupées sous deux en-têtes : celles qui se trouvent à l'intérieur de la racine du projet et celles qui se trouvent sous votre répertoire personnel.
+
+Lorsque la sélection écrit en dehors de la racine du projet, une confirmation interactive protège les écritures enracinées dans le répertoire personnel. `--yes`, un shell non interactif (sans TTY), `--dry-run` et `--format json` poursuivent chacun sans demander ; `--dry-run` et `--format json` n'écrivent rien. Refuser l'invite annule avant qu'un fichier ne soit écrit.
+
+## Notes sur les capacités
+
+Chaque adaptateur ne projette que les capacités que son harness prend en charge nativement ; les capacités sans surface native sont signalées, et non discrètement abandonnées. En mode plain, il s'agit d'une seule note groupée par harness (par exemple `Note: <harness> - 9 capabilities not projected; pass --verbose for detail`) ; sous `--verbose`, chaque capacité affiche sa propre ligne de justification. L'enveloppe `--format json` porte toujours le tableau `warnings` complet, quel que soit le niveau de détail.
+
+## Options
+
+| Option | Description |
+|---|---|
+| `--harness NAME` | Adaptateur de harness à installer, ou `all` pour l'ensemble de tout le registre (obligatoire). Exécutez `apothem harnesses list` pour les noms enregistrés. |
+| `--profile PATH` | Chemin vers le YAML du profil partagé. Par défaut : `~/.config/apothem/profile.yaml`. |
+| `--dry-run` | Prévisualise l'installation sans écrire de fichiers. |
+| `--project PATH` | Racine de projet pour les harness à portée de projet. |
+| `--quiet`, `-q` | Supprime la sortie informative ; seules les erreurs sont émises. |
+| `--verbose`, `-v` | Affiche la justification de chaque capacité non projetée au lieu de la note groupée par harness. |
+| `--format plain\|json` | Format de sortie (par défaut : `plain`). |
+| `--json` | Raccourci pour `--format json`. |
+| `--no-color` | Désactive les codes de couleur ANSI dans la sortie. |
+| `-h`, `--help` | Affiche l'aide et quitte. |
+
+## Sortie JSON
+
+Lorsque `--json` (ou `--format json`) est fourni, un seul document JSON est écrit sur stdout :
+
+```json
+{
+  "status": "success",
+  "command": "install",
+  "action": "installed",
+  "harness": "claude-code",
+  "profile_path": "C:\\Users\\Example\\.config\\apothem\\profile.yaml",
+  "project": null,
+  "files_written": ["C:\\Users\\Example\\.claude\\settings.json"],
+  "results": [],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+Pour `--dry-run` :
+
+```json
+{
+  "status": "dry_run",
+  "command": "install",
+  "action": "dry_run",
+  "harness": "claude-code",
+  "files_written": [],
+  "results": [],
+  "warnings": [],
+  "error": null
+}
+```
+
+Les erreurs de validation attendues utilisent la même enveloppe et incluent un objet error :
+
+```json
+{
+  "status": "error",
+  "command": "install",
+  "harness": "all",
+  "files_written": [],
+  "error": {
+    "code": "project.required",
+    "field": "project",
+    "reason": "project-scope harnesses require --project: cursor, gemini-cli, github-copilot, windsurf.",
+    "fix": "Pass --project PATH or select only user-scope harnesses."
+  }
+}
+```
+
+## Exemples
+
+```bash
+apothem install --harness claude-code
+apothem install --harness claude-code --dry-run
+apothem install --harness cursor --project . --profile ~/profile.yaml --json
+apothem install --harness all --project . --dry-run --json
+apothem Installing --harness claude-code   # continuous-form alias
+apothem installing --harness claude-code   # lowercase variant
+```
+
+## Codes de sortie
+
+| Code | Signification |
+|---|---|
+| 0 | Adaptateur installé avec succès ou dry-run planifié sans erreur |
+| 1 | Erreur attendue de validation, profil, harness, projet ou adaptateur |
+| 2 | Matérialisation partielle du lot après au moins une écriture |
+
+## Voir aussi
+
+- `apothem installing` — alias en forme continue de cette commande (documenté ici ; la CLI accepte les deux formes)
+- [apothem update](/docs/cli-reference/update) — réapplique le profil actuel à un harness
+- [apothem verify](/docs/cli-reference/verify) — confirme que l'adaptateur est actif
+- [Bien démarrer](/docs/install) — guide d'installation complet

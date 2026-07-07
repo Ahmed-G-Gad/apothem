@@ -1,0 +1,70 @@
+---
+title: "/research-analysis"
+description: "/research-analysis — Analyse les données brutes selon le plan préenregistré : tests planifiés, tailles d'effet avec intervalles de confiance, contrôles de robustesse et déviations divulguées."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rôle :** Chercheur principal (analyse)
+**Position dans le pipeline :** milieu de chaîne
+
+Analyse les données brutes selon le plan préenregistré — exécute les tests statistiques planifiés, rapporte les tailles d'effet avec intervalles de confiance (pas seulement les valeurs p), applique la correction pour comparaisons multiples le cas échéant, exécute des contrôles de robustesse / sensibilité, et divulgue chaque déviation par rapport au préenregistrement.
+
+## Invocation canonique
+
+```bash
+/research-analysis
+```
+
+Avec arguments :
+
+```bash
+/research-analysis [path/to/research-suite/]
+```
+
+## Entrées
+
+Les données brutes à l'emplacement naturel de l'hôte enregistré par l'étape d'expérience, plus `_inputs/preregistration.md` (le plan d'analyse figé).
+
+## Sorties
+
+`_outputs/analysis.md` (les tests préenregistrés avec tailles d'effet et IC, la correction pour comparaisons multiples, les contrôles de robustesse et les déviations divulguées) + figures / tableaux à un emplacement naturel de l'hôte.
+
+## En aval
+
+/research-paper (consommateur en aval)
+
+## Phases du flux de travail
+
+La commande suit le flux de travail standard du pipeline `/research` :
+
+1. **Charger le contexte** — Lire les données brutes et le préenregistrement.
+2. **Vérifier la Barrière de séquence** — Confirmer que les sorties de l'expérience existent ; sinon, s'arrêter avec `Blocked: run /research-experiment first`.
+3. **Analyser** — Exécuter les tests préenregistrés ; rapporter les tailles d'effet + IC ; corriger pour comparaisons multiples ; exécuter les contrôles de robustesse / sensibilité.
+4. **Divulguer les déviations** — Consigner chaque écart par rapport au plan préenregistré.
+5. **Mettre à jour le manifeste de transfert** — Consigner le chemin de l'analyse et les figures / tableaux.
+6. **Émettre l'analyse** — `_outputs/analysis.md` + figures / tableaux.
+
+## Seuil de rigueur
+
+Les résultats stochastiques sont rapportés comme le meilleur, la moyenne, la médiane, l'écart-type et le pire sur l'ensemble des répétitions, avec des courbes de convergence et des tracés de distribution. Les comparaisons emploient des tests non paramétriques — un test des rangs signés apparié deux à deux, un test de rangs omnibus avec correction post-hoc entre méthodes — rapportés avec une taille d'effet de supériorité stochastique et un diagramme de différence critique. Un résultat n'accède à l'article que lorsqu'il franchit la porte d'avancement : il bat ses comparateurs de manière convaincante et significative, et le franchissement est consigné dans un cahier d'exécution auditable.
+
+## Modes de défaillance
+
+| Symptôme | Cause | Récupération |
+|---------|-------|----------|
+| Blocked: run /research-experiment first | Aucune donnée brute | Exécuter `/research-experiment` pour produire les données + le journal |
+| Valeur p rapportée sans taille d'effet | Rapport statistique incomplet | Rapporter les tailles d'effet + intervalles de confiance |
+| Déviation d'analyse non divulguée | Le plan a dévié en silence | Divulguer la déviation par rapport au préenregistrement |
+
+## Exemples
+
+```bash
+# Analyser les données brutes selon le plan préenregistré
+/research-analysis path/to/research-suite/
+```
+
+## Références croisées
+
+- [Aperçu du pipeline](/docs/pipeline)
+- [Référence des commandes](/docs/reference/commands)

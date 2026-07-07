@@ -1,0 +1,46 @@
+---
+title: "Apothem vs konfigurasi Windsurf mentah"
+description: "Memelihara aturan Windsurf secara manual di .devin/rules/ versus merendernya dari profil bersama apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Windsurf membaca aturan dari direktori `.devin/rules/`. Adaptor windsurf
+Apothem merender aturan berbasis direktori dari profil bersama. Halaman ini
+mengontraskan pemeliharaan manual konfigurasi tersebut dengan mengelolanya
+melalui apothem.
+
+## Perbandingan upaya
+
+| Tugas | Konfigurasi manual mentah | Dikelola Apothem |
+| ---- | --------------- | --------------- |
+| Menulis aturan | Menulis tangan setiap berkas di bawah `.windsurf/rules/` | Dirender dari korpus bersama |
+| Menjaga satu format aturan | Memilih manual antara `.windsurf/rules/` dan berkas tunggal `.windsurfrules` | Adaptor hanya menulis `.devin/rules/` |
+| Menjaga aturan selaras dengan lingkungan lain | Manual, per alat | Otomatis saat `apothem update` |
+| Memverifikasi konfigurasi sudah benar | Inspeksi manual | `apothem verify --harness windsurf` |
+
+## Apa yang dikelola apothem
+
+Adaptor windsurf merender aturan bersama ke direktori `.devin/rules/`; ia
+tidak menulis berkas tunggal `.windsurfrules`. Windsurf tidak memiliki hook
+PreToolUse, jadi maksud pagar pengaman berada di dalam prosa aturan, bukan pada
+titik intersepsi panggilan alat. Setiap perubahan pada aturan bersama merender
+ulang direktori pada `apothem update` berikutnya.
+
+## Jalur migrasi
+
+1. Jalankan `apothem profile init` untuk membuat profil bersama jika Anda belum
+   melakukannya.
+2. Pindahkan aturan dari `.windsurf/rules/` yang ada (dan berkas tunggal
+   `.windsurfrules` mana pun) ke korpus bersama.
+3. Jalankan `apothem install --harness windsurf` untuk merender direktori
+   `.devin/rules/`.
+4. Jalankan `apothem verify --harness windsurf` untuk memastikan konfigurasi
+   sudah terpasang.
+5. Gunakan `apothem update --harness windsurf` untuk setiap perubahan
+   berikutnya.
+
+## Baca berikutnya
+
+- [Referensi adaptor Windsurf](/docs/harnesses/windsurf)
+- [Ikhtisar perbandingan](/docs/comparison)

@@ -1,0 +1,94 @@
+---
+title: "Gemini CLI"
+description: "Адаптер инструмента Apothem для Gemini CLI (GA)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Поставщик:** Google
+**Имя установки:** `gemini-cli`
+**Статус:** GA
+**Нативная конфигурация:** локальные для проекта `GEMINI.md` и `.gemini/`
+
+## Установка
+
+```bash
+apothem install --harness gemini-cli --project /path/to/project
+```
+
+Адаптер имеет область проекта. Он устанавливает `GEMINI.md` проекта, преобразует
+команды Apothem в слеш-команды Gemini в формате TOML, нормализует определения
+локальных помощников и размещает ненативные наборы поддержки в `.gemini/.apothem/support/`.
+
+**Записанные файлы:**
+
+```text
+GEMINI.md
+.gemini/commands/*.toml
+.gemini/agents/*.md
+.gemini/skills/
+.gemini/.apothem/support/
+```
+
+## Сопоставление профиля с нативной конфигурацией
+
+Адаптер читает общие наборы Apothem и направляет каждый через совместимую с Gemini
+поверхность. Правила Markdown, шаблоны и материал хуков остаются в
+`.gemini/.apothem/support/`, потому что это материал поддержки, а не нативный для Gemini
+каталог правил.
+
+## Заметки о совместимости
+
+`~/.gemini/` остаётся пользовательской территорией для инструментов, использующих
+глобальный профиль Gemini. Адаптер Gemini CLI записывает только в проект,
+переданный через `--project`.
+
+## Проверка
+
+```bash
+apothem verify --harness gemini-cli --project /path/to/project
+```
+
+Команда verify подтверждает, что:
+
+1. Нативная конфигурация существует по ожидаемому пути.
+2. Все обязательные поля из общего профиля присутствуют.
+3. Специфичная для адаптера процедура проверки сообщает об успехе.
+
+## Обновление
+
+```bash
+apothem update --harness gemini-cli --project /path/to/project
+```
+
+Обновляет `GEMINI.md`, преобразованные команды, определения локальных помощников,
+установленные навыки и дерево поддержки `.gemini/.apothem/support/`.
+
+## Удаление
+
+```bash
+apothem uninstall --harness gemini-cli --project /path/to/project
+```
+
+Удаляет файлы нативной конфигурации, записанные адаптером.
+YAML общего профиля и движок Apothem не затрагиваются.
+
+## Шлюз соответствия
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Устранение неполадок
+
+| Симптом | Исправление |
+|---------|-----|
+| Файл конфигурации не найден | Повторно запустите `apothem install --harness gemini-cli --project /path/to/project` |
+| Проверка не пройдена | Запустите `apothem update --harness gemini-cli --project /path/to/project`, затем проверьте снова |
+| Неожиданное содержимое конфигурации | Проверьте `~/.config/apothem/profile.yaml` или `--profile PATH`, затем повторно запустите `apothem update --harness gemini-cli --project /path/to/project` |
+
+## Регуляторы конфигурации
+
+| Флаг | По умолчанию | Описание |
+|------|---------|-------------|
+| `--dry-run` | `false` | Предпросмотр установки без записи файлов. |

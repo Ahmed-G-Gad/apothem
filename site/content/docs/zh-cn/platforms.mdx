@@ -1,0 +1,68 @@
+---
+title: "平台"
+description: "Apothem 支持的操作系统、shell 与安装器脚本，以及自包含运行时所需的系统 Python 前置条件。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem 附带两个安装器脚本，两者合在一起覆盖了现代开发者的桌面与
+服务器矩阵。没有平台特定的构建：引擎是一个
+[自包含运行时](/docs/architecture/self-contained-runtime)，它从自己的源码树
+以内置依赖运行，因此平台支持恰好就是两个安装器之一能够放置该源码树
+并运行它的那组主机。另外几条安装路径进一步拓宽了矩阵：工具原生
+插件与扩展可在其宿主工具能运行的任何地方运行，而 npx 形式
+（`npx @ahmed-g-gad/apothem`）可在任何装有 Node.js 18+ 的操作系统上运行。
+
+## 操作系统与 shell 矩阵
+
+| 操作系统系列 | 支持的 shell | 安装器脚本 |
+| --------- | ---------------- | ---------------- |
+| macOS | POSIX `bash`（系统自带的 bash 或用户安装的更新版 bash） | `install.sh` |
+| Linux | POSIX `bash` | `install.sh` |
+| 适用于 Linux 的 Windows 子系统（WSL2） | POSIX `bash` | `install.sh` |
+| BSD（FreeBSD、OpenBSD、NetBSD） | POSIX `bash` | `install.sh` |
+| Termux（Android） | POSIX `bash` | `install.sh` |
+| ChromeOS Linux 容器（Crostini） | POSIX `bash` | `install.sh` |
+| Windows | Windows PowerShell 5.1+ | `install.ps1` |
+| 任何装有 PowerShell 7+ 的平台 | PowerShell 7+（跨平台） | `install.ps1` |
+
+两个脚本彼此功能对等。`install.sh` 需要一个 POSIX `bash`。`install.ps1`
+需要 Windows PowerShell 5.1 或更高版本，或者 PowerShell 7 本身所支持的
+任何平台上的 PowerShell 7+ —— 包括 macOS 与 Linux，在这些平台上它是
+`install.sh` 的替代选择。
+
+## 唯一的前置条件：系统 Python
+
+Apothem 不安装任何 Python 软件包。引擎的导入是针对你已有的解释器运行的，
+并将捆绑的源码前置到 `PYTHONPATH`。每个安装器在做任何其他事情之前都会
+检查该前置条件：
+
+- **CPython 3.10 或更新版本。** 安装器会探测 `python3`、`python` 以及带
+  版本号的名称（从 `python3.14` 到 `python3.10`），接受第一个报告版本
+  ≥ 3.10 的解释器。在 Windows 上它会拒绝 Microsoft Store 启动器垫片，
+  且捆绑的 `find-python` 定位器施加相同的下限。
+- **运行时库可导入。** 引擎从系统解释器导入 `click` 与 `rich`；其余第三方依赖已随源码树一并打包（vendored）。安装脚本会验证二者均可导入，列出缺失项，并提出代你安装缺失的前置依赖 — 经你确认，或使用 `--yes` / `APOTHEM_AUTO_INSTALL_DEPS=1` 自动安装。
+- **`git`** 仅在网络安装时才需要（脚本会克隆源码树）。从检出进行的
+  本地安装不需要 `git`。
+
+如果解释器、库或 `git` 缺失，安装器会带着一条诊断信息退出，准确指明
+需要提供什么，而不是猜测或改动你的环境。
+
+## 一个平台如何获得支持
+
+当以下两点都成立时，一个平台即获得支持：
+
+1. 两个安装器之一能在其上运行 —— 即该主机拥有一个 POSIX `bash`
+   （`install.sh`）或一个受支持的 PowerShell（`install.ps1`）。
+2. 一个 `click` 与 `rich` 可导入的 CPython 3.10+ 解释器能在其上运行。
+
+没有任何编译组件、没有原生扩展、也没有按平台划分的二进制文件。同一份
+源码树在解释器能运行的任何地方都能运行，因此上面的矩阵就是关于支持的
+完整且准确的陈述 —— 不作更多声称。
+
+## 推荐的下一步
+
+**为你的平台运行安装器** —— 在 POSIX shell 上运行
+`curl -fsSL https://apothem.ahmedgad.com/install.sh | bash`，或在 PowerShell 上
+运行 `irm https://apothem.ahmedgad.com/install.ps1 | iex` —— 请先确认你的 PATH
+上有一个 CPython 3.10+ 解释器。

@@ -1,0 +1,104 @@
+---
+title: "status"
+description: "apothem status コマンドの CLI リファレンス。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+登録済みの各ハーネスについて、インストール、検証、ドリフトの状態を報告します。
+
+## 構文
+
+```
+apothem status [--project PATH]
+               [--quiet|-q] [--verbose|-v]
+               [--format plain|json] [--json] [--no-color]
+```
+
+`status` は読み取り専用の検査コマンドです。登録済みのハーネスアダプターを 1 つずつ走査し、各ハーネスについて 3 つの事実を報告します。インストールされているかどうか、その受け持つターゲットが検証されるかどうか、そしてインストールされた構成が共有プロファイルからドリフトしているかどうかです。ディスクには何も書き込みません。
+
+各ハーネスについて、`status` は次を報告します。
+
+| 列 | 意味 |
+|---|---|
+| `installed` | アダプターの受け持つ構成がそのターゲットパスに存在する。 |
+| `verified` | アダプターの受け持つターゲットが存在し、有効である。 |
+| `drift` | プロファイル忠実度の判定（下記参照）。 |
+
+`drift` の値は次のいずれかです。
+
+| 値 | 意味 |
+|---|---|
+| `in-sync` | インストールされた構成は、新たに投射された共有プロファイルをそのまま携えている。 |
+| `drift` | ハーネスはインストールされているが、その投射されたプロファイル内容が現在の共有プロファイルと一致しなくなっている。`apothem install` を再実行して再投射してください。 |
+| `absent` | ハーネスがインストールされていないため、比較対象がない。 |
+| `needs-project` | プロジェクトスコープのハーネスが `--project` なしで報告されたため、そのターゲットを解決できない。検査するには `--project PATH` を渡してください。 |
+
+ドリフトは報告されますが、エラーとして扱われることはありません。1 つ以上のハーネスが `drift` を報告しても、`status` は 0 で終了します。ドリフトはあなたのセットアップに関する事実であり、コマンドの失敗ではありません。
+
+共有プロファイルを読み込めない場合、インストール済みのハーネスについてはドリフトが `absent` に降格し（installed/verified の事実は引き続き報告されます）、走査を中止することはありません。
+
+## オプション
+
+| オプション | 説明 |
+|---|---|
+| `--project PATH` | プロジェクトスコープのハーネス向けのプロジェクトルート。指定しない場合、プロジェクトスコープのハーネスは `needs-project` を報告します。 |
+| `--quiet`, `-q` | 情報出力を抑制し、エラーのみを発します。 |
+| `--verbose`, `-v` | 追加の診断出力を発します。 |
+| `--format plain\|json` | 出力形式（デフォルト: `plain`）。 |
+| `--json` | `--format json` の短縮形。 |
+| `--no-color` | 出力中の ANSI カラーコードを無効にします。 |
+| `-h`, `--help` | ヘルプを表示して終了します。 |
+
+## JSON 出力
+
+`--json` のエンベロープは、登録済みのハーネスごとに 1 行の結果を携えます。各行は、文書化されたキー `harness`、`installed`、`verified`、`drift` を携えます。
+
+```json
+{
+  "status": "success",
+  "command": "status",
+  "action": "status",
+  "harness": "all",
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "installed": true,
+      "verified": true,
+      "drift": "in-sync"
+    },
+    {
+      "harness": "cursor",
+      "installed": false,
+      "verified": false,
+      "drift": "needs-project"
+    }
+  ],
+  "warnings": [],
+  "error": null
+}
+```
+
+アダプターごとの障害分離: 単一のアダプターが自身の状態を報告する際に例外を発生させた場合、そのハーネスの行は `outcome: "error"` と `message` を携え、残りのハーネスは通常どおり報告し、プロセスはコード 2 で終了します。
+
+## 例
+
+```bash
+apothem status
+apothem status --project .
+apothem status --json
+```
+
+## 終了コード
+
+| コード | 意味 |
+|---|---|
+| 0 | 状態を報告した（ドリフトは報告されるものであり、エラーではない） |
+| 2 | 少なくとも 1 つのアダプターが自身の状態を報告できなかった |
+
+## 関連項目
+
+- [apothem verify](/docs/cli-reference/verify) — 単一のハーネスのインストールを検証する
+- [apothem diff](/docs/cli-reference/diff) — ハーネスの保留中の変更をプレビューする
+- [apothem harnesses](/docs/cli-reference/harnesses) — 登録済みのハーネスを一覧表示し検査する

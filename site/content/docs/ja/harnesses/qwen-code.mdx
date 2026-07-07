@@ -1,0 +1,95 @@
+---
+title: "Qwen Code"
+description: "Qwen Code（ベータ）向けの Apothem ツールアダプター。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**ベンダー：** Alibaba Cloud
+**インストール名：** `qwen-code`
+**ステータス：** ベータ
+**ネイティブ構成：** `~/.qwen/`
+
+## インストール
+
+```bash
+apothem install --harness qwen-code
+```
+
+アダプターは、Qwen Code の設定を書き込み、`QWEN.md` コンテキストアンカーを
+インストールし、Apothem のフックディスパッチャーを登録し、Apothem コマンドを
+Qwen の Markdown コマンドファイルに変換し、スキルを SKILL.md ディレクトリとして
+インストールし、ヘルパー定義を Qwen のサブエージェントとして適応させます。
+
+**書き込まれるファイル：**
+
+```text
+~/.qwen/settings.json
+~/.qwen/QWEN.md
+~/.qwen/commands/
+~/.qwen/skills/
+~/.qwen/agents/
+~/.qwen/.apothem/support/{rules,templates,hooks}/
+```
+
+## プロファイルからネイティブ構成へのマッピング
+
+アダプターは、コンテキストとフック向けに文書化された `settings.json` キーを
+レンダリングし、`QWEN.md` を書き込み、Apothem のコマンド、スキル、ヘルパー定義を
+Qwen Code のネイティブな探索ディレクトリに織り込みます。ルール、テンプレート、
+およびフックのソース素材は、`~/.qwen/.apothem/support/` 配下のサポート素材として残ります。
+
+## 互換性に関する注意
+
+`~/.qwen/.apothem/support/` は、`QWEN.md` と設定のフックコマンドによって参照される
+サポート素材です。これはベンダー所有の探索名前空間ではありません。
+
+## 検証
+
+```bash
+apothem verify --harness qwen-code
+```
+
+verify コマンドは次のことを確認します。
+
+1. ネイティブ構成が想定パスに存在すること。
+2. 共有プロファイルのすべての必須フィールドが存在すること。
+3. アダプター固有の検証ルーチンが成功を報告すること。
+
+## 更新
+
+```bash
+apothem update --harness qwen-code
+```
+
+`settings.json`、`QWEN.md`、ネイティブコマンド、スキル、サブエージェント、および
+Apothem サポートツリーを更新します。
+
+## アンインストール
+
+```bash
+apothem uninstall --harness qwen-code
+```
+
+アダプターが書き込んだネイティブ構成ファイルを削除します。
+共有プロファイルの YAML と Apothem エンジンには影響しません。
+
+## 適合ゲート
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## トラブルシューティング
+
+| 症状 | 修正 |
+|---------|-----|
+| 構成ファイルが見つからない | `apothem install --harness qwen-code` を再実行する |
+| 検証が失敗した | `apothem update --harness qwen-code` を実行し、再度検証する |
+| 予期しない構成内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、`apothem update --harness qwen-code` を再実行する |
+
+## 構成ノブ
+
+| フラグ | デフォルト | 説明 |
+|------|---------|-------------|
+| `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューする。 |

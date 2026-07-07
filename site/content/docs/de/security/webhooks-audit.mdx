@@ -1,0 +1,39 @@
+---
+title: "Webhooks-Audit"
+description: "Apothem-Webhooks-Audit — Secret-Rotation, Geltungsbereich-Minimierung und Nachweis der Scorecard-Webhooks-Prüfung."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Die **Webhooks**-Prüfung von OpenSSF Scorecard verifiziert, dass Repository-Webhooks ein gemeinsam genutztes Secret verwenden, um die Zustellungsoberfläche zu authentifizieren — ohne ein solches kann ein Angreifer, der die Webhook-URL kennt, Ereignisse wiederholen oder fälschen.
+
+## Apothems Webhook-Haltung
+
+| Webhook-Oberfläche | Status | Secret-Rotationskadenz |
+|---|---|---|
+| **Repository-Webhooks** | Auf Repository-Ebene keine konfiguriert. | n. z. |
+| **Organisations-Webhooks** | Auf Organisationsebene keine konfiguriert. | n. z. |
+| **Workflow-Ereignisse** | GitHub-verwaltet; nicht der Webhooks-Prüfung unterworfen. | n. z. |
+
+Apothem betreibt derzeit **null externe Webhook-Oberflächen**. Jede ereignisgesteuerte Integration verwendet GitHub-native Workflows (CI, Scorecard, CodeQL, pip-audit), die nicht der Scorecard-Webhooks-Prüfung unterliegen.
+
+## Künftige Webhook-Governance
+
+Wenn Apothem Webhook-Oberflächen hinzufügt (z. B. Discord-/Matrix-Release-Benachrichtigungen, Build-Trigger nachgelagerter Verbraucher), MUSS der Operator:
+
+1. **Ein Secret mit hoher Entropie generieren** (≥ 32 Byte, kryptografisch zufällig).
+2. **Das Secret in der verschlüsselten Secrets-Oberfläche des Repositorys speichern** — niemals im Quellcode, niemals im Workflow-YAML.
+3. **Den Webhook mit dem Secret konfigurieren**, sodass GitHub bei jeder Zustellung den `X-Hub-Signature-256`-Header signiert.
+4. **Die Signatur am empfangenden Endpunkt verifizieren** mithilfe eines Vergleichs in konstanter Zeit.
+5. **Das Secret rotieren** alle 12 Monate ODER innerhalb von 24 Stunden nach jedem Verdacht auf Kompromittierung.
+6. **Den Webhook in dieser Audit-Datei dokumentieren** mit seinem Zweck, dem empfangenden Endpunkt und dem Rotationsdatum.
+
+## Audit-Kadenz
+
+Diese Datei wird bei jedem `/security-audit`-Durchlauf und an jedem Prüfpunkt vor dem Cutover der Release-Engineering überprüft. Drift (z. B. eine ohne Eintrag hier eingeführte Webhook-Oberfläche) ist ein Befund der Schwere HIGH.
+
+## Referenzen
+
+- [OpenSSF Scorecard — Webhooks-Prüfung](https://github.com/ossf/scorecard/blob/main/docs/checks.md#webhooks)
+- [GitHub — Webhook-Sicherheit](https://docs.github.com/en/webhooks/using-webhooks/securing-your-webhooks)
+- [Apothem-Sicherheitsrichtlinie](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)

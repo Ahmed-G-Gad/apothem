@@ -1,0 +1,49 @@
+---
+title: "Apothem vs. konfigurasi Open-Claw mentah"
+description: "Memelihara konfigurasi Open-Claw dengan tangan versus mengelolanya melalui profil bersama Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Open-Claw membaca `~/.openclaw/openclaw.json`. `agents.defaults.skills`-nya adalah
+daftar nama yang diizinkan (bukan pemuat direktori) dan MCP adalah permukaan CLI,
+jadi Apothem tidak menulis kunci konfigurasi apa pun; ia memasang kohort perintah
+dan skill bersama di bawah `~/.openclaw/.apothem/support/skills/` sebagai materi pendukung.
+
+## Status
+
+**Pratinjau.** Adaptor Open-Claw menyasar berkas konfigurasi yang
+terdokumentasi saat ini dan permukaan direktori skill tambahan. Kohort non-skill
+tetap menjadi materi pendukung Apothem.
+
+## Perbandingan upaya
+
+| Tugas | Config tangan mentah | Dikelola Apothem |
+| ---- | --------------- | --------------- |
+| Menulis skill yang dapat dipakai ulang | Menyunting tangan config dan direktori skill | Menulis sekali di korpus bersama |
+| Menjaga kohort selaras dengan lingkungan lain | Manual, per alat | Otomatis saat `apothem update` |
+| Memasang / menghapus config | Manual | `apothem install` / `apothem uninstall` |
+| Memverifikasi config sudah benar | Inspeksi manual | `apothem verify --harness open-claw` |
+
+## Apa yang dikelola Apothem
+
+Adaptor Open-Claw menulis `openclaw.json`, membungkus perintah garis miring
+Apothem sebagai skill, menyalin skill Apothem ke direktori pendukung yang
+direferensikan, dan menjaga aturan, templat, agents, dan materi hook di bawah
+subpohon pendukung Apothem.
+
+## Jalur migrasi
+
+1. Jalankan `apothem profile init` untuk membuat profil bersama jika Anda belum
+   melakukannya.
+2. Pindahkan skill atau prompt perintah Open-Claw yang dapat dipakai ulang ke
+   korpus bersama.
+3. Jalankan `apothem install --harness open-claw` untuk merender konfigurasi
+   native dan direktori skill pendukung.
+4. Jalankan `apothem verify --harness open-claw` untuk mengonfirmasi bahwa
+   konfigurasi sudah mendarat.
+
+## Baca berikutnya
+
+- [Referensi adaptor Open-Claw](/docs/harnesses/open-claw)
+- [Ikhtisar perbandingan](/docs/comparison)

@@ -1,0 +1,57 @@
+---
+title: "Penyapuan artefak biner"
+description: "Penyapuan artefak biner Apothem — nol biner terkompilasi / terpaket yang dilacak di kode sumber. Bukti untuk pemeriksaan Binary-Artifacts OpenSSF Scorecard."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Pemeriksaan **Binary-Artifacts** OpenSSF Scorecard memverifikasi bahwa pohon kode sumber tidak memuat artefak biner terkompilasi / terpaket / buram apa pun. Biner di kode sumber tidak dapat diaudit dan menyediakan pijakan untuk serangan rantai pasok: biner menyematkan kode yang tidak ditampilkan oleh pohon sumber, sehingga peninjau tidak dapat memeriksanya sebelum merge.
+
+## Sikap Apothem terhadap artefak biner
+
+Apothem adalah **pohon kode sumber Python murni** tanpa artefak biner terkompilasi, terpaket, atau buram apa pun yang dilacak di kontrol versi. Repositori dapat diaudit secara menyeluruh dari kode sumber.
+
+## Metodologi penyapuan
+
+Penyapuan mendaftar tipe berkas yang dianggap biner oleh Scorecard, lalu memverifikasi bahwa masing-masing tidak ada di kontrol versi:
+
+| Keluarga ekstensi | Deskripsi | Status Apothem |
+|---|---|---|
+| `.exe`, `.dll`, `.so`, `.dylib` | Biner native terkompilasi | ✅ Nol dilacak |
+| `.bin`, `.o`, `.a`, `.lib` | Berkas objek / pustaka statis | ✅ Nol dilacak |
+| `.jar`, `.war`, `.ear` | Paket Java | ✅ Nol dilacak |
+| `.whl`, `.egg` | Distribusi Python | ✅ Nol dilacak (dibangun ke `dist/`; diabaikan gitignore) |
+| `.tar.gz`, `.zip` (distribusi terbangun) | Arsip terkompresi yang membawa artefak terbangun | ✅ Nol dilacak |
+| `.class`, `.pyc`, `.pyo` | Bytecode terkompilasi | ✅ Nol dilacak (`__pycache__/` diabaikan gitignore) |
+| `.crt`, `.pem`, `.key`, `.p12`, `.pfx` | Materi kriptografi | ✅ Nol dilacak (ditolak di `.gitignore`) |
+
+## Kelas biner yang diizinkan
+
+Dua kelas sempit artefak biner MEMANG diizinkan di kode sumber:
+
+1. **Aset merek** — `assets/*.png`, `assets/*.ico`, `assets/favicon.*`. Ini **dapat diregenerasi secara deterministik** dari master SVG di `assets/src/` melalui `scripts/dev/rebuild-assets.{sh,ps1}`. Scorecard menganggapnya sah sesuai pengecualian `image/png` miliknya.
+2. **Berkas font** — `assets/fonts/*.ttf`, `assets/fonts/*.woff2`. Berkas font terbundel dengan lisensi terdokumentasi; sesuai pengecualian `font/*` Scorecard.
+
+Kedua kelas didokumentasikan di [`site/content/docs/brand/index.mdx`](/docs/brand) dan asal-usulnya dicatat dalam resep pembangunan-ulang aset.
+
+## Perintah verifikasi
+
+```shell
+# Dari akar repositori apothem:
+git ls-files | grep -E '\\.(exe|dll|so|dylib|bin|o|a|lib|jar|war|ear|whl|egg|class|pyc|pyo|crt|pem|key|p12|pfx)$'
+```
+
+Pemanggilan ini seharusnya mengembalikan **nol baris**. Hasil yang tidak kosong menandakan sebuah artefak biner terlacak di kode sumber — temuan dengan tingkat keparahan TINGGI yang memblokir rilis berikutnya.
+
+## Irama audit
+
+Penyapuan ini merupakan bagian dari:
+
+- **CI per PR** — `.github/workflows/ci.yml` menyertakan langkah grep artefak biner.
+- **Titik periksa per rilis** — runbook rekayasa rilis memverifikasi penyapuan sebelum penandaan.
+- **Eksekusi Scorecard mingguan** — alur kerja OpenSSF Scorecard mengonfirmasi ulang bahwa pemeriksaan lolos.
+
+## Referensi
+
+- [OpenSSF Scorecard — pemeriksaan Binary-Artifacts](https://github.com/ossf/scorecard/blob/main/docs/checks.md#binary-artifacts)
+- [`.gitignore` Apothem](https://github.com/ahmed-g-gad/apothem/blob/main/.gitignore) — daftar penolakan yang mencegah check-in biner secara tidak sengaja

@@ -1,0 +1,96 @@
+---
+title: "OpenCode"
+description: "OpenCode (बीटा) के लिए Apothem टूल अडैप्टर।"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**विक्रेता:** OpenCode
+**इंस्टॉल नाम:** `opencode`
+**स्थिति:** बीटा
+**नेटिव कॉन्फ़िग:** `~/.config/opencode/`
+
+## इंस्टॉलेशन
+
+```bash
+apothem install --harness opencode
+```
+
+अडैप्टर OpenCode का JSON कॉन्फ़िग लिखता है, Apothem कौशलों को OpenCode कौशल सतह
+में इंस्टॉल करता है, कमांड प्रॉम्प्ट को OpenCode Markdown कमांड फ़ाइलों में
+परिवर्तित करता है, और Apothem सहायक परिभाषाओं को OpenCode उप-सहायकों के रूप में
+सामान्य करता है।
+
+**लिखी गई फ़ाइलें:**
+
+```text
+~/.config/opencode/opencode.json
+~/.config/opencode/commands/
+~/.config/opencode/skills/
+~/.config/opencode/agents/
+~/.config/opencode/.apothem/support/{rules,templates,hooks}/
+```
+
+## प्रोफ़ाइल से नेटिव कॉन्फ़िग में मानचित्रण
+
+अडैप्टर `opencode.json` को एक `instructions` फ़ाइल सूची के साथ रेंडर करता है जो
+Apothem के इंस्टॉल किए गए नियमों की ओर इंगित करती है, फिर प्रत्येक साझा Apothem
+समुच्चय को या तो किसी OpenCode नेटिव सतह में या किसी Apothem-स्वामित्व वाले सहायता
+उप-वृक्ष में प्रसारित करता है। पहले से मेल खाने वाले Apothem-प्रबंधित चाइल्ड को
+प्रतिस्थापन से पहले बैकअप कर लिया जाता है।
+
+## संगतता टिप्पणियाँ
+
+नियमों को नेटिव `instructions` सूची के माध्यम से संदर्भित किया जाता है। टेम्पलेट और
+हुक प्रॉम्प्ट `~/.config/opencode/.apothem/support/` के अंतर्गत संदर्भ सामग्री हैं; कमांड,
+कौशल और सहायक परिभाषाएँ नेटिव खोज स्थानों का उपयोग करती हैं।
+
+## सत्यापन
+
+```bash
+apothem verify --harness opencode
+```
+
+verify कमांड पुष्टि करता है कि:
+
+1. नेटिव कॉन्फ़िग अपेक्षित पथ पर मौजूद है।
+2. साझा प्रोफ़ाइल के सभी अनिवार्य फ़ील्ड मौजूद हैं।
+3. अडैप्टर-विशिष्ट सत्यापन दिनचर्या सफलता की रिपोर्ट करती है।
+
+## अपडेट करना
+
+```bash
+apothem update --harness opencode
+```
+
+`opencode.json`, नेटिव कमांड, कौशल, सहायक परिभाषाएँ, और Apothem सहायता ट्री को
+रीफ़्रेश करता है।
+
+## अनइंस्टॉल करना
+
+```bash
+apothem uninstall --harness opencode
+```
+
+अडैप्टर द्वारा लिखी गई नेटिव कॉन्फ़िग फ़ाइलों को हटाता है।
+साझा प्रोफ़ाइल YAML और Apothem इंजन अप्रभावित रहते हैं।
+
+## अनुरूपता द्वार
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## समस्या निवारण
+
+| लक्षण | समाधान |
+|---------|-----|
+| कॉन्फ़िग फ़ाइल नहीं मिली | `apothem install --harness opencode` पुनः चलाएँ |
+| सत्यापन विफल रहा | `apothem update --harness opencode` चलाएँ, फिर पुनः सत्यापित करें |
+| अप्रत्याशित कॉन्फ़िग सामग्री | `~/.config/apothem/profile.yaml` या `--profile PATH` जाँचें, फिर `apothem update --harness opencode` पुनः चलाएँ |
+
+## कॉन्फ़िगरेशन नॉब
+
+| फ़्लैग | डिफ़ॉल्ट | विवरण |
+|------|---------|-------------|
+| `--dry-run` | `false` | फ़ाइलें लिखे बिना इंस्टॉलेशन का पूर्वावलोकन करें। |

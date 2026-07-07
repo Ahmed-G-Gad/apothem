@@ -1,0 +1,87 @@
+---
+title: "Sikap agnostik-host"
+description: "Bagaimana Apothem mencapai sikap agnostik-host melalui profil bersama dan adaptor harness."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem dirancang di sekitar satu prinsip: konfigurasi tata kelola Anda
+harus bertahan lebih lama daripada harness tunggal mana pun. Profil Apothem
+bersama adalah berkas YAML tervalidasi-skema di `~/.config/apothem/profile.yaml` atau
+`--profile PATH`; kohor Apothem yang dipaket menyediakan perintah, aturan, skill,
+hook, templat, statusline, gaya keluaran, dan definisi delegasi.
+Adaptor per-harness di bawah `src/apothem/harnesses/<harness>/` menerjemahkan masukan-masukan itu menjadi format
+yang dibutuhkan setiap harness yang didukung:
+
+```text
+Claude Code, Cursor, Gemini CLI, GitHub Copilot, Codex, Windsurf,
+OpenCode, Antigravity, Open-Claw, Hermes, Qwen Code,
+CodeBuddy, Kiro, Trae, Zed, GLM (Z.ai), Kimi Code
+```
+
+## Gagasan inti
+
+Agnostisisme-host berarti *niat* Anda — siapa Anda, bagaimana Anda ingin asisten
+berperilaku, aturan yang harus mereka ikuti — berada di satu tempat yang tidak dimiliki
+oleh harness tunggal mana pun. Harness adalah konsumen yang dapat dipertukarkan dari niat itu. Saat asisten
+baru tiba, Anda mengadopsinya dengan menambahkan adaptor, bukan dengan menulis-ulang
+konfigurasi Anda. Saat asisten yang Anda gunakan tak lagi disukai, Anda melepasnya
+tanpa kehilangan tata kelola yang Anda bangun. Profil adalah aset; harness
+adalah target render. Harness dapat dipakai untuk coding, chat, cowork, riset, atau menulis — profil bersifat agnostik terhadap untuk apa harness itu digunakan.
+
+Ini adalah inversi yang disengaja. Jalur umum adalah mengonfigurasi setiap peralatan
+secara langsung, yang membuat investasi Anda tersandera pada keawetan dan format
+peralatan tersebut. Apothem memperlakukan konfigurasi sebagai modal portabel dan harness sebagai
+terminal yang dapat dibuang.
+
+## Masalahnya
+
+Setiap harness memiliki format konfigurasinya sendiri:
+
+```text
+Claude Code:    CLAUDE.md + settings.json
+Cursor:         .cursor/rules/*.mdc
+GitHub Copilot: .github/copilot-instructions.md
+Windsurf:       .devin/rules/
+Codex:          AGENTS.md
+```
+
+Tanpa Apothem, Anda memelihara N berkas konfigurasi terpisah yang menyimpang seiring waktu.
+
+## Solusi Apothem
+
+```text
+One shared Apothem profile (YAML) + packaged cohorts
+    identity.name
+    preferences.style
+    rules[]
+         |
+         v
+    Adapter layer (HarnessAdapter protocol — src/apothem/harnesses/<harness>/)
+         |
+         +---> Claude Code adapter   -> ~/.claude/
+         +---> Cursor adapter        -> .cursor/rules/*.mdc
+         +---> Copilot adapter       -> .github/copilot-instructions.md
+         +---> Windsurf adapter      -> .devin/rules/
+         +---> ...
+```
+
+Anda mengedit profil bersama sekali, lalu menjalankan `apothem update --harness <name>` atau
+`apothem update --harness all --project <path>` untuk menyebarkan perubahan.
+`apothem harnesses list` mencetak himpunan yang terdaftar.
+
+## Mengapa "apothem"
+
+Nama ini mengkodekan arsitekturnya. Dalam geometri, sebuah *apothem* adalah garis tegak lurus
+dari **pusat** poligon beraturan ke **titik tengah salah satu sisinya** — satu
+jarak dari inti ke setiap tepi, identik di setiap arah. Itulah
+desainnya: satu profil bersama di pusat, tujuh belas harness berjarak-sama di
+keliling, setiap materialisasi berjarak sama dari sumber kebenaran. Inti
+tidak berubah saat tepi berubah; tepi-tepi berbagi satu hubungan dengan
+inti. Penyimpangan secara struktural mustahil.
+
+## Jaminan portabilitas
+
+Aturan yang ditandai `portability: universal` dijamin dapat diterjemahkan ke setiap
+harness yang didukung. Aturan yang ditandai `portability: project-specific` mungkin memerlukan
+dokumentasi override per-harness di badan aturan.

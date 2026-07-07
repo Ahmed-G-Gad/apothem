@@ -1,0 +1,46 @@
+---
+title: "Apothem と素の Open-Claw 設定の比較"
+description: "Open-Claw 設定を手で保守するか、Apothem の共有プロファイル経由で管理するか。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Open-Claw は `~/.openclaw/openclaw.json` を読み込みます。その
+`agents.defaults.skills` は名前の許可リスト（ディレクトリローダーではありません）
+で、MCP は CLI 面であるため、Apothem は設定キーを一切書き込みません。共有のコマンド
+群とスキル群を `~/.openclaw/.apothem/support/skills/` の下にサポート材料として設置します。
+
+## ステータス
+
+**プレビュー。** Open-Claw アダプターは、現在ドキュメント化されている設定ファイルと
+追加のスキルディレクトリ面を対象とします。スキル以外の群は Apothem のサポート材料の
+ままです。
+
+## 工数の比較
+
+| タスク | 素の手動設定 | Apothem 管理 |
+| ---- | --------------- | --------------- |
+| 再利用可能なスキルを書く | 設定とスキルディレクトリを手で編集 | 共有コーパスに一度書く |
+| 群を他の環境と揃えておく | ツールごとに手動 | `apothem update` で自動 |
+| 設定をインストール／削除する | 手動 | `apothem install` / `apothem uninstall` |
+| 設定が正しいか検証する | 手動の確認 | `apothem verify --harness open-claw` |
+
+## Apothem が管理するもの
+
+Open-Claw アダプターは `openclaw.json` を書き込み、Apothem のスラッシュコマンドを
+スキルとして包み、Apothem のスキルを参照先のサポートディレクトリへコピーし、ルール、
+テンプレート、agents、hook 材料を Apothem サポートサブツリーの下に保持します。
+
+## 移行手順
+
+1. まだ作成していない場合は `apothem profile init` を実行して共有プロファイルを作成
+   します。
+2. 再利用可能な Open-Claw のスキルやコマンドプロンプトを共有コーパスへ移します。
+3. `apothem install --harness open-claw` を実行して、ネイティブ設定とサポートスキル
+   ディレクトリをレンダリングします。
+4. `apothem verify --harness open-claw` を実行して、設定が配置されたことを確認します。
+
+## 次に読む
+
+- [Open-Claw アダプターリファレンス](/docs/harnesses/open-claw)
+- [比較の概要](/docs/comparison)

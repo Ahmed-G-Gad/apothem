@@ -1,0 +1,60 @@
+---
+title: "Registro de la compuerta de preemisión — Comprobación obligatoria de quince barras"
+description: "Comprobación de conformidad obligatoria de quince barras ejecutada antes de la emisión de alcance significativo, con mapeos de acción ante fallo y esquema de prueba de release."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Registro canónico de la compuerta de preemisión de quince barras.** Este documento contiene la tabla completa de quince barras de la compuerta y el bloque YAML del esquema de prueba de release; la tabla sustantiva y el esquema viven aquí, operacionalizados por `src/apothem/rules/pre-emission-gate.md`.
+
+Antes de cualquier emisión de artefacto de alcance significativo (según el umbral trivial frente a no trivial en `site/content/docs/governance/outward-conformity-registry.mdx` §1), ejecuta la compuerta de preemisión de quince barras. Mecaniza mediante hooks PreToolUse donde sea posible (los greps mecánicos en `src/apothem/conformity/*-grep.py` orquestados por `src/apothem/conformity/gate.py`); razona donde la mecanización sea imposible. **El fallo de cualquier barra individual bloquea la emisión; revisa hasta que cada barra pase; emite con la prueba de release de la compuerta registrada.**
+
+| # | Barra | Tipo de comprobación | Fallo → acción |
+| - | --- | ---------- | ---------------- |
+| 1 | M1 agnosticismo del anfitrión | razonada | revisar para coincidir con las convenciones del anfitrión |
+| 2 | M2 divulgación editorial | razonada | añadir libro mayor de divulgación |
+| 3 | M3 diez dimensiones | mixta (mecánica + razonada) | revisar en la dimensión que falla |
+| 4 | M4 autoaplicación | mecánica (prueba de release presente) | registrar prueba de release |
+| 5 | M5 autoridad | mecánica (grep de marcador `<USER-CONFIRM:…>`) | reencaminar a la superficie de consulta |
+| 6 | M6 pericia | razonada (sección de carencias expuestas presente) | exponer carencias; citar |
+| 7 | M7 anotación de opciones | mecánica (el conjunto de opciones lleva marcador de recomendación) | anotar |
+| 8 | M8 carácter definitivo | mecánica (grep de vocabulario evasivo) | promover la evasión a condicionales |
+| 9 | M9 apalancamiento visual | razonada (existe diagrama donde es estructural) | crear / actualizar diagrama |
+| 10 | M10 vínculo bidireccional | mecánica (grep de reciprocidad de vínculos) | cerrar medias-aristas |
+| 11 | M11 sprints ágiles | razonada (aparato de sprint instanciado) | reestructurar como sprints |
+| 12 | M12 informe de fases y disposición | mecánica (grep de salida huérfana) + razonada | crear resumen; reubicar |
+| 13 | M13 oficio de código | mecánica (lint / formateo / verificación de tipos; grep de bare-except, número-mágico, código-comentado) | revisar |
+| 14 | M14 sistematicidad | razonada (declara aguas arriba / aguas abajo / pares / aplicadores) | declarar; indexar |
+| 15 | M15 listo para producción | mecánica (grep de production-ready-pr) + razonada | añadir pruebas / documentación / CHANGELOG |
+
+## 1. Esquema de prueba de release
+
+Cada ejecución de la compuerta registra el resultado en la traza de trabajo del artefacto (un comentario oculto, un bloque de metadatos, un archivo de registro de emisión aparte — lo que permitan las convenciones del anfitrión):
+
+```yaml
+conformity-attestation:
+  artifact: <path-or-identifier>
+  ecosystem-version: <git-commit-sha-or-equivalent ratifying the rule set in force>
+  bars:
+    M1-host-agnosticism:        pass | n/a (with reason)
+    M2-editorial-disclosure:    pass | n/a
+    M3-ten-dimensions:          pass | n/a
+    M4-self-application:        pass
+    M5-authority:               pass
+    M6-expertise:               pass | n/a
+    M7-option-annotation:       pass | n/a (no option set)
+    M8-definitiveness:          pass
+    M9-visual-leverage:         pass | n/a (subject not structural)
+    M10-bidirectional-binding:  pass
+    M11-agile-sprints:          pass | n/a (trivial work)
+    M12-phase-layout:           pass | n/a
+    M13-code-craft:             pass | n/a (not code)
+    M14-systemicity:            pass
+    M15-production-ready:       pass | n/a (no host-public-surface change)
+  surfaced-gaps: []
+  unresolved-inquiries: []
+  amendments-disclosed: []
+  date: <ISO-8601>
+```
+
+Las marcas `n/a` son explícitas y razonadas — nunca omisiones silenciosas. El campo `ecosystem-version` ancla la prueba de release a un estado reproducible del ecosistema de ámbito de usuario (el commit git del árbol de fuentes de Apothem activo cuando se ejecutó la compuerta — p. ej., el checkout `~/.claude/` para el adaptador de Claude Code), de modo que auditorías futuras puedan repetir la compuerta contra los mismos cuerpos de reglas.

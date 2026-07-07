@@ -1,0 +1,70 @@
+---
+title: "/research-design"
+description: "/research-design — Operacionaliza as hipóteses em previsões testáveis e projeta o estudo (variáveis, controles, amostra, poder), depois congela o plano de análise como um pré-registro."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Papel:** Pesquisador Principal (projeto do estudo)
+**Posição no pipeline:** intermediária
+
+Operacionaliza as hipóteses em previsões testáveis e projeta o estudo ou experimento — variáveis, controles, amostra, instrumentos, análise de poder, ameaças à validade — depois produz um pré-registro que congela o plano de análise antes da coleta de dados.
+
+## Invocação canônica
+
+```bash
+/research-design
+```
+
+Com argumentos:
+
+```bash
+/research-design [path/to/research-suite/]
+```
+
+## Entradas
+
+`_inputs/proposal.md` (o plano de referência de `/research-proposal`, o estágio predecessor), `_inputs/synthesis.md` (o mapa SOTA + a declaração de lacuna) e `_spec/research-spec.md` (as hipóteses).
+
+## Saídas
+
+`_inputs/study-design.md` (previsões operacionalizadas, especificação de variáveis, controles, amostra, instrumentos, análise de poder, ameaças à validade) + `_inputs/preregistration.md` (o plano de análise congelado).
+
+## A jusante
+
+/research-experiment (consumidor a jusante)
+
+## Fases do fluxo de trabalho
+
+O comando segue o fluxo de trabalho padrão do pipeline `/research`:
+
+1. **Carregar contexto** — Ler a síntese e as hipóteses da especificação.
+2. **Verificar o Portão de Sequência** — Confirmar que `_inputs/proposal.md` (e os `_inputs/synthesis.md` e `_spec/research-spec.md` a montante) existe; caso contrário, parar com `Blocked: run /research-proposal first`.
+3. **Projetar o estudo** — Operacionalizar previsões; especificar variáveis, controles, amostra, instrumentos, poder; enumerar ameaças à validade.
+4. **Pré-registrar** — Congelar o plano de análise antes de qualquer coleta de dados.
+5. **Atualizar o manifesto de transferência** — Registrar os caminhos do projeto do estudo e do pré-registro.
+6. **Emitir o projeto** — `_inputs/study-design.md` + `_inputs/preregistration.md`.
+
+## Piso de rigor
+
+Para um estudo que envolve comparação, o projeto fixa, e pré-registra, o piso empírico: um único orçamento unificado entre todos os métodos comparados (mesmo tempo de relógio e, onde for significativo, mesma contagem de avaliações), pelo menos trinta repetições por instância para métodos estocásticos, um fator de ablação que desativa um componente de cada vez, varreduras de sensibilidade sobre cada parâmetro e configuração automatizada em uma partição de treino avaliada em uma partição de teste disjunta. A profundidade do piso escala conforme a ambição do veículo-alvo.
+
+## Modos de falha
+
+| Sintoma | Causa | Recuperação |
+|---------|-------|----------|
+| Blocked: run /research-proposal first | Sem plano de referência | Execute `/research-proposal` para produzir `_inputs/proposal.md` |
+| Projeto com poder insuficiente | Amostra pequena demais para o efeito | Reexecute a análise de poder; redimensione a amostra |
+| Plano de análise não congelado | Pré-registro omitido | Redija `_inputs/preregistration.md` antes da coleta de dados |
+
+## Exemplos
+
+```bash
+# Projete o estudo e pré-registre o plano de análise
+/research-design path/to/research-suite/
+```
+
+## Referências cruzadas
+
+- [Visão geral do pipeline](/docs/pipeline)
+- [Referência de comandos](/docs/reference/commands)

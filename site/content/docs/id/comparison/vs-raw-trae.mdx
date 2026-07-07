@@ -1,0 +1,42 @@
+---
+title: "Apothem versus konfigurasi Trae manual"
+description: "Memelihara aturan Trae di bawah .trae/rules/ dengan tangan versus merendernya dari profil bersama Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Trae membaca aturan dari direktori `.trae/rules/` yang jangkar vendornya adalah
+`project_rules.md` dan `user_rules.md`. Adapter trae milik Apothem merender file
+`apothem-rules.md` khusus di direktori itu dari profil bersama. Halaman ini
+mempertentangkan pemeliharaan konfigurasi itu dengan tangan terhadap pengelolaannya
+dengan Apothem.
+
+## Perbandingan upaya
+
+| Tugas | Konfigurasi manual | Dikelola Apothem |
+| ---- | --------------- | --------------- |
+| Menulis aturan | Menulis tiap file di bawah `.trae/rules/` dengan tangan | Dirender dari korpus bersama |
+| Menjaga permukaan Apothem tetap terpisah | Ingat untuk tidak membebani `project_rules.md` | Adapter menulis `apothem-rules.md` khusus |
+| Menjaga aturan selaras dengan lingkungan lain | Manual, per alat | Otomatis saat `apothem update` |
+| Memverifikasi konfigurasi sudah benar | Inspeksi manual | `apothem verify --harness trae` |
+
+## Apa yang dikelola Apothem
+
+Adapter trae merender aturan bersama menjadi file `apothem-rules.md` khusus di bawah
+`.trae/rules/` dan membiarkan jangkar `project_rules.md` dan `user_rules.md` milik
+operator tetap utuh. Trae tidak memiliki hook PreToolUse, sehingga niat pagar pengaman
+berdiam di dalam prosa aturan alih-alih di titik penyadapan panggilan alat. Setiap
+perubahan pada aturan bersama merender ulang file pada `apothem update` berikutnya.
+
+## Jalur migrasi
+
+1. Jalankan `apothem profile init` untuk membuat profil bersama jika Anda belum memilikinya.
+2. Pindahkan aturan dari file `.trae/rules/` Anda yang sudah ada ke korpus bersama.
+3. Jalankan `apothem install --harness trae` untuk merender file `apothem-rules.md`.
+4. Jalankan `apothem verify --harness trae` untuk memastikan konfigurasi sudah terpasang.
+5. Gunakan `apothem update --harness trae` untuk setiap perubahan berikutnya.
+
+## Baca berikutnya
+
+- [Referensi adapter Trae](/docs/harnesses/trae)
+- [Ikhtisar perbandingan](/docs/comparison)

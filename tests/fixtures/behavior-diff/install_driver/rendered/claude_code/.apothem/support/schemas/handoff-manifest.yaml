@@ -1,0 +1,353 @@
+# SPDX-License-Identifier: MIT
+
+# Handoff Manifest Schema
+#
+# YAML-fronted schema specification for the Handoff Manifest carried through
+# the `/plan-*` pipeline. `plan-spec` creates the manifest; `plan-generate`,
+# `plan-review`, `plan-design`, and `plan-execute` augment it as they add
+# validated artifacts. Downstream commands refuse to proceed if the manifest is
+# missing, malformed, or violates the `p0-unresolved: 0` / `p1-unresolved: 0`
+# invariant.
+#
+# Manifest instances land at `{suite}/_inputs/handoff-manifest.yml` per the
+# command's Output table. Standalone invocations still emit the manifest with
+# `downstream: "none (standalone invocation)"` — terminal-ness is never silent.
+
+# -----------------------------------------------------------------------------
+# Field-level schema
+# -----------------------------------------------------------------------------
+
+command:
+  type: string
+  required: true
+  enum:
+    - plan-spec
+    - plan-generate
+    - plan-review
+    - plan-design
+    - plan-execute
+    - plan-status
+  description: |
+    The most recent command that emitted or augmented this manifest. The
+    canonical sequence is `plan-spec` → `plan-generate` → `plan-review` →
+    `plan-design` (conditional for architecture-bearing suites) →
+    `plan-execute`; `plan-status` is read-only but may report against the same
+    manifest shape.
+
+repository:
+  type: string
+  required: true
+  pattern: '^[a-z0-9][a-z0-9-]*$'
+  description: |
+    Repo-bound identifier per the work-root naming convention. Kebab-case,
+    starts with a letter or digit. Non-empty.
+
+mission:
+  type: string
+  required: true
+  pattern: '^[a-z0-9][a-z0-9-]*$'
+  description: |
+    Mission-bearing identifier per the work-root naming convention. Kebab-case,
+    starts with a letter or digit. Distinct from `repository`. Non-empty.
+
+created_at:
+  type: string
+  required: true
+  format: iso8601
+  description: |
+    Timestamp at G5 emission. ISO-8601 UTC with `Z` suffix. Example:
+    `<TIMESTAMP>`.
+
+invocation_sequence:
+  type: integer
+  required: true
+  minimum: 1
+  description: |
+    Monotonically increasing per-suite invocation counter. Initial run = 1;
+    each `--refine-existing` run increments by 1. Lets downstream commands
+    detect spec drift between consecutive Forge runs.
+
+downstream:
+  type: string
+  required: true
+  description: |
+    The downstream consumer. One of the canonical command paths
+    (`/plan-generate`, `/plan-review`, `/plan-design`, `/plan-execute`,
+    `/plan-status`) OR the literal string `none (standalone invocation)` per
+    the standalone-invocation discipline.
+
+p0-unresolved:
+  type: integer
+  required: true
+  enum: [0]
+  description: |
+    Count of P0-severity questionables that did not resolve at their gate and
+    do not carry a deferred-with-placeholder routing. The four-discipline
+    operational invariant requires this field to read `0`. A non-zero value is
+    a P0 integrity failure; downstream refuses to proceed.
+
+p1-unresolved:
+  type: integer
+  required: true
+  enum: [0]
+  description: |
+    Count of P1-severity questionables that did not resolve at their gate and
+    do not carry a deferred-with-placeholder routing. Required to read `0` per
+    the operational invariant. Non-zero = downstream refuses to proceed.
+
+placeholders:
+  type: array
+  required: true
+  items:
+    type: object
+    properties:
+      kind:
+        type: string
+        required: true
+        description: |
+          The questionable's kind tag (e.g., `identity`, `workroot-scheme`,
+          `ops-verification`). Joins to the Question-Resolution Audit row's
+          `trigger-category` and to the spec's inline placeholder.
+      defer-reason:
+        type: string
+        required: true
+        description: |
+          One sentence; cites the concrete reason deferral was selected over
+          inline resolution.
+      defer-timestamp:
+        type: string
+        required: true
+        format: iso8601
+        description: |
+          ISO-8601 UTC timestamp at deferral.
+      deferred-by-command:
+        type: string
+        required: true
+        enum:
+          - plan-spec
+          - plan-generate
+          - plan-review
+          - plan-design
+          - plan-execute
+        description: |
+          The command that surfaced and deferred the question.
+      resolve-by-gate:
+        type: string
+        required: true
+        description: |
+          The downstream gate at which resolution is expected. Either a named
+          gate of a downstream command (`/plan-generate G1` etc.) or the
+          literal `next-Forge-iteration` for refinement-loop deferrals.
+  description: |
+    Empty array `[]` is admissible when no questionable was deferred.
+    Otherwise carries one row per `<USER-CONFIRM:...>` placeholder embedded in
+    the emitted spec.
+
+appendices:
+  type: object
+  required: true
+  properties:
+    consideration_log:
+      type: object
+      properties:
+        path:
+          type: string
+          required: true
+          description: Path to the Consideration Log inside the emitted spec (e.g., `_spec/spec.md#appendix-a-consideration-log`).
+        row_count:
+          type: integer
+          required: true
+          minimum: 1
+    potency_map:
+      type: object
+      properties:
+        path:
+          type: string
+          required: true
+        row_count:
+          type: integer
+          required: true
+          minimum: 1
+    preservation_audit:
+      type: object
+      properties:
+        path:
+          type: string
+          required: true
+        l1_pass:
+          type: integer
+          required: true
+        l1_fail:
+          type: integer
+          required: true
+          enum: [0]
+        l2_pass:
+          type: integer
+          required: true
+        l2_fail:
+          type: integer
+          required: true
+          enum: [0]
+        l3_pass:
+          type: integer
+          required: true
+        l3_partial:
+          type: integer
+          required: true
+        l3_fail:
+          type: integer
+          required: true
+          enum: [0]
+    expertise_gap_log:
+      type: object
+      properties:
+        path:
+          type: string
+          required: true
+        applied_axes_count:
+          type: integer
+          required: true
+          minimum: 0
+          maximum: 7
+        not_applicable_axes_count:
+          type: integer
+          required: true
+          minimum: 0
+          maximum: 7
+        envelope_limited_axes_count:
+          type: integer
+          required: true
+          minimum: 0
+          maximum: 7
+    question_resolution_audit:
+      type: object
+      properties:
+        path:
+          type: string
+          required: true
+        row_count:
+          type: integer
+          required: true
+          minimum: 0
+        p0_count:
+          type: integer
+          required: true
+        p1_count:
+          type: integer
+          required: true
+        p2_count:
+          type: integer
+          required: true
+  description: |
+    Each of the five mandatory appendices reports its anchor + summary
+    statistics so downstream commands can verify the spec's appendix integrity
+    without re-parsing the spec body.
+
+plan_review:
+  type: object
+  required: false
+  properties:
+    scorecards_path:
+      type: string
+      required: false
+    verdict:
+      type: string
+      required: false
+      enum:
+        - pass
+        - fail
+        - not-run
+  description: |
+    Optional augmentation emitted by `/plan-review`. `/plan-design` consumes
+    this block at SHARED+ seriousness and refuses to author a design when the
+    review verdict is missing or failing.
+
+plan_design:
+  type: object
+  required: false
+  properties:
+    applicability:
+      type: string
+      required: false
+      enum:
+        - architecture-bearing
+        - non-architecture-bearing
+      description: |
+        Classification emitted by `/plan-design` or by the upstream review
+        handoff. `architecture-bearing` requires `artifact_path`;
+        `non-architecture-bearing` records an explicit skip and allows
+        `/plan-execute` to proceed without `_inputs/design.md`.
+    skipped_reason:
+      type: string
+      required: false
+      description: |
+        One-sentence rationale when `applicability` is
+        `non-architecture-bearing`; omitted for architecture-bearing suites.
+    artifact_path:
+      type: string
+      required: false
+      description: |
+        Path to the design artifact, normally `_inputs/design.md`.
+    design_gate:
+      type: object
+      required: false
+      description: |
+        Fifteen-bar validation-gate attestation emitted by `/plan-design`.
+    seven_axis_attestation:
+      type: object
+      required: false
+      description: |
+        Per-axis coverage against Architecture, Concurrency, Performance,
+        Security, Testing, Tooling, and Observability.
+    binding_matrix_summary:
+      type: object
+      required: false
+      description: |
+        Bidirectional Binding Matrix summary emitted when the design triggers
+        the matrix threshold.
+  description: |
+    Optional architecture-bearing augmentation emitted by `/plan-design`.
+    `/plan-execute` consumes this block for phases whose PHASE.md declares
+    architecture-bearing outputs; `/architecture-review` consumes the same
+    design artifact during the Audit Review Sequence.
+
+# -----------------------------------------------------------------------------
+# Worked example
+# -----------------------------------------------------------------------------
+#
+# command: plan-spec
+# repository: apothem
+# mission: database-migration-v2
+# created_at: <TIMESTAMP>
+# invocation_sequence: 1
+# downstream: /plan-generate
+# p0-unresolved: 0
+# p1-unresolved: 0
+# placeholders: []
+# appendices:
+#   consideration_log:
+#     path: _spec/spec.md#appendix-a-consideration-log
+#     row_count: 38
+#   potency_map:
+#     path: _spec/spec.md#appendix-b-potency-map
+#     row_count: 47
+#   preservation_audit:
+#     path: _spec/spec.md#appendix-c-preservation-audit
+#     l1_pass: 124
+#     l1_fail: 0
+#     l2_pass: 47
+#     l2_fail: 0
+#     l3_pass: 12
+#     l3_partial: 0
+#     l3_fail: 0
+#   expertise_gap_log:
+#     path: _spec/spec.md#appendix-d-expertise-gap-log
+#     applied_axes_count: 5
+#     not_applicable_axes_count: 2
+#     envelope_limited_axes_count: 0
+#   question_resolution_audit:
+#     path: _spec/spec.md#appendix-e-question-resolution-audit
+#     row_count: 6
+#     p0_count: 0
+#     p1_count: 4
+#     p2_count: 2

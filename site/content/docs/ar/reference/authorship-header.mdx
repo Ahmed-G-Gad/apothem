@@ -1,0 +1,158 @@
+---
+title: "ترويسة الكِتابة (Authorship Header) — سطر رخصة SPDX لكل ملف"
+description: "تعريف وفرض علامات مُعرِّف رخصة SPDX لكل ملف باستخدام ترويسات أحادية السطر كنسية بصيغة التعليق المناسبة لكل نوع ملف."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+{/* REUSE-IgnoreStart */}
+
+> **مرجع معياري كنسي للمساهمين في المراحل اللاحقة.** يعكس هذا المستند أقسام الكِتابة وترويسة الملف من مواصفة المشروع (<bdi>Spec §0.5 + §4.6</bdi>)؛ وهو المرجع المستقل الذي يُشحَن مع المستودع المنشور. السند المعماري مُسجَّل في [<bdi>ADR-0002</bdi>](/docs/reference/authorship-header).
+
+---
+
+## 1. سطر الترويسة الكنسي
+
+يجب أن يبدأ كل ملف منطبق في المنظومة بسطر مُعرِّف رخصة <bdi>SPDX</bdi> كنسي واحد، بصيغة تعليق عائلة نوع ملفه. هذا السطر هو علامة الرخصة القابلة للقراءة آليًّا للملف؛ وجوده غير قابل للتفاوض في الملفات غير المُعفاة، ومحتواه محكوم بمصدر حقيقة واحد لا يُرتجَل لكل ملف. يعيش صكُّ حقوق النشر الكامل مرّةً واحدة في ملف [<bdi>`LICENSE`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) في جذر المستودع — ولا يُكرَّر في كل ملف مصدري.
+
+### 1.1 المحتوى المعلوماتي (ثابت)
+
+المحتوى الكنسي هو سطر واحد بالضبط:
+
+1. <bdi>`SPDX-License-Identifier: MIT`</bdi> — علامة الرخصة القابلة للقراءة آليًّا وفق [مواصفة <bdi>REUSE</bdi>](https://reuse.software/spec/) التي تصونها <bdi>FSFE</bdi>؛ تُحلَّل بلا التباس بواسطة سلسلة أدوات <bdi>SPDX</bdi> (<bdi>`reuse lint`</bdi>، <bdi>`scancode`</bdi>) وأدوات نواة <bdi>Linux</bdi> وماسحات الرخص في المراحل اللاحقة. لا يحمل إطارًا بصريًّا ولا أسطر حقوق نشر أو موقع وب أو بريد إلكتروني أو <bdi>GitHub</bdi> لكل ملف — مصدريّة كل ملف هي سطر <bdi>SPDX</bdi> الواحد بحكم التصميم (انظر §4).
+
+### 1.2 الصيغة المرجعية (عائلة تعليق <bdi>`#`</bdi>)
+
+النص الكنسي — المكتوب هنا بصيغة تعليق <bdi>`#`</bdi> — مصدر حقيقته في [<bdi>`src/apothem/schemas/authorship-header.txt`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt):
+
+```text
+# SPDX-License-Identifier: MIT
+```
+
+هذا النص هو المصدر الموثوق **الوحيد**. يعمل مُتحقِّق <bdi>`file-header`</bdi> (§7) تجاه هذه التثبيتة الدقيقة بايتيًّا. أي انحراف بين سطر ترويسة ملف وهذه التثبيتة (تحت استبدال الصيغة وفق §2) هو إخفاق <bdi>CI</bdi>.
+
+---
+
+## 2. المتغايرات لكل نوع ملف (دقيقة بايتيًّا)
+
+*المحتوى المعلوماتي* للسطر ثابت؛ تتغاير فقط *صيغة تعليقه* حسب نوع الملف. جدول المتغايرات الكامل لكل نوع ملف:
+
+| عائلة نوع الملف | صيغة التعليق | عرض المتغاير |
+|---|---|---|
+| عائلة <bdi>`#`</bdi> — <bdi>`.sh`</bdi>، <bdi>`.bash`</bdi>، <bdi>`.zsh`</bdi>، <bdi>`.py`</bdi>، <bdi>`.rb`</bdi>، <bdi>`.pl`</bdi>، <bdi>`.ps1`</bdi>، <bdi>`.yml`</bdi>، <bdi>`.yaml`</bdi>، <bdi>`.toml`</bdi>، <bdi>`.cff`</bdi>، <bdi>`.gitignore`</bdi>، <bdi>`.gitattributes`</bdi>، <bdi>`.editorconfig`</bdi>، <bdi>`.shellcheckrc`</bdi>، <bdi>`.env.example`</bdi>، <bdi>`Makefile`</bdi>، <bdi>`Dockerfile`</bdi>، <bdi>`Procfile`</bdi>، <bdi>`CODEOWNERS`</bdi>، <bdi>`PKGBUILD`</bdi>، نقاط دخول الصدفة بلا امتداد مثل <bdi>`scripts/apothem`</bdi> | تعليق سطري <bdi>`#`</bdi> | <bdi>`# SPDX-License-Identifier: MIT`</bdi> |
+| عائلة <bdi>`//`</bdi> — <bdi>`.js`</bdi>، <bdi>`.jsx`</bdi>، <bdi>`.mjs`</bdi>، <bdi>`.cjs`</bdi>، <bdi>`.ts`</bdi>، <bdi>`.tsx`</bdi>، <bdi>`.go`</bdi>، <bdi>`.rs`</bdi>، <bdi>`.java`</bdi>، <bdi>`.kt`</bdi>، <bdi>`.swift`</bdi>، <bdi>`.c`</bdi>، <bdi>`.cc`</bdi>، <bdi>`.cpp`</bdi>، <bdi>`.h`</bdi>، <bdi>`.hpp`</bdi>، <bdi>`.cs`</bdi>، <bdi>`.scala`</bdi>، <bdi>`.dart`</bdi>، <bdi>`.jsonc`</bdi> | تعليق سطري <bdi>`//`</bdi> | <bdi>`// SPDX-License-Identifier: MIT`</bdi> |
+| عائلة التعليق الكتلي — <bdi>`.html`</bdi>، <bdi>`.htm`</bdi>، <bdi>`.md`</bdi>، <bdi>`.markdown`</bdi>، <bdi>`.xml`</bdi>، <bdi>`.vue`</bdi> (منطقة القالب)، <bdi>`.php`</bdi> (منطقة القالب) | <bdi>`<!-- ... -->`</bdi> | <bdi>`<!-- SPDX-License-Identifier: MIT -->`</bdi> |
+| <bdi>MDX</bdi> (<bdi>`.mdx`</bdi>) | <bdi>`{/* ... */}`</bdi> (تعليق تعبير <bdi>JSX</bdi>) | <bdi>`{/* SPDX-License-Identifier: MIT */}`</bdi> |
+| عائلة كتلة <bdi>C</bdi> — <bdi>`.css`</bdi>، <bdi>`.scss`</bdi>، <bdi>`.less`</bdi>، <bdi>`.sql`</bdi> (<bdi>`/* */`</bdi>) | <bdi>`/* ... */`</bdi> | <bdi>`/* SPDX-License-Identifier: MIT */`</bdi> |
+| عائلة <bdi>`;`</bdi> — <bdi>`.ini`</bdi>، <bdi>`.cfg`</bdi>، بعض <bdi>`.lisp`</bdi>/<bdi>`.scm`</bdi> | تعليق سطري <bdi>`;`</bdi> | <bdi>`; SPDX-License-Identifier: MIT`</bdi> |
+| عائلة <bdi>`--`</bdi> — <bdi>`.sql`</bdi>، <bdi>`.lua`</bdi>، <bdi>`.hs`</bdi>، <bdi>`.elm`</bdi>، <bdi>`.ada`</bdi> | تعليق سطري <bdi>`--`</bdi> | <bdi>`-- SPDX-License-Identifier: MIT`</bdi> |
+| ملف القفل / مُولَّد / <bdi>JSON</bdi> | لا شيء / غير منطبق | **مُعفى.** انظر §3 قائمة الاستثناءات. |
+
+**متغاير <bdi>Markdown</bdi> (العرض الكنسي):**
+
+```markdown
+<!-- SPDX-License-Identifier: MIT -->
+```
+
+غلاف تعليق <bdi>HTML</bdi> (أو <bdi>MDX</bdi> <bdi>`{/* */}`</bdi>) يُعرَض بلا مرئية، فيبقى السطح المعروض نظيفًا بينما تبقى علامة الرخصة داخل المصدر قابلة للقراءة آليًّا عبر أنواع الملفات.
+
+---
+
+## 3. قائمة الاستثناءات (مُعفاة فئويًّا)
+
+الفئات التالية **مُعفاة** من سطر ترويسة <bdi>SPDX</bdi>. يُرجِع فحص الانطباق في مُتحقِّق <bdi>`file-header`</bdi> القيمة <bdi>`not-applicable`</bdi> لهذه:
+
+- **<bdi>`LICENSE`</bdi>** — هو نفسه الصك القانوني؛ يحمل سطر حقوق النشر الموثوق الذي يؤكّد مُتحقِّق <bdi>`license-author-consistency`</bdi> وجوده.
+- **أصول <bdi>`*.svg`</bdi>** — تعليقات <bdi>XML</bdi> هشّة لعلامات التعليق السطري، لذا تُحمَل مصدريّة <bdi>SVG</bdi> عبر <bdi>README</bdi> الأصل والمخرجات النقطية المُولَّدة.
+- **<bdi>`CHANGELOG.md`</bdi>** — مستند ملاحظات إصدار مقيّد الصيغة؛ يظهر سطر <bdi>SPDX</bdi> كتعليق <bdi>HTML</bdi> واحد فوق ترويسة الـ changelog، لا منسوجًا في الصيغة.
+- **ملفات <bdi>JSON</bdi> (<bdi>`.json`</bdi>)** — لا صيغة تعليق لـ <bdi>JSON</bdi>. حيث تُطلَب النسبة لإعداد <bdi>JSON</bdi>، ضع ملفًّا شقيقًا <bdi>`<file>.NOTICE.md`</bdi>.
+- **ملفات القفل** — <bdi>`package-lock.json`</bdi>، <bdi>`yarn.lock`</bdi>، <bdi>`pnpm-lock.yaml`</bdi>، <bdi>`Cargo.lock`</bdi>، <bdi>`Pipfile.lock`</bdi>، <bdi>`poetry.lock`</bdi>، <bdi>`go.sum`</bdi>، إلخ (مُدارة آليًّا).
+- **الملفات المُولَّدة** — أي شيء بعلامة <bdi>`# Generated by ...`</bdi> أو <bdi>`// Generated by ...`</bdi>، أو أي شيء مطابق لـ <bdi>`.gitattributes`</bdi> <bdi>`linguist-generated=true`</bdi>.
+- **محتوى طرف ثالث مُورَّد** — ملفات تحت <bdi>`vendor/`</bdi>، <bdi>`third_party/`</bdi>، <bdi>`node_modules/`</bdi>. تحمل هذه رخصة/إشعار منبعها الخاص؛ وحقن علامتنا فوق نسبة المنبع انتهاك للرخصة.
+- **ملفات <bdi>`.audit/`</bdi>** — زائلات مُتجاهَلة في git؛ خارج نطاق الشجرة المنشورة.
+- **ملفات الخطط (<bdi>`<project-root>/.apothem/plans/**`</bdi>، والقديم <bdi>`<project-root>/.plans/**`</bdi>)** — زائلات مُتجاهَلة في git؛ المصدريّة هي فرونت-ماتر الخطة (انظر [<bdi>`plans-discipline.md`</bdi>](/docs/reference/plans-discipline) §3).
+- **العلامات الفارغة** — <bdi>`.keep`</bdi>، <bdi>`.gitkeep`</bdi>، إلخ (صفرية البايت دلاليًّا).
+- **الملفات الثنائية** من أي نوع.
+
+قائمة الاستثناءات نفسها مُرمَّزة كقائمة regex/glob في [<bdi>`src/apothem/schemas/header-exceptions.txt`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt) وهي مُدخَل فحص الانطباق في المُتحقِّق. تتطلّب التعديلات استفسارًا مُهيكَلًا و<bdi>ADR</bdi> جديدًا.
+
+---
+
+## 4. تفاعل الرخصة
+
+يُعلِن سطر <bdi>SPDX</bdi> رخصة المشروع بصورة قابلة للقراءة آليًّا؛ ويُعلِنها ملف <bdi>LICENSE</bdi> بصورة موثوقة:
+
+- **<bdi>`SPDX-License-Identifier: MIT`</bdi>** — علامة الرخصة القابلة للقراءة آليًّا وفق [مواصفة <bdi>REUSE</bdi>](https://reuse.software/spec/) ومعيار <bdi>SPDX</bdi>. تُحلِّل ماسحات الرخص الآلية هذا السطر مباشرةً؛ وصيغة تعبير <bdi>SPDX</bdi> متوافقة عَرضيًّا مع <bdi>`reuse lint`</bdi> و<bdi>scancode-toolkit</bdi> و<bdi>FOSSology</bdi> وأدوات رخص نواة <bdi>Linux</bdi>.
+
+{/* REUSE-IgnoreEnd */}
+- **<bdi>[`LICENSE`](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE)</bdi> جذر المستودع** — الصك القانوني الموثوق الحامل لشروط <bdi>MIT</bdi> الكاملة ولمالك حقوق النشر. هو البيت الوحيد لبيان حقوق النشر؛ تشير إليه ترويسات كل ملف ضمنيًّا عبر مُعرِّف <bdi>SPDX</bdi> المشترك بدلًا من إعادة ذكر حقوق النشر في كل ملف.
+
+**الصيغة أحادية السطر.** مصدريّة كل ملف هي سطر <bdi>SPDX</bdi> الواحد؛ ويعيش صك حقوق النشر مرّةً واحدة في <bdi>LICENSE</bdi> الجذر. صناديق اللافتة المؤطَّرة متعددة الأسطر (أسطر حقوق نشر وموقع وب وبريد إلكتروني واتصال ملفوفة في إطار مُسطَّر) يرفضها المُتحقِّق: فهي تُكرِّر بيانات الاتصال وحقوق النشر الوصفية في كل ملف دون أن تضيف شيئًا لا توفّره علامة الرخصة القابلة للقراءة آليًّا أصلًا لأدوات <bdi>REUSE</bdi>/<bdi>SPDX</bdi>/<bdi>SBOM</bdi>. تحمل التثبيتة الدقيقة بايتيًّا في <bdi>`src/apothem/schemas/authorship-header.txt`</bdi> الصيغة أحادية السطر؛ ويعمل المُتحقِّق تجاه هذه التثبيتة.
+
+**الإحالات المتبادلة.** ملف <bdi>LICENSE</bdi> (<bdi>MIT</bdi>) — الصك القانوني هو الحاكم عند التعارض. يوثّق <bdi>ADR-0006</bdi> سند المصادقة على تضييق اللافتة.
+
+---
+
+## 5. موضع الإدراج
+
+- سطر <bdi>SPDX</bdi> هو **أول محتوى** للملف، باستثناء واحد لا غير: سطر الشيبانغ (<bdi>`#!/usr/bin/env bash`</bdi>، <bdi>`#!/usr/bin/env python3`</bdi>، إلخ) الذي يظل دائمًا في السطر 1؛ ويبدأ سطر <bdi>SPDX</bdi> في السطر 2.
+- لملفات <bdi>Markdown</bdi> / <bdi>MDX</bdi> ذات فرونت-ماتر <bdi>YAML</bdi>، يجلس تعليق <bdi>SPDX</bdi> في القمّة تمامًا، ثم يتبعه فرونت-ماتر <bdi>YAML</bdi>، ثم <bdi>H1</bdi> والمتن. يبدأ المُخرَج المعروض بتعليق غير مرئي، ثم تُحلَّل فرونت-ماتر بالأدوات، ثم ينساب المحتوى المرئي.
+- يفصل سطر فارغ واحد فقط سطرَ <bdi>SPDX</bdi> عن المحتوى التالي (<bdi>`---`</bdi> فرونت-ماتر، خَلَف الشيبانغ، <bdi>H1</bdi>، إلخ).
+
+---
+
+## 6. سياسة رؤية الترويسة
+
+لملفات <bdi>Markdown</bdi> تحديدًا، سطر <bdi>SPDX</bdi> **غير مرئي افتراضيًّا** — ملفوف في <bdi>`<!-- ... -->`</bdi> (أو <bdi>`{/* */}`</bdi> لِـ <bdi>MDX</bdi>)، مرئي في المصدر فقط. هذه هي السياسة الصحيحة لِـ <bdi>README</bdi> و<bdi>CONTRIBUTING</bdi> و<bdi>CLAUDE.md</bdi> وملفات تعليمات <bdi>harness</bdi> المدعوم و<bdi>SKILL.md</bdi> الخاص بالمهارة ومتون الأوامر وأنماط المُخرَج وصفحات الوثائق. يُسمَح بعرض **مرئي** (سطر <bdi>SPDX</bdi> كنص عادي أو كتلة مُسوَّرة أعلى المُخرَج) لمستندات المرجع المستقلّة التي تستفيد من مصدريّة قابلة للقراءة فورًا؛ تُضبَط السياسة لكل صنف ملف في <bdi>`src/apothem/schemas/header-visibility.yaml`</bdi> (الافتراضي *invisible*)، مع علامة تجاوز بنطاق الملف <bdi>`<!-- header-visibility: visible -->`</bdi> مسموح بها مباشرةً بعد السطر.
+
+---
+
+## 7. الحاقن — <bdi>`scripts/inject-header.{sh,py}`</bdi>
+
+أداة سطر أوامر حتمية:
+
+- تأخذ مسارًا واحدًا أو أكثر للملفات (أو أنماط <bdi>glob</bdi>).
+- تحدّد الانطباق عبر قائمة الاستثناءات (§3).
+- تكشف حالة الترويسة الموجودة (كنسية / مشوَّهة / غائبة)، نازعةً أي كتلة لافتة غير كنسية تجدها كي تكون عمليات إعادة التشغيل عديمة الأثر التراكمي.
+- تعرض متغاير <bdi>SPDX</bdi> الصحيح لكل نوع ملف (§2).
+- تُدرِج في الموضع الصحيح (§5)، مُحترِمةً الشيبانغ وفرونت-ماتر.
+- تعمل في ثلاثة أنماط: <bdi>`fix-in-place`</bdi> (تكتب)، <bdi>`emit-patch`</bdi> (تطبع <bdi>diff</bdi> موحَّدًا)، <bdi>`check`</bdi> (خروج بقيمة غير صفرية عند أي انحراف — يستخدمه <bdi>CI</bdi>).
+- عديمة الأثر التراكمي: تشغيلها مرّتين عملية فارغة.
+
+يُستدعى الحاقن من أهداف <bdi>Make</bdi> التي تُهيكِل ملفات جديدة بسطر <bdi>SPDX</bdi> مُدرَجًا مسبقًا (<bdi>`make headers-fix`</bdi> وهياكل <bdi>`make new-*`</bdi>) ومن خطّاف <bdi>pre-commit</bdi> في نمط <bdi>`--fix`</bdi>.
+
+---
+
+## 8. المُتحقِّق — <bdi>`file-header`</bdi> (<bdi>CI</bdi>)
+
+يعيش في [<bdi>`src/apothem/conformity/file_header_grep.py`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py). لكل ملف في شجرة العمل، يبحث المُتحقِّق عن انطباقه (وفق §3) ويؤكّد، إذا كان منطبقًا، أن سطر <bdi>SPDX</bdi> الكنسي حاضر في رأس الملف — أمام كل محتوى آخر، والمحتوى السابق الوحيد المسموح به هو الشيبانغ (§5).
+
+مدعوم بالتثبيتة الدقيقة بايتيًّا في [<bdi>`src/apothem/schemas/authorship-header.txt`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt). يبلّغ عن <bdi>diff</bdi> لكل ملف ونسبة تغطية مجمَّعة في ملخّص <bdi>CI</bdi>. يُخفِق البناء عند أي انحراف.
+
+---
+
+## 9. آليات الفرض الذاتي
+
+يجب أن ينجو هذا الانضباط من كل جلسة مستقبلية ومن كل مساهم مستقبلي. أسطح الفرض الإلزامية:
+
+1. **<bdi>`src/apothem/schemas/authorship-header.txt`</bdi>** — التثبيتة الكنسية الدقيقة بايتيًّا؛ مصدر حقيقة واحد.
+2. **<bdi>`scripts/inject-header.{sh,py}`</bdi>** — الحاقن الميكانيكي (§7).
+3. **مُتحقِّق <bdi>CI</bdi> <bdi>`file-header`</bdi>** (§8) — يُخفِق البناء عند أي انحراف.
+4. **خطّاف <bdi>pre-commit</bdi>** — يشغّل المُتحقِّق بـ <bdi>`--fix`</bdi> على الملفات المُجهَّزة، موصولًا بالحاقن.
+5. **كتلة السلوك الإلزامي في <bdi>`CLAUDE.md`</bdi>** — تُوجِّه المساعد لحقن سطر <bdi>SPDX</bdi> الكنسي عند إنشاء أي ملف منطبق.
+6. **ملف تعليمات <bdi>harness</bdi> المدعوم** في مسار <bdi>`.github/`</bdi> الكنسي — يُوجِّه بيئة تشغيل <bdi>harness</bdi> لفعل المثل عند توليد الملف.
+7. **خطّافات <bdi>PreToolUse</bdi>** في <bdi>`src/apothem/hooks/messages/pretooluse-{write,edit}-header-guard.md`</bdi> — تعترض استدعاءات أداة <bdi>Write</bdi>/<bdi>Edit</bdi> على المسارات المنطبقة كي يُحقَن سطر <bdi>SPDX</bdi> عند إنشاء الملف بدلًا من اكتشافه إخفاقَ <bdi>CI</bdi> لاحقًا.
+8. **مربّع اختيار قالب <bdi>PR</bdi>** — تأكيد مُوجَّه للمساهم بأن كل ملف جديد يحمل سطر <bdi>SPDX</bdi> الكنسي.
+9. **هذا المستند** (<bdi>`site/content/docs/reference/authorship-header.mdx`</bdi>) — الشارح المعياري الكنسي.
+
+---
+
+## انظر أيضًا
+
+- [<bdi>ADR-0002</bdi>](/docs/reference/authorship-header) — السند المعماري، والبدائل المدروسة.
+- [<bdi>ADR-0006</bdi>](/docs/reference/authorship-header) — المصادقة على تضييق اللافتة.
+- [<bdi>`src/apothem/schemas/authorship-header.txt`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt) — التثبيتة الكنسية الدقيقة بايتيًّا.
+- [<bdi>`src/apothem/schemas/header-exceptions.txt`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt) — قائمة الاستثناءات (صيغة regex/glob).
+- [<bdi>`scripts/inject-header.py`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.py) و[<bdi>`scripts/inject-header.sh`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.sh) — الحاقن.
+- [<bdi>`src/apothem/conformity/file_header_grep.py`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py) — المُتحقِّق.
+- مواصفة المشروع §0.5 + §4.6 — النص الكنسي المعكوس هنا.

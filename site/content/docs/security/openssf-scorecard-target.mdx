@@ -1,0 +1,49 @@
+---
+title: "OpenSSF Scorecard posture"
+description: "Apothem's OpenSSF Scorecard target and the evidence surfaces used to keep the score improving."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem targets the maximum OpenSSF Scorecard score while keeping the public facade honest about what Scorecard can and cannot infer from a new single-maintainer repository. This document enumerates each check, the evidence surface that backs it, and the control that keeps the posture current.
+
+The live score is at the [Scorecard viewer](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem); the badge is in the [README header](https://github.com/ahmed-g-gad/apothem/blob/main/README.md).
+
+## Per-check evidence matrix
+
+| Check | Evidence surface | Notes |
+|---|---|---|
+| **Binary-Artifacts** | [binary-artifacts-sweep.md](/docs/security/binary-artifacts-sweep) | Zero executable binaries tracked in source; generated distribution archives stay in `dist/`. |
+| **Branch-Protection** | [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) | `main` is protected before public release promotion; force-pushes and deletions are blocked after the fresh release commit lands. |
+| **CI-Tests** | [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) | Pytest matrix, ruff, mypy, CodeQL, Trivy, docs build, and packaging smoke checks. |
+| **CII-Best-Practices** | OpenSSF Best Practices registration | Requires maintainer-side registration at the OpenSSF Best Practices site; this cannot be completed by repository files alone. |
+| **Code-Review** | Branch protection + CODEOWNERS | Enforced for future pull requests; Scorecard history remains limited until reviewed PRs exist. |
+| **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | A new solo-maintainer project cannot manufacture multi-organization contribution history; this improves naturally as contributors join. |
+| **Dangerous-Workflow** | Workflow audit | No `pull_request_target`; Actions are SHA-pinned and scoped with explicit permissions. |
+| **Dependency-Update-Tool** | [`renovate.json`](https://github.com/ahmed-g-gad/apothem/blob/main/renovate.json) | Renovate covers GitHub Actions, Python manifests, hash-locked release requirements, and npm surfaces while keeping grouped dependency PRs available. |
+| **Fuzzing** | [`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | Hypothesis property tests exercise parser and frontmatter invariants; upstream Scorecard may not credit Hypothesis as a fuzzer integration. |
+| **License** | [LICENSE](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) | MIT license at repository root. |
+| **Maintained** | Git history | Current release commit and active workflow cadence demonstrate maintenance; very new repositories may receive an age warning. |
+| **Packaging** | [`.github/workflows/`](https://github.com/ahmed-g-gad/apothem/tree/main/.github/workflows) | Release, Pages, and npmjs.com workflows producing the sdist, wheel, SBOM, SLSA provenance, and Sigstore signatures. |
+| **Pinned-Dependencies** | Workflow audit + hash-locked requirements | Actions are SHA-pinned; release tooling installs use `--require-hashes`; workflow-only pip tools use exact pins. |
+| **SAST** | [`.github/workflows/codeql.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/codeql.yml) | CodeQL `security-extended` queries across Python and Actions. |
+| **Security-Policy** | [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) | Coordinated-disclosure policy, supported-version matrix, and response timeline. |
+| **Signed-Releases** | [`.github/workflows/release.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/release.yml) | Sigstore keyless signatures, SLSA provenance, SBOM, checksums, and release artifacts. |
+| **Token-Permissions** | Workflow audit | Workflows default to read-only permissions; write scopes are job-local and tied to deployment/package operations. |
+| **Vulnerabilities** | [`.github/workflows/pip-audit.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/pip-audit.yml) + [`.github/workflows/dependency-review.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/dependency-review.yml) | Weekly vulnerability scan and CI scan with SARIF upload; the dependency-review gate blocks pull requests that introduce vulnerable or disallowed-license dependencies. |
+
+## Score interpretation
+
+Scorecard scores each check on a 0-10 scale and the overall score is a weighted mean. Controls that depend on repository history, third-party registration, or contributor diversity are tracked explicitly instead of overclaimed. Drift on any file-controlled check triggers immediate remediation.
+
+## Refresh cadence
+
+- **Per-push:** Scorecard workflow re-runs on every push to `main`.
+- **Weekly:** Mondays 02:30 UTC — catches changes in upstream-scoring methodology + new vulnerabilities disclosed against existing pinned deps.
+- **Per-release:** Before public promotion, the maintainer verifies the live Scorecard viewer surface and records any platform-state limits.
+
+## References
+
+- [OpenSSF Scorecard](https://github.com/ossf/scorecard) — upstream project
+- [Scorecard checks reference](https://github.com/ossf/scorecard/blob/main/docs/checks.md) — per-check semantics
+- [`ossf/scorecard-action`](https://github.com/ossf/scorecard-action) — GitHub Actions wrapper
+- [SLSA framework](https://slsa.dev/) — supply-chain levels (apothem ships at SLSA-3)

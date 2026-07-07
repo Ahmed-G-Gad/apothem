@@ -1,0 +1,90 @@
+---
+title: "Open-Claw"
+description: "Adaptador de ferramenta do Apothem para o Open-Claw (Prévia)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Fornecedor:** Open-Claw
+**Nome de instalação:** `open-claw`
+**Status:** Prévia
+**Configuração nativa:** `~/.openclaw/openclaw.json`
+
+## Instalação
+
+```bash
+apothem install --harness open-claw
+```
+
+O adaptador traduz o perfil compartilhado para o arquivo de configuração global de
+usuário do OpenClaw e instala os conjuntos de suporte do Apothem sob a raiz da
+ferramenta. A configuração nativa do OpenClaw é JSON; o materializer renderiza JSON
+para corresponder.
+
+**Arquivos escritos:** `~/.openclaw/openclaw.json` e arquivos de suporte sob
+`~/.openclaw/.apothem/support/`
+
+## Mapeamento de perfil para configuração nativa
+
+O adaptador lê o perfil compartilhado do Apothem. O campo nativo de skills do OpenClaw
+é uma lista de nomes permitidos (não um carregador de diretórios) e o MCP é uma
+superfície de CLI, então o Apothem não redige nenhuma chave de configuração. Comandos,
+skills, regras, templates e prompts de hooks compartilhados são instalados como
+material de suporte sob `~/.openclaw/.apothem/support/`.
+
+## Notas de compatibilidade
+
+Adaptador de prévia. A configuração nativa JSON é a superfície ativa do Open-Claw; o
+Apothem usa o hook documentado de diretório de skills adicional para as skills e mantém
+os demais conjuntos como material de referência para a orientação instalada.
+
+## Verificação
+
+```bash
+apothem verify --harness open-claw
+```
+
+O comando verify confirma que:
+
+1. A configuração nativa existe no caminho esperado.
+2. Todos os campos obrigatórios do perfil compartilhado estão presentes.
+3. A rotina de verificação específica do adaptador relata sucesso.
+
+## Atualização
+
+```bash
+apothem update --harness open-claw
+```
+
+Rederiva a configuração nativa a partir do estado atual do perfil compartilhado.
+Execute após editar `~/.config/apothem/profile.yaml` ou atualizar o pacote do Apothem
+instalado.
+
+## Desinstalação
+
+```bash
+apothem uninstall --harness open-claw
+```
+
+Remove os arquivos de configuração nativa escritos pelo adaptador. O YAML do perfil
+compartilhado e o motor do Apothem não são afetados.
+
+## Portão de conformidade
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Solução de problemas
+
+| Sintoma | Correção |
+|---------|-----|
+| Arquivo de configuração não encontrado | Execute novamente `apothem install --harness open-claw` |
+| Verificação falhou | Execute `apothem update --harness open-claw` e verifique novamente |
+| Conteúdo de configuração inesperado | Verifique `~/.config/apothem/profile.yaml` ou `--profile PATH`, e execute novamente `apothem update --harness open-claw` |
+
+## Ajustes de configuração
+
+| Flag | Padrão | Descrição |
+|------|---------|-------------|
+| `--dry-run` | `false` | Pré-visualiza a instalação sem escrever arquivos. |

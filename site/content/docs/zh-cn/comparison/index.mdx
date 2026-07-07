@@ -1,0 +1,80 @@
+---
+title: "对比"
+description: "如何在手工维护的环境配置和其他配置方式之间评估 Apothem，附功能矩阵和按环境划分的页面。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem 是一个与宿主无关的 AI 环境配置管理器。`~/.config/apothem/profile.yaml`
+中的一份共享配置档案会物化为十七个环境原生的配置面。本节阐述如何在你已经使用的
+替代方案之间评估 Apothem。
+
+## Apothem 的对比
+
+其他工具解决了这一问题相邻的切片。像 **chezmoi** 和 **GNU Stow** 这样基于文件的
+配置管理器会放置或套模板文件，但从不把一个来源翻译成每个工具的 *原生* 配置
+模式。像 **rulesync** 这样的跨工具规则同步 CLI 确实能在许多工具上生成按工具划分的
+原生文件——工具数量比 Apothem 的十七个更多，且其同步单元的广度与之相当。Apothem 的独到之处在于**围绕同步所附带的治理与生命周期纪律**——一道机械化的合规闸门、确定性的流水线、一座审计堡垒，以及可逆且经过验证的生命周期。
+
+| 能力 | Apothem | 文件配置管理器（chezmoi、Stow） | 跨工具规则同步（rulesync） | 按工具的原生配置 |
+| ---------- | :-----: | :----------------------------------: | :-----------------------------: | :--------------------: |
+| 一个来源到许多工具的原生模式 | 是 —— 十七个环境适配器 | 否 —— 复制 / 符号链接，无翻译 | 是 | 否 —— 单一工具 |
+| 同步单元 | 规则、技能、钩子、斜杠命令、MCP | 任意文件 | 规则、忽略、MCP、命令、子代理、技能、钩子、权限 | —— |
+| 治理语料（行为规则加上机械的合规闸门） | 是 —— `python -m apothem.conformity.gate` | 否 | 否 | 否 |
+| 确定性的计划与研究流水线 | 是 —— 从 `/plan-spec` 到 `/plan-execute`、十三阶段的 `/research` | 否 | 否 | 否 |
+| 检测并修复的审计堡垒 | 是 —— 十一命令扫描、`/fortress` 重审循环 | 否 | 否 | 否 |
+| 经供应链加固的版本 | 是 —— SBOM、Sigstore、SLSA、Scorecard 目标 | 否 | 视情况而定 | 否 |
+| 可逆、已验证的生命周期 | 是 —— 备份、`apothem verify --json`、零孤儿卸载 | 视情况而定 | 视情况而定 | —— |
+
+凡是某个竞品更强之处，都会被点名：**rulesync** 覆盖的工具更多，并具备广度相当的同步单元，且若干同步工具会物化原生模式。Apothem 以围绕同步所附带的治理、审计与生命周期纪律——一道合规闸门、确定性的 `/plan` 与 `/research` 流水线、一座十一命令的审计堡垒、持久记忆，以及可逆且经过验证的生命周期——换取原始工具数量，而这是规则同步工具所不具备的。
+
+## 如何对比
+
+沿三条轴线对比：
+
+1. **真相来源。** 你的规则、受托工作者、命令和设置存放在哪里？Apothem 维护一份共享
+   语料，并从中渲染每个环境的原生格式。手工维护的配置则为每个工具保留一份副本。
+2. **漂移成本。** 当你修改一条规则时会发生什么？Apothem 在运行 `apothem update`
+   时把变更传播到每个已安装的环境。手工维护的配置要求你分别编辑每个工具的原生
+   文件并凭记忆保持它们对齐。
+3. **验证。** 你如何知道每个环境都正确配置了？Apothem 提供
+   `apothem verify --harness <name>` 和 `apothem doctor`。手工维护的配置没有
+   内置验证。
+
+## 功能矩阵
+
+该矩阵将 Apothem 与操作者最先求助的两种替代方案对照：手工维护每个环境的原生配置，
+以及通过通用 dotfile 管理器管理那些文件。
+
+| 能力 | 手工维护的配置 | dotfile 管理器 | Apothem |
+| ---------- | ---------------------- | --------------- | ------- |
+| 单一共享的真相来源 | 否（每个工具一份副本） | 否（追踪文件，而非配置档案） | 是（一份配置档案） |
+| 渲染环境原生格式 | 手动 | 否 | 是（按适配器的物化器） |
+| 跨环境的漂移防护 | 手动对齐 | 仅文件同步 | 是（`apothem update`） |
+| 按环境的安装/卸载 | 手动 | 部分（符号链接/复制） | 是（`install` / `uninstall`） |
+| 内置验证 | 无 | 无 | 是（`verify` / `doctor`） |
+| 按工具的格式翻译 | 无 | 无 | 是（`.mdc`、`.toml`、内嵌 `.md`） |
+| 从单一输入到十七个环境 | 否 | 否 | 是 |
+
+## 对比页面
+
+- [Apothem 与其他环境框架的对比](/docs/comparison/vs-other-harness-frameworks)
+- [对比原生 antigravity](/docs/comparison/vs-raw-antigravity)
+- [对比原生 claude-code](/docs/comparison/vs-raw-claude-code)
+- [对比原生 codebuddy](/docs/comparison/vs-raw-codebuddy)
+- [对比原生 codex](/docs/comparison/vs-raw-codex)
+- [对比原生 cursor](/docs/comparison/vs-raw-cursor)
+- [对比原生 gemini-cli](/docs/comparison/vs-raw-gemini-cli)
+- [对比原生 github-copilot](/docs/comparison/vs-raw-github-copilot)
+- [对比原生 glm](/docs/comparison/vs-raw-glm)
+- [对比原生 hermes](/docs/comparison/vs-raw-hermes)
+- [对比原生 kimi-code](/docs/comparison/vs-raw-kimi-code)
+- [对比原生 kiro](/docs/comparison/vs-raw-kiro)
+- [对比原生 open-claw](/docs/comparison/vs-raw-open-claw)
+- [对比原生 opencode](/docs/comparison/vs-raw-opencode)
+- [对比原生 qwen-code](/docs/comparison/vs-raw-qwen-code)
+- [对比原生 trae](/docs/comparison/vs-raw-trae)
+- [对比原生 windsurf](/docs/comparison/vs-raw-windsurf)
+- [对比原生 zed](/docs/comparison/vs-raw-zed)
+
+按环境划分的适配器细节，见 [环境适配器](/docs/harnesses) 一节。

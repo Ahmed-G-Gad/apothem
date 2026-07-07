@@ -1,0 +1,131 @@
+# SPDX-License-Identifier: MIT
+
+# Pre-commit hook configuration for Apothem.
+# Install: pip install pre-commit && pre-commit install
+# Run all hooks manually: pre-commit run --all-files
+
+repos:
+  # ---------------------------------------------------------------------------
+  # General file hygiene
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--unsafe]
+      - id: check-json
+      - id: check-toml
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: check-merge-conflict
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  # ---------------------------------------------------------------------------
+  # Python — ruff (lint + format)
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Lockstep: keep in sync with the ruff floor in pyproject.toml [project.optional-dependencies].dev.
+    rev: v0.15.20
+    hooks:
+      - id: ruff
+        args: [--fix]
+        types_or: [python, pyi]
+      - id: ruff-format
+        types_or: [python, pyi]
+
+  # ---------------------------------------------------------------------------
+  # Python — mypy (type checking)
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v2.1.0
+    hooks:
+      - id: mypy
+        pass_filenames: false
+        additional_dependencies:
+          # Floors kept in lockstep with pyproject.toml [project.dependencies]
+          # so the isolated mypy venv type-checks against the same library
+          # versions a `pip install -e .[dev]` resolves.
+          - click==8.4.2
+          - rich>=15.0.0
+          - pyyaml>=6.0.3
+          - jsonschema>=4.26.0
+          - types-PyYAML
+          - types-jsonschema>=4.26.0.20260518
+
+  # ---------------------------------------------------------------------------
+  # Markdown
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.48.0
+    hooks:
+      # Rule policy lives in .markdownlint.json (auto-discovered by
+      # markdownlint-cli); no args here so the policy is declared once.
+      - id: markdownlint
+
+  # ---------------------------------------------------------------------------
+  # YAML lint
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+        args: [-d, '{extends: relaxed, rules: {line-length: {max: 120}}}']
+        exclude: ^.github/workflows/
+
+  # ---------------------------------------------------------------------------
+  # Secrets detection
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/gitleaks/gitleaks
+    # Lockstep: keep in sync with GL_VERSION in .github/workflows/ci.yml.
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  # ---------------------------------------------------------------------------
+  # Conventional Commits (commit-msg hook)
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.4.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: [feat, fix, docs, chore, refactor, test, ci, perf, build, style, revert, release]
+
+  # ---------------------------------------------------------------------------
+  # Conformity corpus runner (per-Write, strict)
+  # ---------------------------------------------------------------------------
+  # Runs the per-Write matcher corpus over the git-tracked tree under --strict
+  # so the mechanical bars run before a commit lands. Per the ratified EN-1
+  # enforcement posture, a BLOCKING matcher finding fails the commit while
+  # ADVISORY matchers report (stderr) but never gate.
+  # pass_filenames is false because the runner enumerates the corpus itself via
+  # `git ls-files`; `always_run` keeps it firing even when no staged path matches
+  # a matcher's surface (a tree-wide gate, not a per-file linter). The entry is
+  # the repo-root wrapper `scripts/dev/run_corpus_gate.py`, which prepends the
+  # checkout's `src/` to sys.path before dispatching to `gate.main` — so the hook
+  # resolves apothem from a plain checkout (no install required) inside
+  # pre-commit's isolated venv, matching the self-contained-checkout posture.
+  - repo: local
+    hooks:
+      - id: conformity-corpus-perwrite
+        name: conformity corpus runner (per-Write, strict)
+        entry: python scripts/dev/run_corpus_gate.py --all-perwrite . --strict
+        language: python
+        pass_filenames: false
+        always_run: true
+        require_serial: true
+
+  # ---------------------------------------------------------------------------
+  # GitHub Actions lint
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+
+ci:
+  autofix_prs: false
+  autoupdate_schedule: weekly

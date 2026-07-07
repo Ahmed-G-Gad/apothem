@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT
+
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability disclosure
+    url: https://github.com/ahmed-g-gad/apothem/security
+    about: Report security vulnerabilities via the "Report a vulnerability" button on the Security tab. See SECURITY.md for the full policy.
+  - name: Discussions
+    url: https://github.com/ahmed-g-gad/apothem/discussions
+    about: Use Discussions for questions, workflow tips, and discussion-style threads. Issues are reserved for actionable defects, feature requests, and clarification questions anchored on a specific artifact.

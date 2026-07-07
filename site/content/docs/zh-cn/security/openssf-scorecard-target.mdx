@@ -1,0 +1,50 @@
+---
+title: "OpenSSF Scorecard 态势"
+description: "Apothem 的 OpenSSF Scorecard 目标，以及用于持续提升分数的证据表面。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem 以争取 OpenSSF Scorecard 的最高分为目标，同时保持公开门面对 Scorecard 能从一个全新的单一维护者仓库推断什么、不能推断什么这一点保持诚实。本文档逐项列举每项检查、支撑它的证据表面，以及保持该态势处于最新状态的控制措施。
+
+实时分数见 [Scorecard 查看器](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem);徽章见 [README 头部](https://github.com/ahmed-g-gad/apothem/blob/main/README.md)。
+
+## 逐项检查的证据矩阵
+
+| 检查 | 证据表面 | 备注 |
+|---|---|---|
+| **Binary-Artifacts** | [binary-artifacts-sweep.md](/docs/security/binary-artifacts-sweep) | 源码中不跟踪任何可执行二进制文件;生成的分发归档保留在 `dist/` 中。 |
+| **Branch-Protection** | [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) | `main` 在公开发布推广前受保护;在全新发布提交落地后,强制推送与删除被阻止。 |
+| **CI-Tests** | [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) | Pytest 矩阵、ruff、mypy、CodeQL、Trivy、文档构建以及打包冒烟检查。 |
+| **CII-Best-Practices** | OpenSSF Best Practices 注册 | 需要维护者一侧在 OpenSSF Best Practices 站点完成注册;仅靠仓库文件无法完成此项。 |
+| **Code-Review** | 分支保护 + CODEOWNERS | 对未来的拉取请求强制执行;在存在经过评审的 PR 之前,Scorecard 历史仍然有限。 |
+| **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | 一个全新的单人维护项目无法制造多组织的贡献历史;随着贡献者加入,此项会自然改善。 |
+| **Dangerous-Workflow** | 工作流审计 | 没有 `pull_request_target`;Actions 按 SHA 固定,并以显式权限限定作用域。 |
+| **Dependency-Update-Tool** | [`renovate.json`](https://github.com/ahmed-g-gad/apothem/blob/main/renovate.json) | Renovate 覆盖 GitHub Actions、Python 清单、哈希锁定的发布需求以及 npm 表面,同时保留分组的依赖 PR。 |
+| **Fuzzing** | [`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | Hypothesis 属性测试演练解析器与 frontmatter 不变式;上游 Scorecard 可能不将 Hypothesis 计为模糊测试集成。 |
+| **License** | [LICENSE](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) | 仓库根目录的 MIT 许可证。 |
+| **Maintained** | Git 历史 | 当前发布提交与活跃的工作流节奏证明了维护状态;非常新的仓库可能会收到年限警告。 |
+| **Packaging** | [`.github/workflows/`](https://github.com/ahmed-g-gad/apothem/tree/main/.github/workflows) | Release、Pages 与 npmjs.com 工作流,产出 sdist、wheel、SBOM、SLSA 溯源以及 Sigstore 签名。 |
+| **Pinned-Dependencies** | 工作流审计 + 哈希锁定需求 | Actions 按 SHA 固定;发布工具安装使用 `--require-hashes`;仅用于工作流的 pip 工具使用精确固定。 |
+| **SAST** | [`.github/workflows/codeql.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/codeql.yml) | 跨 Python 与 Actions 的 CodeQL `security-extended` 查询。 |
+| **Security-Policy** | [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) | 协调披露策略、受支持版本矩阵以及响应时间线。 |
+| **Signed-Releases** | [`.github/workflows/release.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/release.yml) | Sigstore 无密钥签名、SLSA 溯源、SBOM、校验和以及发布产物。 |
+| **Token-Permissions** | 工作流审计 | 工作流默认为只读权限;写作用域为作业本地,并与部署/打包操作绑定。 |
+| **Vulnerabilities** | [`.github/workflows/pip-audit.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/pip-audit.yml) + [`.github/workflows/dependency-review.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/dependency-review.yml) | 每周漏洞扫描与 CI 扫描,并上传 SARIF;依赖评审关卡会阻止引入存在漏洞或不被许可的许可证依赖的拉取请求。 |
+
+## 分数解读
+
+Scorecard 对每项检查按 0-10 分制评分,总分为加权平均值。依赖仓库历史、第三方注册或贡献者多样性的控制项会被显式跟踪,而非过度宣称。任何受文件控制的检查出现漂移都会触发立即修复。
+
+## 刷新节奏
+
+- **每次推送:** Scorecard 工作流在每次推送到 `main` 时重新运行。
+- **每周:** 周一 UTC 02:30 —— 捕捉上游评分方法的变化 + 针对既有固定依赖新披露的漏洞。
+- **每次发布:** 在公开推广前,维护者会核验实时 Scorecard 查看器表面,并记录任何平台状态限制。
+
+## 参考
+
+- [OpenSSF Scorecard](https://github.com/ossf/scorecard) —— 上游项目
+- [Scorecard 检查参考](https://github.com/ossf/scorecard/blob/main/docs/checks.md) —— 逐项检查语义
+- [`ossf/scorecard-action`](https://github.com/ossf/scorecard-action) —— GitHub Actions 封装
+- [SLSA 框架](https://slsa.dev/) —— 供应链等级(apothem 以 SLSA-3 发布)

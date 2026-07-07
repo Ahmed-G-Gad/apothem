@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: MIT
+
+# CODEOWNERS — review-ownership partition for apothem.
+# See https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# Every pull request that touches a matched path automatically requests
+# review from the listed owner. apothem is currently a single-maintainer
+# project; @ahmed-g-gad owns every path. As co-maintainers are added (see
+# MAINTAINERS.md + GOVERNANCE.md Maintainer Lifecycle), per-subtree
+# ownership rows below the global rule narrow the partition.
+#
+# Syntax: <path-pattern> <owner> [<owner> ...]
+# Later matches take precedence over earlier ones.
+
+# Global ownership — every file.
+*                       @ahmed-g-gad
+
+# Source tree.
+/src/apothem/           @ahmed-g-gad
+
+# Per-harness adapters.
+/src/apothem/harnesses/ @ahmed-g-gad
+
+# CI / release / supply-chain surfaces.
+/.github/               @ahmed-g-gad
+
+# Project-governance + visibility surfaces.
+/.github/CODEOWNERS     @ahmed-g-gad
+/GOVERNANCE.md          @ahmed-g-gad
+/MAINTAINERS.md         @ahmed-g-gad
+/SECURITY.md            @ahmed-g-gad
+/pyproject.toml         @ahmed-g-gad

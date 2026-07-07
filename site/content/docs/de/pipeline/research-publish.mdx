@@ -1,0 +1,70 @@
+---
+title: "/research-publish"
+description: "/research-publish — Formatiert das Paper nach der Vorlage des Publikationsorts und stellt das Einreichungspaket zusammen (Supplement, Daten-/Code-Verfügbarkeit, Anschreiben, Ethik/Interessenkonflikt), mit einem Preprint-/DOI-Plan."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Rolle:** Hauptforscher (Publikation)
+**Pipeline-Position:** Mitte der Kette
+
+Formatiert das Paper nach der Vorlage des Publikationsorts und stellt das Einreichungspaket zusammen — Supplementmaterialien, Erklärung zur Daten-/Code-Verfügbarkeit, Anschreiben, Ethik- und Interessenkonflikterklärungen — plus einen Preprint-/Archivierungsplan mit einem DOI und einer Einreichungs-Checkliste. Der Betreiber reicht das Paket ein; der terminale Nachfolger ist `/research-disseminate`, der die veröffentlichte Arbeit zu ihrem Publikum trägt.
+
+## Kanonischer Aufruf
+
+```bash
+/research-publish
+```
+
+Mit Argumenten:
+
+```bash
+/research-publish [path/to/research-suite/]
+```
+
+## Eingaben
+
+Das Paper-Liefergut und `_outputs/review-report.md` (die Peer-Review-Überarbeitungen).
+
+## Ausgaben
+
+Das nach dem Publikationsort formatierte Einreichungspaket an einem host-natürlichen Ort (das formatierte Manuskript + Supplementmaterialien + Erklärung zur Daten-/Code-Verfügbarkeit + Anschreiben + Ethik-/Interessenkonflikterklärungen) + `_outputs/publication-record.md` + eine Einreichungs-Checkliste.
+
+## Stromabwärts
+
+/research-disseminate (nachgelagerter Konsument) — der Betreiber führt die Einreichung durch, dann trägt `/research-disseminate` die veröffentlichte Arbeit zu ihrem Publikum. Wenn der Publikationsort Überarbeitungen zurückgibt, `/research-review` gegen das überarbeitete Paper erneut ausführen, bevor das Paket neu erstellt wird.
+
+## Workflow-Phasen
+
+Der Befehl folgt dem standardmäßigen Workflow der `/research`-Pipeline:
+
+1. **Kontext laden** — Das Paper und den Review-Bericht lesen.
+2. **Das Sequenz-Gate verifizieren** — Bestätigen, dass `_outputs/review-report.md` existiert; andernfalls mit `Blocked: run /research-review first` anhalten.
+3. **Formatieren & packen** — Die Vorlage des Publikationsorts anwenden; Supplement, Daten-/Code-Verfügbarkeit, Anschreiben, Ethik-/Interessenkonflikterklärungen zusammenstellen.
+4. **Preprint / Archivierung planen** — Den Preprint- und DOI-Plan festhalten; die Einreichungs-Checkliste erstellen.
+5. **Das Übergabemanifest aktualisieren** — Das Einreichungspaket und den Publikationsdatensatz festhalten.
+6. **Das Paket ausgeben** — Das nach dem Publikationsort formatierte Einreichungspaket + `_outputs/publication-record.md`.
+
+## Rigorositätsuntergrenze
+
+Die Formatierung wahrt die gestufte Offenlegung: Bei einem doppelblinden Publikationsort werden Autor, Institution und Systemidentität auf separat eingereichte Metadaten reduziert und erst in der dafür vorgesehenen Druckfahnen-Stufe wiederhergestellt. Das Archivierungs-Deposit trägt das am Publikationsort skalierte Reproduzierbarkeitsnachweis-Paket (Daten, Code, eingefrorene Umgebung, Seeds, Hardware-Protokoll, Ergebnisse pro Instanz und Abbildungen).
+
+## Fehlermodi
+
+| Symptom | Ursache | Behebung |
+|---------|-------|----------|
+| Blocked: run /research-review first | Kein Review-Bericht | Führen Sie `/research-review` aus, um `_outputs/review-report.md` zu erzeugen |
+| Unbearbeitete HIGH-Überarbeitung | Review-Befund übersprungen | Bearbeiten Sie die Überarbeitung und führen Sie `/research-review` erneut aus |
+| Fehlende Daten-/Code-Verfügbarkeit | Reproduzierbarkeitsoberfläche fehlt | Fügen Sie vor der Einreichung die Erklärung zur Daten-/Code-Verfügbarkeit hinzu |
+
+## Beispiele
+
+```bash
+# Das Einreichungspaket des Publikationsorts zusammenstellen
+/research-publish path/to/research-suite/
+```
+
+## Querverweise
+
+- [Pipeline-Übersicht](/docs/pipeline)
+- [Befehlsreferenz](/docs/reference/commands)

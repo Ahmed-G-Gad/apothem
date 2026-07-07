@@ -1,0 +1,107 @@
+---
+title: "تأليف محوّل إطار عمل"
+description: "دليل خطوة بخطوة لتأليف محوّل إطار عمل جديد لـ Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+يرشدك هذا الدليل خلال إنشاء محوّل إطار عمل لـ<bdi>Apothem</bdi> من الصِّفر،
+باستخدام بروتوكول <bdi>`HarnessAdapter`</bdi>.
+
+## المتطلّبات المسبقة
+
+- <bdi>Python 3.10+</bdi>
+- إطار عمل مستهدَف بتنسيق إعداد معروف
+- فهم [تجريد محوّل إطار العمل](/docs/architecture/harness-adapter-abstraction)
+
+## الخطوة 1: إنشاء حزمة المحوّل
+
+```bash
+mkdir apothem-myadapter
+cd apothem-myadapter
+```
+
+```toml
+# pyproject.toml
+[project]
+name = "apothem-myadapter"
+version = "X.Y.Z"
+requires-python = ">=3.10"
+dependencies = ["apothem>=X.Y.Z"]  # pin the floor to the apothem release you target
+
+[project.entry-points."apothem.harnesses"]
+my-harness = "apothem_myadapter.adapter:MyHarnessAdapter"
+```
+
+## الخطوة 2: تنفيذ المحوّل
+
+```python
+# src/apothem_myadapter/adapter.py
+from pathlib import Path
+from typing import Any
+
+from apothem.harnesses import HarnessAdapter
+
+
+class MyHarnessAdapter(HarnessAdapter):
+    """Implements the HarnessAdapter protocol for "My Harness".
+
+    First-party adapters in the apothem tree usually delegate to the
+    ``make_user_scope_adapter`` / ``make_project_scope_adapter`` factories in
+    ``apothem.harnesses._shared.wrapper_factories`` and declare their install
+    rules in ``src/apothem/lib/propagation-manifest.yaml``. Implementing the
+    protocol directly, as shown here, is the clearest way to read its surface.
+    """
+
+    @property
+    def name(self) -> str:
+        return "my-harness"
+
+    @property
+    def output_path(self) -> Path:
+        # The single native config file this adapter owns on disk.
+        return Path.home() / ".myharness" / "config.md"
+
+    def install(self, profile: dict[str, Any]) -> object:
+        # ``profile`` is the loaded shared-profile dict (rules, skills, hooks...).
+        self.output_path.parent.mkdir(parents=True, exist_ok=True)
+        self.output_path.write_text(self._render(profile), encoding="utf-8")
+        return self.output_path
+
+    def update(self, profile: dict[str, Any]) -> object:
+        return self.install(profile)  # idempotent re-materialization
+
+    def uninstall(self) -> None:
+        self.output_path.unlink(missing_ok=True)
+
+    def is_installed(self) -> bool:
+        return self.output_path.is_file()
+
+    def verify(self) -> bool:
+        return self.output_path.is_file() and self.output_path.stat().st_size > 0
+
+    def _render(self, profile: dict[str, Any]) -> str:
+        # Translate the profile into the harness's native format.
+        rules = profile.get("rules", [])
+        return "\n\n".join(str(rule) for rule in rules)
+```
+
+## الخطوة 3: التثبيت والاختبار
+
+```bash
+pip install -e .
+apothem install --harness my-harness
+apothem verify --harness my-harness
+```
+
+## الخطوة 4: الإضافة إلى توثيق <bdi>pyproject.toml</bdi>
+
+وثّق إطار العمل في <bdi>`site/content/docs/harnesses/my-harness.mdx`</bdi> باتّباع
+[قالب صفحة إطار العمل](/docs/harnesses).
+
+## الخطوة 5: التقديم للإدراج
+
+افتح طلب سحب في مستودع <bdi>Apothem</bdi> يحوي:
+- حزمة المحوّل (أو رابطًا إليها)
+- صفحة التوثيق
+- اختبار تحقّق في <bdi>`tests/packaging/test_myadapter_install.py`</bdi>

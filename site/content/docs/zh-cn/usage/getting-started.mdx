@@ -1,0 +1,72 @@
+---
+title: "核心工作流"
+description: "Apothem 的四个核心工作流——配置档案、规则、计划与合规闸门。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem 提供四项核心能力：一份共享的治理配置档案、一套规则语料、一条结构化的
+计划流水线，以及一道实时的合规闸门。
+
+<Callout title="初来乍到？">
+  若需要一份从零到首次运行的引导式演练，请先阅读
+  [入门教程](/docs/tutorials/getting-started)。本页是你完成配置后对四个核心
+  工作流的快速参考。
+</Callout>
+
+## 共享配置档案
+
+除非你传入 `--profile PATH`，你的 Apothem 配置档案位于
+`~/.config/apothem/profile.yaml`。它是唯一的真相来源，每个环境适配器都从中
+派生出原生配置：
+
+```yaml
+identity:
+  name: "Example User"
+preferences:
+  style: "concise"
+rules:
+  - "Validate external input before writing files."
+```
+
+创建并查看配置档案：
+
+```bash
+apothem profile init
+apothem profile show --json
+```
+
+## 第一条规则
+
+将共享规则添加到配置档案 YAML 中，然后重新物化所选环境。当这些规则包含示例
+数据时，请使用虚构的占位值，以免任何真实身份或凭据混入共享配置档案或 CI
+运行中。
+
+```bash
+apothem profile set rules '["Always include a brief summary at the end of every response."]'
+apothem update --harness claude-code
+apothem verify --harness claude-code
+```
+
+## 第一个计划
+
+`/plan` 流水线作为斜杠命令在你的工具内运行，而不是通过 `apothem`
+二进制文件。一旦某个环境安装完成，便可从该工具的对话中启动一个计划：
+
+```text
+/plan-spec
+```
+
+`/plan-spec` 将你的散文精炼为一份规格，而 `/plan-generate` 会在
+`<project-root>/.apothem/plans/{suite}/` 下物化一个计划套件。完整流程参见
+[流水线命令参考](/docs/pipeline)。
+
+## 合规闸门
+
+从仓库根目录运行：
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+运行所有机械化合规检查，并逐条报告通过/失败。

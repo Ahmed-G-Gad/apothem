@@ -1,0 +1,89 @@
+---
+title: "Editar o perfil"
+description: "Altere o perfil compartilhado e rematerialize todas as ferramentas instaladas."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Objetivo: alterar um valor no perfil compartilhado e propagá-lo para todas as ferramentas que você
+tem instaladas.
+
+## Pré-requisitos
+
+- A CLI `apothem` no seu `PATH` (ou a forma autocontida: prefixe com
+  `PYTHONPATH="$HOME/.apothem/src"` e execute `python -m apothem`, ou use
+  `npx @ahmed-g-gad/apothem`).
+- Um perfil em `~/.config/apothem/profile.yaml`. Crie um com
+  `apothem profile init` se ele estiver ausente.
+
+## A forma do perfil
+
+O perfil é um único documento YAML. Suas chaves de nível superior:
+
+- `identity` (obrigatório) — `name`, mais os opcionais `role`, `email`, `website`,
+  `github`.
+- `preferences` — `language`, `style` (`concise` / `verbose` / `balanced`),
+  `formatter`, `test_framework`.
+- `rules` — uma lista de strings de regras adicionais compartilhadas com ferramentas capazes.
+- `seriousness` — um de `EXPLORING`, `PERSONAL_USE`, `SHARED`,
+  `PUBLIC_LAUNCH`.
+- `enforcement` — alternadores opcionais (`sprints`, `agent_teams`, `multitasking`,
+  `continuous_execution`, `learning_loop`), cada flag desligada por padrão.
+- `harnesses` — sobrescritas por ferramenta indexadas pelo id da ferramenta.
+- `exclude_harnesses` — ids de ferramentas ignorados por comandos em lote (`--harness all`).
+
+## Passos
+
+1. Inspecione o perfil atual:
+
+   ```bash
+   apothem profile show
+   ```
+
+2. Edite-o. Abra-o no editor do seu sistema:
+
+   ```bash
+   apothem profile edit
+   ```
+
+   Ou defina uma única chave pontilhada a partir da linha de comando. O valor é armazenado
+   literalmente (com exceção de `true`/`false` e entradas explícitas `[..]`/`{..}`, que são interpretadas) e o
+   perfil é validado contra o esquema antes da gravação — uma definição inválida é
+   recusada e o perfil em disco permanece inalterado:
+
+   ```bash
+   apothem profile set seriousness SHARED
+   apothem profile set identity.name "Ada Lovelace"
+   ```
+
+3. Rematerialize os harness para que a alteração chegue à configuração nativa deles.
+   Para um harness de escopo de usuário:
+
+   ```bash
+   apothem update --harness claude-code
+   ```
+
+   Para um harness de escopo de projeto, informe a raiz do projeto; use `all` para atualizar
+   todos os harness instalados:
+
+   ```bash
+   apothem update --harness cursor --project /path/to/project
+   apothem update --harness all --project /path/to/project
+   ```
+
+## Verificar
+
+```bash
+apothem profile show
+apothem verify --harness all
+```
+
+`profile show` reflete sua edição; `verify` confirma que a configuração materializada
+corresponde ao perfil atualizado.
+
+## Relacionado
+
+- [Adicionar uma ferramenta](/docs/how-to/adding-a-harness) para colocar uma nova ferramenta sob
+  o controle do perfil antes de rematerializar.
+- [Atualização](/docs/install/updating) cobre a atualização do mecanismo junto com a
+  etapa de rematerialização.

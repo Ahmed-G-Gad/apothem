@@ -1,0 +1,41 @@
+---
+title: "Apothem versus konfigurasi Kiro manual"
+description: "Memelihara file pengarah Kiro di bawah .kiro/steering/ dengan tangan versus merendernya dari profil bersama Apothem."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Kiro membaca pengarah dari direktori `.kiro/steering/` berisi file Markdown. Adapter
+kiro milik Apothem merender file pengarah `apothem-rules.md` khusus dari profil
+bersama. Halaman ini mempertentangkan pemeliharaan konfigurasi itu dengan tangan
+terhadap pengelolaannya dengan Apothem.
+
+## Perbandingan upaya
+
+| Tugas | Konfigurasi manual | Dikelola Apothem |
+| ---- | --------------- | --------------- |
+| Menulis aturan pengarah | Menulis tiap file di bawah `.kiro/steering/` dengan tangan | Dirender dari korpus bersama |
+| Menjaga file fondasi tetap utuh | Ingat untuk tidak menimpa `product.md` / `tech.md` / `structure.md` | Adapter hanya menulis `apothem-rules.md` |
+| Menjaga aturan selaras dengan lingkungan lain | Manual, per alat | Otomatis saat `apothem update` |
+| Memverifikasi konfigurasi sudah benar | Inspeksi manual | `apothem verify --harness kiro` |
+
+## Apa yang dikelola Apothem
+
+Adapter kiro merender aturan bersama menjadi file pengarah `apothem-rules.md` khusus
+dengan front matter `inclusion: always` dan tidak menyentuh file fondasi yang ditulis
+operator milik Kiro. Kiro tidak memiliki hook PreToolUse, sehingga niat pagar pengaman
+berdiam di dalam prosa aturan alih-alih di titik penyadapan panggilan alat. Setiap
+perubahan pada aturan bersama merender ulang file pada `apothem update` berikutnya.
+
+## Jalur migrasi
+
+1. Jalankan `apothem profile init` untuk membuat profil bersama jika Anda belum memilikinya.
+2. Pindahkan aturan dari `.kiro/steering/` Anda yang sudah ada ke korpus bersama.
+3. Jalankan `apothem install --harness kiro` untuk merender file pengarah `apothem-rules.md`.
+4. Jalankan `apothem verify --harness kiro` untuk memastikan konfigurasi sudah terpasang.
+5. Gunakan `apothem update --harness kiro` untuk setiap perubahan berikutnya.
+
+## Baca berikutnya
+
+- [Referensi adapter Kiro](/docs/harnesses/kiro)
+- [Ikhtisar perbandingan](/docs/comparison)

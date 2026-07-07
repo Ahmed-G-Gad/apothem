@@ -1,0 +1,110 @@
+---
+title: "Cohort パッケージング契約"
+description: "Cohort パッケージングとプラグインマニフェストのための、安定した下流消費可能な契約 — マッピングを再導出することなく cohort を列挙し、各ハーネス固有のネイティブターゲットを解決する。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+# Cohort パッケージング契約
+
+本ドキュメントは、cohort パッケージングとプラグインマニフェストのための、
+安定した下流消費可能な契約を規定します。消費者はこの契約を読むことで、
+cohort を列挙し、各ハーネス固有のネイティブターゲットを**マッピングを再導出
+することなく**解決できます。
+
+## アーティファクト
+
+| アーティファクト | 役割 |
+| -------- | ---- |
+| `src/apothem/schemas/cohort.schema.json` | cohort マニフェストドキュメントの JSON Schema。 |
+| `src/apothem/schemas/cohort-manifest.yaml` | cohort マニフェストのインスタンス — 6 つすべての cohort（`core`、`developer`、`security`、`research`、`ai-engineering`、`full`）がそれぞれのメンバー集合で充填されている。`full` は他の 5 つの和集合。 |
+| `src/apothem/schemas/plugin.schema.json` | バンドルごとのプラグインマニフェスト（`plugin.json`）の JSON Schema。 |
+| `src/apothem/lib/propagation-manifest.yaml` | 各ハーネス固有のネイティブターゲットの**信頼できる情報源**。 |
+
+## cohort マニフェストの形
+
+cohort マニフェストは、3 つのキーを持つトップレベルのオブジェクトです。
+
+- `version` — マニフェストの SemVer 文字列。
+- `cohorts[]` — cohort ごとに 1 エントリ。各エントリは `id`（閉じた集合
+  `core | developer | security | research | ai-engineering | full` から）、
+  `name`、`description`、`members`（カタログタイプ別にメンバー識別子を
+  グループ化するオブジェクト: `skills` / `agents` / `commands` / `rules` /
+  `hooks`）を持ちます。
+- `per_harness_targets` — 解決契約（下記）。
+
+各メンバー識別子は安定した kebab-case の名前であり、`src/apothem/` 配下の実在の
+アーティファクト（`skills/<name>/`、`agents/<name>.md`、`commands/<name>.md`、
+`rules/<name>.md`、または `hooks/` のエントリ）に対応します。
+
+## cohort の列挙
+
+消費者は `cohort-manifest.yaml` を読み込み、`cohort.schema.json` に対して検証し、
+その後 `cohorts[]` を反復処理します。各 cohort について、`members.<type>` を
+読み取り、各カタログタイプのメンバー識別子を取得します。
+
+## 各ハーネス固有のネイティブターゲットの解決（再導出なし）
+
+cohort マニフェストはハーネスマッピングを**再記述しません**。代わりに、
+`per_harness_targets.source` が唯一の信頼できる情報源である
+`lib/propagation-manifest.yaml` を指し示します。解決規則は次のとおりです。
+
+> カタログタイプ `T`（`skills`、`agents`、`commands`、`rules`、`hooks` の
+> いずれか）の cohort メンバーと、ターゲットハーネス `H`（`per_harness_targets.harnesses`
+> に列挙されているもののいずれか）について、ネイティブプラグインターゲットは、
+> `lib/propagation-manifest.yaml` の `harnesses.H.install` 配下で `source` が
+> `T/` に一致するエントリの `target` フィールドです。
+
+例えば、`claude_code` 向けにインストールされた `core` cohort の skill は、
+`source: "skills/"` を持つ `harnesses.claude_code.install` のエントリを通じて
+`target: "${HARNESS_ROOT}/skills/"` に解決されます。同じ skill は `opencode`
+では `${HARNESS_ROOT}/skills/` に、`gemini_cli` では
+`${PROJECT_ROOT}/.gemini/skills/` に解決されます。消費者はハーネスターゲットを
+決して捏造せず — それらを参照します。
+
+`${HARNESS_ROOT}` / `${PROJECT_ROOT}` のプレースホルダーは、各ハーネスアダプター
+によってインストール時に解決されます。cohort 消費者は解決済みの `target` を
+そのまま扱います。
+
+## プラグインマニフェストの役割
+
+`plugin.schema.json` は `plugin.json` を記述します — これは、必須の `name`、
+SemVer の `version`、`description` を持つ、カタログメンバー（`skills` /
+`commands` / `agents` / `hooks` / `rules`）の自己記述的なバンドルです。
+プラグインマニフェストは、ハーネスアダプターがそのネイティブプラグイン面へ
+物質化する単位です。cohort はプラグインがどのメンバーを携えるかを選択し、
+伝播マニフェストはそれらのメンバーが各ハーネスでどこに着地するかを解決します。
+
+## パッケージングの決定 — 1 つの包括バンドル、論理的な cohort
+
+cohort は**論理的な選択レイヤー**（このマニフェスト）であり、個別に
+インストール可能な分離バンドルの集合ではありません。Apothem は完全なカタログを
+携えた**1 つの包括バンドル**を出荷します。cohort マニフェストは消費者が一貫した
+サブセットを選択できるようにし、伝播マニフェストは選択された各メンバーが
+各ハーネスでどこに着地するかを解決します。
+
+カタログを cohort ごとの分離バンドル（例えば `developer` / `security` /
+`research` ファミリーごとに 1 バンドル）に分割することは、主要な配布面が
+ドキュメント化している**メタプラグインシンボリックリンクパターン**を介して、
+**リポジトリレベルの重複なしに達成可能**です。マーケットプレイスのカタログが
+複数の cohort プラグインを列挙し、各 cohort プラグインディレクトリはコピー
+ではなく、単一ソースの共有カタログへの**シンボリックリンク**を保持します。
+cohort がインストールされると、ハーネスはマーケットプレイス内の各シンボリック
+リンクを逆参照し — ターゲットの内容をその cohort の*キャッシュ*へコピーし —
+これによりインストールされた cohort は自己完結する一方で、**リポジトリは
+シンボリックリンクで配線された単一の信頼できる情報源を保持します**
+（重複過程の規律が好むとおり、冗長性ではなく配線）。cohort バンドルがカタログ
+を「機械的に重複させる」とする以前の解釈は、*インストール時のキャッシュ*重複
+（ハーネスの通常のプラグインごとのコピー）と*リポジトリ*重複とを混同して
+いました。シンボリックリンクパターンは後者を回避します。
+
+Apothem は現在**1 つの包括バンドル**を出荷していますが、それは cohort が
+機械的に不可能だからではなく、それが最も単純な配布面だからです。cohort ごとの
+形式を採用することは、重複過程違反ではなく、本物の **UX と保守のトレードオフ**
+です。利点は「このファミリーだけをインストールする」というよりきめ細かい
+体験です。コストは、N 個の cohort シンボリックリンクディレクトリとそれらの
+マーケットプレイスエントリの保守、より大きな適合性 / テスト / golden 面、
+および cohort ごとのインストール時キャッシュコピーです。上記の論理的 cohort
+レイヤーは、単一バンドルから「必要なものだけをインストールする」という*選択*
+の成果をすでに提供しています。cohort ごとの*パッケージング*は、よりきめ細かい
+インストール UX が望まれるときの次のステップです。

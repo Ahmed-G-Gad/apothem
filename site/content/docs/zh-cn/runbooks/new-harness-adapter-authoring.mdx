@@ -1,0 +1,65 @@
+---
+title: "编写新的工具适配器"
+description: "编写并发布新的 Apothem 工具适配器的操作手册。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+当你要为 Apothem 编写一个新的工具适配器（作为一方内置项或第三方包）时，
+请使用本操作手册。
+
+## 前置条件
+
+- 熟悉 [HarnessAdapter 协议](/docs/architecture/harness-adapter-abstraction)
+- 理解目标工具的配置格式
+- Python 3.10+
+
+## 步骤
+
+### 1. 实现适配器
+
+按照 [编写工具适配器](/docs/examples/authoring-a-harness-adapter)
+示例，为目标工具实现 `HarnessAdapter`。
+
+### 2. 编写文档页面
+
+创建 `site/content/docs/harnesses/<slug>.mdx`，涵盖：
+
+- 安装流程
+- 配置文件到原生配置的映射
+- 兼容性注意事项
+- 验证方法
+- 更新与卸载方法
+- 一致性闸门表面
+- 故障排查表
+- 配置项表
+
+### 3. 编写测试
+
+```bash
+tests/packaging/test_<slug>_adapter.py
+tests/unit/test_<slug>_adapter.py
+```
+
+最低测试覆盖：
+- `test_install_creates_expected_files`
+- `test_verify_passes_after_install`
+- `test_uninstall_removes_files`
+
+### 4. 本地验证
+
+```bash
+apothem install --harness <slug>
+apothem verify --harness <slug>
+python -m apothem.conformity.gate --all .
+```
+
+### 5. 提交拉取请求
+
+提交一个包含以下内容的 PR：
+
+- 适配器实现
+- 位于 `site/content/docs/harnesses/<slug>.mdx` 的文档页面
+- 测试
+- 在 `pyproject.toml` 中注册入口点
+- 变更日志条目

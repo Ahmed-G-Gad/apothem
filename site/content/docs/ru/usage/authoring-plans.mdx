@@ -1,0 +1,43 @@
+---
+title: "Составление планов"
+description: "Составляйте наборы планов с помощью конвейера /plan."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Конвейер `/plan` превращает требования в сырой прозе в исполнимые, проверенные планы реализации, прошедшие шлюзы качества.
+
+## Основные этапы
+
+Конвейер поставляется как восемь первоклассных команд `/plan-<stage>`. Повседневный поток запускает пять из них:
+
+1. `/plan-spec` — Уточняет прозу до `_spec/spec.md` уровня спецификации
+2. `/plan-generate` — Генерирует полный каркас набора планов
+3. `/plan-review` — Криминалистический аудит сгенерированного плана
+4. `/plan-execute` — Выполняет фазы по одной
+5. `/plan-status` — Проверяет прогресс в любой момент
+
+Три этапа дополняют набор: `/plan-design` выпускает артефакт архитектурного проектирования для наборов, несущих архитектуру, `/plan-audit` запускает замкнутую обёртку устранения spec → generate → review, а `/plan-amend` пересматривает существующий набор без потери разрешённых решений.
+
+## Быстрый план (один файл)
+
+```bash
+# Creates plans/YYYY-MM-DD--my-feature.md in the current project
+/plan-spec --quick my-feature
+```
+
+## Полный набор планов
+
+```bash
+# Step 1 — write your requirements to prose.md, then:
+/plan-spec prose.md --suite-name my-project-plan
+/plan-generate
+/plan-review
+/plan-execute
+```
+
+## Жизненный цикл плана
+
+Планы проходят через: `draft` -> `in-progress` -> `converged` (повышение до ADR) или `abandoned`.
+
+См. [Дисциплину планов](/docs/reference/plans-discipline) для полной спецификации жизненного цикла.

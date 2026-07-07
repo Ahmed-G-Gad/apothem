@@ -1,0 +1,62 @@
+---
+title: "كتابة القواعد"
+description: "أنشئ قواعد سلوك Apothem وحدِّد نطاقها وصُنها."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+القواعد هي ملفّات <bdi>Markdown</bdi> في <bdi>`src/apothem/rules/`</bdi> بامتداد
+<bdi>`.md`</bdi>.
+
+## الـ<bdi>frontmatter</bdi> الخاص بالقاعدة
+
+```yaml
+---
+name: "..."
+description: "..."
+pathFilter: ""            # empty string for always-on; a glob for path-filtered
+alwaysApply: true         # true for always-on; false for path-filtered
+---
+```
+
+## نطاقات القاعدة
+
+| النطاق | متى يُطبَّق |
+|-------|-------------|
+| <bdi>`always-on`</bdi> | كلّ جلسة، كلّ ملف |
+| <bdi>`path-filtered`</bdi> | فقط عندما يطابق الملفّ النشط <bdi>`path-filter`</bdi> |
+| <bdi>`operator-selected`</bdi> | يُفعِّلها المُشغِّل صراحةً في <bdi>settings.json</bdi> |
+
+## مثال على قاعدة
+
+```markdown
+---
+name: "python-conventions"
+description: "Python style conventions for this project"
+pathFilter: "**/*.py"
+alwaysApply: false
+---
+
+# Python conventions
+
+- Use type annotations on all public functions.
+- Maximum line length: 88 characters.
+- Prefer explicit over implicit.
+```
+
+## تطبيق القواعد على الـ<bdi>harnesses</bdi>
+
+بعد كتابة قاعدة، حدِّث كلّ محوِّل <bdi>harness</bdi> مُثبَّت. شغِّل
+<bdi>`apothem harnesses list`</bdi> لرؤية المجموعة المُثبَّتة، ثم استدعِ
+<bdi>update</bdi> مرّة واحدة لكلّ <bdi>harness</bdi>:
+
+```bash
+apothem update --harness claude-code
+apothem update --harness cursor
+```
+
+## التحقّق من القواعد
+
+```bash
+python -m apothem.conformity.gate --check frontmatter
+```

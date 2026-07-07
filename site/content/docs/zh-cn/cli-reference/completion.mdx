@@ -1,0 +1,73 @@
+---
+title: "completion"
+description: "apothem completion 命令的 CLI 参考。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+将所请求 shell 的补全脚本打印到标准输出。启用补全是**可选的**：此命令仅打印脚本——它绝不会编辑你的 shell 启动文件。你需要自己将输出追加到该 shell 的补全文件中。
+
+## 概要
+
+```
+apothem completion bash|zsh|fish|powershell
+```
+
+发出的脚本会启用对 `apothem` 子命令、标志的 `<TAB>` 补全，并且——对于 `--harness` 选项——补全已注册的 harness id 以及 `all`。
+
+## 受支持的 shell
+
+| Shell | 脚本的生成方式 |
+|---|---|
+| `bash` | Click 的原生 bash 补全脚本。 |
+| `zsh` | Click 的原生 zsh 补全脚本。 |
+| `fish` | Click 的原生 fish 补全脚本。 |
+| `powershell` | 一段桥接到 Click 补全协议的 `Register-ArgumentCompleter` 代码（Click 不附带原生 PowerShell 脚本，因此该代码片段将相同的协议接入 PowerShell）。 |
+
+请求任何其他 shell 都会以 `2` 退出，并附带受支持的 shell 列表。
+
+## 按 shell 启用补全
+
+首先 `apothem` 命令必须位于你的 `PATH` 上（一键安装程序会将其放在那里）。然后通过将脚本追加到该 shell 的补全文件并重启 shell 来启用补全：
+
+```bash
+# bash —— 追加到你的 bashrc
+apothem completion bash >> ~/.bashrc
+
+# zsh —— 追加到你的 zshrc
+apothem completion zsh >> ~/.zshrc
+
+# fish —— 写入 fish 补全目录
+apothem completion fish > ~/.config/fish/completions/apothem.fish
+```
+
+```powershell
+# PowerShell —— 将补全器注册追加到你的配置文件
+apothem completion powershell >> $PROFILE
+```
+
+若只想为当前会话试用补全而不编辑任何文件，可直接 source 该脚本（bash/zsh）：`source <(apothem completion bash)`。
+
+## 为何是可选的
+
+Apothem 绝不会悄悄编辑操作者的 shell 启动文件。安装程序会打印一行指向此命令的提示；由操作者决定是否启用补全以及追加到哪个文件。这使得安装足迹可预测且可逆——移除所追加的代码块即可禁用补全。
+
+## 选项
+
+| 选项 | 说明 |
+|---|---|
+| `SHELL` | `bash`、`zsh`、`fish`、`powershell` 之一（必需的位置参数）。 |
+| `-h`、`--help` | 显示帮助并退出。 |
+
+## 退出码
+
+| 码 | 含义 |
+|---|---|
+| 0 | 已发出补全脚本 |
+| 2 | 请求了不受支持的 shell |
+
+## 另请参阅
+
+- [apothem install](/docs/cli-reference/install) —— 安装某个 harness 配置
+- [apothem harnesses](/docs/cli-reference/harnesses) —— `--harness` 补全所提供的 harness id
+- [CLI 参考](/docs/cli-reference) —— 所有子命令

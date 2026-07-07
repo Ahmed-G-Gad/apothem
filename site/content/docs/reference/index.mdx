@@ -1,0 +1,30 @@
+---
+title: "Reference"
+description: "Navigable registry of artifact classes with paths and on-disk layouts for rules, commands, skills, delegated workers, hooks, MCP servers, settings, and output styles."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Per-artifact-class reference. Each page describes the class's purpose,
+on-disk layout, frontmatter contract, and the registry that lists every
+instance.
+
+Repo-relative paths are shown below; each adapter materializes these
+into its native configuration directory (e.g. `~/.claude/` for the
+Claude Code adapter — see [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses)
+for per-harness destinations).
+
+| Class | Page | Repo-relative source path |
+|-------|------|--------------|
+| `CLAUDE.md` | [CLAUDE.md](/docs/reference/claude-md) | `CLAUDE.md` |
+| Rules | [Rules](/docs/reference/rules) | `src/apothem/rules/` |
+| Commands | [Commands](/docs/reference/commands) | `src/apothem/commands/` |
+| Skills | [Skills](/docs/reference/skills) | `src/apothem/skills/` |
+| Delegated workers | [reference page](/docs/reference/agents) | see canonical-paths block |
+| Hooks | [Hooks](/docs/reference/hooks) | `src/apothem/hooks/` |
+| MCP servers | [MCP servers](/docs/reference/mcp) | shared profile — `mcp_servers` |
+| Settings | [Settings](/docs/reference/settings) | `src/apothem/harnesses/claude_code/templates/settings.json` |
+| Output styles | [Output styles](/docs/reference/output-styles) | `src/apothem/output-styles/` |
+| Harness registry | [Harness registry](/docs/reference/harness-registry) | `src/apothem/lib/harness_registry.py` |
+
+The full canonical registry lives across the artifact cohorts (`rules/`, `commands/`, `skills/`, `agents/`, `hooks/`). This page mirrors that
+registry in a navigable form.

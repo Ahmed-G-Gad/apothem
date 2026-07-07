@@ -1,0 +1,98 @@
+---
+title: "diff"
+description: "مرجع واجهة سطر الأوامر لأمر apothem diff."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+معاينة تغييرات التهيئة المُعلَّقة لمساعد برمجي واحد.
+
+## الموجز
+
+```
+apothem diff --harness NAME [--profile PATH] [--project PATH]
+             [--quiet|-q] [--verbose|-v]
+             [--format plain|json] [--json] [--no-color]
+```
+
+<bdi>`diff`</bdi> أمر فحص للقراءة فقط. ينفّذ التجسيد نفسه الذي ينفّذه أمر
+<bdi>`install`</bdi>، لكن في وضع التشغيل التجريبي — فلا يُكتَب أي شيء على القرص. ثم
+يصيّر، لكل هدف مُخطَّط، العملية ومسار الهدف والنتيجة و(بالنسبة إلى المراسي التي يملكها
+المشغّل والتي سيجري دمجها) الفرق الموحّد للتغيير. إنه الإجابة عن سؤال «ماذا سيفعل
+<bdi>`apothem install`</bdi> بهذا المساعد البرمجي الآن؟» دون إجراء التغيير.
+
+بالنسبة إلى الأهداف التي يملكها المشغّل — وهي الملفات التي تحمل محتواك الخاص وكتلة
+يديرها <bdi>Apothem</bdi> معًا — يُظهِر الفرق الأسطر التي ستتغيّر بالضبط. أما الأهداف
+الأخرى، فتُلخَّص العملية والنتيجة المُخطَّطتان.
+
+يعمل <bdi>`diff`</bdi> على مساعد برمجي واحد. وبخلاف <bdi>`status`</bdi>، فهو لا يقبل
+<bdi>`all`</bdi>؛ مرّر اسم مساعد برمجي واحد.
+
+## الخيارات
+
+| الخيار | الوصف |
+|---|---|
+| `--harness NAME` | محوّل المساعد البرمجي المراد معاينته (إلزامي؛ مساعد واحد، لا <bdi>`all`</bdi>). |
+| `--profile PATH` | مسار <bdi>YAML</bdi> الملف التعريفي المشترك. الافتراضي <bdi>`~/.config/apothem/profile.yaml`</bdi>. |
+| `--project PATH` | جذر المشروع للمساعدات البرمجية بنطاق المشروع. مطلوب عندما يكون المساعد المحدّد بنطاق المشروع. |
+| `--quiet`, `-q` | يُخمِد المخرجات المعلوماتية؛ تُصدَر الأخطاء فقط. |
+| `--verbose`, `-v` | يُصدِر مخرجات تشخيصية إضافية. |
+| `--format plain\|json` | تنسيق المخرجات (الافتراضي: `plain`). |
+| `--json` | اختصار لـ `--format json`. |
+| `--no-color` | يُعطِّل رموز ألوان <bdi>ANSI</bdi> في المخرجات. |
+| `-h`, `--help` | يعرض المساعدة ويخرج. |
+
+## مخرجات JSON
+
+يعكس غلاف <bdi>`--json`</bdi> غلاف التثبيت في وضع التشغيل التجريبي. تكون
+<bdi>`status`</bdi> بقيمة <bdi>`dry_run`</bdi>، وتكون <bdi>`files_written`</bdi> فارغة
+دائمًا، وتحمل كتلة <bdi>`materialization`</bdi> وقائمة <bdi>`results`</bdi> كامل تفاصيل
+الهدف المُخطَّط. ويحمل حقل <bdi>`detail.diff`</bdi> في كل صف نتيجة يملكه المشغّل سلسلة
+الفرق الموحّد.
+
+```json
+{
+  "status": "dry_run",
+  "command": "diff",
+  "action": "dry_run",
+  "harness": "claude-code",
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "updated",
+      "operation": "sentinel_merge",
+      "path": "C:\\Users\\Example\\.claude\\CLAUDE.md",
+      "message": "dry run: no filesystem changes made",
+      "detail": {
+        "ownership_class": "operator-owned",
+        "diff": "--- a/CLAUDE.md\n+++ b/CLAUDE.md\n@@ ..."
+      }
+    }
+  ],
+  "warnings": [],
+  "error": null,
+  "materialization": { "...": "..." }
+}
+```
+
+## أمثلة
+
+```bash
+apothem diff --harness claude-code
+apothem diff --harness cursor --project .
+apothem diff --harness claude-code --json
+```
+
+## رموز الخروج
+
+| الرمز | المعنى |
+|---|---|
+| 0 | جرى الإبلاغ عن الفرق (التغييرات المُعلَّقة يُبلَّغ عنها، وليست خطأً) |
+| 1 | خطأ متوقَّع في التحقّق أو الملف التعريفي أو المساعد البرمجي أو المشروع |
+
+## انظر أيضًا
+
+- [apothem status](/docs/cli-reference/status) — يُبلِّغ عن حالة التثبيت/التحقّق/الانحراف لكل مساعد برمجي
+- [apothem verify](/docs/cli-reference/verify) — يتحقّق من تثبيت مساعد برمجي واحد
+- [apothem install](/docs/cli-reference/install) — يطبّق التغييرات المُعايَنة

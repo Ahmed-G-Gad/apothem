@@ -1,0 +1,8 @@
+{
+  "argv": [
+    "harnesses",
+    "--help"
+  ],
+  "exit_code": 0,
+  "stdout": "Usage: main harnesses [OPTIONS] COMMAND [ARGS]...\n\n  List and inspect registered harness adapters.\n\nOptions:\n  -h, --help  Show this message and exit.\n\nCommands:\n  list  List all registered harness adapters.\n  show  Show details for a specific harness adapter.\n"
+}

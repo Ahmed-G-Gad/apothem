@@ -1,0 +1,36 @@
+---
+title: "Conventions de prose"
+description: "Impose la hiérarchie modale RFC 2119, interdit les adjectifs marketing et le remplissage évasif, utilise des dates ISO-8601 absolues et valide l'étanchéité de la prose directive."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **Référence canonique pour la discipline de prose sur chaque surface Markdown rédigée.** Le résumé dans [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Conventions est la déclaration en ligne ; cette page est la référence autonome que les contributeurs en aval citent.
+
+---
+
+## 1. Hiérarchie modale (RFC 2119)
+
+La prose directive utilise la hiérarchie modale **RFC 2119** : `MUST`, `MUST NOT`, `SHOULD`, `SHOULD NOT`, `MAY`. Chacun porte la force contraignante que le RFC définit. Les modaux en minuscules (`must`, `should`) ne portent aucun poids normatif et ne sont utilisés que dans la prose narrative où aucune obligation n'est déclarée.
+
+## 2. Vocabulaire interdit
+
+### 2.1 Adjectifs marketing
+
+Les termes `powerful`, `seamless`, `robust`, `cutting-edge`, `next-generation`, `world-class`, `enterprise-grade` et leurs équivalents sont interdits dans les artefacts orientés utilisateur à moins d'être concrètement étayés par des preuves mesurées. L'étayage cite un benchmark, une comparaison, une mesure ou une source de validation externe.
+
+### 2.2 Remplissage évasif
+
+Les termes `basically`, `kind of`, `sort of`, `in some sense`, `to some extent` et leurs équivalents sont interdits dans le texte directif. La prose directive est contraignante ; le remplissage évasif concède la force contraignante que la prose revendique.
+
+### 2.3 Étanchéité UDA
+
+La vérification d'étanchéité universelle des directives (UDA) à `scripts/dev/validate_ecosystem.py` impose un lexique fermé d'évasifs (`maybe`, `might`, `could`, `should probably`, `usually`, `generally speaking`, `in most cases`, `mostly`, `typically`, `often`, `or similar`, `etc.`, `and so on`) sur les lignes qui portent une prescription contraignante. Les jetons évasifs cités comme le sujet propre de la règle (par exemple, une liste de mots interdits sur une page de liste d'interdits) sont exemptés par le mécanisme de marqueur définitionnel du validateur.
+
+## 3. Références de date
+
+Les dates sont en ISO-8601 absolu (`YYYY-MM-DD`) à chaque référence. Les dates relatives (`yesterday`, `last week`, `recently`) sont interdites dans les artefacts qui persistent au-delà de leur session de rédaction.
+
+## 4. Validateurs
+
+La vérification d'étanchéité UDA de `scripts/dev/validate_ecosystem.py` est la surface d'imposition mécanique pour §2.3. La famille `markdown` de validateurs conformity-grep par écriture impose la barre de qualité de prose plus large aux limites des hooks PreToolUse Write/Edit.

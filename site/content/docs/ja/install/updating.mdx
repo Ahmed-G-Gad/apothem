@@ -1,0 +1,78 @@
+---
+title: "更新"
+description: "Apothem とハーネスアダプターを更新する。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## Claude Code プラグインを更新する
+
+マーケットプレイスの一覧を更新してから、Claude Code 内の `/plugin` メニューから
+プラグインを更新します。
+
+```text title="Claude Code 内"
+/plugin marketplace update apothem
+```
+
+`/plugin` を開き、**apothem** を選択し、より新しいプラグインバージョンが一覧に表示されている
+ときは更新アクションを選びます。
+
+## npx は常に現行リリースを実行する
+
+`npx @ahmed-g-gad/apothem` は実行のたびに現行の公開パッケージを解決するため、更新するものは
+ありません。古い npx キャッシュが旧バージョンを提供する場合は、dist-tag を明示的に固定してください。
+
+```bash
+npx @ahmed-g-gad/apothem@latest --version
+```
+
+## インストーラーベースのセットアップを更新する
+
+インストーラーを再実行します — べき等であり、既存のツリーをファストフォワードします — または
+専用の更新スクリプトを実行します。
+
+```bash title="macOS · Linux · WSL2 · BSD"
+bash scripts/installer/update.sh
+```
+
+```powershell title="Windows · PowerShell"
+pwsh -NoProfile -File scripts/installer/update.ps1
+```
+
+更新スクリプトは `APOTHEM_HOME`（デフォルトは `~/.apothem`）にあるソースツリーを `APOTHEM_REF`
+へ再チェックアウトします — 未設定の場合は最新の署名済み `vMAJOR.MINOR.PATCH` リリースタグへ
+解決し、タグ値はそれを固定し、`main` は移動するブランチを選択します。再マテリアライズの前に
+`git verify-tag` でタグの署名を検証します。署名されていない、または改ざんされたタグは、
+`APOTHEM_ALLOW_UNVERIFIED=1` が中断を警告へ格下げしない限り中断します。その後、リフレッシュ
+されたツリーから `apothem update` を実行して、`APOTHEM_HARNESS` で指定されたハーネス
+（デフォルトは[インストーラー環境変数](/docs/how-to/installer-environment-variables)の表に従う）を
+再マテリアライズします。事前のインストールが必要です。`APOTHEM_HOME` にツリーが存在せず
+`APOTHEM_SOURCE` が未設定の場合は、まずインストーラーを案内するメッセージを表示して終了します。
+
+## ハーネス出力を再マテリアライズする
+
+エンジンを更新した後、または `~/.config/apothem/profile.yaml` を編集した後は、インストール済みの
+ハーネス設定を再導出します。ユーザースコープのアダプターには `--project` は不要ですが、
+プロジェクトスコープのアダプターには必要です。
+
+```bash
+apothem update --harness claude-code
+apothem update --harness cursor --project /path/to/project
+apothem update --harness all --project /path/to/project
+```
+
+ファイルシステムへの書き込みを伴わず、機械可読のプレビューが必要な場合は、同じコマンドを
+`--dry-run --json` 付きで実行してください。
+
+## 現在のコマンドの境界
+
+`apothem update` はハーネス出力のみを更新します。CLI は `update --self`、`update --check`、
+`update --apply` を実装していません。エンジン本体は、インストールに使用したチャネル — `/plugin`
+フロー、新しい `npx` 実行、または上記のインストーラー／更新スクリプト — を通じて更新してください。
+
+## エンジンのバージョンを確認する
+
+```bash
+apothem --version
+npx @ahmed-g-gad/apothem --version
+```

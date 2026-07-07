@@ -1,0 +1,103 @@
+---
+title: "Release-Engineering-Richtlinie"
+description: "Fünf kanonische Richtlinien für Versionierung, Release-Tagging, Veraltungszyklen, inkompatible Änderungen und Rollback-Verfahren."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Fünf Richtlinien regeln, wie `apothem` veröffentlicht wird.
+
+## 1. Semantische Versionierung
+
+Das Projekt wird unter [Semantic Versioning 2.0](https://semver.org/) ausgeliefert.
+Versionsnummern haben die Form `MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]`.
+
+| Anhebung | Auslöser |
+|----------|----------|
+| **MAJOR** | Inkompatible Änderungen an Artefaktschemas, Mandatsbezeichnern (CM-N / TM-N / CP-N) oder Hook-Verträgen |
+| **MINOR** | Neue Regeln, delegierte Arbeiter, Befehle, Skills, Hook-Ereignisse oder nicht inkompatible Schemaerweiterungen |
+| **PATCH** | Klarstellungen, Antimuster-Ergänzungen, Dokumentationskorrekturen und Änderungen, die das Verhalten nicht ändern |
+
+Kandidaten-Tags verwenden das Format `vX.Y.Z-rc.N` (Release-Kandidat)
+oder `vX.Y.Z-alpha.N` / `vX.Y.Z-beta.N` (Frühzugang).
+
+## 2. Release-Tags
+
+Jedes Release setzt auf `main` einen signierten git-Tag der Form
+`vMAJOR.MINOR.PATCH` ab. Der Tag löst `.github/workflows/release.yml` aus, der
+baut, signiert, SBOM und SLSA-3-Provenienz erzeugt und
+die GitHub-Release-Seite veröffentlicht.
+
+Tag-Konventionen:
+
+- **Format** — exakt `vMAJOR.MINOR.PATCH`. Kein `release-`-Präfix,
+  kein `-final`-Suffix.
+- **Annotation** — jeder Tag ist ein annotierter Tag (`git tag -a -s`),
+  der die Zusammenfassung der Release-Notes in der Tag-Nachricht trägt.
+- **Signatur** — jeder Tag ist GPG-signiert. Der Release-Workflow
+  erzeugt zusätzlich eine schlüssellose Sigstore-cosign-Signatur auf
+  jedem Artefakt und einen SLSA-3-Provenienz-Release-Nachweis, beide
+  an die GitHub-Release-Seite angehängt.
+
+## 3. Veraltungsrichtlinie
+
+Die aktuelle öffentliche Supportlinie ist die zuletzt veröffentlichte Nebenversion. Wenn
+das Projekt mehrere öffentliche Nebenversionen hat, ist die Matrix unterstützter
+Versionen in [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
+die Wahrheitsquelle für etwaige zusätzliche Supportfenster,
+die nur kritische Fehlerbehebungen umfassen.
+
+Veraltungsrhythmus:
+
+- **Ankündigung** — ein veraltetes Symbol oder Verhalten wird
+  im Abschnitt `### Deprecated` der `CHANGELOG.md` des
+  Releases angekündigt, in dem die Veraltung eintrifft. Die Release-Notes
+  spiegeln die Veraltungsankündigung.
+- **Übergangsfenster** — veraltete Symbole bleiben mindestens
+  einen vollen Nebenzyklus lang verfügbar, bevor sie entfernt werden.
+- **Entfernung** — die Entfernung erfolgt bei einer `MAJOR`-Anhebung. Jedes entfernte
+  Symbol trägt eine `### Removed`-Zeile in `CHANGELOG.md` und einen
+  Migrationsleitfaden-Eintrag unter
+  [Anleitungen](/docs/how-to-guides).
+
+## 4. Richtlinie für inkompatible Änderungen
+
+Inkompatible Änderungen erfordern:
+
+1. **Ein RFC-Issue** — eröffnet mit dem Issue-Label `rfcs`,
+   das die inkompatible Änderung, den Migrationspfad und die
+   Rollback-Strategie beschreibt.
+2. **Ein 30-tägiges Kommentarfenster** — die RFC bleibt mindestens
+   30 Tage vor dem Merge offen. Maintainer können das Fenster verlängern, wenn
+   das Feedback es rechtfertigt.
+3. **Eine MAJOR-Anhebung** — das Release, das die inkompatible
+   Änderung einführt, hebt die MAJOR-Komponente an.
+4. **Ein Migrationsleitfaden** — die Änderung wird mit einem
+   [Anleitungen](/docs/how-to-guides)-Eintrag ausgeliefert, der den
+   Operator durch die Migration führt.
+
+## 5. Rollback-Richtlinie
+
+Falls ein Release eine Regression aufweist, die die Annahme blockiert:
+
+1. **Zurücksetzen** — der bzw. die fehlerhaften Commits werden auf `main` zurückgesetzt.
+2. **Release-plus-eins-Neutagging** — ein Folge-Release erscheint als
+   `vMAJOR.MINOR.PATCH+1` und trägt die Zurücksetzung sowie etwaige
+   inkrementelle Korrekturen. Das vorherige fehlerhafte Release wird **nicht**
+   aus GitHub Releases gelöscht — eine `### Yanked`-Annotation in
+   `CHANGELOG.md` dokumentiert die Situation, damit reproduzierbare
+   Builds verankert bleiben.
+3. **Kommunikation** — eine Security-Advisories-Benachrichtigung (wenn
+   sicherheitsrelevant) oder ein Discussions-Beitrag (wenn
+   zuverlässigkeitsrelevant) begleitet den Rollback.
+
+## Siehe auch
+
+- [CHANGELOG.md](https://github.com/ahmed-g-gad/apothem/blob/main/CHANGELOG.md)
+  — das kanonische Release-Hauptbuch.
+- [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
+  — die Matrix unterstützter Versionen und die Meldekanäle.
+- [cicd-pipeline.md](/docs/architecture/cicd-pipeline) — die Klassen von
+  CI-Prüfungen, die jedes Release absichern.
+- [deployment-checklist.md](/docs/runbooks/deployment-checklist) — der
+  Produktionsreife-Durchlauf pro Release.

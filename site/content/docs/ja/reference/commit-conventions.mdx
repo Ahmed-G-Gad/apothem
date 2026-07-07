@@ -1,0 +1,32 @@
+---
+title: "コミット規約"
+description: "git 制果物とバージョン管理のために、コミットメッセージの形式、リリースのタグ付け、人間のみの作者規律、そしてタスクごとのケイデンスを確立する。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+> **git のコミットメッセージ、リリースタグ、作者規律に関する規範的リファレンス。** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) 規約 にある要約はインライン宣言です。本ページは下流のコントリビューターが参照する独立したリファレンスです。
+
+---
+
+## 1. Conventional Commits
+
+コミットの件名は **Conventional Commits** の形態に従います。`<type>(<scope>): <subject>`。閉じた `<type>` 集合は `{feat, fix, chore, docs, refactor, test, perf, ci, build, style, revert, release}` です。`<scope>` はコミットが触れる面です（例：`feat(conformity)`、`docs(adr)`、`fix(ci)`）。scope は、局所化しない横断的な変更の場合にのみ省略されます。
+
+件名は命令法で、type/scope のコロンの後は小文字、末尾のピリオドなし、72 文字未満です。本文 — 空行で件名から区切られる — は、diff が何を変えたかではなく、変更が**なぜ**存在するのかを説明します。何を変えたかの規範的な記録は diff 自体です。
+
+## 2. 作者規律（人間のみ）
+
+すべての git 制果物のすべての作者面（コミット件名、コミット本文、`Author:` フィールド、`Co-Authored-By:` トレーラー、`Signed-off-by:` トレーラー、ブランチ名、タグ名、タグ注釈、stash 名、git-notes 本文、PR タイトル、PR 説明）は、**人間のコントリビューターのみ**を記載します。ハーネスは、自分自身、基盤となる言語モデル、ランタイム / 環境 / IDE / 拡張機能 / ベンダー、あるいはその他のいかなる自動化ツールも、これらの面のいずれにも決して帰属させません。禁止されるパターンには、`Co-Authored-By: <model-name>`、`Co-Authored-By: <noreply@*-vendor.com>`、`generated with X` や `co-authored by an automated helper` のような本文の記述、そして人間でない作者を示すあらゆる件名行のマーカーが含まれます。完全な仕様は [`src/apothem/rules/production-ready-prs.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/production-ready-prs.md) §6 にあります。機械的な強制は [`src/apothem/hooks/messages/pretooluse-bash.md`](https://github.com/ahmed-g-gad/apothem/blob/main/hooks/messages/pretooluse-bash.md) Scan 3 にあります。
+
+## 3. リリースタグ（セマンティックバージョニング）
+
+リリースタグは **セマンティックバージョニング**（`vMAJOR.MINOR.PATCH`）に従います。1.0 より前のバージョンは、仕様の安定前の規約に従って `0.MINOR.PATCH` です。破壊的変更は MINOR を、バグ修正は PATCH をインクリメントします。タグは注釈付き（`git tag -a`）で、[`site/content/docs/governance/release-engineering-policy.mdx`](/docs/governance/release-engineering-policy) に従って公開層で署名されます。パッケージのバージョンはソースマニフェスト（`pyproject.toml` の `version`）にあり、ランタイム / バージョンを担う面はそのパッケージメタデータから派生します。
+
+## 4. タスクごとのケイデンス
+
+コミットは SHARED+ の真剣度ではタスクごと、PERSONAL_USE ではフェーズごとに行われ、EXPLORING では任意です。タスクのコミットは、そのタスクの検証ゲートが通過した直後に行われます。先延ばしにしたコミットはコンテキストを蓄積し、スコープを失うリスクがあります。完全な規律は [`src/apothem/rules/operational-mandates.md`](https://github.com/ahmed-g-gad/apothem/blob/main/rules/operational-mandates.md) §CM-13 にあります。
+
+## 5. バリデーター
+
+[`.pre-commit-config.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/.pre-commit-config.yaml) にある pre-commit フックチェーンは、書き込みごとの品質ゲートを強制します。bash フックでの作者規律の強制（`src/apothem/hooks/messages/pretooluse-bash.md` の Scan 3）は、いかなる git 書き込み操作が行われる前に、禁止されたトレーラーと本文マーカーを捕捉します。

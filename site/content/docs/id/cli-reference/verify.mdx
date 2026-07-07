@@ -1,0 +1,82 @@
+---
+title: "verify"
+description: "Referensi CLI untuk perintah apothem verify."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Memverifikasi instalasi adaptor asisten-pengkodean.
+
+## Ringkasan
+
+```
+apothem verify --harness NAME|all [--project PATH]
+                [--quiet|-q] [--verbose|-v]
+                [--format plain|json] [--json] [--no-color]
+```
+
+Memanggil implementasi `verify()` dari setiap adaptor yang dipilih. Keluar dengan 0 hanya ketika semua adaptor yang dipilih melaporkan bahwa target yang dikelolanya ada dan valid.
+
+## Opsi
+
+| Opsi | Deskripsi |
+|---|---|
+| `--harness NAME` | Adaptor asisten-pengkodean yang akan diverifikasi, atau `all` untuk himpunan seluruh registri (wajib). |
+| `--project PATH` | Akar proyek untuk asisten-pengkodean dengan cakupan proyek. |
+| `--quiet`, `-q` | Menyembunyikan keluaran informatif; hanya kesalahan yang dikeluarkan. |
+| `--verbose`, `-v` | Mengeluarkan keluaran diagnostik tambahan. |
+| `--format plain\|json` | Format keluaran (bawaan: `plain`). |
+| `--json` | Singkatan untuk `--format json`. |
+| `--no-color` | Menonaktifkan kode warna ANSI pada keluaran. |
+| `-h`, `--help` | Menampilkan bantuan dan keluar. |
+
+## Keluaran JSON
+
+```json
+{
+  "status": "success",
+  "command": "verify",
+  "action": "verified",
+  "harness": "claude-code",
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "unchanged",
+      "operation": "verify",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "managed targets verified",
+      "installed": true,
+      "verified": true
+    }
+  ],
+  "warnings": [],
+  "error": null,
+  "installed": true,
+  "verified": true,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
+```
+
+Ketika salah satu asisten-pengkodean yang dipilih hilang atau tidak valid, `status` adalah `error`, baris hasil yang gagal membawa `verified: false`, dan proses keluar dengan kode 1.
+
+## Contoh
+
+```bash
+apothem verify --harness claude-code
+apothem verify --harness claude-code --json
+apothem verify --harness all --project .
+```
+
+## Kode keluar
+
+| Kode | Arti |
+|---|---|
+| 0 | Asisten-pengkodean terpasang |
+| 1 | Asisten-pengkodean tidak terpasang |
+
+## Lihat juga
+
+- [apothem install](/docs/cli-reference/install) — pasang konfigurasi asisten-pengkodean
+- [apothem update](/docs/cli-reference/update) — menerapkan ulang profil saat ini ke sebuah asisten-pengkodean
+- [apothem doctor](/docs/install/concepts) — diagnostik instalasi seluruh sistem

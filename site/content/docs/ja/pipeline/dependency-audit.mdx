@@ -1,0 +1,69 @@
+---
+title: "/dependency-audit"
+description: "/dependency-audit——ライセンス、CVE、新鮮さに対する依存関係ごとの監査パス（直接 + 推移的）。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**役割：** 依存関係監査者
+**パイプライン位置：** フォートレス
+
+ライセンス、CVE、新鮮さに対する依存関係ごとの監査パス（直接 + 推移的）。
+
+## 正規の呼び出し
+
+```bash
+/dependency-audit
+```
+
+引数付き：
+
+```bash
+/dependency-audit [path/to/plan-suite/] [phase-id] [--dry-run]
+```
+
+## 入力
+
+ホストリポジトリの依存関係マニフェスト
+
+## 出力
+
+依存関係の発見事項 + REPORT.md
+
+## 下流
+
+監査レビューシーケンスの dependency-audit ステージ
+
+## ワークフローのフェーズ
+
+このコマンドは標準の `/plan` パイプラインワークフローに従います。
+
+1. **コンテキストの読み込み** — プランスイート、ルール、再開コントラクトを読み取ります。
+2. **前提条件の検証** — 依存フェーズが完了していることを確認します。
+3. **タスクの実行** — コマンドのミッションを遂行します。
+4. **出力の検証** — 宣言されたすべての出力が存在し、品質ゲートを通過することを確認します。
+5. **PROGRESS.md の更新** — 検証済みの出力をフェーズ出力レジストリに記録します。
+6. **REPORT.md の発行** — 事前発出ゲートのリリース証跡が記録されます。
+
+## 失敗モード
+
+| 症状 | 原因 | 復旧 |
+|---------|-------|----------|
+| 前提条件が未完了 | 依存フェーズが終わっていない | まず上流のフェーズを完了させる |
+| 品質ゲート FAIL | 出力が基準を満たさない | 出力を修正して再実行する |
+| 入力ファイルが欠落 | プランスイートのファイルが存在しない | `/plan-generate` を実行して作成する |
+
+## 例
+
+```bash
+# Dry-run to preview what would happen
+/dependency-audit --dry-run
+
+# Execute against a named plan suite
+/dependency-audit path/to/plan-suite/
+```
+
+## 相互参照
+
+- [パイプラインの概要](/docs/pipeline)
+- [マスタープランスイートテンプレート](/docs/reference/commands)

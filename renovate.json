@@ -1,0 +1,65 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits",
+    ":prHourlyLimit2",
+    ":prConcurrentLimit5",
+    ":separatePatchReleases"
+  ],
+  "schedule": ["before 6am on monday"],
+  "timezone": "UTC",
+  "assignees": ["ahmed-g-gad"],
+  "reviewers": ["ahmed-g-gad"],
+  "labels": ["dependencies"],
+  "commitMessagePrefix": "chore(deps):",
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchDepTypes": ["devDependencies"],
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
+      "groupName": "pytest ecosystem",
+      "matchPackageNames": ["pytest", "pytest-cov", "pytest-xdist"]
+    },
+    {
+      "groupName": "ruff + mypy",
+      "matchPackageNames": ["ruff", "mypy"]
+    },
+    {
+      "groupName": "fumadocs docs ecosystem",
+      "matchPackageNames": ["fumadocs-core", "fumadocs-ui", "fumadocs-mdx", "next", "react", "react-dom"]
+    },
+    {
+      "groupName": "GitHub Actions",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"]
+    },
+    {
+      "description": "The SLSA reusable generator is trust-anchored on its per-tag attestation (Sigstore policy forbids SHA/digest-pinning trusted reusable workflows). Exempt it from Renovate so digest-pinning does not fight the documented action-pinning-exempt marker in release.yml.",
+      "matchManagers": ["github-actions"],
+      "matchPackageNames": ["slsa-framework/slsa-github-generator"],
+      "enabled": false
+    }
+  ],
+  "github-actions": {
+    "enabled": true,
+    "pinDigests": true
+  },
+  "pre-commit": {
+    "enabled": true
+  },
+  "pip_requirements": {
+    "managerFilePatterns": [
+      "/^src/apothem/_vendor/vendor\\.txt$/",
+      "/^scripts/release/requirements-build-linux\\.txt$/"
+    ]
+  },
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security"]
+  },
+  "osvVulnerabilityAlerts": true
+}

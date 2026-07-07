@@ -1,0 +1,69 @@
+---
+title: "/research-synthesis"
+description: "/research-synthesis — Reconciles the collected sources into a state-of-the-art map and literature matrix, adversarially verifies every claim, and states the explicit research gap."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Role:** Principal Investigator (synthesis)
+**Pipeline position:** mid-chain
+
+Reconciles the collected sources into a state-of-the-art map + literature matrix and states the explicit research gap the work addresses. Every load-bearing claim is adversarially verified against two or more independent sources, refute-by-default.
+
+## Canonical invocation
+
+```bash
+/research-synthesis
+```
+
+With arguments:
+
+```bash
+/research-synthesis [path/to/research-suite/]
+```
+
+## Inputs
+
+`_inputs/source-ledger.md` (the ranked, screened source index) plus the per-source extractions under `sources/`.
+
+## Outputs
+
+`_inputs/synthesis.md` — the SOTA map, the literature matrix, the contested-findings ledger, and the explicit one-sentence gap statement.
+
+## Downstream
+
+/research-proposal (downstream consumer)
+
+## Workflow phases
+
+The command follows the standard `/research` pipeline workflow:
+
+1. **Load context** — Read the source ledger and the per-source extractions.
+2. **Verify the Sequence Gate** — Confirm the source ledger exists; otherwise halt with `Blocked: run /research-sources first`.
+3. **Synthesize** — Build the SOTA map + literature matrix; reconcile agreements and contradictions; state the explicit gap.
+4. **Adversarially verify** — Every load-bearing claim is refuted-by-default against two or more independent sources.
+5. **Update the handoff manifest** — Record the synthesis path and the contested-claims ledger.
+6. **Emit the synthesis** — `_inputs/synthesis.md`.
+
+## Rigor floor
+
+Before the gap statement is finalized, the synthesis reconciles its terminology, findings, and recommendations against related sibling corpora (cross-corpus coherence); a conflict is recorded in the contested-findings ledger, never silently harmonized. The gap must resolve to a distinct, parsimonious contribution — not one already closed by a corroborated claim, and not decomposable into overlapping non-distinct elements.
+
+## Failure modes
+
+| Symptom | Cause | Recovery |
+|---------|-------|----------|
+| Blocked: run /research-sources first | No source ledger | Run `/research-sources` to produce `_inputs/source-ledger.md` |
+| Claim survives without ≥2 sources | Insufficient corroboration | Mark contested or unverifiable; do not assert |
+| No explicit gap statement | Synthesis lacks a target | Re-derive the one-sentence gap the research addresses |
+
+## Examples
+
+```bash
+# Synthesize the collected sources into a SOTA map + gap
+/research-synthesis path/to/research-suite/
+```
+
+## Cross-references
+
+- [Pipeline overview](/docs/pipeline)
+- [Commands reference](/docs/reference/commands)

@@ -1,0 +1,93 @@
+---
+title: "harnesses"
+description: "CLI reference for the apothem harnesses command group."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+List and inspect registered harness adapters.
+
+`harnesses` is a command group with two subcommands: `list` and `show`.
+
+## Synopsis
+
+```
+apothem harnesses list [--quiet|-q] [--verbose|-v]
+                       [--format plain|json] [--json] [--no-color]
+apothem harnesses show NAME
+                       [--quiet|-q] [--verbose|-v]
+                       [--format plain|json] [--json] [--no-color]
+```
+
+## Subcommands
+
+### `harnesses list`
+
+List all registered harness adapters.
+
+| Option | Description |
+|---|---|
+| `--quiet`, `-q` | Suppress informational output; only errors are emitted. |
+| `--verbose`, `-v` | Emit additional diagnostic output. |
+| `--format plain\|json` | Output format (default: `plain`). |
+| `--json` | Shorthand for `--format json`. |
+| `--no-color` | Disable ANSI color codes in output. |
+| `-h`, `--help` | Show help and exit. |
+
+### `harnesses show NAME`
+
+Show details for a specific harness adapter. `NAME` is the kebab-case harness
+identifier; run `apothem harnesses list` to see the available identifiers.
+
+| Option | Description |
+|---|---|
+| `NAME` | Harness adapter to inspect (required positional argument). |
+| `--quiet`, `-q` | Suppress informational output; only errors are emitted. |
+| `--verbose`, `-v` | Emit additional diagnostic output. |
+| `--format plain\|json` | Output format (default: `plain`). |
+| `--json` | Shorthand for `--format json`. |
+| `--no-color` | Disable ANSI color codes in output. |
+| `-h`, `--help` | Show help and exit. |
+
+## Examples
+
+```bash
+apothem harnesses list
+apothem harnesses list --json
+apothem harnesses show claude-code
+apothem harnesses show claude-code --json
+```
+
+The registered harness IDs are:
+
+```text
+antigravity
+claude-code
+codebuddy
+codex
+cursor
+gemini-cli
+github-copilot
+glm
+hermes
+kimi-code
+kiro
+open-claw
+opencode
+qwen-code
+trae
+windsurf
+zed
+```
+
+## Exit codes
+
+| Code | Meaning |
+|---|---|
+| 0 | Success |
+| 1 | Harness not found (`harnesses show` with an unknown `NAME`), or every adapter failed to load or report (`harnesses list`) |
+| 2 | At least one adapter listed, but at least one failed to report (`harnesses list`) |
+
+## See also
+
+- [apothem doctor](/docs/cli-reference/doctor) — run system-wide install diagnostics
+- [apothem verify](/docs/cli-reference/verify) — check a specific harness installation

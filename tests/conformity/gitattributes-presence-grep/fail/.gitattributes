@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: MIT
+
+# Non-conformant fixture — missing `*.svg text` and `plans/ export-ignore`.
+
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+
+tests/ export-ignore
+.github/ export-ignore

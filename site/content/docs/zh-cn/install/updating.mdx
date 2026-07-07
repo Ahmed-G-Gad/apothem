@@ -1,0 +1,61 @@
+---
+title: "更新"
+description: "更新 Apothem 与各工具适配器。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+## 更新 Claude Code 插件
+
+先刷新插件市场列表，然后在 Claude Code 内的 `/plugin` 菜单中更新插件：
+
+```text title="Inside Claude Code"
+/plugin marketplace update apothem
+```
+
+打开 `/plugin`，选择 **apothem**，当列出更新版本的插件时选择更新操作。
+
+## npx 始终运行当前发布版本
+
+`npx @ahmed-g-gad/apothem` 在每次运行时都会解析当前已发布的软件包，因此无需手动更新。当 npx 缓存过期、提供旧版副本时，请显式锁定 dist-tag：
+
+```bash
+npx @ahmed-g-gad/apothem@latest --version
+```
+
+## 更新基于安装脚本的部署
+
+重新运行安装脚本——它具有幂等性，会对已有的代码树执行快进更新——或者运行专用的更新脚本：
+
+```bash title="macOS · Linux · WSL2 · BSD"
+bash scripts/installer/update.sh
+```
+
+```powershell title="Windows · PowerShell"
+pwsh -NoProfile -File scripts/installer/update.ps1
+```
+
+更新脚本会将位于 `APOTHEM_HOME`（默认为 `~/.apothem`）的源代码树重新检出到 `APOTHEM_REF`——未设置时解析为最新的已签名 `vMAJOR.MINOR.PATCH` 发布标签，指定标签值则锁定到该标签，而 `main` 则选择持续变动的分支。它会在重新生成之前使用 `git verify-tag` 验证标签签名；未签名或被篡改的标签会中止操作，除非 `APOTHEM_ALLOW_UNVERIFIED=1` 将中止降级为警告。随后它会通过在刷新后的代码树中运行 `apothem update`，重新生成由 `APOTHEM_HARNESS` 指定的工具（默认值见[安装脚本环境变量](/docs/how-to/installer-environment-variables)表）。该操作要求事先已完成安装：当 `APOTHEM_HOME` 处不存在代码树且 `APOTHEM_SOURCE` 未设置时，它会退出并提示你先运行安装脚本。
+
+## 重新生成工具输出
+
+更新引擎或编辑 `~/.config/apothem/profile.yaml` 之后，请重新生成已安装的工具配置。用户范围的适配器不需要 `--project`；项目范围的适配器则需要。
+
+```bash
+apothem update --harness claude-code
+apothem update --harness cursor --project /path/to/project
+apothem update --harness all --project /path/to/project
+```
+
+当你需要一份机器可读的预览且不写入文件系统时，请用 `--dry-run --json` 运行相同的命令。
+
+## 当前命令边界
+
+`apothem update` 仅更新工具输出。该 CLI 未实现 `update --self`、`update --check` 或 `update --apply`；请通过你的安装渠道更新引擎本身——`/plugin` 流程、重新运行一次 `npx`，或上文中的安装/更新脚本。
+
+## 查看引擎版本
+
+```bash
+apothem --version
+npx @ahmed-g-gad/apothem --version
+```

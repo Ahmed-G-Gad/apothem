@@ -1,0 +1,54 @@
+---
+title: "doctor"
+description: "مرجع سطر الأوامر لأمر apothem doctor."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+يُجري تشخيصات النظام لتثبيت <bdi>Apothem</bdi>.
+
+## الموجز
+
+```
+apothem doctor [--quiet|-q] [--verbose|-v]
+               [--format plain|json] [--json] [--no-color]
+```
+
+يفحص تثبيت <bdi>Apothem</bdi> ويبلِّغ عن حالة كلّ محوِّل <bdi>harness</bdi> مُسجَّل.
+عند وجود ملف تعريف مشترك، يُتحقَّق منه مقابل المخطَّط المُضمَّن — لا يُكتفى بالتحقُّق
+من وجوده — بحيث يُكشف ملفُّ التعريف المُشوَّه على أنّه فشل تشخيصي بدلًا من
+"موجود" أخضر. تحمل مخرجات <bdi>JSON</bdi> حقلًا باسم <bdi>`profile_valid`</bdi>
+(<bdi>`true`</bdi> / <bdi>`false`</bdi>، أو <bdi>`null`</bdi> عند عدم وجود ملف
+تعريف) وحقلًا باسم <bdi>`profile_error`</bdi> عند فشل التحقُّق. يخرج بالرمز 0
+عندما تنجح كلّ الفحوصات، وبالرمز 1 عندما يكون واحد أو أكثر من الـ<bdi>harnesses</bdi>
+غير مُثبَّت أو عندما يكون ملفُّ التعريف موجودًا لكنّه يفشل في التحقُّق من المخطَّط.
+
+## الخيارات
+
+| الخيار | الوصف |
+|---|---|
+| <bdi>`--quiet`</bdi>، <bdi>`-q`</bdi> | يكبت المخرجات المعلوماتية؛ تُصدَر الأخطاء فقط. |
+| <bdi>`--verbose`</bdi>، <bdi>`-v`</bdi> | يُصدِر مخرجات تشخيصية إضافية. |
+| <bdi>`--format plain\|json`</bdi> | صيغة المخرجات (الافتراضي: <bdi>`plain`</bdi>). |
+| <bdi>`--json`</bdi> | اختصار لـ<bdi>`--format json`</bdi>. |
+| <bdi>`--no-color`</bdi> | يعطّل رموز ألوان <bdi>ANSI</bdi> في المخرجات. |
+| <bdi>`-h`</bdi>، <bdi>`--help`</bdi> | يعرض المساعدة ويخرج. |
+
+## أمثلة
+
+```bash
+apothem doctor
+apothem doctor --json
+```
+
+## رموز الخروج
+
+| الرمز | المعنى |
+|---|---|
+| 0 | نجحت كلّ الفحوصات |
+| 1 | واحد أو أكثر من الـ<bdi>harnesses</bdi> غير مُثبَّت، أو ملفُّ تعريف موجود فشل في التحقُّق من المخطَّط |
+
+## انظر أيضًا
+
+- [apothem harnesses](/docs/cli-reference/harnesses) — سرد وفحص الـ<bdi>harnesses</bdi> المُسجَّلة
+- [apothem verify](/docs/cli-reference/verify) — فحص تثبيت <bdi>harness</bdi> محدَّد

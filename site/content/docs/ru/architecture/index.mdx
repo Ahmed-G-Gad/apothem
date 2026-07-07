@@ -1,0 +1,48 @@
+---
+title: "Архитектура"
+description: "Обзор архитектуры Apothem — общий профиль, абстракция адаптера harness и организация дерева исходного кода."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem построен вокруг одной идеи: единый общий профиль управления,
+материализуемый адаптером для каждого harness в нативный формат конфигурации
+каждого harness. В этом разделе
+рассматриваются структурные части — протокол адаптера, схема профиля, компоновка
+дерева исходного кода и рабочий процесс установки, связывающий их воедино.
+
+## Обзор системы
+
+С первого взгляда Apothem — это единый конвейер: единый общий профиль поступает
+в реестр harness, который разрешает каждый адаптер harness; каждый адаптер
+материализует нативную поверхность конфигурации своего harness, а постоянная
+проверка соответствия проверяет каждую материализованную поверхность.
+
+```mermaid
+%% provenance: hand-authored %%
+%% verified: 2026-06-23 %%
+%% cross-reference: src/apothem/lib/harness_registry.py (runtime registry) + src/apothem/harnesses/ (adapter sub-packages) + src/apothem/conformity/ (conformity gate) %%
+flowchart TD
+    accTitle: Apothem end-to-end materialization flow
+    accDescr: One shared profile feeds the harness registry, which resolves seventeen per-harness adapters; each adapter runs its install, uninstall, update, and verify lifecycle, with four single-file-config adapters also rendering a native config file through a materializer, and writes the harness's own native configuration surface. A standing conformity gate checks every materialized surface.
+    P["Shared profile<br/>~/.config/apothem/profile.yaml<br/>rules, skills, hooks, slash-commands, MCP servers"]
+    R["Harness registry<br/>authoritative at runtime<br/>(resolves every adapter)"]
+    A["17 per-harness adapters<br/>each: install / uninstall / update / verify<br/>+ materializer on 4 single-file-config adapters"]
+    N["Each harness's native config surface<br/>Claude Code settings.json, Cursor .mdc,<br/>Gemini GEMINI.md, Copilot instructions.md, …"]
+    G["Conformity gate<br/>pre-emission validators"]
+
+    P --> R
+    R --> A
+    A --> N
+    G -.->|standing check over every materialized surface| N
+```
+
+## Страницы
+
+| Страница | Описание |
+|------|-------------|
+| [Абстракция адаптера harness](/docs/architecture/harness-adapter-abstraction) | Протокол `HarnessAdapter` — как адаптеры преобразуют общий профиль в нативную конфигурацию платформы. |
+| [Схема общего профиля](/docs/architecture/shared-profile-schema) | Профиль YAML, подкреплённый схемой, в `~/.config/apothem/profile.yaml` или `--profile PATH`. |
+| [Компоновка исходного кода](/docs/architecture/source-layout) | Почему Apothem использует компоновку `src/` и как организовано дерево. |
+| [Рабочий процесс установки](/docs/architecture/installation-workflow) | Как `apothem install`, `update` и `uninstall` работают от начала до конца. |
+| [Делегированные работники](/docs/architecture/agents) | Инструкции уровня репозитория для многоработных сред выполнения, работающих в этом репозитории. |

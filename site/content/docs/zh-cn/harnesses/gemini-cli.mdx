@@ -1,0 +1,92 @@
+---
+title: "Gemini CLI"
+description: "适用于 Gemini CLI（GA）的 Apothem 工具适配器。"
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**厂商：** Google
+**安装名称：** `gemini-cli`
+**状态：** GA
+**平台原生配置：** 项目本地的 `GEMINI.md` 和 `.gemini/`
+
+## 安装
+
+```bash
+apothem install --harness gemini-cli --project /path/to/project
+```
+
+该适配器是项目级的。它安装项目 `GEMINI.md`，将 Apothem 命令转换为
+Gemini TOML 斜杠命令，规范化本地辅助工具定义，并将非原生支持套组放置在
+`.gemini/.apothem/support/` 下。
+
+**写入的文件：**
+
+```text
+GEMINI.md
+.gemini/commands/*.toml
+.gemini/agents/*.md
+.gemini/skills/
+.gemini/.apothem/support/
+```
+
+## 配置档案到平台原生配置的映射
+
+适配器读取 Apothem 的共享套组，并将每一个套组通过 Gemini 兼容的界面进行路由。
+Markdown 规则、模板和钩子素材保留在 `.gemini/.apothem/support/` 下，因为它们是支持素材，
+而非 Gemini 原生的规则目录。
+
+## 兼容性说明
+
+对于使用全局 Gemini 配置档案的工具来说，`~/.gemini/` 仍然属于用户级领域。
+Gemini CLI 适配器只写入通过 `--project` 传入的项目。
+
+## 验证
+
+```bash
+apothem verify --harness gemini-cli --project /path/to/project
+```
+
+verify 命令确认：
+
+1. 平台原生配置存在于预期路径。
+2. 共享配置档案中的所有必填字段都已存在。
+3. 适配器特定的验证例程报告成功。
+
+## 更新
+
+```bash
+apothem update --harness gemini-cli --project /path/to/project
+```
+
+刷新 `GEMINI.md`、已转换的命令、本地辅助工具定义、已安装的技能，以及
+`.gemini/.apothem/support/` 支持树。
+
+## 卸载
+
+```bash
+apothem uninstall --harness gemini-cli --project /path/to/project
+```
+
+移除适配器写入的平台原生配置文件。
+共享配置档案 YAML 和 Apothem 引擎不受影响。
+
+## 合规门
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## 故障排查
+
+| 症状 | 修复方法 |
+|---------|-----|
+| 找不到配置文件 | 重新运行 `apothem install --harness gemini-cli --project /path/to/project` |
+| 验证失败 | 运行 `apothem update --harness gemini-cli --project /path/to/project`，然后再次验证 |
+| 意外的配置内容 | 检查 `~/.config/apothem/profile.yaml` 或 `--profile PATH`，然后重新运行 `apothem update --harness gemini-cli --project /path/to/project` |
+
+## 配置开关
+
+| 标志 | 默认值 | 说明 |
+|------|---------|-------------|
+| `--dry-run` | `false` | 预览安装而不写入文件。 |

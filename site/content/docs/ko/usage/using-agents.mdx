@@ -1,0 +1,52 @@
+---
+title: "위임 작업자 사용"
+description: "특화된 작업을 위한 영속적 위임 작업자를 정의하고 호출합니다."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem 위임 작업자는 `src/apothem/` 트리 아래에 저장되는 영속적이고 재사용 가능한
+작업자 정의입니다(정규 디렉터리는 아래에 표시 — 이름은 런타임 로더와의 호환성을 위해
+보존됩니다):
+
+```text
+src/apothem/agents/
+```
+
+각 위임 작업자는 특화된 역할, 검출 시그널, 그리고 허용-도구 집합을 인코딩합니다.
+
+## 위임 작업자 파일 구조
+
+```markdown
+---
+name: "my-agent"
+description: "..."
+tools: "Read, Grep, Glob"
+---
+
+# My assistant
+
+## Role
+...
+
+## Detection signals
+Matched when: ...
+
+## Workflow
+...
+```
+
+## 내장 위임 작업자
+
+| 위임 작업자 | 목적 |
+|-------|---------|
+| `codebase-explorer` | 심층 코드베이스 탐색 |
+| `convention-auditor` | 명명 및 형식 검증 |
+| `memory-auditor` | 메모리 정확성 검증 |
+| `quality-gate` | lint, 테스트, 타입 검사, 보안 스캔 |
+
+## 위임 작업자 호출하기
+
+위임 작업자는 호스트 런타임이 노출하는 위임 도구를 통해 오케스트레이터에 의해
+디스패치됩니다. 오케스트레이터는 작업 설명과 검출 시그널에 기반하여 일치하는
+작업자를 선택합니다.

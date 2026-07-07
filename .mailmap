@@ -1,0 +1,7 @@
+# Canonical author-identity map (git check-mailmap / shortlog). AUTHORS is
+# the copyright roster; this file normalizes commit identities to the
+# canonical entry there. The sole entry below declares the canonical
+# identity as the anchor for alternates: when a commit lands under an
+# alternate name or email, map it here by appending a
+# `Ahmed G. Gad <me@ahmedgad.com> <alternate-email>` line.
+Ahmed G. Gad <me@ahmedgad.com>

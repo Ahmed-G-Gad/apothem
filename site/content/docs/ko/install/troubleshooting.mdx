@@ -1,0 +1,76 @@
+---
+title: "문제 해결"
+description: "플러그인, npx, 설치 프로그램 경로 전반에 걸친 일반적인 Apothem 설치 실패 및 런타임 문제에 대한 해결책."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+일반적인 Apothem 설치 및 런타임 문제에 대한 해결책입니다.
+
+## 설치 문제
+
+### Python 3.10+를 찾을 수 없음
+
+설치 프로그램과 npx 심(shim)은 `python3`, `python`, 버전이 지정된 이름(`python3.14`부터 `python3.10`까지), 그리고 Windows에서 `py -3`를 탐색하며 — Microsoft Store 런처 심은 거부합니다 — 3.10 하한선을 충족하는 후보가 없으면 `No Python >= 3.10 found in PATH`로 중단합니다. python.org 또는 OS 패키지 저장소에서 CPython 3.10 이상을 설치하고, `python3 --version`(또는 Windows에서 `py -3 --version`)이 최소 3.10을 보고하는지 확인한 다음, 다시 실행하세요.
+
+### 런타임 종속성 누락: click, rich
+
+엔진은 대부분의 서드파티 종속성을 소스 트리 내부에 벤더링하지만, `click`과 `rich`는 설치 프로그램이 선택한 인터프리터에서 임포트 가능해야 합니다. 둘 중 하나가 누락되면 설치 프로그램은 그것의 이름을 알려 주고 사용자를 대신해 설치하겠다고 제안합니다.
+
+```text
+! Missing runtime dependencies: click rich
+```
+
+프롬프트를 수락하면 설치 프로그램이 해당 인터프리터에서 `pip install`을 실행합니다. 프롬프트를 건너뛰려면 `--yes`(PowerShell에서는 `-Yes`)를 전달하거나 `APOTHEM_AUTO_INSTALL_DEPS=1`을 설정하여 자동으로 설치하세요. 거부하거나 — `pip`을 사용할 수 없거나, OS 패키지 관리자를 선호하는 경우 — 명명된 패키지를 직접 설치한 다음(예: Debian 계열 호스트에서 `python3-click` 및 `python3-rich`, 또는 `pip install click rich`) 다시 실행하세요.
+
+### 설치 프로그램 실행 후 `apothem`을 찾을 수 없음
+
+설치 프로그램은 소스 트리를 `~/.apothem`에 배치하며 `apothem` 실행 파일을 `PATH`에 추가하지 않습니다. 설치 프로그램이 완료 시 출력하는 호출 방법을 통해 엔진을 실행하세요.
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
+```
+
+또는 `PATH` 항목이 필요 없는 npx 형식(`npx @ahmed-g-gad/apothem <command>`)을 사용하세요.
+
+### `/plugin marketplace add`가 실패함
+
+`/plugin marketplace add ahmed-g-gad/apothem`은 GitHub에서 마켓플레이스 목록을 가져옵니다. 실패하는 경우, 머신이 `https://github.com/ahmed-g-gad/apothem`에 도달할 수 있는지(네트워크, 프록시, 또는 방화벽 규칙) 확인한 다음 다시 시도하세요. 부분 가져오기 상태에서 마켓플레이스가 이전에 추가된 경우, `/plugin install apothem@apothem`을 실행하기 전에 제거하고 다시 추가하세요.
+
+### npx가 오래된 버전을 제공함
+
+`npx`는 다운로드된 패키지를 캐시합니다. `npx @ahmed-g-gad/apothem --version`이 현재 릴리스보다 이전 버전을 보고하는 경우, 캐시를 지우거나 dist-tag를 고정하세요.
+
+```bash
+npx clear-npx-cache
+npx @ahmed-g-gad/apothem@latest --version
+```
+
+### Windows에서 irm / iex가 차단됨
+
+PowerShell 실행 정책이 설치 프로그램을 차단하는 경우:
+
+```powershell
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+irm https://apothem.ahmedgad.com/install.ps1 | iex
+```
+
+## 런타임 문제
+
+### apothem install이 하니스를 찾지 못함
+
+apothem doctor를 실행하여 감지된 하니스 디렉터리를 나열하세요. 아무것도 발견되지 않으면 하니스가 설치되어 있고 최소 한 번 실행되었는지 확인하세요.
+
+### apothem verify가 실패한 어댑터를 보고함
+
+apothem install을 다시 실행하여 어댑터를 재구체화하세요. 문제가 지속되면 [하니스 어댑터](/docs/harnesses) 아래의 어댑터별 페이지를 확인하세요.
+
+### Claude Code에서 훅이 실행되지 않음
+
+~/.claude/settings.json에서 훅 항목을 확인하여 Apothem이 연결되어 있는지 확인하세요. 파일에 훅이 누락된 경우, apothem install을 다시 실행하세요.
+
+## 도움 받기
+
+- [GitHub Issues](https://github.com/ahmed-g-gad/apothem/issues) -- 버그 신고
+- [GitHub Discussions](https://github.com/ahmed-g-gad/apothem/discussions) -- 질문
+- [FAQ](/docs/faq) -- 자주 묻는 질문

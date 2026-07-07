@@ -1,0 +1,231 @@
+---
+title: "릴리스 주기 런북"
+description: "로컬 게이트에서 시작해 서명된 GitHub Release를 거쳐 선택적 npm 게시 디스패치에 이르는 완전한 릴리스 워크플로."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+이 런북은 `apothem`의 `vX.Y.Z` 릴리스를 깨끗한 작업 트리에서 검증된 배포 면까지
+이끕니다. 절차는 `gh`, `git`, 그리고 release-tier 셸을 다루는 메인테이너를 위해
+작성되었으며, 검증된 Release 페이지, 제출된 CHANGELOG, 그리고 각 사용자 대상 면이
+정규 설치 명령에 응답하는지 확인하는 설치 경로 스모크 테스트로 끝납니다.
+
+릴리스 형태는 **단일 태그, 2단계**입니다. `main`의 서명된 릴리스 태그 하나가
+`.github/workflows/release.yml`을 트리거하며, 이는 GitHub Release를 전체 아티팩트
+세트—sdist, wheel, CycloneDX SBOM, Sigstore cosign 번들, SLSA-3 출처, 그리고
+플랫폼 런타임 아카이브—와 함께 빌드, 서명, 증명, 게시합니다. 선택적인 두 번째
+단계는 `publish-npm.yml`의 수동 디스패치로,
+`scripts/release/check-release-ready.sh`가 그린이 된 후 `@ahmed-g-gad/apothem`을
+npmjs.com에 게시합니다. 버전이 매겨진 CHANGELOG 섹션은 태그 커밋과 함께
+작성되며, 오퍼레이터는 두 단계가 모두 안착한 후 설치 경로 스모크 테스트를
+실행합니다.
+
+## 1. 전제 조건
+
+메인테이너는 태깅 전에 다음을 확인합니다.
+
+- **작업 트리.** 깨끗함(`git status`가 보류 중인 것을 아무것도 표시하지 않음).
+  릴리스를 위한 모든 기능 작업이 `main`에 있다.
+- **CI 그린.** 최신 `main`의 `gh run list --branch=main --limit=1
+  --json conclusion --jq '.[0].conclusion'`이 `success`를 반환한다.
+- **도구.** `gh`(GitHub CLI) 버전 2.40 이상이 `ahmed-g-gad`에 대해 인증되어 있음;
+  `git` 2.40 이상이 GPG 서명 하위 키를 로드한 상태; `@ahmed-g-gad/apothem`에 대한
+  npm 신뢰 게시자 바인딩이 활성화됨([게시자 계정 설정 런북](/docs/runbooks/publisher-account-setup)에
+  따라 검증됨).
+- **버전 앵커 정렬됨.** `pyproject.toml`에 선언된 버전 문자열이 `v` 접두사 없이
+  계획된 태그와 일치한다. 검증:
+
+  ```bash
+  grep '^version' pyproject.toml
+  ```
+
+  예상 출력(`vX.Y.Z` 릴리스의 경우; 플레이스홀더는 진행 중인 릴리스 태그를
+  나타냄):
+
+  ```text
+  version = "X.Y.Z"
+  ```
+
+- **CHANGELOG 섹션 스테이징됨.** `CHANGELOG.md`가 Keep-a-Changelog 헤딩 아래에
+  버전이 매겨진 섹션을 담는다. 메인테이너는 태그를 안착시키는 동일한 커밋에서
+  날짜와 릴리스 항목을 업데이트한다.
+
+## 2. 태깅 및 트리거
+
+### 2.1 릴리스 커밋 작성
+
+릴리스 커밋은 두 가지 변경을 안착시킵니다.
+
+- 릴리스의 실제 UTC 날짜로 날짜가 표기된 `CHANGELOG.md` 버전 섹션.
+- 새 버전으로 올린 `pyproject.toml` 버전(오직 `main`의 이전 커밋이 이미 이전
+  버전 핀을 담고 있고 새로운 인상이 필요한 경우에만; 커밋은 태그 시점 며칠 전의
+  버전 인상 주기 동안 안착할 수도 있음).
+
+예시 커밋:
+
+```bash
+git checkout main
+git pull --ff-only origin main
+# Edit 도구로 CHANGELOG와 pyproject.toml 편집을 작성한 다음:
+git add CHANGELOG.md pyproject.toml
+git commit -S -m "chore(release): cut vX.Y.Z"
+git push origin main
+```
+
+`-S` 플래그는 GPG 키로 커밋에 서명합니다. 푸시는 표준 CI 매트릭스(lint, test,
+build)를 트리거합니다; 태깅 전에 그린을 기다리세요.
+
+### 2.2 태그 서명 및 푸시
+
+```bash
+git tag -a -s vX.Y.Z -m "vX.Y.Z"
+git push origin vX.Y.Z
+```
+
+`-a -s` 조합은 주석이 달리고 GPG 서명된 태그를 생성합니다. 푸시는
+`.github/workflows/release.yml`을 트리거하며, 이는 빌드, 서명, 증명, 게시합니다.
+
+### 2.3 릴리스 워크플로 완료 확인
+
+```bash
+gh run watch $(gh run list --workflow=release.yml --limit=1 --json databaseId --jq '.[0].databaseId')
+```
+
+워크플로는 빌드(sdist + wheel), SBOM 생성(CycloneDX), 키리스
+cosign 서명, SLSA-3 출처 생성 및 검증, 플랫폼 아카이브 빌드(darwin / linux /
+windows), 집계된 `SHA256SUMS` 매니페스트와 함께한 아카이브 서명, 그리고 최종
+GitHub Release 게시를 실행합니다. 메인테이너는 `publish GitHub Release` 작업
+로그를 훑어 자산 업로드 확인을 찾습니다.
+
+### 2.4 npm 게시 디스패치(선택 단계)
+
+GitHub Release와 준비 게이트가 모두 그린이 된 후:
+
+```bash
+bash scripts/release/check-release-ready.sh vX.Y.Z
+gh workflow run publish-npm.yml --field tag=vX.Y.Z
+```
+
+프롬프트가 표시되면 `npmjs` 환경 배포를 승인하세요. 워크플로는 npm Trusted
+Publishing(OIDC)을 통해 `@ahmed-g-gad/apothem@X.Y.Z`를 npmjs.com에 게시합니다;
+저장소에는 레지스트리 토큰이 저장되지 않습니다.
+
+## 3. 배포 면
+
+각 면에는 "릴리스가 여기에 안착했는가?"에 답하는 검증 명령이 있습니다.
+
+| # | 면 | 아티팩트 | 검증 |
+|---|---|---|---|
+| 1 | GitHub Release(Python 배포판) | `apothem-X.Y.Z.tar.gz`(sdist) + `apothem-X.Y.Z-py3-none-any.whl` | `gh release view vX.Y.Z --json assets --jq '.assets[].name'`이 두 파일명을 모두 포함 |
+| 2 | GitHub Release(SBOM) | `sbom.cdx.json` | 1행과 동일; 자산 목록이 CycloneDX SBOM을 포함 |
+| 3 | GitHub Release(서명) | 배포 아티팩트마다 `*.cosign.bundle`; 아카이브마다 `*.sig`; `SHA256SUMS` + `SHA256SUMS.sig` | `cosign verify-blob --bundle <artifact>.cosign.bundle <artifact>`이 0으로 종료(워크플로 ID 플래그 포함) |
+| 4 | GitHub Release(출처) | `provenance.intoto.jsonl` | `bash scripts/release/verify-provenance.sh vX.Y.Z`이 0으로 종료 |
+| 5 | GitHub Release(플랫폼 아카이브) | `apothem-vX.Y.Z-darwin.tar.gz`, `apothem-vX.Y.Z-linux.tar.gz`, `apothem-vX.Y.Z-windows.zip` | 자산 목록이 각 아카이브와 `SHA256SUMS`를 포함 |
+| 6 | npmjs.com | `@ahmed-g-gad/apothem@X.Y.Z` | `npm view @ahmed-g-gad/apothem version`이 `X.Y.Z`를 반환; `npx @ahmed-g-gad/apothem@X.Y.Z --version`이 `apothem X.Y.Z`를 출력 |
+| 7 | Pages(스크립트 설치기) | 문서 사이트의 `install.sh` / `install.ps1` | `curl -fsSL https://apothem.ahmedgad.com/install.sh \| head -n 1`이 스크립트 헤더를 반환 |
+
+GitHub Release는 정규 아티팩트 면이며, npm 패키지와 스크립트 설치기는 그 위에
+계층화된 설치 경로입니다. npm 게시는 의도적으로 마지막 단계입니다.
+
+## 4. CHANGELOG 규율
+
+`CHANGELOG.md`는 Keep-a-Changelog 관례 아래 릴리스마다 한 섹션을 담습니다. 릴리스
+커밋의 CHANGELOG 편집은:
+
+- 버전 섹션이 `## [X.Y.Z] — YYYY-MM-DD` 헤딩을 사용하는지 확인한다.
+- 해당하는 곳에서 표준 헤딩—Added, Changed, Deprecated, Removed, Fixed,
+  Security—이 사용되는지 확인한다. 빈 헤딩은 렌더링된 파일에서 제거된다.
+- 구현이 아닌 **역량**을 포착한다. 도메인 언어만; 플랜 내부 참조 없음; 커밋 해시
+  없음; 플랜이나 페이즈 식별자 없음.
+
+메인테이너의 검토를 살아남은 CHANGELOG 섹션은 공지 내러티브를 위한 릴리스 노트
+앵커로 읽힙니다.
+
+## 5. 설치 경로 스모크 테스트
+
+두 단계가 모두 완료된 후, 메인테이너는 스모크 테스트를 실행합니다. 스모크
+테스트는 사용자 대상 설치 명령이 응답한다는 정규 검증입니다.
+
+### 5.1 Claude Code 플러그인
+
+```text
+/plugin marketplace add ahmed-g-gad/apothem
+/plugin install apothem@apothem
+```
+
+예상: 플러그인이 설치되고 `apothem` 명령이 Claude Code 내에서 사용 가능해진다.
+
+### 5.2 Node.js(npx)
+
+```bash
+npx @ahmed-g-gad/apothem@X.Y.Z --version
+```
+
+예상 출력: `apothem X.Y.Z`.
+
+### 5.3 원샷 스크립트 설치기(POSIX)
+
+```bash
+curl -fsSL https://apothem.ahmedgad.com/install.sh | sh
+apothem --version
+```
+
+예상 출력: `apothem X.Y.Z`.
+
+### 5.4 원샷 스크립트 설치기(Windows)
+
+```powershell
+irm https://apothem.ahmedgad.com/install.ps1 | iex
+apothem --version
+```
+
+예상 출력: `apothem X.Y.Z`.
+
+### 5.5 아티팩트 검증(공급망 증거)
+
+```bash
+gh release download vX.Y.Z --pattern 'apothem-X.Y.Z*' --pattern '*.cosign.bundle'
+cosign verify-blob \
+  --bundle apothem-X.Y.Z-py3-none-any.whl.cosign.bundle \
+  --certificate-identity-regexp 'github.com/ahmed-g-gad/apothem' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  apothem-X.Y.Z-py3-none-any.whl
+bash scripts/release/verify-provenance.sh vX.Y.Z
+```
+
+예상: 두 검증 모두 0으로 종료한다.
+
+스모크 테스트는 면마다 한 줄의 PASS / FAIL 행을 생성합니다; 그 행들을 메인테이너의
+릴리스 로그에 기록하세요.
+
+## 6. 장애 복구
+
+릴리스 워크플로에는 릴리스 엔진과 npm 게시자를 위한 문서화된 장애 모드가
+있습니다.
+
+| 장애 | 진단 | 복구 |
+|---|---|---|
+| 태그 푸시 거부(서명 실패) | `git push origin vX.Y.Z`이 GPG 관련 메시지와 함께 `error: failed to push some refs`를 반환 | GPG 하위 키가 로드되었는지 검증한다(`gpg --list-secret-keys --keyid-format=long`); 키링을 고친 후 로컬에서 `-s`로 다시 태깅한다; 다시 푸시한다 |
+| `release.yml` 작업이 단일 단계에서 실패 | `gh run view <run-id> --log`이 실패한 작업(build / sbom / sign / provenance / archive / publish)을 명시 | `gh run rerun <run-id> --failed`로 실패한 작업만 다시 실행한다; 장애가 반복되면 다시 태깅하기 전에 작업의 입력을 그 출처에서 고친다 |
+| SLSA 출처 검증 실패 | `verify SLSA provenance artifact` 작업이 0이 아닌 값으로 종료 | 출처 아티팩트에 주체 다이제스트 불일치가 있는지 검사한다; 동일한 태그에서 다시 빌드한다—출처는 정확한 아티팩트 다이제스트에 바인딩되므로, 어떤 아티팩트 재생성도 전체 워크플로 재실행을 요구한다 |
+| npmjs.com 게시 거부 | npm 작업이 `npm publish` 중에 0이 아닌 값으로 종료; `PUT` 중의 레지스트리 `404`는 인가 / 신뢰 게시자 불일치이지, 패키지 코드가 누락되었다는 증거가 아니다 | `@ahmed-g-gad/apothem`에 대한 npm Trusted Publishing이 소유자 `ahmed-g-gad`, 저장소 `apothem`, 워크플로 `publish-npm.yml`, 허용된 액션 `npm publish`를 명시하는지 검증한다; 작업이 워크플로에 고정된 Node 버전과 npm CLI OIDC 최저선으로 실행되는지 확인한다 |
+| 태그는 보이지만 아티팩트 누락 | `gh release view vX.Y.Z`이 스텁 릴리스를 반환 | 릴리스 워크플로의 publish 작업을 다시 실행한다; 스텁이 남으면 릴리스 페이지를 삭제하고(`gh release delete vX.Y.Z --cleanup-tag`) 동일한 SHA에서 다시 태깅한다 |
+
+복구 주기가 한 번의 진단 패스 내에 면을 안착시키지 못하면, 그 면은 알려진 장애로
+릴리스 노트에 열린 이슈 링크와 함께 기록되며, 깨진 면이 패치 릴리스에서 고쳐지는
+동안 다운스트림 사용자는 작동하는 면으로 안내됩니다.
+
+## 7. 상호 참조
+
+- **게시자 설정.**
+  [게시자 계정 설정 런북](/docs/runbooks/publisher-account-setup)은 npm 신뢰 게시자
+  바인딩과 이 런북이 가정하는 GitHub 측 전제 조건을 확립합니다.
+- **복구 흐름.** 릴리스 복구 런북(`site/content/docs/runbooks/release-recovery.mdx`)은
+  릴리스 컷오버 중의 단계 간 장애 경로를 관할하며, §6에 명시된 면별 릴리스
+  장애는 관할하지 않습니다.
+- **Pages 활성화.** `publish-static-site.yml` 워크플로는 프로젝트 웹사이트를
+  검증하고 사용자 지정 도메인에 배포합니다; Pages 활성화 런북
+  (`site/content/docs/runbooks/pages-enablement.mdx`)은 애초에 사용자 지정
+  도메인을 확립한 상위 절차입니다.
+- **버전 관리 정책.** `site/content/docs/governance/release-engineering-policy.mdx`는
+  이 런북이 준수하는 SemVer + 서명 + 폐기 정책을 담고 있습니다.

@@ -1,0 +1,93 @@
+---
+title: "Convergence des conventions entre environnements"
+description: "Comment Apothem maintient un seul flux de travail de l'opérateur cohérent à travers dix-sept environnements, malgré des formats de configuration et des surfaces d'enforcement divergents selon les fournisseurs."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Dix-sept environnements, dix-sept avis sur l'endroit où vit la configuration et sur
+la forme qu'elle prend. Le travail d'Apothem consiste à donner au flux de
+travail de l'opérateur une impression identique sur tous : vous rédigez les
+conventions une seule fois, et elles se comportent de la même façon, que vous
+optiez pour Claude Code, Cursor ou Gemini CLI. Cet article couvre les deux
+divergences qu'Apothem réconcilie : le format de configuration et la surface
+d'enforcement.
+
+## La divergence de format
+
+Chaque environnement lit ses règles à partir d'une forme de fichier différente.
+Le profil d'Apothem conserve l'intention de l'opérateur sous une seule forme
+neutre ; chaque adaptateur restitue cette intention dans la forme que son
+environnement attend.
+
+| Forme | Environnements (exemples) | Ce qu'Apothem émet |
+| --- | --- | --- |
+| Fichiers de règles `.md` plats dans un répertoire | claude-code, windsurf, trae | Fichiers de règles bruts copiés dans l'arbre de règles de l'environnement |
+| Règles `.mdc` de Cursor | cursor | Un ensemble de règles `.mdc` portant l'en-tête de métadonnées que Cursor attend |
+| Document d'instructions à fichier unique | codex, gemini-cli, github-copilot, zed | Un document concaténé —`AGENTS.md`, `GEMINI.md`, `copilot-instructions.md`, `.rules`— assemblé à partir de l'ensemble de règles du profil |
+
+Un environnement à `.md` plat prend les règles telles quelles. Un environnement
+`.mdc` a besoin de l'en-tête de métadonnées de Cursor enroulé autour de chaque
+règle. Un environnement à fichier unique a besoin que tout l'ensemble de règles
+soit aplati en un seul document avec un ordre de sections stable, afin que
+l'opérateur lise les mêmes conventions dans la même séquence quelle que soit la
+cible. Le profil neutre est la source unique de vérité ; la divergence vit
+entièrement dans l'étape de rendu de chaque adaptateur.
+
+## L'ordre des sections est l'ancre de la convergence
+
+Aplatir de nombreuses règles en un seul document risque de les mélanger d'un
+environnement à l'autre, de sorte que les mêmes conventions atterrissent dans un
+ordre différent dans `AGENTS.md` et dans `GEMINI.md`. Apothem fixe l'ordre au
+niveau du profil : l'ensemble de règles a une séquence déclarée, et chaque
+adaptateur à fichier unique la parcourt dans cet ordre. L'opérateur qui mémorise
+« les conventions de nommage viennent avant les conventions de commit » dans un
+environnement retrouve la même séquence dans tous les autres. La convergence
+n'est pas un accident du rendu — c'est une propriété que le profil épingle.
+
+## La divergence d'enforcement
+
+Le format de configuration est la moitié visible. La moitié la plus difficile est
+l'enforcement : comment une convention est tenue de rendre des comptes au moment
+où l'opérateur (ou l'agent) agit.
+
+### Hooks natifs PreToolUse
+
+claude-code, codex et qwen-code exposent des surfaces de hooks natives. Un hook
+PreToolUse se déclenche avant qu'un appel d'outil ne s'exécute, l'inspecte, et le
+bloque ou le réécrit. C'est de l'enforcement en temps réel : une règle interdisant
+d'écrire des artefacts de planification à un emplacement global devient un hook
+qui rejette l'écriture avant qu'elle ne touche le disque. Apothem matérialise ces
+hooks directement dans la configuration de hooks de l'environnement, de sorte que
+la convention est appliquée par le runtime de l'environnement.
+
+### Discipline fondée sur un wrapper ailleurs
+
+Les environnements restants n'exposent aucune surface de hook de pré-exécution
+équivalente qu'Apothem contrôle. Apothem ne peut pas installer une porte au
+moment de l'exécution là où l'environnement n'offre aucun point de connexion pour
+cela. À la place, la convention est portée sous forme de texte d'instructions
+dans la configuration matérialisée : l'agent lit la règle et y est lié, mais aucun
+mécanisme à l'exécution n'intercepte une action qui l'enfreint. Apothem rend la
+différence explicite plutôt que de prétendre à une parité : une convention
+adossée à un hook et une convention adossée à des instructions ne sont pas la
+même garantie, et l'opérateur voit quels environnements appliquent l'enforcement
+à l'exécution et lesquels reposent sur la discipline par instructions.
+
+## Ce que la convergence signifie en pratique
+
+L'opérateur écrit une seule convention. Apothem la restitue en dix-sept formats et
+lui attache l'enforcement le plus fort que chaque environnement prend en charge —
+un hook natif là où la surface existe, du texte d'instructions là où elle
+n'existe pas. Le flux de travail converge ; les garanties sont énoncées
+honnêtement par environnement.
+
+C'est pourquoi `apothem verify` compte sur tous les fronts : là où aucun hook à
+l'exécution ne peut attraper la dérive, l'opérateur exécute `verify` pour
+détecter une configuration d'environnement qui a dérivé du profil. La commande
+verify est le filet de sécurité de la convergence pour chaque environnement
+dépourvu d'enforcement natif.
+
+Lisez la surface d'enforcement par environnement dans
+[Environnements](/docs/harnesses) et la mécanique des adaptateurs dans
+[l'analyse approfondie de la conception des adaptateurs](/docs/blog/posts/multi-harness-adapter-design).

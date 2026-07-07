@@ -1,0 +1,93 @@
+---
+title: "Hermes"
+description: "Apothem-Harness-Adapter für Hermes (Vorschau)."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+**Anbieter:** Hermes
+**Installationsname:** `hermes`
+**Status:** Vorschau
+**Native Konfiguration:** `~/.hermes/config.yaml`
+
+## Installation
+
+```bash
+apothem install --harness hermes
+```
+
+Der Adapter übersetzt das gemeinsame Profil in die benutzerübergreifende
+Konfigurationsdatei des Hermes Agent und installiert die Apothem-Support-Kohorten
+unter der Harness-Wurzel.
+
+**Geschriebene Dateien:** `~/.hermes/config.yaml` und Support-Dateien unter
+`~/.hermes/.apothem/support/`
+
+## Zuordnung von Profil zu nativer Konfiguration
+
+Der Adapter liest das gemeinsame Profil von Apothem und rendert die native
+YAML-Konfiguration. Die eigene Skills-Oberfläche von Hermes ist `skills.config`
+— installierbare Registry-Pakete, die Hermes automatisch als dynamische
+Slash-Befehle bereitstellt — die Apothem nicht schreibt. Stattdessen liefert
+Apothem die gemeinsamen Befehls- und Skill-Inhalte als Support-Material unter
+`~/.hermes/.apothem/support/`, referenziert vom nativen Anweisungsanker. Hilfsdefinitionen,
+Regeln, Vorlagen und Hook-Prompts bleiben ebenfalls Support-Material unter
+`~/.hermes/.apothem/support/`.
+
+## Kompatibilitätshinweise
+
+Vorschau-Adapter. Die native YAML-Konfiguration ist die aktive Hermes-Oberfläche;
+Apothem verwendet den dokumentierten externen Skill-Verzeichnis-Hook für Skills
+und behält die übrigen Kohorten als Referenzmaterial für die installierte
+Anleitung.
+
+## Verifizierung
+
+```bash
+apothem verify --harness hermes
+```
+
+Der Befehl verify bestätigt, dass:
+
+1. Die native Konfiguration am erwarteten Pfad existiert.
+2. Alle obligatorischen Felder aus dem gemeinsamen Profil vorhanden sind.
+3. Die adapterspezifische Verifizierungsroutine Erfolg meldet.
+
+## Aktualisierung
+
+```bash
+apothem update --harness hermes
+```
+
+Leitet die native Konfiguration aus dem aktuellen Zustand des gemeinsamen Profils
+neu ab. Nach dem Bearbeiten von `~/.config/apothem/profile.yaml` oder dem
+Aktualisieren des installierten Apothem-Pakets ausführen.
+
+## Deinstallation
+
+```bash
+apothem uninstall --harness hermes
+```
+
+Entfernt die vom Adapter geschriebenen nativen Konfigurationsdateien.
+Das YAML des gemeinsamen Profils und die Apothem-Engine sind nicht betroffen.
+
+## Konformitäts-Gate
+
+```bash
+python -m apothem.conformity.gate --all .
+```
+
+## Fehlerbehebung
+
+| Symptom | Lösung |
+|---------|-----|
+| Konfigurationsdatei nicht gefunden | Führen Sie `apothem install --harness hermes` erneut aus |
+| Verifizierung fehlgeschlagen | Führen Sie `apothem update --harness hermes` aus und verifizieren Sie erneut |
+| Unerwarteter Konfigurationsinhalt | Prüfen Sie `~/.config/apothem/profile.yaml` oder `--profile PATH`, dann führen Sie `apothem update --harness hermes` erneut aus |
+
+## Konfigurationsschalter
+
+| Flag | Standard | Beschreibung |
+|------|---------|-------------|
+| `--dry-run` | `false` | Installation in der Vorschau anzeigen, ohne Dateien zu schreiben. |

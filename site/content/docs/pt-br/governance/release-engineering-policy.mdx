@@ -1,0 +1,103 @@
+---
+title: "Política de engenharia de lançamento"
+description: "Cinco políticas canônicas para versionamento, marcação de lançamentos, ciclos de descontinuação, mudanças incompatíveis e procedimentos de reversão."
+machineTranslated: true
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Cinco políticas regem como o `apothem` é lançado.
+
+## 1. Versionamento semântico
+
+O projeto é distribuído sob o [Versionamento Semântico 2.0](https://semver.org/).
+Os números de versão assumem a forma `MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]`.
+
+| Incremento | Gatilhos |
+|------------|----------|
+| **MAJOR** | Mudanças incompatíveis em esquemas de artefatos, identificadores de mandato (CM-N / TM-N / CP-N) ou contratos de hooks |
+| **MINOR** | Novas regras, trabalhadores delegados, comandos, habilidades, eventos de hook ou extensões de esquema não incompatíveis |
+| **PATCH** | Esclarecimentos, adições de antipadrões, correções de documentação e edições que não alteram o comportamento |
+
+As tags candidatas usam o formato `vX.Y.Z-rc.N` (candidata a lançamento)
+ou `vX.Y.Z-alpha.N` / `vX.Y.Z-beta.N` (acesso antecipado).
+
+## 2. Tags de lançamento
+
+Cada lançamento deposita em `main` uma tag git assinada da forma
+`vMAJOR.MINOR.PATCH`. A tag dispara o `.github/workflows/release.yml`, que
+constrói, assina, gera SBOM e procedência SLSA-3, e
+publica a página de GitHub Release.
+
+Convenções de tags:
+
+- **Formato** — exatamente `vMAJOR.MINOR.PATCH`. Sem prefixo `release-`,
+  sem sufixo `-final`.
+- **Anotação** — cada tag é uma tag anotada (`git tag -a -s`)
+  que carrega o resumo das notas de lançamento na mensagem da tag.
+- **Assinatura** — cada tag é assinada com GPG. O fluxo de trabalho de lançamento
+  adicionalmente produz uma assinatura cosign sem chave do Sigstore em
+  cada artefato e uma prova de procedência de lançamento SLSA-3, ambas
+  anexadas à página de GitHub Release.
+
+## 3. Política de descontinuação
+
+A linha de suporte público atual é a versão menor mais recente lançada. Quando
+o projeto tem várias versões menores públicas, a matriz de versões
+suportadas do [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
+é a fonte de verdade para quaisquer janelas adicionais de suporte
+somente para correções críticas.
+
+Cadência de descontinuação:
+
+- **Anúncio** — um símbolo ou comportamento descontinuado é
+  anunciado na seção `### Deprecated` do `CHANGELOG.md` do
+  lançamento em que a descontinuação ocorre. As notas de lançamento
+  espelham o anúncio de descontinuação.
+- **Janela de tolerância** — símbolos descontinuados permanecem disponíveis por
+  no mínimo um ciclo menor completo antes da remoção.
+- **Remoção** — a remoção ocorre em um incremento `MAJOR`. Cada símbolo
+  removido carrega uma linha `### Removed` no `CHANGELOG.md` e uma
+  entrada de guia de migração em
+  [Guias práticos](/docs/how-to-guides).
+
+## 4. Política de mudanças incompatíveis
+
+Mudanças incompatíveis exigem:
+
+1. **Uma issue RFC** — aberta com o rótulo de issue `rfcs`
+   descrevendo a mudança incompatível, o caminho de migração e a
+   estratégia de reversão.
+2. **Uma janela de comentários de 30 dias** — a RFC permanece aberta por pelo menos
+   30 dias antes do merge. Os mantenedores podem estender a janela quando
+   o feedback justificar.
+3. **Um incremento MAJOR** — o lançamento que aplica a mudança
+   incompatível incrementa o componente MAJOR.
+4. **Um guia de migração** — a mudança é entregue com uma
+   entrada de [Guias práticos](/docs/how-to-guides) que orienta o
+   operador na migração.
+
+## 5. Política de reversão
+
+Se um lançamento exibir uma regressão que bloqueia a adoção:
+
+1. **Reverter** — o(s) commit(s) problemático(s) são revertidos em `main`.
+2. **Reetiquetagem menos um** — um lançamento subsequente ocorre como
+   `vMAJOR.MINOR.PATCH+1` carregando a reversão mais quaisquer
+   correções incrementais. O lançamento defeituoso anterior **não** é
+   excluído do GitHub Releases — uma anotação `### Yanked` no
+   `CHANGELOG.md` documenta a situação para que as
+   compilações reproduzíveis permaneçam ancoradas.
+3. **Comunicação** — um aviso de security-advisories (quando
+   for relevante para a segurança) ou uma postagem em Discussions (quando
+   for relevante para a confiabilidade) acompanha a reversão.
+
+## Veja também
+
+- [CHANGELOG.md](https://github.com/ahmed-g-gad/apothem/blob/main/CHANGELOG.md)
+  — o livro-razão canônico de lançamentos.
+- [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
+  — a matriz de versões suportadas e os canais de notificação.
+- [cicd-pipeline.md](/docs/architecture/cicd-pipeline) — as classes de
+  verificações de CI que protegem cada lançamento.
+- [deployment-checklist.md](/docs/runbooks/deployment-checklist) — a varredura de
+  prontidão para produção por lançamento.
