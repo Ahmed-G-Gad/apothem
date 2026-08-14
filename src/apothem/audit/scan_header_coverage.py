@@ -43,7 +43,20 @@ import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Final
+
+# ---------------------------------------------------------------------------
+# Canonical header rendering lives in ``header_banner``, which mirrors
+# src/apothem/conformity/file_header_grep.py byte-for-byte so the scanner, the
+# validator, and the injector agree on the canonical form without sharing a
+# module. Re-exported here: this module is the established public entry point.
+# ---------------------------------------------------------------------------
+from apothem.audit.header_banner import (
+    canonical_banner_lines,
+    # Public re-export: consumed through this module's path, not called here,
+    # so the unused-import rule cannot see its importers.
+    canonical_banner_text,  # noqa: F401
+    canonical_block_lines,
+)
 
 # ---------------------------------------------------------------------------
 # Shared vocabulary. The status / variant / malformation taxonomies, the
@@ -83,98 +96,6 @@ from apothem.audit.header_vocabulary import (
     VARIANT_HTML,
     VARIANT_SEMICOLON,
 )
-
-
-# ---------------------------------------------------------------------------
-# Canonical header rendering per variant family.
-#
-# The load / render / canonical-block helpers mirror
-# src/apothem/conformity/file_header_grep.py byte-for-byte so the scanner,
-# the validator, and the injector agree on the canonical form without
-# sharing a module. The fixture at src/apothem/schemas/authorship-header.txt
-# is a single hash-form SPDX line; every other variant is rendered from it
-# by comment-marker substitution (hash / double-slash / semicolon /
-# double-dash) or by wrapper composition (html / c-block).
-# ---------------------------------------------------------------------------
-def _replace_marker(line: str, source: str, target: str) -> str:
-    """Substitute the leading comment marker on a header line.
-
-    The narrowed header line carries the comment marker on its leading edge
-    only; this swaps that edge. Mirrors scripts/inject-header.py and
-    file_header_grep.py to preserve injector / validator / scanner parity.
-    """
-    if not line.startswith(source):
-        return line
-    if len(line) >= 2 * len(source) and line.endswith(source):
-        inner = line[len(source) : -len(source)]
-        return f"{target}{inner}{target}"
-    return target + line[len(source) :]
-
-
-def _render_variant(hash_form_line: str, spdx_text: str, variant: str) -> list[str]:
-    """Render the canonical SPDX header line for ``variant`` (no trailing blank)."""
-    if variant == VARIANT_HASH:
-        return [hash_form_line]
-    if variant == VARIANT_DOUBLE_SLASH:
-        return [_replace_marker(hash_form_line, "#", "//")]
-    if variant == VARIANT_SEMICOLON:
-        return [_replace_marker(hash_form_line, "#", ";")]
-    if variant == VARIANT_DOUBLE_DASH:
-        return [_replace_marker(hash_form_line, "#", "--")]
-    if variant == VARIANT_HTML:
-        return [f"<!-- {spdx_text} -->"]
-    if variant == VARIANT_C_BLOCK:
-        return [f"/* {spdx_text} */"]
-    raise ValueError(f"variant not renderable: {variant!r}")
-
-
-def _render_canonical_block(
-    hash_form_line: str, spdx_text: str, variant: str
-) -> list[str]:
-    """Render the canonical block including the mandatory trailing blank line."""
-    return [*_render_variant(hash_form_line, spdx_text, variant), ""]
-
-
-def _load_banner(schemas_dir: Path) -> tuple[str, str]:
-    """Load the narrowed SPDX-line header fixture.
-
-    Mirrors file_header_grep.py ``_load_banner``: the fixture is the single
-    ``# SPDX-License-Identifier: MIT`` line. Returns ``(hash_form_line,
-    spdx_text)`` on success, or two empty strings when the fixture is absent
-    or malformed (the caller treats the empty result as a skip).
-    """
-    banner_path = schemas_dir / "authorship-header.txt"
-    if not banner_path.is_file():
-        return "", ""
-    raw = banner_path.read_text(encoding="utf-8")
-    lines = [line for line in raw.splitlines() if line.strip()]
-    if len(lines) != 1:
-        return "", ""
-    spdx_line = lines[0]
-    if SPDX_PREFIX_TEXT not in spdx_line or not spdx_line.startswith("#"):
-        return "", ""
-    return spdx_line, spdx_line[1:].strip()
-
-
-# Resolve the canonical header fixture once at import. The fixture lives at
-# src/apothem/schemas/ relative to this file (audit/ → apothem/ → schemas/).
-_SCHEMAS_DIR: Final[Path] = Path(__file__).resolve().parent.parent / "schemas"
-_HASH_FORM_LINE, _SPDX_TEXT = _load_banner(_SCHEMAS_DIR)
-
-
-def canonical_banner_lines(variant: str) -> list[str]:
-    """Return the canonical header lines for ``variant``.
-
-    The narrowed header is a single line per variant. Raises ``ValueError``
-    if ``variant`` is not a renderable family; the caller filters exempt
-    files before requesting a canonical form.
-    """
-    return _render_variant(_HASH_FORM_LINE, _SPDX_TEXT, variant)
-
-
-def canonical_banner_text(variant: str) -> str:
-    """Return the canonical header as one newline-terminated text block."""
-    return "\n".join(canonical_banner_lines(variant)) + "\n"
 
 
 # ---------------------------------------------------------------------------
@@ -427,7 +348,7 @@ def scan_for_banner(
 
     # Canonical block = the variant line plus one trailing blank, mirroring
     # _render_canonical_block / file_header_grep's _is_canonical_at_position.
-    canonical_block = _render_canonical_block(_HASH_FORM_LINE, _SPDX_TEXT, variant)
+    canonical_block = canonical_block_lines(variant)
 
     # The header sits at the insertion site: line index 1 after a shebang,
     # else line index 0. The reported range is the SPDX line itself (the
