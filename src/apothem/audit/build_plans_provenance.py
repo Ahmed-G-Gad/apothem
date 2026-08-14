@@ -68,6 +68,16 @@ from pathlib import Path
 from typing import Any, Final
 
 # ---------------------------------------------------------------------------
+# Filename derivation lives in ``plan_filename``: the slug rule, the H1
+# reader, and the title precedence between them. Public names, because
+# ``_record_for`` calls them.
+# ---------------------------------------------------------------------------
+from apothem.audit.plan_filename import (
+    h1_of,
+    proposed_filename,
+)
+
+# ---------------------------------------------------------------------------
 # Frontmatter parsing lives in ``plan_frontmatter``: the grammar plus the
 # two readers over it. Public names, because other stages import them.
 # ---------------------------------------------------------------------------
@@ -138,8 +148,6 @@ _FILE_REF_RE: Final[re.Pattern[str]] = re.compile(
     r"\b[\w./-]+\.(?:py|js|ts|tsx|rs|go|java|rb|sh|md|yml|yaml|json|toml|ini)\b"
 )
 
-_H1_RE: Final[re.Pattern[str]] = re.compile(r"^#\s+(.+?)\s*$", re.MULTILINE)
-
 
 @dataclass
 class Signals:
@@ -209,38 +217,6 @@ def _scan_signals(content: str) -> Signals:
         frameworks=sorted(set(_FRAMEWORK_RE.findall(body))),
         eco_path_hits=len(_ECO_PATH_RE.findall(body)),
     )
-
-
-def _kebab_slug(text: str) -> str:
-    text = text.lower()
-    text = re.sub(r"[^\w\s-]", "", text)
-    text = re.sub(r"[\s_]+", "-", text)
-    text = re.sub(r"-+", "-", text)
-    return text.strip("-")[:60]
-
-
-def _h1_of(content: str) -> str | None:
-    body = strip_frontmatter(content)
-    match = _H1_RE.search(body)
-    return match.group(1).strip() if match else None
-
-
-def _proposed_filename(
-    path: Path,
-    mtime_iso: str,
-    fm_fields: dict[str, str],
-    h1: str | None,
-) -> str:
-    date_str = fm_fields.get("created", "")
-    iso10 = re.match(r"\d{4}-\d{2}-\d{2}", date_str)
-    date = iso10.group(0) if iso10 else mtime_iso[:10]
-    if "title" in fm_fields:
-        slug = _kebab_slug(fm_fields["title"])
-    elif h1:
-        slug = _kebab_slug(h1)
-    else:
-        slug = _kebab_slug(path.stem)
-    return f"{date}--{slug}.md"
 
 
 def _suite_of(rel: str) -> str:
@@ -581,7 +557,7 @@ def _record_for(
     content = _read_text(path)
     fm = parse_frontmatter(content)
     signals = _scan_signals(content)
-    h1 = _h1_of(content)
+    h1 = h1_of(content)
     mtime = inventory_record.get("mtime", "")
     if not mtime and path.exists():
         mtime = datetime.fromtimestamp(
@@ -600,7 +576,7 @@ def _record_for(
     ):
         proposed = "n/a (stay-in-place)"
     else:
-        proposed = _proposed_filename(path, mtime, fm, h1)
+        proposed = proposed_filename(path, mtime, fm, h1)
     return ProvenanceRecord(
         path=rel,
         suite=suite,
@@ -950,13 +926,8 @@ __all__ = [
     "ProvenanceRecord",
     "Signals",
     "SuiteVerdict",
-    "_h1_of",
-    "_kebab_slug",
     "_load_known_projects",
     "_matches_project",
-    "_proposed_filename",
     "_suite_of",
     "main",
-    "parse_frontmatter",
-    "strip_frontmatter",
 ]

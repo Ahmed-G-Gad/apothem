@@ -41,6 +41,17 @@ _FRONTMATTER_CREATED_RE: Final[re.Pattern[str]] = re.compile(
 
 
 def parse_frontmatter(content: str) -> dict[str, str]:
+    """Lift the three tracked fields out of a leading frontmatter block.
+
+    Only ``project``, ``title``, and ``created`` are read — the three the
+    provenance pipeline acts on. Any other key in the block is left where it
+    is rather than carried along, so the returned mapping is a decision
+    surface and not a partial copy of the file's metadata.
+
+    Content with no frontmatter yields an empty mapping, as does a block
+    carrying none of the three; the caller cannot distinguish those cases
+    and does not need to.
+    """
     match = _FRONTMATTER_RE.match(content)
     if not match:
         return {}
@@ -59,6 +70,13 @@ def parse_frontmatter(content: str) -> dict[str, str]:
 
 
 def strip_frontmatter(content: str) -> str:
+    """Return the content with any leading frontmatter block removed.
+
+    This is what lets a body scan treat the file as prose: without it a
+    ``title:`` field would read as a heading candidate and the closing
+    ``---`` fence as a horizontal rule. Content with no frontmatter comes
+    back unchanged rather than trimmed.
+    """
     match = _FRONTMATTER_RE.match(content)
     if not match:
         return content

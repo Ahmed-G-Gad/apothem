@@ -13,9 +13,11 @@ be refactored against a real green-before / green-after baseline, and they say
 so in the docstring wherever the behavior is more surprising than the function
 name suggests.
 
-Scope note. Every function in the module is module-private; ``main`` is the
-only public surface. Testing the privates is deliberate — characterizing a
-1,005-line module through its CLI alone would pin almost nothing.
+Scope note. Every function tested here is module-private; ``main`` is the only
+public surface. Testing the privates is deliberate — characterizing a
+900-line module through its CLI alone would pin almost nothing. Frontmatter
+parsing and filename derivation have since moved to their own modules and are
+covered by ``test_audit_plan_frontmatter`` and ``test_audit_plan_filename``.
 
 Lifecycle note. The builder is scoped to the legacy ``.plans/`` tree by
 design, per its own module docstring. ``CLAUDE.md`` makes ``.apothem/plans/``
@@ -29,151 +31,10 @@ from __future__ import annotations
 from pathlib import Path
 
 from apothem.audit.build_plans_provenance import (
-    _h1_of,
-    _kebab_slug,
     _load_known_projects,
     _matches_project,
-    _proposed_filename,
     _suite_of,
-    parse_frontmatter,
-    strip_frontmatter,
 )
-
-# --- frontmatter ------------------------------------------------------------
-
-
-def test_parse_frontmatter_absent_block_yields_no_fields() -> None:
-    """Content with no frontmatter parses to an empty mapping."""
-    assert parse_frontmatter("# Heading\nbody\n") == {}
-
-
-def test_parse_frontmatter_extracts_the_three_tracked_fields() -> None:
-    """Only project, title, and created are lifted out of the block.
-
-    The builder needs exactly these three to attribute and rename a file;
-    other frontmatter keys are deliberately ignored rather than carried.
-    """
-    content = (
-        "---\n"
-        "project: apothem\n"
-        "title: Some Plan\n"
-        "created: 2026-01-15\n"
-        "author: someone\n"
-        "---\n"
-        "body\n"
-    )
-
-    fields = parse_frontmatter(content)
-
-    assert fields == {
-        "project": "apothem",
-        "title": "Some Plan",
-        "created": "2026-01-15",
-    }
-
-
-def test_parse_frontmatter_only_matches_at_the_start_of_content() -> None:
-    """A delimiter block further down the file is body text, not frontmatter."""
-    assert parse_frontmatter("intro\n---\ntitle: Not Frontmatter\n---\n") == {}
-
-
-def test_strip_frontmatter_removes_only_the_leading_block() -> None:
-    """The body after the closing delimiter survives intact."""
-    content = "---\ntitle: T\n---\n# Heading\nbody\n"
-
-    assert strip_frontmatter(content) == "# Heading\nbody\n"
-
-
-def test_strip_frontmatter_passes_content_through_when_absent() -> None:
-    """Content with no frontmatter is returned unchanged."""
-    assert strip_frontmatter("# Heading\n") == "# Heading\n"
-
-
-# --- slug and heading -------------------------------------------------------
-
-
-def test_kebab_slug_lowercases_and_joins_on_hyphens() -> None:
-    """Spaces and underscores collapse to single hyphens."""
-    assert _kebab_slug("Some  Plan_Title") == "some-plan-title"
-
-
-def test_kebab_slug_drops_punctuation_and_trims_edges() -> None:
-    """Non-word characters are removed, and leading/trailing hyphens go."""
-    assert _kebab_slug("  *Plan*: the (sequel)!  ") == "plan-the-sequel"
-
-
-def test_kebab_slug_truncates_at_sixty_characters() -> None:
-    """An overlong title is cut to keep filenames manageable."""
-    assert len(_kebab_slug("word " * 40)) <= 60
-
-
-def test_kebab_slug_of_empty_text_is_empty() -> None:
-    """Nothing in, nothing out — the caller decides the fallback."""
-    assert _kebab_slug("   ") == ""
-
-
-def test_h1_of_reads_past_the_frontmatter() -> None:
-    """The first heading is found in the body, not the frontmatter block."""
-    assert _h1_of("---\ntitle: T\n---\n# Real Heading\n") == "Real Heading"
-
-
-def test_h1_of_returns_none_without_a_heading() -> None:
-    """Body prose with no heading yields no title candidate."""
-    assert _h1_of("just prose\n") is None
-
-
-# --- proposed filename ------------------------------------------------------
-
-
-def test_proposed_filename_prefers_frontmatter_title_over_h1() -> None:
-    """The declared title outranks the rendered heading.
-
-    Frontmatter is an explicit authoring decision; the H1 is a rendering
-    detail that may have drifted from it.
-    """
-    name = _proposed_filename(
-        Path("notes.md"),
-        "2026-08-14T00:00:00",
-        {"title": "Declared Title", "created": "2026-01-15"},
-        "Rendered Heading",
-    )
-
-    assert name == "2026-01-15--declared-title.md"
-
-
-def test_proposed_filename_falls_back_to_h1_then_to_the_stem() -> None:
-    """With no title the heading is used; with neither, the filename stem is."""
-    from_h1 = _proposed_filename(
-        Path("notes.md"), "2026-08-14T00:00:00", {}, "Rendered Heading"
-    )
-    from_stem = _proposed_filename(
-        Path("Some_Notes.md"), "2026-08-14T00:00:00", {}, None
-    )
-
-    assert from_h1 == "2026-08-14--rendered-heading.md"
-    assert from_stem == "2026-08-14--some-notes.md"
-
-
-def test_proposed_filename_uses_mtime_when_created_is_absent_or_malformed() -> None:
-    """A non-ISO created value is ignored in favour of the file's mtime date."""
-    name = _proposed_filename(
-        Path("notes.md"), "2026-08-14T00:00:00", {"created": "last Tuesday"}, "Title"
-    )
-
-    assert name.startswith("2026-08-14--")
-
-
-def test_proposed_filename_truncates_a_long_created_value_to_the_date() -> None:
-    """A full timestamp in `created` contributes only its date component."""
-    name = _proposed_filename(
-        Path("notes.md"),
-        "2026-08-14T00:00:00",
-        {"created": "2026-01-15T09:30:00Z"},
-        "Title",
-    )
-
-    assert name == "2026-01-15--title.md"
-
 
 # --- suite resolution -------------------------------------------------------
 
