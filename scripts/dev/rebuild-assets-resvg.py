@@ -36,6 +36,17 @@ SITE_SRC_ASSETS = REPO_ROOT / "site" / "src" / "assets"
 
 
 def find_resvg(operator_override: str | None) -> Path:
+    """Resolve the ``resvg`` binary, preferring the operator's explicit choice.
+
+    Pre-conditions: ``operator_override`` is the ``--resvg`` value, or ``None``
+    to auto-detect.
+
+    Post-conditions: an explicit override that does not resolve to a file
+    raises ``SystemExit`` rather than silently falling back — an operator who
+    named a binary meant that one. Auto-detection searches ``PATH`` first, then
+    the conventional per-user install locations, covering both the POSIX and
+    the Windows executable names.
+    """
     if operator_override:
         path = Path(operator_override)
         if not path.is_file():
@@ -150,6 +161,14 @@ def mirror_site_source_assets() -> None:
 
 
 def main() -> int:
+    """Re-render the raster asset set from the SVG masters; return the exit.
+
+    Post-conditions: ``--check-only`` verifies the toolchain is resolvable and
+    returns without writing any file, so CI can assert the renderer is
+    available without regenerating committed assets. Otherwise every raster is
+    re-rendered from its SVG master, keeping the binary assets derivable rather
+    than hand-maintained. Returns ``0`` on success.
+    """
     parser = argparse.ArgumentParser(
         description="Regenerate Apothem raster set from SVG masters via resvg."
     )

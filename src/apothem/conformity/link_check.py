@@ -116,6 +116,15 @@ LOCALE_ROUTE_SEGMENTS: Final[frozenset[str]] = frozenset(
 
 @dataclass(frozen=True)
 class Finding:
+    """One unresolvable link target in the inspected document.
+
+    Pre-conditions: ``line`` is the 1-based line carrying the link;
+    ``destination`` is the raw target as written (a relative path, an anchor,
+    or an absolute URL); ``detail`` states why it failed to resolve.
+    Post-conditions: ``rule`` defaults to :data:`RULE_ANCHOR` so every finding
+    cites its governing discipline.
+    """
+
     line: int
     destination: str
     detail: str
@@ -124,6 +133,16 @@ class Finding:
 
 @dataclass(frozen=True)
 class GrepResult:
+    """Matcher report for a single sweep of this validator.
+
+    Carries its own result shape rather than reusing the shared base because
+    the payload adds ``internal_count``, ``external_count``.
+
+    Pre-conditions: ``findings`` holds this module's frozen ``Finding``
+    dataclasses. Post-conditions: ``passed`` is ``True`` exactly when
+    ``findings`` is empty; :meth:`to_json` emits the serialised payload.
+    """
+
     grep: str
     path: str | None
     passed: bool
@@ -132,6 +151,12 @@ class GrepResult:
     findings: list[Finding] = field(default_factory=list)
 
     def to_json(self) -> str:
+        """Return this report as a two-space-indented JSON string.
+
+        Post-conditions: the payload carries ``{grep, path, passed,
+        internal_count, external_count, findings}``; each finding is flattened
+        through ``dataclasses.asdict``.
+        """
         # snake_case payload keys, matching the dataclass attribute names and
         # the sibling matchers' convention (e.g. reference_token's
         # ``files_inspected``); no consumer parses the prior kebab-case keys.

@@ -396,6 +396,18 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Build the release tarball and print its digest; return the exit code.
+
+    Pre-conditions: ``argv`` is the argument vector without the program name
+    (``None`` reads ``sys.argv[1:]``), supplying the source root, output
+    directory, archive name, version, and target platform.
+
+    Post-conditions: the archive is written under the resolved output
+    directory and one ``<digest>  <filename>`` line is written to stdout — the
+    two-space separator matches the ``sha256sum`` checksum-file format, so the
+    output can be redirected straight into a ``.sha256`` companion that
+    ``sha256sum -c`` verifies. Returns ``0``.
+    """
     args = _parse_args(argv if argv is not None else sys.argv[1:])
     archive_path = build_tarball(
         args.root.resolve(),

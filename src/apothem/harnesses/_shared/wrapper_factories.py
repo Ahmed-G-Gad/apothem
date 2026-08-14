@@ -100,6 +100,57 @@ _VERIFY_DOC_PROJECT = """Return True when every manifest install-list target is 
     Project-scope: the manifest walk resolves targets from the project root, so
     ``output_path`` (already resolved by the adapter wrapper) is unused here."""
 
+# Docstrings for the install / plan / uninstall closures below. These are
+# assigned onto the returned closure rather than written inline, matching
+# ``_UPDATE_DOC`` / ``_VERIFY_DOC`` above: the closure becomes the adapter's
+# public lifecycle method, so its ``__doc__`` is what an operator sees on
+# ``help(adapter.install)`` — the enclosing factory's docstring is not reachable
+# from there.
+_INSTALL_DOC = """Materialize the profile into the harness's native configuration.
+
+    Runs the manifest install against the harness root (``output_path.parent``),
+    threading the profile into the instruction anchor's managed block, then
+    records the run in the install ledger."""
+
+_INSTALL_DOC_PROJECT = """Materialize the profile into the project's configuration.
+
+    Project-scope: every target resolves from the operator-supplied ``project``
+    root, so ``output_path`` is unused. Raises ``ValueError`` when ``project``
+    is absent — a project-scope adapter has no user-scope fallback root."""
+
+_INSTALL_DOC_NATIVE = """Render and write the harness's native config, then install support files.
+
+    Materializes the native configuration from the profile, applies it as an
+    operator-owned write, installs the manifest support subtree, and finalizes
+    the run."""
+
+_PLAN_DOC = """Return the install list without writing anything.
+
+    Materializes the manifest against the harness root (``output_path.parent``)
+    so a caller can preview every pending change before it lands."""
+
+_PLAN_DOC_PROJECT = """Return the install list without writing anything.
+
+    Project-scope: targets resolve from the ``project`` root, so ``output_path``
+    is unused."""
+
+_UNINSTALL_DOC = """Remove this harness's manifest targets, leaving no orphans.
+
+    The shared driver strips only Apothem's managed block and keys, backing each
+    target up under the Apothem backup root first, so operator-authored content
+    in a shared file survives."""
+
+_UNINSTALL_DOC_PROJECT = """Remove this harness's manifest targets from the project root.
+
+    The project root passes through when the CLI supplied it; otherwise it is
+    derived from the adapter's declared relative target."""
+
+_UNINSTALL_DOC_NATIVE = """Remove the rendered native config and the manifest support subtree.
+
+    The materializer-rendered config is not a manifest entry, so Apothem's
+    structural contribution is identified by re-rendering from an empty profile
+    and removed surgically before the shared driver cleans the support tree."""
+
 
 def make_verify_harness_root(harness_name: str) -> _UserScopeVerify:
     """Return a user-scope ``verify`` shim for the harness-root cluster."""
@@ -164,6 +215,7 @@ def make_user_scope_install(harness_name: str) -> _UserScopeInstall:
             root=output_path.parent,
         )
 
+    install.__doc__ = _INSTALL_DOC
     return install
 
 
@@ -179,6 +231,7 @@ def make_plan_harness_root(harness_name: str) -> _ProjectPlanFn:
     def plan(output_path: Path) -> list[dict[str, str]]:
         return install_driver.build_plan(harness_name, harness_root=output_path.parent)
 
+    plan.__doc__ = _PLAN_DOC
     return plan
 
 
@@ -195,6 +248,7 @@ def make_uninstall(harness_name: str) -> _NativeUninstallFn:
     def uninstall(output_path: Path) -> None:
         install_driver.run_uninstall(harness_name, harness_root=output_path.parent)
 
+    uninstall.__doc__ = _UNINSTALL_DOC
     return uninstall
 
 
@@ -305,6 +359,7 @@ def make_project_scope_install(
             root=project,
         )
 
+    install.__doc__ = _INSTALL_DOC_PROJECT
     return install
 
 
@@ -315,6 +370,7 @@ def make_project_scope_plan(harness_name: str) -> _ProjectScopePlan:
         del output_path  # resolved per-entry from manifest + project root
         return install_driver.build_plan(harness_name, project_root=project)
 
+    plan.__doc__ = _PLAN_DOC_PROJECT
     return plan
 
 
@@ -344,6 +400,7 @@ def make_project_scope_uninstall(
         project_root = project if project is not None else output_path.parents[_depth]
         install_driver.run_uninstall(harness_name, project_root=project_root)
 
+    uninstall.__doc__ = _UNINSTALL_DOC_PROJECT
     return uninstall
 
 
@@ -378,6 +435,7 @@ def make_native_config_uninstall(
         )
         install_driver.run_uninstall(harness_name, harness_root=output_path.parent)
 
+    uninstall.__doc__ = _UNINSTALL_DOC_NATIVE
     return uninstall
 
 
@@ -461,6 +519,7 @@ def make_native_config_install(
             root=output_path.parent,
         )
 
+    install.__doc__ = _INSTALL_DOC_NATIVE
     return install
 
 

@@ -89,6 +89,20 @@ class _CliUserError(Exception):
         safe_value: object | None = None,
         files_written: tuple[str, ...] = (),
     ) -> None:
+        """Capture the structured payload behind an operator-facing failure.
+
+        Pre-conditions: ``code`` is the stable machine-readable identifier;
+        ``message`` is the human sentence; ``field`` names the offending input;
+        ``reason`` says why it was rejected; ``fix`` states the corrective
+        action. ``safe_value`` carries a redacted echo of the input when one can
+        be shown without leaking a secret, and ``files_written`` lists any paths
+        already written before the failure, so a partial run is recoverable
+        rather than silently half-applied.
+
+        Post-conditions: ``message`` is passed to ``Exception`` so the plain
+        string surfaces in a traceback; every field is also retained for
+        :meth:`to_dict`.
+        """
         super().__init__(message)
         self.code = code
         self.message = message
@@ -122,14 +136,34 @@ class _Adapter(Protocol):
     """
 
     @property
-    def name(self) -> str: ...
+    def name(self) -> str:
+        """The adapter's registry key, as the operator types it on the CLI."""
+        ...
+
     @property
-    def output_path(self) -> Path: ...
-    def install(self, profile: dict[str, Any]) -> object: ...
-    def update(self, profile: dict[str, Any]) -> object: ...
-    def uninstall(self) -> None: ...
-    def is_installed(self) -> bool: ...
-    def verify(self) -> bool: ...
+    def output_path(self) -> Path:
+        """Absolute path of the harness's primary configuration target."""
+        ...
+
+    def install(self, profile: dict[str, Any]) -> object:
+        """Materialize *profile* into this harness's native configuration."""
+        ...
+
+    def update(self, profile: dict[str, Any]) -> object:
+        """Re-materialize *profile* over an existing installation."""
+        ...
+
+    def uninstall(self) -> None:
+        """Remove every artifact this adapter installed, leaving no orphans."""
+        ...
+
+    def is_installed(self) -> bool:
+        """Return True when this harness carries an Apothem installation."""
+        ...
+
+    def verify(self) -> bool:
+        """Return True when the installed surface still matches the profile."""
+        ...
 
     # Optional project-scope extension (opt-in per adapter). Adapters
     # that materialize into a project root rather than a user-scope
@@ -717,6 +751,15 @@ class AliasedGroup(click.Group):
     """Click group that resolves subcommands case-insensitively."""
 
     def get_command(self, ctx: click.Context, cmd_name: str) -> click.Command | None:
+        """Resolve *cmd_name* exactly, then fall back to a case-insensitive match.
+
+        Pre-conditions: ``cmd_name`` is the subcommand token as typed.
+        Post-conditions: an exact match wins without any case folding, so
+        declared names always take precedence. Otherwise a single
+        case-insensitive match is returned; several matches fail the context
+        with an ambiguity message rather than silently picking one, and no match
+        returns ``None`` so Click emits its own unknown-command error.
+        """
         cmd = super().get_command(ctx, cmd_name)
         if cmd is not None:
             return cmd

@@ -463,6 +463,12 @@ class FileCoverage:
     injection_plan: dict[str, object] | None
 
     def to_json(self) -> dict[str, object]:
+        """Return this report as a JSON-ready mapping.
+
+        Post-conditions: the payload carries ``{path, applicable,
+        exception-class, header-status, variant-family, header-line-range,
+        malformation-class, malformation-detail, injection-plan}``.
+        """
         return {
             "path": self.path,
             "applicable": self.applicable,
@@ -493,6 +499,12 @@ class CoverageSummary:
     by_malformation_class: dict[str, int] = field(default_factory=dict)
 
     def to_json(self) -> dict[str, object]:
+        """Return this report as a JSON-ready mapping.
+
+        Post-conditions: the payload carries ``{total-files, applicable-total,
+        present-canonical, present-malformed, absent, not-applicable,
+        coverage-pct, by-variant-family, by-malformation-class}``.
+        """
         return {
             "total-files": self.total_files,
             "applicable-total": self.applicable_total,

@@ -74,20 +74,25 @@ class TreeReport:
     findings: list[Finding] = field(default_factory=list)
 
     def fail(self, message: str) -> None:
+        """A blocking finding: the tree violates an audited invariant."""
         self.findings.append(Finding("fail", self.root, message))
 
     def warn(self, message: str) -> None:
+        """Record a non-blocking finding the operator should review."""
         self.findings.append(Finding("warn", self.root, message))
 
     def info(self, message: str) -> None:
+        """Record an observation that carries no verdict, for context only."""
         self.findings.append(Finding("info", self.root, message))
 
     @property
     def fails(self) -> int:
+        """Count of blocking findings; non-zero drives a non-zero exit code."""
         return sum(1 for f in self.findings if f.severity == "fail")
 
     @property
     def warns(self) -> int:
+        """Review-worthy findings; reported, never failing the run."""
         return sum(1 for f in self.findings if f.severity == "warn")
 
 

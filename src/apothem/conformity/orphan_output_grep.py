@@ -148,6 +148,15 @@ RULE_ANCHOR: Final[str] = "M12 canonical-layout + M14 systemicity"
 
 @dataclass(frozen=True)
 class Finding:
+    """One artifact written outside every ratified output prefix.
+
+    Pre-conditions: ``issue`` is the short orphan classification (the emitted
+    path matched no ratified prefix and is not a root-level canonical
+    singleton); ``detail`` names the offending path and the prefixes it was
+    checked against. Post-conditions: ``rule`` defaults to :data:`RULE_ANCHOR`
+    so every finding cites the output-locality discipline as its authority.
+    """
+
     issue: str
     detail: str
     rule: str = RULE_ANCHOR

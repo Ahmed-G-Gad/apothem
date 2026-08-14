@@ -220,7 +220,16 @@ class _CheckCallable(Protocol):
         self,
         content: str,
         path: Path | None = None,
-    ) -> Any: ...  # noqa: ANN401  # GrepResult instances are duck-typed across modules.
+    ) -> Any:  # noqa: ANN401  # GrepResult instances are duck-typed across modules.
+        """Scan *content* and return that module's result dataclass.
+
+        Pre-conditions: ``content`` is the artifact body; ``path`` is its
+        location, or ``None`` when the body arrived over stdin and no path
+        context is available. Post-conditions: the return carries at least
+        ``passed`` and ``findings``; its concrete type varies per module, which
+        is why the annotation stays ``Any``.
+        """
+        ...
 
 
 # Per-grep dispatch order. The order is intentional: the cheap structural
@@ -1367,6 +1376,20 @@ def _findings_summary(report: OrchestratorReport, *, strict: bool) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Dispatch one gate invocation and return its process exit code.
+
+    Pre-conditions: ``argv`` is a full argument vector including the program
+    name (``None`` reads ``sys.argv``). ``--strict`` may appear anywhere and is
+    extracted before flag dispatch; ``APOTHEM_CONFORMITY_STRICT`` sets the same
+    posture from the environment.
+
+    Post-conditions: returns :data:`EXIT_PASS` when no blocking finding was
+    raised, or when findings exist but strict mode is off — the advisory
+    default reports without failing a build. Returns the findings-block code
+    under ``--strict``, and the usage-error code for an unknown validator name,
+    which is kept distinct so a caller can tell a misspelled selector from a
+    real finding.
+    """
     if argv is None:
         argv = sys.argv
     argv, strict = _resolve_strict(argv)

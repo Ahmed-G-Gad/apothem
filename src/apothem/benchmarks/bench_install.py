@@ -44,6 +44,15 @@ def _time_resolution_sweep() -> float:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Time the whole-registry adapter resolution sweep; return the exit code.
+
+    Pre-conditions: ``argv`` is the argument vector without the program name
+    (``None`` reads ``sys.argv``). The parser takes no flags — it exists so the
+    sweep honours ``--help`` and rejects stray arguments like its siblings.
+
+    Post-conditions: returns ``0`` when resolving every registered adapter
+    stays inside the install budget, non-zero when it exceeds it.
+    """
     argparse.ArgumentParser(prog="bench_install").parse_args(argv)
     elapsed = _time_resolution_sweep()
     label = f"install-all resolution sweep ({len(HARNESS_REGISTRY)} adapters)"

@@ -61,6 +61,15 @@ def _measure_dispatcher_startup() -> float:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Run the hook-dispatch benchmark for one event; return the exit code.
+
+    Pre-conditions: ``argv`` is the argument vector without the program name
+    (``None`` reads ``sys.argv``); it must select one ``--event`` from the
+    supported hook events.
+
+    Post-conditions: returns ``0`` when the measured dispatch is inside the
+    per-event budget, non-zero when it exceeds it.
+    """
     parser = argparse.ArgumentParser(prog="bench_hooks")
     parser.add_argument(
         "--event",

@@ -93,12 +93,24 @@ class Finding:
 
 @dataclass(frozen=True)
 class GrepResult:
+    """Matcher report for a single sweep of this validator.
+
+    Pre-conditions: ``findings`` holds this module's frozen ``Finding``
+    dataclasses. Post-conditions: ``passed`` is ``True`` exactly when
+    ``findings`` is empty; :meth:`to_json` emits the serialised payload.
+    """
+
     grep: str
     path: str | None
     passed: bool
     findings: list[Finding] = field(default_factory=list)
 
     def to_json(self) -> str:
+        """Return this report as a two-space-indented JSON string.
+
+        Post-conditions: the payload carries ``{grep, path, passed,
+        findings}``; each finding is flattened through ``dataclasses.asdict``.
+        """
         payload = {
             "grep": self.grep,
             "path": self.path,
@@ -271,6 +283,12 @@ def check(root: Path) -> GrepResult:
 
 
 def main(root: Path) -> int:
+    """Run the check over *root*, print the report, return the exit code.
+
+    Pre-conditions: ``root`` is the repository root to inspect.
+    Post-conditions: the JSON report is written to stdout; the return is
+    :data:`EXIT_PASS` when the sweep passed and :data:`EXIT_FAIL` otherwise.
+    """
     result = check(root)
     print(result.to_json())
     return EXIT_PASS if result.passed else EXIT_FAIL

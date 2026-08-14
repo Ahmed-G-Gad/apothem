@@ -50,6 +50,13 @@ class StageResult:
 
     @property
     def passed(self) -> bool:
+        """True when the stage exited cleanly.
+
+        Only exit code ``0`` counts as a pass; every non-zero code is a
+        failure regardless of its value, because the stages wrap third-party
+        tools whose non-zero codes carry tool-specific meanings this runner
+        deliberately does not interpret.
+        """
         return self.returncode == 0
 
 

@@ -72,6 +72,15 @@ EXIT_FAIL: Final[int] = 2
 
 @dataclass(frozen=True)
 class Finding:
+    """One installer script failing its smoke expectations.
+
+    Pre-conditions: ``script`` is the installer path inspected (an
+    ``install`` / ``uninstall`` / ``update`` entry point in either the POSIX or
+    the PowerShell family); ``detail`` names the absent guard, flag, or
+    idempotence property. Post-conditions: ``rule`` defaults to
+    :data:`RULE_ANCHOR` so every finding cites its governing discipline.
+    """
+
     script: str
     detail: str
     rule: str = RULE_ANCHOR
@@ -79,12 +88,24 @@ class Finding:
 
 @dataclass(frozen=True)
 class GrepResult:
+    """Matcher report for a single sweep of this validator.
+
+    Pre-conditions: ``findings`` holds this module's frozen ``Finding``
+    dataclasses. Post-conditions: ``passed`` is ``True`` exactly when
+    ``findings`` is empty; :meth:`to_json` emits the serialised payload.
+    """
+
     grep: str
     root: str
     passed: bool
     findings: list[Finding] = field(default_factory=list)
 
     def to_json(self) -> str:
+        """Return this report as a two-space-indented JSON string.
+
+        Post-conditions: the payload carries ``{grep, root, passed,
+        findings}``; each finding is flattened through ``dataclasses.asdict``.
+        """
         payload = {
             "grep": self.grep,
             "root": self.root,

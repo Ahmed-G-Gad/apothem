@@ -84,6 +84,15 @@ GIT_TIMEOUT_SECONDS: Final[int] = 5
 
 @dataclass(frozen=True)
 class Finding:
+    """One completeness gap in the inspected change-set.
+
+    Pre-conditions: ``issue`` names the missing companion class — a code change
+    landing without ``tests``, ``docs``, or a ``changelog`` entry — and
+    ``detail`` names the touched paths that triggered the expectation.
+    Post-conditions: ``rule`` defaults to :data:`RULE_ANCHOR` so every finding
+    cites the production-ready-PR discipline as its authority.
+    """
+
     issue: str
     detail: str
     rule: str = RULE_ANCHOR

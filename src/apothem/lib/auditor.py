@@ -154,6 +154,14 @@ class SecretPattern:
     _compiled: re.Pattern[str] = field(init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
+        """Compile ``match_rule`` once and cache it on the frozen instance.
+
+        Compiling at construction rather than per :meth:`search` call keeps the
+        cost off the hot scanning loop, where one pattern is applied across
+        every file. ``object.__setattr__`` is required because the dataclass is
+        frozen; the assignment is the documented escape hatch for a derived
+        field.
+        """
         object.__setattr__(self, "_compiled", re.compile(self.match_rule))
 
     def search(self, text: str) -> Iterable[re.Match[str]]:
@@ -359,6 +367,14 @@ class _ParseError(Exception):
     """Internal: a configuration file failed to parse."""
 
     def __init__(self, message: str, line: int | None = None) -> None:
+        """Record the parse failure and, where the parser reported one, its line.
+
+        Pre-conditions: ``message`` is the underlying parser's error text.
+        Post-conditions: ``line`` is the 1-based line the parser blamed, or
+        ``None`` when the format gave no position — so a caller renders a
+        located error where possible and a bare one otherwise, never a
+        fabricated line number.
+        """
         super().__init__(message)
         self.line = line
 

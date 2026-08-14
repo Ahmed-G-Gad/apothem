@@ -79,6 +79,18 @@ def _load_oracle(module_name: str) -> ModuleType:
 
 
 def main() -> int:
+    """Recapture both golden corpora from the oracles; return the exit code.
+
+    Pre-conditions: the ``apothem`` package must be importable — either the
+    dedicated virtualenv install or a ``PYTHONPATH=src`` invocation satisfies
+    this; the function inserts the checkout's ``src`` onto ``sys.path`` when it
+    is absent.
+
+    Post-conditions: both oracles self-clear and rewrite their subtree, so the
+    corpus reflects the current source exactly rather than accumulating stale
+    entries. ``--dest`` redirects the write to an alternate root, leaving the
+    committed corpus untouched for a diff-only comparison. Returns ``0``.
+    """
     parser = argparse.ArgumentParser(
         description="Regenerate the behavior-diff golden corpus (Windows-capable)."
     )

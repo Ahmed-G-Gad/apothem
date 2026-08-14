@@ -343,6 +343,16 @@ class ProfileValidationError(ValueError):
     """Raised when a profile cannot be parsed, validated, or normalized."""
 
     def __init__(self, diagnostic: ProfileDiagnostic) -> None:
+        """Raise from a structured diagnostic, keeping both renderings usable.
+
+        Pre-conditions: ``diagnostic`` carries the full failure record — code,
+        offending field, reason, and suggested fix.
+
+        Post-conditions: the plain-text rendering becomes the exception message,
+        so an uncaught error still prints the operator-facing block; the
+        ``diagnostic`` object stays attached so a JSON-mode caller can emit the
+        machine-readable form instead of re-parsing that text.
+        """
         super().__init__(diagnostic.format_plain())
         self.diagnostic = diagnostic
 

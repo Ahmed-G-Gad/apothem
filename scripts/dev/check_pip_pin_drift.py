@@ -42,6 +42,14 @@ def _iter_workflows() -> list[Path]:
 
 
 def main() -> int:
+    """Report pip-version pin drift across the workflow set; return the exit.
+
+    Post-conditions: returns ``1`` when the workflow directory is absent, when
+    any workflow installs pip at a literal version instead of the shared
+    environment pin, or when a workflow declares no pin at all. Returns ``0``
+    when every workflow resolves pip through the single declared pin, which is
+    what keeps one bump from having to be mirrored by hand across the matrix.
+    """
     if not _WORKFLOW_DIR.is_dir():
         print(f"error: workflow directory not found: {_WORKFLOW_DIR}", file=sys.stderr)
         return 1
