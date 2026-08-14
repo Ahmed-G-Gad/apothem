@@ -1,7 +1,7 @@
 {
   "changed": true,
   "counts": {
-    "created": 186,
+    "created": 187,
     "error": 0,
     "skipped": 0,
     "unchanged": 6,
@@ -33,6 +33,7 @@
     "<ROOT>/.kimi-code/.apothem/support/hooks/lib",
     "<ROOT>/.kimi-code/.apothem/support/hooks/messages",
     "<ROOT>/.kimi-code/.apothem/support/hooks/proactive_compaction_tracker.py",
+    "<ROOT>/.kimi-code/.apothem/support/hooks/session_end_gate.py",
     "<ROOT>/.kimi-code/.apothem/support/hooks/session_start_bootstrap.py",
     "<ROOT>/.kimi-code/.apothem/support/rules/agent-capability-discipline-matrix.md",
     "<ROOT>/.kimi-code/.apothem/support/rules/agent-capability-discipline.md",

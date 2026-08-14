@@ -1,7 +1,7 @@
 {
   "changed": true,
   "counts": {
-    "created": 270,
+    "created": 271,
     "error": 0,
     "skipped": 0,
     "unchanged": 27,
@@ -73,6 +73,7 @@
     "<ROOT>/.apothem/support/hooks/lib",
     "<ROOT>/.apothem/support/hooks/messages",
     "<ROOT>/.apothem/support/hooks/proactive_compaction_tracker.py",
+    "<ROOT>/.apothem/support/hooks/session_end_gate.py",
     "<ROOT>/.apothem/support/hooks/session_start_bootstrap.py",
     "<ROOT>/.apothem/support/schemas/NOTICE.md",
     "<ROOT>/.apothem/support/schemas/__init__.py",

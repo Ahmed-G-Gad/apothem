@@ -84,6 +84,16 @@ _ASKUSERQUESTION_MESSAGE_BASENAME: Final[str] = "pretooluse-askuserquestion-reco
 # message file lives on disk.
 _PROACTIVE_COMPACTION_MESSAGE_BASENAME: Final[str] = "posttooluse-proactive-compaction"
 
+# The session-end gate is a dispatch-routed ``Stop`` handler that decides
+# *whether* this firing emits the session-end protocol. ``Stop`` fires at every
+# turn end, so emitting ``stop.md`` verbatim each time re-asserted the whole
+# mandate on every turn and never converged. The gate keeps the message file as
+# the single source of the protocol text and adds the missing termination
+# condition (at most one emission per session). Selected by message basename,
+# matched on the ``--context-file`` tail, so the route holds wherever the message
+# file lives on disk.
+_SESSION_END_MESSAGE_BASENAME: Final[str] = "stop"
+
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """Parse dispatch CLI arguments.
@@ -192,6 +202,26 @@ def _run_proactive_compaction_tracker(quiet: bool) -> None:
     pct.main([])
 
 
+def _is_session_end_route(context_file: str) -> bool:
+    """Return True when the message basename selects the session-end gate."""
+    return _route_matches(context_file, _SESSION_END_MESSAGE_BASENAME)
+
+
+def _run_session_end_gate(context_file: str, quiet: bool) -> None:
+    """Invoke the per-session gate that rations the session-end protocol.
+
+    Fail-disposition: fail-open. The gate reads the protocol body from
+    *context_file* and emits it at most once per session; it NEVER blocks
+    (session shutdown must not depend on an advisory). Its own ``main`` swallows
+    every exception and emits an empty envelope, so a gate bug costs the
+    operator nothing. ``quiet`` is unused: the gate is already silent by default
+    and emits at most one advisory for the whole session.
+    """
+    import session_end_gate as seg
+
+    seg.main(["--context-file", context_file])
+
+
 def _run_emit(event_name: str, context_file: str, quiet: bool) -> None:
     """Invoke emit_hook_context in hook mode.
 
@@ -233,6 +263,13 @@ def dispatch(event_name: str, context_file: str, quiet: bool) -> None:
     # context.
     if event_name == "PostToolUse" and _is_proactive_compaction_route(context_file):
         _run_proactive_compaction_tracker(quiet)
+        return
+
+    # Stop with the session-end message basename routes to the per-session gate,
+    # which emits the same Markdown context but at most once per session rather
+    # than on every turn end.
+    if event_name == "Stop" and _is_session_end_route(context_file):
+        _run_session_end_gate(context_file, quiet)
         return
 
     if not context_file:

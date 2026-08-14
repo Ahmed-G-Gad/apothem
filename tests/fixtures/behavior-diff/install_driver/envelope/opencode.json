@@ -1,7 +1,7 @@
 {
   "changed": true,
   "counts": {
-    "created": 184,
+    "created": 185,
     "error": 0,
     "skipped": 0,
     "unchanged": 6,
@@ -18,6 +18,7 @@
     "<ROOT>/.apothem/support/hooks/lib",
     "<ROOT>/.apothem/support/hooks/messages",
     "<ROOT>/.apothem/support/hooks/proactive_compaction_tracker.py",
+    "<ROOT>/.apothem/support/hooks/session_end_gate.py",
     "<ROOT>/.apothem/support/hooks/session_start_bootstrap.py",
     "<ROOT>/.apothem/support/rules/agent-capability-discipline-matrix.md",
     "<ROOT>/.apothem/support/rules/agent-capability-discipline.md",

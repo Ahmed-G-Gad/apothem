@@ -32,6 +32,7 @@ flowchart TD
 | `session_start_bootstrap.py` | Session-start bootstrap hook for the Apothem ecosystem. |
 | `askuserquestion_validator.py` | Call-time `PreToolUse` validator for the `AskUserQuestion` tool's option payload — checks live option-marker well-formedness the committed-artifact matchers cannot see. |
 | `proactive_compaction_tracker.py` | `PostToolUse` handler operationalizing the CM-19 proactive-compaction triggers — a per-session activity counter that emits the context-externalization advisory. |
+| `session_end_gate.py` | `Stop` handler that rations the session-end protocol to one emission per session. `Stop` fires at every turn end, so emitting `messages/stop.md` verbatim each time re-asserted the whole mandate on every turn and never converged; the gate supplies the termination condition while the message file keeps owning the text. |
 | `__init__.py` | Package marker. |
 
 ## `lib/` — dispatcher support
@@ -53,7 +54,7 @@ Markdown context files emitted into the conversation for each hook event:
 | File | Event |
 |------|-------|
 | `sessionstart.md` | SessionStart. |
-| `stop.md` | Stop (session-end). |
+| `stop.md` | Stop (session-end). Routed through `session_end_gate.py`, which emits this body at most once per session rather than on every turn end. |
 | `precompact.md` / `postcompact.md` | PreCompact / PostCompact. |
 | `pretooluse-write.md` / `pretooluse-write-header-guard.md` / `pretooluse-write-plan-guard.md` | PreToolUse Write / apply_patch — base context plus the authorship-header and plans-discipline guards. |
 | `pretooluse-edit.md` / `pretooluse-edit-header-guard.md` | PreToolUse Edit — base context plus the authorship-header guard. |

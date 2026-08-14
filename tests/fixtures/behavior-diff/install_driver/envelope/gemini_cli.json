@@ -1,7 +1,7 @@
 {
   "changed": true,
   "counts": {
-    "created": 188,
+    "created": 189,
     "error": 0,
     "skipped": 0,
     "unchanged": 4,
@@ -21,6 +21,7 @@
     "<ROOT>/.gemini/.apothem/support/hooks/lib",
     "<ROOT>/.gemini/.apothem/support/hooks/messages",
     "<ROOT>/.gemini/.apothem/support/hooks/proactive_compaction_tracker.py",
+    "<ROOT>/.gemini/.apothem/support/hooks/session_end_gate.py",
     "<ROOT>/.gemini/.apothem/support/hooks/session_start_bootstrap.py",
     "<ROOT>/.gemini/.apothem/support/rules/agent-capability-discipline-matrix.md",
     "<ROOT>/.gemini/.apothem/support/rules/agent-capability-discipline.md",
