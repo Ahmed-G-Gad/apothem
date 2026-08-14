@@ -2,7 +2,7 @@
   "name": "apothem",
   "displayName": "Apothem",
   "description": "Install and manage the Apothem shared profile for GitHub Copilot and the VS Code family from your workspace — one profile, materialized into the editor's native configuration surface.",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "publisher": "ahmed-g-gad",
   "license": "MIT",
   "homepage": "https://apothem.ahmedgad.com/",

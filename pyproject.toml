@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "apothem"
-version = "1.0.1"
+version = "1.0.2"
 description = "Host-agnostic AI-harness configuration manager: one shared profile materializes native configs for seventeen AI assistant harnesses, syncing rules, slash-commands, skills, hooks, output-styles, settings, schemas, docs, and MCP servers behind a conformity governance gate and signed releases."
 requires-python = ">=3.10"
 readme = "README.md"

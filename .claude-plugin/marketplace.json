@@ -6,10 +6,10 @@
     "url": "https://github.com/ahmed-g-gad"
   },
   "description": "Marketplace for the apothem plugin: review and audit slash-commands, research and quality agents, reusable skills, mechanical conformity hooks, and behavioral rules referenced on-demand, bundled with the self-contained apothem engine that materializes native configs for 17 AI harnesses.",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "metadata": {
     "description": "Marketplace for the apothem plugin: review and audit slash-commands, research and quality agents, reusable skills, mechanical conformity hooks, and behavioral rules referenced on-demand, bundled with the self-contained apothem engine that materializes native configs for 17 AI harnesses.",
-    "version": "1.0.1"
+    "version": "1.0.2"
   },
   "plugins": [
     {

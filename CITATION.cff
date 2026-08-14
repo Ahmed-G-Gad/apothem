@@ -10,7 +10,7 @@ abstract: >
   per-harness configuration files from a single source of truth, enabling
   consistent AI assistant behavior across seventeen AI assistant harnesses —
   among them Claude Code, Cursor, Gemini CLI, and GitHub Copilot.
-version: "1.0.1"
+version: "1.0.2"
 date-released: "2026-07-06"
 license: MIT
 url: "https://github.com/ahmed-g-gad/apothem"
@@ -32,7 +32,7 @@ authors:
     email: "me@ahmedgad.com"
     website: "https://ahmedgad.com"
 # TODO(clarify): add a `doi:` field (and a matching `identifiers:` entry) once
-# the v1.0.1 tag is deposited to an archival registry such as Zenodo. The DOI is
+# the v1.0.2 tag is deposited to an archival registry such as Zenodo. The DOI is
 # an operator-minted value that cannot be derived from the repository; until the
 # deposit exists, citations resolve through the repository URL above.
 preferred-citation:
@@ -42,7 +42,7 @@ preferred-citation:
     - family-names: "Gad"
       given-names: "Ahmed G."
       email: "me@ahmedgad.com"
-  version: "1.0.1"
+  version: "1.0.2"
   license: MIT
   url: "https://github.com/ahmed-g-gad/apothem"
   repository-code: "https://github.com/ahmed-g-gad/apothem"

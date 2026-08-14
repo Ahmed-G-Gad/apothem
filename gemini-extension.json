@@ -1,6 +1,6 @@
 {
   "name": "apothem",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Install and manage the Apothem shared profile — one source of truth for rules, slash-commands, skills, hooks, output-styles, settings, schemas, docs, and MCP servers — across seventeen AI assistant harnesses, from Gemini CLI.",
   "homepage": "https://apothem.ahmedgad.com/",
   "repository": "https://github.com/ahmed-g-gad/apothem",

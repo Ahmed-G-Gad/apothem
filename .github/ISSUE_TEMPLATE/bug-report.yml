@@ -14,7 +14,7 @@ body:
     attributes:
       label: Affected version
       description: The Apothem version on which the defect was observed. Run `python -m apothem --version` (or `apothem status`) — this works for every install path (wheel, npm shim, one-shot installer). For a source checkout, `git -C <checkout-root> rev-parse --short HEAD` gives the commit SHA.
-      placeholder: "v1.0.1 or commit abcdef0"
+      placeholder: "v1.0.2 or commit abcdef0"
     validations:
       required: true
   - type: textarea

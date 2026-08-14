@@ -9,6 +9,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-08-14
+
 ### Fixed
 
 - **The `Stop` hook no longer re-asserts the session-end protocol on every turn.**
@@ -28,6 +30,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `APOTHEM_SESSION_END_MIN_STOPS` (default `3`) sets the firing floor, and
   `APOTHEM_SESSION_END_ENABLED=0` silences the protocol entirely without editing
   installed plugin files.
+- **The detection pseudocode in the canonical option-shapes rule is fenced as
+  text rather than Python.** The block uses the hyphenated schema field names the
+  same document defines in its field table, so formatting it as Python rewrote
+  `read(probe-record-path)` into a subtraction expression and changed what the
+  documentation said. Correcting the fence language leaves the pseudocode
+  byte-identical and restores the format gate to green.
 
 ## [1.0.1] - 2026-07-07
 
