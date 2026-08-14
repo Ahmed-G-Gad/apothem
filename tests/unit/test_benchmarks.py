@@ -110,6 +110,8 @@ class TestInnerFailureFailsLoudly:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         class _Fake:
+            """Completed-process double carrying a failing return code."""
+
             returncode = 2
 
         monkeypatch.setattr(
@@ -121,6 +123,8 @@ class TestInnerFailureFailsLoudly:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         class _Fake:
+            """Completed-process double carrying a failing return code."""
+
             returncode = 1
 
         monkeypatch.setattr(bench_tests.subprocess, "run", lambda *a, **k: _Fake())

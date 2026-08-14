@@ -35,6 +35,14 @@ pytestmark = pytest.mark.skipif(not _IMPORT_OK, reason="Pillow (PIL) not availab
 
 
 class TestFindResvg:
+    """Locating the renderer binary.
+
+    Covers the operator override being honoured when present and exiting when it
+    is missing — a named binary is never silently replaced — against the
+    auto-detection order: the search path first, then the local install
+    locations.
+    """
+
     def test_operator_override_present_is_returned(self, tmp_path: Path) -> None:
         binary = tmp_path / "resvg"
         binary.write_text("#!/bin/sh\n", encoding="utf-8")
@@ -75,6 +83,8 @@ class TestFindResvg:
 
 
 class TestSyncRuntimeSvgs:
+    """Copying the SVG masters into the runtime asset tree."""
+
     def test_copies_each_master_into_assets(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -94,6 +104,11 @@ class TestSyncRuntimeSvgs:
 
 
 class TestMirrorSiteSourceAssets:
+    """Mirroring the logo pair into the site source tree.
+
+    Covers that the destination directory is created rather than assumed.
+    """
+
     def test_mirrors_logo_pair_creating_destination(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -113,6 +128,12 @@ class TestMirrorSiteSourceAssets:
 
 
 class TestMirrorSitePublic:
+    """Mirroring the published web asset subset.
+
+    Covers that the full subset is mirrored, so no published asset is left
+    stale.
+    """
+
     def test_mirrors_the_full_web_asset_subset(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:

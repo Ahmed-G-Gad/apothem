@@ -21,6 +21,12 @@ import apothem.audit.scan_plans_discipline as spd
 
 
 class TestPlansPathRegex:
+    """Matching a global plans path.
+
+    Covers every global path form including the Windows-shaped variant, against
+    unrelated paths that must not match.
+    """
+
     def test_matches_every_global_plans_path_form(self) -> None:
         for ref in (
             "see ~/.claude/.plans/suite/PHASE.md",
@@ -42,6 +48,12 @@ class TestPlansPathRegex:
 
 
 class TestWriteIntentRegex:
+    """Detecting write intent in prose.
+
+    Covers the write verbs matching and ordinary prose not matching, so a
+    mention of a path is not mistaken for a write to it.
+    """
+
     def test_write_verbs_match(self) -> None:
         for verb in ("write", "create", "store", "emit", "land", "materialize"):
             assert spd._WRITE_INTENT_RE.search(f"please {verb} the file")
@@ -51,6 +63,13 @@ class TestWriteIntentRegex:
 
 
 class TestIsDisciplineDoc:
+    """Recognising the documents exempt from this scan.
+
+    Covers the content-root-relative rules document and the plan-suite paths as
+    exempt — they define the discipline and must name the paths — against an
+    ordinary file that is not.
+    """
+
     def test_content_root_relative_rules_doc_is_exempt(self) -> None:
         # Regression guard: the exemption keys on the content-root-relative
         # inventory path ('rules/...'), not the stale 'src/apothem/rules/...'.
@@ -64,6 +83,13 @@ class TestIsDisciplineDoc:
 
 
 class TestScanFile:
+    """Scanning one file for plans-discipline findings.
+
+    Covers the severity split — a write-intent line is high, a bare reference is
+    medium — the skipping of fenced code blocks, and the discipline-doc flag
+    being carried through onto each hit.
+    """
+
     def test_write_intent_line_is_high_severity(self) -> None:
         hits = spd._scan_file("agents/a.md", "write to ~/.claude/.plans/x\n")
         assert len(hits) == 1
@@ -90,6 +116,12 @@ class TestScanFile:
 
 
 class TestScanRecord:
+    """Deciding whether a record is scanned at all.
+
+    Covers a non-narrative class being skipped and a narrative record being
+    scanned.
+    """
+
     def test_non_narrative_class_is_skipped(self, tmp_path: Path) -> None:
         record = {"class": "memory", "path": "memory/x.md"}
         assert spd._scan_record(record, tmp_path) == []
@@ -108,6 +140,12 @@ class TestScanRecord:
 
 
 class TestMain:
+    """Process-level entry point behaviour.
+
+    Covers the error exit on a missing inventory against the full scan writing
+    its findings.
+    """
+
     def test_missing_inventory_returns_error(self, tmp_path: Path) -> None:
         code = spd.main(
             [

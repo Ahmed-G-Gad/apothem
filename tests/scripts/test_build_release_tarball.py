@@ -45,6 +45,12 @@ def _make_tree(root: Path, files: dict[str, bytes]) -> None:
 
 
 class TestGlobMatch:
+    """Glob matching for exclusion patterns.
+
+    Covers the star pattern matching a suffix and the exact pattern matching a
+    full name.
+    """
+
     def test_star_pattern_matches_suffix(self) -> None:
         assert brt._glob_match("module.pyc", "*.pyc") is True
         assert brt._glob_match("module.py", "*.pyc") is False
@@ -55,6 +61,13 @@ class TestGlobMatch:
 
 
 class TestIsExcluded:
+    """Deciding whether a path is excluded from the archive.
+
+    Covers the root-anchored exclusion that applies only at the top level, the
+    default exclusion that applies at any depth, name-based glob exclusion, and
+    the ordinary source file that survives.
+    """
+
     def test_root_exclude_dir_at_top_level(self) -> None:
         assert brt._is_excluded(Path(".github/workflows/ci.yml")) is True
         assert brt._is_excluded(Path("packaging/spec.in")) is True
@@ -76,6 +89,12 @@ class TestIsExcluded:
 
 
 class TestCollectMembers:
+    """Collecting archive members by walking the tree.
+
+    Covers the non-git tree, where the walk and the exclusion rules are the only
+    source of membership.
+    """
+
     def test_walks_and_excludes_on_a_non_git_tree(self, tmp_path: Path) -> None:
         _make_tree(
             tmp_path,
@@ -114,6 +133,14 @@ def _init_git_repo(root: Path, files: dict[str, bytes]) -> None:
 
 @requires_git
 class TestGitTrackedPath:
+    """Sourcing archive members from git rather than the worktree.
+
+    Covers member collection through ``git ls-files`` with exclusions applied,
+    reading staged blob bytes, the non-git tree returning none from the git
+    helpers, and the checkout build sourcing its bytes from blobs — so the
+    archive reflects tracked content, not stray worktree files.
+    """
+
     def test_collect_members_uses_git_ls_files_and_excludes(
         self, tmp_path: Path
     ) -> None:
@@ -152,6 +179,13 @@ class TestGitTrackedPath:
 
 
 class TestNamingAndEpoch:
+    """Archive naming and reproducible timestamps.
+
+    Covers the per-platform basename, the archive root prefix, parsing of the
+    source-date epoch, and the ZIP timestamp flooring at 1980 — the earliest
+    date the ZIP format can represent.
+    """
+
     def test_archive_basename_per_platform(self) -> None:
         assert brt._archive_basename("apothem", "0.1.0", "windows") == (
             "apothem-v0.1.0-windows.zip"
@@ -182,6 +216,12 @@ class TestNamingAndEpoch:
 
 
 class TestMemberBytes:
+    """Resolving the bytes for one archive member.
+
+    Covers the precedence: explicit content wins, and the source file is read
+    only when no content was supplied.
+    """
+
     def test_prefers_content_over_source(self, tmp_path: Path) -> None:
         f = tmp_path / "a.txt"
         f.write_bytes(b"on-disk")
@@ -196,6 +236,12 @@ class TestMemberBytes:
 
 
 class TestComputeDigest:
+    """Archive digest computation.
+
+    Covers that the digest matches the stdlib implementation, so a consumer can
+    verify it without this tool.
+    """
+
     def test_matches_hashlib(self, tmp_path: Path) -> None:
         f = tmp_path / "blob.bin"
         payload = b"release-artifact-bytes" * 5000  # exceeds one read chunk
@@ -204,6 +250,14 @@ class TestComputeDigest:
 
 
 class TestBuildTarball:
+    """Building the release archive end to end.
+
+    Covers the unknown-platform rejection, the Linux archive prefixing its root
+    and honouring exclusions, the alias carrying its executable mode, the
+    Windows path producing a valid ZIP, and — the property the release posture
+    depends on — that two builds of the same tree are byte-identical.
+    """
+
     def test_unknown_platform_raises(self, tmp_path: Path) -> None:
         with pytest.raises(ValueError, match="unsupported platform"):
             brt.build_tarball(tmp_path, tmp_path / "out", "apothem", "0.1.0", "solaris")
@@ -272,6 +326,11 @@ class TestBuildTarball:
 
 
 class TestMain:
+    """Process-level entry point behaviour.
+
+    Covers that the digest line is emitted and the exit code is zero.
+    """
+
     def test_emits_digest_line_and_returns_zero(
         self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:

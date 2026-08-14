@@ -99,7 +99,15 @@ def _make_tree(root: Path, files: dict[str, str]) -> Path:
 
 
 class TestVariantFamilyFor:
+    """Comment-family resolution for a file's suffix.
+
+    Covers the three resolution paths: a known suffix maps to its comment
+    family, a basename override resolves a suffixless file, and an unknown
+    extension falls through to exempt rather than guessing a family.
+    """
+
     def test_suffix_resolves_to_its_comment_family(self) -> None:
+        """Each known suffix maps to the comment family its language uses."""
         assert variant_family_for(Path("a.py")) == VARIANT_HASH
         assert variant_family_for(Path("a.md")) == VARIANT_HTML
         assert variant_family_for(Path("a.ts")) == VARIANT_DOUBLE_SLASH
@@ -108,16 +116,28 @@ class TestVariantFamilyFor:
         assert variant_family_for(Path("a.sql")) == VARIANT_DOUBLE_DASH
 
     def test_basename_override_resolves_suffixless_files(self) -> None:
+        """A suffixless file resolves by basename, at any directory depth."""
         assert variant_family_for(Path("Makefile")) == VARIANT_HASH
         assert variant_family_for(Path("nested/Dockerfile")) == VARIANT_HASH
 
     def test_unknown_extension_falls_through_to_exempt(self) -> None:
+        """An unrecognised extension resolves to exempt, never a guess."""
         assert variant_family_for(Path("data.xyz")) == VARIANT_EXEMPT
         assert variant_family_for(Path("mystery")) == VARIANT_EXEMPT
 
 
 class TestLoadExceptionGlobs:
+    """Loading the header-exception glob fixture.
+
+    Covers comment and blank-line stripping, and the missing-fixture case that
+    yields an empty set rather than raising.
+    """
+
     def test_strips_comments_and_blank_lines(self, tmp_path: Path) -> None:
+        """Comments and blank lines are dropped, leaving only globs.
+
+        Indented comments are dropped too.
+        """
         fixture = tmp_path / "exc.txt"
         fixture.write_text(
             "# comment\n\nvendored/**\nLICENSE\n   # indented comment\n",
@@ -126,14 +146,24 @@ class TestLoadExceptionGlobs:
         assert load_exception_globs(fixture) == ["vendored/**", "LICENSE"]
 
     def test_missing_fixture_returns_empty(self, tmp_path: Path) -> None:
+        """An absent fixture yields no globs rather than raising."""
         assert load_exception_globs(tmp_path / "absent.txt") == []
 
 
 class TestMatchesException:
+    """Matching a path against the exception globs.
+
+    Covers exact literals, globstar crossing path segments, first-match-wins
+    ordering, the no-match result, and backslash-path normalisation so a
+    Windows-shaped path matches the same POSIX-shaped glob.
+    """
+
     def test_exact_literal_match(self) -> None:
+        """A literal glob matches its identical path and is returned."""
         assert matches_exception("LICENSE", ["LICENSE"]) == "LICENSE"
 
     def test_globstar_crosses_path_segments(self) -> None:
+        """A globstar matches across segments and at the tree root."""
         globs = ["**/*.json", "dist/**"]
         assert matches_exception("a/b/c.json", globs) == "**/*.json"
         assert matches_exception("top.json", globs) == "**/*.json"
@@ -141,23 +171,34 @@ class TestMatchesException:
 
     def test_returns_first_match_in_order(self) -> None:
         # Both patterns match; first-match semantics return the earlier one.
+        """With several matching globs, the earliest in the list wins."""
         globs = ["dist/**", "dist/sub/*.bin"]
         assert matches_exception("dist/sub/x.bin", globs) == "dist/**"
 
     def test_no_match_returns_none(self) -> None:
+        """A path matching no glob returns none rather than a falsy string."""
         assert matches_exception("src/a.py", ["dist/**", "LICENSE"]) is None
 
     def test_backslash_paths_are_normalised(self) -> None:
+        """A backslash-separated path matches a forward-slash glob."""
         assert matches_exception("dist\\sub\\f.bin", ["dist/**"]) == "dist/**"
 
 
 class TestReadHead:
+    """Reading the leading lines of a candidate file.
+
+    Covers terminator stripping, the line budget that bounds how far the scan
+    reads, and the unreadable-path case that yields empty rather than raising.
+    """
+
     def test_returns_lines_without_terminators(self, tmp_path: Path) -> None:
+        """Lines come back stripped of their newline terminators."""
         f = tmp_path / "a.txt"
         f.write_text("one\ntwo\nthree\n", encoding="utf-8")
         assert read_head(f) == ["one", "two", "three"]
 
     def test_honours_the_line_budget(self, tmp_path: Path) -> None:
+        """Reading stops at the budget; one huge file cannot stall the scan."""
         f = tmp_path / "big.txt"
         f.write_text("".join(f"line{i}\n" for i in range(100)), encoding="utf-8")
         head = read_head(f, line_budget=5)
@@ -165,29 +206,58 @@ class TestReadHead:
 
     def test_unreadable_path_returns_empty(self, tmp_path: Path) -> None:
         # Opening a directory as a file raises OSError -> empty head.
+        """An unreadable path yields an empty head, not an OS error."""
         assert read_head(tmp_path) == []
 
 
 class TestHasShebang:
+    """Shebang detection on the file head.
+
+    Covers a leading shebang and the two negative cases: no shebang, and an
+    empty head.
+    """
+
     def test_detects_leading_shebang(self) -> None:
+        """A leading shebang is detected."""
         assert has_shebang(["#!/usr/bin/env bash", "x"]) is True
 
     def test_no_shebang_and_empty_head(self) -> None:
+        """Ordinary source and an empty head both report no shebang."""
         assert has_shebang(["x = 1"]) is False
         assert has_shebang([]) is False
 
 
 class TestInsertionLine:
+    """Choosing the line a header banner is inserted at.
+
+    Covers both placements: a shebang pushes the banner to line two, keeping
+    the interpreter directive first; otherwise it lands on line one.
+    """
+
     def test_shebang_pushes_banner_to_line_two(self) -> None:
+        """A shebang keeps line one, so the banner is placed on line two."""
         assert insertion_line(["#!/bin/sh", "x"]) == 2
 
     def test_no_shebang_inserts_at_line_one(self) -> None:
+        """Without a shebang the banner takes line one, empty file included."""
         assert insertion_line(["x = 1"]) == 1
         assert insertion_line([]) == 1
 
 
 class TestScanForBanner:
+    """Classifying the header banner found in a file head.
+
+    Covers the canonical outcomes (byte-exact, and canonical following a
+    shebang), the absent outcomes (no marker, empty head), and the
+    malformation classes — trailing whitespace, a wrong comment marker, and
+    the remaining variant-mismatch shapes.
+    """
+
     def test_byte_exact_block_is_present_canonical(self) -> None:
+        """A byte-exact banner is canonical.
+
+        It reports its one-line range and no malformation.
+        """
         head = [_HASH_LINE, "", "x = 1"]
         status, rng, malform, detail = scan_for_banner(head, VARIANT_HASH)
         assert status == HEADER_PRESENT_CANONICAL
@@ -196,20 +266,24 @@ class TestScanForBanner:
         assert detail is None
 
     def test_canonical_after_shebang_reports_line_two(self) -> None:
+        """A canonical banner below a shebang stays canonical, at line two."""
         head = ["#!/usr/bin/env python3", _HASH_LINE, "", "x = 1"]
         status, rng, _malform, _detail = scan_for_banner(head, VARIANT_HASH)
         assert status == HEADER_PRESENT_CANONICAL
         assert rng == (2, 2)
 
     def test_no_marker_is_absent(self) -> None:
+        """A head carrying no marker is absent, with no line range."""
         status, rng, _malform, _detail = scan_for_banner(["x = 1"], VARIANT_HASH)
         assert status == HEADER_ABSENT
         assert rng is None
 
     def test_empty_head_is_absent(self) -> None:
+        """An empty head is absent rather than an error."""
         assert scan_for_banner([], VARIANT_HASH)[0] == HEADER_ABSENT
 
     def test_trailing_whitespace_is_malformed(self) -> None:
+        """Trailing whitespace after the SPDX line is its own malformation."""
         head = [_HASH_LINE + "  ", "", "x = 1"]
         status, _rng, malform, _detail = scan_for_banner(head, VARIANT_HASH)
         assert status == HEADER_PRESENT_MALFORMED
@@ -217,6 +291,7 @@ class TestScanForBanner:
 
     def test_wrong_comment_marker_is_malformed_wrong_variant(self) -> None:
         # A double-slash SPDX line in a hash-family file is the wrong variant.
+        """A double-slash line in a hash-family file is the wrong variant."""
         head = [_SLASH_LINE, "", "x = 1"]
         status, _rng, malform, detail = scan_for_banner(head, VARIANT_HASH)
         assert status == HEADER_PRESENT_MALFORMED
@@ -225,6 +300,10 @@ class TestScanForBanner:
 
     def test_missing_html_wrapper_is_wrong_variant(self) -> None:
         # A hash-style SPDX line in a Markdown (html) file lacks the wrapper.
+        """A hash-style line in a Markdown file is the wrong variant.
+
+        It lacks the HTML comment wrapper the family requires.
+        """
         head = [_HASH_LINE, "", "text"]
         status, _rng, malform, _detail = scan_for_banner(head, VARIANT_HTML)
         assert status == HEADER_PRESENT_MALFORMED
@@ -233,6 +312,10 @@ class TestScanForBanner:
     def test_leading_bom_alone_is_malformed_bom_prefix(self) -> None:
         # A BOM before non-header content is itself a malformation: it is the
         # sole detection, so it does not collapse to `mixed`.
+        """A BOM before non-header content is the sole detection.
+
+        It stays bom-prefix rather than collapsing into mixed.
+        """
         head = [BOM_PREFIX + "random first line", "more"]
         status, _rng, malform, _detail = scan_for_banner(head, VARIANT_HASH)
         assert status == HEADER_PRESENT_MALFORMED
@@ -242,6 +325,7 @@ class TestScanForBanner:
         # A BOM in front of an otherwise-canonical hash line trips both
         # bom-prefix AND wrong-variant (the `#` is no longer at the edge),
         # so the two detections collapse to `mixed`.
+        """Two detections collapse to mixed, the detail naming both."""
         head = [BOM_PREFIX + _HASH_LINE, "", "x = 1"]
         status, _rng, malform, detail = scan_for_banner(head, VARIANT_HASH)
         assert status == HEADER_PRESENT_MALFORMED
@@ -254,6 +338,10 @@ class TestScanForBanner:
     def test_smart_quote_in_header_is_malformed(self) -> None:
         # A curly apostrophe (U+2019) on an otherwise-correct hash line.
         # Built via chr() so the test's own source bytes stay ASCII-clean.
+        """A curly apostrophe is the smart-quote malformation.
+
+        The rest of the line is otherwise correct.
+        """
         head = [_HASH_LINE + chr(0x2019), "", "x = 1"]
         status, _rng, malform, _detail = scan_for_banner(head, VARIANT_HASH)
         assert status == HEADER_PRESENT_MALFORMED
@@ -262,6 +350,7 @@ class TestScanForBanner:
     def test_shebang_only_file_is_absent(self) -> None:
         # The insertion site (line 2) is past the end of a shebang-only file,
         # so the short-file guard reports the header absent.
+        """A shebang-only file has no line two, so the guard says absent."""
         assert scan_for_banner(["#!/usr/bin/env bash"], VARIANT_HASH)[0] == (
             HEADER_ABSENT
         )
@@ -269,6 +358,10 @@ class TestScanForBanner:
     def test_canonical_line_without_trailing_blank_is_wrong_line_count(self) -> None:
         # The SPDX line is present and correct, but content follows it with no
         # mandatory trailing blank — the generic wrong-line-count fall-through.
+        """A correct SPDX line with no trailing blank is wrong-line-count.
+
+        The trailing blank line is mandatory, so its absence is the defect.
+        """
         head = [_HASH_LINE, "x = 1"]
         status, _rng, malform, _detail = scan_for_banner(head, VARIANT_HASH)
         assert status == HEADER_PRESENT_MALFORMED
@@ -277,6 +370,7 @@ class TestScanForBanner:
     def test_retired_legacy_banner_is_wrong_line_count(self) -> None:
         # The retired branded-banner author line (no narrowed SPDX line) is a
         # not-yet-narrowed header — the legacy fall-through branch.
+        """The retired branded banner is wrong-line-count, and is named."""
         head = [f"# {LEGACY_AUTHOR_MARK}", "", "x = 1"]
         status, _rng, malform, detail = scan_for_banner(head, VARIANT_HASH)
         assert status == HEADER_PRESENT_MALFORMED
@@ -286,7 +380,15 @@ class TestScanForBanner:
 
 
 class TestBuildInjectionPlan:
+    """Deriving the repair plan for a scanned file.
+
+    Covers the four no-plan cases (already canonical, not applicable, exempt
+    variant, malformed without a usable line range) against the two actionable
+    ones: an absent header plans an insert, a malformed one plans a replace.
+    """
+
     def test_canonical_needs_no_plan(self) -> None:
+        """An already-canonical header plans nothing."""
         plan = build_injection_plan(
             "a.py",
             [_HASH_LINE, "", "x"],
@@ -297,18 +399,24 @@ class TestBuildInjectionPlan:
         assert plan is None
 
     def test_not_applicable_needs_no_plan(self) -> None:
+        """A not-applicable file plans nothing."""
         assert (
             build_injection_plan("x", [], HEADER_NOT_APPLICABLE, VARIANT_HASH, None)
             is None
         )
 
     def test_exempt_variant_needs_no_plan(self) -> None:
+        """An exempt variant plans nothing even with the header absent.
+
+        There is no banner to insert for an exempt comment family.
+        """
         assert (
             build_injection_plan("x.bin", ["data"], HEADER_ABSENT, VARIANT_EXEMPT, None)
             is None
         )
 
     def test_absent_plans_an_insert(self) -> None:
+        """An absent header plans an insert at line one, banner in diff."""
         plan = build_injection_plan(
             "a.py", ["x = 1"], HEADER_ABSENT, VARIANT_HASH, None
         )
@@ -319,6 +427,7 @@ class TestBuildInjectionPlan:
         assert _HASH_LINE in str(plan["diff"])
 
     def test_malformed_plans_a_replace(self) -> None:
+        """A malformed header plans a replace over the range it occupies."""
         plan = build_injection_plan(
             "a.py",
             [_SLASH_LINE, "", "x"],
@@ -331,6 +440,10 @@ class TestBuildInjectionPlan:
         assert plan["replacement-lines"] == [1, 1]
 
     def test_malformed_without_range_returns_none(self) -> None:
+        """A malformed header with no usable range plans nothing.
+
+        The planner refuses to guess where the write would land.
+        """
         plan = build_injection_plan(
             "a.py", ["x"], HEADER_PRESENT_MALFORMED, VARIANT_HASH, None
         )
@@ -338,6 +451,7 @@ class TestBuildInjectionPlan:
 
     def test_absent_empty_file_plans_an_insert(self) -> None:
         # The empty-head branch overrides after_lines to the canonical block.
+        """An empty file plans an insert, the block being the whole file."""
         plan = build_injection_plan("empty.py", [], HEADER_ABSENT, VARIANT_HASH, None)
         assert plan is not None
         assert plan["action"] == "insert"
@@ -345,6 +459,7 @@ class TestBuildInjectionPlan:
 
     def test_absent_after_shebang_inserts_at_line_two(self) -> None:
         # A shebang is preserved at line 1; the banner is inserted below it.
+        """A shebang stays at line one; the banner is inserted below."""
         plan = build_injection_plan(
             "run.sh",
             ["#!/usr/bin/env bash", "echo hi"],
@@ -359,7 +474,15 @@ class TestBuildInjectionPlan:
 
 
 class TestScanInventory:
+    """End-to-end scan across an inventory of files.
+
+    Covers full-coverage reporting, per-path reporting of an absent header,
+    malformation classification and bucketing, the not-applicable paths
+    (exception fixture and unknown suffix), and skipping blank path records.
+    """
+
     def test_all_canonical_tree_reports_full_coverage(self, tmp_path: Path) -> None:
+        """A fully canonical tree reports 100% coverage, with no gaps."""
         inventory = _make_tree(
             tmp_path,
             {
@@ -379,6 +502,10 @@ class TestScanInventory:
         assert all(r.header_status == HEADER_PRESENT_CANONICAL for r in rows)
 
     def test_absent_header_is_reported_with_its_path(self, tmp_path: Path) -> None:
+        """A missing header is reported against its own path.
+
+        The row carries an injection plan the downstream injector can act on.
+        """
         inventory = _make_tree(
             tmp_path,
             {"good.py": _canonical_file(VARIANT_HASH), "bad.py": "x = 1\n"},
@@ -396,6 +523,7 @@ class TestScanInventory:
         assert bad.injection_plan is not None
 
     def test_malformed_header_is_classified(self, tmp_path: Path) -> None:
+        """A wrong-variant header counts as malformed, not absent."""
         inventory = _make_tree(tmp_path, {"weird.py": f"{_SLASH_LINE}\n\nx = 1\n"})
         rows, summary, _prov = scan_inventory(
             inventory, tmp_path / "noexc.txt", tmp_path
@@ -410,6 +538,12 @@ class TestScanInventory:
     def test_exception_fixture_and_unknown_suffix_are_not_applicable(
         self, tmp_path: Path
     ) -> None:
+        """Both exemption routes are labelled distinctly.
+
+        A fixture match carries its glob; an unknown suffix carries
+        unsupported-extension. Only the in-scope file counts toward coverage,
+        and both source digests are recorded as provenance.
+        """
         fixture = tmp_path / "exc.txt"
         fixture.write_text("# comment\nvendored/**\nLICENSE\n", encoding="utf-8")
         inventory = _make_tree(
@@ -445,6 +579,7 @@ class TestScanInventory:
         assert prov["exception-fixture-sha256"]
 
     def test_blank_path_records_are_skipped(self, tmp_path: Path) -> None:
+        """A blank path counts toward the total but yields no scanned row."""
         (tmp_path / "a.py").write_text(_canonical_file(VARIANT_HASH), encoding="utf-8")
         inventory = tmp_path / "inv.json"
         inventory.write_text(
@@ -463,6 +598,7 @@ class TestScanInventory:
     def test_malformations_bucket_into_distinct_classes(self, tmp_path: Path) -> None:
         # Two files with different malformations must tally into separate
         # by_malformation_class buckets, not collapse into one.
+        """Two different malformations tally into separate buckets."""
         inventory = _make_tree(
             tmp_path,
             {
@@ -480,7 +616,14 @@ class TestScanInventory:
 
 
 class TestRenderMarkdown:
+    """Markdown rendering of the coverage report.
+
+    Covers that each status section renders, including the not-applicable
+    section that carries no verdict.
+    """
+
     def test_renders_each_status_section(self) -> None:
+        """Every header status renders its own section."""
         rows = [
             FileCoverage(
                 "good.py",
@@ -549,6 +692,7 @@ class TestRenderMarkdown:
         assert "```diff" in md
 
     def test_renders_not_applicable_section(self) -> None:
+        """The not-applicable section renders despite carrying no verdict."""
         rows = [
             FileCoverage(
                 "vendored/lib.py",
@@ -590,7 +734,14 @@ class TestRenderMarkdown:
 
 
 class TestFileCoverageToJson:
+    """Per-file coverage serialisation.
+
+    Covers the hyphenated payload keys and the header line range, including
+    the absent range serialising to null rather than being omitted.
+    """
+
     def test_uses_hyphenated_keys_and_lists_the_range(self) -> None:
+        """The payload uses hyphenated keys, the line range being a list."""
         record = FileCoverage(
             path="a.py",
             applicable=True,
@@ -609,6 +760,7 @@ class TestFileCoverageToJson:
         assert doc["exception-class"] is None
 
     def test_none_range_serialises_to_null(self) -> None:
+        """An absent range serialises to null rather than being omitted."""
         record = FileCoverage(
             "a.py", True, None, HEADER_ABSENT, VARIANT_HASH, None, None, None, None
         )
@@ -616,7 +768,14 @@ class TestFileCoverageToJson:
 
 
 class TestCoverageSummaryToJson:
+    """Aggregate coverage serialisation.
+
+    Covers the hyphenated payload keys and the rounding applied to the
+    coverage percentage.
+    """
+
     def test_emits_hyphenated_keys_and_rounds_coverage(self) -> None:
+        """The summary payload uses hyphenated keys and rounds coverage."""
         summary = CoverageSummary(
             total_files=3,
             applicable_total=2,
@@ -635,7 +794,14 @@ class TestCoverageSummaryToJson:
 
 
 class TestCanonicalBanner:
+    """Rendering the canonical header banner.
+
+    Covers that the lines and text carry the SPDX marker, and that an exempt
+    variant is deliberately not renderable — there is no banner to emit.
+    """
+
     def test_lines_and_text_render_the_spdx_marker(self) -> None:
+        """Both renderings carry the SPDX marker."""
         lines = canonical_banner_lines(VARIANT_HASH)
         assert len(lines) == 1
         assert "SPDX-License-Identifier" in lines[0]
@@ -643,21 +809,36 @@ class TestCanonicalBanner:
         assert canonical_banner_text(VARIANT_HASH).endswith("\n")
 
     def test_exempt_variant_is_not_renderable(self) -> None:
+        """An exempt variant has no banner to render."""
         with pytest.raises(ValueError, match="not renderable"):
             canonical_banner_lines(VARIANT_EXEMPT)
 
 
 class TestResolvePath:
+    """Resolving an inventory path against the scan root.
+
+    Covers both inputs: a relative path resolves against the root, an absolute
+    path passes through unchanged.
+    """
+
     def test_relative_resolves_against_root(self, tmp_path: Path) -> None:
+        """A relative inventory path resolves against the scan root."""
         assert resolve_path(tmp_path, Path("a/b.json")) == tmp_path / "a/b.json"
 
     def test_absolute_passes_through(self, tmp_path: Path) -> None:
+        """An absolute path passes through unchanged."""
         absolute = tmp_path / "abs.json"
         assert resolve_path(tmp_path, absolute) == absolute
 
 
 class TestParseArgs:
+    """Command-line argument parsing.
+
+    Covers the default values and the overridden values.
+    """
+
     def test_defaults(self) -> None:
+        """Omitted arguments fall back to their declared defaults."""
         args = parse_args([])
         assert args.root == Path.cwd()
         assert args.inventory == Path(".audit/inventory.json")
@@ -668,6 +849,7 @@ class TestParseArgs:
         assert args.out_md == Path(".audit/header-coverage.md")
 
     def test_overrides(self) -> None:
+        """Supplied arguments override the defaults."""
         args = parse_args(
             [
                 "--root",
@@ -690,11 +872,23 @@ class TestParseArgs:
 
 
 class TestMain:
+    """Process-level entry point behaviour.
+
+    Covers the error exit on a missing inventory against the two success
+    paths: a clean tree writes its outputs, and a coverage gap still returns
+    OK because the scanner reports rather than gates.
+    """
+
     def test_missing_inventory_returns_error(self, tmp_path: Path) -> None:
+        """A missing inventory exits with the error code.
+
+        Scanning nothing silently would read as a clean run.
+        """
         code = main(["--root", str(tmp_path), "--inventory", ".audit/none.json"])
         assert code == EXIT_ERROR
 
     def test_clean_tree_writes_outputs_and_returns_ok(self, tmp_path: Path) -> None:
+        """A clean tree writes its outputs and exits zero."""
         _make_tree(tmp_path, {"a.py": _canonical_file(VARIANT_HASH)})
 
         code = main(
@@ -725,6 +919,7 @@ class TestMain:
     def test_coverage_gap_still_returns_ok(self, tmp_path: Path) -> None:
         # The scanner reports; it does not gate. A missing header is named in
         # the mirror but does NOT change the exit code.
+        """A coverage gap still exits zero: the scanner reports, not gates."""
         _make_tree(tmp_path, {"bad.py": "x = 1\n"})
 
         code = main(

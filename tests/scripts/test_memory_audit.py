@@ -33,6 +33,12 @@ def _tree(root: Path, name: str, files: dict[str, str]) -> Path:
 
 
 class TestDiscoverMemoryTrees:
+    """Discovering the memory trees to audit.
+
+    Covers finding the global and project trees in sorted order, and the empty
+    result when no memory directory exists.
+    """
+
     def test_finds_global_and_project_trees_sorted(self, tmp_path: Path) -> None:
         (tmp_path / "memory").mkdir()
         (tmp_path / "projects" / "b" / "memory").mkdir(parents=True)
@@ -52,12 +58,23 @@ class TestDiscoverMemoryTrees:
 
 
 class TestTopicReferences:
+    """Extracting topic references from the index.
+
+    Covers that only Markdown ``.md`` links are treated as references.
+    """
+
     def test_extracts_markdown_md_links_only(self) -> None:
         text = "- [Topic A](a.md) — hook\n- [Site](https://x) — not md\n- [B](sub/b.md)"
         assert ma._topic_references(text) == ["a.md", "sub/b.md"]
 
 
 class TestUpdatedValue:
+    """Reading the frontmatter ``updated`` field.
+
+    Covers the value being read, and the two none cases: no frontmatter at all,
+    and frontmatter lacking the key.
+    """
+
     def test_reads_frontmatter_updated(self, tmp_path: Path) -> None:
         f = tmp_path / "t.md"
         f.write_text("---\nname: t\nupdated: 2026-06-22\n---\nbody", encoding="utf-8")
@@ -75,6 +92,12 @@ class TestUpdatedValue:
 
 
 class TestCheckIsoDate:
+    """Validating an ISO date string.
+
+    Covers the valid date, the wrong shape, and — the case a regex alone would
+    miss — a well-shaped string that is not a real calendar date.
+    """
+
     def test_accepts_valid_iso(self) -> None:
         assert ma._check_iso_date("2026-06-22") is True
 
@@ -88,6 +111,14 @@ class TestCheckIsoDate:
 
 
 class TestAuditTree:
+    """Auditing a single memory tree end to end.
+
+    Covers the clean tree with no findings and the empty tree reported as info,
+    against the failure and warning classes: a missing index that has topics, a
+    referenced but missing topic, an orphan topic, and a malformed ``updated``
+    date.
+    """
+
     def test_missing_index_with_topics_fails(self, tmp_path: Path) -> None:
         tree = _tree(tmp_path, "memory", {"topic.md": "body"})
         rep = ma.audit_tree(tree, apply_fix=False)
@@ -170,6 +201,12 @@ class TestAuditTree:
 
 
 class TestFormatFinding:
+    """Rendering one finding for the operator.
+
+    Covers that the severity marker and the tree-relative path are both
+    rendered.
+    """
+
     def test_renders_marker_and_relative_path(self, tmp_path: Path) -> None:
         finding = ma.Finding("fail", tmp_path / "memory", "broken")
         line = ma.format_finding(finding, tmp_path)
@@ -177,6 +214,12 @@ class TestFormatFinding:
 
 
 class TestReport:
+    """Mapping findings to the process exit code.
+
+    Covers the three-way split: zero on clean, one on warnings, two on failures
+    — so a caller can distinguish advisory findings from blocking ones.
+    """
+
     def test_exit_zero_on_clean(self, tmp_path: Path) -> None:
         rep = ma.TreeReport(root=tmp_path)
         rep.info("ok")
@@ -194,6 +237,11 @@ class TestReport:
 
 
 class TestMain:
+    """Process-level entry point behaviour.
+
+    Covers no trees returning zero and a failing tree returning two.
+    """
+
     def test_no_trees_returns_zero(self, tmp_path: Path) -> None:
         assert ma.main(["--root", str(tmp_path)]) == 0
 

@@ -37,6 +37,11 @@ def _graph(nodes: list[dict[str, Any]], edges: list[dict[str, Any]]) -> dict[str
 
 
 class TestLoadGraph:
+    """Graph deserialisation.
+
+    Covers that the JSON payload round-trips unchanged.
+    """
+
     def test_round_trips_the_json_payload(self, tmp_path: Path) -> None:
         path = tmp_path / "graph.json"
         payload = _graph(
@@ -49,6 +54,14 @@ class TestLoadGraph:
 
 
 class TestDetectOrphans:
+    """Detecting nodes nothing references.
+
+    Covers the plain orphan, the fully-connected graph with none, and the two
+    exclusion rules that prevent false positives: harness event nodes are never
+    orphans, and a hook bound to an event is reachable even with no inbound
+    edge — while an unbound hook with no inbound edge still is one.
+    """
+
     def test_node_with_no_inbound_edge_is_orphan(self) -> None:
         graph = _graph(
             [
@@ -126,6 +139,11 @@ class TestDetectOrphans:
 
 
 class TestDetectDangling:
+    """Detecting edges pointing at unregistered targets.
+
+    Covers the dangling edge and the well-formed graph with none.
+    """
+
     def test_edge_to_unregistered_target_is_dangling(self) -> None:
         graph = _graph(
             [{"id": "a", "kind": "rule", "path": "a.md"}],
@@ -153,6 +171,12 @@ class TestDetectDangling:
 
 
 class TestRenderOrphansReport:
+    """Rendering the orphan report.
+
+    Covers the clean marker at zero orphans and the grouped, sorted listing
+    otherwise.
+    """
+
     def test_zero_orphans_renders_the_clean_marker(self) -> None:
         graph = _graph([{"id": "a", "kind": "rule", "path": "a.md"}], [])
         report = render_orphans_report({}, graph)
@@ -182,6 +206,13 @@ class TestRenderOrphansReport:
 
 
 class TestRenderDanglingReport:
+    """Rendering the dangling-edge report.
+
+    Covers the clean marker at zero, the grouping by relation, and the evidence
+    path being accepted under either key spelling — the report reads graphs
+    written by either serialiser generation.
+    """
+
     def test_zero_dangling_renders_the_clean_marker(self) -> None:
         graph = _graph([{"id": "a", "kind": "rule", "path": "a.md"}], [])
         report = render_dangling_report([], graph)
@@ -221,6 +252,11 @@ class TestRenderDanglingReport:
 
 
 class TestParseArguments:
+    """Command-line argument parsing.
+
+    Covers that the graph and both output paths are required.
+    """
+
     def test_requires_graph_and_both_outputs(self) -> None:
         args = parse_arguments(
             [
@@ -239,6 +275,12 @@ class TestParseArguments:
 
 
 class TestMain:
+    """Process-level entry point behaviour.
+
+    Covers the error exit on a missing graph against the success path that
+    writes both reports.
+    """
+
     def test_missing_graph_returns_error(self, tmp_path: Path) -> None:
         code = main(
             [

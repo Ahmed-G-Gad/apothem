@@ -43,7 +43,14 @@ from apothem.audit.build_capability_graph import (
 
 
 class TestNodeAndEdge:
+    """Serialisation of the graph's two record types.
+
+    Covers that a node round-trips its fields, and that an edge renames
+    ``evidence_path`` to its hyphenated payload key.
+    """
+
     def test_node_to_json_round_trips_fields(self) -> None:
+        """A node serialises its fields unchanged."""
         node = Node(id="rule-a", kind="rule", path="src/apothem/rules/a.md")
         assert node.to_json() == {
             "id": "rule-a",
@@ -52,6 +59,7 @@ class TestNodeAndEdge:
         }
 
     def test_edge_to_json_renames_evidence_path_to_hyphen(self) -> None:
+        """An edge renames its evidence path to the hyphenated payload key."""
         edge = Edge(source="a", target="b", relation="invokes", evidence_path="a.md")
         assert edge.to_json() == {
             "source": "a",
@@ -62,7 +70,15 @@ class TestNodeAndEdge:
 
 
 class TestGraphDedup:
+    """Deduplication rules when accumulating into the graph.
+
+    Covers that adding a node is idempotent per (id, kind) while the same id
+    under a different kind stays distinct, and that adding an edge dedups on
+    the (source, target, relation) triple.
+    """
+
     def test_add_node_is_idempotent_per_id_and_kind(self) -> None:
+        """Adding the same node twice leaves one entry."""
         graph = Graph()
         graph.add_node(Node(id="a", kind="rule", path="a.md"))
         graph.add_node(Node(id="a", kind="rule", path="a.md"))
@@ -70,6 +86,10 @@ class TestGraphDedup:
         assert len(graph.nodes) == 1
 
     def test_same_id_different_kind_is_distinct(self) -> None:
+        """Same id under a different kind is a separate node.
+
+        Id alone is not the key.
+        """
         graph = Graph()
         graph.add_node(Node(id="a", kind="rule", path="a.md"))
         graph.add_node(Node(id="a", kind="skill", path="a/SKILL.md"))
@@ -77,6 +97,10 @@ class TestGraphDedup:
         assert len(graph.nodes) == 2
 
     def test_add_edge_dedups_on_source_target_relation(self) -> None:
+        """Edges dedup on the source/target/relation triple.
+
+        A differing relation survives; a differing evidence path does not.
+        """
         graph = Graph()
         graph.add_edge(Edge("a", "b", "invokes", "a.md"))
         graph.add_edge(Edge("a", "b", "invokes", "other.md"))  # same key -> dropped
@@ -86,30 +110,51 @@ class TestGraphDedup:
 
 
 class TestDeriveNodeId:
+    """Deriving a stable node id from an artifact path.
+
+    Covers the per-class derivation rules: agents and commands drop their
+    prefix and suffix, a skill derives from its parent directory, a hook keeps
+    its relative path verbatim, and an output style drops either accepted
+    suffix.
+    """
+
     # Inventory paths are relative to the content root (src/apothem), so they
     # carry bare top-level directory prefixes — agents/, commands/, rules/ —
     # the same keys the inventory's classify_file matches on.
     def test_agent_drops_prefix_and_suffix(self) -> None:
+        """An agent id is its filename, minus directory prefix and suffix."""
         assert derive_node_id("agent", "agents/explorer.md") == "explorer"
 
     def test_command_drops_prefix_and_suffix(self) -> None:
+        """A command id is its filename, minus directory prefix and suffix."""
         assert derive_node_id("command", "commands/plan.md") == "plan"
 
     def test_skill_derives_from_parent_dir_under_skills_prefix(self) -> None:
+        """A skill id comes from its parent directory.
+
+        The derivation applies only under the bare inventory prefix.
+        """
         assert derive_node_id("skill", "skills/refactor/SKILL.md") == "refactor"
         # A non-bare 'src/apothem/skills/...' form is not the inventory scheme.
         assert derive_node_id("skill", "src/apothem/skills/refactor/SKILL.md") is None
 
     def test_hook_uses_relative_path_verbatim(self) -> None:
+        """A hook keeps its relative path as its id.
+
+        Hooks are addressed by path, not by name.
+        """
         assert derive_node_id("hook", "hooks/dispatch.py") == "hooks/dispatch.py"
 
     def test_output_style_drops_prefix_and_either_suffix(self) -> None:
+        """An output style drops prefix and suffix, as agents do."""
         assert derive_node_id("output-style", "output-styles/concise.md") == "concise"
 
     def test_rule_docs_path_drops_rules_prefix(self) -> None:
+        """A rule under the rules tree drops that prefix to form its id."""
         assert derive_node_id("docs", "rules/naturalism.md") == "naturalism"
 
     def test_statusline_and_mcp_use_relative_path_verbatim(self) -> None:
+        """Statuslines and MCP manifests keep their relative paths as ids."""
         assert (
             derive_node_id("statusline", "statuslines/line.py") == "statuslines/line.py"
         )
@@ -120,17 +165,33 @@ class TestDeriveNodeId:
         # inventory never emits) does not derive an agent or rule id. Before
         # the prefix fix, the agent/rule branches keyed off this form and so
         # silently produced zero agent and zero rule nodes.
+        """A stale content-root-prefixed path derives no id.
+
+        This is the regression that once produced zero agent and zero rule
+        nodes.
+        """
         assert derive_node_id("agent", "src/apothem/agents/explorer.md") is None
         assert derive_node_id("docs", "src/apothem/rules/naturalism.md") is None
 
     def test_unmatched_class_returns_none(self) -> None:
+        """An unmatched class, or a docs file off the rules tree, has no id."""
         assert derive_node_id("memory", "memory/topic.md") is None
         # A docs file outside the rules tree is not a rule node.
         assert derive_node_id("docs", "site/content/docs/page.md") is None
 
 
 class TestRegisterNodes:
+    """Seeding the graph from the inventory.
+
+    Covers that registration populates the artifact nodes and the virtual event
+    nodes hooks bind against.
+    """
+
     def test_populates_nodes_and_virtual_events(self) -> None:
+        """Registration seeds artifact nodes and virtual event nodes.
+
+        The virtual event nodes are what hooks bind against.
+        """
         inventory: dict[str, Any] = {
             "files": [
                 {"class": "agent", "path": "agents/explorer.md"},
@@ -153,6 +214,13 @@ class TestRegisterNodes:
 
 
 class TestReadText:
+    """Bounded UTF-8 read of a candidate artifact.
+
+    Covers the normal read, the missing-file case that yields empty rather than
+    raising, and truncation at the scan byte budget so one oversized file
+    cannot stall the sweep.
+    """
+
     def test_reads_utf8(self, tmp_path: Path) -> None:
         f = tmp_path / "a.md"
         f.write_text("hello", encoding="utf-8")
@@ -168,6 +236,14 @@ class TestReadText:
 
 
 class TestScanTextReferences:
+    """Extracting reference edges from artifact text.
+
+    Covers the relation split (an agent source emits ``invokes`` where other
+    sources emit ``references``), the self-reference that is deliberately not an
+    edge, and the sibling-resolution forms: full node id, bare basename, and a
+    backslash-shaped path.
+    """
+
     def test_agent_source_emits_invokes_other_emits_references(
         self, tmp_path: Path
     ) -> None:
@@ -358,6 +434,14 @@ class TestScanTextReferences:
 
 
 class TestScanHookBindings:
+    """Binding artifacts to hook events from the harness config.
+
+    Covers the successful binding of each referenced artifact to its event
+    against the tolerant failure paths: a missing config file is a no-op,
+    malformed JSON is skipped, and a malformed hook block is guarded rather
+    than crashing the sweep.
+    """
+
     # The engine hook config lives at the content-root-relative
     # ``hooks/hooks.json``; its command strings name hook artifacts by a
     # variable-prefixed path the scan resolves to a bare ``hooks/<...>`` id.
@@ -441,6 +525,13 @@ class TestScanHookBindings:
 
 
 class TestExtractHookNodeIds:
+    """Resolving the node ids referenced by a hook entry.
+
+    Covers order-preserving extraction of resolvable ids, omission of an
+    unresolvable path, deduplication of repeats, and the bare ``hooks/`` prefix
+    resolving without the ``src/apothem`` segment.
+    """
+
     def test_returns_all_resolvable_bare_node_ids_in_order(
         self, tmp_path: Path
     ) -> None:
@@ -487,6 +578,13 @@ class TestExtractHookNodeIds:
 
 
 class TestPythonImportNames:
+    """Indexing a Python module under its importable names.
+
+    Covers that a module indexes both its full dotted path and its bare leaf,
+    and that a package ``__init__`` is named for its directory rather than the
+    leaf filename.
+    """
+
     def test_module_indexes_full_dotted_package_and_bare_leaf(self) -> None:
         # A non-package module answers to its content-root dotted path, the
         # installed-package form, and its bare leaf name — the form the hook
@@ -508,6 +606,13 @@ class TestPythonImportNames:
 
 
 class TestScanPythonImports:
+    """Emitting import edges between known modules.
+
+    Covers that a bare leaf import resolves to its library module, that a
+    similarly-named module does not false-match, and that a self-import is
+    deliberately not an edge.
+    """
+
     def test_bare_leaf_import_resolves_to_lib_module(self, tmp_path: Path) -> None:
         # Regression guard: the hook lib modules are imported by bare leaf name
         # (the bootstrap puts hooks/lib/ on sys.path), never by the content-root
@@ -592,6 +697,12 @@ class TestScanPythonImports:
 
 
 class TestEmitGraph:
+    """Final graph serialisation.
+
+    Covers that the payload is emitted in sorted order with its node and edge
+    counts, so the output is byte-stable across runs.
+    """
+
     def test_serialises_sorted_payload_with_counts(self, tmp_path: Path) -> None:
         graph = Graph()
         graph.add_node(Node(id="z", kind="rule", path="z.md"))
@@ -609,6 +720,12 @@ class TestEmitGraph:
 
 
 class TestMain:
+    """Process-level entry point behaviour.
+
+    Covers the error exit on a missing inventory against the full pipeline,
+    which writes the graph and emits the hook-binding edges.
+    """
+
     def test_missing_inventory_returns_error(self, tmp_path: Path) -> None:
         code = main(
             [
@@ -715,6 +832,11 @@ class TestMain:
 
 
 class TestLoadInventory:
+    """Inventory deserialisation.
+
+    Covers that the payload round-trips unchanged.
+    """
+
     def test_round_trips_payload(self, tmp_path: Path) -> None:
         path = tmp_path / "inv.json"
         payload = {"files": [{"class": "agent", "path": "a.md"}]}

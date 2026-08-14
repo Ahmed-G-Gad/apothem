@@ -29,10 +29,19 @@ import emit_hook_context as ehc  # noqa: E402
 
 
 class TestNormalizeAscii:
+    """Folding typographic characters to ASCII.
+
+    Covers the mapped characters — typographic quotes, the em dash, the arrow —
+    against the two preservation cases: an unmapped non-ASCII character survives
+    rather than being dropped, and empty input stays empty.
+    """
+
     def test_empty_input_returns_empty(self) -> None:
+        """Empty input stays empty."""
         assert ehc.normalize_ascii("") == ""
 
     def test_typographic_quotes_mapped(self) -> None:
+        """Curly double and single quotes fold to their ASCII equivalents."""
         source = "\u201cquoted\u201d and \u2018single\u2019"
 
         result = ehc.normalize_ascii(source)
@@ -40,18 +49,28 @@ class TestNormalizeAscii:
         assert result == "\"quoted\" and 'single'"
 
     def test_em_dash_mapped_to_hyphen(self) -> None:
+        """An em dash folds to a hyphen."""
         assert ehc.normalize_ascii("a\u2014b") == "a-b"
 
     def test_arrow_mapped_to_ascii(self) -> None:
+        """An arrow folds to its ASCII digraph."""
         assert ehc.normalize_ascii("x \u2192 y") == "x -> y"
 
     def test_unmapped_non_ascii_preserved(self) -> None:
         # UTF-8 content the map does not name is PRESERVED (no wholesale strip):
         # the envelope's additionalContext/systemMessage is UTF-8 JSON, so
         # non-Latin MEMORY / plan content must survive rather than be deleted.
+        """An unmapped non-ASCII character survives.
+
+        The envelope is UTF-8 JSON, so nothing is stripped wholesale.
+        """
         assert ehc.normalize_ascii("hello\u2603world") == "hello\u2603world"
 
     def test_non_latin_script_preserved(self) -> None:
+        """Only mapped typographic characters transliterate.
+
+        Non-Latin script passes through intact.
+        """
         source = "\u4e2d\u6587 overview \u2014 done"
         # Only the em dash (a mapped typographic char) transliterates; the
         # non-Latin script survives intact.
@@ -59,13 +78,23 @@ class TestNormalizeAscii:
 
 
 class TestBuildMetadataPrefix:
+    """Building the metadata prefix from the hook payload.
+
+    Covers the two empty inputs (none payload, empty dict), the fully-populated
+    prefix, the partial case emitting only present fields, and non-string values
+    being ignored rather than coerced.
+    """
+
     def test_none_payload_returns_empty(self) -> None:
+        """A none payload yields no prefix."""
         assert ehc.build_metadata_prefix(None) == ""
 
     def test_empty_dict_returns_empty(self) -> None:
+        """An empty payload yields no prefix."""
         assert ehc.build_metadata_prefix({}) == ""
 
     def test_all_fields_present(self) -> None:
+        """A full payload renders every field in the declared order."""
         payload = {"source": "user", "tool_name": "Write", "matcher": "Write"}
 
         result = ehc.build_metadata_prefix(payload)
@@ -73,6 +102,7 @@ class TestBuildMetadataPrefix:
         assert result == "[source=user | tool=Write | matcher=Write]"
 
     def test_partial_fields_only(self) -> None:
+        """Only the fields actually present are rendered."""
         payload = {"tool_name": "Edit"}
 
         result = ehc.build_metadata_prefix(payload)
@@ -80,6 +110,7 @@ class TestBuildMetadataPrefix:
         assert result == "[tool=Edit]"
 
     def test_non_string_values_ignored(self) -> None:
+        """A non-string value is dropped, never coerced into the prefix."""
         payload = {"source": 123, "tool_name": "Write"}
 
         result = ehc.build_metadata_prefix(payload)
@@ -88,30 +119,48 @@ class TestBuildMetadataPrefix:
 
 
 class TestComposeContext:
+    """Joining the metadata prefix to the context body.
+
+    Covers all four combinations: both present and newline-joined, body only,
+    prefix only, and both empty yielding empty.
+    """
+
     def test_prefix_and_body_joined_by_newline(self) -> None:
+        """Prefix and body are joined by a single newline."""
         result = ehc.compose_context("body", {"tool_name": "Write"})
 
         assert result == "[tool=Write]\nbody"
 
     def test_body_only_when_no_payload(self) -> None:
+        """With no payload the body returns alone, no leading newline."""
         assert ehc.compose_context("body", None) == "body"
 
     def test_prefix_only_when_body_empty(self) -> None:
+        """With an empty body the prefix returns alone, no trailing newline."""
         result = ehc.compose_context("", {"tool_name": "Write"})
 
         assert result == "[tool=Write]"
 
     def test_both_empty_returns_empty(self) -> None:
+        """Both empty yields empty."""
         assert ehc.compose_context("", None) == ""
 
 
 class TestResolveContextPath:
+    """Resolving the context file path.
+
+    Covers a relative path resolving against the root and an absolute path being
+    returned verbatim.
+    """
+
     def test_relative_resolved_against_root(self, tmp_path: Path) -> None:
+        """A relative path resolves beneath the supplied root."""
         resolved = ehc.resolve_context_path("sub/file.md", tmp_path)
 
         assert resolved == tmp_path / "sub" / "file.md"
 
     def test_absolute_returned_verbatim(self, tmp_path: Path) -> None:
+        """An absolute path is returned unchanged, ignoring the root."""
         absolute = tmp_path / "absolute.md"
 
         resolved = ehc.resolve_context_path(str(absolute), tmp_path / "other")
@@ -120,8 +169,17 @@ class TestResolveContextPath:
 
 
 class TestReadHookStdin:
+    """Reading and parsing the hook payload from stdin.
+
+    Covers the valid JSON parse against every none-returning case — a TTY,
+    malformed JSON, empty input, and well-formed JSON that is not an object — so
+    the hook degrades rather than raising.
+    """
+
     def test_tty_returns_none(self, monkeypatch: pytest.MonkeyPatch) -> None:
         class FakeStdin:
+            """Stdin double reporting an interactive terminal."""
+
             @staticmethod
             def isatty() -> bool:
                 return True
@@ -162,6 +220,13 @@ class TestReadHookStdin:
 
 
 class TestHookMode:
+    """End-to-end hook-mode emission.
+
+    Covers the valid JSON envelope and the empty-additional cases: a missing
+    context file, and each guard that passes — the write-plan guard, the
+    project-local plan write, and the bash plan guard.
+    """
+
     def test_emits_valid_json_envelope(
         self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
@@ -299,6 +364,11 @@ class TestHookMode:
 
 
 class TestDiagnosticMode:
+    """Diagnostic-mode output.
+
+    Covers that the header and the counts are both emitted.
+    """
+
     def test_emits_header_and_counts(
         self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:

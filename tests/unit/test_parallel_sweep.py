@@ -42,6 +42,11 @@ def _always_raises(path: Path) -> None:
 
 
 class TestMatchDataclass:
+    """The match record.
+
+    Covers that it is frozen and carries its three fields.
+    """
+
     def test_match_is_frozen_with_three_fields(self):
         m = Match(path=Path("a.txt"), line=1, text="hello")
         assert m.path == Path("a.txt")
@@ -52,6 +57,13 @@ class TestMatchDataclass:
 
 
 class TestGrepOneSequential:
+    """Scanning a single file.
+
+    Covers matches in a UTF-8 file, the two empty-result inputs (no matches, an
+    empty file), the missing file yielding empty rather than raising, and a
+    binary file decoding lossily so it cannot abort the sweep.
+    """
+
     def test_finds_matches_in_utf8_file(self, tmp_path):
         f = tmp_path / "hello.txt"
         f.write_text("alpha\nBETA match\ngamma\nBETA again\n", encoding="utf-8")
@@ -85,6 +97,12 @@ class TestGrepOneSequential:
 
 
 class TestGrepOneCompiledWorker:
+    """Pattern compilation inside the worker.
+
+    Covers that the worker compiles its pattern per call — a compiled pattern
+    cannot be assumed to survive the process boundary.
+    """
+
     def test_worker_grep_one_compiles_pattern_per_call(self, tmp_path):
         f = tmp_path / "worker.txt"
         f.write_text("first\nsecond\nthird\n", encoding="utf-8")
@@ -94,6 +112,12 @@ class TestGrepOneCompiledWorker:
 
 
 class TestParallelGrepSequentialPath:
+    """The single-worker sequential path.
+
+    Covers matching with one worker, preservation of input path order, and the
+    empty input yielding empty.
+    """
+
     def test_sequential_path_with_single_worker(self, tmp_path):
         f1 = tmp_path / "a.txt"
         f1.write_text("foo match\nbar\n", encoding="utf-8")
@@ -115,6 +139,12 @@ class TestParallelGrepSequentialPath:
 
 
 class TestParallelGrepParallelPath:
+    """The multi-worker parallel path.
+
+    Covers matching across workers, the no-match result, and a worker exception
+    being wrapped rather than lost — a crashed worker surfaces to the caller.
+    """
+
     def test_parallel_path_with_multiple_workers(self, tmp_path):
         files = []
         for i in range(10):
@@ -150,6 +180,11 @@ class TestParallelGrepParallelPath:
 
 
 class TestParallelApplySequentialPath:
+    """Sequential application of a callable.
+
+    Covers results returned in input order and the empty input.
+    """
+
     def test_sequential_apply_returns_results_in_input_order(self, tmp_path):
         files = []
         for i in range(3):
@@ -164,6 +199,12 @@ class TestParallelApplySequentialPath:
 
 
 class TestParallelApplyParallelPath:
+    """Parallel application of a callable.
+
+    Covers that input order is preserved despite out-of-order completion, and
+    that a worker exception is wrapped.
+    """
+
     def test_parallel_apply_preserves_input_order(self, tmp_path):
         files = []
         for i in range(8):

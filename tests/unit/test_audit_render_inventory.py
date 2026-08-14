@@ -82,6 +82,11 @@ def _inventory(
 
 
 class TestLoadInventory:
+    """Inventory deserialisation.
+
+    Covers that the JSON payload round-trips unchanged.
+    """
+
     def test_round_trips_the_json_payload(self, tmp_path: Path) -> None:
         path = tmp_path / "inv.json"
         payload = _inventory([_record("a.md", "docs")])
@@ -91,6 +96,13 @@ class TestLoadInventory:
 
 
 class TestRenderAggregateSection:
+    """Rendering the aggregate distribution tables.
+
+    Covers the three tables and their thousands separators, plus the omission
+    rules that keep zero-count rows — classes, header statuses, and variants —
+    out of the output rather than printing empty rows.
+    """
+
     def test_emits_three_distribution_tables_with_thousands_separator(self) -> None:
         files = [_record(f"a{i}.md", "docs") for i in range(1500)]
         lines = render_aggregate_section(_inventory(files))
@@ -126,6 +138,13 @@ class TestRenderAggregateSection:
 
 
 class TestRenderPerClassSection:
+    """Rendering the per-class file enumeration.
+
+    Covers the flat enumeration with path, line count, and digest; the em-dash
+    rendering when a line count is absent; and the fallback to aggregation once
+    a class exceeds the flat-listing limit.
+    """
+
     def test_enumerates_small_classes_with_path_lines_sha(self) -> None:
         files = [
             _record("agents/b.md", "agent", lines=20, sha="deadbeefcafe0000"),
@@ -158,6 +177,12 @@ class TestRenderPerClassSection:
 
 
 class TestRenderAggregatedSection:
+    """Rendering the aggregated view of large classes.
+
+    Covers aggregation by subdirectory and the omission of a large class that
+    is absent from this inventory.
+    """
+
     def test_aggregates_large_classes_by_subdir(self) -> None:
         files = [
             _record("memory/topic-a.md", "memory"),
@@ -179,6 +204,12 @@ class TestRenderAggregatedSection:
 
 
 class TestRenderNarrativeSurfaceSection:
+    """Rendering the narrative-surface index.
+
+    Covers that only runtime behaviour surfaces are indexed, keeping the
+    section scoped to what actually governs behaviour.
+    """
+
     def test_indexes_only_runtime_behavior_surfaces(self) -> None:
         files = [
             _record("agents/a.md", "agent"),
@@ -194,6 +225,14 @@ class TestRenderNarrativeSurfaceSection:
 
 
 class TestRenderPlanSuitesSection:
+    """Rendering the plan-suite section.
+
+    Covers the empty case rendering nothing, enumeration of suites with their
+    counts and root files, the skipping of a degenerate plan path that names no
+    suite, and the suite whose files are all deep enough that no root sub-table
+    is emitted.
+    """
+
     def test_no_plan_files_renders_nothing(self) -> None:
         assert render_plan_suites_section(_inventory([_record("a.md", "docs")])) == []
 
@@ -237,6 +276,12 @@ class TestRenderPlanSuitesSection:
 
 
 class TestRenderSkippedSection:
+    """Rendering the skipped-directory list.
+
+    Covers that each skipped directory is listed, so an omission from the scan
+    is visible rather than silent.
+    """
+
     def test_lists_each_skipped_directory(self) -> None:
         body = "\n".join(
             render_skipped_section(
@@ -250,6 +295,11 @@ class TestRenderSkippedSection:
 
 
 class TestRenderInventory:
+    """Composing the whole document.
+
+    Covers that every section is emitted in its declared order.
+    """
+
     def test_composes_every_section_in_order(self) -> None:
         files = [
             _record("agents/a.md", "agent"),
@@ -273,6 +323,11 @@ class TestRenderInventory:
 
 
 class TestParseArguments:
+    """Command-line argument parsing.
+
+    Covers that both the inventory and the output path are required.
+    """
+
     def test_requires_inventory_and_output(self) -> None:
         args = parse_arguments(["--inventory", "i.json", "--output", "o.md"])
         assert args.inventory == Path("i.json")
@@ -280,6 +335,12 @@ class TestParseArguments:
 
 
 class TestMain:
+    """Process-level entry point behaviour.
+
+    Covers the error exit on a missing inventory against the success path that
+    writes the Markdown mirror.
+    """
+
     def test_missing_inventory_returns_error(self, tmp_path: Path) -> None:
         code = main(
             [

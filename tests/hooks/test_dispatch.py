@@ -40,6 +40,11 @@ def _mock_tty_stdin(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 class TestParseArgs:
+    """Command-line argument parsing.
+
+    Covers the event name being required and the remaining defaults.
+    """
+
     def test_event_name_required(self) -> None:
         with pytest.raises(SystemExit):
             dispatch.parse_args([])
@@ -53,6 +58,12 @@ class TestParseArgs:
 
 
 class TestDispatch:
+    """Routing an event to its handler.
+
+    Covers the two raising cases — an unknown event, and a non-session event
+    arriving without context — against the envelope-emitting session events.
+    """
+
     def test_unknown_event_raises(self) -> None:
         with pytest.raises(ValueError, match="Unknown event"):
             dispatch.dispatch("FakeEvent", "", False)
@@ -106,6 +117,14 @@ class TestDispatch:
 
 
 class TestMain:
+    """Process-level entry point behaviour.
+
+    Covers the fail-open contract: a failure envelope on an unknown event, a
+    quiet session start, an envelope even when the event is missing, and
+    recovery of the event name when argument parsing itself fails — so the
+    dispatcher always emits valid output.
+    """
+
     def test_main_emits_failure_envelope_on_unknown_event(
         self,
         monkeypatch: pytest.MonkeyPatch,
