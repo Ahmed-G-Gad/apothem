@@ -291,24 +291,52 @@ def _resolve_suite(
     eco_density: float,
     known_projects: list[dict[str, str]],
 ) -> SuiteVerdict:
-    """Compute the suite-level destination + confidence."""
+    """Compute the suite-level destination + confidence.
+
+    A ladder of nine rungs, tried in order, and the order carries the
+    design: the earlier a rung sits, the stronger the evidence it reads.
+    The recursive-self suite comes first because moving it would amputate
+    the migration's own working tree, and no later signal may override
+    that. Suite-name prefixes come next, because a name is an authoring
+    decision while body signals are inference. Body signals decide only
+    when no name hint fired, and among them a repository URL outranks an
+    absolute path — a URL names a project, a path merely mentions one.
+    The floor is an explicit ``<unmappable>`` verdict rather than a guess,
+    so an undecidable suite reaches the operator as a question.
+
+    Each rung decides just two things — where the suite goes and how much
+    that answer is trusted — and appends its reasoning to the shared
+    rationale, which travels with the verdict so the record shows its
+    work.
+    """
     rationale: list[str] = []
+
+    def verdict(destination: str, confidence: str) -> SuiteVerdict:
+        """Build a verdict from the two fields a rung actually decides.
+
+        Everything else is invariant for this call: the suite identity, the
+        aggregates it was handed, and the rationale list the rungs append to.
+        Closing over them keeps each rung down to its decision, and removes
+        the way a rung could drift from its siblings by restating one of the
+        shared fields differently.
+        """
+        return SuiteVerdict(
+            suite=suite,
+            file_count=file_count,
+            destination=destination,
+            confidence=confidence,
+            rationale=rationale,
+            aggregate_repo_urls=aggregate_urls,
+            aggregate_abs_paths=aggregate_paths,
+            eco_signal_density=eco_density,
+        )
 
     if suite == RECURSIVE_SELF_SUITE:
         rationale.append(
             "this suite hardens the very ecosystem it lives in;"
             " moving it would amputate the migration's working tree"
         )
-        return SuiteVerdict(
-            suite=suite,
-            file_count=file_count,
-            destination=ECOSYSTEM_DESTINATION_TEXT,
-            confidence=CONFIDENCE_RECURSIVE_SELF,
-            rationale=rationale,
-            aggregate_repo_urls=aggregate_urls,
-            aggregate_abs_paths=aggregate_paths,
-            eco_signal_density=eco_density,
-        )
+        return verdict(ECOSYSTEM_DESTINATION_TEXT, CONFIDENCE_RECURSIVE_SELF)
 
     hint = _suite_name_hint(suite)
     if hint == ECOSYSTEM_SELF_MARKER:
@@ -322,16 +350,7 @@ def _resolve_suite(
             f"body eco-signal density {eco_density:.2f} corroborates"
             " the suite-name hint"
         )
-        return SuiteVerdict(
-            suite=suite,
-            file_count=file_count,
-            destination=ECOSYSTEM_DESTINATION_TEXT,
-            confidence=CONFIDENCE_HIGH,
-            rationale=rationale,
-            aggregate_repo_urls=aggregate_urls,
-            aggregate_abs_paths=aggregate_paths,
-            eco_signal_density=eco_density,
-        )
+        return verdict(ECOSYSTEM_DESTINATION_TEXT, CONFIDENCE_HIGH)
 
     if hint is not None:
         # Resolve the named project against the known-projects list.
@@ -358,32 +377,14 @@ def _resolve_suite(
                 f" '{match['name']}' via the suite-name prefix table"
                 f" ({kind} match)"
             )
-            return SuiteVerdict(
-                suite=suite,
-                file_count=file_count,
-                destination=match["name"],
-                confidence=CONFIDENCE_HIGH,
-                rationale=rationale,
-                aggregate_repo_urls=aggregate_urls,
-                aggregate_abs_paths=aggregate_paths,
-                eco_signal_density=eco_density,
-            )
+            return verdict(match["name"], CONFIDENCE_HIGH)
         rationale.append(
             f"suite name '{suite}' maps to project '{hint}' via the"
             " suite-name prefix table; no known-projects entry yet"
             " carries the matching name, so confidence sits at"
             " medium pending known-projects ratification"
         )
-        return SuiteVerdict(
-            suite=suite,
-            file_count=file_count,
-            destination=hint,
-            confidence=CONFIDENCE_MEDIUM,
-            rationale=rationale,
-            aggregate_repo_urls=aggregate_urls,
-            aggregate_abs_paths=aggregate_paths,
-            eco_signal_density=eco_density,
-        )
+        return verdict(hint, CONFIDENCE_MEDIUM)
 
     # No suite-name hint fired. Fall through to body signals.
     if eco_density >= 0.5:
@@ -392,16 +393,7 @@ def _resolve_suite(
             " 0.50 threshold; routes to the user-config ecosystem"
             " stay-in-place destination"
         )
-        return SuiteVerdict(
-            suite=suite,
-            file_count=file_count,
-            destination=ECOSYSTEM_DESTINATION_TEXT,
-            confidence=CONFIDENCE_MEDIUM,
-            rationale=rationale,
-            aggregate_repo_urls=aggregate_urls,
-            aggregate_abs_paths=aggregate_paths,
-            eco_signal_density=eco_density,
-        )
+        return verdict(ECOSYSTEM_DESTINATION_TEXT, CONFIDENCE_MEDIUM)
 
     for url in aggregate_urls:
         for proj in known_projects:
@@ -410,31 +402,13 @@ def _resolve_suite(
                     f"aggregate repository URL '{url}' matches known"
                     f" project '{proj['name']}'"
                 )
-                return SuiteVerdict(
-                    suite=suite,
-                    file_count=file_count,
-                    destination=proj["name"],
-                    confidence=CONFIDENCE_HIGH,
-                    rationale=rationale,
-                    aggregate_repo_urls=aggregate_urls,
-                    aggregate_abs_paths=aggregate_paths,
-                    eco_signal_density=eco_density,
-                )
+                return verdict(proj["name"], CONFIDENCE_HIGH)
     if aggregate_urls:
         rationale.append(
             f"aggregate repository URL '{aggregate_urls[0]}'"
             " recognizable but unmatched against known-projects"
         )
-        return SuiteVerdict(
-            suite=suite,
-            file_count=file_count,
-            destination=aggregate_urls[0],
-            confidence=CONFIDENCE_MEDIUM,
-            rationale=rationale,
-            aggregate_repo_urls=aggregate_urls,
-            aggregate_abs_paths=aggregate_paths,
-            eco_signal_density=eco_density,
-        )
+        return verdict(aggregate_urls[0], CONFIDENCE_MEDIUM)
 
     for ap in aggregate_paths:
         for proj in known_projects:
@@ -443,32 +417,14 @@ def _resolve_suite(
                     f"aggregate absolute path '{ap}' contains known"
                     f" project basename '{proj['name']}'"
                 )
-                return SuiteVerdict(
-                    suite=suite,
-                    file_count=file_count,
-                    destination=proj["name"],
-                    confidence=CONFIDENCE_MEDIUM,
-                    rationale=rationale,
-                    aggregate_repo_urls=aggregate_urls,
-                    aggregate_abs_paths=aggregate_paths,
-                    eco_signal_density=eco_density,
-                )
+                return verdict(proj["name"], CONFIDENCE_MEDIUM)
 
     rationale.append(
         "no suite-name hint, no eco-density majority, no body URL or"
         " absolute-path match against known-projects; suite is"
         " unmappable pending operator disposition"
     )
-    return SuiteVerdict(
-        suite=suite,
-        file_count=file_count,
-        destination="<unmappable>",
-        confidence=CONFIDENCE_UNMAPPABLE,
-        rationale=rationale,
-        aggregate_repo_urls=aggregate_urls,
-        aggregate_abs_paths=aggregate_paths,
-        eco_signal_density=eco_density,
-    )
+    return verdict("<unmappable>", CONFIDENCE_UNMAPPABLE)
 
 
 def _derive_known_projects(
