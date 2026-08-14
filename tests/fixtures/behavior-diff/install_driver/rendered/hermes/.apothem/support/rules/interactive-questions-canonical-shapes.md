@@ -221,7 +221,7 @@ The activation predicate is `direct-surface-outcome = absent AND deferred-resolu
 
 The detection record is the authoritative upstream source. Artifacts cite the pre-flight probe record (path, `final-state` field, timestamp) instead of re-inferring state. The probe record and its post-install re-probe sibling carry the five-field schema. Detection pseudocode:
 
-```python
+```text
 probe = read(probe-record-path)
 direct  = probe.fields["direct-surface-outcome"]
 deferred = probe.fields["deferred-resolution-outcome"]
