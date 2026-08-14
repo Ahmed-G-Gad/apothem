@@ -25,7 +25,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from apothem.audit.scan_ai_surfaces import (
+    ALL_SECTIONS_FOR_PRESENCE,
     COHERENCE_COHERENT,
     COHERENCE_CONTRADICTS,
     COHERENCE_NOT_APPLICABLE,
@@ -40,6 +43,7 @@ from apothem.audit.scan_ai_surfaces import (
     SurfaceDescriptor,
     SurfaceScan,
     body_signature_count,
+    build_authoring_plan,
     build_coherence_map,
     coherence_verdict_for,
     detect_section_presence,
@@ -415,3 +419,170 @@ def test_build_coherence_map_keys_each_unordered_pair_once() -> None:
 
     assert len(coherence) == 3
     assert "AGENTS.md__vs__CLAUDE.md" in coherence
+
+
+# --- build_authoring_plan ---------------------------------------------------
+
+
+def _absent_scan(path: str, *, mandatory: bool) -> SurfaceScan:
+    """Build an absent SurfaceScan for a mandatory or optional surface."""
+    return SurfaceScan(
+        descriptor=SurfaceDescriptor(
+            path=path, role="test surface", mandatory=mandatory
+        ),
+        presence=SURFACE_ABSENT,
+        sha256=None,
+        line_count=0,
+        headings=[],
+        section_presence={},
+        raw_content="",
+    )
+
+
+def _actions_for(scans: list[SurfaceScan], coherence: dict) -> set[str]:
+    """Return the distinct action names the plan emits for these inputs."""
+    return {action.action for action in build_authoring_plan(scans, coherence)}
+
+
+def test_authoring_plan_absent_mandatory_surface_is_authored() -> None:
+    """A missing mandatory surface is authored from the canonical template."""
+    plan = build_authoring_plan([_absent_scan("AGENTS.md", mandatory=True)], {})
+
+    assert [action.action for action in plan] == ["author-from-template"]
+
+
+def test_authoring_plan_absent_optional_surface_defers_to_opt_in() -> None:
+    """A missing optional surface waits for the operator to opt in.
+
+    The scanner never authors an optional surface unprompted — that would
+    install a file the operator never asked for.
+    """
+    plan = build_authoring_plan([_absent_scan(".cursorrules", mandatory=False)], {})
+
+    assert [action.action for action in plan] == ["defer-to-opt-in"]
+
+
+def test_authoring_plan_present_surface_installs_missing_sections() -> None:
+    """A present surface missing every canonical section gets install actions.
+
+    The presence map is built over the real ``ALL_SECTIONS_FOR_PRESENCE``
+    because :func:`build_authoring_plan` subscripts it directly — see
+    :func:`test_authoring_plan_requires_a_complete_presence_map`.
+    """
+    present = SurfaceScan(
+        descriptor=_descriptor(),
+        presence=SURFACE_PRESENT,
+        sha256="0" * 64,
+        line_count=2,
+        headings=parse_headings("# Unrelated\nplain prose\n"),
+        section_presence={s.slug: PRESENCE_ABSENT for s in ALL_SECTIONS_FOR_PRESENCE},
+        raw_content="# Unrelated\nplain prose\n",
+    )
+
+    assert _actions_for([present], {}) == {"install-missing-section"}
+
+
+def test_authoring_plan_requires_a_complete_presence_map() -> None:
+    """A partial presence map raises ``KeyError`` rather than defaulting.
+
+    Latent fragility, pinned deliberately: ``build_authoring_plan`` reads
+    ``scan.section_presence[slug]`` with a bare subscript, while its sibling
+    ``section_present_in_scan`` reads the same map through
+    ``.get(slug, PRESENCE_ABSENT)``. ``scan_surface`` always populates every
+    slug, so the two never disagree in production — but any future caller
+    that hand-builds a scan hits the harder edge. This test records the
+    current contract; it is not an endorsement of the asymmetry.
+    """
+    partial = SurfaceScan(
+        descriptor=_descriptor(),
+        presence=SURFACE_PRESENT,
+        sha256="0" * 64,
+        line_count=1,
+        headings=[],
+        section_presence={},
+        raw_content="prose\n",
+    )
+
+    with pytest.raises(KeyError):
+        build_authoring_plan([partial], {})
+
+
+def test_authoring_plan_reconciliation_treats_agents_md_as_canonical() -> None:
+    """When a pair contradicts, AGENTS.md is canonical and the other is rewritten.
+
+    The divergent surface is the one carrying the action, so the plan says
+    which file to change — not merely that a conflict exists.
+    """
+    coherence = {
+        "AGENTS.md__vs__CLAUDE.md": [
+            {
+                "section_slug": "sample",
+                "section_display": "Sample",
+                "verdict": COHERENCE_CONTRADICTS,
+                "rationale": "asymmetric",
+            }
+        ]
+    }
+
+    plan = build_authoring_plan([], coherence)
+
+    assert len(plan) == 1
+    assert plan[0].action == "reconcile-contradiction"
+    assert plan[0].surface == "CLAUDE.md"
+    assert "AGENTS.md" in plan[0].detail
+
+
+def test_authoring_plan_reconciliation_canonical_precedence_is_order_free() -> None:
+    """AGENTS.md is canonical whichever side of the pair key it occupies."""
+    verdict = {
+        "section_slug": "sample",
+        "section_display": "Sample",
+        "verdict": COHERENCE_CONTRADICTS,
+        "rationale": "asymmetric",
+    }
+
+    plan = build_authoring_plan([], {"CLAUDE.md__vs__AGENTS.md": [verdict]})
+
+    assert plan[0].surface == "CLAUDE.md"
+
+
+def test_authoring_plan_falls_back_to_claude_md_when_agents_absent() -> None:
+    """With no AGENTS.md in the pair, CLAUDE.md becomes the canonical voice."""
+    verdict = {
+        "section_slug": "sample",
+        "section_display": "Sample",
+        "verdict": COHERENCE_CONTRADICTS,
+        "rationale": "asymmetric",
+    }
+    pair = ".github/copilot-instructions.md__vs__CLAUDE.md"
+
+    plan = build_authoring_plan([], {pair: [verdict]})
+
+    assert plan[0].surface == ".github/copilot-instructions.md"
+
+
+def test_authoring_plan_ignores_non_contradiction_verdicts() -> None:
+    """Coherent and partial verdicts produce no reconciliation action."""
+    coherence = {
+        "AGENTS.md__vs__CLAUDE.md": [
+            {
+                "section_slug": "sample",
+                "section_display": "Sample",
+                "verdict": COHERENCE_COHERENT,
+                "rationale": "shared",
+            },
+            {
+                "section_slug": "other",
+                "section_display": "Other",
+                "verdict": COHERENCE_PARTIAL,
+                "rationale": "one-sided",
+            },
+        ]
+    }
+
+    assert build_authoring_plan([], coherence) == []
+
+
+def test_authoring_plan_is_empty_for_no_scans_and_no_coherence() -> None:
+    """Nothing to scan and nothing to reconcile yields no actions."""
+    assert build_authoring_plan([], {}) == []
