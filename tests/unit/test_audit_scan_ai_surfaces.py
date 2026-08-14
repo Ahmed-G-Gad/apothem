@@ -15,22 +15,39 @@ green-before / green-after baseline. Where current behavior is surprising, the
 test says so in its docstring rather than quietly asserting the surprise as
 intent.
 
-Scope. The parsing and presence-detection core: heading extraction with body
-slicing, the keyword and signature matchers, and the four-branch presence
-verdict. These are pure functions over strings — no filesystem, no argv.
+Scope. Three layers. The parsing and presence-detection core (pure functions
+over strings), the per-surface scan (the one layer that touches the
+filesystem, exercised against ``tmp_path``), and the pairwise coherence
+heuristic that compares two scanned surfaces.
 """
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from apothem.audit.scan_ai_surfaces import (
+    COHERENCE_COHERENT,
+    COHERENCE_CONTRADICTS,
+    COHERENCE_NOT_APPLICABLE,
+    COHERENCE_PARTIAL,
     PRESENCE_ABSENT,
     PRESENCE_PRESENT,
     PRESENCE_RENAMED_PREFIX,
+    SURFACE_ABSENT,
+    SURFACE_PARTIAL,
+    SURFACE_PRESENT,
     CanonicalSection,
+    SurfaceDescriptor,
+    SurfaceScan,
     body_signature_count,
+    build_coherence_map,
+    coherence_verdict_for,
     detect_section_presence,
     heading_text_matches,
     parse_headings,
+    scan_surface,
+    section_present_in_scan,
+    shared_claim_overlap,
 )
 
 
@@ -203,3 +220,198 @@ def test_detect_presence_no_keyword_and_no_signature_is_absent() -> None:
 def test_detect_presence_on_empty_document_is_absent() -> None:
     """An empty surface has no headings and no signatures."""
     assert detect_section_presence(_section(), [], "") == PRESENCE_ABSENT
+
+
+# --- scan_surface -----------------------------------------------------------
+
+
+def _descriptor(path: str = "AGENTS.md") -> SurfaceDescriptor:
+    """Build a mandatory surface descriptor pointing at ``path``."""
+    return SurfaceDescriptor(path=path, role="test surface", mandatory=True)
+
+
+def test_scan_surface_missing_file_is_absent(tmp_path: Path) -> None:
+    """A surface that does not exist scans as absent with no digest.
+
+    Post-conditions: every canonical section is marked absent, so the
+    downstream authoring plan sees a complete gap rather than a partial one.
+    """
+    scan = scan_surface(_descriptor(), tmp_path)
+
+    assert scan.presence == SURFACE_ABSENT
+    assert scan.sha256 is None
+    assert scan.line_count == 0
+    assert scan.headings == []
+    assert set(scan.section_presence.values()) == {PRESENCE_ABSENT}
+
+
+def test_scan_surface_empty_file_is_partial_not_absent(tmp_path: Path) -> None:
+    """An existing but empty file is partial — the file exists, the content does not.
+
+    This is the distinction that keeps "never authored" separate from
+    "authored then emptied"; both would otherwise read as absent.
+    """
+    (tmp_path / "AGENTS.md").write_text("", encoding="utf-8")
+
+    scan = scan_surface(_descriptor(), tmp_path)
+
+    assert scan.presence == SURFACE_PARTIAL
+    assert scan.sha256 is None
+
+
+def test_scan_surface_directory_at_the_path_is_absent(tmp_path: Path) -> None:
+    """A directory where a file is expected reads as absent, not as an error."""
+    (tmp_path / "AGENTS.md").mkdir()
+
+    assert scan_surface(_descriptor(), tmp_path).presence == SURFACE_ABSENT
+
+
+def test_scan_surface_populated_file_hashes_and_parses(tmp_path: Path) -> None:
+    """A present surface carries a digest, a line count, and parsed headings."""
+    (tmp_path / "AGENTS.md").write_text(
+        "# Plans Discipline\nthis MUST hold\n", encoding="utf-8"
+    )
+
+    scan = scan_surface(_descriptor(), tmp_path)
+
+    assert scan.presence == SURFACE_PRESENT
+    assert scan.sha256 is not None
+    assert len(scan.sha256) == 64
+    assert scan.line_count == 2
+    assert [block.text for block in scan.headings] == ["Plans Discipline"]
+
+
+def test_scan_surface_digest_is_content_addressed(tmp_path: Path) -> None:
+    """Identical bytes at different paths produce the same digest."""
+    (tmp_path / "AGENTS.md").write_text("# Same\nbody\n", encoding="utf-8")
+    (tmp_path / "CLAUDE.md").write_text("# Same\nbody\n", encoding="utf-8")
+
+    first = scan_surface(_descriptor("AGENTS.md"), tmp_path)
+    second = scan_surface(_descriptor("CLAUDE.md"), tmp_path)
+
+    assert first.sha256 == second.sha256
+
+
+# --- coherence --------------------------------------------------------------
+
+
+def _scan(content: str, path: str = "AGENTS.md") -> SurfaceScan:
+    """Build a present SurfaceScan over ``content`` without touching disk."""
+    section = _section()
+    headings = parse_headings(content)
+    return SurfaceScan(
+        descriptor=_descriptor(path),
+        presence=SURFACE_PRESENT,
+        sha256="0" * 64,
+        line_count=len(content.splitlines()),
+        headings=headings,
+        section_presence={
+            section.slug: detect_section_presence(section, headings, content)
+        },
+        raw_content=content,
+    )
+
+
+def test_section_present_in_scan_counts_renamed_as_present() -> None:
+    """A renamed section still counts as present — the claim exists, retitled."""
+    scan = _scan("# Some Other Title\nthis MUST hold\n")
+
+    assert scan.section_presence["sample"].startswith(PRESENCE_RENAMED_PREFIX)
+    assert section_present_in_scan(scan, "sample")
+
+
+def test_section_present_in_scan_unknown_slug_reads_absent() -> None:
+    """A slug the scan never recorded defaults to absent rather than raising."""
+    assert not section_present_in_scan(_scan("# Plans Discipline\nbody\n"), "unknown")
+
+
+def test_shared_claim_overlap_partitions_signatures() -> None:
+    """Signatures split into shared, only-A, and only-B buckets."""
+    section = _section(signatures=("ALPHA", "BETA", "GAMMA"))
+    scan_a = _scan("# Plans Discipline\nALPHA BETA\n")
+    scan_b = _scan("# Plans Discipline\nALPHA GAMMA\n", path="CLAUDE.md")
+
+    assert shared_claim_overlap(section, scan_a, scan_b) == (1, 1, 1)
+
+
+def test_coherence_is_not_applicable_when_one_surface_lacks_the_section() -> None:
+    """Coherence is undefined until both surfaces author the section."""
+    present = _scan("# Plans Discipline\nMUST\n")
+    missing = _scan("# Unrelated\nplain prose\n", path="CLAUDE.md")
+
+    verdict = coherence_verdict_for(_section(), present, missing)
+
+    assert verdict.verdict == COHERENCE_NOT_APPLICABLE
+
+
+def test_coherence_is_coherent_when_claims_are_symmetric() -> None:
+    """Shared signatures with no asymmetry read as coherent."""
+    section = _section(signatures=("ALPHA",))
+    scan_a = _scan("# Plans Discipline\nALPHA\n")
+    scan_b = _scan("# Plans Discipline\nALPHA\n", path="CLAUDE.md")
+
+    assert coherence_verdict_for(section, scan_a, scan_b).verdict == COHERENCE_COHERENT
+
+
+def test_coherence_is_partial_when_only_one_side_claims() -> None:
+    """A one-sided claim is partial — reconcilable by mirroring, not a conflict."""
+    section = _section(signatures=("ALPHA", "BETA"))
+    scan_a = _scan("# Plans Discipline\nALPHA BETA\n")
+    scan_b = _scan("# Plans Discipline\nALPHA\n", path="CLAUDE.md")
+
+    assert coherence_verdict_for(section, scan_a, scan_b).verdict == COHERENCE_PARTIAL
+
+
+def test_coherence_is_partial_when_headings_exist_but_no_signatures() -> None:
+    """Both headings present with no signatures anywhere is partial, not coherent.
+
+    Absence of evidence on both sides is not evidence of agreement; the
+    rigorous test lives in the multi-surface coherence validator.
+    """
+    section = _section(signatures=("ALPHA",))
+    scan_a = _scan("# Plans Discipline\nprose only\n")
+    scan_b = _scan("# Plans Discipline\nother prose\n", path="CLAUDE.md")
+
+    assert coherence_verdict_for(section, scan_a, scan_b).verdict == COHERENCE_PARTIAL
+
+
+def test_coherence_contradicts_when_both_sides_claim_asymmetrically() -> None:
+    """Each surface carrying a claim the other lacks is a candidate contradiction."""
+    section = _section(signatures=("ALPHA", "BETA"))
+    scan_a = _scan("# Plans Discipline\nALPHA\n")
+    scan_b = _scan("# Plans Discipline\nBETA\n", path="CLAUDE.md")
+
+    verdict = coherence_verdict_for(section, scan_a, scan_b)
+
+    assert verdict.verdict == COHERENCE_CONTRADICTS
+    assert "only-A=1" in verdict.rationale
+
+
+def test_build_coherence_map_skips_surfaces_that_are_not_present() -> None:
+    """Only present surfaces enter the pairwise map."""
+    present = _scan("# Plans Discipline\nMUST\n")
+    absent = SurfaceScan(
+        descriptor=_descriptor("CLAUDE.md"),
+        presence=SURFACE_ABSENT,
+        sha256=None,
+        line_count=0,
+        headings=[],
+        section_presence={},
+        raw_content="",
+    )
+
+    assert build_coherence_map([present, absent]) == {}
+
+
+def test_build_coherence_map_keys_each_unordered_pair_once() -> None:
+    """Three present surfaces yield three pairs, not six — order is not repeated."""
+    scans = [
+        _scan("# Plans Discipline\nMUST\n", path="AGENTS.md"),
+        _scan("# Plans Discipline\nMUST\n", path="CLAUDE.md"),
+        _scan("# Plans Discipline\nMUST\n", path=".github/copilot-instructions.md"),
+    ]
+
+    coherence = build_coherence_map(scans)
+
+    assert len(coherence) == 3
+    assert "AGENTS.md__vs__CLAUDE.md" in coherence
