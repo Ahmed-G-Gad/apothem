@@ -33,10 +33,10 @@ from apothem.audit.build_plans_provenance import (
     _kebab_slug,
     _load_known_projects,
     _matches_project,
-    _parse_frontmatter,
     _proposed_filename,
-    _strip_frontmatter,
     _suite_of,
+    parse_frontmatter,
+    strip_frontmatter,
 )
 
 # --- frontmatter ------------------------------------------------------------
@@ -44,7 +44,7 @@ from apothem.audit.build_plans_provenance import (
 
 def test_parse_frontmatter_absent_block_yields_no_fields() -> None:
     """Content with no frontmatter parses to an empty mapping."""
-    assert _parse_frontmatter("# Heading\nbody\n") == {}
+    assert parse_frontmatter("# Heading\nbody\n") == {}
 
 
 def test_parse_frontmatter_extracts_the_three_tracked_fields() -> None:
@@ -63,7 +63,7 @@ def test_parse_frontmatter_extracts_the_three_tracked_fields() -> None:
         "body\n"
     )
 
-    fields = _parse_frontmatter(content)
+    fields = parse_frontmatter(content)
 
     assert fields == {
         "project": "apothem",
@@ -74,19 +74,19 @@ def test_parse_frontmatter_extracts_the_three_tracked_fields() -> None:
 
 def test_parse_frontmatter_only_matches_at_the_start_of_content() -> None:
     """A delimiter block further down the file is body text, not frontmatter."""
-    assert _parse_frontmatter("intro\n---\ntitle: Not Frontmatter\n---\n") == {}
+    assert parse_frontmatter("intro\n---\ntitle: Not Frontmatter\n---\n") == {}
 
 
 def test_strip_frontmatter_removes_only_the_leading_block() -> None:
     """The body after the closing delimiter survives intact."""
     content = "---\ntitle: T\n---\n# Heading\nbody\n"
 
-    assert _strip_frontmatter(content) == "# Heading\nbody\n"
+    assert strip_frontmatter(content) == "# Heading\nbody\n"
 
 
 def test_strip_frontmatter_passes_content_through_when_absent() -> None:
     """Content with no frontmatter is returned unchanged."""
-    assert _strip_frontmatter("# Heading\n") == "# Heading\n"
+    assert strip_frontmatter("# Heading\n") == "# Heading\n"
 
 
 # --- slug and heading -------------------------------------------------------

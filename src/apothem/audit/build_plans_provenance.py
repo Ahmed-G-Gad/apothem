@@ -68,6 +68,15 @@ from pathlib import Path
 from typing import Any, Final
 
 # ---------------------------------------------------------------------------
+# Frontmatter parsing lives in ``plan_frontmatter``: the grammar plus the
+# two readers over it. Public names, because other stages import them.
+# ---------------------------------------------------------------------------
+from apothem.audit.plan_frontmatter import (
+    parse_frontmatter,
+    strip_frontmatter,
+)
+
+# ---------------------------------------------------------------------------
 # The confidence ladder, destination text, plan extensions, suite-name
 # hints, and ecosystem-self marker live in
 # ``plans_provenance_vocabulary`` — the terms downstream consumers read.
@@ -129,22 +138,6 @@ _FILE_REF_RE: Final[re.Pattern[str]] = re.compile(
     r"\b[\w./-]+\.(?:py|js|ts|tsx|rs|go|java|rb|sh|md|yml|yaml|json|toml|ini)\b"
 )
 
-_FRONTMATTER_RE: Final[re.Pattern[str]] = re.compile(
-    r"\A---\s*\n(.*?)\n---\s*\n",
-    re.DOTALL,
-)
-_FRONTMATTER_PROJECT_RE: Final[re.Pattern[str]] = re.compile(
-    r"^project:\s*(.+?)\s*$",
-    re.MULTILINE,
-)
-_FRONTMATTER_TITLE_RE: Final[re.Pattern[str]] = re.compile(
-    r"^title:\s*(.+?)\s*$",
-    re.MULTILINE,
-)
-_FRONTMATTER_CREATED_RE: Final[re.Pattern[str]] = re.compile(
-    r"^created:\s*(.+?)\s*$",
-    re.MULTILINE,
-)
 _H1_RE: Final[re.Pattern[str]] = re.compile(r"^#\s+(.+?)\s*$", re.MULTILINE)
 
 
@@ -207,33 +200,8 @@ def _read_text(path: Path) -> str:
         return ""
 
 
-def _parse_frontmatter(content: str) -> dict[str, str]:
-    match = _FRONTMATTER_RE.match(content)
-    if not match:
-        return {}
-    body = match.group(1)
-    fields: dict[str, str] = {}
-    project = _FRONTMATTER_PROJECT_RE.search(body)
-    if project:
-        fields["project"] = project.group(1).strip()
-    title = _FRONTMATTER_TITLE_RE.search(body)
-    if title:
-        fields["title"] = title.group(1).strip()
-    created = _FRONTMATTER_CREATED_RE.search(body)
-    if created:
-        fields["created"] = created.group(1).strip()
-    return fields
-
-
-def _strip_frontmatter(content: str) -> str:
-    match = _FRONTMATTER_RE.match(content)
-    if not match:
-        return content
-    return content[match.end() :]
-
-
 def _scan_signals(content: str) -> Signals:
-    body = _strip_frontmatter(content)
+    body = strip_frontmatter(content)
     return Signals(
         repo_urls=sorted(set(_REPO_URL_RE.findall(body))),
         abs_paths=sorted(set(_ABS_PATH_RE.findall(body))),
@@ -252,7 +220,7 @@ def _kebab_slug(text: str) -> str:
 
 
 def _h1_of(content: str) -> str | None:
-    body = _strip_frontmatter(content)
+    body = strip_frontmatter(content)
     match = _H1_RE.search(body)
     return match.group(1).strip() if match else None
 
@@ -611,7 +579,7 @@ def _record_for(
     path = root / rel
     suite = _suite_of(rel)
     content = _read_text(path)
-    fm = _parse_frontmatter(content)
+    fm = parse_frontmatter(content)
     signals = _scan_signals(content)
     h1 = _h1_of(content)
     mtime = inventory_record.get("mtime", "")
@@ -986,9 +954,9 @@ __all__ = [
     "_kebab_slug",
     "_load_known_projects",
     "_matches_project",
-    "_parse_frontmatter",
     "_proposed_filename",
-    "_strip_frontmatter",
     "_suite_of",
     "main",
+    "parse_frontmatter",
+    "strip_frontmatter",
 ]
