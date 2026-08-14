@@ -525,7 +525,7 @@ Apothem decouples *what* you want every supported tool to do (your shared profil
 
 ```mermaid
 %%{ init: { "theme": "neutral" } }%%
-%% verified: 2026-06-26 %%
+%% verified: 2026-08-14 %%
 %% provenance: README.md §How it works — apothem's seventeen-harness materialization fan-out %%
 %% cross-reference: src/apothem/lib/harness_registry_data.py (the authoritative adapter registry) %%
 graph LR
@@ -566,7 +566,7 @@ Beyond syncing config, Apothem ships a disciplined loop for the changes you make
 
 ```mermaid
 %%{ init: { "theme": "neutral" } }%%
-%% verified: 2026-06-23 %%
+%% verified: 2026-08-14 %%
 %% provenance: README.md §The operating loop — CLAUDE.md "Operating Loop & Synthesis Posture" %%
 %% cross-reference: CLAUDE.md "Operating Loop & Synthesis Posture"; src/apothem/commands/plan.md + src/apothem/commands/fortress.md %%
 flowchart LR
