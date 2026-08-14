@@ -26,13 +26,11 @@ from __future__ import annotations
 from pathlib import Path
 
 from apothem.audit.build_plans_provenance import (
-    ProvenanceRecord,
     Signals,
     SuiteVerdict,
     _aggregate_suite,
     _filter_plan_records,
     _is_text_readable,
-    _record_to_dict,
     _resolve_suite,
     _scan_signals,
     _suite_name_hint,
@@ -314,31 +312,7 @@ def test_every_verdict_carries_the_aggregates_it_was_given() -> None:
     assert verdict.file_count == 3
 
 
-# --- record shaping ---------------------------------------------------------
-
-
-def test_record_to_dict_renames_fields_to_the_json_envelope_keys() -> None:
-    """Python's snake_case becomes the kebab-case the JSON contract uses."""
-    record = ProvenanceRecord(
-        path=".plans/s/f.md",
-        suite="s",
-        mtime="2026-01-15T00:00:00",
-        sha256="abc",
-        line_count=12,
-        frontmatter_project=None,
-        signals=Signals(),
-        inferred_destination="dc-kit",
-        confidence=CONFIDENCE_HIGH,
-        proposed_destination_filename="2026-01-15--f.md",
-        notes=[],
-    )
-
-    payload = _record_to_dict(record)
-
-    assert payload["line-count"] == 12
-    assert payload["frontmatter-project"] is None
-    assert payload["proposed-destination-filename"] == "2026-01-15--f.md"
-    assert payload["signals"]["eco_path_hits"] == 0
+# --- record filtering -------------------------------------------------------
 
 
 def test_filter_plan_records_keeps_every_plan_artifact_class() -> None:
