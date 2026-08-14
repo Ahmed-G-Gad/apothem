@@ -17,6 +17,28 @@ All notable changes to this project are documented in this file.
 This changelog follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **The `Stop` hook no longer re-asserts the session-end protocol on every turn.**
+  `Stop` fires at the end of every assistant turn, not only at the end of a
+  session, and the hook emitted `hooks/messages/stop.md` verbatim each time. Because
+  that body reads as a fresh work order rather than a status check, every response
+  triggered another firing and nothing the agent did changed what the hook
+  asserted — the loop had no fixed point, and an operator could only escape it by
+  restarting the harness, since hook configuration and message bodies are both
+  snapshotted at session start. A new dispatch-routed handler,
+  `hooks/session_end_gate.py`, supplies the missing termination condition: the
+  protocol is emitted at most once per session, and only once the session has
+  accumulated enough turn-ends to have state worth externalizing. The message file
+  still owns the protocol text — the gate decides only when it is emitted — so its
+  path and its cross-references from `rules/context-management.md` and
+  `rules/auto-memory.md` are unchanged. Two environment variables tune it:
+  `APOTHEM_SESSION_END_MIN_STOPS` (default `3`) sets the firing floor, and
+  `APOTHEM_SESSION_END_ENABLED=0` silences the protocol entirely without editing
+  installed plugin files.
+
 ## [1.0.1] - 2026-07-07
 
 Apothem is a host-agnostic AI-harness configuration manager: one governed shared
