@@ -55,5 +55,8 @@ To change a mark: edit the `src/` source, then run
 [`scripts/dev/rebuild-assets-resvg.py`](../scripts/dev/rebuild-assets-resvg.py)
 and commit the regenerated outputs and `site/` mirrors in the same change-set.
 To change a hand-authored runtime SVG: edit it at the assets root, then rerun
-the generator's mirror step. Verify the toolchain and that committed outputs match
-sources with the generator's `--check-only` mode before handoff.
+the generator's mirror step. Before handoff, verify the toolchain with the
+generator's `--check-only` mode, then confirm the committed outputs still match
+their sources by rerunning the generator and checking that git reports no diff.
+`--check-only` resolves the renderer and returns without reading any committed
+file, so it cannot detect output drift on its own.
