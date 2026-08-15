@@ -27,6 +27,7 @@ flowchart TD
 
 | File | Purpose |
 |------|---------|
+| `hooks.json` | The hook-registration source of truth: which event fires which handler. A handler that is not registered here does not run, whatever its module says. |
 | `dispatch.py` | Unified Python entrypoint for all hook events — routes each event to its handler. |
 | `emit_hook_context.py` | Emit structured JSON context for hook events. |
 | `session_start_bootstrap.py` | Session-start bootstrap hook for the Apothem ecosystem. |
@@ -43,6 +44,7 @@ flowchart TD
 | `find-python.sh` / `find-python.ps1` | Python interpreter locators. |
 | `find-pwsh.sh` / `find-pwsh.ps1` | PowerShell interpreter locators. |
 | `events.py` | Single source of truth for the supported hook-event vocabulary. |
+| `stdin_json.py` | The one canonical reader for a hook's stdin payload, so the read path cannot drift between handlers. |
 | `log.py` | Shared logger factory for the hook scripts. |
 | `resolve_root.py` | Project-root resolution for the Apothem ecosystem. |
 | `__init__.py` | Package marker. |

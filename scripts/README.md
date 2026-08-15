@@ -21,6 +21,7 @@ Operator-, release-, install-, and dev-facing executables for the `apothem` repo
 | `regen-behavior-goldens.py` | Regenerate the behavior-diff golden corpus under `tests/fixtures/behavior-diff/` from the deterministic HOME-isolated install-driver and CLI oracles after an intended behavior change; the canonicalized comparison stays portable across platforms, so a non-empty `git diff` flags platform-form churn to review. |
 | `check_pip_pin_drift.py` | Assert every workflow's `PIP_PIN_VERSION` matches the canonical pin and no raw `pip==<version>` literal has been reintroduced. Invoked by CI. |
 | `check_site_version_parity.py` | Assert `site/package.json`'s version matches `pyproject.toml`'s. Both are hand-maintained and the site renders its copy in the landing footer, so drift is silent — the site simply advertises a release that is no longer shipping. Invoked by CI beside the pin-drift check. |
+| `check_readme_file_coverage.py` | Report every git-tracked file a folder ships that the folder's own README never names. A per-folder README is that folder's operating contract, so its file table is load-bearing — a module missing from it reads as nonexistent. Advisory by default; `--strict` exits non-zero and is how CI invokes it. |
 
 ## `installer/` — the canonical install scripts
 

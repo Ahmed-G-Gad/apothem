@@ -26,6 +26,18 @@ derive from it rather than re-declaring it.
   site is `output: 'export'`, so the index is emitted at build time and queried
   in the browser; this module holds the pure transform, with its `node --test`
   unit test alongside it (`search-index-core.test.mjs`, run by `npm test`).
+- **`search-index.ts`** — builds one Fumadocs `SearchAPI` **per locale** and owns
+  the Orama language / tokenizer choice for each. Fumadocs' `createFromSource`
+  would emit a single combined index that, with the English fallback tree indexed
+  under all twelve locales, exceeds the 100 MB per-file limit of the static host —
+  so the CDN refuses it and client search fails outright. One index per locale
+  keeps every file small. Mandarin and Japanese carry a dedicated `@orama/tokenizers`
+  tokenizer because neither script has whitespace word boundaries.
+- **`translated-pages.ts`** — enumerates the slugs a locale has *authored*, read
+  from `content/docs/<locale>/` rather than from the loader. The i18n loader merges
+  each locale's storage with the English fallback, so asking it would report the
+  whole fallback tree as translated; reading the filesystem keeps static params
+  tied to the real translated surface.
 - **`source.ts`** / **`utils.ts`** — the Fumadocs content-source binding and the
   `cn()` class-name helper the components use.
 

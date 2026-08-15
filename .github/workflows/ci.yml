@@ -458,7 +458,13 @@ jobs:
         # one number drift silently — nothing breaks, the site just advertises
         # a release that is no longer shipping.
         run: python scripts/dev/check_site_version_parity.py
-      - name: Install release toolchain
+      - name: Check per-folder README file coverage
+        # A folder's README is its operating contract, so its file table is
+        # load-bearing: a reader who cannot find a module there concludes it
+        # does not exist. Nothing held that table against the folder's actual
+        # contents, and the drift is invisible from both sides — you do not
+        # notice a missing row while reading, or the README while adding a file.
+        run: python scripts/dev/check_readme_file_coverage.py --strict
         run: python -m pip install --require-hashes -r scripts/release/requirements-build-linux.txt
       - name: Build sdist + wheel
         run: python -m build
