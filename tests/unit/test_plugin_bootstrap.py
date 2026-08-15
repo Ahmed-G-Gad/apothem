@@ -141,3 +141,36 @@ def test_bootstrapped_root_tracks_last_root(
     bootstrap_syspath(plugin_root)
 
     assert bootstrapped_root() == plugin_root.resolve()
+
+
+def test_bootstrap_hoists_entries_already_on_syspath(
+    tmp_path: Path, isolate_syspath: None
+) -> None:
+    """A pre-existing entry is moved to the front, not left where it sat.
+
+    The self-containment guarantee is positional: the bundled tree must win
+    the import against a system-installed copy. An entry inherited from
+    ``PYTHONPATH`` or added by an embedding host already satisfies a bare
+    membership test, so an "insert only if absent" check would leave it
+    behind whatever precedes it and silently forfeit that guarantee.
+    """
+    plugin_root = tmp_path / "plugin"
+    lib_dir = plugin_root / "lib"
+    vendor_dir = lib_dir / "apothem" / "_vendor"
+    vendor_dir.mkdir(parents=True)
+
+    # Both entries are already present, but buried behind a competing path
+    # that would otherwise resolve `apothem` first.
+    competitor = str(tmp_path / "system-site-packages")
+    sys.path.insert(0, str(lib_dir))
+    sys.path.insert(0, str(vendor_dir))
+    sys.path.insert(0, competitor)
+
+    bootstrap_syspath(plugin_root)
+
+    # The documented post-condition holds: vendor at [0], lib ahead of the
+    # competitor, and no entry duplicated by the hoist.
+    assert sys.path[0] == str(vendor_dir)
+    assert sys.path.index(str(lib_dir)) < sys.path.index(competitor)
+    assert sys.path.count(str(lib_dir)) == 1
+    assert sys.path.count(str(vendor_dir)) == 1
