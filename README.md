@@ -393,9 +393,13 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 
 **Prerequisites:** VS Code, Node.js 18+, and system Python 3.10+ on `PATH`.
 
-Install the **Apothem** extension from the
-[Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=ahmed-g-gad.apothem) —
-one extension covers VS Code and GitHub Copilot. Its commands (`Apothem:
+The **Apothem** extension ships as the signed `apothem.vsix` artifact attached
+to each GitHub Release — install it with `code --install-extension apothem.vsix`
+or through the editor's *Install from VSIX…* command. One extension covers VS
+Code and GitHub Copilot. A
+[Visual Studio Marketplace](https://marketplace.visualstudio.com/) listing is
+not yet published: the `apothem` name is held by another publisher, so the
+identifier is still unresolved. Its commands (`Apothem:
 Install`, `Verify`, `Update`, `Uninstall`, `Doctor`) run the same engine
 through the configured runner (`npx @ahmed-g-gad/apothem` by default). Source
 lives under [`vscode-extension/`](vscode-extension/).

@@ -2,7 +2,7 @@
 name: "workflow"
 version: "0.1.0"
 updated: "2026-06-14"
-description: "General-purpose workflow-harnessing skill — matched when the operator states a mission via '/goal <<mission>>', asks to 'harness a workflow', 'run a multi-agent workflow', 'orchestrate agents', 'fan out and verify', 'critique and remediate', 'maximally elevate' a target, or otherwise hands off a non-trivial multi-step mission whose accomplishment benefits from genuinely-independent parallel work plus adversarial verification. Decomposes the mission, dispatches independent agents under named return contracts (non-overlapping scope, isolation where parallel writes collide, single-message parallel launch), subjects every load-bearing finding to an EXTREMELY-CRITIQUE refute-by-default verification pass (N independent critics per finding, default 3, distinct lenses — correctness/security/reproducibility/regression — survival only on non-refute majority) before it survives, is granted to identify and remediate defects beyond the literal mission (each disclosed per rules/disclosure-ledger.md), self-augments from current authoritative SOTA sources rather than memory alone, and emits a deterministic, byte-stable result. Multi-agent dispatch and continuous auto-execution are opt-in / confirmation-gated, never default-on — the canonical home for the '/goal <<mission>>' entry pattern. A single-step request that one direct tool call resolves is below this skill's threshold."
+description: "General-purpose workflow-harnessing skill — matched when the operator states a mission via '/workflow <<mission>>', asks to 'harness a workflow', 'run a multi-agent workflow', 'orchestrate agents', 'fan out and verify', 'critique and remediate', 'maximally elevate' a target, or otherwise hands off a non-trivial multi-step mission whose accomplishment benefits from genuinely-independent parallel work plus adversarial verification. Decomposes the mission, dispatches independent agents under named return contracts (non-overlapping scope, isolation where parallel writes collide, single-message parallel launch), subjects every load-bearing finding to an EXTREMELY-CRITIQUE refute-by-default verification pass (N independent critics per finding, default 3, distinct lenses — correctness/security/reproducibility/regression — survival only on non-refute majority) before it survives, is granted to identify and remediate defects beyond the literal mission (each disclosed per rules/disclosure-ledger.md), self-augments from current authoritative SOTA sources rather than memory alone, and emits a deterministic, byte-stable result. Multi-agent dispatch and continuous auto-execution are opt-in / confirmation-gated, never default-on — the canonical home for the '/workflow <<mission>>' entry pattern. A single-step request that one direct tool call resolves is below this skill's threshold."
 archetype: "orchestration-template"
 userInvocable: true
 argument-hint: "[<<mission>>] [--autonomous] [--verify-panel N]"
@@ -14,11 +14,11 @@ allowed-tools: "Read, Write, Edit, Glob, Grep, Bash, Agent, WebSearch, WebFetch,
 
 ## Purpose
 
-Harness a non-trivial mission into a disciplined multi-agent workflow: decompose it, dispatch genuinely-independent agents under named return contracts, subject every finding to an adversarial refute-by-default verification pass, remediate the mission plus any defect expertise reveals along the way (disclosing each amendment), and emit a deterministic result with a single recommended next move. The skill is the operator's general-purpose orchestration surface — the canonical home for the `/goal <<mission>>` entry pattern — and it honors apothem's agnostic posture: the heavy machinery engages only when the operator opts in.
+Harness a non-trivial mission into a disciplined multi-agent workflow: decompose it, dispatch genuinely-independent agents under named return contracts, subject every finding to an adversarial refute-by-default verification pass, remediate the mission plus any defect expertise reveals along the way (disclosing each amendment), and emit a deterministic result with a single recommended next move. The skill is the operator's general-purpose orchestration surface — the canonical home for the `/workflow <<mission>>` entry pattern — and it honors apothem's agnostic posture: the heavy machinery engages only when the operator opts in.
 
 ## Detection Signal
 
-The operator states a mission through `/goal <<mission>>`, or asks to "harness a workflow", "run a multi-agent workflow", "orchestrate agents", "fan out and verify", "critique and remediate", or "maximally elevate" a target — any non-trivial, multi-step mission whose accomplishment benefits from independent parallel work plus adversarial verification.
+The operator states a mission through `/workflow <<mission>>`, or asks to "harness a workflow", "run a multi-agent workflow", "orchestrate agents", "fan out and verify", "critique and remediate", or "maximally elevate" a target — any non-trivial, multi-step mission whose accomplishment benefits from independent parallel work plus adversarial verification.
 
 **Falsifiable counter-signal.** A single-step request that one direct tool call resolves is below this skill's threshold — it routes to the direct tool, not the harness.
 
@@ -110,7 +110,7 @@ Autonomy is opt-in, never the shipped default, per `rules/agnostic-posture.md`. 
 
 ## Arguments
 
-- `<<mission>>` — the mission / task / requirement in natural language (the `/goal <<mission>>` entry form).
+- `<<mission>>` — the mission / task / requirement in natural language (the `/workflow <<mission>>` entry form).
 - `--autonomous` — opt into continuous multi-agent dispatch + advancement (default: planned, confirm-before-commit).
 - `--verify-panel N` — critics per finding in the adversarial-verify pass (default: 3).
 
@@ -128,11 +128,11 @@ Output shape is byte-stable for identical inputs per `rules/determinism.md`; any
 
 ## Recommended Next Step
 
-**State your mission as `/goal <<mission>>`** (add `--autonomous` to opt into continuous multi-agent dispatch); the harness frames it, decomposes the dispatch, runs the adversarial-verify pass, and returns the verified result with a single forward move. Begin in planned mode and opt into autonomy only once the dispatch plan reads correctly.
+**State your mission as `/workflow <<mission>>`** (add `--autonomous` to opt into continuous multi-agent dispatch); the harness frames it, decomposes the dispatch, runs the adversarial-verify pass, and returns the verified result with a single forward move. Begin in planned mode and opt into autonomy only once the dispatch plan reads correctly.
 
 ## Bindings (§0.j five-direction)
 
-- **Drives →** ● Every operator mission handed off via `/goal <<mission>>` (the skill is user-invocable; the orchestration surface for general missions). ● Every adversarial-verify pass that gates a finding before it survives. ● Every beyond-mission amendment disclosed through the ledger. ◐ The opt-in autonomy path that restores continuous multi-agent dispatch.
+- **Drives →** ● Every operator mission handed off via `/workflow <<mission>>` (the skill is user-invocable; the orchestration surface for general missions). ● Every adversarial-verify pass that gates a finding before it survives. ● Every beyond-mission amendment disclosed through the ledger. ◐ The opt-in autonomy path that restores continuous multi-agent dispatch.
 - **Satisfies →** ● `CLAUDE.md` Source Layout row "workflow" (skills/ class). ● The multi-agent independent-critique / synthesis / lean-thread capability declared at `rules/multi-agent-workflow.md`. ● The deterministic-output contract at `rules/determinism.md`. ● The agnostic default-off posture at `rules/agnostic-posture.md`.
 - **Established by ↑** ● `rules/agent-orchestration.md` (the team patterns + dispatch discipline this skill orchestrates). ● `rules/agent-orchestration-patterns.md` §Quality patterns (the judge-panel + adversarial-verify pattern). ● `rules/agnostic-posture.md` (the opt-in default-off frame). ● `rules/multi-agent-workflow.md` (the rule that declares this independent-critique / synthesis / lean-thread capability available and opt-in; this skill is the procedure that realizes it).
 - **Gated by ←** ● The harness's Agent + structured-inquiry + Edit + Write + WebSearch + WebFetch tool surface. ● The operator's opt-in for autonomous dispatch. ● The destructive-op floor for irreversible / outward-facing steps.

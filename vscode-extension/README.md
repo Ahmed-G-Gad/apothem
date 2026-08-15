@@ -36,5 +36,9 @@ local checkout instead, set **`apothem.runner`** in Settings (for example,
 - Documentation: <https://apothem.ahmedgad.com/>
 - Source and issues: <https://github.com/ahmed-g-gad/apothem>
 
-Published to the Visual Studio Marketplace so it installs across the VS Code
-family and manages the GitHub Copilot instruction surface.
+Distributed as the signed `apothem.vsix` attached to each GitHub Release —
+install with `code --install-extension apothem.vsix`, or the editor's *Install
+from VSIX…* command. It installs across the VS Code family and manages the
+GitHub Copilot instruction surface. A Marketplace listing is not yet published:
+the `apothem` name is held by another publisher, so the extension identifier is
+still unresolved.
