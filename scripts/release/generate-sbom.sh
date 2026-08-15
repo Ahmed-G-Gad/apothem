@@ -118,7 +118,12 @@ PY
 
 # Sanity-check that the output is non-empty JSON with expected SPDX shape AND
 # that every vendored distribution is enumerated.
-if ! python -c "import json,sys; d=json.load(open(sys.argv[1])); assert d.get('spdxVersion','').startswith('SPDX'), 'not an SPDX document'; assert d.get('packages'), 'no packages enumerated'; names={p.get('name','').lower() for p in d['packages']}; missing=[v for v in ('attrs','jsonschema','jsonschema-specifications','referencing','pyyaml','typing-extensions') if v not in names]; assert not missing, 'vendored packages missing from SBOM: '+', '.join(missing)" "${OUT_PATH}" 2>/dev/null; then
+if ! python -c "import json,sys; d=json.load(open(sys.argv[1])); assert d.get('spdxVersion','').startswith('SPDX'), 'not an SPDX document'; assert d.get('packages'), 'no packages enumerated'; names={p.get('name','').lower() for p in d['packages']}; missing=[v for v in ('attrs','jsonschema','jsonschema-specifications','referencing','pyyaml','typing-extensions') if v not in names]; assert not missing, 'vendored packages missing from SBOM: '+', '.join(missing)" "${OUT_PATH}"; then
+    # stderr is deliberately NOT suppressed: the assertion text above names
+    # which check failed and, for the vendored set, exactly which distributions
+    # are absent. Swallowing it left the operator to re-run this same Python by
+    # hand to learn anything, and diverged from the .ps1 sibling, which surfaces
+    # the message.
     printf 'generate-sbom: emitted SBOM failed shape/vendored-package validation\n' >&2
     exit 1
 fi

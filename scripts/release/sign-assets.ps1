@@ -31,8 +31,13 @@ if (-not (Test-Path -LiteralPath $AssetsDir)) {
 Push-Location $AssetsDir
 try {
     $env:COSIGN_EXPERIMENTAL = '1'
+    # SHA256SUMS is excluded here because the block below signs it on its own.
+    # Each keyless sign-blob mints a fresh Fulcio certificate and a Rekor
+    # transparency-log entry, so enumerating the manifest in both places would
+    # overwrite its outputs and strand one Rekor entry per release.
     $assets = @(Get-ChildItem -LiteralPath $AssetsDir -File | Where-Object {
-        $_.Name -notlike '*.sig' -and $_.Name -notlike '*.crt'
+        $_.Name -notlike '*.sig' -and $_.Name -notlike '*.crt' -and
+        $_.Name -ne 'SHA256SUMS'
     })
 
     foreach ($asset in $assets) {
@@ -44,15 +49,18 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "cosign sign-blob failed on $($asset.Name)" }
     }
 
+    $signed = $assets.Count
     if (Test-Path -LiteralPath 'SHA256SUMS') {
+        Write-Information 'sign-assets: signing SHA256SUMS' -InformationAction Continue
         & cosign sign-blob --yes `
             --output-signature 'SHA256SUMS.sig' `
             --output-certificate 'SHA256SUMS.crt' `
             'SHA256SUMS'
         if ($LASTEXITCODE -ne 0) { throw 'cosign sign-blob failed on SHA256SUMS' }
+        $signed++
     }
 
-    Write-Information "sign-assets: signed $($assets.Count) artifacts" -InformationAction Continue
+    Write-Information "sign-assets: signed $signed artifacts" -InformationAction Continue
     Write-Information 'sign-assets: OK' -InformationAction Continue
 } finally {
     Pop-Location

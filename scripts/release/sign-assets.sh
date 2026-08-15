@@ -40,7 +40,12 @@ export COSIGN_EXPERIMENTAL=1
 assets=()
 while IFS= read -r _asset; do
     assets+=("${_asset#./}")
-done < <(find . -maxdepth 1 -type f ! -name '*.sig' ! -name '*.crt')
+#
+# SHA256SUMS is excluded here because the block below signs it on its own. Each
+# keyless `sign-blob` mints a fresh Fulcio certificate and a Rekor
+# transparency-log entry, so enumerating the manifest in both places would
+# overwrite its outputs and strand one Rekor entry per release.
+done < <(find . -maxdepth 1 -type f ! -name '*.sig' ! -name '*.crt' ! -name 'SHA256SUMS')
 
 for asset in "${assets[@]}"; do
     printf 'sign-assets: signing %s\n' "${asset}" >&2
@@ -51,12 +56,15 @@ for asset in "${assets[@]}"; do
 done
 
 # Sign the manifest itself last; consumers verify SHA256SUMS first, then per-file.
+signed=${#assets[@]}
 if [[ -f SHA256SUMS ]]; then
+    printf 'sign-assets: signing SHA256SUMS\n' >&2
     cosign sign-blob --yes \
         --output-signature SHA256SUMS.sig \
         --output-certificate SHA256SUMS.crt \
         SHA256SUMS
+    signed=$((signed + 1))
 fi
 
-printf 'sign-assets: signed %d artifacts\n' "${#assets[@]}" >&2
+printf 'sign-assets: signed %d artifacts\n' "${signed}" >&2
 printf 'sign-assets: OK\n' >&2
