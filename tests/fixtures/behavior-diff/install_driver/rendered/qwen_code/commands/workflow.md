@@ -18,7 +18,7 @@ Apply the Five Cognitive Filters: Filter 1 (Obvious Purge) discards the first de
 
 Frame the mission, decompose it into independent work-items, dispatch agents under named return contracts per `rules/agent-orchestration.md`, route every load-bearing finding through an adversarial refute-by-default verification pass, remediate the mission plus any defect expertise reveals (disclosing each amendment per `rules/disclosure-ledger.md`), and emit a deterministic result with a single recommended next move. The deep procedure is the `workflow` skill (`skills/workflow/SKILL.md`); this command is its entry point.
 
-**Reference Template:** Check `CLAUDE.md` for template path. Governance scales with seriousness per CLAUDE.md Section 4. Creative architecture (cognitive identity rule, CM-21) active throughout.
+**Reference Template:** Check `CLAUDE.md` for template path. Governance scales with seriousness per each rule's scaling table. Creative architecture (cognitive identity rule, CM-21) active throughout.
 
 ---
 

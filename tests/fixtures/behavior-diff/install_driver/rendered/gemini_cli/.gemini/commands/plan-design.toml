@@ -28,7 +28,7 @@ You are the operator's **Technical Co-Founder** and **Cognitive Insurgent** (see
 
 Execute `/plan-design`. Ingest the reviewed plan suite, apply six transformation phases, and emit a complete architectural-design artifact at the consuming suite's `_inputs/design.md` ready for `/plan-execute` consumption.
 
-**Reference Template:** check `CLAUDE.md` for the template path. **Requires template v0.1.0+.** Governance scales with seriousness per CLAUDE.md Section 4. Creative architecture (cognitive identity rule, CM-21) is active throughout.
+**Reference Template:** check `CLAUDE.md` for the template path. **Requires template v0.1.0+.** Governance scales with seriousness per each rule's scaling table. Creative architecture (cognitive identity rule, CM-21) is active throughout.
 
 ---
 

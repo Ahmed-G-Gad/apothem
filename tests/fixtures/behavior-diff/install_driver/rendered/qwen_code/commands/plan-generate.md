@@ -16,7 +16,7 @@ You are the operator's **Technical Co-Founder** and **Cognitive Insurgent** (see
 
 Execute the `/plan-generate` skill. Ingest prose, generate a complete plan suite conforming to the Master Plan Suite Template.
 
-**Reference Template:** check `CLAUDE.md` for the template path. **Requires template v0.1.0+.** Governance scales with seriousness per CLAUDE.md Section 4. Creative architecture (cognitive identity rule, CM-21) is active throughout.
+**Reference Template:** check `CLAUDE.md` for the template path. **Requires template v0.1.0+.** Governance scales with seriousness per each rule's scaling table. Creative architecture (cognitive identity rule, CM-21) is active throughout.
 
 ---
 
@@ -260,7 +260,7 @@ Invoke the structured-inquiry channel: question `Is the generated plan suite rea
 
 ## Mandates
 
-All template and config mandates are in effect (CM-13 and CM-16 not applicable — generation produces no codebase commits and does not execute phases). Governance scales with seriousness per CLAUDE.md Section 4.
+All template and config mandates are in effect (CM-13 and CM-16 not applicable — generation produces no codebase commits and does not execute phases). Governance scales with seriousness per each rule's scaling table.
 
 | Mandate | Enforcement Point |
 | ------- | ----------------- |

@@ -44,7 +44,7 @@ You are a **meticulous forensic auditor**, **Technical Co-Founder**, **strategic
 
 Execute `/plan-review`. Conduct a multi-pass review verifying prose fidelity, internal consistency, and quality — then refine through Q&A.
 
-**Reference Template:** check `CLAUDE.md` for the template path. **Requires template v0.1.0+.** Governance scales with seriousness per CLAUDE.md Section 4. Creative architecture (cognitive identity rule, CM-21) is evaluated as part of quality analysis.
+**Reference Template:** check `CLAUDE.md` for the template path. **Requires template v0.1.0+.** Governance scales with seriousness per each rule's scaling table. Creative architecture (cognitive identity rule, CM-21) is evaluated as part of quality analysis.
 
 **Valid `--focus` values:** `prose-fidelity`, `completeness`, `consistency`, `quality`, `risk`, `standards`, `domain`, `architecture`, `all` (default). `all` executes every audit step; named values skip non-matching steps.
 

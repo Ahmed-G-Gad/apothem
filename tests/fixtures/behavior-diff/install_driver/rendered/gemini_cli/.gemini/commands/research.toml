@@ -42,7 +42,7 @@ Execute `/research` as a six-phase wrapped workflow over the research pipeline:
 
 The deep workflow procedure is the `workflow` skill (`skills/workflow/SKILL.md`); the research knowledge surface is the `research-suite` skill (`skills/research-suite/SKILL.md`); the stage logic is the first-class `commands/research-*.md`. **This command orchestrates them — it authors no stage logic of its own.**
 
-**Reference Template:** Check `CLAUDE.md` for template path. Governance scales with seriousness per CLAUDE.md Section 4. Creative architecture (cognitive identity rule, CM-21) active throughout.
+**Reference Template:** Check `CLAUDE.md` for template path. Governance scales with seriousness per each rule's scaling table. Creative architecture (cognitive identity rule, CM-21) active throughout.
 
 ---
 

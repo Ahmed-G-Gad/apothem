@@ -24,7 +24,7 @@ Three operating invariants govern the sweep:
 2. **The "etc." extension rule.** Where the source intent enumerates a trace class with a trailing "etc." or "e.g.", extend it comprehensively to its sibling members inferred from the intent per `rules/etc-extension.md` — never honor the short literal list. "caches, build artifacts, etc." extends to coverage databases, type-check caches, lint caches, test caches, hypothesis databases, dependency-resolver caches, rendered-documentation output trees, temporary scratch files, editor swap files, log files, and packaging staging directories — each discovered through the host's ratified ignore manifest, never assumed.
 3. **Maximal naturalness, coherence, and naming normalization.** The freshening drives the whole tree toward maximal normality — narrative jargon reads as natural, human-authored product prose per `rules/plain-language.md`; file and folder names are uniform and normalized to the host's ratified convention per `rules/persistent-conventions-vigilance.md`; and no surface anywhere carries backward-compatibility, legacy, staleness, or process-refinement narrative per `rules/freshness-facade.md`. Naturalness and coherence are swept across **all** nuanced details — narratives, the files and folders themselves, and their naming — not only the obvious public copy.
 
-**Reference Template:** Check `CLAUDE.md` for template path. Governance scales with seriousness per CLAUDE.md Section 4. Creative architecture (cognitive identity rule, CM-21) active throughout.
+**Reference Template:** Check `CLAUDE.md` for template path. Governance scales with seriousness per each rule's scaling table. Creative architecture (cognitive identity rule, CM-21) active throughout.
 
 ---
 
