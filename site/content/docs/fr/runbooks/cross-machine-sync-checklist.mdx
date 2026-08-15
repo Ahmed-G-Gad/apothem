@@ -92,12 +92,12 @@ $env:CLAUDE_PROJECT_DIR='C:\tmp\alt-claude'; pwsh -File scripts/installer/instal
 
 ```bash
 cd ~/.claude
-make validate                                                 # 50 conformity validators
+make validate                                                 # conformity gate --all --strict; exit 0
 make headers-doctor                                           # file-header-grep → passed:true
 make ai-surfaces-doctor                                       # multi-surface-coherence → passed:true
 make plans-doctor                                             # no-global-plans + plans-discipline-language
 make lint                                                     # ruff + mypy
-make test                                                     # pytest 265/265
+make test                                                     # exit 0, no failures
 ```
 
 **Attendu :** Chaque barrière au vert. Capturez les codes de sortie + les lignes de résumé.
@@ -159,4 +159,4 @@ Remontez les constats au mainteneur :
 - [ ] §6 chaque refus de garde-fou de sécurité se déclenche
 - [ ] §7 résultats capturés aux chemins d'audit documentés
 
-Lorsque chaque case ci-dessus est cochée sur un second hôte neuf, le suivi de synchronisation inter-machines (COMPLETION.md §7 contrainte limitante) est clos.
+Lorsque chaque case ci-dessus est cochée sur un second hôte neuf, le suivi de synchronisation inter-machines est clos.

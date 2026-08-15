@@ -92,12 +92,12 @@ $env:CLAUDE_PROJECT_DIR='C:\tmp\alt-claude'; pwsh -File scripts/installer/instal
 
 ```bash
 cd ~/.claude
-make validate                                                 # 50 conformity validators
+make validate                                                 # conformity gate --all --strict; exit 0
 make headers-doctor                                           # file-header-grep → passed:true
 make ai-surfaces-doctor                                       # multi-surface-coherence → passed:true
 make plans-doctor                                             # no-global-plans + plans-discipline-language
 make lint                                                     # ruff + mypy
-make test                                                     # pytest 265/265
+make test                                                     # exit 0, no failures
 ```
 
 **المتوقَّع:** كل بوابة خضراء. التقط رموز الخروج + أسطر الملخص.
@@ -159,4 +159,4 @@ CLAUDE_PROJECT_DIR='' bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
 - [ ] §6 يُطلَق كل رفض من حواجز الأمان
 - [ ] §7 النتائج ملتقطة عند مسارات التدقيق الموثّقة
 
-عندما يُؤشَّر على كل مربع أعلاه على مضيف ثانٍ جديد، تُغلَق متابعة المزامنة عبر الأجهزة (<bdi>COMPLETION.md</bdi> §7 القيد المُلزِم).
+عندما يُؤشَّر على كل مربع أعلاه على مضيف ثانٍ جديد، تُغلَق متابعة المزامنة عبر الأجهزة.

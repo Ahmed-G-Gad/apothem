@@ -92,12 +92,12 @@ $env:CLAUDE_PROJECT_DIR='C:\tmp\alt-claude'; pwsh -File scripts/installer/instal
 
 ```bash
 cd ~/.claude
-make validate                                                 # 50 conformity validators
+make validate                                                 # conformity gate --all --strict; exit 0
 make headers-doctor                                           # file-header-grep → passed:true
 make ai-surfaces-doctor                                       # multi-surface-coherence → passed:true
 make plans-doctor                                             # no-global-plans + plans-discipline-language
 make lint                                                     # ruff + mypy
-make test                                                     # pytest 265/265
+make test                                                     # exit 0, no failures
 ```
 
 **अपेक्षित:** प्रत्येक गेट हरा। एग्ज़िट कोड + सारांश पंक्तियाँ कैप्चर करें।
@@ -159,4 +159,4 @@ CLAUDE_PROJECT_DIR='' bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
 - [ ] §6 प्रत्येक सुरक्षा-गार्ड अस्वीकृति सक्रिय होती है
 - [ ] §7 परिणाम प्रलेखित ऑडिट पथों पर कैप्चर किए गए
 
-जब एक नए दूसरे होस्ट पर उपरोक्त प्रत्येक चेकबॉक्स पर निशान लग जाता है, तो क्रॉस-मशीन सिंक फ़ॉलो-ऑन (COMPLETION.md §7 बाध्यकारी-अवरोध) बंद हो जाता है।
+जब एक नए दूसरे होस्ट पर उपरोक्त प्रत्येक चेकबॉक्स पर निशान लग जाता है, तो क्रॉस-मशीन सिंक फ़ॉलो-ऑन बंद हो जाता है।

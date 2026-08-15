@@ -92,12 +92,12 @@ $env:CLAUDE_PROJECT_DIR='C:\tmp\alt-claude'; pwsh -File scripts/installer/instal
 
 ```bash
 cd ~/.claude
-make validate                                                 # 50 conformity validators
+make validate                                                 # conformity gate --all --strict; exit 0
 make headers-doctor                                           # file-header-grep → passed:true
 make ai-surfaces-doctor                                       # multi-surface-coherence → passed:true
 make plans-doctor                                             # no-global-plans + plans-discipline-language
 make lint                                                     # ruff + mypy
-make test                                                     # pytest 265/265
+make test                                                     # exit 0, no failures
 ```
 
 **예상:** 모든 게이트가 녹색. 종료 코드 + 요약 줄을 캡처하세요.
@@ -159,4 +159,4 @@ CLAUDE_PROJECT_DIR='' bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
 - [ ] §6 모든 안전 가드 거부가 발동
 - [ ] §7 결과가 문서화된 감사 경로에 캡처됨
 
-새 두 번째 호스트에서 위의 각 체크박스가 모두 체크되면, 머신 간 동기화 후속 작업(COMPLETION.md §7 제약 병목)이 종료됩니다.
+새 두 번째 호스트에서 위의 각 체크박스가 모두 체크되면, 머신 간 동기화 후속 작업이 종료됩니다.

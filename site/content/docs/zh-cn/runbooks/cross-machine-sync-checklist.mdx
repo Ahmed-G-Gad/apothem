@@ -92,12 +92,12 @@ $env:CLAUDE_PROJECT_DIR='C:\tmp\alt-claude'; pwsh -File scripts/installer/instal
 
 ```bash
 cd ~/.claude
-make validate                                                 # 50 conformity validators
+make validate                                                 # conformity gate --all --strict; exit 0
 make headers-doctor                                           # file-header-grep → passed:true
 make ai-surfaces-doctor                                       # multi-surface-coherence → passed:true
 make plans-doctor                                             # no-global-plans + plans-discipline-language
 make lint                                                     # ruff + mypy
-make test                                                     # pytest 265/265
+make test                                                     # exit 0, no failures
 ```
 
 **预期：** 每道关卡通过。记录退出码与摘要行。
@@ -159,4 +159,4 @@ CLAUDE_PROJECT_DIR='' bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
 - [ ] §6 每道安全护栏拒绝均触发
 - [ ] §7 结果已记录至文档中的审计路径
 
-当上述每一项在全新第二台主机上都被勾选时，跨主机同步后续事项（COMPLETION.md §7 约束瓶颈）即告关闭。
+当上述每一项在全新第二台主机上都被勾选时，跨主机同步后续事项即告关闭。

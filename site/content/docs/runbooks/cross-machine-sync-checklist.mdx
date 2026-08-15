@@ -97,12 +97,12 @@ $env:APOTHEM_HOME='C:\tmp\alt-apothem'; pwsh -File scripts/installer/install.ps1
 
 ```bash
 cd "$HOME/.apothem"
-make validate                                                 # 50 conformity validators
+make validate                                                 # conformity gate --all --strict; exit 0
 make headers-doctor                                           # file-header-grep → passed:true
 make ai-surfaces-doctor                                       # multi-surface-coherence → passed:true
 make plans-doctor                                             # no-global-plans + plans-discipline-language
 make lint                                                     # ruff + mypy
-make test                                                     # pytest 2265/2265
+make test                                                     # exit 0, no failures
 ```
 
 **Expected:** Every gate green. Capture exit codes + summary lines.
@@ -178,4 +178,4 @@ Surface findings to the maintainer:
 - [ ] §6 every safety-guard refusal fires
 - [ ] §7 results captured at the documented audit paths
 
-When every checkbox above is ticked on a fresh second host, the cross-machine sync follow-on (COMPLETION.md §7 binding-constraint) is closed.
+When every checkbox above is ticked on a fresh second host, the cross-machine sync verification is complete and the `portability: universal` claim is verified end-to-end.
