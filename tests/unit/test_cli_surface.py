@@ -821,6 +821,40 @@ def test_status_unreadable_default_profile_warns_when_nothing_installed(
     assert "unknown" in str(entry["message"])
 
 
+def test_verify_all_unreadable_default_profile_warns_exclusions_dropped(
+    runner: CliRunner, mock_adapter: MagicMock, tmp_path
+) -> None:
+    """Dropping exclude_harnesses on an unreadable profile is never silent.
+
+    'verify --harness all' loads the default profile only to honour
+    exclude_harnesses. Swallowing that failure lets every excluded harness
+    back into the selection — and the project-scope ones then demand
+    --project, so the run dies on 'project.required' listing harnesses the
+    operator deliberately excluded. The error must carry its own cause.
+    """
+    bad_profile = tmp_path / "profile.yaml"
+    bad_profile.write_text("identity: [unclosed", encoding="utf-8")
+    with (
+        patch(
+            "apothem.cli._cmd_verify._resolve_profile_path",
+            return_value=bad_profile,
+        ),
+        patch("apothem.cli._load_adapter_for_entry", return_value=mock_adapter),
+    ):
+        result = runner.invoke(main, ["verify", "--harness", "all", "--json"])
+    data = json.loads(result.output.strip())
+    # The failure is a consequence of the dropped excludes, not of the
+    # harnesses it names.
+    assert data["error"]["code"] == "project.required"
+
+    warnings = data["warnings"]
+    assert len(warnings) == 1, warnings
+    entry = warnings[0]
+    assert entry["operation"] == "exclusions_unavailable"
+    assert entry["path"] == str(bad_profile)
+    assert "exclu" in str(entry["message"]).lower()
+
+
 def test_harnesses_list_json_load_failure_is_error_row(runner: CliRunner) -> None:
     """A broken adapter is a JSON error row — never styled text on stdout.
 

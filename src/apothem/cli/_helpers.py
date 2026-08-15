@@ -338,6 +338,45 @@ def _baseline_unavailable_entry(
     }
 
 
+def _exclusions_unavailable_entry(
+    profile_path: Path, exc: Exception
+) -> dict[str, object]:
+    """Build the lifecycle-envelope advisory for dropped harness exclusions.
+
+    ``verify --harness all`` loads the default profile solely to honour
+    ``exclude_harnesses``. Falling back to the full registry when that load
+    fails re-creates exactly the false failure the honouring exists to
+    prevent: an excluded harness is swept, reports its managed targets
+    missing, and verify exits non-zero blaming the harness rather than the
+    unreadable profile. Silent, that verdict is unattributable.
+
+    The caller also catches ``OSError``, which carries no diagnostic, so the
+    fields degrade to the exception text rather than assuming one.
+    """
+    if isinstance(exc, ProfileValidationError):
+        diagnostic = exc.diagnostic
+        code, reason, fix = diagnostic.code, diagnostic.reason, diagnostic.fix
+    else:
+        code = "profile.unreadable"
+        reason = str(exc)
+        fix = "Make the profile readable so its exclusions apply."
+    return {
+        "harness": None,
+        "outcome": "advisory",
+        "operation": "exclusions_unavailable",
+        "path": str(profile_path),
+        "code": code,
+        "reason": reason,
+        "fix": fix,
+        "message": (
+            f"Harness exclusions unavailable: {profile_path} could not be "
+            f"loaded ({code}). Every registered harness was verified, so a "
+            f"harness excluded in that profile can report as missing and "
+            f"fail the run. {fix}"
+        ),
+    }
+
+
 def _invoke_with_project(
     fn: Callable[..., object], *args: object, project: Path | None
 ) -> object:

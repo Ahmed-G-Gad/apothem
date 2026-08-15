@@ -26,6 +26,7 @@ from apothem.cli._helpers import (
     _CliUserError,
     _drift_state,
     _emit_expected_error,
+    _exclusions_unavailable_entry,
     _harness_option,
     _invoke_with_project,
     _lifecycle_envelope,
@@ -65,6 +66,7 @@ def verify(
     fmt = resolve_format(output_format, json_flag)
     con = get_console(no_color=no_color, quiet=quiet)
     profile_path = _resolve_profile_path(profile) if profile is not None else None
+    exclusions_warning: dict[str, object] | None = None
     try:
         project_root = _resolve_project_root(project)
         shared_profile: dict[str, Any] | None = (
@@ -79,10 +81,15 @@ def verify(
         # explicit --profile.
         excludes_profile = shared_profile
         if excludes_profile is None and harness.strip().lower() == "all":
+            default_path = _resolve_profile_path(None)
             try:
-                excludes_profile = _load_profile(_resolve_profile_path(None))
-            except (ProfileValidationError, OSError):
+                excludes_profile = _load_profile(default_path)
+            except (ProfileValidationError, OSError) as exc:
+                # Dropping the excludes is the only way to keep going, but it
+                # re-creates the false failure the excludes prevent — so the
+                # fallback is recorded rather than swallowed.
                 excludes_profile = None
+                exclusions_warning = _exclusions_unavailable_entry(default_path, exc)
         adapters = _pkg._select_and_load_adapters(
             harness,
             project_root,
@@ -105,8 +112,20 @@ def verify(
             harness=harness,
             profile_path=profile_path,
             error=exc.to_dict(),
+            # Dropped excludes can *cause* this error: without them the
+            # project-scope harnesses the operator excluded re-enter the
+            # selection and demand --project. The advisory rides along so the
+            # error names its own cause.
+            warnings=([exclusions_warning] if exclusions_warning is not None else None),
         )
         return
+
+    # Printed ahead of the rows so a resulting failure is attributable to the
+    # unreadable profile rather than to the harnesses it stopped excluding.
+    if exclusions_warning is not None and fmt != "json":
+        get_error_console(no_color=no_color).print(
+            f"[yellow]![/] {escape(str(exclusions_warning['message']))}"
+        )
 
     results: list[dict[str, object]] = []
     last_output_path: Path | None = None
@@ -193,7 +212,7 @@ def verify(
             project_root=project_root,
             files_written=[],
             results=results,
-            warnings=[],
+            warnings=([exclusions_warning] if exclusions_warning is not None else []),
             output_path=last_output_path if len(adapters) == 1 else None,
         )
         if len(results) == 1:
