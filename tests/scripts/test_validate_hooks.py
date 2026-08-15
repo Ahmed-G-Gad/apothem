@@ -38,7 +38,10 @@ for _p in (_SCRIPTS_DEV, _LIB_DIR):
         sys.path.insert(0, str(_p))
 
 from reporter import Reporter  # noqa: E402
-from validate_hooks import validate_hook_command_shape  # noqa: E402
+from validate_hooks import (  # noqa: E402
+    validate_hook_command_shape,
+    validate_no_hardcoded_paths,
+)
 
 _BOOTSTRAP_SH = _REPO_ROOT / "src" / "apothem" / "hooks" / "lib" / "bootstrap.sh"
 _BOOTSTRAP_PS1 = _REPO_ROOT / "src" / "apothem" / "hooks" / "lib" / "bootstrap.ps1"
@@ -275,3 +278,60 @@ def _os_environ() -> dict[str, str]:
     import os
 
     return dict(os.environ)
+
+
+# --- validate_no_hardcoded_paths ---------------------------------------------
+
+
+def _hook_with(tmp_path: Path, body: str) -> Path:
+    """Write a one-line hook module under a fresh hooks dir and return it."""
+    hooks = tmp_path / "hooks"
+    hooks.mkdir()
+    (hooks / "handler.py").write_text(body, encoding="utf-8")
+    return hooks
+
+
+@pytest.mark.parametrize(
+    "literal",
+    [
+        pytest.param('HOME = "/home/someone/.apothem"', id="posix-home"),
+        pytest.param('HOME = "/Users/someone/.apothem"', id="macos-users"),
+        pytest.param('HOME = "/root/.apothem"', id="posix-root"),
+        pytest.param('HOME = "C:\\\\Users\\\\someone\\\\.apothem"', id="windows-back"),
+        pytest.param('HOME = "C:/Users/someone/.apothem"', id="windows-forward"),
+    ],
+)
+def test_absolute_user_path_is_reported(
+    literal: str, reporter: Reporter, tmp_path: Path
+) -> None:
+    """Every platform's home root is caught, not just the Windows backslash form.
+
+    The scan reports "No hardcoded absolute paths" when it finds nothing, so a
+    root it cannot match is worse than no check: it is an affirmative clean
+    bill. Only the backslash Windows form was matched before, which left the
+    POSIX roots — and the forward-slash Windows form — passing silently.
+    """
+    validate_no_hardcoded_paths(_hook_with(tmp_path, literal), reporter)
+
+    assert reporter.failed == 1, f"expected a FAIL for {literal!r}"
+    assert "handler.py" in reporter.errors[0]
+
+
+def test_relative_and_env_derived_paths_pass(
+    reporter: Reporter, tmp_path: Path
+) -> None:
+    """The intended idiom — resolve the home at runtime — is not flagged."""
+    body = 'from pathlib import Path\nHOME = Path.home() / ".apothem"\n'
+    validate_no_hardcoded_paths(_hook_with(tmp_path, body), reporter)
+
+    assert reporter.failed == 0, reporter.errors
+    assert reporter.passed == 1
+
+
+def test_shipped_hook_scripts_carry_no_absolute_home_path(
+    reporter: Reporter,
+) -> None:
+    """The widened pattern still passes against the real hooks tree."""
+    validate_no_hardcoded_paths(_HOOKS_SRC / "hooks", reporter)
+
+    assert reporter.failed == 0, reporter.errors
