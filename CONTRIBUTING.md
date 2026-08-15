@@ -123,7 +123,8 @@ each tool's native surface at install/materialize time:
 | `src/apothem/hooks/` | Shared hook scripts and message contexts |
 | `src/apothem/output-styles/` | Output-style definitions |
 | `src/apothem/statuslines/` | Statusline definitions |
-| `src/apothem/templates/` | Per-harness output templates |
+| `src/apothem/templates/` | Plan-suite and ledger templates |
+| `src/apothem/harnesses/<name>/templates/` | Per-harness output templates |
 | `src/apothem/cli/` | Click CLI (`install`, `uninstall`, `update`, `verify`, …) |
 | `src/apothem/harnesses/` | One sub-package per harness adapter |
 | `src/apothem/conformity/` | Pre-emission conformity validators |

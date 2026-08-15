@@ -129,7 +129,7 @@ apothem profile edit [--profile PATH]
 |------------|-------------|
 | `profile init` | Create a schema-valid minimal profile scaffold. |
 | `profile show` | Print the resolved profile (YAML) to stdout. |
-| `profile set <key> <value>` | Set a profile field. The value is YAML-parsed (strings, numbers, booleans, lists, and mappings are all accepted). |
+| `profile set <key> <value>` | Set a profile field. The value is stored as a literal string — bare words are not coerced, so `no` stays `"no"` and `1.0` stays a string — except `true`/`false` and explicit `[...]` / `{...}` list and map input. The assembled profile is schema-validated before it is written. |
 | `profile edit` | Open the profile in `$EDITOR` (falls back to the platform default). |
 
 The `--profile PATH` option points each subcommand at an alternate profile

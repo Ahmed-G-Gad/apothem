@@ -20,9 +20,26 @@ const navLinks = [
   { label: 'Changelog', href: '/docs/changelog' },
 ];
 
-export function LandingNav() {
+/**
+ * `localePrefix` keeps a localized visitor inside their locale.
+ *
+ * The nav links are authored as bare `/docs/...` paths, which is correct on
+ * the root landing page. On `/[lang]` they are not: a visitor who arrived at
+ * `/ja` and clicked "Docs" would be dropped onto the English tree. The
+ * localized page passes `/${lang}` here, matching the prefix its own CTAs
+ * already build. Defaults to `''` so the root page is unaffected.
+ */
+export function LandingNav({ localePrefix = '' }: { localePrefix?: string }) {
   const pathname = usePathname();
   const [open, setOpen] = React.useState(false);
+
+  // Resolve each href once so the active-state test compares the same string
+  // the link actually navigates to.
+  const links = navLinks.map((l) => ({
+    ...l,
+    href: `${localePrefix}${l.href}`,
+  }));
+  const homeHref = localePrefix || '/';
 
   // Close the mobile sheet on route change so a tapped link does not leave the
   // panel open over the destination.
@@ -37,8 +54,8 @@ export function LandingNav() {
         className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6"
       >
         <Link
-          href="/"
-          aria-current={pathname === '/' ? 'page' : undefined}
+          href={homeHref}
+          aria-current={pathname === homeHref ? 'page' : undefined}
           className="flex items-center gap-2 font-semibold"
         >
           <BrandMark size={26} decorative />
@@ -47,7 +64,7 @@ export function LandingNav() {
 
         <div className="flex items-center gap-1 sm:gap-2">
           <ul className="hidden items-center gap-1 sm:flex">
-            {navLinks.map((l) => {
+            {links.map((l) => {
               const active =
                 pathname === l.href || pathname.startsWith(`${l.href}/`);
               return (
@@ -104,7 +121,7 @@ export function LandingNav() {
           className="border-t border-[var(--border)] bg-[var(--background)] sm:hidden"
         >
           <ul className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3">
-            {navLinks.map((l) => {
+            {links.map((l) => {
               const active =
                 pathname === l.href || pathname.startsWith(`${l.href}/`);
               return (

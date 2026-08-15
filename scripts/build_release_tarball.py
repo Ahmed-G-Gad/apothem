@@ -51,6 +51,11 @@ DEFAULT_EXCLUDE_DIRS: Final[tuple[str, ...]] = (
     "dist",
     "build",
     ".audit",
+    # Both plans trees: ".apothem" is the canonical workspace and ".plans" the
+    # legacy one an unmigrated checkout may still carry. Excluding only the
+    # legacy name would ship a current operator's plan-product in the tarball.
+    # generate-sbom.sh applies the same dual exclusion.
+    ".apothem",
     ".plans",
     "_inputs",
     "_spec",

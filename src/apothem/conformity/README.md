@@ -9,6 +9,7 @@
 | File | Purpose |
 |------|---------|
 | `gate.py` | The conformity-gate orchestrator — dispatches every matcher against a Write/Edit input and aggregates the verdicts. |
+| `_grep_base.py` | Shared building blocks every `*_grep` matcher imports: the finding shape, the file-walk, and the JSON envelope. Private to this package. |
 | `__init__.py` | Package marker. |
 
 ## Matcher families
@@ -22,6 +23,7 @@
 | `frontmatter_value_grep.py` | Frontmatter `enum`/`pattern` values against the per-class JSON Schema (agents, commands, skills) — the value-level counterpart to `frontmatter_grep`'s key check. |
 | `naming_grep.py` | Naming-convention conformance. |
 | `binding_reciprocity_grep.py` | Reciprocal five-direction bindings — half-edge detection. |
+| `binding_reciprocity_corpus_grep.py` | The same reciprocity check run across the whole artifact corpus rather than a single Write/Edit input. |
 | `always_on_budget_grep.py` | Always-on rule body token budget (the 500-token ceiling). |
 | `agent_capability_grep.py` | Every harness declares its agentic-capability matrix. |
 | `agents_md_coverage_grep.py` | Stale agent-companion files under the root-only AGENTS.md convention. |

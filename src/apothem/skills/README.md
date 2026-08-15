@@ -63,6 +63,13 @@ selectively.
 | `research-suite/references/rigor-mandates.md` | The ten rigor mandates (R1–R10) in full (progressively disclosed by the router). |
 | `research-suite/references/lifecycle.md` | The thirteen-stage research lifecycle + per-stage invoking-surfaces table (progressively disclosed by the router). |
 | `research-suite/references/principal-investigator-framework.md` | The Principal-Investigator (PI) lens and its six commitments (progressively disclosed by the router). |
+| `research-suite/references/advancement-gate.md` | The gate a stage must clear before the lifecycle advances. |
+| `research-suite/references/autonomous-experiment-loop.md` | The unattended experiment loop and its stopping conditions. |
+| `research-suite/references/blinding-and-disclosure.md` | Blinding protocol and the disclosure obligations that accompany it. |
+| `research-suite/references/comparator-provenance.md` | How a comparator's origin and version are recorded so a result stays attributable. |
+| `research-suite/references/compute-utilization.md` | Compute accounting for a run — what is measured and what is reported. |
+| `research-suite/references/empirical-comparison-rigor.md` | The bar an empirical comparison clears before its claim may be stated. |
+| `research-suite/references/experiment-program-scaffold.md` | The scaffold an experiment program is laid out against. |
 | `test-authoring/SKILL.md` | The test-authoring skill's entry point and procedure. |
 | `refactor-extract/SKILL.md` | The refactor-extract skill's entry point and procedure. |
 | `dependency-upgrade/SKILL.md` | The dependency-upgrade skill's entry point and procedure. |
