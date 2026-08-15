@@ -47,6 +47,46 @@
 | `render_inventory.py` | Emit a human-readable Markdown mirror of `inventory.json`. |
 | `render_capability_index.py` | Render the Markdown capability-index table in the project README's instruction-surface summary. |
 
+## Support modules
+
+Three entry points above are large enough to have been decomposed. Each keeps
+its pipeline role and delegates the parts that are not scanning: the vocabulary
+it speaks, the shapes it produces, and the documents it emits. None of these is
+a pipeline stage — they are the layers beneath one.
+
+The layering is deliberate and load-bearing: a *model* module holds the
+dataclasses, and both the producer and the renderer depend on it. Without that
+split the scanner would import its renderer while the renderer imported the
+scanner.
+
+### Under `scan_header_coverage`
+
+| File | Purpose |
+|------|---------|
+| `header_vocabulary.py` | Status, variant, and malformation taxonomies plus the suffix and basename maps — pure declaration. |
+| `header_variants.py` | Resolve a path to its header variant, and the exception globs that exempt one. |
+| `header_banner.py` | Render the canonical header block for a variant. |
+| `header_detect.py` | Read a file head, scan it for a banner, and plan an injection. |
+
+### Under `scan_ai_surfaces`
+
+| File | Purpose |
+|------|---------|
+| `ai_surface_catalog.py` | The candidate-surface catalog, canonical-section table, and status vocabularies. |
+| `ai_surface_parsing.py` | Heading parsing and section detection — pure functions over strings. |
+| `ai_surface_model.py` | The three result shapes: one surface's scan, one pair's coherence verdict, one authoring action. |
+| `ai_surface_render.py` | Emit `ai-surfaces.json` and its markdown mirror. |
+
+### Under `build_plans_provenance`
+
+| File | Purpose |
+|------|---------|
+| `plans_provenance_vocabulary.py` | Confidence ladder, destination text, plan extensions, suite-name hints. |
+| `plans_provenance_model.py` | The three shapes the pipeline speaks in: scan signals, suite verdict, file record. |
+| `plans_provenance_render.py` | Emit `plans-provenance.json` and its markdown mirror. |
+| `plan_frontmatter.py` | The frontmatter grammar and the two readers over it. |
+| `plan_filename.py` | The slug rule, the H1 reader, and the title precedence between them. |
+
 ## Shared / data
 
 | File | Purpose |
