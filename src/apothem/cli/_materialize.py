@@ -48,6 +48,7 @@ from apothem.harnesses._shared.install_driver import (
     MaterializationResult,
     MaterializationRun,
 )
+from apothem.lib.atomic_io import write_bytes_atomically
 from apothem.lib.clean_slate import CleanSlateError, CleanSlateResult, run_clean_slate
 from apothem.lib.profile import ProfileValidationError
 
@@ -141,8 +142,37 @@ def _materialize(
             )
             return
         if not dry_run and profile_bytes is not None:
-            profile_path.parent.mkdir(parents=True, exist_ok=True)
-            profile_path.write_bytes(profile_bytes)
+            # This restore is the identity safety net, so it gets the same care
+            # as every other write: clean-slate has just removed the profile,
+            # and these in-memory bytes plus the timestamped backup are the only
+            # copies left. A raw write would surface a disk-full or
+            # permission failure as a traceback with the canonical path already
+            # empty, and an interruption mid-write would leave it truncated.
+            try:
+                write_bytes_atomically(profile_path, profile_bytes)
+            except OSError as exc:
+                backup_dir = clean_result.backup_dir if clean_result else None
+                _emit_expected_error(
+                    command=verb_present,
+                    fmt=fmt,
+                    harness=harness,
+                    profile_path=profile_path,
+                    error=_CliUserError(
+                        code="clean_slate.profile_restore_failed",
+                        message="Clean-slate removal ran, but the profile could "
+                        "not be written back.",
+                        field="clean",
+                        reason=str(exc),
+                        fix=(
+                            "Copy the profile back from the clean-slate backup "
+                            f"at {backup_dir}."
+                            if backup_dir is not None
+                            else "Restore the profile from the clean-slate "
+                            "backup directory reported above."
+                        ),
+                    ).to_dict(),
+                )
+                return
         # A clean dry run falls through to the materialization preview below:
         # the operation previews both phases (removals, then fresh writes), and
         # JSON mode keeps its single-envelope contract — the removal preview

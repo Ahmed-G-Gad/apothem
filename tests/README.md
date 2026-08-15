@@ -26,7 +26,8 @@ The `apothem` test suite. `pytest` is the sole test framework; the configuration
 | `commands/` | Slash-command behavior tests (e.g., `plan-spec-quick`). |
 | `property/` | Property-based tests (Hypothesis) over the invariants — frontmatter parsing, materialize round-trip, profile merge, and path-safety. |
 | `conformity-scenarios/` | End-to-end multi-mandate fixture scenarios (`F-*`) driven by `verify.py` and gated in CI by `.github/workflows/conformity.yml` — not collected by the default `pytest` run (see Running). |
-| `fixtures/` | Shared cross-suite fixtures — the header-mandate text, the multi-surface-claims schema, the plans-discipline fixture — each with a paired schema/fixture test. |
+| `fixtures/` | Shared cross-suite fixtures — the multi-surface-claims schema, the plans-discipline fixture, and the byte-golden `behavior-diff/` corpus — each with a paired schema/fixture test. |
+| `_shared/` | Cross-subtree test helpers imported as `tests._shared`, not collected as tests. `bash_resolver.py` locates a usable POSIX `bash` (and refuses the Windows WSL launcher, which is not one), so the installer tests skip honestly on a host without it instead of failing. |
 
 ## Running
 
@@ -44,7 +45,7 @@ The `conformity-scenarios/` subtree is **not** collected by `pytest` (it carries
 - Conformity self-tests follow the `pass` / `fail` fixture pattern where the matcher is fixture-driven.
 - Markers are strict (`--strict-markers`) — every marker used is declared, or collection fails.
 - Tests assert behavior over implementation, name the behavior in the test name, and never depend on test ordering (the suite runs in parallel).
-- The root `tests/conftest.py` owns the suite-wide bootstrap: the `src/` `sys.path` insert and the autouse install-ledger isolation. Per-subtree conftests carry only subtree-specific fixtures.
+- The root `tests/conftest.py` owns the suite-wide bootstrap: two `sys.path` inserts (`src/`, so `apothem` imports from a plain checkout with no editable install; and the repo root, so the helpers under `_shared/` resolve as `tests._shared` however pytest is invoked) plus two autouse isolations — the install ledger and the backup root, both of which default under the developer's real home and would otherwise be written there by any test that installs. Per-subtree conftests carry only subtree-specific fixtures.
 
 ## Conformity corpus layout
 

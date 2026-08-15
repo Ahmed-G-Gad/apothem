@@ -12,13 +12,15 @@ The harness pipes a JSON object the renderer reads from stdin. The renderer cons
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `workspace.project_dir` | string | Absolute path to the project root. Joined with `.apothem/plans/` (legacy `.plans/` as a fallback) to locate the project-local plans tree. |
+| `workspace.project_dir` | string | Absolute path to the project root. Joined with `.apothem/plans/` to locate the project-local plans tree. |
 
 The plans root resolves in this order:
 
 1. `LLM_PLAN_SUITES_DIR` environment variable, when set — the operator override.
-2. `<workspace.project_dir>/.apothem/plans/` from the stdin payload — the canonical project-local tree per the plans-locality discipline, with a legacy `<workspace.project_dir>/.plans/` fallback.
-3. `<cwd>/.apothem/plans/` — the interactive fallback when no payload is supplied (the legacy `<cwd>/.plans/` is honored too).
+2. `<workspace.project_dir>/.apothem/plans/` from the stdin payload — the canonical project-local tree per the plans-locality discipline.
+3. `<cwd>/.apothem/plans/` — the interactive fallback when no payload is supplied.
+
+`.apothem/plans/` is the only tree the renderer reads. An operator holding a legacy `.plans/` tree upgrades it with `apothem migrate-workspace`; until then the statusline reports no active suite.
 
 No harness configuration path is ever hardcoded; the renderer privileges no one harness. An absent payload or absent field degrades to the working-directory fallback, never to a harness-specific default.
 

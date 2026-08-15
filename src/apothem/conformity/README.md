@@ -172,8 +172,12 @@ Validate every change here:
 python -m apothem.conformity.gate --all .
 python -m pytest tests/conformity
 python -m ruff check .
-python -m mypy src/apothem/cli/ src/apothem/harnesses/
+python -m mypy
 ```
+
+Run `mypy` bare: this package is in the `[tool.mypy] files` strict scope, and
+naming paths on the command line overrides that key — the earlier form here
+type-checked everything except the package it was validating.
 
 ## Related
 

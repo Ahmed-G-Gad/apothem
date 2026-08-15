@@ -41,7 +41,7 @@
 - **Profile ↔ schema sync.** Keep the profile model and its schema in sync; a profile-shape change without the matching schema update is a defect.
 - **Strict typing.** Public surfaces here are part of the `mypy --strict` scope — keep type annotations exact (`list[T]` / `dict[K, V]` / `X | None`, `typing.Protocol` for structural typing, `typing.cast()` to narrow `Any`); never widen a public signature to escape a strict failure.
 - **Agnostic, operator-portable data stores.** Memory records and context fragments serialize to a byte-equivalent canonical form, and the learning loop is **default-off**, gated on its profile flag. Do not bias any store toward a particular harness or model, and do not flip the learning loop on by default. Reference harnesses only by catalog slug; privilege none.
-- **Adding or changing a module:** update the module table above in the same change-set, and confirm the public API stays `mypy --strict`-clean. Validate with `python -m ruff check` and `python -m ruff format`, `python -m mypy src/apothem/cli/ src/apothem/harnesses/` (plus this package where it falls in strict scope), `python -m pytest`, and `python -m apothem.conformity.gate --all .`.
+- **Adding or changing a module:** update the module table above in the same change-set, and confirm the public API stays `mypy --strict`-clean. Validate with `python -m ruff check` and `python -m ruff format`, `python -m mypy` (bare — this package is unconditionally in the `[tool.mypy] files` strict scope, and passing paths on the command line overrides that key), `python -m pytest`, and `python -m apothem.conformity.gate --all .`.
 
 ## Related
 

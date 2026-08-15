@@ -2,7 +2,7 @@
 
 # Scripts
 
-Operator-, release-, install-, and dev-facing executables for the `apothem` repository — every standalone script lives here. Root-level entries are the operator / contributor utilities; `installer/` holds the install ceremonies, `release/` the release-engineering recipes, and `dev/` the internal CI/QA orchestration and audit / validation tooling (`validate_ecosystem.py`, `validate_hooks.py`, `chaos_pass.py`, `audit_all.py`, `auto_update.py`, `memory_audit.py`, `admin_merge.py`).
+Operator-, release-, install-, and dev-facing executables for the `apothem` repository — every standalone script lives here. Root-level entries are the operator / contributor utilities; `installer/` holds the install ceremonies, `release/` the release-engineering recipes, and `dev/` the internal CI/QA orchestration and audit / validation tooling. The tables below are the index: `dev/` has no README of its own, so a script that is not listed here is documented nowhere.
 
 ## Root-level scripts
 
@@ -22,6 +22,16 @@ Operator-, release-, install-, and dev-facing executables for the `apothem` repo
 | `check_pip_pin_drift.py` | Assert every workflow's `PIP_PIN_VERSION` matches the canonical pin and no raw `pip==<version>` literal has been reintroduced. Invoked by CI. |
 | `check_site_version_parity.py` | Assert `site/package.json`'s version matches `pyproject.toml`'s. Both are hand-maintained and the site renders its copy in the landing footer, so drift is silent — the site simply advertises a release that is no longer shipping. Invoked by CI beside the pin-drift check. |
 | `check_readme_file_coverage.py` | Report every git-tracked file a folder ships that the folder's own README never names. A per-folder README is that folder's operating contract, so its file table is load-bearing — a module missing from it reads as nonexistent. Advisory by default; `--strict` exits non-zero and is how CI invokes it. |
+| `run_corpus_gate.py` | Repo-root shim that puts the checkout's `src/` on `sys.path` and dispatches to `apothem.conformity.gate`. The pre-commit corpus hook runs in an isolated venv where the package is not importable, so it cannot call `python -m apothem` the way the engine does; every argument forwards unchanged. |
+| `validate_harness_convention_pins.py` | Assert every registered adapter carries a `STANDARD-CONVENTION-PIN.md` and that none has gone stale. The adapter count is derived from the filesystem, never hardcoded. |
+| `validate_ecosystem.py` | Ecosystem-wide structural and frontmatter validator: required directories and core files exist, every artifact declares the mandatory frontmatter fields, `version` is SemVer-shaped, `updated` is ISO 8601, `name` is kebab-case. Delegates hook checks to `validate_hooks.py`. |
+| `validate_hooks.py` | Hook-infrastructure validator: the Claude Code `settings.json` template is present and valid JSON, each runtime declares its required events, the Python hook scripts exist and import cleanly, the message files are present, and no hardcoded absolute user path has crept in. |
+| `chaos_pass.py` | Adversarial hook exercise — every configured hook command against a storm of hostile inputs (garbled stdin, a missing context file, a temp working directory with a fake `HOME`). Each must still exit 0 with a valid envelope, which is the dispatcher's fail-open contract stated as a test. |
+| `audit_all.py` | One-shot quality orchestrator: `ruff check`, `ruff format --check`, `mypy`, `pytest`, `validate_ecosystem`, `chaos_pass`, in that order. Aborts on the first failure unless `--continue-on-error` aggregates them. |
+| `auto_update.py` | Report the latest signed release tag the checkout has not incorporated; `--apply` fast-forwards to it. Updates target a signed tag rather than a moving branch, and `--apply` refuses an unsigned or tampered tag unless `APOTHEM_ALLOW_UNVERIFIED=1` downgrades the refusal to a warning. |
+| `memory_audit.py` | Health audit of the harness memory tiers — each `MEMORY.md` index's line budget, topic-index integrity, orphan topic files, and frontmatter-date freshness. `--fix` is the only mutating path and truncates an over-budget index, nothing else. |
+| `admin_merge.py` | Solo-maintainer self-merge ceremony. Main-branch protection requires one approving review and is admin-enforced, which by design stops the maintainer merging their own PR even with `--admin`. This runs the documented relax → merge → restore toggle inside `try`/`finally` so the protection is never left relaxed on failure. |
+| `per-claim-register.md` | Not a script: the evidence register backing every threshold- or measurement-bearing claim in `src/apothem/rules/*.md`, one row per claim with its evidence pointer and verification stamp. |
 
 ## `installer/` — the canonical install scripts
 
