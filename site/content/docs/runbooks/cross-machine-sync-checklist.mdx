@@ -4,9 +4,11 @@ description: "Verification procedure to confirm the Claude Code adapter installs
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Scope.** This checklist verifies the **Claude Code adapter** install / uninstall portability layer on a fresh second host. Other harnesses have their own per-host verification recipes documented under [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses). The path `~/.claude/` is the canonical install destination for the Claude Code adapter; substitute the adapter-native path when validating a different harness.
+> **Scope.** This checklist verifies the **Claude Code adapter** install / uninstall portability layer on a fresh second host. Other harnesses have their own per-host verification recipes documented under [`site/content/docs/harnesses/<harness>.mdx`](/docs/harnesses).
 
-> **Operator-driven verification of the install / uninstall portability layer on a fresh second host.** The publication tier (`vX.Y.Z`) was authored on a single Windows host; the `~/.claude/` portability claim (`CLAUDE.md` `portability: universal`) needs end-to-end exercise on a second host before the multi-host invariant carries weight. This checklist is the canonical second-host verification recipe (Claude Code adapter).
+> **Two paths, two roles.** Keep them apart while reading this checklist. `$HOME/.apothem` is the **engine home** — where the source tree is cloned and where the installers read from, overridable with `APOTHEM_HOME`. `~/.claude/` is the **Claude Code configuration root** — the adapter's output surface, where materialized `settings.json` and the support subtree land. The engine is never installed into `~/.claude/`; substitute the adapter-native output path when validating a different harness.
+
+> **Operator-driven verification of the install / uninstall portability layer on a fresh second host.** The publication tier (`vX.Y.Z`) was authored on a single Windows host; the portability claim (`CLAUDE.md` `portability: universal`) needs end-to-end exercise on a second host before the multi-host invariant carries weight. This checklist is the canonical second-host verification recipe (Claude Code adapter).
 
 ---
 
@@ -20,22 +22,24 @@ Run on the second host before starting the verification:
 | Python 3.10+ available | `python3 --version` (POSIX) or `py -3 --version` (Windows) | 3.10 / 3.11 / 3.12 / 3.13 |
 | GitHub auth (optional, for authenticated clone / API checks) | `gh auth status` | Logged in as the repo's authorized account when using authenticated workflows |
 | Shell available | `bash --version` (POSIX) or `pwsh --version` (Windows) | Bash 4+ or PowerShell 7+ |
-| No pre-existing `~/.claude/` directory | `ls ~/.claude 2>&1` | "No such file or directory" — if present, back up before proceeding |
+| No pre-existing engine home | `ls "$HOME/.apothem" 2>&1` | "No such file or directory" — if present, back up before proceeding |
 
 ## 2. Clone-and-Install Verification
 
 Execute on the second host:
 
 ```bash
-# Clone the published repo to ~/.claude (the install destination)
-git clone https://github.com/ahmed-g-gad/apothem.git ~/.claude
-cd ~/.claude
+# Clone the published repo to the engine home. This is NOT ~/.claude — that
+# is the Claude Code configuration root the adapter writes into, and cloning
+# a source tree on top of it would bury the harness's own config.
+git clone https://github.com/ahmed-g-gad/apothem.git "$HOME/.apothem"
+cd "$HOME/.apothem"
 
 # (POSIX path) Run scripts/installer/install.sh dry-run first
 bash scripts/installer/install.sh --dry-run                                    # exit 0; Quick Start banner
 
 # (POSIX path) Run scripts/installer/install.sh for real
-bash scripts/installer/install.sh                                               # exit 0; sentinel-file check; idempotent
+bash scripts/installer/install.sh                                               # exit 0; idempotent
 
 # (Windows path) PowerShell parallel
 pwsh -File scripts/installer/install.ps1 -DryRun                                # exit 0; Quick Start banner
@@ -44,11 +48,11 @@ pwsh -File scripts/installer/install.ps1                                        
 
 Capture each command's exit code and stdout banner. Record at `<second-host>/.audit/cross-machine-clone-install.md`.
 
-## 3. The Four-Element Discipline (per `src/apothem/rules/production-ready-prs.md` §8.3)
+## 3. The Four-Element Discipline (per `src/apothem/rules/production-ready-prs.md`)
 
 Verify each of the four invariants on the second host:
 
-### 3.1 Sentinel-File Safety
+### 3.1 Existing-Destination Safety
 
 ```bash
 # Re-run installer at the same destination.
@@ -56,7 +60,7 @@ bash scripts/installer/install.sh                                               
 pwsh -File scripts/installer/install.ps1                                        # Windows
 ```
 
-**Expected:** Installer detects existing valid `~/.claude/` (sentinel-file present), fast-forwards rather than re-installing or duplicating; exit 0.
+**Expected:** Installer detects the existing engine home, fast-forwards rather than re-installing or duplicating; exit 0.
 
 ### 3.2 Prerequisite-Checked
 
@@ -80,17 +84,19 @@ for i in 1 2 3 4 5; do bash scripts/installer/install.sh; done                  
 ### 3.4 Configurable via Environment Variables
 
 ```bash
-# Install to a non-default location.
-CLAUDE_PROJECT_DIR=/tmp/alt-claude bash scripts/installer/install.sh            # POSIX
-$env:CLAUDE_PROJECT_DIR='C:\tmp\alt-claude'; pwsh -File scripts/installer/install.ps1   # Windows
+# Install to a non-default engine home. APOTHEM_HOME is the destination
+# override the installers actually read; see the installer-environment-variables
+# reference for the full set.
+APOTHEM_HOME=/tmp/alt-apothem bash scripts/installer/install.sh                 # POSIX
+$env:APOTHEM_HOME='C:\tmp\alt-apothem'; pwsh -File scripts/installer/install.ps1   # Windows
 ```
 
-**Expected:** Installer honors the env-var; `~/.claude/` is NOT modified; the alt destination contains the expected layout.
+**Expected:** Installer honors the env-var; the default `$HOME/.apothem` is NOT created; the alt destination contains the expected layout.
 
 ## 4. Validator-Suite Verification (Post-Install)
 
 ```bash
-cd ~/.claude
+cd "$HOME/.apothem"
 make validate                                                 # 50 conformity validators
 make headers-doctor                                           # file-header-grep → passed:true
 make ai-surfaces-doctor                                       # multi-surface-coherence → passed:true
@@ -106,34 +112,48 @@ make test                                                     # pytest 2265/2265
 ```bash
 # POSIX path — interactive uninstall
 bash scripts/installer/uninstall.sh                           # answers: "y" to confirm
-ls ~/.claude 2>&1                                             # "No such file or directory"
+apothem verify --harness claude-code                          # reports the harness as not installed
 
 # Re-install from clone, then uninstall non-interactively
-git clone https://github.com/ahmed-g-gad/apothem.git ~/.claude
+git clone https://github.com/ahmed-g-gad/apothem.git "$HOME/.apothem"
 bash scripts/installer/uninstall.sh --yes
-ls ~/.claude 2>&1                                             # "No such file or directory"
+apothem verify --harness claude-code                          # reports the harness as not installed
 ```
 
-**Expected:** Interactive flow prompts; `--yes` skips the prompt for batch runs; both flows leave `~/.claude/` cleanly removed; companion shell-profile env-var references are cleaned up.
+**Expected:** Interactive flow prompts; `--yes` skips the prompt for batch runs; both flows leave the Claude Code configuration root free of Apothem-materialized files; companion shell-profile env-var references are cleaned up.
 
 ## 6. Safety-Guard Verification
 
+The uninstaller's guard is a source-tree shape check, not a sentinel file: it
+proceeds only when the target holds `src/apothem/` alongside either
+`pyproject.toml` or `.claude-plugin/`. Drive these probes with `APOTHEM_HOME`,
+the variable the script reads — a probe written against a variable the script
+ignores does not test the guard, it runs the uninstaller against your real
+install.
+
 ```bash
-# Run uninstall against a path that fails the sentinel-file check.
-mkdir -p /tmp/not-a-claude-install
-CLAUDE_PROJECT_DIR=/tmp/not-a-claude-install bash scripts/installer/uninstall.sh --yes
+# Run uninstall against a directory that is not an apothem source tree.
+mkdir -p /tmp/not-an-apothem-install
+APOTHEM_HOME=/tmp/not-an-apothem-install bash scripts/installer/uninstall.sh --yes
 ```
 
-**Expected:** Uninstaller refuses; emits "sentinel-file missing; refusing to remove unsafe target" diagnostic; exit non-zero. The path was NOT touched.
+**Expected:** Uninstaller refuses; emits `No apothem source found at /tmp/not-an-apothem-install — nothing to uninstall`; exit non-zero. The path was NOT touched.
 
 ```bash
-# Run uninstall against $HOME, /, or empty path.
-CLAUDE_PROJECT_DIR=$HOME bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
-CLAUDE_PROJECT_DIR=/ bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
-CLAUDE_PROJECT_DIR='' bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
+# Run uninstall against $HOME, /, and an empty path.
+APOTHEM_HOME=$HOME bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
+APOTHEM_HOME=/ bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
+APOTHEM_HOME='' bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
 ```
 
-**Expected:** Each refuses with explicit "unsafe target" diagnostic; none touch the filesystem.
+**Expected:** Each refuses with the same `No apothem source found at …` diagnostic, because none of the three holds the source-tree shape; none touch the filesystem.
+
+```bash
+# An explicit APOTHEM_SOURCE that is not a source tree is rejected separately.
+APOTHEM_SOURCE=/tmp/not-an-apothem-install bash scripts/installer/uninstall.sh --yes
+```
+
+**Expected:** Refuses with `APOTHEM_SOURCE is not an apothem source tree: /tmp/not-an-apothem-install`; exit non-zero.
 
 ## 7. Reporting
 
@@ -152,7 +172,7 @@ Surface findings to the maintainer:
 
 - [ ] §1 pre-conditions met
 - [ ] §2 clone-and-install succeeds on both POSIX and Windows shells
-- [ ] §3 four-element discipline holds (sentinel-file safety; prerequisite-checked; idempotent; env-var configurable)
+- [ ] §3 four-element discipline holds (existing-destination safety; prerequisite-checked; idempotent; env-var configurable)
 - [ ] §4 every validator gate green
 - [ ] §5 interactive uninstall succeeds; `--yes` succeeds without prompt
 - [ ] §6 every safety-guard refusal fires
