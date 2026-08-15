@@ -72,7 +72,11 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 
 **Prerequisites:** Node.js 18+ (for `npx`) and system Python 3.10+ on `PATH`.
 The shim locates the interpreter and forwards every CLI command to the bundled
-engine — nothing is placed permanently on your system.
+engine — nothing is placed permanently on your system. It tries `python3`,
+`python`, then `py -3` in that order; set **`APOTHEM_PYTHON`** to an
+interpreter path to skip the probe, which is what you need when Python is
+installed but not on `PATH`, or when several versions are and you want a
+specific one.
 
 ```bash title="npx"
 npx @ahmed-g-gad/apothem install --harness claude-code
