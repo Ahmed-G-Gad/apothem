@@ -103,30 +103,6 @@ class TestSyncRuntimeSvgs:
             assert (assets / name).read_text(encoding="utf-8") == f"<svg>{name}</svg>"
 
 
-class TestMirrorSiteSourceAssets:
-    """Mirroring the logo pair into the site source tree.
-
-    Covers that the destination directory is created rather than assumed.
-    """
-
-    def test_mirrors_logo_pair_creating_destination(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        assets = tmp_path / "assets"
-        dest = tmp_path / "site" / "src" / "assets"  # does not exist yet
-        assets.mkdir()
-        for name in ("logo.svg", "logo-dark.svg"):
-            (assets / name).write_text(name, encoding="utf-8")
-        monkeypatch.setattr(rar, "ASSETS", assets)
-        monkeypatch.setattr(rar, "SITE_SRC_ASSETS", dest)
-
-        rar.mirror_site_source_assets()
-
-        # The destination is created on demand and both masters land.
-        assert (dest / "logo.svg").is_file()
-        assert (dest / "logo-dark.svg").is_file()
-
-
 class TestMirrorSitePublic:
     """Mirroring the published web asset subset.
 

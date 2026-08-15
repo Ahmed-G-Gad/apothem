@@ -32,7 +32,6 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 ASSETS = REPO_ROOT / "assets"
 SRC = ASSETS / "src"
 SITE_PUBLIC = REPO_ROOT / "site" / "public"
-SITE_SRC_ASSETS = REPO_ROOT / "site" / "src" / "assets"
 
 
 def find_resvg(operator_override: str | None) -> Path:
@@ -153,13 +152,6 @@ def mirror_site_public() -> None:
         shutil.copy2(ASSETS / name, SITE_PUBLIC / name)
 
 
-def mirror_site_source_assets() -> None:
-    """Mirror the optimized logo sources used by the Fumadocs site hero images."""
-    SITE_SRC_ASSETS.mkdir(parents=True, exist_ok=True)
-    for name in ("logo.svg", "logo-dark.svg"):
-        shutil.copy2(ASSETS / name, SITE_SRC_ASSETS / name)
-
-
 def main() -> int:
     """Re-render the raster asset set from the SVG masters; return the exit.
 
@@ -251,10 +243,12 @@ def main() -> int:
         )
         print("[OK] twitter-card.png (1200x628)")
 
-    # 9) Site asset mirrors
+    # 9) Site asset mirror. Only site/public/ — a src/assets mirror used to be
+    # written here for "Fumadocs hero images", but nothing under site/ ever
+    # imported it and site/src/ is not in the tree, so it created a directory
+    # and two files no build step read.
     mirror_site_public()
-    mirror_site_source_assets()
-    print("[OK] site asset mirrors")
+    print("[OK] site asset mirror")
 
     print("\nRebuild complete. Run 'git diff --stat assets/' to review.")
     return 0
