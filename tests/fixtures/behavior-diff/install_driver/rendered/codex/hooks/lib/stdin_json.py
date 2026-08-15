@@ -2,10 +2,18 @@
 
 """Shared hook stdin JSON reader.
 
-The four hook entry points that read the harness's PreToolUse / PostToolUse /
-statusline stdin payload each hand-rolled the same read-and-parse sequence with
-divergent exception handling. This is the one canonical reader they consume so
-the read path cannot drift between them.
+Four hook entry points read the harness's PreToolUse / PostToolUse /
+statusline stdin payload. This is the canonical reader for that sequence.
+
+Consumed by ``emit_hook_context`` only. ``askuserquestion_validator``,
+``proactive_compaction_tracker`` and ``session_end_gate`` still carry a local
+``_read_payload`` copy: they sit in ``hooks/`` rather than ``hooks/lib/`` and
+set up no path to import from here, so adopting this reader means adding that
+bootstrap to three entry points that run on every tool call — a change worth
+reviewing rather than slipping in. Their bodies are otherwise identical to
+this one and are kept deliberately in step; drift between them is the defect
+this module exists to prevent, and it has happened once already (they caught
+only ``OSError`` where this catches ``ValueError`` too).
 
 Contract (fail-open, matching the hooks' never-crash discipline):
 
