@@ -47,3 +47,7 @@ flowchart TD
 | [Quell-Layout](/docs/architecture/source-layout) | Warum Apothem ein `src/`-Layout verwendet und wie der Baum organisiert ist. |
 | [Installations-Workflow](/docs/architecture/installation-workflow) | Wie `apothem install`, `update` und `uninstall` durchgängig funktionieren. |
 | [Delegierte Arbeiter](/docs/architecture/agents) | Repository-bezogene Anweisungen für Multi-Worker-Laufzeiten, die in diesem Repository arbeiten. |
+| [Eigenständige Laufzeitumgebung](/docs/architecture/self-contained-runtime) | Wie die Engine von Apothem aus jedem Checkout läuft — internalisierte Abhängigkeiten, das PYTHONPATH=src-Aufrufmodell und der Bootstrap des Plugin-Baums. |
+| [Strategie zur Abhängigkeits-Internalisierung](/docs/architecture/vendoring-strategy) | Welche Drittanbieter-Pakete Apothem unter src/apothem/_vendor/ internalisiert, welche Systemvoraussetzungen bleiben und wie internalisierte Kopien aktualisiert werden. |
+| [Cohort-Packaging-Vertrag](/docs/architecture/cohort-packaging-contract) | Der stabile, downstream-konsumierbare Vertrag für Cohort-Packaging und Plugin-Manifeste — Cohorts aufzählen und ihre harness-spezifischen nativen Ziele auflösen, ohne die Zuordnung neu abzuleiten. |
+| [CI/CD-Pipeline-Diagramm](/docs/architecture/cicd-pipeline) | Visuelle Karte und Spuraufschlüsselung der Workflow-Phasen für Build, Test, Lint, Sicherheit und Veröffentlichung, die jede Codeänderung und jedes Release kontrollieren. |
