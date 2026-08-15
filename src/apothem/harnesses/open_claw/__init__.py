@@ -7,9 +7,11 @@ OpenClaw's user-global configuration file. Delegates install logic to
 :mod:`apothem.harnesses.open_claw.install`, which renders the native config
 via :mod:`apothem.harnesses.open_claw.materializer`. OpenClaw's
 ``agents.defaults.skills`` is a name allowlist (not a directory loader) and MCP
-is a CLI surface, so Apothem authors no config keys; the support cohort lands
-under ``~/.openclaw/.apothem/support/`` and the projected profile document is written
-there as operator reference.
+is a CLI surface, so Apothem authors no config keys; the shared cohorts (rules,
+agents, skills, hooks, templates) land as individual files under
+``~/.openclaw/.apothem/support/`` for operator reference. No single profile
+document is projected — OpenClaw auto-loads no instruction file, so the
+operator wires the cohorts in through the vendor's own mechanisms.
 """
 
 from __future__ import annotations

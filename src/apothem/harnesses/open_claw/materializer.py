@@ -5,8 +5,8 @@
 OpenClaw's user-global config file (``~/.openclaw/openclaw.json``) is JSON with
 a vendor schema that rejects unknown top-level keys. Apothem authors no config
 keys here — it knows neither the operator's chosen skill names nor a file MCP
-surface — so the materializer emits an empty object; the projected managed-block
-profile document lands under the ``~/.openclaw/.apothem/support/`` support subtree
+surface — so the materializer emits an empty object; the shared cohorts land as
+individual files under the ``~/.openclaw/.apothem/support/`` support subtree
 instead (see ``materialize_native_config``).
 """
 
@@ -25,11 +25,13 @@ def materialize_native_config(profile: dict[str, Any]) -> str:
     config-file block. Apothem knows neither the operator's chosen skill names
     nor a file MCP surface here, so it authors no config keys — a directory path
     in a name-allowlist would be misread as a (non-existent) skill name.
-    Apothem's shared command/skill content lands under ``~/.openclaw/.apothem/support/``
-    (support subtree); the projected managed-block profile document is written
-    there as operator reference (OpenClaw has no auto-loaded instruction file,
-    so the operator wires it via the vendor's own mechanisms). Returns a JSON
-    string ready to be written to ``~/.openclaw/openclaw.json``.
+    Apothem's shared cohorts land as individual files under
+    ``~/.openclaw/.apothem/support/`` (support subtree) for operator reference.
+    No managed-block profile document is projected: OpenClaw auto-loads no
+    instruction file, so there is nothing for a single document to be wired
+    into — the operator references the cohorts through the vendor's own
+    mechanisms. Returns a JSON string ready to be written to
+    ``~/.openclaw/openclaw.json``.
     """
     _ = profile
     config: dict[str, Any] = {}
