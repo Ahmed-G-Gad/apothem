@@ -785,6 +785,42 @@ def test_status_unreadable_default_profile_reports_unknown_drift(
     assert "drift" not in drifts.values()
 
 
+def test_status_unreadable_default_profile_warns_when_nothing_installed(
+    runner: CliRunner, mock_adapter: MagicMock, tmp_path
+) -> None:
+    """A broken baseline is surfaced even when no harness is installed.
+
+    The 'unknown' drift cell is only emitted for an *installed* harness; with
+    nothing installed every cell reads 'absent' — true, but it conceals that
+    the baseline never loaded. The advisory is then the only channel that
+    reports the degradation, and it matters most here: a malformed profile is
+    likeliest right after hand-editing a fresh one, when nothing is installed.
+    """
+    bad_profile = tmp_path / "profile.yaml"
+    bad_profile.write_text("identity: [unclosed", encoding="utf-8")
+    mock_adapter.is_installed.return_value = False
+    with (
+        patch(
+            "apothem.cli._cmd_status._resolve_profile_path",
+            return_value=bad_profile,
+        ),
+        patch("apothem.cli._load_adapter_for_entry", return_value=mock_adapter),
+    ):
+        result = runner.invoke(main, ["status", "--json"])
+    assert result.exit_code == 0, result.output
+    data = json.loads(result.output.strip())
+    # No 'unknown' cell exists to carry the signal, so warnings must.
+    assert "unknown" not in {row["drift"] for row in data["results"]}
+
+    warnings = data["warnings"]
+    assert len(warnings) == 1, warnings
+    entry = warnings[0]
+    assert entry["operation"] == "drift_baseline_unavailable"
+    assert entry["path"] == str(bad_profile)
+    # The advisory names the consequence, not merely that something failed.
+    assert "unknown" in str(entry["message"])
+
+
 def test_harnesses_list_json_load_failure_is_error_row(runner: CliRunner) -> None:
     """A broken adapter is a JSON error row — never styled text on stdout.
 

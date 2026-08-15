@@ -304,6 +304,40 @@ def _placeholder_advisory_entry(
     }
 
 
+def _baseline_unavailable_entry(
+    profile_path: Path, exc: ProfileValidationError
+) -> dict[str, object]:
+    """Build the lifecycle-envelope advisory for an unreadable drift baseline.
+
+    ``status`` degrades drift rather than aborting when the default profile
+    will not load, which is right — the installed/verified facts stay
+    reportable. But the degradation needs its own channel: the ``unknown``
+    drift cell is only emitted for an *installed* harness, so with nothing
+    installed every cell reads ``absent`` and the broken baseline leaves no
+    trace at all. This advisory carries the path, the parse failure, and the
+    fix, so a degraded sweep is never mistaken for a clean one.
+    """
+    diagnostic = exc.diagnostic
+    return {
+        "harness": None,
+        "outcome": "advisory",
+        "operation": "drift_baseline_unavailable",
+        "path": str(profile_path),
+        "code": diagnostic.code,
+        # `reason` stays its own field rather than being inlined: a YAML
+        # syntax failure renders as a multi-line parser dump, which would
+        # make the one-line terminal advisory unreadable.
+        "reason": diagnostic.reason,
+        "fix": diagnostic.fix,
+        "message": (
+            f"Drift baseline unavailable: {profile_path} could not be loaded "
+            f"({diagnostic.code}). Drift reads 'unknown' for installed "
+            f"harnesses; installed and verified are unaffected. "
+            f"{diagnostic.fix}"
+        ),
+    }
+
+
 def _invoke_with_project(
     fn: Callable[..., object], *args: object, project: Path | None
 ) -> object:

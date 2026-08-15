@@ -46,6 +46,12 @@ for installed harnesses (the installed/verified facts are still reported)
 rather than aborting the sweep. An explicit `--profile` that cannot be loaded
 is a user error and aborts with a structured error instead.
 
+The degradation is always reported: `status` prints an advisory naming the
+profile and the fix, and the `--json` envelope carries a matching
+`drift_baseline_unavailable` entry in `warnings`. This matters most when no
+harness is installed — every row then reads `absent` and no `unknown` cell
+exists, so the advisory is the only signal that the baseline never loaded.
+
 ## Options
 
 | Option | Description |
@@ -63,6 +69,9 @@ is a user error and aborts with a structured error instead.
 
 The `--json` envelope carries one result row per registered harness. Each row
 carries the documented keys `harness`, `installed`, `verified`, and `drift`.
+`warnings` is empty on a clean sweep; when the default profile could not be
+loaded it carries one `drift_baseline_unavailable` entry with `path`, `code`,
+`reason`, and `fix`.
 
 ```json
 {
