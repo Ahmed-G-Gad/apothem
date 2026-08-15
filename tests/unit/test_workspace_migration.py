@@ -250,3 +250,23 @@ def test_migrate_reports_a_legacy_home_it_could_not_remove(
     leftover = tmp_path / ".apothem" / "claude_code"
     assert leftover.exists()
     assert any(str(leftover) in note for note in outcome.notes)
+
+
+def test_migrate_refuses_a_custom_working_directory_name(tmp_path: Path) -> None:
+    """A non-default directory_name is refused, not silently mishandled.
+
+    Only the migration target honours the name; discovery resolves the legacy
+    tree from the module constant. Accepting a custom name would read the
+    legacy homes from `.apothem/` and merge them into the named tree -- the
+    wrong source, in code that moves and deletes a user's records. Nothing
+    passes a non-default today; this pins the refusal so wiring the profile's
+    workspace.directory_name through cannot quietly open that gap.
+    """
+    _legacy_home(tmp_path, "claude_code")
+
+    with pytest.raises(WorkspaceMigrationError) as excinfo:
+        migrate_workspace(tmp_path, directory_name=".custom")
+
+    # The message names both the unsupported value and the reason.
+    assert ".custom" in str(excinfo.value)
+    assert "wrong tree" in str(excinfo.value)

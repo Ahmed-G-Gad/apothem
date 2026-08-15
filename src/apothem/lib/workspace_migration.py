@@ -253,16 +253,35 @@ def migrate_workspace(
 
     Args:
         base: The base directory the working directory sits beneath.
-        directory_name: The shared working-directory name (default ``.apothem``).
+        directory_name: The shared working-directory name. Only the default
+            ``.apothem`` is supported; see Raises.
 
     Returns:
         A :class:`MigrationOutcome` describing what was migrated.
 
     Raises:
-        WorkspaceMigrationError: When *base* is not an existing directory.
+        WorkspaceMigrationError: When *base* is not an existing directory, or
+            when *directory_name* is not the default. Only the migration
+            TARGET honours the name — discovery (``_legacy_data_home``,
+            ``detect_legacy_layout``) resolves the legacy tree from the module
+            constant instead. Accepting a custom name would therefore read the
+            legacy homes from ``.apothem/`` while merging them into the named
+            tree: the wrong source, in code that moves and deletes a user's
+            records. Refusing is the honest behaviour until discovery is
+            threaded through too. Nothing passes a non-default today, so this
+            raise is unreachable from the shipped CLI; it exists to stop the
+            trap closing when the profile's ``workspace.directory_name`` is
+            eventually wired to this call.
     """
     if not base.is_dir():
         raise WorkspaceMigrationError(f"base directory does not exist: {base}")
+    if directory_name != _APOTHEM_SUBTREE:
+        raise WorkspaceMigrationError(
+            f"migrate_workspace supports only the default working directory "
+            f"{_APOTHEM_SUBTREE!r}; got {directory_name!r}. Legacy-layout "
+            f"discovery is not yet parameterized, so a custom name would "
+            f"migrate from the wrong tree."
+        )
 
     outcome = MigrationOutcome(base=base)
     legacy_homes = _legacy_home_dirs(base)
