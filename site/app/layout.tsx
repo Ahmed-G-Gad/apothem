@@ -37,6 +37,19 @@ export const metadata: Metadata = {
   // Wires the PWA web app manifest (public/manifest.json) into the document
   // head so the install/theme metadata is discoverable.
   manifest: '/manifest.json',
+  // Without this the head carries no icon link at all: only `/favicon.ico` was
+  // reachable, and then only via the browser's blind root probe. favicon.svg
+  // ships and the brand page documents it as serving browser tabs, but nothing
+  // referenced it. Every file named here is already in `public/`.
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon.ico', sizes: 'any' },
+    ],
+    apple: '/apple-touch-icon-180.png',
+  },
   title: {
     default: 'Apothem',
     template: '%s — Apothem',
@@ -87,7 +100,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="flex min-h-screen flex-col">
         <a
           href="#main-content"
-          className="sr-only z-50 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] focus-visible:not-sr-only focus-visible:absolute focus-visible:inset-inline-start-4 focus-visible:top-4"
+          className="sr-only z-50 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] focus-visible:not-sr-only focus-visible:absolute focus-visible:start-4 focus-visible:top-4"
         >
           Skip to content
         </a>
