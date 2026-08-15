@@ -56,7 +56,7 @@ Claude Code is the one harness with a **full standalone plugin**:
 | Skills | Yes | The manifest `skills` reference loads the skill cohort from the plugin tree. |
 | Hooks | Yes | The manifest `hooks` field points at the bundled `hooks.json`, wired with `${CLAUDE_PLUGIN_ROOT}`-relative dispatch — the PreToolUse/SessionStart/etc. pipeline fires from the plugin alone. |
 | Rules | Degraded — requires `apothem install` for full reference tree | The plugin carries no rules-directory primitive; the embedded directives degrade to a SessionStart `additionalContext` pointer. The full `${HARNESS_ROOT}/rules/` reference tree lands only via the engine. |
-| Settings / output-styles / gate matchers | No — requires `apothem install` | `settings.json` (managed allow/deny + statusline), `output-styles/`, and the conformity `gate.py` + `schemas/` ride beside the engine install, not the plugin package. |
+| Settings / output-styles / statuslines / gate matchers | No — requires `apothem install` | `settings.json` (managed allow/deny gates only — see the MCP row above), `output-styles/`, `statuslines/`, and the conformity `gate.py` + `schemas/` ride beside the engine install, not the plugin package. The statusline ships as `statuslines/statusline.md`, not as a `settings.json` key. |
 | MCP | No — operator-owned | MCP servers register via `claude mcp add` into `~/.claude.json` / project `.mcp.json`; neither the plugin nor the engine authors entries. |
 
 Bundle status: this is the reference plugin-alone implementation — commands,
