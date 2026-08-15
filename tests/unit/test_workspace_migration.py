@@ -218,3 +218,35 @@ def test_backup_tree_preserves_broken_symlink(tmp_path: Path) -> None:
     _backup_tree(source, backup_root, "legacy")
 
     assert (backup_root / "legacy" / "dangling").is_symlink()
+
+
+def test_migrate_reports_a_legacy_home_it_could_not_remove(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A swallowed rmtree failure is surfaced, not reported as a clean move.
+
+    ``shutil.rmtree`` runs with ``ignore_errors=True`` so a locked or
+    permission-denied tree cannot abort a migration whose records are already
+    merged and backed up. Windows hits that case routinely. Without a note the
+    operator is told the migration succeeded while the legacy home is still on
+    disk, and the next run rediscovers it.
+    """
+    home = _legacy_home(tmp_path, "claude_code")
+    MemoryStore(home).add(_memory_record("rec-a"))
+    # Simulate the swallowed failure: removal is attempted and silently does
+    # nothing, exactly as ignore_errors leaves it on a locked tree.
+    monkeypatch.setattr(
+        "apothem.lib.workspace_migration.shutil.rmtree",
+        lambda *args, **kwargs: None,
+    )
+
+    outcome = migrate_workspace(tmp_path)
+
+    # The records still migrated -- the merge happened before the removal.
+    shared = resolve_shared_data_home(base=tmp_path)
+    assert {record.id for record in MemoryStore(shared).records()} == {"rec-a"}
+    assert outcome.migrated is True
+    # ...and the leftover is named, with its path, rather than passing silently.
+    leftover = tmp_path / ".apothem" / "claude_code"
+    assert leftover.exists()
+    assert any(str(leftover) in note for note in outcome.notes)

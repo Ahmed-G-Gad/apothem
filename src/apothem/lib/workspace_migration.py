@@ -303,6 +303,16 @@ def migrate_workspace(
         # union merge, so its records are preserved both in the shared store and
         # in the backup.
         shutil.rmtree(home_dir, ignore_errors=True)
+        # `ignore_errors` keeps a locked or permission-denied tree from aborting
+        # a migration whose records are already safe, but it also hides the
+        # leftover. Report it: silence would leave the operator believing the
+        # legacy home is gone while the next run rediscovers it.
+        if home_dir.exists():
+            outcome.notes.append(
+                f"legacy data home {home_dir} could not be removed — its records "
+                "are merged into the shared store and preserved in the backup; "
+                "delete the directory manually"
+            )
         outcome.migrated = True
 
     if has_legacy_plans:
