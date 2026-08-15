@@ -208,8 +208,10 @@ def main() -> int:
         )
     print("[OK] apple-touch-icon set (120/144/152/180)")
 
-    # 4) Logo raster set (light). 192 + 512 are the PWA-manifest maskable
-    # installability icons referenced from site/public/manifest.json.
+    # 4) Logo raster set (light). 192 + 512 are the manifest's `purpose: "any"`
+    # installability icons in site/public/manifest.json. The maskable pair is a
+    # different pair of files, rendered from the full-bleed tile master at 5b —
+    # an "any" icon has no safe zone and is cropped by a maskable mask.
     for size in (16, 32, 64, 128, 192, 256, 512, 1024):
         render_png(resvg, SRC / "logo.svg", ASSETS / f"logo-{size}.png", size)
     print("[OK] logo raster set (light; 16..1024)")
