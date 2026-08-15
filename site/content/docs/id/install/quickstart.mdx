@@ -47,10 +47,13 @@ mesin di `~/.apothem`, dan mencetak pemanggilan mesin yang tepat untuk shell And
 saat selesai.
 
 ```text
-Apothem installed.
-Run the engine with:
+Installation complete.
 
-  apothem <command>
+The 'apothem' command is on your PATH.
+
+Recommended first step — the guided setup (profile -> preview -> install):
+
+  apothem quickstart
 ```
 
 <Callout title="Perintah `apothem`">
@@ -112,8 +115,7 @@ apothem install --harness claude-code
 ```
 
 ```text
-Installed claude-code.
-Wrote: ~/.claude/settings.json
+✓ Installed claude-code -> /home/you/.claude/settings.json
 ```
 
 Adaptor bercakupan proyek menulis di dalam sebuah proyek alih-alih direktori home
@@ -148,7 +150,7 @@ apothem verify --harness claude-code
 ```
 
 ```text
-claude-code: managed targets verified.
+✓ claude-code is verified at /home/you/.claude/settings.json
 ```
 
 `verify` keluar dengan kode bukan-nol jika konfigurasi hilang atau menyimpang,

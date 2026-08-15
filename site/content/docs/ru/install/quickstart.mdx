@@ -45,10 +45,13 @@ irm https://apothem.ahmedgad.com/install.ps1 | iex
 в `~/.apothem` и по завершении выводит точный вызов движка для вашей оболочки.
 
 ```text
-Apothem installed.
-Run the engine with:
+Installation complete.
 
-  apothem <command>
+The 'apothem' command is on your PATH.
+
+Recommended first step — the guided setup (profile -> preview -> install):
+
+  apothem quickstart
 ```
 
 <Callout title="Команда `apothem`">
@@ -110,8 +113,7 @@ apothem install --harness claude-code
 ```
 
 ```text
-Installed claude-code.
-Wrote: ~/.claude/settings.json
+✓ Installed claude-code -> /home/you/.claude/settings.json
 ```
 
 Адаптеры с областью проекта пишут внутрь проекта, а не в ваш домашний каталог,
@@ -146,7 +148,7 @@ apothem verify --harness claude-code
 ```
 
 ```text
-claude-code: managed targets verified.
+✓ claude-code is verified at /home/you/.claude/settings.json
 ```
 
 `verify` завершается с ненулевым кодом, если конфигурация отсутствует или

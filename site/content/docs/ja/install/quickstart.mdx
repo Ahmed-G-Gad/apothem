@@ -44,10 +44,13 @@ irm https://apothem.ahmedgad.com/install.ps1 | iex
 `~/.apothem` に配置し、完了時にあなたのシェル向けの正確なエンジン呼び出しを出力します。
 
 ```text
-Apothem installed.
-Run the engine with:
+Installation complete.
 
-  apothem <command>
+The 'apothem' command is on your PATH.
+
+Recommended first step — the guided setup (profile -> preview -> install):
+
+  apothem quickstart
 ```
 
 <Callout title="`apothem` コマンド">
@@ -107,8 +110,7 @@ apothem install --harness claude-code
 ```
 
 ```text
-Installed claude-code.
-Wrote: ~/.claude/settings.json
+✓ Installed claude-code -> /home/you/.claude/settings.json
 ```
 
 プロジェクトスコープのアダプターは、ホームディレクトリではなくプロジェクトの内部に
@@ -142,7 +144,7 @@ apothem verify --harness claude-code
 ```
 
 ```text
-claude-code: managed targets verified.
+✓ claude-code is verified at /home/you/.claude/settings.json
 ```
 
 `verify` は設定が欠けている、またはドリフトしている場合に非ゼロのコードで終了する
