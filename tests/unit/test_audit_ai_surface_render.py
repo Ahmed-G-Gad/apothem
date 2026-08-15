@@ -35,10 +35,9 @@ from apothem.audit.ai_surface_catalog import (
     SURFACE_PRESENT,
     SurfaceDescriptor,
 )
+from apothem.audit.ai_surface_model import PlanAction, SurfaceScan
 from apothem.audit.ai_surface_parsing import HeadingBlock
-from apothem.audit.scan_ai_surfaces import (
-    PlanAction,
-    SurfaceScan,
+from apothem.audit.ai_surface_render import (
     emit_json,
     render_markdown,
     serialise_scan,
