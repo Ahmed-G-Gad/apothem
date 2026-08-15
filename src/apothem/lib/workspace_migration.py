@@ -198,10 +198,10 @@ def _merge_learning(legacy: LearningStore, shared: LearningStore) -> int:
         identity = _signal_identity(signal)
         if identity in seen:
             continue
-        # Append directly through the store's private appender — capture's
-        # opt-in gate governs NEW signals, not the migration of already-captured
-        # ones, so a flag-off operator does not lose previously-captured data.
-        shared._append(signal)
+        # Append ungated rather than through capture(): the opt-in gate governs
+        # NEW signals, not the migration of already-captured ones, so a
+        # flag-off operator does not lose previously-captured data.
+        shared.append_signal(signal)
         seen.add(identity)
         merged += 1
     return merged

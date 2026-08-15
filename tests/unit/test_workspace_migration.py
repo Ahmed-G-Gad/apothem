@@ -95,8 +95,8 @@ def test_migrate_unions_two_harness_stores(tmp_path: Path) -> None:
     MemoryStore(home_b).add(_memory_record("rec-shared"))  # identical body
     ContextStore(home_a).add(_fragment("frag-a"))
     ContextStore(home_b).add(_fragment("frag-b"))
-    LearningStore(home_a)._append(_signal("sig-a"))
-    LearningStore(home_b)._append(_signal("sig-a"))  # duplicate, deduped
+    LearningStore(home_a).append_signal(_signal("sig-a"))
+    LearningStore(home_b).append_signal(_signal("sig-a"))  # duplicate, deduped
 
     # Act.
     outcome = migrate_workspace(tmp_path)

@@ -277,7 +277,7 @@ class LearningStore:
         Returns:
             The path to the canonical signals file.
         """
-        # Serialize the check-then-write under the same lock _append() holds, so
+        # Serialize the check-then-write under the same lock append_signal() holds, so
         # a concurrent first capture cannot append a signal line between the
         # existence check and the empty-store write that clobbers it.
         with advisory_lock(self._lock_path):
@@ -286,11 +286,20 @@ class LearningStore:
                 write_bytes_atomically(self._signals_path, b"")
         return self._signals_path
 
-    def _append(self, signal: LearningSignal) -> None:
+    def append_signal(self, signal: LearningSignal) -> None:
         """Append *signal* as one JSON Lines record, creating the dir if absent.
 
+        This is the raw durable write. It neither validates *signal* nor
+        consults ``enforcement.learning_loop`` — :func:`capture` is the gated
+        entry point that does both, and new signals MUST go through it.
+
+        Appending directly is correct only where the opt-in gate does not
+        apply because the signal was already captured under it: the workspace
+        migration merges previously-captured records, and gating those on the
+        operator's *current* flag would silently discard their history.
+
         Args:
-            signal: The validated signal to persist.
+            signal: An already-validated signal to persist verbatim.
         """
         self._learning_dir.mkdir(parents=True, exist_ok=True)
         # Hold the advisory lock around the durable O_APPEND so concurrent
@@ -326,7 +335,7 @@ def capture(
     if not profile.enforcement.learning_loop:
         return None
     validate_signal(signal.to_dict())
-    store._append(signal)
+    store.append_signal(signal)
     return signal
 
 
