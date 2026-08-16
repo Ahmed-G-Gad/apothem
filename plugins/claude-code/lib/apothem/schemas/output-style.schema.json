@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://apothem.ahmedgad.com/schemas/output-style.schema.json",
+  "title": "Output-style",
+  "description": "Frontmatter schema for output-style definitions under src/apothem/output-styles/. The required floor is name + description, matching the mechanical floor the conformity grep enforces on every cohort file; id, applies-to, version, and last-reviewed are optional extensions.",
+  "type": "object",
+  "required": ["name", "description"],
+  "additionalProperties": true,
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Stable kebab-case identifier for the output style.",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable style name shown in /output-style."
+    },
+    "description": {
+      "type": "string",
+      "description": "One- to two-sentence statement of the style's tone, format, and intended use."
+    },
+    "applies-to": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Artifact classes or contexts the style applies to."
+    },
+    "version": {
+      "type": "string",
+      "description": "SemVer version of the output-style definition.",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "last-reviewed": {
+      "type": "string",
+      "description": "ISO 8601 date of last human review.",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    }
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://apothem.ahmedgad.com/schemas/agent.schema.json",
+  "title": "Agent",
+  "description": "Frontmatter schema for persistent agent definitions under src/apothem/agents/. Reconciled to the Anthropic Claude Code subagent canonical format (https://code.claude.com/docs/en/sub-agents#supported-frontmatter-fields): only `name` and `description` are required; multi-word optional fields use camelCase; unrecognized fields are accepted as metadata.",
+  "type": "object",
+  "required": ["name", "description"],
+  "additionalProperties": true,
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Unique kebab-case identifier (lowercase letters and hyphens). The filename does not have to match.",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "description": {
+      "type": "string",
+      "description": "When Claude should delegate to this subagent (one to two sentences)."
+    },
+    "tools": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "array", "items": { "type": "string" } }
+      ],
+      "description": "Tools the subagent may invoke. Inherits all tools if omitted. Accepts a comma-separated string or a JSON array."
+    },
+    "disallowedTools": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "array", "items": { "type": "string" } }
+      ],
+      "description": "Tools to deny, removed from inherited or specified list. Accepts a comma-separated string or a JSON array."
+    },
+    "model": {
+      "type": "string",
+      "description": "Model selection: `sonnet`, `opus`, `haiku`, a full model ID (e.g. `claude-opus-4-7`), or `inherit`. Defaults to `inherit`."
+    },
+    "permissionMode": {
+      "type": "string",
+      "enum": ["default", "acceptEdits", "auto", "dontAsk", "bypassPermissions", "plan"],
+      "description": "How the subagent handles permission prompts."
+    },
+    "maxTurns": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Maximum number of agentic turns before the subagent stops."
+    },
+    "skills": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Skills to preload into the subagent's context at startup."
+    },
+    "mcpServers": {
+      "type": "array",
+      "description": "MCP servers available to this subagent. Each entry is either a server name (string) or an inline definition (object)."
+    },
+    "hooks": {
+      "type": "object",
+      "description": "Lifecycle hooks scoped to this subagent (PreToolUse, PostToolUse, Stop, etc.)."
+    },
+    "memory": {
+      "oneOf": [
+        { "type": "string", "enum": ["user", "project", "local"] },
+        { "type": "boolean" }
+      ],
+      "description": "Persistent memory scope: `user`, `project`, or `local`. Boolean `false` is accepted as the explicit no-memory marker; omit the field to inherit defaults."
+    },
+    "background": {
+      "type": "boolean",
+      "description": "Always run this subagent as a background task when true. Default: false."
+    },
+    "effort": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "xhigh", "max"],
+      "description": "Effort level when this subagent is active. Overrides the session effort level."
+    },
+    "isolation": {
+      "type": "string",
+      "enum": ["worktree"],
+      "description": "Set to `worktree` to run the subagent in a temporary git worktree."
+    },
+    "color": {
+      "type": "string",
+      "enum": ["red", "blue", "green", "yellow", "purple", "orange", "pink", "cyan"],
+      "description": "Display color for the subagent in the task list and transcript."
+    },
+    "initialPrompt": {
+      "type": "string",
+      "description": "Auto-submitted as the first user turn when this agent runs as the main session agent."
+    },
+    "version": {
+      "type": "string",
+      "description": "Apothem extension: SemVer version of the agent definition.",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "updated": {
+      "type": "string",
+      "description": "Apothem extension: ISO 8601 date of last revision.",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "portability": {
+      "type": "string",
+      "description": "Apothem extension: portability classification across harness adapters (e.g., `universal`, `claude-code-only`)."
+    }
+  }
+}

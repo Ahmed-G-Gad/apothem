@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: MIT
+
+# Per rules/agent-capability-discipline.md §1 / §3 / §7. Kiro
+# ratifies MCP via .kiro/settings/mcp.json (workspace) and
+# ~/.kiro/settings/mcp.json (user) — both operator-owned; the adapter
+# recognizes them but does not author entries. The vendor documents a
+# command-like surface via Agent Skills (kiro.dev/docs/skills) and CLI
+# custom agents, named below under custom_command_support; the adapter
+# delivers a single project steering file under .kiro/steering/ and does
+# not author command/skill/spec/hook cohorts (deliberate rules-only posture).
+
+mcp_servers:
+  - workspace-scope-.kiro/settings/mcp.json
+  - user-scope-~/.kiro/settings/mcp.json
+# Operator-owned MCP surface: the adapter recognizes it but authors no entries.
+mcp_servers_authored: false
+sub_agent_dispatch: false
+custom_command_support: "skills"
+recommended_postfix_rendering: "plain-text"
+long_context_compaction: "profile-managed"
+context_ignore_surface: "not-documented-in-current-pin"
+layered_context_surface: ".kiro/steering/*.md directory"
+lsp_symbol_navigation: "tracked-gap-no-adapter-owned-LSP-surface"
+hook_learning_capture: "artifact-evolution-cycle"
+standard_convention_pin: "STANDARD-CONVENTION-PIN.md"
+# web-fetch / browser-retrieval surface — the backing capability dimension for
+# rules/source-accessibility.md step 1 ("retrieve through the host's browser /
+# fetch capability"). The pinned snapshot catalogs config-materialization
+# surfaces, not the vendor tool surface, so the web-fetch tool is not yet
+# discovered against the pin — discovery-pending per
+# rules/agent-capability-discipline-matrix.md §1.
+web_fetch: "discovery-pending"
+tool_surface_restrictions:
+  - secrets-paths
+  - destructive-shell-ops
+  - network-write-unsigned
+system_prompt_template_path: "templates/apothem-rules.md"
+agent_memory_surface: "kiro-steering-persistent-context"

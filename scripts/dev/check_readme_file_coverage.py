@@ -106,15 +106,27 @@ FRONT_PAGE_READMES = frozenset(
 )
 
 
+# Generated distribution trees, matched by path prefix rather than by a bare
+# path part: every file is machine-emitted from a source elsewhere in the repo,
+# so a README row per file would index a copy, not an authored surface. These
+# carry their own drift gate — the generator is the contract, not a file table.
+# Prefix matching keeps the exclusion narrow: the bare part "claude-code" would
+# also silence unrelated folders that happen to share the name.
+GENERATED_TREES = frozenset({Path("plugins/claude-code")})
+
+
 def is_excluded(path: Path) -> bool:
     """Return True when the path sits in a tree the contract does not govern.
 
-    Two classes: the excluded trees named above, and the conformity fixture
-    corpora under ``tests/conformity/*/pass|fail/``, whose READMEs describe
-    what the corpus proves rather than indexing each fixture file.
+    Three classes: the excluded trees named above, the generated distribution
+    trees (matched by path prefix), and the conformity fixture corpora under
+    ``tests/conformity/*/pass|fail/``, whose READMEs describe what the corpus
+    proves rather than indexing each fixture file.
     """
     parts = path.parts
     if any(part in EXCLUDED_PARTS for part in parts):
+        return True
+    if any(path.is_relative_to(tree) for tree in GENERATED_TREES):
         return True
     return "conformity" in parts and ("pass" in parts or "fail" in parts)
 

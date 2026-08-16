@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: MIT
+
+# Per rules/agent-capability-discipline.md §1 / §3 / §7. opencode
+# anchors ~/.config/opencode/opencode.json (user-scope), then uses native
+# commands, skills, and agents discovery directories. Skills are a documented
+# native surface (skills/<name>/SKILL.md). Plugins are vendor-native (plugin
+# key + plugins/ directory) and operator-owned; no plugin package is authored.
+# MCP surface declared within opencode.json. Memory surface not documented as
+# durable. The native config is rendered directly (no Jinja template).
+
+mcp_servers:
+  - opencode.json-mcp-block
+# The adapter's materializer.py authors this MCP block from the shared profile.
+mcp_servers_authored: true
+sub_agent_dispatch: true
+custom_command_support: "markdown"
+recommended_postfix_rendering: "plain-text"
+long_context_compaction: "profile-managed"
+context_ignore_surface: "not-documented-in-current-pin"
+layered_context_surface: "opencode.json instructions plus native commands, skills, and agents"
+lsp_symbol_navigation: "tracked-gap-no-adapter-owned-LSP-surface"
+hook_learning_capture: "artifact-evolution-cycle"
+standard_convention_pin: "STANDARD-CONVENTION-PIN.md"
+# web-fetch / browser-retrieval surface — the backing capability dimension for
+# rules/source-accessibility.md step 1 ("retrieve through the host's browser /
+# fetch capability"). Vendor-confirmed PARTIAL: opencode ships an unconditional
+# built-in `webfetch` tool (fetch + read web pages), while `websearch` is
+# provider/env-gated (OpenCode provider or OPENCODE_ENABLE_EXA). The evidence
+# triple (vendor-doc-url, snapshot-id, snapshot-date) lives at its canonical
+# home, STANDARD-CONVENTION-PIN.md "Web-Fetch / Browser-Retrieval Surface", per
+# rules/agent-capability-discipline-matrix.md §1A.
+web_fetch: "partial"
+tool_surface_restrictions:
+  - secrets-paths
+  - destructive-shell-ops
+  - network-write-unsigned
+system_prompt_template_path: "n/a"
+agent_memory_surface: "n/a"

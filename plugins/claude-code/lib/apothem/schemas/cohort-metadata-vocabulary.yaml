@@ -1,0 +1,168 @@
+# SPDX-License-Identifier: MIT
+
+# Canonical cohort-metadata vocabulary.
+#
+# Single repo-controlled source of truth for the status names, severity names,
+# ownership classes, frontmatter key sets, version-field rules, output-contract
+# field shapes, and exemption markers that the ecosystem's cohort files,
+# schemas, validators, and output envelopes use. Where the repo controls a
+# vocabulary, this file names its canonical values and the artifact that owns
+# them; where a surface uses a distinct vocabulary for a distinct purpose, the
+# scope is stated explicitly so the distinction reads as intentional, not drift.
+#
+# Consumed by tests/unit/test_cohort_metadata_vocabulary.py, which asserts that
+# every live schema and validator listed under `controlled_by` agrees with the
+# values declared here. A divergence on either surface fails that test.
+
+schema_version: 1
+
+# --- Status vocabulary -------------------------------------------------------
+# Each entry is a distinct status surface with its own closed value set. They
+# are not unified into one global enum because they answer different questions
+# (a plan's lifecycle, a review's verdict, a propagation write's outcome, a
+# mechanical gate's pass/fail).
+status_vocabulary:
+  plan_lifecycle:
+    values: [draft, in-progress, converged, abandoned, superseded]
+    controlled_by: src/apothem/schemas/plan.schema.json
+    scope: the `status` field of a plan suite's frontmatter
+  review_verdict:
+    values: [pass, fail, not-run]
+    controlled_by: src/apothem/schemas/handoff-manifest.yaml
+    scope: the `plan_review.verdict` field of the handoff manifest
+  plan_design_applicability:
+    values: [architecture-bearing, non-architecture-bearing]
+    controlled_by: src/apothem/schemas/handoff-manifest.yaml
+    scope: the `plan_design.applicability` field of the handoff manifest
+  materialization_outcome:
+    values: [created, updated, unchanged, skipped, warning, error]
+    controlled_by: src/apothem/harnesses/_shared/install_driver.py
+    scope: the per-result `outcome` field of a propagation MaterializationResult
+  gate_result:
+    representation: boolean field `passed` plus process exit code
+    pass_exit_code: 0
+    fail_exit_code: 2
+    controlled_by: src/apothem/conformity/gate.py
+    scope: the mechanical pass/fail surface of every conformity validator
+
+# --- Severity vocabulary -----------------------------------------------------
+# Two distinct, orthogonal severity surfaces; neither subsumes the other.
+severity_vocabulary:
+  questionable_priority:
+    values: [p0, p1, p2]
+    controlled_by: src/apothem/schemas/handoff-manifest.yaml
+    scope: priority tier of an unresolved questionable in the handoff manifest
+  gate_finding_severity:
+    values: [error, warning]
+    controlled_by: src/apothem/conformity
+    scope: >-
+      finding tier emitted by validators that classify findings
+      (license-author-consistency, multi-surface-coherence); validators without
+      a tier surface the binary pass/fail of `gate_result` instead
+
+# --- Ownership classes -------------------------------------------------------
+# Propagation write-planning classes; gate destructive writes to operator-owned
+# and refuse vendor-reserved / immutable targets.
+ownership_classes:
+  values: [apothem-owned, generated, immutable, operator-owned, vendor-reserved]
+  controlled_by: src/apothem/lib/propagation.py
+
+# --- Frontmatter / native metadata -------------------------------------------
+# Two-tier model. The mechanical floor is the fast per-Write presence check the
+# conformity grep enforces on every cohort file; the authoritative contract is
+# the full per-cohort required-key set the JSON schema enforces at validation
+# time. The floor is a strict subset of the contract; the two tiers are
+# deliberate, not redundant.
+frontmatter:
+  mechanical_floor:
+    controlled_by: src/apothem/conformity/frontmatter_grep.py
+    required_keys:
+      rules: [alwaysApply, description, name]
+      agents: [description, name]
+      skills: [description, name]
+      commands: [description, name]
+      output-styles: [description, name]
+      hooks-messages: [description]
+  authoritative_contract:
+    required_keys:
+      agents:
+        controlled_by: src/apothem/schemas/agent.schema.json
+        keys: [description, name]
+      commands:
+        controlled_by: src/apothem/schemas/command.schema.json
+        keys:
+          [
+            allowed-tools,
+            argument-hint,
+            description,
+            disable-model-invocation,
+            name,
+            portability,
+            updated,
+            version,
+          ]
+      skills:
+        controlled_by: src/apothem/schemas/skill.schema.json
+        keys:
+          [
+            allowed-tools,
+            archetype,
+            description,
+            disable-model-invocation,
+            name,
+            updated,
+            userInvocable,
+            version,
+          ]
+      output-styles:
+        controlled_by: src/apothem/schemas/output-style.schema.json
+        # The schema's required floor is name + description (matching the
+        # mechanical floor); applies-to, id, last-reviewed, version are
+        # optional extensions the shipped styles do not carry.
+        keys: [description, name]
+  version_field_rule:
+    # SemVer `version` (`^\d+\.\d+\.\d+$`) frontmatter field.
+    required: [commands, skills]
+    # agent.schema.json and output-style.schema.json carry `version` as an
+    # optional extension; the shipped output-styles do not declare it.
+    optional: [agents, output-styles]
+    absent: [hooks-messages, plan, rules]
+
+# --- Output-contract field shapes --------------------------------------------
+# The JSON envelope shapes the repo emits. Validators and consumers bind to
+# these keys; a new emitter reuses one of these shapes rather than inventing a
+# field set.
+output_contract_fields:
+  conformity_grep_result:
+    keys: [findings, grep, passed, path]
+    controlled_by: src/apothem/conformity (every *_grep.py GrepResult)
+  hook_envelope_hook_specific:
+    keys: [hookSpecificOutput.additionalContext, hookSpecificOutput.hookEventName]
+    controlled_by: src/apothem/hooks/emit_hook_context.py
+    scope: events in HOOK_SPECIFIC_OUTPUT_EVENTS
+  hook_envelope_system_message:
+    keys: [systemMessage]
+    controlled_by: src/apothem/hooks/emit_hook_context.py
+    scope: PreCompact / PostCompact events
+  materialization_result:
+    required_keys: [message, operation, outcome, path]
+    optional_keys: [backup_path, detail, source]
+    controlled_by: src/apothem/harnesses/_shared/install_driver.py
+  materialization_run:
+    keys: [changed, counts, dry_run, files_written, harness, results]
+    controlled_by: src/apothem/harnesses/_shared/install_driver.py
+
+# --- Exemption markers -------------------------------------------------------
+exemption_markers:
+  authorship_header_exceptions:
+    controlled_by: src/apothem/schemas/header-exceptions.txt
+    scope: file classes exempt from the canonical SPDX header line
+  option_annotation_definitional_exclusions:
+    controlled_by: src/apothem/conformity/option_annotation_grep.py
+    scope: >-
+      rule and skill files that define the option-annotation convention; their
+      worked examples are specification material, not live invocations
+  propagation_destructive_gate:
+    marker: "destructive_gate: required"
+    controlled_by: src/apothem/harnesses/_shared/install_driver.py
+    scope: detail marker on a MaterializationResult for an operator-owned target

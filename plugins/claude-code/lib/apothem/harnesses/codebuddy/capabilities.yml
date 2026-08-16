@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: MIT
+
+# Per rules/agent-capability-discipline.md §1 / §3 / §7. CodeBuddy
+# ratifies MCP via .codebuddy/settings.json (project-scope; operator-owned;
+# the adapter recognizes it but does not author entries). The adapter
+# delivers a single project rules file under .codebuddy/rules/ and does
+# not dispatch sub-agents or author command/skill/hook cohorts.
+
+mcp_servers:
+  - project-scope-.codebuddy/settings.json-mcp
+# Operator-owned MCP surface: the adapter recognizes it but authors no entries.
+mcp_servers_authored: false
+sub_agent_dispatch: false
+custom_command_support: "no"
+recommended_postfix_rendering: "plain-text"
+long_context_compaction: "profile-managed"
+context_ignore_surface: "not-documented-in-current-pin"
+layered_context_surface: ".codebuddy/rules/*.md directory"
+lsp_symbol_navigation: "tracked-gap-no-adapter-owned-LSP-surface"
+hook_learning_capture: "artifact-evolution-cycle"
+standard_convention_pin: "STANDARD-CONVENTION-PIN.md"
+# web-fetch / browser-retrieval surface — the backing capability dimension for
+# rules/source-accessibility.md step 1 ("retrieve through the host's browser /
+# fetch capability"). The pinned snapshot catalogs config-materialization
+# surfaces, not the vendor tool surface, so the web-fetch tool is not yet
+# discovered against the pin — discovery-pending per
+# rules/agent-capability-discipline-matrix.md §1.
+web_fetch: "discovery-pending"
+tool_surface_restrictions:
+  - secrets-paths
+  - destructive-shell-ops
+  - network-write-unsigned
+system_prompt_template_path: "templates/apothem-rules.md"
+agent_memory_surface: "CODEBUDDY.md project memory file (operator-owned)"

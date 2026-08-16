@@ -1,0 +1,15 @@
+# src/apothem/audit/known-projects.txt
+#
+# Auto-derived from plan-suite body content. Each line is either a bare URL,
+# a bare absolute path, or a name=reference pair. Lines starting with #
+# are comments. Edit freely; re-run the provenance scanner to refresh
+# .audit/plans-provenance.{json,md}.
+
+dc-kit=https://github.com/ahmed-g-gad/dc-kit
+slsa-github-generator=https://github.com/slsa-framework/slsa-github-generator
+# Local-path entries are operator-specific. Add lines like
+#   <project-name>=<absolute-path>
+# pointing at your own working copies before re-running the
+# provenance scanner (path resolution accepts both POSIX and Windows
+# forms; the scanner normalizes via the project-roots list at
+# src/apothem/audit/build_plans_provenance.py).

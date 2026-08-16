@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://apothem.ahmedgad.com/schemas/learning-signal.schema.json",
+  "title": "Apothem Learning Signal",
+  "description": "One captured signal in the opt-in continuous-learning loop. A signal is the raw observation the capture stage records when the operator has opted in; the extraction stage scores patterns over a set of signals. The shape is neutral: it carries no tool-specific or vendor-specific identifier.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "kind", "summary", "captured"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable signal identifier, unique within a learning store."
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["correction", "confirmation", "observation"],
+      "description": "Signal taxonomy. correction: an operator corrected an action. confirmation: an operator confirmed an approach. observation: a recurring pattern noticed in the work."
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "description": "One-line statement of what was observed."
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Tags used to group related signals during pattern extraction.",
+      "default": []
+    },
+    "payload": {
+      "type": "object",
+      "description": "Free-form structured detail accompanying the signal.",
+      "additionalProperties": true,
+      "default": {}
+    },
+    "captured": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp the signal was captured."
+    }
+  }
+}

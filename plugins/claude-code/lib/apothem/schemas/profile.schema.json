@@ -1,0 +1,404 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://apothem.ahmedgad.com/schemas/profile.schema.json",
+  "title": "Apothem Shared Profile",
+  "description": "Canonical YAML profile consumed by Apothem before harness-native configuration is materialized.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["identity"],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Optional profile-schema version; defaults to the current version (1) when absent. Version-less profiles remain valid. A profile stamped with a version greater than the engine supports is rejected with an upgrade-the-engine diagnostic before validation."
+    },
+    "identity": {
+      "$ref": "#/$defs/identity"
+    },
+    "preferences": {
+      "$ref": "#/$defs/preferences"
+    },
+    "rules": {
+      "$ref": "#/$defs/rules",
+      "default": []
+    },
+    "seriousness": {
+      "$ref": "#/$defs/seriousness",
+      "default": "PERSONAL_USE"
+    },
+    "enforcement": {
+      "$ref": "#/$defs/enforcement",
+      "default": {}
+    },
+    "mcp_servers": {
+      "$ref": "#/$defs/mcpInventory",
+      "default": {}
+    },
+    "harnesses": {
+      "type": "object",
+      "description": "Per-harness overrides keyed by supported public harness id.",
+      "additionalProperties": false,
+      "default": {},
+      "properties": {
+        "antigravity": {
+          "$ref": "#/$defs/harnessOverride"
+        },
+        "claude-code": {
+          "$ref": "#/$defs/harnessOverride"
+        },
+        "codex": {
+          "$ref": "#/$defs/harnessOverride"
+        },
+        "cursor": {
+          "$ref": "#/$defs/harnessOverride"
+        },
+        "gemini-cli": {
+          "$ref": "#/$defs/harnessOverride"
+        },
+        "github-copilot": {
+          "$ref": "#/$defs/harnessOverride"
+        },
+        "hermes": {
+          "$ref": "#/$defs/harnessOverride"
+        },
+        "kimi-code": {
+          "$ref": "#/$defs/harnessOverride"
+        },
+        "open-claw": {
+          "$ref": "#/$defs/harnessOverride"
+        },
+        "opencode": {
+          "$ref": "#/$defs/harnessOverride"
+        },
+        "qwen-code": {
+          "$ref": "#/$defs/harnessOverride"
+        },
+        "windsurf": {
+          "$ref": "#/$defs/harnessOverride"
+        },
+        "codebuddy": {
+          "$ref": "#/$defs/harnessOverride"
+        },
+        "kiro": {
+          "$ref": "#/$defs/harnessOverride"
+        },
+        "trae": {
+          "$ref": "#/$defs/harnessOverride"
+        },
+        "zed": {
+          "$ref": "#/$defs/harnessOverride"
+        },
+        "glm": {
+          "$ref": "#/$defs/harnessOverride"
+        }
+      }
+    },
+    "exclude_harnesses": {
+      "type": "array",
+      "description": "Supported public harness ids skipped by batch lifecycle commands.",
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/harnessId"
+      },
+      "uniqueItems": true
+    },
+    "workspace": {
+      "$ref": "#/$defs/workspace",
+      "default": {}
+    }
+  },
+  "$defs": {
+    "identity": {
+      "type": "object",
+      "description": "Operator identity fields shared across harnesses.",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Operator display name."
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1,
+          "default": "senior software engineer",
+          "description": "Operator role presented to capable harnesses."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Operator email address."
+        },
+        "website": {
+          "type": "string",
+          "format": "uri",
+          "description": "Operator personal or project website URL."
+        },
+        "github": {
+          "type": "string",
+          "minLength": 1,
+          "description": "GitHub username without @."
+        }
+      }
+    },
+    "identityOverride": {
+      "type": "object",
+      "description": "Optional identity fields overridden for one harness.",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "website": {
+          "type": "string",
+          "format": "uri"
+        },
+        "github": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "preferences": {
+      "type": "object",
+      "description": "Workflow and interaction preferences shared across harnesses.",
+      "additionalProperties": false,
+      "default": {},
+      "properties": {
+        "language": {
+          "type": "string",
+          "minLength": 1,
+          "default": "python",
+          "description": "Primary programming language in lower-case semantic form."
+        },
+        "style": {
+          "type": "string",
+          "enum": ["concise", "verbose", "balanced"],
+          "default": "concise",
+          "description": "Preferred AI response style."
+        },
+        "formatter": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Preferred code formatter."
+        },
+        "test_framework": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Preferred test framework."
+        }
+      }
+    },
+    "rules": {
+      "type": "array",
+      "description": "Additional rules shared with capable harnesses.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "seriousness": {
+      "type": "string",
+      "enum": ["EXPLORING", "PERSONAL_USE", "SHARED", "PUBLIC_LAUNCH"],
+      "description": "Governance seriousness tier."
+    },
+    "enforcement": {
+      "type": "object",
+      "description": "Opt-in toggles for shipped behaviors that ship default-off; every flag defaults false and a clean install imposes none of them.",
+      "additionalProperties": false,
+      "default": {},
+      "properties": {
+        "sprints": {
+          "type": "boolean",
+          "default": false,
+          "description": "Opt in to the sprint apparatus for non-trivial multi-step work."
+        },
+        "agent_teams": {
+          "type": "boolean",
+          "default": false,
+          "description": "Opt in to parallel agent-team dispatch for parallelizable work."
+        },
+        "multitasking": {
+          "type": "boolean",
+          "default": false,
+          "description": "Opt in to parallel multi-task execution."
+        },
+        "continuous_execution": {
+          "type": "boolean",
+          "default": false,
+          "description": "Opt in to continuous multi-step advancement across natural boundaries."
+        },
+        "learning_loop": {
+          "type": "boolean",
+          "default": false,
+          "description": "Opt in to continuous-learning capture and pattern promotion."
+        }
+      }
+    },
+    "workspace": {
+      "type": "object",
+      "description": "Where Apothem keeps its shared, gitignored working directory (plans, memory, learning, contexts). One directory shared across every harness; never per-harness.",
+      "additionalProperties": false,
+      "default": {},
+      "properties": {
+        "directory_name": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[^/\\\\:]+$",
+          "default": ".apothem",
+          "description": "Name of the shared working directory. A single path component (no separator, no drive specifier). Defaults to '.apothem'."
+        },
+        "scope": {
+          "type": "string",
+          "enum": ["project-local", "user-home"],
+          "default": "project-local",
+          "description": "Where the working directory is rooted. 'project-local' places <project-root>/<directory_name>/ (default); 'user-home' places ~/<directory_name>/."
+        }
+      }
+    },
+    "harnessId": {
+      "type": "string",
+      "enum": [
+        "antigravity",
+        "claude-code",
+        "codex",
+        "cursor",
+        "gemini-cli",
+        "github-copilot",
+        "hermes",
+        "kimi-code",
+        "open-claw",
+        "opencode",
+        "qwen-code",
+        "windsurf",
+        "codebuddy",
+        "kiro",
+        "trae",
+        "zed",
+        "glm"
+      ]
+    },
+    "harnessOverride": {
+      "type": "object",
+      "description": "Canonical profile fields overridden for one harness.",
+      "additionalProperties": false,
+      "properties": {
+        "identity": {
+          "$ref": "#/$defs/identityOverride"
+        },
+        "preferences": {
+          "$ref": "#/$defs/preferences"
+        },
+        "rules": {
+          "$ref": "#/$defs/rules"
+        },
+        "seriousness": {
+          "$ref": "#/$defs/seriousness"
+        },
+        "enforcement": {
+          "$ref": "#/$defs/enforcement"
+        },
+        "mcp_servers": {
+          "$ref": "#/$defs/mcpInventory"
+        }
+      }
+    },
+    "mcpInventory": {
+      "type": "object",
+      "description": "MCP server inventory keyed by server name: the canonical cross-harness portability surface for Model Context Protocol servers.",
+      "propertyNames": {
+        "pattern": "^\\S(.*\\S)?$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/mcpServer"
+      },
+      "default": {}
+    },
+    "mcpServer": {
+      "type": "object",
+      "description": "One MCP server. stdio servers carry command (+ args); http/sse/streamable-http servers carry url (and may carry headers for remote auth). Secret values in env/headers SHOULD be written as environment-variable references (${VAR}, e.g. ${GITHUB_TOKEN}); such a reference passes through to native config verbatim and is never resolved at render time, so no raw secret literal is materialized into a committable scope.",
+      "additionalProperties": false,
+      "required": ["transport"],
+      "properties": {
+        "transport": {
+          "type": "string",
+          "enum": ["stdio", "http", "sse", "streamable-http"],
+          "description": "MCP transport. streamable-http is the modern replacement for sse; bare sse is accepted for back-compat but deprecated and is never emitted as a default — prefer streamable-http for new remote servers."
+        },
+        "command": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Executable launched for a stdio server."
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Arguments passed to the stdio command."
+        },
+        "env": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {},
+          "description": "Environment variables passed to the server process. A secret value SHOULD be a ${VAR} reference (e.g. ${GITHUB_TOKEN}) rather than a raw literal; the reference passes through to native config verbatim and is never resolved at render time."
+        },
+        "headers": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {},
+          "description": "HTTP request headers sent to a remote (http-family) MCP endpoint — the surface for Bearer / API-key auth (e.g. {\"Authorization\": \"Bearer ${API_TOKEN}\"}). A secret value SHOULD be a ${VAR} reference rather than a raw literal; the reference passes through to native config verbatim and is never resolved at render time."
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Endpoint URL for an http/sse/streamable-http server."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "transport": {
+                "const": "stdio"
+              }
+            },
+            "required": ["transport"]
+          },
+          "then": {
+            "required": ["command"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "transport": {
+                "enum": ["http", "sse", "streamable-http"]
+              }
+            },
+            "required": ["transport"]
+          },
+          "then": {
+            "required": ["url"]
+          }
+        }
+      ]
+    }
+  }
+}

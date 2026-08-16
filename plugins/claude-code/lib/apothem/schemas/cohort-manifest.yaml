@@ -1,0 +1,252 @@
+# SPDX-License-Identifier: MIT
+
+# Apothem cohort manifest.
+#
+# Validates against cohort.schema.json. Defines all six cohorts
+# (core, developer, security, research, ai-engineering, full) with their
+# member sets. `full` is the union of the other five.
+#
+# Every member name corresponds to a real artifact under src/apothem/
+# (skills/<name>/, agents/<name>.md, commands/<name>.md, rules/<name>.md, or a
+# hooks entry — either an executable hooks/<name>.py or an advisory message
+# context at hooks/messages/<name>.md delivered through the dispatcher).
+# Per-harness native targets are NOT restated here: a consumer
+# resolves them through per_harness_targets.source (lib/propagation-manifest.yaml)
+# per the resolution rule. See site/content/docs/architecture/cohort-packaging-contract.mdx.
+
+version: 0.2.0
+
+cohorts:
+  - id: core
+    name: Core
+    description: >-
+      The baseline cohort installed for every operator: the planning workflow,
+      the entry code review, the foundational agents, and the always-on
+      behavioral rules. The minimum coherent working set.
+    members:
+      skills:
+        - ecosystem-audit
+        - plan-suite
+      agents:
+        - codebase-explorer
+        - convention-auditor
+        - quality-gate
+        - memory-auditor
+      commands:
+        - plan-spec
+        - plan-generate
+        - plan-review
+        - plan-design
+        - plan-audit
+        - plan-execute
+        - plan-status
+        - code-review
+      rules:
+        - agent-orchestration
+        - context-management
+        - definitiveness
+        - pre-emission-gate
+      hooks:
+        - dispatch
+
+  - id: developer
+    name: Developer
+    description: >-
+      The day-to-day build loop: review, audit, refactor, test, architecture,
+      documentation, dependencies, performance, accessibility, and user
+      experience. Code-craft and quality surfaces.
+    members:
+      skills:
+        - test-authoring
+        - refactor-extract
+        - dependency-upgrade
+        - incident-runbook
+      agents:
+        - test-runner
+        - refactor-surgeon
+        - dependency-auditor
+      commands:
+        - code-review
+        - code-audit
+        - architecture-review
+        - docs-review
+        - perf-audit
+        - a11y-audit
+        - ux-review
+        - dependency-audit
+        - test-suite
+        - release-readiness
+      rules:
+        - code-craft-python
+        - code-craft-shell
+        - code-craft-markdown
+        - clean-architecture-layers
+      hooks:
+        - pretooluse-dependency-guard
+
+  - id: security
+    name: Security
+    description: >-
+      Defensive posture: security, supply-chain, and threat-model audits,
+      secret handling, vulnerability triage, and dependency risk.
+    members:
+      skills:
+        - secret-rotation
+        - vuln-triage
+        - dependency-upgrade
+        - incident-runbook
+      agents:
+        - security-scanner
+        - dependency-auditor
+      commands:
+        - security-audit
+        - supply-chain-audit
+        - threat-model-audit
+        - dependency-audit
+        - release-readiness
+      rules:
+        - production-ready-prs
+        - authority-inquiry
+      hooks:
+        - pretooluse-dependency-guard
+
+  - id: research
+    name: Research
+    description: >-
+      Multi-source investigation: research orchestration, source discovery,
+      synthesis, and adversarial fact-checking. The primary output is a cited
+      research artifact.
+    members:
+      skills:
+        - multi-source-research
+        - source-synthesis
+      agents:
+        - research-scout
+        - fact-checker
+      commands:
+        - research
+      rules:
+        - host-discovery
+        - disclosure-ledger
+      hooks: []
+
+  - id: ai-engineering
+    name: AI-Engineering
+    description: >-
+      Building on language models: prompt design, evaluation harnesses,
+      Model Context Protocol servers, and prompt-output scoring.
+    members:
+      skills:
+        - prompt-engineering
+        - eval-harness
+      agents:
+        - prompt-evaluator
+        - mcp-builder
+      commands:
+        - eval
+      rules:
+        - cognitive-identity
+        - interactive-questions
+      hooks:
+        - pretooluse-eval-guard
+
+  - id: full
+    name: Full
+    description: >-
+      The union of the five named cohorts. The cohort catalog is the curated
+      selectable subset of the on-disk artifact tree, so artifacts outside
+      every named cohort are outside full as well.
+    members:
+      skills:
+        - ecosystem-audit
+        - plan-suite
+        - test-authoring
+        - refactor-extract
+        - dependency-upgrade
+        - incident-runbook
+        - secret-rotation
+        - vuln-triage
+        - multi-source-research
+        - source-synthesis
+        - prompt-engineering
+        - eval-harness
+      agents:
+        - codebase-explorer
+        - convention-auditor
+        - quality-gate
+        - memory-auditor
+        - test-runner
+        - refactor-surgeon
+        - dependency-auditor
+        - security-scanner
+        - research-scout
+        - fact-checker
+        - prompt-evaluator
+        - mcp-builder
+      commands:
+        - plan-spec
+        - plan-generate
+        - plan-review
+        - plan-design
+        - plan-audit
+        - plan-execute
+        - plan-status
+        - code-review
+        - code-audit
+        - architecture-review
+        - docs-review
+        - perf-audit
+        - a11y-audit
+        - ux-review
+        - dependency-audit
+        - security-audit
+        - supply-chain-audit
+        - threat-model-audit
+        - research
+        - test-suite
+        - eval
+        - release-readiness
+      rules:
+        - agent-orchestration
+        - context-management
+        - definitiveness
+        - code-craft-python
+        - code-craft-shell
+        - code-craft-markdown
+        - clean-architecture-layers
+        - production-ready-prs
+        - authority-inquiry
+        - host-discovery
+        - disclosure-ledger
+        - cognitive-identity
+        - interactive-questions
+        - pre-emission-gate
+      hooks:
+        - dispatch
+        - pretooluse-dependency-guard
+        - pretooluse-eval-guard
+
+per_harness_targets:
+  source: lib/propagation-manifest.yaml
+  harnesses:
+    - antigravity
+    - claude_code
+    - codex
+    - cursor
+    - gemini_cli
+    - github_copilot
+    - hermes
+    - open_claw
+    - opencode
+    - qwen_code
+    - windsurf
+    - codebuddy
+    - kiro
+    - trae
+    - zed
+  resolution: >-
+    For a cohort member of catalog type T (skills | agents | commands | rules |
+    hooks) and a target harness H, the native plugin target is the `target`
+    field of the entry in lib/propagation-manifest.yaml under
+    harnesses.H.install whose `source` matches `T/`. The propagation manifest is
+    the single source of truth; consumers never re-derive harness targets.

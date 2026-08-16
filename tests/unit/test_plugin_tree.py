@@ -293,3 +293,109 @@ def test_committed_repo_manifest_matches_generator() -> None:
         address_default_command_dir=True,
     )
     assert committed == generated
+
+
+# --- Committed distribution tree ------------------------------------------
+#
+# The repository root is not a shippable plugin package: Cowork caps a plugin
+# package at 5,000 files and the repo carries ~6,150, because site/ and tests/
+# are 85% of it and neither is plugin content. Plugin packages have no
+# exclusion mechanism, so the distribution unit is the assembled tree committed
+# at plugins/claude-code/, which the marketplace points at.
+
+_DIST_ROOT = _REPO_ROOT / "plugins" / "claude-code"
+
+#: Cowork's documented per-plugin-package limits.
+_COWORK_MAX_FILES = 5_000
+_COWORK_MAX_BYTES = 200 * 1024**2
+
+
+def _tree_files(root: Path) -> set[str]:
+    """Return every file under ``root`` as a POSIX path relative to it."""
+    return {p.relative_to(root).as_posix() for p in root.rglob("*") if p.is_file()}
+
+
+def test_assemble_prunes_catalog_doc_files(tmp_path: Path) -> None:
+    """Catalog roots become discovery directories — no README/AGENTS may ship.
+
+    Claude Code scans the default component folders directly, so a copied
+    ``commands/README.md`` loads as a frontmatter-less command even though the
+    manifest omits it.
+    """
+    dest = tmp_path / "plugin_root"
+    assemble_plugin_tree(_SRC_ROOT, dest)
+    for name in ("skills", "agents", "commands", "rules"):
+        for doc in ("README.md", "AGENTS.md"):
+            assert not (dest / name / doc).exists(), (
+                f"{name}/{doc} leaked into the tree"
+            )
+
+
+def test_assemble_keeps_docs_nested_inside_skills(tmp_path: Path) -> None:
+    """Pruning is catalog-root-only: a skill's own reference docs survive."""
+    dest = tmp_path / "plugin_root"
+    assemble_plugin_tree(_SRC_ROOT, dest)
+    src_nested = {
+        p.relative_to(_SRC_ROOT / "skills").as_posix()
+        for p in (_SRC_ROOT / "skills").rglob("README.md")
+        if p.parent != _SRC_ROOT / "skills"
+    }
+    dest_nested = {
+        p.relative_to(dest / "skills").as_posix()
+        for p in (dest / "skills").rglob("README.md")
+        if p.parent != dest / "skills"
+    }
+    assert dest_nested == src_nested
+
+
+def test_committed_dist_tree_exists() -> None:
+    """The marketplace resolves ./plugins/claude-code from a clone."""
+    assert (_DIST_ROOT / ".claude-plugin" / "plugin.json").is_file(), (
+        "run: python scripts/dev/assemble_plugin_tree.py"
+    )
+
+
+def test_committed_dist_tree_matches_generator(tmp_path: Path) -> None:
+    """The committed distribution tree must never drift from the generator."""
+    reference = tmp_path / "claude-code"
+    assemble_plugin_tree(_SRC_ROOT, reference)
+
+    expected = _tree_files(reference)
+    actual = _tree_files(_DIST_ROOT)
+    assert expected == actual, (
+        "plugins/claude-code has drifted; regenerate with "
+        "python scripts/dev/assemble_plugin_tree.py"
+    )
+    differing = [
+        rel
+        for rel in sorted(expected)
+        if (reference / rel).read_bytes() != (_DIST_ROOT / rel).read_bytes()
+    ]
+    assert not differing, f"content drift in {len(differing)} file(s): {differing[:5]}"
+
+
+def test_committed_dist_tree_fits_cowork_limits() -> None:
+    """The distribution tree must stay inside Cowork's per-package caps."""
+    files = _tree_files(_DIST_ROOT)
+    total = sum((_DIST_ROOT / rel).stat().st_size for rel in files)
+    assert len(files) <= _COWORK_MAX_FILES, (
+        f"{len(files)} files exceeds Cowork's {_COWORK_MAX_FILES}-file cap"
+    )
+    assert total <= _COWORK_MAX_BYTES, (
+        f"{total} bytes exceeds Cowork's {_COWORK_MAX_BYTES}-byte cap"
+    )
+
+
+def test_marketplace_source_points_at_committed_dist_tree() -> None:
+    """The marketplace must ship the scoped tree, never the repository root.
+
+    ``"source": "./"`` makes the plugin package the whole repository, which
+    installs in Claude Code (no file cap on a local clone) and fails in Cowork.
+    """
+    marketplace = json.loads(
+        (_REPO_ROOT / ".claude-plugin" / "marketplace.json").read_text(encoding="utf-8")
+    )
+    plugins = marketplace["plugins"]
+    assert isinstance(plugins, list)
+    entry = next(item for item in plugins if item["name"] == "apothem")
+    assert entry["source"] == "./plugins/claude-code"

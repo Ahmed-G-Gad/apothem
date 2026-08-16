@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://apothem.ahmedgad.com/schemas/advisory-finding.schema.json",
+  "title": "Apothem Advisory Auditor Findings",
+  "description": "Output contract for the advisory-mode conformance / security auditor and the advisory-mode reporting surface. Findings are ADVISORY by default: their presence reports issues but does not block, abort, or force failure on the end user unless the auditor runs with strict = true. Every finding carries a definitive next_step — the determinant advisory move the operator can take. An internal auditor error is itself reported as a finding (category = error), never swallowed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["findings", "strict", "summary"],
+  "properties": {
+    "findings": {
+      "type": "array",
+      "description": "Every finding the auditor produced, in deterministic order.",
+      "items": {
+        "$ref": "#/$defs/finding"
+      }
+    },
+    "strict": {
+      "type": "boolean",
+      "default": false,
+      "description": "When false (the default), the auditor is advisory: it exits zero even with findings present. When true, findings-present forces a non-zero exit. Strict mode is opt-in, never the shipped default."
+    },
+    "summary": {
+      "$ref": "#/$defs/summary"
+    }
+  },
+  "$defs": {
+    "finding": {
+      "type": "object",
+      "description": "A single advisory finding. Always carries a definitive next_step.",
+      "additionalProperties": false,
+      "required": ["id", "category", "severity", "location", "message", "next_step"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Stable finding identifier (e.g., the matcher or check name)."
+        },
+        "category": {
+          "type": "string",
+          "enum": ["config-scan", "secret", "conformance", "error"],
+          "description": "config-scan: configuration-file scan finding. secret: secret-pattern detection (closed catalog). conformance: rule-based conformance finding. error: an internal auditor failure reported as a finding rather than a silent swallow or crash."
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["HIGH", "MEDIUM", "LOW"],
+          "description": "Severity triage; advisory regardless of level."
+        },
+        "location": {
+          "$ref": "#/$defs/location"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "description": "What was found, stated specifically."
+        },
+        "next_step": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The determinant advisory move — the definitive next action the operator can take to resolve the finding. Always present and non-empty."
+        }
+      }
+    },
+    "location": {
+      "type": "object",
+      "description": "Where the finding was found.",
+      "additionalProperties": false,
+      "required": ["path"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path to the artifact the finding concerns."
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "1-based line number, when the finding is line-scoped."
+        },
+        "column": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "1-based column number, when the finding is column-scoped."
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "description": "Aggregate finding counts for the run.",
+      "additionalProperties": false,
+      "required": ["total", "high", "medium", "low"],
+      "properties": {
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "high": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "medium": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "low": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}
