@@ -15,14 +15,23 @@
 # `tests/scripts/test_required_check_coverage.py`). But `paths` and
 # `paths-ignore` are both ANY-match triggers, so a MIXED docs+code PR satisfies
 # both filters and would start BOTH workflows on the same context names — the
-# stub could then report a required check green over a real code change. To
-# close that gap each stub job is SELF-GATING: it first inspects the PR's
-# changed files and, if any gated surface is present, fails immediately instead
-# of echoing a fabricated success. The honest green path is therefore: a
-# purely-documentation PR runs this stub (no gated file, guard passes, contexts
-# report green); any PR touching a gated surface runs `ci.yml`'s REAL
-# quality+coverage, and this stub — if it starts at all — fails its guard so it
-# can never stand in for the real job.
+# stub could then report a required check green over a real code change.
+#
+# A `gate` job closes that: it inspects the PR's changed files once and emits a
+# docs_only boolean, and the reporting jobs run only when it is true. On a
+# mixed PR they are SKIPPED, so the stub publishes no conclusion on a context
+# `ci.yml` also reports. The reporting jobs keep their own assertion as a
+# second line of defence — if one ever runs on a gated diff it still fails
+# rather than fabricating a green.
+#
+# Skipping rather than failing matters for enforcement, not just tidiness: a
+# required status check resolves to the latest run for a given name, so while
+# the stub published a red `quality / …` beside `ci.yml`'s green one, which
+# result governed the merge depended on which finished last.
+#
+# The honest green path is therefore: a purely-documentation PR runs this stub
+# (gate says docs-only, contexts report green); any PR touching a gated surface
+# runs `ci.yml`'s REAL quality+coverage and this stub stands aside.
 
 name: CI Docs Stub
 
@@ -53,9 +62,51 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  gate:
+    # Resolves the docs-only question ONCE, as a boolean the reporting jobs
+    # gate on. Previously each reporting job asserted docs-only and failed when
+    # a gated surface was present. That was safe -- it never fabricated a green
+    # -- but it left a mixed PR with the same context name published twice, red
+    # by this workflow and green by ci.yml. A required status check resolves to
+    # the latest run for a name, so enforcement became timing-dependent.
+    # Skipping the job instead publishes no failure to collide with.
+    name: Docs-only gate
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      docs_only: ${{ steps.check.outputs.docs_only }}
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Resolve docs-only status
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        # The `if` swallows the script's non-zero exit deliberately: here a
+        # gated surface is an answer, not an error. The script keeps its
+        # failing exit for the assertion the reporting jobs still run.
+        run: |
+          if bash .github/workflows/scripts/assert-docs-only.sh; then
+            echo "docs_only=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+          fi
+
   quality:
     name: quality / ${{ matrix.os }} / py${{ matrix.python-version }}
-    if: github.event_name == 'pull_request'
+    needs: gate
+    if: github.event_name == 'pull_request' && needs.gate.outputs.docs_only == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -90,7 +141,8 @@ jobs:
 
   coverage:
     name: coverage
-    if: github.event_name == 'pull_request'
+    needs: gate
+    if: github.event_name == 'pull_request' && needs.gate.outputs.docs_only == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
