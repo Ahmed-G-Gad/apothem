@@ -39,7 +39,17 @@ jobs:
         with:
           # Block egress: this job checks out the repo and calls the GitHub
           # dependency-graph API through dependency-review-action. Endpoints
-          # cover action-tarball fetch + the GitHub API/clone surface only.
+          # cover action-tarball fetch, the GitHub API/clone surface, and the
+          # one third-party host the action itself reaches.
+          #
+          # api.deps.dev is Google's Open Source Insights, which
+          # dependency-review-action queries to resolve dependency license
+          # metadata. Without it the action fails with a bare "fetch failed" --
+          # the block shows up only in the harden-runner agent log, as
+          # "ip address dropped" against the resolved deps.dev address, so the
+          # symptom reads like a transient network blip and is not one. The
+          # gate reports failure rather than a false pass in that state, so no
+          # review was ever silently skipped.
           egress-policy: block
           allowed-endpoints: >
             github.com:443
@@ -47,6 +57,7 @@ jobs:
             codeload.github.com:443
             objects.githubusercontent.com:443
             release-assets.githubusercontent.com:443
+            api.deps.dev:443
 
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
