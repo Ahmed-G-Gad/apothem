@@ -106,6 +106,7 @@ from .install_driver_lifecycle import _remove_data_home as _remove_data_home
 from .install_driver_lifecycle import _rendered_template_text as _rendered_template_text
 from .install_driver_lifecycle import build_plan as build_plan
 from .install_driver_lifecycle import check_fidelity as check_fidelity
+from .install_driver_lifecycle import detect_install as detect_install
 from .install_driver_lifecycle import fidelity_is_faithful as fidelity_is_faithful
 from .install_driver_lifecycle import run_uninstall as run_uninstall
 from .install_driver_lifecycle import verify_install as verify_install
@@ -259,6 +260,7 @@ __all__ = [
     "backup_existing",
     "build_plan",
     "check_fidelity",
+    "detect_install",
     "fidelity_is_faithful",
     "finalize_install",
     "list_backup_timestamps",

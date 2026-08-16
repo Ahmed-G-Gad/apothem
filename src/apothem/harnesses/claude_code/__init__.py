@@ -58,6 +58,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared.install_driver import MaterializationRun
 from apothem.harnesses.claude_code.install import install as _install
 from apothem.harnesses.claude_code.install import plan as _plan
@@ -102,8 +103,17 @@ class ClaudeCodeAdapter:
         _uninstall(self.output_path)
 
     def is_installed(self) -> bool:
-        """Return True if the configuration file exists on disk."""
-        return self.output_path.exists()
+        """Return True if this harness root carries an Apothem install.
+
+        Keyed on Apothem's own artifacts under the harness root, NOT on
+        ``output_path``: Claude Code writes ``~/.claude/settings.json`` itself
+        for its plugin registrations and notification preferences, so that file
+        exists on any machine that has ever run Claude Code. Testing it reported
+        an install Apothem had never performed.
+        """
+        return install_driver.detect_install(
+            "claude_code", harness_root=self.output_path.parent
+        )
 
     def verify(self) -> bool:
         """Return True if the installed configuration is valid."""

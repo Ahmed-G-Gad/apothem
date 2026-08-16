@@ -111,6 +111,107 @@ def verify_install(
     return True
 
 
+#: Path segment naming Apothem's own working subtree beneath a harness or
+#: project root (mirrors ``_APOTHEM_SUBTREE`` in :mod:`apothem.lib.data_home`,
+#: and the ``.apothem/`` segment the manifest's target templates hardcode). No
+#: vendor creates this directory, so a target inside it exists only because an
+#: Apothem install put it there.
+_APOTHEM_SUBTREE: str = ".apothem"
+
+
+def _carries_managed_block(target: Path) -> bool:
+    """Return True when *target* holds an Apothem sentinel-delimited block.
+
+    The managed block is self-delimiting and Apothem-specific, so finding one
+    inside an operator-owned anchor is positive proof of an install even though
+    the file itself is not Apothem's to own.
+    """
+    if not target.is_file():
+        return False
+    try:
+        text = target.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    return extract_managed_block(text) is not None
+
+
+def _holds_content(target: Path) -> bool:
+    """Return True when *target* is a file, or a directory holding some file.
+
+    An empty directory is NOT content. Uninstall reverses tree targets
+    child-by-child (so operator-authored siblings survive) and leaves the
+    directory itself in place, so every Apothem tree target outlives an
+    uninstall as an empty shell. Testing mere existence would report a fully
+    uninstalled harness as still installed.
+    """
+    if target.is_file():
+        return True
+    if not target.is_dir():
+        return False
+    return any(child.is_file() for child in target.rglob("*"))
+
+
+def _entry_proves_install(
+    entry: InstallEntry,
+    *,
+    harness_root: Path | None,
+    project_root: Path | None,
+) -> bool:
+    """Return True when *entry*'s on-disk state proves Apothem installed here.
+
+    Only *unambiguous* evidence counts — a surface Apothem alone can produce:
+
+    * a ``sentinel_merge`` anchor carrying the Apothem managed block, and
+    * a non-empty target under the Apothem-owned ``.apothem/`` subtree.
+
+    Every other manifest target is deliberately NOT evidence. A target's
+    ``ownership_class`` of ``apothem-owned`` says Apothem *manages* the path,
+    not that Apothem *created* it: ``~/.claude/agents/``, ``~/.qwen/skills/``,
+    and their siblings are surfaces the harness itself offers for
+    operator-authored content, so their existence proves nothing. Neither does a
+    ``write_text`` target on a vendor-owned config file such as
+    ``~/.claude/settings.json``, which the harness writes for its own use.
+    """
+    target = resolve_target(
+        entry.target, harness_root=harness_root, project_root=project_root
+    )
+    if entry.mode == "sentinel_merge":
+        return _carries_managed_block(target)
+    return _APOTHEM_SUBTREE in target.parts and _holds_content(target)
+
+
+def detect_install(
+    harness_name: str,
+    *,
+    harness_root: Path | None = None,
+    project_root: Path | None = None,
+) -> bool:
+    """Return True when this root carries positive evidence of an Apothem install.
+
+    This is the ``is_installed()`` predicate. It answers "did Apothem install
+    here?" — deliberately NOT "does this harness exist on the machine?". Keying
+    presence off an adapter's ``output_path`` conflates the two whenever that
+    anchor is a vendor-owned file the harness creates for itself (Claude Code
+    writes ``~/.claude/settings.json`` for its own plugin registrations), which
+    reported ``installed=True`` on a machine Apothem had never touched. Paired
+    with a correctly-failing :func:`verify_install`, that rendered as ``drift``
+    — inviting a remediating uninstall against the operator's own settings file.
+
+    The walk is existential: ANY unambiguous Apothem artifact under this root
+    means installed. That keeps a genuinely half-removed tree reporting
+    ``installed=True`` + ``verified=False`` — real drift — while an untouched
+    harness home reports absent. See :func:`_entry_proves_install` for what
+    counts as evidence and why the weaker signals are excluded.
+    """
+    rules = install_driver.load_rules(harness_name)
+    return any(
+        _entry_proves_install(
+            entry, harness_root=harness_root, project_root=project_root
+        )
+        for entry in rules.install
+    )
+
+
 @dataclass(frozen=True)
 class FidelityResult:
     """The drift verdict for one profile-derived anchor on disk."""

@@ -22,6 +22,8 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from apothem.lib.harness_registry import package_key_for_public_id
+
 from . import install_driver
 from .install_driver import MaterializationError, MaterializationRun
 
@@ -320,8 +322,11 @@ def make_user_scope_adapter(
             uninstall_fn(self.output_path)
 
         def is_installed(self) -> bool:
-            """Return True if the configuration file exists on disk."""
-            return self.output_path.exists()
+            """Return True if this harness root carries an Apothem install."""
+            return install_driver.detect_install(
+                package_key_for_public_id(_name),
+                harness_root=self.output_path.parent,
+            )
 
         def verify(self) -> bool:
             """Return True if the installed configuration is valid."""
@@ -617,10 +622,12 @@ def make_project_scope_adapter(
             uninstall_fn(output_path, project=project)
 
         def is_installed(self, *, project: Path | None = None) -> bool:
-            """Return True if the configuration file exists on disk."""
+            """Return True if this project root carries an Apothem install."""
             if project is None:
                 return False
-            return self.resolve_output_path(project).exists()
+            return install_driver.detect_install(
+                package_key_for_public_id(_name), project_root=project
+            )
 
         def verify(self, *, project: Path | None = None) -> bool:
             """Return True if the installed configuration is valid."""
@@ -696,8 +703,11 @@ def make_native_config_adapter(
             uninstall_fn(self.output_path)
 
         def is_installed(self) -> bool:
-            """Return True if the configuration file exists on disk."""
-            return self.output_path.exists()
+            """Return True if this harness root carries an Apothem install."""
+            return install_driver.detect_install(
+                package_key_for_public_id(_name),
+                harness_root=self.output_path.parent,
+            )
 
         def verify(self) -> bool:
             """Return True if the installed configuration is valid."""

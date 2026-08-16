@@ -114,6 +114,37 @@ Exit code is `0` when the harness is verified (and, with `--profile`, faithful
 to it), `1` when a target is missing or invalid, or when `--profile` is given
 and the install has drifted.
 
+### `apothem status`
+
+Report install, verify, and drift state for every registered harness.
+
+```bash
+apothem status [--profile PATH] [--project PATH]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--profile PATH` | Shared profile to use as the drift baseline. An unreadable default profile degrades drift to `unknown` rather than aborting the sweep. |
+| `--project PATH` | Project root for project-scope harnesses. Without it they report `needs-project`. |
+
+Each row pairs an `installed` flag with a `verified` flag, and the two combine
+into the drift state:
+
+| State | Meaning |
+|-------|---------|
+| `absent` | Apothem has not installed into this harness. |
+| `in-sync` | Installed and matching the profile baseline. |
+| `drift` | Installed but no longer matching — remediate with `apothem update`. |
+| `unknown` | Installed, but the baseline profile could not be read. |
+
+`installed` answers "did Apothem install here?", not "is this harness present
+on the machine?". It is keyed on Apothem's own artifacts — the managed block
+inside an instruction anchor, and content under the Apothem-owned `.apothem/`
+subtree — never on a vendor-owned file the harness writes for itself. A
+harness whose config directory exists but that Apothem never touched reports
+`absent`, and one that has been uninstalled reports `absent` even though the
+emptied directories remain.
+
 ### `apothem profile`
 
 Manage the shared Apothem profile.
