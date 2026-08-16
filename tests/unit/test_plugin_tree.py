@@ -348,6 +348,39 @@ def test_assemble_keeps_docs_nested_inside_skills(tmp_path: Path) -> None:
     assert dest_nested == src_nested
 
 
+#: The three files the assembler writes rather than copies. Copied files carry
+#: their source bytes; only these pass through ``write_text``, so only these can
+#: pick up the host's line-ending convention.
+_GENERATED_FILES = (
+    ".claude-plugin/plugin.json",
+    "lib/apothem/hooks/hooks.json",
+    "lib/apothem_lib.py",
+)
+
+
+def test_generated_files_use_lf_line_endings(tmp_path: Path) -> None:
+    """Written files must be LF on every host, or the drift gate is unusable.
+
+    ``write_text`` without ``newline=`` translates "\\n" to ``os.linesep``, so a
+    Windows assembly emits CRLF. Git normalizes the committed bytes to LF, and
+    the next Windows re-assembly then reports drift against a clone the author
+    cannot reproduce locally. The drift test alone cannot catch this: both sides
+    of its comparison are generated on the same host, so they always agree.
+    """
+    dest = tmp_path / "plugin_root"
+    assemble_plugin_tree(_SRC_ROOT, dest)
+    for rel in _GENERATED_FILES:
+        raw = (dest / rel).read_bytes()
+        assert b"\r\n" not in raw, f"{rel} carries CRLF; pass newline='\\n'"
+
+
+def test_committed_dist_tree_generated_files_use_lf() -> None:
+    """The committed copies carry LF, matching what a clone checks out."""
+    for rel in _GENERATED_FILES:
+        raw = (_DIST_ROOT / rel).read_bytes()
+        assert b"\r\n" not in raw, f"committed {rel} carries CRLF"
+
+
 def test_committed_dist_tree_exists() -> None:
     """The marketplace resolves ./plugins/claude-code from a clone."""
     assert (_DIST_ROOT / ".claude-plugin" / "plugin.json").is_file(), (

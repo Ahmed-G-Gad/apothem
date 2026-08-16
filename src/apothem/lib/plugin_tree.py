@@ -548,7 +548,13 @@ def assemble_plugin_tree(src_root: Path, dest_root: Path) -> Path:
         (vendor_dest / ".keep").write_text("", encoding="utf-8")
 
     # 3. Alias shim: lib/apothem_lib.py.
-    (lib_dir / "apothem_lib.py").write_text(_SHIM_BODY, encoding="utf-8")
+    #    newline="\n" on every generated file: the assembled tree is committed
+    #    and held to this generator by a drift gate, so the output has to be
+    #    byte-identical across platforms. Without it Python translates "\n" to
+    #    os.linesep, git normalizes the committed bytes to LF, and a Windows
+    #    re-assembly then reports drift against a clone the author cannot
+    #    reproduce. Copied files are unaffected — they carry source bytes.
+    (lib_dir / "apothem_lib.py").write_text(_SHIM_BODY, encoding="utf-8", newline="\n")
 
     # 4. Catalog dirs: skills/agents/commands/rules copied to plugin root.
     #    The catalog directories become harness DISCOVERY directories at the
@@ -597,6 +603,7 @@ def assemble_plugin_tree(src_root: Path, dest_root: Path) -> Path:
     (engine_hooks_dir / "hooks.json").write_text(
         json.dumps(hooks_json, indent=2, sort_keys=False) + "\n",
         encoding="utf-8",
+        newline="\n",
     )
 
     # 7. Manifest: .claude-plugin/plugin.json.
@@ -605,6 +612,7 @@ def assemble_plugin_tree(src_root: Path, dest_root: Path) -> Path:
     (plugin_meta_dir / "plugin.json").write_text(
         json.dumps(manifest, indent=2, sort_keys=False) + "\n",
         encoding="utf-8",
+        newline="\n",
     )
 
     return dest_root
