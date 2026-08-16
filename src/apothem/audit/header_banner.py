@@ -85,9 +85,15 @@ def _load_banner(schemas_dir: Path) -> tuple[str, str]:
     """Load the narrowed SPDX-line header fixture.
 
     Mirrors file_header_grep.py ``_load_banner``: the fixture is the single
-    ``# SPDX-License-Identifier: MIT`` line. Returns ``(hash_form_line,
-    spdx_text)`` on success, or two empty strings when the fixture is absent
-    or malformed (the caller treats the empty result as a skip).
+    hash-form SPDX identifier line naming the MIT license. Returns
+    ``(hash_form_line, spdx_text)`` on success, or two empty strings when the
+    fixture is absent or malformed (the caller treats the empty result as a
+    skip).
+
+    The tag is described rather than quoted here on purpose: the REUSE
+    scanner reads any occurrence of the literal tag in a file as that file's
+    own license declaration, so spelling it out in prose made this module
+    declare a malformed expression and failed the license gate.
     """
     banner_path = schemas_dir / "authorship-header.txt"
     if not banner_path.is_file():

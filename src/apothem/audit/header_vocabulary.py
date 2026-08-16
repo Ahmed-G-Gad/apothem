@@ -186,7 +186,14 @@ BASENAME_VARIANT: Final[dict[str, str]] = {
 # narrowed SPDX line at the canonical site) is a not-yet-narrowed header and
 # is counted malformed/uncovered, so the scan surfaces the remaining work.
 # ---------------------------------------------------------------------------
-SPDX_PREFIX_TEXT: Final[str] = "SPDX-License-Identifier:"
+# Composed rather than written as one literal: the REUSE scanner treats any
+# contiguous occurrence of the tag in a file as that file's own license
+# declaration, and parses whatever follows as the expression. Spelling it out
+# here made this module declare `"` as its license and failed the license gate.
+# Splitting the literal keeps the runtime value identical while leaving no
+# contiguous tag for the scanner to misread.
+_SPDX_TAG_HEAD: Final[str] = "SPDX-License"
+SPDX_PREFIX_TEXT: Final[str] = f"{_SPDX_TAG_HEAD}-Identifier:"
 LEGACY_AUTHOR_MARK: Final[str] = "Copyright (c) Ahmed G. Gad"
 
 # Smart-quote codepoints whose presence inside a banner is malformation
