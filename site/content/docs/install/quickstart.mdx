@@ -45,10 +45,13 @@ places the engine under `~/.apothem`, and prints the exact engine invocation
 for your shell on completion:
 
 ```text
-Apothem installed.
-Run the engine with:
+Installation complete.
 
-  apothem <command>
+The 'apothem' command is on your PATH.
+
+Recommended first step — the guided setup (profile -> preview -> install):
+
+  apothem quickstart
 ```
 
 <Callout title="First-run profile stop">
@@ -118,8 +121,7 @@ apothem install --harness claude-code
 ```
 
 ```text
-Installed claude-code.
-Wrote: ~/.claude/settings.json
+✓ Installed claude-code -> /home/you/.claude/settings.json
 ```
 
 Project-scope adapters write inside a project rather than your home directory,
@@ -153,7 +155,7 @@ apothem verify --harness claude-code
 ```
 
 ```text
-claude-code: managed targets verified.
+✓ claude-code is verified at /home/you/.claude/settings.json
 ```
 
 `verify` exits non-zero if the configuration is missing or has drifted, so it

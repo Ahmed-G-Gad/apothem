@@ -4,9 +4,14 @@
 # the project root, locates a real CPython >= 3.10 via find-python.ps1,
 # then invokes hooks/dispatch.py with the event name (and optional
 # context-file relative to project root).
-# Contract: stdout passthrough; exit 0 always (fail-open) so hook failures
-# never stall the host harness; missing interpreter or dispatcher emits a JSON
-# diagnostic envelope on stdout.
+# Contract: stdout passthrough; every bootstrap-owned failure branch (missing
+# event, missing locator/dispatch, no interpreter, unexpected error) emits a
+# JSON diagnostic envelope on stdout and exits 0 (fail-open) so hook failures
+# never stall the host harness. Once control reaches the dispatch invocation at
+# the end, dispatch.py owns the exit code and this stub propagates it verbatim
+# via $LASTEXITCODE — dispatch.py is itself fail-open, so the effective
+# disposition remains exit 0. This mirrors bootstrap.sh, which reaches the same
+# disposition by exec'ing dispatch.py and letting it replace the process.
 # Sibling files in hooks/lib/: bootstrap.sh (POSIX counterpart),
 # find-python.ps1 (interpreter locator this stub dot-sources),
 # find-python.sh (POSIX counterpart of the locator).

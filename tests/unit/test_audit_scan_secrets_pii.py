@@ -16,6 +16,13 @@ import apothem.audit.scan_secrets_pii as ssp
 
 
 class TestScanPii:
+    """Scanning for personally-identifying information.
+
+    Covers the banner email being exempt while a non-banner email is a
+    medium-severity finding, including the mixed case where only the
+    non-banner addresses are flagged.
+    """
+
     def test_banner_email_is_exempt(self) -> None:
         assert ssp._scan_pii("docs/x.md", f"contact {ssp.BANNER_EMAIL}\n") == []
 
@@ -34,6 +41,12 @@ class TestScanPii:
 
 
 class TestBannerConstants:
+    """The exempt banner constants.
+
+    Covers that only the wired constants are defined, so an unused exemption
+    cannot silently widen the allow-list.
+    """
+
     def test_only_the_wired_banner_constants_are_defined(self) -> None:
         # Regression guard: BANNER_WEBSITE / BANNER_GITHUB_HANDLE / BANNER_NAME
         # were removed as dead code — the module has no website / handle / name

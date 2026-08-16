@@ -84,12 +84,34 @@ STDIN_FLAG: Final[str] = "--stdin"
 
 @dataclass(frozen=True)
 class Finding:
+    """One frontmatter violation on the inspected artifact.
+
+    Pre-conditions: ``detail`` names the violated expectation in
+    operator-facing prose (a missing required key, an unparseable YAML block,
+    or a non-kebab-case key). Post-conditions: ``rule`` defaults to
+    :data:`RULE_ANCHOR` so every finding cites the per-class frontmatter
+    schemas as its authority.
+    """
+
     detail: str
     rule: str = RULE_ANCHOR
 
 
 @dataclass(frozen=True)
 class GrepResult:
+    """Frontmatter-matcher report for a single artifact.
+
+    Carries its own result shape rather than reusing
+    :class:`apothem.conformity._grep_base.GrepResult` because the payload adds
+    an ``artifact-class`` key recording which required-key set was applied.
+
+    Pre-conditions: ``artifact_class`` is the class inferred from the path
+    (``rules`` / ``agents`` / ``skills`` / ``commands`` / ``output-styles`` /
+    ``hooks-messages``), or ``None`` when the path matches no class and the
+    check is vacuously satisfied. Post-conditions: ``to_json`` emits
+    ``{grep, path, artifact-class, passed, findings}``.
+    """
+
     grep: str
     path: str | None
     artifact_class: str | None
@@ -97,6 +119,12 @@ class GrepResult:
     findings: list[Finding] = field(default_factory=list)
 
     def to_json(self) -> str:
+        """Return the canonical JSON report as a two-space-indented string.
+
+        Post-conditions: the ``artifact_class`` field is emitted under the
+        kebab-case ``artifact-class`` key per the report-shape convention; each
+        finding is flattened through ``dataclasses.asdict``.
+        """
         payload = {
             "grep": self.grep,
             "path": self.path,

@@ -40,10 +40,13 @@ irm https://apothem.ahmedgad.com/install.ps1 | iex
 所用 shell 的确切引擎调用方式：
 
 ```text
-Apothem installed.
-Run the engine with:
+Installation complete.
 
-  apothem <command>
+The 'apothem' command is on your PATH.
+
+Recommended first step — the guided setup (profile -> preview -> install):
+
+  apothem quickstart
 ```
 
 <Callout title="`apothem` 命令">
@@ -100,8 +103,7 @@ apothem install --harness claude-code
 ```
 
 ```text
-Installed claude-code.
-Wrote: ~/.claude/settings.json
+✓ Installed claude-code -> /home/you/.claude/settings.json
 ```
 
 项目作用域的适配器写入项目内部而非你的主目录，因此它们需要一个
@@ -133,7 +135,7 @@ apothem verify --harness claude-code
 ```
 
 ```text
-claude-code: managed targets verified.
+✓ claude-code is verified at /home/you/.claude/settings.json
 ```
 
 如果配置缺失或发生漂移，`verify` 会以非零状态退出，因此它在配置脚本中也兼作闸门。

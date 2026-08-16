@@ -23,11 +23,21 @@ function Find-RealPwsh {
     )
 
     $candidates = @('pwsh', 'pwsh-preview')
-    $fallbackPaths = @(
-        (Join-Path $env:ProgramFiles 'PowerShell\7\pwsh.exe'),
-        (Join-Path $env:ProgramFiles 'PowerShell\7-preview\pwsh.exe'),
-        (Join-Path ${env:ProgramFiles(x86)} 'PowerShell\7\pwsh.exe')
-    )
+    # Build the Windows install-root fallbacks only where those roots exist.
+    # Join-Path rejects a null -Path with a terminating
+    # ParameterBindingValidationException, and $env:ProgramFiles is unset under
+    # pwsh on Linux/macOS — so an unguarded Join-Path here throws and breaks the
+    # documented "returns $null, does not throw" contract. The list is built
+    # eagerly, before the Phase 1 PATH probe, so the throw would pre-empt even
+    # the case where a real pwsh IS on PATH and would have been found.
+    $fallbackPaths = @()
+    if ($env:ProgramFiles) {
+        $fallbackPaths += (Join-Path $env:ProgramFiles 'PowerShell\7\pwsh.exe')
+        $fallbackPaths += (Join-Path $env:ProgramFiles 'PowerShell\7-preview\pwsh.exe')
+    }
+    if (${env:ProgramFiles(x86)}) {
+        $fallbackPaths += (Join-Path ${env:ProgramFiles(x86)} 'PowerShell\7\pwsh.exe')
+    }
     $probe = '$PSVersionTable.PSVersion.Major'
 
     # Phase 1 — PATH probe via Get-Command, rejecting WindowsApps stubs.

@@ -49,10 +49,13 @@ previos, coloca el motor en `~/.apothem` e imprime la invocación exacta del
 motor para tu shell al terminar:
 
 ```text
-Apothem installed.
-Run the engine with:
+Installation complete.
 
-  apothem <command>
+The 'apothem' command is on your PATH.
+
+Recommended first step — the guided setup (profile -> preview -> install):
+
+  apothem quickstart
 ```
 
 <Callout title="El comando `apothem`">
@@ -115,8 +118,7 @@ apothem install --harness claude-code
 ```
 
 ```text
-Installed claude-code.
-Wrote: ~/.claude/settings.json
+✓ Installed claude-code -> /home/you/.claude/settings.json
 ```
 
 Los adaptadores de ámbito de proyecto escriben dentro de un proyecto en lugar
@@ -153,7 +155,7 @@ apothem verify --harness claude-code
 ```
 
 ```text
-claude-code: managed targets verified.
+✓ claude-code is verified at /home/you/.claude/settings.json
 ```
 
 `verify` sale con un código distinto de cero si la configuración falta o se ha

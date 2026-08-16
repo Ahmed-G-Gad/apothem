@@ -68,7 +68,18 @@ _MESSAGE_FILES: Final[tuple[str, ...]] = (
     "stop.md",
 )
 
-_HARDCODED_USER_PATTERN: Final[str] = r"[C-Z]:\\Users\\"
+# Absolute home-directory roots, across the platforms a hook script may be
+# authored on. The original pattern was Windows-backslash only, so a script
+# carrying `/home/someone/...` passed and the validator reported "No hardcoded
+# absolute paths" — an affirmative clean bill for the majority platform.
+#
+# The separator repeats (`[\\/]+`) because a Windows path in Python source is
+# normally written escaped — `"C:\\Users\\me"` is two backslash characters on
+# disk, which a single-separator pattern reads straight past. Both the escaped
+# and the raw-string form have to match.
+_HARDCODED_USER_PATTERN: Final[str] = (
+    r"(?:[C-Z]:[\\/]+Users[\\/]+|/home/[^/\s\"']+|/Users/[^/\s\"']+|/root/)"
+)
 
 
 def validate_settings_file(path: Path, label: str, reporter: Reporter) -> None:

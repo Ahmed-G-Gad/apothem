@@ -29,6 +29,16 @@ foreach ($shell in @("bash", "zsh", "fish")) {
         # broken CLI triggers the python entry point rather than truncating the golden.
         Write-Host "apothem unavailable on PATH; falling back to: python -c"
         $output = & python -c "from apothem.cli import main; main()"
+        if ($LASTEXITCODE -ne 0) {
+            throw "failed to regenerate apothem.$shell (apothem off PATH and the python fallback failed; run under PYTHONPATH=src)"
+        }
+    }
+    # Refuse before the write, matching the .sh sibling: a generator that
+    # resolves and exits 0 while emitting nothing would otherwise put a lone
+    # newline over the committed golden, which the byte-identical verification
+    # check then treats as canonical.
+    if (-not $output) {
+        throw "apothem.$shell generated empty; refusing to overwrite the golden"
     }
     [System.IO.File]::WriteAllText($target, (($output -join "`n") + "`n"), $Utf8NoBom)
     Remove-Item Env:_APOTHEM_COMPLETE
@@ -48,6 +58,12 @@ try {
 if ($LASTEXITCODE -ne 0) {
     Write-Host "apothem unavailable on PATH; falling back to: python -m apothem"
     $psOutput = & python -m apothem completion powershell
+    if ($LASTEXITCODE -ne 0) {
+        throw "failed to regenerate apothem.ps1 (apothem off PATH and the python fallback failed; run under PYTHONPATH=src)"
+    }
+}
+if (-not $psOutput) {
+    throw 'apothem.ps1 generated empty; refusing to overwrite the golden'
 }
 $psHeader = "# SPDX-License-Identifier: MIT`n`n"
 [System.IO.File]::WriteAllText($psTarget, ($psHeader + (($psOutput -join "`n") + "`n")), $Utf8NoBom)

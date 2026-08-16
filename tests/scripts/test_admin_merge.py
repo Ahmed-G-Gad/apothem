@@ -26,6 +26,12 @@ import admin_merge as am  # noqa: E402
 
 
 class _FakeProc:
+    """Stand-in for a completed subprocess.
+
+    Carries only the fields the ceremony reads — return code and captured
+    output — so the double cannot imply a dependency the code does not have.
+    """
+
     def __init__(self, returncode: int, stdout: str = "", stderr: str = "") -> None:
         self.returncode = returncode
         self.stdout = stdout
@@ -66,6 +72,12 @@ def _install_fake_run(
 
 
 class TestRunHelper:
+    """The subprocess helper.
+
+    Covers stdout returned on success and the raise on a non-zero exit, so a
+    failed step cannot be mistaken for an empty result.
+    """
+
     def test_returns_stdout_on_capture_success(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -83,12 +95,22 @@ class TestRunHelper:
 
 
 class TestCaptureApproverCount:
+    """Parsing the approver count from the forge response."""
+
     def test_parses_int(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(am, "_run", lambda *a, **k: " 2 \n")
         assert am._capture_approver_count("o/r") == 2
 
 
 class TestAdminMergeCeremony:
+    """The relax-merge-restore ceremony.
+
+    Covers the happy path relaxing then restoring protection, and — the property
+    that matters most — that protection is restored even when the merge fails.
+    Also covers a restore failure being surfaced rather than swallowed, and the
+    repository defaulting to the current checkout.
+    """
+
     def test_happy_path_relaxes_then_restores(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -129,6 +151,12 @@ class TestAdminMergeCeremony:
 
 
 class TestParseArgs:
+    """Command-line argument parsing.
+
+    Covers the pull-request number parsed as an integer with the repository
+    optional.
+    """
+
     def test_pr_number_is_int_repo_optional(self) -> None:
         args = am._parse_args(["42"])
         assert args.pr_number == 42
@@ -138,6 +166,11 @@ class TestParseArgs:
 
 
 class TestMain:
+    """Process-level entry point behaviour.
+
+    Covers zero on success and one on a ceremony failure.
+    """
+
     def test_returns_zero_on_success(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(am, "admin_merge", lambda *a, **k: None)
         assert am.main(["7", "owner/repo"]) == 0

@@ -27,6 +27,7 @@ flowchart TD
 
 | File | Purpose |
 |------|---------|
+| `hooks.json` | The hook-registration source of truth: which event fires which handler. A handler that is not registered here does not run, whatever its module says. |
 | `dispatch.py` | Unified Python entrypoint for all hook events — routes each event to its handler. |
 | `emit_hook_context.py` | Emit structured JSON context for hook events. |
 | `session_start_bootstrap.py` | Session-start bootstrap hook for the Apothem ecosystem. |
@@ -43,6 +44,7 @@ flowchart TD
 | `find-python.sh` / `find-python.ps1` | Python interpreter locators. |
 | `find-pwsh.sh` / `find-pwsh.ps1` | PowerShell interpreter locators. |
 | `events.py` | Single source of truth for the supported hook-event vocabulary. |
+| `stdin_json.py` | The one canonical reader for a hook's stdin payload, so the read path cannot drift between handlers. |
 | `log.py` | Shared logger factory for the hook scripts. |
 | `resolve_root.py` | Project-root resolution for the Apothem ecosystem. |
 | `__init__.py` | Package marker. |
@@ -75,8 +77,8 @@ Markdown context files emitted into the conversation for each hook event:
 - **Fail-open is the dispatcher contract.** `dispatch.py::main` always exits 0; any uncaught exception is converted to a valid JSON failure envelope on stdout so the host harness never sees a raw traceback and never stalls. A handler that can raise past `main` is a contract breach — preserve the `# noqa: BLE001` intent-marker on the outermost boundary, and never widen the dispatcher's fail-open boundary.
 - **The event vocabulary has one source of truth:** `lib/events.py` (`SUPPORTED_EVENTS`, `HOOK_SPECIFIC_OUTPUT_EVENTS`). Never hard-code an event-name list elsewhere; import from `events`.
 - **Per-event timeout budgets bound runtime** (PreToolUse / PostToolUse / UserPromptSubmit / Notification tighter; SessionStart / PreCompact / PostCompact wider; Stop widest). A handler exceeding its event's budget is silently skipped by the runtime — keep handler work inside the budget; the per-event runtime benchmark is [`../benchmarks/bench_hooks.py`](../benchmarks/bench_hooks.py).
-- **Adding an event:** extend `lib/events.py` first, then the dispatcher routing, then a `messages/<event>.md` context file. A new `messages/<event>.md` carries the markdown SPDX comment line and is registered in the table above in the same change.
-- Validate a change with `python -m ruff check`, `python -m mypy` (cli + harnesses scope), and `python -m pytest`. Surface any unresolved decision as `TODO(clarify): ...` rather than guessing.
+- **Adding an event:** extend `lib/events.py` first, then the dispatcher routing, then a `messages/<event>.md` context file, then register the event in `hooks.json`. The registration is the step that makes it fire — an event correctly routed and documented but absent from `hooks.json` is dead code the harness never invokes. A new `messages/<event>.md` carries the markdown SPDX comment line and is registered in the table above in the same change.
+- Validate a change with `python -m ruff check`, `python -m mypy` (bare — it reads the `[tool.mypy] files` key: `cli`, `harnesses`, `lib`, `conformity`), and `python -m pytest`. Surface any unresolved decision as `TODO(clarify): ...` rather than guessing.
 
 ## Related
 

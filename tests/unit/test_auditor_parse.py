@@ -19,6 +19,13 @@ from apothem.lib import auditor as au
 
 
 class TestParseStructure:
+    """Parsing a configuration file by suffix.
+
+    Covers the JSON and YAML success paths against their malformed
+    counterparts, which raise carrying the offending line so the operator is
+    pointed at the fault rather than told only that parsing failed.
+    """
+
     def test_json_parses(self) -> None:
         assert au._parse_structure('{"a": 1}', ".json") == {"a": 1}
 

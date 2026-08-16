@@ -70,6 +70,15 @@ RULE_ANCHOR: Final[str] = "M13.3 error handling"
 
 @dataclass(frozen=True)
 class Finding:
+    """One swallowing exception clause on the inspected file.
+
+    Pre-conditions: ``line`` is the 1-based line of the offending clause;
+    ``form`` names the clause shape that matched (a bare ``except:`` or a
+    catch-all ``except Exception``); ``detail`` states why the clause swallows
+    rather than propagates. Post-conditions: ``rule`` defaults to
+    :data:`RULE_ANCHOR` so every finding cites its governing discipline.
+    """
+
     line: int
     form: str
     detail: str

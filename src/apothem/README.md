@@ -48,5 +48,5 @@
 
 - **Self-contained run model.** The engine runs from source via `PYTHONPATH=src python -m apothem ...` with its dependencies vendored under `_vendor/`; do not assume an installed entry point when verifying changes here. `_vendor/` is a vendored tree an agent does not hand-edit.
 - Add or modify code inside the owning subpackage rather than at this root; add corpus artifacts inside the owning content directory.
-- After any change, validate with `python -m ruff check . --fix`, then `python -m mypy src/apothem/cli/ src/apothem/harnesses/` (strict scope is `cli` + `harnesses`), then `python -m pytest`, then `python -m apothem.conformity.gate --all .`.
+- After any change, validate with `python -m ruff check . --fix`, then `python -m mypy` (bare — it reads the `[tool.mypy] files` key in `pyproject.toml`, whose strict scope is `cli`, `harnesses`, `lib`, `conformity`; passing paths on the command line overrides that key and silently drops the rest), then `python -m pytest`, then `python -m apothem.conformity.gate --all .`.
 - A new harness adapter touches several coupled surfaces beyond its subpackage (registry, manifest, golden fixtures, profile schema, tests) — consult `harnesses/README.md` before adding one.

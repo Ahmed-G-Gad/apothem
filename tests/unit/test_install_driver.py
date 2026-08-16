@@ -30,17 +30,20 @@ def _symlink_or_skip(target: Path, link: Path, *, target_is_directory: bool) -> 
 
 
 def test_load_rules_returns_known_harness() -> None:
+    """A registered harness resolves to a rules object with entries."""
     rules = install_driver.load_rules("claude_code")
     assert isinstance(rules, HarnessRules)
     assert rules.install  # claude_code declares a non-empty install list
 
 
 def test_load_rules_unknown_harness_raises() -> None:
+    """An unregistered harness name raises, naming the bad key."""
     with pytest.raises(RuntimeError, match="does_not_exist"):
         install_driver.load_rules("does_not_exist")
 
 
 def test_resolve_source_under_package_root() -> None:
+    """Sources resolve under the package root; a trailing slash is stripped."""
     assert (
         install_driver.resolve_source("rules") == install_driver.APOTHEM_SRC / "rules"
     )
@@ -51,6 +54,7 @@ def test_resolve_source_under_package_root() -> None:
 
 
 def test_run_install_user_scope_round_trip(tmp_path: Path) -> None:
+    """A user-scope install creates every planned target, twice over."""
     plan = install_driver.build_plan("claude_code", harness_root=tmp_path)
     install_driver.run_install("claude_code", harness_root=tmp_path)
     for entry in plan:
@@ -74,6 +78,7 @@ def test_run_install_user_scope_round_trip(tmp_path: Path) -> None:
 
 
 def test_run_install_project_scope_round_trip(tmp_path: Path) -> None:
+    """A project-scope install creates every planned target."""
     install_driver.run_install("cursor", project_root=tmp_path)
     for entry in install_driver.build_plan("cursor", project_root=tmp_path):
         assert Path(entry["target"]).exists()
@@ -82,6 +87,7 @@ def test_run_install_project_scope_round_trip(tmp_path: Path) -> None:
 def test_run_install_dry_run_returns_structured_results_without_writes(
     tmp_path: Path,
 ) -> None:
+    """A dry run classifies entries as created and writes nothing."""
     result = install_driver.run_install("cursor", project_root=tmp_path, dry_run=True)
 
     assert result.dry_run is True
@@ -97,6 +103,7 @@ def test_run_install_dry_run_returns_structured_results_without_writes(
 def test_run_install_reports_unchanged_on_second_pass(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """A second install reports unchanged and takes no backup."""
     backup_root = tmp_path / "backups"
     project = tmp_path / "project"
     project.mkdir()
@@ -128,6 +135,7 @@ _FOLDING_HARNESSES = ("claude_code", "codex", "antigravity", "hermes", "open_cla
 def test_run_install_idempotent_for_command_skill_collision(
     harness: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Folding harnesses converge: the second pass writes nothing."""
     monkeypatch.setattr(install_driver, "BACKUP_ROOT", tmp_path / "backups")
     root = tmp_path / harness
 
@@ -147,6 +155,7 @@ def test_run_install_idempotent_for_command_skill_collision(
 def test_run_install_validates_all_sources_before_first_write(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """One missing source aborts before any target is created."""
     package_root = tmp_path / "package"
     package_root.mkdir()
     (package_root / "ok.txt").write_text("ok", encoding="utf-8")
@@ -181,6 +190,7 @@ def test_run_install_validates_all_sources_before_first_write(
 def test_run_install_rejects_target_traversal_before_first_write(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """A target escaping the root aborts before the first write."""
     package_root = tmp_path / "package"
     package_root.mkdir()
     (package_root / "payload.txt").write_text("escape", encoding="utf-8")
@@ -207,6 +217,7 @@ def test_run_install_rejects_target_traversal_before_first_write(
 
 
 def test_run_install_projects_registry_capability_warnings(tmp_path: Path) -> None:
+    """Codex projects its unsupported and discovery-pending surfaces."""
     result = install_driver.run_install("codex", harness_root=tmp_path, dry_run=True)
     warning_keys = {
         warning.detail["capability"]
@@ -227,6 +238,7 @@ def test_run_install_warns_for_every_unsupported_capability(
     entry,
     tmp_path: Path,
 ) -> None:
+    """Each harness warns on exactly its non-native capabilities."""
     root = tmp_path / entry.package_key
     if entry.scope == "project":
         root.mkdir()
@@ -256,6 +268,7 @@ def test_run_install_warns_for_every_unsupported_capability(
 
 
 def test_build_plan_leaves_placeholder_when_no_root() -> None:
+    """With no root the plan keeps its literal root placeholder."""
     plan = install_driver.build_plan("cursor")
     assert any("${PROJECT_ROOT}" in entry["target"] for entry in plan)
 
@@ -289,11 +302,13 @@ def test_build_plan_claude_code_includes_conformity_and_schemas(
 
 
 def test_run_install_requires_a_root() -> None:
+    """An install with neither root raises rather than guessing one."""
     with pytest.raises(ValueError, match="harness_root or project_root"):
         install_driver.run_install("cursor")
 
 
 def test_sweep_stale_removes_dir_and_file(tmp_path: Path) -> None:
+    """The sweep removes stale dirs and files, ignoring absent ones."""
     stale_dir = tmp_path / "olddir"
     stale_dir.mkdir()
     (stale_dir / "child").write_text("x", encoding="utf-8")
@@ -309,6 +324,7 @@ def test_sweep_stale_removes_dir_and_file(tmp_path: Path) -> None:
 def test_sweep_stale_backs_up_removed_targets(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """A named harness backs up each swept target before removal."""
     backup_root = tmp_path / "backups"
     monkeypatch.setattr(install_driver, "BACKUP_ROOT", backup_root)
     stale_dir = tmp_path / "olddir"
@@ -329,6 +345,7 @@ def test_sweep_stale_backs_up_removed_targets(
 def test_write_text_safely_backs_up_before_overwrite(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """An operator-edited target is backed up before it is replaced."""
     backup_root = tmp_path / "backups"
     monkeypatch.setattr(install_driver, "BACKUP_ROOT", backup_root)
     target = tmp_path / "config.txt"
@@ -349,6 +366,8 @@ def test_write_text_safely_backs_up_before_overwrite(
 def test_write_text_safely_reports_permission_failure(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """A denied write reports an error and leaves no partial file."""
+
     def _raise_permission_error(target: Path, data: bytes) -> None:
         raise PermissionError("denied")
 
@@ -369,6 +388,7 @@ def test_write_text_safely_reports_permission_failure(
 
 
 def test_write_text_safely_rejects_target_traversal(tmp_path: Path) -> None:
+    """A target outside the install root is refused."""
     result = install_driver.write_text_safely(
         tmp_path / ".." / "escape.txt",
         "content",
@@ -382,6 +402,7 @@ def test_write_text_safely_rejects_target_traversal(tmp_path: Path) -> None:
 
 
 def test_write_text_safely_rejects_symlink_file_target(tmp_path: Path) -> None:
+    """A symlinked target is refused; the linked file is untouched."""
     outside = tmp_path / "outside.txt"
     outside.write_text("operator content", encoding="utf-8")
     link = tmp_path / "config.txt"
@@ -401,6 +422,7 @@ def test_write_text_safely_rejects_symlink_file_target(tmp_path: Path) -> None:
 
 
 def test_write_text_safely_rejects_symlink_parent(tmp_path: Path) -> None:
+    """A symlinked parent directory is refused before any write."""
     outside = tmp_path / "outside"
     outside.mkdir()
     linked_root = tmp_path / "linked-root"
@@ -421,6 +443,7 @@ def test_write_text_safely_rejects_symlink_parent(tmp_path: Path) -> None:
 def test_write_text_safely_merges_json_settings(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """JSON merges keep operator keys and hooks, swapping Apothem's."""
     backup_root = tmp_path / "backups"
     monkeypatch.setattr(install_driver, "BACKUP_ROOT", backup_root)
     target = tmp_path / "settings.json"
@@ -495,6 +518,7 @@ def test_write_text_safely_merges_json_settings(
 def test_write_text_safely_can_overlay_managed_json_values(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Template-authoritative overlay wins on managed keys only."""
     backup_root = tmp_path / "backups"
     monkeypatch.setattr(install_driver, "BACKUP_ROOT", backup_root)
     target = tmp_path / "opencode.json"
@@ -780,6 +804,7 @@ def test_apply_merge_tree_entries_renders_tokens_in_top_level_file_entries(
 def test_run_install_rejects_unknown_mode(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """An unrecognized install mode raises rather than no-opping."""
     bogus = HarnessRules(
         install=[
             InstallEntry(source="rules", target="${HARNESS_ROOT}/x", mode="bogus")
@@ -793,6 +818,7 @@ def test_run_install_rejects_unknown_mode(
 
 
 def test_replace_tree_skips_when_source_absent(tmp_path: Path) -> None:
+    """An absent source leaves the destination uncreated."""
     dst = tmp_path / "dst"
     install_driver.replace_tree(
         tmp_path / "no-such-source", dst, install_driver.make_ignore([], {})
@@ -801,6 +827,7 @@ def test_replace_tree_skips_when_source_absent(tmp_path: Path) -> None:
 
 
 def test_apply_write_text_skips_when_source_absent(tmp_path: Path) -> None:
+    """An absent template writes no file, only the parent dir."""
     entry = InstallEntry(
         source="no-such-template-file.txt",
         target="${HARNESS_ROOT}/out.txt",
@@ -815,6 +842,7 @@ def test_apply_write_text_skips_when_source_absent(tmp_path: Path) -> None:
 def test_apply_merge_tree_entries_honors_source_root_filters(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Per-directory filters exclude their named files from the copy."""
     package_root = tmp_path / "package"
     statuslines = package_root / "statuslines"
     statuslines.mkdir(parents=True)
@@ -851,6 +879,7 @@ def test_apply_merge_tree_entries_honors_source_root_filters(
 def test_apply_command_skills_preserves_unrelated_skill_dirs(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Operator-authored skill directories survive the conversion."""
     src = tmp_path / "src"
     src.mkdir()
     (src / "sample-command.md").write_text(
@@ -978,6 +1007,7 @@ def test_apply_command_skills_rejects_symlink_generated_directory(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """A symlinked skill dir errors instead of being written through."""
     fake_package_root = tmp_path / "package"
     commands_src = fake_package_root / "commands"
     commands_src.mkdir(parents=True)
@@ -1015,6 +1045,7 @@ def test_codex_command_skill_note_points_hooks_to_codex_root(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """The codex note points hooks at the codex root, not the skills tree."""
     fake_package_root = tmp_path / "package"
     commands_src = fake_package_root / "commands"
     commands_src.mkdir(parents=True)
@@ -1055,6 +1086,7 @@ def test_command_skill_note_points_to_apothem_support_tree(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Hermes and Open-Claw point every cohort at the support subtree."""
     fake_package_root = tmp_path / "package"
     commands_src = fake_package_root / "commands"
     commands_src.mkdir(parents=True)
@@ -1086,6 +1118,7 @@ def test_claude_command_skill_note_points_to_apothem_support_tree(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Claude Code splits native rules from the support-subtree cohorts."""
     fake_package_root = tmp_path / "package"
     commands_src = fake_package_root / "commands"
     commands_src.mkdir(parents=True)
@@ -1116,6 +1149,7 @@ def test_antigravity_command_skill_note_points_to_plugin_support_tree(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Antigravity addresses its cohorts under the plugin root."""
     fake_package_root = tmp_path / "package"
     commands_src = fake_package_root / "commands"
     commands_src.mkdir(parents=True)
@@ -1149,6 +1183,7 @@ def test_antigravity_command_skill_note_points_to_plugin_support_tree(
 def test_apply_codex_agents_converts_markdown_to_toml(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Agents convert to TOML and the stale markdown twin is removed."""
     fake_package_root = tmp_path / "package"
     agents_src = fake_package_root / "agents"
     agents_src.mkdir(parents=True)
@@ -1182,6 +1217,7 @@ def test_apply_codex_agents_converts_markdown_to_toml(
 def test_apply_qwen_agents_converts_tools_and_approval_mode(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Tool names and the permission mode map to Qwen's vocabulary."""
     fake_package_root = tmp_path / "package"
     agents_src = fake_package_root / "agents"
     agents_src.mkdir(parents=True)
@@ -1224,6 +1260,7 @@ def test_apply_qwen_agents_converts_tools_and_approval_mode(
 def test_apply_markdown_commands_normalizes_frontmatter_and_args(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """The generated header is dropped and args take the host's form."""
     fake_package_root = tmp_path / "package"
     commands_src = fake_package_root / "commands"
     commands_src.mkdir(parents=True)
@@ -1277,6 +1314,7 @@ def _fake_template_package(
 def test_apply_sentinel_merge_preserves_operator_prose(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """The managed block lands beside operator prose and is stable."""
     backup_root = tmp_path / "backups"
     monkeypatch.setattr(install_driver, "BACKUP_ROOT", backup_root)
     _fake_template_package(
@@ -1319,6 +1357,7 @@ def test_apply_sentinel_merge_preserves_operator_prose(
 def test_apply_sentinel_merge_creates_anchor_when_absent(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """An absent anchor is created rather than gated."""
     _fake_template_package(
         tmp_path, monkeypatch, relative="anchor.md", body="Apothem block"
     )
@@ -1342,6 +1381,7 @@ def test_apply_sentinel_merge_creates_anchor_when_absent(
 def test_apply_sentinel_merge_gate_decline_leaves_file_untouched(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """A declined gate skips the merge, leaving the file byte-identical."""
     _fake_template_package(
         tmp_path, monkeypatch, relative="anchor.md", body="Apothem block"
     )
@@ -1376,6 +1416,7 @@ def test_apply_sentinel_merge_gate_decline_leaves_file_untouched(
 def test_run_install_refuses_vendor_reserved_entry(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """A vendor-reserved target aborts the install before any write."""
     _fake_template_package(tmp_path, monkeypatch, relative="payload.txt", body="x")
     rules = HarnessRules(
         install=[
@@ -1402,6 +1443,7 @@ def test_run_install_refuses_vendor_reserved_entry(
 def test_dry_run_renders_diff_and_gate_for_operator_anchor(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """A preview renders the diff and marks the gate without writing."""
     _fake_template_package(
         tmp_path, monkeypatch, relative="anchor.md", body="Apothem block"
     )
@@ -1544,6 +1586,7 @@ def test_dry_run_operator_anchor_created_without_gate_on_fresh_target(
 def test_restore_backup_rolls_back_operator_file(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Restoring the newest backup returns the operator file verbatim."""
     backup_root = tmp_path / "backups"
     monkeypatch.setattr(install_driver, "BACKUP_ROOT", backup_root)
     _fake_template_package(
@@ -1579,6 +1622,7 @@ def test_restore_backup_rolls_back_operator_file(
 def test_list_backup_timestamps_enumerates_in_recency_order(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Timestamps sort oldest-first, so the tail is the newest set."""
     backup_root = tmp_path / "backups"
     monkeypatch.setattr(install_driver, "BACKUP_ROOT", backup_root)
     # Two backup sets for the same harness, named by their UTC timestamp
@@ -1602,6 +1646,7 @@ def test_list_backup_timestamps_enumerates_in_recency_order(
 def test_list_backup_timestamps_filters_by_harness(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Each harness sees only its own backup sets."""
     backup_root = tmp_path / "backups"
     monkeypatch.setattr(install_driver, "BACKUP_ROOT", backup_root)
     codex_set = backup_root / "20240101T000000Z" / "codex"
@@ -1618,6 +1663,7 @@ def test_list_backup_timestamps_filters_by_harness(
 def test_restore_backup_skips_unknown_timestamp(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """An unknown timestamp is skipped rather than raising."""
     backup_root = tmp_path / "backups"
     monkeypatch.setattr(install_driver, "BACKUP_ROOT", backup_root)
     harness = tmp_path / "harness"
@@ -1636,6 +1682,7 @@ def test_backup_existing_same_second_collision_resolves_distinct_dirs(
     # Two backups that resolve the same timestamp second must not collide:
     # the second one suffixes its leaf rather than raising FileExistsError
     # (Windows WinError 183 from copytree onto an existing directory).
+    """Two directory backups in one second land at distinct leaves."""
     backup_root = tmp_path / "backups"
     monkeypatch.setattr(install_driver, "BACKUP_ROOT", backup_root)
     monkeypatch.setattr(install_driver, "_timestamp_slug", lambda: "20240101T000000Z")
@@ -1670,6 +1717,7 @@ def test_backup_existing_same_second_collision_resolves_distinct_files(
 ) -> None:
     # The single-file backup path is collision-proof too: the second backup
     # of the same file within one timestamp second lands at a suffixed leaf.
+    """Two file backups in one second land at distinct leaves."""
     backup_root = tmp_path / "backups"
     monkeypatch.setattr(install_driver, "BACKUP_ROOT", backup_root)
     monkeypatch.setattr(install_driver, "_timestamp_slug", lambda: "20240101T000000Z")
@@ -1697,6 +1745,7 @@ def test_backup_existing_same_second_collision_resolves_distinct_files(
 def test_run_uninstall_removes_generated_children_only(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Uninstall removes generated children and spares operator files."""
     backup_root = tmp_path / "backups"
     monkeypatch.setattr(install_driver, "BACKUP_ROOT", backup_root)
     rules = HarnessRules(

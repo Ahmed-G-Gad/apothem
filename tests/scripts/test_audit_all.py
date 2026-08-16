@@ -26,6 +26,13 @@ import audit_all as aa  # noqa: E402
 
 
 class _FakeProc:
+    """Stand-in for a completed subprocess, carrying only a return code.
+
+    The runner reads nothing but ``returncode`` from the process object, so the
+    double deliberately implements only that — a fuller fake would imply the
+    runner depends on output it never reads.
+    """
+
     def __init__(self, returncode: int) -> None:
         self.returncode = returncode
 
@@ -35,12 +42,23 @@ def _stage(slug: str, *, suite_aware: bool = False) -> aa.Stage:
 
 
 class TestStageResult:
+    """Pass/fail verdict for one stage.
+
+    Covers that only a zero return code counts as a pass.
+    """
+
     def test_passed_is_true_only_on_zero(self) -> None:
         assert aa.StageResult(_stage("x"), 0).passed is True
         assert aa.StageResult(_stage("x"), 1).passed is False
 
 
 class TestStageSlugs:
+    """The declared stage inventory.
+
+    Covers that every canonical stage slug is listed, so a stage cannot be added
+    to the runner without appearing in the selectable set.
+    """
+
     def test_lists_all_canonical_stage_slugs(self) -> None:
         slugs = aa._stage_slugs()
         assert "ruff-check" in slugs
@@ -50,6 +68,14 @@ class TestStageSlugs:
 
 
 class TestRunStage:
+    """Running one stage as a subprocess.
+
+    Covers the result carrying the subprocess return code, and the suite-flag
+    threading: a suite-aware stage appends the flag, a non-suite-aware stage
+    ignores the suite name, and a suite-aware stage with no suite name omits the
+    flag rather than passing an empty value.
+    """
+
     def test_returns_result_from_subprocess_returncode(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -100,6 +126,13 @@ class TestRunStage:
 
 
 class TestRunPolicy:
+    """Fail-fast versus continue-on-error sequencing.
+
+    Covers that fail-fast stops after the first failure while continue-on-error
+    runs every stage, so an operator can choose between a fast signal and a
+    complete report.
+    """
+
     def _patch_run_stage(
         self, monkeypatch: pytest.MonkeyPatch, codes: dict[str, int]
     ) -> list[str]:
@@ -140,6 +173,11 @@ class TestRunPolicy:
 
 
 class TestReport:
+    """Aggregate exit code across the stages.
+
+    Covers zero when all stages pass and one when any fails.
+    """
+
     def test_zero_when_all_pass(self) -> None:
         results = [aa.StageResult(_stage("a"), 0), aa.StageResult(_stage("b"), 0)]
         assert aa.report(results) == 0
@@ -150,6 +188,12 @@ class TestReport:
 
 
 class TestSelectStages:
+    """Selecting which stages run.
+
+    Covers the default selecting all, and a per-stage negative flag removing
+    just that stage.
+    """
+
     def test_selects_all_by_default(self) -> None:
         args = aa.parse_args([])
         assert len(aa._select_stages(args)) == len(aa._STAGES)
@@ -163,6 +207,12 @@ class TestSelectStages:
 
 
 class TestMain:
+    """Process-level entry point behaviour.
+
+    Covers the vacuous case where no stages are selected returning zero, and the
+    aggregation of stage results into the exit code.
+    """
+
     def test_no_stages_selected_returns_zero(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:

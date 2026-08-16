@@ -49,10 +49,13 @@ place le moteur dans `~/.apothem` et affiche l'invocation exacte du moteur pour
 votre shell une fois terminé :
 
 ```text
-Apothem installed.
-Run the engine with:
+Installation complete.
 
-  apothem <command>
+The 'apothem' command is on your PATH.
+
+Recommended first step — the guided setup (profile -> preview -> install):
+
+  apothem quickstart
 ```
 
 <Callout title="La commande `apothem`">
@@ -116,8 +119,7 @@ apothem install --harness claude-code
 ```
 
 ```text
-Installed claude-code.
-Wrote: ~/.claude/settings.json
+✓ Installed claude-code -> /home/you/.claude/settings.json
 ```
 
 Les adaptateurs à portée projet écrivent à l'intérieur d'un projet plutôt que
@@ -155,7 +157,7 @@ apothem verify --harness claude-code
 ```
 
 ```text
-claude-code: managed targets verified.
+✓ claude-code is verified at /home/you/.claude/settings.json
 ```
 
 `verify` se termine avec un code différent de zéro si la configuration manque ou

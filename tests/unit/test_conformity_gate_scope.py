@@ -93,6 +93,13 @@ def test_path_in_scope_returns_true_on_resolve_error(
     """Path-resolution failures fall back to in-scope (fail-permissive)."""
 
     class _BrokenPath:
+        """Path double whose resolution always raises.
+
+        Models the filesystem conditions the real ``Path.resolve`` fails on — a
+        broken symlink loop, a permission denial — without needing to create
+        one on disk.
+        """
+
         def expanduser(self) -> _BrokenPath:
             return self
 

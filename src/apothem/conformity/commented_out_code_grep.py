@@ -202,6 +202,14 @@ def check(content: str, path: Path | None = None) -> GrepResult:
     run_length = 0
 
     def flush(end_line: int) -> None:
+        """Close the open commented-out run, recording it when long enough.
+
+        Pre-conditions: ``end_line`` is the 1-based line the run stopped at;
+        the enclosing ``run_start`` / ``run_length`` track the run in progress.
+        Post-conditions: a run of at least :data:`MIN_BLOCK_LINES` appends one
+        :class:`Finding`; a shorter run is discarded, so an isolated commented
+        line is never reported as commented-out code.
+        """
         if run_start is not None and run_length >= MIN_BLOCK_LINES:
             findings.append(
                 Finding(

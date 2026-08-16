@@ -49,6 +49,13 @@ def _kinds(result: aqv.ValidationResult) -> set[str]:
 
 
 class TestWellFormed:
+    """Option sets the validator accepts unchanged.
+
+    Covers a single recommended marker, a zero-marker multi-select, a
+    multi-select carrying several recommendations, and the single substantive
+    option that draws no nudge because there is nothing to choose between.
+    """
+
     def test_single_recommended_passes(self) -> None:
         result = aqv.validate_payload(
             _payload(_question("Accept (Recommended)", "Reject"))
@@ -82,6 +89,13 @@ class TestWellFormed:
 
 
 class TestWellFormednessFindings:
+    """Marker shapes the validator rejects.
+
+    Covers the malformed marker spellings — lowercase, bracketed, abbreviated,
+    and an extra internal space — plus the two semantic violations: a double
+    marker on a single-select, and a marker on a destructive option.
+    """
+
     def test_lowercase_marker_is_finding(self) -> None:
         result = aqv.validate_payload(
             _payload(_question("Accept (recommended)", "Reject"))
@@ -121,6 +135,12 @@ class TestWellFormednessFindings:
 
 
 class TestNudge:
+    """The advisory nudge toward naming a recommendation.
+
+    Covers the two-option set with no marker drawing a nudge, and the implicit
+    ``Other`` option being skipped so it never counts toward the choice.
+    """
+
     def test_missing_marker_two_options_nudges(self) -> None:
         result = aqv.validate_payload(_payload(_question("Patch", "Rewrite")))
         assert "no-recommended-marker" in _kinds(result)
@@ -136,6 +156,14 @@ class TestNudge:
 
 
 class TestEnvelope:
+    """Shape of the emitted hook envelope.
+
+    Covers the clean payload yielding an empty envelope, the advisory mode
+    emitting a system message rather than blocking, strict mode blocking on a
+    well-formedness finding, and strict mode deliberately not blocking when only
+    a nudge is present.
+    """
+
     def test_clean_payload_empty_envelope(self) -> None:
         result = aqv.validate_payload(
             _payload(_question("Accept (Recommended)", "Reject"))
@@ -168,6 +196,12 @@ class TestEnvelope:
 
 
 class TestStrictDetection:
+    """Resolving the strict-versus-advisory posture.
+
+    Covers both enabling routes — the flag and the environment variable —
+    against the advisory default.
+    """
+
     def test_strict_flag_enables(self) -> None:
         assert aqv.strict_enabled(["--strict"]) is True
 
@@ -181,6 +215,14 @@ class TestStrictDetection:
 
 
 class TestFailOpen:
+    """Fail-open behaviour on malformed input.
+
+    Covers a none payload, a missing tool input, a non-list questions field, an
+    option lacking a label, and garbage on stdin — each yielding an empty or
+    allow result rather than raising, so a malformed payload never blocks the
+    tool call.
+    """
+
     def test_none_payload_empty_result(self) -> None:
         assert aqv.validate_payload(None).findings == []
 
@@ -214,6 +256,11 @@ class TestFailOpen:
 
 
 class TestMainStdin:
+    """Process-level entry point behaviour over stdin.
+
+    Covers the advisory system message and the strict block.
+    """
+
     @staticmethod
     def _feed_stdin(
         monkeypatch: pytest.MonkeyPatch, payload: dict[str, object]
@@ -245,6 +292,13 @@ class TestMainStdin:
 
 
 class TestDispatchRouting:
+    """Routing from the shared dispatcher into this validator.
+
+    Covers that the route predicate matches on the basename and rejects other
+    events, that the question event reaches the validator, and that a clean
+    payload yields an empty envelope.
+    """
+
     def test_route_predicate_matches_basename(self) -> None:
         assert dispatch._is_askuserquestion_route(
             "pretooluse-askuserquestion-recommended"

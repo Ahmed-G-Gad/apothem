@@ -98,7 +98,7 @@ def test_learning_concurrent_append_produces_no_torn_line(tmp_path: Path) -> Non
     store = LearningStore(resolve_shared_data_home(base=tmp_path).ensure())
 
     def append_one(i: int) -> None:
-        store._append(
+        store.append_signal(
             LearningSignal(
                 id=f"s{i}", kind="observation", summary="x", captured=_CREATED
             )

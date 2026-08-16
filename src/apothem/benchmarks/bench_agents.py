@@ -36,6 +36,17 @@ def _representative_spawn() -> float | None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Run the agent-spawn benchmark for one pattern; return the exit code.
+
+    Pre-conditions: ``argv`` is the argument vector without the program name
+    (``None`` reads ``sys.argv``); it must select one ``--pattern`` from the
+    four supported agent patterns.
+
+    Post-conditions: returns ``0`` when the measured spawn is inside the
+    per-spawn budget, or when no harness fixture is wired and the run degrades
+    to reporting the budget alone; returns non-zero when a measured spawn
+    exceeds it.
+    """
     parser = argparse.ArgumentParser(prog="bench_agents")
     parser.add_argument(
         "--pattern",

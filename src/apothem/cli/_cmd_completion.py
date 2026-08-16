@@ -71,6 +71,18 @@ Register-ArgumentCompleter -Native -CommandName %(prog_name)s -ScriptBlock {
 """
 
     def get_completion_args(self) -> tuple[list[str], str]:
+        """Return ``(args, incomplete)`` parsed from the PowerShell handshake.
+
+        Pre-conditions: the completion script exports ``COMP_WORDS`` (the whole
+        command line) and ``COMP_CWORD`` (the cursor offset). A missing or
+        non-integer ``COMP_CWORD`` falls back to end-of-line, so completion
+        degrades to whole-line parsing rather than raising.
+
+        Post-conditions: ``args`` excludes the program name. The final token
+        becomes ``incomplete`` only when the cursor sits directly against it —
+        a trailing space means the operator finished that word and wants the
+        next argument's candidates instead.
+        """
         command_line = os.environ.get("COMP_WORDS", "")
         try:
             cursor = int(os.environ.get("COMP_CWORD", ""))
@@ -85,6 +97,11 @@ Register-ArgumentCompleter -Native -CommandName %(prog_name)s -ScriptBlock {
         return args, incomplete
 
     def format_completion(self, item: CompletionItem) -> str:
+        """Render one completion candidate as a single comma-joined line.
+
+        Post-conditions: returns ``type,value,help`` with an empty trailing
+        field when the item carries no help text.
+        """
         # One completion per line; the script splits on the first two commas,
         # so a help text containing commas survives intact.
         return f"{item.type},{item.value},{item.help or ''}"

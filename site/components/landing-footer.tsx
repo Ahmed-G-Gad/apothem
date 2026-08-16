@@ -34,12 +34,27 @@ const sections: { heading: string; links: { label: string; href: string }[] }[] 
     },
   ];
 
-export function LandingFooter({ version }: { version: string }) {
+/**
+ * `localePrefix` keeps a localized visitor inside their locale — see the same
+ * prop on `LandingNav`. Every href below is authored as a bare `/docs/...`
+ * path, correct on the root page and wrong on `/[lang]`, where following one
+ * would leave the visitor's locale silently. Defaults to `''`.
+ */
+export function LandingFooter({
+  version,
+  localePrefix = '',
+}: {
+  version: string;
+  localePrefix?: string;
+}) {
   return (
     <footer className="border-t border-[var(--border)]">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1.4fr_repeat(3,1fr)]">
         <div className="flex flex-col gap-3">
-          <Link href="/" className="flex items-center gap-2 font-semibold">
+          <Link
+            href={localePrefix || '/'}
+            className="flex items-center gap-2 font-semibold"
+          >
             <BrandMark size={28} decorative />
             <span className="tracking-tight">Apothem</span>
           </Link>
@@ -65,7 +80,7 @@ export function LandingFooter({ version }: { version: string }) {
               {s.links.map((l) => (
                 <li key={l.label}>
                   <Link
-                    href={l.href}
+                    href={`${localePrefix}${l.href}`}
                     className="text-sm text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
                   >
                     {l.label}

@@ -48,3 +48,7 @@ flowchart TD
 | [Organisation des sources](/docs/architecture/source-layout) | Pourquoi Apothem utilise une organisation `src/` et comment l'arborescence est structurée. |
 | [Flux d'installation](/docs/architecture/installation-workflow) | Comment `apothem install`, `update` et `uninstall` fonctionnent de bout en bout. |
 | [Travailleurs délégués](/docs/architecture/agents) | Instructions à portée de dépôt pour les environnements d'exécution multi-travailleurs opérant dans ce dépôt. |
+| [Runtime autonome](/docs/architecture/self-contained-runtime) | Comment le moteur d'Apothem s'exécute depuis n'importe quel checkout — dépendances internalisées, le modèle d'invocation PYTHONPATH=src et le bootstrap de l'arbre du plugin. |
+| [Stratégie d'internalisation des dépendances](/docs/architecture/vendoring-strategy) | Quels paquets tiers Apothem internalise sous src/apothem/_vendor/, lesquels restent des prérequis système, et comment les copies internalisées sont rafraîchies. |
+| [Contrat d'empaquetage des cohortes](/docs/architecture/cohort-packaging-contract) | Le contrat stable, consommable en aval, pour l'empaquetage des cohortes et les manifestes de plugin — énumérer les cohortes et résoudre leurs cibles natives par environnement sans redériver la correspondance. |
+| [Diagramme du pipeline CI/CD](/docs/architecture/cicd-pipeline) | Carte visuelle et décomposition par couloirs des étapes du flux de travail de build, de test, de lint, de sécurité et de publication qui contrôlent chaque changement de code et chaque release. |

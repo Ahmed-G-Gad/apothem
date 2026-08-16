@@ -43,10 +43,13 @@ irm https://apothem.ahmedgad.com/install.ps1 | iex
 ويطبع عند الانتهاء استدعاء المحرّك الدقيق المناسب لصدفتك.
 
 ```text
-Apothem installed.
-Run the engine with:
+Installation complete.
 
-  apothem <command>
+The 'apothem' command is on your PATH.
+
+Recommended first step — the guided setup (profile -> preview -> install):
+
+  apothem quickstart
 ```
 
 <Callout title="اختصار `apothem`">
@@ -105,8 +108,7 @@ apothem install --harness claude-code
 ```
 
 ```text
-Installed claude-code.
-Wrote: ~/.claude/settings.json
+✓ Installed claude-code -> /home/you/.claude/settings.json
 ```
 
 تتطلّب المحوِّلات ذات نطاق المشروع `--project PATH`، لأنها تكتب داخل المشروع
@@ -138,7 +140,7 @@ apothem verify --harness claude-code
 ```
 
 ```text
-claude-code: managed targets verified.
+✓ claude-code is verified at /home/you/.claude/settings.json
 ```
 
 يخرج `verify` برمز غير صفري إن كانت التهيئة مفقودة أو منحرفة، فيصلح بذلك بوّابةً

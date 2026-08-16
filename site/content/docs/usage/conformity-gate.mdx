@@ -64,6 +64,21 @@ harness-dispatched entry point: it reads a tool-input JSON payload from stdin
 and runs the per-write matcher chain against the pending write. This is the
 form the deployed `PreToolUse` hook invokes; you rarely call it by hand.
 
+Hook mode is **scoped to a set of directories**. It runs the matcher chain
+only on writes whose target falls under one of them; a write outside every
+scope short-circuits to a silent pass. The defaults are the hook-capable
+user-scope harness roots Apothem installs into — each harness's page under
+Harnesses names its own root. Set `APOTHEM_CONFORMITY_SCOPE` to a directory
+to replace them:
+
+```bash
+# Run the per-write matcher chain against one project tree instead
+export APOTHEM_CONFORMITY_SCOPE=/path/to/project
+```
+
+A hook that appears to do nothing is usually a scope miss rather than a
+failure — check the write's target against the scopes above first.
+
 ## CI integration
 
 The gate runs in CI via `.github/workflows/conformity.yml` on every push.

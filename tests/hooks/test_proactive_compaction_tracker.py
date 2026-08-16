@@ -57,6 +57,13 @@ def _payload(
 
 
 class TestCounterIncrement:
+    """Accumulating the per-session activity counter.
+
+    Covers that a single call below the threshold stays silent, that the count
+    persists across calls, and that distinct sessions count independently so one
+    session cannot trip another's advisory.
+    """
+
     def test_single_call_below_threshold_is_silent(self) -> None:
         envelope = pct.evaluate(_payload())
         assert envelope == {}
@@ -76,6 +83,14 @@ class TestCounterIncrement:
 
 
 class TestThresholdFires:
+    """Firing and backing off the compaction advisory.
+
+    Covers both trigger paths — the tool-call threshold and the output-byte
+    threshold above its call floor — and the back-off that holds the advisory to
+    one per window even under consecutive large outputs. Also covers that firing
+    resets the output counter, not just the call counter.
+    """
+
     def test_tool_threshold_fires_once_then_backs_off(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -134,6 +149,12 @@ class TestThresholdFires:
 
 
 class TestAdvisoryShape:
+    """Shape of the emitted advisory envelope.
+
+    Covers that the advisory carries both the system message and the additional
+    context, and that it never blocks — the tracker advises, it does not gate.
+    """
+
     def test_advisory_carries_systemmessage_and_additional_context(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -156,6 +177,12 @@ class TestAdvisoryShape:
 
 
 class TestEnvOverride:
+    """Threshold override from the environment.
+
+    Covers the unset default, a valid override applying, and an invalid override
+    falling back to the default rather than raising.
+    """
+
     def test_default_when_unset(self) -> None:
         thresholds = pct.resolve_thresholds()
         assert thresholds.tool_calls == pct.DEFAULT_TOOL_THRESHOLD
@@ -177,6 +204,14 @@ class TestEnvOverride:
 
 
 class TestFailOpen:
+    """Fail-open behaviour on malformed or hostile input.
+
+    Covers a missing session id counting under the default key, a garbage
+    session id not crashing, a none payload counting under the default key, a
+    corrupt state file degrading to zero, and the path-containment guard that
+    keeps a crafted session id from escaping the state directory.
+    """
+
     def test_missing_session_id_uses_default_key_and_counts(self) -> None:
         envelope = pct.evaluate({"tool_response": ""})
         assert envelope == {}
@@ -209,6 +244,13 @@ class TestFailOpen:
 
 
 class TestAtomicWriteAndPurge:
+    """Durability and cleanup of the on-disk counter state.
+
+    Covers that the write is atomic and leaves no temporary residue, that the
+    purge removes stale counter files and is a no-op on a missing directory, and
+    that evaluation purges stale state as it runs.
+    """
+
     def test_write_is_atomic_and_leaves_no_temp_residue(self) -> None:
         path = pct.state_path_for("sess-1")
         pct._write_state(path, pct.SessionState(tool_calls=4, output_bytes=99))
@@ -253,6 +295,13 @@ class TestAtomicWriteAndPurge:
 
 
 class TestEstimateOutputBytes:
+    """Measuring the size of a tool response.
+
+    Covers a string response measured as UTF-8 bytes, a dict response measured
+    after serialisation, and the two zero cases: an absent response and a none
+    payload.
+    """
+
     def test_string_response_measured_in_utf8_bytes(self) -> None:
         assert pct.estimate_output_bytes(_payload(output="abc")) == 3
 
@@ -268,6 +317,13 @@ class TestEstimateOutputBytes:
 
 
 class TestMain:
+    """Process-level entry point behaviour.
+
+    Covers the empty envelope below the threshold, the advisory at the
+    threshold, and that a TTY stdin never raises — the hook must not crash when
+    it is invoked outside a pipe.
+    """
+
     def _feed_stdin(self, monkeypatch: pytest.MonkeyPatch, payload: object) -> None:
         stream = io.StringIO(json.dumps(payload))
         stream.isatty = lambda: False  # type: ignore[method-assign]
@@ -300,6 +356,13 @@ class TestMain:
 
 
 class TestDispatchRouting:
+    """Routing from the shared dispatcher into this tracker.
+
+    Covers that the route predicate matches on the basename, that a
+    post-tool-use event reaches the tracker, and that it stays silent below the
+    threshold.
+    """
+
     def _feed_stdin(self, monkeypatch: pytest.MonkeyPatch, payload: object) -> None:
         stream = io.StringIO(json.dumps(payload))
         stream.isatty = lambda: False  # type: ignore[method-assign]

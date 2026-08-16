@@ -92,12 +92,12 @@ $env:CLAUDE_PROJECT_DIR='C:\tmp\alt-claude'; pwsh -File scripts/installer/instal
 
 ```bash
 cd ~/.claude
-make validate                                                 # 50 conformity validators
+make validate                                                 # conformity gate --all --strict; exit 0
 make headers-doctor                                           # file-header-grep → passed:true
 make ai-surfaces-doctor                                       # multi-surface-coherence → passed:true
 make plans-doctor                                             # no-global-plans + plans-discipline-language
 make lint                                                     # ruff + mypy
-make test                                                     # pytest 265/265
+make test                                                     # exit 0, no failures
 ```
 
 **Erwartet:** Jedes Tor grün. Erfasse die Exit-Codes + Zusammenfassungszeilen.
@@ -159,4 +159,4 @@ Trage die Befunde an den Maintainer heran:
 - [ ] §6 jede Sicherheits-Schutzvorrichtungs-Verweigerung löst aus
 - [ ] §7 Ergebnisse an den dokumentierten Audit-Pfaden erfasst
 
-Wenn jedes Kästchen oben auf einem frischen zweiten Host abgehakt ist, ist die Nachverfolgung der maschinenübergreifenden Synchronisation (COMPLETION.md §7 bindende Beschränkung) abgeschlossen.
+Wenn jedes Kästchen oben auf einem frischen zweiten Host abgehakt ist, ist die Nachverfolgung der maschinenübergreifenden Synchronisation abgeschlossen.

@@ -92,12 +92,12 @@ $env:CLAUDE_PROJECT_DIR='C:\tmp\alt-claude'; pwsh -File scripts/installer/instal
 
 ```bash
 cd ~/.claude
-make validate                                                 # 50 conformity validators
+make validate                                                 # conformity gate --all --strict; exit 0
 make headers-doctor                                           # file-header-grep → passed:true
 make ai-surfaces-doctor                                       # multi-surface-coherence → passed:true
 make plans-doctor                                             # no-global-plans + plans-discipline-language
 make lint                                                     # ruff + mypy
-make test                                                     # pytest 265/265
+make test                                                     # exit 0, no failures
 ```
 
 **Esperado:** Todas as portas em verde. Capture os códigos de saída + linhas de resumo.
@@ -159,4 +159,4 @@ Comunique os achados ao mantenedor:
 - [ ] §6 cada recusa de salvaguarda de segurança dispara
 - [ ] §7 resultados capturados nos caminhos de auditoria documentados
 
-Quando cada caixa de seleção acima estiver marcada em um segundo host novo, o acompanhamento da sincronização entre máquinas (COMPLETION.md §7 restrição vinculante) está encerrado.
+Quando cada caixa de seleção acima estiver marcada em um segundo host novo, o acompanhamento da sincronização entre máquinas está encerrado.

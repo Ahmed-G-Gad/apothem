@@ -32,20 +32,18 @@ the canonical propagation manifest at
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from apothem.harnesses._shared.wrapper_factories import make_project_scope_adapter
 from apothem.harnesses.kimi_code.install import install as _install
 from apothem.harnesses.kimi_code.install import plan as _plan
+from apothem.harnesses.kimi_code.uninstall import RELATIVE_TARGET as _SENTINEL_RELATIVE
 from apothem.harnesses.kimi_code.uninstall import uninstall as _uninstall
 from apothem.harnesses.kimi_code.update import update as _update
 from apothem.harnesses.kimi_code.verify import verify as _verify
 
-# Sentinel relative path used by ``output_path`` for display purposes
-# only. The real target is resolved per-install via
-# ``resolve_output_path(project)`` once the operator supplies
-# ``--project <path>``.
-_SENTINEL_RELATIVE: Path = Path("AGENTS.md")
+# Sentinel relative path used by ``output_path`` for display purposes only; the
+# real target is resolved per-install via ``resolve_output_path(project)`` once
+# the operator supplies ``--project <path>``. Imported from ``uninstall`` so the
+# target path and the uninstall project-root derivation cannot drift apart.
 
 KimiCodeAdapter = make_project_scope_adapter(
     "kimi-code",

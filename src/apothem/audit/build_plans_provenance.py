@@ -62,61 +62,68 @@ import json
 import re
 import sys
 from collections.abc import Iterable
-from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Final
 
-# The single suite name that earns the literal recursive-self
-# annotation. The migration-confirmation pass reads this constant
-# transitively via the JSON output.
-RECURSIVE_SELF_SUITE: Final[str] = "-".join(("apothem", "production", "hardening"))
+# ---------------------------------------------------------------------------
+# Filename derivation lives in ``plan_filename``: the slug rule, the H1
+# reader, and the title precedence between them. Public names, because
+# ``_record_for`` calls them.
+# ---------------------------------------------------------------------------
+from apothem.audit.plan_filename import (
+    h1_of,
+    proposed_filename,
+)
 
-# Confidence tiers. ``recursive-self`` is reserved for the suite above;
-# the cascade in :func:`_resolve_suite` assigns the remaining four.
-CONFIDENCE_RECURSIVE_SELF: Final[str] = "recursive-self"
-CONFIDENCE_HIGH: Final[str] = "high"
-CONFIDENCE_MEDIUM: Final[str] = "medium"
-CONFIDENCE_LOW: Final[str] = "low"
-CONFIDENCE_UNMAPPABLE: Final[str] = "unmappable"
+# ---------------------------------------------------------------------------
+# Frontmatter parsing lives in ``plan_frontmatter``: the grammar plus the
+# two readers over it. Public names, because other stages import them.
+# ---------------------------------------------------------------------------
+from apothem.audit.plan_frontmatter import (
+    parse_frontmatter,
+    strip_frontmatter,
+)
 
-ALL_CONFIDENCES: Final[tuple[str, ...]] = (
-    CONFIDENCE_RECURSIVE_SELF,
+# ---------------------------------------------------------------------------
+# The three shapes the pipeline speaks in live in ``plans_provenance_model``:
+# the scan's observations, the suite's verdict, and a file's record. Shared
+# with the renderer, which is why they are not defined here.
+# ---------------------------------------------------------------------------
+from apothem.audit.plans_provenance_model import (
+    ProvenanceRecord,
+    Signals,
+    SuiteVerdict,
+)
+
+# ---------------------------------------------------------------------------
+# Emitting the JSON envelope and its markdown mirror lives in
+# ``plans_provenance_render``. Presentation only: by the time it runs, every
+# verdict is settled. Public names, because ``main`` calls them.
+# ---------------------------------------------------------------------------
+from apothem.audit.plans_provenance_render import (
+    emit_json,
+    emit_markdown,
+)
+
+# ---------------------------------------------------------------------------
+# The confidence ladder, destination text, plan extensions, suite-name
+# hints, and ecosystem-self marker live in
+# ``plans_provenance_vocabulary`` — the terms downstream consumers read.
+# The detection regexes stay below: private machinery, not contract.
+# ---------------------------------------------------------------------------
+from apothem.audit.plans_provenance_vocabulary import (
+    ALL_CONFIDENCES,
     CONFIDENCE_HIGH,
     CONFIDENCE_MEDIUM,
-    CONFIDENCE_LOW,
+    CONFIDENCE_RECURSIVE_SELF,
     CONFIDENCE_UNMAPPABLE,
+    ECOSYSTEM_DESTINATION_TEXT,
+    ECOSYSTEM_SELF_MARKER,
+    PLAN_EXTENSIONS,
+    RECURSIVE_SELF_SUITE,
+    SUITE_NAME_HINTS,
 )
-
-# Canonical natural-domain rationale for the recursive case. The
-# plan-internal-isolation discipline forbids planning-internal tokens
-# from leaking into produced artifacts; this string is the natural-
-# domain phrasing every consumer reads.
-ECOSYSTEM_DESTINATION_TEXT: Final[str] = (
-    "stay in place at the user-config root; the .plans directory is"
-    " gitignored at the cleanup phase so the published tree carries"
-    " no plan-product"
-)
-
-# File extensions the scanner considers part of a plan suite.
-PLAN_EXTENSIONS: Final[frozenset[str]] = frozenset({".md", ".yml", ".yaml"})
-
-# Suite-name prefix → built-in project hint. The mapping captures the
-# operator's stated decomposition: each suite has a respective
-# destination, and the suite name's prefix is the strongest single
-# indicator of which destination that is.
-SUITE_NAME_HINTS: Final[tuple[tuple[str, str], ...]] = (
-    ("dc-kit-mini-", "dc-kit-mini"),
-    ("dc-kit-ieee", "dc-kit"),
-    ("claude-", "<ecosystem-self>"),
-    ("agent-home-", "<ecosystem-self>"),
-)
-
-# The marker the suite-name heuristic emits when a suite resolves to
-# the user-config ecosystem itself. Downstream code routes this marker
-# to the canonical ECOSYSTEM_DESTINATION_TEXT and to the recursive-
-# self vs ecosystem-archive confidence assignment.
-ECOSYSTEM_SELF_MARKER: Final[str] = "<ecosystem-self>"
 
 # Repository-URL patterns. GitHub and GitLab cover the migration
 # corpus; additional hosts can be added without breaking downstream
@@ -161,76 +168,6 @@ _FILE_REF_RE: Final[re.Pattern[str]] = re.compile(
     r"\b[\w./-]+\.(?:py|js|ts|tsx|rs|go|java|rb|sh|md|yml|yaml|json|toml|ini)\b"
 )
 
-_FRONTMATTER_RE: Final[re.Pattern[str]] = re.compile(
-    r"\A---\s*\n(.*?)\n---\s*\n",
-    re.DOTALL,
-)
-_FRONTMATTER_PROJECT_RE: Final[re.Pattern[str]] = re.compile(
-    r"^project:\s*(.+?)\s*$",
-    re.MULTILINE,
-)
-_FRONTMATTER_TITLE_RE: Final[re.Pattern[str]] = re.compile(
-    r"^title:\s*(.+?)\s*$",
-    re.MULTILINE,
-)
-_FRONTMATTER_CREATED_RE: Final[re.Pattern[str]] = re.compile(
-    r"^created:\s*(.+?)\s*$",
-    re.MULTILINE,
-)
-_H1_RE: Final[re.Pattern[str]] = re.compile(r"^#\s+(.+?)\s*$", re.MULTILINE)
-
-
-@dataclass
-class Signals:
-    """Per-file body-scan signal set."""
-
-    repo_urls: list[str] = field(default_factory=list)
-    abs_paths: list[str] = field(default_factory=list)
-    file_refs: list[str] = field(default_factory=list)
-    frameworks: list[str] = field(default_factory=list)
-    eco_path_hits: int = 0
-
-
-@dataclass
-class SuiteVerdict:
-    """The suite-level destination + confidence + rationale fragments
-    every file in the suite inherits.
-
-    The verdict is computed once per suite from the suite-name
-    heuristic plus the aggregated body signals; the per-file records
-    surface the verdict alongside their individual signal sets.
-    """
-
-    suite: str
-    file_count: int
-    destination: str
-    confidence: str
-    rationale: list[str]
-    aggregate_repo_urls: list[str]
-    aggregate_abs_paths: list[str]
-    eco_signal_density: float
-
-
-@dataclass
-class ProvenanceRecord:
-    """Provenance record for a single plan file.
-
-    The shape is the source of truth for the JSON envelope: every field
-    here surfaces in the output document with an identical key.
-    """
-
-    path: str
-    suite: str
-    mtime: str
-    sha256: str
-    line_count: int
-    frontmatter_project: str | None
-    signals: Signals
-    inferred_destination: str
-    confidence: str
-    proposed_destination_filename: str
-    notes: list[str] = field(default_factory=list)
-
 
 def _read_text(path: Path) -> str:
     try:
@@ -239,33 +176,8 @@ def _read_text(path: Path) -> str:
         return ""
 
 
-def _parse_frontmatter(content: str) -> dict[str, str]:
-    match = _FRONTMATTER_RE.match(content)
-    if not match:
-        return {}
-    body = match.group(1)
-    fields: dict[str, str] = {}
-    project = _FRONTMATTER_PROJECT_RE.search(body)
-    if project:
-        fields["project"] = project.group(1).strip()
-    title = _FRONTMATTER_TITLE_RE.search(body)
-    if title:
-        fields["title"] = title.group(1).strip()
-    created = _FRONTMATTER_CREATED_RE.search(body)
-    if created:
-        fields["created"] = created.group(1).strip()
-    return fields
-
-
-def _strip_frontmatter(content: str) -> str:
-    match = _FRONTMATTER_RE.match(content)
-    if not match:
-        return content
-    return content[match.end() :]
-
-
 def _scan_signals(content: str) -> Signals:
-    body = _strip_frontmatter(content)
+    body = strip_frontmatter(content)
     return Signals(
         repo_urls=sorted(set(_REPO_URL_RE.findall(body))),
         abs_paths=sorted(set(_ABS_PATH_RE.findall(body))),
@@ -273,38 +185,6 @@ def _scan_signals(content: str) -> Signals:
         frameworks=sorted(set(_FRAMEWORK_RE.findall(body))),
         eco_path_hits=len(_ECO_PATH_RE.findall(body)),
     )
-
-
-def _kebab_slug(text: str) -> str:
-    text = text.lower()
-    text = re.sub(r"[^\w\s-]", "", text)
-    text = re.sub(r"[\s_]+", "-", text)
-    text = re.sub(r"-+", "-", text)
-    return text.strip("-")[:60]
-
-
-def _h1_of(content: str) -> str | None:
-    body = _strip_frontmatter(content)
-    match = _H1_RE.search(body)
-    return match.group(1).strip() if match else None
-
-
-def _proposed_filename(
-    path: Path,
-    mtime_iso: str,
-    fm_fields: dict[str, str],
-    h1: str | None,
-) -> str:
-    date_str = fm_fields.get("created", "")
-    iso10 = re.match(r"\d{4}-\d{2}-\d{2}", date_str)
-    date = iso10.group(0) if iso10 else mtime_iso[:10]
-    if "title" in fm_fields:
-        slug = _kebab_slug(fm_fields["title"])
-    elif h1:
-        slug = _kebab_slug(h1)
-    else:
-        slug = _kebab_slug(path.stem)
-    return f"{date}--{slug}.md"
 
 
 def _suite_of(rel: str) -> str:
@@ -379,24 +259,52 @@ def _resolve_suite(
     eco_density: float,
     known_projects: list[dict[str, str]],
 ) -> SuiteVerdict:
-    """Compute the suite-level destination + confidence."""
+    """Compute the suite-level destination + confidence.
+
+    A ladder of nine rungs, tried in order, and the order carries the
+    design: the earlier a rung sits, the stronger the evidence it reads.
+    The recursive-self suite comes first because moving it would amputate
+    the migration's own working tree, and no later signal may override
+    that. Suite-name prefixes come next, because a name is an authoring
+    decision while body signals are inference. Body signals decide only
+    when no name hint fired, and among them a repository URL outranks an
+    absolute path — a URL names a project, a path merely mentions one.
+    The floor is an explicit ``<unmappable>`` verdict rather than a guess,
+    so an undecidable suite reaches the operator as a question.
+
+    Each rung decides just two things — where the suite goes and how much
+    that answer is trusted — and appends its reasoning to the shared
+    rationale, which travels with the verdict so the record shows its
+    work.
+    """
     rationale: list[str] = []
+
+    def verdict(destination: str, confidence: str) -> SuiteVerdict:
+        """Build a verdict from the two fields a rung actually decides.
+
+        Everything else is invariant for this call: the suite identity, the
+        aggregates it was handed, and the rationale list the rungs append to.
+        Closing over them keeps each rung down to its decision, and removes
+        the way a rung could drift from its siblings by restating one of the
+        shared fields differently.
+        """
+        return SuiteVerdict(
+            suite=suite,
+            file_count=file_count,
+            destination=destination,
+            confidence=confidence,
+            rationale=rationale,
+            aggregate_repo_urls=aggregate_urls,
+            aggregate_abs_paths=aggregate_paths,
+            eco_signal_density=eco_density,
+        )
 
     if suite == RECURSIVE_SELF_SUITE:
         rationale.append(
             "this suite hardens the very ecosystem it lives in;"
             " moving it would amputate the migration's working tree"
         )
-        return SuiteVerdict(
-            suite=suite,
-            file_count=file_count,
-            destination=ECOSYSTEM_DESTINATION_TEXT,
-            confidence=CONFIDENCE_RECURSIVE_SELF,
-            rationale=rationale,
-            aggregate_repo_urls=aggregate_urls,
-            aggregate_abs_paths=aggregate_paths,
-            eco_signal_density=eco_density,
-        )
+        return verdict(ECOSYSTEM_DESTINATION_TEXT, CONFIDENCE_RECURSIVE_SELF)
 
     hint = _suite_name_hint(suite)
     if hint == ECOSYSTEM_SELF_MARKER:
@@ -410,16 +318,7 @@ def _resolve_suite(
             f"body eco-signal density {eco_density:.2f} corroborates"
             " the suite-name hint"
         )
-        return SuiteVerdict(
-            suite=suite,
-            file_count=file_count,
-            destination=ECOSYSTEM_DESTINATION_TEXT,
-            confidence=CONFIDENCE_HIGH,
-            rationale=rationale,
-            aggregate_repo_urls=aggregate_urls,
-            aggregate_abs_paths=aggregate_paths,
-            eco_signal_density=eco_density,
-        )
+        return verdict(ECOSYSTEM_DESTINATION_TEXT, CONFIDENCE_HIGH)
 
     if hint is not None:
         # Resolve the named project against the known-projects list.
@@ -446,32 +345,14 @@ def _resolve_suite(
                 f" '{match['name']}' via the suite-name prefix table"
                 f" ({kind} match)"
             )
-            return SuiteVerdict(
-                suite=suite,
-                file_count=file_count,
-                destination=match["name"],
-                confidence=CONFIDENCE_HIGH,
-                rationale=rationale,
-                aggregate_repo_urls=aggregate_urls,
-                aggregate_abs_paths=aggregate_paths,
-                eco_signal_density=eco_density,
-            )
+            return verdict(match["name"], CONFIDENCE_HIGH)
         rationale.append(
             f"suite name '{suite}' maps to project '{hint}' via the"
             " suite-name prefix table; no known-projects entry yet"
             " carries the matching name, so confidence sits at"
             " medium pending known-projects ratification"
         )
-        return SuiteVerdict(
-            suite=suite,
-            file_count=file_count,
-            destination=hint,
-            confidence=CONFIDENCE_MEDIUM,
-            rationale=rationale,
-            aggregate_repo_urls=aggregate_urls,
-            aggregate_abs_paths=aggregate_paths,
-            eco_signal_density=eco_density,
-        )
+        return verdict(hint, CONFIDENCE_MEDIUM)
 
     # No suite-name hint fired. Fall through to body signals.
     if eco_density >= 0.5:
@@ -480,16 +361,7 @@ def _resolve_suite(
             " 0.50 threshold; routes to the user-config ecosystem"
             " stay-in-place destination"
         )
-        return SuiteVerdict(
-            suite=suite,
-            file_count=file_count,
-            destination=ECOSYSTEM_DESTINATION_TEXT,
-            confidence=CONFIDENCE_MEDIUM,
-            rationale=rationale,
-            aggregate_repo_urls=aggregate_urls,
-            aggregate_abs_paths=aggregate_paths,
-            eco_signal_density=eco_density,
-        )
+        return verdict(ECOSYSTEM_DESTINATION_TEXT, CONFIDENCE_MEDIUM)
 
     for url in aggregate_urls:
         for proj in known_projects:
@@ -498,31 +370,13 @@ def _resolve_suite(
                     f"aggregate repository URL '{url}' matches known"
                     f" project '{proj['name']}'"
                 )
-                return SuiteVerdict(
-                    suite=suite,
-                    file_count=file_count,
-                    destination=proj["name"],
-                    confidence=CONFIDENCE_HIGH,
-                    rationale=rationale,
-                    aggregate_repo_urls=aggregate_urls,
-                    aggregate_abs_paths=aggregate_paths,
-                    eco_signal_density=eco_density,
-                )
+                return verdict(proj["name"], CONFIDENCE_HIGH)
     if aggregate_urls:
         rationale.append(
             f"aggregate repository URL '{aggregate_urls[0]}'"
             " recognizable but unmatched against known-projects"
         )
-        return SuiteVerdict(
-            suite=suite,
-            file_count=file_count,
-            destination=aggregate_urls[0],
-            confidence=CONFIDENCE_MEDIUM,
-            rationale=rationale,
-            aggregate_repo_urls=aggregate_urls,
-            aggregate_abs_paths=aggregate_paths,
-            eco_signal_density=eco_density,
-        )
+        return verdict(aggregate_urls[0], CONFIDENCE_MEDIUM)
 
     for ap in aggregate_paths:
         for proj in known_projects:
@@ -531,32 +385,14 @@ def _resolve_suite(
                     f"aggregate absolute path '{ap}' contains known"
                     f" project basename '{proj['name']}'"
                 )
-                return SuiteVerdict(
-                    suite=suite,
-                    file_count=file_count,
-                    destination=proj["name"],
-                    confidence=CONFIDENCE_MEDIUM,
-                    rationale=rationale,
-                    aggregate_repo_urls=aggregate_urls,
-                    aggregate_abs_paths=aggregate_paths,
-                    eco_signal_density=eco_density,
-                )
+                return verdict(proj["name"], CONFIDENCE_MEDIUM)
 
     rationale.append(
         "no suite-name hint, no eco-density majority, no body URL or"
         " absolute-path match against known-projects; suite is"
         " unmappable pending operator disposition"
     )
-    return SuiteVerdict(
-        suite=suite,
-        file_count=file_count,
-        destination="<unmappable>",
-        confidence=CONFIDENCE_UNMAPPABLE,
-        rationale=rationale,
-        aggregate_repo_urls=aggregate_urls,
-        aggregate_abs_paths=aggregate_paths,
-        eco_signal_density=eco_density,
-    )
+    return verdict("<unmappable>", CONFIDENCE_UNMAPPABLE)
 
 
 def _derive_known_projects(
@@ -643,9 +479,9 @@ def _record_for(
     path = root / rel
     suite = _suite_of(rel)
     content = _read_text(path)
-    fm = _parse_frontmatter(content)
+    fm = parse_frontmatter(content)
     signals = _scan_signals(content)
-    h1 = _h1_of(content)
+    h1 = h1_of(content)
     mtime = inventory_record.get("mtime", "")
     if not mtime and path.exists():
         mtime = datetime.fromtimestamp(
@@ -664,7 +500,7 @@ def _record_for(
     ):
         proposed = "n/a (stay-in-place)"
     else:
-        proposed = _proposed_filename(path, mtime, fm, h1)
+        proposed = proposed_filename(path, mtime, fm, h1)
     return ProvenanceRecord(
         path=rel,
         suite=suite,
@@ -678,160 +514,6 @@ def _record_for(
         proposed_destination_filename=proposed,
         notes=list(suite_verdict.rationale),
     )
-
-
-def _emit_json(
-    records: list[ProvenanceRecord],
-    suite_verdicts: dict[str, SuiteVerdict],
-    inventory_sha: str,
-    out: Path,
-) -> None:
-    by_suite_block: dict[str, dict[str, Any]] = {}
-    for suite, verdict in sorted(suite_verdicts.items()):
-        by_suite_block[suite] = {
-            "file-count": verdict.file_count,
-            "destination": verdict.destination,
-            "confidence": verdict.confidence,
-            "rationale": verdict.rationale,
-            "aggregate-repo-urls": verdict.aggregate_repo_urls,
-            "aggregate-abs-paths": verdict.aggregate_abs_paths,
-            "eco-signal-density": round(verdict.eco_signal_density, 3),
-        }
-    by_confidence_total: dict[str, int] = dict.fromkeys(ALL_CONFIDENCES, 0)
-    for r in records:
-        by_confidence_total[r.confidence] += 1
-    payload = {
-        "generated": datetime.now(timezone.utc).isoformat(),
-        "scanner": "build_plans_provenance",
-        "inventory-source-sha256": inventory_sha,
-        "suite-count": len(suite_verdicts),
-        "file-count": len(records),
-        "by-confidence": by_confidence_total,
-        "suites": by_suite_block,
-        "files": [_record_to_dict(r) for r in records],
-    }
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-
-
-def _record_to_dict(r: ProvenanceRecord) -> dict[str, Any]:
-    return {
-        "path": r.path,
-        "suite": r.suite,
-        "mtime": r.mtime,
-        "sha256": r.sha256,
-        "line-count": r.line_count,
-        "frontmatter-project": r.frontmatter_project,
-        "signals": asdict(r.signals),
-        "inferred-destination": r.inferred_destination,
-        "confidence": r.confidence,
-        "proposed-destination-filename": r.proposed_destination_filename,
-        "notes": r.notes,
-    }
-
-
-def _emit_markdown(
-    records: list[ProvenanceRecord],
-    suite_verdicts: dict[str, SuiteVerdict],
-    out: Path,
-) -> None:
-    total = len(records)
-    by_confidence: dict[str, int] = dict.fromkeys(ALL_CONFIDENCES, 0)
-    for r in records:
-        by_confidence[r.confidence] += 1
-    orphans = [r for r in records if r.confidence == CONFIDENCE_UNMAPPABLE]
-
-    lines: list[str] = []
-    lines.append("# Plans Provenance — Per-Suite, Per-File Map")
-    lines.append("")
-    lines.append(f"_Generated: {datetime.now(timezone.utc).isoformat()}_")
-    lines.append("")
-    lines.append("## Aggregate Stats")
-    lines.append("")
-    lines.append(f"- **Total suites:** {len(suite_verdicts)}")
-    lines.append(f"- **Total plan files:** {total}")
-    lines.append("- **By confidence:**")
-    for c in ALL_CONFIDENCES:
-        lines.append(f"  - `{c}`: {by_confidence[c]}")
-    lines.append("")
-
-    lines.append("## Suite-Level Verdicts")
-    lines.append("")
-    lines.append("| Suite | Files | Confidence | Destination |")
-    lines.append("|-------|-------|------------|-------------|")
-    for suite, verdict in sorted(suite_verdicts.items()):
-        suite_disp = suite.replace("|", "\\|")
-        dest_disp = verdict.destination.replace("|", "\\|")
-        lines.append(
-            f"| `{suite_disp}` | {verdict.file_count} |"
-            f" `{verdict.confidence}` | {dest_disp} |"
-        )
-    lines.append("")
-
-    lines.append("## Per-Suite Tables")
-    lines.append("")
-    by_suite: dict[str, list[ProvenanceRecord]] = {}
-    for r in records:
-        by_suite.setdefault(r.suite or "<root>", []).append(r)
-    for suite in sorted(by_suite):
-        suite_records = sorted(by_suite[suite], key=lambda r: r.path)
-        suite_verdict = suite_verdicts.get(suite)
-        lines.append(f"### `{suite}`")
-        lines.append("")
-        if suite_verdict is not None:
-            lines.append(
-                f"_Confidence: `{suite_verdict.confidence}`. Destination:"
-                f" {suite_verdict.destination}._"
-            )
-            lines.append("")
-            lines.append("**Rationale:**")
-            lines.append("")
-            for fragment in suite_verdict.rationale:
-                lines.append(f"- {fragment}")
-            lines.append("")
-        lines.append("| Path | Proposed filename |")
-        lines.append("|------|-------------------|")
-        for r in suite_records:
-            path_disp = r.path.replace("|", "\\|")
-            file_disp = r.proposed_destination_filename.replace("|", "\\|")
-            lines.append(f"| `{path_disp}` | `{file_disp}` |")
-        lines.append("")
-
-    lines.append("## Recursive-Case Annotation")
-    lines.append("")
-    recursive = [
-        v for v in suite_verdicts.values() if v.confidence == CONFIDENCE_RECURSIVE_SELF
-    ]
-    if recursive:
-        v = recursive[0]
-        lines.append(
-            f"The suite `{v.suite}` describes the very ecosystem it"
-            f" lives in ({v.file_count} files); the migration leaves"
-            " it in place and the cleanup phase adds `.plans/` to the"
-            " repository's `.gitignore` so the directory carries no"
-            " plan-product through publication."
-        )
-    else:
-        lines.append("_No recursive-self records._")
-    lines.append("")
-
-    lines.append("## Orphan Candidates")
-    lines.append("")
-    if orphans:
-        lines.append(
-            f"{len(orphans)} file(s) with `confidence: unmappable`."
-            " The migration-confirmation pass routes these to the"
-            " operator for explicit disposition."
-        )
-        lines.append("")
-        for r in sorted(orphans, key=lambda r: r.path):
-            lines.append(f"- `{r.path}`")
-    else:
-        lines.append("_No orphan candidates surfaced._")
-    lines.append("")
-
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text("\n".join(lines), encoding="utf-8")
 
 
 def _filter_plan_records(records: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -980,8 +662,8 @@ def main(argv: list[str] | None = None) -> int:
                 _record_for(inv["path"], inv, args.root, verdict),
             )
 
-    _emit_json(records, suite_verdicts, inventory_sha, args.output_json)
-    _emit_markdown(records, suite_verdicts, args.output_md)
+    emit_json(records, suite_verdicts, inventory_sha, args.output_json)
+    emit_markdown(records, suite_verdicts, args.output_md)
 
     by_conf: dict[str, int] = dict.fromkeys(ALL_CONFIDENCES, 0)
     for r in records:
@@ -1002,3 +684,20 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+# ---------------------------------------------------------------------------
+# Public surface. This module is the entry point for the header-coverage
+# pipeline; the names below are re-exported from the sibling modules that own
+# them (``header_vocabulary`` / ``header_banner`` / ``header_variants`` /
+# ``header_detect``). Declaring them here keeps the unused-import rule from
+# deleting a re-export whose importers live in other files.
+# ---------------------------------------------------------------------------
+__all__ = [
+    "ProvenanceRecord",
+    "Signals",
+    "SuiteVerdict",
+    "_load_known_projects",
+    "_matches_project",
+    "_suite_of",
+    "main",
+]

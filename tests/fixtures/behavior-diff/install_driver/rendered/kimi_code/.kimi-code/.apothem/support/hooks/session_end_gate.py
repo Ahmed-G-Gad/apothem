@@ -274,7 +274,10 @@ def _read_payload() -> dict[str, object] | None:
         if sys.stdin.isatty():
             return None
         raw = sys.stdin.read()
-    except OSError:
+    except (OSError, ValueError):
+        # ValueError covers a read from an already-closed stdin. Matches
+        # lib/stdin_json.read_stdin_json; catching only OSError let that case
+        # crash a hook whose whole contract is to fail open.
         return None
     if not raw or not raw.strip():
         return None

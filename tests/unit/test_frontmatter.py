@@ -24,6 +24,12 @@ def _write(tmp_path: Path, body: str, name: str = "doc.md") -> Path:
 
 
 class TestExtractFrontmatter:
+    """Extracting the leading YAML block.
+
+    Covers the normal extraction, the skip past a leading authorship comment,
+    and the two none cases: no frontmatter, and an unreadable path.
+    """
+
     def test_extracts_the_yaml_block(self, tmp_path: Path) -> None:
         path = _write(tmp_path, '---\nname: "x"\ndescription: "y"\n---\nbody\n')
         assert fm.extract_frontmatter(path) == 'name: "x"\ndescription: "y"'
@@ -44,6 +50,12 @@ class TestExtractFrontmatter:
 
 
 class TestFieldValue:
+    """Reading one field out of the frontmatter.
+
+    Covers dequoting of double- and single-quoted values, an unquoted value
+    returned raw, and an absent field returning none.
+    """
+
     def test_double_quoted_value_is_dequoted(self, tmp_path: Path) -> None:
         path = _write(tmp_path, '---\nname: "Ahmed"\n---\n')
         assert fm.field_value(path, "name") == "Ahmed"
@@ -66,6 +78,12 @@ class TestFieldValue:
 
 
 class TestPresenceHelpers:
+    """Field-presence predicates.
+
+    Covers the single-field check in both directions and the all-fields check,
+    which is false when even one field is absent.
+    """
+
     def test_has_field_true_when_present(self, tmp_path: Path) -> None:
         path = _write(tmp_path, "---\nname: x\n---\n")
         assert fm.has_field(path, "name") is True

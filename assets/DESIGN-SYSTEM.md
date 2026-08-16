@@ -6,9 +6,11 @@ The single source of truth for the apothem brand: the mark, the palette, the
 type scale, the spacing rhythm, and the elevation set. Machine-readable token
 values live alongside this document in [`design-tokens.css`](design-tokens.css)
 (CSS custom properties) and [`design-tokens.json`](design-tokens.json) (W3C
-design-token format). Consumers — the README header, the documentation site,
-and downstream product surfaces — reference those tokens; they do not copy hex
-literals.
+design-token format). Those two files are the reference every surface is
+checked against. No surface imports them at build time today — the
+documentation site restates the values in its own theme variables — so a token
+change has to be carried into each surface by hand, and the values here are
+what that carry is verified against.
 
 Dark mode is the default. Every light value is a remap of a dark default, never
 the other way around.

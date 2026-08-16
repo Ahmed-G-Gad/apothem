@@ -46,3 +46,7 @@ flowchart TD
 | [소스 레이아웃](/docs/architecture/source-layout) | Apothem이 `src/` 레이아웃을 사용하는 이유와 트리의 구성 방식. |
 | [설치 워크플로](/docs/architecture/installation-workflow) | `apothem install`, `update`, `uninstall`이 처음부터 끝까지 작동하는 방식. |
 | [위임 작업자](/docs/architecture/agents) | 이 저장소에서 작동하는 멀티 워커 런타임을 위한 저장소 범위 지침. |
+| [자기완결적 런타임](/docs/architecture/self-contained-runtime) | Apothem의 엔진이 임의의 체크아웃에서 어떻게 실행되는가 — 내장된 의존성, PYTHONPATH=src 호출 모델, 그리고 플러그인 트리 부트스트랩. |
+| [의존성 내장 전략](/docs/architecture/vendoring-strategy) | Apothem이 src/apothem/_vendor/ 아래에 어떤 서드파티 패키지를 내장하는지, 어떤 것이 시스템 전제 조건으로 남는지, 그리고 내장된 사본이 어떻게 갱신되는지. |
+| [Cohort 패키징 계약](/docs/architecture/cohort-packaging-contract) | Cohort 패키징과 플러그인 매니페스트를 위한 안정적이고 다운스트림에서 소비 가능한 계약 — 매핑을 다시 도출하지 않고 cohort를 열거하고 하니스별 네이티브 타깃을 해석한다. |
+| [CI/CD 파이프라인 다이어그램](/docs/architecture/cicd-pipeline) | 모든 코드 변경과 릴리스를 게이트하는 빌드, 테스트, lint, 보안, 배포 워크플로 단계의 시각적 지도와 레인 분해. |

@@ -83,7 +83,7 @@ def test_learning_append_routes_through_durable_append(
         real(path, line)
 
     monkeypatch.setattr(learning_mod, "append_line_durably", spy)
-    store._append(
+    store.append_signal(
         LearningSignal(id="s0", kind="observation", summary="x", captured=_CREATED)
     )
     assert calls["n"] >= 1, "learning append bypassed the durable-append utility"

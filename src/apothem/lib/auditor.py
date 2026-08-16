@@ -154,6 +154,14 @@ class SecretPattern:
     _compiled: re.Pattern[str] = field(init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
+        """Compile ``match_rule`` once and cache it on the frozen instance.
+
+        Compiling at construction rather than per :meth:`search` call keeps the
+        cost off the hot scanning loop, where one pattern is applied across
+        every file. ``object.__setattr__`` is required because the dataclass is
+        frozen; the assignment is the documented escape hatch for a derived
+        field.
+        """
         object.__setattr__(self, "_compiled", re.compile(self.match_rule))
 
     def search(self, text: str) -> Iterable[re.Match[str]]:
@@ -307,11 +315,17 @@ def _looks_like_placeholder(token: str) -> bool:
 # --- Capability 1: configuration-file scanning ------------------------------
 
 
-def scan_config(path: Path) -> tuple[object | None, Finding | None]:
+def scan_config(
+    path: Path, *, text: str | None = None
+) -> tuple[object | None, Finding | None]:
     """Parse a harness configuration file into an inspectable structure.
 
     Args:
         path: The configuration file to read.
+        text: The file's content when the caller has already read it. Supplying
+            it skips the read here, which is what keeps a whole-tree ``audit``
+            from reading every file a second time. Omit it and the file is read
+            as before.
 
     Returns:
         A ``(structure, finding)`` pair. On success ``structure`` is the parsed
@@ -328,17 +342,18 @@ def scan_config(path: Path) -> tuple[object | None, Finding | None]:
             message=f"configuration path does not exist or is not a file: {path}",
             next_step=f"create the file at {path} or correct the path passed to the auditor.",
         )
-    try:
-        text = path.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError) as exc:
-        return None, Finding(
-            id="config-unreadable",
-            category="config-scan",
-            severity="MEDIUM",
-            location=Location(path=str(path)),
-            message=f"configuration file is not readable as UTF-8 text: {exc}",
-            next_step="verify the file is UTF-8 encoded and readable, then re-run the auditor.",
-        )
+    if text is None:
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as exc:
+            return None, Finding(
+                id="config-unreadable",
+                category="config-scan",
+                severity="MEDIUM",
+                location=Location(path=str(path)),
+                message=f"configuration file is not readable as UTF-8 text: {exc}",
+                next_step="verify the file is UTF-8 encoded and readable, then re-run the auditor.",
+            )
 
     suffix = path.suffix.lower()
     try:
@@ -359,6 +374,14 @@ class _ParseError(Exception):
     """Internal: a configuration file failed to parse."""
 
     def __init__(self, message: str, line: int | None = None) -> None:
+        """Record the parse failure and, where the parser reported one, its line.
+
+        Pre-conditions: ``message`` is the underlying parser's error text.
+        Post-conditions: ``line`` is the 1-based line the parser blamed, or
+        ``None`` when the format gave no position — so a caller renders a
+        located error where possible and a bare one otherwise, never a
+        fabricated line number.
+        """
         super().__init__(message)
         self.line = line
 
@@ -512,15 +535,22 @@ def _audit_path(path: Path) -> list[Finding]:
     """Run all three capabilities over a single path; never raise."""
     findings: list[Finding] = []
     try:
-        structure, scan_finding = scan_config(path)
-        if scan_finding is not None:
-            findings.append(scan_finding)
-        # Secret detection runs on raw text even when parsing failed.
+        # Read once and hand the text to both consumers. `audit` walks whole
+        # trees via rglob, so reading here and again inside scan_config would
+        # double the I/O of every run. On a read failure the text stays None
+        # and scan_config reports the unreadable-file finding from its own
+        # failed read — one wasted attempt on a file that is already broken.
+        text: str | None = None
         if path.is_file():
             try:
                 text = path.read_text(encoding="utf-8")
             except (OSError, UnicodeDecodeError):
-                text = ""
+                text = None
+        structure, scan_finding = scan_config(path, text=text)
+        if scan_finding is not None:
+            findings.append(scan_finding)
+        # Secret detection runs on raw text even when parsing failed.
+        if text is not None:
             findings.extend(detect_secrets(path, text))
         if structure is not None:
             findings.extend(run_conformance(path, structure))

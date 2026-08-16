@@ -92,12 +92,12 @@ $env:CLAUDE_PROJECT_DIR='C:\tmp\alt-claude'; pwsh -File scripts/installer/instal
 
 ```bash
 cd ~/.claude
-make validate                                                 # 50 conformity validators
+make validate                                                 # conformity gate --all --strict; exit 0
 make headers-doctor                                           # file-header-grep → passed:true
 make ai-surfaces-doctor                                       # multi-surface-coherence → passed:true
 make plans-doctor                                             # no-global-plans + plans-discipline-language
 make lint                                                     # ruff + mypy
-make test                                                     # pytest 265/265
+make test                                                     # exit 0, no failures
 ```
 
 **Ожидается:** Каждый шлюз зелёный. Зафиксируйте коды выхода + строки сводки.
@@ -159,4 +159,4 @@ CLAUDE_PROJECT_DIR='' bash scripts/installer/uninstall.sh --yes 2>&1 | tail -3
 - [ ] §6 каждый отказ защитного ограждения безопасности срабатывает
 - [ ] §7 результаты зафиксированы по задокументированным путям аудита
 
-Когда каждый флажок выше отмечен на новом втором хосте, сопровождающая задача межмашинной синхронизации (COMPLETION.md §7 связывающее ограничение) считается закрытой.
+Когда каждый флажок выше отмечен на новом втором хосте, сопровождающая задача межмашинной синхронизации считается закрытой.

@@ -39,7 +39,7 @@ Two standing rules govern every step:
 - **Proportionate confirmation, not blanket gating.** Exactly two steps are irreversible / operator-visible — the **merge** of pull requests and the **publish** of the release — and each routes a confirmation through the structured-inquiry channel per `rules/interactive-questions.md` §6 before acting. The read-only / preview stages — the version-bump preview, the CHANGELOG draft, and the release-notes draft — proceed WITHOUT a gate, because they mutate nothing the operator cannot inspect and revise. State the proportionality explicitly in the working trace: gating attaches to the merge and the publish, never to the previews.
 - **SemVer derivation, not presumption.** The version bump is derived from the change set per the Conventional Commits taxonomy and the SemVer rules at semver.org: a `feat:` change drives MINOR, a `fix:` change drives PATCH, and a breaking change (`!` marker or `BREAKING CHANGE:` footer) drives MAJOR. The highest-precedence change in the set determines the bump. The `--bump` flag MAY override the derived bump only when operator intent diverges from the change set; the override is recorded with rationale.
 
-**Reference Template:** Check `CLAUDE.md` for template path. Governance scales with seriousness per CLAUDE.md Section 4. Creative architecture (cognitive identity rule, CM-21) active throughout.
+**Reference Template:** Check `CLAUDE.md` for template path. Governance scales with seriousness per each rule's scaling table. Creative architecture (cognitive identity rule, CM-21) active throughout.
 
 ---
 

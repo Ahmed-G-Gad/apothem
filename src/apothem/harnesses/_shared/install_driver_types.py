@@ -259,6 +259,14 @@ class MaterializationError(ValueError):
     """Raised when validation prevents a write pass from starting."""
 
     def __init__(self, message: str, run: MaterializationRun) -> None:
+        """Attach the aborted run to the raised validation failure.
+
+        Pre-conditions: ``run`` is the :class:`MaterializationRun` assembled up
+        to the point validation rejected the pass — no file has been written.
+        Post-conditions: ``message`` reaches ``ValueError`` for the traceback,
+        and ``run`` stays reachable so a caller can report exactly which
+        planned writes were abandoned instead of only that something failed.
+        """
         super().__init__(message)
         self.run = run
 

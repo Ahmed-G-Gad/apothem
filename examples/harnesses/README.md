@@ -28,8 +28,12 @@ calls Class II-A and Class II-B:
   `settings.json` above is one such template, not a render of your profile.
 - **OpenCode (Class II-B) — profile-rendered.** A materializer reads the shared
   profile's structured fields and emits a single native config file. The
-  `opencode.json` above is the actual output of that render — the MCP inventory,
-  instructions pointer, and schema all derived from the profile.
+  `opencode.json` above shows what that render produces — the schema pin, the
+  instructions pointer, and an MCP inventory projected into OpenCode's native
+  `mcp` surface, including the `headers` and `${VAR}` secret indirection a
+  remote server needs. Its server list is illustrative and does not correspond
+  to `profile.example.yaml`; to see the exact output for a given profile, use
+  the `--dry-run` preview below.
 - **Cursor (Class II-B, project-scope) — profile-rendered into a project tree.**
   Cursor is a project-scope harness: `apothem install --harness cursor --project <path>`
   writes into the operator's project at `<project-root>/.cursor/rules/apothem-rules.mdc`

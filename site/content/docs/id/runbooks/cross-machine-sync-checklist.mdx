@@ -92,12 +92,12 @@ $env:CLAUDE_PROJECT_DIR='C:\tmp\alt-claude'; pwsh -File scripts/installer/instal
 
 ```bash
 cd ~/.claude
-make validate                                                 # 50 conformity validators
+make validate                                                 # conformity gate --all --strict; exit 0
 make headers-doctor                                           # file-header-grep → passed:true
 make ai-surfaces-doctor                                       # multi-surface-coherence → passed:true
 make plans-doctor                                             # no-global-plans + plans-discipline-language
 make lint                                                     # ruff + mypy
-make test                                                     # pytest 265/265
+make test                                                     # exit 0, no failures
 ```
 
 **Diharapkan:** Setiap gerbang hijau. Tangkap kode keluar + baris ringkasan.
@@ -159,4 +159,4 @@ Sampaikan temuan kepada pemelihara:
 - [ ] §6 setiap penolakan pengaman keselamatan terpicu
 - [ ] §7 hasil ditangkap pada path audit yang didokumentasikan
 
-Ketika setiap kotak centang di atas dicentang pada host kedua yang baru, tindak lanjut sinkronisasi antar-mesin (COMPLETION.md §7 batasan pengikat) ditutup.
+Ketika setiap kotak centang di atas dicentang pada host kedua yang baru, tindak lanjut sinkronisasi antar-mesin ditutup.

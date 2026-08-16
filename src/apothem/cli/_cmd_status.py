@@ -20,6 +20,7 @@ from apothem.cli._epilogs import _EP_STATUS
 from apothem.cli._helpers import (
     _EXIT_PARTIAL,
     _adapter_failure_result,
+    _baseline_unavailable_entry,
     _CliUserError,
     _drift_state,
     _emit_expected_error,
@@ -59,6 +60,7 @@ def status(
         _emit_expected_error(command="status", fmt=fmt, error=exc.to_dict())
         return
     profile_path = _resolve_profile_path(profile)
+    baseline_warning: dict[str, object] | None = None
     try:
         shared_profile = _load_profile(profile_path)
     except ProfileValidationError as exc:
@@ -77,9 +79,12 @@ def status(
         # precondition: an unreadable one degrades drift to "unknown" rather
         # than aborting the read-only sweep (installed/verified stay reportable).
         shared_profile = {}
-        profile_unavailable = True
-    else:
-        profile_unavailable = False
+        baseline_warning = _baseline_unavailable_entry(profile_path, exc)
+
+    # The degradation is deliberate but must never be silent: report it once,
+    # up front, so the rows below are read as degraded rather than clean.
+    if baseline_warning is not None and fmt != "json":
+        con.print(f"[yellow]![/] {escape(str(baseline_warning['message']))}")
 
     results: list[dict[str, object]] = []
     errored = False
@@ -125,7 +130,7 @@ def status(
             # Without a readable baseline there is nothing to compare an
             # installed harness against — comparing to an empty profile would
             # misreport every install as drifted.
-            if profile_unavailable:
+            if baseline_warning is not None:
                 drift = "unknown" if installed else "absent"
             else:
                 drift = _drift_state(
@@ -179,7 +184,7 @@ def status(
             project_root=project_root,
             files_written=[],
             results=results,
-            warnings=[],
+            warnings=[baseline_warning] if baseline_warning is not None else [],
         )
         emit_json(payload)
         if exit_code:

@@ -83,7 +83,8 @@ bundle; every artifact requires the full
 | Artifact class | Persists standalone? | Mechanism / limit |
 |---|---|---|
 | Rules (flat `.rules`) | No — requires `apothem install` | The merged `.rules` file (carrying the embedded behavioral mandates) is written only by the engine to the project root. Nothing persists before that run. |
-| Commands / Skills / Agents | No — platform limit | Zed documents threads, agent profiles, and MCP context servers but no command/skill/agent file primitive Apothem targets; these cohorts are not materialized for this harness. |
+| Commands / Agents | No — platform limit | Zed documents threads, agent profiles, and MCP context servers but no command/agent file primitive Apothem targets; these cohorts are not materialized for this harness. |
+| Skills | No — adapter gap, not a platform limit | Zed documents a native Skills surface at `zed.dev/docs/ai/skills` (the Reusable Rules → Skills migration). The adapter does not yet author skill files for it — the `discovery-pending` entry above. The surface exists; Apothem has not targeted it. |
 | Hooks / MCP / Settings | No — operator-owned / platform limit | `context_servers` in `.zed/settings.json` (MCP) is operator-owned; the adapter authors no entries. |
 
 Platform limit: Zed's editor extensions are language/theme plugins, not an

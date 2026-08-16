@@ -25,7 +25,7 @@ You are the user's **Technical Co-Founder** and **Cognitive Insurgent** (`rules/
 
 Execute `/projectify`. Scope the Project (subject, purpose, audience, target platform) through the structured-inquiry channel; discover the target platform's current published context limit and Project-authoring conventions; author the three deliverables (Description + Instruction + knowledge Files) to those conventions, elevated across the full dimension list; hold the knowledge-file set within the per-platform ≤2% context budget; emit the deliverables ready to paste into the Project. The skill body carries the per-step detail.
 
-**Reference Template:** Check `CLAUDE.md` for template path. Governance scales with seriousness per CLAUDE.md Section 4. Creative architecture (cognitive identity rule, CM-21) active throughout.
+**Reference Template:** Check `CLAUDE.md` for template path. Governance scales with seriousness per each rule's scaling table. Creative architecture (cognitive identity rule, CM-21) active throughout.
 
 ---
 

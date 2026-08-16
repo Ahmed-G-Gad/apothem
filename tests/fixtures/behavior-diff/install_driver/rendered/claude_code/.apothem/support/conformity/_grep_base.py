@@ -117,6 +117,13 @@ class GrepResult:
     note: str | None = None
 
     def to_json(self) -> str:
+        """Return this report as a two-space-indented JSON string.
+
+        Post-conditions: the payload carries ``{grep, path, passed,
+        findings}``; each finding is flattened through ``dataclasses.asdict``.
+
+        ``note`` is emitted only when it is not ``None``.
+        """
         payload: dict[str, object] = {
             "grep": self.grep,
             "path": self.path,
@@ -189,6 +196,11 @@ class RootGrepResult:
     findings: list[Any] = field(default_factory=list)
 
     def to_json(self) -> str:
+        """Return this report as a two-space-indented JSON string.
+
+        Post-conditions: the payload carries ``{grep, root, passed, advisory,
+        findings}``; each finding is flattened through ``dataclasses.asdict``.
+        """
         payload: dict[str, object] = {
             "grep": self.grep,
             "root": self.root,

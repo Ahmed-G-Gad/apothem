@@ -19,6 +19,12 @@ import apothem.audit.synthesize_drift as sd
 
 
 class TestGather:
+    """Gathering the drift findings.
+
+    Covers resolution from a non-default audit directory and the missing
+    directory yielding no findings rather than raising.
+    """
+
     def test_resolves_drift_json_from_non_default_audit_dir(
         self, tmp_path: Path
     ) -> None:

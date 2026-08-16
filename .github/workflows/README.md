@@ -60,8 +60,10 @@ top-level `.github/README.md` would, and none exists.
   it. No job uses write-all.
 - **Runner hardening.** Every job's first step is `step-security/harden-runner`;
   jobs with a small, stable endpoint set (`dco.yml`, `dependency-review.yml`,
-  `scorecard.yml`, `zizmor.yml`) set `egress-policy: block` with an explicit
-  allowlist, and the rest run `audit`.
+  `scorecard.yml`) set `egress-policy: block` with an explicit allowlist, and
+  the rest run `audit`. `zizmor.yml` and `license-audit.yml` stay on `audit`
+  because their endpoint sets are not stable enough to allowlist without
+  false-failing the job.
 - **Concurrency.** Each workflow declares a `concurrency` group keyed on the ref;
   release and publish workflows set `cancel-in-progress: false` so a
   publication run is never cancelled mid-flight, while gate and scan workflows

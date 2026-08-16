@@ -36,413 +36,84 @@ output's diff previews and applies them.
 from __future__ import annotations
 
 import argparse
-import difflib
 import hashlib
 import json
 import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Final
 
 # ---------------------------------------------------------------------------
-# Header-status taxonomy. Mirrors the inventory's four-value taxonomy.
+# Canonical header rendering lives in ``header_banner``, which mirrors
+# src/apothem/conformity/file_header_grep.py byte-for-byte so the scanner, the
+# validator, and the injector agree on the canonical form without sharing a
+# module. Re-exported here: this module is the established public entry point.
 # ---------------------------------------------------------------------------
-HEADER_PRESENT_CANONICAL: Final[str] = "present-canonical"
-HEADER_PRESENT_MALFORMED: Final[str] = "present-malformed"
-HEADER_ABSENT: Final[str] = "absent"
-HEADER_NOT_APPLICABLE: Final[str] = "not-applicable"
+from apothem.audit.header_banner import (
+    canonical_banner_lines,
+    # Public re-export: consumed through this module's path, not called here,
+    # so the unused-import rule cannot see its importers.
+    canonical_banner_text,
+)
 
-ALL_HEADER_STATUSES: Final[tuple[str, ...]] = (
-    HEADER_PRESENT_CANONICAL,
-    HEADER_PRESENT_MALFORMED,
+# ---------------------------------------------------------------------------
+# Head reading, banner classification, and injection planning live in
+# ``header_detect`` — the one stage that touches file bytes. Re-exported here
+# because this module is the public entry point for the whole surface; see
+# ``__all__`` at the foot of the module for the full facade.
+# ---------------------------------------------------------------------------
+from apothem.audit.header_detect import (
+    build_injection_plan,
+    has_shebang,
+    insertion_line,
+    read_head,
+    scan_for_banner,
+)
+
+# ---------------------------------------------------------------------------
+# Variant resolution and exception-fixture matching live in
+# ``header_variants``: both answer path questions that precede reading a
+# single byte of the file. Re-exported here, since this module is the
+# established public entry point for the header-coverage surface.
+# ---------------------------------------------------------------------------
+from apothem.audit.header_variants import (
+    load_exception_globs,
+    matches_exception,
+    variant_family_for,
+)
+
+# ---------------------------------------------------------------------------
+# Shared vocabulary. The status / variant / malformation taxonomies, the
+# path-to-variant maps, the detection markers, and the budgets live in
+# ``header_vocabulary`` so each pipeline stage can name them without
+# importing its sibling stages. Re-exported here: this module is the
+# established public entry point for the whole header-coverage surface.
+# ---------------------------------------------------------------------------
+from apothem.audit.header_vocabulary import (
+    ALL_MALFORMATIONS,
+    ALL_VARIANTS,
+    BOM_PREFIX,
+    EXIT_ERROR,
+    EXIT_OK,
     HEADER_ABSENT,
     HEADER_NOT_APPLICABLE,
-)
-
-# ---------------------------------------------------------------------------
-# Variant-family taxonomy per spec §4.6.2.
-# ---------------------------------------------------------------------------
-VARIANT_HASH: Final[str] = "hash"
-VARIANT_DOUBLE_SLASH: Final[str] = "double-slash"
-VARIANT_HTML: Final[str] = "html"
-VARIANT_C_BLOCK: Final[str] = "c-block"
-VARIANT_SEMICOLON: Final[str] = "semicolon"
-VARIANT_DOUBLE_DASH: Final[str] = "double-dash"
-VARIANT_EXEMPT: Final[str] = "exempt"
-
-ALL_VARIANTS: Final[tuple[str, ...]] = (
-    VARIANT_HASH,
-    VARIANT_DOUBLE_SLASH,
-    VARIANT_HTML,
-    VARIANT_C_BLOCK,
-    VARIANT_SEMICOLON,
-    VARIANT_DOUBLE_DASH,
-    VARIANT_EXEMPT,
-)
-
-# ---------------------------------------------------------------------------
-# Header-malformation taxonomy consumed by the coverage scanner.
-# ---------------------------------------------------------------------------
-MALFORM_WRONG_VARIANT: Final[str] = "wrong-variant"
-MALFORM_WRONG_LINE_ORDER: Final[str] = "wrong-line-order"
-MALFORM_DRIFTED_CONTACT: Final[str] = "drifted-contact-info"
-MALFORM_SMART_QUOTE: Final[str] = "smart-quote-pollution"
-MALFORM_BOM_PREFIX: Final[str] = "bom-prefix"
-MALFORM_TRAILING_WHITESPACE: Final[str] = "trailing-whitespace"
-MALFORM_WRONG_LINE_COUNT: Final[str] = "wrong-line-count"
-MALFORM_MIXED: Final[str] = "mixed"
-
-ALL_MALFORMATIONS: Final[tuple[str, ...]] = (
-    MALFORM_WRONG_VARIANT,
-    MALFORM_WRONG_LINE_ORDER,
-    MALFORM_DRIFTED_CONTACT,
-    MALFORM_SMART_QUOTE,
+    HEADER_PRESENT_CANONICAL,
+    HEADER_PRESENT_MALFORMED,
+    LEGACY_AUTHOR_MARK,
     MALFORM_BOM_PREFIX,
+    MALFORM_MIXED,
+    MALFORM_SMART_QUOTE,
     MALFORM_TRAILING_WHITESPACE,
     MALFORM_WRONG_LINE_COUNT,
-    MALFORM_MIXED,
+    MALFORM_WRONG_VARIANT,
+    VARIANT_C_BLOCK,
+    VARIANT_DOUBLE_DASH,
+    VARIANT_DOUBLE_SLASH,
+    VARIANT_EXEMPT,
+    VARIANT_HASH,
+    VARIANT_HTML,
+    VARIANT_SEMICOLON,
 )
-
-# ---------------------------------------------------------------------------
-# Variant-family resolution per spec §4.6.2.
-#
-# The mapping is consulted by suffix (lowercase) first; basename overrides
-# follow for files with no suffix or with a name-only convention
-# (Makefile, Dockerfile, etc.). Files whose suffix is not registered fall
-# to ``exempt`` — the exception fixture is the authoritative gate, so a
-# fall-through here only matters when the path also escapes the fixture.
-# ---------------------------------------------------------------------------
-SUFFIX_VARIANT: Final[dict[str, str]] = {
-    # `#` family
-    ".sh": VARIANT_HASH,
-    ".bash": VARIANT_HASH,
-    ".zsh": VARIANT_HASH,
-    ".py": VARIANT_HASH,
-    ".rb": VARIANT_HASH,
-    ".pl": VARIANT_HASH,
-    ".ps1": VARIANT_HASH,
-    ".psm1": VARIANT_HASH,
-    ".psd1": VARIANT_HASH,
-    ".yml": VARIANT_HASH,
-    ".yaml": VARIANT_HASH,
-    ".toml": VARIANT_HASH,
-    ".cff": VARIANT_HASH,
-    ".gitignore": VARIANT_HASH,
-    ".gitattributes": VARIANT_HASH,
-    ".editorconfig": VARIANT_HASH,
-    ".shellcheckrc": VARIANT_HASH,
-    ".env.example": VARIANT_HASH,
-    ".cfg": VARIANT_HASH,
-    ".conf": VARIANT_HASH,
-    # `//` family
-    ".js": VARIANT_DOUBLE_SLASH,
-    ".jsx": VARIANT_DOUBLE_SLASH,
-    ".mjs": VARIANT_DOUBLE_SLASH,
-    ".cjs": VARIANT_DOUBLE_SLASH,
-    ".ts": VARIANT_DOUBLE_SLASH,
-    ".tsx": VARIANT_DOUBLE_SLASH,
-    ".go": VARIANT_DOUBLE_SLASH,
-    ".rs": VARIANT_DOUBLE_SLASH,
-    ".java": VARIANT_DOUBLE_SLASH,
-    ".kt": VARIANT_DOUBLE_SLASH,
-    ".swift": VARIANT_DOUBLE_SLASH,
-    ".scala": VARIANT_DOUBLE_SLASH,
-    ".dart": VARIANT_DOUBLE_SLASH,
-    ".cs": VARIANT_DOUBLE_SLASH,
-    ".jsonc": VARIANT_DOUBLE_SLASH,
-    # block-comment family (HTML-style wrapper)
-    ".html": VARIANT_HTML,
-    ".htm": VARIANT_HTML,
-    ".md": VARIANT_HTML,
-    ".markdown": VARIANT_HTML,
-    ".mdc": VARIANT_HTML,
-    ".xml": VARIANT_HTML,
-    ".vue": VARIANT_HTML,
-    ".php": VARIANT_HTML,
-    # `/* */` block family
-    ".c": VARIANT_C_BLOCK,
-    ".cc": VARIANT_C_BLOCK,
-    ".cpp": VARIANT_C_BLOCK,
-    ".h": VARIANT_C_BLOCK,
-    ".hpp": VARIANT_C_BLOCK,
-    ".css": VARIANT_C_BLOCK,
-    ".scss": VARIANT_C_BLOCK,
-    ".less": VARIANT_C_BLOCK,
-    ".sql": VARIANT_DOUBLE_DASH,
-    # `;` family
-    ".ini": VARIANT_SEMICOLON,
-    ".lisp": VARIANT_SEMICOLON,
-    ".scm": VARIANT_SEMICOLON,
-    # `--` family
-    ".lua": VARIANT_DOUBLE_DASH,
-    ".hs": VARIANT_DOUBLE_DASH,
-    ".elm": VARIANT_DOUBLE_DASH,
-    ".ada": VARIANT_DOUBLE_DASH,
-}
-
-BASENAME_VARIANT: Final[dict[str, str]] = {
-    "Makefile": VARIANT_HASH,
-    "Dockerfile": VARIANT_HASH,
-    "Procfile": VARIANT_HASH,
-    "CODEOWNERS": VARIANT_HASH,
-    "apothem": VARIANT_HASH,
-    "PKGBUILD": VARIANT_HASH,
-    ".gitignore": VARIANT_HASH,
-    ".gitattributes": VARIANT_HASH,
-    ".editorconfig": VARIANT_HASH,
-    ".shellcheckrc": VARIANT_HASH,
-    ".env.example": VARIANT_HASH,
-}
-
-# ---------------------------------------------------------------------------
-# Canonical header — the single SPDX-License-Identifier line (D-007).
-#
-# The header was narrowed from a six-line branded banner box to one
-# machine-readable license-identifier line per comment-syntax variant.
-# Only comment syntax varies between variants; the identifier text is
-# invariant. Drift in the identifier line is a CI failure.
-#
-# SPDX_PREFIX_TEXT is the substring that identifies the SPDX line in any
-# variant. LEGACY_AUTHOR_MARK is retained purely as a detection constant:
-# a file still carrying the retired branded-banner author line (but not the
-# narrowed SPDX line at the canonical site) is a not-yet-narrowed header and
-# is counted malformed/uncovered, so the scan surfaces the remaining work.
-# ---------------------------------------------------------------------------
-SPDX_PREFIX_TEXT: Final[str] = "SPDX-License-Identifier:"
-LEGACY_AUTHOR_MARK: Final[str] = "Copyright (c) Ahmed G. Gad"
-
-# Smart-quote codepoints whose presence inside a banner is malformation
-# class ``smart-quote-pollution``. Source-escaped so the
-# scanner's own bytes never trigger the ambiguous-Unicode lint rule
-# that would otherwise flag literal smart quotes.
-SMART_QUOTES: Final[tuple[str, ...]] = (
-    "‘",  # noqa: RUF001 - detection codepoint U+2018
-    "’",  # noqa: RUF001 - detection codepoint U+2019
-    "“",
-    "”",
-    "–",  # noqa: RUF001 - detection codepoint U+2013
-    "—",
-)
-
-BOM_PREFIX: Final[str] = "﻿"
-
-# Number of leading lines scanned for banner detection. Must accommodate
-# shebang + (optional) interpreter-pragma + frontmatter + banner shape.
-SCAN_LINE_BUDGET: Final[int] = 60
-
-# Per-file unified-diff context lines. Three lines is unified-diff
-# default; the injection-plan diff uses a tighter window because the
-# patch is always at the head of the file.
-DIFF_CONTEXT_LINES: Final[int] = 3
-
-EXIT_OK: Final[int] = 0
-EXIT_ERROR: Final[int] = 1
-
-
-# ---------------------------------------------------------------------------
-# Canonical header rendering per variant family.
-#
-# The load / render / canonical-block helpers mirror
-# src/apothem/conformity/file_header_grep.py byte-for-byte so the scanner,
-# the validator, and the injector agree on the canonical form without
-# sharing a module. The fixture at src/apothem/schemas/authorship-header.txt
-# is a single hash-form SPDX line; every other variant is rendered from it
-# by comment-marker substitution (hash / double-slash / semicolon /
-# double-dash) or by wrapper composition (html / c-block).
-# ---------------------------------------------------------------------------
-def _replace_marker(line: str, source: str, target: str) -> str:
-    """Substitute the leading comment marker on a header line.
-
-    The narrowed header line carries the comment marker on its leading edge
-    only; this swaps that edge. Mirrors scripts/inject-header.py and
-    file_header_grep.py to preserve injector / validator / scanner parity.
-    """
-    if not line.startswith(source):
-        return line
-    if len(line) >= 2 * len(source) and line.endswith(source):
-        inner = line[len(source) : -len(source)]
-        return f"{target}{inner}{target}"
-    return target + line[len(source) :]
-
-
-def _render_variant(hash_form_line: str, spdx_text: str, variant: str) -> list[str]:
-    """Render the canonical SPDX header line for ``variant`` (no trailing blank)."""
-    if variant == VARIANT_HASH:
-        return [hash_form_line]
-    if variant == VARIANT_DOUBLE_SLASH:
-        return [_replace_marker(hash_form_line, "#", "//")]
-    if variant == VARIANT_SEMICOLON:
-        return [_replace_marker(hash_form_line, "#", ";")]
-    if variant == VARIANT_DOUBLE_DASH:
-        return [_replace_marker(hash_form_line, "#", "--")]
-    if variant == VARIANT_HTML:
-        return [f"<!-- {spdx_text} -->"]
-    if variant == VARIANT_C_BLOCK:
-        return [f"/* {spdx_text} */"]
-    raise ValueError(f"variant not renderable: {variant!r}")
-
-
-def _render_canonical_block(
-    hash_form_line: str, spdx_text: str, variant: str
-) -> list[str]:
-    """Render the canonical block including the mandatory trailing blank line."""
-    return [*_render_variant(hash_form_line, spdx_text, variant), ""]
-
-
-def _load_banner(schemas_dir: Path) -> tuple[str, str]:
-    """Load the narrowed SPDX-line header fixture.
-
-    Mirrors file_header_grep.py ``_load_banner``: the fixture is the single
-    ``# SPDX-License-Identifier: MIT`` line. Returns ``(hash_form_line,
-    spdx_text)`` on success, or two empty strings when the fixture is absent
-    or malformed (the caller treats the empty result as a skip).
-    """
-    banner_path = schemas_dir / "authorship-header.txt"
-    if not banner_path.is_file():
-        return "", ""
-    raw = banner_path.read_text(encoding="utf-8")
-    lines = [line for line in raw.splitlines() if line.strip()]
-    if len(lines) != 1:
-        return "", ""
-    spdx_line = lines[0]
-    if SPDX_PREFIX_TEXT not in spdx_line or not spdx_line.startswith("#"):
-        return "", ""
-    return spdx_line, spdx_line[1:].strip()
-
-
-# Resolve the canonical header fixture once at import. The fixture lives at
-# src/apothem/schemas/ relative to this file (audit/ → apothem/ → schemas/).
-_SCHEMAS_DIR: Final[Path] = Path(__file__).resolve().parent.parent / "schemas"
-_HASH_FORM_LINE, _SPDX_TEXT = _load_banner(_SCHEMAS_DIR)
-
-
-def canonical_banner_lines(variant: str) -> list[str]:
-    """Return the canonical header lines for ``variant``.
-
-    The narrowed header is a single line per variant. Raises ``ValueError``
-    if ``variant`` is not a renderable family; the caller filters exempt
-    files before requesting a canonical form.
-    """
-    return _render_variant(_HASH_FORM_LINE, _SPDX_TEXT, variant)
-
-
-def canonical_banner_text(variant: str) -> str:
-    """Return the canonical header as one newline-terminated text block."""
-    return "\n".join(canonical_banner_lines(variant)) + "\n"
-
-
-# ---------------------------------------------------------------------------
-# Variant resolution.
-# ---------------------------------------------------------------------------
-def variant_family_for(relative_path: Path) -> str:
-    """Resolve the canonical variant family for the file's filetype.
-
-    Suffix lookup is the primary signal; basename overrides cover
-    suffix-less artifacts (Makefile / Dockerfile / dotfiles whose
-    name encodes the convention). When neither resolves, the file is
-    treated as ``exempt`` — the exception fixture remains the
-    authoritative applicability gate, so a fall-through here only
-    matters for files the fixture also fails to cover.
-    """
-    name = relative_path.name
-    if name in BASENAME_VARIANT:
-        return BASENAME_VARIANT[name]
-
-    suffix = relative_path.suffix.lower()
-    if suffix in SUFFIX_VARIANT:
-        return SUFFIX_VARIANT[suffix]
-
-    return VARIANT_EXEMPT
-
-
-# ---------------------------------------------------------------------------
-# Exception-fixture parsing.
-# ---------------------------------------------------------------------------
-def load_exception_globs(fixture_path: Path) -> list[str]:
-    """Parse ``src/apothem/schemas/header-exceptions.txt`` into a glob list.
-
-    Comment lines (``#``-prefixed) and blank lines are stripped; every
-    other line becomes a pathspec. The order is preserved so a future
-    deny-list / allow-list extension can rely on first-match semantics.
-    """
-    if not fixture_path.is_file():
-        return []
-    globs: list[str] = []
-    for raw in fixture_path.read_text(encoding="utf-8").splitlines():
-        line = raw.strip()
-        if not line or line.startswith("#"):
-            continue
-        globs.append(line)
-    return globs
-
-
-def matches_exception(relative_path: str, globs: list[str]) -> str | None:
-    """Return the first matching glob, or ``None`` when the path is in scope.
-
-    Patterns containing ``**`` are translated to fnmatch-friendly form by
-    treating ``**`` as ``*`` across path separators (fnmatch handles
-    cross-segment expansion when the path is expressed as POSIX-style).
-    """
-    posix = relative_path.replace("\\", "/")
-    for pattern in globs:
-        if _fnmatch_with_globstar(posix, pattern):
-            return pattern
-    return None
-
-
-def _fnmatch_with_globstar(path: str, pattern: str) -> bool:
-    """Return ``True`` when ``pattern`` matches ``path`` under fnmatch
-    semantics extended for ``**`` cross-segment expansion.
-
-    fnmatch alone treats ``*`` as non-greedy across separators; ``**``
-    here matches zero or more path segments (the conventional gitignore
-    /gitattributes / Unix glob semantics). Translation is deliberately
-    direct — character-by-character regex synthesis with the four
-    glob-significant tokens (``**``, ``*``, ``?``, character classes)
-    handled inline; ordinary characters are escaped via ``re.escape``.
-    """
-    if (
-        "**" not in pattern
-        and "*" not in pattern
-        and "?" not in pattern
-        and "[" not in pattern
-    ):
-        return path == pattern
-
-    import re
-
-    regex_parts: list[str] = []
-    i = 0
-    pattern_length = len(pattern)
-    while i < pattern_length:
-        char = pattern[i]
-        if char == "*":
-            if i + 1 < pattern_length and pattern[i + 1] == "*":
-                # `**` token. When followed by `/`, the segment is
-                # optional — `**/foo` matches `foo` AND `a/foo`. When
-                # standalone (e.g. trailing `**`), the token matches
-                # any remaining suffix including empty.
-                if i + 2 < pattern_length and pattern[i + 2] == "/":
-                    regex_parts.append("(?:.*/)?")
-                    i += 3
-                    continue
-                regex_parts.append(".*")
-                i += 2
-                continue
-            # Single `*` — match within a segment only.
-            regex_parts.append("[^/]*")
-            i += 1
-            continue
-        if char == "?":
-            regex_parts.append("[^/]")
-            i += 1
-            continue
-        regex_parts.append(re.escape(char))
-        i += 1
-
-    full = "^" + "".join(regex_parts) + "$"
-    return re.match(full, path) is not None
 
 
 # ---------------------------------------------------------------------------
@@ -463,6 +134,12 @@ class FileCoverage:
     injection_plan: dict[str, object] | None
 
     def to_json(self) -> dict[str, object]:
+        """Return this report as a JSON-ready mapping.
+
+        Post-conditions: the payload carries ``{path, applicable,
+        exception-class, header-status, variant-family, header-line-range,
+        malformation-class, malformation-detail, injection-plan}``.
+        """
         return {
             "path": self.path,
             "applicable": self.applicable,
@@ -493,6 +170,12 @@ class CoverageSummary:
     by_malformation_class: dict[str, int] = field(default_factory=dict)
 
     def to_json(self) -> dict[str, object]:
+        """Return this report as a JSON-ready mapping.
+
+        Post-conditions: the payload carries ``{total-files, applicable-total,
+        present-canonical, present-malformed, absent, not-applicable,
+        coverage-pct, by-variant-family, by-malformation-class}``.
+        """
         return {
             "total-files": self.total_files,
             "applicable-total": self.applicable_total,
@@ -504,283 +187,6 @@ class CoverageSummary:
             "by-variant-family": dict(sorted(self.by_variant_family.items())),
             "by-malformation-class": dict(sorted(self.by_malformation_class.items())),
         }
-
-
-def read_head(absolute_path: Path, line_budget: int = SCAN_LINE_BUDGET) -> list[str]:
-    """Return the file's leading lines (without trailing newlines).
-
-    UTF-8 with replacement fallback keeps mixed-encoding corpora
-    walkable. A binary file mis-classified as text yields garbled lines
-    but never crashes the scan.
-    """
-    try:
-        with absolute_path.open("r", encoding="utf-8", errors="replace") as handle:
-            head: list[str] = []
-            for index, line in enumerate(handle):
-                if index >= line_budget:
-                    break
-                head.append(line.rstrip("\r\n"))
-            return head
-    except OSError:
-        return []
-
-
-def has_shebang(head_lines: list[str]) -> bool:
-    """Return ``True`` when the first line begins with ``#!``."""
-    return bool(head_lines) and head_lines[0].startswith("#!")
-
-
-def insertion_line(head_lines: list[str]) -> int:
-    """Return the 1-based line at which the canonical banner is inserted.
-
-    The banner is the file's first content with the single exception of
-    a shebang line (``#!``), which always remains line 1; the banner
-    starts on line 2 in that case. Frontmatter (``---``) follows the
-    banner per spec §4.6.3.
-    """
-    return 2 if has_shebang(head_lines) else 1
-
-
-def scan_for_banner(
-    head_lines: list[str], variant: str
-) -> tuple[str, tuple[int, int] | None, str | None, str | None]:
-    """Inspect leading lines for the canonical header and return a verdict.
-
-    Returns a 4-tuple ``(header_status, line_range, malformation_class,
-    malformation_detail)``. ``line_range`` is ``None`` for absent headers;
-    the others carry detail when the header is present but malformed.
-
-    The narrowed header is a single line, so the verdict reduces to a
-    byte-exact comparison of the canonical block (the SPDX line plus its
-    mandatory trailing blank) at the insertion site — the same block the
-    validator at file_header_grep.py compares. A header present at the site
-    but not byte-exact is classified against the malformation slots a
-    one-line header can exhibit: bom-prefix, smart-quote-pollution,
-    trailing-whitespace, wrong-variant, and a wrong-line-count fall-through.
-    The retired branded-banner box (whose first line was the SPDX line but
-    which lacks the trailing blank) lands here as not-yet-narrowed; a file
-    with neither the SPDX line nor the legacy author mark is absent.
-    """
-    if not head_lines:
-        return HEADER_ABSENT, None, None, None
-
-    # BOM detection is independent of variant: any BOM byte before the
-    # header is itself a malformation, even if the rest is byte-exact.
-    bom_observed = head_lines[0].startswith(BOM_PREFIX)
-
-    # Canonical block = the variant line plus one trailing blank, mirroring
-    # _render_canonical_block / file_header_grep's _is_canonical_at_position.
-    canonical_block = _render_canonical_block(_HASH_FORM_LINE, _SPDX_TEXT, variant)
-
-    # The header sits at the insertion site: line index 1 after a shebang,
-    # else line index 0. The reported range is the SPDX line itself (the
-    # trailing blank completes the block but is not part of the header).
-    site_index = 1 if has_shebang(head_lines) else 0
-    if site_index >= len(head_lines):
-        # The file is shorter than the insertion site — header absent.
-        return HEADER_ABSENT, None, None, None
-
-    observed_line = head_lines[site_index]
-    line_range = (site_index + 1, site_index + 1)
-
-    # Byte-exact comparison of the full canonical block at the site.
-    block_end = site_index + len(canonical_block)
-    block_canonical = (
-        block_end <= len(head_lines)
-        and head_lines[site_index:block_end] == canonical_block
-    )
-    if block_canonical and not bom_observed:
-        return HEADER_PRESENT_CANONICAL, line_range, None, None
-
-    # The site does not carry the byte-exact canonical line. Decide whether
-    # any recognizable header is present at all: a SPDX line in some shape,
-    # or the retired branded-banner author mark anywhere in the head.
-    spdx_at_site = SPDX_PREFIX_TEXT in observed_line
-    legacy_present = any(LEGACY_AUTHOR_MARK in line for line in head_lines)
-
-    if not spdx_at_site and not legacy_present and not bom_observed:
-        return HEADER_ABSENT, None, None, None
-
-    # A recognizable-but-non-canonical header is present. Classify the
-    # malformation against the slots a one-line header can exhibit; multiple
-    # matches collapse to ``mixed``.
-    detected: list[tuple[str, str]] = []
-
-    if bom_observed:
-        detected.append((MALFORM_BOM_PREFIX, "U+FEFF byte order mark prefix"))
-
-    # Smart-quote pollution: any non-ASCII smart quote on the header line.
-    smart_hits = [q for q in SMART_QUOTES if q in observed_line]
-    if smart_hits:
-        detected.append(
-            (
-                MALFORM_SMART_QUOTE,
-                "non-ASCII typography in header: "
-                + ", ".join(repr(q) for q in smart_hits),
-            )
-        )
-
-    # Trailing whitespace: the header line carries whitespace beyond the
-    # canonical line's content.
-    if observed_line.rstrip() != observed_line:
-        detected.append(
-            (MALFORM_TRAILING_WHITESPACE, "trailing whitespace on header line"),
-        )
-
-    # Wrong-variant: the SPDX line uses a comment marker different from the
-    # canonical for this filetype.
-    if spdx_at_site:
-        wrong_variant = _detect_wrong_variant(observed_line, variant)
-        if wrong_variant is not None:
-            detected.append(
-                (MALFORM_WRONG_VARIANT, f"header uses {wrong_variant!r} marker"),
-            )
-
-    # Fall-through: present but not byte-exact and no finer class fired.
-    # The retired branded-banner box is a not-yet-narrowed header and lands
-    # here as a wrong-line-count (the multi-line legacy box vs. one line).
-    if not detected:
-        if legacy_present and not spdx_at_site:
-            detected.append(
-                (
-                    MALFORM_WRONG_LINE_COUNT,
-                    "retired branded-banner box present; expected single SPDX line",
-                ),
-            )
-        else:
-            detected.append(
-                (
-                    MALFORM_WRONG_LINE_COUNT,
-                    "header present but does not match canonical bytes",
-                ),
-            )
-
-    # Resolve to a single class: more than one finding ⇒ mixed.
-    if len(detected) == 1:
-        cls, detail = detected[0]
-    else:
-        cls = MALFORM_MIXED
-        detail = "; ".join(f"{c}: {d}" for c, d in detected)
-
-    return HEADER_PRESENT_MALFORMED, line_range, cls, detail
-
-
-def _detect_wrong_variant(observed_line: str, target_variant: str) -> str | None:
-    """Return the comment-syntax marker observed on the SPDX header line when
-    it disagrees with the target variant; ``None`` when the marker is
-    correct or the line shape does not let us tell.
-
-    The comment-marker prefix (or html/c-block wrapper) determines which
-    variant the header *was* written in.
-    """
-    stripped = observed_line.lstrip()
-    if target_variant == VARIANT_HTML:
-        if not stripped.startswith("<!--"):
-            return "missing <!-- wrapper"
-        return None
-    if target_variant == VARIANT_C_BLOCK:
-        if not stripped.startswith("/*"):
-            return "missing /* wrapper"
-        return None
-
-    target_prefix_map = {
-        VARIANT_HASH: "#",
-        VARIANT_DOUBLE_SLASH: "//",
-        VARIANT_SEMICOLON: ";",
-        VARIANT_DOUBLE_DASH: "--",
-    }
-    target_prefix = target_prefix_map.get(target_variant)
-    if target_prefix is None:
-        return None
-    if not stripped.startswith(target_prefix):
-        # Sniff which marker the line uses instead.
-        for sniff_prefix in ("//", "--", ";", "#", "<!--", "/*"):
-            if stripped.startswith(sniff_prefix):
-                return sniff_prefix
-        return "unrecognized marker"
-    return None
-
-
-# ---------------------------------------------------------------------------
-# Injection-plan emission.
-# ---------------------------------------------------------------------------
-def build_injection_plan(
-    relative_path: str,
-    head_lines: list[str],
-    header_status: str,
-    variant: str,
-    header_line_range: tuple[int, int] | None,
-) -> dict[str, object] | None:
-    """Return the unified-diff-bearing injection plan for an absent or
-    malformed banner; ``None`` when no action is required.
-    """
-    if header_status == HEADER_PRESENT_CANONICAL:
-        return None
-    if header_status == HEADER_NOT_APPLICABLE:
-        return None
-    if variant == VARIANT_EXEMPT:
-        return None
-
-    canonical_lines = canonical_banner_lines(variant)
-    insert_at = insertion_line(head_lines)
-
-    if header_status == HEADER_ABSENT:
-        action = "insert"
-        before_lines = list(head_lines)
-        # Insertion: shebang preserved at line 1; banner begins at
-        # `insert_at`; existing content shifts down. A single blank
-        # separator follows the banner.
-        after_lines: list[str] = []
-        for idx, line in enumerate(before_lines, start=1):
-            if idx == insert_at:
-                after_lines.extend(canonical_lines)
-                after_lines.append("")
-                after_lines.append(line)
-            else:
-                after_lines.append(line)
-        if not before_lines:
-            after_lines = list(canonical_lines)
-            after_lines.append("")
-        replacement_lines = None
-    else:
-        # present-malformed — replace the malformed range with canonical.
-        action = "replace"
-        before_lines = list(head_lines)
-        if header_line_range is None:
-            return None
-        start_1based, end_1based = header_line_range
-        start_idx = start_1based - 1
-        end_idx = end_1based  # slice is half-open
-        after_lines = (
-            before_lines[:start_idx] + canonical_lines + before_lines[end_idx:]
-        )
-        replacement_lines = [start_1based, end_1based]
-
-    diff = list(
-        difflib.unified_diff(
-            before_lines,
-            after_lines,
-            fromfile=f"a/{relative_path}",
-            tofile=f"b/{relative_path}",
-            n=DIFF_CONTEXT_LINES,
-            lineterm="",
-        )
-    )
-
-    truncated = False
-    diff_text = "\n".join(diff)
-    if len(diff_text) > 4_000:
-        diff_text = diff_text[:4_000] + "\n[... diff truncated ...]"
-        truncated = True
-
-    return {
-        "needed": True,
-        "action": action,
-        "insertion-line": insert_at if action == "insert" else None,
-        "replacement-lines": replacement_lines,
-        "diff": diff_text,
-        "diff-truncated": truncated,
-    }
 
 
 # ---------------------------------------------------------------------------
@@ -1132,3 +538,51 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+# ---------------------------------------------------------------------------
+# Public surface. This module is the entry point for the header-coverage
+# pipeline; the names below are re-exported from the sibling modules that own
+# them (``header_vocabulary`` / ``header_banner`` / ``header_variants`` /
+# ``header_detect``). Declaring them here keeps the unused-import rule from
+# deleting a re-export whose importers live in other files.
+# ---------------------------------------------------------------------------
+__all__ = [
+    "BOM_PREFIX",
+    "EXIT_ERROR",
+    "EXIT_OK",
+    "HEADER_ABSENT",
+    "HEADER_NOT_APPLICABLE",
+    "HEADER_PRESENT_CANONICAL",
+    "HEADER_PRESENT_MALFORMED",
+    "LEGACY_AUTHOR_MARK",
+    "MALFORM_BOM_PREFIX",
+    "MALFORM_MIXED",
+    "MALFORM_SMART_QUOTE",
+    "MALFORM_TRAILING_WHITESPACE",
+    "MALFORM_WRONG_LINE_COUNT",
+    "MALFORM_WRONG_VARIANT",
+    "VARIANT_C_BLOCK",
+    "VARIANT_DOUBLE_DASH",
+    "VARIANT_DOUBLE_SLASH",
+    "VARIANT_EXEMPT",
+    "VARIANT_HASH",
+    "VARIANT_HTML",
+    "VARIANT_SEMICOLON",
+    "CoverageSummary",
+    "FileCoverage",
+    "build_injection_plan",
+    "canonical_banner_lines",
+    "canonical_banner_text",
+    "has_shebang",
+    "insertion_line",
+    "load_exception_globs",
+    "main",
+    "matches_exception",
+    "parse_args",
+    "read_head",
+    "render_markdown",
+    "resolve_path",
+    "scan_for_banner",
+    "scan_inventory",
+    "variant_family_for",
+]

@@ -57,6 +57,14 @@ from apothem.audit.build_inventory import (
 
 
 class TestClassifyFile:
+    """Assigning an artifact class to a scanned path.
+
+    Covers the two classification routes — a path-prefix directory maps to its
+    class, a root-level file maps via its membership set — and the fallthrough
+    where neither an unknown root file nor an unknown prefix is forced into a
+    class.
+    """
+
     def test_path_prefix_directories_map_to_their_class(self) -> None:
         assert classify_file(Path("agents/explorer.md")) == CLASS_AGENT
         assert classify_file(Path("rules/naturalism.md")) == CLASS_DOCS
@@ -76,6 +84,13 @@ class TestClassifyFile:
 
 
 class TestHeaderVariantFor:
+    """Resolving the header comment variant for a path.
+
+    Covers an extension mapping to its comment family against the three
+    none-resolving cases: a binary or unknown extension, a not-applicable
+    basename, and a not-applicable extension.
+    """
+
     def test_extension_maps_to_its_comment_family(self) -> None:
         assert header_variant_for(Path("a.py")) == HEADER_VARIANT_HASH
         assert header_variant_for(Path("a.md")) == HEADER_VARIANT_HTML
@@ -98,6 +113,11 @@ class TestHeaderVariantFor:
 
 
 class TestIsBinaryFile:
+    """Binary-versus-text classification by extension.
+
+    Covers both verdicts: a known binary extension and a text extension.
+    """
+
     def test_known_binary_extension_is_binary(self) -> None:
         assert is_binary_file(Path("logo.png")) is True
 
@@ -106,6 +126,12 @@ class TestIsBinaryFile:
 
 
 class TestComputeSha256:
+    """Content digest computation.
+
+    Covers that the digest matches the stdlib implementation, so the inventory's
+    hashes are reproducible outside this tool.
+    """
+
     def test_matches_hashlib(self, tmp_path: Path) -> None:
         f = tmp_path / "a.txt"
         f.write_bytes(b"hello world")
@@ -113,6 +139,12 @@ class TestComputeSha256:
 
 
 class TestCountLines:
+    """Line counting for a scanned file.
+
+    Covers newline-terminated counting and the missing-file case that yields
+    none rather than zero, keeping absent distinct from empty.
+    """
+
     def test_counts_newline_terminated_lines(self, tmp_path: Path) -> None:
         f = tmp_path / "a.txt"
         f.write_bytes(b"one\ntwo\nthree\n")
@@ -123,6 +155,13 @@ class TestCountLines:
 
 
 class TestScanBanner:
+    """Classifying the licence banner in a scanned file.
+
+    Covers the short-circuit where a none variant is not applicable, the
+    canonical SPDX line, the legacy copyright without SPDX classified as
+    malformed, and the two absent cases: no marker, and an unreadable path.
+    """
+
     def test_none_variant_short_circuits_to_not_applicable(
         self, tmp_path: Path
     ) -> None:
@@ -154,6 +193,11 @@ class TestScanBanner:
 
 
 class TestFileRecord:
+    """Per-file record serialisation.
+
+    Covers the rename of attribute names to their hyphenated payload keys.
+    """
+
     def test_to_json_renames_to_hyphenated_keys(self) -> None:
         record = FileRecord(
             path="a.py",
@@ -173,6 +217,12 @@ class TestFileRecord:
 
 
 class TestAggregateStats:
+    """Aggregate tallying across the inventory.
+
+    Covers counting broken down by artifact class, header status, and comment
+    variant.
+    """
+
     def test_counts_by_class_status_and_variant(self) -> None:
         records = [
             FileRecord(
@@ -196,6 +246,12 @@ class TestAggregateStats:
 
 
 class TestEmitInventory:
+    """Inventory serialisation.
+
+    Covers that the payload carries both the per-file records and the aggregate
+    statistics.
+    """
+
     def test_serialises_payload_with_files_and_stats(self, tmp_path: Path) -> None:
         records = [
             FileRecord("a.py", 1, "t", "sha", 1, CLASS_SCAFFOLDING, "absent", "hash"),
@@ -214,6 +270,12 @@ class TestEmitInventory:
 
 
 class TestWalkRoot:
+    """Walking the tree to collect candidate files.
+
+    Covers that files are recorded and that ignored directories are skipped
+    rather than descended into.
+    """
+
     def test_records_files_and_skips_ignored_dirs(self, tmp_path: Path) -> None:
         (tmp_path / "agents").mkdir()
         (tmp_path / "agents/explorer.md").write_text(
@@ -236,6 +298,11 @@ class TestWalkRoot:
 
 
 class TestParseArguments:
+    """Command-line argument parsing.
+
+    Covers that both the root and the output path are required.
+    """
+
     def test_requires_root_and_output(self) -> None:
         args = parse_arguments(["--root", "r", "--output", "o.json"])
         assert args.root == Path("r")
@@ -243,6 +310,12 @@ class TestParseArguments:
 
 
 class TestMain:
+    """Process-level entry point behaviour.
+
+    Covers the error exit on a missing root directory against the success path
+    that walks the tree and writes the inventory.
+    """
+
     def test_missing_root_directory_returns_error(self, tmp_path: Path) -> None:
         code = main(
             [

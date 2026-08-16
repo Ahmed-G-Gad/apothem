@@ -71,6 +71,13 @@ def _run(message: str, count: int, session_id: object = "sess-1") -> list[dict]:
 
 
 class TestFloor:
+    """The turn-count floor the protocol waits for.
+
+    Covers silence below the floor, emission on reaching it, the environment
+    override, and an unusable override falling back to the default rather than
+    raising.
+    """
+
     def test_below_floor_is_silent(self, message: str) -> None:
         envelopes = _run(message, seg.DEFAULT_MIN_STOPS - 1)
         assert envelopes == [{}] * (seg.DEFAULT_MIN_STOPS - 1)
@@ -112,6 +119,13 @@ class TestTermination:
 
 
 class TestEnvelope:
+    """Shape of the emitted envelope.
+
+    Covers the stop-hook-specific shape, the invariant that it never carries a
+    block decision, and the body being sourced from the message file — the file
+    owns the protocol text, the gate owns only the timing.
+    """
+
     def test_uses_stop_hook_specific_shape(self, message: str) -> None:
         envelope = _run(message, seg.DEFAULT_MIN_STOPS)[-1]
         assert envelope == {
@@ -134,6 +148,12 @@ class TestEnvelope:
 
 
 class TestKillSwitch:
+    """The environment kill switch.
+
+    Covers the disabling values silencing the protocol and other values leaving
+    it enabled, so an operator can opt out without editing installed files.
+    """
+
     @pytest.mark.parametrize("raw", ["0", "false", "FALSE", "no", "off", "Off"])
     def test_disabled_values_silence_the_protocol(
         self, message: str, raw: str, monkeypatch: pytest.MonkeyPatch
@@ -178,6 +198,13 @@ class TestUnreadableMessage:
 
 
 class TestSessionIsolation:
+    """Per-session gating.
+
+    Covers distinct sessions gating independently, an unusable session id
+    falling back without raising, and the containment guard that keeps a
+    traversal sequence in the session id inside the state directory.
+    """
+
     def test_distinct_sessions_gate_independently(self, message: str) -> None:
         _run(message, seg.DEFAULT_MIN_STOPS, session_id="sess-a")
         envelopes = _run(message, seg.DEFAULT_MIN_STOPS, session_id="sess-b")
@@ -195,6 +222,13 @@ class TestSessionIsolation:
 
 
 class TestFailOpen:
+    """Fail-open behaviour.
+
+    Covers a corrupt state file degrading to fresh, a none payload being
+    handled, valid JSON still emitted when evaluation raises, and silence when
+    the context flag is absent.
+    """
+
     def test_corrupt_state_file_degrades_to_fresh(self, message: str) -> None:
         path = seg.state_path_for("sess-1")
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -222,6 +256,13 @@ class TestFailOpen:
 
 
 class TestDispatchRouting:
+    """Routing from the shared dispatcher into this gate.
+
+    Covers the stop event with the gate's basename routing here, a stop event
+    with another basename still emitting verbatim, and the route matching with
+    and without the file suffix.
+    """
+
     def test_stop_with_stop_basename_routes_to_the_gate(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:

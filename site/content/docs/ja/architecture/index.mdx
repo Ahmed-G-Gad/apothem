@@ -46,3 +46,7 @@ flowchart TD
 | [ソースレイアウト](/docs/architecture/source-layout) | Apothem が `src/` レイアウトを使う理由と、ツリーの構成方法。 |
 | [インストールワークフロー](/docs/architecture/installation-workflow) | `apothem install`、`update`、`uninstall` がエンドツーエンドでどのように動作するか。 |
 | [委譲ワーカー](/docs/architecture/agents) | 本リポジトリ内で動作するマルチワーカーランタイム向けのリポジトリスコープの指示。 |
+| [自己完結型ランタイム](/docs/architecture/self-contained-runtime) | Apothem のエンジンが任意のチェックアウトからどのように動くか — 内蔵された依存関係、PYTHONPATH=src の呼び出しモデル、そしてプラグインツリーのブートストラップ。 |
+| [依存関係内蔵戦略](/docs/architecture/vendoring-strategy) | Apothem が src/apothem/_vendor/ 配下にどのサードパーティパッケージを内蔵し、どれをシステム前提条件として残すか、そして内蔵されたコピーがどのようにリフレッシュされるか。 |
+| [Cohort パッケージング契約](/docs/architecture/cohort-packaging-contract) | Cohort パッケージングとプラグインマニフェストのための、安定した下流消費可能な契約 — マッピングを再導出することなく cohort を列挙し、各ハーネス固有のネイティブターゲットを解決する。 |
+| [CI/CD パイプライン図](/docs/architecture/cicd-pipeline) | あらゆるコード変更とリリースを門にかけるビルド・テスト・lint・セキュリティ・公開のワークフロー段階の視覚マップとレーン分解。 |

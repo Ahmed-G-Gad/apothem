@@ -134,6 +134,15 @@ STDIN_FLAG: Final[str] = "--stdin"
 
 @dataclass(frozen=True)
 class Finding:
+    """One path component violating the ratified naming convention.
+
+    Pre-conditions: ``component`` is the single offending path segment (a
+    directory or file name), not the whole path, so the finding points at the
+    exact token to rename; ``detail`` names the convention it breaks.
+    Post-conditions: ``rule`` defaults to :data:`RULE_ANCHOR` so every finding
+    cites the kebab-case naming discipline as its authority.
+    """
+
     component: str
     detail: str
     rule: str = RULE_ANCHOR
@@ -141,6 +150,16 @@ class Finding:
 
 @dataclass(frozen=True)
 class GrepResult:
+    """Matcher report for a single sweep of this validator.
+
+    Carries its own result shape rather than reusing the shared base because
+    the payload adds ``components_inspected``, ``notes``.
+
+    Pre-conditions: ``findings`` holds this module's frozen ``Finding``
+    dataclasses. Post-conditions: ``passed`` is ``True`` exactly when
+    ``findings`` is empty; :meth:`to_json` emits the serialised payload.
+    """
+
     grep: str
     path: str | None
     passed: bool
@@ -149,6 +168,12 @@ class GrepResult:
     notes: list[str] = field(default_factory=list)
 
     def to_json(self) -> str:
+        """Return this report as a two-space-indented JSON string.
+
+        Post-conditions: the payload carries ``{grep, path, passed,
+        components_inspected, findings, notes}``; each finding is flattened
+        through ``dataclasses.asdict``.
+        """
         payload = {
             "grep": self.grep,
             "path": self.path,

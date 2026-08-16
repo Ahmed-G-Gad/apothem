@@ -11,7 +11,7 @@ alwaysApply: true
 
 ## What this rule enforces
 
-This rule binds **M4 — Self-Application: Every Artifact Passes the Same Bar Before Emission**. Every artifact the ecosystem emits in a host project — commit, diff, file, PR description, comment, response, doc page, diagram, test, example, migration script, config entry — MUST itself clear all fifteen mandates. Quality is a pre-emission concern, never a downstream "the user can revise it" concern. The bar is **fifteen**: the ten dimensions of M3 plus M5, M6, M7, M8, M9, M10, M11, M12, M13, M14, M15. An artifact that fails any single bar MUST be revised before it leaves the agent's hands.
+This rule binds **M4 — Self-Application: Every Artifact Passes the Same Bar Before Emission**. Every artifact the ecosystem emits in a host project — commit, diff, file, PR description, comment, response, doc page, diagram, test, example, migration script, config entry — MUST itself clear all fifteen mandates. Quality is a pre-emission concern, never a downstream "the user can revise it" concern. The bar is **fifteen**: M1 through M15, where M3 is itself the ten-dimension check. An artifact that fails any single bar MUST be revised before it leaves the agent's hands.
 
 ## Pre-conditions
 

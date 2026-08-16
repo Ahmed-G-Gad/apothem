@@ -20,6 +20,7 @@ substituted at install time), so the bootstrap stubs are not on that harness's
 | `find-python.sh` / `find-python.ps1` | Python interpreter locators — find a real interpreter on PATH (rejecting zero-byte Store launcher shims, enforcing the version floor). |
 | `find-pwsh.sh` / `find-pwsh.ps1` | PowerShell interpreter locators. |
 | `events.py` | Single source of truth for the supported hook-event vocabulary, imported by the dispatcher and handlers. |
+| `stdin_json.py` | Shared hook stdin JSON reader. Several handlers need the harness's event payload; this is the one canonical reader they consume, so the read path — and its behavior on absent, empty, or malformed stdin — cannot drift between them. |
 | `log.py` | Shared logger factory for the hook scripts. |
 | `resolve_root.py` | Project-root resolution for the apothem ecosystem. |
 | `__init__.py` | Package marker. |

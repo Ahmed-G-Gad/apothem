@@ -85,12 +85,30 @@ INIT_PATH = Path("src/apothem/__init__.py")
 
 @dataclass(frozen=True)
 class Finding:
+    """One public-surface change weighed against the declared version bump.
+
+    Pre-conditions: ``severity`` grades the break; ``bar`` names the stability
+    bar the change crossed (a removed or renamed public symbol, a narrowed
+    signature, a changed default); ``path`` locates the surface; ``message``
+    states the observed break in operator-facing prose. Post-conditions: the
+    finding is frozen and serialised through :meth:`as_dict`.
+    """
+
     severity: str
     bar: str
     path: str
     message: str
 
     def as_dict(self) -> dict[str, Any]:
+        """Return this finding as a plain mapping.
+
+        Carries an explicit serialiser rather than relying on
+        ``dataclasses.asdict`` because the enclosing report composes findings
+        into a bespoke payload.
+
+        Post-conditions: the mapping carries ``{severity, bar, path,
+        message}``.
+        """
         return {
             "severity": self.severity,
             "bar": self.bar,
@@ -108,6 +126,10 @@ class GrepResult:
     findings: list[Finding] = field(default_factory=list)
 
     def to_json(self) -> str:
+        """Return this report as a two-space-indented JSON string.
+
+        Post-conditions: the payload carries ``{grep, passed, findings}``.
+        """
         payload = {
             "grep": self.grep,
             "passed": self.passed,
@@ -251,6 +273,13 @@ def current_version() -> str | None:
 
 
 def is_v0(version: str) -> bool:
+    """Return True when *version* is in the ``0.x`` initial-development series.
+
+    Pre-conditions: ``version`` is a dotted SemVer string. Post-conditions:
+    returns ``True`` iff the major component is ``0``. Callers use this to relax
+    the breaking-change bars, because SemVer §4 exempts ``0.y.z`` from the
+    stability guarantee that governs ``1.0.0`` and later.
+    """
     parts = version.split(".")
     return parts[0] == "0"
 

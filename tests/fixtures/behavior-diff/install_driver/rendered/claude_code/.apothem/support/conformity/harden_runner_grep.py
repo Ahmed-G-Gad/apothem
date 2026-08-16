@@ -76,6 +76,16 @@ class Finding:
 
 @dataclass(frozen=True)
 class GrepResult:
+    """Matcher report for a single sweep of this validator.
+
+    Carries its own result shape rather than reusing the shared base because
+    the payload adds ``not_yet_materialised``.
+
+    Pre-conditions: ``findings`` holds this module's frozen ``Finding``
+    dataclasses. Post-conditions: ``passed`` is ``True`` exactly when
+    ``findings`` is empty; :meth:`to_json` emits the serialised payload.
+    """
+
     grep: str
     root: str
     passed: bool
@@ -83,6 +93,12 @@ class GrepResult:
     findings: list[Finding] = field(default_factory=list)
 
     def to_json(self) -> str:
+        """Return this report as a two-space-indented JSON string.
+
+        Post-conditions: the payload carries ``{grep, root, passed,
+        not-yet-materialised, findings}``; each finding is flattened through
+        ``dataclasses.asdict``.
+        """
         payload = {
             "grep": self.grep,
             "root": self.root,

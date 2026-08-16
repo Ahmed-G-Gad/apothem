@@ -43,3 +43,7 @@ flowchart TD
 | [源代码布局](/docs/architecture/source-layout) | 为何 Apothem 采用 `src/` 布局，以及代码树的组织方式。 |
 | [安装工作流](/docs/architecture/installation-workflow) | `apothem install`、`update` 和 `uninstall` 如何端到端工作。 |
 | [委派工作者](/docs/architecture/agents) | 面向在本仓库中运行的多工作者运行时的仓库范围指令。 |
+| [自包含运行时](/docs/architecture/self-contained-runtime) | Apothem 的引擎如何从任意检出运行——内联依赖、PYTHONPATH=src 调用模型，以及插件树引导。 |
+| [依赖内联策略](/docs/architecture/vendoring-strategy) | Apothem 在 src/apothem/_vendor/ 下内联哪些第三方包、哪些保留为系统前置条件，以及内联副本如何刷新。 |
+| [Cohort 打包契约](/docs/architecture/cohort-packaging-contract) | 用于 cohort 打包与插件清单的稳定、可供下游消费的契约——枚举 cohort 并解析其每个harness的原生目标，而无需重新推导映射。 |
+| [CI/CD 流水线图](/docs/architecture/cicd-pipeline) | 门控每次代码变更与发布的构建、测试、lint、安全与发布工作流阶段的可视化映射与泳道分解。 |

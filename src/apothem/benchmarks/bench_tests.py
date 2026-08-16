@@ -57,6 +57,14 @@ def _time_invocation(target: Path, *, single_module: bool) -> float:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Run the test-suite benchmark for one module; return the exit code.
+
+    Pre-conditions: ``argv`` is the argument vector without the program name
+    (``None`` reads ``sys.argv``); it must select one ``--module`` to time.
+
+    Post-conditions: returns ``0`` when the module's suite finishes inside the
+    per-module budget, non-zero when it exceeds it.
+    """
     parser = argparse.ArgumentParser(prog="bench_tests")
     parser.add_argument(
         "--module",

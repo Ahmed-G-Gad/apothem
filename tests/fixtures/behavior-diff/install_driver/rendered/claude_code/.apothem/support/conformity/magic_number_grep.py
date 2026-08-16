@@ -204,6 +204,15 @@ RULE_ANCHOR: Final[str] = "M13.10 magic numbers"
 
 @dataclass(frozen=True)
 class Finding:
+    """One unnamed numeric literal repeated across the inspected file.
+
+    Pre-conditions: ``value`` is the literal as written (so ``3`` and ``-3``
+    are distinct findings); ``occurrences`` lists every 1-based line the
+    literal appears on, and its length is what crosses the repetition
+    threshold. Post-conditions: ``rule`` defaults to :data:`RULE_ANCHOR`,
+    which points at the named-constant discipline the literal should satisfy.
+    """
+
     value: str
     occurrences: list[int]
     rule: str = RULE_ANCHOR

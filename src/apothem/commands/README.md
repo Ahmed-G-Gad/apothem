@@ -94,7 +94,7 @@ General-purpose operator commands that harness a whole mission end to end. Each 
 
 | Command | Purpose |
 |---------|---------|
-| [`workflow.md`](workflow.md) | Workflow-harnessing command (entry form `/goal <<mission>>`) — decomposes a mission and drives genuinely-independent multi-agent dynamic workflows under named return contracts, subjects every finding to a refute-by-default verification pass before it survives, and self-augments from current authoritative sources, not memory alone. |
+| [`workflow.md`](workflow.md) | Workflow-harnessing command (entry form `/workflow <<mission>>`) — decomposes a mission and drives genuinely-independent multi-agent dynamic workflows under named return contracts, subjects every finding to a refute-by-default verification pass before it survives, and self-augments from current authoritative sources, not memory alone. |
 | [`projectify.md`](projectify.md) | Chat-app Project elevation command — produces the three deliverables (Description, Instruction, knowledge Files) for a Claude Project / ChatGPT Custom GPT / Gemini Gem through a structured-inquiry-saturated elicitation, holding knowledge files within a measurable per-platform context budget. |
 
 ## Frontmatter contract

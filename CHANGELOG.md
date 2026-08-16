@@ -9,6 +9,57 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-08-16
+
+### Added
+
+- **Per-folder README file coverage is now gated.** A folder's README is its
+  operating contract, so its file table is load-bearing: a reader who cannot
+  find a module there concludes it does not exist. Nothing held that table
+  against the folder's actual contents, and the drift is invisible from both
+  sides — you do not notice a missing row while reading, nor the README while
+  adding a file. `scripts/dev/check_readme_file_coverage.py` reports every
+  shipped file its folder's README never names, and runs `--strict` in CI
+  across all 31 folders.
+
+### Fixed
+
+- **`status` and `verify` no longer swallow a profile that fails to load.**
+  `status` hardcoded an empty warnings array and printed nothing in plain mode;
+  with nothing installed there was no `unknown` drift cell either, so the
+  failure left no trace at all. `verify --harness all` discarded the failure to
+  read its exclusions, so excluded harnesses rejoined the sweep and the run died
+  later on a missing project path that named them — with no sign of the real
+  cause. Both now surface a structured advisory naming the diagnostic code and
+  the fix.
+- **The PowerShell interpreter locator no longer throws where its contract
+  promises `$null`.** `find-pwsh.ps1` built its Windows install-root fallbacks
+  with an unguarded `Join-Path $env:ProgramFiles`, which is unset under
+  PowerShell on Linux and macOS. The list was built eagerly, so the throw
+  pre-empted even the PATH probe that would have succeeded.
+- **A duplicate `run:` key made the CI workflow unparseable.** Adding the README
+  coverage gate consumed the `Install release toolchain` step header and left
+  its `run:` line attached to the new step. GitHub rejects a workflow file with
+  a duplicate mapping key outright, so runs ended immediately with no jobs and
+  no logs, and the release build lost its toolchain install.
+- **`migrate-workspace` honored a custom directory name for its target but not
+  its discovery**, so a non-default workspace name was written correctly and
+  then never found again.
+- Documentation corrections across the conformity gate's hook scope, the design
+  tokens' consumers, the OpenCode example's provenance, two harness convention
+  pins, and four architecture pages that were unreachable from ten locale
+  indexes.
+
+### Changed
+
+- **Kimi Code's uninstall routes through the shared project-scope factory.** It
+  was the one project-scope adapter still deriving its project root by walking
+  up from the output path — the hardcoded ascent the factory exists to remove.
+- **`LearningStore._append` is now `append_signal`.** It was reached across a
+  module boundary by `workspace_migration` and four test modules while named
+  private; the rename matches how it is actually used, and its docstring now
+  states what it deliberately does not do.
+
 ## [1.0.2] - 2026-08-14
 
 ### Fixed
@@ -101,4 +152,6 @@ harnesses behind a conformity governance gate and signed, reproducible releases.
   constraints and document an inspect-first alternative to the pipe-to-shell
   one-liner.
 
+[Unreleased]: https://github.com/ahmed-g-gad/apothem/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.0.2
 [1.0.1]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.0.1

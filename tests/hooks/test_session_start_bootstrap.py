@@ -26,6 +26,13 @@ import session_start_bootstrap as ssb  # noqa: E402
 
 
 class TestSessionMeta:
+    """Extracting session metadata from the hook payload.
+
+    Covers the empty payload yielding blank metadata, extraction from a
+    populated payload, bullet-row rendering, and coercion of non-string fields
+    to empty rather than propagating the wrong type.
+    """
+
     def test_empty_payload_returns_blank_meta(self) -> None:
         meta = ssb.SessionMeta.from_payload(None)
 
@@ -61,6 +68,12 @@ class TestSessionMeta:
 
 
 class TestMemorySummary:
+    """Rendering the memory-tier summary block.
+
+    Covers that an empty summary produces no lines at all, so the bootstrap
+    output carries no empty heading, against the populated rendering.
+    """
+
     def test_empty_summary_produces_no_lines(self) -> None:
         assert ssb.MemorySummary().lines() == []
 
@@ -81,6 +94,12 @@ class TestMemorySummary:
 
 
 class TestPlanSummary:
+    """Rendering the plan-suite summary block.
+
+    Covers that an empty summary produces no lines, against the populated
+    rendering of every field.
+    """
+
     def test_empty_summary_produces_no_lines(self) -> None:
         assert ssb.PlanSummary().lines() == []
 
@@ -105,6 +124,13 @@ class TestPlanSummary:
 
 
 class TestSectionParsing:
+    """Primitives for reading values out of a Markdown section.
+
+    Covers first-non-blank content lookup (including the empty section), bold
+    field lookup (including the missing key), and heading-value tail
+    extraction.
+    """
+
     def test_first_nonblank_finds_first_content_line(self, tmp_path: Path) -> None:
         path = tmp_path / "memory.md"
         path.write_text(
@@ -140,6 +166,12 @@ class TestSectionParsing:
 
 
 class TestTopicFileNames:
+    """Collecting topic file names from an index document.
+
+    Covers that only Markdown links are extracted, that non-``.md`` links are
+    ignored, and that the limit caps the result count.
+    """
+
     def test_extracts_only_markdown_links(self, tmp_path: Path) -> None:
         path = tmp_path / "MEMORY.md"
         path.write_text(
@@ -177,6 +209,12 @@ class TestTopicFileNames:
 
 
 class TestBulletsUnder:
+    """Collecting bullet items beneath a heading.
+
+    Covers extraction of the bullets and the stop boundary at the next
+    second-level heading, so one section never absorbs the next.
+    """
+
     def test_extracts_bullets(self, tmp_path: Path) -> None:
         path = tmp_path / "m.md"
         path.write_text(
@@ -201,6 +239,11 @@ class TestBulletsUnder:
 
 
 class TestNumberedUnder:
+    """Collecting numbered items beneath a heading.
+
+    Covers extraction of the ordered items.
+    """
+
     def test_extracts_numbered_items(self, tmp_path: Path) -> None:
         path = tmp_path / "p.md"
         path.write_text(
@@ -216,6 +259,12 @@ class TestNumberedUnder:
 
 
 class TestProjectSlug:
+    """Slugifying a project path into a directory key.
+
+    Covers the Windows-shaped path, whose separators and drive letter must
+    survive slugification.
+    """
+
     def test_windows_path_slugified(self) -> None:
         result = ssb.project_slug(Path("C:/Users/test-user/.claude"))
 
@@ -223,6 +272,13 @@ class TestProjectSlug:
 
 
 class TestFindMemoryIndex:
+    """Locating the memory index for the current project.
+
+    Covers the direct match winning, the missing projects directory returning
+    none, and the leaf fallback — which matches on a path-boundary suffix and
+    rejects a bare substring, so a similarly-named project cannot be picked.
+    """
+
     def test_direct_match_wins(self, tmp_path: Path) -> None:
         root = tmp_path / ".claude"
         slug = ssb.project_slug(root)
@@ -258,6 +314,12 @@ class TestFindMemoryIndex:
 
 
 class TestFindActiveSuite:
+    """Selecting the active plan suite.
+
+    Covers the no-plans-directory case returning none, selection of the most
+    recent suite, and the skipping of incomplete suites.
+    """
+
     def test_returns_none_when_no_plans_dir(self, tmp_path: Path) -> None:
         assert ssb.find_active_suite(tmp_path / ".plans") is None
 
@@ -293,6 +355,12 @@ class TestFindActiveSuite:
 
 
 class TestBuildContext:
+    """Assembling the full bootstrap context block.
+
+    Covers the degraded path, where neither a plan nor memory is present and a
+    placeholder is emitted, against the full assembly.
+    """
+
     def test_no_plan_no_memory_emits_placeholder(self, tmp_path: Path) -> None:
         context = ssb.build_context(tmp_path, None)
 
@@ -330,6 +398,13 @@ class TestBuildContext:
 
 
 class TestMain:
+    """Process-level entry point behaviour.
+
+    Covers envelope emission, quiet mode suppressing output, and the failure
+    envelope emitted when context assembly raises — the fail-open contract that
+    keeps a bootstrap error from blocking the session.
+    """
+
     def test_main_emits_envelope(
         self,
         tmp_path: Path,

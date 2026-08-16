@@ -30,7 +30,7 @@ Apply the Five Cognitive Filters during test design: Filter 1 (Obvious Purge) di
 
 Discover the deployed repository's behavior contracts and its ratified test framework, author behavior-first AAA tests through the `test-authoring` skill, run them through the `test-runner` agent, triage every failure, and report coverage gaps against critical paths. Emit the report at the consuming suite's `_inputs/test-suite-report.md`.
 
-**Reference Template:** Check `CLAUDE.md` for template path. Governance scales with seriousness per CLAUDE.md Section 4. Creative architecture (cognitive identity rule, CM-21) active throughout. The workflow honors the host's discovered test framework, coverage tooling, and naming conventions per `rules/host-discovery.md`; it never assumes a framework the host has not adopted.
+**Reference Template:** Check `CLAUDE.md` for template path. Governance scales with seriousness per each rule's scaling table. Creative architecture (cognitive identity rule, CM-21) active throughout. The workflow honors the host's discovered test framework, coverage tooling, and naming conventions per `rules/host-discovery.md`; it never assumes a framework the host has not adopted.
 
 ---
 

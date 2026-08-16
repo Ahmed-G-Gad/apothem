@@ -26,11 +26,13 @@ Plans-root resolution (harness-agnostic, no harness path hardcoded):
 
 1. ``$LLM_PLAN_SUITES_DIR`` when set — the operator override.
 2. ``<workspace.project_dir>/.apothem/plans/`` from the stdin payload — the
-   canonical project-local plans tree per the plans-locality discipline,
-   falling back to the legacy ``<workspace.project_dir>/.plans/`` when the
-   canonical tree is absent (dual-read compatibility window).
+   canonical project-local plans tree per the plans-locality discipline.
 3. ``<cwd>/.apothem/plans/`` when no payload is supplied — the interactive
-   fallback, with the same legacy ``<cwd>/.plans/`` fallback.
+   fallback.
+
+``.apothem/plans/`` is the sole tree this renderer reads. An operator holding
+a legacy ``.plans/`` tree upgrades it with ``apothem migrate-workspace``;
+until they do, the statusline reports no active suite.
 
 Degradation modes:
 

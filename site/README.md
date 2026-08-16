@@ -25,9 +25,13 @@ pages, blog posts, and static assets.
 - `components/` holds the landing-page and shared UI components.
 - `lib/` is the internal source of truth for cross-cutting concerns: the i18n
   cohort/locale table (`i18n.ts`), the hreflang alternate builder
-  (`hreflang.ts`), and the search-index transform core (`search-index-core.mjs`,
+  (`hreflang.ts`), and the search-index transform core (`search-index-core.ts`,
   with its `node --test` unit test alongside it). Scripts that hard-code a
   locale set assert parity against `lib/i18n.ts` rather than duplicating it.
+  Each module is described in `lib/README.md`.
+- `mdx-components.tsx` is the MDX component map every rendered page resolves
+  through — the Fumadocs defaults plus any per-render override. A component the
+  content tree uses must be reachable from here or the page fails to render.
 - `scripts/` holds the build/guard scripts (each documented in
   `scripts/README.md`): `update-reference-inventory.mjs`, `build-llms-txt.mjs`,
   `author-ia.mjs`, `check-search-index-sizes.mjs`, and `export-to-dist.mjs`.

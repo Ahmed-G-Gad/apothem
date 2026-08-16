@@ -341,3 +341,32 @@ def test_cli_json_output_is_schema_valid(
     payload = json.loads(capsys.readouterr().out)
     validate_findings(payload)
     assert payload["summary"]["total"] == 1
+
+
+def test_audit_reads_each_file_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A file is read once per audit, not once per capability.
+
+    ``audit`` expands directories with ``rglob``, so a second read inside
+    ``scan_config`` would double the I/O of every whole-tree run. The parse
+    and the secret scan both need the same text; the caller reads it once and
+    passes it down.
+    """
+    cfg = tmp_path / "config.yaml"
+    cfg.write_text("alpha: 1\n", encoding="utf-8")
+
+    reads: list[str] = []
+    real_read_text = Path.read_text
+
+    def counting_read_text(self: Path, *args: object, **kwargs: object) -> str:
+        reads.append(str(self))
+        return real_read_text(self, *args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(Path, "read_text", counting_read_text)
+
+    findings = audit([cfg])
+
+    assert reads.count(str(cfg)) == 1
+    # The audit still produced a usable result from that single read.
+    assert findings.findings == [] or all(f.category for f in findings.findings)

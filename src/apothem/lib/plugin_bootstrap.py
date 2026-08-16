@@ -123,10 +123,20 @@ def bootstrapped_root() -> Path | None:
 
 
 def _prepend_unique(entry: str) -> None:
-    """Prepend ``entry`` to ``sys.path[0]`` only if not already present.
+    """Move ``entry`` to ``sys.path[0]``, leaving no duplicate behind.
+
+    Inserting only when the entry is absent cannot hold the post-condition
+    ``bootstrap_syspath`` documents. An entry already on ``sys.path`` --
+    inherited from ``PYTHONPATH``, or added out-of-band by an embedding host
+    -- would keep whatever position it had, so a system-installed copy
+    earlier in the path would still win the import and the self-containment
+    guarantee would be silently lost. Dropping every occurrence before
+    inserting yields position 0 whether or not the entry was already there,
+    and leaves no duplicate.
 
     Args:
-        entry: The ``sys.path`` entry to prepend.
+        entry: The ``sys.path`` entry to move to the front.
     """
-    if entry not in sys.path:
-        sys.path.insert(0, entry)
+    while entry in sys.path:
+        sys.path.remove(entry)
+    sys.path.insert(0, entry)

@@ -36,7 +36,7 @@ Two standing rules govern every step:
 - **In-place freshening is the default.** Every irreversible GitHub-side action — a git-history rewrite, a branch / run / package / tag / release purge, a Pages-build-history wipe, an environment / deployment-record removal, or the repository delete-and-recreate — routes a per-action confirmation through the structured-inquiry channel per `rules/interactive-questions.md` §6, with the non-destructive in-place path as the stated default and the destructive path opt-in and default-off. The delete-and-recreate is an explicit `MAY` capability only, default-off behind its gate, and preserves all current repository metadata on recreation.
 - **The "etc." extension rule.** Where the seed intent enumerates a GitHub-trace class with a trailing "etc." or "e.g.", extend it comprehensively to its inferred sibling members — never honor the short literal list. "Previous versions / releases / packages / deployments … and so on" extends to draft and pre-releases, stale tags, GitHub Packages versions, Pages build history, Actions run logs and workflow-run history, environment and deployment records, branch-protection drift, gist and wiki traces, fork-network artifacts, and registry coordinates (npm, npx) pointing at superseded versions — each named explicitly as its own removal step.
 
-**Reference Template:** Check `CLAUDE.md` for template path. Governance scales with seriousness per CLAUDE.md Section 4. Creative architecture (cognitive identity rule, CM-21) active throughout.
+**Reference Template:** Check `CLAUDE.md` for template path. Governance scales with seriousness per each rule's scaling table. Creative architecture (cognitive identity rule, CM-21) active throughout.
 
 ---
 

@@ -18,7 +18,7 @@ Apply Filter 1 (Obvious Purge): the obvious metric — overall pass rate — hid
 
 Execute `/eval`. Define the evaluation dataset and scorer via the eval-harness skill, run the candidate model or prompt over the dataset, score every output with the prompt-evaluator agent, aggregate campaign metrics with a per-category breakdown, and emit the report at `_inputs/eval-findings.md` with regressions surfaced against the prior baseline.
 
-**Reference Template:** Check `CLAUDE.md` for template path. Governance scales with seriousness per CLAUDE.md Section 4. Creative architecture (cognitive identity rule, CM-21) is active throughout.
+**Reference Template:** Check `CLAUDE.md` for template path. Governance scales with seriousness per each rule's scaling table. Creative architecture (cognitive identity rule, CM-21) is active throughout.
 
 ---
 

@@ -39,6 +39,13 @@ def _make_marker_root(base: Path) -> Path:
 
 
 class TestResolutionStrategy:
+    """The two marker strategies a candidate directory is matched against.
+
+    Covers hooks mode requiring both directories, marker mode requiring the
+    instruction file, and the guard that a non-directory candidate never matches
+    whatever its name.
+    """
+
     def test_hooks_mode_requires_both_directories(self, tmp_path: Path) -> None:
         strategy = ResolutionStrategy.for_mode(Mode.HOOKS)
 
@@ -68,6 +75,14 @@ class TestResolutionStrategy:
 
 
 class TestEnvironmentVariable:
+    """Root resolution from the environment.
+
+    Covers the precedence between the primary and fallback variables — the
+    primary wins when valid, the fallback applies when the primary is absent or
+    invalid — and an invalid value falling through to the next strategy rather
+    than resolving to a bad root.
+    """
+
     def test_claude_project_dir_wins_when_valid(self, tmp_path: Path) -> None:
         root = _make_hooks_root(tmp_path / "root-a")
         _make_hooks_root(tmp_path / "root-b")
@@ -139,6 +154,13 @@ class TestEnvironmentVariable:
 
 
 class TestScriptRelative:
+    """Root resolution relative to the running script.
+
+    Covers a script inside the hooks folder resolving its parent, and a script
+    outside that folder being ignored so an unrelated location cannot be
+    mistaken for a root.
+    """
+
     def test_script_in_hooks_folder_resolves_parent(self, tmp_path: Path) -> None:
         root = _make_hooks_root(tmp_path / "ecosystem")
         script = root / "hooks" / "dispatch.py"
@@ -172,6 +194,13 @@ class TestScriptRelative:
 
 
 class TestCwdWalk:
+    """Root resolution by walking up from the working directory.
+
+    Covers the working directory matching directly, a deep subdirectory walking
+    up to find it, and partial markers being skipped so a half-formed directory
+    never wins.
+    """
+
     def test_cwd_itself_matches(self, tmp_path: Path) -> None:
         root = _make_hooks_root(tmp_path / "ecosystem")
 
@@ -201,6 +230,13 @@ class TestCwdWalk:
 
 
 class TestHomeFallback:
+    """The last-resort home directory fallback.
+
+    Covers the home location being used when no ancestor matches, and the
+    explicit none when every strategy fails — the caller is told, not handed a
+    guess.
+    """
+
     def test_home_claude_used_when_no_ancestor_matches(self, tmp_path: Path) -> None:
         home = tmp_path / "home"
         home.mkdir()
@@ -228,6 +264,12 @@ class TestHomeFallback:
 
 
 class TestMarkerMode:
+    """Marker-mode resolution specifically.
+
+    Covers resolution via the instruction file, and the deliberate exclusion of
+    hooks-only directories that marker mode must not claim.
+    """
+
     def test_marker_mode_resolves_via_claude_md(self, tmp_path: Path) -> None:
         root = _make_marker_root(tmp_path / "project")
 
@@ -251,6 +293,13 @@ class TestMarkerMode:
 
 
 class TestDefaultContentRoot:
+    """Deriving the content root from the resolved project root.
+
+    Covers the src layout resolving into the package directory, the flat layout
+    returning the root unchanged, and a src directory without a package marker
+    falling back to the root rather than descending into a non-package.
+    """
+
     def test_src_layout_resolves_to_package_dir(self, tmp_path: Path) -> None:
         package = tmp_path / "src" / "apothem"
         (package / "hooks").mkdir(parents=True)

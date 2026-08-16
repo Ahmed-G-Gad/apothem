@@ -89,6 +89,20 @@ class _CliUserError(Exception):
         safe_value: object | None = None,
         files_written: tuple[str, ...] = (),
     ) -> None:
+        """Capture the structured payload behind an operator-facing failure.
+
+        Pre-conditions: ``code`` is the stable machine-readable identifier;
+        ``message`` is the human sentence; ``field`` names the offending input;
+        ``reason`` says why it was rejected; ``fix`` states the corrective
+        action. ``safe_value`` carries a redacted echo of the input when one can
+        be shown without leaking a secret, and ``files_written`` lists any paths
+        already written before the failure, so a partial run is recoverable
+        rather than silently half-applied.
+
+        Post-conditions: ``message`` is passed to ``Exception`` so the plain
+        string surfaces in a traceback; every field is also retained for
+        :meth:`to_dict`.
+        """
         super().__init__(message)
         self.code = code
         self.message = message
@@ -122,14 +136,34 @@ class _Adapter(Protocol):
     """
 
     @property
-    def name(self) -> str: ...
+    def name(self) -> str:
+        """The adapter's registry key, as the operator types it on the CLI."""
+        ...
+
     @property
-    def output_path(self) -> Path: ...
-    def install(self, profile: dict[str, Any]) -> object: ...
-    def update(self, profile: dict[str, Any]) -> object: ...
-    def uninstall(self) -> None: ...
-    def is_installed(self) -> bool: ...
-    def verify(self) -> bool: ...
+    def output_path(self) -> Path:
+        """Absolute path of the harness's primary configuration target."""
+        ...
+
+    def install(self, profile: dict[str, Any]) -> object:
+        """Materialize *profile* into this harness's native configuration."""
+        ...
+
+    def update(self, profile: dict[str, Any]) -> object:
+        """Re-materialize *profile* over an existing installation."""
+        ...
+
+    def uninstall(self) -> None:
+        """Remove every artifact this adapter installed, leaving no orphans."""
+        ...
+
+    def is_installed(self) -> bool:
+        """Return True when this harness carries an Apothem installation."""
+        ...
+
+    def verify(self) -> bool:
+        """Return True when the installed surface still matches the profile."""
+        ...
 
     # Optional project-scope extension (opt-in per adapter). Adapters
     # that materialize into a project root rather than a user-scope
@@ -266,6 +300,79 @@ def _placeholder_advisory_entry(
             + ", ".join(fields)
             + "); personalize it so a real identity is projected. Edit the "
             + "profile or run 'apothem profile set identity.name \"Your Name\"'."
+        ),
+    }
+
+
+def _baseline_unavailable_entry(
+    profile_path: Path, exc: ProfileValidationError
+) -> dict[str, object]:
+    """Build the lifecycle-envelope advisory for an unreadable drift baseline.
+
+    ``status`` degrades drift rather than aborting when the default profile
+    will not load, which is right — the installed/verified facts stay
+    reportable. But the degradation needs its own channel: the ``unknown``
+    drift cell is only emitted for an *installed* harness, so with nothing
+    installed every cell reads ``absent`` and the broken baseline leaves no
+    trace at all. This advisory carries the path, the parse failure, and the
+    fix, so a degraded sweep is never mistaken for a clean one.
+    """
+    diagnostic = exc.diagnostic
+    return {
+        "harness": None,
+        "outcome": "advisory",
+        "operation": "drift_baseline_unavailable",
+        "path": str(profile_path),
+        "code": diagnostic.code,
+        # `reason` stays its own field rather than being inlined: a YAML
+        # syntax failure renders as a multi-line parser dump, which would
+        # make the one-line terminal advisory unreadable.
+        "reason": diagnostic.reason,
+        "fix": diagnostic.fix,
+        "message": (
+            f"Drift baseline unavailable: {profile_path} could not be loaded "
+            f"({diagnostic.code}). Drift reads 'unknown' for installed "
+            f"harnesses; installed and verified are unaffected. "
+            f"{diagnostic.fix}"
+        ),
+    }
+
+
+def _exclusions_unavailable_entry(
+    profile_path: Path, exc: Exception
+) -> dict[str, object]:
+    """Build the lifecycle-envelope advisory for dropped harness exclusions.
+
+    ``verify --harness all`` loads the default profile solely to honour
+    ``exclude_harnesses``. Falling back to the full registry when that load
+    fails re-creates exactly the false failure the honouring exists to
+    prevent: an excluded harness is swept, reports its managed targets
+    missing, and verify exits non-zero blaming the harness rather than the
+    unreadable profile. Silent, that verdict is unattributable.
+
+    The caller also catches ``OSError``, which carries no diagnostic, so the
+    fields degrade to the exception text rather than assuming one.
+    """
+    if isinstance(exc, ProfileValidationError):
+        diagnostic = exc.diagnostic
+        code, reason, fix = diagnostic.code, diagnostic.reason, diagnostic.fix
+    else:
+        code = "profile.unreadable"
+        reason = str(exc)
+        fix = "Make the profile readable so its exclusions apply."
+    return {
+        "harness": None,
+        "outcome": "advisory",
+        "operation": "exclusions_unavailable",
+        "path": str(profile_path),
+        "code": code,
+        "reason": reason,
+        "fix": fix,
+        "message": (
+            f"Harness exclusions unavailable: {profile_path} could not be "
+            f"loaded ({code}). Every registered harness was verified, so a "
+            f"harness excluded in that profile can report as missing and "
+            f"fail the run. {fix}"
         ),
     }
 
@@ -717,6 +824,15 @@ class AliasedGroup(click.Group):
     """Click group that resolves subcommands case-insensitively."""
 
     def get_command(self, ctx: click.Context, cmd_name: str) -> click.Command | None:
+        """Resolve *cmd_name* exactly, then fall back to a case-insensitive match.
+
+        Pre-conditions: ``cmd_name`` is the subcommand token as typed.
+        Post-conditions: an exact match wins without any case folding, so
+        declared names always take precedence. Otherwise a single
+        case-insensitive match is returned; several matches fail the context
+        with an ambiguity message rather than silently picking one, and no match
+        returns ``None`` so Click emits its own unknown-command error.
+        """
         cmd = super().get_command(ctx, cmd_name)
         if cmd is not None:
             return cmd

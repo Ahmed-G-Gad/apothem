@@ -48,10 +48,13 @@ Engine unter `~/.apothem` ab und gibt beim Abschluss den exakten
 Engine-Aufruf für deine Shell aus:
 
 ```text
-Apothem installed.
-Run the engine with:
+Installation complete.
 
-  apothem <command>
+The 'apothem' command is on your PATH.
+
+Recommended first step — the guided setup (profile -> preview -> install):
+
+  apothem quickstart
 ```
 
 <Callout title="Der Befehl `apothem`">
@@ -114,8 +117,7 @@ apothem install --harness claude-code
 ```
 
 ```text
-Installed claude-code.
-Wrote: ~/.claude/settings.json
+✓ Installed claude-code -> /home/you/.claude/settings.json
 ```
 
 Projektbezogene Adapter schreiben innerhalb eines Projekts statt in dein
@@ -152,7 +154,7 @@ apothem verify --harness claude-code
 ```
 
 ```text
-claude-code: managed targets verified.
+✓ claude-code is verified at /home/you/.claude/settings.json
 ```
 
 `verify` beendet sich mit einem Code ungleich Null, wenn die Konfiguration fehlt

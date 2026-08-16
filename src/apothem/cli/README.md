@@ -14,9 +14,9 @@
 | `_materialize.py` | The shared install/update materialization orchestrators (`_materialize`, `_dry_run_materialization`). |
 | `_common_flags.py` | Shared Click options plus the console factory used across CLI commands. |
 | `_json_formatter.py` | JSON-output helper for the CLI (machine-readable command output). |
-| `_cmd_install.py` | The `install` command. |
+| `_cmd_install.py` | The `install` **and `quickstart`** commands. `quickstart` is the guided profile → preview → install path and shares this module's materialization machinery, so it lives beside `install` rather than in a module of its own. |
 | `_cmd_uninstall.py` | The `uninstall` command. |
-| `_cmd_update.py` | The `update` command. |
+| `_cmd_update.py` | The `update` **and `rollback`** commands. `rollback` restores from the backup set an update wrote, so it shares this module's ledger and backup handling. |
 | `_cmd_verify.py` | The `verify` command. |
 | `_cmd_status.py` | The `status` command. |
 | `_cmd_diff.py` | The `diff` command. |
@@ -39,7 +39,7 @@
 - Snake_case modules; private/shared helpers use a leading underscore (the `_common_flags`, `_json_formatter` pattern). Ambiguity is surfaced through structured inquiry or a `TODO(clarify)` marker — never invented.
 - **Adding a command/helper:** author it as a `.py` module under this package, wiring it into the command tree rather than as a free-standing script. Preserve the JSON-output path for any machine-readable command.
 - **A documented public CLI surface change** (a command, a flag, an environment variable) updates its `site/content/docs/` page in the same change-set.
-- Validate with `python -m ruff check` and `python -m ruff format`, `python -m mypy src/apothem/cli/`, then `python -m pytest`, then `python -m apothem.conformity.gate --all .`.
+- Validate with `python -m ruff check` and `python -m ruff format`, `python -m mypy` (bare — naming a path overrides the `[tool.mypy] files` key and drops the sibling packages from strict checking), then `python -m pytest`, then `python -m apothem.conformity.gate --all .`.
 
 ## Related
 

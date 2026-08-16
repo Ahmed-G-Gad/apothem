@@ -1,6 +1,6 @@
 {
   "name": "apothem",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Host-agnostic AI-harness configuration catalog: review and audit slash-commands, research and quality agents, reusable skills, mechanical conformity hooks, and behavioral rules referenced on-demand \u2014 bundled with the self-contained apothem engine.",
   "author": {
     "name": "Ahmed G. Gad",

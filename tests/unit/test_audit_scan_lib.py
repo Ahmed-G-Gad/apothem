@@ -30,6 +30,12 @@ from apothem.audit._scan_lib import (
 
 
 class TestLoadInventory:
+    """Loading the inventory the scan walks.
+
+    Covers the records and content digest being returned, and a payload missing
+    the files key yielding empty records rather than raising.
+    """
+
     def test_returns_records_and_content_sha(self, tmp_path: Path) -> None:
         inv = tmp_path / "inventory.json"
         payload = {"files": [{"path": "a.md", "class": "docs"}]}
@@ -51,6 +57,12 @@ class TestLoadInventory:
 
 
 class TestNarrativeSurfaceFilter:
+    """Selecting which records count as narrative surfaces.
+
+    Covers inclusion of every narrative class against the exclusions: state
+    artifacts, unknown classes, and a record carrying no class at all.
+    """
+
     def test_includes_every_narrative_class(self) -> None:
         for cls in NARRATIVE_CLASSES:
             assert narrative_surface_filter({"class": cls}) is True
@@ -64,6 +76,13 @@ class TestNarrativeSurfaceFilter:
 
 
 class TestReadTextSafely:
+    """Defensive text read of a scanned file.
+
+    Covers the normal UTF-8 read, the two empty results (missing file, oversize
+    file), and invalid UTF-8 falling back to replacement characters so one
+    undecodable file cannot abort the sweep.
+    """
+
     def test_reads_utf8_content(self, tmp_path: Path) -> None:
         f = tmp_path / "a.txt"
         f.write_text("hello", encoding="utf-8")
@@ -91,6 +110,11 @@ class TestReadTextSafely:
 
 
 class TestWalkNarrativeSurfaces:
+    """Walking the narrative surfaces.
+
+    Covers that only narrative files carrying content are visited.
+    """
+
     def test_walks_only_narrative_files_that_have_content(self, tmp_path: Path) -> None:
         (tmp_path / "doc.md").write_text("body", encoding="utf-8")
         (tmp_path / "state.md").write_text("body", encoding="utf-8")
@@ -122,6 +146,12 @@ class TestWalkNarrativeSurfaces:
 
 
 class TestEmitJson:
+    """Writing the scan envelope.
+
+    Covers the canonical envelope shape and the creation of missing parent
+    directories.
+    """
+
     def test_writes_canonical_envelope_and_creates_parents(
         self, tmp_path: Path
     ) -> None:
@@ -140,12 +170,20 @@ class TestEmitJson:
 
 
 class TestHit:
+    """The per-hit record.
+
+    Covers that the extra field defaults to an empty mapping, so a consumer can
+    index it without a presence check.
+    """
+
     def test_extra_defaults_to_empty_dict(self) -> None:
         h = Hit(file="f", line=1, signal="s", severity="LOW", remediation="r")
         assert h.extra == {}
 
 
 class TestContentRoot:
+    """Resolving the content root the scan is anchored to."""
+
     def test_resolves_to_the_apothem_content_root(self) -> None:
         # CONTENT_ROOT is the default --root for inventory-record-resolving
         # scanners: the src/apothem package directory the inventory is built

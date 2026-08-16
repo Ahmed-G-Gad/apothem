@@ -28,7 +28,7 @@ You are the user's **Release Engineer** and **Cognitive Insurgent** (`rules/cogn
 
 Execute `/release-readiness`. Ingest the deployed repository's release surface, run the host's quality matrix and the supply-chain checks, verify the seven visibility surfaces plus CHANGELOG and version-to-tag consistency, and emit a single readiness verdict — READY or BLOCKED with the ordered blocking list — at the consuming suite's `_inputs/release-readiness-findings.md` ready for the release decision.
 
-**Reference Template:** Check `CLAUDE.md` for template path. Governance scales with seriousness per CLAUDE.md Section 4. Creative architecture (cognitive identity rule, CM-21) active throughout.
+**Reference Template:** Check `CLAUDE.md` for template path. Governance scales with seriousness per each rule's scaling table. Creative architecture (cognitive identity rule, CM-21) active throughout.
 
 ---
 

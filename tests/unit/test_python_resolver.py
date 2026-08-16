@@ -36,6 +36,13 @@ class _FakeCompleted:
 
 
 class TestIsWindowsappsStub:
+    """Recognising the Windows Store interpreter stub.
+
+    Covers the path segment marking a stub regardless of size, the sub-floor
+    byte size counting as a stub only on Windows, and a real large interpreter
+    not being one — the stub is an execution alias that would fail on launch.
+    """
+
     def test_windowsapps_path_segment_is_stub_regardless_of_size(
         self, tmp_path: Path
     ) -> None:
@@ -78,6 +85,12 @@ class TestIsWindowsappsStub:
 
 
 class TestProbeVersion:
+    """Probing a candidate interpreter for its version.
+
+    Covers the parse of a major/minor pair against every none-returning case: a
+    non-zero exit, output too short to parse, and unparseable output.
+    """
+
     def test_parses_major_minor(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(
             pr.subprocess, "run", lambda *a, **k: _FakeCompleted(0, "3 12")
@@ -122,6 +135,8 @@ class TestProbeVersion:
 
 
 class TestSatisfiesFloor:
+    """The minimum-version predicate."""
+
     @pytest.mark.parametrize(
         ("major", "minor", "expected"),
         [
@@ -137,6 +152,13 @@ class TestSatisfiesFloor:
 
 
 class TestPathCandidates:
+    """Enumerating interpreter candidates from the search path.
+
+    Covers matches returned in path order, and the security-relevant distinction
+    between an empty path entry — skipped rather than resolved to the working
+    directory — and an explicit dot entry, which does search it.
+    """
+
     @staticmethod
     def _make_executable(directory: Path, name: str) -> Path:
         directory.mkdir(parents=True, exist_ok=True)
@@ -203,6 +225,13 @@ class TestPathCandidates:
 
 
 class TestResolveFromPath:
+    """Selecting an interpreter from the path candidates.
+
+    Covers the first floor-satisfying candidate winning, the skip chain past a
+    stub and an unprobeable binary to reach a real one, the skip of a
+    below-floor interpreter, and none when no candidate qualifies.
+    """
+
     def test_returns_first_floor_satisfying_resolved(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -256,6 +285,13 @@ class TestResolveFromPath:
 
 
 class TestResolvePythonBin:
+    """Resolving the interpreter to run with.
+
+    Covers preferring a real running interpreter, falling back to the search
+    path when that interpreter is a stub or empty, and raising when nothing
+    resolves — the caller is told rather than handed an unusable path.
+    """
+
     def test_prefers_real_sys_executable(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:

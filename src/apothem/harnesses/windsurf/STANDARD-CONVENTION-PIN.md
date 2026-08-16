@@ -40,7 +40,15 @@
 - Native skills are a documented vendor surface at
   `.windsurf/skills/<name>/SKILL.md` (Markdown SKILL.md with YAML frontmatter
   carrying `name` + `description`); workflows (`.windsurf/workflows/`) and a
-  `hooks.json` hook surface are also vendor-side. The adapter delivers only the
+  `hooks.json` hook surface are also vendor-side. **The skills path is stated
+  two ways in this pin** — the config-root entry above lists skills under the
+  preferred `.devin/` tree, while this entry cites only the `.windsurf/`
+  fallback. Which one the current vendor docs specify is **unverified**; the
+  rules surface has a confirmed `.devin/`-over-`.windsurf/` precedence, but
+  that precedence was not separately confirmed for skills. Nothing in the
+  adapter turns on it (see the rules-only posture below), so the discrepancy
+  is carried as a tracked claim pending re-verification rather than resolved
+  by assuming skills follow the rules precedence. The adapter delivers only the
   project rules file and authors none of those cohorts (deliberate rules-only
   posture). The `hooks.json` surface is **unverified against current docs** —
   it could not be confirmed in the current official `docs.devin.ai` documentation

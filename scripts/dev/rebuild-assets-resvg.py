@@ -32,10 +32,20 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 ASSETS = REPO_ROOT / "assets"
 SRC = ASSETS / "src"
 SITE_PUBLIC = REPO_ROOT / "site" / "public"
-SITE_SRC_ASSETS = REPO_ROOT / "site" / "src" / "assets"
 
 
 def find_resvg(operator_override: str | None) -> Path:
+    """Resolve the ``resvg`` binary, preferring the operator's explicit choice.
+
+    Pre-conditions: ``operator_override`` is the ``--resvg`` value, or ``None``
+    to auto-detect.
+
+    Post-conditions: an explicit override that does not resolve to a file
+    raises ``SystemExit`` rather than silently falling back — an operator who
+    named a binary meant that one. Auto-detection searches ``PATH`` first, then
+    the conventional per-user install locations, covering both the POSIX and
+    the Windows executable names.
+    """
     if operator_override:
         path = Path(operator_override)
         if not path.is_file():
@@ -142,14 +152,15 @@ def mirror_site_public() -> None:
         shutil.copy2(ASSETS / name, SITE_PUBLIC / name)
 
 
-def mirror_site_source_assets() -> None:
-    """Mirror the optimized logo sources used by the Fumadocs site hero images."""
-    SITE_SRC_ASSETS.mkdir(parents=True, exist_ok=True)
-    for name in ("logo.svg", "logo-dark.svg"):
-        shutil.copy2(ASSETS / name, SITE_SRC_ASSETS / name)
-
-
 def main() -> int:
+    """Re-render the raster asset set from the SVG masters; return the exit.
+
+    Post-conditions: ``--check-only`` verifies the toolchain is resolvable and
+    returns without writing any file, so CI can assert the renderer is
+    available without regenerating committed assets. Otherwise every raster is
+    re-rendered from its SVG master, keeping the binary assets derivable rather
+    than hand-maintained. Returns ``0`` on success.
+    """
     parser = argparse.ArgumentParser(
         description="Regenerate Apothem raster set from SVG masters via resvg."
     )
@@ -189,8 +200,10 @@ def main() -> int:
         )
     print("[OK] apple-touch-icon set (120/144/152/180)")
 
-    # 4) Logo raster set (light). 192 + 512 are the PWA-manifest maskable
-    # installability icons referenced from site/public/manifest.json.
+    # 4) Logo raster set (light). 192 + 512 are the manifest's `purpose: "any"`
+    # installability icons in site/public/manifest.json. The maskable pair is a
+    # different pair of files, rendered from the full-bleed tile master at 5b —
+    # an "any" icon has no safe zone and is cropped by a maskable mask.
     for size in (16, 32, 64, 128, 192, 256, 512, 1024):
         render_png(resvg, SRC / "logo.svg", ASSETS / f"logo-{size}.png", size)
     print("[OK] logo raster set (light; 16..1024)")
@@ -230,10 +243,12 @@ def main() -> int:
         )
         print("[OK] twitter-card.png (1200x628)")
 
-    # 9) Site asset mirrors
+    # 9) Site asset mirror. Only site/public/ — a src/assets mirror used to be
+    # written here for "Fumadocs hero images", but nothing under site/ ever
+    # imported it and site/src/ is not in the tree, so it created a directory
+    # and two files no build step read.
     mirror_site_public()
-    mirror_site_source_assets()
-    print("[OK] site asset mirrors")
+    print("[OK] site asset mirror")
 
     print("\nRebuild complete. Run 'git diff --stat assets/' to review.")
     return 0

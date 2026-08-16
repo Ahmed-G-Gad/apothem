@@ -46,7 +46,7 @@ Six operating invariants govern the loop:
 5. **Agnostic orchestration.** Describe orchestration generically — "deploy independent critique agents", "open-loop until convergence", "fan out per nuance class". Name no model tier; preset no effort. Capability tier and effort resolve only from the operator's in-conversation choice per `rules/agnostic-posture.md`; the multi-agent capability is opt-in and default-off per `rules/multi-agent-workflow.md`.
 6. **Behavior preservation under a captured baseline.** Before the first mutation, capture the target's regression baseline — the host's build, test, lint, type-check, and coverage state discovered per `rules/host-discovery.md` — as the reference every remediation is verified against. Run the derived build / test once to confirm it executes before relying on it as the baseline, and state each derived-command assumption inline rather than blocking on inquiry when the host is merely quiet (not silent). Observable behavior is preserved by default (green-before / green-after per `rules/refactoring-discipline.md`); a deliberate behavior change is marked explicitly, justified, and proven by a new test, never dropped by accident. The culmination verifies zero regression against the baseline, coverage at or above it, and a clean reproducible build from a fresh checkout.
 
-**Reference Template:** Check `CLAUDE.md` for template path. Governance scales with seriousness per CLAUDE.md Section 4. Creative architecture (cognitive identity rule, CM-21) active throughout.
+**Reference Template:** Check `CLAUDE.md` for template path. Governance scales with seriousness per each rule's scaling table. Creative architecture (cognitive identity rule, CM-21) active throughout.
 
 ---
 

@@ -145,7 +145,7 @@ export default async function LocaleHome(props: {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <LandingNav />
+      <LandingNav localePrefix={`/${lang}`} />
       <main
         id="main-content"
         dir={locale.dir}
@@ -196,7 +196,7 @@ export default async function LocaleHome(props: {
 
         </div>
       </main>
-      <LandingFooter version={pkg.version} />
+      <LandingFooter version={pkg.version} localePrefix={`/${lang}`} />
     </div>
   );
 }

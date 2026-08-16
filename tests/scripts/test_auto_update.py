@@ -41,6 +41,12 @@ def make_git(table: dict[tuple[str, ...], GitResult]) -> Callable[..., GitResult
 
 
 class TestReleaseTagRecognition:
+    """Recognising a release tag.
+
+    Covers acceptance of a pure SemVer ``v`` tag and rejection of prereleases
+    and non-tags, so an update never targets an unreleased ref.
+    """
+
     def test_is_release_tag_accepts_pure_semver_v_tag(self) -> None:
         assert auto_update._is_release_tag("v1.2.3") is True
 
@@ -52,6 +58,12 @@ class TestReleaseTagRecognition:
 
 
 class TestLatestReleaseTag:
+    """Selecting the newest release tag.
+
+    Covers ordering by numeric components rather than lexically, exclusion of
+    prereleases, and the empty result when no tags exist.
+    """
+
     def test_returns_highest_by_numeric_components(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -92,6 +104,12 @@ class TestLatestReleaseTag:
 
 
 class TestResolveRef:
+    """Resolving which ref to update to.
+
+    Covers the precedence chain: an explicit ref wins, otherwise the latest tag,
+    otherwise the main branch.
+    """
+
     def test_explicit_ref_wins(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -129,6 +147,12 @@ def _state_table(
 
 
 class TestCheckState:
+    """Determining the checkout's state against the target.
+
+    Covers the no-checkout case, a fetch failure reported as a missing remote,
+    and the three comparisons: up to date, behind, and ahead.
+    """
+
     def test_no_checkout_when_no_git_dir(self, tmp_path: Path) -> None:
         # tmp_path has no .git -> no-checkout, no git calls needed.
         state, *_ = auto_update._check_state(tmp_path)
@@ -197,6 +221,13 @@ class TestCheckState:
 
 
 class TestVerifyRef:
+    """Signature verification of the target ref.
+
+    Covers a release tag with a good signature verifying, one with a bad
+    signature failing, and a non-release ref being unverifiable — a distinct
+    state from failing verification.
+    """
+
     def test_release_tag_with_good_signature_verifies(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -226,6 +257,15 @@ class TestVerifyRef:
 
 
 class TestApply:
+    """Applying the update to the working tree.
+
+    Covers the two refusals that protect the operator — a dirty tree, and an
+    unverified ref when that is not allowed — the explicit opt-in downgrading
+    the refusal to a warning, the verified tag fast-forwarding, and a
+    fast-forward failure propagating its return code rather than being
+    swallowed.
+    """
+
     def test_dirty_tree_refuses_without_merging(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -314,6 +354,13 @@ class TestApply:
 
 
 class TestMain:
+    """Process-level entry point behaviour.
+
+    Covers the read-only default not applying even when behind, the apply flag
+    invoking the update, check-only reporting informationally with a zero exit,
+    the up-to-date zero, and the no-checkout failure.
+    """
+
     def test_read_only_by_default_does_not_apply_when_behind(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:

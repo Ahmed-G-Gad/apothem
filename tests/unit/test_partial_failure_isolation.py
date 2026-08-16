@@ -21,6 +21,12 @@ from apothem import cli
 
 
 class _GoodAdapter:
+    """Adapter double whose lifecycle calls all succeed.
+
+    Paired with a failing double so the sweep can be observed isolating one
+    adapter's failure without disturbing its neighbours.
+    """
+
     name = "alpha"
 
     @property
@@ -39,6 +45,13 @@ class _GoodAdapter:
 
 def _make_faulty(fault: str) -> object:
     class _FaultyAdapter:
+        """Adapter double that raises from the one lifecycle call named by *fault*.
+
+        Parameterising the failure point keeps a single double covering every
+        lifecycle method, so the sweep's isolation is exercised per entry point
+        rather than only where a hand-written double happened to break.
+        """
+
         name = "omega"
 
         @property

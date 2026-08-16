@@ -44,6 +44,10 @@ def _json_version(path: Path, *keys: str) -> str:
 _JSON_MANIFESTS: list[tuple[str, tuple[str, ...]]] = [
     (".claude-plugin/plugin.json", ()),
     (".claude-plugin/marketplace.json", ()),
+    # The marketplace manifest carries the number twice: once at the top level
+    # and again under `metadata`. Only the first was gated, so the second could
+    # drift to a version no longer shipping with nothing to catch it.
+    (".claude-plugin/marketplace.json", ("metadata",)),
     ("gemini-extension.json", ()),
     ("qwen-extension.json", ()),
     ("plugins/apothem/.codex-plugin/plugin.json", ()),
@@ -69,18 +73,27 @@ def test_json_manifest_version_matches_engine(
 
 
 def test_marketplace_nested_plugin_version_matches_engine() -> None:
-    """The marketplace manifest also pins the version inside its plugins list."""
+    """A plugins entry that pins a version must pin the engine's.
+
+    Entries are not obliged to carry one, and today none does — the shipping
+    numbers are the manifest's top-level ``version`` and its
+    ``metadata.version``, both gated by the table above. This guards the case
+    where an entry gains one later, which would otherwise be a third copy of
+    the number with nothing holding it to the others.
+
+    The skip is deliberate: filtering first means the report says "not
+    exercised" rather than passing while asserting nothing.
+    """
     path = _REPO_ROOT / ".claude-plugin" / "marketplace.json"
     data = json.loads(path.read_text(encoding="utf-8"))
-    plugins = data.get("plugins")
-    if not plugins:
-        pytest.skip("marketplace manifest carries no nested plugin version")
-    for entry in plugins:
-        if "version" in entry:
-            assert entry["version"] == __version__, (
-                f"marketplace nested plugin version drifted from "
-                f"apothem.__version__ ({__version__})"
-            )
+    versioned = [entry for entry in data.get("plugins", []) if "version" in entry]
+    if not versioned:
+        pytest.skip("no marketplace plugins entry pins a version")
+    for entry in versioned:
+        assert entry["version"] == __version__, (
+            f"marketplace nested plugin version drifted from "
+            f"apothem.__version__ ({__version__})"
+        )
 
 
 def test_citation_versions_match_engine() -> None:

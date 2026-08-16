@@ -1,1 +1,0 @@
-Every new applicable file you create MUST begin with the canonical authorship-header banner per site/content/docs/reference/authorship-header.mdx. Use scripts/inject-header.* if available; otherwise emit the banner verbatim from the variant table at §4.6.2.

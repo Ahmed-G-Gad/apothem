@@ -46,3 +46,7 @@ flowchart TD
 | [Tata letak sumber](/docs/architecture/source-layout) | Mengapa Apothem memakai tata letak `src/` dan bagaimana pohon diatur. |
 | [Alur pemasangan](/docs/architecture/installation-workflow) | Bagaimana `apothem install`, `update`, dan `uninstall` bekerja dari ujung ke ujung. |
 | [Pekerja terdelegasi](/docs/architecture/agents) | Instruksi bercakupan repositori untuk runtime multi-pekerja yang beroperasi di repositori ini. |
+| [Runtime mandiri](/docs/architecture/self-contained-runtime) | Bagaimana mesin Apothem berjalan dari checkout mana pun — dependensi yang diinternalkan, model invokasi PYTHONPATH=src, dan bootstrap pohon plugin. |
+| [Strategi internalisasi dependensi](/docs/architecture/vendoring-strategy) | Paket pihak ketiga mana yang diinternalkan Apothem di bawah src/apothem/_vendor/, mana yang tetap menjadi prasyarat sistem, dan bagaimana salinan yang diinternalkan disegarkan. |
+| [Kontrak pemaketan cohort](/docs/architecture/cohort-packaging-contract) | Kontrak yang stabil dan dapat dikonsumsi hilir untuk pemaketan cohort dan manifes plugin — menyebutkan cohort dan menyelesaikan target asli per-harness-nya tanpa menurunkan ulang pemetaan. |
+| [Diagram pipeline CI/CD](/docs/architecture/cicd-pipeline) | Peta visual dan rincian per jalur dari tahap alur kerja build, uji, lint, keamanan, dan publikasi yang mengawal setiap perubahan kode dan rilis. |

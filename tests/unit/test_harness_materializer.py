@@ -105,6 +105,14 @@ class TestManagedBlockMerge:
 
 
 class TestExtractMarkdownFields:
+    """Projecting the profile into Markdown fields.
+
+    Covers the empty profile yielding canonical defaults, a populated profile
+    round-tripping, and the per-key fallbacks when identity or preferences are
+    absent — a missing field falls back individually rather than discarding the
+    whole block.
+    """
+
     def test_empty_profile_yields_canonical_defaults(self):
         f = extract_markdown_fields({})
         assert isinstance(f, MarkdownProfileFields)
@@ -162,6 +170,13 @@ class TestExtractMarkdownFields:
 
 
 class TestBuildYamlManagedConfig:
+    """Rendering the managed YAML configuration.
+
+    Covers the header prefixing the body and the managed sentinel that marks
+    Apothem's block for surgical removal, plus the same default and round-trip
+    behaviour as the Markdown projection.
+    """
+
     def test_header_prefixes_yaml_body(self):
         header = "# foo configuration — managed by Apothem\n"
         out = build_yaml_managed_config({}, header)

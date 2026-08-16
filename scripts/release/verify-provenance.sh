@@ -24,11 +24,18 @@ if [[ ! -d "${ASSETS_DIR}" ]]; then
 fi
 cd "${ASSETS_DIR}"
 
+# Count the layers that actually ran. Every layer here is conditional on a tool
+# or a file being present, so a host missing all three would otherwise reach the
+# final line and report a verified chain having verified nothing — the one
+# outcome a supply-chain check must never produce.
+layers_run=0
+
 # Layer 1: sha256 re-compute. Select the hasher up front — `sha256sum` is absent
 # on macOS (a release target), where `shasum -a 256` is the coreutils-free
 # equivalent; mirrors the producer's fallback in build-release-assets.sh.
 if [[ -f SHA256SUMS ]]; then
     printf 'verify-provenance: layer 1 — sha256 manifest\n' >&2
+    layers_run=$((layers_run + 1))
     if command -v sha256sum >/dev/null 2>&1; then
         sha256sum -c SHA256SUMS || { printf 'verify-provenance: sha256 manifest mismatch\n' >&2; exit 1; }
     elif command -v shasum >/dev/null 2>&1; then
@@ -42,6 +49,7 @@ fi
 # Layer 2: cosign verify-blob on every signed asset.
 if command -v cosign >/dev/null 2>&1; then
     printf 'verify-provenance: layer 2 — cosign verify-blob\n' >&2
+    layers_run=$((layers_run + 1))
     while IFS= read -r sig; do
         asset="${sig%.sig}"
         cert="${asset}.crt"
@@ -61,6 +69,7 @@ fi
 # Layer 3: SLSA-3 build provenance.
 if command -v slsa-verifier >/dev/null 2>&1; then
     printf 'verify-provenance: layer 3 — slsa-verifier\n' >&2
+    layers_run=$((layers_run + 1))
     for artifact in apothem-*.tar.gz apothem-*.whl; do
         [[ -f "${artifact}" ]] || continue
         provenance="${artifact}.intoto.jsonl"
@@ -75,4 +84,9 @@ else
     printf 'verify-provenance: slsa-verifier absent; skipping layer 3\n' >&2
 fi
 
-printf 'verify-provenance: chain OK\n' >&2
+if (( layers_run == 0 )); then
+    printf 'verify-provenance: no verification performed — no SHA256SUMS manifest, no cosign, no slsa-verifier\n' >&2
+    exit 1
+fi
+
+printf 'verify-provenance: chain OK (%d of 3 layers verified)\n' "${layers_run}" >&2

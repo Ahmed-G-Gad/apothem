@@ -26,6 +26,12 @@ import apothem.audit.classify_artifacts as ca
 
 
 class TestLoadScanFindings:
+    """Loading the scan findings to classify.
+
+    Covers resolution from a non-default audit directory and the missing
+    directory yielding an empty mapping rather than raising.
+    """
+
     def test_resolves_drift_json_from_non_default_audit_dir(
         self, tmp_path: Path
     ) -> None:
@@ -61,6 +67,13 @@ class TestLoadScanFindings:
 
 
 class TestIsGenuineSecret:
+    """Distinguishing a genuine secret from a benign hit.
+
+    Covers the secret candidate being genuine, a non-secret hit and an empty hit
+    set not being, and the removal of the former fixture-path exemption — those
+    paths are no longer waved through.
+    """
+
     def test_secret_candidate_hit_is_genuine(self) -> None:
         hits = [{"signal": "secret-candidate:aws-key"}]
         assert ca._is_genuine_secret(hits) is True

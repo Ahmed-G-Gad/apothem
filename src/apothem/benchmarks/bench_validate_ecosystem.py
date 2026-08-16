@@ -51,6 +51,15 @@ def _time_invocation(extra: list[str]) -> float:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Run the ecosystem-validation benchmark for one check; return the exit.
+
+    Pre-conditions: ``argv`` is the argument vector without the program name
+    (``None`` reads ``sys.argv``); it must select one ``--check`` from the
+    ecosystem validator's check set.
+
+    Post-conditions: returns ``0`` when the check completes inside its budget,
+    non-zero when it exceeds it.
+    """
     parser = argparse.ArgumentParser(prog="bench_validate_ecosystem")
     parser.add_argument(
         "--check",

@@ -198,10 +198,10 @@ def _merge_learning(legacy: LearningStore, shared: LearningStore) -> int:
         identity = _signal_identity(signal)
         if identity in seen:
             continue
-        # Append directly through the store's private appender — capture's
-        # opt-in gate governs NEW signals, not the migration of already-captured
-        # ones, so a flag-off operator does not lose previously-captured data.
-        shared._append(signal)
+        # Append ungated rather than through capture(): the opt-in gate governs
+        # NEW signals, not the migration of already-captured ones, so a
+        # flag-off operator does not lose previously-captured data.
+        shared.append_signal(signal)
         seen.add(identity)
         merged += 1
     return merged
@@ -253,16 +253,35 @@ def migrate_workspace(
 
     Args:
         base: The base directory the working directory sits beneath.
-        directory_name: The shared working-directory name (default ``.apothem``).
+        directory_name: The shared working-directory name. Only the default
+            ``.apothem`` is supported; see Raises.
 
     Returns:
         A :class:`MigrationOutcome` describing what was migrated.
 
     Raises:
-        WorkspaceMigrationError: When *base* is not an existing directory.
+        WorkspaceMigrationError: When *base* is not an existing directory, or
+            when *directory_name* is not the default. Only the migration
+            TARGET honours the name — discovery (``_legacy_data_home``,
+            ``detect_legacy_layout``) resolves the legacy tree from the module
+            constant instead. Accepting a custom name would therefore read the
+            legacy homes from ``.apothem/`` while merging them into the named
+            tree: the wrong source, in code that moves and deletes a user's
+            records. Refusing is the honest behaviour until discovery is
+            threaded through too. Nothing passes a non-default today, so this
+            raise is unreachable from the shipped CLI; it exists to stop the
+            trap closing when the profile's ``workspace.directory_name`` is
+            eventually wired to this call.
     """
     if not base.is_dir():
         raise WorkspaceMigrationError(f"base directory does not exist: {base}")
+    if directory_name != _APOTHEM_SUBTREE:
+        raise WorkspaceMigrationError(
+            f"migrate_workspace supports only the default working directory "
+            f"{_APOTHEM_SUBTREE!r}; got {directory_name!r}. Legacy-layout "
+            f"discovery is not yet parameterized, so a custom name would "
+            f"migrate from the wrong tree."
+        )
 
     outcome = MigrationOutcome(base=base)
     legacy_homes = _legacy_home_dirs(base)
@@ -303,6 +322,16 @@ def migrate_workspace(
         # union merge, so its records are preserved both in the shared store and
         # in the backup.
         shutil.rmtree(home_dir, ignore_errors=True)
+        # `ignore_errors` keeps a locked or permission-denied tree from aborting
+        # a migration whose records are already safe, but it also hides the
+        # leftover. Report it: silence would leave the operator believing the
+        # legacy home is gone while the next run rediscovers it.
+        if home_dir.exists():
+            outcome.notes.append(
+                f"legacy data home {home_dir} could not be removed — its records "
+                "are merged into the shared store and preserved in the backup; "
+                "delete the directory manually"
+            )
         outcome.migrated = True
 
     if has_legacy_plans:

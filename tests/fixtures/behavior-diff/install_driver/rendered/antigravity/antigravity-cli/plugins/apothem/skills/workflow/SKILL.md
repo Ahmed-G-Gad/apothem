@@ -2,7 +2,7 @@
 name: "workflow"
 version: "0.1.0"
 updated: "2026-06-14"
-description: "General-purpose workflow-harnessing command. Entry form '/goal <<mission>>'. Drives genuinely-independent multi-agent dynamic workflows under named return contracts, subjects every finding to an EXTREMELY-CRITIQUE refute-by-default verification pass before it survives, is granted to identify and remediate issues beyond the literal mission (each disclosed per the change ledger), self-augments from current authoritative SOTA sources rather than memory alone, and emits deterministic output with a single recommended next move. Multi-agent dispatch and auto-execution are opt-in / confirmation-gated, never default-on."
+description: "General-purpose workflow-harnessing command. Entry form '/workflow <<mission>>'. Drives genuinely-independent multi-agent dynamic workflows under named return contracts, subjects every finding to an EXTREMELY-CRITIQUE refute-by-default verification pass before it survives, is granted to identify and remediate issues beyond the literal mission (each disclosed per the change ledger), self-augments from current authoritative SOTA sources rather than memory alone, and emits deterministic output with a single recommended next move. Multi-agent dispatch and auto-execution are opt-in / confirmation-gated, never default-on."
 argument-hint: "[<<mission>>] [--autonomous] [--verify-panel N]"
 disable-model-invocation: true
 portability: "universal"
@@ -27,13 +27,13 @@ Apply the Five Cognitive Filters: Filter 1 (Obvious Purge) discards the first de
 
 Frame the mission, decompose it into independent work-items, dispatch agents under named return contracts per `rules/agent-orchestration.md`, route every load-bearing finding through an adversarial refute-by-default verification pass, remediate the mission plus any defect expertise reveals (disclosing each amendment per `rules/disclosure-ledger.md`), and emit a deterministic result with a single recommended next move. The deep procedure is the `workflow` skill (`skills/workflow/SKILL.md`); this command is its entry point.
 
-**Reference Template:** Check `CLAUDE.md` for template path. Governance scales with seriousness per CLAUDE.md Section 4. Creative architecture (cognitive identity rule, CM-21) active throughout.
+**Reference Template:** Check `CLAUDE.md` for template path. Governance scales with seriousness per each rule's scaling table. Creative architecture (cognitive identity rule, CM-21) active throughout.
 
 ---
 
 ## Pipeline Contract
 
-**Pipeline position.** Standalone general-purpose orchestration surface. It consumes a natural-language mission (the `/goal <<mission>>` entry form) plus optional flags and produces whatever the mission requires — code, artifacts, audits, remediations — at the host's domain-natural locations. It owns no fixed downstream artifact; it dispatches the specialized pipelines (`/plan-<stage>`, the audit-fortress commands, `/research`) where they fit.
+**Pipeline position.** Standalone general-purpose orchestration surface. It consumes a natural-language mission (the `/workflow <<mission>>` entry form) plus optional flags and produces whatever the mission requires — code, artifacts, audits, remediations — at the host's domain-natural locations. It owns no fixed downstream artifact; it dispatches the specialized pipelines (`/plan-<stage>`, the audit-fortress commands, `/research`) where they fit.
 
 **Consumed.** The operator's mission, the `--autonomous` opt-in, and the `--verify-panel N` budget. No upstream manifest is required.
 
@@ -81,7 +81,7 @@ The workflow is granted to identify and properly remediate any new issue / defec
 
 | Argument | Type | Required | Description |
 | -------- | ---- | -------- | ----------- |
-| `<<mission>>` | String | Yes | The mission / task / requirement in natural language (the `/goal <<mission>>` entry form). |
+| `<<mission>>` | String | Yes | The mission / task / requirement in natural language (the `/workflow <<mission>>` entry form). |
 | `--autonomous` | Flag | No | Opt into continuous multi-agent dispatch + advancement (default: planned, confirm-before-commit). Irreversible steps stay per-action gated even under this flag. |
 | `--verify-panel N` | Integer | No | Critics per finding in the adversarial-verify pass (default: 3). |
 
@@ -126,7 +126,7 @@ The workflow is granted to identify and properly remediate any new issue / defec
 %% provenance: commands/workflow.md §Workflow %%
 %% cross-reference: skills/workflow/SKILL.md, rules/agent-orchestration.md, rules/agnostic-posture.md %%
 flowchart TD
-    Start[/goal mission stated/] --> Frame{Mission scope unambiguous?}
+    Start[/workflow mission stated/] --> Frame{Mission scope unambiguous?}
     Frame -->|no| Inquiry[Frame: structured-inquiry scope set]
     Inquiry --> Frame
     Frame -->|yes| Decompose[Decompose into independent work-items + return contracts]
@@ -150,7 +150,7 @@ flowchart TD
 
 ## Recommended Next Step
 
-**State the mission as `/goal <<mission>>`**; review the dispatch plan the command presents, then opt into `--autonomous` only once the decomposition and return contracts read correctly. The planned mode is the safe default — autonomy is the explicit opt-in.
+**State the mission as `/workflow <<mission>>`**; review the dispatch plan the command presents, then opt into `--autonomous` only once the decomposition and return contracts read correctly. The planned mode is the safe default — autonomy is the explicit opt-in.
 
 ## Bindings (§0.j five-direction)
 

@@ -104,7 +104,7 @@ before materialization:
 
 ```mermaid
 %%{ init: { "theme": "neutral" } }%%
-%% verified: 2026-06-23 %%
+%% verified: 2026-08-14 %%
 %% provenance: AGENTS.md Project Purpose — the shared-profile → adapter → native-surface flow %%
 %% cross-reference: src/apothem/lib/harness_registry_data.py (authoritative adapter registry); src/apothem/conformity/ (the gate) %%
 flowchart TD

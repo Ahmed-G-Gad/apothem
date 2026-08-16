@@ -139,6 +139,17 @@ _PUNCT_RE: Final[re.Pattern[str]] = re.compile(r"[^\w\s]+")
 
 @dataclass(frozen=True)
 class Finding:
+    """One near-duplicate prose block spanning two or more documents.
+
+    Pre-conditions: ``files`` lists every path carrying the duplicated block;
+    ``similarity`` is the measured ratio that crossed the sweep's threshold;
+    ``suggested_canonical_home`` names the single file the block should live in
+    so the others can cross-reference it instead of restating it. ``issue`` and
+    ``detail`` carry the operator-facing classification and excerpt.
+    Post-conditions: ``rule`` defaults to :data:`RULE_ANCHOR`, citing the
+    non-redundancy discipline the duplication violates.
+    """
+
     issue: str
     detail: str
     files: list[str]
@@ -149,6 +160,16 @@ class Finding:
 
 @dataclass(frozen=True)
 class GrepResult:
+    """Matcher report for a single sweep of this validator.
+
+    Carries its own result shape rather than reusing the shared base because
+    the payload adds ``threshold``, ``paragraph_count``.
+
+    Pre-conditions: ``findings`` holds this module's frozen ``Finding``
+    dataclasses. Post-conditions: ``passed`` is ``True`` exactly when
+    ``findings`` is empty; :meth:`to_json` emits the serialised payload.
+    """
+
     grep: str
     root: str
     threshold: float
@@ -157,6 +178,12 @@ class GrepResult:
     findings: list[Finding] = field(default_factory=list)
 
     def to_json(self) -> str:
+        """Return this report as a two-space-indented JSON string.
+
+        Post-conditions: the payload carries ``{grep, root, threshold,
+        paragraph_count, passed, findings}``; each finding is flattened through
+        ``dataclasses.asdict``.
+        """
         payload = {
             "grep": self.grep,
             "root": self.root,
@@ -222,6 +249,15 @@ def _split_paragraphs(text: str) -> list[str]:
     current_block: list[str] = []
 
     def flush_block() -> None:
+        """Close the accumulated paragraph and keep it when it is comparable.
+
+        Post-conditions: the buffered lines are joined and appended to the
+        comparison set, then cleared. A paragraph is dropped rather than
+        appended when it is empty, when it carries the companion-anchor
+        marker, or when any enclosing heading is on the scaffolding
+        allow-list — those repeat legitimately and would otherwise register as
+        false duplication.
+        """
         if not current_block:
             return
         para = "\n".join(current_block).strip()

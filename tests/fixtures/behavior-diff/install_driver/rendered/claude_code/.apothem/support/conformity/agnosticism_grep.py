@@ -143,6 +143,12 @@ class GrepResult:
     findings: list[Finding] = field(default_factory=list)
 
     def to_json(self) -> str:
+        """Return this report as a two-space-indented JSON string.
+
+        Post-conditions: the payload carries ``{grep, root, scanned_count,
+        passed, findings}``; each finding is flattened through
+        ``dataclasses.asdict``.
+        """
         payload = {
             "grep": self.grep,
             "root": self.root,
