@@ -227,10 +227,15 @@ $RECYCLE.BIN/
 *.seed
 *.pid.lock
 *.stackdump
-# Core dumps only — the anchored forms avoid swallowing source files such
-# as `core.py` or `core.ts` anywhere in the tree.
-core
-core.[0-9]*
+# Core dumps only, anchored to the repository root. A bare `core` matches any
+# file OR directory of that name at any depth, which silently swallowed the
+# vendored JSON Schema vocabulary files
+# (`_vendor/jsonschema_specifications/schemas/draft*/vocabularies/core`). The
+# in-tree copies survived only because they were committed before this pattern
+# existed — git ignores untracked files only — so the breakage surfaced only
+# when a new tree carrying the same vendored payload was added.
+/core
+/core.[0-9]*
 
 # =============================================================================
 # Archives — listed as commented-out entries; uncomment to ignore individual
