@@ -38,8 +38,15 @@ from pathlib import Path
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 
-if str(_REPO_ROOT / "src") not in sys.path:
-    sys.path.insert(0, str(_REPO_ROOT / "src"))
+# Vendored dependencies first, then the engine — the same order bin/apothem.mjs
+# puts on PYTHONPATH. plugin_tree imports jsonschema, and the CI job that runs
+# this check does so before installing the release toolchain, so resolving the
+# import through site-packages would make the gate depend on whatever the runner
+# happens to have. The engine ships its dependencies precisely so it can run from
+# a bare checkout; use them.
+for _path in (_REPO_ROOT / "src" / "apothem" / "_vendor", _REPO_ROOT / "src"):
+    if str(_path) not in sys.path:
+        sys.path.insert(0, str(_path))
 
 from apothem.lib.plugin_tree import assemble_plugin_tree  # noqa: E402
 
