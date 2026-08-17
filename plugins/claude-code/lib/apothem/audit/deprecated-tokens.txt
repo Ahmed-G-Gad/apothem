@@ -1,0 +1,10 @@
+# Deprecated-feature catalog consumed by scan_drift_features.py.
+#
+# Format: one token per line; lines beginning with '#' are comments;
+# blank lines are ignored. Matching is case-sensitive substring.
+#
+# This catalog is intentionally seeded empty. A token belongs here only
+# after the operator has confirmed the corresponding feature has been
+# retired upstream and the ecosystem still references it. Adding a token
+# without that confirmation would fabricate findings against artifacts
+# that are correctly written.

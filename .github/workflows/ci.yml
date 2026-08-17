@@ -465,6 +465,15 @@ jobs:
         # contents, and the drift is invisible from both sides — you do not
         # notice a missing row while reading, or the README while adding a file.
         run: python scripts/dev/check_readme_file_coverage.py --strict
+      - name: Check committed plugin tree matches the generator
+        # plugins/claude-code/ is the Claude Code plugin package the marketplace
+        # ships, assembled from src/apothem/ and committed so a git-source
+        # marketplace resolves it from a clone. It is generated, so it drifts the
+        # moment a command, agent, skill, or rule changes without a regen — and
+        # the drift is silent: the marketplace still resolves, it just serves a
+        # stale catalog. Cowork caps a plugin package at 5,000 files, which is
+        # why the repository root cannot be the package and this tree exists.
+        run: python scripts/dev/assemble_plugin_tree.py --check
       - name: Install release toolchain
         run: python -m pip install --require-hashes -r scripts/release/requirements-build-linux.txt
       - name: Build sdist + wheel

@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: MIT
+#
+# Reference-token denylist loaded by reference_token_grep.
+#
+# Apothem reimplements a peer platform's feature-set in its own voice with
+# zero branding leak. This file enumerates the reference platform's slug and
+# brand variants so the mechanical sweep can prove no in-scope authored
+# surface leaks them. The matcher loads every non-empty, non-comment line as
+# a forbidden token and asserts zero hits across the authored surface set.
+#
+# This data file is OUT of the sweep's in-scope set (it lives under
+# src/apothem/schemas/, which the matcher exempts), so it safely contains the
+# tokens it forbids elsewhere.
+#
+# One token per line. '#' begins a comment line. Pure-alpha slugs are matched
+# at word boundaries; punctuation-bearing tokens are matched as escaped
+# literals. All matching is case-insensitive.
+ECC
+ecc.tools
+ecc-tools
+affaan
+agentshield
+ecc-agentshield
+ecc-universal
+ecc-install

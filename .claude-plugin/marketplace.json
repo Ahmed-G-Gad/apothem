@@ -14,7 +14,7 @@
   "plugins": [
     {
       "name": "apothem",
-      "source": "./",
+      "source": "./plugins/claude-code",
       "description": "Host-agnostic AI-harness configuration catalog: review and audit slash-commands, research and quality agents, reusable skills, mechanical conformity hooks, and behavioral rules referenced on-demand — bundled with the self-contained apothem engine that materializes native configs for 17 harnesses behind a conformity governance gate and signed releases.",
       "author": {
         "name": "Ahmed G. Gad",

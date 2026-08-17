@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: MIT
+
+# Pinned closure of every package vendored under src/apothem/_vendor/.
+#
+# Each pin is the exact upstream release the vendored tree contains, verified by
+# __version__ (attrs, jsonschema, PyYAML) or by sha256-matching the vendored
+# module against the installed upstream release (jsonschema-specifications,
+# referencing, typing_extensions). `rpds` is an apothem-authored pure-Python
+# shim, NOT the upstream distribution; its pin records the upstream rpds-py
+# release whose API subset the shim mirrors.
+#
+# Living-dependencies mandate: refresh this file AND the REUSE.toml [[annotations]]
+# for src/apothem/_vendor/ in the SAME change-set as any re-vendor. See
+# site/content/docs/architecture/vendoring-strategy.mdx.
+
+attrs==26.1.0
+jsonschema==4.26.0
+jsonschema-specifications==2025.9.1
+referencing==0.37.0
+typing_extensions==4.15.0
+PyYAML==6.0.3
+# rpds-py: upstream moved to CalVer after 0.x; 0.30.0 was the final 0.x
+# release and is the intentionally-frozen API anchor the apothem-authored
+# pure-Python rpds shim mirrors. Do not bump this pin to a CalVer tag — the
+# shim tracks the 0.30.0 API subset, not the upstream distribution.
+rpds-py==0.30.0  # upstream API anchor for the apothem-authored rpds shim

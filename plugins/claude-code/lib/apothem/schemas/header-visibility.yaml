@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: MIT
+
+# schemas/header-visibility.yaml
+#
+# Per-file-class visibility policy for the authorship-header banner
+# in Markdown files, per spec §4.6.5.
+#
+# - `invisible` (default): banner wrapped in `<!-- ... -->`, source-visible
+#   only; the rendered Markdown surface stays clean.
+# - `visible`: banner appears at the top of the rendered output as a
+#   plain text or fenced-code block; appropriate for stand-alone
+#   reference documents that benefit from immediately readable provenance.
+# - `special-rendered`: format-bound files (e.g., CHANGELOG.md per
+#   release-notes format) where the banner sits as a single
+#   HTML-comment block above the format header rather than being
+#   interleaved into the format body.
+#
+# An override at file scope is permitted with an inline marker
+# `<!-- header-visibility: visible -->` immediately after the banner;
+# the inline marker takes precedence over the per-class default.
+#
+# Authored at the fixture-and-injector sub-phase per the locked
+# banner-ratification policy; consumed by the injector
+# (`scripts/inject-header.{sh,py}`) when rendering Markdown variants.
+
+default-visibility: invisible
+
+class-overrides:
+  - class: spec-document
+    visibility: visible
+    pattern: "**/spec*.md"
+
+  - class: changelog
+    visibility: special-rendered
+    pattern: "**/CHANGELOG.md"
+
+  - class: license-readable
+    visibility: visible
+    pattern: "**/LICENSE.md"

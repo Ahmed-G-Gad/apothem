@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://apothem.ahmedgad.com/schemas/command.schema.json",
+  "title": "Command",
+  "description": "Frontmatter schema for slash-command definitions under src/apothem/commands/. Reconciled to the live command corpus: every shipped command carries name, version, updated, description, argument-hint, disable-model-invocation, portability, and allowed-tools.",
+  "type": "object",
+  "required": [
+    "allowed-tools",
+    "argument-hint",
+    "description",
+    "disable-model-invocation",
+    "name",
+    "portability",
+    "updated",
+    "version"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Human-readable kebab-case name matching the slash-command surface (the filename without .md), declared without a leading slash.",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "description": {
+      "type": "string",
+      "description": "Capability-led statement of the command's purpose and invocation triggers."
+    },
+    "version": {
+      "type": "string",
+      "description": "SemVer version of the command definition.",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "updated": {
+      "type": "string",
+      "description": "ISO 8601 date of the command's last revision.",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "argument-hint": {
+      "type": "string",
+      "description": "Usage hint shown to the operator describing the command's accepted arguments and flags."
+    },
+    "disable-model-invocation": {
+      "type": "boolean",
+      "description": "When true, the command is reached only by explicit /<name> invocation, never auto-selected by the model from its description."
+    },
+    "portability": {
+      "type": "string",
+      "description": "Portability classification across harness adapters (e.g. universal, claude-code-only)."
+    },
+    "allowed-tools": {
+      "type": "string",
+      "description": "Comma-separated list of tools the command may invoke, or \"*\" for the full surface."
+    }
+  },
+  "examples": [
+    {
+      "name": "eval",
+      "description": "Model-agnostic language-model evaluation campaign. Defines a dataset and scorer, runs a candidate model over it, scores every output, and emits a regression-aware report.",
+      "version": "0.1.0",
+      "updated": "2026-06-16",
+      "argument-hint": "[--dataset PATH] [--scorer NAME]",
+      "disable-model-invocation": true,
+      "portability": "universal",
+      "allowed-tools": "*"
+    }
+  ]
+}

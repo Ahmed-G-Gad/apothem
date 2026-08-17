@@ -1,0 +1,920 @@
+# SPDX-License-Identifier: MIT
+
+# Apothem propagation manifest — per-harness include/exclude rules.
+#
+# This file declares, per harness, exactly which artifacts from the
+# apothem source tree propagate to the harness's native config root
+# at `apothem install --harness <name>` invocation time. The manifest
+# is the single source of truth for what propagates; per-harness
+# adapters at `src/apothem/harnesses/<name>/install.py` are expected
+# to consume the manifest at install time.
+#
+# Schema:
+#   harnesses:
+#     <harness-name>:
+#       install:       Ordered list of (source, target) pairs the adapter
+#                      materializes at the harness root. Each pair carries
+#                      an optional `mode` field (`write_text` for a single
+#                      template, `sentinel_merge` for an operator-owned
+#                      Markdown instruction anchor whose Apothem content is
+#                      folded into a sentinel-delimited managed block,
+#                      `replace_tree` for an exact Apothem-owned directory,
+#                      `merge_tree_entries` for discovery dirs that may also
+#                      contain operator files, or a harness-specific
+#                      conversion mode such as `codex_agents`) and an
+#                      `ownership_class` field that selects the preserve-first
+#                      write strategy independent of `mode`
+#                      (`apothem-owned` | `operator-owned` | `vendor-reserved`
+#                      | `generated` | `immutable`). Operator-owned targets
+#                      get backup + full diff + the destructive-authorization
+#                      gate; vendor-reserved / immutable targets are refused.
+#                      Source paths are relative to the apothem source
+#                      package root (`src/apothem/`). Target paths use
+#                      `${HARNESS_ROOT}` as the placeholder for the
+#                      harness's native config root resolved at install
+#                      time.
+#       exclude:       Glob patterns excluded from every directory copy.
+#                      Matched against entry basenames within each
+#                      directory the adapter walks.
+#       stale-sweep:   Harness-root-relative paths swept on every install.
+#                      Unmanaged flat-copy layouts or out-of-contract
+#                      support paths found at these locations are removed
+#                      so the manifest-declared surface is the only
+#                      resident artifact set.
+#       per-directory-filters:
+#                      Per-directory filename exclusions. When the
+#                      adapter copies one of the listed directories, the
+#                      named filenames are excluded from the copy. Useful
+#                      for stripping renderer internals from a directory
+#                      whose other contents are convention-surface.
+#
+# Status: ACTIVE CONTRACT. The `claude_code` adapter consumes this
+# manifest directly through `apothem.lib.propagation.load_manifest` —
+# the manifest IS the install contract, not a specification awaiting
+# implementation. The adapter's install / plan logic iterates the
+# `claude_code` install list, exclude globs, stale-sweep entries, and
+# per-directory filters resolved from this file.
+
+version: 1
+
+harnesses:
+
+  claude_code:
+    # Claude Code native user-scope surfaces. Directories that operators may
+    # also author in are merged child-by-child; settings.json is JSON-merged.
+    install:
+      - source: "harnesses/claude_code/templates/settings.json"
+        target: "${HARNESS_ROOT}/settings.json"
+        mode: write_text
+        ownership_class: operator-owned
+      - source: "agents/"
+        target: "${HARNESS_ROOT}/agents/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "commands/"
+        target: "${HARNESS_ROOT}/skills/"
+        mode: command_skills
+        ownership_class: apothem-owned
+      - source: "rules/"
+        target: "${HARNESS_ROOT}/rules/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "skills/"
+        target: "${HARNESS_ROOT}/skills/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      # The Apothem-owned support subtree (templates, hooks, the conformity
+      # gate, and its schema fixtures) lives under the shared `.apothem/`
+      # working-directory root as its `support/` child, so a harness config
+      # root carries ONE Apothem-owned top-level directory (`.apothem/`) rather
+      # than a `.apothem/` data home beside a separate `apothem/` machinery dir.
+      # hooks/, conformity/, and schemas/ stay mutual siblings under support/ so
+      # the settings.json PreToolUse gate entries resolve to an on-disk script
+      # with its sibling `schemas/` data, and the matchers resolve fixtures
+      # relative to their own file — shape-invariant between the source checkout
+      # and this installed layout.
+      - source: "templates/"
+        target: "${HARNESS_ROOT}/.apothem/support/templates/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "hooks/"
+        target: "${HARNESS_ROOT}/.apothem/support/hooks/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "conformity/"
+        target: "${HARNESS_ROOT}/.apothem/support/conformity/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "schemas/"
+        target: "${HARNESS_ROOT}/.apothem/support/schemas/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "statuslines/"
+        target: "${HARNESS_ROOT}/statuslines/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      # output-styles is a Claude Code-native surface — the operator selects a
+      # style via `/output-style`, and only claude_code exposes the
+      # output-styles/ discovery directory. The cohort therefore propagates
+      # ONLY to claude_code by design; the other harnesses carry no equivalent
+      # output-style primitive, so routing it into their support subtrees would
+      # ship inert content. Capability backing: output_style_support = yes for
+      # claude_code, no/discovery-pending elsewhere per agent-capability-discipline.
+      - source: "output-styles/"
+        target: "${HARNESS_ROOT}/output-styles/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+
+    # Per-directory entry exclusions for every tree operation.
+    # README.md and AGENTS.md are excluded because the convention
+    # directories (agents/, rules/, skills/, statuslines/,
+    # output-styles/) are harness DISCOVERY directories once
+    # materialized at the harness root — every entry is interpreted as
+    # an agent / command / rule / skill / output-style (a stray
+    # rules/AGENTS.md would even load as an always-on rule). Directory
+    # READMEs and agent-companion docs are navigational source
+    # documentation; they stay in the source tree and never propagate
+    # into a discovery directory.
+    exclude:
+      - "__pycache__"
+      - ".mypy_cache"
+      - ".pytest_cache"
+      - "*.pyc"
+      - "README.md"
+      - "AGENTS.md"
+
+    # Stale subdirectories swept on every install. Unmanaged flat-copy
+    # layouts at these locations are removed so the convention-surface
+    # install is the only resident artifact set.
+    stale-sweep:
+      - "src"
+      - "conformity"
+      - "schemas"
+      - "hooks"
+      - "config"
+      - "scripts"
+      - "tools"
+      - "lib"
+      - "templates"
+      - "docs"
+      - "tests"
+      - "packaging"
+      - "mcp"
+      - "examples"
+      - "assets"
+      - "site"
+      - "public"
+      - "commands"
+      - "statuslines/__init__.py"
+      - "rules/AGENTS.md"
+      - "skills/AGENTS.md"
+      - "agents/AGENTS.md"
+      - "statuslines/AGENTS.md"
+      - "output-styles/AGENTS.md"
+
+    # Per-directory filename exclusions. The package __init__ is import
+    # machinery with no on-disk role at the harness root; the renderer
+    # (`render.py`, standalone stdlib script) and its statusline config
+    # snippet (`conformity.json`, whose command points at the installed
+    # renderer via the `${HARNESS_ROOT}` token) propagate alongside the
+    # operator-readable Markdown (`statusline.md`).
+    per-directory-filters:
+      # projectify and workflow each ship BOTH as a command (commands/) and as a
+      # standalone skill (skills/<name>/SKILL.md). On this harness the
+      # command_skills entry renders commands/ into the SAME skills/ directory the
+      # skills/ tree merge writes into, so both entries would author
+      # skills/<name>/SKILL.md — a source collision whose two differing bodies
+      # never converge (each install rewrites what the other wrote). The command
+      # is the authoritative entry point (cataloged under "Operator workflow" in
+      # commands/README.md), so the command-as-skill wins: exclude the standalone
+      # skill subdirs from the skills/ tree copy here, leaving command_skills the
+      # sole writer of each target and the install idempotent. The standalone
+      # skills still ship intact to the harnesses whose command and skill surfaces
+      # are distinct directories (gemini_cli, opencode, qwen_code), where the two
+      # artifacts land on separate paths and no collision occurs.
+      skills:
+        - "projectify"
+        - "workflow"
+      statuslines:
+        - "__init__.py"
+
+  codex:
+    # Codex native surfaces: ~/.codex/AGENTS.md, ~/.codex/hooks.json,
+    # ~/.codex/hooks/, ~/.codex/agents/*.toml, ~/.codex/config.toml
+    # (operator-owned, not emitted here), and the shared Codex skills root
+    # at ~/.agents/skills/. Codex's ~/.codex/rules/ directory is reserved
+    # for .rules execution policies, so Apothem Markdown rules remain under
+    # ~/.config/apothem/ and are referenced from AGENTS.md / generated skills.
+    install:
+      - source: "harnesses/codex/templates/AGENTS.md"
+        target: "${HARNESS_ROOT}/AGENTS.md"
+        mode: sentinel_merge
+        ownership_class: operator-owned
+      - source: "harnesses/codex/templates/hooks.json"
+        target: "${HARNESS_ROOT}/hooks.json"
+        mode: write_text
+        ownership_class: operator-owned
+      - source: "hooks/"
+        target: "${HARNESS_ROOT}/hooks/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "rules/"
+        target: "${HARNESS_ROOT}/../.config/apothem/rules/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "skills/"
+        target: "${HARNESS_ROOT}/../.agents/skills/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "commands/"
+        target: "${HARNESS_ROOT}/../.agents/skills/"
+        mode: command_skills
+        ownership_class: apothem-owned
+      - source: "agents/"
+        target: "${HARNESS_ROOT}/agents/"
+        mode: codex_agents
+        ownership_class: apothem-owned
+      - source: "templates/"
+        target: "${HARNESS_ROOT}/../.config/apothem/templates/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+
+    exclude:
+      - "__pycache__"
+      - ".mypy_cache"
+      - ".pytest_cache"
+      - "*.pyc"
+      - "README.md"
+      - "AGENTS.md"
+
+    stale-sweep:
+      - "../.config/apothem/hooks"
+      - "../.agents/skills/AGENTS.md"
+      - "rules"
+      - "commands"
+      # Do not sweep ~/.codex/skills. Official docs (re-fetched 2026-05-31)
+      # state system skills are OpenAI-bundled with NO documented on-disk
+      # path; the ~/.codex/skills/.system location is an observed-runtime
+      # convenience, not an official path, so it is never a sweep target.
+      # Apothem-managed skills land under the official user-scope skills
+      # root ~/.agents/skills/ (confirmed against official docs 2026-05-31).
+
+    # projectify/workflow collide between the command_skills entry and the
+    # skills/ tree merge (both author skills/<name>/SKILL.md). The
+    # command-as-skill is authoritative; exclude the standalone skill subdirs so
+    # command_skills is the sole writer and the install is idempotent. See the
+    # claude_code per-directory-filters for the full rationale.
+    per-directory-filters:
+      skills:
+        - "projectify"
+        - "workflow"
+
+  antigravity:
+    # Antigravity CLI reads ~/.gemini/GEMINI.md for global context while
+    # CLI customization lives under ~/.gemini/antigravity-cli/. Apothem
+    # installs a named plugin at ~/.gemini/antigravity-cli/plugins/apothem/
+    # and keeps non-native support cohorts beneath that plugin instead of
+    # reviving the retired ~/.gemini/antigravity/ tree.
+    install:
+      - source: "harnesses/antigravity/templates/GEMINI.md"
+        target: "${HARNESS_ROOT}/GEMINI.md"
+        mode: sentinel_merge
+        ownership_class: operator-owned
+      - source: "harnesses/antigravity/templates/plugin.json"
+        target: "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/plugin.json"
+        mode: write_text
+        ownership_class: apothem-owned
+      - source: "commands/"
+        target: "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/skills/"
+        mode: command_skills
+        ownership_class: apothem-owned
+      - source: "rules/"
+        target: "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/rules/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "skills/"
+        target: "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/skills/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "agents/"
+        target: "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/agents/"
+        mode: gemini_agents
+        ownership_class: apothem-owned
+      - source: "templates/"
+        target: "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/.apothem/support/templates/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "hooks/"
+        target: "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/.apothem/support/hooks/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+
+    exclude:
+      - "__pycache__"
+      - ".mypy_cache"
+      - ".pytest_cache"
+      - "*.pyc"
+      - "README.md"
+      - "AGENTS.md"
+
+    stale-sweep:
+      - "antigravity"
+      - "../.antigravity/profile.yaml"
+      # Old machinery dir (pre-fold, doubled-segment bug) swept on migration.
+      - "antigravity-cli/plugins/apothem/apothem/templates"
+      - "antigravity-cli/plugins/apothem/apothem/hooks"
+
+    # projectify/workflow collide between the command_skills entry and the
+    # skills/ tree merge (both author skills/<name>/SKILL.md). The
+    # command-as-skill is authoritative; exclude the standalone skill subdirs so
+    # command_skills is the sole writer and the install is idempotent. See the
+    # claude_code per-directory-filters for the full rationale.
+    per-directory-filters:
+      skills:
+        - "projectify"
+        - "workflow"
+
+  gemini_cli:
+    # Gemini CLI's apothem-managed surface is project-scope only.
+    # The vendor-canonical project-context anchor is <project>/GEMINI.md.
+    # Slash commands are converted to Gemini TOML command files, agents are
+    # normalized as local subagents, and Apothem's Markdown rules/templates/
+    # hook prompts land under an Apothem-owned support subtree rather than
+    # pretending to be a Gemini-native rules primitive.
+    # The adapter at
+    # src/apothem/harnesses/gemini_cli/ opts into the project-scope
+    # contract (requires_project = True) and supplies the operator-
+    # supplied --project value via the project-scope CLI plumbing; manifest
+    # entries use ${PROJECT_ROOT} rather than ${HARNESS_ROOT}.
+    install:
+      - source: "harnesses/gemini_cli/templates/GEMINI.md"
+        target: "${PROJECT_ROOT}/GEMINI.md"
+        mode: sentinel_merge
+        ownership_class: operator-owned
+      - source: "commands/"
+        target: "${PROJECT_ROOT}/.gemini/commands/"
+        mode: gemini_commands
+        ownership_class: apothem-owned
+      - source: "skills/"
+        target: "${PROJECT_ROOT}/.gemini/skills/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "agents/"
+        target: "${PROJECT_ROOT}/.gemini/agents/"
+        mode: gemini_agents
+        ownership_class: apothem-owned
+      - source: "rules/"
+        target: "${PROJECT_ROOT}/.gemini/.apothem/support/rules/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "templates/"
+        target: "${PROJECT_ROOT}/.gemini/.apothem/support/templates/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "hooks/"
+        target: "${PROJECT_ROOT}/.gemini/.apothem/support/hooks/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+
+    exclude:
+      - "__pycache__"
+      - ".mypy_cache"
+      - ".pytest_cache"
+      - "*.pyc"
+      - "README.md"
+      - "AGENTS.md"
+
+    stale-sweep:
+      - "skills/AGENTS.md"
+      # Old machinery + cohort dirs (pre-fold, non-dotted) swept on migration.
+      - ".gemini/apothem/templates"
+      - ".gemini/apothem/hooks"
+      - ".gemini/apothem/rules"
+
+    per-directory-filters: {}
+
+  github_copilot:
+    # GitHub Copilot's repo-wide instructions surface is
+    # <project>/.github/copilot-instructions.md (per
+    # https://docs.github.com/en/copilot/customizing-copilot/adding-custom-instructions-for-github-copilot).
+    # User-scope: none — Copilot's user-level settings live in IDE
+    # state (VS Code / JetBrains UI), not a file path the harness can
+    # write. Project-scope only per pin §1.6. The optional per-glob
+    # .github/instructions/*.instructions.md cohort remains intentionally
+    # separate from Apothem's single-file project bootstrap.
+    # The adapter at src/apothem/harnesses/github_copilot/ opts into the
+    # project-scope contract (requires_project = True) and supplies the
+    # operator-supplied --project value via the project-scope CLI plumbing.
+    install:
+      - source: "harnesses/github_copilot/templates/copilot-instructions.md"
+        target: "${PROJECT_ROOT}/.github/copilot-instructions.md"
+        mode: sentinel_merge
+        ownership_class: operator-owned
+
+    exclude:
+      - "__pycache__"
+      - ".mypy_cache"
+      - ".pytest_cache"
+      - "*.pyc"
+      - "README.md"
+      - "AGENTS.md"
+
+    stale-sweep: []
+
+    per-directory-filters: {}
+
+  windsurf:
+    # The windsurf harness rebranded to Devin Desktop (OTA 2026-06-02). The
+    # vendor's current docs (docs.devin.ai) make <project>/.devin/rules/*.md the
+    # PREFERRED workspace-rules surface, which TAKES PRECEDENCE over the retained
+    # backward-compat fallback at <project>/.windsurf/rules/*.md. Apothem writes
+    # the canonical target into .devin/rules/ so the merged rules file is never
+    # silently shadowed by any .devin/rules/ content the operator already keeps.
+    # The legacy single-file .windsurfrules target stays excluded. Windsurf /
+    # Devin workflows (<project>/.windsurf/workflows/) are operator-authored;
+    # memories (~/.codeium/windsurf/memories/) are machine-local; both are out
+    # of apothem's adapter scope. The harness slug stays "windsurf". The adapter
+    # at src/apothem/harnesses/windsurf/ opts into the project-scope contract
+    # (requires_project = True) and supplies the operator-supplied --project
+    # value via the project-scope CLI plumbing.
+    install:
+      - source: "harnesses/windsurf/templates/apothem-rules.md"
+        target: "${PROJECT_ROOT}/.devin/rules/apothem-rules.md"
+        mode: sentinel_merge
+        ownership_class: operator-owned
+
+    exclude:
+      - "__pycache__"
+      - ".mypy_cache"
+      - ".pytest_cache"
+      - "*.pyc"
+      - "README.md"
+      - "AGENTS.md"
+
+    stale-sweep: []
+
+    per-directory-filters: {}
+
+  cursor:
+    # Cursor's canonical surface is the project-scope MDC ruleset
+    # at <project>/.cursor/rules/*.mdc (vendor doc:
+    # https://cursor.com/docs/context/rules). The legacy single-file
+    # ~/.cursorrules target is intentionally excluded: apothem targets
+    # the current multi-file rules surface only. The
+    # adapter at src/apothem/harnesses/cursor/ opts into the
+    # project-scope contract (requires_project = True) and supplies the
+    # operator-supplied --project value via the project-scope CLI plumbing; the
+    # manifest entry uses ${PROJECT_ROOT} rather than ${HARNESS_ROOT}.
+    install:
+      - source: "harnesses/cursor/templates/apothem-rules.mdc"
+        target: "${PROJECT_ROOT}/.cursor/rules/apothem-rules.mdc"
+        mode: sentinel_merge
+        ownership_class: operator-owned
+
+    exclude:
+      - "__pycache__"
+      - ".mypy_cache"
+      - ".pytest_cache"
+      - "*.pyc"
+      - "README.md"
+      - "AGENTS.md"
+
+    stale-sweep: []
+
+    per-directory-filters: {}
+
+  opencode:
+    # OpenCode has native config plus native skills, commands, and subagents.
+    # Apothem commands and agents are converted to OpenCode Markdown files so
+    # each concept lands on the corresponding discovery surface.
+    install:
+      - source: "skills/"
+        target: "${HARNESS_ROOT}/skills/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "commands/"
+        target: "${HARNESS_ROOT}/commands/"
+        mode: markdown_commands
+        ownership_class: apothem-owned
+      - source: "agents/"
+        target: "${HARNESS_ROOT}/agents/"
+        mode: opencode_agents
+        ownership_class: apothem-owned
+      - source: "rules/"
+        target: "${HARNESS_ROOT}/.apothem/support/rules/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "templates/"
+        target: "${HARNESS_ROOT}/.apothem/support/templates/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "hooks/"
+        target: "${HARNESS_ROOT}/.apothem/support/hooks/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+
+    exclude:
+      - "__pycache__"
+      - ".mypy_cache"
+      - ".pytest_cache"
+      - "*.pyc"
+      - "README.md"
+      - "AGENTS.md"
+
+    # Old machinery + cohort dirs (pre-fold, non-dotted) swept on migration.
+    stale-sweep:
+      - "apothem/templates"
+      - "apothem/hooks"
+      - "apothem/rules"
+
+    per-directory-filters: {}
+
+  qwen_code:
+    # Qwen Code has JSON settings, QWEN.md context, native Markdown commands,
+    # native SKILL.md skills, native Markdown subagents, and settings.json
+    # hook wiring. Apothem keeps rule/template/hook source material under its
+    # own subtree for installed context and hook helper resolution.
+    install:
+      - source: "harnesses/qwen_code/templates/QWEN.md"
+        target: "${HARNESS_ROOT}/QWEN.md"
+        mode: sentinel_merge
+        ownership_class: operator-owned
+      - source: "skills/"
+        target: "${HARNESS_ROOT}/skills/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "commands/"
+        target: "${HARNESS_ROOT}/commands/"
+        mode: markdown_commands
+        ownership_class: apothem-owned
+      - source: "agents/"
+        target: "${HARNESS_ROOT}/agents/"
+        mode: qwen_agents
+        ownership_class: apothem-owned
+      - source: "rules/"
+        target: "${HARNESS_ROOT}/.apothem/support/rules/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "templates/"
+        target: "${HARNESS_ROOT}/.apothem/support/templates/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "hooks/"
+        target: "${HARNESS_ROOT}/.apothem/support/hooks/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+
+    exclude:
+      - "__pycache__"
+      - ".mypy_cache"
+      - ".pytest_cache"
+      - "*.pyc"
+      - "README.md"
+      - "AGENTS.md"
+
+    stale-sweep:
+      - "skills/AGENTS.md"
+      # Old machinery + cohort dirs (pre-fold, non-dotted) swept on migration.
+      - "apothem/templates"
+      - "apothem/hooks"
+      - "apothem/rules"
+
+    per-directory-filters: {}
+
+  hermes:
+    # Hermes receives ~/.hermes/config.yaml from materializer.py (native MCP
+    # under auxiliary.mcp). Commands and skills land under the Apothem support
+    # subtree; skills.config is a vendor registry-package list Apothem does not author.
+    install:
+      - source: "commands/"
+        target: "${HARNESS_ROOT}/.apothem/support/skills/"
+        mode: command_skills
+        ownership_class: apothem-owned
+      - source: "skills/"
+        target: "${HARNESS_ROOT}/.apothem/support/skills/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "agents/"
+        target: "${HARNESS_ROOT}/.apothem/support/agents/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "rules/"
+        target: "${HARNESS_ROOT}/.apothem/support/rules/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "templates/"
+        target: "${HARNESS_ROOT}/.apothem/support/templates/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "hooks/"
+        target: "${HARNESS_ROOT}/.apothem/support/hooks/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+
+    exclude:
+      - "__pycache__"
+      - ".mypy_cache"
+      - ".pytest_cache"
+      - "*.pyc"
+      - "README.md"
+      - "AGENTS.md"
+
+    stale-sweep:
+      - "cli-config.yaml"
+      - "profile.yaml"
+      # Old machinery + cohort dirs (pre-fold, non-dotted) swept on migration.
+      - "apothem/templates"
+      - "apothem/hooks"
+      - "apothem/rules"
+      - "apothem/skills"
+      - "apothem/agents"
+
+    # projectify/workflow collide between the command_skills entry and the
+    # skills/ tree merge (both author skills/<name>/SKILL.md). The
+    # command-as-skill is authoritative; exclude the standalone skill subdirs so
+    # command_skills is the sole writer and the install is idempotent. See the
+    # claude_code per-directory-filters for the full rationale.
+    per-directory-filters:
+      skills:
+        - "projectify"
+        - "workflow"
+
+  open_claw:
+    # OpenClaw receives ~/.openclaw/openclaw.json from materializer.py.
+    # Commands and skills land under the Apothem support subtree; OpenClaw's
+    # agents.defaults.skills is a name allowlist (not a dir loader), so no key is authored.
+    install:
+      - source: "commands/"
+        target: "${HARNESS_ROOT}/.apothem/support/skills/"
+        mode: command_skills
+        ownership_class: apothem-owned
+      - source: "skills/"
+        target: "${HARNESS_ROOT}/.apothem/support/skills/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "agents/"
+        target: "${HARNESS_ROOT}/.apothem/support/agents/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "rules/"
+        target: "${HARNESS_ROOT}/.apothem/support/rules/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "templates/"
+        target: "${HARNESS_ROOT}/.apothem/support/templates/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "hooks/"
+        target: "${HARNESS_ROOT}/.apothem/support/hooks/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+
+    exclude:
+      - "__pycache__"
+      - ".mypy_cache"
+      - ".pytest_cache"
+      - "*.pyc"
+      - "README.md"
+      - "AGENTS.md"
+
+    stale-sweep:
+      - "../.open-claw/config.yaml"
+      # Old machinery + cohort dirs (pre-fold, non-dotted) swept on migration.
+      - "apothem/templates"
+      - "apothem/hooks"
+      - "apothem/rules"
+      - "apothem/skills"
+      - "apothem/agents"
+
+    # projectify/workflow collide between the command_skills entry and the
+    # skills/ tree merge (both author skills/<name>/SKILL.md). The
+    # command-as-skill is authoritative; exclude the standalone skill subdirs so
+    # command_skills is the sole writer and the install is idempotent. See the
+    # claude_code per-directory-filters for the full rationale.
+    per-directory-filters:
+      skills:
+        - "projectify"
+        - "workflow"
+
+  kimi_code:
+    # Kimi Code CLI (Moonshot) reads the project-root AGENTS.md as its
+    # agent-instructions surface (per the vendor configuration docs at
+    # https://moonshotai.github.io/kimi-cli/en/configuration/config-files.html,
+    # snapshot-date 2026-06-25) and keeps project configuration under
+    # <project>/.kimi-code/. Apothem writes its governance surface into
+    # AGENTS.md as a sentinel-delimited managed block (operator prose outside
+    # the sentinels is preserved) and keeps non-native Markdown cohorts under
+    # the Apothem-owned support tree at <project>/.kimi-code/.apothem/support/. The
+    # <project>/.kimi-code/mcp.json MCP surface is operator-owned and out of
+    # apothem's adapter scope. The adapter at src/apothem/harnesses/kimi_code/
+    # opts into the project-scope contract (requires_project = True).
+    install:
+      - source: "harnesses/kimi_code/templates/AGENTS.md"
+        target: "${PROJECT_ROOT}/AGENTS.md"
+        mode: sentinel_merge
+        ownership_class: operator-owned
+      - source: "hooks/"
+        target: "${PROJECT_ROOT}/.kimi-code/.apothem/support/hooks/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "rules/"
+        target: "${PROJECT_ROOT}/.kimi-code/.apothem/support/rules/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "skills/"
+        target: "${PROJECT_ROOT}/.kimi-code/.apothem/support/skills/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "commands/"
+        target: "${PROJECT_ROOT}/.kimi-code/.apothem/support/skills/"
+        mode: command_skills
+        ownership_class: apothem-owned
+      - source: "agents/"
+        target: "${PROJECT_ROOT}/.kimi-code/.apothem/support/agents/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+      - source: "templates/"
+        target: "${PROJECT_ROOT}/.kimi-code/.apothem/support/templates/"
+        mode: merge_tree_entries
+        ownership_class: apothem-owned
+
+    exclude:
+      - "__pycache__"
+      - ".mypy_cache"
+      - ".pytest_cache"
+      - "*.pyc"
+      - "README.md"
+      - "AGENTS.md"
+
+    # Legacy cleanup on migration. The live install targets now sit under the
+    # dotted <project>/.kimi-code/.apothem/support/ tree, so the old non-dotted
+    # <project>/.kimi-code/apothem/ machinery (templates, hooks) AND cohort
+    # (rules, skills, agents) dirs are stale and swept. Sweeping the old
+    # non-dotted paths is safe: none is a live install target any longer, so no
+    # remove + recreate churn on a fresh install.
+    stale-sweep:
+      - ".kimi-code/apothem/skills/AGENTS.md"
+      - ".kimi-code/apothem/templates"
+      - ".kimi-code/apothem/hooks"
+      - ".kimi-code/apothem/rules"
+      - ".kimi-code/apothem/skills"
+      - ".kimi-code/apothem/agents"
+
+    # projectify/workflow collide between the command_skills entry and the
+    # skills/ tree merge (both author skills/<name>/SKILL.md). The
+    # command-as-skill is authoritative; exclude the standalone skill subdirs so
+    # command_skills is the sole writer and the install is idempotent. See the
+    # codex per-directory-filters for the full rationale.
+    per-directory-filters:
+      skills:
+        - "projectify"
+        - "workflow"
+
+  codebuddy:
+    # CodeBuddy's canonical rules surface is the project-scope Markdown
+    # format at <project>/.codebuddy/rules/*.md (per
+    # https://www.codebuddy.ai/docs/ide/Rules). The adapter writes a
+    # dedicated apothem-rules.md file so operator-authored rules are never
+    # clobbered. CodeBuddy's CODEBUDDY.md memory file and
+    # .codebuddy/settings.json (permissions/MCP) are operator-owned and out
+    # of apothem's adapter scope. The adapter at
+    # src/apothem/harnesses/codebuddy/ opts into the project-scope contract
+    # (requires_project = True).
+    install:
+      - source: "harnesses/codebuddy/templates/apothem-rules.md"
+        target: "${PROJECT_ROOT}/.codebuddy/rules/apothem-rules.md"
+        mode: sentinel_merge
+        ownership_class: operator-owned
+
+    exclude:
+      - "__pycache__"
+      - ".mypy_cache"
+      - ".pytest_cache"
+      - "*.pyc"
+      - "README.md"
+      - "AGENTS.md"
+
+    stale-sweep: []
+
+    per-directory-filters: {}
+
+  kiro:
+    # Kiro's canonical steering surface is the project-scope Markdown format
+    # at <project>/.kiro/steering/*.md (per https://kiro.dev/docs/steering/).
+    # The adapter writes a dedicated apothem-rules.md steering file and never
+    # clobbers Kiro's operator-authored foundation files (product.md, tech.md,
+    # structure.md) or the .kiro/specs/ surface. The adapter at
+    # src/apothem/harnesses/kiro/ opts into the project-scope contract
+    # (requires_project = True).
+    install:
+      - source: "harnesses/kiro/templates/apothem-rules.md"
+        target: "${PROJECT_ROOT}/.kiro/steering/apothem-rules.md"
+        mode: sentinel_merge
+        ownership_class: operator-owned
+
+    exclude:
+      - "__pycache__"
+      - ".mypy_cache"
+      - ".pytest_cache"
+      - "*.pyc"
+      - "README.md"
+      - "AGENTS.md"
+
+    stale-sweep: []
+
+    per-directory-filters: {}
+
+  trae:
+    # Trae's canonical rules surface is the project-scope Markdown format at
+    # <project>/.trae/rules/*.md (per https://docs.trae.ai/ide/rules). The
+    # vendor anchors project_rules.md and user_rules.md are operator-owned
+    # and never clobbered; apothem writes only its own apothem-rules.md file.
+    # The .trae/mcp.json and .trae/skills/ surfaces are operator-owned and
+    # out of apothem's adapter scope. The adapter at
+    # src/apothem/harnesses/trae/ opts into the project-scope contract
+    # (requires_project = True).
+    install:
+      - source: "harnesses/trae/templates/apothem-rules.md"
+        target: "${PROJECT_ROOT}/.trae/rules/apothem-rules.md"
+        mode: sentinel_merge
+        ownership_class: operator-owned
+
+    exclude:
+      - "__pycache__"
+      - ".mypy_cache"
+      - ".pytest_cache"
+      - "*.pyc"
+      - "README.md"
+      - "AGENTS.md"
+
+    stale-sweep: []
+
+    per-directory-filters: {}
+
+  zed:
+    # Zed's canonical agent-instruction surface is a single flat
+    # project-root file at <project>/.rules (per
+    # https://zed.dev/docs/ai/instructions) — a divergence from the cohort's
+    # rules-directory shape. The global ~/.config/zed/AGENTS.md target and
+    # the .zed/settings.json context_servers MCP block are operator-owned and
+    # out of apothem's adapter scope. The adapter at
+    # src/apothem/harnesses/zed/ opts into the project-scope contract
+    # (requires_project = True); the shared driver backs up any pre-existing
+    # .rules before replace.
+    install:
+      - source: "harnesses/zed/templates/apothem-rules.md"
+        target: "${PROJECT_ROOT}/.rules"
+        mode: sentinel_merge
+        ownership_class: operator-owned
+
+    exclude:
+      - "__pycache__"
+      - ".mypy_cache"
+      - ".pytest_cache"
+      - "*.pyc"
+      - "README.md"
+      - "AGENTS.md"
+
+    stale-sweep: []
+
+    per-directory-filters: {}
+
+  glm:
+    # GLM (Z.ai) is a model backend, not a coding-agent tool: Z.ai ships no
+    # native GLM coding CLI. An Anthropic-compatible or OpenAI-compatible agent
+    # is pointed at GLM by setting backend environment variables. The adapter
+    # writes a single provider config file at
+    # <project>/.apothem/providers/glm.toml recording the Anthropic-compatible
+    # base URL (https://api.z.ai/api/anthropic), the OpenAI-compatible base URL
+    # (https://api.z.ai/api/coding/paas/v4), an auth-token placeholder, and
+    # operator-configurable model-mapping placeholders. No coding-agent cohort
+    # is materialized because a model backend exposes none — and, critically,
+    # GLM carries NO projected shared-profile managed block (no rules, no
+    # opted-in behaviors): a model backend is not rule-bearing, so there is no
+    # instruction content to fold in. The managed-block sentinel machinery is
+    # markdown-only (HTML-comment <!-- ... --> delimiters, a frozen contract in
+    # apothem.lib.harness_materializer), so it cannot apply to a .toml surface
+    # without producing invalid TOML. The file is therefore materialized via
+    # write_text as an operator-owned valid-TOML backend config: apothem writes
+    # the clean template, and the operator owns the file thereafter — their own
+    # backend keys and edits route through the destructive-op authorization gate
+    # on every subsequent update rather than being silently overwritten. The
+    # adapter at src/apothem/harnesses/glm/ opts into the project-scope contract
+    # (requires_project = True).
+    install:
+      - source: "harnesses/glm/templates/glm.toml"
+        target: "${PROJECT_ROOT}/.apothem/providers/glm.toml"
+        mode: write_text
+        ownership_class: operator-owned
+
+    exclude:
+      - "__pycache__"
+      - ".mypy_cache"
+      - ".pytest_cache"
+      - "*.pyc"
+      - "README.md"
+      - "AGENTS.md"
+
+    stale-sweep: []
+
+    per-directory-filters: {}

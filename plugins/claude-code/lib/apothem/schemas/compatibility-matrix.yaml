@@ -1,0 +1,432 @@
+# SPDX-License-Identifier: MIT
+
+# Cross-harness compatibility matrix
+# Declares per-rule, per-agent, per-hook, per-output-style, per-skill, and
+# per-schema compatibility across the 15 Apothem harness adapters.
+# A reference artifact exposed via schemas.compatibility_matrix_path(); install-
+# time asset resolution itself flows through lib/propagation-manifest.yaml and
+# cohort-manifest.yaml, not this matrix.
+#
+# Schema version: 1.0.0
+# Maintained by: Apothem — update whenever a harness adds/drops a capability.
+
+schema_version: "1.0.0"
+
+# ---------------------------------------------------------------------------
+# Harness inventory
+# ---------------------------------------------------------------------------
+harnesses:
+  - name: claude-code
+    display: Claude Code
+    config_format: json
+    supports_hooks: true
+    supports_agents: true
+    supports_skills: true
+    supports_custom_rules: true
+    supports_output_styles: true
+    supports_statuslines: true
+    platform: [linux, macos, windows]
+    notes: "Primary harness; full feature support via ~/.claude/ ecosystem."
+
+  - name: cursor
+    display: Cursor
+    config_format: mdc
+    supports_hooks: false
+    supports_agents: false
+    supports_skills: false
+    supports_custom_rules: true
+    supports_output_styles: false
+    supports_statuslines: false
+    platform: [linux, macos, windows]
+    notes: >-
+      Project rules via <project>/.cursor/rules/apothem-rules.mdc. Cursor has
+      no documented file-based user-global rules surface; the legacy
+      .cursorrules path is intentionally excluded.
+
+  - name: gemini-cli
+    display: Gemini CLI
+    config_format: markdown
+    supports_hooks: false
+    supports_agents: true
+    supports_skills: true
+    supports_custom_rules: true
+    supports_output_styles: false
+    supports_statuslines: false
+    platform: [linux, macos, windows]
+    notes: >-
+      Project context via <project>/GEMINI.md plus native
+      <project>/.gemini/{commands,skills,agents}/ and Apothem support material
+      under <project>/.gemini/.apothem/support/.
+
+  - name: github-copilot
+    display: GitHub Copilot
+    config_format: markdown
+    supports_hooks: false
+    supports_agents: false
+    supports_skills: false
+    supports_custom_rules: true
+    supports_output_styles: false
+    supports_statuslines: false
+    platform: [linux, macos, windows]
+    notes: >-
+      Project instructions via <project>/.github/copilot-instructions.md.
+      GitHub Copilot user-level settings live in IDE state, not an adapter-owned
+      user-global file.
+
+  - name: codex
+    display: Codex
+    config_format: markdown
+    supports_hooks: true
+    supports_agents: true
+    supports_skills: true
+    supports_custom_rules: true
+    supports_output_styles: false
+    supports_statuslines: false
+    platform: [linux, macos, windows]
+    notes: >-
+      Native ~/.codex/AGENTS.md, ~/.codex/hooks.json, ~/.codex/hooks/,
+      ~/.codex/agents/*.toml, shared ~/.agents/skills/, and Apothem
+      support material under ~/.config/apothem/.
+
+  - name: windsurf
+    display: Windsurf
+    config_format: markdown
+    supports_hooks: false
+    supports_agents: false
+    supports_skills: false
+    supports_custom_rules: true
+    supports_output_styles: false
+    supports_statuslines: false
+    platform: [linux, macos, windows]
+    notes: >-
+      Project rules via <project>/.devin/rules/apothem-rules.md (the preferred
+      surface after the Devin Desktop rebrand; .windsurf/rules/ is the
+      backward-compat fallback). Workflows and machine-local memories are
+      operator-owned; legacy .windsurfrules is intentionally excluded.
+
+  - name: opencode
+    display: OpenCode
+    config_format: json
+    supports_hooks: false
+    supports_agents: true
+    supports_skills: true
+    supports_custom_rules: true
+    supports_output_styles: false
+    supports_statuslines: false
+    platform: [linux, macos, windows]
+    notes: "Config plus native ~/.config/opencode/{commands,skills,agents}/."
+
+  - name: antigravity
+    display: Antigravity
+    config_format: markdown
+    supports_hooks: false
+    supports_agents: true
+    supports_skills: true
+    supports_custom_rules: true
+    supports_output_styles: false
+    supports_statuslines: false
+    platform: [linux, macos, windows]
+    notes: >-
+      User instructions via ~/.gemini/GEMINI.md plus the Apothem Antigravity
+      CLI plugin under ~/.gemini/antigravity-cli/plugins/apothem/. The shared
+      GEMINI.md anchor with gemini-cli is intentional; prior
+      ~/.gemini/antigravity/ and ~/.antigravity/profile.yaml targets are
+      retired.
+
+  - name: open-claw
+    display: Open-Claw
+    config_format: json
+    supports_hooks: false
+    supports_agents: true
+    supports_skills: true
+    supports_custom_rules: true
+    supports_output_styles: false
+    supports_statuslines: false
+    platform: [linux, macos, windows]
+    notes: >-
+      Native config via ~/.openclaw/openclaw.json. agents.defaults.skills is a
+      name allowlist (not a dir loader), so Apothem authors no skills key; support
+      skills land under ~/.openclaw/.apothem/support/.
+      Prior target ~/.open-claw/config.yaml used the wrong directory name and
+      extension.
+
+  - name: hermes
+    display: Hermes
+    config_format: yaml
+    supports_hooks: false
+    supports_agents: true
+    supports_skills: true
+    supports_custom_rules: true
+    supports_output_styles: false
+    supports_statuslines: false
+    platform: [linux, macos, windows]
+    notes: >-
+      Native config via ~/.hermes/config.yaml (profile MCP under auxiliary.mcp).
+      skills.config is a vendor registry-package list Apothem does not author;
+      support skills land under ~/.hermes/.apothem/support/.
+      Prior targets ~/.hermes/cli-config.yaml and ~/.hermes/profile.yaml used
+      retired filenames.
+
+  - name: qwen-code
+    display: Qwen Code
+    config_format: json
+    supports_hooks: true
+    supports_agents: true
+    supports_skills: true
+    supports_custom_rules: true
+    supports_output_styles: false
+    supports_statuslines: false
+    platform: [linux, macos, windows]
+    notes: >-
+      Settings plus QWEN.md, native ~/.qwen/{commands,skills,agents}/, and
+      native hook wiring through ~/.qwen/settings.json. Apothem support
+      material remains under ~/.qwen/.apothem/support/.
+
+  - name: kimi-code
+    display: Kimi Code
+    config_format: markdown
+    supports_hooks: false
+    supports_agents: true
+    supports_skills: true
+    supports_custom_rules: true
+    supports_output_styles: false
+    supports_statuslines: false
+    platform: [linux, macos, windows]
+    notes: >-
+      Project-root AGENTS.md managed block plus an Apothem support tree under
+      <project>/.kimi-code/.apothem/support/ carrying rules, commands, skills, agents,
+      and templates. The <project>/.kimi-code/mcp.json MCP surface is
+      operator-owned.
+
+  - name: codebuddy
+    display: CodeBuddy
+    config_format: markdown
+    supports_hooks: false
+    supports_agents: false
+    supports_skills: false
+    supports_custom_rules: true
+    supports_output_styles: false
+    supports_statuslines: false
+    platform: [linux, macos, windows]
+    notes: >-
+      Project rules via <project>/.codebuddy/rules/apothem-rules.md, a
+      dedicated apothem file. CodeBuddy's CODEBUDDY.md memory file and
+      .codebuddy/settings.json (permissions/MCP) are operator-owned.
+
+  - name: kiro
+    display: Kiro
+    config_format: markdown
+    supports_hooks: false
+    supports_agents: false
+    supports_skills: false
+    supports_custom_rules: true
+    supports_output_styles: false
+    supports_statuslines: false
+    platform: [linux, macos, windows]
+    notes: >-
+      Project steering via <project>/.kiro/steering/apothem-rules.md
+      (inclusion: always). Kiro foundation files (product.md, tech.md,
+      structure.md) and specs are operator-owned.
+
+  - name: trae
+    display: Trae
+    config_format: markdown
+    supports_hooks: false
+    supports_agents: false
+    supports_skills: false
+    supports_custom_rules: true
+    supports_output_styles: false
+    supports_statuslines: false
+    platform: [linux, macos, windows]
+    notes: >-
+      Project rules via <project>/.trae/rules/apothem-rules.md, alongside the
+      operator-owned project_rules.md and user_rules.md anchors. The
+      .trae/mcp.json and .trae/skills/ surfaces are operator-owned.
+
+  - name: zed
+    display: Zed
+    config_format: markdown
+    supports_hooks: false
+    supports_agents: false
+    supports_skills: false
+    supports_custom_rules: true
+    supports_output_styles: false
+    supports_statuslines: false
+    platform: [linux, macos, windows]
+    notes: >-
+      Project agent-instructions via the flat <project>/.rules file (no rules
+      directory). Global ~/.config/zed/AGENTS.md and .zed/settings.json MCP
+      context_servers are operator-owned.
+
+  - name: glm
+    display: GLM (Z.ai)
+    config_format: toml
+    supports_hooks: false
+    supports_agents: false
+    supports_skills: false
+    supports_custom_rules: false
+    supports_output_styles: false
+    supports_statuslines: false
+    platform: [linux, macos, windows]
+    notes: >-
+      GLM (Z.ai) is a model backend, not a coding-agent tool. The adapter
+      writes a project-scope Apothem-owned provider file at
+      <project>/.apothem/providers/glm.toml recording the Anthropic-compatible
+      (https://api.z.ai/api/anthropic) and OpenAI-compatible
+      (https://api.z.ai/api/coding/paas/v4) backend base URLs, an auth-token
+      placeholder, and operator-configurable model-mapping placeholders. A
+      model backend exposes no coding-agent cohort, so every capability is
+      unsupported.
+
+# ---------------------------------------------------------------------------
+# Asset-class compatibility
+# ---------------------------------------------------------------------------
+# For each shared-profile asset class, declares which harnesses can consume it
+# and how it is adapted (materialisation_strategy).
+
+asset_classes:
+  rules:
+    description: "Behavioral rules (.md) from src/apothem/rules/."
+    compatible_harnesses:
+      - claude-code        # full: rules injected into ~/.claude/ tree
+      - cursor             # partial: distilled into project .cursor/rules/
+      - gemini-cli         # partial: distilled into ~/.gemini/GEMINI.md
+      - github-copilot     # partial: distilled into copilot-instructions.md
+      - codex              # partial: distilled into ~/.codex/AGENTS.md
+      - windsurf           # partial: distilled into project .devin/rules/ (preferred; .windsurf/rules/ fallback)
+      - opencode           # partial: support cohort referenced by opencode.json
+      - antigravity        # partial: distilled into GEMINI.md plus plugin rules
+      - open-claw          # partial: support cohort referenced by installed skills
+      - hermes             # partial: support cohort referenced by installed skills
+      - qwen-code          # partial: support cohort referenced by QWEN.md
+    materialisation_strategy:
+      claude-code: "copy to ~/.claude/rules/"
+      default: "distil or reference from the harness-native instruction anchor"
+
+  agents:
+    description: "Agent definitions (flat *.md) from src/apothem/agents/."
+    compatible_harnesses:
+      - claude-code
+      - antigravity
+      - codex
+      - gemini-cli
+      - hermes
+      - open-claw
+      - opencode
+      - qwen-code
+    materialisation_strategy:
+      claude-code: "copy to ~/.claude/agents/"
+      antigravity: "convert to ~/.gemini/antigravity-cli/plugins/apothem/agents/*.md"
+      codex: "convert to ~/.codex/agents/*.toml"
+      gemini-cli: "convert to <project>/.gemini/agents/*.md"
+      hermes: "support cohort under ~/.hermes/.apothem/support/agents/"
+      open-claw: "support cohort under ~/.openclaw/.apothem/support/agents/"
+      opencode: "convert to ~/.config/opencode/agents/*.md"
+      qwen-code: "convert to ~/.qwen/agents/*.md"
+      default: "support cohort under apothem/agents/"
+
+  hooks:
+    description: "Hook scripts from src/apothem/hooks/."
+    compatible_harnesses:
+      - claude-code
+      - codex
+      - antigravity
+      - gemini-cli
+      - hermes
+      - open-claw
+      - opencode
+      - qwen-code
+    materialisation_strategy:
+      claude-code: "register in settings.json; support material under ~/.claude/.apothem/support/hooks/"
+      codex: "copy to ~/.codex/hooks/ + register in ~/.codex/hooks.json"
+      antigravity: "support cohort under ~/.gemini/antigravity-cli/plugins/apothem/apothem/hooks/; no active hook wiring until schema adapter exists"
+      gemini-cli: "support cohort under <project>/.gemini/.apothem/support/hooks/"
+      hermes: "support cohort under ~/.hermes/.apothem/support/hooks/"
+      open-claw: "support cohort under ~/.openclaw/.apothem/support/hooks/"
+      opencode: "support cohort under ~/.config/opencode/.apothem/support/hooks/"
+      qwen-code: "register in settings.json; support material under ~/.qwen/.apothem/support/hooks/"
+      default: "support cohort under apothem/hooks/"
+
+  skills:
+    description: "Skill definitions from src/apothem/skills/."
+    compatible_harnesses:
+      - claude-code
+      - antigravity
+      - codex
+      - gemini-cli
+      - hermes
+      - open-claw
+      - opencode
+      - qwen-code
+    materialisation_strategy:
+      claude-code: "copy to ~/.claude/skills/"
+      antigravity: "copy to ~/.gemini/antigravity-cli/plugins/apothem/skills/"
+      codex: "copy to ~/.agents/skills/"
+      gemini-cli: "copy to <project>/.gemini/skills/"
+      hermes: "copy to ~/.hermes/.apothem/support/skills/ (support subtree; skills.config is a vendor registry-package list Apothem does not author)"
+      open-claw: "copy to ~/.openclaw/.apothem/support/skills/ (support subtree; agents.defaults.skills is a name allowlist Apothem does not author)"
+      opencode: "copy to ~/.config/opencode/skills/"
+      qwen-code: "copy to ~/.qwen/skills/"
+      default: "support cohort under apothem/skills/"
+
+  commands:
+    description: "Custom slash-commands from src/apothem/commands/."
+    compatible_harnesses:
+      - claude-code
+      - antigravity
+      - codex
+      - gemini-cli
+      - hermes
+      - open-claw
+      - opencode
+      - qwen-code
+    materialisation_strategy:
+      claude-code: "wrap as ~/.claude/skills/<command>/SKILL.md"
+      antigravity: "wrap as ~/.gemini/antigravity-cli/plugins/apothem/skills/<command>/SKILL.md"
+      codex: "wrap as ~/.agents/skills/<command>/SKILL.md"
+      gemini-cli: "convert to <project>/.gemini/commands/*.toml"
+      hermes: "wrap as ~/.hermes/.apothem/support/skills/<command>/SKILL.md"
+      open-claw: "wrap as ~/.openclaw/.apothem/support/skills/<command>/SKILL.md"
+      opencode: "convert to ~/.config/opencode/commands/*.md"
+      qwen-code: "convert to ~/.qwen/commands/*.md"
+      default: "wrap as skills under the harness support tree"
+
+  output_styles:
+    description: "Output style definitions from src/apothem/output-styles/."
+    compatible_harnesses:
+      - claude-code
+    materialisation_strategy:
+      claude-code: "copy to ~/.claude/output-styles/"
+      default: "not supported"
+
+  statuslines:
+    description: "Statusline configs from src/apothem/statuslines/."
+    compatible_harnesses:
+      - claude-code
+    materialisation_strategy:
+      claude-code: "copy to ~/.claude/statuslines/"
+      default: "not supported"
+
+  templates:
+    description: "Prompt templates from src/apothem/templates/."
+    compatible_harnesses:
+      - claude-code
+      - antigravity
+      - codex
+      - gemini-cli
+      - hermes
+      - open-claw
+      - opencode
+      - qwen-code
+    materialisation_strategy:
+      claude-code: "support cohort under ~/.claude/.apothem/support/templates/"
+      antigravity: "support cohort under ~/.gemini/antigravity-cli/plugins/apothem/apothem/templates/"
+      default: "support cohort under apothem/templates/"
+
+  schemas:
+    description: "Schema files from src/apothem/schemas/."
+    compatible_harnesses:
+      - claude-code
+    materialisation_strategy:
+      claude-code: "copy to ~/.claude/schemas/"
+      default: "not applicable"

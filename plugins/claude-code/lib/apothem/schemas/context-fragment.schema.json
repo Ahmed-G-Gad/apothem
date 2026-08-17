@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://apothem.ahmedgad.com/schemas/context-fragment.schema.json",
+  "title": "Apothem Context Fragment",
+  "description": "One named, injectable prompt or context fragment in the contexts surface. A fragment is dynamic injectable text the operator can enable or disable, with activation metadata describing when it applies. The shape is neutral: it carries no tool-specific or vendor-specific identifier, so the same fragment applies across any installation target.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "body", "enabled"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable fragment identifier, unique within a contexts store."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable fragment name."
+    },
+    "body": {
+      "type": "string",
+      "description": "The injectable prompt or context text."
+    },
+    "enabled": {
+      "type": "boolean",
+      "description": "Enable/disable switch. When false, the fragment is retained but never injected."
+    },
+    "activation": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Metadata describing when the fragment activates.",
+      "properties": {
+        "scope": {
+          "type": "string",
+          "enum": ["global", "session", "task"],
+          "description": "Activation breadth. global: every interaction. session: the active session. task: a single task scope."
+        },
+        "triggers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Phrases or signals that activate the fragment.",
+          "default": []
+        }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Discovery tags.",
+      "default": []
+    },
+    "updated": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp the fragment was last amended."
+    }
+  }
+}
