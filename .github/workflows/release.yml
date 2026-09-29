@@ -419,15 +419,27 @@ jobs:
             echo "notes_path=release-notes.md"
           } >> "$GITHUB_OUTPUT"
       - name: Publish GitHub Release
-        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65  # v2.6.2
-        with:
-          name: "v${{ steps.notes.outputs.version }}"
-          body_path: ${{ steps.notes.outputs.notes_path }}
-          files: |
-            dist/*
-            sbom.cdx.json
-            provenance.intoto.jsonl
-            archives/*
-          draft: false
-          prerelease: false
-          generate_release_notes: false
+        # The runner's preinstalled gh CLI publishes the release, so no
+        # third-party action holds this job's contents:write token (zizmor
+        # superfluous-actions). The first run creates the release on the
+        # pushed tag with every asset. A re-run of this job finds the release
+        # already there, so it refreshes the title and notes and uploads the
+        # assets again with --clobber, which replaces an asset of the same name.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ steps.notes.outputs.version }}
+          NOTES_PATH: ${{ steps.notes.outputs.notes_path }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          assets=(dist/* sbom.cdx.json provenance.intoto.jsonl archives/*)
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            gh release edit "${TAG}" --title "v${VERSION}" \
+              --notes-file "${NOTES_PATH}" --draft=false --prerelease=false
+            gh release upload "${TAG}" --clobber "${assets[@]}"
+          else
+            gh release create "${TAG}" --verify-tag --title "v${VERSION}" \
+              --notes-file "${NOTES_PATH}" "${assets[@]}"
+          fi

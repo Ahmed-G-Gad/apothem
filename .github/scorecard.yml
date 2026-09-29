@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: MIT
+
+# OpenSSF Scorecard maintainer annotations. Scorecard reads this file from
+# .github/scorecard.yml and leaves an annotated check out of its SARIF results,
+# so the check raises no code scanning alert:
+# https://github.com/ossf/scorecard/blob/main/config/README.md
+#
+# fuzzing: the Hypothesis property tests under tests/property/ generate inputs
+# across the search space for the frontmatter parser, the materialize round
+# trip, the merge rules, and path safety. Scorecard detects fuzzing through
+# OSS-Fuzz, ClusterFuzzLite, Go's native fuzzing, and property-based testing
+# libraries for a few other languages, none of them Python, so it cannot see
+# these tests. `not-supported` is the reason Scorecard defines for a check
+# fulfilled in a way it does not support.
+annotations:
+  - checks:
+      - fuzzing
+    reasons:
+      - reason: not-supported
