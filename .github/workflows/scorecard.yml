@@ -65,6 +65,13 @@ jobs:
           persist-credentials: false
 
       - name: Run Scorecard
+        # The default archive file mode reads a GitHub archive of main, which
+        # leaves out .github/ (export-ignore in .gitattributes). Scorecard
+        # therefore finds no workflows and scores Dangerous-Workflow,
+        # Token-Permissions, Pinned-Dependencies, and Packaging as
+        # inconclusive. zizmor.yml, codeql.yml, and the conformity gate audit
+        # the workflows instead. The maintainer annotations sit at the root in
+        # .scorecard.yml for the same reason.
         uses: ossf/scorecard-action@4eaacf0543bb3f2c246792bd56e8cdeffafb205a  # v2.4.3
         with:
           results_file: scorecard-results.sarif

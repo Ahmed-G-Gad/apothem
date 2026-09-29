@@ -1,9 +1,15 @@
 # SPDX-License-Identifier: MIT
 
-# OpenSSF Scorecard maintainer annotations. Scorecard reads this file from
-# .github/scorecard.yml and leaves an annotated check out of its SARIF results,
-# so the check raises no code scanning alert:
+# OpenSSF Scorecard maintainer annotations. Scorecard reads this file and
+# leaves an annotated check out of its SARIF results, so the check raises no
+# code scanning alert:
 # https://github.com/ossf/scorecard/blob/main/config/README.md
+#
+# It lives at the repository root because Scorecard, in the action's default
+# archive file mode, reads a GitHub archive of the default branch, and
+# .gitattributes marks .github/ export-ignore, which leaves that folder out of
+# every archive. Scorecard also looks for .github/scorecard.yml, but cannot
+# see it there.
 #
 # fuzzing: the Hypothesis property tests under tests/property/ generate inputs
 # across the search space for the frontmatter parser, the materialize round
