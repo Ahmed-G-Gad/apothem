@@ -327,7 +327,10 @@ SPDX-License-Identifier = "MIT"
 # surfaces, the header-injector, the conformity matchers that grep for the
 # marker, the header-form test fixtures, the hook-message contexts, the doc
 # pages on the header convention). `reuse lint` parses each such occurrence as
-# an in-file SPDX expression and reports it as malformed.
+# an in-file SPDX expression and reports it as malformed. The Claude Code
+# plugin tree under plugins/claude-code/ holds byte-identical copies of some of
+# these sources (scripts/dev/assemble_plugin_tree.py), so a copy that discusses
+# the convention is listed too.
 #
 # Per the REUSE 3.3 specification, licensing information declared as part of
 # documentation or command output is handled with `precedence = "override"`
@@ -345,6 +348,22 @@ path = [
   ".github/copilot-instructions.md",
   "AGENTS.md",
   "CLAUDE.md",
+  "plugins/claude-code/commands/test-suite.md",
+  "plugins/claude-code/hooks/pretooluse-edit-header-guard.md",
+  "plugins/claude-code/hooks/pretooluse-write-header-guard.md",
+  "plugins/claude-code/lib/apothem/audit/build_inventory.py",
+  "plugins/claude-code/lib/apothem/commands/test-suite.md",
+  "plugins/claude-code/lib/apothem/conformity/copilot_instructions_presence_grep.py",
+  "plugins/claude-code/lib/apothem/conformity/determinism_grep.py",
+  "plugins/claude-code/lib/apothem/conformity/file_header_grep.py",
+  "plugins/claude-code/lib/apothem/conformity/license_author_consistency_grep.py",
+  "plugins/claude-code/lib/apothem/conformity/orphan_output_grep.py",
+  "plugins/claude-code/lib/apothem/hooks/messages/pretooluse-edit-header-guard.md",
+  "plugins/claude-code/lib/apothem/hooks/messages/pretooluse-write-header-guard.md",
+  "plugins/claude-code/lib/apothem/skills/incident-runbook/SKILL.md",
+  "plugins/claude-code/lib/apothem/skills/test-authoring/SKILL.md",
+  "plugins/claude-code/skills/incident-runbook/SKILL.md",
+  "plugins/claude-code/skills/test-authoring/SKILL.md",
   "scripts/dev/regenerate-completions.ps1",
   "scripts/dev/regenerate-completions.sh",
   "scripts/inject-header.py",
