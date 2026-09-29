@@ -23,7 +23,7 @@ top-level `.github/README.md` would, and none exists.
 | `docs-drift.yml` | push (main), PR (main), dispatch | Documentation drift gate — forbids a root `docs/` tree and fails on any diff after regenerating the source-generated reference pages. |
 | `codeql.yml` | push (main), PR (main), schedule (weekly), dispatch | CodeQL SAST over the Python source and the Actions workflows; uploads SARIF to the Security tab. |
 | `zizmor.yml` | push (main), PR, dispatch | Static analysis of every workflow for template injection, credential persistence, unpinned actions, and excessive permissions; uploads SARIF. |
-| `scorecard.yml` | push (main), schedule (weekly), dispatch, branch_protection_rule | OpenSSF Scorecard analysis; publishes to the OpenSSF API and uploads SARIF to the Security tab. |
+| `scorecard.yml` | push (main), schedule (weekly), dispatch, branch_protection_rule | OpenSSF Scorecard analysis; publishes to the OpenSSF API and uploads SARIF to the Security tab. Maintainer annotations live in `.github/scorecard.yml`. |
 | `dco.yml` | PR (main), dispatch | Developer Certificate of Origin enforcement — requires a `Signed-off-by` trailer on every PR commit. |
 | `dependency-review.yml` | PR (main) | Blocks PRs that introduce dependencies with known vulnerabilities or disallowed licenses, evaluated against the manifest/lockfile diff. |
 | `pip-audit.yml` | push (main), PR, schedule (weekly), dispatch | Weekly `pip-audit` CVE scan of the resolved dependencies, the frozen vendored closure, and the hash-locked release build tooling, plus a PR/push gate on changes to them. |
