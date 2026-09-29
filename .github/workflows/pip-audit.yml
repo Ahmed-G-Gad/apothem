@@ -36,11 +36,11 @@ on:
 permissions:
   contents: read
 
-# Single-sourced pip pin (CVE-2026-6357 closes on pip >=26.1). One value per
+# Single-sourced pip pin (CVE-2026-13346 closes on pip >=26.2). One value per
 # workflow file; scripts/dev/check_pip_pin_drift.py fails the build if any
 # workflow's PIP_PIN_VERSION diverges from the canonical pin.
 env:
-  PIP_PIN_VERSION: "26.1.2"
+  PIP_PIN_VERSION: "26.2.1"
 
 concurrency:
   group: pip-audit-${{ github.ref }}
@@ -93,25 +93,7 @@ jobs:
           # backed (not SARIF-backed), so feeds correctly from the workflow's
           # pass/fail status alone — which is exactly pip-audit's default
           # exit semantics.
-          #
-          # CVE-2026-3219 ignored: the advisory targets `pip` itself (the
-          # package-manager runtime) over a tar+ZIP file-handling heuristic;
-          # it is informational for developer tooling, not a project-dep
-          # vulnerability, and no fix version is published.
-          # Expiry: 2026-08-20 — if no upstream fix has landed by then,
-          # re-triage and either re-justify with a fresh expiry or drop the
-          # ignore. No open-ended suppression.
-          #
-          # PYSEC-2026-89 ignored: the advisory targets Python-Markdown < 3.8.1
-          # (unhandled AssertionError on malformed HTML -> DoS). The resolved
-          # tree pins markdown 3.10.2, which is well past the 3.8.1 fix; the
-          # OSV record carries no fixed-version range, so pip-audit reports the
-          # already-patched version as vulnerable (false positive).
-          # Expiry: 2026-08-20 — re-triage if the OSV record gains a fixed
-          # range or markdown is downgraded. No open-ended suppression.
-          pip-audit --desc \
-            --ignore-vuln CVE-2026-3219 \
-            --ignore-vuln PYSEC-2026-89
+          pip-audit --desc
 
       - name: Run pip-audit (frozen vendored closure)
         id: audit_vendor
@@ -124,10 +106,6 @@ jobs:
           # requirements file (inline `#` comments, e.g. on the rpds-py anchor
           # line, are stripped by the requirements parser). A CVE disclosed
           # against any pinned vendored version fails this step and the run.
-          #
-          # The same CVE-2026-3219 / PYSEC-2026-89 ignores from the resolved-
-          # tree audit do not apply here: neither pip nor markdown is in the
-          # vendored closure, so no ignore is needed for the frozen set.
           pip-audit --desc -r src/apothem/_vendor/vendor.txt
 
       - name: Surface failure as workflow status
