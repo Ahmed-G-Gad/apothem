@@ -194,7 +194,7 @@ dev = [
     # Hypothesis drives the property tests at tests/property/, which exercise
     # invariants (round-trip, idempotence, schema-validity) across
     # generated inputs. Scorecard's Fuzzing check does not detect Python
-    # property tests, so .github/scorecard.yml annotates it as not-supported.
+    # property tests, so .scorecard.yml annotates it as not-supported.
     # Floor below 6.156.0: that release begins the Rust-internals migration
     # (native wheels; source builds need a Rust toolchain). Verify wheel
     # coverage for every CI OS/arch target before floating past it.
