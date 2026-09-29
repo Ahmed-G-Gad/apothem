@@ -79,9 +79,27 @@ jobs:
           # Node 24 is the npm trusted-publishing runtime floor.
           node-version: "24"
           registry-url: https://registry.npmjs.org
-      - name: Pin npm CLI for trusted publishing
-        # The OIDC token exchange requires npm CLI 11.5.1 or newer.
-        run: npm install -g npm@11.5.1
+          # No dependency cache in a publishing job, since a restored cache could
+          # carry poisoned packages into the release (zizmor cache-poisoning).
+          # setup-node turns npm caching on by itself when package.json names
+          # npm as its packageManager, so it is switched off explicitly.
+          package-manager-cache: false
+      - name: Check the npm CLI meets the trusted-publishing floor
+        # The OIDC token exchange requires npm CLI 11.5.1 or newer. Current
+        # Node 24 releases bundle a newer npm (24.18.0 ships 11.16.0), so this
+        # check replaces a global `npm install -g npm@11.5.1`, which installed
+        # outside any lockfile (zizmor adhoc-packages) and downgraded the
+        # bundled CLI.
+        run: |
+          set -euo pipefail
+          required="11.5.1"
+          actual="$(npm --version)"
+          lowest="$(printf '%s\n%s\n' "${required}" "${actual}" | sort -V | head -n 1)"
+          if [ "${lowest}" != "${required}" ]; then
+            echo "::error::npm ${actual} is older than ${required}, the trusted-publishing floor"
+            exit 1
+          fi
+          echo "npm ${actual} meets the ${required} floor"
       - name: Validate package version matches tag
         env:
           RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
