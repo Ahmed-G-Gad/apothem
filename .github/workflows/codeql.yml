@@ -21,11 +21,13 @@ on:
     paths:
       - 'src/**'
       - '.github/workflows/**'
+      - '.github/codeql/**'
   pull_request:
     branches: [main]
     paths:
       - 'src/**'
       - '.github/workflows/**'
+      - '.github/codeql/**'
   schedule:
     - cron: "0 4 * * 1"   # every Monday 04:00 UTC — re-analysis runs even when paths-filtered events would skip
 

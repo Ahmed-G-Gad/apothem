@@ -2,7 +2,7 @@
 
 # Publish dynamic badge endpoint JSONs.
 #
-# Triggers after the CI workflow completes. Generates per-badge JSON files
+# Triggers after a CI run on main completes. Generates per-badge JSON files
 # conforming to the shields.io endpoint schema (schemaVersion / label /
 # message / color), stages them under badges/, and uploads them as the
 # `badges` artifact. The static-site workflow (publish-static-site.yml)
@@ -18,9 +18,17 @@
 name: Badges
 
 on:
-  workflow_run:
+  # zizmor flags every workflow_run trigger, because the triggered run holds
+  # this repository's privileges while a pull request, one from a fork
+  # included, can start the CI run that triggers it. Here the trigger is
+  # limited to CI runs on main, the job below also requires a push from this
+  # repository, the token is read-only, no secret is used, and the job checks
+  # out main and never reads the triggering run's code or artifacts. The
+  # filters also keep pull-request CI results out of the published badges.
+  workflow_run:  # zizmor: ignore[dangerous-triggers] see the comment above
     workflows: [CI]
     types: [completed]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -35,7 +43,11 @@ jobs:
   publish-badges:
     name: publish-badges
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository)
     timeout-minutes: 10
     steps:
       - name: Harden runner

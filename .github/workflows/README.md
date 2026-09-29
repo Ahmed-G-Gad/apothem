@@ -29,7 +29,7 @@ top-level `.github/README.md` would, and none exists.
 | `pip-audit.yml` | push (main), PR, schedule (weekly), dispatch | Weekly `pip-audit` CVE scan of the resolved dependencies, the frozen vendored closure, and the hash-locked release build tooling, plus a PR/push gate on changes to them. |
 | `npm-audit.yml` | push (main), PR, schedule (weekly), dispatch | Weekly `npm audit` of the documentation site's dependency tree, plus a PR/push gate on `site/package.json` and its lockfile. Sibling of `pip-audit.yml`, whose path filters cover the Python surface only — without this the npm tree is unaudited. Fails on high/critical. |
 | `license-audit.yml` | push (main), PR, schedule (weekly), dispatch | Scans the resolved dependency tree for copyleft or otherwise MIT-incompatible licenses; mirrors the dependency-review allow-list. |
-| `badges.yml` | workflow_run (CI completed), dispatch | Generates the shields.io endpoint JSONs after CI completes and uploads them as the `badges` artifact for the static site to serve. |
+| `badges.yml` | workflow_run (CI completed on main), dispatch | Generates the shields.io endpoint JSONs after CI completes and uploads them as the `badges` artifact for the static site to serve. |
 | `release.yml` | push (tag `v*.*.*`) | Release orchestration — build sdist + wheel, SBOM, cosign signature, SLSA provenance, then publish the GitHub Release with every artifact attached. |
 | `publish-npm.yml` | push (tag `v*.*.*`), dispatch | Publishes `@ahmed-g-gad/apothem` to registry.npmjs.org via npm trusted publishing (OIDC); gated on the `NPM_TRUSTED_PUBLISHING_READY` variable. |
 | `publish-vscode.yml` | push (tag `v*.*.*`), dispatch | Packages the extension into a `.vsix` and publishes to the Visual Studio Marketplace; gated on the `VSCE_PAT` secret. |
@@ -45,7 +45,8 @@ top-level `.github/README.md` would, and none exists.
   when a maintainer merges it. One documented exception exists in `release.yml`:
   the SLSA reusable generator is trust-anchored on its per-tag attestation
   (Sigstore policy forbids SHA-pinning trusted reusable workflows), and that
-  `uses:` line carries an `action-pinning-exempt:` marker.
+  `uses:` line carries an `action-pinning-exempt:` marker. `.github/zizmor.yml`
+  records the same exception as zizmor's only `ref-pin` policy.
 - **Branch-protection required checks.** Three workflows declare, in their own
   headers, that a job is a `main` required status check: `ci.yml` (the
   `quality / <os> / py<ver>` matrix and `coverage`), `clean-install-gate.yml`,

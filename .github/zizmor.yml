@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: MIT
+
+# zizmor configuration. zizmor discovers this file at .github/zizmor.yml when
+# the zizmor.yml workflow audits the repository.
+#
+# unpinned-uses: every `uses:` clause stays pinned by commit SHA, which is
+# zizmor's implicit "*": hash-pin rule, with one exception. The SLSA project
+# requires its builders and generators to be referenced by an exact vX.Y.Z
+# tag, because slsa-verifier verifies the ref of the trusted reusable workflow
+# and cannot do that for a commit digest:
+# https://github.com/slsa-framework/slsa-github-generator#referencing-slsa-builders-and-generators
+# release.yml marks the same exception with an `action-pinning-exempt:`
+# comment.
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        "slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml": ref-pin
