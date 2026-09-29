@@ -26,7 +26,7 @@ top-level `.github/README.md` would, and none exists.
 | `scorecard.yml` | push (main), schedule (weekly), dispatch, branch_protection_rule | OpenSSF Scorecard analysis; publishes to the OpenSSF API and uploads SARIF to the Security tab. |
 | `dco.yml` | PR (main), dispatch | Developer Certificate of Origin enforcement — requires a `Signed-off-by` trailer on every PR commit. |
 | `dependency-review.yml` | PR (main) | Blocks PRs that introduce dependencies with known vulnerabilities or disallowed licenses, evaluated against the manifest/lockfile diff. |
-| `pip-audit.yml` | push (main), PR, schedule (weekly), dispatch | Weekly `pip-audit` CVE scan of resolved dependencies, plus a PR/push gate on dependency-manifest changes. |
+| `pip-audit.yml` | push (main), PR, schedule (weekly), dispatch | Weekly `pip-audit` CVE scan of the resolved dependencies, the frozen vendored closure, and the hash-locked release build tooling, plus a PR/push gate on changes to them. |
 | `npm-audit.yml` | push (main), PR, schedule (weekly), dispatch | Weekly `npm audit` of the documentation site's dependency tree, plus a PR/push gate on `site/package.json` and its lockfile. Sibling of `pip-audit.yml`, whose path filters cover the Python surface only — without this the npm tree is unaudited. Fails on high/critical. |
 | `license-audit.yml` | push (main), PR, schedule (weekly), dispatch | Scans the resolved dependency tree for copyleft or otherwise MIT-incompatible licenses; mirrors the dependency-review allow-list. |
 | `badges.yml` | workflow_run (CI completed), dispatch | Generates the shields.io endpoint JSONs after CI completes and uploads them as the `badges` artifact for the static site to serve. |

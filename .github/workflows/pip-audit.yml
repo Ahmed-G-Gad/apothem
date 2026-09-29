@@ -1,7 +1,9 @@
 # SPDX-License-Identifier: MIT
 
 # Weekly dependency audit (pip-audit) — runs on a weekly cadence so new
-# CVEs are surfaced even when no code changes.
+# CVEs are surfaced even when no code changes. It audits three closures:
+# the resolved apothem tree, the frozen vendored closure, and the
+# hash-locked release build tooling.
 #
 # Distinct from ci.yml's supply-chain-scan job:
 #   - ci.yml's pip-audit blocks merges on every PR (latest deps).
@@ -23,6 +25,7 @@ on:
       - "requirements*.txt"
       - "Pipfile*"
       - "src/apothem/_vendor/**"
+      - "scripts/release/requirements-build-linux.txt"
       - ".github/workflows/pip-audit.yml"
   pull_request:
     paths:
@@ -30,6 +33,7 @@ on:
       - "requirements*.txt"
       - "Pipfile*"
       - "src/apothem/_vendor/**"
+      - "scripts/release/requirements-build-linux.txt"
       - ".github/workflows/pip-audit.yml"
   workflow_dispatch:
 
@@ -108,8 +112,20 @@ jobs:
           # against any pinned vendored version fails this step and the run.
           pip-audit --desc -r src/apothem/_vendor/vendor.txt
 
-      - name: Surface failure as workflow status
-        if: steps.audit.outcome == 'failure' || steps.audit_vendor.outcome == 'failure'
+      - name: Run pip-audit (release build tooling)
+        id: audit_release
+        continue-on-error: true
         run: |
-          echo "::error::pip-audit found vulnerable dependencies (resolved tree and/or frozen vendored closure). See this run's log for details."
+          # Audit the hash-locked build tooling that release.yml, ci.yml, and
+          # harness-matrix.yml install with --require-hashes before they build
+          # the sdist and wheel. The file pins every transitive dependency with
+          # hashes, so --disable-pip audits exactly those pins without
+          # resolving or installing anything. A CVE disclosed against a pinned
+          # version fails this step and the run.
+          pip-audit --desc --disable-pip -r scripts/release/requirements-build-linux.txt
+
+      - name: Surface failure as workflow status
+        if: steps.audit.outcome == 'failure' || steps.audit_vendor.outcome == 'failure' || steps.audit_release.outcome == 'failure'
+        run: |
+          echo "::error::pip-audit found vulnerable dependencies (resolved tree, frozen vendored closure, and/or release build tooling). See this run's log for details."
           exit 1
