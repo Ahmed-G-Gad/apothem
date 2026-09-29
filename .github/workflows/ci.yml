@@ -68,11 +68,11 @@ on:
 permissions:
   contents: read
 
-# Single-sourced pip pin (CVE-2026-6357 closes on pip >=26.1). One value per
+# Single-sourced pip pin (CVE-2026-13346 closes on pip >=26.2). One value per
 # workflow file; scripts/dev/check_pip_pin_drift.py fails the build if any
 # workflow's PIP_PIN_VERSION diverges from the canonical pin.
 env:
-  PIP_PIN_VERSION: "26.1.2"
+  PIP_PIN_VERSION: "26.2.1"
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -301,9 +301,9 @@ jobs:
           category: trivy
       - name: Upgrade pip
         # Upgrade the runner-bundled pip before pip-audit runs so the audit
-        # scans against a current pip version (CVE-2026-6357 closes on pip
-        # >=26.1; earlier runner pip carries the vulnerable archive-handling
-        # path). The fix-the-vuln approach is preferred over --ignore-vuln.
+        # scans against a current pip version (CVE-2026-13346 closes on pip
+        # >=26.2; earlier pip mishandles doubly-encoded package URLs from
+        # indexes). The fix-the-vuln approach is preferred over --ignore-vuln.
         run: python -m pip install "pip==${PIP_PIN_VERSION}"
       - name: pip-audit
         run: |
@@ -313,16 +313,7 @@ jobs:
           # surfaces advisory descriptions; `--strict` is intentionally
           # NOT set during 0.x so a transient transitive advisory does
           # not wedge the build before a remediation lands.
-          #
-          # CVE-2026-3219 ignored: the advisory targets `pip` itself
-          # (the package manager runtime) over a tar+ZIP file-handling
-          # heuristic. No fix version is published yet; the advisory
-          # is informational for developer tooling, not a project-dep
-          # vulnerability.
-          # Expiry: 2026-08-20 — if no upstream fix has landed by then,
-          # re-triage and either re-justify with a fresh expiry or drop
-          # the ignore. No open-ended suppression.
-          pip-audit --desc --ignore-vuln CVE-2026-3219
+          pip-audit --desc
       - name: Gitleaks (secrets scan)
         # Self-contained CLI install instead of a wrapper Action so the
         # step does not depend on an upstream tag/SHA the wrapper repo
@@ -448,7 +439,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Check pip-pin single-source coherence
-        # The pip pin (CVE-2026-6357) is single-sourced per workflow via the
+        # The pip pin (CVE-2026-13346) is single-sourced per workflow via the
         # PIP_PIN_VERSION env var; this gate fails if any workflow's pin drifts
         # or a raw `pip==<version>` literal is reintroduced.
         run: python scripts/dev/check_pip_pin_drift.py

@@ -2,7 +2,7 @@
 
 """Fail when the single-sourced pip pin drifts across the CI workflows.
 
-The pip pin (`PIP_PIN_VERSION`) closes CVE-2026-6357 and is set once per
+The pip pin (`PIP_PIN_VERSION`) closes CVE-2026-13346 and is set once per
 workflow file at the top-level ``env:`` block, referenced from every
 ``python -m pip install "pip==${PIP_PIN_VERSION}"`` step. This check enforces
 that single-source contract mechanically so a security bump cannot silently
