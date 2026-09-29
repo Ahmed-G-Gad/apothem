@@ -55,6 +55,16 @@ top-level `.github/README.md` would, and none exists.
   `clean-install-gate.yml` and the `harness-matrix.yml` pull-request trigger run
   on every PR to `main`, and `ci-docs-stub.yml` reports the required contexts
   green on a documentation-only PR that never runs the real jobs.
+- **Public-only security scans.** Code scanning and dependency review are free
+  on public repositories and need GitHub Code Security on private ones, and
+  Scorecard needs public access to the repository. The jobs and steps that
+  depend on them run only when `github.event.repository.private == false`:
+  `codeql.yml`, the `review` job in `dependency-review.yml`, `scorecard.yml`,
+  `zizmor.yml`, and the Trivy scan and SARIF upload in `ci.yml`. On a private
+  repository they are skipped rather than failed, and they run again unchanged
+  once the repository is public. None of them is a required check, so a skip
+  never blocks a merge. The other gates, including pip-audit, npm audit, the
+  license audit, and gitleaks, run in both states.
 - **Least privilege.** Each workflow declares a `contents: read` baseline at the
   workflow scope; per-job overrides escalate a scope (`security-events: write`,
   `id-token: write`, `issues: write`, `pages: write`) only where a step needs

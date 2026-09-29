@@ -4,6 +4,8 @@
 # known vulnerabilities or disallowed licenses, evaluated against the diff of
 # the manifest/lockfiles. Complements the weekly pip-audit and Trivy scans with
 # a PR-time gate (OpenSSF Scorecard Dependency-Update-Tool / supply-chain).
+# The review runs only while the repository is public. See the `if:` on the
+# review job.
 # Ref: https://github.com/actions/dependency-review-action
 
 name: Dependency Review
@@ -27,7 +29,12 @@ concurrency:
 jobs:
   review:
     name: Dependency review
-    if: github.event_name == 'pull_request'
+    # Dependency review is free on public repositories and needs GitHub Code
+    # Security on private ones. Without it, a private run fails with
+    # "Dependency review is not supported on this repository". Skip on
+    # private repos instead, as scorecard.yml and zizmor.yml do. The gate
+    # runs again unchanged once the repository is public.
+    if: github.event_name == 'pull_request' && github.event.repository.private == false
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

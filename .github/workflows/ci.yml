@@ -31,7 +31,9 @@
 # The workflow-level permissions block grants the minimum scopes the steps
 # below need (read-only on contents). Exactly one job escalates:
 # supply-chain-scan takes security-events:write so the Trivy SARIF can be
-# posted to Code Scanning. CodeQL itself is owned by codeql.yml and carries
+# posted to Code Scanning. The Trivy scan and its upload run only while the
+# repository is public, because Code Scanning on a private repository needs
+# GitHub Code Security. CodeQL itself is owned by codeql.yml and carries
 # its own scopes there. Coverage reports are uploaded as workflow artifacts
 # rather than to an external service, so that job needs no write scope at
 # all. No job uses write-all.
@@ -276,6 +278,11 @@ jobs:
         with:
           python-version: "3.12"
       - name: Trivy filesystem scan
+        # Public repositories only. The scan's one output is the SARIF file
+        # the next step uploads, and Code Scanning on a private repository
+        # needs GitHub Code Security, so a private run would discard it.
+        # pip-audit and gitleaks below run in both states.
+        if: github.event.repository.private == false
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
         with:
           scan-type: fs
@@ -292,9 +299,13 @@ jobs:
         # fail — red-failing every external contributor's PR. The Trivy scan
         # itself still runs on forks; only the SARIF upload (which the fork
         # token cannot perform) is gated.
+        # Skipped on a private repository, together with the scan above:
+        # Code Scanning there needs GitHub Code Security, and without it the
+        # upload fails the job.
         if: >-
-          github.event_name != 'pull_request' ||
-          github.event.pull_request.head.repo.full_name == github.repository
+          github.event.repository.private == false &&
+          (github.event_name != 'pull_request' ||
+          github.event.pull_request.head.repo.full_name == github.repository)
         uses: github/codeql-action/upload-sarif@54f647b7e1bb85c95cddabcd46b0c578ec92bc1a  # v4.36.3
         with:
           sarif_file: trivy-results.sarif
