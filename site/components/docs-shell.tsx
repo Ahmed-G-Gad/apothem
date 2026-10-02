@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 
-import { DocsLayout } from 'fumadocs-ui/layouts/docs';
 import type { ReactNode } from 'react';
 import { source } from '@/lib/source';
 import { i18n } from '@/lib/i18n';
 import { BrandMark } from '@/components/brand-mark';
+import { GithubIcon } from '@/components/github-icon';
+import { LandmarkDocsLayout } from '@/components/docs-landmarks';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 const REPO_URL = 'https://github.com/ahmed-g-gad/apothem';
@@ -19,7 +20,9 @@ const REPO_URL = 'https://github.com/ahmed-g-gad/apothem';
  * The `locale` selects which per-language page tree the sidebar renders;
  * `i18n` enables Fumadocs' built-in language switcher. The current locale and
  * the available locale list are supplied by the enclosing layout's
- * `RootProvider` i18n prop.
+ * `RootProvider` i18n prop. The sidebar sits in a `nav` landmark and each
+ * page's content in the `main` landmark the skip link targets (see
+ * `docs-landmarks.tsx`).
  */
 export function DocsShell({
   locale,
@@ -29,15 +32,27 @@ export function DocsShell({
   children: ReactNode;
 }) {
   return (
-    <DocsLayout
+    <LandmarkDocsLayout
       tree={source.getPageTree(locale)}
       // Enables Fumadocs' built-in language switcher in the docs chrome so
       // readers can move to any routed locale (the twelve cohort locales) from
       // any docs page.
       i18n={i18n}
       // Surfaces the repository link as a GitHub icon in the docs chrome, so
-      // the source is reachable from every docs page (it is absent by default).
-      githubUrl={REPO_URL}
+      // the source is reachable from every docs page. The link is declared
+      // here rather than through `githubUrl`: Fumadocs' built-in icon is an
+      // untitled `svg role="img"` (axe svg-img-alt, WCAG 1.1.1), while the
+      // site's glyph is `aria-hidden` inside a link the `label` names.
+      links={[
+        {
+          type: 'icon',
+          url: REPO_URL,
+          label: 'GitHub',
+          text: 'GitHub',
+          icon: <GithubIcon />,
+          external: true,
+        },
+      ]}
       nav={{
         title: (
           <span className="flex items-center gap-2 font-semibold">
@@ -60,27 +75,7 @@ export function DocsShell({
         defaultOpenLevel: 1,
       }}
     >
-      {/* Target for the root layout's "Skip to content" link (href
-          `#main-content`); Fumadocs' DocsLayout/DocsPage renders no such id, so
-          docs routes must supply one (WCAG 2.4.1 bypass-blocks).
-
-          It is a dedicated sentinel rather than a wrapper around `children` on
-          purpose. DocsPage renders its three regions — the article
-          (`[grid-area:main]`), the "On this page" TOC rail (`[grid-area:toc]`),
-          and the mobile TOC popover (`[grid-area:toc-popover]`) — as direct
-          participants in the CSS grid defined on the enclosing DocsLayout
-          container. A block wrapper around them inserts a box between that grid
-          and its named-area items, so `[grid-area:*]` stops resolving and the
-          TOC rail collapses (it never renders). Leaving `children` unwrapped
-          keeps the grid intact.
-
-          `sr-only` is `position: absolute`, so the sentinel is out of grid flow
-          and never occupies a grid cell, yet it remains a real, focusable box
-          (`tabIndex={-1}`) — so the skip link both scrolls to and moves focus
-          into the content, which a box-less (`display: contents`) element
-          cannot receive. */}
-      <div id="main-content" tabIndex={-1} className="sr-only" />
       {children}
-    </DocsLayout>
+    </LandmarkDocsLayout>
   );
 }

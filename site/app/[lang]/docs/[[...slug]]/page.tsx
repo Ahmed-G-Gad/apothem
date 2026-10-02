@@ -1,12 +1,8 @@
 // SPDX-License-Identifier: MIT
 
 import { source } from '@/lib/source';
-import {
-  DocsPage,
-  DocsBody,
-  DocsDescription,
-  DocsTitle,
-} from 'fumadocs-ui/page';
+import { DocsBody, DocsDescription, DocsTitle } from 'fumadocs-ui/page';
+import { LandmarkDocsPage } from '@/components/docs-landmarks';
 import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/mdx-components';
 import { buildAlternates } from '@/lib/hreflang';
@@ -29,13 +25,13 @@ export default async function Page(props: {
   const MDXContent = page.data.body;
 
   return (
-    <DocsPage toc={page.data.toc} full={page.data.full}>
+    <LandmarkDocsPage toc={page.data.toc} full={page.data.full}>
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
       <DocsBody>
         <MDXContent components={getMDXComponents()} />
       </DocsBody>
-    </DocsPage>
+    </LandmarkDocsPage>
   );
 }
 
