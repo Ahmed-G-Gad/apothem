@@ -1,16 +1,17 @@
 <!-- SPDX-License-Identifier: MIT -->
 
-# Apothem — Antigravity Bootstrap
+# Apothem — Global Instructions
 
-This file is the vendor-canonical instructions surface for Google
-Antigravity (`~/.gemini/GEMINI.md`). Antigravity CLI customization lives
-under `~/.gemini/antigravity-cli/`; Apothem installs its user-scope
-convention cohort as the `apothem` plugin under
+Apothem wrote this block with `apothem install --harness antigravity`.
+`~/.gemini/GEMINI.md` is a shared global instruction file: more than one
+coding tool loads it, so this block carries guidance that holds in every
+project and names no single tool as its reader. Apothem's Antigravity cohort
+is installed as the `apothem` plugin under
 `~/.gemini/antigravity-cli/plugins/apothem/`.
 
-## Apothem Conventions
+## Apothem reference material
 
-The Apothem-managed cohorts are propagated to:
+The install placed Apothem's files here:
 
 - `~/.gemini/antigravity-cli/plugins/apothem/plugin.json` — plugin metadata.
 - `~/.gemini/antigravity-cli/plugins/apothem/skills/` — reusable techniques

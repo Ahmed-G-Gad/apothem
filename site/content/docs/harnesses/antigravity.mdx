@@ -30,7 +30,9 @@ converted local helper definitions inside the plugin,
 **Shared user anchor.** `~/.gemini/GEMINI.md` is also the user-scope anchor for
 Gemini-family tooling. The Antigravity adapter keeps its extra Apothem material
 inside the `apothem` plugin under `~/.gemini/antigravity-cli/plugins/` so it
-does not claim generic Gemini CLI project directories.
+does not claim generic Gemini CLI project directories. Because more than one
+tool loads `~/.gemini/GEMINI.md`, the Apothem block there is written as global
+guidance that names no single tool as its reader.
 
 ## Profile-to-native-config mapping
 
