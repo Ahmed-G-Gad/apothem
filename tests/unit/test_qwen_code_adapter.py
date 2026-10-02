@@ -129,6 +129,34 @@ def test_materializer_hook_timeouts_are_seconds(
             assert handler["timeout"] < 1000
 
 
+@pytest.mark.parametrize(
+    "interpreter",
+    [
+        "C:/Program Files/Python311/python.exe",
+        "/Users/jane doe/.pyenv/versions/3.12.4/bin/python3",
+    ],
+)
+def test_materializer_quotes_an_interpreter_path_with_spaces(
+    monkeypatch: pytest.MonkeyPatch, interpreter: str
+) -> None:
+    # The hook command is a shell-form string. An interpreter under a path with
+    # spaces must be one quoted token, or the shell splits it and every guard
+    # fails to spawn (the dispatcher is fail-open, so the loss is silent).
+    from apothem.harnesses.qwen_code import materializer as qwen_materializer
+
+    monkeypatch.setattr(
+        qwen_materializer, "resolve_python_bin", lambda: PurePosixPath(interpreter)
+    )
+    grouped = _hook_entries(json.loads(materialize_native_config({})))
+    for handlers in grouped.values():
+        for handler in handlers:
+            command = handler["command"]
+            assert isinstance(command, str)
+            assert command.startswith(
+                f'"{interpreter}" "${{HARNESS_ROOT}}/.apothem/support/hooks/'
+            ), command
+
+
 def test_materializer_hook_commands_resolve_a_real_interpreter(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

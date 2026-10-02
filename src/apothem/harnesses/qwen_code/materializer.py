@@ -17,6 +17,8 @@ POSIX host, which silently disables every installed guard.
 from __future__ import annotations
 
 import json
+import re
+import shlex
 from typing import Any
 
 from apothem.lib.profile import coerce_profile
@@ -32,6 +34,12 @@ from apothem.lib.python_resolver import resolve_python_bin
 _PRETOOLUSE_TIMEOUT_S = 10
 _SESSION_TIMEOUT_S = 30
 _STOP_TIMEOUT_S = 60
+
+# Characters that never need shell quoting in the interpreter token. A path made
+# only of these renders bare; any other path (a space in ``C:/Program Files/``
+# or a macOS user directory) renders as one quoted token so the shell-form
+# ``command`` string cannot split it.
+_SHELL_SAFE_TOKEN = re.compile(r"[A-Za-z0-9_./:@+=,-]+")
 
 
 def _hook(command: str, timeout: int, description: str) -> dict[str, object]:
@@ -62,9 +70,21 @@ def _dispatch(python_bin: str, event_name: str, message_name: str | None = None)
     tokens before writing), so the command points at the dispatcher materialized
     under ``~/.qwen/.apothem/support/hooks/`` without requiring an importable
     ``apothem`` package on the host.
+
+    Qwen runs ``command`` as a shell command, and Apothem sets no ``shell``
+    field, so an interpreter path that contains a space is wrapped in double
+    quotes, the same quoting the script path already uses. A path that also
+    carries a character double quotes do not protect in a POSIX shell (``"``,
+    ``$``, a backtick or a backslash) falls back to :func:`shlex.quote`.
     """
+    interpreter = python_bin
+    if not _SHELL_SAFE_TOKEN.fullmatch(interpreter):
+        if any(char in interpreter for char in '"$`\\'):
+            interpreter = shlex.quote(interpreter)
+        else:
+            interpreter = f'"{interpreter}"'
     parts = [
-        python_bin,
+        interpreter,
         '"${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py"',
         event_name,
     ]
