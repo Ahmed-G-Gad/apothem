@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import json
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
@@ -50,22 +49,26 @@ def _native_config_parses(target: Path) -> bool:
     """Return True unless *target* is a structurally invalid JSON/YAML file.
 
     Only ``.json``/``.yaml``/``.yml`` targets are parsed; other suffixes (e.g.
-    Markdown anchors) pass trivially. A present-but-corrupt config reads as
-    not-installed.
+    Markdown anchors) pass trivially. A ``.json`` target may be JSONC or JSON5
+    (OpenCode and OpenClaw read those dialects, and install leaves such a file
+    in place when it has nothing to change). A present-but-corrupt config reads
+    as not-installed.
     """
+    from apothem.lib import lenient_json
+
     suffix = target.suffix.lower()
     if suffix not in {".json", ".yaml", ".yml"}:
         return True
     try:
         text = target.read_text(encoding="utf-8")
-    except OSError:
+    except (OSError, UnicodeDecodeError):
         return False
     try:
         if suffix == ".json":
-            json.loads(text)
+            lenient_json.loads(text)
         else:
             yaml.safe_load(text)
-    except (json.JSONDecodeError, yaml.YAMLError):
+    except (lenient_json.LenientJSONError, yaml.YAMLError):
         return False
     return True
 

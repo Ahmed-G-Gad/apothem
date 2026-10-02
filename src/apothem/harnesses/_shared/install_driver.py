@@ -101,6 +101,19 @@ from .install_driver_converters import _toml_multiline_string as _toml_multiline
 from .install_driver_converters import _toml_string as _toml_string
 from .install_driver_converters import _yaml_list as _yaml_list
 from .install_driver_converters import _yaml_scalar as _yaml_scalar
+from .install_driver_jsonmerge import _APOTHEM_HOOK_MARKERS as _APOTHEM_HOOK_MARKERS
+from .install_driver_jsonmerge import (
+    CONFIG_UNPARSEABLE_CODE as CONFIG_UNPARSEABLE_CODE,
+)
+from .install_driver_jsonmerge import _dedupe_json_list as _dedupe_json_list
+from .install_driver_jsonmerge import _is_apothem_hook as _is_apothem_hook
+from .install_driver_jsonmerge import _leading_comment_block as _leading_comment_block
+from .install_driver_jsonmerge import _merge_hook_entry as _merge_hook_entry
+from .install_driver_jsonmerge import _merge_hooks as _merge_hooks
+from .install_driver_jsonmerge import _merge_json_settings as _merge_json_settings
+from .install_driver_jsonmerge import _merge_json_values as _merge_json_values
+from .install_driver_jsonmerge import _merge_native_content as _merge_native_content
+from .install_driver_jsonmerge import _overlay_json_settings as _overlay_json_settings
 from .install_driver_lifecycle import FidelityResult as FidelityResult
 from .install_driver_lifecycle import _native_config_parses as _native_config_parses
 from .install_driver_lifecycle import _profile_anchor_targets as _profile_anchor_targets
@@ -123,25 +136,14 @@ from .install_driver_materialize import (
     _materialize_data_surfaces as _materialize_data_surfaces,
 )
 from .install_driver_materialize import run_install as run_install
-from .install_driver_merge import _APOTHEM_HOOK_MARKERS as _APOTHEM_HOOK_MARKERS
 from .install_driver_merge import (
     _apply_operator_owned_file as _apply_operator_owned_file,
 )
-from .install_driver_merge import _dedupe_json_list as _dedupe_json_list
-from .install_driver_merge import _is_apothem_hook as _is_apothem_hook
-from .install_driver_merge import _leading_comment_block as _leading_comment_block
-from .install_driver_merge import _merge_hook_entry as _merge_hook_entry
-from .install_driver_merge import _merge_hooks as _merge_hooks
-from .install_driver_merge import _merge_json_settings as _merge_json_settings
-from .install_driver_merge import _merge_json_values as _merge_json_values
-from .install_driver_merge import _merge_native_content as _merge_native_content
 from .install_driver_merge import _merged_json_text as _merged_json_text
-from .install_driver_merge import _merged_yaml_text as _merged_yaml_text
 from .install_driver_merge import (
     _operator_owned_merge_text as _operator_owned_merge_text,
 )
 from .install_driver_merge import _operator_owned_preview as _operator_owned_preview
-from .install_driver_merge import _overlay_json_settings as _overlay_json_settings
 from .install_driver_merge import _unified_diff as _unified_diff
 from .install_driver_merge import (
     apply_managed_block_anchor as apply_managed_block_anchor,

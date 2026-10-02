@@ -47,6 +47,7 @@ from .install_driver_converters import (
     _opencode_agent_text,
     _qwen_agent_text,
 )
+from .install_driver_jsonmerge import CONFIG_UNPARSEABLE_CODE
 from .install_driver_merge import (
     _merged_json_text,
     _operator_owned_preview,
@@ -340,6 +341,7 @@ def _dry_run_results(
         src = resolve_source(entry.source)
         detail: dict[str, str] = {"ownership_class": entry.ownership_class}
         outcome: MaterializationOutcome
+        message = _DRY_RUN_MESSAGE
         operator_owned_write = entry.mode == "sentinel_merge" or (
             entry.mode == "write_text" and entry.ownership_class == "operator-owned"
         )
@@ -352,12 +354,17 @@ def _dry_run_results(
             )
             if preview is None:
                 outcome = "skipped"
+            elif preview.refusal is not None:
+                target, outcome = preview.target, "error"
+                message = preview.refusal.reason
+                detail["code"] = CONFIG_UNPARSEABLE_CODE
+                detail["fix"] = preview.refusal.fix
             else:
-                target, outcome, diff, gate_required = preview
+                target, outcome = preview.target, preview.outcome
                 if entry.ownership_class == "operator-owned":
-                    if diff:
-                        detail["diff"] = diff
-                    if gate_required:
+                    if preview.diff:
+                        detail["diff"] = preview.diff
+                    if preview.gate_required:
                         detail["destructive_gate"] = "required"
         else:
             outcome = _prospective_entry_outcome(
@@ -373,7 +380,7 @@ def _dry_run_results(
             )
         results.append(
             _with_detail(
-                _result(outcome, entry.mode, target, _DRY_RUN_MESSAGE, source=src),
+                _result(outcome, entry.mode, target, message, source=src),
                 detail,
             )
         )

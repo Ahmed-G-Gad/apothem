@@ -82,6 +82,24 @@ The profile's MCP servers get three advisories, each naming the profile field:
 The credential advisory never prints the value it found. A value that contains
 a `${...}` reference is never flagged.
 
+## Operator configs with comments
+
+Some harness configs are files you also edit, such as `settings.json`,
+`opencode.json` (which may be JSONC), `openclaw.json` (JSON5), and
+`config.yaml`. Install merges its keys into these files and keeps every key you
+added.
+
+A merge rewrites the file as plain JSON or YAML, which would drop comments,
+trailing commas, and JSON5 syntax. So:
+
+- When the merge would not change any value (for example, you already added
+  Apothem's keys yourself), the file is left byte-for-byte as it is.
+- When the merge must change a value in a file that carries comments or JSON5
+  syntax, or in a file that does not parse at all, install writes nothing for
+  that harness and exits 1 with the error code `config.unparseable`. The
+  `fix` field names the keys install would add, so you can convert the file
+  to plain JSON or YAML, or add those keys by hand and re-run.
+
 ## Options
 
 | Option | Description |

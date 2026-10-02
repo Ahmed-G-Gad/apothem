@@ -29,6 +29,7 @@ EXPECTED_MODULES = {
     "install_driver_backup",
     "install_driver_converters",
     "install_driver_merge",
+    "install_driver_jsonmerge",
     "install_driver_removal",
     "install_driver_planvalidation",
     "install_driver_treeops",

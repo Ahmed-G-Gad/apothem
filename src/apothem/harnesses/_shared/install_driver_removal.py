@@ -16,7 +16,7 @@ from apothem.lib.harness_materializer import (
 )
 
 from .install_driver_backup import _guarded_unlink, backup_existing, write_bytes_safely
-from .install_driver_merge import _is_apothem_hook
+from .install_driver_jsonmerge import _is_apothem_hook
 from .install_driver_pathsafety import _validate_target_path
 from .install_driver_types import (
     _REMOVE_KEY,

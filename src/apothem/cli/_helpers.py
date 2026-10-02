@@ -981,13 +981,23 @@ def _dry_run_plan(
 def _materialization_error(
     exc: MaterializationError, *, files_written: list[str]
 ) -> dict[str, object]:
-    """Convert a materialization exception to the CLI diagnostic contract."""
+    """Convert a materialization exception to the CLI diagnostic contract.
+
+    A result that carries its own structured ``code`` / ``fix`` in ``detail``
+    (for example ``config.unparseable`` for an operator config the install
+    refuses to rewrite) surfaces those instead of the generic pair.
+    """
     first = exc.run.errors[0] if exc.run.errors else None
+    detail = first.detail if first is not None else {}
     return _CliUserError(
-        code="materialization.failed",
+        code=detail.get("code", "materialization.failed"),
         message="Apothem materialization failed.",
         field=first.operation if first is not None else "materialization",
         reason=first.message if first is not None else str(exc),
-        fix="Review the target path, permissions, and harness support files before retrying.",
+        fix=detail.get(
+            "fix",
+            "Review the target path, permissions, and harness support files "
+            "before retrying.",
+        ),
         files_written=tuple(files_written),
     ).to_dict()

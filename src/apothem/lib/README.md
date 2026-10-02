@@ -10,6 +10,7 @@
 |------|---------|
 | `frontmatter.py` | YAML frontmatter field probing and value extraction for ecosystem files. |
 | `harness_materializer.py` | Shared building blocks for the per-harness materializers. |
+| `lenient_json.py` | Read-only, stdlib-only parser for JSONC and JSON5 operator configs (OpenCode, OpenClaw) — lets the install tell whether its merge would change a value, so a commented file is left byte-identical or refused (`config.unparseable`) rather than rewritten without its comments. |
 | `harness_protocol.py` | The `HarnessAdapter` structural Protocol every concrete adapter satisfies — defined in the foundation layer so the registry references the contract without importing its consumers; re-exported by `apothem.harnesses` as the public import path. |
 | `harness_registry.py` | Harness identity, adapter entry-point, target, docs, capability, package-data, and test-fixture registry — authoritative at runtime (filesystem-convention `discover_adapters` is a conformance parity check, not the runtime resolver). |
 | `harness_registry_data.py` | The static, declarative `HARNESS_REGISTRY` data table (split from `harness_registry.py`) — the per-adapter identity / entry-point / target / capability / package-data records plus the dataclass and capability-matrix builders; the sibling module holds the resolution logic and is the runtime surface. |
