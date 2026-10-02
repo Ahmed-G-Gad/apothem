@@ -107,7 +107,7 @@ Command frontmatter is validated against [`../schemas/command.schema.json`](../s
 - `argument-hint` — the command's argument / flag surface, shown in invocation help.
 - `disable-model-invocation` — when `true`, the command is operator-invoked only and is never auto-invoked by the model.
 - `portability` — the command's portability class across harnesses (e.g. `universal`).
-- `allowed-tools` — the tool surface the command may use (`*` for the full set), propagated to harnesses that scope command tool access.
+- `allowed-tools` — the tools a harness may run without asking while the command is active. Read-only by default (`Read, Glob, Grep`); a side-effecting tool appears only as a scoped rule such as `Bash(git log *)`. The schema rejects `*` and bare `Bash`, `PowerShell`, `Write`, `Edit`, `NotebookEdit`, and `WebFetch`.
 
 The body after the frontmatter is the command's workflow specification: ordered steps, gates, structured-inquiry invocation points, and output contract.
 

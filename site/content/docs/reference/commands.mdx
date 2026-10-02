@@ -55,12 +55,18 @@ description: <one-line role>
 argument-hint: <placeholder for the slash-command argument>
 disable-model-invocation: <true | false>
 portability: <portability classification, e.g. universal>
-allowed-tools: <comma-separated tool list, or "*">
+allowed-tools: <comma-separated read-only tools and scoped rules, e.g. "Read, Glob, Grep" or "Read, Bash(git log *)">
 ---
 ```
 
 The validator's `frontmatter-cohort` check (Command branch) verifies the
-contract on every command file.
+contract on every command file. `allowed-tools` lists the tools a harness may
+run without asking while the command is active, so it stays read-only by
+default: a side-effecting tool (Bash, PowerShell, Write, Edit, NotebookEdit,
+WebFetch) appears only as a scoped rule such as `Bash(git log *)`, and the bare
+`"*"` wildcard is rejected by the schema. Commands with irreversible side
+effects (`freshify`, `github-deploy-fresh`, `github-deploy-next`) set
+`disable-model-invocation: true`, so only the operator starts them.
 
 ## Authoring discipline
 

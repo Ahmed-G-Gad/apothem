@@ -22,6 +22,20 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   suggestion goes to the operator, who owns that action.
 - **`APOTHEM_HOOKS_DISABLE=1` silences every dispatcher-routed hook**, for
   troubleshooting without editing installed files.
+- **Commands and skills pre-approve read-only tools only.** `allowed-tools`
+  names the tools a harness may run without asking while a command or skill is
+  active. Every command declared the bare `"*"` wildcard, which Claude Code
+  ignores, and 17 skills pre-approved unscoped `Bash`, `Write`, `Edit`, or
+  `WebFetch`, so content fetched during a run could start them unprompted.
+  Commands now declare `Read, Glob, Grep`, skills keep only their read-only
+  tools, and the command and skill schemas reject `"*"` and bare `Bash`,
+  `PowerShell`, `Write`, `Edit`, `NotebookEdit`, and `WebFetch`; the
+  conformity gate enforces both schemas. Side-effecting tools still run under
+  the operator's own permission settings.
+- **`/freshify`, `/github-deploy-fresh`, and `/github-deploy-next` are
+  operator-invoked only.** They purge caches and history, merge, tag, and
+  publish, so they now set `disable-model-invocation: true`, and the model
+  cannot start them from its own skill choice.
 - **Hook guidance no longer carries maintainer text.** The license comment line
   and the `## Bindings` section of each message file are removed before the
   text reaches the assistant.

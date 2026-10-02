@@ -143,12 +143,14 @@ def test_foundational_stanzas_present(command_text: str) -> None:
 
 
 def test_frontmatter_version_bumped(command_text: str) -> None:
-    """The frontmatter carries the release version and a current date."""
+    """The frontmatter carries the release version and a date at or after the change."""
     assert re.search(r'^version:\s*"0\.1\.0"', command_text, re.MULTILINE), (
         "version field does not carry the release version 0.1.0"
     )
-    assert re.search(r'^updated:\s*"2026-06-10"', command_text, re.MULTILINE), (
-        "updated field not refreshed to 2026-06-10"
+    match = re.search(r'^updated:\s*"(\d{4}-\d{2}-\d{2})"', command_text, re.MULTILINE)
+    assert match is not None, "updated field missing or not an ISO date"
+    assert match.group(1) >= "2026-06-10", (
+        f"updated field {match.group(1)} predates the --quick change (2026-06-10)"
     )
 
 

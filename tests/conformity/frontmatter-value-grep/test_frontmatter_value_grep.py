@@ -20,6 +20,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from apothem.conformity import frontmatter_value_grep as fvg
 from apothem.conformity import gate
 
@@ -125,6 +127,65 @@ def test_pattern_branch_accepts_semver_rejects_malformed() -> None:
     assert fvg._value_valid("1.2.3", prop)
     assert not fvg._value_valid("0.1", prop)
     assert not fvg._value_valid("v1.2.3", prop)
+
+
+_SCOPED_TOOLS = [
+    "Read, Glob, Grep",
+    "Read",
+    "Read, Glob, Grep, WebSearch, TodoWrite, Agent",
+    "Read, Bash(git log *)",
+    "Bash(git status:*), Edit(docs/**)",
+    "WebFetch(domain:example.com)",
+]
+_UNSCOPED_TOOLS = [
+    "*",
+    "Read, *",
+    "Read, Write",
+    "Bash",
+    "Read,Bash",
+    "Read, Edit, Glob",
+    "Read, NotebookEdit",
+    "PowerShell",
+    "WebFetch",
+]
+
+
+@pytest.mark.parametrize("schema_name", ["command.schema.json", "skill.schema.json"])
+def test_allowed_tools_accepts_only_scoped_grants(schema_name: str) -> None:
+    """``allowed-tools`` admits read-only tools and scoped rules only.
+
+    Harnesses that honor the field run a pre-approved tool without asking, so
+    a bare wildcard or an unscoped side-effecting tool would let prompt-injected
+    content run it unprompted.
+    """
+    schema = json.loads((fvg.SCHEMAS_DIR / schema_name).read_text("utf-8"))
+    prop = schema["properties"]["allowed-tools"]
+    for value in _SCOPED_TOOLS:
+        assert fvg._value_valid(value, prop), value
+    for value in _UNSCOPED_TOOLS:
+        assert not fvg._value_valid(value, prop), value
+
+
+def test_command_wildcard_is_flagged(tmp_path: Path) -> None:
+    """A command that pre-approves ``*`` is a value finding."""
+    _write(
+        tmp_path / "src" / "apothem" / "commands" / "c.md",
+        "---\n"
+        'name: "c"\n'
+        'version: "0.1.0"\n'
+        'updated: "2026-10-02"\n'
+        'description: "A synthetic command fixture."\n'
+        'argument-hint: ""\n'
+        "disable-model-invocation: true\n"
+        'portability: "universal"\n'
+        'allowed-tools: "*"\n'
+        "---\n\nBody.\n",
+    )
+
+    result = fvg.check(tmp_path)
+
+    assert result.passed is False
+    assert {f.key for f in result.findings} == {"allowed-tools"}
 
 
 # --- check(root) walk against synthetic cohort trees ------------------------

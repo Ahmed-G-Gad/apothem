@@ -93,7 +93,7 @@ description: "What this command does"
 argument-hint: "[argument-pattern]"
 disable-model-invocation: true | false
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 ```
 
@@ -121,7 +121,7 @@ description: "Executes a specific phase from a Master Plan Suite with conformity
 argument-hint: "[path/to/plan-suite/] [phase-id] [--dry-run]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 # /plan-execute — Execute a Specific Phase
@@ -215,7 +215,7 @@ description: "What this skill teaches"
 archetype: "workflow-template"
 userInvocable: true | false
 disable-model-invocation: true | false
-allowed-tools: "Read, Write, Glob"
+allowed-tools: "Read, Glob, Grep"
 ---
 ```
 
@@ -231,7 +231,6 @@ allowed-tools: "Read, Write, Glob"
 
 ```yaml
 argument-hint: "[args...]"                           # Usage pattern if userInvocable
-effort: "low" | "medium" | "high" | "xhigh" | "max" # Optional effort level
 ```
 
 ### المثال
@@ -245,9 +244,8 @@ description: "Comprehensive blind audit of the apothem ecosystem"
 archetype: "audit-template"
 userInvocable: true
 disable-model-invocation: true
-allowed-tools: "Read, Write, Edit, Glob, Grep, Bash"
+allowed-tools: "Read, Glob, Grep, Agent, TodoWrite"
 argument-hint: "[--focus area] [--fix]"
-effort: "max"
 ---
 
 ## Purpose
