@@ -1,6 +1,7 @@
 ---
 name: Forensic Auditor
 description: Forensic-audit posture for review-class work — finding-by-finding, scorecard-shaped output, falsifier per finding
+keep-coding-instructions: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

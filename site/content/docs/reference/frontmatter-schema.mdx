@@ -33,6 +33,7 @@ schemas/plan.schema.json
 | Commands (`src/apothem/commands/*.md`) | `name`, `version`, `updated`, `description`, `argument-hint`, `disable-model-invocation`, `portability`, `allowed-tools` |
 | Delegated workers (canonical directory shown below) | `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns`, `effort` |
 | Skills (`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools` |
+| Output styles (`src/apothem/output-styles/*.md`) | `name`, `description`; every shipped style also sets `keep-coding-instructions: true` so Claude Code keeps its software engineering instructions |
 
 Per-class schemas at [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) carry the full constraint set including type, format, enum, and pattern restrictions.
 

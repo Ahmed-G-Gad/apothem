@@ -12,7 +12,8 @@ style on a per-session basis via `/output-style <name>`.
 
 | Profile | File | Tone |
 |---------|------|------|
-| Default architect | `src/apothem/output-styles/default-architect.md` | Senior Software Architect tone (default) |
+| Default | `src/apothem/output-styles/default.md` | Baseline tone every other style supplements |
+| Default architect | `src/apothem/output-styles/default-architect.md` | Senior Software Architect tone |
 | Concise engineer | `src/apothem/output-styles/concise-engineer.md` | Short-form engineering tone |
 | Forensic auditor | `src/apothem/output-styles/forensic-auditor.md` | Finding-by-finding audit tone |
 
@@ -22,13 +23,21 @@ style on a per-session basis via `/output-style <name>`.
 ---
 name: <style name>
 description: <one-line tone summary>
-type: output-style
+keep-coding-instructions: true
 ---
 ```
+
+`name` and `description` are required. Every shipped style also sets
+`keep-coding-instructions: true`. Claude Code leaves its built-in software
+engineering instructions (how to scope changes, write comments, and verify
+work) out of any custom output style unless this key is `true`; its default is
+`false`. The Apothem styles change how work is presented, not how it is done,
+so they keep those instructions. See the
+[Claude Code output styles reference](https://code.claude.com/docs/en/output-styles).
 
 ## Authoring a new profile
 
 Create a new `<name>.md` file under `src/apothem/output-styles/` with the
-canonical frontmatter, declare the tone in the body, and ratify
-by invoking `/output-style <name>` at the start of your next
-session.
+canonical frontmatter, including `keep-coding-instructions: true` unless the
+style is not meant for engineering work, declare the tone in the body, and
+ratify by invoking `/output-style <name>` at the start of your next session.
