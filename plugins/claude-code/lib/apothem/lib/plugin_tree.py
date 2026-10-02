@@ -55,6 +55,24 @@ PLUGIN_AUTHOR: Final[dict[str, str]] = {
 }
 PLUGIN_HOMEPAGE: Final[str] = "https://apothem.ahmedgad.com"
 PLUGIN_REPOSITORY: Final[str] = "https://github.com/ahmed-g-gad/apothem"
+
+#: Name shown in Claude Code's UI in place of the kebab-case ``name``.
+PLUGIN_DISPLAY_NAME: Final[str] = "Apothem"
+
+#: Directory-listing links. Anthropic's plugin directory reads these from
+#: ``plugin.json``; Claude Code ignores them at load time. Each must be an
+#: ``https://`` URL (manifest reference, "Directory listing fields").
+#: The support link is the issue tracker SUPPORT.md routes defects and
+#: questions to.
+#:
+#: TODO(clarify): ``privacyPolicyUrl`` and ``termsOfServiceUrl`` stay unset
+#: until the operator publishes those pages; their URLs cannot be derived from
+#: the repository. ``icon`` needs an image file inside the assembled tree,
+#: which the assembler does not copy yet.
+PLUGIN_LISTING_URLS: Final[dict[str, str]] = {
+    "documentationUrl": "https://apothem.ahmedgad.com/docs",
+    "supportUrl": "https://github.com/ahmed-g-gad/apothem/issues",
+}
 PLUGIN_LICENSE: Final[str] = "MIT"
 PLUGIN_KEYWORDS: Final[tuple[str, ...]] = (
     "configuration",
@@ -327,6 +345,7 @@ def build_plugin_manifest(
     engine_root_rel = _engine_root_rel_for(catalog_prefix)
     manifest: dict[str, object] = {
         "name": PLUGIN_NAME,
+        "displayName": PLUGIN_DISPLAY_NAME,
         "version": _resolve_version(version),
         "description": PLUGIN_DESCRIPTION,
         "author": dict(PLUGIN_AUTHOR),
@@ -334,6 +353,7 @@ def build_plugin_manifest(
         "repository": PLUGIN_REPOSITORY,
         "license": PLUGIN_LICENSE,
         "keywords": list(PLUGIN_KEYWORDS),
+        **PLUGIN_LISTING_URLS,
         "commands": command_paths,
         "agents": sorted(
             f"{catalog_prefix}agents/{stem}.md" for stem in members["agents"]

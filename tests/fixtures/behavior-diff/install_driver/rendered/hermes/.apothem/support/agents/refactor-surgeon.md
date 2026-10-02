@@ -72,3 +72,11 @@ Out-of-axis: Concurrency, Performance, Security, Tooling, Observability. Out-of-
 - **Surfaced gaps:** Adjacent gaps observed but out of scope; required when structural (M6). Empty: `[]`.
 - **Inquiry surface:** Typed inquiry items per M5 with options annotated per M7. Empty: `[]`.
 - **Self-check attestation:** Fifteen-bar gate result per M4. Each bar `pass` or `n/a (with reason)`; failures block return.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The clean-room re-derivation of one named target, the named deficiency it removes, and the before-and-after test evidence that behavior is unchanged.
+- **Satisfies →** A behavior-preserving refactor: behavior, contracts, and side effects are identical before and after, as the host's own tests show.
+- **Established by ↑** `agents/README.md` (this agent's index entry). `rules/clean-room-generation.md` (extract the contract, re-derive, never edit in place). `rules/refactoring-discipline.md` (refactors run behind green tests, one concern at a time).
+- **Gated by ←** The write-capable tool posture in frontmatter (`Read, Write, Edit, Glob, Grep, Bash`). The `maxTurns: 20` ceiling. A single named target with a stated refactor intent; the host's own tests green before and after.
+- **Cross-bound with ↔** `skills/refactor-extract/SKILL.md` (the interactive counterpart a user invokes directly). `agents/mcp-builder.md` (the other write-capable agent; both touch only the named target and surface adjacent gaps as findings).

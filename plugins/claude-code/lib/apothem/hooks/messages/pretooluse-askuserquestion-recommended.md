@@ -63,3 +63,9 @@ yields an empty (allow) envelope, so a validator error never crashes the
 operator's question. The dispatcher's outer boundary is fail-open too: a
 dispatch error converts to a structured failure envelope on stdout and the
 question proceeds.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** `hooks/askuserquestion_validator.py` (the dispatcher routes this basename to the validator, which checks the `(Recommended)` marker on the live question payload).
+- **Established by ↑** The PreToolUse AskUserQuestion registration in `hooks/hooks.json` and the harness settings templates. `rules/interactive-questions-canonical-shapes.md` (the marker form it validates). `conformity/option_annotation_grep.py` (the committed-artifact counterpart this call-time check complements).
+- **Cross-bound with ↔** `hooks/messages/pretooluse-conformity.md` (the per-write gate context whose option-annotation matcher covers committed artifacts).

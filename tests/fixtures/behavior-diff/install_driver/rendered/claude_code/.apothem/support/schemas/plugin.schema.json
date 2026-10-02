@@ -12,10 +12,36 @@
       "description": "Unique kebab-case plugin identifier.",
       "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
     },
+    "displayName": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Name shown in the UI in place of 'name'. Not used for namespacing or lookup."
+    },
     "version": {
       "type": "string",
       "description": "SemVer version of the plugin. Pins the plugin so consumers receive updates only when it changes.",
       "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "icon": {
+      "type": "string",
+      "pattern": "^\\./",
+      "description": "Directory listing: plugin-root-relative path to an image file. Claude Code ignores it at load time."
+    },
+    "documentationUrl": {
+      "$ref": "#/$defs/listingUrl",
+      "description": "Directory listing: documentation link. Claude Code ignores it at load time."
+    },
+    "supportUrl": {
+      "$ref": "#/$defs/listingUrl",
+      "description": "Directory listing: support link. Claude Code ignores it at load time."
+    },
+    "privacyPolicyUrl": {
+      "$ref": "#/$defs/listingUrl",
+      "description": "Directory listing: privacy policy link. Claude Code ignores it at load time."
+    },
+    "termsOfServiceUrl": {
+      "$ref": "#/$defs/listingUrl",
+      "description": "Directory listing: terms of service link. Claude Code ignores it at load time."
     },
     "description": {
       "type": "string",
@@ -70,6 +96,12 @@
     }
   },
   "$defs": {
+    "listingUrl": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://",
+      "description": "Anthropic's directory requires an https:// URL for each listing link."
+    },
     "componentPathArray": {
       "type": "array",
       "minItems": 1,

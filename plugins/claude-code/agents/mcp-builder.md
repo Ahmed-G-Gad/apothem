@@ -84,3 +84,11 @@ Out-of-axis: Concurrency, Performance, Security, Testing, Observability. Out-of-
 - **Surfaced gaps.** Structural gaps from execution; required when structural (M6). Empty: `[]`
 - **Inquiry surface.** Typed inquiry items per M5 with options annotated per M7. Empty: `[]`
 - **Self-check attestation.** Fifteen-bar gate result per M4. Each bar `pass` or `n/a`; any failure blocks return.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The scaffolded MCP server: one typed tool definition per contract entry plus a list-tools smoke test, in the SDK the host already uses.
+- **Satisfies →** A contract-first scaffold with a minimal surface: every tool traces to a contract entry and nothing speculative ships.
+- **Established by ↑** `agents/README.md` (this agent's index entry). `rules/clean-room-generation.md` (each tool is derived from the stated contract, not copied). `rules/host-discovery.md` (the SDK is selected from the host's stack).
+- **Gated by ←** The write-capable tool posture in frontmatter (`Read, Write, Edit, Glob, Grep, Bash`). The `maxTurns: 20` ceiling. A stated or derivable contract (tool names, argument shapes, return types, resource URIs); an underspecified contract routes as inquiry.
+- **Cross-bound with ↔** `agents/refactor-surgeon.md` (the other write-capable agent; both touch only the named target and surface adjacent gaps as findings).

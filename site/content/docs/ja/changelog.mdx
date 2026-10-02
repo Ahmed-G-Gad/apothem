@@ -34,6 +34,25 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   Claude Code marketplace, so Qwen Code asks which plugin to install;
   `qwen extensions install ahmed-g-gad/apothem:apothem --consent` installs
   without the prompt.
+- **A behavioural eval suite ships as plain data.** `evals/` holds 108 cases
+  in the plugin-eval format: trigger and non-trigger cases for every
+  model-invocable command and agent, one outcome case per `/plan`,
+  `/research`, and `/audit` stage, and paired rule-effect cases.
+  `evals/case.schema.json` and a test validate every case, and a
+  manual-dispatch, cost-capped Evals workflow runs them on demand.
+- **CI records per-commit metrics.** A `metrics` job runs
+  `scripts/dev/collect_metrics.py` and enforces separate coverage floors for
+  the engine (80), the conformity gate (81), and the audit tooling (70). It
+  also reports launch-time bytes per harness, CLI cold start, and hook latency.
+- **Property tests cover the profile loader and frontmatter parsers.**
+- **`scripts/release/bump_version.py` moves every version anchor in one
+  step.** CI also checks the CHANGELOG link definitions, and the release
+  build stops a tag whose plugin changed without a version change.
+- **The plugin manifest carries a display name and listing links.**
+- **A `binding-five-direction-grep` validator gates the Bindings section**,
+  and every conformity entry point answers `--help`.
+- **Brand and README pages carry a trademark and non-affiliation notice**
+  for third-party harness names.
 
 ### Changed
 
@@ -51,7 +70,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   can be silenced with `APOTHEM_PROACTIVE_COMPACTION_ENABLED=0`. Its
   model-facing text now asks only for state externalization; the compaction
   suggestion goes to the operator, who owns that action.
-- **`APOTHEM_HOOKS_DISABLE=1` silences every dispatcher-routed hook**, for
+- **`APOTHEM_HOOKS_DISABLE=1` silences every Apothem hook**, the
+  dispatcher-routed ones and the engine install's conformity-gate hook, for
   troubleshooting without editing installed files.
 - **Commands and skills pre-approve read-only tools only.** `allowed-tools`
   names the tools a harness may run without asking while a command or skill is
@@ -70,6 +90,24 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **Hook guidance no longer carries maintainer text.** The license comment line
   and the `## Bindings` section of each message file are removed before the
   text reaches the assistant.
+- **Conformity validators report what they inspected.** Every standalone
+  report and `--all` result carries an `inspected` count. A run that inspects
+  nothing fails unless its empty scope is declared. Unknown flags and missing
+  files or roots exit 3.
+- **The hedging check flags the filler the instruction surfaces forbid**:
+  `basically`, `kind of` as an adverb, and `in some sense`.
+- **The always-on budget check names its unit and reports the full loaded
+  size** of the always-on rules, beside the word count it gates on.
+- **The hook benchmark runs the registered hook chain on real payloads**, and
+  the agent benchmarks report "not measured" instead of passing.
+- **The release SBOM describes the shipped wheel and sdist**, vendored
+  packages included, and is signed. The sdist and wheel build reproducibly
+  with a pinned setuptools backend.
+- **npm releases publish through OIDC trusted publishing only.**
+- **`ROADMAP.md` is the single roadmap**, and the site page is generated from
+  it. The release policy and runbooks describe one additive release model.
+- **The repository-root plugin manifest is removed.** The marketplace serves
+  `plugins/claude-code`, whose manifest validates in strict mode.
 
 ### Fixed
 
@@ -104,9 +142,25 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   the project directory from the harness, ascends a payload working directory
   to its Git root, and honors `CLAUDE_CONFIG_DIR`. The plugin-alone pointer
   prints the resolved rules path instead of an unexpanded variable.
+- **The engine-installed conformity gate hook starts.** It failed to import
+  its package in the installed layout and crashed on every write.
+- **Several validators no longer pass while inspecting nothing**, including
+  the naming check and the five-direction Bindings check, and the secret-leak
+  check no longer flags AWS documentation example keys.
+- **The profile loader returns structured errors** for invalid UTF-8, YAML
+  alias cycles, and very deep nesting instead of raising.
+- **The documented release verification passes on real release assets**, with
+  the exact signer identity, and the verifier script checks all three layers.
+- **Distribution metadata declares `MIT AND PSF-2.0`**, and REUSE attributes
+  the plugin tree's vendored code to its authors.
+- **SECURITY.md lists 1.1.x as supported**, the release badge reads the tag
+  from full history, and the CHANGELOG links resolve.
 
 ### Security
 
+- **No long-lived npm token path remains.** The npm publish workflow
+  authenticates through OIDC alone; the token secret and its opt-in gate are
+  gone.
 - **Hooks never run code from the opened project.** The bootstrap stubs
   resolve the dispatcher from their own installed location. Previously the
   stubs took their root from the project directory when it contained a
@@ -262,7 +316,8 @@ harnesses behind a conformity governance gate and signed, reproducible releases.
   constraints and document an inspect-first alternative to the pipe-to-shell
   one-liner.
 
-[Unreleased]: https://github.com/ahmed-g-gad/apothem/compare/v1.0.2...HEAD
+[Unreleased]: https://github.com/ahmed-g-gad/apothem/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.1.0
 [1.0.2]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.0.2
 [1.0.1]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.0.1
 

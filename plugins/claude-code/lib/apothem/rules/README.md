@@ -17,7 +17,7 @@ When an always-on rule's content exceeds the token ceiling, it decomposes along 
 
 ## The `## Bindings` five-direction section
 
-Every rule closes with a `## Bindings (§0.j five-direction)` section declaring its place in the rule graph along five reciprocal directions: **Drives →** (what it causes), **Driven by ← / Established by ↑** (what gates / ratifies it), **Satisfies →** (what end-state it meets), and **Cross-bound with ↔** (sibling rules that mutually reinforce). Every declared binding has a reciprocal back-pointer at the other end; the discipline is specified in `bidirectional-binding.md`.
+Every rule closes with a `## Bindings (§0.j five-direction)` section declaring its place in the rule graph along five reciprocal directions: **Drives →** (what it causes), **Driven by ← / Established by ↑** (what triggers / ratifies it), **Gated by ←** (the activation condition or enforcer that gates it), **Satisfies →** (what end-state it meets), and **Cross-bound with ↔** (sibling rules that mutually reinforce). `scripts/dev/validate_ecosystem.py --check binding-five-direction` requires Drives, Satisfies, Established by, Gated by, and Cross-bound with on every rule, command, agent, and skill, and the three-direction subset (Drives, Established by, Cross-bound with) on every hook message. Every declared binding has a reciprocal back-pointer at the other end; the discipline is specified in `bidirectional-binding.md`.
 
 ## Rule families
 
@@ -119,3 +119,11 @@ Every rule closes with a `## Bindings (§0.j five-direction)` section declaring 
 - **Harness-neutral prose.** This folder is swept by the agnosticism and reference-token matchers. Name a harness only by its catalog slug — one entry among the registered set — never by a privileging brand phrase, and pre-set no model or effort preference.
 - **Adding a rule:** author the file with the shape above, add its row to the registry table above, and wire it into the rule graph via its `## Bindings` section; decide always-on vs companion by the token budget. **Splitting an over-budget always-on rule:** move depth to a `<parent>-<aspect>.md` companion, leave the `(Companion Sub-Rule Anchor)` pointer in the parent, and make both `## Bindings` blocks cite each other.
 - Validate every change with `python -m apothem.conformity.gate --all .` (frontmatter, token-budget, bindings-reciprocity, agnosticism, reference-token matchers) and `python -m pytest`.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The rule registry tables above and the file shape every rule in this folder follows, including its closing `## Bindings` section.
+- **Satisfies →** The agent-guidance locality canon in `AGENTS.md` (each folder's operating contract lives in its README).
+- **Established by ↑** `AGENTS.md` (the root agent-instruction canon). `rules/agents-md-convention.md` (the per-folder README contract). `rules/bidirectional-binding.md` (the five-direction notation this folder's rules use). `rules/token-budget-discipline.md` (the always-on budget that decides parent versus companion).
+- **Gated by ←** `scripts/dev/check_readme_file_coverage.py --strict` (every shipped rule is named here). The propagation manifest's `README.md` exclusion (this file never ships into a harness discovery directory, where it would load as a rule).
+- **Cross-bound with ↔** `agents/README.md` + `commands/README.md` (the sibling contracts for the other convention directories).

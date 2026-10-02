@@ -95,3 +95,11 @@ Out-of-axis: Architecture, Concurrency, Performance, Testing, Observability. Out
 - **Surfaced gaps.** Structural gaps from execution; required when structural (M6). Empty: `[]`.
 - **Inquiry surface.** Typed inquiry items per M5 with options annotated per M7. Empty: `[]`.
 - **Self-check attestation.** Fifteen-bar gate result per M4. Each bar `pass` or `n/a`; any failure blocks return.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The risk-ranked dependency table (known-vulnerable, unpinned, duplicate, stale) with manifest and lockfile evidence that `/dependency-audit` deepens and the dependency-risk stanza of `/release-readiness` reads before a release cut.
+- **Satisfies →** The supply-chain review of `rules/production-ready-prs.md` (every dependency pinned and free of known advisories before it ships).
+- **Established by ↑** `agents/README.md` (this agent's index entry). `rules/host-discovery.md` (the ecosystem and audit tool are discovered from the host's manifests).
+- **Gated by ←** The read-only tool posture in frontmatter (`Read, Glob, Grep, Bash`; `Write, Edit, TodoWrite` denied). The `maxTurns: 15` ceiling. A detectable manifest: an ecosystem it cannot detect returns as a gap, never a guessed tool.
+- **Cross-bound with ↔** `commands/dependency-audit.md` (Phase 1 dispatches this scan and deepens its findings). `commands/release-readiness.md` (the release sign-off that consumes its risk table).

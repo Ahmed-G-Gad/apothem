@@ -33,8 +33,10 @@ from typing import Final
 from apothem.conformity._grep_base import GrepResult, iter_prose_lines, run_grep
 
 # The closed hedging vocabulary per the definitiveness rule M8 §Hedging
-# vocabulary — eliminate or qualify. Word-boundary regex prevents partial
-# matches inside larger words ("usually" matches; "unusually" does not).
+# vocabulary — eliminate or qualify — plus, as its last three entries, the
+# hedging filler AGENTS.md and CLAUDE.md forbid in directive text. Word-boundary
+# regex prevents partial matches inside larger words (`usually` matches;
+# `unusually` does not; the plural noun `kinds of` is never matched).
 HEDGING_VOCABULARY: Final[tuple[str, ...]] = (
     "maybe",
     "might",
@@ -51,7 +53,47 @@ HEDGING_VOCABULARY: Final[tuple[str, ...]] = (
     "fairly",
     "roughly",
     "broadly",
+    "basically",
+    "kind of",
+    "in some sense",
 )
+
+# The `kind of` filler hedges only as an adverb (`it is kind of required`).
+# After a determiner or possessive it is a noun phrase naming a category
+# (`what kind of project`, `this kind of change`) and is not reported.
+KIND_OF: Final[str] = "kind of"
+_KIND_OF_NOUN_DETERMINERS: Final[frozenset[str]] = frozenset(
+    {
+        "a",
+        "an",
+        "another",
+        "any",
+        "each",
+        "every",
+        "her",
+        "his",
+        "its",
+        "my",
+        "no",
+        "one",
+        "other",
+        "our",
+        "same",
+        "some",
+        "that",
+        "the",
+        "their",
+        "these",
+        "this",
+        "those",
+        "what",
+        "whatever",
+        "which",
+        "whichever",
+        "your",
+    }
+)
+_LAST_WORD_RE: Final[re.Pattern[str]] = re.compile(r"([A-Za-z]+)\W*$")
 
 # Compile a single combined regex to scan once per line. The `(?i)` makes the
 # match case-insensitive — `Usually` at sentence start hedges identically.
@@ -86,6 +128,16 @@ class Finding:
     rule: str = RULE_ANCHOR
 
 
+def _is_kind_of_noun_phrase(match: re.Match[str], line: str) -> bool:
+    """Return True when a ``kind of`` match follows a determiner (a noun phrase)."""
+    if match.group().lower() != KIND_OF:
+        return False
+    previous = _LAST_WORD_RE.search(line[max(0, match.start() - 64) : match.start()])
+    return previous is not None and previous.group(1).lower() in (
+        _KIND_OF_NOUN_DETERMINERS
+    )
+
+
 def check(content: str, path: Path | None = None) -> GrepResult:
     """Scan content; return a structured result.
 
@@ -104,6 +156,8 @@ def check(content: str, path: Path | None = None) -> GrepResult:
         inline_blank_re=INLINE_CODE_RE,
     ):
         for match in HEDGING_RE.finditer(scanned):
+            if _is_kind_of_noun_phrase(match, scanned):
+                continue
             findings.append(
                 Finding(
                     line=line_index,

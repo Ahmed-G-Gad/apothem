@@ -98,7 +98,7 @@ When uncertain about the host's test framework, the behavior contract under test
 | Structured Inquiry (CM-2) | Framework ambiguity and contract ambiguity route through the canonical channel; free-form prose as primary input is forbidden. |
 | File Headers | Every authored test file carries the canonical SPDX header via `scripts/inject-header.py`. |
 | Pre-Emission Gate (M4) | The report and authored test files pass the fifteen-bar gate before promotion. |
-| Agent Orchestration (CM-25) | The test-runner agent carries an explicit 200-token return contract. |
+| Worker Orchestration (CM-25) | The test-runner agent carries an explicit 200-token return contract. |
 
 ---
 

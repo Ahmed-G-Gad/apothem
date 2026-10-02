@@ -413,24 +413,23 @@ def check_corpus(root: Path, threshold: float = DEFAULT_THRESHOLD) -> GrepResult
 
 
 def _main(argv: list[str]) -> int:
-    parser = argparse.ArgumentParser(prog=GREP_NAME, description=__doc__)
-    parser.add_argument(
-        "root",
-        nargs="?",
-        default=".",
-        help="project root to walk (default: current directory)",
+    # Imported here, not at module top: ``check_corpus()`` stays stdlib-only;
+    # only the command-line entry needs the shared parser and report stamp.
+    from apothem.conformity._grep_base import finish_root_report, parse_root_args
+
+    def _configure(parser: argparse.ArgumentParser) -> None:
+        parser.add_argument(
+            "--threshold",
+            type=float,
+            default=DEFAULT_THRESHOLD,
+            help=f"jaccard similarity threshold (default: {DEFAULT_THRESHOLD})",
+        )
+
+    args = parse_root_args(argv, prog=GREP_NAME, doc=__doc__, configure=_configure)
+    result = check_corpus(args.root, threshold=args.threshold)
+    return finish_root_report(
+        result.to_json(), passed=result.passed, inspected=result.paragraph_count
     )
-    parser.add_argument(
-        "--threshold",
-        type=float,
-        default=DEFAULT_THRESHOLD,
-        help=f"jaccard similarity threshold (default: {DEFAULT_THRESHOLD})",
-    )
-    args = parser.parse_args(argv[1:])
-    root = Path(args.root).resolve()
-    result = check_corpus(root, threshold=args.threshold)
-    print(result.to_json())
-    return EXIT_PASS if result.passed else EXIT_FAIL
 
 
 if __name__ == "__main__":

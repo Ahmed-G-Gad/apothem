@@ -61,3 +61,11 @@ Out-of-axis: Architecture, Concurrency, Performance, Security, Testing, Observab
 - **Surfaced gaps:** Facets with no authoritative source from execution; required when structural (M6). Empty: `surfaced-gaps: []`.
 - **Inquiry surface:** Typed inquiry items per M5 with options annotated per M7. Empty: `unresolved-inquiries: []`.
 - **Self-check attestation:** Fifteen-bar gate result per M4. Each bar passes or is marked `n/a` with reason; failures block return.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The deduplicated source list ranked by authority, recency, and relevance that the source-gathering stage hands to synthesis and verification.
+- **Satisfies →** The discovery lens of the research pipeline: every source carries a real, retrievable location; none is fabricated.
+- **Established by ↑** `agents/README.md` (this agent's index entry). `rules/source-accessibility.md` (trusted sources outrank reachable ones).
+- **Gated by ←** The read-only tool posture in frontmatter (`Read, Glob, Grep, WebSearch, WebFetch`; `Write, Edit, TodoWrite` denied). The `maxTurns: 15` ceiling. Discovery and ranking only; synthesis and claim verification belong to other lenses.
+- **Cross-bound with ↔** `commands/research.md` + `commands/research-sources.md` (the research stages that dispatch it). `skills/research-suite/SKILL.md` + `skills/research-suite/references/lifecycle.md` (the research knowledge surface that names it as the discovery lens).

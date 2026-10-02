@@ -23,6 +23,7 @@ performs the substantive check.
 
 from __future__ import annotations
 
+import argparse
 import re
 import subprocess
 import sys
@@ -34,7 +35,8 @@ from apothem.conformity._grep_base import (
     EXIT_FAIL,
     EXIT_PASS,
     GrepResult,
-    read_input,
+    make_parser,
+    parse_path_input,
 )
 
 # Per-class path patterns. Patterns are inclusive — a file matching
@@ -183,10 +185,23 @@ def check(content: str, path: Path | None = None) -> GrepResult:
 
 
 def _main(argv: list[str]) -> int:
-    if len(argv) >= 2 and argv[1] == STAGED_FLAG:
+    def _configure(parser: argparse.ArgumentParser) -> None:
+        parser.add_argument(
+            STAGED_FLAG,
+            dest="staged",
+            action="store_true",
+            help="check the staged change set instead of one file",
+        )
+
+    if STAGED_FLAG in argv[1:]:
+        parser = make_parser(GREP_NAME, __doc__)
+        _configure(parser)
+        parser.parse_args(argv[1:])
         result = _check_staged()
     else:
-        content, path = read_input(argv)
+        _args, content, path = parse_path_input(
+            argv, prog=GREP_NAME, doc=__doc__, configure=_configure
+        )
         result = check(content, path)
     print(result.to_json())
     return EXIT_PASS if result.passed else EXIT_FAIL

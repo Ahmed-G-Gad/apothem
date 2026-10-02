@@ -74,7 +74,7 @@ Markdown context files emitted into the conversation for each hook event:
 
 - The Claude Code `settings.json` hook entries invoke an install-resolved absolute CPython interpreter on `dispatch.py` directly — the `${PYTHON_BIN}` placeholder is substituted at install time (per `apothem.lib.python_resolver`) so no entry runs a bare `python`. The plugin's `hooks.json` registers each hook once, as `bash "<plugin-root>/…/hooks/lib/bootstrap.sh" <event> [<message>]`, so no entry depends on a file's executable bit or on a per-platform shell field.
 - Every registered command meets the runtime contract in `tests/hooks/test_hook_contract.py`: exit 0, empty or single-JSON-object output, registered once, bounded output, delivered on a channel the harness reads, and no code taken from the opened project.
-- `APOTHEM_HOOKS_DISABLE=1` silences every dispatcher-routed hook.
+- `APOTHEM_HOOKS_DISABLE=1` silences every dispatcher-routed hook, and `conformity/gate.py --hook` honors the same switch.
 
 ## Operating in this folder
 

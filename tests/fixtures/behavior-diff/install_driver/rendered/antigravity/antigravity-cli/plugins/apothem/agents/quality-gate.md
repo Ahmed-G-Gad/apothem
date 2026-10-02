@@ -91,3 +91,11 @@ This agent holds no write surface (`tools: Bash, Read, Glob, Grep`; `Write`/`Edi
 - **Surfaced gaps:** Structural gaps from execution, required when structural per M6 (`rules/expertise-posture.md`). State `none` when empty.
 - **Inquiry surface:** Typed inquiry items per M5 with options annotated per M7. State `none` when empty.
 - **Self-check attestation:** Fifteen-bar gate result per M4 (`rules/pre-emission-gate.md`). Each bar `pass` or `n/a (reason)`; any failure blocks return.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The per-gate PASS/FAIL table (build, type-check, tests, lint, security) with file, line, and error evidence that a release or phase gate reads.
+- **Satisfies →** A Quality-team member in `rules/agent-orchestration.md` §1: independent gates run in parallel, the result returns inside the budget recorded in `rules/agent-orchestration-patterns.md` §3.1.
+- **Established by ↑** `agents/README.md` (this agent's index entry). `rules/host-discovery.md` (every gate command is discovered from the host, never assumed).
+- **Gated by ←** The read-only tool posture in frontmatter (`Bash, Read, Glob, Grep`; `Write, Edit, TodoWrite` denied). The `maxTurns: 15` ceiling. The build-first order: a build failure short-circuits the suite and marks every downstream gate skipped.
+- **Cross-bound with ↔** `rules/agent-orchestration.md` + `rules/agent-orchestration-patterns.md` (both name this agent among the persistent definitions their team patterns dispatch).

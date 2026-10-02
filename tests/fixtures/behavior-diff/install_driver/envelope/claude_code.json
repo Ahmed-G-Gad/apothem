@@ -1,7 +1,7 @@
 {
   "changed": true,
   "counts": {
-    "created": 271,
+    "created": 272,
     "error": 0,
     "skipped": 0,
     "unchanged": 27,
@@ -17,6 +17,7 @@
     "<ROOT>/.apothem/support/conformity/agnosticism_grep.py",
     "<ROOT>/.apothem/support/conformity/always_on_budget_grep.py",
     "<ROOT>/.apothem/support/conformity/bare_except_grep.py",
+    "<ROOT>/.apothem/support/conformity/binding_five_direction_grep.py",
     "<ROOT>/.apothem/support/conformity/binding_reciprocity_corpus_grep.py",
     "<ROOT>/.apothem/support/conformity/binding_reciprocity_grep.py",
     "<ROOT>/.apothem/support/conformity/brand_mark_grep.py",

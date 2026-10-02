@@ -1,5 +1,6 @@
 {
   "name": "apothem",
+  "displayName": "Apothem",
   "version": "1.1.0",
   "description": "Host-agnostic AI-harness configuration catalog: review and audit slash-commands, research and quality agents, reusable skills, mechanical conformity hooks, and behavioral rules referenced on-demand \u2014 bundled with the self-contained apothem engine.",
   "author": {
@@ -17,6 +18,8 @@
     "agents",
     "commands"
   ],
+  "documentationUrl": "https://apothem.ahmedgad.com/docs",
+  "supportUrl": "https://github.com/ahmed-g-gad/apothem/issues",
   "commands": [
     "./commands/a11y-audit.md",
     "./commands/architecture-review.md",

@@ -47,3 +47,9 @@ tracked tree. A missing, empty, or corrupt counter file degrades to
 on stdout; the tracker's own `main` swallows every exception and emits an empty
 envelope. A tracker fault therefore costs nothing — never a blocked or stalled
 tool call.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** `hooks/proactive_compaction_tracker.py` (the dispatcher routes this basename to the per-session tracker, which emits the advisory once a threshold crosses).
+- **Established by ↑** The PostToolUse registration in `hooks/hooks.json` and the harness settings templates. `rules/context-management-protocol.md` §2 (the proactive-compaction triggers the tracker measures).
+- **Cross-bound with ↔** `hooks/messages/precompact.md` (the externalization the advisory recommends before compacting).

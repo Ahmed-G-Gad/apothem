@@ -82,3 +82,11 @@ This agent holds no write surface (`tools: Read, Glob, Grep`), so output-surface
 - **Surfaced gaps.** Structural gaps from execution, required when structural per M6 (`rules/expertise-posture.md`). State `none` when empty.
 - **Inquiry surface.** Typed inquiry items per M5 with options annotated per M7. State `none` when empty.
 - **Self-check attestation.** Fifteen-bar gate result per M4 (`rules/pre-emission-gate.md`). Each bar `pass` or `n/a (reason)`; any failure blocks return.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The per-claim memory findings (stale, contradicted, orphaned, unindexed) the ecosystem audit consolidates into its report.
+- **Satisfies →** An Audit-team member in `rules/agent-orchestration.md` §1, returning inside the custom budget recorded in `rules/agent-orchestration-patterns.md` §3.1.
+- **Established by ↑** `agents/README.md` (this agent's index entry). `rules/auto-memory.md` (the memory tier it audits). `rules/bidirectional-binding.md` (cross-references are checked for reciprocity).
+- **Gated by ←** The read-only tool posture in frontmatter (`Read, Glob, Grep`; `Write, Edit, TodoWrite` denied). The `maxTurns: 15` ceiling. A memory tier present on disk; an absent tier returns as a gap.
+- **Cross-bound with ↔** `rules/agent-orchestration.md` + `rules/agent-orchestration-patterns.md` (the team patterns that dispatch it). `skills/ecosystem-audit/SKILL.md` + `skills/ecosystem-audit/references/procedure.md` (the audit procedure that fans its memory pass out to this agent).

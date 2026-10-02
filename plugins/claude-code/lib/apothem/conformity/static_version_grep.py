@@ -143,6 +143,9 @@ class GrepResult:
     path: str | None
     passed: bool
     findings: list[Finding] = field(default_factory=list)
+    # Version-bearing sites read (README, site config, runtime module); the
+    # command-line entry stamps it on the report as ``inspected``.
+    inspected: int = 0
 
     def to_json(self) -> str:
         """Return this report as a two-space-indented JSON string.
@@ -170,8 +173,9 @@ def _strip_ref_params(url: str) -> str:
     return REF_PARAM_RE.sub("", url)
 
 
-def _check_readme(root: Path, findings: list[Finding]) -> None:
-    """Flag badge URLs in README that carry literal versions."""
+def _check_readme(root: Path, findings: list[Finding]) -> int:
+    """Flag badge URLs in README that carry literal versions; return files read."""
+    read = 0
     for candidate in README_CANDIDATES:
         readme = root / candidate
         if not readme.is_file():
@@ -180,6 +184,7 @@ def _check_readme(root: Path, findings: list[Finding]) -> None:
             text = readme.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
             continue
+        read += 1
         for match in MARKDOWN_IMAGE_RE.finditer(text):
             url = match.group(1).strip()
             if "shields.io" not in url and "badge" not in url.lower():
@@ -200,10 +205,12 @@ def _check_readme(root: Path, findings: list[Finding]) -> None:
                         ),
                     )
                 )
+    return read
 
 
-def _check_site_config(root: Path, findings: list[Finding]) -> None:
-    """Flag site config files declaring a literal ``version:``."""
+def _check_site_config(root: Path, findings: list[Finding]) -> int:
+    """Flag site config files declaring a literal ``version:``; return files read."""
+    read = 0
     for candidate in SITE_CONFIG_CANDIDATES:
         config = root / candidate
         if not config.is_file():
@@ -212,6 +219,7 @@ def _check_site_config(root: Path, findings: list[Finding]) -> None:
             text = config.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
             continue
+        read += 1
         if any(marker in text for marker in DYNAMIC_VERSION_MARKERS):
             # The config imports a dynamic version-resolution helper; a
             # nearby literal `version:` key is almost certainly a fallback
@@ -232,22 +240,23 @@ def _check_site_config(root: Path, findings: list[Finding]) -> None:
                     ),
                 )
             )
+    return read
 
 
-def _check_runtime_version(root: Path, findings: list[Finding]) -> None:
-    """Flag a literal ``__version__`` assignment in the runtime module."""
+def _check_runtime_version(root: Path, findings: list[Finding]) -> int:
+    """Flag a literal ``__version__`` in the runtime module; return files read."""
     module = root / RUNTIME_VERSION_MODULE
     if not module.is_file():
-        return
+        return 0
     try:
         text = module.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError):
-        return
+        return 0
     if any(marker in text for marker in DYNAMIC_VERSION_MARKERS):
-        return
+        return 1
     match = LITERAL_DUNDER_VERSION_RE.search(text)
     if match is None:
-        return
+        return 1
     findings.append(
         Finding(
             site_class="runtime-version",
@@ -259,6 +268,7 @@ def _check_runtime_version(root: Path, findings: list[Finding]) -> None:
             ),
         )
     )
+    return 1
 
 
 def check(root: Path) -> GrepResult:
@@ -272,14 +282,15 @@ def check(root: Path) -> GrepResult:
     ``__version__`` calls ``importlib.metadata.version`` or equivalent).
     """
     findings: list[Finding] = []
-    _check_readme(root, findings)
-    _check_site_config(root, findings)
-    _check_runtime_version(root, findings)
+    inspected = _check_readme(root, findings)
+    inspected += _check_site_config(root, findings)
+    inspected += _check_runtime_version(root, findings)
     return GrepResult(
         grep=GREP_NAME,
         path=str(root),
         passed=not findings,
         findings=findings,
+        inspected=inspected,
     )
 
 
@@ -287,14 +298,24 @@ def main(root: Path) -> int:
     """Run the check over *root*, print the report, return the exit code.
 
     Pre-conditions: ``root`` is the repository root to inspect.
-    Post-conditions: the JSON report is written to stdout; the return is
-    :data:`EXIT_PASS` when the sweep passed and :data:`EXIT_FAIL` otherwise.
+    Post-conditions: the JSON report, stamped with ``inspected``, is written
+    to stdout; the return is :data:`EXIT_PASS` when the sweep passed and
+    :data:`EXIT_FAIL` otherwise (including a sweep that read no site).
     """
+    # Imported here, not at module top: ``check()`` stays stdlib-only.
+    from apothem.conformity._grep_base import finish_root_report
+
     result = check(root)
-    print(result.to_json())
-    return EXIT_PASS if result.passed else EXIT_FAIL
+    return finish_root_report(
+        result.to_json(), passed=result.passed, inspected=result.inspected
+    )
+
+
+def _main(argv: list[str]) -> int:
+    from apothem.conformity._grep_base import parse_root_args
+
+    return main(parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root)
 
 
 if __name__ == "__main__":
-    target = Path(sys.argv[1]) if len(sys.argv) >= 2 else Path.cwd()
-    sys.exit(main(target))
+    sys.exit(_main(sys.argv))
