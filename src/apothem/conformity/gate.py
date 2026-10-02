@@ -47,25 +47,40 @@ from typing import Any, Final, Protocol, cast
 
 # Plain-script bootstrap. Harness deployments invoke this file by absolute
 # path (``${PYTHON_BIN} ${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook``),
-# which puts only this directory on ``sys.path`` — the ``apothem`` package is
-# unimportable, so every matcher that imports it errors into the fail-open
-# isolation boundary and the per-Write chain silently degrades to the
-# stdlib-only matchers. Prepend the package root (the directory containing
-# ``apothem/``) and the vendored-dependency tree so matcher imports resolve
-# identically under plain-script and package invocations; the vendor entry is
-# prepended last so bundled dependency versions win the resolution race, per
-# the self-containment invariant in ``apothem/lib/plugin_bootstrap.py``. This
-# bootstrap MUST run before the first ``apothem.*`` import below — moving that
-# import above this block reintroduces the plain-script ModuleNotFoundError the
-# block exists to prevent.
+# which puts only this directory on ``sys.path``, so the ``apothem`` package is
+# not importable and the first ``apothem.*`` import below would fail. The file
+# runs from one of two layouts, told apart by its grandparent directory:
+#
+#   - Package layout: ``<parent>/apothem/conformity/gate.py`` (a repository
+#     checkout's ``src/``, an installed package, a plugin tree). Prepend
+#     ``<parent>`` and the vendored-dependency tree; the vendor entry is
+#     prepended last so bundled dependency versions win the resolution race,
+#     per the self-containment invariant in ``apothem/lib/plugin_bootstrap.py``.
+#   - Harness support layout: ``<harness>/.apothem/support/conformity/gate.py``.
+#     ``support/`` mirrors the package subtrees an install ships (``conformity/``,
+#     ``hooks/``, ``schemas/``, ``templates/``) but is not named ``apothem``, so
+#     no ``sys.path`` entry can expose it under that name. Register ``support/``
+#     as the ``apothem`` package instead, so ``apothem.conformity.*`` resolves to
+#     the sibling modules installed with this file (version-matched to it).
+#
+# This bootstrap MUST run before the first ``apothem.*`` import below — moving
+# that import above this block reintroduces the ModuleNotFoundError the block
+# exists to prevent. The standalone-validator launcher reuses it by running this
+# file as a plain script before each validator.
 if __package__ in (None, ""):
-    _PACKAGE_PARENT: Final[Path] = Path(__file__).resolve().parents[2]
-    for _entry in (
-        str(_PACKAGE_PARENT),
-        str(_PACKAGE_PARENT / "apothem" / "_vendor"),
-    ):
-        if _entry not in sys.path:
-            sys.path.insert(0, _entry)
+    _PACKAGE_DIR: Final[Path] = Path(__file__).resolve().parents[1]
+    if _PACKAGE_DIR.name == "apothem" and (_PACKAGE_DIR / "__init__.py").is_file():
+        for _entry in (str(_PACKAGE_DIR.parent), str(_PACKAGE_DIR / "_vendor")):
+            if _entry not in sys.path:
+                sys.path.insert(0, _entry)
+    elif "apothem" not in sys.modules:
+        import types
+
+        _support_package = types.ModuleType(
+            "apothem", "Harness support tree exposed as the apothem package."
+        )
+        _support_package.__path__ = [str(_PACKAGE_DIR)]
+        sys.modules["apothem"] = _support_package
 
 from apothem.conformity._grep_base import (
     EMPTY_SCOPE_KEY,

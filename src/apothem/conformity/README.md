@@ -131,6 +131,13 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   nothing fails unless the walker declares `empty_scope_expected` (a plan-suite
   walker on a checkout without the gitignored plans tree, a workflow walker
   where no workflow directory exists yet).
+- **Two layouts, one import surface.** `gate.py` runs from the package
+  (`src/apothem/conformity/`) and from a harness install
+  (`<harness>/.apothem/support/conformity/`, the PreToolUse hook). Its
+  bootstrap registers the install's `support/` directory as the `apothem`
+  package, so a per-Write matcher may import `apothem.conformity.*` and the
+  standard library only; `apothem.lib` and the other engine subpackages are not
+  shipped under `support/`.
 - **Fail-open isolation.** The orchestrator wraps every matcher load and
   `check()` call; a raised exception is recorded and surfaced, never swallowed,
   and never fail-closes the write. Do not catch-and-suppress inside a matcher;
