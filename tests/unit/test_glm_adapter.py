@@ -71,6 +71,30 @@ def test_install_writes_provider_config(
     assert "https://api.z.ai/api/coding/paas/v4" in content
 
 
+def test_provider_config_lists_the_documented_model_mapping_env(
+    adapter: GlmAdapter,
+    tmp_path: Path,
+) -> None:
+    # Z.ai documents the ANTHROPIC_DEFAULT_{OPUS,SONNET,HAIKU}_MODEL variables
+    # that map an Anthropic-compatible agent's model roles to GLM models
+    # (https://docs.z.ai/devpack/tool/claude). The env table carries them as
+    # placeholders: model ids are version-volatile, so none is pinned.
+    # tomllib is stdlib from Python 3.11; the 3.10 floor skips the parse.
+    tomllib = pytest.importorskip("tomllib")
+    adapter.install({}, project=tmp_path)
+    parsed = tomllib.loads(
+        adapter.resolve_output_path(tmp_path).read_text(encoding="utf-8")
+    )
+    env = parsed["backends"]["anthropic_compatible"]["env"]
+    for key in (
+        "ANTHROPIC_DEFAULT_OPUS_MODEL",
+        "ANTHROPIC_DEFAULT_SONNET_MODEL",
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+    ):
+        assert env[key] == "<GLM_MODEL_ID>", key
+    assert {"ANTHROPIC_BASE_URL", "ANTHROPIC_AUTH_TOKEN", "API_TIMEOUT_MS"} <= set(env)
+
+
 def test_uninstall_noop_when_not_installed(adapter: GlmAdapter, tmp_path: Path) -> None:
     # No config file present under the project root -> uninstall is a noop.
     adapter.uninstall(project=tmp_path)  # must not raise when target absent

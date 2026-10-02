@@ -32,11 +32,14 @@ endpoints and operator-configurable placeholders.
 The provider file records two backends. The Anthropic-compatible backend uses
 the base URL `https://api.z.ai/api/anthropic`; a tool that speaks the Anthropic
 protocol routes to GLM by setting `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN`,
-and optionally `API_TIMEOUT_MS`. The OpenAI-compatible backend uses the base
+and optionally `API_TIMEOUT_MS`. The same env table lists
+`ANTHROPIC_DEFAULT_OPUS_MODEL`, `ANTHROPIC_DEFAULT_SONNET_MODEL`, and
+`ANTHROPIC_DEFAULT_HAIKU_MODEL`, which map the tool's opus, sonnet, and haiku
+roles to GLM models. The OpenAI-compatible backend uses the base
 URL `https://api.z.ai/api/coding/paas/v4`. The auth token is a placeholder you
 replace with your own Z.ai key — Apothem never writes a real secret. Model ids
-are version-volatile, so Apothem pins none; the file carries placeholders you
-fill from the current
+are version-volatile, so Apothem pins none; the file carries `<GLM_MODEL_ID>`
+placeholders you fill from the current
 [Z.ai documentation](https://docs.z.ai/devpack/tool/claude).
 
 ## Compatibility notes
