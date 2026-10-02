@@ -78,6 +78,29 @@ Deprecation cadence:
   migration guide entry under
   [How-to-guides](/docs/how-to-guides).
 
+### Runtime floors
+
+Apothem declares two runtime floors: `requires-python = ">=3.10"` in
+`pyproject.toml` and `"engines": {"node": ">=18"}` in `package.json`.
+
+- **Every declared floor is tested.** The Python floor runs in the CI
+  `quality` matrix and the `CI Matrix` workflow. The `npm Shim` workflow
+  runs the npm shim on the Node floor and on every later LTS major: it
+  checks the missing-prerequisite error, `node bin/apothem.mjs --version`,
+  a dry-run install in an isolated home directory, and the packed tarball
+  through `npx`. A runtime that is not tested is not declared.
+- **End of life is disclosed.** When a runtime that is still a declared
+  floor reaches upstream end of life, the
+  [installation guide](/docs/install#prerequisites-at-a-glance) says so and
+  names the versions to prefer. Python 3.10 reached end of life on
+  2026-10-01; Node.js 18 and 20 on 2025-04-30 and 2026-04-30. All three
+  remain supported floors.
+- **Raising a floor is a deprecation.** It follows the cadence above: an
+  announcement under `### Deprecated`, at least one full minor cycle in
+  which the old floor stays tested, then the release that raises it
+  records the change. `requires-python`, `engines.node`, the installers'
+  version probes, and the CI matrices change together in that release.
+
 ## 4. Breaking-change policy
 
 Breaking changes require:

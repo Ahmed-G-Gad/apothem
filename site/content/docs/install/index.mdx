@@ -13,8 +13,11 @@ system Python 3.10 or newer (see
 **Two prerequisites are shared by every path:** system **Python 3.10 or newer**
 on `PATH`, with the `click` and `rich` packages importable under it. The
 npm-shim and tool-plugin paths additionally need **Node.js 18 or newer** to run
-`npx`. Each channel's own section below repeats its exact prerequisites, one
-copy-ready command, and a verification step.
+`npx`. Python 3.10 and Node.js 18 and 20 are past upstream end of life; they
+remain supported and tested, but newer versions are preferred (see
+[Prerequisites at a glance](#prerequisites-at-a-glance)). Each channel's own
+section below repeats its exact prerequisites, one copy-ready command, and a
+verification step.
 
 ## Choose a channel
 
@@ -367,6 +370,13 @@ registered adapter at a glance, run `apothem doctor` (or
   against (`<interpreter> -m pip install "click==…" "rich>=…"`); with `--json` the
   same error arrives as a JSON envelope with code `runtime.dependency_missing`.
 - **Node.js 18 or later** — the npm-shim and tool-plugin paths only.
+- **End-of-life runtimes.** Python 3.10 reached upstream end of life on
+  2026-10-01, and Node.js 18 and 20 on 2025-04-30 and 2026-04-30. Apothem
+  still supports them as its declared floors and tests each one in CI, but
+  they no longer receive upstream security fixes, so prefer Python 3.11 or
+  newer and Node.js 22 or newer. The
+  [runtime-floor policy](/docs/governance/release-engineering-policy#runtime-floors)
+  explains how a floor is raised.
 - **Git** — installer path only, and only for the network form (the script
   clones the source; a local checkout needs no clone).
 - **Claude Code** — plugin path only. **VS Code** and each command-line
