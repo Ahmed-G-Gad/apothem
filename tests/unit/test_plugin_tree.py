@@ -36,6 +36,32 @@ def test_build_manifest_name_is_apothem() -> None:
     assert manifest["name"] == "apothem"
 
 
+def test_build_manifest_carries_listing_fields() -> None:
+    """displayName plus the https listing links Anthropic's directory reads."""
+    manifest = build_plugin_manifest(_SRC_ROOT)
+    assert manifest["displayName"] == "Apothem"
+    for key in ("documentationUrl", "supportUrl"):
+        value = manifest[key]
+        assert isinstance(value, str)
+        assert value.startswith("https://"), f"{key} must be an https:// URL"
+
+
+@pytest.mark.parametrize(
+    "key",
+    [
+        "documentationUrl",
+        "supportUrl",
+        "privacyPolicyUrl",
+        "termsOfServiceUrl",
+    ],
+)
+def test_schema_requires_https_listing_urls(key: str) -> None:
+    manifest = build_plugin_manifest(_SRC_ROOT)
+    manifest[key] = "http://example.com/page"
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(instance=manifest, schema=_schema())
+
+
 def test_build_manifest_arrays_non_empty_and_sorted() -> None:
     manifest = build_plugin_manifest(_SRC_ROOT)
     for key in ("commands", "agents", "skills"):
