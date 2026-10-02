@@ -379,6 +379,7 @@ form — it never advertises a bare `apothem` command the run did not resolve.
 | `APOTHEM_BIN_DIR` | POSIX `$HOME/.local/bin`, Windows `%LOCALAPPDATA%\Microsoft\WindowsApps` | Directory the `apothem` shim is written into |
 | `APOTHEM_SKIP_VERIFY` | _(unset)_ | Set to `1` to skip post-install verification |
 | `APOTHEM_AUTO_INSTALL_DEPS` | _(unset)_ | Set to `1` to install the missing `click` / `rich` prerequisites automatically, without prompting |
+| `NO_COLOR` | _(unset)_ | Set to any value to turn off coloured output. Colour is also off whenever the output is not a terminal (a pipe, a file, a CI log) |
 
 **Updating.** Re-run the installer, or run `scripts/installer/update.sh` /
 `scripts/installer/update.ps1` to re-check-out the latest signed tag (verified)

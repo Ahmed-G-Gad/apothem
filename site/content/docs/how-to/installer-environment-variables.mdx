@@ -27,6 +27,7 @@ environment variables before you run it.
 | `APOTHEM_SKIP_VERIFY` | Skip the post-install verify step when set to `1` | `0` (verify runs) |
 | `APOTHEM_AUTO_INSTALL_DEPS` | Install the missing `click` / `rich` prerequisites automatically, without prompting, when set to `1` | `0` (prompt, or decline in a non-interactive pipe) |
 | `APOTHEM_BIN_DIR` | Directory for the placed `apothem` command shim | `$HOME/.local/bin` (POSIX); `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) |
+| `NO_COLOR` | Turn off coloured output when set to any value ([no-color.org](https://no-color.org/)); colour is also off whenever the output is not a terminal (a pipe, a file, a CI log) | unset (colour on an interactive terminal only) |
 
 `APOTHEM_SOURCE` takes precedence over a clone: when set to a checkout that
 contains `src/apothem`, the installer uses it directly, never touches
