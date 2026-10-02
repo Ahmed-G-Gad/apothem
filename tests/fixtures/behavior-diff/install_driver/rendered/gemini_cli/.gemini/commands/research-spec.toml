@@ -158,7 +158,7 @@ Declare **success metrics** an independent party measures the same way (R2 repro
 
 ### Phase 5 — Question-Resolution Sweep & Emission
 
-Definitively resolve every ambiguity — every implicit hypothesis form, every unstated scope boundary, every undefined metric threshold, every glossary gap, every authoritative-data gap — through the structured-inquiry channel before emission. Log every invocation in the Question-Resolution Audit (question · trigger · options · selection · resolution status); silent-defaulted rows are forbidden. Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the candidate spec; on PASS, promote to `{suite}/_spec/research-spec.md` and emit the Handoff Manifest. On any bar failure, revise and re-run until every bar passes.
+Definitively resolve every ambiguity — every implicit hypothesis form, every unstated scope boundary, every undefined metric threshold, every glossary gap, every authoritative-data gap — through the structured-inquiry channel before emission. Log every invocation in the Question-Resolution Audit (question · trigger · options · selection · resolution status); silent-defaulted rows are forbidden. Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the candidate spec; on PASS, promote to `{suite}/_spec/research-spec.md` and emit the Handoff Manifest. On any bar failure, revise and re-run until every bar passes within the three-round cap of `rules/pre-emission-gate-bars.md` §3 (then BLOCKED).
 
 ---
 

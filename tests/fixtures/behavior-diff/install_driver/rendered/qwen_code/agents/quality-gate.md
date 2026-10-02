@@ -64,8 +64,8 @@ Worked skeleton:
 ```text
 Summary: 3/5 gates passed.
   - Build:      PASS
-  - Type check: FAIL — src/apothem/cli/install.py:42 — error: Argument 1 to "materialize" has incompatible type "str | None"; expected "str"
-  - Tests:      FAIL — tests/unit/test_install.py:88 — AssertionError: expected exit 0, got 2
+  - Type check: FAIL — src/app/cli.py:42 — error: Argument 1 to "render" has incompatible type "str | None"; expected "str"
+  - Tests:      FAIL — tests/test_cli.py:88 — AssertionError: expected exit 0, got 2
   - Lint:       PASS
   - Security:   PASS  (bandit, 0 findings)
 ```

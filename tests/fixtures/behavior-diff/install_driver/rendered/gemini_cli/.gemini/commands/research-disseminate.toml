@@ -141,7 +141,7 @@ Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against t
 - **M14 systemicity** — the dissemination plan declares its upstream (the publication record), downstream (`operator dissemination` — terminal), peers (sibling research-suite artifacts), and enforcers (the `fact-checker` identifier-and-claim pass + the readiness checklist).
 - **M15 production-readiness** — the dissemination plan is complete in the same emission; no "I'll add the FAIR deposit later".
 
-Iterate on failure per the gate rule's §3 until every bar passes; record the attestation block inside the dissemination plan and close the Handoff Manifest with `downstream: operator dissemination (terminal)`. Apply incremental generation per `rules/large-file-generation.md` when the dissemination plan exceeds 500 lines.
+Iterate on failure per the gate rule's §3 until every bar passes or its three-round cap returns BLOCKED; record the attestation block inside the dissemination plan and close the Handoff Manifest with `downstream: operator dissemination (terminal)`. Apply incremental generation per `rules/large-file-generation.md` when the dissemination plan exceeds 500 lines.
 
 ---
 

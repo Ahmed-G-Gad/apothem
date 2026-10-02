@@ -159,7 +159,7 @@ Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against t
 - **M9 visual leverage** — the seven-axis scorecard is a table and the finding-severity distribution is a table or chart, each carrying the metadata header per `rules/visual-leverage.md`.
 - **M14 systemicity** — the report declares its upstream (paper + suite evidence), downstream (`/research-publish`), peers (sibling research-suite artifacts), and enforcers (the `fact-checker` pass).
 
-Iterate on failure per the gate rule's §3 until every bar passes; record the attestation block inside the report and update the Handoff Manifest. Apply incremental generation per `rules/large-file-generation.md` when the report exceeds 500 lines.
+Iterate on failure per the gate rule's §3 until every bar passes or its three-round cap returns BLOCKED; record the attestation block inside the report and update the Handoff Manifest. Apply incremental generation per `rules/large-file-generation.md` when the report exceeds 500 lines.
 
 ---
 

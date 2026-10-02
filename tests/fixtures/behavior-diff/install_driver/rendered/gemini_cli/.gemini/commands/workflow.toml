@@ -44,7 +44,7 @@ Frame the mission, decompose it into independent work-items, dispatch agents und
 
 **Pre-flight inquiry set.** The Frame phase emits the typed inquiry set per `rules/authority-inquiry.md` when the mission is underspecified — scope direction, identity, naming of public surfaces, security posture. Required-category inquiries block dispatch until answered; the autonomy opt-in is itself confirmed before continuous dispatch engages.
 
-**Pre-emission gate.** The Synthesize phase runs the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against every emitted artifact; iterate-on-failure until every bar passes.
+**Pre-emission gate.** The Synthesize phase runs the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against every emitted artifact; iterate-on-failure until every bar passes within the three-round cap of `rules/pre-emission-gate-bars.md` §3 (then BLOCKED).
 
 ---
 

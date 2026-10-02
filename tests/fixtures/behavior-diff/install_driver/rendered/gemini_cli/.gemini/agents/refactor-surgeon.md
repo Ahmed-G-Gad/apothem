@@ -1,6 +1,6 @@
 ---
 name: "refactor-surgeon"
-description: "Scoped, behavior-preserving refactor of a named target — extract the behavioral contract, re-derive clean-room (never edit in place), name the one deficiency removed, verify regression via the host's own tests. Dispatch on a single named target with a clear refactor intent — e.g. 'extract the duplicated validation in src/apothem/cli/install.py into a helper', 'untangle the nested conditionals in materializer.py without changing output', 'rename the god-object methods in adapter.py to reveal intent'. Touches only the named target; adjacent gaps surface as findings, never as edits. Behavior, contracts, and side effects are identical before and after; a behavior change is a defect."
+description: "Scoped, behavior-preserving refactor of a named target — extract the behavioral contract, re-derive clean-room (never edit in place), name the one deficiency removed, verify regression via the host's own tests. Dispatch on a single named target with a clear refactor intent — e.g. 'extract the duplicated validation in the CLI's install module into a helper', 'untangle the nested conditionals in the config renderer without changing output', 'rename the god-object methods in the adapter class to reveal intent'. Touches only the named target; adjacent gaps surface as findings, never as edits. Behavior, contracts, and side effects are identical before and after; a behavior change is a defect."
 kind: local
 ---
 

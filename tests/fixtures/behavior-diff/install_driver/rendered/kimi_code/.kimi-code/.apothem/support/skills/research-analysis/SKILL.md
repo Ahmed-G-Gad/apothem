@@ -149,7 +149,7 @@ Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against t
 - **M13 code craft** — the analysis code passes the host's lint / format / type-check and pins its statistics-toolchain versions (R2).
 - **M14 systemicity** — the analysis declares its upstream (raw data + preregistration), downstream (`/research-paper`), peers (sibling research-suite artifacts), and enforcers (the `fact-checker` pass + the reproducibility manifest).
 
-Iterate on failure per the gate rule's §3 until every bar passes; record the attestation block inside the analysis and update the Handoff Manifest. Apply incremental generation per `rules/large-file-generation.md` when the analysis exceeds 500 lines.
+Iterate on failure per the gate rule's §3 until every bar passes or its three-round cap returns BLOCKED; record the attestation block inside the analysis and update the Handoff Manifest. Apply incremental generation per `rules/large-file-generation.md` when the analysis exceeds 500 lines.
 
 ---
 

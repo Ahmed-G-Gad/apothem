@@ -109,7 +109,7 @@ Compose the conceptual-model diagram — the constructs as nodes, the theorized 
 
 ### Phase 5 — Validation Gate
 
-Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the emitted theory artifact. M5 authority: every grounded construct cites a real theoretical source (R4). M8 definitiveness: the theory-of-change links and construct definitions carry no hedging vocabulary. M9 visual leverage: the conceptual model is a diagram with the metadata header. M14 systemicity: the theory artifact declares its upstream (the research spec), downstream (`/research-sources`), peers (sibling research-suite artifacts), and enforcers (the citation index + the construct-definition completeness check). Iterate on failure per the gate rule's §3 until every bar passes; record the attestation block inside the theory artifact and update the Handoff Manifest.
+Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the emitted theory artifact. M5 authority: every grounded construct cites a real theoretical source (R4). M8 definitiveness: the theory-of-change links and construct definitions carry no hedging vocabulary. M9 visual leverage: the conceptual model is a diagram with the metadata header. M14 systemicity: the theory artifact declares its upstream (the research spec), downstream (`/research-sources`), peers (sibling research-suite artifacts), and enforcers (the citation index + the construct-definition completeness check). Iterate on failure per the gate rule's §3 until every bar passes or its three-round cap returns BLOCKED; record the attestation block inside the theory artifact and update the Handoff Manifest.
 
 ---
 

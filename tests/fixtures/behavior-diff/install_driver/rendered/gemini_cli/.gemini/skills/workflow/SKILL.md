@@ -97,7 +97,7 @@ Apply the surviving findings. Remediate root causes, not symptoms. Where experti
 
 ### 6. Synthesize & Self-Check
 
-Collect agent results in one pass, verify mutual consistency, synthesize a compact result, and release raw agent output from active context. The procedure keeps the main thread lean: raw agent output is released after this single-pass synthesis, so only the synthesized verified findings persist in the conversation per `rules/multi-agent-workflow.md` §4. Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against every emitted artifact; iterate on any failing bar until it passes. Record the attestation.
+Collect agent results in one pass, verify mutual consistency, synthesize a compact result, and release raw agent output from active context. The procedure keeps the main thread lean: raw agent output is released after this single-pass synthesis, so only the synthesized verified findings persist in the conversation per `rules/multi-agent-workflow.md` §4. Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against every emitted artifact; iterate on any failing bar until it passes within the three-round cap of `rules/pre-emission-gate-bars.md` §3 (then BLOCKED). Record the attestation.
 
 ## Autonomy Posture
 

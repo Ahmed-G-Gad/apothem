@@ -41,6 +41,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   turn in every session, whether or not the operator asked for it. Set
   `APOTHEM_SESSION_END_ENABLED=1` to enable it. It never fires on a stop that
   already follows a hook-driven continuation.
+- **Gate iteration and pipeline remediation are bounded.** The pre-emission
+  gate's revise-and-re-run loop stops after three rounds and reports BLOCKED
+  with the failing bars, and every command that iterates on the gate says so.
+  `/plan` and `/research` take `--max-rounds N` (default 3) for per-stage
+  remediation, matching `/fortress`.
 - **The proactive-compaction advisory fires at most twice per session** and
   can be silenced with `APOTHEM_PROACTIVE_COMPACTION_ENABLED=0`. Its
   model-facing text now asks only for state externalization; the compaction

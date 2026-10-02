@@ -42,7 +42,7 @@ Execute `/projectify`. Scope the Project (subject, purpose, audience, target pla
 
 **Pre-flight inquiry set.** The Scope phase emits the typed inquiry set per `rules/authority-inquiry.md` — subject, purpose, audience, target platform, tone, and the knowledge-file partition. The target platform blocks authoring until resolved (it determines the context budget and convention set).
 
-**Pre-emission gate.** The Self-Check phase runs the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the deliverables; iterate-on-failure until every bar passes.
+**Pre-emission gate.** The Self-Check phase runs the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the deliverables; iterate-on-failure until every bar passes within the three-round cap of `rules/pre-emission-gate-bars.md` §3 (then BLOCKED).
 
 ---
 

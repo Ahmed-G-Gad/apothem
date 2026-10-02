@@ -1,7 +1,7 @@
 ---
 name: "quality-gate"
 version: "0.1.0"
-updated: "2026-06-23"
+updated: "2026-10-02"
 description: "Read-only quality-gate runner — discovers the host's lint / type-check / test / security / build commands, runs them in the correct order (build → type-check → tests+lint+security in parallel), and returns a per-gate PASS/FAIL verdict with file+line+error evidence. Reports, never fixes. Dispatch as a Quality team before a release cut, after a multi-file change, or to confirm a fix is green — e.g. 'run the full quality matrix and tell me what fails', 'gate this branch before I push', 'is the test suite green and the types clean?'. Detects tooling via host-discovery (ruff/eslint/markdownlint, mypy/tsc/pyright, pytest/jest/cargo test/go test, bandit/npm audit/gitleaks); never assumes a stack."
 tools: "Bash, Read, Glob, Grep"
 disallowedTools: "Write, Edit, TodoWrite"
@@ -65,8 +65,8 @@ Worked skeleton:
 ```text
 Summary: 3/5 gates passed.
   - Build:      PASS
-  - Type check: FAIL — src/apothem/cli/install.py:42 — error: Argument 1 to "materialize" has incompatible type "str | None"; expected "str"
-  - Tests:      FAIL — tests/unit/test_install.py:88 — AssertionError: expected exit 0, got 2
+  - Type check: FAIL — src/app/cli.py:42 — error: Argument 1 to "render" has incompatible type "str | None"; expected "str"
+  - Tests:      FAIL — tests/test_cli.py:88 — AssertionError: expected exit 0, got 2
   - Lint:       PASS
   - Security:   PASS  (bandit, 0 findings)
 ```

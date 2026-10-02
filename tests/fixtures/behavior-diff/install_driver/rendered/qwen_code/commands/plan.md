@@ -46,7 +46,7 @@ The four standing surfaces every operator inherits per the canonical project voi
 
 ### Refusal & Escalation
 
-REFUSE to author or reimplement any stage's logic — the orchestrator only dispatches first-class stage commands; stage behavior lives in `commands/plan-*.md`. REFUSE to dispatch past a stage whose Sequence Gate fails (a missing or failing upstream manifest) — surface the failed gate and halt. REFUSE continuous chaining without the `--autonomous` opt-in. REFUSE silent reconciliation of contradictory verification verdicts at a hand-off — surface both with evidence. Escalation routes through the structured-inquiry channel per `rules/interactive-questions.md`.
+REFUSE an unbounded remediation loop — the `--max-rounds` cap and its BLOCKED retreat are mandatory per `rules/planning-techniques.md` §1. REFUSE to author or reimplement any stage's logic — the orchestrator only dispatches first-class stage commands; stage behavior lives in `commands/plan-*.md`. REFUSE to dispatch past a stage whose Sequence Gate fails (a missing or failing upstream manifest) — surface the failed gate and halt. REFUSE continuous chaining without the `--autonomous` opt-in. REFUSE silent reconciliation of contradictory verification verdicts at a hand-off — surface both with evidence. Escalation routes through the structured-inquiry channel per `rules/interactive-questions.md`.
 
 ### Output Surface
 
@@ -78,6 +78,7 @@ The workflow is granted to identify any defect a hand-off's verification reveals
 | -------- | ---- | -------- | ----------- |
 | `<<mission>> \| suite path` | String | Yes | A raw planning mission (→ chain starts at `plan-spec`) OR an existing `<project-root>/.apothem/plans/{suite}/` path (→ resume from the first incomplete stage). |
 | `--autonomous` | Flag | No | Opt into continuous chaining + dispatch (no per-stage-boundary halt). Default: halt at each stage boundary for confirmation, per `rules/agnostic-posture.md` + `rules/context-management.md` §4A. Irreversible steps stay per-action gated even under this flag. |
+| `--max-rounds N` | Integer | No | The per-stage remediation cap (default: 3). A hand-off still refuted after N remediation rounds halts the run as BLOCKED with the residual findings and their owning stages, per `rules/planning-techniques.md` §1. |
 | `--verify-panel N` | Integer | No | Refute-by-default critics per stage hand-off (default: 3). |
 | `--from spec\|generate\|review\|design\|execute` | Enum | No | Explicit resume stage (overrides the manifest-derived resume point). |
 
@@ -89,7 +90,7 @@ The workflow is granted to identify any defect a hand-off's verification reveals
 2. **Decompose the pipeline** — Map the mission onto the stage chain `plan-spec → plan-generate → plan-review → plan-design (conditional) → plan-execute`. Each stage is a workflow work-item whose return contract is its Handoff Manifest. Mark `plan-design` conditional on the architecture-bearing flag carried in the generation / review hand-off.
 3. **Dispatch stages (opt-in gated)** — Dispatch each stage in dependency order via its first-class `/plan-<stage>` command, each resuming from the prior stage's manifest. Under `--autonomous`, continue across boundaries; otherwise present the next-stage plan and confirm. Per `rules/agent-orchestration.md`, a stage may itself fan out its own internal agent teams.
 4. **Verify each hand-off (refute-by-default)** — Before a downstream stage consumes an upstream manifest, run N refute-by-default critics over the hand-off across distinct lenses (spec-fidelity, internal consistency, gate-attestation presence, cross-stage non-contradiction). The hand-off survives only on a non-refute majority. A failed Sequence Gate or a refuted hand-off halts and surfaces — never silently proceeds.
-5. **Remediate** — Apply surviving findings at their root (re-invoke the owning stage to fix; never patch the manifest). Remediate disclosed beyond-mission defects. Integrate in the main loop.
+5. **Remediate** — Apply surviving findings at their root (re-invoke the owning stage to fix; never patch the manifest). Each stage gets at most `--max-rounds` remediation rounds (default 3); a hand-off still refuted at the cap halts the run as BLOCKED with the residual findings and their owning stages, per `rules/planning-techniques.md` §1. Remediate disclosed beyond-mission defects. Integrate in the main loop.
 6. **Synthesize & self-check** — When `plan-execute` reaches the final phase and emits `COMPLETION.md`, synthesize the run in a single pass, release raw stage output, run the workflow's fifteen-bar gate over the result surface, record the attestation, and emit the single recommended next move.
 
 ---

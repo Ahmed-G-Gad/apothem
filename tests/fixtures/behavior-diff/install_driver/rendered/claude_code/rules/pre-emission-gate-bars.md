@@ -79,7 +79,7 @@ Every `n/a` is explicit and reasoned — never a silent skip. The `ecosystem-ver
 
 ### 3. Iteration on failure
 
-A single bar failure blocks emission. Revise the artifact per the failing bar's "Failure → action" cell — which names the rule that owns the revision protocol — and re-run the gate. Iterate until every bar passes, then emit with the attestation recorded.
+A single bar failure blocks emission. Revise the artifact per the failing bar's "Failure → action" cell — which names the rule that owns the revision protocol — and re-run the gate. Iterate until every bar passes, then emit with the attestation recorded. The loop is capped at three revision rounds per `rules/planning-techniques.md` §1: when a bar still fails after the third round, do not emit and do not soften the bar. Stop and report BLOCKED with each failing bar, its evidence, and the rule that owns its revision, so the operator decides the next step.
 
 ## Enforcement
 
@@ -87,7 +87,7 @@ Path-filtered (the seven glob patterns in this rule's `pathFilter` field), alway
 
 ## Bindings (§0.j five-direction)
 
-- **Drives →** ● The per-bar Check + Failure→action enforcement on every emitted artifact under the path-filter. ● The attestation YAML schema's appearance in every artifact's working trace. ● The iteration-on-failure protocol's revise-and-re-run loop.
+- **Drives →** ● The per-bar Check + Failure→action enforcement on every emitted artifact under the path-filter. ● The attestation YAML schema's appearance in every artifact's working trace. ● The iteration-on-failure protocol's revise-and-re-run loop, capped at three rounds with a BLOCKED retreat.
 - **Satisfies →** ● the fifteen-mandate registry row **M4 — Self-Application** (companion-sub-rule materialization). ● the Pre-Emission Gate Attestation Schema. ● `rules/pre-emission-gate.md` anchor (the parent rule's pointer to this companion's full bar-level catalog).
 - **Established by ↑** ● `rules/pre-emission-gate.md` (parent-rule anchor). ● the Pre-Emission Gate. ● the Pre-Emission Gate Attestation Schema.
 - **Gated by ←** ● The path-filter (seven glob patterns) — this rule demand-loads only on emission-surface touches. ● `rules/pre-emission-gate.md` always-on baseline (parent rule's anchor must be live for the companion to demand-load coherently).

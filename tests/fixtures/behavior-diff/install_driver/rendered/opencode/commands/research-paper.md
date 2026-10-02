@@ -154,7 +154,7 @@ Confirm the selected EQUATOR reporting checklist is **complete** — every item 
 
 **Run the anonymization-completeness check when `--anonymized` is set (R6).** When `--anonymized` is active, run a gated double-blind-readiness check per `skills/research-suite/references/blinding-and-disclosure.md` that clears only when every bar holds: no residual author, institution, funding, or system/tool identifier leaks into the manuscript body — not in prose, captions, acknowledgements, metadata, or repository/artifact handles that reconstruct identity; every self-citation is phrased de-anonymization-safe (a neutral third-person reference to a prior contribution, never a first-person one that reveals authorship); and the held-out identity is recorded as the designated de-anonymization payload in the attestation so the publish stage restores it exactly. A manuscript that does not clear every bar is not double-blind-ready and does not advance until the leak is remediated and the check is re-run.
 
-Iterate on failure per the gate rule's §3 until every bar passes; record the attestation block in `{suite}/_outputs/paper-attestation.md` and update the Handoff Manifest.
+Iterate on failure per the gate rule's §3 until every bar passes or its three-round cap returns BLOCKED; record the attestation block in `{suite}/_outputs/paper-attestation.md` and update the Handoff Manifest.
 
 ---
 
