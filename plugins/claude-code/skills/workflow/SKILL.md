@@ -1,13 +1,13 @@
 ---
 name: "workflow"
 version: "0.1.0"
-updated: "2026-06-14"
+updated: "2026-10-02"
 description: "General-purpose workflow-harnessing skill — matched when the operator states a mission via '/workflow <<mission>>', asks to 'harness a workflow', 'run a multi-agent workflow', 'orchestrate agents', 'fan out and verify', 'critique and remediate', 'maximally elevate' a target, or otherwise hands off a non-trivial multi-step mission whose accomplishment benefits from genuinely-independent parallel work plus adversarial verification. Decomposes the mission, dispatches independent agents under named return contracts (non-overlapping scope, isolation where parallel writes collide, single-message parallel launch), subjects every load-bearing finding to an EXTREMELY-CRITIQUE refute-by-default verification pass (N independent critics per finding, default 3, distinct lenses — correctness/security/reproducibility/regression — survival only on non-refute majority) before it survives, is granted to identify and remediate defects beyond the literal mission (each disclosed per rules/disclosure-ledger.md), self-augments from current authoritative SOTA sources rather than memory alone, and emits a deterministic, byte-stable result. Multi-agent dispatch and continuous auto-execution are opt-in / confirmation-gated, never default-on — the canonical home for the '/workflow <<mission>>' entry pattern. A single-step request that one direct tool call resolves is below this skill's threshold."
 archetype: "orchestration-template"
 userInvocable: true
 argument-hint: "[<<mission>>] [--autonomous] [--verify-panel N]"
 disable-model-invocation: true
-allowed-tools: "Read, Write, Edit, Glob, Grep, Bash, Agent, WebSearch, WebFetch, TodoWrite"
+allowed-tools: "Read, Glob, Grep, Agent, WebSearch, TodoWrite"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

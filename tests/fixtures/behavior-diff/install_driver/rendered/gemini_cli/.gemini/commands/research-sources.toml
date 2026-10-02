@@ -4,12 +4,12 @@ prompt = """
 ---
 name: "research-sources"
 version: "0.1.0"
-updated: "2026-06-16"
+updated: "2026-10-02"
 description: "Systematic source collection — the discovery-and-extraction stage of the `/research` pipeline. Decomposes the ratified research spec into orthogonal sub-queries, dispatches parallel discovery via the research-scout agent and the multi-source-research skill, deduplicates, ranks by authority/recency/relevance, screens against the spec's inclusion/exclusion criteria, and extracts each surviving source with full provenance. Use when a research mission has a finalized spec and needs its evidence base assembled: 'collect the sources for this question', 'gather the primary literature', 'build the source ledger', 'find and screen the references before synthesis', 'survey and extract the evidence base'. Fans external facets through research-scout (WebSearch/WebFetch + in-repo corpus), extracts per-source through the multi-source-research skill, and runs fact-checker adversarially to confirm every citation resolves. Emits `sources/<id>.md` per-source extractions plus `_inputs/source-ledger.md` (ranked, screened, deduplicated, citation-indexed). Discovery and extraction only — synthesis and the SOTA/gap map route to /research-synthesis."
 argument-hint: "[suite-path] [--max-sources N] [--override] [--standalone]"
 disable-model-invocation: false
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

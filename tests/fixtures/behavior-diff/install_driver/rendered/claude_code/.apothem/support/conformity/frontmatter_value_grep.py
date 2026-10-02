@@ -27,11 +27,11 @@ satisfies the constraint. The governed classes and their schemas:
   ``isolation``, ``color``, and the ``memory`` ``oneOf`` string-enum/boolean;
   patterns: ``name``, ``version``, ``updated``).
 - ``commands`` → ``command.schema.json`` (patterns: ``name``, ``version``,
-  ``updated``). ``additionalProperties: false``, but key/required validation is
+  ``updated``, ``allowed-tools``). ``additionalProperties: false``, but key/required validation is
   owned by ``frontmatter_grep`` and the doc-example test — this validator adds
   the value-level pattern enforcement those surfaces lack.
 - ``skills``  → ``skill.schema.json``  (enum: ``effort``; patterns: ``name``,
-  ``version``, ``updated``, ``archetype``).
+  ``version``, ``updated``, ``archetype``, ``allowed-tools``).
 
 Scope boundary. This validator is value-only and schema-driven: it never
 hardcodes a field list (a new enum/pattern property added to a schema is picked

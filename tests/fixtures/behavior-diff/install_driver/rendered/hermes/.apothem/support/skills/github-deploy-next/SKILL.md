@@ -1,12 +1,12 @@
 ---
 name: "github-deploy-next"
 version: "0.1.0"
-updated: "2026-06-22"
+updated: "2026-10-02"
 description: "Subsequent-release-cycle sibling of /github-deploy-fresh that runs one full next-release cycle end-to-end on origin/main — review-gated merge of ready pull requests, resolution of the issues the release addresses, a SemVer version bump derived from the Conventional Commits change set, a Keep-a-Changelog roll of [Unreleased] into the new version section, an annotated and signed tag published to the host's release surface, and concise current-version release notes — preserving the current-version-only release facade and the signed-release supply-chain posture where the host ratifies signing. The merge and publish steps are confirmation-gated through the structured-inquiry channel; read-only preview stages proceed without a gate."
 argument-hint: "[path/to/repo/] [--bump major|minor|patch] [--strict]"
-disable-model-invocation: false
+disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

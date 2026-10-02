@@ -4,12 +4,12 @@ prompt = """
 ---
 name: "projectify"
 version: "0.1.0"
-updated: "2026-06-16"
+updated: "2026-10-02"
 description: "Chat-app Project elevation command. Produces the three deliverables — Description, Instruction, knowledge Files — for a Claude Project / ChatGPT Custom GPT / Gemini Gem, freshly authored to current SOTA conventions through a structured-inquiry-saturated elicitation, elevated across order / coherence / clarity / determinism / structurality / conciseness / rigor / comprehensiveness and beyond, holding knowledge files within a measurable per-platform context budget (token-sum / discovered-platform-limit <= 0.02), with the grant to consolidate or divide files. Installs agnostically across all harnesses. Deterministic output; multi-step autonomy is opt-in / confirmation-gated."
 argument-hint: "[project subject] [--platform claude|chatgpt|gemini] [--autonomous]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

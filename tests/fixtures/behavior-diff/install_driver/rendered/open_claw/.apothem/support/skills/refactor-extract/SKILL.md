@@ -1,13 +1,13 @@
 ---
 name: "refactor-extract"
 version: "0.1.0"
-updated: "2026-06-22"
+updated: "2026-10-02"
 description: "Scoped behavior-preserving extraction refactor — matched when the user asks to 'extract this', 'extract this function', 'pull this out into its own module', 'clean up this module', 'refactor this', 'split this function', 'break this apart', or any phrasing that asks for a structural extraction of an existing symbol or file while preserving observable behavior. Performs behavioral extraction of what the code DOES, clean-room re-derivation from the extracted specification, quality elevation against a named deficiency, and regression verification that behavior is preserved. NOT for behavior changes (changed inputs / outputs / side effects / error behavior route back as a feature-change finding), whole-file rewrites (the clean-room barrier binds the named target only), or building a test suite as the deliverable. User-invocable directly with an optional target symbol or file — the interactive skill counterpart to the dispatched `refactor-surgeon` agent."
 archetype: "refactor-template"
 userInvocable: true
 argument-hint: "[--target SYMBOL_OR_FILE]"
 disable-model-invocation: true
-allowed-tools: "Read, Write, Edit, Glob, Grep, Bash"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

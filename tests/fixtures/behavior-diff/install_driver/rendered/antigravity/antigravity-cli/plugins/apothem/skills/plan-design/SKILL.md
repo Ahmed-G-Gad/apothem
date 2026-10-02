@@ -1,12 +1,12 @@
 ---
 name: "plan-design"
 version: "0.1.0"
-updated: "2026-06-10"
+updated: "2026-10-02"
 description: "Produces a comprehensive architectural-design artifact at the consuming suite's _inputs/design.md for architecture-bearing plan suites — six transformation phases (Input Ingest · Architectural Decomposition · Component-Interface Design · Cross-Component Binding Ratification · Design-Artifact Emission · Design Validation Gate) covering the seven-axs-of-breadth taxonomy with diagrams, ratified decision records, and a Bidirectional Binding Matrix appendix. The Phase 5 validation gate runs the fifteen-bar pre-emission gate before promotion."
 argument-hint: "[path/to/plan-suite/] [--refine-existing] [--dry-run]"
 disable-model-invocation: false
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

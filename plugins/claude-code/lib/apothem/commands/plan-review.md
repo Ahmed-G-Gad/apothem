@@ -1,12 +1,12 @@
 ---
 name: "plan-review"
 version: "0.1.0"
-updated: "2026-06-10"
+updated: "2026-10-02"
 description: "Forensic, blind, line-by-line audit of an existing plan suite — prose fidelity, internal consistency, completeness, quality, risk, standards, domain, and architecture — then refine through interactive Q&A. Mid-chain `/plan` stage; emits Review Scorecards that gate downstream execution at SHARED+ and a zero-open-finding terminal verdict."
 argument-hint: "[path/to/plan-suite/] [--focus AREA] [--dry-run]"
 disable-model-invocation: false
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

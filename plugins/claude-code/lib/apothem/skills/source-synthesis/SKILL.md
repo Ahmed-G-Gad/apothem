@@ -1,13 +1,13 @@
 ---
 name: "source-synthesis"
 version: "0.1.0"
-updated: "2026-06-22"
+updated: "2026-10-02"
 description: "Reconcile a fixed set of provided sources into one cited synthesis — matched when the user says 'synthesize these sources', 'combine these documents', 'reconcile these', 'what do these say together', 'merge these notes into one', or any phrasing that hands over N specific documents and asks for a single consolidated reading. Extracts the claim set per source with citation anchors, reconciles agreements and contradictions across sources, and produces a cited synthesis that separates consensus from contested ground while flagging coverage gaps. User-invocable directly via `--sources`; never gathers or discovers sources of its own (that is the `multi-source-research` surface), never adjudicates which source is correct against ground truth (a contradiction is reported as contested, not resolved by fiat), and never synthesizes fewer than two sources (a lone source is summarized, not synthesized)."
 archetype: "research-template"
 userInvocable: true
 argument-hint: "[--sources GLOB_OR_PATHS]"
 disable-model-invocation: true
-allowed-tools: "Read, Write, Edit, Glob, Grep"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

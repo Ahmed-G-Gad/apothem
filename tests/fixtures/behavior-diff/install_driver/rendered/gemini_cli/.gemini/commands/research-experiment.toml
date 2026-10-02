@@ -4,12 +4,12 @@ prompt = """
 ---
 name: "research-experiment"
 version: "0.1.0"
-updated: "2026-06-16"
+updated: "2026-10-02"
 description: "Executes the designed study or experiment and captures raw data with full provenance — the run-and-record stage of the /research pipeline. Triggered as 'run the experiment and log it', 'execute the study and capture the data', 'collect the data per the preregistered protocol', 'record the run with full provenance', or the pipeline-chained hand-off from /research-design. Consumes the suite's _inputs/study-design.md plus _inputs/preregistration.md and emits _outputs/experiment-log.md (the timestamped protocol trace), the raw data at a host-natural location (e.g. data/), and _outputs/reproducibility-manifest.md carrying the environment snapshot, the seed, the protocol log, and the version pins so an independent party can re-run the study to the same observations. Reproducibility is the binding rigor mandate (R2): no observation enters the log without its provenance, and a null or unexpected result is recorded as faithfully as a confirming one (R3). The protocol is executed exactly as preregistered; every deviation is disclosed (R5), and the human/data-privacy and conflict-of-interest declarations are carried forward (R6)."
 argument-hint: "[--suite-name NAME] [--override] [--data-dir PATH] [--seed N] [--dry-run]"
 disable-model-invocation: false
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

@@ -4,12 +4,12 @@ prompt = """
 ---
 name: "plan-amend"
 version: "0.1.0"
-updated: "2026-06-22"
+updated: "2026-10-02"
 description: "Amends, extends, refines, reverts, or weaves an existing plan suite without destroying prior resolved decisions — re-derives only the affected downstream artifacts (spec, master-plan, phases, notes), preserves the PLAN-NOTES.md decision ledger as authoritative and append-only, and routes every ambiguity through the structured-inquiry channel rather than inventing scope, identity, or decisions. The re-entrant `/plan` stage that revisits a converged-or-in-progress suite at any point in the spec → generate → review → execute chain."
 argument-hint: "[amend|extend|refine|revert|weave] [suite-path] [--dry-run]"
 disable-model-invocation: false
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

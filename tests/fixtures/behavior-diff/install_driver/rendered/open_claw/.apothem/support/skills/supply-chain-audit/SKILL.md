@@ -1,12 +1,12 @@
 ---
 name: "supply-chain-audit"
 version: "0.1.0"
-updated: "2026-06-16"
+updated: "2026-10-02"
 description: "Operator-driven supply-chain audit pass against SLSA + Sigstore + SBOM. Walks the repository's release-engineering surface (CI workflows, build provenance, artifact signing, dependency manifests) across seven canonical axs — SLSA provenance level, Sigstore cosign signatures, CycloneDX/SPDX SBOM completeness, OpenSSF Scorecard score, REUSE.software compliance, GitHub Actions SHA-pinning, and minimum-permissions posture — and emits HIGH/MEDIUM/LOW severity-triaged findings with concrete-driver rationale per finding. SOTA references: SLSA, Sigstore, in-toto, OpenSSF Scorecard, SCITT, REUSE. Read-only diagnostics; never remediates. Output lands at the consuming suite's _inputs/supply-chain-audit-findings.md. Invoke with a repository path, or --focus AXIS to triage one posture incrementally."
 argument-hint: "[path/to/repo/] [--focus AXIS] [--dry-run]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

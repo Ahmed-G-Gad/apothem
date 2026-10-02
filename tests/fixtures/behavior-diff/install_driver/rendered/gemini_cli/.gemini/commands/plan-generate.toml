@@ -4,12 +4,12 @@ prompt = """
 ---
 name: "plan-generate"
 version: "0.1.0"
-updated: "2026-06-10"
+updated: "2026-10-02"
 description: "Generates a complete Master Plan Suite from raw prose or an authored `_spec/spec.md` — ingests requirements, runs seriousness-scaled discovery with the Five Cognitive Filters, decomposes into acyclic phases, and emits PREAMBLE/MASTER-PLAN/PROGRESS/PLAN-NOTES plus per-phase PHASE.md files gated by the fifteen-bar pre-emission sweep. Mid-chain `/plan` stage between `/plan-spec` and `/plan-review`."
 argument-hint: "[path/to/prose.md] [--mode NEW|OVERHAUL] [--seriousness LEVEL] [--context CONTEXT] [--mission MISSION] [--domain DOMAIN] [--dry-run]"
 disable-model-invocation: false
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

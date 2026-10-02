@@ -1,13 +1,13 @@
 ---
 name: "eval-harness"
 version: "0.1.0"
-updated: "2026-06-09"
+updated: "2026-10-02"
 description: "Build and run a reproducible LLM evaluation harness — matched when the operator asks to 'build an eval', 'measure the model', set up an 'evaluation harness', 'score outputs', benchmark a prompt or model variant, regression-test generation quality, or compare candidate models on a labeled task. Defines four artifacts: a versioned labeled dataset, a scorer (exact-match / rubric / LLM-judge) with an explicit pass criterion, a candidate runner, and an aggregated metrics report carrying pass-rate with a Wilson confidence interval, per-category breakdowns, and regression/improvement lists against a prior run. Reproducibility is the contract — every run stamps the dataset version, the scorer definition, the candidate identifier, and the seed so two runs over identical inputs return an identical verdict. Harness- and model-agnostic: drives any provider through its native invocation surface, discovered or inquired per rules/host-discovery.md. NOT for fine-tuning or training pipelines, authoring the prompt under test, live-monitoring dashboards, one-shot un-versioned benchmarks, or scoring against an undefined pass criterion. User-invocable directly."
 archetype: "ai-template"
 userInvocable: true
 argument-hint: "[--dataset PATH] [--scorer NAME]"
 disable-model-invocation: true
-allowed-tools: "Read, Write, Edit, Glob, Grep, Bash"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

@@ -1,12 +1,12 @@
 ---
 name: "docs-review"
 version: "0.1.0"
-updated: "2026-06-10"
+updated: "2026-10-02"
 description: "Operator-driven documentation review pass against rules/code-craft-markdown.md and rules/ten-dimension-check.md. Walks every Markdown page under the host docs source (Apothem: site/content/docs/) plus README, CONTRIBUTING, CHANGELOG, ADRs, and RFCs, then emits per-page findings covering prose clarity, sentence-level justification, precision-over-politeness, active-voice construction, hedge-elimination, link-integrity, code-block language tags, Mermaid verified metadata, citation completeness, and public-API coverage. Output lands at the consuming suite's _inputs/docs-review-findings.md with HIGH / MEDIUM / LOW severity triage and concrete-driver rationale per finding."
 argument-hint: "[path/to/repo/ or path/to/docs-source/] [--focus FILE_OR_DIR] [--dry-run]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

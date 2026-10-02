@@ -4,12 +4,12 @@ prompt = """
 ---
 name: "research-theory"
 version: "0.1.0"
-updated: "2026-06-16"
+updated: "2026-10-02"
 description: "Builds the foundational conceptual and theoretical framework for a framed research question — the theoretical-grounding stage of the /research pipeline. Triggered as 'build the theoretical framework', 'draw the theory of change for this study', 'define the constructs and their operational definitions', 'build the logic model', 'what's the conceptual model here', or the pipeline-chained hand-off from /research-spec. Consumes the suite's _spec/research-spec.md and emits _inputs/theory.md carrying the conceptual / theoretical framework, the theory-of-change / logic model, the constructs with their operational definitions, and a conceptual-model diagram — the a-priori grounding (R10) that the systematic search and synthesis stages trace back to. Every construct is grounded in primary theory (R1), every theorized relation is stated in a refutable form (R3)."
 argument-hint: "[--suite-name NAME] [--override] [--framework NAME]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

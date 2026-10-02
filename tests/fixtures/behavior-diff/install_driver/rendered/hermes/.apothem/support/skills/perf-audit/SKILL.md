@@ -1,12 +1,12 @@
 ---
 name: "perf-audit"
 version: "0.1.0"
-updated: "2026-06-16"
+updated: "2026-10-02"
 description: "Audits a deployed repository against the per-class performance budgets at `rules/performance-discipline.md` §1 — hook-handler runtime (10s/30s/60s tiers), verify-ecosystem composite (30s) and per-check (5s), conformity-gate per-dispatch (1s), test-suite full (60s) and per-module (10s), agent-spawn (60s), and the shell sub-budgets at §1.1 (bootstrap.sh 500ms, bootstrap.ps1 1500ms, find-python 200ms, shellcheck 5s, Invoke-ScriptAnalyzer 10s, ruff 5s). Drives the four benchmark drivers under `src/apothem/benchmarks/`, identifies hot paths via USE (Utilization · Saturation · Errors) decomposition, classifies findings mechanically by exceedance — HIGH (>100%) / MEDIUM (25-100%) / LOW (≤25%) — and emits the report at the consuming suite's _inputs/perf-audit-findings.md. Measurement-only; never fabricates a budget or a measurement. Invoke with a repository path, or --focus CLASS to re-measure one class post-remediation."
 argument-hint: "[path/to/repo/] [--focus CLASS] [--dry-run]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

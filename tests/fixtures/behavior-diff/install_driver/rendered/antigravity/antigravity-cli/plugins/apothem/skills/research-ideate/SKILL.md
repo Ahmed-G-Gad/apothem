@@ -1,12 +1,12 @@
 ---
 name: "research-ideate"
 version: "0.1.0"
-updated: "2026-06-16"
+updated: "2026-10-02"
 description: "Formulates the problem space from zero — opportunity-and-gap scanning, invalidated-prior-hypothesis scanning, and candidate research-question generation with ranking — the new entry stage of the /research pipeline. Triggered as 'help me find a research question', 'scan the opportunity space for this domain', 'what's worth studying here', 'generate candidate research questions', 'what prior hypotheses have already been invalidated', or a fresh research engagement with no framed question yet. Frames the problem space against an a-priori theoretical anchor (R10), grounds every candidate against prior art (R1), and generates candidate research questions each stated in a falsifiable form (R3). Emits _inputs/ideation.md carrying the framed problem space, the opportunity-and-gap scan, the invalidated-prior-hypothesis scan, and the ranked candidate-question slate that /research-spec consumes, plus the Handoff Manifest at the research-suite folder."
 argument-hint: "[path/to/domain-notes] [--suite-name NAME] [--override] [--domain NAME]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

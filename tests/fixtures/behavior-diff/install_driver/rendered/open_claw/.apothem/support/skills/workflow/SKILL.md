@@ -1,12 +1,12 @@
 ---
 name: "workflow"
 version: "0.1.0"
-updated: "2026-06-14"
+updated: "2026-10-02"
 description: "General-purpose workflow-harnessing command. Entry form '/workflow <<mission>>'. Drives genuinely-independent multi-agent dynamic workflows under named return contracts, subjects every finding to an EXTREMELY-CRITIQUE refute-by-default verification pass before it survives, is granted to identify and remediate issues beyond the literal mission (each disclosed per the change ledger), self-augments from current authoritative SOTA sources rather than memory alone, and emits deterministic output with a single recommended next move. Multi-agent dispatch and auto-execution are opt-in / confirmation-gated, never default-on."
 argument-hint: "[<<mission>>] [--autonomous] [--verify-panel N]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

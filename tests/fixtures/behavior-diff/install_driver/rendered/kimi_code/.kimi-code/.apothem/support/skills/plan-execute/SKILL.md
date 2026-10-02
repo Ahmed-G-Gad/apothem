@@ -1,12 +1,12 @@
 ---
 name: "plan-execute"
 version: "0.1.0"
-updated: "2026-06-22"
+updated: "2026-10-02"
 description: "Executes a specific phase from a Master Plan Suite — ingests the phase's `PHASE.md` plus the suite's PROGRESS/PLAN-NOTES context, verifies prerequisites and review scorecards, implements every task with per-task commits, runs quality gates, and emits the phase `REPORT.md` before transitioning to the next phase (granular or continuous) — all under conformity checking, the fifteen-bar pre-emission gate, and a per-file destructive-op floor. The terminal `/plan` stage that turns a reviewed suite into landed, verified work."
 argument-hint: "[path/to/plan-suite/] [phase-id] [--dry-run]"
 disable-model-invocation: false
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

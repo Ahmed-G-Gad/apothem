@@ -1,12 +1,12 @@
 ---
 name: "plan-status"
 version: "0.1.0"
-updated: "2026-06-22"
+updated: "2026-10-02"
 description: "Read-only plan-suite progress reporter — reads the suite's PROGRESS.md / PLAN-NOTES.md / phase tracking files and emits a strategic status report across the task / phase / artifact dimensions, with a `--verbose` health-grade and spot-check pass. The read-only `/plan` pipeline stage that surveys a suite at any point between `/plan-generate` and `/plan-execute` without mutating a single byte."
 argument-hint: "[path/to/plan-suite/] [--verbose]"
 disable-model-invocation: false
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

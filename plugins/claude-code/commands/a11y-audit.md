@@ -1,12 +1,12 @@
 ---
 name: "a11y-audit"
 version: "0.1.0"
-updated: "2026-06-16"
+updated: "2026-10-02"
 description: "Operator-driven accessibility audit pass against WCAG 2.2 AA. Walks every rendered page of a deployed web surface (documentation site, landing portal, in-app surfaces) via ax-core + Pa11y + Lighthouse Accessibility, attests each issue against the WCAG 2.2 success-criterion catalog (including the six 2.2-new criteria — 2.4.11 Focus Not Obscured, 2.5.7 Dragging Movements, 2.5.8 Target Size, 3.3.7 Redundant Entry, 3.3.8 Accessible Authentication, plus the carried-forward AA floor), and emits per-page findings — HIGH/MEDIUM/LOW severity-triaged with concrete-driver rationale per finding. Read-only diagnostics; never remediates. Output lands at the consuming suite's _inputs/a11y-audit-findings.md. Invoke with a site path or URL, or --focus PAGE_OR_DIR to audit a recent docs change-set incrementally."
 argument-hint: "[path/to/site/ or URL] [--focus PAGE_OR_DIR] [--dry-run]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

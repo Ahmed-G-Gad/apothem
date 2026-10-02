@@ -4,12 +4,12 @@ prompt = """
 ---
 name: "elevate"
 version: "0.4.1"
-updated: "2026-07-02"
+updated: "2026-10-02"
 description: "Aggressive, zero-trust, open-loop MASTER repository-elevation command. DETECTS across every technically-auditable dimension by dispatching the report-only /audit fortress (reusing its eleven first-class passes — code-review, code-audit, architecture-review, docs-review, security-audit, dependency-audit, supply-chain-audit, threat-model-audit, perf-audit, a11y-audit, ux-review — never re-deriving them), then runs genuinely-independent critique agents over the SOTA-and-elevation dimensions no audit covers (storytelling, naming uniformity, cross-sync, consolidation/modularity, aesthetic SOTA, visualization/tabulation, extensibility), stopping at every nuance folder-by-folder, file-by-file, line-by-line, lifting each surface to current SOTA per rules/sota-elevation.md, remediating with the most appropriate action (destruction included; every destructive step confirmation-gated), propagating each change across the whole reference graph per rules/propagation.md, and culminating trace-free and production-ready by handing off to /freshify. Orchestration runs through the workflow harness (skills/workflow/SKILL.md) per rules/agent-orchestration.md; the command names no model tier and presets no effort. WARNING: a full run is a relentless multi-pass undertaking, not a quick amendment — bound a pass with --dimensions / --max-passes for a scoped run."
 argument-hint: "[path/to/repo/] [--dimensions all|<list>] [--max-passes N] [--open-loop] [--autonomous] [--verify-panel N] [--strict]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

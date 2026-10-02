@@ -4,12 +4,12 @@ prompt = """
 ---
 name: "research-review"
 version: "0.1.0"
-updated: "2026-06-16"
+updated: "2026-10-02"
 description: "Subjects the finished paper to a peer-review-grade adversarial critique against venue standards — scores novelty, rigor, reproducibility, clarity, ethics, statistical review, and reporting-guideline conformance, then emits a severity-triaged required-revision list with a concrete-driver rationale per finding. Refute-by-default: every claim in the paper is treated as unsupported until the evidence in the manuscript forces otherwise. The peer-review stage of the /research pipeline. Triggered as 'review this paper like a hostile reviewer', 'run the peer-review critique against the venue bar', 'score the paper on novelty rigor reproducibility clarity ethics and statistics', 'what would Reviewer 2 reject this for', 'give me the required-revision list before submission', or the pipeline-chained hand-off from /research-paper. Consumes the paper deliverable emitted by the paper stage and emits _outputs/review-report.md carrying the seven-axis reviewer scorecard, the HIGH/MEDIUM/LOW required-revision list with per-finding concrete-driver rationale, the reproducibility-package and re-run verdict, the citation-integrity audit, and a recommend/major-revision/reject verdict. Every finding is adversarially verified refute-by-default by the fact-checker before it lands as a required revision."
 argument-hint: "[--suite-name NAME] [--override] [--venue STANDARD] [--blind]"
 disable-model-invocation: false
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
