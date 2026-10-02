@@ -20,7 +20,7 @@ target version) that rarely change, where the static form is honest.
 
 ## 2. Architecture
 
-Three forms cover every badge in the project:
+Four forms cover every badge in the project:
 
 1. **GitHub-native workflow status badges.** A workflow's badge URL has the
    shape `https://github.com/<owner>/<repo>/actions/workflows/<file>/badge.svg`
@@ -37,23 +37,39 @@ Three forms cover every badge in the project:
    `https://img.shields.io/badge/<label>-<message>-<color>` with no
    reactive data source. Reserved for values that genuinely rarely change
    (license identifier, Python target version).
+4. **Registry and scorecard badges.** A badge whose value a third party
+   computes from public data it already holds: the npm registry (version and
+   downloads, rendered by shields.io) and the OpenSSF Scorecard API. The
+   project publishes nothing for these; the third party is the source.
 
 Public-Gist publication of project metrics is excluded by design. Shields.io
 endpoints over the project-controlled domain are the canonical substitute.
 
 ## 3. Per-badge specification
 
-| Badge | Form | Source | URL shape |
-|---|---|---|---|
-| CI status | GitHub-native | `.github/workflows/ci.yml` | `https://github.com/ahmed-g-gad/apothem/actions/workflows/ci.yml/badge.svg?branch=main` |
-| Last commit | GitHub-native | repo metadata | `https://img.shields.io/github/last-commit/ahmed-g-gad/apothem` |
-| License | shields.io static | `LICENSE` (MIT) | `https://img.shields.io/badge/License-MIT-yellow.svg` |
-| Latest release | shields.io endpoint | `badges/release.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/release.json` |
-| Coverage | shields.io endpoint | `badges/coverage.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/coverage.json` |
-| Security | shields.io endpoint | `badges/security.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/security.json` |
-| Supply chain | shields.io endpoint | `badges/supply-chain.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/supply-chain.json` |
-| Docs | shields.io endpoint | `badges/docs.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/docs.json` |
-| Python version | shields.io static | `pyproject.toml` `python_requires` | `https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white` |
+The table lists the README badge strip in order. The last column marks the
+badges whose image renders only while the repository is public: GitHub serves
+a workflow badge for a private repository only to signed-in members, and
+Scorecard scans public repositories only.
+
+| Badge | Form | Source | URL shape | Needs a public repository |
+|---|---|---|---|---|
+| Latest release | shields.io endpoint | `badges/release.json` | `https://img.shields.io/endpoint?url=https%3A%2F%2Fapothem.ahmedgad.com%2Fbadges%2Frelease.json` | No |
+| CI status | GitHub-native | `.github/workflows/ci.yml` | `https://github.com/ahmed-g-gad/apothem/actions/workflows/ci.yml/badge.svg?branch=main` | Yes |
+| License | shields.io static | `LICENSE` (MIT) | `https://img.shields.io/badge/license-MIT-0F172A` | No |
+| npm version | registry | npm registry | `https://img.shields.io/npm/v/%40ahmed-g-gad%2Fapothem?color=10B981&label=npm` | No |
+| Coverage gate | shields.io static | `pyproject.toml` `fail_under = 80` | `https://img.shields.io/badge/coverage%20gate-%E2%89%A580%25-2563EB` | No |
+| OpenSSF Scorecard | scorecard | `.github/workflows/scorecard.yml` results | `https://api.securityscorecards.dev/projects/github.com/ahmed-g-gad/apothem/badge` | Yes |
+| Feedback | shields.io static | GitHub Issues | `https://img.shields.io/badge/feedback-GitHub%20issues-7C3AED` | No |
+| Docs | shields.io static | the docs site | `https://img.shields.io/badge/docs-Fumadocs-0F172A` | No |
+| npm downloads | registry | npm registry | `https://img.shields.io/npm/dm/%40ahmed-g-gad%2Fapothem?color=10B981&label=downloads` | No |
+
+Every badge's link target on `github.com` (releases, the workflow, the
+license file, issues) opens only while the repository is public.
+
+The badges workflow also publishes `coverage.json`, `security.json`,
+`supply-chain.json` and `docs.json` endpoint files for future badges; the
+README does not show them today.
 
 CodeQL runs as a dedicated `.github/workflows/codeql.yml` workflow that
 analyzes the Python and Actions surfaces; the `security-scan` job in
@@ -69,8 +85,11 @@ workflow:
 
 - Triggers on `workflow_run` after the `ci` workflow completes (and on
   manual `workflow_dispatch` for re-publication without a CI run).
-- Resolves the latest tag from `git describe --tags --abbrev=0` and the
-  parent CI conclusion from the `workflow_run` event.
+- Resolves the latest release tag with
+  `git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*'` on a
+  full-history checkout (`fetch-depth: 0`; on a depth-1 checkout no tagged
+  commit is reachable and the badge reads `unreleased`), and the parent CI
+  conclusion from the `workflow_run` event.
 - Generates each JSON via `jq -n` so the output strictly matches the
   shields.io endpoint schema (`schemaVersion: 1`, plus `label`,
   `message`, `color`).
