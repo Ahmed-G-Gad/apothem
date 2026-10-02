@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 
-// Inject generated artifact inventories into the Fumadocs reference pages.
+// Inject generated artifact inventories into the Fumadocs docs pages.
 //
 // The script is intentionally non-destructive: page authors control all prose
-// outside the marker block, while this build step refreshes only the table
-// between the generated-reference markers.
+// outside the marker block, while this build step refreshes only the content
+// between the generated-reference markers. Two outputs are owned whole: the
+// generated command pages under pipeline/ (marked with GENERATED_PAGE) and the
+// `pages` order of every pipeline/meta.json.
 //
 // The target pages are Fumadocs MDX (`.mdx`) under `site/content/docs/`. Two
 // adaptations follow from MDX (versus the prior Markdown stack):
@@ -22,7 +24,7 @@
 //      void element and is preserved verbatim.
 
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -368,6 +370,62 @@ function generateProfileBlock() {
 	);
 }
 
+// The architecture page's list of top-level CLI commands. The emitter returns
+// leaf commands (`profile init`, `harnesses list`), so the first word of each
+// name is the top-level command. A command with a CLI reference page links to
+// it; one without is listed unlinked, so a new command never emits a dead link.
+function generateCliCommandListBlock() {
+	const payload = runEmitter('cli');
+	const topLevel = [...new Set(payload.commands.map((command) => command.name.split(' ')[0]))].sort();
+	const items = topLevel.map((name) => {
+		const label = `\`apothem ${name}\``;
+		const page = join(DOCS_ROOT, 'cli-reference', `${name}.mdx`);
+		return existsFile(page) ? `- [${label}](/docs/cli-reference/${name})` : `- ${label}`;
+	});
+	return [
+		START,
+		'',
+		`The \`cli/\` package registers ${topLevel.length} top-level commands:`,
+		'',
+		...items,
+		'',
+		END,
+	].join('\n');
+}
+
+// The conformity-gate page's validator table, one row per module that declares
+// a GREP_NAME. `mode` says how the gate runs the validator (see
+// apothem.cli.reference_export.export_conformity).
+function generateConformityBlock() {
+	const payload = runEmitter('conformity');
+	const counts = { 'per-write': 0, standalone: 0, 'change-set': 0 };
+	const rows = payload.validators.map((validator) => {
+		counts[validator.mode] = (counts[validator.mode] || 0) + 1;
+		const anchor = validator.rule_anchor ? escapeMdx(escapePipe(validator.rule_anchor)) : '—';
+		return `| \`${escapePipe(validator.name)}\` | ${validator.mode} | ${anchor} | ${escapeMdx(escapePipe(validator.summary))} |`;
+	});
+	return [
+		START,
+		'',
+		`The gate registers ${payload.validators.length} validators: ${counts['per-write']} per-write, ` +
+			`${counts.standalone} standalone and ${counts['change-set']} change-set.`,
+		'',
+		'| Validator | Runs | Rule anchor | What it checks |',
+		'| --- | --- | --- | --- |',
+		...rows,
+		'',
+		END,
+	].join('\n');
+}
+
+function existsFile(path) {
+	try {
+		return statSync(path).isFile();
+	} catch {
+		return false;
+	}
+}
+
 const GENERATED_SOURCES = [
 	{
 		generate: generateCliBlock,
@@ -380,6 +438,14 @@ const GENERATED_SOURCES = [
 	{
 		generate: generateProfileBlock,
 		target: join(DOCS_ROOT, 'reference', 'profile-fields.mdx'),
+	},
+	{
+		generate: generateCliCommandListBlock,
+		target: join(DOCS_ROOT, 'architecture', 'source-layout.mdx'),
+	},
+	{
+		generate: generateConformityBlock,
+		target: join(DOCS_ROOT, 'conformity-gate', 'index.mdx'),
 	},
 ];
 
@@ -564,6 +630,242 @@ function ensureProfileFieldsPage(target) {
 	}
 }
 
+// -----------------------------------------------------------------------
+// Slash-command pages and the command-pipeline nav.
+//
+// Every shipped command definition under src/apothem/commands/ has a page at
+// pipeline/<name>.mdx. A command with no hand-written page gets a generated
+// page: this script owns the whole file (it carries GENERATED_PAGE) and
+// rewrites it from the definition on every run, and deletes it when the
+// command is removed. A hand-written page (no GENERATED_PAGE marker) is never
+// touched. The sidebar order in pipeline/meta.json is generated as well, in
+// English and in every locale, so a new command cannot ship without a page or
+// a nav entry. Locale meta files keep their translated title.
+// -----------------------------------------------------------------------
+
+const COMMANDS_DIR = join(REPO_ROOT, 'src', 'apothem', 'commands');
+const PIPELINE_DIR = join(DOCS_ROOT, 'pipeline');
+const GENERATED_PAGE_PREFIX = '{/* apothem:generated-page';
+const GENERATED_PAGE =
+	`${GENERATED_PAGE_PREFIX} — generated from src/apothem/commands; edit the ` +
+	'command definition and rerun site/scripts/update-reference-inventory.mjs */}';
+
+function commandDefinitions() {
+	return walk(COMMANDS_DIR, false)
+		.filter((path) => basename(path) !== 'README')
+		.map((path) => {
+			const { frontmatter, body } = parseFrontmatter(readFileSync(path, 'utf8'));
+			return { name: frontmatter.name || basename(path), path, frontmatter, body };
+		});
+}
+
+// The paragraph that opens with a bold label, e.g. "**Pipeline position.** …".
+function labelledParagraph(body, label) {
+	const lines = body.split(/\r?\n/);
+	const lead = `**${label}.**`;
+	const start = lines.findIndex((line) => line.trim().startsWith(lead));
+	if (start === -1) return '';
+	const out = [lines[start].trim().slice(lead.length).trim()];
+	for (const line of lines.slice(start + 1)) {
+		if (!line.trim()) break;
+		out.push(line.trim());
+	}
+	return out.join(' ');
+}
+
+// The lines of a `## <heading>` section, up to the next heading or rule.
+function sectionLines(body, heading) {
+	const lines = body.split(/\r?\n/);
+	const start = lines.findIndex((line) => line.trim() === `## ${heading}`);
+	if (start === -1) return [];
+	const out = [];
+	for (const line of lines.slice(start + 1)) {
+		if (/^#{1,2}\s/.test(line) || /^---\s*$/.test(line)) break;
+		out.push(line);
+	}
+	return out;
+}
+
+function firstParagraph(lines) {
+	const out = [];
+	for (const line of lines) {
+		if (!line.trim()) {
+			if (out.length > 0) break;
+			continue;
+		}
+		out.push(line.trim());
+	}
+	return out.join(' ');
+}
+
+// Command definitions cite repository paths with relative links that do not
+// resolve on the site; keep the link text and drop a non-absolute target.
+function plainLinks(text) {
+	return text.replace(/\[([^\]]+)\]\((?!https?:\/\/)[^)]*\)/g, '$1');
+}
+
+function prose(text) {
+	return escapeMdx(plainLinks(text));
+}
+
+function yamlString(value) {
+	return JSON.stringify(value);
+}
+
+function commandPage(command) {
+	const { name, frontmatter, body } = command;
+	const rel = relative(REPO_ROOT, command.path).split(sep).join('/');
+	const hint = frontmatter['argument-hint'] || '';
+	const description = frontmatter.description || excerpt(body);
+	const position = labelledParagraph(body, 'Pipeline position');
+	const consumed = labelledParagraph(body, 'Consumed');
+	const emitted = labelledParagraph(body, 'Emitted');
+	const table = sectionLines(body, 'Inputs')
+		.map((line) => line.trim())
+		.filter((line) => line.startsWith('|'));
+	const next = firstParagraph(sectionLines(body, 'Recommended Next Step'));
+	const parts = [
+		'---',
+		`title: ${yamlString(`/${name}`)}`,
+		`description: ${yamlString(`Reference for the /${name} command: invocation, arguments, inputs and outputs.`)}`,
+		'---',
+		'{/* SPDX-License-Identifier: MIT */}',
+		GENERATED_PAGE,
+		'',
+		START,
+		'',
+		prose(description),
+		'',
+		'## Invocation',
+		'',
+		'```text',
+		`/${name}${hint ? ` ${hint}` : ''}`,
+		'```',
+	];
+	if (frontmatter['disable-model-invocation'] === 'true') {
+		parts.push(
+			'',
+			'The definition sets `disable-model-invocation: true`, so a harness that honors that key ' +
+				'starts this command only when you type it.',
+		);
+	}
+	if (position) parts.push('', '## Pipeline position', '', prose(position));
+	if (consumed || table.length > 0) {
+		parts.push('', '## Inputs');
+		if (consumed) parts.push('', prose(consumed));
+		if (table.length > 0) parts.push('', ...table.map((row) => prose(row)));
+	}
+	if (emitted) parts.push('', '## Outputs', '', prose(emitted));
+	if (next) parts.push('', '## Next step', '', prose(next));
+	parts.push(
+		'',
+		'## Source',
+		'',
+		`Generated from [\`${rel}\`](https://github.com/${GITHUB_REPOSITORY}/blob/main/${rel}), ` +
+			'the command definition every harness installs.',
+		'',
+		END,
+		'',
+	);
+	return parts.join('\n');
+}
+
+function writeCommandPages(commands) {
+	let count = 0;
+	const names = new Set(commands.map((command) => command.name));
+	for (const command of commands) {
+		const target = join(PIPELINE_DIR, `${command.name}.mdx`);
+		const existing = existsFile(target) ? readFileSync(target, 'utf8') : null;
+		if (existing !== null && !existing.includes(GENERATED_PAGE_PREFIX)) continue;
+		const next = commandPage(command);
+		if (next !== existing) {
+			writeFileSync(target, next, 'utf8');
+			count += 1;
+		}
+	}
+	// A generated page whose command was removed would otherwise linger as an
+	// orphan; hand-written pages are left for their authors.
+	for (const entry of readdirSync(PIPELINE_DIR)) {
+		if (!entry.endsWith('.mdx')) continue;
+		const path = join(PIPELINE_DIR, entry);
+		if (names.has(entry.replace(/\.mdx$/, ''))) continue;
+		if (readFileSync(path, 'utf8').includes(GENERATED_PAGE_PREFIX)) {
+			rmSync(path);
+			count += 1;
+		}
+	}
+	return count;
+}
+
+// Sidebar order: each orchestrator, then its stages in the order its
+// `--from` argument declares, then that family's remaining commands; the audit
+// orchestrator and the -audit / -review dimensions; /fortress; then every
+// other command alphabetically. Every command appears exactly once.
+function pipelineNavPages(commands) {
+	const byName = new Map(commands.map((command) => [command.name, command]));
+	const sorted = [...byName.keys()].sort();
+	const ordered = [];
+	const take = (name) => {
+		if (byName.has(name) && !ordered.includes(name)) ordered.push(name);
+	};
+	const stagesOf = (orchestrator) => {
+		const hint = byName.get(orchestrator)?.frontmatter['argument-hint'] || '';
+		const match = hint.match(/--from\s+([a-z|-]+)/);
+		return match ? match[1].split('|') : [];
+	};
+	for (const family of ['plan', 'research']) {
+		take(family);
+		for (const stage of stagesOf(family)) take(`${family}-${stage}`);
+		for (const name of sorted) if (name.startsWith(`${family}-`)) take(name);
+	}
+	take('audit');
+	for (const name of sorted) if (/-(audit|review)$/.test(name)) take(name);
+	take('fortress');
+	for (const name of sorted) take(name);
+	return ['index', ...ordered, '...'];
+}
+
+// The first sentence of a description, cut on a word boundary when long.
+function firstSentence(text, limit = 160) {
+	const sentence = text.split(/(?<=[.!?])\s+(?=[A-Z/`])/)[0].trim();
+	if (sentence.length <= limit) return sentence;
+	const cut = sentence.slice(0, limit);
+	return `${cut.slice(0, cut.lastIndexOf(' '))} …`;
+}
+
+// The pipeline overview's index of every command, in nav order.
+function commandIndexBlock(commands, pages) {
+	const byName = new Map(commands.map((command) => [command.name, command]));
+	const rows = pages
+		.filter((page) => byName.has(page))
+		.map((name) => {
+			const { frontmatter, body } = byName.get(name);
+			const summary = firstSentence(frontmatter.description || excerpt(body));
+			return `| [/${name}](/docs/pipeline/${name}) | ${prose(escapePipe(summary))} |`;
+		});
+	return [START, '', '| Command | Summary |', '| --- | --- |', ...rows, '', END].join('\n');
+}
+
+function writePipelineNav(pages) {
+	let count = 0;
+	const targets = [
+		join(PIPELINE_DIR, 'meta.json'),
+		...LOCALE_DIRS.map((locale) => join(DOCS_ROOT, locale, 'pipeline', 'meta.json')),
+	];
+	for (const target of targets) {
+		if (!existsFile(target)) continue;
+		const existing = readFileSync(target, 'utf8');
+		const meta = JSON.parse(existing);
+		meta.pages = pages;
+		const next = `${JSON.stringify(meta, null, 2)}\n`;
+		if (next !== existing) {
+			writeFileSync(target, next, 'utf8');
+			count += 1;
+		}
+	}
+	return count;
+}
+
 let changed = 0;
 for (const config of SOURCES) {
 	mkdirSync(dirname(config.target), { recursive: true });
@@ -597,5 +899,13 @@ for (const locale of LOCALE_DIRS) {
 
 if (injectRoadmap(ROADMAP_TARGET)) changed += 1;
 
-const total = SOURCES.length + GENERATED_SOURCES.length + 2;
+const commands = commandDefinitions();
+const pipelinePages = pipelineNavPages(commands);
+changed += writeCommandPages(commands);
+changed += writePipelineNav(pipelinePages);
+if (inject(join(PIPELINE_DIR, 'index.mdx'), commandIndexBlock(commands, pipelinePages))) changed += 1;
+
+// Inventories: the walked sources, the emitter-backed blocks, the changelog,
+// the roadmap, the command pages, the command nav and the command index.
+const total = SOURCES.length + GENERATED_SOURCES.length + 5;
 process.stdout.write(`update-reference-inventory: refreshed ${total} inventories; changed ${changed} pages.\n`);

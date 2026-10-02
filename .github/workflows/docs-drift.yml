@@ -10,11 +10,13 @@
 #      The standalone matcher `apothem.conformity.no_toplevel_docs_grep` is
 #      run in --strict mode so a root `docs/` directory fails the job.
 #
-#   2. reference-sync — the source-generated reference pages under
-#      `site/content/docs/reference/` (Fumadocs MDX) are regenerated from
-#      Apothem's own source of truth (the CLI command tree, the harness
-#      registry, the profile JSON Schema, and the rule/command/skill/agent/hook
-#      directories) by `site/scripts/update-reference-inventory.mjs`. When a
+#   2. reference-sync — the source-generated docs content (the reference pages
+#      under `site/content/docs/reference/`, the generated blocks on other
+#      pages, the per-command pages and the command nav) is regenerated from
+#      Apothem's own source of truth (the CLI command tree, the conformity
+#      validators, the harness registry, the profile JSON Schema, and the
+#      rule/command/skill/agent/hook directories) by
+#      `site/scripts/update-reference-inventory.mjs`. When a
 #      documented source surface changes without the reference pages being
 #      regenerated, the pages drift. This job regenerates them and fails on any
 #      diff, naming the violation and printing the drift.
@@ -120,11 +122,17 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}/src
         run: node site/scripts/update-reference-inventory.mjs
       - name: Fail on reference-page drift
+        # The generator writes reference pages, generated blocks on other pages,
+        # whole command pages under pipeline/ and every pipeline/meta.json, so
+        # the whole docs tree is diffed, and an untracked file (a generated page
+        # for a new command) counts as drift too.
         run: |
           set -euo pipefail
-          if ! git diff --exit-code site/content/docs/reference/ site/content/docs/changelog.mdx; then
-            echo "Reference docs drifted: a documented source surface (CLI / harness-registry / profile schema / rule-command-skill-agent-hook inventory / root CHANGELOG.md) changed without regenerating the reference pages."
+          drift="$(git status --porcelain -- site/content/docs/)"
+          if [ -n "${drift}" ]; then
+            echo "Reference docs drifted: a documented source surface (CLI / conformity validators / harness-registry / profile schema / rule-command-skill-agent-hook inventory / root CHANGELOG.md) changed without regenerating the docs pages."
             echo "Run: PYTHONPATH=src node site/scripts/update-reference-inventory.mjs and commit the result."
-            git --no-pager diff site/content/docs/reference/ site/content/docs/changelog.mdx
+            echo "${drift}"
+            git --no-pager diff -- site/content/docs/
             exit 1
           fi

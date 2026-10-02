@@ -11,18 +11,24 @@ Run any of them from `site/`.
 ## Scripts
 
 - **`update-reference-inventory.mjs`** — source-generates the reference pages
-  under `content/docs/reference/` from the Python package's public surface. Runs
-  as the `predev` and `prebuild` npm hooks; a dirty `git status` on a reference
-  page after a build signals a missed regeneration (the CI docs-reference-sync
-  drift gate enforces it). Do not hand-edit the generated pages.
+  under `content/docs/reference/` from the Python package's public surface, plus
+  the generated blocks on `architecture/source-layout.mdx` (top-level CLI
+  commands), `conformity-gate/index.mdx` (validator table) and
+  `pipeline/index.mdx` (command index), a page under `pipeline/` for every
+  shipped command without a hand-written one, and the `pipeline/meta.json` nav in
+  English and every locale. Runs as the `predev` and `prebuild` npm hooks; a
+  dirty `git status` under `content/docs/` after a build signals a missed
+  regeneration (the CI docs-reference-sync drift gate enforces it). Do not
+  hand-edit the generated pages or blocks.
 - **`build-llms-txt.mjs`** — walks `content/docs/**` and emits the English-only
   `public/llms.txt` (compact index) and `public/llms-full.txt` (concatenated
   bodies). Runs in `prebuild`. `assertLocaleParity()` fails the build if its
   hard-coded locale set drifts from `lib/i18n.ts`, so a newly-routed locale
   cannot leak its translated pages into the English artifacts.
 - **`author-ia.mjs`** — authors the Fumadocs `meta.json` information-architecture
-  files (section ordering). Carries `assertNoDrift`, which fails if a live doc
-  page is missing from a curated list. Run `node scripts/author-ia.mjs` to
+  files (section ordering), except `pipeline/meta.json`, which
+  `update-reference-inventory.mjs` generates. Carries `assertNoDrift`, which
+  fails if a live doc page is missing from a curated list. Run `node scripts/author-ia.mjs` to
   regenerate the metas, or `--check` (the `ia:check` npm script) to run the drift
   guard read-only without rewriting — the check-only mode is the CI-safe form.
 - **`check-search-index-sizes.mjs`** — guards the per-locale static search-index
