@@ -489,6 +489,50 @@ function injectChangelog(target) {
 	return false;
 }
 
+// -----------------------------------------------------------------------
+// Root ROADMAP injection.
+//
+// ROADMAP.md is the single roadmap; the /community/roadmap/ page is a shell
+// whose body is copied from it between the roadmap markers, exactly as the
+// changelog page mirrors CHANGELOG.md. Two hand-written roadmaps had drifted
+// apart. Only the English page is mirrored; locale pages keep their
+// translations.
+// -----------------------------------------------------------------------
+
+const ROADMAP_START = '{/* apothem:roadmap:start */}';
+const ROADMAP_END = '{/* apothem:roadmap:end */}';
+const ROADMAP_SOURCE = join(REPO_ROOT, 'ROADMAP.md');
+const ROADMAP_TARGET = join(DOCS_ROOT, 'community', 'roadmap.mdx');
+
+function roadmapBody() {
+	const raw = readFileSync(ROADMAP_SOURCE, 'utf8');
+	// Drop the license-header comment (as for the changelog) and the H1: the
+	// page title comes from the MDX frontmatter.
+	return raw
+		.replace(/^\s*<!--[\s\S]*?-->\s*/, '')
+		.replace(/^# [^\n]*\n/, '')
+		.trim();
+}
+
+function injectRoadmap(target) {
+	const existing = readFileSync(target, 'utf8');
+	const startIndex = existing.indexOf(ROADMAP_START);
+	const endIndex = existing.indexOf(ROADMAP_END);
+	if (startIndex === -1 || endIndex === -1 || endIndex < startIndex) {
+		throw new Error(
+			`update-reference-inventory: roadmap markers missing or malformed in ${target}`,
+		);
+	}
+	const block = `${ROADMAP_START}\n\n${roadmapBody()}\n\n${ROADMAP_END}`;
+	const next =
+		existing.slice(0, startIndex) + block + existing.slice(endIndex + ROADMAP_END.length);
+	if (next !== existing) {
+		writeFileSync(target, next, 'utf8');
+		return true;
+	}
+	return false;
+}
+
 // The bootstrap page carries an empty generated-reference marker pair so the
 // first generation splices the table in through the normal marker path — the
 // same path every subsequent run and every other reference page uses. Without
@@ -551,5 +595,7 @@ for (const locale of LOCALE_DIRS) {
 	if (injectChangelog(localeChangelog)) changed += 1;
 }
 
-const total = SOURCES.length + GENERATED_SOURCES.length + 1;
+if (injectRoadmap(ROADMAP_TARGET)) changed += 1;
+
+const total = SOURCES.length + GENERATED_SOURCES.length + 2;
 process.stdout.write(`update-reference-inventory: refreshed ${total} inventories; changed ${changed} pages.\n`);
