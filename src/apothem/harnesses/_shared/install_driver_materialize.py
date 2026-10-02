@@ -36,6 +36,7 @@ from .install_driver_apply import (
 )
 from .install_driver_backup import _compensating_rollback, _install_lock_path
 from .install_driver_converters import (
+    _antigravity_agent_text,
     _antigravity_rule_text,
     _claude_rule_text,
     _codex_agent_text,
@@ -123,6 +124,7 @@ _NATIVE_FILE_CONVERTERS: Final[dict[str, Callable[[Path], str]]] = {
     "markdown_commands": _native_markdown_command_text,
     "claude_rules": _claude_rule_text,
     "antigravity_rules": _antigravity_rule_text,
+    "antigravity_agents": _antigravity_agent_text,
 }
 
 

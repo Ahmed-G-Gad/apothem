@@ -308,7 +308,7 @@ harnesses:
         ownership_class: apothem-owned
       - source: "agents/"
         target: "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/agents/"
-        mode: gemini_agents
+        mode: antigravity_agents
         ownership_class: apothem-owned
       - source: "templates/"
         target: "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/.apothem/support/templates/"

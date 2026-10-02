@@ -106,7 +106,12 @@ def _generated_targets_for_entry(
             for source_path in sorted(src.glob("*.md"))
             if source_path.name not in _COHORT_DOC_FILES
         ]
-    if entry.mode in {"gemini_agents", "opencode_agents", "qwen_agents"}:
+    if entry.mode in {
+        "gemini_agents",
+        "opencode_agents",
+        "qwen_agents",
+        "antigravity_agents",
+    }:
         return [
             dst / source_path.name
             for source_path in sorted(src.glob("*.md"))

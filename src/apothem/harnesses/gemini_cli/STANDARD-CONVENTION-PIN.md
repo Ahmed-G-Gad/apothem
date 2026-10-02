@@ -43,6 +43,19 @@
 - Commands: TOML custom commands (`.toml`, required `prompt`, optional
   `description`) under `~/.gemini/commands/` (user) / `.gemini/commands/`
   (project). Apothem converts its command cohort to this native TOML shape.
+- Subagents (re-checked 2026-10-02 against
+  https://geminicli.com/docs/core/subagents): Markdown files with YAML
+  frontmatter under `.gemini/agents/`; `name` and `description` are required,
+  and `kind`, `tools` (an allowlist of Gemini tool names; omitted means every
+  tool), `model` (default `inherit`), `temperature`, `max_turns` and
+  `timeout_mins` are optional. The `gemini_agents` converter emits `name`,
+  `description`, `kind: local`, the source tool grant minus its deny list
+  mapped to Gemini tool names (`Read` to `read_file` / `read_many_files` /
+  `list_directory`, `Glob` to `glob`, `Grep` to `grep_search`, `Bash` to
+  `run_shell_command`, `Write` to `write_file`, `Edit` to `replace`,
+  `WebSearch` to `google_web_search`, `WebFetch` to `web_fetch`, `TodoWrite`
+  to `write_todos`, per https://geminicli.com/docs/reference/tools), and
+  `max_turns` from `maxTurns`. No model is set, so it inherits.
 - Memory: the Auto Memory feature scans transcripts and writes candidate diffs
   plus skill drafts to a review inbox (`/memory inbox`), with durable memory
   stored in `GEMINI.md`. There is no `.gemini/memory/` directory; the adapter's

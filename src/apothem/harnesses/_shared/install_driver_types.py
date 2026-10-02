@@ -53,6 +53,7 @@ _INSTALL_ENTRY_MODES: tuple[str, ...] = (
     "claude_rules",
     "antigravity_rules",
     "native_skills",
+    "antigravity_agents",
 )
 
 #: Plain-language verb phrase for each operation kind. Preview surfaces (the
@@ -76,6 +77,7 @@ OPERATION_LABELS: Final[dict[str, str]] = {
     "claude_rules": "Install rules",
     "antigravity_rules": "Install rules",
     "native_skills": "Install skills",
+    "antigravity_agents": "Install agents",
     "sweep_stale": "Prune stale files",
     "capability_projection": "Project capability",
     "data_surface": "Write data file",

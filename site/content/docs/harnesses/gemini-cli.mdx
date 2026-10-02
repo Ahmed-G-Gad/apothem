@@ -38,6 +38,12 @@ Gemini-compatible surface. Markdown rules, templates, and hook material remain
 under `.gemini/.apothem/support/` because they are support material, not a Gemini-native
 rules directory.
 
+Helper definitions in `.gemini/agents/` keep their tool limits and turn limit:
+the source `tools` grant, minus `disallowedTools`, becomes a Gemini `tools`
+allowlist of Gemini tool names, and `maxTurns` becomes `max_turns`. A read-only
+helper therefore gets no `write_file` or `replace` tool. No model is set, so
+each helper inherits the session model.
+
 ## Compatibility notes
 
 `~/.gemini/` remains user-scope territory for tools that use a global Gemini

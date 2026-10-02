@@ -44,6 +44,24 @@ maxTurns: <integer>
 ---
 ```
 
+## Per-harness conversion
+
+A helper whose `tools` grant, after `disallowedTools`, includes no `Write` or
+`Edit` is read-only. Each harness that converts helpers either enforces that
+limit natively or drops the read-only label:
+
+| Harness | Tool limit | Turn limit | Model and effort |
+| --- | --- | --- | --- |
+| Claude Code | `tools` / `disallowedTools` as written | `maxTurns` | inherited (not set) |
+| Codex | `sandbox_mode = "read-only"` for read-only helpers | not available | inherited (not set) |
+| Gemini CLI | `tools` allowlist of Gemini tool names | `max_turns` | inherited (not set) |
+| Qwen Code | `tools` / `disallowedTools` in Qwen tool names | not mapped | `model: inherit` |
+| OpenCode | `permission` (`allow` / `deny` per tool) | not mapped | inherited (not set) |
+| Antigravity | none emitted; the description drops "read-only" | not available | inherited (not set) |
+
+Hermes, Open-Claw and Kimi Code receive the helper files as support material,
+not as native helpers.
+
 ## Orchestration
 
 Helper deployment, parallel-launch protocol, return-contract

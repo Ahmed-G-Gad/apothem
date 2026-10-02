@@ -40,6 +40,13 @@ Codex surface: instructions to `AGENTS.md`, hooks to `hooks.json` and
 `hooks/`, agents to TOML, skills to `~/.agents/skills/`, and non-native
 Markdown rules/templates to `~/.config/apothem/` as support material.
 
+Each converted helper sets `name`, `description`, and `developer_instructions`.
+A helper whose tool grant cannot write files also sets
+`sandbox_mode = "read-only"`, Codex's own write restriction. No model or
+reasoning effort is set, so each helper inherits the session's choices. Codex
+has no per-helper tool list or turn limit, so a helper's `tools` and `maxTurns`
+do not carry over.
+
 ## Compatibility notes
 
 `~/.agents/skills/` is a shared root that Codex owns: eight other supported

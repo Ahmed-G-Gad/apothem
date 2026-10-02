@@ -16,6 +16,7 @@ from apothem.lib.propagation import (
 
 from .install_driver_backup import _replace_path, write_bytes_safely
 from .install_driver_converters import (
+    _antigravity_agent_text,
     _antigravity_rule_text,
     _claude_rule_text,
     _codex_agent_text,
@@ -619,11 +620,37 @@ def apply_antigravity_rules(
     )
 
 
+def apply_antigravity_agents(
+    entry: InstallEntry,
+    *,
+    ignore: IgnoreFn | None = None,
+    exclude: list[str] | None = None,
+    harness_root: Path | None = None,
+    project_root: Path | None = None,
+    harness_name: str = "manual",
+) -> list[MaterializationResult]:
+    """Install Markdown agents as Antigravity subagent definitions.
+
+    *ignore* and *exclude* are accepted for the shared emission signature; a
+    flat agents cohort uses neither.
+    """
+    del ignore, exclude
+    return _apply_rendered_cohort(
+        entry,
+        renderer=_antigravity_agent_text,
+        operation="antigravity_agents",
+        harness_root=harness_root,
+        project_root=project_root,
+        harness_name=harness_name,
+    )
+
+
 #: Harness-specific emission modes. Each applier takes the entry plus the
 #: ``ignore`` / ``exclude`` / ``harness_root`` / ``project_root`` /
 #: ``harness_name`` keywords; the install dispatcher looks a mode up here, so
 #: adding one is a single row.
 HARNESS_EMISSION_APPLIERS: dict[str, Callable[..., list[MaterializationResult]]] = {
+    "antigravity_agents": apply_antigravity_agents,
     "antigravity_rules": apply_antigravity_rules,
     "claude_rules": apply_claude_rules,
     "native_skills": apply_native_skills,

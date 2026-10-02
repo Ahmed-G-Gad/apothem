@@ -259,29 +259,152 @@ def _yaml_list(name: str, values: list[str]) -> str:
     return f"{name}:\n{items}\n"
 
 
+#: Tools whose grant lets an agent author files. An agent granted none of them
+#: (after its deny list) is the read-only kind its description advertises.
+_FILE_WRITE_TOOLS: Final[frozenset[str]] = frozenset(
+    {"write", "edit", "multiedit", "notebookedit"}
+)
+
+
+def _tool_key(name: str) -> str:
+    """Return the case- and separator-insensitive key of a tool name."""
+    return name.split("(", 1)[0].strip().lower().replace("-", "").replace("_", "")
+
+
+def _agent_is_read_only(source_path: Path) -> bool:
+    """Return True when the agent's effective tool grant authors no files.
+
+    With an explicit ``tools`` grant, the grant minus ``disallowedTools`` must
+    hold no file-writing tool. Without one the agent inherits every tool, so
+    it is read-only only when ``disallowedTools`` denies both Write and Edit.
+    """
+    granted = {_tool_key(t) for t in _agent_scalar_list(source_path, "tools")}
+    denied = {_tool_key(t) for t in _agent_scalar_list(source_path, "disallowedTools")}
+    if not granted:
+        return {"write", "edit"} <= denied
+    return not ((granted - denied) & _FILE_WRITE_TOOLS)
+
+
 def _codex_agent_text(source_path: Path) -> str:
-    """Convert a Markdown agent definition into Codex's TOML agent format."""
+    """Convert a Markdown agent definition into Codex's TOML agent format.
+
+    Codex custom agents take ``name``, ``description`` and
+    ``developer_instructions`` plus any ``config.toml`` key; omitted keys
+    inherit from the parent session
+    (https://developers.openai.com/codex/subagents, retrieved 2026-10-02). A
+    read-only agent gets ``sandbox_mode = "read-only"``, Codex's native write
+    restriction. Model and reasoning effort are left to inherit. Codex has no
+    tool allowlist or turn-limit key, so ``tools`` and ``maxTurns`` do not map
+    (declared in the codex ``conversion_losses``).
+    """
     name = _agent_name(source_path)
     description = _agent_description(source_path)
     body = _agent_body(source_path).strip()
+    sandbox = 'sandbox_mode = "read-only"\n' if _agent_is_read_only(source_path) else ""
     return (
         f"name = {_toml_string(name)}\n"
         f"description = {_toml_string(description)}\n"
-        'model_reasoning_effort = "medium"\n'
+        f"{sandbox}"
         "developer_instructions = "
         f"{_toml_multiline_string(body)}\n"
     )
 
 
+#: Claude-Code-style tool names to Gemini CLI built-in tool names
+#: (https://geminicli.com/docs/reference/tools, retrieved 2026-10-02).
+_GEMINI_TOOL_MAP: Final[dict[str, tuple[str, ...]]] = {
+    "read": ("read_file", "read_many_files", "list_directory"),
+    "glob": ("glob",),
+    "grep": ("grep_search",),
+    "bash": ("run_shell_command",),
+    "write": ("write_file",),
+    "edit": ("replace",),
+    "multiedit": ("replace",),
+    "websearch": ("google_web_search",),
+    "webfetch": ("web_fetch",),
+    "todowrite": ("write_todos",),
+}
+
+
+def _gemini_tool_names(source_path: Path) -> list[str] | None:
+    """Return the Gemini ``tools`` allowlist, or ``None`` to inherit all tools.
+
+    The source grant minus its deny list, mapped to Gemini names. A tool with
+    no Gemini equivalent is left out rather than widened to a wildcard.
+    """
+    granted = [_tool_key(t) for t in _agent_scalar_list(source_path, "tools")]
+    if not granted:
+        return None
+    denied = {_tool_key(t) for t in _agent_scalar_list(source_path, "disallowedTools")}
+    names: list[str] = []
+    for key in granted:
+        if key in denied:
+            continue
+        for native in _GEMINI_TOOL_MAP.get(key, ()):
+            if native not in names:
+                names.append(native)
+    return names
+
+
 def _gemini_agent_text(source_path: Path) -> str:
-    """Normalize a Markdown agent definition for Gemini CLI subagents."""
+    """Normalize a Markdown agent definition for Gemini CLI subagents.
+
+    Gemini subagents accept ``tools`` (an allowlist; omitted means every tool)
+    and ``max_turns`` (https://geminicli.com/docs/core/subagents, retrieved
+    2026-10-02), so the source grant and turn limit carry over natively.
+    """
     name = (field_value(source_path, "name") or source_path.stem).strip().lower()
     description = _agent_description(source_path)
     body = _agent_body(source_path).strip()
-    return (
+    frontmatter = (
         f"---\nname: {_yaml_scalar(name)}\n"
         f"description: {_yaml_scalar(description)}\n"
-        f"kind: local\n---\n\n{body}\n"
+        "kind: local\n"
+    )
+    tools = _gemini_tool_names(source_path)
+    if tools is not None:
+        frontmatter += _yaml_list("tools", tools) if tools else "tools: []\n"
+    max_turns = (field_value(source_path, "maxTurns") or "").strip()
+    if max_turns.isdigit():
+        frontmatter += f"max_turns: {int(max_turns)}\n"
+    return f"{frontmatter}---\n\n{body}\n"
+
+
+_READ_ONLY_LEAD = re.compile(r"^Read-only\s+(\w)")
+_READ_ONLY_SENTENCE = re.compile(r"\bRead-only:\s+(\w)")
+_READ_ONLY_WORD = re.compile(r"\bread-only\s+", re.IGNORECASE)
+
+
+def _drop_read_only_claim(description: str) -> str:
+    """Return *description* without its read-only capability claim.
+
+    Used where the harness has no verified native restriction to back the
+    claim. Behavioural statements ("never fixes") stay; only the read-only
+    label goes, with the following word re-capitalised where it starts a
+    sentence.
+    """
+    text = _READ_ONLY_LEAD.sub(lambda m: m.group(1).upper(), description)
+    text = _READ_ONLY_SENTENCE.sub(lambda m: m.group(1).upper(), text)
+    return _READ_ONLY_WORD.sub("", text)
+
+
+def _antigravity_agent_text(source_path: Path) -> str:
+    """Normalize a Markdown agent definition for Antigravity subagents.
+
+    Antigravity subagents require ``name`` and ``description``
+    (https://antigravity.google/docs/subagents, retrieved 2026-10-02). Their
+    ``tools`` list takes Antigravity tool names, and an unmapped name can hang
+    the subagent, so no list is emitted; without a native restriction the
+    description drops its read-only claim.
+    """
+    name = (field_value(source_path, "name") or source_path.stem).strip().lower()
+    description = _agent_description(source_path)
+    if _agent_is_read_only(source_path):
+        description = _drop_read_only_claim(description)
+    body = _agent_body(source_path).strip()
+    return (
+        f"---\nname: {_yaml_scalar(name)}\n"
+        f"description: {_yaml_scalar(description)}\n---\n\n{body}\n"
     )
 
 
