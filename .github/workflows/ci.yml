@@ -2,7 +2,7 @@
 
 # Continuous Integration workflow.
 #
-# Ten canonical check classes run on every push to main and every pull request:
+# Eleven canonical check classes run on every push to main and every pull request:
 #   1. lint               — ruff check
 #   2. format-check       — ruff format --check
 #   3. type-check         — mypy
@@ -13,6 +13,7 @@
 #   8. docs-build         — Next.js + Fumadocs build
 #   9. example-run        — smoke test for each examples/* artifact-class demo
 #  10. release-preflight  — semantic-version tag dry-run + CHANGELOG sanity
+#  11. metrics            — per-package coverage floors + the metrics.json artifact
 #
 # SHA-pinning policy
 # ------------------
@@ -521,3 +522,60 @@ jobs:
               sys.exit(f'CHANGELOG.md is missing a [{v}] section header for the current pyproject version')
           print(f'pyproject.toml version OK: {v}; CHANGELOG carries the matching entry')
           "
+
+  # 11 — metrics
+  metrics:
+    name: metrics
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [quality]
+    permissions:
+      contents: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install "pip==${PIP_PIN_VERSION}"
+          python -m pip install -e ".[dev]"
+      - name: Pytest with coverage over every package
+        # One run measures src/apothem whole, so the engine, conformity and
+        # audit figures come from the same tests. --cov-fail-under=0 turns off
+        # the combined-total gate: each package is held to its own floor by
+        # the next step, and the engine's 80 stays enforced by the coverage
+        # job above.
+        run: |
+          python -m pytest \
+            --cov=src/apothem \
+            --cov-fail-under=0 \
+            --cov-report=json:coverage-all.json
+      - name: Collect metrics and enforce package coverage floors
+        # Floors: [tool.coverage.report] fail_under (engine) and
+        # [tool.coverage.package-floors] (conformity, audit) in pyproject.toml.
+        # Every other figure is recorded, not gated; a null names its reason.
+        run: |
+          python scripts/dev/collect_metrics.py \
+            --coverage-json coverage-all.json \
+            --check-floors \
+            --out metrics.json
+      - name: Upload metrics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: metrics
+          path: |
+            metrics.json
+            coverage-all.json
+          if-no-files-found: warn
+          retention-days: 90
