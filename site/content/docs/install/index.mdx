@@ -90,6 +90,11 @@ specific one.
 npx @ahmed-g-gad/apothem install --harness claude-code
 ```
 
+On a machine with no profile, this first `install` creates the starter profile
+at `~/.config/apothem/profile.yaml` and says so. Its identity fields are
+placeholders: personalize them (`npx @ahmed-g-gad/apothem profile edit`), then
+rerun the command with `update` in place of `install` to apply them.
+
 It also runs straight from the repository:
 
 ```bash title="npx from the repository"
@@ -317,6 +322,9 @@ git clone https://github.com/ahmed-g-gad/apothem
 cd apothem
 PYTHONPATH=src python -m apothem install --harness claude-code
 ```
+
+As with the npm shim, a first `install` on a machine with no profile creates the
+starter profile at `~/.config/apothem/profile.yaml` and continues.
 
 **Verify:**
 

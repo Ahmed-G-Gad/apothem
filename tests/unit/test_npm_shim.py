@@ -10,6 +10,7 @@ on every supported Node major.
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import subprocess
@@ -54,6 +55,20 @@ def test_shim_reports_the_engine_version(tmp_path: Path) -> None:
     result = _run(["--version"], _base_env(tmp_path))
     assert result.returncode == 0, result.stderr
     assert "Apothem, version" in result.stdout
+
+
+def test_shim_dry_run_install_writes_nothing(tmp_path: Path) -> None:
+    """A dry-run install through the shim on a clean HOME exits 0 and writes nothing."""
+    home = tmp_path / "home"
+    home.mkdir()
+    result = _run(
+        ["install", "--harness", "claude-code", "--dry-run", "--json"],
+        _base_env(home),
+    )
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["status"] == "dry_run"
+    assert list(home.iterdir()) == []
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX wrapper interpreter")

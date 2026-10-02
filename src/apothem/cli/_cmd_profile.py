@@ -37,7 +37,11 @@ from apothem.cli._helpers import (
     _write_profile_text_safely,
 )
 from apothem.cli._json_formatter import emit_json
-from apothem.lib.profile import ProfileValidationError, validate_profile
+from apothem.lib.profile import (
+    PROFILE_NOT_FOUND_FIX,
+    ProfileValidationError,
+    validate_profile,
+)
 
 
 @main.group(cls=AliasedGroup, context_settings=_CONTEXT)
@@ -67,7 +71,7 @@ def profile_show(
             message="Apothem validation failed.",
             field="profile",
             reason="profile file does not exist",
-            fix="Run 'apothem profile init' or pass --profile PATH.",
+            fix=PROFILE_NOT_FOUND_FIX,
         ).to_dict()
         _emit_expected_error(
             command="profile show",

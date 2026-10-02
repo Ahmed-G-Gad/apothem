@@ -49,6 +49,14 @@ SERIOUSNESS_LEVELS = (
     "PUBLIC_LAUNCH",
 )
 
+# Remedy for a missing profile. Channel-neutral on purpose: the CLI runs as
+# `apothem`, `npx @ahmed-g-gad/apothem`, or `python -m apothem`, so the fix
+# names the subcommand rather than one program name that may not be on PATH.
+PROFILE_NOT_FOUND_FIX = (
+    "Create one with the 'profile init' subcommand of the command you ran, or "
+    "pass an existing profile with --profile PATH."
+)
+
 # Highest profile-schema version this engine understands. A version-less
 # profile is treated as this version; a profile stamped higher is rejected
 # with an upgrade-the-engine diagnostic before schema validation runs.
@@ -376,7 +384,7 @@ def load_profile_file(profile_path: Path) -> CanonicalProfile:
                 profile_path=str(resolved),
                 field="profile",
                 reason="profile file does not exist",
-                fix="Run 'apothem profile init' or pass --profile PATH.",
+                fix=PROFILE_NOT_FOUND_FIX,
             )
         )
 

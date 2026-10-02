@@ -22,6 +22,21 @@ require `--project PATH`.
 
 The continuous-form alias `apothem installing` resolves to the same handler.
 
+## First run without a profile
+
+When `--profile` is omitted and no profile exists at the default path
+(`~/.config/apothem/profile.yaml`), `install` writes the starter profile there
+first, prints `Created a starter profile at <path>`, and continues. The starter
+profile carries placeholder identity fields, so the install also prints the
+placeholder-identity note; personalize the profile, then run
+[`update`](/docs/cli-reference/update) to apply it. Under `--json` the creation
+is reported as a `warnings` entry with `"operation": "profile_created"`.
+
+- `--dry-run` never writes the profile: the preview uses the starter profile in
+  memory and reports `"operation": "profile_scaffold_preview"`.
+- An explicit `--profile PATH` that does not exist is never created; the command
+  exits 1 with `profile.not_found`.
+
 ## Blast-radius preview
 
 `install --harness all` fans out into mixed scopes: project-scope adapters write

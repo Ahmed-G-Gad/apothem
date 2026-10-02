@@ -14,7 +14,7 @@ command modules. Patchable-helper call sites resolve through the
 from __future__ import annotations
 
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 import click
 from rich.markup import escape
@@ -36,11 +36,13 @@ from apothem.cli._helpers import (
     _placeholder_advisory_entry,
     _placeholder_identity_fields,
     _profile_error,
+    _profile_scaffold_text,
     _render_blast_radius,
     _resolve_profile_path,
     _resolve_project_root,
     _result_dicts,
     _warning_dicts,
+    _write_profile_text_safely,
 )
 from apothem.cli._json_formatter import emit_json
 from apothem.harnesses._shared.install_driver import (
@@ -50,7 +52,7 @@ from apothem.harnesses._shared.install_driver import (
 )
 from apothem.lib.atomic_io import write_bytes_atomically
 from apothem.lib.clean_slate import CleanSlateError, CleanSlateResult, run_clean_slate
-from apothem.lib.profile import ProfileValidationError
+from apothem.lib.profile import ProfileValidationError, validate_profile
 
 
 def _materialize(
@@ -68,18 +70,36 @@ def _materialize(
     assume_yes: bool = False,
     verbose: bool = False,
     payload_sink: list[dict[str, object]] | None = None,
+    create_default_profile: bool = False,
 ) -> None:
     """Install or update a harness adapter from the shared profile.
 
     The command accepts a single harness id or ``all``. Profiles are
     validated before dry-runs and writes, and JSON output always uses the
     lifecycle envelope required by the product contract.
+
+    With *create_default_profile* (``install``), a run that names no
+    ``--profile`` and finds no profile at the default path scaffolds the
+    starter profile first, so the first documented command succeeds on a
+    clean machine. A dry run uses that scaffold in memory and writes nothing.
     """
     con = get_console(no_color=no_color, quiet=quiet)
     profile_path = _resolve_profile_path(profile)
+    first_run = (
+        create_default_profile
+        and profile is None
+        and not profile_path.exists()
+        and not profile_path.is_symlink()
+    )
+    first_run_entry: dict[str, object] | None = None
     try:
         project_root = _resolve_project_root(project)
-        shared_profile = _load_profile(profile_path)
+        if first_run:
+            shared_profile, first_run_entry = _first_run_profile(
+                profile_path, dry_run=dry_run
+            )
+        else:
+            shared_profile = _load_profile(profile_path)
         adapters = _pkg._select_and_load_adapters(
             harness,
             project_root,
@@ -196,6 +216,17 @@ def _materialize(
     all_files_written: list[str] = []
     all_results: list[dict[str, object]] = []
     all_warnings: list[dict[str, object]] = []
+
+    if first_run_entry is not None:
+        all_warnings.append(first_run_entry)
+        if fmt != "json":
+            if dry_run:
+                con.print(f"[yellow]Note:[/] {escape(str(first_run_entry['message']))}")
+            else:
+                con.print(
+                    f"[green]✓[/] Created a starter profile at "
+                    f"[cyan]{escape(str(profile_path))}[/]"
+                )
 
     # Placeholder-identity advisory (install + update). When the loaded profile
     # still carries the shipped scaffold identity, surface a single advisory so a
@@ -369,6 +400,55 @@ def _materialize(
             "[bold]Next step:[/] confirm the fresh install with "
             f"[cyan]apothem verify --harness {escape(verify_harness)}[/]"
         )
+
+
+def _first_run_profile(
+    profile_path: Path, *, dry_run: bool
+) -> tuple[dict[str, Any], dict[str, object]]:
+    """Scaffold the default profile for a first ``install``; return it and its advisory.
+
+    A real run writes the starter profile through the shared atomic boundary
+    and loads it back. A dry run validates the same scaffold in memory and
+    writes nothing. Either way the returned advisory rides the envelope's
+    ``warnings`` array so a JSON caller learns the profile was (or would be)
+    created; the placeholder-identity advisory follows separately.
+    """
+    import yaml
+
+    text = _profile_scaffold_text()
+    if dry_run:
+        loaded = validate_profile(yaml.safe_load(text), profile_path=profile_path)
+        return loaded.to_dict(), {
+            "harness": None,
+            "outcome": "advisory",
+            "operation": "profile_scaffold_preview",
+            "path": str(profile_path),
+            "message": (
+                f"No profile at {profile_path}; this dry run uses the starter "
+                "profile in memory. A real install creates it."
+            ),
+        }
+    try:
+        _write_profile_text_safely(profile_path, text, operation="install_profile_init")
+    except OSError as exc:
+        raise _CliUserError(
+            code="profile.write_failed",
+            message="Apothem could not create the starter profile.",
+            field="profile",
+            reason=str(exc),
+            fix="Check the profile path and directory permissions, or pass "
+            "an existing profile with --profile PATH.",
+        ) from exc
+    return _load_profile(profile_path), {
+        "harness": None,
+        "outcome": "advisory",
+        "operation": "profile_created",
+        "path": str(profile_path),
+        "message": (
+            f"Created a starter profile at {profile_path}. Its identity fields "
+            "are placeholders; personalize them, then run update to apply."
+        ),
+    }
 
 
 def _clean_slate_dict(result: CleanSlateResult) -> dict[str, object]:

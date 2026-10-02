@@ -89,6 +89,7 @@ def install(
         clean=clean,
         assume_yes=assume_yes,
         verbose=verbose,
+        create_default_profile=True,
     )
 
 
@@ -361,6 +362,7 @@ def _make_installing_alias(name: str) -> click.Command:
             clean=clean,
             assume_yes=assume_yes,
             verbose=verbose,
+            create_default_profile=True,
         )
 
     return _alias
