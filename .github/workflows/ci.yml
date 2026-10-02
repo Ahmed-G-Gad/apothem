@@ -45,6 +45,7 @@ on:
   push:
     branches: [main]
     paths:
+      - 'CHANGELOG.md'
       - 'src/**'
       - 'tests/**'
       - 'pyproject.toml'
@@ -58,6 +59,7 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - 'CHANGELOG.md'
       - 'src/**'
       - 'tests/**'
       - 'pyproject.toml'
@@ -463,6 +465,13 @@ jobs:
         # one number drift silently — nothing breaks, the site just advertises
         # a release that is no longer shipping.
         run: python scripts/dev/check_site_version_parity.py
+      - name: Check CHANGELOG link definitions
+        # Every "## [x.y.z]" heading needs a link definition naming tag vx.y.z,
+        # and [Unreleased] must compare from the latest heading. Both are kept
+        # by hand: after 1.1.0 the [1.1.0] link was never added and
+        # [Unreleased] still compared from v1.0.2, so the docs site rendered a
+        # literal "[1.1.0]" and readers diffed the wrong range.
+        run: python scripts/dev/check_changelog_links.py
       - name: Check per-folder README file coverage
         # A folder's README is its operating contract, so its file table is
         # load-bearing: a reader who cannot find a module there concludes it

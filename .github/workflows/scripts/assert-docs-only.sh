@@ -25,7 +25,7 @@ fi
 # Gated directory prefixes (a change under any of these must run the real job).
 _GATED_PREFIXES="src/ tests/ site/ examples/ scripts/ evals/ .github/workflows/"
 # Gated exact file paths.
-_GATED_EXACT="pyproject.toml .pre-commit-config.yaml .gitleaks.toml"
+_GATED_EXACT="CHANGELOG.md pyproject.toml .pre-commit-config.yaml .gitleaks.toml"
 
 # List the PR's changed files via the REST API, paginating fully.
 changed_files="$(gh api --paginate \

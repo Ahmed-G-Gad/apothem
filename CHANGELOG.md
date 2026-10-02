@@ -251,6 +251,7 @@ harnesses behind a conformity governance gate and signed, reproducible releases.
   constraints and document an inspect-first alternative to the pipe-to-shell
   one-liner.
 
-[Unreleased]: https://github.com/ahmed-g-gad/apothem/compare/v1.0.2...HEAD
+[Unreleased]: https://github.com/ahmed-g-gad/apothem/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.1.0
 [1.0.2]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.0.2
 [1.0.1]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.0.1
