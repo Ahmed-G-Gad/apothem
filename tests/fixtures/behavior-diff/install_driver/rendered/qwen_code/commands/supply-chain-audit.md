@@ -140,7 +140,7 @@ Run the fifteen-bar pre-emission gate (`rules/pre-emission-gate.md`) over the em
 
 The remaining bars attest `pass` or `n/a (with reason)` per `rules/pre-emission-gate-bars.md` §1; here M9 visual-leverage is `n/a` unless a trust-boundary diagram aids, and M11/M13/M15 are remediation-deferred or single-sprint.
 
-**Iterate on failure.** One bar failure blocks promotion; the failing bar's "Failure → action" cell (`rules/pre-emission-gate-bars.md` §1) names the owning revision rule. Revise, re-run, iterate until every bar passes within the three-round cap of `rules/pre-emission-gate-bars.md` §3 (then BLOCKED), then emit the attestation block.
+**Iterate on failure.** One bar failure blocks promotion. Revise and re-run per `rules/pre-emission-gate-bars.md` §3, which names the owning revision rule for each bar and caps the loop at three rounds before BLOCKED, then emit the attestation block.
 
 ---
 

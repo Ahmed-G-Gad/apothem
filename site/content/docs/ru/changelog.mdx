@@ -111,6 +111,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **Extension wrappers run the engine version they shipped with.** The Gemini
+  CLI command, the Gemini and Qwen Code context files, and the Codex plugin
+  skill called `npx @ahmed-g-gad/apothem` with no version, so a later npm
+  publish changed what an installed extension ran. Each call now pins the
+  wrapper's own version, and `bump_version.py` moves the pins.
+- **The wheel and sdist carry the full hook corpus.** They left out
+  `hooks/hooks.json` and the hook READMEs that every other channel ships.
 - **Path-filtered rules no longer load in every Claude Code session.** Claude
   Code reads only `paths:` from a rule and loads every rule without it at
   launch, so the engine install loaded all 91 rules (914,538 bytes) in each

@@ -178,7 +178,7 @@ Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against t
 - **M14 systemicity.** Every new component declared at Phase 1 carries its upstream / downstream / peers / enforcers per `rules/systemic-participation.md`.
 - **M15 production-ready.** N/A at the design tier; production-ready discipline applies at `/plan-execute` time when the design materializes as code.
 
-**Iterate on failure.** A single bar failure blocks promotion. The failing bar's "Failure → action" cell at `rules/pre-emission-gate-bars.md` §1 names the rule that owns the revision protocol. Revise; re-run the gate; iterate until every bar passes within the three-round cap of `rules/pre-emission-gate-bars.md` §3 (then BLOCKED); emit the attestation block.
+**Iterate on failure.** One bar failure blocks promotion. Revise and re-run per `rules/pre-emission-gate-bars.md` §3, which names the owning revision rule for each bar and caps the loop at three rounds before BLOCKED, then emit the attestation block.
 
 ---
 
