@@ -661,6 +661,18 @@ zed             The first of .rules, .cursorrules, .windsurfrules, .clinerules,
 glm             Nothing: GLM is a model backend and loads no instruction files.
 ```
 
+### Behavioural evals
+
+The suite under `evals/` measures behaviour rather than form: 64 trigger cases
+(each model-invocable command and subagent fires on a request in its domain
+and stays quiet on a near miss), 32 outcome cases (one per plan stage,
+research stage and audit dimension) and 6 rule-effect pairs (an always-on
+rule's text on and off). The cases are plain data validated for free by
+`python -m pytest tests/unit/test_eval_suite.py`; running them is billed and
+manual. See [Run the behavioural evals](/docs/how-to/evals) for the `Evals`
+workflow, a local run and how to add a case. After editing an always-on rule
+that has a pair, run `python scripts/dev/sync_eval_rule_cases.py`.
+
 ### Benchmarks
 
 `make benchmarks` runs the per-class drivers under `src/apothem/benchmarks/`.

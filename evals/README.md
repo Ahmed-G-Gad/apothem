@@ -62,7 +62,7 @@ claude plugin eval "$tmp/plugin" --trust-plugin --scaffold --allow-tools Write E
   --model <model-id> --judge-model <model-id> --max-cost-usd <usd> --no-publish --json results.json
 ```
 
-`--tag r12-regression --ablation none` runs only the rule-effect pairs; `--tag trigger` and so on select one kind. Each case's prompt body opens with the repository's SPDX comment line; the runner sends the body verbatim, so the model sees that one comment line in every case and in both arms.
+`--tag r12-regression --ablation none` runs only the rule-effect pairs; `--tag trigger` and so on select one kind. CI runs the same command from the manual `Evals` workflow (`.github/workflows/evals.yml`), gated on the repository variable `RUN_PAID_EVALS` and the `ANTHROPIC_API_KEY` secret. Each case's prompt body opens with the repository's SPDX comment line; the runner sends the body verbatim, so the model sees that one comment line in every case and in both arms.
 
 ## Operating in this folder
 
@@ -76,3 +76,5 @@ claude plugin eval "$tmp/plugin" --trust-plugin --scaffold --allow-tools Write E
 
 - [`../tests/unit/test_eval_suite.py`](../tests/unit/test_eval_suite.py) — schema validation and the coverage contract.
 - [`../scripts/dev/sync_eval_rule_cases.py`](../scripts/dev/sync_eval_rule_cases.py) — keeps the rule-effect pairs in step with the rules.
+- [`../.github/workflows/evals.yml`](../.github/workflows/evals.yml) — the manual, cost-capped CI run.
+- [`../site/content/docs/how-to/evals.mdx`](../site/content/docs/how-to/evals.mdx) — the how-to page (Run the behavioural evals).

@@ -89,7 +89,7 @@ const sections = {
   tutorials: ['Tutorials', ['index', 'getting-started']],
   'how-to': ['How-to guides', [
     'index', 'editing-the-profile', 'adding-a-harness',
-    'installer-environment-variables',
+    'installer-environment-variables', 'evals',
   ]],
   harnesses: ['Harnesses', [
     'index', 'claude-code', 'cursor', 'gemini-cli', 'github-copilot',
