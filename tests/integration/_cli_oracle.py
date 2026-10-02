@@ -253,20 +253,26 @@ def matrix() -> list[tuple[str, list[str], bool]]:
     rows.append(
         ("err-diff-all-rejected-json", ["diff", "--harness", "all", "--json"], False)
     )
+    # A first install without --profile creates the default profile, so the
+    # missing-profile error is pinned with an explicit --profile that does not
+    # exist (``~`` expands to the scratch home), and the first-run success has
+    # its own plain row.
+    missing_profile = ["--profile", "~/.config/apothem/missing.yaml"]
     rows.append(
         (
             "err-install-missing-profile",
-            ["install", "--harness", _SAMPLE_HARNESS],
+            ["install", "--harness", _SAMPLE_HARNESS, *missing_profile],
             False,
         )
     )
     rows.append(
         (
             "err-install-missing-profile-json",
-            ["install", "--harness", _SAMPLE_HARNESS, "--json"],
+            ["install", "--harness", _SAMPLE_HARNESS, *missing_profile, "--json"],
             False,
         )
     )
+    rows.append(("install-first-run", ["install", "--harness", _SAMPLE_HARNESS], False))
     return rows
 
 
