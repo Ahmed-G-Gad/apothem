@@ -371,16 +371,16 @@ _STRICT_TRUTHY: Final[frozenset[str]] = frozenset({"1", "true", "yes", "on"})
 #   - BLOCKING (``_BLOCKING_PER_WRITE_GREPS``): deterministic, low-false-
 #     positive matchers that are GREEN over the live tracked corpus today.
 #     A finding from one of these under ``--strict`` fails the corpus run.
-#     EN-1's governing principle: a matcher is blocking ONLY once it is
-#     green over the tracked corpus — never blocking-AND-failing.
+#     The posture's governing principle: a matcher is blocking ONLY once it
+#     is green over the tracked corpus — never blocking-AND-failing.
 #
 #   - ADVISORY (``_ADVISORY_PER_WRITE_GREPS``): matchers whose findings are
 #     reported (so the drift is never silent) but do NOT gate, because they
 #     are high-false-positive against the shipped prose / code / config /
-#     docs corpus today. Each carries a one-line remediation-owner note in
-#     ``_ADVISORY_RATIONALE`` so the classification is visible and testable.
-#     EN-1 explicitly authorizes ``hedging`` + ``plain-language`` as advisory
-#     until the SR-1 (phase 65) prose-debt clears; the remaining advisory
+#     docs corpus today. Each carries a one-line note in ``_ADVISORY_RATIONALE``
+#     naming the work that would let it gate, so the classification is visible
+#     and testable. ``hedging`` stays advisory until the shipped rule and doc
+#     prose is rewritten; the remaining advisory
 #     members are matchers whose own ``check()`` fires structurally against
 #     legitimate non-target content the corpus enumerates (lockfile entropy,
 #     frontmatter-first Markdown, design-token literals, documented pattern
@@ -399,11 +399,10 @@ _BLOCKING_PER_WRITE_GREPS: Final[frozenset[str]] = frozenset(
     }
 )
 
-# Advisory rationale: matcher name -> (reason, remediation-owner). The reason
-# names WHY the matcher is high-false-positive in corpus mode; the owner names
-# the phase / surface that, once it lands, lets a successor promote the matcher
-# to the blocking set. ``SR-1`` is the plain-language / rule-rewrite reconcile
-# phase (phase 65) per the EN-1 posture.
+# Advisory rationale: matcher name -> (reason, remediation). The reason names
+# WHY the matcher is high-false-positive in corpus mode; the remediation names
+# the work that, once done, lets the matcher join the blocking set. Both ship in
+# the ``--all-perwrite`` report (``reason`` / ``remediation_owner``).
 _ADVISORY_RATIONALE: Final[dict[str, tuple[str, str]]] = {
     "bare_except_grep": (
         "the bare `except:` sub-rule (always a real defect) is GREEN over the "
@@ -411,47 +410,46 @@ _ADVISORY_RATIONALE: Final[dict[str, tuple[str, str]]] = {
         "on deliberate, `# noqa: BLE001`-marked fail-open isolation boundaries "
         "(dispatch / gate / statusline / hook) that ruff's BLE001 rule already "
         "governs and `ruff check` already gates in CI",
-        "ruff BLE001 (already CI-gating) + SR-1 reconcile (phase 65)",
+        "ruff BLE001 already gates the broad form in CI; teach the matcher the "
+        "`# noqa: BLE001` intent marker",
     ),
     "user_confirm_grep": (
         "fires on prose / commands / matcher source that DOCUMENT the "
         "<USER-CONFIRM:id=...> placeholder syntax, not on unresolved "
         "placeholders",
-        "SR-1 prose reconcile (phase 65)",
+        "skip placeholders quoted in code spans and in matcher source",
     ),
     "hedging_grep": (
-        "EN-1-authorized advisory: hedging vocabulary trips a portion of the "
-        "shipped rule / doc bodies until the prose is rewritten; SR-1 reconciles "
-        "plain-language only, so the rule-body hedging debt is owned by the rule-body "
-        "rewrite cluster, not SR-1",
-        "SR-4..SR-9 rule-body rewrite cluster",
+        "hedging vocabulary trips a portion of the shipped rule / doc bodies "
+        "until that prose is rewritten",
+        "rewrite the hedged rule and doc prose",
     ),
     "brand_mark_grep": (
         "fires on harness brand slugs (Cursor, Codex, ...) in config / "
         "workflow / catalog files where the slug is a load-bearing catalog "
         "entry, not a privileging brand reference",
-        "SR-1 prose reconcile (phase 65)",
+        "tell catalog entries apart from brand references in config and catalog files",
     ),
     "diagram_staleness_grep": (
         "date-comparison heuristic flags shipped docs diagrams whose verified "
         "date predates a sibling edit; staleness reconcile is doc-rewrite work",
-        "SR-1 prose reconcile (phase 65)",
+        "re-verify the flagged docs diagrams and refresh their verified dates",
     ),
     "magic_number_grep": (
         "fires on CSS design-token values, version pins, and rebuild-script "
         "asset dimensions that are values in a data context, not logic literals",
-        "SR-1 prose reconcile (phase 65)",
+        "exempt data contexts (design tokens, version pins, asset dimensions)",
     ),
     "orphan_output_grep": (
         "orphan-output is a multi-step-work-session concept; in corpus mode it "
         "fires on standalone config / data files that carry no provenance "
         "frontmatter by their own ratified convention",
-        "SR-1 prose reconcile (phase 65)",
+        "scope the matcher to multi-step work outputs instead of every file",
     ),
     "commented_out_code_grep": (
         "fires on YAML / TOML comment blocks and shell here-doc bodies that "
         "resemble commented-out code but are deliberate inline documentation",
-        "SR-1 prose reconcile (phase 65)",
+        "exempt documentation comments in YAML, TOML, and shell here-docs",
     ),
     "secret_leak_grep": (
         "entropy heuristic fires on package-lock.json integrity hashes and "
@@ -459,7 +457,7 @@ _ADVISORY_RATIONALE: Final[dict[str, tuple[str, str]]] = {
         "the literal-shape heuristic fires on test fixtures that DELIBERATELY "
         "embed fake credentials to exercise the detector under test; no genuine "
         "secret among the corpus findings",
-        "SR-1 prose reconcile (phase 65)",
+        "exempt lockfile integrity hashes and the detector's own test fixtures",
     ),
     "production_ready_pr_grep": (
         "change-set-scoped matcher; returns clean per-file by design, so it "
@@ -471,7 +469,7 @@ _ADVISORY_RATIONALE: Final[dict[str, tuple[str, str]]] = {
         "frontmatter-first Markdown class (rules / agents / commands / docs / "
         "AGENTS.md) that is the dominant ratified head convention across the "
         "shipped tree; the genuine code-surface gaps are fixed in source",
-        "SR-1 prose reconcile (phase 65)",
+        "model the frontmatter-first Markdown head convention in the matcher",
     ),
     "copilot_instructions_presence_grep": (
         "single-target surface matcher (.github/copilot-instructions.md); in "
@@ -493,24 +491,24 @@ _ADVISORY_RATIONALE: Final[dict[str, tuple[str, str]]] = {
         "class-inference heuristic fires on .mdx / .tsx components and docs content "
         "whose frontmatter contract differs from the rule / skill / agent "
         "schema it infers",
-        "SR-1 prose reconcile (phase 65)",
+        "infer the frontmatter contract per artifact class, docs and site "
+        "components included",
     ),
     "link_check": (
         "link reachability / resolution is inherently high-false-positive over "
         "the corpus (relative-link base ambiguity, external-host flakiness)",
-        "SR-1 prose reconcile (phase 65)",
+        "resolve relative links against the right base; stop probing external "
+        "hosts in corpus mode",
     ),
     "always_on_budget_grep": (
-        "surfaces a genuine ~10-token overage on one always-on rule "
-        "(interactive-questions.md); remediation is a rule-body decomposition "
-        "owned by the token-budget / SR rewrite cluster, not the EN-3 "
-        "enforcement-wiring phase",
-        "SR token-budget rewrite cluster (SR-0..SR-9, phases 64-73)",
+        "surfaces always-on rule bodies over the substantive-token ceiling; "
+        "remediation is a rule-body decomposition, not a matcher change",
+        "decompose an over-budget always-on rule into a path-filtered companion",
     ),
     "token_efficiency_grep": (
         "filler / qualifier prose heuristic in the same prose-debt class as "
         "hedging; high-false-positive against shipped rule / doc bodies",
-        "SR-1 prose reconcile (phase 65)",
+        "rewrite the filler and qualifier prose in rule and doc bodies",
     ),
 }
 
@@ -995,7 +993,8 @@ def _strict_exit_with_advisory(
     if strict and advisory_present:
         sys.stderr.write(
             "conformity-gate: advisory finding(s) present (non-gating per the "
-            "EN-1 posture); surfaced for review, exit code unaffected\n"
+            "advisory-by-default posture); surfaced for review, exit code "
+            "unaffected\n"
         )
     return _gate_exit(blocking_passed, strict=strict)
 
@@ -1251,7 +1250,7 @@ def _run_all_perwrite(root: Path) -> tuple[bool, str]:
     Returns ``(blocking_clean, payload)`` where ``blocking_clean`` is True iff
     zero blocking matchers flagged a finding. Advisory findings are reported
     (so drift is never silent) but never affect ``blocking_clean``. A matcher
-    result carrying a ``note`` (EN-2's "scope not resolvable" skip) is not a
+    result carrying a ``note`` (a matcher's "scope not resolvable" skip) is not a
     finding. The caller maps ``blocking_clean`` to an exit code under the
     advisory-by-default posture (``--strict`` makes a non-clean blocking run
     exit non-zero).
@@ -1290,7 +1289,7 @@ def _run_all_perwrite(root: Path) -> tuple[bool, str]:
             except Exception:  # noqa: S112, BLE001, RUF100 — fail-open isolation: one matcher's internal error (load failure or check() raise) must never fail-close the corpus run; the matcher contributes no finding for this file and the run proceeds, mirroring run_orchestrator's per-matcher isolation boundary (BLE001 is the intent marker; RUF100 self-suppresses because ruff's BLE family is not active)
                 continue
             if getattr(result, "note", None) is not None:
-                # EN-2 scope-not-resolvable skip — not a finding.
+                # A matcher's scope-not-resolvable skip — not a finding.
                 continue
             findings = getattr(result, "findings", None) or []
             if not findings:

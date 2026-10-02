@@ -12,7 +12,7 @@ target path, and dispatches every registered per-Write matcher via `importlib`.
 Each grep returns a structured result; the orchestrator aggregates them into a
 single JSON report. The findings are surfaced as an advisory nudge plus a
 definitive next step — the per-Write surface does not block the tool call (the
-EN-1 advisory-by-default posture). Strict enforcement runs separately in CI and
+advisory-by-default posture). Strict enforcement runs separately in CI and
 pre-commit via the corpus gate (`gate --all-perwrite --strict`).
 
 ## Per-Write grep coverage
