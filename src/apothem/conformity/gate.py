@@ -99,6 +99,19 @@ from apothem.conformity._grep_base import (
 # short-circuit to a silent pass-through.
 SCOPE_ENV_VAR: Final[str] = "APOTHEM_CONFORMITY_SCOPE"
 
+# Hooks-wide kill switch, shared with hooks/dispatch.py. The engine install
+# registers this gate's --hook mode beside the dispatcher-routed hooks, so a
+# truthy value silences it too and an operator troubleshooting hooks turns
+# every Apothem hook off with one variable.
+HOOKS_DISABLE_ENV: Final[str] = "APOTHEM_HOOKS_DISABLE"
+_TRUTHY: Final[frozenset[str]] = frozenset({"1", "true", "yes", "on"})
+
+
+def _hooks_disabled() -> bool:
+    """Return True when ``APOTHEM_HOOKS_DISABLE`` holds a truthy value."""
+    return os.environ.get(HOOKS_DISABLE_ENV, "").strip().lower() in _TRUTHY
+
+
 # Default scopes when APOTHEM_CONFORMITY_SCOPE is unset. Hook-capable
 # user-scope harness roots are matcher-applicable territories; writes
 # outside them are pass-through.
@@ -1583,6 +1596,8 @@ def _dispatch(
             return _gate_exit(passed, strict=strict)
         only = canonical
     pre_content: str | None = None
+    if args.hook and _hooks_disabled():
+        return EXIT_PASS
     if args.hook:
         # Harness-dispatched hook mode: parse tool-input JSON from stdin.
         content, path, pre_content = _read_tool_input_from_stdin()

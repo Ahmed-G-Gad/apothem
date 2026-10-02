@@ -96,7 +96,7 @@ install, Codex, and Qwen Code:
 
 | Variable | Default | Effect |
 | --- | --- | --- |
-| `APOTHEM_HOOKS_DISABLE` | unset | `1`, `true`, `yes` or `on` silences every dispatcher-routed hook |
+| `APOTHEM_HOOKS_DISABLE` | unset | `1`, `true`, `yes` or `on` silences every dispatcher-routed hook and the engine install's conformity-gate hook |
 | `APOTHEM_SESSION_END_ENABLED` | off | `1`, `true`, `yes` or `on` enables the session-end protocol on Stop. A Stop hook that returns context makes the assistant continue, so the protocol costs one extra turn per session; it never fires on a stop that already follows a hook-driven continuation |
 | `APOTHEM_SESSION_END_MIN_STOPS` | `3` | Turn-ends before the session-end protocol may fire |
 | `APOTHEM_PROACTIVE_COMPACTION_ENABLED` | on | `0`, `false`, `no` or `off` silences the compaction advisory |

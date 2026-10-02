@@ -382,10 +382,6 @@ def test_clause1_3_5_every_command_executes_bounded_and_fast(
     assert not failures, "\n".join(failures)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="the installed gate.py cannot import the apothem package yet",
-)
 def test_engine_gate_hook_starts(workspace: dict[str, Path]) -> None:
     """The engine's conformity gate hook starts and returns a JSON report."""
     gates = [e for e in _all_entries(workspace) if _is_engine_gate(e)]

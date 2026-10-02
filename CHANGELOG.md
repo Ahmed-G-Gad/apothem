@@ -40,7 +40,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   can be silenced with `APOTHEM_PROACTIVE_COMPACTION_ENABLED=0`. Its
   model-facing text now asks only for state externalization; the compaction
   suggestion goes to the operator, who owns that action.
-- **`APOTHEM_HOOKS_DISABLE=1` silences every dispatcher-routed hook**, for
+- **`APOTHEM_HOOKS_DISABLE=1` silences every Apothem hook**, the
+  dispatcher-routed ones and the engine install's conformity-gate hook, for
   troubleshooting without editing installed files.
 - **Commands and skills pre-approve read-only tools only.** `allowed-tools`
   names the tools a harness may run without asking while a command or skill is
