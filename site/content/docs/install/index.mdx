@@ -223,8 +223,12 @@ The **Apothem** extension installs from the
 extension covers VS Code and its in-editor companion assistant surface. Its
 palette commands (`Apothem: Install`, `Verify`, `Update`, `Uninstall`,
 `Doctor`) run the same engine through the configured runner
-(`npx @ahmed-g-gad/apothem` by default; point the `apothem.runner` setting at a
-local checkout to run from source).
+(`npx @ahmed-g-gad/apothem` by default; point the `apothem.runner` user setting
+at a local checkout to run from source). Install, Verify, Update and Uninstall
+ask which harness to act on, offering the editor's own harness first; `all` is
+a choice, never the default. The `apothem.runner` setting is machine-scoped, so
+a workspace cannot change it, and the extension runs only in a trusted
+workspace.
 
 **Verify:** run the **Apothem: Verify** command from the editor's command
 palette, or from a terminal:

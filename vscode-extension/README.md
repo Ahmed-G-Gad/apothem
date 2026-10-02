@@ -24,12 +24,24 @@ Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) and run:
 | **Apothem: Uninstall** | Remove the materialized configuration |
 | **Apothem: Doctor** | Diagnose the environment and report a next step |
 
+Install, Verify, Update and Uninstall ask which harness to act on. The list
+starts with this editor's own harness (GitHub Copilot in VS Code, Cursor, or
+Windsurf); **Other harness…** takes any harness name, and **all** acts on every
+supported harness, including files in your home directory. Each command runs
+as a task in the terminal panel, with the workspace folder as `--project`.
+
 ## Requirements
 
 The extension drives the Apothem engine through the npm shim by default
 (`npx @ahmed-g-gad/apothem`), which needs Node.js on the `PATH`. To run from a
-local checkout instead, set **`apothem.runner`** in Settings (for example,
-`python -m apothem`).
+local checkout instead, set **`apothem.runner`** in your user Settings (for
+example, `python -m apothem`). The setting is machine-scoped: a workspace's
+`.vscode/settings.json` cannot change it. The runner is split on spaces into a
+program and its arguments, and every argument is passed quoted, never as shell
+text.
+
+The extension is disabled in Restricted Mode and runs only in a trusted
+workspace.
 
 ## Links
 
