@@ -19,6 +19,11 @@ derive from it rather than re-declaring it.
   routed-locale set** — build scripts (`build-llms-txt.mjs`,
   `check-search-index-sizes.mjs`, `export-to-dist.mjs`) re-parse it and fail on
   drift rather than hard-coding a divergent copy.
+- **`code-theme.mjs`** — the Shiki `colorReplacements` map `source.config.ts`
+  passes to the code highlighter, lifting the github-light / github-dark token
+  colours that fail WCAG 1.4.3 contrast on the code-block surfaces. Its
+  `node --test` check (`code-theme.test.mjs`, run by `npm test`) holds every
+  token colour of both themes to 4.5:1 on every code surface.
 - **`hreflang.ts`** — builds the per-page `alternates` (hreflang) set from a
   locale-agnostic path, emitting the `en` self-link, `x-default`, and one
   alternate per routed locale that carries a version of the page.
