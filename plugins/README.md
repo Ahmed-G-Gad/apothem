@@ -42,6 +42,15 @@ same change-set:
 python scripts/dev/assemble_plugin_tree.py
 ```
 
+The manifest `version` comes from `pyproject.toml`. Claude Code keeps an
+installed plugin on its cached copy until that string changes, so any change to
+`claude-code/` after a release must ship under a new version:
+[`scripts/release/check_plugin_version_bump.py`](../scripts/release/check_plugin_version_bump.py)
+fails CI when the package differs from the last release tag under the same
+version, and
+[`scripts/release/bump_version.py`](../scripts/release/bump_version.py) moves
+every version anchor at once.
+
 Verify before handoff — the first command fails on drift, the second on a
 malformed manifest:
 
