@@ -12,7 +12,7 @@
         apothem-v<VERSION>-windows.zip       runtime zip
         apothem-<VERSION>.tar.gz             sdist (supply-chain evidence)
         apothem-<VERSION>-py3-none-any.whl   wheel (supply-chain evidence)
-        apothem-v<VERSION>.spdx.json         SBOM
+        sbom.cdx.json                        CycloneDX SBOM of the wheel and sdist
         install.ps1                           Windows installer copy
         SHA256SUMS                            sha256 manifest
 
@@ -79,8 +79,8 @@ $wheel | Copy-Item -Destination $AssetsDir
 
 $sbomScript = Join-Path $RepoRoot 'scripts' 'release' 'generate-sbom.ps1'
 if (Test-Path -LiteralPath $sbomScript) {
-    $sbomOut = Join-Path $AssetsDir "apothem-v$Version.spdx.json"
-    & pwsh -NoProfile -File $sbomScript -OutputPath $sbomOut
+    $sbomOut = Join-Path $AssetsDir 'sbom.cdx.json'
+    & pwsh -NoProfile -File $sbomScript -OutputPath $sbomOut -DistDir $AssetsDir
 }
 
 $installScript = Join-Path $RepoRoot 'dist' 'install' 'install.ps1'

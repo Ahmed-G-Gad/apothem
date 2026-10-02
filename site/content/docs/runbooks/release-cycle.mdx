@@ -127,8 +127,8 @@ attests, and publishes.
 gh run watch $(gh run list --workflow=release.yml --limit=1 --json databaseId --jq '.[0].databaseId')
 ```
 
-The workflow runs build (sdist + wheel), SBOM generation
-(CycloneDX), keyless cosign signing, SLSA-3 provenance generation and
+The workflow runs build (sdist + wheel, then a CycloneDX SBOM of those
+distributions written beside them), keyless cosign signing, SLSA-3 provenance generation and
 verification, platform archive builds (darwin / linux / windows), archive
 signing with an aggregated `SHA256SUMS` manifest, and the final GitHub
 Release publish. The maintainer scans the `publish GitHub Release` job
@@ -155,7 +155,7 @@ here?":
 | # | Surface | Artifact | Verification |
 |---|---|---|---|
 | 1 | GitHub Release (Python distributions) | `apothem-X.Y.Z.tar.gz` (sdist) + `apothem-X.Y.Z-py3-none-any.whl` | `gh release view vX.Y.Z --json assets --jq '.assets[].name'` includes both filenames |
-| 2 | GitHub Release (SBOM) | `sbom.cdx.json` | same as row 1; asset list includes the CycloneDX SBOM |
+| 2 | GitHub Release (SBOM) | `sbom.cdx.json` + `sbom.cdx.json.cosign.bundle` | asset list includes both; the SBOM's `metadata.component.purl` is `pkg:pypi/apothem@X.Y.Z` and its components include every package in `src/apothem/_vendor/vendor.txt` |
 | 3 | GitHub Release (signatures) | one `<asset>.cosign.bundle` per sdist, wheel, SBOM, platform archive and `SHA256SUMS` (earlier releases name the archive and `SHA256SUMS` bundles `<asset>.sig`) | `cosign verify-blob` with the exact identity in §5.5 exits 0 |
 | 4 | GitHub Release (provenance) | `provenance.intoto.jsonl` | `bash scripts/release/verify-provenance.sh <download-dir>` exits 0 (§5.5) |
 | 5 | GitHub Release (platform archives) | `apothem-vX.Y.Z-darwin.tar.gz`, `apothem-vX.Y.Z-linux.tar.gz`, `apothem-vX.Y.Z-windows.zip` | asset list includes every archive plus `SHA256SUMS` |
@@ -263,7 +263,7 @@ and the npm publisher:
 |---|---|---|
 | Tag push rejected (signing failure) | `git push origin vX.Y.Z` returns `error: failed to push some refs` with a GPG-related message | Verify the GPG subkey is loaded (`gpg --list-secret-keys --keyid-format=long`); re-tag locally with `-s` after fixing the keyring; re-push |
 | Release build stops at `Check the plugin version changed with the plugin` | The build job log names the plugin and the previous tag; no asset was built or published | The plugin package changed since the previous release but its version did not. Delete the tag (`git push --delete origin vX.Y.Z`, `git tag -d vX.Y.Z`), run `python scripts/release/bump_version.py X.Y.Z`, commit, then sign and push the tag again (§2.2). The same check runs on every pull request, so this normally surfaces before tagging |
-| `release.yml` job fails on a single stage | `gh run view <run-id> --log` names the failing job (build / sbom / sign / provenance / archive / publish) | Re-run the failed job alone via `gh run rerun <run-id> --failed`; if the failure repeats, fix the job's input at its source before retagging |
+| `release.yml` job fails on a single stage | `gh run view <run-id> --log` names the failing job (build, which also writes the SBOM / sign / provenance / archive / publish) | Re-run the failed job alone via `gh run rerun <run-id> --failed`; if the failure repeats, fix the job's input at its source before retagging |
 | SLSA provenance verification fails | The `verify SLSA provenance artifact` job exits non-zero | Inspect the provenance artifact for subject-digest mismatch; rebuild from the same tag — provenance binds to the exact artifact digests, so any artifact regeneration requires a full workflow rerun |
 | npmjs.com publish rejected | The npm job exits non-zero during `npm publish`; a registry `404` during `PUT` is an authorization / trusted-publisher mismatch, not proof that the package code is missing | Verify npm Trusted Publishing for `@ahmed-g-gad/apothem` names owner `ahmed-g-gad`, repository `apothem`, workflow `publish-npm.yml`, and allowed action `npm publish`; confirm the job runs with the Node version and npm CLI OIDC floor pinned in the workflow |
 | Tag visible but assets missing | `gh release view vX.Y.Z` returns a stub release | Re-run the release workflow's publish job; if the stub persists, delete the release page (`gh release delete vX.Y.Z --cleanup-tag`) and re-tag from the same SHA |

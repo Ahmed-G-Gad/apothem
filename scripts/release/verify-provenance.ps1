@@ -116,6 +116,10 @@ try {
                 $_.Name -match '^apothem-\d[^/]*-py3-none-any\.whl$' -or $_.Name -match '^apothem-\d[^/]*\.tar\.gz$'
             } | ForEach-Object { $_.Name })
         if ($subjects.Count -eq 0) { throw 'verify-provenance: layer 3: no wheel or sdist to verify' }
+        # From the release that started signing the SBOM, it is a subject too.
+        if ((Test-Path -LiteralPath 'sbom.cdx.json') -and (Test-Path -LiteralPath 'sbom.cdx.json.cosign.bundle')) {
+            $subjects += 'sbom.cdx.json'
+        }
         & slsa-verifier verify-artifact `
             --provenance-path provenance.intoto.jsonl `
             --source-uri "github.com/$GithubRepo" `

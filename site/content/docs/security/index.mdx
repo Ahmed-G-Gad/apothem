@@ -70,7 +70,7 @@ Every release artifact ships with:
 
 - **SLSA-3 build provenance** via [`slsa-framework/slsa-github-generator`](https://github.com/slsa-framework/slsa-github-generator)
 - **Sigstore signatures** via [`sigstore/cosign-installer`](https://github.com/sigstore/cosign-installer)
-- **CycloneDX SBOM** via [`anchore/sbom-action`](https://github.com/anchore/sbom-action)
+- **CycloneDX SBOM** of the shipped wheel and sdist, written by `scripts/release/generate_sbom.py`: the apothem package, every package vendored under `apothem/_vendor` with its license, the declared runtime requirements, and each distribution's SHA-256. The SBOM is signed and covered by the build provenance like the distributions
 - **npm provenance statements** via Trusted Publishing OIDC on `@ahmed-g-gad/apothem`
 - **GPG-signed git tags** (EDDSA key `70396FED9C634163`)
 

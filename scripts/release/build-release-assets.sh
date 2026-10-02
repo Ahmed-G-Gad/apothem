@@ -9,7 +9,7 @@
 #   apothem-v<VERSION>-windows.zip   runtime zip (Windows-friendly)
 #   apothem-<VERSION>.tar.gz         sdist (copied from dist/; supply-chain evidence)
 #   apothem-<VERSION>-py3-none-any.whl wheel (copied from dist/; supply-chain evidence)
-#   apothem-v<VERSION>.spdx.json     SBOM (produced by generate-sbom.sh)
+#   sbom.cdx.json                    CycloneDX SBOM of the wheel and sdist (generate-sbom.sh)
 #   install.ps1                       Windows installer copy (from dist/install/)
 #   SHA256SUMS                        sha256 manifest of every asset above
 #   *.cosign.bundle                   Sigstore bundle per asset and for SHA256SUMS (produced by sign-assets.sh)
@@ -73,7 +73,7 @@ cp "${DIST_DIR}"/apothem-*-py3-none-any.whl "${ASSETS_DIR}/"
 
 # Generate SBOM into the assets directory.
 if [[ -f "${REPO_ROOT}/scripts/release/generate-sbom.sh" ]]; then
-    bash "${REPO_ROOT}/scripts/release/generate-sbom.sh" "${ASSETS_DIR}/apothem-v${VERSION}.spdx.json"
+    bash "${REPO_ROOT}/scripts/release/generate-sbom.sh" "${ASSETS_DIR}/sbom.cdx.json" "${ASSETS_DIR}"
 fi
 
 # Copy install.ps1 alongside the assets so the GitHub Release page exposes it.

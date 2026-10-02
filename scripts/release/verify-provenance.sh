@@ -117,11 +117,15 @@ else
 fi
 
 # Layer 3: SLSA build provenance. One provenance file covers the build job's
-# outputs (wheel and sdist); the platform archives are not its subjects.
+# outputs: the wheel, the sdist and, from the release that started signing it,
+# the SBOM. The platform archives are not its subjects.
 if command -v slsa-verifier >/dev/null 2>&1; then
     printf 'verify-provenance: layer 3 — slsa-verifier\n' >&2
     [[ -f provenance.intoto.jsonl ]] || fail "layer 3: provenance.intoto.jsonl not found"
     subjects=(apothem-[0-9]*-py3-none-any.whl apothem-[0-9]*.tar.gz)
+    if [[ -f sbom.cdx.json && -f sbom.cdx.json.cosign.bundle ]]; then
+        subjects+=(sbom.cdx.json)
+    fi
     (( ${#subjects[@]} > 0 )) || fail "layer 3: no wheel or sdist to verify"
     slsa-verifier verify-artifact \
         --provenance-path provenance.intoto.jsonl \

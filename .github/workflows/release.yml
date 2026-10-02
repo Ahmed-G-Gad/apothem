@@ -8,11 +8,14 @@
 # (CI itself runs earlier, on the push / pull request that landed the release
 # commit — this workflow assumes those gates are already green):
 #
-#   (1) Build      — sdist + wheel via PEP 517 build.
-#   (2) SBOM       — CycloneDX SBOM for the project's dependency closure.
-#   (3) Sign       — Sigstore cosign keyless signature on the build artifacts.
-#   (4) Provenance — SLSA Level 3 provenance attestation via the
-#                    slsa-framework reusable workflow.
+#   (1) Build      — sdist + wheel via PEP 517 build, then a CycloneDX SBOM
+#                    of what those distributions ship (vendored packages
+#                    included), written beside them in dist/.
+#   (2) Sign       — Sigstore cosign keyless signature on every dist/ file,
+#                    the SBOM included.
+#   (3) Provenance — SLSA Level 3 provenance via the slsa-framework reusable
+#                    workflow; its subjects are every dist/ file, the SBOM
+#                    included.
 #
 # Once those finish, the workflow:
 #
@@ -90,6 +93,18 @@ jobs:
           export SOURCE_DATE_EPOCH
           echo "SOURCE_DATE_EPOCH=$SOURCE_DATE_EPOCH ($(date -u -d "@$SOURCE_DATE_EPOCH" '+%Y-%m-%dT%H:%M:%SZ'))"
           python -m build
+      - name: Generate SBOM from the built distributions
+        # The SBOM describes what ships: the wheel's metadata and declared
+        # requirements, every package vendored under apothem/_vendor (pinned
+        # in vendor.txt and checked against the wheel), and the SHA-256 of
+        # each distribution. A scan of the checkout instead listed the docs
+        # site and the build toolchain and missed every vendored package.
+        # Written into dist/ so it is hashed into the provenance and signed.
+        run: |
+          set -euo pipefail
+          SOURCE_DATE_EPOCH="$(git log -1 --pretty=%ct)"
+          export SOURCE_DATE_EPOCH
+          python scripts/release/generate_sbom.py --dist dist --output dist/sbom.cdx.json
       - name: Compute artifact hashes
         id: hash
         run: |
@@ -102,37 +117,6 @@ jobs:
           name: dist
           path: dist/
           retention-days: 7
-
-  sbom:
-    name: generate SBOM (CycloneDX)
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    needs: [build]
-    permissions:
-      contents: read   # SBOM uploads as a workflow artifact here; the publish job attaches it to the Release
-    steps:
-      - name: Harden runner
-        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
-        with:
-          egress-policy: audit
-      - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
-        with:
-          persist-credentials: false
-      - name: Generate CycloneDX SBOM
-        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610  # v0.24.0
-        with:
-          path: .
-          format: cyclonedx-json
-          output-file: sbom.cdx.json
-          dependency-snapshot: false
-          upload-release-assets: false   # the publish job (depends on this) attaches the SBOM to the Release
-      - name: Upload SBOM
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
-        with:
-          name: sbom
-          path: sbom.cdx.json
-          retention-days: 90
 
   sign:
     name: sign artifacts (cosign keyless)
@@ -381,7 +365,7 @@ jobs:
     # attestation-store failure must not block a fully-signed, provenance-backed
     # release; the attestation is verifiable independently via `gh attestation
     # verify` once it lands.
-    needs: [build, sbom, sign, verify-provenance, archive-build, sign-archives]
+    needs: [build, sign, verify-provenance, archive-build, sign-archives]
     runs-on: ubuntu-latest
     environment: release
     timeout-minutes: 15
@@ -402,11 +386,6 @@ jobs:
         with:
           name: dist
           path: dist/
-      - name: Download SBOM
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
-        with:
-          name: sbom
-          path: ./
       - name: Download cosign bundles
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
@@ -451,7 +430,7 @@ jobs:
         run: |
           set -euo pipefail
           shopt -s nullglob
-          assets=(dist/* sbom.cdx.json provenance.intoto.jsonl archives/*)
+          assets=(dist/* provenance.intoto.jsonl archives/*)
           if gh release view "${TAG}" >/dev/null 2>&1; then
             gh release edit "${TAG}" --title "v${VERSION}" \
               --notes-file "${NOTES_PATH}" --draft=false --prerelease=false

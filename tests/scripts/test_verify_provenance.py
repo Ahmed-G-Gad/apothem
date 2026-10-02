@@ -152,6 +152,29 @@ def test_accepts_new_style_archive_bundles(tmp_path: Path) -> None:
     assert len(_calls(log, "verify-blob")) == 5
 
 
+def test_signed_sbom_is_verified_and_a_provenance_subject(tmp_path: Path) -> None:
+    """New releases build, sign and hash the SBOM with the distributions."""
+    fake_bin, log = _fake_bin(tmp_path)
+    assets = _release_dir(tmp_path, legacy_archive_sigs=False)
+    (assets / "sbom.cdx.json").write_text("{}", encoding="utf-8")
+    (assets / "sbom.cdx.json.cosign.bundle").write_text("{}", encoding="utf-8")
+    assert _run(assets, fake_bin).returncode == 0
+    assert any(c.endswith(" sbom.cdx.json") for c in _calls(log, "verify-blob"))
+    (slsa,) = _calls(log, "verify-artifact")
+    assert "sbom.cdx.json" in slsa
+
+
+def test_unsigned_legacy_sbom_is_skipped(tmp_path: Path) -> None:
+    """Releases up to v1.1.0 shipped an unsigned SBOM outside the provenance."""
+    fake_bin, log = _fake_bin(tmp_path)
+    assets = _release_dir(tmp_path)
+    (assets / "sbom.cdx.json").write_text("{}", encoding="utf-8")
+    assert _run(assets, fake_bin).returncode == 0
+    assert not any("sbom" in c for c in _calls(log, "verify-blob"))
+    (slsa,) = _calls(log, "verify-artifact")
+    assert "sbom.cdx.json" not in slsa
+
+
 def test_explicit_tag_overrides_the_derived_one(tmp_path: Path) -> None:
     fake_bin, log = _fake_bin(tmp_path)
     assets = _release_dir(tmp_path)
