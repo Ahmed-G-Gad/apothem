@@ -58,6 +58,30 @@ Status values are `native`, `converted`, `support-tree`,
 | Windsurf | native rules and system prompt templates; profile-projected tool restrictions | none | commands, skills, hooks, agents, statuslines, output styles, sub-agent dispatch, memory; MCP discovery pending |
 | Zed | native rules, MCP, system prompt templates; profile-projected tool restrictions | none | commands, skills, hooks, agents, statuslines, output styles, sub-agent dispatch, memory |
 
+## Shared roots
+
+Some install targets are loaded by harnesses other than the one that writes
+them. The registry records each such path in `SHARED_ROOTS` with one owner (the
+only adapter that writes it) and the readers whose vendor docs load it by
+default, with the vendor pages as evidence. Installing the owner puts Apothem
+content in front of every reader, and uninstalling the owner removes it from
+every reader.
+
+| Path | Owner | Readers |
+| --- | --- | --- |
+| `~/.agents/skills/` | Codex | Cursor, Gemini CLI, GitHub Copilot, Kimi Code, Open-Claw, OpenCode, Windsurf, Zed |
+| `~/.claude/skills/` | Claude Code | Cursor, OpenCode |
+| `<project>/AGENTS.md` | Kimi Code | Antigravity, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
+| `<project>/GEMINI.md` | Gemini CLI | Antigravity, GitHub Copilot, Zed |
+| `~/.gemini/GEMINI.md` | Antigravity | Gemini CLI |
+| `<project>/.github/copilot-instructions.md` | GitHub Copilot | Zed |
+
+The Apothem block an owner writes into a shared instruction file names no
+single tool as its reader. `tests/unit/test_shared_roots.py` fails when a
+registry target is written by two adapters, or is named like a cross-tool
+instruction file (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`,
+`copilot-instructions.md`), without a declared owner.
+
 ## Validation hooks
 
 The registry stays synchronized through these checks:
