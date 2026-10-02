@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://apothem.ahmedgad.com/schemas/skill.schema.json",
   "title": "Skill",
-  "description": "Frontmatter schema for skill definitions under src/apothem/skills/<name>/SKILL.md. Reconciled to the live skill corpus: every shipped SKILL.md carries name, description, version, updated, archetype, userInvocable, disable-model-invocation, and allowed-tools; argument-hint is optional. The agnostic posture forbids a model/effort/permission preset, so effort/model/permissionMode are not admitted keys.",
+  "description": "Frontmatter schema for skill definitions under src/apothem/skills/<name>/SKILL.md. Reconciled to the live skill corpus: every shipped SKILL.md carries name, description, version, updated, archetype, userInvocable, disable-model-invocation, and allowed-tools; argument-hint is optional. The user-invocability flag is spelled userInvocable in the source corpus and user-invocable in the Claude Code emission (the claude_code install and the plugin assembler rename it); a skill carries exactly one of the two. The agnostic posture forbids a model/effort/permission preset, so effort/model/permissionMode are not admitted keys.",
   "type": "object",
   "required": [
     "allowed-tools",
@@ -11,8 +11,11 @@
     "disable-model-invocation",
     "name",
     "updated",
-    "userInvocable",
     "version"
+  ],
+  "oneOf": [
+    { "required": ["userInvocable"] },
+    { "required": ["user-invocable"] }
   ],
   "additionalProperties": false,
   "properties": {
@@ -44,7 +47,11 @@
     },
     "userInvocable": {
       "type": "boolean",
-      "description": "Whether the operator can invoke the skill directly through the Skill tool."
+      "description": "Source-corpus spelling: whether the operator can invoke the skill directly (false hides it from the operator's skill menu where the harness supports that)."
+    },
+    "user-invocable": {
+      "type": "boolean",
+      "description": "Claude Code spelling of userInvocable (https://code.claude.com/docs/en/skills). The claude_code install and the plugin assembler emit it in place of userInvocable; Claude Code ignores the camelCase key."
     },
     "disable-model-invocation": {
       "type": "boolean",

@@ -9,7 +9,11 @@ import re
 from pathlib import Path
 from typing import Final
 
-from apothem.lib.frontmatter import field_value, field_value_in_text
+from apothem.lib.frontmatter import (
+    field_value,
+    field_value_in_text,
+    split_frontmatter,
+)
 
 
 def _strip_markdown_frontmatter(text: str) -> str:
@@ -130,6 +134,33 @@ _CODEX_USER_ONLY_POLICY: Final[str] = (
 )
 
 
+#: Source skill keys renamed to the spelling Claude Code reads. Claude Code
+#: reads ``user-invocable`` and silently ignores unknown keys such as the
+#: source corpus's ``userInvocable`` (https://code.claude.com/docs/en/skills,
+#: retrieved 2026-10-02). Only key names are translated; values are kept.
+CLAUDE_CODE_SKILL_KEY_RENAMES: Final[dict[str, str]] = {
+    "userInvocable": "user-invocable",
+}
+
+
+def _rename_frontmatter_keys(text: str, renames: dict[str, str]) -> str:
+    """Return *text* with top-level frontmatter keys renamed per *renames*.
+
+    Only unindented ``key:`` lines inside the byte-0 frontmatter block change;
+    the body, nested keys and values are untouched.
+    """
+    parts = split_frontmatter(text)
+    if parts is None:
+        return text
+    block, rest = parts
+    lines = block.split("\n")
+    for index, line in enumerate(lines):
+        key, sep, value = line.partition(":")
+        if sep and key in renames:
+            lines[index] = f"{renames[key]}{sep}{value}"
+    return "\n".join(lines) + rest
+
+
 def _source_disables_model_invocation(skill_text: str) -> bool:
     """Return True when *skill_text* sets ``disable-model-invocation: true``."""
     value = field_value_in_text(skill_text, "disable-model-invocation") or ""
@@ -144,12 +175,21 @@ def _native_skill_emission(
     Sidecars map a skill-directory-relative POSIX path to file text. Harnesses
     without a skill-level translation get the text unchanged and no sidecars:
 
+    - ``claude_code``: source key names renamed to Claude Code's spelling
+      (:data:`CLAUDE_CODE_SKILL_KEY_RENAMES`).
     - ``codex``: ``agents/openai.yaml`` disabling implicit invocation for a
       skill whose source sets ``disable-model-invocation: true``.
     """
+    if harness_name == "claude_code":
+        return _rename_frontmatter_keys(skill_text, CLAUDE_CODE_SKILL_KEY_RENAMES), {}
     if harness_name == "codex" and _source_disables_model_invocation(skill_text):
         return skill_text, {_CODEX_POLICY_PATH: _CODEX_USER_ONLY_POLICY}
     return skill_text, {}
+
+
+def claude_code_skill_text(skill_text: str) -> str:
+    """Return a source ``SKILL.md`` in the form the Claude Code plugin ships."""
+    return _native_skill_emission("claude_code", skill_text)[0]
 
 
 def _command_skill_files(

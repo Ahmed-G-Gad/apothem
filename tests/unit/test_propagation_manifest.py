@@ -53,6 +53,7 @@ def test_manifest_install_entries_are_well_formed() -> None:
             "markdown_commands",
             "claude_rules",
             "qwen_agents",
+            "native_skills",
         ), f"unexpected mode '{entry.mode}' on entry {entry}"
 
 

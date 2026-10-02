@@ -30,6 +30,20 @@ allowed-tools: <comma-separated read-only tools and scoped rules, e.g. "Read, Gl
 ---
 ```
 
+## Per-harness emission
+
+Source skills use the keys above. Some harnesses read different keys, so the
+install translates them for that harness only:
+
+| Harness | What the install changes |
+| --- | --- |
+| Claude Code (install and plugin) | Renames `userInvocable` to `user-invocable`, the key Claude Code reads. Claude Code ignores the camelCase key, so without the rename a skill marked `userInvocable: false` would still show in the `/` menu. |
+| Codex | Leaves `SKILL.md` as is and writes `agents/openai.yaml` with `policy.allow_implicit_invocation: false` beside every skill whose source sets `disable-model-invocation: true`, because Codex ignores that key. |
+| Other harnesses | No change. |
+
+`skill.schema.json` accepts either spelling of the user-invocability flag and
+requires exactly one of them.
+
 ## Authoring discipline
 
 - **Folder-per-skill.** Every skill is its own folder with the entry

@@ -69,6 +69,7 @@ def test_run_install_user_scope_round_trip(tmp_path: Path) -> None:
             "qwen_agents",
             "gemini_commands",
             "markdown_commands",
+            "native_skills",
         }:
             assert target.is_dir()
         elif entry["mode"] == "write_text":

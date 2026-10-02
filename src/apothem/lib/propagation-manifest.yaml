@@ -81,9 +81,11 @@ harnesses:
         target: "${HARNESS_ROOT}/rules/"
         mode: claude_rules
         ownership_class: apothem-owned
+      # native_skills renames source skill keys to the spelling Claude Code
+      # reads (userInvocable -> user-invocable).
       - source: "skills/"
         target: "${HARNESS_ROOT}/skills/"
-        mode: merge_tree_entries
+        mode: native_skills
         ownership_class: apothem-owned
       # The Apothem-owned support subtree (templates, hooks, the conformity
       # gate, and its schema fixtures) lives under the shared `.apothem/`

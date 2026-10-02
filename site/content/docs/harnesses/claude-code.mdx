@@ -53,6 +53,13 @@ backed up before replacement; unrelated operator-authored entries are
 preserved. `settings.json` is merged so operator-authored keys remain
 recoverable.
 
+Installed skills, and the skills bundled in the Claude Code plugin, carry
+`user-invocable` instead of the source corpus's `userInvocable`, because Claude
+Code reads only the hyphenated key. The two template containers
+(`plan-suite`, `research-suite`) set it to `false`, so they stay out of the `/`
+menu. Every output style sets `keep-coding-instructions: true`, so selecting
+one keeps Claude Code's built-in software engineering instructions.
+
 ## Compatibility notes
 
 Command prompts are converted into skill directories; agents, rules, skills,
