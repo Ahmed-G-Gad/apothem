@@ -714,3 +714,5 @@ Full channel-routing guidance at [`SUPPORT.md`](https://github.com/ahmed-g-gad/a
 The canonical contributor list is at [`AUTHORS`](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS). Third-party licenses are cataloged at [`LICENSES/`](https://github.com/ahmed-g-gad/apothem/tree/main/LICENSES) under the [REUSE](https://reuse.software/) specification.
 
 Apothem stands on the harness ecosystem's open foundation: every supported harness is an independent project authored and maintained by its respective creators. The adapter layer translates between schemas; the harnesses themselves are credit to their authors.
+
+Product names, logos and brand colors of the supported harnesses are trademarks of their respective owners. Apothem uses the names only to identify the tools it configures. Apothem is an independent project and is not affiliated with, sponsored by or endorsed by any of them.
