@@ -85,6 +85,7 @@ is written to stdout:
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "install",
   "action": "installed",
@@ -103,6 +104,7 @@ For `--dry-run`:
 
 ```json
 {
+  "schema_version": 1,
   "status": "dry_run",
   "command": "install",
   "action": "dry_run",
@@ -142,6 +144,7 @@ Expected validation errors use the same envelope and include an error object:
 
 ```json
 {
+  "schema_version": 1,
   "status": "error",
   "command": "install",
   "harness": "all",

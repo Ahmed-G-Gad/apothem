@@ -45,6 +45,11 @@ _VENDOR_DIR = Path(__file__).resolve().parent / "_vendor"
 
 _EXIT_EXPECTED = 1
 
+#: The CLI JSON contract version (``apothem.cli._json_formatter``), repeated
+#: here because this module must not import the CLI package; a test keeps the
+#: two equal.
+JSON_SCHEMA_VERSION = 1
+
 
 def prepend_vendor_dir() -> None:
     """Move the vendored dependency directory to ``sys.path[0]`` (idempotent)."""
@@ -113,6 +118,7 @@ def report_missing_prerequisites(
     error = dependency_error(missing)
     if _json_requested(argv):
         envelope = {
+            "schema_version": JSON_SCHEMA_VERSION,
             "status": "error",
             "command": None,
             "harness": None,

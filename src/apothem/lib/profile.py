@@ -474,6 +474,11 @@ def load_profile_file(profile_path: Path) -> CanonicalProfile:
     return validate_profile(raw_profile, profile_path=resolved)
 
 
+def current_schema_version() -> int:
+    """Return the highest profile-schema version this engine reads and writes."""
+    return _CURRENT_SCHEMA_VERSION
+
+
 # Ordered profile-schema migration chain. Each entry maps a source version N to
 # a callable that returns the profile upgraded to version N+1. The chain is a
 # no-op while only v1 exists; a future v1->v2 migration registers as

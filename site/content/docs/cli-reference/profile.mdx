@@ -53,7 +53,10 @@ preserved unless `--force` is supplied.
 
 ### `profile show`
 
-Display the validated, default-expanded shared profile.
+Display the validated, default-expanded shared profile. With `--json` the
+document is the profile itself, led by `schema_version`: the profile schema
+version the engine read it as (see the
+[JSON output contract](/docs/cli-reference#json-output-contract)).
 
 ### `profile set KEY VALUE`
 

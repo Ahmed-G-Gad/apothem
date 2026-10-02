@@ -40,6 +40,7 @@ from apothem.cli._json_formatter import emit_json
 from apothem.lib.profile import (
     PROFILE_NOT_FOUND_FIX,
     ProfileValidationError,
+    current_schema_version,
     validate_profile,
 )
 
@@ -92,7 +93,9 @@ def profile_show(
         )
         return
     if fmt == "json":
-        emit_json(data)
+        # The document is a profile, so its schema_version is the profile
+        # schema version (the JSON contract's rule for versioned artifacts).
+        emit_json({"schema_version": current_schema_version(), **data})
     else:
         con.print_json(data=data)
 

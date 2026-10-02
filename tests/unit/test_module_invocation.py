@@ -183,6 +183,7 @@ def test_missing_prerequisites_honor_json_mode() -> None:
     payload = json.loads(result.stdout)
     assert payload["status"] == "error"
     assert payload["error"]["code"] == "runtime.dependency_missing"
+    assert payload["schema_version"] == 1
     assert f"{sys.executable} -m pip install" in payload["error"]["fix"]
 
 

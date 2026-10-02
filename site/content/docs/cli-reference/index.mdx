@@ -34,6 +34,29 @@ themselves.
 | [doctor](/docs/cli-reference/doctor) | Run system diagnostics for the Apothem installation. |
 | [completion](/docs/cli-reference/completion) | Emit a sourceable shell-completion script (bash, zsh, fish, powershell). |
 
+## JSON output contract
+
+Every command accepts `--json` (shorthand for `--format json`) and then writes
+exactly one JSON document to stdout. Each document starts with a top-level
+`schema_version` key, an integer that is `1` today:
+
+```json
+{"schema_version": 1, "status": "success", "command": "verify", "...": "..."}
+```
+
+- **Stability.** Within one `schema_version`, changes are additive: a new key
+  can appear, but no key is renamed or removed and no value changes type.
+  Anything else increases `schema_version`.
+- **Versioned artifacts.** `profile show --json` emits the profile itself, so
+  its `schema_version` is the profile schema version (also `1` today).
+- **One exception.** `harnesses list --json` emits a JSON array (one object
+  per harness), as it always has, so it has no top-level key to carry the
+  version. Wrapping it in an object would break existing parsers; until a
+  version bump does that, treat its shape as `schema_version` `1`.
+- **Errors.** Expected failures use the same document shape with
+  `"status": "error"` and an `error` object carrying `code`, `field`,
+  `reason`, and `fix`.
+
 For slash commands and the higher-level CLI overview, see the
 [CLI overview](/docs/reference/cli) and [Slash commands](/docs/reference/commands)
 reference pages.

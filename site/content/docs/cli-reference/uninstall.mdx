@@ -48,13 +48,13 @@ The continuous-form alias `apothem uninstalling` resolves to the same handler.
 When the adapter is installed and successfully removed:
 
 ```json
-{"action": "uninstalled", "harness": "claude-code", "output_path": "..."}
+{"schema_version": 1, "action": "uninstalled", "harness": "claude-code", "output_path": "..."}
 ```
 
 When the adapter was not installed:
 
 ```json
-{"status": "not_installed", "harness": "claude-code"}
+{"schema_version": 1, "status": "not_installed", "harness": "claude-code"}
 ```
 
 ## Examples
