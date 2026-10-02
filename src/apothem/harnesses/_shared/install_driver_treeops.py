@@ -1,6 +1,10 @@
 # SPDX-License-Identifier: MIT
 
-"""Directory tree replace / sweep / single-file-directory write primitives."""
+"""Directory tree replace / sweep / generated-directory write primitives.
+
+Also holds the skill-directory emission helpers the ``native_skills`` install
+mode and its dry-run preview share.
+"""
 
 from __future__ import annotations
 
@@ -10,11 +14,14 @@ import shutil
 from pathlib import Path
 
 from .install_driver_backup import _replace_path, backup_existing, write_bytes_safely
+from .install_driver_converters import _native_skill_emission
 from .install_driver_pathsafety import _validate_target_path
 from .install_driver_types import (
     IgnoreFn,
+    MaterializationOutcome,
     MaterializationResult,
     _handle_rm_error,
+    _is_excluded_path,
     _result,
 )
 
@@ -189,6 +196,90 @@ def _single_file_directory_matches(
     )
 
 
+def _generated_directory_matches(
+    directory: Path,
+    files: dict[str, bytes],
+    ignore: IgnoreFn | None = None,
+) -> bool:
+    """Return True when *directory* holds exactly *files* (relative POSIX paths).
+
+    *ignore* filters the on-disk side, so interpreter artifacts that collect
+    beside installed scripts do not read as drift.
+    """
+    if not directory.is_dir():
+        return False
+    on_disk = {path.as_posix() for path in _iter_relative_files(directory, ignore)}
+    if on_disk != set(files):
+        return False
+    return all((directory / name).read_bytes() == data for name, data in files.items())
+
+
+def _write_generated_directory(
+    directory: Path,
+    files: dict[str, bytes],
+    *,
+    root: Path,
+    harness_name: str,
+    operation: str,
+    source: Path,
+    allowed_root: Path,
+    ignore: IgnoreFn | None = None,
+) -> MaterializationResult:
+    """Replace or create a generated directory holding exactly *files*.
+
+    The multi-file form of :func:`_write_single_file_directory`: an unchanged
+    directory is left alone; otherwise the old one is backed up and removed,
+    and every file is written through the safe-write primitive.
+    """
+    target_error = _validate_target_path(
+        directory,
+        allowed_root=allowed_root,
+        operation=operation,
+    )
+    if target_error is not None:
+        return target_error
+    if _generated_directory_matches(directory, files, ignore):
+        return _result(
+            "unchanged",
+            operation,
+            directory,
+            "generated directory already matches",
+            source=source,
+        )
+    removed = _replace_path(
+        directory,
+        install_root=root,
+        harness_name=harness_name,
+        allowed_root=allowed_root,
+    )
+    if removed is not None and removed.outcome == "error":
+        return removed
+    for name in sorted(files):
+        target = directory / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        write_result = write_bytes_safely(
+            target,
+            files[name],
+            install_root=root,
+            harness_name=harness_name,
+            operation=operation,
+            source=source,
+            allowed_root=allowed_root,
+        )
+        if write_result.outcome == "error":
+            return write_result
+    return _result(
+        "updated" if removed else "created",
+        operation,
+        directory,
+        "wrote generated directory",
+        source=source,
+        backup_path=Path(removed.backup_path)
+        if removed and removed.backup_path
+        else None,
+    )
+
+
 def _write_single_file_directory(
     directory: Path,
     filename: str,
@@ -246,3 +337,77 @@ def _write_single_file_directory(
         if removed and removed.backup_path
         else None,
     )
+
+
+def _skill_children(
+    src: Path, ignore: IgnoreFn | None, exclude: list[str] | None
+) -> list[Path]:
+    """Return the direct children of a skills cohort that propagate.
+
+    The same selection ``merge_tree_entries`` makes: manifest ``exclude``
+    globs and per-directory filters both drop a child.
+    """
+    children: list[Path] = []
+    for source_path in sorted(src.iterdir()):
+        if _is_excluded_path(source_path, exclude or []):
+            continue
+        if ignore is not None and source_path.name in ignore(
+            str(src), [source_path.name]
+        ):
+            continue
+        children.append(source_path)
+    return children
+
+
+def _native_skill_dir_files(
+    skill_dir: Path, *, harness_name: str, ignore: IgnoreFn | None
+) -> dict[str, bytes]:
+    """Return a skill directory's emitted files for *harness_name*.
+
+    Every source file is carried byte-for-byte except ``SKILL.md``, which goes
+    through the harness's skill emission; the emission's sidecar files are
+    added unless the source already ships a file at that path.
+    """
+    files = {
+        rel.as_posix(): (skill_dir / rel).read_bytes()
+        for rel in _iter_relative_files(skill_dir, ignore)
+    }
+    skill_md = skill_dir / "SKILL.md"
+    if skill_md.is_file():
+        text, sidecars = _native_skill_emission(
+            harness_name, skill_md.read_text(encoding="utf-8")
+        )
+        files["SKILL.md"] = text.encode("utf-8")
+        for name, body in sidecars.items():
+            files.setdefault(name, body.encode("utf-8"))
+    return files
+
+
+def preview_native_skills(
+    *,
+    src: Path,
+    dst: Path,
+    ignore: IgnoreFn | None,
+    exclude: list[str] | None,
+    harness_name: str,
+) -> list[MaterializationOutcome]:
+    """Classify each child a ``native_skills`` install would write, no writes."""
+    outcomes: list[MaterializationOutcome] = []
+    for source_path in _skill_children(src, ignore, exclude):
+        target = dst / source_path.name
+        if source_path.is_dir():
+            files = _native_skill_dir_files(
+                source_path, harness_name=harness_name, ignore=ignore
+            )
+            matches = _generated_directory_matches(target, files, ignore)
+        elif source_path.is_file():
+            matches = target.is_file() and (
+                target.read_bytes() == source_path.read_bytes()
+            )
+        else:
+            continue
+        if matches:
+            outcomes.append("unchanged")
+        else:
+            outcomes.append("updated" if target.exists() else "created")
+    return outcomes

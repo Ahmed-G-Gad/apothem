@@ -22,8 +22,16 @@ skills.
 
 **Files written:** `~/.codex/AGENTS.md`, `~/.codex/hooks.json`,
 `~/.codex/hooks/`, `~/.codex/agents/*.toml`,
-`~/.agents/skills/*/SKILL.md`, and support files under
+`~/.agents/skills/*/SKILL.md`, `~/.agents/skills/*/agents/openai.yaml` for
+user-invoked skills, and support files under
 `~/.config/apothem/{rules,templates}/`.
+
+**User-invoked skills.** Codex ignores the `disable-model-invocation` key. For
+every skill or command whose source sets `disable-model-invocation: true`, the
+adapter writes `agents/openai.yaml` beside its `SKILL.md` with
+`policy.allow_implicit_invocation: false`, so Codex does not pick the skill on
+its own; you can still run it explicitly with `$skill-name`. See the
+[Codex skills documentation](https://developers.openai.com/codex/skills).
 
 ## Profile-to-native-config mapping
 

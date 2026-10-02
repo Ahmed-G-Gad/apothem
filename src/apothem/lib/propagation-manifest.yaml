@@ -224,9 +224,12 @@ harnesses:
         target: "${HARNESS_ROOT}/../.config/apothem/rules/"
         mode: merge_tree_entries
         ownership_class: apothem-owned
+      # native_skills / command_skills write agents/openai.yaml with
+      # policy.allow_implicit_invocation: false beside each SKILL.md whose
+      # source sets disable-model-invocation: true (Codex ignores that key).
       - source: "skills/"
         target: "${HARNESS_ROOT}/../.agents/skills/"
-        mode: merge_tree_entries
+        mode: native_skills
         ownership_class: apothem-owned
       - source: "commands/"
         target: "${HARNESS_ROOT}/../.agents/skills/"

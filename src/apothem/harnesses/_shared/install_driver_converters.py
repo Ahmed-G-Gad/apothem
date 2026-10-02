@@ -7,8 +7,9 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
+from typing import Final
 
-from apothem.lib.frontmatter import field_value
+from apothem.lib.frontmatter import field_value, field_value_in_text
 
 
 def _strip_markdown_frontmatter(text: str) -> str:
@@ -114,6 +115,56 @@ def _generated_skill_text(
     if "## Installed Reference Paths" in text:
         return text
     return text.rstrip() + "\n" + reference_note
+
+
+#: Codex policy file written beside a user-only skill's ``SKILL.md``. Codex
+#: ignores ``disable-model-invocation``; it reads
+#: ``policy.allow_implicit_invocation`` (default ``true``) from
+#: ``agents/openai.yaml``, and ``false`` still allows explicit ``$skill``
+#: invocation (https://developers.openai.com/codex/skills, retrieved 2026-10-02).
+_CODEX_POLICY_PATH: Final[str] = "agents/openai.yaml"
+_CODEX_USER_ONLY_POLICY: Final[str] = (
+    "# Written by Apothem: the skill sets disable-model-invocation: true.\n"
+    "policy:\n"
+    "  allow_implicit_invocation: false\n"
+)
+
+
+def _source_disables_model_invocation(skill_text: str) -> bool:
+    """Return True when *skill_text* sets ``disable-model-invocation: true``."""
+    value = field_value_in_text(skill_text, "disable-model-invocation") or ""
+    return value.strip().lower() == "true"
+
+
+def _native_skill_emission(
+    harness_name: str, skill_text: str
+) -> tuple[str, dict[str, str]]:
+    """Return a harness's ``SKILL.md`` text and its sidecar files.
+
+    Sidecars map a skill-directory-relative POSIX path to file text. Harnesses
+    without a skill-level translation get the text unchanged and no sidecars:
+
+    - ``codex``: ``agents/openai.yaml`` disabling implicit invocation for a
+      skill whose source sets ``disable-model-invocation: true``.
+    """
+    if harness_name == "codex" and _source_disables_model_invocation(skill_text):
+        return skill_text, {_CODEX_POLICY_PATH: _CODEX_USER_ONLY_POLICY}
+    return skill_text, {}
+
+
+def _command_skill_files(
+    source_path: Path, *, harness_name: str, install_root: Path
+) -> dict[str, bytes]:
+    """Return the files of a command rendered as a native skill directory."""
+    text, sidecars = _native_skill_emission(
+        harness_name,
+        _generated_skill_text(
+            source_path, harness_name=harness_name, install_root=install_root
+        ),
+    )
+    files = {name: body.encode("utf-8") for name, body in sidecars.items()}
+    files["SKILL.md"] = text.encode("utf-8")
+    return files
 
 
 def _agent_body(source_path: Path) -> str:

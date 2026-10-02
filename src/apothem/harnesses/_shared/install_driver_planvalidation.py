@@ -87,7 +87,7 @@ def _generated_targets_for_entry(
         return [dst]
     if not src.is_dir():
         return []
-    if entry.mode == "merge_tree_entries":
+    if entry.mode in {"merge_tree_entries", "native_skills"}:
         return [
             dst / source_path.name
             for source_path in sorted(src.iterdir())

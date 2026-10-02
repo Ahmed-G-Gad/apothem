@@ -6,7 +6,8 @@ Provides three layers of inspection:
 
 * :func:`extract_frontmatter` — return the raw YAML block.
 * :func:`field_value` — return the value of a single declared field as a string,
-  or ``None`` when the field is absent.
+  or ``None`` when the field is absent (:func:`field_value_in_text` reads
+  in-memory text instead of a file).
 * :func:`has_field` / :func:`has_all_fields` — boolean presence checks.
 * :func:`split_frontmatter` — split text into a byte-0 frontmatter block and
   the remainder, for emitters that must keep frontmatter first.
@@ -73,6 +74,11 @@ def extract_frontmatter(path: Path) -> str | None:
         text = path.read_text(encoding="utf-8", errors="replace")
     except OSError:
         return None
+    return _frontmatter_block(text)
+
+
+def _frontmatter_block(text: str) -> str | None:
+    """Return the YAML block of *text*, skipping one leading HTML comment."""
     text = _LEADING_HTML_COMMENT.sub("", text, count=1)
     match = _FRONTMATTER_BLOCK.match(text)
     return match.group(1) if match else None
@@ -92,7 +98,20 @@ def field_value(path: Path, field_name: str) -> str | None:
     Returns:
         Stripped, dequoted value, or ``None`` when the field is absent.
     """
-    block = extract_frontmatter(path)
+    return _block_field_value(extract_frontmatter(path), field_name)
+
+
+def field_value_in_text(text: str, field_name: str) -> str | None:
+    """Return the value of ``field_name`` from the frontmatter of *text*.
+
+    The in-memory twin of :func:`field_value`, for emitters that hold rendered
+    text rather than a source path. Same parsing rules and return contract.
+    """
+    return _block_field_value(_frontmatter_block(text), field_name)
+
+
+def _block_field_value(block: str | None, field_name: str) -> str | None:
+    """Return the dequoted scalar value of ``field_name`` in a YAML *block*."""
     if block is None:
         return None
     pattern = re.compile(
