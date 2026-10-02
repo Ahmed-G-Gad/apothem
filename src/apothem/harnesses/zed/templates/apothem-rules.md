@@ -2,7 +2,7 @@
 
 # Apothem — Zed Bootstrap
 
-This file is materialised by `apothem install --harness zed --project <path>` and lands at `<project>/.rules`, the current Zed project agent-instruction surface per https://zed.dev/docs/ai/instructions. Zed auto-includes this flat project-root file (alongside the `AGENTS.md` / `CLAUDE.md` family) as agent instructions; there is no per-tool rules directory, so the whole apothem surface folds into a sentinel-delimited managed block in this single file. Any operator prose in a pre-existing `.rules` outside the sentinels is preserved; the prior file is backed up under the Apothem backup root before the block is written.
+This file is materialised by `apothem install --harness zed --project <path>` and lands at `<project>/.rules`, the current Zed project agent-instruction surface per https://zed.dev/docs/ai/instructions. Zed reads the first project instruction file it finds and `.rules` comes first, so this file takes the place of any `AGENTS.md` or `CLAUDE.md` for Zed; there is no per-tool rules directory, so the whole apothem surface folds into a sentinel-delimited managed block in this single file. Any operator prose in a pre-existing `.rules` outside the sentinels is preserved; the prior file is backed up under the Apothem backup root before the block is written.
 
 ## What Apothem governs in this project
 

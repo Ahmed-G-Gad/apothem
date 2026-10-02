@@ -346,12 +346,26 @@ def _materialize(
                             f"{escape(warning.message)}"
                         )
                 else:
-                    count = len(materialization.warnings)
-                    noun = "capability" if count == 1 else "capabilities"
-                    con.print(
-                        f"[dim]Note:[/] {harness_id} - {count} {noun} not "
-                        "projected; pass --verbose for detail"
-                    )
+                    # Only capability-projection cells collapse into the grouped
+                    # count; any other adapter warning (an instruction file an
+                    # install hides, a data surface it could not create) prints
+                    # on its own line, because the grouped Note would misreport
+                    # it as a capability.
+                    capability_count = 0
+                    for warning in materialization.warnings:
+                        if warning.operation == "capability_projection":
+                            capability_count += 1
+                            continue
+                        con.print(
+                            f"[yellow]Warning:[/] {harness_id} - "
+                            f"{escape(warning.message)}"
+                        )
+                    if capability_count:
+                        noun = "capability" if capability_count == 1 else "capabilities"
+                        con.print(
+                            f"[dim]Note:[/] {harness_id} - {capability_count} {noun} "
+                            "not projected; pass --verbose for detail"
+                        )
             if dry_run:
                 con.print(
                     f"[bold yellow]DRY RUN[/] would {verb_present} "

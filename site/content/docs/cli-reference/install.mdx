@@ -57,7 +57,9 @@ Each adapter projects only the capabilities its harness supports natively;
 capabilities with no native surface are reported, not silently dropped. In plain
 mode this is a single grouped note per harness (for example
 `Note: <harness> - 9 capabilities not projected; pass --verbose for detail`);
-under `--verbose` each capability prints its own rationale line. The
+under `--verbose` each capability prints its own rationale line. Any other
+adapter warning prints on its own `Warning:` line in plain mode too, for example
+the Zed warning that names an instruction file the new `.rules` hides. The
 `--format json` envelope always carries the full `warnings` array regardless of
 verbosity.
 
