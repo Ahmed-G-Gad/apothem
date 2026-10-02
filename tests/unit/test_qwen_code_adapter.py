@@ -86,7 +86,47 @@ def test_materializer_emits_qwen_hook_schema(monkeypatch: pytest.MonkeyPatch) ->
         '/usr/bin/python3.12 "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py" '
         "PreToolUse pretooluse-bash"
     )
-    assert first_hook["timeout"] == 10000
+    # Qwen reads command-hook timeouts in seconds (a value of 1000 or more is
+    # only accepted as legacy milliseconds).
+    assert first_hook["timeout"] == 10
+
+
+def _hook_entries(parsed: dict[str, object]) -> dict[str, list[dict[str, object]]]:
+    """Return every emitted hook handler grouped by event name."""
+    hooks = parsed["hooks"]
+    assert isinstance(hooks, dict)
+    grouped: dict[str, list[dict[str, object]]] = {}
+    for event, blocks in hooks.items():
+        for block in blocks:
+            grouped.setdefault(event, []).extend(block["hooks"])
+    return grouped
+
+
+def test_materializer_hook_timeouts_are_seconds(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Qwen Code documents command-hook ``timeout`` in seconds and reads a value
+    # of 1000 or more as legacy milliseconds. Every emitted timeout must be a
+    # seconds value: PreToolUse 10 s, session-lifecycle events 30 s, Stop 60 s.
+    from apothem.harnesses.qwen_code import materializer as qwen_materializer
+
+    monkeypatch.setattr(
+        qwen_materializer, "resolve_python_bin", lambda: Path("/usr/bin/python3")
+    )
+    grouped = _hook_entries(json.loads(materialize_native_config({})))
+    expected = {
+        "SessionStart": 30,
+        "PreToolUse": 10,
+        "PreCompact": 30,
+        "PostCompact": 30,
+        "Stop": 60,
+    }
+    assert set(grouped) == set(expected)
+    for event, handlers in grouped.items():
+        for handler in handlers:
+            assert handler["timeout"] == expected[event], (event, handler)
+            assert isinstance(handler["timeout"], int)
+            assert handler["timeout"] < 1000
 
 
 def test_materializer_hook_commands_resolve_a_real_interpreter(
