@@ -38,6 +38,26 @@ Tag conventions:
   each artifact and a SLSA-3 provenance release proof, both
   attached to the GitHub Release page.
 
+### Release model: additive
+
+Releases are additive. Each release adds one commit on `main` and one
+tag; `main` is never force-pushed, and no published tag, GitHub Release or
+npm version is deleted, moved or reused. The project has three releases,
+each with its tag, its GitHub Release and its npm version, and all three
+stay published. npm versions are immutable: a published `name@version` can
+never be replaced, and an unpublished number can never be used again. Pinned
+installs and reproducible builds depend on every published tag. The
+[release-cycle](/docs/runbooks/release-cycle) and
+[release-recovery](/docs/runbooks/release-recovery) runbooks both follow this
+model.
+
+The repository's release-facade rule (the Release Facade section of the
+contributor instructions, mirrored in the freshness-facade rule) asks for
+"one visible release tag, one GitHub Release". That contradicts this model:
+three releases exist, and npm cannot drop a published version. The rule is
+unchanged until the maintainer settles it. Until then the additive model
+governs, and nothing published is deleted or rewritten to satisfy the rule.
+
 ## 3. Deprecation policy
 
 The current public support line is the latest released minor. When the
@@ -79,15 +99,16 @@ Breaking changes require:
 If a release exhibits a regression that blocks adoption:
 
 1. **Revert** — the offending commit(s) are reverted on `main`.
-2. **Release-minus-one re-tag** — a follow-up release lands as
+2. **Fix-forward release** — a follow-up release lands as
    `vMAJOR.MINOR.PATCH+1` carrying the revert plus any
    incremental fixes. The previous bad release is **not**
-   deleted from GitHub Releases — a `### Yanked` annotation in
-   `CHANGELOG.md` documents the situation so reproducible
-   builds remain anchored.
+   deleted from GitHub Releases, and its npm version stays
+   published (npm versions are immutable) and is marked with
+   `npm deprecate`. A `### Yanked` annotation in `CHANGELOG.md`
+   documents the situation so reproducible builds remain anchored.
 3. **Communication** — a security-advisories notice (when
-   security-relevant) or a Discussions post (when
-   reliability-relevant) accompanies the rollback.
+   security-relevant) or a GitHub issue pinned for the incident
+   (when reliability-relevant) accompanies the rollback.
 
 ## See also
 

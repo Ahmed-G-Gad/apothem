@@ -11,15 +11,20 @@ terminates with a verified Release page, a filed CHANGELOG, and an
 install-path smoke confirming each user-facing surface answers the
 canonical install command.
 
-The release shape is **single-tag, two-stage**. One signed release tag on
-`main` triggers `.github/workflows/release.yml`, which builds, signs,
-attests, and publishes the GitHub Release with its full artifact set —
+The release model is **additive**. Each release adds one commit on `main`
+and one signed, annotated `vX.Y.Z` tag; nothing is force-pushed and no
+earlier tag, GitHub Release or npm version is removed. The project has three
+releases, each with its tag, its GitHub Release and its npm version, and all
+stay published: npm versions are immutable (a published `name@version` can
+never be replaced), and pinned installs depend on the tags.
+
+The tag push starts two workflows. `.github/workflows/release.yml` builds,
+signs, attests, and publishes the GitHub Release with its full artifact set:
 sdist, wheel, CycloneDX SBOM, Sigstore cosign bundles, SLSA-3 provenance,
-and the platform runtime archives. The optional second stage is a manual
-dispatch of `publish-npm.yml`, which publishes `@ahmed-g-gad/apothem` to
-npmjs.com after `scripts/release/check-release-ready.sh` is green. The
-versioned CHANGELOG section is authored alongside the tag commit; the
-operator runs the install-path smoke after both stages land.
+and the platform runtime archives. `publish-npm.yml` publishes
+`@ahmed-g-gad/apothem` to npmjs.com through npm trusted publishing. The
+versioned CHANGELOG section lands in the release commit; the operator runs
+the install-path smoke after both workflows finish.
 
 ## 1. Prerequisites
 
@@ -134,18 +139,21 @@ signing with an aggregated `SHA256SUMS` manifest, and the final GitHub
 Release publish. The maintainer scans the `publish GitHub Release` job
 log for the asset-upload confirmations.
 
-### 2.4 Dispatch the npm publish (optional stage)
+### 2.4 Confirm the npm publish
 
-After the GitHub Release and the readiness gate are green:
+The tag push also runs `publish-npm.yml`. Approve the `release` environment
+deployment when prompted. The workflow publishes `@ahmed-g-gad/apothem@X.Y.Z`
+to npmjs.com through npm trusted publishing (OIDC); no registry token is
+stored in the repository. Then confirm readiness:
 
 ```bash
 bash scripts/release/check-release-ready.sh vX.Y.Z
-gh workflow run publish-npm.yml --field tag=vX.Y.Z
 ```
 
-Approve the `release` environment deployment when prompted. The workflow
-publishes `@ahmed-g-gad/apothem@X.Y.Z` to npmjs.com via npm Trusted
-Publishing (OIDC); no registry token is stored in the repository.
+To publish again after a failed run, dispatch the workflow for the same tag
+(`gh workflow run publish-npm.yml --field tag=vX.Y.Z`). It skips publication
+when the version is already on the registry, because npm versions are
+immutable.
 
 ## 3. Distribution Surfaces
 
@@ -164,7 +172,7 @@ here?":
 
 The GitHub Release is the canonical artifact surface; the npm package and
 the script installers are the install paths layered on top of it. The npm
-publish is deliberately the last stage.
+publish runs beside the release workflow on the same tag push.
 
 ## 4. CHANGELOG discipline
 
@@ -268,7 +276,7 @@ and the npm publisher:
 | `release.yml` job fails on a single stage | `gh run view <run-id> --log` names the failing job (build, which also writes the SBOM / sign / provenance / archive / publish) | Re-run the failed job alone via `gh run rerun <run-id> --failed`; if the failure repeats, fix the job's input at its source before retagging |
 | SLSA provenance verification fails | The `verify SLSA provenance artifact` job exits non-zero | Inspect the provenance artifact for subject-digest mismatch; rebuild from the same tag — provenance binds to the exact artifact digests, so any artifact regeneration requires a full workflow rerun |
 | npmjs.com publish rejected | The npm job exits non-zero during `npm publish`; a registry `404` during `PUT` is an authorization / trusted-publisher mismatch, not proof that the package code is missing | Verify npm Trusted Publishing for `@ahmed-g-gad/apothem` names owner `ahmed-g-gad`, repository `apothem`, workflow `publish-npm.yml`, and allowed action `npm publish`; confirm the job runs with the Node version and npm CLI OIDC floor pinned in the workflow |
-| Tag visible but assets missing | `gh release view vX.Y.Z` returns a stub release | Re-run the release workflow's publish job; if the stub persists, delete the release page (`gh release delete vX.Y.Z --cleanup-tag`) and re-tag from the same SHA |
+| Tag visible but assets missing | `gh release view vX.Y.Z` returns a stub release | Re-run the release workflow's publish job; it edits the existing release and re-uploads every asset. Delete and re-tag only when nothing from the tag reached users (no assets, no npm version); otherwise fix forward with the next patch release ([release-recovery runbook](/docs/runbooks/release-recovery) §2) |
 
 If a recovery cycle fails to land a surface within one diagnostic
 pass, the surface is logged as a known-failure in the release notes
@@ -281,9 +289,10 @@ working surfaces while the broken one is fixed in a patch release.
   [publisher-account-setup runbook](/docs/runbooks/publisher-account-setup)
   establishes the npm trusted-publisher binding and the GitHub-side
   prerequisites this runbook assumes.
-- **Recovery flow.** The release-recovery runbook (`site/content/docs/runbooks/release-recovery.mdx`) governs the cross-stage failure path
-  during a release cutover, not the per-surface release
-  failures named in §6.
+- **Recovery flow.** The [release-recovery runbook](/docs/runbooks/release-recovery)
+  follows the same additive model: it recovers a failed tag or publisher
+  stage by stage and rolls back by releasing the fix as a new patch version,
+  never by deleting or re-pointing a published tag, release or npm version.
 - **Pages enablement.** The `publish-static-site.yml` workflow
   validates and deploys the project website to the custom domain; the
   Pages-enablement runbook (`site/content/docs/runbooks/pages-enablement.mdx`)

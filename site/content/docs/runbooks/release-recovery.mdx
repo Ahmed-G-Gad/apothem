@@ -1,105 +1,108 @@
 ---
 title: "Release-recovery runbook"
-description: "Recovery procedures for restoring the repository when a release sequence fails mid-flight, with stage-by-stage diagnostics."
+description: "Recovery procedures for a release that fails mid-flight under the additive release model, stage by stage, without rewriting published history."
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-This runbook restores `ahmed-g-gad/apothem` to a working state when a
-clean-slate-in-place release sequence fails mid-flight. The public repository is
-not deleted or recreated during the release. Recovery depends on the
-release-specific history safety tag, the maintainer's local clone, and
-downstream package-manager state.
+This runbook restores a working state when a `vX.Y.Z` release of
+`ahmed-g-gad/apothem` fails part-way. It follows the same release model as the
+[release-cycle runbook](/docs/runbooks/release-cycle): an **additive** model.
+Each release adds one commit on `main` and one signed, annotated tag; the tag
+push runs the release and npm workflows. Nothing is force-pushed, and history
+on `main` is never rewritten.
+
+Published history is permanent. Every release tag, GitHub Release and npm
+version the project has published stays published: the project has three
+releases, each with its tag, its GitHub Release and its npm version. npm
+versions are immutable: a published `name@version` can never be replaced, and
+a version number that was unpublished can never be used again. Recovery
+therefore moves forward with a new patch release; it does not delete or
+re-point anything a user may already have installed.
 
 ## 1. Stage taxonomy
 
 | Stage | Action | Failure mode | Recovery path |
 |---|---|---|---|
-| 1 | Capture and push the history safety tag | The tag is missing, unsigned, or points at the wrong graph | Recreate the tag from the pre-squash merge point before moving `main` |
-| 2 | Verify CI, audit fortress, package state, and changelog | Any gate fails | Stop; fix locally; do not move `main` |
-| 3 | Move `main` to the signed single release commit | Force-with-lease fails, the commit is unsigned, or the commit message is wrong | Reset local `main` to the intended signed commit and retry with a fresh lease |
-| 4 | Publish GitHub Release, Pages, npm, and metadata | A publisher or verification surface fails | Keep the release commit; rerun only the failed publisher after recording the failure |
+| 1 | Land the release commit on `main` (§2.1 of the release-cycle runbook) | CI fails on the release commit | Fix forward with another commit on `main`; do not tag until CI is green |
+| 2 | Push the signed, annotated tag | The push is rejected, or the tag is unsigned or on the wrong commit | §2 below |
+| 3 | `release.yml` builds, signs and publishes the GitHub Release | A job fails, or assets are missing | §3 below |
+| 4 | `publish-npm.yml` publishes `@ahmed-g-gad/apothem` (runs on the same tag push) | The publish fails | §3 below |
+| 5 | Pages and repository metadata | The site or metadata is stale | §3 below |
 
 Every recovery action is idempotent. Running it on a clean state is a no-op;
 running it on a partial state restores the expected post-stage condition.
 
-## 2. Safety-tag recovery
+## 2. Tag recovery
 
-Verify the safety tag before any history rewrite:
+Diagnose the tag:
 
 ```bash
 git fetch origin --tags
-git show --summary --show-signature <history-safety-tag>
-git merge-base --is-ancestor origin/main <history-safety-tag>
+git ls-remote origin refs/tags/vX.Y.Z
+git cat-file -t vX.Y.Z      # "tag" for an annotated tag
+git tag -v vX.Y.Z           # signature check
 ```
 
-Expected: the tag exists, signature verification succeeds when the tag is
-signed, and the full pre-squash graph is reachable from the tag. If the tag is
-missing locally but present remotely, fetch it. If it is missing remotely, stop
-the release and recreate it before touching `main`:
+What to do depends on whether anything was published from the tag:
 
-```bash
-git tag -s <history-safety-tag> <pre-squash-commit>
-git push origin <history-safety-tag>
-```
+- **Nothing published yet** (the release workflow failed before its publish
+  job, and `publish-npm.yml` did not publish): delete the tag and re-tag the
+  same commit with `-a -s`.
 
-## 3. Main-branch recovery
+  ```bash
+  git push --delete origin vX.Y.Z
+  git tag -d vX.Y.Z
+  git tag -a -s vX.Y.Z -m "vX.Y.Z" <release-commit-sha>
+  git push origin vX.Y.Z
+  ```
 
-Diagnose the public `main` state:
+- **Anything published** (a GitHub Release with assets, or the npm version):
+  never move, delete or reuse the tag. Fix forward with `vX.Y.(Z+1)`.
 
-```bash
-gh api repos/ahmed-g-gad/apothem/commits/main \
-  --jq '.sha, .commit.message, .commit.verification.verified, .commit.verification.reason'
-```
+A tag name is never reused for a different commit.
 
-Expected after the cutover: the message is exactly
-`release: Apothem <release-version>` and `verification.verified` is `true`.
+## 3. Publisher recovery
 
-If the force-with-lease push failed before changing GitHub, leave the remote as
-is, fetch it, rebuild the signed release commit locally, and retry only after
-the lease matches:
-
-```bash
-git fetch origin main
-git push --force-with-lease=main:<expected-remote-sha> origin main
-```
-
-If the push landed with an unsigned or unverified commit, fix the local signing
-configuration, re-create the release commit from the same tree, and force-push
-again with a lease. Do not delete the safety tag.
-
-## 4. Publisher recovery
-
-Each publisher is retried independently after the GitHub release commit is
-verified:
+Each publisher is retried on its own:
 
 | Surface | Diagnostic | Recovery |
 |---|---|---|
-| GitHub Release | `gh release view <release-tag> --json tagName,isDraft,isPrerelease,assets` | Delete only a malformed draft; otherwise upload missing assets with `gh release upload --clobber` |
-| Release tag | `git ls-remote origin refs/tags/<release-tag>` and `git tag -v <release-tag>` | Re-tag from the same SHA with `-a -s` if the tag is missing or unsigned; never reuse a tag name for a different commit |
-| npm | `npm view @ahmed-g-gad/apothem version` and `npx @ahmed-g-gad/apothem@<version> --version` | Rerun `publish-npm.yml` for `<release-tag>` after confirming npm Trusted Publishing for `@ahmed-g-gad/apothem` |
-| Pages | `gh run list --workflow=publish-static-site.yml --limit=1` and `curl -sSI https://apothem.ahmedgad.com/` | Rerun `publish-static-site.yml`; verify the CNAME still resolves to `ahmed-g-gad.github.io` |
-| GitHub metadata | `gh repo view ahmed-g-gad/apothem --json description,homepageUrl,repositoryTopics,visibility` | Patch description, homepage, and topics in place; do not recreate the repo |
+| Release workflow | `gh run view <run-id> --log` names the failing job | `gh run rerun <run-id> --failed`. A failure at `Check the plugin version changed with the plugin` means the version was not bumped: see the release-cycle runbook's failure table |
+| GitHub Release | `gh release view vX.Y.Z --json tagName,isDraft,isPrerelease,assets` | Re-run the `publish GitHub Release` job; it edits the existing release and re-uploads assets with `--clobber` |
+| npm | `npm view @ahmed-g-gad/apothem version` and `npx @ahmed-g-gad/apothem@X.Y.Z --version` | Re-run `publish-npm.yml` for `vX.Y.Z` (`gh workflow run publish-npm.yml --field tag=vX.Y.Z`) after confirming npm trusted publishing for the package. If the version is already on the registry the workflow skips publication, since npm versions are immutable |
+| Pages | `gh run list --workflow=publish-static-site.yml --limit=1` and `curl -sSI https://apothem.ahmedgad.com/` | Re-run `publish-static-site.yml`; verify the CNAME still resolves to `ahmed-g-gad.github.io` |
+| Repository metadata | `gh repo view ahmed-g-gad/apothem --json description,homepageUrl,repositoryTopics,visibility` | Patch description, homepage and topics in place; never recreate the repository |
 
-## 5. Rollback
+## 4. Rollback
 
-Rollback is last resort. Prefer targeted publisher recovery first. If the
-single release commit must be backed out, restore `main` from the safety tag:
+A bad release is rolled back by releasing its fix, not by removing it:
 
-```bash
-git fetch origin --tags
-git switch main
-git reset --hard <history-safety-tag>
-git push --force-with-lease origin main
-```
+1. Revert the offending commits on `main` (an ordinary revert commit).
+2. Cut `vX.Y.(Z+1)` with the release-cycle runbook.
+3. Mark the bad version: add a `### Yanked` note to its `CHANGELOG.md`
+   section, edit its GitHub Release notes to point at the fix, and deprecate
+   it on npm:
 
-After rollback, re-run CI, re-apply branch protection if GitHub reports drift,
-and log the rollback as a release-blocking incident. Retain the release tag only
-if the release artifacts remain valid; otherwise delete the malformed release
-and tag before retrying.
+   ```bash
+   npm deprecate @ahmed-g-gad/apothem@X.Y.Z "Contains <defect>; use X.Y.(Z+1)"
+   ```
+
+The bad tag, GitHub Release and npm version stay published, so pinned installs
+and reproducible builds keep resolving. Log the rollback as a release incident.
+
+## 5. The release-facade rule
+
+The repository's release-facade rule (the Release Facade section of the
+contributor instructions) asks for one visible release tag and one GitHub
+Release. Practice keeps every release, and npm cannot comply: its versions are
+immutable. Until the maintainer settles that rule, this runbook follows the
+additive model above and never deletes or rewrites published tags, GitHub
+Releases or npm versions to meet it.
 
 ## 6. Cross-references
 
+- Release procedure: [release-cycle runbook](/docs/runbooks/release-cycle).
+- Release policy: [release-engineering policy](/docs/governance/release-engineering-policy).
+- Tag objects and how to verify each one: the release-signing section of
+  [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
 - Pages configuration: `site/content/docs/runbooks/pages-enablement.mdx`.
-- Release procedure: `site/content/docs/runbooks/release-cycle.mdx`.
-- Package recipes: `packaging/README.md`.
-- Recovery anchor: the release-specific history safety tag.
