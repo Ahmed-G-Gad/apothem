@@ -4,7 +4,7 @@
 
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
-import { COHORT_LOCALES, DEFAULT_LOCALE, ROUTED_NON_DEFAULT_LOCALES } from '@/lib/i18n';
+import { COHORT_LOCALES, DEFAULT_LOCALE, localeFromPathname } from '@/lib/i18n';
 
 /**
  * Language-of-parts markup for the site chrome (WCAG 3.1.2).
@@ -52,15 +52,19 @@ const ENGLISH_CHROME = new Set([
   'Documentation',
   'Change language',
   'Skip to content',
+  // Landing-page chrome (landing-nav, command-block, feature-matrix).
+  'Primary',
+  'Apothem on GitHub',
+  'Open menu',
+  'Close menu',
+  'Copy command',
+  'Copied command',
+  'not applicable',
+  'yes',
+  'no',
 ]);
 
 const LOCALE_BY_LABEL = new Map(COHORT_LOCALES.map((locale) => [locale.label, locale.code]));
-const TRANSLATED = new Set(ROUTED_NON_DEFAULT_LOCALES);
-
-function isTranslatedPath(pathname: string): boolean {
-  const first = pathname.split('/').filter(Boolean)[0];
-  return first !== undefined && first !== DEFAULT_LOCALE && TRANSLATED.has(first);
-}
 
 function mark(element: Element | null, lang: string): void {
   if (element && !element.hasAttribute('lang')) element.setAttribute('lang', lang);
@@ -86,7 +90,7 @@ function markChrome(englishChrome: boolean): void {
 export function ChromeLang() {
   const pathname = usePathname();
   useEffect(() => {
-    const englishChrome = isTranslatedPath(pathname);
+    const englishChrome = localeFromPathname(pathname) !== DEFAULT_LOCALE;
     let frame = 0;
     const schedule = () => {
       if (frame) return;

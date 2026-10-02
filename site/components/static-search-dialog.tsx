@@ -16,7 +16,8 @@ import {
   SearchDialogOverlay,
   type SharedProps,
 } from 'fumadocs-ui/components/dialog/search';
-import { useI18n } from 'fumadocs-ui/contexts/i18n';
+import { usePathname } from 'next/navigation';
+import { localeFromPathname } from '@/lib/i18n';
 
 /**
  * Static-export search dialog. The site is `output: 'export'`, so the search
@@ -26,13 +27,15 @@ import { useI18n } from 'fumadocs-ui/contexts/i18n';
  * `/api/search` route on static hosting. The default Fumadocs dialog uses
  * `fetchClient`, which POSTs queries to that non-existent route and returns the
  * whole index unfiltered. `oramaStaticClient` instead downloads the prebuilt
- * index once and runs Orama locally. The active locale (from the RootProvider i18n context)
- * selects the matching per-locale sub-index — the static i18n index is keyed by
- * the routed path form (`en`, `es`, `zh-cn`), exactly what `useI18n().locale`
- * carries here.
+ * index once and runs Orama locally. The active locale selects the matching
+ * per-locale index, keyed by the routed path form (`en`, `es`, `zh-cn`). It is
+ * read from the URL, not from `useI18n()`: the root provider mounts this dialog
+ * above the per-locale `I18nProvider` (components/locale-override.tsx), so the
+ * context there always reports English, and every translated page searched the
+ * English index.
  */
 export default function StaticSearchDialog(props: SharedProps) {
-  const { locale } = useI18n();
+  const locale = localeFromPathname(usePathname());
   const { search, setSearch, query } = useDocsSearch({
     // Per-locale static index: one file per routed locale at
     // `/api/search/<locale>`, split because the single combined index exceeded

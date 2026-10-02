@@ -15,7 +15,9 @@ derive from it rather than re-declaring it.
   `ROUTED_LOCALES` is the set wired into live Fumadocs routing (currently the
   full twelve-locale cohort), and `ROUTED_NON_DEFAULT_LOCALES` is that set minus
   the default (`en`). `DEFAULT_LOCALE` is the source locale served at the site
-  root with no path prefix. **This file is the single source of truth for the
+  root with no path prefix. `localeFromPathname` maps a URL path to its routed
+  locale for client components mounted above the per-locale i18n provider (the
+  search dialog); `i18n.test.mjs` covers it (run by `npm test`). **This file is the single source of truth for the
   routed-locale set** — build scripts (`build-llms-txt.mjs`,
   `check-search-index-sizes.mjs`, `export-to-dist.mjs`) re-parse it and fail on
   drift rather than hard-coding a divergent copy.
