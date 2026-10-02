@@ -33,6 +33,7 @@ from events import (
     HOOK_SPECIFIC_OUTPUT_EVENTS as _HOOK_SPECIFIC_OUTPUT_EVENTS,
 )
 from log import get_logger
+from message_text import strip_maintainer_text
 from resolve_root import Mode, resolve_project_root
 from stdin_json import read_stdin_json
 
@@ -196,6 +197,44 @@ _PLAN_PATH_MARKERS: Final[tuple[str, ...]] = (
 )
 
 
+#: Shell tool names a shell-command guard accepts. Claude Code names its tools
+#: ``Bash`` and ``PowerShell``; Qwen Code reports the runtime id
+#: ``run_shell_command``. Every one carries the command in ``tool_input.command``.
+_SHELL_TOOL_NAMES: Final[frozenset[str]] = frozenset(
+    {"Bash", "PowerShell", "run_shell_command"}
+)
+_DEPENDENCY_GUARD_MESSAGE: Final[str] = "pretooluse-dependency-guard.md"
+_EVAL_GUARD_MESSAGE: Final[str] = "pretooluse-eval-guard.md"
+# Mirrors the manifest and lockfile set in
+# ``hooks/messages/pretooluse-dependency-guard.md`` (Scope); a change to one
+# side is mirrored in the other in the same change-set.
+_DEPENDENCY_MANIFEST_RE: Final[re.Pattern[str]] = re.compile(
+    r"^(?:pyproject\.toml|requirements[^/\\]*\.txt|package\.json|Cargo\.toml|go\.mod"
+    r"|Gemfile|uv\.lock|poetry\.lock|package-lock\.json|pnpm-lock\.yaml|yarn\.lock"
+    r"|Cargo\.lock|go\.sum|Gemfile\.lock)$"
+)
+# Mirrors the primitive list in ``hooks/messages/pretooluse-eval-guard.md``
+# (Trigger / inspected patterns): dynamic evaluation, shell-out with the shell
+# switched on, and unsafe deserialization. A member access (``re.compile(``,
+# ``regex.exec(``) is excluded by the look-behind, so only the bare primitive
+# matches.
+_EVAL_PRIMITIVE_RES: Final[tuple[re.Pattern[str], ...]] = (
+    re.compile(r"(?<![\w.])(?:eval|exec|compile)\s*\("),
+    re.compile(r"(?<![\w.])(?:new\s+)?Function\s*\("),
+    re.compile(r"(?:^|[;&|]\s*)eval\s", re.MULTILINE),
+    re.compile(r"\bos\.system\s*\("),
+    re.compile(r"\bshell\s*=\s*True\b"),
+    re.compile(r"\bchild_process\b"),
+    re.compile(r"\b(?:pickle|cPickle|marshal|dill)\.loads?\s*\("),
+    re.compile(r"\byaml\.unsafe_load\s*\("),
+    re.compile(r"\byaml\.load\s*\((?![^\n)]*SafeLoader)"),
+)
+# Codex ``apply_patch`` carries its targets inside the patch body.
+_PATCH_TARGET_RE: Final[re.Pattern[str]] = re.compile(
+    r"^\*\*\* (?:Add|Update) File: (.+?)\s*$", re.MULTILINE
+)
+
+
 def should_suppress_bash_hook(
     event_name: str,
     context_file: str,
@@ -228,7 +267,7 @@ def should_suppress_bash_hook(
     # command cannot be inspected: suppress (return True), because the reminder
     # is only relevant to a positively-matched git-write command and firing it
     # blind on every Bash call is pure noise.
-    if not payload or payload.get("tool_name") != "Bash":
+    if not payload or payload.get("tool_name") not in _SHELL_TOOL_NAMES:
         return True
     tool_input = payload.get("tool_input")
     if not isinstance(tool_input, dict):
@@ -384,7 +423,33 @@ def should_suppress_pretooluse_context(
         return not _looks_plan_shaped(path, text, root)
     if basename in _HEADER_GUARD_MESSAGES:
         return not _missing_header(path, text)
+    if basename == _DEPENDENCY_GUARD_MESSAGE:
+        return not _touches_dependency_manifest(path, text)
+    if basename == _EVAL_GUARD_MESSAGE:
+        return not _has_eval_primitive(text)
     return False
+
+
+def _touches_dependency_manifest(path: str, text: str) -> bool:
+    """True when the write targets a dependency manifest or lockfile.
+
+    The target comes from the tool input's path, or, for a Codex ``apply_patch``
+    payload that names its files inside the patch body, from each
+    ``*** Add File:`` / ``*** Update File:`` line.
+    """
+    targets = [path] if path else _PATCH_TARGET_RE.findall(text)
+    return any(
+        _DEPENDENCY_MANIFEST_RE.match(Path(target.replace("\\", "/")).name)
+        for target in targets
+        if target
+    )
+
+
+def _has_eval_primitive(text: str) -> bool:
+    """True when *text* contains a dynamic-eval or unsafe-deserialization primitive."""
+    if not text:
+        return False
+    return any(pattern.search(text) for pattern in _EVAL_PRIMITIVE_RES)
 
 
 def _leaks_plan_terms(text: str) -> bool:
@@ -469,11 +534,16 @@ def run_hook_mode(
         _logger.warning("Refusing context path outside root: %s", context_file)
     elif resolved.is_file():
         try:
-            message = resolved.read_text(encoding="utf-8")
+            message = strip_maintainer_text(resolved.read_text(encoding="utf-8"))
         except OSError as exc:
             _logger.debug("Context file unreadable: %s", exc)
 
     payload = read_hook_stdin()
+    if not message:
+        # A missing or empty message file has nothing to say; a metadata prefix
+        # alone is not guidance. Fail open with an empty envelope.
+        emit_hook_envelope(event_name, "", quiet)
+        return
     if should_suppress_bash_hook(event_name, context_file, payload):
         emit_hook_envelope(event_name, "", quiet)
         return

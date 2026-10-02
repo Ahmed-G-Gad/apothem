@@ -28,15 +28,18 @@ estimate since the last advisory.
   unparseable override falls back to the default, so a typo can never silently
   disable the tracker.
 
-**Advisory shape.** When a threshold crosses, the tracker emits a `systemMessage`
-plus `additionalContext` recommending the operator externalize in-conversation
-state (PROGRESS.md Resumption Contract + PLAN-NOTES.md, or a scratch file under
-the active harness's config root when no suite is active) and then compact, so
-context stays lean per the blind-execution invariant.
+**Advisory shape.** When a threshold crosses, the tracker emits a
+`systemMessage` that suggests compaction to the operator, plus
+`additionalContext` asking the assistant to externalize in-conversation state
+(PROGRESS.md Resumption Contract + PLAN-NOTES.md, or a scratch file under the
+active harness's config root when no suite is active). Compaction stays the
+operator's call. The advisory fires at most twice per session, and
+`APOTHEM_PROACTIVE_COMPACTION_ENABLED=0` silences it.
 
-**State.** Per-session counters live under the OS temp dir
-(`<tempdir>/apothem-proactive-compaction/<session>.json`) — never inside the
-repository's tracked tree. A missing, empty, or corrupt counter file degrades to
+**State.** Per-session counters live in the per-user hook state directory
+(`<state-dir>/proactive-compaction/<session>.json`, mode `0700`; the directory
+resolution order is in the hooks reference) — never inside the repository's
+tracked tree. A missing, empty, or corrupt counter file degrades to
 "start counting again", never a crash.
 
 **Fail-disposition.** Fail-open at every layer. The Python dispatcher at

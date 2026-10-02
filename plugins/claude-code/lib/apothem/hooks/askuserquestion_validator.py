@@ -11,8 +11,8 @@ marker reached the operator unchecked. This module is the dispatch-routed
 ``PreToolUse`` handler that closes that gap: it receives the tool input (a
 ``questions`` array, each question carrying ``options[].label`` and
 ``multiSelect``), validates marker well-formedness against the canonical rule,
-and emits an advisory ``systemMessage`` (default) or — under the repo's strict
-opt-in — a blocking ``decision`` envelope.
+and emits advisory ``additionalContext`` (default) or, under the repo's strict
+opt-in, a ``permissionDecision: deny`` envelope.
 
 What it CAN guarantee. Well-formedness: a marker present on a label is in the
 canonical form (capital ``(Recommended)``, exact end-of-label placement, one
@@ -32,7 +32,7 @@ idempotent, and FAIL-OPEN: any exception → allow the call (an empty envelope),
 never crash the operator's question. The strict opt-in mirrors the conformity
 gate's: the ``--strict`` flag or a truthy ``APOTHEM_CONFORMITY_STRICT``
 environment variable escalates WELL-FORMEDNESS findings (never the NUDGE) to a
-``decision: block``.
+``permissionDecision: deny``.
 """
 
 from __future__ import annotations
@@ -334,10 +334,14 @@ def _format_findings(findings: list[Finding]) -> str:
 def build_envelope(result: ValidationResult, *, strict: bool) -> dict[str, object]:
     """Map a validation result to a hook-output envelope.
 
-    Default (advisory): a ``systemMessage`` surfacing well-formedness findings
-    and nudges; the question proceeds. Strict: a ``decision: block`` envelope
-    when well-formedness findings exist (nudges never block). A clean result
-    yields an empty envelope (the question proceeds silently).
+    Default (advisory): ``additionalContext`` surfacing well-formedness findings
+    and nudges to the model, which is the party that can fix the labels; the
+    question proceeds. Strict: ``permissionDecision: deny`` with the findings as
+    ``permissionDecisionReason`` when well-formedness findings exist (nudges
+    never block). Both live in ``hookSpecificOutput``, the PreToolUse channel;
+    the top-level ``decision`` field is deprecated for PreToolUse and a
+    ``systemMessage`` reaches only the operator. A clean result yields an empty
+    envelope (the question proceeds silently).
     """
     wellformedness = result.wellformedness_findings
     nudges = result.nudges
@@ -350,7 +354,13 @@ def build_envelope(result: ValidationResult, *, strict: bool) -> dict[str, objec
         ]
         if nudges:
             reason_lines.append("Advisory (not blocking):\n" + _format_findings(nudges))
-        return {"decision": "block", "reason": "\n".join(reason_lines)}
+        return {
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "deny",
+                "permissionDecisionReason": "\n".join(reason_lines),
+            }
+        }
 
     advisory: list[Finding] = [*wellformedness, *nudges]
     if not advisory:
@@ -361,7 +371,12 @@ def build_envelope(result: ValidationResult, *, strict: bool) -> dict[str, objec
         "Set APOTHEM_CONFORMITY_STRICT=1 (or pass --strict) to block on "
         "well-formedness violations."
     )
-    return {"systemMessage": header + "\n" + _format_findings(advisory)}
+    return {
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "additionalContext": header + "\n" + _format_findings(advisory),
+        }
+    }
 
 
 def main(argv: list[str] | None = None) -> None:

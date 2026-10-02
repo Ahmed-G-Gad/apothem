@@ -20,6 +20,65 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- **The session-end protocol is now opt-in.** A `Stop` hook that returns
+  context makes the assistant take another turn, so the protocol cost one extra
+  turn in every session, whether or not the operator asked for it. Set
+  `APOTHEM_SESSION_END_ENABLED=1` to enable it. It never fires on a stop that
+  already follows a hook-driven continuation.
+- **The proactive-compaction advisory fires at most twice per session** and
+  can be silenced with `APOTHEM_PROACTIVE_COMPACTION_ENABLED=0`. Its
+  model-facing text now asks only for state externalization; the compaction
+  suggestion goes to the operator, who owns that action.
+- **`APOTHEM_HOOKS_DISABLE=1` silences every dispatcher-routed hook**, for
+  troubleshooting without editing installed files.
+- **Hook guidance no longer carries maintainer text.** The license comment line
+  and the `## Bindings` section of each message file are removed before the
+  text reaches the assistant.
+
+### Fixed
+
+- **Claude Code plugin hooks run on a plain checkout.** Each hook is
+  registered once, as `bash "<plugin-root>/…/bootstrap.sh" <event>`, so no hook
+  depends on a file's executable bit, and no tool call triggers the same hook
+  twice. On Windows without Git for Windows, use the engine install, whose
+  hooks need no shell.
+- **Post-compaction recovery reaches the assistant on Claude Code.** Claude
+  Code discards PreCompact and PostCompact hook output, so those registrations
+  did nothing there. The recovery context now arrives with the SessionStart
+  event that follows compaction. Codex and Qwen Code keep both events.
+- **Shell guards cover PowerShell and Qwen Code.** The Claude Code matcher is
+  `Bash|PowerShell`, and the Qwen Code matcher is `^run_shell_command$`, the
+  tool id Qwen Code reports at runtime. The engine-installed Claude Code
+  settings also deny the PowerShell forms of `git push --force`,
+  `git push --force-with-lease`, `git push -f`, and `Invoke-Expression`.
+- **The dependency and dynamic-eval guards speak only when relevant.** They
+  fired on every write and every shell call. The dependency guard now needs a
+  write to a dependency manifest or lockfile, and the eval guard needs an
+  evaluation or unsafe-deserialization primitive in the content or command.
+- **The strict AskUserQuestion guard blocks through the current channel.** It
+  returns `permissionDecision: deny` with a reason, which Claude Code honors,
+  instead of the deprecated top-level `decision` field.
+- **Session-start memory lookup finds the project's memory index.** It keys on
+  the project directory from the harness, ascends a payload working directory
+  to its Git root, and honors `CLAUDE_CONFIG_DIR`. The plugin-alone pointer
+  prints the resolved rules path instead of an unexpanded variable.
+
+### Security
+
+- **Hooks never run code from the opened project.** The bootstrap stubs
+  resolve the dispatcher from their own installed location. Previously the
+  stubs took their root from the project directory when it contained a
+  `hooks/` folder, so a project could supply the interpreter locator or the
+  dispatcher that the plugin's hooks then ran. Session-start guidance is read from the installed tree; the
+  project is read only for plan and memory summaries.
+- **Per-session hook state is private to the user.** The session-end gate and
+  the compaction tracker kept counters in a shared directory under the system
+  temp dir, created with default permissions. State now lives in a per-user
+  directory created with mode `0700`, and session ids are sanitized before use
+  as file names. `APOTHEM_HOOK_STATE_DIR` overrides the location.
+
 ## [1.1.0] - 2026-08-16
 
 ### Added

@@ -31,7 +31,11 @@
       "Bash(git push --force-with-lease:*)",
       "Bash(git push -f:*)",
       "Bash(eval:*)",
-      "Bash(exec:*)"
+      "Bash(exec:*)",
+      "PowerShell(git push --force:*)",
+      "PowerShell(git push --force-with-lease:*)",
+      "PowerShell(git push -f:*)",
+      "PowerShell(Invoke-Expression:*)"
     ]
   },
   "hooks": {
@@ -221,7 +225,7 @@
         ]
       },
       {
-        "matcher": "Bash",
+        "matcher": "Bash|PowerShell",
         "hooks": [
           {
             "type": "command",
@@ -288,42 +292,6 @@
               "<ROOT>/.apothem/support/hooks/dispatch.py",
               "PostToolUse",
               "posttooluse-proactive-compaction"
-            ]
-          }
-        ]
-      }
-    ],
-    "PreCompact": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${PYTHON_BIN}",
-            "timeout": 30,
-            "statusMessage": "Externalizing state before context compression",
-            "args": [
-              "<ROOT>/.apothem/support/hooks/dispatch.py",
-              "PreCompact",
-              "precompact"
-            ]
-          }
-        ]
-      }
-    ],
-    "PostCompact": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${PYTHON_BIN}",
-            "timeout": 30,
-            "statusMessage": "Restoring state from durable files after compaction",
-            "args": [
-              "<ROOT>/.apothem/support/hooks/dispatch.py",
-              "PostCompact",
-              "postcompact"
             ]
           }
         ]

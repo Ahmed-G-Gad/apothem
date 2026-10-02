@@ -8,12 +8,12 @@
 
 ```mermaid
 %%{ init: { "theme": "neutral" } }%%
-%% verified: 2026-06-23 %%
+%% verified: 2026-10-02 %%
 %% provenance: hooks/README.md — the hook-dispatch runtime flow %%
 %% cross-reference: src/apothem/hooks/dispatch.py (router); src/apothem/hooks/lib/bootstrap.sh + bootstrap.ps1 (stubs); src/apothem/hooks/messages/ (per-event context) %%
 flowchart TD
     Event["Harness fires a hook event<br/>PreToolUse · PostToolUse · SessionStart · Stop · PreCompact · …"]
-    Stub["Bootstrap stub — lib/bootstrap.sh / bootstrap.ps1<br/>locates a Python interpreter, then execs the dispatcher<br/>(Claude Code settings.json invokes an install-resolved interpreter on dispatch.py directly)"]
+    Stub["Entry — plugin: bash lib/bootstrap.sh (locates Python, execs the dispatcher)<br/>engine install: install-resolved interpreter on dispatch.py, exec form"]
     Dispatch["dispatch.py — unified router<br/>routes each event to its handler"]
     Context["Per-event Markdown context<br/>from messages/&lt;event&gt;.md"]
     Bootstrap["session_start_bootstrap.py<br/>(SessionStart only)"]
@@ -32,21 +32,23 @@ flowchart TD
 | `emit_hook_context.py` | Emit structured JSON context for hook events. |
 | `session_start_bootstrap.py` | Session-start bootstrap hook for the Apothem ecosystem. |
 | `askuserquestion_validator.py` | Call-time `PreToolUse` validator for the `AskUserQuestion` tool's option payload — checks live option-marker well-formedness the committed-artifact matchers cannot see. |
-| `proactive_compaction_tracker.py` | `PostToolUse` handler operationalizing the CM-19 proactive-compaction triggers — a per-session activity counter that emits the context-externalization advisory. |
-| `session_end_gate.py` | `Stop` handler that rations the session-end protocol to one emission per session. `Stop` fires at every turn end, so emitting `messages/stop.md` verbatim each time re-asserted the whole mandate on every turn and never converged; the gate supplies the termination condition while the message file keeps owning the text. |
+| `proactive_compaction_tracker.py` | `PostToolUse` handler operationalizing the CM-19 proactive-compaction triggers — a per-session activity counter that emits the context-externalization advisory, at most twice per session; `APOTHEM_PROACTIVE_COMPACTION_ENABLED=0` silences it. |
+| `session_end_gate.py` | `Stop` handler that rations the session-end protocol to one emission per session. Opt-in through `APOTHEM_SESSION_END_ENABLED`, because a `Stop` hook that returns context makes the assistant take another turn. `Stop` fires at every turn end, so emitting `messages/stop.md` verbatim each time re-asserted the whole mandate on every turn and never converged; the gate supplies the termination condition while the message file keeps owning the text. |
 | `__init__.py` | Package marker. |
 
 ## `lib/` — dispatcher support
 
 | File | Purpose |
 |------|---------|
-| `bootstrap.sh` / `bootstrap.ps1` | Shell bootstrap stubs that locate an interpreter (via the locators below) and `exec` the dispatcher. Shipped as the documented shell entry path; the Claude Code `settings.json` entries instead invoke an install-resolved absolute interpreter on `dispatch.py` directly. |
+| `bootstrap.sh` / `bootstrap.ps1` | Shell bootstrap stubs that locate an interpreter (via the locators below) and `exec` the dispatcher. The Claude Code plugin's `hooks.json` runs `bootstrap.sh` through `bash`; the engine-installed `settings.json` entries instead invoke an install-resolved absolute interpreter on `dispatch.py` directly. The stubs resolve the dispatcher relative to their own location, never from the opened project. |
 | `find-python.sh` / `find-python.ps1` | Python interpreter locators. |
 | `find-pwsh.sh` / `find-pwsh.ps1` | PowerShell interpreter locators. |
 | `events.py` | Single source of truth for the supported hook-event vocabulary. |
 | `stdin_json.py` | The one canonical reader for a hook's stdin payload, so the read path cannot drift between handlers. |
 | `log.py` | Shared logger factory for the hook scripts. |
 | `resolve_root.py` | Project-root resolution for the Apothem ecosystem. |
+| `message_text.py` | Strips the maintainer-only parts of a message file (the license comment line and the `## Bindings` section) before the text reaches the assistant. |
+| `state_dir.py` | Per-user `0700` state directory and safe per-session file keys for the stateful handlers. |
 | `__init__.py` | Package marker. |
 
 ## `messages/` — per-event context
@@ -56,21 +58,23 @@ Markdown context files emitted into the conversation for each hook event:
 | File | Event |
 |------|-------|
 | `sessionstart.md` | SessionStart. |
-| `stop.md` | Stop (session-end). Routed through `session_end_gate.py`, which emits this body at most once per session rather than on every turn end. |
-| `precompact.md` / `postcompact.md` | PreCompact / PostCompact. |
+| `stop.md` | Stop (session-end). Routed through `session_end_gate.py`, which emits this body at most once per session rather than on every turn end, and only when `APOTHEM_SESSION_END_ENABLED` is set. |
+| `precompact.md` / `postcompact.md` | PreCompact / PostCompact on Codex and Qwen Code. Claude Code discards the output of both events, so there `session_start_bootstrap.py` delivers `postcompact.md` on the SessionStart event whose source is `compact`. |
 | `pretooluse-write.md` / `pretooluse-write-header-guard.md` / `pretooluse-write-plan-guard.md` | PreToolUse Write / apply_patch — base context plus the authorship-header and plans-discipline guards. |
 | `pretooluse-edit.md` / `pretooluse-edit-header-guard.md` | PreToolUse Edit — base context plus the authorship-header guard. |
 | `pretooluse-notebookedit.md` | PreToolUse NotebookEdit. |
-| `pretooluse-bash.md` / `pretooluse-bash-plan-guard.md` | PreToolUse Bash — base context plus the plans-discipline redirection guard. |
+| `pretooluse-bash.md` / `pretooluse-bash-plan-guard.md` | PreToolUse shell tools (Bash, PowerShell, Qwen Code `run_shell_command`) — base context plus the plans-discipline redirection guard. |
 | `pretooluse-conformity.md` | PreToolUse conformity-gate context. |
-| `pretooluse-dependency-guard.md` | PreToolUse Write / Edit — advisory flag on unpinned or untrusted dependency additions to manifests and lockfiles. |
-| `pretooluse-eval-guard.md` | PreToolUse Write / Edit / Bash — advisory flag on dynamic evaluation of untrusted or model-derived input. |
+| `pretooluse-dependency-guard.md` | PreToolUse Write / Edit — advisory flag on unpinned or untrusted dependency additions; emitted only when the write targets a manifest or lockfile. |
+| `pretooluse-eval-guard.md` | PreToolUse Write / Edit / shell — advisory flag on dynamic evaluation of untrusted or model-derived input; emitted only when the content or command contains an evaluation or unsafe-deserialization primitive. |
 | `pretooluse-askuserquestion-recommended.md` | PreToolUse AskUserQuestion — advisory `(Recommended)`-marker guard on rendered option sets. |
 | `posttooluse-proactive-compaction.md` | PostToolUse — proactive-compaction tracker context (CM-19). |
 
 ## Conventions
 
-- The Claude Code `settings.json` hook entries invoke an install-resolved absolute CPython interpreter on `dispatch.py` directly — the `${PYTHON_BIN}` placeholder is substituted at install time (per `apothem.lib.python_resolver`) so no entry runs a bare `python`. The shell bootstrap stubs (`bootstrap.sh` / `bootstrap.ps1`) are the documented shell entry path that locates an interpreter and hands off to `dispatch.py`; they are not the `settings.json` entry point.
+- The Claude Code `settings.json` hook entries invoke an install-resolved absolute CPython interpreter on `dispatch.py` directly — the `${PYTHON_BIN}` placeholder is substituted at install time (per `apothem.lib.python_resolver`) so no entry runs a bare `python`. The plugin's `hooks.json` registers each hook once, as `bash "<plugin-root>/…/hooks/lib/bootstrap.sh" <event> [<message>]`, so no entry depends on a file's executable bit or on a per-platform shell field.
+- Every registered command meets the runtime contract in `tests/hooks/test_hook_contract.py`: exit 0, empty or single-JSON-object output, registered once, bounded output, delivered on a channel the harness reads, and no code taken from the opened project.
+- `APOTHEM_HOOKS_DISABLE=1` silences every dispatcher-routed hook.
 
 ## Operating in this folder
 

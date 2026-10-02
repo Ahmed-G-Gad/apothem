@@ -64,7 +64,7 @@ from emit_hook_context import (
     read_hook_stdin,
 )
 from log import get_logger
-from resolve_root import Mode, resolve_project_root
+from message_text import strip_maintainer_text
 
 _logger = get_logger(__name__)
 
@@ -273,16 +273,37 @@ def project_slug(root: Path) -> str:
     return text
 
 
-def find_memory_index(root: Path) -> Path | None:
-    """Locate ``MEMORY.md`` for this project under ``<root>/projects``."""
-    projects_root = root / "projects"
+def _claude_config_dir() -> Path:
+    """Return the Claude Code config root (``CLAUDE_CONFIG_DIR`` or ``~/.claude``)."""
+    override = os.environ.get("CLAUDE_CONFIG_DIR", "").strip()
+    return Path(override).expanduser() if override else Path.home() / ".claude"
+
+
+def find_memory_index(
+    project: Path, harness_roots: tuple[Path, ...] = ()
+) -> Path | None:
+    """Locate ``MEMORY.md`` for *project* under a harness ``projects/`` tree.
+
+    The memory store is keyed by the slug of the **project** directory under
+    each candidate harness root's ``projects/`` folder (the Claude Code config
+    root first, then any extra roots the caller passes, such as the installed
+    tree). Keying it by the harness root instead, as an earlier version did,
+    could never match the operator's project.
+    """
+    roots = (_claude_config_dir(), *harness_roots)
+    for root in roots:
+        found = _memory_index_under(root / "projects", project)
+        if found is not None:
+            return found
+    return None
+
+
+def _memory_index_under(projects_root: Path, project: Path) -> Path | None:
     if not projects_root.is_dir():
         return None
-
-    direct = projects_root / project_slug(root) / "memory" / "MEMORY.md"
+    direct = projects_root / project_slug(project) / "memory" / "MEMORY.md"
     if direct.is_file():
         return direct
-
     # Fallback for a project whose on-disk slug does not match ``project_slug``
     # byte-for-byte (path-separator or drive-letter drift). The project's leaf
     # directory name is the trailing kebab segment of the slug, so match it as a
@@ -290,7 +311,7 @@ def find_memory_index(root: Path) -> Path | None:
     # short leaf ('app') resolve another project's memory dir ('my-app-fork'),
     # crossing into an unrelated project's memory. Exact first, then a
     # separator-delimited suffix ('…-<leaf>'), so only a true leaf match wins.
-    leaf = root.name.lower().lstrip(".")
+    leaf = project.name.lower().lstrip(".")
     if not leaf:
         return None
     candidates = sorted(projects_root.glob("*/memory/MEMORY.md"), reverse=True)
@@ -299,6 +320,27 @@ def find_memory_index(root: Path) -> Path | None:
         if parent_name == leaf or parent_name.endswith(f"-{leaf}"):
             return candidate
     return None
+
+
+def resolve_project_dir(payload: dict[str, object] | None) -> Path:
+    """Return the operator's project directory, as data for plans and memory.
+
+    Order: ``CLAUDE_PROJECT_DIR`` (the project root where the session started),
+    ``LLM_PROJECT_DIR`` (vendor-neutral alias), the payload ``cwd`` ascended to
+    its git root, then the process working directory. The result is only ever
+    read as data; no code is loaded from it.
+    """
+    for name in ("CLAUDE_PROJECT_DIR", "LLM_PROJECT_DIR"):
+        value = os.environ.get(name, "").strip()
+        if value and Path(value).is_dir():
+            return Path(value).resolve()
+    cwd_value = payload.get("cwd") if isinstance(payload, dict) else None
+    start = Path(cwd_value) if isinstance(cwd_value, str) and cwd_value else Path.cwd()
+    start = start.resolve()
+    for candidate in (start, *start.parents):
+        if (candidate / ".git").exists():
+            return candidate
+    return start
 
 
 def read_memory_summary(memory_path: Path) -> MemorySummary:
@@ -374,14 +416,29 @@ def read_conformity_posture(root: Path) -> list[str]:
     a missing posture file does not break SessionStart.
     """
 
-    path = root / "hooks" / "messages" / "sessionstart.md"
+    return _message_lines(root / "hooks" / "messages" / "sessionstart.md")
+
+
+def _message_lines(path: Path) -> list[str]:
+    """Return a message file's model-facing lines, or [] when unreadable."""
     if not path.is_file():
         return []
     try:
         text = path.read_text(encoding="utf-8")
     except OSError:
         return []
-    return text.splitlines()
+    return strip_maintainer_text(text).splitlines()
+
+
+def read_compaction_recovery(root: Path) -> list[str]:
+    """Return the post-compaction recovery lines for a ``source: compact`` start.
+
+    Claude Code discards the ``systemMessage`` of ``PreCompact`` and
+    ``PostCompact`` hooks and accepts no ``additionalContext`` from them, so the
+    recovery guidance in ``hooks/messages/postcompact.md`` reaches the model
+    through the ``SessionStart`` event that follows compaction instead.
+    """
+    return _message_lines(root / "hooks" / "messages" / "postcompact.md")
 
 
 def plugin_alone_pointer() -> list[str]:
@@ -409,31 +466,44 @@ def plugin_alone_pointer() -> list[str]:
     plugin_root = os.environ.get("CLAUDE_PLUGIN_ROOT")
     if not plugin_root:
         return []
-    base = Path(plugin_root)
+    base = Path(plugin_root).resolve()
     for rel in ("rules", "src/apothem/rules"):
         if (base / rel).is_dir():
-            rules_ref = f"${{CLAUDE_PLUGIN_ROOT}}/{rel}/"
+            rules_dir = base / rel
             break
     else:
-        rules_ref = "${CLAUDE_PLUGIN_ROOT}/rules/"
+        rules_dir = base / "rules"
     return [
         "Apothem plugin posture:",
         (
             "- Apothem is installed as a Claude Code plugin alone (no engine "
             "install). Its behavioral rules are bundled at "
-            f"{rules_ref} — consult them as governing guidance for this "
-            "session; they are not auto-loaded as always-on context plugin-alone."
+            f"{rules_dir}{os.sep} (read them with the file tools when a task "
+            "needs them; they are not loaded as always-on context in this posture)."
         ),
         (
-            "- The mechanical conformity hooks (write/edit/bash guards, "
-            "authorship-header and plans-locality checks, session and "
-            "compaction handlers) remain active and fire on tool use."
+            "- Advisory hooks remain active on tool use: plan-term leak, "
+            "authorship-header and plans-locality guards on writes, dependency "
+            "and dynamic-eval guards when a write or command matches, a git-"
+            "mutation reminder on shell commands, and post-compaction recovery "
+            "at session start."
         ),
     ]
 
 
-def build_context(root: Path, payload: dict[str, object] | None) -> str:
-    """Assemble the full additionalContext string."""
+def build_context(
+    root: Path,
+    payload: dict[str, object] | None,
+    project: Path | None = None,
+) -> str:
+    """Assemble the full additionalContext string.
+
+    *root* is the installed tree that ships this hook (its message files are
+    read from there); *project* is the operator's project directory, read as
+    data for the plan and memory summaries. When *project* is omitted it is
+    resolved from the environment and payload.
+    """
+    project_dir = project if project is not None else resolve_project_dir(payload)
     blocks: list[list[str]] = []
 
     pointer = plugin_alone_pointer()
@@ -445,14 +515,19 @@ def build_context(root: Path, payload: dict[str, object] | None) -> str:
     if meta_lines:
         blocks.append(["Session bootstrap:", *meta_lines])
 
-    memory_index = find_memory_index(root)
+    if meta.source == "compact":
+        recovery = read_compaction_recovery(root)
+        if recovery:
+            blocks.append(["Post-compaction recovery:", *recovery])
+
+    memory_index = find_memory_index(project_dir, (root,))
     if memory_index is not None:
         summary = read_memory_summary(memory_index)
         memory_lines = summary.lines()
         if memory_lines:
             blocks.append(["Memory summary:", *memory_lines])
 
-    active_suite = find_active_suite(_resolve_plan_suites_root(root))
+    active_suite = find_active_suite(_resolve_plan_suites_root(project_dir))
     if active_suite is not None:
         plan_lines = read_plan_summary(active_suite).lines()
         blocks.append(["Plan summary:", *plan_lines])
@@ -483,9 +558,10 @@ def main(argv: list[str] | None = None) -> None:
     """Entry point. Emits a hook envelope (success or failure) and returns."""
     args = parse_args(argv)
     try:
-        root = resolve_project_root(Mode.HOOKS, script_path=Path(__file__))
-        if root is None:
-            root = Path(__file__).resolve().parent.parent
+        # The installed tree that ships this hook, never the opened project:
+        # message files are injected as guidance, so they must come from the
+        # install, not from a directory the session happens to open.
+        root = _HOOKS_DIR.parent
         payload = read_hook_stdin()
         context = build_context(root, payload)
         emit_hook_envelope("SessionStart", context, args.quiet)
