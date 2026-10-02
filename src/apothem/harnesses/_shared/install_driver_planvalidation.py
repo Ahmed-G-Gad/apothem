@@ -112,7 +112,7 @@ def _generated_targets_for_entry(
             for source_path in sorted(src.glob("*.md"))
             if source_path.name not in _COHORT_DOC_FILES
         ]
-    if entry.mode in {"markdown_commands", "claude_rules"}:
+    if entry.mode in {"markdown_commands", "claude_rules", "antigravity_rules"}:
         return [
             dst / source_path.name
             for source_path in sorted(src.glob("*.md"))

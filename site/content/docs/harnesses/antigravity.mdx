@@ -24,8 +24,20 @@ Apothem support cohorts as an Antigravity CLI plugin.
 `~/.gemini/antigravity-cli/plugins/apothem/skills/`,
 `~/.gemini/antigravity-cli/plugins/apothem/rules/`,
 converted local helper definitions inside the plugin,
-`~/.gemini/antigravity-cli/plugins/apothem/apothem/templates/`, and
-`~/.gemini/antigravity-cli/plugins/apothem/apothem/hooks/`.
+`~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/templates/`, and
+`~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/hooks/`.
+
+**Plugin rules.** Antigravity discards any file in a plugin's `rules/`
+directory that does not open with a valid `trigger`
+([Antigravity rules documentation](https://antigravity.google/docs/rules)), so
+each Apothem rule is converted on install. A rule that always applies gets
+`trigger: always_on`; a rule scoped to paths gets `trigger: glob` with the same
+patterns in `globs`; any other rule gets `trigger: model_decision`. Every rule
+keeps its `description`. Antigravity shares a 20,000-token budget across
+always-on rules and turns the largest into on-demand pointers past it.
+
+**Plugin manifest.** `plugin.json` carries only `name` and `description`, the
+two keys Antigravity's plugin schema admits.
 
 **Shared user anchor.** `~/.gemini/GEMINI.md` is also the user-scope anchor for
 Gemini-family tooling. The Antigravity adapter keeps its extra Apothem material

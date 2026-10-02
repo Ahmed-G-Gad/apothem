@@ -290,9 +290,12 @@ harnesses:
         target: "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/skills/"
         mode: command_skills
         ownership_class: apothem-owned
+      # Antigravity discards a rules/*.md file whose frontmatter lacks a valid
+      # trigger, so each rule is converted: alwaysApply -> always_on,
+      # pathFilter -> glob + globs, otherwise model_decision (description).
       - source: "rules/"
         target: "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/rules/"
-        mode: merge_tree_entries
+        mode: antigravity_rules
         ownership_class: apothem-owned
       - source: "skills/"
         target: "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/skills/"

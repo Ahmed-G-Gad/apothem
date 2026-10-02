@@ -61,7 +61,6 @@ JSON_ANCHORS: list[tuple[str, tuple[str, ...]]] = [
     ("gemini-extension.json", ()),
     ("qwen-extension.json", ()),
     ("plugins/apothem/.codex-plugin/plugin.json", ()),
-    ("src/apothem/harnesses/antigravity/templates/plugin.json", ()),
     ("package.json", ()),
     ("vscode-extension/package.json", ()),
     ("site/package.json", ()),

@@ -16,6 +16,7 @@ from apothem.lib.propagation import (
 
 from .install_driver_backup import _replace_path, write_bytes_safely
 from .install_driver_converters import (
+    _antigravity_rule_text,
     _claude_rule_text,
     _codex_agent_text,
     _gemini_agent_text,
@@ -518,3 +519,30 @@ def apply_claude_rules(
         project_root=project_root,
         harness_name=harness_name,
     )
+
+
+def apply_antigravity_rules(
+    entry: InstallEntry,
+    *,
+    harness_root: Path | None = None,
+    project_root: Path | None = None,
+    harness_name: str = "manual",
+) -> list[MaterializationResult]:
+    """Install Markdown rules as Antigravity rules with a valid ``trigger``."""
+    return _apply_rendered_cohort(
+        entry,
+        renderer=_antigravity_rule_text,
+        operation="antigravity_rules",
+        harness_root=harness_root,
+        project_root=project_root,
+        harness_name=harness_name,
+    )
+
+
+#: Harness-specific emission modes whose applier takes the entry plus the
+#: ``harness_root`` / ``project_root`` / ``harness_name`` keywords. The install
+#: dispatcher looks a mode up here, so adding one is a single row.
+HARNESS_EMISSION_APPLIERS: dict[str, Callable[..., list[MaterializationResult]]] = {
+    "antigravity_rules": apply_antigravity_rules,
+    "claude_rules": apply_claude_rules,
+}

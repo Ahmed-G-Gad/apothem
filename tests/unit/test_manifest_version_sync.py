@@ -5,10 +5,10 @@
 The project version single-sources from ``pyproject`` into
 ``apothem.__version__``. Each published distribution manifest — the Claude Code
 marketplace manifest, the Gemini and Qwen extension manifests, the Codex plugin
-manifest, the Antigravity plugin template, the npm package and VS Code
-extension manifests, and the citation file — carries its own hand-maintained
-version field. (The Claude Code plugin manifest under ``plugins/claude-code``
-is generated from ``pyproject`` and drift-gated by ``test_plugin_tree.py``.) Without a cross-manifest check a
+manifest, the npm package and VS Code extension manifests, and the citation
+file — carries its own hand-maintained version field. (The Claude Code plugin
+manifest under ``plugins/claude-code`` is generated from ``pyproject`` and
+drift-gated by ``test_plugin_tree.py``.) Without a cross-manifest check a
 release bump can update the engine version and leave one of these manifests
 behind, shipping a stale version to that install channel.
 
@@ -51,7 +51,9 @@ _JSON_MANIFESTS: list[tuple[str, tuple[str, ...]]] = [
     ("gemini-extension.json", ()),
     ("qwen-extension.json", ()),
     ("plugins/apothem/.codex-plugin/plugin.json", ()),
-    ("src/apothem/harnesses/antigravity/templates/plugin.json", ()),
+    # The Antigravity plugin template carries no version: Antigravity's
+    # plugin.json schema admits only name and description
+    # (additionalProperties false), so it is not a version-bearing manifest.
     ("package.json", ()),
     ("vscode-extension/package.json", ()),
 ]

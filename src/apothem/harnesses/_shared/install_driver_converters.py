@@ -288,6 +288,38 @@ def _opencode_agent_text(source_path: Path) -> str:
     )
 
 
+def _antigravity_rule_text(source_path: Path) -> str:
+    """Convert an Apothem rule into an Antigravity rule file.
+
+    Antigravity discards any file in a ``rules/`` directory whose frontmatter
+    lacks a valid ``trigger`` (``always_on`` | ``model_decision`` | ``glob`` |
+    ``manual``); ``model_decision`` needs ``description`` and ``glob`` needs
+    ``globs`` (https://antigravity.google/docs/rules, retrieved 2026-10-02).
+    The source activation maps one-to-one: ``alwaysApply: true`` becomes
+    ``always_on``, a non-empty ``pathFilter`` becomes ``glob`` with the same
+    comma-separated patterns, and any other rule is ``model_decision``. Only
+    the documented keys are emitted; the body follows unchanged.
+    """
+    description = field_value(source_path, "description") or (
+        f"Apothem {source_path.stem} rule."
+    )
+    always = (field_value(source_path, "alwaysApply") or "").lower() == "true"
+    path_filter = (field_value(source_path, "pathFilter") or "").strip()
+    lines = ["---"]
+    if always:
+        lines.append("trigger: always_on")
+    elif path_filter:
+        lines.append("trigger: glob")
+    else:
+        lines.append("trigger: model_decision")
+    lines.append(f"description: {_yaml_scalar(description)}")
+    if not always and path_filter:
+        lines.append(f"globs: {_yaml_scalar(path_filter)}")
+    lines.append("---")
+    body = _agent_body(source_path).strip()
+    return "\n".join(lines) + f"\n\n{body}\n"
+
+
 def _gemini_command_text(source_path: Path) -> str:
     """Convert a Markdown command definition into Gemini CLI TOML."""
     description = field_value(source_path, "description") or (
