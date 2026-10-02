@@ -56,7 +56,6 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 #: key path means the top-level object. This list must stay a superset of the
 #: one in ``tests/unit/test_manifest_version_sync.py``; a test enforces it.
 JSON_ANCHORS: list[tuple[str, tuple[str, ...]]] = [
-    (".claude-plugin/plugin.json", ()),
     (".claude-plugin/marketplace.json", ()),
     (".claude-plugin/marketplace.json", ("metadata",)),
     ("gemini-extension.json", ()),

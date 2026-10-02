@@ -43,15 +43,16 @@
 ## Plugin-alone Persistence
 
 Claude Code is the one harness with a **full standalone plugin**:
-`.claude-plugin/plugin.json` (installed via
-`/plugin marketplace add ahmed-g-gad/apothem`) declares `commands`, `agents`,
-`skills`, and `hooks` (`./src/apothem/hooks/hooks.json`, resolved against
-`${CLAUDE_PLUGIN_ROOT}`). Installing the plugin *alone* — without running
+`plugins/claude-code/.claude-plugin/plugin.json` (the marketplace `source`,
+installed via `/plugin marketplace add ahmed-g-gad/apothem`) declares
+`commands`, `agents`, `skills`, and `hooks` (`./lib/apothem/hooks/hooks.json`,
+resolved against `${CLAUDE_PLUGIN_ROOT}`). The repository root carries no
+plugin manifest. Installing the plugin *alone* — without running
 `apothem install` — persists most of the cohort directly.
 
 | Artifact class | Persists plugin-alone? | Mechanism / limit |
 |---|---|---|
-| Commands | Yes | The manifest `commands` array (46 entries — the 45 command files plus the `./commands/` default-directory entry) loads the 45 slash-commands from the plugin tree; the directory entry holds no `*.md` and loads no command — it addresses the Claude Code v2.1.140+ default-folder note so the explicit nested paths stay authoritative. |
+| Commands | Yes | The manifest `commands` array (45 entries, one per command file) loads the 45 slash-commands from the plugin tree. |
 | Agents | Yes | The manifest `agents` array (12 entries) loads sub-agents from the plugin tree. |
 | Skills | Yes | The manifest `skills` reference loads the skill cohort from the plugin tree. |
 | Hooks | Yes | The manifest `hooks` field points at the bundled `hooks.json`, wired with `${CLAUDE_PLUGIN_ROOT}`-relative dispatch — the PreToolUse/SessionStart/etc. pipeline fires from the plugin alone. |

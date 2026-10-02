@@ -279,26 +279,40 @@ def test_committed_repo_hooks_json_matches_generator() -> None:
     assert committed == build_plugin_hooks_json("src/apothem")
 
 
-def test_committed_repo_manifest_validates() -> None:
-    committed = _REPO_ROOT / ".claude-plugin" / "plugin.json"
-    assert committed.is_file(), "repo-root .claude-plugin/plugin.json must exist"
-    jsonschema.validate(
-        instance=json.loads(committed.read_text(encoding="utf-8")),
-        schema=_schema(),
+def test_repo_root_carries_no_plugin_manifest() -> None:
+    """The repository root is not a plugin, so it ships no plugin manifest.
+
+    The marketplace installs ``plugins/claude-code``. A second manifest at the
+    root was a hand-kept duplicate that no install path read, and it failed
+    ``claude plugin validate --strict`` (a root ``CLAUDE.md`` is not plugin
+    context). Only ``marketplace.json`` belongs in the root ``.claude-plugin``.
+    """
+    root_meta = _REPO_ROOT / ".claude-plugin"
+    assert not (root_meta / "plugin.json").exists(), (
+        "repo-root .claude-plugin/plugin.json is vestigial; the marketplace "
+        "source is plugins/claude-code"
     )
+    assert sorted(p.name for p in root_meta.iterdir()) == ["marketplace.json"]
 
 
-def test_committed_repo_manifest_matches_generator() -> None:
-    """The committed manifest must never drift from the generator's output."""
-    committed = json.loads(
-        (_REPO_ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8")
+def test_every_marketplace_source_carries_a_valid_manifest() -> None:
+    """Each marketplace entry resolves to a directory with a valid manifest."""
+    marketplace = json.loads(
+        (_REPO_ROOT / ".claude-plugin" / "marketplace.json").read_text(encoding="utf-8")
     )
-    generated = build_plugin_manifest(
-        _SRC_ROOT,
-        catalog_prefix="./src/apothem/",
-        address_default_command_dir=True,
-    )
-    assert committed == generated
+    plugins = marketplace["plugins"]
+    assert plugins, "the marketplace lists no plugins"
+    for entry in plugins:
+        source = _REPO_ROOT / entry["source"]
+        assert source.resolve() != _REPO_ROOT.resolve(), (
+            f"{entry['name']}: the repository root cannot be a plugin source"
+        )
+        manifest = source / ".claude-plugin" / "plugin.json"
+        assert manifest.is_file(), f"{entry['name']}: {manifest} is missing"
+        jsonschema.validate(
+            instance=json.loads(manifest.read_text(encoding="utf-8")),
+            schema=_schema(),
+        )
 
 
 # --- Committed distribution tree ------------------------------------------

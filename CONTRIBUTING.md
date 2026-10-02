@@ -153,8 +153,8 @@ at the authoritative cohorts; they do not contain the logic you edit:
 
 | Surface | Role |
 | ------- | ---- |
-| `.claude-plugin/plugin.json` | Claude Code plugin manifest — generated from the source cohorts (see the regeneration checklist below) |
-| `.claude-plugin/marketplace.json` | Claude Code plugin-marketplace entry |
+| `.claude-plugin/marketplace.json` | Claude Code plugin-marketplace entry; its plugin `source` is `plugins/claude-code/`. The repository root is not a plugin and carries no `plugin.json`. |
+| `plugins/claude-code/` | The Claude Code plugin package, manifest included — generated from the source cohorts (see the regeneration checklist below) |
 | `commands/apothem.toml` | A single passthrough slash-command that shells out to the engine, for the tool whose native commands are TOML files |
 | `plugins/apothem/` | The bundled plugin tree for the tool that consumes a local plugin source (carries `.codex-plugin/plugin.json` plus a bundled `skills/` copy) |
 | `.agents/plugins/marketplace.json` | The plugin-marketplace entry that points at `plugins/apothem/` |
@@ -173,13 +173,9 @@ When you **add, rename, or remove** a command, agent, or skill under
 same change-set**, then the gates must pass. Run these from the repository root:
 
 ```bash
-# 1. Regenerate the Claude Code plugin manifest (.claude-plugin/plugin.json).
-#    The manifest is produced by build_plugin_manifest() in
-#    src/apothem/lib/plugin_tree.py; there is no standalone CLI for it, so
-#    regenerate via the module and write the result. The
-#    test_committed_repo_manifest_matches_generator test pins the exact
-#    arguments (catalog_prefix + address_default_command_dir):
-python -c "import json; from pathlib import Path; from apothem.lib.plugin_tree import build_plugin_manifest; m = build_plugin_manifest(Path('src/apothem'), catalog_prefix='./src/apothem/', address_default_command_dir=True); Path('.claude-plugin/plugin.json').write_text(json.dumps(m, indent=2) + '\n', encoding='utf-8')"
+# 1. Regenerate the Claude Code plugin package (plugins/claude-code/,
+#    manifest included) from apothem.lib.plugin_tree.
+python scripts/dev/assemble_plugin_tree.py
 
 # 2. Regenerate the docs reference inventory (source-generated reference pages).
 node site/scripts/update-reference-inventory.mjs
@@ -192,11 +188,10 @@ python -m apothem.conformity.gate --all .
 make test
 ```
 
-Step 1 has no dedicated script — the `build_plugin_manifest` function in
-`src/apothem/lib/plugin_tree.py` is the canonical generator, and the
-`test_committed_repo_manifest_matches_generator` test fails if the committed
-`.claude-plugin/plugin.json` drifts from its output, so confirm that test is
-green after regenerating. Steps 2 and 3 are run by `node` and the dev script
+In step 1, `apothem.lib.plugin_tree` is the canonical generator, and
+`python scripts/dev/assemble_plugin_tree.py --check` (run in CI) fails if the
+committed `plugins/claude-code/` tree, its `.claude-plugin/plugin.json`
+included, drifts from its output. Steps 2 and 3 are run by `node` and the dev script
 respectively. The behavior-diff and docs-drift gates run in CI and will block a
 PR whose generated surfaces drifted from the source cohorts.
 
