@@ -382,6 +382,17 @@ def load_profile_file(profile_path: Path) -> CanonicalProfile:
 
     try:
         raw_text = resolved.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        raise ProfileValidationError(
+            ProfileDiagnostic(
+                code="profile.read_failed",
+                message="Apothem validation failed.",
+                profile_path=str(resolved),
+                field="profile",
+                reason=f"profile is not valid UTF-8 ({exc.reason} at byte {exc.start})",
+                fix="Save the profile as UTF-8 text.",
+            )
+        ) from exc
     except OSError as exc:
         raise ProfileValidationError(
             ProfileDiagnostic(
@@ -407,6 +418,35 @@ def load_profile_file(profile_path: Path) -> CanonicalProfile:
                 fix="Fix the YAML syntax before running the command again.",
             )
         ) from exc
+    except RecursionError as exc:
+        # The YAML composer recurses once per nesting level, so a deeply
+        # nested document exhausts the stack before it is a YAMLError.
+        raise ProfileValidationError(
+            ProfileDiagnostic(
+                code="profile.yaml_invalid",
+                message="Apothem validation failed.",
+                profile_path=str(resolved),
+                field="profile",
+                reason="YAML nesting is too deep to parse",
+                fix="Fix the YAML syntax before running the command again.",
+            )
+        ) from exc
+
+    shape_problem = _document_shape_problem(raw_profile)
+    if shape_problem is not None:
+        raise ProfileValidationError(
+            ProfileDiagnostic(
+                code="profile.yaml_invalid",
+                message="Apothem validation failed.",
+                profile_path=str(resolved),
+                field="profile",
+                reason=shape_problem,
+                fix=(
+                    "Simplify the YAML: remove self-referencing aliases and "
+                    "deep nesting."
+                ),
+            )
+        )
 
     if raw_profile is None:
         raw_profile = {}
@@ -480,6 +520,48 @@ def migrate_profile(
                 profile = _MIGRATIONS[version](profile)
                 version += 1
     return profile
+
+
+# Bounds on a parsed profile document. A real profile nests about five levels
+# and holds at most a few hundred values. The bounds sit far above that and
+# below the point where recursive validation and redaction would exhaust the
+# stack, or where YAML aliases (which share one object per anchor) would expand
+# into an exponential walk.
+_MAX_DOCUMENT_DEPTH: Final[int] = 64
+_MAX_DOCUMENT_VALUES: Final[int] = 100_000
+
+
+def _document_shape_problem(document: object) -> str | None:
+    """Return why a parsed YAML document cannot be validated safely, or None.
+
+    Walks the document iteratively (so the check itself cannot overflow the
+    stack) and reports, in plain words, a value that contains itself (an alias
+    cycle such as ``&a [*a]``), nesting deeper than ``_MAX_DOCUMENT_DEPTH``, or
+    more than ``_MAX_DOCUMENT_VALUES`` values once aliases are followed.
+    """
+    stack: list[tuple[object, int, frozenset[int]]] = [(document, 0, frozenset())]
+    visited = 0
+    while stack:
+        value, depth, ancestors = stack.pop()
+        visited += 1
+        if visited > _MAX_DOCUMENT_VALUES:
+            return (
+                f"profile expands to more than {_MAX_DOCUMENT_VALUES} values "
+                "once YAML aliases are followed"
+            )
+        if isinstance(value, Mapping):
+            children: list[object] = list(value.values())
+        elif isinstance(value, list):
+            children = list(value)
+        else:
+            continue
+        if id(value) in ancestors:
+            return "YAML aliases form a cycle: a value contains itself"
+        if depth >= _MAX_DOCUMENT_DEPTH:
+            return f"profile nests deeper than {_MAX_DOCUMENT_DEPTH} levels"
+        inner = ancestors | {id(value)}
+        stack.extend((child, depth + 1, inner) for child in children)
+    return None
 
 
 def validate_profile(
