@@ -3,6 +3,12 @@ name: "tool-use-discipline-failure-tells"
 description: "Path-filtered companion to tool-use-discipline carrying the failure-tells enumeration for the three tool-loop disciplines — sequential-where-parallel, act-without-observe, no-verifiable-exit, fixed-count-stop, and false-sequencing — declared at the parent rule's §Failure-tells anchor; demand-loaded on rule, command, skill, agent, and hook authoring surfaces where tool-loop cadence is exercised."
 pathFilter: "**/rules/**, **/commands/**, **/skills/**, **/agents/**, **/hooks/**"
 alwaysApply: false
+paths:
+  - "**/rules/**"
+  - "**/commands/**"
+  - "**/skills/**"
+  - "**/agents/**"
+  - "**/hooks/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

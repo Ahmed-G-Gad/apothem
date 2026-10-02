@@ -22,6 +22,7 @@ from apothem.lib.propagation import (
 
 from .install_driver_apply import (
     _COHORT_DOC_FILES,
+    apply_claude_rules,
     apply_codex_agents,
     apply_command_skills,
     apply_gemini_agents,
@@ -35,6 +36,7 @@ from .install_driver_apply import (
 )
 from .install_driver_backup import _compensating_rollback, _install_lock_path
 from .install_driver_converters import (
+    _claude_rule_text,
     _codex_agent_text,
     _gemini_agent_text,
     _gemini_command_text,
@@ -117,6 +119,7 @@ _NATIVE_FILE_CONVERTERS: Final[dict[str, Callable[[Path], str]]] = {
     "opencode_agents": _opencode_agent_text,
     "qwen_agents": _qwen_agent_text,
     "markdown_commands": _native_markdown_command_text,
+    "claude_rules": _claude_rule_text,
 }
 
 
@@ -458,6 +461,13 @@ def _dispatch_install_entry(
         )
     if entry.mode == "markdown_commands":
         return apply_markdown_commands(
+            entry,
+            harness_root=harness_root,
+            project_root=project_root,
+            harness_name=harness_name,
+        )
+    if entry.mode == "claude_rules":
+        return apply_claude_rules(
             entry,
             harness_root=harness_root,
             project_root=project_root,

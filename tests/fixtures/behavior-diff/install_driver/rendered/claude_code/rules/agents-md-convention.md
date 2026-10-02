@@ -3,6 +3,9 @@ name: "agents-md-convention"
 description: "The repository carries a single agent-facing canon at the root AGENTS.md; per-folder operating guidance lives in each folder's README.md, which serves both the human and the agent reader. Per-folder AGENTS.md companions are not required; any present companion stays current with its folder and the root AGENTS.md stays coherent with the AI-surface canon."
 pathFilter: "**/AGENTS.md, **/README.md"
 alwaysApply: false
+paths:
+  - "**/AGENTS.md"
+  - "**/README.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

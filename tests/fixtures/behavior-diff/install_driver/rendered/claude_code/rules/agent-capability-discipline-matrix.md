@@ -3,6 +3,11 @@ name: "agent-capability-discipline-matrix"
 description: "Path-filtered companion to `agent-capability-discipline.md` — carries the per-harness agentic-capability matrix (§1), the per-harness MCP-surface catalog (§3), and the per-harness agent-memory-convention catalog (§7) the parent rule's anchors delegate to. Demand-loaded when the assistant edits any adapter sub-package, cross-harness capability-matrix input, or per-harness MCP-config artifact."
 pathFilter: "**/src/apothem/harnesses/**, **/_inputs/cross-harness-agent-capability-matrix.md, **/.mcp.json, **/mcp.json"
 alwaysApply: false
+paths:
+  - "**/src/apothem/harnesses/**"
+  - "**/_inputs/cross-harness-agent-capability-matrix.md"
+  - "**/.mcp.json"
+  - "**/mcp.json"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

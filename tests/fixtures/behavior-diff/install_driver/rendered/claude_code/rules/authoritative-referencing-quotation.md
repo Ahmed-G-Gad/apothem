@@ -3,6 +3,11 @@ name: "authoritative-referencing-quotation"
 description: "Quotation-ceiling / paraphrase-default companion to authoritative-referencing — paraphrase a cited source by default with attribution; quote sparingly and briefly (a short excerpt, never a full third-party work); attribute the source without offering a legal or fair-use opinion. Path-filtered to prose surfaces where source material is reproduced."
 pathFilter: "**/*.md, **/*.mdx, **/docs/**, **/site/**"
 alwaysApply: false
+paths:
+  - "**/*.md"
+  - "**/*.mdx"
+  - "**/docs/**"
+  - "**/site/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

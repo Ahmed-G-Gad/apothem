@@ -68,6 +68,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **Path-filtered rules no longer load in every Claude Code session.** Claude
+  Code reads only `paths:` from a rule and loads every rule without it at
+  launch, so the engine install loaded all 91 rules (914,538 bytes) in each
+  session. The install now writes each path-filtered rule with a `paths:` list
+  built from its `pathFilter`; the 28 always-on rules (213,701 bytes) load at
+  launch and the 63 companions load when a matching file is read.
 - **Claude Code plugin hooks run on a plain checkout.** Each hook is
   registered once, as `bash "<plugin-root>/…/bootstrap.sh" <event>`, so no hook
   depends on a file's executable bit, and no tool call triggers the same hook

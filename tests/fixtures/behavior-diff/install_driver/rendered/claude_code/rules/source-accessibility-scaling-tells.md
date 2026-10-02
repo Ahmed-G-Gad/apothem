@@ -3,6 +3,14 @@ name: "source-accessibility-scaling-tells"
 description: "Path-filtered companion to source-accessibility carrying the four-level seriousness-scaling table and the failure-tells enumeration for source-trust-outranks-reachability selection, declared at the parent rule's §Seriousness-Scaling and §Failure-tells anchors; demand-loaded on documentation, site, and configuration-manifest surfaces where a claim's source is selected and cited."
 pathFilter: "**/*.md, **/*.mdx, **/docs/**, **/site/**, **/*.toml, **/*.cfg, **/package.json"
 alwaysApply: false
+paths:
+  - "**/*.md"
+  - "**/*.mdx"
+  - "**/docs/**"
+  - "**/site/**"
+  - "**/*.toml"
+  - "**/*.cfg"
+  - "**/package.json"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

@@ -3,6 +3,12 @@ name: "interactive-questions-canonical-shapes"
 description: "Path-filtered companion rule carrying the canonical invocation shapes, worked examples, recommendation-taxonomy details, harness-fallback shape, destructive-op canonical option-set templates, and default-pointer worked examples for the parent `interactive-questions.md` rule; demand-loaded on path match."
 pathFilter: "**/commands/**/*.md, **/rules/**/*.md, **/skills/**/*.md, **/agents/**/*.md, **/hooks/**/*.md"
 alwaysApply: false
+paths:
+  - "**/commands/**/*.md"
+  - "**/rules/**/*.md"
+  - "**/skills/**/*.md"
+  - "**/agents/**/*.md"
+  - "**/hooks/**/*.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

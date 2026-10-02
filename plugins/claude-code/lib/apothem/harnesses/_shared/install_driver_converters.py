@@ -308,3 +308,26 @@ def _native_markdown_command_text(source_path: Path) -> str:
     body = _strip_leading_html_comment(_agent_body(source_path)).strip()
     body = re.sub(r"\{\{\s*args\s*\}\}", "$ARGUMENTS", body)
     return f"---\ndescription: {_yaml_scalar(description)}\n---\n\n{body}\n"
+
+
+def _claude_rule_text(source_path: Path) -> str:
+    """Render a rule for ``~/.claude/rules/`` with Claude Code's native scoping.
+
+    Claude Code loads every rule file at launch unless its frontmatter carries
+    ``paths:``, the only rule field it reads
+    (https://code.claude.com/docs/en/memory, retrieved 2026-10-02). The corpus
+    marks a path-scoped rule with the harness-neutral ``pathFilter`` key, a
+    comma-separated glob list, so this adds the equivalent ``paths:`` list just
+    before the closing delimiter. An always-on rule (empty ``pathFilter``) is
+    returned unchanged, and the body is never touched.
+    """
+    text = source_path.read_text(encoding="utf-8")
+    path_filter = (field_value(source_path, "pathFilter") or "").strip()
+    if not path_filter or not text.startswith("---\n"):
+        return text
+    end = text.find("\n---\n", 4)
+    if end < 0:
+        return text
+    globs = [item.strip() for item in path_filter.split(",") if item.strip()]
+    paths = _yaml_list("paths", globs)
+    return text[: end + 1] + paths + text[end + 1 :]

@@ -3,6 +3,14 @@ name: "authority-inquiry-categories"
 description: "Path-filtered companion sub-rule carrying the seven-category inquiry catalog (full forbidden-to-invent + inquire-because columns), the required-vs-optional explanatory paragraph, the carved-out auto-decisions catalog, and the failure-tells enumeration declared at the parent `authority-inquiry.md` rule's anchors; demand-loaded on host-project artifact authoring."
 pathFilter: "**/*.md, **/CLAUDE.md, **/rules/**, **/commands/**, **/skills/**, **/agents/**, **/docs/**"
 alwaysApply: false
+paths:
+  - "**/*.md"
+  - "**/CLAUDE.md"
+  - "**/rules/**"
+  - "**/commands/**"
+  - "**/skills/**"
+  - "**/agents/**"
+  - "**/docs/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

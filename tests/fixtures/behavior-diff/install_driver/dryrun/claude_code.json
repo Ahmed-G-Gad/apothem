@@ -189,7 +189,7 @@
       "ownership_class": "apothem-owned"
     },
     "message": "dry run: no filesystem changes made",
-    "operation": "merge_tree_entries",
+    "operation": "claude_rules",
     "outcome": "created",
     "path": "<ROOT>/rules",
     "source": "<APOTHEM_SRC>/rules"

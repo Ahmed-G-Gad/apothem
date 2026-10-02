@@ -50,6 +50,7 @@ _INSTALL_ENTRY_MODES: tuple[str, ...] = (
     "qwen_agents",
     "gemini_commands",
     "markdown_commands",
+    "claude_rules",
 )
 
 #: Plain-language verb phrase for each operation kind. Preview surfaces (the
@@ -70,6 +71,7 @@ OPERATION_LABELS: Final[dict[str, str]] = {
     "qwen_agents": "Install agents",
     "gemini_commands": "Install commands",
     "markdown_commands": "Install commands",
+    "claude_rules": "Install rules",
     "sweep_stale": "Prune stale files",
     "capability_projection": "Project capability",
     "data_surface": "Write data file",

@@ -3,6 +3,11 @@ name: "agent-capability-discipline"
 description: "Cross-harness agentic discipline — the 17-harness adapter cohort is recognized as sophisticated AI agent systems; core and supplemental agentic capabilities converge via M14, anchor to per-adapter STANDARD CONVENTION PIN, validate at materializer time, and attest through adapter capability coverage. Demand-loaded on adapter / capability / MCP-config touches, co-triggering with its matrix companion."
 pathFilter: "**/src/apothem/harnesses/**, **/_inputs/cross-harness-agent-capability-matrix.md, **/.mcp.json, **/mcp.json"
 alwaysApply: false
+paths:
+  - "**/src/apothem/harnesses/**"
+  - "**/_inputs/cross-harness-agent-capability-matrix.md"
+  - "**/.mcp.json"
+  - "**/mcp.json"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

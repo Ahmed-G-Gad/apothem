@@ -3,6 +3,17 @@ name: "host-discovery-manifests"
 description: "Path-filtered companion rule carrying the per-language manifest catalog, the discovery-record provenance schema, the failure-tells enumeration, and the Derived Project Context Block definition declared at the parent `host-discovery.md` rule's §1, §4, Failure-tells, and §Derived Project Context Block anchors; demand-loaded on host-manifest or convention-document touches."
 pathFilter: "**/pyproject.toml, **/setup.cfg, **/package.json, **/Cargo.toml, **/go.mod, **/.editorconfig, **/.github/workflows/**, **/CONTRIBUTING.md, **/CLAUDE.md, **/rules/**"
 alwaysApply: false
+paths:
+  - "**/pyproject.toml"
+  - "**/setup.cfg"
+  - "**/package.json"
+  - "**/Cargo.toml"
+  - "**/go.mod"
+  - "**/.editorconfig"
+  - "**/.github/workflows/**"
+  - "**/CONTRIBUTING.md"
+  - "**/CLAUDE.md"
+  - "**/rules/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

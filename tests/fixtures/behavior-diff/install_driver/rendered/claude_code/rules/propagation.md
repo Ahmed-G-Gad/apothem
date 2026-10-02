@@ -3,6 +3,22 @@ name: "propagation"
 description: "Every mutation of any artifact propagates, in the SAME change-set, to every dependent reference across the whole repository's reference graph — code, tests, docs, root files, `.github`, CHANGELOG, harness-rendered templates, the harness registry, plugin manifests, and cross-rule bindings. A mutation (add / edit / remove / rename / move / split / merge / deprecate) that lands without its reference updates is an orphan / half-edge finding. Unifies the docs-tier (living-docs) and component-tier (systemic-participation) propagation disciplines to the full reference graph; the existing drift gates are its mechanical arm."
 pathFilter: "**/*.py, **/*.md, **/*.mdx, **/*.json, **/*.yaml, **/*.yml, **/*.toml, **/*.sh, **/*.ps1, **/*.ts, **/*.js, **/*.mjs, **/*.css, **/*.mdc, **/*.txt"
 alwaysApply: false
+paths:
+  - "**/*.py"
+  - "**/*.md"
+  - "**/*.mdx"
+  - "**/*.json"
+  - "**/*.yaml"
+  - "**/*.yml"
+  - "**/*.toml"
+  - "**/*.sh"
+  - "**/*.ps1"
+  - "**/*.ts"
+  - "**/*.js"
+  - "**/*.mjs"
+  - "**/*.css"
+  - "**/*.mdc"
+  - "**/*.txt"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

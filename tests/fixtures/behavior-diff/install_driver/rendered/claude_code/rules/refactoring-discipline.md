@@ -3,6 +3,24 @@ name: "refactoring-discipline"
 description: "Agent-driven refactoring is test-gated, one-at-a-time, plan-first, and continuous: a behavior-preserving refactor holds a GREEN test baseline before the first edit and after (the before-and-after contract); addresses exactly one concern in an isolated workspace; proceeds only from a reviewed plan after maximal context-gathering; and runs continuously as the codebase drifts rather than deferred to a crisis. Demand-loaded on refactor-class source edits; the detection signals and full procedure live in the body."
 pathFilter: "**/*.py, **/*.ts, **/*.tsx, **/*.js, **/*.jsx, **/*.mjs, **/*.go, **/*.rs, **/*.java, **/*.kt, **/*.rb, **/*.c, **/*.cpp, **/*.h, **/*.swift, **/*.sh, **/*.ps1"
 alwaysApply: false
+paths:
+  - "**/*.py"
+  - "**/*.ts"
+  - "**/*.tsx"
+  - "**/*.js"
+  - "**/*.jsx"
+  - "**/*.mjs"
+  - "**/*.go"
+  - "**/*.rs"
+  - "**/*.java"
+  - "**/*.kt"
+  - "**/*.rb"
+  - "**/*.c"
+  - "**/*.cpp"
+  - "**/*.h"
+  - "**/*.swift"
+  - "**/*.sh"
+  - "**/*.ps1"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

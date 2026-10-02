@@ -3,6 +3,21 @@ name: "surgical-manipulation"
 description: "Every mutation of an existing artifact is surgical — a precise, minimal, anchor-bounded or managed-block edit that touches only the span the change requires, never a blunt whole-file overwrite where a scoped edit suffices, and never a strip of a surrounding banner or unrelated content. The mutation produces a minimal diff attested against the host's green conformity baseline (the golden-corpus invariant). The surgical-edit + reactive-guard mechanism is the surgical-guard skill."
 pathFilter: "**/*.py, **/*.md, **/*.mdx, **/*.json, **/*.yaml, **/*.yml, **/*.toml, **/*.sh, **/*.ps1, **/*.ts, **/*.js, **/*.mjs, **/*.css, **/*.mdc"
 alwaysApply: false
+paths:
+  - "**/*.py"
+  - "**/*.md"
+  - "**/*.mdx"
+  - "**/*.json"
+  - "**/*.yaml"
+  - "**/*.yml"
+  - "**/*.toml"
+  - "**/*.sh"
+  - "**/*.ps1"
+  - "**/*.ts"
+  - "**/*.js"
+  - "**/*.mjs"
+  - "**/*.css"
+  - "**/*.mdc"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
