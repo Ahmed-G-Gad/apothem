@@ -150,7 +150,12 @@ APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/
 ```
 
 Replace `vMAJOR.MINOR.PATCH` with a tag from the
-[releases page](https://github.com/ahmed-g-gad/apothem/releases).
+[releases page](https://github.com/ahmed-g-gad/apothem/releases). The oldest
+release tag is a lightweight tag with no signature of its own, so the tag
+check aborts on it even though its commit is signed; every later release tag
+is annotated and signed. The
+[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
+release-signing section lists each tag and how to verify it.
 
 Two explicit overrides relax the default: `APOTHEM_REF=main` checks out the
 moving branch (unverified), and `APOTHEM_ALLOW_UNVERIFIED=1` downgrades a
