@@ -15,10 +15,10 @@ Run the engine through the npm shim (needs Node.js and Python 3.10+ on the
 `PATH`):
 
 ```bash
-npx @ahmed-g-gad/apothem install   --harness gemini-cli --project .
-npx @ahmed-g-gad/apothem verify    --harness gemini-cli --project .
-npx @ahmed-g-gad/apothem update    --harness gemini-cli --project .
-npx @ahmed-g-gad/apothem uninstall --harness gemini-cli --project .
+npx @ahmed-g-gad/apothem@1.1.0 install   --harness gemini-cli --project .
+npx @ahmed-g-gad/apothem@1.1.0 verify    --harness gemini-cli --project .
+npx @ahmed-g-gad/apothem@1.1.0 update    --harness gemini-cli --project .
+npx @ahmed-g-gad/apothem@1.1.0 uninstall --harness gemini-cli --project .
 ```
 
 `install` materializes the profile into this project's `GEMINI.md` and
@@ -40,7 +40,7 @@ without requiring the full `apothem install` run:
 - **Production-ready discipline.** Every change ships in production-ready form — tests, docs, CHANGELOG entry, conformant commit message, CI green — in the same change-set.
 - **Plain-language.** Codebase artefacts and user-facing prose read as natural domain language with zero trace of internal planning structure.
 
-Run `npx @ahmed-g-gad/apothem install --harness gemini-cli --project .` to
+Run `npx @ahmed-g-gad/apothem@1.1.0 install --harness gemini-cli --project .` to
 materialize the full converted command, skill, and agent cohort beyond these
 context directives.
 

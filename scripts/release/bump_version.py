@@ -69,6 +69,20 @@ JSON_ANCHORS: list[tuple[str, tuple[str, ...]]] = [
     ("site/package-lock.json", ("packages", "")),
 ]
 
+#: Wrapper files that run the engine through npx. Each call is pinned to the
+#: wrapper's own version (``npx @ahmed-g-gad/apothem@X.Y.Z``) so a published
+#: extension never runs a newer or older engine than the one it shipped with.
+NPX_PIN_ANCHORS: list[str] = [
+    "commands/apothem.toml",
+    "GEMINI.md",
+    "QWEN.md",
+    "plugins/apothem/skills/apothem/SKILL.md",
+]
+
+#: An engine call in a wrapper, pinned or not; group 1 is the pinned version.
+NPX_PIN = re.compile(r"(?<=@ahmed-g-gad/apothem@)(\d+\.\d+\.\d+)")
+_NPX_CALL = re.compile(r"@ahmed-g-gad/apothem(?:@\d+\.\d+\.\d+)?(?![\w@.-])")
+
 PYPROJECT = "pyproject.toml"
 CITATION = "CITATION.cff"
 CHANGELOG = "CHANGELOG.md"
@@ -94,9 +108,14 @@ class BumpError(RuntimeError):
 def anchor_files() -> list[str]:
     """Return every repository-relative file the bumper may rewrite."""
     seen: dict[str, None] = {rel: None for rel, _ in JSON_ANCHORS}
-    for rel in (PYPROJECT, CITATION, CHANGELOG, SECURITY):
+    for rel in (PYPROJECT, CITATION, CHANGELOG, SECURITY, *NPX_PIN_ANCHORS):
         seen[rel] = None
     return list(seen)
+
+
+def _pin_npx(text: str, new: str) -> str:
+    """Pin every engine call in a wrapper to *new*."""
+    return _NPX_CALL.sub(f"@ahmed-g-gad/apothem@{new}", text)
 
 
 def _parse(version: str) -> tuple[int, int, int]:
@@ -282,6 +301,7 @@ def plan(
         _text_step(root, CITATION, lambda t: _bump_citation(t, new, date)),
         _text_step(root, CHANGELOG, changelog),
         _text_step(root, SECURITY, security),
+        *(_text_step(root, rel, lambda t: _pin_npx(t, new)) for rel in NPX_PIN_ANCHORS),
     )
     for step in steps:
         if step is not None:

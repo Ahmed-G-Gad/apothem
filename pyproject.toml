@@ -125,8 +125,10 @@ where = ["src"]
 "apothem.schemas"     = ["*.json", "*.yaml", "*.txt", "*.md"]
 # Hook library ships cross-platform shell stubs alongside the Python
 # dispatcher (bootstrap.{sh,ps1}, find-python.{sh,ps1}, find-pwsh.{sh,ps1})
-# plus the per-event Markdown context fixtures consumed by the dispatcher.
-"apothem.hooks"       = ["lib/*.sh", "lib/*.ps1", "messages/*.md"]
+# plus the per-event Markdown context fixtures consumed by the dispatcher,
+# the plugin hook registration (hooks.json), and the folder READMEs, so the
+# wheel carries the same hook corpus as the npm package and the plugin tree.
+"apothem.hooks"       = ["hooks.json", "*.md", "lib/*.sh", "lib/*.ps1", "lib/*.md", "messages/*.md"]
 # Statusline renderer ships the shell shims plus the conformity-posture
 # data file and the operator-facing reference Markdown.
 "apothem.statuslines" = ["*.sh", "*.ps1", "*.md", "*.json"]

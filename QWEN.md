@@ -15,10 +15,10 @@ Run the engine through the npm shim (needs Node.js and Python 3.10+ on the
 `PATH`):
 
 ```bash
-npx @ahmed-g-gad/apothem install   --harness qwen-code
-npx @ahmed-g-gad/apothem verify    --harness qwen-code
-npx @ahmed-g-gad/apothem update    --harness qwen-code
-npx @ahmed-g-gad/apothem uninstall --harness qwen-code
+npx @ahmed-g-gad/apothem@1.1.0 install   --harness qwen-code
+npx @ahmed-g-gad/apothem@1.1.0 verify    --harness qwen-code
+npx @ahmed-g-gad/apothem@1.1.0 update    --harness qwen-code
+npx @ahmed-g-gad/apothem@1.1.0 uninstall --harness qwen-code
 ```
 
 `install` materializes the profile into Qwen Code's user-global configuration
@@ -39,7 +39,7 @@ without requiring the full `apothem install` run:
 - **Production-ready discipline.** Every change ships in production-ready form — tests, docs, CHANGELOG entry, conformant commit message, CI green — in the same change-set.
 - **Plain-language.** Codebase artefacts and user-facing prose read as natural domain language with zero trace of internal planning structure.
 
-Run `npx @ahmed-g-gad/apothem install --harness qwen-code` to
+Run `npx @ahmed-g-gad/apothem@1.1.0 install --harness qwen-code` to
 materialize the full converted command, skill, and sub-agent cohort beyond these
 context directives.
 

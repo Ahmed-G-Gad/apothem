@@ -12,6 +12,7 @@ that guard the same files.
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -99,6 +100,33 @@ def test_bump_changes_nothing_but_the_version_fields(tmp_path: Path) -> None:
             if anchor_rel == rel:
                 _get(after, keys)["version"] = _get(original, keys)["version"]
         assert after == original, f"{rel} changed beyond its version fields"
+
+
+def test_bump_moves_every_wrapper_engine_pin(tmp_path: Path) -> None:
+    """Each wrapper's npx call moves to the new version, and nothing else does."""
+    root = _scratch_repo(tmp_path)
+    before = {
+        rel: (root / rel).read_text(encoding="utf-8")
+        for rel in bump_version.NPX_PIN_ANCHORS
+    }
+    assert _run(root) == 0
+    for rel, original in before.items():
+        after = (root / rel).read_text(encoding="utf-8")
+        assert bump_version.NPX_PIN.findall(after), rel
+        assert set(bump_version.NPX_PIN.findall(after)) == {NEW}, rel
+        assert bump_version.NPX_PIN.sub("X", after) == bump_version.NPX_PIN.sub(
+            "X", original
+        ), f"{rel} changed beyond its npx pins"
+
+
+def test_shipped_wrappers_pin_the_engine_to_their_own_version() -> None:
+    """Wrappers never run an unpinned engine, so they cannot drift apart."""
+    version = bump_version.current_version(REPO_ROOT)
+    unpinned = re.compile(r"@ahmed-g-gad/apothem(?!@)\b")
+    for rel in bump_version.NPX_PIN_ANCHORS:
+        text = (REPO_ROOT / rel).read_text(encoding="utf-8")
+        assert not unpinned.search(text), f"{rel} runs an unpinned engine"
+        assert set(bump_version.NPX_PIN.findall(text)) == {version}, rel
 
 
 def test_bump_leaves_dependency_versions_in_lockfile_alone(tmp_path: Path) -> None:
