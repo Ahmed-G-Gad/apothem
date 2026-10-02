@@ -409,6 +409,19 @@ def make_project_scope_uninstall(
     return uninstall
 
 
+def _native_allowed_root(output_path: Path) -> Path:
+    """Return the allowed-write boundary for a native config at *output_path*.
+
+    The same boundary :func:`install_driver.run_install` uses for the harness
+    root ``output_path.parent``: its parent (the home directory for a
+    user-scope harness). Backups are keyed relative to this boundary and
+    :func:`install_driver.restore_backup` rebuilds paths from it, so the native
+    config's backup must use it too — keying it relative to the harness root
+    instead restored the operator's config one directory too high.
+    """
+    return install_driver._allowed_write_root(output_path.parent, None)
+
+
 def make_native_config_uninstall(
     harness_name: str,
     materialize_fn: _MaterializeFn,
@@ -436,6 +449,7 @@ def make_native_config_uninstall(
             materialize_fn({}),
             install_root=output_path.parent,
             harness_name=harness_name,
+            allowed_root=_native_allowed_root(output_path),
             apothem_keys=apothem_keys,
         )
         install_driver.run_uninstall(harness_name, harness_root=output_path.parent)
@@ -480,6 +494,7 @@ def make_native_config_install(
             content,
             install_root=output_path.parent,
             harness_name=harness_name,
+            allowed_root=_native_allowed_root(output_path),
         )
         if native_result.outcome == "error":
             raise MaterializationError(

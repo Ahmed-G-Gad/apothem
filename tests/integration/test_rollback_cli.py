@@ -149,3 +149,61 @@ def test_rollback_conflicting_selectors_is_rejected(
     assert result.exit_code == 1
     envelope = json.loads(result.output)
     assert envelope["error"]["code"] == "rollback.conflicting_selectors"
+
+
+# Native-config (materializer) adapters: each renders its config file from the
+# profile and merges it into the operator's existing file. The seed below is an
+# operator config the merge must rewrite (so the install captures a backup);
+# rollback must put those exact bytes back at the config's real path.
+_NATIVE_CONFIG_SEEDS: dict[str, tuple[str, str]] = {
+    "hermes": (".hermes/config.yaml", "model:\n  default: operator-model\n"),
+    "qwen-code": (".qwen/settings.json", '{"model": {"name": "operator-model"}}\n'),
+    "opencode": (
+        ".config/opencode/opencode.json",
+        '{"model": "anthropic/operator-model"}\n',
+    ),
+    "open-claw": (".openclaw/openclaw.json", '{"gateway":{"port":18789}}\n'),
+}
+
+
+@pytest.mark.parametrize("harness_id", sorted(_NATIVE_CONFIG_SEEDS))
+def test_rollback_restores_native_config_in_place(
+    harness_id: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from apothem.lib.harness_registry import get_harness_entry, load_adapter_class
+
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    relative, seed = _NATIVE_CONFIG_SEEDS[harness_id]
+    config = home / relative
+    config.parent.mkdir(parents=True)
+    config.write_text(seed, encoding="utf-8")
+
+    entry = get_harness_entry(harness_id)
+    adapter = load_adapter_class(entry)()
+    assert adapter.output_path == config
+    profile = yaml.safe_load(profile_minimal_path().read_text(encoding="utf-8"))
+    adapter.install(profile)
+    record = install_ledger.latest_record(entry.package_key, root=config.parent)
+    assert record is not None
+
+    result = CliRunner().invoke(
+        main,
+        [
+            "rollback",
+            "--harness",
+            harness_id,
+            "--install-id",
+            record.install_id,
+            "--yes",
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    # The operator's config is back, byte-for-byte, at its real path ...
+    assert config.read_text(encoding="utf-8") == seed
+    # ... and no copy of it landed one directory too high.
+    assert not (config.parent.parent / config.name).exists()
