@@ -15,6 +15,7 @@ from apothem.harnesses._shared import install_driver
 from apothem.lib import install_ledger
 from apothem.lib.data_home import resolve_shared_data_home
 from apothem.lib.harness_materializer import (
+    defuse_sentinels,
     extract_managed_block,
 )
 from apothem.lib.harness_registry import SUPPORTED_PACKAGE_KEYS
@@ -270,7 +271,11 @@ def check_fidelity(
     ``verify`` answer "is the profile faithfully installed?" rather than merely
     "does a file exist".
     """
-    expected = _projected_profile_body(harness_name, profile) or ""
+    # The anchor carries the body with any embedded sentinel neutralized (see
+    # ``defuse_sentinels``), so compare against that same form.
+    expected = defuse_sentinels(
+        (_projected_profile_body(harness_name, profile) or "").strip()
+    )
     results: list[FidelityResult] = []
     for target in _profile_anchor_targets(
         harness_name, harness_root=harness_root, project_root=project_root

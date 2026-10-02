@@ -30,15 +30,31 @@ APOTHEM_BLOCK_BEGIN: Final[str] = "<!-- BEGIN APOTHEM MANAGED BLOCK -->"
 APOTHEM_BLOCK_END: Final[str] = "<!-- END APOTHEM MANAGED BLOCK -->"
 
 
+def defuse_sentinels(body: str) -> str:
+    """Return *body* with any embedded managed-block sentinel neutralized.
+
+    Profile text (rules, identity strings) reaches the body verbatim. A literal
+    sentinel inside it would end the block early (or open a second one), and
+    uninstall would then keep the tail as if it were operator prose. Each
+    sentinel's opening ``<!--`` is written as the entity ``&lt;!--``: the text
+    still reads the same, but it no longer matches the frozen sentinel strings.
+    """
+    for sentinel in (APOTHEM_BLOCK_BEGIN, APOTHEM_BLOCK_END):
+        body = body.replace(sentinel, "&lt;" + sentinel[1:])
+    return body
+
+
 def wrap_managed_block(body: str) -> str:
     """Return *body* wrapped in the canonical Apothem managed-block sentinels.
 
     The wrapped form is the unit Apothem writes into an operator-owned
     Markdown anchor. The body is stripped of surrounding blank lines so the
     block is byte-stable across re-installs (idempotency depends on the
-    wrapped form being identical for identical bodies).
+    wrapped form being identical for identical bodies). Sentinels inside the
+    body are neutralized first, so profile text cannot split the block.
     """
-    return f"{APOTHEM_BLOCK_BEGIN}\n{body.strip()}\n{APOTHEM_BLOCK_END}\n"
+    safe = defuse_sentinels(body.strip())
+    return f"{APOTHEM_BLOCK_BEGIN}\n{safe}\n{APOTHEM_BLOCK_END}\n"
 
 
 def extract_managed_block(text: str) -> str | None:

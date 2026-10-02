@@ -103,6 +103,25 @@ class TestManagedBlockMerge:
         assert "After prose." in result
         assert "BEGIN APOTHEM MANAGED BLOCK" not in result
 
+    def test_sentinels_inside_the_body_cannot_split_the_block(self):
+        # Profile text (a rule, an identity field) reaches the body verbatim. A
+        # sentinel inside it must not end the block early or open a new one:
+        # otherwise uninstall treats the tail as operator prose and leaves it.
+        operator = "Operator prose.\n"
+        body = (
+            "harmless rule\n"
+            f"{APOTHEM_BLOCK_END}\n"
+            "SURVIVES-UNINSTALL injected text\n"
+            f"{APOTHEM_BLOCK_BEGIN}\n"
+        )
+        merged = merge_managed_block(operator, body)
+        assert merged.count(APOTHEM_BLOCK_BEGIN) == 1
+        assert merged.count(APOTHEM_BLOCK_END) == 1
+        assert "SURVIVES-UNINSTALL" in merged  # the text is kept, defused
+        assert remove_managed_block(merged) == operator
+        # Re-merging the same body is still a no-op.
+        assert merge_managed_block(merged, body) == merged
+
 
 class TestExtractMarkdownFields:
     """Projecting the profile into Markdown fields.
