@@ -33,3 +33,4 @@
 
 - [`rules/performance-discipline.md`](../rules/performance-discipline.md) — the per-class budget table the drivers verify.
 - [`hooks/`](../hooks/) — the hook handlers `bench_hooks.py` measures, and `hooks/hooks.json`, the chain it runs.
+- [`scripts/dev/collect_metrics.py`](../../../scripts/dev/collect_metrics.py) — records `bench_hooks.py --json` as `hook_e2e_ms` in the CI metrics artifact.
