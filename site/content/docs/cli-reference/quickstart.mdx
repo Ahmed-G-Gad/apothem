@@ -22,11 +22,17 @@ harnesses will write, grouped by project root versus your home directory;
 capability-note output; and (5) prints the recommended next commands.
 
 It composes the same building blocks the `install` command uses — it does not
-reimplement them. `--harness` defaults to `all` and `--project` to the current
-directory.
+reimplement them. `--project` defaults to the current directory. `--harness` has
+no default: when it is omitted, `quickstart` asks which harness to install, so a
+first run writes one harness's configuration. `--harness all` installs every
+supported harness and is always an explicit choice.
 
 ## Behavior
 
+- **Harness** — without `--harness`, an interactive run lists the supported
+  names (plus `all`) and asks for one before anything is written. A run that
+  cannot ask — `--yes`, `--format json`, or no terminal — stops with a usage
+  error that names the `--harness` option, and writes nothing.
 - **Profile** — if the resolved profile path has no file, `quickstart` offers to
   create a starter profile (auto-creates under `--yes`, a non-interactive shell,
   or `--format json`) and names the placeholder identity fields to personalize.
@@ -44,7 +50,7 @@ directory.
 
 | Option | Description |
 |---|---|
-| `--harness NAME` | Harness adapter to install, or `all` for the registry-wide set (default: `all`). |
+| `--harness NAME` | Harness adapter to install, or `all` for the registry-wide set. No default: an interactive run asks; a non-interactive run must pass it. |
 | `--profile PATH` | Path to shared profile YAML. Defaults to `~/.config/apothem/profile.yaml`. |
 | `--project PATH` | Project root for project-scope harnesses. Defaults to the current directory. |
 | `--yes` | Run the full guided sequence non-interactively (skip every prompt). |
@@ -76,10 +82,10 @@ directory.
 ## Examples
 
 ```bash
-apothem quickstart
-apothem quickstart --harness all --project . --yes
-apothem quickstart --harness claude-code
-apothem quickstart --json
+apothem quickstart                                  # asks which harness
+apothem quickstart --harness claude-code --yes
+apothem quickstart --harness all --project . --yes  # every harness, explicitly
+apothem quickstart --harness claude-code --json
 ```
 
 ## Exit codes

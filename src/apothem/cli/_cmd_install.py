@@ -34,6 +34,7 @@ from apothem.cli._helpers import (
 )
 from apothem.cli._json_formatter import emit_json
 from apothem.cli._materialize import _materialize
+from apothem.lib.harness_registry import SUPPORTED_HARNESS_IDS
 from apothem.lib.profile import ProfileValidationError
 
 
@@ -96,9 +97,11 @@ def install(
 @main.command(epilog=_EP_QUICKSTART)
 @click.option(
     "--harness",
-    default="all",
+    default=None,
     metavar="NAME",
-    help="Harness adapter name or 'all' for every supported harness (default: all).",
+    help="Harness adapter name, or 'all' for every supported harness. When "
+    "omitted, quickstart asks; a run that cannot ask (--yes, --format json, or "
+    "no terminal) must pass it.",
     shell_complete=_complete_harness,
 )
 @_profile_option
@@ -116,7 +119,7 @@ def install(
 )
 @common_options
 def quickstart(
-    harness: str,
+    harness: str | None,
     profile: str | None,
     assume_yes: bool,
     project: str | None,
@@ -135,9 +138,18 @@ def quickstart(
     recommended next commands. ``--yes`` runs the whole sequence
     non-interactively; ``--format json`` emits one structured summary of every
     step. It composes the install building blocks; it does not duplicate them.
+
+    Without ``--harness`` it asks which harness to install, so the first run
+    writes one harness's configuration rather than all of them; ``all`` is an
+    explicit choice. A run that cannot ask fails with a usage error before
+    anything is written.
     """
     fmt = resolve_format(output_format, json_flag)
     con = get_console(no_color=no_color, quiet=quiet)
+    if harness is None:
+        harness = _ask_for_harness(
+            can_ask=not assume_yes and fmt != "json" and _pkg._stdin_is_interactive()
+        )
     profile_path = _resolve_profile_path(profile)
     steps: list[dict[str, object]] = []
 
@@ -305,6 +317,28 @@ def quickstart(
         con.print("\n[bold]Recommended next step:[/]")
         con.print(f"  Confirm the install:  [cyan]{escape(recommended[0])}[/]")
         con.print(f"  Check system health:  [cyan]{escape(recommended[1])}[/]")
+
+
+def _ask_for_harness(*, can_ask: bool) -> str:
+    """Return the harness quickstart should install, asking when it can.
+
+    Raises :class:`click.UsageError` when no prompt is possible, so a scripted
+    run never falls back to every harness.
+    """
+    if not can_ask:
+        raise click.UsageError(
+            "Missing option '--harness'. Name one harness (for example "
+            "'--harness claude-code'), or pass '--harness all' for every "
+            "supported harness."
+        )
+    choices = [*SUPPORTED_HARNESS_IDS, "all"]
+    answer: str = click.prompt(
+        "Which harness should quickstart install? (a name from the list, or "
+        "'all' for every harness)",
+        type=click.Choice(choices, case_sensitive=False),
+        show_choices=True,
+    )
+    return answer.strip().lower()
 
 
 def _make_installing_alias(name: str) -> click.Command:

@@ -52,7 +52,16 @@ def test_quickstart_yes_fresh_runs_full_ordered_sequence(
     """``--yes`` on a fresh machine runs profile->preview->install->next in order."""
     home, project = env
     result = runner.invoke(
-        main, ["quickstart", "--project", str(project), "--no-color", "--yes"]
+        main,
+        [
+            "quickstart",
+            "--harness",
+            "all",
+            "--project",
+            str(project),
+            "--no-color",
+            "--yes",
+        ],
     )
     assert result.exit_code == 0, result.output
     out = result.output
@@ -85,7 +94,16 @@ def test_quickstart_json_emits_one_structured_summary(
     _, project = env
     result = runner.invoke(
         main,
-        ["quickstart", "--project", str(project), "--format", "json", "--yes"],
+        [
+            "quickstart",
+            "--harness",
+            "all",
+            "--project",
+            str(project),
+            "--format",
+            "json",
+            "--yes",
+        ],
     )
     assert result.exit_code == 0, result.output
     payload = json.loads(result.output)  # exactly one JSON document
@@ -109,7 +127,7 @@ def test_quickstart_interactive_decline_at_confirm_writes_nothing(
     # writes (no) -> abort before any harness file is written.
     result = runner.invoke(
         main,
-        ["quickstart", "--project", str(project), "--no-color"],
+        ["quickstart", "--harness", "all", "--project", str(project), "--no-color"],
         input="y\nn\n",
     )
     assert result.exit_code != 0  # click.Abort
@@ -136,7 +154,16 @@ def test_quickstart_existing_invalid_profile_emits_structured_error(
 
     result = runner.invoke(
         main,
-        ["quickstart", "--project", str(project), "--format", "json", "--yes"],
+        [
+            "quickstart",
+            "--harness",
+            "all",
+            "--project",
+            str(project),
+            "--format",
+            "json",
+            "--yes",
+        ],
     )
     assert result.exit_code == 1, result.output
     payload = json.loads(result.output)  # exactly one JSON document, no traceback
@@ -145,7 +172,16 @@ def test_quickstart_existing_invalid_profile_emits_structured_error(
     assert payload["error"]
 
     plain = runner.invoke(
-        main, ["quickstart", "--project", str(project), "--no-color", "--yes"]
+        main,
+        [
+            "quickstart",
+            "--harness",
+            "all",
+            "--project",
+            str(project),
+            "--no-color",
+            "--yes",
+        ],
     )
     assert plain.exit_code == 1, plain.output
     assert "Error:" in plain.output
@@ -163,7 +199,16 @@ def test_quickstart_existing_profile_is_not_recreated(
 
     result = runner.invoke(
         main,
-        ["quickstart", "--project", str(project), "--format", "json", "--yes"],
+        [
+            "quickstart",
+            "--harness",
+            "all",
+            "--project",
+            str(project),
+            "--format",
+            "json",
+            "--yes",
+        ],
     )
     assert result.exit_code == 0, result.output
     payload = json.loads(result.output)
@@ -174,3 +219,37 @@ def test_quickstart_existing_profile_is_not_recreated(
     assert not any(
         w.get("operation") == "placeholder_identity" for w in install_warnings
     )
+
+
+def test_quickstart_without_harness_asks_which_one(
+    runner: CliRunner, env: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """With no ``--harness``, an interactive quickstart asks and installs one."""
+    home, project = env
+    monkeypatch.setattr(cli, "_stdin_is_interactive", lambda: True)
+    # Prompts: which harness (claude-code), then create the starter profile (y).
+    result = runner.invoke(
+        main,
+        ["quickstart", "--project", str(project), "--no-color"],
+        input="claude-code\ny\n",
+    )
+    assert result.exit_code == 0, result.output
+    assert "Which harness" in result.output
+    assert (home / ".claude" / "settings.json").is_file()
+    # Only the named harness: no project-scope harness wrote into the project.
+    assert [p for p in project.rglob("*") if p.is_file()] == []
+    assert "--harness claude-code" in result.output.replace("\n", "")
+
+
+def test_quickstart_noninteractive_without_harness_writes_nothing(
+    runner: CliRunner, env: tuple[Path, Path]
+) -> None:
+    """``--yes`` with no ``--harness`` is a usage error, never an implicit ``all``."""
+    home, project = env
+    result = runner.invoke(
+        main, ["quickstart", "--project", str(project), "--no-color", "--yes"]
+    )
+    assert result.exit_code not in (0, 1), result.output
+    assert "--harness" in result.output
+    assert list(home.iterdir()) == []
+    assert list(project.iterdir()) == []

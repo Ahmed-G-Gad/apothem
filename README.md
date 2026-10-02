@@ -134,12 +134,17 @@ on your `PATH`, with the `click` and `rich` Python packages importable
 either is missing). Then two commands take you from nothing to a verified install:
 
 ```shell
-# 1 — create a profile (if needed), preview, confirm, and install — one guided step
-npx @ahmed-g-gad/apothem quickstart --yes
+# 1 — create a profile (if needed), preview, and install one harness — one guided step
+npx @ahmed-g-gad/apothem quickstart --harness claude-code --yes
 
 # 2 — confirm the configuration landed correctly
 npx @ahmed-g-gad/apothem verify --harness claude-code
 ```
+
+Swap `claude-code` for the tool you use in both commands
+(`npx @ahmed-g-gad/apothem harnesses list` prints every name). Leave
+`--harness` off and `quickstart` asks; `--harness all` configures every
+supported tool and is never the default.
 
 That is the whole path: `quickstart` scaffolds a shared profile when none
 exists, previews every file it will write, installs, and names the next
@@ -176,11 +181,12 @@ The `quickstart` command walks the whole canonical path in one guided step:
 npx @ahmed-g-gad/apothem quickstart
 ```
 
-It ensures a profile (scaffolding one with a personalize nudge if it is
-missing), previews the writes grouped by project root versus your home
-directory, asks before writing outside the project, installs with the grouped
-capability-note output, and ends by naming the next commands. `--yes` runs it
-non-interactively; `--format json` emits one structured summary.
+It asks which harness to install (unless you pass `--harness`), ensures a
+profile (scaffolding one with a personalize nudge if it is missing), previews
+the writes grouped by project root versus your home directory, asks before
+writing outside the project, installs with the grouped capability-note output,
+and ends by naming the next commands. `--yes` runs it non-interactively and then
+needs `--harness`; `--format json` emits one structured summary.
 
 Prefer the explicit steps? Run them directly. The `--project` flag is required
 when `all` includes project-scope adapters such as Cursor, Gemini CLI, GitHub

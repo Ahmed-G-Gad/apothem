@@ -263,9 +263,13 @@ Exit codes:
 _EP_QUICKSTART = """
 Examples:
   apothem quickstart
+  apothem quickstart --harness claude-code --yes
   apothem quickstart --harness all --project . --yes
-  apothem quickstart --harness claude-code
-  apothem quickstart --json
+  apothem quickstart --harness claude-code --json
+
+Without --harness, quickstart asks which harness to install; a run that
+cannot ask (--yes, --json, or no terminal) must name one. 'all' installs
+every supported harness and is never the default.
 
 Related commands:
   install   Materialize a harness from the shared profile
