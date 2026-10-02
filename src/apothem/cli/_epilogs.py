@@ -2,9 +2,10 @@
 
 """Per-subcommand ``--help`` epilog blocks for the apothem CLI.
 
-Each block carries Examples, Related commands, and Exit codes. Extracted
-verbatim from the former monolithic ``cli/__init__.py`` so ``--help`` output
-is byte-identical.
+Each block carries Examples, Related commands, and Exit codes. The blocks are
+line-structured, so every paragraph is marked with Click's no-rewrap marker
+(see :func:`_keep_line_structure` at the end of this module); without it Click
+re-flows each list into one run-on paragraph.
 """
 
 from __future__ import annotations
@@ -327,3 +328,19 @@ Exit codes:
   1  Expected validation or project error
   64 Usage error: unknown option or command, or a missing or invalid value
 """
+
+
+def _keep_line_structure(epilog: str) -> str:
+    """Prefix every paragraph of *epilog* with Click's no-rewrap marker.
+
+    Click re-wraps help text paragraph by paragraph; a paragraph whose first
+    line is ``\\b`` is printed with its line breaks and indentation intact.
+    """
+    paragraphs = epilog.strip("\n").split("\n\n")
+    return "\n" + "\n\n".join(f"\b\n{paragraph}" for paragraph in paragraphs) + "\n"
+
+
+# Mark every epilog defined above, so a new _EP_* block cannot forget it.
+for _name, _value in list(globals().items()):
+    if _name.startswith("_EP_") and isinstance(_value, str):
+        globals()[_name] = _keep_line_structure(_value)
