@@ -6,12 +6,12 @@
 Spawn budget: 60 seconds for any of the four agent patterns
 (research / audit / quality / generation).
 
-Agent spawns are exercised through the host harness rather than via a
-direct subprocess call; the script stands as a budget anchor with a
-representative-invocation hook that operators wire to their harness.
-When no harness fixture is provided, the script reports the budget and
-exits with the scaffold marker (return code 0) so the verifier surface
-remains usable while detailed fixtures land.
+Not measured. An agent spawn runs inside a host harness and costs a model
+call; there is no headless, unbilled way to time one from this repository.
+Until a harness fixture is wired, the driver reports ``NOT MEASURED`` with the
+budget and exits ``EXIT_NOT_MEASURED`` (3). That code is distinct from pass
+(0), over budget (1) and error (2), so a caller can never read the scaffold as
+a pass. The ``make benchmarks`` target therefore does not run this driver.
 """
 
 from __future__ import annotations
@@ -22,6 +22,10 @@ from typing import Final
 _BUDGET: Final[float] = 60.0
 _PATTERNS: Final[tuple[str, ...]] = ("research", "audit", "quality", "generation")
 
+EXIT_PASS: Final[int] = 0
+EXIT_OVER_BUDGET: Final[int] = 1
+EXIT_NOT_MEASURED: Final[int] = 3
+
 
 def _representative_spawn() -> float | None:
     """Return wall-clock seconds for a representative agent spawn.
@@ -29,9 +33,8 @@ def _representative_spawn() -> float | None:
     Returns ``None`` when no harness fixture is wired; the caller then
     reports the budget without a measurement.
     """
-    # Harness fixtures are operator-editorial; without one wired, no
-    # measurement is attempted. Wire a representative spawn through the
-    # host harness here when one becomes available.
+    # A spawn needs a host harness and a model call; wire a fixture here when
+    # an unbilled one exists.
     return None
 
 
@@ -42,10 +45,9 @@ def main(argv: list[str] | None = None) -> int:
     (``None`` reads ``sys.argv``); it must select one ``--pattern`` from the
     four supported agent patterns.
 
-    Post-conditions: returns ``0`` when the measured spawn is inside the
-    per-spawn budget, or when no harness fixture is wired and the run degrades
-    to reporting the budget alone; returns non-zero when a measured spawn
-    exceeds it.
+    Post-conditions: returns ``0`` when a measured spawn is inside the budget,
+    ``1`` when it exceeds it, and ``3`` (not measured) when no harness fixture
+    is wired.
     """
     parser = argparse.ArgumentParser(prog="bench_agents")
     parser.add_argument(
@@ -59,15 +61,15 @@ def main(argv: list[str] | None = None) -> int:
     elapsed = _representative_spawn()
     if elapsed is None:
         print(
-            f"SCAFFOLD: pattern={args.pattern} budget={_BUDGET}s "
-            "(no harness fixture wired; measurement skipped)"
+            f"NOT MEASURED: agent {args.pattern} budget={_BUDGET}s "
+            "(a spawn needs a host harness and a model call; no fixture is wired)"
         )
-        return 0
+        return EXIT_NOT_MEASURED
     if elapsed <= _BUDGET:
         print(f"PASS: agent {args.pattern} = {elapsed:.3f}s (budget {_BUDGET}s)")
-        return 0
+        return EXIT_PASS
     print(f"FAIL: agent {args.pattern} = {elapsed:.3f}s exceeds budget {_BUDGET}s")
-    return 1
+    return EXIT_OVER_BUDGET
 
 
 if __name__ == "__main__":
