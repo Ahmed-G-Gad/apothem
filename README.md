@@ -446,6 +446,11 @@ Install Apothem as a Qwen Code extension straight from the repository:
 qwen extensions install ahmed-g-gad/apothem
 ```
 
+The repository is also a Claude Code plugin marketplace, so Qwen Code asks
+which plugin to install; choose `apothem`. To install without the prompt, for
+example in a script, name the plugin and accept the install notice up front:
+`qwen extensions install ahmed-g-gad/apothem:apothem --consent`.
+
 Like the Gemini CLI extension, this is a bootstrap: it loads an Apothem context
 file (`QWEN.md`) and shells out to the engine; materialize the full harness by
 running the install through it. Qwen Code also installs Gemini CLI extensions

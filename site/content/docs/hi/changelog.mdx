@@ -20,6 +20,21 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- **A channel smoke workflow runs every documented install command
+  anonymously.** `channel-smoke.yml` runs on a weekly schedule and on demand.
+  Each of the eight install channels runs on a clean runner with only its
+  documented prerequisites, an isolated home directory, no credentials, and
+  Git prompts disabled, so a private repository, an unpublished listing, or a
+  missing release asset fails the job instead of reaching a new user. The
+  commands live in `scripts/dev/channel_smoke.py`, and a test keeps them equal
+  to the README. The harness CLIs install from a hash-pinned lockfile.
+- **The README explains the Qwen Code plugin prompt.** The repository is also a
+  Claude Code marketplace, so Qwen Code asks which plugin to install;
+  `qwen extensions install ahmed-g-gad/apothem:apothem --consent` installs
+  without the prompt.
+
 ### Changed
 
 - **The session-end protocol is now opt-in.** A `Stop` hook that returns
