@@ -71,6 +71,17 @@ Apothem content from another install's shared root, the note names that
 install. In the `--format json` envelope each advisory is a `warnings` entry
 with `"outcome": "advisory"` and `"operation": "shared_root"`.
 
+The profile's MCP servers get three advisories, each naming the profile field:
+
+| Operation | Condition | Fix |
+| --- | --- | --- |
+| `mcp_deprecated_transport` | `transport: sse` (the MCP specification deprecates HTTP+SSE) | Use `streamable-http` when the server supports it. |
+| `mcp_plain_http` | an `http://` URL to a host that is not loopback | Use an `https://` URL. |
+| `mcp_literal_credential` | a `headers` or `env` value shaped like a token (`ghp_`, `github_pat_`, `sk-`, `xox*-`, or `Bearer` with a long token) | Keep the secret in an environment variable and write `${GITHUB_TOKEN}`-style references. |
+
+The credential advisory never prints the value it found. A value that contains
+a `${...}` reference is never flagged.
+
 ## Options
 
 | Option | Description |

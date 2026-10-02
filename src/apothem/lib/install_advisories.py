@@ -12,12 +12,21 @@ install target that harnesses other than its writer also load. Installing the
 owner of a shared root puts Apothem content in front of every reader, so
 :func:`shared_root_advisories` names the readers. Installing a reader while the
 shared root already holds Apothem content says which install placed it there.
+
+MCP servers. :func:`mcp_profile_advisories` reads the shared profile's MCP
+inventory and flags a deprecated transport, plain ``http://`` to a remote host,
+and literal credentials in ``headers`` or ``env``, which an install would copy
+into every harness config file that takes MCP servers.
 """
 
 from __future__ import annotations
 
+import ipaddress
+import re
+from collections.abc import Mapping
 from functools import lru_cache
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import apothem
 from apothem.lib.harness_materializer import APOTHEM_BLOCK_BEGIN
@@ -125,4 +134,145 @@ def shared_root_advisories(
     return advisories
 
 
-__all__ = ["shared_root_advisories"]
+# --- MCP profile advisories ---------------------------------------------------
+
+# The MCP specification deprecates the HTTP+SSE transport in favour of
+# Streamable HTTP (https://modelcontextprotocol.io/specification/2026-07-28/deprecated,
+# retrieved 2026-10-02).
+_DEPRECATED_TRANSPORTS: dict[str, str] = {"sse": "streamable-http"}
+
+_LOOPBACK_HOSTS: frozenset[str] = frozenset({"localhost", "::1", "0:0:0:0:0:0:0:1"})
+
+# Token shapes that mark a literal credential. Each pattern matches the secret
+# itself, so a ``${VAR}`` reference never matches. The bearer pattern needs a
+# token of at least 20 characters, which leaves short placeholders alone.
+_CREDENTIAL_SHAPES: tuple[tuple[str, re.Pattern[str]], ...] = (
+    (
+        "GitHub token",
+        re.compile(r"\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})"),
+    ),
+    ("API key", re.compile(r"\bsk-[A-Za-z0-9_-]{16,}")),
+    ("Slack token", re.compile(r"\bxox[abposr]-[A-Za-z0-9-]{10,}")),
+    ("bearer token", re.compile(r"(?i)^\s*bearer\s+[A-Za-z0-9._~+/=-]{20,}\s*$")),
+)
+
+
+def _mcp_entry(
+    profile_path: Path, operation: str, field: str, message: str
+) -> dict[str, object]:
+    return {
+        "harness": None,
+        "outcome": "advisory",
+        "operation": operation,
+        "path": str(profile_path),
+        "field": field,
+        "message": message,
+    }
+
+
+def _is_loopback(host: str) -> bool:
+    host = host.strip("[]").lower()
+    if host in _LOOPBACK_HOSTS or host.endswith(".localhost"):
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
+def _server_advisories(
+    prefix: str, server: Mapping[str, object], profile_path: Path
+) -> list[dict[str, object]]:
+    advisories: list[dict[str, object]] = []
+    transport = str(server.get("transport", ""))
+    replacement = _DEPRECATED_TRANSPORTS.get(transport)
+    if replacement is not None:
+        advisories.append(
+            _mcp_entry(
+                profile_path,
+                "mcp_deprecated_transport",
+                f"{prefix}.transport",
+                f"{prefix}.transport is '{transport}', a transport the MCP "
+                f"specification deprecates. Set it to '{replacement}' if the "
+                "server supports it.",
+            )
+        )
+    url = server.get("url")
+    if isinstance(url, str):
+        parsed = urlsplit(url)
+        host = parsed.hostname or ""
+        if parsed.scheme.lower() == "http" and host and not _is_loopback(host):
+            advisories.append(
+                _mcp_entry(
+                    profile_path,
+                    "mcp_plain_http",
+                    f"{prefix}.url",
+                    f"{prefix}.url uses plain http:// to {host}, so requests and "
+                    "their headers travel unencrypted. Use an https:// URL.",
+                )
+            )
+    for location in ("headers", "env"):
+        values = server.get(location)
+        if not isinstance(values, Mapping):
+            continue
+        for key, value in values.items():
+            if not isinstance(value, str) or "${" in value:
+                continue
+            kind = next(
+                (name for name, shape in _CREDENTIAL_SHAPES if shape.search(value)),
+                None,
+            )
+            if kind is None:
+                continue
+            field = f"{prefix}.{location}.{key}"
+            advisories.append(
+                _mcp_entry(
+                    profile_path,
+                    "mcp_literal_credential",
+                    field,
+                    f"{field} holds what looks like a literal {kind}. Apothem "
+                    "copies MCP values into each harness config file as written. "
+                    "Keep the secret in an environment variable and write the "
+                    "value as a reference such as ${GITHUB_TOKEN}.",
+                )
+            )
+    return advisories
+
+
+def mcp_profile_advisories(
+    profile: Mapping[str, object], profile_path: Path
+) -> list[dict[str, object]]:
+    """Return advisories for the MCP servers a shared *profile* declares.
+
+    Checks the top-level ``mcp_servers`` inventory and every
+    ``harnesses.<id>.mcp_servers`` override for three conditions: a deprecated
+    transport (``sse``; the advisory names ``streamable-http``), a plain
+    ``http://`` URL to a host that is not loopback, and a ``headers`` or ``env``
+    value shaped like a literal credential (``ghp_``/``github_pat_``, ``sk-``,
+    ``xox*-``, or ``Bearer`` with a long token). A value that contains a
+    ``${VAR}`` reference is never flagged. Advisories name the profile field
+    and never echo a credential value.
+    """
+    advisories: list[dict[str, object]] = []
+    inventories: list[tuple[str, object]] = [
+        ("mcp_servers", profile.get("mcp_servers"))
+    ]
+    harnesses = profile.get("harnesses")
+    if isinstance(harnesses, Mapping):
+        for harness_id, override in harnesses.items():
+            if isinstance(override, Mapping):
+                inventories.append(
+                    (f"harnesses.{harness_id}.mcp_servers", override.get("mcp_servers"))
+                )
+    for prefix, servers in inventories:
+        if not isinstance(servers, Mapping):
+            continue
+        for name, server in servers.items():
+            if isinstance(server, Mapping):
+                advisories.extend(
+                    _server_advisories(f"{prefix}.{name}", server, profile_path)
+                )
+    return advisories
+
+
+__all__ = ["mcp_profile_advisories", "shared_root_advisories"]

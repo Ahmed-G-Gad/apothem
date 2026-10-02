@@ -52,7 +52,10 @@ from apothem.harnesses._shared.install_driver import (
 )
 from apothem.lib.atomic_io import write_bytes_atomically
 from apothem.lib.clean_slate import CleanSlateError, CleanSlateResult, run_clean_slate
-from apothem.lib.install_advisories import shared_root_advisories
+from apothem.lib.install_advisories import (
+    mcp_profile_advisories,
+    shared_root_advisories,
+)
 from apothem.lib.profile import ProfileValidationError, validate_profile
 
 
@@ -237,6 +240,13 @@ def _materialize(
     placeholder_fields = _placeholder_identity_fields(shared_profile)
     if placeholder_fields:
         advisory = _placeholder_advisory_entry(profile_path, placeholder_fields)
+        all_warnings.append(advisory)
+        if fmt != "json":
+            con.print(f"[yellow]Note:[/] {escape(str(advisory['message']))}")
+    # MCP advisories (install + update): a deprecated transport, plain http:// to
+    # a remote host, or a literal credential in headers/env would be copied into
+    # every harness config that takes MCP servers. Advisory only, printed once.
+    for advisory in mcp_profile_advisories(shared_profile, profile_path):
         all_warnings.append(advisory)
         if fmt != "json":
             con.print(f"[yellow]Note:[/] {escape(str(advisory['message']))}")

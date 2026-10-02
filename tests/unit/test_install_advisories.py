@@ -19,7 +19,10 @@ from click.testing import CliRunner
 from apothem.cli import main
 from apothem.harnesses._shared import install_driver
 from apothem.lib.harness_registry import SHARED_ROOTS, get_harness_entry
-from apothem.lib.install_advisories import shared_root_advisories
+from apothem.lib.install_advisories import (
+    mcp_profile_advisories,
+    shared_root_advisories,
+)
 
 _AGENTS_SKILLS = next(root for root in SHARED_ROOTS if root.owner == "codex")
 
@@ -120,3 +123,132 @@ def test_cli_codex_install_lists_the_readers(cli_env: tuple[Path, Path]) -> None
     shared = [w for w in payload["warnings"] if w.get("operation") == "shared_root"]
     assert len(shared) == 1
     assert shared[0]["outcome"] == "advisory"
+
+
+# --- MCP profile advisories ---------------------------------------------------
+
+_FAKE_GITHUB_TOKEN = "ghp_" + "0123456789abcdefghijABCDEFGHIJ0123"
+_FAKE_API_KEY = "sk-" + "abcdefghijklmnopqrstuvwxyz012345"
+
+
+def _profile(servers: dict[str, object], **extra: object) -> dict[str, object]:
+    return {"identity": {"name": "Test User"}, "mcp_servers": servers, **extra}
+
+
+def _fields(advisories: list[dict[str, object]], operation: str) -> list[object]:
+    return [a["field"] for a in advisories if a["operation"] == operation]
+
+
+def test_sse_transport_gets_a_deprecation_advisory(tmp_path: Path) -> None:
+    profile = _profile(
+        {"legacy": {"transport": "sse", "url": "https://mcp.example.com/sse"}}
+    )
+    advisories = mcp_profile_advisories(profile, tmp_path / "profile.yaml")
+    assert _fields(advisories, "mcp_deprecated_transport") == [
+        "mcp_servers.legacy.transport"
+    ]
+    entry = advisories[0]
+    assert entry["outcome"] == "advisory"
+    assert entry["harness"] is None
+    assert "streamable-http" in str(entry["message"])
+
+
+@pytest.mark.parametrize(
+    ("url", "warned"),
+    [
+        ("http://mcp.example.com/mcp", True),
+        ("http://10.0.0.5:8080/mcp", True),
+        ("https://mcp.example.com/mcp", False),
+        ("http://localhost:3000/mcp", False),
+        ("http://127.0.0.1:3000/mcp", False),
+        ("http://[::1]:3000/mcp", False),
+    ],
+)
+def test_plain_http_to_a_remote_host_gets_an_advisory(
+    tmp_path: Path, url: str, warned: bool
+) -> None:
+    profile = _profile({"api": {"transport": "streamable-http", "url": url}})
+    advisories = mcp_profile_advisories(profile, tmp_path / "profile.yaml")
+    expected = ["mcp_servers.api.url"] if warned else []
+    assert _fields(advisories, "mcp_plain_http") == expected
+
+
+@pytest.mark.parametrize(
+    ("location", "key", "value"),
+    [
+        ("headers", "Authorization", f"Bearer {_FAKE_GITHUB_TOKEN}"),
+        ("headers", "Authorization", "Bearer " + "a1b2c3d4e5f6g7h8i9j0k1l2m3"),
+        ("env", "OPENAI_API_KEY", _FAKE_API_KEY),
+        ("env", "SLACK_TOKEN", "xoxb-" + "1234567890-abcdefghij"),
+        ("env", "GITHUB_TOKEN", _FAKE_GITHUB_TOKEN),
+    ],
+)
+def test_literal_credentials_get_an_advisory_without_echoing_them(
+    tmp_path: Path, location: str, key: str, value: str
+) -> None:
+    server: dict[str, object] = {"transport": "streamable-http"}
+    server["url"] = "https://mcp.example.com/mcp"
+    server[location] = {key: value}
+    advisories = mcp_profile_advisories(_profile({"gh": server}), tmp_path / "p.yaml")
+    assert _fields(advisories, "mcp_literal_credential") == [
+        f"mcp_servers.gh.{location}.{key}"
+    ]
+    message = str(advisories[0]["message"])
+    assert "${" in message
+    assert value.split()[-1] not in json.dumps(advisories)
+
+
+@pytest.mark.parametrize(
+    "value",
+    ["Bearer ${GITHUB_TOKEN}", "${OPENAI_API_KEY}", "Bearer short", "application/json"],
+)
+def test_references_and_ordinary_values_get_no_credential_advisory(
+    tmp_path: Path, value: str
+) -> None:
+    server = {
+        "transport": "streamable-http",
+        "url": "https://mcp.example.com/mcp",
+        "headers": {"Authorization": value},
+    }
+    advisories = mcp_profile_advisories(_profile({"gh": server}), tmp_path / "p.yaml")
+    assert _fields(advisories, "mcp_literal_credential") == []
+
+
+def test_harness_override_servers_are_checked(tmp_path: Path) -> None:
+    profile = _profile(
+        {},
+        harnesses={
+            "qwen-code": {
+                "mcp_servers": {
+                    "legacy": {"transport": "sse", "url": "http://mcp.example.com"}
+                }
+            }
+        },
+    )
+    advisories = mcp_profile_advisories(profile, tmp_path / "profile.yaml")
+    fields = [a["field"] for a in advisories]
+    assert "harnesses.qwen-code.mcp_servers.legacy.transport" in fields
+    assert "harnesses.qwen-code.mcp_servers.legacy.url" in fields
+
+
+def test_cli_install_prints_the_mcp_advisories(cli_env: tuple[Path, Path]) -> None:
+    _home, profile = cli_env
+    profile.write_text(
+        "identity:\n  name: Test User\n"
+        "mcp_servers:\n"
+        "  gh:\n"
+        "    transport: sse\n"
+        "    url: https://mcp.example.com/sse\n"
+        "    headers:\n"
+        f"      Authorization: Bearer {_FAKE_GITHUB_TOKEN}\n",
+        encoding="utf-8",
+    )
+    result = CliRunner().invoke(
+        main,
+        ["install", "--harness", "qwen-code", "--profile", str(profile), "--no-color"],
+    )
+    assert result.exit_code == 0, result.output
+    flat = " ".join(result.output.split())
+    assert "mcp_servers.gh.headers.Authorization" in flat
+    assert "streamable-http" in flat
+    assert _FAKE_GITHUB_TOKEN not in result.output
