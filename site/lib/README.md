@@ -24,6 +24,10 @@ derive from it rather than re-declaring it.
   colours that fail WCAG 1.4.3 contrast on the code-block surfaces. Its
   `node --test` check (`code-theme.test.mjs`, run by `npm test`) holds every
   token colour of both themes to 4.5:1 on every code surface.
+- **`theme-tokens.test.mjs`** — reads the light theme's `--primary`,
+  `--background` and `--secondary` tokens from `app/global.css` and holds
+  `--primary` text to 4.5:1 on the active-item wash, the secondary surface and
+  the page (run by `npm test`).
 - **`hreflang.ts`** — builds the per-page `alternates` (hreflang) set from a
   locale-agnostic path, emitting the `en` self-link, `x-default`, and one
   alternate per routed locale that carries a version of the page.

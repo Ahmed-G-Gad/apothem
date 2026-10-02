@@ -14,7 +14,7 @@
     "build": "next build",
     "postbuild": "node scripts/export-to-dist.mjs",
     "start": "next start",
-    "test": "node --test --experimental-strip-types lib/search-index-core.test.mjs lib/code-theme.test.mjs lib/translation-source.test.mjs scripts/trailing-slash-redirects.test.mjs",
+    "test": "node --test --experimental-strip-types lib/search-index-core.test.mjs lib/code-theme.test.mjs lib/translation-source.test.mjs lib/theme-tokens.test.mjs scripts/trailing-slash-redirects.test.mjs",
     "translations": "node scripts/translation-sources.mjs",
     "check:search-index": "node scripts/check-search-index-sizes.mjs",
     "ia": "node scripts/author-ia.mjs",
