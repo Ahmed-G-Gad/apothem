@@ -23,7 +23,7 @@ if [ -z "${PR_NUMBER:-}" ]; then
 fi
 
 # Gated directory prefixes (a change under any of these must run the real job).
-_GATED_PREFIXES="src/ tests/ site/ examples/ scripts/ .github/workflows/"
+_GATED_PREFIXES="src/ tests/ site/ examples/ scripts/ evals/ .github/workflows/"
 # Gated exact file paths.
 _GATED_EXACT="pyproject.toml .pre-commit-config.yaml .gitleaks.toml"
 

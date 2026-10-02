@@ -50,6 +50,7 @@ on:
       - 'site/**'
       - 'examples/**'
       - 'scripts/**'
+      - 'evals/**'
       - '.github/workflows/**'
       - '.pre-commit-config.yaml'
       - '.gitleaks.toml'
