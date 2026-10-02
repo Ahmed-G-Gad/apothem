@@ -214,3 +214,44 @@ def test_gate_page_is_titled_for_its_subject(page: str) -> None:
     title = re.search(r'^title: "(?P<title>[^"]+)"', text, flags=re.MULTILINE)
     assert title is not None
     assert title.group("title") != "Index"
+
+
+def _harness_entries() -> dict[str, dict[str, object]]:
+    """Return the harness export keyed by public adapter id."""
+    harnesses = reference_export.export_harnesses()["harnesses"]
+    assert isinstance(harnesses, list)
+    return {str(entry["id"]): entry for entry in harnesses}
+
+
+def test_harness_export_carries_the_capability_cells() -> None:
+    """The harness export carries each adapter's capability status and notes."""
+    entries = _harness_entries()
+    claude = entries["claude-code"]
+    capabilities = claude["capabilities"]
+    notes = claude["capability_notes"]
+    assert isinstance(capabilities, dict)
+    assert isinstance(notes, dict)
+    assert capabilities["mcp_servers"] != "native"
+    assert notes["mcp_servers"]
+    opencode_capabilities = entries["opencode"]["capabilities"]
+    assert isinstance(opencode_capabilities, dict)
+    assert opencode_capabilities["mcp_servers"] == "native"
+
+
+def test_mcp_page_names_each_adapter_projection_from_the_registry() -> None:
+    """The MCP page's adapter table is generated from the registry's MCP cells."""
+    page = (_DOCS_ROOT / "reference" / "mcp.mdx").read_text(encoding="utf-8")
+    region = _generated_region(page)
+    for harness_id, entry in _harness_entries().items():
+        capabilities = entry["capabilities"]
+        assert isinstance(capabilities, dict)
+        expected = (
+            "Projected" if capabilities["mcp_servers"] == "native" else "Not projected"
+        )
+        row = re.search(
+            rf"^\| [^|]*\(`{re.escape(harness_id)}`\) \| (?P<cell>[^|]+) \|",
+            region,
+            flags=re.MULTILINE,
+        )
+        assert row is not None, f"{harness_id} missing from the MCP table"
+        assert row.group("cell").strip().startswith(expected), harness_id

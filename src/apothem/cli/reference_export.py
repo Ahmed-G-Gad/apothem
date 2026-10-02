@@ -92,7 +92,13 @@ def export_cli() -> dict[str, object]:
 
 
 def export_harnesses() -> dict[str, object]:
-    """Return the deterministic harness-adapter registry export."""
+    """Return the deterministic harness-adapter registry export.
+
+    Each record carries the registry's capability matrix (``capabilities``:
+    surface → status) and the rationale recorded for exempt cells
+    (``capability_notes``), so generated pages state per-adapter capability
+    from the registry rather than from hand-written prose.
+    """
     harnesses = [
         {
             "id": entry.public_id,
@@ -100,6 +106,8 @@ def export_harnesses() -> dict[str, object]:
             "scope": entry.scope,
             "output_format": entry.output_format,
             "target_paths": sorted(entry.target_paths),
+            "capabilities": dict(entry.capability_status),
+            "capability_notes": dict(entry.unsupported_rationale),
         }
         for entry in iter_harness_entries()
     ]

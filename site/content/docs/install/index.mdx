@@ -56,10 +56,18 @@ all runnable from the self-contained plugin tree:
 /plugin install apothem@apothem
 ```
 
-After the install, the Apothem command set (`/plan-spec`, `/code-review`,
-`/security-audit`, and the rest), the bundled delegated workers, and the
-skills are available in every Claude Code session. See
-[Slash commands](/docs/reference/commands) for the full command catalog.
+After the install, the Apothem command set, the bundled delegated workers, and
+the skills are available in every Claude Code session. Plugin commands carry
+the plugin's prefix: `/apothem:plan-spec`, `/apothem:security-audit`, and the
+rest. Claude Code also accepts the short form (`/plan-spec`) while no other
+command uses that name. Two names are taken by Claude Code itself: `/plan`
+enters plan mode and `/code-review` runs the bundled review, so type
+`/apothem:plan` and `/apothem:code-review` for the Apothem commands. When the
+Apothem engine installs into Claude Code instead of the plugin, commands become
+personal skills under `~/.claude/skills/` without a prefix, and a personal
+`code-review` skill replaces the bundled `/code-review` (its `/review` alias
+still runs the bundled one). See [Slash commands](/docs/reference/commands)
+for the full command catalog.
 
 **Verify:** run `/plugin` inside Claude Code and confirm **apothem** is listed
 as installed, or check the drift report from a terminal:

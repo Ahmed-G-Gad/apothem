@@ -244,7 +244,14 @@ const PROFILE_SCHEMA = join(
 	'profile.schema.json',
 );
 
+const EMITTER_CACHE = new Map();
+
 function runEmitter(kind) {
+	if (!EMITTER_CACHE.has(kind)) EMITTER_CACHE.set(kind, spawnEmitter(kind));
+	return EMITTER_CACHE.get(kind);
+}
+
+function spawnEmitter(kind) {
 	const args = ['-m', 'apothem.cli.reference_export', kind];
 	const options = {
 		cwd: REPO_ROOT,
@@ -418,6 +425,32 @@ function generateConformityBlock() {
 	].join('\n');
 }
 
+// The MCP page's per-adapter table, from each registry entry's `mcp_servers`
+// capability cell: `native` means the adapter writes the profile's MCP
+// inventory into the tool's own config; every other status means it authors
+// no server entries, with the registry's recorded reason.
+function generateMcpBlock() {
+	const payload = runEmitter('harnesses');
+	const rows = payload.harnesses.map((harness) => {
+		const status = harness.capabilities.mcp_servers;
+		const cell =
+			status === 'native'
+				? "Projected: written into the tool's MCP config"
+				: `Not projected (${status})`;
+		const note = harness.capability_notes.mcp_servers;
+		return `| ${escapeMdx(escapePipe(harness.display_name))} (\`${escapePipe(harness.id)}\`) | ${escapeMdx(cell)} | ${note ? escapeMdx(escapePipe(note)) : '—'} |`;
+	});
+	return [
+		START,
+		'',
+		'| Harness | MCP inventory | Note |',
+		'| --- | --- | --- |',
+		...rows,
+		'',
+		END,
+	].join('\n');
+}
+
 function existsFile(path) {
 	try {
 		return statSync(path).isFile();
@@ -446,6 +479,10 @@ const GENERATED_SOURCES = [
 	{
 		generate: generateConformityBlock,
 		target: join(DOCS_ROOT, 'conformity-gate', 'index.mdx'),
+	},
+	{
+		generate: generateMcpBlock,
+		target: join(DOCS_ROOT, 'reference', 'mcp.mdx'),
 	},
 ];
 
