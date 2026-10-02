@@ -7,7 +7,7 @@ archetype: "elicitation-template"
 userInvocable: true
 argument-hint: "[project subject] [--platform claude|chatgpt|gemini] [--autonomous]"
 disable-model-invocation: true
-allowed-tools: "Read, Glob, Grep, WebSearch, TodoWrite"
+allowed-tools: "Read, Glob, Grep, WebSearch, TodoWrite, TaskCreate, TaskGet, TaskList, TaskUpdate"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

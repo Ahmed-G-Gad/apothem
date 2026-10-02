@@ -63,6 +63,24 @@ authors no MCP server entries: register servers with `claude mcp add` (see
 
 Claude Code applies all hook bindings in settings.json on every session start. Each adapter is verified against its own native harness — there is no privileged "reference" harness.
 
+### Permission rule limits
+
+The settings template denies `Read(...)` on secret and cache paths such as
+`.env*` and `~/.ssh/**`. Claude Code applies a `Read` deny to its file tools,
+to the file commands it recognizes in Bash (`cat`, `head`, `tail`, `sed`,
+`tee`), and to redirection targets. It does not apply the deny to a search that
+reads files without naming them, such as `grep -r pattern .`, or to a script
+that opens files itself
+([permissions reference](https://code.claude.com/docs/en/permissions)). On
+macOS, Linux, and WSL, Claude Code leaves the `Glob` and `Grep` tools out of the
+default tool set and searches through Bash instead, so the template's `Glob`
+and `Grep` allow entries take effect only where those tools are present. To
+block every process from reading a path, enable the Claude Code sandbox.
+
+The skills and helper definitions that name `TodoWrite` also name `TaskCreate`,
+`TaskGet`, `TaskList`, and `TaskUpdate`, because Claude Code turns `TodoWrite`
+off by default in favor of those tools.
+
 ## Verification
 
 ```bash
