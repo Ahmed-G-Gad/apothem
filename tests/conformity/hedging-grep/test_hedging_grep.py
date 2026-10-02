@@ -99,3 +99,38 @@ def test_fenced_block_hedge_still_excluded() -> None:
     body = "\n".join(["```text", "This usually works inside a fence.", "```"])
     result = _MOD.check(body, _COHORT_PATH)
     assert result.passed, _matches(result)
+
+
+# --- the hedging filler AGENTS.md and CLAUDE.md forbid -----------------------
+
+
+def test_forbidden_filler_phrases_fail() -> None:
+    """``basically``, ``kind of`` and ``in some sense`` hedge a directive."""
+    body = (
+        "You should basically run the tests. It is kind of required.\n"
+        "In some sense the cache is optional."
+    )
+    result = _MOD.check(body, _COHORT_PATH)
+    assert not result.passed
+    assert sorted(m.lower() for m in _matches(result)) == [
+        "basically",
+        "in some sense",
+        "kind of",
+    ]
+
+
+def test_filler_quoted_in_backticks_passes() -> None:
+    """The rule text that names the filler cites it, it does not hedge."""
+    body = "Hedging filler such as `basically`, `kind of`, and `in some sense` is forbidden."
+    result = _MOD.check(body, _COHORT_PATH)
+    assert result.passed, _matches(result)
+
+
+def test_kind_of_as_a_noun_phrase_passes() -> None:
+    """``what kind of`` / ``this kind of`` name a category; they do not hedge."""
+    body = (
+        "What kind of project is this? This kind of change needs a test.\n"
+        "A kind of index, the kind of input, any kind of file, two kinds of output."
+    )
+    result = _MOD.check(body, _COHORT_PATH)
+    assert result.passed, _matches(result)
