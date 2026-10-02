@@ -39,6 +39,12 @@ Run any of them from `site/`.
   export to `dist/`, the served tree the Pages publish pipeline deploys, baking
   the correct per-locale `lang`/`dir` into each locale's HTML, then writes the
   trailing-slash redirect stubs.
+- **`translation-sources.mjs`** — reports, per locale, which translated pages
+  are current, stale (the English page changed since the translation) or
+  unrecorded, and exits 1 only when a locale page records no `sourceHash` or has
+  no English page. `--stamp <locale>/<path>` records the current English hash
+  after a translation is refreshed; `--seed` recovers missing hashes from git
+  history (needs a full clone). Run as `npm run translations`.
 - **`trailing-slash-redirects.mjs`** — writes `<page>/index.html` redirect stubs
   so `/docs/install/` reaches `/docs/install` instead of a static-host 404. Each
   stub names the canonical URL, is marked noindex, and keeps the query string and

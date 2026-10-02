@@ -43,6 +43,16 @@ derive from it rather than re-declaring it.
   each locale's storage with the English fallback, so asking it would report the
   whole fallback tree as translated; reading the filesystem keeps static params
   tied to the real translated surface.
+- **`translation-source.mjs`** — the `sourceHash` a locale page records: the
+  hash of the English page it was translated from, over the English
+  frontmatter and prose but not the generated reference and changelog blocks.
+  Shared by the docs route and `scripts/translation-sources.mjs`; unit-tested by
+  `translation-source.test.mjs` (run by `npm test`).
+- **`translation-status.ts`** — classifies a page served under a locale URL as
+  `fallback` (English source served), `current`, or `stale` (English changed
+  since the translation), from the recorded `sourceHash` and the current
+  English page. The `[lang]` docs route shows the staleness marker for `stale`
+  and marks `fallback` text as English.
 - **`source.ts`** / **`utils.ts`** — the Fumadocs content-source binding and the
   `cn()` class-name helper the components use.
 

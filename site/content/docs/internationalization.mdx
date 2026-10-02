@@ -27,6 +27,10 @@ right-to-left rendering, and how each language's pages are wired into routing.
   filesystem, so a page is advertised in a locale only when that locale has it.
 - **Right-to-left rendering: active.** The shared stylesheets use logical CSS
   properties throughout, so Arabic pages render correctly under `dir="rtl"`.
+- **Translation freshness: tracked per page.** Each locale page records the
+  English text it was translated from. When the English page changes later,
+  the translated page shows a one-line note linking the English page, which
+  stays authoritative.
 
 ## The locale cohort
 
@@ -92,9 +96,25 @@ Arabic is the cohort's right-to-left locale, and the site renders it correctly:
 The cohort and routing are driven by `site/lib/i18n.ts`:
 
 1. Author the page under `content/docs/<locale>/` mirroring the English source.
-2. Confirm the locale is listed in `ROUTED_LOCALES` (all twelve cohort locales
+2. Record the English text it translates: from `site/`, run
+   `node scripts/translation-sources.mjs --stamp <locale>/<path>.mdx`, which
+   writes the English page's hash into the locale page's `sourceHash`
+   frontmatter.
+3. Confirm the locale is listed in `ROUTED_LOCALES` (all twelve cohort locales
    are routed today).
-3. Its `hreflang` link and routes resolve automatically from the filesystem.
+4. Its `hreflang` link and routes resolve automatically from the filesystem.
+
+## Stale translations
+
+A locale page's `sourceHash` is the hash of the English page it was translated
+from, covering the English frontmatter and prose but not the generated tables
+the reference generator rewrites in every language at once. At build time the
+site hashes the current English page; when the two differ, the translated page
+shows a note that the English page has changed since the translation was made,
+with a link to it. Run `node scripts/translation-sources.mjs` from `site/` to
+list the stale pages per locale, then refresh each translation and stamp it as
+in step 2 above. A page a locale has not translated at all is served from the
+English source, marked as English text.
 
 English remains the source of truth; each locale page mirrors its English
 counterpart's structure, links, and code samples verbatim.
