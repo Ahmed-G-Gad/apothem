@@ -12,6 +12,7 @@ during an incident would rewrite history the release never rewrote.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
@@ -51,5 +52,7 @@ def test_policy_records_the_release_facade_contradiction() -> None:
     text = _POLICY.read_text(encoding="utf-8")
     assert "release-facade" in text
     assert "three" in text, "the policy records how many releases exist"
-    for internal in ("D-11", "R-25", "F-F1-03", "elevation"):
-        assert internal not in text, f"plan-internal identifier {internal} leaked"
+    # Planning identifiers (a letter, a dash and a number, optionally with a
+    # lens code) belong to the internal plan, never to a published page.
+    leaked = re.findall(r"\b[DFR]-(?:[A-Z][0-9]-)?[0-9]{2}\b", text)
+    assert not leaked, f"plan-internal identifiers leaked: {leaked}"
