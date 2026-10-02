@@ -11,7 +11,6 @@ maxTurns: 15
 # sources (2–4 tool calls to locate and read), plus a dedicated refutation pass, and a single
 # invocation may carry several discrete claims that each consume their own chain.
 portability: "universal"
-memory: false
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

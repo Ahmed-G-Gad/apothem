@@ -412,12 +412,13 @@ description: "What this helper specializes in"
 tools: "Read, Glob, Grep, Bash"
 disallowedTools: "Write, Edit"
 maxTurns: 15
-effort: "high"
-permissionMode: "default"
-memory: false
 portability: "universal"
 ---
 ```
+
+Leave out `model`, `effort`, and `permissionMode` so the helper inherits the
+session's choices (the agnostic posture), and leave out `memory` unless the
+helper needs a persistent-memory scope (`user`, `project`, or `local`).
 
 ### 3. Write Content
 

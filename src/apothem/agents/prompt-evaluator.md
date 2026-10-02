@@ -12,7 +12,6 @@ maxTurns: 15
 # extract failure examples. 15 covers multi-criterion rubrics with evidence extraction without
 # permitting unbounded re-scoring.
 portability: "universal"
-memory: false
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
