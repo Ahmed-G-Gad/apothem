@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { source } from '@/lib/source';
-import { i18n } from '@/lib/i18n';
+import { DEFAULT_LOCALE, i18n } from '@/lib/i18n';
 import { BrandMark } from '@/components/brand-mark';
 import { GithubIcon } from '@/components/github-icon';
 import { LandmarkDocsLayout } from '@/components/docs-landmarks';
@@ -54,6 +54,9 @@ export function DocsShell({
         },
       ]}
       nav={{
+        // The brand link returns to the home page of the current locale,
+        // rather than always to the English root.
+        url: locale === DEFAULT_LOCALE ? '/' : `/${locale}`,
         title: (
           <span className="flex items-center gap-2 font-semibold">
             <BrandMark size={22} decorative />
