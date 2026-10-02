@@ -126,3 +126,11 @@ The body after the frontmatter is the command's workflow specification: ordered 
 - **Adding a command:** author a flat `commands/<name>.md` file (stem = `name` = slash name) with schema-valid frontmatter and a workflow body. The discovery glob is non-recursive, so a command must sit at the top level (not nested in a subdirectory) to register. Surface ambiguity through the structured-inquiry channel or a `TODO(clarify)` marker — never invented.
 - A documented public command surface change updates its `site/content/docs/` page in the same change-set.
 - Validate with `python -m apothem.conformity.gate --all .` (name+description floor, determinism, recommend-next-step) and `python -m pytest`.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The command catalog above and the flat-file shape every slash command in this folder follows.
+- **Satisfies →** The agent-guidance locality canon in `AGENTS.md` (each folder's operating contract lives in its README). The registry entry each command's own Bindings cite as its catalog row.
+- **Established by ↑** `AGENTS.md` (the root agent-instruction canon). `rules/agents-md-convention.md` (the per-folder README contract). `rules/determinism.md` + `rules/recommend-next-step.md` (the output-structure and forward-move gates every command carries).
+- **Gated by ←** `scripts/dev/check_readme_file_coverage.py --strict` (every shipped command is named here). The propagation manifest's `README.md` exclusion (this file never ships into a harness discovery directory, where it would register as a command).
+- **Cross-bound with ↔** `agents/README.md` + `rules/README.md` (the sibling contracts for the other convention directories).

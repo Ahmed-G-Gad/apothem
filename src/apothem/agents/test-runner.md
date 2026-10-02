@@ -82,3 +82,11 @@ This agent holds no write surface (`tools: Read, Glob, Grep, Bash`; `Write`/`Edi
 - **Surfaced gaps:** Out-of-axis failure causes and undiscoverable host signals; required when structural per M6 (`rules/expertise-posture.md`). Empty: `[]`.
 - **Inquiry surface:** Typed inquiry items per M5 with options annotated per M7. Empty: `[]`.
 - **Self-check attestation:** Fifteen-bar gate result per M4 (`rules/pre-emission-gate.md`). Each bar `pass` or `n/a (with reason)`; failures block return.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The pass, fail, and skip tally with the discovered test command and a root-cause class per failure, read by `/test-suite` and by the experiment stage's protocol run.
+- **Satisfies →** A Research or Quality team member in `rules/agent-orchestration.md` §1: exit codes are the verdict, every failure cites test, file, line, and assertion.
+- **Established by ↑** `agents/README.md` (this agent's index entry). `rules/host-discovery.md` (the test command is discovered from the host's manifest and CI configuration).
+- **Gated by ←** The read-only tool posture in frontmatter (`Read, Glob, Grep, Bash`; `Write, Edit, TodoWrite` denied). The `maxTurns: 15` ceiling. A discoverable test command; an undiscoverable one routes as inquiry.
+- **Cross-bound with ↔** `commands/test-suite.md` (dispatches this agent to run the suite). `commands/research-experiment.md` (dispatches it to run a computational protocol and capture its output).

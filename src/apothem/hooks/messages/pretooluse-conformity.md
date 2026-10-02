@@ -68,3 +68,9 @@ The operator inspects the JSON report (one entry per matcher, with findings for
 the matchers that flagged), addresses the reported violations in the candidate
 content where warranted, and re-issues the Write/Edit. Each finding carries its
 rule anchor for routing.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The reading of the gate's advisory report on every Write and Edit: each finding is surfaced with a next step, and strict enforcement stays in CI and pre-commit. `conformity/gate.py` (the per-write matcher chain the `--hook` entry runs).
+- **Established by ↑** The `gate.py --hook` PreToolUse Write and Edit entries in the harness settings templates. `rules/pre-emission-gate.md` (the gate whose mechanical bars the matchers check).
+- **Cross-bound with ↔** `hooks/messages/pretooluse-askuserquestion-recommended.md` (the call-time `(Recommended)` check that complements the committed-artifact option-annotation matcher).
