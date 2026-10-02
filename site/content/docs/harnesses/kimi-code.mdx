@@ -36,8 +36,16 @@ The adapter reads Apothem's shared profile and renders the project-root
 run. The behavioral rules and governance corpus land in the managed block of
 `AGENTS.md`; the commands, skills, hooks, agents, rules, and templates cohorts
 are placed under `.kimi-code/.apothem/support/` and referenced from the instruction
-surface, because Kimi Code exposes no matching native primitive for each of
-those cohorts yet.
+surface. This is the adapter's chosen layout, not a gap in Kimi Code: Kimi Code
+loads skills from `.kimi-code/skills/` and `.agents/skills/`, custom agents from
+`.kimi-code/agents/` and `.agents/agents/`, and hooks from the `[[hooks]]` array
+in `~/.kimi-code/config.toml`, but it does not load them from the support tree,
+so the Apothem copies there are reference material the `AGENTS.md` block points
+to. (Kimi Code behavior per its customization pages for
+[skills](https://moonshotai.github.io/kimi-code/en/customization/skills),
+[subagents](https://moonshotai.github.io/kimi-code/en/customization/agents), and
+[hooks](https://moonshotai.github.io/kimi-code/en/customization/hooks), read
+2026-10-02.)
 
 ## Compatibility notes
 
