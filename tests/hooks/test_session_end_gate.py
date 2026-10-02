@@ -19,6 +19,7 @@ and pins the emission count at one. Before the gate, that count was unbounded.
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -30,26 +31,30 @@ if str(_HOOKS_DIR) not in sys.path:
 
 import dispatch  # noqa: E402
 import session_end_gate as seg  # noqa: E402
+import state_dir  # noqa: E402
 
 _PROTOCOL = "Session-end protocol.\n\nPhase A - externalize.\n"
 
 
 @pytest.fixture(autouse=True)
 def _isolate_state(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    """Redirect the OS temp dir to a per-test tmp_path so state never leaks.
+    """Point the per-user hook state directory at a per-test tmp_path.
 
-    The gate derives its state directory from ``tempfile.gettempdir()``; pointing
-    that at ``tmp_path`` isolates every test's state and guarantees no write
-    lands in the repository tree.
+    Every test's state is isolated, and no write lands in the repository tree
+    or the operator's real state directory.
     """
-    monkeypatch.setattr(seg.tempfile, "gettempdir", lambda: str(tmp_path))
+    monkeypatch.setenv(state_dir.OVERRIDE_ENV, str(tmp_path / "state"))
 
 
 @pytest.fixture(autouse=True)
 def _clear_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Ensure the gate's env vars start unset so defaults apply unless set."""
+    """Start from the floor default with the gate opted in.
+
+    The gate is opt-in (default off). The cadence tests below exercise the
+    emitting path, so they opt in here; ``TestOptIn`` covers the default.
+    """
     monkeypatch.delenv(seg.MIN_STOPS_ENV, raising=False)
-    monkeypatch.delenv(seg.ENABLED_ENV, raising=False)
+    monkeypatch.setenv(seg.ENABLED_ENV, "1")
 
 
 @pytest.fixture
@@ -147,28 +152,47 @@ class TestEnvelope:
         assert envelope["hookSpecificOutput"]["additionalContext"] == "BODY FROM FILE"
 
 
-class TestKillSwitch:
-    """The environment kill switch.
+class TestOptIn:
+    """The opt-in switch.
 
-    Covers the disabling values silencing the protocol and other values leaving
-    it enabled, so an operator can opt out without editing installed files.
+    A Stop hook that returns context makes the harness continue the
+    conversation, so the protocol is off unless the operator opts in, and it
+    never answers a stop that already follows a hook-driven continuation.
     """
 
-    @pytest.mark.parametrize("raw", ["0", "false", "FALSE", "no", "off", "Off"])
-    def test_disabled_values_silence_the_protocol(
-        self, message: str, raw: str, monkeypatch: pytest.MonkeyPatch
+    def test_default_is_off(
+        self, message: str, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.setenv(seg.ENABLED_ENV, raw)
+        monkeypatch.delenv(seg.ENABLED_ENV, raising=False)
+        assert seg.is_enabled() is False
         assert _run(message, seg.DEFAULT_MIN_STOPS + 5) == [{}] * (
             seg.DEFAULT_MIN_STOPS + 5
         )
 
-    @pytest.mark.parametrize("raw", ["1", "true", "yes", "anything"])
-    def test_other_values_leave_it_enabled(
+    @pytest.mark.parametrize(
+        "raw", ["0", "false", "FALSE", "no", "off", "anything", ""]
+    )
+    def test_non_true_values_keep_it_off(
+        self, message: str, raw: str, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv(seg.ENABLED_ENV, raw)
+        assert seg.is_enabled() is False
+        assert _run(message, seg.DEFAULT_MIN_STOPS + 5) == [{}] * (
+            seg.DEFAULT_MIN_STOPS + 5
+        )
+
+    @pytest.mark.parametrize("raw", ["1", "true", "TRUE", "yes", "on", "On"])
+    def test_true_values_opt_in(
         self, raw: str, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setenv(seg.ENABLED_ENV, raw)
         assert seg.is_enabled() is True
+
+    def test_stop_hook_active_never_emits(self, message: str) -> None:
+        payload = _payload()
+        payload["stop_hook_active"] = True
+        for _ in range(seg.DEFAULT_MIN_STOPS + 5):
+            assert seg.evaluate(payload, message) == {}
 
 
 class TestUnreadableMessage:
@@ -218,7 +242,12 @@ class TestSessionIsolation:
 
     def test_traversal_in_session_id_stays_inside_state_dir(self) -> None:
         path = seg.state_path_for("../../escape")
-        assert path.parent == seg._state_dir()
+        assert path.parent == state_dir.hook_state_dir(seg._STATE_DIRNAME)
+
+    @pytest.mark.skipif(not hasattr(os, "getuid"), reason="POSIX permission bits")
+    def test_state_dir_is_private_to_the_user(self) -> None:
+        path = seg.state_path_for("sess-mode").parent
+        assert path.stat().st_mode & 0o777 == 0o700
 
 
 class TestFailOpen:

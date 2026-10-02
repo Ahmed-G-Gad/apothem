@@ -1,33 +1,42 @@
 ---
 title: "Hooks"
-description: "Tool event handlers that fire on SessionStart, PreToolUse, and Stop, loading message contexts enforcing git isolation and plan discipline."
+description: "Tool event handlers that fire on SessionStart, PreToolUse, PostToolUse, and Stop, loading message contexts enforcing git isolation and plan discipline, with a tested runtime contract and per-user state."
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Hooks fire on tool events and load message contexts that the
 assistant treats as additional system prompts. Wiring lives in
-the Claude Code `settings.json` hook block, the Codex `hooks.json` hook file,
+the Claude Code `settings.json` hook block (engine install) or the plugin's
+`hooks.json` (plugin install), the Codex `hooks.json` hook file,
 and the Qwen Code `settings.json` hooks map.
 
 | Event | Timeout | Purpose |
 |-------|--------:|---------|
-| SessionStart | 30 seconds | Read memory, check plan state, report readiness |
-| PreCompact | 30 seconds | Verify state externalized before compaction |
-| PostCompact | 30 seconds | Restore working state after compaction |
-| Stop | 60 seconds | Session-end externalization |
-| PreToolUse (Bash) | 10 seconds | Bash validation — git artifact isolation |
-| PreToolUse (Write/Edit/NotebookEdit/apply_patch) | 10 seconds | Plan-reference isolation, frontmatter checks |
+| SessionStart | 30 seconds | Read memory, check plan state, report readiness; after compaction, deliver the recovery context |
+| PreCompact | 30 seconds | Verify state externalized before compaction (Codex, Qwen Code; not registered on Claude Code) |
+| PostCompact | 30 seconds | Restore working state after compaction (Codex, Qwen Code; not registered on Claude Code) |
+| Stop | 60 seconds | Session-end protocol, opt-in |
+| PostToolUse | 10 seconds | Proactive-compaction advisory, at most twice per session |
+| PreToolUse (shell: Bash, PowerShell, `run_shell_command`) | 10 seconds | Git-artifact isolation, plans locality, dynamic-eval guard |
+| PreToolUse (Write/Edit/NotebookEdit/apply_patch) | 10 seconds | Plan-reference isolation, authorship header, plans locality, dependency and dynamic-eval guards |
+| PreToolUse (AskUserQuestion) | 10 seconds | `(Recommended)`-marker well-formedness |
 
 ## Dispatcher
 
-Installed hook entries invoke the dispatcher by absolute script path. The
-settings templates carry the `${HARNESS_ROOT}` token —
-`python "${HARNESS_ROOT}/apothem/hooks/dispatch.py" <event> [<message-name>]`
-— which the installer renders to the harness root's real path at install
-time (Claude Code and Qwen Code materialize the dispatcher under
-`<harness-root>/apothem/hooks/`; Codex under `<harness-root>/hooks/`). The
-dispatcher is a standalone stdlib script: it bootstraps its own `sys.path`,
-so no importable `apothem` package is needed on the host. From a source
+Engine-installed hook entries invoke the dispatcher by absolute script path
+with an install-resolved interpreter. The templates carry the `${PYTHON_BIN}`
+and `${HARNESS_ROOT}` tokens, which the installer renders at install time.
+Claude Code and Qwen Code materialize the dispatcher under
+`<harness-root>/.apothem/support/hooks/`; Codex under `<harness-root>/hooks/`.
+Claude Code entries use exec form (`command` plus `args`), so they need no
+shell. The Claude Code plugin runs each hook as
+`bash "${CLAUDE_PLUGIN_ROOT}/lib/apothem/hooks/lib/bootstrap.sh" <event> [<message-file>]`,
+in Claude Code's default hook shell (`sh` on macOS and Linux, Git Bash on
+Windows); the bootstrap locates a Python 3.10+ interpreter and runs the
+bundled dispatcher. On Windows without Git for Windows, use the engine install
+(`apothem install --harness claude-code`), whose exec-form hooks need no shell.
+The dispatcher is a standalone stdlib script: it bootstraps its own
+`sys.path`, so no importable `apothem` package is needed on the host. From a source
 checkout, the module form `python -m apothem.hooks.dispatch <event>` (with
 `PYTHONPATH=src`) runs the same code for development. The dispatcher loads
 `hooks/lib/resolve_root.py` for ecosystem-root resolution and delegates to
@@ -37,12 +46,68 @@ checkout, the module form `python -m apothem.hooks.dispatch <event>` (with
 
 Per-event Markdown contexts live under `src/apothem/hooks/messages/`:
 
-- `postcompact.md`, `precompact.md`, `stop.md`
-- `pretooluse-bash.md`, `pretooluse-write.md`, `pretooluse-edit.md`,
-  `pretooluse-notebookedit.md`
+- Session lifecycle: `sessionstart.md`, `precompact.md`, `postcompact.md`,
+  `stop.md`, `posttooluse-proactive-compaction.md`
+- Shell calls: `pretooluse-bash.md`, `pretooluse-bash-plan-guard.md`
+- File writes: `pretooluse-write.md`, `pretooluse-edit.md`,
+  `pretooluse-notebookedit.md`, `pretooluse-write-plan-guard.md`,
+  `pretooluse-write-header-guard.md`, `pretooluse-edit-header-guard.md`,
+  `pretooluse-conformity.md`
+- Guards on content: `pretooluse-dependency-guard.md`,
+  `pretooluse-eval-guard.md`
+- Questions: `pretooluse-askuserquestion-recommended.md`
+
+On Claude Code, `postcompact.md` is delivered by the SessionStart hook when the
+session resumes after compaction, because Claude Code does not pass PreCompact
+or PostCompact hook output to the assistant.
 
 Each context file is loaded by the dispatcher when its event fires
-and its context argument is registered in the settings file.
+and its context argument is registered in the settings file. The license
+comment line and the closing `## Bindings` section are removed before the text
+reaches the assistant; both exist for maintainers and the conformity gate.
+
+## Runtime contract
+
+Every registered hook command meets the same contract, checked by
+`tests/hooks/test_hook_contract.py` on the plugin, the Claude Code engine
+install, Codex, and Qwen Code:
+
+- **Runs from a plain checkout.** Exit 0, and standard output is empty or one
+  JSON object. No hook depends on a file's executable bit.
+- **Registered once.** Each event, matcher, and message pair appears once per
+  surface, so a hook never runs twice on one tool call.
+- **Bounded.** No emitted text exceeds 10,000 characters. The dependency guard
+  speaks only when a write targets a dependency manifest or lockfile, and the
+  dynamic-eval guard only when the content or command contains an evaluation
+  or unsafe-deserialization primitive. The compaction advisory fires at most
+  twice per session.
+- **Uses channels the harness delivers.** PreToolUse guidance travels in
+  `hookSpecificOutput`; the AskUserQuestion guard returns `additionalContext`,
+  or `permissionDecision: deny` under the strict opt-in. Claude Code discards
+  PreCompact and PostCompact output, so on Claude Code the post-compaction
+  recovery context arrives with the SessionStart event whose source is
+  `compact`.
+- **Never runs project code.** The bootstrap resolves its own installed tree
+  and never takes a script from the opened project. Session-start guidance is
+  read from the installed tree; the project directory is read only for plan
+  and memory summaries.
+- **Fails open.** A missing message file, a missing interpreter, or corrupt
+  state yields exit 0 and a valid envelope.
+
+| Variable | Default | Effect |
+| --- | --- | --- |
+| `APOTHEM_HOOKS_DISABLE` | unset | `1`, `true`, `yes` or `on` silences every dispatcher-routed hook |
+| `APOTHEM_SESSION_END_ENABLED` | off | `1`, `true`, `yes` or `on` enables the session-end protocol on Stop. A Stop hook that returns context makes the assistant continue, so the protocol costs one extra turn per session; it never fires on a stop that already follows a hook-driven continuation |
+| `APOTHEM_SESSION_END_MIN_STOPS` | `3` | Turn-ends before the session-end protocol may fire |
+| `APOTHEM_PROACTIVE_COMPACTION_ENABLED` | on | `0`, `false`, `no` or `off` silences the compaction advisory |
+| `APOTHEM_PROACTIVE_COMPACTION_TOOL_THRESHOLD` | `18` | Tool calls per advisory window |
+| `APOTHEM_PROACTIVE_COMPACTION_OUTPUT_THRESHOLD` | `20000` | Tool-output bytes per advisory window |
+| `APOTHEM_HOOK_STATE_DIR` | see below | Directory for per-session hook state |
+
+Per-session hook state lives in a per-user directory created with mode `0700`:
+`APOTHEM_HOOK_STATE_DIR` when set, else `${CLAUDE_PLUGIN_DATA}/state` for the
+Claude Code plugin, else `$XDG_STATE_HOME/apothem`, else
+`~/.local/state/apothem` (`%LOCALAPPDATA%\apothem\state` on Windows).
 
 ## Generated Hook Message Inventory
 

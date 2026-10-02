@@ -175,14 +175,9 @@ def test_hooks_json_mirrors_engine_event_set() -> None:
     hooks_json = build_plugin_hooks_json("lib/apothem")
     events = hooks_json["hooks"]
     assert isinstance(events, dict)
-    assert set(events) == {
-        "SessionStart",
-        "PreToolUse",
-        "PostToolUse",
-        "PreCompact",
-        "PostCompact",
-        "Stop",
-    }
+    # PreCompact and PostCompact are absent: Claude Code discards their
+    # output, so the recovery context rides SessionStart(source=compact).
+    assert set(events) == {"SessionStart", "PreToolUse", "PostToolUse", "Stop"}
 
 
 def test_hooks_json_pretooluse_matchers() -> None:
@@ -193,11 +188,23 @@ def test_hooks_json_pretooluse_matchers() -> None:
     pretooluse = events["PreToolUse"]
     assert isinstance(pretooluse, list)
     matchers = [group["matcher"] for group in pretooluse]
-    assert matchers == ["Write", "Edit", "NotebookEdit", "Bash", "AskUserQuestion"]
+    assert matchers == [
+        "Write",
+        "Edit",
+        "NotebookEdit",
+        "Bash|PowerShell",
+        "AskUserQuestion",
+    ]
 
 
-def test_hooks_json_every_command_pairs_bash_and_powershell() -> None:
-    """Every matcher group emits matched bash + powershell command pairs."""
+def test_hooks_json_registers_each_hook_once_through_bash() -> None:
+    """Each hook is one shell-form command that invokes bash by name.
+
+    A dual bash + powershell registration ran twice wherever both shells exist
+    and errored on every call wherever one is missing; executing the stub path
+    directly depended on the file's executable bit. Invoking ``bash`` keeps the
+    hook independent of the tracked file mode.
+    """
     hooks_json = build_plugin_hooks_json("lib/apothem")
     events = hooks_json["hooks"]
     assert isinstance(events, dict)
@@ -206,10 +213,11 @@ def test_hooks_json_every_command_pairs_bash_and_powershell() -> None:
         for group in groups:
             commands = group["hooks"]
             assert isinstance(commands, list)
-            shells = [cmd["shell"] for cmd in commands]
-            # Pairs interleave bash then powershell — equal counts of each.
-            assert shells.count("bash") == shells.count("powershell")
-            assert shells.count("bash") >= 1
+            for cmd in commands:
+                assert "shell" not in cmd
+                assert str(cmd["command"]).startswith('bash "${CLAUDE_PLUGIN_ROOT}/')
+            names = [str(cmd["command"]).split()[-1] for cmd in commands]
+            assert len(names) == len(set(names)), names
 
 
 def test_hooks_json_commands_resolve_under_plugin_root() -> None:
@@ -223,7 +231,7 @@ def test_hooks_json_commands_resolve_under_plugin_root() -> None:
             for cmd in group["hooks"]:
                 command = cmd["command"]
                 assert isinstance(command, str)
-                assert "${CLAUDE_PLUGIN_ROOT}/lib/apothem/hooks/lib/bootstrap." in (
+                assert "${CLAUDE_PLUGIN_ROOT}/lib/apothem/hooks/lib/bootstrap.sh" in (
                     command
                 )
 
@@ -250,8 +258,6 @@ def test_hooks_json_timeouts_mirror_engine() -> None:
     assert _timeout("SessionStart") == {30}
     assert _timeout("PreToolUse") == {10}
     assert _timeout("PostToolUse") == {10}
-    assert _timeout("PreCompact") == {30}
-    assert _timeout("PostCompact") == {30}
     assert _timeout("Stop") == {60}
 
 

@@ -91,7 +91,11 @@ def _qwen_hooks(python_bin: str) -> dict[str, list[dict[str, object]]]:
         ],
         "PreToolUse": [
             {
-                "matcher": "^Bash$",
+                # Qwen matches a matcher that starts with ``^`` purely as a
+                # regex against the runtime tool id, so the shell tool is
+                # anchored by its id, never by the ``Bash`` display name (which
+                # an anchored regex can never match).
+                "matcher": "^run_shell_command$",
                 "hooks": [
                     _hook(
                         _dispatch(python_bin, "PreToolUse", "pretooluse-bash"),

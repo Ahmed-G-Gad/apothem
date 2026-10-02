@@ -33,11 +33,13 @@ execs the bundled dispatcher, so hooks fire without the engine install's
 ``${PYTHON_BIN}`` / ``${HARNESS_ROOT}`` substitution. The honest capability
 split:
 
-* **Persists plugin-alone.** The SessionStart bootstrap (which now emits a
-  lean pointer to the bundled ``rules/`` plus a note that the mechanical hooks
-  are active), the PreToolUse write / edit / notebook / bash context guards
-  (authorship-header, plans-locality, base context nudges), and the
-  PreCompact / PostCompact / Stop handlers — every dispatch-routable hook event.
+* **Persists plugin-alone.** The SessionStart bootstrap (which emits a lean
+  pointer to the bundled ``rules/`` at its resolved path, and on
+  ``source: compact`` the post-compaction recovery context), the PreToolUse
+  write / edit / notebook / shell context guards (authorship-header,
+  plans-locality, dependency and dynamic-eval guards, base context nudges),
+  the PostToolUse compaction advisory, and the opt-in Stop protocol. Claude
+  Code discards PreCompact and PostCompact output, so neither is registered.
 * **Degrades plugin-alone.** The behavioral ``rules/`` are bundled under the
   plugin root but cannot load as always-on context; they degrade to the
   SessionStart pointer plus the still-active mechanical hooks. The conformity

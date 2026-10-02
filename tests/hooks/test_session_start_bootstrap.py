@@ -272,21 +272,51 @@ class TestProjectSlug:
 
 
 class TestFindMemoryIndex:
-    """Locating the memory index for the current project.
+    """Locating the memory index for the operator's project.
 
-    Covers the direct match winning, the missing projects directory returning
-    none, and the leaf fallback — which matches on a path-boundary suffix and
-    rejects a bare substring, so a similarly-named project cannot be picked.
+    The store lives under a harness root's ``projects/<slug>/memory`` and is
+    keyed by the **project** directory's slug, never by the harness root's.
+    Covers the direct match winning, a missing projects directory returning
+    none, extra harness roots, and the leaf fallback, which matches on a
+    path-boundary suffix and rejects a bare substring so a similarly-named
+    project cannot be picked.
     """
 
+    @pytest.fixture(autouse=True)
+    def _config_dir(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+        harness = tmp_path / "harness"
+        monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(harness))
+        return harness
+
     def test_direct_match_wins(self, tmp_path: Path) -> None:
-        root = tmp_path / ".claude"
-        slug = ssb.project_slug(root)
-        direct = root / "projects" / slug / "memory" / "MEMORY.md"
+        project = tmp_path / "work" / "proj"
+        slug = ssb.project_slug(project)
+        direct = tmp_path / "harness" / "projects" / slug / "memory" / "MEMORY.md"
         direct.parent.mkdir(parents=True)
         direct.write_text("# m", encoding="utf-8")
 
-        assert ssb.find_memory_index(root) == direct
+        assert ssb.find_memory_index(project) == direct
+
+    def test_harness_root_slug_never_matches(self, tmp_path: Path) -> None:
+        # The earlier bug: the slug of the harness root itself was looked up,
+        # which can never be the operator's project.
+        harness = tmp_path / "harness"
+        wrong = (
+            harness / "projects" / ssb.project_slug(harness) / "memory" / "MEMORY.md"
+        )
+        wrong.parent.mkdir(parents=True)
+        wrong.write_text("# m", encoding="utf-8")
+
+        assert ssb.find_memory_index(tmp_path / "work" / "proj") is None
+
+    def test_extra_harness_root_is_searched(self, tmp_path: Path) -> None:
+        project = tmp_path / "work" / "proj"
+        extra = tmp_path / "installed"
+        found = extra / "projects" / ssb.project_slug(project) / "memory" / "MEMORY.md"
+        found.parent.mkdir(parents=True)
+        found.write_text("# m", encoding="utf-8")
+
+        assert ssb.find_memory_index(project, (extra,)) == found
 
     def test_missing_projects_dir_returns_none(self, tmp_path: Path) -> None:
         assert ssb.find_memory_index(tmp_path / "empty") is None
@@ -294,23 +324,57 @@ class TestFindMemoryIndex:
     def test_leaf_fallback_matches_boundary_suffix(self, tmp_path: Path) -> None:
         # The leaf is the trailing kebab segment of the project slug, so a
         # slug ending in ``-<leaf>`` is a genuine match for this project.
-        root = tmp_path / "my-app"
-        fallback = root / "projects" / "c--work-my-app" / "memory" / "MEMORY.md"
+        project = tmp_path / "my-app"
+        fallback = (
+            tmp_path
+            / "harness"
+            / "projects"
+            / "c--work-my-app"
+            / "memory"
+            / "MEMORY.md"
+        )
         fallback.parent.mkdir(parents=True)
         fallback.write_text("# m", encoding="utf-8")
 
-        assert ssb.find_memory_index(root) == fallback
+        assert ssb.find_memory_index(project) == fallback
 
     def test_leaf_fallback_rejects_bare_substring(self, tmp_path: Path) -> None:
         # A mere substring must NOT cross-match: a project named ``my-app-fork``
-        # is NOT this ``my-app`` project's memory — the prior substring test
-        # ('app' in 'my-app-fork') would have wrongly resolved it.
-        root = tmp_path / "my-app"
-        other = root / "projects" / "c--work-my-app-fork" / "memory" / "MEMORY.md"
+        # is NOT this ``my-app`` project's memory.
+        project = tmp_path / "my-app"
+        other = (
+            tmp_path
+            / "harness"
+            / "projects"
+            / "c--work-my-app-fork"
+            / "memory"
+            / "MEMORY.md"
+        )
         other.parent.mkdir(parents=True)
         other.write_text("# m", encoding="utf-8")
 
-        assert ssb.find_memory_index(root) is None
+        assert ssb.find_memory_index(project) is None
+
+
+class TestResolveProjectDir:
+    """The project directory is read from the environment, then the payload."""
+
+    def test_claude_project_dir_wins(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path))
+        monkeypatch.delenv("LLM_PROJECT_DIR", raising=False)
+        assert ssb.resolve_project_dir({"cwd": "/elsewhere"}) == tmp_path.resolve()
+
+    def test_payload_cwd_ascends_to_git_root(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.delenv("CLAUDE_PROJECT_DIR", raising=False)
+        monkeypatch.delenv("LLM_PROJECT_DIR", raising=False)
+        (tmp_path / ".git").mkdir()
+        nested = tmp_path / "pkg" / "sub"
+        nested.mkdir(parents=True)
+        assert ssb.resolve_project_dir({"cwd": str(nested)}) == tmp_path.resolve()
 
 
 class TestFindActiveSuite:
@@ -367,17 +431,23 @@ class TestBuildContext:
         assert "Plan summary:" in context
         assert "No active plan suite detected" in context
 
-    def test_full_context_assembly(self, tmp_path: Path) -> None:
-        root = tmp_path / ".claude"
-        slug = ssb.project_slug(root)
-        memory = root / "projects" / slug / "memory" / "MEMORY.md"
+    def test_full_context_assembly(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        installed = tmp_path / "installed"
+        (installed / "hooks" / "messages").mkdir(parents=True)
+        harness = tmp_path / "harness"
+        monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(harness))
+        project = tmp_path / "project"
+        memory = (
+            harness / "projects" / ssb.project_slug(project) / "memory" / "MEMORY.md"
+        )
         memory.parent.mkdir(parents=True)
         memory.write_text(
             "## Project Overview\nTest project.\n## Other\n",
             encoding="utf-8",
         )
-        plans = root / ".plans"
-        suite = plans / "test-suite"
+        suite = project / ".apothem" / "plans" / "test-suite"
         suite.mkdir(parents=True)
         (suite / "PROGRESS.md").write_text(
             "## Status: active\n**Next action:** run tests\n",
@@ -386,7 +456,7 @@ class TestBuildContext:
         (suite / "PLAN-NOTES.md").write_text("", encoding="utf-8")
 
         payload = {"source": "startup", "model": "opus"}
-        context = ssb.build_context(root, payload)
+        context = ssb.build_context(installed, payload, project)
 
         assert "Session bootstrap:" in context
         assert "- Session source: startup" in context
@@ -395,6 +465,52 @@ class TestBuildContext:
         assert "Plan summary:" in context
         assert "- Active suite: test-suite" in context
         assert "- Next action: run tests" in context
+        assert "Post-compaction recovery:" not in context
+
+    def test_compact_source_carries_recovery_context(self, tmp_path: Path) -> None:
+        installed = tmp_path / "installed"
+        messages = installed / "hooks" / "messages"
+        messages.mkdir(parents=True)
+        (messages / "postcompact.md").write_text(
+            "<!-- SPDX-License-Identifier: MIT -->\n\nReload PROGRESS.md.\n\n"
+            "## Bindings\n\n- Drives: x\n",
+            encoding="utf-8",
+        )
+        context = ssb.build_context(installed, {"source": "compact"}, tmp_path)
+
+        assert "Post-compaction recovery:" in context
+        assert "Reload PROGRESS.md." in context
+        assert "SPDX" not in context
+        assert "Bindings" not in context
+
+    def test_plugin_pointer_names_a_resolved_path(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        (tmp_path / "plugin" / "rules").mkdir(parents=True)
+        monkeypatch.setenv("CLAUDE_PLUGIN_ROOT", str(tmp_path / "plugin"))
+        lines = ssb.plugin_alone_pointer()
+        text = "\n".join(lines)
+        assert "${" not in text
+        assert str((tmp_path / "plugin" / "rules").resolve()) in text
+
+    def test_posture_comes_from_the_installed_tree_not_the_project(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        installed = tmp_path / "installed"
+        (installed / "hooks" / "messages").mkdir(parents=True)
+        (installed / "hooks" / "messages" / "sessionstart.md").write_text(
+            "Installed posture.\n", encoding="utf-8"
+        )
+        hostile = tmp_path / "hostile"
+        (hostile / "hooks" / "messages").mkdir(parents=True)
+        (hostile / "rules").mkdir()
+        (hostile / "hooks" / "messages" / "sessionstart.md").write_text(
+            "Injected by the project.\n", encoding="utf-8"
+        )
+        monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(hostile))
+        context = ssb.build_context(installed, {"source": "startup"})
+        assert "Installed posture." in context
+        assert "Injected by the project." not in context
 
 
 class TestMain:

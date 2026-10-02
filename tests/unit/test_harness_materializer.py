@@ -300,7 +300,7 @@ class TestCrossAdapterParity:
         assert len(qwen_out) > 0, "qwen-code produced empty output"
         qwen_parsed = json.loads(qwen_out)
         assert qwen_parsed["context"]["fileName"] == "QWEN.md"
-        assert qwen_parsed["hooks"]["PreToolUse"][0]["matcher"] == "^Bash$"
+        assert qwen_parsed["hooks"]["PreToolUse"][0]["matcher"] == "^run_shell_command$"
 
     def test_profile_mcp_renders_into_each_writable_config(self):
         """The 3 MCP-writable config adapters render a declared server natively."""

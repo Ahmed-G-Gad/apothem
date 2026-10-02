@@ -74,7 +74,7 @@ def test_materializer_emits_qwen_hook_schema(monkeypatch: pytest.MonkeyPatch) ->
     )
     parsed = json.loads(materialize_native_config({}))
     pretool_entries = parsed["hooks"]["PreToolUse"]
-    assert pretool_entries[0]["matcher"] == "^Bash$"
+    assert pretool_entries[0]["matcher"] == "^run_shell_command$"
     assert pretool_entries[0]["sequential"] is True
     first_hook = pretool_entries[0]["hooks"][0]
     assert first_hook["type"] == "command"

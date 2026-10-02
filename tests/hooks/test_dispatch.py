@@ -92,20 +92,20 @@ class TestDispatch:
     ) -> None:
         """Stop still emits the Stop-shaped envelope carrying the message body.
 
-        Stop now routes through ``session_end_gate``, which rations the protocol
-        to one emission per session, so the floor is lowered to 1 to exercise the
-        emitting path here; the rationing itself is covered in
-        ``test_session_end_gate.py``. The gate's state directory is redirected at
-        ``tmp_path`` because it keys on the stdin ``session_id`` — absent here, so
-        it falls back to a shared key that would otherwise latch in the real temp
-        directory and silence every subsequent run of this test.
+        Stop routes through ``session_end_gate``, which is opt-in and rations the
+        protocol to one emission per session, so the gate is enabled and the
+        floor lowered to 1 to exercise the emitting path here; the rationing
+        itself is covered in ``test_session_end_gate.py``. The per-user hook
+        state directory is redirected at ``tmp_path`` so the latch written by
+        this run never silences a later one.
         """
         import session_end_gate as seg
+        import state_dir
 
         _mock_tty_stdin(monkeypatch)
-        monkeypatch.setattr(seg.tempfile, "gettempdir", lambda: str(tmp_path))
+        monkeypatch.setenv(state_dir.OVERRIDE_ENV, str(tmp_path / "state"))
         monkeypatch.setenv(seg.MIN_STOPS_ENV, "1")
-        monkeypatch.delenv(seg.ENABLED_ENV, raising=False)
+        monkeypatch.setenv(seg.ENABLED_ENV, "1")
         ctx = tmp_path / "stop.md"
         ctx.write_text("Stop body.", encoding="utf-8")
 
