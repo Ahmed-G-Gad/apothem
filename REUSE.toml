@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 
-# REUSE.toml — REUSE 3.0 file-level licensing declaration for Apothem.
+# REUSE.toml — REUSE 3.3 file-level licensing declaration for Apothem.
 # https://reuse.software/spec/
 #
 # Files with inline SPDX headers (Python source, shell scripts) are
@@ -425,15 +425,25 @@ SPDX-License-Identifier = "MIT"
 # Each subtree keeps its TRUE upstream license + copyright — not Apothem's.
 # Exact versions are pinned in src/apothem/_vendor/vendor.txt; refresh both this
 # block and vendor.txt in the SAME change-set on any re-vendor.
+#
+# Every path is listed twice: the source tree and the copy the plugin assembler
+# ships under plugins/claude-code/lib/apothem/_vendor/. Without the mirror, the
+# shipped copies fell through to the repository-wide baseline and were
+# attributed to Apothem under MIT. These tables must stay LAST so they win over
+# that baseline (tests/unit/test_reuse_vendored_plugin_copies.py holds both).
 # ---------------------------------------------------------------------------
 
 # attrs (and its `attr` import alias) — MIT, Hynek Schlawack.
 [[annotations]]
 path = [
   "src/apothem/_vendor/attr/**",
+  "plugins/claude-code/lib/apothem/_vendor/attr/**",
   "src/apothem/_vendor/attrs/**",
+  "plugins/claude-code/lib/apothem/_vendor/attrs/**",
   "src/apothem/_vendor/attr.LICENSE",
+  "plugins/claude-code/lib/apothem/_vendor/attr.LICENSE",
   "src/apothem/_vendor/attrs.LICENSE",
+  "plugins/claude-code/lib/apothem/_vendor/attrs.LICENSE",
 ]
 SPDX-FileCopyrightText = "2015 Hynek Schlawack and the attrs contributors"
 SPDX-License-Identifier = "MIT"
@@ -442,11 +452,17 @@ SPDX-License-Identifier = "MIT"
 [[annotations]]
 path = [
   "src/apothem/_vendor/jsonschema/**",
+  "plugins/claude-code/lib/apothem/_vendor/jsonschema/**",
   "src/apothem/_vendor/referencing/**",
+  "plugins/claude-code/lib/apothem/_vendor/referencing/**",
   "src/apothem/_vendor/jsonschema_specifications/**",
+  "plugins/claude-code/lib/apothem/_vendor/jsonschema_specifications/**",
   "src/apothem/_vendor/jsonschema.LICENSE",
+  "plugins/claude-code/lib/apothem/_vendor/jsonschema.LICENSE",
   "src/apothem/_vendor/referencing.LICENSE",
+  "plugins/claude-code/lib/apothem/_vendor/referencing.LICENSE",
   "src/apothem/_vendor/jsonschema_specifications.LICENSE",
+  "plugins/claude-code/lib/apothem/_vendor/jsonschema_specifications.LICENSE",
 ]
 SPDX-FileCopyrightText = "2013 Julian Berman and the jsonschema/referencing contributors"
 SPDX-License-Identifier = "MIT"
@@ -455,7 +471,9 @@ SPDX-License-Identifier = "MIT"
 [[annotations]]
 path = [
   "src/apothem/_vendor/yaml/**",
+  "plugins/claude-code/lib/apothem/_vendor/yaml/**",
   "src/apothem/_vendor/yaml.LICENSE",
+  "plugins/claude-code/lib/apothem/_vendor/yaml.LICENSE",
 ]
 SPDX-FileCopyrightText = "2006-2016 Kirill Simonov; 2017 Ingy döt Net"
 SPDX-License-Identifier = "MIT"
@@ -464,7 +482,9 @@ SPDX-License-Identifier = "MIT"
 [[annotations]]
 path = [
   "src/apothem/_vendor/typing_extensions.py",
+  "plugins/claude-code/lib/apothem/_vendor/typing_extensions.py",
   "src/apothem/_vendor/typing_extensions.LICENSE",
+  "plugins/claude-code/lib/apothem/_vendor/typing_extensions.LICENSE",
 ]
 SPDX-FileCopyrightText = "Python Software Foundation"
 SPDX-License-Identifier = "PSF-2.0"
@@ -473,8 +493,11 @@ SPDX-License-Identifier = "PSF-2.0"
 [[annotations]]
 path = [
   "src/apothem/_vendor/__init__.py",
+  "plugins/claude-code/lib/apothem/_vendor/__init__.py",
   "src/apothem/_vendor/rpds/**",
+  "plugins/claude-code/lib/apothem/_vendor/rpds/**",
   "src/apothem/_vendor/vendor.txt",
+  "plugins/claude-code/lib/apothem/_vendor/vendor.txt",
 ]
 SPDX-FileCopyrightText = "2026 Ahmed G. Gad <me@ahmedgad.com>"
 SPDX-License-Identifier = "MIT"
