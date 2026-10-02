@@ -60,8 +60,8 @@ Invoked by the release engineer and by `.github/workflows/release.yml`. Each shi
 | `check_plugin_version_bump.py` | Fail when a Claude Code marketplace plugin differs from the newest earlier release tag (moved source or changed files) while its manifest `version` is unchanged; Claude Code keeps users on a cached plugin until that string changes. Skips with a message when no `vMAJOR.MINOR.PATCH` tag is reachable; `--base-ref` overrides the base. Run by CI's release-preflight on pull requests and pushes and by the release build on tags. |
 | `check-release-ready` | Gate post-release follow-up work: the tag must name an existing non-draft release and every required workflow for the release commit must be green. |
 | `generate-sbom` | Generate an SPDX-JSON Software Bill of Materials for the source tree via Anchore `syft`. |
-| `sign-assets` | Cosign keyless-OIDC `sign-blob` recipe for the release asset matrix (Sigstore signature bundle + Fulcio certificate per asset, plus a signed `SHA256SUMS`). |
-| `verify-provenance` | Verify the supply-chain provenance chain for a release asset set: SHA-256 manifest re-computation, cosign, and the SLSA verifier. |
+| `sign-assets` | Cosign keyless-OIDC `sign-blob` recipe for the release asset matrix: one `<asset>.cosign.bundle` (signature, Fulcio certificate and Rekor entry) per asset plus one for `SHA256SUMS`, the same naming `release.yml` publishes. |
+| `verify-provenance` | Verify a downloaded release asset set (default: the current directory): the `SHA256SUMS` manifest, every `<asset>.cosign.bundle` (or legacy `<asset>.sig`) against the exact identity `https://github.com/Ahmed-G-Gad/apothem/.github/workflows/release.yml@refs/tags/<tag>`, and `provenance.intoto.jsonl` for the wheel and sdist via `slsa-verifier --source-uri github.com/Ahmed-G-Gad/apothem --source-tag <tag>`. The tag comes from the wheel name unless `--tag` / `-Tag` is given. Owner casing matters: the certificates say `Ahmed-G-Gad`. |
 
 ## Conventions
 

@@ -156,8 +156,8 @@ here?":
 |---|---|---|---|
 | 1 | GitHub Release (Python distributions) | `apothem-X.Y.Z.tar.gz` (sdist) + `apothem-X.Y.Z-py3-none-any.whl` | `gh release view vX.Y.Z --json assets --jq '.assets[].name'` includes both filenames |
 | 2 | GitHub Release (SBOM) | `sbom.cdx.json` | same as row 1; asset list includes the CycloneDX SBOM |
-| 3 | GitHub Release (signatures) | `*.cosign.bundle` per dist artifact; `*.sig` per archive; `SHA256SUMS` + `SHA256SUMS.sig` | `cosign verify-blob --bundle <artifact>.cosign.bundle <artifact>` exits 0 (with the workflow identity flags) |
-| 4 | GitHub Release (provenance) | `provenance.intoto.jsonl` | `bash scripts/release/verify-provenance.sh vX.Y.Z` exits 0 |
+| 3 | GitHub Release (signatures) | one `<asset>.cosign.bundle` per sdist, wheel, SBOM, platform archive and `SHA256SUMS` (earlier releases name the archive and `SHA256SUMS` bundles `<asset>.sig`) | `cosign verify-blob` with the exact identity in §5.5 exits 0 |
+| 4 | GitHub Release (provenance) | `provenance.intoto.jsonl` | `bash scripts/release/verify-provenance.sh <download-dir>` exits 0 (§5.5) |
 | 5 | GitHub Release (platform archives) | `apothem-vX.Y.Z-darwin.tar.gz`, `apothem-vX.Y.Z-linux.tar.gz`, `apothem-vX.Y.Z-windows.zip` | asset list includes every archive plus `SHA256SUMS` |
 | 6 | npmjs.com | `@ahmed-g-gad/apothem@X.Y.Z` | `npm view @ahmed-g-gad/apothem version` returns `X.Y.Z`; `npx @ahmed-g-gad/apothem@X.Y.Z --version` prints `apothem X.Y.Z` |
 | 7 | Pages (script installers) | `install.sh` / `install.ps1` on the docs site | `curl -fsSL https://apothem.ahmedgad.com/install.sh \| head -n 1` returns the script header |
@@ -225,17 +225,31 @@ Expected output: `apothem X.Y.Z`.
 
 ### 5.5 Artifact verification (supply-chain evidence)
 
+Download every asset into an empty directory, then verify. The certificate
+identity is the release workflow at this exact tag. Identity checks are
+case-sensitive, and the certificates carry the owner as GitHub reports it,
+`Ahmed-G-Gad`, so a lowercase owner fails.
+
 ```bash
-gh release download vX.Y.Z --pattern 'apothem-X.Y.Z*' --pattern '*.cosign.bundle'
+mkdir release-vX.Y.Z && cd release-vX.Y.Z
+gh release download vX.Y.Z --repo ahmed-g-gad/apothem
 cosign verify-blob \
   --bundle apothem-X.Y.Z-py3-none-any.whl.cosign.bundle \
-  --certificate-identity-regexp 'github.com/ahmed-g-gad/apothem' \
+  --certificate-identity https://github.com/Ahmed-G-Gad/apothem/.github/workflows/release.yml@refs/tags/vX.Y.Z \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   apothem-X.Y.Z-py3-none-any.whl
-bash scripts/release/verify-provenance.sh vX.Y.Z
+slsa-verifier verify-artifact \
+  --provenance-path provenance.intoto.jsonl \
+  --source-uri github.com/Ahmed-G-Gad/apothem \
+  --source-tag vX.Y.Z \
+  apothem-X.Y.Z-py3-none-any.whl apothem-X.Y.Z.tar.gz
+bash ../scripts/release/verify-provenance.sh .
 ```
 
-Expected: both verifications exit 0.
+Expected: `Verified OK`, `PASSED: SLSA verification passed`, and
+`verify-provenance: chain OK (3 of 3 layers verified)`. The script checks
+`SHA256SUMS`, every signature bundle, and the provenance in one run; it
+derives the tag from the wheel name (`--tag vX.Y.Z` overrides it).
 
 The smoke produces a one-line PASS / FAIL row per surface; record
 the rows in the maintainer's release log.

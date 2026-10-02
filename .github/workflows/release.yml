@@ -17,8 +17,14 @@
 # Once those finish, the workflow:
 #
 #   - Publishes a GitHub Release that mirrors the matching CHANGELOG section.
-#   - Attaches every release artifact (sdist + wheel + SBOM + cosign bundle +
-#     provenance attestation + platform runtime archives) to the Release page.
+#   - Attaches every release artifact (sdist + wheel + SBOM + one
+#     <asset>.cosign.bundle per signed asset + provenance + platform runtime
+#     archives + SHA256SUMS) to the Release page.
+#
+# Users verify with the exact certificate identity
+#   https://github.com/Ahmed-G-Gad/apothem/.github/workflows/release.yml@refs/tags/<tag>
+# (owner casing as GitHub reports it); scripts/release/verify-provenance.sh
+# runs every check.
 #
 # All single-org actions are pinned by 40-character commit SHA followed by a
 # `# vMAJOR.MINOR.PATCH` version comment. The SLSA generator is referenced by
@@ -342,10 +348,13 @@ jobs:
         run: |
           set -euo pipefail
           cd archives
+          # One naming scheme for every bundle: <asset>.cosign.bundle. These
+          # were "<asset>.sig" up to v1.1.0, a name that suggests a detached
+          # signature rather than a Sigstore bundle.
           for f in *.tar.gz *.zip; do
             [ -e "${f}" ] || continue
             cosign sign-blob --yes \
-              --bundle "${f}.sig" \
+              --bundle "${f}.cosign.bundle" \
               "${f}"
           done
       - name: Sign SHA256SUMS manifest (keyless)
@@ -353,7 +362,7 @@ jobs:
           set -euo pipefail
           cd archives
           cosign sign-blob --yes \
-            --bundle SHA256SUMS.sig \
+            --bundle SHA256SUMS.cosign.bundle \
             SHA256SUMS
       - name: Upload signed archives + manifest
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1

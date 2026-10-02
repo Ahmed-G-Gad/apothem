@@ -12,7 +12,7 @@
 #   apothem-v<VERSION>.spdx.json     SBOM (produced by generate-sbom.sh)
 #   install.ps1                       Windows installer copy (from dist/install/)
 #   SHA256SUMS                        sha256 manifest of every asset above
-#   SHA256SUMS.sig                    sigstore signature bundle (produced by sign-assets.sh)
+#   *.cosign.bundle                   Sigstore bundle per asset and for SHA256SUMS (produced by sign-assets.sh)
 #
 # The sdist + wheel attach to the GitHub Release as supply-chain evidence;
 # this script builds them on demand when dist/ does not already carry them.
