@@ -35,8 +35,8 @@ The maintainer confirms the following before tagging:
   is live (verified per the
   [publisher-account-setup runbook](/docs/runbooks/publisher-account-setup)).
 - **Version anchors aligned.** The version string declared at
-  `pyproject.toml` matches the planned tag without the `v` prefix.
-  Verify:
+  `pyproject.toml` matches the planned tag without the `v` prefix
+  (§2.1 sets it, with every other anchor). Verify:
 
   ```bash
   grep '^version' pyproject.toml
@@ -48,29 +48,60 @@ The maintainer confirms the following before tagging:
   version = "X.Y.Z"
   ```
 
-- **CHANGELOG section staged.** `CHANGELOG.md` carries a versioned section
-  under Keep-a-Changelog headings. The maintainer updates the date and
-  release bullets in the same commit that lands the tag.
+- **CHANGELOG entries staged.** The release bullets sit under
+  `## [Unreleased]` in Keep-a-Changelog headings; §2.1 turns them into the
+  dated version section in the commit that lands the tag.
 
 ## 2. Tag and trigger
 
 ### 2.1 Author the release commit
 
-The release commit lands two changes:
-
-- `CHANGELOG.md` version section dated with the actual UTC date of the release.
-- `pyproject.toml` version bumped to the new version (only when the
-  prior commit on `main` already carries the previous-version pin
-  and a fresh bump is required; the commit may also land during the
-  version-bump cycle days before tag time).
-
-Example commit:
+The version lives in more than a dozen files, so do not edit them by hand.
+One command moves all of them:
 
 ```bash
 git checkout main
 git pull --ff-only origin main
-# Author CHANGELOG and pyproject.toml edits via Edit tool, then:
-git add CHANGELOG.md pyproject.toml
+python scripts/release/bump_version.py X.Y.Z
+```
+
+`bump_version.py` updates every version anchor together:
+
+- Every packaging, extension, plugin and marketplace manifest, plus the
+  citation file (version and release date). The full list:
+
+  ```text
+  pyproject.toml
+  package.json
+  site/package.json
+  site/package-lock.json            (the project entries only)
+  vscode-extension/package.json
+  gemini-extension.json
+  qwen-extension.json
+  .claude-plugin/marketplace.json   (top level and metadata)
+  plugins/apothem/.codex-plugin/plugin.json
+  src/apothem/harnesses/antigravity/templates/plugin.json
+  CITATION.cff
+  ```
+
+- `CHANGELOG.md`: the `[Unreleased]` entries become a dated `## [X.Y.Z]`
+  section, `[Unreleased]` compares from `vX.Y.Z`, and a `[X.Y.Z]` link is
+  added.
+- `SECURITY.md`: a new minor gets a supported `X.Y.x` row. Whether older
+  minors stay listed is your decision; the script prints a reminder.
+
+It then regenerates the derived trees: the Claude Code plugin package, the
+behavior-diff goldens, and the docs reference and changelog pages. Pass
+`--dry-run` to list the changes first, `--date
+YYYY-MM-DD` to set the release date (default: today in UTC), or `--no-regen`
+to skip the regeneration. The script refuses a malformed version or a
+downgrade, and re-running it with the current version only re-aligns stray
+anchors.
+
+Review the diff, then commit:
+
+```bash
+git add -A
 git commit -S -m "chore(release): cut vX.Y.Z"
 git push origin main
 ```

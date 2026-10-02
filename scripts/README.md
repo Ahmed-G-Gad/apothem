@@ -50,10 +50,11 @@ The operator-facing bootstrap, update, and uninstall ceremonies — paired acros
 
 ## `release/` — release-engineering recipes
 
-Invoked by the release engineer and by `.github/workflows/release.yml`. Each ships a POSIX `.sh` and a PowerShell `.ps1` parity sibling (`extract_release_notes.py` and `requirements-build-linux.txt` are single-file siblings).
+Invoked by the release engineer and by `.github/workflows/release.yml`. Each ships a POSIX `.sh` and a PowerShell `.ps1` parity sibling (the `.py` scripts and `requirements-build-linux.txt` are single-file siblings: Python runs on every host).
 
 | Script family | Purpose |
 |---------------|---------|
+| `bump_version.py` | Move every version anchor (packaging, npm, site, extension, marketplace and citation manifests, the CHANGELOG section and links, the SECURITY.md support row) to one new `MAJOR.MINOR.PATCH`, then regenerate the plugin package, behavior goldens and docs pages. Stdlib only; `--dry-run` lists the changes. Its anchor list is held to `tests/unit/test_manifest_version_sync.py` by `tests/scripts/test_bump_version.py`. |
 | `build-release-assets` | Build the full GitHub Releases asset matrix for a version tag (runtime tarballs/zips, sdist + wheel supply-chain evidence, SBOM, SHA256SUMS). |
 | `check-release-ready` | Gate post-release follow-up work: the tag must name an existing non-draft release and every required workflow for the release commit must be green. |
 | `generate-sbom` | Generate an SPDX-JSON Software Bill of Materials for the source tree via Anchore `syft`. |
