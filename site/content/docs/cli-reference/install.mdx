@@ -63,6 +63,14 @@ the Zed warning that names an instruction file the new `.rules` hides. The
 `--format json` envelope always carries the full `warnings` array regardless of
 verbosity.
 
+Install and update also print advisories as `Note:` lines. An advisory never
+changes what the install writes. When an install writes a shared root, a path
+other tools also load (for example the skills folder `~/.agents/skills/`),
+the note names those tools. When an install targets a tool that already loads
+Apothem content from another install's shared root, the note names that
+install. In the `--format json` envelope each advisory is a `warnings` entry
+with `"outcome": "advisory"` and `"operation": "shared_root"`.
+
 ## Options
 
 | Option | Description |

@@ -34,6 +34,12 @@ Markdown rules/templates to `~/.config/apothem/` as support material.
 
 ## Compatibility notes
 
+`~/.agents/skills/` is a shared root that Codex owns: eight other supported
+tools load it too (the [harness registry](/docs/reference/harness-registry)
+lists them), so the Apothem skills a Codex install writes there appear in those
+tools as well, and a Codex uninstall removes them from those tools. The install
+prints a note that names those tools.
+
 Codex reserves `~/.codex/rules/` for `.rules` execution policies. Apothem does
 not place Markdown behavioral rules there; it keeps them in `~/.config/apothem/`
 and references them from `AGENTS.md` and installed skills.

@@ -52,6 +52,7 @@ from apothem.harnesses._shared.install_driver import (
 )
 from apothem.lib.atomic_io import write_bytes_atomically
 from apothem.lib.clean_slate import CleanSlateError, CleanSlateResult, run_clean_slate
+from apothem.lib.install_advisories import shared_root_advisories
 from apothem.lib.profile import ProfileValidationError, validate_profile
 
 
@@ -333,8 +334,20 @@ def _materialize(
             all_files_written.extend(materialization.files_written)
         all_results.extend(_result_dicts(harness_id, materialization))
         all_warnings.extend(_warning_dicts(harness_id, materialization))
+        # Shared-root advisories: a path this harness writes that other
+        # harnesses also load, or a path it loads that already holds another
+        # install's Apothem content. Advisory only; the install is unchanged.
+        shared_advisories = shared_root_advisories(
+            harness_id, home=Path.home(), project=project_root
+        )
+        all_warnings.extend(shared_advisories)
 
         if fmt != "json":
+            for advisory in shared_advisories:
+                con.print(
+                    f"[yellow]Note:[/] {harness_id} - "
+                    f"{escape(str(advisory['message']))}"
+                )
             # Paths and adapter-produced messages are operator/user data, not
             # trusted markup: a bracketed path segment would otherwise crash
             # or restyle the Rich rendering.
