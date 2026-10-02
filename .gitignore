@@ -54,6 +54,8 @@ coverage.xml
 htmlcov/
 .hypothesis/
 .ipynb_checkpoints/
+# Behavioural eval runs write results here (claude plugin eval); not source.
+evals/results/
 .python-version
 
 # Virtual environments
