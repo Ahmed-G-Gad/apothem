@@ -8,7 +8,7 @@ import contextlib
 import difflib
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from string import Template
 from typing import Any
@@ -16,6 +16,7 @@ from typing import Any
 from apothem.lib.harness_materializer import (
     merge_managed_block,
 )
+from apothem.lib.install_ledger import OwnedEntry
 from apothem.lib.propagation import (
     InstallEntry,
     resolve_target,
@@ -25,11 +26,16 @@ from .install_driver_backup import write_bytes_safely
 from .install_driver_jsonmerge import (
     _LossyRewriteError,
     _merge_json_settings,
-    _merge_native_content,
-    _operator_json_merge,
     _overlay_json_settings,
     _read_existing,
     _refused_result,
+)
+from .install_driver_ownership import (
+    MergeOutcome,
+    _LegacyOwnership,
+    _merge_native_content,
+    _operator_json_merge,
+    prior_ownership,
 )
 from .install_driver_pathsafety import (
     _allowed_write_root,
@@ -190,11 +196,16 @@ def apply_operator_owned_content(
     detail: dict[str, str] = {"ownership_class": ownership_class}
     try:
         existing_text = _read_existing(target)
-        merged = _merge_native_content(
-            target, content, before=existing_text, harness_root=install_root
+        merge = _merge_native_content(
+            target,
+            content,
+            before=existing_text,
+            harness_root=install_root,
+            prior=prior_ownership(harness_name, install_root, target),
         )
     except _LossyRewriteError as refusal:
         return _refused_result("write_text", target, refusal, detail)
+    merged = merge.text
     existed = existing_text is not None
     before = existing_text or ""
     diff = _unified_diff(before, merged, target)
@@ -228,7 +239,7 @@ def apply_operator_owned_content(
         operation="write_text",
         allowed_root=allowed_root,
     )
-    return _with_detail(result, detail)
+    return replace(_with_detail(result, detail), owned=merge.owned)
 
 
 def _unified_diff(before: str, after: str, target: Path) -> str:
@@ -304,8 +315,9 @@ def _operator_owned_merge_text(
     *,
     before: str | None,
     hook_root: Path | None = None,
-) -> str:
-    """Return the prospective merged text for an operator-owned target.
+    prior: tuple[OwnedEntry, ...] | _LegacyOwnership = (),
+) -> MergeOutcome:
+    """Return the prospective merged text (and ownership) for a target.
 
     *before* is the target's current text (``None`` when it does not exist).
     ``sentinel_merge`` entries fold *content* into the operator anchor as a
@@ -323,10 +335,14 @@ def _operator_owned_merge_text(
             losslessly (see :func:`_operator_json_merge`).
     """
     if entry.mode == "sentinel_merge":
-        return merge_managed_block(before or "", content)
-    if target.suffix.lower() == ".json" and before is not None and before.strip():
-        return _operator_json_merge(target, before, content, harness_root=hook_root)
-    return content
+        return MergeOutcome(merge_managed_block(before or "", content), None)
+    if target.suffix.lower() != ".json":
+        return MergeOutcome(content, None)
+    if before is not None and before.strip():
+        return _operator_json_merge(
+            target, before, content, harness_root=hook_root, prior=prior
+        )
+    return _merge_native_content(target, content, before=None)
 
 
 @dataclass(frozen=True)
@@ -346,6 +362,7 @@ def _operator_owned_preview(
     harness_root: Path | None,
     project_root: Path | None,
     profile_body: str | None = None,
+    harness_name: str = "manual",
 ) -> _OperatorOwnedPreview | None:
     """Return the prospective outcome, unified diff and gate flag for an entry.
 
@@ -388,7 +405,10 @@ def _operator_owned_preview(
             content,
             before=existing_text,
             hook_root=harness_root or project_root,
-        )
+            prior=prior_ownership(
+                harness_name, _root_for(harness_root, project_root), target
+            ),
+        ).text
     except _LossyRewriteError as refusal:
         return _OperatorOwnedPreview(target, "error", "", False, refusal)
     existed = existing_text is not None
@@ -437,15 +457,17 @@ def _apply_operator_owned_file(
     detail: dict[str, str] = {"ownership_class": entry.ownership_class}
     try:
         existing_text = _read_existing(target)
-        merged = _operator_owned_merge_text(
+        merge = _operator_owned_merge_text(
             entry,
             target,
             content,
             before=existing_text,
             hook_root=harness_root or project_root,
+            prior=prior_ownership(harness_name, root, target),
         )
     except _LossyRewriteError as refusal:
         return [_refused_result(entry.mode, target, refusal, detail, source=src)]
+    merged = merge.text
     existed = existing_text is not None
     before = existing_text or ""
     diff = _unified_diff(before, merged, target)
@@ -483,7 +505,7 @@ def _apply_operator_owned_file(
         source=src,
         allowed_root=allowed_root,
     )
-    return [_with_detail(result, detail)]
+    return [replace(_with_detail(result, detail), owned=merge.owned)]
 
 
 def apply_sentinel_merge(

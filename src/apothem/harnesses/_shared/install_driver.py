@@ -112,7 +112,6 @@ from .install_driver_jsonmerge import _merge_hook_entry as _merge_hook_entry
 from .install_driver_jsonmerge import _merge_hooks as _merge_hooks
 from .install_driver_jsonmerge import _merge_json_settings as _merge_json_settings
 from .install_driver_jsonmerge import _merge_json_values as _merge_json_values
-from .install_driver_jsonmerge import _merge_native_content as _merge_native_content
 from .install_driver_jsonmerge import _overlay_json_settings as _overlay_json_settings
 from .install_driver_lifecycle import FidelityResult as FidelityResult
 from .install_driver_lifecycle import _native_config_parses as _native_config_parses
@@ -155,6 +154,7 @@ from .install_driver_merge import apply_sentinel_merge as apply_sentinel_merge
 from .install_driver_merge import project_profile_document as project_profile_document
 from .install_driver_merge import render_content_tokens as render_content_tokens
 from .install_driver_merge import write_text_safely as write_text_safely
+from .install_driver_ownership import _merge_native_content as _merge_native_content
 from .install_driver_pathsafety import _allowed_write_root as _allowed_write_root
 from .install_driver_pathsafety import _existing_chain as _existing_chain
 from .install_driver_pathsafety import (

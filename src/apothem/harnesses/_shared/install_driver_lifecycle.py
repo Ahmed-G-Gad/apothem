@@ -504,9 +504,12 @@ def run_uninstall(
     # exists (legacy / pre-ledger install) — fall back to removing every manifest
     # target. With a record, a single-file manifest target is removed only if it
     # was recorded, so an entry added to the manifest after install is not touched.
-    record = install_ledger.latest_record(harness_name, root=root)
+    record = install_ledger.current_install_record(harness_name, root=root)
+    recorded_targets = (
+        {target.path: target for target in record.targets} if record is not None else {}
+    )
     recorded_paths: set[str] | None = (
-        {target.path for target in record.targets} if record is not None else None
+        set(recorded_targets) if record is not None else None
     )
     handled: set[str] = set()
     results: list[MaterializationResult] = []
@@ -530,6 +533,7 @@ def run_uninstall(
                 install_root=root,
                 harness_name=harness_name,
                 allowed_root=allowed_root,
+                recorded=recorded_targets.get(_path_text(target)),
             )
             if removal is not None:
                 results.append(removal)

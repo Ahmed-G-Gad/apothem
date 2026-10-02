@@ -351,6 +351,7 @@ def _dry_run_results(
                 harness_root=harness_root,
                 project_root=project_root,
                 profile_body=profile_body,
+                harness_name=harness_name,
             )
             if preview is None:
                 outcome = "skipped"

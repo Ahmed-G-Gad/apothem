@@ -31,10 +31,10 @@ from __future__ import annotations
 import json
 import os
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Literal
+from typing import Literal, cast
 
 from apothem.lib import atomic_io
 
@@ -100,6 +100,58 @@ def _utc_now_iso() -> str:
     )
 
 
+#: The kinds of entry Apothem can own inside a structured (JSON / YAML) config.
+#: ``key``: a mapping key Apothem added with a scalar value (removed on
+#: uninstall while it still holds that value). ``item``: one list item Apothem
+#: appended. ``container``: a mapping or list Apothem created (removed on
+#: uninstall only once it is empty, so operator entries added to it survive).
+OwnedKind = Literal["key", "item", "container"]
+
+#: The accepted owned-entry kinds, validated on construction.
+OWNED_KINDS: tuple[OwnedKind, ...] = ("key", "item", "container")
+
+
+@dataclass(frozen=True)
+class OwnedEntry:
+    """One entry Apothem added to an operator-owned structured config.
+
+    Attributes:
+        path: The mapping keys from the document root to the entry (for an
+            ``item``, the path of the list that holds it).
+        kind: One of :data:`OWNED_KINDS`.
+        value: The scalar value (``key``) or list item (``item``) Apothem
+            wrote; ``None`` for a ``container``.
+    """
+
+    path: tuple[str, ...]
+    kind: str
+    value: object = None
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-serializable representation."""
+        payload: dict[str, object] = {"path": list(self.path), "kind": self.kind}
+        if self.kind != "container":
+            payload["value"] = self.value
+        return payload
+
+    @classmethod
+    def from_dict(cls, data: dict[str, object]) -> OwnedEntry:
+        """Reconstruct an entry from its serialized form.
+
+        Raises:
+            KeyError: When a required field is missing.
+            ValueError: When the kind is not one of :data:`OWNED_KINDS`.
+        """
+        kind = str(data["kind"])
+        if kind not in OWNED_KINDS:
+            raise ValueError(f"unknown owned-entry kind: {kind!r}")
+        raw_path = data["path"]
+        path = (
+            tuple(str(part) for part in raw_path) if isinstance(raw_path, list) else ()
+        )
+        return cls(path=path, kind=kind, value=data.get("value"))
+
+
 @dataclass(frozen=True)
 class LedgerTarget:
     """One file an install pass wrote, with the data needed to reverse it.
@@ -119,15 +171,29 @@ class LedgerTarget:
             :mod:`apothem.harnesses._shared.install_driver_types`), or ``None``
             when the target did not previously exist (nothing to restore;
             reversal is a delete).
+        outcome: What this pass did to the target (``created``, ``updated``,
+            or ``unchanged``); ``None`` in records written before the field
+            existed.
+        created: Whether Apothem created the file in the current install cycle
+            (this pass or an earlier install since the last uninstall), carried
+            forward from record to record; ``None`` when unknown (older
+            records).
+        owned: The entries Apothem added to this structured config (see
+            :class:`OwnedEntry`), carried forward from record to record;
+            ``None`` when not recorded (a non-structured target, or an older
+            record).
     """
 
     path: str
     mode: str
     ownership_class: str
     backup_ref: str | None = None
+    outcome: str | None = None
+    created: bool | None = None
+    owned: tuple[OwnedEntry, ...] | None = field(default=None)
 
     def to_dict(self) -> dict[str, object]:
-        """Return a JSON-serializable representation, omitting an absent ref."""
+        """Return a JSON-serializable representation, omitting absent fields."""
         payload: dict[str, object] = {
             "path": self.path,
             "mode": self.mode,
@@ -135,6 +201,12 @@ class LedgerTarget:
         }
         if self.backup_ref is not None:
             payload["backup_ref"] = self.backup_ref
+        if self.outcome is not None:
+            payload["outcome"] = self.outcome
+        if self.created is not None:
+            payload["created"] = self.created
+        if self.owned is not None:
+            payload["owned"] = [entry.to_dict() for entry in self.owned]
         return payload
 
     @classmethod
@@ -145,11 +217,26 @@ class LedgerTarget:
             KeyError: When a required field is missing.
         """
         backup_ref = data.get("backup_ref")
+        outcome = data.get("outcome")
+        created = data.get("created")
+        raw_owned = data.get("owned")
+        owned = (
+            tuple(
+                OwnedEntry.from_dict(cast("dict[str, object]", entry))
+                for entry in raw_owned
+                if isinstance(entry, dict)
+            )
+            if isinstance(raw_owned, list)
+            else None
+        )
         return cls(
             path=str(data["path"]),
             mode=str(data["mode"]),
             ownership_class=str(data["ownership_class"]),
             backup_ref=None if backup_ref is None else str(backup_ref),
+            outcome=None if outcome is None else str(outcome),
+            created=created if isinstance(created, bool) else None,
+            owned=owned,
         )
 
 
@@ -344,6 +431,40 @@ def latest_record(
     return match
 
 
+def current_install_record(
+    harness: str,
+    *,
+    root: Path | str,
+    state_root: Path | None = None,
+) -> LedgerRecord | None:
+    """Return the install record that describes *root*'s current state.
+
+    Replays the harness+root history in append order: an ``install`` record
+    becomes current; an ``uninstall`` clears it; a ``rollback`` of install
+    *X* makes the install current before *X* current again (its changes were
+    undone). A ``rollback`` with no install-id (a failed install that undid
+    itself) changes nothing. ``None`` when nothing is installed at *root*.
+
+    Raises:
+        LedgerError: Propagated from :func:`read_records` on a corrupted ledger.
+    """
+    root_str = str(root)
+    installs: list[LedgerRecord] = []
+    for record in read_records(harness, state_root=state_root):
+        if record.root != root_str:
+            continue
+        if record.kind == "install":
+            installs.append(record)
+        elif record.kind == "uninstall":
+            installs.clear()
+        elif record.kind == "rollback":
+            for index in range(len(installs) - 1, -1, -1):
+                if installs[index].install_id == record.install_id:
+                    del installs[index:]
+                    break
+    return installs[-1] if installs else None
+
+
 def find_record(
     harness: str,
     install_id: str,
@@ -377,13 +498,17 @@ def find_record(
 
 __all__ = [
     "LEDGER_FILENAME",
+    "OWNED_KINDS",
     "RECORD_KINDS",
     "STATE_ROOT",
     "LedgerError",
     "LedgerRecord",
     "LedgerTarget",
+    "OwnedEntry",
+    "OwnedKind",
     "RecordKind",
     "append_record",
+    "current_install_record",
     "find_record",
     "generate_ulid",
     "latest_record",

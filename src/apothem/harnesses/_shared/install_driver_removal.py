@@ -14,9 +14,15 @@ import yaml
 from apothem.lib.harness_materializer import (
     remove_managed_block,
 )
+from apothem.lib.install_ledger import LedgerTarget
 
 from .install_driver_backup import _guarded_unlink, backup_existing, write_bytes_safely
-from .install_driver_jsonmerge import _is_apothem_hook
+from .install_driver_jsonmerge import (
+    _is_apothem_hook,
+    _leading_comment_block,
+    _LossyRewriteError,
+)
+from .install_driver_ownership import current_target, remove_owned_text
 from .install_driver_pathsafety import _validate_target_path
 from .install_driver_types import (
     _REMOVE_KEY,
@@ -268,6 +274,7 @@ def _surgical_remove_from_target(
     harness_name: str,
     allowed_root: Path,
     apothem_keys: frozenset[str] = frozenset(),
+    recorded: LedgerTarget | None = None,
 ) -> MaterializationResult | None:
     """Surgically remove Apothem's contribution from one operator-owned target.
 
@@ -285,9 +292,16 @@ def _surgical_remove_from_target(
       (Apothem-owned, untouched); otherwise leave it in place (never destroy
       unrecognized operator content) — the backup already captured it.
 
+    When *recorded* (the target's entry in the current install record) carries
+    the entries Apothem owns in a JSON / YAML target, exactly those are removed
+    (plus Apothem's hook handlers, by path) instead of every value equal to the
+    template: an operator entry that happens to equal one of Apothem's own
+    survives. A file Apothem did not create is never deleted.
+
     Returns ``None`` when *target* does not exist (nothing to remove). The
     *template_text* is the rendered Apothem template (path tokens already
-    substituted) the install wrote, used to identify Apothem's contribution.
+    substituted) the install wrote, used to identify Apothem's contribution
+    when no ownership is recorded.
     """
     if not target.exists() or not target.is_file():
         return None
@@ -308,9 +322,28 @@ def _surgical_remove_from_target(
     )
     suffix = target.suffix.lower()
     remainder: str | None
+    structured = suffix in {".json", ".yaml", ".yml"}
     if mode == "sentinel_merge":
         stripped = remove_managed_block(existing)
         remainder = None if not stripped.strip() else stripped
+    elif structured and recorded is not None and recorded.owned is not None:
+        try:
+            remainder = remove_owned_text(
+                target,
+                existing,
+                owned=recorded.owned,
+                created=recorded.created,
+                harness_root=install_root,
+                managed_header=_leading_comment_block(template_text),
+            )
+        except _LossyRewriteError as refusal:
+            return _result(
+                "skipped",
+                "surgical_uninstall",
+                target,
+                f"{refusal.reason}; {refusal.fix}",
+                backup_path=backup,
+            )
     elif suffix == ".json":
         remainder = _strip_apothem_json(
             existing,
@@ -385,4 +418,5 @@ def surgically_remove_materialized_config(
         harness_name=harness_name,
         allowed_root=allowed_root or install_root,
         apothem_keys=apothem_keys,
+        recorded=current_target(harness_name, install_root, target),
     )

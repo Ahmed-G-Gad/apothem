@@ -13,12 +13,9 @@ syntax.
 
 from __future__ import annotations
 
-import json
 import re
 from pathlib import Path
 from typing import Final
-
-import yaml
 
 from .install_driver_types import MaterializationResult, _result, _with_detail
 
@@ -266,54 +263,6 @@ def _lossy_rewrite(
     )
 
 
-def _operator_json_merge(
-    target: Path,
-    existing_text: str,
-    content: str,
-    *,
-    harness_root: Path | None = None,
-) -> str:
-    """Return the merged text for an existing operator-owned JSON config.
-
-    Incoming managed values take precedence (the overlay merge) and
-    operator-added keys survive. When the merge changes no value, the
-    operator's bytes come back untouched, so their formatting is kept. A file
-    that parses only as JSONC or JSON5 can still be left as it is, but it
-    cannot be rewritten without losing its comments or syntax, so a needed
-    change raises :class:`_LossyRewriteError`; so does a file that does not parse
-    at all, unless the incoming config is empty (nothing to merge).
-    """
-    from apothem.lib import lenient_json
-
-    incoming = json.loads(content)
-    strict = True
-    try:
-        existing = json.loads(existing_text)
-    except json.JSONDecodeError:
-        strict = False
-        try:
-            existing = lenient_json.loads(existing_text)
-        except lenient_json.LenientJSONError as exc:
-            if incoming == {}:
-                return existing_text
-            raise _LossyRewriteError(
-                f"{target} is not valid JSON, JSONC or JSON5: {exc}",
-                f"Repair {target.name} (or move it aside) and re-run.",
-            ) from exc
-    merged = _overlay_json_settings(existing, incoming, harness_root=harness_root)
-    if merged == existing:
-        return existing_text
-    if not strict:
-        raise _lossy_rewrite(
-            target,
-            "comments, trailing commas or JSON5 syntax",
-            "JSON",
-            existing,
-            merged,
-        )
-    return json.dumps(merged, indent=2, ensure_ascii=False) + "\n"
-
-
 def _yaml_has_operator_comments(existing_text: str, managed_header: str) -> bool:
     """Return True when *existing_text* carries comments Apothem did not write.
 
@@ -324,53 +273,6 @@ def _yaml_has_operator_comments(existing_text: str, managed_header: str) -> bool
     if managed_header and body.startswith(managed_header):
         body = body[len(managed_header) :]
     return _YAML_COMMENT_RE.search(body) is not None
-
-
-def _operator_yaml_merge(
-    target: Path,
-    existing_text: str,
-    content: str,
-    *,
-    harness_root: Path | None = None,
-) -> str:
-    """Return the merged text for an existing operator-owned YAML config.
-
-    The YAML mirror of :func:`_operator_json_merge`: overlay the incoming
-    managed keys, keep operator keys, and leave the operator's bytes untouched
-    when no value changes. PyYAML round-trips values, not comments, so a
-    needed change to a file that carries operator comments, or to a file that
-    does not parse as a YAML mapping, raises :class:`_LossyRewriteError`.
-    """
-    incoming = yaml.safe_load(content)
-    if not isinstance(incoming, dict):
-        return content
-    if not existing_text.strip():
-        return content
-    try:
-        existing = yaml.safe_load(existing_text)
-    except yaml.YAMLError as exc:
-        if not incoming:
-            return existing_text
-        raise _LossyRewriteError(
-            f"{target} is not valid YAML: {exc}",
-            f"Repair {target.name} (or move it aside) and re-run.",
-        ) from exc
-    if existing is None:
-        existing = {}
-    if not isinstance(existing, dict):
-        if not incoming:
-            return existing_text
-        raise _LossyRewriteError(
-            f"{target} is not a YAML mapping",
-            f"Repair {target.name} (or move it aside) and re-run.",
-        )
-    merged = _overlay_json_settings(existing, incoming, harness_root=harness_root)
-    if merged == existing:
-        return existing_text
-    header = _leading_comment_block(content)
-    if _yaml_has_operator_comments(existing_text, header):
-        raise _lossy_rewrite(target, "comments", "YAML", existing, merged)
-    return header + yaml.safe_dump(merged, sort_keys=False, allow_unicode=True)
 
 
 def _leading_comment_block(text: str) -> str:
@@ -389,34 +291,6 @@ def _leading_comment_block(text: str) -> str:
         else:
             break
     return "".join(kept)
-
-
-def _merge_native_content(
-    target: Path,
-    content: str,
-    *,
-    before: str | None,
-    harness_root: Path | None = None,
-) -> str:
-    """Return the prospective merged text for a materializer-rendered config.
-
-    *before* is the operator's current file text (``None`` when the target does
-    not exist). JSON and YAML targets key-merge with it (incoming managed values
-    authoritative, operator-added keys preserved, operator bytes kept when no
-    value changes); other suffixes, absent targets and empty files render
-    *content* verbatim.
-
-    Raises:
-        _LossyRewriteError: When the existing file cannot be rewritten losslessly.
-    """
-    if before is None or not before.strip():
-        return content
-    suffix = target.suffix.lower()
-    if suffix == ".json":
-        return _operator_json_merge(target, before, content, harness_root=harness_root)
-    if suffix in {".yaml", ".yml"}:
-        return _operator_yaml_merge(target, before, content, harness_root=harness_root)
-    return content
 
 
 def _refused_result(

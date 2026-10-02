@@ -40,6 +40,10 @@ Removal matches the install channel you used:
 - The shared profile YAML at `~/.config/apothem/profile.yaml` or
   `--profile PATH` is never removed by `apothem uninstall`.
 - Unrelated operator-authored files in harness directories are preserved.
+- Entries you added to a shared settings file are preserved: your own
+  permission rules, MCP servers and hook handlers stay. Uninstall removes only
+  the keys and list entries the install ledger records as Apothem's (see
+  [Settings](/docs/reference/settings#merging-into-your-own-settings-file)).
 - Plan suites under `<project>/.apothem/plans/` (and the legacy `<project>/.plans/`) are unaffected.
 
 To fully clean up a harness root, remove the harness-native path documented on

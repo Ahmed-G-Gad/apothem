@@ -359,15 +359,21 @@ _NON_LEDGER_OPERATIONS: frozenset[str] = frozenset(
 )
 
 
-def _ledger_targets(run: MaterializationRun) -> tuple[LedgerTarget, ...]:
+def _ledger_targets(
+    run: MaterializationRun, *, prior: LedgerRecord | None = None
+) -> tuple[LedgerTarget, ...]:
     """Project a materialization run's written files to typed ledger targets.
 
     One :class:`LedgerTarget` per created/updated/unchanged file result, carrying
     the path, the install mode (the result ``operation`` — ``sentinel_merge`` /
-    ``write_text`` / a tree mode), the ownership class, and the backup reference
-    captured during the write. Data-surface and advisory results are excluded;
-    duplicate paths collapse to the first occurrence.
+    ``write_text`` / a tree mode), the ownership class, the backup reference
+    captured during the write, the pass outcome, the entries Apothem owns in a
+    structured config, and whether Apothem created the file in this install
+    cycle (carried forward from *prior*, the record that was current before this
+    pass). Data-surface and advisory results are excluded; duplicate paths
+    collapse to the first occurrence.
     """
+    earlier = {target.path: target for target in prior.targets} if prior else {}
     targets: list[LedgerTarget] = []
     seen: set[str] = set()
     for result in run.results:
@@ -378,12 +384,23 @@ def _ledger_targets(run: MaterializationRun) -> tuple[LedgerTarget, ...]:
         if result.path in seen:
             continue
         seen.add(result.path)
+        before = earlier.get(result.path)
+        created: bool | None
+        if result.outcome == "created":
+            created = True
+        elif before is not None:
+            created = before.created
+        else:
+            created = False
         targets.append(
             LedgerTarget(
                 path=result.path,
                 mode=result.operation,
                 ownership_class=result.detail.get("ownership_class", "operator-owned"),
                 backup_ref=result.backup_path,
+                outcome=result.outcome,
+                created=created,
+                owned=result.owned,
             )
         )
     return tuple(targets)
@@ -401,11 +418,15 @@ def record_install(run: MaterializationRun, *, root: Path) -> LedgerRecord | Non
     """
     if run.dry_run:
         return None
+    try:
+        prior = install_ledger.current_install_record(run.harness, root=root)
+    except install_ledger.LedgerError:
+        prior = None
     record = LedgerRecord.create(
         harness=run.harness,
         root=root,
         kind="install",
-        targets=_ledger_targets(run),
+        targets=_ledger_targets(run, prior=prior),
     )
     install_ledger.append_record(record)
     return record

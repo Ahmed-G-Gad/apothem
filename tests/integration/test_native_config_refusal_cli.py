@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 
-"""``apothem install`` over a JSONC / JSON5 operator config (roadmap R-09).
+"""``apothem install`` over a JSONC / JSON5 operator config.
 
 OpenCode, Qwen Code and Open-Claw read configs that may carry comments or
 JSON5 syntax. Install must either keep every operator key with the file's
