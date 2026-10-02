@@ -5,9 +5,10 @@
 Materializes the apothem rules surface into the operator-supplied
 project root at ``<project>/.trae/rules/apothem-rules.md`` — a dedicated
 apothem rules file inside Trae's documented ``.trae/rules/`` directory per
-https://docs.trae.ai/ide/rules. The vendor anchors ``project_rules.md`` and
-``user_rules.md`` are never clobbered: Apothem writes only its own
-``apothem-rules.md`` file alongside them. Trae's MCP surface
+https://docs.trae.ai/ide/rules. The file opens with ``alwaysApply: true``
+frontmatter (Trae's Always Apply mode). Other project rule files and the
+global ``~/.trae/user_rules`` are never clobbered: Apothem writes only its own
+``apothem-rules.md`` file. Trae's MCP surface
 (``.trae/mcp.json``) and skill surface (``.trae/skills/``) are operator-owned
 and out of apothem's adapter scope.
 
