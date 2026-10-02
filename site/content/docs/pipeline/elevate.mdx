@@ -1,0 +1,50 @@
+---
+title: "/elevate"
+description: "Reference for the /elevate command: invocation, arguments, inputs and outputs."
+---
+{/* SPDX-License-Identifier: MIT */}
+{/* apothem:generated-page — generated from src/apothem/commands; edit the command definition and rerun site/scripts/update-reference-inventory.mjs */}
+
+{/* apothem:generated-reference:start */}
+
+Aggressive, zero-trust, open-loop MASTER repository-elevation command. DETECTS across every technically-auditable dimension by dispatching the report-only /audit fortress (reusing its eleven first-class passes — code-review, code-audit, architecture-review, docs-review, security-audit, dependency-audit, supply-chain-audit, threat-model-audit, perf-audit, a11y-audit, ux-review — never re-deriving them), then runs genuinely-independent critique agents over the SOTA-and-elevation dimensions no audit covers (storytelling, naming uniformity, cross-sync, consolidation/modularity, aesthetic SOTA, visualization/tabulation, extensibility), stopping at every nuance folder-by-folder, file-by-file, line-by-line, lifting each surface to current SOTA per rules/sota-elevation.md, remediating with the most appropriate action (destruction included; every destructive step confirmation-gated), propagating each change across the whole reference graph per rules/propagation.md, and culminating trace-free and production-ready by handing off to /freshify. Orchestration runs through the workflow harness (skills/workflow/SKILL.md) per rules/agent-orchestration.md; the command names no model tier and presets no effort. WARNING: a full run is a relentless multi-pass undertaking, not a quick amendment — bound a pass with --dimensions / --max-passes for a scoped run.
+
+## Invocation
+
+```text
+/elevate [path/to/repo/] [--dimensions all|<list>] [--max-passes N] [--open-loop] [--autonomous] [--verify-panel N] [--strict]
+```
+
+The definition sets `disable-model-invocation: true`, so a harness that honors that key starts this command only when you type it.
+
+## Pipeline position
+
+`/elevate` is the aggressive elevation pass that precedes the freshening close, and the remediation consumer the report-only `/audit` routes its HIGH findings to. It consumes the target repository's full working surface, emits an elevated cross-coherent tree plus an elevation report, then hands off to `/freshify` for the trace-free culmination. It is distinct from `/audit` (report-only multi-dimension detection), `/fortress` (the security/production-scoped detect → remediate → re-audit → gate loop, which routes its broad lifts here), and `/release-readiness` (a single READY / BLOCKED verdict): `/elevate` is the broad, open-loop, whole-repo critique-**and-remediate** to SOTA. The elevation here is the substrate the freshening core finalizes.
+
+## Inputs
+
+The target repository's entire working surface — every file, folder, and package; every root file; the README files, `AGENTS.md`, `CLAUDE.md`, the website / portal and its source, the documentation tree, the test suite, the examples, the assets and logos, the `.github/` folder, the source-forge metadata, the CHANGELOG, and every narrative and style surface — plus `/audit`'s verified findings (the technically-auditable detection front), the host's ratified conventions discovered per `rules/host-discovery.md`, and current SOTA authoritative sources accessed per the source-access contract below.
+
+| Argument | Type | Required | Description |
+| -------- | ---- | -------- | ----------- |
+| `path/to/repo/` | Path | Yes | Root directory of the target repository. The command refuses execution when no elevation surface resolves. |
+| `--dimensions all\|<list>` | Enum/List | No | Scope the cross-dimension critique to the named axes (comma-separated) or, with `all`, the full axis list. Default `all`. The audit-detected dimensions accept the same names the eleven first-class passes use (e.g. `security-audit,perf-audit`). |
+| `--max-passes N` | Integer | No | Cap the open-loop pass count at `N` per the iteration-safety contract. Without the flag, the loop runs to convergence under the bounded retreat protocol. |
+| `--open-loop` | Flag | No | Enable dynamic open-loop "dreaming" orchestration — independent critique agents re-fan across nuance classes between passes per `rules/agent-orchestration.md` rather than running a single fixed wave. |
+| `--autonomous` | Flag | No | Opt into continuous pass-to-pass advancement without a per-pass-boundary halt. Default: halt at each pass boundary and confirm, per `rules/agnostic-posture.md` + `rules/context-management.md` §4A. Destructive remediations stay per-target gated even under this flag. |
+| `--verify-panel N` | Integer | No | Refute-by-default critics per surviving finding in the bespoke-critique fan-out (default: 3). |
+| `--strict` | Flag | No | Promote every advisory elevation finding to a blocking finding. Under `--strict`, elevation is complete only when zero sub-SOTA surfaces and zero open critiques remain. |
+
+## Outputs
+
+The elevated working tree (in-place by default), cross-coherent at SOTA across every dimension, and an elevation report enumerating every nuance inspected, every critique verdict (with the `/audit` findings it consumed cited, not re-derived), every remediation with its action and rationale, every surfaced elevation opportunity, the per-dimension attestation, the per-axis attestation against the seven-axs-of-breadth taxonomy, the disclosure ledger of every amendment / extension / refinement per `rules/disclosure-ledger.md`, and the SOTA-elevation disclosure markers per `rules/sota-elevation.md`.
+
+## Next step
+
+**Invoke `/freshify` against the elevated tree** to culminate the project trace-free and production-ready — `/elevate` lifts every surface to SOTA, and the freshening core finalizes the clean, current-version-only close per `rules/production-ready-prs.md`.
+
+## Source
+
+Generated from [`src/apothem/commands/elevate.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/commands/elevate.md), the command definition every harness installs.
+
+{/* apothem:generated-reference:end */}

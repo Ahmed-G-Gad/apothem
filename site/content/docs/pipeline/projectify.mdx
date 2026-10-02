@@ -1,0 +1,46 @@
+---
+title: "/projectify"
+description: "Reference for the /projectify command: invocation, arguments, inputs and outputs."
+---
+{/* SPDX-License-Identifier: MIT */}
+{/* apothem:generated-page — generated from src/apothem/commands; edit the command definition and rerun site/scripts/update-reference-inventory.mjs */}
+
+{/* apothem:generated-reference:start */}
+
+Chat-app Project elevation command. Produces the three deliverables — Description, Instruction, knowledge Files — for a Claude Project / ChatGPT Custom GPT / Gemini Gem, freshly authored to current SOTA conventions through a structured-inquiry-saturated elicitation, elevated across order / coherence / clarity / determinism / structurality / conciseness / rigor / comprehensiveness and beyond, holding knowledge files within a measurable per-platform context budget (token-sum / discovered-platform-limit &lt;= 0.02), with the grant to consolidate or divide files. Installs agnostically across all harnesses. Deterministic output; multi-step autonomy is opt-in / confirmation-gated.
+
+## Invocation
+
+```text
+/projectify [project subject] [--platform claude|chatgpt|gemini] [--autonomous]
+```
+
+The definition sets `disable-model-invocation: true`, so a harness that honors that key starts this command only when you type it.
+
+## Pipeline position
+
+Standalone chat-app-Project authoring surface. It consumes a Project subject + target platform and emits the three Project deliverables; it owns no downstream pipeline artifact.
+
+## Inputs
+
+The operator's Project subject, the `--platform` selection (elicited when unstated), the `--autonomous` opt-in, and any operator-supplied source material for the knowledge files.
+
+| Argument | Type | Required | Description |
+| -------- | ---- | -------- | ----------- |
+| `[project subject]` | String | Yes | The Project's subject / purpose in natural language. |
+| `--platform claude\|chatgpt\|gemini` | Enum | No | The target chat-app platform. When unstated, elicited via inquiry (it determines the context budget + convention set). |
+| `--autonomous` | Flag | No | Opt into continuous multi-step elaboration (default: elicit + confirm at each major decision). |
+
+## Outputs
+
+The three deliverables — Description, Instruction, knowledge Files — plus the SLO computation (token-sum ÷ discovered platform limit ≤ 0.02 with provenance) and the fifteen-bar gate attestation.
+
+## Next step
+
+Invoke `/projectify <subject> --platform <claude|chatgpt|gemini>`; answer the scope + platform inquiries, review the three deliverables and the SLO ratio, then paste them into your chat-app Project. Re-run with refined answers to iterate the Description / Instruction / knowledge-file partition.
+
+## Source
+
+Generated from [`src/apothem/commands/projectify.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/commands/projectify.md), the command definition every harness installs.
+
+{/* apothem:generated-reference:end */}

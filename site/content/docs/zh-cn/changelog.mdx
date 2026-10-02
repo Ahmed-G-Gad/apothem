@@ -22,6 +22,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- **Every slash command has a generated docs page and nav entry**, and the
+  command index, CLI list, and conformity-validator table are generated from
+  code. Translated pages whose English source changed since translation show
+  a staleness note.
 - **A channel smoke workflow runs every documented install command
   anonymously.** `channel-smoke.yml` runs on a weekly schedule and on demand.
   Each of the eight install channels runs on a clean runner with only its
@@ -56,6 +60,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- **The harness docs state what each tool loads.** The Claude Code pages match
+  what the adapter writes, the install page gives the plugin's
+  `/apothem:<name>` command names, and the OpenClaw, Hermes, and Kimi Code
+  pages cite the vendor docs. The comparison page is dated and sourced.
 - **The session-end protocol is now opt-in.** A `Stop` hook that returns
   context makes the assistant take another turn, so the protocol cost one extra
   turn in every session, whether or not the operator asked for it. Set
@@ -111,6 +119,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **Docs pages meet WCAG 2.2 AA in the checked views.** Code-block and
+  active-navigation colours reach 4.5:1 contrast, pages have `main` and `nav`
+  landmarks, and the GitHub icon has an accessible name. Trailing-slash URLs
+  redirect instead of returning 404, and translated pages search their own
+  language's index.
+- **Each GitHub Release attaches the VS Code extension.** The README's VS Code
+  channel installs `apothem.vsix` from the Release, but the release workflow
+  never built it, and v1.1.0 carries none. The release build now packages it
+  into the signed, hashed, and attested asset set.
 - **Extension wrappers run the engine version they shipped with.** The Gemini
   CLI command, the Gemini and Qwen Code context files, and the Codex plugin
   skill called `npx @ahmed-g-gad/apothem` with no version, so a later npm

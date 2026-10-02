@@ -1,0 +1,48 @@
+---
+title: "/github-deploy-fresh"
+description: "Reference for the /github-deploy-fresh command: invocation, arguments, inputs and outputs."
+---
+{/* SPDX-License-Identifier: MIT */}
+{/* apothem:generated-page — generated from src/apothem/commands; edit the command definition and rerun site/scripts/update-reference-inventory.mjs */}
+
+{/* apothem:generated-reference:start */}
+
+GitHub-specific specialization of /freshify that produces a single 100% fresh first-version release on origin/main — one templated release: &lt;repo-name&gt; v0.1.0 commit, strictly-green and maximal-score workflow cards (OpenSSF Scorecard where applicable), a curated concise first-version CHANGELOG, and zero residual GitHub traces (caches, branches, pull requests, prior releases/packages/deployments, failed runs, workflow-run history, draft/pre-releases, stale tags, gist/wiki traces, Pages build history, Actions run logs, environment/deployment records, branch-protection drift, git history). Inherits the agnostic freshening core from /freshify and adds only the forge-specific surface; in-place freshening is the default and every destructive step is confirmation-gated through the structured-inquiry channel.
+
+## Invocation
+
+```text
+/github-deploy-fresh [path/to/repo/] [--purge-runs] [--rewrite-history] [--recreate-repo] [--strict]
+```
+
+The definition sets `disable-model-invocation: true`, so a harness that honors that key starts this command only when you type it.
+
+## Pipeline position
+
+The GitHub deployment pass that follows the `/freshify` agnostic freshening core and precedes the next-release cycle (`/github-deploy-next`). The inherited freshening is the substrate; this command owns only the GitHub-specific deployment contract.
+
+## Inputs
+
+The `/freshify`-freshened working tree; the `origin` remote and its `main` branch; the repository's GitHub Actions workflow set and run history; the GitHub Releases and Packages state; the GitHub Pages build history; the environment and deployment records; the branch and tag set; the pull-request and issue state; the `CHANGELOG.md`; and the version declaration in the host's manifest.
+
+| Argument | Type | Required | Description |
+| -------- | ---- | -------- | ----------- |
+| `path/to/repo/` | Path | Yes | Root directory of the target repository. MUST carry a root manifest, the host's ratified ignore manifest, and an `origin` remote pointing at the GitHub repository so the deployment surface resolves. The command refuses execution when no deployment surface resolves. |
+| `--purge-runs` | Flag | No | Pre-authorize the destructive purge of GitHub Actions run logs, workflow-run history, and failed-run records. Without the flag, the run sweep reports the purge targets and routes a per-action confirmation before any deletion; with it, the purge proceeds while still recording each run id in the report. |
+| `--rewrite-history` | Flag | No | Pre-authorize the destructive git-history rewrite that collapses the repository to the single `release: <repo-name> v0.1.0` commit. Without the flag, the history sweep reports the rewrite scope and routes a confirmation; the rewrite never proceeds on `origin/main` without explicit operator selection. |
+| `--recreate-repo` | Flag | No | Opt into the explicit `MAY` capability that deletes the GitHub repository and recreates it with all current metadata to guarantee full freshness. Default-off; even with the flag the delete-and-recreate routes a per-action confirmation, captures the current metadata first, and refuses to proceed without explicit operator selection. |
+| `--strict` | Flag | No | Promote every advisory deployment finding to blocking. Under `--strict`, the deployment is complete only when zero residual GitHub traces remain, every workflow card is green, and every applicable score (OpenSSF Scorecard) sits at its maximal value. |
+
+## Outputs
+
+The single templated `release: <repo-name> v0.1.0` commit on `origin/main` (with sibling `release: <sub-package> v0.1.0` lines for monorepos); one first-version GitHub Release tagged `v0.1.0`; the curated first-version `CHANGELOG.md` entry per Keep-a-Changelog; strictly-green-and-maximal-score workflow cards; and a deployment report enumerating every inherited `/freshify` pass, every GitHub-trace removal, every confirmation outcome, the per-workflow green/score verdict, and the per-axis attestation against the seven-axs taxonomy.
+
+## Next step
+
+**Invoke `/github-deploy-next`** to deploy the subsequent release in turn — merging the next-cycle pull requests, resolving the next-cycle issues, and tagging the next version — once `/github-deploy-fresh` has landed the single fresh first-version release on `origin/main`.
+
+## Source
+
+Generated from [`src/apothem/commands/github-deploy-fresh.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/commands/github-deploy-fresh.md), the command definition every harness installs.
+
+{/* apothem:generated-reference:end */}

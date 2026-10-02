@@ -25,7 +25,7 @@
 | `_cmd_doctor.py` | The `doctor` command. |
 | `_cmd_migrate_workspace.py` | The `migrate-workspace` command. |
 | `_cmd_completion.py` | The `completion` command (shell-completion script emission). |
-| `reference_export.py` | Deterministic JSON exporter for source-generated documentation reference — introspects the CLI command tree and harness registry. Runnable via `python -m apothem.cli.reference_export <kind>`; spawned by `site/scripts/update-reference-inventory.mjs` and the docs-drift CI gate. |
+| `reference_export.py` | Deterministic JSON exporter for source-generated documentation reference — introspects the CLI command tree, the conformity validator modules and the harness registry. Runnable via `python -m apothem.cli.reference_export <kind>`; spawned by `site/scripts/update-reference-inventory.mjs` and the docs-drift CI gate. |
 | `completions/` | Shell completion scripts: `apothem.bash`, `apothem.zsh`, `apothem.fish`, `apothem.ps1`. |
 
 ## Conventions
