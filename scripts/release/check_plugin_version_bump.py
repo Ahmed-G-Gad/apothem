@@ -23,6 +23,7 @@ Usage::
 
     python scripts/release/check_plugin_version_bump.py
     python scripts/release/check_plugin_version_bump.py --base-ref v1.1.0
+    python scripts/release/check_plugin_version_bump.py --advisory   # warn, exit 0
 
 Exit codes: ``0`` pass or skip, ``1`` a plugin changed without a version
 change, ``2`` git or manifest error.
@@ -183,6 +184,14 @@ def main(argv: list[str] | None = None) -> int:
         "--base-ref",
         help="Compare with this ref instead of the newest earlier release tag.",
     )
+    parser.add_argument(
+        "--advisory",
+        action="store_true",
+        help=(
+            "Report findings as GitHub warning annotations and exit 0. Pull "
+            "requests between releases use this; the release build does not."
+        ),
+    )
     parser.add_argument("--root", type=Path, default=REPO_ROOT, help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
     root: Path = args.root
@@ -205,6 +214,13 @@ def main(argv: list[str] | None = None) -> int:
         print(f"check-plugin-version-bump: {len(problems)} finding(s) against {base}")
         for problem in problems:
             print(f"  {problem}")
+        if args.advisory:
+            for problem in problems:
+                print(
+                    f"::warning title=Plugin version not bumped since {base}::"
+                    f"{problem} Run scripts/release/bump_version.py before tagging."
+                )
+            return 0
         return 1
     print(f"check-plugin-version-bump: OK against {base}")
     return 0

@@ -123,6 +123,19 @@ def test_fails_when_content_changes_under_the_same_version(
     assert "1.0.0" in out
 
 
+def test_advisory_mode_warns_without_failing(
+    repo: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Between releases, pull requests get a warning, not a red check."""
+    _git(repo, "tag", "v1.0.0")
+    (repo / "plugins" / "claude-code" / "commands" / "a.md").write_text("a2\n")
+    _commit(repo, "change a command")
+    assert check.main(["--root", str(repo), "--advisory"]) == 0
+    out = capsys.readouterr().out
+    assert "::warning" in out
+    assert "v1.0.0" in out
+
+
 def test_uncommitted_change_counts(repo: Path) -> None:
     _git(repo, "tag", "v1.0.0")
     (repo / "README.md").write_text("changed outside the plugin\n")

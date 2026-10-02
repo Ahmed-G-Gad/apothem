@@ -483,7 +483,10 @@ jobs:
         # updated. This fails when the marketplace plugin differs from the last
         # release tag while its version is unchanged; the full-history checkout
         # above supplies the tags, and with no tag it skips and says so.
-        run: python scripts/release/check_plugin_version_bump.py
+        # Between releases the plugin always differs from the last tag, so pull
+        # requests get a warning annotation; the release build runs the same
+        # check without --advisory and blocks a tag whose version was not bumped.
+        run: python scripts/release/check_plugin_version_bump.py --advisory
       - name: Check per-folder README file coverage
         # A folder's README is its operating contract, so its file table is
         # load-bearing: a reader who cannot find a module there concludes it
