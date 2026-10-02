@@ -3,7 +3,13 @@
 [build-system]
 # Modern setuptools builds wheels natively; a separate "wheel" requirement is
 # no longer part of the recommended configuration on packaging.python.org.
-requires      = ["setuptools>=77.0"]
+# Pinned to the setuptools that scripts/release/requirements-build-linux.txt
+# hash-locks: the release builds with --no-isolation from that environment, so
+# the backend that produced a release is the reviewed one. A range here let an
+# isolated build fetch whatever PyPI served (the 1.1.0 wheel says setuptools
+# 84.0.0 while the toolchain pinned 83.0.0). tests/scripts/test_normalize_sdist.py
+# holds the two pins together.
+requires      = ["setuptools==83.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]

@@ -119,3 +119,24 @@ Two details decide whether verification means anything:
 
 The [release-cycle runbook](/docs/runbooks/release-cycle) records the same
 commands as the maintainer's post-release check.
+
+### Rebuild a release and compare
+
+The wheel and sdist are reproducible: rebuilding the tag with the release
+toolchain gives the published SHA-256 digests. Use Python 3.12 on Linux, as
+the release does:
+
+```bash
+git clone https://github.com/ahmed-g-gad/apothem && cd apothem
+git checkout vX.Y.Z
+python3.12 -m venv .build && . .build/bin/activate
+pip install --require-hashes -r scripts/release/requirements-build-linux.txt
+export SOURCE_DATE_EPOCH="$(git log -1 --pretty=%ct)"
+python -m build --no-isolation
+python scripts/release/normalize_sdist.py dist/*.tar.gz
+sha256sum dist/*
+```
+
+Compare the digests with the published wheel and sdist. The build uses the
+hash-locked setuptools that `pyproject.toml` pins, and `normalize_sdist.py`
+removes the build time, file owners and checkout timestamps from the sdist.

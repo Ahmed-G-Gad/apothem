@@ -87,12 +87,18 @@ jobs:
         run: |
           set -euo pipefail
           # Reproducible builds: pin every archive mtime to the release
-          # commit's author timestamp so identical sources produce
-          # byte-identical artifacts (verifiable against the SLSA provenance).
+          # commit's timestamp so identical sources produce byte-identical
+          # artifacts (verifiable against the SLSA provenance).
           SOURCE_DATE_EPOCH="$(git log -1 --pretty=%ct)"
           export SOURCE_DATE_EPOCH
           echo "SOURCE_DATE_EPOCH=$SOURCE_DATE_EPOCH ($(date -u -d "@$SOURCE_DATE_EPOCH" '+%Y-%m-%dT%H:%M:%SZ'))"
-          python -m build
+          # --no-isolation builds with the hash-locked toolchain installed
+          # above; an isolated build fetches build-system.requires from PyPI
+          # unhashed. pyproject.toml pins the same setuptools.
+          python -m build --no-isolation
+          # The wheel honours SOURCE_DATE_EPOCH; the sdist's gzip header and
+          # tar entries carry build-time and checkout metadata. Normalize them.
+          python scripts/release/normalize_sdist.py dist/*.tar.gz
       - name: Generate SBOM from the built distributions
         # The SBOM describes what ships: the wheel's metadata and declared
         # requirements, every package vendored under apothem/_vendor (pinned
