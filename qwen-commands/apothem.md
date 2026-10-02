@@ -1,0 +1,10 @@
+---
+description: Run an Apothem command to manage your shared coding-assistant profile.
+---
+
+<!-- SPDX-License-Identifier: MIT -->
+
+Run the Apothem engine with the arguments the user supplied, then summarize the
+result for the user. If no arguments were given, run the help output instead.
+
+!{npx @ahmed-g-gad/apothem {{args}}}

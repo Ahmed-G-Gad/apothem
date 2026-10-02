@@ -233,3 +233,32 @@ def test_capabilities_template_path_resolves_and_commands_are_markdown() -> None
     assert isinstance(template_rel, str)
     assert (_ADAPTER_DIR / template_rel).is_file()
     assert capabilities["custom_command_support"] == "markdown"
+
+
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_qwen_extension_ships_a_markdown_bootstrap_command() -> None:
+    # Qwen Code deprecates TOML commands and shows a migration prompt when it
+    # finds one. The repo root serves both the Gemini CLI extension (TOML only,
+    # read from ``commands/``) and the Qwen Code extension, so the Qwen manifest
+    # points its ``commands`` key at a Qwen-only directory that carries the
+    # Markdown form of the same bootstrap command.
+    manifest = json.loads(
+        (_REPO_ROOT / "qwen-extension.json").read_text(encoding="utf-8")
+    )
+    commands_dir = manifest.get("commands")
+    assert isinstance(commands_dir, str)
+    assert commands_dir != "commands"
+    root = _REPO_ROOT / commands_dir
+    assert not list(root.glob("**/*.toml")), "Qwen must not see a TOML command"
+    command = root / "apothem.md"
+    text = command.read_text(encoding="utf-8")
+    assert text.startswith("---\n"), "frontmatter must be the first content"
+    _, frontmatter, body = text.split("---\n", 2)
+    meta = yaml.safe_load(frontmatter)
+    assert isinstance(meta, dict)
+    assert meta.get("description")
+    assert "!{npx @ahmed-g-gad/apothem {{args}}}" in body
+    # The Gemini extension keeps its TOML command in the shared directory.
+    assert (_REPO_ROOT / "commands" / "apothem.toml").is_file()
