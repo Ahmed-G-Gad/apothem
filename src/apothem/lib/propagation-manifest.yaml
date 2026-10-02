@@ -75,9 +75,11 @@ harnesses:
         target: "${HARNESS_ROOT}/skills/"
         mode: command_skills
         ownership_class: apothem-owned
+      # Claude Code reads only `paths:` from a rule; claude_rules renders the
+      # corpus pathFilter as that list so path-scoped rules stop loading at launch.
       - source: "rules/"
         target: "${HARNESS_ROOT}/rules/"
-        mode: merge_tree_entries
+        mode: claude_rules
         ownership_class: apothem-owned
       - source: "skills/"
         target: "${HARNESS_ROOT}/skills/"

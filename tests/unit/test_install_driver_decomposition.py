@@ -79,7 +79,7 @@ def test_concern_module_set_is_pinned() -> None:
 def test_shim_re_exports_full_public_surface() -> None:
     for name in install_driver.__all__:
         assert hasattr(install_driver, name), f"shim lost public symbol {name}"
-    assert len(install_driver.__all__) == 47
+    assert len(install_driver.__all__) == 48
 
 
 def test_shim_exposes_consumer_private_surface() -> None:

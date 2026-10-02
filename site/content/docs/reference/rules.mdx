@@ -51,6 +51,14 @@ is `true`; on a path-filtered rule `pathFilter` carries the glob list and
 (`{name, description, pathFilter, alwaysApply}`); the validator's
 `frontmatter-cohort` check verifies it on every rule file.
 
+`pathFilter` and `alwaysApply` are harness-neutral. Each adapter translates
+them where its harness has a native scoping field. Claude Code reads only
+`paths:` from a rule and loads every rule without it at launch, so the engine
+install (`apothem install --harness claude-code`) writes each path-filtered rule
+to `~/.claude/rules/` with a `paths:` list built from its `pathFilter`, and
+copies always-on rules unchanged. The 28 always-on rules load in every session;
+the 63 path-filtered companions load when the assistant reads a matching file.
+
 ## Authoring discipline
 
 - **Self-contained.** Each rule has its own Purpose, Obligations, Anti-Patterns,

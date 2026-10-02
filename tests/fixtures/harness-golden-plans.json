@@ -58,7 +58,7 @@
       "target": "<ROOT>/skills"
     },
     {
-      "mode": "merge_tree_entries",
+      "mode": "claude_rules",
       "source": "rules",
       "target": "<ROOT>/rules"
     },
