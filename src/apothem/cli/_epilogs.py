@@ -150,16 +150,23 @@ Exit codes:
 _EP_DOCTOR = """
 Examples:
   apothem doctor
+  apothem doctor --project .
   apothem doctor --json
+
+Checks each installed harness: its verify must pass and every hook command
+its install registered must start (run with a no-op payload). A harness that
+is not installed is reported, not failed. Project-scope harnesses are checked
+when --project names their root.
 
 Related commands:
   harnesses list  List all registered harnesses
   verify          Check a specific harness
 
 Exit codes:
-  0  All checks passed
-  1  A harness is not installed or could not be probed, or the shared
-     profile is present but failed schema validation
+  0  All checks passed (also when no harness is installed yet)
+  1  An installed harness does not verify, a registered hook command cannot
+     start, an adapter could not be loaded or probed, or the shared profile
+     is present but failed schema validation
   64 Usage error: unknown option or command, or a missing or invalid value
 """
 

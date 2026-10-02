@@ -165,8 +165,9 @@ every registered adapter, run:
 apothem doctor
 ```
 
-`doctor` reports each adapter's installed state and exits non-zero if any
-registered adapter reports not installed.
+`doctor` checks every installed harness: it must verify, and each hook command
+its install registered must start. A harness you have not installed is listed
+but is not a failure, so `doctor` exits 0 with one healthy harness.
 
 ## 5. Your first run
 

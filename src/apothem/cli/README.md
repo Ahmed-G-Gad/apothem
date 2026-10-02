@@ -23,6 +23,7 @@
 | `_cmd_harnesses.py` | The `harnesses` command group. |
 | `_cmd_profile.py` | The `profile` command group. |
 | `_cmd_doctor.py` | The `doctor` command. |
+| `_doctor_hooks.py` | Harness-neutral hook probe for `doctor`: reads the files the latest install wrote (install ledger), collects the Apothem hook commands registered there, and starts each interpreter and script pair once with a no-op payload. |
 | `_cmd_migrate_workspace.py` | The `migrate-workspace` command. |
 | `_cmd_completion.py` | The `completion` command (shell-completion script emission). |
 | `reference_export.py` | Deterministic JSON exporter for source-generated documentation reference — introspects the CLI command tree, the conformity validator modules and the harness registry. Runnable via `python -m apothem.cli.reference_export <kind>`; spawned by `site/scripts/update-reference-inventory.mjs` and the docs-drift CI gate. |
