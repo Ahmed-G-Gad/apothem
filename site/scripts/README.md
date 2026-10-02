@@ -37,7 +37,12 @@ Run any of them from `site/`.
   (`check:search-index` npm script).
 - **`export-to-dist.mjs`** — the `postbuild` step: renames Next's `out/` static
   export to `dist/`, the served tree the Pages publish pipeline deploys, baking
-  the correct per-locale `lang`/`dir` into each locale's HTML.
+  the correct per-locale `lang`/`dir` into each locale's HTML, then writes the
+  trailing-slash redirect stubs.
+- **`trailing-slash-redirects.mjs`** — writes `<page>/index.html` redirect stubs
+  so `/docs/install/` reaches `/docs/install` instead of a static-host 404. Each
+  stub names the canonical URL, is marked noindex, and keeps the query string and
+  fragment. Unit-tested by `trailing-slash-redirects.test.mjs` (run by `npm test`).
 
 ## Working in this folder
 

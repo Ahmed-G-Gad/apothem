@@ -96,13 +96,15 @@ jobs:
         # live Click tree; the non-vendored runtime deps (click, rich) must import.
         run: python -m pip install click rich pyyaml jsonschema
 
-      - name: Unit-test the per-locale search-index transform
-        # Node's built-in test runner (no JS test framework is installed). Guards
-        # the single point that can silently drop a page from a locale's search
-        # index (lib/search-index-core.ts `pageToIndex`), including its
-        # intentional fail-fast throw on a page with no structured data.
+      - name: Unit-test the site build helpers
+        # Node's built-in test runner (no JS test framework is installed), via
+        # the `test` npm script. Guards the single point that can silently drop a
+        # page from a locale's search index (lib/search-index-core.ts
+        # `pageToIndex`), including its intentional fail-fast throw on a page
+        # with no structured data, and the trailing-slash redirect stubs
+        # (scripts/trailing-slash-redirects.mjs).
         working-directory: site
-        run: node --test --experimental-strip-types lib/search-index-core.test.mjs
+        run: npm test
 
       - name: Build project website
         working-directory: site

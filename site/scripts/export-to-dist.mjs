@@ -19,6 +19,10 @@
 // `lang="ar" dir="rtl"` and every LTR locale (and English at the root) keeps
 // `dir="ltr"`. The locale → (code, dir) table is projected from the single
 // i18n source of truth so this step never diverges from `lib/i18n.ts`.
+//
+// Last, it writes a redirect stub at `<page>/index.html` for every exported
+// `<page>.html`, so a URL with a trailing slash reaches the page rather than a
+// 404 (see `trailing-slash-redirects.mjs`).
 
 import {
   existsSync,
@@ -31,6 +35,7 @@ import {
 } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { writeTrailingSlashRedirects } from './trailing-slash-redirects.mjs';
 
 // Anchor the build directories to the site root (the script's parent-of-parent),
 // not the caller's cwd, so the rename resolves the same `out/` and `dist/`
@@ -89,6 +94,25 @@ for (const file of walkHtml(SERVE_DIR)) {
   }
 }
 console.log(`Baked per-locale lang/dir into ${rewritten} localized HTML file(s).`);
+
+// A static host answers `/docs/install/` from `docs/install/index.html`, which
+// the export does not write; add a redirect stub per page so URLs with a
+// trailing slash reach the page instead of a 404 (see trailing-slash-redirects.mjs).
+const stubs = writeTrailingSlashRedirects(SERVE_DIR, {
+  siteUrl: loadSiteUrl(),
+  localeFor: (segment) => PATH_TO_LOCALE.get(segment) ?? null,
+});
+console.log(`Wrote ${stubs.length} trailing-slash redirect stub(s).`);
+
+/** Read the canonical site URL from `lib/i18n.ts`, the single source for it. */
+function loadSiteUrl() {
+  const src = readFileSync(new URL('../lib/i18n.ts', import.meta.url), 'utf8');
+  const match = src.match(/export const SITE_URL = '([^']+)'/);
+  if (!match) {
+    throw new Error('export-to-dist: could not parse SITE_URL from lib/i18n.ts');
+  }
+  return match[1];
+}
 
 /** Replace (or insert) a single attribute inside an `<html ...>` attribute run. */
 function setAttr(attrs, name, value) {

@@ -389,6 +389,9 @@ jobs:
         # npm run build runs the source reference emitter, which introspects the
         # live Click tree; the non-vendored runtime deps (click, rich) must import.
         run: python -m pip install click rich pyyaml jsonschema
+      - name: Unit-test the site build helpers
+        working-directory: site
+        run: npm test
       - name: Build docs
         working-directory: site
         run: npm run build
