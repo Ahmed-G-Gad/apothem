@@ -198,3 +198,22 @@ def test_profile_init_stamps_the_schema_version(tmp_path) -> None:
 
     assert result.exit_code == 0, result.output
     assert yaml.safe_load(target.read_text(encoding="utf-8"))["schema_version"] == 1
+
+
+def test_profile_init_points_editors_at_the_published_schema(tmp_path) -> None:
+    """The scaffold's first line is a YAML language-server modeline."""
+    import json
+
+    from click.testing import CliRunner
+
+    from apothem.cli import main
+    from apothem.schemas import profile_schema_path
+
+    schema_id = json.loads(profile_schema_path().read_text(encoding="utf-8"))["$id"]
+    target = tmp_path / "profile.yaml"
+    result = CliRunner().invoke(main, ["profile", "init", "--profile", str(target)])
+
+    assert result.exit_code == 0, result.output
+    first_line = target.read_text(encoding="utf-8").splitlines()[0]
+    assert first_line == f"# yaml-language-server: $schema={schema_id}"
+    load_profile_file(target)  # the modeline is a comment; the file still loads

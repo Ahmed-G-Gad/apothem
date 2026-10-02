@@ -13,6 +13,7 @@ package (``_pkg``) so the test patch seams keep landing."""
 from __future__ import annotations
 
 import inspect
+import json
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -47,7 +48,7 @@ from apothem.lib.profile import (
     other_problem_lines,
     resolve_profile_path,
 )
-from apothem.schemas import profile_minimal_path
+from apothem.schemas import profile_minimal_path, profile_schema_path
 
 #: Shared Click context settings (``-h`` / ``--help`` aliases) for ``main`` and
 #: the ``profile`` / ``harnesses`` sub-groups.
@@ -834,6 +835,9 @@ def _select_and_load_adapters(
 def _profile_scaffold_text() -> str:
     """Return a schema-valid minimal profile scaffold stamped with its version.
 
+    The scaffold opens with a ``yaml-language-server`` modeline naming the
+    profile schema's ``$id``, so an editor validates the file as it is edited.
+
     Every scaffold writer (``profile init``, ``profile edit`` on a missing
     file, ``quickstart``, and a first ``install``) goes through here, so each
     new profile records the schema version it was written for and a later
@@ -844,7 +848,12 @@ def _profile_scaffold_text() -> str:
     data = yaml.safe_load(profile_minimal_path().read_text(encoding="utf-8"))
     if isinstance(data, dict) and "schema_version" not in data:
         data = {"schema_version": current_schema_version(), **data}
-    return yaml.safe_dump(data, sort_keys=False)
+    # The first-line modeline points YAML language servers (editors) at the
+    # schema's $id, which the documentation site serves.
+    schema_id = json.loads(profile_schema_path().read_text(encoding="utf-8"))["$id"]
+    return f"# yaml-language-server: $schema={schema_id}\n" + yaml.safe_dump(
+        data, sort_keys=False
+    )
 
 
 def _usage_failure(

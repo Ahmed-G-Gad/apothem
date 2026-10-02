@@ -47,6 +47,14 @@ Create a schema-valid minimal profile scaffold at
 `~/.config/apothem/profile.yaml` or `--profile PATH`. Existing files are
 preserved unless `--force` is supplied.
 
+The scaffold's first line is a `yaml-language-server` modeline naming the
+profile schema's `$id`,
+`https://apothem.ahmedgad.com/schemas/profile.schema.json`. The site serves
+the packaged schema at that address, so an editor with YAML language support
+validates the profile while you edit it. Every packaged schema under
+`src/apothem/schemas/` is served the same way at
+`https://apothem.ahmedgad.com/schemas/<file>`.
+
 | Option | Description |
 |---|---|
 | `--force` | Overwrite an existing profile scaffold. |

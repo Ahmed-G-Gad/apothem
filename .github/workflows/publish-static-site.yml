@@ -14,7 +14,9 @@
 # siblings) resolve. The served install scripts are always the canonical source
 # — they are not committed under the build-output tree. The Next.js static
 # export copies site/public/CNAME into the build output verbatim, so the apex
-# hostname is served without an extra step.
+# hostname is served without an extra step. The packaged JSON schemas
+# (src/apothem/schemas/*.schema.json) are copied into site/dist/schemas/ the
+# same way, so each schema's $id URL serves the packaged file.
 # Deployment runs through the official GitHub Pages Actions toolchain —
 # actions/configure-pages, actions/upload-pages-artifact,
 # actions/deploy-pages — with OIDC + minimum permissions.
@@ -41,6 +43,7 @@ on:
     paths:
       - 'site/**'
       - 'scripts/installer/**'
+      - 'src/apothem/schemas/**'
       - '.github/workflows/publish-static-site.yml'
   workflow_dispatch:
 
@@ -148,6 +151,16 @@ jobs:
                 || true
             done
           done
+
+      - name: Sync packaged JSON schemas into site/dist/schemas/
+        # Each src/apothem/schemas/*.schema.json declares
+        # $id https://apothem.ahmedgad.com/schemas/<file>; serving the
+        # packaged bytes there lets editors resolve the profile schema (the
+        # profile scaffold's yaml-language-server modeline points at it).
+        run: |
+          set -euo pipefail
+          mkdir -p site/dist/schemas
+          cp src/apothem/schemas/*.schema.json site/dist/schemas/
 
       - name: Validate synced shell scripts
         run: shellcheck --severity=error site/dist/*.sh
