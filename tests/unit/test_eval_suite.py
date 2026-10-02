@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -344,6 +345,23 @@ def test_rule_on_text_matches_the_rule_source() -> None:
     assert not drift, (
         "\n".join(drift) + "\nrun: python scripts/dev/sync_eval_rule_cases.py"
     )
+
+
+def test_importing_the_sync_script_leaves_sys_path_alone() -> None:
+    # This module imports the sync script; if the import put the vendored tree
+    # first on sys.path, every later test in the same worker would load the
+    # vendored jsonschema and yaml instead of the installed ones.
+    code = (
+        "import sys; sys.path.insert(0, sys.argv[1]); before = list(sys.path); "
+        "import sync_eval_rule_cases; "
+        "raise SystemExit(0 if sys.path == before else 1)"
+    )
+    completed = subprocess.run(
+        [sys.executable, "-c", code, str(_SCRIPTS_DEV)],
+        check=False,
+        capture_output=True,
+    )
+    assert completed.returncode == 0, completed.stderr.decode()
 
 
 def test_results_are_not_committed() -> None:

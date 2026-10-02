@@ -32,10 +32,14 @@ SRC = REPO_ROOT / "src"
 EVALS = REPO_ROOT / "evals"
 RULES = SRC / "apothem" / "rules"
 
-if str(SRC / "apothem" / "_vendor") not in sys.path:
+try:
+    import yaml
+except ModuleNotFoundError:
+    # A bare interpreter: fall back to the PyYAML copy vendored with the engine.
+    # Only then, so importing this module (the eval-suite test does) never puts
+    # the vendored tree ahead of the installed packages for the rest of a run.
     sys.path.insert(0, str(SRC / "apothem" / "_vendor"))
-
-import yaml  # noqa: E402  (vendored PyYAML)
+    import yaml
 
 _FRONTMATTER = re.compile(r"\A---\n(.*?)\n---\n", re.DOTALL)
 _SPDX_LINE = re.compile(r"^<!-- SPDX-License-Identifier: MIT -->\n?", re.MULTILINE)
