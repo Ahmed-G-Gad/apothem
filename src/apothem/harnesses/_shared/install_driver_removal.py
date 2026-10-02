@@ -288,9 +288,9 @@ def _surgical_remove_from_target(
       via the recursive structured stripper (operator-added/overridden keys
       survive), plus any *apothem_keys* top-level namespaces Apothem fully owns;
       delete when the remainder is empty, else atomic-rewrite.
-    - Any other suffix: delete when the file content equals the rendered template
-      (Apothem-owned, untouched); otherwise leave it in place (never destroy
-      unrecognized operator content) — the backup already captured it.
+    - Any other suffix: delete when Apothem created the file and its content
+      still equals the rendered template; otherwise leave it in place (never
+      destroy unrecognized operator content) — the backup already captured it.
 
     When *recorded* (the target's entry in the current install record) carries
     the entries Apothem owns in a JSON / YAML target, exactly those are removed
@@ -359,8 +359,10 @@ def _surgical_remove_from_target(
             harness_root=install_root,
         )
     else:
-        # Unrecognized operator content: only delete an exact template copy.
-        remainder = None if existing == template_text else existing
+        # Unrecognized operator content: only delete an exact template copy
+        # Apothem itself created (an operator's own copy is left alone).
+        apothem_created = recorded is None or recorded.created is not False
+        remainder = None if existing == template_text and apothem_created else existing
     if remainder is None:
         result = _guarded_unlink(
             target, allowed_root=allowed_root, operation="surgical_uninstall"

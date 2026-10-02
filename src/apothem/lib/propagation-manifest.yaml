@@ -911,10 +911,11 @@ harnesses:
     # markdown-only (HTML-comment <!-- ... --> delimiters, a frozen contract in
     # apothem.lib.harness_materializer), so it cannot apply to a .toml surface
     # without producing invalid TOML. The file is therefore materialized via
-    # write_text as an operator-owned valid-TOML backend config: apothem writes
-    # the clean template, and the operator owns the file thereafter — their own
-    # backend keys and edits route through the destructive-op authorization gate
-    # on every subsequent update rather than being silently overwritten. The
+    # write_text as an operator-owned valid-TOML backend config: an
+    # operator-owned target in a format Apothem cannot merge into is written
+    # only when absent (create-if-missing) and never overwritten afterwards;
+    # uninstall removes it only when Apothem created it and it is still the
+    # unedited template. The
     # adapter at src/apothem/harnesses/glm/ opts into the project-scope contract
     # (requires_project = True).
     install:

@@ -233,9 +233,12 @@ def _profile_anchor_targets(
     """Return the on-disk anchors that carry the projected profile managed block.
 
     Every ``sentinel_merge`` manifest target (anchor adapters fold the projected
-    body into these), plus the two bolt-on profile anchors written outside the
-    manifest when present: claude_code's ``CLAUDE.md`` and the single-file-config
-    adapters' ``apothem/rules/00-apothem-profile.md``.
+    body into these), plus the bolt-on profile anchors written outside the
+    manifest (claude_code's ``CLAUDE.md``, the single-file-config adapters'
+    ``apothem/rules/00-apothem-profile.md``): the ones the current install
+    record lists, so a deleted bolt-on reads as missing. Without a record (an
+    install from before the ledger) a bolt-on counts only when present. An
+    adapter that projects no profile content (GLM) has no anchors.
     """
     rules = install_driver.load_rules(harness_name)
     root = _root_for(harness_root, project_root)
@@ -246,6 +249,18 @@ def _profile_anchor_targets(
         for entry in rules.install
         if entry.mode == "sentinel_merge"
     ]
+    try:
+        record = install_ledger.current_install_record(harness_name, root=root)
+    except install_ledger.LedgerError:
+        record = None
+    if record is not None:
+        listed = {_path_text(target) for target in targets}
+        targets.extend(
+            Path(recorded.path)
+            for recorded in record.targets
+            if recorded.mode == "sentinel_merge" and recorded.path not in listed
+        )
+        return targets
     for relative in ("CLAUDE.md", "apothem/rules/00-apothem-profile.md"):
         bolt_on = root / relative
         if bolt_on.is_file():
@@ -299,8 +314,14 @@ def check_fidelity(
 
 
 def fidelity_is_faithful(results: list[FidelityResult]) -> bool:
-    """Reduce per-anchor fidelity results to a single bool (all faithful)."""
-    return bool(results) and all(result.status == "faithful" for result in results)
+    """Reduce per-anchor fidelity results to a single bool (all faithful).
+
+    No results means the adapter projects no profile content (GLM, a model
+    backend): there is nothing to drift, so it is faithful. A projecting
+    adapter whose anchor is gone yields a ``missing`` result, not an empty
+    list (see :func:`_profile_anchor_targets`).
+    """
+    return all(result.status == "faithful" for result in results)
 
 
 def _rendered_template_text(

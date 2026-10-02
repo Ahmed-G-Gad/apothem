@@ -342,7 +342,8 @@ def _operator_owned_merge_text(
     merge with the incoming template authoritative: template-carried keys
     update in place so fixes ship to existing installs, while operator-added
     keys absent from the template are preserved, and the operator's bytes are
-    kept when no value changes. The backup-before-replace and
+    kept when no value changes. An existing ``write_text`` target in a format
+    Apothem cannot merge into is left exactly as it is (create-if-missing). The backup-before-replace and
     destructive-authorization gate still guard the write. A non-existent
     target merges to *content* verbatim.
 
@@ -353,7 +354,9 @@ def _operator_owned_merge_text(
     if entry.mode == "sentinel_merge":
         return MergeOutcome(merge_managed_block(before or "", content), None)
     if target.suffix.lower() != ".json":
-        return MergeOutcome(content, None)
+        # A format Apothem cannot merge into (the GLM provider TOML): write the
+        # template only when the file is absent; the operator owns it after.
+        return MergeOutcome(content if before is None else before, None)
     if before is not None and before.strip():
         return _operator_json_merge(
             target, before, content, harness_root=hook_root, prior=prior
