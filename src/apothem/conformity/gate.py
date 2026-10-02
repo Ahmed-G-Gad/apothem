@@ -307,6 +307,7 @@ STANDALONE_MODULES: Final[tuple[str, ...]] = (
     "agents-md-coverage-grep",
     "registry-capability-consistency-grep",
     "binding-reciprocity-corpus-grep",
+    "binding-five-direction-grep",
 )
 
 # Per-grep wall-clock budget in seconds. Exceeding the budget surfaces

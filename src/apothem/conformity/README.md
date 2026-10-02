@@ -24,6 +24,7 @@
 | `naming_grep.py` | Naming-convention conformance. |
 | `binding_reciprocity_grep.py` | Reciprocal five-direction bindings — half-edge detection. |
 | `binding_reciprocity_corpus_grep.py` | The same reciprocity check run across the whole artifact corpus rather than a single Write/Edit input. |
+| `binding_five_direction_grep.py` | Every rule, command, agent, and skill closes with a five-direction `## Bindings` section (hook messages: the three-direction subset). |
 | `always_on_budget_grep.py` | Always-on rule body token budget (the 500-token ceiling). |
 | `agent_capability_grep.py` | Every harness declares its agentic-capability matrix. |
 | `agents_md_coverage_grep.py` | Stale agent-companion files under the root-only AGENTS.md convention. |
