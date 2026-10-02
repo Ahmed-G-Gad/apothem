@@ -54,13 +54,12 @@ Recommended first step — the guided setup (profile -> preview -> install):
   apothem quickstart
 ```
 
-<Callout title="First-run profile stop">
+<Callout title="First run without a profile">
   If you have no profile yet, the installer copies the example profile to
-  `~/.config/apothem/profile.yaml` and stops there, asking you to edit it before
-  any harness config is written — so on a first run, materializing your first
-  harness is the `apothem install` in Step 3, after you make the profile yours
-  in Step 2. When a profile already exists, the run continues straight through
-  to materialization.
+  `~/.config/apothem/profile.yaml` and carries on: it materializes your first
+  harness and verifies it in the same run. The example's identity fields are
+  placeholders, so the install prints a note. Make the profile yours in Step 2,
+  then apply it with `apothem update --harness <name>` as in Step 5.
 </Callout>
 
 <Callout title="The `apothem` command">
