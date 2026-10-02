@@ -469,21 +469,27 @@ echo
 
 # Profile setup ------------------------------------------------------------------
 
+# A first run with no profile creates one from the example and carries on to
+# materialize and verify in the same run (the engine only warns about the
+# placeholder identity). A dry run writes nothing, so it previews with the
+# example profile in place instead of copying it.
 bold "Profile setup"
+ENGINE_PROFILE="$PROFILE"
 if [ -f "$PROFILE" ]; then
     ok "Found profile at $PROFILE"
 else
-    info "No profile found at $PROFILE — creating from example"
-    mkdir -p "$(dirname "$PROFILE")"
     EXAMPLE_PATH="${SOURCE}/src/apothem/schemas/profile.example.yaml"
-    if [ -f "$EXAMPLE_PATH" ]; then
-        cp "$EXAMPLE_PATH" "$PROFILE"
-        ok "Created $PROFILE from example — edit it to set your identity before re-running"
-        warn "Edit $PROFILE, then re-run this installer."
-        exit 0
+    [ -f "$EXAMPLE_PATH" ] \
+        || die "Could not locate profile.example.yaml — create $PROFILE manually before continuing"
+    if [ "$DRY_RUN" = "1" ]; then
+        info "No profile at $PROFILE — the dry run previews with the example profile and writes nothing"
+        ENGINE_PROFILE="$EXAMPLE_PATH"
     else
-        warn "Could not locate profile.example.yaml — create $PROFILE manually before continuing"
-        exit 1
+        info "No profile found at $PROFILE — creating it from the example"
+        mkdir -p "$(dirname "$PROFILE")"
+        cp "$EXAMPLE_PATH" "$PROFILE"
+        ok "Created $PROFILE from the example profile"
+        warn "Its identity fields are placeholders. Edit $PROFILE, then run 'apothem update --harness ${HARNESS}' to apply your identity."
     fi
 fi
 echo
@@ -502,7 +508,7 @@ set --
 [ "$DRY_RUN" = "1" ]    && set -- "$@" --dry-run
 [ "$ASSUME_YES" = "1" ] && set -- "$@" --yes
 PYTHONPATH="${ENGINE_PYPATH}${PYTHONPATH:+:${PYTHONPATH}}" \
-    "$PY" -m apothem install --harness "$HARNESS" --profile "$PROFILE" "$@"
+    "$PY" -m apothem install --harness "$HARNESS" --profile "$ENGINE_PROFILE" "$@"
 if [ "$DRY_RUN" = "1" ]; then
     ok "Harness ${HARNESS} preview generated (dry-run)"
 else

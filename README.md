@@ -343,9 +343,10 @@ prerequisite install, the installer never modifies your Python environment.
 **What it does.** Prerequisite-check (Python ≥ 3.10, `click`, `rich`) →
 locate the source (a surrounding checkout, or — for a network install —
 resolve the latest signed tag and clone the repository at it) → verify the
-tag signature (fail-closed) → run `python -m apothem install --harness
-<name>` from that source → verify → place an `apothem` command on PATH → print
-the next-step banner. Re-running is idempotent: an existing clone is
+tag signature (fail-closed) → create a starter profile from the example when
+none exists → run `python -m apothem install --harness <name>` from that
+source → verify → place an `apothem` command on PATH → print the next-step
+banner, all in one run. Re-running is idempotent: an existing clone is
 re-checked-out to the resolved tag and the harness is re-materialized.
 
 **The `apothem` command.** After a successful install, the installer writes an

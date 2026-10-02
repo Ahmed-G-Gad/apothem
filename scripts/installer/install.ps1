@@ -395,20 +395,28 @@ $VendorPath = [System.IO.Path]::Combine($SrcPath, 'apothem', '_vendor')
 $EnginePyPath = "$VendorPath$([System.IO.Path]::PathSeparator)$SrcPath"
 
 # Profile setup ---------------------------------------------------------------
+# A first run with no profile creates one from the example and carries on to
+# materialize and verify in the same run (the engine only warns about the
+# placeholder identity). A dry run writes nothing, so it previews with the
+# example profile in place instead of copying it.
 Write-Bold "Profile setup"
+$EngineProfile = $ApothemProfile
 if (Test-Path $ApothemProfile) {
     Write-Ok "Found profile at $ApothemProfile"
 } else {
-    Write-Info "No profile at $ApothemProfile - creating from example"
     $ExamplePath = [System.IO.Path]::Combine($Source, 'src', 'apothem', 'schemas', 'profile.example.yaml')
-    if (Test-Path -LiteralPath $ExamplePath) {
+    if (-not (Test-Path -LiteralPath $ExamplePath)) {
+        Write-Fail "Could not locate profile.example.yaml - create $ApothemProfile manually"
+    }
+    if ($DryRun) {
+        Write-Info "No profile at $ApothemProfile - the dry run previews with the example profile and writes nothing"
+        $EngineProfile = $ExamplePath
+    } else {
+        Write-Info "No profile at $ApothemProfile - creating it from the example"
         New-Item -ItemType Directory -Force -Path (Split-Path $ApothemProfile) | Out-Null
         Copy-Item $ExamplePath $ApothemProfile
-        Write-Ok "Created $ApothemProfile from example"
-        Write-Warn "Edit $ApothemProfile to set your identity, then re-run this installer."
-        exit 0
-    } else {
-        Write-Fail "Could not locate profile.example.yaml - create $ApothemProfile manually"
+        Write-Ok "Created $ApothemProfile from the example profile"
+        Write-Warn "Its identity fields are placeholders. Edit $ApothemProfile, then run 'apothem update --harness $Harness' to apply your identity."
     }
 }
 
@@ -430,7 +438,7 @@ if ($Yes)              { $EngineFlags += '--yes' }
 $PriorPyPath = $env:PYTHONPATH
 $env:PYTHONPATH = if ($PriorPyPath) { "$EnginePyPath$([System.IO.Path]::PathSeparator)$PriorPyPath" } else { $EnginePyPath }
 try {
-    & $PY -m apothem install --harness $Harness --profile $ApothemProfile @EngineFlags
+    & $PY -m apothem install --harness $Harness --profile $EngineProfile @EngineFlags
     if ($LASTEXITCODE -ne 0) { Write-Fail "Harness materialization failed for $Harness" }
 
     if ($DryRun) {

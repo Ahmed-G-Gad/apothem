@@ -123,9 +123,11 @@ install that clones the source.
 The installer scripts resolve the latest signed release tag, verify its
 signature, place the Apothem source tree at `~/.apothem` at that tag, create a
 starter profile when none exists, materialize your first harness, and verify
-the result. Re-running is idempotent: an existing tree is re-checked-out to the
-resolved tag and the harness is re-materialized. The tag-pinned verified
-install is the default and recommended path.
+the result, all in one run. The starter profile carries placeholder identity
+fields: edit it, then run `apothem update --harness <name>` to apply yours.
+Re-running is idempotent: an existing tree is re-checked-out to the resolved
+tag and the harness is re-materialized. The tag-pinned verified install is the
+default and recommended path.
 
 ```bash title="macOS · Linux · WSL2 · BSD — latest signed tag, verified"
 curl -fsSL https://apothem.ahmedgad.com/install.sh | bash

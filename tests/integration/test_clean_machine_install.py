@@ -198,3 +198,68 @@ def test_clean_machine_install_materializes_and_discovers(tmp_path: Path) -> Non
         f"expected {EXPECTED_ADAPTER_COUNT} adapters, "
         f"discovered {discovered_count}: {probe.stdout.strip()}"
     )
+
+
+def test_clean_machine_install_without_a_profile_needs_one_run(
+    tmp_path: Path,
+) -> None:
+    """A first run with no profile creates it, installs, and verifies.
+
+    The installer used to stop after copying the example profile, exit 0,
+    and install nothing until it ran a second time. One run must now leave
+    the harness installed and ``verify`` at exit 0.
+    """
+    home = tmp_path / "home"
+    home.mkdir()
+    profile = home / ".config" / "apothem" / "profile.yaml"
+    env = _isolated_env(home, profile, tmp_path / "apothem-home")
+
+    result = subprocess.run(
+        ["bash", str(INSTALLER)],
+        cwd=str(REPO_ROOT),
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=INSTALL_TIMEOUT_SECONDS,
+    )
+
+    output = f"--- stdout ---\n{result.stdout}\n--- stderr ---\n{result.stderr}"
+    assert result.returncode == 0, output
+    assert profile.is_file(), output
+    assert (home / HARNESS_CONFIG_RELATIVE).is_file(), output
+    assert "re-run this installer" not in result.stdout, output
+
+    verify_env = dict(env)
+    verify_env["PYTHONPATH"] = str(SRC_DIR)
+    verify = subprocess.run(
+        [sys.executable, "-m", "apothem", "verify", "--harness", "claude-code"],
+        cwd=str(tmp_path),
+        env=verify_env,
+        capture_output=True,
+        text=True,
+        timeout=INSTALL_TIMEOUT_SECONDS,
+    )
+    assert verify.returncode == 0, verify.stdout + verify.stderr
+
+
+def test_clean_machine_dry_run_without_a_profile_writes_nothing(
+    tmp_path: Path,
+) -> None:
+    """``--dry-run`` with no profile previews with the example and writes nothing."""
+    home = tmp_path / "home"
+    home.mkdir()
+    profile = home / ".config" / "apothem" / "profile.yaml"
+    env = _isolated_env(home, profile, tmp_path / "apothem-home")
+
+    result = subprocess.run(
+        ["bash", str(INSTALLER), "--dry-run"],
+        cwd=str(REPO_ROOT),
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=INSTALL_TIMEOUT_SECONDS,
+    )
+
+    output = f"--- stdout ---\n{result.stdout}\n--- stderr ---\n{result.stderr}"
+    assert result.returncode == 0, output
+    assert list(home.iterdir()) == [], output
