@@ -343,17 +343,41 @@ def discover_rule_files(target: Path) -> list[Path]:
 
 
 def _read_stdin_finding() -> Finding:
+    """Measure a rule body read from stdin as one finding."""
     return _finding(sys.stdin.read(), "<stdin>")
 
 
-def _resolve_target(argv: list[str]) -> Path:
-    if len(argv) >= 2:
-        return Path(argv[1])
-    return Path(DEFAULT_SCAN_DIR)
+def _parse_args(argv: list[str]) -> tuple[bool, Path]:
+    """Return ``(read_stdin, target)``; usage errors exit ``EXIT_USAGE`` (3).
+
+    The parser is imported here, not at module top, so ``check()`` stays
+    stdlib-only for the gate's in-process load.
+    """
+    from apothem.conformity._grep_base import make_parser
+
+    parser = make_parser(GREP_NAME, __doc__)
+    parser.add_argument(
+        "target",
+        nargs="?",
+        default=DEFAULT_SCAN_DIR,
+        help=f"rule file or directory to measure (default: {DEFAULT_SCAN_DIR})",
+    )
+    parser.add_argument(
+        STDIN_FLAG,
+        dest="stdin",
+        action="store_true",
+        help="measure one rule body read from stdin",
+    )
+    args = parser.parse_args(argv[1:])
+    target = Path(args.target)
+    if not args.stdin and not target.exists():
+        parser.error(f"target does not exist: {target}")
+    return bool(args.stdin), target
 
 
 def _main(argv: list[str]) -> int:
-    if len(argv) >= 2 and argv[1] == STDIN_FLAG:
+    read_stdin, target = _parse_args(argv)
+    if read_stdin:
         finding = _read_stdin_finding()
         result = GrepResult(
             grep=GREP_NAME,
@@ -363,7 +387,6 @@ def _main(argv: list[str]) -> int:
         print(result.to_json())
         return EXIT_PASS if result.passed else EXIT_FAIL
 
-    target = _resolve_target(argv)
     paths = discover_rule_files(target)
     findings = [check_file(p) for p in paths]
     failed = [f for f in findings if f.over_budget]

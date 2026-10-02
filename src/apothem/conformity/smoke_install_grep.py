@@ -99,6 +99,8 @@ class GrepResult:
     root: str
     passed: bool
     findings: list[Finding] = field(default_factory=list)
+    # Install scripts read; stamped on the report as ``inspected``.
+    inspected: int = 0
 
     def to_json(self) -> str:
         """Return this report as a two-space-indented JSON string.
@@ -188,27 +190,33 @@ def _check_powershell(path: Path, findings: list[Finding]) -> None:
 def check(root: Path) -> GrepResult:
     """Smoke-check the paired install scripts under root."""
     findings: list[Finding] = []
-    _check_bash(root / "scripts/installer/install.sh", findings)
-    _check_powershell(root / "scripts/installer/install.ps1", findings)
+    scripts = (
+        root / "scripts/installer/install.sh",
+        root / "scripts/installer/install.ps1",
+    )
+    _check_bash(scripts[0], findings)
+    _check_powershell(scripts[1], findings)
     return GrepResult(
         grep=GREP_NAME,
         root=str(root),
         passed=not findings,
         findings=findings,
+        inspected=sum(1 for script in scripts if script.is_file()),
     )
 
 
-def _read_input(argv: list[str]) -> Path:
-    if len(argv) >= 2:
-        return Path(argv[1])
-    return Path.cwd()
-
-
 def _main(argv: list[str]) -> int:
-    root = _read_input(argv)
+    # Imported here, not at module top: ``check()`` stays stdlib-only; only
+    # the command-line entry needs the shared parser and report stamp.
+    from apothem.conformity._grep_base import finish_root_report, parse_root_args
+
+    root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root
     result = check(root)
-    print(result.to_json())
-    return EXIT_PASS if result.passed else EXIT_FAIL
+    return finish_root_report(
+        result.to_json(),
+        passed=result.passed,
+        inspected=result.inspected,
+    )
 
 
 if __name__ == "__main__":

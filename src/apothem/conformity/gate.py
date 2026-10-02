@@ -32,6 +32,7 @@ staged-diff check.
 
 from __future__ import annotations
 
+import argparse
 import contextlib
 import functools
 import importlib.util
@@ -67,9 +68,14 @@ if __package__ in (None, ""):
             sys.path.insert(0, _entry)
 
 from apothem.conformity._grep_base import (
+    EMPTY_SCOPE_KEY,
     EXIT_FAIL,
     EXIT_PASS,
-    read_input,
+    EXIT_USAGE,
+    INSPECTED_KEY,
+    STDIN_FLAG,
+    make_parser,
+    read_path_arguments,
 )
 
 # Environment variable that overrides the default conformity-gate scopes.
@@ -322,17 +328,18 @@ _PERWRITE_FILE_SAMPLE_CAP: Final[int] = 10
 # ``schemas/`` sibling travel together in both shapes).
 TOOLS_DIR: Final[Path] = Path(__file__).resolve().parent
 
-# EXIT_PASS / EXIT_FAIL are imported from ``_grep_base`` (single source with the
-# standalone matchers). EXIT_FAIL (2) is the strict-mode findings-blocked code;
-# a CLI-usage error carries the distinct EXIT_USAGE (3) so a CI consumer can tell
-# "the gate blocked on findings" apart from "the gate was invoked wrong" (an
-# unknown validator name, an unresolvable argument).
-EXIT_USAGE: Final[int] = 3
+# EXIT_PASS / EXIT_FAIL / EXIT_USAGE are imported from ``_grep_base`` (single
+# source with every matcher). EXIT_FAIL (2) is the strict-mode findings-blocked
+# code; a CLI-usage error carries the distinct EXIT_USAGE (3) so a CI consumer
+# can tell "the gate blocked on findings" apart from "the gate was invoked
+# wrong" (an unknown flag or validator name, a missing file or root).
 CHECK_FLAG: Final[str] = "--check"
 LIST_FLAG: Final[str] = "--list"
 ALL_FLAG: Final[str] = "--all"
 ALL_PERWRITE_FLAG: Final[str] = "--all-perwrite"
+HOOK_FLAG: Final[str] = "--hook"
 STRICT_FLAG: Final[str] = "--strict"
+PROG: Final[str] = "conformity-gate"
 STRICT_ENV: Final[str] = "APOTHEM_CONFORMITY_STRICT"
 _STRICT_TRUTHY: Final[frozenset[str]] = frozenset({"1", "true", "yes", "on"})
 
@@ -925,35 +932,6 @@ def _orchestrator_diff_report(
     )
 
 
-def _split_check_flag(argv: list[str]) -> tuple[list[str], str | None]:
-    """Strip a leading ``--check <name>`` pair; return (rest, name or None).
-
-    The flag is recognised only in the first argument position (immediately
-    after ``argv[0]``): ``argv[1]`` must be ``--check`` and ``argv[2]`` is then
-    consumed as the grep name, with both dropped from the returned argv. A
-    ``--check`` appearing anywhere else is left untouched (the callers place
-    it first). Returns the argv unchanged and a ``None`` name when the pair is
-    absent from that position.
-    """
-    if len(argv) >= 3 and argv[1] == CHECK_FLAG:
-        return [argv[0], *argv[3:]], argv[2]
-    return argv, None
-
-
-def _resolve_strict(argv: list[str]) -> tuple[list[str], bool]:
-    """Strip every ``--strict`` flag from *argv*; return (rest, strict_enabled).
-
-    The gate is advisory by default: findings are reported but never block,
-    abort, or force a non-zero exit. Strict mode is opt-in — the operator
-    enables it with the ``--strict`` flag or a truthy ``APOTHEM_CONFORMITY_STRICT``
-    environment variable (e.g., a CI job that wants findings to fail the build).
-    """
-    rest = [arg for arg in argv if arg != STRICT_FLAG]
-    flag_present = len(rest) != len(argv)
-    env_enabled = os.environ.get(STRICT_ENV, "").strip().lower() in _STRICT_TRUTHY
-    return rest, flag_present or env_enabled
-
-
 def _gate_exit(passed: bool, *, strict: bool) -> int:
     """Map a gate verdict to an exit code under the advisory-by-default posture.
 
@@ -1041,6 +1019,22 @@ def _list_validators() -> str:
     return json.dumps(payload, indent=2)
 
 
+# Launcher for one standalone-validator subprocess. It first runs this gate
+# file as a plain script, so the layout-aware bootstrap at the top of the file
+# makes the ``apothem`` package importable the same way it does for the gate
+# itself, then runs the validator module as ``__main__`` with the remaining
+# arguments. A child process therefore resolves its imports without relying on
+# the parent's ``PYTHONPATH`` or on an installed package.
+_STANDALONE_LAUNCHER: Final[str] = (
+    "import runpy, sys\n"
+    "gate_path, module = sys.argv[1], sys.argv[2]\n"
+    "sys.argv = [module, *sys.argv[3:]]\n"
+    "runpy.run_path(gate_path, run_name='apothem_conformity_bootstrap')\n"
+    "runpy.run_module('apothem.conformity.' + module, run_name='__main__',"
+    " alter_sys=True)\n"
+)
+
+
 def _run_standalone(name: str, root: Path) -> tuple[bool, str]:
     """Invoke a standalone validator via subprocess; return (passed, output).
 
@@ -1048,14 +1042,24 @@ def _run_standalone(name: str, root: Path) -> tuple[bool, str]:
     (``naming-grep``), but the on-disk module filenames are underscored
     (``naming_grep.py``). Normalize the name to the underscored form
     before resolving the script path so ``--all`` and ``--check`` both
-    locate the script regardless of which form the caller supplied.
+    locate the script regardless of which form the caller supplied. The
+    validator runs through :data:`_STANDALONE_LAUNCHER` against *root*,
+    which the caller has already resolved to an absolute directory.
     """
-    script = TOOLS_DIR / f"{name.replace('-', '_')}.py"
+    module = name.replace("-", "_")
+    script = TOOLS_DIR / f"{module}.py"
     if not script.exists():
         return False, f"{name}: script absent at {script}"
     try:
-        completed = subprocess.run(  # noqa: S603 — trusted invocation: sys.executable + literal in-repo script path against a validated STANDALONE_MODULES name
-            [sys.executable, str(script), str(root)],
+        completed = subprocess.run(  # noqa: S603 — trusted invocation: sys.executable + a constant launcher + this file's path + a validated STANDALONE_MODULES name
+            [
+                sys.executable,
+                "-c",
+                _STANDALONE_LAUNCHER,
+                str(Path(__file__).resolve()),
+                module,
+                str(root),
+            ],
             capture_output=True,
             text=True,
             check=False,
@@ -1094,6 +1098,25 @@ def _advisory_verdict(output: str) -> dict[str, object] | None:
     }
 
 
+def _inspection_fields(output: str) -> dict[str, object]:
+    """Return a validator report's ``inspected`` / empty-scope fields, if any.
+
+    Every standalone validator stamps ``inspected`` (how many targets it
+    examined) on its JSON report, plus ``empty_scope_expected`` when it
+    examined none. Lifting them into the ``--all`` result entry lets a consumer
+    see a vacuous run without parsing each embedded ``output`` string.
+    """
+    try:
+        payload = json.loads(output)
+    except (json.JSONDecodeError, ValueError, TypeError):
+        return {}
+    if not isinstance(payload, dict):
+        return {}
+    return {
+        key: payload[key] for key in (INSPECTED_KEY, EMPTY_SCOPE_KEY) if key in payload
+    }
+
+
 def _run_all(root: Path) -> tuple[bool, str]:
     """Run every standalone validator; aggregate exit verdicts.
 
@@ -1120,6 +1143,7 @@ def _run_all(root: Path) -> tuple[bool, str]:
             "passed": passed,
             "output": output.strip(),
         }
+        entry.update(_inspection_fields(output))
         verdict = _advisory_verdict(output)
         if verdict is not None:
             entry["advisory"] = True
@@ -1375,63 +1399,176 @@ def _findings_summary(report: OrchestratorReport, *, strict: bool) -> str:
     return "\n".join(lines)
 
 
+def _build_parser() -> argparse.ArgumentParser:
+    """Return the gate's argument parser (usage errors exit ``EXIT_USAGE``)."""
+    parser = make_parser(PROG, __doc__)
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument(
+        LIST_FLAG,
+        dest="list",
+        action="store_true",
+        help="print every registered validator as JSON and exit",
+    )
+    modes.add_argument(
+        ALL_FLAG,
+        dest="all",
+        action="store_true",
+        help="run every standalone validator over TARGET, a root directory "
+        "(default: the current directory)",
+    )
+    modes.add_argument(
+        ALL_PERWRITE_FLAG,
+        dest="all_perwrite",
+        action="store_true",
+        help="run every per-write matcher over the tracked files under TARGET",
+    )
+    modes.add_argument(
+        HOOK_FLAG,
+        dest="hook",
+        action="store_true",
+        help="read a harness tool-input payload on stdin (the PreToolUse form)",
+    )
+    parser.add_argument(
+        CHECK_FLAG,
+        dest="check",
+        metavar="NAME",
+        default=None,
+        help="run one validator: a per-write matcher over a file or stdin, or a "
+        "standalone validator over a root directory",
+    )
+    parser.add_argument(
+        STRICT_FLAG,
+        dest="strict",
+        action="store_true",
+        help=f"exit {EXIT_FAIL} on a blocking finding (also: {STRICT_ENV}=1)",
+    )
+    parser.add_argument(
+        STDIN_FLAG,
+        dest="stdin",
+        action="store_true",
+        help="read the content to check from stdin",
+    )
+    parser.add_argument(
+        "target",
+        nargs="?",
+        default=None,
+        help="file to check, or the root directory for --all, --all-perwrite, "
+        "or a standalone --check",
+    )
+    return parser
+
+
+def _resolve_root(parser: argparse.ArgumentParser, target: str | None) -> Path:
+    """Return *target* (default: the current directory) as an absolute root.
+
+    A root that is not an existing directory is a usage error: a typo'd path
+    in a CI step or a pre-commit hook must not read as a pass. Resolving here
+    means ``.`` and the absolute form inspect the same tree.
+    """
+    root = Path(target) if target is not None else Path.cwd()
+    if not root.is_dir():
+        parser.error(f"root is not an existing directory: {root}")
+    return root.resolve()
+
+
+def _strict_enabled(flag: bool) -> bool:
+    """Return True when ``--strict`` or a truthy ``APOTHEM_CONFORMITY_STRICT`` is set.
+
+    The gate is advisory by default: findings are reported but never block,
+    abort, or force a non-zero exit. Strict mode is opt-in — the operator
+    enables it with the ``--strict`` flag or a truthy ``APOTHEM_CONFORMITY_STRICT``
+    environment variable (e.g., a CI job that wants findings to fail the build).
+    """
+    env_enabled = os.environ.get(STRICT_ENV, "").strip().lower() in _STRICT_TRUTHY
+    return flag or env_enabled
+
+
 def main(argv: list[str] | None = None) -> int:
     """Dispatch one gate invocation and return its process exit code.
 
     Pre-conditions: ``argv`` is a full argument vector including the program
-    name (``None`` reads ``sys.argv``). ``--strict`` may appear anywhere and is
-    extracted before flag dispatch; ``APOTHEM_CONFORMITY_STRICT`` sets the same
-    posture from the environment.
+    name (``None`` reads ``sys.argv``). ``--strict`` may appear anywhere;
+    ``APOTHEM_CONFORMITY_STRICT`` sets the same posture from the environment.
 
     Post-conditions: returns :data:`EXIT_PASS` when no blocking finding was
     raised, or when findings exist but strict mode is off — the advisory
     default reports without failing a build. Returns the findings-block code
-    under ``--strict``, and the usage-error code for an unknown validator name,
-    which is kept distinct so a caller can tell a misspelled selector from a
-    real finding.
+    under ``--strict``, and the usage-error code :data:`EXIT_USAGE` for an
+    unknown flag or validator name, a conflicting flag pair, a file that does
+    not exist, or a root that is not an existing directory — kept distinct so
+    a caller can tell a misspelled selector or path from a real finding.
+    ``--help`` prints usage and returns 0.
     """
     if argv is None:
         argv = sys.argv
-    argv, strict = _resolve_strict(argv)
-    if len(argv) >= 2 and argv[1] == LIST_FLAG:
+    parser = _build_parser()
+    try:
+        args = parser.parse_args(argv[1:])
+    except SystemExit as exc:
+        return exc.code if isinstance(exc.code, int) else EXIT_USAGE
+    strict = _strict_enabled(bool(args.strict))
+    try:
+        return _dispatch(parser, args, strict=strict)
+    except SystemExit as exc:
+        # ``parser.error`` exits EXIT_USAGE after printing its one-line message.
+        return exc.code if isinstance(exc.code, int) else EXIT_USAGE
+
+
+def _dispatch(
+    parser: argparse.ArgumentParser, args: argparse.Namespace, *, strict: bool
+) -> int:
+    """Run the mode the parsed arguments select; return the exit code."""
+    corpus_mode = args.list or args.all or args.all_perwrite
+    if args.check is not None and corpus_mode:
+        parser.error(
+            f"{CHECK_FLAG} cannot be combined with {LIST_FLAG}, "
+            f"{ALL_FLAG}, or {ALL_PERWRITE_FLAG}"
+        )
+    if args.stdin and (corpus_mode or args.hook):
+        parser.error(f"{STDIN_FLAG} applies only to a file check")
+    if args.hook and args.target is not None:
+        parser.error(f"{HOOK_FLAG} reads its payload from stdin; drop the path")
+    if args.list:
+        if args.target is not None:
+            parser.error(f"{LIST_FLAG} takes no path")
         print(_list_validators())
         return EXIT_PASS
-    if len(argv) >= 2 and argv[1] == ALL_PERWRITE_FLAG:
-        root = Path(argv[2]) if len(argv) >= 3 else Path.cwd()
-        passed, payload = _run_all_perwrite(root)
+    if args.all_perwrite:
+        passed, payload = _run_all_perwrite(_resolve_root(parser, args.target))
         print(payload)
         return _strict_exit_with_advisory(
             blocking_passed=passed,
             advisory_present=advisory_findings_present(json.loads(payload)),
             strict=strict,
         )
-    if len(argv) >= 2 and argv[1] == ALL_FLAG:
-        root = Path(argv[2]) if len(argv) >= 3 else Path.cwd()
-        passed, payload = _run_all(root)
+    if args.all:
+        passed, payload = _run_all(_resolve_root(parser, args.target))
         print(payload)
         return _strict_exit_with_advisory(
             blocking_passed=passed,
             advisory_present=advisory_findings_present(json.loads(payload)),
             strict=strict,
         )
-    argv, only = _split_check_flag(argv)
+    only: str | None = None
     # --check <name> may name a standalone; route via subprocess when so.
-    if only is not None:
+    if args.check is not None:
         try:
-            canonical, is_standalone = _resolve_validator(only)
+            canonical, is_standalone = _resolve_validator(args.check)
         except ValueError as exc:
             # Unknown validator name is a CLI-usage error, not a findings block:
             # EXIT_USAGE (3) keeps it distinct from EXIT_FAIL (2, strict block).
             sys.stderr.write(f"{exc}\n")
             return EXIT_USAGE
         if is_standalone:
-            root = Path(argv[1]) if len(argv) >= 2 else Path.cwd()
+            if args.hook or args.stdin:
+                parser.error(f"{canonical} is a standalone validator; pass a root")
+            root = _resolve_root(parser, args.target)
             passed, output = _run_standalone(canonical, root)
             print(output)
             return _gate_exit(passed, strict=strict)
         only = canonical
     pre_content: str | None = None
-    if len(argv) >= 2 and argv[1] == "--hook":
+    if args.hook:
         # Harness-dispatched hook mode: parse tool-input JSON from stdin.
         content, path, pre_content = _read_tool_input_from_stdin()
         # No resolvable target path: an empty or malformed payload (no
@@ -1455,7 +1592,8 @@ def main(argv: list[str] | None = None) -> int:
         if _is_harness_state_path(path, scopes):
             return _silent_pass(path)
     else:
-        content, path = read_input(argv)
+        args.path = args.target
+        content, path = read_path_arguments(parser, args)
     try:
         if pre_content is not None:
             report = _orchestrator_diff_report(pre_content, content, path, only)

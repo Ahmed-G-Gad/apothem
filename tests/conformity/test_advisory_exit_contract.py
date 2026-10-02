@@ -26,6 +26,7 @@ from __future__ import annotations
 import importlib
 import inspect
 import json
+from pathlib import Path
 from types import ModuleType
 from typing import ClassVar
 
@@ -81,6 +82,10 @@ class _FailingResult:
     """
 
     passed: ClassVar[bool] = False
+    # A scan that reports findings has inspected targets; each advisory
+    # validator reads its own count field, so the stub carries all of them.
+    files_inspected: ClassVar[int] = 1
+    folders_inspected: ClassVar[int] = 1
 
     def to_json(self) -> str:
         return json.dumps(
@@ -110,6 +115,7 @@ def test_advisory_main_exits_zero_on_findings(
     module_name: str,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
+    tmp_path: Path,
 ) -> None:
     """Each advisory validator's ``_main`` exits 0 even when findings are present."""
     module = importlib.import_module(f"apothem.conformity.{module_name}")
@@ -122,7 +128,7 @@ def test_advisory_main_exits_zero_on_findings(
 
     monkeypatch.setattr(module, "check", _failing_check)
 
-    exit_code = module._main([module_name])
+    exit_code = module._main([module_name, str(tmp_path)])
     assert exit_code == module.EXIT_PASS, (
         f"{module_name}._main returned {exit_code} on findings; advisory "
         f"validators must exit EXIT_PASS ({module.EXIT_PASS}) per the gate's "
