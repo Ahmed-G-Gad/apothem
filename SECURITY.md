@@ -8,9 +8,14 @@ This document describes how to report security vulnerabilities in this project, 
 
 | Version  | Supported          |
 | -------- | ------------------ |
+| 1.1.x    | ✓                  |
 | 1.0.x    | ✓                  |
 
-The support matrix updates with each minor release. The latest minor is always under active support and receives all security fixes. When multiple public minors exist, any previous-minor critical-fix-only window is listed here explicitly. Unlisted minors are unsupported; reporters should upgrade to a supported version before requesting a fix.
+<!-- TODO(clarify): decide whether 1.0.x keeps full support or moves to a
+critical-fix-only window now that 1.1.x is the latest minor, and record the
+window's end date in this table. The support window is an operator decision. -->
+
+The support matrix updates with each minor release; `scripts/release/bump_version.py` adds the new minor's row. The latest minor is always under active support and receives all security fixes. When multiple public minors exist, any previous-minor critical-fix-only window is listed here explicitly. Unlisted minors are unsupported; reporters should upgrade to a supported version before requesting a fix.
 
 ## Reporting a vulnerability
 
