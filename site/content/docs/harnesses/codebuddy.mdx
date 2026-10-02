@@ -28,9 +28,11 @@ every `*.md` file under `.codebuddy/rules/` as Markdown with optional YAML
 frontmatter (`alwaysApply`, `paths`, `enabled`) per the
 [CodeBuddy Rules documentation](https://www.codebuddy.ai/docs/ide/Rules);
 Apothem's file carries `alwaysApply: true` so the governance surface applies
-on every interaction. The shared profile is the source of truth; project-local
-edits to the generated file are backed up before the next sync replaces the
-Apothem-managed content.
+on every interaction. The frontmatter is the first content in the file and the
+Apothem-managed block follows it; text you add after the block is kept on every
+sync. The shared profile is the source of truth; project-local edits to the
+generated file are backed up before the next sync replaces the Apothem-managed
+content.
 
 ## Compatibility notes
 

@@ -27,6 +27,11 @@ on every `apothem install` or `apothem update` run. The shared profile is the
 source of truth; project-local edits to the generated file are backed up before
 the next sync replaces the Apothem-managed content.
 
+The file opens with its YAML frontmatter (`description`, `globs`,
+`alwaysApply: true`), because Cursor reads a rule's type only from frontmatter
+at the start of the file. The Apothem-managed block follows it; text you add
+after the block is kept on every sync.
+
 ## Compatibility notes
 
 Cursor 0.45+ supports project-level instructions via `.cursor/rules/`. The

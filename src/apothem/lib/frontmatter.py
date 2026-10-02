@@ -8,6 +8,8 @@ Provides three layers of inspection:
 * :func:`field_value` — return the value of a single declared field as a string,
   or ``None`` when the field is absent.
 * :func:`has_field` / :func:`has_all_fields` — boolean presence checks.
+* :func:`split_frontmatter` — split text into a byte-0 frontmatter block and
+  the remainder, for emitters that must keep frontmatter first.
 
 The probe is intentionally regex-based rather than a full YAML parser so that
 the validator surface has zero third-party dependencies and remains
@@ -27,6 +29,29 @@ _FRONTMATTER_BLOCK: Final[re.Pattern[str]] = re.compile(
 _LEADING_HTML_COMMENT: Final[re.Pattern[str]] = re.compile(
     r"\A\s*<!--.*?-->\s*", re.DOTALL
 )
+#: A YAML frontmatter block that opens at byte 0 and closes on its own
+#: ``---`` line, including that line's newline when present.
+_LEADING_FRONTMATTER: Final[re.Pattern[str]] = re.compile(
+    r"\A---[ \t]*\r?\n.*?\r?\n---[ \t]*(?:\r?\n|\Z)", re.DOTALL
+)
+
+
+def split_frontmatter(text: str) -> tuple[str, str] | None:
+    """Split *text* into its byte-0 frontmatter block and the remainder.
+
+    Unlike :func:`extract_frontmatter`, nothing may precede the opening
+    ``---``: this is the strict shape harnesses such as Kiro and Cursor require
+    for a rule file's activation keys. The returned block keeps both delimiter
+    lines and the closing line's newline, so ``block + rest == text``.
+
+    Returns:
+        ``(block, rest)``, or ``None`` when *text* does not open with a
+        frontmatter block.
+    """
+    match = _LEADING_FRONTMATTER.match(text)
+    if match is None:
+        return None
+    return match.group(0), text[match.end() :]
 
 
 def extract_frontmatter(path: Path) -> str | None:

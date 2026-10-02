@@ -27,6 +27,10 @@ on every `apothem install` or `apothem update` run. The shared profile is the
 source of truth; project-local edits to the generated file are backed up before
 the next sync replaces the Apothem-managed content.
 
+The file opens with its YAML frontmatter, which carries the rule's activation
+keys. The Apothem-managed block follows it; text you add after the block is
+kept on every sync.
+
 ## Compatibility notes
 
 Trae's current rules surface is project-scoped under `.trae/rules/`. The
