@@ -8,9 +8,10 @@
 # (CI itself runs earlier, on the push / pull request that landed the release
 # commit — this workflow assumes those gates are already green):
 #
-#   (1) Build      — sdist + wheel via PEP 517 build, then a CycloneDX SBOM
-#                    of what those distributions ship (vendored packages
-#                    included), written beside them in dist/.
+#   (1) Build      — sdist + wheel via PEP 517 build, the VS Code extension
+#                    packaged as apothem.vsix, then a CycloneDX SBOM of what
+#                    the Python distributions ship (vendored packages
+#                    included), all written to dist/.
 #   (2) Sign       — Sigstore cosign keyless signature on every dist/ file,
 #                    the SBOM included.
 #   (3) Provenance — SLSA Level 3 provenance via the slsa-framework reusable
@@ -99,6 +100,20 @@ jobs:
           # The wheel honours SOURCE_DATE_EPOCH; the sdist's gzip header and
           # tar entries carry build-time and checkout metadata. Normalize them.
           python scripts/release/normalize_sdist.py dist/*.tar.gz
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+        with:
+          node-version: "24"
+          # No dependency cache in a release job, since a restored cache could
+          # carry poisoned packages into the release (zizmor cache-poisoning).
+          package-manager-cache: false
+      - name: Package the VS Code extension
+        # Written into dist/ so the .vsix is hashed into the provenance, signed
+        # with cosign, attested, listed in SHA256SUMS, and attached to the
+        # Release with the other assets; the README's VS Code channel installs
+        # it from there. The same vsce pin as publish-vscode.yml.
+        working-directory: vscode-extension
+        run: npx --yes @vscode/vsce@3.9.2 package --no-dependencies --out ../dist/apothem.vsix
       - name: Generate SBOM from the built distributions
         # The SBOM describes what ships: the wheel's metadata and declared
         # requirements, every package vendored under apothem/_vendor (pinned

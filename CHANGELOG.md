@@ -100,6 +100,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **Each GitHub Release attaches the VS Code extension.** The README's VS Code
+  channel installs `apothem.vsix` from the Release, but the release workflow
+  never built it, and v1.1.0 carries none. The release build now packages it
+  into the signed, hashed, and attested asset set.
 - **Extension wrappers run the engine version they shipped with.** The Gemini
   CLI command, the Gemini and Qwen Code context files, and the Codex plugin
   skill called `npx @ahmed-g-gad/apothem` with no version, so a later npm

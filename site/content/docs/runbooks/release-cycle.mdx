@@ -164,11 +164,12 @@ here?":
 |---|---|---|---|
 | 1 | GitHub Release (Python distributions) | `apothem-X.Y.Z.tar.gz` (sdist) + `apothem-X.Y.Z-py3-none-any.whl` | `gh release view vX.Y.Z --json assets --jq '.assets[].name'` includes both filenames |
 | 2 | GitHub Release (SBOM) | `sbom.cdx.json` + `sbom.cdx.json.cosign.bundle` | asset list includes both; the SBOM's `metadata.component.purl` is `pkg:pypi/apothem@X.Y.Z` and its components include every package in `src/apothem/_vendor/vendor.txt` |
-| 3 | GitHub Release (signatures) | one `<asset>.cosign.bundle` per sdist, wheel, SBOM, platform archive and `SHA256SUMS` (earlier releases name the archive and `SHA256SUMS` bundles `<asset>.sig`) | `cosign verify-blob` with the exact identity in §5.5 exits 0 |
+| 3 | GitHub Release (signatures) | one `<asset>.cosign.bundle` per sdist, wheel, SBOM, VS Code extension, platform archive and `SHA256SUMS` (earlier releases name the archive and `SHA256SUMS` bundles `<asset>.sig`) | `cosign verify-blob` with the exact identity in §5.5 exits 0 |
 | 4 | GitHub Release (provenance) | `provenance.intoto.jsonl` | `bash scripts/release/verify-provenance.sh <download-dir>` exits 0 (§5.5) |
 | 5 | GitHub Release (platform archives) | `apothem-vX.Y.Z-darwin.tar.gz`, `apothem-vX.Y.Z-linux.tar.gz`, `apothem-vX.Y.Z-windows.zip` | asset list includes every archive plus `SHA256SUMS`. The darwin and linux archives are the same bytes under two names (the runtime is platform-neutral; `--platform` only picks tar.gz or zip), so their `SHA256SUMS` lines show one digest twice |
-| 6 | npmjs.com | `@ahmed-g-gad/apothem@X.Y.Z` | `npm view @ahmed-g-gad/apothem version` returns `X.Y.Z`; `npx @ahmed-g-gad/apothem@X.Y.Z --version` prints `Apothem, version X.Y.Z` |
-| 7 | Pages (script installers) | `install.sh` / `install.ps1` on the docs site | `curl -fsSL https://apothem.ahmedgad.com/install.sh \| head -n 1` returns the script header |
+| 6 | GitHub Release (VS Code extension) | `apothem.vsix` + `apothem.vsix.cosign.bundle` | asset list includes both; `code --install-extension apothem.vsix` installs it. Releases before the release workflow packaged the extension carry neither |
+| 7 | npmjs.com | `@ahmed-g-gad/apothem@X.Y.Z` | `npm view @ahmed-g-gad/apothem version` returns `X.Y.Z`; `npx @ahmed-g-gad/apothem@X.Y.Z --version` prints `Apothem, version X.Y.Z` |
+| 8 | Pages (script installers) | `install.sh` / `install.ps1` on the docs site | `curl -fsSL https://apothem.ahmedgad.com/install.sh \| head -n 1` returns the script header |
 
 The GitHub Release is the canonical artifact surface; the npm package and
 the script installers are the install paths layered on top of it. The npm
