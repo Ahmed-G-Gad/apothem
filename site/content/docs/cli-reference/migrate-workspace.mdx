@@ -90,6 +90,7 @@ apothem migrate-workspace --dry-run --json
 |---|---|
 | 0 | Migration completed, or no legacy layout was found (nothing to migrate) |
 | 1 | Expected error — a validation or project-root error, or a migration failure |
+| 64 | Usage error: an unknown option or command, or a missing or invalid option value. Under `--json` the error is a JSON envelope with code `cli.usage`. |
 
 ## See also
 

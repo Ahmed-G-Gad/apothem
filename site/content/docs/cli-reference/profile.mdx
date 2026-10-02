@@ -96,6 +96,7 @@ apothem profile edit
 |---|---|
 | 0 | Success (or, for `edit`, the editor exited normally) |
 | 1 | Profile missing, invalid, already exists without `--force`, or cannot be written |
+| 64 | Usage error: an unknown option or command, or a missing or invalid option value. Under `--json` the error is a JSON envelope with code `cli.usage`. |
 
 ## See also
 

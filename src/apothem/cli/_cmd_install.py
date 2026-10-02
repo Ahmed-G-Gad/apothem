@@ -329,7 +329,8 @@ def _ask_for_harness(*, can_ask: bool) -> str:
         raise click.UsageError(
             "Missing option '--harness'. Name one harness (for example "
             "'--harness claude-code'), or pass '--harness all' for every "
-            "supported harness."
+            "supported harness.",
+            ctx=click.get_current_context(silent=True),
         )
     choices = [*SUPPORTED_HARNESS_IDS, "all"]
     answer: str = click.prompt(

@@ -90,6 +90,7 @@ apothem rollback --harness cursor --project . --last --json
 | 0 | Rolled back successfully, or nothing to restore (the install captured no backups) |
 | 1 | Expected error — no install record, conflicting selectors, unknown harness, missing project root, or confirmation declined or unavailable (non-interactive or JSON mode without `--yes`) |
 | 2 | Partial restore after at least one target was rolled back |
+| 64 | Usage error: an unknown option or command, or a missing or invalid option value. Under `--json` the error is a JSON envelope with code `cli.usage`. |
 
 ## See also
 

@@ -26,6 +26,7 @@ Exit codes:
   0  Adapter installed successfully
   1  Expected validation, profile, harness, project, or adapter error
   2  Partial batch materialization after at least one write
+  64 Usage error: unknown option or command, or a missing or invalid value
 """
 
 _EP_UNINSTALL = """
@@ -44,6 +45,7 @@ Exit codes:
   1  Harness not found, confirmation declined or unavailable
      (non-interactive or JSON mode without --yes), or every removal failed
   2  Partial removal — at least one harness removed before a failure
+  64 Usage error: unknown option or command, or a missing or invalid value
 """
 
 _EP_ROLLBACK = """
@@ -62,6 +64,7 @@ Exit codes:
   1  No matching install record, unknown install-id, harness/project error,
      or confirmation declined or unavailable without --yes
   2  Partial restore after at least one backup was restored
+  64 Usage error: unknown option or command, or a missing or invalid value
 """
 
 _EP_UPDATE = """
@@ -79,6 +82,7 @@ Exit codes:
   0  Adapter updated successfully
   1  Expected validation, profile, harness, project, or adapter error
   2  Partial batch materialization after at least one write
+  64 Usage error: unknown option or command, or a missing or invalid value
 """
 
 _EP_VERIFY = """
@@ -100,6 +104,7 @@ Related commands:
 Exit codes:
   0  Harness is verified (with --profile, also faithful to it)
   1  Harness is not verified (missing/invalid, or drifted from --profile)
+  64 Usage error: unknown option or command, or a missing or invalid value
 """
 
 _EP_STATUS = """
@@ -122,6 +127,7 @@ Exit codes:
   0  Status reported (drift is reported, not an error)
   1  Expected validation error (invalid --profile or missing --project path)
   2  At least one adapter failed to report its status
+  64 Usage error: unknown option or command, or a missing or invalid value
 """
 
 _EP_DIFF = """
@@ -138,6 +144,7 @@ Related commands:
 Exit codes:
   0  Diff reported (pending changes are reported, not an error)
   1  Expected validation, profile, harness, or project error
+  64 Usage error: unknown option or command, or a missing or invalid value
 """
 
 _EP_DOCTOR = """
@@ -153,6 +160,7 @@ Exit codes:
   0  All checks passed
   1  A harness is not installed or could not be probed, or the shared
      profile is present but failed schema validation
+  64 Usage error: unknown option or command, or a missing or invalid value
 """
 
 _EP_PROFILE_SHOW = """
@@ -168,6 +176,7 @@ Related commands:
 Exit codes:
   0  Success
   1  Profile missing or invalid
+  64 Usage error: unknown option or command, or a missing or invalid value
 """
 
 _EP_PROFILE_INIT = """
@@ -182,6 +191,7 @@ Related commands:
 Exit codes:
   0  Profile scaffold created
   1  Profile exists or cannot be written
+  64 Usage error: unknown option or command, or a missing or invalid value
 """
 
 _EP_PROFILE_SET = """
@@ -202,6 +212,7 @@ Related commands:
 Exit codes:
   0  Key set successfully
   1  Invalid key, value, or unwritable profile (profile unchanged)
+  64 Usage error: unknown option or command, or a missing or invalid value
 """
 
 _EP_PROFILE_EDIT = """
@@ -214,6 +225,7 @@ Related commands:
 
 Exit codes:
   0  Editor exited normally
+  64 Usage error: unknown option or command, or a missing or invalid value
 """
 
 _EP_HARNESSES_LIST = """
@@ -229,6 +241,7 @@ Exit codes:
   0  Success
   1  Every adapter failed to load or report
   2  At least one adapter listed, at least one failed
+  64 Usage error: unknown option or command, or a missing or invalid value
 """
 
 _EP_HARNESSES_SHOW = """
@@ -242,6 +255,7 @@ Related commands:
 Exit codes:
   0  Success
   1  Harness not found
+  64 Usage error: unknown option or command, or a missing or invalid value
 """
 
 _EP_COMPLETION = """
@@ -257,7 +271,7 @@ source it ad-hoc), then restart the shell.
 
 Exit codes:
   0  Completion script emitted
-  2  Unsupported shell requested
+  64 Unsupported shell requested, or another usage error
 """
 
 _EP_QUICKSTART = """
@@ -280,6 +294,7 @@ Exit codes:
   0  Guided run completed
   1  Expected validation, profile, harness, project, or adapter error
   2  Partial batch materialization after at least one write
+  64 Usage error: unknown option or command, or a missing or invalid value
 """
 
 _EP_MIGRATE_WORKSPACE = """
@@ -303,4 +318,5 @@ Related commands:
 Exit codes:
   0  Migration completed (or no legacy layout found)
   1  Expected validation or project error
+  64 Usage error: unknown option or command, or a missing or invalid value
 """

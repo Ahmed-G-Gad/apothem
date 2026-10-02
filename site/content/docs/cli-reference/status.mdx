@@ -119,6 +119,7 @@ apothem status --json
 | 0 | Status reported (drift is reported, not an error) |
 | 1 | Expected validation error (invalid `--profile`, or a `--project` path that does not exist) |
 | 2 | At least one adapter failed to report its status |
+| 64 | Usage error: an unknown option or command, or a missing or invalid option value. Under `--json` the error is a JSON envelope with code `cli.usage`. |
 
 ## See also
 

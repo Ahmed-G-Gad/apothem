@@ -57,6 +57,23 @@ exactly one JSON document to stdout. Each document starts with a top-level
   `"status": "error"` and an `error` object carrying `code`, `field`,
   `reason`, and `fix`.
 
+## Exit codes
+
+Every command uses the same small set of exit codes; each page lists the ones
+it can return.
+
+| Code | Meaning |
+|---|---|
+| 0 | Success |
+| 1 | Expected failure: a validation, profile, harness, project, or adapter error |
+| 2 | Partial result: a batch wrote or removed something before a failure (only the commands whose page lists it) |
+| 64 | Usage error: an unknown option or command, a missing required option, or an invalid option value |
+
+A usage error never touches the filesystem. Under `--json` (or
+`--format json`) it prints one error document with `"code": "cli.usage"`
+instead of the plain usage text, so automation can tell a mistyped flag from a
+partial write.
+
 For slash commands and the higher-level CLI overview, see the
 [CLI overview](/docs/reference/cli) and [Slash commands](/docs/reference/commands)
 reference pages.

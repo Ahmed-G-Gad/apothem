@@ -249,7 +249,7 @@ def test_quickstart_noninteractive_without_harness_writes_nothing(
     result = runner.invoke(
         main, ["quickstart", "--project", str(project), "--no-color", "--yes"]
     )
-    assert result.exit_code not in (0, 1), result.output
+    assert result.exit_code == 64, result.output  # usage error, not partial (2)
     assert "--harness" in result.output
     assert list(home.iterdir()) == []
     assert list(project.iterdir()) == []
