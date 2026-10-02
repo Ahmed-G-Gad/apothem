@@ -23,7 +23,9 @@ Windsurf, Zed, and GLM (Z.ai). The shared profile carries rules, slash-commands,
 output-styles, settings, schemas, and docs. The
 engine is invoked as `python -m apothem`; the Claude Code plugin, the npm
 shim (`npx @ahmed-g-gad/apothem`), and the one-shot script installers run the
-same module surface. It is single-author maintained. The source layout is the
+same module surface. From a checkout, `PYTHONPATH=src python -m apothem` puts
+the vendored dependencies (`src/apothem/_vendor`) on `sys.path`; the host
+interpreter must provide `click` and `rich`. It is single-author maintained. The source layout is the
 canonical authoring layout; harness adapters convert or relocate cohorts at
 install time when a target harness expects a different native surface.
 Consumers include Codex, Claude Code, GitHub Copilot, and the optional

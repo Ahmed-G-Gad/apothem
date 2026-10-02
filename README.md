@@ -129,7 +129,9 @@ Where a peer is stronger, it is named: **rulesync** reaches more tools and carri
 ### Fastest start
 
 **Prerequisite:** [Node.js](https://nodejs.org/) and system Python 3.10 or newer
-on your `PATH`. Then two commands take you from nothing to a verified install:
+on your `PATH`, with the `click` and `rich` Python packages importable
+(`python3 -m pip install click rich`; the engine names the exact versions if
+either is missing). Then two commands take you from nothing to a verified install:
 
 ```shell
 # 1 — create a profile (if needed), preview, confirm, and install — one guided step
@@ -496,8 +498,10 @@ npx @ahmed-g-gad/apothem verify --harness codex
 **Prerequisites:** system Python 3.10+ with the `click` and `rich` packages
 importable; a checkout of the repository. No Node.js required.
 
-Run the self-contained engine straight from a clone — the source tree carries
-its vendored dependencies, so `PYTHONPATH=src` is the whole setup:
+Run the engine straight from a clone. The entry point puts the vendored
+dependencies (`src/apothem/_vendor`) on `sys.path`, so with `click` and `rich`
+importable, `PYTHONPATH=src` is the whole setup. Without them the engine stops
+with an error that names the exact `pip` command for your interpreter:
 
 ```shell
 git clone https://github.com/ahmed-g-gad/apothem

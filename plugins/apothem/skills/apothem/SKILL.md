@@ -12,8 +12,8 @@ per-harness adapters.
 
 ## Managing the profile
 
-Run the engine through the npm shim (needs Node.js and Python 3.10+ on the
-`PATH`):
+Run the engine through the npm shim (needs Node.js, and Python 3.10+ with
+the `click` and `rich` packages, on the `PATH`):
 
 - `npx @ahmed-g-gad/apothem@1.1.0 install --harness codex` — materialize the profile into Codex.
 - `npx @ahmed-g-gad/apothem@1.1.0 verify --harness codex` — report drift as structured JSON.

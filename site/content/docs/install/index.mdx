@@ -171,9 +171,9 @@ verification failure to a warning and proceeds — for air-gapped, local, or
 pre-signed-release use. A local checkout via `APOTHEM_SOURCE` fetches nothing
 and skips verification.
 
-The engine then runs directly from the placed tree as a self-contained
-runtime — its third-party dependencies are vendored inside the source tree,
-so no package registry is involved:
+The engine then runs directly from the placed tree. Every third-party
+dependency except `click` and `rich` is vendored inside the source tree, and
+the entry point puts that vendor directory on `sys.path` itself:
 
 ```bash
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
@@ -308,8 +308,9 @@ npx @ahmed-g-gad/apothem verify --harness codex
 **Prerequisites:** system Python 3.10+ with the `click` and `rich` packages
 importable, plus a checkout of the repository. No Node.js required.
 
-Run the self-contained engine straight from a clone — the source tree carries
-its vendored dependencies, so `PYTHONPATH=src` is the whole setup:
+Run the engine straight from a clone. The entry point puts the vendored
+dependencies (`src/apothem/_vendor`) on `sys.path`, so with `click` and `rich`
+importable, `PYTHONPATH=src` is the whole setup:
 
 ```bash title="Direct engine"
 git clone https://github.com/ahmed-g-gad/apothem
@@ -350,7 +351,11 @@ registered adapter at a glance, run `apothem doctor` (or
   terminal-facing dependencies the engine does not vendor. The installers
   check both, name anything missing, and offer to install it for you — with
   your confirmation, or automatically with `--yes` (`-Yes` on PowerShell) or
-  `APOTHEM_AUTO_INSTALL_DEPS=1`.
+  `APOTHEM_AUTO_INSTALL_DEPS=1`. On every other channel, a missing package
+  stops the engine with an error (exit 1) that names the exact command for the
+  interpreter it found, with the version constraints Apothem is tested
+  against (`<interpreter> -m pip install "click==…" "rich>=…"`); with `--json` the
+  same error arrives as a JSON envelope with code `runtime.dependency_missing`.
 - **Node.js 18 or later** — the npm-shim and tool-plugin paths only.
 - **Git** — installer path only, and only for the network form (the script
   clones the source; a local checkout needs no clone).

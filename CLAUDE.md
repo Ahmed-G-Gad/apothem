@@ -151,7 +151,9 @@ tests/
 ## Development Commands
 
 ```bash
-# Run the engine from the checkout (self-contained; vendored dependencies)
+# Run the engine from the checkout. The entry point puts the vendored
+# dependencies (src/apothem/_vendor) on sys.path; the host interpreter must
+# provide click and rich; without them it prints the exact pip command.
 PYTHONPATH=src python -m apothem --help
 
 # Lint and auto-fix

@@ -28,7 +28,8 @@ file:
 - `typing_extensions`
 
 Vendored copies take precedence over any system-installed version: the
-bootstrap prepends the vendor directory to `sys.path` ahead of
+plugin bootstrap, the npm shim, the installers, and the `python -m apothem`
+entry point itself each put the vendor directory on `sys.path` ahead of
 site-packages. The selection policy — what is vendored, what is not, and
 how vendored packages are refreshed — is documented in the
 [dependency vendoring strategy](/docs/architecture/vendoring-strategy).
@@ -37,7 +38,11 @@ Two dependencies stay outside the tree: **`click`** and **`rich`**, the
 terminal-facing libraries the CLI imports. They must be importable under
 the interpreter that runs the engine; the installers check both, name any
 that is missing, and offer to install it for you — with your confirmation,
-or automatically with `--yes` / `APOTHEM_AUTO_INSTALL_DEPS=1`.
+or automatically with `--yes` / `APOTHEM_AUTO_INSTALL_DEPS=1`. On every other
+channel the entry point checks both with the standard library before it
+imports the CLI, and a missing one stops it with an error that names the
+exact `pip` command for the running interpreter (a JSON envelope with code
+`runtime.dependency_missing` under `--json`).
 
 ## The `python -m` invocation model
 
@@ -51,8 +56,9 @@ invocation surfaces instead:
 | Engine CLI | `python -m apothem <command>` | A source tree with `src/` on `PYTHONPATH` (checkout, npx cache, plugin tree) |
 | Hook runtime | `python "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | The materialized copy under the harness root's shared `.apothem/support/` tree, by absolute path |
 
-- `python -m apothem` runs `src/apothem/__main__.py`, which calls
-  `apothem.cli:main` — the Click command group.
+- `python -m apothem` runs `src/apothem/__main__.py`, which puts
+  `src/apothem/_vendor` on `sys.path`, checks that `click` and `rich` are
+  importable, then calls `apothem.cli:main` — the Click command group.
 - Hook entries in the materialized `settings.json` / `hooks.json` invoke
   the dispatcher (and, for Claude Code, the conformity gate at
   `<harness-root>/.apothem/support/conformity/gate.py`) by absolute script path.

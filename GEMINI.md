@@ -11,8 +11,8 @@ truth, seventeen destinations, no hand-maintained drift.
 
 ## Using Apothem from Gemini CLI
 
-Run the engine through the npm shim (needs Node.js and Python 3.10+ on the
-`PATH`):
+Run the engine through the npm shim (needs Node.js, and Python 3.10+ with
+the `click` and `rich` packages, on the `PATH`):
 
 ```bash
 npx @ahmed-g-gad/apothem@1.1.0 install   --harness gemini-cli --project .
