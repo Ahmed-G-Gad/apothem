@@ -26,7 +26,9 @@ from .install_driver_types import (
 )
 
 
-def _remove_apothem_hook_handlers(existing_entries: object) -> object:
+def _remove_apothem_hook_handlers(
+    existing_entries: object, *, harness_root: Path | None = None
+) -> object:
     """Strip Apothem hook handlers from one hooks event's matcher list.
 
     The inverse of :func:`_merge_hooks` for a single event: walks the operator's
@@ -49,7 +51,9 @@ def _remove_apothem_hook_handlers(existing_entries: object) -> object:
             retained.append(entry)
             continue
         kept_handlers = [
-            handler for handler in handlers if not _is_apothem_hook(handler)
+            handler
+            for handler in handlers
+            if not _is_apothem_hook(handler, harness_root=harness_root)
         ]
         if not kept_handlers:
             # Every handler under this matcher was Apothem's: drop the entry.
@@ -65,6 +69,8 @@ def _remove_apothem_hook_handlers(existing_entries: object) -> object:
 def _remove_apothem_hooks(
     existing_hooks: object,
     template_hooks: object,
+    *,
+    harness_root: Path | None = None,
 ) -> object:
     """Strip Apothem-managed handlers from an operator ``hooks`` object.
 
@@ -81,7 +87,9 @@ def _remove_apothem_hooks(
         if event_name not in template:
             result[event_name] = existing_entries
             continue
-        stripped = _remove_apothem_hook_handlers(existing_entries)
+        stripped = _remove_apothem_hook_handlers(
+            existing_entries, harness_root=harness_root
+        )
         if stripped is _REMOVE_KEY:
             continue
         result[event_name] = stripped
@@ -110,7 +118,9 @@ def _remove_apothem_list_items(
     return remaining
 
 
-def _remove_apothem_values(existing: object, template: object) -> object:
+def _remove_apothem_values(
+    existing: object, template: object, *, harness_root: Path | None = None
+) -> object:
     """Return *existing* with Apothem's *template* contribution removed.
 
     The structural inverse of the install-side overlay merge. Recurses through
@@ -133,12 +143,16 @@ def _remove_apothem_values(existing: object, template: object) -> object:
             continue
         template_value = template[key]
         if key == "hooks" and isinstance(value, dict):
-            stripped_hooks = _remove_apothem_hooks(value, template_value)
+            stripped_hooks = _remove_apothem_hooks(
+                value, template_value, harness_root=harness_root
+            )
             if stripped_hooks is not _REMOVE_KEY:
                 result[key] = stripped_hooks
             continue
         if isinstance(value, dict) and isinstance(template_value, dict):
-            reduced = _remove_apothem_values(value, template_value)
+            reduced = _remove_apothem_values(
+                value, template_value, harness_root=harness_root
+            )
             if reduced is not _REMOVE_KEY:
                 result[key] = reduced
             continue
@@ -176,6 +190,7 @@ def _strip_apothem_json(
     template_text: str,
     *,
     apothem_keys: frozenset[str] = frozenset(),
+    harness_root: Path | None = None,
 ) -> str | None:
     """Return *operator_text* JSON with Apothem's *template_text* keys removed.
 
@@ -193,7 +208,7 @@ def _strip_apothem_json(
         return operator_text
     if isinstance(operator, dict) and apothem_keys:
         operator = _drop_owned_top_keys(operator, apothem_keys)
-    reduced = _remove_apothem_values(operator, template)
+    reduced = _remove_apothem_values(operator, template, harness_root=harness_root)
     if reduced is _REMOVE_KEY:
         return None
     if isinstance(reduced, dict) and not reduced:
@@ -206,6 +221,7 @@ def _strip_apothem_yaml(
     template_text: str,
     *,
     apothem_keys: frozenset[str] = frozenset(),
+    harness_root: Path | None = None,
 ) -> str | None:
     """Return *operator_text* YAML with Apothem's *template_text* keys removed.
 
@@ -235,7 +251,7 @@ def _strip_apothem_yaml(
     if apothem_keys:
         operator = _drop_owned_top_keys(operator, apothem_keys)
     template_dict = template if isinstance(template, dict) else {}
-    reduced = _remove_apothem_values(operator, template_dict)
+    reduced = _remove_apothem_values(operator, template_dict, harness_root=harness_root)
     if reduced is _REMOVE_KEY:
         return None
     if isinstance(reduced, dict) and not reduced:
@@ -297,11 +313,17 @@ def _surgical_remove_from_target(
         remainder = None if not stripped.strip() else stripped
     elif suffix == ".json":
         remainder = _strip_apothem_json(
-            existing, template_text, apothem_keys=apothem_keys
+            existing,
+            template_text,
+            apothem_keys=apothem_keys,
+            harness_root=install_root,
         )
     elif suffix in {".yaml", ".yml"}:
         remainder = _strip_apothem_yaml(
-            existing, template_text, apothem_keys=apothem_keys
+            existing,
+            template_text,
+            apothem_keys=apothem_keys,
+            harness_root=install_root,
         )
     else:
         # Unrecognized operator content: only delete an exact template copy.

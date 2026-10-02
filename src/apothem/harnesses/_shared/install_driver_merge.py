@@ -190,7 +190,9 @@ def apply_operator_owned_content(
     detail: dict[str, str] = {"ownership_class": ownership_class}
     try:
         existing_text = _read_existing(target)
-        merged = _merge_native_content(target, content, before=existing_text)
+        merged = _merge_native_content(
+            target, content, before=existing_text, harness_root=install_root
+        )
     except _LossyRewriteError as refusal:
         return _refused_result("write_text", target, refusal, detail)
     existed = existing_text is not None
@@ -296,7 +298,12 @@ def _fold_profile_body(
 
 
 def _operator_owned_merge_text(
-    entry: InstallEntry, target: Path, content: str, *, before: str | None
+    entry: InstallEntry,
+    target: Path,
+    content: str,
+    *,
+    before: str | None,
+    hook_root: Path | None = None,
 ) -> str:
     """Return the prospective merged text for an operator-owned target.
 
@@ -318,7 +325,7 @@ def _operator_owned_merge_text(
     if entry.mode == "sentinel_merge":
         return merge_managed_block(before or "", content)
     if target.suffix.lower() == ".json" and before is not None and before.strip():
-        return _operator_json_merge(target, before, content)
+        return _operator_json_merge(target, before, content, harness_root=hook_root)
     return content
 
 
@@ -375,7 +382,13 @@ def _operator_owned_preview(
     content = _fold_profile_body(entry, content, profile_body)
     try:
         existing_text = _read_existing(target)
-        after = _operator_owned_merge_text(entry, target, content, before=existing_text)
+        after = _operator_owned_merge_text(
+            entry,
+            target,
+            content,
+            before=existing_text,
+            hook_root=harness_root or project_root,
+        )
     except _LossyRewriteError as refusal:
         return _OperatorOwnedPreview(target, "error", "", False, refusal)
     existed = existing_text is not None
@@ -425,7 +438,11 @@ def _apply_operator_owned_file(
     try:
         existing_text = _read_existing(target)
         merged = _operator_owned_merge_text(
-            entry, target, content, before=existing_text
+            entry,
+            target,
+            content,
+            before=existing_text,
+            hook_root=harness_root or project_root,
         )
     except _LossyRewriteError as refusal:
         return [_refused_result(entry.mode, target, refusal, detail, source=src)]

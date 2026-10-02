@@ -22,10 +22,9 @@ import yaml
 
 from .install_driver_types import MaterializationResult, _result, _with_detail
 
-#: Substrings that identify an Apothem-managed hook handler. Covers both the
-#: module-invocation spelling and the installed script-path spelling (the
-#: settings templates point hooks at the materialized ``hooks/dispatch.py``
-#: and ``conformity/gate.py`` scripts under the harness root).
+#: Substrings that identify an Apothem-managed hook handler when no harness root
+#: is known (the legacy, unscoped check). Covers both the module-invocation
+#: spelling and the installed script-path spelling.
 _APOTHEM_HOOK_MARKERS: tuple[str, ...] = (
     "apothem.hooks.dispatch",
     "apothem.conformity.gate",
@@ -33,18 +32,52 @@ _APOTHEM_HOOK_MARKERS: tuple[str, ...] = (
     "conformity/gate.py",
 )
 
+#: Module spellings that name Apothem's own hook entry points. They identify a
+#: handler as Apothem's wherever it lives.
+_APOTHEM_HOOK_MODULES: tuple[str, ...] = (
+    "apothem.hooks.dispatch",
+    "apothem.conformity.gate",
+)
 
-def _is_apothem_hook(handler: object) -> bool:
-    """Return True when a hook handler belongs to Apothem's managed surface."""
+#: Installed script names Apothem's handlers run, under the harness root.
+_APOTHEM_HOOK_SCRIPTS = r"(?:hooks/dispatch\.py|conformity/gate\.py)"
+
+
+def _handler_text(handler: dict[object, object]) -> str:
+    """Return the command-bearing text of one hook handler."""
+    parts = [str(handler.get("command", "")), str(handler.get("commandWindows", ""))]
+    args = handler.get("args", [])
+    if isinstance(args, list):
+        parts.extend(str(arg) for arg in args)
+    return " ".join(parts)
+
+
+def _is_apothem_hook(handler: object, *, harness_root: Path | None = None) -> bool:
+    """Return True when a hook handler belongs to Apothem's managed surface.
+
+    With *harness_root*, ownership is exact: the handler must run one of
+    Apothem's installed scripts (``.../hooks/dispatch.py`` or
+    ``.../conformity/gate.py``) at a path under that harness root (current or
+    earlier layout, resolved or as the unrendered ``${HARNESS_ROOT}`` token),
+    or invoke Apothem's hook modules by name. An operator's own
+    ``/elsewhere/hooks/dispatch.py`` is not Apothem's and survives install and
+    uninstall. Without a root, the legacy substring check applies.
+    """
     if not isinstance(handler, dict):
         return False
-    command = str(handler.get("command", ""))
-    args = handler.get("args", [])
-    args_text = " ".join(str(arg) for arg in args) if isinstance(args, list) else ""
-    haystacks = (command, args_text)
-    return any(
-        marker in haystack for marker in _APOTHEM_HOOK_MARKERS for haystack in haystacks
-    )
+    text = _handler_text(handler)
+    if harness_root is None:
+        return any(marker in text for marker in _APOTHEM_HOOK_MARKERS)
+    if any(module in text for module in _APOTHEM_HOOK_MODULES):
+        return True
+    roots = {
+        harness_root.resolve().as_posix(),
+        harness_root.as_posix(),
+        "${HARNESS_ROOT}",
+    }
+    alternatives = "|".join(re.escape(root.rstrip("/")) for root in sorted(roots))
+    pattern = rf"(?:{alternatives})/(?:[^\s\"']*/)?{_APOTHEM_HOOK_SCRIPTS}"
+    return re.search(pattern, text) is not None
 
 
 def _dedupe_json_list(existing: list[object], incoming: list[object]) -> list[object]:
@@ -59,6 +92,8 @@ def _dedupe_json_list(existing: list[object], incoming: list[object]) -> list[ob
 def _merge_hook_entry(
     existing_entries: list[object],
     incoming_entry: dict[str, object],
+    *,
+    harness_root: Path | None = None,
 ) -> dict[str, object]:
     """Merge one incoming hook matcher with existing non-Apothem handlers."""
     matcher = incoming_entry.get("matcher")
@@ -70,7 +105,9 @@ def _merge_hook_entry(
         if not isinstance(handlers, list):
             continue
         preserved_handlers.extend(
-            handler for handler in handlers if not _is_apothem_hook(handler)
+            handler
+            for handler in handlers
+            if not _is_apothem_hook(handler, harness_root=harness_root)
         )
 
     incoming_handlers = incoming_entry.get("hooks", [])
@@ -85,6 +122,8 @@ def _merge_hook_entry(
 def _merge_hooks(
     existing_hooks: dict[str, object],
     incoming_hooks: dict[str, object],
+    *,
+    harness_root: Path | None = None,
 ) -> dict[str, object]:
     """Merge Claude Code hook settings while replacing Apothem-owned handlers."""
     merged = dict(existing_hooks)
@@ -109,33 +148,52 @@ def _merge_hooks(
         ]
         for incoming_entry in incoming_entries:
             if isinstance(incoming_entry, dict):
-                retained.append(_merge_hook_entry(existing_entries, incoming_entry))
+                retained.append(
+                    _merge_hook_entry(
+                        existing_entries, incoming_entry, harness_root=harness_root
+                    )
+                )
             else:
                 retained.append(incoming_entry)
         merged[event_name] = retained
     return merged
 
 
-def _merge_json_settings(existing: object, incoming: object) -> object:
+def _merge_json_settings(
+    existing: object, incoming: object, *, harness_root: Path | None = None
+) -> object:
     """Merge JSON settings while preserving operator-authored keys."""
-    return _merge_json_values(existing, incoming, prefer_existing=True)
+    return _merge_json_values(
+        existing, incoming, prefer_existing=True, harness_root=harness_root
+    )
 
 
-def _overlay_json_settings(existing: object, incoming: object) -> object:
+def _overlay_json_settings(
+    existing: object, incoming: object, *, harness_root: Path | None = None
+) -> object:
     """Merge JSON settings while incoming managed values take precedence."""
-    return _merge_json_values(existing, incoming, prefer_existing=False)
+    return _merge_json_values(
+        existing, incoming, prefer_existing=False, harness_root=harness_root
+    )
 
 
 def _merge_json_values(
-    existing: object, incoming: object, *, prefer_existing: bool
+    existing: object,
+    incoming: object,
+    *,
+    prefer_existing: bool,
+    harness_root: Path | None = None,
 ) -> object:
-    """Merge JSON objects, preserving keys absent from the incoming object."""
+    """Merge JSON objects, preserving keys absent from the incoming object.
+
+    *harness_root* scopes hook-handler ownership (see :func:`_is_apothem_hook`).
+    """
     if isinstance(existing, dict) and isinstance(incoming, dict):
         merged: dict[str, object] = dict(existing)
         for key, value in incoming.items():
             current = existing.get(key)
             if key == "hooks" and isinstance(current, dict) and isinstance(value, dict):
-                merged[key] = _merge_hooks(current, value)
+                merged[key] = _merge_hooks(current, value, harness_root=harness_root)
             elif (
                 prefer_existing
                 and isinstance(current, list)
@@ -144,7 +202,10 @@ def _merge_json_values(
                 merged[key] = _dedupe_json_list(current, value)
             elif isinstance(current, dict) and isinstance(value, dict):
                 merged[key] = _merge_json_values(
-                    current, value, prefer_existing=prefer_existing
+                    current,
+                    value,
+                    prefer_existing=prefer_existing,
+                    harness_root=harness_root,
                 )
             elif key not in merged:
                 merged[key] = value
@@ -205,7 +266,13 @@ def _lossy_rewrite(
     )
 
 
-def _operator_json_merge(target: Path, existing_text: str, content: str) -> str:
+def _operator_json_merge(
+    target: Path,
+    existing_text: str,
+    content: str,
+    *,
+    harness_root: Path | None = None,
+) -> str:
     """Return the merged text for an existing operator-owned JSON config.
 
     Incoming managed values take precedence (the overlay merge) and
@@ -233,7 +300,7 @@ def _operator_json_merge(target: Path, existing_text: str, content: str) -> str:
                 f"{target} is not valid JSON, JSONC or JSON5: {exc}",
                 f"Repair {target.name} (or move it aside) and re-run.",
             ) from exc
-    merged = _overlay_json_settings(existing, incoming)
+    merged = _overlay_json_settings(existing, incoming, harness_root=harness_root)
     if merged == existing:
         return existing_text
     if not strict:
@@ -259,7 +326,13 @@ def _yaml_has_operator_comments(existing_text: str, managed_header: str) -> bool
     return _YAML_COMMENT_RE.search(body) is not None
 
 
-def _operator_yaml_merge(target: Path, existing_text: str, content: str) -> str:
+def _operator_yaml_merge(
+    target: Path,
+    existing_text: str,
+    content: str,
+    *,
+    harness_root: Path | None = None,
+) -> str:
     """Return the merged text for an existing operator-owned YAML config.
 
     The YAML mirror of :func:`_operator_json_merge`: overlay the incoming
@@ -291,7 +364,7 @@ def _operator_yaml_merge(target: Path, existing_text: str, content: str) -> str:
             f"{target} is not a YAML mapping",
             f"Repair {target.name} (or move it aside) and re-run.",
         )
-    merged = _overlay_json_settings(existing, incoming)
+    merged = _overlay_json_settings(existing, incoming, harness_root=harness_root)
     if merged == existing:
         return existing_text
     header = _leading_comment_block(content)
@@ -318,7 +391,13 @@ def _leading_comment_block(text: str) -> str:
     return "".join(kept)
 
 
-def _merge_native_content(target: Path, content: str, *, before: str | None) -> str:
+def _merge_native_content(
+    target: Path,
+    content: str,
+    *,
+    before: str | None,
+    harness_root: Path | None = None,
+) -> str:
     """Return the prospective merged text for a materializer-rendered config.
 
     *before* is the operator's current file text (``None`` when the target does
@@ -334,9 +413,9 @@ def _merge_native_content(target: Path, content: str, *, before: str | None) -> 
         return content
     suffix = target.suffix.lower()
     if suffix == ".json":
-        return _operator_json_merge(target, before, content)
+        return _operator_json_merge(target, before, content, harness_root=harness_root)
     if suffix in {".yaml", ".yml"}:
-        return _operator_yaml_merge(target, before, content)
+        return _operator_yaml_merge(target, before, content, harness_root=harness_root)
     return content
 
 
