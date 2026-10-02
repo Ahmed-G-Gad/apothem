@@ -132,6 +132,12 @@ def install(output_path: Path, profile: dict[str, Any]) -> MaterializationRun:
     # Resolve the hook interpreter before writing anything: a resolution failure
     # must abort with no half-written tree carrying literal ``${PYTHON_BIN}``.
     python_bin = resolve_python_bin().as_posix()
+    missing = install_driver.capture_missing_dirs(
+        _HARNESS_NAME,
+        harness_root=harness_root,
+        profile=profile,
+        extra=(harness_root / "CLAUDE.md",),
+    )
     run = install_driver.run_install(_HARNESS_NAME, harness_root=harness_root)
     for_harness = coerce_profile(profile).for_harness(_HARNESS_ID)
     surfaces = project(for_harness, _HARNESS_ID)
@@ -144,7 +150,9 @@ def install(output_path: Path, profile: dict[str, Any]) -> MaterializationRun:
     )
     interpreter_results = _substitute_hook_interpreter(harness_root, python_bin)
     return install_driver.finalize_install(
-        run.extend([anchor_result, *interpreter_results]), root=harness_root
+        run.extend([anchor_result, *interpreter_results]),
+        root=harness_root,
+        missing_before=missing,
     )
 
 

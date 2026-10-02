@@ -212,11 +212,15 @@ def make_user_scope_install(harness_name: str) -> _UserScopeInstall:
     """
 
     def install(output_path: Path, profile: dict[str, Any]) -> MaterializationRun:
+        missing = install_driver.capture_missing_dirs(
+            harness_name, harness_root=output_path.parent, profile=profile
+        )
         return install_driver.finalize_install(
             install_driver.run_install(
                 harness_name, harness_root=output_path.parent, profile=profile
             ),
             root=output_path.parent,
+            missing_before=missing,
         )
 
     install.__doc__ = _INSTALL_DOC
@@ -359,11 +363,15 @@ def make_project_scope_install(
         del output_path  # resolved per-entry from manifest + project root
         if project is None:
             raise ValueError(error_message)
+        missing = install_driver.capture_missing_dirs(
+            harness_name, project_root=project, profile=profile
+        )
         return install_driver.finalize_install(
             install_driver.run_install(
                 harness_name, project_root=project, profile=profile
             ),
             root=project,
+            missing_before=missing,
         )
 
     install.__doc__ = _INSTALL_DOC_PROJECT
@@ -489,6 +497,15 @@ def make_native_config_install(
     """
 
     def install(output_path: Path, profile: dict[str, Any]) -> MaterializationRun:
+        missing = install_driver.capture_missing_dirs(
+            harness_name,
+            harness_root=output_path.parent,
+            profile=profile,
+            extra=(
+                output_path,
+                output_path.parent / install_driver.PROFILE_DOCUMENT_RELATIVE,
+            ),
+        )
         content = materialize_fn(profile)
         if render_tokens:
             content = install_driver.render_content_tokens(
@@ -546,6 +563,7 @@ def make_native_config_install(
                 ),
             ),
             root=output_path.parent,
+            missing_before=missing,
         )
 
     install.__doc__ = _INSTALL_DOC_NATIVE

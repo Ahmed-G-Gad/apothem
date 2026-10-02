@@ -117,29 +117,6 @@ def _make_updating_alias(name: str) -> click.Command:
     return _alias
 
 
-def _record_backup_timestamps(record: LedgerRecord) -> list[str]:
-    """Return the unique backup-timestamp dirs referenced by *record*'s targets.
-
-    Each recorded ``backup_ref`` is ``<BACKUP_ROOT>/<timestamp>/<harness>/<rel>``;
-    one install pass can straddle a second boundary (the backup-slug granularity),
-    so a record may reference more than one timestamp set. Targets created fresh
-    (no prior file) carry no ``backup_ref`` and contribute nothing. Returns the
-    timestamps oldest-first.
-    """
-    backup_root = install_driver.BACKUP_ROOT.resolve()
-    timestamps: set[str] = set()
-    for target in record.targets:
-        if not target.backup_ref:
-            continue
-        try:
-            relative = Path(target.backup_ref).resolve().relative_to(backup_root)
-        except ValueError:
-            continue
-        if relative.parts:
-            timestamps.add(relative.parts[0])
-    return sorted(timestamps)
-
-
 def _record_harness_error(
     error: _CliUserError,
     *,
@@ -198,9 +175,10 @@ def _rollback_impl(
     """Shared body for the ``rollback`` command.
 
     Resolves the recorded install (the latest, or the supplied ``--install-id``)
-    for each selected harness, then restores each recorded backup set through
-    :func:`restore_backup`, reconstructing every target's pre-install bytes from
-    the Apothem backup root. Emits the standard lifecycle envelope.
+    for each selected harness, then reverses it through
+    :func:`install_driver.rollback_install`: every recorded backup is restored
+    to its recorded path, every file and directory the install created is
+    removed. Emits the standard lifecycle envelope.
     """
     con = get_console(no_color=no_color, quiet=quiet)
     try:
@@ -317,22 +295,20 @@ def _rollback_impl(
             errored = True
             continue
 
-        timestamps = _record_backup_timestamps(record)
-        if not timestamps:
+        if not record.targets and not record.created_dirs:
             results.append(
                 {
                     "harness": harness_id,
                     "outcome": "skipped",
                     "operation": "rollback",
                     "path": str(output_path),
-                    "message": "install captured no backups (all targets were "
-                    "newly created); nothing to restore",
+                    "message": "the install recorded no changes; nothing to roll back",
                 }
             )
             if fmt != "json":
                 con.print(
                     f"[dim]{harness_id}: install {escape(str(record.install_id))} "
-                    "captured no backups; nothing to restore.[/]"
+                    "recorded no changes; nothing to roll back.[/]"
                 )
             continue
 
@@ -343,25 +319,12 @@ def _rollback_impl(
                 abort=True,
             )
 
-        # Scope the restore to exactly this record's recorded backups. The
-        # timestamp slug is second-granular, so a sibling install pass in the
-        # same second shares the <timestamp>/<harness>/ set; restoring the whole
-        # set would clobber that sibling's files.
-        record_refs = frozenset(
-            str(Path(target.backup_ref).resolve())
-            for target in record.targets
-            if target.backup_ref
+        # Reverse the record target by target: restore each recorded backup
+        # to its recorded path, remove what the install created, and remove
+        # the directories it created once empty.
+        target_results: list[MaterializationResult] = install_driver.rollback_install(
+            record, harness_name=entry.package_key, **root_kwargs
         )
-        target_results: list[MaterializationResult] = []
-        for timestamp in timestamps:
-            target_results.extend(
-                install_driver.restore_backup(
-                    entry.package_key,
-                    timestamp,
-                    only_refs=record_refs,
-                    **root_kwargs,
-                )
-            )
         install_ledger.append_record(
             LedgerRecord.create(
                 harness=entry.package_key,

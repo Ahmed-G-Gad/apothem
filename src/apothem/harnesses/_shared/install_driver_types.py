@@ -85,6 +85,8 @@ OPERATION_LABELS: Final[dict[str, str]] = {
     "surgical_uninstall": "Remove file",
     "remove_existing": "Replace existing target",
     "restore_backup": "Restore backup",
+    "remove_created": "Remove created file",
+    "remove_directory": "Remove empty directory",
     "remove_data_home": "Remove data directory",
 }
 

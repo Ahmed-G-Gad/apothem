@@ -351,11 +351,12 @@ _LEDGER_OUTCOMES: frozenset[str] = frozenset({"created", "updated", "unchanged"}
 
 # Result operations that are NOT standalone installed ledger targets: the
 # per-surface data-home files (reversed wholesale by the data-home cleanup on
-# uninstall, not file-by-file), the advisory capability-projection note, and the
-# stale-sweep pass (a removal that emits an ``unchanged`` result for every absent
-# legacy path — recording those would log phantom targets that were never written).
+# uninstall, not file-by-file) and the advisory capability-projection note. A
+# stale-sweep result is recorded only when it removed something (an ``updated``
+# result carrying its backup), so rollback can put the swept path back; the
+# ``unchanged`` result every absent legacy path emits is not a target.
 _NON_LEDGER_OPERATIONS: frozenset[str] = frozenset(
-    {"data_surface", "capability_projection", "sweep_stale"}
+    {"data_surface", "capability_projection"}
 )
 
 
@@ -380,6 +381,8 @@ def _ledger_targets(
         if result.outcome not in _LEDGER_OUTCOMES:
             continue
         if result.operation in _NON_LEDGER_OPERATIONS:
+            continue
+        if result.operation == "sweep_stale" and result.outcome != "updated":
             continue
         if result.path in seen:
             continue
@@ -406,13 +409,21 @@ def _ledger_targets(
     return tuple(targets)
 
 
-def record_install(run: MaterializationRun, *, root: Path) -> LedgerRecord | None:
+def record_install(
+    run: MaterializationRun,
+    *,
+    root: Path,
+    missing_before: frozenset[Path] = frozenset(),
+) -> LedgerRecord | None:
     """Append an install record for *run* to the per-harness ledger; return it.
 
     The record captures every file the pass wrote (including the materializer
     adapters' native configs, which are part of the adapter's combined run) so
     uninstall and rollback can reverse exactly what was installed rather than
-    re-deriving intent from the live manifest. A dry-run pass records nothing
+    re-deriving intent from the live manifest. *missing_before* is the
+    adapter's pre-install :func:`capture_missing_dirs` snapshot: the ones that
+    exist now are the directories this pass created, recorded so rollback and
+    uninstall can remove them once empty. A dry-run pass records nothing
     (returns ``None``); a pass that wrote nothing still records an empty-target
     install marker so the harness+root has a latest record.
     """
@@ -427,12 +438,20 @@ def record_install(run: MaterializationRun, *, root: Path) -> LedgerRecord | Non
         root=root,
         kind="install",
         targets=_ledger_targets(run, prior=prior),
+        created_dirs=tuple(
+            sorted(str(path) for path in missing_before if path.is_dir())
+        ),
     )
     install_ledger.append_record(record)
     return record
 
 
-def finalize_install(run: MaterializationRun, *, root: Path) -> MaterializationRun:
+def finalize_install(
+    run: MaterializationRun,
+    *,
+    root: Path,
+    missing_before: frozenset[Path] = frozenset(),
+) -> MaterializationRun:
     """Record *run* in the install ledger and return it unchanged.
 
     The pass-through an adapter's ``install``/``update`` wraps around its final
@@ -441,7 +460,7 @@ def finalize_install(run: MaterializationRun, *, root: Path) -> MaterializationR
     one layer that sees the complete run — manifest targets, the projected
     instruction anchor, and any materializer-rendered native config alike.
     """
-    record_install(run, root=root)
+    record_install(run, root=root, missing_before=missing_before)
     return run
 
 

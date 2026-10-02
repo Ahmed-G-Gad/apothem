@@ -11,7 +11,7 @@ import re
 from dataclasses import dataclass, replace
 from pathlib import Path
 from string import Template
-from typing import Any
+from typing import Any, Final
 
 from apothem.lib.harness_materializer import (
     merge_managed_block,
@@ -86,13 +86,18 @@ def apply_managed_block_anchor(
     )
 
 
+#: Where the single-file-config adapters project the profile's managed block,
+#: relative to the harness root.
+PROFILE_DOCUMENT_RELATIVE: Final[str] = "apothem/rules/00-apothem-profile.md"
+
+
 def project_profile_document(
     harness_root: Path,
     *,
     harness_id: str,
     harness_name: str,
     profile: dict[str, Any],
-    relative_path: str = "apothem/rules/00-apothem-profile.md",
+    relative_path: str = PROFILE_DOCUMENT_RELATIVE,
 ) -> MaterializationResult:
     """Write the profile's projected managed block to a config adapter's anchor.
 

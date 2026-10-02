@@ -11,6 +11,7 @@ from __future__ import annotations
 import contextlib
 import os
 import shutil
+from collections.abc import Iterable
 from pathlib import Path
 
 from .install_driver_backup import _replace_path, backup_existing, write_bytes_safely
@@ -411,3 +412,44 @@ def preview_native_skills(
         else:
             outcomes.append("updated" if target.exists() else "created")
     return outcomes
+
+
+def remove_created_dirs(
+    directories: Iterable[Path], *, allowed_root: Path
+) -> list[MaterializationResult]:
+    """Remove the *directories* an install created, now that they are empty.
+
+    Deepest first, so a created parent goes once its created children have. A
+    directory that still holds anything (operator content, or data another
+    harness keeps) is left in place; so is one outside *allowed_root* or behind
+    a symlink. Returns one ``updated`` result per directory removed.
+    """
+    results: list[MaterializationResult] = []
+    ordered = sorted(
+        {Path(directory) for directory in directories},
+        key=lambda path: len(path.parts),
+        reverse=True,
+    )
+    for directory in ordered:
+        if not directory.is_dir() or directory.is_symlink():
+            continue
+        if (
+            _validate_target_path(
+                directory, allowed_root=allowed_root, operation="remove_directory"
+            )
+            is not None
+        ):
+            continue
+        try:
+            directory.rmdir()
+        except OSError:
+            continue
+        results.append(
+            _result(
+                "updated",
+                "remove_directory",
+                directory,
+                "removed an empty directory the install created",
+            )
+        )
+    return results

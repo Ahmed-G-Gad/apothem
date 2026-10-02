@@ -252,6 +252,10 @@ class LedgerRecord:
         root: The install root the pass targeted, as a string.
         kind: One of :data:`RECORD_KINDS`.
         targets: The typed list of files the pass touched.
+        created_dirs: The directories this install pass created (they did not
+            exist before it), so rollback and uninstall can remove them once
+            empty. Empty for other kinds and for records written before the
+            field existed.
     """
 
     install_id: str
@@ -260,6 +264,7 @@ class LedgerRecord:
     root: str
     kind: str
     targets: tuple[LedgerTarget, ...] = ()
+    created_dirs: tuple[str, ...] = ()
 
     @classmethod
     def create(
@@ -270,6 +275,7 @@ class LedgerRecord:
         kind: RecordKind,
         targets: tuple[LedgerTarget, ...] = (),
         install_id: str | None = None,
+        created_dirs: tuple[str, ...] = (),
     ) -> LedgerRecord:
         """Build a record, stamping a fresh ULID and UTC timestamp.
 
@@ -288,6 +294,7 @@ class LedgerRecord:
             root=str(root),
             kind=kind,
             targets=tuple(targets),
+            created_dirs=tuple(created_dirs),
         )
 
     def to_json_line(self) -> str:
@@ -304,6 +311,8 @@ class LedgerRecord:
             "kind": self.kind,
             "targets": [target.to_dict() for target in self.targets],
         }
+        if self.created_dirs:
+            payload["created_dirs"] = list(self.created_dirs)
         return json.dumps(payload, sort_keys=True, separators=(",", ":"))
 
     @classmethod
@@ -320,6 +329,12 @@ class LedgerRecord:
             for entry in entries
             if isinstance(entry, dict)
         )
+        raw_dirs = data.get("created_dirs")
+        created_dirs = (
+            tuple(str(entry) for entry in raw_dirs)
+            if isinstance(raw_dirs, list)
+            else ()
+        )
         return cls(
             install_id=str(data["install_id"]),
             timestamp=str(data["timestamp"]),
@@ -327,6 +342,7 @@ class LedgerRecord:
             root=str(data["root"]),
             kind=str(data["kind"]),
             targets=targets,
+            created_dirs=created_dirs,
         )
 
 
@@ -431,19 +447,19 @@ def latest_record(
     return match
 
 
-def current_install_record(
+def active_install_records(
     harness: str,
     *,
     root: Path | str,
     state_root: Path | None = None,
-) -> LedgerRecord | None:
-    """Return the install record that describes *root*'s current state.
+) -> list[LedgerRecord]:
+    """Return the install records whose changes are still in place at *root*.
 
     Replays the harness+root history in append order: an ``install`` record
-    becomes current; an ``uninstall`` clears it; a ``rollback`` of install
-    *X* makes the install current before *X* current again (its changes were
-    undone). A ``rollback`` with no install-id (a failed install that undid
-    itself) changes nothing. ``None`` when nothing is installed at *root*.
+    joins the stack; an ``uninstall`` clears it; a ``rollback`` of install *X*
+    drops *X* and every later install (their changes were undone). A
+    ``rollback`` with no install-id (a failed install that undid itself)
+    changes nothing. Oldest first; empty when nothing is installed at *root*.
 
     Raises:
         LedgerError: Propagated from :func:`read_records` on a corrupted ledger.
@@ -462,6 +478,24 @@ def current_install_record(
                 if installs[index].install_id == record.install_id:
                     del installs[index:]
                     break
+    return installs
+
+
+def current_install_record(
+    harness: str,
+    *,
+    root: Path | str,
+    state_root: Path | None = None,
+) -> LedgerRecord | None:
+    """Return the install record that describes *root*'s current state.
+
+    The newest of :func:`active_install_records`; ``None`` when nothing is
+    installed at *root*.
+
+    Raises:
+        LedgerError: Propagated from :func:`read_records` on a corrupted ledger.
+    """
+    installs = active_install_records(harness, root=root, state_root=state_root)
     return installs[-1] if installs else None
 
 
@@ -507,6 +541,7 @@ __all__ = [
     "OwnedEntry",
     "OwnedKind",
     "RecordKind",
+    "active_install_records",
     "append_record",
     "current_install_record",
     "find_record",

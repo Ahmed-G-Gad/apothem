@@ -136,6 +136,9 @@ from .install_driver_materialize import (
 )
 from .install_driver_materialize import run_install as run_install
 from .install_driver_merge import (
+    PROFILE_DOCUMENT_RELATIVE as PROFILE_DOCUMENT_RELATIVE,
+)
+from .install_driver_merge import (
     _apply_operator_owned_file as _apply_operator_owned_file,
 )
 from .install_driver_merge import _merged_json_text as _merged_json_text
@@ -198,6 +201,8 @@ from .install_driver_removal import (
 from .install_driver_removal import (
     surgically_remove_materialized_config as surgically_remove_materialized_config,
 )
+from .install_driver_reversal import capture_missing_dirs as capture_missing_dirs
+from .install_driver_reversal import rollback_install as rollback_install
 from .install_driver_treeops import (
     _directory_contents_equal as _directory_contents_equal,
 )
@@ -208,6 +213,7 @@ from .install_driver_treeops import (
 from .install_driver_treeops import (
     _write_single_file_directory as _write_single_file_directory,
 )
+from .install_driver_treeops import remove_created_dirs as remove_created_dirs
 from .install_driver_treeops import replace_tree as replace_tree
 from .install_driver_treeops import sweep_stale as sweep_stale
 from .install_driver_types import _INSTALL_ENTRY_MODES as _INSTALL_ENTRY_MODES
@@ -264,6 +270,7 @@ __all__ = [
     "apply_write_text",
     "backup_existing",
     "build_plan",
+    "capture_missing_dirs",
     "check_fidelity",
     "detect_install",
     "fidelity_is_faithful",
@@ -278,6 +285,7 @@ __all__ = [
     "resolve_source",
     "resolve_target",
     "restore_backup",
+    "rollback_install",
     "run_install",
     "run_uninstall",
     "surgically_remove_materialized_config",
