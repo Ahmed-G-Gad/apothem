@@ -20,6 +20,7 @@ stabilized mappings — so ``to_dict()`` round-trips byte-stably.
 
 from __future__ import annotations
 
+import dataclasses
 import os
 import re
 from collections.abc import Callable, Iterable, Mapping
@@ -61,6 +62,10 @@ PROFILE_NOT_FOUND_FIX = (
 # higher is rejected with an upgrade-the-engine diagnostic before schema
 # validation runs.
 _CURRENT_SCHEMA_VERSION: Final[int] = 1
+
+# Most extra validation problems a plain-text diagnostic lists after the first;
+# the JSON ``errors`` array always carries all of them.
+PLAIN_PROBLEM_LIMIT: Final[int] = 10
 
 # Version a profile without ``schema_version`` is read as. Versioning began at
 # 1 and every scaffold now stamps the version, so a version-less profile is a
@@ -315,7 +320,13 @@ class CanonicalProfile:
 
 @dataclass(frozen=True)
 class ProfileDiagnostic:
-    """Actionable profile validation error suitable for plain or JSON output."""
+    """Actionable profile validation error suitable for plain or JSON output.
+
+    ``safe_value`` is the offending input, redacted, never a suggested
+    replacement. ``problems`` holds every schema error found in one pass
+    (this diagnostic is the first of them), so an operator can fix them all
+    in one edit instead of one per run.
+    """
 
     code: str
     message: str
@@ -324,11 +335,23 @@ class ProfileDiagnostic:
     reason: str
     fix: str
     safe_value: Any | None = None
+    problems: tuple[ProfileDiagnostic, ...] = ()
+
+    def problem_dict(self) -> dict[str, Any]:
+        """Serialize the per-problem fields used in the ``errors`` array."""
+        return {
+            "code": self.code,
+            "field": self.field,
+            "reason": self.reason,
+            "fix": self.fix,
+            "safe_value": self.safe_value,
+        }
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize to a dict, appending an empty ``files_written`` list so
-        the payload matches the CLI lifecycle-envelope shape."""
-        return {
+        the payload matches the CLI lifecycle-envelope shape. A schema failure
+        also carries ``errors``: every problem found, the first one included."""
+        payload: dict[str, Any] = {
             "code": self.code,
             "message": self.message,
             "profile_path": self.profile_path,
@@ -338,19 +361,45 @@ class ProfileDiagnostic:
             "safe_value": self.safe_value,
             "files_written": [],
         }
+        if self.problems:
+            payload["errors"] = [problem.problem_dict() for problem in self.problems]
+        return payload
 
     def format_plain(self) -> str:
         """Render the diagnostic as a human-readable plain-text block."""
-        safe_value = "none" if self.safe_value is None else repr(self.safe_value)
-        return (
-            f"{self.message}\n"
-            f"Profile: {self.profile_path}\n"
-            f"Field: {self.field}\n"
-            f"Reason: {self.reason}\n"
-            f"Fix: {self.fix}\n"
-            f"Safe value: {safe_value}\n"
-            "Files written: none."
+        lines = [
+            self.message,
+            f"Profile: {self.profile_path}",
+            f"Field: {self.field}",
+            f"Reason: {self.reason}",
+            f"Fix: {self.fix}",
+        ]
+        if self.safe_value is not None:
+            lines.append(f"Offending value (redacted): {self.safe_value!r}")
+        lines.extend(
+            other_problem_lines(
+                [problem.problem_dict() for problem in self.problems[1:]]
+            )
         )
+        lines.append("Files written: none.")
+        return "\n".join(lines)
+
+
+def other_problem_lines(others: list[dict[str, Any]]) -> list[str]:
+    """Return the plain-text lines listing validation problems after the first.
+
+    Lists up to :data:`PLAIN_PROBLEM_LIMIT` of them; the JSON ``errors`` array
+    always carries the full set.
+    """
+    if not others:
+        return []
+    lines = [f"Other problems ({len(others)}):"]
+    for problem in others[:PLAIN_PROBLEM_LIMIT]:
+        lines.append(f"  - {problem.get('field')}: {problem.get('reason')}")
+    hidden = len(others) - PLAIN_PROBLEM_LIMIT
+    if hidden > 0:
+        lines.append(f"  - ... and {hidden} more; run with --json for the full list.")
+    return lines
 
 
 class ProfileValidationError(ValueError):
@@ -598,8 +647,11 @@ def validate_profile(
         key=lambda err: [(isinstance(p, int), str(p)) for p in err.absolute_path],
     )
     if errors:
+        problems = tuple(
+            _diagnostic_from_validation_error(error, profile_path) for error in errors
+        )
         raise ProfileValidationError(
-            _diagnostic_from_validation_error(errors[0], profile_path)
+            dataclasses.replace(problems[0], problems=problems)
         )
     return coerce_profile(profile)
 
@@ -718,8 +770,35 @@ def _diagnostic_from_validation_error(
         field=field,
         reason=error.message,
         fix=_suggest_fix(error),
-        safe_value=redact_value(error.instance, field_path=tuple(error.absolute_path)),
+        safe_value=_offending_value(error),
     )
+
+
+def _offending_value(error: ValidationError) -> object:
+    """Return the redacted input that failed, narrowed to what actually failed.
+
+    An ``additionalProperties`` failure is reported against the whole parent
+    mapping; echoing that would print the entire profile for one misspelled
+    key. Only the unexpected keys (with their redacted values) are returned.
+    """
+    path = tuple(error.absolute_path)
+    instance = error.instance
+    if error.validator == "additionalProperties" and isinstance(instance, Mapping):
+        schema = error.schema if isinstance(error.schema, Mapping) else {}
+        allowed = set(schema.get("properties", {}))
+        patterns = list(schema.get("patternProperties", {}))
+        extras = [
+            key
+            for key in instance
+            if key not in allowed
+            and not any(re.search(pattern, str(key)) for pattern in patterns)
+        ]
+        if extras:
+            return {
+                str(key): redact_value(instance[key], field_path=(*path, key))
+                for key in extras
+            }
+    return redact_value(instance, field_path=path)
 
 
 def _error_code(validator_name: object) -> str:

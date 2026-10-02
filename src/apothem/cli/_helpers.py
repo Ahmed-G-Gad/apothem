@@ -44,6 +44,7 @@ from apothem.lib.profile import (
     ProfileValidationError,
     current_schema_version,
     load_profile_file,
+    other_problem_lines,
     resolve_profile_path,
 )
 from apothem.schemas import profile_minimal_path
@@ -557,7 +558,13 @@ def _format_error_plain(
     )
     safe_value = error.get("safe_value")
     if safe_value is not None:
-        lines.insert(-1, f"Safe value: {safe_value!r}")
+        lines.insert(-1, f"Offending value (redacted): {safe_value!r}")
+    problems = error.get("errors")
+    if isinstance(problems, list):
+        for line in other_problem_lines(
+            [item for item in problems[1:] if isinstance(item, dict)]
+        ):
+            lines.insert(-1, line)
     return "\n".join(lines)
 
 

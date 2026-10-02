@@ -78,6 +78,25 @@ before writing; an invalid set is refused and the profile on disk is unchanged.
 
 Open the shared profile in the system editor.
 
+## Validation errors
+
+Every command that reads the profile validates it against the packaged schema
+and reports **every** problem it finds in one pass, so one edit can fix them
+all:
+
+- **Plain output** names the first problem in full (`Field`, `Reason`, `Fix`,
+  and `Offending value (redacted)`: the input that failed, with secret-shaped
+  values replaced by `<redacted>`; it is never a suggested replacement), then
+  lists up to ten more under `Other problems`.
+- **JSON output** keeps the first problem in the `error` object's top-level
+  fields and adds an `errors` array with every problem (`code`, `field`,
+  `reason`, `fix`, `safe_value`).
+- **Unknown keys** echo only the unexpected key and its redacted value, not
+  the whole profile.
+
+`profile init` (and every other command that scaffolds a profile) writes
+`schema_version: 1`. A profile without `schema_version` is read as version 1.
+
 ## Examples
 
 ```bash
