@@ -44,8 +44,17 @@ from .install_driver_jsonmerge import (
 )
 
 
+@dataclass(frozen=True)
 class _LegacyOwnership:
-    """Marker: the current install record predates ownership recording."""
+    """Marker: the current install record predates ownership recording.
+
+    ``retired`` lists entries an earlier release wrote at a location the
+    adapter no longer uses (for example the Hermes ``auxiliary.mcp`` slot);
+    they are removed, while they still hold the value that release wrote,
+    before the rest of the legacy equality rule applies.
+    """
+
+    retired: tuple[OwnedEntry, ...] = ()
 
 
 #: The ledger records an install for this target but no owned entries (an
@@ -253,7 +262,8 @@ def _merge_mapping(
     if isinstance(prior, _LegacyOwnership):
         if operator_only.get("hooks") == {}:
             del operator_only["hooks"]
-        base_obj = _strip_equal(operator_only, incoming)
+        retired_removed = strip_owned(operator_only, prior.retired)
+        base_obj = _strip_equal(retired_removed, incoming)
     else:
         base_obj = strip_owned(operator_only, prior)
     base = base_obj if isinstance(base_obj, dict) else {}

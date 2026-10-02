@@ -599,7 +599,7 @@ harnesses:
 
   hermes:
     # Hermes receives ~/.hermes/config.yaml from materializer.py (native MCP
-    # under auxiliary.mcp). Commands and skills land under the Apothem support
+    # under mcp_servers). Commands and skills land under the Apothem support
     # subtree; skills.config is a vendor registry-package list Apothem does not author.
     install:
       - source: "commands/"

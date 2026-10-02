@@ -5,7 +5,7 @@ description: "Hand-maintaining Hermes config versus managing it through Apothem'
 {/* SPDX-License-Identifier: MIT */}
 
 Hermes reads `~/.hermes/config.yaml`. Apothem writes the native YAML config
-(projecting the profile's MCP inventory into `auxiliary.mcp`) and installs shared
+(projecting the profile's MCP inventory into `mcp_servers`) and installs shared
 command and skill cohorts under `~/.hermes/.apothem/support/skills/`. Hermes's own
 `skills.config` is a registry-package list, so Apothem does not author it.
 

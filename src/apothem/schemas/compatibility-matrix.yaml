@@ -161,7 +161,7 @@ harnesses:
     supports_statuslines: false
     platform: [linux, macos, windows]
     notes: >-
-      Native config via ~/.hermes/config.yaml (profile MCP under auxiliary.mcp).
+      Native config via ~/.hermes/config.yaml (profile MCP under mcp_servers).
       skills.config is a vendor registry-package list Apothem does not author;
       support skills land under ~/.hermes/.apothem/support/.
       Prior targets ~/.hermes/cli-config.yaml and ~/.hermes/profile.yaml used

@@ -12,7 +12,8 @@
   `355af2c20f495b97c22c9aeb4c227fb0ca010da7` for `~/.hermes/config.yaml`.
   Skills are installable registry packages under `skills.config` (auto-exposed
   as commands) — NOT `skills.external_dirs` (that earlier claim is refuted). MCP
-  is the `auxiliary.mcp` config block; sub-agent dispatch is the `delegation`
+  servers are the top-level `mcp_servers` map (corrected 2026-10-02; see the
+  MCP correction below); sub-agent dispatch is the `delegation`
   block (`delegate_task`, bounded by `max_concurrent_children` /
   `max_spawn_depth`); user commands are `quick_commands` plus skill-exposed
   commands; durable memory lives at `~/.hermes/memories/`. Hermes is a
@@ -20,6 +21,27 @@
 - Official references (commit-permalinked to the pinned SHA):
   - <https://github.com/NousResearch/hermes-agent/blob/355af2c20f495b97c22c9aeb4c227fb0ca010da7/website/docs/user-guide/configuration.md>
   - <https://github.com/NousResearch/hermes-agent/blob/355af2c20f495b97c22c9aeb4c227fb0ca010da7/website/docs/reference/slash-commands.md>
+
+## MCP correction (2026-10-02)
+
+- Hermes reads MCP servers from the top-level `mcp_servers` map in
+  `~/.hermes/config.yaml` (`mcp_servers: <name>: command / args / env` for a
+  local server, `url` / `headers` for a remote one), per
+  <https://raw.githubusercontent.com/NousResearch/hermes-agent/main/website/docs/user-guide/features/mcp.md>
+  (the "Add an MCP server" example).
+- `auxiliary.mcp` is a different setting: the auxiliary model slot Hermes uses
+  for MCP tool dispatch (`provider` / `model` / `base_url` / `api_key` /
+  `timeout`), per
+  <https://raw.githubusercontent.com/NousResearch/hermes-agent/main/website/docs/user-guide/configuration.md>
+  and the same file at the pinned commit
+  <https://raw.githubusercontent.com/NousResearch/hermes-agent/355af2c20f495b97c22c9aeb4c227fb0ca010da7/website/docs/user-guide/configuration.md>.
+  The earlier pin read that block as the MCP server list.
+- The adapter therefore renders the profile's servers under `mcp_servers`. An
+  update over an install from an earlier release removes the server map that
+  release wrote under `auxiliary.mcp` (only while it still holds exactly that
+  value), and uninstall removes only the server entries the install ledger
+  records as Apothem's, so the operator's own `auxiliary` routing and
+  `mcp_servers` entries survive.
 
 ## Recommended Postfix Rendering
 
@@ -43,7 +65,7 @@
 
 Hermes is a multi-platform messaging gateway with **no vendor plugin or
 extension install surface** that Apothem ships. The adapter materializes
-`~/.hermes/config.yaml` (native MCP under `auxiliary.mcp`) via its materializer
+`~/.hermes/config.yaml` (native MCP under `mcp_servers`) via its materializer
 and keeps non-native cohorts under the Apothem support subtree
 (`~/.hermes/.apothem/support/`). There is no standalone-installable bundle; every artifact
 requires the full `apothem install --harness hermes` engine run.

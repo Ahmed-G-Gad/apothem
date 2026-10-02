@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Any
 
 from apothem.lib.harness_registry import package_key_for_public_id
+from apothem.lib.install_ledger import OwnedEntry
 
 from . import install_driver
 from .install_driver import MaterializationError, MaterializationRun
@@ -45,6 +46,7 @@ _UserScopeVerify = Callable[[Path], bool]
 _ProjectScopeVerify = Callable[..., bool]
 _ProjectScopePlan = Callable[..., list[dict[str, str]]]
 _MaterializeFn = Callable[[dict[str, Any]], str]
+_RetiredFn = Callable[[dict[str, Any]], tuple[OwnedEntry, ...]]
 
 _UPDATE_DOC = """Re-materialize the harness configuration from the updated profile.
 
@@ -435,10 +437,12 @@ def make_native_config_uninstall(
     opencode, qwen_code) each hand-rolled. The materializer-rendered native
     config is not a manifest entry, so it is cleaned surgically here: the
     adapter's *materialize_fn* rendered from an empty profile identifies
-    Apothem's structural contribution, *apothem_keys* names the top-level
-    namespaces whose profile-derived values are stripped wholesale (empty —
-    the driver default — for open_claw; ``{"auxiliary"}`` for hermes) — and
-    the manifest support subtree is then cleaned by the shared driver.
+    Apothem's structural contribution for an install recorded before
+    ownership tracking (newer installs remove exactly the entries the ledger
+    records), *apothem_keys* names top-level namespaces stripped wholesale
+    from such an older install (empty — the driver default — for every
+    current adapter) — and the manifest support subtree is then cleaned by
+    the shared driver.
     Behavior is identical to the hand-written body — same driver calls, same
     argument order.
     """
@@ -465,6 +469,7 @@ def make_native_config_install(
     harness_id: str,
     render_tokens: bool = False,
     support_profile: bool = False,
+    retired_fn: _RetiredFn | None = None,
 ) -> _UserScopeInstall:
     """Return a native-config (materializer) ``install`` shim.
 
@@ -478,6 +483,9 @@ def make_native_config_install(
       (qwen_code only).
     - *support_profile*: when True, the support ``run_install`` receives the
       ``profile`` keyword (qwen_code only).
+    - *retired_fn*: returns, for a profile, the entries an earlier release of
+      this adapter wrote at a location it no longer uses, so an update over
+      such an install removes them (hermes only).
     """
 
     def install(output_path: Path, profile: dict[str, Any]) -> MaterializationRun:
@@ -495,6 +503,7 @@ def make_native_config_install(
             install_root=output_path.parent,
             harness_name=harness_name,
             allowed_root=_native_allowed_root(output_path),
+            retired=retired_fn(profile) if retired_fn is not None else (),
         )
         if native_result.outcome == "error":
             raise MaterializationError(

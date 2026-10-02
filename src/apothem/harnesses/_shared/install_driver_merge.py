@@ -176,6 +176,7 @@ def apply_operator_owned_content(
     ownership_class: str = "operator-owned",
     allowed_root: Path | None = None,
     authorize: AuthorizeFn | None = None,
+    retired: tuple[OwnedEntry, ...] = (),
 ) -> MaterializationResult:
     """Write materializer-rendered content to an operator-owned native config.
 
@@ -185,7 +186,10 @@ def apply_operator_owned_content(
     key-preserving merge (JSON / YAML), records a unified diff on the result,
     consults *authorize* on a non-additive overwrite (declining leaves the
     operator file untouched), then writes atomically with backup-before-replace
-    and no-op detection.
+    and no-op detection. *retired* lists entries an earlier release wrote at a
+    location the adapter no longer uses; when the target's install record
+    predates ownership recording, they are removed while they still hold that
+    release's value.
     """
     write_allowed = allowed_root or install_root
     target_error = _validate_target_path(
@@ -201,7 +205,9 @@ def apply_operator_owned_content(
             content,
             before=existing_text,
             harness_root=install_root,
-            prior=prior_ownership(harness_name, install_root, target),
+            prior=_with_retired(
+                prior_ownership(harness_name, install_root, target), retired
+            ),
         )
     except _LossyRewriteError as refusal:
         return _refused_result("write_text", target, refusal, detail)
@@ -240,6 +246,16 @@ def apply_operator_owned_content(
         allowed_root=allowed_root,
     )
     return replace(_with_detail(result, detail), owned=merge.owned)
+
+
+def _with_retired(
+    prior: tuple[OwnedEntry, ...] | _LegacyOwnership,
+    retired: tuple[OwnedEntry, ...],
+) -> tuple[OwnedEntry, ...] | _LegacyOwnership:
+    """Attach *retired* entries to a legacy (pre-ownership) prior record."""
+    if retired and isinstance(prior, _LegacyOwnership):
+        return _LegacyOwnership(retired)
+    return prior
 
 
 def _unified_diff(before: str, after: str, target: Path) -> str:

@@ -345,10 +345,12 @@ class TestCrossAdapterParity:
         assert json.loads(op(profile))["mcp"]["fs"]["command"] == ["npx", "srv"]
         # qwen `mcpServers` shape: command/args.
         assert json.loads(qwen(profile))["mcpServers"]["fs"]["command"] == "npx"
-        # hermes `auxiliary.mcp` block.
-        assert yaml.safe_load(hm(profile))["auxiliary"]["mcp"]["fs"]["command"] == "npx"
+        # hermes top-level `mcp_servers` block (not the auxiliary.mcp model slot).
+        rendered = yaml.safe_load(hm(profile))
+        assert rendered["mcp_servers"]["fs"]["command"] == "npx"
+        assert "auxiliary" not in rendered
         # A minimal profile (no MCP) emits no MCP key in any of them.
         minimal = {"identity": {"name": "Eve"}}
         assert "mcp" not in json.loads(op(minimal))
         assert "mcpServers" not in json.loads(qwen(minimal))
-        assert "auxiliary" not in yaml.safe_load(hm(minimal))
+        assert "mcp_servers" not in yaml.safe_load(hm(minimal))
