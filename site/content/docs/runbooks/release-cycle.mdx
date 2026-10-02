@@ -143,7 +143,7 @@ bash scripts/release/check-release-ready.sh vX.Y.Z
 gh workflow run publish-npm.yml --field tag=vX.Y.Z
 ```
 
-Approve the `npmjs` environment deployment when prompted. The workflow
+Approve the `release` environment deployment when prompted. The workflow
 publishes `@ahmed-g-gad/apothem@X.Y.Z` to npmjs.com via npm Trusted
 Publishing (OIDC); no registry token is stored in the repository.
 
