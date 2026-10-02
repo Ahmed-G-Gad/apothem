@@ -80,4 +80,4 @@ def test_fail_always_on_body_over_ceiling() -> None:
     finding = result.findings[0]
     assert finding.always_on is True
     assert finding.over_budget is True
-    assert finding.substantive_tokens > _MOD.MAX_SUBSTANTIVE_TOKENS
+    assert finding.substantive_words > _MOD.MAX_SUBSTANTIVE_TOKENS
