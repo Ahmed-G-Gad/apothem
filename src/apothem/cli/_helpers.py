@@ -42,6 +42,7 @@ from apothem.lib.harness_registry import (
 )
 from apothem.lib.profile import (
     ProfileValidationError,
+    current_schema_version,
     load_profile_file,
     resolve_profile_path,
 )
@@ -824,10 +825,18 @@ def _select_and_load_adapters(
 
 
 def _profile_scaffold_text() -> str:
-    """Return a schema-valid minimal profile scaffold."""
+    """Return a schema-valid minimal profile scaffold stamped with its version.
+
+    Every scaffold writer (``profile init``, ``profile edit`` on a missing
+    file, ``quickstart``, and a first ``install``) goes through here, so each
+    new profile records the schema version it was written for and a later
+    migration can tell it apart from a newer one.
+    """
     import yaml
 
     data = yaml.safe_load(profile_minimal_path().read_text(encoding="utf-8"))
+    if isinstance(data, dict) and "schema_version" not in data:
+        data = {"schema_version": current_schema_version(), **data}
     return yaml.safe_dump(data, sort_keys=False)
 
 

@@ -162,3 +162,39 @@ def test_mixed_type_error_paths_raise_profile_error_not_type_error() -> None:
     }
     with pytest.raises(ProfileValidationError):
         validate_profile(profile)
+
+
+def test_version_less_profile_is_read_as_v1_once_v2_exists(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A version-less profile is version 1, not "whatever is current".
+
+    With the engine at v2 and a registered v1->v2 migration, a profile that
+    carries no schema_version must go through that migration.
+    """
+    from apothem.lib import profile as profile_mod
+
+    def _v1_to_v2(source: dict) -> dict:
+        return {**source, "schema_version": 2, "migrated_from_v1": True}
+
+    monkeypatch.setattr(profile_mod, "_CURRENT_SCHEMA_VERSION", 2)
+    monkeypatch.setattr(profile_mod, "_MIGRATIONS", {1: _v1_to_v2})
+
+    migrated = profile_mod.migrate_profile({"identity": {"name": "Example User"}})
+
+    assert migrated["migrated_from_v1"] is True
+    assert migrated["schema_version"] == 2
+
+
+def test_profile_init_stamps_the_schema_version(tmp_path) -> None:
+    """``profile init`` writes ``schema_version: 1`` into the scaffold."""
+    import yaml
+    from click.testing import CliRunner
+
+    from apothem.cli import main
+
+    target = tmp_path / "profile.yaml"
+    result = CliRunner().invoke(main, ["profile", "init", "--profile", str(target)])
+
+    assert result.exit_code == 0, result.output
+    assert yaml.safe_load(target.read_text(encoding="utf-8"))["schema_version"] == 1

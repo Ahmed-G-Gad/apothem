@@ -57,10 +57,16 @@ PROFILE_NOT_FOUND_FIX = (
     "pass an existing profile with --profile PATH."
 )
 
-# Highest profile-schema version this engine understands. A version-less
-# profile is treated as this version; a profile stamped higher is rejected
-# with an upgrade-the-engine diagnostic before schema validation runs.
+# Highest profile-schema version this engine understands. A profile stamped
+# higher is rejected with an upgrade-the-engine diagnostic before schema
+# validation runs.
 _CURRENT_SCHEMA_VERSION: Final[int] = 1
+
+# Version a profile without ``schema_version`` is read as. Versioning began at
+# 1 and every scaffold now stamps the version, so a version-less profile is a
+# v1 profile: pinned as a literal, never "whatever the engine supports", so a
+# future v1->v2 migration still runs on it.
+_UNVERSIONED_PROFILE_VERSION: Final[int] = 1
 
 # MCP transports the schema and model both recognize; streamable-http is the
 # modern replacement for sse. The schema↔code cross-check test pins these equal.
@@ -494,7 +500,8 @@ def migrate_profile(
 ) -> Mapping[str, Any]:
     """Forward-migrate *profile* to the current schema version.
 
-    A version-less profile is treated as ``_CURRENT_SCHEMA_VERSION``. A profile
+    A version-less profile is read as ``_UNVERSIONED_PROFILE_VERSION`` (1) and
+    migrated forward like any other v1 profile. A profile
     stamped with a version greater than this engine supports is rejected with an
     upgrade-the-engine diagnostic before any schema validation runs, so a
     newer-version profile surfaces an actionable message rather than an opaque
@@ -502,7 +509,7 @@ def migrate_profile(
     ``schema_version`` is left for the jsonschema validator to reject. The v1
     migration chain is a no-op: the mapping is returned unchanged.
     """
-    declared = profile.get("schema_version", _CURRENT_SCHEMA_VERSION)
+    declared = profile.get("schema_version", _UNVERSIONED_PROFILE_VERSION)
     # bool is an int subclass; treat a non-int (including bool) version as
     # malformed and let the schema validator emit the precise diagnostic.
     if isinstance(declared, int) and not isinstance(declared, bool):
