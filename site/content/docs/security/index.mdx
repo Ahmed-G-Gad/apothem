@@ -97,7 +97,8 @@ slsa-verifier verify-artifact \
 `cosign` prints `Verified OK` and `slsa-verifier` prints `PASSED: SLSA
 verification passed`. Repeat the `cosign` command for any other asset with its
 `<asset>.cosign.bundle` (earlier releases name the platform-archive and
-`SHA256SUMS` bundles `<asset>.sig`). From a clone,
+`SHA256SUMS` bundles `<asset>.sig`). The darwin and linux archives are the same
+bytes under two names, so `SHA256SUMS` lists one digest twice. From a clone,
 `bash scripts/release/verify-provenance.sh <download-dir>` runs all three
 checks, the `SHA256SUMS` manifest included, in one pass.
 

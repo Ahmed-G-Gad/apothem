@@ -252,6 +252,10 @@ jobs:
     needs: [build]
     permissions:
       contents: read
+    # The runtime is platform-neutral and the archive build is reproducible, so
+    # the darwin and linux cells produce the same bytes under two names
+    # (--platform only selects tar.gz or zip). Both names are kept so existing
+    # download links keep working; SHA256SUMS lists one digest twice.
     strategy:
       fail-fast: false
       matrix:

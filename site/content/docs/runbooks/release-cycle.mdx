@@ -158,8 +158,8 @@ here?":
 | 2 | GitHub Release (SBOM) | `sbom.cdx.json` + `sbom.cdx.json.cosign.bundle` | asset list includes both; the SBOM's `metadata.component.purl` is `pkg:pypi/apothem@X.Y.Z` and its components include every package in `src/apothem/_vendor/vendor.txt` |
 | 3 | GitHub Release (signatures) | one `<asset>.cosign.bundle` per sdist, wheel, SBOM, platform archive and `SHA256SUMS` (earlier releases name the archive and `SHA256SUMS` bundles `<asset>.sig`) | `cosign verify-blob` with the exact identity in §5.5 exits 0 |
 | 4 | GitHub Release (provenance) | `provenance.intoto.jsonl` | `bash scripts/release/verify-provenance.sh <download-dir>` exits 0 (§5.5) |
-| 5 | GitHub Release (platform archives) | `apothem-vX.Y.Z-darwin.tar.gz`, `apothem-vX.Y.Z-linux.tar.gz`, `apothem-vX.Y.Z-windows.zip` | asset list includes every archive plus `SHA256SUMS` |
-| 6 | npmjs.com | `@ahmed-g-gad/apothem@X.Y.Z` | `npm view @ahmed-g-gad/apothem version` returns `X.Y.Z`; `npx @ahmed-g-gad/apothem@X.Y.Z --version` prints `apothem X.Y.Z` |
+| 5 | GitHub Release (platform archives) | `apothem-vX.Y.Z-darwin.tar.gz`, `apothem-vX.Y.Z-linux.tar.gz`, `apothem-vX.Y.Z-windows.zip` | asset list includes every archive plus `SHA256SUMS`. The darwin and linux archives are the same bytes under two names (the runtime is platform-neutral; `--platform` only picks tar.gz or zip), so their `SHA256SUMS` lines show one digest twice |
+| 6 | npmjs.com | `@ahmed-g-gad/apothem@X.Y.Z` | `npm view @ahmed-g-gad/apothem version` returns `X.Y.Z`; `npx @ahmed-g-gad/apothem@X.Y.Z --version` prints `Apothem, version X.Y.Z` |
 | 7 | Pages (script installers) | `install.sh` / `install.ps1` on the docs site | `curl -fsSL https://apothem.ahmedgad.com/install.sh \| head -n 1` returns the script header |
 
 The GitHub Release is the canonical artifact surface; the npm package and
@@ -171,7 +171,9 @@ publish is deliberately the last stage.
 The `CHANGELOG.md` carries one section per release under the
 Keep-a-Changelog convention. The release commit's CHANGELOG edit:
 
-- Confirms the version section uses the `## [X.Y.Z] — YYYY-MM-DD` heading.
+- Confirms the version section uses the `## [X.Y.Z] - YYYY-MM-DD` heading
+  (a hyphen; `bump_version.py` writes it, and `extract_release_notes.py`
+  matches the `## [X.Y.Z]` prefix).
 - Confirms the standard headings — Added, Changed, Deprecated, Removed,
   Fixed, Security — are used where applicable. Empty headings are dropped from
   the rendered file.
@@ -203,7 +205,7 @@ Claude Code.
 npx @ahmed-g-gad/apothem@X.Y.Z --version
 ```
 
-Expected output: `apothem X.Y.Z`.
+Expected output: `Apothem, version X.Y.Z`.
 
 ### 5.3 One-shot script installer (POSIX)
 
@@ -212,7 +214,7 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | sh
 apothem --version
 ```
 
-Expected output: `apothem X.Y.Z`.
+Expected output: `Apothem, version X.Y.Z`.
 
 ### 5.4 One-shot script installer (Windows)
 
@@ -221,7 +223,7 @@ irm https://apothem.ahmedgad.com/install.ps1 | iex
 apothem --version
 ```
 
-Expected output: `apothem X.Y.Z`.
+Expected output: `Apothem, version X.Y.Z`.
 
 ### 5.5 Artifact verification (supply-chain evidence)
 
