@@ -85,6 +85,19 @@ BANNER_ALLOW_LIST: Final[tuple[str, ...]] = (
     "@ahmed-g-gad",
 )
 
+# Vendor-published documentation placeholders. AWS documents this access-key
+# id and secret access key as the example values for its credential formats
+# (IAM user guide, "Manage access keys"); they grant nothing, and docs or code
+# samples quote them verbatim. Only an exact match is exempt: the rest of the
+# line is still scanned, and any other key — including one that merely
+# resembles a placeholder — is still reported.
+DOCUMENTATION_EXAMPLE_CREDENTIALS: Final[frozenset[str]] = frozenset(
+    {
+        "AKIAIOSFODNN7EXAMPLE",
+        "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+    }
+)
+
 # Generic high-entropy heuristic. A standalone alphanumeric token of this
 # minimum length whose Shannon entropy exceeds the threshold is suspect.
 # These thresholds favor precision over recall — common identifier shapes
@@ -140,7 +153,9 @@ def check(content: str, path: Path | None = None) -> GrepResult:
 
     Pre-conditions: `content` is the artifact body about to be emitted.
     Post-conditions: `result.passed` is True iff zero credential patterns
-    matched and no high-entropy token exceeded the heuristic threshold.
+    matched and no high-entropy token exceeded the heuristic threshold. A
+    match that is exactly a vendor-published documentation placeholder
+    (:data:`DOCUMENTATION_EXAMPLE_CREDENTIALS`) is not a finding.
     """
     findings: list[Finding] = []
     lines = content.splitlines()
@@ -150,8 +165,12 @@ def check(content: str, path: Path | None = None) -> GrepResult:
         # and entropy checks (merged from the retired secret-scan matcher).
         if _line_in_banner(line):
             continue
+        named_hit = False
         for secret in SECRET_PATTERNS:
             for match in secret.pattern.finditer(line):
+                if match.group() in DOCUMENTATION_EXAMPLE_CREDENTIALS:
+                    continue
+                named_hit = True
                 findings.append(
                     Finding(
                         line=line_index,
@@ -161,10 +180,12 @@ def check(content: str, path: Path | None = None) -> GrepResult:
                 )
         # Generic high-entropy fallback. Skip lines already covered by a
         # named pattern to avoid double-reporting the same token.
-        if any(s.pattern.search(line) for s in SECRET_PATTERNS):
+        if named_hit:
             continue
         for match in ENTROPY_TOKEN_RE.finditer(line):
             token = match.group()
+            if token in DOCUMENTATION_EXAMPLE_CREDENTIALS:
+                continue
             entropy = _shannon_entropy_bits_per_char(token)
             if entropy >= ENTROPY_BITS_PER_CHAR_THRESHOLD:
                 findings.append(
