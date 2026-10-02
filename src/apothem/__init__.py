@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import importlib.metadata
 import re
 from pathlib import Path
 
@@ -56,6 +55,11 @@ def _resolve_version() -> str:
     declared = _version_from_source_tree()
     if declared is not None:
         return declared
+    # Imported here, not at module level: importlib.metadata costs tens of
+    # milliseconds, and every source-tree run (the CLI's usual case) returns
+    # above without it.
+    import importlib.metadata
+
     try:
         return importlib.metadata.version(__name__)
     except importlib.metadata.PackageNotFoundError:

@@ -12,6 +12,7 @@
 | `_helpers.py` | Shared constants, the structured CLI-error type, the adapter protocol + load helpers, profile read/write, lifecycle-envelope builders, harness selection, project-root resolution, `AliasedGroup`, and the drift/plan helpers. |
 | `_epilogs.py` | The per-subcommand `--help` epilog strings. |
 | `_materialize.py` | The shared install/update materialization orchestrators (`_materialize`, `_dry_run_materialization`). |
+| `_group.py` | Group plumbing that loads without the materialization stack: the root group that imports each command module on first use (with the static command summaries the root `--help` renders), the usage-error contract (exit 64, JSON error envelope), context settings, and UTF-8 stdio setup. |
 | `_common_flags.py` | Shared Click options plus the console factory used across CLI commands. |
 | `_json_formatter.py` | JSON-output helper for the CLI (machine-readable command output). |
 | `_cmd_install.py` | The `install` **and `quickstart`** commands. `quickstart` is the guided profile → preview → install path and shares this module's materialization machinery, so it lives beside `install` rather than in a module of its own. |

@@ -25,7 +25,16 @@ from rich.console import Console
 from rich.markup import escape
 
 import apothem.cli as _pkg
-from apothem.cli._json_formatter import emit_json, json_requested
+
+# The group plumbing lives in the light _group module (loaded by --version and
+# --help); it is re-exported here so existing imports keep working.
+from apothem.cli._group import _ARGV_META_KEY as _ARGV_META_KEY
+from apothem.cli._group import _CONTEXT as _CONTEXT
+from apothem.cli._group import _EXIT_USAGE as _EXIT_USAGE
+from apothem.cli._group import AliasedGroup as AliasedGroup
+from apothem.cli._group import _configure_stdio as _configure_stdio
+from apothem.cli._group import _usage_failure as _usage_failure
+from apothem.cli._json_formatter import emit_json
 from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared.install_driver import (
     MaterializationError,
@@ -50,11 +59,6 @@ from apothem.lib.profile import (
 )
 from apothem.schemas import profile_minimal_path, profile_schema_path
 
-#: Shared Click context settings (``-h`` / ``--help`` aliases) for ``main`` and
-#: the ``profile`` / ``harnesses`` sub-groups.
-_CONTEXT = {"help_option_names": ["-h", "--help"]}
-
-
 _ADAPTER_LOAD_ERRORS = (ImportError, AttributeError, TypeError, OSError)
 
 
@@ -62,17 +66,6 @@ _EXIT_EXPECTED = 1
 
 
 _EXIT_PARTIAL = 2
-
-
-#: Exit code for a command-line usage error (``EX_USAGE`` from sysexits.h): an
-#: unknown option or command, a missing required option, or a bad option
-#: value. Distinct from the partial-write code 2, which Click would otherwise
-#: reuse for usage errors.
-_EXIT_USAGE = 64
-
-#: ``Context.meta`` key holding the root argv, so a usage error raised deep in
-#: the command tree can still tell whether JSON output was requested.
-_ARGV_META_KEY = "apothem.argv"
 
 
 def _status_for_exit_code(exit_code: int) -> str:
@@ -856,100 +849,6 @@ def _profile_scaffold_text() -> str:
     )
 
 
-def _usage_failure(
-    exc: click.UsageError, argv: list[str]
-) -> click.UsageError | click.exceptions.Exit:
-    """Map a Click usage error onto the CLI contract; return what to raise.
-
-    The error's exit code becomes :data:`_EXIT_USAGE`. Under ``--json`` /
-    ``--format json`` the error is written as one JSON error envelope with
-    code ``cli.usage`` and an ``Exit`` is returned so Click prints nothing
-    else; otherwise the usage error itself is returned for Click to show.
-    """
-    # exit_code is a class attribute on ClickException; set it on this instance
-    # so the original subclass (and its own show()) is kept.
-    cast(Any, exc).exit_code = _EXIT_USAGE
-    if not json_requested(argv):
-        return exc
-    ctx = exc.ctx
-    names: list[str] = []
-    node = ctx
-    while node is not None and node.parent is not None:
-        names.append(node.info_name or "")
-        node = node.parent
-    field = "command"
-    if isinstance(exc, click.BadParameter) and exc.param is not None:
-        field = exc.param.name or field
-    elif isinstance(exc, click.NoSuchOption):
-        field = exc.option_name
-    help_path = ctx.command_path if ctx is not None else "apothem"
-    error = _CliUserError(
-        code="cli.usage",
-        message="Apothem usage error.",
-        field=field,
-        reason=exc.format_message(),
-        fix=f"Run '{help_path} --help' for the accepted options and commands.",
-    ).to_dict()
-    emit_json(_error_envelope(command=" ".join(reversed(names)) or None, error=error))
-    return click.exceptions.Exit(_EXIT_USAGE)
-
-
-class AliasedGroup(click.Group):
-    """Click group that resolves subcommands case-insensitively.
-
-    It also owns the usage-error contract for every command beneath it: a
-    usage error exits :data:`_EXIT_USAGE` (64) instead of Click's 2, and under
-    JSON output it prints a ``cli.usage`` error envelope instead of plain text.
-    """
-
-    def make_context(
-        self,
-        info_name: str | None,
-        args: list[str],
-        parent: click.Context | None = None,
-        **extra: object,
-    ) -> click.Context:
-        """Build the context, mapping a parse-time usage error to the contract."""
-        argv = list(args)
-        try:
-            ctx = super().make_context(info_name, args, parent=parent, **extra)
-        except click.UsageError as exc:
-            root_argv = (
-                parent.meta.get(_ARGV_META_KEY, argv) if parent is not None else argv
-            )
-            raise _usage_failure(exc, root_argv) from None
-        ctx.meta.setdefault(_ARGV_META_KEY, argv)
-        return ctx
-
-    def invoke(self, ctx: click.Context) -> object:
-        """Invoke the subcommand, mapping any usage error to the contract."""
-        try:
-            return super().invoke(ctx)
-        except click.UsageError as exc:
-            raise _usage_failure(exc, ctx.meta.get(_ARGV_META_KEY, [])) from None
-
-    def get_command(self, ctx: click.Context, cmd_name: str) -> click.Command | None:
-        """Resolve *cmd_name* exactly, then fall back to a case-insensitive match.
-
-        Pre-conditions: ``cmd_name`` is the subcommand token as typed.
-        Post-conditions: an exact match wins without any case folding, so
-        declared names always take precedence. Otherwise a single
-        case-insensitive match is returned; several matches fail the context
-        with an ambiguity message rather than silently picking one, and no match
-        returns ``None`` so Click emits its own unknown-command error.
-        """
-        cmd = super().get_command(ctx, cmd_name)
-        if cmd is not None:
-            return cmd
-        lower = cmd_name.lower()
-        matches = [n for n in self.list_commands(ctx) if n.lower() == lower]
-        if len(matches) == 1:
-            return super().get_command(ctx, matches[0])
-        if len(matches) > 1:
-            ctx.fail(f"Ambiguous command {cmd_name!r}: matches {sorted(matches)}")
-        return None
-
-
 def _resolve_project_root(project: str | None) -> Path | None:
     """Resolve operator-supplied ``--project`` value to an absolute path."""
     if project is None:
@@ -1092,21 +991,3 @@ def _materialization_error(
         fix="Review the target path, permissions, and harness support files before retrying.",
         files_written=tuple(files_written),
     ).to_dict()
-
-
-def _configure_stdio() -> None:
-    """Force UTF-8 stdio on Windows so Rich output renders correctly.
-
-    Runs at CLI invocation only — never at import time — so it cannot
-    disturb a host process's captured streams. ``reconfigure`` mutates
-    the existing stream in place rather than replacing ``sys.stdout``,
-    which would orphan and later close a wrapping process's buffer
-    (e.g. pytest's capture buffer).
-    """
-    if sys.platform != "win32":
-        return
-    for stream_name in ("stdout", "stderr"):
-        stream = getattr(sys, stream_name)
-        reconfigure = getattr(stream, "reconfigure", None)
-        if reconfigure is not None:
-            reconfigure(encoding="utf-8", errors="replace")
