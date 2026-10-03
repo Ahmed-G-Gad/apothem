@@ -27,6 +27,13 @@ instructions file on every `apothem install` or `apothem update` run. The
 shared profile is the source of truth; project-local edits to the generated
 file are backed up before the next sync replaces the Apothem-managed content.
 
+Inside the Apothem block, the section rendered from your profile (operator,
+preferences, custom rules, opted-in behaviors, MCP server names) comes first,
+ahead of the shared governance text. GitHub notes that shorter instruction
+files are more likely to be processed in full by code review
+([Customizing code review](https://docs.github.com/en/copilot/tutorials/customize-code-review)),
+so the part that is specific to you leads the file.
+
 ## Compatibility notes
 
 GitHub Copilot does not expose a file-based user-global instructions path for

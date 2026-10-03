@@ -407,11 +407,17 @@ harnesses:
     # The adapter at src/apothem/harnesses/github_copilot/ opts into the
     # project-scope contract (requires_project = True) and supplies the
     # operator-supplied --project value via the project-scope CLI plumbing.
+    # profile_position: first puts the operator's shared-profile block ahead
+    # of the governance text: GitHub's code-review guidance says shorter
+    # instruction files are more likely to be fully processed
+    # (docs.github.com/en/copilot/tutorials/customize-code-review, retrieved
+    # 2026-10-03), so the operator-specific part leads.
     install:
       - source: "harnesses/github_copilot/templates/copilot-instructions.md"
         target: "${PROJECT_ROOT}/.github/copilot-instructions.md"
         mode: sentinel_merge
         ownership_class: operator-owned
+        profile_position: first
 
     exclude:
       - "__pycache__"

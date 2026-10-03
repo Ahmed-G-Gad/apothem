@@ -40,6 +40,7 @@ _SHARED_ANCHOR_TEMPLATES = (
     "harnesses/kimi_code/templates/AGENTS.md",
     "harnesses/gemini_cli/templates/GEMINI.md",
     "harnesses/antigravity/templates/GEMINI.md",
+    "harnesses/github_copilot/templates/copilot-instructions.md",
 )
 
 _DISPLAY_NAMES = sorted(
