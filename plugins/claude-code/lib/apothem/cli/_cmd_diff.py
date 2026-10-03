@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import click
+from rich.console import Console
 from rich.markup import escape
 
 import apothem.cli as _pkg
@@ -35,6 +36,7 @@ from apothem.cli._helpers import (
 from apothem.cli._json_formatter import emit_json
 from apothem.harnesses._shared.install_driver import (
     MaterializationError,
+    MaterializationRun,
     operation_label,
     preview_status,
 )
@@ -136,6 +138,13 @@ def diff(
         emit_json(payload)
         return
 
+    _render_plain_preview(con, harness_id, run, verbose=verbose)
+
+
+def _render_plain_preview(
+    con: Console, harness_id: str, run: MaterializationRun, *, verbose: bool
+) -> None:
+    """Print the plain-mode preview: one line per pending change, plus diffs."""
     con.print(f"[bold]Pending changes for[/] [cyan]{harness_id}[/]:")
     if verbose:
         con.print(
@@ -149,15 +158,11 @@ def diff(
             "'apothem install' would do.[/]"
         )
     rendered = 0
-    had_results = False
     for result in run.results:
-        had_results = True
         # Warnings are surfaced elsewhere; a no-op target (e.g. nothing stale
         # to prune) is not a pending change. Both are omitted from the default
         # preview and restored under --verbose for the full plan.
-        if result.outcome == "warning" and not verbose:
-            continue
-        if result.outcome == "unchanged" and not verbose:
+        if result.outcome in {"warning", "unchanged"} and not verbose:
             continue
         rendered += 1
         label = operation_label(result.operation)
@@ -166,17 +171,22 @@ def diff(
         con.print(f"  [cyan]{label}[/] {escape(result.path)} [dim]({status})[/]{raw}")
         diff_text = result.detail.get("diff")
         if diff_text:
-            for line in diff_text.splitlines():
-                if line.startswith("+") and not line.startswith("+++"):
-                    con.print(f"    [green]{escape(line)}[/]")
-                elif line.startswith("-") and not line.startswith("---"):
-                    con.print(f"    [red]{escape(line)}[/]")
-                else:
-                    con.print(f"    [dim]{escape(line)}[/]")
+            _print_diff_lines(con, diff_text)
     if rendered == 0:
-        if had_results:
+        if run.results:
             con.print(
                 "  [dim]No pending changes. Re-run with --verbose for the full plan.[/]"
             )
         else:
             con.print("  [dim]No planned targets.[/]")
+
+
+def _print_diff_lines(con: Console, diff_text: str) -> None:
+    """Print a unified diff with added lines green and removed lines red."""
+    for line in diff_text.splitlines():
+        if line.startswith("+") and not line.startswith("+++"):
+            con.print(f"    [green]{escape(line)}[/]")
+        elif line.startswith("-") and not line.startswith("---"):
+            con.print(f"    [red]{escape(line)}[/]")
+        else:
+            con.print(f"    [dim]{escape(line)}[/]")

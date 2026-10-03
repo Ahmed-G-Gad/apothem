@@ -33,6 +33,10 @@ from .install_driver_jsonmerge import (
     _read_existing,
     _refused_result,
 )
+from .install_driver_layout import (
+    announces_in_profile_document,
+    with_support_announcement,
+)
 from .install_driver_ownership import (
     MergeOutcome,
     _LegacyOwnership,
@@ -119,18 +123,21 @@ def project_profile_document(
     only documented keys (skills pointers, MCP), so the profile's identity /
     preferences / rules / opted-in behaviors reach the harness through this
     dedicated apothem profile document under the adapter's apothem rules
-    directory — the same directory the native config's instructions pointer
-    references. Written through the gated managed-block anchor path, so it is
-    operator-preserving and idempotent.
+    directory. Written through the gated managed-block anchor path, so it is
+    operator-preserving and idempotent. A harness with no instruction anchor of
+    its own (no ``sentinel_merge`` entry) also gets its support announcement
+    here: this document is the instruction file such an install writes.
     """
     from apothem.lib.profile import coerce_profile
     from apothem.lib.profile_projection import project
 
     for_harness = coerce_profile(profile).for_harness(harness_id)
-    surfaces = project(for_harness, harness_id)
+    body = project(for_harness, harness_id).managed_block_body
+    if announces_in_profile_document(harness_name):
+        body = with_support_announcement(body, harness_name, harness_root)
     return apply_managed_block_anchor(
         harness_root / relative_path,
-        surfaces.managed_block_body,
+        body,
         install_root=harness_root,
         harness_name=harness_name,
         allowed_root=harness_root.parent,
@@ -382,6 +389,27 @@ def _fold_profile_body(
     return f"{lead}{profile_body}\n\n{rest.strip()}"
 
 
+def _anchor_content(
+    entry: InstallEntry,
+    content: str,
+    profile_body: str | None,
+    *,
+    harness_name: str,
+    root: Path,
+) -> str:
+    """Return a ``sentinel_merge`` template with its generated sections.
+
+    The harness's support announcement follows the template governance (see
+    :func:`with_support_announcement`), then the projected *profile_body* is
+    folded in per :func:`_fold_profile_body`. Other entries are returned
+    unchanged.
+    """
+    if entry.mode != "sentinel_merge":
+        return content
+    content = with_support_announcement(content, harness_name, root)
+    return _fold_profile_body(entry, content, profile_body)
+
+
 def _operator_owned_merge_text(
     entry: InstallEntry,
     target: Path,
@@ -473,7 +501,13 @@ def _operator_owned_preview(
         harness_root=harness_root,
         project_root=project_root,
     )
-    content = _fold_profile_body(entry, content, profile_body)
+    content = _anchor_content(
+        entry,
+        content,
+        profile_body,
+        harness_name=harness_name,
+        root=_root_for(harness_root, project_root),
+    )
     try:
         existing_text = _read_existing(target)
         after = _operator_owned_merge_text(
@@ -530,7 +564,9 @@ def _apply_operator_owned_file(
         harness_root=harness_root,
         project_root=project_root,
     )
-    content = _fold_profile_body(entry, content, profile_body)
+    content = _anchor_content(
+        entry, content, profile_body, harness_name=harness_name, root=root
+    )
     detail: dict[str, str] = {"ownership_class": entry.ownership_class}
     try:
         existing_text = _read_existing(target)

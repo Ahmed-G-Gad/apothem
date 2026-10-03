@@ -15,13 +15,12 @@ The install placed Apothem's files in this project:
 - `.gemini/commands/*.toml` — slash commands converted from Apothem command prompts.
 - `.gemini/agents/*.md` — helper definitions normalized from Apothem agents.
 - `.gemini/skills/*/SKILL.md` — Apothem skills.
-- `.gemini/.apothem/support/rules/` — Apothem rules used as reference material.
-- `.gemini/.apothem/support/templates/` — plan, report, and audit templates.
-- `.gemini/.apothem/support/hooks/` — hook messages and helper scripts retained as reference material.
 
-The `.gemini/.apothem/support/` tree is Apothem-owned reference material that
-this block, the generated commands, and the installed skills point to; no tool
-discovers it on its own.
+Apothem's rules, its plan, report, and audit templates, and its hook messages
+and helper scripts are installed as support files: Apothem-owned reference
+material that this block, the generated commands, and the installed skills
+point to, and that no tool discovers on its own. The Apothem support files
+section below names their directories.
 
 ## Engineering disciplines in force
 
@@ -37,6 +36,16 @@ Apothem's foundational mandates apply in every tool that reads this block:
 ## Maintaining this block
 
 Text outside the Apothem managed block is operator-owned and survives every re-install. Re-run `apothem install --harness gemini-cli --project <this-project-root>` to refresh the block, the converted `.gemini/` entries, and the reference material; the operation is idempotent. `apothem uninstall --harness gemini-cli --project <this-project-root>` removes the block, backing the prior file up under the Apothem backup root (`~/.apothem/backups/<timestamp>/gemini_cli/`) first, and removes the file only when nothing but the block remained. `apothem verify --harness gemini-cli --project <this-project-root>` checks that the file is present and non-empty.
+
+## Apothem support files
+
+Apothem's support root is `.gemini/.apothem/support/` in this project. Apothem rules, skills, commands, and helper definitions cite support files by repository-style paths such as `rules/<name>.md`, `templates/...`, and `hooks/...`. Resolve each citation against the installed directory for its first segment, relative to this project's root:
+
+- `rules/<path>` is `.gemini/.apothem/support/rules/<path>`
+- `templates/<path>` is `.gemini/.apothem/support/templates/<path>`
+- `hooks/<path>` is `.gemini/.apothem/support/hooks/<path>`
+
+A cited path whose first segment is not listed here is not installed.
 
 # Apothem Shared Profile
 

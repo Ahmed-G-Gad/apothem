@@ -30,7 +30,7 @@ from click.utils import make_default_short_help
 from apothem.cli._json_formatter import emit_json, json_requested
 
 #: Shared Click context settings (``-h`` / ``--help`` aliases) for ``main`` and
-#: the ``profile`` / ``harnesses`` sub-groups.
+#: the ``profile`` / ``harnesses`` / ``backups`` sub-groups.
 _CONTEXT = {"help_option_names": ["-h", "--help"]}
 
 #: Exit code for a command-line usage error (``EX_USAGE`` from sysexits.h): an
@@ -159,6 +159,10 @@ _UNINSTALL = "apothem.cli._cmd_uninstall"
 
 #: Every root command, keyed by the name it is invoked as.
 ROOT_COMMANDS: Mapping[str, LazyCommand] = {
+    "backups": LazyCommand(
+        "apothem.cli._cmd_backups",
+        "Manage the install backups and ledger history Apothem keeps.",
+    ),
     "completion": LazyCommand(
         "apothem.cli._cmd_completion",
         "Print a shell-completion script for SHELL to stdout.",
@@ -293,7 +297,7 @@ class RootGroup(AliasedGroup):
         return self.lazy_commands[name].hidden
 
 
-def _configure_stdio() -> None:
+def configure_stdio() -> None:
     """Force UTF-8 stdio on Windows so Rich output renders correctly.
 
     Runs at CLI invocation only — never at import time — so it cannot
@@ -309,3 +313,7 @@ def _configure_stdio() -> None:
         reconfigure = getattr(stream, "reconfigure", None)
         if reconfigure is not None:
             reconfigure(encoding="utf-8", errors="replace")
+
+
+#: The earlier private spelling, kept for importers that still use it.
+_configure_stdio = configure_stdio

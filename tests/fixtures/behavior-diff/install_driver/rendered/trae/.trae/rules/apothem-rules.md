@@ -13,8 +13,8 @@ This file is materialised by `apothem install --harness trae --project <path>` a
 
 Apothem propagates a shared governance and convention surface across every supported AI harness in this project's host environment. Inside Trae, the surface manifests as this Always Apply rule file:
 
-- **Rules** — engineering rules applied on every interaction (`alwaysApply: true`). The full rule cohort lives at the apothem source repository under `src/apothem/rules/`; this Trae-facing anchor names the disciplines the operator may consult in detail.
-- **Skills, commands, agents** — reusable techniques, slash-style workflows, and persistent sub-agent definitions. Apothem's canonical-master cohort at the apothem source repository defines them; Trae does not auto-discover them as separate surfaces, so they manifest here as referenced discipline.
+- **Rules** — engineering rules applied on every interaction (`alwaysApply: true`). This install writes this one file: no rule, skill, command, template, or hook file is installed beside it, so the disciplines below are the rule text in force here.
+- **Skills, commands, agents** — Apothem's reusable techniques, slash-style workflows, and sub-agent definitions are not installed here; Trae does not auto-discover them as separate surfaces.
 - **MCP** — Trae's tool-server surface (`.trae/mcp.json`) is operator-authored, not apothem-managed.
 - **Skills directory** — Trae's skill surface (`.trae/skills/`) is operator-authored, not apothem-managed.
 

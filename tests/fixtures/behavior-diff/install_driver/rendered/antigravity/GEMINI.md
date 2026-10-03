@@ -17,15 +17,13 @@ The install placed Apothem's files here:
 - `~/.gemini/antigravity-cli/plugins/apothem/plugin.json` — plugin metadata.
 - `~/.gemini/antigravity-cli/plugins/apothem/skills/` — reusable techniques
   plus slash-command prompts converted into skills.
-- `~/.gemini/antigravity-cli/plugins/apothem/rules/` — behavioral reference
-  rules.
 - `~/.gemini/antigravity-cli/plugins/apothem/agents/` — local agent
   definitions normalized from Apothem agents.
-- `~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/templates/` — support
-  templates retained for prompts that cite reusable plan or audit assets.
-- `~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/hooks/` — hook support
-  material retained as reference content; Apothem does not register
-  Antigravity hook events until the adapter owns the schema translation.
+
+Apothem's behavioral rules, the plan and audit templates its prompts cite, and
+its hook messages are installed as support files; the Apothem support files
+section below names their directories. The hook material is reference content
+only: Apothem registers no hook events for this install.
 
 ## Project-Scope Surface
 
@@ -43,6 +41,16 @@ verbatim; `apothem uninstall --harness antigravity` strips that block, backing
 the prior file up under the Apothem backup root first. Project-scope
 instructions still belong in `<workspace>/.agents/` or an operator-owned
 Antigravity plugin.
+
+## Apothem support files
+
+Apothem's support root is `<ROOT>/antigravity-cli/plugins/apothem/.apothem/support`. Apothem rules, skills, commands, and helper definitions cite support files by repository-style paths such as `rules/<name>.md`, `templates/...`, and `hooks/...`. Resolve each citation against the installed directory for its first segment:
+
+- `rules/<path>` is `<ROOT>/antigravity-cli/plugins/apothem/rules/<path>`
+- `templates/<path>` is `<ROOT>/antigravity-cli/plugins/apothem/.apothem/support/templates/<path>`
+- `hooks/<path>` is `<ROOT>/antigravity-cli/plugins/apothem/.apothem/support/hooks/<path>`
+
+A cited path whose first segment is not listed here is not installed.
 
 # Apothem Shared Profile
 

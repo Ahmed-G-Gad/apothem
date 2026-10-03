@@ -13,8 +13,10 @@ from __future__ import annotations
 
 import platform
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
+from rich.console import Console
 from rich.markup import escape
 from rich.table import Table
 
@@ -214,6 +216,51 @@ def _probe_registered_hooks(
         )
 
 
+@dataclass(frozen=True)
+class _ProfileCheck:
+    """The shared-profile check: whether it exists, validates, and why not."""
+
+    path: Path
+    exists: bool
+    valid: bool | None = None
+    error: str | None = None
+    error_code: str | None = None
+
+
+def _check_profile(checks: list[dict[str, object]]) -> _ProfileCheck:
+    """Validate the default shared profile when present; append its check record."""
+    profile_path = _resolve_profile_path(None)
+    if not profile_path.exists():
+        checks.append(
+            _check(
+                "profile.missing",
+                "info",
+                f"No shared profile at {profile_path}; install creates one.",
+            )
+        )
+        return _ProfileCheck(path=profile_path, exists=False)
+    try:
+        load_profile_file(profile_path)
+    except ProfileValidationError as exc:
+        checks.append(
+            _check(
+                exc.diagnostic.code,
+                "fail",
+                f"The shared profile does not validate: {exc.diagnostic.reason}",
+                fix=exc.diagnostic.fix,
+            )
+        )
+        return _ProfileCheck(
+            path=profile_path,
+            exists=True,
+            valid=False,
+            error=str(exc),
+            error_code=exc.diagnostic.code,
+        )
+    checks.append(_check("profile.valid", "pass", "The shared profile validates."))
+    return _ProfileCheck(path=profile_path, exists=True, valid=True)
+
+
 @main.command(epilog=_EP_DOCTOR)
 @_project_option
 @common_options
@@ -244,38 +291,7 @@ def doctor(
         return
 
     checks: list[dict[str, object]] = []
-    profile_path = _resolve_profile_path(None)
-    profile_exists = profile_path.exists()
-    profile_valid: bool | None = None
-    profile_error: str | None = None
-    profile_error_code: str | None = None
-    if profile_exists:
-        try:
-            load_profile_file(profile_path)
-            profile_valid = True
-            checks.append(
-                _check("profile.valid", "pass", "The shared profile validates.")
-            )
-        except ProfileValidationError as exc:
-            profile_valid = False
-            profile_error = str(exc)
-            profile_error_code = exc.diagnostic.code
-            checks.append(
-                _check(
-                    exc.diagnostic.code,
-                    "fail",
-                    f"The shared profile does not validate: {exc.diagnostic.reason}",
-                    fix=exc.diagnostic.fix,
-                )
-            )
-    else:
-        checks.append(
-            _check(
-                "profile.missing",
-                "info",
-                f"No shared profile at {profile_path}; install creates one.",
-            )
-        )
+    profile = _check_profile(checks)
 
     # Entries and adapters resolve through the apothem.cli package so the test
     # seams (patching apothem.cli.iter_harness_entries / _load_adapter_for_entry)
@@ -285,58 +301,70 @@ def doctor(
         for entry in _pkg.iter_harness_entries()
     ]
     all_ok = not any(check["status"] == "fail" for check in checks)
-    installed_count = sum(1 for row in harness_rows if row["installed"])
 
     if fmt == "json":
         payload: dict[str, object] = {
             "version": _VERSION,
             "python": sys.version.split()[0],
             "platform": f"{platform.system()} {platform.release()}",
-            "profile_path": str(profile_path),
-            "profile_exists": profile_exists,
-            "profile_valid": profile_valid,
+            "profile_path": str(profile.path),
+            "profile_exists": profile.exists,
+            "profile_valid": profile.valid,
             "project": str(project_root) if project_root is not None else None,
             "harnesses": harness_rows,
             "checks": checks,
             "all_ok": all_ok,
         }
-        if profile_error is not None:
-            payload["profile_error"] = profile_error
-            payload["profile_error_code"] = profile_error_code
+        if profile.error is not None:
+            payload["profile_error"] = profile.error
+            payload["profile_error_code"] = profile.error_code
         emit_json(payload)
         if not all_ok:
             sys.exit(_EXIT_EXPECTED)
         return
 
+    _render_doctor_report(con, profile, harness_rows, checks)
+    if all_ok:
+        installed_count = sum(1 for row in harness_rows if row["installed"])
+        if installed_count:
+            con.print(f"[green]All checks passed[/] ({installed_count} installed).")
+        else:
+            con.print(
+                "[green]All checks passed.[/] No harness is installed yet; "
+                "install one with 'install --harness <name>'."
+            )
+        return
+    sys.exit(_EXIT_EXPECTED)
+
+
+def _render_doctor_report(
+    con: Console,
+    profile: _ProfileCheck,
+    harness_rows: list[dict[str, object]],
+    checks: list[dict[str, object]],
+) -> None:
+    """Print the plain-mode report: environment, profile, harness table, failures."""
     con.print("[bold]Apothem Doctor[/]")
     con.print(f"  Version:   Apothem v{_VERSION}")
     con.print(f"  Python:    {sys.version.split()[0]}")
     con.print(f"  Platform:  {platform.system()} {platform.release()}")
-    if not profile_exists:
+    if not profile.exists:
         profile_note = "[yellow]missing[/]"
-    elif profile_valid:
+    elif profile.valid:
         profile_note = "[green]found, valid[/]"
     else:
         profile_note = "[red]found, invalid[/]"
-    con.print(f"  Profile:   {escape(str(profile_path))} [{profile_note}]")
-    if profile_valid is False and profile_error:
-        con.print(f"             [red]{escape(profile_error)}[/]")
+    con.print(f"  Profile:   {escape(str(profile.path))} [{profile_note}]")
+    if profile.valid is False and profile.error:
+        con.print(f"             [red]{escape(profile.error)}[/]")
 
     table = Table(title="Harness Status", show_header=True, header_style="bold cyan")
     table.add_column("Harness", style="cyan")
     table.add_column("Status")
     table.add_column("Hooks", justify="right")
     for row in harness_rows:
-        hooks = row.get("hooks")
-        hook_cell = ""
-        if isinstance(hooks, dict):
-            failed = hooks.get("failed")
-            failed_count = len(failed) if isinstance(failed, list) else 0
-            hook_cell = f"{hooks.get('probed', 0)} started"
-            if failed_count:
-                hook_cell = f"[red]{failed_count} failed[/]"
         table.add_row(
-            str(row["name"]), _STATUS_STYLE.get(str(row["status"]), ""), hook_cell
+            str(row["name"]), _STATUS_STYLE.get(str(row["status"]), ""), _hook_cell(row)
         )
     con.print(table)
 
@@ -347,13 +375,14 @@ def doctor(
         if check["fix"]:
             con.print(f"  Fix: {escape(str(check['fix']))}")
 
-    if all_ok:
-        if installed_count:
-            con.print(f"[green]All checks passed[/] ({installed_count} installed).")
-        else:
-            con.print(
-                "[green]All checks passed.[/] No harness is installed yet; "
-                "install one with 'install --harness <name>'."
-            )
-        return
-    sys.exit(_EXIT_EXPECTED)
+
+def _hook_cell(row: dict[str, object]) -> str:
+    """Return the harness table's Hooks cell for one report row."""
+    hooks = row.get("hooks")
+    if not isinstance(hooks, dict):
+        return ""
+    failed = hooks.get("failed")
+    failed_count = len(failed) if isinstance(failed, list) else 0
+    if failed_count:
+        return f"[red]{failed_count} failed[/]"
+    return f"{hooks.get('probed', 0)} started"

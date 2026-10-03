@@ -5,7 +5,7 @@
 The check is harness-neutral: it holds no vendor config format. It reads the
 files the latest install wrote (from the install ledger), parses the JSON ones,
 and collects every handler mapping the shared install driver recognizes as
-Apothem-owned (``_is_apothem_hook``: a ``command`` plus optional ``args`` that
+Apothem-owned (``is_apothem_hook``: a ``command`` plus optional ``args`` that
 point at the materialized ``hooks/dispatch.py`` or ``conformity/gate.py``).
 Both registration shapes in use resolve to an argv: exec form (``command`` is
 the interpreter, ``args`` the script and its arguments) and shell form (one
@@ -33,7 +33,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
-from apothem.harnesses._shared.install_driver import _is_apothem_hook
+from apothem.harnesses._shared.install_driver import is_apothem_hook
 from apothem.lib import install_ledger
 
 #: Script names that identify an Apothem hook entry point inside an argv.
@@ -109,7 +109,7 @@ def probe_hooks(argvs: list[list[str]]) -> list[HookProbe]:
 def _handlers(node: object) -> Iterator[dict[str, object]]:
     """Yield every Apothem-owned hook handler mapping nested in *node*."""
     if isinstance(node, dict):
-        if isinstance(node.get("command"), str) and _is_apothem_hook(node):
+        if isinstance(node.get("command"), str) and is_apothem_hook(node):
             yield node
         for value in node.values():
             yield from _handlers(value)

@@ -49,7 +49,7 @@ def _handler_text(handler: dict[object, object]) -> str:
     return " ".join(parts)
 
 
-def _is_apothem_hook(handler: object, *, harness_root: Path | None = None) -> bool:
+def is_apothem_hook(handler: object, *, harness_root: Path | None = None) -> bool:
     """Return True when a hook handler belongs to Apothem's managed surface.
 
     With *harness_root*, ownership is exact: the handler must run one of
@@ -104,7 +104,7 @@ def _merge_hook_entry(
         preserved_handlers.extend(
             handler
             for handler in handlers
-            if not _is_apothem_hook(handler, harness_root=harness_root)
+            if not is_apothem_hook(handler, harness_root=harness_root)
         )
 
     incoming_handlers = incoming_entry.get("hooks", [])
@@ -183,7 +183,7 @@ def _merge_json_values(
 ) -> object:
     """Merge JSON objects, preserving keys absent from the incoming object.
 
-    *harness_root* scopes hook-handler ownership (see :func:`_is_apothem_hook`).
+    *harness_root* scopes hook-handler ownership (see :func:`is_apothem_hook`).
     """
     if isinstance(existing, dict) and isinstance(incoming, dict):
         merged: dict[str, object] = dict(existing)

@@ -560,7 +560,11 @@ def _retained(records: list[LedgerRecord], keep_installs: int) -> list[LedgerRec
 
 
 def compact_records(
-    harness: str, *, keep_installs: int, state_root: Path | None = None
+    harness: str,
+    *,
+    keep_installs: int,
+    state_root: Path | None = None,
+    dry_run: bool = False,
 ) -> list[LedgerRecord]:
     """Drop *harness* ledger records retention no longer needs; return the rest.
 
@@ -568,11 +572,16 @@ def compact_records(
     are still in place and every record after the oldest of them (see
     :func:`_retained`). Older installs can no longer be rolled back by id. The
     ledger is rewritten atomically under its lock, and only when something is
-    dropped.
+    dropped. With *dry_run* the ledger is left untouched and the records a
+    real compaction would keep are returned.
 
     Raises:
         LedgerError: Propagated from :func:`read_records` on a corrupted ledger.
     """
+    if dry_run:
+        return _retained(
+            read_records(harness, state_root=state_root), max(1, keep_installs)
+        )
     path = ledger_path(harness, state_root=state_root)
     lock = path.with_name(path.name + _LOCK_SUFFIX)
     with atomic_io.advisory_lock(lock):

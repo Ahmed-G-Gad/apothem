@@ -23,6 +23,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- **Each install says where Apothem's support files are.** The instruction
+  file an install already writes (or its profile document) gains an "Apothem
+  support files" section that names the directory each `rules/`,
+  `templates/`, `schemas/`, `hooks/`, and `conformity/` citation resolves
+  against, derived from the propagation manifest.
+- **The Claude Code plugin ships the four output styles**, in the plugin's
+  `output-styles/` directory.
+- **`apothem backups prune`** runs backup and ledger retention on demand
+  (`--keep N`, `--harness NAME|all`, `--dry-run`, `--json`). It never removes
+  the backup set that rolling back a harness's latest install restores from.
 - **A weekly check follows every vendor URL the harness pins and templates
   cite**, and files an issue when one has moved or died.
 - **The one-shot installers offer a checksum-only path.**
@@ -82,6 +92,22 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- **OpenCode loads the always-on rules only.** `opencode.json` `instructions`
+  lists the profile document and the 28 `alwaysApply` rules by path instead of
+  globbing all 91, which cut OpenCode's launch context from 914,285 bytes to
+  about 216,000. Install and update replace the old glob, and uninstall
+  removes it; your own `instructions` entries are kept.
+- **A skill and a command that share a name install as the skill**
+  (`projectify`, `workflow`), in the engine install as in the plugin.
+- **The single-file rule anchors no longer point at the Apothem source
+  repository**; they say which Apothem files the install placed.
+- **CI bounds cyclomatic complexity.** The CLI and the install driver block any
+  function above 15, and a repository-wide ratchet stops any function from
+  growing past the current maximum. The longest command bodies are split
+  into phase helpers with no change in behaviour.
+- **Helpers used across packages have public names**:
+  `capability_projection_results`, `is_apothem_hook`, and `configure_stdio`.
+  The private spellings remain as aliases.
 - **Install refuses to rewrite a config it cannot keep intact.** A merge
   that must change a commented, JSONC, JSON5, or unparseable operator config
   writes nothing for that harness and exits 1 with `config.unparseable`; a
@@ -174,6 +200,17 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **OpenCode receives the operator profile.** The projected profile document
+  was never in the `instructions` list, so OpenCode saw neither the
+  operator's identity and preferences nor the support-file locations.
+- **The reference note in command skills names directories that exist.** It
+  pointed templates and hooks at a support directory no install creates.
+- **The shared-root install note reads correctly when one other tool loads
+  the path**, and `~/.claude/CLAUDE.md` is recorded as a Claude Code target
+  that OpenCode also reads.
+- **Hermes uninstall removes the `auxiliary.mcp` block an earlier release
+  wrote**, under the same exact-value rule `update` uses, so the operator's
+  own `auxiliary` settings stay.
 - **Rollback returns a harness to its exact pre-install state**, and restores
   native configs at their real path.
 - **Uninstall removes the empty directories the install created.**
@@ -289,6 +326,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Security
 
+- **Profile text cannot carry the managed-block markers.** A profile value
+  containing a block marker fails validation with
+  `profile.managed_block_marker`, naming the field without echoing the value.
 - **The VS Code extension runs only a user-scoped runner**, quoted, for a
   chosen harness; a workspace setting can no longer set the command it runs.
 - **No long-lived npm token path remains.** The npm publish workflow

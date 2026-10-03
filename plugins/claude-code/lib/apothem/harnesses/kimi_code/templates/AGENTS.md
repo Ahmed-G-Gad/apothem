@@ -11,15 +11,13 @@ only and names no single tool as its reader.
 
 The install placed Apothem's reference material in this project:
 
-- `.kimi-code/.apothem/support/rules/` — Apothem rules.
 - `.kimi-code/.apothem/support/skills/` — Apothem skills, plus command prompts
   wrapped as skills.
 - `.kimi-code/.apothem/support/agents/` — Apothem helper definitions.
-- `.kimi-code/.apothem/support/templates/` — plan, report, and audit
-  templates.
 
-Read the matching file there when a task calls for one of those rules, skills,
-or templates.
+Apothem's rules, templates, and hook helpers are installed beside them; the
+Apothem support files section below names their directories. Read the matching
+file there when a task calls for one of those rules, skills, or templates.
 
 ## Maintaining this block
 

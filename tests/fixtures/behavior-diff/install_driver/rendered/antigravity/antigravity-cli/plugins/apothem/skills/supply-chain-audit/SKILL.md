@@ -193,4 +193,8 @@ Invoke `/threat-model-audit` to advance the audit-fortress sequence — the cano
 
 ## Installed Reference Paths
 
-When this skill is installed by Apothem, resolve repository-style references such as `rules/...` under `<ROOT>/antigravity-cli/plugins/apothem`, `templates/...` and `hooks/...` under `<ROOT>/antigravity-cli/plugins/apothem/apothem`, unless a project-local file with the same relative path exists.
+When this skill is installed by Apothem, resolve a repository-style reference against the installed directory for its first segment, unless a project-local file with the same relative path exists.
+
+- `rules/<path>` is `<ROOT>/antigravity-cli/plugins/apothem/rules/<path>`
+- `templates/<path>` is `<ROOT>/antigravity-cli/plugins/apothem/.apothem/support/templates/<path>`
+- `hooks/<path>` is `<ROOT>/antigravity-cli/plugins/apothem/.apothem/support/hooks/<path>`

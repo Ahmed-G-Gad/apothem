@@ -12,15 +12,13 @@ only and names no single tool as its reader.
 
 The install placed Apothem's reference material in this project:
 
-- `.kimi-code/.apothem/support/rules/` — Apothem rules.
 - `.kimi-code/.apothem/support/skills/` — Apothem skills, plus command prompts
   wrapped as skills.
 - `.kimi-code/.apothem/support/agents/` — Apothem helper definitions.
-- `.kimi-code/.apothem/support/templates/` — plan, report, and audit
-  templates.
 
-Read the matching file there when a task calls for one of those rules, skills,
-or templates.
+Apothem's rules, templates, and hook helpers are installed beside them; the
+Apothem support files section below names their directories. Read the matching
+file there when a task calls for one of those rules, skills, or templates.
 
 ## Maintaining this block
 
@@ -30,6 +28,16 @@ re-install. Re-run `apothem install --harness kimi-code --project
 operation is idempotent. `apothem uninstall --harness kimi-code --project
 <this-project-root>` removes the block and leaves the rest of this file in
 place.
+
+## Apothem support files
+
+Apothem's support root is `.kimi-code/.apothem/support/` in this project. Apothem rules, skills, commands, and helper definitions cite support files by repository-style paths such as `rules/<name>.md`, `templates/...`, and `hooks/...`. Resolve each citation against the installed directory for its first segment, relative to this project's root:
+
+- `rules/<path>` is `.kimi-code/.apothem/support/rules/<path>`
+- `templates/<path>` is `.kimi-code/.apothem/support/templates/<path>`
+- `hooks/<path>` is `.kimi-code/.apothem/support/hooks/<path>`
+
+A cited path whose first segment is not listed here is not installed.
 
 # Apothem Shared Profile
 

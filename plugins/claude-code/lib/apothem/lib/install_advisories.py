@@ -119,10 +119,12 @@ def shared_root_advisories(
             continue
         if public_id == root.owner:
             readers = ", ".join(_display_name(reader) for reader in root.readers)
+            single = len(root.readers) == 1
             message = (
-                f"{root.path} is shared: {readers} also load it. Installing "
-                f"or uninstalling {_display_name(root.owner)} changes what "
-                "those tools load."
+                f"{root.path} is shared: {readers} also "
+                f"{'loads' if single else 'load'} it. Installing or uninstalling "
+                f"{_display_name(root.owner)} changes what "
+                f"{'that tool loads' if single else 'those tools load'}."
             )
             advisories.append(_entry(public_id, root, resolved, "owner", message))
         elif _holds_apothem_content(resolved):

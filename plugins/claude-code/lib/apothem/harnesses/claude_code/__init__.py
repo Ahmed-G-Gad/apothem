@@ -40,6 +40,8 @@ split:
   plans-locality, dependency and dynamic-eval guards, base context nudges),
   the PostToolUse compaction advisory, and the opt-in Stop protocol. Claude
   Code discards PreCompact and PostCompact output, so neither is registered.
+  The output styles ship in the plugin's default ``output-styles/`` folder,
+  so they are selectable plugin-alone.
 * **Degrades plugin-alone.** The behavioral ``rules/`` are bundled under the
   plugin root but cannot load as always-on context; they degrade to the
   SessionStart pointer plus the still-active mechanical hooks. The conformity
@@ -48,9 +50,9 @@ split:
   harness root (``~/.claude`` / ``~/.codex``) rather than a plugin-alone
   project write; full conformity-gate enforcement needs the engine install.
 * **Needs the engine install.** The materialized ``settings.json``
-  (permissions allow / deny floor), the ``output-styles/`` and
-  ``statuslines/`` cohorts, and the ``CLAUDE.md`` managed-block projection are
-  engine-install surfaces with no plugin manifest field.
+  (permissions allow / deny floor), the ``statuslines/`` cohort, and the
+  ``CLAUDE.md`` managed-block projection are engine-install surfaces with no
+  plugin manifest field.
 * **Not shipped today.** No MCP server is bundled, so no MCP tools surface
   from the plugin alone.
 """

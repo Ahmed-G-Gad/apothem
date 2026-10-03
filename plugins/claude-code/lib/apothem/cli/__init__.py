@@ -48,6 +48,7 @@ import click
 import apothem
 from apothem.cli._group import _CONTEXT, RootGroup
 from apothem.cli._group import _configure_stdio as _configure_stdio
+from apothem.cli._group import configure_stdio as configure_stdio
 
 if TYPE_CHECKING:
     # Static view of the lazy re-exports below, for type checkers only.
@@ -289,4 +290,4 @@ def __dir__() -> list[str]:
 @click.version_option(version=_VERSION, prog_name="Apothem")
 def main() -> None:
     """Apothem — host-agnostic AI harness configuration manager."""
-    _configure_stdio()
+    configure_stdio()

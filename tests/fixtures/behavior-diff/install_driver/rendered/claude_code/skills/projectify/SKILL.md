@@ -2,46 +2,32 @@
 name: "projectify"
 version: "0.1.0"
 updated: "2026-10-02"
-description: "Chat-app Project elevation command. Produces the three deliverables — Description, Instruction, knowledge Files — for a Claude Project / ChatGPT Custom GPT / Gemini Gem, freshly authored to current SOTA conventions through a structured-inquiry-saturated elicitation, elevated across order / coherence / clarity / determinism / structurality / conciseness / rigor / comprehensiveness and beyond, holding knowledge files within a measurable per-platform context budget (token-sum / discovered-platform-limit <= 0.02), with the grant to consolidate or divide files. Installs agnostically across all harnesses. Deterministic output; multi-step autonomy is opt-in / confirmation-gated."
+description: "Chat-app Project elevation skill — matched when the operator asks to 'projectify', 'build a Project', 'set up a Custom GPT / Gem', 'write Project instructions', 'rewrite my Project', or hands off a chat-app Project (Claude Project / ChatGPT Custom GPT / Gemini Gem) to be authored fresh or elevated to current conventions. Emits the three deliverables a Project carries — Description, Instruction, knowledge Files — through an inquiry-saturated elicitation that settles every preference and ambiguity with the operator before committing. Keeps the knowledge-file set within a measured per-platform context budget (token-sum / platform-limit <= 0.02, the limit discovered live, never inlined) and may consolidate or split files through the inquiry channel. Installs on every harness; the deliverables target the chat-app Project. Deterministic output; multi-step autonomy is opt-in and confirmation-gated. NOT for authoring coding-harness rules, skills, commands, or hooks (route to the ecosystem authoring paths)."
+archetype: "elicitation-template"
+user-invocable: true
 argument-hint: "[project subject] [--platform claude|chatgpt|gemini] [--autonomous]"
 disable-model-invocation: true
-portability: "universal"
-allowed-tools: "Read, Glob, Grep"
+allowed-tools: "Read, Glob, Grep, WebSearch, TodoWrite, TaskCreate, TaskGet, TaskList, TaskUpdate"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
 
-# /projectify — Chat-App Project Elevation
+## Purpose
 
----
+Freshly author or elevate a chat-app Project to current SOTA conventions, emitting the three deliverables a Project carries — its **Description**, its **Instruction**, and its **knowledge Files** — through an inquiry-saturated elicitation that reconciles every preference and ambiguity with the operator before it commits.
 
-## Role
+The skill installs agnostically across apothem's harnesses; the artifact it produces targets the operator's chat-app Project (Claude Project, ChatGPT Custom GPT / Project, Gemini Gem, or the platform the operator names). Knowledge files are held within a measurable per-platform context budget, and the operator may have files consolidated or divided as the material warrants.
 
-You are the user's **Technical Co-Founder** and **Cognitive Insurgent** (`rules/cognitive-identity.md`) operating as the **elicitor-as-instrument**. A chat-app Project's behavior is only as good as its Description, Instruction, and knowledge Files — so the engagement is elicitation-first: reconcile every preference and ambiguity with the operator before authoring, then elevate the deliverables to current SOTA conventions. Apply the Five Cognitive Filters; Filter 1 (Obvious Purge) discards the generic Project-instruction template so the result fits THIS Project; Filter 5 (Aesthetic Demand) governs the prose form. The deep procedure is the `projectify` skill (`skills/projectify/SKILL.md`); this command is its entry point.
+## Detection Signal
 
----
+Triggers when the operator asks to "projectify", "build a Project", "set up a Custom GPT" / "make a Gem", "write Project instructions", "rewrite / elevate my Project", or otherwise hands off a chat-app Project's Description / Instruction / knowledge-file surface to be authored or elevated. A request to author a coding-harness rule, skill, or command is a different surface — that routes to the ecosystem's authoring paths, not here.
 
-## Instructions
+## Non-Goals
 
-Execute `/projectify`. Scope the Project (subject, purpose, audience, target platform) through the structured-inquiry channel; discover the target platform's current published context limit and Project-authoring conventions; author the three deliverables (Description + Instruction + knowledge Files) to those conventions, elevated across the full dimension list; hold the knowledge-file set within the per-platform ≤2% context budget; emit the deliverables ready to paste into the Project. The skill body carries the per-step detail.
-
-**Reference Template:** Check `CLAUDE.md` for template path. Governance scales with seriousness per each rule's scaling table. Creative architecture (cognitive identity rule, CM-21) active throughout.
-
----
-
-## Pipeline Contract
-
-**Pipeline position.** Standalone chat-app-Project authoring surface. It consumes a Project subject + target platform and emits the three Project deliverables; it owns no downstream pipeline artifact.
-
-**Consumed.** The operator's Project subject, the `--platform` selection (elicited when unstated), the `--autonomous` opt-in, and any operator-supplied source material for the knowledge files.
-
-**Emitted.** The three deliverables — Description, Instruction, knowledge Files — plus the SLO computation (token-sum ÷ discovered platform limit ≤ 0.02 with provenance) and the fifteen-bar gate attestation.
-
-**Pre-flight inquiry set.** The Scope phase emits the typed inquiry set per `rules/authority-inquiry.md` — subject, purpose, audience, target platform, tone, and the knowledge-file partition. The target platform blocks authoring until resolved (it determines the context budget and convention set).
-
-**Pre-emission gate.** The Self-Check phase runs the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the deliverables; iterate-on-failure until every bar passes within the three-round cap of `rules/pre-emission-gate-bars.md` §3 (then BLOCKED).
-
----
+- **Not a harness config author.** It produces chat-app Project deliverables, not apothem rules / skills / commands / hooks. The two surfaces are distinct — a Project's Instruction is consumed by a chat assistant, not a harness's config surface.
+- **Not a hardcoded-limit calculator.** The per-platform context limit is **discovered** from the platform's current published documentation at runtime per `rules/dynamism.md`, never inlined as a static number that rots when the platform changes its limit.
+- **Not a silent file-restructurer.** Consolidating or dividing knowledge files is granted but routes through the structured-inquiry channel — the operator ratifies the file partition.
+- **Not a default-on autonomy switch.** Multi-step elaboration engages under opt-in per `rules/agnostic-posture.md`; a clean invocation elicits and confirms.
 
 ## Foundational Stanzas
 
@@ -49,98 +35,83 @@ The four standing surfaces every operator inherits per the canonical project voi
 
 ### Refusal & Escalation
 
-REFUSE any step exceeding the Project's elevation mission — name what was refused, name the boundary crossed, surface an escalation option through the structured-inquiry channel. REFUSE emitting a knowledge-file set over the per-platform context budget without surfacing the overage plus the consolidate/divide options. REFUSE asserting a platform's context limit from memory when the live published figure is reachable.
+REFUSE any step exceeding the stated Project's elevation mission — name what was refused, name the boundary crossed, surface an escalation option through the structured-inquiry channel per `rules/interactive-questions.md`. REFUSE emitting a knowledge-file set that exceeds the per-platform context budget without surfacing the overage and the consolidate / divide options. REFUSE asserting a platform's context limit from memory when the live published figure is reachable.
 
 ### Output Surface
 
-The three deliverables emit at the operator's chosen location (a plan suite's `_inputs/` by default, or an operator-named path) per the suite-locality invariant. The deliverables carry natural domain language describing the Project — zero Apothem-internal scaffolding (CM-7). Knowledge-file deliverables are content artifacts (no SPDX banner); plan-suite working artifacts are header-exempt per the `.apothem/**` class.
+The three deliverables emit at the operator's chosen location (the consuming suite's `_inputs/` working surface by default, or an operator-named path) per the suite-locality invariant at `rules/context-management.md` §2.6.1. The Description and Instruction are prose deliverables; the knowledge Files are the operator's curated corpus. Per `rules/operational-mandates.md` CM-7, the deliverables carry natural domain language — they describe the Project's purpose, never apothem's internal scaffolding.
 
 ### File-Authoring Contract
 
-Project knowledge files the operator pastes into a chat-app Project are content, not Apothem source — they are NOT routed through the authorship-header injector. Working artifacts under a plan suite's `_inputs/` are header-exempt per `src/apothem/schemas/header-exceptions.txt`.
+Knowledge-file deliverables the operator pastes into a chat-app Project are content artifacts, not apothem source files — they are NOT routed through the authorship-header injector (a Project knowledge file carries no SPDX banner). When the skill emits a working artifact into a plan suite's `_inputs/`, that path is header-exempt per the `.apothem/plans/**` class at `src/apothem/schemas/header-exceptions.txt`.
 
 ### Structured Inquiry on Ambiguity
 
-Interactive inquiry is maximally enabled (R-A7): every preference, ambiguity, tone choice, audience question, and file-partition decision routes through the structured-inquiry channel with the three-segment option annotation per `rules/interactive-questions.md` §3. NEVER fabricate the operator's intent, audience, or domain facts; the target platform, when unstated, is an inquiry.
+Interactive inquiry is **maximally enabled**: the elicitation surfaces every preference, ambiguity, scope question, tone choice, audience question, and file-partition decision through the structured-inquiry channel with the three-segment option annotation per `rules/interactive-questions.md` §3 (rationale / recommendation / default-pointer). NEVER fabricate the operator's intent, audience, or domain facts. The target platform, when unstated, is an inquiry — not a guess.
 
----
+## Conformity Posture
 
-## Inputs
+**Discover-don't-assume preamble (M1).** The target platform's current published context limit, its Project-surface conventions (Description length norms, Instruction structure, knowledge-file format + count limits), and its current SOTA authoring guidance are **discovered** from the platform's live documentation per `rules/host-discovery.md`, recorded with provenance — never assumed from memory.
 
-| Argument | Type | Required | Description |
-| -------- | ---- | -------- | ----------- |
-| `[project subject]` | String | Yes | The Project's subject / purpose in natural language. |
-| `--platform claude\|chatgpt\|gemini` | Enum | No | The target chat-app platform. When unstated, elicited via inquiry (it determines the context budget + convention set). |
-| `--autonomous` | Flag | No | Opt into continuous multi-step elaboration (default: elicit + confirm at each major decision). |
+**Current-SOTA source-consultation mandate (M5).** Before authoring, consult the target platform's current official Project/GPT/Gem authoring documentation plus current SOTA prompt-and-instruction conventions per `rules/sota-elevation.md`; cite a retrievable pointer. An unsourced convention claim is downgraded or routed to inquiry per `rules/option-annotation.md`.
 
----
+## Procedure
 
-## Workflow — Five Phases
+### 1. Scope & Platform (inquiry-saturated)
 
-1. **Scope & Platform** — inquiry-saturated elicitation of subject, purpose, audience, target platform; resolve all ambiguity before authoring.
-2. **Discover** — the platform's current published context limit + Project-authoring conventions, recorded with provenance (never inlined).
-3. **Author** — Description + Instruction + knowledge Files, freshly authored to discovered SOTA conventions, elevated across the full dimension list (order / coherence / clarity / determinism / structurality / conciseness / rigor / comprehensiveness + EM-1: accessibility, token-economy, cross-file non-contradiction, citation hygiene, maintainability).
-4. **Budget** — compute the ≤2% SLO (token-sum ÷ discovered limit); on overage, route consolidate/divide through the structured-inquiry channel.
-5. **Self-Check & Emit** — fifteen-bar gate; cross-file non-contradiction; emit the three deliverables + SLO + the single recommended next move.
+Elicit the Project's subject, purpose, audience, and target platform through the structured-inquiry channel. Resolve every ambiguity before authoring. When the platform is unstated, inquire (`--platform` or the channel) — it determines the context budget and the convention set. Record the scoped intent.
 
----
+### 2. Discover the Platform Convention Set & Context Limit
 
-## Mandates
+Discover, from the platform's live documentation: the current published **context limit** (the denominator for the SLO), the Description and Instruction conventions, and the knowledge-file format / count / size limits. Record each with provenance. The limit is never inlined as a static number.
 
-| Discipline | Rule | Enforcement point |
-| ---------- | ---- | ----------------- |
-| Interactive inquiry | `rules/interactive-questions.md` | Scope phase blocks authoring until subject + platform resolve; maximally-enabled throughout. |
-| Dynamism | `rules/dynamism.md` | The per-platform context limit is discovered, never inlined. |
-| SOTA-source consultation | `rules/authority-inquiry.md` | The platform's current authoring conventions are consulted + cited. |
-| Determinism | `rules/determinism.md` | Output shape byte-stable; `(Recommended)` markers; terminal next move. |
-| Opt-in autonomy | `rules/agnostic-posture.md` | Multi-step elaboration engages only on opt-in; default elicit + confirm. |
-| Pre-emission gate | `rules/pre-emission-gate.md` | Self-Check runs all fifteen bars against the deliverables. |
+### 3. Author the Three Deliverables (elevated)
 
----
+Author — freshly, to the discovered SOTA conventions — across the full elevation-dimension list:
 
-## Output
+- **order · structurality / organization · systemicity · flow · consolidation · conciseness** — the deliverables read as one coherently-ordered, non-redundant whole.
+- **clarity · readability · understanding · ambient-induction · accessibility of instruction prose** — a first-time reader grasps the Project's behavior without re-reading.
+- **certainty · determinism · rigor · solidity · integrity · cross-file non-contradiction** — the Instruction prescribes definitively; no two knowledge files contradict.
+- **interoperability · suitability · professionalism · elaboration · comprehensiveness · in-depth · style · proofreading · SOTA-conventions adherence · citation hygiene · maintainability across edits** — the trailing dimensions are realized, not elided; the list extends comprehensively beyond these as the Project warrants.
 
-- The three deliverables — Description, Instruction, knowledge Files — labeled and ready to paste into the target Project.
-- The SLO computation (ratio + discovered limit + provenance) and the fifteen-bar gate attestation.
+Emit: **Description** (the Project's one-surface summary), **Instruction** (the behavioral contract), and the **knowledge Files** (the curated corpus).
 
----
+### 4. Knowledge-File Context Budget (the ≤2% SLO)
 
-## Decision Tree
+Compute, per platform, the measurable SLO:
 
-```mermaid
-%% verified: 2026-06-16 %%
-%% provenance: commands/projectify.md §Workflow %%
-%% cross-reference: skills/projectify/SKILL.md, rules/interactive-questions.md, rules/dynamism.md %%
-flowchart TD
-    Start[/projectify subject stated/] --> Scope{Subject + platform resolved?}
-    Scope -->|no| Inquiry[Scope: structured-inquiry set]
-    Inquiry --> Scope
-    Scope -->|yes| Discover[Discover platform context limit + conventions]
-    Discover --> Author[Author Description + Instruction + knowledge Files, elevated]
-    Author --> Budget{token-sum / limit <= 0.02?}
-    Budget -->|no| Resolve[Inquiry: consolidate / divide / compress]
-    Resolve --> Budget
-    Budget -->|yes| Gate{Fifteen-bar gate passes?}
-    Gate -->|no| Revise[Revise per failing bar]
-    Revise --> Gate
-    Gate -->|yes| Emit[Emit three deliverables + SLO + next move]
+```
+knowledge_file_token_sum / platform_context_limit  <=  0.02
 ```
 
----
+The numerator is the token sum across every emitted knowledge file; the denominator is the platform's **discovered current published context limit** (Step 2), never a hardcoded constant. When the ratio exceeds 0.02, surface the overage and route the **consolidate / divide** decision through the structured-inquiry channel — compress, split, or drop low-value files per the operator's ratification. The SLO is a hard budget, not a soft expectation; the emitted set satisfies it, or the overage is an explicit operator decision.
+
+### 5. Self-Check & Emit
+
+Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the deliverables. Verify cross-file non-contradiction, the SLO, citation hygiene, and the elevation-dimension coverage. Emit the three deliverables ready for the operator to paste into the Project, with the single recommended next move.
+
+## Autonomy Posture
+
+Multi-step elaboration (e.g., authoring a large knowledge corpus across many files in one pass) engages under `--autonomous`, an explicit in-conversation opt-in, or the profile `enforcement` flag; the clean default elicits + confirms at each major decision. Opt-in, never default-on, per `rules/agnostic-posture.md`.
+
+## Arguments
+
+- `[project subject]` — the Project's subject / purpose in natural language.
+- `--platform claude|chatgpt|gemini` — the target chat-app platform (when unstated, elicited via inquiry).
+- `--autonomous` — opt into continuous multi-step elaboration (default: elicit + confirm).
+
+## Return Contract
+
+The three deliverables — **Description**, **Instruction**, **knowledge Files** — each labeled and ready to paste into the target Project, plus the SLO computation (ratio + discovered limit + provenance), the fifteen-bar gate attestation, and a single `## Recommended Next Step`. Output shape is byte-stable for identical inputs per `rules/determinism.md`; the discovered context limit (a date-sensitive external figure) is the declared non-deterministic element, stamped with its source and access date.
 
 ## Recommended Next Step
 
-Invoke `/projectify <subject> --platform <claude|chatgpt|gemini>`; answer the scope + platform inquiries, review the three deliverables and the SLO ratio, then paste them into your chat-app Project. Re-run with refined answers to iterate the Description / Instruction / knowledge-file partition.
+Invoke `/projectify <subject> --platform <claude|chatgpt|gemini>`; answer the scope + platform inquiries, then review the three deliverables and the SLO ratio before pasting them into your chat-app Project. Re-run with refined answers to iterate the Description / Instruction / knowledge-file partition.
 
 ## Bindings (§0.j five-direction)
 
-- **Drives →** `skills/projectify/SKILL.md` (the deep elicitation procedure this command enters). The three Project deliverables. The fifteen-bar pre-emission gate at the Self-Check phase.
-- **Driven by ←** The operator's Project subject, the `--platform` selection, and the structured-inquiry scope resolutions.
-- **Satisfies →** `_spec/spec.md` §WS-A R-A4 / R-A5 / R-A6 / R-A7 / R-A8 / R-A9. The `commands/README.md` command catalog's Operator-workflow row for `/projectify` (the registry entry that ratifies this command's place in the slash-command catalog). The deterministic-output contract at `rules/determinism.md`.
-- **Established by ↑** `rules/interactive-questions.md` (the inquiry-saturated elicitation). `rules/dynamism.md` (discovered context limit). `rules/agnostic-posture.md` (opt-in default-off). `rules/cognitive-identity.md` §1 (the filters).
-- **Gated by ←** A statable Project subject + target platform. The operator's opt-in for autonomous elaboration. The harness's structured-inquiry + Edit + Write + WebSearch + WebFetch tool surface.
-- **Cross-bound with ↔** `skills/projectify/SKILL.md` (the procedure). `rules/interactive-questions.md` (the inquiry channel). `rules/dynamism.md` (discovered per-platform limit). `rules/determinism.md` (deterministic output). `rules/agnostic-posture.md` (opt-in autonomy). `rules/option-annotation.md` (consolidate / divide recommendation). `commands/workflow.md` (sibling WS-A deterministic-SOTA command).
-
-## Installed Reference Paths
-
-When this skill is installed by Apothem, resolve repository-style references such as `rules/...` under `<ROOT>`, `templates/...` and `hooks/...` under `<ROOT>/apothem`, unless a project-local file with the same relative path exists.
+- **Drives →** ● Every operator chat-app Project authored or elevated via `/projectify` (the skill is user-invocable). ● Every knowledge-file set held within the per-platform ≤2% context budget. ● Every file consolidate / divide decision routed through the structured-inquiry channel. ◐ The opt-in autonomy path for large-corpus elaboration.
+- **Satisfies →** ● `CLAUDE.md` Source Layout row "projectify" (skills/ class). ● The deterministic-output contract at `rules/determinism.md`. ● The agnostic default-off posture at `rules/agnostic-posture.md`.
+- **Established by ↑** ● `rules/interactive-questions.md` (the inquiry-saturated elicitation discipline). ● `rules/determinism.md` (the deterministic-output contract). ● `rules/dynamism.md` (the discovered, never-inlined context limit). ● `rules/agnostic-posture.md` (the opt-in default-off frame).
+- **Gated by ←** ● The harness's structured-inquiry + Edit + Write + WebSearch + WebFetch tool surface. ● A statable Project subject + target platform. ● The operator's opt-in for autonomous elaboration.
+- **Cross-bound with ↔** ↔ `commands/projectify.md` (the `/projectify` command entry point). ↔ `rules/interactive-questions.md` (the maximally-enabled inquiry channel). ↔ `rules/determinism.md` (deterministic output). ↔ `rules/dynamism.md` (discovered per-platform context limit). ↔ `rules/agnostic-posture.md` (opt-in autonomy). ↔ `rules/option-annotation.md` (consolidate / divide recommendation). ↔ `skills/workflow/SKILL.md` (sibling deterministic-SOTA orchestration skill).

@@ -8,8 +8,8 @@ This file is materialised by `apothem install --harness zed --project <path>` an
 
 Apothem propagates a shared governance and convention surface across every supported AI harness in this project's host environment. Inside Zed, the surface manifests as this `.rules` instruction file:
 
-- **Rules** — engineering rules applied on every interaction. The full rule cohort lives at the apothem source repository under `src/apothem/rules/`; this Zed-facing anchor names the disciplines the operator may consult in detail.
-- **Skills, commands, agents** — reusable techniques, slash-style workflows, and persistent sub-agent definitions. Apothem's canonical-master cohort at the apothem source repository defines them; Zed does not auto-discover them as separate surfaces, so they manifest here as referenced discipline.
+- **Rules** — engineering rules applied on every interaction. This install writes this one file: no rule, skill, command, template, or hook file is installed beside it, so the disciplines below are the rule text in force here.
+- **Skills, commands, agents** — Apothem's reusable techniques, slash-style workflows, and sub-agent definitions are not installed here; Zed does not auto-discover them as separate surfaces.
 - **Context servers (MCP)** — Zed's MCP surface (`.zed/settings.json` `context_servers`) is operator-owned, not apothem-managed.
 - **Global instructions** — Zed's global instruction surface (`~/.config/zed/AGENTS.md`) is operator-owned, not apothem-managed.
 

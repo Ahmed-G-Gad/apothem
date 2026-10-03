@@ -47,6 +47,7 @@ from typing import Any
 
 from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared.install_driver import MaterializationRun
+from apothem.harnesses._shared.install_driver_layout import with_support_announcement
 from apothem.lib.profile import coerce_profile
 from apothem.lib.profile_projection import project
 from apothem.lib.python_resolver import resolve_python_bin
@@ -86,7 +87,13 @@ def install(
     # must abort with no half-written tree carrying literal ``${PYTHON_BIN}``.
     python_bin = resolve_python_bin().as_posix()
     for_harness = coerce_profile(profile).for_harness(_HARNESS_ID)
-    body = project(for_harness, _HARNESS_ID).managed_block_body
+    # CLAUDE.md is the instruction file this install writes, so it also names
+    # where the install placed the support files the corpus cites.
+    body = with_support_announcement(
+        project(for_harness, _HARNESS_ID).managed_block_body,
+        _HARNESS_NAME,
+        harness_root,
+    )
     missing = install_driver.capture_missing_dirs(
         _HARNESS_NAME,
         harness_root=harness_root,

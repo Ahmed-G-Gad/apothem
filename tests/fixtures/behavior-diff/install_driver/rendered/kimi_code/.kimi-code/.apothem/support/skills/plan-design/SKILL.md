@@ -258,4 +258,8 @@ Invoke `/plan-execute` on the designed suite. The design artifact at `_inputs/de
 
 ## Installed Reference Paths
 
-When this skill is installed by Apothem, resolve repository-style references such as `rules/...`, `templates/...`, and `hooks/...` under `<ROOT>` unless a project-local file with the same relative path exists.
+When this skill is installed by Apothem, resolve a repository-style reference against the installed directory for its first segment, unless a project-local file with the same relative path exists. Paths are relative to the project root.
+
+- `rules/<path>` is `.kimi-code/.apothem/support/rules/<path>`
+- `templates/<path>` is `.kimi-code/.apothem/support/templates/<path>`
+- `hooks/<path>` is `.kimi-code/.apothem/support/hooks/<path>`

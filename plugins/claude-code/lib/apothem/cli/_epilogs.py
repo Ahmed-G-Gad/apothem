@@ -266,6 +266,29 @@ Exit codes:
   64 Usage error: unknown option or command, or a missing or invalid value
 """
 
+_EP_BACKUPS_PRUNE = """
+Examples:
+  apothem backups prune
+  apothem backups prune --keep 3 --dry-run
+  apothem backups prune --harness claude-code --keep 1 --json
+
+A backup set that a kept install record, or the latest install record of any
+install root, still references is never removed, so rollback of the latest
+install keeps working.
+
+Related commands:
+  rollback   Restore a harness to the state before its recorded install
+  uninstall  Remove a harness configuration
+
+Exit codes:
+  0  Pruned, or nothing to prune
+  1  Unknown harness, or no harness could be pruned (unreadable ledger, or a
+     backup set that could not be removed)
+  2  Partial prune: at least one harness pruned before a failure
+  64 Usage error: unknown option or command, or a missing or invalid value
+     (including --keep below 1)
+"""
+
 _EP_COMPLETION = """
 Examples:
   apothem completion bash >> ~/.bashrc

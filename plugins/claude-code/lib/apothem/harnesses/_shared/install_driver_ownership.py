@@ -14,7 +14,7 @@ ledger), and the next install and uninstall act only on those:
   config into the operator's remainder (lists are unioned, operator items
   first), and records what it added;
 * uninstall removes the owned entries, plus Apothem's hook handlers (identified
-  by path, see :func:`_is_apothem_hook`), and drops containers Apothem created
+  by path, see :func:`is_apothem_hook`), and drops containers Apothem created
   once they are empty.
 
 An install whose ledger record predates ownership recording falls back once to
@@ -35,11 +35,11 @@ from apothem.lib import install_ledger, lenient_json
 from apothem.lib.install_ledger import LedgerTarget, OwnedEntry
 
 from .install_driver_jsonmerge import (
-    _is_apothem_hook,
     _leading_comment_block,
     _lossy_rewrite,
     _LossyRewriteError,
     _yaml_has_operator_comments,
+    is_apothem_hook,
 )
 
 
@@ -486,7 +486,7 @@ def _strip_hook_handlers(doc: dict[str, object], harness_root: Path | None) -> N
             survivors = [
                 handler
                 for handler in handlers
-                if not _is_apothem_hook(handler, harness_root=harness_root)
+                if not is_apothem_hook(handler, harness_root=harness_root)
             ]
             if survivors:
                 kept.append({**entry, "hooks": survivors})

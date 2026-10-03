@@ -60,6 +60,7 @@ from .install_driver_types import (
     _result,
     _with_detail,
     resolve_source,
+    skills_sharing_command_target,
 )
 
 
@@ -329,6 +330,91 @@ def _aggregate_dir_outcome(
     return "created" if not target_dir.exists() else "updated"
 
 
+def _prospective_merge_tree_outcomes(
+    *,
+    src: Path,
+    dst: Path,
+    ignore: IgnoreFn,
+    exclude: list[str],
+    harness_root: Path | None,
+    project_root: Path | None,
+) -> list[MaterializationOutcome]:
+    """Classify each child of a ``merge_tree_entries`` entry without writing.
+
+    Mirrors the merge-tree apply: excluded and ignored children are skipped, a
+    child directory compares by contents, and a child file compares by its
+    token-rendered bytes.
+    """
+    outcomes: list[MaterializationOutcome] = []
+    for source_path in sorted(src.iterdir()):
+        if _is_excluded_path(source_path, exclude):
+            continue
+        if source_path.name in ignore(str(src), [source_path.name]):
+            continue
+        target = dst / source_path.name
+        if source_path.is_dir():
+            if _directory_contents_equal(source_path, target, ignore):
+                outcomes.append("unchanged")
+            else:
+                outcomes.append("updated" if target.exists() else "created")
+        elif source_path.is_file():
+            data = source_path.read_bytes()
+            if b"${" in data:
+                with contextlib.suppress(UnicodeDecodeError):
+                    data = render_content_tokens(
+                        data.decode("utf-8"),
+                        harness_root=harness_root,
+                        project_root=project_root,
+                    ).encode("utf-8")
+            outcomes.append(_prospective_file_outcome(target, data))
+    return outcomes
+
+
+def _prospective_markdown_child_outcome(
+    mode: str,
+    source_path: Path,
+    *,
+    dst: Path,
+    root: Path,
+    harness_name: str,
+) -> MaterializationOutcome | None:
+    """Classify one markdown source child of a per-file directory mode.
+
+    Returns ``None`` for a mode with no per-file conversion, which contributes
+    no child outcome.
+    """
+    if mode == "command_skills":
+        skill_dir = dst / source_path.stem
+        files = _command_skill_files(
+            source_path, harness_name=harness_name, install_root=root
+        )
+        if _generated_directory_matches(skill_dir, files):
+            return "unchanged"
+        return "updated" if skill_dir.exists() else "created"
+    if mode == "codex_agents":
+        outcome = _prospective_file_outcome(
+            dst / f"{source_path.stem}.toml",
+            _codex_agent_text(source_path).encode("utf-8"),
+        )
+        # A stale ``.md`` from a prior layout is removed before the ``.toml``
+        # is written, so its presence makes the child a change even when the
+        # rendered ``.toml`` already matches.
+        if outcome == "unchanged" and (dst / source_path.name).exists():
+            outcome = "updated"
+        return outcome
+    if mode == "gemini_commands":
+        return _prospective_file_outcome(
+            dst / f"{source_path.stem}.toml",
+            _gemini_command_text(source_path).encode("utf-8"),
+        )
+    converter = _NATIVE_FILE_CONVERTERS.get(mode)
+    if converter is None:
+        return None
+    return _prospective_file_outcome(
+        dst / source_path.name, converter(source_path).encode("utf-8")
+    )
+
+
 def _prospective_child_outcomes(
     entry: InstallEntry,
     *,
@@ -340,82 +426,40 @@ def _prospective_child_outcomes(
     harness_root: Path | None,
     project_root: Path | None,
     harness_name: str,
+    skip: frozenset[str] = frozenset(),
 ) -> list[MaterializationOutcome]:
     """Classify each child of a per-file directory mode without writing.
 
     Each branch mirrors the matching ``apply_*`` function in
     :mod:`install_driver_apply` — the same source enumeration, the same
     cohort-doc exclusion, the same native-text conversion — so the no-write
-    classification tracks what the real install would decide.
+    classification tracks what the real install would decide. *skip* names
+    the commands a same-named skill shadows (``command_skills`` only).
     """
     if entry.mode == "native_skills":
         return preview_native_skills(
             src=src, dst=dst, ignore=ignore, exclude=exclude, harness_name=harness_name
         )
-    outcomes: list[MaterializationOutcome] = []
     if entry.mode == "merge_tree_entries":
-        for source_path in sorted(src.iterdir()):
-            if _is_excluded_path(source_path, exclude):
-                continue
-            if source_path.name in ignore(str(src), [source_path.name]):
-                continue
-            target = dst / source_path.name
-            if source_path.is_dir():
-                if _directory_contents_equal(source_path, target, ignore):
-                    outcomes.append("unchanged")
-                else:
-                    outcomes.append("updated" if target.exists() else "created")
-            elif source_path.is_file():
-                data = source_path.read_bytes()
-                if b"${" in data:
-                    with contextlib.suppress(UnicodeDecodeError):
-                        data = render_content_tokens(
-                            data.decode("utf-8"),
-                            harness_root=harness_root,
-                            project_root=project_root,
-                        ).encode("utf-8")
-                outcomes.append(_prospective_file_outcome(target, data))
-        return outcomes
+        return _prospective_merge_tree_outcomes(
+            src=src,
+            dst=dst,
+            ignore=ignore,
+            exclude=exclude,
+            harness_root=harness_root,
+            project_root=project_root,
+        )
+    outcomes: list[MaterializationOutcome] = []
     for source_path in sorted(src.glob("*.md")):
         if source_path.name in _COHORT_DOC_FILES:
             continue
-        if entry.mode == "command_skills":
-            skill_dir = dst / source_path.stem
-            files = _command_skill_files(
-                source_path, harness_name=harness_name, install_root=root
-            )
-            if _generated_directory_matches(skill_dir, files):
-                outcomes.append("unchanged")
-            else:
-                outcomes.append("updated" if skill_dir.exists() else "created")
+        if entry.mode == "command_skills" and source_path.stem in skip:
             continue
-        if entry.mode == "codex_agents":
-            target = dst / f"{source_path.stem}.toml"
-            outcome = _prospective_file_outcome(
-                target, _codex_agent_text(source_path).encode("utf-8")
-            )
-            # A stale ``.md`` from a prior layout is removed before the ``.toml``
-            # is written, so its presence makes the child a change even when the
-            # rendered ``.toml`` already matches.
-            if outcome == "unchanged" and (dst / source_path.name).exists():
-                outcome = "updated"
+        outcome = _prospective_markdown_child_outcome(
+            entry.mode, source_path, dst=dst, root=root, harness_name=harness_name
+        )
+        if outcome is not None:
             outcomes.append(outcome)
-            continue
-        if entry.mode == "gemini_commands":
-            outcomes.append(
-                _prospective_file_outcome(
-                    dst / f"{source_path.stem}.toml",
-                    _gemini_command_text(source_path).encode("utf-8"),
-                )
-            )
-            continue
-        converter = _NATIVE_FILE_CONVERTERS.get(entry.mode)
-        if converter is not None:
-            outcomes.append(
-                _prospective_file_outcome(
-                    dst / source_path.name, converter(source_path).encode("utf-8")
-                )
-            )
     return outcomes
 
 
@@ -430,6 +474,7 @@ def _prospective_entry_outcome(
     harness_root: Path | None,
     project_root: Path | None,
     harness_name: str,
+    skip: frozenset[str] = frozenset(),
 ) -> MaterializationOutcome:
     """Classify an Apothem-owned ``write_text`` or any tree entry, no writes.
 
@@ -463,6 +508,7 @@ def _prospective_entry_outcome(
             harness_root=harness_root,
             project_root=project_root,
             harness_name=harness_name,
+            skip=skip,
         ),
         target_dir=target,
     )
@@ -550,6 +596,7 @@ def _dry_run_results(
                 harness_root=harness_root,
                 project_root=project_root,
                 harness_name=harness_name,
+                skip=skills_sharing_command_target(entry, rules),
             )
         results.append(
             _with_detail(

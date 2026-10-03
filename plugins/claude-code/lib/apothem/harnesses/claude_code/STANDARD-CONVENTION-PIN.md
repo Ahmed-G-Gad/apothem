@@ -73,11 +73,12 @@ plugin manifest. Installing the plugin *alone* — without running
 | Agents | Yes | The manifest `agents` array (12 entries) loads sub-agents from the plugin tree. |
 | Skills | Yes | The manifest `skills` reference loads the skill cohort from the plugin tree. |
 | Hooks | Yes | The manifest `hooks` field points at the bundled `hooks.json`, wired with `${CLAUDE_PLUGIN_ROOT}`-relative dispatch — the PreToolUse/SessionStart/etc. pipeline fires from the plugin alone. |
+| Output styles | Yes | The 4 styles ship in the plugin's default `output-styles/` folder, which Claude Code scans when the manifest sets no `outputStyles` key ([plugins reference](https://code.claude.com/docs/en/plugins-reference), retrieved 2026-10-03); they are selectable from `/config` with the plugin alone. |
 | Rules | Degraded — requires `apothem install` for full reference tree | The plugin carries no rules-directory primitive; the embedded directives degrade to a SessionStart `additionalContext` pointer. The full `${HARNESS_ROOT}/rules/` reference tree lands only via the engine. |
-| Settings / output-styles / statuslines / gate matchers | No — requires `apothem install` | `settings.json` (managed allow/deny gates only — see the MCP row above), `output-styles/`, `statuslines/`, and the conformity `gate.py` + `schemas/` ride beside the engine install, not the plugin package. The statusline ships as `statuslines/statusline.md`, not as a `settings.json` key. |
+| Settings / statuslines / gate matchers | No — requires `apothem install` | `settings.json` (managed allow/deny gates only — see the MCP row above), `statuslines/`, and the conformity `gate.py` + `schemas/` ride beside the engine install, not the plugin package. The statusline ships as `statuslines/statusline.md`, not as a `settings.json` key. |
 | MCP | No — operator-owned | MCP servers register via `claude mcp add` into `~/.claude.json` / project `.mcp.json`; neither the plugin nor the engine authors entries. |
 
 Bundle status: this is the reference plugin-alone implementation — commands,
-agents, skills, and hooks persist from the plugin package directly; only the full
-rules reference tree, settings, output-styles, and the gate engine need
-`apothem install`.
+agents, skills, output styles, and hooks persist from the plugin package
+directly; only the full rules reference tree, settings, and the gate engine
+need `apothem install`.
