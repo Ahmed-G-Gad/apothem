@@ -125,6 +125,7 @@ def install(
     profile: dict[str, Any],
     *,
     project: Path | None = None,
+    dry_run: bool = False,
 ) -> MaterializationRun:
     """Materialize ``.rules`` and warn when it hides another instruction file.
 
@@ -133,10 +134,12 @@ def install(
     managed block (before or after the write) and a lower-priority instruction
     file exists. An operator-authored ``.rules`` already outranks those files,
     so the install changes nothing about which file Zed reads and no warning is
-    added. Raises ``ValueError`` when *project* is ``None``.
+    added. With *dry_run* nothing is written and the same warning previews
+    what the install would hide. Raises ``ValueError`` when *project* is
+    ``None``.
     """
     operator_rules = project is not None and _has_operator_text(project / ".rules")
-    run = _install_rules(output_path, profile, project=project)
+    run = _install_rules(output_path, profile, project=project, dry_run=dry_run)
     if project is None or operator_rules:
         return run
     warning = _shadowing_warning(project)

@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import json
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
@@ -16,6 +15,7 @@ from apothem.harnesses._shared import install_driver
 from apothem.lib import install_ledger
 from apothem.lib.data_home import resolve_shared_data_home
 from apothem.lib.harness_materializer import (
+    defuse_sentinels,
     extract_managed_block,
 )
 from apothem.lib.harness_registry import SUPPORTED_PACKAGE_KEYS
@@ -25,7 +25,7 @@ from apothem.lib.propagation import (
     resolve_target,
 )
 
-from .install_driver_backup import _replace_path, backup_existing
+from .install_driver_backup import _replace_path, apply_retention, backup_existing
 from .install_driver_merge import render_content_tokens
 from .install_driver_pathsafety import (
     _allowed_write_root,
@@ -37,6 +37,7 @@ from .install_driver_planvalidation import (
     _projected_profile_body,
 )
 from .install_driver_removal import _surgical_remove_from_target
+from .install_driver_treeops import remove_created_dirs
 from .install_driver_types import (
     MaterializationResult,
     _handle_rm_error,
@@ -50,22 +51,26 @@ def _native_config_parses(target: Path) -> bool:
     """Return True unless *target* is a structurally invalid JSON/YAML file.
 
     Only ``.json``/``.yaml``/``.yml`` targets are parsed; other suffixes (e.g.
-    Markdown anchors) pass trivially. A present-but-corrupt config reads as
-    not-installed.
+    Markdown anchors) pass trivially. A ``.json`` target may be JSONC or JSON5
+    (OpenCode and OpenClaw read those dialects, and install leaves such a file
+    in place when it has nothing to change). A present-but-corrupt config reads
+    as not-installed.
     """
+    from apothem.lib import lenient_json
+
     suffix = target.suffix.lower()
     if suffix not in {".json", ".yaml", ".yml"}:
         return True
     try:
         text = target.read_text(encoding="utf-8")
-    except OSError:
+    except (OSError, UnicodeDecodeError):
         return False
     try:
         if suffix == ".json":
-            json.loads(text)
+            lenient_json.loads(text)
         else:
             yaml.safe_load(text)
-    except (json.JSONDecodeError, yaml.YAMLError):
+    except (lenient_json.LenientJSONError, yaml.YAMLError):
         return False
     return True
 
@@ -229,9 +234,12 @@ def _profile_anchor_targets(
     """Return the on-disk anchors that carry the projected profile managed block.
 
     Every ``sentinel_merge`` manifest target (anchor adapters fold the projected
-    body into these), plus the two bolt-on profile anchors written outside the
-    manifest when present: claude_code's ``CLAUDE.md`` and the single-file-config
-    adapters' ``apothem/rules/00-apothem-profile.md``.
+    body into these), plus the bolt-on profile anchors written outside the
+    manifest (claude_code's ``CLAUDE.md``, the single-file-config adapters'
+    ``apothem/rules/00-apothem-profile.md``): the ones the current install
+    record lists, so a deleted bolt-on reads as missing. Without a record (an
+    install from before the ledger) a bolt-on counts only when present. An
+    adapter that projects no profile content (GLM) has no anchors.
     """
     rules = install_driver.load_rules(harness_name)
     root = _root_for(harness_root, project_root)
@@ -242,6 +250,18 @@ def _profile_anchor_targets(
         for entry in rules.install
         if entry.mode == "sentinel_merge"
     ]
+    try:
+        record = install_ledger.current_install_record(harness_name, root=root)
+    except install_ledger.LedgerError:
+        record = None
+    if record is not None:
+        listed = {_path_text(target) for target in targets}
+        targets.extend(
+            Path(recorded.path)
+            for recorded in record.targets
+            if recorded.mode == "sentinel_merge" and recorded.path not in listed
+        )
+        return targets
     for relative in ("CLAUDE.md", "apothem/rules/00-apothem-profile.md"):
         bolt_on = root / relative
         if bolt_on.is_file():
@@ -267,7 +287,11 @@ def check_fidelity(
     ``verify`` answer "is the profile faithfully installed?" rather than merely
     "does a file exist".
     """
-    expected = _projected_profile_body(harness_name, profile) or ""
+    # The anchor carries the body with any embedded sentinel neutralized (see
+    # ``defuse_sentinels``), so compare against that same form.
+    expected = defuse_sentinels(
+        (_projected_profile_body(harness_name, profile) or "").strip()
+    )
     results: list[FidelityResult] = []
     for target in _profile_anchor_targets(
         harness_name, harness_root=harness_root, project_root=project_root
@@ -291,8 +315,14 @@ def check_fidelity(
 
 
 def fidelity_is_faithful(results: list[FidelityResult]) -> bool:
-    """Reduce per-anchor fidelity results to a single bool (all faithful)."""
-    return bool(results) and all(result.status == "faithful" for result in results)
+    """Reduce per-anchor fidelity results to a single bool (all faithful).
+
+    No results means the adapter projects no profile content (GLM, a model
+    backend): there is nothing to drift, so it is faithful. A projecting
+    adapter whose anchor is gone yields a ``missing`` result, not an empty
+    list (see :func:`_profile_anchor_targets`).
+    """
+    return all(result.status == "faithful" for result in results)
 
 
 def _rendered_template_text(
@@ -476,8 +506,9 @@ def run_uninstall(
     added to the manifest later is untouched; a recorded target removed from the
     manifest is still cleaned). Tree/discovery surfaces stay manifest+source
     driven. The shared data home (memory / contexts / learning) is backed up and
-    removed only when last-referenced, and an uninstall marker is appended to the
-    ledger. With no ledger
+    removed only when last-referenced, the directories the installs since the
+    last uninstall created are removed once empty, and an uninstall marker is
+    appended to the ledger. With no ledger
     record (a pre-ledger install), the pass falls back to the full manifest.
 
     Returns every removal's :class:`MaterializationResult` so callers can
@@ -496,9 +527,13 @@ def run_uninstall(
     # exists (legacy / pre-ledger install) — fall back to removing every manifest
     # target. With a record, a single-file manifest target is removed only if it
     # was recorded, so an entry added to the manifest after install is not touched.
-    record = install_ledger.latest_record(harness_name, root=root)
+    active = install_ledger.active_install_records(harness_name, root=root)
+    record = active[-1] if active else None
+    recorded_targets = (
+        {target.path: target for target in record.targets} if record is not None else {}
+    )
     recorded_paths: set[str] | None = (
-        {target.path for target in record.targets} if record is not None else None
+        set(recorded_targets) if record is not None else None
     )
     handled: set[str] = set()
     results: list[MaterializationResult] = []
@@ -522,6 +557,7 @@ def run_uninstall(
                 install_root=root,
                 harness_name=harness_name,
                 allowed_root=allowed_root,
+                recorded=recorded_targets.get(_path_text(target)),
             )
             if removal is not None:
                 results.append(removal)
@@ -574,6 +610,17 @@ def run_uninstall(
     if data_home_removal is not None:
         results.append(data_home_removal)
 
+    # Remove the directories the installs since the last uninstall created,
+    # now that their contents are gone — only the empty ones, deepest first, so
+    # a directory still holding operator content or another harness's data
+    # stays.
+    results.extend(
+        remove_created_dirs(
+            {Path(path) for install in active for path in install.created_dirs},
+            allowed_root=allowed_root,
+        )
+    )
+
     # Append an uninstall marker referencing the install pass it reversed —
     # only when every removal succeeded. On any error the install record
     # stays latest, matching the on-disk state (targets remain) so verify,
@@ -587,6 +634,7 @@ def run_uninstall(
                 install_id=record.install_id if record is not None else None,
             )
         )
+        apply_retention(harness_name)
     return results
 
 

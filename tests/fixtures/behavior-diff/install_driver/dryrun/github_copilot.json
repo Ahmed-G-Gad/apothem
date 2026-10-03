@@ -14,7 +14,7 @@
       "capability": "agents",
       "status": "unsupported"
     },
-    "message": "Copilot has no repo-config sub-agent file surface.",
+    "message": "Copilot reads custom agent profiles (.github/agents/*.agent.md); the adapter delivers the repo-wide instructions file only and Apothem does not author agent profiles.",
     "operation": "capability_projection",
     "outcome": "warning",
     "path": "src/apothem/harnesses/github_copilot/capabilities.yml"
@@ -24,7 +24,7 @@
       "capability": "commands",
       "status": "unsupported"
     },
-    "message": "Copilot exposes no user-defined custom-command surface.",
+    "message": "Copilot runs prompt files (.github/prompts/*.prompt.md) as slash commands; the adapter delivers the repo-wide instructions file only and Apothem does not author prompt files.",
     "operation": "capability_projection",
     "outcome": "warning",
     "path": "src/apothem/harnesses/github_copilot/capabilities.yml"
@@ -44,7 +44,7 @@
       "capability": "mcp_servers",
       "status": "unsupported"
     },
-    "message": "Copilot MCP is service/IDE state, not a repo file target.",
+    "message": "Copilot MCP is configured in repository settings, the IDE, the Copilot CLI, or a custom agent profile; the adapter authors none of them.",
     "operation": "capability_projection",
     "outcome": "warning",
     "path": "src/apothem/harnesses/github_copilot/capabilities.yml"
@@ -54,7 +54,7 @@
       "capability": "output_styles",
       "status": "unsupported"
     },
-    "message": "Copilot has no output-style file surface.",
+    "message": "No Copilot output-style file surface is pinned.",
     "operation": "capability_projection",
     "outcome": "warning",
     "path": "src/apothem/harnesses/github_copilot/capabilities.yml"
@@ -74,7 +74,7 @@
       "capability": "statuslines",
       "status": "unsupported"
     },
-    "message": "Copilot has no statusline file surface.",
+    "message": "No Copilot statusline file surface is pinned.",
     "operation": "capability_projection",
     "outcome": "warning",
     "path": "src/apothem/harnesses/github_copilot/capabilities.yml"
@@ -99,5 +99,23 @@
     "outcome": "created",
     "path": "<ROOT>/.github/copilot-instructions.md",
     "source": "<APOTHEM_SRC>/harnesses/github_copilot/templates/copilot-instructions.md"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "data_surface",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/memory"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "data_surface",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/contexts"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "data_surface",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/learning"
   }
 ]

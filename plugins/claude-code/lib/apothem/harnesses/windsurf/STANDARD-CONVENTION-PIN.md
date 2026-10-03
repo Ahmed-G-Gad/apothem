@@ -4,62 +4,73 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-06-25
+- Snapshot date: 2026-10-03
 - Adapter source: `src/apothem/harnesses/windsurf/`
-- Evidence level: adapter-local projection; no vendor-native UI claim is made here.
+- Evidence level: vendor-doc pinned (living docs at `docs.devin.ai`; no-immutable-source exception). No vendor-native UI claim is made here.
 
 ## Official Surface Refresh
 
-- Refreshed live 2026-06-25 against the current vendor documentation
-  (`docs.devin.ai`). The windsurf harness rebranded to **Devin Desktop**
-  (OTA rollout 2026-06-02); the docs authority host moved from
-  `docs.windsurf.com` to the first-party Devin host `docs.devin.ai`. No
-  immutable version pin is exposed (mutable docs site), so every captured
-  convention carries a no-immutable-source exception. The harness slug stays
-  `windsurf`.
-- **Write-target migration.** The vendor's current docs make
-  `<project>/.devin/rules/*.md` the **preferred** workspace-rules surface, which
-  **takes precedence** over the retained backward-compat fallback at
-  `<project>/.windsurf/rules/*.md`. The adapter migrated its canonical write
-  target to `<project>/.devin/rules/apothem-rules.md` so the merged rules file is
-  never silently shadowed by any `.devin/rules/` content the operator already
-  keeps. Evidence: vendor-doc-url
-  <https://docs.devin.ai/desktop/cascade/workspace-rules>; snapshot-id living
-  docs; snapshot-date 2026-06-25.
-- Config-root correction: the global config root is `~/.codeium/windsurf/`
-  (global rules, MCP, skills, memories), not `~/.windsurf/`. The workspace
-  directory carries both the preferred `.devin/` tree (rules, skills) and the
-  retained `.windsurf/` fallback tree.
-- MCP is now recognized: `~/.codeium/windsurf/mcp_config.json` (stdio / HTTP /
-  SSE / OAuth) is operator-owned; the adapter recognizes it but does not author
-  entries. `capabilities.yml` `mcp_servers` and the shared capability matrix were
-  refreshed accordingly.
-- Workspace rules are a `*.md` directory (12k char per file), not a single file;
-  `layered_context_surface` names the preferred `.devin/rules/*.md` directory
-  with the `.windsurf/rules/` backward-compat fallback noted.
-- Native skills are a documented vendor surface at
-  `.windsurf/skills/<name>/SKILL.md` (Markdown SKILL.md with YAML frontmatter
-  carrying `name` + `description`); workflows (`.windsurf/workflows/`) and a
-  `hooks.json` hook surface are also vendor-side. **The skills path is stated
-  two ways in this pin** — the config-root entry above lists skills under the
-  preferred `.devin/` tree, while this entry cites only the `.windsurf/`
-  fallback. Which one the current vendor docs specify is **unverified**; the
-  rules surface has a confirmed `.devin/`-over-`.windsurf/` precedence, but
-  that precedence was not separately confirmed for skills. Nothing in the
-  adapter turns on it (see the rules-only posture below), so the discrepancy
-  is carried as a tracked claim pending re-verification rather than resolved
-  by assuming skills follow the rules precedence. The adapter delivers only the
-  project rules file and authors none of those cohorts (deliberate rules-only
-  posture). The `hooks.json` surface is **unverified against current docs** —
-  it could not be confirmed in the current official `docs.devin.ai` documentation
-  and is carried as a tracked claim pending re-verification. Settings,
-  agent-dispatch, plugins, and status-lines remain undocumented as file surfaces.
-- Web-fetch / browser-retrieval (`web_fetch` = **yes**): the Cascade agent
-  ships Web Search + URL Read (page fetch/chunk) tools, forced via `@web` and
-  `@docs`, gated by the "Enable Web Search" admin setting — the backing dimension
-  for `rules/source-accessibility.md` step 1. Evidence: vendor-doc-url
+- Refreshed 2026-10-03 against `docs.devin.ai`. The windsurf harness is Devin
+  Desktop (rebranded 2026-06-02); the slug stays `windsurf`. Devin Desktop now
+  has two agents: the Devin Local agent, the default for new tabs, which
+  configures MCP in the Devin CLI config files, and the legacy Cascade agent.
+- Rules (resolved): the Memories & Rules page lists workspace rules at
+  `.devin/rules/*.md` (preferred) or `.windsurf/rules/*.md` (fallback), 12,000
+  characters per file, plus the legacy `.windsurfrules` file and `AGENTS.md` in
+  any directory; the global rule file is
+  `~/.codeium/windsurf/memories/global_rules.md`. The Devin CLI rules page
+  documents the same `.devin/rules/` precedence for the CLI. The adapter's
+  `<project>/.devin/rules/apothem-rules.md` therefore sits at the preferred
+  location. The earlier `docs.devin.ai/desktop/cascade/workspace-rules` page now
+  answers 404.
+- Skills (resolved): `.devin/skills/` (preferred) or the legacy
+  `.windsurf/skills/` in the workspace; `~/.codeium/windsurf/skills/` or
+  `~/.config/devin/skills/` globally. Devin Desktop also discovers
+  `.agents/skills/` and `~/.agents/skills/`, so a Codex install's skills reach it.
+  This settles the earlier open question: skills follow the same
+  `.devin/`-over-`.windsurf/` order as rules.
+- Hooks (resolved): `hooks.json` at `.devin/hooks.json` in the workspace (the
+  legacy `.windsurf/hooks.json` is used only when the `.devin` file is absent or
+  defines no hooks), `~/.codeium/windsurf/hooks.json` for the user, and
+  OS-level system paths; all levels merge. The earlier "unverified" flag is
+  cleared.
+- MCP (corrected): Cascade reads `~/.config/devin/mcp_config.json`
+  (`%APPDATA%\devin\mcp_config.json` on Windows), and the Devin Local agent
+  uses the Devin CLI config files. The earlier
+  `~/.codeium/windsurf/mcp_config.json` path is no longer in the docs.
+  Operator-owned; the adapter authors no entries.
+- Memories: auto-generated memories apply to the legacy Cascade agent only and
+  stay on the machine; the Devin Local agent does not persist memories.
+- The adapter delivers only the project rules file and authors none of the
+  skills, workflows, hooks, or subagents (deliberate rules-only posture).
+- Open question (review by 2026-12-31): the Devin CLI imports other tools'
+  rules by default (`AGENTS.md`, `.cursor/rules/*.mdc`, `CLAUDE.md` and
+  `~/.claude/CLAUDE.md`). If Devin Desktop's Local agent applies the same
+  defaults, Apothem's Cursor and Claude Code blocks also load there. The
+  Desktop docs do not say, so the registry records no shared root for it yet.
+- Web-fetch / browser-retrieval (`web_fetch` = **yes**): Cascade searches the
+  web and documentation through `@web` and `@docs` mentions and URL parsing,
+  gated by the "Enable Web Search" admin setting — the backing dimension for
+  `rules/source-accessibility.md` step 1. Evidence: vendor-doc-url
   <https://docs.devin.ai/desktop/cascade/web-search>; snapshot-id living docs;
-  snapshot-date 2026-06-25.
+  snapshot-date 2026-10-03.
+
+## Vendor Sources
+
+Retrieved 2026-10-03 unless marked.
+
+- <https://docs.devin.ai/desktop/cascade/memories> (memories and rules)
+- <https://docs.devin.ai/desktop/cascade/agents-md> (`AGENTS.md`)
+- <https://docs.devin.ai/desktop/cascade/mcp> (`mcp_config.json`)
+- <https://docs.devin.ai/desktop/cascade/web-search> (web search)
+- <https://docs.devin.ai/cli/extensibility/rules.md> (Devin CLI rules)
+- <https://docs.devin.ai/cli/reference/configuration/read-config-from.md> (Devin CLI config imports)
+- <https://docs.devin.ai/desktop/cascade/skills.md> (skills; retrieved 2026-10-02)
+- <https://docs.devin.ai/desktop/cascade/hooks.md> (hooks; retrieved 2026-10-02)
+
+## Discovery Targets
+
+- Discovery target: mcp_servers by 2026-12-31 — decide whether Apothem renders the profile's MCP inventory into `~/.config/devin/mcp_config.json` or keeps naming it as operator-owned.
 
 ## Recommended Postfix Rendering
 
@@ -91,9 +102,10 @@ full `apothem install --harness windsurf --project <path>` engine run.
 | Artifact class | Persists standalone? | Mechanism / limit |
 |---|---|---|
 | Rules | No — requires `apothem install` | The merged `apothem-rules.md` (carrying the embedded behavioral mandates) is written only by the engine into the preferred `.devin/rules/` directory (`.windsurf/rules/` backward-compat fallback). Nothing persists before that run. |
-| Commands / Skills / Agents | No — platform limit | The vendor documents native skills (`.windsurf/skills/<name>/SKILL.md`), workflows, and an unverified `hooks.json` surface but no command/agent primitive Apothem targets; these cohorts are not materialized for this harness (deliberate rules-only posture). |
-| Hooks / MCP / Settings | No — operator-owned / platform limit | `~/.codeium/windsurf/mcp_config.json` (MCP) is operator-owned and the `hooks.json` surface is unverified against current docs; the adapter authors no entries. |
+| Commands / Skills / Agents | No — deliberate rules-only posture | The vendor documents skills (`.devin/skills/`), workflows (`.windsurf/workflows/`), and subagents; the adapter authors none of them. |
+| Hooks / MCP / Settings | No — operator-owned | `~/.config/devin/mcp_config.json` (MCP) and `hooks.json` (hooks) are operator-owned; the adapter authors no entries. |
 
-Platform limit: Windsurf ships no marketplace/extension channel, so a
+The Devin CLI documents plugins and team marketplaces, but Apothem ships no
+Devin plugin, so a
 plugin-alone story does not exist — the merged rules file via `apothem install`
 is the sole persistence surface.

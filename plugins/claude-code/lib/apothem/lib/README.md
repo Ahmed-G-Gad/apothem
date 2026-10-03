@@ -10,6 +10,7 @@
 |------|---------|
 | `frontmatter.py` | YAML frontmatter field probing and value extraction for ecosystem files. |
 | `harness_materializer.py` | Shared building blocks for the per-harness materializers. |
+| `lenient_json.py` | Read-only, stdlib-only parser for JSONC and JSON5 operator configs (OpenCode, OpenClaw) — lets the install tell whether its merge would change a value, so a commented file is left byte-identical or refused (`config.unparseable`) rather than rewritten without its comments. |
 | `harness_protocol.py` | The `HarnessAdapter` structural Protocol every concrete adapter satisfies — defined in the foundation layer so the registry references the contract without importing its consumers; re-exported by `apothem.harnesses` as the public import path. |
 | `harness_registry.py` | Harness identity, adapter entry-point, target, docs, capability, package-data, and test-fixture registry — authoritative at runtime (filesystem-convention `discover_adapters` is a conformance parity check, not the runtime resolver). |
 | `harness_registry_data.py` | The static, declarative `HARNESS_REGISTRY` data table (split from `harness_registry.py`) — the per-adapter identity / entry-point / target / capability / package-data records plus the dataclass and capability-matrix builders; the sibling module holds the resolution logic and is the runtime surface. |
@@ -30,7 +31,7 @@
 | `learning.py` | Opt-in (default-off) continuous-learning loop — signal capture gated on the profile flag, confidence-scored pattern extraction, and promotion of above-threshold patterns to catalog-skill artifacts. |
 | `auditor.py` | Unified conformance / security auditor — configuration-file scanning, closed-catalog secret detection, and rule-based conformance over a parsed config, emitting advisory `Finding`s that validate against `advisory-finding.schema.json`. Standalone via `python -m apothem.lib.auditor`; `pr_audit` is the changed-path integration entry point for a CI / pull-request audit caller. |
 | `clean_slate.py` | Opt-in clean-slate removal routine — closed removal target set, unsafe-root guard, timestamped backup taken before any removal, per-target confirmation, dry-run preview, and a non-interactive override. |
-| `install_ledger.py` | Append-only per-install state ledger (`~/.apothem/state/<harness>/ledger.jsonl`) — the source of truth for uninstall and rollback, so manifest drift after install cannot strand or over-remove operator content. |
+| `install_ledger.py` | Append-only per-install state ledger (`~/.apothem/state/<harness>/ledger.jsonl`) — the source of truth for uninstall and rollback, so manifest drift after install cannot strand or over-remove operator content. Records each target's outcome, the entries Apothem owns in a structured config, and the directories an install created; retention compacts it to the newest kept installs per root. |
 | `python_resolver.py` | Resolves an absolute CPython interpreter for install-time hook-command wiring — never a bare `python` name that a host `PATH` could resolve to a Microsoft Store `WindowsApps` launcher stub. |
 | `workspace_migration.py` | Migrates a legacy per-harness workspace (`.apothem/<harness>/…` plus a sibling `.plans` tree) into the current shared `.apothem/{plans,memory,learning,contexts}` layout (`apothem migrate-workspace`). |
 | `__init__.py` | Package marker. |

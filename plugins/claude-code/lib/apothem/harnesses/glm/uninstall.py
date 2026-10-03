@@ -17,7 +17,8 @@ _HARNESS_NAME: str = "glm"
 # single source of truth for the target path — ``__init__`` imports it here.
 RELATIVE_TARGET: Path = Path(".apothem") / "providers" / "glm.toml"
 
-# The Apothem-owned ``glm.toml`` provider file is removed by the shared driver,
-# which backs the file up under the Apothem backup root before deletion — no
-# whole-file ``.bak`` sibling is left beside the operator's project files.
+# The shared driver removes the ``glm.toml`` provider file only when Apothem
+# created it and it is still the unedited template; an operator's own or edited
+# file is left in place. The file is backed up under the Apothem backup root
+# first — no whole-file ``.bak`` sibling is left beside the operator's files.
 uninstall = make_project_scope_uninstall(_HARNESS_NAME, relative_target=RELATIVE_TARGET)

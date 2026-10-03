@@ -8,26 +8,44 @@ import contextlib
 import difflib
 import json
 import re
+from collections.abc import Iterator, Mapping
+from contextlib import contextmanager
+from contextvars import ContextVar
+from dataclasses import dataclass, replace
 from pathlib import Path
 from string import Template
-from typing import Any
-
-import yaml
+from typing import Any, Final
 
 from apothem.lib.harness_materializer import (
     merge_managed_block,
 )
+from apothem.lib.install_ledger import OwnedEntry
 from apothem.lib.propagation import (
     InstallEntry,
     resolve_target,
 )
 
 from .install_driver_backup import write_bytes_safely
+from .install_driver_jsonmerge import (
+    _LossyRewriteError,
+    _merge_json_settings,
+    _overlay_json_settings,
+    _read_existing,
+    _refused_result,
+)
+from .install_driver_ownership import (
+    MergeOutcome,
+    _LegacyOwnership,
+    _merge_native_content,
+    _operator_json_merge,
+    prior_ownership,
+)
 from .install_driver_pathsafety import (
     _allowed_write_root,
     _root_for,
     _validate_target_path,
 )
+from .install_driver_preview import prospective_result
 from .install_driver_types import (
     AuthorizationRequest,
     AuthorizeFn,
@@ -47,6 +65,7 @@ def apply_managed_block_anchor(
     install_root: Path,
     harness_name: str,
     allowed_root: Path | None = None,
+    dry_run: bool = False,
 ) -> MaterializationResult:
     """Fold a profile-projected managed block into an operator-owned anchor.
 
@@ -56,12 +75,20 @@ def apply_managed_block_anchor(
     backup-before-replace + no-op detection. This is the reusable projection
     write path every instruction-anchor adapter shares: the profile-projection
     seam renders *body*, this helper lands it in the harness's Markdown anchor.
+    With *dry_run*, nothing is written and the prospective result is returned.
     """
     try:
         existing = target.read_text(encoding="utf-8") if target.exists() else ""
     except OSError:
         existing = ""
     merged = merge_managed_block(existing, body)
+    if dry_run:
+        return prospective_result(
+            target,
+            before=existing if target.exists() else None,
+            after=merged,
+            operation="sentinel_merge",
+        )
     return write_bytes_safely(
         target,
         merged.encode("utf-8"),
@@ -72,13 +99,19 @@ def apply_managed_block_anchor(
     )
 
 
+#: Where the single-file-config adapters project the profile's managed block,
+#: relative to the harness root.
+PROFILE_DOCUMENT_RELATIVE: Final[str] = "apothem/rules/00-apothem-profile.md"
+
+
 def project_profile_document(
     harness_root: Path,
     *,
     harness_id: str,
     harness_name: str,
     profile: dict[str, Any],
-    relative_path: str = "apothem/rules/00-apothem-profile.md",
+    relative_path: str = PROFILE_DOCUMENT_RELATIVE,
+    dry_run: bool = False,
 ) -> MaterializationResult:
     """Write the profile's projected managed block to a config adapter's anchor.
 
@@ -101,145 +134,8 @@ def project_profile_document(
         install_root=harness_root,
         harness_name=harness_name,
         allowed_root=harness_root.parent,
+        dry_run=dry_run,
     )
-
-
-#: Substrings that identify an Apothem-managed hook handler. Covers both the
-#: module-invocation spelling and the installed script-path spelling (the
-#: settings templates point hooks at the materialized ``hooks/dispatch.py``
-#: and ``conformity/gate.py`` scripts under the harness root).
-_APOTHEM_HOOK_MARKERS: tuple[str, ...] = (
-    "apothem.hooks.dispatch",
-    "apothem.conformity.gate",
-    "hooks/dispatch.py",
-    "conformity/gate.py",
-)
-
-
-def _is_apothem_hook(handler: object) -> bool:
-    """Return True when a hook handler belongs to Apothem's managed surface."""
-    if not isinstance(handler, dict):
-        return False
-    command = str(handler.get("command", ""))
-    args = handler.get("args", [])
-    args_text = " ".join(str(arg) for arg in args) if isinstance(args, list) else ""
-    haystacks = (command, args_text)
-    return any(
-        marker in haystack for marker in _APOTHEM_HOOK_MARKERS for haystack in haystacks
-    )
-
-
-def _dedupe_json_list(existing: list[object], incoming: list[object]) -> list[object]:
-    """Append incoming JSON values that are not already present."""
-    merged = list(existing)
-    for item in incoming:
-        if item not in merged:
-            merged.append(item)
-    return merged
-
-
-def _merge_hook_entry(
-    existing_entries: list[object],
-    incoming_entry: dict[str, object],
-) -> dict[str, object]:
-    """Merge one incoming hook matcher with existing non-Apothem handlers."""
-    matcher = incoming_entry.get("matcher")
-    preserved_handlers: list[object] = []
-    for entry in existing_entries:
-        if not isinstance(entry, dict) or entry.get("matcher") != matcher:
-            continue
-        handlers = entry.get("hooks", [])
-        if not isinstance(handlers, list):
-            continue
-        preserved_handlers.extend(
-            handler for handler in handlers if not _is_apothem_hook(handler)
-        )
-
-    incoming_handlers = incoming_entry.get("hooks", [])
-    if not isinstance(incoming_handlers, list):
-        incoming_handlers = []
-
-    merged_entry = dict(incoming_entry)
-    merged_entry["hooks"] = preserved_handlers + incoming_handlers
-    return merged_entry
-
-
-def _merge_hooks(
-    existing_hooks: dict[str, object],
-    incoming_hooks: dict[str, object],
-) -> dict[str, object]:
-    """Merge Claude Code hook settings while replacing Apothem-owned handlers."""
-    merged = dict(existing_hooks)
-    for event_name, incoming_entries in incoming_hooks.items():
-        if not isinstance(incoming_entries, list):
-            merged[event_name] = incoming_entries
-            continue
-        existing_entries_obj = existing_hooks.get(event_name, [])
-        existing_entries = (
-            existing_entries_obj if isinstance(existing_entries_obj, list) else []
-        )
-        incoming_matchers = {
-            entry.get("matcher")
-            for entry in incoming_entries
-            if isinstance(entry, dict)
-        }
-        retained = [
-            entry
-            for entry in existing_entries
-            if not isinstance(entry, dict)
-            or entry.get("matcher") not in incoming_matchers
-        ]
-        for incoming_entry in incoming_entries:
-            if isinstance(incoming_entry, dict):
-                retained.append(_merge_hook_entry(existing_entries, incoming_entry))
-            else:
-                retained.append(incoming_entry)
-        merged[event_name] = retained
-    return merged
-
-
-def _merge_json_settings(existing: object, incoming: object) -> object:
-    """Merge JSON settings while preserving operator-authored keys."""
-    return _merge_json_values(existing, incoming, prefer_existing=True)
-
-
-def _overlay_json_settings(existing: object, incoming: object) -> object:
-    """Merge JSON settings while incoming managed values take precedence."""
-    return _merge_json_values(existing, incoming, prefer_existing=False)
-
-
-def _merge_json_values(
-    existing: object, incoming: object, *, prefer_existing: bool
-) -> object:
-    """Merge JSON objects, preserving keys absent from the incoming object."""
-    if isinstance(existing, dict) and isinstance(incoming, dict):
-        merged: dict[str, object] = dict(existing)
-        for key, value in incoming.items():
-            current = existing.get(key)
-            if key == "hooks" and isinstance(current, dict) and isinstance(value, dict):
-                merged[key] = _merge_hooks(current, value)
-            elif (
-                prefer_existing
-                and isinstance(current, list)
-                and isinstance(value, list)
-            ):
-                merged[key] = _dedupe_json_list(current, value)
-            elif isinstance(current, dict) and isinstance(value, dict):
-                merged[key] = _merge_json_values(
-                    current, value, prefer_existing=prefer_existing
-                )
-            elif key not in merged:
-                merged[key] = value
-            elif prefer_existing:
-                merged[key] = current
-            else:
-                merged[key] = value
-        return merged
-    if isinstance(existing, list) and isinstance(incoming, list):
-        if prefer_existing:
-            return _dedupe_json_list(existing, incoming)
-        return incoming
-    return existing
 
 
 def _merged_json_text(
@@ -291,65 +187,6 @@ def write_text_safely(
     )
 
 
-def _leading_comment_block(text: str) -> str:
-    """Return the leading comment/blank lines of *text* (a managed YAML header).
-
-    PyYAML drops comments on round-trip, so the incoming config's leading
-    ``#`` header is captured here and re-prepended to a merged YAML body. This
-    keeps the merge byte-stable: re-merging identical content reproduces the
-    same header + body, so install stays idempotent.
-    """
-    kept: list[str] = []
-    for line in text.splitlines(keepends=True):
-        stripped = line.lstrip()
-        if stripped == "" or stripped.startswith("#"):
-            kept.append(line)
-        else:
-            break
-    return "".join(kept)
-
-
-def _merged_yaml_text(target: Path, content: str, *, prefer_existing: bool) -> str:
-    """Return YAML text merged with an existing YAML target when possible.
-
-    The YAML mirror of :func:`_merged_json_text`: parse both documents, overlay
-    operator keys per the shared key-merge, re-dump, and re-prepend the incoming
-    managed header comment. Operator keys absent from the incoming managed
-    config are preserved; operator *comments* are not retained across a
-    merge-over-existing (PyYAML round-trips values, not comments). A clean
-    install with no existing target writes *content* verbatim.
-    """
-    try:
-        incoming = yaml.safe_load(content)
-        existing = yaml.safe_load(target.read_text(encoding="utf-8"))
-    except (OSError, yaml.YAMLError):
-        return content
-    if not isinstance(incoming, dict) or not isinstance(existing, dict):
-        return content
-    merger = _merge_json_settings if prefer_existing else _overlay_json_settings
-    merged = merger(existing, incoming)
-    header = _leading_comment_block(content)
-    return header + yaml.safe_dump(merged, sort_keys=False, allow_unicode=True)
-
-
-def _merge_native_content(target: Path, content: str, *, existed: bool) -> str:
-    """Return the prospective merged text for a materializer-rendered config.
-
-    JSON and YAML targets key-merge with the operator's existing file (incoming
-    managed values authoritative, operator-added keys preserved); other suffixes
-    and non-existent targets render *content* verbatim.
-    """
-    if not existed:
-        return content
-    suffix = target.suffix.lower()
-    if suffix == ".json":
-        with contextlib.suppress(json.JSONDecodeError, OSError):
-            return _merged_json_text(target, content, prefer_existing=False)
-    elif suffix in {".yaml", ".yml"}:
-        return _merged_yaml_text(target, content, prefer_existing=False)
-    return content
-
-
 def apply_operator_owned_content(
     target: Path,
     content: str,
@@ -359,6 +196,8 @@ def apply_operator_owned_content(
     ownership_class: str = "operator-owned",
     allowed_root: Path | None = None,
     authorize: AuthorizeFn | None = None,
+    retired: tuple[OwnedEntry, ...] = (),
+    dry_run: bool = False,
 ) -> MaterializationResult:
     """Write materializer-rendered content to an operator-owned native config.
 
@@ -368,7 +207,11 @@ def apply_operator_owned_content(
     key-preserving merge (JSON / YAML), records a unified diff on the result,
     consults *authorize* on a non-additive overwrite (declining leaves the
     operator file untouched), then writes atomically with backup-before-replace
-    and no-op detection.
+    and no-op detection. *retired* lists entries an earlier release wrote at a
+    location the adapter no longer uses; when the target's install record
+    predates ownership recording, they are removed while they still hold that
+    release's value. With *dry_run*, nothing is written: the prospective
+    result (with its diff) is returned, or the refusal the write would raise.
     """
     write_allowed = allowed_root or install_root
     target_error = _validate_target_path(
@@ -376,19 +219,41 @@ def apply_operator_owned_content(
     )
     if target_error is not None:
         return target_error
-    existed = target.exists()
-    before = ""
-    if existed:
-        with contextlib.suppress(OSError):
-            before = target.read_text(encoding="utf-8")
-    merged = _merge_native_content(target, content, existed=existed)
-    diff = _unified_diff(before, merged, target)
     detail: dict[str, str] = {"ownership_class": ownership_class}
+    try:
+        existing_text = _read_existing(target)
+        merge = _merge_native_content(
+            target,
+            content,
+            before=existing_text,
+            harness_root=install_root,
+            prior=_with_retired(
+                prior_ownership(harness_name, install_root, target), retired
+            ),
+        )
+    except _LossyRewriteError as refusal:
+        return _refused_result("write_text", target, refusal, detail)
+    merged = merge.text
+    existed = existing_text is not None
+    before = existing_text or ""
+    diff = _unified_diff(before, merged, target)
     if diff:
         detail["diff"] = diff
     if existed and before != merged:
         detail["destructive_gate"] = "required"
-        if authorize is not None and not authorize(
+    if dry_run:
+        return prospective_result(
+            target,
+            before=existing_text,
+            after=merged,
+            operation="write_text",
+            detail=detail,
+        )
+    if (
+        existed
+        and before != merged
+        and authorize is not None
+        and not authorize(
             AuthorizationRequest(
                 harness=harness_name,
                 path=_path_text(target),
@@ -396,16 +261,17 @@ def apply_operator_owned_content(
                 ownership_class=ownership_class,
                 diff=diff,
             )
-        ):
-            return _with_detail(
-                _result(
-                    "skipped",
-                    "write_text",
-                    target,
-                    "operator declined the native-config change",
-                ),
-                detail,
-            )
+        )
+    ):
+        return _with_detail(
+            _result(
+                "skipped",
+                "write_text",
+                target,
+                "operator declined the native-config change",
+            ),
+            detail,
+        )
     result = write_bytes_safely(
         target,
         merged.encode("utf-8"),
@@ -414,7 +280,17 @@ def apply_operator_owned_content(
         operation="write_text",
         allowed_root=allowed_root,
     )
-    return _with_detail(result, detail)
+    return replace(_with_detail(result, detail), owned=merge.owned)
+
+
+def _with_retired(
+    prior: tuple[OwnedEntry, ...] | _LegacyOwnership,
+    retired: tuple[OwnedEntry, ...],
+) -> tuple[OwnedEntry, ...] | _LegacyOwnership:
+    """Attach *retired* entries to a legacy (pre-ownership) prior record."""
+    if retired and isinstance(prior, _LegacyOwnership):
+        return _LegacyOwnership(retired)
+    return prior
 
 
 def _unified_diff(before: str, after: str, target: Path) -> str:
@@ -427,6 +303,27 @@ def _unified_diff(before: str, after: str, target: Path) -> str:
             tofile=f"b/{target.name}",
         )
     )
+
+
+#: Extra template tokens for the current install pass (see content_tokens).
+_EXTRA_TOKENS: ContextVar[Mapping[str, str] | None] = ContextVar(
+    "apothem_extra_content_tokens", default=None
+)
+
+
+@contextmanager
+def content_tokens(**tokens: str) -> Iterator[None]:
+    """Substitute ``${NAME}`` tokens in every template rendered inside the block.
+
+    Lets an adapter resolve an install-time value (Claude Code's
+    ``${PYTHON_BIN}`` hook interpreter) while the template is rendered, so the
+    file is written once in its final form and a preview shows that form.
+    """
+    reset = _EXTRA_TOKENS.set({**(_EXTRA_TOKENS.get() or {}), **tokens})
+    try:
+        yield
+    finally:
+        _EXTRA_TOKENS.reset(reset)
 
 
 def render_content_tokens(
@@ -445,10 +342,12 @@ def render_content_tokens(
     location this way. Substituted paths use forward-slash form so the result
     stays valid inside JSON string literals on every platform. An absent root
     leaves its placeholder untouched, matching the path-resolution helper.
+    Tokens set by an enclosing :func:`content_tokens` block (Claude Code's
+    ``${PYTHON_BIN}``) are substituted too.
     """
     if "${" not in content:
         return content
-    mapping: dict[str, str] = {}
+    mapping: dict[str, str] = dict(_EXTRA_TOKENS.get() or {})
     if harness_root is not None:
         mapping["HARNESS_ROOT"] = harness_root.resolve().as_posix()
     if project_root is not None:
@@ -484,29 +383,54 @@ def _fold_profile_body(
 
 
 def _operator_owned_merge_text(
-    entry: InstallEntry, target: Path, content: str, *, existed: bool
-) -> str:
-    """Return the prospective merged text for an operator-owned target.
+    entry: InstallEntry,
+    target: Path,
+    content: str,
+    *,
+    before: str | None,
+    hook_root: Path | None = None,
+    prior: tuple[OwnedEntry, ...] | _LegacyOwnership = (),
+) -> MergeOutcome:
+    """Return the prospective merged text (and ownership) for a target.
 
+    *before* is the target's current text (``None`` when it does not exist).
     ``sentinel_merge`` entries fold *content* into the operator anchor as a
     sentinel-delimited managed block, preserving operator prose outside the
     block. ``write_text`` entries on an existing JSON target run the JSON
     merge with the incoming template authoritative: template-carried keys
     update in place so fixes ship to existing installs, while operator-added
-    keys absent from the template are preserved. The backup-before-replace
-    and destructive-authorization gate still guard the write. A non-existent
+    keys absent from the template are preserved, and the operator's bytes are
+    kept when no value changes. An existing ``write_text`` target in a format
+    Apothem cannot merge into is left exactly as it is (create-if-missing). The backup-before-replace and
+    destructive-authorization gate still guard the write. A non-existent
     target merges to *content* verbatim.
+
+    Raises:
+        _LossyRewriteError: When an existing JSON target cannot be rewritten
+            losslessly (see :func:`_operator_json_merge`).
     """
     if entry.mode == "sentinel_merge":
-        existing = ""
-        if existed:
-            with contextlib.suppress(OSError):
-                existing = target.read_text(encoding="utf-8")
-        return merge_managed_block(existing, content)
-    if target.suffix.lower() == ".json" and existed:
-        with contextlib.suppress(json.JSONDecodeError, OSError):
-            return _merged_json_text(target, content, prefer_existing=False)
-    return content
+        return MergeOutcome(merge_managed_block(before or "", content), None)
+    if target.suffix.lower() != ".json":
+        # A format Apothem cannot merge into (the GLM provider TOML): write the
+        # template only when the file is absent; the operator owns it after.
+        return MergeOutcome(content if before is None else before, None)
+    if before is not None and before.strip():
+        return _operator_json_merge(
+            target, before, content, harness_root=hook_root, prior=prior
+        )
+    return _merge_native_content(target, content, before=None)
+
+
+@dataclass(frozen=True)
+class _OperatorOwnedPreview:
+    """The no-write prospective outcome of one operator-owned manifest entry."""
+
+    target: Path
+    outcome: MaterializationOutcome
+    diff: str
+    gate_required: bool
+    refusal: _LossyRewriteError | None = None
 
 
 def _operator_owned_preview(
@@ -515,8 +439,9 @@ def _operator_owned_preview(
     harness_root: Path | None,
     project_root: Path | None,
     profile_body: str | None = None,
-) -> tuple[Path, MaterializationOutcome, str, bool] | None:
-    """Return (target, outcome, unified-diff, gate-required) for an entry.
+    harness_name: str = "manual",
+) -> _OperatorOwnedPreview | None:
+    """Return the prospective outcome, unified diff and gate flag for an entry.
 
     Reads the source and the current target without writing, then computes the
     prospective merge exactly as :func:`_apply_operator_owned_file` would — the
@@ -531,9 +456,11 @@ def _operator_owned_preview(
     The unified diff and the destructive-gate flag (``True`` only for an
     ``updated`` outcome, i.e. an overwrite of differing operator content)
     accompany the outcome so a dry-run preview can render the same diff the
-    gated write would show. ``None`` when the source file is absent (nothing to
-    preview — the plan validator already errors on a missing source, so this is
-    a defensive fallback).
+    gated write would show. A target the real write would refuse (see
+    :func:`_operator_json_merge`) previews as ``error`` and carries the refusal.
+    ``None`` when the source file is absent (nothing to preview — the plan
+    validator already errors on a missing source, so this is a defensive
+    fallback).
     """
     src = resolve_source(entry.source)
     if not src.is_file():
@@ -547,18 +474,28 @@ def _operator_owned_preview(
         project_root=project_root,
     )
     content = _fold_profile_body(entry, content, profile_body)
-    existed = target.exists()
-    before = ""
-    if existed:
-        with contextlib.suppress(OSError):
-            before = target.read_text(encoding="utf-8")
-    after = _operator_owned_merge_text(entry, target, content, existed=existed)
+    try:
+        existing_text = _read_existing(target)
+        after = _operator_owned_merge_text(
+            entry,
+            target,
+            content,
+            before=existing_text,
+            hook_root=harness_root or project_root,
+            prior=prior_ownership(
+                harness_name, _root_for(harness_root, project_root), target
+            ),
+        ).text
+    except _LossyRewriteError as refusal:
+        return _OperatorOwnedPreview(target, "error", "", False, refusal)
+    existed = existing_text is not None
+    before = existing_text or ""
     diff = _unified_diff(before, after, target)
     gate_required = existed and before != after
     outcome: MaterializationOutcome = (
         "created" if not existed else ("updated" if gate_required else "unchanged")
     )
-    return target, outcome, diff, gate_required
+    return _OperatorOwnedPreview(target, outcome, diff, gate_required)
 
 
 def _apply_operator_owned_file(
@@ -594,14 +531,23 @@ def _apply_operator_owned_file(
         project_root=project_root,
     )
     content = _fold_profile_body(entry, content, profile_body)
-    existed = target.exists()
-    before = ""
-    if existed:
-        with contextlib.suppress(OSError):
-            before = target.read_text(encoding="utf-8")
-    merged = _operator_owned_merge_text(entry, target, content, existed=existed)
-    diff = _unified_diff(before, merged, target)
     detail: dict[str, str] = {"ownership_class": entry.ownership_class}
+    try:
+        existing_text = _read_existing(target)
+        merge = _operator_owned_merge_text(
+            entry,
+            target,
+            content,
+            before=existing_text,
+            hook_root=harness_root or project_root,
+            prior=prior_ownership(harness_name, root, target),
+        )
+    except _LossyRewriteError as refusal:
+        return [_refused_result(entry.mode, target, refusal, detail, source=src)]
+    merged = merge.text
+    existed = existing_text is not None
+    before = existing_text or ""
+    diff = _unified_diff(before, merged, target)
     if diff:
         detail["diff"] = diff
     if existed and before != merged:
@@ -636,7 +582,7 @@ def _apply_operator_owned_file(
         source=src,
         allowed_root=allowed_root,
     )
-    return [_with_detail(result, detail)]
+    return [replace(_with_detail(result, detail), owned=merge.owned)]
 
 
 def apply_sentinel_merge(

@@ -474,7 +474,7 @@ harnesses:
   cursor:
     # Cursor's canonical surface is the project-scope MDC ruleset
     # at <project>/.cursor/rules/*.mdc (vendor doc:
-    # https://cursor.com/docs/context/rules). The legacy single-file
+    # https://cursor.com/docs/rules). The legacy single-file
     # ~/.cursorrules target is intentionally excluded: apothem targets
     # the current multi-file rules surface only. The
     # adapter at src/apothem/harnesses/cursor/ opts into the
@@ -599,7 +599,7 @@ harnesses:
 
   hermes:
     # Hermes receives ~/.hermes/config.yaml from materializer.py (native MCP
-    # under auxiliary.mcp). Commands and skills land under the Apothem support
+    # under mcp_servers). Commands and skills land under the Apothem support
     # subtree; skills.config is a vendor registry-package list Apothem does not author.
     install:
       - source: "commands/"
@@ -714,9 +714,9 @@ harnesses:
 
   kimi_code:
     # Kimi Code CLI (Moonshot) reads the project-root AGENTS.md as its
-    # agent-instructions surface (per the vendor configuration docs at
-    # https://moonshotai.github.io/kimi-cli/en/configuration/config-files.html,
-    # snapshot-date 2026-06-25) and keeps project configuration under
+    # agent-instructions surface (per the vendor docs at
+    # https://moonshotai.github.io/kimi-code/en/customization/agents,
+    # snapshot-date 2026-10-03) and keeps project configuration under
     # <project>/.kimi-code/. Apothem writes its governance surface into
     # AGENTS.md as a sentinel-delimited managed block (operator prose outside
     # the sentinels is preserved) and keeps non-native Markdown cohorts under
@@ -911,10 +911,11 @@ harnesses:
     # markdown-only (HTML-comment <!-- ... --> delimiters, a frozen contract in
     # apothem.lib.harness_materializer), so it cannot apply to a .toml surface
     # without producing invalid TOML. The file is therefore materialized via
-    # write_text as an operator-owned valid-TOML backend config: apothem writes
-    # the clean template, and the operator owns the file thereafter — their own
-    # backend keys and edits route through the destructive-op authorization gate
-    # on every subsequent update rather than being silently overwritten. The
+    # write_text as an operator-owned valid-TOML backend config: an
+    # operator-owned target in a format Apothem cannot merge into is written
+    # only when absent (create-if-missing) and never overwritten afterwards;
+    # uninstall removes it only when Apothem created it and it is still the
+    # unedited template. The
     # adapter at src/apothem/harnesses/glm/ opts into the project-scope contract
     # (requires_project = True).
     install:

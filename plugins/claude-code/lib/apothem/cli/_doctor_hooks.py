@@ -33,7 +33,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
-from apothem.harnesses._shared.install_driver_merge import _is_apothem_hook
+from apothem.harnesses._shared.install_driver import _is_apothem_hook
 from apothem.lib import install_ledger
 
 #: Script names that identify an Apothem hook entry point inside an argv.

@@ -1,16 +1,6 @@
 [
   {
     "detail": {
-      "capability": "agent_memory",
-      "status": "discovery-pending"
-    },
-    "message": "The current adapter pin does not identify durable memory.",
-    "operation": "capability_projection",
-    "outcome": "warning",
-    "path": "src/apothem/harnesses/gemini_cli/capabilities.yml"
-  },
-  {
-    "detail": {
       "capability": "mcp_servers",
       "status": "discovery-pending"
     },
@@ -133,5 +123,23 @@
     "outcome": "created",
     "path": "<ROOT>/.gemini/.apothem/support/hooks",
     "source": "<APOTHEM_SRC>/hooks"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "data_surface",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/memory"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "data_surface",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/contexts"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "data_surface",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/learning"
   }
 ]

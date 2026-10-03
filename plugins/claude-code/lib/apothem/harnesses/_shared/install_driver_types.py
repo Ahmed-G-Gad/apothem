@@ -13,6 +13,7 @@ from typing import Any, Final, Literal
 
 import apothem
 from apothem.harnesses._shared import install_driver
+from apothem.lib.install_ledger import OwnedEntry
 
 IgnoreFn = Callable[[str, list[str]], list[str]]
 
@@ -84,6 +85,8 @@ OPERATION_LABELS: Final[dict[str, str]] = {
     "surgical_uninstall": "Remove file",
     "remove_existing": "Replace existing target",
     "restore_backup": "Restore backup",
+    "remove_created": "Remove created file",
+    "remove_directory": "Remove empty directory",
     "remove_data_home": "Remove data directory",
 }
 
@@ -173,6 +176,10 @@ class MaterializationResult:
     source: str | None = None
     backup_path: str | None = None
     detail: dict[str, str] = field(default_factory=dict)
+    #: Entries Apothem added to this structured operator config, recorded in
+    #: the install ledger so uninstall removes exactly those. ``None`` for a
+    #: non-structured target. Internal bookkeeping: not part of ``to_dict``.
+    owned: tuple[OwnedEntry, ...] | None = None
 
     @property
     def changed(self) -> bool:

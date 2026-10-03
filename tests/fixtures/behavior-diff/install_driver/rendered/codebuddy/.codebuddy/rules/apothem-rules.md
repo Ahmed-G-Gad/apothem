@@ -16,7 +16,7 @@ Apothem propagates a shared governance and convention surface across every suppo
 - **Rules** — engineering rules applied on every interaction (`alwaysApply: true`). The full rule cohort lives at the apothem source repository under `src/apothem/rules/`; this CodeBuddy-facing anchor names the disciplines the operator may consult in detail.
 - **Skills, commands, agents** — reusable techniques, slash-style workflows, and persistent sub-agent definitions. Apothem's canonical-master cohort at the apothem source repository defines them; CodeBuddy does not auto-discover them as separate surfaces, so they manifest here as referenced discipline.
 - **Memory** — CodeBuddy's project memory file (`CODEBUDDY.md`) is operator-owned, not apothem-managed.
-- **Settings** — CodeBuddy's permissions and MCP surface (`.codebuddy/settings.json`) is operator-owned, not apothem-managed.
+- **Settings** — CodeBuddy's MCP servers (`.mcp.json` at the project root) and settings (`.codebuddy/settings.json`) are operator-owned, not apothem-managed.
 
 ## Engineering disciplines in force
 

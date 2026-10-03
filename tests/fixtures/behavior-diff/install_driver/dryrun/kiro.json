@@ -74,7 +74,7 @@
       "capability": "sub_agent_dispatch",
       "status": "unsupported"
     },
-    "message": "No Kiro sub-agent dispatch surface is documented for the adapter to project.",
+    "message": "Kiro documents custom agents (.kiro/agents and the Kiro CLI); the Kiro adapter delivers steering rules only and Apothem does not dispatch sub-agents through Kiro.",
     "operation": "capability_projection",
     "outcome": "warning",
     "path": "src/apothem/harnesses/kiro/capabilities.yml"
@@ -89,5 +89,23 @@
     "outcome": "created",
     "path": "<ROOT>/.kiro/steering/apothem-rules.md",
     "source": "<APOTHEM_SRC>/harnesses/kiro/templates/apothem-rules.md"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "data_surface",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/memory"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "data_surface",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/contexts"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "data_surface",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/learning"
   }
 ]

@@ -13,10 +13,10 @@
 # This file is operator-owned. GLM is a model backend, not a rule-bearing
 # coding agent, so Apothem projects NO shared-profile instruction content here
 # (no rules, no opted-in behaviors — a backend exposes none): the file carries
-# only the backend wiring below. Apothem writes this clean template on install;
-# thereafter the file is yours. Your own backend keys and edits route through
-# the per-file confirmation gate on every subsequent `apothem install` /
-# `apothem update` rather than being silently overwritten.
+# only the backend wiring below. Apothem writes this template only when the
+# file is absent; thereafter the file is yours: `apothem install` and
+# `apothem update` never overwrite it, and `apothem uninstall` removes it only
+# while it is still this unedited template.
 #
 # Vendor surface conventions are pinned at
 # src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md (snapshotted against the

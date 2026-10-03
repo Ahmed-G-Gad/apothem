@@ -46,11 +46,7 @@ from pathlib import Path
 from typing import Any
 
 from apothem.harnesses._shared import install_driver
-from apothem.harnesses._shared.install_driver import (
-    MaterializationResult,
-    MaterializationRun,
-)
-from apothem.lib import atomic_io
+from apothem.harnesses._shared.install_driver import MaterializationRun
 from apothem.lib.profile import coerce_profile
 from apothem.lib.profile_projection import project
 from apothem.lib.python_resolver import resolve_python_bin
@@ -59,92 +55,62 @@ from apothem.lib.python_resolver import resolve_python_bin
 _HARNESS_NAME: str = "claude_code"
 # Public adapter id used to resolve per-harness profile overrides.
 _HARNESS_ID: str = "claude-code"
-# Placeholder the settings.json template carries on every hook ``command``
-# field; resolved to an absolute CPython path at install time so no hook
-# entry invokes a bare ``python`` (which a host PATH can resolve to a
-# Microsoft Store WindowsApps launcher stub).
-_PYTHON_BIN_TOKEN: str = "${PYTHON_BIN}"  # noqa: S105 — template placeholder token, not a secret
 
 
-def _substitute_hook_interpreter(
-    harness_root: Path, python_bin: str
-) -> list[MaterializationResult]:
-    """Substitute ``${PYTHON_BIN}`` in the installed settings.json.
-
-    Reads the settings.json the manifest install just wrote, replaces every
-    ``${PYTHON_BIN}`` placeholder with *python_bin* (the absolute path to a real
-    CPython >= 3.10 resolved by :func:`resolve_python_bin` *before* the tree was
-    written), and rewrites the file in place. Resolution is pre-committed by the
-    caller so a resolution failure aborts the install before any tree is
-    written, never leaving settings.json with literal ``${PYTHON_BIN}`` in every
-    hook command. The rewrite is a pure token substitution on the file the same
-    install just produced, so it is written atomically *without* a
-    backup-before-replace and *without* the JSON key-merge — both would corrupt
-    the substitution (the merge re-prefers the existing ``${PYTHON_BIN}`` token,
-    and the backup would capture the un-resolved intermediate state as a stray
-    sibling). Idempotent: *python_bin* is stable across installs on the same
-    host, so re-running yields byte-identical output. A settings.json with no
-    placeholder (already resolved, or an operator-stripped hooks block) is left
-    untouched.
-    """
-    settings_path = harness_root / "settings.json"
-    if not settings_path.is_file():
-        return []
-    content = settings_path.read_text(encoding="utf-8")
-    if _PYTHON_BIN_TOKEN not in content:
-        return []
-    rendered = content.replace(_PYTHON_BIN_TOKEN, python_bin)
-    atomic_io.write_bytes_atomically(settings_path, rendered.encode("utf-8"))
-    return [
-        MaterializationResult(
-            outcome="updated",
-            operation="resolve-python-bin",
-            path=str(settings_path),
-            message=f"resolved hook interpreter to {python_bin}",
-            source=None,
-            backup_path=None,
-            detail={"python_bin": python_bin},
-        )
-    ]
-
-
-def install(output_path: Path, profile: dict[str, Any]) -> MaterializationRun:
+def install(
+    output_path: Path, profile: dict[str, Any], *, dry_run: bool = False
+) -> MaterializationRun:
     """Install the apothem convention surface into the Claude Code harness.
 
     The harness root is derived as ``output_path.parent`` — the
     ``ClaudeCodeAdapter`` resolves this to ``~/.claude/``. The hook interpreter
     is resolved FIRST, before any tree is written: a resolution failure
     (:func:`resolve_python_bin` raising when no real CPython >= 3.10 is found)
-    aborts the install with nothing on disk, so it can never leave settings.json
-    with a literal ``${PYTHON_BIN}`` in every hook command (which would then
-    invoke a nonexistent binary). The manifest-driven convention surface
+    aborts the install with nothing on disk. The resolved path is substituted
+    for the template's ``${PYTHON_BIN}`` token while settings.json is rendered,
+    so the file is written once in its final form (a re-install and ``diff``
+    then see no pending change). The manifest-driven convention surface
     (settings.json, agents/, commands→skills/, rules/, skills/, support trees)
-    is materialized next, then the shared *profile* is projected into the
+    is materialized, then the shared *profile* is projected into the
     user-scope ``CLAUDE.md`` instruction anchor as a sentinel-delimited managed
-    block (identity / preferences / rules / seriousness / opted-in behaviors),
-    and finally the pre-resolved interpreter path is substituted into the
-    written settings.json. Operator prose outside the sentinels is preserved
-    verbatim. All operations are idempotent — re-running with the same profile
-    yields byte-identical output and preserves unrelated operator-authored
-    discovery entries.
+    block (identity / preferences / rules / seriousness / opted-in behaviors).
+    Operator prose outside the sentinels is preserved verbatim. All operations
+    are idempotent — re-running with the same profile yields byte-identical
+    output and preserves unrelated operator-authored discovery entries.
+
+    With ``dry_run=True`` nothing is written: the returned run previews every
+    write, the ``CLAUDE.md`` anchor included.
     """
     harness_root = output_path.parent
     # Resolve the hook interpreter before writing anything: a resolution failure
     # must abort with no half-written tree carrying literal ``${PYTHON_BIN}``.
     python_bin = resolve_python_bin().as_posix()
-    run = install_driver.run_install(_HARNESS_NAME, harness_root=harness_root)
     for_harness = coerce_profile(profile).for_harness(_HARNESS_ID)
-    surfaces = project(for_harness, _HARNESS_ID)
+    body = project(for_harness, _HARNESS_ID).managed_block_body
+    missing = install_driver.capture_missing_dirs(
+        _HARNESS_NAME,
+        harness_root=harness_root,
+        profile=profile,
+        extra=(harness_root / "CLAUDE.md",),
+    )
+    with install_driver.content_tokens(PYTHON_BIN=python_bin):
+        run = install_driver.run_install(
+            _HARNESS_NAME, harness_root=harness_root, dry_run=dry_run
+        )
     anchor_result = install_driver.apply_managed_block_anchor(
         harness_root / "CLAUDE.md",
-        surfaces.managed_block_body,
+        body,
         install_root=harness_root,
         harness_name=_HARNESS_NAME,
         allowed_root=harness_root.parent,
+        dry_run=dry_run,
     )
-    interpreter_results = _substitute_hook_interpreter(harness_root, python_bin)
+    if dry_run:
+        return run.extend([anchor_result])
     return install_driver.finalize_install(
-        run.extend([anchor_result, *interpreter_results]), root=harness_root
+        run.extend([anchor_result]),
+        root=harness_root,
+        missing_before=missing,
     )
 
 

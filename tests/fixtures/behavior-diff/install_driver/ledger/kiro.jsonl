@@ -1,1 +1,1 @@
-{"harness": "kiro", "install_id": "<INSTALL_ID>", "kind": "install", "root": "<ROOT>", "targets": [{"mode": "sentinel_merge", "ownership_class": "operator-owned", "path": "<ROOT>/.kiro/steering/apothem-rules.md"}], "timestamp": "<TIMESTAMP>"}
+{"harness": "kiro", "install_id": "<INSTALL_ID>", "kind": "install", "root": "<ROOT>", "targets": [{"created": true, "mode": "sentinel_merge", "outcome": "created", "ownership_class": "operator-owned", "path": "<ROOT>/.kiro/steering/apothem-rules.md"}], "timestamp": "<TIMESTAMP>"}

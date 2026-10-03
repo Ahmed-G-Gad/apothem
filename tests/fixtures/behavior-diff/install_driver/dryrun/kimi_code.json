@@ -34,7 +34,7 @@
       "capability": "tool_surface_restrictions",
       "status": "discovery-pending"
     },
-    "message": "Kimi Code tool-permission surface not yet pinned.",
+    "message": "Kimi Code documents default_permission_mode and [[permission.rules]] in ~/.kimi-code/config.toml; Apothem has not yet decided how to project the universal-deny floor into them.",
     "operation": "capability_projection",
     "outcome": "warning",
     "path": "src/apothem/harnesses/kimi_code/capabilities.yml"
@@ -145,5 +145,23 @@
     "outcome": "created",
     "path": "<ROOT>/.kimi-code/.apothem/support/templates",
     "source": "<APOTHEM_SRC>/templates"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "data_surface",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/memory"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "data_surface",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/contexts"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "data_surface",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/learning"
   }
 ]

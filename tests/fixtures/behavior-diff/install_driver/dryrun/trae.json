@@ -14,7 +14,7 @@
       "capability": "agents",
       "status": "unsupported"
     },
-    "message": "No Trae sub-agent dispatch surface is documented.",
+    "message": "Trae documents custom Agents (docs.trae.ai/ide/agent); the Trae adapter delivers the project rules file only and Apothem does not author Trae agents.",
     "operation": "capability_projection",
     "outcome": "warning",
     "path": "src/apothem/harnesses/trae/capabilities.yml"
@@ -84,7 +84,7 @@
       "capability": "sub_agent_dispatch",
       "status": "unsupported"
     },
-    "message": "No Trae sub-agent dispatch surface is documented.",
+    "message": "The Trae adapter delivers the project rules file only; Apothem does not dispatch sub-agents through Trae.",
     "operation": "capability_projection",
     "outcome": "warning",
     "path": "src/apothem/harnesses/trae/capabilities.yml"
@@ -99,5 +99,23 @@
     "outcome": "created",
     "path": "<ROOT>/.trae/rules/apothem-rules.md",
     "source": "<APOTHEM_SRC>/harnesses/trae/templates/apothem-rules.md"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "data_surface",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/memory"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "data_surface",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/contexts"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "data_surface",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/learning"
   }
 ]

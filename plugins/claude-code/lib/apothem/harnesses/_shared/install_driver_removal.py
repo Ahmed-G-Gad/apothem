@@ -14,9 +14,15 @@ import yaml
 from apothem.lib.harness_materializer import (
     remove_managed_block,
 )
+from apothem.lib.install_ledger import LedgerTarget
 
 from .install_driver_backup import _guarded_unlink, backup_existing, write_bytes_safely
-from .install_driver_merge import _is_apothem_hook
+from .install_driver_jsonmerge import (
+    _is_apothem_hook,
+    _leading_comment_block,
+    _LossyRewriteError,
+)
+from .install_driver_ownership import current_target, remove_owned_text
 from .install_driver_pathsafety import _validate_target_path
 from .install_driver_types import (
     _REMOVE_KEY,
@@ -26,7 +32,9 @@ from .install_driver_types import (
 )
 
 
-def _remove_apothem_hook_handlers(existing_entries: object) -> object:
+def _remove_apothem_hook_handlers(
+    existing_entries: object, *, harness_root: Path | None = None
+) -> object:
     """Strip Apothem hook handlers from one hooks event's matcher list.
 
     The inverse of :func:`_merge_hooks` for a single event: walks the operator's
@@ -49,7 +57,9 @@ def _remove_apothem_hook_handlers(existing_entries: object) -> object:
             retained.append(entry)
             continue
         kept_handlers = [
-            handler for handler in handlers if not _is_apothem_hook(handler)
+            handler
+            for handler in handlers
+            if not _is_apothem_hook(handler, harness_root=harness_root)
         ]
         if not kept_handlers:
             # Every handler under this matcher was Apothem's: drop the entry.
@@ -65,6 +75,8 @@ def _remove_apothem_hook_handlers(existing_entries: object) -> object:
 def _remove_apothem_hooks(
     existing_hooks: object,
     template_hooks: object,
+    *,
+    harness_root: Path | None = None,
 ) -> object:
     """Strip Apothem-managed handlers from an operator ``hooks`` object.
 
@@ -81,7 +93,9 @@ def _remove_apothem_hooks(
         if event_name not in template:
             result[event_name] = existing_entries
             continue
-        stripped = _remove_apothem_hook_handlers(existing_entries)
+        stripped = _remove_apothem_hook_handlers(
+            existing_entries, harness_root=harness_root
+        )
         if stripped is _REMOVE_KEY:
             continue
         result[event_name] = stripped
@@ -110,7 +124,9 @@ def _remove_apothem_list_items(
     return remaining
 
 
-def _remove_apothem_values(existing: object, template: object) -> object:
+def _remove_apothem_values(
+    existing: object, template: object, *, harness_root: Path | None = None
+) -> object:
     """Return *existing* with Apothem's *template* contribution removed.
 
     The structural inverse of the install-side overlay merge. Recurses through
@@ -133,12 +149,16 @@ def _remove_apothem_values(existing: object, template: object) -> object:
             continue
         template_value = template[key]
         if key == "hooks" and isinstance(value, dict):
-            stripped_hooks = _remove_apothem_hooks(value, template_value)
+            stripped_hooks = _remove_apothem_hooks(
+                value, template_value, harness_root=harness_root
+            )
             if stripped_hooks is not _REMOVE_KEY:
                 result[key] = stripped_hooks
             continue
         if isinstance(value, dict) and isinstance(template_value, dict):
-            reduced = _remove_apothem_values(value, template_value)
+            reduced = _remove_apothem_values(
+                value, template_value, harness_root=harness_root
+            )
             if reduced is not _REMOVE_KEY:
                 result[key] = reduced
             continue
@@ -176,6 +196,7 @@ def _strip_apothem_json(
     template_text: str,
     *,
     apothem_keys: frozenset[str] = frozenset(),
+    harness_root: Path | None = None,
 ) -> str | None:
     """Return *operator_text* JSON with Apothem's *template_text* keys removed.
 
@@ -193,7 +214,7 @@ def _strip_apothem_json(
         return operator_text
     if isinstance(operator, dict) and apothem_keys:
         operator = _drop_owned_top_keys(operator, apothem_keys)
-    reduced = _remove_apothem_values(operator, template)
+    reduced = _remove_apothem_values(operator, template, harness_root=harness_root)
     if reduced is _REMOVE_KEY:
         return None
     if isinstance(reduced, dict) and not reduced:
@@ -206,6 +227,7 @@ def _strip_apothem_yaml(
     template_text: str,
     *,
     apothem_keys: frozenset[str] = frozenset(),
+    harness_root: Path | None = None,
 ) -> str | None:
     """Return *operator_text* YAML with Apothem's *template_text* keys removed.
 
@@ -235,7 +257,7 @@ def _strip_apothem_yaml(
     if apothem_keys:
         operator = _drop_owned_top_keys(operator, apothem_keys)
     template_dict = template if isinstance(template, dict) else {}
-    reduced = _remove_apothem_values(operator, template_dict)
+    reduced = _remove_apothem_values(operator, template_dict, harness_root=harness_root)
     if reduced is _REMOVE_KEY:
         return None
     if isinstance(reduced, dict) and not reduced:
@@ -252,6 +274,7 @@ def _surgical_remove_from_target(
     harness_name: str,
     allowed_root: Path,
     apothem_keys: frozenset[str] = frozenset(),
+    recorded: LedgerTarget | None = None,
 ) -> MaterializationResult | None:
     """Surgically remove Apothem's contribution from one operator-owned target.
 
@@ -265,13 +288,20 @@ def _surgical_remove_from_target(
       via the recursive structured stripper (operator-added/overridden keys
       survive), plus any *apothem_keys* top-level namespaces Apothem fully owns;
       delete when the remainder is empty, else atomic-rewrite.
-    - Any other suffix: delete when the file content equals the rendered template
-      (Apothem-owned, untouched); otherwise leave it in place (never destroy
-      unrecognized operator content) — the backup already captured it.
+    - Any other suffix: delete when Apothem created the file and its content
+      still equals the rendered template; otherwise leave it in place (never
+      destroy unrecognized operator content) — the backup already captured it.
+
+    When *recorded* (the target's entry in the current install record) carries
+    the entries Apothem owns in a JSON / YAML target, exactly those are removed
+    (plus Apothem's hook handlers, by path) instead of every value equal to the
+    template: an operator entry that happens to equal one of Apothem's own
+    survives. A file Apothem did not create is never deleted.
 
     Returns ``None`` when *target* does not exist (nothing to remove). The
     *template_text* is the rendered Apothem template (path tokens already
-    substituted) the install wrote, used to identify Apothem's contribution.
+    substituted) the install wrote, used to identify Apothem's contribution
+    when no ownership is recorded.
     """
     if not target.exists() or not target.is_file():
         return None
@@ -292,20 +322,47 @@ def _surgical_remove_from_target(
     )
     suffix = target.suffix.lower()
     remainder: str | None
+    structured = suffix in {".json", ".yaml", ".yml"}
     if mode == "sentinel_merge":
         stripped = remove_managed_block(existing)
         remainder = None if not stripped.strip() else stripped
+    elif structured and recorded is not None and recorded.owned is not None:
+        try:
+            remainder = remove_owned_text(
+                target,
+                existing,
+                owned=recorded.owned,
+                created=recorded.created,
+                harness_root=install_root,
+                managed_header=_leading_comment_block(template_text),
+            )
+        except _LossyRewriteError as refusal:
+            return _result(
+                "skipped",
+                "surgical_uninstall",
+                target,
+                f"{refusal.reason}; {refusal.fix}",
+                backup_path=backup,
+            )
     elif suffix == ".json":
         remainder = _strip_apothem_json(
-            existing, template_text, apothem_keys=apothem_keys
+            existing,
+            template_text,
+            apothem_keys=apothem_keys,
+            harness_root=install_root,
         )
     elif suffix in {".yaml", ".yml"}:
         remainder = _strip_apothem_yaml(
-            existing, template_text, apothem_keys=apothem_keys
+            existing,
+            template_text,
+            apothem_keys=apothem_keys,
+            harness_root=install_root,
         )
     else:
-        # Unrecognized operator content: only delete an exact template copy.
-        remainder = None if existing == template_text else existing
+        # Unrecognized operator content: only delete an exact template copy
+        # Apothem itself created (an operator's own copy is left alone).
+        apothem_created = recorded is None or recorded.created is not False
+        remainder = None if existing == template_text and apothem_created else existing
     if remainder is None:
         result = _guarded_unlink(
             target, allowed_root=allowed_root, operation="surgical_uninstall"
@@ -363,4 +420,5 @@ def surgically_remove_materialized_config(
         harness_name=harness_name,
         allowed_root=allowed_root or install_root,
         apothem_keys=apothem_keys,
+        recorded=current_target(harness_name, install_root, target),
     )

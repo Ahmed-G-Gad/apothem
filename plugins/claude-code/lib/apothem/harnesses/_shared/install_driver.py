@@ -49,6 +49,7 @@ from .install_driver_apply import apply_replace_tree as apply_replace_tree
 from .install_driver_apply import apply_write_text as apply_write_text
 from .install_driver_backup import _LEDGER_OUTCOMES as _LEDGER_OUTCOMES
 from .install_driver_backup import _NON_LEDGER_OPERATIONS as _NON_LEDGER_OPERATIONS
+from .install_driver_backup import BACKUP_KEEP as BACKUP_KEEP
 from .install_driver_backup import _backup_relative_path as _backup_relative_path
 from .install_driver_backup import _compensating_rollback as _compensating_rollback
 from .install_driver_backup import _guarded_unlink as _guarded_unlink
@@ -59,6 +60,7 @@ from .install_driver_backup import _reserve_unique_backup as _reserve_unique_bac
 from .install_driver_backup import _sibling_backup_path as _sibling_backup_path
 from .install_driver_backup import _unique_path as _unique_path
 from .install_driver_backup import _write_file_atomically as _write_file_atomically
+from .install_driver_backup import apply_retention as apply_retention
 from .install_driver_backup import backup_existing as backup_existing
 from .install_driver_backup import backup_file_to_sibling as backup_file_to_sibling
 from .install_driver_backup import finalize_install as finalize_install
@@ -101,6 +103,18 @@ from .install_driver_converters import _toml_multiline_string as _toml_multiline
 from .install_driver_converters import _toml_string as _toml_string
 from .install_driver_converters import _yaml_list as _yaml_list
 from .install_driver_converters import _yaml_scalar as _yaml_scalar
+from .install_driver_jsonmerge import _APOTHEM_HOOK_MARKERS as _APOTHEM_HOOK_MARKERS
+from .install_driver_jsonmerge import (
+    CONFIG_UNPARSEABLE_CODE as CONFIG_UNPARSEABLE_CODE,
+)
+from .install_driver_jsonmerge import _dedupe_json_list as _dedupe_json_list
+from .install_driver_jsonmerge import _is_apothem_hook as _is_apothem_hook
+from .install_driver_jsonmerge import _leading_comment_block as _leading_comment_block
+from .install_driver_jsonmerge import _merge_hook_entry as _merge_hook_entry
+from .install_driver_jsonmerge import _merge_hooks as _merge_hooks
+from .install_driver_jsonmerge import _merge_json_settings as _merge_json_settings
+from .install_driver_jsonmerge import _merge_json_values as _merge_json_values
+from .install_driver_jsonmerge import _overlay_json_settings as _overlay_json_settings
 from .install_driver_lifecycle import FidelityResult as FidelityResult
 from .install_driver_lifecycle import _native_config_parses as _native_config_parses
 from .install_driver_lifecycle import _profile_anchor_targets as _profile_anchor_targets
@@ -118,30 +132,21 @@ from .install_driver_materialize import (
 from .install_driver_materialize import (
     _dispatch_install_entry as _dispatch_install_entry,
 )
-from .install_driver_materialize import _dry_run_results as _dry_run_results
 from .install_driver_materialize import (
     _materialize_data_surfaces as _materialize_data_surfaces,
 )
 from .install_driver_materialize import run_install as run_install
-from .install_driver_merge import _APOTHEM_HOOK_MARKERS as _APOTHEM_HOOK_MARKERS
+from .install_driver_merge import (
+    PROFILE_DOCUMENT_RELATIVE as PROFILE_DOCUMENT_RELATIVE,
+)
 from .install_driver_merge import (
     _apply_operator_owned_file as _apply_operator_owned_file,
 )
-from .install_driver_merge import _dedupe_json_list as _dedupe_json_list
-from .install_driver_merge import _is_apothem_hook as _is_apothem_hook
-from .install_driver_merge import _leading_comment_block as _leading_comment_block
-from .install_driver_merge import _merge_hook_entry as _merge_hook_entry
-from .install_driver_merge import _merge_hooks as _merge_hooks
-from .install_driver_merge import _merge_json_settings as _merge_json_settings
-from .install_driver_merge import _merge_json_values as _merge_json_values
-from .install_driver_merge import _merge_native_content as _merge_native_content
 from .install_driver_merge import _merged_json_text as _merged_json_text
-from .install_driver_merge import _merged_yaml_text as _merged_yaml_text
 from .install_driver_merge import (
     _operator_owned_merge_text as _operator_owned_merge_text,
 )
 from .install_driver_merge import _operator_owned_preview as _operator_owned_preview
-from .install_driver_merge import _overlay_json_settings as _overlay_json_settings
 from .install_driver_merge import _unified_diff as _unified_diff
 from .install_driver_merge import (
     apply_managed_block_anchor as apply_managed_block_anchor,
@@ -150,9 +155,11 @@ from .install_driver_merge import (
     apply_operator_owned_content as apply_operator_owned_content,
 )
 from .install_driver_merge import apply_sentinel_merge as apply_sentinel_merge
+from .install_driver_merge import content_tokens as content_tokens
 from .install_driver_merge import project_profile_document as project_profile_document
 from .install_driver_merge import render_content_tokens as render_content_tokens
 from .install_driver_merge import write_text_safely as write_text_safely
+from .install_driver_ownership import _merge_native_content as _merge_native_content
 from .install_driver_pathsafety import _allowed_write_root as _allowed_write_root
 from .install_driver_pathsafety import _existing_chain as _existing_chain
 from .install_driver_pathsafety import (
@@ -164,6 +171,7 @@ from .install_driver_pathsafety import _root_for as _root_for
 from .install_driver_pathsafety import _unsafe_symlink as _unsafe_symlink
 from .install_driver_pathsafety import _validate_target_path as _validate_target_path
 from .install_driver_pathsafety import _within_allowed_root as _within_allowed_root
+from .install_driver_planvalidation import _dry_run_results as _dry_run_results
 from .install_driver_planvalidation import (
     _generated_targets_for_entry as _generated_targets_for_entry,
 )
@@ -196,6 +204,8 @@ from .install_driver_removal import (
 from .install_driver_removal import (
     surgically_remove_materialized_config as surgically_remove_materialized_config,
 )
+from .install_driver_reversal import capture_missing_dirs as capture_missing_dirs
+from .install_driver_reversal import rollback_install as rollback_install
 from .install_driver_treeops import (
     _directory_contents_equal as _directory_contents_equal,
 )
@@ -206,6 +216,7 @@ from .install_driver_treeops import (
 from .install_driver_treeops import (
     _write_single_file_directory as _write_single_file_directory,
 )
+from .install_driver_treeops import remove_created_dirs as remove_created_dirs
 from .install_driver_treeops import replace_tree as replace_tree
 from .install_driver_treeops import sweep_stale as sweep_stale
 from .install_driver_types import _INSTALL_ENTRY_MODES as _INSTALL_ENTRY_MODES
@@ -262,6 +273,7 @@ __all__ = [
     "apply_write_text",
     "backup_existing",
     "build_plan",
+    "capture_missing_dirs",
     "check_fidelity",
     "detect_install",
     "fidelity_is_faithful",
@@ -276,6 +288,7 @@ __all__ = [
     "resolve_source",
     "resolve_target",
     "restore_backup",
+    "rollback_install",
     "run_install",
     "run_uninstall",
     "surgically_remove_materialized_config",

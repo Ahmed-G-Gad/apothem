@@ -22,6 +22,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- **A weekly check follows every vendor URL the harness pins and templates
+  cite**, and files an issue when one has moved or died.
 - **The one-shot installers offer a checksum-only path.**
   `APOTHEM_VERIFY=checksum` installs the release's platform archive after
   checking its SHA-256 against the release's `SHA256SUMS`, aborts on a
@@ -79,6 +81,20 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- **Install refuses to rewrite a config it cannot keep intact.** A merge
+  that must change a commented, JSONC, JSON5, or unparseable operator config
+  writes nothing for that harness and exits 1 with `config.unparseable`; a
+  merge that changes no value leaves the file byte-for-byte as it was.
+- **Backups and the install ledger stay bounded** to the newest 10 sets and
+  records per harness.
+- **Harness convention pins cite their vendor sources.** Each pin lists the
+  pages it rests on with retrieval dates and gives every discovery-pending
+  capability a dated target. CI and the release build block on a pin older
+  than 90 days, a pin with no vendor URL, or an overdue target.
+- **Capability rationales match the vendor docs.** GitHub Copilot, Kiro, Trae,
+  CodeBuddy, and Devin rationales cite the command and agent surfaces those
+  tools document; Antigravity skills and Gemini CLI memory are native; Cursor
+  web fetch is supported; the CodeBuddy and Devin MCP paths are corrected.
 - **Each converted cohort declares what it keeps or drops.** Every adapter
   that converts commands, agents, or rules records a `conversion_losses` map
   in its `capabilities.yml`, checked against real converted output, and
@@ -157,6 +173,22 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **Rollback returns a harness to its exact pre-install state**, and restores
+  native configs at their real path.
+- **Uninstall removes the empty directories the install created.**
+- **Operator settings survive install, update, and uninstall.** Permission
+  rules, MCP servers, Hermes `auxiliary` settings, and hook handlers the
+  operator added are kept; a hook counts as Apothem's only when it runs
+  Apothem's installed scripts.
+- **Hermes MCP servers land in the top-level `mcp_servers` map**, and an update
+  moves the servers an earlier release wrote under `auxiliary.mcp`.
+- **The GLM provider file is written only when absent**, and GLM verifies in
+  sync after a clean install.
+- **Profile text can no longer split the managed block.**
+- **`install --dry-run` and `diff` list every write**, and a repeated install
+  writes nothing.
+- **Cursor, Devin, and Kimi Code references point at the current vendor
+  pages.**
 - **Codex keeps user-only skills out of implicit invocation.** Codex ignores
   `disable-model-invocation`, so the install writes `agents/openai.yaml` with
   `allow_implicit_invocation: false` beside each user-only skill.

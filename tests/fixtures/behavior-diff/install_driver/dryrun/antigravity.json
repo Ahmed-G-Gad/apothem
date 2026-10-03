@@ -4,7 +4,7 @@
       "capability": "agent_memory",
       "status": "discovery-pending"
     },
-    "message": "The current adapter pin does not identify durable memory.",
+    "message": "The Antigravity docs index (antigravity.google/llms.txt, retrieved 2026-10-03) lists no durable-memory surface.",
     "operation": "capability_projection",
     "outcome": "warning",
     "path": "src/apothem/harnesses/antigravity/capabilities.yml"
@@ -25,16 +25,6 @@
       "status": "unsupported"
     },
     "message": "No current Antigravity CLI output-style surface is pinned.",
-    "operation": "capability_projection",
-    "outcome": "warning",
-    "path": "src/apothem/harnesses/antigravity/capabilities.yml"
-  },
-  {
-    "detail": {
-      "capability": "skills",
-      "status": "discovery-pending"
-    },
-    "message": "Antigravity skills auto-load placement is unverified under the empty-body docs problem; left unchanged pending a browser-verified pass.",
     "operation": "capability_projection",
     "outcome": "warning",
     "path": "src/apothem/harnesses/antigravity/capabilities.yml"
@@ -153,5 +143,23 @@
     "outcome": "created",
     "path": "<ROOT>/antigravity-cli/plugins/apothem/.apothem/support/hooks",
     "source": "<APOTHEM_SRC>/hooks"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "data_surface",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/memory"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "data_surface",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/contexts"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "data_surface",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/learning"
   }
 ]

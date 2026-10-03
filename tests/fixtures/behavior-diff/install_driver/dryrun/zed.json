@@ -14,7 +14,7 @@
       "capability": "agents",
       "status": "unsupported"
     },
-    "message": "No Zed adapter-owned sub-agent file surface is documented.",
+    "message": "The Zed adapter delivers the project rules file only; Apothem does not author Zed agent profiles or external agents.",
     "operation": "capability_projection",
     "outcome": "warning",
     "path": "src/apothem/harnesses/zed/capabilities.yml"
@@ -84,7 +84,7 @@
       "capability": "sub_agent_dispatch",
       "status": "unsupported"
     },
-    "message": "No Zed sub-agent dispatch surface is documented.",
+    "message": "The Zed adapter delivers the project rules file only; Apothem does not dispatch sub-agents through Zed.",
     "operation": "capability_projection",
     "outcome": "warning",
     "path": "src/apothem/harnesses/zed/capabilities.yml"
@@ -99,5 +99,23 @@
     "outcome": "created",
     "path": "<ROOT>/.rules",
     "source": "<APOTHEM_SRC>/harnesses/zed/templates/apothem-rules.md"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "data_surface",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/memory"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "data_surface",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/contexts"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "data_surface",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/learning"
   }
 ]

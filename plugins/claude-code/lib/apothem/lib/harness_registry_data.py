@@ -154,7 +154,7 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         ),
         capability_status=_matrix(
             commands="converted",
-            skills="discovery-pending",
+            skills="native",
             hooks="support-tree",
             agents="converted",
             rules="converted",
@@ -168,11 +168,10 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             agent_memory="discovery-pending",
         ),
         unsupported_rationale=_unsupported(
-            skills="Antigravity skills auto-load placement is unverified under the empty-body docs problem; left unchanged pending a browser-verified pass.",
             mcp_servers="MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries.",
             statuslines="No current Antigravity CLI statusline file surface is pinned.",
             output_styles="No current Antigravity CLI output-style surface is pinned.",
-            agent_memory="The current adapter pin does not identify durable memory.",
+            agent_memory="The Antigravity docs index (antigravity.google/llms.txt, retrieved 2026-10-03) lists no durable-memory surface.",
         ),
     ),
     HarnessRegistryEntry(
@@ -345,13 +344,12 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             sub_agent_dispatch="native",
             tool_surface_restrictions="not-applicable",
             system_prompt_templates="native",
-            agent_memory="discovery-pending",
+            agent_memory="native",
         ),
         unsupported_rationale=_unsupported(
             mcp_servers="MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries.",
             statuslines="No Gemini CLI statusline file surface is pinned.",
             output_styles="No Gemini CLI output-style file surface is pinned.",
-            agent_memory="The current adapter pin does not identify durable memory.",
         ),
     ),
     HarnessRegistryEntry(
@@ -389,15 +387,15 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             agent_memory="unsupported",
         ),
         unsupported_rationale=_unsupported(
-            commands="Copilot exposes no user-defined custom-command surface.",
+            commands="Copilot runs prompt files (.github/prompts/*.prompt.md) as slash commands; the adapter delivers the repo-wide instructions file only and Apothem does not author prompt files.",
             skills="The Copilot adapter delivers the repo-wide instructions "
             "surface only; Apothem does not author a Copilot skill cohort.",
             hooks="The Copilot adapter delivers the repo-wide instructions "
             "surface only; Apothem does not author a Copilot hook cohort.",
-            agents="Copilot has no repo-config sub-agent file surface.",
-            statuslines="Copilot has no statusline file surface.",
-            output_styles="Copilot has no output-style file surface.",
-            mcp_servers="Copilot MCP is service/IDE state, not a repo file target.",
+            agents="Copilot reads custom agent profiles (.github/agents/*.agent.md); the adapter delivers the repo-wide instructions file only and Apothem does not author agent profiles.",
+            statuslines="No Copilot statusline file surface is pinned.",
+            output_styles="No Copilot output-style file surface is pinned.",
+            mcp_servers="Copilot MCP is configured in repository settings, the IDE, the Copilot CLI, or a custom agent profile; the adapter authors none of them.",
             sub_agent_dispatch="Copilot sub-agent dispatch is outside this adapter scope.",
             agent_memory="Copilot user memory is IDE/service state, not a file target.",
         ),
@@ -476,8 +474,10 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             output_styles="No Kimi Code output-style file surface is pinned.",
             mcp_servers="`.kimi-code/mcp.json` is the recognized operator-owned "
             "MCP surface; Apothem names it but defers authoring entries.",
-            tool_surface_restrictions="Kimi Code tool-permission surface not "
-            "yet pinned.",
+            tool_surface_restrictions="Kimi Code documents "
+            "default_permission_mode and [[permission.rules]] in "
+            "~/.kimi-code/config.toml; Apothem has not yet decided how to project "
+            "the universal-deny floor into them.",
         ),
     ),
     HarnessRegistryEntry(
@@ -640,10 +640,10 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             "only; Apothem does not author a Windsurf skill cohort.",
             hooks="The Windsurf adapter delivers the project rules surface "
             "only; Apothem does not author a Windsurf hook cohort.",
-            agents="No Windsurf sub-agent dispatch surface is documented.",
+            agents="Devin documents subagents (docs.devin.ai/cli/subagents); the Windsurf adapter delivers the project rules file only and Apothem does not author Devin subagents.",
             statuslines="No Windsurf statusline file surface is pinned.",
             output_styles="No Windsurf output-style file surface is pinned.",
-            sub_agent_dispatch="No Windsurf sub-agent dispatch surface is documented.",
+            sub_agent_dispatch="The Windsurf adapter delivers the project rules file only; Apothem does not dispatch sub-agents through Devin Desktop.",
             agent_memory="Windsurf memories are machine-local and not adapter-owned.",
         ),
     ),
@@ -691,8 +691,9 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             "only; Apothem does not author a CodeBuddy sub-agent cohort.",
             statuslines="No CodeBuddy statusline file surface is pinned.",
             output_styles="No CodeBuddy output-style file surface is pinned.",
-            sub_agent_dispatch="No CodeBuddy sub-agent dispatch surface is "
-            "documented for the adapter to project.",
+            sub_agent_dispatch="CodeBuddy Code documents sub-agents; the "
+            "CodeBuddy adapter delivers the project rules file only and Apothem "
+            "does not dispatch sub-agents through CodeBuddy.",
         ),
     ),
     HarnessRegistryEntry(
@@ -737,8 +738,9 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             "does not author a Kiro sub-agent cohort.",
             statuslines="No Kiro statusline file surface is pinned.",
             output_styles="No Kiro output-style file surface is pinned.",
-            sub_agent_dispatch="No Kiro sub-agent dispatch surface is "
-            "documented for the adapter to project.",
+            sub_agent_dispatch="Kiro documents custom agents (.kiro/agents and "
+            "the Kiro CLI); the Kiro adapter delivers steering rules only and "
+            "Apothem does not dispatch sub-agents through Kiro.",
         ),
     ),
     HarnessRegistryEntry(
@@ -779,10 +781,10 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             "only; Apothem does not author a Trae skill cohort.",
             hooks="The Trae adapter delivers the project rules surface "
             "only; Apothem does not author a Trae hook cohort.",
-            agents="No Trae sub-agent dispatch surface is documented.",
+            agents="Trae documents custom Agents (docs.trae.ai/ide/agent); the Trae adapter delivers the project rules file only and Apothem does not author Trae agents.",
             statuslines="No Trae statusline file surface is pinned.",
             output_styles="No Trae output-style file surface is pinned.",
-            sub_agent_dispatch="No Trae sub-agent dispatch surface is documented.",
+            sub_agent_dispatch="The Trae adapter delivers the project rules file only; Apothem does not dispatch sub-agents through Trae.",
             agent_memory="No Trae adapter-owned agent-memory surface is documented.",
         ),
     ),
@@ -824,10 +826,10 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             "only; Apothem does not author a Zed skill cohort.",
             hooks="The Zed adapter delivers the project rules surface "
             "only; Apothem does not author a Zed hook cohort.",
-            agents="No Zed adapter-owned sub-agent file surface is documented.",
+            agents="The Zed adapter delivers the project rules file only; Apothem does not author Zed agent profiles or external agents.",
             statuslines="No Zed statusline file surface is pinned.",
             output_styles="No Zed output-style file surface is pinned.",
-            sub_agent_dispatch="No Zed sub-agent dispatch surface is documented.",
+            sub_agent_dispatch="The Zed adapter delivers the project rules file only; Apothem does not dispatch sub-agents through Zed.",
             agent_memory="Zed agent memory is session-local and not adapter-owned.",
         ),
     ),

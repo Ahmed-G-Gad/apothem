@@ -4,17 +4,17 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-06-25
-- Snapshot note: live re-verification against `qwenlm.github.io/qwen-code-docs` + `github.com/QwenLM/qwen-code` — `~/.qwen/QWEN.md` (`context.fileName`, `@path` imports, `/memory` reload), Markdown+YAML custom commands (TOML deprecated), and settings.json / `mcpServers` / `.qwen/skills/` / hooks all confirmed current.
+- Snapshot date: 2026-10-03
+- Snapshot note: refreshed against `qwenlm.github.io/qwen-code-docs` (settings, commands, sub-agents, skills, hooks, MCP, `.qwenignore`) and the Qwen Code source. The 2026-10-02 adapter changes followed these pages: hook timeouts are written in seconds, the hook interpreter path is quoted, and the extension's `/apothem` command is Markdown, since TOML commands are deprecated. Previous 2026-06-25.
 - Adapter source: `src/apothem/harnesses/qwen_code/`
-- Evidence level: vendor-doc pinned (live re-fetch 2026-05-31) at release tag
-  `v0.17.0` for `~/.qwen/settings.json`, `QWEN.md` (`context.fileName`),
-  Markdown+YAML commands (TOML deprecated), `.qwen/skills/`, SubAgents
-  (Markdown+YAML), `mcpServers`, settings hooks, and `.qwenignore`. The
+- Evidence level: vendor-doc pinned for `~/.qwen/settings.json`, `QWEN.md`
+  (`context.fileName`), Markdown+YAML commands (TOML deprecated),
+  `.qwen/skills/`, sub-agents (Markdown+YAML), `mcpServers`, settings hooks, and
+  `.qwenignore`. The extension command-directory behavior is pinned to commit
+  `a011f66944768e05b432a10548ffa4576f1d8ef8` of `FileCommandLoader.ts`. The
   `settings.json` config renders directly (no Jinja template); the shipped
   instruction template is `templates/QWEN.md`. No vendor-native UI claim is made
-  here. Docs pages are mutable — no-immutable-source exception anchored to the
-  immutable release tag `v0.17.0`.
+  here. Docs pages are mutable — no-immutable-source exception for them.
 - Official references:
   - <https://qwenlm.github.io/qwen-code-docs/en/users/configuration/settings/>
   - <https://qwenlm.github.io/qwen-code-docs/en/users/features/commands/>
@@ -33,12 +33,26 @@
   now MCP-only (a documented breaking change). The `partial` subset boundary is:
   fetch yes, search via MCP only.
 - Evidence: vendor-doc-url
-  <https://github.com/QwenLM/qwen-code/blob/8f8ed0d7c184208ac3fc4b92020b207cec453723/docs/developers/tools/introduction.md>
+  <https://raw.githubusercontent.com/QwenLM/qwen-code/8f8ed0d7c184208ac3fc4b92020b207cec453723/docs/developers/tools/introduction.md>
   (web_fetch listed built-in) +
-  <https://github.com/QwenLM/qwen-code/blob/8f8ed0d7c184208ac3fc4b92020b207cec453723/docs/developers/tools/web-search.md>
+  <https://raw.githubusercontent.com/QwenLM/qwen-code/8f8ed0d7c184208ac3fc4b92020b207cec453723/docs/developers/tools/web-search.md>
   (web_search removed, MCP-only); commit-sha
-  `8f8ed0d7c184208ac3fc4b92020b207cec453723` (default-branch HEAD, both blobs
-  confirmed reachable at this commit); snapshot-date 2026-06-21.
+  `8f8ed0d7c184208ac3fc4b92020b207cec453723`; snapshot-date 2026-06-21.
+
+## Vendor Sources
+
+Retrieved 2026-10-03 unless marked.
+
+- <https://qwenlm.github.io/qwen-code-docs/en/users/configuration/settings/> (settings, hooks, `mcpServers`)
+- <https://qwenlm.github.io/qwen-code-docs/en/users/features/commands/> (Markdown commands)
+- <https://qwenlm.github.io/qwen-code-docs/en/users/features/mcp/> (MCP)
+- <https://qwenlm.github.io/qwen-code-docs/en/users/features/sub-agents/> (sub-agents; retrieved 2026-10-02)
+- <https://qwenlm.github.io/qwen-code-docs/en/users/features/skills/> (skills; retrieved 2026-10-02)
+- <https://raw.githubusercontent.com/QwenLM/qwen-code/a011f66944768e05b432a10548ffa4576f1d8ef8/packages/cli/src/services/FileCommandLoader.ts> (extension command directories; retrieved 2026-10-02)
+
+## Discovery Targets
+
+- None. No capability cell for this harness is discovery-pending.
 
 ## Recommended Postfix Rendering
 

@@ -96,6 +96,10 @@ class ClaudeCodeAdapter:
         """Re-materialize the harness configuration from the updated profile."""
         return _update(self.output_path, profile)
 
+    def preview(self, profile: dict[str, Any]) -> MaterializationRun:
+        """Return what ``install`` would do, without writing anything."""
+        return _install(self.output_path, profile, dry_run=True)
+
     def plan(self, output_path: Path | None = None) -> list[dict[str, str]]:
         """Return the manifest-driven propagation plan without writing."""
         return _plan(output_path or self.output_path)
