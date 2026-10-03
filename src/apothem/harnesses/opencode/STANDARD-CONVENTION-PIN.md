@@ -42,6 +42,10 @@ Retrieved 2026-10-03 unless marked.
 
 - <https://opencode.ai/docs/config/> (config sources, plural directories, plugins)
 - <https://opencode.ai/docs/rules/> (`AGENTS.md` and `instructions`)
+- <https://raw.githubusercontent.com/sst/opencode/dev/packages/opencode/src/session/instruction.ts>
+  (`instructions` resolution: a leading `~/` expands to the home directory, an
+  absolute entry globs its final segment, a relative entry resolves against
+  the project directory)
 - <https://opencode.ai/docs/mcp-servers/> (`mcp` block)
 - <https://opencode.ai/docs/skills/> (skill locations; retrieved 2026-10-02)
 - <https://opencode.ai/docs/agents/> (agents; retrieved 2026-10-02)
@@ -83,7 +87,7 @@ the full `apothem install --harness opencode` engine run.
 | Skills | No — requires `apothem install` | Native `~/.config/opencode/skills/*/SKILL.md` is engine-written; no pre-built bundle carries it. |
 | Commands | No — requires `apothem install` | Apothem commands are engine-converted to OpenCode Markdown under `~/.config/opencode/commands/`. |
 | Agents | No — requires `apothem install` | Apothem agents are engine-converted to OpenCode Markdown under `~/.config/opencode/agents/`. |
-| Rules (as native primitive) | No — platform limit | OpenCode has no native rules-directory primitive; Apothem rules land as `~/.config/opencode/.apothem/support/rules/` reference material via the engine. |
+| Rules (as native primitive) | No — platform limit | OpenCode has no native rules-directory primitive; Apothem rules land as `~/.config/opencode/.apothem/support/rules/` reference material via the engine, and `opencode.json` `instructions` names the `alwaysApply: true` rules by explicit path (OpenCode loads every listed file in every session). |
 | Hooks | No — platform limit | Engine support material only under `~/.config/opencode/.apothem/support/hooks/`. |
 | MCP | No — requires `apothem install` | The adapter's materializer projects the profile's MCP inventory into the `opencode.json` `mcp` block; nothing persists before the engine run. |
 | Plugins / Settings | No — operator-owned | The `plugin` key in `opencode.json` is operator-owned; the adapter authors no plugin entries. |

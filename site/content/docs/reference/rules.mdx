@@ -59,6 +59,15 @@ to `~/.claude/rules/` with a `paths:` list built from its `pathFilter`, and
 copies always-on rules unchanged. The 28 always-on rules load in every session;
 the 63 path-filtered companions load when the assistant reads a matching file.
 
+OpenCode has no per-rule scoping field: it combines every file its
+`opencode.json` `instructions` list names into every session. The OpenCode
+install (`apothem install --harness opencode`) therefore lists only the rules
+whose `alwaysApply` is `true`, one explicit `~/.config/opencode/...` path per
+rule, read from the rule files when the config is written. Every rule,
+path-filtered ones included, is still installed under
+`~/.config/opencode/.apothem/support/rules/`, where a rule, skill, or command
+that cites one reads it on demand.
+
 ## Authoring discipline
 
 - **Self-contained.** Each rule has its own Purpose, Obligations, Anti-Patterns,

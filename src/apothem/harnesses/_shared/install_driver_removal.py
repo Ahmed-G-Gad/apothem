@@ -214,7 +214,7 @@ def _strip_apothem_json(
         template = json.loads(template_text)
     except json.JSONDecodeError:
         return operator_text
-    if retired:
+    if isinstance(operator, dict) and retired:
         operator = strip_owned(operator, retired)
     if isinstance(operator, dict) and apothem_keys:
         operator = _drop_owned_top_keys(operator, apothem_keys)
@@ -244,7 +244,8 @@ def _strip_apothem_yaml(
     ``None`` when the remainder is empty (delete) and the operator text unchanged
     when either side is unparseable (never destroy what the inverse cannot map).
     PyYAML round-trips values, not comments, so a managed header comment is not
-    reproduced — operator value keys are what survive.
+    reproduced — operator value keys are what survive. *retired* entries are
+    removed first, as in :func:`_strip_apothem_json`.
     """
     try:
         operator = yaml.safe_load(operator_text)

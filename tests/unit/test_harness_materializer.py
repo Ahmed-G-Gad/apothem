@@ -303,9 +303,14 @@ class TestCrossAdapterParity:
         assert len(opencode_out) > 0, "opencode produced empty output"
         opencode_parsed = json.loads(opencode_out)
         assert opencode_parsed["$schema"] == "https://opencode.ai/config.json"
-        assert opencode_parsed["instructions"] == [
-            "~/.config/opencode/.apothem/support/rules/*.md"
-        ]
+        instructions = opencode_parsed["instructions"]
+        assert instructions, "opencode lists no always-on rule"
+        assert all(
+            entry.startswith("~/.config/opencode/.apothem/support/rules/")
+            and entry.endswith(".md")
+            and "*" not in entry
+            for entry in instructions
+        )
 
         openclaw_out = oc(profile)
         assert len(openclaw_out) > 0, "open-claw produced empty output"
