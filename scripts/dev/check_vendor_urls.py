@@ -13,12 +13,15 @@ it:
   Pins and templates should cite the final address. A site root that
   redirects to a landing page on the same host is not a move, and neither is
   a documented alias listed in ``_ACCEPTED_REDIRECTS``.
-- ``dead``: the URL answers 404, 410, or another 4xx status that is not a
-  blocking one.
+- ``dead``: the URL answers 404, 410, another 4xx status that is not a
+  blocking one, or a 5xx status the check does not retry (501, 505 and the
+  like); or its host name no longer resolves, or its certificate fails
+  verification. These do not clear up on their own.
 - ``blocked``: the URL answers 401, 403, or 429. Bot protection returns these
   for live pages, so they are reported but do not fail the check.
-- ``unreachable``: the host cannot be reached, or still answers 5xx, after
-  retries. A network fault or an outage says nothing about whether the page
+- ``unreachable``: the request timed out, was refused or reset, or met a
+  temporary DNS failure, or the URL still answers 500, 502, 503 or 504, after
+  retries. A passing fault or an outage says nothing about whether the page
   moved, so these are reported but do not fail the check.
 
 The report is JSON. The exit code is 2 when any URL is ``moved`` or ``dead``,
@@ -30,6 +33,8 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import socket
+import ssl
 import sys
 import time
 import urllib.error
@@ -55,6 +60,13 @@ _ACCEPTED_REDIRECTS: Final[frozenset[tuple[str, str]]] = frozenset(
 )
 
 _BLOCKED_STATUSES: Final[frozenset[int]] = frozenset({401, 403, 429})
+# Server errors an outage produces; fetch() retries these and an answer that
+# stays one of them is ``unreachable``. Any other 5xx is ``dead``.
+_RETRIED_STATUSES: Final[frozenset[int]] = frozenset({500, 502, 503, 504})
+# getaddrinfo errors that mean "try again later", unlike a name that is gone.
+_TEMPORARY_DNS_ERRORS: Final[frozenset[int]] = frozenset(
+    code for code in (getattr(socket, "EAI_AGAIN", None),) if code is not None
+)
 _USER_AGENT: Final[str] = (
     "Mozilla/5.0 (compatible; apothem-vendor-url-check/1.0; "
     "+https://github.com/ahmed-g-gad/apothem)"
@@ -68,6 +80,10 @@ class FetchResult:
     status: int | None
     final_url: str | None
     error: str | None = None
+    #: True when no request reached the page for a reason that does not clear
+    #: up on its own: the host name no longer resolves, or its certificate
+    #: fails verification.
+    lasting: bool = False
 
 
 @dataclass(frozen=True)
@@ -157,7 +173,9 @@ def _benign_redirect(url: str, final_url: str) -> bool:
 
 def classify(url: str, result: FetchResult) -> str:
     """Return ``ok``, ``moved``, ``dead``, ``blocked`` or ``unreachable``."""
-    if result.status is None or result.status >= 500:
+    if result.status is None:
+        return "dead" if result.lasting else "unreachable"
+    if result.status in _RETRIED_STATUSES:
         return "unreachable"
     if result.status in _BLOCKED_STATUSES:
         return "blocked"
@@ -167,6 +185,15 @@ def classify(url: str, result: FetchResult) -> str:
     if final and _normalized(final) != _normalized(url):
         return "ok" if _benign_redirect(url, final) else "moved"
     return "ok"
+
+
+def _is_lasting(reason: object) -> bool:
+    """Return True for a request failure that does not clear up on its own."""
+    if isinstance(reason, ssl.SSLCertVerificationError):
+        return True
+    if isinstance(reason, socket.gaierror):
+        return reason.errno not in _TEMPORARY_DNS_ERRORS
+    return False
 
 
 def fetch(url: str, *, attempts: int = 3, timeout: float = 30.0) -> FetchResult:
@@ -184,11 +211,14 @@ def fetch(url: str, *, attempts: int = 3, timeout: float = 30.0) -> FetchResult:
                 response.read(1024)
                 return FetchResult(response.status, response.geturl())
         except urllib.error.HTTPError as exc:
-            if exc.code not in {500, 502, 503, 504} or attempt == attempts - 1:
+            if exc.code not in _RETRIED_STATUSES or attempt == attempts - 1:
                 return FetchResult(exc.code, exc.geturl() or url)
             error = f"HTTP {exc.code}"
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
-            error = str(getattr(exc, "reason", exc))
+            reason = getattr(exc, "reason", exc)
+            error = str(reason)
+            if _is_lasting(reason):
+                return FetchResult(None, None, error, lasting=True)
         time.sleep(2**attempt)
     return FetchResult(None, None, error)
 

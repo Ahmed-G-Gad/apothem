@@ -23,7 +23,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   the backup set that rolling back a harness's latest install restores from.
 - **A weekly check follows every vendor URL the harness pins and templates
   cite**, and reports one that has moved or died on a single open issue. A
-  host that cannot be reached is listed but does not count as dead.
+  timeout, a refused connection or a passing outage is listed but does not
+  count as dead; a host name that no longer resolves does.
 - **The one-shot installers offer a checksum-only path.**
   `APOTHEM_VERIFY=checksum` installs the release's platform archive after
   checking its SHA-256 against the release's `SHA256SUMS`, aborts on a

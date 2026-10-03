@@ -5,7 +5,10 @@
 from __future__ import annotations
 
 import json
+import socket
+import ssl
 import sys
+import urllib.error
 from pathlib import Path
 
 import pytest
@@ -59,6 +62,12 @@ def test_collects_urls_from_pins_and_templates(tmp_path: Path) -> None:
         ("https://a.dev/x", cvu.FetchResult(410, "https://a.dev/x"), "dead"),
         ("https://a.dev/x", cvu.FetchResult(None, None, "reset"), "unreachable"),
         ("https://a.dev/x", cvu.FetchResult(503, "https://a.dev/x"), "unreachable"),
+        ("https://a.dev/x", cvu.FetchResult(501, "https://a.dev/x"), "dead"),
+        (
+            "https://a.dev/x",
+            cvu.FetchResult(None, None, "name not known", lasting=True),
+            "dead",
+        ),
         ("https://a.dev/x", cvu.FetchResult(403, "https://a.dev/x"), "blocked"),
         ("https://a.dev/x", cvu.FetchResult(429, "https://a.dev/x"), "blocked"),
         (
@@ -149,3 +158,35 @@ def test_an_unreachable_url_alone_does_not_fail(tmp_path: Path) -> None:
 
 def test_missing_root_returns_error(tmp_path: Path) -> None:
     assert cvu.main(["--harnesses-root", str(tmp_path / "absent")]) == 1
+
+
+@pytest.mark.parametrize(
+    ("reason", "lasting"),
+    [
+        pytest.param(
+            socket.gaierror(socket.EAI_NONAME, "not known"), True, id="nxdomain"
+        ),
+        pytest.param(
+            socket.gaierror(socket.EAI_AGAIN, "try again"), False, id="dns-again"
+        ),
+        pytest.param(ssl.SSLCertVerificationError("expired"), True, id="certificate"),
+        pytest.param(TimeoutError("timed out"), False, id="timeout"),
+        pytest.param(ConnectionRefusedError("refused"), False, id="refused"),
+    ],
+)
+def test_fetch_tells_a_lasting_failure_from_a_passing_one(
+    monkeypatch: pytest.MonkeyPatch, reason: BaseException, lasting: bool
+) -> None:
+    def fail(*_args: object, **_kwargs: object) -> object:
+        raise urllib.error.URLError(reason)
+
+    monkeypatch.setattr(cvu.urllib.request, "urlopen", fail)
+    monkeypatch.setattr(cvu.time, "sleep", lambda _seconds: None)
+
+    result = cvu.fetch("https://a.dev/x", attempts=2)
+
+    assert result.status is None
+    assert result.lasting is lasting
+    assert cvu.classify("https://a.dev/x", result) == (
+        "dead" if lasting else "unreachable"
+    )
