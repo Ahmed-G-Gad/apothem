@@ -44,7 +44,7 @@ variable `RUN_PAID_EVALS` is `true`.
 | `model` | yes | The model id of the session under test. Pin it so a model rollout is not read as a regression. |
 | `judge_model` | yes | The model id for judge graders. |
 | `claude_code_version` | yes | The CLI version to install, as `x.y.z`; it must ship `claude plugin eval`. |
-| `tag` | no | Run only the cases carrying this tag, such as `r12-regression` or `trigger`. |
+| `tag` | no | Run only the cases carrying this tag, such as `rule-scoping-regression` or `trigger`. |
 | `ablation` | no | `with-without` (default) also runs every case without the plugin and reports the difference; `none` runs one arm. |
 
 The run uploads `eval-results` with `results.json`, `aggregate-result.json` and
@@ -70,7 +70,7 @@ claude plugin eval "$tmp/plugin" --trust-plugin --scaffold \
 `--scaffold` runs the cases' seeding scripts, and `--allow-tools Write Edit`
 lets outcome cases write their artifacts; both are needed only for outcome
 cases. To iterate on one case cheaply, add `--case <name> --runs 1 --ablation none`.
-The rule-effect pairs run with `--tag r12-regression --ablation none`, since
+The rule-effect pairs run with `--tag rule-scoping-regression --ablation none`, since
 the comparison that matters is between the two cases of a pair.
 
 ## Read the results

@@ -2,7 +2,7 @@
 description: 'Effect of the always-on rule session-closure: the same prompt and graders with the rule''s
   runtime text appended to the system prompt (off in this case). Plugin eval runs load no rules, so the
   pair isolates the rule''s effect.'
-tags: [rule-effect, 'rule:session-closure', 'arm:rule-off', r12-regression]
+tags: [rule-effect, 'rule:session-closure', 'arm:rule-off', rule-scoping-regression]
 expected_outcome: The closing reply carries a Recommended Next Step, a done/deferred account, and what
   was checked.
 max_turns: 6

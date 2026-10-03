@@ -2,7 +2,7 @@
 description: 'Effect of the always-on rule interactive-questions: the same prompt and graders with the
   rule''s runtime text appended to the system prompt (on in this case). Plugin eval runs load no rules,
   so the pair isolates the rule''s effect.'
-tags: [rule-effect, 'rule:interactive-questions', 'arm:rule-on', r12-regression]
+tags: [rule-effect, 'rule:interactive-questions', 'arm:rule-on', rule-scoping-regression]
 expected_outcome: The ambiguity (which database, where, which schema) is routed through the AskUserQuestion
   tool.
 max_turns: 6

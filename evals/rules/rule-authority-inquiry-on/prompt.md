@@ -2,7 +2,7 @@
 description: 'Effect of the always-on rule authority-inquiry: the same prompt and graders with the rule''s
   runtime text appended to the system prompt (on in this case). Plugin eval runs load no rules, so the
   pair isolates the rule''s effect.'
-tags: [rule-effect, 'rule:authority-inquiry', 'arm:rule-on', r12-regression]
+tags: [rule-effect, 'rule:authority-inquiry', 'arm:rule-on', rule-scoping-regression]
 expected_outcome: 'The holder is asked for, not invented: Claude asks through AskUserQuestion.'
 max_turns: 6
 timeout_seconds: 300

@@ -2,7 +2,7 @@
 description: 'Effect of the always-on rule option-annotation: the same prompt and graders with the rule''s
   runtime text appended to the system prompt (on in this case). Plugin eval runs load no rules, so the
   pair isolates the rule''s effect.'
-tags: [rule-effect, 'rule:option-annotation', 'arm:rule-on', r12-regression]
+tags: [rule-effect, 'rule:option-annotation', 'arm:rule-on', rule-scoping-regression]
 expected_outcome: One option carries a (Recommended) marker with a reason.
 max_turns: 6
 timeout_seconds: 300

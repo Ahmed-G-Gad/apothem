@@ -11,7 +11,7 @@
 | `case.schema.json` | JSON Schema (draft 2020-12) for one case: `prompt.md` frontmatter, `case.yaml`, and each grader. It also documents how each grader type maps to a runner-neutral check. `tests/unit/test_eval_suite.py` validates every case against it. |
 | `triggers/` | 64 trigger cases, one directory per case. |
 | `outcomes/plan/`, `outcomes/research/`, `outcomes/audit/` | One outcome case per pipeline stage: 8 plan stages, 13 research stages, 11 audit dimensions. |
-| `rules/` | Rule-effect pairs for six always-on rules (the R-12 regression set). |
+| `rules/` | Rule-effect pairs for six always-on rules (the rule-scoping regression set). |
 
 ## Case layout
 
@@ -33,12 +33,12 @@ Unknown frontmatter keys fail a case at load time, so metadata travels in `tags`
 | `component:<name>` | The command, subagent or stage under test. |
 | `class:command`, `class:agent` | What kind of component a trigger case targets. |
 | `pipeline:plan`, `pipeline:research`, `pipeline:audit` | The pipeline of an outcome case. |
-| `d12-user-invoked` | The command is user-invoked only by decision D-12 (`freshify`, `github-deploy-fresh`, `github-deploy-next`). |
-| `rule:<name>`, `arm:rule-on`, `arm:rule-off`, `r12-regression` | A rule-effect pair and its arm. |
+| `user-invoked-only` | The command is user-invoked only by maintainer decision (`freshify`, `github-deploy-fresh`, `github-deploy-next`). |
+| `rule:<name>`, `arm:rule-on`, `arm:rule-off`, `rule-scoping-regression` | A rule-effect pair and its arm. |
 
 ## Case kinds
 
-- **Trigger (64).** Every model-invocable command and every subagent has a `trigger-<name>` case (a request in its domain, phrased as a user would type it, never naming it) graded by `tool_used` on `Skill` or `Agent` with the component's name in `input_match`, and a `no-trigger-<name>` near miss graded by the same check with `min: 0`, `max: 0`, `arm: both`. The three D-12 commands have `no-auto-trigger-<name>` instead of `trigger-<name>`: a request that matches them exactly must still not start them.
+- **Trigger (64).** Every model-invocable command and every subagent has a `trigger-<name>` case (a request in its domain, phrased as a user would type it, never naming it) graded by `tool_used` on `Skill` or `Agent` with the component's name in `input_match`, and a `no-trigger-<name>` near miss graded by the same check with `min: 0`, `max: 0`, `arm: both`. The three user-invoked-only commands have `no-auto-trigger-<name>` instead of `trigger-<name>`: a request that matches them exactly must still not start them.
 - **Outcome (32).** The prompt runs the stage as a user would (`/apothem:<stage> …`) on a workspace seeded by `scaffold.sh`, and free graders check the artifact the stage contract names (`file_exists`, `regex` over the file or the reply). Audit cases plant one defect per dimension and also assert the audit is report-only (no `Edit` of the seeded sources). No outcome case needs an `llm` grader.
 - **Rule effect (6 pairs).** A plugin eval run loads no rules and no `CLAUDE.md`, so each sampled always-on rule has a `rule-<name>-on` and a `rule-<name>-off` case that differ only by `append_system_prompt`, which carries the rule's runtime text (the rule file without frontmatter, SPDX line and `## Bindings`). Sampled rules: `session-closure`, `option-annotation`, `interactive-questions`, `authority-inquiry`, `definitiveness`, `freshness-facade`.
 
@@ -62,7 +62,7 @@ claude plugin eval "$tmp/plugin" --trust-plugin --scaffold --allow-tools Write E
   --model <model-id> --judge-model <model-id> --max-cost-usd <usd> --no-publish --json results.json
 ```
 
-`--tag r12-regression --ablation none` runs only the rule-effect pairs; `--tag trigger` and so on select one kind. CI runs the same command from the manual `Evals` workflow (`.github/workflows/evals.yml`), gated on the repository variable `RUN_PAID_EVALS` and the `ANTHROPIC_API_KEY` secret. Each case's prompt body opens with the repository's SPDX comment line; the runner sends the body verbatim, so the model sees that one comment line in every case and in both arms.
+`--tag rule-scoping-regression --ablation none` runs only the rule-effect pairs; `--tag trigger` and so on select one kind. CI runs the same command from the manual `Evals` workflow (`.github/workflows/evals.yml`), gated on the repository variable `RUN_PAID_EVALS` and the `ANTHROPIC_API_KEY` secret. Each case's prompt body opens with the repository's SPDX comment line; the runner sends the body verbatim, so the model sees that one comment line in every case and in both arms.
 
 ## Operating in this folder
 

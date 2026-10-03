@@ -13,12 +13,12 @@ both the format and the coverage contract:
 * every model-invocable component (commands and skills without
   ``disable-model-invocation: true``, and every subagent) has a should-trigger
   and a should-not-trigger case, and each command that is user-invoked by
-  decision (D-12) has a should-not-auto-trigger case instead;
+  maintainer decision has a should-not-auto-trigger case instead;
 * a "never fires" grader is scored in both arms, so the no-plugin baseline is
   comparable;
 * every stage of the plan, research and audit pipelines has an outcome case;
 * rule-effect cases come in pairs that differ only by ``append_system_prompt``,
-  which equals the rule's runtime text (the R-12 regression set).
+  which equals the rule's runtime text (the rule-scoping regression set).
 """
 
 from __future__ import annotations
@@ -45,7 +45,7 @@ if str(_SCRIPTS_DEV) not in sys.path:
 
 import sync_eval_rule_cases as rule_sync  # noqa: E402
 
-# Commands that stay user-invoked only by operator decision D-12: the model
+# Commands that stay user-invoked only by maintainer decision: the model
 # must not start them on its own, whatever their frontmatter says today.
 _USER_INVOKED_BY_DECISION = frozenset(
     {"freshify", "github-deploy-fresh", "github-deploy-next"}
@@ -315,7 +315,7 @@ def test_rule_effect_cases_are_paired() -> None:
     for case in _by_kind("rule-effect"):
         (rule,) = case.tag_values("rule")
         (arm,) = case.tag_values("arm")
-        assert "r12-regression" in case.tags, case.path
+        assert "rule-scoping-regression" in case.tags, case.path
         assert arm not in pairs.setdefault(rule, {}), f"{rule}: two {arm} cases"
         pairs[rule][arm] = case
     assert len(pairs) >= 6, "sample at least six always-on rules"
@@ -326,7 +326,7 @@ def test_rule_effect_cases_are_paired() -> None:
         on, off = arms["rule-on"], arms["rule-off"]
         source = _frontmatter_of(_CORPUS / "rules" / f"{rule}.md")
         assert source.get("alwaysApply") is True, (
-            f"{rule}: the R-12 set samples always-on rules"
+            f"{rule}: the rule-scoping set samples always-on rules"
         )
         assert on.frontmatter.get("append_system_prompt"), on.path
         assert "append_system_prompt" not in off.frontmatter, off.path

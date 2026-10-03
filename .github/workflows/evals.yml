@@ -48,7 +48,7 @@ on:
         required: true
         type: string
       tag:
-        description: "Optional case tag filter, for example r12-regression or trigger"
+        description: "Optional case tag filter, for example rule-scoping-regression or trigger"
         required: false
         type: string
         default: ""

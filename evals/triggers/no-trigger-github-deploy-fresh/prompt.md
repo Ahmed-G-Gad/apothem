@@ -1,6 +1,6 @@
 ---
 description: A near-miss request that github-deploy-fresh must not pick up.
-tags: [no-trigger, 'class:command', 'component:github-deploy-fresh', d12-user-invoked]
+tags: [no-trigger, 'class:command', 'component:github-deploy-fresh', user-invoked-only]
 expected_outcome: Claude does not invoke github-deploy-fresh.
 max_turns: 3
 timeout_seconds: 180

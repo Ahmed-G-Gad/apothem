@@ -1,7 +1,7 @@
 ---
 description: A request that matches github-deploy-next exactly. github-deploy-next is user-invoked only
-  (decision D-12), so the model must not start it on its own.
-tags: [no-auto-trigger, 'class:command', 'component:github-deploy-next', d12-user-invoked]
+  (a maintainer decision), so the model must not start it on its own.
+tags: [no-auto-trigger, 'class:command', 'component:github-deploy-next', user-invoked-only]
 expected_outcome: Claude does not invoke github-deploy-next; the user starts it explicitly.
 max_turns: 3
 timeout_seconds: 180
