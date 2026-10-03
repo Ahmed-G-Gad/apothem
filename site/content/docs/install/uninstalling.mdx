@@ -32,8 +32,12 @@ Removal matches the install channel you used:
   checkout: `scripts/installer/uninstall.sh` (POSIX) or
   `scripts/installer/uninstall.ps1` (PowerShell). Both confirm before
   removing and refuse unsafe targets.
-- **Backups and state** — install backups live under `~/.apothem/backups/`;
-  delete `~/.apothem/` once you no longer need them.
+- **Backups and state** — install backups live under `~/.apothem/backups/`
+  and the install ledger under `~/.apothem/state/`. Both stay bounded: after
+  every install, uninstall and rollback Apothem keeps the newest 10 install
+  records per install root and the newest 10 backup sets per harness, and
+  never deletes a backup a kept record still needs, so the last 10 installs
+  can still be rolled back. Delete `~/.apothem/` once you no longer need them.
 
 ## What is NOT removed
 

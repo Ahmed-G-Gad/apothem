@@ -25,7 +25,7 @@ from apothem.lib.propagation import (
     resolve_target,
 )
 
-from .install_driver_backup import _replace_path, backup_existing
+from .install_driver_backup import _replace_path, apply_retention, backup_existing
 from .install_driver_merge import render_content_tokens
 from .install_driver_pathsafety import (
     _allowed_write_root,
@@ -634,6 +634,7 @@ def run_uninstall(
                 install_id=record.install_id if record is not None else None,
             )
         )
+        apply_retention(harness_name)
     return results
 
 

@@ -9,7 +9,7 @@
 `install_driver.py` is the shared propagation driver every adapter's `install.py` delegates to. It carries the install recipe once: load a harness's rules from `lib/propagation-manifest.yaml`, sweep stale top-level paths from earlier layouts, then apply each install entry in declaration order. The driver supplies:
 
 - The structured materialization-result surface (`MaterializationResult` / `MaterializationRun`) with deterministic per-outcome counts.
-- The safe-write primitives: path validation against an allowed root, backup-before-replace, atomic swap, no-op detection.
+- The safe-write primitives: path validation against an allowed root, backup-before-replace, atomic swap, no-op detection, and backup retention (`BACKUP_KEEP`: the newest 10 install records per root and backup sets per harness are kept, plus anything a kept record references).
 - The directory-replace and stale-sweep primitives.
 - The operator-owned merge path: sentinel-block merge for Markdown anchors, key-preserving merge for JSON and YAML. An operator file that parses only as JSONC, JSON5 or commented YAML is left byte-identical when the merge changes no value and refused with `config.unparseable` when it would, so a rewrite never drops the operator's comments. Each structured merge records in the install ledger exactly which keys and list items Apothem added; the next install replaces only those and uninstall removes only those, so operator entries (permission rules, MCP servers, hook handlers) survive.
 - The destructive-authorization gate.

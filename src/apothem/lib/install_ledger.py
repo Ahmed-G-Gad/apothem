@@ -15,6 +15,10 @@ Durability model (mirrors :mod:`apothem.lib.atomic_io`):
   :func:`apothem.lib.atomic_io.append_line_durably` under an advisory lock — the
   whole file is never rewritten, so a crash mid-append can lose at most the final
   partial line, never a prior record.
+- :func:`compact_records` is the one rewrite: retention drops records older
+  than the newest kept installs, writing the remainder through a sibling temp
+  file and an atomic replace under the same lock, so a crash leaves either the
+  old or the new ledger, never a partial one.
 - The reader tolerates and drops only a torn FINAL line — the one artifact the
   crash-during-append model can produce — so every complete prior record stays
   recoverable. A malformed line anywhere earlier cannot be a tear; it means the
@@ -31,7 +35,7 @@ from __future__ import annotations
 import json
 import os
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal, cast
@@ -499,6 +503,87 @@ def current_install_record(
     return installs[-1] if installs else None
 
 
+def _active_ids(records: list[LedgerRecord]) -> set[str]:
+    """Return the install-ids still active in one root's *records* (replayed)."""
+    installs: list[str] = []
+    for record in records:
+        if record.kind == "install":
+            installs.append(record.install_id)
+        elif record.kind == "uninstall":
+            installs.clear()
+        elif record.kind == "rollback" and record.install_id in installs:
+            del installs[installs.index(record.install_id) :]
+    return set(installs)
+
+
+def _retained(records: list[LedgerRecord], keep_installs: int) -> list[LedgerRecord]:
+    """Return the records retention keeps, per root, in ledger order.
+
+    For each root the kept records are a contiguous tail starting at the
+    oldest of the newest *keep_installs* active installs, so replaying the tail
+    gives the same active installs as replaying the whole history. The
+    directories older dropped installs created are folded into the first kept
+    install, so uninstall still removes them. A root with no active install
+    keeps only its last record.
+    """
+    by_root: dict[str, list[int]] = {}
+    for index, record in enumerate(records):
+        by_root.setdefault(record.root, []).append(index)
+    kept: dict[int, LedgerRecord] = {}
+    for indices in by_root.values():
+        active = _active_ids([records[index] for index in indices])
+        active_positions = [
+            index
+            for index in indices
+            if records[index].kind == "install" and records[index].install_id in active
+        ]
+        if not active_positions:
+            kept[indices[-1]] = records[indices[-1]]
+            continue
+        start = active_positions[-keep_installs:][0]
+        for index in indices:
+            if index >= start:
+                kept[index] = records[index]
+        dropped_dirs = {
+            path
+            for index in active_positions
+            if index < start
+            for path in records[index].created_dirs
+        }
+        if dropped_dirs:
+            first = records[start]
+            kept[start] = replace(
+                first,
+                created_dirs=tuple(sorted(dropped_dirs | set(first.created_dirs))),
+            )
+    return [kept[index] for index in sorted(kept)]
+
+
+def compact_records(
+    harness: str, *, keep_installs: int, state_root: Path | None = None
+) -> list[LedgerRecord]:
+    """Drop *harness* ledger records retention no longer needs; return the rest.
+
+    Keeps, per install root, the newest *keep_installs* installs whose changes
+    are still in place and every record after the oldest of them (see
+    :func:`_retained`). Older installs can no longer be rolled back by id. The
+    ledger is rewritten atomically under its lock, and only when something is
+    dropped.
+
+    Raises:
+        LedgerError: Propagated from :func:`read_records` on a corrupted ledger.
+    """
+    path = ledger_path(harness, state_root=state_root)
+    lock = path.with_name(path.name + _LOCK_SUFFIX)
+    with atomic_io.advisory_lock(lock):
+        records = read_records(harness, state_root=state_root)
+        kept = _retained(records, max(1, keep_installs))
+        if kept != records:
+            text = "".join(record.to_json_line() + "\n" for record in kept)
+            atomic_io.write_bytes_atomically(path, text.encode("utf-8"))
+    return kept
+
+
 def find_record(
     harness: str,
     install_id: str,
@@ -543,6 +628,7 @@ __all__ = [
     "RecordKind",
     "active_install_records",
     "append_record",
+    "compact_records",
     "current_install_record",
     "find_record",
     "generate_ulid",

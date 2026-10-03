@@ -333,6 +333,7 @@ def _rollback_impl(
                 install_id=record.install_id,
             )
         )
+        install_driver.apply_retention(entry.package_key)
         harness_failures: list[MaterializationResult] = []
         for result in target_results:
             if result.outcome in {"created", "updated"}:

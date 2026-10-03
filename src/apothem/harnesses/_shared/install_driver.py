@@ -49,6 +49,7 @@ from .install_driver_apply import apply_replace_tree as apply_replace_tree
 from .install_driver_apply import apply_write_text as apply_write_text
 from .install_driver_backup import _LEDGER_OUTCOMES as _LEDGER_OUTCOMES
 from .install_driver_backup import _NON_LEDGER_OPERATIONS as _NON_LEDGER_OPERATIONS
+from .install_driver_backup import BACKUP_KEEP as BACKUP_KEEP
 from .install_driver_backup import _backup_relative_path as _backup_relative_path
 from .install_driver_backup import _compensating_rollback as _compensating_rollback
 from .install_driver_backup import _guarded_unlink as _guarded_unlink
@@ -59,6 +60,7 @@ from .install_driver_backup import _reserve_unique_backup as _reserve_unique_bac
 from .install_driver_backup import _sibling_backup_path as _sibling_backup_path
 from .install_driver_backup import _unique_path as _unique_path
 from .install_driver_backup import _write_file_atomically as _write_file_atomically
+from .install_driver_backup import apply_retention as apply_retention
 from .install_driver_backup import backup_existing as backup_existing
 from .install_driver_backup import backup_file_to_sibling as backup_file_to_sibling
 from .install_driver_backup import finalize_install as finalize_install
