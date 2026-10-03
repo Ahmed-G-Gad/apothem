@@ -37,7 +37,7 @@ top-level `.github/README.md` would, and none exists.
 | `publish-npm.yml` | push (tag `v*.*.*`), dispatch | Publishes `@ahmed-g-gad/apothem` to registry.npmjs.org via npm trusted publishing (OIDC) with provenance; no registry token is stored or read. |
 | `publish-vscode.yml` | push (tag `v*.*.*`), dispatch | Packages the extension into a `.vsix` and publishes to the Visual Studio Marketplace; gated on the `VSCE_PAT` secret. |
 | `publish-static-site.yml` | push (main), dispatch | Builds the Next.js + Fumadocs site, stages the canonical install scripts and badges, and deploys to apothem.ahmedgad.com via GitHub Pages. |
-| `harness-convention-monitor.yml` | schedule (quarterly), dispatch | Enforces the 90-day freshness cadence on each adapter's `STANDARD-CONVENTION-PIN.md`; files a drift-alert issue when a pin is missing, malformed, future-dated, or stale. |
+| `harness-convention-monitor.yml` | schedule (weekly), dispatch | Enforces the 90-day freshness cadence on each adapter's `STANDARD-CONVENTION-PIN.md`; files a drift-alert issue when a pin is missing, malformed, future-dated, or stale. A second job runs `scripts/dev/check_vendor_urls.py` over every vendor URL the pins and harness templates cite and files an issue when one has moved or died. |
 | `reusable-python-setup.yml` | workflow_call, dispatch | Reusable Python setup + dependency-install building block callers invoke via `uses: ./.github/workflows/reusable-python-setup.yml`; not a standalone gate. |
 
 ## Conventions

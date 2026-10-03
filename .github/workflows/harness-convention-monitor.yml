@@ -5,10 +5,13 @@
 # Enforces the 90-day freshness cadence on each harness adapter's
 # STANDARD-CONVENTION-PIN.md. The monitor reads the adapter-local pin
 # files, validates snapshot dates, and files a drift-alert GitHub issue
-# when any pin is missing, malformed, future-dated, or stale.
+# when any pin is missing, malformed, future-dated, or stale. A second job
+# fetches every vendor URL the pins and harness templates cite and files an
+# issue when one has moved or died.
 #
-# Schedule: 00:00 UTC on the 1st of every third month (approx. 90-day
-# cadence). Manual fire via workflow_dispatch.
+# Schedule: weekly, 06:17 UTC on Mondays, so a pin is caught within a week
+# of crossing the 90-day line and a moved vendor page within a week of the
+# move. Manual fire via workflow_dispatch.
 #
 # SHA-pinning policy mirrors sibling workflows; every `uses:` reference
 # is pinned by 40-char commit SHA followed by a `# vX.Y.Z` version
@@ -18,7 +21,7 @@ name: Harness Convention Monitor
 
 on:
   schedule:
-    - cron: '0 0 1 */3 *'   # 00:00 UTC on the 1st of every third month
+    - cron: '17 6 * * 1'   # 06:17 UTC every Monday
   workflow_dispatch:
 
 permissions:
@@ -118,4 +121,90 @@ jobs:
         if: steps.drift.outcome == 'failure'
         run: |
           echo "Harness-convention pin drift detected; issue filed. Failing the job to surface in the Actions tab."
+          exit 1
+
+  vendor-url-check:
+    name: Vendor URL check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: '3.10'
+
+      # Standard library only, so no package install is needed.
+      - name: Check vendor URLs in pins and templates
+        id: urls
+        run: |
+          python scripts/dev/check_vendor_urls.py \
+            --harnesses-root src/apothem/harnesses \
+            --output vendor-url-report.json
+        continue-on-error: true
+
+      - name: Upload vendor URL report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: vendor-url-report
+          path: vendor-url-report.json
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: File vendor-URL issue
+        if: steps.urls.outcome == 'failure'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        with:
+          script: |
+            const fs = require('fs');
+            const today = new Date().toISOString().slice(0, 10);
+            let body;
+            try {
+              const report = JSON.parse(fs.readFileSync('vendor-url-report.json', 'utf8'));
+              const rows = (report.urls || [])
+                .filter(u => u.outcome === 'moved' || u.outcome === 'dead')
+                .map(u => {
+                  const target = u.final_url && u.final_url !== u.url ? ` -> ${u.final_url}` : '';
+                  const cited = (u.cited_in || []).map(p => `\`${p}\``).join(', ');
+                  return `- ${u.outcome}: ${u.url}${target} (status \`${u.status ?? 'n/a'}\`; cited in ${cited})`;
+                })
+                .join('\n');
+              body = [
+                `Moved or dead vendor URLs found on ${today}.`,
+                '',
+                rows || '_(report parsed but no moved or dead rows; inspect artifact)_',
+                '',
+                `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+                '',
+                'Update each pin or template to cite the current page, and refresh the pin retrieval date.',
+              ].join('\n');
+            } catch (e) {
+              body = `The vendor URL check exited non-zero on ${today}, but \`vendor-url-report.json\` could not be parsed: ${e.message}. Inspect the workflow artifact.`;
+            }
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[harness-convention-monitor] vendor URLs moved or dead on ${today}`,
+              body,
+              labels: ['harness-convention-drift', 'automation'],
+            });
+
+      - name: Fail job if a vendor URL moved or died
+        if: steps.urls.outcome == 'failure'
+        run: |
+          echo "Moved or dead vendor URLs found; issue filed. Failing the job to surface in the Actions tab."
           exit 1
