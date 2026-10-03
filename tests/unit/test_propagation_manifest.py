@@ -49,6 +49,7 @@ def test_manifest_install_entries_are_well_formed() -> None:
             "opencode_agents",
             "gemini_commands",
             "markdown_commands",
+            "claude_rules",
             "qwen_agents",
         ), f"unexpected mode '{entry.mode}' on entry {entry}"
 

@@ -127,9 +127,11 @@ class TestDriversMeasureAndGate:
         assert chain["status"] == "pass"
         assert chain["commands"] == 1
         assert chain["median_sum_ms"] > 0
-        # The dependency guard injects its context for a Write payload; a
-        # `--help` invocation (the old measurement) injects nothing.
-        assert chain["injected_chars"] > 0
+        # The benchmark writes a benign app.py. The dependency guard speaks
+        # only when a write targets a manifest or lockfile, so a real run of
+        # the registered chain injects nothing for this payload: the benign
+        # cost the guard-precision change set out to remove.
+        assert chain["injected_chars"] == 0
 
     def test_bench_validate_ecosystem_passes_within_budget(self) -> None:
         assert bench_validate_ecosystem.main(["--check", "option-annotation"]) == 0

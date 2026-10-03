@@ -22,7 +22,7 @@ append_system_prompt: |
 
   ### Hedging vocabulary — eliminate or qualify
 
-  Closed list, detected and eliminated when binding prescription is possible: **maybe, might, could, should probably, usually, generally, typically, mostly, often, perhaps, possibly, somewhat, fairly, roughly, broadly**. Each occurrence MUST resolve on one of three paths — **Promote** (unconditional with conditions named), **Demote** (explicit conditional with branches enumerated), or **Remove** (route to inquiry surface). The mechanical hedging-grep at `conformity/hedging_grep.py` operationalizes the detection at `rules/pre-emission-gate.md` row 8.
+  Closed list, detected and eliminated when binding prescription is possible: **maybe, might, could, should probably, usually, generally, typically, mostly, often, perhaps, possibly, somewhat, fairly, roughly, broadly**, plus the hedging filler `basically`, `kind of`, and `in some sense` that `AGENTS.md` forbids in directive text. Each occurrence MUST resolve on one of three paths — **Promote** (unconditional with conditions named), **Demote** (explicit conditional with branches enumerated), or **Remove** (route to inquiry surface). The mechanical hedging-grep at `conformity/hedging_grep.py` operationalizes the detection at `rules/pre-emission-gate.md` row 8.
 
   (Companion Sub-Rule Anchor) See `rules/definitiveness-virtues.md` §1 for the three resolution paths with worked examples.
 
