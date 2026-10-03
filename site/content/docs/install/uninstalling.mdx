@@ -46,6 +46,14 @@ Removal matches the install channel you used:
   [Settings](/docs/reference/settings#merging-into-your-own-settings-file)).
 - Plan suites under `<project>/.apothem/plans/` (and the legacy `<project>/.plans/`) are unaffected.
 
+## Directories
+
+Uninstall also removes the directories the install created (for example a
+`~/.claude/` that did not exist before the first install), once they are
+empty. A directory that still holds a file of yours, or data another installed
+harness uses, stays. Directories that existed before the install are never
+removed.
+
 To fully clean up a harness root, remove the harness-native path documented on
 the [harness reference pages](/docs/harnesses) after confirming you have backed up
 any custom rules, helpers, or profile files you want to keep.

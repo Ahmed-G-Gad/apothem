@@ -14,7 +14,9 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
                    [--format plain|json] [--json] [--no-color]
 ```
 
-Removes adapter-managed harness targets. Prompts for confirmation unless
+Removes adapter-managed harness targets, then the directories the install
+created once they are empty (a directory holding anything of yours stays).
+Prompts for confirmation unless
 `--yes` is supplied. When no prompt is possible — `--format json` (prompt
 text would corrupt the single JSON document) or a non-interactive shell (no
 TTY) — the command refuses up front with a structured

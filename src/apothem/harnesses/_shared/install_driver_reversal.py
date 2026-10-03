@@ -71,10 +71,10 @@ def capture_missing_dirs(
     """Return the directories an install of *harness_name* may create.
 
     Call it before the install writes anything. Covers every manifest target and
-    the directories on the way to it, the shared data home and its stores, and
-    the *extra* paths the adapter writes outside the manifest (a native config,
-    a profile document); only paths inside the allowed-write boundary and not
-    present yet are returned. After the pass, the ones that now exist are the
+    the directories on the way to it, the shared data home and its stores, the
+    *extra* paths the adapter writes outside the manifest (a native config, a
+    profile document) and the allowed-write boundary itself; only paths inside
+    that boundary and not present yet are returned. After the pass, the ones that now exist are the
     directories it created.
     """
     boundary = _allowed_write_root(harness_root, project_root)
@@ -92,6 +92,9 @@ def capture_missing_dirs(
         candidates.extend(_chain(path, boundary))
     if harness_root is not None:
         candidates.extend(_chain(harness_root, boundary))
+    # The boundary itself can be new too (``~/.config`` for opencode, whose
+    # harness root is ``~/.config/opencode``).
+    candidates.append(_normalized(boundary))
     return frozenset(path for path in candidates if not path.exists())
 
 

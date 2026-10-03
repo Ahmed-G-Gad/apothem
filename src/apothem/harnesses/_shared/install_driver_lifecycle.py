@@ -37,6 +37,7 @@ from .install_driver_planvalidation import (
     _projected_profile_body,
 )
 from .install_driver_removal import _surgical_remove_from_target
+from .install_driver_treeops import remove_created_dirs
 from .install_driver_types import (
     MaterializationResult,
     _handle_rm_error,
@@ -505,8 +506,9 @@ def run_uninstall(
     added to the manifest later is untouched; a recorded target removed from the
     manifest is still cleaned). Tree/discovery surfaces stay manifest+source
     driven. The shared data home (memory / contexts / learning) is backed up and
-    removed only when last-referenced, and an uninstall marker is appended to the
-    ledger. With no ledger
+    removed only when last-referenced, the directories the installs since the
+    last uninstall created are removed once empty, and an uninstall marker is
+    appended to the ledger. With no ledger
     record (a pre-ledger install), the pass falls back to the full manifest.
 
     Returns every removal's :class:`MaterializationResult` so callers can
@@ -525,7 +527,8 @@ def run_uninstall(
     # exists (legacy / pre-ledger install) — fall back to removing every manifest
     # target. With a record, a single-file manifest target is removed only if it
     # was recorded, so an entry added to the manifest after install is not touched.
-    record = install_ledger.current_install_record(harness_name, root=root)
+    active = install_ledger.active_install_records(harness_name, root=root)
+    record = active[-1] if active else None
     recorded_targets = (
         {target.path: target for target in record.targets} if record is not None else {}
     )
@@ -606,6 +609,17 @@ def run_uninstall(
     )
     if data_home_removal is not None:
         results.append(data_home_removal)
+
+    # Remove the directories the installs since the last uninstall created,
+    # now that their contents are gone — only the empty ones, deepest first, so
+    # a directory still holding operator content or another harness's data
+    # stays.
+    results.extend(
+        remove_created_dirs(
+            {Path(path) for install in active for path in install.created_dirs},
+            allowed_root=allowed_root,
+        )
+    )
 
     # Append an uninstall marker referencing the install pass it reversed —
     # only when every removal succeeded. On any error the install record
