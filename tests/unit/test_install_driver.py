@@ -1046,7 +1046,7 @@ def test_codex_command_skill_note_points_hooks_to_codex_root(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The codex note points hooks at the codex root, not the skills tree."""
+    """The codex note points hooks at the codex root, rules at ~/.config."""
     fake_package_root = tmp_path / "package"
     commands_src = fake_package_root / "commands"
     commands_src.mkdir(parents=True)
@@ -1069,9 +1069,11 @@ def test_codex_command_skill_note_points_hooks_to_codex_root(
     text = (tmp_path / ".agents" / "skills" / "sample-command" / "SKILL.md").read_text(
         encoding="utf-8"
     )
-    assert "`hooks/...` under" in text
-    assert str(tmp_path / ".codex") in text
-    assert "`rules/...` and `templates/...`" in text
+    assert f"`hooks/<path>` is `{(tmp_path / '.codex' / 'hooks').as_posix()}/" in text
+    support = tmp_path / ".config" / "apothem"
+    assert f"`rules/<path>` is `{(support / 'rules').as_posix()}/" in text
+    assert f"`templates/<path>` is `{(support / 'templates').as_posix()}/" in text
+    assert "schemas/" not in text  # codex installs no schemas
 
 
 @pytest.mark.parametrize(
@@ -1087,7 +1089,7 @@ def test_command_skill_note_points_to_apothem_support_tree(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Hermes and Open-Claw point every cohort at the support subtree."""
+    """Hermes and Open-Claw point every cohort at the .apothem/support tree."""
     fake_package_root = tmp_path / "package"
     commands_src = fake_package_root / "commands"
     commands_src.mkdir(parents=True)
@@ -1111,8 +1113,10 @@ def test_command_skill_note_points_to_apothem_support_tree(
     text = (root / "apothem" / "skills" / "sample-command" / "SKILL.md").read_text(
         encoding="utf-8"
     )
-    assert str(root / "apothem") in text
-    assert "`rules/...`, `templates/...`, and `hooks/...`" in text
+    support = root / ".apothem" / "support"
+    for name in ("rules", "templates", "hooks"):
+        assert f"`{name}/<path>` is `{(support / name).as_posix()}/" in text
+    assert (root / "apothem").as_posix() + "/" not in text
 
 
 def test_claude_command_skill_note_points_to_apothem_support_tree(
@@ -1141,9 +1145,10 @@ def test_claude_command_skill_note_points_to_apothem_support_tree(
     )
 
     text = (root / "skills" / "sample-command" / "SKILL.md").read_text(encoding="utf-8")
-    assert str(root) in text
-    assert str(root / "apothem") in text
-    assert "`templates/...` and `hooks/...`" in text
+    assert f"`rules/<path>` is `{(root / 'rules').as_posix()}/" in text
+    support = root / ".apothem" / "support"
+    for name in ("templates", "schemas", "hooks", "conformity"):
+        assert f"`{name}/<path>` is `{(support / name).as_posix()}/" in text
 
 
 def test_antigravity_command_skill_note_points_to_plugin_support_tree(
@@ -1175,10 +1180,10 @@ def test_antigravity_command_skill_note_points_to_plugin_support_tree(
     text = (plugin_root / "skills" / "sample-command" / "SKILL.md").read_text(
         encoding="utf-8"
     )
-    assert str(plugin_root) in text
-    assert str(plugin_root / "apothem") in text
-    assert "`rules/...` under" in text
-    assert "`templates/...` and `hooks/...`" in text
+    assert f"`rules/<path>` is `{(plugin_root / 'rules').as_posix()}/" in text
+    support = plugin_root / ".apothem" / "support"
+    for name in ("templates", "hooks"):
+        assert f"`{name}/<path>` is `{(support / name).as_posix()}/" in text
 
 
 def test_apply_codex_agents_converts_markdown_to_toml(

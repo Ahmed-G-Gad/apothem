@@ -28,6 +28,7 @@ EXPECTED_MODULES = {
     "install_driver_pathsafety",
     "install_driver_backup",
     "install_driver_converters",
+    "install_driver_layout",
     "install_driver_merge",
     "install_driver_jsonmerge",
     "install_driver_ownership",

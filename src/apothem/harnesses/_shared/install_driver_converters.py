@@ -15,6 +15,12 @@ from apothem.lib.frontmatter import (
     split_frontmatter,
 )
 
+from .install_driver_layout import (
+    REFERENCE_NOTE_HEADING,
+    harness_layout,
+    reference_note,
+)
+
 
 def _strip_markdown_frontmatter(text: str) -> str:
     """Return Markdown body text with leading YAML frontmatter removed."""
@@ -59,52 +65,14 @@ def _toml_multiline_string(value: str) -> str:
 
 
 def _installed_reference_note(harness_name: str, install_root: Path) -> str:
-    """Return the generated skill note for installed reference paths."""
-    if harness_name == "codex":
-        codex_root = install_root
-        support_root = Path.home() / ".config" / "apothem"
-        return (
-            "\n## Installed Reference Paths\n\n"
-            "When this skill is installed by Apothem, resolve repository-style "
-            f"references such as `rules/...` and `templates/...` under "
-            f"`{support_root}`, and `hooks/...` under `{codex_root}` unless a "
-            "project-local file with the same relative path exists.\n"
-        )
-    if harness_name == "antigravity":
-        plugin_root = install_root / "antigravity-cli" / "plugins" / "apothem"
-        support_root = plugin_root / "apothem"
-        return (
-            "\n## Installed Reference Paths\n\n"
-            "When this skill is installed by Apothem, resolve repository-style "
-            f"references such as `rules/...` under `{plugin_root}`, "
-            f"`templates/...` and `hooks/...` under `{support_root}`, unless a "
-            "project-local file with the same relative path exists.\n"
-        )
-    if harness_name == "claude_code":
-        support_root = install_root / "apothem"
-        return (
-            "\n## Installed Reference Paths\n\n"
-            "When this skill is installed by Apothem, resolve repository-style "
-            f"references such as `rules/...` under `{install_root}`, "
-            f"`templates/...` and `hooks/...` under `{support_root}`, unless a "
-            "project-local file with the same relative path exists.\n"
-        )
-    if harness_name in {"hermes", "open_claw"}:
-        support_root = install_root / "apothem"
-        return (
-            "\n## Installed Reference Paths\n\n"
-            "When this skill is installed by Apothem, resolve repository-style "
-            f"references such as `rules/...`, `templates/...`, and `hooks/...` "
-            f"under `{support_root}` unless a project-local file with the same "
-            "relative path exists.\n"
-        )
-    return (
-        "\n## Installed Reference Paths\n\n"
-        "When this skill is installed by Apothem, resolve repository-style "
-        f"references such as `rules/...`, `templates/...`, and `hooks/...` "
-        f"under `{install_root}` unless a project-local file with the same "
-        "relative path exists.\n"
-    )
+    """Return the generated skill note for installed reference paths.
+
+    The note names, for each cited corpus directory the harness installs
+    (``rules/``, ``templates/``, ``schemas/``, ``hooks/``, ``conformity/``),
+    the directory its manifest entry targets under *install_root*, so every
+    path it names is one the install writes.
+    """
+    return reference_note(harness_layout(harness_name, install_root))
 
 
 def _generated_skill_text(
@@ -115,10 +83,10 @@ def _generated_skill_text(
 ) -> str:
     """Render a command Markdown file as a native skill entrypoint."""
     text = source_path.read_text(encoding="utf-8")
-    reference_note = _installed_reference_note(harness_name, install_root)
-    if "## Installed Reference Paths" in text:
+    if REFERENCE_NOTE_HEADING in text:
         return text
-    return text.rstrip() + "\n" + reference_note
+    reference_note_text = _installed_reference_note(harness_name, install_root)
+    return text.rstrip() + "\n" + reference_note_text
 
 
 #: Codex policy file written beside a user-only skill's ``SKILL.md``. Codex
