@@ -132,7 +132,6 @@ from .install_driver_materialize import (
 from .install_driver_materialize import (
     _dispatch_install_entry as _dispatch_install_entry,
 )
-from .install_driver_materialize import _dry_run_results as _dry_run_results
 from .install_driver_materialize import (
     _materialize_data_surfaces as _materialize_data_surfaces,
 )
@@ -172,6 +171,7 @@ from .install_driver_pathsafety import _root_for as _root_for
 from .install_driver_pathsafety import _unsafe_symlink as _unsafe_symlink
 from .install_driver_pathsafety import _validate_target_path as _validate_target_path
 from .install_driver_pathsafety import _within_allowed_root as _within_allowed_root
+from .install_driver_planvalidation import _dry_run_results as _dry_run_results
 from .install_driver_planvalidation import (
     _generated_targets_for_entry as _generated_targets_for_entry,
 )
