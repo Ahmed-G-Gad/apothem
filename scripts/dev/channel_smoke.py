@@ -125,14 +125,14 @@ CHANNELS: tuple[Channel, ...] = (
         id="npm",
         title="2 — npm shim (npx)",
         documented=(
-            "npx @ahmed-g-gad/apothem quickstart --yes",
+            "npx @ahmed-g-gad/apothem quickstart --harness claude-code --yes",
             "npx @ahmed-g-gad/apothem verify --harness claude-code",
             "npx @ahmed-g-gad/apothem --version",
         ),
         requires=("npx", "python3"),
         steps=(
             _npx("--version"),
-            _npx("quickstart", "--yes"),
+            _npx("quickstart", "--harness", "claude-code", "--yes"),
             _npx("verify", "--harness", "claude-code"),
         ),
     ),
