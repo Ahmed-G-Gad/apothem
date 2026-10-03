@@ -22,8 +22,10 @@
   project-root file behavior is unchanged and current — Zed still auto-includes
   the flat `.rules` file as agent instructions; only the docs were reorganized
   (re-verified live 2026-06-25 against `zed.dev/docs`).
-- Surface: Zed auto-includes a single flat project-root file `.rules` as agent
-  instructions (alongside the `AGENTS.md` / `CLAUDE.md` family). The format is
+- Surface: Zed reads one project instruction file, the first match in the
+  list `.rules`, `.cursorrules`, `.windsurfrules`, `.clinerules`,
+  `.github/copilot-instructions.md`, `AGENT.md`, `AGENTS.md`, `CLAUDE.md`,
+  `GEMINI.md`, so `.rules` hides every later file. The format is
   free-form plaintext / Markdown with no schema. The global surface is
   `~/.config/zed/AGENTS.md`.
 - DIVERGENCE (flat file, no dedicated apothem file): unlike the cohort's

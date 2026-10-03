@@ -72,10 +72,15 @@ def _walk_commands(prefix: str, group: click.Group) -> list[dict[str, object]]:
     are skipped at the top level.
     """
     entries: list[dict[str, object]] = []
-    for child_name in group.commands:
+    # list_commands / get_command (not group.commands) so the root group's
+    # lazily loaded command modules are imported and walked too.
+    ctx = click.Context(group)
+    for child_name in group.list_commands(ctx):
         if not prefix and child_name in _ALIAS_COMMAND_NAMES:
             continue
-        child = group.commands[child_name]
+        child = group.get_command(ctx, child_name)
+        if child is None:
+            continue
         full_name = f"{prefix} {child_name}".strip()
         if isinstance(child, click.Group):
             entries.extend(_walk_commands(full_name, child))

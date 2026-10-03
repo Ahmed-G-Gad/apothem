@@ -4,7 +4,7 @@ version: "0.1.0"
 updated: "2026-06-23"
 description: "Read-only memory-file auditor: cross-reference every claim in the harness memory tier (MEMORY.md index + topic files under `<harness-root>/projects/{hash}/memory/` and `<harness-root>/memory/`) against actual filesystem state — file/line/rule counts (glob and count), referenced paths (do they exist?), rule scope labels (match `pathFilter` frontmatter?), dates (against frontmatter `updated:` or `mtime`, never the system clock), and cross-reference matrices. Dispatch when MEMORY.md or a topic file may have drifted from reality and you need a per-claim PASS/FAIL verdict with contradicting evidence — e.g. 'audit MEMORY.md after the rules cohort was renamed', 'verify the memory index counts match the current ecosystem', 'check the debugging topic file for stale references to deleted artifacts'. Existence + name match only; never re-audit an artifact's internal correctness (convention-auditor's scope). Read-only: never writes, never fixes."
 tools: "Read, Glob, Grep"
-disallowedTools: "Write, Edit, TodoWrite"
+disallowedTools: "Write, Edit, TodoWrite, TaskCreate, TaskUpdate"
 maxTurns: 15
 # maxTurns rationale: 15 exceeds the 5–10 norm because each memory claim requires an independent
 # filesystem verification (Read / Glob / Grep). An audit across MEMORY.md plus 5–8 topic files with

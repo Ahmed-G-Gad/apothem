@@ -394,7 +394,7 @@ de lo que un perfil compartido puede declarar; edita el esquema y luego regenera
 | `preferences.style` | string | no | Preferred AI response style. |
 | `preferences.test_framework` | string | no | Preferred test framework. |
 | `rules` | array | no | Additional rules shared with capable harnesses. |
-| `schema_version` | integer | no | Optional profile-schema version; defaults to the current version (1) when absent. Version-less profiles remain valid. A profile stamped with a version greater than the engine supports is rejected with an upgrade-the-engine diagnostic before validation. |
+| `schema_version` | integer | no | Optional profile-schema version. A profile without it is read as version 1 and migrated forward like any v1 profile; profile scaffolds always write it. A profile stamped with a version greater than the engine supports is rejected with an upgrade-the-engine diagnostic before validation. |
 | `seriousness` | string | no | Governance seriousness tier. |
 | `workspace` | object | no | Where Apothem keeps its shared, gitignored working directory (plans, memory, learning, contexts). One directory shared across every harness; never per-harness. |
 | `workspace.directory_name` | string | no | Name of the shared working directory. A single path component (no separator, no drive specifier). Defaults to '.apothem'. |

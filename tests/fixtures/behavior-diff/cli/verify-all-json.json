@@ -22,8 +22,9 @@
     "profile_path": null,
     "project": null,
     "results": [],
+    "schema_version": 1,
     "status": "error",
     "warnings": []
   },
-  "stdout": "{\"status\": \"error\", \"command\": \"verify\", \"harness\": \"all\", \"profile_path\": null, \"project\": null, \"files_written\": [], \"results\": [], \"warnings\": [], \"error\": {\"code\": \"project.required\", \"message\": \"Apothem validation failed.\", \"field\": \"project\", \"reason\": \"project-scope harnesses require --project: cursor, gemini-cli, github-copilot, kimi-code, windsurf, codebuddy, kiro, trae, zed, glm.\", \"fix\": \"Pass --project PATH or select only user-scope harnesses.\", \"safe_value\": null, \"files_written\": []}}\n"
+  "stdout": "{\"schema_version\": 1, \"status\": \"error\", \"command\": \"verify\", \"harness\": \"all\", \"profile_path\": null, \"project\": null, \"files_written\": [], \"results\": [], \"warnings\": [], \"error\": {\"code\": \"project.required\", \"message\": \"Apothem validation failed.\", \"field\": \"project\", \"reason\": \"project-scope harnesses require --project: cursor, gemini-cli, github-copilot, kimi-code, windsurf, codebuddy, kiro, trae, zed, glm.\", \"fix\": \"Pass --project PATH or select only user-scope harnesses.\", \"safe_value\": null, \"files_written\": []}}\n"
 }

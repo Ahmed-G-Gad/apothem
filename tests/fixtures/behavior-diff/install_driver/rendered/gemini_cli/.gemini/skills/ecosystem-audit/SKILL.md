@@ -7,7 +7,7 @@ archetype: "audit-template"
 userInvocable: true
 argument-hint: "[--focus area] [--fix]"
 disable-model-invocation: true
-allowed-tools: "Read, Glob, Grep, Agent, TodoWrite"
+allowed-tools: "Read, Glob, Grep, Agent, TodoWrite, TaskCreate, TaskGet, TaskList, TaskUpdate"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

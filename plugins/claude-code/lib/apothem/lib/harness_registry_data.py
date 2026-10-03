@@ -79,6 +79,25 @@ class HarnessRegistryEntry:
         return self.entry_point.split(":", 1)[1]
 
 
+@dataclass(frozen=True)
+class SharedRoot:
+    """An install target that harnesses other than its writer also load.
+
+    Each shared root has exactly one owner: the registered adapter that writes
+    ``path``. ``readers`` are the other registered harnesses whose vendor docs
+    load ``path`` by default (an opt-in load is not listed), and ``evidence``
+    holds those vendor pages, retrieved on ``retrieved``. ``path`` uses the
+    registry ``target_paths`` notation (``~/`` for the user home,
+    ``<project>/`` for the project root).
+    """
+
+    path: str
+    owner: str
+    readers: tuple[str, ...]
+    evidence: tuple[str, ...]
+    retrieved: str
+
+
 def _matrix(**values: CapabilityStatus) -> Mapping[str, CapabilityStatus]:
     # Exact-coverage gate: every one of REQUIRED_CAPABILITIES must be assigned a
     # status AND no unknown axis may leak in, so a registry entry's matrix is
@@ -859,3 +878,122 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         ),
     ),
 )
+
+
+# Paths that more than one harness loads. One owner per shared root: the owner
+# is the only adapter that writes the path, and every other harness that loads
+# it is a reader. Installing the owner places Apothem content in front of every
+# reader, and uninstalling the owner removes it from every reader, so the
+# install advisories name the readers. Evidence retrieved 2026-10-02.
+SHARED_ROOTS: tuple[SharedRoot, ...] = (
+    SharedRoot(
+        path="~/.agents/skills/",
+        owner="codex",
+        readers=(
+            "cursor",
+            "gemini-cli",
+            "github-copilot",
+            "kimi-code",
+            "open-claw",
+            "opencode",
+            "windsurf",
+            "zed",
+        ),
+        evidence=(
+            "https://learn.chatgpt.com/docs/build-skills",
+            "https://cursor.com/docs/skills",
+            "https://raw.githubusercontent.com/google-gemini/gemini-cli/fb972b2f87fe7d5b06d37eac711490162d98de2c/docs/cli/skills.md",
+            "https://docs.github.com/en/copilot/concepts/agents/about-agent-skills",
+            "https://moonshotai.github.io/kimi-code/en/customization/skills",
+            "https://docs.openclaw.ai/tools/skills",
+            "https://opencode.ai/docs/skills/",
+            "https://docs.devin.ai/desktop/cascade/skills.md",
+            "https://zed.dev/docs/ai/skills",
+        ),
+        retrieved="2026-10-02",
+    ),
+    SharedRoot(
+        path="~/.claude/skills/",
+        owner="claude-code",
+        readers=("cursor", "opencode"),
+        evidence=(
+            "https://code.claude.com/docs/en/skills.md",
+            "https://cursor.com/docs/skills",
+            "https://opencode.ai/docs/skills/",
+        ),
+        retrieved="2026-10-02",
+    ),
+    SharedRoot(
+        path="<project>/AGENTS.md",
+        owner="kimi-code",
+        readers=(
+            "antigravity",
+            "codebuddy",
+            "codex",
+            "cursor",
+            "github-copilot",
+            "hermes",
+            "kiro",
+            "opencode",
+            "windsurf",
+            "zed",
+        ),
+        evidence=(
+            "https://moonshotai.github.io/kimi-code/en/customization/agents",
+            "https://antigravity.google/docs/rules",
+            "https://www.codebuddy.ai/docs/cli/memory",
+            "https://learn.chatgpt.com/docs/agent-configuration/agents-md",
+            "https://cursor.com/docs/rules",
+            "https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-custom-instructions",
+            "https://raw.githubusercontent.com/NousResearch/hermes-agent/1c56fed0480e67ffd56675d10862e607fb61a55b/website/docs/user-guide/features/context-files.md",
+            "https://kiro.dev/docs/steering/",
+            "https://opencode.ai/docs/rules/",
+            "https://docs.devin.ai/desktop/cascade/agents-md.md",
+            "https://zed.dev/docs/ai/instructions",
+        ),
+        retrieved="2026-10-02",
+    ),
+    SharedRoot(
+        path="<project>/GEMINI.md",
+        owner="gemini-cli",
+        readers=("antigravity", "github-copilot", "zed"),
+        evidence=(
+            "https://raw.githubusercontent.com/google-gemini/gemini-cli/fb972b2f87fe7d5b06d37eac711490162d98de2c/docs/cli/gemini-md.md",
+            "https://antigravity.google/docs/rules",
+            "https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-custom-instructions",
+            "https://zed.dev/docs/ai/instructions",
+        ),
+        retrieved="2026-10-02",
+    ),
+    SharedRoot(
+        path="~/.gemini/GEMINI.md",
+        owner="antigravity",
+        readers=("gemini-cli",),
+        evidence=(
+            "https://antigravity.google/docs/rules",
+            "https://raw.githubusercontent.com/google-gemini/gemini-cli/fb972b2f87fe7d5b06d37eac711490162d98de2c/docs/cli/gemini-md.md",
+        ),
+        retrieved="2026-10-02",
+    ),
+    SharedRoot(
+        path="<project>/.github/copilot-instructions.md",
+        owner="github-copilot",
+        readers=("zed",),
+        evidence=(
+            "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/add-custom-instructions/add-repository-instructions",
+            "https://zed.dev/docs/ai/instructions",
+        ),
+        retrieved="2026-10-02",
+    ),
+)
+
+# Instruction filenames that several vendors read under the same name. A
+# registry target with one of these basenames is a shared root unless it sits
+# under a directory only its own harness reads (listed here with the reason).
+CROSS_TOOL_INSTRUCTION_FILES: frozenset[str] = frozenset(
+    {"AGENTS.md", "CLAUDE.md", "GEMINI.md", "copilot-instructions.md"}
+)
+PRIVATE_INSTRUCTION_TARGETS: Mapping[str, str] = {
+    "~/.codex/AGENTS.md": "Codex reads it from CODEX_HOME; no other registered "
+    "harness documents loading this path.",
+}

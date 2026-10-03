@@ -34,6 +34,12 @@ standard_convention_pin: "STANDARD-CONVENTION-PIN.md"
 # rules/agent-capability-discipline-matrix.md §1A; pin refresh tracked as a
 # follow-up to fold this triple into the pin's evidence chain.
 web_fetch: "yes"
+# secrets-paths is enforced by the settings template's Read(...) deny rules.
+# Claude Code applies those to its file tools, to file commands it recognizes
+# in Bash (cat, head, tail, sed, tee) and to redirection targets, but not to a
+# Bash search such as `grep -r` or a script that opens files itself
+# (https://code.claude.com/docs/en/permissions.md, retrieved 2026-10-02). The
+# OS-level boundary is the Claude Code sandbox, which the adapter does not set.
 tool_surface_restrictions:
   - secrets-paths
   - destructive-shell-ops

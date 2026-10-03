@@ -4,7 +4,7 @@ version: "0.1.0"
 updated: "2026-06-23"
 description: "Read-only conventions auditor: verify naming (kebab-case files, snake_case Python, frontmatter keys), cross-reference resolution (dead rule/skill/agent paths, broken anchors, half-edge bindings), formatting standards (SPDX header presence, frontmatter contract), and ecosystem coherence (orphan artifacts, sibling-convention drift, registry gaps). Dispatch when a change touches multiple rules/skills/agents/commands and you need a binary PASS/FINDING verdict per instance with file+line+expected+actual evidence — e.g. 'audit naming across the harness adapters', 'check every new rule resolves its Bindings cross-refs', 'verify the skills cohort matches the kebab-case + SKILL.md convention'. Read-only: never fixes, never runs shell. Conventions are owned upstream and verified against, never re-derived; every finding cites severity + evidence."
 tools: "Read, Glob, Grep"
-disallowedTools: "Write, Edit, Bash, TodoWrite"
+disallowedTools: "Write, Edit, Bash, TodoWrite, TaskCreate, TaskUpdate"
 maxTurns: 15
 # maxTurns rationale: 15 exceeds the 5–10 norm because auditing N artifacts requires one Read
 # per artifact plus verification follow-up reads. A full ecosystem audit across 20+ artifacts needs ~20+ reads

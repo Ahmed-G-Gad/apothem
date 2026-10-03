@@ -12,6 +12,7 @@
 | `_helpers.py` | Shared constants, the structured CLI-error type, the adapter protocol + load helpers, profile read/write, lifecycle-envelope builders, harness selection, project-root resolution, `AliasedGroup`, and the drift/plan helpers. |
 | `_epilogs.py` | The per-subcommand `--help` epilog strings. |
 | `_materialize.py` | The shared install/update materialization orchestrators (`_materialize`, `_dry_run_materialization`). |
+| `_group.py` | Group plumbing that loads without the materialization stack: the root group that imports each command module on first use (with the static command summaries the root `--help` renders), the usage-error contract (exit 64, JSON error envelope), context settings, and UTF-8 stdio setup. |
 | `_common_flags.py` | Shared Click options plus the console factory used across CLI commands. |
 | `_json_formatter.py` | JSON-output helper for the CLI (machine-readable command output). |
 | `_cmd_install.py` | The `install` **and `quickstart`** commands. `quickstart` is the guided profile → preview → install path and shares this module's materialization machinery, so it lives beside `install` rather than in a module of its own. |
@@ -23,6 +24,7 @@
 | `_cmd_harnesses.py` | The `harnesses` command group. |
 | `_cmd_profile.py` | The `profile` command group. |
 | `_cmd_doctor.py` | The `doctor` command. |
+| `_doctor_hooks.py` | Harness-neutral hook probe for `doctor`: reads the files the latest install wrote (install ledger), collects the Apothem hook commands registered there, and starts each interpreter and script pair once with a no-op payload. |
 | `_cmd_migrate_workspace.py` | The `migrate-workspace` command. |
 | `_cmd_completion.py` | The `completion` command (shell-completion script emission). |
 | `reference_export.py` | Deterministic JSON exporter for source-generated documentation reference — introspects the CLI command tree, the conformity validator modules and the harness registry. Runnable via `python -m apothem.cli.reference_export <kind>`; spawned by `site/scripts/update-reference-inventory.mjs` and the docs-drift CI gate. |

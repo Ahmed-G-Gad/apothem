@@ -21,6 +21,18 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- **Every `--json` document carries `schema_version`**, and the profile
+  schemas are served at their `$id` URLs.
+- **`doctor` probes each installed harness's hooks** and accepts `--project`.
+- **CI runs the npm shim on Node 18, 20, 22, and 24**, under a written
+  runtime-floor policy with an end-of-life notice.
+- **Installs name the other tools that load a shared path.** The registry
+  records one owner for each path several tools read, and installing an owner
+  or a reader prints a note naming the others.
+- **Install warns about risky MCP profile entries**: `transport: sse`, plain
+  `http://` to a non-loopback host, and token-shaped literals in headers or
+  env, without printing the value.
+- **The Qwen Code extension ships a Markdown bootstrap command.**
 - **Every slash command has a generated docs page and nav entry**, and the
   command index, CLI list, and conformity-validator table are generated from
   code. Translated pages whose English source changed since translation show
@@ -59,6 +71,17 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- **Usage errors exit 64** with a `cli.usage` envelope under `--json`,
+  distinct from a findings or partial-write exit.
+- **`quickstart` asks for a harness** instead of configuring all seventeen;
+  `--harness all` keeps the old behaviour. The first `install` creates the
+  default profile.
+- **`doctor` judges installed harnesses only**, and profile validation
+  reports every error.
+- **The GitHub Copilot instructions put the operator profile first.**
+- **Shared instruction files carry harness-neutral text.** The Kimi Code
+  `AGENTS.md` block and the Gemini CLI and Antigravity `GEMINI.md` blocks no
+  longer present themselves as one tool's own file.
 - **The harness docs state what each tool loads.** The Claude Code pages match
   what the adapter writes, the install page gives the plugin's
   `/apothem:<name>` command names, and the OpenClaw, Hermes, and Kimi Code
@@ -118,6 +141,21 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **A missing `click` or `rich` gives a structured error naming the install
+  command** instead of a traceback, and `PYTHONPATH=src` resolves the vendored
+  dependencies.
+- **The one-shot installer installs and verifies in one run**, and the
+  installers emit no ANSI codes when output is not a terminal.
+- **Piped output and `--help` epilogs keep their line structure.**
+- **Profiles without a version are read as version 1.**
+- **Qwen Code hook timeouts are written in seconds** and the interpreter path
+  is quoted.
+- **The GLM provider file carries the documented model-mapping
+  placeholders.**
+- **Zed installs warn when the new `.rules` file hides an existing instruction
+  file**, since Zed reads only the first one it finds.
+- **Claude Code agent and command tool lists name the Task tools**, and the
+  settings file declares its schema.
 - **Docs pages meet WCAG 2.2 AA in the checked views.** Code-block and
   active-navigation colours reach 4.5:1 contrast, pages have `main` and `nav`
   landmarks, and the GitHub icon has an accessible name. Trailing-slash URLs
@@ -181,6 +219,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Security
 
+- **The VS Code extension runs only a user-scoped runner**, quoted, for a
+  chosen harness; a workspace setting can no longer set the command it runs.
 - **No long-lived npm token path remains.** The npm publish workflow
   authenticates through OIDC alone; the token secret and its opt-in gate are
   gone.

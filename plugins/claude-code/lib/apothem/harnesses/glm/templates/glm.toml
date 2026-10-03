@@ -35,11 +35,18 @@ docs = "https://docs.z.ai/"
 [backends.anthropic_compatible]
 base_url = "https://api.z.ai/api/anthropic"
 # Environment variables an operator sets so an Anthropic-compatible agent
-# routes to GLM instead of the default Anthropic endpoint.
+# routes to GLM instead of the default Anthropic endpoint. The three
+# ANTHROPIC_DEFAULT_*_MODEL variables map the agent's opus / sonnet / haiku
+# model roles to GLM model ids, as documented at
+# https://docs.z.ai/devpack/tool/claude. Apothem pins no model id: fill each
+# <GLM_MODEL_ID> from the current Z.ai catalog.
 [backends.anthropic_compatible.env]
 ANTHROPIC_BASE_URL = "https://api.z.ai/api/anthropic"
 ANTHROPIC_AUTH_TOKEN = "<YOUR_ZAI_API_KEY>"
 API_TIMEOUT_MS = "<TIMEOUT_MS>"
+ANTHROPIC_DEFAULT_OPUS_MODEL = "<GLM_MODEL_ID>"
+ANTHROPIC_DEFAULT_SONNET_MODEL = "<GLM_MODEL_ID>"
+ANTHROPIC_DEFAULT_HAIKU_MODEL = "<GLM_MODEL_ID>"
 
 # OpenAI-compatible backend. Point an OpenAI-compatible coding agent at GLM by
 # setting its base URL to this endpoint and supplying the API key.
@@ -49,9 +56,11 @@ base_url = "https://api.z.ai/api/coding/paas/v4"
 OPENAI_BASE_URL = "https://api.z.ai/api/coding/paas/v4"
 OPENAI_API_KEY = "<YOUR_ZAI_API_KEY>"
 
-# Operator-configurable model-mapping placeholders. Apothem pins no model id
-# (version-volatile); the operator fills these from the current GLM catalog at
-# https://docs.z.ai/ so the chosen agent's logical roles map to GLM models.
+# Operator-configurable model-role placeholders for agents that take a model id
+# directly (for example an OpenAI-compatible agent). An Anthropic-compatible
+# agent reads the ANTHROPIC_DEFAULT_*_MODEL variables above instead. Apothem pins
+# no model id (version-volatile); fill these from the current GLM catalog at
+# https://docs.z.ai/.
 [models]
 default = "<GLM_MODEL_ID>"
 fast = "<GLM_FAST_MODEL_ID>"

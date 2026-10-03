@@ -4,7 +4,7 @@ version: "0.1.0"
 updated: "2026-06-23"
 description: "Read-only rubric scoring of a prompt's output set — score each output against each named criterion (PASS/FAIL with cited evidence), aggregate per-criterion pass-rate, flag regressions against a baseline, and name recurring failure modes. Use when prompt or model outputs need a reproducible verdict before they ship: comparing a reprompted variant against the prior version, gating a system-prompt change, judging an LLM-as-judge eval set, scoring few-shot outputs against acceptance criteria, or proving a quality claim a reviewer would challenge. Requires an explicit rubric — an absent or underspecified rubric blocks scoring and routes as inquiry; never invents a criterion or threshold, never scores charitably."
 tools: "Read, Glob, Grep, Bash"
-disallowedTools: "Write, Edit, TodoWrite"
+disallowedTools: "Write, Edit, TodoWrite, TaskCreate, TaskUpdate"
 maxTurns: 15
 # maxTurns rationale: 15 exceeds the 5–10 norm because rubric scoring reads the prompt, the
 # full output set, and the rubric, then scores each output against each criterion. A rubric with

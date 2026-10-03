@@ -7,6 +7,7 @@ from __future__ import annotations
 import contextlib
 import difflib
 import json
+import re
 from pathlib import Path
 from string import Template
 from typing import Any
@@ -457,6 +458,31 @@ def render_content_tokens(
     return Template(content).safe_substitute(mapping)
 
 
+_LEADING_HTML_COMMENTS = re.compile(r"\A(?:\s*<!--.*?-->)*\s*", re.S)
+
+
+def _fold_profile_body(
+    entry: InstallEntry, content: str, profile_body: str | None
+) -> str:
+    """Fold the projected *profile_body* into a ``sentinel_merge`` template.
+
+    The default ``profile_position: last`` appends the profile after the
+    template governance. ``first`` puts it ahead of the governance, after the
+    template's leading HTML comments (the SPDX header), for a harness that may
+    not process a long instruction file in full. Any other entry, or no
+    profile, returns *content* unchanged.
+    """
+    if entry.mode != "sentinel_merge" or not profile_body:
+        return content
+    if entry.profile_position != "first":
+        return f"{content.rstrip()}\n\n{profile_body}"
+    split = _LEADING_HTML_COMMENTS.match(content)
+    head = split.group(0).strip() if split else ""
+    rest = content[split.end() :] if split else content
+    lead = f"{head}\n\n" if head else ""
+    return f"{lead}{profile_body}\n\n{rest.strip()}"
+
+
 def _operator_owned_merge_text(
     entry: InstallEntry, target: Path, content: str, *, existed: bool
 ) -> str:
@@ -520,8 +546,7 @@ def _operator_owned_preview(
         harness_root=harness_root,
         project_root=project_root,
     )
-    if entry.mode == "sentinel_merge" and profile_body:
-        content = f"{content.rstrip()}\n\n{profile_body}"
+    content = _fold_profile_body(entry, content, profile_body)
     existed = target.exists()
     before = ""
     if existed:
@@ -555,8 +580,9 @@ def _apply_operator_owned_file(
     key-merged object for JSON config) is folded into the operator's file so
     operator content is preserved. Path tokens inside the template body are
     rendered first per ``render_content_tokens``. For ``sentinel_merge`` anchors,
-    *profile_body* (the projected shared-profile managed block) is appended to
-    the template governance so the anchor's managed block carries both. A
+    *profile_body* (the projected shared-profile managed block) is folded into
+    the template governance, after it or before it per the entry's
+    ``profile_position``, so the anchor's managed block carries both. A
     unified diff is recorded on the result. When the change is a non-additive
     overwrite of an existing file and an *authorize* gate is supplied, the gate
     is consulted per target; declining skips the write and leaves the operator
@@ -567,8 +593,7 @@ def _apply_operator_owned_file(
         harness_root=harness_root,
         project_root=project_root,
     )
-    if entry.mode == "sentinel_merge" and profile_body:
-        content = f"{content.rstrip()}\n\n{profile_body}"
+    content = _fold_profile_body(entry, content, profile_body)
     existed = target.exists()
     before = ""
     if existed:

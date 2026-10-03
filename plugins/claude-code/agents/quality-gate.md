@@ -4,7 +4,7 @@ version: "0.1.0"
 updated: "2026-10-02"
 description: "Read-only quality-gate runner — discovers the host's lint / type-check / test / security / build commands, runs them in the correct order (build → type-check → tests+lint+security in parallel), and returns a per-gate PASS/FAIL verdict with file+line+error evidence. Reports, never fixes. Dispatch as a Quality team before a release cut, after a multi-file change, or to confirm a fix is green — e.g. 'run the full quality matrix and tell me what fails', 'gate this branch before I push', 'is the test suite green and the types clean?'. Detects tooling via host-discovery (ruff/eslint/markdownlint, mypy/tsc/pyright, pytest/jest/cargo test/go test, bandit/npm audit/gitleaks); never assumes a stack."
 tools: "Bash, Read, Glob, Grep"
-disallowedTools: "Write, Edit, TodoWrite"
+disallowedTools: "Write, Edit, TodoWrite, TaskCreate, TaskUpdate"
 maxTurns: 15
 # maxTurns rationale: 15 exceeds the 5–10 norm because each quality gate is an independent Bash
 # invocation (lint, type-check, test, security, build = 5+ runs), and each failure requires a

@@ -5,10 +5,10 @@
 Materializes the apothem rules surface into the operator-supplied
 project root at ``<project>/.rules`` — the canonical Zed project
 agent-instruction file per https://zed.dev/docs/ai/instructions. Zed diverges
-from the cohort's rules-directory shape: it auto-includes a single flat
-project-root file (``.rules``, alongside the ``AGENTS.md`` / ``CLAUDE.md``
-family) as agent instructions, with no dedicated per-tool rules
-subdirectory. The adapter therefore writes a flat ``.rules`` file rather
+from the cohort's rules-directory shape: it reads the first match in a
+project instruction-file list that starts with the flat ``.rules`` file
+(``AGENTS.md`` and ``CLAUDE.md`` come later in that list), with no dedicated
+per-tool rules subdirectory. The adapter therefore writes a flat ``.rules`` file rather
 than a dedicated ``apothem-rules.md`` inside a rules directory. The
 global ``~/.config/zed/AGENTS.md`` surface and Zed's MCP context-server
 block (``.zed/settings.json`` ``context_servers``) are out of apothem's

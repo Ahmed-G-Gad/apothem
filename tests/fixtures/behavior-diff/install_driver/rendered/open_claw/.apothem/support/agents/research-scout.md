@@ -4,7 +4,7 @@ version: "0.1.0"
 updated: "2026-06-23"
 description: "Read-only source discovery and ranking — decompose a research question into facets, fan out parallel web queries, rank candidates by authority, recency, and relevance, and return a deduplicated ranked source list. Use when a question needs sources before it can be answered: 'find the authoritative spec/RFC for X', 'what are the primary sources on Y', 'gather current references for a docs/copy claim', 'survey the landscape before a deep dive'. Fans external facets through WebSearch / WebFetch and any in-repo corpus through Read / Glob / Grep. Discovery and ranking only — never fabricates a URL, never synthesizes; claim verification and combination route to the fact-checker / source-synthesis surface."
 tools: "Read, Glob, Grep, WebSearch, WebFetch"
-disallowedTools: "Write, Edit, TodoWrite"
+disallowedTools: "Write, Edit, TodoWrite, TaskCreate, TaskUpdate"
 maxTurns: 15
 # maxTurns rationale: 15 exceeds the 5–10 norm because source discovery fans out across
 # independent search facets — each facet runs its own WebSearch, then WebFetch confirms

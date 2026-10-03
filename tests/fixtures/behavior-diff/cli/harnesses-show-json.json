@@ -11,7 +11,8 @@
     "installed": false,
     "name": "claude-code",
     "output_path": "<HOME>/.claude/settings.json",
+    "schema_version": 1,
     "scope": "user"
   },
-  "stdout": "{\"name\": \"claude-code\", \"display_name\": \"Claude Code\", \"scope\": \"user\", \"installed\": false, \"output_path\": \"<HOME>/.claude/settings.json\"}\n"
+  "stdout": "{\"schema_version\": 1, \"name\": \"claude-code\", \"display_name\": \"Claude Code\", \"scope\": \"user\", \"installed\": false, \"output_path\": \"<HOME>/.claude/settings.json\"}\n"
 }
