@@ -17,10 +17,11 @@ import apothem
 import apothem.harnesses.opencode as opencode_pkg
 import apothem.harnesses.opencode.materializer as opencode_materializer
 from apothem.harnesses import HarnessAdapter
+from apothem.harnesses._shared import install_driver
 from apothem.harnesses.opencode import OpenCodeAdapter
 from apothem.harnesses.opencode.materializer import (
     LEGACY_RULES_GLOB,
-    always_on_rule_instructions,
+    instruction_entries,
 )
 from apothem.lib import install_ledger
 from apothem.lib.frontmatter import field_value
@@ -117,9 +118,9 @@ def test_capabilities_declare_native_mcp_and_subagent_dispatch() -> None:
 # --- Always-on instruction scope -------------------------------------------
 #
 # OpenCode combines every file its ``instructions`` list resolves to into every
-# session (https://opencode.ai/docs/rules/). Only the rules whose frontmatter
-# sets ``alwaysApply: true`` may be listed; the path-scoped rules stay installed
-# for on-demand reading.
+# session (https://opencode.ai/docs/rules/). Only the projected profile document
+# and the rules whose frontmatter sets ``alwaysApply: true`` may be listed; the
+# path-scoped rules stay installed for on-demand reading.
 
 _RULES_SRC = Path(apothem.__file__).resolve().parent / "rules"
 
@@ -161,7 +162,7 @@ def isolated_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return home
 
 
-def test_instructions_load_at_most_the_always_on_rule_bytes(
+def test_instructions_load_the_profile_and_at_most_the_always_on_rule_bytes(
     adapter: OpenCodeAdapter, isolated_home: Path
 ) -> None:
     adapter.install({})
@@ -174,16 +175,22 @@ def test_instructions_load_at_most_the_always_on_rule_bytes(
             for match in _resolve_instruction(entry, isolated_home)
         }
     )
-    loaded_bytes = sum(path.stat().st_size for path in loaded)
     always_on_bytes, always_on_names = _always_on_rules()
+    profile_document = (
+        adapter.output_path.parent / install_driver.PROFILE_DOCUMENT_RELATIVE
+    )
+    loaded_rules = [path for path in loaded if path != profile_document]
 
-    assert loaded_bytes <= always_on_bytes
-    assert {path.name for path in loaded} == always_on_names
+    # The operator profile (identity, preferences, support-file locations)
+    # reaches OpenCode, and the rules it loads are exactly the always-on set.
+    assert profile_document in loaded
+    assert sum(path.stat().st_size for path in loaded_rules) <= always_on_bytes
+    assert {path.name for path in loaded_rules} == always_on_names
     # The path-scoped rules are still installed, for reading on demand.
     support_rules = adapter.output_path.parent / ".apothem" / "support" / "rules"
     installed = {path.name for path in support_rules.glob("*.md")}
     assert always_on_names < installed
-    assert config["instructions"] == always_on_rule_instructions()
+    assert config["instructions"] == instruction_entries()
 
 
 def _write_legacy_install(target: Path, config: dict[str, object]) -> None:
@@ -219,7 +226,7 @@ def test_install_and_update_replace_the_legacy_glob(
     config = json.loads(adapter.output_path.read_text(encoding="utf-8"))
     assert config["instructions"] == [
         "CONTRIBUTING.md",
-        *always_on_rule_instructions(),
+        *instruction_entries(),
     ]
     assert config["model"] == "anthropic/operator-model"
 
@@ -234,7 +241,7 @@ def test_update_drops_an_owned_legacy_glob(
     with monkeypatch.context() as patch:
         patch.setattr(
             opencode_materializer,
-            "always_on_rule_instructions",
+            "instruction_entries",
             lambda: [LEGACY_RULES_GLOB],
         )
         adapter.install({})
@@ -248,7 +255,7 @@ def test_update_drops_an_owned_legacy_glob(
     config = json.loads(adapter.output_path.read_text(encoding="utf-8"))
     assert config["instructions"] == [
         "CONTRIBUTING.md",
-        *always_on_rule_instructions(),
+        *instruction_entries(),
     ]
 
 

@@ -4,9 +4,11 @@
 
 OpenCode combines every file its ``instructions`` list resolves to into every
 session (https://opencode.ai/docs/rules/, retrieved 2026-10-03). The list
-therefore names only the rules whose source frontmatter sets
-``alwaysApply: true``; the path-scoped rules stay installed under the support
-tree, where a rule, skill or command that needs one reads it on demand.
+therefore names the profile document (the operator's identity and
+preferences, and where Apothem's support files are installed) and only the
+rules whose source frontmatter sets ``alwaysApply: true``; the path-scoped
+rules stay installed under the support tree, where a rule, skill or command
+that needs one reads it on demand.
 
 An entry starting with ``~/`` is expanded against the home directory, and an
 absolute entry is matched as a glob on its final segment, so an explicit file
@@ -61,17 +63,33 @@ def always_on_rule_instructions() -> list[str]:
     return [f"{target_dir.rstrip('/')}/{name}" for name in names]
 
 
+def profile_document_instruction() -> str:
+    """Return the ``instructions`` entry for the projected profile document.
+
+    The install projects the shared profile into
+    ``<harness root>/apothem/rules/00-apothem-profile.md``; OpenCode reads no
+    other file Apothem writes for it, so without this entry the operator's
+    identity, preferences and the support-file locations never reach it.
+    """
+    return f"{_HOME_ANCHORED_ROOT}/{install_driver.PROFILE_DOCUMENT_RELATIVE}"
+
+
+def instruction_entries() -> list[str]:
+    """Return every ``instructions`` entry: the profile document, then the rules."""
+    return [profile_document_instruction(), *always_on_rule_instructions()]
+
+
 def materialize_native_config(profile: dict[str, Any]) -> str:
     """Render the opencode native configuration from *profile*.
 
-    Renders the always-on rule list (see :func:`always_on_rule_instructions`)
-    plus the profile's MCP inventory into opencode's native ``mcp`` surface.
+    Renders the ``instructions`` list (see :func:`instruction_entries`) plus
+    the profile's MCP inventory into opencode's native ``mcp`` surface.
     Returns a JSON string ready to be written to ``output_path``.
     """
     for_harness = coerce_profile(profile).for_harness("opencode")
     config: dict[str, Any] = {
         "$schema": "https://opencode.ai/config.json",
-        "instructions": always_on_rule_instructions(),
+        "instructions": instruction_entries(),
     }
     mcp = render_mcp_opencode(mcp_servers_for(for_harness))
     if mcp:

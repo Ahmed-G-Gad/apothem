@@ -61,9 +61,10 @@ the 63 path-filtered companions load when the assistant reads a matching file.
 
 OpenCode has no per-rule scoping field: it combines every file its
 `opencode.json` `instructions` list names into every session. The OpenCode
-install (`apothem install --harness opencode`) therefore lists only the rules
-whose `alwaysApply` is `true`, one explicit `~/.config/opencode/...` path per
-rule, read from the rule files when the config is written. Every rule,
+install (`apothem install --harness opencode`) therefore lists your profile
+document and only the rules whose `alwaysApply` is `true`, one explicit
+`~/.config/opencode/...` path per file, read from the rule files when the
+config is written. Every rule,
 path-filtered ones included, is still installed under
 `~/.config/opencode/.apothem/support/rules/`, where a rule, skill, or command
 that cites one reads it on demand.
