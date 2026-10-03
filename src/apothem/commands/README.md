@@ -111,6 +111,60 @@ Command frontmatter is validated against [`../schemas/command.schema.json`](../s
 
 The body after the frontmatter is the command's workflow specification: ordered steps, gates, structured-inquiry invocation points, and output contract.
 
+## Model invocation
+
+`disable-model-invocation: true` makes a command operator-invoked only: the model never runs it on its own. With `false`, the model may run the command when a request matches its description. This table records every command's current setting; `tests/unit/test_command_invocation_table.py` checks it against the command files, so a change to a command's flag updates its row in the same change-set.
+
+TODO(clarify): the reason for each setting is not recorded, and two patterns need an operator decision before reasons can be written here. In the plan pipeline, the `/plan` orchestrator is operator-only while every stage command is model-invocable. In the research pipeline, the `/research` orchestrator and four stages (`/research-ideate`, `/research-theory`, `/research-proposal`, `/research-disseminate`) are operator-only while the other nine stages are model-invocable, although `/research-theory` and `/research-proposal` describe the same pipeline-chained hand-off as the model-invocable stages.
+
+| Command | `disable-model-invocation` | Section |
+| --- | --- | --- |
+| `/plan` | `true` | Plan pipeline (orchestrator) |
+| `/plan-spec` | `false` | Plan pipeline |
+| `/plan-generate` | `false` | Plan pipeline |
+| `/plan-review` | `false` | Plan pipeline |
+| `/plan-design` | `false` | Plan pipeline |
+| `/plan-audit` | `false` | Plan pipeline |
+| `/plan-execute` | `false` | Plan pipeline |
+| `/plan-status` | `false` | Plan pipeline |
+| `/plan-amend` | `false` | Plan pipeline |
+| `/research` | `true` | Research pipeline (orchestrator) |
+| `/research-ideate` | `true` | Research pipeline, stage 1 |
+| `/research-spec` | `false` | Research pipeline, stage 2 |
+| `/research-theory` | `true` | Research pipeline, stage 3 |
+| `/research-sources` | `false` | Research pipeline, stage 4 |
+| `/research-synthesis` | `false` | Research pipeline, stage 5 |
+| `/research-proposal` | `true` | Research pipeline, stage 6 |
+| `/research-design` | `false` | Research pipeline, stage 7 |
+| `/research-experiment` | `false` | Research pipeline, stage 8 |
+| `/research-analysis` | `false` | Research pipeline, stage 9 |
+| `/research-paper` | `false` | Research pipeline, stage 10 |
+| `/research-review` | `false` | Research pipeline, stage 11 |
+| `/research-publish` | `false` | Research pipeline, stage 12 |
+| `/research-disseminate` | `true` | Research pipeline, stage 13 |
+| `/audit` | `true` | Audit / review passes (orchestrator) |
+| `/fortress` | `true` | Audit / review passes (orchestrator) |
+| `/code-review` | `true` | Audit / review passes |
+| `/code-audit` | `true` | Audit / review passes |
+| `/architecture-review` | `true` | Audit / review passes |
+| `/docs-review` | `true` | Audit / review passes |
+| `/security-audit` | `true` | Audit / review passes |
+| `/dependency-audit` | `true` | Audit / review passes |
+| `/supply-chain-audit` | `true` | Audit / review passes |
+| `/threat-model-audit` | `true` | Audit / review passes |
+| `/perf-audit` | `true` | Audit / review passes |
+| `/a11y-audit` | `true` | Audit / review passes |
+| `/ux-review` | `true` | Audit / review passes |
+| `/eval` | `true` | Cohort commands |
+| `/release-readiness` | `true` | Cohort commands |
+| `/test-suite` | `true` | Cohort commands |
+| `/elevate` | `true` | Deployment / elevation |
+| `/freshify` | `true` | Deployment / elevation |
+| `/github-deploy-fresh` | `true` | Deployment / elevation |
+| `/github-deploy-next` | `true` | Deployment / elevation |
+| `/projectify` | `true` | Operator workflow |
+| `/workflow` | `true` | Operator workflow |
+
 ## Conventions
 
 - One flat `.md` file per command; filename stem equals the `name` field and the slash-command name.

@@ -350,7 +350,11 @@ allowed-tools: "Read, Glob, Grep"
 ---
 ```
 
-Always set `disable-model-invocation: true` for commands. Keep
+`disable-model-invocation: true` makes a command operator-invoked only; with
+`false`, the model may run it when a request matches its description. Most
+commands use `true`, but most plan and research pipeline stages use `false`.
+The invocation table in `src/apothem/commands/README.md` lists every
+command's setting; add a row for a new command. Keep
 `allowed-tools` read-only: a harness that honors it runs those tools without
 asking. Grant a side-effecting tool only as a scoped rule, such as
 `Bash(git log *)`; the schema rejects `"*"` and bare `Bash`, `PowerShell`,
