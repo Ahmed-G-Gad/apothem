@@ -506,6 +506,13 @@ jobs:
         # stale catalog. Cowork caps a plugin package at 5,000 files, which is
         # why the repository root cannot be the package and this tree exists.
         run: python scripts/dev/assemble_plugin_tree.py --check
+      - name: Check harness convention pins are current
+        # Each adapter's STANDARD-CONVENTION-PIN.md records what the vendor's
+        # docs said on its snapshot date. A pin older than 90 days, one that
+        # cites no absolute vendor URL, or one whose discovery target date has
+        # passed fails here, so a stale pin blocks the merge instead of
+        # waiting for the weekly monitor.
+        run: python scripts/dev/validate_harness_convention_pins.py --harnesses-root src/apothem/harnesses
       - name: Check PR title fits the squash-merge subject limit
         if: github.event_name == 'pull_request'
         # A squash merge composes the subject as "<pr title> (#<number>)", so a

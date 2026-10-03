@@ -14,7 +14,7 @@ top-level `.github/README.md` would, and none exists.
 
 | Workflow | Triggers | Purpose |
 |----------|----------|---------|
-| `ci.yml` | push (main), PR (main), dispatch | Eleven canonical check classes — lint, format-check, type-check, test matrix, coverage, security-scan, supply-chain-scan, docs-build, example-run, release-preflight, metrics (per-package coverage floors and the `metrics.json` artifact). |
+| `ci.yml` | push (main), PR (main), dispatch | Eleven canonical check classes — lint, format-check, type-check, test matrix, coverage, security-scan, supply-chain-scan, docs-build, example-run, release-preflight, metrics (per-package coverage floors and the `metrics.json` artifact). Release-preflight also runs `scripts/dev/validate_harness_convention_pins.py`, so a stale pin blocks the merge. |
 | `ci-matrix.yml` | push (main), PR (main), dispatch | Cross-platform 3-OS × 5-Python `pytest` matrix (adds macOS reach) via the in-repo reusable setup workflow. |
 | `ci-docs-stub.yml` | PR (main) | Documentation-only PR stub that reports the required `quality` / `coverage` contexts green; self-gates and fails if a gated code/config surface is present. |
 | `npm-shim.yml` | push (main), PR (main), dispatch | npm shim runtime-floor gate — runs `bin/apothem.mjs` on Node 18, 20, 22 and 24 with Python 3.10: the missing-prerequisite error, `--version`, an isolated dry-run install, and the packed tarball through `npx`. |
@@ -33,7 +33,7 @@ top-level `.github/README.md` would, and none exists.
 | `license-audit.yml` | push (main), PR, schedule (weekly), dispatch | Scans the resolved dependency tree for copyleft or otherwise MIT-incompatible licenses; mirrors the dependency-review allow-list. |
 | `evals.yml` | dispatch only (runs when the `RUN_PAID_EVALS` variable is `true`) | Behavioural eval suite under `evals/` with `claude plugin eval` against a staged copy of the plugin package. Billed per run: the cost ceiling, the model, the judge model and the CLI version are required inputs; uploads `eval-results`. |
 | `badges.yml` | workflow_run (CI completed on main), dispatch | Generates the shields.io endpoint JSONs after CI completes and uploads them as the `badges` artifact for the static site to serve. |
-| `release.yml` | push (tag `v*.*.*`) | Release orchestration — build sdist + wheel, package the VS Code extension (`apothem.vsix`), SBOM, cosign signature, SLSA provenance, then publish the GitHub Release with every artifact attached. |
+| `release.yml` | push (tag `v*.*.*`) | Release orchestration — check the harness convention pins, build sdist + wheel, package the VS Code extension (`apothem.vsix`), SBOM, cosign signature, SLSA provenance, then publish the GitHub Release with every artifact attached. |
 | `publish-npm.yml` | push (tag `v*.*.*`), dispatch | Publishes `@ahmed-g-gad/apothem` to registry.npmjs.org via npm trusted publishing (OIDC) with provenance; no registry token is stored or read. |
 | `publish-vscode.yml` | push (tag `v*.*.*`), dispatch | Packages the extension into a `.vsix` and publishes to the Visual Studio Marketplace; gated on the `VSCE_PAT` secret. |
 | `publish-static-site.yml` | push (main), dispatch | Builds the Next.js + Fumadocs site, stages the canonical install scripts and badges, and deploys to apothem.ahmedgad.com via GitHub Pages. |
