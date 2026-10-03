@@ -9,6 +9,7 @@ import socket
 import ssl
 import sys
 import urllib.error
+from email.message import Message
 from pathlib import Path
 
 import pytest
@@ -62,7 +63,9 @@ def test_collects_urls_from_pins_and_templates(tmp_path: Path) -> None:
         ("https://a.dev/x", cvu.FetchResult(410, "https://a.dev/x"), "dead"),
         ("https://a.dev/x", cvu.FetchResult(None, None, "reset"), "unreachable"),
         ("https://a.dev/x", cvu.FetchResult(503, "https://a.dev/x"), "unreachable"),
-        ("https://a.dev/x", cvu.FetchResult(501, "https://a.dev/x"), "dead"),
+        ("https://a.dev/x", cvu.FetchResult(501, "https://a.dev/x"), "unreachable"),
+        ("https://a.dev/x", cvu.FetchResult(522, "https://a.dev/x"), "unreachable"),
+        ("https://a.dev/x", cvu.FetchResult(524, "https://a.dev/x"), "unreachable"),
         (
             "https://a.dev/x",
             cvu.FetchResult(None, None, "name not known", lasting=True),
@@ -190,3 +193,23 @@ def test_fetch_tells_a_lasting_failure_from_a_passing_one(
     assert cvu.classify("https://a.dev/x", result) == (
         "dead" if lasting else "unreachable"
     )
+
+
+@pytest.mark.parametrize(("code", "calls"), [(522, 3), (524, 3), (501, 1)])
+def test_fetch_retries_the_server_errors_an_outage_produces(
+    monkeypatch: pytest.MonkeyPatch, code: int, calls: int
+) -> None:
+    seen: list[int] = []
+
+    def fail(*_args: object, **_kwargs: object) -> object:
+        seen.append(code)
+        raise urllib.error.HTTPError("https://a.dev/x", code, "error", Message(), None)
+
+    monkeypatch.setattr(cvu.urllib.request, "urlopen", fail)
+    monkeypatch.setattr(cvu.time, "sleep", lambda _seconds: None)
+
+    result = cvu.fetch("https://a.dev/x", attempts=3)
+
+    assert len(seen) == calls
+    assert result.status == code
+    assert cvu.classify("https://a.dev/x", result) == "unreachable"

@@ -13,15 +13,15 @@ it:
   Pins and templates should cite the final address. A site root that
   redirects to a landing page on the same host is not a move, and neither is
   a documented alias listed in ``_ACCEPTED_REDIRECTS``.
-- ``dead``: the URL answers 404, 410, another 4xx status that is not a
-  blocking one, or a 5xx status the check does not retry (501, 505 and the
-  like); or its host name no longer resolves, or its certificate fails
+- ``dead``: the URL answers 404, 410, or another 4xx status that is not a
+  blocking one; or its host name no longer resolves, or its certificate fails
   verification. These do not clear up on their own.
 - ``blocked``: the URL answers 401, 403, or 429. Bot protection returns these
   for live pages, so they are reported but do not fail the check.
 - ``unreachable``: the request timed out, was refused or reset, or met a
-  temporary DNS failure, or the URL still answers 500, 502, 503 or 504, after
-  retries. A passing fault or an outage says nothing about whether the page
+  temporary DNS failure, after retries; or the URL answers a 5xx status.
+  500, 502, 503, 504 and Cloudflare's origin errors 520 to 524 are retried
+  first. A server fault or an outage says nothing about whether the page
   moved, so these are reported but do not fail the check.
 
 The report is JSON. The exit code is 2 when any URL is ``moved`` or ``dead``,
@@ -60,9 +60,12 @@ _ACCEPTED_REDIRECTS: Final[frozenset[tuple[str, str]]] = frozenset(
 )
 
 _BLOCKED_STATUSES: Final[frozenset[int]] = frozenset({401, 403, 429})
-# Server errors an outage produces; fetch() retries these and an answer that
-# stays one of them is ``unreachable``. Any other 5xx is ``dead``.
-_RETRIED_STATUSES: Final[frozenset[int]] = frozenset({500, 502, 503, 504})
+# Server errors an outage produces, including the origin errors Cloudflare
+# returns for a down or slow origin (520 to 524). fetch() retries these; every
+# 5xx answer is ``unreachable``.
+_RETRIED_STATUSES: Final[frozenset[int]] = frozenset(
+    {500, 502, 503, 504, 520, 521, 522, 523, 524}
+)
 # getaddrinfo errors that mean "try again later", unlike a name that is gone.
 _TEMPORARY_DNS_ERRORS: Final[frozenset[int]] = frozenset(
     code for code in (getattr(socket, "EAI_AGAIN", None),) if code is not None
@@ -175,7 +178,7 @@ def classify(url: str, result: FetchResult) -> str:
     """Return ``ok``, ``moved``, ``dead``, ``blocked`` or ``unreachable``."""
     if result.status is None:
         return "dead" if result.lasting else "unreachable"
-    if result.status in _RETRIED_STATUSES:
+    if result.status >= 500:
         return "unreachable"
     if result.status in _BLOCKED_STATUSES:
         return "blocked"
