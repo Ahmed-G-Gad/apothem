@@ -119,6 +119,39 @@ def test_strict_json_semantic_noop_keeps_operator_formatting(tmp_path: Path) -> 
     assert target.read_text(encoding="utf-8") == text
 
 
+@pytest.mark.parametrize(
+    ("name", "data", "incoming", "harness"),
+    [
+        pytest.param(
+            "openclaw.json",
+            b'{\r\n  "gateway": {"port": 18789}\r\n}\r\n',
+            "{}\n",
+            "opencode",
+            id="json",
+        ),
+        pytest.param(
+            "config.yaml",
+            b"# my hermes config\r\nmodel:\r\n  default: operator-model\r\n",
+            "# managed header\n{}\n",
+            "hermes",
+            id="yaml",
+        ),
+    ],
+)
+def test_crlf_config_with_nothing_to_add_keeps_its_line_endings(
+    tmp_path: Path, name: str, data: bytes, incoming: str, harness: str
+) -> None:
+    target = tmp_path / name
+    target.write_bytes(data)
+
+    result = install_driver.apply_operator_owned_content(
+        target, incoming, install_root=tmp_path, harness_name=harness
+    )
+
+    assert result.outcome == "unchanged"
+    assert target.read_bytes() == data
+
+
 def test_garbage_config_is_refused_not_replaced(tmp_path: Path) -> None:
     target = tmp_path / "opencode.json"
     garbage = "{ this is not json at all\n"

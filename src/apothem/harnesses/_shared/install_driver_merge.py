@@ -29,6 +29,7 @@ from .install_driver_backup import write_bytes_safely
 from .install_driver_jsonmerge import (
     _LossyRewriteError,
     _merge_json_settings,
+    _merged_bytes,
     _overlay_json_settings,
     _read_existing,
     _refused_result,
@@ -281,7 +282,7 @@ def apply_operator_owned_content(
         )
     result = write_bytes_safely(
         target,
-        merged.encode("utf-8"),
+        _merged_bytes(target, existing_text, merged),
         install_root=install_root,
         harness_name=harness_name,
         operation="write_text",
@@ -611,7 +612,7 @@ def _apply_operator_owned_file(
             ]
     result = write_bytes_safely(
         target,
-        merged.encode("utf-8"),
+        _merged_bytes(target, existing_text, merged),
         install_root=root,
         harness_name=harness_name,
         operation=entry.mode,

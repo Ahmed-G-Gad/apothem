@@ -308,6 +308,19 @@ def _refused_result(
     )
 
 
+def _merged_bytes(target: Path, before: str | None, merged: str) -> bytes:
+    """Return the bytes to write for *merged*, keeping an unchanged file as is.
+
+    :func:`_read_existing` reads in text mode, so a CRLF file arrives with LF
+    line endings and the merge compares LF text. When the merge changes
+    nothing, the target's own bytes are returned, so the no-op check sees the
+    file as it is and leaves the operator's line endings alone.
+    """
+    if before is not None and merged == before:
+        return target.read_bytes()
+    return merged.encode("utf-8")
+
+
 def _read_existing(target: Path) -> str | None:
     """Return *target*'s text, ``None`` when absent.
 
