@@ -84,9 +84,13 @@ jobs:
           python -m pip install .
 
       - name: Emit license inventory (table)
+        # The gate covers apothem's dependencies. apothem's own declared
+        # expression (MIT AND PSF-2.0, for the vendored typing_extensions) is
+        # checked against REUSE.toml by tests/unit/test_distribution_license_metadata.py,
+        # so the package itself is left out of both pip-licenses runs.
         run: |
           python -m piplicenses --format=markdown --with-urls --with-authors \
-            --order=license
+            --order=license --ignore-packages apothem
 
       - name: Fail on copyleft / network-copyleft licenses
         run: |
@@ -97,7 +101,7 @@ jobs:
           # SPDX expressions that pip-licenses 5.x reads from package metadata
           # (e.g. typing_extensions now declares "PSF-2.0", the SPDX form of
           # the already-allowed Python Software Foundation License).
-          python -m piplicenses --format=json \
+          python -m piplicenses --format=json --ignore-packages apothem \
             --allow-only="MIT License;MIT;BSD License;BSD-3-Clause;BSD-2-Clause;Apache Software License;Apache 2.0;Apache-2.0;ISC License (ISCL);ISC;Python Software Foundation License;PSF-2.0;The Unlicense (Unlicense);Mozilla Public License 2.0 (MPL 2.0)" \
             || {
               echo "::error::A dependency carries a license outside the MIT-compatible allowlist. Review the license inventory above and ratify or remove the dependency.";
