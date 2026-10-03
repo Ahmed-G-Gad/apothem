@@ -50,6 +50,20 @@ def test_owner_install_names_every_reader(tmp_path: Path) -> None:
         assert get_harness_entry(reader).display_name in message, reader
 
 
+def test_owner_note_agrees_with_a_single_reader(tmp_path: Path) -> None:
+    # ~/.claude/CLAUDE.md has one reader (OpenCode); the note reads as one tool.
+    advisories = shared_root_advisories("claude-code", home=tmp_path, project=None)
+    messages = [
+        str(a["message"])
+        for a in advisories
+        if a["role"] == "owner" and str(a["message"]).startswith("~/.claude/CLAUDE.md")
+    ]
+    assert messages == [
+        "~/.claude/CLAUDE.md is shared: OpenCode also loads it. Installing or "
+        "uninstalling Claude Code changes what that tool loads."
+    ]
+
+
 def test_reader_install_names_the_owner_when_apothem_content_is_present(
     tmp_path: Path,
 ) -> None:
