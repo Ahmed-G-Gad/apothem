@@ -212,7 +212,9 @@ def test_clean_machine_install_without_a_profile_needs_one_run(
     home = tmp_path / "home"
     home.mkdir()
     profile = home / ".config" / "apothem" / "profile.yaml"
-    env = _isolated_env(home, profile, tmp_path / "apothem-home")
+    env = _isolated_env(
+        home, profile, tmp_path / "apothem-home", _interpreter_bin_dir(tmp_path)
+    )
 
     result = subprocess.run(
         ["bash", str(INSTALLER)],
@@ -249,7 +251,9 @@ def test_clean_machine_dry_run_without_a_profile_writes_nothing(
     home = tmp_path / "home"
     home.mkdir()
     profile = home / ".config" / "apothem" / "profile.yaml"
-    env = _isolated_env(home, profile, tmp_path / "apothem-home")
+    env = _isolated_env(
+        home, profile, tmp_path / "apothem-home", _interpreter_bin_dir(tmp_path)
+    )
 
     result = subprocess.run(
         ["bash", str(INSTALLER), "--dry-run"],
