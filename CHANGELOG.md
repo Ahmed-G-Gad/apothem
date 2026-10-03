@@ -68,6 +68,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- **Each converted cohort declares what it keeps or drops.** Every adapter
+  that converts commands, agents, or rules records a `conversion_losses` map
+  in its `capabilities.yml`, checked against real converted output, and
+  Gemini CLI command prompts no longer start with the source frontmatter.
+- **Skill and command descriptions stay within 1,024 characters**, the Agent
+  Skills limit, and the schemas enforce it.
+- **The commands README records each command's model-invocation setting**,
+  and a test keeps the table equal to the command files.
 - **Usage errors exit 64** with a `cli.usage` envelope under `--json`,
   distinct from a findings or partial-write exit.
 - **`quickstart` asks for a harness** instead of configuring all seventeen;
@@ -138,6 +146,21 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **Codex keeps user-only skills out of implicit invocation.** Codex ignores
+  `disable-model-invocation`, so the install writes `agents/openai.yaml` with
+  `allow_implicit_invocation: false` beside each user-only skill.
+- **Claude Code skills use `user-invocable`**, the key Claude Code reads, in
+  the engine install and the plugin.
+- **Selecting an Apothem output style keeps Claude Code's coding
+  instructions** (`keep-coding-instructions: true`).
+- **Cursor, Kiro, Trae, CodeBuddy, and Windsurf rule files put frontmatter
+  first**, ahead of the managed-block marker, so the tool reads it. Trae rules
+  activate with `alwaysApply`, and Antigravity plugin rules carry a valid
+  `trigger`.
+- **Converted agents keep their limits.** Read-only agents run in a read-only
+  Codex sandbox, Gemini CLI agents get a tool allowlist and `max_turns`, and
+  the hard-coded Codex reasoning effort is gone. Agents no longer set
+  `memory: false`, a value Claude Code does not define.
 - **A missing `click` or `rich` gives a structured error naming the install
   command** instead of a traceback, and `PYTHONPATH=src` resolves the vendored
   dependencies.
