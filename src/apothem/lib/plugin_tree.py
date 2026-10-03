@@ -18,7 +18,7 @@ The layout contract produced is::
     <plugin_root>/lib/apothem/            (verbatim engine copy)
     <plugin_root>/lib/apothem_lib.py      (re-export shim)
     <plugin_root>/lib/apothem/_vendor/    (vendored deps, or empty .keep)
-    <plugin_root>/skills|agents|commands|hooks|rules/  (catalog copies)
+    <plugin_root>/skills|agents|commands|hooks|rules|output-styles/  (catalog copies)
 """
 
 from __future__ import annotations
@@ -96,11 +96,16 @@ _COPY_IGNORE: Final[tuple[str, ...]] = (
 )
 
 #: Catalog directory names copied from the engine source into the plugin root.
+#: ``output-styles/`` is the plugin's default output-style folder: with no
+#: ``outputStyles`` manifest key, Claude Code scans it, so the styles are
+#: selectable plugin-alone (https://code.claude.com/docs/en/plugins-reference,
+#: "Output styles | output-styles/", retrieved 2026-10-03).
 _CATALOG_DIRS: Final[tuple[str, ...]] = (
     "skills",
     "agents",
     "commands",
     "rules",
+    "output-styles",
 )
 
 #: Source-relative location of the hook message catalog.
@@ -301,8 +306,10 @@ def build_plugin_manifest(
     directory (each immediate child carries a ``SKILL.md`` entry point).
     Rules and hook message contexts are engine cohorts consumed by the
     apothem materializers, not plugin components, so they carry no manifest
-    field. Component arrays are sorted for determinism: the same catalog
-    always yields the same manifest.
+    field. Output styles carry none either: the assembled tree ships them in
+    the default ``output-styles/`` folder Claude Code scans when the manifest
+    sets no ``outputStyles`` key. Component arrays are sorted for determinism:
+    the same catalog always yields the same manifest.
 
     Args:
         catalog_root: The apothem source package directory (the dir holding
@@ -598,7 +605,7 @@ def assemble_plugin_tree(src_root: Path, dest_root: Path) -> Path:
     #    reproduce. Copied files are unaffected — they carry source bytes.
     (lib_dir / "apothem_lib.py").write_text(_SHIM_BODY, encoding="utf-8", newline="\n")
 
-    # 4. Catalog dirs: skills/agents/commands/rules copied to plugin root.
+    # 4. Catalog dirs: skills/agents/commands/rules/output-styles copied to plugin root.
     #    The catalog directories become harness DISCOVERY directories at the
     #    plugin root, where every top-level entry is interpreted as a component.
     #    ``build_plugin_manifest`` already omits the directory READMEs from the

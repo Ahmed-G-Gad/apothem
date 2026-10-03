@@ -143,7 +143,7 @@ def test_assemble_produces_layout_contract(tmp_path: Path) -> None:
     assert (dest / "lib" / "apothem_lib.py").is_file()
     assert (dest / "lib" / "apothem" / "_vendor").is_dir()
 
-    for name in ("skills", "agents", "commands", "rules", "hooks"):
+    for name in ("skills", "agents", "commands", "rules", "hooks", "output-styles"):
         assert (dest / name).is_dir(), f"catalog dir {name} missing"
 
 
@@ -370,11 +370,38 @@ def test_assemble_prunes_catalog_doc_files(tmp_path: Path) -> None:
     """
     dest = tmp_path / "plugin_root"
     assemble_plugin_tree(_SRC_ROOT, dest)
-    for name in ("skills", "agents", "commands", "rules"):
+    for name in ("skills", "agents", "commands", "rules", "output-styles"):
         for doc in ("README.md", "AGENTS.md"):
             assert not (dest / name / doc).exists(), (
                 f"{name}/{doc} leaked into the tree"
             )
+
+
+def test_assemble_ships_output_styles_in_the_default_folder(tmp_path: Path) -> None:
+    """Every source output style is selectable from the plugin alone.
+
+    Claude Code scans a plugin's ``output-styles/`` folder when the manifest
+    sets no ``outputStyles`` key (plugins reference, "Output styles"), so each
+    style must sit there byte-for-byte and the manifest must leave the key out.
+    """
+    dest = tmp_path / "plugin_root"
+    assemble_plugin_tree(_SRC_ROOT, dest)
+    sources = sorted(
+        path
+        for path in (_SRC_ROOT / "output-styles").glob("*.md")
+        if path.name not in {"README.md", "AGENTS.md"}
+    )
+    assert sources
+    shipped = sorted(path.name for path in (dest / "output-styles").glob("*.md"))
+    assert shipped == [path.name for path in sources]
+    for source in sources:
+        assert (
+            dest / "output-styles" / source.name
+        ).read_bytes() == source.read_bytes()
+    manifest = json.loads(
+        (dest / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8")
+    )
+    assert "outputStyles" not in manifest
 
 
 def test_assemble_keeps_docs_nested_inside_skills(tmp_path: Path) -> None:

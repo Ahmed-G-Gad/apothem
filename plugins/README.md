@@ -35,8 +35,8 @@ Cowork.
 ## Working in this folder
 
 Never hand-edit `claude-code/`. After changing any command, agent, skill, rule,
-or hook message under `src/apothem/`, regenerate and commit the result in the
-same change-set:
+output style, or hook message under `src/apothem/`, regenerate and commit the
+result in the same change-set:
 
 ```bash
 python scripts/dev/assemble_plugin_tree.py

@@ -17,6 +17,15 @@ style on a per-session basis via `/output-style <name>`.
 | Concise engineer | `src/apothem/output-styles/concise-engineer.md` | Short-form engineering tone |
 | Forensic auditor | `src/apothem/output-styles/forensic-auditor.md` | Finding-by-finding audit tone |
 
+## Where the styles are installed
+
+`apothem install --harness claude-code` copies the styles to
+`~/.claude/output-styles/`. The Claude Code plugin ships the same files in its
+`output-styles/` folder, which Claude Code scans for plugin output styles
+([plugins reference](https://code.claude.com/docs/en/plugins-reference)), so
+the styles are selectable with the plugin installed alone. No other harness
+has an output-style surface, so no other install ships them.
+
 ## Frontmatter contract
 
 ```yaml
