@@ -103,7 +103,7 @@ Command frontmatter is validated against [`../schemas/command.schema.json`](../s
 
 - `name` — command identifier; the slash command is `/<name>`.
 - `version` / `updated` — semantic version and ISO-8601 revision date.
-- `description` — statement of what the command does.
+- `description` — statement of what the command does, 1,024 characters or fewer: several harnesses install each command as a skill, where the [Agent Skills](https://agentskills.io/specification) limit applies (`command.schema.json` enforces it).
 - `argument-hint` — the command's argument / flag surface, shown in invocation help.
 - `disable-model-invocation` — when `true`, the command is operator-invoked only and is never auto-invoked by the model.
 - `portability` — the command's portability class across harnesses (e.g. `universal`).

@@ -26,8 +26,8 @@
     },
     "description": {
       "type": "string",
-      "description": "Trigger-rich, capability-led description that surfaces detection signals so the harness routes matching requests to the skill. The shipped corpus uses dense trigger phrasing up to ~1.6k chars; the 2048 ceiling bounds the field while admitting the live convention.",
-      "maxLength": 2048
+      "description": "Trigger-rich, capability-led description that surfaces detection signals so the harness routes matching requests to the skill. At most 1024 characters, the Agent Skills specification limit (https://agentskills.io/specification); strict consumers reject or truncate a longer one.",
+      "maxLength": 1024
     },
     "version": {
       "type": "string",
