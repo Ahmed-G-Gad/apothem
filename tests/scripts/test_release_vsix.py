@@ -80,8 +80,26 @@ def test_the_build_job_runs_no_node_tooling() -> None:
 
 
 def test_the_marketplace_workflow_uses_the_same_lockfile() -> None:
-    runs = _runs(_job("publish-vscode.yml", "publish"))
-    assert any(_LOCKED_INSTALL.format(prefix="../.github/vsce") in run for run in runs)
+    job = _job("publish-vscode.yml", "publish")
+    runs = _runs(job)
+    prefix = "../vsce-tool/.github/vsce"
+    assert any(_LOCKED_INSTALL.format(prefix=prefix) in run for run in runs)
+    # The lockfile comes from the workflow's own commit, not the tag being
+    # packaged, so a dispatch for a tag cut before .github/vsce still works.
+    tool = [
+        step["with"]
+        for step in job["steps"]
+        if str(step.get("uses", "")).startswith("actions/checkout@")
+        and step.get("with", {}).get("path") == "vsce-tool"
+    ]
+    assert tool == [
+        {
+            "persist-credentials": False,
+            "ref": "${{ github.sha }}",
+            "path": "vsce-tool",
+            "sparse-checkout": ".github/vsce",
+        }
+    ]
     assert not any("npx" in run for run in runs)
 
 
