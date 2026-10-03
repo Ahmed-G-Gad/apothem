@@ -714,9 +714,9 @@ harnesses:
 
   kimi_code:
     # Kimi Code CLI (Moonshot) reads the project-root AGENTS.md as its
-    # agent-instructions surface (per the vendor configuration docs at
-    # https://moonshotai.github.io/kimi-cli/en/configuration/config-files.html,
-    # snapshot-date 2026-06-25) and keeps project configuration under
+    # agent-instructions surface (per the vendor docs at
+    # https://moonshotai.github.io/kimi-code/en/customization/agents,
+    # snapshot-date 2026-10-03) and keeps project configuration under
     # <project>/.kimi-code/. Apothem writes its governance surface into
     # AGENTS.md as a sentinel-delimited managed block (operator prose outside
     # the sentinels is preserved) and keeps non-native Markdown cohorts under

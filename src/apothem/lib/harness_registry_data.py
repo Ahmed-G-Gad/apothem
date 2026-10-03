@@ -476,8 +476,10 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             output_styles="No Kimi Code output-style file surface is pinned.",
             mcp_servers="`.kimi-code/mcp.json` is the recognized operator-owned "
             "MCP surface; Apothem names it but defers authoring entries.",
-            tool_surface_restrictions="Kimi Code tool-permission surface not "
-            "yet pinned.",
+            tool_surface_restrictions="Kimi Code documents "
+            "default_permission_mode and [[permission.rules]] in "
+            "~/.kimi-code/config.toml; Apothem has not yet decided how to project "
+            "the universal-deny floor into them.",
         ),
     ),
     HarnessRegistryEntry(

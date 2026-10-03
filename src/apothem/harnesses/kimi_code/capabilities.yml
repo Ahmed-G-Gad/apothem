@@ -7,10 +7,9 @@
 # Apothem support tree under <project>/.kimi-code/.apothem/support/ for non-native
 # Markdown cohorts (rules, commands, skills, agents, templates). MCP is the
 # recognized operator-owned surface at <project>/.kimi-code/mcp.json; Apothem
-# names it but defers authoring entries. The vendor configuration docs are
-# pinned at https://moonshotai.github.io/kimi-cli/en/configuration/config-files.html
-# (snapshot-date 2026-06-25); the model FAMILY is vendor-pinned, never
-# adapter-authored.
+# names it but defers authoring entries. The vendor docs are pinned at
+# https://moonshotai.github.io/kimi-code/en/ (snapshot-date 2026-10-03); the
+# model FAMILY is vendor-pinned, never adapter-authored.
 
 mcp_servers:
   - project-scope-.kimi-code/mcp.json-operator-owned
@@ -27,11 +26,11 @@ hook_learning_capture: "artifact-evolution-cycle"
 standard_convention_pin: "STANDARD-CONVENTION-PIN.md"
 # web-fetch / browser-retrieval surface — the backing capability dimension for
 # rules/source-accessibility.md step 1 ("retrieve through the host's browser /
-# fetch capability"). The pinned snapshot catalogs config-materialization
-# surfaces, not the vendor tool surface, so the web-fetch tool is not yet
-# discovered against the pin — discovery-pending per
-# rules/agent-capability-discipline-matrix.md §1.
-web_fetch: "discovery-pending"
+# fetch capability"). Vendor-confirmed: Kimi Code ships built-in FetchURL (page
+# body text) and WebSearch tools, both auto-allowed. Evidence: vendor-doc-url
+# https://moonshotai.github.io/kimi-code/en/reference/tools; snapshot-id living
+# docs; snapshot-date 2026-10-03 (canonical home: STANDARD-CONVENTION-PIN.md).
+web_fetch: "yes"
 tool_surface_restrictions:
   - secrets-paths
   - destructive-shell-ops
