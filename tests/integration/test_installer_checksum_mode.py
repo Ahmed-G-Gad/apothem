@@ -91,11 +91,13 @@ def _run(
 ) -> subprocess.CompletedProcess[str]:
     home = tmp_path / "home"
     home.mkdir(exist_ok=True)
+    (tmp_path / "temp").mkdir(exist_ok=True)
     env = {k: v for k, v in os.environ.items() if not k.startswith("APOTHEM_")}
     env.pop("PYTHONPATH", None)
     env.update(
         {
             "HOME": str(home),
+            "TMPDIR": str(tmp_path / "temp"),
             "APOTHEM_VERIFY": "checksum",
             "APOTHEM_RELEASE_BASE": base.as_uri(),
             "APOTHEM_REF": ref,
@@ -149,6 +151,7 @@ def test_archive_without_the_release_root_is_refused(tmp_path: Path) -> None:
         combined
     )
     assert not (tmp_path / "apothem-home" / "src").exists()
+    assert list((tmp_path / "temp").iterdir()) == [], "the download was left behind"
 
 
 # REUSE-IgnoreEnd

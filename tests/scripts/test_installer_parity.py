@@ -177,6 +177,7 @@ def test_checksum_mode_messages_agree() -> None:
         "it does not prove who published it",
         "needs a vMAJOR.MINOR.PATCH release tag",
         "lists no",
+        "does not hold an apothem source under",
     ):
         assert phrase in SH, f"install.sh lacks {phrase!r}"
         assert phrase in PS1, f"install.ps1 lacks {phrase!r}"

@@ -387,17 +387,25 @@ if (-not $Source -and $ApothemVerify -eq 'checksum') {
         }
     }
     # The release archive roots every file under apothem-<tag>\ (see
-    # scripts/build_release_tarball.py). Extract into the temp directory,
-    # require that root, then move it into place.
-    $CkExtract = Join-Path $CkTmp 'extract'
-    Expand-Archive -LiteralPath $CkArchive -DestinationPath $CkExtract -Force
-    $CkRoot = Join-Path $CkExtract "apothem-$ApothemRef"
-    if (-not (Test-ApothemSource $CkRoot)) { Write-Fail "$CkName does not hold an apothem source under apothem-$ApothemRef\" }
+    # scripts/build_release_tarball.py). It is extracted into a staging folder
+    # beside APOTHEM_HOME, because Windows PowerShell 5.1's Move-Item moves a
+    # directory only within one drive; the root is then required and moved
+    # into place. The download and the staging folder are removed on every
+    # path, success or failure.
     $CkParent = Split-Path -Parent $ApothemHome
-    if ($CkParent) { New-Item -ItemType Directory -Path $CkParent -Force | Out-Null }
-    if (Test-Path -LiteralPath $ApothemHome) { Remove-Item -LiteralPath $ApothemHome -Recurse -Force }
-    Move-Item -LiteralPath $CkRoot -Destination $ApothemHome
-    Remove-Item -LiteralPath $CkTmp -Recurse -Force
+    if (-not $CkParent) { $CkParent = (Get-Location).Path }
+    New-Item -ItemType Directory -Path $CkParent -Force | Out-Null
+    $CkExtract = Join-Path $CkParent (".apothem-extract-" + [System.Guid]::NewGuid().ToString('N'))
+    try {
+        Expand-Archive -LiteralPath $CkArchive -DestinationPath $CkExtract -Force
+        $CkRoot = Join-Path $CkExtract "apothem-$ApothemRef"
+        if (-not (Test-ApothemSource $CkRoot)) { Write-Fail "$CkName does not hold an apothem source under apothem-$ApothemRef\" }
+        if (Test-Path -LiteralPath $ApothemHome) { Remove-Item -LiteralPath $ApothemHome -Recurse -Force }
+        Move-Item -LiteralPath $CkRoot -Destination $ApothemHome
+    } finally {
+        if (Test-Path -LiteralPath $CkExtract) { Remove-Item -LiteralPath $CkExtract -Recurse -Force }
+        if (Test-Path -LiteralPath $CkTmp) { Remove-Item -LiteralPath $CkTmp -Recurse -Force }
+    }
     $Source = $ApothemHome
     Write-Ok "Source ready at $Source (release archive $ApothemRef)"
 }
