@@ -86,7 +86,9 @@ def _publish(folder: Path, data: bytes) -> None:
     (folder / "SHA256SUMS").write_bytes(f"{digest}  {name}\n".encode("ascii"))
 
 
-def _run(tmp_path: Path, base_url: str) -> subprocess.CompletedProcess[str]:
+def _run(
+    tmp_path: Path, base_url: str, apothem_home: Path | None = None
+) -> subprocess.CompletedProcess[str]:
     home = tmp_path / "home"
     home.mkdir(exist_ok=True)
     temp = tmp_path / "temp"
@@ -108,7 +110,7 @@ def _run(tmp_path: Path, base_url: str) -> subprocess.CompletedProcess[str]:
             "APOTHEM_VERIFY": "checksum",
             "APOTHEM_RELEASE_BASE": base_url,
             "APOTHEM_REF": TAG,
-            "APOTHEM_HOME": str(tmp_path / "apothem-home"),
+            "APOTHEM_HOME": str(apothem_home or tmp_path / "apothem-home"),
         }
     )
     staging = tmp_path / "installer-under-test"
@@ -188,6 +190,22 @@ def test_archive_without_the_release_root_is_refused(
     expected = f"does not hold an apothem source under {ARCHIVE_ROOT}"
     assert expected in _plain(combined), combined
     assert not (tmp_path / "apothem-home" / "src").exists()
+    assert _leftovers(tmp_path) == []
+
+
+def test_a_destination_that_cannot_be_created_leaves_no_download(
+    tmp_path: Path, release: tuple[Path, str]
+) -> None:
+    folder, base_url = release
+    _publish(folder, _zip_bytes(root=ARCHIVE_ROOT))
+    blocker = tmp_path / "a-file"
+    blocker.write_text("", encoding="utf-8")
+
+    result = _run(tmp_path, base_url, apothem_home=blocker / "apothem")
+
+    combined = result.stdout + result.stderr
+    assert result.returncode != 0, combined
+    assert "Could not create the parent directory of" in _plain(combined), combined
     assert _leftovers(tmp_path) == []
 
 

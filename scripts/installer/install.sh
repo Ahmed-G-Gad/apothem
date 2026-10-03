@@ -441,6 +441,13 @@ if [ -z "$SOURCE" ] && [ "$APOTHEM_VERIFY" = "checksum" ]; then
     esac
     _ck_name="apothem-${APOTHEM_REF}-${_ck_platform}.tar.gz"
     _ck_tmp="$(mktemp -d)"
+    # Remove the download and the extraction on every way out of this block: a
+    # die, a failing command under set -e, or an interrupt. Cleared below once
+    # the source is in place.
+    trap 'rm -rf "$_ck_tmp"' EXIT
+    trap 'exit 129' HUP
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
     info "Downloading ${_ck_name} and SHA256SUMS from the ${APOTHEM_REF} release"
     curl -fsSL "${APOTHEM_RELEASE_BASE}/${APOTHEM_REF}/${_ck_name}" -o "${_ck_tmp}/${_ck_name}" \
         || die "Could not download ${_ck_name} from ${APOTHEM_RELEASE_BASE}/${APOTHEM_REF}"
@@ -451,7 +458,6 @@ if [ -z "$SOURCE" ] && [ "$APOTHEM_VERIFY" = "checksum" ]; then
     _ck_actual="$(sha256_of "${_ck_tmp}/${_ck_name}")" \
         || die "Neither sha256sum nor shasum is available to check ${_ck_name}"
     if [ "$_ck_actual" != "$_ck_expected" ]; then
-        rm -rf "$_ck_tmp"
         die "${_ck_name} does not match the release's SHA256SUMS (expected ${_ck_expected}, got ${_ck_actual}). Aborting before anything is extracted."
     fi
     ok "${_ck_name} matches the release's SHA256SUMS"
@@ -459,33 +465,27 @@ if [ -z "$SOURCE" ] && [ "$APOTHEM_VERIFY" = "checksum" ]; then
     if [ -e "$APOTHEM_HOME" ] && [ -n "$(ls -A "$APOTHEM_HOME" 2>/dev/null)" ]; then
         if [ "$ASSUME_YES" = "1" ]; then
             warn "Replacing existing $APOTHEM_HOME with the ${APOTHEM_REF} archive (--yes)"
-            rm -rf "$APOTHEM_HOME"
+            rm -rf "$APOTHEM_HOME" || die "Could not remove the existing $APOTHEM_HOME"
         else
-            rm -rf "$_ck_tmp"
             die "Destination $APOTHEM_HOME is not empty; refusing to replace it. Move it aside, point APOTHEM_HOME at another directory, or re-run with --yes."
         fi
     fi
     # The release archive roots every file under apothem-<tag>/ (see
     # scripts/build_release_tarball.py). Extract into the temp directory,
-    # require that root, then move it into place. Every failure below removes
-    # the temp directory before it stops.
+    # require that root, then move it into place.
     mkdir -p "${_ck_tmp}/extract"
-    if ! tar -xzf "${_ck_tmp}/${_ck_name}" -C "${_ck_tmp}/extract"; then
-        rm -rf "$_ck_tmp"
-        die "Could not extract ${_ck_name}"
-    fi
+    tar -xzf "${_ck_tmp}/${_ck_name}" -C "${_ck_tmp}/extract" \
+        || die "Could not extract ${_ck_name}"
     _ck_root="${_ck_tmp}/extract/apothem-${APOTHEM_REF}"
-    if ! is_apothem_source "$_ck_root"; then
-        rm -rf "$_ck_tmp"
-        die "${_ck_name} does not hold an apothem source under apothem-${APOTHEM_REF}/"
-    fi
-    mkdir -p "$(dirname "$APOTHEM_HOME")"
-    rm -rf "$APOTHEM_HOME"
-    if ! mv "$_ck_root" "$APOTHEM_HOME"; then
-        rm -rf "$_ck_tmp"
-        die "Could not move the extracted source to $APOTHEM_HOME"
-    fi
+    is_apothem_source "$_ck_root" \
+        || die "${_ck_name} does not hold an apothem source under apothem-${APOTHEM_REF}/"
+    mkdir -p "$(dirname "$APOTHEM_HOME")" \
+        || die "Could not create the parent directory of $APOTHEM_HOME"
+    rm -rf "$APOTHEM_HOME" || die "Could not remove the existing $APOTHEM_HOME"
+    mv "$_ck_root" "$APOTHEM_HOME" \
+        || die "Could not move the extracted source to $APOTHEM_HOME"
     rm -rf "$_ck_tmp"
+    trap - EXIT HUP INT TERM
     SOURCE="$APOTHEM_HOME"
     ok "Source ready at $SOURCE (release archive ${APOTHEM_REF})"
     echo

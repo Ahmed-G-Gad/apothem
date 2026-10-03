@@ -87,7 +87,7 @@ def _release(
 
 
 def _run(
-    tmp_path: Path, base: Path, ref: str = TAG
+    tmp_path: Path, base: Path, ref: str = TAG, apothem_home: Path | None = None
 ) -> subprocess.CompletedProcess[str]:
     home = tmp_path / "home"
     home.mkdir(exist_ok=True)
@@ -101,7 +101,7 @@ def _run(
             "APOTHEM_VERIFY": "checksum",
             "APOTHEM_RELEASE_BASE": base.as_uri(),
             "APOTHEM_REF": ref,
-            "APOTHEM_HOME": str(tmp_path / "apothem-home"),
+            "APOTHEM_HOME": str(apothem_home or tmp_path / "apothem-home"),
         }
     )
     staging = tmp_path / "installer-under-test"
@@ -151,6 +151,20 @@ def test_archive_without_the_release_root_is_refused(tmp_path: Path) -> None:
         combined
     )
     assert not (tmp_path / "apothem-home" / "src").exists()
+    assert list((tmp_path / "temp").iterdir()) == [], "the download was left behind"
+
+
+def test_a_destination_that_cannot_be_created_leaves_no_download(
+    tmp_path: Path,
+) -> None:
+    blocker = tmp_path / "a-file"
+    blocker.write_text("", encoding="utf-8")
+
+    result = _run(tmp_path, _release(tmp_path), apothem_home=blocker / "apothem")
+
+    combined = result.stdout + result.stderr
+    assert result.returncode != 0, combined
+    assert "Could not create the parent directory" in combined, combined
     assert list((tmp_path / "temp").iterdir()) == [], "the download was left behind"
 
 

@@ -356,54 +356,67 @@ if (-not $Source -and $ApothemVerify -eq 'checksum') {
     $CkName = "apothem-$ApothemRef-windows.zip"
     $CkTmp = Join-Path ([System.IO.Path]::GetTempPath()) ("apothem-" + [System.Guid]::NewGuid().ToString('N'))
     New-Item -ItemType Directory -Path $CkTmp -Force | Out-Null
-    $CkArchive = Join-Path $CkTmp $CkName
-    $CkSums = Join-Path $CkTmp 'SHA256SUMS'
-    Write-Info "Downloading $CkName and SHA256SUMS from the $ApothemRef release"
-    Invoke-WebRequest -UseBasicParsing -Uri "$ApothemReleaseBase/$ApothemRef/$CkName" -OutFile $CkArchive
-    Invoke-WebRequest -UseBasicParsing -Uri "$ApothemReleaseBase/$ApothemRef/SHA256SUMS" -OutFile $CkSums
-    $CkExpected = $null
-    foreach ($Line in Get-Content -LiteralPath $CkSums) {
-        $Fields = $Line -split '\s+', 2
-        if ($Fields.Count -eq 2 -and ($Fields[1] -eq $CkName -or $Fields[1] -eq "*$CkName")) {
-            $CkExpected = $Fields[0]
-            break
-        }
-    }
-    if (-not $CkExpected) { Write-Fail "SHA256SUMS for $ApothemRef lists no $CkName" }
-    $CkActual = (Get-FileHash -Algorithm SHA256 -LiteralPath $CkArchive).Hash
-    if ($CkActual -ne $CkExpected) {
-        Remove-Item -LiteralPath $CkTmp -Recurse -Force
-        Write-Fail "$CkName does not match the release's SHA256SUMS (expected $CkExpected, got $CkActual). Aborting before anything is extracted."
-    }
-    Write-Ok "$CkName matches the release's SHA256SUMS"
-    Write-Warn "Checksum mode: a matching digest shows the archive is the one the release lists; it does not prove who published it. For signature verification, import the maintainer key named in SECURITY.md and run without APOTHEM_VERIFY=checksum."
-    if ((Test-Path -LiteralPath $ApothemHome) -and (Get-ChildItem -LiteralPath $ApothemHome -Force | Select-Object -First 1)) {
-        if ($Yes) {
-            Write-Warn "Replacing existing $ApothemHome with the $ApothemRef archive (-Yes)"
-            Remove-Item -LiteralPath $ApothemHome -Recurse -Force
-        } else {
-            Remove-Item -LiteralPath $CkTmp -Recurse -Force
-            Write-Fail "Destination $ApothemHome is not empty; refusing to replace it. Move it aside, point APOTHEM_HOME at another directory, or re-run with -Yes."
-        }
-    }
-    # The release archive roots every file under apothem-<tag>\ (see
-    # scripts/build_release_tarball.py). It is extracted into a staging folder
-    # beside APOTHEM_HOME, because Windows PowerShell 5.1's Move-Item moves a
-    # directory only within one drive; the root is then required and moved
-    # into place. The download and the staging folder are removed on every
-    # path, success or failure.
-    $CkParent = Split-Path -Parent $ApothemHome
-    if (-not $CkParent) { $CkParent = (Get-Location).Path }
-    New-Item -ItemType Directory -Path $CkParent -Force | Out-Null
-    $CkExtract = Join-Path $CkParent (".apothem-extract-" + [System.Guid]::NewGuid().ToString('N'))
+    $CkExtract = $null
+    # Everything from here to the move into APOTHEM_HOME runs inside try, so
+    # the download and the staging folder are removed on every path, success,
+    # failure or interrupt.
     try {
-        Expand-Archive -LiteralPath $CkArchive -DestinationPath $CkExtract -Force
+        $CkArchive = Join-Path $CkTmp $CkName
+        $CkSums = Join-Path $CkTmp 'SHA256SUMS'
+        Write-Info "Downloading $CkName and SHA256SUMS from the $ApothemRef release"
+        try { Invoke-WebRequest -UseBasicParsing -Uri "$ApothemReleaseBase/$ApothemRef/$CkName" -OutFile $CkArchive }
+        catch { Write-Fail "Could not download $CkName from $ApothemReleaseBase/$ApothemRef" }
+        try { Invoke-WebRequest -UseBasicParsing -Uri "$ApothemReleaseBase/$ApothemRef/SHA256SUMS" -OutFile $CkSums }
+        catch { Write-Fail "Could not download SHA256SUMS from $ApothemReleaseBase/$ApothemRef" }
+        $CkExpected = $null
+        foreach ($Line in Get-Content -LiteralPath $CkSums) {
+            $Fields = $Line -split '\s+', 2
+            if ($Fields.Count -eq 2 -and ($Fields[1] -eq $CkName -or $Fields[1] -eq "*$CkName")) {
+                $CkExpected = $Fields[0]
+                break
+            }
+        }
+        if (-not $CkExpected) { Write-Fail "SHA256SUMS for $ApothemRef lists no $CkName" }
+        $CkActual = (Get-FileHash -Algorithm SHA256 -LiteralPath $CkArchive).Hash
+        if ($CkActual -ne $CkExpected) {
+            Write-Fail "$CkName does not match the release's SHA256SUMS (expected $CkExpected, got $CkActual). Aborting before anything is extracted."
+        }
+        Write-Ok "$CkName matches the release's SHA256SUMS"
+        Write-Warn "Checksum mode: a matching digest shows the archive is the one the release lists; it does not prove who published it. For signature verification, import the maintainer key named in SECURITY.md and run without APOTHEM_VERIFY=checksum."
+        if ((Test-Path -LiteralPath $ApothemHome) -and (Get-ChildItem -LiteralPath $ApothemHome -Force | Select-Object -First 1)) {
+            if ($Yes) {
+                Write-Warn "Replacing existing $ApothemHome with the $ApothemRef archive (-Yes)"
+                try { Remove-Item -LiteralPath $ApothemHome -Recurse -Force }
+                catch { Write-Fail "Could not remove the existing $ApothemHome" }
+            } else {
+                Write-Fail "Destination $ApothemHome is not empty; refusing to replace it. Move it aside, point APOTHEM_HOME at another directory, or re-run with -Yes."
+            }
+        }
+        # The release archive roots every file under apothem-<tag>\ (see
+        # scripts/build_release_tarball.py). It is extracted into a staging
+        # folder beside APOTHEM_HOME, because Windows PowerShell 5.1's Move-Item
+        # moves a directory only within one drive; the root is then required and
+        # moved into place.
+        $CkParent = Split-Path -Parent $ApothemHome
+        if (-not $CkParent) { $CkParent = (Get-Location).Path }
+        try { New-Item -ItemType Directory -Path $CkParent -Force | Out-Null }
+        catch { Write-Fail "Could not create the parent directory of $ApothemHome" }
+        if (-not (Test-Path -LiteralPath $CkParent -PathType Container)) {
+            Write-Fail "Could not create the parent directory of $ApothemHome"
+        }
+        $CkExtract = Join-Path $CkParent (".apothem-extract-" + [System.Guid]::NewGuid().ToString('N'))
+        try { Expand-Archive -LiteralPath $CkArchive -DestinationPath $CkExtract -Force }
+        catch { Write-Fail "Could not extract $CkName" }
         $CkRoot = Join-Path $CkExtract "apothem-$ApothemRef"
         if (-not (Test-ApothemSource $CkRoot)) { Write-Fail "$CkName does not hold an apothem source under apothem-$ApothemRef\" }
-        if (Test-Path -LiteralPath $ApothemHome) { Remove-Item -LiteralPath $ApothemHome -Recurse -Force }
-        Move-Item -LiteralPath $CkRoot -Destination $ApothemHome
+        if (Test-Path -LiteralPath $ApothemHome) {
+            try { Remove-Item -LiteralPath $ApothemHome -Recurse -Force }
+            catch { Write-Fail "Could not remove the existing $ApothemHome" }
+        }
+        try { Move-Item -LiteralPath $CkRoot -Destination $ApothemHome }
+        catch { Write-Fail "Could not move the extracted source to $ApothemHome" }
     } finally {
-        if (Test-Path -LiteralPath $CkExtract) { Remove-Item -LiteralPath $CkExtract -Recurse -Force }
+        if ($CkExtract -and (Test-Path -LiteralPath $CkExtract)) { Remove-Item -LiteralPath $CkExtract -Recurse -Force }
         if (Test-Path -LiteralPath $CkTmp) { Remove-Item -LiteralPath $CkTmp -Recurse -Force }
     }
     $Source = $ApothemHome

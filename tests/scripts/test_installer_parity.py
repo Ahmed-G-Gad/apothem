@@ -178,6 +178,11 @@ def test_checksum_mode_messages_agree() -> None:
         "needs a vMAJOR.MINOR.PATCH release tag",
         "lists no",
         "does not hold an apothem source under",
+        "Could not download",
+        "Could not extract",
+        "Could not create the parent directory of",
+        "Could not remove the existing",
+        "Could not move the extracted source to",
     ):
         assert phrase in SH, f"install.sh lacks {phrase!r}"
         assert phrase in PS1, f"install.ps1 lacks {phrase!r}"
