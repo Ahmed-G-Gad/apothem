@@ -180,7 +180,7 @@ def fetch(url: str, *, attempts: int = 3, timeout: float = 30.0) -> FetchResult:
             url, headers={"User-Agent": _USER_AGENT}
         )
         try:
-            with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310
+            with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310  # nosec B310
                 response.read(1024)
                 return FetchResult(response.status, response.geturl())
         except urllib.error.HTTPError as exc:
