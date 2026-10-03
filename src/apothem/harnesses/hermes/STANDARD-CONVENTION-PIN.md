@@ -56,7 +56,8 @@ Retrieved 2026-10-03 unless marked, at commit `1c56fed0480e67ffd56675d10862e607f
 - The adapter therefore renders the profile's servers under `mcp_servers`. An
   update over an install from an earlier release removes the server map that
   release wrote under `auxiliary.mcp` (only while it still holds exactly that
-  value), and uninstall removes only the server entries the install ledger
+  value), and so does an uninstall over such an install with no update since.
+  Uninstall otherwise removes only the server entries the install ledger
   records as Apothem's, so the operator's own `auxiliary` routing and
   `mcp_servers` entries survive.
 

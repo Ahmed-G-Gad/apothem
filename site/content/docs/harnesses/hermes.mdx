@@ -38,10 +38,13 @@ point there, so after install Hermes runs without Apothem's rules, skills, or
 hooks. Hermes reads skills from `~/.hermes/skills/` and from every folder listed
 under `skills.external_dirs` in `config.yaml`; to use the Apothem skills, add
 `~/.hermes/.apothem/support/skills` to that list yourself; `apothem update`
-keeps keys you add to `config.yaml`. The adapter writes
-the profile's MCP inventory under `auxiliary.mcp`, but Hermes reads MCP servers
-from the top-level `mcp_servers` key, so it does not load them; declare your
-servers under `mcp_servers`. (Hermes behavior per its user guide pages on
+keeps keys you add to `config.yaml`. The adapter writes the profile's MCP
+inventory under the top-level `mcp_servers` key, where Hermes reads MCP servers.
+Earlier Apothem releases wrote it under `auxiliary.mcp`, which Hermes reads as
+the auxiliary model for MCP tool dispatch; both `apothem update` and
+`apothem uninstall` remove that block while it still holds exactly what such a
+release wrote (see [Uninstalling](#uninstalling)). (Hermes behavior per its user
+guide pages on
 [skills](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)
 and [MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md),
 read 2026-10-02.)
@@ -74,8 +77,18 @@ Apothem package.
 apothem uninstall --harness hermes
 ```
 
-Removes the native config files written by the adapter.
-The shared profile YAML and Apothem engine are unaffected.
+Removes what the adapter added: the `mcp_servers` entries its install recorded
+in `config.yaml` (your own keys stay, and the file is deleted only when Apothem
+created it and nothing of yours is left), the profile document, and the support
+tree. The shared profile YAML and Apothem engine are unaffected.
+
+An install made by an earlier release, which wrote the profile's servers under
+`auxiliary.mcp`, also has that block removed when it still holds exactly what
+that release wrote, as rendered from the shared profile at
+`~/.config/apothem/profile.yaml`. This is the same rule `apothem update` applies,
+so uninstalling without updating first leaves no stale block. A block you have
+edited, or one with no readable shared profile to compare against, stays in
+place, and the rest of your `auxiliary` settings always stay.
 
 ## Conformity gate
 

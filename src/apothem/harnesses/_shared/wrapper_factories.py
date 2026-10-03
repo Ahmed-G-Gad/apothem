@@ -24,6 +24,11 @@ from typing import Any
 
 from apothem.lib.harness_registry import package_key_for_public_id
 from apothem.lib.install_ledger import OwnedEntry
+from apothem.lib.profile import (
+    ProfileValidationError,
+    load_profile_file,
+    resolve_profile_path,
+)
 
 from . import install_driver
 from .install_driver import MaterializationError, MaterializationRun
@@ -450,11 +455,30 @@ def _native_allowed_root(output_path: Path) -> Path:
     return install_driver._allowed_write_root(output_path.parent, None)
 
 
+def _retired_at_uninstall(retired_fn: _RetiredFn | None) -> tuple[OwnedEntry, ...]:
+    """Return the retired entries an uninstall checks, from the shared profile.
+
+    Uninstall carries no profile, so the values an earlier release wrote are
+    rendered from the shared profile at its default path: the profile an
+    update without ``--profile`` migrates with. When that profile is absent or
+    invalid there is nothing to compare against, so no retired entry is
+    removed and the operator's file keeps it.
+    """
+    if retired_fn is None:
+        return ()
+    try:
+        profile = load_profile_file(resolve_profile_path(None)).to_dict()
+    except ProfileValidationError:
+        return ()
+    return retired_fn(profile)
+
+
 def make_native_config_uninstall(
     harness_name: str,
     materialize_fn: _MaterializeFn,
     *,
     apothem_keys: frozenset[str] = frozenset(),
+    retired_fn: _RetiredFn | None = None,
 ) -> _NativeUninstallFn:
     """Return a native-config (materializer) ``uninstall`` shim.
 
@@ -468,9 +492,10 @@ def make_native_config_uninstall(
     records), *apothem_keys* names top-level namespaces stripped wholesale
     from such an older install (empty — the driver default — for every
     current adapter) — and the manifest support subtree is then cleaned by
-    the shared driver.
-    Behavior is identical to the hand-written body — same driver calls, same
-    argument order.
+    the shared driver. *retired_fn* is the install's own (hermes only): an
+    install from an earlier release that never updated has the entries that
+    release wrote removed under the same exact-value rule an update applies
+    (see :func:`_retired_at_uninstall` for the profile they are rendered from).
     """
 
     def uninstall(output_path: Path) -> None:
@@ -481,6 +506,7 @@ def make_native_config_uninstall(
             harness_name=harness_name,
             allowed_root=_native_allowed_root(output_path),
             apothem_keys=apothem_keys,
+            retired=_retired_at_uninstall(retired_fn),
         )
         install_driver.run_uninstall(harness_name, harness_root=output_path.parent)
 

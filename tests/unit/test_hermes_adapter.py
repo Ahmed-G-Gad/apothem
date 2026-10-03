@@ -146,3 +146,109 @@ def test_update_moves_servers_out_of_the_auxiliary_model_slot(
     adapter.uninstall()
     remaining = yaml.safe_load(target.read_text(encoding="utf-8"))
     assert remaining == {"auxiliary": {"compression": {"provider": "openrouter"}}}
+
+
+_LEGACY_SERVERS = {"fs": {"command": "npx", "args": ["srv"]}}
+_OPERATOR_ROUTING = {"compression": {"provider": "openrouter"}}
+
+
+@pytest.fixture
+def legacy_install(
+    adapter: HermesAdapter, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> Path:
+    """The install record an earlier release left, with no update since.
+
+    That release wrote the profile's servers under ``auxiliary.mcp`` and
+    recorded no ownership. The shared profile at its default path still lists
+    the same server. Returns the ``config.yaml`` path; each test writes it.
+    """
+    from apothem.lib import install_ledger
+    from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
+
+    home = tmp_path / "home"
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
+    profile = home / ".config" / "apothem" / "profile.yaml"
+    profile.parent.mkdir(parents=True)
+    profile.write_text(
+        yaml.safe_dump(
+            {
+                "identity": {"name": "Example User"},
+                "mcp_servers": {
+                    "fs": {"transport": "stdio", "command": "npx", "args": ["srv"]}
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    target = home / ".hermes" / "config.yaml"
+    target.parent.mkdir(parents=True)
+    monkeypatch.setattr(type(adapter), "output_path", property(lambda self: target))
+    install_ledger.append_record(
+        LedgerRecord.create(
+            harness="hermes",
+            root=target.parent,
+            kind="install",
+            targets=(LedgerTarget(str(target), "write_text", "operator-owned"),),
+        )
+    )
+    return target
+
+
+def _write(target: Path, doc: dict[str, object]) -> None:
+    target.write_text(yaml.safe_dump(doc, sort_keys=False), encoding="utf-8")
+
+
+def test_uninstall_removes_the_legacy_auxiliary_mcp_block(
+    adapter: HermesAdapter, legacy_install: Path
+) -> None:
+    # Uninstalling without updating first removes the servers the earlier
+    # release wrote, and keeps the operator's own auxiliary routing.
+    _write(legacy_install, {"auxiliary": {**_OPERATOR_ROUTING, "mcp": _LEGACY_SERVERS}})
+
+    adapter.uninstall()
+
+    remaining = yaml.safe_load(legacy_install.read_text(encoding="utf-8"))
+    assert remaining == {"auxiliary": _OPERATOR_ROUTING}
+
+
+def test_uninstall_drops_an_auxiliary_mapping_left_empty(
+    adapter: HermesAdapter, legacy_install: Path
+) -> None:
+    _write(
+        legacy_install,
+        {"model": "operator-model", "auxiliary": {"mcp": _LEGACY_SERVERS}},
+    )
+
+    adapter.uninstall()
+
+    remaining = yaml.safe_load(legacy_install.read_text(encoding="utf-8"))
+    assert remaining == {"model": "operator-model"}
+
+
+def test_uninstall_keeps_an_operator_edited_auxiliary_mcp(
+    adapter: HermesAdapter, legacy_install: Path
+) -> None:
+    # The value no longer equals what the earlier release wrote, so it is the
+    # operator's now: uninstall leaves it, exactly as an update would.
+    edited = {"fs": {"command": "npx", "args": ["srv", "--read-only"]}}
+    doc = {"auxiliary": {**_OPERATOR_ROUTING, "mcp": edited}}
+    _write(legacy_install, doc)
+
+    adapter.uninstall()
+
+    assert yaml.safe_load(legacy_install.read_text(encoding="utf-8")) == doc
+
+
+def test_uninstall_without_a_shared_profile_leaves_the_legacy_block(
+    adapter: HermesAdapter, legacy_install: Path, tmp_path: Path
+) -> None:
+    # With no profile to render the earlier value from, nothing can be shown to
+    # be Apothem's, so nothing is removed.
+    (tmp_path / "home" / ".config" / "apothem" / "profile.yaml").unlink()
+    doc = {"auxiliary": {**_OPERATOR_ROUTING, "mcp": _LEGACY_SERVERS}}
+    _write(legacy_install, doc)
+
+    adapter.uninstall()
+
+    assert yaml.safe_load(legacy_install.read_text(encoding="utf-8")) == doc
