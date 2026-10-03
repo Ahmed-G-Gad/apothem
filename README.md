@@ -412,8 +412,8 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 The **Apothem** extension installs from an `apothem.vsix` package: run
 `code --install-extension apothem.vsix`, or use the editor's *Install from
 VSIX…* command. The release workflow signs the package and attaches it to each
-GitHub Release; the current release, v1.1.0, predates that step and carries
-none, so build the package from a checkout:
+GitHub Release. Releases published before the workflow packaged the extension
+carry none; when the latest one lacks it, build the package from a checkout:
 
 ```shell
 cd vscode-extension && npx @vscode/vsce package --no-dependencies --out apothem.vsix
