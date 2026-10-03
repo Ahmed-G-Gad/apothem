@@ -27,6 +27,11 @@ converted local helper definitions inside the plugin,
 `~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/templates/`, and
 `~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/hooks/`.
 
+The Apothem block in `~/.gemini/GEMINI.md` ends with an Apothem support files
+section that names the absolute directory each repository-style citation
+resolves against: `rules/<name>.md` under the plugin's `rules/`, and
+`templates/...` and `hooks/...` under the plugin's `.apothem/support/`.
+
 **Plugin rules.** Antigravity discards any file in a plugin's `rules/`
 directory that does not open with a valid `trigger`
 ([Antigravity rules documentation](https://antigravity.google/docs/rules)), so

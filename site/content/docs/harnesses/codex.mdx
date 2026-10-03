@@ -26,6 +26,13 @@ skills.
 user-invoked skills, and support files under
 `~/.config/apothem/{rules,templates}/`.
 
+The Apothem block in `AGENTS.md` ends with an Apothem support files section
+that names the absolute directory each repository-style citation in the
+installed skills and rules resolves against: `rules/<name>.md` and
+`templates/...` under `~/.config/apothem/`, and `hooks/...` under
+`~/.codex/hooks/`. The Codex install ships no `schemas/` or `conformity/`
+tree, so the section lists neither.
+
 **User-invoked skills.** Codex ignores the `disable-model-invocation` key. For
 every skill or command whose source sets `disable-model-invocation: true`, the
 adapter writes `agents/openai.yaml` beside its `SKILL.md` with

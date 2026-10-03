@@ -9,13 +9,14 @@ copies those directories to its own locations (``~/.claude/rules/`` and
 ``~/.claude/.apothem/support/templates/`` for one, ``~/.config/apothem/rules/``
 for another). This module derives each location from the propagation
 manifest's install entries, so the text that tells the model where the files
-are (the per-skill reference note) names exactly the directories the install
-writes, and nothing it does not.
+are (the instruction anchor's announcement and the per-skill reference note)
+names exactly the directories the install writes, and nothing it does not.
 """
 
 from __future__ import annotations
 
 import os
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
@@ -43,6 +44,9 @@ _PATH_KEEPING_MODES: Final[frozenset[str]] = frozenset(
 #: Heading of the per-skill note generated command skills carry.
 REFERENCE_NOTE_HEADING: Final[str] = "## Installed Reference Paths"
 
+#: Heading of the announcement an instruction anchor carries.
+ANNOUNCEMENT_HEADING: Final[str] = "## Apothem support files"
+
 
 @dataclass(frozen=True)
 class CorpusLayout:
@@ -63,10 +67,35 @@ class CorpusLayout:
         return bool(self.dirs)
 
     def display(self, path: Path) -> str:
-        """Return *path* as the text a note shows."""
+        """Return *path* as the text a note or announcement shows."""
         if self.base is not None:
             return path.relative_to(self.base).as_posix()
         return path.as_posix()
+
+    @property
+    def support_root(self) -> Path | None:
+        """Return the directory most of the cited directories sit in.
+
+        Ties go to the parent of the earliest directory in
+        :data:`CITED_CORPUS_DIRS` order. ``None`` when nothing is installed.
+        """
+        if not self.dirs:
+            return None
+        counts = Counter(path.parent for _, path in self.dirs)
+        best = max(counts.values())
+        return next(path.parent for _, path in self.dirs if counts[path.parent] == best)
+
+    def resolve(self, citation: str) -> Path | None:
+        """Return the installed path a citation names, or ``None``.
+
+        *citation* is a repository-style path such as ``rules/naming.md``;
+        ``None`` when its first segment is not an installed directory.
+        """
+        head, _, rest = citation.partition("/")
+        for name, path in self.dirs:
+            if name == head:
+                return path / rest if rest else path
+        return None
 
     def path_lines(self) -> list[str]:
         """Return one Markdown bullet per installed directory."""
@@ -137,6 +166,76 @@ def harness_layout(harness_name: str, root: Path) -> CorpusLayout:
     if any("${PROJECT_ROOT}" in entry.target for entry in rules.install):
         return corpus_layout(rules, project_root=root)
     return corpus_layout(rules, harness_root=root)
+
+
+def _example_citations(layout: CorpusLayout) -> str:
+    """Return the installed citation forms as an inline list."""
+    forms = [
+        "`rules/<name>.md`" if name == "rules" else f"`{name}/...`"
+        for name, _ in layout.dirs
+    ]
+    if len(forms) == 1:
+        return forms[0]
+    return ", ".join(forms[:-1]) + f", and {forms[-1]}"
+
+
+def support_announcement(layout: CorpusLayout) -> str:
+    """Return the anchor section that names the installed support files.
+
+    Harness-neutral: anchors that several tools load carry it unchanged. Empty
+    when the install places no cited corpus directory.
+    """
+    root = layout.support_root
+    if root is None:
+        return ""
+    where = (
+        f"`{layout.display(root)}/` in this project"
+        if layout.base is not None
+        else f"`{layout.display(root)}`"
+    )
+    relative = (
+        " Paths are relative to this project's root." if layout.base is not None else ""
+    )
+    lines = [
+        ANNOUNCEMENT_HEADING,
+        "",
+        f"Apothem's support root is {where}. Apothem rules, skills, commands, "
+        "and helper definitions cite support files by repository-style paths "
+        f"such as {_example_citations(layout)}. Resolve each citation against "
+        f"the installed directory for its first segment:{relative}",
+        "",
+        *layout.path_lines(),
+        "",
+        "A cited path whose first segment is not listed here is not installed.",
+    ]
+    return "\n".join(lines)
+
+
+def with_support_announcement(text: str, harness_name: str, root: Path) -> str:
+    """Return *text* followed by *harness_name*'s support announcement.
+
+    *root* is the install root (see :func:`harness_layout`). *text* comes back
+    unchanged when the harness installs no cited corpus directory.
+    """
+    announcement = support_announcement(harness_layout(harness_name, root))
+    if not announcement:
+        return text
+    return f"{text.rstrip()}\n\n{announcement}\n"
+
+
+def announces_in_profile_document(harness_name: str) -> bool:
+    """Return True when the profile document is the harness's anchor.
+
+    A harness whose manifest folds a managed block into an instruction file
+    (a ``sentinel_merge`` entry) announces its support files there; the
+    single-file-config adapters write no such file, so the profile document
+    they project is where the announcement goes.
+    """
+    try:
+        rules = _load_rules(harness_name)
+    except RuntimeError:
+        return False
+    return not any(entry.mode == "sentinel_merge" for entry in rules.install)
 
 
 def reference_note(layout: CorpusLayout) -> str:

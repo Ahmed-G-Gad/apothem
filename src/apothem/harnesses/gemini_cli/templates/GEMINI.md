@@ -14,13 +14,12 @@ The install placed Apothem's files in this project:
 - `.gemini/commands/*.toml` — slash commands converted from Apothem command prompts.
 - `.gemini/agents/*.md` — helper definitions normalized from Apothem agents.
 - `.gemini/skills/*/SKILL.md` — Apothem skills.
-- `.gemini/.apothem/support/rules/` — Apothem rules used as reference material.
-- `.gemini/.apothem/support/templates/` — plan, report, and audit templates.
-- `.gemini/.apothem/support/hooks/` — hook messages and helper scripts retained as reference material.
 
-The `.gemini/.apothem/support/` tree is Apothem-owned reference material that
-this block, the generated commands, and the installed skills point to; no tool
-discovers it on its own.
+Apothem's rules, its plan, report, and audit templates, and its hook messages
+and helper scripts are installed as support files: Apothem-owned reference
+material that this block, the generated commands, and the installed skills
+point to, and that no tool discovers on its own. The Apothem support files
+section below names their directories.
 
 ## Engineering disciplines in force
 

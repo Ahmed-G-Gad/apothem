@@ -48,6 +48,12 @@ templates, and hook prompts stay installed as reference material under
 cites one reads it on demand. Commands, skills, and helper definitions use
 native discovery locations.
 
+The profile document `~/.config/opencode/apothem/rules/00-apothem-profile.md`
+ends with an Apothem support files section that names the absolute directory
+under `~/.config/opencode/.apothem/support/` each repository-style citation
+(`rules/<name>.md`, `templates/...`, `hooks/...`) resolves against. OpenCode
+does not load that document: it is not in the `instructions` list.
+
 An `opencode.json` written by an earlier release lists the single glob
 `~/.config/opencode/.apothem/support/rules/*.md`, which loads every rule.
 `apothem install` and `apothem update` replace it with the always-on list, and

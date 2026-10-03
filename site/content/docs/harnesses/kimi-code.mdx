@@ -44,7 +44,10 @@ loads skills from `.kimi-code/skills/` and `.agents/skills/`, custom agents from
 `.kimi-code/agents/` and `.agents/agents/`, and hooks from the `[[hooks]]` array
 in `~/.kimi-code/config.toml`, but it does not load them from the support tree,
 so the Apothem copies there are reference material the `AGENTS.md` block points
-to. (Kimi Code behavior per its customization pages for
+to. The block ends with an Apothem support files section that names, relative to
+the project root, the directory under `.kimi-code/.apothem/support/` each
+repository-style citation (`rules/<name>.md`, `templates/...`, `hooks/...`)
+resolves against, so a committed `AGENTS.md` carries no machine-specific path. (Kimi Code behavior per its customization pages for
 [skills](https://moonshotai.github.io/kimi-code/en/customization/skills),
 [subagents](https://moonshotai.github.io/kimi-code/en/customization/agents), and
 [hooks](https://moonshotai.github.io/kimi-code/en/customization/hooks), read

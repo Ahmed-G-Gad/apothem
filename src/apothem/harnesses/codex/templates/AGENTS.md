@@ -15,13 +15,14 @@ The Apothem-managed cohorts are installed as follows:
 
 - `$CODEX_HOME/agents/*.toml` — Codex custom agents converted from Apothem
   Markdown agents.
-- `$CODEX_HOME/hooks.json` and `$CODEX_HOME/hooks/` — Codex lifecycle hook
-  configuration plus Apothem hook helpers.
+- `$CODEX_HOME/hooks.json` — Codex lifecycle hook configuration; the hook
+  helpers it runs are listed under Apothem support files below.
 - `~/.agents/skills/*/SKILL.md` — Apothem skills plus command prompts wrapped
   as Codex skills.
-- `~/.config/apothem/rules/` — Apothem Markdown rules used as reference
-  material by this file and the installed skills.
-- `~/.config/apothem/templates/` — plan, report, and audit templates.
+
+Apothem's Markdown rules and templates are reference material for this file
+and the installed skills; the Apothem support files section below names the
+directories they were installed to.
 
 Do not place Apothem Markdown rules under `$CODEX_HOME/rules/`. Codex
 reserves that directory for `.rules` execution-policy files, which use a

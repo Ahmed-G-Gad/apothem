@@ -15,7 +15,7 @@ registry, the per-adapter `capabilities.yml`, and each adapter's
 | Harness | Install name | Scope | Format | Targets | MCP | Convention pin |
 | --- | --- | --- | --- | --- | --- | --- |
 | Antigravity | `antigravity` | user | markdown | `~/.gemini/GEMINI.md`; `~/.gemini/antigravity-cli/plugins/apothem/` | discovery-pending | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
-| Claude Code | `claude-code` | user | json | `~/.claude/settings.json`; native `agents`, `rules`, `skills`, `statuslines`, `output-styles`; `~/.claude/.apothem/support/` | discovery-pending | `src/apothem/harnesses/claude_code/STANDARD-CONVENTION-PIN.md` |
+| Claude Code | `claude-code` | user | json | `~/.claude/settings.json`; `~/.claude/CLAUDE.md`; native `agents`, `rules`, `skills`, `statuslines`, `output-styles`; `~/.claude/.apothem/support/` | discovery-pending | `src/apothem/harnesses/claude_code/STANDARD-CONVENTION-PIN.md` |
 | CodeBuddy | `codebuddy` | project | markdown | `<project>/.codebuddy/rules/apothem-rules.md` | discovery-pending | `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` |
 | Codex | `codex` | user | markdown | `~/.codex/AGENTS.md`; `hooks.json`; `hooks/`; `agents/*.toml`; `~/.agents/skills/`; `~/.config/apothem/` | discovery-pending | `src/apothem/harnesses/codex/STANDARD-CONVENTION-PIN.md` |
 | Cursor | `cursor` | project | mdc | `<project>/.cursor/rules/apothem-rules.mdc` | discovery-pending | `src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md` |
@@ -87,6 +87,7 @@ every reader.
 | --- | --- | --- |
 | `~/.agents/skills/` | Codex | Cursor, Gemini CLI, GitHub Copilot, Kimi Code, Open-Claw, OpenCode, Windsurf, Zed |
 | `~/.claude/skills/` | Claude Code | Cursor, OpenCode |
+| `~/.claude/CLAUDE.md` | Claude Code | OpenCode |
 | `<project>/AGENTS.md` | Kimi Code | Antigravity, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
 | `<project>/GEMINI.md` | Gemini CLI | Antigravity, GitHub Copilot, Zed |
 | `~/.gemini/GEMINI.md` | Antigravity | Gemini CLI |

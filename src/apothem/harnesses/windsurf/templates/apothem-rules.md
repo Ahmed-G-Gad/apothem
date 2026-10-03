@@ -13,8 +13,8 @@ This file is materialised by `apothem install --harness windsurf --project <path
 
 Apothem propagates a shared governance and convention surface across every supported AI harness in this project's host environment. Inside Windsurf, the surface manifests as this `always_on` rule file:
 
-- **Rules** — engineering rules applied on every interaction (`trigger: always_on`). The full rule cohort lives at the apothem source repository under `src/apothem/rules/`; this Windsurf-facing anchor names the disciplines the operator may consult in detail.
-- **Skills, commands, agents** — reusable techniques, slash-style workflows, and persistent sub-agent definitions. Apothem's canonical-master cohort at the apothem source repository defines them; Windsurf does not auto-discover them as separate surfaces, so they manifest here as referenced discipline.
+- **Rules** — engineering rules applied on every interaction (`trigger: always_on`). This install writes this one file: no rule, skill, command, template, or hook file is installed beside it, so the disciplines below are the rule text in force here.
+- **Skills, commands, agents** — Apothem's reusable techniques, slash-style workflows, and sub-agent definitions are not installed here; Windsurf does not auto-discover them as separate surfaces.
 - **Workflows** — Windsurf's slash-command surface (`.windsurf/workflows/`) is operator-authored, not apothem-managed.
 - **Memories** — Windsurf's memory surface (`~/.codeium/windsurf/memories/`) is machine-local, not apothem-managed.
 

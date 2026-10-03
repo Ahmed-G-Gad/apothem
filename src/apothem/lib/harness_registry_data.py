@@ -183,6 +183,7 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         output_format="json",
         target_paths=(
             "~/.claude/settings.json",
+            "~/.claude/CLAUDE.md",
             "~/.claude/{agents,rules,skills,statuslines,output-styles}/",
             "~/.claude/.apothem/support/{templates,hooks,conformity,schemas}/",
         ),
@@ -924,6 +925,16 @@ SHARED_ROOTS: tuple[SharedRoot, ...] = (
             "https://opencode.ai/docs/skills/",
         ),
         retrieved="2026-10-02",
+    ),
+    SharedRoot(
+        path="~/.claude/CLAUDE.md",
+        owner="claude-code",
+        readers=("opencode",),
+        evidence=(
+            "https://code.claude.com/docs/en/memory",
+            "https://opencode.ai/docs/rules/",
+        ),
+        retrieved="2026-10-03",
     ),
     SharedRoot(
         path="<project>/AGENTS.md",

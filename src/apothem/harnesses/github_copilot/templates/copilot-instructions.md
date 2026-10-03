@@ -4,7 +4,7 @@
 
 Apothem wrote this block with `apothem install --harness github-copilot`. It lands at `<project>/.github/copilot-instructions.md`, the repository-wide custom instructions file (https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/add-custom-instructions/add-repository-instructions), which Copilot applies to requests made in this repository, including chat, the cloud agent, and code review. Other coding tools can read the same file, so this block carries project-wide guidance only and names no single tool as its reader. GitHub notes that shorter instruction files are more likely to be processed in full, so the shared-profile section, when the profile sets one, comes first in this block.
 
-The full Apothem rule, skill, command, and agent set lives in the Apothem source under `src/apothem/{rules,skills,commands,agents}/`; consult the matching rule there when generating non-trivial code or prose.
+This install writes this one file: no Apothem rule, skill, command, or agent file is installed beside it, so the disciplines below are the Apothem rule text in force in this project.
 
 ## Engineering disciplines in force
 
@@ -22,7 +22,7 @@ Apothem's foundational mandates apply in every tool that reads this block:
 
 ## Modal hierarchy
 
-When the operator's request conflicts with an apothem rule, the rule wins; surface the conflict and propose the rule-conformant alternative. When two apothem surfaces conflict, the most specific path-filtered rule wins over the always-on rule. Always-on rules are listed at `<apothem-src>/src/apothem/rules/` with `alwaysApply: true` in their frontmatter.
+When the operator's request conflicts with an apothem rule, the rule wins; surface the conflict and propose the rule-conformant alternative. When two apothem surfaces conflict, the most specific path-filtered rule wins over the always-on rule.
 
 ## Maintaining this block
 

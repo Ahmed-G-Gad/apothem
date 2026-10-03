@@ -22,6 +22,11 @@ configuration file and installs Apothem support cohorts under the harness root.
 `~/.hermes/apothem/rules/00-apothem-profile.md`, and support files under
 `~/.hermes/.apothem/support/`
 
+The profile document ends with an Apothem support files section that names
+the absolute directory under `~/.hermes/.apothem/support/` each
+repository-style citation (`rules/<name>.md`, `templates/...`, `hooks/...`)
+resolves against.
+
 ## Profile-to-native-config mapping
 
 The adapter reads Apothem's shared profile and renders the native YAML config,
