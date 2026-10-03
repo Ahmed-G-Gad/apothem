@@ -122,7 +122,7 @@ flowchart TD
 
 ```
 src/apothem/
-  cli/            — Click CLI (quickstart, install, update, uninstall, verify, status, diff, rollback, migrate-workspace, harnesses, profile, doctor, completion)
+  cli/            — Click CLI (quickstart, install, update, uninstall, verify, status, diff, rollback, backups, migrate-workspace, harnesses, profile, doctor, completion)
   harnesses/      — one sub-package per harness adapter (__init__.py adapter class + install/uninstall/update/verify.py; adapters with rendered single-file config also carry materializer.py)
   conformity/     — pre-emission conformity validators
   lib/            — shared internal helpers reused across the subpackages (harness registry, profile model + projection, materializer building blocks, state stores, atomic IO, parallel sweep, reporting)
