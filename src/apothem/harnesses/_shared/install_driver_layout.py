@@ -193,16 +193,14 @@ def support_announcement(layout: CorpusLayout) -> str:
         if layout.base is not None
         else f"`{layout.display(root)}`"
     )
-    relative = (
-        " Paths are relative to this project's root." if layout.base is not None else ""
-    )
+    relative = ", relative to this project's root" if layout.base is not None else ""
     lines = [
         ANNOUNCEMENT_HEADING,
         "",
         f"Apothem's support root is {where}. Apothem rules, skills, commands, "
         "and helper definitions cite support files by repository-style paths "
         f"such as {_example_citations(layout)}. Resolve each citation against "
-        f"the installed directory for its first segment:{relative}",
+        f"the installed directory for its first segment{relative}:",
         "",
         *layout.path_lines(),
         "",
