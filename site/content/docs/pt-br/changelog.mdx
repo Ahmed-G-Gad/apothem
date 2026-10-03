@@ -336,6 +336,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `profile.managed_block_marker`, naming the field without echoing the value.
 - **The VS Code extension runs only a user-scoped runner**, quoted, for a
   chosen harness; a workspace setting can no longer set the command it runs.
+- **The release packages the VS Code extension in a job of its own.** vsce
+  installs from a committed lockfile with `npm ci --ignore-scripts`, in a job
+  that never sees the Python distributions, and only `apothem.vsix` passes to
+  the build job that hashes and signs `dist/`. Before, `npx` resolved the
+  packager's dependency tree at release time, with install scripts, in the job
+  that built the wheel. The Marketplace workflow uses the same lockfile.
 - **No long-lived npm token path remains.** The npm publish workflow
   authenticates through OIDC alone; the token secret and its opt-in gate are
   gone.

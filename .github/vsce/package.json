@@ -1,0 +1,9 @@
+{
+  "name": "apothem-vsce",
+  "private": true,
+  "description": "The vsce packager the release and VS Code publish workflows install with npm ci --ignore-scripts, so the toolchain is pinned by version and integrity hash.",
+  "license": "MIT",
+  "dependencies": {
+    "@vscode/vsce": "3.9.2"
+  }
+}

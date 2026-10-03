@@ -9,9 +9,9 @@
 # commit — this workflow assumes those gates are already green):
 #
 #   (1) Build      — sdist + wheel via PEP 517 build, the VS Code extension
-#                    packaged as apothem.vsix, then a CycloneDX SBOM of what
-#                    the Python distributions ship (vendored packages
-#                    included), all written to dist/.
+#                    packaged as apothem.vsix in its own job, then a CycloneDX
+#                    SBOM of what the Python distributions ship (vendored
+#                    packages included), all gathered in dist/.
 #   (2) Sign       — Sigstore cosign keyless signature on every dist/ file,
 #                    the SBOM included.
 #   (3) Provenance — SLSA Level 3 provenance via the slsa-framework reusable
@@ -53,10 +53,53 @@ concurrency:
 
 jobs:
 
+  vsix:
+    name: package the VS Code extension
+    # A job of its own: the packager's npm dependency tree never runs where
+    # the Python distributions are built, hashed or uploaded, and only
+    # apothem.vsix leaves this job.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+        with:
+          node-version: "24"
+          # No dependency cache in a release job, since a restored cache could
+          # carry poisoned packages into the release (zizmor cache-poisoning).
+          package-manager-cache: false
+      - name: Install vsce from its lockfile
+        # npm ci installs the exact versions and integrity hashes recorded in
+        # .github/vsce/package-lock.json, and --ignore-scripts runs no
+        # dependency install script. Packaging needs neither keytar nor the
+        # vsce-sign binary that those scripts would fetch.
+        run: npm ci --prefix .github/vsce --ignore-scripts --no-audit --no-fund
+      - name: Package the VS Code extension
+        working-directory: vscode-extension
+        run: ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out "${RUNNER_TEMP}/apothem.vsix"
+      - name: Upload the extension package
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: vsix
+          path: ${{ runner.temp }}/apothem.vsix
+          if-no-files-found: error
+          retention-days: 7
+
   build:
     name: build sdist + wheel
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    needs: [vsix]
     permissions:
       contents: read
     outputs:
@@ -106,20 +149,15 @@ jobs:
           # The wheel honours SOURCE_DATE_EPOCH; the sdist's gzip header and
           # tar entries carry build-time and checkout metadata. Normalize them.
           python scripts/release/normalize_sdist.py dist/*.tar.gz
-      - name: Set up Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
-        with:
-          node-version: "24"
-          # No dependency cache in a release job, since a restored cache could
-          # carry poisoned packages into the release (zizmor cache-poisoning).
-          package-manager-cache: false
-      - name: Package the VS Code extension
-        # Written into dist/ so the .vsix is hashed into the provenance, signed
+      - name: Add the VS Code extension to dist/
+        # Placed in dist/ so the .vsix is hashed into the provenance, signed
         # with cosign, attested, listed in SHA256SUMS, and attached to the
         # Release with the other assets; the README's VS Code channel installs
-        # it from there. The same vsce pin as publish-vscode.yml.
-        working-directory: vscode-extension
-        run: npx --yes @vscode/vsce@3.9.2 package --no-dependencies --out ../dist/apothem.vsix
+        # it from there.
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          name: vsix
+          path: dist/
       - name: Generate SBOM from the built distributions
         # The SBOM describes what ships: the wheel's metadata and declared
         # requirements, every package vendored under apothem/_vendor (pinned

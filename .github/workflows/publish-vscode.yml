@@ -79,10 +79,13 @@ jobs:
             echo "::error::vscode-extension/package.json version ${actual} does not match tag ${RELEASE_TAG}"
             exit 1
           fi
-      # vsce is pinned so release builds are reproducible; a floating @latest
-      # resolves a different toolchain on every run. Bump deliberately.
+      # vsce and its whole dependency tree are pinned by version and integrity
+      # hash in .github/vsce/package-lock.json, the lockfile release.yml uses,
+      # and --ignore-scripts runs no dependency install script. Bump it there.
+      - name: Install vsce from its lockfile
+        run: npm ci --prefix ../.github/vsce --ignore-scripts --no-audit --no-fund
       - name: Package .vsix
-        run: npx --yes @vscode/vsce@3.9.2 package --no-dependencies --out apothem.vsix
+        run: ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix
       # The `secrets` context is not a valid context inside an `if:` expression
       # (GitHub allows env / steps / github / vars / … there, not secrets), so a
       # `if: ${{ secrets.VSCE_PAT != '' }}` gate makes the workflow fail to start.
@@ -107,7 +110,7 @@ jobs:
         if: ${{ steps.token.outputs.configured == 'true' && vars.VSCODE_MARKETPLACE_READY == 'true' }}
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: npx --yes @vscode/vsce@3.9.2 publish --no-dependencies --packagePath apothem.vsix
+        run: ../.github/vsce/node_modules/.bin/vsce publish --no-dependencies --packagePath apothem.vsix
       - name: Marketplace publish skipped (not yet enabled)
         if: ${{ steps.token.outputs.configured != 'true' || vars.VSCODE_MARKETPLACE_READY != 'true' }}
         run: |
