@@ -17,6 +17,7 @@ import hashlib
 import http.server
 import io
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -41,6 +42,8 @@ ARCHIVE_ROOT = brt._archive_root("apothem", TAG.removeprefix("v"))
 _PWSH = shutil.which("pwsh") or shutil.which("powershell")
 
 pytestmark = pytest.mark.skipif(_PWSH is None, reason="no PowerShell on this host")
+
+_ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
 
 
 def _zip_bytes(*, root: str | None) -> bytes:
@@ -133,6 +136,18 @@ def _run(tmp_path: Path, base_url: str) -> subprocess.CompletedProcess[str]:
     )
 
 
+def _plain(output: str) -> str:
+    """Return installer output as single-spaced words, as a reader sees them.
+
+    ``Write-Fail`` writes an error record. PowerShell renders it in its concise
+    error view, which colours the text and wraps it at the console width behind
+    a ``|`` gutter, so a long message can be split across lines (the macOS
+    runner wraps at 80 columns).
+    """
+    words = _ANSI_ESCAPE.sub("", output).split()
+    return " ".join(word for word in words if word != "|")
+
+
 def _leftovers(tmp_path: Path) -> list[str]:
     """Return any download or staging folder the installer left behind."""
     temp = [
@@ -153,7 +168,7 @@ def test_release_root_is_moved_into_apothem_home(
     result = _run(tmp_path, base_url)
 
     combined = result.stdout + result.stderr
-    assert "does not prove who published it" in combined, combined
+    assert "does not prove who published it" in _plain(combined), combined
     home = tmp_path / "apothem-home"
     assert (home / "src" / "apothem" / "__init__.py").is_file(), combined
     assert (home / "pyproject.toml").is_file(), combined
@@ -170,7 +185,8 @@ def test_archive_without_the_release_root_is_refused(
 
     combined = result.stdout + result.stderr
     assert result.returncode != 0, combined
-    assert f"does not hold an apothem source under {ARCHIVE_ROOT}" in combined, combined
+    expected = f"does not hold an apothem source under {ARCHIVE_ROOT}"
+    assert expected in _plain(combined), combined
     assert not (tmp_path / "apothem-home" / "src").exists()
     assert _leftovers(tmp_path) == []
 
