@@ -314,6 +314,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Security
 
+- **The release build tooling uses urllib3 2.8.0**, which fixes
+  PYSEC-2026-4175 and PYSEC-2026-4176 in the hash-locked tooling the release
+  workflow installs before it builds.
 - **Profile text cannot carry the managed-block markers.** A profile value
   containing a block marker fails validation with
   `profile.managed_block_marker`, naming the field without echoing the value.
