@@ -9,7 +9,7 @@ alwaysApply: true
 
 # Apothem — Cursor Bootstrap
 
-This file is materialised by `apothem install --harness cursor --project <path>` and lands at `<project>/.cursor/rules/apothem-rules.mdc`, the current Cursor project rules surface per https://cursor.com/docs/context/rules. The legacy single-file `.cursorrules` target is excluded because Apothem targets the multi-file project rules format; this MDC file is the authoritative Cursor-facing anchor.
+This file is materialised by `apothem install --harness cursor --project <path>` and lands at `<project>/.cursor/rules/apothem-rules.mdc`, the current Cursor project rules surface per https://cursor.com/docs/rules. The legacy single-file `.cursorrules` target is excluded because Apothem targets the multi-file project rules format; this MDC file is the authoritative Cursor-facing anchor.
 
 ## What Apothem governs in this project
 

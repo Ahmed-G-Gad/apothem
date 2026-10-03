@@ -474,7 +474,7 @@ harnesses:
   cursor:
     # Cursor's canonical surface is the project-scope MDC ruleset
     # at <project>/.cursor/rules/*.mdc (vendor doc:
-    # https://cursor.com/docs/context/rules). The legacy single-file
+    # https://cursor.com/docs/rules). The legacy single-file
     # ~/.cursorrules target is intentionally excluded: apothem targets
     # the current multi-file rules surface only. The
     # adapter at src/apothem/harnesses/cursor/ opts into the
