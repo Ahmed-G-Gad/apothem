@@ -465,11 +465,18 @@ if [ -z "$SOURCE" ] && [ "$APOTHEM_VERIFY" = "checksum" ]; then
             die "Destination $APOTHEM_HOME is not empty; refusing to replace it. Move it aside, point APOTHEM_HOME at another directory, or re-run with --yes."
         fi
     fi
-    mkdir -p "$APOTHEM_HOME"
-    tar -xzf "${_ck_tmp}/${_ck_name}" -C "$APOTHEM_HOME" || die "Could not extract ${_ck_name}"
+    # The release archive roots every file under apothem-<tag>/ (see
+    # scripts/build_release_tarball.py). Extract into the temp directory,
+    # require that root, then move it into place.
+    mkdir -p "${_ck_tmp}/extract"
+    tar -xzf "${_ck_tmp}/${_ck_name}" -C "${_ck_tmp}/extract" || die "Could not extract ${_ck_name}"
+    _ck_root="${_ck_tmp}/extract/apothem-${APOTHEM_REF}"
+    is_apothem_source "$_ck_root" || die "${_ck_name} does not hold an apothem source under apothem-${APOTHEM_REF}/"
+    mkdir -p "$(dirname "$APOTHEM_HOME")"
+    rm -rf "$APOTHEM_HOME"
+    mv "$_ck_root" "$APOTHEM_HOME" || die "Could not move the extracted source to $APOTHEM_HOME"
     rm -rf "$_ck_tmp"
     SOURCE="$APOTHEM_HOME"
-    is_apothem_source "$SOURCE" || die "Extracted archive is not an apothem source: $SOURCE"
     ok "Source ready at $SOURCE (release archive ${APOTHEM_REF})"
     echo
 fi

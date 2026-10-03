@@ -28,6 +28,15 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[2]
 INSTALLER = REPO_ROOT / "scripts" / "installer" / "install.sh"
 TAG = "v9.9.9"
+
+_SCRIPTS = REPO_ROOT / "scripts"
+if str(_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS))
+
+import build_release_tarball as brt  # noqa: E402
+
+# The directory every member of a real release archive sits under.
+ARCHIVE_ROOT = brt._archive_root("apothem", TAG.removeprefix("v"))
 INTEGRITY_WARNING = "does not prove who published it"
 MISMATCH_MARKER = "does not match the release's SHA256SUMS"
 
@@ -39,15 +48,20 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def _archive_bytes() -> bytes:
-    """A minimal apothem-shaped runtime archive (no top-level prefix)."""
+def _archive_bytes(*, root: str | None = ARCHIVE_ROOT) -> bytes:
+    """A minimal apothem-shaped runtime archive laid out like a real release.
+
+    Every member sits under *root*, the directory scripts/build_release_tarball.py
+    puts at the top of each release archive; ``root=None`` builds a flat archive.
+    """
+    prefix = f"{root}/" if root else ""
     buffer = io.BytesIO()
     with tarfile.open(fileobj=buffer, mode="w:gz") as archive:
         for name, body in (
             ("src/apothem/__init__.py", b"# SPDX-License-Identifier: MIT\n"),
             ("pyproject.toml", b'[project]\nname = "fixture"\nversion = "9.9.9"\n'),
         ):
-            info = tarfile.TarInfo(name)
+            info = tarfile.TarInfo(prefix + name)
             info.size = len(body)
             archive.addfile(info, io.BytesIO(body))
     return buffer.getvalue()
@@ -57,13 +71,15 @@ def _platform() -> str:
     return "darwin" if sys.platform == "darwin" else "linux"
 
 
-def _release(tmp_path: Path, *, tamper: bool = False) -> Path:
+def _release(
+    tmp_path: Path, *, tamper: bool = False, root: str | None = ARCHIVE_ROOT
+) -> Path:
     """Write a fake release under ``<base>/<tag>/`` and return the base."""
     base = tmp_path / "releases"
     folder = base / TAG
     folder.mkdir(parents=True)
     name = f"apothem-{TAG}-{_platform()}.tar.gz"
-    data = _archive_bytes()
+    data = _archive_bytes(root=root)
     (folder / name).write_bytes(data + (b"tampered" if tamper else b""))
     digest = hashlib.sha256(data).hexdigest()
     (folder / "SHA256SUMS").write_text(f"{digest}  {name}\n", encoding="utf-8")
@@ -123,6 +139,16 @@ def test_checksum_mode_needs_a_release_tag(tmp_path: Path) -> None:
     combined = result.stdout + result.stderr
     assert result.returncode != 0, combined
     assert "needs a vMAJOR.MINOR.PATCH release tag" in combined, combined
+
+
+def test_archive_without_the_release_root_is_refused(tmp_path: Path) -> None:
+    result = _run(tmp_path, _release(tmp_path, root=None))
+    combined = result.stdout + result.stderr
+    assert result.returncode != 0, combined
+    assert f"does not hold an apothem source under {ARCHIVE_ROOT}/" in combined, (
+        combined
+    )
+    assert not (tmp_path / "apothem-home" / "src").exists()
 
 
 # REUSE-IgnoreEnd

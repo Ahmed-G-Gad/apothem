@@ -386,10 +386,18 @@ if (-not $Source -and $ApothemVerify -eq 'checksum') {
             Write-Fail "Destination $ApothemHome is not empty; refusing to replace it. Move it aside, point APOTHEM_HOME at another directory, or re-run with -Yes."
         }
     }
-    New-Item -ItemType Directory -Path $ApothemHome -Force | Out-Null
-    Expand-Archive -LiteralPath $CkArchive -DestinationPath $ApothemHome -Force
+    # The release archive roots every file under apothem-<tag>\ (see
+    # scripts/build_release_tarball.py). Extract into the temp directory,
+    # require that root, then move it into place.
+    $CkExtract = Join-Path $CkTmp 'extract'
+    Expand-Archive -LiteralPath $CkArchive -DestinationPath $CkExtract -Force
+    $CkRoot = Join-Path $CkExtract "apothem-$ApothemRef"
+    if (-not (Test-ApothemSource $CkRoot)) { Write-Fail "$CkName does not hold an apothem source under apothem-$ApothemRef\" }
+    $CkParent = Split-Path -Parent $ApothemHome
+    if ($CkParent) { New-Item -ItemType Directory -Path $CkParent -Force | Out-Null }
+    if (Test-Path -LiteralPath $ApothemHome) { Remove-Item -LiteralPath $ApothemHome -Recurse -Force }
+    Move-Item -LiteralPath $CkRoot -Destination $ApothemHome
     Remove-Item -LiteralPath $CkTmp -Recurse -Force
-    if (-not (Test-ApothemSource $ApothemHome)) { Write-Fail "Extracted archive is not an apothem source: $ApothemHome" }
     $Source = $ApothemHome
     Write-Ok "Source ready at $Source (release archive $ApothemRef)"
 }
