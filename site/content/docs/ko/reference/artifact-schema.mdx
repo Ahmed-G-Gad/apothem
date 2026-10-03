@@ -171,7 +171,7 @@ effort: "high" | "medium" | "low"
 
 ```yaml
 permissionMode: "default"       # Permission handling
-memory: true | false                    # If true, agent retains memory across sessions
+memory: user | project | local  # Persistent-memory scope; omit for none
 pattern: "Research" | "Audit" | "Implementation" | "Quality"  # Agent team pattern
 portability: "universal"
 ```
@@ -189,7 +189,6 @@ disallowedTools: "Write, Edit, TodoWrite"
 maxTurns: 20
 effort: "high"
 permissionMode: "default"
-memory: false
 portability: "universal"
 ---
 
