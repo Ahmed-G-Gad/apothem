@@ -25,8 +25,12 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pytest
-import tomllib
 import yaml
+
+try:  # tomllib is stdlib from Python 3.11; pytest and mypy bring tomli on 3.10.
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - Python 3.10
+    import tomli as tomllib
 
 from apothem.harnesses._shared import install_driver_converters as conv
 from apothem.lib.harness_registry import iter_harness_entries
