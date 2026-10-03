@@ -6,7 +6,8 @@
 # conforming to the shields.io endpoint schema (schemaVersion / label /
 # message / color), stages them under badges/, and uploads them as the
 # `badges` artifact. The static-site workflow (publish-static-site.yml)
-# fetches the latest successful run's `badges` artifact and stages it
+# fetches the `badges` artifact of the latest successful run on main started by
+# workflow_run or workflow_dispatch, and stages its five JSON files
 # under site/dist/badges/, so https://apothem.ahmedgad.com/badges/*.json
 # resolve.
 #

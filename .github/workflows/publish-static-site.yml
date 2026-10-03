@@ -132,10 +132,25 @@ jobs:
           # exit status, so a `gh run list` API hiccup / rate-limit / auth error
           # would otherwise kill the whole Pages publish. `|| true` degrades a
           # failed lookup to an empty run_id, which routes to the no-badges branch.
-          run_id="$(gh run list --workflow='Badges' --status=success \
-            --limit=1 --json databaseId --jq '.[0].databaseId // empty' || true)"
+          #
+          # Only a run on main started by workflow_run or workflow_dispatch is
+          # accepted. A pull request, one from a fork included, can run its own
+          # copy of badges.yml, but it cannot start either of those events, so
+          # its artifact never reaches the published site. Only the five badge
+          # files are copied out of the artifact.
+          run_id="$(gh run list --workflow=badges.yml --branch=main --status=success \
+            --limit=20 --json databaseId,event \
+            --jq '[.[] | select(.event == "workflow_run" or .event == "workflow_dispatch")][0].databaseId // empty' \
+            || true)"
+          fetched="${RUNNER_TEMP}/badges-artifact"
           if [ -n "${run_id}" ] \
-            && gh run download "${run_id}" --name badges --dir site/dist/badges; then
+            && gh run download "${run_id}" --name badges --dir "${fetched}"; then
+            mkdir -p site/dist/badges
+            for name in release coverage security supply-chain docs; do
+              if [ -f "${fetched}/${name}.json" ] && [ ! -L "${fetched}/${name}.json" ]; then
+                cp "${fetched}/${name}.json" "site/dist/badges/${name}.json"
+              fi
+            done
             echo "Badge JSONs fetched from Badges run ${run_id}."
           else
             echo "Badge artifact unavailable; site ships without badges/." >&2
