@@ -95,9 +95,8 @@ jobs:
   quality:
     name: quality / ${{ matrix.os }} / py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
-    # The Windows cells run the full suite in 20 to 35 minutes, as the CI
-    # Matrix job (90-minute budget) shows for the same tests; Linux finishes in
-    # under 10. Sixty minutes keeps the matrix-job ceiling of the
+    # The Windows cells run the full suite in 28 to 39 minutes; Linux finishes
+    # in under 10. Sixty minutes keeps the matrix-job ceiling of the
     # workflow-concurrency validator (90) and stops a hung run well before it.
     timeout-minutes: 60
     # A pre-release cell is advisory: it exercises the next Python against the
