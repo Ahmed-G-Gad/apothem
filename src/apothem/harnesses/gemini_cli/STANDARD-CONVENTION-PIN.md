@@ -48,7 +48,7 @@
   the source frontmatter and license comment stripped. Every other source key
   is dropped (see `conversion_losses` in `capabilities.yml`).
 - Subagents (re-checked 2026-10-02 against
-  https://geminicli.com/docs/core/subagents): Markdown files with YAML
+  <https://geminicli.com/docs/core/subagents>): Markdown files with YAML
   frontmatter under `.gemini/agents/`; `name` and `description` are required,
   and `kind`, `tools` (an allowlist of Gemini tool names; omitted means every
   tool), `model` (default `inherit`), `temperature`, `max_turns` and
@@ -58,7 +58,7 @@
   `list_directory`, `Glob` to `glob`, `Grep` to `grep_search`, `Bash` to
   `run_shell_command`, `Write` to `write_file`, `Edit` to `replace`,
   `WebSearch` to `google_web_search`, `WebFetch` to `web_fetch`, `TodoWrite`
-  to `write_todos`, per https://geminicli.com/docs/reference/tools), and
+  to `write_todos`, per <https://geminicli.com/docs/reference/tools>), and
   `max_turns` from `maxTurns`. No model is set, so it inherits.
 - Memory: the memory tool edits Markdown memory files — shared project
   instructions in repository `GEMINI.md` files, private notes in a per-project

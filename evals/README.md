@@ -7,7 +7,7 @@
 ## Files
 
 | File | Purpose |
-|------|---------|
+| --- | --- |
 | `case.schema.json` | JSON Schema (draft 2020-12) for one case: `prompt.md` frontmatter, `case.yaml`, and each grader. It also documents how each grader type maps to a runner-neutral check. `tests/unit/test_eval_suite.py` validates every case against it. |
 | `triggers/` | 64 trigger cases, one directory per case. |
 | `outcomes/plan/`, `outcomes/research/`, `outcomes/audit/` | One outcome case per pipeline stage: 8 plan stages, 13 research stages, 11 audit dimensions. |
@@ -28,7 +28,7 @@ Each case is a directory whose name is the case name:
 Unknown frontmatter keys fail a case at load time, so metadata travels in `tags`:
 
 | Tag | Meaning |
-|-----|---------|
+| --- | --- |
 | `trigger`, `no-trigger`, `no-auto-trigger`, `outcome`, `rule-effect` | The case kind (exactly one). |
 | `component:<name>` | The command, subagent or stage under test. |
 | `class:command`, `class:agent` | What kind of component a trigger case targets. |
@@ -45,7 +45,7 @@ Unknown frontmatter keys fail a case at load time, so metadata travels in `tags`
 ## Grader types, runner-neutral
 
 | Type | Neutral check |
-|------|---------------|
+| --- | --- |
 | `regex` | A JavaScript-syntax pattern over the final reply (`last_message`), the transcript (`trace`), the created-path list (`files`), or one file (`{source: file, path}`); `match` is `contains`, `not_contains` or `count:N`; case-insensitivity goes in `flags`, never inline. |
 | `tool_used` | The number of calls to `tool` whose JSON input matches `input_match` lies in `[min, max]`. |
 | `tool_order` | The first matching call of `before` precedes the first of `after`. |
