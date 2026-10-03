@@ -101,6 +101,15 @@ all:
   `reason`, `fix`, `safe_value`).
 - **Unknown keys** echo only the unexpected key and its redacted value, not
   the whole profile.
+- **Managed-block markers.** No key or text value may contain
+  `<!-- BEGIN APOTHEM MANAGED BLOCK -->` or `<!-- END APOTHEM MANAGED BLOCK -->`.
+  Apothem writes those markers around the block it manages in instruction
+  files, and profile text lands inside that block, so a marker in it would
+  split the block. Each such field fails with `profile.managed_block_marker`:
+  `field` is its dotted path (for example `rules.2` or
+  `mcp_servers.search.env.SEARCH_MODE`) and `reason` names the marker. The
+  value itself is never echoed (`safe_value` is `null`), since it may be a
+  credential.
 
 `profile init` (and every other command that scaffolds a profile) writes
 `schema_version: 1`. A profile without `schema_version` is read as version 1.

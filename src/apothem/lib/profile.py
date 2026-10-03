@@ -23,7 +23,7 @@ from __future__ import annotations
 import dataclasses
 import os
 import re
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Final
@@ -636,7 +636,12 @@ def _document_shape_problem(document: object) -> str | None:
 def validate_profile(
     profile: Mapping[str, Any], *, profile_path: str | Path = "<memory>"
 ) -> CanonicalProfile:
-    """Validate *profile* against the packaged schema, then normalize it."""
+    """Validate *profile* against the packaged schema, then normalize it.
+
+    Beyond the schema, no key or string value may carry a managed-block
+    marker (see :func:`_managed_block_marker_problems`). Every problem from
+    both checks is reported in one pass.
+    """
     profile = migrate_profile(profile, profile_path=profile_path)
     schema = yaml.safe_load(profile_schema_path().read_text(encoding="utf-8"))
     validator = Draft202012Validator(schema, format_checker=FormatChecker())
@@ -646,14 +651,89 @@ def validate_profile(
         validator.iter_errors(profile),
         key=lambda err: [(isinstance(p, int), str(p)) for p in err.absolute_path],
     )
-    if errors:
-        problems = tuple(
-            _diagnostic_from_validation_error(error, profile_path) for error in errors
-        )
+    problems = (
+        *(_diagnostic_from_validation_error(error, profile_path) for error in errors),
+        *_managed_block_marker_problems(profile, profile_path),
+    )
+    if problems:
         raise ProfileValidationError(
             dataclasses.replace(problems[0], problems=problems)
         )
     return coerce_profile(profile)
+
+
+#: Error code for profile text that carries a managed-block marker.
+_MANAGED_BLOCK_MARKER_CODE: Final[str] = "profile.managed_block_marker"
+
+
+def _profile_strings(
+    document: object,
+) -> Iterator[tuple[tuple[object, ...], str]]:
+    """Yield ``(field_path, text)`` for every string key and value.
+
+    A key is reported at the path it names, so a marker in an MCP server name
+    or an ``env`` variable name is located the same way as one in a value.
+    """
+    pending: list[tuple[tuple[object, ...], object]] = [((), document)]
+    while pending:
+        path, value = pending.pop()
+        if isinstance(value, str):
+            yield path, value
+            continue
+        if isinstance(value, Mapping):
+            children = [((*path, key), item) for key, item in value.items()]
+            for child_path, _ in children:
+                if isinstance(child_path[-1], str):
+                    yield child_path, child_path[-1]
+        elif isinstance(value, list):
+            children = [((*path, index), item) for index, item in enumerate(value)]
+        else:
+            continue
+        pending.extend(reversed(children))
+
+
+def _managed_block_marker_problems(
+    profile: Mapping[str, Any], profile_path: str | Path
+) -> list[ProfileDiagnostic]:
+    """Return one diagnostic per profile field that carries a managed-block marker.
+
+    The markers delimit the block Apothem owns inside operator-owned
+    instruction files (AGENTS.md, GEMINI.md, rule files). Profile text reaches
+    that block verbatim, so a marker in it would end the block early or open
+    a second one. The materializer neutralizes any marker that still gets
+    through; rejecting it here tells the operator at load time instead. The
+    diagnostic names the field path and the marker, never the value, which
+    may be a credential.
+    """
+    # Imported here, not at module load: harness_materializer imports this
+    # module, and the marker strings are its frozen contract.
+    from apothem.lib.harness_materializer import (
+        APOTHEM_BLOCK_BEGIN,
+        APOTHEM_BLOCK_END,
+    )
+
+    found: dict[tuple[object, ...], list[str]] = {}
+    for path, text in _profile_strings(profile):
+        for marker in (APOTHEM_BLOCK_BEGIN, APOTHEM_BLOCK_END):
+            if marker not in text:
+                continue
+            markers = found.setdefault(path, [])
+            if marker not in markers:
+                markers.append(marker)
+    return [
+        ProfileDiagnostic(
+            code=_MANAGED_BLOCK_MARKER_CODE,
+            message="Apothem validation failed.",
+            profile_path=str(profile_path),
+            field=_format_field_path(path),
+            reason=(
+                f"contains {' and '.join(markers)}, which Apothem reserves to "
+                "delimit the block it manages in instruction files"
+            ),
+            fix="Remove the marker from this field; Apothem writes it itself.",
+        )
+        for path, markers in found.items()
+    ]
 
 
 def coerce_profile(profile: Mapping[str, Any]) -> CanonicalProfile:
