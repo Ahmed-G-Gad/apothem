@@ -11,6 +11,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- **Each install says where Apothem's support files are.** The instruction
+  file an install already writes (or its profile document) gains an "Apothem
+  support files" section that names the directory each `rules/`,
+  `templates/`, `schemas/`, `hooks/`, and `conformity/` citation resolves
+  against, derived from the propagation manifest.
+- **The Claude Code plugin ships the four output styles**, in the plugin's
+  `output-styles/` directory.
 - **`apothem backups prune`** runs backup and ledger retention on demand
   (`--keep N`, `--harness NAME|all`, `--dry-run`, `--json`). It never removes
   the backup set that rolling back a harness's latest install restores from.
@@ -73,6 +80,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- **OpenCode loads the always-on rules only.** `opencode.json` `instructions`
+  lists the profile document and the 28 `alwaysApply` rules by path instead of
+  globbing all 91, which cut OpenCode's launch context from 914,285 bytes to
+  about 216,000. Install and update replace the old glob, and uninstall
+  removes it; your own `instructions` entries are kept.
+- **A skill and a command that share a name install as the skill**
+  (`projectify`, `workflow`), in the engine install as in the plugin.
+- **The single-file rule anchors no longer point at the Apothem source
+  repository**; they say which Apothem files the install placed.
 - **CI bounds cyclomatic complexity.** The CLI and the install driver block any
   function above 15, and a repository-wide ratchet stops any function from
   growing past the current maximum. The longest command bodies are split
@@ -172,6 +188,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **OpenCode receives the operator profile.** The projected profile document
+  was never in the `instructions` list, so OpenCode saw neither the
+  operator's identity and preferences nor the support-file locations.
+- **The reference note in command skills names directories that exist.** It
+  pointed templates and hooks at a support directory no install creates.
+- **The shared-root install note reads correctly when one other tool loads
+  the path**, and `~/.claude/CLAUDE.md` is recorded as a Claude Code target
+  that OpenCode also reads.
 - **Hermes uninstall removes the `auxiliary.mcp` block an earlier release
   wrote**, under the same exact-value rule `update` uses, so the operator's
   own `auxiliary` settings stay.
