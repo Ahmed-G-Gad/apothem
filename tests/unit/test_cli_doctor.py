@@ -13,11 +13,15 @@ with a no-op payload.
 from __future__ import annotations
 
 import json
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
 
+import apothem
 from apothem.cli import main
 from apothem.harnesses._shared import install_driver
 
@@ -129,3 +133,25 @@ def test_doctor_reports_an_invalid_profile_with_its_code(
     assert payload["profile_error_code"] == "profile.yaml_invalid"
     codes = [c["code"] for c in payload["checks"] if c["status"] == "fail"]
     assert codes == ["profile.yaml_invalid"]
+
+
+def test_doctor_hook_probe_imports_in_a_fresh_interpreter() -> None:
+    """``doctor`` loads its hook probe before anything imports the install driver.
+
+    In-process tests import the driver shim first, which hides an import cycle
+    that only a fresh interpreter (the real ``apothem doctor``) meets.
+    """
+    src_root = Path(apothem.__file__).resolve().parents[1]
+    env = dict(os.environ)
+    env["PYTHONPATH"] = os.pathsep.join(
+        part for part in (str(src_root), env.get("PYTHONPATH", "")) if part
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", "import apothem.cli._doctor_hooks"],
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
