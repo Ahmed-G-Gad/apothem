@@ -92,6 +92,7 @@ def test_engine_install_scopes_path_filtered_rules(tmp_path: Path) -> None:
             if k not in {"CODEX_HOME", "XDG_CONFIG_HOME"}
         },
         "HOME": str(home),
+        "USERPROFILE": str(home),
         "CLAUDE_CONFIG_DIR": str(home / ".claude"),
         "PYTHONPATH": str(_REPO / "src"),
     }

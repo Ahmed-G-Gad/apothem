@@ -177,9 +177,15 @@ def test_json_warning_count_identical_with_and_without_verbose(
 
 
 def test_single_harness_plain_groups_verbose_expands(
-    runner: CliRunner, tmp_path: Path
+    runner: CliRunner, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A single project-scope harness: one Note in plain mode, full detail verbose."""
+    # An empty home: a shared root that already holds another tool's Apothem
+    # content would add a reader Note to the count.
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
     profile = tmp_path / "profile.yaml"
     profile.write_text(_PROFILE, encoding="utf-8")
 

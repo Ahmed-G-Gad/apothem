@@ -49,6 +49,8 @@ from pathlib import Path
 
 import pytest
 
+from tests._shared.bash_resolver import SKIP_REASON, find_test_bash
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PLUGIN_TREE = REPO_ROOT / "plugins" / "claude-code"
 SRC_ROOT = REPO_ROOT / "src"
@@ -58,6 +60,15 @@ _OUTPUT_CAP = 10_000
 #: Wall-clock ceiling for one hook command on a CI runner. Interpreter start-up
 #: dominates; the measured median on the plugin chain is ~0.15 s.
 _LATENCY_BUDGET_SECONDS = 5.0
+#: Shell-form commands run through sh, as the hosts run them on POSIX. On
+#: Windows a PATH ``sh`` or ``bash`` can be the WSL launcher, so they run
+#: through Git Bash, which is what the hosts use there.
+_WINDOWS_BASH = find_test_bash() if sys.platform == "win32" else None
+_SHELL = _WINDOWS_BASH or "sh"
+
+pytestmark = pytest.mark.skipif(
+    sys.platform == "win32" and _WINDOWS_BASH is None, reason=SKIP_REASON
+)
 #: Context-carrying emissions allowed per session for the periodic handlers.
 _MAX_STOP_EMISSIONS = 1
 _MAX_POSTTOOLUSE_EMISSIONS = 2
@@ -103,6 +114,7 @@ def _isolated_env(home: Path, **extra: str) -> dict[str, str]:
         and key not in {"XDG_CONFIG_HOME", "XDG_STATE_HOME", "PYTHONPATH"}
     }
     env["HOME"] = str(home)
+    env["USERPROFILE"] = str(home)
     env["PYTHONDONTWRITEBYTECODE"] = "1"
     env["APOTHEM_HOOK_STATE_DIR"] = str(home / ".hook-state")
     env.update(extra)
@@ -232,7 +244,7 @@ def _plugin_entries(plugin_root: Path) -> list[HookEntry]:
                         surface="plugin",
                         event=event,
                         matcher=str(group.get("matcher", "")),
-                        argv=("sh", "-c", hook["command"]),
+                        argv=(_SHELL, "-c", hook["command"]),
                         label=hook["command"],
                     )
                 )
@@ -270,7 +282,7 @@ def _settings_entries(surface: str, config: Path) -> list[HookEntry]:
                     argv: tuple[str, ...] = (command, *[str(a) for a in hook["args"]])
                     label = " ".join(argv)
                 else:
-                    argv = ("sh", "-c", command)
+                    argv = (_SHELL, "-c", command)
                     label = command
                 entries.append(
                     HookEntry(

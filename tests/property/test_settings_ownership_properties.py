@@ -178,6 +178,7 @@ def _run_lifecycle(harness_id: str, seed: dict[str, Any]) -> None:
     with tempfile.TemporaryDirectory() as scratch, pytest.MonkeyPatch.context() as mp:
         home = Path(scratch) / "home"
         mp.setenv("HOME", str(home))
+        mp.setenv("USERPROFILE", str(home))
         mp.delenv("CODEX_HOME", raising=False)
         mp.setattr(install_driver, "load_rules", _settings_only)
         mp.setattr(install_driver, "BACKUP_ROOT", Path(scratch) / "backups")

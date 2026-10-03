@@ -46,6 +46,7 @@ def test_thirty_installs_keep_bounded_history_and_still_reverse(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path / "home"))
     # One distinct backup timestamp per install pass.
     counter = itertools.count()
     monkeypatch.setattr(

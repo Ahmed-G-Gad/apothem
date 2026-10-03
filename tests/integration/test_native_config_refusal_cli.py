@@ -57,6 +57,7 @@ def test_install_refuses_commented_config_and_writes_nothing(
     config.parent.mkdir(parents=True)
     config.write_text(seed, encoding="utf-8")
     monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
 
     exit_code, envelope = _install(harness)
 
@@ -78,6 +79,7 @@ def test_install_leaves_json5_openclaw_config_byte_identical(
     config.parent.mkdir(parents=True)
     config.write_text(_JSON5_OPENCLAW, encoding="utf-8")
     monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
 
     exit_code, envelope = _install("open-claw")
 

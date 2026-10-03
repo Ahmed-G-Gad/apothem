@@ -91,6 +91,7 @@ def _run_hook(
         )
     }
     env["HOME"] = str(home)
+    env["USERPROFILE"] = str(home)
     return subprocess.run(
         argv,
         input=json.dumps(payload),

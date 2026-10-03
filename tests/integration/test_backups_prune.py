@@ -86,6 +86,7 @@ def two_projects(
     A's latest install must restore.
     """
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path / "home"))
     counter = itertools.count()
     monkeypatch.setattr(
         install_driver,
@@ -186,6 +187,7 @@ def test_prune_of_a_harness_without_history_reports_nothing_to_prune(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path / "home"))
     payload = _cli("backups", "prune", "--harness", "claude-code")
     assert payload["status"] == "success"
     assert [row["outcome"] for row in payload["results"]] == ["unchanged"]  # type: ignore[union-attr]
@@ -210,6 +212,7 @@ def test_unreadable_ledger_is_reported_and_left_alone(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path / "home"))
     ledger = install_ledger.ledger_path("cursor")
     ledger.parent.mkdir(parents=True)
     ledger.write_text("not json\n{}\n", encoding="utf-8")

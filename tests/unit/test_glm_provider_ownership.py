@@ -111,6 +111,7 @@ def test_clean_install_verifies_in_sync(
     project = tmp_path / "project"
     project.mkdir()
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path / "home"))
     profile = str(profile_minimal_path())
     runner = CliRunner()
     install = runner.invoke(

@@ -32,6 +32,7 @@ def _adapter(
     harness_id: str, home: Path, monkeypatch: pytest.MonkeyPatch
 ) -> HarnessAdapter:
     monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
     return load_adapter_class(get_harness_entry(harness_id))()
 
 

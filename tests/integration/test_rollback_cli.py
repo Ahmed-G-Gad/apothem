@@ -175,6 +175,7 @@ def test_rollback_restores_native_config_in_place(
     home = tmp_path / "home"
     home.mkdir()
     monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
     relative, seed = _NATIVE_CONFIG_SEEDS[harness_id]
     config = home / relative
     config.parent.mkdir(parents=True)

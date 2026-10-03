@@ -60,6 +60,7 @@ class _Sandbox:
         self.home.mkdir()
         self.project.mkdir()
         mp.setenv("HOME", str(self.home))
+        mp.setenv("USERPROFILE", str(self.home))
         mp.delenv("CODEX_HOME", raising=False)
         mp.delenv("XDG_CONFIG_HOME", raising=False)
 
