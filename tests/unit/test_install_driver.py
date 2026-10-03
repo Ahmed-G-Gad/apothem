@@ -17,6 +17,7 @@ from pathlib import Path
 import pytest
 
 from apothem.harnesses._shared import install_driver
+from apothem.lib.harness_materializer import APOTHEM_BLOCK_BEGIN, merge_managed_block
 from apothem.lib.harness_registry import HARNESS_REGISTRY
 from apothem.lib.propagation import HarnessRules, InstallEntry
 
@@ -1416,6 +1417,68 @@ def test_apply_sentinel_merge_gate_decline_leaves_file_untouched(
     assert seen
     assert seen[0].ownership_class == "operator-owned"
     assert seen[0].diff
+
+
+def _write_crlf_anchor(anchor: Path, body: str) -> bytes:
+    """Write a CRLF anchor: operator prose plus a managed block of *body*."""
+    merged = merge_managed_block("# Operator Heading\n\nOperator prose.\n", body)
+    data = merged.replace("\n", "\r\n").encode("utf-8")
+    # Bytes, not write_text: the text path would translate the line endings.
+    anchor.write_bytes(data)
+    return data
+
+
+def test_managed_block_anchor_noop_keeps_crlf_line_endings(tmp_path: Path) -> None:
+    """A CRLF anchor whose managed block is current is left byte-identical."""
+    anchor = tmp_path / "CLAUDE.md"
+    original = _write_crlf_anchor(anchor, "Profile body")
+
+    result = install_driver.apply_managed_block_anchor(
+        anchor, "Profile body", install_root=tmp_path, harness_name="claude_code"
+    )
+
+    assert result.outcome == "unchanged"
+    assert result.backup_path is None
+    assert anchor.read_bytes() == original
+
+
+def test_managed_block_anchor_updates_crlf_anchor_when_block_changes(
+    tmp_path: Path,
+) -> None:
+    """A CRLF anchor whose block content changed is rewritten with one block."""
+    anchor = tmp_path / "CLAUDE.md"
+    _write_crlf_anchor(anchor, "Old profile body")
+
+    result = install_driver.apply_managed_block_anchor(
+        anchor, "New profile body", install_root=tmp_path, harness_name="claude_code"
+    )
+
+    text = anchor.read_bytes().decode("utf-8")
+    assert result.outcome == "updated"
+    assert "New profile body" in text
+    assert "Old profile body" not in text
+    assert "Operator prose." in text
+    assert text.count(APOTHEM_BLOCK_BEGIN) == 1
+
+
+def test_profile_document_noop_keeps_crlf_line_endings(tmp_path: Path) -> None:
+    """A CRLF profile document that is already current is left byte-identical."""
+    harness_root = tmp_path / "opencode"
+    document = harness_root / install_driver.PROFILE_DOCUMENT_RELATIVE
+
+    def project() -> install_driver.MaterializationResult:
+        return install_driver.project_profile_document(
+            harness_root, harness_id="opencode", harness_name="opencode", profile={}
+        )
+
+    assert project().outcome == "created"
+    original = document.read_bytes().replace(b"\n", b"\r\n")
+    document.write_bytes(original)
+
+    result = project()
+
+    assert result.outcome == "unchanged"
+    assert document.read_bytes() == original
 
 
 def test_run_install_refuses_vendor_reserved_entry(
