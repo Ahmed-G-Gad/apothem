@@ -29,6 +29,7 @@ from apothem.lib.frontmatter import field_value
 from apothem.lib.install_ledger import OwnedEntry
 from apothem.lib.profile import coerce_profile
 from apothem.lib.profile_projection import mcp_servers_for, render_mcp_opencode
+from apothem.lib.propagation import load_manifest
 
 #: The OpenCode configuration directory, relative to the home directory.
 CONFIG_DIR: Final[str] = ".config/opencode"
@@ -45,13 +46,23 @@ def always_on_rule_instructions() -> list[str]:
     """Return the ``instructions`` entries for the always-on rules.
 
     Read at materialize time from the opencode ``rules/`` install entry of the
-    propagation manifest: its source directory supplies the rules (minus the
-    manifest's excluded files), and its target directory, home-anchored,
-    supplies the installed location. A rule is listed when its frontmatter sets
+    canonical propagation manifest (not an install plan a caller may have
+    trimmed): its source directory supplies the rules (minus the manifest's
+    excluded files), and its target directory, home-anchored, supplies the
+    installed location. A rule is listed when its frontmatter sets
     ``alwaysApply: true``. Entries are sorted by file name.
+
+    Raises:
+        RuntimeError: When the manifest has no opencode ``rules/`` entry.
     """
-    rules = install_driver.load_rules("opencode")
-    entry = next(item for item in rules.install if item.source.rstrip("/") == "rules")
+    rules = load_manifest()["opencode"]
+    entry = next(
+        (item for item in rules.install if item.source.rstrip("/") == "rules"), None
+    )
+    if entry is None:
+        raise RuntimeError(
+            "propagation manifest has no opencode 'rules/' install entry"
+        )
     source_dir = install_driver.resolve_source(entry.source)
     target_dir = Template(entry.target).substitute(HARNESS_ROOT=_HOME_ANCHORED_ROOT)
     names = sorted(
