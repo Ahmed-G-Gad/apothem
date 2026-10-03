@@ -11,6 +11,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- **The one-shot installers offer a checksum-only path.**
+  `APOTHEM_VERIFY=checksum` installs the release's platform archive after
+  checking its SHA-256 against the release's `SHA256SUMS`, aborts on a
+  mismatch before extracting anything, and states that a matching digest
+  proves integrity, not who published the archive. It is the documented
+  alternative to `APOTHEM_ALLOW_UNVERIFIED=1` for a host without the
+  maintainer's public key.
 - **Every `--json` document carries `schema_version`**, and the profile
   schemas are served at their `$id` URLs.
 - **`doctor` probes each installed harness's hooks** and accepts `--project`.

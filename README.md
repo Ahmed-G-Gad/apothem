@@ -338,6 +338,12 @@ for air-gapped, local, or pre-signed-release use. The `APOTHEM_SOURCE`
 local-checkout path fetches nothing, so it skips tag resolution and
 verification and runs the checkout you point it at.
 
+`APOTHEM_VERIFY=checksum` is the middle path for a host that does not yet hold
+the maintainer's public key: instead of cloning, the installer downloads the
+release's platform archive and its `SHA256SUMS`, aborts on a digest mismatch
+before extracting anything, and warns that a matching digest proves the
+archive is the one the release lists, not who published it.
+
 **Requirements.** A system Python 3.10 or newer must be on PATH, and the
 `click` and `rich` packages must be importable under that interpreter; the
 installer checks for each, names anything missing, and offers to install the

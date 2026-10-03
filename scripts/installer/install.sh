@@ -57,6 +57,14 @@
 #                              to "main" for the moving branch.
 #     APOTHEM_ALLOW_UNVERIFIED If "1", downgrade a tag-verification failure
 #                              from a fatal abort to a loud warning and proceed.
+#     APOTHEM_VERIFY           "signature" (default) verifies the release tag's
+#                              GPG signature. "checksum" instead downloads the
+#                              release's platform archive and installs it only
+#                              if its SHA-256 matches the release's SHA256SUMS:
+#                              integrity without proof of the publisher, for
+#                              hosts without the maintainer's public key.
+#     APOTHEM_RELEASE_BASE     Release download base for checksum mode
+#                              (default: <APOTHEM_REPO>/releases/download).
 #     APOTHEM_SOURCE           Explicit local source tree to use instead of
 #                              cloning (a checkout containing src/apothem).
 #                              Skips tag resolution and verification.
@@ -76,6 +84,8 @@ APOTHEM_REPO="${APOTHEM_REPO:-https://github.com/ahmed-g-gad/apothem}"
 # the value is logged once resolved.
 APOTHEM_REF="${APOTHEM_REF:-}"
 APOTHEM_ALLOW_UNVERIFIED="${APOTHEM_ALLOW_UNVERIFIED:-0}"
+APOTHEM_VERIFY="${APOTHEM_VERIFY:-signature}"
+APOTHEM_RELEASE_BASE="${APOTHEM_RELEASE_BASE:-${APOTHEM_REPO}/releases/download}"
 HARNESS="${APOTHEM_HARNESS:-claude-code}"
 PROFILE="${APOTHEM_PROFILE:-$HOME/.config/apothem/profile.yaml}"
 
@@ -139,6 +149,10 @@ Overrides:
                                (air-gapped / local / pre-signed-release use).
   APOTHEM_SOURCE=<path>        run a local checkout (fetches nothing; no
                                verification).
+  APOTHEM_VERIFY=checksum      without the maintainer's public key: install
+                               the release archive after checking its SHA-256
+                               against the release's SHA256SUMS (integrity,
+                               not proof of who published it).
 USAGE
             exit 0
             ;;
@@ -389,6 +403,75 @@ elif [ -n "$SCRIPT_DIR" ]; then
         ok "Using local checkout: $SOURCE"
         info "Local checkout — skipping tag resolution and signature verification"
     fi
+fi
+
+# sha256_of FILE — print FILE's SHA-256 hex digest with whichever of
+# sha256sum (GNU) or shasum (macOS) is present; fail when neither is.
+sha256_of() {
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum "$1" | cut -d' ' -f1
+    elif command -v shasum >/dev/null 2>&1; then
+        shasum -a 256 "$1" | cut -d' ' -f1
+    else
+        return 1
+    fi
+}
+
+case "$APOTHEM_VERIFY" in
+    signature|checksum) ;;
+    *) die "APOTHEM_VERIFY must be 'signature' or 'checksum' (got '${APOTHEM_VERIFY}')." ;;
+esac
+
+# Checksum mode: install the release's platform archive after checking its
+# SHA-256 against the release's SHA256SUMS. It replaces the git clone and the
+# tag-signature gate below for hosts that do not hold the maintainer's public
+# key, and says plainly that a matching digest proves integrity, not origin.
+if [ -z "$SOURCE" ] && [ "$APOTHEM_VERIFY" = "checksum" ]; then
+    command -v curl >/dev/null 2>&1 || die "curl not found in PATH — needed for APOTHEM_VERIFY=checksum"
+    if [ -z "$APOTHEM_REF" ]; then
+        command -v git >/dev/null 2>&1 || die "git not found in PATH — needed to resolve the latest release tag"
+        info "Resolving latest release tag from ${APOTHEM_REPO}"
+        APOTHEM_REF="$(resolve_latest_tag "$APOTHEM_REPO")"
+    fi
+    is_release_tag "$APOTHEM_REF" \
+        || die "APOTHEM_VERIFY=checksum needs a vMAJOR.MINOR.PATCH release tag; got '${APOTHEM_REF}'. Pin one with APOTHEM_REF."
+    case "$(uname -s 2>/dev/null)" in
+        Darwin) _ck_platform=darwin ;;
+        *)      _ck_platform=linux ;;
+    esac
+    _ck_name="apothem-${APOTHEM_REF}-${_ck_platform}.tar.gz"
+    _ck_tmp="$(mktemp -d)"
+    info "Downloading ${_ck_name} and SHA256SUMS from the ${APOTHEM_REF} release"
+    curl -fsSL "${APOTHEM_RELEASE_BASE}/${APOTHEM_REF}/${_ck_name}" -o "${_ck_tmp}/${_ck_name}" \
+        || die "Could not download ${_ck_name} from ${APOTHEM_RELEASE_BASE}/${APOTHEM_REF}"
+    curl -fsSL "${APOTHEM_RELEASE_BASE}/${APOTHEM_REF}/SHA256SUMS" -o "${_ck_tmp}/SHA256SUMS" \
+        || die "Could not download SHA256SUMS from ${APOTHEM_RELEASE_BASE}/${APOTHEM_REF}"
+    _ck_expected="$(awk -v n="$_ck_name" '$2 == n || $2 == "*" n { print $1; exit }' "${_ck_tmp}/SHA256SUMS")"
+    [ -n "$_ck_expected" ] || die "SHA256SUMS for ${APOTHEM_REF} lists no ${_ck_name}"
+    _ck_actual="$(sha256_of "${_ck_tmp}/${_ck_name}")" \
+        || die "Neither sha256sum nor shasum is available to check ${_ck_name}"
+    if [ "$_ck_actual" != "$_ck_expected" ]; then
+        rm -rf "$_ck_tmp"
+        die "${_ck_name} does not match the release's SHA256SUMS (expected ${_ck_expected}, got ${_ck_actual}). Aborting before anything is extracted."
+    fi
+    ok "${_ck_name} matches the release's SHA256SUMS"
+    warn "Checksum mode: a matching digest shows the archive is the one the release lists; it does not prove who published it. For signature verification, import the maintainer key named in SECURITY.md and run without APOTHEM_VERIFY=checksum."
+    if [ -e "$APOTHEM_HOME" ] && [ -n "$(ls -A "$APOTHEM_HOME" 2>/dev/null)" ]; then
+        if [ "$ASSUME_YES" = "1" ]; then
+            warn "Replacing existing $APOTHEM_HOME with the ${APOTHEM_REF} archive (--yes)"
+            rm -rf "$APOTHEM_HOME"
+        else
+            rm -rf "$_ck_tmp"
+            die "Destination $APOTHEM_HOME is not empty; refusing to replace it. Move it aside, point APOTHEM_HOME at another directory, or re-run with --yes."
+        fi
+    fi
+    mkdir -p "$APOTHEM_HOME"
+    tar -xzf "${_ck_tmp}/${_ck_name}" -C "$APOTHEM_HOME" || die "Could not extract ${_ck_name}"
+    rm -rf "$_ck_tmp"
+    SOURCE="$APOTHEM_HOME"
+    is_apothem_source "$SOURCE" || die "Extracted archive is not an apothem source: $SOURCE"
+    ok "Source ready at $SOURCE (release archive ${APOTHEM_REF})"
+    echo
 fi
 
 if [ -z "$SOURCE" ]; then

@@ -181,6 +181,12 @@ verification failure to a warning and proceeds — for air-gapped, local, or
 pre-signed-release use. A local checkout via `APOTHEM_SOURCE` fetches nothing
 and skips verification.
 
+`APOTHEM_VERIFY=checksum` is the middle path for a host that does not yet hold
+the maintainer's public key: instead of cloning, the installer downloads the
+release's platform archive and its `SHA256SUMS`, aborts on a digest mismatch
+before extracting anything, and warns that a matching digest proves the
+archive is the one the release lists, not who published it.
+
 The engine then runs directly from the placed tree. Every third-party
 dependency except `click` and `rich` is vendored inside the source tree, and
 the entry point puts that vendor directory on `sys.path` itself:
@@ -191,7 +197,7 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 
 Both scripts read the same configuration environment variables
 (`APOTHEM_HOME`, `APOTHEM_REPO`, `APOTHEM_REF`, `APOTHEM_ALLOW_UNVERIFIED`,
-`APOTHEM_SOURCE`, `APOTHEM_HARNESS`, `APOTHEM_PROFILE`,
+`APOTHEM_VERIFY`, `APOTHEM_RELEASE_BASE`, `APOTHEM_SOURCE`, `APOTHEM_HARNESS`, `APOTHEM_PROFILE`,
 `APOTHEM_SKIP_VERIFY`, `APOTHEM_AUTO_INSTALL_DEPS`, `APOTHEM_BIN_DIR`); see
 [Installer environment variables](/docs/how-to/installer-environment-variables)
 for the full table and
