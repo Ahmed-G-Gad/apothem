@@ -143,6 +143,15 @@ jobs:
           python -m pip install -e ".[dev]"
       - name: Ruff (lint)
         run: python -m ruff check .
+      - name: Ruff (complexity, CLI and install driver)
+        # The CLI command bodies and the shared install driver hold the
+        # tighter cyclomatic-complexity bound of 15; the repo-wide bound in
+        # pyproject.toml ([tool.ruff.lint.mccabe]) is a ratchet that only
+        # keeps the rest of the tree from getting worse.
+        run: >-
+          python -m ruff check --select C901
+          --config "lint.mccabe.max-complexity=15"
+          src/apothem/cli src/apothem/harnesses/_shared
       - name: Ruff (format check)
         run: python -m ruff format --check .
       - name: Mypy (type check)

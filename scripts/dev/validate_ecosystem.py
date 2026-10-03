@@ -734,6 +734,55 @@ def _extract_invocation_block(lines: list[str], start: int) -> tuple[int, list[s
     return end, block
 
 
+def _option_label_bind_violated(block: list[str]) -> bool:
+    """Return whether one invocation block breaks the H6 label-postfix bind.
+
+    Each option label pairs with the first recommendation value in its body,
+    so the bind is checked per option, not by file-wide count. A
+    single-select block also fails when more than one option is recommended.
+    """
+    multi_select = any(
+        re.search(r"multiSelect:\s*true\b", blk_line) for blk_line in block
+    )
+    options: list[list[str | None]] = []
+    for blk_line in block:
+        label_match = _OPTION_LABEL_SHAPE.match(blk_line)
+        if label_match:
+            options.append([label_match.group("label"), None])
+            continue
+        if options and options[-1][1] is None:
+            rec_match = _RECOMMENDATION_VALUE_SHAPE.search(blk_line)
+            if rec_match:
+                options[-1][1] = rec_match.group("value")
+    recommended_count = 0
+    bind_violation = False
+    for label, value in options:
+        if label is None:
+            continue
+        is_recommended = value == "recommended"
+        if is_recommended:
+            recommended_count += 1
+        has_canonical = label.endswith(_CANONICAL_POSTFIX_LITERAL)
+        has_lowercase = label.endswith(_LOWERCASE_POSTFIX_LITERAL)
+        if has_lowercase:
+            bind_violation = True  # banned non-canonical case
+        elif is_recommended and not has_canonical:
+            bind_violation = True  # body→label: missing canonical postfix
+        elif has_canonical and not is_recommended:
+            bind_violation = True  # label→body: spurious postfix
+    return bind_violation or (not multi_select and recommended_count > 1)
+
+
+def _destructive_default_missing(block: list[str], block_text: str) -> bool:
+    """Return whether a destructive-op block lacks the H7 no-default floor."""
+    if "destructive-no-default" not in block_text:
+        return False
+    return any(
+        "default-pointer:" in blk_line and _NO_DEFAULT_FLOOR_LITERAL not in blk_line
+        for blk_line in block
+    )
+
+
 def validate_option_annotation(root: Path, reporter: Reporter) -> None:
     """Sweep structured-inquiry invocations for option-annotation discipline.
 
@@ -775,48 +824,11 @@ def validate_option_annotation(root: Path, reporter: Reporter) -> None:
             if not (has_rationale and has_recommendation and has_default_pointer):
                 h4_hits.append(location)
 
-            multi_select = any(
-                re.search(r"multiSelect:\s*true\b", blk_line) for blk_line in block
-            )
-            # Pair each option label with the first recommendation value in its
-            # body so the bind is checked per option, not by file-wide count.
-            options: list[list[str | None]] = []
-            for blk_line in block:
-                label_match = _OPTION_LABEL_SHAPE.match(blk_line)
-                if label_match:
-                    options.append([label_match.group("label"), None])
-                    continue
-                if options and options[-1][1] is None:
-                    rec_match = _RECOMMENDATION_VALUE_SHAPE.search(blk_line)
-                    if rec_match:
-                        options[-1][1] = rec_match.group("value")
-            recommended_count = 0
-            bind_violation = False
-            for label, value in options:
-                if label is None:
-                    continue
-                is_recommended = value == "recommended"
-                if is_recommended:
-                    recommended_count += 1
-                has_canonical = label.endswith(_CANONICAL_POSTFIX_LITERAL)
-                has_lowercase = label.endswith(_LOWERCASE_POSTFIX_LITERAL)
-                if has_lowercase:
-                    bind_violation = True  # banned non-canonical case
-                elif is_recommended and not has_canonical:
-                    bind_violation = True  # body→label: missing canonical postfix
-                elif has_canonical and not is_recommended:
-                    bind_violation = True  # label→body: spurious postfix
-            if bind_violation or (not multi_select and recommended_count > 1):
+            if _option_label_bind_violated(block):
                 h6_hits.append(location)
 
-            if "destructive-no-default" in block_text:
-                for blk_line in block:
-                    if (
-                        "default-pointer:" in blk_line
-                        and _NO_DEFAULT_FLOOR_LITERAL not in blk_line
-                    ):
-                        h7_hits.append(location)
-                        break
+            if _destructive_default_missing(block, block_text):
+                h7_hits.append(location)
 
             i = end_idx + 1
 

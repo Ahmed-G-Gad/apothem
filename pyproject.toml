@@ -265,8 +265,15 @@ extend-exclude = [
 ]
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "UP", "B", "SIM", "N", "S", "C4", "ANN", "PT", "FA", "PTH", "RET", "RUF"]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "N", "S", "C4", "ANN", "PT", "FA", "PTH", "RET", "RUF", "C901"]
 ignore = ["E501"]
+
+[tool.ruff.lint.mccabe]
+# A ratchet, not a target: the bound is the highest cyclomatic complexity any
+# function under src/apothem carries today, so no function can get worse.
+# Lower it whenever the most complex function is split. CI holds src/apothem/cli
+# and src/apothem/harnesses/_shared to the tighter bound of 15.
+max-complexity = 20
 
 [tool.ruff.lint.per-file-ignores]
 # Pytest's expected idiom: assertions are the test harness's primary
