@@ -148,7 +148,7 @@ def run() -> int:
     if missing:
         return report_missing_prerequisites(missing, sys.argv[1:])
 
-    from apothem.cli import _configure_stdio, main
+    from apothem.cli import configure_stdio, main
 
     # Force UTF-8 stdio (Windows) before Click parses anything. Click emits
     # ``--help`` / ``--version`` from eager-option handling, and usage errors
@@ -159,7 +159,7 @@ def run() -> int:
     # when stdout is a pipe or redirect. The group-callback call remains as
     # defense-in-depth for a direct ``apothem.cli.main`` import that bypasses
     # this entry.
-    _configure_stdio()
+    configure_stdio()
     # Pin the completion trigger. Click derives the completion env var from
     # the detected program name, which under ``python -m apothem`` is
     # "python -m apothem" — an unmatchable variable name — so the emitted

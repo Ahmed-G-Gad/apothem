@@ -57,6 +57,7 @@ CONSUMER_PRIVATE_SURFACE = {
     "_directory_contents_equal",
     "_dispatch_install_entry",
     "_install_lock_path",
+    "_is_apothem_hook",
     "_merge_json_values",
     "_write_file_atomically",
     "_filesystem_is_case_insensitive",
@@ -83,7 +84,7 @@ def test_concern_module_set_is_pinned() -> None:
 def test_shim_re_exports_full_public_surface() -> None:
     for name in install_driver.__all__:
         assert hasattr(install_driver, name), f"shim lost public symbol {name}"
-    assert len(install_driver.__all__) == 50
+    assert len(install_driver.__all__) == 52
 
 
 def test_shim_exposes_consumer_private_surface() -> None:

@@ -56,7 +56,7 @@ from .install_driver_types import (
 )
 
 
-def _capability_projection_results(harness_name: str) -> list[MaterializationResult]:
+def capability_projection_results(harness_name: str) -> list[MaterializationResult]:
     """Return registry capability warnings for unsupported projection cells."""
     from apothem.lib.harness_registry import get_harness_entry
 
@@ -304,7 +304,7 @@ def run_install(
     rules = install_driver.load_rules(harness_name)
     profile_body = _projected_profile_body(harness_name, profile)
     root = _root_for(harness_root, project_root)
-    results = _capability_projection_results(harness_name)
+    results = capability_projection_results(harness_name)
     errors = _validate_install_plan(
         rules,
         root=root,

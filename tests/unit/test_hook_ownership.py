@@ -101,6 +101,6 @@ def test_handler_recognition_is_scoped_to_the_harness_root(tmp_path: Path) -> No
     ]
     theirs = [_FOREIGN_DISPATCH, _FOREIGN_GATE, _FOREIGN_SCRIPT]
     for handler in ours:
-        assert install_driver._is_apothem_hook(handler, harness_root=root), handler
+        assert install_driver.is_apothem_hook(handler, harness_root=root), handler
     for handler in theirs:
-        assert not install_driver._is_apothem_hook(handler, harness_root=root), handler
+        assert not install_driver.is_apothem_hook(handler, harness_root=root), handler

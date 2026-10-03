@@ -108,13 +108,13 @@ from .install_driver_jsonmerge import (
     CONFIG_UNPARSEABLE_CODE as CONFIG_UNPARSEABLE_CODE,
 )
 from .install_driver_jsonmerge import _dedupe_json_list as _dedupe_json_list
-from .install_driver_jsonmerge import _is_apothem_hook as _is_apothem_hook
 from .install_driver_jsonmerge import _leading_comment_block as _leading_comment_block
 from .install_driver_jsonmerge import _merge_hook_entry as _merge_hook_entry
 from .install_driver_jsonmerge import _merge_hooks as _merge_hooks
 from .install_driver_jsonmerge import _merge_json_settings as _merge_json_settings
 from .install_driver_jsonmerge import _merge_json_values as _merge_json_values
 from .install_driver_jsonmerge import _overlay_json_settings as _overlay_json_settings
+from .install_driver_jsonmerge import is_apothem_hook as is_apothem_hook
 from .install_driver_lifecycle import FidelityResult as FidelityResult
 from .install_driver_lifecycle import _native_config_parses as _native_config_parses
 from .install_driver_lifecycle import _profile_anchor_targets as _profile_anchor_targets
@@ -127,13 +127,13 @@ from .install_driver_lifecycle import fidelity_is_faithful as fidelity_is_faithf
 from .install_driver_lifecycle import run_uninstall as run_uninstall
 from .install_driver_lifecycle import verify_install as verify_install
 from .install_driver_materialize import (
-    _capability_projection_results as _capability_projection_results,
-)
-from .install_driver_materialize import (
     _dispatch_install_entry as _dispatch_install_entry,
 )
 from .install_driver_materialize import (
     _materialize_data_surfaces as _materialize_data_surfaces,
+)
+from .install_driver_materialize import (
+    capability_projection_results as capability_projection_results,
 )
 from .install_driver_materialize import run_install as run_install
 from .install_driver_merge import (
@@ -245,6 +245,11 @@ from .install_driver_types import operation_label as operation_label
 from .install_driver_types import preview_status as preview_status
 from .install_driver_types import resolve_source as resolve_source
 
+# Earlier private spellings of names now public above, kept resolvable for
+# consumers that still reach them through this module.
+_capability_projection_results = capability_projection_results
+_is_apothem_hook = is_apothem_hook
+
 __all__ = [
     "APOTHEM_SRC",
     "BACKUP_ROOT",
@@ -273,11 +278,13 @@ __all__ = [
     "apply_write_text",
     "backup_existing",
     "build_plan",
+    "capability_projection_results",
     "capture_missing_dirs",
     "check_fidelity",
     "detect_install",
     "fidelity_is_faithful",
     "finalize_install",
+    "is_apothem_hook",
     "list_backup_timestamps",
     "load_rules",
     "make_ignore",

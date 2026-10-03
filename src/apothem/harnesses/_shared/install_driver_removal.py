@@ -18,9 +18,9 @@ from apothem.lib.install_ledger import LedgerTarget
 
 from .install_driver_backup import _guarded_unlink, backup_existing, write_bytes_safely
 from .install_driver_jsonmerge import (
-    _is_apothem_hook,
     _leading_comment_block,
     _LossyRewriteError,
+    is_apothem_hook,
 )
 from .install_driver_ownership import current_target, remove_owned_text
 from .install_driver_pathsafety import _validate_target_path
@@ -38,7 +38,7 @@ def _remove_apothem_hook_handlers(
     """Strip Apothem hook handlers from one hooks event's matcher list.
 
     The inverse of :func:`_merge_hooks` for a single event: walks the operator's
-    matcher entries, drops every handler :func:`_is_apothem_hook` recognizes, and
+    matcher entries, drops every handler :func:`is_apothem_hook` recognizes, and
     drops a matcher entry once its ``hooks`` list is emptied (an empty-hooks
     matcher entry is meaningless — an Apothem matcher's sibling attributes such as
     ``sequential`` go with it). An operator-authored handler under any matcher
@@ -59,7 +59,7 @@ def _remove_apothem_hook_handlers(
         kept_handlers = [
             handler
             for handler in handlers
-            if not _is_apothem_hook(handler, harness_root=harness_root)
+            if not is_apothem_hook(handler, harness_root=harness_root)
         ]
         if not kept_handlers:
             # Every handler under this matcher was Apothem's: drop the entry.

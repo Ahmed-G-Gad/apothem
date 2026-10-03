@@ -535,9 +535,7 @@ def make_native_config_install(
             content = install_driver.render_content_tokens(
                 content, harness_root=output_path.parent
             )
-        capability_warnings = install_driver._capability_projection_results(
-            harness_name
-        )
+        capability_warnings = install_driver.capability_projection_results(harness_name)
         native_result = install_driver.apply_operator_owned_content(
             output_path,
             content,

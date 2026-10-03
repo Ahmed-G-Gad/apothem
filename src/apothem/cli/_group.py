@@ -293,7 +293,7 @@ class RootGroup(AliasedGroup):
         return self.lazy_commands[name].hidden
 
 
-def _configure_stdio() -> None:
+def configure_stdio() -> None:
     """Force UTF-8 stdio on Windows so Rich output renders correctly.
 
     Runs at CLI invocation only — never at import time — so it cannot
@@ -309,3 +309,7 @@ def _configure_stdio() -> None:
         reconfigure = getattr(stream, "reconfigure", None)
         if reconfigure is not None:
             reconfigure(encoding="utf-8", errors="replace")
+
+
+#: The earlier private spelling, kept for importers that still use it.
+_configure_stdio = configure_stdio
