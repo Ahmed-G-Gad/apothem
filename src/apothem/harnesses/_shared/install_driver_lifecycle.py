@@ -25,7 +25,7 @@ from apothem.lib.propagation import (
     resolve_target,
 )
 
-from .install_driver_backup import _replace_path, apply_retention, backup_existing
+from .install_driver_backup import _replace_path, backup_existing
 from .install_driver_merge import render_content_tokens
 from .install_driver_pathsafety import (
     _allowed_write_root,
@@ -37,6 +37,7 @@ from .install_driver_planvalidation import (
     _projected_profile_body,
 )
 from .install_driver_removal import _surgical_remove_from_target
+from .install_driver_retention import apply_retention
 from .install_driver_treeops import remove_created_dirs
 from .install_driver_types import (
     MaterializationResult,

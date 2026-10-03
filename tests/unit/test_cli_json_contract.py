@@ -63,6 +63,8 @@ def _argvs(world: dict[str, Path]) -> list[list[str]]:
         ["quickstart", "--harness", "claude-code", "--yes", "--json"],
         ["uninstall", "--harness", "claude-code", "--yes", "--json"],
         ["rollback", "--harness", "claude-code", "--last", "--yes", "--json"],
+        ["backups", "prune", "--harness", "claude-code", "--dry-run", "--json"],
+        ["backups", "prune", "--harness", "claude-code", "--json"],
         # Expected-error envelopes carry the field too.
         ["install", "--harness", "no-such-harness", "--json"],
         ["profile", "show", "--profile", str(world["tmp"] / "absent.yaml"), "--json"],

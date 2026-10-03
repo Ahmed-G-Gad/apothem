@@ -36,7 +36,9 @@ install also undoes every install after it at the same root.
 
 The ledger keeps the newest 10 install records per install root (with the
 backups they reference); an older install can no longer be rolled back by id
-and reports `rollback.no_record`.
+and reports `rollback.no_record`. [`apothem backups prune`](/docs/cli-reference/backups)
+lowers that bound on demand, and never removes the backup the latest install
+restores from.
 
 Records written by an Apothem release before this behaviour was added do not
 list which files the install created; rolling back such a record restores the

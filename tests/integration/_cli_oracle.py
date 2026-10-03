@@ -72,6 +72,7 @@ _PLATFORM = f"{platform.system()} {platform.release()}"
 _SAMPLE_HARNESS = "claude-code"
 _COMPLETION_SHELLS = ("bash", "zsh", "fish", "powershell")
 _HELP_COMMANDS = (
+    "backups",
     "completion",
     "install",
     "quickstart",
@@ -220,6 +221,7 @@ def matrix() -> list[tuple[str, list[str], bool]]:
         rows.append((f"help-profile-{sub}", ["profile", sub, "--help"], False))
     for sub in ("list", "show"):
         rows.append((f"help-harnesses-{sub}", ["harnesses", sub, "--help"], False))
+    rows.append(("help-backups-prune", ["backups", "prune", "--help"], False))
     for shell in _COMPLETION_SHELLS:
         rows.append((f"completion-{shell}", ["completion", shell], False))
     rows.append(("harnesses-list", ["harnesses", "list"], False))

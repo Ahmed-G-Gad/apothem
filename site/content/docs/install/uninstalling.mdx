@@ -37,7 +37,11 @@ Removal matches the install channel you used:
   every install, uninstall and rollback Apothem keeps the newest 10 install
   records per install root and the newest 10 backup sets per harness, and
   never deletes a backup a kept record still needs, so the last 10 installs
-  can still be rolled back. Delete `~/.apothem/` once you no longer need them.
+  can still be rolled back. To keep fewer, run
+  [`apothem backups prune --keep N`](/docs/cli-reference/backups) (add
+  `--dry-run` to see what it would remove first); it never removes the backup
+  that rollback of a harness's latest install restores from. Once the engine
+  is removed and you no longer need any of the history, delete `~/.apothem/`.
 
 ## What is NOT removed
 

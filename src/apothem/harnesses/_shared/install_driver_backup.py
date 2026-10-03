@@ -8,7 +8,6 @@ import contextlib
 import hashlib
 import shutil
 from pathlib import Path
-from typing import Final
 
 from apothem.harnesses._shared import install_driver
 from apothem.lib import atomic_io, install_ledger
@@ -21,6 +20,7 @@ from .install_driver_pathsafety import (
     _validate_target_path,
     _within_allowed_root,
 )
+from .install_driver_retention import apply_retention
 from .install_driver_types import (
     MaterializationResult,
     MaterializationRun,
@@ -448,54 +448,6 @@ def record_install(
     return record
 
 
-#: How many install records per install root, and backup sets per harness,
-#: retention keeps. Older ones are deleted after each install, uninstall and
-#: rollback; anything a kept record still references is never deleted.
-BACKUP_KEEP: Final[int] = 10
-
-
-def _referenced_timestamps(records: list[LedgerRecord]) -> set[str]:
-    """Return the backup-set timestamps the *records* still reference."""
-    backup_root = install_driver.BACKUP_ROOT.resolve()
-    stamps: set[str] = set()
-    for record in records:
-        for target in record.targets:
-            if not target.backup_ref:
-                continue
-            try:
-                relative = Path(target.backup_ref).resolve().relative_to(backup_root)
-            except ValueError:
-                continue
-            if relative.parts:
-                stamps.add(relative.parts[0])
-    return stamps
-
-
-def apply_retention(harness_name: str, *, keep: int = BACKUP_KEEP) -> None:
-    """Bound *harness_name*'s ledger and backup sets to the newest *keep*.
-
-    Compacts the ledger (see :func:`install_ledger.compact_records`), then
-    deletes the harness's backup sets under ``BACKUP_ROOT/<timestamp>/`` beyond
-    the newest *keep*, except the sets a kept ledger record references (so
-    every kept install can still be rolled back). A timestamp directory left
-    empty is removed too. Best-effort: a retention failure never fails the
-    install, uninstall or rollback that triggered it.
-    """
-    try:
-        records = install_ledger.compact_records(harness_name, keep_installs=keep)
-        stamps = list_backup_timestamps(harness_name)
-        referenced = _referenced_timestamps(records)
-        for stamp in stamps[: max(0, len(stamps) - keep)]:
-            if stamp in referenced:
-                continue
-            stamp_dir = install_driver.BACKUP_ROOT / stamp
-            shutil.rmtree(stamp_dir / harness_name, onerror=_handle_rm_error)
-            with contextlib.suppress(OSError):
-                stamp_dir.rmdir()
-    except (OSError, install_ledger.LedgerError):
-        return
-
-
 def finalize_install(
     run: MaterializationRun,
     *,
@@ -512,25 +464,6 @@ def finalize_install(
     """
     record_install(run, root=root, missing_before=missing_before)
     return run
-
-
-def list_backup_timestamps(harness_name: str | None = None) -> list[str]:
-    """Return available backup timestamps under the Apothem backup root.
-
-    Each timestamp is a ``~/.apothem/backups/<timestamp>/`` directory created
-    before a mutating install pass. When *harness_name* is given, only
-    timestamps carrying a backup set for that harness are returned. Results are
-    sorted oldest-to-newest (the timestamp slug sorts lexically by time).
-    """
-    if not install_driver.BACKUP_ROOT.is_dir():
-        return []
-    stamps: list[str] = []
-    for ts_dir in sorted(install_driver.BACKUP_ROOT.iterdir()):
-        if not ts_dir.is_dir():
-            continue
-        if harness_name is None or (ts_dir / harness_name).is_dir():
-            stamps.append(ts_dir.name)
-    return stamps
 
 
 def restore_backup(

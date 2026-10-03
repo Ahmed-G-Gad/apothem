@@ -33,6 +33,7 @@ EXPECTED_MODULES = {
     "install_driver_ownership",
     "install_driver_removal",
     "install_driver_reversal",
+    "install_driver_retention",
     "install_driver_planvalidation",
     "install_driver_preview",
     "install_driver_treeops",
@@ -84,7 +85,7 @@ def test_concern_module_set_is_pinned() -> None:
 def test_shim_re_exports_full_public_surface() -> None:
     for name in install_driver.__all__:
         assert hasattr(install_driver, name), f"shim lost public symbol {name}"
-    assert len(install_driver.__all__) == 52
+    assert len(install_driver.__all__) == 54
 
 
 def test_shim_exposes_consumer_private_surface() -> None:

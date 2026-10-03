@@ -121,8 +121,8 @@ const sections = {
   ]],
   'cli-reference': ['CLI reference', [
     'index', 'quickstart', 'install', 'uninstall', 'update', 'verify',
-    'status', 'diff', 'rollback', 'migrate-workspace', 'doctor', 'harnesses',
-    'profile', 'completion',
+    'status', 'diff', 'rollback', 'backups', 'migrate-workspace', 'doctor',
+    'harnesses', 'profile', 'completion',
   ]],
   comparison: ['Comparison', [
     'index', 'vs-other-harness-frameworks', 'vs-raw-claude-code',

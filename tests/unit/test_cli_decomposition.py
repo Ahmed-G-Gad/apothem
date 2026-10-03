@@ -34,6 +34,7 @@ _CLI_PKG = Path(__file__).resolve().parents[2] / "src" / "apothem" / "cli"
 _THIN_INIT_CEILING = 400
 
 _EXPECTED_CMD_MODULES = (
+    "_cmd_backups.py",
     "_cmd_completion.py",
     "_cmd_install.py",
     "_cmd_uninstall.py",
@@ -55,6 +56,7 @@ _EXPECTED_HELPER_MODULES = (
 
 # Every command name registered on ``main`` in the pre-decomposition monolith.
 _EXPECTED_COMMANDS = {
+    "backups",
     "completion",
     "install",
     "quickstart",
