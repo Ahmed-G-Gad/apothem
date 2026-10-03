@@ -154,6 +154,7 @@ from .install_driver_merge import (
     apply_operator_owned_content as apply_operator_owned_content,
 )
 from .install_driver_merge import apply_sentinel_merge as apply_sentinel_merge
+from .install_driver_merge import content_tokens as content_tokens
 from .install_driver_merge import project_profile_document as project_profile_document
 from .install_driver_merge import render_content_tokens as render_content_tokens
 from .install_driver_merge import write_text_safely as write_text_safely

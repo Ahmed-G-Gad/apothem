@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -26,6 +27,7 @@ import pytest
 from click.testing import CliRunner
 
 from apothem.cli import main
+from apothem.harnesses._shared import install_driver
 from apothem.lib.harness_registry import HARNESS_REGISTRY, HarnessRegistryEntry
 from apothem.schemas import profile_minimal_path
 
@@ -119,3 +121,52 @@ def test_install_then_rollback_restores_the_clean_state(
 
     after = sandbox.snapshot()
     assert after == before, sorted(set(after) ^ set(before))[:20]
+
+
+def _norm(path: str) -> Path:
+    return Path(os.path.normpath(path))
+
+
+@pytest.mark.parametrize("harness_id", _IDS)
+def test_dry_run_plans_every_path_the_install_writes(
+    harness_id: str, sandbox_factory: SandboxFactory
+) -> None:
+    sandbox = sandbox_factory(harness_id)
+    before = sandbox.snapshot()
+
+    plan = sandbox.install("--dry-run")
+
+    assert sandbox.snapshot() == before  # a dry run writes nothing
+    planned = [
+        _norm(str(result["path"]))
+        for result in plan["results"]
+        if result["outcome"] in {"created", "updated"}
+    ]
+    written = [_norm(path) for path in sandbox.install()["files_written"]]
+    unplanned = [
+        str(path)
+        for path in written
+        if not any(path == entry or entry in path.parents for entry in planned)
+    ]
+    assert not unplanned, unplanned[:10]
+
+
+@pytest.mark.parametrize("harness_id", _IDS)
+def test_diff_is_empty_and_reinstall_is_a_noop_after_install(
+    harness_id: str, sandbox_factory: SandboxFactory
+) -> None:
+    sandbox = sandbox_factory(harness_id)
+    sandbox.install()
+
+    diff = sandbox.run("diff", "--profile", str(profile_minimal_path()))
+    pending = [
+        (result["operation"], result["path"])
+        for result in diff["results"]
+        if result["outcome"] not in {"unchanged", "warning"}
+    ]
+    assert not pending, pending[:10]
+
+    backups_before = sorted(install_driver.BACKUP_ROOT.rglob("*"))
+    again = sandbox.install()
+    assert again["files_written"] == []
+    assert sorted(install_driver.BACKUP_ROOT.rglob("*")) == backups_before

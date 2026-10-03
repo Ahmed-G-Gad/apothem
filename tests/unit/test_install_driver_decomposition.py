@@ -34,6 +34,7 @@ EXPECTED_MODULES = {
     "install_driver_removal",
     "install_driver_reversal",
     "install_driver_planvalidation",
+    "install_driver_preview",
     "install_driver_treeops",
     "install_driver_apply",
     "install_driver_materialize",

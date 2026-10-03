@@ -16,7 +16,11 @@ from pathlib import Path
 
 from .install_driver_backup import _replace_path, backup_existing, write_bytes_safely
 from .install_driver_converters import _native_skill_emission
-from .install_driver_pathsafety import _validate_target_path
+from .install_driver_pathsafety import (
+    _is_relative_to,
+    _normalized,
+    _validate_target_path,
+)
 from .install_driver_types import (
     IgnoreFn,
     MaterializationOutcome,
@@ -116,18 +120,79 @@ def replace_tree(
     )
 
 
+def _preserved_inside(stale: Path, preserve: frozenset[Path]) -> set[Path]:
+    """Return the *preserve* paths that live inside the *stale* directory."""
+    base = _normalized(stale)
+    return {path for path in preserve if path != base and _is_relative_to(path, base)}
+
+
+def stale_needs_sweep(stale: Path, preserve: frozenset[Path] = frozenset()) -> bool:
+    """Return True when *stale* exists and holds more than *preserve* paths."""
+    if not stale.exists() and not stale.is_symlink():
+        return False
+    keep = _preserved_inside(stale, preserve) if stale.is_dir() else set()
+    if not keep:
+        return True
+    return any(
+        _normalized(path) not in keep
+        for path in stale.rglob("*")
+        if not path.is_dir() or path.is_symlink()
+    )
+
+
+def _sweep_around(
+    stale: Path, keep: set[Path], *, root: Path, harness_name: str, allowed_root: Path
+) -> MaterializationResult:
+    """Sweep a stale directory except the current files it holds (*keep*)."""
+    doomed = [
+        path
+        for path in stale.rglob("*")
+        if (not path.is_dir() or path.is_symlink()) and _normalized(path) not in keep
+    ]
+    if not doomed:
+        return _result(
+            "unchanged", "sweep_stale", stale, "stale path holds only current files"
+        )
+    backup = backup_existing(
+        stale, install_root=root, harness_name=harness_name, allowed_root=allowed_root
+    )
+    for path in doomed:
+        with contextlib.suppress(OSError):
+            path.unlink()
+    directories = sorted(
+        (path for path in stale.rglob("*") if path.is_dir()),
+        key=lambda path: len(path.parts),
+        reverse=True,
+    )
+    for directory in directories:
+        if not any(_is_relative_to(kept, _normalized(directory)) for kept in keep):
+            with contextlib.suppress(OSError):
+                directory.rmdir()
+    return _result(
+        "updated",
+        "sweep_stale",
+        stale,
+        "removed stale files; kept current ones",
+        backup_path=backup,
+    )
+
+
 def sweep_stale(
     stale_sweep: list[str],
     root: Path,
     *,
     harness_name: str = "manual",
     allowed_root: Path | None = None,
+    preserve: frozenset[Path] = frozenset(),
 ) -> list[MaterializationResult]:
     """Remove each stale top-level path under *root* from earlier layouts.
 
     Directories are removed recursively via ``shutil.rmtree``; files are
     removed via ``Path.unlink``. Missing paths are silently skipped so a
-    re-install is idempotent.
+    re-install is idempotent. A stale directory that holds a *preserve* path
+    (a file the current layout still writes there, such as the profile
+    document) keeps it: only the other files are removed, and a directory
+    holding nothing else is left alone.
     """
     results: list[MaterializationResult] = []
     for legacy in stale_sweep:
@@ -139,6 +204,18 @@ def sweep_stale(
         )
         if target_error is not None:
             results.append(target_error)
+            continue
+        keep = _preserved_inside(stale, preserve) if stale.is_dir() else set()
+        if keep:
+            results.append(
+                _sweep_around(
+                    stale,
+                    keep,
+                    root=root,
+                    harness_name=harness_name,
+                    allowed_root=allowed_root or root,
+                )
+            )
             continue
         if stale.is_dir():
             backup = backup_existing(

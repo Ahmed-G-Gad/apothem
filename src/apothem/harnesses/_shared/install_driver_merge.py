@@ -8,6 +8,9 @@ import contextlib
 import difflib
 import json
 import re
+from collections.abc import Iterator, Mapping
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass, replace
 from pathlib import Path
 from string import Template
@@ -42,6 +45,7 @@ from .install_driver_pathsafety import (
     _root_for,
     _validate_target_path,
 )
+from .install_driver_preview import prospective_result
 from .install_driver_types import (
     AuthorizationRequest,
     AuthorizeFn,
@@ -61,6 +65,7 @@ def apply_managed_block_anchor(
     install_root: Path,
     harness_name: str,
     allowed_root: Path | None = None,
+    dry_run: bool = False,
 ) -> MaterializationResult:
     """Fold a profile-projected managed block into an operator-owned anchor.
 
@@ -70,12 +75,20 @@ def apply_managed_block_anchor(
     backup-before-replace + no-op detection. This is the reusable projection
     write path every instruction-anchor adapter shares: the profile-projection
     seam renders *body*, this helper lands it in the harness's Markdown anchor.
+    With *dry_run*, nothing is written and the prospective result is returned.
     """
     try:
         existing = target.read_text(encoding="utf-8") if target.exists() else ""
     except OSError:
         existing = ""
     merged = merge_managed_block(existing, body)
+    if dry_run:
+        return prospective_result(
+            target,
+            before=existing if target.exists() else None,
+            after=merged,
+            operation="sentinel_merge",
+        )
     return write_bytes_safely(
         target,
         merged.encode("utf-8"),
@@ -98,6 +111,7 @@ def project_profile_document(
     harness_name: str,
     profile: dict[str, Any],
     relative_path: str = PROFILE_DOCUMENT_RELATIVE,
+    dry_run: bool = False,
 ) -> MaterializationResult:
     """Write the profile's projected managed block to a config adapter's anchor.
 
@@ -120,6 +134,7 @@ def project_profile_document(
         install_root=harness_root,
         harness_name=harness_name,
         allowed_root=harness_root.parent,
+        dry_run=dry_run,
     )
 
 
@@ -182,6 +197,7 @@ def apply_operator_owned_content(
     allowed_root: Path | None = None,
     authorize: AuthorizeFn | None = None,
     retired: tuple[OwnedEntry, ...] = (),
+    dry_run: bool = False,
 ) -> MaterializationResult:
     """Write materializer-rendered content to an operator-owned native config.
 
@@ -194,7 +210,8 @@ def apply_operator_owned_content(
     and no-op detection. *retired* lists entries an earlier release wrote at a
     location the adapter no longer uses; when the target's install record
     predates ownership recording, they are removed while they still hold that
-    release's value.
+    release's value. With *dry_run*, nothing is written: the prospective
+    result (with its diff) is returned, or the refusal the write would raise.
     """
     write_allowed = allowed_root or install_root
     target_error = _validate_target_path(
@@ -224,7 +241,19 @@ def apply_operator_owned_content(
         detail["diff"] = diff
     if existed and before != merged:
         detail["destructive_gate"] = "required"
-        if authorize is not None and not authorize(
+    if dry_run:
+        return prospective_result(
+            target,
+            before=existing_text,
+            after=merged,
+            operation="write_text",
+            detail=detail,
+        )
+    if (
+        existed
+        and before != merged
+        and authorize is not None
+        and not authorize(
             AuthorizationRequest(
                 harness=harness_name,
                 path=_path_text(target),
@@ -232,16 +261,17 @@ def apply_operator_owned_content(
                 ownership_class=ownership_class,
                 diff=diff,
             )
-        ):
-            return _with_detail(
-                _result(
-                    "skipped",
-                    "write_text",
-                    target,
-                    "operator declined the native-config change",
-                ),
-                detail,
-            )
+        )
+    ):
+        return _with_detail(
+            _result(
+                "skipped",
+                "write_text",
+                target,
+                "operator declined the native-config change",
+            ),
+            detail,
+        )
     result = write_bytes_safely(
         target,
         merged.encode("utf-8"),
@@ -275,6 +305,27 @@ def _unified_diff(before: str, after: str, target: Path) -> str:
     )
 
 
+#: Extra template tokens for the current install pass (see content_tokens).
+_EXTRA_TOKENS: ContextVar[Mapping[str, str] | None] = ContextVar(
+    "apothem_extra_content_tokens", default=None
+)
+
+
+@contextmanager
+def content_tokens(**tokens: str) -> Iterator[None]:
+    """Substitute ``${NAME}`` tokens in every template rendered inside the block.
+
+    Lets an adapter resolve an install-time value (Claude Code's
+    ``${PYTHON_BIN}`` hook interpreter) while the template is rendered, so the
+    file is written once in its final form and a preview shows that form.
+    """
+    reset = _EXTRA_TOKENS.set({**(_EXTRA_TOKENS.get() or {}), **tokens})
+    try:
+        yield
+    finally:
+        _EXTRA_TOKENS.reset(reset)
+
+
 def render_content_tokens(
     content: str,
     *,
@@ -291,10 +342,12 @@ def render_content_tokens(
     location this way. Substituted paths use forward-slash form so the result
     stays valid inside JSON string literals on every platform. An absent root
     leaves its placeholder untouched, matching the path-resolution helper.
+    Tokens set by an enclosing :func:`content_tokens` block (Claude Code's
+    ``${PYTHON_BIN}``) are substituted too.
     """
     if "${" not in content:
         return content
-    mapping: dict[str, str] = {}
+    mapping: dict[str, str] = dict(_EXTRA_TOKENS.get() or {})
     if harness_root is not None:
         mapping["HARNESS_ROOT"] = harness_root.resolve().as_posix()
     if project_root is not None:

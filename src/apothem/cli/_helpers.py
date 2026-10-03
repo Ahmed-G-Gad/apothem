@@ -964,10 +964,18 @@ def _dry_run_plan(
 ) -> MaterializationRun:
     """Return the no-write dry-run plan for one harness, diffs included.
 
-    Routes through the same ``install_driver.run_install(dry_run=True, profile=…)``
-    seam the install path uses, so the result carries the unified diff already
-    present in each operator-owned target's ``.detail`` — no re-derivation.
+    Uses the adapter's ``preview`` (its install with ``dry_run=True``), so the
+    plan lists every path the install writes — the native config, instruction
+    anchor, profile document and data stores as well as the manifest entries —
+    with the unified diff each operator-owned target's ``.detail`` carries. An
+    adapter without ``preview`` falls back to the manifest-only
+    ``install_driver.run_install(dry_run=True, profile=…)`` seam.
     """
+    preview = getattr(adapter, "preview", None)
+    if callable(preview):
+        run = _invoke_with_project(preview, shared_profile, project=project_root)
+        if isinstance(run, MaterializationRun):
+            return run
     harness_root, scoped_project = _harness_roots(entry, adapter, project_root)
     return install_driver.run_install(
         entry.package_key,

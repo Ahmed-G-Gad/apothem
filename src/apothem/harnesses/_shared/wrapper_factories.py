@@ -33,12 +33,12 @@ _ProjectInstallFn = Callable[..., MaterializationRun]
 _ProjectPlanFn = Callable[..., list[dict[str, str]]]
 _ProjectUninstallFn = Callable[..., None]
 _ProjectVerifyFn = Callable[..., bool]
-_NativeInstallFn = Callable[[Path, dict[str, Any]], MaterializationRun]
+_NativeInstallFn = Callable[..., MaterializationRun]
 _NativeUninstallFn = Callable[[Path], None]
 _NativeVerifyFn = Callable[[Path], bool]
 
 # Type aliases for the wrapper closure signatures.
-_UserScopeInstall = Callable[[Path, dict[str, Any]], MaterializationRun]
+_UserScopeInstall = Callable[..., MaterializationRun]
 _ProjectScopeInstall = Callable[..., MaterializationRun]
 _UserScopeUpdate = Callable[[Path, dict[str, Any]], MaterializationRun]
 _ProjectScopeUpdate = Callable[..., MaterializationRun]
@@ -211,7 +211,16 @@ def make_user_scope_install(harness_name: str) -> _UserScopeInstall:
     install body.
     """
 
-    def install(output_path: Path, profile: dict[str, Any]) -> MaterializationRun:
+    def install(
+        output_path: Path, profile: dict[str, Any], *, dry_run: bool = False
+    ) -> MaterializationRun:
+        if dry_run:
+            return install_driver.run_install(
+                harness_name,
+                harness_root=output_path.parent,
+                profile=profile,
+                dry_run=True,
+            )
         missing = install_driver.capture_missing_dirs(
             harness_name, harness_root=output_path.parent, profile=profile
         )
@@ -319,6 +328,10 @@ def make_user_scope_adapter(
             """Re-materialize the harness configuration from the updated profile."""
             return update_fn(self.output_path, profile)
 
+        def preview(self, profile: dict[str, Any]) -> MaterializationRun:
+            """Return what ``install`` would do, without writing anything."""
+            return install_fn(self.output_path, profile, dry_run=True)
+
         def plan(self, output_path: Path | None = None) -> list[dict[str, str]]:
             """Return the manifest-driven propagation plan without writing."""
             return plan_fn(output_path or self.output_path)
@@ -359,10 +372,15 @@ def make_project_scope_install(
         profile: dict[str, Any],
         *,
         project: Path | None = None,
+        dry_run: bool = False,
     ) -> MaterializationRun:
         del output_path  # resolved per-entry from manifest + project root
         if project is None:
             raise ValueError(error_message)
+        if dry_run:
+            return install_driver.run_install(
+                harness_name, project_root=project, profile=profile, dry_run=True
+            )
         missing = install_driver.capture_missing_dirs(
             harness_name, project_root=project, profile=profile
         )
@@ -494,9 +512,15 @@ def make_native_config_install(
     - *retired_fn*: returns, for a profile, the entries an earlier release of
       this adapter wrote at a location it no longer uses, so an update over
       such an install removes them (hermes only).
+
+    With ``dry_run=True`` the closure writes nothing and returns the
+    prospective run: the native config (with its diff), the support tree, the
+    profile document and the data stores, each classified against disk.
     """
 
-    def install(output_path: Path, profile: dict[str, Any]) -> MaterializationRun:
+    def install(
+        output_path: Path, profile: dict[str, Any], *, dry_run: bool = False
+    ) -> MaterializationRun:
         missing = install_driver.capture_missing_dirs(
             harness_name,
             harness_root=output_path.parent,
@@ -521,27 +545,23 @@ def make_native_config_install(
             harness_name=harness_name,
             allowed_root=_native_allowed_root(output_path),
             retired=retired_fn(profile) if retired_fn is not None else (),
+            dry_run=dry_run,
         )
         if native_result.outcome == "error":
             raise MaterializationError(
                 f"materialization write failed: {native_result.message}",
                 MaterializationRun(
                     harness=harness_name,
-                    dry_run=False,
+                    dry_run=dry_run,
                     results=(*capability_warnings, native_result),
                 ),
             )
-        if support_profile:
-            support_run = install_driver.run_install(
-                harness_name,
-                harness_root=output_path.parent,
-                profile=profile,
-            )
-        else:
-            support_run = install_driver.run_install(
-                harness_name,
-                harness_root=output_path.parent,
-            )
+        support_run = install_driver.run_install(
+            harness_name,
+            harness_root=output_path.parent,
+            profile=profile if support_profile else None,
+            dry_run=dry_run,
+        )
         support_results = tuple(
             result for result in support_run.results if result.outcome != "warning"
         )
@@ -550,20 +570,22 @@ def make_native_config_install(
             harness_id=harness_id,
             harness_name=harness_name,
             profile=profile,
+            dry_run=dry_run,
         )
-        return install_driver.finalize_install(
-            MaterializationRun(
-                harness=harness_name,
-                dry_run=False,
-                results=(
-                    *capability_warnings,
-                    native_result,
-                    *support_results,
-                    profile_result,
-                ),
+        run = MaterializationRun(
+            harness=harness_name,
+            dry_run=dry_run,
+            results=(
+                *capability_warnings,
+                native_result,
+                *support_results,
+                profile_result,
             ),
-            root=output_path.parent,
-            missing_before=missing,
+        )
+        if dry_run:
+            return run
+        return install_driver.finalize_install(
+            run, root=output_path.parent, missing_before=missing
         )
 
     install.__doc__ = _INSTALL_DOC_NATIVE
@@ -645,6 +667,13 @@ def make_project_scope_adapter(
             """Re-materialize the harness configuration into the project root."""
             output_path = self.resolve_output_path(project)
             return update_fn(output_path, profile, project=project)
+
+        def preview(
+            self, profile: dict[str, Any], *, project: Path | None = None
+        ) -> MaterializationRun:
+            """Return what ``install`` would do, without writing anything."""
+            output_path = self.resolve_output_path(project)
+            return install_fn(output_path, profile, project=project, dry_run=True)
 
         def plan(
             self,
@@ -739,6 +768,10 @@ def make_native_config_adapter(
         def update(self, profile: dict[str, Any]) -> MaterializationRun:
             """Re-materialize the harness configuration from the updated profile."""
             return update_fn(self.output_path, profile)
+
+        def preview(self, profile: dict[str, Any]) -> MaterializationRun:
+            """Return what ``install`` would do, without writing anything."""
+            return install_fn(self.output_path, profile, dry_run=True)
 
         def uninstall(self) -> None:
             """Remove the harness configuration file if present."""

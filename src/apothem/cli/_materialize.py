@@ -265,6 +265,7 @@ def _materialize(
                     adapter,
                     output_path,
                     project_root,
+                    shared_profile,
                 )
             elif verb_present == "update":
                 maybe_run = _invoke_with_project(
@@ -510,8 +511,19 @@ def _dry_run_materialization(
     adapter: _Adapter,
     output_path: Path,
     project_root: Path | None,
+    shared_profile: dict[str, Any] | None = None,
 ) -> MaterializationRun:
-    """Return a no-write materialization run using the adapter plan surface."""
+    """Return a no-write materialization run for one harness.
+
+    An adapter with ``preview`` (every registered adapter) reports what its
+    install would do to each path, with diffs: the same plan ``diff`` shows.
+    Otherwise the adapter's static ``plan`` entries are listed.
+    """
+    preview = getattr(adapter, "preview", None)
+    if shared_profile is not None and callable(preview):
+        previewed = _invoke_with_project(preview, shared_profile, project=project_root)
+        if isinstance(previewed, MaterializationRun):
+            return previewed
     plan_entries: list[dict[str, str]] = []
     plan_fn = getattr(adapter, "plan", None)
     if callable(plan_fn):

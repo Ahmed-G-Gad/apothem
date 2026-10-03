@@ -49,21 +49,24 @@ from .install_driver_converters import (
 )
 from .install_driver_jsonmerge import CONFIG_UNPARSEABLE_CODE
 from .install_driver_merge import (
+    PROFILE_DOCUMENT_RELATIVE,
     _merged_json_text,
     _operator_owned_preview,
     apply_sentinel_merge,
     render_content_tokens,
 )
-from .install_driver_pathsafety import _allowed_write_root, _root_for
+from .install_driver_pathsafety import _allowed_write_root, _normalized, _root_for
 from .install_driver_planvalidation import (
     _projected_profile_body,
     _validate_install_plan,
     make_ignore,
 )
+from .install_driver_preview import DRY_RUN_MESSAGE, preview_data_surfaces
 from .install_driver_treeops import (
     _directory_contents_equal,
     _generated_directory_matches,
     preview_native_skills,
+    stale_needs_sweep,
     sweep_stale,
 )
 from .install_driver_types import (
@@ -109,11 +112,7 @@ def _capability_projection_results(harness_name: str) -> list[MaterializationRes
     return results
 
 
-#: The uniform message every dry-run result carries. A dry run writes nothing,
-#: so the message states only that; the prospective ``outcome`` word
-#: (``created`` / ``updated`` / ``unchanged``) carries the would-this-change
-#: distinction, exactly as the stale-sweep dry-run results already do.
-_DRY_RUN_MESSAGE: Final[str] = "dry run: no filesystem changes made"
+_DRY_RUN_MESSAGE: Final[str] = DRY_RUN_MESSAGE
 
 #: Per-file directory modes whose native target keeps the source basename and
 #: whose body is a pure (source_path -> text) conversion. ``gemini_commands``
@@ -308,6 +307,7 @@ def _dry_run_results(
     project_root: Path | None,
     harness_name: str,
     profile_body: str | None,
+    profile: dict[str, Any] | None = None,
 ) -> list[MaterializationResult]:
     """Return prospective no-write results for the validated plan.
 
@@ -318,15 +318,18 @@ def _dry_run_results(
     A re-preview after install therefore reports the unchanged targets as no-ops
     instead of phantom writes. The plan validator has already run, so every
     entry's source exists; *profile_body* is folded into ``sentinel_merge``
-    anchors so their classification matches the projected managed block.
+    anchors so their classification matches the projected managed block. The
+    shared data stores the install seeds are previewed last, as the install
+    writes them.
     """
     ignore = make_ignore(rules.exclude, rules.per_directory_filters)
     results: list[MaterializationResult] = []
+    preserve = _preserved_paths(root)
     for legacy in rules.stale_sweep:
         stale = root / legacy
         results.append(
             _result(
-                "skipped" if stale.exists() else "unchanged",
+                "skipped" if stale_needs_sweep(stale, preserve) else "unchanged",
                 "sweep_stale",
                 stale,
                 _DRY_RUN_MESSAGE,
@@ -385,7 +388,17 @@ def _dry_run_results(
                 detail,
             )
         )
+    results.extend(preview_data_surfaces(root, profile=profile))
     return results
+
+
+def _preserved_paths(root: Path) -> frozenset[Path]:
+    """Return the current files a stale-sweep entry must not remove.
+
+    The single-file-config adapters project the profile document into
+    ``apothem/rules/``, a directory earlier layouts used for copied rules.
+    """
+    return frozenset({_normalized(root / PROFILE_DOCUMENT_RELATIVE)})
 
 
 def _dispatch_install_entry(
@@ -638,6 +651,7 @@ def run_install(
                     project_root=project_root,
                     harness_name=harness_name,
                     profile_body=profile_body,
+                    profile=profile,
                 ),
             ),
         )
@@ -660,6 +674,7 @@ def run_install(
                     root,
                     harness_name=harness_name,
                     allowed_root=write_root,
+                    preserve=_preserved_paths(root),
                 )
             )
             for entry in rules.install:

@@ -139,7 +139,11 @@ is written to stdout:
 }
 ```
 
-For `--dry-run`:
+For `--dry-run`, nothing is written and `results` lists every path the install
+would write, each with the outcome it would have (`created`, `updated` or
+`unchanged`) and, for a file you also edit, the unified diff in
+`detail.diff` — the same plan [`apothem diff`](/docs/cli-reference/diff)
+shows:
 
 ```json
 {
