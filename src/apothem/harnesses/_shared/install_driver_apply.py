@@ -580,11 +580,18 @@ def apply_markdown_commands(
 def apply_claude_rules(
     entry: InstallEntry,
     *,
+    ignore: IgnoreFn | None = None,
+    exclude: list[str] | None = None,
     harness_root: Path | None = None,
     project_root: Path | None = None,
     harness_name: str = "manual",
 ) -> list[MaterializationResult]:
-    """Install rule files with ``pathFilter`` rendered as Claude Code ``paths:``."""
+    """Install rule files with ``pathFilter`` rendered as Claude Code ``paths:``.
+
+    *ignore* and *exclude* are accepted for the shared emission signature (see
+    :data:`HARNESS_EMISSION_APPLIERS`); a flat rules cohort uses neither.
+    """
+    del ignore, exclude
     return _apply_rendered_cohort(
         entry,
         renderer=_claude_rule_text,
