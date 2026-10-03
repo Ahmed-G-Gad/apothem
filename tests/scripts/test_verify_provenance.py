@@ -53,7 +53,9 @@ def _fake_bin(tmp_path: Path) -> tuple[Path, Path]:
     log = tmp_path / "calls.log"
     for tool, name in (("cosign", "COSIGN"), ("slsa-verifier", "SLSA")):
         path = fake_bin / tool
-        path.write_text(_FAKE_TOOL.format(log=log, name=name), encoding="utf-8")
+        path.write_text(
+            _FAKE_TOOL.format(log=log, name=name), encoding="utf-8", newline="\n"
+        )
         path.chmod(0o755)
     return fake_bin, log
 
@@ -73,7 +75,7 @@ def _release_dir(tmp_path: Path, *, legacy_archive_sigs: bool = True) -> Path:
     sums = "".join(
         f"{hashlib.sha256(name.encode()).hexdigest()}  {name}\n" for name in archives
     )
-    (assets / "SHA256SUMS").write_text(sums, encoding="utf-8")
+    (assets / "SHA256SUMS").write_text(sums, encoding="utf-8", newline="\n")
     for name in (*archives, "SHA256SUMS"):
         (assets / f"{name}{suffix}").write_text("{}", encoding="utf-8")
     (assets / "provenance.intoto.jsonl").write_text("{}\n", encoding="utf-8")

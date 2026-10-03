@@ -20,6 +20,8 @@ from pathlib import Path
 import pytest
 import yaml
 
+from tests._shared.bash_resolver import SKIP_REASON, find_test_bash
+
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _WORKFLOW = _REPO_ROOT / ".github" / "workflows" / "publish-static-site.yml"
 _SCHEMAS = _REPO_ROOT / "src" / "apothem" / "schemas"
@@ -44,14 +46,17 @@ def test_schema_changes_trigger_a_site_publish() -> None:
     assert "src/apothem/schemas/**" in triggers["push"]["paths"]
 
 
-@pytest.mark.skipif(shutil.which("bash") is None, reason="bash is not on PATH")
+_BASH = find_test_bash()
+
+
+@pytest.mark.skipif(_BASH is None, reason=SKIP_REASON)
 def test_publish_step_serves_every_schema_at_its_id(tmp_path: Path) -> None:
     (tmp_path / "src" / "apothem").mkdir(parents=True)
     shutil.copytree(_SCHEMAS, tmp_path / "src" / "apothem" / "schemas")
     (tmp_path / "site" / "dist").mkdir(parents=True)
 
     subprocess.run(
-        ["bash", "-c", _schema_step()["run"]], cwd=tmp_path, check=True, timeout=60
+        [_BASH, "-c", _schema_step()["run"]], cwd=tmp_path, check=True, timeout=60
     )
 
     packaged = sorted(_SCHEMAS.glob("*.schema.json"))

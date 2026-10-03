@@ -39,7 +39,8 @@ _SCRIPT_MODULES: tuple[str, ...] = tuple(
     sorted(
         path.stem
         for path in _CONFORMITY_DIR.glob("*.py")
-        if path.stem != "gate" and 'if __name__ == "__main__"' in path.read_text()
+        if path.stem != "gate"
+        and 'if __name__ == "__main__"' in path.read_text(encoding="utf-8")
     )
 )
 

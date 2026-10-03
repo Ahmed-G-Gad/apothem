@@ -14,6 +14,7 @@ The tests drive ``vscode-extension/extension.js`` under node with a stubbed
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -29,6 +30,11 @@ _PINNED_ENGINE = (
     ]
 )
 _NODE = shutil.which("node")
+# Node cannot seed its random source on Windows without SYSTEMROOT, so the
+# otherwise empty driver environment keeps the Windows system-directory keys.
+_WINDOWS_SYSTEM_ENV = {
+    key: os.environ[key] for key in ("SYSTEMROOT", "WINDIR") if key in os.environ
+}
 
 _VSCODE_STUB = r"""
 const state = globalThis.__apothemStub;
@@ -126,7 +132,11 @@ def _run(tmp_path: Path, command_id: str, **state: object) -> dict:
         ],
         capture_output=True,
         text=True,
-        env={"NODE_PATH": str(tmp_path / "node_modules"), "PATH": ""},
+        env={
+            **_WINDOWS_SYSTEM_ENV,
+            "NODE_PATH": str(tmp_path / "node_modules"),
+            "PATH": "",
+        },
         timeout=60,
         check=False,
     )
