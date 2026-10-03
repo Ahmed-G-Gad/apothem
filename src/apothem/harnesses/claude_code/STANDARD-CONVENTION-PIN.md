@@ -4,17 +4,34 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-06-25
-- Snapshot note: live re-verification against `code.claude.com` docs (hooks-guide, sdk-permissions) — the `code.claude.com` authority host, the `settings.json` hooks structure + permission tiers (allow / ask / deny, deny-first), and the hook-event taxonomy all confirmed current; no immutable pin (living MDX docs)
+- Snapshot date: 2026-10-03
+- Snapshot note: refreshed against the Claude Code docs at `code.claude.com/docs/en/` (settings, permissions, memory, hooks, MCP, skills, sub-agents, status line, output styles). The 2026-10-02 adapter changes followed these pages: agent and command frontmatter name the Task tools, and the settings template carries the documented `$schema` line. Previous 2026-06-25.
 - Adapter source: `src/apothem/harnesses/claude_code/`
-- Evidence level: adapter-local projection; no vendor-native UI claim is made here.
-- Authority host: `code.claude.com` — the prior `docs.anthropic.com` / `docs.claude.com` hosts 301-redirect here (confirmed live 2026-05-31). The adapter pins no doc URLs in code, so no in-code URL change is required.
+- Evidence level: vendor-doc pinned (living MDX docs; no immutable pin). No vendor-native UI claim is made here.
+- Authority host: `code.claude.com`; the older `docs.anthropic.com` and `docs.claude.com` paths redirect there.
 
 ## MCP and Permissions Surface Projection
 
-- MCP: registered via `claude mcp add --scope local|project|user`. Storage is `~/.claude.json` (user/local scope) and project `.mcp.json` — **not** `settings.json` (confirmed live 2026-05-31; `settings.json` carries only managed allow/deny gates). Apothem authors no MCP server entries; the template `settings.json` carries no `mcpServers`.
-- Permissions: `settings.json` `permissions` carries three tiers — `allow`, `ask`, `deny` — evaluated deny → ask → allow, first match wins. The Apothem template uses the `allow` and `deny` tiers; the `ask` tier is available but unused by default.
-- Hook events: the vendor taxonomy has expanded to roughly 30 events. Apothem wires a current, valid subset — SessionStart, PreToolUse (Write/Edit/NotebookEdit/Bash matchers), PreCompact, PostCompact, Stop — all confirmed current 2026-05-31; no template change required.
+- MCP: registered with `claude mcp add --scope local|project|user` and stored in `~/.claude.json` (user and local scope) and the project `.mcp.json`, not `settings.json`. Apothem authors no MCP server entries; the template `settings.json` carries no `mcpServers`.
+- Permissions: `settings.json` `permissions` holds `allow`, `ask`, and `deny` rules, evaluated deny, then ask, then allow; the first match in that order decides. The Apothem template uses `allow` and `deny`.
+- Hook events: Apothem wires a current subset (SessionStart, PreToolUse with Write/Edit/NotebookEdit/Bash matchers, PreCompact, PostCompact, Stop).
+- Shared root: `~/.claude/skills/`, where the adapter installs skills, is also loaded by Cursor and OpenCode; the registry records Claude Code as its owner and `apothem install` names the other readers.
+
+## Vendor Sources
+
+Retrieved 2026-10-03 unless marked.
+
+- <https://code.claude.com/docs/en/settings> (settings, `$schema`)
+- <https://code.claude.com/docs/en/memory> (CLAUDE.md files)
+- <https://code.claude.com/docs/en/hooks> (hook events)
+- <https://code.claude.com/docs/en/mcp> (MCP scopes and storage)
+- <https://code.claude.com/docs/en/permissions> (rule order; retrieved 2026-10-02)
+- <https://code.claude.com/docs/en/skills> (skills; retrieved 2026-10-02)
+- <https://code.claude.com/docs/en/sub-agents> (agent frontmatter; retrieved 2026-10-02)
+
+## Discovery Targets
+
+- Discovery target: mcp_servers by 2026-12-31 — decide whether Apothem renders the profile's MCP inventory into the project `.mcp.json` or keeps naming it as operator-owned.
 
 ## Recommended Postfix Rendering
 

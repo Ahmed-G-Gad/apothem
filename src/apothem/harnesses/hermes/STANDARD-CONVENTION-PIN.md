@@ -4,23 +4,40 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-06-25
-- Snapshot note: live re-verification — Hermes docs are now also published at `hermes-agent.nousresearch.com/docs`; the `~/.hermes/config.yaml` `delegation` block (subagent model/provider override, bounded), the `skills.config` namespace (skills auto-exposed as commands; `hermes config migrate` / `show`), and `quick_commands` all confirmed current; the commit anchor `355af2c…` is retained as the immutable evidence pin. Previous 2026-05-31.
+- Snapshot date: 2026-10-03
+- Snapshot note: refreshed against the Hermes docs at commit `1c56fed0480e67ffd56675d10862e607fb61a55b` of `github.com/NousResearch/hermes-agent` (configuration, MCP, skills, hooks, context files, slash commands). Corrections: MCP servers live in the top-level `mcp_servers` map of `~/.hermes/config.yaml`, not an `auxiliary.mcp` block; `skills.external_dirs` is a documented key for extra skill directories; and `skills.config` stores per-skill settings rather than a package list. Previous 2026-06-25 at commit `355af2c20f495b97c22c9aeb4c227fb0ca010da7`.
 - Adapter source: `src/apothem/harnesses/hermes/`
-- Evidence level: vendor-repo pinned (live re-verification 2026-06-25;
-  previous 2026-05-31) at commit
-  `355af2c20f495b97c22c9aeb4c227fb0ca010da7` for `~/.hermes/config.yaml`.
-  Skills are installable registry packages under `skills.config` (auto-exposed
-  as commands) — NOT `skills.external_dirs` (that earlier claim is refuted). MCP
-  servers are the top-level `mcp_servers` map (corrected 2026-10-02; see the
-  MCP correction below); sub-agent dispatch is the `delegation`
-  block (`delegate_task`, bounded by `max_concurrent_children` /
-  `max_spawn_depth`); user commands are `quick_commands` plus skill-exposed
-  commands; durable memory lives at `~/.hermes/memories/`. Hermes is a
-  multi-platform messaging gateway. No vendor-native UI claim is made here.
-- Official references (commit-permalinked to the pinned SHA):
-  - <https://github.com/NousResearch/hermes-agent/blob/355af2c20f495b97c22c9aeb4c227fb0ca010da7/website/docs/user-guide/configuration.md>
-  - <https://github.com/NousResearch/hermes-agent/blob/355af2c20f495b97c22c9aeb4c227fb0ca010da7/website/docs/reference/slash-commands.md>
+- Evidence level: vendor-repo pinned at commit
+  `1c56fed0480e67ffd56675d10862e607fb61a55b`. Hermes is a multi-platform
+  messaging gateway. No vendor-native UI claim is made here.
+  - Config: `~/.hermes/config.yaml`.
+  - MCP: the top-level `mcp_servers` map. Each entry is a stdio server
+    (`command`, `args`, `env`) or a remote server (`url`, with optional
+    `auth: oauth`); `hermes import-agent claude-code` maps Claude Code's
+    `mcpServers` onto it.
+  - Skills: `~/.hermes/skills/` is the primary directory; project skills take
+    precedence, then local, then `skills.external_dirs` (opt-in extra
+    directories). Every installed skill is available as a slash command, and
+    per-skill settings live under `skills.config`.
+  - Sub-agent dispatch: the `delegation` block, bounded by
+    `max_concurrent_children` and `max_spawn_depth`.
+  - Commands: `quick_commands` plus skill slash commands.
+  - Memory: `~/.hermes/memories/` (`MEMORY.md`, `USER.md`).
+  - Hooks and plugins: `~/.hermes/hooks/<name>/` and `~/.hermes/plugins/<name>/`.
+
+## Vendor Sources
+
+Retrieved 2026-10-03 unless marked, at commit `1c56fed0480e67ffd56675d10862e607fb61a55b`.
+
+- <https://raw.githubusercontent.com/NousResearch/hermes-agent/1c56fed0480e67ffd56675d10862e607fb61a55b/website/docs/user-guide/configuration.md> (`config.yaml`, `delegation`, `quick_commands`)
+- <https://raw.githubusercontent.com/NousResearch/hermes-agent/1c56fed0480e67ffd56675d10862e607fb61a55b/website/docs/user-guide/features/mcp.md> (`mcp_servers`)
+- <https://raw.githubusercontent.com/NousResearch/hermes-agent/1c56fed0480e67ffd56675d10862e607fb61a55b/website/docs/reference/slash-commands.md> (slash commands)
+- <https://raw.githubusercontent.com/NousResearch/hermes-agent/1c56fed0480e67ffd56675d10862e607fb61a55b/website/docs/user-guide/features/skills.md> (skill directories, `skills.config`; retrieved 2026-10-02)
+- <https://raw.githubusercontent.com/NousResearch/hermes-agent/1c56fed0480e67ffd56675d10862e607fb61a55b/website/docs/user-guide/features/hooks.md> (hooks and plugins; retrieved 2026-10-02)
+
+## Discovery Targets
+
+- None. No capability cell for this harness is discovery-pending.
 
 ## MCP correction (2026-10-02)
 
@@ -65,7 +82,7 @@
 
 Hermes is a multi-platform messaging gateway with **no vendor plugin or
 extension install surface** that Apothem ships. The adapter materializes
-`~/.hermes/config.yaml` (native MCP under `mcp_servers`) via its materializer
+`~/.hermes/config.yaml` (MCP under the top-level `mcp_servers` map) via its materializer
 and keeps non-native cohorts under the Apothem support subtree
 (`~/.hermes/.apothem/support/`). There is no standalone-installable bundle; every artifact
 requires the full `apothem install --harness hermes` engine run.
@@ -73,8 +90,8 @@ requires the full `apothem install --harness hermes` engine run.
 | Artifact class | Persists standalone? | Mechanism / limit |
 |---|---|---|
 | Config / MCP | No — requires `apothem install` | `~/.hermes/config.yaml` is materializer-rendered by the engine; nothing persists before that run. |
-| Commands / Skills / Agents / Rules | No — requires `apothem install` | These land under `~/.hermes/.apothem/support/` (support subtree) via the engine; Hermes `skills.config` registry packages are a vendor list the adapter does not author. |
-| Hooks / Settings | No — platform limit | No Apothem-authored hook or settings surface beyond the config materializer. |
+| Commands / Skills / Agents / Rules | No — requires `apothem install` | These land under `~/.hermes/.apothem/support/` (support subtree) via the engine; Hermes skill directories and `skills.config` settings are operator-owned and the adapter authors neither. |
+| Hooks / Settings | No — adapter scope | Hermes documents hooks (`~/.hermes/hooks/`) and plugins (`~/.hermes/plugins/`); Apothem authors neither beyond the config materializer. |
 
-Platform limit: Hermes ships no marketplace/extension channel, so a plugin-alone
-story does not exist — the engine install is the sole persistence path.
+Apothem ships no Hermes plugin, so the engine install is the sole persistence
+path.

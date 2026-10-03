@@ -4,41 +4,54 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-06-25
-- Snapshot note: live re-verification against `cursor.com/docs/context/rules` — the `.cursor/rules/*.mdc` rules surface, the frontmatter fields (`description` / `globs` / `alwaysApply`), and the `docs.cursor.com`→`cursor.com/docs` host move all confirmed current.
+- Snapshot date: 2026-10-03
+- Snapshot note: refreshed against `cursor.com/docs`. The rules page moved to `cursor.com/docs/rules`, the MCP page to `cursor.com/docs/mcp`, and the old `@Web` page is gone. The agent's Browser tool visits URLs, so `web_fetch` moves from partial to yes. Previous 2026-06-25.
 - Adapter source: `src/apothem/harnesses/cursor/`
-- Evidence level: adapter-local projection; no vendor-native UI claim is made here.
+- Evidence level: vendor-doc pinned (living docs; no-immutable-source exception). No vendor-native UI claim is made here.
 
 ## Official Surface Refresh
 
-- Refreshed live 2026-05-31 against the current Cursor documentation. The
-  authority host moved: `docs.cursor.com` now 308-redirects to `cursor.com/docs`.
-  No immutable version pin is exposed (mutable docs site), so every captured
-  convention carries a no-immutable-source exception.
-- Confirmed live: rules surface `.cursor/rules/*.mdc` (frontmatter
-  `description`/`globs`/`alwaysApply`); MCP via `~/.cursor/mcp.json` plus
-  `.cursor/mcp.json` (operator-owned; the adapter recognizes it but does not
-  author entries).
-- The vendor now documents a plugin mechanism (`.cursor-plugin/plugin.json`)
-  that can bundle agents, commands, skills, and hooks. The adapter delivers only
-  the project rules file (`apothem-rules.mdc`) and authors none of those cohorts;
-  this rules-only posture is deliberate and the plugin-bundle delivery question
-  is a propagation write-planning concern, not part of this adapter.
-- Settings (IDE-managed) and status-lines remain undocumented as file surfaces.
+- Rules: `.cursor/rules/*.mdc` with frontmatter `description` / `globs` /
+  `alwaysApply`. The adapter writes only `apothem-rules.mdc`.
+- MCP: `.cursor/mcp.json` (project) and `~/.cursor/mcp.json` (global), plus
+  servers installed from the Customize page or the Cursor Marketplace.
+  Operator-owned; the adapter names the surface and authors no entries.
+- Skills: Cursor loads `.agents/skills/`, `.cursor/skills/`,
+  `~/.agents/skills/`, and `~/.cursor/skills/`, and for compatibility
+  `.claude/skills/`, `.codex/skills/`, `~/.claude/skills/`, and
+  `~/.codex/skills/`. The Codex adapter's `~/.agents/skills/` and the Claude
+  Code adapter's `~/.claude/skills/` therefore reach Cursor (shared roots in the
+  registry).
+- The vendor documents plugins (`.cursor-plugin/plugin.json`, bundling agents,
+  commands, skills, and hooks) and a marketplace. The adapter delivers only the
+  project rules file and authors none of those (deliberate rules-only posture).
+- Settings (IDE-managed) and status lines are not file surfaces the adapter
+  owns.
 
 ## Web-Fetch / Browser-Retrieval Surface
 
-- Capability: `web_fetch` = **partial**. The backing dimension for
+- Capability: `web_fetch` = **yes**. The backing dimension for
   `rules/source-accessibility.md` step 1 ("retrieve through the host's browser /
   fetch capability").
-- Vendor-confirmed PARTIAL: Cursor exposes `@Web` — a user-invoked
-  context-injection web search ("performs a live web search to retrieve
-  up-to-date information"), plus an "Always search the web" auto setting. It is a
-  context-injection symbol rather than a documented autonomous agent-loop fetch
-  tool, hence the `partial` subset boundary (user-invoked search yes; autonomous
-  fetch tool not documented).
-- Evidence: vendor-doc-url <https://docs.cursor.com/context/@-symbols/@-web>;
-  snapshot-id living docs; snapshot-date 2026-06-21.
+- Vendor-confirmed: Cursor's agent has a Browser tool that "can navigate
+  anywhere on the web by visiting URLs, following links", run as a secure web
+  view controlled through an MCP server. This replaces the earlier `partial`
+  reading, which rested on the user-invoked `@Web` search alone.
+- Evidence: vendor-doc-url <https://cursor.com/docs/agent/tools/browser>;
+  snapshot-id living docs; snapshot-date 2026-10-03.
+
+## Vendor Sources
+
+Retrieved 2026-10-03.
+
+- <https://cursor.com/docs/rules> (rules)
+- <https://cursor.com/docs/mcp> (`mcp.json`)
+- <https://cursor.com/docs/skills> (skill directories)
+- <https://cursor.com/docs/agent/tools/browser> (Browser tool)
+
+## Discovery Targets
+
+- Discovery target: mcp_servers by 2026-12-31 — decide whether Apothem renders the profile's MCP inventory into `.cursor/mcp.json` or keeps naming it as operator-owned.
 
 ## Recommended Postfix Rendering
 

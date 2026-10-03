@@ -4,10 +4,11 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-06-25
-- Snapshot note: live re-verification of `developers.openai.com/codex` — AGENTS.md instruction chain (`CODEX_HOME`, `AGENTS.override.md`, `project_doc_fallback_filenames`), `~/.codex/config.toml` (+ `[mcp_servers.<name>]` tables), `~/.codex/agents/*.toml` subagents, `~/.agents/skills`, `~/.codex/hooks.json`, and the first-party web-search tool all confirmed current; no authority-host move; no immutable pin — mutable docs site
+- Snapshot date: 2026-10-03
+- Snapshot note: refreshed against the Codex docs, which moved from `developers.openai.com/codex` to `learn.chatgpt.com/docs` (the old addresses redirect). The AGENTS.md chain (`CODEX_HOME`, `AGENTS.override.md`), `[mcp_servers.<name>]` tables in `config.toml`, `~/.codex/agents/*.toml` subagents, `$HOME/.agents/skills`, `hooks.json`, and the web search tool are confirmed. Previous 2026-06-25.
 - Adapter source: `src/apothem/harnesses/codex/`
-- Evidence level: adapter-local projection; no vendor-native UI claim is made here.
+- Evidence level: vendor-doc pinned (living docs; no immutable pin). No vendor-native UI claim is made here.
+- Shared root: Codex owns `~/.agents/skills/`, which Cursor, Gemini CLI, GitHub Copilot, Kimi Code, Open-Claw, OpenCode, Windsurf, and Zed also load. The registry records those readers and `apothem install` names them.
 
 ## MCP Surface Projection
 
@@ -17,9 +18,24 @@
 
 ## Subagent and Skills Surface Projection
 
-- Subagents: standalone TOML in `~/.codex/agents/` requiring `name` / `description` / `developer_instructions`; any other `config.toml` key may be set, and omitted keys (`model`, `model_reasoning_effort`, `sandbox_mode`, ...) inherit from the parent session (re-checked 2026-10-02 against https://developers.openai.com/codex/subagents). The adapter's `codex_agents` converter emits the three required keys plus `sandbox_mode = "read-only"` for an agent whose tool grant authors no files (no Write or Edit after its deny list). It sets no model or reasoning effort, so both inherit. Codex has no per-agent tool allowlist or turn limit, so `tools` and `maxTurns` do not map (see `conversion_losses` in `capabilities.yml`).
-- Skills: user-scope path is `~/.agents/skills` (confirmed correct). System skills are OpenAI-bundled with no official on-disk path — any `~/.codex/skills/.system` reference is an observed-runtime convenience, not an official path, and is never a write or sweep target.
-- Skill invocation policy (verified 2026-10-02 against https://developers.openai.com/codex/skills, which redirects to https://learn.chatgpt.com/docs/build-skills): Codex ignores `disable-model-invocation`. It reads `policy.allow_implicit_invocation` (default `true`) from `agents/openai.yaml` beside `SKILL.md`; `false` stops implicit selection while explicit `$skill` invocation still works. The `native_skills` and `command_skills` install modes write that file with `allow_implicit_invocation: false` for every skill or command whose source sets `disable-model-invocation: true`.
+- Subagents: standalone TOML in `~/.codex/agents/` (personal) or `.codex/agents/` (project) requiring `name` / `description` / `developer_instructions`; any other `config.toml` key may be set, and omitted keys (`model`, `model_reasoning_effort`, `sandbox_mode`, ...) inherit from the parent session (re-checked 2026-10-02 against https://learn.chatgpt.com/docs/agent-configuration/subagents). The adapter's `codex_agents` converter emits the three required keys plus `sandbox_mode = "read-only"` for an agent whose tool grant authors no files (no Write or Edit after its deny list). It sets no model or reasoning effort, so both inherit. Codex has no per-agent tool allowlist or turn limit, so `tools` and `maxTurns` do not map (see `conversion_losses` in `capabilities.yml`).
+- Skills: user-scope path is `$HOME/.agents/skills`. System skills are OpenAI-bundled with no official on-disk path — any `~/.codex/skills/.system` reference is an observed-runtime convenience, not an official path, and is never a write or sweep target.
+- Skill invocation policy (verified 2026-10-02 against https://learn.chatgpt.com/docs/build-skills): Codex ignores `disable-model-invocation`. It reads `policy.allow_implicit_invocation` (default `true`) from `agents/openai.yaml` beside `SKILL.md`; `false` stops implicit selection while explicit `$skill` invocation still works. The `native_skills` and `command_skills` install modes write that file with `allow_implicit_invocation: false` for every skill or command whose source sets `disable-model-invocation: true`.
+
+## Vendor Sources
+
+Retrieved 2026-10-03 unless marked.
+
+- <https://learn.chatgpt.com/docs/agent-configuration/agents-md> (AGENTS.md chain)
+- <https://learn.chatgpt.com/docs/extend/mcp> (`[mcp_servers.<name>]`)
+- <https://learn.chatgpt.com/docs/build-skills> (skill locations)
+- <https://learn.chatgpt.com/docs/hooks> (`hooks.json`)
+- <https://learn.chatgpt.com/docs/agent-configuration/subagents> (agent TOML; retrieved 2026-10-02)
+- <https://learn.chatgpt.com/docs/web-search> (web search modes)
+
+## Discovery Targets
+
+- Discovery target: mcp_servers by 2026-12-31 — decide whether Apothem renders the profile's MCP inventory into `~/.codex/config.toml` (which the adapter does not overwrite today) or keeps naming it as operator-owned.
 
 ## Recommended Postfix Rendering
 
@@ -42,8 +58,8 @@
 ## Web-Fetch / Browser-Retrieval Surface
 
 - Capability: `web_fetch` = **yes**. The backing dimension for `rules/source-accessibility.md` step 1 ("retrieve through the host's browser / fetch capability").
-- Vendor-confirmed: Codex CLI ships a first-party web search tool, enabled by default for local tasks (cache-served); `--search` or `web_search = "live"` fetches live results, `"disabled"` turns it off.
-- Evidence: vendor-doc-url <https://developers.openai.com/codex/cli/features> ("Codex ships with a first-party web search tool"); snapshot-id living docs (no immutable commit); snapshot-date 2026-06-21.
+- Vendor-confirmed: local Codex chats use cached web search by default (an OpenAI-maintained index); `codex --search` or `web_search = "live"` in `config.toml` fetches live results, `"indexed"` limits access to the index, and `"disabled"` turns the tool off.
+- Evidence: vendor-doc-url <https://learn.chatgpt.com/docs/web-search>; snapshot-id living docs (no immutable commit); snapshot-date 2026-10-03.
 
 ## Hook Surface Projection
 
