@@ -2,6 +2,14 @@
 name: "security-scanner"
 description: "Read-only secret, SAST-pattern, and config-risk sweep — a coarse first-pass that surfaces candidates fast and routes deep scanning to the host's CI scanners. Use when a security review is requested, before a release cut, after touching auth/crypto/IO surfaces, or when a secret may have been committed. Greps for credential literals (key/token/password/private-key/certificate, committed `.env` values), injection surfaces (`shell=True` on untrusted input, string-formatted SQL, command interpolation), unsafe-eval (`eval`/`exec`/`Invoke-Expression`), unsafe deserialization (`pickle.loads`, `yaml.load` without `SafeLoader`), and config risk (over-broad CI `permissions:`, unpinned Actions `uses:`, network egress). Routes known-vulnerable dependencies to the dependency-auditor agent, CVE/advisory triage to the vuln-triage skill, and leaked-credential rotation to the secret-rotation skill."
 kind: local
+tools:
+  - "read_file"
+  - "read_many_files"
+  - "list_directory"
+  - "glob"
+  - "grep_search"
+  - "run_shell_command"
+max_turns: 20
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

@@ -1,8 +1,6 @@
 ---
-name: "agent-orchestration"
+trigger: always_on
 description: "Agent and agent team orchestration — the six canonical team patterns (Research, Audit, Implementation, Generation, Quality, Documentation), the deploy-when threshold (3+ independent parallel operations, multi-path exploration, heavy reads, multi-dimension verification, multi-file generation), the single-message parallel-launch invariant, explicit return contracts, and context isolation. Canonical specification for CM-17 / CM-25."
-pathFilter: ""
-alwaysApply: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

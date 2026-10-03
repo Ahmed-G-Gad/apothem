@@ -11,7 +11,6 @@ maxTurns: 20
 # needs a targeted Read to confirm the pattern in context and rule out false positives. 20 covers
 # the multi-pattern sweep plus per-finding confirmation without permitting unbounded escalation.
 portability: "universal"
-memory: false
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

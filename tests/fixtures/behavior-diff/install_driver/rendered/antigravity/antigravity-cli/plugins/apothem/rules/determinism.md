@@ -1,8 +1,7 @@
 ---
-name: "determinism"
+trigger: glob
 description: "Every rendered option set carries the (Recommended) marker in its answer header, every terminal surface closes with a named next step, and every command, skill, output-style, and statusline surface holds a deterministic output shape — identical inputs produce identically-shaped output. The determinism harness proves the contract mechanically; the marker and next-step semantics are owned by their dedicated rules and this rule consolidates them under the determinism contract."
-pathFilter: "**/commands/**/*.md, **/skills/**/SKILL.md, **/rules/**/*.md, **/output-styles/**/*.md, **/statuslines/**/*.md"
-alwaysApply: false
+globs: "**/commands/**/*.md, **/skills/**/SKILL.md, **/rules/**/*.md, **/output-styles/**/*.md, **/statuslines/**/*.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

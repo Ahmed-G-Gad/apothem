@@ -1,8 +1,6 @@
 ---
-name: "host-discovery"
+trigger: always_on
 description: "Discover host-project conventions before emitting any artifact — language, formatter, linter, layout, naming, idioms, sibling-file patterns. Honor discoveries; surface silence as an authoritative inquiry per the canonical channel."
-pathFilter: ""
-alwaysApply: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

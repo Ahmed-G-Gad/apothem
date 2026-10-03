@@ -109,7 +109,7 @@
       "ownership_class": "apothem-owned"
     },
     "message": "dry run: no filesystem changes made",
-    "operation": "merge_tree_entries",
+    "operation": "antigravity_rules",
     "outcome": "created",
     "path": "<ROOT>/antigravity-cli/plugins/apothem/rules",
     "source": "<APOTHEM_SRC>/rules"
@@ -129,7 +129,7 @@
       "ownership_class": "apothem-owned"
     },
     "message": "dry run: no filesystem changes made",
-    "operation": "gemini_agents",
+    "operation": "antigravity_agents",
     "outcome": "created",
     "path": "<ROOT>/antigravity-cli/plugins/apothem/agents",
     "source": "<APOTHEM_SRC>/agents"

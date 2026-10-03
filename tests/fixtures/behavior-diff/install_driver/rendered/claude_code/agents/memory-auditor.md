@@ -10,7 +10,6 @@ maxTurns: 15
 # filesystem verification (Read / Glob / Grep). An audit across MEMORY.md plus 5–8 topic files with
 # 10–20 claims each accumulates quickly. 15 provides headroom without permitting unbounded exploration.
 portability: "universal"
-memory: false
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

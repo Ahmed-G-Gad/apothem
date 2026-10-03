@@ -11,7 +11,6 @@ maxTurns: 15
 # to extract the failing assertion and its source loci. 15 covers discovery + one full run + per-failure
 # triage without permitting unbounded re-runs.
 portability: "universal"
-memory: false
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

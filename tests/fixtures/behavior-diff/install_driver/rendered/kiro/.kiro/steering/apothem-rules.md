@@ -1,8 +1,7 @@
-<!-- BEGIN APOTHEM MANAGED BLOCK -->
 ---
 inclusion: always
 ---
-
+<!-- BEGIN APOTHEM MANAGED BLOCK -->
 <!-- SPDX-License-Identifier: MIT -->
 
 # Apothem — Kiro Bootstrap

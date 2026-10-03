@@ -1,8 +1,7 @@
 ---
-name: "code-craft-conventions"
+trigger: glob
 description: "Universal code-craft delegation stub for languages without a dedicated per-language rule. Discovers the host's ratified formatter / linter / type-checker / test framework / per-language idioms and honors them per M1; surfaces silence as inquiry per M5; defers to a per-language sibling rule (code-craft-python, code-craft-shell, code-craft-markdown) when one matches the artifact's path."
-pathFilter: "**"
-alwaysApply: false
+globs: "**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

@@ -1,8 +1,7 @@
 ---
-name: "bidirectional-binding"
+trigger: glob
 description: "Every substantive structural element carries reciprocal bindings to its peers in canonical five-direction notation — Drives → / Driven by ← / Satisfies → / Established by ↑ / Cross-bound with ↔. Every binding declared in one direction has a reciprocal back-pointer at the other end; half-edges are structural failures. A Bidirectional Binding Matrix appendix summarizes the graph where structure permits."
-pathFilter: "**/*.md, **/docs/**, **/CLAUDE.md, **/rules/**, **/skills/**, **/agents/**, **/commands/**, **/adr/**, **/rfcs/**, **/architecture*, **/design*"
-alwaysApply: false
+globs: "**/*.md, **/docs/**, **/CLAUDE.md, **/rules/**, **/skills/**, **/agents/**, **/commands/**, **/adr/**, **/rfcs/**, **/architecture*, **/design*"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

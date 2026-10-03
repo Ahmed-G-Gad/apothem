@@ -2,6 +2,15 @@
 name: "research-scout"
 description: "Read-only source discovery and ranking — decompose a research question into facets, fan out parallel web queries, rank candidates by authority, recency, and relevance, and return a deduplicated ranked source list. Use when a question needs sources before it can be answered: 'find the authoritative spec/RFC for X', 'what are the primary sources on Y', 'gather current references for a docs/copy claim', 'survey the landscape before a deep dive'. Fans external facets through WebSearch / WebFetch and any in-repo corpus through Read / Glob / Grep. Discovery and ranking only — never fabricates a URL, never synthesizes; claim verification and combination route to the fact-checker / source-synthesis surface."
 kind: local
+tools:
+  - "read_file"
+  - "read_many_files"
+  - "list_directory"
+  - "glob"
+  - "grep_search"
+  - "google_web_search"
+  - "web_fetch"
+max_turns: 15
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

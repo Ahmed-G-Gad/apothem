@@ -1,8 +1,6 @@
 ---
-name: "auto-memory"
+trigger: always_on
 description: "Auto memory lifecycle augmenting the harness built-in — classifies memory against PROGRESS.md / PLAN-NOTES.md / skills (stable fact/convention/preference/insight → memory; plan/task-specific → PROGRESS/PLAN-NOTES; reusable technique with detection signal → skill), bans session-specific context / incomplete info / CLAUDE.md duplicates / plan-specific decisions / ephemeral facts, and anchors topic-file hygiene to the path-filtered companion."
-pathFilter: ""
-alwaysApply: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

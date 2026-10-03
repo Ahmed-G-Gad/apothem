@@ -1,8 +1,6 @@
 ---
-name: "tool-use-discipline"
+trigger: always_on
 description: "Ordinary tool use runs as a disciplined loop: independent tool calls go in one turn, never sequentially; the agent works an observe → decide → act cadence; the loop iterates until a verifiable exit condition is met, never a fixed count. Generalizes the agent-tier single-message parallel-launch discipline down to every tool call. Harness-agnostic; advisory under the agnostic posture."
-pathFilter: ""
-alwaysApply: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

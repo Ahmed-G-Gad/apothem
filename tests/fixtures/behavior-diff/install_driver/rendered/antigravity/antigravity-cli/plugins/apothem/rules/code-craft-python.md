@@ -1,8 +1,7 @@
 ---
-name: "code-craft-python"
+trigger: glob
 description: "Per-language code-craft for Python — strict SOLID compliance, modern type hinting (3.10+ syntax, no Any), Google-style docstrings, specific exception handling, pytest discipline, security guardrails (no hardcoded secrets, no shell injection, no unsafe deserialization), and architectural anti-pattern interception. Path-filtered to Python source files and configuration manifests."
-pathFilter: "**/*.py, **/pyproject.toml, **/setup.py, **/setup.cfg, **/requirements*.txt, **/Pipfile, **/tox.ini, **/pytest.ini, **/conftest.py, **/.flake8, **/mypy.ini, **/ruff.toml, **/.ruff.toml, **/uv.toml, **/uv.lock, **/.python-version, **/pyrightconfig.json"
-alwaysApply: false
+globs: "**/*.py, **/pyproject.toml, **/setup.py, **/setup.cfg, **/requirements*.txt, **/Pipfile, **/tox.ini, **/pytest.ini, **/conftest.py, **/.flake8, **/mypy.ini, **/ruff.toml, **/.ruff.toml, **/uv.toml, **/uv.lock, **/.python-version, **/pyrightconfig.json"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

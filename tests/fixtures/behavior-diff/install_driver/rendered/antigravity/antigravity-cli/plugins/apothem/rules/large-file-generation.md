@@ -1,8 +1,7 @@
 ---
-name: "large-file-generation"
+trigger: glob
 description: "Large file generation via incremental appends — assess size (Small <200 / Medium 200–500 / Large 500–1500 / Massive >1500 lines), then for Large+ plan sections first and append via Write-then-Edit so documents are never silently truncated or abandoned."
-pathFilter: "**/.apothem/plans/**, **/.plans/**, **/*.md, **/docs/**"
-alwaysApply: false
+globs: "**/.apothem/plans/**, **/.plans/**, **/*.md, **/docs/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

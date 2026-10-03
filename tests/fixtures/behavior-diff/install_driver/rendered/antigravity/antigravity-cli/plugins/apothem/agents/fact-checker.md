@@ -1,7 +1,6 @@
 ---
 name: "fact-checker"
-description: "Read-only adversarial claim verification — decompose input into atomic claims, seek ≥2 independent sources, attempt refutation, assign cited verdicts (supported / refuted / unverifiable) with quoted evidence and confidence. Use when a claim needs proof before it ships: a benchmark or statistic in docs/copy, a 'X is faster/safer than Y' assertion, a citation that names an RFC or spec, a release note, or any factual claim a reviewer would challenge. Routes external claims through WebSearch / WebFetch and repository claims through Read / Glob / Grep; defaults to refuted-or-unverifiable when evidence is insufficient, never a charitable supported."
-kind: local
+description: "Adversarial claim verification — decompose input into atomic claims, seek ≥2 independent sources, attempt refutation, assign cited verdicts (supported / refuted / unverifiable) with quoted evidence and confidence. Use when a claim needs proof before it ships: a benchmark or statistic in docs/copy, a 'X is faster/safer than Y' assertion, a citation that names an RFC or spec, a release note, or any factual claim a reviewer would challenge. Routes external claims through WebSearch / WebFetch and repository claims through Read / Glob / Grep; defaults to refuted-or-unverifiable when evidence is insufficient, never a charitable supported."
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

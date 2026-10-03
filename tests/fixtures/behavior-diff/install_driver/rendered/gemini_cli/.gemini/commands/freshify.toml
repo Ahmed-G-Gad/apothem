@@ -1,19 +1,6 @@
 description = "Host- and forge-agnostic command that renders a project fresh, clean, trace-free, and production-ready. Purges caches and stale artifacts, removes legacy/obsolete narrative and back-references, normalizes file / folder naming to the host's ratified convention, drives every surface to maximal naturalness and coherence (no backward-compatibility / staleness / process-refinement narrative anywhere), enforces a current-version-only facade with a concise current-version changelog, and drives the host's discovered quality gates to green. In-place freshening is the default; every destructive step (cache purge, version-control-history rewrite, artifact deletion, file / folder rename, stale-run-trace removal) is confirmation-gated through the structured-inquiry channel. Carries zero host- or forge-specific vocabulary; every surface is discovered via rules/host-discovery.md, never named."
 
 prompt = """
----
-name: "freshify"
-version: "0.1.0"
-updated: "2026-10-02"
-description: "Host- and forge-agnostic command that renders a project fresh, clean, trace-free, and production-ready. Purges caches and stale artifacts, removes legacy/obsolete narrative and back-references, normalizes file / folder naming to the host's ratified convention, drives every surface to maximal naturalness and coherence (no backward-compatibility / staleness / process-refinement narrative anywhere), enforces a current-version-only facade with a concise current-version changelog, and drives the host's discovered quality gates to green. In-place freshening is the default; every destructive step (cache purge, version-control-history rewrite, artifact deletion, file / folder rename, stale-run-trace removal) is confirmation-gated through the structured-inquiry channel. Carries zero host- or forge-specific vocabulary; every surface is discovered via rules/host-discovery.md, never named."
-argument-hint: "[path/to/repo/] [--purge-caches] [--rewrite-history] [--normalize-naming] [--strict]"
-disable-model-invocation: true
-portability: "universal"
-allowed-tools: "Read, Glob, Grep"
----
-
-<!-- SPDX-License-Identifier: MIT -->
-
 # /freshify — Agnostic Freshening Core
 
 ---

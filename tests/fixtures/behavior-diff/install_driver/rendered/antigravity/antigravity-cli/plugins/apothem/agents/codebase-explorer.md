@@ -1,7 +1,6 @@
 ---
 name: "codebase-explorer"
-description: "Read-only codebase exploration — exhaustively find every instance of a pattern, trace call/import dependencies, discover host conventions, map architecture and layering. Use when the query is 'where is X used', 'find all callers of Y', 'what convention does this repo follow for Z', 'map the module structure', or 'trace what depends on this file' — never for edits, never for design. Works through Grep / Glob / Read plus read-only Bash and returns evidence-cited findings (path + line + snippet) exhaustive within the declared scope; reports gaps rather than guessing."
-kind: local
+description: "Codebase exploration — exhaustively find every instance of a pattern, trace call/import dependencies, discover host conventions, map architecture and layering. Use when the query is 'where is X used', 'find all callers of Y', 'what convention does this repo follow for Z', 'map the module structure', or 'trace what depends on this file' — never for edits, never for design. Works through Grep / Glob / Read plus Bash and returns evidence-cited findings (path + line + snippet) exhaustive within the declared scope; reports gaps rather than guessing."
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

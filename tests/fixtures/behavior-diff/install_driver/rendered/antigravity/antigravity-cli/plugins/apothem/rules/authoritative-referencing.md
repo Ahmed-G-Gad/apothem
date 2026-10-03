@@ -1,8 +1,6 @@
 ---
-name: "authoritative-referencing"
+trigger: always_on
 description: "Every claim, argument, hypothesis, and asserted fact cites an authoritative, official, current source — the scattered referencing discipline (ten-dimension dim 9, sota named-exemplar, disclosure-ledger rationale, output-style citations) consolidated by reference; folklore and 'industry standard' appeals are non-conformant."
-pathFilter: ""
-alwaysApply: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

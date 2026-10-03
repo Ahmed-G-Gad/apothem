@@ -2,6 +2,13 @@
 name: "memory-auditor"
 description: "Read-only memory-file auditor: cross-reference every claim in the harness memory tier (MEMORY.md index + topic files under `<harness-root>/projects/{hash}/memory/` and `<harness-root>/memory/`) against actual filesystem state — file/line/rule counts (glob and count), referenced paths (do they exist?), rule scope labels (match `pathFilter` frontmatter?), dates (against frontmatter `updated:` or `mtime`, never the system clock), and cross-reference matrices. Dispatch when MEMORY.md or a topic file may have drifted from reality and you need a per-claim PASS/FAIL verdict with contradicting evidence — e.g. 'audit MEMORY.md after the rules cohort was renamed', 'verify the memory index counts match the current ecosystem', 'check the debugging topic file for stale references to deleted artifacts'. Existence + name match only; never re-audit an artifact's internal correctness (convention-auditor's scope). Read-only: never writes, never fixes."
 kind: local
+tools:
+  - "read_file"
+  - "read_many_files"
+  - "list_directory"
+  - "glob"
+  - "grep_search"
+max_turns: 15
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

@@ -11,7 +11,6 @@ maxTurns: 20
 # regularly need 3–5 tool calls per pattern (discover candidates → filter false positives →
 # read for confirmation), and a single invocation may need to query several independent patterns.
 portability: "universal"
-memory: false
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

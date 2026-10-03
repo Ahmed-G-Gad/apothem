@@ -1,8 +1,7 @@
 ---
-name: "i18n-discipline"
+trigger: glob
 description: "Locale-cohort selection, framework i18n integration, machine-seed translation with optional human review, per-locale glossary, RTL discipline, and hreflang / lang attribute discipline for every host-project translated surface."
-pathFilter: "**/site/**, **/docs/**, **/_inputs/locale-glossary-*.md, **/next.config.*"
-alwaysApply: false
+globs: "**/site/**, **/docs/**, **/_inputs/locale-glossary-*.md, **/next.config.*"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

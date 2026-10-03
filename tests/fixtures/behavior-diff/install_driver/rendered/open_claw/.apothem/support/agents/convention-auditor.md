@@ -10,7 +10,6 @@ maxTurns: 15
 # per artifact plus verification follow-up reads. A full ecosystem audit across 20+ artifacts needs ~20+ reads
 # plus grep confirmations. Capped at 15 as a soft ceiling; invokers may override per scope.
 portability: "universal"
-memory: false
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

@@ -4,7 +4,7 @@ version: "0.1.0"
 updated: "2026-06-16"
 description: "Research Suite template — matched when the request is a structured research engagement from problem ideation and question formulation, conceptual / theoretical framing, evidence-gathering across primary sources, literature synthesis with an explicit gap statement, proposal authoring, falsifiable study design and preregistration, reproducible experiment execution, preregistered statistical analysis, paper authoring, peer-review-grade adversarial review, venue-formatted publication, or post-acceptance dissemination and impact; consumed by the /research pipeline commands (ideate, spec, theory, sources, synthesis, proposal, design, experiment, analysis, paper, review, publish, disseminate). Houses the canonical surface that defines research-suite structure, the ten rigor mandates (R1–R10), the thirteen-stage research lifecycle, and the Principal-Investigator Framework. Not directly user-invocable; the consuming /research pipeline stages resolve the surface by path."
 archetype: "workflow-template"
-userInvocable: false
+user-invocable: false
 disable-model-invocation: true
 allowed-tools: "Read"
 ---

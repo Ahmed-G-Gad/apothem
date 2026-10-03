@@ -1,8 +1,7 @@
 ---
-name: "agnostic-posture-checklist"
+trigger: glob
 description: "Path-filtered companion to `agnostic-posture.md`: the default-off and opt-in invariant checklist, each with a concrete verification step, that every phase's definition of done satisfies and the planning-pipeline commands and learning loop consult."
-pathFilter: "**/commands/**, **/rules/**, **/output-styles/**, **/statuslines/**, **/.apothem/plans/**, **/.plans/**"
-alwaysApply: false
+globs: "**/commands/**, **/rules/**, **/output-styles/**, **/statuslines/**, **/.apothem/plans/**, **/.plans/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

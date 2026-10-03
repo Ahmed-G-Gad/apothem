@@ -1,8 +1,7 @@
 ---
-name: "pre-emission-gate-bars"
+trigger: glob
 description: "Path-filtered companion rule carrying the full Fifteen-Bars table (M1–M15 detailed Check + Failure→action columns), the Attestation Schema YAML block, and the iteration-on-failure protocol declared at the parent `pre-emission-gate.md` rule's anchor; demand-loaded when the assistant edits any artifact whose emission triggers the fifteen-bar gate."
-pathFilter: "**/*.md, **/CLAUDE.md, **/rules/**, **/commands/**, **/skills/**, **/agents/**, **/docs/**"
-alwaysApply: false
+globs: "**/*.md, **/CLAUDE.md, **/rules/**, **/commands/**, **/skills/**, **/agents/**, **/docs/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

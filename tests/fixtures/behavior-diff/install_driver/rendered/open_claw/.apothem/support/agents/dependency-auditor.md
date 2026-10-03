@@ -12,7 +12,6 @@ maxTurns: 15
 # follow-up read to confirm the pin and assess the transitive path. 15 covers a full ecosystem
 # sweep with per-finding diagnostic follow-up without permitting unbounded retries.
 portability: "universal"
-memory: false
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

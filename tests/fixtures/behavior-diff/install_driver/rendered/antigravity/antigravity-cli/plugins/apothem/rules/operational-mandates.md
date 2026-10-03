@@ -1,8 +1,6 @@
 ---
-name: "operational-mandates"
+trigger: always_on
 description: "The ten always-on behavioral mandates CM-1–CM-10 as canonical one-line directives — critical evaluation, zero assumptions, configuration-driven, search-before-implement, best solution, self-improvement, coherent product, bottleneck-first focus, decision velocity, and brutal honesty. The behavioral floor every other rule reads through; per-mandate violation indicators and recovery actions live at the path-filtered companion."
-pathFilter: ""
-alwaysApply: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

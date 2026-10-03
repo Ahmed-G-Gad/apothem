@@ -1,7 +1,6 @@
 ---
 name: "mcp-builder"
 description: "Scaffold a Model Context Protocol (MCP) server skeleton from a tool/resource contract — contract-first, well-typed tools, minimal surface. Use when: 'build an MCP server for <API>', 'scaffold MCP tools from this spec', 'wire FastMCP/TypeScript-SDK tool definitions', 'add a tool that exposes <resource> over MCP'. Detection: tool names + argument shapes + return types + resource URIs are stated or derivable. Selects the SDK via host-discovery (FastMCP for Python, the TypeScript SDK for Node), emits one typed tool definition per contract entry plus a list-tools smoke test, and scaffolds nothing speculative. Not for: tuning, securing, or load-testing an existing server (those surface as adjacent gaps)."
-kind: local
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

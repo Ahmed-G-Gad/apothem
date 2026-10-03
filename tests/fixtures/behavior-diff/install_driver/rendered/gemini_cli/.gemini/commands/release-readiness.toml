@@ -1,19 +1,6 @@
 description = "Operator-driven pre-release gate sweep against the production-ready discipline. Runs the host's quality matrix (lint, format, type-check, test), a dependency-risk pass, and the supply-chain checks (pinned actions, no secret literals, signed artifacts where ratified), then verifies the seven visibility surfaces, CHANGELOG currency, and version-to-tag consistency. Emits a single readiness verdict — READY or BLOCKED with the ordered blocking list — at the consuming suite's _inputs/release-readiness-findings.md with HIGH / MEDIUM / LOW severity triage and concrete-driver rationale per finding. SOTA references: Keep-a-Changelog, Conventional Commits, SemVer, SLSA, Sigstore."
 
 prompt = """
----
-name: "release-readiness"
-version: "0.1.0"
-updated: "2026-10-02"
-description: "Operator-driven pre-release gate sweep against the production-ready discipline. Runs the host's quality matrix (lint, format, type-check, test), a dependency-risk pass, and the supply-chain checks (pinned actions, no secret literals, signed artifacts where ratified), then verifies the seven visibility surfaces, CHANGELOG currency, and version-to-tag consistency. Emits a single readiness verdict — READY or BLOCKED with the ordered blocking list — at the consuming suite's _inputs/release-readiness-findings.md with HIGH / MEDIUM / LOW severity triage and concrete-driver rationale per finding. SOTA references: Keep-a-Changelog, Conventional Commits, SemVer, SLSA, Sigstore."
-argument-hint: "[path/to/repo/] [--strict]"
-disable-model-invocation: true
-portability: "universal"
-allowed-tools: "Read, Glob, Grep"
----
-
-<!-- SPDX-License-Identifier: MIT -->
-
 # /release-readiness — Pre-Release Gate Sweep
 
 ---

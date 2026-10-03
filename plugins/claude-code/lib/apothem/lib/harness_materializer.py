@@ -16,6 +16,7 @@ from typing import Any, Final
 
 import yaml
 
+from apothem.lib.frontmatter import split_frontmatter
 from apothem.lib.profile import DEFAULT_LANGUAGE, DEFAULT_STYLE, coerce_profile
 
 # Canonical sentinel pair delimiting the Apothem-managed block inside an
@@ -77,7 +78,14 @@ def merge_managed_block(existing: str, body: str) -> str:
 
     The merge is idempotent: re-merging the same *body* into text that
     already carries the resulting block returns byte-identical output.
+
+    A *body* that opens with YAML frontmatter (the rule-file templates whose
+    activation keys a harness reads from byte 0) is emitted frontmatter first;
+    see :func:`_merge_frontmatter_block`.
     """
+    body_parts = split_frontmatter(body)
+    if body_parts is not None:
+        return _merge_frontmatter_block(existing, *body_parts)
     wrapped = wrap_managed_block(body)
     if not existing.strip():
         return wrapped
@@ -86,6 +94,50 @@ def merge_managed_block(existing: str, body: str) -> str:
         return existing.replace(current_block, wrapped.rstrip("\n"), 1)
     separator = "" if existing.endswith("\n") else "\n"
     return f"{existing}{separator}\n{wrapped}"
+
+
+def _owned_frontmatter_split(text: str) -> tuple[str, str] | None:
+    """Return ``(frontmatter, rest)`` when *text* has the frontmatter-first shape.
+
+    The shape is a byte-0 frontmatter block immediately followed by the BEGIN
+    sentinel, with no blank line between them. Only
+    :func:`_merge_frontmatter_block` writes it, so the frontmatter is Apothem's.
+    An operator file with its own frontmatter that later received an appended
+    block always has a blank line (and usually prose) before the sentinel, so it
+    never matches.
+    """
+    parts = split_frontmatter(text)
+    if parts is None or not parts[1].startswith(APOTHEM_BLOCK_BEGIN):
+        return None
+    return parts
+
+
+def _merge_frontmatter_block(existing: str, frontmatter: str, body: str) -> str:
+    """Merge a frontmatter-carrying managed body, keeping the frontmatter first.
+
+    Emits ``frontmatter``, then the BEGIN sentinel, *body* and the END sentinel,
+    then any operator prose. Three cases for *existing*:
+
+    - It already has the frontmatter-first shape: Apothem's frontmatter and
+      block are both replaced; operator prose after the block is kept.
+    - It opens with the operator's own frontmatter: that frontmatter governs the
+      file, so the block (without Apothem's frontmatter) is folded in as for a
+      plain body.
+    - Anything else (empty, operator prose, or a legacy install whose
+      frontmatter sat inside the block): any existing block is removed and the
+      frontmatter-first unit is written at the top, with the operator prose
+      moved below it.
+    """
+    owned = _owned_frontmatter_split(existing)
+    if owned is None and split_frontmatter(existing) is not None:
+        return merge_managed_block(existing, body)
+    remainder = owned[1] if owned is not None else existing
+    operator = remove_managed_block(remainder)
+    head = frontmatter if frontmatter.endswith("\n") else f"{frontmatter}\n"
+    emitted = head + wrap_managed_block(body)
+    if operator.strip():
+        emitted += f"\n{operator}"
+    return emitted
 
 
 def remove_managed_block(existing: str) -> str:
@@ -101,7 +153,13 @@ def remove_managed_block(existing: str) -> str:
 
     Round-trips byte-for-byte for the canonical case: an operator prose block
     ending in a single newline, merged-then-removed, returns the original.
+
+    For the frontmatter-first shape (Apothem's frontmatter directly followed by
+    the block), the frontmatter is removed together with the block.
     """
+    owned = _owned_frontmatter_split(existing)
+    if owned is not None:
+        return remove_managed_block(owned[1])
     block = extract_managed_block(existing)
     if block is None:
         return existing

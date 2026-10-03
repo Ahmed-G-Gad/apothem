@@ -1,8 +1,6 @@
 ---
-name: "option-annotation"
+trigger: always_on
 description: "Every multi-option choice carries a Recommended marker plus principle-linked rationale — silent picks and un-annotated option lists are forbidden in authoritative territory. The structured-inquiry subset delegates to the canonical structured inquiry schema; this rule extends the discipline to prose-and-document option sets."
-pathFilter: ""
-alwaysApply: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

@@ -1,8 +1,7 @@
 ---
-name: "harness-adapter-shape"
+trigger: glob
 description: "Per-harness adapter discipline — discovery walk per harness, sibling-convention convergence, per-harness pre-emission gate adaptation, 7-column adapter-test matrix shape, cross-harness redundancy elimination, and the per-harness STANDARD CONVENTION PIN schema (vendor doc URL + commit-SHA + snapshot date + canonical filename + canonical schema). Demand-loaded on adapter-sub-package touches, co-triggering with its schemas companion."
-pathFilter: "**/src/apothem/harnesses/**, **/_inputs/harness-*"
-alwaysApply: false
+globs: "**/src/apothem/harnesses/**, **/_inputs/harness-*"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

@@ -15,11 +15,19 @@
   (`docs.trae.ai`, https://docs.trae.ai/ide/rules). No authority-host move; no
   immutable version pin is exposed (mutable docs site), so every captured
   convention carries a no-immutable-source exception.
-- Config-root note: the Trae workspace rules directory is `.trae/rules/`. The
-  vendor anchors are `project_rules.md` (project scope) and `user_rules.md`
-  (user scope). The adapter is project-scope and writes only a dedicated
-  `<project>/.trae/rules/apothem-rules.md` file alongside those anchors; it
-  never clobbers `project_rules.md` or `user_rules.md`.
+- Config-root note: the Trae workspace rules directory is `.trae/rules/`
+  (project scope); global rules live under `~/.trae/user_rules`
+  (`%userprofile%/.trae/user_rules` on Windows). Re-checked 2026-10-02 against
+  https://docs.trae.ai/ide/rules, which no longer names a `project_rules.md`
+  anchor. The adapter is project-scope and writes only a dedicated
+  `<project>/.trae/rules/apothem-rules.md` file; it never clobbers other rule
+  files in that directory or the global rules.
+- Rule activation (re-checked 2026-10-02, same page): a project rule's
+  application mode is carried by its frontmatter `alwaysApply` property
+  (`true` for Always Apply), with `description` (intelligent apply) or `globs`
+  (file-pattern apply) for the other modes. The template emits
+  `alwaysApply: true` plus a `description`, as the first content in the file.
+  `trigger` is a Windsurf key that Trae does not document.
 - MCP is recognized: `.trae/mcp.json` is operator-owned; the adapter recognizes
   it but does not author entries. `capabilities.yml` `mcp_servers` and the
   shared capability matrix were set accordingly.
@@ -55,7 +63,8 @@
 Trae exposes **no vendor plugin or extension install surface** that Apothem
 ships. The adapter is project-scope rules-only: it writes a single merged rules
 file at `<project>/.trae/rules/apothem-rules.md` (alongside, never clobbering,
-the `project_rules.md` / `user_rules.md` anchors) and authors no other cohort.
+the operator's other project rules or the `~/.trae/user_rules` global rules)
+and authors no other cohort.
 There is no standalone-installable bundle; every artifact requires the full
 `apothem install --harness trae --project <path>` engine run.
 

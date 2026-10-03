@@ -1,8 +1,7 @@
 ---
-name: "agent-orchestration-patterns"
+trigger: glob
 description: "Path-filtered companion sub-rule carrying the team-pattern catalog, agent-type selection, launch protocol, return-contract enforcement, isolation discipline, error handling, decision tree, and anti-patterns that the parent `agent-orchestration.md` rule's anchors declare."
-pathFilter: "**/agents/**/*.md, **/commands/plan-*.md, **/skills/**/SKILL.md, **/rules/agent-orchestration*.md"
-alwaysApply: false
+globs: "**/agents/**/*.md, **/commands/plan-*.md, **/skills/**/SKILL.md, **/rules/agent-orchestration*.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

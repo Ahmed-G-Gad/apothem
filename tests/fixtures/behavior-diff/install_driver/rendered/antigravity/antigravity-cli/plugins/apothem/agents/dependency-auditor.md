@@ -1,7 +1,6 @@
 ---
 name: "dependency-auditor"
-description: "Read-only dependency-tree risk audit — flags unpinned, stale, duplicate, and known-vulnerable dependencies with manifest/lockfile evidence. Use when auditing supply-chain risk, before a release cut, after adding a dependency, or when a CVE/advisory lands. Detects the ecosystem via host-discovery: npm (package.json + package-lock/yarn/pnpm), pip (pyproject/requirements + lock), cargo (Cargo.toml + Cargo.lock), go (go.mod + go.sum). Runs npm audit / pip-audit / cargo audit / govulncheck and returns a risk-ranked table (known-vulnerable → unpinned → duplicate → stale) with per-row evidence; never widens a pin or escalates a scope — gaps surface as inquiry."
-kind: local
+description: "Dependency-tree risk audit — flags unpinned, stale, duplicate, and known-vulnerable dependencies with manifest/lockfile evidence. Use when auditing supply-chain risk, before a release cut, after adding a dependency, or when a CVE/advisory lands. Detects the ecosystem via host-discovery: npm (package.json + package-lock/yarn/pnpm), pip (pyproject/requirements + lock), cargo (Cargo.toml + Cargo.lock), go (go.mod + go.sum). Runs npm audit / pip-audit / cargo audit / govulncheck and returns a risk-ranked table (known-vulnerable → unpinned → duplicate → stale) with per-row evidence; never widens a pin or escalates a scope — gaps surface as inquiry."
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

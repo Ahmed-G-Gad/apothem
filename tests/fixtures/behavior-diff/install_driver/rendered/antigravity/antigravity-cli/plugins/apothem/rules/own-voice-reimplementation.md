@@ -1,8 +1,7 @@
 ---
-name: "own-voice-reimplementation"
+trigger: glob
 description: "Every reference-derived feature is reauthored in apothem's own voice with zero verbatim code/text/branding, is demonstrably more elegant and effective than the reference, and cites the relevant harness's own latest official documentation (a convention-pin snapshot dated within the prior 90 days)."
-pathFilter: "**/rules/**/*.md, **/commands/**/*.md, **/skills/**/*.md, **/agents/**/*.md, **/site/**/*.md*, **/assets/**"
-alwaysApply: false
+globs: "**/rules/**/*.md, **/commands/**/*.md, **/skills/**/*.md, **/agents/**/*.md, **/site/**/*.md*, **/assets/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

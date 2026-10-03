@@ -15,7 +15,7 @@
     "target": "<ROOT>/antigravity-cli/plugins/apothem/skills"
   },
   {
-    "mode": "merge_tree_entries",
+    "mode": "antigravity_rules",
     "source": "<APOTHEM_SRC>/rules",
     "target": "<ROOT>/antigravity-cli/plugins/apothem/rules"
   },
@@ -25,7 +25,7 @@
     "target": "<ROOT>/antigravity-cli/plugins/apothem/skills"
   },
   {
-    "mode": "gemini_agents",
+    "mode": "antigravity_agents",
     "source": "<APOTHEM_SRC>/agents",
     "target": "<ROOT>/antigravity-cli/plugins/apothem/agents"
   },

@@ -1,8 +1,7 @@
 ---
-name: "code-craft-markdown"
+trigger: glob
 description: "Per-language code-craft for Markdown / prose artifacts — purpose-driven structure, sentence-level justification, precision over politeness, active-voice construction, hedge-elimination per the clean-room generation projection. Honors host's ratified Markdown linter (markdownlint, vale, prose-linter) and frontmatter conventions; passes the host's lint clean."
-pathFilter: "**/*.md, **/*.markdown"
-alwaysApply: false
+globs: "**/*.md, **/*.markdown"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

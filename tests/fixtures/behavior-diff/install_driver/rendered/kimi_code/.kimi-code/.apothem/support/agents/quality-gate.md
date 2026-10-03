@@ -11,7 +11,6 @@ maxTurns: 15
 # targeted follow-up read to extract the exact error location. 15 covers multi-gate suites with
 # diagnostic follow-up without permitting unbounded retries.
 portability: "universal"
-memory: false
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

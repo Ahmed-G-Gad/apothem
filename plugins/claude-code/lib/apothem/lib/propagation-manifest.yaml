@@ -81,9 +81,11 @@ harnesses:
         target: "${HARNESS_ROOT}/rules/"
         mode: claude_rules
         ownership_class: apothem-owned
+      # native_skills renames source skill keys to the spelling Claude Code
+      # reads (userInvocable -> user-invocable).
       - source: "skills/"
         target: "${HARNESS_ROOT}/skills/"
-        mode: merge_tree_entries
+        mode: native_skills
         ownership_class: apothem-owned
       # The Apothem-owned support subtree (templates, hooks, the conformity
       # gate, and its schema fixtures) lives under the shared `.apothem/`
@@ -224,9 +226,12 @@ harnesses:
         target: "${HARNESS_ROOT}/../.config/apothem/rules/"
         mode: merge_tree_entries
         ownership_class: apothem-owned
+      # native_skills / command_skills write agents/openai.yaml with
+      # policy.allow_implicit_invocation: false beside each SKILL.md whose
+      # source sets disable-model-invocation: true (Codex ignores that key).
       - source: "skills/"
         target: "${HARNESS_ROOT}/../.agents/skills/"
-        mode: merge_tree_entries
+        mode: native_skills
         ownership_class: apothem-owned
       - source: "commands/"
         target: "${HARNESS_ROOT}/../.agents/skills/"
@@ -290,9 +295,12 @@ harnesses:
         target: "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/skills/"
         mode: command_skills
         ownership_class: apothem-owned
+      # Antigravity discards a rules/*.md file whose frontmatter lacks a valid
+      # trigger, so each rule is converted: alwaysApply -> always_on,
+      # pathFilter -> glob + globs, otherwise model_decision (description).
       - source: "rules/"
         target: "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/rules/"
-        mode: merge_tree_entries
+        mode: antigravity_rules
         ownership_class: apothem-owned
       - source: "skills/"
         target: "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/skills/"
@@ -300,7 +308,7 @@ harnesses:
         ownership_class: apothem-owned
       - source: "agents/"
         target: "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/agents/"
-        mode: gemini_agents
+        mode: antigravity_agents
         ownership_class: apothem-owned
       - source: "templates/"
         target: "${HARNESS_ROOT}/antigravity-cli/plugins/apothem/.apothem/support/templates/"

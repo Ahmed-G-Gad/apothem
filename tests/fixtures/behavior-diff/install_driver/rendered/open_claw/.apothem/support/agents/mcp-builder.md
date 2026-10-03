@@ -12,7 +12,6 @@ maxTurns: 20
 # tools. Each tool definition adds a read/write pair, and the smoke test may need one
 # diagnostic re-run; 20 covers a multi-tool contract without unbounded retries.
 portability: "universal"
-memory: false
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

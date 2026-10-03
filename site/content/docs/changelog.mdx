@@ -21,6 +21,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- **The one-shot installers offer a checksum-only path.**
+  `APOTHEM_VERIFY=checksum` installs the release's platform archive after
+  checking its SHA-256 against the release's `SHA256SUMS`, aborts on a
+  mismatch before extracting anything, and states that a matching digest
+  proves integrity, not who published the archive. It is the documented
+  alternative to `APOTHEM_ALLOW_UNVERIFIED=1` for a host without the
+  maintainer's public key.
 - **Every `--json` document carries `schema_version`**, and the profile
   schemas are served at their `$id` URLs.
 - **`doctor` probes each installed harness's hooks** and accepts `--project`.
@@ -71,6 +78,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- **Each converted cohort declares what it keeps or drops.** Every adapter
+  that converts commands, agents, or rules records a `conversion_losses` map
+  in its `capabilities.yml`, checked against real converted output, and
+  Gemini CLI command prompts no longer start with the source frontmatter.
+- **Skill and command descriptions stay within 1,024 characters**, the Agent
+  Skills limit, and the schemas enforce it.
+- **The commands README records each command's model-invocation setting**,
+  and a test keeps the table equal to the command files.
 - **Usage errors exit 64** with a `cli.usage` envelope under `--json`,
   distinct from a findings or partial-write exit.
 - **`quickstart` asks for a harness** instead of configuring all seventeen;
@@ -141,6 +156,21 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **Codex keeps user-only skills out of implicit invocation.** Codex ignores
+  `disable-model-invocation`, so the install writes `agents/openai.yaml` with
+  `allow_implicit_invocation: false` beside each user-only skill.
+- **Claude Code skills use `user-invocable`**, the key Claude Code reads, in
+  the engine install and the plugin.
+- **Selecting an Apothem output style keeps Claude Code's coding
+  instructions** (`keep-coding-instructions: true`).
+- **Cursor, Kiro, Trae, CodeBuddy, and Windsurf rule files put frontmatter
+  first**, ahead of the managed-block marker, so the tool reads it. Trae rules
+  activate with `alwaysApply`, and Antigravity plugin rules carry a valid
+  `trigger`.
+- **Converted agents keep their limits.** Read-only agents run in a read-only
+  Codex sandbox, Gemini CLI agents get a tool allowlist and `max_turns`, and
+  the hard-coded Codex reasoning effort is gone. Agents no longer set
+  `memory: false`, a value Claude Code does not define.
 - **A missing `click` or `rich` gives a structured error naming the install
   command** instead of a traceback, and `PYTHONPATH=src` resolves the vendored
   dependencies.
@@ -166,10 +196,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   never built it, and v1.1.0 carries none. The release build now packages it
   into the signed, hashed, and attested asset set.
 - **Extension wrappers run the engine version they shipped with.** The Gemini
-  CLI command, the Gemini and Qwen Code context files, and the Codex plugin
-  skill called `npx @ahmed-g-gad/apothem` with no version, so a later npm
-  publish changed what an installed extension ran. Each call now pins the
-  wrapper's own version, and `bump_version.py` moves the pins.
+  CLI and Qwen Code commands, the Gemini and Qwen Code context files, the
+  Codex plugin skill, and the VS Code extension's default runner called
+  `npx @ahmed-g-gad/apothem` with no version, so a later npm publish changed
+  what an installed extension ran. Each call now pins the wrapper's own
+  version, and `bump_version.py` moves the pins.
+- **The docs describe the VS Code extension as it ships.** The install page
+  said it installs from the Visual Studio Marketplace, where no listing
+  exists, and the README said each release attaches a signed `.vsix`, which
+  v1.1.0 does not. Both now say how to install the package and how to build
+  it from a checkout.
 - **The wheel and sdist carry the full hook corpus.** They left out
   `hooks/hooks.json` and the hook READMEs that every other channel ships.
 - **Path-filtered rules no longer load in every Claude Code session.** Claude

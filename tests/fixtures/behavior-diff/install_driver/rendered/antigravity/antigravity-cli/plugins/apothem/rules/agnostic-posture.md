@@ -1,8 +1,6 @@
 ---
-name: "agnostic-posture"
+trigger: always_on
 description: "Default-off, opt-in posture for every shipped behavior; correctness gates stay advisory; every surface is harness-neutral; model, effort, and workflow preference resolve only from an explicit in-conversation choice."
-pathFilter: ""
-alwaysApply: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

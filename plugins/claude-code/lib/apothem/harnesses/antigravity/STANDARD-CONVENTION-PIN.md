@@ -16,6 +16,33 @@
 - Immutable pin: none — Antigravity is a hosted product with no version or
   commit surface (the sitemap exposes a changelog but no pin); the
   `no-immutable-source` exception stands for every claim.
+- 2026-10-02 re-check (rules and plugin manifest only): the docs are now
+  server-rendered, and `https://antigravity.google/docs/rules` and
+  `https://antigravity.google/docs/plugins` were read as raw official page
+  text. The claims under "Plugin rules and manifest" below rest on that text;
+  the other sections keep the partial-confidence basis above until a full
+  re-pin.
+
+## Plugin rules and manifest (verified 2026-10-02)
+
+- Rules: every `.md` file inside a `rules/` directory must start with YAML
+  frontmatter declaring a valid `trigger` (`always_on`, `model_decision`,
+  `glob`, or `manual`); a file without one, or with an unrecognised value, is
+  silently discarded. `model_decision` requires `description`; `glob` requires
+  `globs` (comma-separated patterns). The Antigravity CLI activates the rules
+  packaged under `~/.gemini/antigravity-cli/plugins/<plugin_name>/rules/`.
+  The adapter therefore converts each Apothem rule (`antigravity_rules` install
+  mode): `alwaysApply: true` becomes `trigger: always_on`, a non-empty
+  `pathFilter` becomes `trigger: glob` with `globs`, any other rule becomes
+  `trigger: model_decision`; `description` is always emitted and the Apothem
+  keys `name`, `pathFilter`, and `alwaysApply` are dropped.
+- Always-on budget: all active global and `always_on` rules share a
+  20,000-token budget; past it Antigravity demotes the largest rule files to
+  `- <path>: <description>` pointers the agent reads on demand. Single rule
+  files are truncated past 24,000 bytes; no Apothem rule is that large.
+- Manifest: `plugin.json` admits only `name` (required for the CLI) and
+  `description`; the published schema sets `additionalProperties: false`. The
+  template carries exactly those two keys.
 
 ## Antigravity CLI Surface Projection (partial confidence)
 

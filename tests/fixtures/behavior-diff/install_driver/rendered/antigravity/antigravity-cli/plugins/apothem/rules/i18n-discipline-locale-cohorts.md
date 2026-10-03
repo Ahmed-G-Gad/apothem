@@ -1,8 +1,7 @@
 ---
-name: "i18n-discipline-locale-cohorts"
+trigger: glob
 description: "Path-filtered companion sub-rule to i18n-discipline.md — carries the Modern Dev Cohort selection rationale + per-locale reach data, the RTL CSS-token catalog, and the hreflang link-tag shape + canonical-URL discipline. Demand-loaded on site / docs / locale-glossary / i18n-config touches."
-pathFilter: "**/site/**, **/docs/**, **/_inputs/locale-glossary-*.md, **/next.config.*"
-alwaysApply: false
+globs: "**/site/**, **/docs/**, **/_inputs/locale-glossary-*.md, **/next.config.*"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

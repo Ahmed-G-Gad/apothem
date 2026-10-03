@@ -1,19 +1,6 @@
 description = "GitHub-specific specialization of /freshify that produces a single 100% fresh first-version release on origin/main — one templated release: <repo-name> v0.1.0 commit, strictly-green and maximal-score workflow cards (OpenSSF Scorecard where applicable), a curated concise first-version CHANGELOG, and zero residual GitHub traces (caches, branches, pull requests, prior releases/packages/deployments, failed runs, workflow-run history, draft/pre-releases, stale tags, gist/wiki traces, Pages build history, Actions run logs, environment/deployment records, branch-protection drift, git history). Inherits the agnostic freshening core from /freshify and adds only the forge-specific surface; in-place freshening is the default and every destructive step is confirmation-gated through the structured-inquiry channel."
 
 prompt = """
----
-name: "github-deploy-fresh"
-version: "0.1.0"
-updated: "2026-10-02"
-description: "GitHub-specific specialization of /freshify that produces a single 100% fresh first-version release on origin/main — one templated release: <repo-name> v0.1.0 commit, strictly-green and maximal-score workflow cards (OpenSSF Scorecard where applicable), a curated concise first-version CHANGELOG, and zero residual GitHub traces (caches, branches, pull requests, prior releases/packages/deployments, failed runs, workflow-run history, draft/pre-releases, stale tags, gist/wiki traces, Pages build history, Actions run logs, environment/deployment records, branch-protection drift, git history). Inherits the agnostic freshening core from /freshify and adds only the forge-specific surface; in-place freshening is the default and every destructive step is confirmation-gated through the structured-inquiry channel."
-argument-hint: "[path/to/repo/] [--purge-runs] [--rewrite-history] [--recreate-repo] [--strict]"
-disable-model-invocation: true
-portability: "universal"
-allowed-tools: "Read, Glob, Grep"
----
-
-<!-- SPDX-License-Identifier: MIT -->
-
 # /github-deploy-fresh — GitHub First-Version Fresh Deployment
 
 ---

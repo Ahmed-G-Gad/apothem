@@ -46,3 +46,17 @@ tool_surface_restrictions:
   - network-write-unsigned
 system_prompt_template_path: "n/a"
 agent_memory_surface: "~/.claude/projects/<project>/memory/ (auto-memory) plus CLAUDE.md"
+# What each source frontmatter key becomes in a converted cohort (see
+# tests/unit/test_conversion_losses.py for the value vocabulary). Commands are
+# installed as skills whose SKILL.md keeps the source frontmatter; Claude Code
+# reads the skill keys and ignores the Apothem metadata.
+conversion_losses:
+  commands:
+    name: "native:name"
+    description: "native:description"
+    argument-hint: "native:argument-hint"
+    disable-model-invocation: "native:disable-model-invocation"
+    allowed-tools: "native:allowed-tools"
+    version: "ignored"
+    updated: "ignored"
+    portability: "ignored"

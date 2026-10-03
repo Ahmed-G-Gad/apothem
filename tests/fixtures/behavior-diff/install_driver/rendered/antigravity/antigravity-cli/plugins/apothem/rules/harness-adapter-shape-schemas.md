@@ -1,8 +1,7 @@
 ---
-name: "harness-adapter-shape-schemas"
+trigger: glob
 description: "Path-filtered companion to `rules/harness-adapter-shape.md` — carries the per-harness schema catalog, convergence-vs-divergence table, per-harness pre-emission gate adaptation, the 7-column adapter-test matrix template, the cross-harness redundancy hoist heuristic, and the per-harness STANDARD CONVENTION PIN templates for the 17-harness cohort."
-pathFilter: "**/src/apothem/harnesses/**, **/_inputs/harness-*"
-alwaysApply: false
+globs: "**/src/apothem/harnesses/**, **/_inputs/harness-*"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

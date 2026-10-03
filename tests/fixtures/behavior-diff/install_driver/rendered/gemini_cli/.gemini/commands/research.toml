@@ -1,19 +1,6 @@
-description = "The research pipeline wrapped as a single dynamic multi-agent workflow. A single call drives a research mission from a raw idea to a disseminated, peer-reviewed paper by dispatching the first-class stages — research-ideate → research-spec → research-theory → research-sources → research-synthesis → research-proposal → research-design → research-experiment → research-analysis → research-paper → research-review → research-publish → research-disseminate — as workflow phases under named Handoff-Manifest return contracts, routing each stage's hand-off through a refute-by-default verification pass before the next stage consumes it, and emitting a deterministic result with a single recommended next move. Invoke it with a research question or domain ('research whether X causes Y', 'investigate the SOTA on Z', 'run the study from idea to paper'), an existing research suite path to resume, or `--quick` for a one-shot cited report. Stage logic stays first-class in commands/research-*.md and the knowledge surface stays the research-suite skill; this command adds only the workflow harness (independent critique, return contracts, determinism). Multi-agent dispatch and continuous chaining are opt-in / confirmation-gated, never default-on."
+description = "The research pipeline wrapped as a single dynamic multi-agent workflow. One call drives a research mission from a raw idea to a disseminated, peer-reviewed paper by dispatching the first-class stages — research-ideate → research-spec → research-theory → research-sources → research-synthesis → research-proposal → research-design → research-experiment → research-analysis → research-paper → research-review → research-publish → research-disseminate — as workflow phases under named Handoff-Manifest return contracts, verifying each stage's hand-off refute-by-default before the next stage consumes it. Invoke it with a research question or domain ('research whether X causes Y', 'investigate the SOTA on Z', 'run the study from idea to paper'), an existing research suite path to resume, or `--quick` for a one-shot cited report. Stage logic stays in commands/research-*.md; this command adds only the workflow harness. Multi-agent dispatch and continuous chaining are opt-in and confirmation-gated."
 
 prompt = """
----
-name: "research"
-version: "0.1.0"
-updated: "2026-10-02"
-description: "The research pipeline wrapped as a single dynamic multi-agent workflow. A single call drives a research mission from a raw idea to a disseminated, peer-reviewed paper by dispatching the first-class stages — research-ideate → research-spec → research-theory → research-sources → research-synthesis → research-proposal → research-design → research-experiment → research-analysis → research-paper → research-review → research-publish → research-disseminate — as workflow phases under named Handoff-Manifest return contracts, routing each stage's hand-off through a refute-by-default verification pass before the next stage consumes it, and emitting a deterministic result with a single recommended next move. Invoke it with a research question or domain ('research whether X causes Y', 'investigate the SOTA on Z', 'run the study from idea to paper'), an existing research suite path to resume, or `--quick` for a one-shot cited report. Stage logic stays first-class in commands/research-*.md and the knowledge surface stays the research-suite skill; this command adds only the workflow harness (independent critique, return contracts, determinism). Multi-agent dispatch and continuous chaining are opt-in / confirmation-gated, never default-on."
-argument-hint: "[<<question>> | suite path] [--autonomous] [--max-rounds N] [--quick] [--verify-panel N] [--from ideate|spec|theory|sources|synthesis|proposal|design|experiment|analysis|paper|review|publish|disseminate]"
-disable-model-invocation: true
-portability: "universal"
-allowed-tools: "Read, Glob, Grep"
----
-
-<!-- SPDX-License-Identifier: MIT -->
-
 # /research — The Research Pipeline as a Wrapped Dynamic Workflow
 
 ---

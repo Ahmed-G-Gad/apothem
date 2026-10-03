@@ -1,6 +1,7 @@
 ---
 name: Default
 description: Ecosystem-default output style — encodes unified output conventions, planning-content routing, and the file-authoring contract; ships as the baseline tone every other style supplements.
+keep-coding-instructions: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

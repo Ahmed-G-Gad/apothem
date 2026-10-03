@@ -1,8 +1,6 @@
 ---
-name: "agile-sprints"
+trigger: always_on
 description: "Non-trivial multi-step work in host projects runs as disciplined Agile sprints — Sprint Goal + Backlog + Definition of Ready + Definition of Done + Sprint Review + Retrospective + Velocity tracking. The trivial-vs-non-trivial threshold is the ratifiable choice (line-count + scope hybrid). Empirical process control — transparency, inspection, adaptation — applies throughout."
-pathFilter: ""
-alwaysApply: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

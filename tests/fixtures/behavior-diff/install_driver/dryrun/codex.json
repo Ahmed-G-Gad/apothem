@@ -100,7 +100,7 @@
       "ownership_class": "apothem-owned"
     },
     "message": "dry run: no filesystem changes made",
-    "operation": "merge_tree_entries",
+    "operation": "native_skills",
     "outcome": "created",
     "path": "<ROOT>/../.agents/skills",
     "source": "<APOTHEM_SRC>/skills"

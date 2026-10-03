@@ -1,6 +1,7 @@
 ---
 name: Default Architect
 description: Senior Software Architect tone — analytical, brutally honest, concrete-driver citations, seven-axs-of-breadth attestation
+keep-coding-instructions: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

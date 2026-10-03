@@ -11,7 +11,6 @@ maxTurns: 15
 # authority and recency on candidate hits. A multi-facet question needs 2–3 tool calls per
 # facet (query → fetch → confirm), and several facets run within one invocation.
 portability: "universal"
-memory: false
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

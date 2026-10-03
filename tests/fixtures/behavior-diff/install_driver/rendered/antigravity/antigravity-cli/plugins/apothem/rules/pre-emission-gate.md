@@ -1,8 +1,6 @@
 ---
-name: "pre-emission-gate"
+trigger: always_on
 description: "Fifteen-bar pre-emission gate — every host-project artifact passes M1 through M15 before emission, with a recorded YAML attestation and explicit n/a reasoning where a bar does not apply."
-pathFilter: ""
-alwaysApply: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

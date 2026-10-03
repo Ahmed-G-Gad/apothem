@@ -1,8 +1,7 @@
 ---
-name: "interactive-questions-sweep-matchers"
+trigger: glob
 description: "Path-filtered companion rule carrying the canonical-channel sweep matcher specifications (H1–H7); demand-loaded when the parent `interactive-questions.md` rule's §8 anchor surfaces."
-pathFilter: "**/commands/**/*.md, **/rules/**/*.md, **/skills/**/*.md, **/agents/**/*.md, **/hooks/**/*.md, **/CLAUDE.md, **/settings.json"
-alwaysApply: false
+globs: "**/commands/**/*.md, **/rules/**/*.md, **/skills/**/*.md, **/agents/**/*.md, **/hooks/**/*.md, **/CLAUDE.md, **/settings.json"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

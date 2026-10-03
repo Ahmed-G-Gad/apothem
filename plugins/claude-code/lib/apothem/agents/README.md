@@ -36,7 +36,8 @@ Agent frontmatter is validated against [`../schemas/agent.schema.json`](../schem
 - `disallowedTools` — comma-separated explicit denials.
 - `maxTurns` — turn ceiling (with an inline rationale comment when it exceeds the 5–10 norm).
 - `portability` — harness-portability classification (e.g. `universal`).
-- `memory` — whether the agent retains memory across invocations.
+
+No shipped agent sets `memory`. Claude Code defines it as a persistent-memory scope (`user`, `project`, or `local`), and leaving it out means no persistent memory, so an agent sets it only when it needs that scope. `version`, `updated`, and `portability` are Apothem metadata the schema admits; harnesses ignore them.
 
 The body after the frontmatter is the agent's system prompt: mission, operating principles, and return-format specification.
 

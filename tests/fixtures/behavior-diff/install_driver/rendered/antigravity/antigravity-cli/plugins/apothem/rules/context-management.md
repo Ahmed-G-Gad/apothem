@@ -1,8 +1,6 @@
 ---
-name: "context-management"
+trigger: always_on
 description: "Systematic context management under the blind-execution invariant — every turn must be executable by a fresh session with zero prior history, so all state lives in durable files and active context is acceleration, not storage. Covers context-rot monitoring, proactive externalization, compaction discipline, opt-in continuous single-session execution, and context-budget calibration. Implements CM-12 / CM-14 / CM-18 / CM-19 / CM-24."
-pathFilter: ""
-alwaysApply: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

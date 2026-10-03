@@ -1,8 +1,7 @@
 ---
-name: "context-management-protocol"
+trigger: glob
 description: "Path-filtered companion rule carrying the detailed externalization sub-clauses, compaction-trigger catalog, long-conversation resilience procedures, graceful-degradation priorities, blind-execution protocol full body, and error-classification table declared at the parent `context-management.md` rule's §2/§3/§4/§5/§6/§8 anchors; demand-loaded on plan-workflow entry."
-pathFilter: "**/.apothem/plans/**, **/.plans/**, **/PROGRESS.md, **/PLAN-NOTES.md, **/PHASE.md, **/MASTER-PLAN.md, **/REPORT.md, **/PREAMBLE.md"
-alwaysApply: false
+globs: "**/.apothem/plans/**, **/.plans/**, **/PROGRESS.md, **/PLAN-NOTES.md, **/PHASE.md, **/MASTER-PLAN.md, **/REPORT.md, **/PREAMBLE.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

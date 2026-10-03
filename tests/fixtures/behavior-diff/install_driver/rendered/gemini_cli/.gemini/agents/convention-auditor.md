@@ -2,6 +2,13 @@
 name: "convention-auditor"
 description: "Read-only conventions auditor: verify naming (kebab-case files, snake_case Python, frontmatter keys), cross-reference resolution (dead rule/skill/agent paths, broken anchors, half-edge bindings), formatting standards (SPDX header presence, frontmatter contract), and ecosystem coherence (orphan artifacts, sibling-convention drift, registry gaps). Dispatch when a change touches multiple rules/skills/agents/commands and you need a binary PASS/FINDING verdict per instance with file+line+expected+actual evidence — e.g. 'audit naming across the harness adapters', 'check every new rule resolves its Bindings cross-refs', 'verify the skills cohort matches the kebab-case + SKILL.md convention'. Read-only: never fixes, never runs shell. Conventions are owned upstream and verified against, never re-derived; every finding cites severity + evidence."
 kind: local
+tools:
+  - "read_file"
+  - "read_many_files"
+  - "list_directory"
+  - "glob"
+  - "grep_search"
+max_turns: 15
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

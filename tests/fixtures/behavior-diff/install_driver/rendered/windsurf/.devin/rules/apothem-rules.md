@@ -1,9 +1,8 @@
-<!-- BEGIN APOTHEM MANAGED BLOCK -->
 ---
 trigger: always_on
 description: "Apothem governance and convention surface for the Windsurf harness — applied every session to honour project-wide engineering discipline."
 ---
-
+<!-- BEGIN APOTHEM MANAGED BLOCK -->
 <!-- SPDX-License-Identifier: MIT -->
 
 # Apothem — Windsurf Bootstrap

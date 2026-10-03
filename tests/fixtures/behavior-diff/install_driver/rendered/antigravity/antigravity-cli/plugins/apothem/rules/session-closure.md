@@ -1,8 +1,6 @@
 ---
-name: "session-closure"
+trigger: always_on
 description: "Every session — ad-hoc conversational sessions included, not only plan phases — ends with a formal, verifiable close: a terminal Recommended Next Step, a done/deferred ledger, and a verification attestation. A session that trails off mid-thread, claims done without a checked outcome, or buries deferred work silently is a structural failure. Harness-agnostic; the close is rules text every harness honors."
-pathFilter: ""
-alwaysApply: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

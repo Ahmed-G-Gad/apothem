@@ -1,6 +1,7 @@
 ---
 name: Concise Engineer
 description: Engineering-focused short-form output — minimum prose, maximum signal, code-first
+keep-coding-instructions: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

@@ -1,20 +1,19 @@
-<!-- BEGIN APOTHEM MANAGED BLOCK -->
 ---
-trigger: always_on
+alwaysApply: true
 description: "Apothem governance and convention surface for the Trae harness — applied every session to honour project-wide engineering discipline."
 ---
-
+<!-- BEGIN APOTHEM MANAGED BLOCK -->
 <!-- SPDX-License-Identifier: MIT -->
 
 # Apothem — Trae Bootstrap
 
-This file is materialised by `apothem install --harness trae --project <path>` and lands at `<project>/.trae/rules/apothem-rules.md`, a dedicated Apothem rules file inside the current Trae project rules directory per https://docs.trae.ai/ide/rules. It sits alongside the operator-owned `project_rules.md` and `user_rules.md` anchors and never clobbers them.
+This file is materialised by `apothem install --harness trae --project <path>` and lands at `<project>/.trae/rules/apothem-rules.md`, a dedicated Apothem rules file inside the current Trae project rules directory per https://docs.trae.ai/ide/rules. It sits alongside any rule files the operator authors in `.trae/rules/` (and the global rules under `~/.trae/user_rules`) and never clobbers them.
 
 ## What Apothem governs in this project
 
-Apothem propagates a shared governance and convention surface across every supported AI harness in this project's host environment. Inside Trae, the surface manifests as this `always_on` rule file:
+Apothem propagates a shared governance and convention surface across every supported AI harness in this project's host environment. Inside Trae, the surface manifests as this Always Apply rule file:
 
-- **Rules** — engineering rules applied on every interaction (`trigger: always_on`). The full rule cohort lives at the apothem source repository under `src/apothem/rules/`; this Trae-facing anchor names the disciplines the operator may consult in detail.
+- **Rules** — engineering rules applied on every interaction (`alwaysApply: true`). The full rule cohort lives at the apothem source repository under `src/apothem/rules/`; this Trae-facing anchor names the disciplines the operator may consult in detail.
 - **Skills, commands, agents** — reusable techniques, slash-style workflows, and persistent sub-agent definitions. Apothem's canonical-master cohort at the apothem source repository defines them; Trae does not auto-discover them as separate surfaces, so they manifest here as referenced discipline.
 - **MCP** — Trae's tool-server surface (`.trae/mcp.json`) is operator-authored, not apothem-managed.
 - **Skills directory** — Trae's skill surface (`.trae/skills/`) is operator-authored, not apothem-managed.

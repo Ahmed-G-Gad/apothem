@@ -12,7 +12,6 @@ maxTurns: 20
 # extraction alone needs multiple reads to map call-sites and edge cases, and the regression
 # stage re-runs the host's tests with targeted follow-up reads on each failure.
 portability: "universal"
-memory: false
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

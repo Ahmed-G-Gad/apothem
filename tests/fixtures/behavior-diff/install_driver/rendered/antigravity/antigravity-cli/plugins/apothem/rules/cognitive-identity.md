@@ -1,8 +1,6 @@
 ---
-name: "cognitive-identity"
+trigger: always_on
 description: "The cognitive identity and creative architecture governing every substantive output — the cognitive-insurgent posture and Senior Software Architect role, the five sequential cognitive filters (obvious-purge through aesthetic-demand), the six on-detection ideation techniques, the forbidden / required language standards, and the seven-axs-of-breadth expertise taxonomy. Implements CM-21."
-pathFilter: ""
-alwaysApply: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

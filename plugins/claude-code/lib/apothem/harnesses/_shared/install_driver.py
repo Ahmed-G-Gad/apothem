@@ -35,6 +35,7 @@ from apothem.lib.propagation import load_manifest as load_manifest
 from apothem.lib.propagation import resolve_target as resolve_target
 
 from .install_driver_apply import _COHORT_DOC_FILES as _COHORT_DOC_FILES
+from .install_driver_apply import apply_antigravity_rules as apply_antigravity_rules
 from .install_driver_apply import apply_claude_rules as apply_claude_rules
 from .install_driver_apply import apply_codex_agents as apply_codex_agents
 from .install_driver_apply import apply_command_skills as apply_command_skills

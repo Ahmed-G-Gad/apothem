@@ -1,19 +1,6 @@
 description = "Model-agnostic language-model evaluation campaign. Defines an evaluation dataset and scorer using the eval-harness skill, runs a candidate model or prompt over the dataset, scores every output with the prompt-evaluator agent, aggregates campaign metrics plus a per-category breakdown, and emits a report that surfaces regressions against the prior baseline. Operates against any model provider — no single vendor is assumed; the dataset, scorer, and candidate endpoint are all operator-supplied. Output lands at the consuming suite's `_inputs/eval-findings.md` with per-category scores, aggregate metrics, and a regression ledger ready for downstream release-readiness review."
 
 prompt = """
----
-name: "eval"
-version: "0.1.0"
-updated: "2026-10-02"
-description: "Model-agnostic language-model evaluation campaign. Defines an evaluation dataset and scorer using the eval-harness skill, runs a candidate model or prompt over the dataset, scores every output with the prompt-evaluator agent, aggregates campaign metrics plus a per-category breakdown, and emits a report that surfaces regressions against the prior baseline. Operates against any model provider — no single vendor is assumed; the dataset, scorer, and candidate endpoint are all operator-supplied. Output lands at the consuming suite's `_inputs/eval-findings.md` with per-category scores, aggregate metrics, and a regression ledger ready for downstream release-readiness review."
-argument-hint: "[--dataset PATH] [--scorer NAME]"
-disable-model-invocation: true
-portability: "universal"
-allowed-tools: "Read, Glob, Grep"
----
-
-<!-- SPDX-License-Identifier: MIT -->
-
 # /eval — LLM Evaluation Campaign
 
 ---

@@ -1,9 +1,8 @@
-<!-- BEGIN APOTHEM MANAGED BLOCK -->
 ---
 alwaysApply: true
 description: "Apothem governance and convention surface for the CodeBuddy harness — applied every session to honour project-wide engineering discipline."
 ---
-
+<!-- BEGIN APOTHEM MANAGED BLOCK -->
 <!-- SPDX-License-Identifier: MIT -->
 
 # Apothem — CodeBuddy Bootstrap

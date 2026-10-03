@@ -1,8 +1,7 @@
 ---
-name: "clean-architecture-layers"
+trigger: glob
 description: "Clean architecture layer discipline — Domain / Application / Infrastructure / Presentation separation under the inward-only dependency rule (Domain depends on nothing; outer layers implement inner-layer interfaces injected at the composition root; no inner layer imports a concrete outer class). Mandatory at 3+ modules or SHARED+; relaxed for throwaway scripts and trivial scopes. Path-filtered to src / lib / app / packages source trees."
-pathFilter: "**/src/**, **/lib/**, **/app/**, **/packages/**"
-alwaysApply: false
+globs: "**/src/**, **/lib/**, **/app/**, **/packages/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

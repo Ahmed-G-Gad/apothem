@@ -1,8 +1,6 @@
 ---
-name: "definitiveness"
+trigger: always_on
 description: "Every emitted statement is definitive and airtight — hedging vocabulary is eliminated where binding prescription is possible; every contract carries pre / post / failure conditions; every TBD / TODO / FIXME is closed in place or surfaced as an inquiry; the family of rigorous-systems virtues governs every artifact."
-pathFilter: ""
-alwaysApply: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

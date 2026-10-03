@@ -515,6 +515,25 @@ def _validate_manifest(manifest: dict[str, object]) -> None:
     jsonschema.validate(instance=manifest, schema=schema)
 
 
+def _translate_catalog_skills(skills_dir: Path) -> None:
+    """Rewrite each catalog ``SKILL.md`` in Claude Code's frontmatter spelling.
+
+    Uses the same translation as the claude_code install's ``native_skills``
+    mode (imported lazily: ``lib`` does not depend on the harness package at
+    import time). Files are rewritten with ``\\n`` newlines so the committed
+    tree stays byte-identical across platforms.
+    """
+    from apothem.harnesses._shared.install_driver_converters import (
+        claude_code_skill_text,
+    )
+
+    for skill_md in sorted(skills_dir.glob("*/SKILL.md")):
+        text = skill_md.read_text(encoding="utf-8")
+        translated = claude_code_skill_text(text)
+        if translated != text:
+            skill_md.write_text(translated, encoding="utf-8", newline="\n")
+
+
 def assemble_plugin_tree(src_root: Path, dest_root: Path) -> Path:
     """Materialize the canonical plugin source tree at ``dest_root``.
 
@@ -602,6 +621,12 @@ def assemble_plugin_tree(src_root: Path, dest_root: Path) -> Path:
         )
         for doc_name in _CATALOG_DOC_FILES:
             (dest_dir / doc_name).unlink(missing_ok=True)
+
+    # 4b. Skill frontmatter: rename source keys to the spelling Claude Code
+    #     reads (userInvocable -> user-invocable), as the claude_code install
+    #     does. Only the plugin-root catalog changes; the lib/apothem engine
+    #     copy keeps the source form.
+    _translate_catalog_skills(dest_root / "skills")
 
     # 5. Hook message catalog: hooks/messages copied to plugin-root hooks/.
     hooks_src = src_root / _HOOK_MESSAGES_REL

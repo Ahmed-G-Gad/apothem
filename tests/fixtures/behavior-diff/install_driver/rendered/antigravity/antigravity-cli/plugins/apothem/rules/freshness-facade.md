@@ -1,8 +1,6 @@
 ---
-name: "freshness-facade"
+trigger: always_on
 description: "Shipped public surfaces carry no AI-disclosure, backward/legacy/obsolete/retired/deprecated, placeholder/TBD/coming-soon, or fix/refinement narrative — a current-version-only facade; the freshness-token-grep matcher gives the closed token-class list mechanical teeth on README plus site copy."
-pathFilter: ""
-alwaysApply: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

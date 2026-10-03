@@ -22,7 +22,7 @@ from apothem.lib.propagation import (
 
 from .install_driver_apply import (
     _COHORT_DOC_FILES,
-    apply_claude_rules,
+    HARNESS_EMISSION_APPLIERS,
     apply_codex_agents,
     apply_command_skills,
     apply_gemini_agents,
@@ -36,11 +36,13 @@ from .install_driver_apply import (
 )
 from .install_driver_backup import _compensating_rollback, _install_lock_path
 from .install_driver_converters import (
+    _antigravity_agent_text,
+    _antigravity_rule_text,
     _claude_rule_text,
     _codex_agent_text,
+    _command_skill_files,
     _gemini_agent_text,
     _gemini_command_text,
-    _generated_skill_text,
     _native_markdown_command_text,
     _opencode_agent_text,
     _qwen_agent_text,
@@ -59,7 +61,8 @@ from .install_driver_planvalidation import (
 )
 from .install_driver_treeops import (
     _directory_contents_equal,
-    _single_file_directory_matches,
+    _generated_directory_matches,
+    preview_native_skills,
     sweep_stale,
 )
 from .install_driver_types import (
@@ -120,6 +123,8 @@ _NATIVE_FILE_CONVERTERS: Final[dict[str, Callable[[Path], str]]] = {
     "qwen_agents": _qwen_agent_text,
     "markdown_commands": _native_markdown_command_text,
     "claude_rules": _claude_rule_text,
+    "antigravity_rules": _antigravity_rule_text,
+    "antigravity_agents": _antigravity_agent_text,
 }
 
 
@@ -174,6 +179,10 @@ def _prospective_child_outcomes(
     cohort-doc exclusion, the same native-text conversion — so the no-write
     classification tracks what the real install would decide.
     """
+    if entry.mode == "native_skills":
+        return preview_native_skills(
+            src=src, dst=dst, ignore=ignore, exclude=exclude, harness_name=harness_name
+        )
     outcomes: list[MaterializationOutcome] = []
     if entry.mode == "merge_tree_entries":
         for source_path in sorted(src.iterdir()):
@@ -203,10 +212,10 @@ def _prospective_child_outcomes(
             continue
         if entry.mode == "command_skills":
             skill_dir = dst / source_path.stem
-            content = _generated_skill_text(
+            files = _command_skill_files(
                 source_path, harness_name=harness_name, install_root=root
             )
-            if _single_file_directory_matches(skill_dir, "SKILL.md", content):
+            if _generated_directory_matches(skill_dir, files):
                 outcomes.append("unchanged")
             else:
                 outcomes.append("updated" if skill_dir.exists() else "created")
@@ -466,9 +475,12 @@ def _dispatch_install_entry(
             project_root=project_root,
             harness_name=harness_name,
         )
-    if entry.mode == "claude_rules":
-        return apply_claude_rules(
+    applier = HARNESS_EMISSION_APPLIERS.get(entry.mode)
+    if applier is not None:
+        return applier(
             entry,
+            ignore=ignore,
+            exclude=rules.exclude,
             harness_root=harness_root,
             project_root=project_root,
             harness_name=harness_name,

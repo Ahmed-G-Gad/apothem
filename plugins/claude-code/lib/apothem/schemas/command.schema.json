@@ -23,7 +23,8 @@
     },
     "description": {
       "type": "string",
-      "description": "Capability-led statement of the command's purpose and invocation triggers."
+      "description": "Capability-led statement of the command's purpose and invocation triggers. At most 1024 characters: several harnesses install each command as a skill, and the Agent Skills specification (https://agentskills.io/specification) caps a skill description there.",
+      "maxLength": 1024
     },
     "version": {
       "type": "string",

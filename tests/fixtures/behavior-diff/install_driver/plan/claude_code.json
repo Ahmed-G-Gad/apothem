@@ -20,7 +20,7 @@
     "target": "<ROOT>/rules"
   },
   {
-    "mode": "merge_tree_entries",
+    "mode": "native_skills",
     "source": "<APOTHEM_SRC>/skills",
     "target": "<ROOT>/skills"
   },

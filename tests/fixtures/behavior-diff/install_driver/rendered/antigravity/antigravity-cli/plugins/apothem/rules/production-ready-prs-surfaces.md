@@ -1,8 +1,7 @@
 ---
-name: "production-ready-prs-surfaces"
+trigger: glob
 description: "Path-filtered companion to `rules/production-ready-prs.md` carrying the operational depth of M15: the seven visibility surfaces, the supply-chain posture catalog, the release-engineering invariants, the commit-message convention (with the human-only authorship clause), the CI-green discipline, and the modern-project-surface specification. Demand-loaded when the assistant edits any visibility-surface artifact (README / CHANGELOG / CONTRIBUTING / LICENSE / SECURITY / `.github/**` / install / update / uninstall scripts)."
-pathFilter: "**/README.md, **/CHANGELOG.md, **/CONTRIBUTING.md, **/LICENSE, **/.github/**, **/install.*, **/update.*, **/uninstall.*, **/CODEOWNERS, **/SECURITY.md, **/SUPPORT.md"
-alwaysApply: false
+globs: "**/README.md, **/CHANGELOG.md, **/CONTRIBUTING.md, **/LICENSE, **/.github/**, **/install.*, **/update.*, **/uninstall.*, **/CODEOWNERS, **/SECURITY.md, **/SUPPORT.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

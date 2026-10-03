@@ -1,10 +1,9 @@
-<!-- BEGIN APOTHEM MANAGED BLOCK -->
 ---
 description: "Apothem governance and convention surface for the Cursor harness — read every session to honour project-wide engineering discipline."
 globs: "**/*"
 alwaysApply: true
 ---
-
+<!-- BEGIN APOTHEM MANAGED BLOCK -->
 <!-- SPDX-License-Identifier: MIT -->
 
 # Apothem — Cursor Bootstrap

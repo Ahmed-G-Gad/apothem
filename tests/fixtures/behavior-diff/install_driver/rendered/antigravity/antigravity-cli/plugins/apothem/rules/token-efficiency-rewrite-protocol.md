@@ -1,8 +1,7 @@
 ---
-name: "token-efficiency-rewrite-protocol"
+trigger: glob
 description: "The full token-efficiency rewrite protocol the always-on parent rule references: the L1 prose-scaffolding elimination classes (filler / throat-clearing / restatement / hedge-padding / ceremonial-scaffolding / connective-bloat), the per-class compression heuristics, the extract-discard-re-derive-verify procedure, and worked before/after examples. Demand-loads when the assistant rewrites an authoring surface for token efficiency."
-pathFilter: "**/*.md, **/*.mdx, **/rules/**, **/skills/**, **/commands/**, **/agents/**, **/docs/**"
-alwaysApply: false
+globs: "**/*.md, **/*.mdx, **/rules/**, **/skills/**, **/commands/**, **/agents/**, **/docs/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
