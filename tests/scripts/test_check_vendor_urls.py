@@ -56,7 +56,9 @@ def test_collects_urls_from_pins_and_templates(tmp_path: Path) -> None:
         ("https://a.dev/x", cvu.FetchResult(200, "https://a.dev/y"), "moved"),
         ("https://a.dev/", cvu.FetchResult(200, "https://a.dev/start"), "ok"),
         ("https://a.dev/x", cvu.FetchResult(404, "https://a.dev/x"), "dead"),
-        ("https://a.dev/x", cvu.FetchResult(None, None, "reset"), "dead"),
+        ("https://a.dev/x", cvu.FetchResult(410, "https://a.dev/x"), "dead"),
+        ("https://a.dev/x", cvu.FetchResult(None, None, "reset"), "unreachable"),
+        ("https://a.dev/x", cvu.FetchResult(503, "https://a.dev/x"), "unreachable"),
         ("https://a.dev/x", cvu.FetchResult(403, "https://a.dev/x"), "blocked"),
         ("https://a.dev/x", cvu.FetchResult(429, "https://a.dev/x"), "blocked"),
         (
@@ -83,19 +85,23 @@ def test_fetch_refuses_non_http_schemes() -> None:
     assert result.error == "not an http(s) URL"
 
 
-def test_main_fails_on_moved_and_dead_but_not_blocked(tmp_path: Path) -> None:
+def test_main_fails_on_moved_and_dead_but_not_blocked_or_unreachable(
+    tmp_path: Path,
+) -> None:
     root = tmp_path / "harnesses"
     root.mkdir()
     _harness(
         root,
         "alpha",
-        "https://a.dev/ok https://a.dev/old https://a.dev/gone https://a.dev/bot\n",
+        "https://a.dev/ok https://a.dev/old https://a.dev/gone https://a.dev/bot"
+        " https://a.dev/down\n",
     )
     answers = {
         "https://a.dev/ok": cvu.FetchResult(200, "https://a.dev/ok"),
         "https://a.dev/old": cvu.FetchResult(200, "https://a.dev/new"),
         "https://a.dev/gone": cvu.FetchResult(404, "https://a.dev/gone"),
         "https://a.dev/bot": cvu.FetchResult(403, "https://a.dev/bot"),
+        "https://a.dev/down": cvu.FetchResult(None, None, "timed out"),
     }
     output = tmp_path / "report.json"
 
@@ -107,7 +113,13 @@ def test_main_fails_on_moved_and_dead_but_not_blocked(tmp_path: Path) -> None:
     payload = json.loads(output.read_text(encoding="utf-8"))
     assert rc == 2
     assert payload["passed"] is False
-    assert payload["counts"] == {"ok": 1, "moved": 1, "dead": 1, "blocked": 1}
+    assert payload["counts"] == {
+        "ok": 1,
+        "moved": 1,
+        "dead": 1,
+        "blocked": 1,
+        "unreachable": 1,
+    }
     moved = next(u for u in payload["urls"] if u["outcome"] == "moved")
     assert moved["final_url"] == "https://a.dev/new"
     assert moved["cited_in"] == ["alpha/STANDARD-CONVENTION-PIN.md"]
@@ -120,6 +132,19 @@ def test_main_passes_when_every_url_resolves(tmp_path: Path) -> None:
         fetcher=lambda url: cvu.FetchResult(200, url),
     )
     assert rc == 0
+
+
+def test_an_unreachable_url_alone_does_not_fail(tmp_path: Path) -> None:
+    _harness(tmp_path, "alpha", "https://a.dev/down\n")
+    output = tmp_path / "r.json"
+    rc = cvu.main(
+        ["--harnesses-root", str(tmp_path), "--output", str(output)],
+        fetcher=lambda url: cvu.FetchResult(None, None, "timed out"),
+    )
+    payload = json.loads(output.read_text(encoding="utf-8"))
+    assert rc == 0
+    assert payload["passed"] is True
+    assert payload["counts"]["unreachable"] == 1
 
 
 def test_missing_root_returns_error(tmp_path: Path) -> None:

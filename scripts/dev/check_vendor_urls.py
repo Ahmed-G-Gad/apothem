@@ -13,10 +13,13 @@ it:
   Pins and templates should cite the final address. A site root that
   redirects to a landing page on the same host is not a move, and neither is
   a documented alias listed in ``_ACCEPTED_REDIRECTS``.
-- ``dead``: the URL answers 404, 410, or another non-blocking error status, or
-  the host cannot be reached after retries.
+- ``dead``: the URL answers 404, 410, or another 4xx status that is not a
+  blocking one.
 - ``blocked``: the URL answers 401, 403, or 429. Bot protection returns these
   for live pages, so they are reported but do not fail the check.
+- ``unreachable``: the host cannot be reached, or still answers 5xx, after
+  retries. A network fault or an outage says nothing about whether the page
+  moved, so these are reported but do not fail the check.
 
 The report is JSON. The exit code is 2 when any URL is ``moved`` or ``dead``,
 0 otherwise. The harness-convention monitor runs this weekly.
@@ -153,9 +156,9 @@ def _benign_redirect(url: str, final_url: str) -> bool:
 
 
 def classify(url: str, result: FetchResult) -> str:
-    """Return ``ok``, ``moved``, ``dead`` or ``blocked`` for one fetch."""
-    if result.status is None:
-        return "dead"
+    """Return ``ok``, ``moved``, ``dead``, ``blocked`` or ``unreachable``."""
+    if result.status is None or result.status >= 500:
+        return "unreachable"
     if result.status in _BLOCKED_STATUSES:
         return "blocked"
     if result.status >= 400:
@@ -247,7 +250,7 @@ def main(argv: list[str] | None = None, *, fetcher: Fetcher = fetch) -> int:
         "url_count": len(reports),
         "counts": {
             outcome: sum(1 for r in reports if r.outcome == outcome)
-            for outcome in ("ok", "moved", "dead", "blocked")
+            for outcome in ("ok", "moved", "dead", "blocked", "unreachable")
         },
         "urls": [asdict(report) for report in reports],
     }
