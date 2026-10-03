@@ -29,16 +29,15 @@ from apothem.lib.harness_registry import HARNESS_REGISTRY
 
 from ._oracle_norm import (
     _ISO_TS_RE,
-    _PYBIN_RE,
     _TS_RE,
     _ULID_RE,
     TOK_INSTALL_ID,
-    TOK_PYBIN,
     TOK_ROOT,
     TOK_SRC,
     TOK_TIMESTAMP,
     collapse_token_paths,
     normalize_obj,
+    tokenize_python_bin,
 )
 
 # A single fixed sample profile reused for every adapter; every projected
@@ -143,9 +142,7 @@ def _snapshot_rendered_tree(
         except UnicodeDecodeError:
             dest.write_bytes(raw)
             continue
-        normalized = _PYBIN_RE.sub(
-            f'"{TOK_PYBIN}"', _normalize_text(text, root=root, outer=outer)
-        )
+        normalized = tokenize_python_bin(_normalize_text(text, root=root, outer=outer))
         dest.write_text(normalized, encoding="utf-8", newline="\n")
 
 

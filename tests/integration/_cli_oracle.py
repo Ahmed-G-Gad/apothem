@@ -43,16 +43,15 @@ from apothem.lib import install_ledger
 
 from ._oracle_norm import (
     _ISO_TS_RE,
-    _PYBIN_RE,
     _TS_RE,
     _ULID_RE,
     TOK_INSTALL_ID,
-    TOK_PYBIN,
     TOK_ROOT,
     TOK_SRC,
     TOK_TIMESTAMP,
     collapse_token_paths,
     normalize_obj,
+    tokenize_python_bin,
 )
 
 TOK_VERSION = "<VERSION>"
@@ -124,7 +123,7 @@ def _normalize_text(text: str, *, home: Path) -> str:
     text = _ISO_TS_RE.sub(TOK_TIMESTAMP, text)
     text = _TS_RE.sub(TOK_TIMESTAMP, text)
     text = _ULID_RE.sub(TOK_INSTALL_ID, text)
-    text = _PYBIN_RE.sub(f'"{TOK_PYBIN}"', text)
+    text = tokenize_python_bin(text)
     text = _VERSION_RE.sub(TOK_VERSION, text)
     text = text.replace(_PLATFORM, _TOK_PLATFORM)
     text = text.replace(_PYVER, _TOK_PYVER)
