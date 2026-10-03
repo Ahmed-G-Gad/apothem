@@ -95,7 +95,11 @@ jobs:
   quality:
     name: quality / ${{ matrix.os }} / py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    # The Windows cells run the full suite in 20 to 35 minutes, as the CI
+    # Matrix job (90-minute budget) shows for the same tests; Linux finishes in
+    # under 10. Sixty minutes keeps the matrix-job ceiling of the
+    # workflow-concurrency validator (90) and stops a hung run well before it.
+    timeout-minutes: 60
     # A pre-release cell is advisory: it exercises the next Python against the
     # suite for early-warning without gating the merge. matrix.include carries
     # `prerelease: true` on the 3.15 cell only; the job's continue-on-error and
