@@ -48,9 +48,11 @@ workspace.
 - Documentation: <https://apothem.ahmedgad.com/>
 - Source and issues: <https://github.com/ahmed-g-gad/apothem>
 
-Distributed as the signed `apothem.vsix` attached to each GitHub Release —
-install with `code --install-extension apothem.vsix`, or the editor's *Install
-from VSIX…* command. It installs across the VS Code family and manages the
+Distributed as the signed `apothem.vsix` that the release workflow attaches to
+each new GitHub Release (or built from a checkout with
+`npx @vscode/vsce package --no-dependencies`) — install with
+`code --install-extension apothem.vsix`, or the editor's *Install from VSIX…*
+command. It installs across the VS Code family and manages the
 GitHub Copilot instruction surface. A Marketplace listing is not yet published:
 the `apothem` name is held by another publisher, so the extension identifier is
 still unresolved.

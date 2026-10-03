@@ -10,8 +10,9 @@ plugin hooks that could not execute on macOS and Linux (the bootstrap stub was
 tracked without its executable bit) and as handlers that injected context on
 every call. This module checks the class, not the instance.
 
-Surfaces. Each surface is materialized the way the harness consumes it and every
-registered command is run the way the harness runs it:
+Surfaces. Each surface is materialized the way the harness consumes it, and on
+macOS and Linux every registered command is run the way the harness runs it
+(Windows is covered below):
 
 * the Claude Code plugin ``hooks.json`` in the committed ``plugins/claude-code``
   tree, copied with every executable bit stripped and run through ``sh -c``
