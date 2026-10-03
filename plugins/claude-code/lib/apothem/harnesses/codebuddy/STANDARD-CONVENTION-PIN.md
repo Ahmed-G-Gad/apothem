@@ -7,7 +7,7 @@
 - Snapshot date: 2026-10-03
 - Snapshot note: refreshed against `www.codebuddy.ai/docs`. Correction: MCP servers live in `.mcp.json` at the project root and `~/.codebuddy/.mcp.json`, not in `.codebuddy/settings.json` as the earlier pin said. CodeBuddy Code also reads `AGENTS.md` as project memory when no `CODEBUDDY.md` exists. Previous 2026-06-25.
 - Adapter source: `src/apothem/harnesses/codebuddy/`
-- Evidence level: vendor-doc pinned (living docs; no-immutable-source exception). The IDE Rules page was re-read on 2026-10-03; the CLI memory, MCP, and hooks pages were read on 2026-10-02, because this environment's network proxy blocked them on 2026-10-03. No vendor-native UI claim is made here.
+- Evidence level: vendor-doc pinned (living docs; no-immutable-source exception). The IDE Rules page was re-read on 2026-10-03; the CLI memory, MCP, and hooks pages were read on 2026-10-02. No vendor-native UI claim is made here.
 
 ## Official Surface Refresh
 
