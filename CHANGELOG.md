@@ -11,6 +11,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- **`apothem backups prune`** runs backup and ledger retention on demand
+  (`--keep N`, `--harness NAME|all`, `--dry-run`, `--json`). It never removes
+  the backup set that rolling back a harness's latest install restores from.
 - **A weekly check follows every vendor URL the harness pins and templates
   cite**, and files an issue when one has moved or died.
 - **The one-shot installers offer a checksum-only path.**
@@ -70,6 +73,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- **CI bounds cyclomatic complexity.** The CLI and the install driver block any
+  function above 15, and a repository-wide ratchet stops any function from
+  growing past the current maximum. The longest command bodies are split
+  into phase helpers with no change in behaviour.
+- **Helpers used across packages have public names**:
+  `capability_projection_results`, `is_apothem_hook`, and `configure_stdio`.
+  The private spellings remain as aliases.
 - **Install refuses to rewrite a config it cannot keep intact.** A merge
   that must change a commented, JSONC, JSON5, or unparseable operator config
   writes nothing for that harness and exits 1 with `config.unparseable`; a
@@ -162,6 +172,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **Hermes uninstall removes the `auxiliary.mcp` block an earlier release
+  wrote**, under the same exact-value rule `update` uses, so the operator's
+  own `auxiliary` settings stay.
 - **Rollback returns a harness to its exact pre-install state**, and restores
   native configs at their real path.
 - **Uninstall removes the empty directories the install created.**
@@ -277,6 +290,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Security
 
+- **Profile text cannot carry the managed-block markers.** A profile value
+  containing a block marker fails validation with
+  `profile.managed_block_marker`, naming the field without echoing the value.
 - **The VS Code extension runs only a user-scoped runner**, quoted, for a
   chosen harness; a workspace setting can no longer set the command it runs.
 - **No long-lived npm token path remains.** The npm publish workflow
