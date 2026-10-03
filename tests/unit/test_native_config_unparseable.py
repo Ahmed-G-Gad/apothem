@@ -234,3 +234,13 @@ def test_manifest_json_target_that_is_jsonc_aborts_install(tmp_path: Path) -> No
     assert settings.read_text(encoding="utf-8") == text
     # Nothing else was materialized: the refusal happens before the trees.
     assert not (harness_root / "agents").exists()
+
+
+def test_unchanged_merge_writes_the_merged_text_when_the_file_is_gone(
+    tmp_path: Path,
+) -> None:
+    from apothem.harnesses._shared.install_driver_jsonmerge import _merged_bytes
+
+    gone = tmp_path / "removed-after-read.json"
+
+    assert _merged_bytes(gone, "{}\n", "{}\n") == b"{}\n"

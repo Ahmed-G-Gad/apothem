@@ -73,6 +73,22 @@ def test_claude_permissions_survive_install_update_uninstall(
     assert _read_json(settings) == seed
 
 
+def test_claude_settings_with_crlf_endings_survive_a_no_op_update(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An update that changes no value leaves a CRLF settings.json byte for byte."""
+    home = tmp_path / "home"
+    settings = home / ".claude" / "settings.json"
+    adapter = _adapter("claude-code", home, monkeypatch)
+    adapter.install({})
+    crlf = settings.read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
+    settings.write_bytes(crlf)
+
+    adapter.update({})
+
+    assert settings.read_bytes() == crlf
+
+
 def test_qwen_operator_mcp_server_survives_uninstall(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -317,7 +317,11 @@ def _merged_bytes(target: Path, before: str | None, merged: str) -> bytes:
     file as it is and leaves the operator's line endings alone.
     """
     if before is not None and merged == before:
-        return target.read_bytes()
+        try:
+            return target.read_bytes()
+        except OSError:
+            # The file changed after it was read; write the merged text.
+            pass
     return merged.encode("utf-8")
 
 
