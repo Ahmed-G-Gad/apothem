@@ -210,8 +210,9 @@ harnesses:
     platform: [linux, macos, windows]
     notes: >-
       Project rules via <project>/.codebuddy/rules/apothem-rules.md, a
-      dedicated apothem file. CodeBuddy's CODEBUDDY.md memory file and
-      .codebuddy/settings.json (permissions/MCP) are operator-owned.
+      dedicated apothem file. CodeBuddy's CODEBUDDY.md memory file,
+      .codebuddy/settings.json, and the project .mcp.json (MCP servers) are
+      operator-owned.
 
   - name: kiro
     display: Kiro

@@ -23,12 +23,13 @@ hook_learning_capture: "artifact-evolution-cycle"
 standard_convention_pin: "STANDARD-CONVENTION-PIN.md"
 # web-fetch / browser-retrieval surface — the backing capability dimension for
 # rules/source-accessibility.md step 1 ("retrieve through the host's browser /
-# fetch capability"). Vendor-confirmed PARTIAL (Cursor `@Web` user-invoked
-# search; no documented autonomous fetch tool). The evidence triple
+# fetch capability"). Vendor-confirmed: Cursor's agent has a Browser tool that
+# visits URLs and browses web pages (cursor.com/docs/agent/tools/browser,
+# retrieved 2026-10-03). The evidence triple
 # (vendor-doc-url, snapshot-id, snapshot-date) lives at its canonical home,
 # STANDARD-CONVENTION-PIN.md "Web-Fetch / Browser-Retrieval Surface", per
 # rules/agent-capability-discipline-matrix.md §1A.
-web_fetch: "partial"
+web_fetch: "yes"
 tool_surface_restrictions:
   - secrets-paths
   - destructive-shell-ops

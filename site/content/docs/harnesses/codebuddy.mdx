@@ -39,10 +39,12 @@ content.
 CodeBuddy's rules surface is project-scoped under `.codebuddy/rules/`. The
 adapter writes a dedicated `apothem-rules.md` file that co-exists with any
 rules files the operator authors in the same directory. The `CODEBUDDY.md`
-project memory file and `.codebuddy/settings.json` (permissions, MCP) are
-operator-owned; Apothem does not write them. Skills, commands, agents, and
-hooks are referenced as discipline inside the rules file — CodeBuddy exposes
-no adapter-owned file surface for them. The vendor surface conventions the
+project memory file, `.codebuddy/settings.json`, and the project `.mcp.json`
+(MCP servers) are operator-owned; Apothem does not write them. CodeBuddy also
+documents skills, commands, sub-agents, and hooks; the adapter writes none of
+them and references the disciplines inside the rules file instead. When a
+project has no `CODEBUDDY.md`, CodeBuddy Code reads `AGENTS.md` as project
+memory, so an `AGENTS.md` another adapter writes reaches CodeBuddy as well. The vendor surface conventions the
 adapter relies on are pinned at
 `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md`, snapshotted
 against the live CodeBuddy documentation.
