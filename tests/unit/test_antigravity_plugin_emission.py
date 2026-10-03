@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 
+# REUSE-IgnoreStart
 """The Antigravity plugin emits rules and a manifest Antigravity accepts.
 
 Per https://antigravity.google/docs/rules (retrieved 2026-10-02), every ``.md``
@@ -110,3 +111,6 @@ def test_reinstall_is_unchanged(tmp_path: Path) -> None:
     rules_results = [r for r in run.results if r.operation == "antigravity_rules"]
     assert rules_results
     assert {r.outcome for r in rules_results} == {"unchanged"}
+
+
+# REUSE-IgnoreEnd

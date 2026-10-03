@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 
+# REUSE-IgnoreStart
 """The always-on matcher reports what a harness actually loads, in named units.
 
 The budget count excludes the ``## Bindings`` section and companion-pointer
@@ -133,3 +134,6 @@ def test_corpus_aggregate_matches_independent_measurement() -> None:
 
     assert aggregate["rules"] == expected_rules
     assert aggregate["bytes"] == expected_bytes
+
+
+# REUSE-IgnoreEnd

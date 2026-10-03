@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 
+# REUSE-IgnoreStart
 """Planted defects fail the corpus gate in its CI form (``--all --strict``).
 
 The gate's standalone sweep once passed vacuously: naming-grep inspected no
@@ -103,3 +104,6 @@ def test_planted_defects_fail_all_strict(tree: Path) -> None:
     assert bindings["passed"] is False
     assert "rules/missing-bindings.md" in str(bindings["output"])
     assert "BadName_Rule.md" not in str(bindings["output"])
+
+
+# REUSE-IgnoreEnd

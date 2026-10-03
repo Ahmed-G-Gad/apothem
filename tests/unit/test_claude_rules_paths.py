@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 
+# REUSE-IgnoreStart
 """Claude Code rule scoping: ``pathFilter`` becomes the native ``paths:`` list.
 
 Claude Code loads every file under ``~/.claude/rules/`` at launch unless its
@@ -116,3 +117,6 @@ def test_engine_install_scopes_path_filtered_rules(tmp_path: Path) -> None:
         and _frontmatter(p.read_text("utf-8")).get("alwaysApply") is True
     ]
     assert loaded_at_launch == always_on
+
+
+# REUSE-IgnoreEnd

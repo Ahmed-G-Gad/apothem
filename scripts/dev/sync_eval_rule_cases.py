@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 
+# REUSE-IgnoreStart
 """Keep the rule-effect eval cases in step with the rules they measure.
 
 Why this exists. A plugin eval run loads no rules and no ``CLAUDE.md``, so an
@@ -162,3 +163,6 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+# REUSE-IgnoreEnd

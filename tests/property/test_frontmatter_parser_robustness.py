@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 
+# REUSE-IgnoreStart
 """Robustness properties for the frontmatter parsers over malformed input.
 
 The engine reads frontmatter in three places: the field probe in
@@ -162,3 +163,6 @@ def test_plan_frontmatter_reader_never_raises(text: str) -> None:
         assert "\n" not in value
     stripped = strip_frontmatter(text)
     assert text.endswith(stripped)
+
+
+# REUSE-IgnoreEnd

@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 
+# REUSE-IgnoreStart
 """Bootstrap-context assembly for the SessionStart hook (``hooks.session_start_bootstrap``).
 
 On every session start the hook builds the injected context from inputs that may
@@ -581,3 +582,6 @@ class TestMain:
             "Hook execution failure: bootstrap exploded"
             in envelope["hookSpecificOutput"]["additionalContext"]
         )
+
+
+# REUSE-IgnoreEnd

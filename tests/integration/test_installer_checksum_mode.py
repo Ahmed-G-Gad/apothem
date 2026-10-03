@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 
+# REUSE-IgnoreStart
 """The POSIX installer's checksum-only mode (``APOTHEM_VERIFY=checksum``).
 
 The default mode verifies the release tag's GPG signature, which needs the
@@ -122,3 +123,6 @@ def test_checksum_mode_needs_a_release_tag(tmp_path: Path) -> None:
     combined = result.stdout + result.stderr
     assert result.returncode != 0, combined
     assert "needs a vMAJOR.MINOR.PATCH release tag" in combined, combined
+
+
+# REUSE-IgnoreEnd

@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 
+# REUSE-IgnoreStart
 """Behavioral coverage for the five-direction Bindings presence validator.
 
 Every rule, command, agent, and skill closes with a ``## Bindings`` section
@@ -160,3 +161,6 @@ def test_cli_exit_codes(
     with pytest.raises(SystemExit) as excinfo:
         b5._main(["prog", str(empty / "absent")])
     assert excinfo.value.code == _grep_base.EXIT_USAGE
+
+
+# REUSE-IgnoreEnd

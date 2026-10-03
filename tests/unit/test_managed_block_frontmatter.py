@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 
+# REUSE-IgnoreStart
 """Frontmatter-carrying rule files keep their frontmatter at byte 0.
 
 Cursor, Kiro, Trae, CodeBuddy and Windsurf read a rule file's activation mode
@@ -133,3 +134,6 @@ def test_installed_rule_file_opens_with_frontmatter(
     assert target.read_text(encoding="utf-8") == text
     adapter.uninstall(project=tmp_path)  # type: ignore[attr-defined]
     assert not target.exists() or not target.read_text(encoding="utf-8").strip()
+
+
+# REUSE-IgnoreEnd

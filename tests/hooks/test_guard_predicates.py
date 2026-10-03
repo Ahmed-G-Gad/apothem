@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 
+# REUSE-IgnoreStart
 """Unit tests for the hook runtime pieces added for the hook contract.
 
 Covers the maintainer-text stripper, the dependency and dynamic-eval guard
@@ -221,3 +222,6 @@ class TestStateDir:
     def test_ids_are_sanitized(self) -> None:
         assert state_dir.session_key("../../etc/passwd") == "etcpasswd"
         assert state_dir.session_key("abc-123_x.y") == "abc-123_x.y"
+
+
+# REUSE-IgnoreEnd
