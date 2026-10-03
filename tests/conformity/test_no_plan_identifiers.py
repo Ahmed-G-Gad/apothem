@@ -1,12 +1,11 @@
 # SPDX-License-Identifier: MIT
 
-"""Shipped Python carries no plan-internal identifiers.
+"""Shipped Python names work in plain words, never by a work-item code.
 
-The gate's advisory rationale once named private plan phases and work items by
-their internal codes. Those strings ship in the npm package and the plugin
-tree, where they mean nothing to a reader and break the release-facade rule.
-The advisory notes now describe the work in plain words; this test keeps it
-that way.
+Every Python file under ``src/apothem`` reaches users through the npm package
+and the plugin tree. The gate's advisory rationale in particular is read by
+someone with no access to project planning, so each reason and remediation
+says what the work is instead of citing a phase number or work-item code.
 """
 
 from __future__ import annotations

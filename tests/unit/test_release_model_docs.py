@@ -2,12 +2,10 @@
 
 """The release docs describe one release model: additive, nothing rewritten.
 
-The release-cycle runbook adds a commit and a signed tag per release, and the
-project keeps every tag, GitHub Release and npm version it has published (npm
-versions cannot be replaced). The release-recovery runbook instead described a
-"clean-slate-in-place" model: a history safety tag, a force-pushed single
-release commit, and rollback by ``reset --hard``. An operator following it
-during an incident would rewrite history the release never rewrote.
+Each release adds a commit and a signed tag, and the project keeps every tag,
+GitHub Release and npm version it has published (npm versions cannot be
+replaced). No runbook tells an operator to force-push, reset or replace
+published history, during a release or while recovering from a failed one.
 """
 
 from __future__ import annotations
@@ -52,7 +50,7 @@ def test_policy_records_the_release_facade_contradiction() -> None:
     text = _POLICY.read_text(encoding="utf-8")
     assert "release-facade" in text
     assert "three" in text, "the policy records how many releases exist"
-    # Planning identifiers (a letter, a dash and a number, optionally with a
-    # lens code) belong to the internal plan, never to a published page.
+    # A published page names work in plain words, never by a work-item code
+    # (a capital letter, a dash and two digits, with an optional infix).
     leaked = re.findall(r"\b[DFR]-(?:[A-Z][0-9]-)?[0-9]{2}\b", text)
-    assert not leaked, f"plan-internal identifiers leaked: {leaked}"
+    assert not leaked, f"work-item codes on a published page: {leaked}"
