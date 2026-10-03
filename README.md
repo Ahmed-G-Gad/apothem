@@ -409,16 +409,23 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 
 **Prerequisites:** VS Code, Node.js 18+, and system Python 3.10+ on `PATH`.
 
-The **Apothem** extension ships as the signed `apothem.vsix` artifact attached
-to each GitHub Release — install it with `code --install-extension apothem.vsix`
-or through the editor's *Install from VSIX…* command. One extension covers VS
-Code and GitHub Copilot. A
+The **Apothem** extension installs from an `apothem.vsix` package: run
+`code --install-extension apothem.vsix`, or use the editor's *Install from
+VSIX…* command. The release workflow signs the package and attaches it to each
+GitHub Release; the current release, v1.1.0, predates that step and carries
+none, so build the package from a checkout:
+
+```shell
+cd vscode-extension && npx @vscode/vsce package --no-dependencies --out apothem.vsix
+```
+
+One extension covers VS Code and GitHub Copilot. A
 [Visual Studio Marketplace](https://marketplace.visualstudio.com/) listing is
 not yet published: the `apothem` name is held by another publisher, so the
 identifier is still unresolved. Its commands (`Apothem:
 Install`, `Verify`, `Update`, `Uninstall`, `Doctor`) run the same engine
-through the configured runner (`npx @ahmed-g-gad/apothem` by default). Source
-lives under [`vscode-extension/`](vscode-extension/).
+through the configured runner (`npx @ahmed-g-gad/apothem@<extension version>`
+by default). Source lives under [`vscode-extension/`](vscode-extension/).
 
 **Verify:** run the **Apothem: Verify** command from the editor's command
 palette, or from a terminal:

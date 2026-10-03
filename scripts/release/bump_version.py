@@ -74,9 +74,13 @@ JSON_ANCHORS: list[tuple[str, tuple[str, ...]]] = [
 #: extension never runs a newer or older engine than the one it shipped with.
 NPX_PIN_ANCHORS: list[str] = [
     "commands/apothem.toml",
+    "qwen-commands/apothem.md",
     "GEMINI.md",
     "QWEN.md",
     "plugins/apothem/skills/apothem/SKILL.md",
+    "vscode-extension/extension.js",
+    "vscode-extension/package.json",
+    "vscode-extension/README.md",
 ]
 
 #: An engine call in a wrapper, pinned or not; group 1 is the pinned version.
@@ -301,9 +305,18 @@ def plan(
         _text_step(root, CITATION, lambda t: _bump_citation(t, new, date)),
         _text_step(root, CHANGELOG, changelog),
         _text_step(root, SECURITY, security),
-        *(_text_step(root, rel, lambda t: _pin_npx(t, new)) for rel in NPX_PIN_ANCHORS),
     )
     for step in steps:
+        if step is not None:
+            changes[step[0]] = step[1]
+    # A pin anchor may also be a JSON anchor (the extension's package.json):
+    # pin on top of its version bump instead of re-reading the original.
+    for rel in NPX_PIN_ANCHORS:
+        if rel in changes:
+            before, after = changes[rel]
+            changes[rel] = (before, _pin_npx(after, new))
+            continue
+        step = _text_step(root, rel, lambda t: _pin_npx(t, new))
         if step is not None:
             changes[step[0]] = step[1]
     return changes, notes

@@ -8,6 +8,7 @@ Protocol-conformance and install-smoke tests for the adapter.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path, PurePosixPath
 
 import pytest
@@ -259,6 +260,7 @@ def test_qwen_extension_ships_a_markdown_bootstrap_command() -> None:
     meta = yaml.safe_load(frontmatter)
     assert isinstance(meta, dict)
     assert meta.get("description")
-    assert "!{npx @ahmed-g-gad/apothem {{args}}}" in body
+    # The engine call is pinned to the extension's own version.
+    assert re.search(r"!\{npx @ahmed-g-gad/apothem@\d+\.\d+\.\d+ \{\{args\}\}\}", body)
     # The Gemini extension keeps its TOML command in the shared directory.
     assert (_REPO_ROOT / "commands" / "apothem.toml").is_file()

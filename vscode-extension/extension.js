@@ -32,7 +32,7 @@ const SUBCOMMANDS = {
 // harness and takes only `--project`.
 const HARNESS_SUBCOMMANDS = new Set(['install', 'verify', 'update', 'uninstall']);
 
-const DEFAULT_RUNNER = 'npx @ahmed-g-gad/apothem';
+const DEFAULT_RUNNER = 'npx @ahmed-g-gad/apothem@1.1.0';
 
 // The VS Code-family harnesses, matched against the editor's application name.
 // The first entry is the fallback for VS Code itself.

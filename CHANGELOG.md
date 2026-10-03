@@ -163,10 +163,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   never built it, and v1.1.0 carries none. The release build now packages it
   into the signed, hashed, and attested asset set.
 - **Extension wrappers run the engine version they shipped with.** The Gemini
-  CLI command, the Gemini and Qwen Code context files, and the Codex plugin
-  skill called `npx @ahmed-g-gad/apothem` with no version, so a later npm
-  publish changed what an installed extension ran. Each call now pins the
-  wrapper's own version, and `bump_version.py` moves the pins.
+  CLI and Qwen Code commands, the Gemini and Qwen Code context files, the
+  Codex plugin skill, and the VS Code extension's default runner called
+  `npx @ahmed-g-gad/apothem` with no version, so a later npm publish changed
+  what an installed extension ran. Each call now pins the wrapper's own
+  version, and `bump_version.py` moves the pins.
+- **The docs describe the VS Code extension as it ships.** The install page
+  said it installs from the Visual Studio Marketplace, where no listing
+  exists, and the README said each release attaches a signed `.vsix`, which
+  v1.1.0 does not. Both now say how to install the package and how to build
+  it from a checkout.
 - **The wheel and sdist carry the full hook corpus.** They left out
   `hooks/hooks.json` and the hook READMEs that every other channel ships.
 - **Path-filtered rules no longer load in every Claude Code session.** Claude

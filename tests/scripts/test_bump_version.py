@@ -88,14 +88,18 @@ def test_bump_rewrites_every_anchor(tmp_path: Path) -> None:
 def test_bump_changes_nothing_but_the_version_fields(tmp_path: Path) -> None:
     """A semantic diff of each JSON anchor shows only the version keys moved."""
     root = _scratch_repo(tmp_path)
+
+    def load(rel: str) -> object:
+        # An engine pin in a JSON anchor is a version field too.
+        text = (root / rel).read_text(encoding="utf-8")
+        return json.loads(bump_version.NPX_PIN.sub("X.Y.Z", text))
+
     before = {
-        rel: json.loads((root / rel).read_text(encoding="utf-8"))
-        for rel, _ in bump_version.JSON_ANCHORS
-        if (root / rel).is_file()
+        rel: load(rel) for rel, _ in bump_version.JSON_ANCHORS if (root / rel).is_file()
     }
     assert _run(root) == 0
     for rel, original in before.items():
-        after = json.loads((root / rel).read_text(encoding="utf-8"))
+        after = load(rel)
         for anchor_rel, keys in bump_version.JSON_ANCHORS:
             if anchor_rel == rel:
                 _get(after, keys)["version"] = _get(original, keys)["version"]
@@ -110,10 +114,13 @@ def test_bump_moves_every_wrapper_engine_pin(tmp_path: Path) -> None:
         for rel in bump_version.NPX_PIN_ANCHORS
     }
     assert _run(root) == 0
+    json_anchors = {rel for rel, _ in bump_version.JSON_ANCHORS}
     for rel, original in before.items():
         after = (root / rel).read_text(encoding="utf-8")
         assert bump_version.NPX_PIN.findall(after), rel
         assert set(bump_version.NPX_PIN.findall(after)) == {NEW}, rel
+        if rel in json_anchors:
+            continue  # its version field moves too; the JSON test covers it
         assert bump_version.NPX_PIN.sub("X", after) == bump_version.NPX_PIN.sub(
             "X", original
         ), f"{rel} changed beyond its npx pins"

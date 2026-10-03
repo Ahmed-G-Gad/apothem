@@ -91,7 +91,7 @@
       "properties": {
         "apothem.runner": {
           "type": "string",
-          "default": "npx @ahmed-g-gad/apothem",
+          "default": "npx @ahmed-g-gad/apothem@1.1.0",
           "scope": "machine",
           "description": "Command used to invoke the Apothem engine, split on spaces into a program and its arguments. Defaults to the npm shim; set to a local interpreter invocation (e.g. 'python -m apothem') to run from a checkout. Read from user settings only: a workspace cannot change it."
         }

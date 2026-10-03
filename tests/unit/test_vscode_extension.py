@@ -21,6 +21,13 @@ from pathlib import Path
 import pytest
 
 _EXTENSION_DIR = Path(__file__).resolve().parents[2] / "vscode-extension"
+# The built-in runner pins the engine to the extension's own version.
+_PINNED_ENGINE = (
+    "@ahmed-g-gad/apothem@"
+    + json.loads((_EXTENSION_DIR / "package.json").read_text(encoding="utf-8"))[
+        "version"
+    ]
+)
 _NODE = shutil.which("node")
 
 _VSCODE_STUB = r"""
@@ -136,7 +143,9 @@ def test_runner_setting_is_machine_scoped() -> None:
     manifest = json.loads((_EXTENSION_DIR / "package.json").read_text(encoding="utf-8"))
     runner = manifest["contributes"]["configuration"]["properties"]["apothem.runner"]
     assert runner["scope"] == "machine"
-    assert runner["default"] == "npx @ahmed-g-gad/apothem"
+    # The default runs the engine version the extension shipped with.
+    version = manifest["version"]
+    assert runner["default"] == f"npx @ahmed-g-gad/apothem@{version}"
     assert manifest["capabilities"]["untrustedWorkspaces"]["supported"] is False
 
 
@@ -152,7 +161,7 @@ def test_workspace_runner_value_is_ignored(tmp_path: Path) -> None:
         },
     )
     assert record["sendText"] == []
-    assert _argv(record)[:3] == ["npx", "@ahmed-g-gad/apothem", "install"]
+    assert _argv(record)[:3] == ["npx", _PINNED_ENGINE, "install"]
 
 
 def test_user_runner_value_is_used(tmp_path: Path) -> None:
@@ -202,7 +211,7 @@ def test_doctor_asks_nothing_and_scopes_the_project(tmp_path: Path) -> None:
     assert record["quickPick"] == []
     assert _argv(record) == [
         "npx",
-        "@ahmed-g-gad/apothem",
+        _PINNED_ENGINE,
         "doctor",
         "--project",
         "/work/project",

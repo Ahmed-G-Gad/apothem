@@ -33,7 +33,7 @@ as a task in the terminal panel, with the workspace folder as `--project`.
 ## Requirements
 
 The extension drives the Apothem engine through the npm shim by default
-(`npx @ahmed-g-gad/apothem`), which needs Node.js on the `PATH`. To run from a
+(`npx @ahmed-g-gad/apothem@1.1.0`), which needs Node.js on the `PATH`. To run from a
 local checkout instead, set **`apothem.runner`** in your user Settings (for
 example, `python -m apothem`). The setting is machine-scoped: a workspace's
 `.vscode/settings.json` cannot change it. The runner is split on spaces into a

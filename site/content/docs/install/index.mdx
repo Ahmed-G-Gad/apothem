@@ -224,13 +224,19 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 
 **Prerequisites:** VS Code, Node.js 18+, and system Python 3.10+ on `PATH`.
 
-The **Apothem** extension installs from the
-[Visual Studio Marketplace](https://marketplace.visualstudio.com/) — one
-extension covers VS Code and its in-editor companion assistant surface. Its
-palette commands (`Apothem: Install`, `Verify`, `Update`, `Uninstall`,
-`Doctor`) run the same engine through the configured runner
-(`npx @ahmed-g-gad/apothem` by default; point the `apothem.runner` user setting
-at a local checkout to run from source). Install, Verify, Update and Uninstall
+The **Apothem** extension installs from an `apothem.vsix` package:
+`code --install-extension apothem.vsix`, or the editor's *Install from VSIX…*
+command. The release workflow signs the package and attaches it to each GitHub
+Release; the current release, v1.1.0, predates that step and carries none, so
+build the package from a checkout with
+`cd vscode-extension && npx @vscode/vsce package --no-dependencies --out apothem.vsix`.
+A [Visual Studio Marketplace](https://marketplace.visualstudio.com/) listing is
+not yet published. One extension covers VS Code and its in-editor companion
+assistant surface. Its palette commands (`Apothem: Install`, `Verify`,
+`Update`, `Uninstall`, `Doctor`) run the same engine through the configured
+runner (`npx @ahmed-g-gad/apothem@<extension version>` by default, so the
+extension runs the engine version it shipped with; point the `apothem.runner`
+user setting at a local checkout to run from source). Install, Verify, Update and Uninstall
 ask which harness to act on, offering the editor's own harness first; `all` is
 a choice, never the default. The `apothem.runner` setting is machine-scoped, so
 a workspace cannot change it, and the extension runs only in a trusted
