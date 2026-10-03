@@ -21,6 +21,12 @@ registered command is run the way the harness runs it:
 * the engine-installed Codex ``hooks.json`` and Qwen Code ``settings.json``
   (shell form).
 
+On Windows every shell-form command runs through Git Bash. That is how Claude
+Code runs a plugin hook there. Codex runs each hook's ``commandWindows`` instead,
+and Qwen Code runs hooks through cmd.exe, so on Windows the Codex and Qwen rows
+check the dispatcher and its handlers, not those hosts' own command lines. A
+separate check holds every Codex ``commandWindows`` to the command run here.
+
 Clauses. (1) executes: exit 0 and stdout empty or one JSON object. (2)
 termination: Stop and PostToolUse emissions are bounded per session. (3) output
 bound: no emitted string exceeds 10,000 characters, the Claude Code cap. (4)
@@ -62,7 +68,8 @@ _OUTPUT_CAP = 10_000
 _LATENCY_BUDGET_SECONDS = 5.0
 #: Shell-form commands run through sh, as the hosts run them on POSIX. On
 #: Windows a PATH ``sh`` or ``bash`` can be the WSL launcher, so they run
-#: through Git Bash, which is what the hosts use there.
+#: through Git Bash, the shell Claude Code uses there (see the module docstring
+#: for the Codex and Qwen Code rows).
 _WINDOWS_BASH = find_test_bash() if sys.platform == "win32" else None
 _SHELL = _WINDOWS_BASH or "sh"
 
@@ -541,6 +548,28 @@ def test_clause8_single_registration_per_surface(workspace: dict[str, Path]) -> 
     assert not duplicates, duplicates
     for entry in _plugin_entries(workspace["plugin"]):
         assert entry.argv[2].startswith('bash "'), entry.label
+
+
+def test_codex_windows_command_mirrors_the_command(workspace: dict[str, Path]) -> None:
+    """Codex runs ``commandWindows`` on Windows; it makes the same dispatcher call.
+
+    The clauses above run ``command``. Each override must be that command with
+    only the interpreter launcher swapped, so a clean run covers both strings.
+    """
+    config = workspace["home"] / ".codex" / "hooks.json"
+    data = json.loads(config.read_text(encoding="utf-8"))
+    hooks = [
+        hook
+        for groups in data["hooks"].values()
+        for group in groups
+        for hook in group["hooks"]
+    ]
+
+    assert hooks
+    for hook in hooks:
+        command = hook["command"]
+        assert command.startswith("python3 "), command
+        assert hook.get("commandWindows") == "py -3 " + command.removeprefix("python3 ")
 
 
 def test_shell_guards_cover_the_powershell_tool(workspace: dict[str, Path]) -> None:
