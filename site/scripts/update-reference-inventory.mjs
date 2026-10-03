@@ -681,6 +681,7 @@ function ensureProfileFieldsPage(target) {
 // -----------------------------------------------------------------------
 
 const COMMANDS_DIR = join(REPO_ROOT, 'src', 'apothem', 'commands');
+const SKILLS_DIR = join(REPO_ROOT, 'src', 'apothem', 'skills');
 const PIPELINE_DIR = join(DOCS_ROOT, 'pipeline');
 const GENERATED_PAGE_PREFIX = '{/* apothem:generated-page';
 const GENERATED_PAGE =
@@ -794,17 +795,27 @@ function commandPage(command) {
 	}
 	if (emitted) parts.push('', '## Outputs', '', prose(emitted));
 	if (next) parts.push('', '## Next step', '', prose(next));
-	parts.push(
-		'',
-		'## Source',
-		'',
-		`Generated from [\`${rel}\`](https://github.com/${GITHUB_REPOSITORY}/blob/main/${rel}), ` +
-			'the command definition every harness installs.',
-		'',
-		END,
-		'',
-	);
+	parts.push('', '## Source', '', sourceNote(name, rel), '', END, '');
 	return parts.join('\n');
+}
+
+// A skill that shares the command's name takes the name wherever an install
+// puts commands and skills in one namespace: Claude Code resolves the pair to
+// the skill, and the engine installs that turn commands into skills keep it.
+function sourceNote(name, rel) {
+	const link = (path) =>
+		`[\`${path}\`](https://github.com/${GITHUB_REPOSITORY}/blob/main/${path})`;
+	const skill = join(SKILLS_DIR, name, 'SKILL.md');
+	if (!existsFile(skill)) {
+		return `Generated from ${link(rel)}, the command definition every harness installs.`;
+	}
+	const skillRel = relative(REPO_ROOT, skill).split(sep).join('/');
+	return (
+		`Generated from ${link(rel)}. The skill ${link(skillRel)} has the same name. ` +
+		'Where an install puts commands and skills under one name (the Claude Code ' +
+		'plugin, and the engine installs that turn commands into skills), the skill ' +
+		'runs; installs that keep commands and skills apart ship both.'
+	);
 }
 
 function writeCommandPages(commands) {

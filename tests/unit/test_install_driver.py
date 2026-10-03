@@ -122,13 +122,12 @@ def test_run_install_reports_unchanged_on_second_pass(
 # The five "folding" harnesses render commands/ into the SAME skills/ directory
 # their skills/ tree merge writes into (a command_skills entry and a
 # merge_tree_entries skills/ entry that resolve to one root). projectify and
-# workflow ship as BOTH a command and a standalone skill, so without the manifest's
-# per-directory-filters skills exclusion both entries would author
-# skills/<name>/SKILL.md with differing bodies — a source collision that rewrites
-# itself on every install and never converges. The manifest excludes the standalone
-# skill subdirs on these harnesses so the command-as-skill is the sole writer; this
-# guard fails if a future same-name command/skill pair (or a dropped filter)
-# reopens the collision.
+# workflow ship as BOTH a command and a standalone skill, so both entries would
+# author skills/<name>/SKILL.md with differing bodies — a source collision that
+# rewrites itself on every install and never converges. The driver leaves a
+# command out when a skill of the same name shares its target, so the skill is the
+# sole writer; this guard fails if a same-name command/skill pair reopens the
+# collision.
 _FOLDING_HARNESSES = ("claude_code", "codex", "antigravity", "hermes", "open_claw")
 
 

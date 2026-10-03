@@ -246,8 +246,14 @@ def apply_command_skills(
     harness_root: Path | None = None,
     project_root: Path | None = None,
     harness_name: str = "manual",
+    skip: frozenset[str] = frozenset(),
 ) -> list[MaterializationResult]:
-    """Install Markdown command files as native skill directories."""
+    """Install Markdown command files as native skill directories.
+
+    A command named in *skip* is left out: a source skill of the same name is
+    installed into the same directory and takes precedence (see
+    :func:`skills_sharing_command_target`).
+    """
     src = resolve_source(entry.source)
     dst = resolve_target(
         entry.target, harness_root=harness_root, project_root=project_root
@@ -274,7 +280,7 @@ def apply_command_skills(
     root = _root_for(harness_root, project_root)
     results: list[MaterializationResult] = []
     for source_path in sorted(src.glob("*.md")):
-        if source_path.name in _COHORT_DOC_FILES:
+        if source_path.name in _COHORT_DOC_FILES or source_path.stem in skip:
             continue
         skill_dir = dst / source_path.stem
         results.append(

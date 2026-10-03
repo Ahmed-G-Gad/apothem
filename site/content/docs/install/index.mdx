@@ -71,7 +71,9 @@ enters plan mode and `/code-review` runs the bundled review, so type
 Apothem engine installs into Claude Code instead of the plugin, commands become
 personal skills under `~/.claude/skills/` without a prefix, and a personal
 `code-review` skill replaces the bundled `/code-review` (its `/review` alias
-still runs the bundled one). See [Slash commands](/docs/reference/commands)
+still runs the bundled one). Two names, `projectify` and `workflow`, ship as
+both a command and a skill; Claude Code runs the skill when both exist, so the
+plugin runs the skill and the engine install writes the skill into that slot. See [Slash commands](/docs/reference/commands)
 for the full command catalog.
 
 **Verify:** run `/plugin` inside Claude Code and confirm **apothem** is listed

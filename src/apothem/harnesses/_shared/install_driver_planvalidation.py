@@ -60,6 +60,7 @@ from .install_driver_types import (
     _result,
     _with_detail,
     resolve_source,
+    skills_sharing_command_target,
 )
 
 
@@ -425,13 +426,15 @@ def _prospective_child_outcomes(
     harness_root: Path | None,
     project_root: Path | None,
     harness_name: str,
+    skip: frozenset[str] = frozenset(),
 ) -> list[MaterializationOutcome]:
     """Classify each child of a per-file directory mode without writing.
 
     Each branch mirrors the matching ``apply_*`` function in
     :mod:`install_driver_apply` — the same source enumeration, the same
     cohort-doc exclusion, the same native-text conversion — so the no-write
-    classification tracks what the real install would decide.
+    classification tracks what the real install would decide. *skip* names
+    the commands a same-named skill shadows (``command_skills`` only).
     """
     if entry.mode == "native_skills":
         return preview_native_skills(
@@ -449,6 +452,8 @@ def _prospective_child_outcomes(
     outcomes: list[MaterializationOutcome] = []
     for source_path in sorted(src.glob("*.md")):
         if source_path.name in _COHORT_DOC_FILES:
+            continue
+        if entry.mode == "command_skills" and source_path.stem in skip:
             continue
         outcome = _prospective_markdown_child_outcome(
             entry.mode, source_path, dst=dst, root=root, harness_name=harness_name
@@ -469,6 +474,7 @@ def _prospective_entry_outcome(
     harness_root: Path | None,
     project_root: Path | None,
     harness_name: str,
+    skip: frozenset[str] = frozenset(),
 ) -> MaterializationOutcome:
     """Classify an Apothem-owned ``write_text`` or any tree entry, no writes.
 
@@ -502,6 +508,7 @@ def _prospective_entry_outcome(
             harness_root=harness_root,
             project_root=project_root,
             harness_name=harness_name,
+            skip=skip,
         ),
         target_dir=target,
     )
@@ -589,6 +596,7 @@ def _dry_run_results(
                 harness_root=harness_root,
                 project_root=project_root,
                 harness_name=harness_name,
+                skip=skills_sharing_command_target(entry, rules),
             )
         results.append(
             _with_detail(

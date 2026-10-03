@@ -182,23 +182,15 @@ harnesses:
     # snippet (`conformity.json`, whose command points at the installed
     # renderer via the `${HARNESS_ROOT}` token) propagate alongside the
     # operator-readable Markdown (`statusline.md`).
+    # A command and a skill that share a name (projectify and workflow ship as
+    # both) would both author skills/<name>/SKILL.md here, because command_skills
+    # renders commands/ into the same skills/ directory the skills/ tree writes.
+    # The driver leaves such a command out, so the skill is the sole writer: the
+    # body Claude Code itself picks when a skill and a command share a name
+    # (code.claude.com/docs/en/skills.md#resolve-skills-that-share-a-name), and
+    # the one the plugin, which ships both, therefore loads. Every harness whose
+    # command_skills and skills entries share a target follows the same rule.
     per-directory-filters:
-      # projectify and workflow each ship BOTH as a command (commands/) and as a
-      # standalone skill (skills/<name>/SKILL.md). On this harness the
-      # command_skills entry renders commands/ into the SAME skills/ directory the
-      # skills/ tree merge writes into, so both entries would author
-      # skills/<name>/SKILL.md — a source collision whose two differing bodies
-      # never converge (each install rewrites what the other wrote). The command
-      # is the authoritative entry point (cataloged under "Operator workflow" in
-      # commands/README.md), so the command-as-skill wins: exclude the standalone
-      # skill subdirs from the skills/ tree copy here, leaving command_skills the
-      # sole writer of each target and the install idempotent. The standalone
-      # skills still ship intact to the harnesses whose command and skill surfaces
-      # are distinct directories (gemini_cli, opencode, qwen_code), where the two
-      # artifacts land on separate paths and no collision occurs.
-      skills:
-        - "projectify"
-        - "workflow"
       statuslines:
         - "__init__.py"
 
@@ -266,15 +258,9 @@ harnesses:
       # Apothem-managed skills land under the official user-scope skills
       # root ~/.agents/skills/ (confirmed against official docs 2026-05-31).
 
-    # projectify/workflow collide between the command_skills entry and the
-    # skills/ tree merge (both author skills/<name>/SKILL.md). The
-    # command-as-skill is authoritative; exclude the standalone skill subdirs so
-    # command_skills is the sole writer and the install is idempotent. See the
-    # claude_code per-directory-filters for the full rationale.
-    per-directory-filters:
-      skills:
-        - "projectify"
-        - "workflow"
+    # A command sharing a source skill's name is left to the skill; see the
+    # claude_code entry.
+    per-directory-filters: {}
 
   antigravity:
     # Antigravity CLI reads ~/.gemini/GEMINI.md for global context while
@@ -334,15 +320,9 @@ harnesses:
       - "antigravity-cli/plugins/apothem/apothem/templates"
       - "antigravity-cli/plugins/apothem/apothem/hooks"
 
-    # projectify/workflow collide between the command_skills entry and the
-    # skills/ tree merge (both author skills/<name>/SKILL.md). The
-    # command-as-skill is authoritative; exclude the standalone skill subdirs so
-    # command_skills is the sole writer and the install is idempotent. See the
-    # claude_code per-directory-filters for the full rationale.
-    per-directory-filters:
-      skills:
-        - "projectify"
-        - "workflow"
+    # A command sharing a source skill's name is left to the skill; see the
+    # claude_code entry.
+    per-directory-filters: {}
 
   gemini_cli:
     # Gemini CLI's apothem-managed surface is project-scope only.
@@ -645,15 +625,9 @@ harnesses:
       - "apothem/skills"
       - "apothem/agents"
 
-    # projectify/workflow collide between the command_skills entry and the
-    # skills/ tree merge (both author skills/<name>/SKILL.md). The
-    # command-as-skill is authoritative; exclude the standalone skill subdirs so
-    # command_skills is the sole writer and the install is idempotent. See the
-    # claude_code per-directory-filters for the full rationale.
-    per-directory-filters:
-      skills:
-        - "projectify"
-        - "workflow"
+    # A command sharing a source skill's name is left to the skill; see the
+    # claude_code entry.
+    per-directory-filters: {}
 
   open_claw:
     # OpenClaw receives ~/.openclaw/openclaw.json from materializer.py.
@@ -702,15 +676,9 @@ harnesses:
       - "apothem/skills"
       - "apothem/agents"
 
-    # projectify/workflow collide between the command_skills entry and the
-    # skills/ tree merge (both author skills/<name>/SKILL.md). The
-    # command-as-skill is authoritative; exclude the standalone skill subdirs so
-    # command_skills is the sole writer and the install is idempotent. See the
-    # claude_code per-directory-filters for the full rationale.
-    per-directory-filters:
-      skills:
-        - "projectify"
-        - "workflow"
+    # A command sharing a source skill's name is left to the skill; see the
+    # claude_code entry.
+    per-directory-filters: {}
 
   kimi_code:
     # Kimi Code CLI (Moonshot) reads the project-root AGENTS.md as its
@@ -776,15 +744,9 @@ harnesses:
       - ".kimi-code/apothem/skills"
       - ".kimi-code/apothem/agents"
 
-    # projectify/workflow collide between the command_skills entry and the
-    # skills/ tree merge (both author skills/<name>/SKILL.md). The
-    # command-as-skill is authoritative; exclude the standalone skill subdirs so
-    # command_skills is the sole writer and the install is idempotent. See the
-    # codex per-directory-filters for the full rationale.
-    per-directory-filters:
-      skills:
-        - "projectify"
-        - "workflow"
+    # A command sharing a source skill's name is left to the skill; see the
+    # claude_code entry.
+    per-directory-filters: {}
 
   codebuddy:
     # CodeBuddy's canonical rules surface is the project-scope Markdown

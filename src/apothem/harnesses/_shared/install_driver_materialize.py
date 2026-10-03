@@ -53,6 +53,7 @@ from .install_driver_types import (
     MaterializationResult,
     MaterializationRun,
     _result,
+    skills_sharing_command_target,
 )
 
 
@@ -137,6 +138,7 @@ def _dispatch_install_entry(
             harness_root=harness_root,
             project_root=project_root,
             harness_name=harness_name,
+            skip=skills_sharing_command_target(entry, rules),
         )
     if entry.mode == "codex_agents":
         return apply_codex_agents(

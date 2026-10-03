@@ -23,18 +23,16 @@ from apothem.harnesses._shared import install_driver
 from apothem.lib.frontmatter import field_value
 
 _PKG = Path(__file__).resolve().parents[2] / "src" / "apothem"
-_SKIPPED_SKILLS = {"projectify", "workflow"}  # codex per-directory filter
 
 
 def _sources() -> dict[str, Path]:
+    """Map each installed skill name to its source; a skill wins over a command."""
     sources = {
-        p.parent.name: p
-        for p in (_PKG / "skills").glob("*/SKILL.md")
-        if p.parent.name not in _SKIPPED_SKILLS
+        command.stem: command
+        for command in (_PKG / "commands").glob("*.md")
+        if command.name not in {"README.md", "AGENTS.md"}
     }
-    for command in (_PKG / "commands").glob("*.md"):
-        if command.name not in {"README.md", "AGENTS.md"}:
-            sources[command.stem] = command
+    sources.update({p.parent.name: p for p in (_PKG / "skills").glob("*/SKILL.md")})
     return sources
 
 
