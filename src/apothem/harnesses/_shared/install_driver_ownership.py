@@ -39,7 +39,6 @@ from .install_driver_jsonmerge import (
     _leading_comment_block,
     _lossy_rewrite,
     _LossyRewriteError,
-    _merge_hooks,
     _yaml_has_operator_comments,
 )
 
@@ -182,6 +181,54 @@ def _strip_equal(existing: object, incoming: object) -> object:
     return result
 
 
+def _merge_hooks_into_operator(
+    existing: dict[str, object], incoming: dict[str, object]
+) -> dict[str, object]:
+    """Add Apothem's hook entries to the operator's hooks without altering theirs.
+
+    *existing* holds only the operator's entries (Apothem's handlers were
+    stripped first). For each incoming matcher entry, Apothem's handlers are
+    appended to the operator's first entry with the same matcher, which keeps
+    its own settings (``sequential``, ``timeout``, ...); with no such entry,
+    Apothem's entry is added as is. Removing Apothem's handlers later therefore
+    leaves the operator's entries exactly as they were.
+    """
+    merged: dict[str, object] = dict(existing)
+    for event, incoming_entries in incoming.items():
+        if not isinstance(incoming_entries, list):
+            merged[event] = incoming_entries
+            continue
+        current = existing.get(event)
+        entries: list[object] = (
+            [copy.deepcopy(entry) for entry in current]
+            if isinstance(current, list)
+            else []
+        )
+        for incoming_entry in incoming_entries:
+            if not isinstance(incoming_entry, dict):
+                entries.append(incoming_entry)
+                continue
+            handlers = incoming_entry.get("hooks")
+            host = next(
+                (
+                    index
+                    for index, entry in enumerate(entries)
+                    if isinstance(entry, dict)
+                    and entry.get("matcher") == incoming_entry.get("matcher")
+                    and isinstance(entry.get("hooks"), list)
+                ),
+                None,
+            )
+            if host is None or not isinstance(handlers, list):
+                entries.append(copy.deepcopy(incoming_entry))
+                continue
+            entry = entries[host]
+            if isinstance(entry, dict) and isinstance(entry.get("hooks"), list):
+                entries[host] = {**entry, "hooks": [*entry["hooks"], *handlers]}
+        merged[event] = entries
+    return merged
+
+
 def ownership_merge(
     base: dict[str, object],
     incoming: dict[str, object],
@@ -190,15 +237,15 @@ def ownership_merge(
 ) -> dict[str, object]:
     """Merge *incoming* into the operator's *base* (Apothem entries removed).
 
-    Mappings merge recursively; ``hooks`` merge handler-aware; lists are the
-    union with the operator's items first; scalars take the incoming value.
-    Keys only in *base* are kept.
+    Mappings merge recursively; ``hooks`` merge without altering the
+    operator's own entries; lists are the union with the operator's items
+    first; scalars take the incoming value. Keys only in *base* are kept.
     """
     merged: dict[str, object] = dict(base)
     for key, value in incoming.items():
         current = base.get(key, _MISSING)
         if key == "hooks" and isinstance(current, dict) and isinstance(value, dict):
-            merged[key] = _merge_hooks(current, value, harness_root=harness_root)
+            merged[key] = _merge_hooks_into_operator(current, value)
         elif isinstance(current, dict) and isinstance(value, dict):
             merged[key] = ownership_merge(current, value, harness_root=harness_root)
         elif isinstance(current, list) and isinstance(value, list):
