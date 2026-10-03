@@ -31,7 +31,7 @@ these surfaces agree:
 | Registry row | Public ID, package key, entry point, scope, output format, target paths, docs paths, capability file, standard pin, fixture tests, package-data key, template sources, and capability statuses. |
 | Adapter package | `__init__.py`, `install.py`, `update.py`, `uninstall.py`, `verify.py`; add `materializer.py` only when the harness renders a native config file. |
 | Propagation manifest | Template and cohort paths for manifest-backed adapters. |
-| Capabilities | `src/apothem/harnesses/<package>/capabilities.yml` with every required capability and rationale for unsupported or discovery-pending states. |
+| Capabilities | `src/apothem/harnesses/<package>/capabilities.yml` with every required capability and rationale for unsupported or discovery-pending states, plus a `conversion_losses` map for each converted commands, agents, or rules cohort (see the [harness registry](/docs/reference/harness-registry)). |
 | Convention pin | `STANDARD-CONVENTION-PIN.md` with vendor URL, snapshot date, canonical filename/schema, evidence reference, and unsupported capability rationale. |
 | Tests | Registry parity, adapter fixture test, golden install-plan row, dry-run/no-write behavior, idempotence, and package-data coverage. |
 | Docs | Harness reference page, comparison page, capability/MCP notes, and examples that use fake placeholders. |

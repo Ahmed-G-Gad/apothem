@@ -42,7 +42,10 @@
   alias; `SKILL.md` entry. Apothem installs to the native `<project>/.gemini/skills/`.
 - Commands: TOML custom commands (`.toml`, required `prompt`, optional
   `description`) under `~/.gemini/commands/` (user) / `.gemini/commands/`
-  (project). Apothem converts its command cohort to this native TOML shape.
+  (project). Apothem converts its command cohort to this native TOML shape:
+  `description` from the source, and a `prompt` holding the command body with
+  the source frontmatter and license comment stripped. Every other source key
+  is dropped (see `conversion_losses` in `capabilities.yml`).
 - Subagents (re-checked 2026-10-02 against
   https://geminicli.com/docs/core/subagents): Markdown files with YAML
   frontmatter under `.gemini/agents/`; `name` and `description` are required,

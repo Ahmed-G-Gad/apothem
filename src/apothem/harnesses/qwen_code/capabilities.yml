@@ -35,3 +35,25 @@ tool_surface_restrictions:
   - network-write-unsigned
 system_prompt_template_path: "templates/QWEN.md"
 agent_memory_surface: "n/a"
+# What each source frontmatter key becomes in a converted cohort (see
+# tests/unit/test_conversion_losses.py for the value vocabulary). Markdown
+# commands carry description only; agents keep their tool lists in Qwen names.
+conversion_losses:
+  commands:
+    name: "filename"
+    description: "native:description"
+    argument-hint: "dropped"
+    disable-model-invocation: "dropped"
+    allowed-tools: "dropped"
+    version: "dropped"
+    updated: "dropped"
+    portability: "dropped"
+  agents:
+    name: "native:name"
+    description: "native:description"
+    tools: "native:tools"
+    disallowedTools: "native:disallowedTools"
+    maxTurns: "dropped"
+    version: "dropped"
+    updated: "dropped"
+    portability: "dropped"

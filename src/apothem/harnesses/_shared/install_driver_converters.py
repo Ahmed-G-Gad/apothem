@@ -535,11 +535,18 @@ def _antigravity_rule_text(source_path: Path) -> str:
 
 
 def _gemini_command_text(source_path: Path) -> str:
-    """Convert a Markdown command definition into Gemini CLI TOML."""
+    """Convert a Markdown command definition into Gemini CLI TOML.
+
+    ``description`` maps to the TOML ``description``; the prompt is the body
+    with the source frontmatter and the leading license comment stripped, the
+    same body the Markdown-command converter emits, so no metadata reaches the
+    model as instructions. What happens to each other source key is declared
+    in the gemini_cli ``conversion_losses``.
+    """
     description = field_value(source_path, "description") or (
         f"Run the {source_path.stem} Apothem workflow."
     )
-    prompt = source_path.read_text(encoding="utf-8")
+    prompt = _strip_leading_html_comment(_agent_body(source_path)).strip() + "\n"
     return (
         f"description = {_toml_string(description)}\n\n"
         f"prompt = {_toml_multiline_string(prompt)}\n"

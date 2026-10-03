@@ -38,9 +38,25 @@ Status values are `native`, `converted`, `support-tree`,
 `profile-projected`, `unsupported`, `not-applicable`, and
 `discovery-pending`.
 
+A `converted` cohort is rewritten into the harness's own format, and some
+source fields have no place in it. For each converted commands, agents, or
+rules cohort, the adapter's `capabilities.yml` carries a `conversion_losses`
+map that says what happens to every source frontmatter field:
+
+| Value | Meaning |
+| --- | --- |
+| `native:<field>` | The harness reads it under that field. |
+| `sidecar:<path>` | It is written to a separate file next to the converted one, such as Codex's `agents/openai.yaml`. |
+| `filename` | The file or folder name carries it. |
+| `inlined` | It moves into the prompt or body text. |
+| `ignored` | It stays in the file, but the harness does not read it. |
+| `dropped` | It is left out. |
+
+A test renders every converted file and checks the maps against the output.
+
 | Harness | Native or converted payloads | Support-tree payloads | Unsupported or pending warnings |
 | --- | --- | --- | --- |
-| Antigravity | converted commands and agents; native skills, sub-agent dispatch, system prompt templates; profile-projected tool restrictions | hooks, rules, templates | statuslines, output styles; MCP and memory discovery pending |
+| Antigravity | converted commands, agents, and rules; native skills, sub-agent dispatch, system prompt templates; profile-projected tool restrictions | hooks, templates | statuslines, output styles; MCP and memory discovery pending |
 | Claude Code | converted commands; native skills, hooks, agents, rules, statuslines, output styles, sub-agent dispatch, tool restrictions, memory | templates | `CLAUDE.md` remains operator-owned; no adapter-written system prompt template; MCP discovery pending |
 | CodeBuddy | native rules, system prompt templates, memory; profile-projected tool restrictions | none | commands, skills, hooks, agents, statuslines, output styles, sub-agent dispatch; MCP discovery pending |
 | Codex | converted commands and agents; native skills, hooks, sub-agent dispatch, system prompt templates, memory; profile-projected tool restrictions | rules, templates | statuslines, output styles; MCP discovery pending because Apothem does not overwrite `config.toml` |
