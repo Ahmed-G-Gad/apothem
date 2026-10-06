@@ -18,7 +18,10 @@
 # The job holds no secret and no write token (`permissions: {}` at the top
 # level, `contents: read` for checkout only). The harness CLIs install with
 # `npm ci` from .github/channel-smoke/package-lock.json, so each is pinned by
-# version and integrity hash; Renovate refreshes that lockfile.
+# version and integrity hash; Renovate refreshes that lockfile. Its
+# package.json overrides sharp to 0.35.5, which fixes GHSA-wq5f-xc86-pv6w in
+# the bundled librsvg: Qwen Code pins sharp 0.35.4. Drop the override once
+# Qwen Code requires 0.35.5 or later.
 #
 # SHA-pinning policy: every `uses:` reference is pinned by 40-character commit
 # SHA followed by a `# vMAJOR.MINOR.PATCH` comment, identical to the canonical

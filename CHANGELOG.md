@@ -56,7 +56,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   Git prompts disabled, so a private repository, an unpublished listing, or a
   missing release asset fails the job instead of reaching a new user. The
   commands live in `scripts/dev/channel_smoke.py`, and a test keeps them equal
-  to the README. The harness CLIs install from a hash-pinned lockfile.
+  to the README. The harness CLIs install from a hash-pinned lockfile, which
+  overrides Qwen Code's sharp 0.35.4 with 0.35.5 for GHSA-wq5f-xc86-pv6w.
 - **The README explains the Qwen Code plugin prompt.** The repository is also a
   Claude Code marketplace, so Qwen Code asks which plugin to install;
   `qwen extensions install ahmed-g-gad/apothem:apothem --consent` installs
