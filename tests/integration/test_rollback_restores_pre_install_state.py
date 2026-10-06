@@ -111,3 +111,25 @@ def test_same_second_backups_restore_to_their_own_paths(
 
     assert settings.read_text(encoding="utf-8") == seed
     assert not (settings.parent / "settings.json.1").exists()
+
+
+def test_rollback_record_references_the_backups_rollback_took(home: Path) -> None:
+    # Rollback backs up what it replaces before restoring the operator's
+    # directory; its ledger record references those backups so retention
+    # keeps them while the record is kept.
+    operator_skill = home / ".claude" / "skills" / "dev-toolkit"
+    operator_skill.mkdir(parents=True)
+    (operator_skill / "NOTES.md").write_text("operator notes\n", encoding="utf-8")
+    adapter = load_adapter_class(get_harness_entry("claude-code"))()
+    adapter.install(_PROFILE)
+
+    _rollback("claude-code", "--last")
+
+    marker = install_ledger.latest_record("claude_code", kind=None)
+    assert marker is not None
+    assert marker.kind == "rollback"
+    refs = [Path(target.backup_ref) for target in marker.targets if target.backup_ref]
+    assert refs
+    backup_root = install_driver.BACKUP_ROOT.resolve()
+    assert all(ref.resolve().is_relative_to(backup_root) for ref in refs)
+    assert all(ref.exists() for ref in refs)

@@ -501,8 +501,9 @@ def make_native_config_uninstall(
     :func:`_retired_at_uninstall` for the profile they are rendered from).
     """
 
+    @install_driver.backup_session()
     def uninstall(output_path: Path) -> None:
-        install_driver.surgically_remove_materialized_config(
+        native = install_driver.surgically_remove_materialized_config(
             output_path,
             materialize_fn({}),
             install_root=output_path.parent,
@@ -511,7 +512,11 @@ def make_native_config_uninstall(
             apothem_keys=apothem_keys,
             retired=_retired_at_uninstall(retired_fn),
         )
-        install_driver.run_uninstall(harness_name, harness_root=output_path.parent)
+        install_driver.run_uninstall(
+            harness_name,
+            harness_root=output_path.parent,
+            prior_results=(native,) if native is not None else (),
+        )
 
     uninstall.__doc__ = _UNINSTALL_DOC_NATIVE
     return uninstall
@@ -545,8 +550,11 @@ def make_native_config_install(
     With ``dry_run=True`` the closure writes nothing and returns the
     prospective run: the native config (with its diff), the support tree, the
     profile document and the data stores, each classified against disk.
+    The whole install runs in one :func:`~install_driver.backup_session`, so
+    the native config, support tree and profile document back up into one set.
     """
 
+    @install_driver.backup_session()
     def install(
         output_path: Path, profile: dict[str, Any], *, dry_run: bool = False
     ) -> MaterializationRun:

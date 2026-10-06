@@ -30,7 +30,11 @@ from .install_driver_apply import (
     apply_replace_tree,
     apply_write_text,
 )
-from .install_driver_backup import _compensating_rollback, _install_lock_path
+from .install_driver_backup import (
+    _compensating_rollback,
+    _install_lock_path,
+    backup_ledger_targets,
+)
 from .install_driver_merge import (
     apply_sentinel_merge,
 )
@@ -397,7 +401,10 @@ def run_install(
             with contextlib.suppress(Exception):
                 install_ledger.append_record(
                     LedgerRecord.create(
-                        harness=harness_name, root=root, kind="rollback"
+                        harness=harness_name,
+                        root=root,
+                        kind="rollback",
+                        targets=backup_ledger_targets(results),
                     )
                 )
             raise

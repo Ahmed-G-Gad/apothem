@@ -85,3 +85,45 @@ def test_thirty_installs_keep_bounded_history_and_still_reverse(
     # ... and uninstall still removes everything the first install created.
     _cli("uninstall", *common, "--yes")
     assert _snapshot(project) == before
+
+
+def test_native_config_uninstall_records_its_backups_in_one_set(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A single-file-config adapter strips its native config before the
+    # shared uninstall pass. With a clock that moves a second per read, the
+    # whole uninstall still writes one backup set, and the uninstall record
+    # references the native config's backup as well as the pass's own.
+    from datetime import datetime, timedelta, timezone, tzinfo
+
+    from apothem.harnesses._shared import install_driver_types
+    from apothem.lib.harness_registry import get_harness_entry, load_adapter_class
+
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
+    start = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    seconds = itertools.count()
+
+    class _Clock(datetime):
+        @classmethod
+        def now(cls, tz: tzinfo | None = None) -> datetime:
+            return start + timedelta(seconds=next(seconds))
+
+    monkeypatch.setattr(install_driver_types, "datetime", _Clock)
+    settings = home / ".qwen" / "settings.json"
+    settings.parent.mkdir(parents=True)
+    settings.write_text('{"model": {"name": "operator-model"}}\n', encoding="utf-8")
+    adapter = load_adapter_class(get_harness_entry("qwen-code"))()
+    adapter.install({"identity": {"name": "Retention Probe"}})
+    before = set(install_driver.list_backup_timestamps("qwen_code"))
+
+    adapter.uninstall()
+
+    marker = install_ledger.latest_record("qwen_code", kind=None)
+    assert marker is not None
+    assert marker.kind == "uninstall"
+    assert str(settings) in {target.path for target in marker.targets}
+    written = set(install_driver.list_backup_timestamps("qwen_code")) - before
+    assert len(written) == 1

@@ -58,6 +58,7 @@ _HARNESS_NAME: str = "claude_code"
 _HARNESS_ID: str = "claude-code"
 
 
+@install_driver.backup_session()
 def install(
     output_path: Path, profile: dict[str, Any], *, dry_run: bool = False
 ) -> MaterializationRun:

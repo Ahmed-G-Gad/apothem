@@ -158,13 +158,19 @@ class OwnedEntry:
 
 @dataclass(frozen=True)
 class LedgerTarget:
-    """One file an install pass wrote, with the data needed to reverse it.
+    """One file a pass wrote or backed up, with the data needed to reverse it.
+
+    An install record lists every file the install wrote. An uninstall or
+    rollback record lists the files that pass backed up before changing them,
+    so retention keeps those backup sets while the record is kept.
 
     Attributes:
-        path: Absolute on-disk path that was written.
+        path: Absolute on-disk path that was written (or, in an uninstall or
+            rollback record, backed up).
         mode: The install entry mode (e.g. ``write_text``, ``sentinel_merge``,
             ``replace_tree``) that produced the write — selects the surgical
-            reversal strategy on uninstall.
+            reversal strategy on uninstall. In an uninstall or rollback record,
+            the operation that changed the file.
         ownership_class: One of the five
             :data:`apothem.lib.propagation.OWNERSHIP_CLASSES` (``apothem-owned``,
             ``operator-owned``, ``vendor-reserved``, ``generated``,
@@ -255,7 +261,8 @@ class LedgerRecord:
         harness: The harness identifier (e.g. ``claude-code``).
         root: The install root the pass targeted, as a string.
         kind: One of :data:`RECORD_KINDS`.
-        targets: The typed list of files the pass touched.
+        targets: The typed list of files the pass touched (see
+            :class:`LedgerTarget` for what each kind of record lists).
         created_dirs: The directories this install pass created (they did not
             exist before it), so rollback and uninstall can remove them once
             empty. Empty for other kinds and for records written before the

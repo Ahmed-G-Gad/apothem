@@ -161,3 +161,44 @@ def test_failed_install_rolls_back_and_releases_lock(
     run = install_driver.run_install("claude_code", harness_root=harness_root)
     assert run.changed
     assert not run.errors
+
+
+def test_failed_install_rollback_record_references_the_restored_backups(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    harness_root = tmp_path / ".claude"
+    operator_file = harness_root / "operator.md"
+    operator_file.parent.mkdir(parents=True)
+    operator_file.write_text("operator\n", encoding="utf-8")
+    backups: list[Path] = []
+    state = {"calls": 0}
+
+    def failing(*args: object, **kwargs: object) -> list[MaterializationResult]:
+        state["calls"] += 1
+        if state["calls"] == 2:
+            raise OSError("injected mid-pass failure")
+        backup = install_driver.backup_existing(
+            operator_file, install_root=harness_root, harness_name="claude_code"
+        )
+        assert backup is not None
+        backups.append(backup)
+        operator_file.write_text("apothem\n", encoding="utf-8")
+        return [
+            MaterializationResult(
+                "updated",
+                "write_text",
+                str(operator_file),
+                "wrote",
+                backup_path=str(backup),
+            )
+        ]
+
+    monkeypatch.setattr(install_driver, "_dispatch_install_entry", failing)
+    with pytest.raises(OSError, match="injected mid-pass failure"):
+        install_driver.run_install("claude_code", harness_root=harness_root)
+
+    assert operator_file.read_text(encoding="utf-8") == "operator\n"
+    marker = install_ledger.latest_record("claude_code", kind=None)
+    assert marker is not None
+    assert marker.kind == "rollback"
+    assert [target.backup_ref for target in marker.targets] == [str(backups[0])]

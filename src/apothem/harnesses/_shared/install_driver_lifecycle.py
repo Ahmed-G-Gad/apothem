@@ -25,7 +25,11 @@ from apothem.lib.propagation import (
     resolve_target,
 )
 
-from .install_driver_backup import _replace_path, backup_existing
+from .install_driver_backup import (
+    _replace_path,
+    backup_existing,
+    backup_ledger_targets,
+)
 from .install_driver_merge import render_content_tokens
 from .install_driver_pathsafety import (
     _allowed_write_root,
@@ -489,6 +493,7 @@ def run_uninstall(
     *,
     harness_root: Path | None = None,
     project_root: Path | None = None,
+    prior_results: tuple[MaterializationResult, ...] = (),
 ) -> list[MaterializationResult]:
     """Remove Apothem-generated targets declared for *harness_name*.
 
@@ -519,7 +524,9 @@ def run_uninstall(
     unconditional success. The ``kind="uninstall"`` ledger marker is appended
     only when no removal errored — a failed uninstall leaves the install
     record as the latest ledger entry, matching the on-disk reality that
-    targets remain.
+    targets remain. The marker references every backup the uninstall took,
+    including those in *prior_results*: removals the caller made just before
+    this pass, such as a native config stripped of Apothem's keys.
     """
     rules = install_driver.load_rules(harness_name)
     root = _root_for(harness_root, project_root)
@@ -634,6 +641,7 @@ def run_uninstall(
                 harness=harness_name,
                 root=root,
                 kind="uninstall",
+                targets=backup_ledger_targets([*prior_results, *results]),
                 install_id=record.install_id if record is not None else None,
             )
         )

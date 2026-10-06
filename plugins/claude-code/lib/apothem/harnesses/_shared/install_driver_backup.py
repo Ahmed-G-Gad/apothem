@@ -410,6 +410,36 @@ def _ledger_targets(
     return tuple(targets)
 
 
+def backup_ledger_targets(
+    results: list[MaterializationResult],
+) -> tuple[LedgerTarget, ...]:
+    """Project the backups an uninstall or rollback relied on to ledger targets.
+
+    One :class:`LedgerTarget` per result that carries a backup, with the same
+    path, mode (the result ``operation``), ownership class and outcome
+    projection :func:`_ledger_targets` uses for install records. Recording them
+    keeps those backup sets referenced, so retention never deletes them while
+    the record itself is kept. Duplicate paths keep the first backup, the
+    state before the operation.
+    """
+    targets: list[LedgerTarget] = []
+    seen: set[str] = set()
+    for result in results:
+        if result.backup_path is None or result.path in seen:
+            continue
+        seen.add(result.path)
+        targets.append(
+            LedgerTarget(
+                path=result.path,
+                mode=result.operation,
+                ownership_class=result.detail.get("ownership_class", "operator-owned"),
+                backup_ref=result.backup_path,
+                outcome=result.outcome,
+            )
+        )
+    return tuple(targets)
+
+
 def record_install(
     run: MaterializationRun,
     *,

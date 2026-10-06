@@ -167,3 +167,82 @@ def test_slow_uninstall_keeps_its_own_backup_of_the_settings_file(
     assert list(install_driver.BACKUP_ROOT.rglob("settings.json"))
     written = set(install_driver.list_backup_timestamps("claude_code")) - before
     assert len(written) == 1
+
+
+def test_backup_ledger_targets_records_each_backed_up_path_once() -> None:
+    from apothem.harnesses._shared.install_driver import MaterializationResult
+
+    first = MaterializationResult(
+        "updated",
+        "write_text",
+        "/root/settings.json",
+        "stripped",
+        backup_path="/backups/S/claude_code/settings.json",
+        detail={"ownership_class": "operator-owned"},
+    )
+    again = MaterializationResult(
+        "updated",
+        "write_text",
+        "/root/settings.json",
+        "stripped",
+        backup_path="/backups/S/claude_code/settings.json.1",
+    )
+    removed = MaterializationResult(
+        "updated",
+        "replace_tree",
+        "/root/skills/x",
+        "removed",
+        backup_path="/backups/S/claude_code/skills/x",
+        detail={"ownership_class": "apothem-owned"},
+    )
+    unbacked = MaterializationResult("skipped", "write_text", "/root/a.md", "absent")
+
+    targets = install_driver.backup_ledger_targets([first, again, removed, unbacked])
+
+    assert [(t.path, t.backup_ref, t.mode, t.ownership_class) for t in targets] == [
+        (
+            "/root/settings.json",
+            "/backups/S/claude_code/settings.json",
+            "write_text",
+            "operator-owned",
+        ),
+        (
+            "/root/skills/x",
+            "/backups/S/claude_code/skills/x",
+            "replace_tree",
+            "apothem-owned",
+        ),
+    ]
+
+
+def test_uninstall_record_keeps_its_backup_set_through_retention(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Retention keeps an uninstall's backup set while the record is kept.
+
+    Twelve newer backup sets push the uninstall's set past the newest ten; it
+    survives because the uninstall record references it.
+    """
+    from apothem.harnesses.claude_code import ClaudeCodeAdapter
+
+    target = tmp_path / "settings.json"
+    adapter = ClaudeCodeAdapter()
+    monkeypatch.setattr(type(adapter), "output_path", property(lambda self: target))
+    adapter.install({})
+    adapter.uninstall()
+    marker = install_ledger.latest_record("claude_code", kind=None)
+    assert marker is not None
+    assert marker.kind == "uninstall"
+    refs = [Path(t.backup_ref) for t in marker.targets if t.backup_ref]
+    assert refs
+    backup_root = install_driver.BACKUP_ROOT.resolve()
+    stamp = refs[0].resolve().relative_to(backup_root).parts[0]
+    for index in range(12):
+        newer = install_driver.BACKUP_ROOT / f"29990101T0000{index:02d}Z"
+        (newer / "claude_code").mkdir(parents=True)
+        (newer / "claude_code" / "rules.md").write_text("x", encoding="utf-8")
+
+    report = install_driver.prune_history("claude_code", keep=10)
+
+    assert stamp in report.protected
+    assert all(ref.exists() for ref in refs)

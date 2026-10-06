@@ -61,6 +61,7 @@ from .install_driver_backup import _unique_path as _unique_path
 from .install_driver_backup import _write_file_atomically as _write_file_atomically
 from .install_driver_backup import backup_existing as backup_existing
 from .install_driver_backup import backup_file_to_sibling as backup_file_to_sibling
+from .install_driver_backup import backup_ledger_targets as backup_ledger_targets
 from .install_driver_backup import finalize_install as finalize_install
 from .install_driver_backup import record_install as record_install
 from .install_driver_backup import restore_backup as restore_backup
@@ -243,6 +244,7 @@ from .install_driver_types import _path_text as _path_text
 from .install_driver_types import _result as _result
 from .install_driver_types import _timestamp_slug as _timestamp_slug
 from .install_driver_types import _with_detail as _with_detail
+from .install_driver_types import backup_session as backup_session
 from .install_driver_types import operation_label as operation_label
 from .install_driver_types import preview_status as preview_status
 from .install_driver_types import resolve_source as resolve_source
@@ -280,6 +282,8 @@ __all__ = [
     "apply_sentinel_merge",
     "apply_write_text",
     "backup_existing",
+    "backup_ledger_targets",
+    "backup_session",
     "build_plan",
     "capability_projection_results",
     "capture_missing_dirs",

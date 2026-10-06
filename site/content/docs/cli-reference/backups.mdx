@@ -36,7 +36,9 @@ demand, with your own bound:
   them. An older install can no longer be rolled back by id.
 - It never deletes a backup set that a kept ledger record, or the latest
   install record of any install root, still references. `apothem rollback` of
-  the latest install therefore still restores after any prune.
+  the latest install therefore still restores after any prune. Uninstall and
+  rollback records reference the backups those passes took, so they stay
+  while the record is kept.
 
 With `--dry-run` nothing is changed: the command reports what a real prune
 would remove. Backups and the ledger are kept per harness, not per project, so

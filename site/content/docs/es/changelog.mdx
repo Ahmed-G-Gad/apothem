@@ -116,8 +116,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   writes nothing for that harness and exits 1 with `config.unparseable`; a
   merge that changes no value leaves the file byte-for-byte as it was.
 - **Backups and the install ledger stay bounded.** Each harness keeps its
-  newest 10 backup sets, plus any older set a kept install still restores
-  from, and the ledger keeps the newest 10 installs per install root.
+  newest 10 backup sets, one per install, uninstall or rollback, plus any
+  older set a kept install, uninstall or rollback record still references,
+  and the ledger keeps the newest 10 installs per install root.
 - **Harness convention pins cite their vendor sources.** Each pin lists the
   pages it rests on with retrieval dates and gives every discovery-pending
   capability a dated target. CI and the release build block on a pin older

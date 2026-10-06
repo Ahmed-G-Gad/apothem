@@ -363,6 +363,7 @@ def _rollback_harness(
             harness=entry.package_key,
             root=install_root,
             kind="rollback",
+            targets=install_driver.backup_ledger_targets(target_results),
             install_id=record.install_id,
         )
     )
