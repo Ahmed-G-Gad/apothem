@@ -81,15 +81,14 @@ def apply_managed_block_anchor(
     write path every instruction-anchor adapter shares: the profile-projection
     seam renders *body*, this helper lands it in the harness's Markdown anchor.
     An anchor whose block is already current keeps its own bytes, line endings
-    included (see :func:`_merged_bytes`).
+    included (see :func:`_merged_bytes`). An anchor that cannot be read as UTF-8
+    text is refused with a ``config.unparseable`` error and left untouched.
     With *dry_run*, nothing is written and the prospective result is returned.
     """
-    before: str | None = None
-    if target.exists():
-        try:
-            before = target.read_text(encoding="utf-8")
-        except OSError:
-            before = ""
+    try:
+        before = _read_existing(target)
+    except _LossyRewriteError as refusal:
+        return _refused_result("sentinel_merge", target, refusal, {})
     merged = merge_managed_block(before or "", body)
     if dry_run:
         return prospective_result(

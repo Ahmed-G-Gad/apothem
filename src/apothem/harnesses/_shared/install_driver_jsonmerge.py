@@ -314,15 +314,26 @@ def _merged_bytes(target: Path, before: str | None, merged: str) -> bytes:
     :func:`_read_existing` reads in text mode, so a CRLF file arrives with LF
     line endings and the merge compares LF text. When the merge changes
     nothing, the target's own bytes are returned, so the no-op check sees the
-    file as it is and leaves the operator's line endings alone.
+    file as it is and leaves the operator's line endings alone. They are
+    returned only while they still read as *before*: a file changed after it
+    was read gets the merged text.
     """
-    if before is not None and merged == before:
-        try:
-            return target.read_bytes()
-        except OSError:
-            # The file changed after it was read; write the merged text.
-            pass
-    return merged.encode("utf-8")
+    if before is None or merged != before:
+        return merged.encode("utf-8")
+    try:
+        current = target.read_bytes()
+    except OSError:
+        return merged.encode("utf-8")
+    try:
+        unchanged = _universal_newlines(current.decode("utf-8")) == before
+    except UnicodeDecodeError:
+        unchanged = False
+    return current if unchanged else merged.encode("utf-8")
+
+
+def _universal_newlines(text: str) -> str:
+    """Return *text* with CRLF and CR line endings read as LF, as text mode does."""
+    return text.replace("\r\n", "\n").replace("\r", "\n")
 
 
 def _read_existing(target: Path) -> str | None:

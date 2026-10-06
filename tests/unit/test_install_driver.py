@@ -1453,8 +1453,12 @@ def test_managed_block_anchor_updates_crlf_anchor_when_block_changes(
         anchor, "New profile body", install_root=tmp_path, harness_name="claude_code"
     )
 
-    text = anchor.read_bytes().decode("utf-8")
+    data = anchor.read_bytes()
+    text = data.decode("utf-8")
     assert result.outcome == "updated"
+    assert result.backup_path is not None
+    # A changed block is rewritten with LF line endings throughout.
+    assert b"\r\n" not in data
     assert "New profile body" in text
     assert "Old profile body" not in text
     assert "Operator prose." in text
@@ -1478,7 +1482,66 @@ def test_profile_document_noop_keeps_crlf_line_endings(tmp_path: Path) -> None:
     result = project()
 
     assert result.outcome == "unchanged"
+    assert result.backup_path is None
     assert document.read_bytes() == original
+
+
+def test_managed_block_anchor_dry_run_reports_current_crlf_anchor_unchanged(
+    tmp_path: Path,
+) -> None:
+    anchor = tmp_path / "CLAUDE.md"
+    original = _write_crlf_anchor(anchor, "Profile body")
+
+    result = install_driver.apply_managed_block_anchor(
+        anchor,
+        "Profile body",
+        install_root=tmp_path,
+        harness_name="claude_code",
+        dry_run=True,
+    )
+
+    assert result.outcome == "unchanged"
+    assert anchor.read_bytes() == original
+
+
+@pytest.mark.parametrize("dry_run", [False, True])
+def test_managed_block_anchor_refuses_an_anchor_that_is_not_utf8(
+    tmp_path: Path, dry_run: bool
+) -> None:
+    """A non-UTF-8 anchor is refused and left as it is, not crashed on."""
+    anchor = tmp_path / "CLAUDE.md"
+    original = "# Notes\n\ncaf\u00e9\n".encode("latin-1")
+    anchor.write_bytes(original)
+
+    result = install_driver.apply_managed_block_anchor(
+        anchor,
+        "Profile body",
+        install_root=tmp_path,
+        harness_name="claude_code",
+        dry_run=dry_run,
+    )
+
+    assert result.outcome == "error"
+    assert result.detail["code"] == "config.unparseable"
+    assert result.backup_path is None
+    assert anchor.read_bytes() == original
+
+
+def test_merged_bytes_keeps_the_file_bytes_only_while_they_match_the_read(
+    tmp_path: Path,
+) -> None:
+    """An unchanged merge reuses the file's bytes unless the file changed since."""
+    from apothem.harnesses._shared.install_driver_jsonmerge import _merged_bytes
+
+    target = tmp_path / "CLAUDE.md"
+    target.write_bytes(b"one\r\ntwo\r\n")
+    assert _merged_bytes(target, "one\ntwo\n", "one\ntwo\n") == b"one\r\ntwo\r\n"
+
+    target.write_bytes(b"edited after the read\r\n")
+    assert _merged_bytes(target, "one\ntwo\n", "one\ntwo\n") == b"one\ntwo\n"
+
+    target.unlink()
+    assert _merged_bytes(target, "one\ntwo\n", "one\ntwo\n") == b"one\ntwo\n"
 
 
 def test_run_install_refuses_vendor_reserved_entry(

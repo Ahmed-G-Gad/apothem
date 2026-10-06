@@ -214,7 +214,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   the Apothem block in Claude Code's `CLAUDE.md` or in the projected profile
   document is already current, install keeps the file's bytes, CRLF line
   endings included, and reports it unchanged. It no longer rewrites the file
-  with LF line endings, backs it up, and reports it updated.
+  with LF line endings, backs it up, and reports it updated. An instruction
+  file that is not UTF-8 text is refused with `config.unparseable` and left
+  as it is, where install and `apothem diff` stopped with a decoding error.
 - **Operator settings survive install, update, and uninstall.** Permission
   rules, MCP servers, Hermes `auxiliary` settings, and hook handlers the
   operator added are kept; a hook counts as Apothem's only when it runs
