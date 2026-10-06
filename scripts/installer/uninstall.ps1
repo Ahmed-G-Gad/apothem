@@ -28,14 +28,14 @@ $ApothemHome = if ($env:APOTHEM_HOME) { $env:APOTHEM_HOME } else { Join-Path $HO
 # Colour only an interactive console. NO_COLOR (https://no-color.org/) or
 # redirected output (a pipe, a file, a CI log) gets plain text.
 $UseColor = (-not $env:NO_COLOR) -and (-not [Console]::IsOutputRedirected)
-function Get-ColorArgs {
+function Get-ColorParameter {
     param([string]$Color)
     if ($UseColor) { return @{ ForegroundColor = $Color } }
     return @{}
 }
-function Write-Bold { param([string]$Msg) $c = Get-ColorArgs White;  Write-Host "`n$Msg" @c }
-function Write-Ok   { param([string]$Msg) $c = Get-ColorArgs Green;  Write-Host "  + $Msg" @c }
-function Write-Warn { param([string]$Msg) $c = Get-ColorArgs Yellow; Write-Host "  ! $Msg" @c }
+function Write-Bold { param([string]$Msg) $c = Get-ColorParameter White;  Write-Host "`n$Msg" @c }
+function Write-Ok   { param([string]$Msg) $c = Get-ColorParameter Green;  Write-Host "  + $Msg" @c }
+function Write-Warn { param([string]$Msg) $c = Get-ColorParameter Yellow; Write-Host "  ! $Msg" @c }
 function Write-Fail { param([string]$Msg) Write-Error "  x $Msg" }
 
 Write-Bold "Apothem uninstaller"
