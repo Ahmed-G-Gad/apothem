@@ -44,7 +44,12 @@ from .install_driver_pathsafety import (
     _within_allowed_root,
 )
 from .install_driver_treeops import remove_created_dirs
-from .install_driver_types import MaterializationResult, _handle_rm_error, _result
+from .install_driver_types import (
+    MaterializationResult,
+    _handle_rm_error,
+    _result,
+    backup_session,
+)
 
 
 def _chain(path: Path, boundary: Path) -> list[Path]:
@@ -198,6 +203,7 @@ def _remove_created(
     )
 
 
+@backup_session()
 def rollback_install(
     record: LedgerRecord,
     *,

@@ -44,6 +44,7 @@ from .install_driver_types import (
     _handle_rm_error,
     _path_text,
     _result,
+    backup_session,
     resolve_source,
 )
 
@@ -482,6 +483,7 @@ def _remove_data_home(
     )
 
 
+@backup_session()
 def run_uninstall(
     harness_name: str,
     *,

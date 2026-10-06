@@ -105,3 +105,65 @@ def test_apply_retention_tolerates_a_corrupted_ledger(tmp_path: Path) -> None:
     install_driver.apply_retention(_HARNESS, keep=1)
 
     assert _sets() == ["20260101T000001Z"]
+
+
+def _advancing_clock(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Make every backup-clock read land in a new second, like a slow disk."""
+    from datetime import datetime, timedelta, tzinfo
+
+    from apothem.harnesses._shared import install_driver_types
+
+    start = datetime(2026, 1, 1, tzinfo=install_driver_types.timezone.utc)
+    seconds = iter(range(1_000_000))
+
+    class _Clock(datetime):
+        @classmethod
+        def now(cls, tz: tzinfo | None = None) -> datetime:
+            return start + timedelta(seconds=next(seconds))
+
+    monkeypatch.setattr(install_driver_types, "datetime", _Clock)
+
+
+def test_backup_session_pins_one_slug_and_nested_sessions_share_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from apothem.harnesses._shared.install_driver_types import backup_session
+
+    _advancing_clock(monkeypatch)
+    with backup_session() as outer:
+        assert install_driver._timestamp_slug() == outer
+        with backup_session() as inner:
+            assert inner == outer
+        assert install_driver._timestamp_slug() == outer
+    assert install_driver._timestamp_slug() != outer
+
+
+def test_slow_uninstall_keeps_its_own_backup_of_the_settings_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An uninstall slower than retention's set count keeps its first backup.
+
+    Uninstall backs up every file it changes. With one timestamp per backup,
+    an uninstall spanning more than ``BACKUP_KEEP`` seconds wrote more sets
+    than retention keeps, and the retention pass at its end deleted the
+    operation's earliest backups, the pre-uninstall settings file among them.
+    """
+    import json
+
+    from apothem.harnesses.claude_code import ClaudeCodeAdapter
+
+    _advancing_clock(monkeypatch)
+    target = tmp_path / "settings.json"
+    adapter = ClaudeCodeAdapter()
+    monkeypatch.setattr(type(adapter), "output_path", property(lambda self: target))
+    adapter.install({})
+    settings = json.loads(target.read_text(encoding="utf-8"))
+    settings["operatorCustom"] = {"keep": True}
+    target.write_text(json.dumps(settings, indent=2), encoding="utf-8")
+    before = set(install_driver.list_backup_timestamps("claude_code"))
+
+    adapter.uninstall()
+
+    assert list(install_driver.BACKUP_ROOT.rglob("settings.json"))
+    written = set(install_driver.list_backup_timestamps("claude_code")) - before
+    assert len(written) == 1

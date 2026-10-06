@@ -53,6 +53,7 @@ from .install_driver_types import (
     MaterializationResult,
     MaterializationRun,
     _result,
+    backup_session,
     skills_sharing_command_target,
 )
 
@@ -275,6 +276,7 @@ def _materialize_data_surfaces(
     ]
 
 
+@backup_session()
 def run_install(
     harness_name: str,
     *,

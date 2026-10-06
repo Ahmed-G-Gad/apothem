@@ -5,7 +5,9 @@
 from __future__ import annotations
 
 import fnmatch
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from pathlib import Path
@@ -326,9 +328,46 @@ def _handle_rm_error(
     return
 
 
-def _timestamp_slug() -> str:
-    """Return the UTC timestamp slug used for backup directories."""
+#: The backup timestamp an operation pinned with :func:`backup_session`.
+_SESSION_SLUG: ContextVar[str | None] = ContextVar(
+    "apothem_backup_session_slug", default=None
+)
+
+
+def _now_slug() -> str:
+    """Return the current UTC time as a backup-directory timestamp slug."""
     return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+
+
+def _timestamp_slug() -> str:
+    """Return the UTC timestamp slug used for backup directories.
+
+    Inside :func:`backup_session` every call returns the slug the session
+    pinned, so one operation writes one backup set however long it runs.
+    """
+    pinned = _SESSION_SLUG.get()
+    return pinned if pinned is not None else _now_slug()
+
+
+@contextmanager
+def backup_session() -> Iterator[str]:
+    """Pin one backup timestamp for the install, uninstall or rollback inside.
+
+    Retention keeps the newest backup sets per harness, one set per
+    timestamp. Without a pinned slug, an operation that runs longer than a
+    second writes a set per second, and on a slow disk the retention pass at
+    its end could delete that operation's own earliest backups. A nested
+    session keeps the outer session's slug. Also usable as a decorator.
+    """
+    pinned = _SESSION_SLUG.get()
+    if pinned is not None:
+        yield pinned
+        return
+    token = _SESSION_SLUG.set(_now_slug())
+    try:
+        yield _SESSION_SLUG.get() or ""
+    finally:
+        _SESSION_SLUG.reset(token)
 
 
 def _is_excluded_path(path: Path, exclude: list[str]) -> bool:
