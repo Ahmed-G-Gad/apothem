@@ -162,7 +162,11 @@ class LedgerTarget:
 
     An install record lists every file the install wrote. An uninstall or
     rollback record lists the files that pass backed up before changing them,
-    so retention keeps those backup sets while the record is kept.
+    so retention keeps those backup sets while the record is kept. In those
+    records only *path* and *backup_ref* are relied on: *mode* is the
+    operation, *ownership_class* falls back to ``operator-owned``, and
+    *outcome* can be ``skipped`` or ``error`` for a file the pass backed up
+    but did not change.
 
     Attributes:
         path: Absolute on-disk path that was written (or, in an uninstall or

@@ -526,7 +526,8 @@ def run_uninstall(
     record as the latest ledger entry, matching the on-disk reality that
     targets remain. The marker references every backup the uninstall took,
     including those in *prior_results*: removals the caller made just before
-    this pass, such as a native config stripped of Apothem's keys.
+    this pass, such as a native config stripped of Apothem's keys. An error in
+    *prior_results* also withholds the marker.
     """
     rules = install_driver.load_rules(harness_name)
     root = _root_for(harness_root, project_root)
@@ -635,7 +636,7 @@ def run_uninstall(
     # only when every removal succeeded. On any error the install record
     # stays latest, matching the on-disk state (targets remain) so verify,
     # status, and rollback keep operating against the truth.
-    if not any(result.outcome == "error" for result in results):
+    if not any(result.outcome == "error" for result in (*prior_results, *results)):
         install_ledger.append_record(
             LedgerRecord.create(
                 harness=harness_name,

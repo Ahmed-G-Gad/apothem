@@ -36,7 +36,7 @@ class RetentionReport:
     Backup sets are named by their ``BACKUP_ROOT/<timestamp>/`` directory.
     *pruned* lists the sets the pass removed (for a dry run, the sets a real
     pass would remove); *protected* the sets beyond the newest *keep* that
-    stay because an install record still references them; *failed* the
+    stay because a ledger record still references them; *failed* the
     pruned sets that could not be fully removed.
     """
 

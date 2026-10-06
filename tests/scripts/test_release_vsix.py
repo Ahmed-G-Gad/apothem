@@ -114,3 +114,45 @@ def test_the_lockfile_pins_vsce_and_every_dependency_by_hash() -> None:
         name for name, entry in packages.items() if name and "integrity" not in entry
     ]
     assert unhashed == []
+
+
+def _vsce_jobs() -> list[dict[str, Any]]:
+    """Return every release or Marketplace job that runs the vsce packager."""
+    jobs = []
+    for workflow in ("release.yml", "publish-vscode.yml"):
+        data = yaml.safe_load((_WORKFLOWS / workflow).read_text(encoding="utf-8"))
+        for job in data["jobs"].values():
+            if "steps" in job and any("/.bin/vsce " in run for run in _runs(job)):
+                jobs.append(job)
+    return jobs
+
+
+def test_every_vsce_run_packages_or_publishes_without_dependencies() -> None:
+    # The vsix carries only vscode-extension/; --no-dependencies keeps vsce
+    # from walking an npm tree into the package.
+    runs = [
+        line
+        for job in _vsce_jobs()
+        for run in _runs(job)
+        for line in run.splitlines()
+        if "/.bin/vsce " in line
+    ]
+    assert len(runs) >= 3, runs
+    for line in runs:
+        assert "--no-dependencies" in line, line
+
+
+def test_each_vsce_job_sets_up_a_node_the_locked_vsce_supports() -> None:
+    lock = json.loads((_VSCE / "package-lock.json").read_text(encoding="utf-8"))
+    engines = lock["packages"]["node_modules/@vscode/vsce"]["engines"]["node"]
+    floor = int(engines.lstrip(">= ").split(".")[0])
+    jobs = _vsce_jobs()
+    assert len(jobs) >= 2
+    for job in jobs:
+        versions = [
+            str(step["with"]["node-version"])
+            for step in job["steps"]
+            if str(step.get("uses", "")).startswith("actions/setup-node@")
+        ]
+        assert versions, "a vsce job sets up Node explicitly"
+        assert all(int(version.split(".")[0]) >= floor for version in versions)

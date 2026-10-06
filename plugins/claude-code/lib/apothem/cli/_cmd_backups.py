@@ -207,7 +207,7 @@ def _record_report(
                 harness_id,
                 "skipped",
                 backup_root / stamp / report.harness,
-                f"kept backup set {stamp}: an install record still references it",
+                f"kept backup set {stamp}: a ledger record still references it",
             )
         )
     if report.records_dropped:

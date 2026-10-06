@@ -596,6 +596,7 @@ def make_native_config_install(
             harness_root=output_path.parent,
             profile=profile if support_profile else None,
             dry_run=dry_run,
+            prior_results=(native_result,),
         )
         support_results = tuple(
             result for result in support_run.results if result.outcome != "warning"

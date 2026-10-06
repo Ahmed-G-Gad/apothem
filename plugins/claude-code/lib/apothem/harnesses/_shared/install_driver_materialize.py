@@ -289,6 +289,7 @@ def run_install(
     dry_run: bool = False,
     authorize: AuthorizeFn | None = None,
     profile: dict[str, Any] | None = None,
+    prior_results: tuple[MaterializationResult, ...] = (),
 ) -> MaterializationRun:
     """Propagate *harness_name*'s convention surface to its install root.
 
@@ -308,6 +309,10 @@ def run_install(
     write and leaves the operator's file untouched. ``None`` (the default) is
     the non-interactive path — operator content is merge-preserved and backed
     up, never silently lost.
+
+    *prior_results* are writes the caller made just before this pass, such as
+    a native config. If the pass fails, they are undone with its own writes
+    and listed in the same rollback record.
     """
     rules = install_driver.load_rules(harness_name)
     profile_body = _projected_profile_body(harness_name, profile)
@@ -397,14 +402,15 @@ def run_install(
                 _materialize_data_surfaces(harness_name, root, profile=profile)
             )
         except BaseException:
-            _compensating_rollback(results, allowed_root=write_root)
+            undone = [*prior_results, *results]
+            _compensating_rollback(undone, allowed_root=write_root)
             with contextlib.suppress(Exception):
                 install_ledger.append_record(
                     LedgerRecord.create(
                         harness=harness_name,
                         root=root,
                         kind="rollback",
-                        targets=backup_ledger_targets(results),
+                        targets=backup_ledger_targets(undone),
                     )
                 )
             raise

@@ -138,6 +138,91 @@ def test_backup_session_pins_one_slug_and_nested_sessions_share_it(
     assert install_driver._timestamp_slug() != outer
 
 
+def test_reinstall_over_edited_files_writes_one_backup_set(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / ".claude"
+    install_driver.run_install("claude_code", harness_root=root)
+    for agent in sorted((root / "agents").glob("*.md"))[:4]:
+        agent.write_text(
+            agent.read_text(encoding="utf-8") + "\noperator edit\n", encoding="utf-8"
+        )
+    before = set(install_driver.list_backup_timestamps("claude_code"))
+    _advancing_clock(monkeypatch)
+
+    run = install_driver.run_install("claude_code", harness_root=root)
+
+    assert sum(1 for result in run.results if result.backup_path) >= 4
+    written = set(install_driver.list_backup_timestamps("claude_code")) - before
+    assert len(written) == 1
+
+
+def test_rollback_writes_one_backup_set(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / ".claude"
+    install_driver.finalize_install(
+        install_driver.run_install("claude_code", harness_root=root), root=root
+    )
+    record = install_ledger.latest_record("claude_code")
+    assert record is not None
+    before = set(install_driver.list_backup_timestamps("claude_code"))
+    _advancing_clock(monkeypatch)
+
+    results = install_driver.rollback_install(
+        record, harness_name="claude_code", harness_root=root
+    )
+
+    assert sum(1 for result in results if result.backup_path) > 1
+    written = set(install_driver.list_backup_timestamps("claude_code")) - before
+    assert len(written) == 1
+
+
+def test_rollback_keeps_the_backup_of_a_directory_at_a_restored_file(
+    tmp_path: Path,
+) -> None:
+    """A directory standing where a backed-up file was is backed up, then replaced.
+
+    The restore result carries that directory's backup, so the rollback record
+    references it and retention keeps it.
+    """
+    root = tmp_path / ".claude"
+    target = root / "rules.md"
+    backup = (
+        install_driver.BACKUP_ROOT / "20260101T000001Z" / "claude_code" / "rules.md"
+    )
+    backup.parent.mkdir(parents=True)
+    backup.write_text("operator\n", encoding="utf-8")
+    (target / "nested").mkdir(parents=True)
+    (target / "nested" / "note.md").write_text("later\n", encoding="utf-8")
+    record = LedgerRecord.create(
+        harness="claude_code",
+        root=root,
+        kind="install",
+        targets=(
+            LedgerTarget(
+                path=str(target),
+                mode="write_text",
+                ownership_class="operator-owned",
+                backup_ref=str(backup),
+                outcome="updated",
+            ),
+        ),
+    )
+
+    results = install_driver.rollback_install(
+        record, harness_name="claude_code", harness_root=root
+    )
+
+    assert target.read_text(encoding="utf-8") == "operator\n"
+    [restored] = [result for result in results if result.operation == "restore_backup"]
+    assert restored.backup_path is not None
+    note = Path(restored.backup_path) / "nested" / "note.md"
+    assert note.read_text(encoding="utf-8") == "later\n"
+    targets = install_driver.backup_ledger_targets(results)
+    assert [target.backup_ref for target in targets] == [restored.backup_path]
+
+
 def test_slow_uninstall_keeps_its_own_backup_of_the_settings_file(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

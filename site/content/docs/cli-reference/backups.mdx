@@ -38,7 +38,9 @@ demand, with your own bound:
   install record of any install root, still references. `apothem rollback` of
   the latest install therefore still restores after any prune. Uninstall and
   rollback records reference the backups those passes took, so they stay
-  while the record is kept.
+  while the record is kept. A root with nothing installed keeps its last
+  record, so the backups of its last uninstall or rollback stay until that
+  root sees another install, uninstall or rollback.
 
 With `--dry-run` nothing is changed: the command reports what a real prune
 would remove. Backups and the ledger are kept per harness, not per project, so
@@ -96,7 +98,7 @@ Every row has `"operation": "prune"`:
   (under `--dry-run`, the same rows describe what would be removed, and the
   message starts with `would remove` or `would drop`);
 - `"outcome": "skipped"` — a backup set older than the newest `N` that is kept
-  because an install record still references it;
+  because a ledger record still references it;
 - `"outcome": "unchanged"` — a harness with nothing to prune;
 - `"outcome": "error"` — a harness whose ledger could not be read (nothing is
   pruned for it), or a backup set that could not be fully removed.

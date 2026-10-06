@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import shutil
 from collections.abc import Iterable
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -160,12 +161,14 @@ def _restore_target(
             harness_name=harness_name,
             allowed_root=allowed_root,
         )
+    removed: MaterializationResult | None = None
     if target.is_dir():
-        # A directory now stands where the backed-up file was.
-        _remove_created(
+        # A directory now stands where the backed-up file was. Its backup rides
+        # on the restore result so the rollback record references it.
+        removed = _remove_created(
             target, root=root, harness_name=harness_name, allowed_root=allowed_root
         )
-    return write_bytes_safely(
+    restored = write_bytes_safely(
         target,
         backup.read_bytes(),
         install_root=root,
@@ -174,6 +177,9 @@ def _restore_target(
         source=backup,
         allowed_root=allowed_root,
     )
+    if removed is not None and removed.backup_path and restored.backup_path is None:
+        return replace(restored, backup_path=removed.backup_path)
+    return restored
 
 
 def _remove_created(

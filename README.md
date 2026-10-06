@@ -413,10 +413,13 @@ The **Apothem** extension installs from an `apothem.vsix` package: run
 `code --install-extension apothem.vsix`, or use the editor's *Install from
 VSIX…* command. The release workflow signs the package and attaches it to each
 GitHub Release. Releases published before the workflow packaged the extension
-carry none; when the latest one lacks it, build the package from a checkout:
+carry none; when the latest one lacks it, build the package from a checkout
+with the vsce release locked in `.github/vsce/`, as the release workflow does.
+That vsce needs Node.js 22 or later:
 
 ```shell
-cd vscode-extension && npx @vscode/vsce package --no-dependencies --out apothem.vsix
+npm ci --prefix .github/vsce --ignore-scripts
+cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix
 ```
 
 One extension covers VS Code and GitHub Copilot. A

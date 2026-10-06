@@ -110,16 +110,21 @@ jobs:
           # pins the Claude Code, Gemini CLI, Codex and Qwen Code CLIs that
           # channel-smoke.yml installs to smoke each install channel, and
           # .github/vsce pins the vsce packager the release and publish-vscode
-          # jobs install. Both are installed by npm ci inside CI jobs only.
-          # Nothing from them ships: the sdist and wheel carry no npm code, and
-          # the vsix is built with vsce --no-dependencies. The Claude
-          # Code and @vscode/vsce-sign packages are proprietary. The rest
-          # declare permissive licences outside the list above (Artistic-2.0,
-          # BlueOak-1.0.0, 0BSD), or declare MIT while GitHub's licence
-          # detection adds CC0-1.0, Unicode or unknown references (lodash.*,
-          # xmlbuilder, typed-rest-client). Re-derive with: the
-          # "incompatible licenses" list Dependency review prints for those two
-          # lockfiles.
+          # jobs install. Both are installed by npm ci inside CI jobs only, and
+          # neither tree ships: the sdist and wheel carry no npm code, and the
+          # vsix holds only vscode-extension/, which declares no dependencies.
+          # The Claude Code and @vscode/vsce-sign packages are proprietary. The
+          # rest declare permissive licences outside the list above
+          # (Artistic-2.0, BlueOak-1.0.0, 0BSD), or declare MIT while GitHub's
+          # licence detection adds CC0-1.0, Unicode or unknown references
+          # (lodash.*, xmlbuilder, typed-rest-client).
+          #
+          # The action matches each entry by package name alone: it applies in
+          # every manifest and at every version, so the two tslib entries in
+          # site/package-lock.json are exempt too. Excluded packages are
+          # never evaluated or printed. To re-derive the list, remove these
+          # entries on a branch that changes one of the two lockfiles and read
+          # the "incompatible licenses" list Dependency review prints.
           allow-dependencies-licenses: >-
             pkg:npm/%40img/sharp-libvips-darwin-arm64,
             pkg:npm/%40img/sharp-libvips-darwin-x64,

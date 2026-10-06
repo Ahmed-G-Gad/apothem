@@ -116,7 +116,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **Backups and the install ledger stay bounded.** Each harness keeps its
   newest 10 backup sets, one per install, uninstall or rollback, plus any
   older set a kept install, uninstall or rollback record still references,
-  and the ledger keeps the newest 10 installs per install root.
+  and the ledger keeps the newest 10 installs per install root. A root with
+  nothing installed keeps its last record, so the backups of its last
+  uninstall or rollback stay until that root sees another operation.
 - **Harness convention pins cite their vendor sources.** Each pin lists the
   pages it rests on with retrieval dates and gives every discovery-pending
   capability a dated target. CI and the release build block on a pin older
@@ -330,8 +332,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 ### Security
 
 - **The release build tooling uses urllib3 2.8.0**, which fixes
-  PYSEC-2026-4175 and PYSEC-2026-4176 in the hash-locked tooling the release
-  workflow installs before it builds.
+  PYSEC-2026-4175, PYSEC-2026-4176 and PYSEC-2026-4177 in the hash-locked
+  tooling the release workflow installs before it builds.
 - **Profile text cannot carry the managed-block markers.** A profile value
   containing a block marker fails validation with
   `profile.managed_block_marker`, naming the field without echoing the value.
@@ -343,7 +345,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   the build job, which adds it to the `dist/` assets that are hashed, signed and
   attested. Before, `npx` resolved the packager's dependency tree at release
   time, with install scripts, in the job that built the wheel. The Marketplace
-  workflow uses the same lockfile.
+  workflow uses the same lockfile. The packager is vsce 4.0.0, which no longer
+  pulls in braces 3.0.3 (GHSA-vfj7-8cjw-p6xm, with no patched release).
 - **No long-lived npm token path remains.** The npm publish workflow
   authenticates through OIDC alone; the token secret and its opt-in gate are
   gone.
@@ -351,8 +354,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   resolve the dispatcher from their own installed location. Previously the
   stubs took their root from the project directory when it contained a
   `hooks/` folder, so a project could supply the interpreter locator or the
-  dispatcher that the plugin's hooks then ran. Session-start guidance is read from the installed tree; the
-  project is read only for plan and memory summaries.
+  dispatcher that the plugin's hooks then ran. Session-start guidance is read
+  from the installed tree; the project is read only for plan and memory
+  summaries.
 - **Per-session hook state is private to the user.** The session-end gate and
   the compaction tracker kept counters in a shared directory under the system
   temp dir, created with default permissions. State now lives in a per-user
