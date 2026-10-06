@@ -8,7 +8,7 @@ field rendered verbatim as an object key in every covered adapter's output:
 
 * opencode  -> `json.loads(...)["mcp"][name]`
 * qwen_code -> `json.loads(...)["mcpServers"][name]`
-* hermes    -> `yaml.safe_load(...)["auxiliary"]["mcp"][name]`
+* hermes    -> `yaml.safe_load(...)["mcp_servers"][name]`
 
 (open_claw is intentionally NOT covered: its materializer renders an empty `{}`
 and projects no profile field, so there is no field to round-trip.)
@@ -103,7 +103,7 @@ def _qwen_names(rendered: str) -> dict[str, Any]:
 
 def _hermes_names(rendered: str) -> dict[str, Any]:
     doc = yaml.safe_load(rendered) or {}
-    return dict((doc.get("auxiliary") or {}).get("mcp", {}))
+    return dict(doc.get("mcp_servers") or {})
 
 
 # (materializer, parse-to-name-map) pairs for the adapters that render the field.

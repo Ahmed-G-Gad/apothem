@@ -1,0 +1,102 @@
+---
+title: "Run the behavioural evals"
+description: "Measure whether Apothem's commands and subagents fire on the right requests, whether each pipeline stage produces its artifact, and whether an always-on rule changes behaviour, with a cost-capped eval run."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+The conformity gate checks that Apothem's files are well formed. The eval suite
+checks what they do to a session: given a realistic request, does the right
+command or subagent start, does a pipeline stage write the artifact its
+contract names, and does an always-on rule change the reply. Every eval run
+calls a model and is billed, so runs are manual and capped by a cost ceiling.
+
+## What the suite contains
+
+The suite lives in `evals/` as plain data, one directory per case: a
+`prompt.md` (the request and its run limits), one or more graders, and for
+cases that need files, a `case.yaml` with a `scaffold.sh` that seeds the empty
+workspace. The format is the plugin eval case format (`schema_version: "1.1"`),
+and `evals/case.schema.json` describes it.
+
+| Kind | Cases | What passes |
+| --- | --- | --- |
+| Trigger | 64 | Each model-invocable command and each subagent fires on a request in its domain and stays quiet on a near miss. The three destructive release commands are user-invoked only, so their cases check that they do not start on their own. |
+| Outcome | 32 | One per stage: the eight plan stages, the thirteen research stages and the eleven audit dimensions. Each runs the stage on a seeded workspace and checks the artifact it writes; audit cases also check that nothing in the seeded sources was edited. |
+| Rule effect | 6 pairs | Two copies of one request, one with an always-on rule's text appended to the system prompt and one without. The pair isolates the rule's effect, because an eval run loads no rules of its own. |
+
+Graders are free checks wherever they suffice: a pattern over the reply or a
+file, a count of tool calls, or a file that must exist. No case uses a judge
+model today.
+
+## Run it in CI
+
+The `Evals` workflow runs the whole suite (or one tag) against the shipped
+plugin package. It runs only when started by hand and only when the repository
+variable `RUN_PAID_EVALS` is `true`.
+
+1. Add the API key as the repository secret `ANTHROPIC_API_KEY`.
+2. Set the repository variable `RUN_PAID_EVALS` to `true`.
+3. Start **Actions → Evals → Run workflow** with these inputs:
+
+| Input | Required | Meaning |
+| --- | --- | --- |
+| `max_cost_usd` | yes | The cost ceiling for the run. Once spent, no further case starts and the run ends as partial. |
+| `model` | yes | The model id of the session under test. Pin it so a model rollout is not read as a regression. |
+| `judge_model` | yes | The model id for judge graders. |
+| `claude_code_version` | yes | The CLI version to install, as `x.y.z`; it must ship `claude plugin eval`. |
+| `tag` | no | Run only the cases carrying this tag, such as `rule-scoping-regression` or `trigger`. |
+| `ablation` | no | `with-without` (default) also runs every case without the plugin and reports the difference; `none` runs one arm. |
+
+The run uploads `eval-results` with `results.json`, `aggregate-result.json` and
+the HTML report. The eval step exits `0` when every case met the threshold,
+`1` when a case scored below it or failed to load, and `2` when the run ended
+early at the cost ceiling or on a rejected credential. Leave a partial (`2`)
+run out of any before and after comparison.
+
+## Run it locally
+
+Stage the suite into a scratch copy of the plugin package, so the committed
+package stays untouched, then run it with both models pinned and a ceiling:
+
+```bash
+tmp="$(mktemp -d)"
+cp -R plugins/claude-code "$tmp/plugin"
+cp -R evals "$tmp/plugin/evals"
+claude plugin eval "$tmp/plugin" --trust-plugin --scaffold \
+  --model <model-id> --judge-model <model-id> --max-cost-usd 5 \
+  --no-publish --json results.json --allow-tools Write Edit
+```
+
+`--scaffold` runs the cases' seeding scripts, and `--allow-tools Write Edit`
+lets outcome cases write their artifacts; both are needed only for outcome
+cases. To iterate on one case cheaply, add `--case <name> --runs 1 --ablation none`.
+The rule-effect pairs run with `--tag rule-scoping-regression --ablation none`, since
+the comparison that matters is between the two cases of a pair.
+
+## Read the results
+
+A case runs three times by default. Its score is the mean share of graders
+that passed; with the no-plugin arm, the difference between the two scores is
+what the plugin contributed. For a rule-effect pair, compare the score of the
+`-on` case with the `-off` case under the same model: a rule that changes
+nothing scores the same in both.
+
+## Add or change a case
+
+- Write the request the way a user would type it, never naming the command or
+  subagent under test.
+- Tag the case with its kind (`trigger`, `no-trigger`, `no-auto-trigger`,
+  `outcome`, `rule-effect`) and the component under test, keep its directory
+  name equal to its case name, and prefer free graders.
+- A check that a tool is never called sets `min: 0`, `max: 0` and `arm: both`,
+  so the run without the plugin is scored the same way.
+- After editing an always-on rule that has a pair, run
+  `python scripts/dev/sync_eval_rule_cases.py` to copy its new text into the
+  pair.
+
+Validate any change for free; this checks every case against the schema and
+the coverage contract without calling a model:
+
+```bash
+python -m pytest tests/unit/test_eval_suite.py
+```

@@ -69,7 +69,12 @@ verbatim.
 
 `plugin.schema.json` describes a `plugin.json` — a self-describing bundle of
 catalog members (`skills` / `commands` / `agents` / `hooks` / `rules`) with a
-required `name`, SemVer `version`, and `description`. A plugin manifest is the
+required `name`, SemVer `version`, and `description`. Optional metadata covers
+`displayName` (the name shown in place of `name`) and the plugin-directory
+listing fields: `documentationUrl`, `supportUrl`, `privacyPolicyUrl` and
+`termsOfServiceUrl`, each an `https://` URL, plus an `icon` path inside the
+plugin. The generated Claude Code package sets `displayName`,
+`documentationUrl` and `supportUrl`. A plugin manifest is the
 unit a harness adapter materializes into its native plugin surface; cohorts
 select which members a plugin carries, and the propagation manifest resolves
 where those members land per harness.

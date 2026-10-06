@@ -1,8 +1,7 @@
 ---
-name: "expertise-posture-elements"
+trigger: glob
 description: "Path-filtered companion rule carrying the seven sub-elements of expertise (full prose bodies), the four-rung calibration ladder, the disclosure marker enumeration, and the failure tells declared at the parent `expertise-posture.md` rule's anchors; demand-loaded on artifact-authoring touches."
-pathFilter: "**/*.md, **/CLAUDE.md, **/rules/**, **/commands/**, **/skills/**, **/agents/**, **/docs/**"
-alwaysApply: false
+globs: "**/*.md, **/CLAUDE.md, **/rules/**, **/commands/**, **/skills/**, **/agents/**, **/docs/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

@@ -161,3 +161,92 @@ def test_failed_install_rolls_back_and_releases_lock(
     run = install_driver.run_install("claude_code", harness_root=harness_root)
     assert run.changed
     assert not run.errors
+
+
+def test_failed_install_rollback_record_references_the_restored_backups(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    harness_root = tmp_path / ".claude"
+    operator_file = harness_root / "operator.md"
+    operator_file.parent.mkdir(parents=True)
+    operator_file.write_text("operator\n", encoding="utf-8")
+    backups: list[Path] = []
+    state = {"calls": 0}
+
+    def failing(*args: object, **kwargs: object) -> list[MaterializationResult]:
+        state["calls"] += 1
+        if state["calls"] == 2:
+            raise OSError("injected mid-pass failure")
+        backup = install_driver.backup_existing(
+            operator_file, install_root=harness_root, harness_name="claude_code"
+        )
+        assert backup is not None
+        backups.append(backup)
+        operator_file.write_text("apothem\n", encoding="utf-8")
+        return [
+            MaterializationResult(
+                "updated",
+                "write_text",
+                str(operator_file),
+                "wrote",
+                backup_path=str(backup),
+            )
+        ]
+
+    monkeypatch.setattr(install_driver, "_dispatch_install_entry", failing)
+    with pytest.raises(OSError, match="injected mid-pass failure"):
+        install_driver.run_install("claude_code", harness_root=harness_root)
+
+    assert operator_file.read_text(encoding="utf-8") == "operator\n"
+    marker = install_ledger.latest_record("claude_code", kind=None)
+    assert marker is not None
+    assert marker.kind == "rollback"
+    assert [target.backup_ref for target in marker.targets] == [str(backups[0])]
+
+
+def test_failed_native_config_install_restores_the_operator_config(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A failure after the native config is written undoes that write too."""
+    from apothem.harnesses.qwen_code import QwenCodeAdapter
+
+    target = tmp_path / ".qwen" / "settings.json"
+    target.parent.mkdir()
+    original = '{\n  "operatorKey": true\n}\n'
+    target.write_text(original, encoding="utf-8")
+    adapter = QwenCodeAdapter()
+    monkeypatch.setattr(type(adapter), "output_path", property(lambda self: target))
+
+    def failing(*args: object, **kwargs: object) -> list[MaterializationResult]:
+        raise OSError("injected support-tree failure")
+
+    monkeypatch.setattr(install_driver, "_dispatch_install_entry", failing)
+    with pytest.raises(OSError, match="injected support-tree failure"):
+        adapter.install({})
+
+    assert target.read_text(encoding="utf-8") == original
+    marker = install_ledger.latest_record("qwen_code", kind=None)
+    assert marker is not None
+    assert marker.kind == "rollback"
+    assert [Path(t.path).name for t in marker.targets] == ["settings.json"]
+    assert all(t.backup_ref for t in marker.targets)
+
+
+def test_uninstall_withholds_its_marker_when_a_prior_removal_failed(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / ".claude"
+    install_driver.finalize_install(
+        install_driver.run_install("claude_code", harness_root=root), root=root
+    )
+    failed = MaterializationResult(
+        "error", "write_text", str(root / "settings.json"), "injected strip failure"
+    )
+
+    install_driver.run_uninstall(
+        "claude_code", harness_root=root, prior_results=(failed,)
+    )
+
+    marker = install_ledger.latest_record("claude_code", kind=None)
+    assert marker is not None
+    assert marker.kind == "install"

@@ -1,12 +1,12 @@
 ---
 name: "code-review"
 version: "0.1.0"
-updated: "2026-06-10"
+updated: "2026-10-02"
 description: "Operator-driven per-file code-quality review pass. Walks every source file under src/, scripts/, and tools/ in a deployed repository and emits per-file findings covering readability, maintainability, idiom-conformance, naming, complexity, magic-numbers, and comment-quality per the four code-craft rules (Python, shell, Markdown, universal-delegation) and the ten quality dimensions. Output lands at the consuming suite's _inputs/code-review-findings.md with HIGH / MEDIUM / LOW severity triage and concrete-driver rationale per finding. Distinct from `/code-audit` (cross-file forensic, repository-corpus scope) — `/code-review` is the per-file craft surface; not for plan-suite prose audits (use `/plan-review`) or remediation authoring (the command is read-only and never writes source)."
 argument-hint: "[path/to/repo/] [--focus FILE_OR_DIR] [--dry-run]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -150,7 +150,7 @@ Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against t
 - **M14 systemicity** — the artifact declares upstream (deployed repository), downstream (remediation surface), peers (sibling fortress artifacts), enforcers (the four code-craft rules + the ten-dimension check).
 - **N/A bars (reason recorded):** M11 (single-sprint review surface) · M13 (no executable code emitted) · M15 (production-ready applies at remediation time) · M9 (unless a structural defect warrants a diagram, then per `rules/visual-leverage.md`).
 
-**Iterate on failure.** A single bar failure blocks promotion. The failing bar's Failure→action cell names the owning rule; revise, re-run, iterate until every bar passes, then emit the attestation block.
+**Iterate on failure.** A single bar failure blocks promotion. The failing bar's Failure→action cell names the owning rule; revise, re-run, iterate until every bar passes within the three-round cap of `rules/pre-emission-gate-bars.md` §3 (then BLOCKED), then emit the attestation block.
 
 ---
 

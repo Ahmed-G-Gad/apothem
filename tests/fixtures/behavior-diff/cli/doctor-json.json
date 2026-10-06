@@ -3,85 +3,130 @@
     "doctor",
     "--json"
   ],
-  "exit_code": 1,
+  "exit_code": 0,
   "json": {
-    "all_ok": false,
+    "all_ok": true,
+    "checks": [
+      {
+        "code": "profile.missing",
+        "fix": null,
+        "harness": null,
+        "message": "No shared profile at <HOME>/.config/apothem/profile.yaml; install creates one.",
+        "status": "info"
+      }
+    ],
     "harnesses": [
       {
         "installed": false,
-        "name": "antigravity"
+        "name": "antigravity",
+        "status": "not_installed",
+        "verified": null
       },
       {
         "installed": false,
-        "name": "claude-code"
+        "name": "claude-code",
+        "status": "not_installed",
+        "verified": null
       },
       {
         "installed": false,
-        "name": "codex"
+        "name": "codex",
+        "status": "not_installed",
+        "verified": null
       },
       {
         "installed": false,
-        "name": "cursor"
+        "name": "cursor",
+        "status": "needs_project",
+        "verified": null
       },
       {
         "installed": false,
-        "name": "gemini-cli"
+        "name": "gemini-cli",
+        "status": "needs_project",
+        "verified": null
       },
       {
         "installed": false,
-        "name": "github-copilot"
+        "name": "github-copilot",
+        "status": "needs_project",
+        "verified": null
       },
       {
         "installed": false,
-        "name": "hermes"
+        "name": "hermes",
+        "status": "not_installed",
+        "verified": null
       },
       {
         "installed": false,
-        "name": "kimi-code"
+        "name": "kimi-code",
+        "status": "needs_project",
+        "verified": null
       },
       {
         "installed": false,
-        "name": "open-claw"
+        "name": "open-claw",
+        "status": "not_installed",
+        "verified": null
       },
       {
         "installed": false,
-        "name": "opencode"
+        "name": "opencode",
+        "status": "not_installed",
+        "verified": null
       },
       {
         "installed": false,
-        "name": "qwen-code"
+        "name": "qwen-code",
+        "status": "not_installed",
+        "verified": null
       },
       {
         "installed": false,
-        "name": "windsurf"
+        "name": "windsurf",
+        "status": "needs_project",
+        "verified": null
       },
       {
         "installed": false,
-        "name": "codebuddy"
+        "name": "codebuddy",
+        "status": "needs_project",
+        "verified": null
       },
       {
         "installed": false,
-        "name": "kiro"
+        "name": "kiro",
+        "status": "needs_project",
+        "verified": null
       },
       {
         "installed": false,
-        "name": "trae"
+        "name": "trae",
+        "status": "needs_project",
+        "verified": null
       },
       {
         "installed": false,
-        "name": "zed"
+        "name": "zed",
+        "status": "needs_project",
+        "verified": null
       },
       {
         "installed": false,
-        "name": "glm"
+        "name": "glm",
+        "status": "needs_project",
+        "verified": null
       }
     ],
     "platform": "<PLATFORM>",
     "profile_exists": false,
     "profile_path": "<HOME>/.config/apothem/profile.yaml",
     "profile_valid": null,
+    "project": null,
     "python": "<PYVER>",
+    "schema_version": 1,
     "version": "<VERSION>"
   },
-  "stdout": "{\"version\": \"<VERSION>\", \"python\": \"<PYVER>\", \"platform\": \"<PLATFORM>\", \"profile_path\": \"<HOME>/.config/apothem/profile.yaml\", \"profile_exists\": false, \"profile_valid\": null, \"harnesses\": [{\"name\": \"antigravity\", \"installed\": false}, {\"name\": \"claude-code\", \"installed\": false}, {\"name\": \"codex\", \"installed\": false}, {\"name\": \"cursor\", \"installed\": false}, {\"name\": \"gemini-cli\", \"installed\": false}, {\"name\": \"github-copilot\", \"installed\": false}, {\"name\": \"hermes\", \"installed\": false}, {\"name\": \"kimi-code\", \"installed\": false}, {\"name\": \"open-claw\", \"installed\": false}, {\"name\": \"opencode\", \"installed\": false}, {\"name\": \"qwen-code\", \"installed\": false}, {\"name\": \"windsurf\", \"installed\": false}, {\"name\": \"codebuddy\", \"installed\": false}, {\"name\": \"kiro\", \"installed\": false}, {\"name\": \"trae\", \"installed\": false}, {\"name\": \"zed\", \"installed\": false}, {\"name\": \"glm\", \"installed\": false}], \"all_ok\": false}\n"
+  "stdout": "{\"schema_version\": 1, \"version\": \"<VERSION>\", \"python\": \"<PYVER>\", \"platform\": \"<PLATFORM>\", \"profile_path\": \"<HOME>/.config/apothem/profile.yaml\", \"profile_exists\": false, \"profile_valid\": null, \"project\": null, \"harnesses\": [{\"name\": \"antigravity\", \"installed\": false, \"verified\": null, \"status\": \"not_installed\"}, {\"name\": \"claude-code\", \"installed\": false, \"verified\": null, \"status\": \"not_installed\"}, {\"name\": \"codex\", \"installed\": false, \"verified\": null, \"status\": \"not_installed\"}, {\"name\": \"cursor\", \"installed\": false, \"verified\": null, \"status\": \"needs_project\"}, {\"name\": \"gemini-cli\", \"installed\": false, \"verified\": null, \"status\": \"needs_project\"}, {\"name\": \"github-copilot\", \"installed\": false, \"verified\": null, \"status\": \"needs_project\"}, {\"name\": \"hermes\", \"installed\": false, \"verified\": null, \"status\": \"not_installed\"}, {\"name\": \"kimi-code\", \"installed\": false, \"verified\": null, \"status\": \"needs_project\"}, {\"name\": \"open-claw\", \"installed\": false, \"verified\": null, \"status\": \"not_installed\"}, {\"name\": \"opencode\", \"installed\": false, \"verified\": null, \"status\": \"not_installed\"}, {\"name\": \"qwen-code\", \"installed\": false, \"verified\": null, \"status\": \"not_installed\"}, {\"name\": \"windsurf\", \"installed\": false, \"verified\": null, \"status\": \"needs_project\"}, {\"name\": \"codebuddy\", \"installed\": false, \"verified\": null, \"status\": \"needs_project\"}, {\"name\": \"kiro\", \"installed\": false, \"verified\": null, \"status\": \"needs_project\"}, {\"name\": \"trae\", \"installed\": false, \"verified\": null, \"status\": \"needs_project\"}, {\"name\": \"zed\", \"installed\": false, \"verified\": null, \"status\": \"needs_project\"}, {\"name\": \"glm\", \"installed\": false, \"verified\": null, \"status\": \"needs_project\"}], \"checks\": [{\"code\": \"profile.missing\", \"status\": \"info\", \"harness\": null, \"message\": \"No shared profile at <HOME>/.config/apothem/profile.yaml; install creates one.\", \"fix\": null}], \"all_ok\": true}\n"
 }

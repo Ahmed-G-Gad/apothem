@@ -1,8 +1,7 @@
 ---
-name: "ten-dimension-check-dimensions"
+trigger: glob
 description: "Path-filtered companion sub-rule carrying the verbatim per-dimension bodies (rigor / coherence / configurability / readability / orphanism / structurality / architecture / naming / scholarly referencing / examples-tests-docs) and per-dimension failure tells declared at the parent `ten-dimension-check.md` rule's anchor; demand-loaded on artifact-emission surfaces."
-pathFilter: "**/*.md, **/*.py, **/*.sh, **/*.ps1, **/CLAUDE.md, **/rules/**, **/commands/**, **/skills/**, **/agents/**, **/docs/**"
-alwaysApply: false
+globs: "**/*.md, **/*.py, **/*.sh, **/*.ps1, **/CLAUDE.md, **/rules/**, **/commands/**, **/skills/**, **/agents/**, **/docs/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

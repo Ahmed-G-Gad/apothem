@@ -1,12 +1,12 @@
 ---
 name: "ux-review"
 version: "0.1.0"
-updated: "2026-06-16"
+updated: "2026-10-02"
 description: "Developer-experience review of a host repository — audits CLI ergonomics (argument naming, help text, error messages, progress indicators), installation flow, documentation discoverability, per-harness install parity, dev-loop ergonomics, and error-recovery affordances. Reads every surface from the first-time-operator posture, never the maintainer's familiar terrain. Reference frame: clig.dev Command Line Interface Guidelines, Nielsen Norman Group ten usability heuristics, GNU coreutils convention manual. Read-only against the host; emits a severity-ranked findings ledger at the consuming suite's _inputs/ux-review-findings.md with HIGH/MEDIUM/LOW classifications grounded in concrete-driver rationale. Invoke with a repository path, or --focus SURFACE to re-run one surface after a remediation cycle."
 argument-hint: "[path/to/repo/] [--focus SURFACE] [--dry-run]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -203,4 +203,10 @@ Invoke `/a11y-audit` to advance the audit-fortress sequence — the canonical su
 
 ## Installed Reference Paths
 
-When this skill is installed by Apothem, resolve repository-style references such as `rules/...` under `<ROOT>`, `templates/...` and `hooks/...` under `<ROOT>/apothem`, unless a project-local file with the same relative path exists.
+When this skill is installed by Apothem, resolve a repository-style reference against the installed directory for its first segment, unless a project-local file with the same relative path exists.
+
+- `rules/<path>` is `<ROOT>/rules/<path>`
+- `templates/<path>` is `<ROOT>/.apothem/support/templates/<path>`
+- `schemas/<path>` is `<ROOT>/.apothem/support/schemas/<path>`
+- `hooks/<path>` is `<ROOT>/.apothem/support/hooks/<path>`
+- `conformity/<path>` is `<ROOT>/.apothem/support/conformity/<path>`

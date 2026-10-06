@@ -1,8 +1,7 @@
 ---
-name: "sota-elevation"
+trigger: glob
 description: "SOTA elevation as default posture for OSS distribution projects — every user-facing surface targets the upper bound of contemporary best-practice, calibrated against named exemplar projects (cpython, shadcn-ui, Bun, Fumadocs, vite, vitest) and audited across the eight SOTA evaluation surfaces."
-pathFilter: "**/README.md, **/docs/**, **/.github/**, **/site/**"
-alwaysApply: false
+globs: "**/README.md, **/docs/**, **/.github/**, **/site/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

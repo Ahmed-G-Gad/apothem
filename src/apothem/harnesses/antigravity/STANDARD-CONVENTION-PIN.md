@@ -4,56 +4,88 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-06-25
-- Snapshot note: live re-verification via the official Antigravity codelabs (`codelabs.developers.google.com`) + launch blog (`antigravity.google/blog`) — the `antigravity.google/docs` SPA still returns empty bodies under fetch, so partial confidence persists, but official Google sources now CONFIRM the `~/.gemini/GEMINI.md` global anchor, the `~/.gemini/antigravity-cli/plugins/` plugin root, and plugin `skills/` auto-discovery (resolving the prior unverified skills-scan limitation below), and REFINE the MCP-config path toward `~/.gemini/config/mcp_config.json` (vs the prior `antigravity-cli/` reading — the adapter authors no MCP entries, so no write is affected). Previous 2026-05-31 / 2026-05-28.
+- Snapshot date: 2026-10-03
+- Snapshot note: refreshed against the Antigravity docs at `antigravity.google/docs`. The pages now return their full text to a plain fetch, so the earlier empty-body limitation and its partial-confidence caveat no longer apply. The refresh settles the MCP config path, confirms plugin-provided skills, and records the hooks file locations. Previous 2026-06-25.
 - Adapter source: `src/apothem/harnesses/antigravity/`.
-- Evidence level: **partial confidence.** The official `antigravity.google/docs/*`
-  pages are a JavaScript single-page app that returns empty bodies under fetch;
-  a browser-capable re-fetch on 2026-05-31 could not defeat the empty-body
-  problem. Every convention claim below rests on dated-2026 authority-domain
-  snapshots and third-party sources quoting the official docs, not raw official
-  page text. No vendor-native UI claim is made here.
-- Immutable pin: none — Antigravity is a hosted product with no version or
-  commit surface (the sitemap exposes a changelog but no pin); the
-  `no-immutable-source` exception stands for every claim.
+- Evidence level: vendor-doc pinned (living docs; Antigravity exposes no version or commit surface, so the no-immutable-source exception stands). No vendor-native UI claim is made here.
 
-## Antigravity CLI Surface Projection (partial confidence)
+## Plugin rules and manifest (verified 2026-10-02)
 
-- Global context anchor: `~/.gemini/GEMINI.md` (this user-scope adapter writes
-  the global file; the sibling project-scope gemini_cli adapter writes
-  `<project>/GEMINI.md` — distinct targets that share only the filename and the
-  `~/.gemini/` config root). `AGENTS.md` continues working unchanged.
-- Migration: the standalone Gemini CLI sunset for individual tiers (dated
-  2026-06-18 at the launch blog) folds that surface into Antigravity CLI
-  (binary `agy`); `GEMINI.md` and `AGENTS.md` continue working unchanged.
+- Rules: every `.md` file inside a `rules/` directory must start with YAML
+  frontmatter declaring a valid `trigger` (`always_on`, `model_decision`,
+  `glob`, or `manual`); a file without one, or with an unrecognised value, is
+  silently discarded. `model_decision` requires `description`; `glob` requires
+  `globs` (comma-separated patterns). The Antigravity CLI activates the rules
+  packaged under `~/.gemini/antigravity-cli/plugins/<plugin_name>/rules/`.
+  The adapter therefore converts each Apothem rule (`antigravity_rules` install
+  mode): `alwaysApply: true` becomes `trigger: always_on`, a non-empty
+  `pathFilter` becomes `trigger: glob` with `globs`, any other rule becomes
+  `trigger: model_decision`; `description` is always emitted and the Apothem
+  keys `name`, `pathFilter`, and `alwaysApply` are dropped.
+- Always-on budget: all active global and `always_on` rules share a
+  20,000-token budget; past it Antigravity demotes the largest rule files to
+  `- <path>: <description>` pointers the agent reads on demand. Single rule
+  files are truncated past 24,000 bytes; no Apothem rule is that large.
+- Manifest: `plugin.json` admits only `name` (required for the CLI) and
+  `description`; the published schema sets `additionalProperties: false`. The
+  template carries exactly those two keys.
+
+## Antigravity CLI Surface Projection
+
+- Context: Antigravity reads global rules from `~/.gemini/AGENTS.md`,
+  `~/.gemini/GEMINI.md`, `~/.gemini/config/AGENTS.md`,
+  `~/.gemini/config/GEMINI.md`, and `~/.gemini/config/rules/*.md`, and
+  workspace rules from `AGENTS.md`, `GEMINI.md`, and `.agents/rules/*.md`.
+  Each rule file is truncated past 24,000 bytes. This user-scope adapter writes
+  the managed block in `~/.gemini/GEMINI.md`; Gemini CLI loads the same file,
+  so the block is tool-neutral and the registry records Antigravity as the
+  file's owner. The sibling project-scope gemini_cli adapter writes
+  `<project>/GEMINI.md`.
+- Migration: the earlier reading records Google folding the standalone Gemini
+  CLI for individual tiers into Antigravity CLI (binary `agy`), dated
+  2026-06-18 on the launch blog; `GEMINI.md` and `AGENTS.md` keep working. Not
+  re-read on 2026-10-03.
 - CLI customization root: `~/.gemini/antigravity-cli/`.
 - Apothem plugin root: `~/.gemini/antigravity-cli/plugins/apothem/`.
-- MCP: the `mcpServers` object in the global `mcp_config.json` /
-  `.agents/mcp_config.json` (workspace); stdio entries use `command`/`args`/`env`,
-  remote entries use `serverUrl`. Apothem names this surface but does not author
-  MCP server entries. The global-config path carries a known ambiguity across
-  authority snapshots: the 2026-06-25 re-verification refines it toward
-  `~/.gemini/config/mcp_config.json`, while an earlier snapshot read
-  `~/.gemini/antigravity-cli/mcp_config.json` and another the IDE-scoped
-  `~/.gemini/antigravity/`. The adapter writes no MCP entries, so the ambiguity
-  affects no write; the path is left unresolved pending a browser-verifiable
-  docs pass.
-- Skills: the confirmed global discovery root is `~/.gemini/antigravity-cli/skills/`;
-  workspace skills live at `.agents/skills/`; the shared `~/.gemini/skills/`
-  still auto-loads. Apothem installs its skills cohort into its own
-  `plugins/apothem/skills/` namespace to avoid colliding with the operator's
-  skills and Gemini CLI project-local files. The agent's auto-discovery of
-  skills inside each plugin's `skills/` directory is confirmed by the official
-  Antigravity codelabs + launch blog (re-verified 2026-06-25), resolving the
-  prior tracked limitation; Apothem's `plugins/apothem/skills/` namespace is
-  therefore a confirmed-discovered placement.
-- Commands: converted into Antigravity skills under the Apothem plugin because the current CLI migration convention routes command-like prompts through skills.
-- Hooks: Antigravity now documents a simple-JSON lifecycle-hook surface
-  (global and workspace scope). Apothem retains its hook prose as support
-  material under the Apothem plugin and does not register Antigravity hook
-  events, because the adapter does not yet own a verified schema translation
-  layer for the Antigravity hook JSON; building one is deferred until the docs
-  are browser-verifiable.
+- MCP: `mcpServers` in `mcp_config.json`, globally at
+  `~/.gemini/config/mcp_config.json` and per workspace at
+  `.agents/mcp_config.json` (stdio and remote servers; OAuth tokens in
+  `~/.gemini/antigravity/mcp_oauth_tokens.json`). Apothem names this surface and
+  authors no entries. This settles the earlier ambiguity between
+  `~/.gemini/config/`, `~/.gemini/antigravity-cli/`, and `~/.gemini/antigravity/`.
+- Skills: workspace `.agents/skills/`, global `~/.gemini/config/skills/`, CLI
+  global `~/.gemini/antigravity-cli/skills/`, and plugin-provided
+  `~/.gemini/antigravity-cli/plugins/<name>/skills/`. Apothem installs its skills
+  into its own plugin's `skills/` directory, a documented location, so the
+  registry skills cell is `native`.
+- Commands: converted into Antigravity skills under the Apothem plugin because
+  the CLI routes command-like prompts through skills.
+- Hooks: `hooks.json` at `.agents/hooks.json` (workspace),
+  `~/.gemini/config/hooks.json` or `~/.gemini/antigravity-cli/settings.json`
+  (global), and inside an installed plugin. Apothem keeps its hook prose as
+  support material under the plugin and registers no hook events; building the
+  hook translation is adapter work, not a documentation gap.
+- Memory: the docs index (`antigravity.google/llms.txt`) lists no durable-memory
+  page and `antigravity.google/docs/memory` answers 404, so the registry memory
+  cell stays `discovery-pending`.
+
+## Vendor Sources
+
+Retrieved 2026-10-03 unless marked.
+
+- <https://antigravity.google/docs/rules> (rules and context files)
+- <https://antigravity.google/docs/skills> (skill locations)
+- <https://antigravity.google/docs/mcp> (`mcp_config.json`)
+- <https://antigravity.google/docs/plugins> (plugins)
+- <https://antigravity.google/docs/hooks> (`hooks.json`; retrieved 2026-10-02)
+- <https://antigravity.google/llms.txt> (docs index; retrieved 2026-10-02)
+
+## Discovery Targets
+
+- Discovery target: mcp_servers by 2026-12-31 — decide whether Apothem renders the profile's MCP inventory into `~/.gemini/config/mcp_config.json` or keeps naming it as operator-owned.
+- Discovery target: agent_memory by 2026-12-31 — re-check the Antigravity docs
+  for a durable-memory surface; record the cell as `unsupported` if none is
+  documented.
 
 ## Recommended Postfix Rendering
 
@@ -91,7 +123,7 @@ plugin-alone install path for this harness; everything requires the full
 | MCP / Settings | No — operator-owned | `mcpServers` lives in operator-owned `mcp_config.json`; the adapter authors no entries. |
 
 Platform note: a plugin directory exists, but as an engine-write target, not a
-distributable plugin-alone bundle. Building a standalone Antigravity plugin
-package is deferred until the docs are browser-verifiable (the docs SPA returns
-empty bodies under fetch — partial-confidence pin). The engine install is the
-sole persistence path today.
+distributable plugin-alone bundle. Antigravity documents installable plugins
+(`antigravity.google/docs/plugins`); building a standalone Apothem plugin
+package is a separate packaging decision. The engine install is the sole
+persistence path today.

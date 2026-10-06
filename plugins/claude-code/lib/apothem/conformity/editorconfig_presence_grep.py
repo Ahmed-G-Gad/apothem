@@ -286,14 +286,26 @@ def main(root: Path) -> int:
     """Run the check over *root*, print the report, return the exit code.
 
     Pre-conditions: ``root`` is the repository root to inspect.
-    Post-conditions: the JSON report is written to stdout; the return is
+    Post-conditions: the JSON report, stamped with ``inspected`` (1 when the
+    ``.editorconfig`` file was read), is written to stdout; the return is
     :data:`EXIT_PASS` when the sweep passed and :data:`EXIT_FAIL` otherwise.
     """
+    # Imported here, not at module top: ``check()`` stays stdlib-only.
+    from apothem.conformity._grep_base import finish_root_report
+
     result = check(root)
-    print(result.to_json())
-    return EXIT_PASS if result.passed else EXIT_FAIL
+    return finish_root_report(
+        result.to_json(),
+        passed=result.passed,
+        inspected=int((root / EDITORCONFIG_FILENAME).is_file()),
+    )
+
+
+def _main(argv: list[str]) -> int:
+    from apothem.conformity._grep_base import parse_root_args
+
+    return main(parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root)
 
 
 if __name__ == "__main__":
-    target = Path(sys.argv[1]) if len(sys.argv) >= 2 else Path.cwd()
-    sys.exit(main(target))
+    sys.exit(_main(sys.argv))

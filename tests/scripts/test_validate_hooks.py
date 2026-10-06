@@ -240,15 +240,23 @@ def test_bootstrap_ps1_trap_writes_envelope_to_stdout(tmp_path: Path) -> None:
     the explicit try/catch around ``Find-RealPython``). The trap must emit its
     JSON envelope on stdout (the hook-runtime contract); stderr carries only the
     human-readable diagnostic.
+
+    The stub takes its root from its own location, never from the project, so
+    the throwing locator sits beside a copy of the stub in its own tree.
     """
     assert _PWSH is not None
     root = tmp_path / "ps-root"
-    (root / "hooks" / "lib").mkdir(parents=True)
+    lib = root / "hooks" / "lib"
+    lib.mkdir(parents=True)
     (root / "hooks" / "dispatch.py").write_text("import sys\n", encoding="utf-8")
+    stub = lib / "bootstrap.ps1"
+    shutil.copyfile(_BOOTSTRAP_PS1, stub)
     # Locator throws at dot-source time -> the bare trap fires.
-    (root / "hooks" / "lib" / "find-python.ps1").write_text(
+    (lib / "find-python.ps1").write_text(
         'throw "boom from locator load"\n', encoding="utf-8"
     )
+    project = tmp_path / "project"
+    project.mkdir()
     result = subprocess.run(
         [
             _PWSH,
@@ -256,13 +264,13 @@ def test_bootstrap_ps1_trap_writes_envelope_to_stdout(tmp_path: Path) -> None:
             "-ExecutionPolicy",
             "Bypass",
             "-File",
-            str(_BOOTSTRAP_PS1),
+            str(stub),
             "-Event",
             "SessionStart",
         ],
         capture_output=True,
         text=True,
-        env={**_os_environ(), "CLAUDE_PROJECT_DIR": str(root)},
+        env={**_os_environ(), "CLAUDE_PROJECT_DIR": str(project)},
         check=False,
     )
     assert result.returncode == 0, f"stub must exit 0; stderr={result.stderr!r}"

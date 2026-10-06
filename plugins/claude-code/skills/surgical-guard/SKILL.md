@@ -1,13 +1,13 @@
 ---
 name: "surgical-guard"
 version: "0.1.0"
-updated: "2026-06-14"
-description: "Surgical-edit + reactive-guard skill — matched when the operator asks to 'edit surgically', 'make a minimal diff', 'guard this change', 'review the diff for quality', 'don't rewrite the whole file', or otherwise needs a precise, anchor-bounded mutation plus a post-edit quality pass before it lands. Stage 1 is a minimal-diff editing discipline: mutate through a managed-block or anchor-bounded edit (e.g. swap only the sentinel-delimited region, preserving the surrounding bytes and the authorship banner) — never a blunt whole-file overwrite where a scoped edit suffices. Stage 2 is a reactive, diff-based quality guard that reviews only the change's diff and loads only the rule references the diff's context matches (progressive disclosure), catching the systematic failure modes of generated changes: clean-code (swallowed errors, hardcoded success returns, hallucinated APIs, premature abstraction, silent contract changes), test (mock-boundary violations, duplicate bodies, hollow assertions, missing coverage of the changed behavior), docs (hallucinated symbols, broken samples, docs-vs-code drift). Not for: green-field file creation with no existing content to preserve (below the surgical threshold — routes to ordinary authoring); domain-framework linting with vendor-specific rule packs (out of scope — only the generalized clean-code/test/docs guard pattern is carried); producing the change's content via debugging or TDD (routes to dev-toolkit — this skill governs how the change lands and whether it passes). Harness-agnostic; deterministic output. Feeds the harness-directive surgical-manipulation mandate."
+updated: "2026-10-02"
+description: "Surgical-edit + reactive-guard skill — matched when the operator asks to 'edit surgically', 'make a minimal diff', 'guard this change', 'review the diff for quality', 'don't rewrite the whole file', or needs a precise, anchor-bounded change plus a post-edit quality pass before it lands. Stage 1 edits through a managed-block or anchor-bounded region, preserving the surrounding bytes — never a whole-file overwrite where a scoped edit suffices. Stage 2 reviews only the change's diff, loading only the rule references its context matches, and catches the common failure modes of generated changes: clean-code (swallowed errors, hardcoded success returns, hallucinated APIs, silent contract changes), test (mock-boundary violations, hollow assertions, missing coverage of the changed behavior), and docs (hallucinated symbols, broken samples, docs-vs-code drift). NOT for green-field file creation, vendor-specific lint rule packs, or producing the change itself via debugging or TDD (routes to dev-toolkit)."
 archetype: "guard-template"
-userInvocable: true
+user-invocable: true
 argument-hint: "[change target] [--guard clean-code|test|docs|all]"
 disable-model-invocation: true
-allowed-tools: "Read, Write, Edit, Glob, Grep, Bash, TodoWrite"
+allowed-tools: "Read, Glob, Grep, TodoWrite, TaskCreate, TaskGet, TaskList, TaskUpdate"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

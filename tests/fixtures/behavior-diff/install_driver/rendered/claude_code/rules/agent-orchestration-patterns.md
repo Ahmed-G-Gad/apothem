@@ -3,6 +3,11 @@ name: "agent-orchestration-patterns"
 description: "Path-filtered companion sub-rule carrying the team-pattern catalog, agent-type selection, launch protocol, return-contract enforcement, isolation discipline, error handling, decision tree, and anti-patterns that the parent `agent-orchestration.md` rule's anchors declare."
 pathFilter: "**/agents/**/*.md, **/commands/plan-*.md, **/skills/**/SKILL.md, **/rules/agent-orchestration*.md"
 alwaysApply: false
+paths:
+  - "**/agents/**/*.md"
+  - "**/commands/plan-*.md"
+  - "**/skills/**/SKILL.md"
+  - "**/rules/agent-orchestration*.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -138,7 +143,7 @@ Path-filtered (the four glob patterns in this rule's `pathFilter` field), always
 ## Bindings (§0.j five-direction)
 
 - **Drives →** ● Every agent deployment decision's pattern selection (§1 team-pattern catalog). ● Every parallel agent team launch (§3.2 single-message parallel-launch invariant). ● Every agent prompt's six-element shape (§3.1 prompt engineering). ● Every return-contract enforcement loop (§4 contract specification + result processing + context integration). ● The Implementation Team file-scope-non-overlap invariant (§3.1 file scope; §5.1 isolation worktree).
-- **Satisfies →** ● CM-17 (Agent Teams) and CM-25 (Agent Orchestration; rule-delegated). ● the rules registry row "Agent Orchestration" (companion-tier specification). ● `rules/agent-orchestration.md` Companion Sub-Rule Anchor (the parent rule's pointer to this companion's full specification).
+- **Satisfies →** ● CM-17 (Worker Teams) and CM-25 (Worker Orchestration; rule-delegated). ● the rules registry row "Worker Orchestration" (companion-tier specification). ● `rules/agent-orchestration.md` Companion Sub-Rule Anchor (the parent rule's pointer to this companion's full specification).
 - **Established by ↑** ● `rules/agent-orchestration.md` (parent-rule anchor). ● CM-17 + CM-25. ● the agents registry (the persistent agent definitions consume this companion's deployment patterns).
 - **Gated by ←** ● The path-filter (`**/agents/**/*.md`, `**/commands/plan-*.md`, `**/skills/**/SKILL.md`, `**/rules/agent-orchestration*.md`) — this rule demand-loads only on agent-orchestration-touching artifact edits. ● `rules/agent-orchestration.md` always-on baseline (parent rule must be live for the companion anchor to surface).
-- **Cross-bound with ↔** ↔ `rules/agent-orchestration.md` (parent rule; the Companion Sub-Rule Anchor binds this companion). ↔ `agents/codebase-explorer.md` + `agents/convention-auditor.md` + `agents/quality-gate.md` + `agents/memory-auditor.md` (the four persistent flat agent definitions this companion's §1 team patterns dispatch to). ↔ `rules/agent-orchestration-patterns.md` §Decision Tree (the in-rule per-agent dispatch tree the §2.2 agent-class-selection cross-references). ↔ `rules/context-management.md` (post-multi-agent compaction trigger; §6 result-processing externalizes agent results per CM-24). ↔ `rules/operational-mandates.md` (CM-17 + CM-25 inline-defined there).
+- **Cross-bound with ↔** ↔ `rules/agent-orchestration.md` (parent rule; the Companion Sub-Rule Anchor binds this companion). ↔ `agents/codebase-explorer.md` + `agents/convention-auditor.md` + `agents/quality-gate.md` + `agents/memory-auditor.md` (the four agent definitions, of the persistent flat definitions under `agents/`, that this companion's §1 team patterns dispatch to). ↔ `rules/agent-orchestration-patterns.md` §Decision Tree (the in-rule per-agent dispatch tree the §2.2 agent-class-selection cross-references). ↔ `rules/context-management.md` (post-multi-agent compaction trigger; §6 result-processing externalizes agent results per CM-24). ↔ `rules/operational-mandates.md` (CM-17 + CM-25 inline-defined there).

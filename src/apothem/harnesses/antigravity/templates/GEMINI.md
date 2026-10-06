@@ -1,29 +1,28 @@
 <!-- SPDX-License-Identifier: MIT -->
 
-# Apothem — Antigravity Bootstrap
+# Apothem — Global Instructions
 
-This file is the vendor-canonical instructions surface for Google
-Antigravity (`~/.gemini/GEMINI.md`). Antigravity CLI customization lives
-under `~/.gemini/antigravity-cli/`; Apothem installs its user-scope
-convention cohort as the `apothem` plugin under
+Apothem wrote this block with `apothem install --harness antigravity`.
+`~/.gemini/GEMINI.md` is a shared global instruction file: more than one
+coding tool loads it, so this block carries guidance that holds in every
+project and names no single tool as its reader. Apothem's Antigravity cohort
+is installed as the `apothem` plugin under
 `~/.gemini/antigravity-cli/plugins/apothem/`.
 
-## Apothem Conventions
+## Apothem reference material
 
-The Apothem-managed cohorts are propagated to:
+The install placed Apothem's files here:
 
 - `~/.gemini/antigravity-cli/plugins/apothem/plugin.json` — plugin metadata.
 - `~/.gemini/antigravity-cli/plugins/apothem/skills/` — reusable techniques
   plus slash-command prompts converted into skills.
-- `~/.gemini/antigravity-cli/plugins/apothem/rules/` — behavioral reference
-  rules.
 - `~/.gemini/antigravity-cli/plugins/apothem/agents/` — local agent
   definitions normalized from Apothem agents.
-- `~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/templates/` — support
-  templates retained for prompts that cite reusable plan or audit assets.
-- `~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/hooks/` — hook support
-  material retained as reference content; Apothem does not register
-  Antigravity hook events until the adapter owns the schema translation.
+
+Apothem's behavioral rules, the plan and audit templates its prompts cite, and
+its hook messages are installed as support files; the Apothem support files
+section below names their directories. The hook material is reference content
+only: Apothem registers no hook events for this install.
 
 ## Project-Scope Surface
 

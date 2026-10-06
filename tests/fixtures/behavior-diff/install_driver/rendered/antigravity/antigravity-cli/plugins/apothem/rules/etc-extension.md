@@ -1,8 +1,6 @@
 ---
-name: "etc-extension"
+trigger: always_on
 description: "Enumerations are seeds, not ceilings — every 'etc.', 'e.g.', 'such as', 'like', 'including', and '…' is a directive to extend the set comprehensively from intent; only an enumeration explicitly marked closed is exhaustive."
-pathFilter: ""
-alwaysApply: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

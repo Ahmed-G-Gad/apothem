@@ -54,7 +54,11 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Final
 
-from apothem.conformity._grep_base import iter_prose_lines
+from apothem.conformity._grep_base import (
+    finish_root_report,
+    iter_prose_lines,
+    parse_root_args,
+)
 
 GREP_NAME: Final[str] = "agnosticism-grep"
 RULE_ANCHOR: Final[str] = (
@@ -302,17 +306,12 @@ def check(root: Path) -> GrepResult:
     )
 
 
-def _read_input(argv: list[str]) -> Path:
-    if len(argv) >= 2:
-        return Path(argv[1])
-    return Path.cwd()
-
-
 def _main(argv: list[str]) -> int:
-    root = _read_input(argv)
+    root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root
     result = check(root)
-    print(result.to_json())
-    return EXIT_PASS if result.passed else EXIT_FAIL
+    return finish_root_report(
+        result.to_json(), passed=result.passed, inspected=result.scanned_count
+    )
 
 
 if __name__ == "__main__":

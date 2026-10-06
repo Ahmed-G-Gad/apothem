@@ -22,8 +22,9 @@
     "profile_path": "<HOME>/.config/apothem/profile.yaml",
     "project": null,
     "results": [],
+    "schema_version": 1,
     "status": "error",
     "warnings": []
   },
-  "stdout": "{\"status\": \"error\", \"command\": \"diff\", \"harness\": \"all\", \"profile_path\": \"<HOME>/.config/apothem/profile.yaml\", \"project\": null, \"files_written\": [], \"results\": [], \"warnings\": [], \"error\": {\"code\": \"harness.unknown\", \"message\": \"Apothem validation failed.\", \"field\": \"harness\", \"reason\": \"'all' is not a supported harness.\", \"fix\": \"Use one of: antigravity, claude-code, codex, cursor, gemini-cli, github-copilot, hermes, kimi-code, open-claw, opencode, qwen-code, windsurf, codebuddy, kiro, trae, zed, glm, or use 'all' for batch lifecycle commands.\", \"safe_value\": null, \"files_written\": []}}\n"
+  "stdout": "{\"schema_version\": 1, \"status\": \"error\", \"command\": \"diff\", \"harness\": \"all\", \"profile_path\": \"<HOME>/.config/apothem/profile.yaml\", \"project\": null, \"files_written\": [], \"results\": [], \"warnings\": [], \"error\": {\"code\": \"harness.unknown\", \"message\": \"Apothem validation failed.\", \"field\": \"harness\", \"reason\": \"'all' is not a supported harness.\", \"fix\": \"Use one of: antigravity, claude-code, codex, cursor, gemini-cli, github-copilot, hermes, kimi-code, open-claw, opencode, qwen-code, windsurf, codebuddy, kiro, trae, zed, glm, or use 'all' for batch lifecycle commands.\", \"safe_value\": null, \"files_written\": []}}\n"
 }

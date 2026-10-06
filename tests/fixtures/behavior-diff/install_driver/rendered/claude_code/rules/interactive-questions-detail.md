@@ -3,6 +3,12 @@ name: "interactive-questions-detail"
 description: "Path-filtered companion to interactive-questions.md carrying the authoring-discipline procedure and the anti-pattern catalog; demand-loaded on path match when a surface authors structured-inquiry invocations."
 pathFilter: "**/commands/**/*.md, **/rules/**/*.md, **/skills/**/*.md, **/agents/**/*.md, **/hooks/**/*.md"
 alwaysApply: false
+paths:
+  - "**/commands/**/*.md"
+  - "**/rules/**/*.md"
+  - "**/skills/**/*.md"
+  - "**/agents/**/*.md"
+  - "**/hooks/**/*.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

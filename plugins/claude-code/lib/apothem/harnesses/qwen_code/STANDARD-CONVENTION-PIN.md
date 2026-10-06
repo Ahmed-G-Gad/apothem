@@ -4,17 +4,17 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-06-25
-- Snapshot note: live re-verification against `qwenlm.github.io/qwen-code-docs` + `github.com/QwenLM/qwen-code` — `~/.qwen/QWEN.md` (`context.fileName`, `@path` imports, `/memory` reload), Markdown+YAML custom commands (TOML deprecated), and settings.json / `mcpServers` / `.qwen/skills/` / hooks all confirmed current.
+- Snapshot date: 2026-10-03
+- Snapshot note: refreshed against `qwenlm.github.io/qwen-code-docs` (settings, commands, sub-agents, skills, hooks, MCP, `.qwenignore`) and the Qwen Code source. The 2026-10-02 adapter changes followed these pages: hook timeouts are written in seconds, the hook interpreter path is quoted, and the extension's `/apothem` command is Markdown, since TOML commands are deprecated. Previous 2026-06-25.
 - Adapter source: `src/apothem/harnesses/qwen_code/`
-- Evidence level: vendor-doc pinned (live re-fetch 2026-05-31) at release tag
-  `v0.17.0` for `~/.qwen/settings.json`, `QWEN.md` (`context.fileName`),
-  Markdown+YAML commands (TOML deprecated), `.qwen/skills/`, SubAgents
-  (Markdown+YAML), `mcpServers`, settings hooks, and `.qwenignore`. The
+- Evidence level: vendor-doc pinned for `~/.qwen/settings.json`, `QWEN.md`
+  (`context.fileName`), Markdown+YAML commands (TOML deprecated),
+  `.qwen/skills/`, sub-agents (Markdown+YAML), `mcpServers`, settings hooks, and
+  `.qwenignore`. The extension command-directory behavior is pinned to commit
+  `a011f66944768e05b432a10548ffa4576f1d8ef8` of `FileCommandLoader.ts`. The
   `settings.json` config renders directly (no Jinja template); the shipped
   instruction template is `templates/QWEN.md`. No vendor-native UI claim is made
-  here. Docs pages are mutable — no-immutable-source exception anchored to the
-  immutable release tag `v0.17.0`.
+  here. Docs pages are mutable — no-immutable-source exception for them.
 - Official references:
   - <https://qwenlm.github.io/qwen-code-docs/en/users/configuration/settings/>
   - <https://qwenlm.github.io/qwen-code-docs/en/users/features/commands/>
@@ -33,12 +33,26 @@
   now MCP-only (a documented breaking change). The `partial` subset boundary is:
   fetch yes, search via MCP only.
 - Evidence: vendor-doc-url
-  <https://github.com/QwenLM/qwen-code/blob/8f8ed0d7c184208ac3fc4b92020b207cec453723/docs/developers/tools/introduction.md>
+  <https://raw.githubusercontent.com/QwenLM/qwen-code/8f8ed0d7c184208ac3fc4b92020b207cec453723/docs/developers/tools/introduction.md>
   (web_fetch listed built-in) +
-  <https://github.com/QwenLM/qwen-code/blob/8f8ed0d7c184208ac3fc4b92020b207cec453723/docs/developers/tools/web-search.md>
+  <https://raw.githubusercontent.com/QwenLM/qwen-code/8f8ed0d7c184208ac3fc4b92020b207cec453723/docs/developers/tools/web-search.md>
   (web_search removed, MCP-only); commit-sha
-  `8f8ed0d7c184208ac3fc4b92020b207cec453723` (default-branch HEAD, both blobs
-  confirmed reachable at this commit); snapshot-date 2026-06-21.
+  `8f8ed0d7c184208ac3fc4b92020b207cec453723`; snapshot-date 2026-06-21.
+
+## Vendor Sources
+
+Retrieved 2026-10-03 unless marked.
+
+- <https://qwenlm.github.io/qwen-code-docs/en/users/configuration/settings/> (settings, hooks, `mcpServers`)
+- <https://qwenlm.github.io/qwen-code-docs/en/users/features/commands/> (Markdown commands)
+- <https://qwenlm.github.io/qwen-code-docs/en/users/features/mcp/> (MCP)
+- <https://qwenlm.github.io/qwen-code-docs/en/users/features/sub-agents/> (sub-agents; retrieved 2026-10-02)
+- <https://qwenlm.github.io/qwen-code-docs/en/users/features/skills/> (skills; retrieved 2026-10-02)
+- <https://raw.githubusercontent.com/QwenLM/qwen-code/a011f66944768e05b432a10548ffa4576f1d8ef8/packages/cli/src/services/FileCommandLoader.ts> (extension command directories; retrieved 2026-10-02)
+
+## Discovery Targets
+
+- None. No capability cell for this harness is discovery-pending.
 
 ## Recommended Postfix Rendering
 
@@ -62,8 +76,14 @@
 
 Qwen Code exposes a vendor extension surface (`qwen extensions install`). The
 repo root IS the extension root: `qwen-extension.json` (manifest), `QWEN.md`
-(the manifest's `contextFileName` anchor), and a sibling `commands/apothem.toml`
-the harness auto-discovers. Installing the extension *alone* — without running
+(the manifest's `contextFileName` anchor), and `qwen-commands/apothem.md`, which
+the manifest's `commands` key names as the extension's command directory. The
+shared `commands/` directory keeps the Gemini CLI extension's TOML command; the
+`commands` key keeps Qwen Code from reading that deprecated TOML file (the key
+is read by `getExtensionCommandsPaths` in
+<https://raw.githubusercontent.com/QwenLM/qwen-code/a011f66944768e05b432a10548ffa4576f1d8ef8/packages/cli/src/services/FileCommandLoader.ts>,
+retrieved 2026-10-02; a Qwen Code build without the key falls back to
+`commands/` and still finds the TOML command). Installing the extension *alone* — without running
 `apothem install` — persists only what the vendor extension surface carries; the
 full per-target cohort still requires the engine, which converts each Apothem
 artifact to its Qwen-native shape (Markdown+YAML commands/agents, `.qwen/skills/`).
@@ -71,7 +91,7 @@ artifact to its Qwen-native shape (Markdown+YAML commands/agents, `.qwen/skills/
 | Artifact class | Persists extension-alone? | Mechanism / limit |
 |---|---|---|
 | Context anchor (rules-as-text) | Yes | `QWEN.md` is loaded as session context by `context.fileName`; it now embeds the core engineering disciplines (Plans-Locality, Authority hygiene, Definitiveness, Production-ready, Plain-language) so those directives persist as context text. |
-| Commands | Bootstrap only | The bundled `/apothem` command (`commands/apothem.toml`) auto-discovers and persists; it shells `npx @ahmed-g-gad/apothem`. The full converted command cohort (`~/.qwen/commands/`) requires `apothem install`, and the engine converts it to the current Markdown+YAML shape. The bootstrap file stays TOML deliberately: the snapshot above records TOML as **deprecated, not removed** — still auto-discovered by the harness — and this file is what launches the engine (it shells `npx`), so it is read before any conversion could run. Migrate it when the vendor drops TOML discovery; until then the two formats coexist by design, not by oversight. |
+| Commands | Bootstrap only | The bundled `/apothem` command (`qwen-commands/apothem.md`, Markdown with a `description` frontmatter key) persists; it shells `npx @ahmed-g-gad/apothem`. The full converted command cohort (`~/.qwen/commands/`) requires `apothem install`, and the engine converts it to the Markdown+YAML shape. Qwen Code documents TOML commands as deprecated and shows a migration prompt when it finds one, so the Qwen extension no longer reads the Gemini TOML file. |
 | Skills | No — requires `apothem install` | The extension manifest bundles no skills; `~/.qwen/skills/*/SKILL.md` lands only via the engine. |
 | Rules (as native primitive) | No — platform limit | Qwen Code has no native rules-directory primitive; Apothem rules persist as the `QWEN.md` context text above, or as the engine-installed `~/.qwen/.apothem/support/rules/` reference tree. |
 | Hooks | No — requires `apothem install` | The adapter's materializer authors the native `settings.json` `hooks` block (SessionStart, PreToolUse, PreCompact, PostCompact, Stop); the extension manifest bundles none, so hooks land only via the engine run. Hook helper material lands under `~/.qwen/.apothem/support/hooks/`. |

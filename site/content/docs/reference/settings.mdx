@@ -26,3 +26,27 @@ The Claude Code adapter ships one `settings.json` template. Hook commands use
 exec form (`command` plus `args`) instead of shell-specific command strings, so
 cross-OS behavior is reviewed inside one file. New permission entries and hook
 events land in that file atomically.
+
+## Merging into your own settings file
+
+`settings.json` is also your file. Install merges the template into it rather
+than replacing it, and records in the install ledger
+(`~/.apothem/state/<harness>/ledger.jsonl`) exactly which keys and list entries
+it added:
+
+- `permissions.allow` and `permissions.deny` are merged as a union: your rules
+  stay first and Apothem's are appended. A deny rule you wrote always survives,
+  and Claude Code applies deny rules before allow rules.
+- Your own hook handlers stay in place. A handler counts as Apothem's only when
+  it runs a script Apothem installed under the harness root, so a handler that
+  calls some other `hooks/dispatch.py` is yours.
+- Re-installing replaces only what Apothem added last time, so an entry the
+  template drops is removed and an entry you added is kept.
+- Uninstall removes only the entries the ledger records as Apothem's. A rule
+  that happens to equal one of Apothem's (for example `Read` in your own
+  `allow` list before the first install) stays. The file is deleted only when
+  Apothem created it and nothing of yours is left.
+
+The same rules apply to the other settings files Apothem merges into, such as
+the MCP server maps in Qwen Code's `settings.json` and OpenCode's
+`opencode.json`.

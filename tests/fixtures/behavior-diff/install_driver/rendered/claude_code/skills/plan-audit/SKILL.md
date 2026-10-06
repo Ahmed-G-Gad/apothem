@@ -1,12 +1,12 @@
 ---
 name: "plan-audit"
 version: "0.1.0"
-updated: "2026-06-16"
+updated: "2026-10-02"
 description: "Closed-loop guardian of the /plan pipeline — audits a plan suite across the full cycle (spec → generate → review) and actively remediates findings rather than only reporting them, looping until zero findings remain or an iteration cap with a defined retreat is hit. Implicitly encompasses the pipeline from /plan-spec: it brings a suite at any stage to a reviewed, zero-finding whole, routes deferred or incomplete work to a sibling *-maintenance suite, and persists a bounded audit report to _outputs/."
 argument-hint: "[suite-path] [--from spec|generate|review] [--remediate] [--cap N] [--maintenance] [--dry-run]"
 disable-model-invocation: false
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -128,4 +128,10 @@ flowchart TD
 
 ## Installed Reference Paths
 
-When this skill is installed by Apothem, resolve repository-style references such as `rules/...` under `<ROOT>`, `templates/...` and `hooks/...` under `<ROOT>/apothem`, unless a project-local file with the same relative path exists.
+When this skill is installed by Apothem, resolve a repository-style reference against the installed directory for its first segment, unless a project-local file with the same relative path exists.
+
+- `rules/<path>` is `<ROOT>/rules/<path>`
+- `templates/<path>` is `<ROOT>/.apothem/support/templates/<path>`
+- `schemas/<path>` is `<ROOT>/.apothem/support/schemas/<path>`
+- `hooks/<path>` is `<ROOT>/.apothem/support/hooks/<path>`
+- `conformity/<path>` is `<ROOT>/.apothem/support/conformity/<path>`

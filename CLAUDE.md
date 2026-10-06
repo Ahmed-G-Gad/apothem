@@ -125,7 +125,7 @@ flowchart TD
 
 ```
 src/apothem/
-  cli/            — Click CLI (quickstart, install, update, uninstall, verify, status, diff, rollback, migrate-workspace, harnesses, profile, doctor, completion)
+  cli/            — Click CLI (quickstart, install, update, uninstall, verify, status, diff, rollback, backups, migrate-workspace, harnesses, profile, doctor, completion)
   harnesses/      — one sub-package per harness adapter (__init__.py adapter class + install/uninstall/update/verify.py; adapters with rendered single-file config also carry materializer.py)
   conformity/     — pre-emission conformity validators
   lib/            — shared internal helpers reused across the subpackages (harness registry, profile model + projection, materializer building blocks, state stores, atomic IO, parallel sweep, reporting)
@@ -151,7 +151,9 @@ tests/
 ## Development Commands
 
 ```bash
-# Run the engine from the checkout (self-contained; vendored dependencies)
+# Run the engine from the checkout. The entry point puts the vendored
+# dependencies (src/apothem/_vendor) on sys.path; the host interpreter must
+# provide click and rich; without them it prints the exact pip command.
 PYTHONPATH=src python -m apothem --help
 
 # Lint and auto-fix
@@ -192,7 +194,8 @@ plugins and extensions (the Claude Code plugin via
 `/plugin marketplace add ahmed-g-gad/apothem`, a Gemini CLI extension via
 `gemini extensions install`, a Qwen Code extension via
 `qwen extensions install`, a Codex plugin via `codex plugin marketplace add`,
-and a VS Code-family extension on the Visual Studio Marketplace), the npm shim
+and a VS Code-family extension packaged as `apothem.vsix`, which the release
+workflow attaches to each new GitHub Release), the npm shim
 (`npx @ahmed-g-gad/apothem` — also the install path for OpenCode and every
 other adapter-only tool, which expose no harness-native plugin surface), and
 the one-shot script installers (`install.sh`

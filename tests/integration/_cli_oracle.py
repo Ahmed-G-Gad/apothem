@@ -43,16 +43,15 @@ from apothem.lib import install_ledger
 
 from ._oracle_norm import (
     _ISO_TS_RE,
-    _PYBIN_RE,
     _TS_RE,
     _ULID_RE,
     TOK_INSTALL_ID,
-    TOK_PYBIN,
     TOK_ROOT,
     TOK_SRC,
     TOK_TIMESTAMP,
     collapse_token_paths,
     normalize_obj,
+    tokenize_python_bin,
 )
 
 TOK_VERSION = "<VERSION>"
@@ -72,6 +71,7 @@ _PLATFORM = f"{platform.system()} {platform.release()}"
 _SAMPLE_HARNESS = "claude-code"
 _COMPLETION_SHELLS = ("bash", "zsh", "fish", "powershell")
 _HELP_COMMANDS = (
+    "backups",
     "completion",
     "install",
     "quickstart",
@@ -99,22 +99,31 @@ def _path_variants(value: Path) -> set[str]:
 
 
 def _normalize_text(text: str, *, home: Path) -> str:
-    for variant in sorted(_path_variants(home), key=len, reverse=True):
-        text = text.replace(variant, TOK_HOME)
-    for variant in sorted(
-        _path_variants(Path(tempfile.gettempdir())), key=len, reverse=True
+    # Three machine-specific roots are tokenized: the scratch home, the temp
+    # root, and the apothem package source root (embedded in plan `source`
+    # fields that `diff` echoes). They can nest — the scratch home always sits
+    # under the temp root, and a checkout cloned under $TMPDIR puts the source
+    # root there too — so all spellings are replaced longest-first in one pass.
+    # Replacing the temp root before a root nested inside it would rewrite
+    # `<src>/...` to `<ROOT>/clone/src/...` and drift the golden for a reason
+    # unrelated to the change under test.
+    replacements = [
+        (variant, token)
+        for token, root in (
+            (TOK_HOME, home),
+            (TOK_ROOT, Path(tempfile.gettempdir())),
+            (TOK_SRC, install_driver.APOTHEM_SRC),
+        )
+        for variant in _path_variants(root)
+    ]
+    for variant, token in sorted(
+        replacements, key=lambda pair: len(pair[0]), reverse=True
     ):
-        text = text.replace(variant, TOK_ROOT)
-    # The apothem package source root is embedded in plan `source` fields that
-    # `diff` echoes; tokenize it so the corpus is platform-identical.
-    for variant in sorted(
-        _path_variants(install_driver.APOTHEM_SRC), key=len, reverse=True
-    ):
-        text = text.replace(variant, TOK_SRC)
+        text = text.replace(variant, token)
     text = _ISO_TS_RE.sub(TOK_TIMESTAMP, text)
     text = _TS_RE.sub(TOK_TIMESTAMP, text)
     text = _ULID_RE.sub(TOK_INSTALL_ID, text)
-    text = _PYBIN_RE.sub(f'"{TOK_PYBIN}"', text)
+    text = tokenize_python_bin(text)
     text = _VERSION_RE.sub(TOK_VERSION, text)
     text = text.replace(_PLATFORM, _TOK_PLATFORM)
     text = text.replace(_PYVER, _TOK_PYVER)
@@ -211,6 +220,7 @@ def matrix() -> list[tuple[str, list[str], bool]]:
         rows.append((f"help-profile-{sub}", ["profile", sub, "--help"], False))
     for sub in ("list", "show"):
         rows.append((f"help-harnesses-{sub}", ["harnesses", sub, "--help"], False))
+    rows.append(("help-backups-prune", ["backups", "prune", "--help"], False))
     for shell in _COMPLETION_SHELLS:
         rows.append((f"completion-{shell}", ["completion", shell], False))
     rows.append(("harnesses-list", ["harnesses", "list"], False))
@@ -244,20 +254,26 @@ def matrix() -> list[tuple[str, list[str], bool]]:
     rows.append(
         ("err-diff-all-rejected-json", ["diff", "--harness", "all", "--json"], False)
     )
+    # A first install without --profile creates the default profile, so the
+    # missing-profile error is pinned with an explicit --profile that does not
+    # exist (``~`` expands to the scratch home), and the first-run success has
+    # its own plain row.
+    missing_profile = ["--profile", "~/.config/apothem/missing.yaml"]
     rows.append(
         (
             "err-install-missing-profile",
-            ["install", "--harness", _SAMPLE_HARNESS],
+            ["install", "--harness", _SAMPLE_HARNESS, *missing_profile],
             False,
         )
     )
     rows.append(
         (
             "err-install-missing-profile-json",
-            ["install", "--harness", _SAMPLE_HARNESS, "--json"],
+            ["install", "--harness", _SAMPLE_HARNESS, *missing_profile, "--json"],
             False,
         )
     )
+    rows.append(("install-first-run", ["install", "--harness", _SAMPLE_HARNESS], False))
     return rows
 
 

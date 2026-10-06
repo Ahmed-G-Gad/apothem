@@ -59,3 +59,9 @@ the operator decide before re-issuing the Edit. The two layers are
 non-redundant: the dispatcher protects the runtime, this context protects the
 header discipline. The header invariant itself is enforced mechanically in CI
 and pre-commit via the strict conformity corpus gate.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The corrected content recommendation when an Edit would create an applicable file without the SPDX header line or remove an existing one. `conformity/file_header_grep.py` (the header check it runs).
+- **Established by ↑** The PreToolUse Edit registration in `hooks/hooks.json` and the harness settings templates. The File Headers section of `AGENTS.md` and the fixture `schemas/authorship-header.txt`.
+- **Cross-bound with ↔** `rules/interactive-questions-canonical-shapes.md` (the authorship-header inject-guard option set this guard renders). `hooks/messages/pretooluse-write-header-guard.md` (the same guard on Write).

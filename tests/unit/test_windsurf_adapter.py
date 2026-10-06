@@ -97,13 +97,14 @@ def test_capabilities_template_path_resolves_to_existing_file() -> None:
 
 
 def test_capabilities_names_native_mcp_surface() -> None:
-    # Windsurf MCP is a vendor-native, operator-owned surface at
-    # ~/.codeium/windsurf/mcp_config.json the adapter recognizes.
+    # Devin Desktop's Cascade MCP is a vendor-native, operator-owned surface at
+    # ~/.config/devin/mcp_config.json the adapter recognizes
+    # (docs.devin.ai/desktop/cascade/mcp, retrieved 2026-10-03).
     capabilities = _capabilities()
     mcp = capabilities["mcp_servers"]
     assert isinstance(mcp, list)
     assert mcp
-    assert any(".codeium/windsurf/mcp_config.json" in str(e) for e in mcp)
+    assert any(".config/devin/mcp_config.json" in str(e) for e in mcp)
 
 
 def test_capabilities_layered_context_names_rules_directory() -> None:

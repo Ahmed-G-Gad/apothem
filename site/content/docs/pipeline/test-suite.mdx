@@ -1,0 +1,45 @@
+---
+title: "/test-suite"
+description: "Reference for the /test-suite command: invocation, arguments, inputs and outputs."
+---
+{/* SPDX-License-Identifier: MIT */}
+{/* apothem:generated-page — generated from src/apothem/commands; edit the command definition and rerun site/scripts/update-reference-inventory.mjs */}
+
+{/* apothem:generated-reference:start */}
+
+Behavior-first test authoring and execution workflow for a deployed repository. Discovers the host's ratified test framework, coverage tooling, and behavior contracts via host-discovery, authors behavior-shaped AAA tests through the test-authoring skill, runs them through the test-runner agent, triages failures into actionable findings, and reports coverage gaps against critical paths. Tests are named for the behavior they assert, follow the Arrange / Act / Assert shape, and never depend on test ordering. Output lands at the consuming suite's _inputs/test-suite-report.md with per-test outcomes, failure triage, and coverage-gap findings carrying concrete-driver rationale.
+
+## Invocation
+
+```text
+/test-suite [path/to/repo/] [--focus FILE_OR_DIR]
+```
+
+The definition sets `disable-model-invocation: true`, so a harness that honors that key starts this command only when you type it.
+
+## Pipeline position
+
+Consumes the deployed repository's behavior contracts (public-API surfaces, error-handling branches, documented invariants) and emits the test report downstream remediation cycles consume. **Upstream:** entered from `/plan-execute`'s implementation hand-off or invoked standalone against a deployed repository. **Downstream:** `/code-review` (per-file craft) and `/code-audit` (cross-file forensic) read the coverage-gap findings.
+
+## Inputs
+
+The deployed repository's source tree, its root manifest (`pyproject.toml` / `package.json` / `Cargo.toml` / `go.mod` / sibling), and its existing test corpus. No upstream manifest is required; the command operates against on-disk state.
+
+| Argument | Type | Required | Description |
+| -------- | ---- | -------- | ----------- |
+| `path/to/repo/` | Path | Yes | Root directory of the deployed repository. MUST carry a source tree and a discoverable root manifest. The command refuses execution when no source tree is present. |
+| `--focus FILE_OR_DIR` | Path | No | Restrict test authoring to the behavior contracts of a single file or directory subtree under the repo root. Path resolves relative to the repo root. |
+
+## Outputs
+
+The report at `_inputs/test-suite-report.md` plus the authored test files at the host's ratified test location. Test files carry the canonical SPDX header per the File-Authoring Contract; the report is header-exempt per the `.apothem/**` exception class at `src/apothem/schemas/header-exceptions.txt`.
+
+## Next step
+
+**Invoke `/code-review`** to walk the per-file craft of the source under test, then `/code-audit` for cross-file forensic integrity; both consume the coverage-gap findings this command emits at `_inputs/test-suite-report.md`.
+
+## Source
+
+Generated from [`src/apothem/commands/test-suite.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/commands/test-suite.md), the command definition every harness installs.
+
+{/* apothem:generated-reference:end */}

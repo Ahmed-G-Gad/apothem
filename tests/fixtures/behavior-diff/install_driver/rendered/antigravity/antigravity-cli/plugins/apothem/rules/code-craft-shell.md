@@ -1,8 +1,7 @@
 ---
-name: "code-craft-shell"
+trigger: glob
 description: "Per-language code-craft for shell artifacts — POSIX bash idioms (set -euo pipefail; quoted variables; no eval on untrusted input; trap-based cleanup) and PowerShell idioms (Set-StrictMode -Version Latest; verb-noun cmdlet naming; no Invoke-Expression on untrusted input; structured error records). Honor shellcheck for bash and Invoke-ScriptAnalyzer for PowerShell; pass the host's ratified shell linter clean."
-pathFilter: "**/*.sh, **/*.bash, **/*.ps1, **/*.psm1, **/*.psd1"
-alwaysApply: false
+globs: "**/*.sh, **/*.bash, **/*.ps1, **/*.psm1, **/*.psd1"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

@@ -10,9 +10,10 @@ floor: every release workflow under ``.github/workflows/`` that
 publishes to PyPI or npm declares ``id-token: write`` permission; a PyPI
 workflow references no legacy ``PYPI_API_TOKEN`` and pins
 ``pypa/gh-action-pypi-publish`` at v1.10+; an npm workflow runs on the
-provenance runtime floor (Node 24 and npm CLI 11.5.1 or newer) and
-authenticates with a scoped, granular-access ``NODE_AUTH_TOKEN``. npm
-emits build provenance for public packages published from public GitHub
+trusted-publishing runtime floor (Node 24 and npm CLI 11.5.1 or newer) and
+references no long-lived ``NPM_TOKEN``: the npm CLI exchanges the job's OIDC
+token for a short-lived publish credential, so no stored token is needed.
+npm emits build provenance for public packages published from public GitHub
 Actions workflows.
 
 Scope. The validator walks ``<root>/.github/workflows/`` and inspects
@@ -36,8 +37,9 @@ Drift classes.
   pinned below v1.10; OIDC trusted publishing support landed at v1.10.
 - ``legacy-token-secret-reference`` — a reference to
   ``secrets.PYPI_API_TOKEN`` (or the bare ``PYPI_API_TOKEN`` env-var
-  name in a workflow env block) survives in a PyPI publish workflow;
-  PyPI publication is keyless via OIDC trusted publishing.
+  name in a workflow env block) survives in a PyPI publish workflow, or
+  ``NPM_TOKEN`` survives in an npm publish workflow; both publish
+  keylessly via OIDC trusted publishing.
 - ``npm-runtime-too-old`` — the npm workflow does not select Node 24 or
   a newer major Node line.
 - ``npm-cli-floor-absent`` — the npm workflow does not pin npm CLI
@@ -82,6 +84,7 @@ _PYPI_ACTION_USES_RE: Final[re.Pattern[str]] = re.compile(
     r"pypa/gh-action-pypi-publish@v?(\d+)\.(\d+)(?:\.\d+)?"
 )
 _PYPI_TOKEN_REF_RE: Final[re.Pattern[str]] = re.compile(r"PYPI_API_TOKEN")
+_NPM_TOKEN_REF_RE: Final[re.Pattern[str]] = re.compile(r"NPM_TOKEN")
 _NPM_PUBLISH_RE: Final[re.Pattern[str]] = re.compile(r"npm\s+publish")
 _NPM_NODE_BASELINE_RE: Final[re.Pattern[str]] = re.compile(
     r"node-version\s*:\s*[\"']?(?:24|2[5-9]|[3-9]\d)(?:[\"']|\b)"
@@ -193,6 +196,18 @@ def _check_npm_workflow(workflow: Path, text: str) -> list[Finding]:
                 ),
             )
         )
+    if _NPM_TOKEN_REF_RE.search(text):
+        findings.append(
+            Finding(
+                workflow=name,
+                drift_class="legacy-token-secret-reference",
+                detail=(
+                    "NPM_TOKEN reference survives; npm trusted publishing "
+                    "authenticates through the job's OIDC token, so a stored "
+                    "long-lived token only widens the publish attack surface"
+                ),
+            )
+        )
     if _NPM_PUBLISH_RE.search(text) and not _NPM_NODE_BASELINE_RE.search(text):
         findings.append(
             Finding(
@@ -269,17 +284,19 @@ def check(root: Path) -> GrepResult:
     )
 
 
-def _read_input(argv: list[str]) -> Path:
-    if len(argv) >= 2:
-        return Path(argv[1])
-    return Path.cwd()
-
-
 def _main(argv: list[str]) -> int:
-    root = _read_input(argv)
+    # Imported here, not at module top: ``check()`` stays stdlib-only; only
+    # the command-line entry needs the shared parser and report stamp.
+    from apothem.conformity._grep_base import finish_root_report, parse_root_args
+
+    root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root
     result = check(root)
-    print(result.to_json())
-    return EXIT_PASS if result.passed else EXIT_FAIL
+    return finish_root_report(
+        result.to_json(),
+        passed=result.passed,
+        inspected=len(result.workflows_inspected),
+        empty_scope_expected=result.not_yet_materialised,
+    )
 
 
 if __name__ == "__main__":

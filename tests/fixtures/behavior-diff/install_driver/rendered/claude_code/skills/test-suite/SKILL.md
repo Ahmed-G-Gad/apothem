@@ -1,12 +1,12 @@
 ---
 name: "test-suite"
 version: "0.1.0"
-updated: "2026-07-02"
+updated: "2026-10-02"
 description: "Behavior-first test authoring and execution workflow for a deployed repository. Discovers the host's ratified test framework, coverage tooling, and behavior contracts via host-discovery, authors behavior-shaped AAA tests through the test-authoring skill, runs them through the test-runner agent, triages failures into actionable findings, and reports coverage gaps against critical paths. Tests are named for the behavior they assert, follow the Arrange / Act / Assert shape, and never depend on test ordering. Output lands at the consuming suite's _inputs/test-suite-report.md with per-test outcomes, failure triage, and coverage-gap findings carrying concrete-driver rationale."
 argument-hint: "[path/to/repo/] [--focus FILE_OR_DIR]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -95,7 +95,7 @@ When uncertain about the host's test framework, the behavior contract under test
 | Structured Inquiry (CM-2) | Framework ambiguity and contract ambiguity route through the canonical channel; free-form prose as primary input is forbidden. |
 | File Headers | Every authored test file carries the canonical SPDX header via `scripts/inject-header.py`. |
 | Pre-Emission Gate (M4) | The report and authored test files pass the fifteen-bar gate before promotion. |
-| Agent Orchestration (CM-25) | The test-runner agent carries an explicit 200-token return contract. |
+| Worker Orchestration (CM-25) | The test-runner agent carries an explicit 200-token return contract. |
 
 ---
 
@@ -147,4 +147,10 @@ flowchart TD
 
 ## Installed Reference Paths
 
-When this skill is installed by Apothem, resolve repository-style references such as `rules/...` under `<ROOT>`, `templates/...` and `hooks/...` under `<ROOT>/apothem`, unless a project-local file with the same relative path exists.
+When this skill is installed by Apothem, resolve a repository-style reference against the installed directory for its first segment, unless a project-local file with the same relative path exists.
+
+- `rules/<path>` is `<ROOT>/rules/<path>`
+- `templates/<path>` is `<ROOT>/.apothem/support/templates/<path>`
+- `schemas/<path>` is `<ROOT>/.apothem/support/schemas/<path>`
+- `hooks/<path>` is `<ROOT>/.apothem/support/hooks/<path>`
+- `conformity/<path>` is `<ROOT>/.apothem/support/conformity/<path>`

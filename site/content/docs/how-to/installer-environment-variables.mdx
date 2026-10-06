@@ -21,12 +21,15 @@ environment variables before you run it.
 | `APOTHEM_REPO` | Git remote to clone | `https://github.com/ahmed-g-gad/apothem` |
 | `APOTHEM_REF` | Git ref to check out; unset resolves the latest signed `vMAJOR.MINOR.PATCH` tag, a tag value pins it, `main` selects the moving branch | unset (latest signed tag) |
 | `APOTHEM_ALLOW_UNVERIFIED` | Downgrade a tag-signature-verification failure from a fatal abort to a warning when set to `1` | `0` (verify, fail-closed) |
+| `APOTHEM_VERIFY` | `signature` verifies the release tag's GPG signature; `checksum` installs the release's platform archive after checking its SHA-256 against the release's `SHA256SUMS` (integrity, not proof of who published it) | `signature` |
+| `APOTHEM_RELEASE_BASE` | Download base for checksum mode | `<APOTHEM_REPO>/releases/download` |
 | `APOTHEM_SOURCE` | Explicit local source tree to use instead of cloning | unset (clone) |
 | `APOTHEM_HARNESS` | Harness to install | `claude-code` |
 | `APOTHEM_PROFILE` | Path to the shared profile YAML | `$HOME/.config/apothem/profile.yaml` |
 | `APOTHEM_SKIP_VERIFY` | Skip the post-install verify step when set to `1` | `0` (verify runs) |
 | `APOTHEM_AUTO_INSTALL_DEPS` | Install the missing `click` / `rich` prerequisites automatically, without prompting, when set to `1` | `0` (prompt, or decline in a non-interactive pipe) |
 | `APOTHEM_BIN_DIR` | Directory for the placed `apothem` command shim | `$HOME/.local/bin` (POSIX); `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) |
+| `NO_COLOR` | Turn off coloured output when set to any value ([no-color.org](https://no-color.org/)); colour is also off whenever the output is not a terminal (a pipe, a file, a CI log) | unset (colour on an interactive terminal only) |
 
 `APOTHEM_SOURCE` takes precedence over a clone: when set to a checkout that
 contains `src/apothem`, the installer uses it directly, never touches
@@ -57,6 +60,10 @@ warning (air-gapped, local, or pre-signed-release use).
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH bash install.sh
+```
+
+```bash title="Check the archive digest when the signing key is not imported"
+APOTHEM_VERIFY=checksum bash install.sh
 ```
 
 ```bash title="Proceed without verification (interim / air-gapped)"
@@ -118,7 +125,10 @@ apothem verify --harness cursor
 ```
 
 When the profile did not yet exist, the installer creates one from the example
-and exits early — edit `$APOTHEM_PROFILE`, then re-run.
+and carries on to install and verify in the same run. The example's identity
+fields are placeholders, so the install prints a note; edit `$APOTHEM_PROFILE`,
+then run `apothem update --harness <name>` to apply your identity. A `--dry-run`
+with no profile previews with the example in place and writes nothing.
 
 ## Related
 

@@ -18,11 +18,11 @@
 <p align="center">
   <a href="https://github.com/ahmed-g-gad/apothem/releases"><img alt="Release" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fapothem.ahmedgad.com%2Fbadges%2Frelease.json"></a>
   <a href="https://github.com/ahmed-g-gad/apothem/actions/workflows/ci.yml"><img alt="Build" src="https://github.com/ahmed-g-gad/apothem/actions/workflows/ci.yml/badge.svg?branch=main"></a>
-  <a href="https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/github/license/ahmed-g-gad/apothem?color=0F172A"></a>
+  <a href="https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-0F172A"></a>
   <a href="https://www.npmjs.com/package/@ahmed-g-gad/apothem"><img alt="npm version" src="https://img.shields.io/npm/v/%40ahmed-g-gad%2Fapothem?color=10B981&label=npm"></a>
   <a href="https://github.com/ahmed-g-gad/apothem/blob/main/pyproject.toml"><img alt="Coverage gate ≥80%" src="https://img.shields.io/badge/coverage%20gate-%E2%89%A580%25-2563EB"></a>
   <a href="https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem"><img alt="OpenSSF Scorecard" src="https://api.securityscorecards.dev/projects/github.com/ahmed-g-gad/apothem/badge"></a>
-  <a href="https://github.com/ahmed-g-gad/apothem/discussions"><img alt="Community discussions" src="https://img.shields.io/badge/discussions-GitHub-7C3AED"></a>
+  <a href="https://github.com/ahmed-g-gad/apothem/issues"><img alt="Feedback: GitHub issues" src="https://img.shields.io/badge/feedback-GitHub%20issues-7C3AED"></a>
   <a href="https://apothem.ahmedgad.com/"><img alt="Documentation" src="https://img.shields.io/badge/docs-Fumadocs-0F172A"></a>
   <a href="https://www.npmjs.com/package/@ahmed-g-gad/apothem"><img alt="npm downloads" src="https://img.shields.io/npm/dm/%40ahmed-g-gad%2Fapothem?color=10B981&label=downloads"></a>
 </p>
@@ -129,15 +129,22 @@ Where a peer is stronger, it is named: **rulesync** reaches more tools and carri
 ### Fastest start
 
 **Prerequisite:** [Node.js](https://nodejs.org/) and system Python 3.10 or newer
-on your `PATH`. Then two commands take you from nothing to a verified install:
+on your `PATH`, with the `click` and `rich` Python packages importable
+(`python3 -m pip install click rich`; the engine names the exact versions if
+either is missing). Then two commands take you from nothing to a verified install:
 
 ```shell
-# 1 — create a profile (if needed), preview, confirm, and install — one guided step
-npx @ahmed-g-gad/apothem quickstart --yes
+# 1 — create a profile (if needed), preview, and install one harness — one guided step
+npx @ahmed-g-gad/apothem quickstart --harness claude-code --yes
 
 # 2 — confirm the configuration landed correctly
 npx @ahmed-g-gad/apothem verify --harness claude-code
 ```
+
+Swap `claude-code` for the tool you use in both commands
+(`npx @ahmed-g-gad/apothem harnesses list` prints every name). Leave
+`--harness` off and `quickstart` asks; `--harness all` configures every
+supported tool and is never the default.
 
 That is the whole path: `quickstart` scaffolds a shared profile when none
 exists, previews every file it will write, installs, and names the next
@@ -174,11 +181,12 @@ The `quickstart` command walks the whole canonical path in one guided step:
 npx @ahmed-g-gad/apothem quickstart
 ```
 
-It ensures a profile (scaffolding one with a personalize nudge if it is
-missing), previews the writes grouped by project root versus your home
-directory, asks before writing outside the project, installs with the grouped
-capability-note output, and ends by naming the next commands. `--yes` runs it
-non-interactively; `--format json` emits one structured summary.
+It asks which harness to install (unless you pass `--harness`), ensures a
+profile (scaffolding one with a personalize nudge if it is missing), previews
+the writes grouped by project root versus your home directory, asks before
+writing outside the project, installs with the grouped capability-note output,
+and ends by naming the next commands. `--yes` runs it non-interactively and then
+needs `--harness`; `--format json` emits one structured summary.
 
 Prefer the explicit steps? Run them directly. The `--project` flag is required
 when `all` includes project-scope adapters such as Cursor, Gemini CLI, GitHub
@@ -330,6 +338,12 @@ for air-gapped, local, or pre-signed-release use. The `APOTHEM_SOURCE`
 local-checkout path fetches nothing, so it skips tag resolution and
 verification and runs the checkout you point it at.
 
+`APOTHEM_VERIFY=checksum` is the middle path for a host that does not yet hold
+the maintainer's public key: instead of cloning, the installer downloads the
+release's platform archive and its `SHA256SUMS`, aborts on a digest mismatch
+before extracting anything, and warns that a matching digest proves the
+archive is the one the release lists, not who published it.
+
 **Requirements.** A system Python 3.10 or newer must be on PATH, and the
 `click` and `rich` packages must be importable under that interpreter; the
 installer checks for each, names anything missing, and offers to install the
@@ -341,9 +355,10 @@ prerequisite install, the installer never modifies your Python environment.
 **What it does.** Prerequisite-check (Python ≥ 3.10, `click`, `rich`) →
 locate the source (a surrounding checkout, or — for a network install —
 resolve the latest signed tag and clone the repository at it) → verify the
-tag signature (fail-closed) → run `python -m apothem install --harness
-<name>` from that source → verify → place an `apothem` command on PATH → print
-the next-step banner. Re-running is idempotent: an existing clone is
+tag signature (fail-closed) → create a starter profile from the example when
+none exists → run `python -m apothem install --harness <name>` from that
+source → verify → place an `apothem` command on PATH → print the next-step
+banner, all in one run. Re-running is idempotent: an existing clone is
 re-checked-out to the resolved tag and the harness is re-materialized.
 
 **The `apothem` command.** After a successful install, the installer writes an
@@ -370,6 +385,7 @@ form — it never advertises a bare `apothem` command the run did not resolve.
 | `APOTHEM_BIN_DIR` | POSIX `$HOME/.local/bin`, Windows `%LOCALAPPDATA%\Microsoft\WindowsApps` | Directory the `apothem` shim is written into |
 | `APOTHEM_SKIP_VERIFY` | _(unset)_ | Set to `1` to skip post-install verification |
 | `APOTHEM_AUTO_INSTALL_DEPS` | _(unset)_ | Set to `1` to install the missing `click` / `rich` prerequisites automatically, without prompting |
+| `NO_COLOR` | _(unset)_ | Set to any value to turn off coloured output. Colour is also off whenever the output is not a terminal (a pipe, a file, a CI log) |
 
 **Updating.** Re-run the installer, or run `scripts/installer/update.sh` /
 `scripts/installer/update.ps1` to re-check-out the latest signed tag (verified)
@@ -393,16 +409,26 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 
 **Prerequisites:** VS Code, Node.js 18+, and system Python 3.10+ on `PATH`.
 
-The **Apothem** extension ships as the signed `apothem.vsix` artifact attached
-to each GitHub Release — install it with `code --install-extension apothem.vsix`
-or through the editor's *Install from VSIX…* command. One extension covers VS
-Code and GitHub Copilot. A
+The **Apothem** extension installs from an `apothem.vsix` package: run
+`code --install-extension apothem.vsix`, or use the editor's *Install from
+VSIX…* command. The release workflow signs the package and attaches it to each
+GitHub Release. Releases published before the workflow packaged the extension
+carry none; when the latest one lacks it, build the package from a checkout
+with the vsce release locked in `.github/vsce/`, as the release workflow does.
+That vsce needs Node.js 22 or later:
+
+```shell
+npm ci --prefix .github/vsce --ignore-scripts
+cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix
+```
+
+One extension covers VS Code and GitHub Copilot. A
 [Visual Studio Marketplace](https://marketplace.visualstudio.com/) listing is
 not yet published: the `apothem` name is held by another publisher, so the
 identifier is still unresolved. Its commands (`Apothem:
 Install`, `Verify`, `Update`, `Uninstall`, `Doctor`) run the same engine
-through the configured runner (`npx @ahmed-g-gad/apothem` by default). Source
-lives under [`vscode-extension/`](vscode-extension/).
+through the configured runner (`npx @ahmed-g-gad/apothem@<extension version>`
+by default). Source lives under [`vscode-extension/`](vscode-extension/).
 
 **Verify:** run the **Apothem: Verify** command from the editor's command
 palette, or from a terminal:
@@ -445,6 +471,11 @@ Install Apothem as a Qwen Code extension straight from the repository:
 ```shell
 qwen extensions install ahmed-g-gad/apothem
 ```
+
+The repository is also a Claude Code plugin marketplace, so Qwen Code asks
+which plugin to install; choose `apothem`. To install without the prompt, for
+example in a script, name the plugin and accept the install notice up front:
+`qwen extensions install ahmed-g-gad/apothem:apothem --consent`.
 
 Like the Gemini CLI extension, this is a bootstrap: it loads an Apothem context
 file (`QWEN.md`) and shells out to the engine; materialize the full harness by
@@ -491,8 +522,10 @@ npx @ahmed-g-gad/apothem verify --harness codex
 **Prerequisites:** system Python 3.10+ with the `click` and `rich` packages
 importable; a checkout of the repository. No Node.js required.
 
-Run the self-contained engine straight from a clone — the source tree carries
-its vendored dependencies, so `PYTHONPATH=src` is the whole setup:
+Run the engine straight from a clone. The entry point puts the vendored
+dependencies (`src/apothem/_vendor`) on `sys.path`, so with `click` and `rich`
+importable, `PYTHONPATH=src` is the whole setup. Without them the engine stops
+with an error that names the exact `pip` command for your interpreter:
 
 ```shell
 git clone https://github.com/ahmed-g-gad/apothem
@@ -709,3 +742,5 @@ Full channel-routing guidance at [`SUPPORT.md`](https://github.com/ahmed-g-gad/a
 The canonical contributor list is at [`AUTHORS`](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS). Third-party licenses are cataloged at [`LICENSES/`](https://github.com/ahmed-g-gad/apothem/tree/main/LICENSES) under the [REUSE](https://reuse.software/) specification.
 
 Apothem stands on the harness ecosystem's open foundation: every supported harness is an independent project authored and maintained by its respective creators. The adapter layer translates between schemas; the harnesses themselves are credit to their authors.
+
+Product names, logos and brand colors of the supported harnesses are trademarks of their respective owners. Apothem uses the names only to identify the tools it configures. Apothem is an independent project and is not affiliated with, sponsored by or endorsed by any of them.

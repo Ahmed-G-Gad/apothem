@@ -157,7 +157,7 @@ Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against t
 - **M14 systemicity** — the artifact declares upstream (manifest tree + lockfiles), downstream (remediation surface + `/supply-chain-audit`), peers (sibling fortress artifacts), enforcers (pip-audit + safety + osv-scanner + host accepted-license list).
 - **N/A bars (reason recorded):** M11 (single-sprint audit surface) · M13 (no executable code emitted) · M15 (production-ready applies at remediation time) · M9 (unless a non-obvious transitive-dependency graph warrants a diagram, then per `rules/visual-leverage.md`).
 
-**Iterate on failure.** A single bar failure blocks promotion. The failing bar's Failure→action cell names the owning rule; revise, re-run, iterate until every bar passes, then emit the attestation block.
+**Iterate on failure.** A single bar failure blocks promotion. The failing bar's Failure→action cell names the owning rule; revise, re-run, iterate until every bar passes within the three-round cap of `rules/pre-emission-gate-bars.md` §3 (then BLOCKED), then emit the attestation block.
 
 ---
 

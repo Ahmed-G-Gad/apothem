@@ -1,0 +1,48 @@
+---
+title: "/freshify"
+description: "Reference for the /freshify command: invocation, arguments, inputs and outputs."
+---
+{/* SPDX-License-Identifier: MIT */}
+{/* apothem:generated-page — generated from src/apothem/commands; edit the command definition and rerun site/scripts/update-reference-inventory.mjs */}
+
+{/* apothem:generated-reference:start */}
+
+Host- and forge-agnostic command that renders a project fresh, clean, trace-free, and production-ready. Purges caches and stale artifacts, removes legacy/obsolete narrative and back-references, normalizes file / folder naming to the host's ratified convention, drives every surface to maximal naturalness and coherence (no backward-compatibility / staleness / process-refinement narrative anywhere), enforces a current-version-only facade with a concise current-version changelog, and drives the host's discovered quality gates to green. In-place freshening is the default; every destructive step (cache purge, version-control-history rewrite, artifact deletion, file / folder rename, stale-run-trace removal) is confirmation-gated through the structured-inquiry channel. Carries zero host- or forge-specific vocabulary; every surface is discovered via rules/host-discovery.md, never named.
+
+## Invocation
+
+```text
+/freshify [path/to/repo/] [--purge-caches] [--rewrite-history] [--normalize-naming] [--strict]
+```
+
+The definition sets `disable-model-invocation: true`, so a harness that honors that key starts this command only when you type it.
+
+## Pipeline position
+
+The freshening pass that precedes the release decision. It consumes the target repository's full working surface and emits an in-place-freshened tree plus a freshening report; it specializes for no forge, registry, or continuous-integration vendor. The agnostic core here is the substrate the forge-specific specialization extends.
+
+## Inputs
+
+The target repository's working surface: the host's ratified ignore manifest (the source of truth for what is generated state per `rules/host-discovery.md`), the cache and build-artifact trees that manifest enumerates, the narrative surfaces (the readme, the changelog, the contribution guide, the documentation tree, the inline source comments), the version-control history, the version declaration in the host's manifest, and the host's discovered quality-gate command set (formatter, linter, type-checker, test runner, documentation build, security scan).
+
+| Argument | Type | Required | Description |
+| -------- | ---- | -------- | ----------- |
+| `path/to/repo/` | Path | Yes | Root directory of the target repository. MUST contain a root manifest plus the host's ratified ignore manifest, so the generated-state surface resolves. The command refuses execution when no freshening surface resolves. |
+| `--purge-caches` | Flag | No | Opt in to the destructive cache-and-artifact purge. Without the flag, the cache sweep reports the purge targets and routes a per-target confirmation before any deletion; the flag pre-authorizes the purge but still records each target in the report. |
+| `--rewrite-history` | Flag | No | Opt in to the destructive version-control-history rewrite that strips stale run traces from history. Without the flag, the history sweep reports the rewrite scope and routes a confirmation; the rewrite never proceeds on a shared branch without explicit operator selection. |
+| `--normalize-naming` | Flag | No | Opt in to the destructive file / folder rename pass that normalizes naming to the host's ratified convention. Without the flag, the naming sweep reports the off-convention targets and routes a per-target Rename / Move confirmation before any rename; the flag pre-authorizes the rename pass while still recording each target and propagating every inbound reference in the same change-set. |
+| `--strict` | Flag | No | Promote every advisory freshening finding to a blocking finding. Under `--strict`, the freshening is complete only when zero stale traces, zero off-convention names, zero non-natural narrative, and zero blocked gates remain. |
+
+## Outputs
+
+The freshened working tree (in-place by default), a concise current-version changelog entry curated per the host's ratified changelog format, and a freshening report enumerating every sweep, every removal, every confirmation outcome, the per-gate green/blocked verdict, and the per-axis attestation against the seven-axs-of-breadth taxonomy.
+
+## Next step
+
+**Invoke the forge-specific specialization `/github-deploy-fresh`** against the freshened tree to layer the source-forge deployment surface onto this agnostic freshening core, then publish the current-version release through the host's discovered release facade.
+
+## Source
+
+Generated from [`src/apothem/commands/freshify.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/commands/freshify.md), the command definition every harness installs.
+
+{/* apothem:generated-reference:end */}

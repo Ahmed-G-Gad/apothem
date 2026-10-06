@@ -6,8 +6,9 @@ Materializes the apothem Trae rules surface into the operator-supplied
 project root. Trae's canonical rules surface is the project-scope
 Markdown format at ``<project>/.trae/rules/*.md`` (per
 https://docs.trae.ai/ide/rules). The adapter writes a dedicated
-``apothem-rules.md`` file alongside the operator-owned ``project_rules.md``
-and ``user_rules.md`` anchors; the vendor anchors are never clobbered.
+``apothem-rules.md`` file whose frontmatter (``alwaysApply: true`` plus a
+``description``) is the first content in the file; the operator's other rule
+files and the global ``~/.trae/user_rules`` are never clobbered.
 
 The propagation contract is declared in the canonical manifest at
 ``src/apothem/lib/propagation-manifest.yaml`` under the ``trae`` key

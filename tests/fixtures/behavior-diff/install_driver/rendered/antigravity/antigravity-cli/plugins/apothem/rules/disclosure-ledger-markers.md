@@ -1,8 +1,7 @@
 ---
-name: "disclosure-ledger-markers"
+trigger: glob
 description: "Path-filtered companion rule carrying the full marker-class enumeration, ledger-completeness detail, rationale-specificity detail, and failure-tells body declared at the parent `disclosure-ledger.md` rule's anchor; demand-loaded on disclosure-bearing artifact touches."
-pathFilter: "**/*.md, **/CLAUDE.md, **/rules/**, **/commands/**, **/skills/**, **/agents/**, **/docs/**, **/.github/**"
-alwaysApply: false
+globs: "**/*.md, **/CLAUDE.md, **/rules/**, **/commands/**, **/skills/**, **/agents/**, **/docs/**, **/.github/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

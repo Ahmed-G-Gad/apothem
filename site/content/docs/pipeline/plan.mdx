@@ -1,0 +1,48 @@
+---
+title: "/plan"
+description: "Reference for the /plan command: invocation, arguments, inputs and outputs."
+---
+{/* SPDX-License-Identifier: MIT */}
+{/* apothem:generated-page — generated from src/apothem/commands; edit the command definition and rerun site/scripts/update-reference-inventory.mjs */}
+
+{/* apothem:generated-reference:start */}
+
+The plan-suite pipeline wrapped as one dynamic multi-agent workflow. A single call drives a planning mission from raw prose to executed phases by dispatching the first-class stages — plan-spec → plan-generate → plan-review → plan-design (conditional, architecture-bearing suites) → plan-execute — as workflow phases under named Handoff-Manifest return contracts, routing every stage hand-off through a refute-by-default adversarial verification pass before the next stage consumes it, and emitting a deterministic result with a single recommended next move. Stage logic stays first-class in commands/plan-*.md; the knowledge surface stays the plan-suite skill; this command adds only the workflow harness (independent critique, return contracts, determinism). Multi-agent dispatch and continuous chaining are opt-in / confirmation-gated, never default-on.
+
+## Invocation
+
+```text
+/plan [<<mission>> | suite path] [--autonomous] [--max-rounds N] [--verify-panel N] [--from spec|generate|review|design|execute]
+```
+
+The definition sets `disable-model-invocation: true`, so a harness that honors that key starts this command only when you type it.
+
+## Pipeline position
+
+Wrapped-workflow meta-orchestrator over the whole `/plan` pipeline — the canonical single-call entry. It consumes a planning mission (raw prose or an existing suite path) and drives the stage chain to completion through the workflow harness. It emits no artifact of its own beyond the chain's outputs (the suite, its reports, its `COMPLETION.md`) plus the workflow's deterministic result surface and run trace.
+
+## Inputs
+
+The operator's mission or suite path; the `--autonomous` opt-in; the `--verify-panel N` budget; the optional `--from <stage>` resume point. At each stage transition, the upstream stage's **Handoff Manifest** at `{suite}/_inputs/handoff-manifest.yml` is the named return contract the next phase consumes.
+
+| Argument | Type | Required | Description |
+| -------- | ---- | -------- | ----------- |
+| `<<mission>> \| suite path` | String | Yes | A raw planning mission (→ chain starts at `plan-spec`) OR an existing `<project-root>/.apothem/plans/{suite}/` path (→ resume from the first incomplete stage). |
+| `--autonomous` | Flag | No | Opt into continuous chaining + dispatch (no per-stage-boundary halt). Default: halt at each stage boundary for confirmation, per `rules/agnostic-posture.md` + `rules/context-management.md` §4A. Irreversible steps stay per-action gated even under this flag. |
+| `--max-rounds N` | Integer | No | The per-stage remediation cap (default: 3). A hand-off still refuted after N remediation rounds halts the run as BLOCKED with the residual findings and their owning stages, per `rules/planning-techniques.md` §1. |
+| `--verify-panel N` | Integer | No | Refute-by-default critics per stage hand-off (default: 3). |
+| `--from spec\|generate\|review\|design\|execute` | Enum | No | Explicit resume stage (overrides the manifest-derived resume point). |
+
+## Outputs
+
+The chain's own artifacts (owned by each stage command), plus the workflow's deterministic result surface: the planning outcome; the per-stage verified hand-offs with evidence; the disclosure ledger of any beyond-mission remediation; the fifteen-bar gate attestation; the per-run workflow trace (stages run, manifest hand-offs, verification verdicts, halt/continue decisions); and the single recommended next move.
+
+## Next step
+
+**Invoke `/plan <mission>`** for a fresh planning mission — the wrapped workflow starts at `/plan-spec` and drives to executed phases — or `/plan <project-root>/.apothem/plans/{suite}/` to resume an existing suite from its first incomplete stage. Review each stage hand-off's verification, then pass `--autonomous` to chain continuously once the decomposition and return contracts read correctly. The halt-at-boundary mode is the safe default; autonomy is the explicit opt-in. Once `/plan-execute` lands the suite's phases, the executed work flows into `/fortress` for hardening — the plan → harden → ship operating loop that closes at the release gate.
+
+## Source
+
+Generated from [`src/apothem/commands/plan.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/commands/plan.md), the command definition every harness installs.
+
+{/* apothem:generated-reference:end */}

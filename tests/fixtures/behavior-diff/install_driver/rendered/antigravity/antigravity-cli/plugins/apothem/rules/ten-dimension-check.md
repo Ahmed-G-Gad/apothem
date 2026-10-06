@@ -1,8 +1,6 @@
 ---
-name: "ten-dimension-check"
+trigger: always_on
 description: "Ten quality dimensions every host-project artifact passes before emission — rigor, coherence, configurability, readability, orphanism, structurality, architecture, naming, scholarly referencing, examples / tests / docs."
-pathFilter: ""
-alwaysApply: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

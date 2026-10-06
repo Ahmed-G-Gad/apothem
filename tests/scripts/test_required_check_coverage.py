@@ -106,3 +106,27 @@ def test_self_gating_guard_script_exists() -> None:
         "the docs-stub self-gating guard script must exist at "
         ".github/workflows/scripts/assert-docs-only.sh"
     )
+
+
+def _guard_globs() -> set[str]:
+    """Return the guard script's gated surfaces as ci.yml-style path globs."""
+    text = (_WORKFLOWS / "scripts" / "assert-docs-only.sh").read_text(encoding="utf-8")
+    prefixes = text.split('_GATED_PREFIXES="', 1)[1].split('"', 1)[0].split()
+    exact = text.split('_GATED_EXACT="', 1)[1].split('"', 1)[0].split()
+    return {f"{prefix}**" for prefix in prefixes} | set(exact)
+
+
+def test_guard_script_gates_exactly_the_ci_trigger_paths() -> None:
+    # The stub's self-gating guard decides "docs-only" from its own prefix
+    # list. If ci.yml gains a gated surface the guard does not know, a PR that
+    # touches only that surface runs the stub and the guard waves it through.
+    ci_paths = set(_on(_load("ci.yml"))["pull_request"]["paths"])
+    assert _guard_globs() == ci_paths
+
+
+def test_eval_suite_changes_run_the_real_ci() -> None:
+    # evals/ is validated by tests/unit/test_eval_suite.py (schema, coverage
+    # contract, rule-text sync); an evals-only change must run it.
+    triggers = _on(_load("ci.yml"))
+    assert "evals/**" in triggers["push"]["paths"]
+    assert "evals/**" in triggers["pull_request"]["paths"]

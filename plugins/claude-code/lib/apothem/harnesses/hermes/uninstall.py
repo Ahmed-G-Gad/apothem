@@ -5,20 +5,25 @@
 from __future__ import annotations
 
 from apothem.harnesses._shared.wrapper_factories import make_native_config_uninstall
-from apothem.harnesses.hermes.materializer import materialize_native_config
+from apothem.harnesses.hermes.materializer import (
+    materialize_native_config,
+    retired_entries,
+)
 
 _HARNESS_NAME: str = "hermes"
 
 # The native ``config.yaml`` is rendered by the materializer rather than the
-# manifest, so it is cleaned surgically: only Apothem's keys (the
-# ``auxiliary.mcp`` block) are stripped from the parsed operator YAML — operator
-# channels / auth keys survive — and the file is deleted only when nothing
-# operator-authored remains. The pre-mutation file is copied into the Apothem
-# backup root; no whole-file ``.bak`` sibling is left beside the operator's file.
-# The manifest support subtree is then cleaned child-by-child by the shared
-# driver.
+# manifest, so it is cleaned surgically: only the entries the install ledger
+# records as Apothem's (the MCP servers it wrote) are stripped from the parsed
+# operator YAML — operator keys, including the rest of an ``auxiliary`` block,
+# survive — and the file is deleted only when Apothem created it and nothing
+# operator-authored remains. An install from an earlier release, which wrote the
+# MCP servers under ``auxiliary.mcp``, has that value removed while it is still
+# exactly what that release wrote (the rule an update applies), so uninstalling
+# without updating first leaves no stale block. The pre-mutation file is copied
+# into the Apothem backup root; no whole-file ``.bak`` sibling is left beside the
+# operator's file. The manifest support subtree is then cleaned child-by-child
+# by the shared driver.
 uninstall = make_native_config_uninstall(
-    _HARNESS_NAME,
-    materialize_native_config,
-    apothem_keys=frozenset({"auxiliary"}),
+    _HARNESS_NAME, materialize_native_config, retired_fn=retired_entries
 )

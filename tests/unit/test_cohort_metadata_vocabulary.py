@@ -114,6 +114,15 @@ def test_authoritative_contract_matches_json_schemas() -> None:
     ):
         declared = sorted(contract[cohort]["keys"])
         assert declared == _schema_required(schema_name), cohort
+        schema = json.loads(
+            (_SCHEMAS / f"{schema_name}.schema.json").read_text(encoding="utf-8")
+        )
+        one_of = (
+            [sorted(key for branch in schema["oneOf"] for key in branch["required"])]
+            if "oneOf" in schema
+            else []
+        )
+        assert contract[cohort].get("one_of_keys", []) == one_of, cohort
 
 
 def test_version_field_rule_matches_schemas() -> None:

@@ -4,7 +4,7 @@ version: "0.1.0"
 updated: "2026-06-23"
 description: "Read-only dependency-tree risk audit — flags unpinned, stale, duplicate, and known-vulnerable dependencies with manifest/lockfile evidence. Use when auditing supply-chain risk, before a release cut, after adding a dependency, or when a CVE/advisory lands. Detects the ecosystem via host-discovery: npm (package.json + package-lock/yarn/pnpm), pip (pyproject/requirements + lock), cargo (Cargo.toml + Cargo.lock), go (go.mod + go.sum). Runs npm audit / pip-audit / cargo audit / govulncheck and returns a risk-ranked table (known-vulnerable → unpinned → duplicate → stale) with per-row evidence; never widens a pin or escalates a scope — gaps surface as inquiry."
 tools: "Read, Glob, Grep, Bash"
-disallowedTools: "Write, Edit, TodoWrite"
+disallowedTools: "Write, Edit, TodoWrite, TaskCreate, TaskUpdate"
 maxTurns: 15
 # maxTurns rationale: 15 exceeds the 5–10 norm because a dependency audit reads the manifest and
 # lockfile, enumerates direct and transitive entries, and runs the host's audit tooling
@@ -12,7 +12,6 @@ maxTurns: 15
 # follow-up read to confirm the pin and assess the transitive path. 15 covers a full ecosystem
 # sweep with per-finding diagnostic follow-up without permitting unbounded retries.
 portability: "universal"
-memory: false
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -95,3 +94,11 @@ Out-of-axis: Architecture, Concurrency, Performance, Testing, Observability. Out
 - **Surfaced gaps.** Structural gaps from execution; required when structural (M6). Empty: `[]`.
 - **Inquiry surface.** Typed inquiry items per M5 with options annotated per M7. Empty: `[]`.
 - **Self-check attestation.** Fifteen-bar gate result per M4. Each bar `pass` or `n/a`; any failure blocks return.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The risk-ranked dependency table (known-vulnerable, unpinned, duplicate, stale) with manifest and lockfile evidence that `/dependency-audit` deepens and the dependency-risk stanza of `/release-readiness` reads before a release cut.
+- **Satisfies →** The supply-chain review of `rules/production-ready-prs.md` (every dependency pinned and free of known advisories before it ships).
+- **Established by ↑** `agents/README.md` (this agent's index entry). `rules/host-discovery.md` (the ecosystem and audit tool are discovered from the host's manifests).
+- **Gated by ←** The read-only tool posture in frontmatter (`Read, Glob, Grep, Bash`; `Write, Edit, TodoWrite` denied). The `maxTurns: 15` ceiling. A detectable manifest: an ecosystem it cannot detect returns as a gap, never a guessed tool.
+- **Cross-bound with ↔** `commands/dependency-audit.md` (Phase 1 dispatches this scan and deepens its findings). `commands/release-readiness.md` (the release sign-off that consumes its risk table).

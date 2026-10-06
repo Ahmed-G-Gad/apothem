@@ -56,4 +56,9 @@ def test_settings_json_wires_plan_guard_on_all_four_matchers(
                 or "pretooluse-bash-plan-guard" in args
             ):
                 matchers_with_plan_guard.add(matcher_block["matcher"])
-    assert matchers_with_plan_guard == {"Write", "Edit", "NotebookEdit", "Bash"}
+    assert matchers_with_plan_guard == {
+        "Write",
+        "Edit",
+        "NotebookEdit",
+        "Bash|PowerShell",
+    }

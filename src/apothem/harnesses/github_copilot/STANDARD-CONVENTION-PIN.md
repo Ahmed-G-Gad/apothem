@@ -4,31 +4,32 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-06-25
-- Snapshot note: live re-verification against `docs.github.com` — `.github/copilot-instructions.md` (repo-wide) + `*.instructions.md` (path-specific `applyTo`, both-used-together) + the Copilot CLI `web_fetch` tool all confirmed current.
+- Snapshot date: 2026-10-03
+- Snapshot note: refreshed against `docs.github.com/en/copilot`. Corrections: Copilot has user-defined commands (prompt files in `.github/prompts/*.prompt.md`, run as `/name` in Copilot Chat) and repository agent files (`.github/agents/*.agent.md`), and MCP can be configured in a custom agent profile as well as in repository settings, the IDE, and the Copilot CLI. Code review reads instructions from the pull request's head branch and no longer documents a fixed character cap. Previous 2026-06-25.
 - Adapter source: `src/apothem/harnesses/github_copilot/`
-- Evidence level: adapter-local projection; no vendor-native UI claim is made here.
+- Evidence level: vendor-doc pinned (living docs; no-immutable-source exception). No vendor-native UI claim is made here.
 
 ## Official Surface Refresh
 
-- Refreshed live 2026-05-31 against the current GitHub Copilot documentation
-  (`docs.github.com`). No authority-host move; no immutable version pin is
-  exposed (mutable docs site), so every captured convention carries a
-  no-immutable-source exception.
-- Instruction surface is broader than the single repo-wide file: the vendor
-  recognizes `.github/copilot-instructions.md` (repo-wide),
-  `.github/instructions/*.instructions.md` (`applyTo` glob, optional
-  `excludeAgent`), `AGENTS.md` (nearest-in-tree wins), and root `CLAUDE.md` /
-  `GEMINI.md`. The adapter delivers only the repo-wide
-  `.github/copilot-instructions.md`; the other anchors are operator-owned and
-  read-only.
-- The vendor now documents skills (`.github/skills/<name>/SKILL.md`), hooks
-  (`.github/hooks/*.json`), and CLI plugins (`plugin.json`). The adapter delivers
-  only the instructions file and authors none of those cohorts (deliberate
-  preserve-first posture).
-- MCP is service / IDE state (`~/.copilot/mcp-config.json`), not a repo-writable
-  file, so `capabilities.yml` `mcp_servers` stays `[]`. There is no user-defined
-  custom-command creation surface (built-in slash commands only).
+- Instructions: `.github/copilot-instructions.md` (repository-wide),
+  `.github/instructions/*.instructions.md` (path-specific, `applyTo` glob), and
+  agent instructions in `AGENTS.md` (the nearest in the tree wins) or a root
+  `CLAUDE.md` / `GEMINI.md`. The adapter writes only
+  `.github/copilot-instructions.md`. Zed also reads that file when no
+  higher-priority instruction file exists, so the block is tool-neutral and the
+  registry records Copilot as the file's owner.
+- Code review: Copilot reads repository instructions, agent instructions, and
+  skills from the pull request's head branch. GitHub's guidance is that shorter
+  instruction files are more likely to be fully processed (about 1,000 lines at
+  most), so the adapter puts the operator's profile section first in its block.
+- Commands and agents: prompt files (`.github/prompts/*.prompt.md`) run as
+  `/name` slash commands in Copilot Chat in VS Code, and custom agents are
+  `.github/agents/*.agent.md` profiles. Skills (`.github/skills/<name>/SKILL.md`),
+  hooks, and CLI plugins are also documented. The adapter authors none of them
+  (deliberate instructions-only posture).
+- MCP: configured in repository settings for the cloud agent, in IDE
+  configuration, in the Copilot CLI, or in a custom agent profile. The adapter
+  authors no entries, so `capabilities.yml` `mcp_servers` stays `[]`.
 
 ## Web-Fetch / Browser-Retrieval Surface
 
@@ -41,9 +42,24 @@
   the Copilot CLI tool surface; the adapter itself materializes only
   `.github/copilot-instructions.md` and authors no tool config.
 - Evidence: vendor-doc-url
-  <https://docs.github.com/en/copilot/concepts/agents/copilot-cli/research>
-  (+ `.../how-tos/copilot-cli/set-up-copilot-cli/configure-copilot-cli`);
-  snapshot-id living docs; snapshot-date 2026-06-21.
+  <https://docs.github.com/en/copilot/concepts/agents/copilot-cli/research>;
+  snapshot-id living docs; snapshot-date 2026-06-21 (the URL still resolves on
+  2026-10-03).
+
+## Vendor Sources
+
+Retrieved 2026-10-03 unless marked.
+
+- <https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/add-custom-instructions/add-repository-instructions> (instruction files)
+- <https://docs.github.com/en/copilot/tutorials/customize-code-review> (code review and instruction length)
+- <https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-custom-instructions> (Copilot CLI instructions)
+- <https://docs.github.com/en/copilot/concepts/agents/about-agent-skills> (skills)
+- <https://docs.github.com/en/copilot/tutorials/customization-library/prompt-files/your-first-prompt-file> (prompt files; retrieved 2026-10-02)
+- <https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/create-custom-agents> (agent profiles)
+
+## Discovery Targets
+
+- None. No capability cell for this harness is discovery-pending.
 
 ## Recommended Postfix Rendering
 
@@ -76,8 +92,8 @@ artifact requires the full
 | Artifact class | Persists standalone? | Mechanism / limit |
 |---|---|---|
 | Rules (instructions-as-text) | No — requires `apothem install` | The merged `copilot-instructions.md` (carrying the embedded behavioral mandates) is written only by the engine into the vendor-native `.github/` directory. Nothing persists before that run. |
-| Commands / Skills / Agents / Hooks | No — Apothem ships no bundle | Copilot's `plugin.json` / `.github/skills/` / `.github/hooks/` accept these cohorts, but Apothem authors no Copilot plugin; the instructions-only posture is deliberate. There is no user-defined custom-command creation surface (built-in slash commands only). |
-| MCP / Settings | No — service/IDE state | MCP lives in `~/.copilot/mcp-config.json` (IDE/service state, not a repo-writable file); the adapter authors no entries (`mcp_servers` stays `[]`). |
+| Commands / Skills / Agents / Hooks | No — Apothem ships no bundle | Copilot's `plugin.json`, prompt files (`.github/prompts/`), agent profiles (`.github/agents/`), skills (`.github/skills/`), and hooks accept these cohorts, but Apothem authors none of them; the instructions-only posture is deliberate. |
+| MCP / Settings | No — operator-owned | MCP lives in repository settings, IDE configuration, the Copilot CLI, or a custom agent profile; the adapter authors no entries (`mcp_servers` stays `[]`). |
 
 Platform note: the vendor plugin surface exists; the Apothem-distributable
 plugin bundle does not. The merged instructions file via `apothem install` is the

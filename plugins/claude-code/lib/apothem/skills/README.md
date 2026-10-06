@@ -89,7 +89,7 @@ selectively.
 
 ## Operating in this folder
 
-- **One folder per skill; the entry point is always `SKILL.md`,** never a differently-named file. The `description` frontmatter field is the match surface: make it precise enough that the harness selects the skill from the request, touched paths, or task class without pulling unrelated procedures into context.
+- **One folder per skill; the entry point is always `SKILL.md`,** never a differently-named file. The `description` frontmatter field is the match surface: make it precise enough that the harness selects the skill from the request, touched paths, or task class without pulling unrelated procedures into context. Keep it to 1,024 characters or fewer (the [Agent Skills](https://agentskills.io/specification) limit, enforced by `skill.schema.json`).
 - **Keep supporting files self-loading and beside the entry point;** do not scatter a skill's references across the tree, so they load selectively with the procedure rather than into baseline context.
 - **Adding a skill:** create a new kebab-case subfolder, author its `SKILL.md` with valid frontmatter and an SPDX header, place supporting files beside it, then register the skill in the index and Folder-contents tables above and in any consuming command — in the same change-set. **Removing or renaming a skill** updates the same tables and every consumer in the same change-set.
 - Validate a change with `python -m apothem.conformity.gate --all .`, `python -m pytest`, and `python -m ruff check`.

@@ -223,22 +223,25 @@ def check(root: Path) -> GrepResult:
     )
 
 
-def _read_input(argv: list[str]) -> Path:
-    if len(argv) >= 2:
-        return Path(argv[1])
-    return Path.cwd()
-
-
 def _main(argv: list[str]) -> int:
-    root = _read_input(argv)
+    # Imported here, not at module top: ``check()`` stays stdlib-only; only
+    # the command-line entry needs the shared parser and report stamp.
+    from apothem.conformity._grep_base import finish_root_report, parse_root_args
+
+    root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root
     result = check(root)
-    print(result.to_json())
     # Advisory posture: ``to_json`` declares ``advisory: true``, so ``_main``
-    # must exit 0 even when findings are present (gate.py: "Advisory
-    # validators exit 0 even when they report findings"). The verdict rides
-    # the JSON ``passed`` field; the orchestrator surfaces it as
-    # ``advisory_findings_present`` without failing ``gate --all``.
-    return EXIT_PASS
+    # exits 0 even when findings are present (gate.py: "Advisory validators
+    # exit 0 even when they report findings"). The verdict rides the JSON
+    # ``passed`` field; the orchestrator surfaces it as
+    # ``advisory_findings_present`` without failing ``gate --all``. A scan
+    # that read no file is not advisory drift: it fails.
+    return finish_root_report(
+        result.to_json(),
+        passed=result.passed,
+        inspected=result.files_inspected,
+        advisory=True,
+    )
 
 
 if __name__ == "__main__":

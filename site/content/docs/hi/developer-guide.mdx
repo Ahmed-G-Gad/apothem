@@ -2,6 +2,7 @@
 title: "Apothem में योगदान — डेवलपर मार्गदर्शिका"
 description: "केननिकल स्कीमा, फ़्रंटमैटर आवश्यकताओं, और सत्यापन प्रक्रियाओं के साथ नियम, कमांड, हेल्पर, कौशल, और हुक रचकर Apothem पारिस्थितिकी तंत्र को बनाए रखें और विस्तारित करें।"
 machineTranslated: true
+sourceHash: "19a6e0292c96762b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -343,7 +344,7 @@ description: "What this command does"
 argument-hint: "[path/to/input] [--flag VALUE]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 ```
 
@@ -405,9 +406,6 @@ description: "What this helper specializes in"
 tools: "Read, Glob, Grep, Bash"
 disallowedTools: "Write, Edit"
 maxTurns: 15
-effort: "high"
-permissionMode: "default"
-memory: false
 portability: "universal"
 ---
 ```
@@ -474,7 +472,6 @@ userInvocable: true | false
 disable-model-invocation: true | false
 allowed-tools: "Read, Glob, Grep"
 argument-hint: "[args]"               # optional; if userInvocable
-effort: "max"                          # optional
 ---
 ```
 

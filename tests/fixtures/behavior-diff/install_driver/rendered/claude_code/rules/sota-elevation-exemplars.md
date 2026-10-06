@@ -3,6 +3,11 @@ name: "sota-elevation-exemplars"
 description: "Path-filtered companion to `sota-elevation.md` carrying the eight-surface SOTA evaluation lens, the named-exemplar catalogue (cpython / shadcn-ui / Bun / Fumadocs / vite / vitest), per-surface exemplar walks, the upper-bound calibration binding, the Filter-5 aesthetic-demand binding, the gap-surfacing protocol, the disclosure markers, and the failure tells; demand-loaded on README / docs / `.github/` / `site/` touches."
 pathFilter: "**/README.md, **/docs/**, **/.github/**, **/site/**"
 alwaysApply: false
+paths:
+  - "**/README.md"
+  - "**/docs/**"
+  - "**/.github/**"
+  - "**/site/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

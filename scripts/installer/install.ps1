@@ -50,6 +50,14 @@
 #                            the moving branch.
 #   APOTHEM_ALLOW_UNVERIFIED If "1", downgrade a tag-verification failure to a
 #                            warning and proceed.
+#   APOTHEM_VERIFY           "signature" (default) verifies the release tag's
+#                            GPG signature. "checksum" instead downloads the
+#                            release's Windows archive and installs it only if
+#                            its SHA-256 matches the release's SHA256SUMS:
+#                            integrity without proof of the publisher, for
+#                            hosts without the maintainer's public key.
+#   APOTHEM_RELEASE_BASE     Release download base for checksum mode
+#                            (default: <APOTHEM_REPO>/releases/download).
 #   APOTHEM_SOURCE           Explicit local source tree (a checkout containing
 #                            src/apothem) to use instead of cloning. Skips tag
 #                            resolution and verification.
@@ -78,6 +86,7 @@ $ApothemRepo = if ($env:APOTHEM_REPO) { $env:APOTHEM_REPO } else { 'https://gith
 # if/else subexpression supplies the empty-string default.
 $ApothemRef  = if ($env:APOTHEM_REF) { $env:APOTHEM_REF } else { '' }
 $ApothemAllowUnverified = if ($env:APOTHEM_ALLOW_UNVERIFIED) { $env:APOTHEM_ALLOW_UNVERIFIED } else { '0' }
+$ApothemVerify = if ($env:APOTHEM_VERIFY) { $env:APOTHEM_VERIFY } else { 'signature' }
 $Harness     = if ($env:APOTHEM_HARNESS) { $env:APOTHEM_HARNESS } else { 'claude-code' }
 $ApothemProfile = if ($env:APOTHEM_PROFILE) { $env:APOTHEM_PROFILE } else { [System.IO.Path]::Combine($HOME, '.config', 'apothem', 'profile.yaml') }
 
@@ -93,10 +102,18 @@ $RuntimeDeps = @('click', 'rich')
 $RuntimeDepSpecs = @{ click = 'click==8.4.2'; rich = 'rich>=15.0.0' }
 $VendoringDoc = 'https://apothem.ahmedgad.com/docs/architecture/vendoring-strategy/'
 
-function Write-Bold  { param([string]$Msg) Write-Host "`n$Msg" -ForegroundColor White }
-function Write-Info  { param([string]$Msg) Write-Host "  . $Msg" -ForegroundColor Cyan }
-function Write-Ok    { param([string]$Msg) Write-Host "  + $Msg" -ForegroundColor Green }
-function Write-Warn  { param([string]$Msg) Write-Host "  ! $Msg" -ForegroundColor Yellow }
+# Colour only an interactive console. NO_COLOR (https://no-color.org/) or
+# redirected output (a pipe, a file, a CI log) gets plain text.
+$UseColor = (-not $env:NO_COLOR) -and (-not [Console]::IsOutputRedirected)
+function Get-ColorArgs {
+    param([string]$Color)
+    if ($UseColor) { return @{ ForegroundColor = $Color } }
+    return @{}
+}
+function Write-Bold  { param([string]$Msg) $c = Get-ColorArgs White;  Write-Host "`n$Msg" @c }
+function Write-Info  { param([string]$Msg) $c = Get-ColorArgs Cyan;   Write-Host "  . $Msg" @c }
+function Write-Ok    { param([string]$Msg) $c = Get-ColorArgs Green;  Write-Host "  + $Msg" @c }
+function Write-Warn  { param([string]$Msg) $c = Get-ColorArgs Yellow; Write-Host "  ! $Msg" @c }
 function Write-Fail  { param([string]$Msg) Write-Error "  x $Msg" }
 
 # Test-PythonImport INTERPRETER MODULE - return $true when MODULE imports under
@@ -316,6 +333,96 @@ if ($env:APOTHEM_SOURCE) {
     }
 }
 
+if ($ApothemVerify -ne 'signature' -and $ApothemVerify -ne 'checksum') {
+    Write-Fail "APOTHEM_VERIFY must be 'signature' or 'checksum' (got '$ApothemVerify')."
+}
+$ApothemReleaseBase = if ($env:APOTHEM_RELEASE_BASE) { $env:APOTHEM_RELEASE_BASE } else { "$ApothemRepo/releases/download" }
+
+# Checksum mode: install the release's Windows archive after checking its
+# SHA-256 against the release's SHA256SUMS. It replaces the git clone and the
+# tag-signature gate below for hosts that do not hold the maintainer's public
+# key, and says plainly that a matching digest proves integrity, not origin.
+if (-not $Source -and $ApothemVerify -eq 'checksum') {
+    if (-not $ApothemRef) {
+        if (-not (Get-Command 'git' -ErrorAction SilentlyContinue)) {
+            Write-Fail "git not found in PATH - needed to resolve the latest release tag"
+        }
+        Write-Info "Resolving latest release tag from $ApothemRepo"
+        $ApothemRef = Resolve-LatestTag $ApothemRepo
+    }
+    if (-not (Test-ReleaseTag $ApothemRef)) {
+        Write-Fail "APOTHEM_VERIFY=checksum needs a vMAJOR.MINOR.PATCH release tag; got '$ApothemRef'. Pin one with APOTHEM_REF."
+    }
+    $CkName = "apothem-$ApothemRef-windows.zip"
+    $CkTmp = Join-Path ([System.IO.Path]::GetTempPath()) ("apothem-" + [System.Guid]::NewGuid().ToString('N'))
+    New-Item -ItemType Directory -Path $CkTmp -Force | Out-Null
+    $CkExtract = $null
+    # Everything from here to the move into APOTHEM_HOME runs inside try, so
+    # the download and the staging folder are removed on every path, success,
+    # failure or interrupt.
+    try {
+        $CkArchive = Join-Path $CkTmp $CkName
+        $CkSums = Join-Path $CkTmp 'SHA256SUMS'
+        Write-Info "Downloading $CkName and SHA256SUMS from the $ApothemRef release"
+        try { Invoke-WebRequest -UseBasicParsing -Uri "$ApothemReleaseBase/$ApothemRef/$CkName" -OutFile $CkArchive }
+        catch { Write-Fail "Could not download $CkName from $ApothemReleaseBase/$ApothemRef" }
+        try { Invoke-WebRequest -UseBasicParsing -Uri "$ApothemReleaseBase/$ApothemRef/SHA256SUMS" -OutFile $CkSums }
+        catch { Write-Fail "Could not download SHA256SUMS from $ApothemReleaseBase/$ApothemRef" }
+        $CkExpected = $null
+        foreach ($Line in Get-Content -LiteralPath $CkSums) {
+            $Fields = $Line -split '\s+', 2
+            if ($Fields.Count -eq 2 -and ($Fields[1] -eq $CkName -or $Fields[1] -eq "*$CkName")) {
+                $CkExpected = $Fields[0]
+                break
+            }
+        }
+        if (-not $CkExpected) { Write-Fail "SHA256SUMS for $ApothemRef lists no $CkName" }
+        $CkActual = (Get-FileHash -Algorithm SHA256 -LiteralPath $CkArchive).Hash
+        if ($CkActual -ne $CkExpected) {
+            Write-Fail "$CkName does not match the release's SHA256SUMS (expected $CkExpected, got $CkActual). Aborting before anything is extracted."
+        }
+        Write-Ok "$CkName matches the release's SHA256SUMS"
+        Write-Warn "Checksum mode: a matching digest shows the archive is the one the release lists; it does not prove who published it. For signature verification, import the maintainer key named in SECURITY.md and run without APOTHEM_VERIFY=checksum."
+        if ((Test-Path -LiteralPath $ApothemHome) -and (Get-ChildItem -LiteralPath $ApothemHome -Force | Select-Object -First 1)) {
+            if ($Yes) {
+                Write-Warn "Replacing existing $ApothemHome with the $ApothemRef archive (-Yes)"
+                try { Remove-Item -LiteralPath $ApothemHome -Recurse -Force }
+                catch { Write-Fail "Could not remove the existing $ApothemHome" }
+            } else {
+                Write-Fail "Destination $ApothemHome is not empty; refusing to replace it. Move it aside, point APOTHEM_HOME at another directory, or re-run with -Yes."
+            }
+        }
+        # The release archive roots every file under apothem-<tag>\ (see
+        # scripts/build_release_tarball.py). It is extracted into a staging
+        # folder beside APOTHEM_HOME, because Windows PowerShell 5.1's Move-Item
+        # moves a directory only within one drive; the root is then required and
+        # moved into place.
+        $CkParent = Split-Path -Parent $ApothemHome
+        if (-not $CkParent) { $CkParent = (Get-Location).Path }
+        try { New-Item -ItemType Directory -Path $CkParent -Force | Out-Null }
+        catch { Write-Fail "Could not create the parent directory of $ApothemHome" }
+        if (-not (Test-Path -LiteralPath $CkParent -PathType Container)) {
+            Write-Fail "Could not create the parent directory of $ApothemHome"
+        }
+        $CkExtract = Join-Path $CkParent (".apothem-extract-" + [System.Guid]::NewGuid().ToString('N'))
+        try { Expand-Archive -LiteralPath $CkArchive -DestinationPath $CkExtract -Force }
+        catch { Write-Fail "Could not extract $CkName" }
+        $CkRoot = Join-Path $CkExtract "apothem-$ApothemRef"
+        if (-not (Test-ApothemSource $CkRoot)) { Write-Fail "$CkName does not hold an apothem source under apothem-$ApothemRef\" }
+        if (Test-Path -LiteralPath $ApothemHome) {
+            try { Remove-Item -LiteralPath $ApothemHome -Recurse -Force }
+            catch { Write-Fail "Could not remove the existing $ApothemHome" }
+        }
+        try { Move-Item -LiteralPath $CkRoot -Destination $ApothemHome }
+        catch { Write-Fail "Could not move the extracted source to $ApothemHome" }
+    } finally {
+        if ($CkExtract -and (Test-Path -LiteralPath $CkExtract)) { Remove-Item -LiteralPath $CkExtract -Recurse -Force }
+        if (Test-Path -LiteralPath $CkTmp) { Remove-Item -LiteralPath $CkTmp -Recurse -Force }
+    }
+    $Source = $ApothemHome
+    Write-Ok "Source ready at $Source (release archive $ApothemRef)"
+}
+
 if (-not $Source) {
     if (-not (Get-Command 'git' -ErrorAction SilentlyContinue)) {
         Write-Fail "git not found in PATH - needed to fetch $ApothemRepo"
@@ -395,20 +502,28 @@ $VendorPath = [System.IO.Path]::Combine($SrcPath, 'apothem', '_vendor')
 $EnginePyPath = "$VendorPath$([System.IO.Path]::PathSeparator)$SrcPath"
 
 # Profile setup ---------------------------------------------------------------
+# A first run with no profile creates one from the example and carries on to
+# materialize and verify in the same run (the engine only warns about the
+# placeholder identity). A dry run writes nothing, so it previews with the
+# example profile in place instead of copying it.
 Write-Bold "Profile setup"
+$EngineProfile = $ApothemProfile
 if (Test-Path $ApothemProfile) {
     Write-Ok "Found profile at $ApothemProfile"
 } else {
-    Write-Info "No profile at $ApothemProfile - creating from example"
     $ExamplePath = [System.IO.Path]::Combine($Source, 'src', 'apothem', 'schemas', 'profile.example.yaml')
-    if (Test-Path -LiteralPath $ExamplePath) {
+    if (-not (Test-Path -LiteralPath $ExamplePath)) {
+        Write-Fail "Could not locate profile.example.yaml - create $ApothemProfile manually"
+    }
+    if ($DryRun) {
+        Write-Info "No profile at $ApothemProfile - the dry run previews with the example profile and writes nothing"
+        $EngineProfile = $ExamplePath
+    } else {
+        Write-Info "No profile at $ApothemProfile - creating it from the example"
         New-Item -ItemType Directory -Force -Path (Split-Path $ApothemProfile) | Out-Null
         Copy-Item $ExamplePath $ApothemProfile
-        Write-Ok "Created $ApothemProfile from example"
-        Write-Warn "Edit $ApothemProfile to set your identity, then re-run this installer."
-        exit 0
-    } else {
-        Write-Fail "Could not locate profile.example.yaml - create $ApothemProfile manually"
+        Write-Ok "Created $ApothemProfile from the example profile"
+        Write-Warn "Its identity fields are placeholders. Edit $ApothemProfile, then run 'apothem update --harness $Harness' to apply your identity."
     }
 }
 
@@ -430,7 +545,7 @@ if ($Yes)              { $EngineFlags += '--yes' }
 $PriorPyPath = $env:PYTHONPATH
 $env:PYTHONPATH = if ($PriorPyPath) { "$EnginePyPath$([System.IO.Path]::PathSeparator)$PriorPyPath" } else { $EnginePyPath }
 try {
-    & $PY -m apothem install --harness $Harness --profile $ApothemProfile @EngineFlags
+    & $PY -m apothem install --harness $Harness --profile $EngineProfile @EngineFlags
     if ($LASTEXITCODE -ne 0) { Write-Fail "Harness materialization failed for $Harness" }
 
     if ($DryRun) {

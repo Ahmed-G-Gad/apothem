@@ -1,8 +1,7 @@
 ---
-name: "agnostic-posture-checklist"
+trigger: glob
 description: "Path-filtered companion to `agnostic-posture.md`: the default-off and opt-in invariant checklist, each with a concrete verification step, that every phase's definition of done satisfies and the planning-pipeline commands and learning loop consult."
-pathFilter: "**/commands/**, **/rules/**, **/output-styles/**, **/statuslines/**, **/.apothem/plans/**, **/.plans/**"
-alwaysApply: false
+globs: "**/commands/**, **/rules/**, **/output-styles/**, **/statuslines/**, **/.apothem/plans/**, **/.plans/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -42,6 +41,7 @@ A shipped profile with an `enforcement` flag defaulting `true`. A correctness ga
 
 - **Drives →** every phase's agnosticism definition-of-done check; the planning-pipeline commands' per-phase acceptance criteria; the learning loop's clean-install-imposition guard; the agnosticism sweep's two detection classes (the mechanical arm of invariants 4 and 5).
 - **Driven by ←** the parent rule `agnostic-posture.md` (the posture this checklist verifies); the operator directive that the agent impose no workflow, model, or effort.
+- **Gated by ←** The frontmatter `pathFilter` (commands, rules, output-styles, statuslines, and the plans trees): the checklist loads when a shipped surface or a plan suite is touched. A phase that changes a shipped surface (the §1 trigger; an unchanged surface carries no checklist obligation). `conformity/agnosticism_grep.py` (the mechanical harness-neutrality and default-off sweep under `gate --all`).
 - **Satisfies →** the default-off and opt-in invariant enumeration with per-invariant verification; the phase-level agnosticism gate.
 - **Established by ↑** `agnostic-posture.md` (the posture the checklist operationalizes); the shared-profile `enforcement` schema (the opt-in surface invariant 1 inspects).
 - **Cross-bound with ↔** `agnostic-posture.md` (parent rule; this companion carries its verification checklist); `agile-sprints.md`, `agent-orchestration.md`, `context-management.md` (the opted-in behaviors invariants 1–2 hold default-off); `pre-emission-gate.md` (its bars surface as advisories per invariant 3).

@@ -1,0 +1,144 @@
+# SPDX-License-Identifier: MIT
+
+# npm shim runtime-floor gate.
+#
+# Runs the npm shim (bin/apothem.mjs), the entry point every npx, VS Code,
+# Gemini CLI, Qwen Code and Codex user goes through, on each Node major in the
+# declared range: the `engines.node` floor in package.json (18) and every later
+# LTS major (20, 22, 24). Every cell uses the `requires-python` floor in
+# pyproject.toml (3.10) and checks, in order:
+#   1. a bare interpreter (no click or rich) gets the engine's structured
+#      prerequisite error naming the pip command, not a traceback;
+#   2. `node bin/apothem.mjs --version` once the prerequisites are installed;
+#   3. a dry-run install in an isolated HOME exits 0 and writes nothing;
+#   4. the packed tarball (`npm pack`) runs through `npx`, the way users get it.
+# Node 18 and 20 are past upstream end of life. They stay in the matrix while
+# they remain the declared floor; see the runtime-floor policy in
+# site/content/docs/governance/release-engineering-policy.mdx §3.
+#
+# The job needs no dependency beyond click and rich: the shim puts the vendored
+# tree on PYTHONPATH, which is exactly what this gate proves.
+#
+# SHA-pinning policy mirrors ci.yml: every action `uses:` reference is pinned by
+# 40-character commit SHA followed by a `# vMAJOR.MINOR.PATCH` version comment.
+
+name: npm Shim
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'bin/**'
+      - 'src/**'
+      - 'package.json'
+      - 'pyproject.toml'
+      - '.github/workflows/npm-shim.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'bin/**'
+      - 'src/**'
+      - 'package.json'
+      - 'pyproject.toml'
+      - '.github/workflows/npm-shim.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Single-sourced pip pin; scripts/dev/check_pip_pin_drift.py keeps it equal
+# across every workflow.
+env:
+  PIP_PIN_VERSION: "26.2.1"
+
+concurrency:
+  group: npm-shim-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  shim:
+    name: shim / node${{ matrix.node }} / py3.10
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["18", "20", "22", "24"]
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node ${{ matrix.node }}
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Set up Python (requires-python floor)
+        id: python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: "3.10"
+
+      - name: Missing prerequisites produce the structured error
+        env:
+          APOTHEM_PYTHON: ${{ steps.python.outputs.python-path }}
+        run: |
+          set -u
+          if "$APOTHEM_PYTHON" -c "import click" 2>/dev/null \
+              || "$APOTHEM_PYTHON" -c "import rich" 2>/dev/null; then
+            echo "::notice::click or rich is preinstalled; skipping the bare-interpreter check"
+            exit 0
+          fi
+          status=0
+          node bin/apothem.mjs --version 2> prereq.err || status=$?
+          cat prereq.err
+          test "$status" -eq 1
+          grep -q -- "-m pip install" prereq.err
+          if grep -q Traceback prereq.err; then exit 1; fi
+
+      - name: Install the click and rich prerequisites
+        env:
+          APOTHEM_PYTHON: ${{ steps.python.outputs.python-path }}
+        run: |
+          set -euo pipefail
+          "$APOTHEM_PYTHON" -m pip install "pip==${PIP_PIN_VERSION}"
+          # The specs come from the engine itself (HOST_PREREQUISITES), which a
+          # unit test pins to pyproject.toml, so the pins live in one place.
+          mapfile -t specs < <(PYTHONPATH=src "$APOTHEM_PYTHON" -c \
+            "from apothem.__main__ import HOST_PREREQUISITES as h; print('\n'.join(s for _, s in h))")
+          "$APOTHEM_PYTHON" -m pip install "${specs[@]}"
+
+      - name: Shim reports the engine version
+        env:
+          APOTHEM_PYTHON: ${{ steps.python.outputs.python-path }}
+        run: node bin/apothem.mjs --version
+
+      - name: Dry-run install in an isolated HOME writes nothing
+        env:
+          APOTHEM_PYTHON: ${{ steps.python.outputs.python-path }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/shim-home"
+          HOME="$RUNNER_TEMP/shim-home" node bin/apothem.mjs install --harness claude-code --dry-run --json > dry-run.json
+          "$APOTHEM_PYTHON" -c "import json, sys; d = json.load(open('dry-run.json')); sys.exit(d['status'] != 'dry_run')"
+          test -z "$(ls -A "$RUNNER_TEMP/shim-home")"
+
+      - name: Packed tarball runs through npx
+        env:
+          APOTHEM_PYTHON: ${{ steps.python.outputs.python-path }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/npx-home" "$RUNNER_TEMP/pack"
+          tarball="$(npm pack --silent --pack-destination "$RUNNER_TEMP/pack")"
+          cd "$RUNNER_TEMP/pack"
+          HOME="$RUNNER_TEMP/npx-home" npx --yes "./${tarball}" --version

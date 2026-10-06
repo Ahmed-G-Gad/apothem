@@ -3,6 +3,12 @@ name: "living-docs"
 description: "Every change to a documented public surface — a CLI command or flag, a harness adapter, a profile field, an installer flag or environment variable, a configuration key, or any surface with a page under site/content/docs/ — MUST update its documentation page in the same change-set; source-generated reference pages are kept current by re-running the reference-inventory generator and committing the regenerated pages."
 pathFilter: "**/site/content/docs/**, **/src/apothem/cli/**, **/src/apothem/harnesses/**, **/src/apothem/schemas/profile.schema.json, **/scripts/installer/**"
 alwaysApply: false
+paths:
+  - "**/site/content/docs/**"
+  - "**/src/apothem/cli/**"
+  - "**/src/apothem/harnesses/**"
+  - "**/src/apothem/schemas/profile.schema.json"
+  - "**/scripts/installer/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

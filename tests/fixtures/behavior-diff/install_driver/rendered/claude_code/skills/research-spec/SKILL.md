@@ -1,12 +1,12 @@
 ---
 name: "research-spec"
 version: "0.1.0"
-updated: "2026-06-16"
-description: "Frames a free-form research question, raw notes, or ad-hoc research idea into a spec-grade research spec ready for `/research-theory` — the question-framing stage of the `/research` pipeline (predecessor `/research-ideate`). Trigger phrasings: `frame this research question`, `turn my notes into a research spec`, `what's the testable hypothesis here`, `scope this study`, `define inclusion/exclusion criteria for my investigation`. Re-frames the question into a falsifiable hypothesis set with stated null forms (R3), draws scope with explicit inclusion/exclusion criteria, declares independently-measurable success metrics (R2), builds a glossary for every domain term, and surfaces every ambiguity through the structured-inquiry channel instead of inventing scope, identity, or hypotheses. Emits `_spec/research-spec.md` (question · falsifiable hypotheses · scope · inclusion/exclusion criteria · success metrics · glossary) plus the Handoff Manifest at the research-suite folder. The `--quick` flag bypasses elicitation and writes a single project-local lightweight research brief at `<project-root>/.apothem/plans/<YYYY-MM-DD>--<kebab-slug>.md`."
+updated: "2026-10-02"
+description: "Frames a free-form research question, raw notes, or ad-hoc research idea into a spec-grade research spec ready for `/research-theory` — the question-framing stage of the `/research` pipeline (predecessor `/research-ideate`). Trigger phrasings: `frame this research question`, `turn my notes into a research spec`, `what's the testable hypothesis here`, `scope this study`, `define inclusion/exclusion criteria for my investigation`. Produces falsifiable hypotheses with stated null forms (R3), explicit inclusion/exclusion scope, independently-measurable success metrics (R2), and a glossary, surfacing every ambiguity through the structured-inquiry channel instead of inventing scope or hypotheses. Emits `_spec/research-spec.md` plus the Handoff Manifest in the research-suite folder. `--quick` skips elicitation and writes one lightweight research brief at `<project-root>/.apothem/plans/<YYYY-MM-DD>--<kebab-slug>.md`."
 argument-hint: "[path/to/question-or-notes] [--suite-name NAME] [--refine-existing] [--standalone] [--quick SLUG [--tag TAG]]"
 disable-model-invocation: false
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -155,7 +155,7 @@ Declare **success metrics** an independent party measures the same way (R2 repro
 
 ### Phase 5 — Question-Resolution Sweep & Emission
 
-Definitively resolve every ambiguity — every implicit hypothesis form, every unstated scope boundary, every undefined metric threshold, every glossary gap, every authoritative-data gap — through the structured-inquiry channel before emission. Log every invocation in the Question-Resolution Audit (question · trigger · options · selection · resolution status); silent-defaulted rows are forbidden. Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the candidate spec; on PASS, promote to `{suite}/_spec/research-spec.md` and emit the Handoff Manifest. On any bar failure, revise and re-run until every bar passes.
+Definitively resolve every ambiguity — every implicit hypothesis form, every unstated scope boundary, every undefined metric threshold, every glossary gap, every authoritative-data gap — through the structured-inquiry channel before emission. Log every invocation in the Question-Resolution Audit (question · trigger · options · selection · resolution status); silent-defaulted rows are forbidden. Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the candidate spec; on PASS, promote to `{suite}/_spec/research-spec.md` and emit the Handoff Manifest. On any bar failure, revise and re-run until every bar passes within the three-round cap of `rules/pre-emission-gate-bars.md` §3 (then BLOCKED).
 
 ---
 
@@ -264,4 +264,10 @@ Invoke `/research-theory` to develop the named theoretical framework this spec a
 
 ## Installed Reference Paths
 
-When this skill is installed by Apothem, resolve repository-style references such as `rules/...` under `<ROOT>`, `templates/...` and `hooks/...` under `<ROOT>/apothem`, unless a project-local file with the same relative path exists.
+When this skill is installed by Apothem, resolve a repository-style reference against the installed directory for its first segment, unless a project-local file with the same relative path exists.
+
+- `rules/<path>` is `<ROOT>/rules/<path>`
+- `templates/<path>` is `<ROOT>/.apothem/support/templates/<path>`
+- `schemas/<path>` is `<ROOT>/.apothem/support/schemas/<path>`
+- `hooks/<path>` is `<ROOT>/.apothem/support/hooks/<path>`
+- `conformity/<path>` is `<ROOT>/.apothem/support/conformity/<path>`

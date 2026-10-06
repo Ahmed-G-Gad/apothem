@@ -17,25 +17,35 @@ POSIX host, which silently disables every installed guard.
 from __future__ import annotations
 
 import json
+import re
+import shlex
 from typing import Any
 
 from apothem.lib.profile import coerce_profile
 from apothem.lib.profile_projection import mcp_servers_for, render_mcp_standard
 from apothem.lib.python_resolver import resolve_python_bin
 
-# Per-event hook-timeout budgets (milliseconds), keyed to the hook-event classes
-# in rules/performance-discipline.md §1: PreToolUse = 10s, SessionStart /
-# PreCompact / PostCompact = 30s, Stop = 60s. Named here so the budgets are
-# documented intent rather than repeated magic numbers (M13.10).
-_PRETOOLUSE_TIMEOUT_MS = 10_000
-_SESSION_TIMEOUT_MS = 30_000
-_STOP_TIMEOUT_MS = 60_000
+# Per-event hook-timeout budgets (seconds), keyed to the hook-event classes in
+# rules/performance-discipline.md §1: PreToolUse = 10s, SessionStart /
+# PreCompact / PostCompact = 30s, Stop = 60s. Qwen Code documents command-hook
+# ``timeout`` in seconds and reads a value of 1000 or more only as legacy
+# milliseconds, so the budgets are emitted in seconds
+# (https://qwenlm.github.io/qwen-code-docs/en/users/features/hooks/).
+_PRETOOLUSE_TIMEOUT_S = 10
+_SESSION_TIMEOUT_S = 30
+_STOP_TIMEOUT_S = 60
+
+# Characters that never need shell quoting in the interpreter token. A path made
+# only of these renders bare; any other path (a space in ``C:/Program Files/``
+# or a macOS user directory) renders as one quoted token so the shell-form
+# ``command`` string cannot split it.
+_SHELL_SAFE_TOKEN = re.compile(r"[A-Za-z0-9_./:@+=,-]+")
 
 
 def _hook(command: str, timeout: int, description: str) -> dict[str, object]:
     """Return one qwen-native hook entry: a ``command``-type handler.
 
-    Wraps *command* with its *timeout* budget (milliseconds) and a
+    Wraps *command* with its *timeout* budget (seconds) and a
     plain-language *description*, in the shape qwen's ``settings.json`` hook
     reader expects. Called once per handler by :func:`_qwen_hooks`.
     """
@@ -60,9 +70,21 @@ def _dispatch(python_bin: str, event_name: str, message_name: str | None = None)
     tokens before writing), so the command points at the dispatcher materialized
     under ``~/.qwen/.apothem/support/hooks/`` without requiring an importable
     ``apothem`` package on the host.
+
+    Qwen runs ``command`` as a shell command, and Apothem sets no ``shell``
+    field, so an interpreter path that contains a space is wrapped in double
+    quotes, the same quoting the script path already uses. A path that also
+    carries a character double quotes do not protect in a POSIX shell (``"``,
+    ``$``, a backtick or a backslash) falls back to :func:`shlex.quote`.
     """
+    interpreter = python_bin
+    if not _SHELL_SAFE_TOKEN.fullmatch(interpreter):
+        if any(char in interpreter for char in '"$`\\'):
+            interpreter = shlex.quote(interpreter)
+        else:
+            interpreter = f'"{interpreter}"'
     parts = [
-        python_bin,
+        interpreter,
         '"${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py"',
         event_name,
     ]
@@ -74,8 +96,8 @@ def _dispatch(python_bin: str, event_name: str, message_name: str | None = None)
 def _qwen_hooks(python_bin: str) -> dict[str, list[dict[str, object]]]:
     """Return qwen's native hook-event wiring — the static event → matcher →
     timeout table for the installed dispatcher. Each event's timeout uses its
-    budget-class constant (``_SESSION_TIMEOUT_MS`` / ``_PRETOOLUSE_TIMEOUT_MS`` /
-    ``_STOP_TIMEOUT_MS``) per ``rules/performance-discipline.md`` §1.
+    budget-class constant (``_SESSION_TIMEOUT_S`` / ``_PRETOOLUSE_TIMEOUT_S`` /
+    ``_STOP_TIMEOUT_S``) per ``rules/performance-discipline.md`` §1.
     """
     return {
         "SessionStart": [
@@ -83,7 +105,7 @@ def _qwen_hooks(python_bin: str) -> dict[str, list[dict[str, object]]]:
                 "hooks": [
                     _hook(
                         _dispatch(python_bin, "SessionStart"),
-                        _SESSION_TIMEOUT_MS,
+                        _SESSION_TIMEOUT_S,
                         "Initialize Apothem session posture.",
                     ),
                 ],
@@ -91,23 +113,27 @@ def _qwen_hooks(python_bin: str) -> dict[str, list[dict[str, object]]]:
         ],
         "PreToolUse": [
             {
-                "matcher": "^Bash$",
+                # Qwen matches a matcher that starts with ``^`` purely as a
+                # regex against the runtime tool id, so the shell tool is
+                # anchored by its id, never by the ``Bash`` display name (which
+                # an anchored regex can never match).
+                "matcher": "^run_shell_command$",
                 "hooks": [
                     _hook(
                         _dispatch(python_bin, "PreToolUse", "pretooluse-bash"),
-                        _PRETOOLUSE_TIMEOUT_MS,
+                        _PRETOOLUSE_TIMEOUT_S,
                         "Validate shell command safety and isolation.",
                     ),
                     _hook(
                         _dispatch(
                             python_bin, "PreToolUse", "pretooluse-bash-plan-guard"
                         ),
-                        _PRETOOLUSE_TIMEOUT_MS,
+                        _PRETOOLUSE_TIMEOUT_S,
                         "Enforce plans locality on shell redirections.",
                     ),
                     _hook(
                         _dispatch(python_bin, "PreToolUse", "pretooluse-eval-guard"),
-                        _PRETOOLUSE_TIMEOUT_MS,
+                        _PRETOOLUSE_TIMEOUT_S,
                         "Flag unsafe dynamic evaluation or deserialization.",
                     ),
                 ],
@@ -118,33 +144,33 @@ def _qwen_hooks(python_bin: str) -> dict[str, list[dict[str, object]]]:
                 "hooks": [
                     _hook(
                         _dispatch(python_bin, "PreToolUse", "pretooluse-write"),
-                        _PRETOOLUSE_TIMEOUT_MS,
+                        _PRETOOLUSE_TIMEOUT_S,
                         "Validate write target and content.",
                     ),
                     _hook(
                         _dispatch(
                             python_bin, "PreToolUse", "pretooluse-write-header-guard"
                         ),
-                        _PRETOOLUSE_TIMEOUT_MS,
+                        _PRETOOLUSE_TIMEOUT_S,
                         "Inject the authorship header when required.",
                     ),
                     _hook(
                         _dispatch(
                             python_bin, "PreToolUse", "pretooluse-write-plan-guard"
                         ),
-                        _PRETOOLUSE_TIMEOUT_MS,
+                        _PRETOOLUSE_TIMEOUT_S,
                         "Enforce plans locality on the target path.",
                     ),
                     _hook(
                         _dispatch(
                             python_bin, "PreToolUse", "pretooluse-dependency-guard"
                         ),
-                        _PRETOOLUSE_TIMEOUT_MS,
+                        _PRETOOLUSE_TIMEOUT_S,
                         "Flag unpinned or untrusted dependency additions.",
                     ),
                     _hook(
                         _dispatch(python_bin, "PreToolUse", "pretooluse-eval-guard"),
-                        _PRETOOLUSE_TIMEOUT_MS,
+                        _PRETOOLUSE_TIMEOUT_S,
                         "Flag unsafe dynamic evaluation or deserialization.",
                     ),
                 ],
@@ -157,7 +183,7 @@ def _qwen_hooks(python_bin: str) -> dict[str, list[dict[str, object]]]:
                 "hooks": [
                     _hook(
                         _dispatch(python_bin, "PreCompact", "precompact"),
-                        _SESSION_TIMEOUT_MS,
+                        _SESSION_TIMEOUT_S,
                         "Externalize state before context compression.",
                     ),
                 ],
@@ -169,7 +195,7 @@ def _qwen_hooks(python_bin: str) -> dict[str, list[dict[str, object]]]:
                 "hooks": [
                     _hook(
                         _dispatch(python_bin, "PostCompact", "postcompact"),
-                        _SESSION_TIMEOUT_MS,
+                        _SESSION_TIMEOUT_S,
                         "Restore state from durable files after compaction.",
                     ),
                 ],
@@ -180,7 +206,7 @@ def _qwen_hooks(python_bin: str) -> dict[str, list[dict[str, object]]]:
                 "hooks": [
                     _hook(
                         _dispatch(python_bin, "Stop", "stop"),
-                        _STOP_TIMEOUT_MS,
+                        _STOP_TIMEOUT_S,
                         "Finalize the session and externalize state.",
                     ),
                 ],

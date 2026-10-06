@@ -3,6 +3,11 @@ name: "plain-language"
 description: "User-facing apothem narrative reads as human-authored with zero process-tooling leak — a closed-set forbidden vocabulary (AI / agent / LLM / attestation / ratified / cutover-rehearsal / harness brand identifiers / plan-stage tokens) is eliminated from in-scope codebase-artifact surfaces; the product noun harness is a domain carve-out; dev-facing tech-spec, rule-tier, and per-harness materializer modules are out-of-scope process artifacts that retain their native vocabulary."
 pathFilter: "**/README*.md, **/CHANGELOG*.md, **/site/**, **/docs/**"
 alwaysApply: false
+paths:
+  - "**/README*.md"
+  - "**/CHANGELOG*.md"
+  - "**/site/**"
+  - "**/docs/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

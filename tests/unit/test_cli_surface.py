@@ -52,6 +52,8 @@ def _symlink_or_skip(target: Path, link: Path, *, target_is_directory: bool) -> 
         ["harnesses", "--help"],
         ["harnesses", "list", "--help"],
         ["harnesses", "show", "--help"],
+        ["backups", "--help"],
+        ["backups", "prune", "--help"],
         ["Installing", "--help"],
         ["installing", "--help"],
         ["Updating", "--help"],

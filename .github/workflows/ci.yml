@@ -2,7 +2,7 @@
 
 # Continuous Integration workflow.
 #
-# Ten canonical check classes run on every push to main and every pull request:
+# Eleven canonical check classes run on every push to main and every pull request:
 #   1. lint               — ruff check
 #   2. format-check       — ruff format --check
 #   3. type-check         — mypy
@@ -13,6 +13,7 @@
 #   8. docs-build         — Next.js + Fumadocs build
 #   9. example-run        — smoke test for each examples/* artifact-class demo
 #  10. release-preflight  — semantic-version tag dry-run + CHANGELOG sanity
+#  11. metrics            — per-package coverage floors + the metrics.json artifact
 #
 # SHA-pinning policy
 # ------------------
@@ -44,24 +45,32 @@ on:
   push:
     branches: [main]
     paths:
+      - '.claude-plugin/**'
+      - 'CHANGELOG.md'
+      - 'plugins/**'
       - 'src/**'
       - 'tests/**'
       - 'pyproject.toml'
       - 'site/**'
       - 'examples/**'
       - 'scripts/**'
+      - 'evals/**'
       - '.github/workflows/**'
       - '.pre-commit-config.yaml'
       - '.gitleaks.toml'
   pull_request:
     branches: [main]
     paths:
+      - '.claude-plugin/**'
+      - 'CHANGELOG.md'
+      - 'plugins/**'
       - 'src/**'
       - 'tests/**'
       - 'pyproject.toml'
       - 'site/**'
       - 'examples/**'
       - 'scripts/**'
+      - 'evals/**'
       - '.github/workflows/**'
       - '.pre-commit-config.yaml'
       - '.gitleaks.toml'
@@ -86,7 +95,10 @@ jobs:
   quality:
     name: quality / ${{ matrix.os }} / py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    # The Windows cells run the full suite in 28 to 39 minutes; Linux finishes
+    # in under 10. Sixty minutes keeps the matrix-job ceiling of the
+    # workflow-concurrency validator (90) and stops a hung run well before it.
+    timeout-minutes: 60
     # A pre-release cell is advisory: it exercises the next Python against the
     # suite for early-warning without gating the merge. matrix.include carries
     # `prerelease: true` on the 3.15 cell only; the job's continue-on-error and
@@ -134,6 +146,15 @@ jobs:
           python -m pip install -e ".[dev]"
       - name: Ruff (lint)
         run: python -m ruff check .
+      - name: Ruff (complexity, CLI and install driver)
+        # The CLI command bodies and the shared install driver hold the
+        # tighter cyclomatic-complexity bound of 15; the repo-wide bound in
+        # pyproject.toml ([tool.ruff.lint.mccabe]) is a ratchet that only
+        # keeps the rest of the tree from getting worse.
+        run: >-
+          python -m ruff check --select C901
+          --config "lint.mccabe.max-complexity=15"
+          src/apothem/cli src/apothem/harnesses/_shared
       - name: Ruff (format check)
         run: python -m ruff format --check .
       - name: Mypy (type check)
@@ -380,6 +401,9 @@ jobs:
         # npm run build runs the source reference emitter, which introspects the
         # live Click tree; the non-vendored runtime deps (click, rich) must import.
         run: python -m pip install click rich pyyaml jsonschema
+      - name: Unit-test the site build helpers
+        working-directory: site
+        run: npm test
       - name: Build docs
         working-directory: site
         run: npm run build
@@ -460,6 +484,24 @@ jobs:
         # one number drift silently — nothing breaks, the site just advertises
         # a release that is no longer shipping.
         run: python scripts/dev/check_site_version_parity.py
+      - name: Check CHANGELOG link definitions
+        # Every "## [x.y.z]" heading needs a link definition naming tag vx.y.z,
+        # and [Unreleased] must compare from the latest heading. Both are kept
+        # by hand: after 1.1.0 the [1.1.0] link was never added and
+        # [Unreleased] still compared from v1.0.2, so the docs site rendered a
+        # literal "[1.1.0]" and readers diffed the wrong range.
+        run: python scripts/dev/check_changelog_links.py
+      - name: Check the plugin version changed with the plugin
+        # A pinned plugin version keeps every Claude Code user on the cached
+        # copy until the string changes. After v1.1.0 the package moved to
+        # plugins/claude-code under the same 1.1.0, so earlier installs never
+        # updated. This fails when the marketplace plugin differs from the last
+        # release tag while its version is unchanged; the full-history checkout
+        # above supplies the tags, and with no tag it skips and says so.
+        # Between releases the plugin always differs from the last tag, so pull
+        # requests get a warning annotation; the release build runs the same
+        # check without --advisory and blocks a tag whose version was not bumped.
+        run: python scripts/release/check_plugin_version_bump.py --advisory
       - name: Check per-folder README file coverage
         # A folder's README is its operating contract, so its file table is
         # load-bearing: a reader who cannot find a module there concludes it
@@ -476,6 +518,13 @@ jobs:
         # stale catalog. Cowork caps a plugin package at 5,000 files, which is
         # why the repository root cannot be the package and this tree exists.
         run: python scripts/dev/assemble_plugin_tree.py --check
+      - name: Check harness convention pins are current
+        # Each adapter's STANDARD-CONVENTION-PIN.md records what the vendor's
+        # docs said on its snapshot date. A pin older than 90 days, one that
+        # cites no absolute vendor URL, or one whose discovery target date has
+        # passed fails here, so a stale pin blocks the merge instead of
+        # waiting for the weekly monitor.
+        run: python scripts/dev/validate_harness_convention_pins.py --harnesses-root src/apothem/harnesses
       - name: Check PR title fits the squash-merge subject limit
         if: github.event_name == 'pull_request'
         # A squash merge composes the subject as "<pr title> (#<number>)", so a
@@ -497,7 +546,9 @@ jobs:
       - name: Install release toolchain
         run: python -m pip install --require-hashes -r scripts/release/requirements-build-linux.txt
       - name: Build sdist + wheel
-        run: python -m build
+        # Same as the release build: the hash-locked toolchain, no isolated
+        # fetch of the backend from PyPI.
+        run: python -m build --no-isolation
       - name: Validate semantic version in pyproject and CHANGELOG entry
         run: |
           python -c "
@@ -521,3 +572,60 @@ jobs:
               sys.exit(f'CHANGELOG.md is missing a [{v}] section header for the current pyproject version')
           print(f'pyproject.toml version OK: {v}; CHANGELOG carries the matching entry')
           "
+
+  # 11 — metrics
+  metrics:
+    name: metrics
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [quality]
+    permissions:
+      contents: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install "pip==${PIP_PIN_VERSION}"
+          python -m pip install -e ".[dev]"
+      - name: Pytest with coverage over every package
+        # One run measures src/apothem whole, so the engine, conformity and
+        # audit figures come from the same tests. --cov-fail-under=0 turns off
+        # the combined-total gate: each package is held to its own floor by
+        # the next step, and the engine's 80 stays enforced by the coverage
+        # job above.
+        run: |
+          python -m pytest \
+            --cov=src/apothem \
+            --cov-fail-under=0 \
+            --cov-report=json:coverage-all.json
+      - name: Collect metrics and enforce package coverage floors
+        # Floors: [tool.coverage.report] fail_under (engine) and
+        # [tool.coverage.package-floors] (conformity, audit) in pyproject.toml.
+        # Every other figure is recorded, not gated; a null names its reason.
+        run: |
+          python scripts/dev/collect_metrics.py \
+            --coverage-json coverage-all.json \
+            --check-floors \
+            --out metrics.json
+      - name: Upload metrics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: metrics
+          path: |
+            metrics.json
+            coverage-all.json
+          if-no-files-found: warn
+          retention-days: 90

@@ -12,8 +12,8 @@ This file is materialised by `apothem install --harness kiro --project <path>` a
 
 Apothem propagates a shared governance and convention surface across every supported AI harness in this project's host environment. Inside Kiro, the surface manifests as this `inclusion: always` steering file:
 
-- **Rules** — engineering rules applied on every interaction. The full rule cohort lives at the apothem source repository under `src/apothem/rules/`; this Kiro-facing anchor names the disciplines the operator may consult in detail.
-- **Skills, commands, agents** — reusable techniques, slash-style workflows, and persistent sub-agent definitions. Apothem's canonical-master cohort at the apothem source repository defines them; Kiro does not auto-discover them as separate surfaces, so they manifest here as referenced discipline.
+- **Rules** — engineering rules applied on every interaction. This install writes this one file: no rule, skill, command, template, or hook file is installed beside it, so the disciplines below are the rule text in force here.
+- **Skills, commands, agents** — Apothem's reusable techniques, slash-style workflows, and sub-agent definitions are not installed here; Kiro does not auto-discover them as separate surfaces.
 - **Specs** — Kiro's spec surface (`.kiro/specs/`) is operator-authored, not apothem-managed.
 - **Agent hooks** — Kiro's agent-hook surface is operator-authored, not apothem-managed.
 

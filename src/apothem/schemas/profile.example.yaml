@@ -4,8 +4,8 @@
 # Copy to ~/.config/apothem/profile.yaml and edit local values.
 # Schema: src/apothem/schemas/profile.schema.json
 
-# Optional profile-schema version; defaults to the current version (1) when
-# omitted. Version-less profiles remain valid.
+# Profile-schema version. Optional: a profile without it is read as version 1
+# and migrated forward like any v1 profile.
 schema_version: 1
 
 identity:

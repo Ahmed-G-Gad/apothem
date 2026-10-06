@@ -15,10 +15,21 @@ derive from it rather than re-declaring it.
   `ROUTED_LOCALES` is the set wired into live Fumadocs routing (currently the
   full twelve-locale cohort), and `ROUTED_NON_DEFAULT_LOCALES` is that set minus
   the default (`en`). `DEFAULT_LOCALE` is the source locale served at the site
-  root with no path prefix. **This file is the single source of truth for the
+  root with no path prefix. `localeFromPathname` maps a URL path to its routed
+  locale for client components mounted above the per-locale i18n provider (the
+  search dialog); `i18n.test.mjs` covers it (run by `npm test`). **This file is the single source of truth for the
   routed-locale set** — build scripts (`build-llms-txt.mjs`,
   `check-search-index-sizes.mjs`, `export-to-dist.mjs`) re-parse it and fail on
   drift rather than hard-coding a divergent copy.
+- **`code-theme.mjs`** — the Shiki `colorReplacements` map `source.config.ts`
+  passes to the code highlighter, lifting the github-light / github-dark token
+  colours that fail WCAG 1.4.3 contrast on the code-block surfaces. Its
+  `node --test` check (`code-theme.test.mjs`, run by `npm test`) holds every
+  token colour of both themes to 4.5:1 on every code surface.
+- **`theme-tokens.test.mjs`** — reads the light theme's `--primary`,
+  `--background` and `--secondary` tokens from `app/global.css` and holds
+  `--primary` text to 4.5:1 on the active-item wash, the secondary surface and
+  the page (run by `npm test`).
 - **`hreflang.ts`** — builds the per-page `alternates` (hreflang) set from a
   locale-agnostic path, emitting the `en` self-link, `x-default`, and one
   alternate per routed locale that carries a version of the page.
@@ -38,6 +49,16 @@ derive from it rather than re-declaring it.
   each locale's storage with the English fallback, so asking it would report the
   whole fallback tree as translated; reading the filesystem keeps static params
   tied to the real translated surface.
+- **`translation-source.mjs`** — the `sourceHash` a locale page records: the
+  hash of the English page it was translated from, over the English
+  frontmatter and prose but not the generated reference and changelog blocks.
+  Shared by the docs route and `scripts/translation-sources.mjs`; unit-tested by
+  `translation-source.test.mjs` (run by `npm test`).
+- **`translation-status.ts`** — classifies a page served under a locale URL as
+  `fallback` (English source served), `current`, or `stale` (English changed
+  since the translation), from the recorded `sourceHash` and the current
+  English page. The `[lang]` docs route shows the staleness marker for `stale`
+  and marks `fallback` text as English.
 - **`source.ts`** / **`utils.ts`** — the Fumadocs content-source binding and the
   `cn()` class-name helper the components use.
 

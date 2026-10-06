@@ -181,8 +181,10 @@ For a whole-machine health check across every registered adapter, run:
 apothem doctor
 ```
 
-`doctor` reports each adapter's installed state and exits non-zero if any
-registered adapter reports not installed — a useful gate in a setup script.
+`doctor` checks every installed harness (it must verify, and its registered
+hook commands must start) and exits non-zero if any check fails. Harnesses you
+have not installed are listed but do not fail it, so it is a useful gate in a
+setup script.
 
 **Your first run.** Open the harness you just configured — Claude Code, in
 our example — and start a session in any project. The rules and preferences you

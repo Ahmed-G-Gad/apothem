@@ -32,15 +32,35 @@ Removal matches the install channel you used:
   checkout: `scripts/installer/uninstall.sh` (POSIX) or
   `scripts/installer/uninstall.ps1` (PowerShell). Both confirm before
   removing and refuse unsafe targets.
-- **Backups and state** — install backups live under `~/.apothem/backups/`;
-  delete `~/.apothem/` once you no longer need them.
+- **Backups and state** — install backups live under `~/.apothem/backups/`
+  and the install ledger under `~/.apothem/state/`. Both stay bounded: after
+  every install, uninstall and rollback Apothem keeps the newest 10 install
+  records per install root and the newest 10 backup sets per harness, and
+  never deletes a backup a kept record still needs, so the last 10 installs
+  can still be rolled back. To keep fewer, run
+  [`apothem backups prune --keep N`](/docs/cli-reference/backups) (add
+  `--dry-run` to see what it would remove first); it never removes the backup
+  that rollback of a harness's latest install restores from. Once the engine
+  is removed and you no longer need any of the history, delete `~/.apothem/`.
 
 ## What is NOT removed
 
 - The shared profile YAML at `~/.config/apothem/profile.yaml` or
   `--profile PATH` is never removed by `apothem uninstall`.
 - Unrelated operator-authored files in harness directories are preserved.
+- Entries you added to a shared settings file are preserved: your own
+  permission rules, MCP servers and hook handlers stay. Uninstall removes only
+  the keys and list entries the install ledger records as Apothem's (see
+  [Settings](/docs/reference/settings#merging-into-your-own-settings-file)).
 - Plan suites under `<project>/.apothem/plans/` (and the legacy `<project>/.plans/`) are unaffected.
+
+## Directories
+
+Uninstall also removes the directories the install created (for example a
+`~/.claude/` that did not exist before the first install), once they are
+empty. A directory that still holds a file of yours, or data another installed
+harness uses, stays. Directories that existed before the install are never
+removed.
 
 To fully clean up a harness root, remove the harness-native path documented on
 the [harness reference pages](/docs/harnesses) after confirming you have backed up

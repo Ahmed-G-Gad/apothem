@@ -55,7 +55,7 @@
   },
   {
     "detail": {
-      "diff": "--- a/AGENTS.md\n+++ b/AGENTS.md\n@@ -0,0 +1,73 @@\n+<!-- BEGIN APOTHEM MANAGED BLOCK -->\n+<!-- SPDX-License-Identifier: MIT -->\n+\n+# Apothem — Codex Bootstrap\n+\n+This file is the vendor-canonical agent-instructions surface for the\n+OpenAI Codex CLI (`$CODEX_HOME/AGENTS.md`, default `~/.codex/AGENTS.md`).\n+It follows the universal AGENTS.md convention adopted across coding-agent\n+ecosystems. Apothem's governance surface is split between Codex-native\n+discovery paths and an Apothem-owned support tree for content that is not a\n+Codex-native primitive.\n+\n+## Apothem Conventions\n+\n+The Apothem-managed cohorts are installed as follows:\n+\n+- `$CODEX_HOME/agents/*.toml` — Codex custom agents converted from Apothem\n+  Markdown agents.\n+- `$CODEX_HOME/hooks.json` and `$CODEX_HOME/hooks/` — Codex lifecycle hook\n+  configuration plus Apothem hook helpers.\n+- `~/.agents/skills/*/SKILL.md` — Apothem skills plus command prompts wrapped\n+  as Codex skills.\n+- `~/.config/apothem/rules/` — Apothem Markdown rules used as reference\n+  material by this file and the installed skills.\n+- `~/.config/apothem/templates/` — plan, report, and audit templates.\n+\n+Do not place Apothem Markdown rules under `$CODEX_HOME/rules/`. Codex\n+reserves that directory for `.rules` execution-policy files, which use a\n+different format and purpose.\n+\n+## Runtime Configuration\n+\n+Codex CLI's runtime configuration lives at `$CODEX_HOME/config.toml`. Apothem\n+does not overwrite that operator-owned file; it installs instructions, hooks,\n+agents, skills, and support content through the vendor-native paths above.\n+\n+## Operator Surface\n+\n+Operators may extend project-specific instructions in project-local\n+`AGENTS.md` files. Re-run `apothem install --harness codex` to refresh this\n+user-scope bootstrap, converted agents, skills, and support cohorts.\n+\n+# Apothem Shared Profile\n+\n+Managed by Apothem from the shared profile. Edits inside the sentinels are overwritten on the next `apothem install`; change the shared profile instead.\n+\n+## Operator\n+\n+- **Name:** Golden-Corpus-Operator\n+- **Role:** release engineer\n+- **Email:** golden@corpus.invalid\n+- **Website:** https://golden.corpus.invalid\n+- **GitHub:** @golden-corpus-operator\n+\n+## Preferences\n+\n+- **Primary language:** python\n+- **Response style:** concise\n+- **Governance seriousness:** PUBLIC_LAUNCH\n+\n+## Custom Rules\n+\n+- golden-corpus-validate-input-before-write\n+\n+## Opted-in Behaviors\n+\n+- Sprint apparatus for non-trivial multi-step work\n+\n+## MCP Servers\n+\n+Configured MCP servers (materialized into the harnesses with a native MCP config surface; named here as reference for the rest):\n+- golden-corpus-srv\n+<!-- END APOTHEM MANAGED BLOCK -->\n",
+      "diff": "--- a/AGENTS.md\n+++ b/AGENTS.md\n@@ -0,0 +1,84 @@\n+<!-- BEGIN APOTHEM MANAGED BLOCK -->\n+<!-- SPDX-License-Identifier: MIT -->\n+\n+# Apothem — Codex Bootstrap\n+\n+This file is the vendor-canonical agent-instructions surface for the\n+OpenAI Codex CLI (`$CODEX_HOME/AGENTS.md`, default `~/.codex/AGENTS.md`).\n+It follows the universal AGENTS.md convention adopted across coding-agent\n+ecosystems. Apothem's governance surface is split between Codex-native\n+discovery paths and an Apothem-owned support tree for content that is not a\n+Codex-native primitive.\n+\n+## Apothem Conventions\n+\n+The Apothem-managed cohorts are installed as follows:\n+\n+- `$CODEX_HOME/agents/*.toml` — Codex custom agents converted from Apothem\n+  Markdown agents.\n+- `$CODEX_HOME/hooks.json` — Codex lifecycle hook configuration; the hook\n+  helpers it runs are listed under Apothem support files below.\n+- `~/.agents/skills/*/SKILL.md` — Apothem skills plus command prompts wrapped\n+  as Codex skills.\n+\n+Apothem's Markdown rules and templates are reference material for this file\n+and the installed skills; the Apothem support files section below names the\n+directories they were installed to.\n+\n+Do not place Apothem Markdown rules under `$CODEX_HOME/rules/`. Codex\n+reserves that directory for `.rules` execution-policy files, which use a\n+different format and purpose.\n+\n+## Runtime Configuration\n+\n+Codex CLI's runtime configuration lives at `$CODEX_HOME/config.toml`. Apothem\n+does not overwrite that operator-owned file; it installs instructions, hooks,\n+agents, skills, and support content through the vendor-native paths above.\n+\n+## Operator Surface\n+\n+Operators may extend project-specific instructions in project-local\n+`AGENTS.md` files. Re-run `apothem install --harness codex` to refresh this\n+user-scope bootstrap, converted agents, skills, and support cohorts.\n+\n+## Apothem support files\n+\n+Apothem's support root is `<ROOT>/../.config/apothem`. Apothem rules, skills, commands, and helper definitions cite support files by repository-style paths such as `rules/<name>.md`, `templates/...`, and `hooks/...`. Resolve each citation against the installed directory for its first segment:\n+\n+- `rules/<path>` is `<ROOT>/../.config/apothem/rules/<path>`\n+- `templates/<path>` is `<ROOT>/../.config/apothem/templates/<path>`\n+- `hooks/<path>` is `<ROOT>/hooks/<path>`\n+\n+A cited path whose first segment is not listed here is not installed.\n+\n+# Apothem Shared Profile\n+\n+Managed by Apothem from the shared profile. Edits inside the sentinels are overwritten on the next `apothem install`; change the shared profile instead.\n+\n+## Operator\n+\n+- **Name:** Golden-Corpus-Operator\n+- **Role:** release engineer\n+- **Email:** golden@corpus.invalid\n+- **Website:** https://golden.corpus.invalid\n+- **GitHub:** @golden-corpus-operator\n+\n+## Preferences\n+\n+- **Primary language:** python\n+- **Response style:** concise\n+- **Governance seriousness:** PUBLIC_LAUNCH\n+\n+## Custom Rules\n+\n+- golden-corpus-validate-input-before-write\n+\n+## Opted-in Behaviors\n+\n+- Sprint apparatus for non-trivial multi-step work\n+\n+## MCP Servers\n+\n+Configured MCP servers (materialized into the harnesses with a native MCP config surface; named here as reference for the rest):\n+- golden-corpus-srv\n+<!-- END APOTHEM MANAGED BLOCK -->\n",
       "ownership_class": "operator-owned"
     },
     "message": "dry run: no filesystem changes made",
@@ -100,7 +100,7 @@
       "ownership_class": "apothem-owned"
     },
     "message": "dry run: no filesystem changes made",
-    "operation": "merge_tree_entries",
+    "operation": "native_skills",
     "outcome": "created",
     "path": "<ROOT>/../.agents/skills",
     "source": "<APOTHEM_SRC>/skills"
@@ -134,5 +134,23 @@
     "outcome": "created",
     "path": "<ROOT>/../.config/apothem/templates",
     "source": "<APOTHEM_SRC>/templates"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "data_surface",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/memory"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "data_surface",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/contexts"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "data_surface",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/learning"
   }
 ]

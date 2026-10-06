@@ -1,8 +1,6 @@
 ---
-name: "clean-room-generation"
+trigger: always_on
 description: "Clean-room generation methodology for every output — code, prose, plans, artifacts: each is a fresh derivation from an understood specification (independently re-derivable from its inputs), never a memorized template nor a cosmetic edit of existing content. Routes CM-4 search outcomes into the Writing vs. Re-Writing protocols and gates every re-write on quality elevation against a named deficiency. Implements CM-5 / CM-7 / CM-21."
-pathFilter: ""
-alwaysApply: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

@@ -19,17 +19,22 @@ Resolve Apothem's native Qwen Code cohorts at:
 - `~/.qwen/agents/` contains local subagents adapted to Qwen Code's Markdown
   agent frontmatter.
 
-Resolve Apothem support paths as follows:
+Apothem's behavioral rules, plan and report templates, and the hook messages
+and helper scripts the `settings.json` hook commands run are installed as
+support files; the Apothem support files section below names their
+directories. Use them as reference material when Qwen Code does not expose a
+matching file-based primitive. Do not treat them as a vendor-owned
+configuration namespace.
 
-- `~/.qwen/.apothem/support/rules/` contains behavioral rules and path-filtered
-  conventions.
-- `~/.qwen/.apothem/support/templates/` contains plan and report templates.
-- `~/.qwen/.apothem/support/hooks/` contains hook messages and helper scripts
-  used by the `settings.json` hook commands.
+## Apothem support files
 
-Use the support subtrees as reference material when Qwen Code does not expose a
-matching file-based primitive. Do not treat them as a vendor-owned configuration
-namespace.
+Apothem's support root is `<ROOT>/.apothem/support`. Apothem rules, skills, commands, and helper definitions cite support files by repository-style paths such as `rules/<name>.md`, `templates/...`, and `hooks/...`. Resolve each citation against the installed directory for its first segment:
+
+- `rules/<path>` is `<ROOT>/.apothem/support/rules/<path>`
+- `templates/<path>` is `<ROOT>/.apothem/support/templates/<path>`
+- `hooks/<path>` is `<ROOT>/.apothem/support/hooks/<path>`
+
+A cited path whose first segment is not listed here is not installed.
 
 # Apothem Shared Profile
 

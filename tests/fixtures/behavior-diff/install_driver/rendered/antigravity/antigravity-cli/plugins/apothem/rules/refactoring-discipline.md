@@ -1,8 +1,7 @@
 ---
-name: "refactoring-discipline"
+trigger: glob
 description: "Agent-driven refactoring is test-gated, one-at-a-time, plan-first, and continuous: a behavior-preserving refactor holds a GREEN test baseline before the first edit and after (the before-and-after contract); addresses exactly one concern in an isolated workspace; proceeds only from a reviewed plan after maximal context-gathering; and runs continuously as the codebase drifts rather than deferred to a crisis. Demand-loaded on refactor-class source edits; the detection signals and full procedure live in the body."
-pathFilter: "**/*.py, **/*.ts, **/*.tsx, **/*.js, **/*.jsx, **/*.mjs, **/*.go, **/*.rs, **/*.java, **/*.kt, **/*.rb, **/*.c, **/*.cpp, **/*.h, **/*.swift, **/*.sh, **/*.ps1"
-alwaysApply: false
+globs: "**/*.py, **/*.ts, **/*.tsx, **/*.js, **/*.jsx, **/*.mjs, **/*.go, **/*.rs, **/*.java, **/*.kt, **/*.rb, **/*.c, **/*.cpp, **/*.h, **/*.swift, **/*.sh, **/*.ps1"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -71,6 +70,7 @@ Two refactors running concurrently against the same surface. A refactor begun wi
 
 - **Drives →** Every behavior-preserving refactor's before-and-after test gate; the one-concern-at-a-time isolation invariant on every refactoring workspace; the plan-first sequence on every refactor; the continuous-cadence drift check on every surface the agent works in.
 - **Driven by ←** The §1 drift detection signals (agent slowdown, defect rate, untouched-code bugs, instruction-following degradation, structural drift) that trigger a refactor.
+- **Gated by ←** The Pre-conditions scope test: a behavior-preserving structural change is in scope; feature work that changes observable behavior and pure-formatting normalization are not. The frontmatter `pathFilter` (source-code file types). The host's own test suite: a refactor proceeds only behind green tests.
 - **Satisfies →** The behavior-preservation contract for agent-driven refactoring (green-before / green-after); the one-at-a-time isolation floor; the continuous-maintenance cadence.
 - **Established by ↑** `rules/clean-room-generation.md` §3 (the re-writing protocol this discipline gates); the host's ratified test command (the safety net's mechanism).
 - **Cross-bound with ↔** `rules/clean-room-generation.md` (§3 Re-Writing Protocol — behavioral extraction, clean-room barrier, quality elevation, regression gate; this rule gates *when and how* that protocol runs for a refactor). `rules/surgical-manipulation.md` (minimal, anchor-bounded mutation — a refactor's edits are surgical). `rules/agent-orchestration.md` (§5.1 worktree isolation — the isolated workspace for one-at-a-time refactoring). `rules/code-craft-python.md` + sibling per-language code-craft rules (the quality bar the §5 deficiency-elevation targets). `skills/refactor-extract/SKILL.md` (the single-symbol extraction operationalization of this discipline). `skills/test-authoring/SKILL.md` (the §4 safety-net author when no tests exist). ↔ `rules/production-ready-prs.md` (§6 Version-Control Safety cites §2 as the refactor analogue — refactor-scoped workspace isolation under the same one-concern-per-unit granularity).

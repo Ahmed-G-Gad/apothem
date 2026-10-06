@@ -1,19 +1,6 @@
 description = "Produces a comprehensive architectural-design artifact at the consuming suite's _inputs/design.md for architecture-bearing plan suites — six transformation phases (Input Ingest · Architectural Decomposition · Component-Interface Design · Cross-Component Binding Ratification · Design-Artifact Emission · Design Validation Gate) covering the seven-axs-of-breadth taxonomy with diagrams, ratified decision records, and a Bidirectional Binding Matrix appendix. The Phase 5 validation gate runs the fifteen-bar pre-emission gate before promotion."
 
 prompt = """
----
-name: "plan-design"
-version: "0.1.0"
-updated: "2026-06-10"
-description: "Produces a comprehensive architectural-design artifact at the consuming suite's _inputs/design.md for architecture-bearing plan suites — six transformation phases (Input Ingest · Architectural Decomposition · Component-Interface Design · Cross-Component Binding Ratification · Design-Artifact Emission · Design Validation Gate) covering the seven-axs-of-breadth taxonomy with diagrams, ratified decision records, and a Bidirectional Binding Matrix appendix. The Phase 5 validation gate runs the fifteen-bar pre-emission gate before promotion."
-argument-hint: "[path/to/plan-suite/] [--refine-existing] [--dry-run]"
-disable-model-invocation: false
-portability: "universal"
-allowed-tools: "*"
----
-
-<!-- SPDX-License-Identifier: MIT -->
-
 # /plan-design — Produce the Architectural-Design Artifact
 
 ---
@@ -181,7 +168,7 @@ Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against t
 - **M14 systemicity.** Every new component declared at Phase 1 carries its upstream / downstream / peers / enforcers per `rules/systemic-participation.md`.
 - **M15 production-ready.** N/A at the design tier; production-ready discipline applies at `/plan-execute` time when the design materializes as code.
 
-**Iterate on failure.** A single bar failure blocks promotion. The failing bar's "Failure → action" cell at `rules/pre-emission-gate-bars.md` §1 names the rule that owns the revision protocol. Revise; re-run the gate; iterate until every bar passes; emit the attestation block.
+**Iterate on failure.** One bar failure blocks promotion. Revise and re-run per `rules/pre-emission-gate-bars.md` §3, which names the owning revision rule for each bar and caps the loop at three rounds before BLOCKED, then emit the attestation block.
 
 ---
 

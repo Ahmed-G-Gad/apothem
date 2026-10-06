@@ -1,0 +1,130 @@
+---
+title: "backups"
+description: "CLI reference for the apothem backups command group."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Manage the install backups and ledger history Apothem keeps.
+
+`backups` is a command group with one subcommand: `prune`.
+
+## Synopsis
+
+```
+apothem backups prune [--keep N] [--harness NAME|all] [--dry-run]
+                      [--quiet|-q] [--verbose|-v]
+                      [--format plain|json] [--json] [--no-color]
+```
+
+## Subcommands
+
+### `backups prune`
+
+Delete backup sets and install records beyond the newest N per harness.
+
+Every install, uninstall and rollback first copies what it changes into a
+timestamped backup set under `~/.apothem/backups/<timestamp>/<harness>/`, and
+appends a record to the harness's install ledger under
+`~/.apothem/state/<harness>/ledger.jsonl`. After each of those passes Apothem
+already keeps the newest 10 of each. `backups prune` runs the same retention on
+demand, with your own bound:
+
+- For each selected harness it keeps the newest `N` backup sets and deletes
+  the older ones. A timestamp directory left empty is removed too.
+- In the harness ledger it keeps, per install root, the newest `N` installs
+  whose changes are still in place, and every record after the oldest of
+  them. An older install can no longer be rolled back by id.
+- It never deletes a backup set that a kept ledger record, or the latest
+  install record of any install root, still references. `apothem rollback` of
+  the latest install therefore still restores after any prune. Uninstall and
+  rollback records reference the backups those passes took, so they stay
+  while the record is kept. A root with nothing installed keeps its last
+  record, so the backups of its last uninstall or rollback stay until that
+  root sees another install, uninstall or rollback.
+
+With `--dry-run` nothing is changed: the command reports what a real prune
+would remove. Backups and the ledger are kept per harness, not per project, so
+`prune` takes no `--project`; a project-scope harness is pruned across every
+project it was installed into.
+
+| Option | Description |
+|---|---|
+| `--keep N` | Backup sets per harness, and install records per install root, to keep (default: `10`; at least `1`). |
+| `--harness NAME` | Harness adapter to prune, or `all` for every registered harness (default: `all`). |
+| `--dry-run` | Report what would be pruned; delete nothing. |
+| `--quiet`, `-q` | Suppress informational output; only errors are emitted. |
+| `--verbose`, `-v` | Also list each backup set removed, and each one kept because a record references it. |
+| `--format plain\|json` | Output format (default: `plain`). |
+| `--json` | Shorthand for `--format json`. |
+| `--no-color` | Disable ANSI color codes in output. |
+| `-h`, `--help` | Show help and exit. |
+
+## JSON output
+
+```json
+{
+  "schema_version": 1,
+  "status": "success",
+  "command": "backups prune",
+  "action": "pruned",
+  "harness": "cursor",
+  "profile_path": null,
+  "project": null,
+  "files_written": [],
+  "results": [
+    {
+      "harness": "cursor",
+      "outcome": "updated",
+      "operation": "prune",
+      "path": "/home/example/.apothem/backups/20260101T120000Z/cursor",
+      "message": "removed backup set 20260101T120000Z"
+    },
+    {
+      "harness": "cursor",
+      "outcome": "updated",
+      "operation": "prune",
+      "path": "/home/example/.apothem/state/cursor/ledger.jsonl",
+      "message": "dropped 3 of 4 install ledger records"
+    }
+  ],
+  "warnings": [],
+  "error": null
+}
+```
+
+Every row has `"operation": "prune"`:
+
+- `"outcome": "updated"` — a backup set removed, or ledger records dropped
+  (under `--dry-run`, the same rows describe what would be removed, and the
+  message starts with `would remove` or `would drop`);
+- `"outcome": "skipped"` — a backup set older than the newest `N` that is kept
+  because a ledger record still references it;
+- `"outcome": "unchanged"` — a harness with nothing to prune;
+- `"outcome": "error"` — a harness whose ledger could not be read (nothing is
+  pruned for it), or a backup set that could not be fully removed.
+
+`status` is `success`, `dry_run`, `partial`, or `error`, following the exit
+code.
+
+## Examples
+
+```bash
+apothem backups prune
+apothem backups prune --keep 3 --dry-run
+apothem backups prune --harness claude-code --keep 1 --json
+```
+
+## Exit codes
+
+| Code | Meaning |
+|---|---|
+| 0 | Pruned, or nothing to prune |
+| 1 | Expected error — unknown harness, or no harness could be pruned (an unreadable ledger, or a backup set that could not be removed) |
+| 2 | Partial prune: at least one harness was pruned before a failure |
+| 64 | Usage error: an unknown option or command, or a missing or invalid option value (including `--keep` below 1). Under `--json` the error is a JSON envelope with code `cli.usage`. |
+
+## See also
+
+- [apothem rollback](/docs/cli-reference/rollback) — restore a harness to the state before its recorded install
+- [apothem uninstall](/docs/cli-reference/uninstall) — remove a harness configuration
+- [Uninstalling](/docs/install/uninstalling) — remove Apothem and its state

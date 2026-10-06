@@ -80,3 +80,11 @@ Out-of-axis: Architecture, Concurrency, Performance, Security, Tooling. Out-of-a
 - **Surfaced gaps:** Structural gaps from execution; required when structural (M6). Empty: `[]`.
 - **Inquiry surface:** Typed inquiry items per M5 with options annotated per M7. Empty: `[]`.
 - **Self-check attestation:** Fifteen-bar gate result per M4. Each bar `pass` or `n/a (reason)`; failures block return.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The per-criterion PASS/FAIL scores with cited evidence, the aggregate pass-rate, and the regression flags `/eval` writes into its ledger.
+- **Satisfies →** A reproducible verdict on a prompt or model change before it ships: every score cites the rubric criterion and the output evidence.
+- **Established by ↑** `agents/README.md` (this agent's index entry). `skills/eval-harness/SKILL.md` (the dataset and scorer definition it scores against).
+- **Gated by ←** The read-only tool posture in frontmatter (`Read, Glob, Grep, Bash`; `Write, Edit, TodoWrite` denied). The `maxTurns: 15` ceiling. An explicit rubric; an absent or underspecified rubric blocks scoring and routes as inquiry.
+- **Cross-bound with ↔** `commands/eval.md` (Phase 3 dispatches this agent to score every candidate output).

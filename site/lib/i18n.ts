@@ -97,6 +97,20 @@ export const ROUTED_NON_DEFAULT_LOCALES: readonly string[] = ROUTED_LOCALES.filt
 );
 
 /**
+ * The routed locale a URL path belongs to: its first segment when that is a
+ * routed non-default locale (`/ja/docs/x` → `ja`), else the default locale
+ * (English is served at the root). For client components that render above the
+ * per-locale i18n provider — the search dialog is mounted by the root provider —
+ * and so cannot read the locale from context.
+ */
+export function localeFromPathname(pathname: string): string {
+  const first = pathname.split('/').filter((segment) => segment.length > 0)[0];
+  return first !== undefined && ROUTED_NON_DEFAULT_LOCALES.includes(first)
+    ? first
+    : DEFAULT_LOCALE;
+}
+
+/**
  * The live Fumadocs i18n configuration consumed by the content `loader()`.
  *
  * - `languages` is the full routed cohort — every cohort locale is routed and

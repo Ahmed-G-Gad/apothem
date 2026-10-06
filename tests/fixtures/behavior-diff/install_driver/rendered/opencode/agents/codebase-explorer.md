@@ -85,3 +85,11 @@ Out-of-axis: Concurrency, Performance, Security, Testing, Observability. Out-of-
 - **Surfaced gaps.** Structural gaps from execution; required when structural (M6). Empty: `[]`.
 - **Inquiry surface.** Typed inquiry items per M5 with options annotated per M7. Empty: `[]`.
 - **Self-check attestation.** Fifteen-bar gate result per M4. Each bar `pass` or `n/a`; any failure blocks return.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The evidence-cited findings (`path:line` plus snippet) the dispatching team synthesizes. The convention and architecture map a planning, audit, or implementation pass reads before it edits.
+- **Satisfies →** A Research-team member in the team patterns of `rules/agent-orchestration.md` §1: exhaustive within the declared scope, gaps reported rather than guessed.
+- **Established by ↑** `agents/README.md` (this agent's index entry). `rules/agent-orchestration.md` (the team patterns that dispatch it). `rules/large-file-reading.md` (how it reads files past the read limit).
+- **Gated by ←** The read-only tool posture in frontmatter (`Read, Glob, Grep, Bash`; `Write, Edit, TodoWrite` denied). The `maxTurns: 20` ceiling. The scope the dispatcher declares; anything outside it returns as a gap.
+- **Cross-bound with ↔** `rules/agent-orchestration.md` + `rules/agent-orchestration-patterns.md` (both name this agent among the persistent definitions their team patterns dispatch).

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 # Purpose: bash bootstrap stub for apothem hook events. Resolves the
-# project root, locates a real CPython >= 3.10 via find-python.sh, then
+# installed tree it ships in, locates a real CPython >= 3.10 via find-python.sh, then
 # execs hooks/dispatch.py with the event name (and optional context-file
 # relative to project root).
 # Dialect: bash (the ERR trap below is a bashism, not POSIX sh; the shebang
@@ -19,26 +19,20 @@
 # find-python.sh (interpreter locator this stub sources), find-python.ps1
 # (PowerShell counterpart of the locator).
 #
-# Root discovery order:
-#   1. $CLAUDE_PROJECT_DIR if it points at a directory containing hooks/.
-#   2. $LLM_PROJECT_DIR (vendor-neutral alias) if it points at a directory
-#      containing hooks/.
-#   3. Upward walk from $PWD looking for hooks/dispatch.py.
-#   4. The directory two levels above this script (i.e. $HOME/.claude when
-#      this lives at $HOME/.claude/hooks/lib/bootstrap.sh).
-#   5. $HOME/.claude as final fallback (Claude Code harness root).
+# Root discovery: the directory two levels above this script, i.e. the
+# installed tree that ships this stub (`<root>/hooks/lib/bootstrap.sh`). That
+# root holds `hooks/lib/find-python.sh` and `hooks/dispatch.py`. The stub
+# never derives its root from the opened project ($CLAUDE_PROJECT_DIR,
+# $LLM_PROJECT_DIR) or from $PWD: the locator is dot-sourced and the dispatcher
+# is executed, so taking either from the project would run project-supplied
+# code inside every hook. Handlers that need project data (plan suites, memory)
+# read the project directory from the hook payload and the environment
+# themselves, as data, never as code.
 #
-# Divergence from lib/resolve_root.py (deliberate, not accidental): this stub
-# and bootstrap.ps1 use env → $PWD-walk → script-relative → $HOME order and a
-# runtime marker of `hooks/dispatch.py` (an installed, dispatch-ready root),
-# whereas resolve_root.py uses env → script-relative → cwd-walk → $HOME order
-# and a directory-marker set (`hooks/`+`rules/` in HOOKS mode, or `CLAUDE.md`
-# in MARKER mode). The bootstrap needs the concrete dispatcher present before
-# it execs, so it keys on the dispatch file directly and prefers the running
-# $PWD over the script location; resolve_root.py serves scripts that may run
-# before dispatch.py exists (scaffolding), so it keys on directory markers and
-# prefers the script's own location. Keep the three in step when the marker or
-# order changes: bootstrap.sh, bootstrap.ps1, and resolve_root.py's docstring.
+# Divergence from lib/resolve_root.py (deliberate): resolve_root.py locates a
+# project root for scripts that read project files; this stub locates only its
+# own installed tree. Keep both headers in step when either rule changes:
+# bootstrap.sh, bootstrap.ps1, and resolve_root.py's docstring.
 
 # Why `-u` only (not `-euo pipefail`): the dispatch contract is fail-open —
 # any blocking error must surface as a JSON envelope on stdout with exit 0
@@ -60,32 +54,13 @@ if [ -z "$event" ]; then
     exit 0
 fi
 
-# --- Resolve project root ----------------------------------------------------
-root="${CLAUDE_PROJECT_DIR:-}"
-if [ -z "$root" ] || [ ! -d "$root/hooks" ]; then
-    root="${LLM_PROJECT_DIR:-}"
+# --- Resolve the installed tree that ships this stub ------------------------
+script_dir="$(cd "$(dirname "$0")" && pwd)"
+root="$(cd "$script_dir/../.." && pwd)"
+if [ ! -f "$root/hooks/dispatch.py" ]; then
+    printf '{"systemMessage":"hook %s skipped: dispatch missing beside the bootstrap stub"}\n' "$event"
+    exit 0
 fi
-if [ -z "$root" ] || [ ! -d "$root/hooks" ]; then
-    cursor="$PWD"
-    root=""
-    while [ -n "$cursor" ]; do
-        if [ -f "$cursor/hooks/dispatch.py" ]; then
-            root="$cursor"
-            break
-        fi
-        parent="$(dirname "$cursor")"
-        [ "$parent" = "$cursor" ] && break
-        cursor="$parent"
-    done
-fi
-if [ -z "$root" ]; then
-    script_dir="$(cd "$(dirname "$0")" && pwd)"
-    candidate="$(cd "$script_dir/../.." && pwd)"
-    if [ -f "$candidate/hooks/dispatch.py" ]; then
-        root="$candidate"
-    fi
-fi
-[ -z "$root" ] && root="$HOME/.claude"
 
 # --- Locate Python via the locator stub --------------------------------------
 locator="$root/hooks/lib/find-python.sh"

@@ -1,12 +1,12 @@
 ---
 name: "security-audit"
 version: "0.1.0"
-updated: "2026-06-10"
+updated: "2026-10-02"
 description: "Performs a comprehensive security posture audit of a host repository against OWASP ASVS v4.0.3+, OWASP Top 10 (2021), and CWE Top 25 (2024). Six audit phases (Input Ingest · Secrets + Permissions Sweep · Input-Validation + Injection-Surface Walk · Deserialization + Path-Traversal + RCE Audit · Dependency-CVE + CodeQL Sweep · Findings Emission + Validation Gate) cover secrets-management, input-validation, shell-injection surfaces, SQL-injection surfaces, deserialization safety, path-traversal, dependency CVEs via pip-audit and safety, CodeQL findings disposition, and permission-scope analysis. Emits a severity-ranked findings artifact at the consuming suite's _inputs/security-audit-findings.md with concrete-driver rationale and recommended remediation per finding."
 argument-hint: "[path/to/repo/] [--focus CATEGORY] [--dry-run]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -152,7 +152,7 @@ Emit the consuming suite's `_inputs/security-audit-findings.md` with the canonic
 5. **`## §Validation Gate Outcome`** — the fifteen-bar gate attestation block per `rules/pre-emission-gate.md` §2.
 6. **`## §Bindings (§0.j five-direction)`** — the artifact's outward bindings.
 
-Apply incremental generation per `rules/large-file-generation.md` above 500 lines. Run the fifteen-bar gate per `rules/pre-emission-gate.md` (canonical per-bar table at `rules/pre-emission-gate-bars.md` §1). Security-tier deltas: **M5** (every finding cites a verified file:line + commit SHA; no fabrication; secret evidence redacted); **M7** (every severity-boundary, accepted-risk, and false-positive call carries `**Recommended**` + concrete-driver rationale). Iterate on bar failure per §3 until every bar passes, then emit the attestation block.
+Apply incremental generation per `rules/large-file-generation.md` above 500 lines. Run the fifteen-bar gate per `rules/pre-emission-gate.md` (canonical per-bar table at `rules/pre-emission-gate-bars.md` §1). Security-tier deltas: **M5** (every finding cites a verified file:line + commit SHA; no fabrication; secret evidence redacted); **M7** (every severity-boundary, accepted-risk, and false-positive call carries `**Recommended**` + concrete-driver rationale). Iterate on bar failure per §3 until every bar passes or its three-round cap returns BLOCKED, then emit the attestation block.
 
 ---
 
@@ -197,4 +197,8 @@ Invoke `/perf-audit` to advance the audit-fortress sequence; `/perf-audit` is th
 
 ## Installed Reference Paths
 
-When this skill is installed by Apothem, resolve repository-style references such as `rules/...`, `templates/...`, and `hooks/...` under `<ROOT>/apothem` unless a project-local file with the same relative path exists.
+When this skill is installed by Apothem, resolve a repository-style reference against the installed directory for its first segment, unless a project-local file with the same relative path exists.
+
+- `rules/<path>` is `<ROOT>/.apothem/support/rules/<path>`
+- `templates/<path>` is `<ROOT>/.apothem/support/templates/<path>`
+- `hooks/<path>` is `<ROOT>/.apothem/support/hooks/<path>`

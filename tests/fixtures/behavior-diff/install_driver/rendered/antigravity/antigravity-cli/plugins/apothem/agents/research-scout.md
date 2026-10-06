@@ -1,7 +1,6 @@
 ---
 name: "research-scout"
-description: "Read-only source discovery and ranking — decompose a research question into facets, fan out parallel web queries, rank candidates by authority, recency, and relevance, and return a deduplicated ranked source list. Use when a question needs sources before it can be answered: 'find the authoritative spec/RFC for X', 'what are the primary sources on Y', 'gather current references for a docs/copy claim', 'survey the landscape before a deep dive'. Fans external facets through WebSearch / WebFetch and any in-repo corpus through Read / Glob / Grep. Discovery and ranking only — never fabricates a URL, never synthesizes; claim verification and combination route to the fact-checker / source-synthesis surface."
-kind: local
+description: "Source discovery and ranking — decompose a research question into facets, fan out parallel web queries, rank candidates by authority, recency, and relevance, and return a deduplicated ranked source list. Use when a question needs sources before it can be answered: 'find the authoritative spec/RFC for X', 'what are the primary sources on Y', 'gather current references for a docs/copy claim', 'survey the landscape before a deep dive'. Fans external facets through WebSearch / WebFetch and any in-repo corpus through Read / Glob / Grep. Discovery and ranking only — never fabricates a URL, never synthesizes; claim verification and combination route to the fact-checker / source-synthesis surface."
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -61,3 +60,11 @@ Out-of-axis: Architecture, Concurrency, Performance, Security, Testing, Observab
 - **Surfaced gaps:** Facets with no authoritative source from execution; required when structural (M6). Empty: `surfaced-gaps: []`.
 - **Inquiry surface:** Typed inquiry items per M5 with options annotated per M7. Empty: `unresolved-inquiries: []`.
 - **Self-check attestation:** Fifteen-bar gate result per M4. Each bar passes or is marked `n/a` with reason; failures block return.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The deduplicated source list ranked by authority, recency, and relevance that the source-gathering stage hands to synthesis and verification.
+- **Satisfies →** The discovery lens of the research pipeline: every source carries a real, retrievable location; none is fabricated.
+- **Established by ↑** `agents/README.md` (this agent's index entry). `rules/source-accessibility.md` (trusted sources outrank reachable ones).
+- **Gated by ←** The read-only tool posture in frontmatter (`Read, Glob, Grep, WebSearch, WebFetch`; `Write, Edit, TodoWrite` denied). The `maxTurns: 15` ceiling. Discovery and ranking only; synthesis and claim verification belong to other lenses.
+- **Cross-bound with ↔** `commands/research.md` + `commands/research-sources.md` (the research stages that dispatch it). `skills/research-suite/SKILL.md` + `skills/research-suite/references/lifecycle.md` (the research knowledge surface that names it as the discovery lens).

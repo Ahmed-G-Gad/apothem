@@ -1,13 +1,15 @@
 # SPDX-License-Identifier: MIT
 
 # Per rules/agent-capability-discipline.md §1 / §3 / §7. CodeBuddy
-# ratifies MCP via .codebuddy/settings.json (project-scope; operator-owned;
-# the adapter recognizes it but does not author entries). The adapter
+# reads MCP servers from .mcp.json at the project root and
+# ~/.codebuddy/.mcp.json (operator-owned; the adapter recognizes them but
+# does not author entries). The adapter
 # delivers a single project rules file under .codebuddy/rules/ and does
 # not dispatch sub-agents or author command/skill/hook cohorts.
 
 mcp_servers:
-  - project-scope-.codebuddy/settings.json-mcp
+  - project-scope-.mcp.json-operator-owned
+  - user-scope-~/.codebuddy/.mcp.json
 # Operator-owned MCP surface: the adapter recognizes it but authors no entries.
 mcp_servers_authored: false
 sub_agent_dispatch: false

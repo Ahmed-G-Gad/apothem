@@ -21,10 +21,19 @@ from types import ModuleType
 
 from apothem.lib.harness_protocol import HarnessAdapter
 from apothem.lib.harness_registry_data import (
+    CROSS_TOOL_INSTRUCTION_FILES as CROSS_TOOL_INSTRUCTION_FILES,
+)
+from apothem.lib.harness_registry_data import (
     HARNESS_REGISTRY as HARNESS_REGISTRY,
 )
 from apothem.lib.harness_registry_data import (
+    PRIVATE_INSTRUCTION_TARGETS as PRIVATE_INSTRUCTION_TARGETS,
+)
+from apothem.lib.harness_registry_data import (
     REQUIRED_CAPABILITIES as REQUIRED_CAPABILITIES,
+)
+from apothem.lib.harness_registry_data import (
+    SHARED_ROOTS as SHARED_ROOTS,
 )
 from apothem.lib.harness_registry_data import (
     SUPPORTED_HARNESS_COUNT as SUPPORTED_HARNESS_COUNT,
@@ -37,6 +46,9 @@ from apothem.lib.harness_registry_data import (
 )
 from apothem.lib.harness_registry_data import (
     HarnessScope as HarnessScope,
+)
+from apothem.lib.harness_registry_data import (
+    SharedRoot as SharedRoot,
 )
 
 SUPPORTED_HARNESS_IDS: tuple[str, ...] = tuple(
@@ -262,8 +274,11 @@ def discovered_adapter_map() -> dict[str, type[object]]:
 
 
 __all__ = [
+    "CROSS_TOOL_INSTRUCTION_FILES",
     "HARNESS_REGISTRY",
+    "PRIVATE_INSTRUCTION_TARGETS",
     "REQUIRED_CAPABILITIES",
+    "SHARED_ROOTS",
     "SUPPORTED_HARNESS_COUNT",
     "SUPPORTED_HARNESS_IDS",
     "SUPPORTED_PACKAGE_KEYS",
@@ -271,6 +286,7 @@ __all__ = [
     "CapabilityStatus",
     "HarnessRegistryEntry",
     "HarnessScope",
+    "SharedRoot",
     "discover_adapters",
     "discovered_adapter_map",
     "get_harness_entry",

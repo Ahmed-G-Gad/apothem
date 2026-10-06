@@ -5,10 +5,12 @@
 from __future__ import annotations
 
 import sys
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import cast
 
 import click
+from rich.console import Console
 from rich.markup import escape
 
 import apothem.cli as _pkg
@@ -117,29 +119,6 @@ def _make_updating_alias(name: str) -> click.Command:
     return _alias
 
 
-def _record_backup_timestamps(record: LedgerRecord) -> list[str]:
-    """Return the unique backup-timestamp dirs referenced by *record*'s targets.
-
-    Each recorded ``backup_ref`` is ``<BACKUP_ROOT>/<timestamp>/<harness>/<rel>``;
-    one install pass can straddle a second boundary (the backup-slug granularity),
-    so a record may reference more than one timestamp set. Targets created fresh
-    (no prior file) carry no ``backup_ref`` and contribute nothing. Returns the
-    timestamps oldest-first.
-    """
-    backup_root = install_driver.BACKUP_ROOT.resolve()
-    timestamps: set[str] = set()
-    for target in record.targets:
-        if not target.backup_ref:
-            continue
-        try:
-            relative = Path(target.backup_ref).resolve().relative_to(backup_root)
-        except ValueError:
-            continue
-        if relative.parts:
-            timestamps.add(relative.parts[0])
-    return sorted(timestamps)
-
-
 def _record_harness_error(
     error: _CliUserError,
     *,
@@ -185,6 +164,45 @@ def _record_harness_error(
     return False
 
 
+@dataclass(frozen=True)
+class _RollbackRun:
+    """The fixed inputs of one rollback run, shared by every harness it visits."""
+
+    harness: str
+    install_id: str | None
+    yes: bool
+    fmt: str
+    no_color: bool
+    con: Console
+    project_root: Path | None
+    solo: bool
+
+
+@dataclass
+class _RollbackTally:
+    """What the per-harness rollback loop has accumulated so far."""
+
+    results: list[dict[str, object]] = field(default_factory=list)
+    restored_any: bool = False
+    errored: bool = False
+    last_output_path: Path | None = None
+
+    def exit_code(self) -> int:
+        """0 when clean; partial when something was restored; else expected-error."""
+        if not self.errored:
+            return 0
+        return _EXIT_PARTIAL if self.restored_any else _EXIT_EXPECTED
+
+
+class _RollbackRefusedError(Exception):
+    """A harness whose recorded install cannot be resolved for rollback."""
+
+    def __init__(self, error: _CliUserError, plain_line: str) -> None:
+        super().__init__(error.message)
+        self.error = error
+        self.plain_line = plain_line
+
+
 def _rollback_impl(
     harness: str,
     *,
@@ -198,9 +216,10 @@ def _rollback_impl(
     """Shared body for the ``rollback`` command.
 
     Resolves the recorded install (the latest, or the supplied ``--install-id``)
-    for each selected harness, then restores each recorded backup set through
-    :func:`restore_backup`, reconstructing every target's pre-install bytes from
-    the Apothem backup root. Emits the standard lifecycle envelope.
+    for each selected harness, then reverses it through
+    :func:`install_driver.rollback_install`: every recorded backup is restored
+    to its recorded path, every file and directory the install created is
+    removed. Emits the standard lifecycle envelope.
     """
     con = get_console(no_color=no_color, quiet=quiet)
     try:
@@ -227,185 +246,22 @@ def _rollback_impl(
         )
         return
 
-    results: list[dict[str, object]] = []
-    restored_any = False
-    errored = False
-    last_output_path: Path | None = None
+    run = _RollbackRun(
+        harness=harness,
+        install_id=install_id,
+        yes=yes,
+        fmt=fmt,
+        no_color=no_color,
+        con=con,
+        project_root=project_root,
+        solo=len(selected) == 1,
+    )
+    tally = _RollbackTally()
     for harness_id in selected:
-        entry = _pkg.get_harness_entry(harness_id)
-        try:
-            adapter = _pkg._load_adapter_for_entry(entry)
-        except _CliUserError as exc:
-            _emit_expected_error(
-                command="rollback", fmt=fmt, harness=harness, error=exc.to_dict()
-            )
+        if not _rollback_harness(run, tally, harness_id):
             return
-        output_path = _adapter_resolve_output_path(adapter, project_root)
-        last_output_path = output_path
-        if entry.scope == "user":
-            install_root = output_path.parent
-            root_kwargs: dict[str, Path] = {"harness_root": install_root}
-        else:
-            install_root = cast(Path, project_root)
-            root_kwargs = {"project_root": install_root}
 
-        try:
-            if install_id is not None:
-                record = install_ledger.find_record(
-                    entry.package_key, install_id, root=install_root
-                )
-            else:
-                record = install_ledger.latest_record(
-                    entry.package_key, root=install_root
-                )
-        except install_ledger.LedgerError as exc:
-            # The ledger is the source of truth for what to restore; a corrupted
-            # record cannot be silently skipped without risking a wrong or
-            # partial rollback, so surface it as a structured error rather than
-            # letting the raw parse failure escape as a traceback.
-            corrupt = _CliUserError(
-                code="rollback.ledger_corrupt",
-                message="The install ledger is corrupted.",
-                field="harness",
-                reason=f"{harness_id}: {exc}.",
-                fix="Inspect the harness ledger for a hand-edited or truncated "
-                "record; rollback cannot proceed against a corrupted ledger.",
-            )
-            if _record_harness_error(
-                corrupt,
-                solo=len(selected) == 1,
-                harness_id=harness_id,
-                output_path=output_path,
-                fmt=fmt,
-                harness=harness,
-                no_color=no_color,
-                plain_line=f"[red]✗[/] {harness_id} rollback failed: ledger corrupt.",
-                results=results,
-            ):
-                return
-            errored = True
-            continue
-
-        if record is None:
-            reason = (
-                f"no install record with id {install_id!r}"
-                if install_id is not None
-                else "no recorded install to roll back"
-            )
-            no_record = _CliUserError(
-                code="rollback.no_record",
-                message="Nothing to roll back.",
-                field="install-id" if install_id is not None else "harness",
-                reason=f"{harness_id}: {reason}.",
-                fix="Run 'apothem install' first, or pass an --install-id that "
-                "appears in the harness ledger.",
-            )
-            # Mirror uninstall: a batch member's failure is visible in plain
-            # mode, not only as a JSON result row.
-            if _record_harness_error(
-                no_record,
-                solo=len(selected) == 1,
-                harness_id=harness_id,
-                output_path=output_path,
-                fmt=fmt,
-                harness=harness,
-                no_color=no_color,
-                plain_line=f"[red]✗[/] {harness_id} rollback failed: {escape(reason)}.",
-                results=results,
-            ):
-                return
-            errored = True
-            continue
-
-        timestamps = _record_backup_timestamps(record)
-        if not timestamps:
-            results.append(
-                {
-                    "harness": harness_id,
-                    "outcome": "skipped",
-                    "operation": "rollback",
-                    "path": str(output_path),
-                    "message": "install captured no backups (all targets were "
-                    "newly created); nothing to restore",
-                }
-            )
-            if fmt != "json":
-                con.print(
-                    f"[dim]{harness_id}: install {escape(str(record.install_id))} "
-                    "captured no backups; nothing to restore.[/]"
-                )
-            continue
-
-        if not yes:
-            click.confirm(
-                f"Roll back {harness_id} to the state before install "
-                f"{record.install_id}?",
-                abort=True,
-            )
-
-        # Scope the restore to exactly this record's recorded backups. The
-        # timestamp slug is second-granular, so a sibling install pass in the
-        # same second shares the <timestamp>/<harness>/ set; restoring the whole
-        # set would clobber that sibling's files.
-        record_refs = frozenset(
-            str(Path(target.backup_ref).resolve())
-            for target in record.targets
-            if target.backup_ref
-        )
-        target_results: list[MaterializationResult] = []
-        for timestamp in timestamps:
-            target_results.extend(
-                install_driver.restore_backup(
-                    entry.package_key,
-                    timestamp,
-                    only_refs=record_refs,
-                    **root_kwargs,
-                )
-            )
-        install_ledger.append_record(
-            LedgerRecord.create(
-                harness=entry.package_key,
-                root=install_root,
-                kind="rollback",
-                install_id=record.install_id,
-            )
-        )
-        harness_failures: list[MaterializationResult] = []
-        for result in target_results:
-            if result.outcome in {"created", "updated"}:
-                restored_any = True
-            elif result.outcome == "error":
-                errored = True
-                harness_failures.append(result)
-            entry_dict: dict[str, object] = {
-                "harness": harness_id,
-                "outcome": result.outcome,
-                "operation": "rollback",
-                "path": result.path,
-                "message": result.message,
-            }
-            if result.backup_path is not None:
-                entry_dict["backup_path"] = result.backup_path
-            results.append(entry_dict)
-        if fmt != "json":
-            # A restore failure is visible in plain mode, not only as a JSON
-            # result row — and never behind an unconditional success line.
-            if harness_failures:
-                err_con = get_error_console(no_color=no_color)
-                for failed in harness_failures:
-                    err_con.print(
-                        f"[red]✗[/] {harness_id} restore failed: "
-                        f"{escape(str(failed.path))} — {escape(str(failed.message))}"
-                    )
-            else:
-                con.print(
-                    f"[green]✓[/] Rolled back [cyan]{harness_id}[/] to install "
-                    f"[dim]{escape(str(record.install_id))}[/]"
-                )
-
-    exit_code = 0
-    if errored:
-        exit_code = _EXIT_PARTIAL if restored_any else _EXIT_EXPECTED
+    exit_code = tally.exit_code()
     if fmt == "json":
         status = _pkg._status_for_exit_code(exit_code)
         emit_json(
@@ -418,16 +274,200 @@ def _rollback_impl(
                 project_root=project_root,
                 files_written=[
                     str(item["path"])
-                    for item in results
+                    for item in tally.results
                     if item.get("outcome") in {"created", "updated"}
                 ],
-                results=results,
+                results=tally.results,
                 warnings=[],
-                output_path=last_output_path if len(selected) == 1 else None,
+                output_path=tally.last_output_path if run.solo else None,
             )
         )
     if exit_code:
         sys.exit(exit_code)
+
+
+def _rollback_harness(
+    run: _RollbackRun, tally: _RollbackTally, harness_id: str
+) -> bool:
+    """Roll back one harness and fold its outcome into *tally*.
+
+    Returns ``False`` once a solo run's failure has been emitted, so the caller
+    stops; a batch member's failure is recorded and the batch continues.
+    """
+    entry = _pkg.get_harness_entry(harness_id)
+    try:
+        adapter = _pkg._load_adapter_for_entry(entry)
+    except _CliUserError as exc:
+        _emit_expected_error(
+            command="rollback", fmt=run.fmt, harness=run.harness, error=exc.to_dict()
+        )
+        return False
+    output_path = _adapter_resolve_output_path(adapter, run.project_root)
+    tally.last_output_path = output_path
+    if entry.scope == "user":
+        install_root = output_path.parent
+        root_kwargs: dict[str, Path] = {"harness_root": install_root}
+    else:
+        install_root = cast(Path, run.project_root)
+        root_kwargs = {"project_root": install_root}
+
+    try:
+        record = _rollback_record(run, entry.package_key, harness_id, install_root)
+    except _RollbackRefusedError as refused:
+        if _record_harness_error(
+            refused.error,
+            solo=run.solo,
+            harness_id=harness_id,
+            output_path=output_path,
+            fmt=run.fmt,
+            harness=run.harness,
+            no_color=run.no_color,
+            plain_line=refused.plain_line,
+            results=tally.results,
+        ):
+            return False
+        tally.errored = True
+        return True
+
+    if not record.targets and not record.created_dirs:
+        tally.results.append(
+            {
+                "harness": harness_id,
+                "outcome": "skipped",
+                "operation": "rollback",
+                "path": str(output_path),
+                "message": "the install recorded no changes; nothing to roll back",
+            }
+        )
+        if run.fmt != "json":
+            run.con.print(
+                f"[dim]{harness_id}: install {escape(str(record.install_id))} "
+                "recorded no changes; nothing to roll back.[/]"
+            )
+        return True
+
+    if not run.yes:
+        click.confirm(
+            f"Roll back {harness_id} to the state before install {record.install_id}?",
+            abort=True,
+        )
+
+    # Reverse the record target by target: restore each recorded backup
+    # to its recorded path, remove what the install created, and remove
+    # the directories it created once empty.
+    target_results: list[MaterializationResult] = install_driver.rollback_install(
+        record, harness_name=entry.package_key, **root_kwargs
+    )
+    install_ledger.append_record(
+        LedgerRecord.create(
+            harness=entry.package_key,
+            root=install_root,
+            kind="rollback",
+            targets=install_driver.backup_ledger_targets(target_results),
+            install_id=record.install_id,
+        )
+    )
+    install_driver.apply_retention(entry.package_key)
+    _record_rollback_results(run, tally, harness_id, record, target_results)
+    return True
+
+
+def _rollback_record(
+    run: _RollbackRun, package_key: str, harness_id: str, install_root: Path
+) -> LedgerRecord:
+    """Return the install record to reverse: ``--install-id``'s, else the latest.
+
+    Raises:
+        _RollbackRefusedError: When the ledger is corrupted or holds no such record.
+    """
+    install_id = run.install_id
+    try:
+        if install_id is not None:
+            record = install_ledger.find_record(
+                package_key, install_id, root=install_root
+            )
+        else:
+            record = install_ledger.latest_record(package_key, root=install_root)
+    except install_ledger.LedgerError as exc:
+        # The ledger is the source of truth for what to restore; a corrupted
+        # record cannot be silently skipped without risking a wrong or
+        # partial rollback, so surface it as a structured error rather than
+        # letting the raw parse failure escape as a traceback.
+        corrupt = _CliUserError(
+            code="rollback.ledger_corrupt",
+            message="The install ledger is corrupted.",
+            field="harness",
+            reason=f"{harness_id}: {exc}.",
+            fix="Inspect the harness ledger for a hand-edited or truncated "
+            "record; rollback cannot proceed against a corrupted ledger.",
+        )
+        raise _RollbackRefusedError(
+            corrupt, f"[red]✗[/] {harness_id} rollback failed: ledger corrupt."
+        ) from exc
+
+    if record is None:
+        reason = (
+            f"no install record with id {install_id!r}"
+            if install_id is not None
+            else "no recorded install to roll back"
+        )
+        no_record = _CliUserError(
+            code="rollback.no_record",
+            message="Nothing to roll back.",
+            field="install-id" if install_id is not None else "harness",
+            reason=f"{harness_id}: {reason}.",
+            fix="Run 'apothem install' first, or pass an --install-id that "
+            "appears in the harness ledger.",
+        )
+        # Mirror uninstall: a batch member's failure is visible in plain
+        # mode, not only as a JSON result row.
+        raise _RollbackRefusedError(
+            no_record, f"[red]✗[/] {harness_id} rollback failed: {escape(reason)}."
+        )
+    return record
+
+
+def _record_rollback_results(
+    run: _RollbackRun,
+    tally: _RollbackTally,
+    harness_id: str,
+    record: LedgerRecord,
+    target_results: list[MaterializationResult],
+) -> None:
+    """Fold one harness's per-target rollback results into *tally*, and report."""
+    harness_failures: list[MaterializationResult] = []
+    for result in target_results:
+        if result.outcome in {"created", "updated"}:
+            tally.restored_any = True
+        elif result.outcome == "error":
+            tally.errored = True
+            harness_failures.append(result)
+        entry_dict: dict[str, object] = {
+            "harness": harness_id,
+            "outcome": result.outcome,
+            "operation": "rollback",
+            "path": result.path,
+            "message": result.message,
+        }
+        if result.backup_path is not None:
+            entry_dict["backup_path"] = result.backup_path
+        tally.results.append(entry_dict)
+    if run.fmt == "json":
+        return
+    # A restore failure is visible in plain mode, not only as a JSON
+    # result row — and never behind an unconditional success line.
+    if harness_failures:
+        err_con = get_error_console(no_color=run.no_color)
+        for failed in harness_failures:
+            err_con.print(
+                f"[red]✗[/] {harness_id} restore failed: "
+                f"{escape(str(failed.path))} — {escape(str(failed.message))}"
+            )
+    else:
+        run.con.print(
+            f"[green]✓[/] Rolled back [cyan]{harness_id}[/] to install "
+            f"[dim]{escape(str(record.install_id))}[/]"
+        )
 
 
 @main.command(epilog=_EP_ROLLBACK)

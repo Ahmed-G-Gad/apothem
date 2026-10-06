@@ -1,12 +1,12 @@
 ---
 name: "projectify"
 version: "0.1.0"
-updated: "2026-06-16"
+updated: "2026-10-02"
 description: "Chat-app Project elevation command. Produces the three deliverables — Description, Instruction, knowledge Files — for a Claude Project / ChatGPT Custom GPT / Gemini Gem, freshly authored to current SOTA conventions through a structured-inquiry-saturated elicitation, elevated across order / coherence / clarity / determinism / structurality / conciseness / rigor / comprehensiveness and beyond, holding knowledge files within a measurable per-platform context budget (token-sum / discovered-platform-limit <= 0.02), with the grant to consolidate or divide files. Installs agnostically across all harnesses. Deterministic output; multi-step autonomy is opt-in / confirmation-gated."
 argument-hint: "[project subject] [--platform claude|chatgpt|gemini] [--autonomous]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -39,7 +39,7 @@ Execute `/projectify`. Scope the Project (subject, purpose, audience, target pla
 
 **Pre-flight inquiry set.** The Scope phase emits the typed inquiry set per `rules/authority-inquiry.md` — subject, purpose, audience, target platform, tone, and the knowledge-file partition. The target platform blocks authoring until resolved (it determines the context budget and convention set).
 
-**Pre-emission gate.** The Self-Check phase runs the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the deliverables; iterate-on-failure until every bar passes.
+**Pre-emission gate.** The Self-Check phase runs the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the deliverables; iterate-on-failure until every bar passes within the three-round cap of `rules/pre-emission-gate-bars.md` §3 (then BLOCKED).
 
 ---
 

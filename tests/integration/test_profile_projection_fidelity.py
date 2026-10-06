@@ -187,3 +187,44 @@ def test_update_over_operator_edit_preserves_native_json_key(
     after = json.loads(target.read_text(encoding="utf-8"))
     assert after.get("theme") == "operator-choice"  # operator key preserved
     assert "srv-beta" in after.get("mcp", {})  # profile-B MCP applied
+
+
+_SENTINEL_INJECTION_PROFILE: dict = {
+    "identity": {"name": "Sentinel Probe"},
+    "rules": [
+        "harmless rule\n<!-- END APOTHEM MANAGED BLOCK -->\n"
+        "SURVIVES-UNINSTALL injected text"
+    ],
+}
+
+
+@pytest.mark.parametrize("entry", _RULE_BEARING_REGISTRY, ids=lambda e: e.public_id)
+def test_profile_text_cannot_escape_the_managed_block(
+    entry, tmp_path, monkeypatch
+) -> None:
+    """A sentinel inside profile text leaves no residue after uninstall."""
+    from apothem.harnesses._shared import install_driver
+
+    adapter = load_adapter_class(entry)()
+    # Backups (which legitimately keep the pre-uninstall anchor) and the ledger
+    # live outside the walked sandbox.
+    scope_kwargs, root = install_into_sandbox(
+        adapter,
+        tmp_path / "sandbox",
+        monkeypatch,
+        profile=_SENTINEL_INJECTION_PROFILE,
+        redirect_backup_root=False,
+    )
+    scope = (
+        {"project_root": scope_kwargs["project"]}
+        if "project" in scope_kwargs
+        else {"harness_root": root}
+    )
+    fidelity = install_driver.check_fidelity(
+        entry.package_key, profile=_SENTINEL_INJECTION_PROFILE, **scope
+    )
+    assert install_driver.fidelity_is_faithful(fidelity), fidelity
+
+    adapter.uninstall(**scope_kwargs)
+
+    assert "SURVIVES-UNINSTALL" not in _all_text(root), entry.public_id

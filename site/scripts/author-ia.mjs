@@ -40,11 +40,13 @@ const rootPages = [
   'index',
   '---Get started---',
   'install',
-  'usage',
   'tutorials',
+  'usage',
   'how-to',
+  'how-to-guides',
   '---Platform---',
   'harnesses',
+  'platforms',
   'pipeline',
   'concepts',
   'architecture',
@@ -52,28 +54,26 @@ const rootPages = [
   'reference',
   'cli-reference',
   'comparison',
+  'glossary',
   '---Operate---',
   'governance',
   'security',
+  'conformity-gate',
   'runbooks',
   'examples',
+  '---Learn---',
+  'faq',
+  'developer-guide',
+  'internationalization',
+  'blog',
   '---Project---',
   'changelog',
-  'platforms',
-  'internationalization',
-  'developer-guide',
-  'faq',
-  'glossary',
-  'how-to-guides',
-  'brand',
   'community',
-  'blog',
-  'conformity-gate',
+  'brand',
   '404',
 ];
 const rootMeta =
   JSON.stringify({ title: 'Documentation', pages: rootPages }, null, 2) + '\n';
-write('meta.json', rootMeta);
 
 // --- Per-section metas (index first, then curated order, then rest glob). ---
 const sections = {
@@ -89,24 +89,16 @@ const sections = {
   tutorials: ['Tutorials', ['index', 'getting-started']],
   'how-to': ['How-to guides', [
     'index', 'editing-the-profile', 'adding-a-harness',
-    'installer-environment-variables',
+    'installer-environment-variables', 'evals',
   ]],
   harnesses: ['Harnesses', [
     'index', 'claude-code', 'cursor', 'gemini-cli', 'github-copilot',
     'codex', 'windsurf', 'zed', 'opencode', 'qwen-code', 'kiro', 'trae',
     'codebuddy', 'antigravity', 'hermes', 'kimi-code', 'open-claw', 'glm',
   ]],
-  pipeline: ['Command pipeline', [
-    'index', 'plan-spec', 'plan-generate', 'plan-review', 'plan-design',
-    'plan-execute', 'plan-audit', 'plan-status', 'code-review', 'code-audit',
-    'docs-review', 'ux-review', 'a11y-audit', 'perf-audit', 'security-audit',
-    'architecture-review', 'dependency-audit', 'supply-chain-audit',
-    'threat-model-audit', 'research-ideate', 'research-spec',
-    'research-proposal', 'research-theory', 'research-sources',
-    'research-synthesis', 'research-design', 'research-experiment',
-    'research-analysis', 'research-paper', 'research-review',
-    'research-publish', 'research-disseminate',
-  ]],
+  // `pipeline` is not authored here: update-reference-inventory.mjs generates
+  // pipeline/meta.json (English and every locale) from the shipped command
+  // definitions, so a new command cannot land without a nav entry.
   concepts: ['Concepts', [
     'index', 'ai-platform-agnosticism', 'agent-architecture',
     'review-fortress', 'cognitive-identity', 'seriousness-tiers',
@@ -129,8 +121,8 @@ const sections = {
   ]],
   'cli-reference': ['CLI reference', [
     'index', 'quickstart', 'install', 'uninstall', 'update', 'verify',
-    'status', 'diff', 'rollback', 'migrate-workspace', 'doctor', 'harnesses',
-    'profile', 'completion',
+    'status', 'diff', 'rollback', 'backups', 'migrate-workspace', 'doctor',
+    'harnesses', 'profile', 'completion',
   ]],
   comparison: ['Comparison', [
     'index', 'vs-other-harness-frameworks', 'vs-raw-claude-code',
@@ -166,7 +158,7 @@ const sections = {
     'index', 'roadmap', 'discussions', 'code-of-conduct',
   ]],
   blog: ['Blog', [
-    'index', 'posts/v1-0-0-release', 'posts/multi-harness-adapter-design',
+    'index', 'posts/v1-0-1-release', 'posts/multi-harness-adapter-design',
     'posts/cross-harness-convention-convergence',
   ]],
   'conformity-gate': ['Conformity gate', ['index']],

@@ -55,9 +55,25 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
+_LIB_DIR: Final[Path] = Path(__file__).resolve().parent / "lib"
+if str(_LIB_DIR) not in sys.path:
+    sys.path.insert(0, str(_LIB_DIR))
+
+from state_dir import hook_state_dir, session_key  # noqa: E402
+
 #: Environment overrides for the two thresholds. Each falls back to its default
 #: when unset, non-numeric, or non-positive.
 TOOL_THRESHOLD_ENV: Final[str] = "APOTHEM_PROACTIVE_COMPACTION_TOOL_THRESHOLD"
+#: On/off switch for the whole tracker. Default on; ``0``, ``false``, ``no`` or
+#: ``off`` (case-folded) silence it without editing installed hook configuration.
+ENABLED_ENV: Final[str] = "APOTHEM_PROACTIVE_COMPACTION_ENABLED"
+_DISABLED_VALUES: Final[frozenset[str]] = frozenset({"0", "false", "no", "off"})
+#: Advisories allowed per session. The window resets after each advisory, so
+#: without a cap the tracker re-fires every window for the life of the session
+#: and has no fixed point: complying (writing PROGRESS.md) does not change what
+#: it asserts next window. Two advisories bound the cost and still reach the
+#: operator twice in a long session.
+MAX_ADVISORIES_PER_SESSION: Final[int] = 2
 OUTPUT_THRESHOLD_ENV: Final[str] = "APOTHEM_PROACTIVE_COMPACTION_OUTPUT_THRESHOLD"
 
 #: Default thresholds, grounded in the §2 compaction-trigger catalog.
@@ -76,24 +92,18 @@ DEFAULT_OUTPUT_THRESHOLD: Final[int] = 20_000
 #: advisory.
 _MIN_CALLS_FOR_OUTPUT_TRIGGER: Final[int] = 3
 
-#: Per-session state lives under a dedicated subdirectory of the OS temp dir —
-#: never inside the repository's tracked tree (the hook runs in the operator's
-#: harness, not the checkout). The subdirectory keeps the counter files grouped
-#: and easy to purge.
-_STATE_DIRNAME: Final[str] = "apothem-proactive-compaction"
+#: Per-session state lives in the per-user hook state directory
+#: (``hooks/lib/state_dir.py``): never inside a checkout, never in a directory
+#: shared by every user on the host.
+_STATE_DIRNAME: Final[str] = "proactive-compaction"
 
 #: Age past which a per-session counter file is considered stale and purged on
 #: the next write. A session's counters are only meaningful within one live
 #: session; a file untouched for this long belongs to an ended session and would
-#: otherwise accumulate in $TMP unbounded. 24 hours is far longer than any live
+#: otherwise accumulate unbounded. 24 hours is far longer than any live
 #: session yet bounds the directory's growth. Purge is best-effort: a failure to
 #: remove a stale file never disturbs the tracker (fail-open).
 _STATE_TTL_SECONDS: Final[float] = 24 * 60 * 60
-
-#: Sanitized fallback when a session id is absent or unusable. A shared key is
-#: acceptable here: the tracker is advisory, and a missing id only means the
-#: counters are not partitioned per session for that (rare) case.
-_DEFAULT_SESSION_KEY: Final[str] = "_default"
 
 
 @dataclass(frozen=True)
@@ -115,10 +125,15 @@ class SessionState:
 
     tool_calls: int = 0
     output_bytes: int = 0
+    advisories: int = 0
 
     def to_dict(self) -> dict[str, int]:
         """Serialize to the on-disk JSON shape."""
-        return {"tool_calls": self.tool_calls, "output_bytes": self.output_bytes}
+        return {
+            "tool_calls": self.tool_calls,
+            "output_bytes": self.output_bytes,
+            "advisories": self.advisories,
+        }
 
     @classmethod
     def from_obj(cls, obj: object) -> SessionState:
@@ -131,7 +146,11 @@ class SessionState:
             return cls()
         tool_calls = obj.get("tool_calls")
         output_bytes = obj.get("output_bytes")
+        advisories = obj.get("advisories")
         return cls(
+            advisories=advisories
+            if isinstance(advisories, int) and advisories >= 0
+            else 0,
             tool_calls=tool_calls
             if isinstance(tool_calls, int) and tool_calls >= 0
             else 0,
@@ -167,32 +186,15 @@ def resolve_thresholds() -> Thresholds:
     )
 
 
-def _sanitize_session_key(session_id: object) -> str:
-    """Map an arbitrary session id to a safe, bounded filename stem.
-
-    Keeps only ``[A-Za-z0-9._-]`` (path-traversal-safe), bounds the length, and
-    falls back to a shared default key when the id is absent, non-string, or
-    sanitizes to empty. This guarantees the state path stays inside the state
-    directory regardless of payload contents.
-    """
-    if not isinstance(session_id, str) or not session_id.strip():
-        return _DEFAULT_SESSION_KEY
-    allowed = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-"
-    cleaned = "".join(ch for ch in session_id if ch in allowed)
-    cleaned = cleaned.strip("._-")
-    if not cleaned:
-        return _DEFAULT_SESSION_KEY
-    return cleaned[:120]
-
-
-def _state_dir() -> Path:
-    """Return the per-session state directory under the OS temp dir."""
-    return Path(tempfile.gettempdir()) / _STATE_DIRNAME
+def is_enabled() -> bool:
+    """Return False when :data:`ENABLED_ENV` reads as an explicit "off" value."""
+    raw = os.environ.get(ENABLED_ENV, "").strip().casefold()
+    return raw not in _DISABLED_VALUES if raw else True
 
 
 def state_path_for(session_id: object) -> Path:
-    """Return the counter-file path for *session_id* (never inside the repo)."""
-    return _state_dir() / f"{_sanitize_session_key(session_id)}.json"
+    """Return the counter-file path for *session_id* (per-user, never in a checkout)."""
+    return hook_state_dir(_STATE_DIRNAME) / f"{session_key(session_id)}.json"
 
 
 def _read_state(path: Path) -> SessionState:
@@ -241,7 +243,7 @@ def _purge_stale_state(state_dir: Path, *, now: float | None = None) -> None:
 
     Best-effort and fail-open: every filesystem error is suppressed, so a purge
     failure never disturbs the advisory. Bounds the state directory's growth so
-    an ended session's counter file does not accumulate in $TMP unbounded.
+    an ended session's counter file does not accumulate unbounded.
     """
     cutoff = (time.time() if now is None else now) - _STATE_TTL_SECONDS
     try:
@@ -279,20 +281,24 @@ def estimate_output_bytes(payload: dict[str, object] | None) -> int:
 
 
 def _advisory_text() -> str:
-    """Return the proactive-compaction advisory body."""
+    """Return the model-facing advisory: the step the model can take itself."""
     return (
         "Apothem proactive-compaction advisory (CM-19): activity since the last "
         "checkpoint has crossed a context-rot threshold. Externalize in-conversation "
-        "state to durable files now, then compact:\n"
-        "  1. Update the PROGRESS.md Resumption Contract (phase, task, next action, "
-        "convention anchors, critical-files manifest); record session decisions in "
-        "PLAN-NOTES.md. With no active suite, externalize to a scratch file under the "
-        "active harness's config root.\n"
-        "  2. Compact (or start a fresh session) so context stays lean per the "
-        "blind-execution invariant — every turn must remain executable from durable "
-        "files alone.\n"
-        "This is advisory; it does not block. The counter has reset, so the next "
-        "advisory is at least another full window away."
+        "state to durable files now: update the PROGRESS.md Resumption Contract "
+        "(phase, task, next action, convention anchors, critical-files manifest) and "
+        "record session decisions in PLAN-NOTES.md. With no active suite, externalize "
+        "to a scratch file under the active harness's config root. Every turn must "
+        "stay executable from durable files alone. Advisory only; it does not block."
+    )
+
+
+def _operator_text() -> str:
+    """Return the operator-facing note: compaction is the operator's action."""
+    return (
+        "Apothem: this session has crossed a context-rot threshold. Consider "
+        "compacting the conversation or starting a fresh session once the current "
+        "step is saved."
     )
 
 
@@ -316,12 +322,11 @@ def build_envelope(state: SessionState, thresholds: Thresholds) -> dict[str, obj
     crossed = state.tool_calls >= thresholds.tool_calls or output_crossed
     if not crossed:
         return {}
-    text = _advisory_text()
     return {
-        "systemMessage": text,
+        "systemMessage": _operator_text(),
         "hookSpecificOutput": {
             "hookEventName": "PostToolUse",
-            "additionalContext": text,
+            "additionalContext": _advisory_text(),
         },
     }
 
@@ -355,23 +360,28 @@ def evaluate(payload: dict[str, object] | None) -> dict[str, object]:
     advisory envelope is returned; otherwise an empty envelope is returned and
     the counters carry forward.
     """
+    if not is_enabled():
+        return {}
     session_id = payload.get("session_id") if isinstance(payload, dict) else None
     path = state_path_for(session_id)
     thresholds = resolve_thresholds()
 
-    # Bound $TMP growth: sweep counter files from ended sessions before writing
+    # Bound the state directory's growth: sweep counter files from ended sessions before writing
     # this session's. Best-effort — a purge failure never disturbs the advisory.
     _purge_stale_state(path.parent)
 
     state = _read_state(path)
+    if state.advisories >= MAX_ADVISORIES_PER_SESSION:
+        return {}
     state.tool_calls += 1
     state.output_bytes += estimate_output_bytes(payload)
 
     envelope = build_envelope(state, thresholds)
     if envelope:
         # Threshold crossed: reset the window so the advisory does not fire on
-        # the next tool call (anti-spam back-off).
-        _write_state(path, SessionState())
+        # the next tool call (anti-spam back-off), and count it against the
+        # per-session cap.
+        _write_state(path, SessionState(advisories=state.advisories + 1))
     else:
         _write_state(path, state)
     return envelope

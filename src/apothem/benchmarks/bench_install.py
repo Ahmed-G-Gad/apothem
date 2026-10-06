@@ -39,7 +39,7 @@ def _time_resolution_sweep() -> float:
     start = time.monotonic()
     for name in names:
         install_driver.load_rules(name)
-        install_driver._capability_projection_results(name)
+        install_driver.capability_projection_results(name)
     return time.monotonic() - start
 
 

@@ -1,8 +1,7 @@
 ---
-name: "token-efficiency-rewrite"
+trigger: glob
 description: "Rewrite protocol for token-efficient content — re-derives prose to a minimal surface while preserving L2 substantive semantics and L3 structural / load-bearing anchors; pairs with token-budget-discipline (sizing) and clean-room-generation §3 (re-writing protocol)."
-pathFilter: "**/rules/**, **/commands/**, **/skills/**, **/agents/**, **/docs/**"
-alwaysApply: false
+globs: "**/rules/**, **/commands/**, **/skills/**, **/agents/**, **/docs/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

@@ -20,7 +20,10 @@ from apothem.lib.install_ledger import (
     LedgerError,
     LedgerRecord,
     LedgerTarget,
+    OwnedEntry,
+    RecordKind,
     append_record,
+    current_install_record,
     find_record,
     generate_ulid,
     latest_record,
@@ -333,3 +336,56 @@ def test_find_record_kind_guard_rejects_a_different_kind(tmp_path: Path) -> None
         is None
     )
     assert find_record("qwen", record.install_id, kind=None, state_root=state) == record
+
+
+def test_target_round_trips_outcome_created_and_owned_entries() -> None:
+    target = LedgerTarget(
+        path="/h/settings.json",
+        mode="write_text",
+        ownership_class="operator-owned",
+        outcome="updated",
+        created=False,
+        owned=(
+            OwnedEntry(("permissions",), "container"),
+            OwnedEntry(("permissions", "deny"), "item", "Bash(sudo:*)"),
+            OwnedEntry(("context", "fileName"), "key", "QWEN.md"),
+        ),
+    )
+    payload = json.loads(json.dumps(target.to_dict()))
+    assert LedgerTarget.from_dict(payload) == target
+    # An empty ownership tuple is recorded (distinct from "not recorded").
+    empty = LedgerTarget("/h/x.json", "write_text", "operator-owned", owned=())
+    assert LedgerTarget.from_dict(empty.to_dict()).owned == ()
+    assert LedgerTarget.from_dict(_target("/h/y").to_dict()).owned is None
+
+
+def test_owned_entry_rejects_unknown_kind() -> None:
+    with pytest.raises(ValueError, match="owned-entry kind"):
+        OwnedEntry.from_dict({"path": ["a"], "kind": "bogus"})
+
+
+def test_current_install_record_replays_uninstall_and_rollback(
+    tmp_path: Path,
+) -> None:
+    state = tmp_path / "state"
+
+    def add(kind: RecordKind, install_id: str | None = None) -> LedgerRecord:
+        record = LedgerRecord.create(
+            harness="qwen", root="/r", kind=kind, install_id=install_id
+        )
+        append_record(record, state_root=state)
+        return record
+
+    assert current_install_record("qwen", root="/r", state_root=state) is None
+    first = add("install")
+    second = add("install")
+    assert current_install_record("qwen", root="/r", state_root=state) == second
+    add("rollback", second.install_id)
+    assert current_install_record("qwen", root="/r", state_root=state) == first
+    add("rollback")  # a failed install that undid itself changes nothing
+    assert current_install_record("qwen", root="/r", state_root=state) == first
+    add("uninstall", first.install_id)
+    assert current_install_record("qwen", root="/r", state_root=state) is None
+    third = add("install")
+    assert current_install_record("qwen", root="/r", state_root=state) == third
+    assert current_install_record("qwen", root="/other", state_root=state) is None

@@ -387,17 +387,19 @@ def check(root: Path) -> GrepResult:
     )
 
 
-def _read_input(argv: list[str]) -> Path:
-    if len(argv) >= 2:
-        return Path(argv[1])
-    return Path.cwd()
-
-
 def _main(argv: list[str]) -> int:
-    root = _read_input(argv)
+    # Imported here, not at module top: ``check()`` stays stdlib-only; only
+    # the command-line entry needs the shared parser and report stamp.
+    from apothem.conformity._grep_base import finish_root_report, parse_root_args
+
+    root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root
     result = check(root)
-    print(result.to_json())
-    return EXIT_PASS if result.passed else EXIT_FAIL
+    return finish_root_report(
+        result.to_json(),
+        passed=result.passed,
+        inspected=0 if result.workflow_path is None else 1,
+        empty_scope_expected=result.not_yet_materialised,
+    )
 
 
 if __name__ == "__main__":

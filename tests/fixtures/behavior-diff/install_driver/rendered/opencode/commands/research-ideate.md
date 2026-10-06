@@ -107,7 +107,7 @@ Generate the candidate research-question slate. Each candidate is stated in a **
 
 ### Phase 5 — Question-Resolution Sweep & Emission
 
-Definitively resolve every ambiguity — every undefined domain boundary, every theoretical-anchor choice, every ranking criterion, every prior-art grounding gap — through the structured-inquiry channel before emission. Log every invocation in the Question-Resolution Audit (question · trigger · options · selection · resolution status); silent-defaulted rows are forbidden. Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the candidate `_inputs/ideation.md`; on PASS, emit the artifact and the Handoff Manifest. On any bar failure, revise and re-run until every bar passes. Apply incremental generation per `rules/large-file-generation.md` when the ideation artifact exceeds 500 lines.
+Definitively resolve every ambiguity — every undefined domain boundary, every theoretical-anchor choice, every ranking criterion, every prior-art grounding gap — through the structured-inquiry channel before emission. Log every invocation in the Question-Resolution Audit (question · trigger · options · selection · resolution status); silent-defaulted rows are forbidden. Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the candidate `_inputs/ideation.md`; on PASS, emit the artifact and the Handoff Manifest. On any bar failure, revise and re-run until every bar passes within the three-round cap of `rules/pre-emission-gate-bars.md` §3 (then BLOCKED). Apply incremental generation per `rules/large-file-generation.md` when the ideation artifact exceeds 500 lines.
 
 ---
 

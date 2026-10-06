@@ -1,8 +1,7 @@
 ---
-name: "definitiveness-virtues"
+trigger: glob
 description: "Path-filtered companion to `rules/definitiveness.md` carrying the operational depth of M8 — Definitiveness, Airtightness, and the Family of Rigorous-Systems Virtues. Demand-loaded when the assistant edits authoring surfaces (Markdown, rules, skills, agents, commands, docs) where prescriptive prose lands: the three hedge-resolution paths with worked examples, the seven-virtue floor, the definitive-form Right/Wrong examples, the airtightness checks, and the failure tells."
-pathFilter: "**/*.md, **/CLAUDE.md, **/rules/**, **/skills/**, **/agents/**, **/commands/**, **/docs/**"
-alwaysApply: false
+globs: "**/*.md, **/CLAUDE.md, **/rules/**, **/skills/**, **/agents/**, **/commands/**, **/docs/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

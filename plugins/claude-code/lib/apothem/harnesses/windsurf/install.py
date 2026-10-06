@@ -6,7 +6,7 @@ Materializes the apothem Windsurf rules surface into the operator-supplied
 project root. The windsurf harness rebranded to Devin Desktop (OTA
 2026-06-02); its preferred workspace-rules surface is now the project-scope
 multi-file format at ``<project>/.devin/rules/*.md`` (per
-https://docs.devin.ai/desktop/cascade/workspace-rules), which TAKES
+https://docs.devin.ai/desktop/cascade/memories), which TAKES
 PRECEDENCE over the retained backward-compat fallback at
 ``<project>/.windsurf/rules/*.md``. Apothem writes the canonical target into
 ``.devin/rules/`` to avoid being silently shadowed. The harness slug stays

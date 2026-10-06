@@ -77,3 +77,11 @@ Beyond the per-claim verdicts of the Return Contract:
 - **Surfaced gaps.** Structural gaps from execution; required when structural (M6). Empty: `[]`.
 - **Inquiry surface.** Typed inquiry items per M5, options annotated per M7. Empty: `[]`.
 - **Self-check attestation.** Fifteen-bar gate result per M4 — each bar `pass` or `n/a (with reason)`; any failure blocks return.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The per-claim verdicts (supported, refuted, unverifiable) with quoted evidence and confidence that the research stages gate their prose on.
+- **Satisfies →** The claim-verification lens of the research pipeline: every factual claim that ships carries at least two independent sources or an explicit unverifiable verdict.
+- **Established by ↑** `agents/README.md` (this agent's index entry). `rules/source-accessibility.md` (trusted sources outrank reachable ones).
+- **Gated by ←** The read-only tool posture in frontmatter (`Read, Glob, Grep, WebSearch, WebFetch`; `Write, Edit, TodoWrite` denied). The `maxTurns: 15` ceiling. Insufficient evidence resolves to refuted or unverifiable, never to a charitable supported.
+- **Cross-bound with ↔** `commands/research.md` + `commands/research-sources.md` + `commands/research-synthesis.md` + `commands/research-analysis.md` + `commands/research-paper.md` + `commands/research-review.md` + `commands/research-publish.md` + `commands/research-disseminate.md` (the research stages that dispatch it). `skills/research-suite/SKILL.md` + `skills/research-suite/references/lifecycle.md` + `skills/research-suite/references/rigor-mandates.md` + `skills/research-suite/references/principal-investigator-framework.md` + `skills/research-suite/references/empirical-comparison-rigor.md` + `skills/research-suite/references/comparator-provenance.md` (the research knowledge surface that names it as the verification lens).

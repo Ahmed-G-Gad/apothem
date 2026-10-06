@@ -27,11 +27,17 @@ on every `apothem install` or `apothem update` run. The shared profile is the
 source of truth; project-local edits to the generated file are backed up before
 the next sync replaces the Apothem-managed content.
 
+The file opens with YAML frontmatter that sets `alwaysApply: true` and a
+`description`, which is Trae's Always Apply mode per the
+[Trae rules documentation](https://docs.trae.ai/ide/rules). The Apothem-managed
+block follows it; text you add after the block is kept on every sync.
+
 ## Compatibility notes
 
-Trae's current rules surface is project-scoped under `.trae/rules/`. The
-adapter writes a dedicated `apothem-rules.md` file alongside the operator-owned
-`project_rules.md` and `user_rules.md` anchors and never clobbers them. The
+Trae's current rules surface is project-scoped under `.trae/rules/`; global
+rules live under `~/.trae/user_rules`. The adapter writes a dedicated
+`apothem-rules.md` file and never clobbers the other rule files in that
+directory or your global rules. The
 `.trae/mcp.json` tool-server surface and `.trae/skills/` skill surface are
 operator-owned; Apothem does not write them.
 

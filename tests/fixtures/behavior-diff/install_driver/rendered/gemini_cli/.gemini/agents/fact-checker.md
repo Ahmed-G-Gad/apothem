@@ -2,6 +2,15 @@
 name: "fact-checker"
 description: "Read-only adversarial claim verification — decompose input into atomic claims, seek ≥2 independent sources, attempt refutation, assign cited verdicts (supported / refuted / unverifiable) with quoted evidence and confidence. Use when a claim needs proof before it ships: a benchmark or statistic in docs/copy, a 'X is faster/safer than Y' assertion, a citation that names an RFC or spec, a release note, or any factual claim a reviewer would challenge. Routes external claims through WebSearch / WebFetch and repository claims through Read / Glob / Grep; defaults to refuted-or-unverifiable when evidence is insufficient, never a charitable supported."
 kind: local
+tools:
+  - "read_file"
+  - "read_many_files"
+  - "list_directory"
+  - "glob"
+  - "grep_search"
+  - "google_web_search"
+  - "web_fetch"
+max_turns: 15
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -72,3 +81,11 @@ Beyond the per-claim verdicts of the Return Contract:
 - **Surfaced gaps.** Structural gaps from execution; required when structural (M6). Empty: `[]`.
 - **Inquiry surface.** Typed inquiry items per M5, options annotated per M7. Empty: `[]`.
 - **Self-check attestation.** Fifteen-bar gate result per M4 — each bar `pass` or `n/a (with reason)`; any failure blocks return.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The per-claim verdicts (supported, refuted, unverifiable) with quoted evidence and confidence that the research stages gate their prose on.
+- **Satisfies →** The claim-verification lens of the research pipeline: every factual claim that ships carries at least two independent sources or an explicit unverifiable verdict.
+- **Established by ↑** `agents/README.md` (this agent's index entry). `rules/source-accessibility.md` (trusted sources outrank reachable ones).
+- **Gated by ←** The read-only tool posture in frontmatter (`Read, Glob, Grep, WebSearch, WebFetch`; `Write, Edit, TodoWrite` denied). The `maxTurns: 15` ceiling. Insufficient evidence resolves to refuted or unverifiable, never to a charitable supported.
+- **Cross-bound with ↔** `commands/research.md` + `commands/research-sources.md` + `commands/research-synthesis.md` + `commands/research-analysis.md` + `commands/research-paper.md` + `commands/research-review.md` + `commands/research-publish.md` + `commands/research-disseminate.md` (the research stages that dispatch it). `skills/research-suite/SKILL.md` + `skills/research-suite/references/lifecycle.md` + `skills/research-suite/references/rigor-mandates.md` + `skills/research-suite/references/principal-investigator-framework.md` + `skills/research-suite/references/empirical-comparison-rigor.md` + `skills/research-suite/references/comparator-provenance.md` (the research knowledge surface that names it as the verification lens).

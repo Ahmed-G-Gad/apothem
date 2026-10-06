@@ -5,7 +5,7 @@
 Materializes the apothem rules surface into the operator-supplied
 project root at ``<project>/.cursor/rules/apothem-rules.mdc`` — the
 canonical Cursor rules surface per
-https://cursor.com/docs/context/rules. The legacy single-file
+https://cursor.com/docs/rules. The legacy single-file
 ``~/.cursorrules`` user-scope target is excluded because Apothem targets the
 current project rules surface; Cursor does not offer a file-based user-global
 rules surface.

@@ -1,12 +1,12 @@
 ---
 name: "research-design"
 version: "0.1.0"
-updated: "2026-06-16"
-description: "Operationalizes the synthesized research gap into testable predictions and a complete study design, then freezes the analysis plan in a preregistration before any data is collected — the design stage of the /research pipeline. Trigger phrasings: 'design the experiment', 'operationalize the hypotheses into predictions', 'what variables and controls does this study need', 'run the power analysis and pick the sample size', 'preregister the analysis plan', 'list the threats to validity', or the pipeline-chained hand-off from /research-synthesis. Consumes the suite's _inputs/synthesis.md (SOTA map + gap statement) plus _spec/research-spec.md (falsifiable hypotheses + success metrics) and emits _inputs/study-design.md (operationalized predictions, independent/dependent/control variables, sample frame, instruments, power analysis, threats-to-validity) plus _inputs/preregistration.md (the frozen analysis plan per the preregistration-discipline mandate R5). The preregistration fixes the hypotheses, the primary outcome, and the statistical tests before data collection so post-hoc flexibility cannot masquerade as a prediction; deviations are disclosed, never silent."
+updated: "2026-10-02"
+description: "Operationalizes the synthesized research gap into testable predictions and a complete study design, then freezes the analysis plan in a preregistration before any data is collected — the design stage of the /research pipeline. Trigger phrasings: 'design the experiment', 'operationalize the hypotheses into predictions', 'what variables and controls does this study need', 'run the power analysis and pick the sample size', 'preregister the analysis plan', 'list the threats to validity', or the pipeline-chained hand-off from /research-synthesis. Consumes _inputs/synthesis.md plus _spec/research-spec.md and emits _inputs/study-design.md (predictions, independent/dependent/control variables, sample frame, instruments, power analysis, threats to validity) and _inputs/preregistration.md (the frozen analysis plan, R5). The preregistration fixes the hypotheses, primary outcome, and statistical tests before data collection, so post-hoc flexibility cannot pass as a prediction; deviations are disclosed, never silent."
 argument-hint: "[--suite-name NAME] [--override] [--design TYPE] [--alpha LEVEL] [--power LEVEL]"
 disable-model-invocation: false
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -139,7 +139,7 @@ Enumerate the threats to validity across four classes — internal (rival causes
 
 ### Phase 6 — Validation Gate
 
-Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against both emitted artifacts. M5 authority: zero fabricated effect sizes, sample sizes, or statistical assumptions; every quantitative input cites the synthesis, a spec metric, or an operator-supplied value (R7). M8 definitiveness: hedging vocabulary absent from the predictions and the preregistered plan. M9 visual leverage: the variable structure is a table, and the design's control-flow (the experimental procedure, the group-assignment sequence, the measurement timeline) carries a diagram with the metadata header per `rules/visual-leverage.md`. M14 systemicity: the study design declares its upstream (the synthesis + research spec), downstream (`/research-experiment`), peers (sibling research-suite artifacts), and enforcers (the validation gate + the preregistration freeze). Iterate on failure per the gate rule's §3 until every bar passes; record the attestation block inside the study design and update the Handoff Manifest.
+Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against both emitted artifacts. M5 authority: zero fabricated effect sizes, sample sizes, or statistical assumptions; every quantitative input cites the synthesis, a spec metric, or an operator-supplied value (R7). M8 definitiveness: hedging vocabulary absent from the predictions and the preregistered plan. M9 visual leverage: the variable structure is a table, and the design's control-flow (the experimental procedure, the group-assignment sequence, the measurement timeline) carries a diagram with the metadata header per `rules/visual-leverage.md`. M14 systemicity: the study design declares its upstream (the synthesis + research spec), downstream (`/research-experiment`), peers (sibling research-suite artifacts), and enforcers (the validation gate + the preregistration freeze). Iterate on failure per the gate rule's §3 until every bar passes or its three-round cap returns BLOCKED; record the attestation block inside the study design and update the Handoff Manifest.
 
 ---
 

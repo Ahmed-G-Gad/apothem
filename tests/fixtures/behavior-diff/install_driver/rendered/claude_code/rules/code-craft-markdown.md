@@ -3,6 +3,9 @@ name: "code-craft-markdown"
 description: "Per-language code-craft for Markdown / prose artifacts — purpose-driven structure, sentence-level justification, precision over politeness, active-voice construction, hedge-elimination per the clean-room generation projection. Honors host's ratified Markdown linter (markdownlint, vale, prose-linter) and frontmatter conventions; passes the host's lint clean."
 pathFilter: "**/*.md, **/*.markdown"
 alwaysApply: false
+paths:
+  - "**/*.md"
+  - "**/*.markdown"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -57,9 +60,9 @@ Exact words. Specific claims. Numbers with units. Conditions stated:
 - **Right:** "The function returns null when the key is missing."
 - **Wrong:** "The function may return null in certain cases."
 
-Hedge words that soften a binding prescription MUST be removed. The hedging-vocabulary discipline at `rules/definitiveness.md` (M8) applies in full: **maybe · might · could · should probably · usually · generally · typically · mostly · often · perhaps · possibly · somewhat · fairly · roughly · broadly** are eliminated where binding prescription is possible. Where the claim genuinely is conditional, the conditions are enumerated explicitly: "The function returns null when the key is missing OR when the value is `None`."
+Hedge words that soften a binding prescription MUST be removed. The hedging-vocabulary discipline at `rules/definitiveness.md` (M8) applies in full: **maybe · might · could · should probably · usually · generally · typically · mostly · often · perhaps · possibly · somewhat · fairly · roughly · broadly**, plus the filler `basically` · `kind of` · `in some sense`, are eliminated where binding prescription is possible. Where the claim genuinely is conditional, the conditions are enumerated explicitly: "The function returns null when the key is missing OR when the value is `None`."
 
-Content-free qualifiers ("very", "quite", "somewhat", "rather", "fairly", "kind of") are noise — remove them; the unqualified claim is stronger and shorter.
+Content-free qualifiers (`very`, `quite`, `somewhat`, `rather`, `fairly`, `kind of`) are noise — remove them; the unqualified claim is stronger and shorter.
 
 ### 4. Active-Voice Construction
 

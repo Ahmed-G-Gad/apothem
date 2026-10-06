@@ -1,8 +1,6 @@
 ---
-name: "persistent-conventions-vigilance"
+trigger: always_on
 description: "Adhere to the harness ecosystem's conventions and proactively evolve its artifacts — per-artifact-class convention awareness (naming, layout, frontmatter shape), the five-step proactive-evolution cycle (detect → search → act → validate → retire), bidirectional cross-reference coherence, and ecosystem gap detection that surfaces a missing rule / skill / command / hook before it is needed. Implements CM-22."
-pathFilter: ""
-alwaysApply: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

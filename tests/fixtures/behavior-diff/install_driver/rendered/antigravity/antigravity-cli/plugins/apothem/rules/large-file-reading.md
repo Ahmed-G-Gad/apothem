@@ -1,8 +1,7 @@
 ---
-name: "large-file-reading"
+trigger: glob
 description: "Large file reading via targeted segments — Grep to locate, Glob for traversal, Read with offset/limit; never load a full file when a segment suffices. Read-side analogue of large-file-generation. Demand-loaded on file-consult touches; the always-on read-side budget invariant lives in context-management.md §7."
-pathFilter: "**/.apothem/plans/**, **/.plans/**, **/*.md, **/docs/**"
-alwaysApply: false
+globs: "**/.apothem/plans/**, **/.plans/**, **/*.md, **/docs/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

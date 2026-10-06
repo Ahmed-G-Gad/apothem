@@ -3,6 +3,22 @@ name: "propagation"
 description: "Every mutation of any artifact propagates, in the SAME change-set, to every dependent reference across the whole repository's reference graph — code, tests, docs, root files, `.github`, CHANGELOG, harness-rendered templates, the harness registry, plugin manifests, and cross-rule bindings. A mutation (add / edit / remove / rename / move / split / merge / deprecate) that lands without its reference updates is an orphan / half-edge finding. Unifies the docs-tier (living-docs) and component-tier (systemic-participation) propagation disciplines to the full reference graph; the existing drift gates are its mechanical arm."
 pathFilter: "**/*.py, **/*.md, **/*.mdx, **/*.json, **/*.yaml, **/*.yml, **/*.toml, **/*.sh, **/*.ps1, **/*.ts, **/*.js, **/*.mjs, **/*.css, **/*.mdc, **/*.txt"
 alwaysApply: false
+paths:
+  - "**/*.py"
+  - "**/*.md"
+  - "**/*.mdx"
+  - "**/*.json"
+  - "**/*.yaml"
+  - "**/*.yml"
+  - "**/*.toml"
+  - "**/*.sh"
+  - "**/*.ps1"
+  - "**/*.ts"
+  - "**/*.js"
+  - "**/*.mjs"
+  - "**/*.css"
+  - "**/*.mdc"
+  - "**/*.txt"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -60,6 +76,7 @@ A renamed symbol whose old name still appears at a call-site. A new command adde
 
 - **Drives →** Every mutation's same-change-set reference-graph update across the repo. The regeneration of generated artifacts (plugin manifest, reference pages, behavior-diff fixtures) when their source mutates. The CHANGELOG entry on every user-facing change.
 - **Driven by ←** The WS-C propagation/sync mandate; the operator directive that every amendment propagate to every reference across the whole repo/project.
+- **Gated by ←** The Pre-conditions trivial-scope carve-out: a single-line edit with no downstream reference is exempt; a change to a name, path, signature, count, public surface, or depended-on value is not. The frontmatter `pathFilter` (source, docs, and configuration file types). The documented-public-surface rule in `AGENTS.md` and the docs-reference-sync drift gate that holds regenerated reference pages to the source.
 - **Satisfies →** The MAXIMAL reference-graph integrity end-state (no orphan, no half-edge, no stale reference); the CM-8 keystone (once propagation is mechanically attestable, every workstream's same-change-set obligation is enforced rather than manual).
 - **Established by ↑** `rules/living-docs.md` (the docs-tier propagation this rule generalizes); `rules/systemic-participation.md` (the component-tier propagation this rule generalizes); `rules/bidirectional-binding.md` (the reciprocity surface).
 - **Cross-bound with ↔** `rules/living-docs.md` (docs tier) · `rules/systemic-participation.md` (component tier) · `rules/bidirectional-binding.md` (binding reciprocity) · `rules/canonical-layout.md` (orphan prevention) · `rules/dynamism.md` (version/badge propagation) · `conformity/orphan_output_grep.py` + `conformity/binding_reciprocity_grep.py` + `.github/workflows/docs-drift.yml` (the mechanical drift-gate arm).

@@ -11,7 +11,7 @@ Two performance/dedup invariants:
 2. The four materializer adapters (opencode, hermes, open_claw, qwen_code) call
    ``install_driver.run_install`` exactly once per install — the throwaway
    ``dry_run=True`` preview was replaced by a direct
-   ``_capability_projection_results`` call, so the capability-projection warnings
+   ``capability_projection_results`` call, so the capability-projection warnings
    are identical without the second pass.
 """
 
@@ -111,7 +111,7 @@ def test_materializer_install_calls_run_install_once(
     # projection call that replaced the dry-run preview — same set by capability.
     expected = {
         result.detail["capability"]
-        for result in install_driver._capability_projection_results(adapter.name)
+        for result in install_driver.capability_projection_results(adapter.name)
     }
     got = {
         result.detail["capability"]

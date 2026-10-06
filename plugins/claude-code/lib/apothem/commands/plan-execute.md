@@ -1,12 +1,12 @@
 ---
 name: "plan-execute"
 version: "0.1.0"
-updated: "2026-06-22"
+updated: "2026-10-02"
 description: "Executes a specific phase from a Master Plan Suite — ingests the phase's `PHASE.md` plus the suite's PROGRESS/PLAN-NOTES context, verifies prerequisites and review scorecards, implements every task with per-task commits, runs quality gates, and emits the phase `REPORT.md` before transitioning to the next phase (granular or continuous) — all under conformity checking, the fifteen-bar pre-emission gate, and a per-file destructive-op floor. The terminal `/plan` stage that turns a reviewed suite into landed, verified work."
 argument-hint: "[path/to/plan-suite/] [phase-id] [--dry-run]"
 disable-model-invocation: false
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -386,7 +386,7 @@ If any context-health signal from `rules/context-management.md` §1 or any regre
 - **NEVER stop between phases** once continuous execution is opted in (CM-16).
 - **NEVER proceed** without template v0.1.0+.
 - **Root-cause fixes only** — no band-aids.
-- **Base protocol:** Agent Teams (CM-25) with return contracts — deployment scales with seriousness per `rules/agent-orchestration.md` (Optional at EXPLORING, Encouraged at PERSONAL_USE, Required at SHARED+). Default token budgets per CM-25C: Research 500, Audit/Quality 200, Implementation/Documentation 500, Generation 1000. Error recovery (CM-18), 3-failure escalation. Session resilience (CM-24/CM-14). Always-on rules (CM-22–28) enforced at all steps.
+- **Base protocol:** Worker Teams (CM-17) with return contracts (CM-25) — deployment scales with seriousness per `rules/agent-orchestration.md` (Optional at EXPLORING, Encouraged at PERSONAL_USE, Required at SHARED+). Default token budgets per CM-25C: Research 500, Audit/Quality 200, Implementation/Documentation 500, Generation 1000. Error recovery (CM-18), 3-failure escalation. Session resilience (CM-24/CM-14). Always-on rules (CM-22–28) enforced at all steps.
 
 ---
 
@@ -406,7 +406,7 @@ All template and config mandates are in effect. Governance scales with seriousne
 | CM-14 | Step 1/1B: Session Start, Blind Bootstrap; pressure: Session End |
 | CM-15 | Step 6.6: coherence check |
 | CM-16 | Step 10: continuous-execution transition (opt-in at all seriousness levels) |
-| CM-17 | Steps 1–6: Agent Teams |
+| CM-17 | Steps 1–6: Worker Teams |
 | CM-18 | Critical Rules: 3-failure escalation |
 | CM-19 | Step 10: mandatory; Steps 1, 3, 4, 5: proactive |
 | CM-20 | Step 10: final-phase handoff |

@@ -31,7 +31,7 @@ these surfaces agree:
 | Registry row | Public ID, package key, entry point, scope, output format, target paths, docs paths, capability file, standard pin, fixture tests, package-data key, template sources, and capability statuses. |
 | Adapter package | `__init__.py`, `install.py`, `update.py`, `uninstall.py`, `verify.py`; add `materializer.py` only when the harness renders a native config file. |
 | Propagation manifest | Template and cohort paths for manifest-backed adapters. |
-| Capabilities | `src/apothem/harnesses/<package>/capabilities.yml` with every required capability and rationale for unsupported or discovery-pending states. |
+| Capabilities | `src/apothem/harnesses/<package>/capabilities.yml` with every required capability and rationale for unsupported or discovery-pending states, plus a `conversion_losses` map for each converted commands, agents, or rules cohort (see the [harness registry](/docs/reference/harness-registry)). |
 | Convention pin | `STANDARD-CONVENTION-PIN.md` with vendor URL, snapshot date, canonical filename/schema, evidence reference, and unsupported capability rationale. |
 | Tests | Registry parity, adapter fixture test, golden install-plan row, dry-run/no-write behavior, idempotence, and package-data coverage. |
 | Docs | Harness reference page, comparison page, capability/MCP notes, and examples that use fake placeholders. |
@@ -346,11 +346,19 @@ description: "What this command does"
 argument-hint: "[path/to/input] [--flag VALUE]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 ```
 
-Always set `disable-model-invocation: true` for commands.
+`disable-model-invocation: true` makes a command operator-invoked only; with
+`false`, the model may run it when a request matches its description. Most
+commands use `true`, but most plan and research pipeline stages use `false`.
+The invocation table in `src/apothem/commands/README.md` lists every
+command's setting; add a row for a new command. Keep
+`allowed-tools` read-only: a harness that honors it runs those tools without
+asking. Grant a side-effecting tool only as a scoped rule, such as
+`Bash(git log *)`; the schema rejects `"*"` and bare `Bash`, `PowerShell`,
+`Write`, `Edit`, `NotebookEdit`, and `WebFetch`.
 
 ### 3. Write Content
 
@@ -408,12 +416,13 @@ description: "What this helper specializes in"
 tools: "Read, Glob, Grep, Bash"
 disallowedTools: "Write, Edit"
 maxTurns: 15
-effort: "high"
-permissionMode: "default"
-memory: false
 portability: "universal"
 ---
 ```
+
+Leave out `model`, `effort`, and `permissionMode` so the helper inherits the
+session's choices (the agnostic posture), and leave out `memory` unless the
+helper needs a persistent-memory scope (`user`, `project`, or `local`).
 
 ### 3. Write Content
 
@@ -477,7 +486,6 @@ userInvocable: true | false
 disable-model-invocation: true | false
 allowed-tools: "Read, Glob, Grep"
 argument-hint: "[args]"               # optional; if userInvocable
-effort: "max"                          # optional
 ---
 ```
 
@@ -569,6 +577,125 @@ All artifacts use:
 
 Use the `Ruff` formatter / linter for Python files. For Markdown, use
 `prettier` or equivalent.
+
+## Testing and Measurement
+
+### Run the suite
+
+```bash
+python -m pytest                      # unit, integration, property, conformity, scripts
+python -m pytest tests/property       # Hypothesis properties (profile loader, frontmatter, merge)
+```
+
+The suite is hermetic: it passes with the checkout under `$TMPDIR` and with a
+`python` on `PATH` that lacks the CLI prerequisites, because the integration
+tests run the interpreter that runs pytest and tokenize nested temp and source
+paths longest-first.
+
+### Coverage per package
+
+CI measures three packages and holds each to its own floor. None of them is
+folded into another.
+
+| Package | Paths | Floor | Where the floor lives |
+| --- | --- | --- | --- |
+| engine | `cli`, `harnesses`, `lib`, `hooks`, `statuslines` | 80 | `[tool.coverage.report] fail_under` |
+| conformity | `src/apothem/conformity` | 81 | `[tool.coverage.package-floors]` |
+| audit | `src/apothem/audit` | 70 | `[tool.coverage.package-floors]` |
+
+The figure is line plus branch coverage, the same percentage coverage.py
+reports with `branch = true`; the metrics artifact also records the
+statement-only figure under `coverage_lines`. Each package floor is the
+measured line plus branch value rounded down. Raise a floor when coverage
+rises; never lower one to make a change pass. To check locally:
+
+```bash
+python -m pytest --cov=src/apothem --cov-report=json:coverage.json
+python scripts/dev/collect_metrics.py --coverage-json coverage.json --check-floors \
+  --skip-hooks --skip-coldstart --harness zed
+```
+
+### The metrics artifact
+
+The CI `metrics` job runs `scripts/dev/collect_metrics.py` on every push and
+pull request and uploads `metrics.json` (`schema_version: 1`). Every value
+that is `null` carries its reason under `nulls`.
+
+| Key | What it measures |
+| --- | --- |
+| `coverage.engine`, `coverage.conformity`, `coverage.audit` | Line plus branch percent per package, with `coverage_floors`. |
+| `always_on_bytes[harness]`, `always_on_files[harness]` | For each of the 17 harnesses, after `profile init` and `install --harness <id>` into a scratch `HOME` and project: bytes on disk of the instruction files that harness loads in full at launch. |
+| `cli_coldstart_ms` | Median of `python -m apothem --version` (with `--help` under `cli_coldstart_detail_ms`). |
+| `hook_e2e_ms[event]`, `hook_injected_chars[event]` | Per registered event and matcher (`PreToolUse:Write`, `Stop`, …): the median total time of the hook chain on a real payload, and the context characters it injects. |
+
+Which files count as loaded at launch is a per-harness rule taken from each
+vendor's documented instruction surfaces. Listings that carry only a
+description (skills, commands, subagents) are not counted. The rule text is
+also written into the artifact under `rules.always_on_bytes`:
+
+```text
+antigravity     ~/.gemini/{GEMINI,AGENTS}.md, ~/.gemini/config/{GEMINI,AGENTS}.md,
+                ~/.gemini/config/rules/*.md with trigger: always_on, project
+                GEMINI.md and AGENTS.md. The plugin rules/ folder is not a
+                documented launch surface.
+claude-code     ~/.claude/CLAUDE.md and ~/.claude/rules/**/*.md without paths:
+                frontmatter, plus the project equivalents.
+codebuddy       .codebuddy/rules/**/*.md (project and home) unless
+                alwaysApply: false, plus CODEBUDDY.md.
+codex           ~/.codex/AGENTS.md and the project AGENTS.md.
+cursor          .cursor/rules/**/*.mdc with alwaysApply: true, and AGENTS.md.
+gemini-cli      ~/.gemini/GEMINI.md and the project GEMINI.md.
+github-copilot  .github/copilot-instructions.md and the project AGENTS.md.
+hermes          ~/.hermes/SOUL.md, project .hermes.md, AGENTS.md, CLAUDE.md.
+                The support tree and apothem/rules/ are not launch surfaces.
+kimi-code       ~/.kimi-code/AGENTS.md, project AGENTS.md and .kimi-code/AGENTS.md.
+kiro            .kiro/steering/**/*.md with inclusion: always or no inclusion
+                key, and the project AGENTS.md.
+open-claw       Workspace bootstrap files ~/.openclaw/workspace/*.md.
+opencode        ~/.config/opencode/AGENTS.md, the project AGENTS.md, and every
+                file the instructions globs in opencode.json match.
+qwen-code       The context files named by context.fileName in
+                ~/.qwen/settings.json (default QWEN.md), in ~/.qwen/ and the project.
+trae            .trae/rules/**/*.md with alwaysApply: true, and
+                ~/.trae/user_rules/*.md.
+windsurf        .devin/rules/**/*.md and .windsurf/rules/**/*.md with
+                trigger: always_on, the global global_rules.md, and AGENTS.md.
+zed             The first of .rules, .cursorrules, .windsurfrules, .clinerules,
+                .github/copilot-instructions.md, AGENT.md, AGENTS.md, CLAUDE.md,
+                GEMINI.md in the project, plus ~/.config/zed/AGENTS.md.
+glm             Nothing: GLM is a model backend and loads no instruction files.
+```
+
+### Behavioural evals
+
+The suite under `evals/` measures behaviour rather than form: 64 trigger cases
+(each model-invocable command and subagent fires on a request in its domain
+and stays quiet on a near miss), 32 outcome cases (one per plan stage,
+research stage and audit dimension) and 6 rule-effect pairs (an always-on
+rule's text on and off). The cases are plain data validated for free by
+`python -m pytest tests/unit/test_eval_suite.py`; running them is billed and
+manual. See [Run the behavioural evals](/docs/how-to/evals) for the `Evals`
+workflow, a local run and how to add a case. After editing an always-on rule
+that has a pair, run `python scripts/dev/sync_eval_rule_cases.py`.
+
+### Benchmarks
+
+`make benchmarks` runs the per-class drivers under `src/apothem/benchmarks/`.
+Each exits `0` pass, `1` over budget, `2` error (the measured run did not
+execute), or `3` not measured.
+
+- `bench_hooks.py` runs every `shell: bash` command that `hooks/hooks.json`
+  registers, as written, on a real payload per event and matcher, and reports
+  the median total time, the slowest command (checked against the event's
+  budget) and the characters injected. A command that cannot run as registered
+  (exit 126 when a script lacks its executable bit) is an error, not a pass.
+- `bench_agents.py` reports `NOT MEASURED` (exit 3): a subagent spawn needs a
+  host harness and a model call. `make benchmarks` does not run it.
+
+The always-on budget check (`always-on-budget-grep`) counts whitespace-separated
+words with the Bindings section and companion pointer lines excluded. Its JSON
+report also carries `always-on-loaded`: the bytes, characters and words of the
+frontmatter-stripped bodies a harness loads, summed over the always-on rules.
 
 ## Ecosystem Audit: Running Validation
 

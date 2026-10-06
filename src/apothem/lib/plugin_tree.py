@@ -18,7 +18,7 @@ The layout contract produced is::
     <plugin_root>/lib/apothem/            (verbatim engine copy)
     <plugin_root>/lib/apothem_lib.py      (re-export shim)
     <plugin_root>/lib/apothem/_vendor/    (vendored deps, or empty .keep)
-    <plugin_root>/skills|agents|commands|hooks|rules/  (catalog copies)
+    <plugin_root>/skills|agents|commands|hooks|rules|output-styles/  (catalog copies)
 """
 
 from __future__ import annotations
@@ -55,6 +55,24 @@ PLUGIN_AUTHOR: Final[dict[str, str]] = {
 }
 PLUGIN_HOMEPAGE: Final[str] = "https://apothem.ahmedgad.com"
 PLUGIN_REPOSITORY: Final[str] = "https://github.com/ahmed-g-gad/apothem"
+
+#: Name shown in Claude Code's UI in place of the kebab-case ``name``.
+PLUGIN_DISPLAY_NAME: Final[str] = "Apothem"
+
+#: Directory-listing links. Anthropic's plugin directory reads these from
+#: ``plugin.json``; Claude Code ignores them at load time. Each must be an
+#: ``https://`` URL (manifest reference, "Directory listing fields").
+#: The support link is the issue tracker SUPPORT.md routes defects and
+#: questions to.
+#:
+#: TODO(clarify): ``privacyPolicyUrl`` and ``termsOfServiceUrl`` stay unset
+#: until the operator publishes those pages; their URLs cannot be derived from
+#: the repository. ``icon`` needs an image file inside the assembled tree,
+#: which the assembler does not copy yet.
+PLUGIN_LISTING_URLS: Final[dict[str, str]] = {
+    "documentationUrl": "https://apothem.ahmedgad.com/docs",
+    "supportUrl": "https://github.com/ahmed-g-gad/apothem/issues",
+}
 PLUGIN_LICENSE: Final[str] = "MIT"
 PLUGIN_KEYWORDS: Final[tuple[str, ...]] = (
     "configuration",
@@ -78,11 +96,16 @@ _COPY_IGNORE: Final[tuple[str, ...]] = (
 )
 
 #: Catalog directory names copied from the engine source into the plugin root.
+#: ``output-styles/`` is the plugin's default output-style folder: with no
+#: ``outputStyles`` manifest key, Claude Code scans it, so the styles are
+#: selectable plugin-alone (https://code.claude.com/docs/en/plugins-reference,
+#: "Output styles | output-styles/", retrieved 2026-10-03).
 _CATALOG_DIRS: Final[tuple[str, ...]] = (
     "skills",
     "agents",
     "commands",
     "rules",
+    "output-styles",
 )
 
 #: Source-relative location of the hook message catalog.
@@ -96,7 +119,7 @@ _ASSEMBLED_ENGINE_ROOT_REL: Final[str] = "lib/apothem"
 
 #: The hook-event block, mirrored from the engine's claude_code
 #: ``settings.json`` template. Each entry is a dispatch-routable event the
-#: shell bootstrap stub (``hooks/lib/bootstrap.{sh,ps1}``) can drive: the stub
+#: bash bootstrap stub (``hooks/lib/bootstrap.sh``) can drive: the stub
 #: self-locates a CPython interpreter and execs ``hooks/dispatch.py`` with the
 #: event name and, where the event emits a Markdown context, the message file's
 #: full path. Conformity-gate entries from ``settings.json``
@@ -104,8 +127,13 @@ _ASSEMBLED_ENGINE_ROOT_REL: Final[str] = "lib/apothem"
 #: drives only the dispatcher, and the gate's user-scope default applies under
 #: a harness root (``~/.claude`` / ``~/.codex``), not a plugin-alone project
 #: write — wiring it plugin-alone would require an engine install. The per-event
-#: timeouts and matchers track the ``settings.json`` block verbatim so the
-#: plugin-alone and engine-install postures stay coherent.
+#: timeouts and matchers track the ``settings.json`` block so the plugin-alone
+#: and engine-install postures stay coherent. ``PreCompact`` and ``PostCompact``
+#: are not registered on Claude Code surfaces: Claude Code discards both events'
+#: ``systemMessage`` and accepts no ``additionalContext`` from them, so the
+#: post-compaction recovery context travels on ``SessionStart`` with
+#: ``source: compact`` instead. Shell guards match ``Bash|PowerShell`` so the
+#: PowerShell tool, where enabled, is covered too.
 #:
 #: Each tuple is ``(event_name, matcher, timeout_seconds, message_basename)``;
 #: ``message_basename`` is ``None`` for events the dispatcher handles without a
@@ -124,13 +152,11 @@ _PLUGIN_HOOK_ENTRIES: Final[tuple[tuple[str, str, int, str | None], ...]] = (
     ("PreToolUse", "Edit", 10, "pretooluse-eval-guard"),
     ("PreToolUse", "NotebookEdit", 10, "pretooluse-notebookedit"),
     ("PreToolUse", "NotebookEdit", 10, "pretooluse-write-plan-guard"),
-    ("PreToolUse", "Bash", 10, "pretooluse-bash"),
-    ("PreToolUse", "Bash", 10, "pretooluse-bash-plan-guard"),
-    ("PreToolUse", "Bash", 10, "pretooluse-eval-guard"),
+    ("PreToolUse", "Bash|PowerShell", 10, "pretooluse-bash"),
+    ("PreToolUse", "Bash|PowerShell", 10, "pretooluse-bash-plan-guard"),
+    ("PreToolUse", "Bash|PowerShell", 10, "pretooluse-eval-guard"),
     ("PreToolUse", "AskUserQuestion", 10, "pretooluse-askuserquestion-recommended"),
     ("PostToolUse", "*", 10, "posttooluse-proactive-compaction"),
-    ("PreCompact", "*", 30, "precompact"),
-    ("PostCompact", "*", 30, "postcompact"),
     ("Stop", "*", 60, "stop"),
 )
 
@@ -280,8 +306,10 @@ def build_plugin_manifest(
     directory (each immediate child carries a ``SKILL.md`` entry point).
     Rules and hook message contexts are engine cohorts consumed by the
     apothem materializers, not plugin components, so they carry no manifest
-    field. Component arrays are sorted for determinism: the same catalog
-    always yields the same manifest.
+    field. Output styles carry none either: the assembled tree ships them in
+    the default ``output-styles/`` folder Claude Code scans when the manifest
+    sets no ``outputStyles`` key. Component arrays are sorted for determinism:
+    the same catalog always yields the same manifest.
 
     Args:
         catalog_root: The apothem source package directory (the dir holding
@@ -324,6 +352,7 @@ def build_plugin_manifest(
     engine_root_rel = _engine_root_rel_for(catalog_prefix)
     manifest: dict[str, object] = {
         "name": PLUGIN_NAME,
+        "displayName": PLUGIN_DISPLAY_NAME,
         "version": _resolve_version(version),
         "description": PLUGIN_DESCRIPTION,
         "author": dict(PLUGIN_AUTHOR),
@@ -331,6 +360,7 @@ def build_plugin_manifest(
         "repository": PLUGIN_REPOSITORY,
         "license": PLUGIN_LICENSE,
         "keywords": list(PLUGIN_KEYWORDS),
+        **PLUGIN_LISTING_URLS,
         "commands": command_paths,
         "agents": sorted(
             f"{catalog_prefix}agents/{stem}.md" for stem in members["agents"]
@@ -365,45 +395,46 @@ def _engine_root_rel_for(catalog_prefix: str) -> str:
     return catalog_prefix.strip("./")
 
 
-def _bootstrap_command(engine_root_rel: str, shell: str, suffix: str) -> str:
-    """Render a single bootstrap-stub ``command`` string for a hook entry.
+def _bootstrap_command(engine_root_rel: str, suffix: str) -> str:
+    """Render the ``command`` string for one plugin hook entry.
 
-    The command invokes the shell bootstrap stub under the plugin install
-    directory (``${CLAUDE_PLUGIN_ROOT}``, the placeholder Claude Code
-    substitutes and exports). The stub self-locates a CPython >= 3.10
-    interpreter and execs ``hooks/dispatch.py``; no engine install or
-    install-time ``${PYTHON_BIN}`` substitution is required.
+    The command runs the bash bootstrap stub under the plugin install
+    directory (``${CLAUDE_PLUGIN_ROOT}``, which Claude Code substitutes and
+    exports) through an explicit ``bash`` invocation. Invoking the interpreter
+    by name, rather than executing the stub path, keeps the hook independent of
+    the file's executable bit: a git checkout or a marketplace copy preserves
+    the tracked mode, and a stub tracked without ``+x`` would otherwise exit 126
+    on every call. The stub self-locates a CPython >= 3.10 interpreter and execs
+    ``hooks/dispatch.py``; no engine install or install-time ``${PYTHON_BIN}``
+    substitution is required.
 
     Args:
         engine_root_rel: Plugin-root-relative engine prefix
             (``lib/apothem`` for the assembled tree, ``src/apothem`` for the
             repository-root manifest).
-        shell: ``"bash"`` (drives ``bootstrap.sh``) or ``"powershell"``
-            (drives ``bootstrap.ps1``).
-        suffix: The argument string appended after the stub path — the event
-            name plus, where present, the message-file path. Already shaped
-            for the target shell's argument convention.
+        suffix: The argument string appended after the stub path: the event
+            name plus, where present, the quoted message-file path.
 
     Returns:
         The ``command`` string for one ``hooks.json`` command entry.
     """
-    if shell == "powershell":
-        stub = f"${{CLAUDE_PLUGIN_ROOT}}/{engine_root_rel}/hooks/lib/bootstrap.ps1"
-        return f'pwsh -NoProfile -File "{stub}" {suffix}'
     stub = f"${{CLAUDE_PLUGIN_ROOT}}/{engine_root_rel}/hooks/lib/bootstrap.sh"
-    return f'"{stub}" {suffix}'
+    return f'bash "{stub}" {suffix}'
 
 
 def _entry_command_block(
     engine_root_rel: str, event: str, timeout: int, message: str | None
 ) -> list[dict[str, object]]:
-    """Return the bash + powershell command pair for one hook entry.
+    """Return the single command hook for one plugin hook entry.
 
-    Each dispatch-routable entry is mirrored as two ``type: command`` hooks —
-    one driving the POSIX ``bootstrap.sh`` (``shell: bash``) and one driving
-    ``bootstrap.ps1`` (``shell: powershell``) — so the hook fires on every
-    host. The bootstrap stubs are fail-open (exit 0 on any error) so neither
-    entry can stall the harness.
+    Each dispatch-routable entry is registered exactly once, in shell form with
+    Claude Code's default hook shell (``sh`` on macOS and Linux, Git Bash on
+    Windows). A paired ``shell: powershell`` registration is deliberately not
+    emitted: Claude Code offers no per-platform condition on a hook, so a pair
+    runs twice wherever both shells exist and reports a hook error on every call
+    wherever one is missing. Windows hosts without Git for Windows use the
+    engine install (``apothem install --harness claude-code``), whose hooks run
+    in exec form against an install-resolved interpreter and need no shell.
 
     Args:
         engine_root_rel: Plugin-root-relative engine prefix.
@@ -414,7 +445,7 @@ def _entry_command_block(
             events the dispatcher handles without a Markdown context.
 
     Returns:
-        A two-element list of command-hook dicts (bash then powershell).
+        A one-element list holding the command-hook dict.
     """
     if message is None:
         suffix = event
@@ -424,11 +455,9 @@ def _entry_command_block(
     return [
         {
             "type": "command",
-            "command": _bootstrap_command(engine_root_rel, shell, suffix),
+            "command": _bootstrap_command(engine_root_rel, suffix),
             "timeout": timeout,
-            "shell": shell,
         }
-        for shell in ("bash", "powershell")
     ]
 
 
@@ -437,15 +466,16 @@ def build_plugin_hooks_json(engine_root_rel: str) -> dict[str, object]:
 
     Produces the plugin-alone hook configuration: a ``hooks`` map keyed by
     event name, each event carrying matcher-grouped command blocks. Every
-    command drives the shell bootstrap stub under ``${CLAUDE_PLUGIN_ROOT}``
-    (one ``bash`` + one ``powershell`` entry per dispatch-routable hook), so
-    the conformity nudges, the session bootstrap, and the compaction / stop
-    handlers fire when the plugin is installed alone — without an apothem
+    command drives the bash bootstrap stub under ``${CLAUDE_PLUGIN_ROOT}``
+    (one entry per dispatch-routable hook), so the conformity nudges, the
+    session bootstrap (which also carries the post-compaction recovery context
+    on ``source: compact``) and the stop handler fire when the plugin is
+    installed alone — without an apothem
     engine install or the install-time ``${PYTHON_BIN}`` / ``${HARNESS_ROOT}``
     substitution the engine ``settings.json`` relies on.
 
     The event set, matchers, and per-event timeouts mirror the engine's
-    claude_code ``settings.json`` block verbatim, minus the ``gate.py --hook``
+    claude_code ``settings.json`` block, minus the ``gate.py --hook``
     conformity entries (the bootstrap stub drives only the dispatcher, and the
     gate's scope default targets a harness root, not a plugin-alone project
     write — see ``_PLUGIN_HOOK_ENTRIES``).
@@ -490,6 +520,25 @@ def _validate_manifest(manifest: dict[str, object]) -> None:
     """
     schema = json.loads(_plugin_schema_path().read_text(encoding="utf-8"))
     jsonschema.validate(instance=manifest, schema=schema)
+
+
+def _translate_catalog_skills(skills_dir: Path) -> None:
+    """Rewrite each catalog ``SKILL.md`` in Claude Code's frontmatter spelling.
+
+    Uses the same translation as the claude_code install's ``native_skills``
+    mode (imported lazily: ``lib`` does not depend on the harness package at
+    import time). Files are rewritten with ``\\n`` newlines so the committed
+    tree stays byte-identical across platforms.
+    """
+    from apothem.harnesses._shared.install_driver_converters import (
+        claude_code_skill_text,
+    )
+
+    for skill_md in sorted(skills_dir.glob("*/SKILL.md")):
+        text = skill_md.read_text(encoding="utf-8")
+        translated = claude_code_skill_text(text)
+        if translated != text:
+            skill_md.write_text(translated, encoding="utf-8", newline="\n")
 
 
 def assemble_plugin_tree(src_root: Path, dest_root: Path) -> Path:
@@ -556,7 +605,7 @@ def assemble_plugin_tree(src_root: Path, dest_root: Path) -> Path:
     #    reproduce. Copied files are unaffected — they carry source bytes.
     (lib_dir / "apothem_lib.py").write_text(_SHIM_BODY, encoding="utf-8", newline="\n")
 
-    # 4. Catalog dirs: skills/agents/commands/rules copied to plugin root.
+    # 4. Catalog dirs: skills/agents/commands/rules/output-styles copied to plugin root.
     #    The catalog directories become harness DISCOVERY directories at the
     #    plugin root, where every top-level entry is interpreted as a component.
     #    ``build_plugin_manifest`` already omits the directory READMEs from the
@@ -579,6 +628,12 @@ def assemble_plugin_tree(src_root: Path, dest_root: Path) -> Path:
         )
         for doc_name in _CATALOG_DOC_FILES:
             (dest_dir / doc_name).unlink(missing_ok=True)
+
+    # 4b. Skill frontmatter: rename source keys to the spelling Claude Code
+    #     reads (userInvocable -> user-invocable), as the claude_code install
+    #     does. Only the plugin-root catalog changes; the lib/apothem engine
+    #     copy keeps the source form.
+    _translate_catalog_skills(dest_root / "skills")
 
     # 5. Hook message catalog: hooks/messages copied to plugin-root hooks/.
     hooks_src = src_root / _HOOK_MESSAGES_REL

@@ -35,6 +35,8 @@ from apothem.lib.propagation import load_manifest as load_manifest
 from apothem.lib.propagation import resolve_target as resolve_target
 
 from .install_driver_apply import _COHORT_DOC_FILES as _COHORT_DOC_FILES
+from .install_driver_apply import apply_antigravity_rules as apply_antigravity_rules
+from .install_driver_apply import apply_claude_rules as apply_claude_rules
 from .install_driver_apply import apply_codex_agents as apply_codex_agents
 from .install_driver_apply import apply_command_skills as apply_command_skills
 from .install_driver_apply import apply_gemini_agents as apply_gemini_agents
@@ -59,8 +61,8 @@ from .install_driver_backup import _unique_path as _unique_path
 from .install_driver_backup import _write_file_atomically as _write_file_atomically
 from .install_driver_backup import backup_existing as backup_existing
 from .install_driver_backup import backup_file_to_sibling as backup_file_to_sibling
+from .install_driver_backup import backup_ledger_targets as backup_ledger_targets
 from .install_driver_backup import finalize_install as finalize_install
-from .install_driver_backup import list_backup_timestamps as list_backup_timestamps
 from .install_driver_backup import record_install as record_install
 from .install_driver_backup import restore_backup as restore_backup
 from .install_driver_backup import write_bytes_safely as write_bytes_safely
@@ -99,6 +101,18 @@ from .install_driver_converters import _toml_multiline_string as _toml_multiline
 from .install_driver_converters import _toml_string as _toml_string
 from .install_driver_converters import _yaml_list as _yaml_list
 from .install_driver_converters import _yaml_scalar as _yaml_scalar
+from .install_driver_jsonmerge import _APOTHEM_HOOK_MARKERS as _APOTHEM_HOOK_MARKERS
+from .install_driver_jsonmerge import (
+    CONFIG_UNPARSEABLE_CODE as CONFIG_UNPARSEABLE_CODE,
+)
+from .install_driver_jsonmerge import _dedupe_json_list as _dedupe_json_list
+from .install_driver_jsonmerge import _leading_comment_block as _leading_comment_block
+from .install_driver_jsonmerge import _merge_hook_entry as _merge_hook_entry
+from .install_driver_jsonmerge import _merge_hooks as _merge_hooks
+from .install_driver_jsonmerge import _merge_json_settings as _merge_json_settings
+from .install_driver_jsonmerge import _merge_json_values as _merge_json_values
+from .install_driver_jsonmerge import _overlay_json_settings as _overlay_json_settings
+from .install_driver_jsonmerge import is_apothem_hook as is_apothem_hook
 from .install_driver_lifecycle import FidelityResult as FidelityResult
 from .install_driver_lifecycle import _native_config_parses as _native_config_parses
 from .install_driver_lifecycle import _profile_anchor_targets as _profile_anchor_targets
@@ -111,35 +125,26 @@ from .install_driver_lifecycle import fidelity_is_faithful as fidelity_is_faithf
 from .install_driver_lifecycle import run_uninstall as run_uninstall
 from .install_driver_lifecycle import verify_install as verify_install
 from .install_driver_materialize import (
-    _capability_projection_results as _capability_projection_results,
-)
-from .install_driver_materialize import (
     _dispatch_install_entry as _dispatch_install_entry,
 )
-from .install_driver_materialize import _dry_run_results as _dry_run_results
 from .install_driver_materialize import (
     _materialize_data_surfaces as _materialize_data_surfaces,
 )
+from .install_driver_materialize import (
+    capability_projection_results as capability_projection_results,
+)
 from .install_driver_materialize import run_install as run_install
-from .install_driver_merge import _APOTHEM_HOOK_MARKERS as _APOTHEM_HOOK_MARKERS
+from .install_driver_merge import (
+    PROFILE_DOCUMENT_RELATIVE as PROFILE_DOCUMENT_RELATIVE,
+)
 from .install_driver_merge import (
     _apply_operator_owned_file as _apply_operator_owned_file,
 )
-from .install_driver_merge import _dedupe_json_list as _dedupe_json_list
-from .install_driver_merge import _is_apothem_hook as _is_apothem_hook
-from .install_driver_merge import _leading_comment_block as _leading_comment_block
-from .install_driver_merge import _merge_hook_entry as _merge_hook_entry
-from .install_driver_merge import _merge_hooks as _merge_hooks
-from .install_driver_merge import _merge_json_settings as _merge_json_settings
-from .install_driver_merge import _merge_json_values as _merge_json_values
-from .install_driver_merge import _merge_native_content as _merge_native_content
 from .install_driver_merge import _merged_json_text as _merged_json_text
-from .install_driver_merge import _merged_yaml_text as _merged_yaml_text
 from .install_driver_merge import (
     _operator_owned_merge_text as _operator_owned_merge_text,
 )
 from .install_driver_merge import _operator_owned_preview as _operator_owned_preview
-from .install_driver_merge import _overlay_json_settings as _overlay_json_settings
 from .install_driver_merge import _unified_diff as _unified_diff
 from .install_driver_merge import (
     apply_managed_block_anchor as apply_managed_block_anchor,
@@ -148,9 +153,11 @@ from .install_driver_merge import (
     apply_operator_owned_content as apply_operator_owned_content,
 )
 from .install_driver_merge import apply_sentinel_merge as apply_sentinel_merge
+from .install_driver_merge import content_tokens as content_tokens
 from .install_driver_merge import project_profile_document as project_profile_document
 from .install_driver_merge import render_content_tokens as render_content_tokens
 from .install_driver_merge import write_text_safely as write_text_safely
+from .install_driver_ownership import _merge_native_content as _merge_native_content
 from .install_driver_pathsafety import _allowed_write_root as _allowed_write_root
 from .install_driver_pathsafety import _existing_chain as _existing_chain
 from .install_driver_pathsafety import (
@@ -162,6 +169,7 @@ from .install_driver_pathsafety import _root_for as _root_for
 from .install_driver_pathsafety import _unsafe_symlink as _unsafe_symlink
 from .install_driver_pathsafety import _validate_target_path as _validate_target_path
 from .install_driver_pathsafety import _within_allowed_root as _within_allowed_root
+from .install_driver_planvalidation import _dry_run_results as _dry_run_results
 from .install_driver_planvalidation import (
     _generated_targets_for_entry as _generated_targets_for_entry,
 )
@@ -194,6 +202,13 @@ from .install_driver_removal import (
 from .install_driver_removal import (
     surgically_remove_materialized_config as surgically_remove_materialized_config,
 )
+from .install_driver_retention import BACKUP_KEEP as BACKUP_KEEP
+from .install_driver_retention import RetentionReport as RetentionReport
+from .install_driver_retention import apply_retention as apply_retention
+from .install_driver_retention import list_backup_timestamps as list_backup_timestamps
+from .install_driver_retention import prune_history as prune_history
+from .install_driver_reversal import capture_missing_dirs as capture_missing_dirs
+from .install_driver_reversal import rollback_install as rollback_install
 from .install_driver_treeops import (
     _directory_contents_equal as _directory_contents_equal,
 )
@@ -204,6 +219,7 @@ from .install_driver_treeops import (
 from .install_driver_treeops import (
     _write_single_file_directory as _write_single_file_directory,
 )
+from .install_driver_treeops import remove_created_dirs as remove_created_dirs
 from .install_driver_treeops import replace_tree as replace_tree
 from .install_driver_treeops import sweep_stale as sweep_stale
 from .install_driver_types import _INSTALL_ENTRY_MODES as _INSTALL_ENTRY_MODES
@@ -228,9 +244,15 @@ from .install_driver_types import _path_text as _path_text
 from .install_driver_types import _result as _result
 from .install_driver_types import _timestamp_slug as _timestamp_slug
 from .install_driver_types import _with_detail as _with_detail
+from .install_driver_types import backup_session as backup_session
 from .install_driver_types import operation_label as operation_label
 from .install_driver_types import preview_status as preview_status
 from .install_driver_types import resolve_source as resolve_source
+
+# Earlier private spellings of names now public above, kept resolvable for
+# consumers that still reach them through this module.
+_capability_projection_results = capability_projection_results
+_is_apothem_hook = is_apothem_hook
 
 __all__ = [
     "APOTHEM_SRC",
@@ -244,6 +266,8 @@ __all__ = [
     "MaterializationOutcome",
     "MaterializationResult",
     "MaterializationRun",
+    "RetentionReport",
+    "apply_claude_rules",
     "apply_codex_agents",
     "apply_command_skills",
     "apply_gemini_agents",
@@ -258,21 +282,28 @@ __all__ = [
     "apply_sentinel_merge",
     "apply_write_text",
     "backup_existing",
+    "backup_ledger_targets",
+    "backup_session",
     "build_plan",
+    "capability_projection_results",
+    "capture_missing_dirs",
     "check_fidelity",
     "detect_install",
     "fidelity_is_faithful",
     "finalize_install",
+    "is_apothem_hook",
     "list_backup_timestamps",
     "load_rules",
     "make_ignore",
     "operation_label",
     "preview_status",
+    "prune_history",
     "record_install",
     "replace_tree",
     "resolve_source",
     "resolve_target",
     "restore_backup",
+    "rollback_install",
     "run_install",
     "run_uninstall",
     "surgically_remove_materialized_config",

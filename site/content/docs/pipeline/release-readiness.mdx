@@ -1,0 +1,45 @@
+---
+title: "/release-readiness"
+description: "Reference for the /release-readiness command: invocation, arguments, inputs and outputs."
+---
+{/* SPDX-License-Identifier: MIT */}
+{/* apothem:generated-page — generated from src/apothem/commands; edit the command definition and rerun site/scripts/update-reference-inventory.mjs */}
+
+{/* apothem:generated-reference:start */}
+
+Operator-driven pre-release gate sweep against the production-ready discipline. Runs the host's quality matrix (lint, format, type-check, test), a dependency-risk pass, and the supply-chain checks (pinned actions, no secret literals, signed artifacts where ratified), then verifies the seven visibility surfaces, CHANGELOG currency, and version-to-tag consistency. Emits a single readiness verdict — READY or BLOCKED with the ordered blocking list — at the consuming suite's _inputs/release-readiness-findings.md with HIGH / MEDIUM / LOW severity triage and concrete-driver rationale per finding. SOTA references: Keep-a-Changelog, Conventional Commits, SemVer, SLSA, Sigstore.
+
+## Invocation
+
+```text
+/release-readiness [path/to/repo/] [--strict]
+```
+
+The definition sets `disable-model-invocation: true`, so a harness that honors that key starts this command only when you type it.
+
+## Pipeline position
+
+The terminal gate before a release decision. It consumes the deployed repository's release surface — the quality matrix, the dependency manifest, the CI workflows, the visibility-surface artifacts, the CHANGELOG, and the version-and-tag state — and emits the readiness verdict the release decision consumes. The command modifies no source, publishes nothing, and tags nothing; the verdict is a read-only diagnostic.
+
+## Inputs
+
+The deployed repository's release surface: root manifest files, `.github/workflows/*.yml`, the dependency lock state, `CHANGELOG.md`, the version declaration in the manifest, the git tag stream, and the seven visibility-surface artifacts (README · install/use · is-it-alive · is-it-safe · how-to-contribute · can-I-trust · what-changed-and-when) per `rules/production-ready-prs.md` §2. When the consuming suite carries a dependency-audit artifact at `_inputs/dependency-audit-findings.md`, its CVE inventory is read as context.
+
+| Argument | Type | Required | Description |
+| -------- | ---- | -------- | ----------- |
+| `path/to/repo/` | Path | Yes | Root directory of the deployed repository. MUST contain a root manifest plus at least one of `.github/workflows/`, `CHANGELOG.md`, or a versioned tag stream. The command refuses execution when no release surface resolves. |
+| `--strict` | Flag | No | Promote every MEDIUM finding to a blocking finding. Under `--strict`, the verdict is READY only when zero HIGH and zero MEDIUM findings remain; LOW findings are reported but do not block. |
+
+## Outputs
+
+The verdict artifact at `_inputs/release-readiness-findings.md` carrying the READY / BLOCKED verdict, the ordered blocking list, the per-gate finding count, the per-severity breakdown, the per-axis attestation against the seven-axs-of-breadth taxonomy, and the sweep's `verified:` date.
+
+## Next step
+
+**When the verdict is READY**, proceed to the operator-driven release decision; the readiness artifact carries the attested gate evidence. **When the verdict is BLOCKED**, invoke `/plan-execute` against the first HIGH finding in the ordered blocking list to remediate, then re-run `/release-readiness` to re-attest.
+
+## Source
+
+Generated from [`src/apothem/commands/release-readiness.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/commands/release-readiness.md), the command definition every harness installs.
+
+{/* apothem:generated-reference:end */}

@@ -143,7 +143,7 @@ Emit the consuming suite's `_inputs/security-audit-findings.md` with the canonic
 5. **`## §Validation Gate Outcome`** — the fifteen-bar gate attestation block per `rules/pre-emission-gate.md` §2.
 6. **`## §Bindings (§0.j five-direction)`** — the artifact's outward bindings.
 
-Apply incremental generation per `rules/large-file-generation.md` above 500 lines. Run the fifteen-bar gate per `rules/pre-emission-gate.md` (canonical per-bar table at `rules/pre-emission-gate-bars.md` §1). Security-tier deltas: **M5** (every finding cites a verified file:line + commit SHA; no fabrication; secret evidence redacted); **M7** (every severity-boundary, accepted-risk, and false-positive call carries `**Recommended**` + concrete-driver rationale). Iterate on bar failure per §3 until every bar passes, then emit the attestation block.
+Apply incremental generation per `rules/large-file-generation.md` above 500 lines. Run the fifteen-bar gate per `rules/pre-emission-gate.md` (canonical per-bar table at `rules/pre-emission-gate-bars.md` §1). Security-tier deltas: **M5** (every finding cites a verified file:line + commit SHA; no fabrication; secret evidence redacted); **M7** (every severity-boundary, accepted-risk, and false-positive call carries `**Recommended**` + concrete-driver rationale). Iterate on bar failure per §3 until every bar passes or its three-round cap returns BLOCKED, then emit the attestation block.
 
 ---
 

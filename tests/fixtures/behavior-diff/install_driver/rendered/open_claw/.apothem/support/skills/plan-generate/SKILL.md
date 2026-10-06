@@ -1,12 +1,12 @@
 ---
 name: "plan-generate"
 version: "0.1.0"
-updated: "2026-06-10"
+updated: "2026-10-02"
 description: "Generates a complete Master Plan Suite from raw prose or an authored `_spec/spec.md` — ingests requirements, runs seriousness-scaled discovery with the Five Cognitive Filters, decomposes into acyclic phases, and emits PREAMBLE/MASTER-PLAN/PROGRESS/PLAN-NOTES plus per-phase PHASE.md files gated by the fifteen-bar pre-emission sweep. Mid-chain `/plan` stage between `/plan-spec` and `/plan-review`."
 argument-hint: "[path/to/prose.md] [--mode NEW|OVERHAUL] [--seriousness LEVEL] [--context CONTEXT] [--mission MISSION] [--domain DOMAIN] [--dry-run]"
 disable-model-invocation: false
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -263,7 +263,7 @@ Invoke the structured-inquiry channel: question `Is the generated plan suite rea
 - **NEVER overwrite** an existing plan suite without confirmation.
 - **NEVER proceed** without template v0.1.0+.
 - **Apply the Cognitive Filters** (cognitive identity rule, Section 2) during discovery (Step 3) and architectural decisions (Step 6) per seriousness scaling.
-- **Base protocol:** Agent Teams (CM-25) with return contracts — deployment scales with seriousness per the agent-orchestration rule (Optional at EXPLORING, Encouraged at PERSONAL_USE, Required at SHARED+). Default token budgets per CM-25C: Research 500, Audit/Quality 200, Generation 1000. Error recovery (CM-18), 3-failure escalation. Session resilience (CM-24/CM-14). Always-on rules (CM-22–28) enforced at all steps.
+- **Base protocol:** Worker Teams (CM-17) with return contracts (CM-25) — deployment scales with seriousness per the agent-orchestration rule (Optional at EXPLORING, Encouraged at PERSONAL_USE, Required at SHARED+). Default token budgets per CM-25C: Research 500, Audit/Quality 200, Generation 1000. Error recovery (CM-18), 3-failure escalation. Session resilience (CM-24/CM-14). Always-on rules (CM-22–28) enforced at all steps.
 
 ---
 
@@ -278,7 +278,7 @@ All template and config mandates are in effect (CM-13 and CM-16 not applicable �
 | CM-12 | All steps: lean context management |
 | CM-14 | Session End on pressure; Session Start on resume |
 | CM-15 | Step 6: forward refs; Step 7B: consistency |
-| CM-17 | Steps 2-3, 5-7: Agent Teams |
+| CM-17 | Steps 2-3, 5-7: Worker Teams |
 | CM-18 | Critical Rules: 3-failure escalation |
 | CM-19 | After Steps 3, 5-6, 7 |
 | CM-20 | Step 9: pipeline handoff |
@@ -352,4 +352,8 @@ Invoke `/plan-review` on the generated suite. `/plan-review` runs the forensic a
 
 ## Installed Reference Paths
 
-When this skill is installed by Apothem, resolve repository-style references such as `rules/...`, `templates/...`, and `hooks/...` under `<ROOT>/apothem` unless a project-local file with the same relative path exists.
+When this skill is installed by Apothem, resolve a repository-style reference against the installed directory for its first segment, unless a project-local file with the same relative path exists.
+
+- `rules/<path>` is `<ROOT>/.apothem/support/rules/<path>`
+- `templates/<path>` is `<ROOT>/.apothem/support/templates/<path>`
+- `hooks/<path>` is `<ROOT>/.apothem/support/hooks/<path>`

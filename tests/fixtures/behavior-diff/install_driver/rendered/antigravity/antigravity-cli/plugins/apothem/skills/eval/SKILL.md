@@ -1,12 +1,12 @@
 ---
 name: "eval"
 version: "0.1.0"
-updated: "2026-06-16"
+updated: "2026-10-02"
 description: "Model-agnostic language-model evaluation campaign. Defines an evaluation dataset and scorer using the eval-harness skill, runs a candidate model or prompt over the dataset, scores every output with the prompt-evaluator agent, aggregates campaign metrics plus a per-category breakdown, and emits a report that surfaces regressions against the prior baseline. Operates against any model provider — no single vendor is assumed; the dataset, scorer, and candidate endpoint are all operator-supplied. Output lands at the consuming suite's `_inputs/eval-findings.md` with per-category scores, aggregate metrics, and a regression ledger ready for downstream release-readiness review."
 argument-hint: "[--dataset PATH] [--scorer NAME]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -150,4 +150,8 @@ Invoke `/perf-audit` to measure the candidate endpoint's runtime against the per
 
 ## Installed Reference Paths
 
-When this skill is installed by Apothem, resolve repository-style references such as `rules/...` under `<ROOT>/antigravity-cli/plugins/apothem`, `templates/...` and `hooks/...` under `<ROOT>/antigravity-cli/plugins/apothem/apothem`, unless a project-local file with the same relative path exists.
+When this skill is installed by Apothem, resolve a repository-style reference against the installed directory for its first segment, unless a project-local file with the same relative path exists.
+
+- `rules/<path>` is `<ROOT>/antigravity-cli/plugins/apothem/rules/<path>`
+- `templates/<path>` is `<ROOT>/antigravity-cli/plugins/apothem/.apothem/support/templates/<path>`
+- `hooks/<path>` is `<ROOT>/antigravity-cli/plugins/apothem/.apothem/support/hooks/<path>`

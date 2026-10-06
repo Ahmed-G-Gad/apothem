@@ -68,17 +68,16 @@ def test_each_behavior_opt_in_path_activates(flag: str) -> None:
 
 def test_gate_advisory_by_default_does_not_block() -> None:
     """With no strict opt-in, a failing verdict still exits PASS (advisory)."""
-    rest, strict = gate._resolve_strict(["gate", "."])
+    strict = gate._strict_enabled(False)
     assert strict is False
-    assert rest == ["gate", "."]
     assert gate._gate_exit(passed=False, strict=strict) == gate.EXIT_PASS
 
 
 def test_gate_strict_flag_restores_blocking() -> None:
-    """The --strict flag is consumed from argv and restores blocking."""
-    rest, strict = gate._resolve_strict(["gate", "--strict", "."])
+    """The --strict flag restores blocking."""
+    assert gate._build_parser().parse_args(["--strict", "."]).strict is True
+    strict = gate._strict_enabled(True)
     assert strict is True
-    assert rest == ["gate", "."]
     assert gate._gate_exit(passed=False, strict=strict) == gate.EXIT_FAIL
 
 
@@ -87,7 +86,7 @@ def test_gate_strict_env_restores_blocking(
 ) -> None:
     """A truthy strict environment variable restores blocking."""
     monkeypatch.setenv(gate.STRICT_ENV, "1")
-    _rest, strict = gate._resolve_strict(["gate", "."])
+    strict = gate._strict_enabled(False)
     assert strict is True
     assert gate._gate_exit(passed=False, strict=strict) == gate.EXIT_FAIL
 

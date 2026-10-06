@@ -27,11 +27,12 @@
       "style": "concise"
     },
     "rules": [],
+    "schema_version": 1,
     "seriousness": "PERSONAL_USE",
     "workspace": {
       "directory_name": ".apothem",
       "scope": "project-local"
     }
   },
-  "stdout": "{\"identity\": {\"name\": \"Example User\", \"role\": \"senior software engineer\", \"email\": \"dev@example.invalid\", \"github\": \"example-user\"}, \"preferences\": {\"language\": \"python\", \"style\": \"concise\"}, \"rules\": [], \"seriousness\": \"PERSONAL_USE\", \"enforcement\": {\"sprints\": false, \"agent_teams\": false, \"multitasking\": false, \"continuous_execution\": false, \"learning_loop\": false}, \"mcp_servers\": {}, \"harnesses\": {}, \"exclude_harnesses\": [], \"workspace\": {\"directory_name\": \".apothem\", \"scope\": \"project-local\"}}\n"
+  "stdout": "{\"schema_version\": 1, \"identity\": {\"name\": \"Example User\", \"role\": \"senior software engineer\", \"email\": \"dev@example.invalid\", \"github\": \"example-user\"}, \"preferences\": {\"language\": \"python\", \"style\": \"concise\"}, \"rules\": [], \"seriousness\": \"PERSONAL_USE\", \"enforcement\": {\"sprints\": false, \"agent_teams\": false, \"multitasking\": false, \"continuous_execution\": false, \"learning_loop\": false}, \"mcp_servers\": {}, \"harnesses\": {}, \"exclude_harnesses\": [], \"workspace\": {\"directory_name\": \".apothem\", \"scope\": \"project-local\"}}\n"
 }

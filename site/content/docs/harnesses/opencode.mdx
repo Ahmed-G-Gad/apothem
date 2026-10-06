@@ -31,16 +31,36 @@ files, and normalizes Apothem helper definitions as OpenCode subhelpers.
 
 ## Profile-to-native-config mapping
 
-The adapter renders `opencode.json` with an `instructions` file list pointing
-at Apothem's installed rules, then propagates each shared Apothem cohort into
+The adapter renders `opencode.json` with an `instructions` file list naming
+your profile document and Apothem's always-on rules, then propagates each shared Apothem cohort into
 either a native OpenCode surface or an Apothem-owned support subtree. Existing
 matching Apothem-managed children are backed up before replacement.
 
 ## Compatibility notes
 
-Rules are referenced through the native `instructions` list. Templates and
-hook prompts are reference material under `~/.config/opencode/.apothem/support/`;
-commands, skills, and helper definitions use native discovery locations.
+OpenCode combines every file the `instructions` list names into every session
+([OpenCode rules](https://opencode.ai/docs/rules/)). The list therefore names
+your profile document first, then only the rules whose `alwaysApply` is
+`true`, one explicit
+`~/.config/opencode/.apothem/support/rules/<name>.md` path each; OpenCode
+expands the leading `~/` against your home directory. The path-filtered rules,
+templates, and hook prompts stay installed as reference material under
+`~/.config/opencode/.apothem/support/`, where a rule, skill, or command that
+cites one reads it on demand. Commands, skills, and helper definitions use
+native discovery locations.
+
+The profile document `~/.config/opencode/apothem/rules/00-apothem-profile.md`
+carries your identity and preferences from the shared profile, and ends with
+an Apothem support files section that names the absolute directory under
+`~/.config/opencode/.apothem/support/` each repository-style citation
+(`rules/<name>.md`, `templates/...`, `hooks/...`) resolves against. It is the
+first `instructions` entry, so OpenCode loads it in every session.
+
+An `opencode.json` written by an earlier release lists the single glob
+`~/.config/opencode/.apothem/support/rules/*.md`, which loads every rule.
+`apothem install` and `apothem update` replace it with the always-on list, and
+`apothem uninstall` removes both forms. Your own `instructions` entries are
+kept in every case.
 
 ## Verification
 

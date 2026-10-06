@@ -2,6 +2,7 @@
 title: "Contribuir a Apothem — Guía del desarrollador"
 description: "Mantén y extiende el ecosistema de Apothem creando reglas, comandos, ayudantes, habilidades y hooks con esquemas canónicos, requisitos de frontmatter y procedimientos de validación."
 machineTranslated: true
+sourceHash: "19a6e0292c96762b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -350,7 +351,7 @@ description: "What this command does"
 argument-hint: "[path/to/input] [--flag VALUE]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 ```
 
@@ -414,9 +415,6 @@ description: "What this helper specializes in"
 tools: "Read, Glob, Grep, Bash"
 disallowedTools: "Write, Edit"
 maxTurns: 15
-effort: "high"
-permissionMode: "default"
-memory: false
 portability: "universal"
 ---
 ```
@@ -484,7 +482,6 @@ userInvocable: true | false
 disable-model-invocation: true | false
 allowed-tools: "Read, Glob, Grep"
 argument-hint: "[args]"               # optional; if userInvocable
-effort: "max"                          # optional
 ---
 ```
 

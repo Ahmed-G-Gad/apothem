@@ -37,3 +37,9 @@ Two layers govern failure. (a) The Python dispatcher at `hooks/dispatch.py` is f
 ## Non-matching writes
 
 No action. The guard is scoped to the dynamic-evaluation and unsafe-deserialization primitives above applied to untrusted input; every other construct passes unaffected.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The advisory flag on dynamic evaluation or unsafe deserialization of untrusted or model-derived input in a Write, Edit, or Bash command.
+- **Established by ↑** The PreToolUse Write, Edit, and Bash registrations in `hooks/hooks.json` and the harness settings templates. `rules/code-craft-conventions.md` (M13.8 security-conscious code: no `eval` or `exec` on untrusted input).
+- **Cross-bound with ↔** `hooks/messages/pretooluse-dependency-guard.md` (the sibling advisory security guard on the same write tools).

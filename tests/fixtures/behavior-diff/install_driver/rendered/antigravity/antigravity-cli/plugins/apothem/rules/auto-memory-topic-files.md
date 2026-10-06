@@ -1,8 +1,7 @@
 ---
-name: "auto-memory-topic-files"
+trigger: glob
 description: "Path-filtered companion sub-rule carrying the topic-file management discipline, ecosystem-specific memory hygiene, session-end evaluation procedure, decision tree, and anti-patterns declared at the parent `auto-memory.md` rule's anchors; demand-loaded when the assistant edits any memory artifact."
-pathFilter: "**/memory/**, **/MEMORY.md, **/projects/**/memory/**, **/promotion-ledger.md"
-alwaysApply: false
+globs: "**/memory/**, **/MEMORY.md, **/projects/**/memory/**, **/promotion-ledger.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

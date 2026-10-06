@@ -18,7 +18,7 @@ import argparse
 import json
 import re
 import sys
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import date
 from pathlib import Path
 from typing import Final
@@ -41,6 +41,27 @@ _REQUIRED_PIN_FIELDS: Final[tuple[str, ...]] = (
 )
 _BRANCH_POINTED_URL: Final[re.Pattern[str]] = re.compile(
     r"https?://[^\s)]+/(?:blob|tree)/(?:main|master|HEAD|trunk)(?:/|\b)"
+)
+_ABSOLUTE_URL: Final[re.Pattern[str]] = re.compile(r"https://[^\s<>()\[\]`\"'|]+")
+# Addresses that are not vendor evidence: Apothem's own site and repository,
+# and the reserved example / loopback hosts.
+_PROJECT_HOSTS: Final[frozenset[str]] = frozenset({"apothem.ahmedgad.com"})
+_PROJECT_REPO_PREFIXES: Final[tuple[str, ...]] = (
+    "github.com/ahmed-g-gad/apothem",
+    "raw.githubusercontent.com/ahmed-g-gad/apothem",
+)
+_RESERVED_DOMAINS: Final[tuple[str, ...]] = (
+    "example.com",
+    "example.org",
+    "example.net",
+    "localhost",
+)
+# ``- Discovery target: <capability> by <YYYY-MM-DD> — <what is decided>``
+_DISCOVERY_LINE: Final[re.Pattern[str]] = re.compile(
+    r"^\s*-\s*Discovery target:(?P<rest>.*)$", re.MULTILINE
+)
+_DISCOVERY_TARGET: Final[re.Pattern[str]] = re.compile(
+    r"^\s*(?P<capability>[a-z_]+)\s+by\s+(?P<date>\S+)"
 )
 
 
@@ -65,6 +86,7 @@ class CheckedHarness:
     pin_path: str
     snapshot_date: str
     age_days: int
+    discovery_targets: dict[str, str] = field(default_factory=dict)
 
 
 def _harness_dirs(root: Path) -> list[Path]:
@@ -100,15 +122,49 @@ def _snapshot_date(pin_path: Path) -> date | None:
         return None
 
 
+def _is_vendor_url(url: str) -> bool:
+    """Return True when *url* points at a vendor rather than Apothem or a placeholder."""
+    address = url.split("://", 1)[1]
+    host = address.split("/", 1)[0].split(":", 1)[0].lower()
+    if host in _PROJECT_HOSTS or address.startswith(_PROJECT_REPO_PREFIXES):
+        return False
+    return not any(
+        host == domain or host.endswith(f".{domain}") for domain in _RESERVED_DOMAINS
+    )
+
+
 def _pin_schema_error(pin_path: Path) -> str | None:
     """Return the first convention-pin schema error, if any."""
     text = pin_path.read_text(encoding="utf-8")
-    for field in _REQUIRED_PIN_FIELDS:
-        if field not in text:
-            return f"standard convention pin is missing required field: {field}"
+    for required in _REQUIRED_PIN_FIELDS:
+        if required not in text:
+            return f"standard convention pin is missing required field: {required}"
     if _BRANCH_POINTED_URL.search(text):
         return "standard convention pin uses branch-pointed evidence URL"
+    if not any(_is_vendor_url(m.group(0)) for m in _ABSOLUTE_URL.finditer(text)):
+        return "standard convention pin cites no absolute vendor URL"
     return None
+
+
+def _discovery_targets(pin_path: Path) -> tuple[dict[str, date], str | None]:
+    """Parse the pin's discovery targets; return (targets, first error)."""
+    text = pin_path.read_text(encoding="utf-8")
+    targets: dict[str, date] = {}
+    for line in _DISCOVERY_LINE.finditer(text):
+        match = _DISCOVERY_TARGET.match(line.group("rest"))
+        if match is None:
+            return targets, (
+                "Discovery target line must read "
+                "'<capability> by <YYYY-MM-DD>': " + line.group(0).strip()
+            )
+        capability, raw_date = match.group("capability"), match.group("date")
+        try:
+            targets[capability] = date.fromisoformat(raw_date)
+        except ValueError:
+            return targets, (
+                f"discovery target for {capability} has an invalid date: {raw_date}"
+            )
+    return targets, None
 
 
 def _validate(
@@ -183,12 +239,36 @@ def _validate(
             )
             continue
 
+        targets, target_error = _discovery_targets(pin_path)
+        overdue = sorted(
+            (due, capability) for capability, due in targets.items() if due < today
+        )
+        if target_error is None and overdue:
+            due, capability = overdue[0]
+            target_error = (
+                f"discovery target for {capability} is overdue (due {due.isoformat()})"
+            )
+        if target_error is not None:
+            drifted.append(
+                DriftedHarness(
+                    harness=harness_dir.name,
+                    reason=target_error,
+                    pin_path=rel_pin,
+                    snapshot_date=snapshot.isoformat(),
+                    age_days=age_days,
+                )
+            )
+            continue
+
         checked.append(
             CheckedHarness(
                 harness=harness_dir.name,
                 pin_path=rel_pin,
                 snapshot_date=snapshot.isoformat(),
                 age_days=age_days,
+                discovery_targets={
+                    capability: due.isoformat() for capability, due in targets.items()
+                },
             )
         )
 

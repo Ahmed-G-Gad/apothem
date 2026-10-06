@@ -16,10 +16,13 @@ from apothem.lib.propagation import (
 
 from .install_driver_backup import _replace_path, write_bytes_safely
 from .install_driver_converters import (
+    _antigravity_agent_text,
+    _antigravity_rule_text,
+    _claude_rule_text,
     _codex_agent_text,
+    _command_skill_files,
     _gemini_agent_text,
     _gemini_command_text,
-    _generated_skill_text,
     _native_markdown_command_text,
     _opencode_agent_text,
     _qwen_agent_text,
@@ -36,7 +39,9 @@ from .install_driver_pathsafety import (
 )
 from .install_driver_treeops import (
     _directory_contents_equal,
-    _write_single_file_directory,
+    _native_skill_dir_files,
+    _skill_children,
+    _write_generated_directory,
     replace_tree,
 )
 from .install_driver_types import (
@@ -241,8 +246,14 @@ def apply_command_skills(
     harness_root: Path | None = None,
     project_root: Path | None = None,
     harness_name: str = "manual",
+    skip: frozenset[str] = frozenset(),
 ) -> list[MaterializationResult]:
-    """Install Markdown command files as native skill directories."""
+    """Install Markdown command files as native skill directories.
+
+    A command named in *skip* is left out: a source skill of the same name is
+    installed into the same directory and takes precedence (see
+    :func:`skills_sharing_command_target`).
+    """
     src = resolve_source(entry.source)
     dst = resolve_target(
         entry.target, harness_root=harness_root, project_root=project_root
@@ -269,14 +280,13 @@ def apply_command_skills(
     root = _root_for(harness_root, project_root)
     results: list[MaterializationResult] = []
     for source_path in sorted(src.glob("*.md")):
-        if source_path.name in _COHORT_DOC_FILES:
+        if source_path.name in _COHORT_DOC_FILES or source_path.stem in skip:
             continue
         skill_dir = dst / source_path.stem
         results.append(
-            _write_single_file_directory(
+            _write_generated_directory(
                 skill_dir,
-                "SKILL.md",
-                _generated_skill_text(
+                _command_skill_files(
                     source_path,
                     harness_name=harness_name,
                     install_root=root,
@@ -288,6 +298,78 @@ def apply_command_skills(
                 allowed_root=allowed_root,
             )
         )
+    return results
+
+
+def apply_native_skills(
+    entry: InstallEntry,
+    *,
+    ignore: IgnoreFn | None = None,
+    exclude: list[str] | None = None,
+    harness_root: Path | None = None,
+    project_root: Path | None = None,
+    harness_name: str = "manual",
+) -> list[MaterializationResult]:
+    """Install skill directories in the harness's native skill form.
+
+    Like ``merge_tree_entries`` for a skills cohort (direct children replaced
+    one by one, operator siblings kept), but each skill directory is emitted
+    through :func:`_native_skill_emission`: the harness may translate
+    ``SKILL.md`` frontmatter and add sidecar files. Plain files at the cohort
+    root are copied unchanged.
+    """
+    src = resolve_source(entry.source)
+    dst = resolve_target(
+        entry.target, harness_root=harness_root, project_root=project_root
+    )
+    if not src.is_dir():
+        return [
+            _result(
+                "skipped",
+                "native_skills",
+                dst,
+                "source directory does not exist",
+                source=src,
+            )
+        ]
+    allowed_root = _allowed_write_root(harness_root, project_root)
+    target_error = _validate_target_path(
+        dst, allowed_root=allowed_root, operation="native_skills"
+    )
+    if target_error is not None:
+        return [target_error]
+    dst.mkdir(parents=True, exist_ok=True)
+    root = _root_for(harness_root, project_root)
+    results: list[MaterializationResult] = []
+    for source_path in _skill_children(src, ignore, exclude):
+        if source_path.is_dir():
+            files = _native_skill_dir_files(
+                source_path, harness_name=harness_name, ignore=ignore
+            )
+            results.append(
+                _write_generated_directory(
+                    dst / source_path.name,
+                    files,
+                    root=root,
+                    harness_name=harness_name,
+                    operation="native_skills",
+                    source=source_path,
+                    allowed_root=allowed_root,
+                    ignore=ignore,
+                )
+            )
+        elif source_path.is_file():
+            results.append(
+                write_bytes_safely(
+                    dst / source_path.name,
+                    source_path.read_bytes(),
+                    install_root=root,
+                    harness_name=harness_name,
+                    operation="native_skills",
+                    source=source_path,
+                    allowed_root=allowed_root,
+                )
+            )
     return results
 
 
@@ -499,3 +581,90 @@ def apply_markdown_commands(
         project_root=project_root,
         harness_name=harness_name,
     )
+
+
+def apply_claude_rules(
+    entry: InstallEntry,
+    *,
+    ignore: IgnoreFn | None = None,
+    exclude: list[str] | None = None,
+    harness_root: Path | None = None,
+    project_root: Path | None = None,
+    harness_name: str = "manual",
+) -> list[MaterializationResult]:
+    """Install rule files with ``pathFilter`` rendered as Claude Code ``paths:``.
+
+    *ignore* and *exclude* are accepted for the shared emission signature (see
+    :data:`HARNESS_EMISSION_APPLIERS`); a flat rules cohort uses neither.
+    """
+    del ignore, exclude
+    return _apply_rendered_cohort(
+        entry,
+        renderer=_claude_rule_text,
+        operation="claude_rules",
+        harness_root=harness_root,
+        project_root=project_root,
+        harness_name=harness_name,
+    )
+
+
+def apply_antigravity_rules(
+    entry: InstallEntry,
+    *,
+    ignore: IgnoreFn | None = None,
+    exclude: list[str] | None = None,
+    harness_root: Path | None = None,
+    project_root: Path | None = None,
+    harness_name: str = "manual",
+) -> list[MaterializationResult]:
+    """Install Markdown rules as Antigravity rules with a valid ``trigger``.
+
+    *ignore* and *exclude* are accepted for the shared emission signature (see
+    :data:`HARNESS_EMISSION_APPLIERS`); a flat rules cohort uses neither.
+    """
+    del ignore, exclude
+    return _apply_rendered_cohort(
+        entry,
+        renderer=_antigravity_rule_text,
+        operation="antigravity_rules",
+        harness_root=harness_root,
+        project_root=project_root,
+        harness_name=harness_name,
+    )
+
+
+def apply_antigravity_agents(
+    entry: InstallEntry,
+    *,
+    ignore: IgnoreFn | None = None,
+    exclude: list[str] | None = None,
+    harness_root: Path | None = None,
+    project_root: Path | None = None,
+    harness_name: str = "manual",
+) -> list[MaterializationResult]:
+    """Install Markdown agents as Antigravity subagent definitions.
+
+    *ignore* and *exclude* are accepted for the shared emission signature; a
+    flat agents cohort uses neither.
+    """
+    del ignore, exclude
+    return _apply_rendered_cohort(
+        entry,
+        renderer=_antigravity_agent_text,
+        operation="antigravity_agents",
+        harness_root=harness_root,
+        project_root=project_root,
+        harness_name=harness_name,
+    )
+
+
+#: Harness-specific emission modes. Each applier takes the entry plus the
+#: ``ignore`` / ``exclude`` / ``harness_root`` / ``project_root`` /
+#: ``harness_name`` keywords; the install dispatcher looks a mode up here, so
+#: adding one is a single row.
+HARNESS_EMISSION_APPLIERS: dict[str, Callable[..., list[MaterializationResult]]] = {
+    "antigravity_agents": apply_antigravity_agents,
+    "antigravity_rules": apply_antigravity_rules,
+    "claude_rules": apply_claude_rules,
+    "native_skills": apply_native_skills,
+}

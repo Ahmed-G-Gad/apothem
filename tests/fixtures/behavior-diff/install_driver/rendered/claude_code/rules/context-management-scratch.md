@@ -3,6 +3,11 @@ name: "context-management-scratch"
 description: "Path-filtered companion rule carrying the plan-workflow directory convention (`_inputs/` working state, `_spec/` authored specifications, and `_outputs/` durable generated emissions) declared at the parent `context-management.md` rule's §2.6 anchor; demand-loaded on plan-workflow entry."
 pathFilter: "**/.apothem/plans/**/*.md, **/_inputs/**/*.md, **/_outputs/**/*.md, **/_spec/**/*.md"
 alwaysApply: false
+paths:
+  - "**/.apothem/plans/**/*.md"
+  - "**/_inputs/**/*.md"
+  - "**/_outputs/**/*.md"
+  - "**/_spec/**/*.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

@@ -1,13 +1,13 @@
 ---
 name: "projectify"
 version: "0.1.0"
-updated: "2026-06-14"
-description: "Chat-app Project elevation skill — matched when the operator asks to 'projectify', 'build a Project', 'set up a Custom GPT / Gem', 'write Project instructions', 'rewrite my Project', or otherwise hands off a chat-app Project (Claude Project / ChatGPT Custom GPT / Gemini Gem) to be freshly authored or elevated to current SOTA conventions. Emits the three deliverables a Project carries — Description, Instruction, knowledge Files — through an inquiry-saturated elicitation that reconciles every preference and ambiguity with the operator before committing, elevated across order / coherence / clarity / determinism / structurality / conciseness / rigor / comprehensiveness and beyond. Holds the knowledge-file set within a measurable per-platform context budget (token-sum / platform-limit <= 0.02, the limit discovered live and never inlined), with the grant to consolidate or divide files through the inquiry channel. Installs agnostically across all harnesses; the deliverables target the chat-app Project. Deterministic output; multi-step autonomy is opt-in / confirmation-gated. NOT for authoring coding-harness rules / skills / commands / hooks (route to the ecosystem authoring paths), and NOT a hardcoded-limit calculator (the per-platform limit is discovered live, never inlined)."
+updated: "2026-10-02"
+description: "Chat-app Project elevation skill — matched when the operator asks to 'projectify', 'build a Project', 'set up a Custom GPT / Gem', 'write Project instructions', 'rewrite my Project', or hands off a chat-app Project (Claude Project / ChatGPT Custom GPT / Gemini Gem) to be authored fresh or elevated to current conventions. Emits the three deliverables a Project carries — Description, Instruction, knowledge Files — through an inquiry-saturated elicitation that settles every preference and ambiguity with the operator before committing. Keeps the knowledge-file set within a measured per-platform context budget (token-sum / platform-limit <= 0.02, the limit discovered live, never inlined) and may consolidate or split files through the inquiry channel. Installs on every harness; the deliverables target the chat-app Project. Deterministic output; multi-step autonomy is opt-in and confirmation-gated. NOT for authoring coding-harness rules, skills, commands, or hooks (route to the ecosystem authoring paths)."
 archetype: "elicitation-template"
-userInvocable: true
+user-invocable: true
 argument-hint: "[project subject] [--platform claude|chatgpt|gemini] [--autonomous]"
 disable-model-invocation: true
-allowed-tools: "Read, Write, Edit, Glob, Grep, WebSearch, WebFetch, TodoWrite"
+allowed-tools: "Read, Glob, Grep, WebSearch, TodoWrite, TaskCreate, TaskGet, TaskList, TaskUpdate"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

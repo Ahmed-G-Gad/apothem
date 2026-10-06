@@ -365,23 +365,26 @@ def check(root: Path) -> GrepResult:
     )
 
 
-def _read_input(argv: list[str]) -> Path:
-    if len(argv) >= 2:
-        return Path(argv[1])
-    return Path.cwd()
-
-
 def _main(argv: list[str]) -> int:
-    root = _read_input(argv)
+    # Imported here, not at module top: ``check()`` stays stdlib-only; only
+    # the command-line entry needs the shared parser and report stamp.
+    from apothem.conformity._grep_base import finish_root_report, parse_root_args
+
+    root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root
     result = check(root)
-    print(result.to_json())
-    # Advisory posture: always exit 0 so the sweep never silent-blocks by
+    # Advisory posture: exit 0 on findings so the sweep never silent-blocks by
     # default. The verdict travels in the JSON — the orchestrator reads the
     # ``advisory: true`` flag plus the inner ``passed`` field (via
     # ``gate._advisory_verdict``) and surfaces a stale-companion finding as
     # ``advisory_findings_present`` without failing the ``gate --all`` run.
-    # CI opts into strict enforcement separately.
-    return EXIT_PASS
+    # CI opts into strict enforcement separately. A sweep that inspected no
+    # folder fails: that is a misconfiguration, not advisory drift.
+    return finish_root_report(
+        result.to_json(),
+        passed=result.passed,
+        inspected=result.folders_inspected,
+        advisory=True,
+    )
 
 
 if __name__ == "__main__":

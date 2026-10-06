@@ -1,0 +1,159 @@
+# SPDX-License-Identifier: MIT
+
+# Behavioural evals — manual dispatch only, billed per run.
+#
+# Runs the eval suite under evals/ against the shipped plugin package with
+# `claude plugin eval`. Every run calls the model with the ANTHROPIC_API_KEY
+# secret and costs money, so the workflow:
+#   - runs only on workflow_dispatch, and only when the repository variable
+#     RUN_PAID_EVALS is 'true' (otherwise the job is skipped);
+#   - takes the cost ceiling, the model under test, the judge model and the
+#     Claude Code version as required inputs with no defaults, so a run never
+#     falls back to an unpinned model or CLI;
+#   - passes --max-cost-usd: a run that reaches the ceiling stops starting new
+#     runs and exits 2 with partial results, which stay out of any before/after
+#     comparison.
+# Exit codes of the eval step: 0 every case met the threshold; 1 a case scored
+# below it (or a case failed to load); 2 partial (cost ceiling or credential).
+#
+# The suite is staged into a scratch copy of the plugin package under
+# $RUNNER_TEMP; the committed plugin tree is never modified. Results
+# (results.json, aggregate-result.json, report.html) are uploaded as the
+# `eval-results` artifact even when the eval step fails.
+#
+# Pinning and permissions follow ci.yml: every action is pinned by commit SHA
+# with a version comment, the token is read-only, and checkout does not
+# persist credentials. Inputs reach the shell through env, never through a
+# ${{ }} expansion inside run:, and are validated before use.
+
+name: Evals
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_cost_usd:
+        description: "Cost ceiling in USD for the whole run (list-price estimate)"
+        required: true
+        type: string
+      model:
+        description: "Model id for the session under test, pinned for the run"
+        required: true
+        type: string
+      judge_model:
+        description: "Model id for judge graders, pinned for the run"
+        required: true
+        type: string
+      claude_code_version:
+        description: "Claude Code CLI version to install (x.y.z; 2.1.269 or later)"
+        required: true
+        type: string
+      tag:
+        description: "Optional case tag filter, for example rule-scoping-regression or trigger"
+        required: false
+        type: string
+        default: ""
+      ablation:
+        description: "with-without adds the no-plugin baseline arm; none runs one arm"
+        required: false
+        type: choice
+        options:
+          - with-without
+          - none
+        default: with-without
+
+permissions:
+  contents: read
+
+concurrency:
+  group: evals-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  evals:
+    name: evals
+    if: vars.RUN_PAID_EVALS == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    permissions:
+      contents: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+        with:
+          node-version-file: site/.nvmrc
+      - name: Validate inputs
+        env:
+          MAX_COST_USD: ${{ inputs.max_cost_usd }}
+          MODEL: ${{ inputs.model }}
+          JUDGE_MODEL: ${{ inputs.judge_model }}
+          CLAUDE_CODE_VERSION: ${{ inputs.claude_code_version }}
+          EVAL_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          fail() { echo "::error::$1"; exit 1; }
+          [[ "$MAX_COST_USD" =~ ^[0-9]+(\.[0-9]+)?$ ]] || fail "max_cost_usd must be a number"
+          [[ "$MODEL" =~ ^[A-Za-z0-9._:@/-]+$ ]] || fail "model must be a model id"
+          [[ "$JUDGE_MODEL" =~ ^[A-Za-z0-9._:@/-]+$ ]] || fail "judge_model must be a model id"
+          [[ "$CLAUDE_CODE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "claude_code_version must be x.y.z"
+          [[ -z "$EVAL_TAG" || "$EVAL_TAG" =~ ^[a-z0-9:-]+$ ]] || fail "tag must be a case tag"
+      - name: Install Claude Code
+        # Installed outside a lockfile on purpose: the exact version is a
+        # required, validated input of every run (no range, no latest), so the
+        # operator pins the CLI per run alongside the model ids. Committing a
+        # lockfile would fix one CLI version in the repository instead.
+        env:
+          CLAUDE_CODE_VERSION: ${{ inputs.claude_code_version }}
+        run: |  # zizmor: ignore[adhoc-packages] exact version from a validated input, see above
+          npm install --global "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
+          claude --version
+      - name: Stage the suite into a copy of the plugin package
+        run: |
+          set -euo pipefail
+          target="${RUNNER_TEMP}/plugin-under-test"
+          mkdir -p "$target"
+          cp -R plugins/claude-code/. "$target/"
+          cp -R evals "$target/evals"
+      - name: Run the eval suite
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          MAX_COST_USD: ${{ inputs.max_cost_usd }}
+          MODEL: ${{ inputs.model }}
+          JUDGE_MODEL: ${{ inputs.judge_model }}
+          EVAL_TAG: ${{ inputs.tag }}
+          ABLATION: ${{ inputs.ablation }}
+        run: |
+          set -euo pipefail
+          args=(
+            "${RUNNER_TEMP}/plugin-under-test"
+            --trust-plugin
+            --scaffold
+            --ablation "$ABLATION"
+            --model "$MODEL"
+            --judge-model "$JUDGE_MODEL"
+            --max-cost-usd "$MAX_COST_USD"
+            --no-publish
+            --output-dir eval-output
+            --json eval-output/results.json
+            --allow-tools Write Edit
+          )
+          if [ -n "$EVAL_TAG" ]; then
+            args+=(--tag "$EVAL_TAG")
+          fi
+          mkdir -p eval-output
+          claude plugin eval "${args[@]}"
+      - name: Upload eval results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: eval-results
+          path: eval-output/
+          if-no-files-found: warn
+          retention-days: 90

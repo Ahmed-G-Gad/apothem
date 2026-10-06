@@ -14,7 +14,7 @@ project-local configuration.
 |------|------|
 | [`claude-code/native-install/settings.json`](claude-code/native-install/settings.json) | A materialized Claude Code `settings.json` — the shape an install writes into the harness's native location. |
 | [`claude-code/settings.local.example.json`](claude-code/settings.local.example.json) | A template for a project-local `settings.local.json`. Copy it to `<project-root>/settings.local.json`, edit, and keep it out of version control (the `.local.json` suffix matches the gitignore pattern). |
-| [`opencode/native-install/opencode.json`](opencode/native-install/opencode.json) | A materialized OpenCode `opencode.json` — a profile-rendered native config: the `$schema` pin, the instructions pointer into the `.apothem/support/` subtree, and the shared MCP inventory rendered into OpenCode's native `mcp` surface (`type: local`/`remote`, `${VAR}` secret indirection). |
+| [`opencode/native-install/opencode.json`](opencode/native-install/opencode.json) | A materialized OpenCode `opencode.json` — a profile-rendered native config: the `$schema` pin, the `instructions` list naming each always-on rule in the `.apothem/support/` subtree, and the shared MCP inventory rendered into OpenCode's native `mcp` surface (`type: local`/`remote`, `${VAR}` secret indirection). |
 | [`cursor/native-install/apothem-rules.mdc`](cursor/native-install/apothem-rules.mdc) | A materialized Cursor rules file — the shape a project-scope install writes into `<project-root>/.cursor/rules/`. The Apothem template and the profile-projected managed block are folded together inside the `<!-- BEGIN/END APOTHEM MANAGED BLOCK -->` sentinels; operator prose outside the sentinels is preserved on re-install. |
 
 ## Two adapter classes, side by side
@@ -29,7 +29,7 @@ calls Class II-A and Class II-B:
 - **OpenCode (Class II-B) — profile-rendered.** A materializer reads the shared
   profile's structured fields and emits a single native config file. The
   `opencode.json` above shows what that render produces — the schema pin, the
-  instructions pointer, and an MCP inventory projected into OpenCode's native
+  always-on rule list, and an MCP inventory projected into OpenCode's native
   `mcp` surface, including the `headers` and `${VAR}` secret indirection a
   remote server needs. Its server list is illustrative and does not correspond
   to `profile.example.yaml`; to see the exact output for a given profile, use

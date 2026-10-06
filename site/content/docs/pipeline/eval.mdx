@@ -1,0 +1,39 @@
+---
+title: "/eval"
+description: "Reference for the /eval command: invocation, arguments, inputs and outputs."
+---
+{/* SPDX-License-Identifier: MIT */}
+{/* apothem:generated-page — generated from src/apothem/commands; edit the command definition and rerun site/scripts/update-reference-inventory.mjs */}
+
+{/* apothem:generated-reference:start */}
+
+Model-agnostic language-model evaluation campaign. Defines an evaluation dataset and scorer using the eval-harness skill, runs a candidate model or prompt over the dataset, scores every output with the prompt-evaluator agent, aggregates campaign metrics plus a per-category breakdown, and emits a report that surfaces regressions against the prior baseline. Operates against any model provider — no single vendor is assumed; the dataset, scorer, and candidate endpoint are all operator-supplied. Output lands at the consuming suite's `_inputs/eval-findings.md` with per-category scores, aggregate metrics, and a regression ledger ready for downstream release-readiness review.
+
+## Invocation
+
+```text
+/eval [--dataset PATH] [--scorer NAME]
+```
+
+The definition sets `disable-model-invocation: true`, so a harness that honors that key starts this command only when you type it.
+
+## Pipeline position
+
+Diagnostic surface for the model-quality review track. It consumes the evaluation dataset, the scorer definition, and the candidate endpoint, and emits the campaign findings artifact that release-readiness consumers read. The command mutates neither the candidate nor the dataset; the findings are read-only diagnostics.
+
+## Inputs
+
+| Argument | Type | Required | Description |
+| -------- | ---- | -------- | ----------- |
+| `--dataset PATH` | Path | No | Path to the evaluation dataset (JSONL / CSV / Parquet). MUST carry an input column, an expected column where the scorer is reference-based, and a category column for the per-category breakdown. When omitted, Phase 1 surfaces the dataset choice as an inquiry. |
+| `--scorer NAME` | Enum | No | Scorer to apply — exact-match · semantic-similarity · rubric-graded · pairwise-preference · operator-defined. When omitted, Phase 1 surfaces the scorer choice as an inquiry with the candidate set annotated per `rules/option-annotation.md`. |
+
+## Next step
+
+Invoke `/perf-audit` to measure the candidate endpoint's runtime against the per-class budgets once the model-quality campaign is clean; the regression ledger at `_inputs/eval-findings.md` is the prerequisite evidence the release-readiness sign-off consumes.
+
+## Source
+
+Generated from [`src/apothem/commands/eval.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/commands/eval.md), the command definition every harness installs.
+
+{/* apothem:generated-reference:end */}

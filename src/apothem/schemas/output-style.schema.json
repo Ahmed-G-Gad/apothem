@@ -35,6 +35,10 @@
       "description": "ISO 8601 date of last human review.",
       "format": "date",
       "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "keep-coding-instructions": {
+      "type": "boolean",
+      "description": "Claude Code key: true keeps Claude Code's built-in software engineering instructions (scoping changes, comments, verification) alongside the style. Claude Code defaults it to false, which drops them; every Apothem style sets true."
     }
   }
 }

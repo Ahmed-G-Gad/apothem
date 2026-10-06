@@ -12,7 +12,7 @@ description: "Canonical normative reference for multi-surface harness configurat
 
 A modern engineering surface is touched by multiple harnesses — chat consoles, in-IDE completion engines, pair-programming companions, and pull-request reviewers. Each reads its own canonical configuration file. If the project ships only one such file, the remaining runtimes silently freelance against unstated conventions; the missing in-repo memory leaks immediately.
 
-The cost of a missing surface is **silent drift in machine-generated code** — the worst kind of defect because it accumulates invisibly. Every machine-generated artifact compounds the divergence; by the time a human reviewer spots the contradiction, the codebase carries weeks of inconsistent conventions.
+The cost of a missing surface is **silent drift in machine-generated code** — the worst class of defect because it accumulates invisibly. Every machine-generated artifact compounds the divergence; by the time a human reviewer spots the contradiction, the codebase carries weeks of inconsistent conventions.
 
 Harness-runtime configuration is plural by deployment reality. The published ecosystem MUST ship a behavioural-memory file for the chat-console runtime AND a repo-scoped instructions file for the in-IDE completion runtime. The two surfaces MUST be mutually coherent — no contradiction, no drift — and MUST jointly encode the same disciplines.
 

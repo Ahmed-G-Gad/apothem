@@ -8,6 +8,7 @@ Protocol-conformance and install-smoke tests for the adapter.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path, PurePosixPath
 
 import pytest
@@ -74,7 +75,7 @@ def test_materializer_emits_qwen_hook_schema(monkeypatch: pytest.MonkeyPatch) ->
     )
     parsed = json.loads(materialize_native_config({}))
     pretool_entries = parsed["hooks"]["PreToolUse"]
-    assert pretool_entries[0]["matcher"] == "^Bash$"
+    assert pretool_entries[0]["matcher"] == "^run_shell_command$"
     assert pretool_entries[0]["sequential"] is True
     first_hook = pretool_entries[0]["hooks"][0]
     assert first_hook["type"] == "command"
@@ -86,7 +87,75 @@ def test_materializer_emits_qwen_hook_schema(monkeypatch: pytest.MonkeyPatch) ->
         '/usr/bin/python3.12 "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py" '
         "PreToolUse pretooluse-bash"
     )
-    assert first_hook["timeout"] == 10000
+    # Qwen reads command-hook timeouts in seconds (a value of 1000 or more is
+    # only accepted as legacy milliseconds).
+    assert first_hook["timeout"] == 10
+
+
+def _hook_entries(parsed: dict[str, object]) -> dict[str, list[dict[str, object]]]:
+    """Return every emitted hook handler grouped by event name."""
+    hooks = parsed["hooks"]
+    assert isinstance(hooks, dict)
+    grouped: dict[str, list[dict[str, object]]] = {}
+    for event, blocks in hooks.items():
+        for block in blocks:
+            grouped.setdefault(event, []).extend(block["hooks"])
+    return grouped
+
+
+def test_materializer_hook_timeouts_are_seconds(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Qwen Code documents command-hook ``timeout`` in seconds and reads a value
+    # of 1000 or more as legacy milliseconds. Every emitted timeout must be a
+    # seconds value: PreToolUse 10 s, session-lifecycle events 30 s, Stop 60 s.
+    from apothem.harnesses.qwen_code import materializer as qwen_materializer
+
+    monkeypatch.setattr(
+        qwen_materializer, "resolve_python_bin", lambda: Path("/usr/bin/python3")
+    )
+    grouped = _hook_entries(json.loads(materialize_native_config({})))
+    expected = {
+        "SessionStart": 30,
+        "PreToolUse": 10,
+        "PreCompact": 30,
+        "PostCompact": 30,
+        "Stop": 60,
+    }
+    assert set(grouped) == set(expected)
+    for event, handlers in grouped.items():
+        for handler in handlers:
+            assert handler["timeout"] == expected[event], (event, handler)
+            assert isinstance(handler["timeout"], int)
+            assert handler["timeout"] < 1000
+
+
+@pytest.mark.parametrize(
+    "interpreter",
+    [
+        "C:/Program Files/Python311/python.exe",
+        "/Users/jane doe/.pyenv/versions/3.12.4/bin/python3",
+    ],
+)
+def test_materializer_quotes_an_interpreter_path_with_spaces(
+    monkeypatch: pytest.MonkeyPatch, interpreter: str
+) -> None:
+    # The hook command is a shell-form string. An interpreter under a path with
+    # spaces must be one quoted token, or the shell splits it and every guard
+    # fails to spawn (the dispatcher is fail-open, so the loss is silent).
+    from apothem.harnesses.qwen_code import materializer as qwen_materializer
+
+    monkeypatch.setattr(
+        qwen_materializer, "resolve_python_bin", lambda: PurePosixPath(interpreter)
+    )
+    grouped = _hook_entries(json.loads(materialize_native_config({})))
+    for handlers in grouped.values():
+        for handler in handlers:
+            command = handler["command"]
+            assert isinstance(command, str)
+            assert command.startswith(
+                f'"{interpreter}" "${{HARNESS_ROOT}}/.apothem/support/hooks/'
+            ), command
 
 
 def test_materializer_hook_commands_resolve_a_real_interpreter(
@@ -165,3 +234,33 @@ def test_capabilities_template_path_resolves_and_commands_are_markdown() -> None
     assert isinstance(template_rel, str)
     assert (_ADAPTER_DIR / template_rel).is_file()
     assert capabilities["custom_command_support"] == "markdown"
+
+
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_qwen_extension_ships_a_markdown_bootstrap_command() -> None:
+    # Qwen Code deprecates TOML commands and shows a migration prompt when it
+    # finds one. The repo root serves both the Gemini CLI extension (TOML only,
+    # read from ``commands/``) and the Qwen Code extension, so the Qwen manifest
+    # points its ``commands`` key at a Qwen-only directory that carries the
+    # Markdown form of the same bootstrap command.
+    manifest = json.loads(
+        (_REPO_ROOT / "qwen-extension.json").read_text(encoding="utf-8")
+    )
+    commands_dir = manifest.get("commands")
+    assert isinstance(commands_dir, str)
+    assert commands_dir != "commands"
+    root = _REPO_ROOT / commands_dir
+    assert not list(root.glob("**/*.toml")), "Qwen must not see a TOML command"
+    command = root / "apothem.md"
+    text = command.read_text(encoding="utf-8")
+    assert text.startswith("---\n"), "frontmatter must be the first content"
+    _, frontmatter, body = text.split("---\n", 2)
+    meta = yaml.safe_load(frontmatter)
+    assert isinstance(meta, dict)
+    assert meta.get("description")
+    # The engine call is pinned to the extension's own version.
+    assert re.search(r"!\{npx @ahmed-g-gad/apothem@\d+\.\d+\.\d+ \{\{args\}\}\}", body)
+    # The Gemini extension keeps its TOML command in the shared directory.
+    assert (_REPO_ROOT / "commands" / "apothem.toml").is_file()

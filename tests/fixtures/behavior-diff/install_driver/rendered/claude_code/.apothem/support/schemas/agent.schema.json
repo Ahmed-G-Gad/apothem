@@ -58,11 +58,9 @@
       "description": "Lifecycle hooks scoped to this subagent (PreToolUse, PostToolUse, Stop, etc.)."
     },
     "memory": {
-      "oneOf": [
-        { "type": "string", "enum": ["user", "project", "local"] },
-        { "type": "boolean" }
-      ],
-      "description": "Persistent memory scope: `user`, `project`, or `local`. Boolean `false` is accepted as the explicit no-memory marker; omit the field to inherit defaults."
+      "type": "string",
+      "enum": ["user", "project", "local"],
+      "description": "Persistent memory scope: `user`, `project`, or `local`. Omit the field for no persistent memory; Claude Code defines no boolean form."
     },
     "background": {
       "type": "boolean",

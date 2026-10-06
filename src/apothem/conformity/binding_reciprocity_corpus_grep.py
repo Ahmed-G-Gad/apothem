@@ -58,8 +58,9 @@ from apothem.conformity._grep_base import (
     EXIT_FAIL,
     EXIT_PASS,
     RootGrepResult,
+    finish_root_report,
     iter_prose_lines,
-    read_root,
+    parse_root_args,
 )
 
 __all__ = ["EXIT_FAIL", "EXIT_PASS", "Finding", "check"]
@@ -204,8 +205,9 @@ def check(root: Path) -> RootGrepResult:
     """
     rules_dir = _resolve_rules_dir(root)
     if rules_dir is None:
-        # No corpus to walk (a subtree without the rules tree, a shallow layout);
-        # a clean pass — there is nothing to check.
+        # No corpus to walk (a subtree without the rules tree, a shallow layout):
+        # no half-edge to report. ``inspected`` stays 0, so the command-line
+        # entry reports the empty scope as a failure, not a pass.
         return RootGrepResult(
             grep=GREP_NAME,
             root=str(root),
@@ -254,17 +256,20 @@ def check(root: Path) -> RootGrepResult:
         root=str(root),
         passed=not findings,
         findings=findings,
+        inspected=len(cross_map),
     )
 
 
 def _main(argv: list[str]) -> int:
-    root = read_root(argv)
+    root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root
     result = check(root)
-    print(result.to_json())
     # Blocking posture: the corpus ships green, so a half-edge is a gating
     # regression — mirror the standard grep exit contract (EXIT_PASS on a
-    # clean walk, EXIT_FAIL on any finding).
-    return EXIT_PASS if result.passed else EXIT_FAIL
+    # clean walk, EXIT_FAIL on any finding). A root with no rules corpus
+    # inspects nothing and fails rather than passing vacuously.
+    return finish_root_report(
+        result.to_json(), passed=result.passed, inspected=result.inspected
+    )
 
 
 if __name__ == "__main__":

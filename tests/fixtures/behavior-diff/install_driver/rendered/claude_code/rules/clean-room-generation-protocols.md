@@ -3,6 +3,20 @@ name: "clean-room-generation-protocols"
 description: "Path-filtered companion rule carrying the full Writing Protocol (§2), Re-Writing Protocol (§3), Code Generation (§4), Prose and Documentation (§5), Plan and Artifact Generation (§6), Decision Tree, and Anti-Patterns specifications anchored at the parent `rules/clean-room-generation.md` rule's pointer sections; demand-loaded when the assistant edits any code, prose, plan, or artifact surface."
 pathFilter: "**/src/**, **/lib/**, **/tools/**, **/scripts/**, **/tests/**, **/docs/**, **/*.py, **/*.md, **/CLAUDE.md, **/rules/**, **/commands/**, **/skills/**, **/agents/**"
 alwaysApply: false
+paths:
+  - "**/src/**"
+  - "**/lib/**"
+  - "**/tools/**"
+  - "**/scripts/**"
+  - "**/tests/**"
+  - "**/docs/**"
+  - "**/*.py"
+  - "**/*.md"
+  - "**/CLAUDE.md"
+  - "**/rules/**"
+  - "**/commands/**"
+  - "**/skills/**"
+  - "**/agents/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

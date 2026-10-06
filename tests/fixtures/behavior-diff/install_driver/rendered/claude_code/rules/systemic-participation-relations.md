@@ -3,6 +3,16 @@ name: "systemic-participation-relations"
 description: "Path-filtered companion rule carrying the operational detail of M14 systemic participation — the four systemic relations table, sibling-convention convergence detail, index/registry update table, the three orphan classes, the three silo classes, retirement discipline, and the cross-component reference graph invariant. Demand-loaded when the parent `systemic-participation.md` rule's anchors surface on host-project component touches."
 pathFilter: "**/src/**, **/lib/**, **/tests/**, **/docs/**, **/.github/**, **/migrations/**, **/__init__.py, **/CONTRIBUTING.md, **/CODEOWNERS"
 alwaysApply: false
+paths:
+  - "**/src/**"
+  - "**/lib/**"
+  - "**/tests/**"
+  - "**/docs/**"
+  - "**/.github/**"
+  - "**/migrations/**"
+  - "**/__init__.py"
+  - "**/CONTRIBUTING.md"
+  - "**/CODEOWNERS"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

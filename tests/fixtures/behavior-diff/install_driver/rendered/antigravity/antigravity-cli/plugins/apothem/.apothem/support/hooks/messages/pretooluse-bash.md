@@ -37,3 +37,9 @@ On hit: STOP. Strip the agent-attribution and re-issue without it. The sole auth
 ## Non-matching commands
 
 No action. The hook is scoped to the ten git-write triggers above; other Bash commands pass unaffected.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The three scans on commit, branch, tag, and move commands: plan-internal isolation, numeric-prefix discipline, and human-only authorship.
+- **Established by ↑** The PreToolUse Bash registration in `hooks/hooks.json` and the harness settings templates. `rules/operational-mandates.md` (plan-internal isolation). `rules/canonical-layout.md` (the numeric-prefix discipline). `rules/production-ready-prs.md` (human-only authorship).
+- **Cross-bound with ↔** `hooks/messages/pretooluse-bash-plan-guard.md` (the other Bash-surface guard).

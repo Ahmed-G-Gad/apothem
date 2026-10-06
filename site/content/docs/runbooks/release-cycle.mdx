@@ -11,15 +11,20 @@ terminates with a verified Release page, a filed CHANGELOG, and an
 install-path smoke confirming each user-facing surface answers the
 canonical install command.
 
-The release shape is **single-tag, two-stage**. One signed release tag on
-`main` triggers `.github/workflows/release.yml`, which builds, signs,
-attests, and publishes the GitHub Release with its full artifact set —
+The release model is **additive**. Each release adds one commit on `main`
+and one signed, annotated `vX.Y.Z` tag; nothing is force-pushed and no
+earlier tag, GitHub Release or npm version is removed. The project has three
+releases, each with its tag, its GitHub Release and its npm version, and all
+stay published: npm versions are immutable (a published `name@version` can
+never be replaced), and pinned installs depend on the tags.
+
+The tag push starts two workflows. `.github/workflows/release.yml` builds,
+signs, attests, and publishes the GitHub Release with its full artifact set:
 sdist, wheel, CycloneDX SBOM, Sigstore cosign bundles, SLSA-3 provenance,
-and the platform runtime archives. The optional second stage is a manual
-dispatch of `publish-npm.yml`, which publishes `@ahmed-g-gad/apothem` to
-npmjs.com after `scripts/release/check-release-ready.sh` is green. The
-versioned CHANGELOG section is authored alongside the tag commit; the
-operator runs the install-path smoke after both stages land.
+and the platform runtime archives. `publish-npm.yml` publishes
+`@ahmed-g-gad/apothem` to npmjs.com through npm trusted publishing. The
+versioned CHANGELOG section lands in the release commit; the operator runs
+the install-path smoke after both workflows finish.
 
 ## 1. Prerequisites
 
@@ -35,8 +40,8 @@ The maintainer confirms the following before tagging:
   is live (verified per the
   [publisher-account-setup runbook](/docs/runbooks/publisher-account-setup)).
 - **Version anchors aligned.** The version string declared at
-  `pyproject.toml` matches the planned tag without the `v` prefix.
-  Verify:
+  `pyproject.toml` matches the planned tag without the `v` prefix
+  (§2.1 sets it, with every other anchor). Verify:
 
   ```bash
   grep '^version' pyproject.toml
@@ -48,29 +53,60 @@ The maintainer confirms the following before tagging:
   version = "X.Y.Z"
   ```
 
-- **CHANGELOG section staged.** `CHANGELOG.md` carries a versioned section
-  under Keep-a-Changelog headings. The maintainer updates the date and
-  release bullets in the same commit that lands the tag.
+- **CHANGELOG entries staged.** The release bullets sit under
+  `## [Unreleased]` in Keep-a-Changelog headings; §2.1 turns them into the
+  dated version section in the commit that lands the tag.
 
 ## 2. Tag and trigger
 
 ### 2.1 Author the release commit
 
-The release commit lands two changes:
-
-- `CHANGELOG.md` version section dated with the actual UTC date of the release.
-- `pyproject.toml` version bumped to the new version (only when the
-  prior commit on `main` already carries the previous-version pin
-  and a fresh bump is required; the commit may also land during the
-  version-bump cycle days before tag time).
-
-Example commit:
+The version lives in more than a dozen files, so do not edit them by hand.
+One command moves all of them:
 
 ```bash
 git checkout main
 git pull --ff-only origin main
-# Author CHANGELOG and pyproject.toml edits via Edit tool, then:
-git add CHANGELOG.md pyproject.toml
+python scripts/release/bump_version.py X.Y.Z
+```
+
+`bump_version.py` updates every version anchor together:
+
+- Every packaging, extension, plugin and marketplace manifest, plus the
+  citation file (version and release date). The full list:
+
+  ```text
+  pyproject.toml
+  package.json
+  site/package.json
+  site/package-lock.json            (the project entries only)
+  vscode-extension/package.json
+  gemini-extension.json
+  qwen-extension.json
+  .claude-plugin/marketplace.json   (top level and metadata)
+  plugins/apothem/.codex-plugin/plugin.json
+  src/apothem/harnesses/antigravity/templates/plugin.json
+  CITATION.cff
+  ```
+
+- `CHANGELOG.md`: the `[Unreleased]` entries become a dated `## [X.Y.Z]`
+  section, `[Unreleased]` compares from `vX.Y.Z`, and a `[X.Y.Z]` link is
+  added.
+- `SECURITY.md`: a new minor gets a supported `X.Y.x` row. Whether older
+  minors stay listed is your decision; the script prints a reminder.
+
+It then regenerates the derived trees: the Claude Code plugin package, the
+behavior-diff goldens, and the docs reference and changelog pages. Pass
+`--dry-run` to list the changes first, `--date
+YYYY-MM-DD` to set the release date (default: today in UTC), or `--no-regen`
+to skip the regeneration. The script refuses a malformed version or a
+downgrade, and re-running it with the current version only re-aligns stray
+anchors.
+
+Review the diff, then commit:
+
+```bash
+git add -A
 git commit -S -m "chore(release): cut vX.Y.Z"
 git push origin main
 ```
@@ -96,25 +132,28 @@ attests, and publishes.
 gh run watch $(gh run list --workflow=release.yml --limit=1 --json databaseId --jq '.[0].databaseId')
 ```
 
-The workflow runs build (sdist + wheel), SBOM generation
-(CycloneDX), keyless cosign signing, SLSA-3 provenance generation and
+The workflow runs build (sdist + wheel, then a CycloneDX SBOM of those
+distributions written beside them), keyless cosign signing, SLSA-3 provenance generation and
 verification, platform archive builds (darwin / linux / windows), archive
 signing with an aggregated `SHA256SUMS` manifest, and the final GitHub
 Release publish. The maintainer scans the `publish GitHub Release` job
 log for the asset-upload confirmations.
 
-### 2.4 Dispatch the npm publish (optional stage)
+### 2.4 Confirm the npm publish
 
-After the GitHub Release and the readiness gate are green:
+The tag push also runs `publish-npm.yml`. Approve the `release` environment
+deployment when prompted. The workflow publishes `@ahmed-g-gad/apothem@X.Y.Z`
+to npmjs.com through npm trusted publishing (OIDC); no registry token is
+stored in the repository. Then confirm readiness:
 
 ```bash
 bash scripts/release/check-release-ready.sh vX.Y.Z
-gh workflow run publish-npm.yml --field tag=vX.Y.Z
 ```
 
-Approve the `npmjs` environment deployment when prompted. The workflow
-publishes `@ahmed-g-gad/apothem@X.Y.Z` to npmjs.com via npm Trusted
-Publishing (OIDC); no registry token is stored in the repository.
+To publish again after a failed run, dispatch the workflow for the same tag
+(`gh workflow run publish-npm.yml --field tag=vX.Y.Z`). It skips publication
+when the version is already on the registry, because npm versions are
+immutable.
 
 ## 3. Distribution Surfaces
 
@@ -124,23 +163,26 @@ here?":
 | # | Surface | Artifact | Verification |
 |---|---|---|---|
 | 1 | GitHub Release (Python distributions) | `apothem-X.Y.Z.tar.gz` (sdist) + `apothem-X.Y.Z-py3-none-any.whl` | `gh release view vX.Y.Z --json assets --jq '.assets[].name'` includes both filenames |
-| 2 | GitHub Release (SBOM) | `sbom.cdx.json` | same as row 1; asset list includes the CycloneDX SBOM |
-| 3 | GitHub Release (signatures) | `*.cosign.bundle` per dist artifact; `*.sig` per archive; `SHA256SUMS` + `SHA256SUMS.sig` | `cosign verify-blob --bundle <artifact>.cosign.bundle <artifact>` exits 0 (with the workflow identity flags) |
-| 4 | GitHub Release (provenance) | `provenance.intoto.jsonl` | `bash scripts/release/verify-provenance.sh vX.Y.Z` exits 0 |
-| 5 | GitHub Release (platform archives) | `apothem-vX.Y.Z-darwin.tar.gz`, `apothem-vX.Y.Z-linux.tar.gz`, `apothem-vX.Y.Z-windows.zip` | asset list includes every archive plus `SHA256SUMS` |
-| 6 | npmjs.com | `@ahmed-g-gad/apothem@X.Y.Z` | `npm view @ahmed-g-gad/apothem version` returns `X.Y.Z`; `npx @ahmed-g-gad/apothem@X.Y.Z --version` prints `apothem X.Y.Z` |
-| 7 | Pages (script installers) | `install.sh` / `install.ps1` on the docs site | `curl -fsSL https://apothem.ahmedgad.com/install.sh \| head -n 1` returns the script header |
+| 2 | GitHub Release (SBOM) | `sbom.cdx.json` + `sbom.cdx.json.cosign.bundle` | asset list includes both; the SBOM's `metadata.component.purl` is `pkg:pypi/apothem@X.Y.Z` and its components include every package in `src/apothem/_vendor/vendor.txt` |
+| 3 | GitHub Release (signatures) | one `<asset>.cosign.bundle` per sdist, wheel, SBOM, VS Code extension, platform archive and `SHA256SUMS` (earlier releases name the archive and `SHA256SUMS` bundles `<asset>.sig`) | `cosign verify-blob` with the exact identity in §5.5 exits 0 |
+| 4 | GitHub Release (provenance) | `provenance.intoto.jsonl` | `bash scripts/release/verify-provenance.sh <download-dir>` exits 0 (§5.5) |
+| 5 | GitHub Release (platform archives) | `apothem-vX.Y.Z-darwin.tar.gz`, `apothem-vX.Y.Z-linux.tar.gz`, `apothem-vX.Y.Z-windows.zip` | asset list includes every archive plus `SHA256SUMS`. The darwin and linux archives are the same bytes under two names (the runtime is platform-neutral; `--platform` only picks tar.gz or zip), so their `SHA256SUMS` lines show one digest twice |
+| 6 | GitHub Release (VS Code extension) | `apothem.vsix` + `apothem.vsix.cosign.bundle` | asset list includes both; `code --install-extension apothem.vsix` installs it. Releases before the release workflow packaged the extension carry neither |
+| 7 | npmjs.com | `@ahmed-g-gad/apothem@X.Y.Z` | `npm view @ahmed-g-gad/apothem version` returns `X.Y.Z`; `npx @ahmed-g-gad/apothem@X.Y.Z --version` prints `Apothem, version X.Y.Z` |
+| 8 | Pages (script installers) | `install.sh` / `install.ps1` on the docs site | `curl -fsSL https://apothem.ahmedgad.com/install.sh \| head -n 1` returns the script header |
 
 The GitHub Release is the canonical artifact surface; the npm package and
 the script installers are the install paths layered on top of it. The npm
-publish is deliberately the last stage.
+publish runs beside the release workflow on the same tag push.
 
 ## 4. CHANGELOG discipline
 
 The `CHANGELOG.md` carries one section per release under the
 Keep-a-Changelog convention. The release commit's CHANGELOG edit:
 
-- Confirms the version section uses the `## [X.Y.Z] — YYYY-MM-DD` heading.
+- Confirms the version section uses the `## [X.Y.Z] - YYYY-MM-DD` heading
+  (a hyphen; `bump_version.py` writes it, and `extract_release_notes.py`
+  matches the `## [X.Y.Z]` prefix).
 - Confirms the standard headings — Added, Changed, Deprecated, Removed,
   Fixed, Security — are used where applicable. Empty headings are dropped from
   the rendered file.
@@ -172,7 +214,7 @@ Claude Code.
 npx @ahmed-g-gad/apothem@X.Y.Z --version
 ```
 
-Expected output: `apothem X.Y.Z`.
+Expected output: `Apothem, version X.Y.Z`.
 
 ### 5.3 One-shot script installer (POSIX)
 
@@ -181,7 +223,7 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | sh
 apothem --version
 ```
 
-Expected output: `apothem X.Y.Z`.
+Expected output: `Apothem, version X.Y.Z`.
 
 ### 5.4 One-shot script installer (Windows)
 
@@ -190,21 +232,35 @@ irm https://apothem.ahmedgad.com/install.ps1 | iex
 apothem --version
 ```
 
-Expected output: `apothem X.Y.Z`.
+Expected output: `Apothem, version X.Y.Z`.
 
 ### 5.5 Artifact verification (supply-chain evidence)
 
+Download every asset into an empty directory, then verify. The certificate
+identity is the release workflow at this exact tag. Identity checks are
+case-sensitive, and the certificates carry the owner as GitHub reports it,
+`Ahmed-G-Gad`, so a lowercase owner fails.
+
 ```bash
-gh release download vX.Y.Z --pattern 'apothem-X.Y.Z*' --pattern '*.cosign.bundle'
+mkdir release-vX.Y.Z && cd release-vX.Y.Z
+gh release download vX.Y.Z --repo ahmed-g-gad/apothem
 cosign verify-blob \
   --bundle apothem-X.Y.Z-py3-none-any.whl.cosign.bundle \
-  --certificate-identity-regexp 'github.com/ahmed-g-gad/apothem' \
+  --certificate-identity https://github.com/Ahmed-G-Gad/apothem/.github/workflows/release.yml@refs/tags/vX.Y.Z \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   apothem-X.Y.Z-py3-none-any.whl
-bash scripts/release/verify-provenance.sh vX.Y.Z
+slsa-verifier verify-artifact \
+  --provenance-path provenance.intoto.jsonl \
+  --source-uri github.com/Ahmed-G-Gad/apothem \
+  --source-tag vX.Y.Z \
+  apothem-X.Y.Z-py3-none-any.whl apothem-X.Y.Z.tar.gz
+bash ../scripts/release/verify-provenance.sh .
 ```
 
-Expected: both verifications exit 0.
+Expected: `Verified OK`, `PASSED: SLSA verification passed`, and
+`verify-provenance: chain OK (3 of 3 layers verified)`. The script checks
+`SHA256SUMS`, every signature bundle, and the provenance in one run; it
+derives the tag from the wheel name (`--tag vX.Y.Z` overrides it).
 
 The smoke produces a one-line PASS / FAIL row per surface; record
 the rows in the maintainer's release log.
@@ -217,10 +273,11 @@ and the npm publisher:
 | Failure | Diagnostic | Recovery |
 |---|---|---|
 | Tag push rejected (signing failure) | `git push origin vX.Y.Z` returns `error: failed to push some refs` with a GPG-related message | Verify the GPG subkey is loaded (`gpg --list-secret-keys --keyid-format=long`); re-tag locally with `-s` after fixing the keyring; re-push |
-| `release.yml` job fails on a single stage | `gh run view <run-id> --log` names the failing job (build / sbom / sign / provenance / archive / publish) | Re-run the failed job alone via `gh run rerun <run-id> --failed`; if the failure repeats, fix the job's input at its source before retagging |
+| Release build stops at `Check the plugin version changed with the plugin` | The build job log names the plugin and the previous tag; no asset was built or published | The plugin package changed since the previous release but its version did not. Delete the tag (`git push --delete origin vX.Y.Z`, `git tag -d vX.Y.Z`), run `python scripts/release/bump_version.py X.Y.Z`, commit, then sign and push the tag again (§2.2). The same check runs on every pull request as a warning annotation, so this normally surfaces before tagging |
+| `release.yml` job fails on a single stage | `gh run view <run-id> --log` names the failing job (build, which also writes the SBOM / sign / provenance / archive / publish) | Re-run the failed job alone via `gh run rerun <run-id> --failed`; if the failure repeats, fix the job's input at its source before retagging |
 | SLSA provenance verification fails | The `verify SLSA provenance artifact` job exits non-zero | Inspect the provenance artifact for subject-digest mismatch; rebuild from the same tag — provenance binds to the exact artifact digests, so any artifact regeneration requires a full workflow rerun |
 | npmjs.com publish rejected | The npm job exits non-zero during `npm publish`; a registry `404` during `PUT` is an authorization / trusted-publisher mismatch, not proof that the package code is missing | Verify npm Trusted Publishing for `@ahmed-g-gad/apothem` names owner `ahmed-g-gad`, repository `apothem`, workflow `publish-npm.yml`, and allowed action `npm publish`; confirm the job runs with the Node version and npm CLI OIDC floor pinned in the workflow |
-| Tag visible but assets missing | `gh release view vX.Y.Z` returns a stub release | Re-run the release workflow's publish job; if the stub persists, delete the release page (`gh release delete vX.Y.Z --cleanup-tag`) and re-tag from the same SHA |
+| Tag visible but assets missing | `gh release view vX.Y.Z` returns a stub release | Re-run the release workflow's publish job; it edits the existing release and re-uploads every asset. Delete and re-tag only when nothing from the tag reached users (no assets, no npm version); otherwise fix forward with the next patch release ([release-recovery runbook](/docs/runbooks/release-recovery) §2) |
 
 If a recovery cycle fails to land a surface within one diagnostic
 pass, the surface is logged as a known-failure in the release notes
@@ -233,9 +290,10 @@ working surfaces while the broken one is fixed in a patch release.
   [publisher-account-setup runbook](/docs/runbooks/publisher-account-setup)
   establishes the npm trusted-publisher binding and the GitHub-side
   prerequisites this runbook assumes.
-- **Recovery flow.** The release-recovery runbook (`site/content/docs/runbooks/release-recovery.mdx`) governs the cross-stage failure path
-  during a release cutover, not the per-surface release
-  failures named in §6.
+- **Recovery flow.** The [release-recovery runbook](/docs/runbooks/release-recovery)
+  follows the same additive model: it recovers a failed tag or publisher
+  stage by stage and rolls back by releasing the fix as a new patch version,
+  never by deleting or re-pointing a published tag, release or npm version.
 - **Pages enablement.** The `publish-static-site.yml` workflow
   validates and deploys the project website to the custom domain; the
   Pages-enablement runbook (`site/content/docs/runbooks/pages-enablement.mdx`)

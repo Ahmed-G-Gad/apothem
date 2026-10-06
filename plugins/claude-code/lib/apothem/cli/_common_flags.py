@@ -64,12 +64,18 @@ def common_options(f: Callable[..., Any]) -> Callable[..., Any]:
 
 
 def get_console(no_color: bool = False, quiet: bool = False) -> Console:
-    """Return a Rich :class:`Console` honoring ``--no-color`` and ``--quiet``."""
+    """Return a Rich :class:`Console` honoring ``--no-color`` and ``--quiet``.
+
+    ``soft_wrap=True`` keeps each printed message on one logical line. When
+    stdout is not a terminal, Rich assumes 80 columns and would otherwise break
+    a long path across lines, so a piped or logged path could not be copied.
+    A terminal still wraps long lines visually; tables keep their layout.
+    """
     if quiet:
-        return Console(highlight=False, quiet=True)
+        return Console(highlight=False, quiet=True, soft_wrap=True)
     if no_color:
-        return Console(highlight=False, no_color=True)
-    return Console(highlight=False)
+        return Console(highlight=False, no_color=True, soft_wrap=True)
+    return Console(highlight=False, soft_wrap=True)
 
 
 def get_error_console(no_color: bool = False) -> Console:
@@ -80,7 +86,7 @@ def get_error_console(no_color: bool = False) -> Console:
     targets stderr (the conventional error stream) honors that contract so a
     batch failure under ``-q`` is never silent.
     """
-    return Console(stderr=True, highlight=False, no_color=no_color)
+    return Console(stderr=True, highlight=False, no_color=no_color, soft_wrap=True)
 
 
 def resolve_format(output_format: str, json_flag: bool) -> str:

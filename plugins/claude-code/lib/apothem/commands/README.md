@@ -103,13 +103,67 @@ Command frontmatter is validated against [`../schemas/command.schema.json`](../s
 
 - `name` — command identifier; the slash command is `/<name>`.
 - `version` / `updated` — semantic version and ISO-8601 revision date.
-- `description` — statement of what the command does.
+- `description` — statement of what the command does, 1,024 characters or fewer: several harnesses install each command as a skill, where the [Agent Skills](https://agentskills.io/specification) limit applies (`command.schema.json` enforces it).
 - `argument-hint` — the command's argument / flag surface, shown in invocation help.
 - `disable-model-invocation` — when `true`, the command is operator-invoked only and is never auto-invoked by the model.
 - `portability` — the command's portability class across harnesses (e.g. `universal`).
-- `allowed-tools` — the tool surface the command may use (`*` for the full set), propagated to harnesses that scope command tool access.
+- `allowed-tools` — the tools a harness may run without asking while the command is active. Read-only by default (`Read, Glob, Grep`); a side-effecting tool appears only as a scoped rule such as `Bash(git log *)`. The schema rejects `*` and bare `Bash`, `PowerShell`, `Write`, `Edit`, `NotebookEdit`, and `WebFetch`.
 
 The body after the frontmatter is the command's workflow specification: ordered steps, gates, structured-inquiry invocation points, and output contract.
+
+## Model invocation
+
+`disable-model-invocation: true` makes a command operator-invoked only: the model never runs it on its own. With `false`, the model may run the command when a request matches its description. This table records every command's current setting; `tests/unit/test_command_invocation_table.py` checks it against the command files, so a change to a command's flag updates its row in the same change-set.
+
+TODO(clarify): the reason for each setting is not recorded, and two patterns need an operator decision before reasons can be written here. In the plan pipeline, the `/plan` orchestrator is operator-only while every stage command is model-invocable. In the research pipeline, the `/research` orchestrator and four stages (`/research-ideate`, `/research-theory`, `/research-proposal`, `/research-disseminate`) are operator-only while the other nine stages are model-invocable, although `/research-theory` and `/research-proposal` describe the same pipeline-chained hand-off as the model-invocable stages.
+
+| Command | `disable-model-invocation` | Section |
+| --- | --- | --- |
+| `/plan` | `true` | Plan pipeline (orchestrator) |
+| `/plan-spec` | `false` | Plan pipeline |
+| `/plan-generate` | `false` | Plan pipeline |
+| `/plan-review` | `false` | Plan pipeline |
+| `/plan-design` | `false` | Plan pipeline |
+| `/plan-audit` | `false` | Plan pipeline |
+| `/plan-execute` | `false` | Plan pipeline |
+| `/plan-status` | `false` | Plan pipeline |
+| `/plan-amend` | `false` | Plan pipeline |
+| `/research` | `true` | Research pipeline (orchestrator) |
+| `/research-ideate` | `true` | Research pipeline, stage 1 |
+| `/research-spec` | `false` | Research pipeline, stage 2 |
+| `/research-theory` | `true` | Research pipeline, stage 3 |
+| `/research-sources` | `false` | Research pipeline, stage 4 |
+| `/research-synthesis` | `false` | Research pipeline, stage 5 |
+| `/research-proposal` | `true` | Research pipeline, stage 6 |
+| `/research-design` | `false` | Research pipeline, stage 7 |
+| `/research-experiment` | `false` | Research pipeline, stage 8 |
+| `/research-analysis` | `false` | Research pipeline, stage 9 |
+| `/research-paper` | `false` | Research pipeline, stage 10 |
+| `/research-review` | `false` | Research pipeline, stage 11 |
+| `/research-publish` | `false` | Research pipeline, stage 12 |
+| `/research-disseminate` | `true` | Research pipeline, stage 13 |
+| `/audit` | `true` | Audit / review passes (orchestrator) |
+| `/fortress` | `true` | Audit / review passes (orchestrator) |
+| `/code-review` | `true` | Audit / review passes |
+| `/code-audit` | `true` | Audit / review passes |
+| `/architecture-review` | `true` | Audit / review passes |
+| `/docs-review` | `true` | Audit / review passes |
+| `/security-audit` | `true` | Audit / review passes |
+| `/dependency-audit` | `true` | Audit / review passes |
+| `/supply-chain-audit` | `true` | Audit / review passes |
+| `/threat-model-audit` | `true` | Audit / review passes |
+| `/perf-audit` | `true` | Audit / review passes |
+| `/a11y-audit` | `true` | Audit / review passes |
+| `/ux-review` | `true` | Audit / review passes |
+| `/eval` | `true` | Cohort commands |
+| `/release-readiness` | `true` | Cohort commands |
+| `/test-suite` | `true` | Cohort commands |
+| `/elevate` | `true` | Deployment / elevation |
+| `/freshify` | `true` | Deployment / elevation |
+| `/github-deploy-fresh` | `true` | Deployment / elevation |
+| `/github-deploy-next` | `true` | Deployment / elevation |
+| `/projectify` | `true` | Operator workflow |
+| `/workflow` | `true` | Operator workflow |
 
 ## Conventions
 
@@ -124,5 +178,14 @@ The body after the frontmatter is the command's workflow specification: ordered 
 - **This folder is swept by the agnosticism matcher.** Command definitions stay harness-neutral: name no harness, model, or tool as privileged, and **do not pre-set an effort or model preference** in frontmatter or body. Native-support routing is a per-adapter `capabilities.yml` concern, not a per-command claim.
 - Command files carry determinism and recommend-next-step gates: a definitive forward-move block closes a workflow's terminal surface, and directive prose stays hedging-free.
 - **Adding a command:** author a flat `commands/<name>.md` file (stem = `name` = slash name) with schema-valid frontmatter and a workflow body. The discovery glob is non-recursive, so a command must sit at the top level (not nested in a subdirectory) to register. Surface ambiguity through the structured-inquiry channel or a `TODO(clarify)` marker — never invented.
+- **A command and a skill sharing a name** (`projectify`, `workflow`): where an install converts commands into skills inside the directory it also installs `skills/` into, the command is left out and the skill holds the name — the same resolution a harness that loads both applies (the skill wins). Installs that keep commands and skills apart ship both. `tests/unit/test_skill_command_collisions.py` fails on any shared name whose installed bodies diverge.
 - A documented public command surface change updates its `site/content/docs/` page in the same change-set.
 - Validate with `python -m apothem.conformity.gate --all .` (name+description floor, determinism, recommend-next-step) and `python -m pytest`.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The command catalog above and the flat-file shape every slash command in this folder follows.
+- **Satisfies →** The agent-guidance locality canon in `AGENTS.md` (each folder's operating contract lives in its README). The registry entry each command's own Bindings cite as its catalog row.
+- **Established by ↑** `AGENTS.md` (the root agent-instruction canon). `rules/agents-md-convention.md` (the per-folder README contract). `rules/determinism.md` + `rules/recommend-next-step.md` (the output-structure and forward-move gates every command carries).
+- **Gated by ←** `scripts/dev/check_readme_file_coverage.py --strict` (every shipped command is named here). The propagation manifest's `README.md` exclusion (this file never ships into a harness discovery directory, where it would register as a command).
+- **Cross-bound with ↔** `agents/README.md` + `rules/README.md` (the sibling contracts for the other convention directories).

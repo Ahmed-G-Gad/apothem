@@ -38,7 +38,27 @@
   ],
   "activationEvents": [],
   "main": "./extension.js",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "Apothem runs a command-line tool that writes harness configuration, so it stays off until you trust the workspace."
+    }
+  },
   "contributes": {
+    "taskDefinitions": [
+      {
+        "type": "apothem",
+        "required": [
+          "subcommand"
+        ],
+        "properties": {
+          "subcommand": {
+            "type": "string",
+            "description": "The Apothem subcommand the task runs."
+          }
+        }
+      }
+    ],
     "commands": [
       {
         "command": "apothem.install",
@@ -71,8 +91,9 @@
       "properties": {
         "apothem.runner": {
           "type": "string",
-          "default": "npx @ahmed-g-gad/apothem",
-          "description": "Command used to invoke the Apothem engine. Defaults to the npm shim; set to a local interpreter invocation (e.g. 'python -m apothem') to run from a checkout."
+          "default": "npx @ahmed-g-gad/apothem@1.1.0",
+          "scope": "machine",
+          "description": "Command used to invoke the Apothem engine, split on spaces into a program and its arguments. Defaults to the npm shim; set to a local interpreter invocation (e.g. 'python -m apothem') to run from a checkout. Read from user settings only: a workspace cannot change it."
         }
       }
     }

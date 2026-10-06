@@ -15,7 +15,7 @@ registry, the per-adapter `capabilities.yml`, and each adapter's
 | Harness | Install name | Scope | Format | Targets | MCP | Convention pin |
 | --- | --- | --- | --- | --- | --- | --- |
 | Antigravity | `antigravity` | user | markdown | `~/.gemini/GEMINI.md`; `~/.gemini/antigravity-cli/plugins/apothem/` | discovery-pending | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
-| Claude Code | `claude-code` | user | json | `~/.claude/settings.json`; native `agents`, `rules`, `skills`, `statuslines`, `output-styles`; `~/.claude/.apothem/support/` | discovery-pending | `src/apothem/harnesses/claude_code/STANDARD-CONVENTION-PIN.md` |
+| Claude Code | `claude-code` | user | json | `~/.claude/settings.json`; `~/.claude/CLAUDE.md`; native `agents`, `rules`, `skills`, `statuslines`, `output-styles`; `~/.claude/.apothem/support/` | discovery-pending | `src/apothem/harnesses/claude_code/STANDARD-CONVENTION-PIN.md` |
 | CodeBuddy | `codebuddy` | project | markdown | `<project>/.codebuddy/rules/apothem-rules.md` | discovery-pending | `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` |
 | Codex | `codex` | user | markdown | `~/.codex/AGENTS.md`; `hooks.json`; `hooks/`; `agents/*.toml`; `~/.agents/skills/`; `~/.config/apothem/` | discovery-pending | `src/apothem/harnesses/codex/STANDARD-CONVENTION-PIN.md` |
 | Cursor | `cursor` | project | mdc | `<project>/.cursor/rules/apothem-rules.mdc` | discovery-pending | `src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md` |
@@ -38,14 +38,30 @@ Status values are `native`, `converted`, `support-tree`,
 `profile-projected`, `unsupported`, `not-applicable`, and
 `discovery-pending`.
 
+A `converted` cohort is rewritten into the harness's own format, and some
+source fields have no place in it. For each converted commands, agents, or
+rules cohort, the adapter's `capabilities.yml` carries a `conversion_losses`
+map that says what happens to every source frontmatter field:
+
+| Value | Meaning |
+| --- | --- |
+| `native:<field>` | The harness reads it under that field. |
+| `sidecar:<path>` | It is written to a separate file next to the converted one, such as Codex's `agents/openai.yaml`. |
+| `filename` | The file or folder name carries it. |
+| `inlined` | It moves into the prompt or body text. |
+| `ignored` | It stays in the file, but the harness does not read it. |
+| `dropped` | It is left out. |
+
+A test renders every converted file and checks the maps against the output.
+
 | Harness | Native or converted payloads | Support-tree payloads | Unsupported or pending warnings |
 | --- | --- | --- | --- |
-| Antigravity | converted commands and agents; native skills, sub-agent dispatch, system prompt templates; profile-projected tool restrictions | hooks, rules, templates | statuslines, output styles; MCP and memory discovery pending |
+| Antigravity | converted commands, agents, and rules; native skills, sub-agent dispatch, system prompt templates; profile-projected tool restrictions | hooks, templates | statuslines, output styles; MCP and memory discovery pending |
 | Claude Code | converted commands; native skills, hooks, agents, rules, statuslines, output styles, sub-agent dispatch, tool restrictions, memory | templates | `CLAUDE.md` remains operator-owned; no adapter-written system prompt template; MCP discovery pending |
 | CodeBuddy | native rules, system prompt templates, memory; profile-projected tool restrictions | none | commands, skills, hooks, agents, statuslines, output styles, sub-agent dispatch; MCP discovery pending |
 | Codex | converted commands and agents; native skills, hooks, sub-agent dispatch, system prompt templates, memory; profile-projected tool restrictions | rules, templates | statuslines, output styles; MCP discovery pending because Apothem does not overwrite `config.toml` |
 | Cursor | native rules, system prompt templates; profile-projected tool restrictions | none | commands, skills, hooks, agents, statuslines, output styles, sub-agent dispatch, memory; MCP discovery pending |
-| Gemini CLI | converted commands and agents; native skills, sub-agent dispatch, system prompt templates; profile-projected tool restrictions | hooks, rules, templates | statuslines, output styles; MCP and memory discovery pending |
+| Gemini CLI | converted commands and agents; native skills, sub-agent dispatch, system prompt templates, memory; profile-projected tool restrictions | hooks, rules, templates | statuslines, output styles; MCP discovery pending |
 | GitHub Copilot | native rules and system prompt templates; profile-projected tool restrictions | none | commands, skills, hooks, agents, statuslines, output styles, MCP, sub-agent dispatch, memory |
 | GLM (Z.ai) | none | none | commands, skills, hooks, agents, rules, templates, statuslines, output styles, MCP, sub-agent dispatch, tool restrictions, system prompt templates, memory — GLM is a model backend with no native config surface |
 | Hermes | converted commands; native system prompt templates, MCP; profile-projected tool restrictions | skills, hooks, agents, rules, templates | statuslines, output styles, sub-agent dispatch |
@@ -58,13 +74,39 @@ Status values are `native`, `converted`, `support-tree`,
 | Windsurf | native rules and system prompt templates; profile-projected tool restrictions | none | commands, skills, hooks, agents, statuslines, output styles, sub-agent dispatch, memory; MCP discovery pending |
 | Zed | native rules, MCP, system prompt templates; profile-projected tool restrictions | none | commands, skills, hooks, agents, statuslines, output styles, sub-agent dispatch, memory |
 
+## Shared roots
+
+Some install targets are loaded by harnesses other than the one that writes
+them. The registry records each such path in `SHARED_ROOTS` with one owner (the
+only adapter that writes it) and the readers whose vendor docs load it by
+default, with the vendor pages as evidence. Installing the owner puts Apothem
+content in front of every reader, and uninstalling the owner removes it from
+every reader.
+
+| Path | Owner | Readers |
+| --- | --- | --- |
+| `~/.agents/skills/` | Codex | Cursor, Gemini CLI, GitHub Copilot, Kimi Code, Open-Claw, OpenCode, Windsurf, Zed |
+| `~/.claude/skills/` | Claude Code | Cursor, OpenCode |
+| `~/.claude/CLAUDE.md` | Claude Code | OpenCode |
+| `<project>/AGENTS.md` | Kimi Code | Antigravity, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
+| `<project>/GEMINI.md` | Gemini CLI | Antigravity, GitHub Copilot, Zed |
+| `~/.gemini/GEMINI.md` | Antigravity | Gemini CLI |
+| `<project>/.github/copilot-instructions.md` | GitHub Copilot | Zed |
+
+The Apothem block an owner writes into a shared instruction file names no
+single tool as its reader. `tests/unit/test_shared_roots.py` fails when a
+registry target is written by two adapters, or is named like a cross-tool
+instruction file (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`,
+`copilot-instructions.md`), without a declared owner.
+
 ## Validation hooks
 
 The registry stays synchronized through these checks:
 
 | Check | Purpose |
 | --- | --- |
-| `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | Confirms each adapter has a current convention pin and that the registry still enumerates seventeen adapters. |
+| `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | Confirms each adapter has a convention pin under 90 days old that cites at least one vendor URL and has no overdue discovery target. CI runs it on every pull request, weekly, and before a release. |
+| `python scripts/dev/check_vendor_urls.py` | Fetches every vendor URL the pins and harness templates cite and fails on a moved or dead page, including a host name that no longer resolves or a certificate that fails verification; a timeout, a refused or reset connection, or a 5xx server error is reported as unreachable and does not fail it. The weekly convention monitor runs it. |
 | `python -m apothem.conformity.gate --all .` | Runs the documentation and implementation conformity checks. |
 | `python -m pytest` | Exercises registry fixture tests and adapter contract tests. |
 
@@ -75,7 +117,7 @@ The registry stays synchronized through these checks:
 | Harness | Scope | Format | Target paths |
 | --- | --- | --- | --- |
 | Antigravity (`antigravity`) | user | markdown | `~/.gemini/GEMINI.md`<br />`~/.gemini/antigravity-cli/plugins/apothem/` |
-| Claude Code (`claude-code`) | user | json | `~/.claude/.apothem/support/{templates,hooks,conformity,schemas}/`<br />`~/.claude/settings.json`<br />`~/.claude/{agents,rules,skills,statuslines,output-styles}/` |
+| Claude Code (`claude-code`) | user | json | `~/.claude/.apothem/support/{templates,hooks,conformity,schemas}/`<br />`~/.claude/CLAUDE.md`<br />`~/.claude/settings.json`<br />`~/.claude/{agents,rules,skills,statuslines,output-styles}/` |
 | CodeBuddy (`codebuddy`) | project | markdown | `<project>/.codebuddy/rules/apothem-rules.md` |
 | Codex (`codex`) | user | markdown | `~/.agents/skills/`<br />`~/.codex/AGENTS.md`<br />`~/.codex/agents/*.toml`<br />`~/.codex/hooks.json`<br />`~/.codex/hooks/`<br />`~/.config/apothem/{rules,templates}/` |
 | Cursor (`cursor`) | project | mdc | `<project>/.cursor/rules/apothem-rules.mdc` |

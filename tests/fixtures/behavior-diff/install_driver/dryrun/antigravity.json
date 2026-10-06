@@ -4,7 +4,7 @@
       "capability": "agent_memory",
       "status": "discovery-pending"
     },
-    "message": "The current adapter pin does not identify durable memory.",
+    "message": "The Antigravity docs index (antigravity.google/llms.txt, retrieved 2026-10-03) lists no durable-memory surface.",
     "operation": "capability_projection",
     "outcome": "warning",
     "path": "src/apothem/harnesses/antigravity/capabilities.yml"
@@ -25,16 +25,6 @@
       "status": "unsupported"
     },
     "message": "No current Antigravity CLI output-style surface is pinned.",
-    "operation": "capability_projection",
-    "outcome": "warning",
-    "path": "src/apothem/harnesses/antigravity/capabilities.yml"
-  },
-  {
-    "detail": {
-      "capability": "skills",
-      "status": "discovery-pending"
-    },
-    "message": "Antigravity skills auto-load placement is unverified under the empty-body docs problem; left unchanged pending a browser-verified pass.",
     "operation": "capability_projection",
     "outcome": "warning",
     "path": "src/apothem/harnesses/antigravity/capabilities.yml"
@@ -75,7 +65,7 @@
   },
   {
     "detail": {
-      "diff": "--- a/GEMINI.md\n+++ b/GEMINI.md\n@@ -0,0 +1,76 @@\n+<!-- BEGIN APOTHEM MANAGED BLOCK -->\n+<!-- SPDX-License-Identifier: MIT -->\n+\n+# Apothem — Antigravity Bootstrap\n+\n+This file is the vendor-canonical instructions surface for Google\n+Antigravity (`~/.gemini/GEMINI.md`). Antigravity CLI customization lives\n+under `~/.gemini/antigravity-cli/`; Apothem installs its user-scope\n+convention cohort as the `apothem` plugin under\n+`~/.gemini/antigravity-cli/plugins/apothem/`.\n+\n+## Apothem Conventions\n+\n+The Apothem-managed cohorts are propagated to:\n+\n+- `~/.gemini/antigravity-cli/plugins/apothem/plugin.json` — plugin metadata.\n+- `~/.gemini/antigravity-cli/plugins/apothem/skills/` — reusable techniques\n+  plus slash-command prompts converted into skills.\n+- `~/.gemini/antigravity-cli/plugins/apothem/rules/` — behavioral reference\n+  rules.\n+- `~/.gemini/antigravity-cli/plugins/apothem/agents/` — local agent\n+  definitions normalized from Apothem agents.\n+- `~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/templates/` — support\n+  templates retained for prompts that cite reusable plan or audit assets.\n+- `~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/hooks/` — hook support\n+  material retained as reference content; Apothem does not register\n+  Antigravity hook events until the adapter owns the schema translation.\n+\n+## Project-Scope Surface\n+\n+Project-specific instructions remain project-owned. This user-scope adapter\n+does not write workspace files unless the operator invokes a project-scope\n+harness adapter separately.\n+\n+## Operator Surface\n+\n+Operators may extend this file with project-specific instructions outside the\n+Apothem managed block. The apothem install folds its content into a\n+sentinel-delimited managed block on every `apothem install --harness\n+antigravity` invocation and preserves any operator prose outside the sentinels\n+verbatim; `apothem uninstall --harness antigravity` strips that block, backing\n+the prior file up under the Apothem backup root first. Project-scope\n+instructions still belong in `<workspace>/.agents/` or an operator-owned\n+Antigravity plugin.\n+\n+# Apothem Shared Profile\n+\n+Managed by Apothem from the shared profile. Edits inside the sentinels are overwritten on the next `apothem install`; change the shared profile instead.\n+\n+## Operator\n+\n+- **Name:** Golden-Corpus-Operator\n+- **Role:** release engineer\n+- **Email:** golden@corpus.invalid\n+- **Website:** https://golden.corpus.invalid\n+- **GitHub:** @golden-corpus-operator\n+\n+## Preferences\n+\n+- **Primary language:** python\n+- **Response style:** concise\n+- **Governance seriousness:** PUBLIC_LAUNCH\n+\n+## Custom Rules\n+\n+- golden-corpus-validate-input-before-write\n+\n+## Opted-in Behaviors\n+\n+- Sprint apparatus for non-trivial multi-step work\n+\n+## MCP Servers\n+\n+Configured MCP servers (materialized into the harnesses with a native MCP config surface; named here as reference for the rest):\n+- golden-corpus-srv\n+<!-- END APOTHEM MANAGED BLOCK -->\n",
+      "diff": "--- a/GEMINI.md\n+++ b/GEMINI.md\n@@ -0,0 +1,85 @@\n+<!-- BEGIN APOTHEM MANAGED BLOCK -->\n+<!-- SPDX-License-Identifier: MIT -->\n+\n+# Apothem — Global Instructions\n+\n+Apothem wrote this block with `apothem install --harness antigravity`.\n+`~/.gemini/GEMINI.md` is a shared global instruction file: more than one\n+coding tool loads it, so this block carries guidance that holds in every\n+project and names no single tool as its reader. Apothem's Antigravity cohort\n+is installed as the `apothem` plugin under\n+`~/.gemini/antigravity-cli/plugins/apothem/`.\n+\n+## Apothem reference material\n+\n+The install placed Apothem's files here:\n+\n+- `~/.gemini/antigravity-cli/plugins/apothem/plugin.json` — plugin metadata.\n+- `~/.gemini/antigravity-cli/plugins/apothem/skills/` — reusable techniques\n+  plus slash-command prompts converted into skills.\n+- `~/.gemini/antigravity-cli/plugins/apothem/agents/` — local agent\n+  definitions normalized from Apothem agents.\n+\n+Apothem's behavioral rules, the plan and audit templates its prompts cite, and\n+its hook messages are installed as support files; the Apothem support files\n+section below names their directories. The hook material is reference content\n+only: Apothem registers no hook events for this install.\n+\n+## Project-Scope Surface\n+\n+Project-specific instructions remain project-owned. This user-scope adapter\n+does not write workspace files unless the operator invokes a project-scope\n+harness adapter separately.\n+\n+## Operator Surface\n+\n+Operators may extend this file with project-specific instructions outside the\n+Apothem managed block. The apothem install folds its content into a\n+sentinel-delimited managed block on every `apothem install --harness\n+antigravity` invocation and preserves any operator prose outside the sentinels\n+verbatim; `apothem uninstall --harness antigravity` strips that block, backing\n+the prior file up under the Apothem backup root first. Project-scope\n+instructions still belong in `<workspace>/.agents/` or an operator-owned\n+Antigravity plugin.\n+\n+## Apothem support files\n+\n+Apothem's support root is `<ROOT>/antigravity-cli/plugins/apothem/.apothem/support`. Apothem rules, skills, commands, and helper definitions cite support files by repository-style paths such as `rules/<name>.md`, `templates/...`, and `hooks/...`. Resolve each citation against the installed directory for its first segment:\n+\n+- `rules/<path>` is `<ROOT>/antigravity-cli/plugins/apothem/rules/<path>`\n+- `templates/<path>` is `<ROOT>/antigravity-cli/plugins/apothem/.apothem/support/templates/<path>`\n+- `hooks/<path>` is `<ROOT>/antigravity-cli/plugins/apothem/.apothem/support/hooks/<path>`\n+\n+A cited path whose first segment is not listed here is not installed.\n+\n+# Apothem Shared Profile\n+\n+Managed by Apothem from the shared profile. Edits inside the sentinels are overwritten on the next `apothem install`; change the shared profile instead.\n+\n+## Operator\n+\n+- **Name:** Golden-Corpus-Operator\n+- **Role:** release engineer\n+- **Email:** golden@corpus.invalid\n+- **Website:** https://golden.corpus.invalid\n+- **GitHub:** @golden-corpus-operator\n+\n+## Preferences\n+\n+- **Primary language:** python\n+- **Response style:** concise\n+- **Governance seriousness:** PUBLIC_LAUNCH\n+\n+## Custom Rules\n+\n+- golden-corpus-validate-input-before-write\n+\n+## Opted-in Behaviors\n+\n+- Sprint apparatus for non-trivial multi-step work\n+\n+## MCP Servers\n+\n+Configured MCP servers (materialized into the harnesses with a native MCP config surface; named here as reference for the rest):\n+- golden-corpus-srv\n+<!-- END APOTHEM MANAGED BLOCK -->\n",
       "ownership_class": "operator-owned"
     },
     "message": "dry run: no filesystem changes made",
@@ -109,7 +99,7 @@
       "ownership_class": "apothem-owned"
     },
     "message": "dry run: no filesystem changes made",
-    "operation": "merge_tree_entries",
+    "operation": "antigravity_rules",
     "outcome": "created",
     "path": "<ROOT>/antigravity-cli/plugins/apothem/rules",
     "source": "<APOTHEM_SRC>/rules"
@@ -129,7 +119,7 @@
       "ownership_class": "apothem-owned"
     },
     "message": "dry run: no filesystem changes made",
-    "operation": "gemini_agents",
+    "operation": "antigravity_agents",
     "outcome": "created",
     "path": "<ROOT>/antigravity-cli/plugins/apothem/agents",
     "source": "<APOTHEM_SRC>/agents"
@@ -153,5 +143,23 @@
     "outcome": "created",
     "path": "<ROOT>/antigravity-cli/plugins/apothem/.apothem/support/hooks",
     "source": "<APOTHEM_SRC>/hooks"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "data_surface",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/memory"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "data_surface",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/contexts"
+  },
+  {
+    "message": "dry run: no filesystem changes made",
+    "operation": "data_surface",
+    "outcome": "created",
+    "path": "<ROOT>/.apothem/learning"
   }
 ]

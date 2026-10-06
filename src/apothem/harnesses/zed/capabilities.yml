@@ -3,9 +3,12 @@
 # Per rules/agent-capability-discipline.md §1 / §3 / §7. Zed ratifies
 # MCP context servers via .zed/settings.json (and global settings)
 # `context_servers` (operator-owned; the adapter recognizes it but does
-# not author entries). DIVERGENCE: Zed reads a single flat project-root
-# `.rules` file (alongside the AGENTS.md / CLAUDE.md family) as agent
-# instructions — not a dedicated Apothem file inside a rules directory.
+# not author entries). DIVERGENCE: Zed reads one project instruction file,
+# the first match in a list that starts with the flat project-root `.rules`
+# (then .cursorrules, .windsurfrules, .clinerules, copilot-instructions.md,
+# AGENT.md, AGENTS.md, CLAUDE.md, GEMINI.md) — not a dedicated Apothem file
+# inside a rules directory. A new `.rules` hides the lower-priority files, so
+# the install warns when one of them holds operator text.
 # The adapter writes that flat `.rules` file, backing up any pre-existing
 # `.rules` before replace, and does not dispatch sub-agents or author
 # workflow/skill/hook cohorts.

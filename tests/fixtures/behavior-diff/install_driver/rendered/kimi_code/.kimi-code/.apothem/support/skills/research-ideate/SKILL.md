@@ -1,12 +1,12 @@
 ---
 name: "research-ideate"
 version: "0.1.0"
-updated: "2026-06-16"
+updated: "2026-10-02"
 description: "Formulates the problem space from zero — opportunity-and-gap scanning, invalidated-prior-hypothesis scanning, and candidate research-question generation with ranking — the new entry stage of the /research pipeline. Triggered as 'help me find a research question', 'scan the opportunity space for this domain', 'what's worth studying here', 'generate candidate research questions', 'what prior hypotheses have already been invalidated', or a fresh research engagement with no framed question yet. Frames the problem space against an a-priori theoretical anchor (R10), grounds every candidate against prior art (R1), and generates candidate research questions each stated in a falsifiable form (R3). Emits _inputs/ideation.md carrying the framed problem space, the opportunity-and-gap scan, the invalidated-prior-hypothesis scan, and the ranked candidate-question slate that /research-spec consumes, plus the Handoff Manifest at the research-suite folder."
 argument-hint: "[path/to/domain-notes] [--suite-name NAME] [--override] [--domain NAME]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -116,7 +116,7 @@ Generate the candidate research-question slate. Each candidate is stated in a **
 
 ### Phase 5 — Question-Resolution Sweep & Emission
 
-Definitively resolve every ambiguity — every undefined domain boundary, every theoretical-anchor choice, every ranking criterion, every prior-art grounding gap — through the structured-inquiry channel before emission. Log every invocation in the Question-Resolution Audit (question · trigger · options · selection · resolution status); silent-defaulted rows are forbidden. Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the candidate `_inputs/ideation.md`; on PASS, emit the artifact and the Handoff Manifest. On any bar failure, revise and re-run until every bar passes. Apply incremental generation per `rules/large-file-generation.md` when the ideation artifact exceeds 500 lines.
+Definitively resolve every ambiguity — every undefined domain boundary, every theoretical-anchor choice, every ranking criterion, every prior-art grounding gap — through the structured-inquiry channel before emission. Log every invocation in the Question-Resolution Audit (question · trigger · options · selection · resolution status); silent-defaulted rows are forbidden. Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the candidate `_inputs/ideation.md`; on PASS, emit the artifact and the Handoff Manifest. On any bar failure, revise and re-run until every bar passes within the three-round cap of `rules/pre-emission-gate-bars.md` §3 (then BLOCKED). Apply incremental generation per `rules/large-file-generation.md` when the ideation artifact exceeds 500 lines.
 
 ---
 
@@ -214,4 +214,8 @@ Invoke `/research-spec` to frame the top-ranked candidate question from the slat
 
 ## Installed Reference Paths
 
-When this skill is installed by Apothem, resolve repository-style references such as `rules/...`, `templates/...`, and `hooks/...` under `<ROOT>` unless a project-local file with the same relative path exists.
+When this skill is installed by Apothem, resolve a repository-style reference against the installed directory for its first segment, unless a project-local file with the same relative path exists. Paths are relative to the project root.
+
+- `rules/<path>` is `.kimi-code/.apothem/support/rules/<path>`
+- `templates/<path>` is `.kimi-code/.apothem/support/templates/<path>`
+- `hooks/<path>` is `.kimi-code/.apothem/support/hooks/<path>`

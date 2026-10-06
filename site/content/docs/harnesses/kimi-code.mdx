@@ -19,6 +19,9 @@ The adapter writes the shared Apothem governance surface into the project-root
 `AGENTS.md` as a sentinel-delimited managed block (operator prose outside the
 sentinels is preserved) and keeps the non-native Markdown cohorts under the
 Apothem-owned support tree at `<project>/.kimi-code/.apothem/support/`.
+A project `AGENTS.md` is read by many coding tools besides Kimi Code, so the
+block is written as project-wide guidance that names no single tool as its
+reader.
 
 Kimi Code reads the project-root `AGENTS.md` instruction file following the
 universal AGENTS.md convention, and project configuration lives under
@@ -36,19 +39,31 @@ The adapter reads Apothem's shared profile and renders the project-root
 run. The behavioral rules and governance corpus land in the managed block of
 `AGENTS.md`; the commands, skills, hooks, agents, rules, and templates cohorts
 are placed under `.kimi-code/.apothem/support/` and referenced from the instruction
-surface, because Kimi Code exposes no matching native primitive for each of
-those cohorts yet.
+surface. This is the adapter's chosen layout, not a gap in Kimi Code: Kimi Code
+loads skills from `.kimi-code/skills/` and `.agents/skills/`, custom agents from
+`.kimi-code/agents/` and `.agents/agents/`, and hooks from the `[[hooks]]` array
+in `~/.kimi-code/config.toml`, but it does not load them from the support tree,
+so the Apothem copies there are reference material the `AGENTS.md` block points
+to. The block ends with an Apothem support files section that names, relative to
+the project root, the directory under `.kimi-code/.apothem/support/` each
+repository-style citation (`rules/<name>.md`, `templates/...`, `hooks/...`)
+resolves against, so a committed `AGENTS.md` carries no machine-specific path. (Kimi Code behavior per its customization pages for
+[skills](https://moonshotai.github.io/kimi-code/en/customization/skills),
+[subagents](https://moonshotai.github.io/kimi-code/en/customization/agents), and
+[hooks](https://moonshotai.github.io/kimi-code/en/customization/hooks), read
+2026-10-02.)
 
 ## Compatibility notes
 
-Kimi Code reads `AGENTS.md` from the project root and recognizes
-`.kimi-code/mcp.json` as the operator-owned MCP surface; Apothem names that
+Kimi Code reads project instructions from `AGENTS.md` or
+`.kimi-code/AGENTS.md` and recognizes `.kimi-code/mcp.json` as the
+operator-owned MCP surface; Apothem names that
 surface but authors no entries into it. The rendered instruction surface drives
 the project directly. Kimi Code exposes no statusline or output-style file
 surface, so those cohorts are not materialized.
 
 Kimi Code runs on the Kimi model family from Moonshot; see the
-[vendor configuration reference](https://moonshotai.github.io/kimi-code/en/configuration/config-files.html)
+[vendor configuration reference](https://moonshotai.github.io/kimi-code/en/configuration/config-files)
 for the current model and configuration surface.
 
 ## Verification

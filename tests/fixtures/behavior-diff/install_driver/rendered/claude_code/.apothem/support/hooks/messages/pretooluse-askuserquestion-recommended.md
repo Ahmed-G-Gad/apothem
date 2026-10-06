@@ -51,11 +51,11 @@ not on a destructive option, at most one per single-select question). It CANNOT
 force a recommendation to exist — that is a behavioral-convention obligation the
 rules carry, surfaced here only as the advisory nudge.
 
-**Advisory vs. strict.** By default the guard emits a `systemMessage` surfacing
-the findings and nudges; the question proceeds. Under the strict opt-in
-(`APOTHEM_CONFORMITY_STRICT=1` or `--strict`, mirroring `conformity/gate.py`),
-well-formedness findings (never the nudge) escalate to a
-`{"decision":"block","reason":"…"}` envelope.
+**Advisory vs. strict.** By default the guard returns the findings and nudges
+as `additionalContext`, so the model that wrote the labels can fix them; the
+question proceeds. Under the strict opt-in (`APOTHEM_CONFORMITY_STRICT=1` or
+`--strict`, mirroring `conformity/gate.py`), well-formedness findings (never the
+nudge) escalate to `permissionDecision: deny` with the findings as the reason.
 
 **Fail-disposition.** Fail-open. Any exception inside the validator — a
 malformed payload, a shapeless `questions` array, an unexpected option type —
@@ -63,3 +63,9 @@ yields an empty (allow) envelope, so a validator error never crashes the
 operator's question. The dispatcher's outer boundary is fail-open too: a
 dispatch error converts to a structured failure envelope on stdout and the
 question proceeds.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** `hooks/askuserquestion_validator.py` (the dispatcher routes this basename to the validator, which checks the `(Recommended)` marker on the live question payload).
+- **Established by ↑** The PreToolUse AskUserQuestion registration in `hooks/hooks.json` and the harness settings templates. `rules/interactive-questions-canonical-shapes.md` (the marker form it validates). `conformity/option_annotation_grep.py` (the committed-artifact counterpart this call-time check complements).
+- **Cross-bound with ↔** `hooks/messages/pretooluse-conformity.md` (the per-write gate context whose option-annotation matcher covers committed artifacts).

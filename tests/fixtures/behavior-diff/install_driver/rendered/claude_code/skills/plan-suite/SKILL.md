@@ -4,7 +4,7 @@ version: "0.1.0"
 updated: "2026-06-10"
 description: "Master Plan Suite template container — matched when the work is structured plan generation from authored prose, phase-by-phase decomposition of a complex multi-step engagement, plan-suite refinement, forensic plan review, closed-loop plan audit/remediation, architectural design, phase execution against quality gates, read-only progress reporting, or decision-preserving amendment; consumed by the /plan pipeline stages (spec, generate, review, design, audit, execute, status, amend). Houses master-template.md — the canonical specification defining plan-suite structure, the mandate catalog (TM-1–28), the core-principle catalog (CP-1–27), and the Technical Co-Founder Framework. Not directly user-invocable: the /plan stages resolve the template by path, cold-load it on a context-empty invocation, and refuse to regenerate it from memory if it is missing. Not a codegen tool, not a research pipeline, not a documentation generator, not a registry, and not stateful across sessions."
 archetype: "workflow-template"
-userInvocable: false
+user-invocable: false
 disable-model-invocation: true
 allowed-tools: "Read"
 ---

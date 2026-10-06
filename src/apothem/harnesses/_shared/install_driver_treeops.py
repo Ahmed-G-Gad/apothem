@@ -1,20 +1,32 @@
 # SPDX-License-Identifier: MIT
 
-"""Directory tree replace / sweep / single-file-directory write primitives."""
+"""Directory tree replace / sweep / generated-directory write primitives.
+
+Also holds the skill-directory emission helpers the ``native_skills`` install
+mode and its dry-run preview share.
+"""
 
 from __future__ import annotations
 
 import contextlib
 import os
 import shutil
+from collections.abc import Iterable
 from pathlib import Path
 
 from .install_driver_backup import _replace_path, backup_existing, write_bytes_safely
-from .install_driver_pathsafety import _validate_target_path
+from .install_driver_converters import _native_skill_emission
+from .install_driver_pathsafety import (
+    _is_relative_to,
+    _normalized,
+    _validate_target_path,
+)
 from .install_driver_types import (
     IgnoreFn,
+    MaterializationOutcome,
     MaterializationResult,
     _handle_rm_error,
+    _is_excluded_path,
     _result,
 )
 
@@ -108,18 +120,79 @@ def replace_tree(
     )
 
 
+def _preserved_inside(stale: Path, preserve: frozenset[Path]) -> set[Path]:
+    """Return the *preserve* paths that live inside the *stale* directory."""
+    base = _normalized(stale)
+    return {path for path in preserve if path != base and _is_relative_to(path, base)}
+
+
+def stale_needs_sweep(stale: Path, preserve: frozenset[Path] = frozenset()) -> bool:
+    """Return True when *stale* exists and holds more than *preserve* paths."""
+    if not stale.exists() and not stale.is_symlink():
+        return False
+    keep = _preserved_inside(stale, preserve) if stale.is_dir() else set()
+    if not keep:
+        return True
+    return any(
+        _normalized(path) not in keep
+        for path in stale.rglob("*")
+        if not path.is_dir() or path.is_symlink()
+    )
+
+
+def _sweep_around(
+    stale: Path, keep: set[Path], *, root: Path, harness_name: str, allowed_root: Path
+) -> MaterializationResult:
+    """Sweep a stale directory except the current files it holds (*keep*)."""
+    doomed = [
+        path
+        for path in stale.rglob("*")
+        if (not path.is_dir() or path.is_symlink()) and _normalized(path) not in keep
+    ]
+    if not doomed:
+        return _result(
+            "unchanged", "sweep_stale", stale, "stale path holds only current files"
+        )
+    backup = backup_existing(
+        stale, install_root=root, harness_name=harness_name, allowed_root=allowed_root
+    )
+    for path in doomed:
+        with contextlib.suppress(OSError):
+            path.unlink()
+    directories = sorted(
+        (path for path in stale.rglob("*") if path.is_dir()),
+        key=lambda path: len(path.parts),
+        reverse=True,
+    )
+    for directory in directories:
+        if not any(_is_relative_to(kept, _normalized(directory)) for kept in keep):
+            with contextlib.suppress(OSError):
+                directory.rmdir()
+    return _result(
+        "updated",
+        "sweep_stale",
+        stale,
+        "removed stale files; kept current ones",
+        backup_path=backup,
+    )
+
+
 def sweep_stale(
     stale_sweep: list[str],
     root: Path,
     *,
     harness_name: str = "manual",
     allowed_root: Path | None = None,
+    preserve: frozenset[Path] = frozenset(),
 ) -> list[MaterializationResult]:
     """Remove each stale top-level path under *root* from earlier layouts.
 
     Directories are removed recursively via ``shutil.rmtree``; files are
     removed via ``Path.unlink``. Missing paths are silently skipped so a
-    re-install is idempotent.
+    re-install is idempotent. A stale directory that holds a *preserve* path
+    (a file the current layout still writes there, such as the profile
+    document) keeps it: only the other files are removed, and a directory
+    holding nothing else is left alone.
     """
     results: list[MaterializationResult] = []
     for legacy in stale_sweep:
@@ -131,6 +204,18 @@ def sweep_stale(
         )
         if target_error is not None:
             results.append(target_error)
+            continue
+        keep = _preserved_inside(stale, preserve) if stale.is_dir() else set()
+        if keep:
+            results.append(
+                _sweep_around(
+                    stale,
+                    keep,
+                    root=root,
+                    harness_name=harness_name,
+                    allowed_root=allowed_root or root,
+                )
+            )
             continue
         if stale.is_dir():
             backup = backup_existing(
@@ -186,6 +271,90 @@ def _single_file_directory_matches(
     return (
         children == [filename]
         and (directory / filename).read_text(encoding="utf-8") == content
+    )
+
+
+def _generated_directory_matches(
+    directory: Path,
+    files: dict[str, bytes],
+    ignore: IgnoreFn | None = None,
+) -> bool:
+    """Return True when *directory* holds exactly *files* (relative POSIX paths).
+
+    *ignore* filters the on-disk side, so interpreter artifacts that collect
+    beside installed scripts do not read as drift.
+    """
+    if not directory.is_dir():
+        return False
+    on_disk = {path.as_posix() for path in _iter_relative_files(directory, ignore)}
+    if on_disk != set(files):
+        return False
+    return all((directory / name).read_bytes() == data for name, data in files.items())
+
+
+def _write_generated_directory(
+    directory: Path,
+    files: dict[str, bytes],
+    *,
+    root: Path,
+    harness_name: str,
+    operation: str,
+    source: Path,
+    allowed_root: Path,
+    ignore: IgnoreFn | None = None,
+) -> MaterializationResult:
+    """Replace or create a generated directory holding exactly *files*.
+
+    The multi-file form of :func:`_write_single_file_directory`: an unchanged
+    directory is left alone; otherwise the old one is backed up and removed,
+    and every file is written through the safe-write primitive.
+    """
+    target_error = _validate_target_path(
+        directory,
+        allowed_root=allowed_root,
+        operation=operation,
+    )
+    if target_error is not None:
+        return target_error
+    if _generated_directory_matches(directory, files, ignore):
+        return _result(
+            "unchanged",
+            operation,
+            directory,
+            "generated directory already matches",
+            source=source,
+        )
+    removed = _replace_path(
+        directory,
+        install_root=root,
+        harness_name=harness_name,
+        allowed_root=allowed_root,
+    )
+    if removed is not None and removed.outcome == "error":
+        return removed
+    for name in sorted(files):
+        target = directory / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        write_result = write_bytes_safely(
+            target,
+            files[name],
+            install_root=root,
+            harness_name=harness_name,
+            operation=operation,
+            source=source,
+            allowed_root=allowed_root,
+        )
+        if write_result.outcome == "error":
+            return write_result
+    return _result(
+        "updated" if removed else "created",
+        operation,
+        directory,
+        "wrote generated directory",
+        source=source,
+        backup_path=Path(removed.backup_path)
+        if removed and removed.backup_path
+        else None,
     )
 
 
@@ -246,3 +415,118 @@ def _write_single_file_directory(
         if removed and removed.backup_path
         else None,
     )
+
+
+def _skill_children(
+    src: Path, ignore: IgnoreFn | None, exclude: list[str] | None
+) -> list[Path]:
+    """Return the direct children of a skills cohort that propagate.
+
+    The same selection ``merge_tree_entries`` makes: manifest ``exclude``
+    globs and per-directory filters both drop a child.
+    """
+    children: list[Path] = []
+    for source_path in sorted(src.iterdir()):
+        if _is_excluded_path(source_path, exclude or []):
+            continue
+        if ignore is not None and source_path.name in ignore(
+            str(src), [source_path.name]
+        ):
+            continue
+        children.append(source_path)
+    return children
+
+
+def _native_skill_dir_files(
+    skill_dir: Path, *, harness_name: str, ignore: IgnoreFn | None
+) -> dict[str, bytes]:
+    """Return a skill directory's emitted files for *harness_name*.
+
+    Every source file is carried byte-for-byte except ``SKILL.md``, which goes
+    through the harness's skill emission; the emission's sidecar files are
+    added unless the source already ships a file at that path.
+    """
+    files = {
+        rel.as_posix(): (skill_dir / rel).read_bytes()
+        for rel in _iter_relative_files(skill_dir, ignore)
+    }
+    skill_md = skill_dir / "SKILL.md"
+    if skill_md.is_file():
+        text, sidecars = _native_skill_emission(
+            harness_name, skill_md.read_text(encoding="utf-8")
+        )
+        files["SKILL.md"] = text.encode("utf-8")
+        for name, body in sidecars.items():
+            files.setdefault(name, body.encode("utf-8"))
+    return files
+
+
+def preview_native_skills(
+    *,
+    src: Path,
+    dst: Path,
+    ignore: IgnoreFn | None,
+    exclude: list[str] | None,
+    harness_name: str,
+) -> list[MaterializationOutcome]:
+    """Classify each child a ``native_skills`` install would write, no writes."""
+    outcomes: list[MaterializationOutcome] = []
+    for source_path in _skill_children(src, ignore, exclude):
+        target = dst / source_path.name
+        if source_path.is_dir():
+            files = _native_skill_dir_files(
+                source_path, harness_name=harness_name, ignore=ignore
+            )
+            matches = _generated_directory_matches(target, files, ignore)
+        elif source_path.is_file():
+            matches = target.is_file() and (
+                target.read_bytes() == source_path.read_bytes()
+            )
+        else:
+            continue
+        if matches:
+            outcomes.append("unchanged")
+        else:
+            outcomes.append("updated" if target.exists() else "created")
+    return outcomes
+
+
+def remove_created_dirs(
+    directories: Iterable[Path], *, allowed_root: Path
+) -> list[MaterializationResult]:
+    """Remove the *directories* an install created, now that they are empty.
+
+    Deepest first, so a created parent goes once its created children have. A
+    directory that still holds anything (operator content, or data another
+    harness keeps) is left in place; so is one outside *allowed_root* or behind
+    a symlink. Returns one ``updated`` result per directory removed.
+    """
+    results: list[MaterializationResult] = []
+    ordered = sorted(
+        {Path(directory) for directory in directories},
+        key=lambda path: len(path.parts),
+        reverse=True,
+    )
+    for directory in ordered:
+        if not directory.is_dir() or directory.is_symlink():
+            continue
+        if (
+            _validate_target_path(
+                directory, allowed_root=allowed_root, operation="remove_directory"
+            )
+            is not None
+        ):
+            continue
+        try:
+            directory.rmdir()
+        except OSError:
+            continue
+        results.append(
+            _result(
+                "updated",
+                "remove_directory",
+                directory,
+                "removed an empty directory the install created",
+            )
+        )
+    return results

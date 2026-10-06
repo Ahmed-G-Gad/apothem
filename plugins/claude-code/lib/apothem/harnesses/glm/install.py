@@ -14,10 +14,10 @@ The propagation contract is declared in the canonical manifest at
 operator-owned ``write_text`` operation targeting
 ``${PROJECT_ROOT}/.apothem/providers/glm.toml``) and applied by the shared
 driver at ``apothem.harnesses._shared.install_driver``. ``write_text`` writes
-the clean valid-TOML template; the operator owns the file thereafter, so a
-subsequent ``update`` that would overwrite differing operator content routes
-through the per-file destructive-op authorization gate rather than clobbering
-silently. The file carries **no** projected shared-profile content — GLM is a
+the valid-TOML template only when the file is absent (an operator-owned target in
+a format Apothem cannot merge into is create-if-missing); the operator owns the
+file thereafter and no ``install`` / ``update`` overwrites it. The file carries
+**no** projected shared-profile content — GLM is a
 model backend, not a rule-bearing coding agent, so there is no instruction
 cohort to fold in, and the markdown-only sentinel-merge machinery (HTML-comment
 delimiters) would corrupt a ``.toml`` surface and is deliberately not used. The

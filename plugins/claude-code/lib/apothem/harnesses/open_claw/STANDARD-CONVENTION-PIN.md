@@ -4,24 +4,31 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-06-25
-- Snapshot note: live re-verification against `docs.openclaw.ai` surfaced two REFINEMENTS to the prior reading (see Evidence level): skills load from `~/.openclaw/skills` + agent workspaces and are THEN allowlist-filtered (not allowlist-only), and MCP servers live in an `mcp.servers` config block managed via the `openclaw mcp` CLI (not CLI-only). The adapter authors no skills/MCP entries either way, so no write is affected. Previous 2026-05-31.
+- Snapshot date: 2026-10-03
+- Snapshot note: refreshed against `docs.openclaw.ai` (agent workspace and bootstrap files, skills, MCP CLI). Skills load from `~/.openclaw/skills` and each agent workspace, then filter through the agent skill allowlists (`agents.defaults.skills`); MCP servers live in the `mcp.servers` config block, managed with `openclaw mcp list|show|set|unset`. OpenClaw also documents plugins and the ClawHub registry. Previous 2026-06-25.
 - Adapter source: `src/apothem/harnesses/open_claw/`
-- Evidence level: vendor-doc pinned (live re-fetch 2026-05-31) for
-  `~/.openclaw/openclaw.json` (JSON5). Skills load from `~/.openclaw/skills`
-  (shared root) plus each agent workspace, then are filtered by the effective
-  allowlist under `agents.defaults.skills` (per-agent override
-  `agents.list[].skills`) — the allowlist filters the directory-loaded set; the
-  specific `skills.load.extraDirs` key remains refuted. Subagents are documented
-  via `agents.list[].subagents.allowAgents` (with `maxConcurrent` /
-  `runTimeoutSeconds`). MCP servers live in the `mcp.servers` config block
-  (`mcp.*` changes hot-apply), managed via the `openclaw mcp` CLI subcommands
-  (list / show / set / unset). OpenClaw is a
-  multi-channel messaging gateway. No vendor-native UI claim is made here.
-  Versionless docs carry no version/SHA — no-immutable-source exception.
-- Official references:
-  - <https://docs.openclaw.ai/gateway/config-agents>
-  - <https://docs.openclaw.ai/cli>
+- Evidence level: vendor-doc pinned for `~/.openclaw/openclaw.json` (JSON5).
+  Skills load from `~/.openclaw/skills` (shared root) plus each agent workspace,
+  then are filtered by the effective allowlist under `agents.defaults.skills`
+  (per-agent override `agents.list[].skills`). Subagents are documented via
+  `agents.list[].subagents.allowAgents` (with `maxConcurrent` /
+  `runTimeoutSeconds`). MCP servers live in the `mcp.servers` config block,
+  managed via the `openclaw mcp` CLI subcommands (list / show / set / unset).
+  OpenClaw is a multi-channel messaging gateway. No vendor-native UI claim is
+  made here. Versionless docs carry no version or SHA — no-immutable-source
+  exception.
+
+## Vendor Sources
+
+Retrieved 2026-10-03.
+
+- <https://docs.openclaw.ai/gateway/config-agents/workspace-and-bootstrap> (agent workspace and bootstrap files)
+- <https://docs.openclaw.ai/tools/skills> (skill loading and allowlists)
+- <https://docs.openclaw.ai/cli/mcp> (`mcp.servers` and the `openclaw mcp` CLI)
+
+## Discovery Targets
+
+- None. No capability cell for this harness is discovery-pending.
 
 ## Recommended Postfix Rendering
 
@@ -54,9 +61,8 @@ standalone-installable bundle; every artifact requires the full
 |---|---|---|
 | Config / agents | No — requires `apothem install` | `~/.openclaw/openclaw.json` is materializer-rendered by the engine; nothing persists before that run. |
 | Commands / Skills / Agents / Rules | No — requires `apothem install` | These land under `~/.openclaw/.apothem/support/` (support subtree) via the engine; OpenClaw `agents.defaults.skills` is a name-allowlist the adapter does not author. |
-| Hooks / Settings | No — platform limit | No Apothem-authored hook or settings surface beyond the config materializer. |
+| Hooks / Settings | No — adapter scope | No Apothem-authored hook or settings surface beyond the config materializer. |
 | MCP | No — operator-owned | OpenClaw MCP servers live in the `mcp.servers` config block (managed via the `openclaw mcp` CLI subcommands; `mcp.*` hot-applies); the adapter authors no entries. |
 
-Platform limit: OpenClaw ships no marketplace/extension channel, so a
-plugin-alone story does not exist — the engine install is the sole persistence
-path.
+OpenClaw documents plugins and the ClawHub registry, but Apothem ships no
+OpenClaw plugin, so the engine install is the sole persistence path.

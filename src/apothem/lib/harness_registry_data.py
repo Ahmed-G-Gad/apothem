@@ -79,6 +79,25 @@ class HarnessRegistryEntry:
         return self.entry_point.split(":", 1)[1]
 
 
+@dataclass(frozen=True)
+class SharedRoot:
+    """An install target that harnesses other than its writer also load.
+
+    Each shared root has exactly one owner: the registered adapter that writes
+    ``path``. ``readers`` are the other registered harnesses whose vendor docs
+    load ``path`` by default (an opt-in load is not listed), and ``evidence``
+    holds those vendor pages, retrieved on ``retrieved``. ``path`` uses the
+    registry ``target_paths`` notation (``~/`` for the user home,
+    ``<project>/`` for the project root).
+    """
+
+    path: str
+    owner: str
+    readers: tuple[str, ...]
+    evidence: tuple[str, ...]
+    retrieved: str
+
+
 def _matrix(**values: CapabilityStatus) -> Mapping[str, CapabilityStatus]:
     # Exact-coverage gate: every one of REQUIRED_CAPABILITIES must be assigned a
     # status AND no unknown axis may leak in, so a registry entry's matrix is
@@ -135,10 +154,10 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         ),
         capability_status=_matrix(
             commands="converted",
-            skills="discovery-pending",
+            skills="native",
             hooks="support-tree",
             agents="converted",
-            rules="support-tree",
+            rules="converted",
             templates="support-tree",
             statuslines="unsupported",
             output_styles="unsupported",
@@ -149,11 +168,10 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             agent_memory="discovery-pending",
         ),
         unsupported_rationale=_unsupported(
-            skills="Antigravity skills auto-load placement is unverified under the empty-body docs problem; left unchanged pending a browser-verified pass.",
             mcp_servers="MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries.",
             statuslines="No current Antigravity CLI statusline file surface is pinned.",
             output_styles="No current Antigravity CLI output-style surface is pinned.",
-            agent_memory="The current adapter pin does not identify durable memory.",
+            agent_memory="The Antigravity docs index (antigravity.google/llms.txt, retrieved 2026-10-03) lists no durable-memory surface.",
         ),
     ),
     HarnessRegistryEntry(
@@ -165,6 +183,7 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         output_format="json",
         target_paths=(
             "~/.claude/settings.json",
+            "~/.claude/CLAUDE.md",
             "~/.claude/{agents,rules,skills,statuslines,output-styles}/",
             "~/.claude/.apothem/support/{templates,hooks,conformity,schemas}/",
         ),
@@ -326,13 +345,12 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             sub_agent_dispatch="native",
             tool_surface_restrictions="not-applicable",
             system_prompt_templates="native",
-            agent_memory="discovery-pending",
+            agent_memory="native",
         ),
         unsupported_rationale=_unsupported(
             mcp_servers="MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries.",
             statuslines="No Gemini CLI statusline file surface is pinned.",
             output_styles="No Gemini CLI output-style file surface is pinned.",
-            agent_memory="The current adapter pin does not identify durable memory.",
         ),
     ),
     HarnessRegistryEntry(
@@ -370,15 +388,15 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             agent_memory="unsupported",
         ),
         unsupported_rationale=_unsupported(
-            commands="Copilot exposes no user-defined custom-command surface.",
+            commands="Copilot runs prompt files (.github/prompts/*.prompt.md) as slash commands; the adapter delivers the repo-wide instructions file only and Apothem does not author prompt files.",
             skills="The Copilot adapter delivers the repo-wide instructions "
             "surface only; Apothem does not author a Copilot skill cohort.",
             hooks="The Copilot adapter delivers the repo-wide instructions "
             "surface only; Apothem does not author a Copilot hook cohort.",
-            agents="Copilot has no repo-config sub-agent file surface.",
-            statuslines="Copilot has no statusline file surface.",
-            output_styles="Copilot has no output-style file surface.",
-            mcp_servers="Copilot MCP is service/IDE state, not a repo file target.",
+            agents="Copilot reads custom agent profiles (.github/agents/*.agent.md); the adapter delivers the repo-wide instructions file only and Apothem does not author agent profiles.",
+            statuslines="No Copilot statusline file surface is pinned.",
+            output_styles="No Copilot output-style file surface is pinned.",
+            mcp_servers="Copilot MCP is configured in repository settings, the IDE, the Copilot CLI, or a custom agent profile; the adapter authors none of them.",
             sub_agent_dispatch="Copilot sub-agent dispatch is outside this adapter scope.",
             agent_memory="Copilot user memory is IDE/service state, not a file target.",
         ),
@@ -457,8 +475,10 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             output_styles="No Kimi Code output-style file surface is pinned.",
             mcp_servers="`.kimi-code/mcp.json` is the recognized operator-owned "
             "MCP surface; Apothem names it but defers authoring entries.",
-            tool_surface_restrictions="Kimi Code tool-permission surface not "
-            "yet pinned.",
+            tool_surface_restrictions="Kimi Code documents "
+            "default_permission_mode and [[permission.rules]] in "
+            "~/.kimi-code/config.toml; Apothem has not yet decided how to project "
+            "the universal-deny floor into them.",
         ),
     ),
     HarnessRegistryEntry(
@@ -621,10 +641,10 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             "only; Apothem does not author a Windsurf skill cohort.",
             hooks="The Windsurf adapter delivers the project rules surface "
             "only; Apothem does not author a Windsurf hook cohort.",
-            agents="No Windsurf sub-agent dispatch surface is documented.",
+            agents="Devin documents subagents (docs.devin.ai/cli/subagents); the Windsurf adapter delivers the project rules file only and Apothem does not author Devin subagents.",
             statuslines="No Windsurf statusline file surface is pinned.",
             output_styles="No Windsurf output-style file surface is pinned.",
-            sub_agent_dispatch="No Windsurf sub-agent dispatch surface is documented.",
+            sub_agent_dispatch="The Windsurf adapter delivers the project rules file only; Apothem does not dispatch sub-agents through Devin Desktop.",
             agent_memory="Windsurf memories are machine-local and not adapter-owned.",
         ),
     ),
@@ -672,8 +692,9 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             "only; Apothem does not author a CodeBuddy sub-agent cohort.",
             statuslines="No CodeBuddy statusline file surface is pinned.",
             output_styles="No CodeBuddy output-style file surface is pinned.",
-            sub_agent_dispatch="No CodeBuddy sub-agent dispatch surface is "
-            "documented for the adapter to project.",
+            sub_agent_dispatch="CodeBuddy Code documents sub-agents; the "
+            "CodeBuddy adapter delivers the project rules file only and Apothem "
+            "does not dispatch sub-agents through CodeBuddy.",
         ),
     ),
     HarnessRegistryEntry(
@@ -718,8 +739,9 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             "does not author a Kiro sub-agent cohort.",
             statuslines="No Kiro statusline file surface is pinned.",
             output_styles="No Kiro output-style file surface is pinned.",
-            sub_agent_dispatch="No Kiro sub-agent dispatch surface is "
-            "documented for the adapter to project.",
+            sub_agent_dispatch="Kiro documents custom agents (.kiro/agents and "
+            "the Kiro CLI); the Kiro adapter delivers steering rules only and "
+            "Apothem does not dispatch sub-agents through Kiro.",
         ),
     ),
     HarnessRegistryEntry(
@@ -760,10 +782,10 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             "only; Apothem does not author a Trae skill cohort.",
             hooks="The Trae adapter delivers the project rules surface "
             "only; Apothem does not author a Trae hook cohort.",
-            agents="No Trae sub-agent dispatch surface is documented.",
+            agents="Trae documents custom Agents (docs.trae.ai/ide/agent); the Trae adapter delivers the project rules file only and Apothem does not author Trae agents.",
             statuslines="No Trae statusline file surface is pinned.",
             output_styles="No Trae output-style file surface is pinned.",
-            sub_agent_dispatch="No Trae sub-agent dispatch surface is documented.",
+            sub_agent_dispatch="The Trae adapter delivers the project rules file only; Apothem does not dispatch sub-agents through Trae.",
             agent_memory="No Trae adapter-owned agent-memory surface is documented.",
         ),
     ),
@@ -805,10 +827,10 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
             "only; Apothem does not author a Zed skill cohort.",
             hooks="The Zed adapter delivers the project rules surface "
             "only; Apothem does not author a Zed hook cohort.",
-            agents="No Zed adapter-owned sub-agent file surface is documented.",
+            agents="The Zed adapter delivers the project rules file only; Apothem does not author Zed agent profiles or external agents.",
             statuslines="No Zed statusline file surface is pinned.",
             output_styles="No Zed output-style file surface is pinned.",
-            sub_agent_dispatch="No Zed sub-agent dispatch surface is documented.",
+            sub_agent_dispatch="The Zed adapter delivers the project rules file only; Apothem does not dispatch sub-agents through Zed.",
             agent_memory="Zed agent memory is session-local and not adapter-owned.",
         ),
     ),
@@ -859,3 +881,132 @@ HARNESS_REGISTRY: tuple[HarnessRegistryEntry, ...] = (
         ),
     ),
 )
+
+
+# Paths that more than one harness loads. One owner per shared root: the owner
+# is the only adapter that writes the path, and every other harness that loads
+# it is a reader. Installing the owner places Apothem content in front of every
+# reader, and uninstalling the owner removes it from every reader, so the
+# install advisories name the readers. Evidence retrieved 2026-10-02.
+SHARED_ROOTS: tuple[SharedRoot, ...] = (
+    SharedRoot(
+        path="~/.agents/skills/",
+        owner="codex",
+        readers=(
+            "cursor",
+            "gemini-cli",
+            "github-copilot",
+            "kimi-code",
+            "open-claw",
+            "opencode",
+            "windsurf",
+            "zed",
+        ),
+        evidence=(
+            "https://learn.chatgpt.com/docs/build-skills",
+            "https://cursor.com/docs/skills",
+            "https://raw.githubusercontent.com/google-gemini/gemini-cli/fb972b2f87fe7d5b06d37eac711490162d98de2c/docs/cli/skills.md",
+            "https://docs.github.com/en/copilot/concepts/agents/about-agent-skills",
+            "https://moonshotai.github.io/kimi-code/en/customization/skills",
+            "https://docs.openclaw.ai/tools/skills",
+            "https://opencode.ai/docs/skills/",
+            "https://docs.devin.ai/desktop/cascade/skills.md",
+            "https://zed.dev/docs/ai/skills",
+        ),
+        retrieved="2026-10-02",
+    ),
+    SharedRoot(
+        path="~/.claude/skills/",
+        owner="claude-code",
+        readers=("cursor", "opencode"),
+        evidence=(
+            "https://code.claude.com/docs/en/skills.md",
+            "https://cursor.com/docs/skills",
+            "https://opencode.ai/docs/skills/",
+        ),
+        retrieved="2026-10-02",
+    ),
+    SharedRoot(
+        path="~/.claude/CLAUDE.md",
+        owner="claude-code",
+        readers=("opencode",),
+        evidence=(
+            "https://code.claude.com/docs/en/memory",
+            "https://opencode.ai/docs/rules/",
+        ),
+        retrieved="2026-10-03",
+    ),
+    SharedRoot(
+        path="<project>/AGENTS.md",
+        owner="kimi-code",
+        readers=(
+            "antigravity",
+            "codebuddy",
+            "codex",
+            "cursor",
+            "github-copilot",
+            "hermes",
+            "kiro",
+            "opencode",
+            "windsurf",
+            "zed",
+        ),
+        evidence=(
+            "https://moonshotai.github.io/kimi-code/en/customization/agents",
+            "https://antigravity.google/docs/rules",
+            "https://www.codebuddy.ai/docs/cli/memory",
+            "https://learn.chatgpt.com/docs/agent-configuration/agents-md",
+            "https://cursor.com/docs/rules",
+            "https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-custom-instructions",
+            "https://raw.githubusercontent.com/NousResearch/hermes-agent/1c56fed0480e67ffd56675d10862e607fb61a55b/website/docs/user-guide/features/context-files.md",
+            "https://kiro.dev/docs/steering/",
+            "https://opencode.ai/docs/rules/",
+            "https://docs.devin.ai/desktop/cascade/agents-md.md",
+            "https://zed.dev/docs/ai/instructions",
+        ),
+        retrieved="2026-10-02",
+    ),
+    SharedRoot(
+        path="<project>/GEMINI.md",
+        owner="gemini-cli",
+        readers=("antigravity", "github-copilot", "zed"),
+        evidence=(
+            "https://raw.githubusercontent.com/google-gemini/gemini-cli/fb972b2f87fe7d5b06d37eac711490162d98de2c/docs/cli/gemini-md.md",
+            "https://antigravity.google/docs/rules",
+            "https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-custom-instructions",
+            "https://zed.dev/docs/ai/instructions",
+        ),
+        retrieved="2026-10-02",
+    ),
+    SharedRoot(
+        path="~/.gemini/GEMINI.md",
+        owner="antigravity",
+        readers=("gemini-cli",),
+        evidence=(
+            "https://antigravity.google/docs/rules",
+            "https://raw.githubusercontent.com/google-gemini/gemini-cli/fb972b2f87fe7d5b06d37eac711490162d98de2c/docs/cli/gemini-md.md",
+        ),
+        retrieved="2026-10-02",
+    ),
+    SharedRoot(
+        path="<project>/.github/copilot-instructions.md",
+        owner="github-copilot",
+        readers=("zed",),
+        evidence=(
+            "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/add-custom-instructions/add-repository-instructions",
+            "https://zed.dev/docs/ai/instructions",
+        ),
+        retrieved="2026-10-02",
+    ),
+)
+
+# Instruction filenames that several vendors read under the same name. A
+# registry target with one of these basenames is a shared root unless it sits
+# under a directory only its own harness reads (listed here with the reason).
+CROSS_TOOL_INSTRUCTION_FILES: frozenset[str] = frozenset(
+    {"AGENTS.md", "CLAUDE.md", "GEMINI.md", "copilot-instructions.md"}
+)
+PRIVATE_INSTRUCTION_TARGETS: Mapping[str, str] = {
+    "~/.codex/AGENTS.md": "Codex reads it from CODEX_HOME; no other registered "
+    "harness documents loading this path.",
+}

@@ -213,10 +213,10 @@ def test_hermes_config_keeps_operator_keys_and_removes_apothem(
     )
     adapter = HermesAdapter()
 
-    # Install with an MCP server so Apothem writes the auxiliary.mcp block.
+    # Install with an MCP server so Apothem writes the mcp_servers block.
     adapter.install({"mcp_servers": {"demo": {"command": "demo-bin"}}})
     doc = yaml.safe_load(config.read_text(encoding="utf-8")) or {}
-    assert "auxiliary" in doc
+    assert "demo" in doc["mcp_servers"]
 
     # Operator adds channels/auth keys outside Apothem's namespace.
     doc["channels"] = {"slack": "xoxb-token"}
@@ -227,10 +227,10 @@ def test_hermes_config_keeps_operator_keys_and_removes_apothem(
 
     assert config.is_file()
     remaining = yaml.safe_load(config.read_text(encoding="utf-8"))
-    # Operator channels/auth survive; Apothem's auxiliary.mcp block is gone.
+    # Operator channels/auth survive; Apothem's MCP server entry is gone.
     assert remaining["channels"] == {"slack": "xoxb-token"}
     assert remaining["auth"] == {"token": "operator-secret"}
-    assert "auxiliary" not in remaining
+    assert "mcp_servers" not in remaining
     # No whole-file .bak sibling in the operator directory.
     assert _no_sibling_bak(hermes_root)
 

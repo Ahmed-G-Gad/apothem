@@ -33,7 +33,7 @@ per-family word-separator shape (snake_case for Python modules, kebab-case
 otherwise). Components that match none are findings. Hidden directories (a
 leading dot) are exempt because dotfile conventions are host-discovered.
 
-Corpus mode. When ``_main`` is handed an absolute directory (the ``gate
+Corpus mode. When ``_main`` is handed a directory, relative or absolute (the ``gate
 --all`` invocation form), the validator walks the project's own authored
 artifact tree (``src/apothem/``) and validates every tracked component
 under the per-family rule — not merely the root basename. Vendored trees
@@ -377,28 +377,54 @@ def check_corpus(root: Path) -> GrepResult:
     )
 
 
-def _read_input(argv: list[str]) -> str:
-    if len(argv) >= 2 and argv[1] != STDIN_FLAG:
-        return argv[1]
-    return sys.stdin.read().strip()
-
-
 def _main(argv: list[str]) -> int:
-    target = _read_input(argv)
-    # In the conformity gate's --all mode this validator is handed the
-    # absolute repository root. naming-grep then validates the project's own
-    # authored artifact tree component-by-component (corpus mode) rather than
-    # reducing the root to its basename — that reduction validated only the
-    # literal string 'apothem' and left the corpus unscanned. Relative inputs
-    # (the per-path invocation form) are validated component-by-component
-    # unchanged.
-    candidate = Path(target)
-    if candidate.is_absolute() and candidate.is_dir():
-        result = check_corpus(candidate)
+    """Validate a root directory (corpus mode), one existing file, or a path.
+
+    A directory argument — relative or absolute, the ``gate --all`` form —
+    selects corpus mode: the project's own authored artifact tree is walked
+    component-by-component. Before, only an absolute directory selected corpus
+    mode, so the CI form ``gate --all .`` validated the literal string ``.``
+    and inspected nothing. An existing file argument validates that path's
+    components. ``--stdin`` validates a path string read from stdin, which need
+    not exist yet (a name about to be created). Any other argument is a usage
+    error (exit 3).
+    """
+    # Imported here, not at module top: ``check()`` stays stdlib-only; only
+    # the command-line entry needs the shared parser and report stamp.
+    from apothem.conformity._grep_base import finish_root_report, make_parser
+
+    parser = make_parser(GREP_NAME, __doc__)
+    parser.add_argument(
+        "target",
+        nargs="?",
+        default=None,
+        help="root directory (corpus mode) or existing file (default: current directory)",
+    )
+    parser.add_argument(
+        STDIN_FLAG,
+        dest="stdin",
+        action="store_true",
+        help="validate a path string read from stdin (it need not exist)",
+    )
+    args = parser.parse_args(argv[1:])
+    if args.stdin:
+        if args.target is not None:
+            parser.error("pass either a target or --stdin, not both")
+        result = check(sys.stdin.read().strip())
+        inspected = len(Path(result.path or "").parts)
     else:
-        result = check(target)
-    print(result.to_json())
-    return EXIT_PASS if result.passed else EXIT_FAIL
+        candidate = Path(args.target) if args.target is not None else Path.cwd()
+        if candidate.is_dir():
+            result = check_corpus(candidate.resolve())
+            inspected = result.components_inspected
+        elif candidate.is_file():
+            result = check(str(candidate))
+            inspected = len(candidate.parts)
+        else:
+            parser.error(f"not an existing directory or file: {candidate}")
+    return finish_root_report(
+        result.to_json(), passed=result.passed, inspected=inspected
+    )
 
 
 if __name__ == "__main__":

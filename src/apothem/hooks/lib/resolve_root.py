@@ -11,12 +11,12 @@ The environment-variable strategy consults two names in order
 :func:`resolve_project_root` enumerates five numbered steps below.
 
 The bootstrap stubs ``hooks/lib/bootstrap.sh`` and ``hooks/lib/bootstrap.ps1``
-resolve the root independently for the pre-dispatch (no-Python) path. They
-diverge deliberately: they key on the concrete ``hooks/dispatch.py`` marker
-and order env -> $PWD-walk -> script-relative -> $HOME, whereas this module
-keys on the directory-marker set (``hooks/``+``rules/`` or ``CLAUDE.md``) and
-orders env -> script-relative -> cwd-walk -> $HOME. Keep the three headers in
-step when the marker or order changes.
+do not use this cascade: they resolve only their own installed tree (the
+directory two levels above the stub), because they dot-source an interpreter
+locator and execute the dispatcher, and taking either from the opened project
+would run project-supplied code inside every hook. This module serves scripts
+that read project files as data. Keep the three headers in step when either
+rule changes.
 
 Two marker strategies are supported:
 

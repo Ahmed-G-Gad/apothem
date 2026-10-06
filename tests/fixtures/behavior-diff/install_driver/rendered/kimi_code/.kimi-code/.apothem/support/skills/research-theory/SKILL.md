@@ -1,12 +1,12 @@
 ---
 name: "research-theory"
 version: "0.1.0"
-updated: "2026-06-16"
+updated: "2026-10-02"
 description: "Builds the foundational conceptual and theoretical framework for a framed research question — the theoretical-grounding stage of the /research pipeline. Triggered as 'build the theoretical framework', 'draw the theory of change for this study', 'define the constructs and their operational definitions', 'build the logic model', 'what's the conceptual model here', or the pipeline-chained hand-off from /research-spec. Consumes the suite's _spec/research-spec.md and emits _inputs/theory.md carrying the conceptual / theoretical framework, the theory-of-change / logic model, the constructs with their operational definitions, and a conceptual-model diagram — the a-priori grounding (R10) that the systematic search and synthesis stages trace back to. Every construct is grounded in primary theory (R1), every theorized relation is stated in a refutable form (R3)."
 argument-hint: "[--suite-name NAME] [--override] [--framework NAME]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -118,7 +118,7 @@ Compose the conceptual-model diagram — the constructs as nodes, the theorized 
 
 ### Phase 5 — Validation Gate
 
-Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the emitted theory artifact. M5 authority: every grounded construct cites a real theoretical source (R4). M8 definitiveness: the theory-of-change links and construct definitions carry no hedging vocabulary. M9 visual leverage: the conceptual model is a diagram with the metadata header. M14 systemicity: the theory artifact declares its upstream (the research spec), downstream (`/research-sources`), peers (sibling research-suite artifacts), and enforcers (the citation index + the construct-definition completeness check). Iterate on failure per the gate rule's §3 until every bar passes; record the attestation block inside the theory artifact and update the Handoff Manifest.
+Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the emitted theory artifact. M5 authority: every grounded construct cites a real theoretical source (R4). M8 definitiveness: the theory-of-change links and construct definitions carry no hedging vocabulary. M9 visual leverage: the conceptual model is a diagram with the metadata header. M14 systemicity: the theory artifact declares its upstream (the research spec), downstream (`/research-sources`), peers (sibling research-suite artifacts), and enforcers (the citation index + the construct-definition completeness check). Iterate on failure per the gate rule's §3 until every bar passes or its three-round cap returns BLOCKED; record the attestation block inside the theory artifact and update the Handoff Manifest.
 
 ---
 
@@ -219,4 +219,8 @@ Invoke `/research-sources` to discover, screen, and extract the primary sources 
 
 ## Installed Reference Paths
 
-When this skill is installed by Apothem, resolve repository-style references such as `rules/...`, `templates/...`, and `hooks/...` under `<ROOT>` unless a project-local file with the same relative path exists.
+When this skill is installed by Apothem, resolve a repository-style reference against the installed directory for its first segment, unless a project-local file with the same relative path exists. Paths are relative to the project root.
+
+- `rules/<path>` is `.kimi-code/.apothem/support/rules/<path>`
+- `templates/<path>` is `.kimi-code/.apothem/support/templates/<path>`
+- `hooks/<path>` is `.kimi-code/.apothem/support/hooks/<path>`

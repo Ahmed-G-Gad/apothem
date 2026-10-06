@@ -32,7 +32,7 @@ Each harness subpackage carries the same core module set: `__init__.py` (the ada
 | `cursor` | `<project>/.cursor/rules/apothem-rules.mdc` | Project-scope manifest adapter. |
 | `gemini_cli` | `<project>/GEMINI.md` plus `<project>/.gemini/{commands,skills,agents}/` and `<project>/.gemini/.apothem/support/` | Project-scope manifest adapter with TOML command conversion. |
 | `github_copilot` | `<project>/.github/copilot-instructions.md` | Project-scope manifest adapter. |
-| `hermes` | `~/.hermes/config.yaml` plus `~/.hermes/.apothem/support/` | Materializer (native MCP via `auxiliary.mcp`); support cohorts under `~/.hermes/.apothem/support/`. |
+| `hermes` | `~/.hermes/config.yaml` plus `~/.hermes/.apothem/support/` | Materializer (native MCP via `mcp_servers`); support cohorts under `~/.hermes/.apothem/support/`. |
 | `kimi_code` | `<project>/AGENTS.md` plus `<project>/.kimi-code/.apothem/support/` | Project-scope manifest adapter; native agent memory. |
 | `open_claw` | `~/.openclaw/openclaw.json` plus `~/.openclaw/.apothem/support/` | Support cohorts under `~/.openclaw/.apothem/support/`; no config keys authored (name-allowlist skills, CLI MCP). |
 | `opencode` | `~/.config/opencode/opencode.json`, `commands/`, `skills/`, `agents/`, `.apothem/support/` | Materializer plus native commands, skills, and agents. |

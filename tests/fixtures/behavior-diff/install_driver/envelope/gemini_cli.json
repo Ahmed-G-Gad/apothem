@@ -6,7 +6,7 @@
     "skipped": 0,
     "unchanged": 4,
     "updated": 0,
-    "warning": 4
+    "warning": 3
   },
   "dry_run": false,
   "files_written": [
@@ -201,5 +201,5 @@
     "<ROOT>/GEMINI.md"
   ],
   "harness": "gemini_cli",
-  "warnings": 4
+  "warnings": 3
 }

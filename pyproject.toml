@@ -3,7 +3,13 @@
 [build-system]
 # Modern setuptools builds wheels natively; a separate "wheel" requirement is
 # no longer part of the recommended configuration on packaging.python.org.
-requires      = ["setuptools>=77.0"]
+# Pinned to the setuptools that scripts/release/requirements-build-linux.txt
+# hash-locks: the release builds with --no-isolation from that environment, so
+# the backend that produced a release is the reviewed one. A range here let an
+# isolated build fetch whatever PyPI served (the 1.1.0 wheel says setuptools
+# 84.0.0 while the toolchain pinned 83.0.0). tests/scripts/test_normalize_sdist.py
+# holds the two pins together.
+requires      = ["setuptools==83.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -12,8 +18,12 @@ version = "1.1.0"
 description = "Host-agnostic AI-harness configuration manager: one shared profile materializes native configs for seventeen AI assistant harnesses, syncing rules, slash-commands, skills, hooks, output-styles, settings, schemas, docs, and MCP servers behind a conformity governance gate and signed releases."
 requires-python = ">=3.10"
 readme = "README.md"
-license = "MIT"
-license-files = ["LICENSE", "LICENSES/MIT.txt"]
+# The project is MIT; the distribution also ships the vendored
+# typing_extensions (apothem/_vendor/typing_extensions.py) under PSF-2.0, and a
+# PEP 639 License-Expression describes everything the distribution contains.
+# tests/unit/test_distribution_license_metadata.py holds this to REUSE.toml.
+license = "MIT AND PSF-2.0"
+license-files = ["LICENSE", "LICENSES/MIT.txt", "LICENSES/PSF-2.0.txt"]
 dependencies = [
     # Pinned exactly: the CLI shell-completion scripts are Click-generated, and
     # the byte-identical behavior-diff golden (completion-fish.json) is only
@@ -115,8 +125,10 @@ where = ["src"]
 "apothem.schemas"     = ["*.json", "*.yaml", "*.txt", "*.md"]
 # Hook library ships cross-platform shell stubs alongside the Python
 # dispatcher (bootstrap.{sh,ps1}, find-python.{sh,ps1}, find-pwsh.{sh,ps1})
-# plus the per-event Markdown context fixtures consumed by the dispatcher.
-"apothem.hooks"       = ["lib/*.sh", "lib/*.ps1", "messages/*.md"]
+# plus the per-event Markdown context fixtures consumed by the dispatcher,
+# the plugin hook registration (hooks.json), and the folder READMEs, so the
+# wheel carries the same hook corpus as the npm package and the plugin tree.
+"apothem.hooks"       = ["hooks.json", "*.md", "lib/*.sh", "lib/*.ps1", "lib/*.md", "messages/*.md"]
 # Statusline renderer ships the shell shims plus the conformity-posture
 # data file and the operator-facing reference Markdown.
 "apothem.statuslines" = ["*.sh", "*.ps1", "*.md", "*.json"]
@@ -253,8 +265,15 @@ extend-exclude = [
 ]
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "UP", "B", "SIM", "N", "S", "C4", "ANN", "PT", "FA", "PTH", "RET", "RUF"]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "N", "S", "C4", "ANN", "PT", "FA", "PTH", "RET", "RUF", "C901"]
 ignore = ["E501"]
+
+[tool.ruff.lint.mccabe]
+# A ratchet, not a target: the bound is the highest cyclomatic complexity any
+# function under src/apothem carries today, so no function can get worse.
+# Lower it whenever the most complex function is split. CI holds src/apothem/cli
+# and src/apothem/harnesses/_shared to the tighter bound of 15.
+max-complexity = 20
 
 [tool.ruff.lint.per-file-ignores]
 # Pytest's expected idiom: assertions are the test harness's primary
@@ -356,3 +375,15 @@ exclude_lines = [
     "if TYPE_CHECKING:",
     "\\.\\.\\.",
 ]
+
+# Packages measured beside the engine, each with its own floor. The conformity
+# gate runs as a per-Write hook and gates releases; the audit package builds the
+# inventory and drift reports. Neither is folded into the engine figure above,
+# and neither lowers it. coverage.py ignores this table: the CI `metrics` job
+# measures src/apothem in one run and `scripts/dev/collect_metrics.py
+# --check-floors` fails when a package drops below its floor. Each floor is the
+# measured value rounded down; raise it as coverage rises, never lower it to
+# make a change pass.
+[tool.coverage.package-floors]
+conformity = { path = "src/apothem/conformity", fail_under = 81 }
+audit = { path = "src/apothem/audit", fail_under = 70 }

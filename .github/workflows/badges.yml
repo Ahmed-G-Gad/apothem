@@ -6,7 +6,8 @@
 # conforming to the shields.io endpoint schema (schemaVersion / label /
 # message / color), stages them under badges/, and uploads them as the
 # `badges` artifact. The static-site workflow (publish-static-site.yml)
-# fetches the latest successful run's `badges` artifact and stages it
+# fetches the `badges` artifact of the latest successful run on main started by
+# workflow_run or workflow_dispatch, and stages its five JSON files
 # under site/dist/badges/, so https://apothem.ahmedgad.com/badges/*.json
 # resolve.
 #
@@ -59,14 +60,15 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
           persist-credentials: false
-          # git describe needs the tag refs; the default shallow checkout
-          # fetches none, so the release badge would read "unreleased" forever.
-          fetch-tags: true
+          # git describe walks history back to the nearest tag. On the default
+          # depth-1 checkout no tagged commit is reachable even with the tag
+          # refs fetched, so the badge read "unreleased" after three releases.
+          fetch-depth: 0
 
       - name: Resolve current release tag
         id: release
         run: |
-          tag="$(git describe --tags --abbrev=0 2>/dev/null || echo 'unreleased')"
+          tag="$(git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*' 2>/dev/null || echo 'unreleased')"
           echo "tag=${tag}" >> "$GITHUB_OUTPUT"
 
       - name: Resolve CI conclusion

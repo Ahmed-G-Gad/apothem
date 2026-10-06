@@ -1,12 +1,12 @@
 ---
 name: "research-disseminate"
 version: "0.1.0"
-updated: "2026-06-16"
-description: "Drives post-acceptance dissemination and impact — preprint announcement, public artifacts, FAIR archival deposit, altmetrics and impact tracking, the reviewer rebuttal / revision loop, and the registered-report stage-2 path — the new terminal stage of the /research pipeline. Triggered as 'plan the dissemination and impact', 'announce the preprint and build the public artifacts', 'archive the data and code to a FAIR repository', 'set up altmetrics tracking', 'draft the reviewer rebuttal', or the pipeline-chained hand-off from /research-publish. Consumes the suite's _outputs/publication-record.md and emits _outputs/dissemination-plan.md carrying the preprint announcement, the public-artifact plan (talk / poster / blog), the FAIR archival deposit record (R8), the altmetrics and impact-tracking plan (R10), the rebuttal / revision loop, and the registered-report stage-2 path — the dissemination-and-impact record. The operator performs the public actions; the stage stops at a ready dissemination plan, never auto-publishes."
+updated: "2026-10-02"
+description: "Drives post-acceptance dissemination and impact — preprint announcement, public artifacts, FAIR archival deposit, altmetrics and impact tracking, the reviewer rebuttal / revision loop, and the registered-report stage-2 path — the terminal stage of the /research pipeline. Triggered as 'plan the dissemination and impact', 'announce the preprint and build the public artifacts', 'archive the data and code to a FAIR repository', 'set up altmetrics tracking', 'draft the reviewer rebuttal', or the pipeline-chained hand-off from /research-publish. Consumes _outputs/publication-record.md and emits _outputs/dissemination-plan.md carrying the preprint announcement, the public-artifact plan (talk / poster / blog), the FAIR archival deposit record (R8), the altmetrics and impact-tracking plan (R10), the rebuttal / revision loop, and the registered-report stage-2 path. The operator performs the public actions; the stage stops at a ready plan, never auto-publishes."
 argument-hint: "[--suite-name NAME] [--override] [--archive REPO] [--preprint SERVER]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -138,7 +138,7 @@ Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against t
 - **M14 systemicity** — the dissemination plan declares its upstream (the publication record), downstream (`operator dissemination` — terminal), peers (sibling research-suite artifacts), and enforcers (the `fact-checker` identifier-and-claim pass + the readiness checklist).
 - **M15 production-readiness** — the dissemination plan is complete in the same emission; no "I'll add the FAIR deposit later".
 
-Iterate on failure per the gate rule's §3 until every bar passes; record the attestation block inside the dissemination plan and close the Handoff Manifest with `downstream: operator dissemination (terminal)`. Apply incremental generation per `rules/large-file-generation.md` when the dissemination plan exceeds 500 lines.
+Iterate on failure per the gate rule's §3 until every bar passes or its three-round cap returns BLOCKED; record the attestation block inside the dissemination plan and close the Handoff Manifest with `downstream: operator dissemination (terminal)`. Apply incremental generation per `rules/large-file-generation.md` when the dissemination plan exceeds 500 lines.
 
 ---
 
@@ -236,4 +236,8 @@ Execute the dissemination plan yourself — post the preprint, deposit the data 
 
 ## Installed Reference Paths
 
-When this skill is installed by Apothem, resolve repository-style references such as `rules/...`, `templates/...`, and `hooks/...` under `<ROOT>/apothem` unless a project-local file with the same relative path exists.
+When this skill is installed by Apothem, resolve a repository-style reference against the installed directory for its first segment, unless a project-local file with the same relative path exists.
+
+- `rules/<path>` is `<ROOT>/.apothem/support/rules/<path>`
+- `templates/<path>` is `<ROOT>/.apothem/support/templates/<path>`
+- `hooks/<path>` is `<ROOT>/.apothem/support/hooks/<path>`

@@ -12,3 +12,9 @@ Read sequence — execute IN ORDER:
 6. Verify alignment. The user's most recent request must be fully addressable from the loaded state. If it references files, decisions, or context NOT in the loaded set, read those files BEFORE proceeding. If the request contradicts loaded state, surface the contradiction to the user — never silently override durable state.
 
 No active suite: step 1, then re-read any files referenced in the user's most recent request, then step 6.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The post-compaction blind bootstrap: reload memory, the pickup point, and the critical files in order, then verify the latest request against the loaded state.
+- **Established by ↑** The PostCompact registration in `hooks/hooks.json` and the harness settings templates.
+- **Cross-bound with ↔** `rules/context-management.md` + `rules/context-management-protocol.md` (the blind-bootstrap procedure this context runs). `hooks/messages/precompact.md` (externalizes what this context restores). `hooks/messages/sessionstart.md` (the same bootstrap at session start).

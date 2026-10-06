@@ -4,69 +4,104 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-06-25
-- vendor-doc-url: <https://moonshotai.github.io/kimi-cli/en/configuration/config-files.html>
-- snapshot-date: 2026-06-25
-- Canonical docs host: `moonshotai.github.io/kimi-cli` (source repo `MoonshotAI/kimi-cli`); the legacy `kimi-code` docs host mirror-resolves but risks link-rot.
+- Snapshot date: 2026-10-03
+- vendor-doc-url: <https://moonshotai.github.io/kimi-code/en/>
+- snapshot-date: 2026-10-03
+- Canonical docs host: `moonshotai.github.io/kimi-code/en/` (Kimi Code CLI,
+  Moonshot). The earlier `moonshotai.github.io/kimi-cli` host documented the
+  predecessor CLI and is no longer the authority for this adapter.
 - canonical-filename: `AGENTS.md`
-- canonical-schema: the universal AGENTS.md open standard (Markdown agent-instructions file at the project root)
+- canonical-schema: free-form Markdown agent instructions (the AGENTS.md
+  convention); no frontmatter.
 - Adapter source: `src/apothem/harnesses/kimi_code/`
-- Evidence level: adapter-local projection; no vendor-native UI claim is made here.
+- Evidence level: vendor-doc pinned (living docs, no version or commit
+  surface; no-immutable-source exception). No vendor-native UI claim is made
+  here.
 
 ## Official Surface Refresh
 
-- Re-verified live 2026-06-25 against `github.com/MoonshotAI/kimi-cli` +
-  `kimi-code`. Kimi Code (Moonshot) reads the project-root `AGENTS.md`
-  instruction file (universal AGENTS.md convention; `/init` generates it,
-  `KIMI_AGENTS_MD` consumes it) — CONFIRMED. FINDING (config-path discovery,
-  flagged not rewritten): the pin declares `kimi-cli` the canonical source yet
-  uses `<project>/.kimi-code/` project-scope paths, while the live kimi-cli docs
-  show user-scope `~/.kimi/config.toml` + `~/.kimi/` for config / sessions / MCP
-  and a conversational `/mcp-config` (`kimi mcp`) surface. The `kimi-code` vs
-  `kimi-cli` product distinction makes the project-scope `.kimi-code/` path
-  UNCERTAIN — it needs a targeted discovery pass against the actual `kimi-code`
-  product before any path rewrite; flagged here rather than guessed (M5: never
-  fabricate a path). The adapter authors no config / MCP entries, so no write is
-  affected by the ambiguity.
-- Canonical filename: `AGENTS.md` at the project root. The adapter is
-  project-scope and writes the apothem governance surface into `AGENTS.md` as a
-  sentinel-delimited managed block so operator prose outside the sentinels is
-  never clobbered.
-- Support tree: non-native Markdown cohorts (rules, commands, skills, agents)
-  land under the Apothem-owned `<project>/.kimi-code/.apothem/support/` subtree, and the
-  template and hook machinery under the shared working directory at
-  `<project>/.kimi-code/.apothem/support/{templates,hooks}/`; both are referenced
-  from the `AGENTS.md` anchor. They are never forced into vendor-reserved
-  configuration directories.
-- Model family: the Kimi Code model FAMILY is vendor-pinned and selected through
-  the operator's own Kimi Code configuration; the adapter authors no model id
-  and presets no model or effort preference.
+- Re-pinned 2026-10-03 to the Kimi Code docs at
+  `moonshotai.github.io/kimi-code/en/`. This resolves the earlier open question
+  about the `.kimi-code/` paths: the current docs place every Kimi Code surface
+  under `.kimi-code/` (project) and `~/.kimi-code/` (user, relocatable with
+  `KIMI_CODE_HOME`).
+- Instructions: project instructions live in `AGENTS.md` or
+  `.kimi-code/AGENTS.md` under the project tree; Kimi-specific global
+  instructions live in `~/.kimi-code/AGENTS.md`, and cross-tool global
+  instructions in `~/.agents/AGENTS.md`. The docs do not say which of the two
+  project files wins when both exist, so the adapter keeps writing the
+  project-root `AGENTS.md` managed block (operator prose outside the sentinels
+  is preserved).
+- Configuration: `~/.kimi-code/config.toml` (runtime settings) and
+  `~/.kimi-code/tui.toml` (terminal UI). Operator-owned; the adapter writes
+  neither.
+- MCP: `mcp.json` at two levels, `~/.kimi-code/mcp.json` (user) and
+  `.kimi-code/mcp.json` (project, overrides same-named user entries; stdio
+  entries prompt through workspace trust). Operator-owned; the adapter names
+  the project file and authors no entries.
+- Skills: `~/.kimi-code/skills/`, `~/.agents/skills/`, `.kimi-code/skills/`,
+  and `.agents/skills/` (`SKILL.md` folders). Agents: `~/.kimi-code/agents/`
+  and `.kimi-code/agents/`. The adapter authors neither; Apothem's skills and
+  agents land in the support tree as reference material (deliberate
+  AGENTS.md-anchor posture).
+- Tool permissions: `default_permission_mode` (`manual`, `yolo`, `auto`) and
+  `[[permission.rules]]` entries in `config.toml`. Apothem does not yet project
+  its universal-deny floor into them (see Discovery Targets).
+- Support tree: non-native Markdown cohorts (rules, commands, skills, agents,
+  templates, hooks) land under the Apothem-owned
+  `<project>/.kimi-code/.apothem/support/` subtree and are referenced from the
+  `AGENTS.md` anchor. They are never written into `.kimi-code/skills/`,
+  `.kimi-code/agents/`, or other vendor-read directories.
+- Web fetch (`web_fetch` = **yes**): Kimi Code ships built-in `FetchURL`
+  (returns a page's body text) and `WebSearch` tools, both auto-allowed, backed
+  by the `moonshot_fetch` and `moonshot_search` services in `config.toml`.
+- Model family: vendor-pinned and selected through the operator's own Kimi Code
+  configuration; the adapter authors no model id.
+
+## Vendor Sources
+
+Retrieved 2026-10-03.
+
+- <https://moonshotai.github.io/kimi-code/en/> (docs home)
+- <https://moonshotai.github.io/kimi-code/en/customization/agents> (instruction
+  files, agent files, `SYSTEM.md`)
+- <https://moonshotai.github.io/kimi-code/en/configuration/config-files>
+  (`config.toml`, permissions, services)
+- <https://moonshotai.github.io/kimi-code/en/customization/mcp> (`mcp.json`)
+- <https://moonshotai.github.io/kimi-code/en/customization/skills> (skill
+  directories)
+- <https://moonshotai.github.io/kimi-code/en/reference/tools> (`FetchURL`,
+  `WebSearch`)
+
+## Discovery Targets
+
+- Discovery target: mcp_servers by 2026-12-31 — decide whether Apothem renders
+  the profile's MCP inventory into `.kimi-code/mcp.json` or keeps naming it as
+  operator-owned.
+- Discovery target: tool_surface_restrictions by 2026-12-31 — decide how the
+  universal-deny floor maps onto `[[permission.rules]]` in `config.toml`.
 
 ## Verification
 
-The vendor configuration surface at the pinned `vendor-doc-url` above was
-verified against vendor reality on `snapshot-date`. Adapter materializer output
-MUST produce an `AGENTS.md` managed block conforming to the universal AGENTS.md
-convention; deviations are findings per
+Adapter output MUST produce an `AGENTS.md` managed block that Kimi Code reads as
+project instructions; deviations are findings per
 `rules/harness-adapter-shape.md` §4 Standard-Conformance.
 
 ## MCP Surface Projection
 
-- Status: MCP is the recognized operator-owned surface at
-  `<project>/.kimi-code/mcp.json`. Apothem names this surface in
-  `capabilities.yml` but does not author MCP server entries; `.kimi-code/mcp.json`
-  is operator-owned and outside the adapter's write surface.
-- Boundary: the registry capability cell is `discovery-pending` — the pinned
-  snapshot catalogs the config-materialization surfaces, not the vendor MCP
-  schema, so Apothem claims only that the surface exists, not that it
-  materializes entries.
+- Status: `.kimi-code/mcp.json` (project) and `~/.kimi-code/mcp.json` (user) are
+  the documented MCP surfaces. Apothem names the project file in
+  `capabilities.yml` and authors no entries.
+- Boundary: the registry capability cell stays `discovery-pending` until the
+  target above is resolved.
 
 ## Tool-Surface Restriction Projection
 
-- Status: `discovery-pending`. The Kimi Code tool-permission surface is not yet
-  pinned against a vendor schema. The universal-deny floor (secrets paths,
-  destructive shell ops, network-write to unsigned endpoints) binds regardless
-  per `rules/agent-capability-discipline.md` §5 and is named in
+- Status: `discovery-pending`. The vendor surface is now identified
+  (`default_permission_mode` and `[[permission.rules]]` in `config.toml`); the
+  projection of the universal-deny floor (secrets paths, destructive shell ops,
+  network-write to unsigned endpoints) into it is not yet built. The floor binds
+  regardless per `rules/agent-capability-discipline.md` §5 and is named in
   `capabilities.yml` under `tool_surface_restrictions`.
 
 ## Recommended Postfix Rendering
@@ -102,12 +137,11 @@ convention; deviations are findings per
 
 ## Refresh cadence
 
-Re-verify against vendor reality every 90 days. On refresh, update
-`snapshot-date` (and `vendor-doc-url` if the authority host moves) in the same
-change-set and emit a `[Pin — refreshed: kimi_code; …]` ledger entry per
-`rules/disclosure-ledger.md`. A pin whose `snapshot-date` exceeds 90 days
-against current vendor reality surfaces as a finding at the next adapter-touch
-boundary per `rules/harness-adapter-shape.md` §6 stale-pin discipline.
+Re-verify against vendor reality every 90 days. On refresh, update the snapshot
+date, the retrieval date under Vendor Sources, and any moved URL in the same
+change-set, and emit a `[Pin — refreshed: kimi_code; …]` ledger entry per
+`rules/disclosure-ledger.md`. A pin older than 90 days, or a discovery target
+past its date, fails `scripts/dev/validate_harness_convention_pins.py`.
 
 ## Plugin-alone Persistence
 
@@ -120,7 +154,7 @@ standalone-installable bundle; every artifact requires the full
 | Artifact class | Persists standalone? | Mechanism / limit |
 |---|---|---|
 | Context anchor (rules-as-text) | No — requires `apothem install` | `AGENTS.md` is written by the engine; nothing persists before that run. |
-| Rules / Commands / Skills / Agents / Templates | No — deliberate posture | The support tree under the Apothem-owned subtree is engine-materialized as reference material. NOTE: contrary to the prior framing, Kimi Code/CLI DOES document native skills (marketplace + GitHub install), built-in subagents (coder / explore / plan), slash commands (`/init`, `/plan`, `/mcp-config`), and agent specs — the adapter authors none of them (deliberate AGENTS.md-anchor posture), not an absence-of-surface claim. |
+| Rules / Commands / Skills / Agents / Templates | No — deliberate posture | The support tree under the Apothem-owned subtree is engine-materialized as reference material. Kimi Code documents native skills (`.kimi-code/skills/`), agent files (`.kimi-code/agents/`), and slash commands; the adapter authors none of them (deliberate AGENTS.md-anchor posture), not an absence-of-surface claim. |
 | MCP servers | No — operator-owned | `.kimi-code/mcp.json` is operator-owned; the adapter authors no entries. |
 
 ## Bindings

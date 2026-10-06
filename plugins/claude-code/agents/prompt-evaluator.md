@@ -4,7 +4,7 @@ version: "0.1.0"
 updated: "2026-06-23"
 description: "Read-only rubric scoring of a prompt's output set — score each output against each named criterion (PASS/FAIL with cited evidence), aggregate per-criterion pass-rate, flag regressions against a baseline, and name recurring failure modes. Use when prompt or model outputs need a reproducible verdict before they ship: comparing a reprompted variant against the prior version, gating a system-prompt change, judging an LLM-as-judge eval set, scoring few-shot outputs against acceptance criteria, or proving a quality claim a reviewer would challenge. Requires an explicit rubric — an absent or underspecified rubric blocks scoring and routes as inquiry; never invents a criterion or threshold, never scores charitably."
 tools: "Read, Glob, Grep, Bash"
-disallowedTools: "Write, Edit, TodoWrite"
+disallowedTools: "Write, Edit, TodoWrite, TaskCreate, TaskUpdate"
 maxTurns: 15
 # maxTurns rationale: 15 exceeds the 5–10 norm because rubric scoring reads the prompt, the
 # full output set, and the rubric, then scores each output against each criterion. A rubric with
@@ -12,7 +12,6 @@ maxTurns: 15
 # extract failure examples. 15 covers multi-criterion rubrics with evidence extraction without
 # permitting unbounded re-scoring.
 portability: "universal"
-memory: false
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -85,3 +84,11 @@ Out-of-axis: Architecture, Concurrency, Performance, Security, Tooling. Out-of-a
 - **Surfaced gaps:** Structural gaps from execution; required when structural (M6). Empty: `[]`.
 - **Inquiry surface:** Typed inquiry items per M5 with options annotated per M7. Empty: `[]`.
 - **Self-check attestation:** Fifteen-bar gate result per M4. Each bar `pass` or `n/a (reason)`; failures block return.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The per-criterion PASS/FAIL scores with cited evidence, the aggregate pass-rate, and the regression flags `/eval` writes into its ledger.
+- **Satisfies →** A reproducible verdict on a prompt or model change before it ships: every score cites the rubric criterion and the output evidence.
+- **Established by ↑** `agents/README.md` (this agent's index entry). `skills/eval-harness/SKILL.md` (the dataset and scorer definition it scores against).
+- **Gated by ←** The read-only tool posture in frontmatter (`Read, Glob, Grep, Bash`; `Write, Edit, TodoWrite` denied). The `maxTurns: 15` ceiling. An explicit rubric; an absent or underspecified rubric blocks scoring and routes as inquiry.
+- **Cross-bound with ↔** `commands/eval.md` (Phase 3 dispatches this agent to score every candidate output).

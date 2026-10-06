@@ -10,10 +10,10 @@ variables. The adapter therefore writes a provider configuration file —
 and OpenAI-compatible base URLs, an auth-token placeholder, and
 operator-configurable model-mapping placeholders so an operator can wire any
 compatible agent to GLM. The file is materialized via ``write_text`` as an
-operator-owned valid-TOML config: Apothem writes the clean template, and the
-operator owns the file thereafter — their own backend secrets and edits route
-through the per-file destructive-op authorization gate on every subsequent
-``update`` rather than being silently overwritten. It carries **no** projected
+operator-owned valid-TOML config: Apothem writes the template only when the file
+is absent and never overwrites it afterwards, so the operator's backend secrets
+and edits survive every ``install`` / ``update``; ``uninstall`` removes it only
+while it is still the unedited template Apothem created. It carries **no** projected
 shared-profile content and **no** coding-agent cohort (rules, commands, skills,
 agents, hooks): a model backend is not rule-bearing and exposes none. The
 managed-block sentinel machinery is markdown-only (HTML-comment delimiters, a

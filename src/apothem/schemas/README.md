@@ -24,9 +24,11 @@ JSON Schema files validating the YAML frontmatter of apothem artifact classes.
 The shared profile carries an optional top-level `schema_version` integer
 (minimum `1`). The contract is additive and forward-compatible:
 
-- **Optional, defaults to the current version.** A version-less profile is
-  treated as the current schema version and validates unchanged; existing
-  profiles need no edit.
+- **Optional, read as version 1 when absent.** A version-less profile is a
+  version 1 profile (pinned as a literal, not the engine's current version),
+  so a future v1 to v2 migration still runs on it; existing profiles need no
+  edit. Every scaffold (`profile init`, `quickstart`, a first `install`)
+  writes `schema_version` explicitly.
 - **Current version is `1`.** The engine constant `_CURRENT_SCHEMA_VERSION` in
   [`../lib/profile.py`](../lib/profile.py) is the source of truth.
 - **Additive migration shim.** `migrate_profile` runs at the top of

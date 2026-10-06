@@ -1,12 +1,12 @@
 ---
 name: "a11y-audit"
 version: "0.1.0"
-updated: "2026-06-16"
+updated: "2026-10-02"
 description: "Operator-driven accessibility audit pass against WCAG 2.2 AA. Walks every rendered page of a deployed web surface (documentation site, landing portal, in-app surfaces) via ax-core + Pa11y + Lighthouse Accessibility, attests each issue against the WCAG 2.2 success-criterion catalog (including the six 2.2-new criteria — 2.4.11 Focus Not Obscured, 2.5.7 Dragging Movements, 2.5.8 Target Size, 3.3.7 Redundant Entry, 3.3.8 Accessible Authentication, plus the carried-forward AA floor), and emits per-page findings — HIGH/MEDIUM/LOW severity-triaged with concrete-driver rationale per finding. Read-only diagnostics; never remediates. Output lands at the consuming suite's _inputs/a11y-audit-findings.md. Invoke with a site path or URL, or --focus PAGE_OR_DIR to audit a recent docs change-set incrementally."
 argument-hint: "[path/to/site/ or URL] [--focus PAGE_OR_DIR] [--dry-run]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -160,7 +160,7 @@ Run the fifteen-bar pre-emission gate (`rules/pre-emission-gate.md`) over the em
 
 The remaining bars attest `pass` or `n/a (with reason)` per `rules/pre-emission-gate-bars.md` §1; for this command M9 visual-leverage is `n/a` unless a focus-order-trap diagram aids comprehension, and M11/M13/M15 are `n/a` (single sprint, no code blocks, remediation-deferred).
 
-**Iterate on failure.** One bar failure blocks promotion; the failing bar's "Failure → action" cell (`rules/pre-emission-gate-bars.md` §1) names the owning revision rule. Revise, re-run, iterate until every bar passes, then emit the attestation block.
+**Iterate on failure.** One bar failure blocks promotion. Revise and re-run per `rules/pre-emission-gate-bars.md` §3, which names the owning revision rule for each bar and caps the loop at three rounds before BLOCKED, then emit the attestation block.
 
 ---
 
@@ -204,4 +204,8 @@ Invoke `/docs-review` to advance the audit-fortress sequence — the canonical s
 
 ## Installed Reference Paths
 
-When this skill is installed by Apothem, resolve repository-style references such as `rules/...`, `templates/...`, and `hooks/...` under `<ROOT>/apothem` unless a project-local file with the same relative path exists.
+When this skill is installed by Apothem, resolve a repository-style reference against the installed directory for its first segment, unless a project-local file with the same relative path exists.
+
+- `rules/<path>` is `<ROOT>/.apothem/support/rules/<path>`
+- `templates/<path>` is `<ROOT>/.apothem/support/templates/<path>`
+- `hooks/<path>` is `<ROOT>/.apothem/support/hooks/<path>`

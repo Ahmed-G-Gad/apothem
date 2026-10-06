@@ -8,7 +8,8 @@
 .DESCRIPTION
     Signs every file in dist/release-assets/ via Sigstore cosign in keyless
     mode (Fulcio-issued short-lived certificate; Rekor transparency-log entry).
-    Per-asset outputs: <asset>.sig (sigstore bundle), <asset>.crt (Fulcio chain).
+    Each asset gets one Sigstore bundle, <asset>.cosign.bundle (signature,
+    Fulcio certificate and Rekor entry), matching what release.yml publishes.
     The manifest SHA256SUMS is also signed.
 
 .EXAMPLE
@@ -36,15 +37,14 @@ try {
     # transparency-log entry, so enumerating the manifest in both places would
     # overwrite its outputs and strand one Rekor entry per release.
     $assets = @(Get-ChildItem -LiteralPath $AssetsDir -File | Where-Object {
-        $_.Name -notlike '*.sig' -and $_.Name -notlike '*.crt' -and
+        $_.Name -notlike '*.cosign.bundle' -and $_.Name -notlike '*.sig' -and $_.Name -notlike '*.crt' -and
         $_.Name -ne 'SHA256SUMS'
     })
 
     foreach ($asset in $assets) {
         Write-Information "sign-assets: signing $($asset.Name)" -InformationAction Continue
         & cosign sign-blob --yes `
-            --output-signature "$($asset.Name).sig" `
-            --output-certificate "$($asset.Name).crt" `
+            --bundle "$($asset.Name).cosign.bundle" `
             $asset.Name
         if ($LASTEXITCODE -ne 0) { throw "cosign sign-blob failed on $($asset.Name)" }
     }
@@ -53,8 +53,7 @@ try {
     if (Test-Path -LiteralPath 'SHA256SUMS') {
         Write-Information 'sign-assets: signing SHA256SUMS' -InformationAction Continue
         & cosign sign-blob --yes `
-            --output-signature 'SHA256SUMS.sig' `
-            --output-certificate 'SHA256SUMS.crt' `
+            --bundle 'SHA256SUMS.cosign.bundle' `
             'SHA256SUMS'
         if ($LASTEXITCODE -ne 0) { throw 'cosign sign-blob failed on SHA256SUMS' }
         $signed++

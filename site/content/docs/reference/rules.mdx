@@ -51,6 +51,24 @@ is `true`; on a path-filtered rule `pathFilter` carries the glob list and
 (`{name, description, pathFilter, alwaysApply}`); the validator's
 `frontmatter-cohort` check verifies it on every rule file.
 
+`pathFilter` and `alwaysApply` are harness-neutral. Each adapter translates
+them where its harness has a native scoping field. Claude Code reads only
+`paths:` from a rule and loads every rule without it at launch, so the engine
+install (`apothem install --harness claude-code`) writes each path-filtered rule
+to `~/.claude/rules/` with a `paths:` list built from its `pathFilter`, and
+copies always-on rules unchanged. The 28 always-on rules load in every session;
+the 63 path-filtered companions load when the assistant reads a matching file.
+
+OpenCode has no per-rule scoping field: it combines every file its
+`opencode.json` `instructions` list names into every session. The OpenCode
+install (`apothem install --harness opencode`) therefore lists your profile
+document and only the rules whose `alwaysApply` is `true`, one explicit
+`~/.config/opencode/...` path per file, read from the rule files when the
+config is written. Every rule,
+path-filtered ones included, is still installed under
+`~/.config/opencode/.apothem/support/rules/`, where a rule, skill, or command
+that cites one reads it on demand.
+
 ## Authoring discipline
 
 - **Self-contained.** Each rule has its own Purpose, Obligations, Anti-Patterns,

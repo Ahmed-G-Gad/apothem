@@ -11,31 +11,55 @@ against the alternatives you already use.
 
 ## How Apothem compares
 
-Other tools solve adjacent slices of this problem. File-based config managers
-like **chezmoi** and **GNU Stow** place or template files but never translate
-one source into each harness's *native* configuration schema. Cross-tool
-rule-sync CLIs like **rulesync** do generate per-tool native files across many
-tools — a broader tool count than Apothem's seventeen, and a comparably wide
-synced unit. Apothem's distinction is the **governance and lifecycle discipline
-shipped around the sync** — a mechanized conformity gate, deterministic
-pipelines, an audit fortress, and a reversible verified lifecycle.
+Peer facts on this page are as of **2026-10-02**, read from each project's own
+README or documentation (see [Sources](#sources)); recheck them at each minor
+release.
 
-| Capability | Apothem | File config managers (chezmoi, Stow) | Cross-tool rule sync (rulesync) | Per-tool native config |
-| ---------- | :-----: | :----------------------------------: | :-----------------------------: | :--------------------: |
-| One source to many tools' native schemas | Yes — seventeen harness adapters | No — copy / symlink, no translation | Yes | No — single tool |
-| Synced unit | rules, skills, hooks, slash-commands, MCP | arbitrary files | rules, ignore, MCP, commands, subagents, skills, hooks, permissions | — |
-| Governance corpus (behavioral rules plus a mechanical conformity gate) | Yes — `python -m apothem.conformity.gate` | No | No | No |
+Other tools solve adjacent slices of this problem. File-based config managers
+like **chezmoi** and **GNU Stow** place, link or template files but never
+translate one source into each harness's *native* configuration schema.
+Cross-tool sync CLIs generate per-tool files from one source: **rulesync**
+generates native configuration for 60 coding tools and two open standards,
+across a wider synced unit than Apothem's; **ruler** distributes one `.ruler/`
+directory to 33 targets, concatenating rules into each tool's instruction file
+and translating MCP servers, skills and subagents into native config. Apothem's
+distinction is the **governance and lifecycle discipline shipped around the
+sync**: a mechanized conformity gate, deterministic pipelines, an audit
+fortress, and a reversible verified lifecycle.
+
+| Capability | Apothem | File config managers (chezmoi, Stow) | rulesync | ruler |
+| ---------- | :-----: | :----------------------------------: | :------: | :---: |
+| One source to many tools' native schemas | Yes — seventeen harness adapters | No — copy, symlink or template, no translation | Yes — 60 tools plus the AGENTS.md and Agent Skills standards | Partly — rules concatenated into each tool's instruction file; MCP, skills and subagents written in native form |
+| Synced unit | rules, skills, hooks, slash-commands, MCP | arbitrary files | rules, ignore, MCP, commands, subagents, skills, hooks, permissions, checks (code-review check instructions) | rules, MCP, skills, subagents |
+| Governance corpus (behavioral rules plus a mechanical conformity gate) | Yes — `python -m apothem.conformity.gate` | No | No — its `checks` feature syncs code-review checks to tools; no conformity gate over the rules | No |
 | Deterministic plan and research pipelines | Yes — `/plan-spec` to `/plan-execute`, thirteen-stage `/research` | No | No | No |
 | Audit fortress that detects and remediates | Yes — eleven-command sweep, `/fortress` re-audit loop | No | No | No |
-| Supply-chain hardened releases | Yes — SBOM, Sigstore, SLSA, Scorecard target | No | varies | No |
-| Reversible, verified lifecycle | Yes — backup, `apothem verify --json`, zero-orphan uninstall | varies | varies | — |
+| Supply-chain hardened releases | Yes — SBOM, Sigstore, SLSA, Scorecard target | Not compared | Not stated in its README | Not stated in its README |
+| Reversible, verified lifecycle | Yes — backup, `apothem verify --json`, zero-orphan uninstall | chezmoi: `chezmoi verify` checks every target; Stow: symlinks only | Not stated in its README | `.bak` backups and `ruler revert`; no verify command in its README |
 
-Where a peer is stronger, it is named: **rulesync** reaches more tools and
-carries a comparably wide synced unit, and several sync tools materialize
-native schemas. Apothem trades raw tool count for the governance, audit, and
-lifecycle discipline shipped around the sync — a conformity gate, deterministic
-plan and research pipelines, an eleven-command audit fortress, durable memory,
-and a reversible verified lifecycle — that a rule-sync tool does not carry.
+Where a peer is stronger, it is named: **rulesync** reaches more than three
+times as many tools and syncs a wider unit (permissions and review checks
+included), and **ruler** reaches nearly twice as many tools with a revert
+command of its own. Apothem trades raw tool count for the governance, audit,
+and lifecycle discipline shipped around the sync — a conformity gate,
+deterministic plan and research pipelines, an eleven-command audit fortress,
+durable memory, and a reversible verified lifecycle — that neither sync tool
+carries.
+
+### Sources
+
+All retrieved 2026-10-02, against each project's latest release on that date.
+
+- rulesync (npm `rulesync`): [README](https://github.com/dyoshikawa/rulesync#readme)
+  (supported-tools table: 60 coding tools and two open standards) and
+  [file formats reference](https://github.com/dyoshikawa/rulesync/blob/main/docs/reference/file-formats.md)
+  (the `checks` feature).
+- ruler (npm `@intellectronica/ruler`): [README](https://github.com/intellectronica/ruler#readme)
+  (supported-agents table, `--backup`, `revert`).
+- chezmoi: [home page](https://www.chezmoi.io/) and
+  [`chezmoi verify`](https://www.chezmoi.io/reference/commands/verify/).
+- GNU Stow: [project page](https://www.gnu.org/software/stow/)
+  ("a symlink farm manager").
 
 ## How to compare
 

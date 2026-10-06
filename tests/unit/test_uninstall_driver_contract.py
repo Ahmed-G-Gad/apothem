@@ -37,7 +37,13 @@ from apothem.lib.propagation import InstallEntry
 
 @pytest.mark.parametrize(
     "mode",
-    ["command_skills", "codex_agents", "gemini_agents", "markdown_commands"],
+    [
+        "command_skills",
+        "codex_agents",
+        "gemini_agents",
+        "markdown_commands",
+        "antigravity_rules",
+    ],
 )
 def test_generated_targets_skip_cohort_doc_files(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mode: str

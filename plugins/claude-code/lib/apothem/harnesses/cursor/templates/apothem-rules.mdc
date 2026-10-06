@@ -8,15 +8,15 @@ alwaysApply: true
 
 # Apothem — Cursor Bootstrap
 
-This file is materialised by `apothem install --harness cursor --project <path>` and lands at `<project>/.cursor/rules/apothem-rules.mdc`, the current Cursor project rules surface per https://cursor.com/docs/context/rules. The legacy single-file `.cursorrules` target is excluded because Apothem targets the multi-file project rules format; this MDC file is the authoritative Cursor-facing anchor.
+This file is materialised by `apothem install --harness cursor --project <path>` and lands at `<project>/.cursor/rules/apothem-rules.mdc`, the current Cursor project rules surface per https://cursor.com/docs/rules. The legacy single-file `.cursorrules` target is excluded because Apothem targets the multi-file project rules format; this MDC file is the authoritative Cursor-facing anchor.
 
 ## What Apothem governs in this project
 
 Apothem propagates a shared governance and convention surface across every supported AI harness in this project's host environment. Inside Cursor, the surface manifests as:
 
-- **Rules** — always-on and path-filtered engineering rules. The full rule cohort lives at the apothem source repository under `src/apothem/rules/`; that cohort is the authoritative source. This MDC file is the Cursor-facing anchor; consult the apothem rules tree (or this project's mirrored documentation) for the per-rule body.
-- **Skills, commands, agents** — reusable techniques, slash-style workflows, and persistent sub-agent definitions. Apothem's canonical-master cohort at the apothem source repository defines them; their per-harness reachability depends on Cursor's discovery contract.
-- **Conformity matchers** — mechanical pre-emission checks that gate artifact emission. The apothem package installs them as the `apothem-conformity` console-script entry point and as PreToolUse hooks where the harness supports hooks.
+- **Rules** — the engineering disciplines below, summarized from Apothem's always-on and path-filtered rules. This install writes this one file: no rule, skill, command, template, or hook file is installed beside it, so the summary below is the rule text in force here.
+- **Skills, commands, agents** — Apothem's reusable techniques, slash-style workflows, and sub-agent definitions are not installed by the Cursor adapter.
+- **Conformity checks** — Apothem's mechanical pre-emission checks run where Apothem's engine is installed; this install registers no hook.
 
 ## Engineering disciplines in force
 
@@ -33,7 +33,7 @@ Apothem's foundational mandates apply uniformly across every harness, including 
 
 ## How to use this file
 
-Cursor reads this MDC file at every session start because `alwaysApply: true` forces inclusion regardless of file-context heuristics. The `globs: "**/*"` field declares the rule applies project-wide. The body above is the high-density summary; the apothem rule cohort at the apothem source repository carries the full per-rule specifications.
+Cursor reads this MDC file at every session start because `alwaysApply: true` forces inclusion regardless of file-context heuristics. The `globs: "**/*"` field declares the rule applies project-wide. The body above is the high-density summary of Apothem's rules, and it is the only Apothem rule text this install places in the project.
 
 ## Refreshing the file
 
