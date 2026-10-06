@@ -1,17 +1,25 @@
 # SPDX-License-Identifier: MIT
 
 @{
-    # PSScriptAnalyzer settings consumed by the project's CI gate and
-    # local smoke tests via:
+    # PSScriptAnalyzer settings for the repository's PowerShell scripts. This
+    # file is the single source of the severities and excluded rules for both
+    # CI callers, which pass no other filter:
     #
-    #     Invoke-ScriptAnalyzer -Path . -Recurse `
-    #         -Settings ./PSScriptAnalyzerSettings.psd1 `
-    #         -Severity Error,Warning
+    #   - `.github/workflows/installer-lint.yml` lints `scripts/installer/`
+    #     on every pull request to main.
+    #   - `.github/workflows/publish-static-site.yml` lints the copies it
+    #     stages in `site/dist/` before each Pages deploy.
     #
-    # `Invoke-ScriptAnalyzer` does NOT auto-load this file; the
-    # `-Settings` flag is required at the call site. The CI shell-lint
-    # job and the local pre-commit script-analyzer pass `-Settings
-    # ./PSScriptAnalyzerSettings.psd1` explicitly.
+    # Both run, from the repository root:
+    #
+    #     Invoke-ScriptAnalyzer -Path <dir> -Settings PSScriptAnalyzerSettings.psd1
+    #
+    # Always pass `-Settings`. `Invoke-ScriptAnalyzer` loads this file on its
+    # own only when `-Path` is the repository root or a file in it, so a run
+    # on `scripts/installer/` without the flag applies no exclusions.
+    # A command-line `-Severity` or `-ExcludeRule` is merged with the values
+    # below and can only widen them, so set a severity or a rule exclusion
+    # here, never at a call site.
     Severity = @('Error', 'Warning')
     ExcludeRules = @(
         # Install scripts produce styled, user-facing console output
@@ -26,6 +34,12 @@
         # source files are encoded UTF-8-no-BOM by convention. The
         # BOM-required convention conflicts with the cross-platform
         # working-tree LF discipline declared in `.gitattributes`.
-        'PSUseBOMForUnicodeEncodedFile'
+        'PSUseBOMForUnicodeEncodedFile',
+        # Moved here from the Static Site build's `-ExcludeRule` list so
+        # that both CI callers read one list. The rule flags a function
+        # named New-, Set-, Remove-, Start-, Stop-, Restart-, Reset- or
+        # Update- that does not declare `SupportsShouldProcess`. No
+        # PowerShell script in this repository defines such a function.
+        'PSUseShouldProcessForStateChangingFunctions'
     )
 }
