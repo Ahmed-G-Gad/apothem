@@ -80,23 +80,23 @@ def apply_managed_block_anchor(
     backup-before-replace + no-op detection. This is the reusable projection
     write path every instruction-anchor adapter shares: the profile-projection
     seam renders *body*, this helper lands it in the harness's Markdown anchor.
+    An anchor whose block is already current keeps its own bytes, line endings
+    included (see :func:`_merged_bytes`). An anchor that cannot be read as UTF-8
+    text is refused with a ``config.unparseable`` error and left untouched.
     With *dry_run*, nothing is written and the prospective result is returned.
     """
     try:
-        existing = target.read_text(encoding="utf-8") if target.exists() else ""
-    except OSError:
-        existing = ""
-    merged = merge_managed_block(existing, body)
+        before = _read_existing(target)
+    except _LossyRewriteError as refusal:
+        return _refused_result("sentinel_merge", target, refusal, {})
+    merged = merge_managed_block(before or "", body)
     if dry_run:
         return prospective_result(
-            target,
-            before=existing if target.exists() else None,
-            after=merged,
-            operation="sentinel_merge",
+            target, before=before, after=merged, operation="sentinel_merge"
         )
     return write_bytes_safely(
         target,
-        merged.encode("utf-8"),
+        _merged_bytes(target, before, merged),
         install_root=install_root,
         harness_name=harness_name,
         operation="sentinel_merge",
