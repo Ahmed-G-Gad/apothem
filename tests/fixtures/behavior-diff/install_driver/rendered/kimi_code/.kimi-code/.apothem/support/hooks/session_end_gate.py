@@ -41,10 +41,15 @@ Configuration.
   delays it to a point where externalization is plausibly meaningful. A
   non-positive or unparseable override falls back to the default, so a typo can
   never silently disable the gate.
-* ``APOTHEM_SESSION_END_ENABLED`` (default enabled) — set to ``0``, ``false``,
-  ``no``, or ``off`` to silence the protocol entirely. Provided because the
-  emission is advisory: an operator who does not want it should be able to turn
-  it off without editing plugin files, which is what the loop forced.
+* ``APOTHEM_SESSION_END_ENABLED`` (default **off**) — set to ``1``, ``true``,
+  ``yes`` or ``on`` to opt in. A ``Stop`` hook that returns context makes the
+  harness continue the conversation, so an enabled gate forces one extra turn
+  per session. Under the agnostic posture (``rules/agnostic-posture.md``: every
+  shipped behavior is default-off and opt-in) that forced turn is the
+  operator's choice, never a default.
+* ``stop_hook_active`` in the payload — when the harness reports that the
+  current stop already follows a hook-driven continuation, the gate emits
+  nothing, so it can never chain continuations.
 """
 
 from __future__ import annotations
@@ -59,12 +64,19 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
+_LIB_DIR: Final[Path] = Path(__file__).resolve().parent / "lib"
+if str(_LIB_DIR) not in sys.path:
+    sys.path.insert(0, str(_LIB_DIR))
+
+from message_text import strip_maintainer_text  # noqa: E402
+from state_dir import hook_state_dir, session_key  # noqa: E402
+
 #: Environment override for the minimum number of ``Stop`` firings before the
 #: protocol may emit. Falls back to the default when unset, non-numeric, or
 #: non-positive.
 MIN_STOPS_ENV: Final[str] = "APOTHEM_SESSION_END_MIN_STOPS"
 
-#: Environment switch that silences the protocol entirely.
+#: Opt-in switch for the protocol (default off; see the module docstring).
 ENABLED_ENV: Final[str] = "APOTHEM_SESSION_END_ENABLED"
 
 #: Default floor. Three turn-ends is enough for a session to have produced work
@@ -72,23 +84,19 @@ ENABLED_ENV: Final[str] = "APOTHEM_SESSION_END_ENABLED"
 #: session closes.
 DEFAULT_MIN_STOPS: Final[int] = 3
 
-#: Values that read as "off" for :data:`ENABLED_ENV`. Compared case-folded.
-_DISABLED_VALUES: Final[frozenset[str]] = frozenset({"0", "false", "no", "off"})
+#: Values that read as "on" for :data:`ENABLED_ENV`. Compared case-folded.
+_ENABLED_VALUES: Final[frozenset[str]] = frozenset({"1", "true", "yes", "on"})
 
-#: Per-session state lives under a dedicated subdirectory of the OS temp dir —
-#: never inside a tracked tree (the hook runs in the operator's harness, not a
-#: checkout). Kept separate from the proactive-compaction tracker's directory so
-#: neither handler's back-off can reset the other's.
-_STATE_DIRNAME: Final[str] = "apothem-session-end"
+#: Per-session state lives in the per-user hook state directory
+#: (``hooks/lib/state_dir.py``), separate from the proactive-compaction
+#: tracker's subdirectory so neither handler's back-off can reset the other's.
+_STATE_DIRNAME: Final[str] = "session-end"
 
 #: Age past which a per-session state file is purged on the next write. A
 #: session's state is only meaningful within one live session; a file untouched
 #: for this long belongs to an ended session and would otherwise accumulate in
-#: $TMP unbounded. Purge is best-effort and never disturbs the gate.
+#: the state directory unbounded. Purge is best-effort and never disturbs the gate.
 _STATE_TTL_SECONDS: Final[float] = 24 * 60 * 60
-
-#: Sanitized fallback when a session id is absent or unusable.
-_DEFAULT_SESSION_KEY: Final[str] = "_default"
 
 #: Emitted when the protocol fires. ``Stop`` is a member of
 #: ``HOOK_SPECIFIC_OUTPUT_EVENTS``, so the envelope uses that shape.
@@ -143,9 +151,8 @@ def _positive_int_env(name: str, default: int) -> int:
 
 
 def is_enabled() -> bool:
-    """Return False when :data:`ENABLED_ENV` reads as an explicit "off" value."""
-    raw = os.environ.get(ENABLED_ENV, "").strip().casefold()
-    return raw not in _DISABLED_VALUES if raw else True
+    """Return True only when :data:`ENABLED_ENV` reads as an explicit "on" value."""
+    return os.environ.get(ENABLED_ENV, "").strip().casefold() in _ENABLED_VALUES
 
 
 def resolve_min_stops() -> int:
@@ -153,32 +160,9 @@ def resolve_min_stops() -> int:
     return _positive_int_env(MIN_STOPS_ENV, DEFAULT_MIN_STOPS)
 
 
-def _sanitize_session_key(session_id: object) -> str:
-    """Map an arbitrary session id to a safe, bounded filename stem.
-
-    Keeps only ``[A-Za-z0-9._-]`` (path-traversal-safe), bounds the length, and
-    falls back to a shared default key when the id is absent, non-string, or
-    sanitizes to empty. This guarantees the state path stays inside the state
-    directory regardless of payload contents.
-    """
-    if not isinstance(session_id, str) or not session_id.strip():
-        return _DEFAULT_SESSION_KEY
-    allowed = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-"
-    cleaned = "".join(ch for ch in session_id if ch in allowed)
-    cleaned = cleaned.strip("._-")
-    if not cleaned:
-        return _DEFAULT_SESSION_KEY
-    return cleaned[:120]
-
-
-def _state_dir() -> Path:
-    """Return the per-session state directory under the OS temp dir."""
-    return Path(tempfile.gettempdir()) / _STATE_DIRNAME
-
-
 def state_path_for(session_id: object) -> Path:
-    """Return the state-file path for *session_id* (never inside a checkout)."""
-    return _state_dir() / f"{_sanitize_session_key(session_id)}.json"
+    """Return the state-file path for *session_id* (per-user, never in a checkout)."""
+    return hook_state_dir(_STATE_DIRNAME) / f"{session_key(session_id)}.json"
 
 
 def _read_state(path: Path) -> SessionState:
@@ -253,7 +237,7 @@ def read_protocol_text(context_file: str) -> str:
         text = Path(context_file).read_text(encoding="utf-8")
     except OSError:
         return ""
-    return text.strip()
+    return strip_maintainer_text(text)
 
 
 def build_envelope(text: str) -> dict[str, object]:
@@ -301,11 +285,13 @@ def evaluate(payload: dict[str, object] | None, context_file: str) -> dict[str, 
     """
     if not is_enabled():
         return {}
+    if isinstance(payload, dict) and payload.get("stop_hook_active") is True:
+        return {}
 
     session_id = payload.get("session_id") if isinstance(payload, dict) else None
     path = state_path_for(session_id)
 
-    # Bound $TMP growth: sweep state files from ended sessions before writing
+    # Bound the state directory: sweep state files from ended sessions before writing
     # this session's. Best-effort — a purge failure never disturbs the gate.
     _purge_stale_state(path.parent)
 

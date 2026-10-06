@@ -20,21 +20,198 @@ canonical payload is ``{grep, root, passed, advisory, findings}`` use
 keys or a bespoke ``_main`` (custom flags such as ``--staged`` / ``--strict``)
 keep their own result dataclass because their serialised shape or CLI diverges
 from these two.
+
+Command-line contract. Every conformity entry point parses its arguments with
+the one minimal parser built here (:func:`make_parser`), so they share one
+behaviour: ``--help`` prints usage and exits 0; an unknown flag, a missing
+file, or a root directory that does not exist is a usage error that prints a
+one-line message and exits :data:`EXIT_USAGE` (3), never a traceback. A
+root-based validator resolves its root to an absolute path before scanning, so
+``.`` and the absolute form inspect the same tree, and its report carries an
+``inspected`` count (:func:`finish_root_report`). A validator that inspected
+nothing cannot pass unless it declares that an empty scope is expected.
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import re
 import sys
 from collections.abc import Callable, Iterable, Iterator
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Final, Protocol
+from typing import Any, Final, NoReturn, Protocol
 
 EXIT_PASS: Final[int] = 0
 EXIT_FAIL: Final[int] = 2
+# A command-line usage error (unknown flag, missing file or root): distinct
+# from EXIT_FAIL so a caller can tell "invoked wrong" from "found a problem".
+EXIT_USAGE: Final[int] = 3
 STDIN_FLAG: Final[str] = "--stdin"
+
+# Report key every root-based validator emits: how many targets it inspected.
+INSPECTED_KEY: Final[str] = "inspected"
+# Report key emitted only when nothing was inspected: whether the validator
+# declared that an empty scope is expected (True) or not (False, a failure).
+EMPTY_SCOPE_KEY: Final[str] = "empty_scope_expected"
+
+
+# ---------------------------------------------------------------------------
+# Shared command-line parser
+# ---------------------------------------------------------------------------
+
+
+class UsageParser(argparse.ArgumentParser):
+    """An ``ArgumentParser`` whose usage errors exit :data:`EXIT_USAGE`.
+
+    ``argparse`` exits 2 on a usage error by default, which collides with the
+    conformity findings-block code :data:`EXIT_FAIL`. This subclass prints the
+    usage line plus a one-line message to stderr and exits 3 instead.
+    """
+
+    def error(self, message: str) -> NoReturn:
+        """Report a usage error on stderr and exit :data:`EXIT_USAGE`."""
+        self.print_usage(sys.stderr)
+        self.exit(EXIT_USAGE, f"{self.prog}: error: {message}\n")
+
+
+def _summary(doc: str | None) -> str | None:
+    """Return the first paragraph of a module docstring for ``--help``."""
+    if not doc:
+        return None
+    return doc.strip().split("\n\n", 1)[0]
+
+
+def make_parser(prog: str, doc: str | None = None) -> UsageParser:
+    """Return the shared conformity parser for one entry point.
+
+    Pre-conditions: ``prog`` is the name shown in usage text; ``doc`` is the
+    module docstring (its first paragraph becomes the description).
+    Post-conditions: abbreviated flags are rejected (``allow_abbrev=False``)
+    so ``--al`` never silently means ``--all``.
+    """
+    return UsageParser(prog=prog, description=_summary(doc), allow_abbrev=False)
+
+
+def _entry_identity(
+    check: Callable[..., Any], argv: list[str]
+) -> tuple[str, str | None]:
+    """Return ``(prog, docstring)`` for the module that defines ``check``."""
+    module = sys.modules.get(getattr(check, "__module__", "") or "")
+    doc = getattr(module, "__doc__", None)
+    prog = getattr(module, "GREP_NAME", None)
+    if not isinstance(prog, str):
+        prog = Path(argv[0]).stem if argv and argv[0] else "conformity-grep"
+    return prog, doc if isinstance(doc, str) else None
+
+
+def add_path_arguments(parser: argparse.ArgumentParser) -> None:
+    """Add the path-or-stdin input arguments of a per-file matcher."""
+    parser.add_argument(
+        "path",
+        nargs="?",
+        default=None,
+        help="file to scan (omit, or pass --stdin, to read the content from stdin)",
+    )
+    parser.add_argument(
+        STDIN_FLAG,
+        dest="stdin",
+        action="store_true",
+        help="read the content from stdin instead of a file",
+    )
+
+
+def read_path_arguments(
+    parser: argparse.ArgumentParser, args: argparse.Namespace
+) -> tuple[str, Path | None]:
+    """Return ``(content, path)`` from parsed path-or-stdin arguments.
+
+    Post-conditions: a ``path`` that is not an existing regular file is a
+    usage error (exit :data:`EXIT_USAGE`); a ``path`` combined with
+    ``--stdin`` is a usage error; with neither, stdin is read.
+    """
+    if args.path is not None and args.stdin:
+        parser.error("pass either a file path or --stdin, not both")
+    if args.path is None:
+        return sys.stdin.read(), None
+    path = Path(args.path)
+    if not path.is_file():
+        parser.error(f"not an existing file: {path}")
+    try:
+        return path.read_text(encoding="utf-8"), path
+    except (OSError, UnicodeDecodeError) as exc:
+        parser.error(f"cannot read {path}: {exc}")
+
+
+def parse_root_args(
+    argv: list[str],
+    *,
+    prog: str,
+    doc: str | None = None,
+    configure: Callable[[argparse.ArgumentParser], None] | None = None,
+) -> argparse.Namespace:
+    """Parse a root-based validator's arguments; resolve and check the root.
+
+    Pre-conditions: ``argv`` is ``sys.argv`` (``argv[0]`` is the script
+    name). ``configure``, when given, adds validator-specific flags.
+    Post-conditions: ``namespace.root`` is the absolute, resolved root (the
+    current directory when omitted). A root that is not an existing directory,
+    or an unknown flag, exits :data:`EXIT_USAGE`; ``--help`` exits 0.
+    """
+    parser = make_parser(prog, doc)
+    parser.add_argument(
+        "root",
+        nargs="?",
+        default=None,
+        help="directory to inspect (default: the current directory)",
+    )
+    if configure is not None:
+        configure(parser)
+    args = parser.parse_args(argv[1:])
+    root = Path(args.root) if args.root is not None else Path.cwd()
+    if not root.is_dir():
+        parser.error(f"root is not an existing directory: {root}")
+    args.root = root.resolve()
+    return args
+
+
+def finish_root_report(
+    report_json: str,
+    *,
+    passed: bool,
+    inspected: int,
+    empty_scope_expected: bool = False,
+    advisory: bool = False,
+) -> int:
+    """Stamp the ``inspected`` count on a root report, print it, return the exit.
+
+    Pre-conditions: ``report_json`` is the validator's JSON object report;
+    ``passed`` is its verdict; ``inspected`` is how many targets it examined;
+    ``empty_scope_expected`` is True only when the validator documents that
+    an empty scope is legitimate (for example a gitignored plans tree that a
+    clean checkout does not carry). ``advisory`` validators report findings
+    without failing.
+    Post-conditions: the printed payload carries ``inspected``. When nothing
+    was inspected it also carries ``empty_scope_expected``; an unexpected empty
+    scope sets ``passed`` to false and returns :data:`EXIT_FAIL` even for an
+    advisory validator, because a validator that inspected nothing has not
+    earned a pass. Otherwise the return is :data:`EXIT_PASS` for a pass or an
+    advisory validator, and :data:`EXIT_FAIL` for a failing blocking one.
+    """
+    payload = json.loads(report_json)
+    payload[INSPECTED_KEY] = inspected
+    vacuous = inspected == 0 and not empty_scope_expected
+    if inspected == 0:
+        payload[EMPTY_SCOPE_KEY] = empty_scope_expected
+    if vacuous:
+        payload["passed"] = False
+    print(json.dumps(payload, indent=2))
+    if vacuous:
+        return EXIT_FAIL
+    if advisory or passed:
+        return EXIT_PASS
+    return EXIT_FAIL
 
 
 # ---------------------------------------------------------------------------
@@ -135,18 +312,27 @@ class GrepResult:
         return json.dumps(payload, indent=2)
 
 
-def read_input(argv: list[str]) -> tuple[str, Path | None]:
-    """Return ``(content, path)`` from a path argument or stdin.
+def parse_path_input(
+    argv: list[str],
+    *,
+    prog: str,
+    doc: str | None = None,
+    configure: Callable[[argparse.ArgumentParser], None] | None = None,
+) -> tuple[argparse.Namespace, str, Path | None]:
+    """Parse a per-file matcher's arguments and read its input.
 
-    Pre-conditions: ``argv`` is ``sys.argv`` (``argv[0]`` is the script name).
-    Post-conditions: when ``argv[1]`` is a path (not ``--stdin``), the file is
-    read and returned with its ``Path``; otherwise stdin is read with a
-    ``None`` path.
+    Pre-conditions: ``argv`` is ``sys.argv``. ``configure`` adds
+    matcher-specific flags.
+    Post-conditions: returns ``(namespace, content, path)``; ``--help`` exits
+    0 and a usage error (unknown flag, missing file) exits :data:`EXIT_USAGE`.
     """
-    if len(argv) >= 2 and argv[1] != STDIN_FLAG:
-        path = Path(argv[1])
-        return path.read_text(encoding="utf-8"), path
-    return sys.stdin.read(), None
+    parser = make_parser(prog, doc)
+    add_path_arguments(parser)
+    if configure is not None:
+        configure(parser)
+    args = parser.parse_args(argv[1:])
+    content, path = read_path_arguments(parser, args)
+    return args, content, path
 
 
 def run_grep(
@@ -157,9 +343,11 @@ def run_grep(
 
     Pre-conditions: ``check`` returns a :class:`GrepResult`. Post-conditions:
     the JSON report is printed to stdout; the return is ``EXIT_PASS`` when the
-    result passed, ``EXIT_FAIL`` otherwise.
+    result passed, ``EXIT_FAIL`` otherwise. ``--help`` and usage errors follow
+    the shared command-line contract (exit 0 and :data:`EXIT_USAGE`).
     """
-    content, path = read_input(argv)
+    prog, doc = _entry_identity(check, argv)
+    _args, content, path = parse_path_input(argv, prog=prog, doc=doc)
     result = check(content, path)
     print(result.to_json())
     return EXIT_PASS if result.passed else EXIT_FAIL
@@ -173,9 +361,10 @@ def run_grep(
 # each re-implement a byte-near-identical ``root``-based ``GrepResult`` +
 # ``to_json`` + ``_read_input`` / ``_main`` skeleton. The types below hoist that
 # boilerplate the same way ``GrepResult`` / ``run_grep`` hoist the path-based
-# skeleton, preserving the observable behaviour: the ``{grep, root, passed,
-# advisory, findings}`` payload shape, the ``EXIT_PASS`` / ``EXIT_FAIL`` exit
-# codes, and the ``argv[1]``-or-cwd root resolution are unchanged.
+# skeleton: the ``{grep, root, passed, advisory, findings}`` payload shape and
+# the ``EXIT_PASS`` / ``EXIT_FAIL`` exit codes. The root comes from
+# :func:`parse_root_args` (resolved, and required to exist) and the printed
+# report carries the ``inspected`` count from :func:`finish_root_report`.
 
 
 @dataclass(frozen=True)
@@ -194,6 +383,9 @@ class RootGrepResult:
     passed: bool
     advisory: bool = False
     findings: list[Any] = field(default_factory=list)
+    # How many targets the run examined. Not part of ``to_json``: the CLI
+    # stamps it on the printed report through :func:`finish_root_report`.
+    inspected: int = 0
 
     def to_json(self) -> str:
         """Return this report as a two-space-indented JSON string.
@@ -211,31 +403,25 @@ class RootGrepResult:
         return json.dumps(payload, indent=2)
 
 
-def read_root(argv: list[str]) -> Path:
-    """Return the root directory from ``argv[1]`` or the current directory.
-
-    Pre-conditions: ``argv`` is ``sys.argv`` (``argv[0]`` is the script name).
-    Post-conditions: when ``argv[1]`` is supplied it is returned as a ``Path``;
-    otherwise the current working directory is returned.
-    """
-    if len(argv) >= 2:
-        return Path(argv[1])
-    return Path.cwd()
-
-
 def run_root_grep(
     check: Callable[[Path], RootGrepResult],
     argv: list[str],
 ) -> int:
     """Run a root-based ``check``, print the report, return the exit code.
 
-    Pre-conditions: ``check`` returns a :class:`RootGrepResult`. Post-conditions:
-    the JSON report is printed to stdout; the return is ``EXIT_PASS`` when the
-    result passed, ``EXIT_FAIL`` otherwise. This mirrors :func:`run_grep`'s
-    non-advisory exit contract; a matcher whose ``--strict``-gated advisory
-    posture differs keeps its own ``_main`` and calls only the dataclass.
+    Pre-conditions: ``check`` returns a :class:`RootGrepResult` whose
+    ``inspected`` counts the targets the run examined. Post-conditions: the root is
+    parsed and resolved per :func:`parse_root_args`; the JSON report, stamped
+    with ``inspected``, is printed per :func:`finish_root_report`, whose exit
+    contract this returns. A matcher whose ``--strict``-gated advisory posture
+    differs keeps its own ``_main`` and calls only the dataclass.
     """
-    root = read_root(argv)
+    prog, doc = _entry_identity(check, argv)
+    root = parse_root_args(argv, prog=prog, doc=doc).root
     result = check(root)
-    print(result.to_json())
-    return EXIT_PASS if result.passed else EXIT_FAIL
+    return finish_root_report(
+        result.to_json(),
+        passed=result.passed,
+        inspected=result.inspected,
+        advisory=result.advisory,
+    )

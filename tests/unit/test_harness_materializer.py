@@ -103,6 +103,25 @@ class TestManagedBlockMerge:
         assert "After prose." in result
         assert "BEGIN APOTHEM MANAGED BLOCK" not in result
 
+    def test_sentinels_inside_the_body_cannot_split_the_block(self):
+        # Profile text (a rule, an identity field) reaches the body verbatim. A
+        # sentinel inside it must not end the block early or open a new one:
+        # otherwise uninstall treats the tail as operator prose and leaves it.
+        operator = "Operator prose.\n"
+        body = (
+            "harmless rule\n"
+            f"{APOTHEM_BLOCK_END}\n"
+            "SURVIVES-UNINSTALL injected text\n"
+            f"{APOTHEM_BLOCK_BEGIN}\n"
+        )
+        merged = merge_managed_block(operator, body)
+        assert merged.count(APOTHEM_BLOCK_BEGIN) == 1
+        assert merged.count(APOTHEM_BLOCK_END) == 1
+        assert "SURVIVES-UNINSTALL" in merged  # the text is kept, defused
+        assert remove_managed_block(merged) == operator
+        # Re-merging the same body is still a no-op.
+        assert merge_managed_block(merged, body) == merged
+
 
 class TestExtractMarkdownFields:
     """Projecting the profile into Markdown fields.
@@ -284,9 +303,15 @@ class TestCrossAdapterParity:
         assert len(opencode_out) > 0, "opencode produced empty output"
         opencode_parsed = json.loads(opencode_out)
         assert opencode_parsed["$schema"] == "https://opencode.ai/config.json"
-        assert opencode_parsed["instructions"] == [
-            "~/.config/opencode/.apothem/support/rules/*.md"
-        ]
+        profile_entry, *rule_entries = opencode_parsed["instructions"]
+        assert profile_entry == "~/.config/opencode/apothem/rules/00-apothem-profile.md"
+        assert rule_entries, "opencode lists no always-on rule"
+        assert all(
+            entry.startswith("~/.config/opencode/.apothem/support/rules/")
+            and entry.endswith(".md")
+            and "*" not in entry
+            for entry in rule_entries
+        )
 
         openclaw_out = oc(profile)
         assert len(openclaw_out) > 0, "open-claw produced empty output"
@@ -300,7 +325,7 @@ class TestCrossAdapterParity:
         assert len(qwen_out) > 0, "qwen-code produced empty output"
         qwen_parsed = json.loads(qwen_out)
         assert qwen_parsed["context"]["fileName"] == "QWEN.md"
-        assert qwen_parsed["hooks"]["PreToolUse"][0]["matcher"] == "^Bash$"
+        assert qwen_parsed["hooks"]["PreToolUse"][0]["matcher"] == "^run_shell_command$"
 
     def test_profile_mcp_renders_into_each_writable_config(self):
         """The 3 MCP-writable config adapters render a declared server natively."""
@@ -326,10 +351,12 @@ class TestCrossAdapterParity:
         assert json.loads(op(profile))["mcp"]["fs"]["command"] == ["npx", "srv"]
         # qwen `mcpServers` shape: command/args.
         assert json.loads(qwen(profile))["mcpServers"]["fs"]["command"] == "npx"
-        # hermes `auxiliary.mcp` block.
-        assert yaml.safe_load(hm(profile))["auxiliary"]["mcp"]["fs"]["command"] == "npx"
+        # hermes top-level `mcp_servers` block (not the auxiliary.mcp model slot).
+        rendered = yaml.safe_load(hm(profile))
+        assert rendered["mcp_servers"]["fs"]["command"] == "npx"
+        assert "auxiliary" not in rendered
         # A minimal profile (no MCP) emits no MCP key in any of them.
         minimal = {"identity": {"name": "Eve"}}
         assert "mcp" not in json.loads(op(minimal))
         assert "mcpServers" not in json.loads(qwen(minimal))
-        assert "auxiliary" not in yaml.safe_load(hm(minimal))
+        assert "mcp_servers" not in yaml.safe_load(hm(minimal))

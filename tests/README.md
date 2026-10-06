@@ -24,7 +24,7 @@ The `apothem` test suite. `pytest` is the sole test framework; the configuration
 | `scripts/` | Tests for the executables under [`scripts/`](../scripts/) — the header injector, the installer invocation model, the release-notes extractor, the SBOM recipe, script-pair parity, and the validation tooling. |
 | `packaging/` | Release-artifact packaging tests — sdist + wheel payload contract, runtime tarball/zip build, examples validity. |
 | `commands/` | Slash-command behavior tests (e.g., `plan-spec-quick`). |
-| `property/` | Property-based tests (Hypothesis) over the invariants — frontmatter parsing, materialize round-trip, profile merge, and path-safety. |
+| `property/` | Property-based tests (Hypothesis) over the invariants — frontmatter parsing, materialize round-trip, profile merge, path-safety, and operator settings entries surviving install, update, uninstall and rollback. |
 | `conformity-scenarios/` | End-to-end multi-mandate fixture scenarios (`F-*`) driven by `verify.py` and gated in CI by `.github/workflows/conformity.yml` — not collected by the default `pytest` run (see Running). |
 | `fixtures/` | Shared cross-suite fixtures — the multi-surface-claims schema, the plans-discipline fixture, and the byte-golden `behavior-diff/` corpus — each with a paired schema/fixture test. |
 | `_shared/` | Cross-subtree test helpers imported as `tests._shared`, not collected as tests. `bash_resolver.py` locates a usable POSIX `bash` (and refuses the Windows WSL launcher, which is not one), so the installer tests skip honestly on a host without it instead of failing. |

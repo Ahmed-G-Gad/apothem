@@ -16,13 +16,14 @@ The Apothem-managed cohorts are installed as follows:
 
 - `$CODEX_HOME/agents/*.toml` — Codex custom agents converted from Apothem
   Markdown agents.
-- `$CODEX_HOME/hooks.json` and `$CODEX_HOME/hooks/` — Codex lifecycle hook
-  configuration plus Apothem hook helpers.
+- `$CODEX_HOME/hooks.json` — Codex lifecycle hook configuration; the hook
+  helpers it runs are listed under Apothem support files below.
 - `~/.agents/skills/*/SKILL.md` — Apothem skills plus command prompts wrapped
   as Codex skills.
-- `~/.config/apothem/rules/` — Apothem Markdown rules used as reference
-  material by this file and the installed skills.
-- `~/.config/apothem/templates/` — plan, report, and audit templates.
+
+Apothem's Markdown rules and templates are reference material for this file
+and the installed skills; the Apothem support files section below names the
+directories they were installed to.
 
 Do not place Apothem Markdown rules under `$CODEX_HOME/rules/`. Codex
 reserves that directory for `.rules` execution-policy files, which use a
@@ -39,6 +40,16 @@ agents, skills, and support content through the vendor-native paths above.
 Operators may extend project-specific instructions in project-local
 `AGENTS.md` files. Re-run `apothem install --harness codex` to refresh this
 user-scope bootstrap, converted agents, skills, and support cohorts.
+
+## Apothem support files
+
+Apothem's support root is `<ROOT>/../.config/apothem`. Apothem rules, skills, commands, and helper definitions cite support files by repository-style paths such as `rules/<name>.md`, `templates/...`, and `hooks/...`. Resolve each citation against the installed directory for its first segment:
+
+- `rules/<path>` is `<ROOT>/../.config/apothem/rules/<path>`
+- `templates/<path>` is `<ROOT>/../.config/apothem/templates/<path>`
+- `hooks/<path>` is `<ROOT>/hooks/<path>`
+
+A cited path whose first segment is not listed here is not installed.
 
 # Apothem Shared Profile
 

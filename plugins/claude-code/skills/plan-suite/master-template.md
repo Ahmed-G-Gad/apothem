@@ -322,7 +322,7 @@ Seriousness Level — see `CLAUDE.md` Section 4.
 14. **Granular Commits (TM-14/CM-13):** Per-task at SHARED+, per-phase at PERSONAL_USE. End-of-phase commit gate: all codebase changes committed before phase report.
 15. **Context Stewardship (TM-15/CM-12):** Always-on context health. See `context-management.md` (CM-24) for full protocol.
 16. **Autonomous Execution (TM-16/CM-16):** Full-suite execution defaults to continuous advancement between phases. Granular pause cadences are explicit overrides recorded in the Resumption Contract.
-17. **Agent Teams (TM-17/CM-17):** Primary mechanism for parallel work. See `agent-orchestration.md` (CM-25) for full protocol.
+17. **Worker Teams (TM-17/CM-17):** Primary mechanism for parallel work. See `agent-orchestration.md` (CM-25) for full protocol.
 18. **Error Recovery (TM-18/CM-18):** Classify, recover, log. Escalate after 3.
 19. **Pipeline Orchestration (TM-19/CM-20):** Skills form directional pipeline.
 20. **Manual Approval (TM-20):** STOP before applying changes to plan files. Invoke the structured-inquiry channel to solicit user review and approval (canonical channel per `rules/interactive-questions.md`).
@@ -331,7 +331,7 @@ Seriousness Level — see `CLAUDE.md` Section 4.
 23. **Persistent Conventions Vigilance (TM-23/CM-22):** Always-on. See `persistent-conventions-vigilance.md` for full specification.
 24. **Large File Generation (TM-24/CM-23):** Always-on. See `large-file-generation.md` for full specification.
 25. **Context Management (TM-25/CM-24):** Always-on. See `context-management.md` for full specification.
-26. **Agent Orchestration (TM-26/CM-25):** Always-on. See `agent-orchestration.md` for full specification.
+26. **Worker Orchestration (TM-26/CM-25):** Always-on. See `agent-orchestration.md` for full specification.
 27. **Auto Memory Lifecycle (TM-27/CM-26):** Always-on. See `auto-memory.md` for full specification.
 28. **Clean Architecture Layers (TM-28/CM-27):** See `clean-architecture-layers.md` for full specification.
 

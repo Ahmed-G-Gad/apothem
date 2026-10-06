@@ -2,6 +2,7 @@
 title: "Apothem에 기여하기 — 개발자 가이드"
 description: "정식 스키마, 프런트매터 요구 사항, 검증 절차에 따라 규칙, 커맨드, 헬퍼, 스킬, 훅을 작성하여 Apothem 생태계를 유지보수하고 확장합니다."
 machineTranslated: true
+sourceHash: "19a6e0292c96762b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -341,7 +342,7 @@ description: "What this command does"
 argument-hint: "[path/to/input] [--flag VALUE]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 ```
 
@@ -404,9 +405,6 @@ description: "What this helper specializes in"
 tools: "Read, Glob, Grep, Bash"
 disallowedTools: "Write, Edit"
 maxTurns: 15
-effort: "high"
-permissionMode: "default"
-memory: false
 portability: "universal"
 ---
 ```
@@ -473,7 +471,6 @@ userInvocable: true | false
 disable-model-invocation: true | false
 allowed-tools: "Read, Glob, Grep"
 argument-hint: "[args]"               # optional; if userInvocable
-effort: "max"                          # optional
 ---
 ```
 

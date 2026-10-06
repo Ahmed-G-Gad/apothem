@@ -1,12 +1,12 @@
 ---
 name: "plan-status"
 version: "0.1.0"
-updated: "2026-06-22"
+updated: "2026-10-02"
 description: "Read-only plan-suite progress reporter — reads the suite's PROGRESS.md / PLAN-NOTES.md / phase tracking files and emits a strategic status report across the task / phase / artifact dimensions, with a `--verbose` health-grade and spot-check pass. The read-only `/plan` pipeline stage that surveys a suite at any point between `/plan-generate` and `/plan-execute` without mutating a single byte."
 argument-hint: "[path/to/plan-suite/] [--verbose]"
 disable-model-invocation: false
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -172,11 +172,11 @@ Deploy an Audit Team (CM-25A) — parallel agents for spot-checks. Each returns 
 - **NEVER create or modify files** — strictly read-only.
 - **NEVER proceed** without template v0.1.0+.
 - **NEVER give generic observations** — every observation is specific to this project.
-- **Deploy Agent Teams** (CM-25) for `--verbose` checks and large-suite parallel reads — with return contracts (CM-25C).
+- **Deploy Worker Teams** (CM-17) for `--verbose` checks and large-suite parallel reads — with return contracts (CM-25C).
 - **Recover gracefully** (CM-18, read-only adaptation) — always produce output, even with missing data.
 - **Recommend `/plan-review`** when DEGRADED.
 - **Recommend `/plan-execute`** for the next pending phase when HEALTHY with work remaining.
-- **Base protocol:** Agent Teams (CM-25) with return contracts — deployment scales with seriousness per `rules/agent-orchestration.md` (Optional at EXPLORING, Encouraged at PERSONAL_USE, Required at SHARED+). Default token budgets per CM-25C: Research 500, Audit/Quality 200. Error recovery (CM-18, read-only adaptation). Session resilience (CM-24/CM-14). Always-on rules (CM-22–28) enforced at all steps.
+- **Base protocol:** Worker Teams (CM-17) with return contracts (CM-25) — deployment scales with seriousness per `rules/agent-orchestration.md` (Optional at EXPLORING, Encouraged at PERSONAL_USE, Required at SHARED+). Default token budgets per CM-25C: Research 500, Audit/Quality 200. Error recovery (CM-18, read-only adaptation). Session resilience (CM-24/CM-14). Always-on rules (CM-22–28) enforced at all steps.
 
 ---
 
@@ -190,7 +190,7 @@ All mandates are in effect with read-only scope reductions (CM-13 and CM-16 not 
 | CM-11 | Step 7: integrity health (`--verbose`) |
 | CM-12 | All steps: lean context management |
 | CM-14 | Step 1: Session Start for accurate state assessment |
-| CM-17 | Steps 1, 7: Agent Teams |
+| CM-17 | Steps 1, 7: Worker Teams |
 | CM-18 | Critical Rules: read-only error recovery |
 | CM-19 | Step 7: proactive compaction (`--verbose`) |
 | CM-20 | Steps 1, 7: pipeline recommendations |
@@ -223,4 +223,8 @@ All mandates are in effect with read-only scope reductions (CM-13 and CM-16 not 
 
 ## Installed Reference Paths
 
-When this skill is installed by Apothem, resolve repository-style references such as `rules/...`, `templates/...`, and `hooks/...` under `<ROOT>` unless a project-local file with the same relative path exists.
+When this skill is installed by Apothem, resolve a repository-style reference against the installed directory for its first segment, unless a project-local file with the same relative path exists. Paths are relative to the project root.
+
+- `rules/<path>` is `.kimi-code/.apothem/support/rules/<path>`
+- `templates/<path>` is `.kimi-code/.apothem/support/templates/<path>`
+- `hooks/<path>` is `.kimi-code/.apothem/support/hooks/<path>`

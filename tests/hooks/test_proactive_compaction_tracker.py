@@ -24,24 +24,29 @@ if str(_HOOKS_DIR) not in sys.path:
 
 import dispatch  # noqa: E402
 import proactive_compaction_tracker as pct  # noqa: E402
+import state_dir  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
 def _isolate_state(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    """Redirect the OS temp dir to a per-test tmp_path so state never leaks.
+    """Point the per-user hook state directory at a per-test tmp_path.
 
-    The tracker derives its state directory from ``tempfile.gettempdir()``;
-    pointing that at ``tmp_path`` isolates every test's counters and guarantees
-    no write lands in the repository tree.
+    Every test's counters are isolated, and no write lands in the repository
+    tree or the operator's real state directory.
     """
-    monkeypatch.setattr(pct.tempfile, "gettempdir", lambda: str(tmp_path))
+    monkeypatch.setenv(state_dir.OVERRIDE_ENV, str(tmp_path / "state"))
 
 
 @pytest.fixture(autouse=True)
 def _clear_threshold_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Ensure threshold env vars start unset so defaults apply unless a test sets them."""
+    """Ensure the tracker's env vars start unset so defaults apply unless set."""
     monkeypatch.delenv(pct.TOOL_THRESHOLD_ENV, raising=False)
     monkeypatch.delenv(pct.OUTPUT_THRESHOLD_ENV, raising=False)
+    monkeypatch.delenv(pct.ENABLED_ENV, raising=False)
+
+
+def _tracker_dir() -> Path:
+    return state_dir.hook_state_dir(pct._STATE_DIRNAME)
 
 
 def _payload(
@@ -101,7 +106,9 @@ class TestThresholdFires:
         # Third call crosses the threshold: advisory fires.
         fired = pct.evaluate(_payload())
         assert "systemMessage" in fired
-        assert "proactive-compaction" in fired["systemMessage"]
+        assert (
+            "proactive-compaction" in fired["hookSpecificOutput"]["additionalContext"]
+        )
         # Back-off: counters reset, so the next call is silent again.
         assert pct.evaluate(_payload()) == {}
         assert pct._read_state(pct.state_path_for("sess-1")).tool_calls == 1
@@ -135,6 +142,23 @@ class TestThresholdFires:
         )
         assert fires == 2
 
+    def test_advisories_are_capped_per_session(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # The window resets after each advisory, so without a cap the tracker
+        # re-fires for the life of the session. It stops at the cap.
+        monkeypatch.setenv(pct.TOOL_THRESHOLD_ENV, "2")
+        fires = sum(bool(pct.evaluate(_payload())) for _ in range(40))
+        assert fires == pct.MAX_ADVISORIES_PER_SESSION
+
+    @pytest.mark.parametrize("raw", ["0", "false", "no", "off", "OFF"])
+    def test_switch_off_silences_the_tracker(
+        self, raw: str, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv(pct.ENABLED_ENV, raw)
+        monkeypatch.setenv(pct.TOOL_THRESHOLD_ENV, "1")
+        assert all(pct.evaluate(_payload()) == {} for _ in range(10))
+
     def test_advisory_resets_output_counter_too(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -165,6 +189,12 @@ class TestAdvisoryShape:
         assert isinstance(hook_out, dict)
         assert hook_out["hookEventName"] == "PostToolUse"
         assert isinstance(hook_out["additionalContext"], str)
+        # The model gets the step it can take (externalize state); compaction
+        # is the operator's action, so only the operator note mentions it.
+        assert "Externalize" in hook_out["additionalContext"]
+        assert "compact" not in hook_out["additionalContext"].lower().replace(
+            "proactive-compaction", ""
+        )
 
     def test_advisory_never_blocks(self, monkeypatch: pytest.MonkeyPatch) -> None:
         # A PostToolUse hook must never carry a block/decision control field.
@@ -236,11 +266,10 @@ class TestFailOpen:
         pct.evaluate(_payload())
         assert pct._read_state(path).tool_calls == 1
 
-    def test_state_path_stays_inside_state_dir(self, tmp_path: Path) -> None:
+    def test_state_path_stays_inside_state_dir(self) -> None:
         # A traversal-shaped id must not escape the state directory.
         resolved = pct.state_path_for("../../../escape").resolve()
-        state_dir = (tmp_path / pct._STATE_DIRNAME).resolve()
-        assert state_dir in resolved.parents
+        assert _tracker_dir().resolve() in resolved.parents
 
 
 class TestAtomicWriteAndPurge:
@@ -262,16 +291,15 @@ class TestAtomicWriteAndPurge:
     def test_purge_removes_stale_counter_files(self, tmp_path: Path) -> None:
         import os
 
-        state_dir = pct._state_dir()
-        state_dir.mkdir(parents=True, exist_ok=True)
-        fresh = state_dir / "fresh.json"
-        stale = state_dir / "stale.json"
+        directory = _tracker_dir()
+        fresh = directory / "fresh.json"
+        stale = directory / "stale.json"
         fresh.write_text("{}", encoding="utf-8")
         stale.write_text("{}", encoding="utf-8")
         # Age ``stale`` past the TTL; keep ``fresh`` recent.
         old = 1_000.0
         os.utime(stale, (old, old))
-        pct._purge_stale_state(state_dir, now=old + pct._STATE_TTL_SECONDS + 10)
+        pct._purge_stale_state(directory, now=old + pct._STATE_TTL_SECONDS + 10)
         assert not stale.exists()
         assert fresh.exists()
 
@@ -282,9 +310,7 @@ class TestAtomicWriteAndPurge:
     def test_evaluate_purges_stale_state(self) -> None:
         import os
 
-        state_dir = pct._state_dir()
-        state_dir.mkdir(parents=True, exist_ok=True)
-        stale = state_dir / "ended-session.json"
+        stale = _tracker_dir() / "ended-session.json"
         stale.write_text("{}", encoding="utf-8")
         old = 1_000.0
         os.utime(stale, (old, old))

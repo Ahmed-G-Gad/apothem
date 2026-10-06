@@ -3,6 +3,16 @@ name: "option-annotation-form"
 description: "Path-filtered companion rule carrying the prose-and-document annotation form, rationale-specificity citations, cross-channel consistency invariant, cardinality bounds, and failure-tells enumeration declared at the parent `option-annotation.md` rule's anchor lines; demand-loaded on prose-and-document artifact touches."
 pathFilter: "**/*.md, **/CLAUDE.md, **/rules/**, **/commands/**, **/skills/**, **/agents/**, **/docs/**, **/ADR/**, **/rfcs/**"
 alwaysApply: false
+paths:
+  - "**/*.md"
+  - "**/CLAUDE.md"
+  - "**/rules/**"
+  - "**/commands/**"
+  - "**/skills/**"
+  - "**/agents/**"
+  - "**/docs/**"
+  - "**/ADR/**"
+  - "**/rfcs/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

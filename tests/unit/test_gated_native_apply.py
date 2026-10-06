@@ -38,8 +38,9 @@ def test_yaml_merge_preserves_operator_keys(tmp_path: Path) -> None:
     merged = yaml.safe_load(target.read_text(encoding="utf-8"))
     # Operator-only key preserved.
     assert merged["channels"]["slack"]["workspace"] == "acme-team"
-    # Incoming managed keys applied.
-    assert merged["skills"]["config"] == ["apothem-skill"]
+    # Incoming managed keys applied. A list both sides carry is unioned with the
+    # operator's items first (an operator list entry is never dropped).
+    assert merged["skills"]["config"] == ["x", "apothem-skill"]
     assert "auxiliary" in merged
     # The result carries a unified diff for operator review.
     assert "diff" in result.detail

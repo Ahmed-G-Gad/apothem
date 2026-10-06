@@ -24,7 +24,21 @@ python -m apothem.conformity.gate --all --strict .
 ```
 
 Exit codes: `0` clean (or advisory), `2` a strict findings-block, `3` a
-CLI-usage error such as an unknown validator name.
+usage error: an unknown flag or validator name, a file that does not exist, or a
+root directory that does not exist. `--help` prints the full usage and exits
+`0`. Every standalone validator accepts the same `--help` and exits `3` on an
+unknown flag or a missing root.
+
+A relative root such as `.` is resolved to an absolute path before any
+validator runs, so `--all .` and `--all "$PWD"` inspect the same tree. Each
+validator reports `inspected` — how many targets it examined — and `--all`
+copies that count into every result entry. A validator that inspected nothing
+reports `passed: false`, so a wrong working directory cannot pass silently. The
+two plan-suite validators are the exception: plan suites live in the gitignored
+`.apothem/plans/` tree, so they report `empty_scope_expected: true` on a clean
+checkout and still pass. The workflow validators do the same when the project
+has no `.github/workflows/` directory yet, and the commit-subject validator does
+when the directory has no commit history.
 
 ## Gate bars
 

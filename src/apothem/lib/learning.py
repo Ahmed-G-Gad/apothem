@@ -471,7 +471,7 @@ def _skill_frontmatter(pattern: LearningPattern, *, today: str) -> dict[str, obj
         "archetype": "learned-template",
         "userInvocable": True,
         "disable-model-invocation": True,
-        "allowed-tools": "*",
+        "allowed-tools": "Read, Glob, Grep",
     }
 
 

@@ -10,7 +10,7 @@
     "schema_version": {
       "type": "integer",
       "minimum": 1,
-      "description": "Optional profile-schema version; defaults to the current version (1) when absent. Version-less profiles remain valid. A profile stamped with a version greater than the engine supports is rejected with an upgrade-the-engine diagnostic before validation."
+      "description": "Optional profile-schema version. A profile without it is read as version 1 and migrated forward like any v1 profile; profile scaffolds always write it. A profile stamped with a version greater than the engine supports is rejected with an upgrade-the-engine diagnostic before validation."
     },
     "identity": {
       "$ref": "#/$defs/identity"

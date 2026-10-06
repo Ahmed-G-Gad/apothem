@@ -4,13 +4,12 @@ version: "0.1.0"
 updated: "2026-06-23"
 description: "Read-only conventions auditor: verify naming (kebab-case files, snake_case Python, frontmatter keys), cross-reference resolution (dead rule/skill/agent paths, broken anchors, half-edge bindings), formatting standards (SPDX header presence, frontmatter contract), and ecosystem coherence (orphan artifacts, sibling-convention drift, registry gaps). Dispatch when a change touches multiple rules/skills/agents/commands and you need a binary PASS/FINDING verdict per instance with file+line+expected+actual evidence — e.g. 'audit naming across the harness adapters', 'check every new rule resolves its Bindings cross-refs', 'verify the skills cohort matches the kebab-case + SKILL.md convention'. Read-only: never fixes, never runs shell. Conventions are owned upstream and verified against, never re-derived; every finding cites severity + evidence."
 tools: "Read, Glob, Grep"
-disallowedTools: "Write, Edit, Bash, TodoWrite"
+disallowedTools: "Write, Edit, Bash, TodoWrite, TaskCreate, TaskUpdate"
 maxTurns: 15
 # maxTurns rationale: 15 exceeds the 5–10 norm because auditing N artifacts requires one Read
 # per artifact plus verification follow-up reads. A full ecosystem audit across 20+ artifacts needs ~20+ reads
 # plus grep confirmations. Capped at 15 as a soft ceiling; invokers may override per scope.
 portability: "universal"
-memory: false
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -91,3 +90,11 @@ This agent holds no write surface (`tools: Read, Glob, Grep`), so output-surface
 - **Surfaced gaps.** Structural gaps from execution, required when structural per M6 (`rules/expertise-posture.md`). State `none` when empty.
 - **Inquiry surface.** Typed inquiry items per M5 with options annotated per M7. State `none` when empty.
 - **Self-check attestation.** Fifteen-bar gate result per M4 (`rules/pre-emission-gate.md`). Each bar `pass` or `n/a (reason)`; any failure blocks return.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The per-artifact convention findings (naming, cross-reference resolution, half-edge bindings, formatting, registry coherence) the ecosystem audit consolidates into its report.
+- **Satisfies →** An Audit-team member in `rules/agent-orchestration.md` §1, returning inside the Audit-pattern budget of `rules/agent-orchestration-patterns.md` §3.
+- **Established by ↑** `agents/README.md` (this agent's index entry). `rules/persistent-conventions-vigilance-checklist.md` (the convention checks it applies). `rules/bidirectional-binding.md` (the half-edge definition it reports against).
+- **Gated by ←** The read-only tool posture in frontmatter (`Read, Glob, Grep`; `Write, Edit, Bash, TodoWrite` denied). The `maxTurns: 15` ceiling. The artifact set the dispatcher names.
+- **Cross-bound with ↔** `rules/agent-orchestration.md` + `rules/agent-orchestration-patterns.md` (the team patterns that dispatch it). `skills/ecosystem-audit/SKILL.md` + `skills/ecosystem-audit/references/procedure.md` (the audit procedure that fans its conventions pass out to this agent).

@@ -1,13 +1,13 @@
 ---
 name: "ecosystem-audit"
 version: "0.1.0"
-updated: "2026-06-17"
+updated: "2026-10-02"
 description: "Blind audit of the apothem ecosystem — matched when the user asks to 'double check', 'audit', 'verify ecosystem', 'sweep', 'validate ecosystem', 'review configuration', 'check the apothem tree', or any phrasing requesting a comprehensive validation of the apothem configuration tree as a whole. Five-phase cadence (census → parallel cross-reference audit → synthesis → report → optional --fix) detects drift, staleness, orphans, dangling references, conflicting directives, frontmatter invalidity, registry-vs-disk count mismatches, and secret exposure. Findings classify FIX / ENHANCE / CONSIDER / DEFER; only FIX auto-applies under --fix, and only after a per-file destructive-op confirmation — ENHANCE / CONSIDER / DEFER surface for operator decision via the structured-inquiry channel. User-invocable directly; also dispatchable from /plan-execute discovery contexts."
 archetype: "audit-template"
-userInvocable: true
+user-invocable: true
 argument-hint: "[--focus area] [--fix]"
 disable-model-invocation: true
-allowed-tools: "Read, Write, Edit, Glob, Grep, Bash, Agent, TodoWrite"
+allowed-tools: "Read, Glob, Grep, Agent, TodoWrite, TaskCreate, TaskGet, TaskList, TaskUpdate"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

@@ -1,0 +1,48 @@
+---
+title: "/fortress"
+description: "Reference for the /fortress command: invocation, arguments, inputs and outputs."
+---
+{/* SPDX-License-Identifier: MIT */}
+{/* apothem:generated-page — generated from src/apothem/commands; edit the command definition and rerun site/scripts/update-reference-inventory.mjs */}
+
+{/* apothem:generated-reference:start */}
+
+The production-hardening fortress wrapped as a single dynamic multi-agent workflow. One call drives a repository from detected weaknesses to a hardened, release-gated state, closing the loop the report-only /audit leaves open: dispatch /audit to DETECT, verify every finding through an EXTREMELY-CRITIQUE refute-by-default pass, REMEDIATE each surviving finding at its owning surface through the surgical-guard skill (secrets via secret-rotation, dependency CVEs via vuln-triage, broad lifts via scoped /elevate), RE-AUDIT until the walls hold (bounded by --max-rounds, with a deterministic BLOCKED retreat), and GATE through /release-readiness, emitting one fortress-posture report with a single recommended next move. Distinct from report-only /audit, open-loop /elevate, and single-verdict /release-readiness. Dispatch, remediation, and chaining are opt-in and confirmation-gated; every irreversible step is confirmed. Invoke with a repository path, or --scope to weight the sweep.
+
+## Invocation
+
+```text
+/fortress [path/to/repo/] [--scope security|hardening|all] [--autonomous] [--max-rounds N] [--verify-panel N]
+```
+
+The definition sets `disable-model-invocation: true`, so a harness that honors that key starts this command only when you type it.
+
+## Pipeline position
+
+Wrapped-workflow meta-orchestrator over the whole detect → remediate → gate hardening loop — the canonical single-call entry for production hardening, and the hardening analogue of `/plan` (planning) and `/research` (research). It consumes a repository surface and a scope weighting, drives the closed loop to a hardened, release-gated state, and emits the hardened source plus a deterministic fortress-posture report. It closes the loop `/audit` deliberately leaves open: `/audit` detects and reports; `/fortress` detects, remediates, re-audits, and gates.
+
+## Inputs
+
+The operator's target path; the `--scope` weighting (`security` — the four defensive-security dimensions; `hardening` — security plus performance and code craft; `all` — the full eleven-dimension fortress); the `--autonomous` opt-in; the `--max-rounds N` iteration cap; the `--verify-panel N` budget. The whole-repo ingest reads the shared Derived Project Context Block per `rules/host-discovery.md`, so the hardening loop inherits the same derived-context surface as `/elevate`. When the mission follows a planning suite, the executed work `/plan-execute` produced is the upstream surface this loop hardens.
+
+| Argument | Type | Required | Description |
+| -------- | ---- | -------- | ----------- |
+| `path/to/repo/` | Path | Yes | The repository to harden (defaults to the current project root when omitted). |
+| `--scope security\|hardening\|all` | Flag + value | No | Weight the detect sweep: `security` (`security-audit`, `dependency-audit`, `supply-chain-audit`, `threat-model-audit`); `hardening` (security plus `perf-audit` and `code-audit`); `all` (the full eleven-dimension fortress). Default: `security`. |
+| `--autonomous` | Flag | No | Opt into continuous remediation + re-audit chaining (no per-round halt). Default: halt at each round boundary for confirmation, per `rules/agnostic-posture.md` + `rules/context-management.md` §4A. Irreversible remediations stay per-action gated even under this flag. |
+| `--max-rounds N` | Integer | No | The re-audit iteration cap (default: 3). On cap exhaustion the loop retreats to a deterministic BLOCKED report listing residual findings + owners, per `rules/planning-techniques.md` §1. |
+| `--verify-panel N` | Integer | No | Refute-by-default critics per finding and per proposed fix (default: 3). |
+
+## Outputs
+
+The hardened source (remediated in place at each finding's owning surface), plus the deterministic result surface: the fortress-posture report (per round — detected / verified / remediated / residual counts by severity), the per-round verified findings with evidence, the disclosure ledger of every remediation and beyond-mission amendment, the `/release-readiness` READY / BLOCKED verdict, the fifteen-bar gate attestation, the per-run workflow trace (rounds run, remediations applied, refutations recorded, halt / continue decisions), and the single recommended next move.
+
+## Next step
+
+**Invoke `/fortress path/to/repo/`** to harden a repository to a release-gated state — the wrapped workflow detects through `/audit`, remediates each verified finding at its root, re-audits until the walls hold, and closes at `/release-readiness` — or `/fortress path/to/repo/ --scope all` for the full eleven-dimension sweep. After a planning suite, `/plan-execute` hands the executed work here as the canonical hardening step before ship. Review each round's verified findings and remediations, then pass `--autonomous` to chain the remediate / re-audit loop continuously once the detection and remediation plan reads correctly; the halt-at-round-boundary mode is the safe default, and every irreversible remediation stays per-action confirmed.
+
+## Source
+
+Generated from [`src/apothem/commands/fortress.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/commands/fortress.md), the command definition every harness installs.
+
+{/* apothem:generated-reference:end */}

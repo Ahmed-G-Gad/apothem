@@ -15,12 +15,12 @@
     "target": "<ROOT>/skills"
   },
   {
-    "mode": "merge_tree_entries",
+    "mode": "claude_rules",
     "source": "<APOTHEM_SRC>/rules",
     "target": "<ROOT>/rules"
   },
   {
-    "mode": "merge_tree_entries",
+    "mode": "native_skills",
     "source": "<APOTHEM_SRC>/skills",
     "target": "<ROOT>/skills"
   },

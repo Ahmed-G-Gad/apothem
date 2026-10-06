@@ -1,0 +1,162 @@
+# SPDX-License-Identifier: MIT
+
+# Channel smoke — every documented install channel, run anonymously.
+#
+# The README and the install pages promise eight install channels. This
+# workflow runs each one the way a new user would: on a clean runner, with the
+# channel's documented prerequisites only, an isolated home directory, no
+# credentials in the environment, and Git prompts disabled. The commands and the
+# per-channel adaptations (a CLI form of an in-app command, a flag that skips an
+# interactive confirmation) live in scripts/dev/channel_smoke.py, and
+# tests/scripts/test_channel_smoke.py keeps them in step with the README.
+#
+# A channel fails here when a person outside the repository cannot follow it:
+# a private repository, an unpublished listing, a missing release asset, or a
+# signing key the installer cannot find. Run it after any change to repository
+# visibility, a release, or the install documentation.
+#
+# The job holds no secret and no write token (`permissions: {}` at the top
+# level, `contents: read` for checkout only). The harness CLIs install with
+# `npm ci` from .github/channel-smoke/package-lock.json, so each is pinned by
+# version and integrity hash; Renovate refreshes that lockfile. Its
+# package.json overrides sharp to 0.35.5, which fixes GHSA-wq5f-xc86-pv6w in
+# the bundled librsvg: Qwen Code pins sharp 0.35.4. Drop the override once
+# Qwen Code requires 0.35.5 or later.
+#
+# SHA-pinning policy: every `uses:` reference is pinned by 40-character commit
+# SHA followed by a `# vMAJOR.MINOR.PATCH` comment, identical to the canonical
+# policy documented in ci.yml and reusable-python-setup.yml.
+
+name: Channel Smoke
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 6 * * 1"
+
+permissions: {}
+
+# Single-sourced pip pin (CVE-2026-13346 closes on pip >=26.2). One value per
+# workflow file; scripts/dev/check_pip_pin_drift.py fails the build if any
+# workflow's PIP_PIN_VERSION diverges from the canonical pin.
+env:
+  PIP_PIN_VERSION: "26.2.1"
+  CLICK_VERSION: "8.4.2"
+  RICH_VERSION: "15.0.0"
+  VSCODE_VERSION: "1.140.0"
+
+concurrency:
+  group: channel-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  channels:
+    name: channel-smoke / list
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 5
+    outputs:
+      linux: ${{ steps.list.outputs.linux }}
+      windows: ${{ steps.list.outputs.windows }}
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+      - name: List channels per runner
+        id: list
+        run: |
+          echo "linux=$(python3 scripts/dev/channel_smoke.py --list --runner ubuntu-latest)" >> "$GITHUB_OUTPUT"
+          echo "windows=$(python3 scripts/dev/channel_smoke.py --list --runner windows-latest)" >> "$GITHUB_OUTPUT"
+
+  channel-smoke-linux:
+    name: channel-smoke / ${{ matrix.channel }}
+    needs: channels
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        channel: ${{ fromJSON(needs.channels.outputs.linux) }}
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: "3.12"
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+        with:
+          node-version: "22"
+      - name: Install the documented prerequisites
+        env:
+          CHANNEL: ${{ matrix.channel }}
+        run: |
+          python -m pip install "pip==${PIP_PIN_VERSION}"
+          python -m pip install "click==${CLICK_VERSION}" "rich==${RICH_VERSION}"
+          case "$CHANNEL" in
+            claude-code-plugin|gemini-cli-extension|qwen-code-extension|codex-plugin)
+              npm ci --prefix .github/channel-smoke --no-audit --no-fund
+              echo "$GITHUB_WORKSPACE/.github/channel-smoke/node_modules/.bin" >> "$GITHUB_PATH"
+              ;;
+            vscode-extension)
+              curl -fsSL -o "$RUNNER_TEMP/code.deb" \
+                "https://update.code.visualstudio.com/${VSCODE_VERSION}/linux-deb-x64/stable"
+              sudo apt-get install -y "$RUNNER_TEMP/code.deb"
+              ;;
+          esac
+      - name: Run the channel without credentials
+        env:
+          CHANNEL: ${{ matrix.channel }}
+        run: python scripts/dev/channel_smoke.py --channel "$CHANNEL"
+
+  channel-smoke-windows:
+    name: channel-smoke / ${{ matrix.channel }}
+    needs: channels
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        channel: ${{ fromJSON(needs.channels.outputs.windows) }}
+    steps:
+      - name: Harden runner
+        if: runner.os == 'Linux'
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: "3.12"
+      - name: Install the documented prerequisites
+        shell: pwsh
+        run: |
+          python -m pip install "pip==$env:PIP_PIN_VERSION"
+          python -m pip install "click==$env:CLICK_VERSION" "rich==$env:RICH_VERSION"
+      - name: Run the channel without credentials
+        shell: pwsh
+        env:
+          CHANNEL: ${{ matrix.channel }}
+        run: python scripts/dev/channel_smoke.py --channel "$env:CHANNEL"

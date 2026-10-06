@@ -16,10 +16,23 @@ apothem install --harness zed --project /path/to/project
 ```
 
 The adapter writes one project-scope Zed instruction file from the shared
-Apothem rules and governance surface. Zed reads a single flat `.rules` file at
-the project root (alongside the `AGENTS.md` / `CLAUDE.md` family) as agent
-instructions; there is no per-tool rules directory, so the whole Apothem
-surface lands in this one file.
+Apothem rules and governance surface. Zed reads one project instruction file,
+the first match in this list:
+
+```text
+.rules
+.cursorrules
+.windsurfrules
+.clinerules
+.github/copilot-instructions.md
+AGENT.md
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+```
+
+There is no per-tool rules directory, so the whole Apothem surface lands in the
+flat `.rules` file at the top of that list.
 
 **Files written:** `<project>/.rules`
 
@@ -33,7 +46,16 @@ content.
 
 ## Compatibility notes
 
-Zed's current agent-instruction surface is the flat project-root `.rules` file.
+Zed names `AGENTS.md` its primary instruction file and keeps project `.rules`
+as a supported compatibility file
+([Zed instructions](https://zed.dev/docs/ai/instructions)). Because Zed reads
+only the first match, a new `.rules` hides an `AGENTS.md`, a `CLAUDE.md`, or any
+other file lower in the list that the project already relies on. The
+install never edits those files. When `.rules` holds only the Apothem block and
+a lower-priority file holds your text, install and update print a warning that
+names the hidden file; copy the instructions you need into `.rules` outside the
+Apothem block to keep them in Zed.
+
 The global `~/.config/zed/AGENTS.md` instruction file and the MCP context-server
 block (`.zed/settings.json` `context_servers`) are operator-owned; Apothem does
 not write them.

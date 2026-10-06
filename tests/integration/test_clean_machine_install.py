@@ -71,17 +71,44 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def _isolated_env(home: Path, profile: Path, apothem_home: Path) -> dict[str, str]:
+def _interpreter_bin_dir(scratch: Path) -> Path:
+    """Return a directory whose ``python`` is the interpreter running the tests.
+
+    The installer has no interpreter override: it takes the first qualifying
+    ``python`` / ``python3`` on ``PATH``. Left alone, that is whatever the host
+    put first, which may lack the click and rich prerequisites the suite's own
+    interpreter has, so the gate would fail for a reason unrelated to the code.
+    A virtual environment's ``bin`` already holds a ``python`` that keeps the
+    environment active, so it is used as is. Otherwise a ``python`` symlink to
+    ``sys.executable`` is placed in a scratch directory (a symlink outside a
+    virtual environment loses nothing).
+    """
+    interpreter = Path(sys.executable)
+    if (interpreter.parent / "python").is_file():
+        return interpreter.parent
+    shim_dir = scratch / "python-bin"
+    shim_dir.mkdir(exist_ok=True)
+    for name in ("python", "python3"):
+        (shim_dir / name).symlink_to(interpreter)
+    return shim_dir
+
+
+def _isolated_env(
+    home: Path, profile: Path, apothem_home: Path, interpreter_dir: Path
+) -> dict[str, str]:
     """Build a hermetic environment dict for the installer subprocess.
 
     The real ``HOME`` / ``USERPROFILE`` are redirected to a tmp subdir so the
     materialized harness config lands in isolation. ``APOTHEM_SOURCE`` points
     at the local worktree so the installer uses it directly with no clone and
     no network. ``PYTHONPATH`` is stripped so the installer's own
-    ``PYTHONPATH=$SOURCE/src`` is what is exercised.
+    ``PYTHONPATH=$SOURCE/src`` is what is exercised. ``interpreter_dir`` leads
+    ``PATH`` so the installer resolves the interpreter running this suite, not
+    the host's first ``python``.
     """
     env = dict(os.environ)
     env.pop("PYTHONPATH", None)
+    env["PATH"] = f"{interpreter_dir}{os.pathsep}{env.get('PATH', '')}"
     env["HOME"] = str(home)
     env["USERPROFILE"] = str(home)  # Windows HOME resolution
     env["APOTHEM_SOURCE"] = str(REPO_ROOT)
@@ -108,7 +135,7 @@ def test_clean_machine_install_materializes_and_discovers(tmp_path: Path) -> Non
     apothem_home = tmp_path / "apothem-home"
     profile = tmp_path / "profile.yaml"
     profile.write_text(MINIMAL_PROFILE, encoding="utf-8")
-    env = _isolated_env(home, profile, apothem_home)
+    env = _isolated_env(home, profile, apothem_home, _interpreter_bin_dir(tmp_path))
 
     # Act.
     result = subprocess.run(
@@ -171,3 +198,72 @@ def test_clean_machine_install_materializes_and_discovers(tmp_path: Path) -> Non
         f"expected {EXPECTED_ADAPTER_COUNT} adapters, "
         f"discovered {discovered_count}: {probe.stdout.strip()}"
     )
+
+
+def test_clean_machine_install_without_a_profile_needs_one_run(
+    tmp_path: Path,
+) -> None:
+    """A first run with no profile creates it, installs, and verifies.
+
+    The installer used to stop after copying the example profile, exit 0,
+    and install nothing until it ran a second time. One run must now leave
+    the harness installed and ``verify`` at exit 0.
+    """
+    home = tmp_path / "home"
+    home.mkdir()
+    profile = home / ".config" / "apothem" / "profile.yaml"
+    env = _isolated_env(
+        home, profile, tmp_path / "apothem-home", _interpreter_bin_dir(tmp_path)
+    )
+
+    result = subprocess.run(
+        ["bash", str(INSTALLER)],
+        cwd=str(REPO_ROOT),
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=INSTALL_TIMEOUT_SECONDS,
+    )
+
+    output = f"--- stdout ---\n{result.stdout}\n--- stderr ---\n{result.stderr}"
+    assert result.returncode == 0, output
+    assert profile.is_file(), output
+    assert (home / HARNESS_CONFIG_RELATIVE).is_file(), output
+    assert "re-run this installer" not in result.stdout, output
+
+    verify_env = dict(env)
+    verify_env["PYTHONPATH"] = str(SRC_DIR)
+    verify = subprocess.run(
+        [sys.executable, "-m", "apothem", "verify", "--harness", "claude-code"],
+        cwd=str(tmp_path),
+        env=verify_env,
+        capture_output=True,
+        text=True,
+        timeout=INSTALL_TIMEOUT_SECONDS,
+    )
+    assert verify.returncode == 0, verify.stdout + verify.stderr
+
+
+def test_clean_machine_dry_run_without_a_profile_writes_nothing(
+    tmp_path: Path,
+) -> None:
+    """``--dry-run`` with no profile previews with the example and writes nothing."""
+    home = tmp_path / "home"
+    home.mkdir()
+    profile = home / ".config" / "apothem" / "profile.yaml"
+    env = _isolated_env(
+        home, profile, tmp_path / "apothem-home", _interpreter_bin_dir(tmp_path)
+    )
+
+    result = subprocess.run(
+        ["bash", str(INSTALLER), "--dry-run"],
+        cwd=str(REPO_ROOT),
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=INSTALL_TIMEOUT_SECONDS,
+    )
+
+    output = f"--- stdout ---\n{result.stdout}\n--- stderr ---\n{result.stderr}"
+    assert result.returncode == 0, output
+    assert list(home.iterdir()) == [], output

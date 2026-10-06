@@ -1,8 +1,7 @@
 ---
-name: "session-closure-scaling"
+trigger: glob
 description: "Path-filtered companion sub-rule to session-closure.md — carries the universality-and-scaling clause (the close binds every session; depth scales to session weight), the single-canonical-close no-repetition discipline (emit once, report only the delta on re-engagement), and the plan-touching residual detail (plan open items zeroed or explained-or-waived on every plan-touching close). Demand-loaded on plan-suite / context-management / recommend-next-step touches."
-pathFilter: "**/.apothem/plans/**, **/context-management*.md, **/recommend-next-step.md, **/session-closure.md"
-alwaysApply: false
+globs: "**/.apothem/plans/**, **/context-management*.md, **/recommend-next-step.md, **/session-closure.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

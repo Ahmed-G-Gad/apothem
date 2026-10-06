@@ -1,8 +1,7 @@
 ---
-name: "operational-mandates-expanded"
+trigger: glob
 description: "Path-filtered companion to operational-mandates — carries the per-mandate Violation indicators and Recovery sub-blocks for CM-1 through CM-10; demand-loaded on Markdown / governed-core surface touches."
-pathFilter: "**/*.md, **/CLAUDE.md, **/rules/**, **/commands/**, **/skills/**, **/agents/**"
-alwaysApply: false
+globs: "**/*.md, **/CLAUDE.md, **/rules/**, **/commands/**, **/skills/**, **/agents/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

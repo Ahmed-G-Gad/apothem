@@ -26,7 +26,9 @@ Output-style frontmatter carries two required fields, the floor the conformity g
 - `name` — the human-readable style name shown in `/output-style`.
 - `description` — one-line statement of the style's posture.
 
-[`../schemas/output-style.schema.json`](../schemas/output-style.schema.json) requires the same `name` + `description` floor and admits `id`, `applies-to`, `version`, and `last-reviewed` as optional extensions; the shipped styles carry only the two required fields. The body after the frontmatter specifies the style's conventions.
+Every shipped style also sets `keep-coding-instructions: true`. A style changes how work is presented, not how engineering work is done, so the host's built-in software-engineering instructions (scoping changes, writing comments, verifying work) stay on. A host that honours this key drops those instructions when the key is absent, because its default is `false`.
+
+[`../schemas/output-style.schema.json`](../schemas/output-style.schema.json) requires the same `name` + `description` floor, types `keep-coding-instructions` as a boolean, and admits `id`, `applies-to`, `version`, and `last-reviewed` as optional extensions. The body after the frontmatter specifies the style's conventions.
 
 ## Conventions
 
@@ -37,5 +39,5 @@ Output-style frontmatter carries two required fields, the floor the conformity g
 ## Operating in this folder
 
 - **Harness- and model-agnostic, no exceptions.** This folder is swept by the agnosticism matcher: a style file MUST NOT name or privilege any harness, model, or vendor, and MUST NOT pre-set an effort or model preference. A posture describes presentation register only.
-- **Adding or changing a style:** author the frontmatter against the schema, write the posture body as a supplement to the baseline (never a replacement that weakens a mandate), confirm it introduces no harness/model/effort bias, and register the new style in the index above in the same change-set.
+- **Adding or changing a style:** author the frontmatter against the schema (including `keep-coding-instructions: true`), write the posture body as a supplement to the baseline (never a replacement that weakens a mandate), confirm it introduces no harness/model/effort bias, and register the new style in the index above in the same change-set.
 - Validate with `python -m ruff check` and `python -m ruff format`, the conformity gate `python -m apothem.conformity.gate --all .` (which runs the agnosticism sweep over this folder), and `python -m pytest`.

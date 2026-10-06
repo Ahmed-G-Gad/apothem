@@ -4,54 +4,54 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-06-25
+- Snapshot date: 2026-10-03
 - Adapter source: `src/apothem/harnesses/zed/`
-- Evidence level: adapter-local projection; no vendor-native UI claim is made here.
+- Evidence level: vendor-doc pinned (living docs; no-immutable-source exception). No vendor-native UI claim is made here.
 - canonical-filename: `.rules`
 - vendor-doc-url: https://zed.dev/docs/ai/instructions
 
 ## Official Surface Refresh
 
-- Captured 2026-06-25 against the current Zed documentation (`zed.dev/docs`).
-  No authority-host move; no immutable version pin is exposed (mutable docs
-  site), so every captured convention carries a no-immutable-source exception.
-- Zed reorganized its AI docs (Reusable Rules → Skills, Always-on Rules →
-  Instructions, ~v1.4.0): `zed.dev/docs/ai/instructions`, `.../ai/skills`, and
-  `.../ai/rules` now coexist (the `ai/rules` page still resolves and documents
-  `.rules` / `.cursorrules` / `CLAUDE.md` / `AGENTS.md`). The `.rules`
-  project-root file behavior is unchanged and current — Zed still auto-includes
-  the flat `.rules` file as agent instructions; only the docs were reorganized
-  (re-verified live 2026-06-25 against `zed.dev/docs`).
-- Surface: Zed auto-includes a single flat project-root file `.rules` as agent
-  instructions (alongside the `AGENTS.md` / `CLAUDE.md` family). The format is
-  free-form plaintext / Markdown with no schema. The global surface is
+- Refreshed 2026-10-03 against `zed.dev/docs` (instructions, skills, MCP).
+- Surface: Zed reads one project instruction file, the first match in the
+  list `.rules`, `.cursorrules`, `.windsurfrules`, `.clinerules`,
+  `.github/copilot-instructions.md`, `AGENT.md`, `AGENTS.md`, `CLAUDE.md`,
+  `GEMINI.md`, so `.rules` hides every later file. Zed names `AGENTS.md` its
+  primary instruction file and supports `.rules` for compatibility. The format
+  is free-form plaintext / Markdown with no schema. The global surface is
   `~/.config/zed/AGENTS.md`.
 - DIVERGENCE (flat file, no dedicated apothem file): unlike the cohort's
-  rules-directory shape (a dedicated `apothem-rules.md` inside a `rules/`
-  directory), Zed reads one flat `.rules` file at the project root. The adapter
-  therefore writes `<project>/.rules` directly. There is no per-tool rules
-  subdirectory to scope the apothem block into.
+  rules-directory shape, Zed reads one flat `.rules` file at the project root,
+  so the adapter writes `<project>/.rules` directly. Install warns when the new
+  `.rules` hides an instruction file that holds operator text.
 - DIVERGENCE (backup-on-replace): because `.rules` is a single shared file an
   operator may already maintain, the shared install driver backs up any
   pre-existing `.rules` to a timestamped copy under `~/.apothem/backups/`
-  before replacement (and `apothem uninstall` renames the live file to a
-  timestamped sibling backup). The operator's prior instruction file is never
-  silently lost.
-- MCP is recognized: Zed's context servers are configured via
-  `.zed/settings.json` (and global settings) under `context_servers`
-  (operator-owned). The adapter recognizes the surface but does not author
-  entries. `capabilities.yml` `mcp_servers` and the shared capability matrix
-  reflect this.
-- The vendor documents threads, agent profiles, and MCP context servers as
-  separate surfaces. The adapter delivers only the project `.rules` file and
-  authors none of those cohorts (deliberate rules-only posture). Sub-agent
-  dispatch, hooks, skills, and output-styles remain undocumented as
-  adapter-owned file surfaces.
-- Skills (`discovery-pending`): Zed now documents a native Skills surface at
-  `zed.dev/docs/ai/skills` (the Reusable Rules → Skills migration). The adapter
-  does not yet author skill files for this harness; the surface is recognized
-  but its adapter-owned shape is discovery-pending against a pinned snapshot.
-  No absence is asserted — the surface exists and awaits a discovery pass.
+  before replacement. The operator's prior instruction file is never silently
+  lost.
+- MCP: Zed's context servers are configured under `context_servers` in
+  `.zed/settings.json` and the global settings. Operator-owned; the adapter
+  names the surface and authors no entries.
+- Skills: Zed loads skills only from `~/.agents/skills/` (global) and
+  `<worktree>/.agents/skills/` (project), flat layout, with no custom search
+  paths. The Zed adapter writes no skills (registry `unsupported`, by design);
+  because `~/.agents/skills/` is Codex's shared root, a Codex install's skills
+  reach Zed.
+- The vendor documents threads, agent profiles, and external agents as
+  separate surfaces; the adapter authors none of them (deliberate rules-only
+  posture).
+
+## Vendor Sources
+
+Retrieved 2026-10-03 unless marked.
+
+- <https://zed.dev/docs/ai/instructions> (instruction files and priority)
+- <https://zed.dev/docs/ai/mcp> (`context_servers`)
+- <https://zed.dev/docs/ai/skills> (skill locations; retrieved 2026-10-02)
+
+## Discovery Targets
+
+- Discovery target: mcp_servers by 2026-12-31 — decide whether Apothem renders the profile's MCP inventory into `.zed/settings.json` `context_servers` or keeps naming it as operator-owned.
 
 ## Recommended Postfix Rendering
 
@@ -83,11 +83,9 @@ bundle; every artifact requires the full
 | Artifact class | Persists standalone? | Mechanism / limit |
 |---|---|---|
 | Rules (flat `.rules`) | No — requires `apothem install` | The merged `.rules` file (carrying the embedded behavioral mandates) is written only by the engine to the project root. Nothing persists before that run. |
-| Commands / Agents | No — platform limit | Zed documents threads, agent profiles, and MCP context servers but no command/agent file primitive Apothem targets; these cohorts are not materialized for this harness. |
-| Skills | No — adapter gap, not a platform limit | Zed documents a native Skills surface at `zed.dev/docs/ai/skills` (the Reusable Rules → Skills migration). The adapter does not yet author skill files for it — the `discovery-pending` entry above. The surface exists; Apothem has not targeted it. |
-| Hooks / MCP / Settings | No — operator-owned / platform limit | `context_servers` in `.zed/settings.json` (MCP) is operator-owned; the adapter authors no entries. |
+| Commands / Agents | No — adapter scope | Zed documents threads, agent profiles, and external agents; the adapter authors none of them. |
+| Skills | No — adapter scope | Zed loads skills from `~/.agents/skills/` and `.agents/skills/`; the Zed adapter writes none, though a Codex install's skills in `~/.agents/skills/` reach Zed. |
+| Hooks / MCP / Settings | No — operator-owned | `context_servers` in `.zed/settings.json` (MCP) is operator-owned; the adapter authors no entries. |
 
-Platform limit: Zed's editor extensions are language/theme plugins, not an
-instruction-cohort channel; a plugin-alone story does not exist for the
-governance surface — the merged `.rules` file via `apothem install` is the sole
-persistence surface.
+Apothem ships no Zed extension, so the merged `.rules` file via
+`apothem install` is the sole persistence surface.

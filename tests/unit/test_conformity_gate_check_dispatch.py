@@ -95,7 +95,9 @@ def test_main_check_standalone_routes_and_exits_zero(
     exit_code = gate.main(["gate", "--check", "naming-grep", "."])
 
     assert exit_code == gate.EXIT_PASS
-    assert calls == [("naming-grep", Path())]
+    # The relative root is resolved before dispatch, so ``.`` and the absolute
+    # form inspect the same tree.
+    assert calls == [("naming-grep", Path.cwd().resolve())]
 
 
 def test_main_check_standalone_is_advisory_by_default(

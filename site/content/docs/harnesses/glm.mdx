@@ -32,11 +32,14 @@ endpoints and operator-configurable placeholders.
 The provider file records two backends. The Anthropic-compatible backend uses
 the base URL `https://api.z.ai/api/anthropic`; a tool that speaks the Anthropic
 protocol routes to GLM by setting `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN`,
-and optionally `API_TIMEOUT_MS`. The OpenAI-compatible backend uses the base
+and optionally `API_TIMEOUT_MS`. The same env table lists
+`ANTHROPIC_DEFAULT_OPUS_MODEL`, `ANTHROPIC_DEFAULT_SONNET_MODEL`, and
+`ANTHROPIC_DEFAULT_HAIKU_MODEL`, which map the tool's opus, sonnet, and haiku
+roles to GLM models. The OpenAI-compatible backend uses the base
 URL `https://api.z.ai/api/coding/paas/v4`. The auth token is a placeholder you
 replace with your own Z.ai key — Apothem never writes a real secret. Model ids
-are version-volatile, so Apothem pins none; the file carries placeholders you
-fill from the current
+are version-volatile, so Apothem pins none; the file carries `<GLM_MODEL_ID>`
+placeholders you fill from the current
 [Z.ai documentation](https://docs.z.ai/devpack/tool/claude).
 
 ## Compatibility notes
@@ -70,9 +73,11 @@ The verify command confirms that:
 apothem update --harness glm --project /path/to/project
 ```
 
-Re-derives the provider file from the current shared profile state. `install`
-and `update` are idempotent — re-running overwrites the managed file with the
-latest rendered content.
+The provider file is yours once it exists. `install` writes the template only
+when `.apothem/providers/glm.toml` is absent, and neither `install` nor `update`
+ever overwrites it afterwards, so your key reference and model choices survive
+every re-run. To pick up a newer template, move your file aside, run `update`,
+and copy your values into the new file.
 
 ## Uninstalling
 
@@ -80,9 +85,10 @@ latest rendered content.
 apothem uninstall --harness glm --project /path/to/project
 ```
 
-Removes the native config file written by the adapter, backing it up under the
-Apothem backup root first. The shared profile YAML and the Apothem engine are
-unaffected.
+Removes the provider file only when Apothem created it and it is still the
+unedited template, backing it up under the Apothem backup root first. A file you
+created or edited is left in place. The shared profile YAML and the Apothem
+engine are unaffected.
 
 ## Conformity gate
 

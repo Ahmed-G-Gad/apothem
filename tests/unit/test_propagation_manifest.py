@@ -18,6 +18,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from apothem.harnesses.claude_code import install as claude_code_install
 from apothem.lib import propagation
 
@@ -49,7 +51,9 @@ def test_manifest_install_entries_are_well_formed() -> None:
             "opencode_agents",
             "gemini_commands",
             "markdown_commands",
+            "claude_rules",
             "qwen_agents",
+            "native_skills",
         ), f"unexpected mode '{entry.mode}' on entry {entry}"
 
 
@@ -371,3 +375,38 @@ def test_adapter_plan_resolves_manifest_entries(tmp_path: Path) -> None:
         # Compare with platform-normalized separators (Windows uses backslash).
         normalised_plan_source = plan_entry["source"].replace("\\", "/")
         assert normalised_plan_source.endswith(manifest_entry.source.rstrip("/"))
+
+
+def test_profile_position_defaults_to_last_and_parses_first() -> None:
+    rules = propagation._parse_manifest_text(
+        "harnesses:\n"
+        "  demo:\n"
+        "    install:\n"
+        "      - source: a.md\n"
+        "        target: b.md\n"
+        "        mode: sentinel_merge\n"
+        "      - source: c.md\n"
+        "        target: d.md\n"
+        "        mode: sentinel_merge\n"
+        "        profile_position: first\n"
+    )
+    first, second = rules["demo"].install
+    assert first.profile_position == "last"
+    assert second.profile_position == "first"
+
+
+def test_profile_position_rejects_unknown_values() -> None:
+    with pytest.raises(ValueError, match="profile_position"):
+        propagation._parse_manifest_text(
+            "harnesses:\n"
+            "  demo:\n"
+            "    install:\n"
+            "      - source: a.md\n"
+            "        target: b.md\n"
+            "        profile_position: middle\n"
+        )
+
+
+def test_github_copilot_anchor_puts_the_profile_first() -> None:
+    (entry,) = propagation.load_manifest()["github_copilot"].install
+    assert entry.profile_position == "first"

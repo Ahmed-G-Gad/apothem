@@ -1,12 +1,12 @@
 ---
 name: "threat-model-audit"
 version: "0.1.0"
-updated: "2026-06-16"
+updated: "2026-10-02"
 description: "Operator-driven threat-modeling audit pass against STRIDE + PASTA. Walks the repository's architecture, data-flow, and trust-boundary surfaces, applies STRIDE per element (Spoofing · Tampering · Repudiation · Information disclosure · Denial of service · Elevation of privilege) and the PASTA seven-stage pass, classifies threat actors against the canonical taxonomy, and emits per-threat findings with trust-boundary citation, MITRE ATT&CK references, mitigation posture, and residual-risk acceptance — HIGH/MEDIUM/LOW severity-triaged with concrete-driver rationale. SOTA references: STRIDE (Microsoft), PASTA (VerSprite), OWASP Threat Modeling, MITRE ATT&CK. Terminal command of the audit fortress — ratifies TIER 3 convergence. Read-only diagnostics; never remediates. Output lands at the consuming suite's _inputs/threat-model-audit-findings.md. Invoke with a repository path, or --focus BOUNDARY_OR_ACTOR to model one attack chain incrementally."
 argument-hint: "[path/to/repo/] [--focus BOUNDARY_OR_ACTOR] [--dry-run]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -155,7 +155,7 @@ Run the fifteen-bar pre-emission gate (`rules/pre-emission-gate.md`) over the em
 
 The remaining bars attest `pass` or `n/a (with reason)` per `rules/pre-emission-gate-bars.md` §1; M9 is **required** here (the Trust-Boundary Map above), M12 layout binds the canonical `_inputs/` artifact, and M11/M13/M15 are single-sprint / no-code / remediation-deferred.
 
-**Iterate on failure.** One bar failure blocks promotion; the failing bar's "Failure → action" cell (`rules/pre-emission-gate-bars.md` §1) names the owning revision rule. Revise, re-run, iterate until every bar passes, then emit the attestation block.
+**Iterate on failure.** One bar failure blocks promotion. Revise and re-run per `rules/pre-emission-gate-bars.md` §3, which names the owning revision rule for each bar and caps the loop at three rounds before BLOCKED, then emit the attestation block.
 
 ---
 
@@ -200,4 +200,10 @@ Invoke `/release-readiness` — the threat-model audit is the terminal command o
 
 ## Installed Reference Paths
 
-When this skill is installed by Apothem, resolve repository-style references such as `rules/...` under `<ROOT>`, `templates/...` and `hooks/...` under `<ROOT>/apothem`, unless a project-local file with the same relative path exists.
+When this skill is installed by Apothem, resolve a repository-style reference against the installed directory for its first segment, unless a project-local file with the same relative path exists.
+
+- `rules/<path>` is `<ROOT>/rules/<path>`
+- `templates/<path>` is `<ROOT>/.apothem/support/templates/<path>`
+- `schemas/<path>` is `<ROOT>/.apothem/support/schemas/<path>`
+- `hooks/<path>` is `<ROOT>/.apothem/support/hooks/<path>`
+- `conformity/<path>` is `<ROOT>/.apothem/support/conformity/<path>`

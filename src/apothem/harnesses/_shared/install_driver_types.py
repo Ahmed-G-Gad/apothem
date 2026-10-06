@@ -5,7 +5,9 @@
 from __future__ import annotations
 
 import fnmatch
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from pathlib import Path
@@ -13,6 +15,8 @@ from typing import Any, Final, Literal
 
 import apothem
 from apothem.harnesses._shared import install_driver
+from apothem.lib.install_ledger import OwnedEntry
+from apothem.lib.propagation import HarnessRules, InstallEntry
 
 IgnoreFn = Callable[[str, list[str]], list[str]]
 
@@ -50,6 +54,10 @@ _INSTALL_ENTRY_MODES: tuple[str, ...] = (
     "qwen_agents",
     "gemini_commands",
     "markdown_commands",
+    "claude_rules",
+    "antigravity_rules",
+    "native_skills",
+    "antigravity_agents",
 )
 
 #: Plain-language verb phrase for each operation kind. Preview surfaces (the
@@ -70,12 +78,18 @@ OPERATION_LABELS: Final[dict[str, str]] = {
     "qwen_agents": "Install agents",
     "gemini_commands": "Install commands",
     "markdown_commands": "Install commands",
+    "claude_rules": "Install rules",
+    "antigravity_rules": "Install rules",
+    "native_skills": "Install skills",
+    "antigravity_agents": "Install agents",
     "sweep_stale": "Prune stale files",
     "capability_projection": "Project capability",
     "data_surface": "Write data file",
     "surgical_uninstall": "Remove file",
     "remove_existing": "Replace existing target",
     "restore_backup": "Restore backup",
+    "remove_created": "Remove created file",
+    "remove_directory": "Remove empty directory",
     "remove_data_home": "Remove data directory",
 }
 
@@ -165,6 +179,10 @@ class MaterializationResult:
     source: str | None = None
     backup_path: str | None = None
     detail: dict[str, str] = field(default_factory=dict)
+    #: Entries Apothem added to this structured operator config, recorded in
+    #: the install ledger so uninstall removes exactly those. ``None`` for a
+    #: non-structured target. Internal bookkeeping: not part of ``to_dict``.
+    owned: tuple[OwnedEntry, ...] | None = None
 
     @property
     def changed(self) -> bool:
@@ -310,14 +328,87 @@ def _handle_rm_error(
     return
 
 
-def _timestamp_slug() -> str:
-    """Return the UTC timestamp slug used for backup directories."""
+#: The backup timestamp an operation pinned with :func:`backup_session`.
+_SESSION_SLUG: ContextVar[str | None] = ContextVar(
+    "apothem_backup_session_slug", default=None
+)
+
+
+def _now_slug() -> str:
+    """Return the current UTC time as a backup-directory timestamp slug."""
     return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+
+
+def _timestamp_slug() -> str:
+    """Return the UTC timestamp slug used for backup directories.
+
+    Inside :func:`backup_session` every call returns the slug the session
+    pinned, so one operation writes one backup set however long it runs.
+    """
+    pinned = _SESSION_SLUG.get()
+    return pinned if pinned is not None else _now_slug()
+
+
+@contextmanager
+def backup_session() -> Iterator[str]:
+    """Pin one backup timestamp for the install, uninstall or rollback inside.
+
+    Retention keeps the newest backup sets per harness, one set per
+    timestamp. Without a pinned slug, an operation that runs longer than a
+    second writes a set per second, and on a slow disk the retention pass at
+    its end could delete that operation's own earliest backups. A nested
+    session keeps the outer session's slug. Also usable as a decorator.
+    """
+    pinned = _SESSION_SLUG.get()
+    if pinned is not None:
+        yield pinned
+        return
+    token = _SESSION_SLUG.set(_now_slug())
+    try:
+        yield _SESSION_SLUG.get() or ""
+    finally:
+        _SESSION_SLUG.reset(token)
 
 
 def _is_excluded_path(path: Path, exclude: list[str]) -> bool:
     """Return True when *path* is excluded by manifest basename globs."""
     return any(fnmatch.fnmatch(path.name, pattern) for pattern in exclude)
+
+
+def skills_sharing_command_target(
+    entry: InstallEntry, rules: HarnessRules
+) -> frozenset[str]:
+    """Return the source skills a ``command_skills`` entry must leave in place.
+
+    A command converted to a skill lands at ``<target>/<name>/SKILL.md``. When
+    the same harness also installs the ``skills/`` tree into that target, a
+    source skill with the command's name would be written twice. The skill
+    wins, as in Claude Code, which resolves a skill and a command sharing a
+    name to the skill
+    (https://code.claude.com/docs/en/skills.md#resolve-skills-that-share-a-name,
+    retrieved 2026-10-03); the plugin ships both and so loads the skill, and
+    the engine install then carries the same body. A skill the manifest
+    filters out of the tree does not shadow its command.
+    """
+    if entry.mode != "command_skills":
+        return frozenset()
+    target = entry.target.rstrip("/")
+    names: set[str] = set()
+    for other in rules.install:
+        if other.source.rstrip("/") != "skills" or other.target.rstrip("/") != target:
+            continue
+        skills_dir = resolve_source(other.source)
+        if not skills_dir.is_dir():
+            continue
+        filtered = set(rules.per_directory_filters.get(skills_dir.name, []))
+        names.update(
+            child.name
+            for child in skills_dir.iterdir()
+            if (child / "SKILL.md").is_file()
+            and child.name not in filtered
+            and not _is_excluded_path(child, rules.exclude)
+        )
+    return frozenset(names)
 
 
 # Sentinel marking a key that the Apothem-removal recursion has emptied out

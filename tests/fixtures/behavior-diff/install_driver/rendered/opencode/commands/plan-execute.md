@@ -377,7 +377,7 @@ If any context-health signal from `rules/context-management.md` §1 or any regre
 - **NEVER stop between phases** once continuous execution is opted in (CM-16).
 - **NEVER proceed** without template v0.1.0+.
 - **Root-cause fixes only** — no band-aids.
-- **Base protocol:** Agent Teams (CM-25) with return contracts — deployment scales with seriousness per `rules/agent-orchestration.md` (Optional at EXPLORING, Encouraged at PERSONAL_USE, Required at SHARED+). Default token budgets per CM-25C: Research 500, Audit/Quality 200, Implementation/Documentation 500, Generation 1000. Error recovery (CM-18), 3-failure escalation. Session resilience (CM-24/CM-14). Always-on rules (CM-22–28) enforced at all steps.
+- **Base protocol:** Worker Teams (CM-17) with return contracts (CM-25) — deployment scales with seriousness per `rules/agent-orchestration.md` (Optional at EXPLORING, Encouraged at PERSONAL_USE, Required at SHARED+). Default token budgets per CM-25C: Research 500, Audit/Quality 200, Implementation/Documentation 500, Generation 1000. Error recovery (CM-18), 3-failure escalation. Session resilience (CM-24/CM-14). Always-on rules (CM-22–28) enforced at all steps.
 
 ---
 
@@ -397,7 +397,7 @@ All template and config mandates are in effect. Governance scales with seriousne
 | CM-14 | Step 1/1B: Session Start, Blind Bootstrap; pressure: Session End |
 | CM-15 | Step 6.6: coherence check |
 | CM-16 | Step 10: continuous-execution transition (opt-in at all seriousness levels) |
-| CM-17 | Steps 1–6: Agent Teams |
+| CM-17 | Steps 1–6: Worker Teams |
 | CM-18 | Critical Rules: 3-failure escalation |
 | CM-19 | Step 10: mandatory; Steps 1, 3, 4, 5: proactive |
 | CM-20 | Step 10: final-phase handoff |

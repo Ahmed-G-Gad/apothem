@@ -3,13 +3,12 @@
 """Apothem harness adapter for kimi_code — project-scope install.
 
 Materializes the apothem instruction surface into the operator-supplied
-project root at ``<project>/AGENTS.md`` — the canonical Kimi Code CLI
-instruction file per the vendor configuration docs
-(https://moonshotai.github.io/kimi-cli/en/configuration/config-files.html,
-snapshot-date 2026-06-24). Kimi Code (Moonshot) reads project-root
-``AGENTS.md`` as its agent-instructions surface following the universal
-AGENTS.md convention; project configuration lives under
-``<project>/.kimi-code/``.
+project root at ``<project>/AGENTS.md`` — a Kimi Code CLI project
+instruction file per the vendor docs
+(https://moonshotai.github.io/kimi-code/en/customization/agents,
+snapshot-date 2026-10-03). Kimi Code (Moonshot) reads ``AGENTS.md`` or
+``.kimi-code/AGENTS.md`` from the project tree as agent instructions; project
+configuration lives under ``<project>/.kimi-code/``.
 
 The adapter writes the apothem governance surface into ``AGENTS.md`` as a
 sentinel-delimited managed block (operator prose outside the sentinels is

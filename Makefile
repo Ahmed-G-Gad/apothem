@@ -98,15 +98,13 @@ ai-surfaces-doctor:
 	$(CONFORMITY) --check multi-surface-coherence
 	$(CONFORMITY) --check license-author-consistency
 
+# bench_hooks.py with no --event measures every event hooks.json registers, on
+# a real payload. bench_agents.py is not run here: an agent spawn needs a host
+# harness and a model call, so it can only report NOT MEASURED (exit 3).
 benchmarks:
 	$(PYTHON) src/apothem/benchmarks/bench_validate_ecosystem.py
-	@for event in PreToolUse PostToolUse UserPromptSubmit Notification SessionStart PreCompact PostCompact Stop; do \
-		$(PYTHON) src/apothem/benchmarks/bench_hooks.py --event $$event || exit 1; \
-	done
+	$(PYTHON) src/apothem/benchmarks/bench_hooks.py
 	$(PYTHON) src/apothem/benchmarks/bench_tests.py
-	@for pattern in research audit quality generation; do \
-		$(PYTHON) src/apothem/benchmarks/bench_agents.py --pattern $$pattern || exit 1; \
-	done
 	$(PYTHON) src/apothem/benchmarks/bench_install.py
 
 # ----- release -------------------------------------------------------

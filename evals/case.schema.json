@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Apothem behavioural eval case",
+  "description": "Shape of one eval case under evals/: a prompt.md (frontmatter: case fields; body: the prompt), optional case.yaml (context fields), and graders/*.md (frontmatter: one grader; body: the llm rubric). The format is the plugin-eval suite format (schema_version 1.1). Each grader type maps to a runner-neutral check: regex = pattern over the final reply, the transcript, the created-path list or one file; tool_used = count of calls to a tool whose JSON input matches a pattern; tool_order = first matching call of one tool precedes another; file_exists = a created path matches a glob; llm = a judge model votes on a rubric.",
+  "$defs": {
+    "kebabName": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "stringList": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "env": {
+      "type": "object",
+      "propertyNames": {"pattern": "^EVAL_[A-Z0-9_]*$"},
+      "additionalProperties": {"type": "string"}
+    },
+    "promptFrontmatter": {
+      "description": "prompt.md frontmatter. Unknown keys fail the case at load time.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {"const": "1.1"},
+        "name": {"$ref": "#/$defs/kebabName"},
+        "description": {"type": "string"},
+        "tags": {"$ref": "#/$defs/stringList"},
+        "plugins": {"$ref": "#/$defs/stringList"},
+        "runs": {"type": "integer", "minimum": 1, "maximum": 50},
+        "expected_outcome": {"type": "string"},
+        "model": {"type": "string", "minLength": 1},
+        "max_turns": {"type": "integer", "minimum": 1, "maximum": 200},
+        "timeout_seconds": {"type": "integer", "minimum": 1, "maximum": 3600},
+        "allowed_tools": {"$ref": "#/$defs/stringList"},
+        "append_system_prompt": {"type": "string", "minLength": 1},
+        "env": {"$ref": "#/$defs/env"}
+      }
+    },
+    "caseYaml": {
+      "description": "case.yaml: context fields, or a whole case in one file.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "name"],
+      "properties": {
+        "schema_version": {"const": "1.1"},
+        "name": {"$ref": "#/$defs/kebabName"},
+        "description": {"type": "string"},
+        "tags": {"$ref": "#/$defs/stringList"},
+        "plugins": {"$ref": "#/$defs/stringList"},
+        "runs": {"type": "integer", "minimum": 1, "maximum": 50},
+        "expected_outcome": {"type": "string"},
+        "execution": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "prompt": {"type": "string", "minLength": 1},
+            "model": {"type": "string", "minLength": 1},
+            "max_turns": {"type": "integer", "minimum": 1, "maximum": 200},
+            "timeout_seconds": {"type": "integer", "minimum": 1, "maximum": 3600},
+            "allowed_tools": {"$ref": "#/$defs/stringList"},
+            "append_system_prompt": {"type": "string", "minLength": 1},
+            "env": {"$ref": "#/$defs/env"}
+          }
+        },
+        "context": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "scaffold_script": {"type": "string", "minLength": 1},
+            "history_file": {"type": "string", "pattern": "\\.jsonl$"},
+            "add_dirs": {"$ref": "#/$defs/stringList"}
+          }
+        },
+        "graders": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {"$ref": "#/$defs/grader"},
+              {"required": ["name"]}
+            ]
+          }
+        }
+      }
+    },
+    "target": {
+      "oneOf": [
+        {"enum": ["last_message", "trace", "files", "mock_calls"]},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["source", "path"],
+          "properties": {
+            "source": {"const": "file"},
+            "path": {"type": "string", "minLength": 1}
+          }
+        }
+      ]
+    },
+    "toolRef": {
+      "oneOf": [
+        {"type": "string", "minLength": 1},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["tool"],
+          "properties": {
+            "tool": {"type": "string", "minLength": 1},
+            "input_match": {"type": "string", "minLength": 1}
+          }
+        }
+      ]
+    },
+    "grader": {
+      "description": "One grader: graders/<name>.md frontmatter (the body is the llm rubric), or one entry of case.yaml graders.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "name": {"$ref": "#/$defs/kebabName"},
+        "type": {"enum": ["regex", "tool_used", "tool_order", "file_exists", "llm", "baseline"]},
+        "weight": {"type": "number", "exclusiveMinimum": 0},
+        "arm": {"enum": ["with-only", "both"]},
+        "pattern": {"type": "string", "minLength": 1},
+        "flags": {"type": "string", "pattern": "^[dgimsuvy]*$"},
+        "match": {
+          "oneOf": [
+            {"enum": ["contains", "not_contains"]},
+            {"type": "string", "pattern": "^count:[0-9]+$"}
+          ]
+        },
+        "target": {"$ref": "#/$defs/target"},
+        "focus": {"$ref": "#/$defs/target"},
+        "tool": {"type": "string", "minLength": 1},
+        "input_match": {"type": "string", "minLength": 1},
+        "min": {"type": "integer", "minimum": 0},
+        "max": {"type": "integer", "minimum": 0},
+        "before": {"$ref": "#/$defs/toolRef"},
+        "after": {"$ref": "#/$defs/toolRef"},
+        "path": {"type": "string", "minLength": 1},
+        "exists": {"type": "boolean"},
+        "criteria": {"type": "string", "minLength": 1},
+        "baseline_file": {"type": "string", "pattern": "\\.jsonl$"}
+      },
+      "allOf": [
+        {"if": {"properties": {"type": {"const": "regex"}}}, "then": {"required": ["pattern"]}},
+        {"if": {"properties": {"type": {"const": "tool_used"}}}, "then": {"required": ["tool"]}},
+        {"if": {"properties": {"type": {"const": "tool_order"}}}, "then": {"required": ["before", "after"]}},
+        {"if": {"properties": {"type": {"const": "file_exists"}}}, "then": {"required": ["path"]}},
+        {"if": {"properties": {"type": {"const": "baseline"}}}, "then": {"required": ["baseline_file"]}}
+      ]
+    }
+  }
+}

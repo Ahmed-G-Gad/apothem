@@ -52,7 +52,11 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Final
 
-from apothem.conformity._grep_base import iter_prose_lines
+from apothem.conformity._grep_base import (
+    finish_root_report,
+    iter_prose_lines,
+    parse_root_args,
+)
 
 GREP_NAME: Final[str] = "freshness-token-grep"
 RULE_ANCHOR: Final[str] = "rules/freshness-facade.md"
@@ -228,22 +232,21 @@ def check(root: Path) -> GrepResult:
     )
 
 
-def _read_input(argv: list[str]) -> Path:
-    if len(argv) >= 2:
-        return Path(argv[1])
-    return Path.cwd()
-
-
 def _main(argv: list[str]) -> int:
-    root = _read_input(argv)
+    root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root
     result = check(root)
-    print(result.to_json())
     # Advisory posture: ``to_json`` declares ``advisory: true``, so ``_main``
-    # must exit 0 even when findings are present (gate.py: "Advisory
-    # validators exit 0 even when they report findings"). The verdict rides
-    # the JSON ``passed`` field; the orchestrator surfaces it as
-    # ``advisory_findings_present`` without failing ``gate --all``.
-    return EXIT_PASS
+    # exits 0 even when findings are present (gate.py: "Advisory validators
+    # exit 0 even when they report findings"). The verdict rides the JSON
+    # ``passed`` field; the orchestrator surfaces it as
+    # ``advisory_findings_present`` without failing ``gate --all``. A scan
+    # that read no file is not advisory drift: it fails.
+    return finish_root_report(
+        result.to_json(),
+        passed=result.passed,
+        inspected=result.files_inspected,
+        advisory=True,
+    )
 
 
 if __name__ == "__main__":

@@ -1,16 +1,14 @@
 // SPDX-License-Identifier: MIT
 
 import { source } from '@/lib/source';
-import {
-  DocsPage,
-  DocsBody,
-  DocsDescription,
-  DocsTitle,
-} from 'fumadocs-ui/page';
+import { DocsBody, DocsDescription, DocsTitle } from 'fumadocs-ui/page';
+import { LandmarkDocsPage } from '@/components/docs-landmarks';
 import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/mdx-components';
 import { buildAlternates } from '@/lib/hreflang';
 import { ROUTED_NON_DEFAULT_LOCALES, DEFAULT_LOCALE } from '@/lib/i18n';
+import { translationState } from '@/lib/translation-status';
+import { StaleTranslationNotice } from '@/components/stale-translation-notice';
 import type { Metadata } from 'next';
 
 // Per-locale docs route (e.g. Spanish at `/es/docs/...`). Pages are resolved for
@@ -18,7 +16,8 @@ import type { Metadata } from 'next';
 // each route renders that locale's own translation. The loader's
 // `fallbackLanguage: 'en'` remains the safety net for any page a locale has not
 // authored. The `machineTranslated` frontmatter flag is internal review-tracking
-// metadata only — it drives no rendered surface.
+// metadata only — it drives no rendered surface. The `sourceHash` flag drives
+// the staleness marker (see lib/translation-status.ts).
 export default async function Page(props: {
   params: Promise<{ lang: string; slug?: string[] }>;
 }) {
@@ -27,15 +26,23 @@ export default async function Page(props: {
   if (!page) notFound();
 
   const MDXContent = page.data.body;
+  // A translation whose English source changed after it was made carries a
+  // staleness marker. An untranslated page is the English fallback: it is
+  // served silently, but its text is marked English (WCAG 3.1.2).
+  const state = translationState(page.path, lang, page.data.sourceHash);
+  const english = state === 'fallback' ? { lang: DEFAULT_LOCALE, dir: 'ltr' as const } : {};
 
   return (
-    <DocsPage toc={page.data.toc} full={page.data.full}>
-      <DocsTitle>{page.data.title}</DocsTitle>
-      <DocsDescription>{page.data.description}</DocsDescription>
-      <DocsBody>
+    <LandmarkDocsPage toc={page.data.toc} full={page.data.full}>
+      <DocsTitle {...english}>{page.data.title}</DocsTitle>
+      {state === 'stale' ? (
+        <StaleTranslationNotice englishUrl={page.url.replace(`/${lang}/`, '/')} />
+      ) : null}
+      <DocsDescription {...english}>{page.data.description}</DocsDescription>
+      <DocsBody {...english}>
         <MDXContent components={getMDXComponents()} />
       </DocsBody>
-    </DocsPage>
+    </LandmarkDocsPage>
   );
 }
 

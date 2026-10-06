@@ -32,11 +32,31 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-bold()  { printf '\033[1m%s\033[0m\n' "$*"; }
-info()  { printf '  \033[36m%s\033[0m %s\n' '·' "$*"; }
-ok()    { printf '  \033[32m%s\033[0m %s\n' '✓' "$*"; }
-warn()  { printf '  \033[33m%s\033[0m %s\n' '!' "$*"; }
-die()   { printf '  \033[31m%s\033[0m %s\n' '✗' "$*" >&2; exit 1; }
+# Colour only an interactive terminal. NO_COLOR (https://no-color.org/) or a
+# redirected stream (a pipe, a file, a CI log) gets plain text; stdout and
+# stderr are checked separately because die() writes to stderr.
+COLOR_OUT=0
+COLOR_ERR=0
+if [ -z "${NO_COLOR:-}" ]; then
+    if [ -t 1 ]; then COLOR_OUT=1; fi
+    if [ -t 2 ]; then COLOR_ERR=1; fi
+fi
+
+# paint ENABLED SGR TEXT — print TEXT, wrapped in the SGR colour code when
+# ENABLED is 1.
+paint() {
+    if [ "$1" = "1" ]; then
+        printf '\033[%sm%s\033[0m' "$2" "$3"
+    else
+        printf '%s' "$3"
+    fi
+}
+
+bold()  { printf '%s\n' "$(paint "$COLOR_OUT" 1 "$*")"; }
+info()  { printf '  %s %s\n' "$(paint "$COLOR_OUT" 36 '·')" "$*"; }
+ok()    { printf '  %s %s\n' "$(paint "$COLOR_OUT" 32 '✓')" "$*"; }
+warn()  { printf '  %s %s\n' "$(paint "$COLOR_OUT" 33 '!')" "$*"; }
+die()   { printf '  %s %s\n' "$(paint "$COLOR_ERR" 31 '✗')" "$*" >&2; exit 1; }
 
 bold "Apothem uninstaller"
 echo

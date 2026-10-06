@@ -63,3 +63,20 @@ def _isolate_backup_root(
         "BACKUP_ROOT",
         tmp_path_factory.mktemp("apothem-backups-default"),
     )
+
+
+@pytest.fixture(autouse=True)
+def _isolate_hook_state(
+    tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Redirect the per-user hook state directory for every test.
+
+    The session-end gate and the proactive-compaction tracker keep per-session
+    counters under ``hooks/lib/state_dir.py``'s per-user root (by default
+    ``~/.local/state/apothem``). Without this redirect a hook test would write
+    real state under the developer's home. Tests that set
+    ``APOTHEM_HOOK_STATE_DIR`` themselves still override this default.
+    """
+    monkeypatch.setenv(
+        "APOTHEM_HOOK_STATE_DIR", str(tmp_path_factory.mktemp("hook-state"))
+    )

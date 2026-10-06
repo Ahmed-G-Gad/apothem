@@ -4,9 +4,9 @@
 #
 # The `main` ruleset requires the `quality / <os> / py<ver>` matrix and the
 # `coverage` status checks. Those live in `ci.yml`, which triggers on every
-# code-and-config surface (src/**, tests/**, pyproject.toml, site/**,
-# examples/**, scripts/**, .github/workflows/**, .pre-commit-config.yaml,
-# .gitleaks.toml). A pull request that touches ONLY documentation outside that
+# code-and-config surface (.claude-plugin/**, CHANGELOG.md, plugins/**,
+# src/**, tests/**, pyproject.toml, site/**, examples/**, scripts/**,
+# .github/workflows/**, .pre-commit-config.yaml, .gitleaks.toml). A pull request that touches ONLY documentation outside that
 # set never runs them, so the required contexts would stay "expected" forever
 # and the PR could not merge.
 #
@@ -44,12 +44,16 @@ on:
   pull_request:
     branches: [main]
     paths-ignore:
+      - '.claude-plugin/**'
+      - 'CHANGELOG.md'
+      - 'plugins/**'
       - 'src/**'
       - 'tests/**'
       - 'pyproject.toml'
       - 'site/**'
       - 'examples/**'
       - 'scripts/**'
+      - 'evals/**'
       - '.github/workflows/**'
       - '.pre-commit-config.yaml'
       - '.gitleaks.toml'

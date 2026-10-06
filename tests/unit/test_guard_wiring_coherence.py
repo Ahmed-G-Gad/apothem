@@ -129,9 +129,9 @@ def test_codex_guard_set_matches_committed_hooks_json() -> None:
         f"codex write-matcher guards drifted from hooks.json Write.\n"
         f"  codex: {codex['Edit|Write|apply_patch']}\n  hooks.json: {hooks['Write']}"
     )
-    assert codex["Bash"] == hooks["Bash"], (
-        f"codex Bash guards drifted from hooks.json Bash.\n"
-        f"  codex: {codex['Bash']}\n  hooks.json: {hooks['Bash']}"
+    assert codex["Bash"] == hooks["Bash|PowerShell"], (
+        f"codex Bash guards drifted from hooks.json Bash|PowerShell.\n"
+        f"  codex: {codex['Bash']}\n  hooks.json: {hooks['Bash|PowerShell']}"
     )
 
 
@@ -146,9 +146,9 @@ def test_qwen_guard_set_matches_committed_hooks_json() -> None:
         f"qwen write-matcher guards drifted from hooks.json Write.\n"
         f"  qwen: {qwen['WriteFile|Edit']}\n  hooks.json: {hooks['Write']}"
     )
-    assert qwen["^Bash$"] == hooks["Bash"], (
-        f"qwen Bash guards drifted from hooks.json Bash.\n"
-        f"  qwen: {qwen['^Bash$']}\n  hooks.json: {hooks['Bash']}"
+    assert qwen["^run_shell_command$"] == hooks["Bash|PowerShell"], (
+        f"qwen shell guards drifted from hooks.json Bash|PowerShell.\n"
+        f"  qwen: {qwen['^run_shell_command$']}\n  hooks.json: {hooks['Bash|PowerShell']}"
     )
 
 
@@ -159,7 +159,7 @@ def test_supply_chain_and_eval_guards_fire_on_their_scopes() -> None:
     hooks = _pretooluse_guard_sets(_load(_HOOKS_JSON))
     assert "pretooluse-dependency-guard" in hooks["Write"]
     assert "pretooluse-dependency-guard" in hooks["Edit"]
-    assert "pretooluse-dependency-guard" not in hooks["Bash"]
+    assert "pretooluse-dependency-guard" not in hooks["Bash|PowerShell"]
     assert "pretooluse-eval-guard" in hooks["Write"]
     assert "pretooluse-eval-guard" in hooks["Edit"]
-    assert "pretooluse-eval-guard" in hooks["Bash"]
+    assert "pretooluse-eval-guard" in hooks["Bash|PowerShell"]

@@ -6,15 +6,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" SessionStart",
-            "timeout": 30,
-            "shell": "bash"
-          },
-          {
-            "type": "command",
-            "command": "pwsh -NoProfile -File \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.ps1\" SessionStart",
-            "timeout": 30,
-            "shell": "powershell"
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" SessionStart",
+            "timeout": 30
           }
         ]
       }
@@ -25,63 +18,28 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-write.md\"",
-            "timeout": 10,
-            "shell": "bash"
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-write.md\"",
+            "timeout": 10
           },
           {
             "type": "command",
-            "command": "pwsh -NoProfile -File \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.ps1\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-write.md\"",
-            "timeout": 10,
-            "shell": "powershell"
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-write-header-guard.md\"",
+            "timeout": 10
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-write-header-guard.md\"",
-            "timeout": 10,
-            "shell": "bash"
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-write-plan-guard.md\"",
+            "timeout": 10
           },
           {
             "type": "command",
-            "command": "pwsh -NoProfile -File \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.ps1\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-write-header-guard.md\"",
-            "timeout": 10,
-            "shell": "powershell"
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-dependency-guard.md\"",
+            "timeout": 10
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-write-plan-guard.md\"",
-            "timeout": 10,
-            "shell": "bash"
-          },
-          {
-            "type": "command",
-            "command": "pwsh -NoProfile -File \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.ps1\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-write-plan-guard.md\"",
-            "timeout": 10,
-            "shell": "powershell"
-          },
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-dependency-guard.md\"",
-            "timeout": 10,
-            "shell": "bash"
-          },
-          {
-            "type": "command",
-            "command": "pwsh -NoProfile -File \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.ps1\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-dependency-guard.md\"",
-            "timeout": 10,
-            "shell": "powershell"
-          },
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-eval-guard.md\"",
-            "timeout": 10,
-            "shell": "bash"
-          },
-          {
-            "type": "command",
-            "command": "pwsh -NoProfile -File \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.ps1\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-eval-guard.md\"",
-            "timeout": 10,
-            "shell": "powershell"
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-eval-guard.md\"",
+            "timeout": 10
           }
         ]
       },
@@ -90,63 +48,28 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-edit.md\"",
-            "timeout": 10,
-            "shell": "bash"
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-edit.md\"",
+            "timeout": 10
           },
           {
             "type": "command",
-            "command": "pwsh -NoProfile -File \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.ps1\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-edit.md\"",
-            "timeout": 10,
-            "shell": "powershell"
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-edit-header-guard.md\"",
+            "timeout": 10
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-edit-header-guard.md\"",
-            "timeout": 10,
-            "shell": "bash"
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-write-plan-guard.md\"",
+            "timeout": 10
           },
           {
             "type": "command",
-            "command": "pwsh -NoProfile -File \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.ps1\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-edit-header-guard.md\"",
-            "timeout": 10,
-            "shell": "powershell"
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-dependency-guard.md\"",
+            "timeout": 10
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-write-plan-guard.md\"",
-            "timeout": 10,
-            "shell": "bash"
-          },
-          {
-            "type": "command",
-            "command": "pwsh -NoProfile -File \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.ps1\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-write-plan-guard.md\"",
-            "timeout": 10,
-            "shell": "powershell"
-          },
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-dependency-guard.md\"",
-            "timeout": 10,
-            "shell": "bash"
-          },
-          {
-            "type": "command",
-            "command": "pwsh -NoProfile -File \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.ps1\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-dependency-guard.md\"",
-            "timeout": 10,
-            "shell": "powershell"
-          },
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-eval-guard.md\"",
-            "timeout": 10,
-            "shell": "bash"
-          },
-          {
-            "type": "command",
-            "command": "pwsh -NoProfile -File \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.ps1\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-eval-guard.md\"",
-            "timeout": 10,
-            "shell": "powershell"
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-eval-guard.md\"",
+            "timeout": 10
           }
         ]
       },
@@ -155,68 +78,33 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-notebookedit.md\"",
-            "timeout": 10,
-            "shell": "bash"
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-notebookedit.md\"",
+            "timeout": 10
           },
           {
             "type": "command",
-            "command": "pwsh -NoProfile -File \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.ps1\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-notebookedit.md\"",
-            "timeout": 10,
-            "shell": "powershell"
-          },
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-write-plan-guard.md\"",
-            "timeout": 10,
-            "shell": "bash"
-          },
-          {
-            "type": "command",
-            "command": "pwsh -NoProfile -File \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.ps1\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-write-plan-guard.md\"",
-            "timeout": 10,
-            "shell": "powershell"
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-write-plan-guard.md\"",
+            "timeout": 10
           }
         ]
       },
       {
-        "matcher": "Bash",
+        "matcher": "Bash|PowerShell",
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-bash.md\"",
-            "timeout": 10,
-            "shell": "bash"
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-bash.md\"",
+            "timeout": 10
           },
           {
             "type": "command",
-            "command": "pwsh -NoProfile -File \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.ps1\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-bash.md\"",
-            "timeout": 10,
-            "shell": "powershell"
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-bash-plan-guard.md\"",
+            "timeout": 10
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-bash-plan-guard.md\"",
-            "timeout": 10,
-            "shell": "bash"
-          },
-          {
-            "type": "command",
-            "command": "pwsh -NoProfile -File \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.ps1\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-bash-plan-guard.md\"",
-            "timeout": 10,
-            "shell": "powershell"
-          },
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-eval-guard.md\"",
-            "timeout": 10,
-            "shell": "bash"
-          },
-          {
-            "type": "command",
-            "command": "pwsh -NoProfile -File \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.ps1\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-eval-guard.md\"",
-            "timeout": 10,
-            "shell": "powershell"
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-eval-guard.md\"",
+            "timeout": 10
           }
         ]
       },
@@ -225,15 +113,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-askuserquestion-recommended.md\"",
-            "timeout": 10,
-            "shell": "bash"
-          },
-          {
-            "type": "command",
-            "command": "pwsh -NoProfile -File \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.ps1\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-askuserquestion-recommended.md\"",
-            "timeout": 10,
-            "shell": "powershell"
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/pretooluse-askuserquestion-recommended.md\"",
+            "timeout": 10
           }
         ]
       }
@@ -244,53 +125,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PostToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/posttooluse-proactive-compaction.md\"",
-            "timeout": 10,
-            "shell": "bash"
-          },
-          {
-            "type": "command",
-            "command": "pwsh -NoProfile -File \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.ps1\" PostToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/posttooluse-proactive-compaction.md\"",
-            "timeout": 10,
-            "shell": "powershell"
-          }
-        ]
-      }
-    ],
-    "PreCompact": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PreCompact \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/precompact.md\"",
-            "timeout": 30,
-            "shell": "bash"
-          },
-          {
-            "type": "command",
-            "command": "pwsh -NoProfile -File \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.ps1\" PreCompact \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/precompact.md\"",
-            "timeout": 30,
-            "shell": "powershell"
-          }
-        ]
-      }
-    ],
-    "PostCompact": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PostCompact \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/postcompact.md\"",
-            "timeout": 30,
-            "shell": "bash"
-          },
-          {
-            "type": "command",
-            "command": "pwsh -NoProfile -File \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.ps1\" PostCompact \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/postcompact.md\"",
-            "timeout": 30,
-            "shell": "powershell"
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" PostToolUse \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/posttooluse-proactive-compaction.md\"",
+            "timeout": 10
           }
         ]
       }
@@ -301,15 +137,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" Stop \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/stop.md\"",
-            "timeout": 60,
-            "shell": "bash"
-          },
-          {
-            "type": "command",
-            "command": "pwsh -NoProfile -File \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.ps1\" Stop \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/stop.md\"",
-            "timeout": 60,
-            "shell": "powershell"
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/lib/bootstrap.sh\" Stop \"${CLAUDE_PLUGIN_ROOT}/src/apothem/hooks/messages/stop.md\"",
+            "timeout": 60
           }
         ]
       }

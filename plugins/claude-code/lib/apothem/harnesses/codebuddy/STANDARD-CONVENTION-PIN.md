@@ -4,38 +4,45 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-06-25
-- Snapshot note: live re-verification against `www.codebuddy.ai/docs` surfaced a STALENESS CORRECTION — the vendor DOES document a fuller CodeBuddy Code CLI surface (Skills `/docs/cli/skills`, Sub-Agents `/docs/cli/sub-agents`, Slash Commands `/docs/cli/slash-commands`, Plugins `/docs/cli/plugins-reference`); the prior pin called these "undocumented". The adapter's rules-only delivery remains a DELIBERATE preserve-first posture, not an absence-of-surface claim. Rules (`.codebuddy/rules/*.md` auto-loaded as project memory; `alwaysApply` / `paths` frontmatter), `CODEBUDDY.md` (`/init`), and `.codebuddy/settings.json` (permissions + JSONC MCP) all confirmed current. Previous 2026-06-09.
+- Snapshot date: 2026-10-03
+- Snapshot note: refreshed against `www.codebuddy.ai/docs`. Correction: MCP servers live in `.mcp.json` at the project root and `~/.codebuddy/.mcp.json`, not in `.codebuddy/settings.json` as the earlier pin said. CodeBuddy Code also reads `AGENTS.md` as project memory when no `CODEBUDDY.md` exists. Previous 2026-06-25.
 - Adapter source: `src/apothem/harnesses/codebuddy/`
-- Evidence level: adapter-local projection; no vendor-native UI claim is made here.
+- Evidence level: vendor-doc pinned (living docs; no-immutable-source exception). The IDE Rules page was re-read on 2026-10-03; the CLI memory, MCP, and hooks pages were read on 2026-10-02. No vendor-native UI claim is made here.
 
 ## Official Surface Refresh
 
-- Refreshed live 2026-06-09 against the current CodeBuddy documentation
-  (`www.codebuddy.ai/docs`). No authority-host move; no immutable version pin
-  is exposed (mutable docs site), so every captured convention carries a
-  no-immutable-source exception.
 - Canonical filename: `.codebuddy/rules/apothem-rules.md`. CodeBuddy reads
-  project rules from `.codebuddy/rules/*.md` (Markdown with optional YAML
-  frontmatter: `alwaysApply`, `paths`, `enabled`) per
-  https://www.codebuddy.ai/docs/ide/Rules. The adapter is project-scope and
-  writes only `<project>/.codebuddy/rules/apothem-rules.md`, a dedicated file
-  that never clobbers operator-authored rules.
-- Memory file: `CODEBUDDY.md` at the project root is the operator-owned memory
-  surface (https://www.codebuddy.ai/docs/cli/memory); the adapter does not
-  author it.
-- MCP and permissions: `.codebuddy/settings.json` is the project-scope
-  settings surface (https://www.codebuddy.ai/docs/cli/settings) where MCP
-  servers and permissions are declared. It is operator-owned; the adapter
-  recognizes it but does not author entries. `capabilities.yml` `mcp_servers`
-  and the shared capability matrix were refreshed accordingly.
-- The vendor documents project rules, a project memory file, a settings
-  surface, and a fuller CodeBuddy Code CLI surface (Skills, Sub-Agents, Slash
-  Commands, Plugins — see the `/docs/cli/*` references above). The adapter
-  delivers only the project rules file and authors none of those other surfaces:
-  this is a DELIBERATE rules-only / preserve-first posture, not a claim that the
-  surfaces are absent. Status-lines remain undocumented as an adapter-owned file
-  surface.
+  project rules from `.codebuddy/rules/*.md` (Markdown with optional
+  frontmatter: `enabled` and `alwaysApply`, both default `true`, and `paths`),
+  auto-loaded as project memory with the same priority as
+  `.codebuddy/CODEBUDDY.md`. The adapter writes only this dedicated file and
+  never clobbers operator rules.
+- Memory: `CODEBUDDY.md` or `.codebuddy/CODEBUDDY.md` (project) and
+  `~/.codebuddy/CODEBUDDY.md` (user). When a project has no `CODEBUDDY.md`,
+  CodeBuddy Code uses `AGENTS.md` instead, so the registry lists CodeBuddy as a
+  reader of the project `AGENTS.md` that the Kimi Code adapter writes. The
+  adapter authors neither file.
+- MCP: `.mcp.json` at the project root (or the deprecated `mcp.json`) and
+  `~/.codebuddy/.mcp.json` for user scope; the first existing file in each
+  scope wins. Operator-owned; the adapter names the surface and authors no
+  entries.
+- The vendor also documents CLI skills, sub-agents, slash commands, hooks, and
+  plugins. The adapter delivers only the project rules file and authors none of
+  them: a deliberate rules-only posture, not a claim that the surfaces are
+  absent.
+
+## Vendor Sources
+
+Retrieved 2026-10-03 unless marked.
+
+- <https://www.codebuddy.ai/docs/ide/Rules> (project rules)
+- <https://www.codebuddy.ai/docs/cli/memory> (memory files, rules frontmatter, `AGENTS.md` fallback; retrieved 2026-10-02)
+- <https://www.codebuddy.ai/docs/cli/mcp> (`.mcp.json` locations; retrieved 2026-10-02)
+- <https://www.codebuddy.ai/docs/cli/hooks> (hooks and sub-agent events; retrieved 2026-10-02)
+
+## Discovery Targets
+
+- Discovery target: mcp_servers by 2026-12-31 — decide whether Apothem renders the profile's MCP inventory into the project `.mcp.json` or keeps naming it as operator-owned.
 
 ## Recommended Postfix Rendering
 
@@ -67,8 +74,7 @@ full `apothem install --harness codebuddy --project <path>` engine run.
 |---|---|---|
 | Rules | No — requires `apothem install` | The merged `apothem-rules.md` (carrying the embedded behavioral mandates) is written only by the engine into the vendor-native `.codebuddy/rules/` directory. Nothing persists before that run. |
 | Commands / Skills / Agents | No — deliberate rules-only posture | CodeBuddy DOES document CLI Skills / Sub-Agents / Slash Commands / Plugins, but the adapter authors none of them (preserve-first rules-only delivery); these cohorts are not materialized for this harness by design. |
-| Hooks / MCP / Tools / Settings | No — operator-owned / platform limit | `.codebuddy/settings.json` (MCP + permissions) and `CODEBUDDY.md` memory are operator-owned; the adapter authors no entries. |
+| Hooks / MCP / Tools / Settings | No — operator-owned | `.mcp.json` (MCP servers), `.codebuddy/settings.json`, and `CODEBUDDY.md` memory are operator-owned; the adapter authors no entries. |
 
-Platform limit: CodeBuddy ships no marketplace/extension channel, so a
-plugin-alone story does not exist for this harness — the merged rules file via
-`apothem install` is the sole persistence surface.
+CodeBuddy documents a plugin surface, but Apothem ships no CodeBuddy plugin, so
+the merged rules file via `apothem install` is the sole persistence surface.

@@ -1,12 +1,12 @@
 ---
 name: "research-paper"
 version: "0.1.0"
-updated: "2026-06-16"
-description: "Assembles a top-tier paper draft from the synthesis, study design, and analysis — abstract, introduction, related work, method, results, discussion, limitations, conclusion, and references — with every citation verified to resolve to a real source (R4: no phantom citations). The manuscript-assembly stage of the /research pipeline. Triggered as 'write up the results into a paper draft', 'assemble the manuscript from the synthesis and analysis', 'draft the abstract, intro, related work, method, results, discussion, and conclusion', 'turn the analysis into a paper with verified references', 'build the references section and confirm every citation resolves', or the pipeline-chained hand-off from /research-analysis. Consumes _inputs/synthesis.md (the SOTA map and gap statement), _inputs/study-design.md (the operationalized method), and _outputs/analysis.md (the confirmed results with effect sizes and CIs) and emits the paper deliverable at a host-natural location (paper/) carrying the nine canonical sections. Every reference is adversarially verified refute-by-default by the fact-checker — a citation earns its place only after it resolves to a real, retrievable source (permalink, DOI, or commit pin); a phantom or unresolvable citation never lands."
+updated: "2026-10-02"
+description: "Assembles a top-tier paper draft from the synthesis, study design, and analysis — abstract, introduction, related work, method, results, discussion, limitations, conclusion, and references — with every citation verified to resolve to a real source (R4: no phantom citations). The manuscript-assembly stage of the /research pipeline. Triggered as 'write up the results into a paper draft', 'assemble the manuscript from the synthesis and analysis', 'turn the analysis into a paper with verified references', 'build the references section and confirm every citation resolves', or the pipeline-chained hand-off from /research-analysis. Consumes _inputs/synthesis.md, _inputs/study-design.md, and _outputs/analysis.md and emits the paper deliverable at a host-natural location (paper/) with the nine canonical sections. The fact-checker verifies every reference refute-by-default: a citation stays only after it resolves to a real, retrievable source (permalink, DOI, or commit pin); a phantom citation never lands."
 argument-hint: "[--suite-name NAME] [--override] [--venue STYLE] [--anonymized]"
 disable-model-invocation: false
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -163,7 +163,7 @@ Confirm the selected EQUATOR reporting checklist is **complete** — every item 
 
 **Run the anonymization-completeness check when `--anonymized` is set (R6).** When `--anonymized` is active, run a gated double-blind-readiness check per `skills/research-suite/references/blinding-and-disclosure.md` that clears only when every bar holds: no residual author, institution, funding, or system/tool identifier leaks into the manuscript body — not in prose, captions, acknowledgements, metadata, or repository/artifact handles that reconstruct identity; every self-citation is phrased de-anonymization-safe (a neutral third-person reference to a prior contribution, never a first-person one that reveals authorship); and the held-out identity is recorded as the designated de-anonymization payload in the attestation so the publish stage restores it exactly. A manuscript that does not clear every bar is not double-blind-ready and does not advance until the leak is remediated and the check is re-run.
 
-Iterate on failure per the gate rule's §3 until every bar passes; record the attestation block in `{suite}/_outputs/paper-attestation.md` and update the Handoff Manifest.
+Iterate on failure per the gate rule's §3 until every bar passes or its three-round cap returns BLOCKED; record the attestation block in `{suite}/_outputs/paper-attestation.md` and update the Handoff Manifest.
 
 ---
 
@@ -263,4 +263,8 @@ Invoke `/research-review` to audit the assembled manuscript against the peer-rev
 
 ## Installed Reference Paths
 
-When this skill is installed by Apothem, resolve repository-style references such as `rules/...` under `<ROOT>/antigravity-cli/plugins/apothem`, `templates/...` and `hooks/...` under `<ROOT>/antigravity-cli/plugins/apothem/apothem`, unless a project-local file with the same relative path exists.
+When this skill is installed by Apothem, resolve a repository-style reference against the installed directory for its first segment, unless a project-local file with the same relative path exists.
+
+- `rules/<path>` is `<ROOT>/antigravity-cli/plugins/apothem/rules/<path>`
+- `templates/<path>` is `<ROOT>/antigravity-cli/plugins/apothem/.apothem/support/templates/<path>`
+- `hooks/<path>` is `<ROOT>/antigravity-cli/plugins/apothem/.apothem/support/hooks/<path>`

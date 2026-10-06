@@ -33,11 +33,15 @@ execs the bundled dispatcher, so hooks fire without the engine install's
 ``${PYTHON_BIN}`` / ``${HARNESS_ROOT}`` substitution. The honest capability
 split:
 
-* **Persists plugin-alone.** The SessionStart bootstrap (which now emits a
-  lean pointer to the bundled ``rules/`` plus a note that the mechanical hooks
-  are active), the PreToolUse write / edit / notebook / bash context guards
-  (authorship-header, plans-locality, base context nudges), and the
-  PreCompact / PostCompact / Stop handlers — every dispatch-routable hook event.
+* **Persists plugin-alone.** The SessionStart bootstrap (which emits a lean
+  pointer to the bundled ``rules/`` at its resolved path, and on
+  ``source: compact`` the post-compaction recovery context), the PreToolUse
+  write / edit / notebook / shell context guards (authorship-header,
+  plans-locality, dependency and dynamic-eval guards, base context nudges),
+  the PostToolUse compaction advisory, and the opt-in Stop protocol. Claude
+  Code discards PreCompact and PostCompact output, so neither is registered.
+  The output styles ship in the plugin's default ``output-styles/`` folder,
+  so they are selectable plugin-alone.
 * **Degrades plugin-alone.** The behavioral ``rules/`` are bundled under the
   plugin root but cannot load as always-on context; they degrade to the
   SessionStart pointer plus the still-active mechanical hooks. The conformity
@@ -46,9 +50,9 @@ split:
   harness root (``~/.claude`` / ``~/.codex``) rather than a plugin-alone
   project write; full conformity-gate enforcement needs the engine install.
 * **Needs the engine install.** The materialized ``settings.json``
-  (permissions allow / deny floor), the ``output-styles/`` and
-  ``statuslines/`` cohorts, and the ``CLAUDE.md`` managed-block projection are
-  engine-install surfaces with no plugin manifest field.
+  (permissions allow / deny floor), the ``statuslines/`` cohort, and the
+  ``CLAUDE.md`` managed-block projection are engine-install surfaces with no
+  plugin manifest field.
 * **Not shipped today.** No MCP server is bundled, so no MCP tools surface
   from the plugin alone.
 """
@@ -93,6 +97,10 @@ class ClaudeCodeAdapter:
     def update(self, profile: dict[str, Any]) -> MaterializationRun:
         """Re-materialize the harness configuration from the updated profile."""
         return _update(self.output_path, profile)
+
+    def preview(self, profile: dict[str, Any]) -> MaterializationRun:
+        """Return what ``install`` would do, without writing anything."""
+        return _install(self.output_path, profile, dry_run=True)
 
     def plan(self, output_path: Path | None = None) -> list[dict[str, str]]:
         """Return the manifest-driven propagation plan without writing."""

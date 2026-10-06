@@ -3,6 +3,14 @@ name: "agile-sprints-elements"
 description: "Path-filtered companion rule carrying the canonical sprint-element bodies (Sprint Goal, Backlog INVEST, DoR, DoD, Review, Retrospective, Velocity), the Three Pillars detail, the Surface Imposition table, and the Failure Recovery table; demand-loaded when the parent `agile-sprints.md` rule's anchors surface."
 pathFilter: "**/.apothem/plans/**, **/.plans/**, **/phases/**, **/PHASE.md, **/MASTER-PLAN.md, **/PROGRESS.md, **/REPORT.md"
 alwaysApply: false
+paths:
+  - "**/.apothem/plans/**"
+  - "**/.plans/**"
+  - "**/phases/**"
+  - "**/PHASE.md"
+  - "**/MASTER-PLAN.md"
+  - "**/PROGRESS.md"
+  - "**/REPORT.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

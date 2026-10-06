@@ -1,0 +1,49 @@
+---
+title: "/research"
+description: "Reference for the /research command: invocation, arguments, inputs and outputs."
+---
+{/* SPDX-License-Identifier: MIT */}
+{/* apothem:generated-page — generated from src/apothem/commands; edit the command definition and rerun site/scripts/update-reference-inventory.mjs */}
+
+{/* apothem:generated-reference:start */}
+
+The research pipeline wrapped as a single dynamic multi-agent workflow. One call drives a research mission from a raw idea to a disseminated, peer-reviewed paper by dispatching the first-class stages — research-ideate → research-spec → research-theory → research-sources → research-synthesis → research-proposal → research-design → research-experiment → research-analysis → research-paper → research-review → research-publish → research-disseminate — as workflow phases under named Handoff-Manifest return contracts, verifying each stage's hand-off refute-by-default before the next stage consumes it. Invoke it with a research question or domain ('research whether X causes Y', 'investigate the SOTA on Z', 'run the study from idea to paper'), an existing research suite path to resume, or `--quick` for a one-shot cited report. Stage logic stays in commands/research-*.md; this command adds only the workflow harness. Multi-agent dispatch and continuous chaining are opt-in and confirmation-gated.
+
+## Invocation
+
+```text
+/research [<<question>> | suite path] [--autonomous] [--max-rounds N] [--quick] [--verify-panel N] [--from ideate|spec|theory|sources|synthesis|proposal|design|experiment|analysis|paper|review|publish|disseminate]
+```
+
+The definition sets `disable-model-invocation: true`, so a harness that honors that key starts this command only when you type it.
+
+## Pipeline position
+
+Wrapped-workflow meta-orchestrator over the whole `/research` pipeline; the canonical single-call entry for the pipeline. It consumes a research mission (raw question or an existing suite path) and drives the stage chain to completion through the workflow harness; it emits no artifact of its own beyond the chain's outputs (the suite, its per-stage artifacts, the paper deliverable, the publication record) plus the workflow's deterministic result surface and run trace.
+
+## Inputs
+
+The operator's question or suite path; the `--autonomous` opt-in; the `--quick` mode; the `--verify-panel N` budget; the optional `--from <stage>` resume point. At each stage transition, the upstream stage's **Handoff Manifest** at `{suite}/_inputs/handoff-manifest.yml` (per `src/apothem/schemas/handoff-manifest.yaml`) is the named return contract the next phase consumes.
+
+| Argument | Type | Required | Description |
+| -------- | ---- | -------- | ----------- |
+| `<<question>> \| suite path` | String | Yes | A raw research question or domain (→ chain starts at `research-ideate`) OR an existing `<project-root>/.apothem/plans/{suite}/` path (→ resume from the first incomplete stage). |
+| `--autonomous` | Flag | No | Opt into continuous chaining (no per-stage-boundary halt). Default: halt at each boundary for confirmation, per `rules/agnostic-posture.md` + `rules/context-management.md` §4A. Irreversible / outward-facing steps (data collection, publication submission, dissemination) stay per-action gated even under this flag. |
+| `--max-rounds N` | Integer | No | The per-stage remediation cap (default: 3). A hand-off still refuted after N remediation rounds halts the run as BLOCKED with the residual findings and their owning stages, per `rules/planning-techniques.md` §1. |
+| `--quick` | Flag | No | Run `research-sources` + `research-synthesis` only → a cited report with per-claim confidence bands. The single-shot research-engagement slice; bypasses the ideate → spec → theory upstream and the proposal → design → experiment → analysis → paper → review → publish → disseminate downstream stages. |
+| `--verify-panel N` | Integer | No | Refute-by-default critics per stage hand-off (default: 3). |
+| `--from ideate\|spec\|theory\|sources\|synthesis\|proposal\|design\|experiment\|analysis\|paper\|review\|publish\|disseminate` | Enum | No | Explicit resume stage (overrides the manifest-derived resume point). |
+
+## Outputs
+
+The chain's own artifacts (owned by each stage command — the research spec, source ledger, synthesis, study design, experiment log, analysis, paper, review report, publication record), plus the workflow's deterministic result surface: the research outcome, the per-stage verified hand-offs with evidence, the per-deliverable advance-gate decisions with the thresholds each cleared (verified from the stage's own advancement-gate attestation, never recomputed), the disclosure ledger of any beyond-mission remediation, the fifteen-bar gate attestation, the per-run workflow trace (stages run, manifest hand-offs, verification verdicts, halt/continue decisions), and the single recommended next move.
+
+## Next step
+
+Invoke `/research <question>` for a fresh research mission (the wrapped workflow starts at `/research-ideate` and drives to a disseminated, peer-reviewed paper), `/research <question> --quick` for a one-shot cited report (runs `/research-sources` + `/research-synthesis` only), or `/research <project-root>/.apothem/plans/{suite}/` to resume an existing suite from its first incomplete stage; review each stage hand-off's refute-by-default verification, then pass `--autonomous` to chain continuously once the decomposition and return contracts read correctly. The planned (halt-at-boundary) mode is the safe default — autonomy is the explicit opt-in.
+
+## Source
+
+Generated from [`src/apothem/commands/research.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/commands/research.md), the command definition every harness installs.
+
+{/* apothem:generated-reference:end */}

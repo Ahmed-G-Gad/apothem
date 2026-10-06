@@ -3,6 +3,13 @@ name: "authoritative-referencing-homes"
 description: "Path-filtered companion to authoritative-referencing carrying the four per-surface referencing-home consolidation list (ten-dimension dim 9, sota named-exemplar, disclosure-ledger rationale, output-style citations), the four-level seriousness-scaling table, and the failure-tells enumeration, declared at the parent rule's §3, §Seriousness-Scaling, and §Failure-tells anchors; demand-loaded on documentation, site, and rule/output-style authoring surfaces where a claim is cited."
 pathFilter: "**/*.md, **/*.mdx, **/docs/**, **/site/**, **/output-styles/**, **/rules/**"
 alwaysApply: false
+paths:
+  - "**/*.md"
+  - "**/*.mdx"
+  - "**/docs/**"
+  - "**/site/**"
+  - "**/output-styles/**"
+  - "**/rules/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

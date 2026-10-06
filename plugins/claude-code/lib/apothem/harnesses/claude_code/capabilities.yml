@@ -34,9 +34,29 @@ standard_convention_pin: "STANDARD-CONVENTION-PIN.md"
 # rules/agent-capability-discipline-matrix.md §1A; pin refresh tracked as a
 # follow-up to fold this triple into the pin's evidence chain.
 web_fetch: "yes"
+# secrets-paths is enforced by the settings template's Read(...) deny rules.
+# Claude Code applies those to its file tools, to file commands it recognizes
+# in Bash (cat, head, tail, sed, tee) and to redirection targets, but not to a
+# Bash search such as `grep -r` or a script that opens files itself
+# (https://code.claude.com/docs/en/permissions.md, retrieved 2026-10-02). The
+# OS-level boundary is the Claude Code sandbox, which the adapter does not set.
 tool_surface_restrictions:
   - secrets-paths
   - destructive-shell-ops
   - network-write-unsigned
 system_prompt_template_path: "n/a"
 agent_memory_surface: "~/.claude/projects/<project>/memory/ (auto-memory) plus CLAUDE.md"
+# What each source frontmatter key becomes in a converted cohort (see
+# tests/unit/test_conversion_losses.py for the value vocabulary). Commands are
+# installed as skills whose SKILL.md keeps the source frontmatter; Claude Code
+# reads the skill keys and ignores the Apothem metadata.
+conversion_losses:
+  commands:
+    name: "native:name"
+    description: "native:description"
+    argument-hint: "native:argument-hint"
+    disable-model-invocation: "native:disable-model-invocation"
+    allowed-tools: "native:allowed-tools"
+    version: "ignored"
+    updated: "ignored"
+    portability: "ignored"

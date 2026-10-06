@@ -1,12 +1,12 @@
 ---
 name: "research-experiment"
 version: "0.1.0"
-updated: "2026-06-16"
-description: "Executes the designed study or experiment and captures raw data with full provenance — the run-and-record stage of the /research pipeline. Triggered as 'run the experiment and log it', 'execute the study and capture the data', 'collect the data per the preregistered protocol', 'record the run with full provenance', or the pipeline-chained hand-off from /research-design. Consumes the suite's _inputs/study-design.md plus _inputs/preregistration.md and emits _outputs/experiment-log.md (the timestamped protocol trace), the raw data at a host-natural location (e.g. data/), and _outputs/reproducibility-manifest.md carrying the environment snapshot, the seed, the protocol log, and the version pins so an independent party can re-run the study to the same observations. Reproducibility is the binding rigor mandate (R2): no observation enters the log without its provenance, and a null or unexpected result is recorded as faithfully as a confirming one (R3). The protocol is executed exactly as preregistered; every deviation is disclosed (R5), and the human/data-privacy and conflict-of-interest declarations are carried forward (R6)."
+updated: "2026-10-02"
+description: "Executes the designed study and captures raw data with full provenance — the run-and-record stage of the /research pipeline. Triggered as 'run the experiment and log it', 'execute the study and capture the data', 'collect the data per the preregistered protocol', or the pipeline-chained hand-off from /research-design. Consumes _inputs/study-design.md plus _inputs/preregistration.md and emits _outputs/experiment-log.md (the timestamped protocol trace), the raw data at a host-natural location (e.g. data/), and _outputs/reproducibility-manifest.md (environment snapshot, seed, protocol log, version pins) so an independent party can reproduce the observations. Reproducibility is binding (R2): no observation enters the log without provenance, and a null or unexpected result is recorded as faithfully as a confirming one (R3). The protocol runs exactly as preregistered; every deviation is disclosed (R5), and privacy and conflict-of-interest declarations carry forward (R6)."
 argument-hint: "[--suite-name NAME] [--override] [--data-dir PATH] [--seed N] [--dry-run]"
 disable-model-invocation: false
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -145,7 +145,7 @@ Apply incremental generation per `rules/large-file-generation.md` when the manif
 
 ### Phase 5 — Validation Gate
 
-Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the emitted experiment log and reproducibility manifest. M5 authority: zero fabricated data points, zero invented data paths, zero guessed version pins — every environment fact is observed and every gap is marked, not back-filled (R2). M8 definitiveness: the protocol log states what ran with pre/post/failure conditions; deviations are stated, not hedged. M9 visual leverage: any structural relationship the protocol reveals (the run's control-flow, a measurement pipeline, a state machine of trial stages) carries a diagram with the metadata header per `rules/visual-leverage.md`. M14 systemicity: the experiment log declares its upstream (the study design + preregistration), downstream (`/research-analysis`), peers (sibling research-suite artifacts), and enforcers (the Sequence Gate + the reproducibility manifest's re-run recipe). Iterate on failure per the gate rule's §3 until every bar passes; record the attestation block inside the experiment log and update the Handoff Manifest.
+Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the emitted experiment log and reproducibility manifest. M5 authority: zero fabricated data points, zero invented data paths, zero guessed version pins — every environment fact is observed and every gap is marked, not back-filled (R2). M8 definitiveness: the protocol log states what ran with pre/post/failure conditions; deviations are stated, not hedged. M9 visual leverage: any structural relationship the protocol reveals (the run's control-flow, a measurement pipeline, a state machine of trial stages) carries a diagram with the metadata header per `rules/visual-leverage.md`. M14 systemicity: the experiment log declares its upstream (the study design + preregistration), downstream (`/research-analysis`), peers (sibling research-suite artifacts), and enforcers (the Sequence Gate + the reproducibility manifest's re-run recipe). Iterate on failure per the gate rule's §3 until every bar passes or its three-round cap returns BLOCKED; record the attestation block inside the experiment log and update the Handoff Manifest.
 
 ---
 
@@ -252,4 +252,8 @@ Invoke `/research-analysis` to run the preregistered tests against the captured 
 
 ## Installed Reference Paths
 
-When this skill is installed by Apothem, resolve repository-style references such as `rules/...` under `<ROOT>/antigravity-cli/plugins/apothem`, `templates/...` and `hooks/...` under `<ROOT>/antigravity-cli/plugins/apothem/apothem`, unless a project-local file with the same relative path exists.
+When this skill is installed by Apothem, resolve a repository-style reference against the installed directory for its first segment, unless a project-local file with the same relative path exists.
+
+- `rules/<path>` is `<ROOT>/antigravity-cli/plugins/apothem/rules/<path>`
+- `templates/<path>` is `<ROOT>/antigravity-cli/plugins/apothem/.apothem/support/templates/<path>`
+- `hooks/<path>` is `<ROOT>/antigravity-cli/plugins/apothem/.apothem/support/hooks/<path>`

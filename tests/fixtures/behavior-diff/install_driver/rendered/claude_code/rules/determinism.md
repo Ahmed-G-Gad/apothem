@@ -3,6 +3,12 @@ name: "determinism"
 description: "Every rendered option set carries the (Recommended) marker in its answer header, every terminal surface closes with a named next step, and every command, skill, output-style, and statusline surface holds a deterministic output shape — identical inputs produce identically-shaped output. The determinism harness proves the contract mechanically; the marker and next-step semantics are owned by their dedicated rules and this rule consolidates them under the determinism contract."
 pathFilter: "**/commands/**/*.md, **/skills/**/SKILL.md, **/rules/**/*.md, **/output-styles/**/*.md, **/statuslines/**/*.md"
 alwaysApply: false
+paths:
+  - "**/commands/**/*.md"
+  - "**/skills/**/SKILL.md"
+  - "**/rules/**/*.md"
+  - "**/output-styles/**/*.md"
+  - "**/statuslines/**/*.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -76,6 +82,7 @@ An option set rendering no `(Recommended)` marker where one option dominates. A 
 
 - **Drives →** every command and skill surface's output shape · the `(Recommended)` marker on every rendered option set · the terminal next-step block on every terminal surface · the mechanical harness `conformity/determinism_grep.py`.
 - **Driven by ←** the option-annotation and recommend-next-step conventions this rule consolidates · the pre-emission gate that consumes the harness verdict.
+- **Gated by ←** The frontmatter `pathFilter` (commands, skills, rules, output-styles, statuslines): the rule loads when an output-shaping surface is authored or modified. `conformity/determinism_grep.py` (the mechanical harness that checks the expected-output structure under `gate --all`).
 - **Satisfies →** the strictly-expected-output-structure end state · the advisory posture (findings plus a forward move, never a silent stop).
 - **Established by ↑** `rules/option-annotation.md` · `rules/recommend-next-step.md` · `rules/definitiveness.md` (the determinism virtue).
 - **Cross-bound with ↔** `rules/option-annotation.md` · `rules/recommend-next-step.md` · `rules/interactive-questions-canonical-shapes.md` · `rules/definitiveness.md` · `rules/pre-emission-gate.md`. ↔ `rules/agent-capability-discipline-matrix.md` (↔ reciprocal of the peer's Cross-bound citation).

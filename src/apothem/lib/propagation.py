@@ -52,6 +52,12 @@ OWNERSHIP_CLASSES: Final[frozenset[str]] = frozenset(
 
 _DEFAULT_OWNERSHIP_CLASS: Final[str] = "apothem-owned"
 
+# Where a ``sentinel_merge`` anchor places the projected shared-profile body
+# inside its managed block: after the template governance (the default) or
+# before it, for a harness that may not process a long file in full.
+PROFILE_POSITIONS: Final[frozenset[str]] = frozenset({"first", "last"})
+_DEFAULT_PROFILE_POSITION: Final[str] = "last"
+
 
 @dataclass(frozen=True)
 class InstallEntry:
@@ -61,6 +67,7 @@ class InstallEntry:
     target: str
     mode: str  # write_text, tree mode, or harness-specific conversion mode
     ownership_class: str = _DEFAULT_OWNERSHIP_CLASS
+    profile_position: str = _DEFAULT_PROFILE_POSITION
 
 
 @dataclass(frozen=True)
@@ -160,12 +167,22 @@ def _parse_manifest_text(text: str) -> dict[str, HarnessRules]:
                     f"harness '{name}' install entry declares unknown "
                     f"ownership_class '{ownership_class}'"
                 )
+            profile_position = str(
+                entry.get("profile_position", _DEFAULT_PROFILE_POSITION)
+            )
+            if profile_position not in PROFILE_POSITIONS:
+                raise ValueError(
+                    f"harness '{name}' install entry declares unknown "
+                    f"profile_position '{profile_position}' (expected "
+                    "'first' or 'last')"
+                )
             install.append(
                 InstallEntry(
                     source=str(entry["source"]),
                     target=str(entry["target"]),
                     mode=str(entry.get("mode", "replace_tree")),
                     ownership_class=ownership_class,
+                    profile_position=profile_position,
                 )
             )
         rules[name] = HarnessRules(

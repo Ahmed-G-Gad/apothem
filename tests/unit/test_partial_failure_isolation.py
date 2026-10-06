@@ -138,10 +138,18 @@ def test_harnesses_list_isolates_one_failing_adapter(
 
 
 def test_doctor_isolates_one_failing_adapter(monkeypatch: pytest.MonkeyPatch) -> None:
+    # doctor walks the registry entries (it needs each entry's scope and
+    # package key) and loads each adapter through the package seam.
+    from types import SimpleNamespace
+
+    entries = [
+        SimpleNamespace(public_id=name, package_key=name, scope="user")
+        for name in ("alpha", "omega")
+    ]
+    doubles = {"alpha": _GoodAdapter(), "omega": _make_faulty("is_installed")}
+    monkeypatch.setattr(cli, "iter_harness_entries", lambda: iter(entries))
     monkeypatch.setattr(
-        cli,
-        "_all_adapters",
-        lambda: ([_GoodAdapter(), _make_faulty("is_installed")], []),
+        cli, "_load_adapter_for_entry", lambda entry: doubles[entry.public_id]
     )
     result = CliRunner().invoke(cli.main, ["doctor", "--format", "json"])
     assert result.exit_code == cli._EXIT_EXPECTED

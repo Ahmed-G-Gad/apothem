@@ -14,7 +14,9 @@
 # siblings) resolve. The served install scripts are always the canonical source
 # — they are not committed under the build-output tree. The Next.js static
 # export copies site/public/CNAME into the build output verbatim, so the apex
-# hostname is served without an extra step.
+# hostname is served without an extra step. The packaged JSON schemas
+# (src/apothem/schemas/*.schema.json) are copied into site/dist/schemas/ the
+# same way, so each schema's $id URL serves the packaged file.
 # Deployment runs through the official GitHub Pages Actions toolchain —
 # actions/configure-pages, actions/upload-pages-artifact,
 # actions/deploy-pages — with OIDC + minimum permissions.
@@ -41,6 +43,7 @@ on:
     paths:
       - 'site/**'
       - 'scripts/installer/**'
+      - 'src/apothem/schemas/**'
       - '.github/workflows/publish-static-site.yml'
   workflow_dispatch:
 
@@ -96,13 +99,15 @@ jobs:
         # live Click tree; the non-vendored runtime deps (click, rich) must import.
         run: python -m pip install click rich pyyaml jsonschema
 
-      - name: Unit-test the per-locale search-index transform
-        # Node's built-in test runner (no JS test framework is installed). Guards
-        # the single point that can silently drop a page from a locale's search
-        # index (lib/search-index-core.ts `pageToIndex`), including its
-        # intentional fail-fast throw on a page with no structured data.
+      - name: Unit-test the site build helpers
+        # Node's built-in test runner (no JS test framework is installed), via
+        # the `test` npm script. Guards the single point that can silently drop a
+        # page from a locale's search index (lib/search-index-core.ts
+        # `pageToIndex`), including its intentional fail-fast throw on a page
+        # with no structured data, and the trailing-slash redirect stubs
+        # (scripts/trailing-slash-redirects.mjs).
         working-directory: site
-        run: node --test --experimental-strip-types lib/search-index-core.test.mjs
+        run: npm test
 
       - name: Build project website
         working-directory: site
@@ -127,10 +132,25 @@ jobs:
           # exit status, so a `gh run list` API hiccup / rate-limit / auth error
           # would otherwise kill the whole Pages publish. `|| true` degrades a
           # failed lookup to an empty run_id, which routes to the no-badges branch.
-          run_id="$(gh run list --workflow='Badges' --status=success \
-            --limit=1 --json databaseId --jq '.[0].databaseId // empty' || true)"
+          #
+          # Only a run on main started by workflow_run or workflow_dispatch is
+          # accepted. A pull request, one from a fork included, can run its own
+          # copy of badges.yml, but it cannot start either of those events, so
+          # its artifact never reaches the published site. Only the five badge
+          # files are copied out of the artifact.
+          run_id="$(gh run list --workflow=badges.yml --branch=main --status=success \
+            --limit=20 --json databaseId,event \
+            --jq '[.[] | select(.event == "workflow_run" or .event == "workflow_dispatch")][0].databaseId // empty' \
+            || true)"
+          fetched="${RUNNER_TEMP}/badges-artifact"
           if [ -n "${run_id}" ] \
-            && gh run download "${run_id}" --name badges --dir site/dist/badges; then
+            && gh run download "${run_id}" --name badges --dir "${fetched}"; then
+            mkdir -p site/dist/badges
+            for name in release coverage security supply-chain docs; do
+              if [ -f "${fetched}/${name}.json" ] && [ ! -L "${fetched}/${name}.json" ]; then
+                cp "${fetched}/${name}.json" "site/dist/badges/${name}.json"
+              fi
+            done
             echo "Badge JSONs fetched from Badges run ${run_id}."
           else
             echo "Badge artifact unavailable; site ships without badges/." >&2
@@ -146,6 +166,16 @@ jobs:
                 || true
             done
           done
+
+      - name: Sync packaged JSON schemas into site/dist/schemas/
+        # Each src/apothem/schemas/*.schema.json declares
+        # $id https://apothem.ahmedgad.com/schemas/<file>; serving the
+        # packaged bytes there lets editors resolve the profile schema (the
+        # profile scaffold's yaml-language-server modeline points at it).
+        run: |
+          set -euo pipefail
+          mkdir -p site/dist/schemas
+          cp src/apothem/schemas/*.schema.json site/dist/schemas/
 
       - name: Validate synced shell scripts
         run: shellcheck --severity=error site/dist/*.sh

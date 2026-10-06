@@ -1,8 +1,6 @@
 ---
-name: "source-accessibility"
+trigger: always_on
 description: "Source trust outranks source accessibility — reach a trusted but inaccessible source via browser then operator interview; never prefer an untrusted-but-free source over a trusted-but-inaccessible one; record the source-trust decision in the ledger."
-pathFilter: ""
-alwaysApply: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

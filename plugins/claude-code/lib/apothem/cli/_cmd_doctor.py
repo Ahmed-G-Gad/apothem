@@ -1,11 +1,22 @@
 # SPDX-License-Identifier: MIT
 
-"""``apothem doctor`` — system diagnostics for the Apothem installation."""
+"""``apothem doctor`` — health checks for the installed harnesses.
+
+doctor judges what is installed, not what could be. An uninstalled harness is
+informational. An installed harness must pass its adapter's ``verify``, and
+every hook command its install registered must start with a no-op payload
+(see :mod:`apothem.cli._doctor_hooks`). A present profile must validate. Any
+failed check exits 1; a machine with one healthy harness exits 0.
+"""
 
 from __future__ import annotations
 
+import platform
 import sys
+from dataclasses import dataclass
+from pathlib import Path
 
+from rich.console import Console
 from rich.markup import escape
 from rich.table import Table
 
@@ -19,141 +30,359 @@ from apothem.cli._common_flags import (
     get_console,
     resolve_format,
 )
+from apothem.cli._doctor_hooks import probe_hooks, registered_hook_argvs
 from apothem.cli._epilogs import _EP_DOCTOR
 from apothem.cli._helpers import (
     _EXIT_EXPECTED,
+    _CliUserError,
+    _emit_expected_error,
+    _invoke_with_project,
+    _project_option,
     _resolve_profile_path,
+    _resolve_project_root,
 )
 from apothem.cli._json_formatter import emit_json
+from apothem.lib.harness_registry import HarnessRegistryEntry
+from apothem.lib.install_ledger import LedgerError
 from apothem.lib.profile import ProfileValidationError, load_profile_file
+
+_STATUS_STYLE = {
+    "ok": "[green]ok[/]",
+    "not_installed": "[dim]not installed[/]",
+    "needs_project": "[dim]needs --project[/]",
+    "verify_failed": "[red]verify failed[/]",
+    "hook_failed": "[red]hook failed[/]",
+    "error": "[red]error[/]",
+}
+
+
+def _check(
+    code: str,
+    status: str,
+    message: str,
+    *,
+    harness: str | None = None,
+    fix: str | None = None,
+) -> dict[str, object]:
+    """Return one doctor check record (``status`` is pass, fail, or info)."""
+    return {
+        "code": code,
+        "status": status,
+        "harness": harness,
+        "message": message,
+        "fix": fix,
+    }
+
+
+def _update_fix(harness: str) -> str:
+    return (
+        f"Run 'update --harness {harness}' with the same command prefix you "
+        "installed with, then run doctor again."
+    )
+
+
+def _probe_harness(
+    entry: HarnessRegistryEntry,
+    project_root: Path | None,
+    checks: list[dict[str, object]],
+) -> dict[str, object]:
+    """Check one harness, append its check records, and return its report row."""
+    name = entry.public_id
+    row: dict[str, object] = {"name": name, "installed": False, "verified": None}
+    try:
+        adapter = _pkg._load_adapter_for_entry(entry)
+    except Exception as exc:
+        row.update(status="error", error=f"{type(exc).__name__}: {exc}")
+        checks.append(
+            _check(
+                "harness.load_failed",
+                "fail",
+                f"{name}: the adapter could not be loaded ({row['error']}).",
+                harness=name,
+                fix="Reinstall Apothem or inspect the adapter package import.",
+            )
+        )
+        return row
+    if entry.scope == "project" and project_root is None:
+        row["status"] = "needs_project"
+        return row
+    try:
+        installed = bool(
+            _invoke_with_project(adapter.is_installed, project=project_root)
+        )
+        row["installed"] = installed
+        if not installed:
+            row["status"] = "not_installed"
+            return row
+        verified = bool(_invoke_with_project(adapter.verify, project=project_root))
+    except Exception as exc:
+        row.update(status="error", error=f"{type(exc).__name__}: {exc}")
+        checks.append(
+            _check(
+                "harness.probe_failed",
+                "fail",
+                f"{name}: the install probe raised ({row['error']}).",
+                harness=name,
+                fix=_update_fix(name),
+            )
+        )
+        return row
+    row["verified"] = verified
+    if not verified:
+        row["status"] = "verify_failed"
+        checks.append(
+            _check(
+                "harness.verify_failed",
+                "fail",
+                f"{name} is installed but does not verify: managed files are "
+                "missing or changed.",
+                harness=name,
+                fix=_update_fix(name),
+            )
+        )
+        return row
+    checks.append(_check("harness.verified", "pass", f"{name} verifies.", harness=name))
+    row["status"] = "ok"
+    _probe_registered_hooks(entry, project_root, row, checks)
+    return row
+
+
+def _probe_registered_hooks(
+    entry: HarnessRegistryEntry,
+    project_root: Path | None,
+    row: dict[str, object],
+    checks: list[dict[str, object]],
+) -> None:
+    """Start the hooks a verified harness registered; record the outcome on *row*."""
+    name = entry.public_id
+    try:
+        argvs = registered_hook_argvs(
+            entry.package_key,
+            within=project_root if entry.scope == "project" else None,
+        )
+    except LedgerError as exc:
+        row.update(status="error", hooks=None)
+        checks.append(
+            _check(
+                "ledger.unreadable",
+                "fail",
+                f"{name}: the install ledger cannot be read ({exc}).",
+                harness=name,
+                fix="Move the damaged ledger file aside, then re-run "
+                f"'update --harness {name}' to record a fresh install.",
+            )
+        )
+        return
+    if argvs is None:
+        row["hooks"] = None
+        checks.append(
+            _check(
+                "hook.unchecked",
+                "info",
+                f"{name}: no install record, so its hook commands were not checked.",
+                harness=name,
+                fix=f"Run 'update --harness {name}' to record the install.",
+            )
+        )
+        return
+    probes = probe_hooks(argvs)
+    failed = [probe for probe in probes if not probe.ok]
+    row["hooks"] = {
+        "probed": len(probes),
+        "failed": [{"command": p.command, "detail": p.detail} for p in failed],
+    }
+    for probe in failed:
+        checks.append(
+            _check(
+                "hook.start_failed",
+                "fail",
+                f"{name}: a registered hook command cannot start: {probe.command} "
+                f"({probe.detail}).",
+                harness=name,
+                fix="Check that the interpreter in the hook command exists and "
+                f"runs, then {_update_fix(name)[0].lower()}{_update_fix(name)[1:]}",
+            )
+        )
+    if failed:
+        row["status"] = "hook_failed"
+    elif probes:
+        checks.append(
+            _check(
+                "hook.started",
+                "pass",
+                f"{name}: {len(probes)} hook command(s) start.",
+                harness=name,
+            )
+        )
+
+
+@dataclass(frozen=True)
+class _ProfileCheck:
+    """The shared-profile check: whether it exists, validates, and why not."""
+
+    path: Path
+    exists: bool
+    valid: bool | None = None
+    error: str | None = None
+    error_code: str | None = None
+
+
+def _check_profile(checks: list[dict[str, object]]) -> _ProfileCheck:
+    """Validate the default shared profile when present; append its check record."""
+    profile_path = _resolve_profile_path(None)
+    if not profile_path.exists():
+        checks.append(
+            _check(
+                "profile.missing",
+                "info",
+                f"No shared profile at {profile_path}; install creates one.",
+            )
+        )
+        return _ProfileCheck(path=profile_path, exists=False)
+    try:
+        load_profile_file(profile_path)
+    except ProfileValidationError as exc:
+        checks.append(
+            _check(
+                exc.diagnostic.code,
+                "fail",
+                f"The shared profile does not validate: {exc.diagnostic.reason}",
+                fix=exc.diagnostic.fix,
+            )
+        )
+        return _ProfileCheck(
+            path=profile_path,
+            exists=True,
+            valid=False,
+            error=str(exc),
+            error_code=exc.diagnostic.code,
+        )
+    checks.append(_check("profile.valid", "pass", "The shared profile validates."))
+    return _ProfileCheck(path=profile_path, exists=True, valid=True)
 
 
 @main.command(epilog=_EP_DOCTOR)
+@_project_option
 @common_options
 def doctor(
+    project: str | None,
     quiet: bool,
     verbose: bool,
     output_format: str,
     no_color: bool,
     json_flag: bool,
 ) -> None:
-    """Report Apothem environment and installation health, exiting non-zero on any failure.
+    """Check the installed harnesses and the shared profile; exit 1 on any failure.
 
-    Prints the engine version, Python, and platform, validates the shared
-    profile against the packaged schema — a present-but-malformed profile is a
-    failure, not a green "found" — and probes every registered adapter's
-    install state. An adapter that raises degrades to an error row rather than
-    aborting the sweep. Any failed check — an invalid profile, or a harness that
-    is uninstalled or could not be probed — forces a non-zero exit so a CI or
-    setup step can gate on it.
+    Reports the engine version, Python, and platform; validates a present
+    shared profile against the packaged schema; and, for every installed
+    harness, runs the adapter's verify and starts each hook command the
+    install registered with a no-op payload. A harness that is not installed
+    is reported but is not a failure, so a machine with one healthy harness
+    passes. Project-scope harnesses are checked when --project names their
+    root.
     """
-    import platform
-
     fmt = resolve_format(output_format, json_flag)
     con = get_console(no_color=no_color, quiet=quiet)
-    adapters, load_failures = _pkg._all_adapters()
-    # One adapter raising in is_installed() must not abort the diagnostic; it
-    # degrades to an error row and forces a non-zero exit. Load failures take
-    # the same shape — data in the report, never a stray styled warning that
-    # would ignore --quiet/--no-color or corrupt JSON stdout.
-    harness_status: list[dict[str, object]] = []
-    errored = bool(load_failures)
-    for failure in load_failures:
-        harness_status.append(
-            {"name": failure["name"], "installed": False, "error": failure["error"]}
-        )
-    for adapter in adapters:
-        name = getattr(adapter, "name", type(adapter).__name__)
-        try:
-            harness_status.append({"name": name, "installed": adapter.is_installed()})
-        except Exception as exc:
-            errored = True
-            harness_status.append(
-                {
-                    "name": name,
-                    "installed": False,
-                    "error": f"{type(exc).__name__}: {exc}",
-                }
-            )
+    try:
+        project_root = _resolve_project_root(project)
+    except _CliUserError as exc:
+        _emit_expected_error(command="doctor", fmt=fmt, error=exc.to_dict())
+        return
 
-    profile_path = _resolve_profile_path(None)
-    profile_exists = profile_path.exists()
-    # An existence check alone passes a present-but-malformed profile. Validate a
-    # present profile against the packaged schema with the same loader the
-    # `profile set` and install paths use, so a broken profile surfaces as a
-    # diagnostic failure (and a non-zero exit) instead of a green "found".
-    profile_valid: bool | None = None
-    profile_error: str | None = None
-    if profile_exists:
-        try:
-            load_profile_file(profile_path)
-            profile_valid = True
-        except ProfileValidationError as exc:
-            profile_valid = False
-            profile_error = str(exc)
+    checks: list[dict[str, object]] = []
+    profile = _check_profile(checks)
 
-    profile_ok = not (profile_exists and profile_valid is False)
-    all_ok = (
-        (not errored) and profile_ok and all(s["installed"] for s in harness_status)
-    )
+    # Entries and adapters resolve through the apothem.cli package so the test
+    # seams (patching apothem.cli.iter_harness_entries / _load_adapter_for_entry)
+    # land here as they do for the other sweeps.
+    harness_rows = [
+        _probe_harness(entry, project_root, checks)
+        for entry in _pkg.iter_harness_entries()
+    ]
+    all_ok = not any(check["status"] == "fail" for check in checks)
 
     if fmt == "json":
         payload: dict[str, object] = {
             "version": _VERSION,
             "python": sys.version.split()[0],
             "platform": f"{platform.system()} {platform.release()}",
-            "profile_path": str(profile_path),
-            "profile_exists": profile_exists,
-            "profile_valid": profile_valid,
-            "harnesses": harness_status,
+            "profile_path": str(profile.path),
+            "profile_exists": profile.exists,
+            "profile_valid": profile.valid,
+            "project": str(project_root) if project_root is not None else None,
+            "harnesses": harness_rows,
+            "checks": checks,
             "all_ok": all_ok,
         }
-        if profile_error is not None:
-            payload["profile_error"] = profile_error
+        if profile.error is not None:
+            payload["profile_error"] = profile.error
+            payload["profile_error_code"] = profile.error_code
         emit_json(payload)
         if not all_ok:
             sys.exit(_EXIT_EXPECTED)
         return
 
+    _render_doctor_report(con, profile, harness_rows, checks)
+    if all_ok:
+        installed_count = sum(1 for row in harness_rows if row["installed"])
+        if installed_count:
+            con.print(f"[green]All checks passed[/] ({installed_count} installed).")
+        else:
+            con.print(
+                "[green]All checks passed.[/] No harness is installed yet; "
+                "install one with 'install --harness <name>'."
+            )
+        return
+    sys.exit(_EXIT_EXPECTED)
+
+
+def _render_doctor_report(
+    con: Console,
+    profile: _ProfileCheck,
+    harness_rows: list[dict[str, object]],
+    checks: list[dict[str, object]],
+) -> None:
+    """Print the plain-mode report: environment, profile, harness table, failures."""
     con.print("[bold]Apothem Doctor[/]")
     con.print(f"  Version:   Apothem v{_VERSION}")
     con.print(f"  Python:    {sys.version.split()[0]}")
     con.print(f"  Platform:  {platform.system()} {platform.release()}")
-
-    if not profile_exists:
+    if not profile.exists:
         profile_note = "[yellow]missing[/]"
-    elif profile_valid:
+    elif profile.valid:
         profile_note = "[green]found, valid[/]"
     else:
         profile_note = "[red]found, invalid[/]"
-    con.print(f"  Profile:   {escape(str(profile_path))} [{profile_note}]")
-    if profile_valid is False and profile_error:
-        con.print(f"             [red]{escape(str(profile_error))}[/]")
+    con.print(f"  Profile:   {escape(str(profile.path))} [{profile_note}]")
+    if profile.valid is False and profile.error:
+        con.print(f"             [red]{escape(profile.error)}[/]")
 
     table = Table(title="Harness Status", show_header=True, header_style="bold cyan")
     table.add_column("Harness", style="cyan")
-    table.add_column("Installed", justify="center")
-
-    for status in harness_status:
-        if status.get("error"):
-            table.add_row(str(status["name"]), "[red]error[/]")
-            continue
-        installed = bool(status["installed"])
-        table.add_row(str(status["name"]), "[green]✓[/]" if installed else "[dim]-[/]")
-
+    table.add_column("Status")
+    table.add_column("Hooks", justify="right")
+    for row in harness_rows:
+        table.add_row(
+            str(row["name"]), _STATUS_STYLE.get(str(row["status"]), ""), _hook_cell(row)
+        )
     con.print(table)
 
-    if all_ok:
-        con.print("[green]All checks passed.[/]")
-    elif not profile_ok:
-        con.print(
-            "[yellow]The shared profile is present but failed schema validation. "
-            "Fix the reported error, or re-scaffold it with 'apothem profile init'.[/]"
-        )
-        sys.exit(_EXIT_EXPECTED)
-    else:
-        con.print(
-            "[yellow]Some harnesses are not installed or could not be checked. "
-            "Run 'apothem install --harness <name>'.[/]"
-        )
-        sys.exit(_EXIT_EXPECTED)
+    for check in checks:
+        if check["status"] != "fail":
+            continue
+        con.print(f"[red]✗[/] {escape(str(check['message']))}")
+        if check["fix"]:
+            con.print(f"  Fix: {escape(str(check['fix']))}")
+
+
+def _hook_cell(row: dict[str, object]) -> str:
+    """Return the harness table's Hooks cell for one report row."""
+    hooks = row.get("hooks")
+    if not isinstance(hooks, dict):
+        return ""
+    failed = hooks.get("failed")
+    failed_count = len(failed) if isinstance(failed, list) else 0
+    if failed_count:
+        return f"[red]{failed_count} failed[/]"
+    return f"{hooks.get('probed', 0)} started"

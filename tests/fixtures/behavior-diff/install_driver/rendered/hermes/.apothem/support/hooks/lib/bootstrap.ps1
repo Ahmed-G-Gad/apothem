@@ -21,26 +21,20 @@
 #   powershell -NoProfile -ExecutionPolicy Bypass -File `
 #     "<root>\hooks\lib\bootstrap.ps1" <event> [<context-file>]
 #
-# Root discovery order:
-#   1. $env:CLAUDE_PROJECT_DIR if it points at a directory containing hooks\.
-#   2. $env:LLM_PROJECT_DIR (vendor-neutral alias) if it points at a
-#      directory containing hooks\.
-#   3. Upward walk from $PWD looking for hooks\dispatch.py.
-#   4. The directory two levels above this script (i.e. $HOME\.claude when
-#      this lives at $HOME\.claude\hooks\lib\bootstrap.ps1).
-#   5. $HOME\.claude as final fallback (Claude Code harness root).
+# Root discovery: the directory two levels above this script, i.e. the
+# installed tree that ships this stub (<root>\hooks\lib\bootstrap.ps1). That
+# root holds hooks\lib\find-python.ps1 and hooks\dispatch.py. The stub never
+# derives its root from the opened project ($env:CLAUDE_PROJECT_DIR,
+# $env:LLM_PROJECT_DIR) or from $PWD: the locator is dot-sourced and the
+# dispatcher is executed, so taking either from the project would run
+# project-supplied code inside every hook. Handlers that need project data
+# (plan suites, memory) read the project directory from the hook payload and
+# the environment themselves, as data, never as code.
 #
-# Divergence from lib/resolve_root.py (deliberate, not accidental): this stub
-# and bootstrap.sh use env -> $PWD-walk -> script-relative -> $HOME order and a
-# runtime marker of hooks\dispatch.py (an installed, dispatch-ready root),
-# whereas resolve_root.py uses env -> script-relative -> cwd-walk -> $HOME
-# order and a directory-marker set (hooks\+rules\ in HOOKS mode, or CLAUDE.md
-# in MARKER mode). The bootstrap needs the concrete dispatcher present before
-# it invokes it, so it keys on the dispatch file directly and prefers the
-# running $PWD over the script location; resolve_root.py serves scripts that
-# may run before dispatch.py exists (scaffolding), so it keys on directory
-# markers and prefers the script's own location. Keep the three in step when
-# the marker or order changes: bootstrap.sh, bootstrap.ps1, resolve_root.py.
+# Divergence from lib/resolve_root.py (deliberate): resolve_root.py locates a
+# project root for scripts that read project files; this stub locates only its
+# own installed tree. Keep both headers in step when either rule changes:
+# bootstrap.sh, bootstrap.ps1, and resolve_root.py's docstring.
 
 [CmdletBinding()]
 param(
@@ -82,33 +76,16 @@ trap {
     exit 0
 }
 
-# --- Resolve project root ----------------------------------------------------
-$root = $env:CLAUDE_PROJECT_DIR
-if (-not $root -or -not (Test-Path -LiteralPath (Join-Path $root 'hooks'))) {
-    $root = $env:LLM_PROJECT_DIR
-}
-if (-not $root -or -not (Test-Path -LiteralPath (Join-Path $root 'hooks'))) {
-    $cursor = $PWD.Path
-    $root = $null
-    while ($cursor) {
-        if (Test-Path -LiteralPath (Join-Path $cursor 'hooks\dispatch.py')) {
-            $root = $cursor
-            break
-        }
-        $parent = Split-Path -Parent $cursor
-        if (-not $parent -or $parent -eq $cursor) { break }
-        $cursor = $parent
-    }
+# --- Resolve the installed tree that ships this stub ------------------------
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$candidate = Resolve-Path (Join-Path $scriptDir '..\..') -ErrorAction SilentlyContinue
+$root = $null
+if ($candidate -and (Test-Path -LiteralPath (Join-Path $candidate.Path 'hooks\dispatch.py'))) {
+    $root = $candidate.Path
 }
 if (-not $root) {
-    $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-    $candidate = Resolve-Path (Join-Path $scriptDir '..\..') -ErrorAction SilentlyContinue
-    if ($candidate -and (Test-Path -LiteralPath (Join-Path $candidate.Path 'hooks\dispatch.py'))) {
-        $root = $candidate.Path
-    }
-}
-if (-not $root) {
-    $root = Join-Path $HOME '.claude'
+    Write-DiagnosticEnvelope -Message ("hook {0} skipped: dispatch missing beside the bootstrap stub" -f $HookEvent)
+    exit 0
 }
 
 # --- Locate Python via the locator stub --------------------------------------

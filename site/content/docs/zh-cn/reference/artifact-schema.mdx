@@ -2,6 +2,7 @@
 title: "制品 Schema 规范"
 description: "Apothem 源码树中所有制品类型的规范化 YAML frontmatter schema 与必填字段，附逐类模板与校验规则。"
 machineTranslated: true
+sourceHash: "78472bdb279c1cb4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -92,7 +93,7 @@ description: "What this command does"
 argument-hint: "[argument-pattern]"
 disable-model-invocation: true | false
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 ```
 
@@ -120,7 +121,7 @@ description: "Executes a specific phase from a Master Plan Suite with conformity
 argument-hint: "[path/to/plan-suite/] [phase-id] [--dry-run]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 # /plan-execute — Execute a Specific Phase
@@ -169,7 +170,7 @@ effort: "high" | "medium" | "low"
 
 ```yaml
 permissionMode: "default"       # Permission handling
-memory: true | false                    # If true, agent retains memory across sessions
+memory: user | project | local  # Persistent-memory scope; omit for none
 pattern: "Research" | "Audit" | "Implementation" | "Quality"  # Agent team pattern
 portability: "universal"
 ```
@@ -187,7 +188,6 @@ disallowedTools: "Write, Edit, TodoWrite"
 maxTurns: 20
 effort: "high"
 permissionMode: "default"
-memory: false
 portability: "universal"
 ---
 
@@ -213,7 +213,7 @@ description: "What this skill teaches"
 archetype: "workflow-template"
 userInvocable: true | false
 disable-model-invocation: true | false
-allowed-tools: "Read, Write, Glob"
+allowed-tools: "Read, Glob, Grep"
 ---
 ```
 
@@ -229,7 +229,6 @@ allowed-tools: "Read, Write, Glob"
 
 ```yaml
 argument-hint: "[args...]"                           # Usage pattern if userInvocable
-effort: "low" | "medium" | "high" | "xhigh" | "max" # Optional effort level
 ```
 
 ### 示例
@@ -243,9 +242,8 @@ description: "Comprehensive blind audit of the apothem ecosystem"
 archetype: "audit-template"
 userInvocable: true
 disable-model-invocation: true
-allowed-tools: "Read, Write, Edit, Glob, Grep, Bash"
+allowed-tools: "Read, Glob, Grep, Agent, TodoWrite"
 argument-hint: "[--focus area] [--fix]"
-effort: "max"
 ---
 
 ## Purpose

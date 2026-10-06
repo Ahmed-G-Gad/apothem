@@ -13,3 +13,9 @@ Session-start conformity posture.
 **Trivial-vs-non-trivial threshold.** The threshold separating trivial from non-trivial work — non-trivial work triggers the agile sprint apparatus, the per-sub-phase reporting, and the full pre-emission gate — is the line-count + scope hybrid: a change is trivial when it is a single-file edit of ≤ 5 lines AND introduces no public-API surface change AND no behavioral shift. Anything else is non-trivial. Project-scope CLAUDE.md may override per host discipline.
 
 **Fail-disposition.** Fail-open at every layer. The Python dispatcher at `hooks/dispatch.py` converts any exception in `session_start_bootstrap.main()` to a structured failure envelope on stdout (per the dispatcher's `_emit_failure` contract); the session itself proceeds. A bootstrap-script error degrades the operator's session-start summary but never blocks the session — there is no recovery path that would benefit from blocking. If the operator notices a missing posture block, the recovery is to re-invoke the bootstrap manually or inspect `hooks/session_start_bootstrap.py` for the diagnostic stack trace.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The session-start posture: read the active suite's pickup point first, surface every unresolved inquiry before emitting, and route emissions through the pre-emission gate. `hooks/session_start_bootstrap.py` (the handler the dispatcher routes this event to).
+- **Established by ↑** The SessionStart registration in `hooks/hooks.json` and the harness settings templates. `rules/context-management.md` (the blind bootstrap this posture opens). `rules/pre-emission-gate.md` (the gate every emission passes).
+- **Cross-bound with ↔** `hooks/messages/stop.md` (the session's closing counterpart). `hooks/messages/postcompact.md` (the same bootstrap, re-run after compaction).

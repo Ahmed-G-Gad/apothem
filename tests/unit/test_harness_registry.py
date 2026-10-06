@@ -206,6 +206,30 @@ def test_standard_pins_carry_required_schema_fields() -> None:
         assert not missing, f"{entry.public_id} pin missing fields: {missing}"
 
 
+_DISCOVERY_TARGET = re.compile(
+    r"^\s*-\s*Discovery target:\s*(?P<capability>[a-z_]+)\s+by\s+"
+    r"(?P<date>\d{4}-\d{2}-\d{2})\b",
+    re.MULTILINE,
+)
+
+
+def test_every_discovery_pending_cell_has_a_dated_target_in_its_pin() -> None:
+    # A discovery-pending cell is a promise to decide; the pin names the date.
+    # scripts/dev/validate_harness_convention_pins.py fails once a date passes.
+    mismatched = {}
+    for entry in HARNESS_REGISTRY:
+        text = (_REPO_ROOT / entry.standard_pin_path).read_text(encoding="utf-8")
+        targets = [m.group("capability") for m in _DISCOVERY_TARGET.finditer(text)]
+        pending = sorted(
+            capability
+            for capability, status in entry.capability_status.items()
+            if status == "discovery-pending"
+        )
+        if sorted(targets) != pending:
+            mismatched[entry.public_id] = {"pending": pending, "targets": targets}
+    assert mismatched == {}
+
+
 def test_standard_pins_do_not_use_branch_pointed_evidence_urls() -> None:
     for entry in HARNESS_REGISTRY:
         text = (_REPO_ROOT / entry.standard_pin_path).read_text(encoding="utf-8")

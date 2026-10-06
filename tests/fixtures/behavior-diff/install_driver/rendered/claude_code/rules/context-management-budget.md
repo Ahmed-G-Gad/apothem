@@ -3,6 +3,11 @@ name: "context-management-budget"
 description: "Path-filtered companion rule carrying the §7 Context Budget Discipline (budget awareness, demand loading, pressure signals) and §7.4 Per-Task Effort Calibration (CM-12d) declared at the parent `context-management.md` rule's §7 anchor; demand-loaded on commands / PROGRESS / plan-suite artifact touches."
 pathFilter: "**/commands/**/*.md, **/PROGRESS.md, **/.apothem/plans/**, **/.plans/**"
 alwaysApply: false
+paths:
+  - "**/commands/**/*.md"
+  - "**/PROGRESS.md"
+  - "**/.apothem/plans/**"
+  - "**/.plans/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

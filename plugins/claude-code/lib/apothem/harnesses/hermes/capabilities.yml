@@ -3,13 +3,13 @@
 # Per rules/agent-capability-discipline.md §1 / §3 / §7. Hermes (a multi-platform
 # messaging gateway) ratifies ~/.hermes/config.yaml as the canonical surface.
 # Skills are installable registry packages under skills.config (auto-exposed as
-# commands); MCP is the auxiliary.mcp config block; sub-agent dispatch is the
+# commands); MCP is the top-level mcp_servers config map; sub-agent dispatch is the
 # delegation block (delegate_task, bounded by max_concurrent_children /
 # max_spawn_depth); user commands are quick_commands plus skill-exposed commands;
 # durable memory lives at ~/.hermes/memories/ (MEMORY.md + USER.md).
 
 mcp_servers:
-  - config.yaml-auxiliary-mcp-block
+  - config.yaml-mcp-servers-map
 # The adapter's materializer.py authors this MCP block from the shared profile.
 mcp_servers_authored: true
 sub_agent_dispatch: true
@@ -34,3 +34,17 @@ tool_surface_restrictions:
   - network-write-unsigned
 system_prompt_template_path: "n/a"
 agent_memory_surface: "~/.hermes/memories/ (MEMORY.md + USER.md, vendor-managed)"
+# What each source frontmatter key becomes in a converted cohort (see
+# tests/unit/test_conversion_losses.py for the value vocabulary). Commands land
+# as SKILL.md support material under .apothem/support/skills/; Hermes loads no
+# skill from that path, so every key is kept as text and read by nothing.
+conversion_losses:
+  commands:
+    name: "ignored"
+    description: "ignored"
+    argument-hint: "ignored"
+    disable-model-invocation: "ignored"
+    allowed-tools: "ignored"
+    version: "ignored"
+    updated: "ignored"
+    portability: "ignored"

@@ -1,12 +1,12 @@
 ---
 name: "research-sources"
 version: "0.1.0"
-updated: "2026-06-16"
-description: "Systematic source collection — the discovery-and-extraction stage of the `/research` pipeline. Decomposes the ratified research spec into orthogonal sub-queries, dispatches parallel discovery via the research-scout agent and the multi-source-research skill, deduplicates, ranks by authority/recency/relevance, screens against the spec's inclusion/exclusion criteria, and extracts each surviving source with full provenance. Use when a research mission has a finalized spec and needs its evidence base assembled: 'collect the sources for this question', 'gather the primary literature', 'build the source ledger', 'find and screen the references before synthesis', 'survey and extract the evidence base'. Fans external facets through research-scout (WebSearch/WebFetch + in-repo corpus), extracts per-source through the multi-source-research skill, and runs fact-checker adversarially to confirm every citation resolves. Emits `sources/<id>.md` per-source extractions plus `_inputs/source-ledger.md` (ranked, screened, deduplicated, citation-indexed). Discovery and extraction only — synthesis and the SOTA/gap map route to /research-synthesis."
+updated: "2026-10-02"
+description: "Systematic source collection — the discovery-and-extraction stage of the `/research` pipeline. Decomposes the ratified research spec into orthogonal sub-queries, dispatches parallel discovery via the research-scout agent and the multi-source-research skill, deduplicates, ranks by authority/recency/relevance, screens against the spec's inclusion/exclusion criteria, and extracts each surviving source with full provenance. Use when a research mission has a finalized spec and needs its evidence base: 'collect the sources for this question', 'gather the primary literature', 'build the source ledger', 'find and screen the references before synthesis', 'survey and extract the evidence base'. The fact-checker confirms every citation resolves. Emits `sources/<id>.md` per-source extractions plus `_inputs/source-ledger.md` (ranked, screened, deduplicated, citation-indexed). Discovery and extraction only — synthesis and the SOTA/gap map route to /research-synthesis."
 argument-hint: "[suite-path] [--max-sources N] [--override] [--standalone]"
 disable-model-invocation: false
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -275,4 +275,8 @@ Invoke `/research-synthesis` to consume the ranked, screened `source-ledger.md` 
 
 ## Installed Reference Paths
 
-When this skill is installed by Apothem, resolve repository-style references such as `rules/...`, `templates/...`, and `hooks/...` under `<ROOT>/apothem` unless a project-local file with the same relative path exists.
+When this skill is installed by Apothem, resolve a repository-style reference against the installed directory for its first segment, unless a project-local file with the same relative path exists.
+
+- `rules/<path>` is `<ROOT>/.apothem/support/rules/<path>`
+- `templates/<path>` is `<ROOT>/.apothem/support/templates/<path>`
+- `hooks/<path>` is `<ROOT>/.apothem/support/hooks/<path>`

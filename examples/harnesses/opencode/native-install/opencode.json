@@ -1,7 +1,35 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "instructions": [
-    "~/.config/opencode/.apothem/support/rules/*.md"
+    "~/.config/opencode/apothem/rules/00-apothem-profile.md",
+    "~/.config/opencode/.apothem/support/rules/agent-orchestration.md",
+    "~/.config/opencode/.apothem/support/rules/agile-sprints.md",
+    "~/.config/opencode/.apothem/support/rules/agnostic-posture.md",
+    "~/.config/opencode/.apothem/support/rules/authoritative-referencing.md",
+    "~/.config/opencode/.apothem/support/rules/authority-inquiry.md",
+    "~/.config/opencode/.apothem/support/rules/auto-memory.md",
+    "~/.config/opencode/.apothem/support/rules/canonical-layout.md",
+    "~/.config/opencode/.apothem/support/rules/clean-room-generation.md",
+    "~/.config/opencode/.apothem/support/rules/cognitive-identity.md",
+    "~/.config/opencode/.apothem/support/rules/context-management.md",
+    "~/.config/opencode/.apothem/support/rules/definitiveness.md",
+    "~/.config/opencode/.apothem/support/rules/disclosure-ledger.md",
+    "~/.config/opencode/.apothem/support/rules/etc-extension.md",
+    "~/.config/opencode/.apothem/support/rules/expertise-posture.md",
+    "~/.config/opencode/.apothem/support/rules/freshness-facade.md",
+    "~/.config/opencode/.apothem/support/rules/host-discovery.md",
+    "~/.config/opencode/.apothem/support/rules/interactive-questions.md",
+    "~/.config/opencode/.apothem/support/rules/multi-agent-workflow.md",
+    "~/.config/opencode/.apothem/support/rules/operational-mandates.md",
+    "~/.config/opencode/.apothem/support/rules/option-annotation.md",
+    "~/.config/opencode/.apothem/support/rules/persistent-conventions-vigilance.md",
+    "~/.config/opencode/.apothem/support/rules/pre-emission-gate.md",
+    "~/.config/opencode/.apothem/support/rules/production-ready-prs.md",
+    "~/.config/opencode/.apothem/support/rules/session-closure.md",
+    "~/.config/opencode/.apothem/support/rules/source-accessibility.md",
+    "~/.config/opencode/.apothem/support/rules/systemic-participation.md",
+    "~/.config/opencode/.apothem/support/rules/ten-dimension-check.md",
+    "~/.config/opencode/.apothem/support/rules/tool-use-discipline.md"
   ],
   "mcp": {
     "filesystem": {

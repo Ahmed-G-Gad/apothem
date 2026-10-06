@@ -35,6 +35,10 @@ _LIB_DIR: Final[Path] = (
 if str(_LIB_DIR) not in sys.path:
     sys.path.insert(0, str(_LIB_DIR))
 
+_SRC_DIR: Final[Path] = Path(__file__).resolve().parent.parent.parent / "src"
+if str(_SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(_SRC_DIR))
+
 from frontmatter import field_value, has_all_fields  # noqa: E402
 from reporter import Reporter  # noqa: E402
 from resolve_root import (  # noqa: E402
@@ -42,6 +46,8 @@ from resolve_root import (  # noqa: E402
     default_content_root,
     resolve_project_root,
 )
+
+from apothem.conformity import binding_five_direction_grep  # noqa: E402
 
 _CLAUDE_MD: Final[str] = "CLAUDE.md"
 
@@ -728,6 +734,55 @@ def _extract_invocation_block(lines: list[str], start: int) -> tuple[int, list[s
     return end, block
 
 
+def _option_label_bind_violated(block: list[str]) -> bool:
+    """Return whether one invocation block breaks the H6 label-postfix bind.
+
+    Each option label pairs with the first recommendation value in its body,
+    so the bind is checked per option, not by file-wide count. A
+    single-select block also fails when more than one option is recommended.
+    """
+    multi_select = any(
+        re.search(r"multiSelect:\s*true\b", blk_line) for blk_line in block
+    )
+    options: list[list[str | None]] = []
+    for blk_line in block:
+        label_match = _OPTION_LABEL_SHAPE.match(blk_line)
+        if label_match:
+            options.append([label_match.group("label"), None])
+            continue
+        if options and options[-1][1] is None:
+            rec_match = _RECOMMENDATION_VALUE_SHAPE.search(blk_line)
+            if rec_match:
+                options[-1][1] = rec_match.group("value")
+    recommended_count = 0
+    bind_violation = False
+    for label, value in options:
+        if label is None:
+            continue
+        is_recommended = value == "recommended"
+        if is_recommended:
+            recommended_count += 1
+        has_canonical = label.endswith(_CANONICAL_POSTFIX_LITERAL)
+        has_lowercase = label.endswith(_LOWERCASE_POSTFIX_LITERAL)
+        if has_lowercase:
+            bind_violation = True  # banned non-canonical case
+        elif is_recommended and not has_canonical:
+            bind_violation = True  # body→label: missing canonical postfix
+        elif has_canonical and not is_recommended:
+            bind_violation = True  # label→body: spurious postfix
+    return bind_violation or (not multi_select and recommended_count > 1)
+
+
+def _destructive_default_missing(block: list[str], block_text: str) -> bool:
+    """Return whether a destructive-op block lacks the H7 no-default floor."""
+    if "destructive-no-default" not in block_text:
+        return False
+    return any(
+        "default-pointer:" in blk_line and _NO_DEFAULT_FLOOR_LITERAL not in blk_line
+        for blk_line in block
+    )
+
+
 def validate_option_annotation(root: Path, reporter: Reporter) -> None:
     """Sweep structured-inquiry invocations for option-annotation discipline.
 
@@ -769,48 +824,11 @@ def validate_option_annotation(root: Path, reporter: Reporter) -> None:
             if not (has_rationale and has_recommendation and has_default_pointer):
                 h4_hits.append(location)
 
-            multi_select = any(
-                re.search(r"multiSelect:\s*true\b", blk_line) for blk_line in block
-            )
-            # Pair each option label with the first recommendation value in its
-            # body so the bind is checked per option, not by file-wide count.
-            options: list[list[str | None]] = []
-            for blk_line in block:
-                label_match = _OPTION_LABEL_SHAPE.match(blk_line)
-                if label_match:
-                    options.append([label_match.group("label"), None])
-                    continue
-                if options and options[-1][1] is None:
-                    rec_match = _RECOMMENDATION_VALUE_SHAPE.search(blk_line)
-                    if rec_match:
-                        options[-1][1] = rec_match.group("value")
-            recommended_count = 0
-            bind_violation = False
-            for label, value in options:
-                if label is None:
-                    continue
-                is_recommended = value == "recommended"
-                if is_recommended:
-                    recommended_count += 1
-                has_canonical = label.endswith(_CANONICAL_POSTFIX_LITERAL)
-                has_lowercase = label.endswith(_LOWERCASE_POSTFIX_LITERAL)
-                if has_lowercase:
-                    bind_violation = True  # banned non-canonical case
-                elif is_recommended and not has_canonical:
-                    bind_violation = True  # body→label: missing canonical postfix
-                elif has_canonical and not is_recommended:
-                    bind_violation = True  # label→body: spurious postfix
-            if bind_violation or (not multi_select and recommended_count > 1):
+            if _option_label_bind_violated(block):
                 h6_hits.append(location)
 
-            if "destructive-no-default" in block_text:
-                for blk_line in block:
-                    if (
-                        "default-pointer:" in blk_line
-                        and _NO_DEFAULT_FLOOR_LITERAL not in blk_line
-                    ):
-                        h7_hits.append(location)
-                        break
+            if _destructive_default_missing(block, block_text):
+                h7_hits.append(location)
 
             i = end_idx + 1
 
@@ -1041,89 +1059,34 @@ def validate_uda_airtightness(root: Path, reporter: Reporter) -> None:
         reporter.fail(f"  hedge in binding prescription: {hit}")
 
 
-_BINDING_SECTION_HEADER: Final[re.Pattern[str]] = re.compile(
-    r"^##\s+Bindings\b", re.MULTILINE
-)
-_BINDING_DIRECTIONS_FULL: Final[tuple[tuple[str, re.Pattern[str]], ...]] = (
-    ("Drives →", re.compile(r"\*\*Drives\s*→\*\*")),
-    ("Satisfies →", re.compile(r"\*\*Satisfies\s*→\*\*")),
-    ("Established by ↑", re.compile(r"\*\*Established by\s*↑\*\*")),
-    ("Gated by ←", re.compile(r"\*\*Gated by\s*←\*\*")),
-    ("Cross-bound with ↔", re.compile(r"\*\*Cross-bound with\s*↔\*\*")),
-)
-_BINDING_DIRECTIONS_HOOK_SUBSET: Final[tuple[tuple[str, re.Pattern[str]], ...]] = (
-    ("Drives →", re.compile(r"\*\*Drives\s*→\*\*")),
-    ("Established by ↑", re.compile(r"\*\*Established by\s*↑\*\*")),
-    ("Cross-bound with ↔", re.compile(r"\*\*Cross-bound with\s*↔\*\*")),
-)
-
-
-def _iter_binding_scope_files(root: Path) -> dict[str, list[Path]]:
-    """Enumerate the five-stratum cohort under the five-direction stamping discipline.
-
-    Returns a stratum-to-paths mapping. Rules, commands, agents, and skills
-    carry the full five-direction set; hook-message contexts carry a
-    three-direction subset (Drives, Established by, Cross-bound) since
-    Satisfies and Gated by collapse for context-message-class artifacts that
-    are themselves directional outputs of hook events.
-    """
-    rules = sorted((root / "rules").glob("*.md"))
-    commands = sorted((root / "commands").glob("*.md"))
-    agents = sorted((root / "agents").glob("*.md"))
-    skills = sorted((root / "skills").rglob("SKILL.md"))
-    hook_messages = sorted((root / "hooks" / "messages").glob("*.md"))
-    return {
-        "rules": [p for p in rules if p.is_file()],
-        "commands": [p for p in commands if p.is_file()],
-        "agents": [p for p in agents if p.is_file()],
-        "skills": [p for p in skills if p.is_file()],
-        "hook-messages": [p for p in hook_messages if p.is_file()],
-    }
-
-
 def validate_binding_five_direction(root: Path, reporter: Reporter) -> None:
-    """Sweep the five-stratum cohort for the five-direction stamping block.
+    """Sweep the content strata for the five-direction Bindings section.
 
-    Every rule, command, agent, and skill MUST carry a
-    ``## Bindings`` section at its tail with the canonical five-direction
-    stamping block populated (Drives, Satisfies, Established by, Gated by,
-    Cross-bound with). Hook-message contexts carry a three-direction subset
-    (Drives, Established by, Cross-bound) per the per-stratum-schema-flexibility
-    convention.
+    Every rule, command, agent, and skill MUST close with a ``## Bindings``
+    section carrying Drives, Satisfies, Established by, Gated by, and
+    Cross-bound with; hook-message contexts carry the Drives, Established by,
+    and Cross-bound subset. ``root`` is the content root (``src/apothem`` in
+    the repository) or a project root above it. The walk is the conformity
+    gate's ``binding-five-direction-grep``, so the developer check and the
+    gate cannot disagree. A root holding no artifact to inspect is a failure,
+    never a clean pass across zero files.
     """
-    targets = _iter_binding_scope_files(root)
-    full_strata = ("rules", "commands", "agents", "skills")
-    hook_stratum = "hook-messages"
-    fails = 0
-    swept = sum(len(paths) for paths in targets.values())
-
-    def _check(path: Path, directions: tuple[tuple[str, re.Pattern[str]], ...]) -> bool:
-        rel = path.relative_to(root)
-        try:
-            text = path.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):
-            reporter.fail(f"Cannot read: {rel}")
-            return False
-        if not _BINDING_SECTION_HEADER.search(text):
-            reporter.fail(f"Missing Bindings section: {rel}")
-            return False
-        missing = [name for name, pattern in directions if not pattern.search(text)]
-        if missing:
-            reporter.fail(f"Missing directions in {rel}: {', '.join(missing)}")
-            return False
-        return True
-
-    for stratum in full_strata:
-        for path in targets[stratum]:
-            if not _check(path, _BINDING_DIRECTIONS_FULL):
-                fails += 1
-
-    for path in targets[hook_stratum]:
-        if not _check(path, _BINDING_DIRECTIONS_HOOK_SUBSET):
-            fails += 1
-
-    if fails == 0:
-        reporter.ok(f"Binding five-direction clean across {swept} files")
+    result = binding_five_direction_grep.check(root)
+    if result.inspected == 0:
+        reporter.fail(
+            "Binding five-direction: no rule, command, agent, skill, or hook "
+            f"message found under {root}"
+        )
+        return
+    for finding in result.findings:
+        if finding.detail.startswith("no ## Bindings"):
+            reporter.fail(f"Missing Bindings section: {finding.path}")
+        else:
+            reporter.fail(
+                f"Missing directions in {finding.path}: {', '.join(finding.missing)}"
+            )
+    if result.passed:
+        reporter.ok(f"Binding five-direction clean across {result.inspected} files")
 
 
 _PHASE_ROLLUP_FOLDER_PATTERN: Final[re.Pattern[str]] = re.compile(r"^\d{2}-")
@@ -1328,7 +1291,7 @@ def run(
     validate_uda_airtightness(root, reporter)
 
     reporter.section("Binding Five-Direction")
-    validate_binding_five_direction(root, reporter)
+    validate_binding_five_direction(cr, reporter)
 
     reporter.section("Phase Rollup Completeness")
     validate_phase_rollup_completeness(root, reporter, suite_name=suite_name)
@@ -1600,7 +1563,7 @@ def main(argv: list[str] | None = None) -> int:
         validate_uda_airtightness(root, reporter)
     elif args.check == "binding-five-direction":
         reporter.section("Binding Five-Direction")
-        validate_binding_five_direction(root, reporter)
+        validate_binding_five_direction(content_root, reporter)
     elif args.check == "phase-rollup-completeness":
         reporter.section("Phase Rollup Completeness")
         validate_phase_rollup_completeness(root, reporter, suite_name=args.suite)

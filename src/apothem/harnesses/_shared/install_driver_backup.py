@@ -20,6 +20,7 @@ from .install_driver_pathsafety import (
     _validate_target_path,
     _within_allowed_root,
 )
+from .install_driver_retention import apply_retention
 from .install_driver_types import (
     MaterializationResult,
     MaterializationRun,
@@ -351,23 +352,30 @@ _LEDGER_OUTCOMES: frozenset[str] = frozenset({"created", "updated", "unchanged"}
 
 # Result operations that are NOT standalone installed ledger targets: the
 # per-surface data-home files (reversed wholesale by the data-home cleanup on
-# uninstall, not file-by-file), the advisory capability-projection note, and the
-# stale-sweep pass (a removal that emits an ``unchanged`` result for every absent
-# legacy path — recording those would log phantom targets that were never written).
+# uninstall, not file-by-file) and the advisory capability-projection note. A
+# stale-sweep result is recorded only when it removed something (an ``updated``
+# result carrying its backup), so rollback can put the swept path back; the
+# ``unchanged`` result every absent legacy path emits is not a target.
 _NON_LEDGER_OPERATIONS: frozenset[str] = frozenset(
-    {"data_surface", "capability_projection", "sweep_stale"}
+    {"data_surface", "capability_projection"}
 )
 
 
-def _ledger_targets(run: MaterializationRun) -> tuple[LedgerTarget, ...]:
+def _ledger_targets(
+    run: MaterializationRun, *, prior: LedgerRecord | None = None
+) -> tuple[LedgerTarget, ...]:
     """Project a materialization run's written files to typed ledger targets.
 
     One :class:`LedgerTarget` per created/updated/unchanged file result, carrying
     the path, the install mode (the result ``operation`` — ``sentinel_merge`` /
-    ``write_text`` / a tree mode), the ownership class, and the backup reference
-    captured during the write. Data-surface and advisory results are excluded;
-    duplicate paths collapse to the first occurrence.
+    ``write_text`` / a tree mode), the ownership class, the backup reference
+    captured during the write, the pass outcome, the entries Apothem owns in a
+    structured config, and whether Apothem created the file in this install
+    cycle (carried forward from *prior*, the record that was current before this
+    pass). Data-surface and advisory results are excluded; duplicate paths
+    collapse to the first occurrence.
     """
+    earlier = {target.path: target for target in prior.targets} if prior else {}
     targets: list[LedgerTarget] = []
     seen: set[str] = set()
     for result in run.results:
@@ -375,7 +383,49 @@ def _ledger_targets(run: MaterializationRun) -> tuple[LedgerTarget, ...]:
             continue
         if result.operation in _NON_LEDGER_OPERATIONS:
             continue
+        if result.operation == "sweep_stale" and result.outcome != "updated":
+            continue
         if result.path in seen:
+            continue
+        seen.add(result.path)
+        before = earlier.get(result.path)
+        created: bool | None
+        if result.outcome == "created":
+            created = True
+        elif before is not None:
+            created = before.created
+        else:
+            created = False
+        targets.append(
+            LedgerTarget(
+                path=result.path,
+                mode=result.operation,
+                ownership_class=result.detail.get("ownership_class", "operator-owned"),
+                backup_ref=result.backup_path,
+                outcome=result.outcome,
+                created=created,
+                owned=result.owned,
+            )
+        )
+    return tuple(targets)
+
+
+def backup_ledger_targets(
+    results: list[MaterializationResult],
+) -> tuple[LedgerTarget, ...]:
+    """Project the backups an uninstall or rollback relied on to ledger targets.
+
+    One :class:`LedgerTarget` per result that carries a backup, with the same
+    path, mode (the result ``operation``), ownership class and outcome
+    projection :func:`_ledger_targets` uses for install records. Recording them
+    keeps those backup sets referenced, so retention never deletes them while
+    the record itself is kept. Duplicate paths keep the first backup, the
+    state before the operation.
+    """
+    targets: list[LedgerTarget] = []
+    seen: set[str] = set()
+    for result in results:
+        if result.backup_path is None or result.path in seen:
             continue
         seen.add(result.path)
         targets.append(
@@ -384,34 +434,56 @@ def _ledger_targets(run: MaterializationRun) -> tuple[LedgerTarget, ...]:
                 mode=result.operation,
                 ownership_class=result.detail.get("ownership_class", "operator-owned"),
                 backup_ref=result.backup_path,
+                outcome=result.outcome,
             )
         )
     return tuple(targets)
 
 
-def record_install(run: MaterializationRun, *, root: Path) -> LedgerRecord | None:
+def record_install(
+    run: MaterializationRun,
+    *,
+    root: Path,
+    missing_before: frozenset[Path] = frozenset(),
+) -> LedgerRecord | None:
     """Append an install record for *run* to the per-harness ledger; return it.
 
     The record captures every file the pass wrote (including the materializer
     adapters' native configs, which are part of the adapter's combined run) so
     uninstall and rollback can reverse exactly what was installed rather than
-    re-deriving intent from the live manifest. A dry-run pass records nothing
+    re-deriving intent from the live manifest. *missing_before* is the
+    adapter's pre-install :func:`capture_missing_dirs` snapshot: the ones that
+    exist now are the directories this pass created, recorded so rollback and
+    uninstall can remove them once empty. A dry-run pass records nothing
     (returns ``None``); a pass that wrote nothing still records an empty-target
     install marker so the harness+root has a latest record.
     """
     if run.dry_run:
         return None
+    try:
+        prior = install_ledger.current_install_record(run.harness, root=root)
+    except install_ledger.LedgerError:
+        prior = None
     record = LedgerRecord.create(
         harness=run.harness,
         root=root,
         kind="install",
-        targets=_ledger_targets(run),
+        targets=_ledger_targets(run, prior=prior),
+        created_dirs=tuple(
+            sorted(str(path) for path in missing_before if path.is_dir())
+        ),
     )
     install_ledger.append_record(record)
+    apply_retention(run.harness)
     return record
 
 
-def finalize_install(run: MaterializationRun, *, root: Path) -> MaterializationRun:
+def finalize_install(
+    run: MaterializationRun,
+    *,
+    root: Path,
+    missing_before: frozenset[Path] = frozenset(),
+) -> MaterializationRun:
     """Record *run* in the install ledger and return it unchanged.
 
     The pass-through an adapter's ``install``/``update`` wraps around its final
@@ -420,27 +492,8 @@ def finalize_install(run: MaterializationRun, *, root: Path) -> MaterializationR
     one layer that sees the complete run — manifest targets, the projected
     instruction anchor, and any materializer-rendered native config alike.
     """
-    record_install(run, root=root)
+    record_install(run, root=root, missing_before=missing_before)
     return run
-
-
-def list_backup_timestamps(harness_name: str | None = None) -> list[str]:
-    """Return available backup timestamps under the Apothem backup root.
-
-    Each timestamp is a ``~/.apothem/backups/<timestamp>/`` directory created
-    before a mutating install pass. When *harness_name* is given, only
-    timestamps carrying a backup set for that harness are returned. Results are
-    sorted oldest-to-newest (the timestamp slug sorts lexically by time).
-    """
-    if not install_driver.BACKUP_ROOT.is_dir():
-        return []
-    stamps: list[str] = []
-    for ts_dir in sorted(install_driver.BACKUP_ROOT.iterdir()):
-        if not ts_dir.is_dir():
-            continue
-        if harness_name is None or (ts_dir / harness_name).is_dir():
-            stamps.append(ts_dir.name)
-    return stamps
 
 
 def restore_backup(

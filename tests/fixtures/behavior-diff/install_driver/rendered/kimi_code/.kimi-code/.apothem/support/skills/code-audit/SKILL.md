@@ -1,12 +1,12 @@
 ---
 name: "code-audit"
 version: "0.1.0"
-updated: "2026-06-10"
+updated: "2026-10-02"
 description: "Cross-file forensic code audit operating at the repository-corpus scope rather than the per-file craft scope — six adversarial phases (Input Ingest · Cross-File Dependency Walk · Type-Hint + Coverage Audit · Dead-Code + Duplicate Detection · Architectural-Integrity Audit · Findings Emission + Validation Gate) interrogate cross-file consistency, hidden coupling, layer-boundary violations, type-hint accuracy under `mypy --strict`, test-coverage gaps against critical paths, dead code via `vulture`, duplicate code via `pylint --disable=all --enable=duplicate-code`, and architectural integrity at the implementation layer. Findings carry severity (HIGH / MEDIUM / LOW) with concrete-driver rationale and land at the consuming suite's `_inputs/code-audit-findings.md` ready for review-fortress consumption. Distinct from `/code-review` (per-file craft) — `/code-audit` is the cross-file forensic surface."
 argument-hint: "[path/to/repo/] [--focus AREA] [--dry-run]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -173,7 +173,7 @@ Emit the consuming suite's `_inputs/code-audit-findings.md` with the canonical s
 
 Apply incremental generation per `rules/large-file-generation.md` above 500 lines (plan sections first; Write the first; Edit-append the rest; verify transition coherence at each boundary).
 
-Run the fifteen-bar gate per `rules/pre-emission-gate.md`; the canonical per-bar table is at `rules/pre-emission-gate-bars.md` §1. Audit-tier deltas: **M5** (every finding cites a verified `file:line`; no fabrication); **M7** (every severity-threshold / layer-assignment / dead-code-vs-API call carries `**Recommended**` + concrete-driver rationale); **M14** (declare upstream `/code-review` + deployed repo, downstream `/security-audit` + remediation, peers fortress siblings, enforcers `mypy` / `vulture` / `pylint` / coverage). N/A (reason recorded): M11 (single-sprint), M15 (production-ready applies at remediation). Iterate on failure until every bar passes, then emit the attestation block.
+Run the fifteen-bar gate per `rules/pre-emission-gate.md`; the canonical per-bar table is at `rules/pre-emission-gate-bars.md` §1. Audit-tier deltas: **M5** (every finding cites a verified `file:line`; no fabrication); **M7** (every severity-threshold / layer-assignment / dead-code-vs-API call carries `**Recommended**` + concrete-driver rationale); **M14** (declare upstream `/code-review` + deployed repo, downstream `/security-audit` + remediation, peers fortress siblings, enforcers `mypy` / `vulture` / `pylint` / coverage). N/A (reason recorded): M11 (single-sprint), M15 (production-ready applies at remediation). Iterate on failure until every bar passes within the three-round cap of `rules/pre-emission-gate-bars.md` §3 (then BLOCKED), then emit the attestation block.
 
 ---
 
@@ -219,4 +219,8 @@ Invoke `/security-audit` to advance the audit-fortress sequence; `/security-audi
 
 ## Installed Reference Paths
 
-When this skill is installed by Apothem, resolve repository-style references such as `rules/...`, `templates/...`, and `hooks/...` under `<ROOT>` unless a project-local file with the same relative path exists.
+When this skill is installed by Apothem, resolve a repository-style reference against the installed directory for its first segment, unless a project-local file with the same relative path exists. Paths are relative to the project root.
+
+- `rules/<path>` is `.kimi-code/.apothem/support/rules/<path>`
+- `templates/<path>` is `.kimi-code/.apothem/support/templates/<path>`
+- `hooks/<path>` is `.kimi-code/.apothem/support/hooks/<path>`

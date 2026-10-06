@@ -1,13 +1,13 @@
 ---
 name: "dev-toolkit"
 version: "0.1.0"
-updated: "2026-06-14"
+updated: "2026-10-02"
 description: "Engineering-discipline toolkit — matched when the operator asks to 'diagnose a bug', 'debug systematically', 'do TDD / write a failing test first', 'break this into vertical slices', 'turn this into a PRD / issues', 'decompose this work', or otherwise needs a disciplined software-engineering loop rather than an ad-hoc fix. Sequences four named, gated, composable loops — structured debugging (reproduce → minimize → hypothesize → instrument → fix root cause), test-first red-green-refactor (red observed before green), vertical-slice decomposition (independently-shippable testable units), and requirement-to-issue breakdown (goal → testable requirement set → tracked issues + ADR) — selected by --mode or by the request. Cross-references (never duplicates) sibling owners: orchestration → /workflow, diagrams → diagram-authoring, minimal-diff guarding → surgical-guard. Harness-agnostic; deterministic output; drives the host's discovered toolchain."
 archetype: "engineering-template"
-userInvocable: true
+user-invocable: true
 argument-hint: "[task or defect] [--mode diagnose|tdd|slice|decompose]"
 disable-model-invocation: true
-allowed-tools: "Read, Write, Edit, Glob, Grep, Bash, TodoWrite"
+allowed-tools: "Read, Glob, Grep, TodoWrite, TaskCreate, TaskGet, TaskList, TaskUpdate"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

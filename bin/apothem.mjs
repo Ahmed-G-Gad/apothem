@@ -4,10 +4,13 @@
 // npx launcher for the apothem CLI.
 //
 // Locates a Python 3.10+ interpreter, points PYTHONPATH at the package's
-// self-contained source tree (vendored dependencies first, then the engine),
-// and executes `python -m apothem` with the caller's arguments. The engine
-// requires the `click` and `rich` Python packages to be importable; every
-// other runtime dependency ships vendored inside the tree.
+// source tree (vendored dependencies first, then the engine), and executes
+// `python -m apothem` with the caller's arguments. The engine requires the
+// `click` and `rich` Python packages to be importable; every other runtime
+// dependency ships vendored inside the tree. The engine entry point checks
+// for click and rich itself, using the standard library only, and prints the
+// exact pip command for the interpreter (or a JSON error under --json), so
+// every channel reports a missing prerequisite the same way.
 
 import { spawnSync } from "node:child_process";
 import { delimiter, join } from "node:path";
@@ -75,19 +78,6 @@ const env = {
     .filter(Boolean)
     .join(delimiter),
 };
-
-const depsProbe = spawnSync(command, [...lead, "-c", "import click, rich"], {
-  stdio: "ignore",
-  env,
-});
-if (depsProbe.status !== 0) {
-  process.stderr.write(
-    "apothem: missing runtime dependencies: click rich\n" +
-      "Make the click and rich Python packages importable for " +
-      `'${command}', then retry.\n`,
-  );
-  process.exit(1);
-}
 
 const run = spawnSync(command, [...lead, "-m", "apothem", ...process.argv.slice(2)], {
   stdio: "inherit",

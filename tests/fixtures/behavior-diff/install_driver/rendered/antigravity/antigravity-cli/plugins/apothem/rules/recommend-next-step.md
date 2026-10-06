@@ -1,8 +1,7 @@
 ---
-name: "recommend-next-step"
+trigger: glob
 description: "Every command, skill, and phase artifact closes with a Recommended Next Step block — canonical heading, named action, optional rationale — so terminal output never leaves the operator without a definitive forward move. Hedged or absent next-step blocks are structural failures; the mechanical matcher operationalises the check at the pre-emission gate."
-pathFilter: "**/commands/**/*.md, **/skills/**/SKILL.md, **/phases/**/PHASE.md"
-alwaysApply: false
+globs: "**/commands/**/*.md, **/skills/**/SKILL.md, **/phases/**/PHASE.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

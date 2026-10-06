@@ -1,0 +1,46 @@
+---
+title: "/workflow"
+description: "Reference for the /workflow command: invocation, arguments, inputs and outputs."
+---
+{/* SPDX-License-Identifier: MIT */}
+{/* apothem:generated-page — generated from src/apothem/commands; edit the command definition and rerun site/scripts/update-reference-inventory.mjs */}
+
+{/* apothem:generated-reference:start */}
+
+General-purpose workflow-harnessing command. Entry form '/workflow &lt;&lt;mission&gt;&gt;'. Drives genuinely-independent multi-agent dynamic workflows under named return contracts, subjects every finding to an EXTREMELY-CRITIQUE refute-by-default verification pass before it survives, is granted to identify and remediate issues beyond the literal mission (each disclosed per the change ledger), self-augments from current authoritative SOTA sources rather than memory alone, and emits deterministic output with a single recommended next move. Multi-agent dispatch and auto-execution are opt-in / confirmation-gated, never default-on.
+
+## Invocation
+
+```text
+/workflow [<<mission>>] [--autonomous] [--verify-panel N]
+```
+
+The definition sets `disable-model-invocation: true`, so a harness that honors that key starts this command only when you type it.
+
+## Pipeline position
+
+Standalone general-purpose orchestration surface. It consumes a natural-language mission (the `/workflow <<mission>>` entry form) plus optional flags and produces whatever the mission requires — code, artifacts, audits, remediations — at the host's domain-natural locations. It owns no fixed downstream artifact; it dispatches the specialized pipelines (`/plan-<stage>`, the audit-fortress commands, `/research`) where they fit.
+
+## Inputs
+
+The operator's mission, the `--autonomous` opt-in, and the `--verify-panel N` budget. No upstream manifest is required.
+
+| Argument | Type | Required | Description |
+| -------- | ---- | -------- | ----------- |
+| `<<mission>>` | String | Yes | The mission / task / requirement in natural language (the `/workflow <<mission>>` entry form). |
+| `--autonomous` | Flag | No | Opt into continuous multi-agent dispatch + advancement (default: planned, confirm-before-commit). Irreversible steps stay per-action gated even under this flag. |
+| `--verify-panel N` | Integer | No | Critics per finding in the adversarial-verify pass (default: 3). |
+
+## Outputs
+
+The mission's deliverables at host-natural locations, plus a deterministic result surface: the mission outcome, the verified findings with evidence, the disclosure ledger of beyond-mission amendments, the fifteen-bar gate attestation, and the single recommended next move.
+
+## Next step
+
+**State the mission as `/workflow <<mission>>`**; review the dispatch plan the command presents, then opt into `--autonomous` only once the decomposition and return contracts read correctly. The planned mode is the safe default — autonomy is the explicit opt-in.
+
+## Source
+
+Generated from [`src/apothem/commands/workflow.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/commands/workflow.md). The skill [`src/apothem/skills/workflow/SKILL.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/skills/workflow/SKILL.md) has the same name. Where an install puts commands and skills under one name (the Claude Code plugin, and the engine installs that turn commands into skills), the skill runs; installs that keep commands and skills apart ship both.
+
+{/* apothem:generated-reference:end */}

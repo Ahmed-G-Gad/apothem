@@ -13,8 +13,11 @@ system Python 3.10 or newer (see
 **Two prerequisites are shared by every path:** system **Python 3.10 or newer**
 on `PATH`, with the `click` and `rich` packages importable under it. The
 npm-shim and tool-plugin paths additionally need **Node.js 18 or newer** to run
-`npx`. Each channel's own section below repeats its exact prerequisites, one
-copy-ready command, and a verification step.
+`npx`. Python 3.10 and Node.js 18 and 20 are past upstream end of life; they
+remain supported and tested, but newer versions are preferred (see
+[Prerequisites at a glance](#prerequisites-at-a-glance)). Each channel's own
+section below repeats its exact prerequisites, one copy-ready command, and a
+verification step.
 
 ## Choose a channel
 
@@ -56,10 +59,22 @@ all runnable from the self-contained plugin tree:
 /plugin install apothem@apothem
 ```
 
-After the install, the Apothem command set (`/plan-spec`, `/code-review`,
-`/security-audit`, and the rest), the bundled delegated workers, and the
-skills are available in every Claude Code session. See
-[Slash commands](/docs/reference/commands) for the full command catalog.
+After the install, the Apothem command set, the bundled delegated workers, the
+skills, and the four [output styles](/docs/reference/output-styles) (pick one
+with `/output-style` or from `/config`) are available in every Claude Code
+session. Plugin commands carry
+the plugin's prefix: `/apothem:plan-spec`, `/apothem:security-audit`, and the
+rest. Claude Code also accepts the short form (`/plan-spec`) while no other
+command uses that name. Two names are taken by Claude Code itself: `/plan`
+enters plan mode and `/code-review` runs the bundled review, so type
+`/apothem:plan` and `/apothem:code-review` for the Apothem commands. When the
+Apothem engine installs into Claude Code instead of the plugin, commands become
+personal skills under `~/.claude/skills/` without a prefix, and a personal
+`code-review` skill replaces the bundled `/code-review` (its `/review` alias
+still runs the bundled one). Two names, `projectify` and `workflow`, ship as
+both a command and a skill; Claude Code runs the skill when both exist, so the
+plugin runs the skill and the engine install writes the skill into that slot. See [Slash commands](/docs/reference/commands)
+for the full command catalog.
 
 **Verify:** run `/plugin` inside Claude Code and confirm **apothem** is listed
 as installed, or check the drift report from a terminal:
@@ -81,6 +96,11 @@ specific one.
 ```bash title="npx"
 npx @ahmed-g-gad/apothem install --harness claude-code
 ```
+
+On a machine with no profile, this first `install` creates the starter profile
+at `~/.config/apothem/profile.yaml` and says so. Its identity fields are
+placeholders: personalize them (`npx @ahmed-g-gad/apothem profile edit`), then
+rerun the command with `update` in place of `install` to apply them.
 
 It also runs straight from the repository:
 
@@ -110,9 +130,11 @@ install that clones the source.
 The installer scripts resolve the latest signed release tag, verify its
 signature, place the Apothem source tree at `~/.apothem` at that tag, create a
 starter profile when none exists, materialize your first harness, and verify
-the result. Re-running is idempotent: an existing tree is re-checked-out to the
-resolved tag and the harness is re-materialized. The tag-pinned verified
-install is the default and recommended path.
+the result, all in one run. The starter profile carries placeholder identity
+fields: edit it, then run `apothem update --harness <name>` to apply yours.
+Re-running is idempotent: an existing tree is re-checked-out to the resolved
+tag and the harness is re-materialized. The tag-pinned verified install is the
+default and recommended path.
 
 ```bash title="macOS · Linux · WSL2 · BSD — latest signed tag, verified"
 curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
@@ -150,7 +172,12 @@ APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/
 ```
 
 Replace `vMAJOR.MINOR.PATCH` with a tag from the
-[releases page](https://github.com/ahmed-g-gad/apothem/releases).
+[releases page](https://github.com/ahmed-g-gad/apothem/releases). The oldest
+release tag is a lightweight tag with no signature of its own, so the tag
+check aborts on it even though its commit is signed; every later release tag
+is annotated and signed. The
+[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
+release-signing section lists each tag and how to verify it.
 
 Two explicit overrides relax the default: `APOTHEM_REF=main` checks out the
 moving branch (unverified), and `APOTHEM_ALLOW_UNVERIFIED=1` downgrades a
@@ -158,9 +185,15 @@ verification failure to a warning and proceeds — for air-gapped, local, or
 pre-signed-release use. A local checkout via `APOTHEM_SOURCE` fetches nothing
 and skips verification.
 
-The engine then runs directly from the placed tree as a self-contained
-runtime — its third-party dependencies are vendored inside the source tree,
-so no package registry is involved:
+`APOTHEM_VERIFY=checksum` is the middle path for a host that does not yet hold
+the maintainer's public key: instead of cloning, the installer downloads the
+release's platform archive and its `SHA256SUMS`, aborts on a digest mismatch
+before extracting anything, and warns that a matching digest proves the
+archive is the one the release lists, not who published it.
+
+The engine then runs directly from the placed tree. Every third-party
+dependency except `click` and `rich` is vendored inside the source tree, and
+the entry point puts that vendor directory on `sys.path` itself:
 
 ```bash
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
@@ -168,7 +201,7 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 
 Both scripts read the same configuration environment variables
 (`APOTHEM_HOME`, `APOTHEM_REPO`, `APOTHEM_REF`, `APOTHEM_ALLOW_UNVERIFIED`,
-`APOTHEM_SOURCE`, `APOTHEM_HARNESS`, `APOTHEM_PROFILE`,
+`APOTHEM_VERIFY`, `APOTHEM_RELEASE_BASE`, `APOTHEM_SOURCE`, `APOTHEM_HARNESS`, `APOTHEM_PROFILE`,
 `APOTHEM_SKIP_VERIFY`, `APOTHEM_AUTO_INSTALL_DEPS`, `APOTHEM_BIN_DIR`); see
 [Installer environment variables](/docs/how-to/installer-environment-variables)
 for the full table and
@@ -195,13 +228,25 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 
 **Prerequisites:** VS Code, Node.js 18+, and system Python 3.10+ on `PATH`.
 
-The **Apothem** extension installs from the
-[Visual Studio Marketplace](https://marketplace.visualstudio.com/) — one
-extension covers VS Code and its in-editor companion assistant surface. Its
-palette commands (`Apothem: Install`, `Verify`, `Update`, `Uninstall`,
-`Doctor`) run the same engine through the configured runner
-(`npx @ahmed-g-gad/apothem` by default; point the `apothem.runner` setting at a
-local checkout to run from source).
+The **Apothem** extension installs from an `apothem.vsix` package:
+`code --install-extension apothem.vsix`, or the editor's *Install from VSIX…*
+command. The release workflow signs the package and attaches it to each GitHub
+Release. Releases published before the workflow packaged the extension carry
+none; when the latest one lacks it, build the package from a checkout with
+the vsce release locked in `.github/vsce/`, which needs Node.js 22 or later:
+run `npm ci --prefix .github/vsce --ignore-scripts`, then
+`cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
+A [Visual Studio Marketplace](https://marketplace.visualstudio.com/) listing is
+not yet published. One extension covers VS Code and its in-editor companion
+assistant surface. Its palette commands (`Apothem: Install`, `Verify`,
+`Update`, `Uninstall`, `Doctor`) run the same engine through the configured
+runner (`npx @ahmed-g-gad/apothem@<extension version>` by default, so the
+extension runs the engine version it shipped with; point the `apothem.runner`
+user setting at a local checkout to run from source). Install, Verify, Update and Uninstall
+ask which harness to act on, offering the editor's own harness first; `all` is
+a choice, never the default. The `apothem.runner` setting is machine-scoped, so
+a workspace cannot change it, and the extension runs only in a trusted
+workspace.
 
 **Verify:** run the **Apothem: Verify** command from the editor's command
 palette, or from a terminal:
@@ -295,14 +340,18 @@ npx @ahmed-g-gad/apothem verify --harness codex
 **Prerequisites:** system Python 3.10+ with the `click` and `rich` packages
 importable, plus a checkout of the repository. No Node.js required.
 
-Run the self-contained engine straight from a clone — the source tree carries
-its vendored dependencies, so `PYTHONPATH=src` is the whole setup:
+Run the engine straight from a clone. The entry point puts the vendored
+dependencies (`src/apothem/_vendor`) on `sys.path`, so with `click` and `rich`
+importable, `PYTHONPATH=src` is the whole setup:
 
 ```bash title="Direct engine"
 git clone https://github.com/ahmed-g-gad/apothem
 cd apothem
 PYTHONPATH=src python -m apothem install --harness claude-code
 ```
+
+As with the npm shim, a first `install` on a machine with no profile creates the
+starter profile at `~/.config/apothem/profile.yaml` and continues.
 
 **Verify:**
 
@@ -325,8 +374,8 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 
 Replace the harness name with whichever adapter you installed; see the
 [harness list](/docs/harnesses) for all supported names. To check every
-registered adapter at a glance, run `apothem doctor` (or
-`npx @ahmed-g-gad/apothem doctor`) in the same form. For the plugin path, run
+installed adapter at once (its verify and its hook commands), run
+`apothem doctor` (or `npx @ahmed-g-gad/apothem doctor`) in the same form. For the plugin path, run
 `/plugin` inside Claude Code and confirm **apothem** is listed as installed.
 
 ## Prerequisites at a glance
@@ -337,8 +386,19 @@ registered adapter at a glance, run `apothem doctor` (or
   terminal-facing dependencies the engine does not vendor. The installers
   check both, name anything missing, and offer to install it for you — with
   your confirmation, or automatically with `--yes` (`-Yes` on PowerShell) or
-  `APOTHEM_AUTO_INSTALL_DEPS=1`.
+  `APOTHEM_AUTO_INSTALL_DEPS=1`. On every other channel, a missing package
+  stops the engine with an error (exit 1) that names the exact command for the
+  interpreter it found, with the version constraints Apothem is tested
+  against (`<interpreter> -m pip install "click==…" "rich>=…"`); with `--json` the
+  same error arrives as a JSON envelope with code `runtime.dependency_missing`.
 - **Node.js 18 or later** — the npm-shim and tool-plugin paths only.
+- **End-of-life runtimes.** Python 3.10 reached upstream end of life on
+  2026-10-01, and Node.js 18 and 20 on 2025-04-30 and 2026-04-30. Apothem
+  still supports them as its declared floors and tests each one in CI, but
+  they no longer receive upstream security fixes, so prefer Python 3.11 or
+  newer and Node.js 22 or newer. The
+  [runtime-floor policy](/docs/governance/release-engineering-policy#runtime-floors)
+  explains how a floor is raised.
 - **Git** — installer path only, and only for the network form (the script
   clones the source; a local checkout needs no clone).
 - **Claude Code** — plugin path only. **VS Code** and each command-line

@@ -18,6 +18,8 @@ apothem install --harness gemini-cli --project /path/to/project
 The adapter is project-scoped. It installs the project `GEMINI.md`, converts
 Apothem commands to Gemini TOML slash commands, normalizes local helper
 definitions, and places non-native support cohorts under `.gemini/.apothem/support/`.
+Other coding tools also read a project `GEMINI.md`, so the Apothem block in it
+is written as project-wide guidance that names no single tool as its reader.
 
 **Files written:**
 
@@ -35,6 +37,23 @@ The adapter reads Apothem's shared cohorts and routes each one through a
 Gemini-compatible surface. Markdown rules, templates, and hook material remain
 under `.gemini/.apothem/support/` because they are support material, not a Gemini-native
 rules directory.
+The Apothem block in `GEMINI.md` ends with an Apothem support files section
+that names, relative to the project root, the directory under
+`.gemini/.apothem/support/` each repository-style citation (`rules/<name>.md`,
+`templates/...`, `hooks/...`) resolves against. The paths are relative so a
+committed `GEMINI.md` carries no machine-specific path.
+
+Each converted command in `.gemini/commands/` holds a `description` and a
+`prompt`. The prompt is the command's instructions only; the Apothem metadata
+at the top of the source file (version, tool list, and similar fields) is left
+out, so the model never reads it as instructions. Gemini runs a custom command
+only when you type it.
+
+Helper definitions in `.gemini/agents/` keep their tool limits and turn limit:
+the source `tools` grant, minus `disallowedTools`, becomes a Gemini `tools`
+allowlist of Gemini tool names, and `maxTurns` becomes `max_turns`. A read-only
+helper therefore gets no `write_file` or `replace` tool. No model is set, so
+each helper inherits the session model.
 
 ## Compatibility notes
 

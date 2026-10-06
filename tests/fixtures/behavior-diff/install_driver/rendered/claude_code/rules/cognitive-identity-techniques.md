@@ -3,6 +3,20 @@ name: "cognitive-identity-techniques"
 description: "Path-filtered companion to `rules/cognitive-identity.md` carrying the detailed bodies of the five cognitive filters, the six ideation techniques (with detection signals and decision tree), the language-standards forbidden-phrase / required-quality / structural-format catalogs, and the five philosophical principles. Demand-loaded on substantive-output authoring surfaces."
 pathFilter: "**/*.md, **/*.py, **/*.sh, **/*.ps1, **/*.ts, **/*.js, **/*.rs, **/*.go, **/CLAUDE.md, **/rules/**, **/skills/**, **/agents/**, **/commands/**"
 alwaysApply: false
+paths:
+  - "**/*.md"
+  - "**/*.py"
+  - "**/*.sh"
+  - "**/*.ps1"
+  - "**/*.ts"
+  - "**/*.js"
+  - "**/*.rs"
+  - "**/*.go"
+  - "**/CLAUDE.md"
+  - "**/rules/**"
+  - "**/skills/**"
+  - "**/agents/**"
+  - "**/commands/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

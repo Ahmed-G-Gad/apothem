@@ -162,8 +162,43 @@ def test_every_banner_token_exempted() -> None:
 def test_banner_allow_list_does_not_mask_real_secret_elsewhere() -> None:
     body = (
         "#  Email:     mailto:me@ahmedgad.com              #\n"
-        'AWS_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE"\n'
+        'AWS_ACCESS_KEY_ID = "AKIA' + "QWERTYUIOPASDFGH" + '"\n'
     )
     result = _MOD.check(body, _PATH)
     assert not result.passed
     assert all(f.line == 2 for f in result.findings)
+
+
+# AWS publishes these two values in its documentation as placeholders; they
+# are not credentials, so a docs page or a code sample quoting them passes.
+_AWS_DOC_KEY_ID: Final[str] = "AKIA" + "IOSFODNN7EXAMPLE"
+_AWS_DOC_SECRET: Final[str] = "wJalrXUtnFEMI/K7MDENG/" + "bPxRfiCYEXAMPLEKEY"
+
+
+def test_aws_documentation_example_key_id_passes() -> None:
+    body = f'aws_access_key_id = "{_AWS_DOC_KEY_ID}"'
+    result = _MOD.check(body, _PATH)
+    assert result.passed, [f.label for f in result.findings]
+
+
+def test_aws_documentation_example_secret_passes() -> None:
+    body = f'aws_secret_access_key = "{_AWS_DOC_SECRET}"'
+    result = _MOD.check(body, _PATH)
+    assert result.passed, [f.label for f in result.findings]
+
+
+def test_example_allow_list_does_not_mask_real_key_on_same_line() -> None:
+    """Only the exact published placeholder is exempt, not its whole line."""
+    body = f"{_AWS_DOC_KEY_ID} rotated to AKIA" + "QWERTYUIOPASDFGH"
+    result = _MOD.check(body, _PATH)
+    assert not result.passed
+    assert len(result.findings) == 1
+    assert result.findings[0].label == "AWS access key"
+
+
+def test_near_miss_of_example_key_is_still_flagged() -> None:
+    """A key that only resembles the placeholder is detected."""
+    body = 'aws_key = "AKIA' + "IOSFODNN7EXAMPLF" + '"'
+    result = _MOD.check(body, _PATH)
+    assert not result.passed
+    assert any("AWS access key" in f.label for f in result.findings)

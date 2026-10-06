@@ -3,6 +3,13 @@ name: "dynamism"
 description: "No static substitutions for dynamic-source-of-truth values — every version, badge, release-reference, and docs-version surface renders dynamically from a single source of truth; static-string embeds across the 7 closed-set surfaces are structural failures."
 pathFilter: "**/README.md, **/__init__.py, **/site/**, **/pyproject.toml, **/*social-card*, **/.github/workflows/release*.yml"
 alwaysApply: false
+paths:
+  - "**/README.md"
+  - "**/__init__.py"
+  - "**/site/**"
+  - "**/pyproject.toml"
+  - "**/*social-card*"
+  - "**/.github/workflows/release*.yml"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

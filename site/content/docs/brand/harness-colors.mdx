@@ -1,6 +1,6 @@
 ---
 title: "Harness brand colors"
-description: "Per-harness brand-color palette used across the Apothem project website, the Apothem mark, and every architectural diagram. One source of truth — seventeen brand colors, one apothem hub."
+description: "Per-harness color palette used across the Apothem project website and every architectural diagram. One source of truth: one color per harness, one apothem hub."
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -10,13 +10,15 @@ The canonical brand-name × color-code enumerations below are wrapped in a `text
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `apothem-hub` | `#0F172A` | `#F1F5F9` | The central distribution node ("apothem") in every architectural diagram and the central hub of the Apothem mark. |
+| `apothem-hub` | `#0F172A` | `#F1F5F9` | The central distribution node ("apothem") in every architectural diagram. |
 | `shared-profile` | `#10B981` | `#34D399` | The source-of-truth profile feeding the apothem core. |
 
 ## Harness palette
 
 Fifteen of the seventeen harnesses are colored to match their primary brand
-identity. The remaining two — `glm` and `kimi-code` — do not yet have a defined
+identity, so a reader can tell the tools apart in a diagram. The Apothem mark
+itself uses only the slate and emerald colors on the [palette](/docs/brand/palette)
+page; it carries no harness color. The remaining two — `glm` and `kimi-code` — do not yet have a defined
 brand color; their rows are added once the upstream brand color is set, per the
 propagation step under [Updates](#updates).
 
@@ -28,7 +30,7 @@ propagation step under [Updates](#updates).
 | `codebuddy`       | `#0052D9` | `#5E8EF7` | Tencent CodeBuddy blue.                                                                                                                             |
 | `codex`           | `#10A37F` | `#19C796` | OpenAI signature teal.                                                                                                                              |
 | `cursor`          | `#6E56CF` | `#9B85E3` | Cursor brand purple.                                                                                                                                |
-| `gemini-cli`      | `#4285F4` | `#6BA4F7` | Google blue (primary); the Apothem mark renders the node with all four Google brand hues `#4285F4` / `#34A853` / `#FBBC04` / `#EA4335`.             |
+| `gemini-cli`      | `#4285F4` | `#6BA4F7` | Google blue.                                                                                                                                        |
 | `github-copilot`  | `#0A3069` | `#5B8FE3` | GitHub Mona deep-blue.                                                                                                                              |
 | `hermes`          | `#71717A` | `#A1A1AA` | Community silver-grey.                                                                                                                              |
 | `kiro`            | `#790ECB` | `#A862DD` | Kiro violet.                                                                                                                                        |
@@ -39,6 +41,15 @@ propagation step under [Updates](#updates).
 | `windsurf`        | `#0EA5E9` | `#38BDF8` | Windsurf sky-blue.                                                                                                                                  |
 | `zed`             | `#084CCF` | `#5E8BE0` | Zed Industries blue.                                                                                                                                |
 ```
+
+## Trademarks
+
+The harness names, product names and brand colors on this page and across the
+site belong to their owners and are trademarks of their respective owners.
+Apothem names a tool only to say which one it configures, and uses a tool's
+color only to tell it apart in a diagram. Apothem is an independent project; it
+is not affiliated with, sponsored by or endorsed by any of these companies or
+projects, and it ships none of their logos.
 
 ## Naming rationale
 

@@ -24,6 +24,7 @@
 | `naming_grep.py` | Naming-convention conformance. |
 | `binding_reciprocity_grep.py` | Reciprocal five-direction bindings — half-edge detection. |
 | `binding_reciprocity_corpus_grep.py` | The same reciprocity check run across the whole artifact corpus rather than a single Write/Edit input. |
+| `binding_five_direction_grep.py` | Every rule, command, agent, and skill closes with a five-direction `## Bindings` section (hook messages: the three-direction subset). |
 | `always_on_budget_grep.py` | Always-on rule body token budget (the 500-token ceiling). |
 | `agent_capability_grep.py` | Every harness declares its agentic-capability matrix. |
 | `agents_md_coverage_grep.py` | Stale agent-companion files under the root-only AGENTS.md convention. |
@@ -117,9 +118,26 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   hard-block a write from inside a matcher.
 - **Exit codes.** `0` — clean, or advisory findings with strict off. `2`
   (`EXIT_FAIL`) — a blocking finding under `--strict`. `3` (`EXIT_USAGE`) — a
-  CLI-usage error (an unknown validator name, an unresolvable argument), kept
-  distinct from `2` so a CI consumer can tell a findings block apart from a
-  wrong invocation.
+  CLI-usage error (an unknown flag or validator name, a file or root that does
+  not exist), kept distinct from `2` so a CI consumer can tell a findings block
+  apart from a wrong invocation.
+- **One command-line contract.** Every entry point parses its arguments with
+  the shared parser in `_grep_base.py` (`make_parser`, `parse_path_input`,
+  `parse_root_args`): `--help` prints usage and exits 0, and a usage error
+  prints one line and exits 3 — never a traceback. A corpus walker resolves its
+  root to an absolute path, so `.` and the absolute form inspect the same tree.
+- **No vacuous pass.** A corpus walker's report carries `inspected` (how many
+  targets it examined), stamped by `finish_root_report`. A run that inspected
+  nothing fails unless the walker declares `empty_scope_expected` (a plan-suite
+  walker on a checkout without the gitignored plans tree, a workflow walker
+  where no workflow directory exists yet).
+- **Two layouts, one import surface.** `gate.py` runs from the package
+  (`src/apothem/conformity/`) and from a harness install
+  (`<harness>/.apothem/support/conformity/`, the PreToolUse hook). Its
+  bootstrap registers the install's `support/` directory as the `apothem`
+  package, so a per-Write matcher may import `apothem.conformity.*` and the
+  standard library only; `apothem.lib` and the other engine subpackages are not
+  shipped under `support/`.
 - **Fail-open isolation.** The orchestrator wraps every matcher load and
   `check()` call; a raised exception is recorded and surfaced, never swallowed,
   and never fail-closes the write. Do not catch-and-suppress inside a matcher;
@@ -148,9 +166,11 @@ To **add a matcher**:
 1. Author `<name>_grep.py` here. Define frozen `Finding` and `GrepResult`
    dataclasses; `GrepResult.to_json()` emits `"advisory": true`. Expose the
    entry callable — **per-Write**:
-   `check(content: str, path: Path | None = None) -> GrepResult`; **corpus
-   walker**: `check(root: Path) -> GrepResult` plus a `_main(argv)` that prints
-   JSON and returns `EXIT_PASS` (0) / `EXIT_FAIL` (2).
+   `check(content: str, path: Path | None = None) -> GrepResult` with a
+   `run_grep(check, sys.argv)` entry; **corpus walker**:
+   `check(root: Path) -> GrepResult` plus a `_main(argv)` that parses with
+   `parse_root_args` and returns `finish_root_report(...)` with the walker's
+   `inspected` count.
 2. **Register** in `gate.py`: add the underscored name to `GREP_MODULES` for
    per-Write, OR the hyphenated name to `STANDALONE_MODULES` for a corpus walker.
 3. Add **fixtures and tests** under `tests/conformity/<name>/` (pass/fail cases)

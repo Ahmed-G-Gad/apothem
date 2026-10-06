@@ -17,11 +17,15 @@ apothem install --harness claude-code
 
 The `claude-code` adapter installs the shared Apothem corpus into Claude
 Code's native discovery tree. Markdown agents, rules, skills, output styles,
-statusline helpers, and settings are installed in their native locations;
-command prompts are additionally wrapped as skills so reusable workflows stay
-visible through the current Claude Code skill surface.
+and settings are installed in their native locations; command prompts are
+converted into skills so reusable workflows stay visible through the current
+Claude Code skill surface. The statusline renderer is copied to
+`~/.claude/statuslines/` but not wired: Claude Code reads its status line from
+the `statusLine` setting, which the adapter leaves unset. To turn it on, add a
+`statusLine` entry of `"type": "command"` that runs
+`~/.claude/statuslines/render.py` to `settings.json`.
 
-**Files written:** `settings.json`, `agents/`, `rules/`, `skills/`,
+**Files written:** `settings.json`, the Apothem block in `CLAUDE.md`, `agents/`, `rules/`, `skills/`,
 `statuslines/`, `output-styles/`, and the `.apothem/support/` support subtree
 (`.apothem/support/hooks/`, `.apothem/support/conformity/`,
 `.apothem/support/schemas/`, `.apothem/support/templates/`) under `~/.claude/`.
@@ -32,10 +36,19 @@ their materialized copies — `settings.json` hook entries invoke
 `~/.claude/.apothem/support/conformity/gate.py` by absolute path, so no importable
 `apothem` package is needed on the host.
 
-The adapter does **not** manage `CLAUDE.md` — that file is operator-owned
-territory. The Apothem governance surface reaches Claude Code through the
-propagated `rules/` tree and the SessionStart hook, not through a rendered
-`CLAUDE.md`.
+`~/.claude/CLAUDE.md` stays operator-owned. The adapter writes one
+sentinel-delimited Apothem block into it, holding the profile projection
+(identity, preferences, rules, seriousness, and opted-in behaviors) and an
+Apothem support files section, and preserves every line outside the sentinels
+verbatim. The support files section names the absolute directory each
+repository-style citation in the installed rules, skills, and agents resolves
+against: `rules/<name>.md` under `~/.claude/rules/`, and `templates/...`,
+`schemas/...`, `hooks/...`, and `conformity/...` under
+`~/.claude/.apothem/support/`. The rest of the Apothem governance surface
+reaches Claude Code through the propagated `rules/` tree and the SessionStart
+hook. OpenCode also loads `~/.claude/CLAUDE.md` when no
+`~/.config/opencode/AGENTS.md` exists, so the block names no single tool as its
+reader.
 
 ## Profile-to-native-config mapping
 
@@ -47,11 +60,40 @@ backed up before replacement; unrelated operator-authored entries are
 preserved. `settings.json` is merged so operator-authored keys remain
 recoverable.
 
+Installed skills, and the skills bundled in the Claude Code plugin, carry
+`user-invocable` instead of the source corpus's `userInvocable`, because Claude
+Code reads only the hyphenated key. The two template containers
+(`plan-suite`, `research-suite`) set it to `false`, so they stay out of the `/`
+menu. Every output style sets `keep-coding-instructions: true`, so selecting
+one keeps Claude Code's built-in software engineering instructions.
+
 ## Compatibility notes
 
-No translation occurs. Install validates that the profile is well-formed and all hook bindings in settings.json are resolvable.
+Command prompts are converted into skill directories; agents, rules, skills,
+and output styles are copied as they are. Install validates that the profile is
+well-formed and all hook bindings in settings.json are resolvable. The adapter
+authors no MCP server entries: register servers with `claude mcp add` (see
+[MCP servers](/docs/reference/mcp)).
 
 Claude Code applies all hook bindings in settings.json on every session start. Each adapter is verified against its own native harness — there is no privileged "reference" harness.
+
+### Permission rule limits
+
+The settings template denies `Read(...)` on secret and cache paths such as
+`.env*` and `~/.ssh/**`. Claude Code applies a `Read` deny to its file tools,
+to the file commands it recognizes in Bash (`cat`, `head`, `tail`, `sed`,
+`tee`), and to redirection targets. It does not apply the deny to a search that
+reads files without naming them, such as `grep -r pattern .`, or to a script
+that opens files itself
+([permissions reference](https://code.claude.com/docs/en/permissions)). On
+macOS, Linux, and WSL, Claude Code leaves the `Glob` and `Grep` tools out of the
+default tool set and searches through Bash instead, so the template's `Glob`
+and `Grep` allow entries take effect only where those tools are present. To
+block every process from reading a path, enable the Claude Code sandbox.
+
+The skills and helper definitions that name `TodoWrite` also name `TaskCreate`,
+`TaskGet`, `TaskList`, and `TaskUpdate`, because Claude Code turns `TodoWrite`
+off by default in favor of those tools.
 
 ## Verification
 
@@ -74,7 +116,8 @@ apothem update --harness claude-code
 Re-derives the native config from the current shared profile. Run after the
 installed `apothem` package is updated, so the propagated convention surface
 (agents, rules, skills, statuslines, output-styles) reflects the new
-version. `CLAUDE.md` is operator-owned and is never touched by the adapter.
+version. In `CLAUDE.md`, update rewrites only the Apothem block between its
+sentinels.
 
 ## Uninstalling
 
@@ -82,7 +125,8 @@ version. `CLAUDE.md` is operator-owned and is never touched by the adapter.
 apothem uninstall --harness claude-code
 ```
 
-Removes the native config files written by the adapter.
+Removes the native config files written by the adapter and strips the Apothem
+block from `CLAUDE.md`, leaving your own prose in place.
 The installed `apothem` package and source repository are unaffected.
 
 ## Conformity gate

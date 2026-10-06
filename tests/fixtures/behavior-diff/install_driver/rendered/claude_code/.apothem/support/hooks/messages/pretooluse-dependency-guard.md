@@ -19,3 +19,9 @@ Action — advisory flag. On any flagged line: surface the dependency through th
 Fail-disposition. Two layers govern failure. (a) The Python dispatcher at `hooks/dispatch.py` is fail-open: a hook error — the diff cannot be parsed, the manifest cannot be read, or any Python exception inside the predicate — converts to a structured failure envelope on stdout and the Write proceeds, so a harness error never silently blocks the tool call. (b) The assistant's interpretation of this context is fail-closed on a detected finding: when a flagged dependency line is found, the directive is to surface it through the structured-inquiry channel and let the operator decide before the line lands. The two layers are non-redundant: the dispatcher protects the runtime, this context protects the supply-chain discipline, which is enforced mechanically in CI and pre-commit.
 
 Non-matching paths. No action. The guard is scoped to the dependency-manifest and lockfile patterns above; every other path class passes unaffected.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The advisory flag on a newly introduced or changed dependency line in a manifest or lockfile that is unpinned or from an untrusted source.
+- **Established by ↑** The PreToolUse Write and Edit registrations in `hooks/hooks.json` and the harness settings templates. `rules/production-ready-prs.md` §3 (the supply-chain posture it protects).
+- **Cross-bound with ↔** `hooks/messages/pretooluse-eval-guard.md` (the sibling advisory security guard on the same write tools).

@@ -1,13 +1,13 @@
 ---
 name: "diagram-authoring"
 version: "0.1.0"
-updated: "2026-06-14"
+updated: "2026-10-02"
 description: "Diagram authoring and rendering — matched when the operator asks to 'draw a diagram', 'make a flowchart / sequence / state / ER / architecture diagram', 'author a data visualization', 'render this Mermaid', 'export a diagram to SVG/PNG/PDF', or otherwise needs a structural picture authored and rendered. One deterministic pipeline — pick notation by subject → author source → validate syntax → render → export — spanning declarative diagrams (flowchart / sequence / state / class / ER / gantt / mindmap) and data-driven visualizations (bar / line / scatter / network / hierarchy / geo). Correct-by-construction (validated before render) and portable (SVG / PNG / PDF via a discovered headless renderer). Not for: shipping or assuming a vendor render server (the renderer is discovered, never bundled); fabricating a visualization's dataset (supplied or discovered, never invented); illustrating non-structural prose a paragraph already carries. Harness-agnostic; deterministic output."
 archetype: "authoring-template"
-userInvocable: true
+user-invocable: true
 argument-hint: "[diagram subject] [--notation auto|declarative|data-driven] [--format svg|png|pdf]"
 disable-model-invocation: true
-allowed-tools: "Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch"
+allowed-tools: "Read, Glob, Grep, WebSearch"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

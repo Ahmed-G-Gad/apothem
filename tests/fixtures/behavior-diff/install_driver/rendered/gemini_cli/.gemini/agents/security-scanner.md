@@ -2,6 +2,14 @@
 name: "security-scanner"
 description: "Read-only secret, SAST-pattern, and config-risk sweep — a coarse first-pass that surfaces candidates fast and routes deep scanning to the host's CI scanners. Use when a security review is requested, before a release cut, after touching auth/crypto/IO surfaces, or when a secret may have been committed. Greps for credential literals (key/token/password/private-key/certificate, committed `.env` values), injection surfaces (`shell=True` on untrusted input, string-formatted SQL, command interpolation), unsafe-eval (`eval`/`exec`/`Invoke-Expression`), unsafe deserialization (`pickle.loads`, `yaml.load` without `SafeLoader`), and config risk (over-broad CI `permissions:`, unpinned Actions `uses:`, network egress). Routes known-vulnerable dependencies to the dependency-auditor agent, CVE/advisory triage to the vuln-triage skill, and leaked-credential rotation to the secret-rotation skill."
 kind: local
+tools:
+  - "read_file"
+  - "read_many_files"
+  - "list_directory"
+  - "glob"
+  - "grep_search"
+  - "run_shell_command"
+max_turns: 20
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -71,3 +79,11 @@ Out-of-axis: Architecture, Concurrency, Performance, Testing, Tooling, Observabi
 - **Surfaced gaps:** Out-of-axis or deep-scan concerns deferred to the host's CI scanners; required when structural (M6).
 - **Inquiry surface:** Typed inquiry items per M5 with options annotated per M7.
 - **Self-check attestation:** Fifteen-bar gate result per M4; failures block return.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The coarse first-pass candidates (credential literals, injection surfaces, unsafe evaluation, unsafe deserialization, configuration risk) that `/security-audit` deepens into its attested report.
+- **Satisfies →** The M13.8 security-conscious-code check of `rules/code-craft-conventions.md` (no hardcoded secrets, no shell execution on unvalidated input, no `eval` or `exec` on untrusted input), as a fast first pass that routes deep scanning to the host's own scanners.
+- **Established by ↑** `agents/README.md` (this agent's index entry). `rules/host-discovery.md` (the host's scanners are discovered, never assumed).
+- **Gated by ←** The read-only tool posture in frontmatter (`Read, Glob, Grep, Bash`; `Write, Edit, TodoWrite` denied). The `maxTurns: 20` ceiling. A coarse first pass only: deep history and tool-level scanning belong to the host's CI scanners.
+- **Cross-bound with ↔** `commands/security-audit.md` (Phases 1–3 dispatch this sweep and deepen its findings).

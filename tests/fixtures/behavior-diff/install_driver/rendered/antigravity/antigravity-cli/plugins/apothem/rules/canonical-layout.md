@@ -1,8 +1,6 @@
 ---
-name: "canonical-layout"
+trigger: always_on
 description: "Non-trivial multi-step work emits two-tier reporting (per-sub-phase report + phase-level rollup that aggregates rather than concatenates) and lays generated outputs at the host's discovered canonical layout with reciprocal producer / consumer cross-references and provenance. Orphan outputs (generated artifacts with no consumer / no index entry / no producer attribution) are structural failures."
-pathFilter: ""
-alwaysApply: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

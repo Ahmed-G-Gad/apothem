@@ -1,13 +1,13 @@
 ---
 name: "document-authoring"
 version: "0.1.0"
-updated: "2026-06-14"
+updated: "2026-10-02"
 description: "Long-form structured-document authoring — matched when the operator asks to 'write a thesis / dissertation / paper / report', 'author a LaTeX document', 'build a document from an outline', 'compile this to PDF', 'manage citations / bibliography', or otherwise needs a long, citation-bearing, typeset document produced. Drives an approval-gated hierarchical pipeline (outline → operator-approve → draft → review), verifies every citation against a real retrievable source (never fabricated — unresolvable references land in an unverified-citations ledger), and compiles through a deterministic detect→route pipeline that inspects the source, selects engine / bibliography tool / index passes by rule, and self-corrects one recoverable build error before surfacing failure. Figures route to diagram-authoring. Not for: a short prose snippet or single-paragraph rewrite (ordinary prose authoring, below threshold); fabricating a citation to fill a gap; rendering figures. Harness-agnostic; deterministic output."
 archetype: "authoring-template"
 userInvocable: true
 argument-hint: "[document subject] [--kind thesis|paper|report|book] [--format latex|markdown]"
 disable-model-invocation: true
-allowed-tools: "Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, TodoWrite"
+allowed-tools: "Read, Glob, Grep, WebSearch, TodoWrite, TaskCreate, TaskGet, TaskList, TaskUpdate"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

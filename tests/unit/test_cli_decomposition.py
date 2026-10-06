@@ -34,6 +34,7 @@ _CLI_PKG = Path(__file__).resolve().parents[2] / "src" / "apothem" / "cli"
 _THIN_INIT_CEILING = 400
 
 _EXPECTED_CMD_MODULES = (
+    "_cmd_backups.py",
     "_cmd_completion.py",
     "_cmd_install.py",
     "_cmd_uninstall.py",
@@ -46,10 +47,16 @@ _EXPECTED_CMD_MODULES = (
     "_cmd_harnesses.py",
 )
 
-_EXPECTED_HELPER_MODULES = ("_helpers.py", "_epilogs.py", "_materialize.py")
+_EXPECTED_HELPER_MODULES = (
+    "_helpers.py",
+    "_epilogs.py",
+    "_materialize.py",
+    "_group.py",
+)
 
 # Every command name registered on ``main`` in the pre-decomposition monolith.
 _EXPECTED_COMMANDS = {
+    "backups",
     "completion",
     "install",
     "quickstart",
@@ -134,6 +141,13 @@ def test_expected_command_modules_exist() -> None:
 
 
 def test_full_command_set_is_registered() -> None:
+    # The root group loads command modules on first use, so resolve every
+    # listed name (which imports its module) before reading the registry.
+    import click
+
+    ctx = click.Context(main)
+    for name in main.list_commands(ctx):
+        assert main.get_command(ctx, name) is not None, name
     registered = set(main.commands.keys())
     missing = _EXPECTED_COMMANDS - registered
     extra = registered - _EXPECTED_COMMANDS

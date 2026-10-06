@@ -1,8 +1,7 @@
 ---
-name: "multi-agent-workflow-shape"
+trigger: glob
 description: "Path-filtered companion sub-rule to multi-agent-workflow.md — carries the four-property capability-shape enumeration (independent agents, adversarial critique, open-loop dynamics, dynamic pacing), the model- and effort-agnostic detail, the synthesis-quality-and-lean-main-thread form, and the seriousness-scaling recommendation table declared at the parent rule's §1, §3, and §Seriousness-Scaling anchors; demand-loaded on agent / workflow-command / workflow-skill and multi-agent authoring surfaces."
-pathFilter: "**/agents/**, **/commands/workflow*.md, **/skills/workflow/**, **/*workflow*.md, **/*multi-agent*.md"
-alwaysApply: false
+globs: "**/agents/**, **/commands/workflow*.md, **/skills/workflow/**, **/*workflow*.md, **/*multi-agent*.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

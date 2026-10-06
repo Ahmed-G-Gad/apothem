@@ -1,12 +1,12 @@
 ---
 name: "research-synthesis"
 version: "0.1.0"
-updated: "2026-06-16"
+updated: "2026-10-02"
 description: "Reconciles the collected sources into a state-of-the-art map, a literature matrix, and an explicit research-gap statement — the synthesis stage of the /research pipeline. Triggered as 'map the SOTA', 'synthesize the sources into a gap statement', 'what does the literature say and where is the hole', 'build the literature matrix', or the pipeline-chained hand-off from /research-sources. Consumes the suite's _inputs/source-ledger.md plus the per-source extractions under sources/ and emits _inputs/synthesis.md carrying the SOTA map, the dimension-by-source literature matrix, the contested-findings ledger, and the one-sentence gap statement the study addresses. Every load-bearing claim is adversarially verified refute-by-default by the fact-checker agent before it earns a place in the map; the source-synthesis skill drives the reconciliation."
 argument-hint: "[--suite-name NAME] [--override] [--matrix-dimensions DIM,DIM,...]"
 disable-model-invocation: false
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -132,7 +132,7 @@ Then state the **explicit gap**: the one-sentence claim of what the prior work l
 
 ### Phase 5 — Validation Gate
 
-Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the emitted synthesis. M5 authority: zero fabricated citations; every map assertion and matrix cell cites a retrievable source ID (R4). M8 definitiveness: hedging vocabulary absent from the gap statement and map prose. M9 visual leverage: the literature matrix is a table, and any structural relationship the SOTA map reveals (a dependency, a research-lineage timeline, a contested-finding graph) carries a diagram with the metadata header per `rules/visual-leverage.md`. M14 systemicity: the synthesis declares its upstream (the source ledger + extractions), downstream (`/research-design`), peers (sibling research-suite artifacts), and enforcers (the `fact-checker` verification pass + the citation index). Iterate on failure per the gate rule's §3 until every bar passes; record the attestation block inside the synthesis and update the Handoff Manifest.
+Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the emitted synthesis. M5 authority: zero fabricated citations; every map assertion and matrix cell cites a retrievable source ID (R4). M8 definitiveness: hedging vocabulary absent from the gap statement and map prose. M9 visual leverage: the literature matrix is a table, and any structural relationship the SOTA map reveals (a dependency, a research-lineage timeline, a contested-finding graph) carries a diagram with the metadata header per `rules/visual-leverage.md`. M14 systemicity: the synthesis declares its upstream (the source ledger + extractions), downstream (`/research-design`), peers (sibling research-suite artifacts), and enforcers (the `fact-checker` verification pass + the citation index). Iterate on failure per the gate rule's §3 until every bar passes or its three-round cap returns BLOCKED; record the attestation block inside the synthesis and update the Handoff Manifest.
 
 ---
 
@@ -241,4 +241,8 @@ Invoke `/research-proposal` to turn the SOTA map, the consolidated theoretical m
 
 ## Installed Reference Paths
 
-When this skill is installed by Apothem, resolve repository-style references such as `rules/...`, `templates/...`, and `hooks/...` under `<ROOT>` unless a project-local file with the same relative path exists.
+When this skill is installed by Apothem, resolve a repository-style reference against the installed directory for its first segment, unless a project-local file with the same relative path exists. Paths are relative to the project root.
+
+- `rules/<path>` is `.kimi-code/.apothem/support/rules/<path>`
+- `templates/<path>` is `.kimi-code/.apothem/support/templates/<path>`
+- `hooks/<path>` is `.kimi-code/.apothem/support/hooks/<path>`

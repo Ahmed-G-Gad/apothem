@@ -92,6 +92,8 @@ def check(root: Path) -> RootGrepResult:
         root=str(root),
         passed=not findings,
         findings=findings,
+        # One location is inspected: the root's top-level ``docs/`` slot.
+        inspected=1,
     )
 
 

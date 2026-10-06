@@ -10,5 +10,6 @@
     "email": "me@ahmedgad.com",
     "url": "https://github.com/ahmed-g-gad"
   },
-  "contextFileName": "QWEN.md"
+  "contextFileName": "QWEN.md",
+  "commands": "qwen-commands"
 }

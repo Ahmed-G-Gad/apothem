@@ -1,0 +1,8 @@
+{
+  "argv": [
+    "backups",
+    "--help"
+  ],
+  "exit_code": 0,
+  "stdout": "Usage: main backups [OPTIONS] COMMAND [ARGS]...\n\n  Manage the install backups and ledger history Apothem keeps.\n\nOptions:\n  -h, --help  Show this message and exit.\n\nCommands:\n  prune  Delete backup sets and install records beyond the newest N per...\n"
+}

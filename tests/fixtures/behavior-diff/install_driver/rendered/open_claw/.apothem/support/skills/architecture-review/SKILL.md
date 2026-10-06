@@ -1,12 +1,12 @@
 ---
 name: "architecture-review"
 version: "0.1.0"
-updated: "2026-06-10"
+updated: "2026-10-02"
 description: "Performs an architectural-integrity review of a target repository against its design artifact at `_inputs/design.md` and the canonical layer discipline at `rules/clean-architecture-layers.md`. Five-phase pipeline (Input Ingest · Design-to-Code Traceability Walk · Layer-Boundary Integrity Audit · Cross-Package Coupling Sweep · Findings Emission + Validation Gate) audits layer-boundary integrity, harness-adapter abstraction integrity, src-layout integrity, CLI surface coherence, entry-point registration completeness, and cross-package coupling. Emits `_inputs/architecture-review-findings.md` with HIGH / MEDIUM / LOW severity classifications grounded in concrete-driver rationale per the option-annotation rule."
 argument-hint: "[path/to/repo/] [--focus LAYER] [--dry-run]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -150,7 +150,7 @@ Emit the target's `_inputs/architecture-review-findings.md` with the canonical s
 
 Apply incremental generation per `rules/large-file-generation.md` above 500 lines (plan sections first; Write the first; Edit-append the rest; verify transition coherence at each boundary).
 
-**Validation gate.** Run the fifteen-bar gate per `rules/pre-emission-gate.md`; the canonical per-bar table is at `rules/pre-emission-gate-bars.md` §1. Architecture-review deltas: **M5** (every cited file path, line range, and import statement is verified to exist; zero fabrication); **M9** (the package dependency graph carries a Mermaid `graph LR` diagram per `rules/visual-leverage.md` — **not** n/a for this command); **M10** (every finding's design-section back-reference closes reciprocally); **M14** (every finding declares its upstream design-section + downstream remediation surface). N/A (reason recorded): M11 (single-sprint), M13 (no executable code), M15 (findings precede production-readiness). Iterate on failure per `rules/pre-emission-gate-bars.md` §3 until every bar passes.
+**Validation gate.** Run the fifteen-bar gate per `rules/pre-emission-gate.md`; the canonical per-bar table is at `rules/pre-emission-gate-bars.md` §1. Architecture-review deltas: **M5** (every cited file path, line range, and import statement is verified to exist; zero fabrication); **M9** (the package dependency graph carries a Mermaid `graph LR` diagram per `rules/visual-leverage.md` — **not** n/a for this command); **M10** (every finding's design-section back-reference closes reciprocally); **M14** (every finding declares its upstream design-section + downstream remediation surface). N/A (reason recorded): M11 (single-sprint), M13 (no executable code), M15 (findings precede production-readiness). Iterate on failure per `rules/pre-emission-gate-bars.md` §3 until every bar passes or its three-round cap returns BLOCKED.
 
 ---
 
@@ -195,4 +195,8 @@ Invoke `/ux-review` to advance the audit-fortress sequence; `/ux-review` is the 
 
 ## Installed Reference Paths
 
-When this skill is installed by Apothem, resolve repository-style references such as `rules/...`, `templates/...`, and `hooks/...` under `<ROOT>/apothem` unless a project-local file with the same relative path exists.
+When this skill is installed by Apothem, resolve a repository-style reference against the installed directory for its first segment, unless a project-local file with the same relative path exists.
+
+- `rules/<path>` is `<ROOT>/.apothem/support/rules/<path>`
+- `templates/<path>` is `<ROOT>/.apothem/support/templates/<path>`
+- `hooks/<path>` is `<ROOT>/.apothem/support/hooks/<path>`

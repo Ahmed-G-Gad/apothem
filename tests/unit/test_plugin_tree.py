@@ -36,6 +36,32 @@ def test_build_manifest_name_is_apothem() -> None:
     assert manifest["name"] == "apothem"
 
 
+def test_build_manifest_carries_listing_fields() -> None:
+    """displayName plus the https listing links Anthropic's directory reads."""
+    manifest = build_plugin_manifest(_SRC_ROOT)
+    assert manifest["displayName"] == "Apothem"
+    for key in ("documentationUrl", "supportUrl"):
+        value = manifest[key]
+        assert isinstance(value, str)
+        assert value.startswith("https://"), f"{key} must be an https:// URL"
+
+
+@pytest.mark.parametrize(
+    "key",
+    [
+        "documentationUrl",
+        "supportUrl",
+        "privacyPolicyUrl",
+        "termsOfServiceUrl",
+    ],
+)
+def test_schema_requires_https_listing_urls(key: str) -> None:
+    manifest = build_plugin_manifest(_SRC_ROOT)
+    manifest[key] = "http://example.com/page"
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(instance=manifest, schema=_schema())
+
+
 def test_build_manifest_arrays_non_empty_and_sorted() -> None:
     manifest = build_plugin_manifest(_SRC_ROOT)
     for key in ("commands", "agents", "skills"):
@@ -117,7 +143,7 @@ def test_assemble_produces_layout_contract(tmp_path: Path) -> None:
     assert (dest / "lib" / "apothem_lib.py").is_file()
     assert (dest / "lib" / "apothem" / "_vendor").is_dir()
 
-    for name in ("skills", "agents", "commands", "rules", "hooks"):
+    for name in ("skills", "agents", "commands", "rules", "hooks", "output-styles"):
         assert (dest / name).is_dir(), f"catalog dir {name} missing"
 
 
@@ -175,14 +201,9 @@ def test_hooks_json_mirrors_engine_event_set() -> None:
     hooks_json = build_plugin_hooks_json("lib/apothem")
     events = hooks_json["hooks"]
     assert isinstance(events, dict)
-    assert set(events) == {
-        "SessionStart",
-        "PreToolUse",
-        "PostToolUse",
-        "PreCompact",
-        "PostCompact",
-        "Stop",
-    }
+    # PreCompact and PostCompact are absent: Claude Code discards their
+    # output, so the recovery context rides SessionStart(source=compact).
+    assert set(events) == {"SessionStart", "PreToolUse", "PostToolUse", "Stop"}
 
 
 def test_hooks_json_pretooluse_matchers() -> None:
@@ -193,11 +214,23 @@ def test_hooks_json_pretooluse_matchers() -> None:
     pretooluse = events["PreToolUse"]
     assert isinstance(pretooluse, list)
     matchers = [group["matcher"] for group in pretooluse]
-    assert matchers == ["Write", "Edit", "NotebookEdit", "Bash", "AskUserQuestion"]
+    assert matchers == [
+        "Write",
+        "Edit",
+        "NotebookEdit",
+        "Bash|PowerShell",
+        "AskUserQuestion",
+    ]
 
 
-def test_hooks_json_every_command_pairs_bash_and_powershell() -> None:
-    """Every matcher group emits matched bash + powershell command pairs."""
+def test_hooks_json_registers_each_hook_once_through_bash() -> None:
+    """Each hook is one shell-form command that invokes bash by name.
+
+    A dual bash + powershell registration ran twice wherever both shells exist
+    and errored on every call wherever one is missing; executing the stub path
+    directly depended on the file's executable bit. Invoking ``bash`` keeps the
+    hook independent of the tracked file mode.
+    """
     hooks_json = build_plugin_hooks_json("lib/apothem")
     events = hooks_json["hooks"]
     assert isinstance(events, dict)
@@ -206,10 +239,11 @@ def test_hooks_json_every_command_pairs_bash_and_powershell() -> None:
         for group in groups:
             commands = group["hooks"]
             assert isinstance(commands, list)
-            shells = [cmd["shell"] for cmd in commands]
-            # Pairs interleave bash then powershell — equal counts of each.
-            assert shells.count("bash") == shells.count("powershell")
-            assert shells.count("bash") >= 1
+            for cmd in commands:
+                assert "shell" not in cmd
+                assert str(cmd["command"]).startswith('bash "${CLAUDE_PLUGIN_ROOT}/')
+            names = [str(cmd["command"]).split()[-1] for cmd in commands]
+            assert len(names) == len(set(names)), names
 
 
 def test_hooks_json_commands_resolve_under_plugin_root() -> None:
@@ -223,7 +257,7 @@ def test_hooks_json_commands_resolve_under_plugin_root() -> None:
             for cmd in group["hooks"]:
                 command = cmd["command"]
                 assert isinstance(command, str)
-                assert "${CLAUDE_PLUGIN_ROOT}/lib/apothem/hooks/lib/bootstrap." in (
+                assert "${CLAUDE_PLUGIN_ROOT}/lib/apothem/hooks/lib/bootstrap.sh" in (
                     command
                 )
 
@@ -250,8 +284,6 @@ def test_hooks_json_timeouts_mirror_engine() -> None:
     assert _timeout("SessionStart") == {30}
     assert _timeout("PreToolUse") == {10}
     assert _timeout("PostToolUse") == {10}
-    assert _timeout("PreCompact") == {30}
-    assert _timeout("PostCompact") == {30}
     assert _timeout("Stop") == {60}
 
 
@@ -273,26 +305,40 @@ def test_committed_repo_hooks_json_matches_generator() -> None:
     assert committed == build_plugin_hooks_json("src/apothem")
 
 
-def test_committed_repo_manifest_validates() -> None:
-    committed = _REPO_ROOT / ".claude-plugin" / "plugin.json"
-    assert committed.is_file(), "repo-root .claude-plugin/plugin.json must exist"
-    jsonschema.validate(
-        instance=json.loads(committed.read_text(encoding="utf-8")),
-        schema=_schema(),
+def test_repo_root_carries_no_plugin_manifest() -> None:
+    """The repository root is not a plugin, so it ships no plugin manifest.
+
+    The marketplace installs ``plugins/claude-code``. A second manifest at the
+    root was a hand-kept duplicate that no install path read, and it failed
+    ``claude plugin validate --strict`` (a root ``CLAUDE.md`` is not plugin
+    context). Only ``marketplace.json`` belongs in the root ``.claude-plugin``.
+    """
+    root_meta = _REPO_ROOT / ".claude-plugin"
+    assert not (root_meta / "plugin.json").exists(), (
+        "repo-root .claude-plugin/plugin.json is vestigial; the marketplace "
+        "source is plugins/claude-code"
     )
+    assert sorted(p.name for p in root_meta.iterdir()) == ["marketplace.json"]
 
 
-def test_committed_repo_manifest_matches_generator() -> None:
-    """The committed manifest must never drift from the generator's output."""
-    committed = json.loads(
-        (_REPO_ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8")
+def test_every_marketplace_source_carries_a_valid_manifest() -> None:
+    """Each marketplace entry resolves to a directory with a valid manifest."""
+    marketplace = json.loads(
+        (_REPO_ROOT / ".claude-plugin" / "marketplace.json").read_text(encoding="utf-8")
     )
-    generated = build_plugin_manifest(
-        _SRC_ROOT,
-        catalog_prefix="./src/apothem/",
-        address_default_command_dir=True,
-    )
-    assert committed == generated
+    plugins = marketplace["plugins"]
+    assert plugins, "the marketplace lists no plugins"
+    for entry in plugins:
+        source = _REPO_ROOT / entry["source"]
+        assert source.resolve() != _REPO_ROOT.resolve(), (
+            f"{entry['name']}: the repository root cannot be a plugin source"
+        )
+        manifest = source / ".claude-plugin" / "plugin.json"
+        assert manifest.is_file(), f"{entry['name']}: {manifest} is missing"
+        jsonschema.validate(
+            instance=json.loads(manifest.read_text(encoding="utf-8")),
+            schema=_schema(),
+        )
 
 
 # --- Committed distribution tree ------------------------------------------
@@ -324,11 +370,38 @@ def test_assemble_prunes_catalog_doc_files(tmp_path: Path) -> None:
     """
     dest = tmp_path / "plugin_root"
     assemble_plugin_tree(_SRC_ROOT, dest)
-    for name in ("skills", "agents", "commands", "rules"):
+    for name in ("skills", "agents", "commands", "rules", "output-styles"):
         for doc in ("README.md", "AGENTS.md"):
             assert not (dest / name / doc).exists(), (
                 f"{name}/{doc} leaked into the tree"
             )
+
+
+def test_assemble_ships_output_styles_in_the_default_folder(tmp_path: Path) -> None:
+    """Every source output style is selectable from the plugin alone.
+
+    Claude Code scans a plugin's ``output-styles/`` folder when the manifest
+    sets no ``outputStyles`` key (plugins reference, "Output styles"), so each
+    style must sit there byte-for-byte and the manifest must leave the key out.
+    """
+    dest = tmp_path / "plugin_root"
+    assemble_plugin_tree(_SRC_ROOT, dest)
+    sources = sorted(
+        path
+        for path in (_SRC_ROOT / "output-styles").glob("*.md")
+        if path.name not in {"README.md", "AGENTS.md"}
+    )
+    assert sources
+    shipped = sorted(path.name for path in (dest / "output-styles").glob("*.md"))
+    assert shipped == [path.name for path in sources]
+    for source in sources:
+        assert (
+            dest / "output-styles" / source.name
+        ).read_bytes() == source.read_bytes()
+    manifest = json.loads(
+        (dest / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8")
+    )
+    assert "outputStyles" not in manifest
 
 
 def test_assemble_keeps_docs_nested_inside_skills(tmp_path: Path) -> None:

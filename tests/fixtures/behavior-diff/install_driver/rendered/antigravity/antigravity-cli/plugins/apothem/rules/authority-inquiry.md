@@ -1,8 +1,6 @@
 ---
-name: "authority-inquiry"
+trigger: always_on
 description: "Inquire, do not invent — names, emails, handles, hostnames, organizations, scope, security, naming, infrastructure, and version pins are discovered or asked, never fabricated. Routes through the canonical structured-inquiry channel."
-pathFilter: ""
-alwaysApply: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

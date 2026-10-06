@@ -35,7 +35,7 @@ The attestation is appended to the artifact's working trace (commit body, PR des
 
 ### Iteration on failure
 
-A single bar failure blocks emission. Revise per that bar's "Failure → action" rule, then re-run the gate; repeat until every bar passes. (Companion Sub-Rule Anchor) See `rules/pre-emission-gate-bars.md` §3.
+A single bar failure blocks emission. Revise per that bar's "Failure → action" rule, then re-run the gate; repeat until every bar passes, for at most three revision rounds. A bar still failing after the third round stops the run as BLOCKED with the failing bars and their evidence, never a softened pass. (Companion Sub-Rule Anchor) See `rules/pre-emission-gate-bars.md` §3.
 
 ## Disclosure surface
 

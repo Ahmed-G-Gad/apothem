@@ -8,9 +8,14 @@ This document describes how to report security vulnerabilities in this project, 
 
 | Version  | Supported          |
 | -------- | ------------------ |
+| 1.1.x    | ✓                  |
 | 1.0.x    | ✓                  |
 
-The support matrix updates with each minor release. The latest minor is always under active support and receives all security fixes. When multiple public minors exist, any previous-minor critical-fix-only window is listed here explicitly. Unlisted minors are unsupported; reporters should upgrade to a supported version before requesting a fix.
+<!-- TODO(clarify): decide whether 1.0.x keeps full support or moves to a
+critical-fix-only window now that 1.1.x is the latest minor, and record the
+window's end date in this table. The support window is an operator decision. -->
+
+The support matrix updates with each minor release; `scripts/release/bump_version.py` adds the new minor's row. The latest minor is always under active support and receives all security fixes. When multiple public minors exist, any previous-minor critical-fix-only window is listed here explicitly. Unlisted minors are unsupported; reporters should upgrade to a supported version before requesting a fix.
 
 ## Reporting a vulnerability
 
@@ -38,6 +43,16 @@ PGP-encrypted reporting may be supported in the future. Reporters who require en
 Release tags (`vMAJOR.MINOR.PATCH`) are GPG-signed, and the artifacts attached to each GitHub Release (sdist, wheel, SBOM) carry Sigstore cosign signatures plus SLSA provenance. The one-shot installers verify the tag signature with `git verify-tag` before materializing any configuration and abort, fail-closed, when verification does not succeed. Third-party `git verify-tag` needs the maintainer public key in the local keyring; until its fingerprint is published (see below), set `APOTHEM_ALLOW_UNVERIFIED=1` to proceed without local tag verification.
 
 To verify a release tag locally: import the maintainer signing key, confirm the imported key's fingerprint, then run `git verify-tag <tag>` inside the clone. The maintainer signing-key fingerprint will be published at this location once the maintainer records it; until then, cross-check the signing identity against the signature metadata on the GitHub Release page and against the key fingerprint that `git verify-tag <tag>` itself reports.
+
+### Release tags are not all the same kind of object
+
+| Tag | Tag object | How to verify it |
+| --- | --- | --- |
+| `v1.1.0` | annotated, GPG-signed | `git verify-tag v1.1.0` |
+| `v1.0.2` | annotated, GPG-signed | `git verify-tag v1.0.2` |
+| `v1.0.1` | lightweight (no tag object) | `git verify-commit v1.0.1` — the commit it names is GPG-signed |
+
+`v1.0.1` was pushed as a lightweight tag. A lightweight tag has no object to sign, so `git verify-tag v1.0.1` fails ("cannot verify a non-tag object") and the one-shot installer, which checks the tag, aborts with its "unsigned or its signature did not verify" message when `APOTHEM_REF=v1.0.1`. The release commit itself is signed, so `git verify-commit v1.0.1` verifies it. Published tags are kept as they are rather than rewritten, so this limit is permanent for `v1.0.1`: pin `v1.0.2` or later for a verified install. Every release from `v1.0.2` on is an annotated, signed tag (`git tag -a -s`).
 
 <!-- TODO(clarify): publish the maintainer GPG signing-key fingerprint here.
 The fingerprint value is an operator input that cannot be derived from the

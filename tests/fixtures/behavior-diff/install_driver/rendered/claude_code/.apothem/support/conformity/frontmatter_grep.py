@@ -284,15 +284,13 @@ def check(content: str, path: Path | None = None) -> GrepResult:
     )
 
 
-def _read_input(argv: list[str]) -> tuple[str, Path | None]:
-    if len(argv) >= 2 and argv[1] != STDIN_FLAG:
-        path = Path(argv[1])
-        return path.read_text(encoding="utf-8"), path
-    return sys.stdin.read(), None
-
-
 def _main(argv: list[str]) -> int:
-    content, path = _read_input(argv)
+    # Imported here, not at module top: ``check()`` stays stdlib-only so the
+    # gate can load it even where the ``apothem`` package is not importable;
+    # only the command-line entry needs the shared parser.
+    from apothem.conformity._grep_base import parse_path_input
+
+    _args, content, path = parse_path_input(argv, prog=GREP_NAME, doc=__doc__)
     result = check(content, path)
     print(result.to_json())
     return EXIT_PASS if result.passed else EXIT_FAIL

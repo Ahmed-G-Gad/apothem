@@ -1,19 +1,24 @@
 # SPDX-License-Identifier: MIT
 
-"""always-on-budget-grep: token-budget conformity matcher for always-on rules.
+"""always-on-budget-grep: body-budget conformity matcher for always-on rules.
 
 Why this enforcement exists. Always-on rules load into every session's
 context as standing directives; aggregate body length is a multiplier on
 every turn's cost. The token-budget-discipline rule caps each always-on
-body at MAX_SUBSTANTIVE_TOKENS substantive tokens, with a pre-emptive
-warn-band at WARN_BAND_THRESHOLD nudging authors to plan a path-filtered
-companion sub-rule before the hard ceiling triggers. Bodies above the
-ceiling are decomposed into the demand-load companion-sub-rule pattern
-ratified at rules/context-management.md and its companion
+body at MAX_SUBSTANTIVE_TOKENS (500) "substantive tokens", with a
+pre-emptive warn-band at WARN_BAND_THRESHOLD nudging authors to plan a
+path-filtered companion sub-rule before the hard ceiling triggers. Bodies
+above the ceiling are decomposed into the demand-load companion-sub-rule
+pattern ratified at rules/context-management.md and its companion
 rules/context-management-scratch.md.
 
-Substantive-token counter. The count is a whitespace-separated token
-count over the rule body with three regions excluded:
+Unit. The rule's "substantive token" is a whitespace-separated word, not a
+model token: a word is often several model tokens. The report therefore
+names the unit as words (``count-unit``, ``max-substantive-words``,
+``substantive_words``); the 500 ceiling and its exclusions are unchanged.
+
+Budget counter. The count is a whitespace-separated word count over the
+rule body with three regions excluded:
 
   1. YAML frontmatter — content between the opening `---` and the second
      `---` delimiters at file head. Frontmatter declares the rule's
@@ -26,6 +31,15 @@ count over the rule body with three regions excluded:
      demand-load surface; the surface itself loads on path-filter match
      and counts against its own (path-filtered) sibling rule, not the
      parent always-on body.
+
+Loaded-size measurement. A harness that loads a rule file strips only the
+frontmatter; the Bindings section and the pointer lines load with the rest.
+The excluded regions are most of the always-on text, so the budget count
+alone understates the standing context cost. Every finding therefore also
+reports the frontmatter-stripped body as loaded (``loaded_bytes`` in UTF-8,
+``loaded_chars``, ``loaded_words``), and the report sums them over the
+always-on rules under ``always-on-loaded``. This is a measurement, not a
+verdict: it never changes ``passed``.
 
 Verdict matrix.
   pass — the rule is not always-on (alwaysApply false OR pathFilter
@@ -66,8 +80,13 @@ STDIN_FLAG: Final[str] = "--stdin"
 # Budget constants
 # ---------------------------------------------------------------------------
 
-MAX_SUBSTANTIVE_TOKENS: Final[int] = 500
+# The rule names the ceiling MAX_SUBSTANTIVE_TOKENS; the counted unit is a
+# whitespace-separated word (see COUNT_UNIT), so the word-named alias is the
+# one the report uses.
+MAX_SUBSTANTIVE_WORDS: Final[int] = 500
+MAX_SUBSTANTIVE_TOKENS: Final[int] = MAX_SUBSTANTIVE_WORDS
 WARN_BAND_THRESHOLD: Final[int] = 450
+COUNT_UNIT: Final[str] = "whitespace-separated words"
 
 # ---------------------------------------------------------------------------
 # Region-exclusion markers
@@ -86,9 +105,12 @@ class Finding:
 
     path: str
     always_on: bool
-    substantive_tokens: int
+    substantive_words: int
     over_budget: bool
     warn_band: bool
+    loaded_bytes: int = 0
+    loaded_chars: int = 0
+    loaded_words: int = 0
     rule: str = RULE_ANCHOR
 
 
@@ -103,15 +125,25 @@ class GrepResult:
     def to_json(self) -> str:
         """Return this report as a two-space-indented JSON string.
 
-        Post-conditions: the payload carries ``{grep, passed,
-        max-substantive-tokens, warn-band-threshold, findings}``; each finding
+        Post-conditions: the payload carries ``{grep, passed, count-unit,
+        max-substantive-words, warn-band-threshold, always-on-loaded,
+        findings}``; ``always-on-loaded`` sums the loaded size of the
+        always-on findings (``{rules, bytes, chars, words}``) and each finding
         is flattened through ``dataclasses.asdict``.
         """
+        always_on = [f for f in self.findings if f.always_on]
         payload = {
             "grep": self.grep,
             "passed": self.passed,
-            "max-substantive-tokens": MAX_SUBSTANTIVE_TOKENS,
+            "count-unit": COUNT_UNIT,
+            "max-substantive-words": MAX_SUBSTANTIVE_WORDS,
             "warn-band-threshold": WARN_BAND_THRESHOLD,
+            "always-on-loaded": {
+                "rules": len(always_on),
+                "bytes": sum(f.loaded_bytes for f in always_on),
+                "chars": sum(f.loaded_chars for f in always_on),
+                "words": sum(f.loaded_words for f in always_on),
+            },
             "findings": [asdict(f) for f in self.findings],
         }
         return json.dumps(payload, indent=2)
@@ -158,6 +190,38 @@ def parse_frontmatter(content: str) -> tuple[dict[str, str], str]:
     return fm, body
 
 
+def loaded_body(content: str) -> str:
+    """Return the rule text a harness loads: everything after the frontmatter.
+
+    Uses the same delimiter search as :func:`parse_frontmatter` but slices
+    the original text, so line endings and the trailing newline are kept and
+    the byte count is the on-disk count. With no frontmatter block, the whole
+    content loads.
+    """
+    lines = content.splitlines(keepends=True)
+    start_index = -1
+    for i, line in enumerate(lines):
+        if line.strip() == FRONTMATTER_DELIM:
+            start_index = i
+            break
+    if start_index == -1:
+        return content
+    for i in range(start_index + 1, len(lines)):
+        if lines[i].strip() == FRONTMATTER_DELIM:
+            return "".join(lines[i + 1 :])
+    return content
+
+
+def measure_loaded(content: str) -> tuple[int, int, int]:
+    """Return ``(bytes, chars, words)`` of the loaded rule text.
+
+    Bytes are UTF-8; words are whitespace-separated, the same unit the budget
+    counter uses, but with nothing excluded beyond the frontmatter.
+    """
+    body = loaded_body(content)
+    return len(body.encode("utf-8")), len(body), len(body.split())
+
+
 def is_always_on(frontmatter: dict[str, str]) -> bool:
     """Classify a rule as always-on per its frontmatter.
 
@@ -200,20 +264,21 @@ def strip_companion_pointers(body: str) -> str:
     )
 
 
-def count_substantive_tokens(body: str) -> int:
-    """Count whitespace-separated tokens in the post-exclusion body.
+def count_substantive_words(body: str) -> int:
+    """Count whitespace-separated words in the post-exclusion body.
 
     The count is reproducible and platform-stable; markdown markers are
-    counted as tokens because they consume context just as words do.
+    counted as words because they consume context just as words do. It is
+    not a model-token count.
     """
     return len(body.split())
 
 
 def measure(content: str) -> tuple[bool, int]:
-    """Measure the always-on classification and the substantive token count.
+    """Measure the always-on classification and the substantive word count.
 
     Returns:
-        Tuple of (always_on, substantive_token_count). When the rule is
+        Tuple of (always_on, substantive_word_count). When the rule is
         not always-on, the count is still reported for transparency but
         the verdict is always pass.
     """
@@ -221,28 +286,36 @@ def measure(content: str) -> tuple[bool, int]:
     always_on = is_always_on(frontmatter)
     body_no_bindings = strip_bindings_section(body)
     body_no_pointers = strip_companion_pointers(body_no_bindings)
-    return always_on, count_substantive_tokens(body_no_pointers)
+    return always_on, count_substantive_words(body_no_pointers)
+
+
+def _finding(content: str, path_str: str) -> Finding:
+    """Measure one rule body and build its finding (budget + loaded size)."""
+    always_on, words = measure(content)
+    over = always_on and words > MAX_SUBSTANTIVE_WORDS
+    warn = always_on and (not over) and words >= WARN_BAND_THRESHOLD
+    loaded_bytes, loaded_chars, loaded_words = measure_loaded(content)
+    return Finding(
+        path=path_str,
+        always_on=always_on,
+        substantive_words=words,
+        over_budget=over,
+        warn_band=warn,
+        loaded_bytes=loaded_bytes,
+        loaded_chars=loaded_chars,
+        loaded_words=loaded_words,
+    )
 
 
 def check_file(path: Path) -> Finding:
     """Apply the matcher to a single rule file."""
-    content = path.read_text(encoding="utf-8")
-    always_on, tokens = measure(content)
-    over = always_on and tokens > MAX_SUBSTANTIVE_TOKENS
-    warn = always_on and (not over) and tokens >= WARN_BAND_THRESHOLD
-    return Finding(
-        path=str(path),
-        always_on=always_on,
-        substantive_tokens=tokens,
-        over_budget=over,
-        warn_band=warn,
-    )
+    return _finding(path.read_text(encoding="utf-8"), str(path))
 
 
 def check(content: str, path: Path | None = None) -> GrepResult:
     """Per-Write dispatch entry consumed by `conformity/gate.py`.
 
-    Measures one rule body's substantive-token count. The orchestrator
+    Measures one rule body's substantive word count. The orchestrator
     invokes this on every Write/Edit; non-rule paths and non-always-on
     rules pass without a finding.
 
@@ -254,17 +327,8 @@ def check(content: str, path: Path | None = None) -> GrepResult:
     path_str = str(path) if path is not None else "<stdin>"
     if path is not None and not path_str.endswith(".md"):
         return GrepResult(grep=GREP_NAME, passed=True, findings=[])
-    always_on, tokens = measure(content)
-    over = always_on and tokens > MAX_SUBSTANTIVE_TOKENS
-    warn = always_on and (not over) and tokens >= WARN_BAND_THRESHOLD
-    finding = Finding(
-        path=path_str,
-        always_on=always_on,
-        substantive_tokens=tokens,
-        over_budget=over,
-        warn_band=warn,
-    )
-    if not over:
+    finding = _finding(content, path_str)
+    if not finding.over_budget:
         return GrepResult(grep=GREP_NAME, passed=True, findings=[])
     return GrepResult(grep=GREP_NAME, passed=False, findings=[finding])
 
@@ -279,27 +343,41 @@ def discover_rule_files(target: Path) -> list[Path]:
 
 
 def _read_stdin_finding() -> Finding:
-    content = sys.stdin.read()
-    always_on, tokens = measure(content)
-    over = always_on and tokens > MAX_SUBSTANTIVE_TOKENS
-    warn = always_on and (not over) and tokens >= WARN_BAND_THRESHOLD
-    return Finding(
-        path="<stdin>",
-        always_on=always_on,
-        substantive_tokens=tokens,
-        over_budget=over,
-        warn_band=warn,
+    """Measure a rule body read from stdin as one finding."""
+    return _finding(sys.stdin.read(), "<stdin>")
+
+
+def _parse_args(argv: list[str]) -> tuple[bool, Path]:
+    """Return ``(read_stdin, target)``; usage errors exit ``EXIT_USAGE`` (3).
+
+    The parser is imported here, not at module top, so ``check()`` stays
+    stdlib-only for the gate's in-process load.
+    """
+    from apothem.conformity._grep_base import make_parser
+
+    parser = make_parser(GREP_NAME, __doc__)
+    parser.add_argument(
+        "target",
+        nargs="?",
+        default=DEFAULT_SCAN_DIR,
+        help=f"rule file or directory to measure (default: {DEFAULT_SCAN_DIR})",
     )
-
-
-def _resolve_target(argv: list[str]) -> Path:
-    if len(argv) >= 2:
-        return Path(argv[1])
-    return Path(DEFAULT_SCAN_DIR)
+    parser.add_argument(
+        STDIN_FLAG,
+        dest="stdin",
+        action="store_true",
+        help="measure one rule body read from stdin",
+    )
+    args = parser.parse_args(argv[1:])
+    target = Path(args.target)
+    if not args.stdin and not target.exists():
+        parser.error(f"target does not exist: {target}")
+    return bool(args.stdin), target
 
 
 def _main(argv: list[str]) -> int:
-    if len(argv) >= 2 and argv[1] == STDIN_FLAG:
+    read_stdin, target = _parse_args(argv)
+    if read_stdin:
         finding = _read_stdin_finding()
         result = GrepResult(
             grep=GREP_NAME,
@@ -309,7 +387,6 @@ def _main(argv: list[str]) -> int:
         print(result.to_json())
         return EXIT_PASS if result.passed else EXIT_FAIL
 
-    target = _resolve_target(argv)
     paths = discover_rule_files(target)
     findings = [check_file(p) for p in paths]
     failed = [f for f in findings if f.over_budget]

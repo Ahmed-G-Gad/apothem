@@ -156,7 +156,33 @@ def test_both_installers_share_the_bypass_and_source_env_surface() -> None:
         "APOTHEM_SOURCE",
         "APOTHEM_REPO",
         "APOTHEM_HOME",
+        "APOTHEM_VERIFY",
+        "APOTHEM_RELEASE_BASE",
     )
     for var in trust_env_vars:
         assert var in SH, f"install.sh dropped trust env var {var}"
         assert var in PS1, f"install.ps1 dropped trust env var {var}"
+
+
+def test_checksum_mode_messages_agree() -> None:
+    """Both installers refuse a digest mismatch and state the same limit.
+
+    The checksum path is weaker than signature verification; each installer
+    must abort on a mismatch before extracting anything and must tell the user
+    that a matching digest does not prove who published the archive.
+    """
+    for phrase in (
+        "does not match the release's SHA256SUMS",
+        "Aborting before anything is extracted.",
+        "it does not prove who published it",
+        "needs a vMAJOR.MINOR.PATCH release tag",
+        "lists no",
+        "does not hold an apothem source under",
+        "Could not download",
+        "Could not extract",
+        "Could not create the parent directory of",
+        "Could not remove the existing",
+        "Could not move the extracted source to",
+    ):
+        assert phrase in SH, f"install.sh lacks {phrase!r}"
+        assert phrase in PS1, f"install.ps1 lacks {phrase!r}"

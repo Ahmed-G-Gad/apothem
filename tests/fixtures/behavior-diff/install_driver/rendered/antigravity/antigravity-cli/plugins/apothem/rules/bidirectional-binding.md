@@ -1,8 +1,7 @@
 ---
-name: "bidirectional-binding"
+trigger: glob
 description: "Every substantive structural element carries reciprocal bindings to its peers in canonical five-direction notation — Drives → / Driven by ← / Satisfies → / Established by ↑ / Cross-bound with ↔. Every binding declared in one direction has a reciprocal back-pointer at the other end; half-edges are structural failures. A Bidirectional Binding Matrix appendix summarizes the graph where structure permits."
-pathFilter: "**/*.md, **/docs/**, **/CLAUDE.md, **/rules/**, **/skills/**, **/agents/**, **/commands/**, **/adr/**, **/rfcs/**, **/architecture*, **/design*"
-alwaysApply: false
+globs: "**/*.md, **/docs/**, **/CLAUDE.md, **/rules/**, **/skills/**, **/agents/**, **/commands/**, **/adr/**, **/rfcs/**, **/architecture*, **/design*"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -48,6 +47,8 @@ The bindings notation reproduces the five canonical symbols **verbatim**. Varian
 ```
 
 A direction with **no bindings** is omitted — a section with three populated and two absent directions is conformant (the absent ones read as "this element neither drives nor is gated beyond its own scope"). Placeholder entries (`- **Drives →** TBD`) are non-conformant per `rules/definitiveness.md`.
+
+**Shipped-corpus floor.** Apothem's own rules, commands, agents, skills, and their folder READMEs hold a stricter floor than a host-project artifact: each closes with the section and carries **Drives →**, **Satisfies →**, **Established by ↑**, **Gated by ←** (the activation condition or enforcer that gates it), and **Cross-bound with ↔**; each hook-message context carries the **Drives →**, **Established by ↑**, **Cross-bound with ↔** subset. The corpus-walking `binding-five-direction-grep` matcher at `conformity/binding_five_direction_grep.py` enforces the floor and is **blocking**: a missing section or direction fails `gate --all --strict`.
 
 ### 2. Reciprocity — The Half-Edge Failure Pattern
 
@@ -116,7 +117,7 @@ Every binding emission, update, or reciprocal closure is recorded in the disclos
 
 ## Bindings (§0.j five-direction)
 
-- **Drives →** ● Every substantive structural element across every emitted host-project artifact (the five-direction notation is the binding floor for every section, sub-section, contract, phase). ● The `## Bindings (§0.j five-direction)` section at every `rules/*.md` body. ● The phase-execution threading at every `<project-root>/.apothem/plans/*/MASTER-PLAN.md` and `phases/NN-topic/PHASE.md`. ● The Bidirectional Binding Matrix appendix at every spec / multi-element design document. ● The `binding-reciprocity-grep` mechanical matcher at `conformity/binding_reciprocity_grep.py` — operationalizes the §2 reciprocity invariant's per-file notation discipline. ● The `binding-reciprocity-corpus-grep` corpus matcher at `conformity/binding_reciprocity_corpus_grep.py` — operationalizes the §2 cross-file `↔` reciprocity walk across the `rules/*.md` corpus.
+- **Drives →** ● Every substantive structural element across every emitted host-project artifact (the five-direction notation is the binding floor for every section, sub-section, contract, phase). ● The `## Bindings (§0.j five-direction)` section at every `rules/*.md` body. ● The phase-execution threading at every `<project-root>/.apothem/plans/*/MASTER-PLAN.md` and `phases/NN-topic/PHASE.md`. ● The Bidirectional Binding Matrix appendix at every spec / multi-element design document. ● The `binding-reciprocity-grep` mechanical matcher at `conformity/binding_reciprocity_grep.py` — operationalizes the §2 reciprocity invariant's per-file notation discipline. ● The `binding-reciprocity-corpus-grep` corpus matcher at `conformity/binding_reciprocity_corpus_grep.py` — operationalizes the §2 cross-file `↔` reciprocity walk across the `rules/*.md` corpus. ● The `binding-five-direction-grep` corpus matcher at `conformity/binding_five_direction_grep.py` — operationalizes the §1 shipped-corpus floor (the section and its required directions on every rule, command, agent, skill, and hook message).
 - **Satisfies →** ● the fifteen-mandate registry row **M10 — Bidirectional Binding**. ● the Pre-Emission Gate row 10 (M10 bidirectional-binding check).
 - **Established by ↑** ● the fifteen-mandate registry (ratifies M10). ● the Pre-Emission Gate row 10. ● The ecosystem's existing practice — every `rules/*.md` already carries a `Bindings (§0.j five-direction)` section; this rule canonicalizes that practice rather than introducing it.
 - **Gated by ←** ● The trivial-vs-non-trivial threshold (trivial linear artifacts without cross-references are exempt). ● `CLAUDE.md` always-loaded preamble. ● The path-filter declared in this rule's frontmatter (Markdown / docs / structural-artifact directories).

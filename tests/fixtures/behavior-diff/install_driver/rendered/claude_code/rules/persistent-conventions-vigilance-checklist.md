@@ -3,6 +3,14 @@ name: "persistent-conventions-vigilance-checklist"
 description: "Path-filtered companion sub-rule carrying the Convention Awareness checklist (§1) and the Ecosystem Gap Detection artifact-class triggers (§4) for the parent `persistent-conventions-vigilance.md` rule; demand-loaded on touches of governed-core surfaces."
 pathFilter: "**/CLAUDE.md, **/rules/**, **/skills/**, **/commands/**, **/agents/**, **/hooks/**, **/settings.json"
 alwaysApply: false
+paths:
+  - "**/CLAUDE.md"
+  - "**/rules/**"
+  - "**/skills/**"
+  - "**/commands/**"
+  - "**/agents/**"
+  - "**/hooks/**"
+  - "**/settings.json"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

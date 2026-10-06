@@ -36,7 +36,8 @@ Agent frontmatter is validated against [`../schemas/agent.schema.json`](../schem
 - `disallowedTools` — comma-separated explicit denials.
 - `maxTurns` — turn ceiling (with an inline rationale comment when it exceeds the 5–10 norm).
 - `portability` — harness-portability classification (e.g. `universal`).
-- `memory` — whether the agent retains memory across invocations.
+
+No shipped agent sets `memory`. Claude Code defines it as a persistent-memory scope (`user`, `project`, or `local`), and leaving it out means no persistent memory, so an agent sets it only when it needs that scope. `version`, `updated`, and `portability` are Apothem metadata the schema admits; harnesses ignore them.
 
 The body after the frontmatter is the agent's system prompt: mission, operating principles, and return-format specification.
 
@@ -58,3 +59,11 @@ These definitions are harness-agnostic. Per-harness adapters materialize each `<
 - Definitions stay harness-agnostic — name a harness only by its catalog slug, never by a privileging brand phrase, and pre-set no model, effort, or permission preference (the agnostic posture).
 - **A new or removed agent updates this README's agent index in the same change-set.** The cross-harness [`../schemas/compatibility-matrix.yaml`](../schemas/compatibility-matrix.yaml) tracks the agents cohort (compatible harnesses + materialization strategy), not individual agents by name, so it changes only when cohort-level harness compatibility changes. To modify an agent, keep the frontmatter schema-valid and the return contract intact.
 - Validate a change with `python -m ruff check`, the conformity gate `python -m apothem.conformity.gate --all .` (frontmatter/header coverage), and `python -m pytest` (agent-definition and matrix tests).
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The agent index above and every definition it lists: `agents/codebase-explorer.md` · `agents/convention-auditor.md` · `agents/memory-auditor.md` · `agents/quality-gate.md` · `agents/test-runner.md` · `agents/refactor-surgeon.md` · `agents/dependency-auditor.md` · `agents/security-scanner.md` · `agents/research-scout.md` · `agents/fact-checker.md` · `agents/prompt-evaluator.md` · `agents/mcp-builder.md`. The per-harness materialization of each definition at install time.
+- **Satisfies →** The agent-guidance locality canon in `AGENTS.md` (each folder's operating contract lives in its README). The same-change-set rule above: a new or removed agent updates this index.
+- **Established by ↑** `AGENTS.md` (the root agent-instruction canon). `rules/agents-md-convention.md` (the per-folder README contract). `rules/agent-orchestration.md` (the team patterns that dispatch these agents).
+- **Gated by ←** `scripts/dev/check_readme_file_coverage.py --strict` (every shipped file in this folder is named here). `schemas/agent.schema.json` (the frontmatter contract each definition validates against). The propagation manifest's `README.md` exclusion (this file never ships into a harness discovery directory).
+- **Cross-bound with ↔** `rules/README.md` + `commands/README.md` (the sibling contracts for the other convention directories).

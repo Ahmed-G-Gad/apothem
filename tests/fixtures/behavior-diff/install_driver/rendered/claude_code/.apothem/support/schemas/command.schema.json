@@ -23,7 +23,8 @@
     },
     "description": {
       "type": "string",
-      "description": "Capability-led statement of the command's purpose and invocation triggers."
+      "description": "Capability-led statement of the command's purpose and invocation triggers. At most 1024 characters: several harnesses install each command as a skill, and the Agent Skills specification (https://agentskills.io/specification) caps a skill description there.",
+      "maxLength": 1024
     },
     "version": {
       "type": "string",
@@ -50,7 +51,8 @@
     },
     "allowed-tools": {
       "type": "string",
-      "description": "Comma-separated list of tools the command may invoke, or \"*\" for the full surface."
+      "description": "Comma-separated tools the command pre-approves while it runs: read-only by default. A side-effecting tool (Bash, PowerShell, Write, Edit, NotebookEdit, WebFetch) appears only as a scoped permission rule such as Bash(git log *), and the bare \"*\" wildcard is not accepted, because harnesses that honor this field run pre-approved tools without asking.",
+      "pattern": "^(?!.*(?:^|[\\s,])(?:\\*|Bash|PowerShell|Write|Edit|NotebookEdit|WebFetch)(?:[\\s,]|$))"
     }
   },
   "examples": [
@@ -62,7 +64,7 @@
       "argument-hint": "[--dataset PATH] [--scorer NAME]",
       "disable-model-invocation": true,
       "portability": "universal",
-      "allowed-tools": "*"
+      "allowed-tools": "Read, Glob, Grep"
     }
   ]
 }

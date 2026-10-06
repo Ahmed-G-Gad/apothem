@@ -25,3 +25,9 @@ No active suite: skip Phase A entirely; execute Phase B against working notes ac
 1. Working-trace emission. Verify the active suite's PROGRESS.md Resumption Contract was updated this session — if any session decision, blocker, or watch item is still in conversation memory only, write it to durable file before the session ends.
 2. Unresolved-inquiry flush. Walk the active suite for concrete-id `<USER-CONFIRM:…>` placeholders and any `unresolved-inquiries:` arrays in this session's emitted phase reports' fifteen-bar gate attestation blocks. Surface every unresolved inquiry in the Resumption Contract Watch Items section so the next session inherits the inventory and does not silently re-invent.
 3. Mandate-axis findings. If this session emitted any findings against the M-N mandate axs (host-discovery gaps, code-craft drift, supply-chain regressions, production-readiness gaps), summarize them in the Resumption Contract so the next session inherits the audit signal alongside its task pointer.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The session-end protocol: externalize task state and decisions, then run the memory evaluation and the artifact-evolution sweep. `hooks/session_end_gate.py` (emits this body at most once per session).
+- **Established by ↑** The Stop registration in `hooks/hooks.json` and the harness settings templates. `rules/session-closure.md` (the formal close every session ends with).
+- **Cross-bound with ↔** `rules/context-management.md` + `rules/context-management-protocol.md` (the externalization procedure this context runs). `rules/auto-memory.md` + `rules/auto-memory-topic-files.md` (the session-end memory evaluation). `hooks/messages/sessionstart.md` (the session's opening counterpart).

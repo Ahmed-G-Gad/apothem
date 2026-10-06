@@ -3,6 +3,8 @@
     "install",
     "--harness",
     "claude-code",
+    "--profile",
+    "~/.config/apothem/missing.yaml",
     "--json"
   ],
   "exit_code": 1,
@@ -12,19 +14,20 @@
       "code": "profile.not_found",
       "field": "profile",
       "files_written": [],
-      "fix": "Run 'apothem profile init' or pass --profile PATH.",
+      "fix": "Create one with the 'profile init' subcommand of the command you ran, or pass an existing profile with --profile PATH.",
       "message": "Apothem validation failed.",
-      "profile_path": "<HOME>/.config/apothem/profile.yaml",
+      "profile_path": "<HOME>/.config/apothem/missing.yaml",
       "reason": "profile file does not exist",
       "safe_value": null
     },
     "files_written": [],
     "harness": "claude-code",
-    "profile_path": "<HOME>/.config/apothem/profile.yaml",
+    "profile_path": "<HOME>/.config/apothem/missing.yaml",
     "project": null,
     "results": [],
+    "schema_version": 1,
     "status": "error",
     "warnings": []
   },
-  "stdout": "{\"status\": \"error\", \"command\": \"install\", \"harness\": \"claude-code\", \"profile_path\": \"<HOME>/.config/apothem/profile.yaml\", \"project\": null, \"files_written\": [], \"results\": [], \"warnings\": [], \"error\": {\"code\": \"profile.not_found\", \"message\": \"Apothem validation failed.\", \"profile_path\": \"<HOME>/.config/apothem/profile.yaml\", \"field\": \"profile\", \"reason\": \"profile file does not exist\", \"fix\": \"Run 'apothem profile init' or pass --profile PATH.\", \"safe_value\": null, \"files_written\": []}}\n"
+  "stdout": "{\"schema_version\": 1, \"status\": \"error\", \"command\": \"install\", \"harness\": \"claude-code\", \"profile_path\": \"<HOME>/.config/apothem/missing.yaml\", \"project\": null, \"files_written\": [], \"results\": [], \"warnings\": [], \"error\": {\"code\": \"profile.not_found\", \"message\": \"Apothem validation failed.\", \"profile_path\": \"<HOME>/.config/apothem/missing.yaml\", \"field\": \"profile\", \"reason\": \"profile file does not exist\", \"fix\": \"Create one with the 'profile init' subcommand of the command you ran, or pass an existing profile with --profile PATH.\", \"safe_value\": null, \"files_written\": []}}\n"
 }

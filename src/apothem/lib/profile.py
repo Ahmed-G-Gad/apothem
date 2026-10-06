@@ -20,9 +20,10 @@ stabilized mappings — so ``to_dict()`` round-trips byte-stably.
 
 from __future__ import annotations
 
+import dataclasses
 import os
 import re
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Final
@@ -49,10 +50,28 @@ SERIOUSNESS_LEVELS = (
     "PUBLIC_LAUNCH",
 )
 
-# Highest profile-schema version this engine understands. A version-less
-# profile is treated as this version; a profile stamped higher is rejected
-# with an upgrade-the-engine diagnostic before schema validation runs.
+# Remedy for a missing profile. Channel-neutral on purpose: the CLI runs as
+# `apothem`, `npx @ahmed-g-gad/apothem`, or `python -m apothem`, so the fix
+# names the subcommand rather than one program name that may not be on PATH.
+PROFILE_NOT_FOUND_FIX = (
+    "Create one with the 'profile init' subcommand of the command you ran, or "
+    "pass an existing profile with --profile PATH."
+)
+
+# Highest profile-schema version this engine understands. A profile stamped
+# higher is rejected with an upgrade-the-engine diagnostic before schema
+# validation runs.
 _CURRENT_SCHEMA_VERSION: Final[int] = 1
+
+# Most extra validation problems a plain-text diagnostic lists after the first;
+# the JSON ``errors`` array always carries all of them.
+PLAIN_PROBLEM_LIMIT: Final[int] = 10
+
+# Version a profile without ``schema_version`` is read as. Versioning began at
+# 1 and every scaffold now stamps the version, so a version-less profile is a
+# v1 profile: pinned as a literal, never "whatever the engine supports", so a
+# future v1->v2 migration still runs on it.
+_UNVERSIONED_PROFILE_VERSION: Final[int] = 1
 
 # MCP transports the schema and model both recognize; streamable-http is the
 # modern replacement for sse. The schema↔code cross-check test pins these equal.
@@ -301,7 +320,13 @@ class CanonicalProfile:
 
 @dataclass(frozen=True)
 class ProfileDiagnostic:
-    """Actionable profile validation error suitable for plain or JSON output."""
+    """Actionable profile validation error suitable for plain or JSON output.
+
+    ``safe_value`` is the offending input, redacted, never a suggested
+    replacement. ``problems`` holds every schema error found in one pass
+    (this diagnostic is the first of them), so an operator can fix them all
+    in one edit instead of one per run.
+    """
 
     code: str
     message: str
@@ -310,11 +335,23 @@ class ProfileDiagnostic:
     reason: str
     fix: str
     safe_value: Any | None = None
+    problems: tuple[ProfileDiagnostic, ...] = ()
+
+    def problem_dict(self) -> dict[str, Any]:
+        """Serialize the per-problem fields used in the ``errors`` array."""
+        return {
+            "code": self.code,
+            "field": self.field,
+            "reason": self.reason,
+            "fix": self.fix,
+            "safe_value": self.safe_value,
+        }
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize to a dict, appending an empty ``files_written`` list so
-        the payload matches the CLI lifecycle-envelope shape."""
-        return {
+        the payload matches the CLI lifecycle-envelope shape. A schema failure
+        also carries ``errors``: every problem found, the first one included."""
+        payload: dict[str, Any] = {
             "code": self.code,
             "message": self.message,
             "profile_path": self.profile_path,
@@ -324,19 +361,45 @@ class ProfileDiagnostic:
             "safe_value": self.safe_value,
             "files_written": [],
         }
+        if self.problems:
+            payload["errors"] = [problem.problem_dict() for problem in self.problems]
+        return payload
 
     def format_plain(self) -> str:
         """Render the diagnostic as a human-readable plain-text block."""
-        safe_value = "none" if self.safe_value is None else repr(self.safe_value)
-        return (
-            f"{self.message}\n"
-            f"Profile: {self.profile_path}\n"
-            f"Field: {self.field}\n"
-            f"Reason: {self.reason}\n"
-            f"Fix: {self.fix}\n"
-            f"Safe value: {safe_value}\n"
-            "Files written: none."
+        lines = [
+            self.message,
+            f"Profile: {self.profile_path}",
+            f"Field: {self.field}",
+            f"Reason: {self.reason}",
+            f"Fix: {self.fix}",
+        ]
+        if self.safe_value is not None:
+            lines.append(f"Offending value (redacted): {self.safe_value!r}")
+        lines.extend(
+            other_problem_lines(
+                [problem.problem_dict() for problem in self.problems[1:]]
+            )
         )
+        lines.append("Files written: none.")
+        return "\n".join(lines)
+
+
+def other_problem_lines(others: list[dict[str, Any]]) -> list[str]:
+    """Return the plain-text lines listing validation problems after the first.
+
+    Lists up to :data:`PLAIN_PROBLEM_LIMIT` of them; the JSON ``errors`` array
+    always carries the full set.
+    """
+    if not others:
+        return []
+    lines = [f"Other problems ({len(others)}):"]
+    for problem in others[:PLAIN_PROBLEM_LIMIT]:
+        lines.append(f"  - {problem.get('field')}: {problem.get('reason')}")
+    hidden = len(others) - PLAIN_PROBLEM_LIMIT
+    if hidden > 0:
+        lines.append(f"  - ... and {hidden} more; run with --json for the full list.")
+    return lines
 
 
 class ProfileValidationError(ValueError):
@@ -376,12 +439,23 @@ def load_profile_file(profile_path: Path) -> CanonicalProfile:
                 profile_path=str(resolved),
                 field="profile",
                 reason="profile file does not exist",
-                fix="Run 'apothem profile init' or pass --profile PATH.",
+                fix=PROFILE_NOT_FOUND_FIX,
             )
         )
 
     try:
         raw_text = resolved.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        raise ProfileValidationError(
+            ProfileDiagnostic(
+                code="profile.read_failed",
+                message="Apothem validation failed.",
+                profile_path=str(resolved),
+                field="profile",
+                reason=f"profile is not valid UTF-8 ({exc.reason} at byte {exc.start})",
+                fix="Save the profile as UTF-8 text.",
+            )
+        ) from exc
     except OSError as exc:
         raise ProfileValidationError(
             ProfileDiagnostic(
@@ -407,6 +481,35 @@ def load_profile_file(profile_path: Path) -> CanonicalProfile:
                 fix="Fix the YAML syntax before running the command again.",
             )
         ) from exc
+    except RecursionError as exc:
+        # The YAML composer recurses once per nesting level, so a deeply
+        # nested document exhausts the stack before it is a YAMLError.
+        raise ProfileValidationError(
+            ProfileDiagnostic(
+                code="profile.yaml_invalid",
+                message="Apothem validation failed.",
+                profile_path=str(resolved),
+                field="profile",
+                reason="YAML nesting is too deep to parse",
+                fix="Fix the YAML syntax before running the command again.",
+            )
+        ) from exc
+
+    shape_problem = _document_shape_problem(raw_profile)
+    if shape_problem is not None:
+        raise ProfileValidationError(
+            ProfileDiagnostic(
+                code="profile.yaml_invalid",
+                message="Apothem validation failed.",
+                profile_path=str(resolved),
+                field="profile",
+                reason=shape_problem,
+                fix=(
+                    "Simplify the YAML: remove self-referencing aliases and "
+                    "deep nesting."
+                ),
+            )
+        )
 
     if raw_profile is None:
         raw_profile = {}
@@ -426,6 +529,11 @@ def load_profile_file(profile_path: Path) -> CanonicalProfile:
     return validate_profile(raw_profile, profile_path=resolved)
 
 
+def current_schema_version() -> int:
+    """Return the highest profile-schema version this engine reads and writes."""
+    return _CURRENT_SCHEMA_VERSION
+
+
 # Ordered profile-schema migration chain. Each entry maps a source version N to
 # a callable that returns the profile upgraded to version N+1. The chain is a
 # no-op while only v1 exists; a future v1->v2 migration registers as
@@ -441,7 +549,8 @@ def migrate_profile(
 ) -> Mapping[str, Any]:
     """Forward-migrate *profile* to the current schema version.
 
-    A version-less profile is treated as ``_CURRENT_SCHEMA_VERSION``. A profile
+    A version-less profile is read as ``_UNVERSIONED_PROFILE_VERSION`` (1) and
+    migrated forward like any other v1 profile. A profile
     stamped with a version greater than this engine supports is rejected with an
     upgrade-the-engine diagnostic before any schema validation runs, so a
     newer-version profile surfaces an actionable message rather than an opaque
@@ -449,7 +558,7 @@ def migrate_profile(
     ``schema_version`` is left for the jsonschema validator to reject. The v1
     migration chain is a no-op: the mapping is returned unchanged.
     """
-    declared = profile.get("schema_version", _CURRENT_SCHEMA_VERSION)
+    declared = profile.get("schema_version", _UNVERSIONED_PROFILE_VERSION)
     # bool is an int subclass; treat a non-int (including bool) version as
     # malformed and let the schema validator emit the precise diagnostic.
     if isinstance(declared, int) and not isinstance(declared, bool):
@@ -482,10 +591,57 @@ def migrate_profile(
     return profile
 
 
+# Bounds on a parsed profile document. A real profile nests about five levels
+# and holds at most a few hundred values. The bounds sit far above that and
+# below the point where recursive validation and redaction would exhaust the
+# stack, or where YAML aliases (which share one object per anchor) would expand
+# into an exponential walk.
+_MAX_DOCUMENT_DEPTH: Final[int] = 64
+_MAX_DOCUMENT_VALUES: Final[int] = 100_000
+
+
+def _document_shape_problem(document: object) -> str | None:
+    """Return why a parsed YAML document cannot be validated safely, or None.
+
+    Walks the document iteratively (so the check itself cannot overflow the
+    stack) and reports, in plain words, a value that contains itself (an alias
+    cycle such as ``&a [*a]``), nesting deeper than ``_MAX_DOCUMENT_DEPTH``, or
+    more than ``_MAX_DOCUMENT_VALUES`` values once aliases are followed.
+    """
+    stack: list[tuple[object, int, frozenset[int]]] = [(document, 0, frozenset())]
+    visited = 0
+    while stack:
+        value, depth, ancestors = stack.pop()
+        visited += 1
+        if visited > _MAX_DOCUMENT_VALUES:
+            return (
+                f"profile expands to more than {_MAX_DOCUMENT_VALUES} values "
+                "once YAML aliases are followed"
+            )
+        if isinstance(value, Mapping):
+            children: list[object] = list(value.values())
+        elif isinstance(value, list):
+            children = list(value)
+        else:
+            continue
+        if id(value) in ancestors:
+            return "YAML aliases form a cycle: a value contains itself"
+        if depth >= _MAX_DOCUMENT_DEPTH:
+            return f"profile nests deeper than {_MAX_DOCUMENT_DEPTH} levels"
+        inner = ancestors | {id(value)}
+        stack.extend((child, depth + 1, inner) for child in children)
+    return None
+
+
 def validate_profile(
     profile: Mapping[str, Any], *, profile_path: str | Path = "<memory>"
 ) -> CanonicalProfile:
-    """Validate *profile* against the packaged schema, then normalize it."""
+    """Validate *profile* against the packaged schema, then normalize it.
+
+    Beyond the schema, no key or string value may carry a managed-block
+    marker (see :func:`_managed_block_marker_problems`). Every problem from
+    both checks is reported in one pass.
+    """
     profile = migrate_profile(profile, profile_path=profile_path)
     schema = yaml.safe_load(profile_schema_path().read_text(encoding="utf-8"))
     validator = Draft202012Validator(schema, format_checker=FormatChecker())
@@ -495,11 +651,89 @@ def validate_profile(
         validator.iter_errors(profile),
         key=lambda err: [(isinstance(p, int), str(p)) for p in err.absolute_path],
     )
-    if errors:
+    problems = (
+        *(_diagnostic_from_validation_error(error, profile_path) for error in errors),
+        *_managed_block_marker_problems(profile, profile_path),
+    )
+    if problems:
         raise ProfileValidationError(
-            _diagnostic_from_validation_error(errors[0], profile_path)
+            dataclasses.replace(problems[0], problems=problems)
         )
     return coerce_profile(profile)
+
+
+#: Error code for profile text that carries a managed-block marker.
+_MANAGED_BLOCK_MARKER_CODE: Final[str] = "profile.managed_block_marker"
+
+
+def _profile_strings(
+    document: object,
+) -> Iterator[tuple[tuple[object, ...], str]]:
+    """Yield ``(field_path, text)`` for every string key and value.
+
+    A key is reported at the path it names, so a marker in an MCP server name
+    or an ``env`` variable name is located the same way as one in a value.
+    """
+    pending: list[tuple[tuple[object, ...], object]] = [((), document)]
+    while pending:
+        path, value = pending.pop()
+        if isinstance(value, str):
+            yield path, value
+            continue
+        if isinstance(value, Mapping):
+            children = [((*path, key), item) for key, item in value.items()]
+            for child_path, _ in children:
+                if isinstance(child_path[-1], str):
+                    yield child_path, child_path[-1]
+        elif isinstance(value, list):
+            children = [((*path, index), item) for index, item in enumerate(value)]
+        else:
+            continue
+        pending.extend(reversed(children))
+
+
+def _managed_block_marker_problems(
+    profile: Mapping[str, Any], profile_path: str | Path
+) -> list[ProfileDiagnostic]:
+    """Return one diagnostic per profile field that carries a managed-block marker.
+
+    The markers delimit the block Apothem owns inside operator-owned
+    instruction files (AGENTS.md, GEMINI.md, rule files). Profile text reaches
+    that block verbatim, so a marker in it would end the block early or open
+    a second one. The materializer neutralizes any marker that still gets
+    through; rejecting it here tells the operator at load time instead. The
+    diagnostic names the field path and the marker, never the value, which
+    may be a credential.
+    """
+    # Imported here, not at module load: harness_materializer imports this
+    # module, and the marker strings are its frozen contract.
+    from apothem.lib.harness_materializer import (
+        APOTHEM_BLOCK_BEGIN,
+        APOTHEM_BLOCK_END,
+    )
+
+    found: dict[tuple[object, ...], list[str]] = {}
+    for path, text in _profile_strings(profile):
+        for marker in (APOTHEM_BLOCK_BEGIN, APOTHEM_BLOCK_END):
+            if marker not in text:
+                continue
+            markers = found.setdefault(path, [])
+            if marker not in markers:
+                markers.append(marker)
+    return [
+        ProfileDiagnostic(
+            code=_MANAGED_BLOCK_MARKER_CODE,
+            message="Apothem validation failed.",
+            profile_path=str(profile_path),
+            field=_format_field_path(path),
+            reason=(
+                f"contains {' and '.join(markers)}, which Apothem reserves to "
+                "delimit the block it manages in instruction files"
+            ),
+            fix="Remove the marker from this field; Apothem writes it itself.",
+        )
+        for path, markers in found.items()
+    ]
 
 
 def coerce_profile(profile: Mapping[str, Any]) -> CanonicalProfile:
@@ -616,8 +850,35 @@ def _diagnostic_from_validation_error(
         field=field,
         reason=error.message,
         fix=_suggest_fix(error),
-        safe_value=redact_value(error.instance, field_path=tuple(error.absolute_path)),
+        safe_value=_offending_value(error),
     )
+
+
+def _offending_value(error: ValidationError) -> object:
+    """Return the redacted input that failed, narrowed to what actually failed.
+
+    An ``additionalProperties`` failure is reported against the whole parent
+    mapping; echoing that would print the entire profile for one misspelled
+    key. Only the unexpected keys (with their redacted values) are returned.
+    """
+    path = tuple(error.absolute_path)
+    instance = error.instance
+    if error.validator == "additionalProperties" and isinstance(instance, Mapping):
+        schema = error.schema if isinstance(error.schema, Mapping) else {}
+        allowed = set(schema.get("properties", {}))
+        patterns = list(schema.get("patternProperties", {}))
+        extras = [
+            key
+            for key in instance
+            if key not in allowed
+            and not any(re.search(pattern, str(key)) for pattern in patterns)
+        ]
+        if extras:
+            return {
+                str(key): redact_value(instance[key], field_path=(*path, key))
+                for key in extras
+            }
+    return redact_value(instance, field_path=path)
 
 
 def _error_code(validator_name: object) -> str:

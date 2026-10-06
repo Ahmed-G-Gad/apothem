@@ -231,3 +231,58 @@ def test_uninstall_keeps_operator_keys_and_strips_apothem(
     assert not list(tmp_path.glob("settings.json.*.bak"))
     # The pre-mutation file is recoverable from the Apothem backup root.
     assert list((tmp_path / "apothem-backups").rglob("settings.json"))
+
+
+_SRC_ROOT = Path(claude_code_pkg.__file__).resolve().parents[2]
+_TASK_READ_TOOLS = ("TaskGet", "TaskList")
+_TASK_WRITE_TOOLS = ("TaskCreate", "TaskUpdate")
+
+
+def test_settings_template_declares_the_schemastore_schema() -> None:
+    """The settings template names its JSON schema for editor validation."""
+    template = Path(claude_code_pkg.__file__).parent / "templates" / "settings.json"
+    settings = json.loads(template.read_text(encoding="utf-8"))
+    assert settings["$schema"] == (
+        "https://json.schemastore.org/claude-code-settings.json"
+    )
+
+
+def _frontmatter(path: Path) -> dict[str, object]:
+    text = path.read_text(encoding="utf-8")
+    if not text.startswith("---\n"):
+        return {}
+    block = text.split("---\n", 2)[1]
+    loaded = yaml.safe_load(block)
+    return loaded if isinstance(loaded, dict) else {}
+
+
+def _tool_names(value: object) -> set[str]:
+    if isinstance(value, list):
+        return {str(item).strip() for item in value}
+    if isinstance(value, str):
+        return {part.strip() for part in value.split(",") if part.strip()}
+    return set()
+
+
+def test_frontmatter_names_task_tools_beside_todowrite() -> None:
+    """Every tool list that names TodoWrite also names the Task tools.
+
+    Claude Code disables TodoWrite by default in favour of TaskCreate,
+    TaskGet, TaskList and TaskUpdate
+    (https://code.claude.com/docs/en/tools-reference.md). The skills and agents
+    install verbatim into ~/.claude/, so a grant or denial that names only
+    TodoWrite no longer covers the tool the session actually has.
+    """
+    stale: list[str] = []
+    for folder in ("skills", "agents", "commands"):
+        for path in sorted((_SRC_ROOT / folder).rglob("*.md")):
+            meta = _frontmatter(path)
+            for field in ("allowed-tools", "tools"):
+                names = _tool_names(meta.get(field))
+                wanted = {*_TASK_READ_TOOLS, *_TASK_WRITE_TOOLS}
+                if "TodoWrite" in names and not wanted <= names:
+                    stale.append(f"{path.relative_to(_SRC_ROOT)}:{field}")
+            denied = _tool_names(meta.get("disallowedTools"))
+            if "TodoWrite" in denied and not set(_TASK_WRITE_TOOLS) <= denied:
+                stale.append(f"{path.relative_to(_SRC_ROOT)}:disallowedTools")
+    assert not stale, stale

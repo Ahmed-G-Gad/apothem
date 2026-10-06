@@ -1,8 +1,7 @@
 ---
-name: "canonical-layout-reporting-tiers"
+trigger: glob
 description: "Path-filtered companion rule carrying the operational depth of `rules/canonical-layout.md` — the two-tier reporting body (per-sub-phase + phase rollup), the numeric-prefix discipline, the orphan-output recovery surface, the reciprocal producer / consumer cross-reference body, the surface-imposition table, and the M11 ↔ M12 correspondence table; demand-loaded on plan-suite / phase / migration touches."
-pathFilter: "**/.apothem/plans/**, **/.plans/**, **/phases/**, **/REPORT.md, **/PHASE.md, **/MASTER-PLAN.md, **/PROGRESS.md, **/migrations/**"
-alwaysApply: false
+globs: "**/.apothem/plans/**, **/.plans/**, **/phases/**, **/REPORT.md, **/PHASE.md, **/MASTER-PLAN.md, **/PROGRESS.md, **/migrations/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

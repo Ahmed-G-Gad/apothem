@@ -362,10 +362,20 @@ def check_repo(root: Path) -> GrepResult:
 
 
 def _main(argv: list[str]) -> int:
-    root = Path(argv[1]) if len(argv) >= 2 else Path.cwd()
+    # Imported here, not at module top: ``check_repo()`` stays stdlib-only.
+    from apothem.conformity._grep_base import finish_root_report, parse_root_args
+
+    root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root
     result = check_repo(root)
-    print(result.to_json())
-    return EXIT_PASS if result.passed else EXIT_FAIL
+    # One HEAD subject is inspected. A directory with no commit history (no
+    # repository, or no commit yet) is the documented exempt state, not a
+    # vacuous pass.
+    return finish_root_report(
+        result.to_json(),
+        passed=result.passed,
+        inspected=int(result.subject is not None),
+        empty_scope_expected=result.subject is None,
+    )
 
 
 if __name__ == "__main__":

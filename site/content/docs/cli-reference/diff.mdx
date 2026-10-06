@@ -25,6 +25,14 @@ against the current on-disk target, so an already-matching target reads
 `no change` and is hidden from the default view. It is the answer to "what would
 `apothem install` do to this harness right now?" without making the change.
 
+The plan covers every path the install writes: the manifest entries, the
+harness's own config file (for example `opencode.json` or
+`config.yaml`), the instruction anchor or profile document the shared profile
+is projected into (such as `CLAUDE.md`), and the shared data stores under
+`.apothem/`. Right after an install, `diff` reports no pending change; a
+re-install then writes nothing and takes no new backup. `install --dry-run`
+shows the same plan.
+
 For operator-owned targets — files that carry both your own content and an
 Apothem-managed block — the diff shows the exact lines that would change. For
 other targets, the planned action and preview status are summarized.
@@ -60,6 +68,7 @@ result row's `detail.diff` field carries the unified diff string.
 
 ```json
 {
+  "schema_version": 1,
   "status": "dry_run",
   "command": "diff",
   "action": "dry_run",
@@ -98,6 +107,7 @@ apothem diff --harness claude-code --json
 |---|---|
 | 0 | Diff reported (pending changes are reported, not an error) |
 | 1 | Expected validation, profile, harness, or project error |
+| 64 | Usage error: an unknown option or command, or a missing or invalid option value. Under `--json` the error is a JSON envelope with code `cli.usage`. |
 
 ## See also
 

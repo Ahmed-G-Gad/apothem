@@ -1,13 +1,13 @@
 ---
 name: "workflow"
 version: "0.1.0"
-updated: "2026-06-14"
-description: "General-purpose workflow-harnessing skill — matched when the operator states a mission via '/workflow <<mission>>', asks to 'harness a workflow', 'run a multi-agent workflow', 'orchestrate agents', 'fan out and verify', 'critique and remediate', 'maximally elevate' a target, or otherwise hands off a non-trivial multi-step mission whose accomplishment benefits from genuinely-independent parallel work plus adversarial verification. Decomposes the mission, dispatches independent agents under named return contracts (non-overlapping scope, isolation where parallel writes collide, single-message parallel launch), subjects every load-bearing finding to an EXTREMELY-CRITIQUE refute-by-default verification pass (N independent critics per finding, default 3, distinct lenses — correctness/security/reproducibility/regression — survival only on non-refute majority) before it survives, is granted to identify and remediate defects beyond the literal mission (each disclosed per rules/disclosure-ledger.md), self-augments from current authoritative SOTA sources rather than memory alone, and emits a deterministic, byte-stable result. Multi-agent dispatch and continuous auto-execution are opt-in / confirmation-gated, never default-on — the canonical home for the '/workflow <<mission>>' entry pattern. A single-step request that one direct tool call resolves is below this skill's threshold."
+updated: "2026-10-02"
+description: "General-purpose workflow-harnessing skill — matched when the operator states a mission via '/workflow <<mission>>', asks to 'harness a workflow', 'run a multi-agent workflow', 'orchestrate agents', 'fan out and verify', 'critique and remediate', 'maximally elevate' a target, or hands off a non-trivial multi-step mission that benefits from independent parallel work plus adversarial verification. Decomposes the mission, dispatches independent agents under named return contracts (non-overlapping scope, isolation where parallel writes collide), runs every load-bearing finding through an EXTREMELY-CRITIQUE refute-by-default pass (default 3 independent critics with distinct lenses; survival only on a non-refute majority), may remediate defects beyond the literal mission (each disclosed per rules/disclosure-ledger.md), and emits a deterministic result. Multi-agent dispatch and auto-execution are opt-in and confirmation-gated. A request one tool call resolves is below this skill's threshold."
 archetype: "orchestration-template"
 userInvocable: true
 argument-hint: "[<<mission>>] [--autonomous] [--verify-panel N]"
 disable-model-invocation: true
-allowed-tools: "Read, Write, Edit, Glob, Grep, Bash, Agent, WebSearch, WebFetch, TodoWrite"
+allowed-tools: "Read, Glob, Grep, Agent, WebSearch, TodoWrite, TaskCreate, TaskGet, TaskList, TaskUpdate"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -97,7 +97,7 @@ Apply the surviving findings. Remediate root causes, not symptoms. Where experti
 
 ### 6. Synthesize & Self-Check
 
-Collect agent results in one pass, verify mutual consistency, synthesize a compact result, and release raw agent output from active context. The procedure keeps the main thread lean: raw agent output is released after this single-pass synthesis, so only the synthesized verified findings persist in the conversation per `rules/multi-agent-workflow.md` §4. Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against every emitted artifact; iterate on any failing bar until it passes. Record the attestation.
+Collect agent results in one pass, verify mutual consistency, synthesize a compact result, and release raw agent output from active context. The procedure keeps the main thread lean: raw agent output is released after this single-pass synthesis, so only the synthesized verified findings persist in the conversation per `rules/multi-agent-workflow.md` §4. Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against every emitted artifact; iterate on any failing bar until it passes within the three-round cap of `rules/pre-emission-gate-bars.md` §3 (then BLOCKED). Record the attestation.
 
 ## Autonomy Posture
 

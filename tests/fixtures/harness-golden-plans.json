@@ -16,7 +16,7 @@
       "target": "<ROOT>/antigravity-cli/plugins/apothem/skills"
     },
     {
-      "mode": "merge_tree_entries",
+      "mode": "antigravity_rules",
       "source": "rules",
       "target": "<ROOT>/antigravity-cli/plugins/apothem/rules"
     },
@@ -26,7 +26,7 @@
       "target": "<ROOT>/antigravity-cli/plugins/apothem/skills"
     },
     {
-      "mode": "gemini_agents",
+      "mode": "antigravity_agents",
       "source": "agents",
       "target": "<ROOT>/antigravity-cli/plugins/apothem/agents"
     },
@@ -58,12 +58,12 @@
       "target": "<ROOT>/skills"
     },
     {
-      "mode": "merge_tree_entries",
+      "mode": "claude_rules",
       "source": "rules",
       "target": "<ROOT>/rules"
     },
     {
-      "mode": "merge_tree_entries",
+      "mode": "native_skills",
       "source": "skills",
       "target": "<ROOT>/skills"
     },
@@ -120,7 +120,7 @@
       "target": "<ROOT>/../.config/apothem/rules"
     },
     {
-      "mode": "merge_tree_entries",
+      "mode": "native_skills",
       "source": "skills",
       "target": "<ROOT>/../.agents/skills"
     },

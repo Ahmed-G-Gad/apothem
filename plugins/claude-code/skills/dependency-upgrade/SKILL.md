@@ -1,13 +1,13 @@
 ---
 name: "dependency-upgrade"
 version: "0.1.0"
-updated: "2026-06-09"
+updated: "2026-10-02"
 description: "Changelog-reviewed, pinned, gate-verified dependency upgrade — matched when the operator asks to 'bump deps', 'upgrade dependencies', 'update packages', 'bump the lockfile', 'refresh dependency versions', or any phrasing requesting an audited version bump of the host project's third-party dependencies. Five-step loop: enumerate outdated dependencies from the host's manifest + lockfile, classify each candidate against its changelog (safe / breaking / major), apply pinned bumps honoring the host's discovered pin policy, run the host's lint / test / type-check gates, and report. Breaking and major candidates STOP for structured inquiry — never crossed silently. Idempotent (re-run on a current manifest yields zero bumps); --dry-run classifies without writing; --package NAME scopes to one dependency. Developer + security cohorts; user-invocable; honors host-discovered tooling and assumes no package manager."
 archetype: "maintenance-template"
-userInvocable: true
+user-invocable: true
 argument-hint: "[--package NAME] [--dry-run]"
 disable-model-invocation: true
-allowed-tools: "Read, Write, Edit, Glob, Grep, Bash"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

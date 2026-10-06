@@ -35,4 +35,27 @@ tool_surface_restrictions:
   - destructive-shell-ops
   - network-write-unsigned
 system_prompt_template_path: "templates/GEMINI.md"
-agent_memory_surface: "GEMINI.md context files via the Auto Memory inbox (no dedicated memory directory)"
+agent_memory_surface: "GEMINI.md memory files (project GEMINI.md, a private per-project memory folder, ~/.gemini/GEMINI.md)"
+# What each source frontmatter key becomes in a converted cohort (see
+# tests/unit/test_conversion_losses.py for the value vocabulary). Gemini TOML
+# commands carry description and prompt only; custom slash commands run only
+# when the user types them, so disable-model-invocation needs no field.
+conversion_losses:
+  commands:
+    name: "filename"
+    description: "native:description"
+    argument-hint: "dropped"
+    disable-model-invocation: "dropped"
+    allowed-tools: "dropped"
+    version: "dropped"
+    updated: "dropped"
+    portability: "dropped"
+  agents:
+    name: "native:name"
+    description: "native:description"
+    tools: "native:tools"
+    disallowedTools: "native:tools"
+    maxTurns: "native:max_turns"
+    version: "dropped"
+    updated: "dropped"
+    portability: "dropped"

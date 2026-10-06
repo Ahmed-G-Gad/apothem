@@ -1,12 +1,12 @@
 ---
 name: "plan-spec"
 version: "0.1.0"
-updated: "2026-06-10"
+updated: "2026-10-02"
 description: "Refines free-form prose, raw notes, or ad-hoc requirements into a spec-grade `_spec/spec.md` ready for `/plan-generate`. Six transformation phases (Discovery & Extraction · Meticulous Consideration · Potency Mapping · Preservation Verification · Expertise Application · Question-Resolution Sweep) governed by four operational disciplines (D1 Meticulous Consideration · D2 EXTREME Potency · D3 STRICT Preservation · D4 Extensive Expertise) under the four-discipline operational invariant (six conditions; failure on any blocks emission). Every questionable surfaces via the structured-inquiry channel per ten resolution disciplines D1–D10 across six mandatory gates G0–G5; silent defaulting is forbidden. Emits a `_spec/spec.md` at the suite folder + Handoff Manifest (unconditionally — even on standalone invocation). The `--quick` flag bypasses Forge elicitation and writes a single project-local lightweight plan file at `<project-root>/.apothem/plans/<YYYY-MM-DD>--<kebab-slug>.md`."
 argument-hint: "[path/to/prose-source] [--suite-name NAME] [--refine-existing] [--standalone] [--quick SLUG [--tag TAG]]"
 disable-model-invocation: false
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -360,4 +360,8 @@ Invoke `/plan-generate` to consume the ratified `_spec/spec.md` and materialize 
 
 ## Installed Reference Paths
 
-When this skill is installed by Apothem, resolve repository-style references such as `rules/...`, `templates/...`, and `hooks/...` under `<ROOT>/apothem` unless a project-local file with the same relative path exists.
+When this skill is installed by Apothem, resolve a repository-style reference against the installed directory for its first segment, unless a project-local file with the same relative path exists.
+
+- `rules/<path>` is `<ROOT>/.apothem/support/rules/<path>`
+- `templates/<path>` is `<ROOT>/.apothem/support/templates/<path>`
+- `hooks/<path>` is `<ROOT>/.apothem/support/hooks/<path>`

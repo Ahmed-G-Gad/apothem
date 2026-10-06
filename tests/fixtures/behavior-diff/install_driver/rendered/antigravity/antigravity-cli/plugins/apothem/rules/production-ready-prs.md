@@ -1,8 +1,6 @@
 ---
-name: "production-ready-prs"
+trigger: always_on
 description: "Every change the agent makes in a host project is delivered in production-ready form — tests + docs + CHANGELOG entry + conformant commit message + CI green in the same change-set. The seven visibility surfaces (what-is-this / how-to-install / is-it-alive / is-it-safe / how-to-contribute / can-I-trust / what-changed) are honored; gaps surface as findings rather than silently entrenched."
-pathFilter: ""
-alwaysApply: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

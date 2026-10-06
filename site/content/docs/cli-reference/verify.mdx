@@ -45,6 +45,7 @@ absent default degrades to the full registry.
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "verify",
   "action": "verified",
@@ -86,6 +87,7 @@ apothem verify --harness all --project .
 |---|---|
 | 0 | Harness verified — all managed targets present and valid |
 | 1 | Harness not verified — managed targets missing or invalid |
+| 64 | Usage error: an unknown option or command, or a missing or invalid option value. Under `--json` the error is a JSON envelope with code `cli.usage`. |
 
 ## See also
 

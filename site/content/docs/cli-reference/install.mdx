@@ -22,6 +22,21 @@ require `--project PATH`.
 
 The continuous-form alias `apothem installing` resolves to the same handler.
 
+## First run without a profile
+
+When `--profile` is omitted and no profile exists at the default path
+(`~/.config/apothem/profile.yaml`), `install` writes the starter profile there
+first, prints `Created a starter profile at <path>`, and continues. The starter
+profile carries placeholder identity fields, so the install also prints the
+placeholder-identity note; personalize the profile, then run
+[`update`](/docs/cli-reference/update) to apply it. Under `--json` the creation
+is reported as a `warnings` entry with `"operation": "profile_created"`.
+
+- `--dry-run` never writes the profile: the preview uses the starter profile in
+  memory and reports `"operation": "profile_scaffold_preview"`.
+- An explicit `--profile PATH` that does not exist is never created; the command
+  exits 1 with `profile.not_found`.
+
 ## Blast-radius preview
 
 `install --harness all` fans out into mixed scopes: project-scope adapters write
@@ -42,9 +57,48 @@ Each adapter projects only the capabilities its harness supports natively;
 capabilities with no native surface are reported, not silently dropped. In plain
 mode this is a single grouped note per harness (for example
 `Note: <harness> - 9 capabilities not projected; pass --verbose for detail`);
-under `--verbose` each capability prints its own rationale line. The
+under `--verbose` each capability prints its own rationale line. Any other
+adapter warning prints on its own `Warning:` line in plain mode too, for example
+the Zed warning that names an instruction file the new `.rules` hides. The
 `--format json` envelope always carries the full `warnings` array regardless of
 verbosity.
+
+Install and update also print advisories as `Note:` lines. An advisory never
+changes what the install writes. When an install writes a shared root, a path
+other tools also load (for example the skills folder `~/.agents/skills/`),
+the note names those tools. When an install targets a tool that already loads
+Apothem content from another install's shared root, the note names that
+install. In the `--format json` envelope each advisory is a `warnings` entry
+with `"outcome": "advisory"` and `"operation": "shared_root"`.
+
+The profile's MCP servers get three advisories, each naming the profile field:
+
+| Operation | Condition | Fix |
+| --- | --- | --- |
+| `mcp_deprecated_transport` | `transport: sse` (the MCP specification deprecates HTTP+SSE) | Use `streamable-http` when the server supports it. |
+| `mcp_plain_http` | an `http://` URL to a host that is not loopback | Use an `https://` URL. |
+| `mcp_literal_credential` | a `headers` or `env` value shaped like a token (`ghp_`, `github_pat_`, `sk-`, `xox*-`, or `Bearer` with a long token) | Keep the secret in an environment variable and write `${GITHUB_TOKEN}`-style references. |
+
+The credential advisory never prints the value it found. A value that contains
+a `${...}` reference is never flagged.
+
+## Operator configs with comments
+
+Some harness configs are files you also edit, such as `settings.json`,
+`opencode.json` (which may be JSONC), `openclaw.json` (JSON5), and
+`config.yaml`. Install merges its keys into these files and keeps every key you
+added.
+
+A merge rewrites the file as plain JSON or YAML, which would drop comments,
+trailing commas, and JSON5 syntax. So:
+
+- When the merge would not change any value (for example, you already added
+  Apothem's keys yourself), the file is left byte-for-byte as it is.
+- When the merge must change a value in a file that carries comments or JSON5
+  syntax, or in a file that does not parse at all, install writes nothing for
+  that harness and exits 1 with the error code `config.unparseable`. The
+  `fix` field names the keys install would add, so you can convert the file
+  to plain JSON or YAML, or add those keys by hand and re-run.
 
 ## Options
 
@@ -70,6 +124,7 @@ is written to stdout:
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "install",
   "action": "installed",
@@ -84,10 +139,15 @@ is written to stdout:
 }
 ```
 
-For `--dry-run`:
+For `--dry-run`, nothing is written and `results` lists every path the install
+would write, each with the outcome it would have (`created`, `updated` or
+`unchanged`) and, for a file you also edit, the unified diff in
+`detail.diff` — the same plan [`apothem diff`](/docs/cli-reference/diff)
+shows:
 
 ```json
 {
+  "schema_version": 1,
   "status": "dry_run",
   "command": "install",
   "action": "dry_run",
@@ -127,6 +187,7 @@ Expected validation errors use the same envelope and include an error object:
 
 ```json
 {
+  "schema_version": 1,
   "status": "error",
   "command": "install",
   "harness": "all",
@@ -158,6 +219,7 @@ apothem installing --harness claude-code   # lowercase variant
 | 0 | Adapter installed successfully or dry-run planned cleanly |
 | 1 | Expected validation, profile, harness, project, or adapter error |
 | 2 | Partial batch materialization after at least one write |
+| 64 | Usage error: an unknown option or command, or a missing or invalid option value. Under `--json` the error is a JSON envelope with code `cli.usage`. |
 
 ## See also
 

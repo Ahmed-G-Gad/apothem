@@ -1,18 +1,14 @@
 <!-- SPDX-License-Identifier: MIT -->
 
-# GitHub Copilot — Apothem Bootstrap
+# Apothem — Project Instructions
 
-This file is materialised by `apothem install --harness github-copilot --project <path>` and lands at `<project>/.github/copilot-instructions.md`, the GA repo-wide instructions surface per https://docs.github.com/en/copilot/customizing-copilot/adding-custom-instructions-for-github-copilot. The first 4,000 characters are parsed by Copilot's code-review agent; the remaining body is consumed by chat / completions in this project.
+Apothem wrote this block with `apothem install --harness github-copilot`. It lands at `<project>/.github/copilot-instructions.md`, the repository-wide custom instructions file (https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/add-custom-instructions/add-repository-instructions), which Copilot applies to requests made in this repository, including chat, the cloud agent, and code review. Other coding tools can read the same file, so this block carries project-wide guidance only and names no single tool as its reader. GitHub notes that shorter instruction files are more likely to be processed in full, so the shared-profile section, when the profile sets one, comes first in this block.
 
-## Project Context
-
-GitHub Copilot operates against the apothem governance and convention surface in this project. Apothem propagates a shared engineering discipline across every supported AI harness; inside Copilot, the surface manifests as this repo-wide instructions file.
-
-The full apothem rule / skill / command / agent cohort lives at the apothem source repository under `src/apothem/{rules,skills,commands,agents}/`. This file is the Copilot-facing anchor; consult the apothem rule tree for the per-rule body when generating non-trivial code or prose.
+This install writes this one file: no Apothem rule, skill, command, or agent file is installed beside it, so the disciplines below are the Apothem rule text in force in this project.
 
 ## Engineering disciplines in force
 
-The apothem governance contract binds the following disciplines uniformly across every harness, including GitHub Copilot:
+Apothem's foundational mandates apply in every tool that reads this block:
 
 - **Plans-Locality.** Plan-suite artefacts (PROGRESS.md, PLAN-NOTES.md, PHASE.md, REPORT.md) live under `<project>/.apothem/plans/{suite}/` — the sole canonical home; a legacy `<project>/.plans/` tree upgrades via `apothem migrate-workspace`. They never land in a global plans directory or any other global-ecosystem location.
 - **Authority hygiene.** Never fabricate identity, scope, security posture, or version-pin data. When generation requires data the operator has not supplied, surface the ambiguity through a question instead of inventing a plausible-looking value.
@@ -26,8 +22,8 @@ The apothem governance contract binds the following disciplines uniformly across
 
 ## Modal hierarchy
 
-When the operator's request conflicts with an apothem rule, the rule wins; surface the conflict and propose the rule-conformant alternative. When two apothem surfaces conflict, the most specific path-filtered rule wins over the always-on rule. Always-on rules are listed at `<apothem-src>/src/apothem/rules/` with `alwaysApply: true` in their frontmatter.
+When the operator's request conflicts with an apothem rule, the rule wins; surface the conflict and propose the rule-conformant alternative. When two apothem surfaces conflict, the most specific path-filtered rule wins over the always-on rule.
 
-## Refreshing the file
+## Maintaining this block
 
-Re-run `apothem install --harness github-copilot --project <this-project-root>` to refresh the Apothem managed block in this file with the latest template. The install folds Apothem's content into a sentinel-delimited managed block and preserves any operator prose outside the sentinels verbatim; it is idempotent. The companion `apothem uninstall --harness github-copilot --project <this-project-root>` strips the managed block (leaving operator prose in place; the file is removed only when nothing but the block remained), backing the prior file up under the Apothem backup root (`~/.apothem/backups/<timestamp>/github_copilot/`) first. `apothem verify --harness github-copilot --project <this-project-root>` checks the file is present and non-empty.
+Text outside the Apothem managed block is operator-owned and survives every re-install. Re-run `apothem install --harness github-copilot --project <this-project-root>` to refresh the block; the operation is idempotent. `apothem uninstall --harness github-copilot --project <this-project-root>` removes the block, backing the prior file up under the Apothem backup root (`~/.apothem/backups/<timestamp>/github_copilot/`) first, and removes the file only when nothing but the block remained. `apothem verify --harness github-copilot --project <this-project-root>` checks that the file is present and non-empty.

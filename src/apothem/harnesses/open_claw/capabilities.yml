@@ -35,3 +35,17 @@ tool_surface_restrictions:
   - network-write-unsigned
 system_prompt_template_path: "n/a"
 agent_memory_surface: "n/a"
+# What each source frontmatter key becomes in a converted cohort (see
+# tests/unit/test_conversion_losses.py for the value vocabulary). Commands land
+# as SKILL.md support material under .apothem/support/skills/; OpenClaw loads
+# no skill from that path, so every key is kept as text and read by nothing.
+conversion_losses:
+  commands:
+    name: "ignored"
+    description: "ignored"
+    argument-hint: "ignored"
+    disable-model-invocation: "ignored"
+    allowed-tools: "ignored"
+    version: "ignored"
+    updated: "ignored"
+    portability: "ignored"

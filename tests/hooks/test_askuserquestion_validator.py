@@ -5,7 +5,7 @@
 Covers the call-time `(Recommended)`-marker validator: well-formed payloads
 pass, lowercase / non-canonical / misplaced / double / destructive markers are
 findings, the missing-marker nudge fires (never blocks), the strict opt-in
-escalates well-formedness findings to a block while leaving the nudge advisory,
+escalates well-formedness findings to a deny while leaving the nudge advisory,
 and malformed input fails open.
 """
 
@@ -159,7 +159,7 @@ class TestEnvelope:
     """Shape of the emitted hook envelope.
 
     Covers the clean payload yielding an empty envelope, the advisory mode
-    emitting a system message rather than blocking, strict mode blocking on a
+    emitting additional context rather than blocking, strict mode denying on a
     well-formedness finding, and strict mode deliberately not blocking when only
     a nudge is present.
     """
@@ -171,12 +171,15 @@ class TestEnvelope:
         assert aqv.build_envelope(result, strict=False) == {}
         assert aqv.build_envelope(result, strict=True) == {}
 
-    def test_advisory_emits_systemmessage_not_block(self) -> None:
+    def test_advisory_emits_additional_context_not_block(self) -> None:
         result = aqv.validate_payload(
             _payload(_question("Accept (recommended)", "Reject"))
         )
         envelope = aqv.build_envelope(result, strict=False)
-        assert "systemMessage" in envelope
+        specific = envelope["hookSpecificOutput"]
+        assert specific["hookEventName"] == "PreToolUse"
+        assert specific["additionalContext"]
+        assert "permissionDecision" not in specific
         assert "decision" not in envelope
 
     def test_strict_blocks_wellformedness(self) -> None:
@@ -184,15 +187,19 @@ class TestEnvelope:
             _payload(_question("Accept (recommended)", "Reject"))
         )
         envelope = aqv.build_envelope(result, strict=True)
-        assert envelope["decision"] == "block"
-        assert "recommended" in envelope["reason"].lower()
+        specific = envelope["hookSpecificOutput"]
+        assert specific["permissionDecision"] == "deny"
+        assert "recommended" in specific["permissionDecisionReason"].lower()
+        assert "decision" not in envelope
 
     def test_strict_does_not_block_nudge_only(self) -> None:
         # A pure-nudge result (missing marker) must NOT block even under strict.
         result = aqv.validate_payload(_payload(_question("Patch", "Rewrite")))
         envelope = aqv.build_envelope(result, strict=True)
         assert "decision" not in envelope
-        assert "systemMessage" in envelope
+        specific = envelope["hookSpecificOutput"]
+        assert "permissionDecision" not in specific
+        assert specific["additionalContext"]
 
 
 class TestStrictDetection:
@@ -258,7 +265,7 @@ class TestFailOpen:
 class TestMainStdin:
     """Process-level entry point behaviour over stdin.
 
-    Covers the advisory system message and the strict block.
+    Covers the advisory additional context and the strict deny.
     """
 
     @staticmethod
@@ -269,7 +276,7 @@ class TestMainStdin:
         stream.isatty = lambda: False  # type: ignore[method-assign]
         monkeypatch.setattr(sys, "stdin", stream)
 
-    def test_main_advisory_systemmessage(
+    def test_main_advisory_additional_context(
         self, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
     ) -> None:
         monkeypatch.delenv(aqv.STRICT_ENV, raising=False)
@@ -278,7 +285,7 @@ class TestMainStdin:
         )
         aqv.main([])
         envelope = json.loads(capsys.readouterr().out)
-        assert "systemMessage" in envelope
+        assert envelope["hookSpecificOutput"]["additionalContext"]
 
     def test_main_strict_block(
         self, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
@@ -288,7 +295,7 @@ class TestMainStdin:
         )
         aqv.main(["--strict"])
         envelope = json.loads(capsys.readouterr().out)
-        assert envelope["decision"] == "block"
+        assert envelope["hookSpecificOutput"]["permissionDecision"] == "deny"
 
 
 class TestDispatchRouting:
@@ -322,7 +329,7 @@ class TestDispatchRouting:
         monkeypatch.setattr(sys, "stdin", stream)
         dispatch.dispatch("PreToolUse", "pretooluse-askuserquestion-recommended", False)
         envelope = json.loads(capsys.readouterr().out)
-        assert "systemMessage" in envelope
+        assert envelope["hookSpecificOutput"]["additionalContext"]
 
     def test_dispatch_clean_payload_empty_envelope(
         self, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]

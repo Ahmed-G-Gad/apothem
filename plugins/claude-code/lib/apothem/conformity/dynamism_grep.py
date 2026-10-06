@@ -273,18 +273,26 @@ def check(root: Path) -> GrepResult:
     )
 
 
-def _read_input(argv: list[str]) -> Path:
-    if len(argv) >= 2:
-        return Path(argv[1])
-    return Path.cwd()
-
-
 def main(root: Path) -> int:
-    """Entry point: scan *root*, print JSON report, return exit code."""
+    """Entry point: scan *root*, print JSON report, return exit code.
+
+    The report carries ``inspected`` (files scanned); a scan that read no
+    file fails rather than passing vacuously.
+    """
+    # Imported here, not at module top: ``check()`` stays stdlib-only.
+    from apothem.conformity._grep_base import finish_root_report
+
     result = check(root)
-    print(result.to_json())
-    return EXIT_PASS if result.passed else EXIT_FAIL
+    return finish_root_report(
+        result.to_json(), passed=result.passed, inspected=result.scanned_count
+    )
+
+
+def _main(argv: list[str]) -> int:
+    from apothem.conformity._grep_base import parse_root_args
+
+    return main(parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root)
 
 
 if __name__ == "__main__":
-    sys.exit(main(_read_input(sys.argv)))
+    sys.exit(_main(sys.argv))

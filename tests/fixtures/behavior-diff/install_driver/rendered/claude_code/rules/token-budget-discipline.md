@@ -3,6 +3,9 @@ name: "token-budget-discipline"
 description: "Caps every always-on rule body at 500 substantive tokens; over-budget bodies decompose into path-filtered companion sub-rules per the established demand-load pattern; mechanical matcher and PreToolUse hook enforce the budget at write time."
 pathFilter: "src/apothem/rules/*.md, **/rules/*.md"
 alwaysApply: false
+paths:
+  - "src/apothem/rules/*.md"
+  - "**/rules/*.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

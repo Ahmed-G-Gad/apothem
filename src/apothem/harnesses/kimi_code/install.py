@@ -3,10 +3,10 @@
 """Install logic for the kimi-code harness adapter.
 
 Materializes the apothem Kimi Code instruction surface into the
-operator-supplied project root. Kimi Code's canonical instruction surface is
-the project-root ``AGENTS.md`` file (per the vendor configuration docs at
-https://moonshotai.github.io/kimi-cli/en/configuration/config-files.html);
-project configuration lives under ``<project>/.kimi-code/``. The adapter
+operator-supplied project root. Kimi Code reads the project-root ``AGENTS.md``
+file as project instructions (per the vendor docs at
+https://moonshotai.github.io/kimi-code/en/customization/agents); project
+configuration lives under ``<project>/.kimi-code/``. The adapter
 writes the apothem governance surface into ``AGENTS.md`` as a
 sentinel-delimited managed block so operator prose is never clobbered, and
 keeps non-native cohorts (rules, commands, skills, agents, templates, hooks)

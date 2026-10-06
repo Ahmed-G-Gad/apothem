@@ -1,12 +1,12 @@
 ---
 name: "research-publish"
 version: "0.1.0"
-updated: "2026-06-16"
-description: "Formats the reviewed paper to the target venue's template and assembles the complete submission package — supplementary materials, the data/code-availability statement, the cover letter, the ethics and conflict-of-interest declarations (R6), the open-access and license selection, the data/code Zenodo deposit beyond the reserved DOI, the registered-report Stage-2 path where one was preregistered, and a submission checklist gating every venue requirement. The venue-and-submission stage of the /research pipeline; its successor is `/research-disseminate`. Triggered as 'format the paper for the venue and build the submission package', 'write the cover letter and data-availability statement', 'declare the ethics and conflict-of-interest statements for submission', 'set up the preprint and reserve a DOI', 'run the submission checklist before I submit', or the pipeline-chained hand-off from /research-review. Consumes the paper deliverable plus _outputs/review-report.md and emits a venue-formatted submission package (paper + supplementary + data/code-availability statement + cover letter + ethics/COI declarations) at a host-natural location, a preprint/archival plan carrying the reserved DOI, _outputs/publication-record.md recording the package manifest and the checklist outcome, and a submission checklist. The operator performs the submission; the stage stops at a ready package, never auto-submits."
+updated: "2026-10-02"
+description: "Formats the reviewed paper to the target venue's template and assembles the complete submission package — supplementary materials, the data/code-availability statement, the cover letter, ethics and conflict-of-interest declarations (R6), open-access and license selection, the data/code Zenodo deposit, the registered-report Stage-2 path where one was preregistered, and a submission checklist gating every venue requirement. The venue-and-submission stage of the /research pipeline; its successor is `/research-disseminate`. Triggered as 'format the paper for the venue and build the submission package', 'write the cover letter and data-availability statement', 'set up the preprint and reserve a DOI', 'run the submission checklist before I submit', or the pipeline-chained hand-off from /research-review. Emits the venue-formatted package, a preprint/archival plan, and _outputs/publication-record.md. The operator submits; the stage stops at a ready package, never auto-submits."
 argument-hint: "[--suite-name NAME] [--override] [--venue NAME] [--template PATH] [--preprint SERVER]"
 disable-model-invocation: false
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -161,7 +161,7 @@ Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against t
 - **M14 systemicity** — the publication record declares its upstream (paper + review report), downstream (`/research-disseminate`, after the operator-submission hand-off), peers (sibling research-suite artifacts), and enforcers (the `fact-checker` citation-and-declaration pass + the submission checklist).
 - **M15 production-readiness** — the package is complete and venue-conformant in the same emission; no "I'll add the COI statement later".
 
-Iterate on failure per the gate rule's §3 until every bar passes; record the attestation block inside the publication record and update the Handoff Manifest with `downstream: /research-disseminate`. Apply incremental generation per `rules/large-file-generation.md` when the publication record exceeds 500 lines.
+Iterate on failure per the gate rule's §3 until every bar passes or its three-round cap returns BLOCKED; record the attestation block inside the publication record and update the Handoff Manifest with `downstream: /research-disseminate`. Apply incremental generation per `rules/large-file-generation.md` when the publication record exceeds 500 lines.
 
 ---
 
@@ -263,4 +263,10 @@ Invoke `/research-disseminate` to carry the published work to its audience once 
 
 ## Installed Reference Paths
 
-When this skill is installed by Apothem, resolve repository-style references such as `rules/...` under `<ROOT>`, `templates/...` and `hooks/...` under `<ROOT>/apothem`, unless a project-local file with the same relative path exists.
+When this skill is installed by Apothem, resolve a repository-style reference against the installed directory for its first segment, unless a project-local file with the same relative path exists.
+
+- `rules/<path>` is `<ROOT>/rules/<path>`
+- `templates/<path>` is `<ROOT>/.apothem/support/templates/<path>`
+- `schemas/<path>` is `<ROOT>/.apothem/support/schemas/<path>`
+- `hooks/<path>` is `<ROOT>/.apothem/support/hooks/<path>`
+- `conformity/<path>` is `<ROOT>/.apothem/support/conformity/<path>`

@@ -1,0 +1,38 @@
+---
+title: "/plan-amend"
+description: "Reference for the /plan-amend command: invocation, arguments, inputs and outputs."
+---
+{/* SPDX-License-Identifier: MIT */}
+{/* apothem:generated-page — generated from src/apothem/commands; edit the command definition and rerun site/scripts/update-reference-inventory.mjs */}
+
+{/* apothem:generated-reference:start */}
+
+Amends, extends, refines, reverts, or weaves an existing plan suite without destroying prior resolved decisions — re-derives only the affected downstream artifacts (spec, master-plan, phases, notes), preserves the PLAN-NOTES.md decision ledger as authoritative and append-only, and routes every ambiguity through the structured-inquiry channel rather than inventing scope, identity, or decisions. The re-entrant `/plan` stage that revisits a converged-or-in-progress suite at any point in the spec → generate → review → execute chain.
+
+## Invocation
+
+```text
+/plan-amend [amend|extend|refine|revert|weave] [suite-path] [--dry-run]
+```
+
+## Pipeline position
+
+**Wrapping / orthogonal.** `/plan-amend` operates on a suite that already exists at any stage of the canonical sequence `/plan-spec → /plan-generate → /plan-review → /plan-design (CONDITIONAL — architecture-bearing suites only) → /plan-execute`. Invocable at any point once a suite exists; it inspects the suite's current stage and re-derives only the affected downstream artifacts. It never executes phase implementation work — it leaves the amended suite ready for re-review.
+
+## Inputs
+
+The target suite's `_spec/spec.md`, `_inputs/handoff-manifest.yml`, infrastructure files (PREAMBLE.md, MASTER-PLAN.md, PROGRESS.md, PLAN-NOTES.md), `phases/**/PHASE.md`, and any existing phase reports. The PLAN-NOTES.md decision ledger is the authoritative record of prior resolved decisions and is read first.
+
+## Outputs
+
+The re-derived subset of downstream artifacts the amendment touches (spec, master-plan, phase files, notes); an appended PLAN-NOTES.md decision-ledger entry recording the amendment mode, the affected artifacts, and the rationale; and an updated handoff manifest reflecting the amended suite shape. Artifacts the amendment does not touch are left byte-unchanged.
+
+## Next step
+
+**Invoke `/plan-review` on the amended suite.** `/plan-review` re-audits the amended suite from scratch under the Blind Review Mandate, confirming the amendment introduced no regression before any downstream execution — it is the canonical successor to every amendment.
+
+## Source
+
+Generated from [`src/apothem/commands/plan-amend.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/commands/plan-amend.md), the command definition every harness installs.
+
+{/* apothem:generated-reference:end */}

@@ -4,56 +4,85 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-06-25
-- Snapshot note: live re-verification against `github.com/google-gemini/gemini-cli` docs — hierarchical `GEMINI.md` context (`@file.md` imports), TOML custom commands (`~/.gemini/commands/*.toml`, required `prompt`), and built-in `web_fetch` / `google_web_search` all confirmed current; previous live-fetch 2026-06-21 / 2026-05-22
+- Snapshot date: 2026-10-03
+- Snapshot note: refreshed against the Gemini CLI docs at commit `fb972b2f87fe7d5b06d37eac711490162d98de2c` of `github.com/google-gemini/gemini-cli` (GEMINI.md context, custom commands, skills, hooks, MCP, memory files). Correction: Gemini CLI stores durable memories by editing Markdown memory files (project `GEMINI.md`, a private per-project memory folder, and `~/.gemini/GEMINI.md`), so the registry memory cell is `native` through the `GEMINI.md` anchor; the earlier "Auto Memory inbox" reading is not in these docs. Previous 2026-06-25.
 - Adapter source: `src/apothem/harnesses/gemini_cli/`.
-- Upstream authority: `github.com/google-gemini/gemini-cli`, release `v0.44.1`
-  (2026-05-28), main HEAD commit `013914071c5412188661014f2670ce3818cb98c3`
-  (2026-05-29) — an immutable pin (one of the three GitHub-backed harnesses).
+- Upstream authority: `github.com/google-gemini/gemini-cli` docs read at commit
+  `fb972b2f87fe7d5b06d37eac711490162d98de2c` — an immutable pin.
 - Evidence level: official-source-backed for the surfaces below; no vendor-native UI claim is made here.
-- Lifecycle: Google's standalone Gemini CLI deprecation for the AI Pro / AI
-  Ultra and free individual tiers (dated 2026-06-18) consolidates its developer
-  tooling under Antigravity CLI (binary `agy`; see the sibling `antigravity`
-  adapter and its pin, which materializes the successor). Gemini Code Assist
-  Standard / Enterprise and paid API keys keep the legacy CLI working, so this
-  adapter stays valid for those accounts; individual-tier users route to the
-  `antigravity` harness. Primary source: Google Developers Blog "Transitioning
-  Gemini CLI to Antigravity CLI" (I/O, 2026-05-19).
+- Lifecycle (recorded 2026-06-25, not re-read on 2026-10-03): Google's
+  standalone Gemini CLI deprecation for the AI Pro / AI Ultra and free
+  individual tiers (dated 2026-06-18) consolidates its developer tooling under
+  Antigravity CLI (binary `agy`; see the sibling `antigravity` adapter). Gemini
+  Code Assist Standard / Enterprise and paid API keys keep the legacy CLI
+  working, so this adapter stays valid for those accounts. Primary source:
+  Google Developers Blog "Transitioning Gemini CLI to Antigravity CLI" (I/O,
+  2026-05-19).
 
-## Native Surfaces (live-confirmed 2026-05-31)
+## Native Surfaces
 
-- Project context anchor: `<project>/GEMINI.md` (and global `~/.gemini/GEMINI.md`);
-  the user-scope `~/.gemini/` tree is reserved for the antigravity adapter, so
-  this project-scope adapter materializes under `<project>/` exclusively.
-- MCP: the `mcpServers` object in the operator-owned `settings.json` (user
-  `~/.gemini/settings.json`, project `.gemini/settings.json`). It supports stdio
-  (`command`/`args`) and HTTP (`url` for SSE, `httpUrl` for streamable). Apothem
-  names this surface but does not author MCP server entries; `settings.json` is
-  operator-owned and never written by the adapter.
-- Hooks: a native `hooks` object in `settings.json` with per-event arrays and a
-  `matcher`, spanning eleven lifecycle events (SessionStart, SessionEnd,
-  BeforeAgent, AfterAgent, BeforeModel, AfterModel, BeforeToolSelection,
-  BeforeTool, AfterTool, PreCompress, Notification). Apothem keeps its hook
-  message-context prose as support material under `<project>/.gemini/.apothem/support/`
-  and does not register native settings.json hooks (the operator owns
-  `settings.json`).
-- Skills: four-tier discovery (built-in, extension, user `~/.gemini/skills/`,
-  workspace `.gemini/skills/`), each with an `~/.agents/skills/` / `.agents/skills/`
-  alias; `SKILL.md` entry. Apothem installs to the native `<project>/.gemini/skills/`.
+- Project context anchor: `<project>/GEMINI.md`. Antigravity, the Copilot CLI,
+  and Zed also read a project `GEMINI.md`, so the Apothem block is tool-neutral
+  and the registry records Gemini CLI as the file's owner. The global
+  `~/.gemini/GEMINI.md` belongs to the antigravity adapter, so this project-scope
+  adapter writes under `<project>/` only.
+- MCP: the top-level `mcpServers` object in the operator-owned `settings.json`
+  (user `~/.gemini/settings.json`, project `.gemini/settings.json`), with stdio
+  (`command`/`args`) and HTTP (`url` for SSE, `httpUrl` for streamable)
+  servers. Apothem names this surface and authors no entries.
+- Hooks: a native `hooks` object in `settings.json` spanning eleven events
+  (SessionStart, SessionEnd, BeforeAgent, AfterAgent, BeforeModel, AfterModel,
+  BeforeToolSelection, BeforeTool, AfterTool, PreCompress, Notification).
+  Apothem keeps its hook prose as support material under
+  `<project>/.gemini/.apothem/support/` and registers no native hooks (the
+  operator owns `settings.json`).
+- Skills: built-in, extension, user (`~/.gemini/skills/` or `~/.agents/skills/`),
+  and workspace (`.gemini/skills/` or `.agents/skills/`, the `.agents` alias
+  taking precedence) tiers, each a `SKILL.md` folder. Apothem installs to
+  `<project>/.gemini/skills/`. The user tier's `~/.agents/skills/` is Codex's
+  shared root, so a Codex install's skills reach Gemini CLI too.
 - Commands: TOML custom commands (`.toml`, required `prompt`, optional
   `description`) under `~/.gemini/commands/` (user) / `.gemini/commands/`
-  (project). Apothem converts its command cohort to this native TOML shape.
-- Memory: the Auto Memory feature scans transcripts and writes candidate diffs
-  plus skill drafts to a review inbox (`/memory inbox`), with durable memory
-  stored in `GEMINI.md`. There is no `.gemini/memory/` directory; the adapter's
-  memory surface is the GEMINI.md context anchor.
-- Web-fetch / browser-retrieval (`web_fetch` = **yes**): gemini-cli ships
-  built-in `web_fetch` and `google_web_search` tools — the backing dimension for
-  `rules/source-accessibility.md` step 1. Evidence: vendor-doc commit-pinned to
-  the same immutable snapshot as this adapter's pin (the `Upstream authority`
-  commit-sha above, `013914071c5412...`) at the repo-relative docs paths
-  `docs/tools/web-fetch.md` (+ `docs/tools/web-search.md`) under
-  `github.com/google-gemini/gemini-cli`; snapshot-date 2026-06-21.
+  (project). Apothem converts its command cohort to this native TOML shape:
+  `description` from the source, and a `prompt` holding the command body with
+  the source frontmatter and license comment stripped. Every other source key
+  is dropped (see `conversion_losses` in `capabilities.yml`).
+- Subagents (re-checked 2026-10-02 against
+  <https://geminicli.com/docs/core/subagents>): Markdown files with YAML
+  frontmatter under `.gemini/agents/`; `name` and `description` are required,
+  and `kind`, `tools` (an allowlist of Gemini tool names; omitted means every
+  tool), `model` (default `inherit`), `temperature`, `max_turns` and
+  `timeout_mins` are optional. The `gemini_agents` converter emits `name`,
+  `description`, `kind: local`, the source tool grant minus its deny list
+  mapped to Gemini tool names (`Read` to `read_file` / `read_many_files` /
+  `list_directory`, `Glob` to `glob`, `Grep` to `grep_search`, `Bash` to
+  `run_shell_command`, `Write` to `write_file`, `Edit` to `replace`,
+  `WebSearch` to `google_web_search`, `WebFetch` to `web_fetch`, `TodoWrite`
+  to `write_todos`, per <https://geminicli.com/docs/reference/tools>), and
+  `max_turns` from `maxTurns`. No model is set, so it inherits.
+- Memory: the memory tool edits Markdown memory files — shared project
+  instructions in repository `GEMINI.md` files, private notes in a per-project
+  memory folder, cross-project preferences in `~/.gemini/GEMINI.md` — and the
+  stored facts load into every session.
+- Web fetch (`web_fetch` = **yes**): built-in `web_fetch` and
+  `google_web_search` tools, documented at `docs/tools/web-fetch.md` and
+  `docs/tools/web-search.md` in the same repository (recorded 2026-06-21 at
+  commit `013914071c5412188661014f2670ce3818cb98c3`).
+
+## Vendor Sources
+
+Retrieved 2026-10-03 unless marked, at commit `fb972b2f87fe7d5b06d37eac711490162d98de2c`.
+
+- <https://raw.githubusercontent.com/google-gemini/gemini-cli/fb972b2f87fe7d5b06d37eac711490162d98de2c/docs/cli/gemini-md.md> (context files)
+- <https://raw.githubusercontent.com/google-gemini/gemini-cli/fb972b2f87fe7d5b06d37eac711490162d98de2c/docs/cli/custom-commands.md> (TOML commands)
+- <https://raw.githubusercontent.com/google-gemini/gemini-cli/fb972b2f87fe7d5b06d37eac711490162d98de2c/docs/tools/mcp-server.md> (`mcpServers`)
+- <https://raw.githubusercontent.com/google-gemini/gemini-cli/fb972b2f87fe7d5b06d37eac711490162d98de2c/docs/tools/memory.md> (memory files)
+- <https://raw.githubusercontent.com/google-gemini/gemini-cli/fb972b2f87fe7d5b06d37eac711490162d98de2c/docs/cli/skills.md> (skill tiers; retrieved 2026-10-02)
+- <https://raw.githubusercontent.com/google-gemini/gemini-cli/fb972b2f87fe7d5b06d37eac711490162d98de2c/docs/hooks/index.md> (hook events; retrieved 2026-10-02)
+
+## Discovery Targets
+
+- Discovery target: mcp_servers by 2026-12-31 — decide whether Apothem renders the profile's MCP inventory into `.gemini/settings.json` or keeps naming it as operator-owned.
 
 ## Recommended Postfix Rendering
 

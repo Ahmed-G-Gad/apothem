@@ -9,19 +9,18 @@
 # resolves the released tree. The tag is the pushed ref on a tag push, or the
 # dispatch input on a manual run (`inputs.tag || github.ref_name`).
 #
-# Authentication: a scoped, granular-access `NODE_AUTH_TOKEN` (the `NPM_TOKEN`
-# secret, restricted to `@ahmed-g-gad/apothem`), combined with `--provenance`,
-# which attaches a Sigstore provenance attestation — signed from this workflow's
-# GitHub Actions OIDC identity (`id-token: write`) — linking the published
-# tarball to this run. The token is scoped to the single publish step and is
-# never passed as a process argument.
+# Authentication: npm trusted publishing (OIDC). The package's trusted
+# publisher on npmjs.com names this repository and this workflow file; the npm
+# CLI (11.5.1 or newer) exchanges the job's GitHub Actions OIDC token
+# (`id-token: write`) for a short-lived publish credential. No registry token
+# is stored in the repository: 1.0.2 and 1.1.0 were published this way, and a
+# leftover long-lived token would only widen the publish attack surface.
+# `--provenance` keeps the Sigstore provenance statement explicit (trusted
+# publishing also emits it by default for a public package).
 #
-# Opt-in gate: the publish step is gated on the repository variable
-# `NPM_TRUSTED_PUBLISHING_READY`. The maintainer adds the `NPM_TOKEN` secret and
-# sets the repository variable `NPM_TRUSTED_PUBLISHING_READY` to `true`. Until
-# the variable is set, the publish step is SKIPPED — never failed — so a release
-# before npm is wired up still runs green, and a notice step records the one
-# configuration action that enables publication on the next tag.
+# Operator follow-up outside this file: on npmjs.com, set the package's
+# publishing access to "Require two-factor authentication and disallow
+# tokens", and delete any leftover npm token secret from the repository.
 #
 # Idempotency: a registry version is immutable — npm rejects re-publishing an
 # existing `name@version`. So the publish step first checks whether the tagged
@@ -116,18 +115,14 @@ jobs:
             echo "::error::package.json name ${name} is not @ahmed-g-gad/apothem"
             exit 1
           fi
-      - name: Publish to npm (scoped token + provenance)
-        # Authenticates with a scoped, granular-access NODE_AUTH_TOKEN and
-        # emits Sigstore build provenance from the GitHub Actions OIDC
-        # identity (id-token: write above). The token stays scoped to this
-        # single step and is never passed as a process argument. Publication is
+      - name: Publish to npm (OIDC trusted publishing + provenance)
+        # Authenticates through npm trusted publishing: the npm CLI exchanges
+        # this job's OIDC token (id-token: write above) for a short-lived
+        # publish credential, so no token is configured here. Publication is
         # idempotent: a registry version is immutable, so if this version is
         # already on the registry the step skips publication (a re-cut / re-tag
         # of an already-published release stays green) rather than failing on
         # npm's duplicate-version error.
-        if: ${{ vars.NPM_TRUSTED_PUBLISHING_READY == 'true' }}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -euo pipefail
           version="$(node -p "require('./package.json').version")"
@@ -136,7 +131,3 @@ jobs:
           else
             npm publish --provenance --access public
           fi
-      - name: npm publish skipped (publishing not yet enabled)
-        if: ${{ vars.NPM_TRUSTED_PUBLISHING_READY != 'true' }}
-        run: |
-          echo "::notice title=npm publish skipped::Add the NPM_TOKEN secret (a granular-access token scoped to @ahmed-g-gad/apothem) and set the repository variable NPM_TRUSTED_PUBLISHING_READY=true to enable provenance-signed publication on the next tag."

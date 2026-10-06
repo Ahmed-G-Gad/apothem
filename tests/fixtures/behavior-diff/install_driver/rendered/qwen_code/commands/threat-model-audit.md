@@ -146,7 +146,7 @@ Run the fifteen-bar pre-emission gate (`rules/pre-emission-gate.md`) over the em
 
 The remaining bars attest `pass` or `n/a (with reason)` per `rules/pre-emission-gate-bars.md` §1; M9 is **required** here (the Trust-Boundary Map above), M12 layout binds the canonical `_inputs/` artifact, and M11/M13/M15 are single-sprint / no-code / remediation-deferred.
 
-**Iterate on failure.** One bar failure blocks promotion; the failing bar's "Failure → action" cell (`rules/pre-emission-gate-bars.md` §1) names the owning revision rule. Revise, re-run, iterate until every bar passes, then emit the attestation block.
+**Iterate on failure.** One bar failure blocks promotion. Revise and re-run per `rules/pre-emission-gate-bars.md` §3, which names the owning revision rule for each bar and caps the loop at three rounds before BLOCKED, then emit the attestation block.
 
 ---
 

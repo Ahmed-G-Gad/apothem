@@ -111,9 +111,12 @@ frontmatter:
             disable-model-invocation,
             name,
             updated,
-            userInvocable,
             version,
           ]
+        # Exactly one key of each group is required (the schema's oneOf): the
+        # source corpus spells the flag userInvocable; the Claude Code emission
+        # renames it to user-invocable.
+        one_of_keys: [[user-invocable, userInvocable]]
       output-styles:
         controlled_by: src/apothem/schemas/output-style.schema.json
         # The schema's required floor is name + description (matching the

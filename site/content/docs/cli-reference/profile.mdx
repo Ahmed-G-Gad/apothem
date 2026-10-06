@@ -47,13 +47,24 @@ Create a schema-valid minimal profile scaffold at
 `~/.config/apothem/profile.yaml` or `--profile PATH`. Existing files are
 preserved unless `--force` is supplied.
 
+The scaffold's first line is a `yaml-language-server` modeline naming the
+profile schema's `$id`,
+`https://apothem.ahmedgad.com/schemas/profile.schema.json`. The site serves
+the packaged schema at that address, so an editor with YAML language support
+validates the profile while you edit it. Every packaged schema under
+`src/apothem/schemas/` is served the same way at
+`https://apothem.ahmedgad.com/schemas/<file>`.
+
 | Option | Description |
 |---|---|
 | `--force` | Overwrite an existing profile scaffold. |
 
 ### `profile show`
 
-Display the validated, default-expanded shared profile.
+Display the validated, default-expanded shared profile. With `--json` the
+document is the profile itself, led by `schema_version`: the profile schema
+version the engine read it as (see the
+[JSON output contract](/docs/cli-reference#json-output-contract)).
 
 ### `profile set KEY VALUE`
 
@@ -75,6 +86,34 @@ before writing; an invalid set is refused and the profile on disk is unchanged.
 
 Open the shared profile in the system editor.
 
+## Validation errors
+
+Every command that reads the profile validates it against the packaged schema
+and reports **every** problem it finds in one pass, so one edit can fix them
+all:
+
+- **Plain output** names the first problem in full (`Field`, `Reason`, `Fix`,
+  and `Offending value (redacted)`: the input that failed, with secret-shaped
+  values replaced by `<redacted>`; it is never a suggested replacement), then
+  lists up to ten more under `Other problems`.
+- **JSON output** keeps the first problem in the `error` object's top-level
+  fields and adds an `errors` array with every problem (`code`, `field`,
+  `reason`, `fix`, `safe_value`).
+- **Unknown keys** echo only the unexpected key and its redacted value, not
+  the whole profile.
+- **Managed-block markers.** No key or text value may contain
+  `<!-- BEGIN APOTHEM MANAGED BLOCK -->` or `<!-- END APOTHEM MANAGED BLOCK -->`.
+  Apothem writes those markers around the block it manages in instruction
+  files, and profile text lands inside that block, so a marker in it would
+  split the block. Each such field fails with `profile.managed_block_marker`:
+  `field` is its dotted path (for example `rules.2` or
+  `mcp_servers.search.env.SEARCH_MODE`) and `reason` names the marker. The
+  value itself is never echoed (`safe_value` is `null`), since it may be a
+  credential.
+
+`profile init` (and every other command that scaffolds a profile) writes
+`schema_version: 1`. A profile without `schema_version` is read as version 1.
+
 ## Examples
 
 ```bash
@@ -93,6 +132,7 @@ apothem profile edit
 |---|---|
 | 0 | Success (or, for `edit`, the editor exited normally) |
 | 1 | Profile missing, invalid, already exists without `--force`, or cannot be written |
+| 64 | Usage error: an unknown option or command, or a missing or invalid option value. Under `--json` the error is a JSON envelope with code `cli.usage`. |
 
 ## See also
 

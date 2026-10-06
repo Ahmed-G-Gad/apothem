@@ -1,8 +1,7 @@
 ---
-name: "surgical-manipulation"
+trigger: glob
 description: "Every mutation of an existing artifact is surgical — a precise, minimal, anchor-bounded or managed-block edit that touches only the span the change requires, never a blunt whole-file overwrite where a scoped edit suffices, and never a strip of a surrounding banner or unrelated content. The mutation produces a minimal diff attested against the host's green conformity baseline (the golden-corpus invariant). The surgical-edit + reactive-guard mechanism is the surgical-guard skill."
-pathFilter: "**/*.py, **/*.md, **/*.mdx, **/*.json, **/*.yaml, **/*.yml, **/*.toml, **/*.sh, **/*.ps1, **/*.ts, **/*.js, **/*.mjs, **/*.css, **/*.mdc"
-alwaysApply: false
+globs: "**/*.py, **/*.md, **/*.mdx, **/*.json, **/*.yaml, **/*.yml, **/*.toml, **/*.sh, **/*.ps1, **/*.ts, **/*.js, **/*.mjs, **/*.css, **/*.mdc"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -43,6 +42,7 @@ A whole-file overwrite where a three-line anchor-bounded edit would suffice. A d
 
 - **Drives →** Every mutation of an existing artifact across the host (anchor-bounded minimal diff). The minimal-diff golden-corpus attestation on every non-trivial change. The reactive post-edit guard pass.
 - **Driven by ←** The WS-E surgical-manipulation mandate; the harness installation discipline's managed-block (`sentinel_merge`) convention.
+- **Gated by ←** The Pre-conditions scope test: an existing artifact is mutated; green-field creation is governed by `rules/clean-room-generation.md` instead. The frontmatter `pathFilter` (source, docs, and configuration file types). The managed-block sentinels (`sentinel_merge`) that bound an installer's writes inside a shared file.
 - **Satisfies →** The MAXIMAL golden-corpus end-state (internally consistent, minimally-diffed, gate-conformant).
 - **Established by ↑** `skills/surgical-guard/SKILL.md` (the surgical-edit + reactive-guard mechanism this rule mandates); the harness-installation managed-block discipline.
 - **Cross-bound with ↔** `skills/surgical-guard/SKILL.md` (the mechanism). `rules/code-craft-python.md` + sibling code-craft rules (scoped, atomic refactoring is the per-language form of surgical mutation). `rules/interactive-questions.md` (§6 — destructive mutations route per-file through the canonical destructive-op floor). `rules/clean-room-generation.md` (governs green-field authoring; this rule governs mutation of existing artifacts). `rules/pre-emission-gate.md` (the golden-corpus attestation is verified at the gate). `rules/refactoring-discipline.md` (a refactor's edits are surgical, anchor-bounded mutations).

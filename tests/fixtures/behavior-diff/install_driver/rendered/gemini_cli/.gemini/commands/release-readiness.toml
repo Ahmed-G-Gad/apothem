@@ -1,19 +1,6 @@
 description = "Operator-driven pre-release gate sweep against the production-ready discipline. Runs the host's quality matrix (lint, format, type-check, test), a dependency-risk pass, and the supply-chain checks (pinned actions, no secret literals, signed artifacts where ratified), then verifies the seven visibility surfaces, CHANGELOG currency, and version-to-tag consistency. Emits a single readiness verdict — READY or BLOCKED with the ordered blocking list — at the consuming suite's _inputs/release-readiness-findings.md with HIGH / MEDIUM / LOW severity triage and concrete-driver rationale per finding. SOTA references: Keep-a-Changelog, Conventional Commits, SemVer, SLSA, Sigstore."
 
 prompt = """
----
-name: "release-readiness"
-version: "0.1.0"
-updated: "2026-06-16"
-description: "Operator-driven pre-release gate sweep against the production-ready discipline. Runs the host's quality matrix (lint, format, type-check, test), a dependency-risk pass, and the supply-chain checks (pinned actions, no secret literals, signed artifacts where ratified), then verifies the seven visibility surfaces, CHANGELOG currency, and version-to-tag consistency. Emits a single readiness verdict — READY or BLOCKED with the ordered blocking list — at the consuming suite's _inputs/release-readiness-findings.md with HIGH / MEDIUM / LOW severity triage and concrete-driver rationale per finding. SOTA references: Keep-a-Changelog, Conventional Commits, SemVer, SLSA, Sigstore."
-argument-hint: "[path/to/repo/] [--strict]"
-disable-model-invocation: true
-portability: "universal"
-allowed-tools: "*"
----
-
-<!-- SPDX-License-Identifier: MIT -->
-
 # /release-readiness — Pre-Release Gate Sweep
 
 ---
@@ -142,5 +129,5 @@ flowchart TD
 - **Satisfies →** The consuming suite's release-readiness slot. The `commands/README.md` command catalog's Cohort-commands row for `/release-readiness` (the registry entry that ratifies this command's place in the slash-command catalog). The M15 production-ready discipline's gate-evidence surface.
 - **Established by ↑** The `commands/README.md` command catalog. `rules/production-ready-prs.md` (the production-ready discipline this command operationalizes). Keep-a-Changelog (the canonical changelog standard). Conventional Commits + SemVer (the canonical versioning standards). `rules/cognitive-identity.md` §1 seven-axs-of-breadth taxonomy (the axis-of-attention attestation surface; Security + Testing + Tooling load-bearing).
 - **Gated by ←** The repository's release-surface presence (a root manifest plus at least one of `.github/workflows/`, `CHANGELOG.md`, or a versioned tag stream). The host's ratified targets discovered at Input Ingest (quality-matrix command set, coverage floor, signing requirement, versioning scheme). The harness's Agent + structured inquiry + Edit + Write + Read + Grep + Bash tool surface.
-- **Cross-bound with ↔** `rules/production-ready-prs.md` (the M15 discipline this command's five gate stanzas verify — the seven visibility surfaces, supply-chain posture, and release-engineering invariants are the gate's pass conditions). `commands/fortress.md` (the closed-loop hardening wrapper that closes on this gate — `/fortress` dispatches `/release-readiness` as its terminal READY / BLOCKED production verdict). `commands/dependency-audit.md` (produces the CVE inventory the dependency-risk pass cross-references). `commands/supply-chain-audit.md` (sibling surface — the supply-chain audit examines the release-engineering surface in depth; this command runs the gate-level subset). `rules/authority-inquiry.md` (every ambiguity routes through the canonical channel). `rules/option-annotation.md` (every severity-triage call cites a concrete-driver class). `rules/pre-emission-gate.md` (fifteen-bar validation). `rules/cognitive-identity.md` (the seven-axs taxonomy). The dependency-auditor agent (consumes the dependency manifest; its risk pass feeds the dependency-risk gate stanza).
+- **Cross-bound with ↔** `rules/production-ready-prs.md` (the M15 discipline this command's five gate stanzas verify — the seven visibility surfaces, supply-chain posture, and release-engineering invariants are the gate's pass conditions). `commands/fortress.md` (the closed-loop hardening wrapper that closes on this gate — `/fortress` dispatches `/release-readiness` as its terminal READY / BLOCKED production verdict). `commands/dependency-audit.md` (produces the CVE inventory the dependency-risk pass cross-references). `commands/supply-chain-audit.md` (sibling surface — the supply-chain audit examines the release-engineering surface in depth; this command runs the gate-level subset). `rules/authority-inquiry.md` (every ambiguity routes through the canonical channel). `rules/option-annotation.md` (every severity-triage call cites a concrete-driver class). `rules/pre-emission-gate.md` (fifteen-bar validation). `rules/cognitive-identity.md` (the seven-axs taxonomy). `agents/dependency-auditor.md` (the dependency-auditor agent; consumes the dependency manifest; its risk pass feeds the dependency-risk gate stanza).
 """

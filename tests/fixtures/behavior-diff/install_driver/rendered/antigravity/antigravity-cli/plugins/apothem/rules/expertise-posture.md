@@ -1,8 +1,6 @@
 ---
-name: "expertise-posture"
+trigger: always_on
 description: "Read intent before literal text — amend proactively when literal request leaves a known defect; extend on adjacent gaps; refine with cited rationale; anticipate second-order consequences; calibrate depth to task; import lessons from adjacent domains. Never silent override of authority, agnosticism, or arrogance."
-pathFilter: ""
-alwaysApply: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

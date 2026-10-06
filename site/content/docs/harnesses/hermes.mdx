@@ -18,26 +18,41 @@ apothem install --harness hermes
 The adapter translates the shared profile to the Hermes Agent user-global
 configuration file and installs Apothem support cohorts under the harness root.
 
-**Files written:** `~/.hermes/config.yaml` and support files under
+**Files written:** `~/.hermes/config.yaml`, the profile document
+`~/.hermes/apothem/rules/00-apothem-profile.md`, and support files under
 `~/.hermes/.apothem/support/`
+
+The profile document ends with an Apothem support files section that names
+the absolute directory under `~/.hermes/.apothem/support/` each
+repository-style citation (`rules/<name>.md`, `templates/...`, `hooks/...`)
+resolves against.
 
 ## Profile-to-native-config mapping
 
-The adapter reads Apothem's shared profile and renders the native YAML config.
-Hermes's own skills surface is `skills.config` — installable registry packages
-that Hermes auto-exposes as dynamic slash commands — which Apothem does not
-author. Apothem instead delivers shared command and skill content as support
-material under `~/.hermes/.apothem/support/`, referenced from the native instruction
-anchor. Helper definitions, rules, templates, and hook prompts likewise remain
-support material under `~/.hermes/.apothem/support/`.
+The adapter reads Apothem's shared profile and renders the native YAML config,
+including the profile's MCP inventory. The profile's identity, preferences, and
+rules go into the profile document. Shared commands, skills, helper definitions,
+rules, templates, and hook prompts land as support material under
+`~/.hermes/.apothem/support/`.
 
 ## Compatibility notes
 
-Preview adapter. The native YAML config is the active Hermes surface. There is
-no skill-directory hook: `skills.config` is a Hermes vendor registry of
-installable packages that Apothem never authors. Apothem instead delivers
-command and skill content — along with the other cohorts — as support material
-under `~/.hermes/.apothem/support/`, referenced from the native instruction anchor.
+Preview adapter. Hermes does not load the support tree or the profile document
+on its own: nothing in `config.yaml` and none of the context files Hermes reads
+point there, so after install Hermes runs without Apothem's rules, skills, or
+hooks. Hermes reads skills from `~/.hermes/skills/` and from every folder listed
+under `skills.external_dirs` in `config.yaml`; to use the Apothem skills, add
+`~/.hermes/.apothem/support/skills` to that list yourself; `apothem update`
+keeps keys you add to `config.yaml`. The adapter writes the profile's MCP
+inventory under the top-level `mcp_servers` key, where Hermes reads MCP servers.
+Earlier Apothem releases wrote it under `auxiliary.mcp`, which Hermes reads as
+the auxiliary model for MCP tool dispatch; both `apothem update` and
+`apothem uninstall` remove that block while it still holds exactly what such a
+release wrote (see [Uninstalling](#uninstalling)). (Hermes behavior per its user
+guide pages on
+[skills](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)
+and [MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md),
+read 2026-10-02.)
 
 ## Verification
 
@@ -67,8 +82,18 @@ Apothem package.
 apothem uninstall --harness hermes
 ```
 
-Removes the native config files written by the adapter.
-The shared profile YAML and Apothem engine are unaffected.
+Removes what the adapter added: the `mcp_servers` entries its install recorded
+in `config.yaml` (your own keys stay, and the file is deleted only when Apothem
+created it and nothing of yours is left), the profile document, and the support
+tree. The shared profile YAML and Apothem engine are unaffected.
+
+An install made by an earlier release, which wrote the profile's servers under
+`auxiliary.mcp`, also has that block removed when it still holds exactly what
+that release wrote, as rendered from the shared profile at
+`~/.config/apothem/profile.yaml`. This is the same rule `apothem update` applies,
+so uninstalling without updating first leaves no stale block. A block you have
+edited, or one with no readable shared profile to compare against, stays in
+place, and the rest of your `auxiliary` settings always stay.
 
 ## Conformity gate
 

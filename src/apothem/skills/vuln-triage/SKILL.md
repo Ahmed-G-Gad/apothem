@@ -1,13 +1,13 @@
 ---
 name: "vuln-triage"
 version: "0.1.0"
-updated: "2026-06-09"
-description: "Vulnerability and security-advisory triage — matched when the user references a 'CVE', cites a 'security advisory' (GHSA, OSV, vendor bulletin), asks to 'triage this vuln', or asks 'is this vulnerable'. Targets one named advisory per invocation: severity-classifies it with a CVSS-style band (critical 9.0–10.0 / high 7.0–8.9 / medium 4.0–6.9 / low 0.1–3.9 / none 0.0) plus the justifying vector string, maps it to the affected surface in the host tree against the resolved lockfile, determines reachability and exploitability (reachable / unreachable / conditional + applicable attack vector), routes remediation from the closed set {patch, upgrade, mitigate, accept} (or not-applicable when no affected surface exists), and records a seven-field triage record with cited rationale. The output drives the operator's remediation decision; the skill does NOT apply the remediation, construct or run exploit payloads, scan the repository, re-publish CVSS scores, or re-solve the dependency graph. The 'accept' route is a security ratification — when the host has not ratified an accepted-risk threshold, it blocks on inquiry."
+updated: "2026-10-02"
+description: "Vulnerability and security-advisory triage — matched when the user references a 'CVE', cites a 'security advisory' (GHSA, OSV, vendor bulletin), asks to 'triage this vuln', or asks 'is this vulnerable'. Handles one named advisory per invocation: classifies severity with a CVSS-style band (critical 9.0–10.0 / high 7.0–8.9 / medium 4.0–6.9 / low 0.1–3.9 / none 0.0) plus the vector string, maps it to the affected surface against the resolved lockfile, decides reachability (reachable / unreachable / conditional), routes remediation to one of patch, upgrade, mitigate, or accept (or not-applicable), and records a seven-field triage record with cited rationale. Does NOT apply the remediation, run exploit payloads, scan the repository, re-publish CVSS scores, or re-solve the dependency graph. 'accept' is a security ratification: without a host-ratified accepted-risk threshold it blocks on inquiry."
 archetype: "security-template"
 userInvocable: true
 argument-hint: "[--advisory ID] [--focus PATH]"
 disable-model-invocation: true
-allowed-tools: "Read, Write, Edit, Glob, Grep, Bash"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

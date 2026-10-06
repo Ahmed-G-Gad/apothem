@@ -13,6 +13,7 @@ package (``_pkg``) so the test patch seams keep landing."""
 from __future__ import annotations
 
 import inspect
+import json
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -24,6 +25,15 @@ from rich.console import Console
 from rich.markup import escape
 
 import apothem.cli as _pkg
+
+# The group plumbing lives in the light _group module (loaded by --version and
+# --help); it is re-exported here so existing imports keep working.
+from apothem.cli._group import _ARGV_META_KEY as _ARGV_META_KEY
+from apothem.cli._group import _CONTEXT as _CONTEXT
+from apothem.cli._group import _EXIT_USAGE as _EXIT_USAGE
+from apothem.cli._group import AliasedGroup as AliasedGroup
+from apothem.cli._group import _configure_stdio as _configure_stdio
+from apothem.cli._group import _usage_failure as _usage_failure
 from apothem.cli._json_formatter import emit_json
 from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared.install_driver import (
@@ -42,15 +52,12 @@ from apothem.lib.harness_registry import (
 )
 from apothem.lib.profile import (
     ProfileValidationError,
+    current_schema_version,
     load_profile_file,
+    other_problem_lines,
     resolve_profile_path,
 )
-from apothem.schemas import profile_minimal_path
-
-#: Shared Click context settings (``-h`` / ``--help`` aliases) for ``main`` and
-#: the ``profile`` / ``harnesses`` sub-groups.
-_CONTEXT = {"help_option_names": ["-h", "--help"]}
-
+from apothem.schemas import profile_minimal_path, profile_schema_path
 
 _ADAPTER_LOAD_ERRORS = (ImportError, AttributeError, TypeError, OSError)
 
@@ -545,13 +552,19 @@ def _format_error_plain(
     )
     safe_value = error.get("safe_value")
     if safe_value is not None:
-        lines.insert(-1, f"Safe value: {safe_value!r}")
+        lines.insert(-1, f"Offending value (redacted): {safe_value!r}")
+    problems = error.get("errors")
+    if isinstance(problems, list):
+        for line in other_problem_lines(
+            [item for item in problems[1:] if isinstance(item, dict)]
+        ):
+            lines.insert(-1, line)
     return "\n".join(lines)
 
 
 def _error_envelope(
     *,
-    command: str,
+    command: str | None,
     harness: str | None = None,
     profile_path: Path | None = None,
     project_root: Path | None = None,
@@ -813,36 +826,27 @@ def _select_and_load_adapters(
 
 
 def _profile_scaffold_text() -> str:
-    """Return a schema-valid minimal profile scaffold."""
+    """Return a schema-valid minimal profile scaffold stamped with its version.
+
+    The scaffold opens with a ``yaml-language-server`` modeline naming the
+    profile schema's ``$id``, so an editor validates the file as it is edited.
+
+    Every scaffold writer (``profile init``, ``profile edit`` on a missing
+    file, ``quickstart``, and a first ``install``) goes through here, so each
+    new profile records the schema version it was written for and a later
+    migration can tell it apart from a newer one.
+    """
     import yaml
 
     data = yaml.safe_load(profile_minimal_path().read_text(encoding="utf-8"))
-    return yaml.safe_dump(data, sort_keys=False)
-
-
-class AliasedGroup(click.Group):
-    """Click group that resolves subcommands case-insensitively."""
-
-    def get_command(self, ctx: click.Context, cmd_name: str) -> click.Command | None:
-        """Resolve *cmd_name* exactly, then fall back to a case-insensitive match.
-
-        Pre-conditions: ``cmd_name`` is the subcommand token as typed.
-        Post-conditions: an exact match wins without any case folding, so
-        declared names always take precedence. Otherwise a single
-        case-insensitive match is returned; several matches fail the context
-        with an ambiguity message rather than silently picking one, and no match
-        returns ``None`` so Click emits its own unknown-command error.
-        """
-        cmd = super().get_command(ctx, cmd_name)
-        if cmd is not None:
-            return cmd
-        lower = cmd_name.lower()
-        matches = [n for n in self.list_commands(ctx) if n.lower() == lower]
-        if len(matches) == 1:
-            return super().get_command(ctx, matches[0])
-        if len(matches) > 1:
-            ctx.fail(f"Ambiguous command {cmd_name!r}: matches {sorted(matches)}")
-        return None
+    if isinstance(data, dict) and "schema_version" not in data:
+        data = {"schema_version": current_schema_version(), **data}
+    # The first-line modeline points YAML language servers (editors) at the
+    # schema's $id, which the documentation site serves.
+    schema_id = json.loads(profile_schema_path().read_text(encoding="utf-8"))["$id"]
+    return f"# yaml-language-server: $schema={schema_id}\n" + yaml.safe_dump(
+        data, sort_keys=False
+    )
 
 
 def _resolve_project_root(project: str | None) -> Path | None:
@@ -960,10 +964,18 @@ def _dry_run_plan(
 ) -> MaterializationRun:
     """Return the no-write dry-run plan for one harness, diffs included.
 
-    Routes through the same ``install_driver.run_install(dry_run=True, profile=…)``
-    seam the install path uses, so the result carries the unified diff already
-    present in each operator-owned target's ``.detail`` — no re-derivation.
+    Uses the adapter's ``preview`` (its install with ``dry_run=True``), so the
+    plan lists every path the install writes — the native config, instruction
+    anchor, profile document and data stores as well as the manifest entries —
+    with the unified diff each operator-owned target's ``.detail`` carries. An
+    adapter without ``preview`` falls back to the manifest-only
+    ``install_driver.run_install(dry_run=True, profile=…)`` seam.
     """
+    preview = getattr(adapter, "preview", None)
+    if callable(preview):
+        run = _invoke_with_project(preview, shared_profile, project=project_root)
+        if isinstance(run, MaterializationRun):
+            return run
     harness_root, scoped_project = _harness_roots(entry, adapter, project_root)
     return install_driver.run_install(
         entry.package_key,
@@ -977,31 +989,23 @@ def _dry_run_plan(
 def _materialization_error(
     exc: MaterializationError, *, files_written: list[str]
 ) -> dict[str, object]:
-    """Convert a materialization exception to the CLI diagnostic contract."""
+    """Convert a materialization exception to the CLI diagnostic contract.
+
+    A result that carries its own structured ``code`` / ``fix`` in ``detail``
+    (for example ``config.unparseable`` for an operator config the install
+    refuses to rewrite) surfaces those instead of the generic pair.
+    """
     first = exc.run.errors[0] if exc.run.errors else None
+    detail = first.detail if first is not None else {}
     return _CliUserError(
-        code="materialization.failed",
+        code=detail.get("code", "materialization.failed"),
         message="Apothem materialization failed.",
         field=first.operation if first is not None else "materialization",
         reason=first.message if first is not None else str(exc),
-        fix="Review the target path, permissions, and harness support files before retrying.",
+        fix=detail.get(
+            "fix",
+            "Review the target path, permissions, and harness support files "
+            "before retrying.",
+        ),
         files_written=tuple(files_written),
     ).to_dict()
-
-
-def _configure_stdio() -> None:
-    """Force UTF-8 stdio on Windows so Rich output renders correctly.
-
-    Runs at CLI invocation only — never at import time — so it cannot
-    disturb a host process's captured streams. ``reconfigure`` mutates
-    the existing stream in place rather than replacing ``sys.stdout``,
-    which would orphan and later close a wrapping process's buffer
-    (e.g. pytest's capture buffer).
-    """
-    if sys.platform != "win32":
-        return
-    for stream_name in ("stdout", "stderr"):
-        stream = getattr(sys, stream_name)
-        reconfigure = getattr(stream, "reconfigure", None)
-        if reconfigure is not None:
-            reconfigure(encoding="utf-8", errors="replace")

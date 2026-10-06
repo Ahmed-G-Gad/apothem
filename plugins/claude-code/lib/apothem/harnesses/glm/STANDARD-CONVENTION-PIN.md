@@ -4,32 +4,44 @@
 
 ## Snapshot
 
-- Snapshot date: 2026-06-25
-- Snapshot note: base URLs re-confirmed live against `docs.z.ai` — the Anthropic-compatible endpoint `https://api.z.ai/api/anthropic` (env `ANTHROPIC_BASE_URL` / `ANTHROPIC_AUTH_TOKEN` / `API_TIMEOUT_MS`) is an exact match to current docs; the no-pinned-model-id decision is vindicated (the catalog already advanced to GLM-5.2 / GLM-5-Turbo / GLM-4.7, which a hard-pinned id would have made stale). Previous 2026-06-24.
+- Snapshot date: 2026-10-03
+- Snapshot note: refreshed against the Z.ai Claude Code guide at `docs.z.ai/devpack/tool/claude`. The Anthropic-compatible base URL `https://api.z.ai/api/anthropic`, the `ANTHROPIC_AUTH_TOKEN` / `ANTHROPIC_BASE_URL` / `API_TIMEOUT_MS` variables, and the `ANTHROPIC_DEFAULT_OPUS_MODEL` / `ANTHROPIC_DEFAULT_SONNET_MODEL` / `ANTHROPIC_DEFAULT_HAIKU_MODEL` model mapping match the current page. The adapter pins no model id. Previous 2026-06-25.
 - Adapter source: `src/apothem/harnesses/glm/`
 - Evidence level: adapter-local projection; no vendor-native coding-tool UI claim is made here. GLM is a model backend, not a coding-agent tool.
 
 ## Official Surface Refresh
 
-- Refreshed live 2026-06-24 against the current Z.ai documentation
-  (`docs.z.ai`). No authority-host move; no immutable version pin is exposed
-  (mutable docs site), so every captured convention carries a
-  no-immutable-source exception.
-- GLM (Z.ai) is a **model backend**, not a first-party coding CLI. Z.ai ships
-  no native GLM coding-agent tool. An Anthropic-compatible or OpenAI-compatible
-  coding agent is pointed at GLM by setting backend environment variables.
+- Refreshed 2026-10-03 against the Z.ai documentation (`docs.z.ai`). No
+  immutable version pin is exposed (mutable docs site), so every captured
+  convention carries a no-immutable-source exception.
+- GLM (Z.ai) is a **model backend**, not a first-party coding CLI. An
+  Anthropic-compatible or OpenAI-compatible coding agent is pointed at GLM by
+  setting backend environment variables.
 - Anthropic-compatible backend: base URL `https://api.z.ai/api/anthropic`. An
-  operator sets `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN`, and
-  (optionally) `API_TIMEOUT_MS` to route an Anthropic-compatible agent to GLM.
-- OpenAI-compatible backend: base URL `https://api.z.ai/api/coding/paas/v4`.
+  operator sets `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN`, and optionally
+  `API_TIMEOUT_MS`, and maps the agent's model roles with
+  `ANTHROPIC_DEFAULT_OPUS_MODEL`, `ANTHROPIC_DEFAULT_SONNET_MODEL`, and
+  `ANTHROPIC_DEFAULT_HAIKU_MODEL`.
+- OpenAI-compatible backend: base URL `https://api.z.ai/api/coding/paas/v4`
+  (recorded 2026-06-24; not on the Claude Code guide re-read on 2026-10-03).
 - Canonical filename: `.apothem/providers/glm.toml`. The adapter is
   project-scope and writes only `<project>/.apothem/providers/glm.toml`, an
   Apothem-owned TOML provider file recording both compatibility surfaces, an
-  auth-token placeholder (never a real secret), and operator-configurable
-  model-mapping placeholders. No GLM model id is pinned (model ids are
-  version-volatile); the operator selects one from the current Z.ai catalog.
+  auth-token placeholder (never a real secret), and the model-mapping
+  placeholders. No GLM model id is pinned (model ids are version-volatile); the
+  operator selects one from the current Z.ai catalog.
 - The adapter authors no coding-agent cohort (rules, commands, skills, agents,
   hooks): a model backend exposes none. Every capability is `unsupported`.
+
+## Vendor Sources
+
+Retrieved 2026-10-03.
+
+- <https://docs.z.ai/devpack/tool/claude> (Anthropic-compatible setup and model mapping)
+
+## Discovery Targets
+
+- None. No capability cell for this harness is discovery-pending.
 
 ## Recommended Postfix Rendering
 
@@ -72,6 +84,5 @@ standalone-installable bundle; the file is written only by the
 | Commands / Skills / Agents / Rules / Hooks | No — platform limit | GLM is a model backend; it exposes no coding-agent primitive Apothem targets, so these cohorts are not materialized for this harness. |
 | Auth / model mapping | Operator-owned | The auth token and model ids are operator placeholders; Apothem never writes a real secret or pins a version-volatile model id. |
 
-Platform limit: GLM ships no marketplace/extension channel, so a plugin-alone
-story does not exist for this harness — the backend-provider file via
-`apothem install` is the sole persistence surface.
+GLM is a model backend with no plugin surface for Apothem to ship, so the
+backend-provider file via `apothem install` is the sole persistence surface.

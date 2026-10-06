@@ -49,10 +49,18 @@ $ApothemProfile = if ($env:APOTHEM_PROFILE) { $env:APOTHEM_PROFILE } else { [Sys
 $RuntimeDeps = @('click', 'rich')
 $VendoringDoc = 'https://apothem.ahmedgad.com/architecture/vendoring-strategy/'
 
-function Write-Bold { param([string]$Msg) Write-Host "`n$Msg" -ForegroundColor White }
-function Write-Info { param([string]$Msg) Write-Host "  . $Msg" -ForegroundColor Cyan }
-function Write-Ok   { param([string]$Msg) Write-Host "  + $Msg" -ForegroundColor Green }
-function Write-Warn { param([string]$Msg) Write-Host "  ! $Msg" -ForegroundColor Yellow }
+# Colour only an interactive console. NO_COLOR (https://no-color.org/) or
+# redirected output (a pipe, a file, a CI log) gets plain text.
+$UseColor = (-not $env:NO_COLOR) -and (-not [Console]::IsOutputRedirected)
+function Get-ColorArgs {
+    param([string]$Color)
+    if ($UseColor) { return @{ ForegroundColor = $Color } }
+    return @{}
+}
+function Write-Bold { param([string]$Msg) $c = Get-ColorArgs White;  Write-Host "`n$Msg" @c }
+function Write-Info { param([string]$Msg) $c = Get-ColorArgs Cyan;   Write-Host "  . $Msg" @c }
+function Write-Ok   { param([string]$Msg) $c = Get-ColorArgs Green;  Write-Host "  + $Msg" @c }
+function Write-Warn { param([string]$Msg) $c = Get-ColorArgs Yellow; Write-Host "  ! $Msg" @c }
 function Write-Fail { param([string]$Msg) Write-Error "  x $Msg" }
 
 # Test-PythonImport INTERPRETER MODULE - return $true when MODULE imports under

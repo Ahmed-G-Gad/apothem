@@ -46,6 +46,7 @@ advisory. Notes never flip ``passed``.
 
 from __future__ import annotations
 
+import argparse
 import json
 import re
 import sys
@@ -436,20 +437,39 @@ def check(root: Path) -> GrepResult:
 
 
 def _read_input(argv: list[str]) -> tuple[Path, bool]:
-    """Return (root, strict) parsed from argv; root defaults to cwd."""
-    strict = STRICT_FLAG in argv
-    positional = [arg for arg in argv[1:] if arg != STRICT_FLAG]
-    root = Path(positional[0]) if positional else Path.cwd()
-    return root, strict
+    """Return (root, strict) parsed from argv; root defaults to cwd.
+
+    Usage errors (unknown flag, a root that is not an existing directory)
+    exit ``EXIT_USAGE`` (3); ``--help`` exits 0.
+    """
+    from apothem.conformity._grep_base import parse_root_args
+
+    def _configure(parser: argparse.ArgumentParser) -> None:
+        parser.add_argument(
+            STRICT_FLAG,
+            dest="strict",
+            action="store_true",
+            help="exit non-zero when a footer disagrees with the suite progress",
+        )
+
+    args = parse_root_args(argv, prog=GREP_NAME, doc=__doc__, configure=_configure)
+    return args.root, bool(args.strict)
 
 
 def _main(argv: list[str]) -> int:
+    from apothem.conformity._grep_base import finish_root_report
+
     root, strict = _read_input(argv)
     result = check(root)
-    print(result.to_json())
-    if strict and not result.passed:
-        return EXIT_FAIL
-    return EXIT_PASS
+    # Plan suites live under the gitignored ``.apothem/plans/`` tree, so a
+    # clean checkout legitimately carries none: an empty scope is expected.
+    return finish_root_report(
+        result.to_json(),
+        passed=result.passed,
+        inspected=result.files_inspected,
+        empty_scope_expected=True,
+        advisory=not strict,
+    )
 
 
 if __name__ == "__main__":

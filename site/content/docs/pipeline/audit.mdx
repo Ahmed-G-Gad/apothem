@@ -1,0 +1,47 @@
+---
+title: "/audit"
+description: "Reference for the /audit command: invocation, arguments, inputs and outputs."
+---
+{/* SPDX-License-Identifier: MIT */}
+{/* apothem:generated-page — generated from src/apothem/commands; edit the command definition and rerun site/scripts/update-reference-inventory.mjs */}
+
+{/* apothem:generated-reference:start */}
+
+The audit fortress wrapped as a single dynamic multi-agent workflow. One call sweeps a deployed repository across all eleven audit/review dimensions — code-review, code-audit, architecture-review, docs-review, security-audit, dependency-audit, supply-chain-audit, threat-model-audit, perf-audit, a11y-audit, ux-review — dispatching each as a parallel phase under a named findings return contract, routing every finding through an EXTREMELY-CRITIQUE refute-by-default verification pass, and emitting one deterministic severity-triaged (HIGH/MEDIUM/LOW) findings report with a single recommended next move. Each audit stays individually invocable in commands/&lt;audit&gt;.md; this command adds only the workflow harness. Report-only — it NEVER remediates (remediation routes to /elevate or the owning surface); multi-agent dispatch is opt-in and confirmation-gated. Invoke with a repository path, or --dimensions &lt;list&gt; to scope the sweep.
+
+## Invocation
+
+```text
+/audit [path/to/repo/] [--dimensions all|<list>] [--autonomous] [--verify-panel N]
+```
+
+The definition sets `disable-model-invocation: true`, so a harness that honors that key starts this command only when you type it.
+
+## Pipeline position
+
+Wrapped-workflow meta-orchestrator over the whole eleven-command audit fortress; the canonical single-call entry for the sweep. It consumes an audit target (a repository path) and a dimension set, fans the dimensions out as parallel phases, and emits one synthesized findings report plus the workflow's deterministic result surface and run trace. It is distinct from `/plan-audit` (closed-loop audit + remediation of a *plan suite*), `/elevate` (aggressive whole-repo critique **and remediation** to SOTA), and `/release-readiness` (a single pass/fail release-gate verdict — distinct from the fortress and never counted among the eleven dimensions): `/audit` is the report-only, multi-dimension findings sweep.
+
+## Inputs
+
+The operator's target path; the `--dimensions` scope; the `--autonomous` opt-in; the `--verify-panel N` budget. Each dispatched audit consumes the deployed repository surface its own contract defines.
+
+| Argument | Type | Required | Description |
+| -------- | ---- | -------- | ----------- |
+| `path/to/repo/` | Path | Yes | The deployed repository to sweep (defaults to the current project root when omitted). |
+| `--dimensions all\|<list>` | Flag + value | No | Scope the sweep: `all` (the eleven dimensions, default) or a comma-separated subset (e.g. `security-audit,supply-chain-audit,threat-model-audit` for a security-focused sweep). |
+| `--autonomous` | Flag | No | Opt into continuous parallel dispatch of all scoped dimensions without per-dimension confirmation. Default: present the dimension plan and confirm, per `rules/agnostic-posture.md`. |
+| `--verify-panel N` | Integer | No | Refute-by-default critics per surviving finding (default: 3). |
+
+## Outputs
+
+The per-dimension findings artifacts (owned by each audit command, at the consuming suite's `_inputs/`), plus the workflow's deterministic result surface: the synthesized severity-triaged findings report (deduplicated across dimensions), the per-dimension verified-findings sets with evidence, the fifteen-bar gate attestation, the per-run workflow trace (dimensions run, verification verdicts, dedup decisions), and the single recommended next move (route HIGH findings to remediation).
+
+## Next step
+
+Invoke `/audit path/to/repo/` to sweep the full eleven-dimension fortress, or `/audit path/to/repo/ --dimensions security-audit,supply-chain-audit,threat-model-audit` for a scoped sweep; review each dimension's verified findings, then route the HIGH findings to remediation via `/elevate` (whole-repo elevation) or the owning surface — `/audit` is report-only and never edits source. Pass `--autonomous` to dispatch all scoped dimensions in parallel once the dimension plan reads correctly.
+
+## Source
+
+Generated from [`src/apothem/commands/audit.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/commands/audit.md), the command definition every harness installs.
+
+{/* apothem:generated-reference:end */}

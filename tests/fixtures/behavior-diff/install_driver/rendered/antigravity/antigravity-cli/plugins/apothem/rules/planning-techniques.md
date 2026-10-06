@@ -1,8 +1,7 @@
 ---
-name: "planning-techniques"
+trigger: glob
 description: "Nine planning-review techniques — each pairing a Detect signal, a verification Procedure, and the Anti-pattern it guards against: iteration-loop safety, campaign dependency ordering, clean-slate artifact conflict, identity-claim verification, asymmetric-fix propagation, blind-review value, added-task completeness, severity-count verification, and strict-gate remediation. Applied on detection across plan generation, review, audit, and execution. Implements CM-20 / CM-21."
-pathFilter: "**/.apothem/plans/**, **/.plans/**, **/commands/plan-*.md"
-alwaysApply: false
+globs: "**/.apothem/plans/**, **/.plans/**, **/commands/plan-*.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

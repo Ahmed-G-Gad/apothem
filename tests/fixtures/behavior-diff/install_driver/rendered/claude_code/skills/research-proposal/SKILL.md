@@ -1,12 +1,12 @@
 ---
 name: "research-proposal"
 version: "0.1.0"
-updated: "2026-06-16"
+updated: "2026-10-02"
 description: "Transforms the synthesized gap and theoretical framework into a fundable, reviewable plan-of-record — the proposal stage of the /research pipeline. Triggered as 'write the research proposal', 'turn the gap into a SMART aims hierarchy', 'build the feasibility and risk register', 'plan the preregistration', 'select the EQUATOR reporting guideline', 'map the impact pathway', or the pipeline-chained hand-off from /research-synthesis. Consumes the suite's _inputs/synthesis.md and _inputs/theory.md and emits _inputs/proposal.md carrying the SMART aims hierarchy, the feasibility assessment, the resource / timeline / risk register, the impact pathway (R10), the preregistration plan (R5), and the EQUATOR reporting-guideline pre-selection (R9) — the plan-of-record that /research-design operationalizes into a frozen study design. Ethics feasibility is surfaced up front (R6)."
 argument-hint: "[--suite-name NAME] [--override] [--guideline NAME] [--prereg-registry NAME]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -121,7 +121,7 @@ Map the **impact pathway** (R10) per the [NWO Impact Plan Approach](https://www.
 
 ### Phase 5 — Validation Gate
 
-Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the emitted proposal. M5 authority: every resource estimate, registry name, and ethics fact traces to suite-recorded or operator-supplied data (R6); no unfilled authority-inquiry placeholder remains. M8 definitiveness: the aims and the impact pathway carry no hedging vocabulary. M9 visual leverage: the impact pathway and the risk register render with the metadata header. M14 systemicity: the proposal declares its upstream (synthesis + theory), downstream (`/research-design`), peers (sibling research-suite artifacts), and enforcers (the SMART-aims completeness check + the preregistration-plan presence check). Iterate on failure per the gate rule's §3 until every bar passes; record the attestation block inside the proposal and update the Handoff Manifest.
+Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against the emitted proposal. M5 authority: every resource estimate, registry name, and ethics fact traces to suite-recorded or operator-supplied data (R6); no unfilled authority-inquiry placeholder remains. M8 definitiveness: the aims and the impact pathway carry no hedging vocabulary. M9 visual leverage: the impact pathway and the risk register render with the metadata header. M14 systemicity: the proposal declares its upstream (synthesis + theory), downstream (`/research-design`), peers (sibling research-suite artifacts), and enforcers (the SMART-aims completeness check + the preregistration-plan presence check). Iterate on failure per the gate rule's §3 until every bar passes or its three-round cap returns BLOCKED; record the attestation block inside the proposal and update the Handoff Manifest.
 
 ---
 
@@ -225,4 +225,10 @@ Invoke `/research-design` to operationalize the plan-of-record into a frozen stu
 
 ## Installed Reference Paths
 
-When this skill is installed by Apothem, resolve repository-style references such as `rules/...` under `<ROOT>`, `templates/...` and `hooks/...` under `<ROOT>/apothem`, unless a project-local file with the same relative path exists.
+When this skill is installed by Apothem, resolve a repository-style reference against the installed directory for its first segment, unless a project-local file with the same relative path exists.
+
+- `rules/<path>` is `<ROOT>/rules/<path>`
+- `templates/<path>` is `<ROOT>/.apothem/support/templates/<path>`
+- `schemas/<path>` is `<ROOT>/.apothem/support/schemas/<path>`
+- `hooks/<path>` is `<ROOT>/.apothem/support/hooks/<path>`
+- `conformity/<path>` is `<ROOT>/.apothem/support/conformity/<path>`

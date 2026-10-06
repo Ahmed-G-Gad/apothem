@@ -14,6 +14,11 @@ per-cell detail prints only under ``--verbose``; and the ``--format json``
 lifecycle envelope keeps every warning regardless of verbosity, so machine
 consumers are unaffected.
 
+Advisories (``outcome: "advisory"``, such as the shared-root advisory that names
+the other tools loading a path an install writes) are not capability cells.
+They print as their own ``Note:`` lines in both modes and ride the same JSON
+``warnings`` array, so the grouped count covers capability cells only.
+
 These tests drive the real seventeen-adapter registry through the CLI install
 path under an isolated HOME so no real harness state is touched.
 """
@@ -92,16 +97,18 @@ def test_plain_install_all_groups_warnings_into_one_note_per_harness(
 
     warning_lines = [line for line in lines if "Warning:" in line]
     note_lines = [line for line in lines if line.startswith("Note:")]
+    capability_notes = [line for line in note_lines if _NOTE_RE.match(line)]
 
     # The flood is gone: not a single per-cell Warning line in plain mode.
     assert warning_lines == []
     # At least one harness has a non-projected capability, so a Note appears.
-    assert note_lines
-    # Every Note matches the grouped summary shape (count + --verbose pointer).
+    assert capability_notes
+    # Every capability Note matches the grouped summary shape (count + --verbose
+    # pointer); other Note lines are advisories, which are never grouped.
     harnesses = []
-    for line in note_lines:
+    for line in capability_notes:
         match = _NOTE_RE.match(line)
-        assert match is not None, f"unexpected Note shape: {line!r}"
+        assert match is not None
         assert int(match["count"]) >= 1
         harnesses.append(match["harness"])
     # At most one Note line per warned harness — no harness summarized twice.
@@ -118,15 +125,15 @@ def test_verbose_install_all_prints_per_cell_warning_detail(
 
     json_lines = _install(runner, profile, project, "--format", "json")
     payload = json.loads("\n".join(json_lines))
-    total_warnings = len(payload["warnings"])
+    total_warnings = sum(1 for w in payload["warnings"] if w["outcome"] == "warning")
     assert total_warnings > 16  # more per-cell warnings than harnesses
 
     verbose_lines = _install(runner, profile, project, "--verbose")
     warning_lines = [line for line in verbose_lines if line.startswith("Warning:")]
-    note_lines = [line for line in verbose_lines if line.startswith("Note:")]
+    summary_lines = [line for line in verbose_lines if _NOTE_RE.match(line)]
 
     # Under --verbose the grouped summary is suppressed in favour of detail.
-    assert note_lines == []
+    assert summary_lines == []
     # Exactly one Warning line per warning in the envelope — the full detail.
     assert len(warning_lines) == total_warnings
     # Each detail line is harness-attributed ("Warning: <harness> - <rationale>").
@@ -147,10 +154,15 @@ def test_json_warning_count_identical_with_and_without_verbose(
         "\n".join(_install(runner, profile, project, "--format", "json", "--verbose"))
     )
 
-    plain_msgs = sorted(str(w["message"]) for w in plain["warnings"])
-    verbose_msgs = sorted(str(w["message"]) for w in verbose["warnings"])
+    # Advisories depend on what earlier runs left on disk (a reader advisory
+    # appears once another install has written a shared root), and both runs
+    # share one HOME, so the comparison covers adapter warnings only.
+    plain_warnings = [w for w in plain["warnings"] if w["outcome"] == "warning"]
+    verbose_warnings = [w for w in verbose["warnings"] if w["outcome"] == "warning"]
+    plain_msgs = sorted(str(w["message"]) for w in plain_warnings)
+    verbose_msgs = sorted(str(w["message"]) for w in verbose_warnings)
 
-    assert len(plain["warnings"]) == len(verbose["warnings"])
+    assert len(plain_warnings) == len(verbose_warnings)
     assert plain_msgs == verbose_msgs
     # The grouped plain-mode counts sum to the full envelope total (no data lost).
     note_total = sum(
@@ -158,13 +170,22 @@ def test_json_warning_count_identical_with_and_without_verbose(
         for line in _install(runner, profile, project)
         if (m := _NOTE_RE.match(line))
     )
-    assert note_total == len(plain["warnings"])
+    capability_total = sum(
+        1 for w in plain["warnings"] if w["operation"] == "capability_projection"
+    )
+    assert note_total == capability_total
 
 
 def test_single_harness_plain_groups_verbose_expands(
-    runner: CliRunner, tmp_path: Path
+    runner: CliRunner, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A single project-scope harness: one Note in plain mode, full detail verbose."""
+    # An empty home: a shared root that already holds another tool's Apothem
+    # content would add a reader Note to the count.
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
     profile = tmp_path / "profile.yaml"
     profile.write_text(_PROFILE, encoding="utf-8")
 

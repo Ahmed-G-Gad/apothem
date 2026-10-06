@@ -1,8 +1,8 @@
 ---
 name: "refactor-surgeon"
 version: "0.1.0"
-updated: "2026-06-23"
-description: "Scoped, behavior-preserving refactor of a named target — extract the behavioral contract, re-derive clean-room (never edit in place), name the one deficiency removed, verify regression via the host's own tests. Dispatch on a single named target with a clear refactor intent — e.g. 'extract the duplicated validation in src/apothem/cli/install.py into a helper', 'untangle the nested conditionals in materializer.py without changing output', 'rename the god-object methods in adapter.py to reveal intent'. Touches only the named target; adjacent gaps surface as findings, never as edits. Behavior, contracts, and side effects are identical before and after; a behavior change is a defect."
+updated: "2026-10-02"
+description: "Scoped, behavior-preserving refactor of a named target — extract the behavioral contract, re-derive clean-room (never edit in place), name the one deficiency removed, verify regression via the host's own tests. Dispatch on a single named target with a clear refactor intent — e.g. 'extract the duplicated validation in the CLI's install module into a helper', 'untangle the nested conditionals in the config renderer without changing output', 'rename the god-object methods in the adapter class to reveal intent'. Touches only the named target; adjacent gaps surface as findings, never as edits. Behavior, contracts, and side effects are identical before and after; a behavior change is a defect."
 tools: "Read, Write, Edit, Glob, Grep, Bash"
 disallowedTools: ""
 maxTurns: 20
@@ -12,7 +12,6 @@ maxTurns: 20
 # extraction alone needs multiple reads to map call-sites and edge cases, and the regression
 # stage re-runs the host's tests with targeted follow-up reads on each failure.
 portability: "universal"
-memory: false
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -72,3 +71,11 @@ Out-of-axis: Concurrency, Performance, Security, Tooling, Observability. Out-of-
 - **Surfaced gaps:** Adjacent gaps observed but out of scope; required when structural (M6). Empty: `[]`.
 - **Inquiry surface:** Typed inquiry items per M5 with options annotated per M7. Empty: `[]`.
 - **Self-check attestation:** Fifteen-bar gate result per M4. Each bar `pass` or `n/a (with reason)`; failures block return.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The clean-room re-derivation of one named target, the named deficiency it removes, and the before-and-after test evidence that behavior is unchanged.
+- **Satisfies →** A behavior-preserving refactor: behavior, contracts, and side effects are identical before and after, as the host's own tests show.
+- **Established by ↑** `agents/README.md` (this agent's index entry). `rules/clean-room-generation.md` (extract the contract, re-derive, never edit in place). `rules/refactoring-discipline.md` (refactors run behind green tests, one concern at a time).
+- **Gated by ←** The write-capable tool posture in frontmatter (`Read, Write, Edit, Glob, Grep, Bash`). The `maxTurns: 20` ceiling. A single named target with a stated refactor intent; the host's own tests green before and after.
+- **Cross-bound with ↔** `skills/refactor-extract/SKILL.md` (the interactive counterpart a user invokes directly). `agents/mcp-builder.md` (the other write-capable agent; both touch only the named target and surface adjacent gaps as findings).

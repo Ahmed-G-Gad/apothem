@@ -91,6 +91,8 @@ class GrepResult:
     passed: bool
     not_yet_materialised: bool = False
     findings: list[Finding] = field(default_factory=list)
+    # Workflow files audited; stamped on the report as ``inspected``.
+    inspected: int = 0
 
     def to_json(self) -> str:
         """Return this report as a two-space-indented JSON string.
@@ -322,14 +324,23 @@ def check_root(root: Path) -> GrepResult:
         root=str(root),
         passed=not findings,
         findings=findings,
+        inspected=len(candidates),
     )
 
 
 def _main(argv: list[str]) -> int:
-    root = Path(argv[1]) if len(argv) >= 2 else Path.cwd()
+    # Imported here, not at module top: ``check_root()`` stays importable
+    # without the package; only the command-line entry needs the parser.
+    from apothem.conformity._grep_base import finish_root_report, parse_root_args
+
+    root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root
     result = check_root(root)
-    print(result.to_json())
-    return EXIT_PASS if result.passed else EXIT_FAIL
+    return finish_root_report(
+        result.to_json(),
+        passed=result.passed,
+        inspected=result.inspected,
+        empty_scope_expected=result.not_yet_materialised,
+    )
 
 
 if __name__ == "__main__":

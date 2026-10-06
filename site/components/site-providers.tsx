@@ -12,6 +12,7 @@ import {
   LOCALE_SWITCHER_ITEMS,
 } from '@/lib/i18n';
 import StaticSearchDialog from '@/components/static-search-dialog';
+import { ChromeLang } from '@/components/chrome-lang';
 
 const ROUTED_SET = new Set<string>(ROUTED_LOCALES);
 
@@ -76,6 +77,9 @@ export function SiteProviders({
         onLocaleChange,
       }}
     >
+      {/* Marks the untranslated chrome strings `lang="en"` on translated pages
+          and each language-switcher entry with its own language (WCAG 3.1.2). */}
+      <ChromeLang />
       {children}
     </RootProvider>
   );

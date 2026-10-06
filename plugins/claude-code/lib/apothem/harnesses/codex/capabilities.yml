@@ -35,3 +35,27 @@ tool_surface_restrictions:
   - network-write-unsigned
 system_prompt_template_path: "templates/AGENTS.md"
 agent_memory_surface: "AGENTS.md hierarchy"
+# What each source frontmatter key becomes in a converted cohort (see
+# tests/unit/test_conversion_losses.py for the value vocabulary). Codex reads
+# only name and description from SKILL.md; implicit invocation is controlled by
+# agents/openai.yaml. Custom agents have no tool allowlist or turn limit, so a
+# read-only grant becomes sandbox_mode = "read-only" and maxTurns is dropped.
+conversion_losses:
+  commands:
+    name: "native:name"
+    description: "native:description"
+    argument-hint: "ignored"
+    disable-model-invocation: "sidecar:agents/openai.yaml#policy.allow_implicit_invocation"
+    allowed-tools: "ignored"
+    version: "ignored"
+    updated: "ignored"
+    portability: "ignored"
+  agents:
+    name: "native:name"
+    description: "native:description"
+    tools: "native:sandbox_mode"
+    disallowedTools: "native:sandbox_mode"
+    maxTurns: "dropped"
+    version: "dropped"
+    updated: "dropped"
+    portability: "dropped"

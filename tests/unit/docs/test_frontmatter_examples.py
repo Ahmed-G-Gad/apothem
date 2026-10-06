@@ -129,8 +129,10 @@ _FORBIDDEN_COMMAND_KEYS = frozenset(
         "effort",
     }
 )
-# Skill drift: a `type` marker, the hyphenated `user-invocable` (the real key is
-# the camelCase `userInvocable`), and keys forbidden by skill.schema.json.
+# Skill drift: a `type` marker, the hyphenated `user-invocable` (the source
+# corpus and its docs use the camelCase `userInvocable`; `user-invocable` is the
+# spelling the Claude Code emission writes), and keys forbidden by
+# skill.schema.json.
 _FORBIDDEN_SKILL_KEYS = frozenset(
     {"type", "user-invocable", "detection-signals", "relatedSkills", "portability"}
 )
@@ -267,6 +269,21 @@ def _schema_keys(schema_filename: str) -> tuple[frozenset[str], frozenset[str]]:
     return frozenset(data["required"]), frozenset(data["properties"])
 
 
+def _schema_one_of(schema_filename: str) -> tuple[frozenset[str], ...]:
+    """Return the key groups a schema's top-level ``oneOf`` requires one of.
+
+    ``skill.schema.json`` requires exactly one spelling of the
+    user-invocability flag (``userInvocable`` in the source corpus,
+    ``user-invocable`` in the Claude Code emission), expressed as
+    ``oneOf: [{required: [a]}, {required: [b]}]``; this yields ``{a, b}``.
+    """
+    data = json.loads((_SCHEMAS_ROOT / schema_filename).read_text(encoding="utf-8"))
+    branches = data.get("oneOf", [])
+    if not branches:
+        return ()
+    return (frozenset(key for branch in branches for key in branch["required"]),)
+
+
 def _collect_examples() -> list[_Example]:
     """Extract every rule/agent frontmatter example from the in-scope EN pages."""
     examples: list[_Example] = []
@@ -301,6 +318,7 @@ _AGENT_ALLOWED = frozenset(frontmatter_grep.REQUIRED_KEYS["agents"]) | _AGENT_RE
 # subset check tracks the schema rather than a hard-coded key list.
 _COMMAND_REQUIRED, _COMMAND_ALLOWED = _schema_keys("command.schema.json")
 _SKILL_REQUIRED, _SKILL_ALLOWED = _schema_keys("skill.schema.json")
+_SKILL_ONE_OF = _schema_one_of("skill.schema.json")
 
 _EXAMPLES = _collect_examples()
 _RULE_EXAMPLES = [ex for ex in _EXAMPLES if ex.cls == "rules"]
@@ -435,7 +453,9 @@ def test_command_and_skill_schema_contracts_are_sound() -> None:
     assert _SKILL_REQUIRED <= _SKILL_ALLOWED
     assert "allowed-tools" in _COMMAND_REQUIRED
     assert "portability" in _COMMAND_REQUIRED
-    assert {"userInvocable", "archetype"} <= _SKILL_REQUIRED
+    assert "archetype" in _SKILL_REQUIRED
+    # The user-invocability flag is required in exactly one spelling.
+    assert frozenset({"userInvocable", "user-invocable"}) in _SKILL_ONE_OF
 
 
 @pytest.mark.parametrize("ex", _COMMAND_EXAMPLES, ids=_ids(_COMMAND_EXAMPLES))
@@ -476,6 +496,11 @@ def test_skill_frontmatter_examples_match_real_contract(ex: _Example) -> None:
         f"{ex.page_rel} block {ex.block_index}: skill example missing required "
         f"key(s) {sorted(missing)}; required = {sorted(_SKILL_REQUIRED)}"
     )
+    for group in _SKILL_ONE_OF:
+        assert len(keyset & group) == 1, (
+            f"{ex.page_rel} block {ex.block_index}: skill example must carry "
+            f"exactly one of {sorted(group)}"
+        )
 
     # Strict "only these keys": skill.schema.json is additionalProperties:false.
     extra = keyset - _SKILL_ALLOWED

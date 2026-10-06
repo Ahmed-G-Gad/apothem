@@ -1,1 +1,1 @@
-{"harness": "zed", "install_id": "<INSTALL_ID>", "kind": "install", "root": "<ROOT>", "targets": [{"mode": "sentinel_merge", "ownership_class": "operator-owned", "path": "<ROOT>/.rules"}], "timestamp": "<TIMESTAMP>"}
+{"harness": "zed", "install_id": "<INSTALL_ID>", "kind": "install", "root": "<ROOT>", "targets": [{"created": true, "mode": "sentinel_merge", "outcome": "created", "ownership_class": "operator-owned", "path": "<ROOT>/.rules"}], "timestamp": "<TIMESTAMP>"}

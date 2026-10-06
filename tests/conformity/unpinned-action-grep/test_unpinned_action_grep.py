@@ -104,3 +104,102 @@ def test_clean_workflow_with_only_run_steps_passes() -> None:
     )
     result = _MOD.check(body)
     assert result.passed
+
+
+# --- every line is scanned, whatever precedes it ----------------------------
+#
+# A checker that stopped at the first pinned, local, or exempt `uses:` line
+# (or at the first non-`uses:` line) would pass every single-line test above.
+# Each workflow below places an unpinned reference AFTER the skipped line, and
+# the findings carry exact line numbers.
+
+_SHA = "b4ffde65f46336ab88eb53be808477a3936bae11"
+
+
+def _lines(result: object) -> list[tuple[int, str, str]]:
+    return [(f.line, f.action, f.ref) for f in result.findings]
+
+
+def test_unpinned_after_sha_pinned_is_flagged() -> None:
+    body = "\n".join(
+        [
+            "steps:",
+            f"  - uses: actions/checkout@{_SHA}",
+            "  - uses: actions/setup-python@v5",
+        ]
+    )
+    result = _MOD.check(body)
+    assert _lines(result) == [(3, "actions/setup-python", "v5")]
+
+
+def test_unpinned_after_local_action_is_flagged() -> None:
+    body = "\n".join(
+        [
+            "steps:",
+            "  - uses: ./.github/actions/setup@v1",
+            "  - uses: actions/cache@v4",
+        ]
+    )
+    result = _MOD.check(body)
+    assert _lines(result) == [(3, "actions/cache", "v4")]
+
+
+def test_unpinned_after_exempt_line_is_flagged() -> None:
+    body = "\n".join(
+        [
+            "jobs:",
+            "  provenance:",
+            "    uses: slsa-framework/slsa-github-generator/.github/workflows/"
+            "generator_generic_slsa3.yml@v2.1.0"
+            "  # action-pinning-exempt: SLSA reusable workflow trust anchor",
+            "  build:",
+            "    steps:",
+            "      - uses: actions/upload-artifact@v4",
+        ]
+    )
+    result = _MOD.check(body)
+    assert _lines(result) == [(6, "actions/upload-artifact", "v4")]
+
+
+def test_unpinned_after_non_uses_lines_is_flagged() -> None:
+    body = "\n".join(
+        [
+            "name: ci",
+            "on: [push]",
+            "jobs:",
+            "  test:",
+            "    steps:",
+            "      - run: echo hi",
+            "      - uses: actions/checkout@v4",
+        ]
+    )
+    result = _MOD.check(body)
+    assert _lines(result) == [(7, "actions/checkout", "v4")]
+
+
+def test_mixed_workflow_reports_every_unpinned_line() -> None:
+    body = "\n".join(
+        [
+            "steps:",
+            "  - uses: actions/checkout@v4",
+            f"  - uses: actions/setup-node@{_SHA}",
+            "  - uses: ./local/action@main",
+            "  - uses: docker/login-action@v3  # action-pinning-exempt: vendor policy",
+            "  - run: make",
+            "  - uses: actions/cache/save@v4",
+        ]
+    )
+    result = _MOD.check(body)
+    assert _lines(result) == [
+        (2, "actions/checkout", "v4"),
+        (7, "actions/cache/save", "v4"),
+    ]
+    assert not result.passed
+
+
+def test_report_names_the_grep_and_the_path() -> None:
+    target = Path(".github/workflows/ci.yml")
+    result = _MOD.check("  - uses: actions/checkout@v4", target)
+    assert result.grep == "unpinned-action-grep"
+    assert result.path == str(target)
+    assert _MOD.check("  - uses: actions/checkout@v4").path is None

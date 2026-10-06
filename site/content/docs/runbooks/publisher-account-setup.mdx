@@ -42,9 +42,10 @@ package name, not the maintainer account name.
    - GitHub owner: `ahmed-g-gad`
    - Repository: `apothem`
    - Workflow filename: `publish-npm.yml`
-   - Environment: `npmjs`
+   - Environment: `release` (the `environment:` of the publish job in
+     `publish-npm.yml`; the two must match)
    - Allowed action: `npm publish`.
-6. In GitHub, verify the `npmjs` environment exists on `ahmed-g-gad/apothem`
+6. In GitHub, verify the `release` environment exists on `ahmed-g-gad/apothem`
    and requires manual approval for deployment.
 7. Keep the npm surface to one public registry package:
    `@ahmed-g-gad/apothem` on npmjs.com.
@@ -55,7 +56,7 @@ package name, not the maintainer account name.
    ```
 
 9. Run `Publish — npm` (`publish-npm.yml`) from the GitHub Actions tab with
-   `tag=<release-tag>` and approve the `npmjs` environment deployment.
+   `tag=<release-tag>` and approve the `release` environment deployment.
 10. Verify the live package:
 
     ```bash title="npm verification"
@@ -71,6 +72,11 @@ provenance for public packages published from a public GitHub Actions
 workflow. A registry `404` during `PUT` means the npm-side trusted publisher,
 package scope, or account authorization is not aligned yet; fix the npm
 package settings before retrying the workflow.
+
+Once a trusted publish has succeeded, close the token path for good: in the
+package's **Settings → Publishing access** on npmjs.com, select **Require
+two-factor authentication and disallow tokens**, and delete any npm token
+secret left in the repository. The workflow no longer reads one.
 
 References: [npm Trusted Publishers](https://docs.npmjs.com/trusted-publishers/), [npm provenance](https://docs.npmjs.com/generating-provenance-statements/), and [npm scopes](https://docs.npmjs.com/about-scopes/).
 

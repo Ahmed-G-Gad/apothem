@@ -108,3 +108,41 @@ def test_capabilities_instructions_only_delivery() -> None:
     # repo-config sub-agent dispatch is authored.
     capabilities = _capabilities()
     assert capabilities["sub_agent_dispatch"] is False
+
+
+def test_profile_block_comes_first_in_the_managed_block(
+    adapter: GitHubCopilotAdapter, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # GitHub's code-review guidance: shorter instruction files are more likely
+    # to be fully processed. The operator's own profile is the part that must
+    # not be cut, so it leads the Apothem block, ahead of the generic
+    # governance text.
+    from apothem.harnesses._shared import install_driver
+    from apothem.lib.harness_materializer import extract_managed_block
+
+    monkeypatch.setattr(install_driver, "BACKUP_ROOT", tmp_path / "apothem-backups")
+    profile = {
+        "identity": {"name": "Ada Lovelace", "role": "maintainer"},
+        "rules": ["Prefer explicit types"],
+    }
+    adapter.install(profile, project=tmp_path)
+    block = extract_managed_block(
+        adapter.resolve_output_path(tmp_path).read_text(encoding="utf-8")
+    )
+    assert block is not None
+    profile_at = block.index("# Apothem Shared Profile")
+    governance_at = block.index("## Engineering disciplines in force")
+    assert profile_at < governance_at
+    assert block.index("Ada Lovelace") < 1000
+    assert block.index("Prefer explicit types") < 1000
+
+
+def test_template_makes_no_stale_feature_claims() -> None:
+    # Current GitHub docs (retrieved 2026-10-03) state no fixed character cap
+    # for code review, and repository instructions do not apply to inline
+    # code completions.
+    text = (_ADAPTER_DIR / "templates" / "copilot-instructions.md").read_text(
+        encoding="utf-8"
+    )
+    assert "4,000" not in text
+    assert "completions" not in text

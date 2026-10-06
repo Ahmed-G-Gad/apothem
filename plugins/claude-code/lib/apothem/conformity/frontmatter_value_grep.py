@@ -27,11 +27,11 @@ satisfies the constraint. The governed classes and their schemas:
   ``isolation``, ``color``, and the ``memory`` ``oneOf`` string-enum/boolean;
   patterns: ``name``, ``version``, ``updated``).
 - ``commands`` → ``command.schema.json`` (patterns: ``name``, ``version``,
-  ``updated``). ``additionalProperties: false``, but key/required validation is
+  ``updated``, ``allowed-tools``). ``additionalProperties: false``, but key/required validation is
   owned by ``frontmatter_grep`` and the doc-example test — this validator adds
   the value-level pattern enforcement those surfaces lack.
 - ``skills``  → ``skill.schema.json``  (enum: ``effort``; patterns: ``name``,
-  ``version``, ``updated``, ``archetype``).
+  ``version``, ``updated``, ``archetype``, ``allowed-tools``).
 
 Scope boundary. This validator is value-only and schema-driven: it never
 hardcodes a field list (a new enum/pattern property added to a schema is picked
@@ -375,17 +375,18 @@ def check(root: Path) -> GrepResult:
     )
 
 
-def _read_input(argv: list[str]) -> Path:
-    if len(argv) >= 2:
-        return Path(argv[1])
-    return Path.cwd()
-
-
 def _main(argv: list[str]) -> int:
-    root = _read_input(argv)
+    # Imported here, not at module top: ``check()`` stays stdlib-only; only
+    # the command-line entry needs the shared parser and report stamp.
+    from apothem.conformity._grep_base import finish_root_report, parse_root_args
+
+    root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root
     result = check(root)
-    print(result.to_json())
-    return EXIT_PASS if result.passed else EXIT_FAIL
+    return finish_root_report(
+        result.to_json(),
+        passed=result.passed,
+        inspected=result.files_inspected,
+    )
 
 
 if __name__ == "__main__":

@@ -22,8 +22,23 @@ skills.
 
 **Files written:** `~/.codex/AGENTS.md`, `~/.codex/hooks.json`,
 `~/.codex/hooks/`, `~/.codex/agents/*.toml`,
-`~/.agents/skills/*/SKILL.md`, and support files under
+`~/.agents/skills/*/SKILL.md`, `~/.agents/skills/*/agents/openai.yaml` for
+user-invoked skills, and support files under
 `~/.config/apothem/{rules,templates}/`.
+
+The Apothem block in `AGENTS.md` ends with an Apothem support files section
+that names the absolute directory each repository-style citation in the
+installed skills and rules resolves against: `rules/<name>.md` and
+`templates/...` under `~/.config/apothem/`, and `hooks/...` under
+`~/.codex/hooks/`. The Codex install ships no `schemas/` or `conformity/`
+tree, so the section lists neither.
+
+**User-invoked skills.** Codex ignores the `disable-model-invocation` key. For
+every skill or command whose source sets `disable-model-invocation: true`, the
+adapter writes `agents/openai.yaml` beside its `SKILL.md` with
+`policy.allow_implicit_invocation: false`, so Codex does not pick the skill on
+its own; you can still run it explicitly with `$skill-name`. See the
+[Codex skills documentation](https://developers.openai.com/codex/skills).
 
 ## Profile-to-native-config mapping
 
@@ -32,7 +47,20 @@ Codex surface: instructions to `AGENTS.md`, hooks to `hooks.json` and
 `hooks/`, agents to TOML, skills to `~/.agents/skills/`, and non-native
 Markdown rules/templates to `~/.config/apothem/` as support material.
 
+Each converted helper sets `name`, `description`, and `developer_instructions`.
+A helper whose tool grant cannot write files also sets
+`sandbox_mode = "read-only"`, Codex's own write restriction. No model or
+reasoning effort is set, so each helper inherits the session's choices. Codex
+has no per-helper tool list or turn limit, so a helper's `tools` and `maxTurns`
+do not carry over.
+
 ## Compatibility notes
+
+`~/.agents/skills/` is a shared root that Codex owns: eight other supported
+tools load it too (the [harness registry](/docs/reference/harness-registry)
+lists them), so the Apothem skills a Codex install writes there appear in those
+tools as well, and a Codex uninstall removes them from those tools. The install
+prints a note that names those tools.
 
 Codex reserves `~/.codex/rules/` for `.rules` execution policies. Apothem does
 not place Markdown behavioral rules there; it keeps them in `~/.config/apothem/`

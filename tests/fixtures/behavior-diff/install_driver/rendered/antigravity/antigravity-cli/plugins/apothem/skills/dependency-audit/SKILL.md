@@ -1,12 +1,12 @@
 ---
 name: "dependency-audit"
 version: "0.1.0"
-updated: "2026-06-10"
+updated: "2026-10-02"
 description: "Operator-driven per-dependency audit pass (direct + transitive). Walks every dependency declared in the repository's manifest files (pyproject.toml, package.json, Cargo.toml, go.mod, Gemfile, etc.) plus their resolved lockfile entries and emits per-dependency findings covering license compatibility, CVE status, deprecation status, replacement recommendation, transitive depth, pinned-vs-range posture, and security-relevant identification. Tooling: pip-audit + safety + osv-scanner + configured dependency-update automation insights. Output lands at the consuming suite's _inputs/dependency-audit-findings.md with HIGH / MEDIUM / LOW severity triage and concrete-driver rationale per finding."
 argument-hint: "[path/to/repo/] [--focus MANIFEST_OR_DEP] [--dry-run]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -166,7 +166,7 @@ Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against t
 - **M14 systemicity** — the artifact declares upstream (manifest tree + lockfiles), downstream (remediation surface + `/supply-chain-audit`), peers (sibling fortress artifacts), enforcers (pip-audit + safety + osv-scanner + host accepted-license list).
 - **N/A bars (reason recorded):** M11 (single-sprint audit surface) · M13 (no executable code emitted) · M15 (production-ready applies at remediation time) · M9 (unless a non-obvious transitive-dependency graph warrants a diagram, then per `rules/visual-leverage.md`).
 
-**Iterate on failure.** A single bar failure blocks promotion. The failing bar's Failure→action cell names the owning rule; revise, re-run, iterate until every bar passes, then emit the attestation block.
+**Iterate on failure.** A single bar failure blocks promotion. The failing bar's Failure→action cell names the owning rule; revise, re-run, iterate until every bar passes within the three-round cap of `rules/pre-emission-gate-bars.md` §3 (then BLOCKED), then emit the attestation block.
 
 ---
 
@@ -210,4 +210,8 @@ Invoke `/supply-chain-audit` to advance the audit-fortress sequence; `/supply-ch
 
 ## Installed Reference Paths
 
-When this skill is installed by Apothem, resolve repository-style references such as `rules/...` under `<ROOT>/antigravity-cli/plugins/apothem`, `templates/...` and `hooks/...` under `<ROOT>/antigravity-cli/plugins/apothem/apothem`, unless a project-local file with the same relative path exists.
+When this skill is installed by Apothem, resolve a repository-style reference against the installed directory for its first segment, unless a project-local file with the same relative path exists.
+
+- `rules/<path>` is `<ROOT>/antigravity-cli/plugins/apothem/rules/<path>`
+- `templates/<path>` is `<ROOT>/antigravity-cli/plugins/apothem/.apothem/support/templates/<path>`
+- `hooks/<path>` is `<ROOT>/antigravity-cli/plugins/apothem/.apothem/support/hooks/<path>`

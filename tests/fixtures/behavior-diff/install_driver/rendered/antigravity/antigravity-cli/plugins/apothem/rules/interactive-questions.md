@@ -1,8 +1,6 @@
 ---
-name: "interactive-questions"
+trigger: always_on
 description: "Canonical discipline for soliciting user input — the harness-neutral structured-inquiry channel is the sanctioned abstraction; every invocation carries a structured option annotation; destructive operations and ambiguity resolution route through this rule; a prose fallback shape covers harnesses that lack a native tool."
-pathFilter: ""
-alwaysApply: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

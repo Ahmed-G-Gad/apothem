@@ -1,0 +1,9 @@
+{
+  "argv": [
+    "install",
+    "--harness",
+    "claude-code"
+  ],
+  "exit_code": 0,
+  "stdout": "✓ Created a starter profile at <HOME>/.config/apothem/profile.yaml\nNote: Profile identity is still the scaffold placeholder (name, email, github); personalize it so a real identity is projected. Edit the profile or run 'apothem profile set identity.name \"Your Name\"'.\nNote: claude-code - ~/.claude/skills/ is shared: Cursor, OpenCode also load it. Installing or uninstalling Claude Code changes what those tools load.\nNote: claude-code - ~/.claude/CLAUDE.md is shared: OpenCode also loads it. Installing or uninstalling Claude Code changes what that tool loads.\nNote: claude-code - 1 capability not projected; pass --verbose for detail\n✓ Installed claude-code -> <HOME>/.claude/settings.json\n"
+}

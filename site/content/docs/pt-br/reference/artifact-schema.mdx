@@ -2,6 +2,7 @@
 title: "Especificação do esquema de artefatos"
 description: "Esquema canônico de frontmatter YAML e campos obrigatórios para todos os tipos de artefato na árvore de fontes do Apothem, com modelos por classe e regras de validação."
 machineTranslated: true
+sourceHash: "78472bdb279c1cb4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -93,7 +94,7 @@ description: "What this command does"
 argument-hint: "[argument-pattern]"
 disable-model-invocation: true | false
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 ```
 
@@ -121,7 +122,7 @@ description: "Executes a specific phase from a Master Plan Suite with conformity
 argument-hint: "[path/to/plan-suite/] [phase-id] [--dry-run]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 # /plan-execute — Execute a Specific Phase
@@ -171,7 +172,7 @@ effort: "high" | "medium" | "low"
 
 ```yaml
 permissionMode: "default"       # Permission handling
-memory: true | false                    # If true, agent retains memory across sessions
+memory: user | project | local  # Persistent-memory scope; omit for none
 pattern: "Research" | "Audit" | "Implementation" | "Quality"  # Agent team pattern
 portability: "universal"
 ```
@@ -189,7 +190,6 @@ disallowedTools: "Write, Edit, TodoWrite"
 maxTurns: 20
 effort: "high"
 permissionMode: "default"
-memory: false
 portability: "universal"
 ---
 
@@ -216,7 +216,7 @@ description: "What this skill teaches"
 archetype: "workflow-template"
 userInvocable: true | false
 disable-model-invocation: true | false
-allowed-tools: "Read, Write, Glob"
+allowed-tools: "Read, Glob, Grep"
 ---
 ```
 
@@ -232,7 +232,6 @@ allowed-tools: "Read, Write, Glob"
 
 ```yaml
 argument-hint: "[args...]"                           # Usage pattern if userInvocable
-effort: "low" | "medium" | "high" | "xhigh" | "max" # Optional effort level
 ```
 
 ### Exemplo
@@ -246,9 +245,8 @@ description: "Comprehensive blind audit of the apothem ecosystem"
 archetype: "audit-template"
 userInvocable: true
 disable-model-invocation: true
-allowed-tools: "Read, Write, Edit, Glob, Grep, Bash"
+allowed-tools: "Read, Glob, Grep, Agent, TodoWrite"
 argument-hint: "[--focus area] [--fix]"
-effort: "max"
 ---
 
 ## Purpose

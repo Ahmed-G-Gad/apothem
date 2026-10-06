@@ -12,6 +12,7 @@ failure envelope on stdout so the hook runtime never sees a raw traceback.
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 from typing import Final
@@ -33,6 +34,18 @@ from events import (
 from events import (
     SUPPORTED_EVENTS as _VALID_EVENTS,
 )
+
+#: Global kill switch. A truthy value silences every dispatcher-routed hook:
+#: no output, exit 0, before any handler runs. It exists so an operator can turn
+#: every Apothem hook off from the environment without editing installed hook
+#: configuration, which the harness snapshots at session start.
+DISABLE_ENV: Final[str] = "APOTHEM_HOOKS_DISABLE"
+_TRUTHY: Final[frozenset[str]] = frozenset({"1", "true", "yes", "on"})
+
+
+def hooks_disabled() -> bool:
+    """Return True when :data:`DISABLE_ENV` reads as an explicit "on" value."""
+    return os.environ.get(DISABLE_ENV, "").strip().casefold() in _TRUTHY
 
 
 def _emit_failure(event_name: str, message: str) -> None:
@@ -312,6 +325,8 @@ def main(argv: list[str] | None = None) -> None:
     *error* still names the event in the failure envelope rather than
     ``UnknownEvent``.
     """
+    if hooks_disabled():
+        return
     event_name = _best_effort_event_name(argv)
     try:
         args = parse_args(argv)

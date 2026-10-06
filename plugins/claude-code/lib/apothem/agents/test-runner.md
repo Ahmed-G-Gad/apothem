@@ -4,14 +4,13 @@ version: "0.1.0"
 updated: "2026-06-23"
 description: "Read-only test-suite runner — discovers the host's test command, runs it, and triages every failure by root cause with test+file+line+assertion evidence. Reports, never fixes. Dispatch as a Research/Quality team member after a code change, before a release cut, or to confirm a fix is green — e.g. 'run the tests and tell me what's failing and why', 'is the suite green on this branch?', 'triage the failures in the auth module'. Detects the runner via host-discovery (pytest/jest/cargo test/go test/Makefile target from the manifest + CI config); never assumes pytest."
 tools: "Read, Glob, Grep, Bash"
-disallowedTools: "Write, Edit, TodoWrite"
+disallowedTools: "Write, Edit, TodoWrite, TaskCreate, TaskUpdate"
 maxTurns: 15
 # maxTurns rationale: 15 exceeds the 5–10 norm because the host's test command is discovered first
 # (manifest read + sibling-config grep), then run, then each failure needs a targeted follow-up read
 # to extract the failing assertion and its source loci. 15 covers discovery + one full run + per-failure
 # triage without permitting unbounded re-runs.
 portability: "universal"
-memory: false
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -82,3 +81,11 @@ This agent holds no write surface (`tools: Read, Glob, Grep, Bash`; `Write`/`Edi
 - **Surfaced gaps:** Out-of-axis failure causes and undiscoverable host signals; required when structural per M6 (`rules/expertise-posture.md`). Empty: `[]`.
 - **Inquiry surface:** Typed inquiry items per M5 with options annotated per M7. Empty: `[]`.
 - **Self-check attestation:** Fifteen-bar gate result per M4 (`rules/pre-emission-gate.md`). Each bar `pass` or `n/a (with reason)`; failures block return.
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The pass, fail, and skip tally with the discovered test command and a root-cause class per failure, read by `/test-suite` and by the experiment stage's protocol run.
+- **Satisfies →** A Research or Quality team member in `rules/agent-orchestration.md` §1: exit codes are the verdict, every failure cites test, file, line, and assertion.
+- **Established by ↑** `agents/README.md` (this agent's index entry). `rules/host-discovery.md` (the test command is discovered from the host's manifest and CI configuration).
+- **Gated by ←** The read-only tool posture in frontmatter (`Read, Glob, Grep, Bash`; `Write, Edit, TodoWrite` denied). The `maxTurns: 15` ceiling. A discoverable test command; an undiscoverable one routes as inquiry.
+- **Cross-bound with ↔** `commands/test-suite.md` (dispatches this agent to run the suite). `commands/research-experiment.md` (dispatches it to run a computational protocol and capture its output).

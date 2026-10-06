@@ -26,9 +26,9 @@ src/apothem/
     agents/         persistent agent definitions (*.md)
     audit/          inventory and provenance tools
     benchmarks/     performance benchmarks
-    cli/            Click CLI (quickstart, install, update, uninstall, verify, status, diff, rollback, harnesses, profile, doctor, completion)
+    cli/            Click CLI (top-level commands listed below the tree)
     commands/       slash command definitions (*.md)
-    conformity/     mechanical gate checkers (*-grep.py)
+    conformity/     mechanical gate checkers (*_grep.py)
     harnesses/      one sub-package per harness adapter (17 adapters)
     hooks/          hook dispatcher + message files
     lib/            shared Python library
@@ -39,6 +39,31 @@ src/apothem/
     statuslines/    status-line config (*.json)
     templates/      reusable template artifacts
 ```
+
+### CLI commands
+
+The list below is generated from the Click command tree.
+
+{/* apothem:generated-reference:start */}
+
+The `cli/` package registers 14 top-level commands:
+
+- [`apothem backups`](/docs/cli-reference/backups)
+- [`apothem completion`](/docs/cli-reference/completion)
+- [`apothem diff`](/docs/cli-reference/diff)
+- [`apothem doctor`](/docs/cli-reference/doctor)
+- [`apothem harnesses`](/docs/cli-reference/harnesses)
+- [`apothem install`](/docs/cli-reference/install)
+- [`apothem migrate-workspace`](/docs/cli-reference/migrate-workspace)
+- [`apothem profile`](/docs/cli-reference/profile)
+- [`apothem quickstart`](/docs/cli-reference/quickstart)
+- [`apothem rollback`](/docs/cli-reference/rollback)
+- [`apothem status`](/docs/cli-reference/status)
+- [`apothem uninstall`](/docs/cli-reference/uninstall)
+- [`apothem update`](/docs/cli-reference/update)
+- [`apothem verify`](/docs/cli-reference/verify)
+
+{/* apothem:generated-reference:end */}
 
 ## Importable vs. configuration artifacts
 

@@ -424,10 +424,19 @@ def _read_hook_findings() -> list[Finding]:
 
 
 def _main(argv: list[str]) -> int:
-    if len(argv) >= 2 and argv[1] == STAGED_FLAG:
-        findings = check_staged()
-    else:
-        findings = _read_hook_findings()
+    # Imported here, not at module top, so the module stays stdlib-only for
+    # every caller except the command-line entry.
+    from apothem.conformity._grep_base import make_parser
+
+    parser = make_parser(GREP_NAME, __doc__)
+    parser.add_argument(
+        STAGED_FLAG,
+        dest="staged",
+        action="store_true",
+        help="check the staged change set (default: read a hook payload on stdin)",
+    )
+    args = parser.parse_args(argv[1:])
+    findings = check_staged() if args.staged else _read_hook_findings()
     result = GrepResult(grep=GREP_NAME, passed=not findings, findings=findings)
     print(result.to_json())
     return EXIT_PASS if result.passed else EXIT_FAIL

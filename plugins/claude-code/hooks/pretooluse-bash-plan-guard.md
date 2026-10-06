@@ -95,3 +95,9 @@ non-redundant: the dispatcher protects the runtime, this context protects the
 Plans-Locality discipline. The Plans-Locality invariant itself is enforced
 mechanically in CI and pre-commit via the strict conformity corpus gate
 (`no_global_plans_grep`).
+
+## Bindings (§0.j five-direction)
+
+- **Drives →** The redirect recommendation for a shell redirection that would land a plan outside `<project-root>/.apothem/plans/`.
+- **Established by ↑** The PreToolUse Bash registration in `hooks/hooks.json` and the harness settings templates. The Plans Discipline section of `AGENTS.md`. `conformity/no_global_plans_grep.py` (the CI-side enforcement this guard surfaces early).
+- **Cross-bound with ↔** `rules/interactive-questions-canonical-shapes.md` (the Plans-Discipline write-guard option sets this guard renders). `hooks/messages/pretooluse-write-plan-guard.md` (the same guard on the file-write tools). `hooks/messages/pretooluse-bash.md` (the other Bash-surface guard).

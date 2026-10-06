@@ -1,13 +1,13 @@
 ---
 name: "multi-source-research"
 version: "0.1.0"
-updated: "2026-06-09"
+updated: "2026-10-02"
 description: "Multi-source research harness — matched when the operator asks to 'research X deeply', 'investigate', 'find sources on', 'gather evidence about', 'fact-check', or any phrasing that demands a fanned-out, cross-verified, cited report rather than a single answer recalled from memory. Runs a five-step pipeline: decompose the question into testable sub-questions, fan out parallel source-discovery queries through a Research Team agent dispatch, fetch and extract claims per source, adversarially verify each claim against two or more independent sources, and synthesize a cited report where every claim carries its sources, a HIGH/MEDIUM/LOW confidence level, and an open-questions list. A single-source claim never closes at HIGH; an unverifiable claim is reported at LOW with the gap named, never papered over with an invented citation. User-invocable directly. NOT a single-answer lookup, a code generator, a plan-suite generator, a documentation generator, or a single-source summarizer."
 archetype: "research-template"
 userInvocable: true
 argument-hint: "[research question]"
 disable-model-invocation: true
-allowed-tools: "Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Agent"
+allowed-tools: "Read, Glob, Grep, WebSearch, Agent"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

@@ -32,9 +32,10 @@ schemas/plan.schema.json
 | Rules (`src/apothem/rules/*.md`) | `name`, `description`, `pathFilter`, `alwaysApply` |
 | Commands (`src/apothem/commands/*.md`) | `name`, `version`, `updated`, `description`, `argument-hint`, `disable-model-invocation`, `portability`, `allowed-tools` |
 | Delegated workers (canonical directory shown below) | `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns`, `effort` |
-| Skills (`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools` |
+| Skills (`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools`; the Claude Code install and plugin rename `userInvocable` to `user-invocable`, and the schema accepts exactly one of the two spellings |
+| Output styles (`src/apothem/output-styles/*.md`) | `name`, `description`; every shipped style also sets `keep-coding-instructions: true` so Claude Code keeps its software engineering instructions |
 
-Per-class schemas at [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) carry the full constraint set including type, format, enum, and pattern restrictions.
+Per-class schemas at [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) carry the full constraint set including type, format, enum, and pattern restrictions, and length limits: a skill or command `description` is at most 1,024 characters, the [Agent Skills](https://agentskills.io/specification) limit.
 
 ## 3. Validators
 

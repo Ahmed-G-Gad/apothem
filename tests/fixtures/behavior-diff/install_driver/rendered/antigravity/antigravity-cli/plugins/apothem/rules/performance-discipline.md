@@ -1,8 +1,7 @@
 ---
-name: "performance-discipline"
+trigger: glob
 description: "Per-class runtime performance budgets with quantitative pass/fail gates — each artifact class (hook handlers, the conformity sweep, the test suite, agent spawn, install resolution) carries a runtime ceiling, a measurement boundary, and a benchmark verifier that exits zero on compliance; budget exceedances surface as findings routed to the expertise-gap log. Closes the Performance axis of the seven-axs-of-breadth taxonomy."
-pathFilter: "**/hooks/**, **/tools/**, **/tests/**, **/agents/**"
-alwaysApply: false
+globs: "**/hooks/**, **/tools/**, **/tests/**, **/agents/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

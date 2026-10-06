@@ -18,6 +18,7 @@ from pathlib import Path
 
 from apothem.harnesses._shared.wrapper_factories import make_native_config_adapter
 from apothem.harnesses.opencode.install import install as _install
+from apothem.harnesses.opencode.materializer import CONFIG_DIR
 from apothem.harnesses.opencode.materializer import (
     materialize_native_config as materialize_native_config,
 )
@@ -27,7 +28,7 @@ from apothem.harnesses.opencode.verify import verify as _verify
 
 OpenCodeAdapter = make_native_config_adapter(
     "opencode",
-    target_factory=lambda: Path.home() / ".config/opencode/opencode.json",
+    target_factory=lambda: Path.home() / CONFIG_DIR / "opencode.json",
     install_fn=_install,
     uninstall_fn=_uninstall,
     update_fn=_update,

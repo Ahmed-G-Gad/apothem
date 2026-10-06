@@ -1,8 +1,6 @@
 ---
-name: "disclosure-ledger"
+trigger: always_on
 description: "Disclosed amendments, never silent — every change of meaningful scope carries an explicit ledger of what was asked, what was amended, what was extended, and what was deferred, with cited rationale."
-pathFilter: ""
-alwaysApply: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

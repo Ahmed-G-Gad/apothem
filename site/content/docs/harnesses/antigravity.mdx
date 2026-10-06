@@ -24,13 +24,39 @@ Apothem support cohorts as an Antigravity CLI plugin.
 `~/.gemini/antigravity-cli/plugins/apothem/skills/`,
 `~/.gemini/antigravity-cli/plugins/apothem/rules/`,
 converted local helper definitions inside the plugin,
-`~/.gemini/antigravity-cli/plugins/apothem/apothem/templates/`, and
-`~/.gemini/antigravity-cli/plugins/apothem/apothem/hooks/`.
+`~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/templates/`, and
+`~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/hooks/`.
+
+The Apothem block in `~/.gemini/GEMINI.md` ends with an Apothem support files
+section that names the absolute directory each repository-style citation
+resolves against: `rules/<name>.md` under the plugin's `rules/`, and
+`templates/...` and `hooks/...` under the plugin's `.apothem/support/`.
+
+**Plugin rules.** Antigravity discards any file in a plugin's `rules/`
+directory that does not open with a valid `trigger`
+([Antigravity rules documentation](https://antigravity.google/docs/rules)), so
+each Apothem rule is converted on install. A rule that always applies gets
+`trigger: always_on`; a rule scoped to paths gets `trigger: glob` with the same
+patterns in `globs`; any other rule gets `trigger: model_decision`. Every rule
+keeps its `description`. Antigravity shares a 20,000-token budget across
+always-on rules and turns the largest into on-demand pointers past it.
+
+**Plugin manifest.** `plugin.json` carries only `name` and `description`, the
+two keys Antigravity's plugin schema admits.
+
+**Plugin helpers.** Helper definitions in the plugin's `agents/` directory
+carry `name` and `description`. Antigravity's `tools` list uses its own tool
+names, and the docs warn that an unknown name can hang the subagent, so no tool
+list is emitted and helpers inherit the parent's tools. Because nothing on
+Antigravity enforces a read-only limit, those helpers' descriptions drop the
+"read-only" label.
 
 **Shared user anchor.** `~/.gemini/GEMINI.md` is also the user-scope anchor for
 Gemini-family tooling. The Antigravity adapter keeps its extra Apothem material
 inside the `apothem` plugin under `~/.gemini/antigravity-cli/plugins/` so it
-does not claim generic Gemini CLI project directories.
+does not claim generic Gemini CLI project directories. Because more than one
+tool loads `~/.gemini/GEMINI.md`, the Apothem block there is written as global
+guidance that names no single tool as its reader.
 
 ## Profile-to-native-config mapping
 

@@ -1,8 +1,7 @@
 ---
-name: "visual-leverage"
+trigger: glob
 description: "Structural subject matter — architecture, control flow, data flow, dependency graph, state machine, sequence, decision tree, hierarchy, precedence stack, lifecycle, permission matrix — carries a current-reality diagram alongside its prose, with provenance and a verification date. Mermaid is the recommended default for Markdown-centric ecosystems; the host's existing notation is honored per M1 host-discovery."
-pathFilter: "**/*.md, **/docs/**, **/CLAUDE.md, **/rules/**, **/skills/**, **/agents/**, **/commands/**, **/adr/**, **/rfcs/**, **/architecture*, **/design*"
-alwaysApply: false
+globs: "**/*.md, **/docs/**, **/CLAUDE.md, **/rules/**, **/skills/**, **/agents/**, **/commands/**, **/adr/**, **/rfcs/**, **/architecture*, **/design*"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

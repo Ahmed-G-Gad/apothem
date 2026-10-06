@@ -1,19 +1,6 @@
 description = "Operator-driven documentation review pass against rules/code-craft-markdown.md and rules/ten-dimension-check.md. Walks every Markdown page under the host docs source (Apothem: site/content/docs/) plus README, CONTRIBUTING, CHANGELOG, ADRs, and RFCs, then emits per-page findings covering prose clarity, sentence-level justification, precision-over-politeness, active-voice construction, hedge-elimination, link-integrity, code-block language tags, Mermaid verified metadata, citation completeness, and public-API coverage. Output lands at the consuming suite's _inputs/docs-review-findings.md with HIGH / MEDIUM / LOW severity triage and concrete-driver rationale per finding."
 
 prompt = """
----
-name: "docs-review"
-version: "0.1.0"
-updated: "2026-06-10"
-description: "Operator-driven documentation review pass against rules/code-craft-markdown.md and rules/ten-dimension-check.md. Walks every Markdown page under the host docs source (Apothem: site/content/docs/) plus README, CONTRIBUTING, CHANGELOG, ADRs, and RFCs, then emits per-page findings covering prose clarity, sentence-level justification, precision-over-politeness, active-voice construction, hedge-elimination, link-integrity, code-block language tags, Mermaid verified metadata, citation completeness, and public-API coverage. Output lands at the consuming suite's _inputs/docs-review-findings.md with HIGH / MEDIUM / LOW severity triage and concrete-driver rationale per finding."
-argument-hint: "[path/to/repo/ or path/to/docs-source/] [--focus FILE_OR_DIR] [--dry-run]"
-disable-model-invocation: true
-portability: "universal"
-allowed-tools: "*"
----
-
-<!-- SPDX-License-Identifier: MIT -->
-
 # /docs-review — Per-Page Documentation Review
 
 ---
@@ -159,7 +146,7 @@ Run the fifteen-bar pre-emission gate per `rules/pre-emission-gate.md` against t
 - **M14 systemicity** — the artifact declares upstream (documentation corpus), downstream (remediation surface), peers (sibling fortress artifacts), enforcers (Markdown craft rule + ten-dimension catalog + host frontmatter contract).
 - **N/A bars (reason recorded):** M11 (single-sprint review surface) · M13 (no executable code emitted) · M15 (production-ready applies at remediation time) · M9 (unless a structural defect warrants a diagram, then per `rules/visual-leverage.md`).
 
-**Iterate on failure.** A single bar failure blocks promotion. The failing bar's Failure→action cell names the owning rule; revise, re-run, iterate until every bar passes, then emit the attestation block.
+**Iterate on failure.** A single bar failure blocks promotion. The failing bar's Failure→action cell names the owning rule; revise, re-run, iterate until every bar passes within the three-round cap of `rules/pre-emission-gate-bars.md` §3 (then BLOCKED), then emit the attestation block.
 
 ---
 

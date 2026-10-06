@@ -1,0 +1,46 @@
+---
+title: "/github-deploy-next"
+description: "Reference for the /github-deploy-next command: invocation, arguments, inputs and outputs."
+---
+{/* SPDX-License-Identifier: MIT */}
+{/* apothem:generated-page — generated from src/apothem/commands; edit the command definition and rerun site/scripts/update-reference-inventory.mjs */}
+
+{/* apothem:generated-reference:start */}
+
+Subsequent-release-cycle sibling of /github-deploy-fresh that runs one full next-release cycle end-to-end on origin/main — review-gated merge of ready pull requests, resolution of the issues the release addresses, a SemVer version bump derived from the Conventional Commits change set, a Keep-a-Changelog roll of [Unreleased] into the new version section, an annotated and signed tag published to the host's release surface, and concise current-version release notes — preserving the current-version-only release facade and the signed-release supply-chain posture where the host ratifies signing. The merge and publish steps are confirmation-gated through the structured-inquiry channel; read-only preview stages proceed without a gate.
+
+## Invocation
+
+```text
+/github-deploy-next [path/to/repo/] [--bump major|minor|patch] [--strict]
+```
+
+The definition sets `disable-model-invocation: true`, so a harness that honors that key starts this command only when you type it.
+
+## Pipeline position
+
+The subsequent-release pass that follows the fresh-first-release pass at `github-deploy-fresh.md` and repeats once per release cycle.
+
+## Inputs
+
+The `origin` remote and its `main` branch; the open and ready pull-request set; the issue set the release addresses; the Conventional Commits change set since the last release tag; the `CHANGELOG.md` `[Unreleased]` section; the version declaration in the host's manifest; and the host's discovered signing posture per `rules/host-discovery.md`.
+
+| Argument | Type | Required | Description |
+| -------- | ---- | -------- | ----------- |
+| `path/to/repo/` | Path | Yes | Root directory of the target repository. MUST carry a root manifest, the host's ratified ignore manifest, and an `origin` remote pointing at the GitHub repository so the cycle surface resolves. The command refuses execution when no cycle surface resolves. |
+| `--bump` | Enum | No | Override the SemVer bump derived from the Conventional Commits change set. Accepts `major`, `minor`, or `patch`. Without the flag, the bump is derived from the change set per semver.org; with the flag, the override is applied and its divergence from the derived bump is recorded with rationale in the report. |
+| `--strict` | Flag | No | Promote every advisory cycle finding to blocking. Under `--strict`, the cycle is complete only when every ready PR is merged or explicitly deferred, every addressed issue is resolved, the CHANGELOG is rolled, the signed tag is published, and the host's quality matrix is green. |
+
+## Outputs
+
+The merged commits on `origin/main`; the bumped version in the host's manifest; the rolled `CHANGELOG.md` with the new version section per Keep-a-Changelog; one new annotated and signed tag; one new GitHub Release with current-version release notes; and a deployment report enumerating every merge, every resolved issue, the derived bump and its rationale, every confirmation outcome, and the per-axis attestation against the seven-axs taxonomy.
+
+## Next step
+
+**Invoke `/release-readiness`** to re-attest the just-published release against the production-ready discipline — re-running the host's quality matrix, the supply-chain checks, and the visibility-surface sweep so the new version is verified READY before the following cycle; then re-run `/github-deploy-next` to deploy the next release in turn.
+
+## Source
+
+Generated from [`src/apothem/commands/github-deploy-next.md`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/commands/github-deploy-next.md), the command definition every harness installs.
+
+{/* apothem:generated-reference:end */}

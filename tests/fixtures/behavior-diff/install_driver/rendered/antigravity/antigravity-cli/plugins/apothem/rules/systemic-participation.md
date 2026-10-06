@@ -1,8 +1,6 @@
 ---
-name: "systemic-participation"
+trigger: always_on
 description: "Every artifact apothem introduces into a host project joins the host as a systemic participant — declares its upstream / downstream / peers / enforcers; honors sibling conventions; lands at the host's canonical layout; updates the host's index registries in the same change. Silos (self-contained artifacts diverging from sibling conventions) and orphans (artifacts with no consumer / no index entry / no producer attribution) are structural failures, not aesthetic preferences."
-pathFilter: ""
-alwaysApply: true
 ---
 
 <!-- SPDX-License-Identifier: MIT -->

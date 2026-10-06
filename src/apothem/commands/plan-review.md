@@ -1,12 +1,12 @@
 ---
 name: "plan-review"
 version: "0.1.0"
-updated: "2026-06-10"
+updated: "2026-10-02"
 description: "Forensic, blind, line-by-line audit of an existing plan suite — prose fidelity, internal consistency, completeness, quality, risk, standards, domain, and architecture — then refine through interactive Q&A. Mid-chain `/plan` stage; emits Review Scorecards that gate downstream execution at SHARED+ and a zero-open-finding terminal verdict."
 argument-hint: "[path/to/plan-suite/] [--focus AREA] [--dry-run]"
 disable-model-invocation: false
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -455,7 +455,7 @@ Per CLAUDE.md Section 7.6 (including CM-22 §4: ecosystem gap detection). SHARED
 - **NEVER misrepresent a focused review as a full review** — if `--focus` narrowed scope, state it explicitly.
 - **NEVER allow cognitive bias** from having generated the plan — actively seek disconfirmation.
 - **Respect resolved decisions** — do NOT re-ask.
-- **Base protocol:** Agent Teams (CM-25) with return contracts — deployment scales with seriousness per the agent-orchestration rule (Optional at EXPLORING, Encouraged at PERSONAL_USE, Required at SHARED+). Default token budgets per CM-25C: Research 500, Audit/Quality 200, Implementation 500. Error recovery (CM-18), 3-failure escalation. Session resilience (CM-24/CM-14). Always-on rules (CM-22–28) enforced at all steps.
+- **Base protocol:** Worker Teams (CM-17) with return contracts (CM-25) — deployment scales with seriousness per the agent-orchestration rule (Optional at EXPLORING, Encouraged at PERSONAL_USE, Required at SHARED+). Default token budgets per CM-25C: Research 500, Audit/Quality 200, Implementation 500. Error recovery (CM-18), 3-failure escalation. Session resilience (CM-24/CM-14). Always-on rules (CM-22–28) enforced at all steps.
 
 ---
 
@@ -470,7 +470,7 @@ All template and config mandates are in effect (CM-13 and CM-16 not applicable �
 | CM-12 | All steps: lean context management |
 | CM-14 | Session protocols on pressure/resume |
 | CM-15 | Step 10: blast radius; Step 11C: coherence |
-| CM-17 | Steps 1–5, 10–11: Agent Teams |
+| CM-17 | Steps 1–5, 10–11: Worker Teams |
 | CM-18 | Critical Rules: 3-failure escalation |
 | CM-19 | After Steps 1, 2, 3, 10, 11 |
 | CM-20 | Step 12: pipeline handoff |

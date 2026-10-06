@@ -1,8 +1,7 @@
 ---
-name: "context-management-protocol"
+trigger: glob
 description: "Path-filtered companion rule carrying the detailed externalization sub-clauses, compaction-trigger catalog, long-conversation resilience procedures, graceful-degradation priorities, blind-execution protocol full body, and error-classification table declared at the parent `context-management.md` rule's §2/§3/§4/§5/§6/§8 anchors; demand-loaded on plan-workflow entry."
-pathFilter: "**/.apothem/plans/**, **/.plans/**, **/PROGRESS.md, **/PLAN-NOTES.md, **/PHASE.md, **/MASTER-PLAN.md, **/REPORT.md, **/PREAMBLE.md"
-alwaysApply: false
+globs: "**/.apothem/plans/**, **/.plans/**, **/PROGRESS.md, **/PLAN-NOTES.md, **/PHASE.md, **/MASTER-PLAN.md, **/REPORT.md, **/PREAMBLE.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -62,20 +61,24 @@ dispatch-routed `PostToolUse` hook (`hooks/proactive_compaction_tracker.py`,
 wired all-tools via the empty matcher) maintains lightweight per-session
 counters keyed off the hook stdin `session_id` and surfaces a concise
 proactive-compaction advisory once a threshold crosses, then resets the
-counters (anti-spam back-off). This makes the existing CM-19 triggers
-*mechanical* rather than introducing a competing policy: the advisory recommends
-the same externalize-then-compact action this section already mandates, and the
-hook itself never blocks (a `PostToolUse` hook fires after the tool ran). The
+counters (anti-spam back-off), at most twice per session. This makes the
+existing CM-19 triggers *mechanical* rather than introducing a competing policy:
+the advisory asks for the same externalization this section already mandates
+and suggests compaction to the operator, and the hook itself never blocks (a `PostToolUse` hook fires after the tool ran). The
 two thresholds default to the catalog values (18 tool calls; ~20 KB cumulative
 output ≈ the 500-line emission band) and are each overridable by an environment
 variable — `APOTHEM_PROACTIVE_COMPACTION_TOOL_THRESHOLD` and
 `APOTHEM_PROACTIVE_COMPACTION_OUTPUT_THRESHOLD`; a non-positive or unparseable
-override falls back to the default so the tracker can never be silently disabled.
+override falls back to the default so a typo can never silently disable the
+tracker; `APOTHEM_PROACTIVE_COMPACTION_ENABLED=0` disables it explicitly.
 The hook is advisory-on but low-noise (silent below threshold), fast (a single
 small counter-file read + write), and fail-open (any error emits nothing).
-Per-session state lives under the OS temp dir, never in the repository tree. The
-hook complements `PreCompact`/`PostCompact` (which fire only once compaction is
-already underway) by advising *before* context fills.
+Per-session state lives in a per-user `0700` state directory, never in the
+repository tree. The hook complements `PreCompact`/`PostCompact` (which fire
+only once compaction is already underway; where a harness discards their
+output, the recovery context arrives with the post-compaction SessionStart event
+instead) by advising
+*before* context fills.
 
 ### 3. Long Conversation Resilience
 

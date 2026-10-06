@@ -3,6 +3,9 @@ name: "agents-md-convention"
 description: "The repository carries a single agent-facing canon at the root AGENTS.md; per-folder operating guidance lives in each folder's README.md, which serves both the human and the agent reader. Per-folder AGENTS.md companions are not required; any present companion stays current with its folder and the root AGENTS.md stays coherent with the AI-surface canon."
 pathFilter: "**/AGENTS.md, **/README.md"
 alwaysApply: false
+paths:
+  - "**/AGENTS.md"
+  - "**/README.md"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -81,6 +84,7 @@ A meaningful folder with no `README.md` (the navigable-folder reader has no guid
 
 - **Drives →** Every meaningful folder's `README.md` agent-facing guidance and any rare present standalone `AGENTS.md`. The present-companion freshness matcher at `conformity/agents_md_coverage_grep.py`. The optional template at `templates/agents-md-template.md`. The CI coverage gate that runs the matcher on every change.
 - **Driven by ←** The root `AGENTS.md` AI-surface canon (the §5 canon each folder's guidance extends). The own-voice, harness-agnostic baseline established by `agnostic-posture.md` (every surface inherits the agnostic posture).
+- **Gated by ←** The frontmatter `pathFilter` (`**/AGENTS.md, **/README.md`): the rule loads when a folder README or a standalone `AGENTS.md` is touched. The §1 meaningful-folder definition (a folder outside the navigable set carries no README obligation). `conformity/agents_md_coverage_grep.py` (the advisory corpus sweep for missing or stale folder companions under `gate --all`) and `scripts/dev/check_readme_file_coverage.py --strict` (every shipped file named in its folder README).
 - **Satisfies →** The root-only agent-surface discipline: one agent-facing canon at the root, per-folder operating guidance in each folder's README, every present companion current and canon-coherent.
 - **Established by ↑** The root `AGENTS.md` AI Surface Canon section; the per-folder README convention this rule centers.
 - **Cross-bound with ↔** `agnostic-posture.md` (the §3 agnostic invariant the folder-guidance content sweep enforces). `own-voice-reimplementation.md` (the own-voice baseline every folder-guidance prose honors). `plain-language.md` (the folder's agent-facing guidance is an out-of-scope agent-facing process surface, not a user-facing surface — its agent vocabulary is load-bearing).

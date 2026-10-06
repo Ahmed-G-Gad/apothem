@@ -1,12 +1,12 @@
 ---
 name: "audit"
 version: "0.1.0"
-updated: "2026-06-16"
-description: "The audit fortress wrapped as a single dynamic multi-agent workflow. One call sweeps a deployed repository across all eleven audit/review dimensions — code-review, code-audit, architecture-review, docs-review, security-audit, dependency-audit, supply-chain-audit, threat-model-audit, perf-audit, a11y-audit, ux-review — by dispatching each as a parallel workflow phase under a named findings return contract, routing every finding through an EXTREMELY-CRITIQUE refute-by-default verification pass, and emitting one deterministic severity-triaged (HIGH/MEDIUM/LOW) findings report with a single recommended next move. Audit logic stays first-class in commands/<audit>.md and is individually invocable; this command adds only the workflow harness (parallel fan-out, independent critique, findings synthesis). Report-only — it NEVER remediates (remediation routes to /elevate for whole-repo elevation or to the owning surface); multi-agent dispatch is opt-in / confirmation-gated, never default-on. Invoke with a repository path, or --dimensions <list> to scope the sweep."
+updated: "2026-10-02"
+description: "The audit fortress wrapped as a single dynamic multi-agent workflow. One call sweeps a deployed repository across all eleven audit/review dimensions — code-review, code-audit, architecture-review, docs-review, security-audit, dependency-audit, supply-chain-audit, threat-model-audit, perf-audit, a11y-audit, ux-review — dispatching each as a parallel phase under a named findings return contract, routing every finding through an EXTREMELY-CRITIQUE refute-by-default verification pass, and emitting one deterministic severity-triaged (HIGH/MEDIUM/LOW) findings report with a single recommended next move. Each audit stays individually invocable in commands/<audit>.md; this command adds only the workflow harness. Report-only — it NEVER remediates (remediation routes to /elevate or the owning surface); multi-agent dispatch is opt-in and confirmation-gated. Invoke with a repository path, or --dimensions <list> to scope the sweep."
 argument-hint: "[path/to/repo/] [--dimensions all|<list>] [--autonomous] [--verify-panel N]"
 disable-model-invocation: true
 portability: "universal"
-allowed-tools: "*"
+allowed-tools: "Read, Glob, Grep"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -166,4 +166,8 @@ Invoke `/audit path/to/repo/` to sweep the full eleven-dimension fortress, or `/
 
 ## Installed Reference Paths
 
-When this skill is installed by Apothem, resolve repository-style references such as `rules/...`, `templates/...`, and `hooks/...` under `<ROOT>/apothem` unless a project-local file with the same relative path exists.
+When this skill is installed by Apothem, resolve a repository-style reference against the installed directory for its first segment, unless a project-local file with the same relative path exists.
+
+- `rules/<path>` is `<ROOT>/.apothem/support/rules/<path>`
+- `templates/<path>` is `<ROOT>/.apothem/support/templates/<path>`
+- `hooks/<path>` is `<ROOT>/.apothem/support/hooks/<path>`

@@ -38,3 +38,32 @@ tool_surface_restrictions:
   - network-write-unsigned
 system_prompt_template_path: "templates/GEMINI.md"
 agent_memory_surface: "not-documented-in-current-pin"
+# What each source frontmatter key becomes in a converted cohort (see
+# tests/unit/test_conversion_losses.py for the value vocabulary). Antigravity
+# skills read only name and description and are always model-selectable, so
+# disable-model-invocation has no effect here; plugin agents get no tool list
+# (an unmapped Antigravity tool name can hang a subagent).
+conversion_losses:
+  commands:
+    name: "native:name"
+    description: "native:description"
+    argument-hint: "ignored"
+    disable-model-invocation: "ignored"
+    allowed-tools: "ignored"
+    version: "ignored"
+    updated: "ignored"
+    portability: "ignored"
+  agents:
+    name: "native:name"
+    description: "native:description"
+    tools: "dropped"
+    disallowedTools: "dropped"
+    maxTurns: "dropped"
+    version: "dropped"
+    updated: "dropped"
+    portability: "dropped"
+  rules:
+    name: "filename"
+    description: "native:description"
+    pathFilter: "native:globs"
+    alwaysApply: "native:trigger"

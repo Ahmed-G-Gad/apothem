@@ -32,6 +32,7 @@ staged-diff check.
 
 from __future__ import annotations
 
+import argparse
 import contextlib
 import functools
 import importlib.util
@@ -46,30 +47,50 @@ from typing import Any, Final, Protocol, cast
 
 # Plain-script bootstrap. Harness deployments invoke this file by absolute
 # path (``${PYTHON_BIN} ${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook``),
-# which puts only this directory on ``sys.path`` — the ``apothem`` package is
-# unimportable, so every matcher that imports it errors into the fail-open
-# isolation boundary and the per-Write chain silently degrades to the
-# stdlib-only matchers. Prepend the package root (the directory containing
-# ``apothem/``) and the vendored-dependency tree so matcher imports resolve
-# identically under plain-script and package invocations; the vendor entry is
-# prepended last so bundled dependency versions win the resolution race, per
-# the self-containment invariant in ``apothem/lib/plugin_bootstrap.py``. This
-# bootstrap MUST run before the first ``apothem.*`` import below — moving that
-# import above this block reintroduces the plain-script ModuleNotFoundError the
-# block exists to prevent.
+# which puts only this directory on ``sys.path``, so the ``apothem`` package is
+# not importable and the first ``apothem.*`` import below would fail. The file
+# runs from one of two layouts, told apart by its grandparent directory:
+#
+#   - Package layout: ``<parent>/apothem/conformity/gate.py`` (a repository
+#     checkout's ``src/``, an installed package, a plugin tree). Prepend
+#     ``<parent>`` and the vendored-dependency tree; the vendor entry is
+#     prepended last so bundled dependency versions win the resolution race,
+#     per the self-containment invariant in ``apothem/lib/plugin_bootstrap.py``.
+#   - Harness support layout: ``<harness>/.apothem/support/conformity/gate.py``.
+#     ``support/`` mirrors the package subtrees an install ships (``conformity/``,
+#     ``hooks/``, ``schemas/``, ``templates/``) but is not named ``apothem``, so
+#     no ``sys.path`` entry can expose it under that name. Register ``support/``
+#     as the ``apothem`` package instead, so ``apothem.conformity.*`` resolves to
+#     the sibling modules installed with this file (version-matched to it).
+#
+# This bootstrap MUST run before the first ``apothem.*`` import below — moving
+# that import above this block reintroduces the ModuleNotFoundError the block
+# exists to prevent. The standalone-validator launcher reuses it by running this
+# file as a plain script before each validator.
 if __package__ in (None, ""):
-    _PACKAGE_PARENT: Final[Path] = Path(__file__).resolve().parents[2]
-    for _entry in (
-        str(_PACKAGE_PARENT),
-        str(_PACKAGE_PARENT / "apothem" / "_vendor"),
-    ):
-        if _entry not in sys.path:
-            sys.path.insert(0, _entry)
+    _PACKAGE_DIR: Final[Path] = Path(__file__).resolve().parents[1]
+    if _PACKAGE_DIR.name == "apothem" and (_PACKAGE_DIR / "__init__.py").is_file():
+        for _entry in (str(_PACKAGE_DIR.parent), str(_PACKAGE_DIR / "_vendor")):
+            if _entry not in sys.path:
+                sys.path.insert(0, _entry)
+    elif "apothem" not in sys.modules:
+        import types
+
+        _support_package = types.ModuleType(
+            "apothem", "Harness support tree exposed as the apothem package."
+        )
+        _support_package.__path__ = [str(_PACKAGE_DIR)]
+        sys.modules["apothem"] = _support_package
 
 from apothem.conformity._grep_base import (
+    EMPTY_SCOPE_KEY,
     EXIT_FAIL,
     EXIT_PASS,
-    read_input,
+    EXIT_USAGE,
+    INSPECTED_KEY,
+    STDIN_FLAG,
+    make_parser,
+    read_path_arguments,
 )
 
 # Environment variable that overrides the default conformity-gate scopes.
@@ -77,6 +98,19 @@ from apothem.conformity._grep_base import (
 # whose target path falls under this directory; out-of-scope writes
 # short-circuit to a silent pass-through.
 SCOPE_ENV_VAR: Final[str] = "APOTHEM_CONFORMITY_SCOPE"
+
+# Hooks-wide kill switch, shared with hooks/dispatch.py. The engine install
+# registers this gate's --hook mode beside the dispatcher-routed hooks, so a
+# truthy value silences it too and an operator troubleshooting hooks turns
+# every Apothem hook off with one variable.
+HOOKS_DISABLE_ENV: Final[str] = "APOTHEM_HOOKS_DISABLE"
+_TRUTHY: Final[frozenset[str]] = frozenset({"1", "true", "yes", "on"})
+
+
+def _hooks_disabled() -> bool:
+    """Return True when ``APOTHEM_HOOKS_DISABLE`` holds a truthy value."""
+    return os.environ.get(HOOKS_DISABLE_ENV, "").strip().lower() in _TRUTHY
+
 
 # Default scopes when APOTHEM_CONFORMITY_SCOPE is unset. Hook-capable
 # user-scope harness roots are matcher-applicable territories; writes
@@ -301,6 +335,7 @@ STANDALONE_MODULES: Final[tuple[str, ...]] = (
     "agents-md-coverage-grep",
     "registry-capability-consistency-grep",
     "binding-reciprocity-corpus-grep",
+    "binding-five-direction-grep",
 )
 
 # Per-grep wall-clock budget in seconds. Exceeding the budget surfaces
@@ -322,17 +357,18 @@ _PERWRITE_FILE_SAMPLE_CAP: Final[int] = 10
 # ``schemas/`` sibling travel together in both shapes).
 TOOLS_DIR: Final[Path] = Path(__file__).resolve().parent
 
-# EXIT_PASS / EXIT_FAIL are imported from ``_grep_base`` (single source with the
-# standalone matchers). EXIT_FAIL (2) is the strict-mode findings-blocked code;
-# a CLI-usage error carries the distinct EXIT_USAGE (3) so a CI consumer can tell
-# "the gate blocked on findings" apart from "the gate was invoked wrong" (an
-# unknown validator name, an unresolvable argument).
-EXIT_USAGE: Final[int] = 3
+# EXIT_PASS / EXIT_FAIL / EXIT_USAGE are imported from ``_grep_base`` (single
+# source with every matcher). EXIT_FAIL (2) is the strict-mode findings-blocked
+# code; a CLI-usage error carries the distinct EXIT_USAGE (3) so a CI consumer
+# can tell "the gate blocked on findings" apart from "the gate was invoked
+# wrong" (an unknown flag or validator name, a missing file or root).
 CHECK_FLAG: Final[str] = "--check"
 LIST_FLAG: Final[str] = "--list"
 ALL_FLAG: Final[str] = "--all"
 ALL_PERWRITE_FLAG: Final[str] = "--all-perwrite"
+HOOK_FLAG: Final[str] = "--hook"
 STRICT_FLAG: Final[str] = "--strict"
+PROG: Final[str] = "conformity-gate"
 STRICT_ENV: Final[str] = "APOTHEM_CONFORMITY_STRICT"
 _STRICT_TRUTHY: Final[frozenset[str]] = frozenset({"1", "true", "yes", "on"})
 
@@ -348,16 +384,16 @@ _STRICT_TRUTHY: Final[frozenset[str]] = frozenset({"1", "true", "yes", "on"})
 #   - BLOCKING (``_BLOCKING_PER_WRITE_GREPS``): deterministic, low-false-
 #     positive matchers that are GREEN over the live tracked corpus today.
 #     A finding from one of these under ``--strict`` fails the corpus run.
-#     EN-1's governing principle: a matcher is blocking ONLY once it is
-#     green over the tracked corpus — never blocking-AND-failing.
+#     The posture's governing principle: a matcher is blocking ONLY once it
+#     is green over the tracked corpus — never blocking-AND-failing.
 #
 #   - ADVISORY (``_ADVISORY_PER_WRITE_GREPS``): matchers whose findings are
 #     reported (so the drift is never silent) but do NOT gate, because they
 #     are high-false-positive against the shipped prose / code / config /
-#     docs corpus today. Each carries a one-line remediation-owner note in
-#     ``_ADVISORY_RATIONALE`` so the classification is visible and testable.
-#     EN-1 explicitly authorizes ``hedging`` + ``plain-language`` as advisory
-#     until the SR-1 (phase 65) prose-debt clears; the remaining advisory
+#     docs corpus today. Each carries a one-line note in ``_ADVISORY_RATIONALE``
+#     naming the work that would let it gate, so the classification is visible
+#     and testable. ``hedging`` stays advisory until the shipped rule and doc
+#     prose is rewritten; the remaining advisory
 #     members are matchers whose own ``check()`` fires structurally against
 #     legitimate non-target content the corpus enumerates (lockfile entropy,
 #     frontmatter-first Markdown, design-token literals, documented pattern
@@ -376,11 +412,10 @@ _BLOCKING_PER_WRITE_GREPS: Final[frozenset[str]] = frozenset(
     }
 )
 
-# Advisory rationale: matcher name -> (reason, remediation-owner). The reason
-# names WHY the matcher is high-false-positive in corpus mode; the owner names
-# the phase / surface that, once it lands, lets a successor promote the matcher
-# to the blocking set. ``SR-1`` is the plain-language / rule-rewrite reconcile
-# phase (phase 65) per the EN-1 posture.
+# Advisory rationale: matcher name -> (reason, remediation). The reason names
+# WHY the matcher is high-false-positive in corpus mode; the remediation names
+# the work that, once done, lets the matcher join the blocking set. Both ship in
+# the ``--all-perwrite`` report (``reason`` / ``remediation_owner``).
 _ADVISORY_RATIONALE: Final[dict[str, tuple[str, str]]] = {
     "bare_except_grep": (
         "the bare `except:` sub-rule (always a real defect) is GREEN over the "
@@ -388,47 +423,46 @@ _ADVISORY_RATIONALE: Final[dict[str, tuple[str, str]]] = {
         "on deliberate, `# noqa: BLE001`-marked fail-open isolation boundaries "
         "(dispatch / gate / statusline / hook) that ruff's BLE001 rule already "
         "governs and `ruff check` already gates in CI",
-        "ruff BLE001 (already CI-gating) + SR-1 reconcile (phase 65)",
+        "ruff BLE001 already gates the broad form in CI; teach the matcher the "
+        "`# noqa: BLE001` intent marker",
     ),
     "user_confirm_grep": (
         "fires on prose / commands / matcher source that DOCUMENT the "
         "<USER-CONFIRM:id=...> placeholder syntax, not on unresolved "
         "placeholders",
-        "SR-1 prose reconcile (phase 65)",
+        "skip placeholders quoted in code spans and in matcher source",
     ),
     "hedging_grep": (
-        "EN-1-authorized advisory: hedging vocabulary trips a portion of the "
-        "shipped rule / doc bodies until the prose is rewritten; SR-1 reconciles "
-        "plain-language only, so the rule-body hedging debt is owned by the rule-body "
-        "rewrite cluster, not SR-1",
-        "SR-4..SR-9 rule-body rewrite cluster",
+        "hedging vocabulary trips a portion of the shipped rule / doc bodies "
+        "until that prose is rewritten",
+        "rewrite the hedged rule and doc prose",
     ),
     "brand_mark_grep": (
         "fires on harness brand slugs (Cursor, Codex, ...) in config / "
         "workflow / catalog files where the slug is a load-bearing catalog "
         "entry, not a privileging brand reference",
-        "SR-1 prose reconcile (phase 65)",
+        "tell catalog entries apart from brand references in config and catalog files",
     ),
     "diagram_staleness_grep": (
         "date-comparison heuristic flags shipped docs diagrams whose verified "
         "date predates a sibling edit; staleness reconcile is doc-rewrite work",
-        "SR-1 prose reconcile (phase 65)",
+        "re-verify the flagged docs diagrams and refresh their verified dates",
     ),
     "magic_number_grep": (
         "fires on CSS design-token values, version pins, and rebuild-script "
         "asset dimensions that are values in a data context, not logic literals",
-        "SR-1 prose reconcile (phase 65)",
+        "exempt data contexts (design tokens, version pins, asset dimensions)",
     ),
     "orphan_output_grep": (
         "orphan-output is a multi-step-work-session concept; in corpus mode it "
         "fires on standalone config / data files that carry no provenance "
         "frontmatter by their own ratified convention",
-        "SR-1 prose reconcile (phase 65)",
+        "scope the matcher to multi-step work outputs instead of every file",
     ),
     "commented_out_code_grep": (
         "fires on YAML / TOML comment blocks and shell here-doc bodies that "
         "resemble commented-out code but are deliberate inline documentation",
-        "SR-1 prose reconcile (phase 65)",
+        "exempt documentation comments in YAML, TOML, and shell here-docs",
     ),
     "secret_leak_grep": (
         "entropy heuristic fires on package-lock.json integrity hashes and "
@@ -436,7 +470,7 @@ _ADVISORY_RATIONALE: Final[dict[str, tuple[str, str]]] = {
         "the literal-shape heuristic fires on test fixtures that DELIBERATELY "
         "embed fake credentials to exercise the detector under test; no genuine "
         "secret among the corpus findings",
-        "SR-1 prose reconcile (phase 65)",
+        "exempt lockfile integrity hashes and the detector's own test fixtures",
     ),
     "production_ready_pr_grep": (
         "change-set-scoped matcher; returns clean per-file by design, so it "
@@ -448,7 +482,7 @@ _ADVISORY_RATIONALE: Final[dict[str, tuple[str, str]]] = {
         "frontmatter-first Markdown class (rules / agents / commands / docs / "
         "AGENTS.md) that is the dominant ratified head convention across the "
         "shipped tree; the genuine code-surface gaps are fixed in source",
-        "SR-1 prose reconcile (phase 65)",
+        "model the frontmatter-first Markdown head convention in the matcher",
     ),
     "copilot_instructions_presence_grep": (
         "single-target surface matcher (.github/copilot-instructions.md); in "
@@ -470,24 +504,24 @@ _ADVISORY_RATIONALE: Final[dict[str, tuple[str, str]]] = {
         "class-inference heuristic fires on .mdx / .tsx components and docs content "
         "whose frontmatter contract differs from the rule / skill / agent "
         "schema it infers",
-        "SR-1 prose reconcile (phase 65)",
+        "infer the frontmatter contract per artifact class, docs and site "
+        "components included",
     ),
     "link_check": (
         "link reachability / resolution is inherently high-false-positive over "
         "the corpus (relative-link base ambiguity, external-host flakiness)",
-        "SR-1 prose reconcile (phase 65)",
+        "resolve relative links against the right base; stop probing external "
+        "hosts in corpus mode",
     ),
     "always_on_budget_grep": (
-        "surfaces a genuine ~10-token overage on one always-on rule "
-        "(interactive-questions.md); remediation is a rule-body decomposition "
-        "owned by the token-budget / SR rewrite cluster, not the EN-3 "
-        "enforcement-wiring phase",
-        "SR token-budget rewrite cluster (SR-0..SR-9, phases 64-73)",
+        "surfaces always-on rule bodies over the substantive-token ceiling; "
+        "remediation is a rule-body decomposition, not a matcher change",
+        "decompose an over-budget always-on rule into a path-filtered companion",
     ),
     "token_efficiency_grep": (
         "filler / qualifier prose heuristic in the same prose-debt class as "
         "hedging; high-false-positive against shipped rule / doc bodies",
-        "SR-1 prose reconcile (phase 65)",
+        "rewrite the filler and qualifier prose in rule and doc bodies",
     ),
 }
 
@@ -925,35 +959,6 @@ def _orchestrator_diff_report(
     )
 
 
-def _split_check_flag(argv: list[str]) -> tuple[list[str], str | None]:
-    """Strip a leading ``--check <name>`` pair; return (rest, name or None).
-
-    The flag is recognised only in the first argument position (immediately
-    after ``argv[0]``): ``argv[1]`` must be ``--check`` and ``argv[2]`` is then
-    consumed as the grep name, with both dropped from the returned argv. A
-    ``--check`` appearing anywhere else is left untouched (the callers place
-    it first). Returns the argv unchanged and a ``None`` name when the pair is
-    absent from that position.
-    """
-    if len(argv) >= 3 and argv[1] == CHECK_FLAG:
-        return [argv[0], *argv[3:]], argv[2]
-    return argv, None
-
-
-def _resolve_strict(argv: list[str]) -> tuple[list[str], bool]:
-    """Strip every ``--strict`` flag from *argv*; return (rest, strict_enabled).
-
-    The gate is advisory by default: findings are reported but never block,
-    abort, or force a non-zero exit. Strict mode is opt-in — the operator
-    enables it with the ``--strict`` flag or a truthy ``APOTHEM_CONFORMITY_STRICT``
-    environment variable (e.g., a CI job that wants findings to fail the build).
-    """
-    rest = [arg for arg in argv if arg != STRICT_FLAG]
-    flag_present = len(rest) != len(argv)
-    env_enabled = os.environ.get(STRICT_ENV, "").strip().lower() in _STRICT_TRUTHY
-    return rest, flag_present or env_enabled
-
-
 def _gate_exit(passed: bool, *, strict: bool) -> int:
     """Map a gate verdict to an exit code under the advisory-by-default posture.
 
@@ -1001,7 +1006,8 @@ def _strict_exit_with_advisory(
     if strict and advisory_present:
         sys.stderr.write(
             "conformity-gate: advisory finding(s) present (non-gating per the "
-            "EN-1 posture); surfaced for review, exit code unaffected\n"
+            "advisory-by-default posture); surfaced for review, exit code "
+            "unaffected\n"
         )
     return _gate_exit(blocking_passed, strict=strict)
 
@@ -1041,6 +1047,22 @@ def _list_validators() -> str:
     return json.dumps(payload, indent=2)
 
 
+# Launcher for one standalone-validator subprocess. It first runs this gate
+# file as a plain script, so the layout-aware bootstrap at the top of the file
+# makes the ``apothem`` package importable the same way it does for the gate
+# itself, then runs the validator module as ``__main__`` with the remaining
+# arguments. A child process therefore resolves its imports without relying on
+# the parent's ``PYTHONPATH`` or on an installed package.
+_STANDALONE_LAUNCHER: Final[str] = (
+    "import runpy, sys\n"
+    "gate_path, module = sys.argv[1], sys.argv[2]\n"
+    "sys.argv = [module, *sys.argv[3:]]\n"
+    "runpy.run_path(gate_path, run_name='apothem_conformity_bootstrap')\n"
+    "runpy.run_module('apothem.conformity.' + module, run_name='__main__',"
+    " alter_sys=True)\n"
+)
+
+
 def _run_standalone(name: str, root: Path) -> tuple[bool, str]:
     """Invoke a standalone validator via subprocess; return (passed, output).
 
@@ -1048,14 +1070,24 @@ def _run_standalone(name: str, root: Path) -> tuple[bool, str]:
     (``naming-grep``), but the on-disk module filenames are underscored
     (``naming_grep.py``). Normalize the name to the underscored form
     before resolving the script path so ``--all`` and ``--check`` both
-    locate the script regardless of which form the caller supplied.
+    locate the script regardless of which form the caller supplied. The
+    validator runs through :data:`_STANDALONE_LAUNCHER` against *root*,
+    which the caller has already resolved to an absolute directory.
     """
-    script = TOOLS_DIR / f"{name.replace('-', '_')}.py"
+    module = name.replace("-", "_")
+    script = TOOLS_DIR / f"{module}.py"
     if not script.exists():
         return False, f"{name}: script absent at {script}"
     try:
-        completed = subprocess.run(  # noqa: S603 — trusted invocation: sys.executable + literal in-repo script path against a validated STANDALONE_MODULES name
-            [sys.executable, str(script), str(root)],
+        completed = subprocess.run(  # noqa: S603 — trusted invocation: sys.executable + a constant launcher + this file's path + a validated STANDALONE_MODULES name
+            [
+                sys.executable,
+                "-c",
+                _STANDALONE_LAUNCHER,
+                str(Path(__file__).resolve()),
+                module,
+                str(root),
+            ],
             capture_output=True,
             text=True,
             check=False,
@@ -1094,6 +1126,25 @@ def _advisory_verdict(output: str) -> dict[str, object] | None:
     }
 
 
+def _inspection_fields(output: str) -> dict[str, object]:
+    """Return a validator report's ``inspected`` / empty-scope fields, if any.
+
+    Every standalone validator stamps ``inspected`` (how many targets it
+    examined) on its JSON report, plus ``empty_scope_expected`` when it
+    examined none. Lifting them into the ``--all`` result entry lets a consumer
+    see a vacuous run without parsing each embedded ``output`` string.
+    """
+    try:
+        payload = json.loads(output)
+    except (json.JSONDecodeError, ValueError, TypeError):
+        return {}
+    if not isinstance(payload, dict):
+        return {}
+    return {
+        key: payload[key] for key in (INSPECTED_KEY, EMPTY_SCOPE_KEY) if key in payload
+    }
+
+
 def _run_all(root: Path) -> tuple[bool, str]:
     """Run every standalone validator; aggregate exit verdicts.
 
@@ -1120,6 +1171,7 @@ def _run_all(root: Path) -> tuple[bool, str]:
             "passed": passed,
             "output": output.strip(),
         }
+        entry.update(_inspection_fields(output))
         verdict = _advisory_verdict(output)
         if verdict is not None:
             entry["advisory"] = True
@@ -1211,7 +1263,7 @@ def _run_all_perwrite(root: Path) -> tuple[bool, str]:
     Returns ``(blocking_clean, payload)`` where ``blocking_clean`` is True iff
     zero blocking matchers flagged a finding. Advisory findings are reported
     (so drift is never silent) but never affect ``blocking_clean``. A matcher
-    result carrying a ``note`` (EN-2's "scope not resolvable" skip) is not a
+    result carrying a ``note`` (a matcher's "scope not resolvable" skip) is not a
     finding. The caller maps ``blocking_clean`` to an exit code under the
     advisory-by-default posture (``--strict`` makes a non-clean blocking run
     exit non-zero).
@@ -1250,7 +1302,7 @@ def _run_all_perwrite(root: Path) -> tuple[bool, str]:
             except Exception:  # noqa: S112, BLE001, RUF100 — fail-open isolation: one matcher's internal error (load failure or check() raise) must never fail-close the corpus run; the matcher contributes no finding for this file and the run proceeds, mirroring run_orchestrator's per-matcher isolation boundary (BLE001 is the intent marker; RUF100 self-suppresses because ruff's BLE family is not active)
                 continue
             if getattr(result, "note", None) is not None:
-                # EN-2 scope-not-resolvable skip — not a finding.
+                # A matcher's scope-not-resolvable skip — not a finding.
                 continue
             findings = getattr(result, "findings", None) or []
             if not findings:
@@ -1375,63 +1427,178 @@ def _findings_summary(report: OrchestratorReport, *, strict: bool) -> str:
     return "\n".join(lines)
 
 
+def _build_parser() -> argparse.ArgumentParser:
+    """Return the gate's argument parser (usage errors exit ``EXIT_USAGE``)."""
+    parser = make_parser(PROG, __doc__)
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument(
+        LIST_FLAG,
+        dest="list",
+        action="store_true",
+        help="print every registered validator as JSON and exit",
+    )
+    modes.add_argument(
+        ALL_FLAG,
+        dest="all",
+        action="store_true",
+        help="run every standalone validator over TARGET, a root directory "
+        "(default: the current directory)",
+    )
+    modes.add_argument(
+        ALL_PERWRITE_FLAG,
+        dest="all_perwrite",
+        action="store_true",
+        help="run every per-write matcher over the tracked files under TARGET",
+    )
+    modes.add_argument(
+        HOOK_FLAG,
+        dest="hook",
+        action="store_true",
+        help="read a harness tool-input payload on stdin (the PreToolUse form)",
+    )
+    parser.add_argument(
+        CHECK_FLAG,
+        dest="check",
+        metavar="NAME",
+        default=None,
+        help="run one validator: a per-write matcher over a file or stdin, or a "
+        "standalone validator over a root directory",
+    )
+    parser.add_argument(
+        STRICT_FLAG,
+        dest="strict",
+        action="store_true",
+        help=f"exit {EXIT_FAIL} on a blocking finding (also: {STRICT_ENV}=1)",
+    )
+    parser.add_argument(
+        STDIN_FLAG,
+        dest="stdin",
+        action="store_true",
+        help="read the content to check from stdin",
+    )
+    parser.add_argument(
+        "target",
+        nargs="?",
+        default=None,
+        help="file to check, or the root directory for --all, --all-perwrite, "
+        "or a standalone --check",
+    )
+    return parser
+
+
+def _resolve_root(parser: argparse.ArgumentParser, target: str | None) -> Path:
+    """Return *target* (default: the current directory) as an absolute root.
+
+    A root that is not an existing directory is a usage error: a typo'd path
+    in a CI step or a pre-commit hook must not read as a pass. Resolving here
+    means ``.`` and the absolute form inspect the same tree.
+    """
+    root = Path(target) if target is not None else Path.cwd()
+    if not root.is_dir():
+        parser.error(f"root is not an existing directory: {root}")
+    return root.resolve()
+
+
+def _strict_enabled(flag: bool) -> bool:
+    """Return True when ``--strict`` or a truthy ``APOTHEM_CONFORMITY_STRICT`` is set.
+
+    The gate is advisory by default: findings are reported but never block,
+    abort, or force a non-zero exit. Strict mode is opt-in — the operator
+    enables it with the ``--strict`` flag or a truthy ``APOTHEM_CONFORMITY_STRICT``
+    environment variable (e.g., a CI job that wants findings to fail the build).
+    """
+    env_enabled = os.environ.get(STRICT_ENV, "").strip().lower() in _STRICT_TRUTHY
+    return flag or env_enabled
+
+
 def main(argv: list[str] | None = None) -> int:
     """Dispatch one gate invocation and return its process exit code.
 
     Pre-conditions: ``argv`` is a full argument vector including the program
-    name (``None`` reads ``sys.argv``). ``--strict`` may appear anywhere and is
-    extracted before flag dispatch; ``APOTHEM_CONFORMITY_STRICT`` sets the same
-    posture from the environment.
+    name (``None`` reads ``sys.argv``). ``--strict`` may appear anywhere;
+    ``APOTHEM_CONFORMITY_STRICT`` sets the same posture from the environment.
 
     Post-conditions: returns :data:`EXIT_PASS` when no blocking finding was
     raised, or when findings exist but strict mode is off — the advisory
     default reports without failing a build. Returns the findings-block code
-    under ``--strict``, and the usage-error code for an unknown validator name,
-    which is kept distinct so a caller can tell a misspelled selector from a
-    real finding.
+    under ``--strict``, and the usage-error code :data:`EXIT_USAGE` for an
+    unknown flag or validator name, a conflicting flag pair, a file that does
+    not exist, or a root that is not an existing directory — kept distinct so
+    a caller can tell a misspelled selector or path from a real finding.
+    ``--help`` prints usage and returns 0.
     """
     if argv is None:
         argv = sys.argv
-    argv, strict = _resolve_strict(argv)
-    if len(argv) >= 2 and argv[1] == LIST_FLAG:
+    parser = _build_parser()
+    try:
+        args = parser.parse_args(argv[1:])
+    except SystemExit as exc:
+        return exc.code if isinstance(exc.code, int) else EXIT_USAGE
+    strict = _strict_enabled(bool(args.strict))
+    try:
+        return _dispatch(parser, args, strict=strict)
+    except SystemExit as exc:
+        # ``parser.error`` exits EXIT_USAGE after printing its one-line message.
+        return exc.code if isinstance(exc.code, int) else EXIT_USAGE
+
+
+def _dispatch(
+    parser: argparse.ArgumentParser, args: argparse.Namespace, *, strict: bool
+) -> int:
+    """Run the mode the parsed arguments select; return the exit code."""
+    corpus_mode = args.list or args.all or args.all_perwrite
+    if args.check is not None and corpus_mode:
+        parser.error(
+            f"{CHECK_FLAG} cannot be combined with {LIST_FLAG}, "
+            f"{ALL_FLAG}, or {ALL_PERWRITE_FLAG}"
+        )
+    if args.stdin and (corpus_mode or args.hook):
+        parser.error(f"{STDIN_FLAG} applies only to a file check")
+    if args.hook and args.target is not None:
+        parser.error(f"{HOOK_FLAG} reads its payload from stdin; drop the path")
+    if args.list:
+        if args.target is not None:
+            parser.error(f"{LIST_FLAG} takes no path")
         print(_list_validators())
         return EXIT_PASS
-    if len(argv) >= 2 and argv[1] == ALL_PERWRITE_FLAG:
-        root = Path(argv[2]) if len(argv) >= 3 else Path.cwd()
-        passed, payload = _run_all_perwrite(root)
+    if args.all_perwrite:
+        passed, payload = _run_all_perwrite(_resolve_root(parser, args.target))
         print(payload)
         return _strict_exit_with_advisory(
             blocking_passed=passed,
             advisory_present=advisory_findings_present(json.loads(payload)),
             strict=strict,
         )
-    if len(argv) >= 2 and argv[1] == ALL_FLAG:
-        root = Path(argv[2]) if len(argv) >= 3 else Path.cwd()
-        passed, payload = _run_all(root)
+    if args.all:
+        passed, payload = _run_all(_resolve_root(parser, args.target))
         print(payload)
         return _strict_exit_with_advisory(
             blocking_passed=passed,
             advisory_present=advisory_findings_present(json.loads(payload)),
             strict=strict,
         )
-    argv, only = _split_check_flag(argv)
+    only: str | None = None
     # --check <name> may name a standalone; route via subprocess when so.
-    if only is not None:
+    if args.check is not None:
         try:
-            canonical, is_standalone = _resolve_validator(only)
+            canonical, is_standalone = _resolve_validator(args.check)
         except ValueError as exc:
             # Unknown validator name is a CLI-usage error, not a findings block:
             # EXIT_USAGE (3) keeps it distinct from EXIT_FAIL (2, strict block).
             sys.stderr.write(f"{exc}\n")
             return EXIT_USAGE
         if is_standalone:
-            root = Path(argv[1]) if len(argv) >= 2 else Path.cwd()
+            if args.hook or args.stdin:
+                parser.error(f"{canonical} is a standalone validator; pass a root")
+            root = _resolve_root(parser, args.target)
             passed, output = _run_standalone(canonical, root)
             print(output)
             return _gate_exit(passed, strict=strict)
         only = canonical
     pre_content: str | None = None
-    if len(argv) >= 2 and argv[1] == "--hook":
+    if args.hook and _hooks_disabled():
+        return EXIT_PASS
+    if args.hook:
         # Harness-dispatched hook mode: parse tool-input JSON from stdin.
         content, path, pre_content = _read_tool_input_from_stdin()
         # No resolvable target path: an empty or malformed payload (no
@@ -1455,7 +1622,8 @@ def main(argv: list[str] | None = None) -> int:
         if _is_harness_state_path(path, scopes):
             return _silent_pass(path)
     else:
-        content, path = read_input(argv)
+        args.path = args.target
+        content, path = read_path_arguments(parser, args)
     try:
         if pre_content is not None:
             report = _orchestrator_diff_report(pre_content, content, path, only)

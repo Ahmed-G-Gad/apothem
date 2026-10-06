@@ -48,6 +48,7 @@ a `.plans/` tree was relocated, the backup root, and any skipped conflicts. A
 
 ```json
 {
+  "schema_version": 1,
   "command": "migrate-workspace",
   "status": "success",
   "base": "/home/example/project",
@@ -67,6 +68,7 @@ The `--dry-run` envelope omits the outcome counts and reports detection only:
 
 ```json
 {
+  "schema_version": 1,
   "command": "migrate-workspace",
   "base": "/home/example/project",
   "dry_run": true,
@@ -88,6 +90,7 @@ apothem migrate-workspace --dry-run --json
 |---|---|
 | 0 | Migration completed, or no legacy layout was found (nothing to migrate) |
 | 1 | Expected error — a validation or project-root error, or a migration failure |
+| 64 | Usage error: an unknown option or command, or a missing or invalid option value. Under `--json` the error is a JSON envelope with code `cli.usage`. |
 
 ## See also
 

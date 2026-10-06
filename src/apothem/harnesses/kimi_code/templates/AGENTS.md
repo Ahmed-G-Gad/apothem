@@ -1,43 +1,29 @@
 <!-- SPDX-License-Identifier: MIT -->
 
-# Apothem — Kimi Code Bootstrap
+# Apothem — Project Instructions
 
-This file is the vendor-canonical agent-instructions surface for the Kimi
-Code CLI (Moonshot): the project-root `AGENTS.md` per the vendor
-configuration docs
-(https://moonshotai.github.io/kimi-cli/en/configuration/config-files.html).
-It follows the universal AGENTS.md convention adopted across coding-agent
-ecosystems. Apothem materialises its governance surface into this file as a
-sentinel-delimited managed block and keeps non-native Markdown cohorts under
-an Apothem-owned support tree at `<project>/.kimi-code/.apothem/support/`.
+Apothem wrote this block with `apothem install --harness kimi-code`.
+`AGENTS.md` is a shared instruction file: any coding tool that follows the
+AGENTS.md convention reads it, so this block carries project-wide guidance
+only and names no single tool as its reader.
 
-## Apothem Conventions
+## Apothem reference material
 
-The Apothem-managed cohorts are installed as follows:
+The install placed Apothem's reference material in this project:
 
-- `<project>/AGENTS.md` — this Kimi Code instruction anchor, carrying the
-  Apothem governance surface as a managed block. Operator prose outside the
-  Apothem sentinels is preserved on every re-install.
-- `<project>/.kimi-code/.apothem/support/rules/` — Apothem Markdown rules used as
-  reference material by this file and the installed cohorts.
-- `<project>/.kimi-code/.apothem/support/skills/` — Apothem skills plus command prompts
+- `.kimi-code/.apothem/support/skills/` — Apothem skills, plus command prompts
   wrapped as skills.
-- `<project>/.kimi-code/.apothem/support/agents/` — Apothem sub-agent definitions.
-- `<project>/.kimi-code/.apothem/support/templates/` — plan, report, and audit
-  templates.
+- `.kimi-code/.apothem/support/agents/` — Apothem helper definitions.
 
-## Runtime Configuration
+Apothem's rules, templates, and hook helpers are installed beside them; the
+Apothem support files section below names their directories. Read the matching
+file there when a task calls for one of those rules, skills, or templates.
 
-Kimi Code CLI's runtime configuration lives under `<project>/.kimi-code/`.
-Apothem does not overwrite operator-owned configuration there; it installs
-instructions and support content through the vendor-native paths above. The
-`<project>/.kimi-code/mcp.json` MCP surface is operator-owned — Apothem names
-it but authors no entries. The Kimi Code model family is selected through the
-operator's own configuration; Apothem presets no model or effort.
+## Maintaining this block
 
-## Operator Surface
-
-Operators may extend project-specific instructions in this `AGENTS.md` outside
-the Apothem managed block. Re-run `apothem install --harness kimi-code
---project <this-project-root>` to refresh this instruction anchor and the
-installed support cohorts. The operation is idempotent.
+Text outside the Apothem managed block is operator-owned and survives every
+re-install. Re-run `apothem install --harness kimi-code --project
+<this-project-root>` to refresh the block and the reference material; the
+operation is idempotent. `apothem uninstall --harness kimi-code --project
+<this-project-root>` removes the block and leaves the rest of this file in
+place.
