@@ -105,6 +105,21 @@ jobs:
           # `Apache-2.0 AND LGPL-3.0-or-later` expression. Enumerating on the
           # name prefix alone misses those four. Re-derive with: every entry in
           # site/package-lock.json whose `license` string contains "LGPL".
+          #
+          # Second named exception: the CI tool lockfiles. .github/channel-smoke
+          # pins the Claude Code, Gemini CLI, Codex and Qwen Code CLIs that
+          # channel-smoke.yml installs to smoke each install channel, and
+          # .github/vsce pins the vsce packager the release and publish-vscode
+          # jobs install. Both are installed by npm ci inside CI jobs only.
+          # Nothing from them ships: the sdist and wheel carry no npm code, and
+          # the vsix is built with vsce --no-dependencies. The Claude
+          # Code and @vscode/vsce-sign packages are proprietary. The rest
+          # declare permissive licences outside the list above (Artistic-2.0,
+          # BlueOak-1.0.0, 0BSD), or declare MIT while GitHub's licence
+          # detection adds CC0-1.0, Unicode or unknown references (lodash.*,
+          # xmlbuilder, typed-rest-client). Re-derive with: the
+          # "incompatible licenses" list Dependency review prints for those two
+          # lockfiles.
           allow-dependencies-licenses: >-
             pkg:npm/%40img/sharp-libvips-darwin-arm64,
             pkg:npm/%40img/sharp-libvips-darwin-x64,
@@ -119,7 +134,40 @@ jobs:
             pkg:npm/%40img/sharp-wasm32,
             pkg:npm/%40img/sharp-win32-arm64,
             pkg:npm/%40img/sharp-win32-ia32,
-            pkg:npm/%40img/sharp-win32-x64
+            pkg:npm/%40img/sharp-win32-x64,
+            pkg:npm/%40anthropic-ai/claude-code,
+            pkg:npm/%40anthropic-ai/claude-code-darwin-arm64,
+            pkg:npm/%40anthropic-ai/claude-code-darwin-x64,
+            pkg:npm/%40anthropic-ai/claude-code-linux-arm64,
+            pkg:npm/%40anthropic-ai/claude-code-linux-arm64-musl,
+            pkg:npm/%40anthropic-ai/claude-code-linux-x64,
+            pkg:npm/%40anthropic-ai/claude-code-linux-x64-musl,
+            pkg:npm/%40anthropic-ai/claude-code-win32-arm64,
+            pkg:npm/%40anthropic-ai/claude-code-win32-x64,
+            pkg:npm/%40vscode/vsce-sign,
+            pkg:npm/%40vscode/vsce-sign-alpine-arm64,
+            pkg:npm/%40vscode/vsce-sign-alpine-x64,
+            pkg:npm/%40vscode/vsce-sign-darwin-arm64,
+            pkg:npm/%40vscode/vsce-sign-darwin-x64,
+            pkg:npm/%40vscode/vsce-sign-linux-arm,
+            pkg:npm/%40vscode/vsce-sign-linux-arm64,
+            pkg:npm/%40vscode/vsce-sign-linux-x64,
+            pkg:npm/%40vscode/vsce-sign-win32-arm64,
+            pkg:npm/%40vscode/vsce-sign-win32-x64,
+            pkg:npm/binaryextensions,
+            pkg:npm/editions,
+            pkg:npm/istextorbinary,
+            pkg:npm/lodash.includes,
+            pkg:npm/lodash.isinteger,
+            pkg:npm/lodash.isplainobject,
+            pkg:npm/lodash.once,
+            pkg:npm/minimatch,
+            pkg:npm/sax,
+            pkg:npm/textextensions,
+            pkg:npm/tslib,
+            pkg:npm/typed-rest-client,
+            pkg:npm/version-range,
+            pkg:npm/xmlbuilder
           comment-summary-in-pr: never
 
   dispatch-noop:
