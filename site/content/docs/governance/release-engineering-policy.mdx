@@ -52,11 +52,9 @@ installs and reproducible builds depend on every published tag. The
 model.
 
 The repository's release-facade rule (the Release Facade section of the
-contributor instructions, mirrored in the freshness-facade rule) asks for
-"one visible release tag, one GitHub Release". That contradicts this model:
-three releases exist, and npm cannot drop a published version. The rule is
-unchanged until the maintainer settles it. Until then the additive model
-governs, and nothing published is deleted or rewritten to satisfy the rule.
+contributor instructions) states this model. Its current-version-only
+requirement, mirrored in the freshness-facade rule, covers what public
+surfaces say. It does not limit which releases stay published.
 
 ## 3. Deprecation policy
 

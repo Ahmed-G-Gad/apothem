@@ -197,6 +197,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   tokens.** Apothem no longer ships them in readable, searchable form, but a
   digest of a short name can be reversed by search, and earlier releases,
   published npm versions and git history still carry the plaintext.
+- **The release-facade rule states the additive release model.** `AGENTS.md`,
+  `CLAUDE.md` and `.github/copilot-instructions.md` asked for one visible
+  release tag and one GitHub Release, while three releases stay published and
+  npm cannot drop a version. The rule now limits what public surfaces say to
+  the current version and keeps every published release tag, GitHub Release
+  and npm version. The release-engineering policy and the release-recovery
+  runbook describe the same model.
 
 ### Fixed
 
