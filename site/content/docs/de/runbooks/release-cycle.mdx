@@ -1,45 +1,51 @@
 ---
 title: "Runbook zum Release-Zyklus"
-description: "Vollständiger Release-Workflow von den lokalen Prüfungen über das signierte GitHub Release bis zum optionalen npm-Veröffentlichungs-Dispatch."
+description: "Vollständiger Release-Workflow von den lokalen Gates über das signierte GitHub Release bis zum optionalen npm-Veröffentlichungs-Dispatch."
 machineTranslated: true
-sourceHash: "aee761a8994b9503"
+sourceHash: "2373679e2d500c4a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Dieses Runbook treibt ein `vX.Y.Z`-Release von `apothem` von einem sauberen
-Arbeitsbaum zu verifizierten Distributionsflächen. Die Prozedur ist für den
-Maintainer geschrieben, der `gh`, `git` und die Release-Level-Shell bedient;
-sie endet mit einer verifizierten Release-Seite, einem abgelegten CHANGELOG und
-einem Installationspfad-Smoke-Test, der bestätigt, dass jede
-benutzerorientierte Fläche auf den kanonischen Installationsbefehl antwortet.
+Dieses Runbook führt ein `vX.Y.Z`-Release von `apothem` von einem sauberen
+Arbeitsbaum zu verifizierten Distributionsoberflächen. Das Verfahren ist für
+den Maintainer geschrieben, der `gh`, `git` und die Shell der Release-Ebene
+bedient; es endet mit einer verifizierten Release-Seite, einem abgelegten
+CHANGELOG und einem Installationspfad-Smoke-Test, der bestätigt, dass jede
+benutzerseitige Oberfläche auf den kanonischen Installationsbefehl antwortet.
 
-Die Release-Form ist **ein einzelnes Tag, zwei Stufen**. Ein signiertes
-Release-Tag auf `main` löst `.github/workflows/release.yml` aus, das das GitHub
-Release mit seinem vollständigen Artefaktsatz baut, signiert, attestiert und
-veröffentlicht — sdist, wheel, CycloneDX-SBOM, Sigstore-cosign-Bundles,
-SLSA-3-Provenienz und die Plattform-Runtime-Archive. Die optionale zweite Stufe
-ist ein manueller Dispatch von `publish-npm.yml`, das
-`@ahmed-g-gad/apothem` auf npmjs.com veröffentlicht, sobald
-`scripts/release/check-release-ready.sh` grün ist. Der versionierte
-CHANGELOG-Abschnitt wird zusammen mit dem Tag-Commit verfasst; der Operator
-führt den Installationspfad-Smoke-Test aus, nachdem beide Stufen gelandet sind.
+Das Release-Modell ist **additiv**. Jedes Release fügt einen Commit auf `main`
+und ein signiertes, annotiertes `vX.Y.Z`-Tag hinzu; nichts wird per Force-Push
+übertragen, und kein früheres Tag, kein GitHub Release und keine npm-Version
+wird entfernt. Das Projekt hat drei Releases, jedes mit seinem Tag, seinem
+GitHub Release und seiner npm-Version, und alle bleiben veröffentlicht:
+npm-Versionen sind unveränderlich (ein veröffentlichtes `name@version` kann
+niemals ersetzt werden), und gepinnte Installationen hängen von den Tags ab.
+
+Der Tag-Push startet zwei Workflows. `.github/workflows/release.yml` baut,
+signiert, attestiert und veröffentlicht das GitHub Release mit seinem
+vollständigen Artefaktsatz: sdist, Wheel, CycloneDX-SBOM,
+Sigstore-cosign-Bundles, SLSA-3-Provenienz und die Plattform-Laufzeitarchive.
+`publish-npm.yml` veröffentlicht `@ahmed-g-gad/apothem` über npm Trusted
+Publishing auf npmjs.com. Der versionierte CHANGELOG-Abschnitt landet im
+Release-Commit; der Operator führt den Installationspfad-Smoke-Test aus,
+nachdem beide Workflows abgeschlossen sind.
 
 ## 1. Voraussetzungen
 
-Der Maintainer bestätigt Folgendes vor dem Taggen:
+Der Maintainer bestätigt vor dem Taggen Folgendes:
 
 - **Arbeitsbaum.** Sauber (`git status` zeigt nichts Ausstehendes). Die gesamte
   Feature-Arbeit für das Release ist auf `main`.
-- **CI grün.** Das neueste `main` `gh run list --branch=main --limit=1
-  --json conclusion --jq '.[0].conclusion'` gibt `success` zurück.
+- **CI grün.** Für den neuesten Stand von `main` gibt `gh run list --branch=main --limit=1
+  --json conclusion --jq '.[0].conclusion'` den Wert `success` zurück.
 - **Werkzeuge.** `gh` (GitHub CLI) Version 2.40 oder neuer, authentifiziert
   gegen `ahmed-g-gad`; `git` 2.40 oder neuer mit geladenem
-  GPG-Signatur-Unterschlüssel; die npm-Trusted-Publisher-Bindung für
+  GPG-Signier-Unterschlüssel; die npm-Trusted-Publisher-Bindung für
   `@ahmed-g-gad/apothem` ist aktiv (verifiziert gemäß dem
   [Runbook zur Einrichtung des Publisher-Kontos](/docs/runbooks/publisher-account-setup)).
-- **Versions-Anker ausgerichtet.** Die in `pyproject.toml` deklarierte
-  Versionszeichenkette stimmt ohne das `v`-Präfix mit dem geplanten Tag überein.
-  Verifizieren:
+- **Versionsanker ausgerichtet.** Die in `pyproject.toml` deklarierte
+  Versionszeichenkette stimmt ohne das `v`-Präfix mit dem geplanten Tag überein
+  (§2.1 setzt sie, zusammen mit jedem anderen Anker). Verifizieren Sie:
 
   ```bash
   grep '^version' pyproject.toml
@@ -52,35 +58,67 @@ Der Maintainer bestätigt Folgendes vor dem Taggen:
   version = "X.Y.Z"
   ```
 
-- **CHANGELOG-Abschnitt vorbereitet.** `CHANGELOG.md` trägt einen versionierten
-  Abschnitt unter Keep-a-Changelog-Überschriften. Der Maintainer aktualisiert
-  das Datum und die Release-Punkte im selben Commit, der das Tag landet.
+- **CHANGELOG-Einträge vorbereitet.** Die Release-Punkte stehen unter
+  `## [Unreleased]` in Keep-a-Changelog-Überschriften; §2.1 macht daraus den
+  datierten Versionsabschnitt in dem Commit, der das Tag landet.
 
 ## 2. Taggen und auslösen
 
 ### 2.1 Den Release-Commit verfassen
 
-Der Release-Commit landet zwei Änderungen:
-
-- Den Versionsabschnitt von `CHANGELOG.md`, datiert mit dem tatsächlichen
-  UTC-Datum des Releases.
-- Die Version von `pyproject.toml`, auf die neue Version angehoben (nur wenn der
-  vorherige Commit auf `main` bereits den Pin der vorherigen Version trägt und
-  eine frische Anhebung erforderlich ist; der Commit kann auch während des
-  Versionsanhebungs-Zyklus Tage vor dem Tag-Zeitpunkt landen).
-
-Beispiel-Commit:
+Die Version steht in mehr als einem Dutzend Dateien, bearbeiten Sie sie also
+nicht von Hand. Ein einziger Befehl ändert sie alle:
 
 ```bash
 git checkout main
 git pull --ff-only origin main
-# CHANGELOG- und pyproject.toml-Änderungen über das Edit-Werkzeug verfassen, dann:
-git add CHANGELOG.md pyproject.toml
+python scripts/release/bump_version.py X.Y.Z
+```
+
+`bump_version.py` aktualisiert jeden Versionsanker gemeinsam:
+
+- Jedes Paketierungs-, Erweiterungs-, Plugin- und Marketplace-Manifest sowie
+  die Zitationsdatei (Version und Release-Datum). Die vollständige Liste:
+
+  ```text
+  pyproject.toml
+  package.json
+  site/package.json
+  site/package-lock.json            (the project entries only)
+  vscode-extension/package.json
+  gemini-extension.json
+  qwen-extension.json
+  .claude-plugin/marketplace.json   (top level and metadata)
+  plugins/apothem/.codex-plugin/plugin.json
+  src/apothem/harnesses/antigravity/templates/plugin.json
+  CITATION.cff
+  ```
+
+- `CHANGELOG.md`: Die `[Unreleased]`-Einträge werden zu einem datierten
+  `## [X.Y.Z]`-Abschnitt, `[Unreleased]` vergleicht ab `vX.Y.Z`, und ein
+  `[X.Y.Z]`-Link wird hinzugefügt.
+- `SECURITY.md`: Eine neue Minor-Version erhält eine unterstützte `X.Y.x`-Zeile.
+  Ob ältere Minor-Versionen gelistet bleiben, entscheiden Sie; das Skript gibt
+  eine Erinnerung aus.
+
+Danach erzeugt es die abgeleiteten Bäume neu: das Claude Code-Plugin-Paket, die
+Behavior-Diff-Goldens sowie die Referenz- und Changelog-Seiten der
+Dokumentation. Übergeben Sie `--dry-run`, um die Änderungen zuerst aufzulisten,
+`--date
+YYYY-MM-DD`, um das Release-Datum festzulegen (Standard: heute in UTC), oder
+`--no-regen`, um die Neuerzeugung zu überspringen. Das Skript lehnt eine
+fehlerhafte Version oder ein Downgrade ab, und ein erneuter Aufruf mit der
+aktuellen Version richtet nur abweichende Anker neu aus.
+
+Prüfen Sie den Diff und committen Sie dann:
+
+```bash
+git add -A
 git commit -S -m "chore(release): cut vX.Y.Z"
 git push origin main
 ```
 
-Das `-S`-Flag signiert den Commit mit dem GPG-Schlüssel. Der Push löst die
+Das Flag `-S` signiert den Commit mit dem GPG-Schlüssel. Der Push löst die
 Standard-CI-Matrix aus (lint, test, build); warten Sie auf Grün, bevor Sie
 taggen.
 
@@ -101,77 +139,84 @@ veröffentlicht.
 gh run watch $(gh run list --workflow=release.yml --limit=1 --json databaseId --jq '.[0].databaseId')
 ```
 
-Der Workflow führt den Build (sdist + wheel), die SBOM-Erzeugung
-(CycloneDX), die schlüssellose cosign-Signierung, die SLSA-3-Provenienz-Erzeugung
-und -Verifizierung, die Plattform-Archiv-Builds (darwin / linux / windows), die
-Archiv-Signierung mit einem aggregierten `SHA256SUMS`-Manifest und die finale
-GitHub-Release-Veröffentlichung aus. Der Maintainer durchsucht das Protokoll des
-Jobs `publish GitHub Release` nach den Asset-Upload-Bestätigungen.
+Der Workflow führt den Build (sdist + Wheel, danach ein CycloneDX-SBOM dieser
+Distributionen, das neben sie geschrieben wird), die schlüssellose
+cosign-Signierung, die Erzeugung und Verifizierung der SLSA-3-Provenienz, die
+Plattform-Archiv-Builds (darwin / linux / windows), die Archiv-Signierung mit
+einem aggregierten `SHA256SUMS`-Manifest und die finale Veröffentlichung des
+GitHub Release aus. Der Maintainer durchsucht das Protokoll des Jobs
+`publish GitHub Release` nach den Bestätigungen der Asset-Uploads.
 
-### 2.4 Die npm-Veröffentlichung auslösen (optionale Stufe)
+### 2.4 Die npm-Veröffentlichung bestätigen
 
-Nachdem das GitHub Release und das Bereitschafts-Gate grün sind:
+Der Tag-Push führt auch `publish-npm.yml` aus. Genehmigen Sie das Deployment
+der Umgebung `release`, wenn Sie dazu aufgefordert werden. Der Workflow
+veröffentlicht `@ahmed-g-gad/apothem@X.Y.Z` über npm Trusted Publishing (OIDC)
+auf npmjs.com; im Repository ist kein Registry-Token gespeichert. Bestätigen
+Sie dann die Bereitschaft:
 
 ```bash
 bash scripts/release/check-release-ready.sh vX.Y.Z
-gh workflow run publish-npm.yml --field tag=vX.Y.Z
 ```
 
-Genehmigen Sie das `npmjs`-Umgebungs-Deployment, wenn Sie dazu aufgefordert
-werden. Der Workflow veröffentlicht `@ahmed-g-gad/apothem@X.Y.Z` auf npmjs.com
-via npm Trusted Publishing (OIDC); im Repository wird kein Registry-Token
-gespeichert.
+Um nach einem fehlgeschlagenen Lauf erneut zu veröffentlichen, starten Sie den
+Workflow für dasselbe Tag
+(`gh workflow run publish-npm.yml --field tag=vX.Y.Z`). Er überspringt die
+Veröffentlichung, wenn die Version bereits in der Registry ist, weil
+npm-Versionen unveränderlich sind.
 
-## 3. Distributionsflächen
+## 3. Distributionsoberflächen
 
-Jede Fläche hat einen Verifizierungsbefehl, der „ist das Release hier gelandet?"
-beantwortet:
+Jede Oberfläche hat einen Verifizierungsbefehl, der die Frage „Ist das Release
+hier gelandet?“ beantwortet:
 
-| # | Fläche | Artefakt | Verifizierung |
+| # | Oberfläche | Artefakt | Verifizierung |
 |---|---|---|---|
 | 1 | GitHub Release (Python-Distributionen) | `apothem-X.Y.Z.tar.gz` (sdist) + `apothem-X.Y.Z-py3-none-any.whl` | `gh release view vX.Y.Z --json assets --jq '.assets[].name'` enthält beide Dateinamen |
-| 2 | GitHub Release (SBOM) | `sbom.cdx.json` | wie Zeile 1; die Asset-Liste enthält das CycloneDX-SBOM |
-| 3 | GitHub Release (Signaturen) | `*.cosign.bundle` pro Distributionsartefakt; `*.sig` pro Archiv; `SHA256SUMS` + `SHA256SUMS.sig` | `cosign verify-blob --bundle <artifact>.cosign.bundle <artifact>` endet mit 0 (mit den Workflow-Identitäts-Flags) |
-| 4 | GitHub Release (Provenienz) | `provenance.intoto.jsonl` | `bash scripts/release/verify-provenance.sh vX.Y.Z` endet mit 0 |
-| 5 | GitHub Release (Plattform-Archive) | `apothem-vX.Y.Z-darwin.tar.gz`, `apothem-vX.Y.Z-linux.tar.gz`, `apothem-vX.Y.Z-windows.zip` | die Asset-Liste enthält jedes Archiv plus `SHA256SUMS` |
-| 6 | npmjs.com | `@ahmed-g-gad/apothem@X.Y.Z` | `npm view @ahmed-g-gad/apothem version` gibt `X.Y.Z` zurück; `npx @ahmed-g-gad/apothem@X.Y.Z --version` gibt `apothem X.Y.Z` aus |
-| 7 | Pages (Skript-Installer) | `install.sh` / `install.ps1` auf der Dokumentationsseite | `curl -fsSL https://apothem.ahmedgad.com/install.sh \| head -n 1` gibt den Skript-Header zurück |
+| 2 | GitHub Release (SBOM) | `sbom.cdx.json` + `sbom.cdx.json.cosign.bundle` | die Asset-Liste enthält beide; das `metadata.component.purl` des SBOM ist `pkg:pypi/apothem@X.Y.Z`, und seine Komponenten umfassen jedes Paket in `src/apothem/_vendor/vendor.txt` |
+| 3 | GitHub Release (Signaturen) | ein `<asset>.cosign.bundle` je sdist, Wheel, SBOM, VS Code-Erweiterung, Plattformarchiv und `SHA256SUMS` (frühere Releases benennen die Archiv- und `SHA256SUMS`-Bundles `<asset>.sig`) | `cosign verify-blob` mit der exakten Identität aus §5.5 endet mit 0 |
+| 4 | GitHub Release (Provenienz) | `provenance.intoto.jsonl` | `bash scripts/release/verify-provenance.sh <download-dir>` endet mit 0 (§5.5) |
+| 5 | GitHub Release (Plattformarchive) | `apothem-vX.Y.Z-darwin.tar.gz`, `apothem-vX.Y.Z-linux.tar.gz`, `apothem-vX.Y.Z-windows.zip` | die Asset-Liste enthält jedes Archiv plus `SHA256SUMS`. Die darwin- und linux-Archive sind dieselben Bytes unter zwei Namen (die Laufzeit ist plattformneutral; `--platform` wählt nur tar.gz oder zip), daher zeigen ihre `SHA256SUMS`-Zeilen denselben Digest zweimal |
+| 6 | GitHub Release (VS Code-Erweiterung) | `apothem.vsix` + `apothem.vsix.cosign.bundle` | die Asset-Liste enthält beide; `code --install-extension apothem.vsix` installiert sie. Releases aus der Zeit, bevor der Release-Workflow die Erweiterung paketierte, enthalten keines von beiden |
+| 7 | npmjs.com | `@ahmed-g-gad/apothem@X.Y.Z` | `npm view @ahmed-g-gad/apothem version` gibt `X.Y.Z` zurück; `npx @ahmed-g-gad/apothem@X.Y.Z --version` gibt `Apothem, version X.Y.Z` aus |
+| 8 | Pages (Skript-Installer) | `install.sh` / `install.ps1` auf der Dokumentationsseite | `curl -fsSL https://apothem.ahmedgad.com/install.sh \| head -n 1` gibt den Skript-Header zurück |
 
-Das GitHub Release ist die kanonische Artefaktfläche; das npm-Paket und die
-Skript-Installer sind die darüber geschichteten Installationspfade. Die
-npm-Veröffentlichung ist bewusst die letzte Stufe.
+Das GitHub Release ist die kanonische Artefaktoberfläche; das npm-Paket und die
+Skript-Installer sind die darauf aufsetzenden Installationspfade. Die
+npm-Veröffentlichung läuft beim selben Tag-Push neben dem Release-Workflow.
 
 ## 4. CHANGELOG-Disziplin
 
-`CHANGELOG.md` trägt einen Abschnitt pro Release unter der
+`CHANGELOG.md` trägt einen Abschnitt pro Release nach der
 Keep-a-Changelog-Konvention. Die CHANGELOG-Bearbeitung des Release-Commits:
 
-- Bestätigt, dass der Versionsabschnitt die Überschrift `## [X.Y.Z] — YYYY-MM-DD`
-  verwendet.
-- Bestätigt, dass die Standard-Überschriften — Added, Changed, Deprecated,
+- Bestätigt, dass der Versionsabschnitt die Überschrift `## [X.Y.Z] - YYYY-MM-DD`
+  verwendet (ein Bindestrich; `bump_version.py` schreibt sie, und
+  `extract_release_notes.py` gleicht das Präfix `## [X.Y.Z]` ab).
+- Bestätigt, dass die Standardüberschriften — Added, Changed, Deprecated,
   Removed, Fixed, Security — verwendet werden, wo zutreffend. Leere Überschriften
   werden aus der gerenderten Datei entfernt.
 - Erfasst **Fähigkeiten**, nicht die Implementierung. Nur Domänensprache; keine
   plan-internen Referenzen; keine Commit-Hashes; keine Plan- oder
-  Phasen-Bezeichner.
+  Phasenbezeichner.
 
-Ein CHANGELOG-Abschnitt, der die Überprüfung des Maintainers überlebt hat, liest
-sich als Release-Notes-Anker für die Ankündigungserzählung.
+Ein CHANGELOG-Abschnitt, der die Prüfung durch den Maintainer überstanden hat,
+dient als Release-Notes-Anker für die Ankündigungserzählung.
 
 ## 5. Installationspfad-Smoke-Test
 
 Nachdem beide Stufen abgeschlossen sind, führt der Maintainer den Smoke-Test
 aus. Der Smoke-Test ist die kanonische Verifizierung, dass die
-benutzerorientierten Installationsbefehle antworten.
+benutzerseitigen Installationsbefehle antworten.
 
-### 5.1 Claude Code Plugin
+### 5.1 Claude Code-Plugin
 
 ```text
 /plugin marketplace add ahmed-g-gad/apothem
 /plugin install apothem@apothem
 ```
 
-Erwartet: das Plugin wird installiert und die `apothem`-Befehle sind innerhalb
+Erwartet: Das Plugin wird installiert, und die `apothem`-Befehle sind innerhalb
 von Claude Code verfügbar.
 
 ### 5.2 Node.js (npx)
@@ -180,76 +225,95 @@ von Claude Code verfügbar.
 npx @ahmed-g-gad/apothem@X.Y.Z --version
 ```
 
-Erwartete Ausgabe: `apothem X.Y.Z`.
+Erwartete Ausgabe: `Apothem, version X.Y.Z`.
 
-### 5.3 Einmaliger Skript-Installer (POSIX)
+### 5.3 Ein-Schritt-Skript-Installer (POSIX)
 
 ```bash
 curl -fsSL https://apothem.ahmedgad.com/install.sh | sh
 apothem --version
 ```
 
-Erwartete Ausgabe: `apothem X.Y.Z`.
+Erwartete Ausgabe: `Apothem, version X.Y.Z`.
 
-### 5.4 Einmaliger Skript-Installer (Windows)
+### 5.4 Ein-Schritt-Skript-Installer (Windows)
 
 ```powershell
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 apothem --version
 ```
 
-Erwartete Ausgabe: `apothem X.Y.Z`.
+Erwartete Ausgabe: `Apothem, version X.Y.Z`.
 
 ### 5.5 Artefakt-Verifizierung (Lieferketten-Nachweis)
 
+Laden Sie jedes Asset in ein leeres Verzeichnis herunter und verifizieren Sie
+dann. Die Zertifikatsidentität ist der Release-Workflow bei genau diesem Tag.
+Identitätsprüfungen unterscheiden Groß- und Kleinschreibung, und die
+Zertifikate tragen den Eigentümer so, wie GitHub ihn meldet, `Ahmed-G-Gad`;
+ein kleingeschriebener Eigentümer schlägt daher fehl.
+
 ```bash
-gh release download vX.Y.Z --pattern 'apothem-X.Y.Z*' --pattern '*.cosign.bundle'
+mkdir release-vX.Y.Z && cd release-vX.Y.Z
+gh release download vX.Y.Z --repo ahmed-g-gad/apothem
 cosign verify-blob \
   --bundle apothem-X.Y.Z-py3-none-any.whl.cosign.bundle \
-  --certificate-identity-regexp 'github.com/ahmed-g-gad/apothem' \
+  --certificate-identity https://github.com/Ahmed-G-Gad/apothem/.github/workflows/release.yml@refs/tags/vX.Y.Z \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   apothem-X.Y.Z-py3-none-any.whl
-bash scripts/release/verify-provenance.sh vX.Y.Z
+slsa-verifier verify-artifact \
+  --provenance-path provenance.intoto.jsonl \
+  --source-uri github.com/Ahmed-G-Gad/apothem \
+  --source-tag vX.Y.Z \
+  apothem-X.Y.Z-py3-none-any.whl apothem-X.Y.Z.tar.gz
+bash ../scripts/release/verify-provenance.sh .
 ```
 
-Erwartet: beide Verifizierungen enden mit 0.
+Erwartet: `Verified OK`, `PASSED: SLSA verification passed` und
+`verify-provenance: chain OK (3 of 3 layers verified)`. Das Skript prüft
+`SHA256SUMS`, jedes Signatur-Bundle und die Provenienz in einem Lauf; es
+leitet das Tag aus dem Wheel-Namen ab (`--tag vX.Y.Z` überschreibt es).
 
-Der Smoke-Test produziert eine PASS / FAIL-Zeile pro Fläche; vermerken Sie die
-Zeilen im Release-Protokoll des Maintainers.
+Der Smoke-Test erzeugt eine einzeilige PASS / FAIL-Zeile pro Oberfläche;
+vermerken Sie die Zeilen im Release-Protokoll des Maintainers.
 
 ## 6. Fehlerbehebung
 
-Der Release-Workflow hat dokumentierte Fehlermodi für die Release-Engine und den
-npm-Publisher:
+Der Release-Workflow hat dokumentierte Fehlermodi für die Release-Engine und
+den npm-Publisher:
 
 | Fehler | Diagnose | Behebung |
 |---|---|---|
-| Tag-Push abgelehnt (Signaturfehler) | `git push origin vX.Y.Z` gibt `error: failed to push some refs` mit einer GPG-bezogenen Meldung zurück | Verifizieren Sie, dass der GPG-Unterschlüssel geladen ist (`gpg --list-secret-keys --keyid-format=long`); taggen Sie lokal mit `-s` neu, nachdem Sie den Schlüsselbund repariert haben; pushen Sie erneut |
-| Ein `release.yml`-Job scheitert an einer einzelnen Stufe | `gh run view <run-id> --log` nennt den fehlgeschlagenen Job (build / sbom / sign / provenance / archive / publish) | Führen Sie den fehlgeschlagenen Job allein über `gh run rerun <run-id> --failed` erneut aus; wenn der Fehler erneut auftritt, beheben Sie die Eingabe des Jobs an der Quelle, bevor Sie neu taggen |
-| Die SLSA-Provenienz-Verifizierung scheitert | Der Job `verify SLSA provenance artifact` endet mit einem Wert ungleich null | Untersuchen Sie das Provenienz-Artefakt auf eine Subjekt-Digest-Diskrepanz; bauen Sie aus demselben Tag neu — die Provenienz bindet sich an die exakten Artefakt-Digests, sodass jede Artefakt-Neuerzeugung eine vollständige Workflow-Neuausführung erfordert |
-| Veröffentlichung auf npmjs.com abgelehnt | Der npm-Job endet während `npm publish` mit einem Wert ungleich null; ein Registry-`404` während `PUT` ist eine Autorisierungs- / Trusted-Publisher-Diskrepanz, kein Beweis dafür, dass der Paketcode fehlt | Verifizieren Sie, dass npm Trusted Publishing für `@ahmed-g-gad/apothem` den Eigentümer `ahmed-g-gad`, das Repository `apothem`, den Workflow `publish-npm.yml` und die erlaubte Aktion `npm publish` nennt; bestätigen Sie, dass der Job mit der im Workflow gepinnten Node-Version und dem npm-CLI-OIDC-Mindeststand läuft |
-| Tag sichtbar, aber Artefakte fehlen | `gh release view vX.Y.Z` gibt ein Stub-Release zurück | Führen Sie den Publish-Job des Release-Workflows erneut aus; wenn der Stub bestehen bleibt, löschen Sie die Release-Seite (`gh release delete vX.Y.Z --cleanup-tag`) und taggen Sie aus demselben SHA neu |
+| Tag-Push abgelehnt (Signierfehler) | `git push origin vX.Y.Z` gibt `error: failed to push some refs` mit einer GPG-bezogenen Meldung zurück | Verifizieren Sie, dass der GPG-Unterschlüssel geladen ist (`gpg --list-secret-keys --keyid-format=long`); taggen Sie lokal mit `-s` neu, nachdem Sie den Schlüsselbund repariert haben; pushen Sie erneut |
+| Release-Build stoppt bei `Check the plugin version changed with the plugin` | Das Protokoll des Build-Jobs nennt das Plugin und das vorherige Tag; es wurde kein Asset gebaut oder veröffentlicht | Das Plugin-Paket hat sich seit dem vorherigen Release geändert, seine Version aber nicht. Löschen Sie das Tag (`git push --delete origin vX.Y.Z`, `git tag -d vX.Y.Z`), führen Sie `python scripts/release/bump_version.py X.Y.Z` aus, committen Sie, und signieren und pushen Sie das Tag dann erneut (§2.2). Dieselbe Prüfung läuft bei jedem Pull Request als Warnungs-Annotation, sodass dies normalerweise vor dem Taggen auffällt |
+| Ein `release.yml`-Job scheitert an einer einzelnen Stufe | `gh run view <run-id> --log` nennt den fehlgeschlagenen Job (build, der auch das SBOM schreibt / sign / provenance / archive / publish) | Führen Sie den fehlgeschlagenen Job allein über `gh run rerun <run-id> --failed` erneut aus; wenn der Fehler erneut auftritt, beheben Sie die Eingabe des Jobs an ihrer Quelle, bevor Sie neu taggen |
+| Die SLSA-Provenienz-Verifizierung scheitert | Der Job `verify SLSA provenance artifact` endet mit einem Wert ungleich null | Untersuchen Sie das Provenienz-Artefakt auf eine Abweichung des Subjekt-Digests; bauen Sie aus demselben Tag neu — die Provenienz bindet sich an die exakten Artefakt-Digests, sodass jede Neuerzeugung eines Artefakts eine vollständige erneute Ausführung des Workflows erfordert |
+| Veröffentlichung auf npmjs.com abgelehnt | Der npm-Job endet während `npm publish` mit einem Wert ungleich null; ein Registry-`404` während `PUT` ist eine Abweichung bei Autorisierung / Trusted Publisher, kein Beweis dafür, dass der Paketcode fehlt | Verifizieren Sie, dass npm Trusted Publishing für `@ahmed-g-gad/apothem` den Eigentümer `ahmed-g-gad`, das Repository `apothem`, den Workflow `publish-npm.yml` und die erlaubte Aktion `npm publish` nennt; bestätigen Sie, dass der Job mit der Node-Version und dem npm-CLI-OIDC-Mindeststand läuft, die im Workflow gepinnt sind |
+| Tag sichtbar, aber Assets fehlen | `gh release view vX.Y.Z` gibt ein Stub-Release zurück | Führen Sie den Publish-Job des Release-Workflows erneut aus; er bearbeitet das bestehende Release und lädt jedes Asset erneut hoch. Löschen Sie das Tag und taggen Sie neu nur dann, wenn nichts aus dem Tag Benutzer erreicht hat (keine Assets, keine npm-Version); andernfalls korrigieren Sie nach vorn mit dem nächsten Patch-Release ([Runbook zur Release-Wiederherstellung](/docs/runbooks/release-recovery) §2) |
 
-Wenn ein Behebungszyklus eine Fläche nicht innerhalb eines einzigen
-Diagnosedurchlaufs landen kann, wird die Fläche als bekannter Fehler in den
-Release-Notes mit einem Link zum offenen Issue protokolliert;
-nachgelagerte Benutzer werden auf die funktionierenden Flächen verwiesen,
-während die kaputte in einem Patch-Release behoben wird.
+Wenn ein Behebungszyklus eine Oberfläche nicht innerhalb eines einzigen
+Diagnosedurchlaufs landen kann, wird die Oberfläche als bekannter Fehler in den
+Release-Notes mit einem Link zum offenen Issue protokolliert; nachgelagerte
+Benutzer werden auf die funktionierenden Oberflächen verwiesen, während die
+defekte in einem Patch-Release behoben wird.
 
 ## 7. Querverweise
 
 - **Publisher-Einrichtung.** Das
   [Runbook zur Einrichtung des Publisher-Kontos](/docs/runbooks/publisher-account-setup)
   etabliert die npm-Trusted-Publisher-Bindung und die GitHub-seitigen
-  Voraussetzungen, die dieses Runbook annimmt.
-- **Behebungsablauf.** Das Release-Recovery-Runbook (`site/content/docs/runbooks/release-recovery.mdx`) regelt den stufenübergreifenden Fehlerpfad
-  während eines Release-Cutovers, nicht die in §6 genannten flächenspezifischen
-  Release-Fehler.
+  Voraussetzungen, von denen dieses Runbook ausgeht.
+- **Wiederherstellungsablauf.** Das [Runbook zur Release-Wiederherstellung](/docs/runbooks/release-recovery)
+  folgt demselben additiven Modell: Es stellt ein fehlgeschlagenes Tag oder
+  einen fehlgeschlagenen Publisher Stufe für Stufe wieder her und rollt zurück,
+  indem es die Korrektur als neue Patch-Version veröffentlicht, niemals durch
+  Löschen oder Neuausrichten eines veröffentlichten Tags, Release oder einer
+  npm-Version.
 - **Pages-Aktivierung.** Der Workflow `publish-static-site.yml` validiert und
   deployt die Projekt-Website auf die benutzerdefinierte Domain; das
   Pages-Aktivierungs-Runbook (`site/content/docs/runbooks/pages-enablement.mdx`)
-  ist die vorgelagerte Prozedur, die die benutzerdefinierte Domain überhaupt
-  erst etabliert hat.
+  ist das vorgelagerte Verfahren, das die benutzerdefinierte Domain
+  ursprünglich eingerichtet hat.
 - **Versionierungsrichtlinie.** `site/content/docs/governance/release-engineering-policy.mdx`
-  trägt die SemVer- + Signier- + Verwerfungs-Richtlinie, die dieses Runbook
+  enthält die Richtlinie zu SemVer + Signierung + Veraltung, die dieses Runbook
   einhält.

@@ -2,7 +2,7 @@
 title: "Kebijakan rekayasa rilis"
 description: "Lima kebijakan kanonik untuk versioning, penandaan rilis, siklus penghentian, perubahan yang tidak kompatibel, dan prosedur rollback."
 machineTranslated: true
-sourceHash: "f74f29a93205cc10"
+sourceHash: "29b59b2934ad73e3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -10,70 +10,117 @@ Lima kebijakan mengatur cara `apothem` dirilis.
 
 ## 1. Versioning semantik
 
-Proyek ini didistribusikan di bawah [Semantic Versioning 2.0](https://semver.org/).
-Nomor versi mengambil bentuk `MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]`.
+Proyek ini dirilis mengikuti [Semantic Versioning 2.0](https://semver.org/).
+Nomor versi berbentuk `MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]`.
 
 | Kenaikan | Pemicu |
-|----------|--------|
+|------|----------|
 | **MAJOR** | Perubahan yang tidak kompatibel pada skema artefak, pengidentifikasi mandat (CM-N / TM-N / CP-N), atau kontrak hook |
-| **MINOR** | Aturan baru, pekerja yang didelegasikan, perintah, keterampilan, peristiwa hook, atau perluasan skema yang tetap kompatibel |
-| **PATCH** | Klarifikasi, penambahan antipola, perbaikan dokumentasi, dan suntingan yang tidak mengubah perilaku |
+| **MINOR** | Aturan, pekerja terdelegasi, command, skill, atau peristiwa hook yang baru, atau perluasan skema yang tetap kompatibel |
+| **PATCH** | Klarifikasi, penambahan anti-pola, perbaikan dokumentasi, suntingan yang tidak mengubah perilaku |
 
 Tag kandidat menggunakan format `vX.Y.Z-rc.N` (kandidat rilis)
 atau `vX.Y.Z-alpha.N` / `vX.Y.Z-beta.N` (akses awal).
 
 ## 2. Tag rilis
 
-Setiap rilis menempatkan tag git bertanda tangan dalam bentuk `vMAJOR.MINOR.PATCH`
-di `main`. Tag tersebut memicu `.github/workflows/release.yml` yang
+Setiap rilis mendaratkan tag git bertanda tangan berbentuk `vMAJOR.MINOR.PATCH`
+di `main`. Tag tersebut memicu `.github/workflows/release.yml`, yang
 membangun, menandatangani, menghasilkan SBOM dan provenance SLSA-3, serta
-menerbitkan halaman GitHub Release.
+memublikasikan halaman GitHub Release.
 
 Konvensi tag:
 
-- **Format** — tepatnya `vMAJOR.MINOR.PATCH`. Tanpa awalan `release-`,
+- **Format** — tepat `vMAJOR.MINOR.PATCH`. Tanpa awalan `release-`,
   tanpa akhiran `-final`.
 - **Anotasi** — setiap tag adalah tag beranotasi (`git tag -a -s`)
   yang membawa ringkasan catatan rilis dalam pesan tag.
 - **Tanda tangan** — setiap tag ditandatangani dengan GPG. Alur kerja rilis
-  juga menghasilkan tanda tangan cosign tanpa kunci Sigstore pada
-  setiap artefak dan bukti provenance rilis SLSA-3, keduanya
-  dilampirkan ke halaman GitHub Release.
+  juga menghasilkan tanda tangan cosign keyless Sigstore pada setiap
+  artefak dan bukti rilis provenance SLSA-3, keduanya dilampirkan ke
+  halaman GitHub Release.
+
+### Model rilis: aditif
+
+Rilis bersifat aditif. Setiap rilis menambahkan satu commit di `main` dan satu
+tag; `main` tidak pernah di-force-push, dan tidak ada tag, GitHub Release, atau
+versi npm yang telah dipublikasikan yang dihapus, dipindahkan, atau digunakan
+ulang. Proyek memiliki tiga rilis, masing-masing dengan tag-nya, GitHub
+Release-nya, dan versi npm-nya, dan ketiganya tetap terpublikasi. Versi npm
+tidak dapat diubah: `name@version` yang telah dipublikasikan tidak pernah dapat
+diganti, dan nomor yang pernah di-unpublish tidak pernah dapat digunakan lagi.
+Pemasangan yang dipatok dan build yang dapat direproduksi bergantung pada setiap
+tag yang telah dipublikasikan. Runbook
+[siklus rilis](/docs/runbooks/release-cycle) dan
+[pemulihan rilis](/docs/runbooks/release-recovery) sama-sama mengikuti model
+ini.
+
+Aturan fasad rilis repositori (bagian Release Facade dari instruksi
+kontributor, dicerminkan dalam aturan freshness-facade) meminta "satu tag rilis
+yang terlihat, satu GitHub Release". Hal itu bertentangan dengan model ini: tiga
+rilis sudah ada, dan npm tidak dapat menghapus versi yang telah dipublikasikan.
+Aturan tersebut tetap tidak berubah sampai pemelihara memutuskannya. Sampai saat
+itu, model aditif yang berlaku, dan tidak ada yang telah dipublikasikan yang
+dihapus atau ditulis ulang untuk memenuhi aturan tersebut.
 
 ## 3. Kebijakan penghentian
 
-Lini dukungan publik saat ini adalah versi minor terbaru yang dirilis. Ketika
-proyek memiliki beberapa versi minor publik, matriks versi yang didukung pada
+Lini dukungan publik saat ini adalah minor terbaru yang telah dirilis. Ketika
+proyek memiliki beberapa minor publik, matriks versi yang didukung di
 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
-adalah sumber kebenaran untuk jendela dukungan tambahan apa pun yang
-hanya untuk perbaikan kritis.
+adalah sumber kebenaran untuk setiap jendela dukungan tambahan yang hanya
+mencakup perbaikan kritis.
 
 Irama penghentian:
 
-- **Pengumuman** — simbol atau perilaku yang dihentikan
-  diumumkan di bagian `### Deprecated` pada `CHANGELOG.md` dari
+- **Pengumuman** — simbol atau perilaku yang dinyatakan usang
+  diumumkan di bagian `CHANGELOG.md` `### Deprecated` dari
   rilis tempat penghentian itu mendarat. Catatan rilis
   mencerminkan pengumuman penghentian tersebut.
-- **Jendela tenggang** — simbol yang dihentikan tetap tersedia selama
-  minimal satu siklus minor penuh sebelum dihapus.
-- **Penghapusan** — penghapusan dilakukan pada kenaikan `MAJOR`. Setiap simbol
-  yang dihapus membawa baris `### Removed` pada `CHANGELOG.md` dan
+- **Jendela tenggang** — simbol yang dinyatakan usang tetap tersedia
+  selama minimal satu siklus minor penuh sebelum dihapus.
+- **Penghapusan** — penghapusan mendarat pada kenaikan `MAJOR`. Setiap
+  simbol yang dihapus membawa baris `CHANGELOG.md` `### Removed` dan
   entri panduan migrasi di bawah
   [Panduan praktis](/docs/how-to-guides).
+
+### Batas bawah runtime
+
+Apothem mendeklarasikan dua batas bawah runtime: `requires-python = ">=3.10"` di
+`pyproject.toml` dan `"engines": {"node": ">=18"}` di `package.json`.
+
+- **Setiap batas bawah yang dideklarasikan diuji.** Batas bawah Python berjalan
+  di matriks CI `quality` dan alur kerja `CI Matrix`. Alur kerja `npm Shim`
+  menjalankan shim npm pada batas bawah Node dan pada setiap mayor LTS yang
+  lebih baru: alur kerja ini memeriksa galat prasyarat yang hilang,
+  `node bin/apothem.mjs --version`, pemasangan dry-run di direktori home yang
+  terisolasi, dan tarball yang telah dikemas melalui `npx`. Runtime yang tidak
+  diuji tidak dideklarasikan.
+- **Akhir masa pakai diungkapkan.** Ketika runtime yang masih menjadi batas
+  bawah yang dideklarasikan mencapai akhir masa pakai (end of life) di
+  upstream, [panduan instalasi](/docs/install#prasyarat-sekilas) menyatakannya
+  dan menyebutkan versi yang sebaiknya dipilih. Python 3.10 mencapai akhir masa
+  pakai pada 2026-10-01; Node.js 18 dan 20 pada 2025-04-30 dan 2026-04-30.
+  Ketiganya tetap menjadi batas bawah yang didukung.
+- **Menaikkan batas bawah adalah sebuah penghentian.** Langkah ini mengikuti
+  irama di atas: pengumuman di bawah `### Deprecated`, setidaknya satu siklus
+  minor penuh di mana batas bawah lama tetap diuji, lalu rilis yang
+  menaikkannya mencatat perubahan tersebut. `requires-python`, `engines.node`,
+  probe versi milik pemasang, dan matriks CI berubah bersama dalam rilis itu.
 
 ## 4. Kebijakan perubahan yang tidak kompatibel
 
 Perubahan yang tidak kompatibel mensyaratkan:
 
 1. **Sebuah isu RFC** — dibuka dengan label isu `rfcs`
-   yang menjelaskan perubahan tidak kompatibel, jalur migrasi, dan
+   yang menjelaskan perubahan tidak kompatibel tersebut, jalur migrasi, dan
    strategi rollback.
-2. **Jendela komentar 30 hari** — RFC tetap terbuka selama setidaknya
-   30 hari sebelum penggabungan. Pemelihara dapat memperpanjang jendela ketika
+2. **Jendela komentar 30 hari** — RFC tetap terbuka setidaknya
+   30 hari sebelum merge. Pemelihara dapat memperpanjang jendela ketika
    umpan balik memerlukannya.
-3. **Sebuah kenaikan MAJOR** — rilis yang memuat perubahan
-   tidak kompatibel menaikkan komponen MAJOR.
-4. **Sebuah panduan migrasi** — perubahan dikirim dengan
+3. **Sebuah kenaikan MAJOR** — rilis yang mendaratkan perubahan
+   tidak kompatibel tersebut menaikkan komponen MAJOR.
+4. **Sebuah panduan migrasi** — perubahan dirilis bersama
    entri [Panduan praktis](/docs/how-to-guides) yang memandu
    operator melalui migrasi.
 
@@ -81,16 +128,18 @@ Perubahan yang tidak kompatibel mensyaratkan:
 
 Jika sebuah rilis menunjukkan regresi yang menghambat adopsi:
 
-1. **Revert** — commit yang bermasalah di-revert pada `main`.
-2. **Penandaan ulang rilis-plus-satu** — rilis lanjutan mendarat sebagai
-   `vMAJOR.MINOR.PATCH+1` yang membawa revert ditambah
-   perbaikan inkremental apa pun. Rilis cacat sebelumnya **tidak**
-   dihapus dari GitHub Releases — anotasi `### Yanked` pada
-   `CHANGELOG.md` mendokumentasikan situasi tersebut agar
-   build yang dapat direproduksi tetap terjangkar.
+1. **Revert** — commit yang bermasalah di-revert di `main`.
+2. **Rilis perbaikan-maju** — rilis lanjutan mendarat sebagai
+   `vMAJOR.MINOR.PATCH+1` yang membawa revert tersebut ditambah
+   perbaikan inkremental apa pun. Rilis buruk sebelumnya **tidak**
+   dihapus dari GitHub Releases, dan versi npm-nya tetap
+   terpublikasi (versi npm tidak dapat diubah) serta ditandai dengan
+   `npm deprecate`. Anotasi `### Yanked` di `CHANGELOG.md`
+   mendokumentasikan situasi tersebut sehingga build yang dapat
+   direproduksi tetap terjangkar.
 3. **Komunikasi** — pemberitahuan security-advisories (ketika
-   relevan dengan keamanan) atau kiriman Discussions (ketika
-   relevan dengan keandalan) menyertai rollback.
+   relevan dengan keamanan) atau isu GitHub yang disematkan untuk insiden
+   tersebut (ketika relevan dengan keandalan) menyertai rollback.
 
 ## Lihat juga
 

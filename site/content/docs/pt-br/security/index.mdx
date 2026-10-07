@@ -1,76 +1,73 @@
 ---
 title: "Segurança"
-description: "Postura de segurança do Apothem: meta de OpenSSF Scorecard, reporte de vulnerabilidades, superfícies de endurecimento."
+description: "Postura de segurança do Apothem — meta no OpenSSF Scorecard, reporte de vulnerabilidades, superfícies de endurecimento."
 machineTranslated: true
-sourceHash: "2a6a18e7bda879b7"
+sourceHash: "1bc24c695dbc976f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-A postura de segurança do Apothem se apoia em cinco pilares: endurecimento da cadeia de suprimentos, resposta a vulnerabilidades, proteção de branch, assinatura de versões e análise de segurança contínua. Esta seção documenta cada superfície.
+A postura de segurança do Apothem se apoia em cinco pilares: endurecimento da cadeia de suprimentos, resposta a vulnerabilidades, proteção de branch, assinatura de lançamentos e análise de segurança contínua. Esta seção documenta cada superfície.
 
 ## Modelo de ameaças
 
 O Apothem é um materializador de configuração. Ele lê um perfil compartilhado e
-escreve arquivos de configuração nativos do harness nos diretórios que cada
-harness lê. Essa única função delimita aquilo
-em que ele confia e aquilo em que não confia.
+grava arquivos de configuração nativos de cada harness nos diretórios que cada
+harness lê. Essa função única delimita aquilo em que ele confia e aquilo em que
+não confia.
 
-- **No que o Apothem confia.** O perfil compartilhado que você redige e a
-  árvore de código incluída posicionada pelo instalador. O perfil é a sua
-  intenção declarada; o motor o trata como entrada autoritativa após a
-  validação contra o esquema.
-- **No que o Apothem não confia.** O conteúdo do perfil chega ao sistema de
-  arquivos apenas após a validação: falhas de esquema, IDs de ferramenta
+- **Em que o Apothem confia.** No perfil compartilhado que você redige e na
+  árvore de código-fonte empacotada posicionada pelo instalador. O perfil é a
+  sua intenção declarada; o motor o trata como entrada autoritativa após a
+  validação de schema.
+- **Em que o Apothem não confia.** O conteúdo do perfil chega ao sistema de
+  arquivos somente após a validação: falhas de schema, IDs de harness
   desconhecidos, caminhos de projeto inseguros, fontes de manifesto ausentes,
-  travessia de alvo e cruzamentos de link simbólico param todos antes de
-  qualquer escrita e retornam diagnósticos estruturados com
-  `files_written: []`.
-- **O que a saída materializada nunca carrega.** Nenhum segredo. Os
-  diagnósticos do perfil redigem chaves com aparência de segredo e valores em
-  forma de token antes de chegarem à saída em texto simples, ao JSON, aos
-  logs, aos trechos de documentação ou aos testes, e os exemplos públicos usam
-  identidades e domínios fictícios de marcador de posição. A configuração
-  materializada destina-se a ser commitada e compartilhada; ela não carrega
-  credenciais.
-- **O piso de negação universal.** As regras que o Apothem materializa
-  carregam um piso de negação inegociável independentemente de qualquer lista
-  de permitidos por ferramenta: caminhos de segredos (`.env*`, `~/.ssh/**`,
+  travessia de alvo e cruzamentos de links simbólicos param todos antes de
+  qualquer gravação e retornam diagnósticos estruturados com `files_written: []`.
+- **O que a saída materializada nunca carrega.** Nenhum segredo. Os diagnósticos
+  do perfil ocultam chaves com aparência de segredo e valores com formato de
+  token antes que cheguem à saída em texto simples, ao JSON, aos logs, aos
+  trechos de documentação ou aos testes, e os exemplos públicos usam identidades
+  e domínios fictícios de exemplo. A configuração materializada destina-se a ser
+  incluída em commits e compartilhada; ela não carrega credenciais.
+- **O piso de negação universal.** As regras que o Apothem materializa carregam
+  um piso de negação inegociável, independentemente de qualquer lista de
+  permissões por harness — caminhos de segredos (`.env*`, `~/.ssh/**`,
   armazenamentos de credenciais), operações de shell destrutivas (`rm -rf`,
-  `sudo`, push forçado para branches protegidos) e a execução de entradas não
-  confiáveis. Nenhuma lista de permitidos amplia silenciosamente esse piso.
-- **Raio de impacto.** As escritas são limitadas aos diretórios da ferramenta e
-  às subárvores de suporte de propriedade do Apothem. Os alvos gerenciados
-  existentes são copiados antes da substituição e os diretórios de descoberta
+  `sudo`, force-pushes para branches protegidas) e execução de entradas não
+  confiáveis. Nenhuma lista de permissões amplia silenciosamente esse piso.
+- **Raio de impacto.** As gravações ficam limitadas aos diretórios dos harnesses
+  e às subárvores de suporte de propriedade do Apothem. Os alvos gerenciados
+  existentes recebem backup antes da substituição, e os diretórios de descoberta
   compartilhados são mesclados filho por filho, de modo que arquivos não
-  relacionados redigidos pelo operador permanecem no lugar.
+  relacionados criados pelo operador permanecem no lugar.
 
 ## Postura de segurança em tempo de execução
 
-Os comandos de ciclo de vida da ferramenta e de escrita de perfil validam
-antes de escrever. Falhas de esquema do perfil, IDs de ferramenta
-desconhecidos, caminhos de projeto inseguros, fontes de manifesto ausentes,
-travessia de alvo e cruzamentos de link simbólico param antes das escritas no
-sistema de arquivos e retornam diagnósticos estruturados com
-`files_written: []`.
+Os comandos de ciclo de vida de harness e de gravação de perfil validam antes de
+gravar. Falhas de schema do perfil, IDs de harness desconhecidos, caminhos de
+projeto inseguros, fontes de manifesto ausentes, travessia de alvo e cruzamentos
+de links simbólicos param antes das gravações no sistema de arquivos e retornam
+diagnósticos estruturados com `files_written: []`.
 
 As operações de instalação e atualização preservam os alvos gerenciados
-existentes copiando-os antes da substituição. Os diretórios de descoberta
-compartilhados são mesclados filho por filho, de modo que arquivos não
-relacionados redigidos pelo operador permanecem no lugar. `--dry-run` realiza
+existentes fazendo backup deles antes da substituição. Os diretórios de
+descoberta compartilhados são mesclados filho por filho, de modo que arquivos
+não relacionados criados pelo operador permanecem no lugar. `--dry-run` executa
 a mesma validação e relata os resultados planejados sem criar diretórios ou
 arquivos.
 
-Os diagnósticos do perfil redigem chaves com aparência de segredo e valores em
-forma de token antes de chegarem à saída em texto simples, à saída JSON, aos
+Os diagnósticos do perfil ocultam chaves com aparência de segredo e valores com
+formato de token antes que cheguem à saída em texto simples, à saída JSON, aos
 logs, aos trechos de documentação ou aos testes. Os exemplos públicos usam
-identidades e domínios fictícios de marcador de posição.
+identidades e domínios fictícios de exemplo.
 
 ## Links rápidos
 
 - [**Postura do OpenSSF Scorecard**](/docs/security/openssf-scorecard-target) — evidência por verificação e limites conhecidos da plataforma
-- [**Auditoria de webhooks**](/docs/security/webhooks-audit) — evidência de higiene do segredo de webhook
-- [**Proteção de branch**](/docs/security/branch-protection-ruleset) — controle de revisão, verificações de status e restrições de push
-- [**Varredura de artefatos binários**](/docs/security/binary-artifacts-sweep) — prova de versão sem binários no código-fonte
+- [**Auditoria de webhooks**](/docs/security/webhooks-audit) — evidência de higiene dos segredos de webhook
+- [**Proteção de branches**](/docs/security/branch-protection-ruleset) — exigência de pull request, verificações de status obrigatórias e bloqueios de force-push e de exclusão
+- [**Varredura de artefatos binários**](/docs/security/binary-artifacts-sweep) — prova de lançamento sem binários no código-fonte
 - [Política de segurança](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) — reporte de vulnerabilidades e versões suportadas
 - [Selo do OpenSSF Scorecard](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem) — pontuação ao vivo
 
@@ -78,14 +75,84 @@ identidades e domínios fictícios de marcador de posição.
 
 Use o [Reporte Privado de Vulnerabilidades](https://github.com/ahmed-g-gad/apothem/security) na aba Security do repositório. A política completa, a matriz de versões suportadas e os prazos de resposta estão em [`SECURITY.md`](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
 
-## Provas de versão da cadeia de suprimentos
+## Provas de lançamento da cadeia de suprimentos
 
-Cada artefato de versão é entregue com:
+Todo artefato de lançamento é distribuído com:
 
 - **Procedência de build SLSA-3** via [`slsa-framework/slsa-github-generator`](https://github.com/slsa-framework/slsa-github-generator)
-- **Assinaturas Sigstore** via [`sigstore/cosign-installer`](https://github.com/sigstore/cosign-installer)
-- **SBOM em CycloneDX** via [`anchore/sbom-action`](https://github.com/anchore/sbom-action)
-- **Declarações de procedência npm** via OIDC de Trusted Publishing em `@ahmed-g-gad/apothem`
+- **Assinaturas do Sigstore** via [`sigstore/cosign-installer`](https://github.com/sigstore/cosign-installer)
+- **SBOM CycloneDX** do wheel e do sdist distribuídos, gerado por `scripts/release/generate_sbom.py`: o pacote apothem, cada pacote incorporado em `apothem/_vendor` com sua licença, os requisitos de runtime declarados e o SHA-256 de cada distribuição. O SBOM é assinado e coberto pela procedência de build, assim como as distribuições
+- **Declarações de procedência do npm** via OIDC do Trusted Publishing em `@ahmed-g-gad/apothem`
 - **Tags git assinadas com GPG** (chave EDDSA `70396FED9C634163`)
 
-As receitas de verificação estão documentadas inline em [Ciclo de versão](/docs/runbooks/release-cycle) e [Recuperação de versão](/docs/runbooks/release-recovery); um runbook dedicado de verificar-uma-versão está a caminho.
+## Verificar um lançamento
+
+Baixe todos os ativos de um lançamento para um diretório vazio e depois verifique
+as assinaturas e a procedência de build. Substitua `vX.Y.Z` e `X.Y.Z` pelo
+lançamento que você baixou.
+
+```bash
+gh release download vX.Y.Z --repo ahmed-g-gad/apothem
+cosign verify-blob \
+  --bundle apothem-X.Y.Z-py3-none-any.whl.cosign.bundle \
+  --certificate-identity https://github.com/Ahmed-G-Gad/apothem/.github/workflows/release.yml@refs/tags/vX.Y.Z \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  apothem-X.Y.Z-py3-none-any.whl
+slsa-verifier verify-artifact \
+  --provenance-path provenance.intoto.jsonl \
+  --source-uri github.com/Ahmed-G-Gad/apothem \
+  --source-tag vX.Y.Z \
+  apothem-X.Y.Z-py3-none-any.whl apothem-X.Y.Z.tar.gz
+```
+
+`cosign` imprime `Verified OK` e `slsa-verifier` imprime `PASSED: SLSA
+verification passed`. Repita o comando `cosign` para qualquer outro ativo com o
+seu `<asset>.cosign.bundle` (os lançamentos anteriores nomeiam os bundles dos
+arquivos de plataforma e de `SHA256SUMS` como `<asset>.sig`). Os arquivos darwin
+e linux são os mesmos bytes sob dois nomes, então `SHA256SUMS` lista o mesmo
+digest duas vezes. A partir de um clone,
+`bash scripts/release/verify-provenance.sh <download-dir>` executa as três
+verificações, incluindo o manifesto `SHA256SUMS`, em uma única passagem.
+
+Dois detalhes decidem se a verificação tem algum valor:
+
+- **Maiúsculas e minúsculas no proprietário.** As verificações de identidade
+  diferenciam maiúsculas de minúsculas, e os certificados trazem o proprietário
+  como o GitHub o informa: `Ahmed-G-Gad`. Um proprietário em minúsculas faz as
+  duas ferramentas falharem.
+- **Identidade exata.** Prefira `--certificate-identity` com o assunto completo
+  acima. Para aceitar qualquer tag de lançamento, ancore o padrão nas duas
+  extremidades:
+
+  ```bash
+  --certificate-identity-regexp '^https://github\.com/Ahmed-G-Gad/apothem/\.github/workflows/release\.yml@refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$'
+  ```
+
+  Um padrão não ancorado, como `github.com/Ahmed-G-Gad/apothem`, também
+  corresponde a um assunto forjado que apenas contenha esse texto, por exemplo um
+  fluxo de trabalho em outro repositório, em uma branch com o nome deste.
+
+O [runbook do ciclo de lançamento](/docs/runbooks/release-cycle) registra os
+mesmos comandos como a verificação pós-lançamento do mantenedor.
+
+### Recompilar um lançamento e comparar
+
+O wheel e o sdist são reproduzíveis: recompilar a tag com a cadeia de
+ferramentas de lançamento produz os digests SHA-256 publicados. Use Python 3.12
+no Linux, como o lançamento faz:
+
+```bash
+git clone https://github.com/ahmed-g-gad/apothem && cd apothem
+git checkout vX.Y.Z
+python3.12 -m venv .build && . .build/bin/activate
+pip install --require-hashes -r scripts/release/requirements-build-linux.txt
+export SOURCE_DATE_EPOCH="$(git log -1 --pretty=%ct)"
+python -m build --no-isolation
+python scripts/release/normalize_sdist.py dist/*.tar.gz
+sha256sum dist/*
+```
+
+Compare os digests com o wheel e o sdist publicados. O build usa o setuptools
+travado por hash que o `pyproject.toml` fixa, e `normalize_sdist.py` remove do
+sdist o horário do build, os proprietários dos arquivos e os carimbos de data e
+hora do checkout.

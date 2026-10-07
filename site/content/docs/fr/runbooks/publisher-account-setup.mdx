@@ -1,18 +1,18 @@
 ---
 title: "Configuration du compte d'éditeur"
-description: "Configurez l'éditeur de confiance npmjs.com pour @ahmed-g-gad/apothem ainsi que les prérequis de version côté GitHub."
+description: "Configurez l'éditeur de confiance npmjs.com pour @ahmed-g-gad/apothem ainsi que les prérequis de publication côté GitHub."
 machineTranslated: true
-sourceHash: "7261839cafc59c09"
+sourceHash: "c0ff17cce209d1d0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Ce runbook configure le côté éditeur de la surface de versions. L'histoire de
-distribution ne comporte qu'un seul registre : le paquet npm à portée
+Ce runbook configure le côté éditeur de la surface de publication. Le dispositif
+de distribution ne comporte qu'un seul registre : le paquet npm à portée
 `@ahmed-g-gad/apothem` sur npmjs.com, publié par le flux de travail
 `publish-npm.yml` déclenché manuellement une fois que les flux de travail GitHub
-Release, Pages, CI, conformity et harness sont au vert. Tous les autres artefacts
-sont distribués sur la page GitHub Release elle-même et ne nécessitent aucun
-compte d'éditeur externe.
+Release, Pages, CI, de conformité et d'environnements sont au vert. Tous les
+autres artefacts sont distribués sur la page GitHub Release elle-même et ne
+nécessitent aucun compte d'éditeur externe.
 
 ## Carte d'identité
 
@@ -21,12 +21,12 @@ compte d'éditeur externe.
 | GitHub | `ahmed-g-gad` | `ahmed-g-gad/apothem` |
 | npm (npmjs.com) | `ahmed-g-gad` | `@ahmed-g-gad/apothem` |
 
-Le propriétaire GitHub est autorisé à changer à l'avenir. La logique du flux de
+Le propriétaire GitHub est autorisé à changer à l'avenir. La logique des flux de
 travail et de l'installateur lit `github.repository`,
 `github.repository_owner` ou `APOTHEM_GITHUB_REPOSITORY` là où une plateforme
-permet la résolution dynamique. L'identifiant du paquet du registre reste stable
-car les utilisateurs installent le nom du paquet, et non le nom du compte du
-mainteneur.
+permet la résolution dynamique. L'identifiant du paquet dans le registre reste
+stable, car les utilisateurs installent le nom du paquet, et non le nom du
+compte du mainteneur.
 
 ## npm (npmjs.com)
 
@@ -42,20 +42,21 @@ mainteneur.
    autre réponse de paquet doit correspondre à ce dépôt et à ce compte avant la
    publication.
 4. Créez le paquet sur npm si l'interface exige un premier enregistrement de
-   paquet. Conservez le nom à portée : `@ahmed-g-gad/apothem`.
-5. Configurez la Publication de confiance (Trusted Publishing) pour
-   `@ahmed-g-gad/apothem` depuis GitHub Actions :
+   paquet. Gardez le nom à portée : `@ahmed-g-gad/apothem`.
+5. Configurez Trusted Publishing pour `@ahmed-g-gad/apothem` depuis GitHub
+   Actions :
    - Propriétaire GitHub : `ahmed-g-gad`
    - Dépôt : `apothem`
    - Nom du fichier de flux de travail : `publish-npm.yml`
-   - Environnement : `npmjs`
+   - Environnement : `release` (l'`environment:` du job de publication dans
+     `publish-npm.yml` ; les deux doivent correspondre)
    - Action autorisée : `npm publish`.
-6. Dans GitHub, vérifiez que l'environnement `npmjs` existe sur
+6. Dans GitHub, vérifiez que l'environnement `release` existe sur
    `ahmed-g-gad/apothem` et qu'il exige une approbation manuelle pour le
    déploiement.
-7. Maintenez la surface npm à un seul paquet de registre public :
+7. Limitez la surface npm à un seul paquet de registre public :
    `@ahmed-g-gad/apothem` sur npmjs.com.
-8. Confirmez la disponibilité de la version :
+8. Confirmez l'état de préparation de la publication :
 
    ```bash title="Release readiness"
    bash scripts/release/check-release-ready.sh <release-tag>
@@ -63,7 +64,7 @@ mainteneur.
 
 9. Exécutez `Publish — npm` (`publish-npm.yml`) depuis l'onglet GitHub Actions
    avec `tag=<release-tag>` et approuvez le déploiement de l'environnement
-   `npmjs`.
+   `release`.
 10. Vérifiez le paquet en ligne :
 
     ```bash title="npm verification"
@@ -72,29 +73,35 @@ mainteneur.
     ```
 
 Aucun secret `NPM_TOKEN`, nom d'utilisateur ou mot de passe n'est requis. Le flux
-de travail publie via la npm Trusted Publishing (OIDC) avec la version de Node et
+de travail publie via npm Trusted Publishing (OIDC) avec la version de Node et
 le plancher OIDC de la CLI npm épinglés dans
 `.github/workflows/publish-npm.yml`. Il exécute `npm publish --access public`
-contre npmjs.com ; npm émet automatiquement la provenance pour les paquets
-publics publiés depuis un flux de travail public GitHub Actions. Un `404` du
-registre lors du `PUT` signifie que l'éditeur de confiance côté npm, la portée du
-paquet ou l'autorisation du compte ne sont pas encore alignés ; corrigez les
-paramètres du paquet npm avant de relancer le flux de travail.
+sur npmjs.com ; npm émet automatiquement la provenance pour les paquets publics
+publiés depuis un flux de travail GitHub Actions public. Un `404` du registre
+pendant `PUT` signifie que l'éditeur de confiance côté npm, la portée du paquet
+ou l'autorisation du compte ne sont pas encore alignés ; corrigez les paramètres
+du paquet npm avant de relancer le flux de travail.
+
+Dès qu'une publication de confiance a réussi, fermez définitivement la voie des
+jetons : dans **Settings → Publishing access** du paquet sur npmjs.com,
+sélectionnez **Require two-factor authentication and disallow tokens**, et
+supprimez tout secret de jeton npm restant dans le dépôt. Le flux de travail
+n'en lit plus aucun.
 
 Références : [Éditeurs de confiance npm](https://docs.npmjs.com/trusted-publishers/), [provenance npm](https://docs.npmjs.com/generating-provenance-statements/) et [portées npm](https://docs.npmjs.com/about-scopes/).
 
-## Prérequis de version côté GitHub
+## Prérequis de publication côté GitHub
 
-Les surfaces de version restantes sont natives de GitHub et s'authentifient avec
-le `GITHUB_TOKEN` à portée de dépôt ; aucun compte externe n'est impliqué.
+Les surfaces de publication restantes sont natives de GitHub et s'authentifient
+avec le `GITHUB_TOKEN` à portée de dépôt ; aucun compte externe n'est impliqué.
 
-1. **GitHub Release.** `.github/workflows/release.yml` s'exécute sur la balise de
-   version et n'a besoin que de sa permission locale de tâche `contents: write`.
-   Confirmez que le fichier de flux de travail est présent sur `main` avant de
-   poser la balise.
+1. **GitHub Release.** `.github/workflows/release.yml` s'exécute sur l'étiquette
+   de version et n'a besoin que de sa permission `contents: write` locale au
+   job. Confirmez que le fichier de flux de travail est présent sur `main` avant
+   d'étiqueter.
 2. **Domaine personnalisé Pages.** Le site de documentation se déploie via
    `publish-static-site.yml` vers le domaine personnalisé
-   `apothem.ahmedgad.com`. Le domaine, le DNS et l'imposition de HTTPS sont
+   `apothem.ahmedgad.com`. Le domaine, le DNS et l'application de HTTPS sont
    établis par le [runbook d'activation de Pages](/docs/runbooks/pages-enablement) ;
    vérifiez :
 
@@ -106,7 +113,7 @@ le `GITHUB_TOKEN` à portée de dépôt ; aucun compte externe n'est impliqué.
 3. **Installateurs de script.** `install.sh` et `install.ps1` sont servis depuis
    le site Pages (`https://apothem.ahmedgad.com/install.sh` et
    `https://apothem.ahmedgad.com/install.ps1`). Ils sont publiés par le même
-   déploiement Pages ; aucun compte ou jeton distinct n'est requis.
+   déploiement Pages ; aucun compte ni jeton distinct n'est requis.
 
 ## Matrice de vérification
 

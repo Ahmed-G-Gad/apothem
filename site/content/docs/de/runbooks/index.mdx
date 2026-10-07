@@ -1,22 +1,25 @@
 ---
 title: "Runbooks"
-description: "Apothem-Runbooks — Schritt-für-Schritt-Betriebsabläufe für Versionen, Publisher-Einrichtung, Pages-Aktivierung, Wiederherstellung und das Erstellen von Adaptern."
+description: "Apothem-Runbooks — schrittweise Betriebsabläufe für Releases, Publisher-Einrichtung, Pages-Aktivierung, Wiederherstellung und das Erstellen von Adaptern."
 machineTranslated: true
-sourceHash: "63bed63ad7506d0b"
+sourceHash: "cd67c6a222612ca3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Betriebsabläufe für Maintainer. Jedes Runbook ist ein sequenzierter,
 kontextfreier Ablauf: Es führt einen bekannten Ausgangszustand in einen
-verifizierten Endzustand über, so geschrieben, dass ein kompetenter Mitwirkender
-ihm ohne Vorwissen folgen kann.
+verifizierten Endzustand über und ist so geschrieben, dass ein kompetenter
+Mitwirkender ihm ohne Vorwissen folgen kann.
 
 ## Seiten
 
 | Seite | Beschreibung |
 |------|-------------|
 | [Pages-Aktivierung](/docs/runbooks/pages-enablement) | Führt `apothem.ahmedgad.com` von einer frischen GitHub-Pages-Konfiguration zu einer HTTPS-Landingpage mit `200 OK`. |
-| [Versionszyklus](/docs/runbooks/release-cycle) | Führt eine `vX.Y.Z`-Version von einem sauberen Arbeitsbaum zu den verifizierten GitHub-Release- und npm-Flächen. |
-| [Einrichtung des Publisher-Kontos](/docs/runbooks/publisher-account-setup) | Konfiguriert den vertrauenswürdigen npmjs.com-Publisher für `@ahmed-g-gad/apothem` sowie die GitHub-seitigen Versionsvoraussetzungen. |
-| [Versionswiederherstellung](/docs/runbooks/release-recovery) | Stellt `ahmed-g-gad/apothem` in einen funktionsfähigen Zustand zurück, wenn die Versionsumschaltsequenz mitten im Ablauf fehlschlägt. |
-| [Erstellen eines neuen Harness-Adapters](/docs/runbooks/new-harness-adapter-authoring) | Erstelle und veröffentliche einen neuen Harness-Adapter für die First-Party-Aufnahme. |
+| [Release-Zyklus](/docs/runbooks/release-cycle) | Führt ein `vX.Y.Z`-Release von einem sauberen Arbeitsbaum zu den verifizierten Oberflächen GitHub Release und npm. |
+| [Einrichtung des Publisher-Kontos](/docs/runbooks/publisher-account-setup) | Konfiguriert den vertrauenswürdigen npmjs.com-Publisher für `@ahmed-g-gad/apothem` sowie die GitHub-seitigen Release-Voraussetzungen. |
+| [Release-Wiederherstellung](/docs/runbooks/release-recovery) | Stellt `ahmed-g-gad/apothem` in einen funktionsfähigen Zustand zurück, wenn die Release-Umstellungssequenz mitten im Ablauf fehlschlägt. |
+| [Erstellen eines neuen Harness-Adapters](/docs/runbooks/new-harness-adapter-authoring) | Erstellt und veröffentlicht einen neuen Harness-Adapter für die First-Party-Aufnahme. |
+| [Deployment-Checkliste](/docs/runbooks/deployment-checklist) | Führt die Vorab-Verifizierungscheckliste aus, bevor das Apothem-Ökosystem bereitgestellt oder geteilt wird. |
+| [Merge-Zeremonie für Solo-Maintainer](/docs/runbooks/solo-maintainer-merge) | Wann der Maintainer seinen eigenen Pull Request direkt mergen kann, und die Selbst-Merge-Zeremonie für einen Schutz, der eine Genehmigung verlangt und sie für Administratoren durchsetzt. |
+| [Prüfliste zur maschinenübergreifenden Synchronisation](/docs/runbooks/cross-machine-sync-checklist) | Verifiziert, dass sich der Claude Code-Adapter auf einem frischen Host korrekt installieren, validieren und deinstallieren lässt, mit vollständigen Portabilitätsprüfungen. |

@@ -1,112 +1,120 @@
 ---
-title: "Runbook de récupération de version"
-description: "Procédures de récupération pour restaurer le dépôt lorsqu'une séquence de version échoue en cours de route, avec des diagnostics étape par étape."
+title: "Runbook de récupération de publication"
+description: "Procédures de récupération, étape par étape, pour une publication qui échoue en cours de route sous le modèle de publication additif, sans réécrire l'historique publié."
 machineTranslated: true
-sourceHash: "ffe06eaee53259e5"
+sourceHash: "5d706b629803179a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Ce runbook restaure `ahmed-g-gad/apothem` à un état fonctionnel lorsqu'une
-séquence de version par remise-à-zéro-sur-place échoue en cours de route. Le
-dépôt public n'est ni supprimé ni recréé pendant la version. La récupération
-dépend de l'étiquette de sécurité d'historique propre à la version, du clone
-local du mainteneur et de l'état des gestionnaires de paquets en aval.
+Ce runbook restaure un état fonctionnel lorsqu'une publication `vX.Y.Z` de
+`ahmed-g-gad/apothem` échoue en cours de route. Il suit le même modèle de
+publication que le [runbook du cycle de publication](/docs/runbooks/release-cycle) :
+un modèle **additif**. Chaque publication ajoute un commit sur `main` et une
+étiquette annotée et signée ; le push de l'étiquette exécute les flux de travail
+de publication et npm. Aucun force-push n'est effectué, et l'historique de
+`main` n'est jamais réécrit.
+
+L'historique publié est permanent. Chaque étiquette de publication, chaque
+GitHub Release et chaque version npm que le projet a publiés restent publiés :
+le projet compte trois publications, chacune avec son étiquette, son GitHub
+Release et sa version npm. Les versions npm sont immuables : un `name@version`
+publié ne peut jamais être remplacé, et un numéro de version dépublié ne peut
+jamais être réutilisé. La récupération avance donc avec une nouvelle publication
+de niveau patch ; elle ne supprime ni ne réaffecte rien de ce qu'un utilisateur
+a peut-être déjà installé.
 
 ## 1. Taxonomie des étapes
 
 | Étape | Action | Mode de défaillance | Chemin de récupération |
 |---|---|---|---|
-| 1 | Capturer et pousser l'étiquette de sécurité d'historique | L'étiquette est absente, non signée ou pointe vers le mauvais graphe | Recréer l'étiquette depuis le point de fusion antérieur à l'écrasement avant de déplacer `main` |
-| 2 | Vérifier la CI, la forteresse d'audit, l'état des paquets et le changelog | Une porte quelconque échoue | Arrêtez ; corrigez en local ; ne déplacez pas `main` |
-| 3 | Déplacer `main` vers l'unique commit de version signé | Le force-with-lease échoue, le commit n'est pas signé ou le message du commit est erroné | Réinitialisez `main` local sur le commit signé prévu et réessayez avec un lease neuf |
-| 4 | Publier GitHub Release, Pages, npm et les métadonnées | Un publicateur ou une surface de vérification échoue | Conservez le commit de version ; relancez uniquement le publicateur en échec après avoir consigné l'échec |
+| 1 | Faire atterrir le commit de publication sur `main` (§2.1 du runbook du cycle de publication) | La CI échoue sur le commit de publication | Corrigez vers l'avant avec un autre commit sur `main` ; n'étiquetez pas tant que la CI n'est pas au vert |
+| 2 | Pousser l'étiquette annotée et signée | Le push est rejeté, ou l'étiquette n'est pas signée ou se trouve sur le mauvais commit | §2 ci-dessous |
+| 3 | `release.yml` compile, signe et publie le GitHub Release | Un job échoue, ou des ressources manquent | §3 ci-dessous |
+| 4 | `publish-npm.yml` publie `@ahmed-g-gad/apothem` (s'exécute sur le même push d'étiquette) | La publication échoue | §3 ci-dessous |
+| 5 | Pages et métadonnées du dépôt | Le site ou les métadonnées sont obsolètes | §3 ci-dessous |
 
 Chaque action de récupération est idempotente. L'exécuter sur un état propre est
 sans effet ; l'exécuter sur un état partiel restaure la condition attendue après
 l'étape.
 
-## 2. Récupération de l'étiquette de sécurité
+## 2. Récupération de l'étiquette
 
-Vérifiez l'étiquette de sécurité avant toute réécriture de l'historique :
+Diagnostiquez l'étiquette :
 
 ```bash
 git fetch origin --tags
-git show --summary --show-signature <history-safety-tag>
-git merge-base --is-ancestor origin/main <history-safety-tag>
+git ls-remote origin refs/tags/vX.Y.Z
+git cat-file -t vX.Y.Z      # "tag" for an annotated tag
+git tag -v vX.Y.Z           # signature check
 ```
 
-Attendu : l'étiquette existe, la vérification de la signature réussit lorsque
-l'étiquette est signée, et l'intégralité du graphe antérieur à l'écrasement est
-accessible depuis l'étiquette. Si l'étiquette est absente en local mais présente
-en distant, récupérez-la. Si elle est absente en distant, arrêtez la version et
-recréez-la avant de toucher à `main` :
+La marche à suivre dépend de la question de savoir si quelque chose a été publié
+à partir de l'étiquette :
 
-```bash
-git tag -s <history-safety-tag> <pre-squash-commit>
-git push origin <history-safety-tag>
-```
+- **Rien n'a encore été publié** (le flux de travail de publication a échoué
+  avant son job de publication, et `publish-npm.yml` n'a rien publié) :
+  supprimez l'étiquette et ré-étiquetez le même commit avec `-a -s`.
 
-## 3. Récupération de la branche principale
+  ```bash
+  git push --delete origin vX.Y.Z
+  git tag -d vX.Y.Z
+  git tag -a -s vX.Y.Z -m "vX.Y.Z" <release-commit-sha>
+  git push origin vX.Y.Z
+  ```
 
-Diagnostiquez l'état de `main` public :
+- **Quelque chose a été publié** (un GitHub Release avec des ressources, ou la
+  version npm) : ne déplacez, ne supprimez et ne réutilisez jamais l'étiquette.
+  Corrigez vers l'avant avec `vX.Y.(Z+1)`.
 
-```bash
-gh api repos/ahmed-g-gad/apothem/commits/main \
-  --jq '.sha, .commit.message, .commit.verification.verified, .commit.verification.reason'
-```
+Un nom d'étiquette n'est jamais réutilisé pour un commit différent.
 
-Attendu après la bascule : le message est exactement
-`release: Apothem <release-version>` et `verification.verified` vaut `true`.
+## 3. Récupération des éditeurs
 
-Si le push force-with-lease a échoué avant de modifier GitHub, laissez le
-distant tel quel, récupérez-le, reconstruisez le commit de version signé en
-local, et ne réessayez qu'une fois que le lease correspond :
-
-```bash
-git fetch origin main
-git push --force-with-lease=main:<expected-remote-sha> origin main
-```
-
-Si le push a abouti avec un commit non signé ou non vérifié, corrigez la
-configuration de signature locale, recréez le commit de version depuis le même
-arbre, et faites de nouveau un force-push avec un lease. Ne supprimez pas
-l'étiquette de sécurité.
-
-## 4. Récupération des publicateurs
-
-Chaque publicateur est réessayé indépendamment une fois que le commit de version
-GitHub est vérifié :
+Chaque éditeur est relancé séparément :
 
 | Surface | Diagnostic | Récupération |
 |---|---|---|
-| GitHub Release | `gh release view <release-tag> --json tagName,isDraft,isPrerelease,assets` | Supprimez uniquement un brouillon malformé ; sinon, téléversez les ressources manquantes avec `gh release upload --clobber` |
-| Étiquette de version | `git ls-remote origin refs/tags/<release-tag>` et `git tag -v <release-tag>` | Ré-étiquetez depuis le même SHA avec `-a -s` si l'étiquette est absente ou non signée ; ne réutilisez jamais un nom d'étiquette pour un commit différent |
-| npm | `npm view @ahmed-g-gad/apothem version` et `npx @ahmed-g-gad/apothem@<version> --version` | Relancez `publish-npm.yml` pour `<release-tag>` après avoir confirmé le npm Trusted Publishing pour `@ahmed-g-gad/apothem` |
+| Flux de travail de publication | `gh run view <run-id> --log` nomme le job en échec | `gh run rerun <run-id> --failed`. Un échec à `Check the plugin version changed with the plugin` signifie que la version n'a pas été incrémentée : voir le tableau des échecs du runbook du cycle de publication |
+| GitHub Release | `gh release view vX.Y.Z --json tagName,isDraft,isPrerelease,assets` | Relancez le job `publish GitHub Release` ; il modifie la publication existante et téléverse de nouveau les ressources avec `--clobber` |
+| npm | `npm view @ahmed-g-gad/apothem version` et `npx @ahmed-g-gad/apothem@X.Y.Z --version` | Relancez `publish-npm.yml` pour `vX.Y.Z` (`gh workflow run publish-npm.yml --field tag=vX.Y.Z`) après avoir confirmé la publication de confiance npm pour le paquet. Si la version est déjà sur le registre, le flux de travail ignore la publication, puisque les versions npm sont immuables |
 | Pages | `gh run list --workflow=publish-static-site.yml --limit=1` et `curl -sSI https://apothem.ahmedgad.com/` | Relancez `publish-static-site.yml` ; vérifiez que le CNAME résout toujours vers `ahmed-g-gad.github.io` |
-| Métadonnées GitHub | `gh repo view ahmed-g-gad/apothem --json description,homepageUrl,repositoryTopics,visibility` | Corrigez la description, la page d'accueil et les sujets sur place ; ne recréez pas le dépôt |
+| Métadonnées du dépôt | `gh repo view ahmed-g-gad/apothem --json description,homepageUrl,repositoryTopics,visibility` | Corrigez la description, la page d'accueil et les sujets sur place ; ne recréez jamais le dépôt |
 
-## 5. Retour arrière
+## 4. Retour arrière
 
-Le retour arrière est l'ultime recours. Préférez d'abord la récupération ciblée
-des publicateurs. Si l'unique commit de version doit être annulé, restaurez
-`main` depuis l'étiquette de sécurité :
+Une publication défectueuse est annulée en publiant son correctif, et non en la
+retirant :
 
-```bash
-git fetch origin --tags
-git switch main
-git reset --hard <history-safety-tag>
-git push --force-with-lease origin main
-```
+1. Annulez les commits fautifs sur `main` (un commit d'annulation ordinaire).
+2. Produisez `vX.Y.(Z+1)` avec le runbook du cycle de publication.
+3. Marquez la version défectueuse : ajoutez une note `### Yanked` à sa section
+   de `CHANGELOG.md`, modifiez les notes de son GitHub Release pour qu'elles
+   pointent vers le correctif, et dépréciez-la sur npm :
 
-Après le retour arrière, relancez la CI, réappliquez la protection de branche si
-GitHub signale une dérive, et consignez le retour arrière comme un incident
-bloquant la version. Ne conservez l'étiquette de version que si les artefacts de
-la version restent valides ; sinon, supprimez la version et l'étiquette
-malformées avant de réessayer.
+   ```bash
+   npm deprecate @ahmed-g-gad/apothem@X.Y.Z "Contains <defect>; use X.Y.(Z+1)"
+   ```
+
+L'étiquette, le GitHub Release et la version npm défectueux restent publiés, de
+sorte que les installations épinglées et les compilations reproductibles
+continuent de se résoudre. Consignez le retour arrière comme un incident de
+publication.
+
+## 5. La règle de façade de publication
+
+La règle de façade de publication du dépôt (la section Release Facade des
+instructions destinées aux contributeurs) demande une seule étiquette de
+publication visible et un seul GitHub Release. La pratique conserve chaque
+publication, et npm ne peut pas s'y conformer : ses versions sont immuables.
+Tant que le mainteneur n'a pas tranché cette règle, ce runbook suit le modèle
+additif ci-dessus et ne supprime ni ne réécrit jamais des étiquettes, des GitHub
+Releases ou des versions npm publiés pour la satisfaire.
 
 ## 6. Références croisées
 
+- Procédure de publication : [runbook du cycle de publication](/docs/runbooks/release-cycle).
+- Politique de publication : [politique d'ingénierie de publication](/docs/governance/release-engineering-policy).
+- Les objets étiquettes et la façon de vérifier chacun d'eux : la section sur la
+  signature des publications de
+  [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
 - Configuration de Pages : `site/content/docs/runbooks/pages-enablement.mdx`.
-- Procédure de version : `site/content/docs/runbooks/release-cycle.mdx`.
-- Recettes d'empaquetage : `packaging/README.md`.
-- Ancre de récupération : l'étiquette de sécurité d'historique propre à la version.

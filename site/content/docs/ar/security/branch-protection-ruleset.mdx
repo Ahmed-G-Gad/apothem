@@ -1,55 +1,130 @@
 ---
 title: "حماية الفرع"
-description: "حماية فرع Apothem على main — بوّابة المراجعة، البوْبَنة عبر فحوص الحالة، وقيود الدفع."
+description: "حماية فرع Apothem على main: قاعدة الحماية الفعّالة، وفحوص الحالة المطلوبة فيها، والفحوص التي تنتظر الإضافة."
 machineTranslated: true
-sourceHash: "57b3290928ce6bcc"
+sourceHash: "7d54aae6581f03ec"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-فرع <bdi>`main`</bdi> الخاص بِـ Apothem محميٌّ بحماية فرع GitHub بعد نشر التزام الإصدار الجديد الوحيد. تَفرِض هذه الحماية انضباط مجموعة-التغيير المُعلَن في <bdi>`rules/production-ready-prs.md`</bdi> وتُغذّي فحصَي **Branch-Protection** و**Code-Review** في OpenSSF Scorecard للعمل المستقبلي.
+فرع <bdi>`main`</bdi> في <bdi>Apothem</bdi> محميّ بقاعدة حماية فرع كلاسيكية في <bdi>GitHub</bdi>. لا توجد في المستودع أي مجموعات قواعد. تفرض الحماية انضباط مجموعة التغييرات المُعلَن في <bdi>`rules/production-ready-prs.md`</bdi> وتُغذّي فحصَي **<bdi>Branch-Protection</bdi>** و**<bdi>Code-Review</bdi>** في <bdi>OpenSSF Scorecard</bdi>.
 
-## إعلان مجموعة القواعد
+تُسجّل هذه الصفحة الإعدادات الفعّالة بدقّة، كما قُرئت آخر مرة من واجهة برمجة تطبيقات <bdi>GitHub</bdi> في 2026-10-07. أي إعداد ينويه المشرف لكنه لم يُطبّقه بعد لا يظهر إلا تحت [تغييرات المشرف المعلّقة](#تغييرات-المشرف-المعلّقة).
 
-| الإعداد | القيمة | المسوّغ |
+## إعدادات الحماية
+
+| الإعداد | حقل الواجهة البرمجية | القيمة الفعّالة | الأثر |
+|---|---|---|---|
+| **اشتراط طلب سحب قبل الدمج** | <bdi>`required_pull_request_reviews`</bdi> (موجود) | ✅ | تصل التغييرات إلى <bdi>`main`</bdi> عبر طلب سحب. |
+| **المراجعات الموافِقة المطلوبة** | <bdi>`required_approving_review_count`</bdi> | **0** | يُدمَج طلب السحب دون مراجعة موافِقة. راجع [نموذج المشرف المنفرد](#نموذج-المشرف-المنفرد). |
+| **إسقاط الموافقات القديمة عند الكوميتات الجديدة** | <bdi>`dismiss_stale_reviews`</bdi> | ✅ | لا تُحتسَب الموافقة الممنوحة قبل دفع جديد. |
+| **اشتراط مراجعة من <bdi>Code Owners</bdi>** | <bdi>`require_code_owner_reviews`</bdi> | ❌ | تفعيل هذا قبل انضمام مشرف ثانٍ يُوقِع طلبات سحب المشرف المنفرد في انسداد. |
+| **اشتراط الموافقة على أحدث دفع قابل للمراجعة** | <bdi>`require_last_push_approval`</bdi> | ❌ | يشترط <bdi>GitHub</bdi> أن تأتي تلك الموافقة من شخص غير الذي أجرى الدفع، وهو ما لا يستطيع المشرف المنفرد توفيره. |
+| **اشتراط نجاح فحوص الحالة** | <bdi>`required_status_checks`</bdi> | ✅ | يجب أن تنجح السياقات الـ 12 المسرودة تحت [فحوص الحالة المطلوبة](#فحوص-الحالة-المطلوبة). |
+| **اشتراط أن تكون الفروع مُحدَّثة قبل الدمج** | <bdi>`required_status_checks.strict`</bdi> | ❌ | يمكن دمج طلب سحب عندما تكون فحوصه المطلوبة قد نجحت مقابل <bdi>`main`</bdi> أقدم. ثم تختبر سِيَر العمل التي تعمل عند الدفع إلى <bdi>`main`</bdi> النتيجةَ المدموجة. |
+| **اشتراط حلّ المحادثات قبل الدمج** | <bdi>`required_conversation_resolution`</bdi> | ✅ | تحجب خيوط المراجعة المفتوحة الدمج. |
+| **اشتراط كوميتات موقَّعة** | <bdi>`required_signatures`</bdi> | ❌ | تُوقَّع كوميتات الإصدار محليًا. ينتظر الفرض حتى توثّق وثائق انضمام المساهمين إعداد التوقيع عبر <bdi>SSH</bdi> أو <bdi>GPG</bdi>. |
+| **اشتراط تاريخ خطّي** | <bdi>`required_linear_history`</bdi> | ✅ | يُبقي التاريخ العام لـ <bdi>`main`</bdi> خطًّا واحدًا. |
+| **قفل الفرع** | <bdi>`lock_branch`</bdi> | ❌ | يقبل <bdi>`main`</bdi> عمليات الدمج. |
+| **عدم السماح بتجاوز الإعدادات أعلاه** | <bdi>`enforce_admins`</bdi> | ❌ | لا تُلزِم الإعدادات أعلاه مسؤول المستودع. يستطيع المسؤول الدمج دون الفحوص المطلوبة أو الدفع إلى <bdi>`main`</bdi> مباشرةً. |
+| **السماح بالدفع بالقوة** | <bdi>`allow_force_pushes`</bdi> | ❌ | الدفع بالقوة إلى <bdi>`main`</bdi> محظور على الجميع، بمن فيهم المسؤولون. |
+| **السماح بالحذف** | <bdi>`allow_deletions`</bdi> | ❌ | لا يستطيع أحد حذف <bdi>`main`</bdi>، بمن فيهم المسؤولون. |
+
+## نموذج المشرف المنفرد
+
+للمستودع مشرف واحد. ينصّ <bdi>GitHub</bdi> على ما يلي: «لا يستطيع مؤلّفو طلبات السحب الموافقة على طلبات السحب الخاصة بهم.» لذلك فإن أي عدد موافقات مطلوب يزيد على 0 سيحجب كل طلب سحب من المشرف. تشترط القاعدة الفعّالة طلب سحب مع 0 موافقات وتترك <bdi>`enforce_admins`</bdi> مُعطَّلًا.
+
+بالنسبة لأي شخص لا يملك صلاحية المسؤول، لا يزال الدمج يتطلّب أن تكون فحوص الحالة المطلوبة خضراء، وأن تكون محادثات المراجعة محلولة، وأن يكون التاريخ خطّيًا. ويبقى الدفع بالقوة وحذف <bdi>`main`</bdi> محظورَين على كل حساب.
+
+عندما ينضمّ مشرف ثانٍ، تكون الإعدادات الأقوى: موافقة مطلوبة واحدة على الأقل، والموافقة على أحدث دفع، ومراجعة <bdi>CODEOWNERS</bdi>، وتفعيل <bdi>`enforce_admins`</bdi>. ولا تنطبق [مراسم دمج المشرف المنفرد](/docs/runbooks/solo-maintainer-merge) إلا على حماية تشترط موافقةً وتفرضها على المسؤولين.
+
+## فحوص الحالة المطلوبة
+
+كلٌّ من هذه السياقات الـ 12 مطلوب، ومصدره <bdi>GitHub Actions</bdi> (مُعرِّف التطبيق <bdi>`15368`</bdi>):
+
+```text
+quality / ubuntu-latest / py3.10
+quality / ubuntu-latest / py3.11
+quality / ubuntu-latest / py3.12
+quality / ubuntu-latest / py3.13
+quality / ubuntu-latest / py3.14
+quality / windows-latest / py3.10
+quality / windows-latest / py3.11
+quality / windows-latest / py3.12
+quality / windows-latest / py3.13
+quality / windows-latest / py3.14
+coverage
+Require Signed-off-by
+```
+
+| السياق | سير العمل والمهمة | كيف يُبلِغ عن حالته في كل طلب سحب |
 |---|---|---|
-| **الهدف** | <bdi>`main`</bdi> | يحمي الفرع الافتراضي العام. |
-| **حالة الفرض** | <bdi>`active`</bdi> | ليس في وضع التشغيل-التجريبي. |
-| **اشتراط طلب سحب قبل الدمج** | ✅ | الدفع المباشر إلى <bdi>`main`</bdi> محظور. |
-| **المراجعات المُوافِقة المطلوبة** | **1** | الحدّ الأدنى من بوّابة المراجعة البشرية لمشروع جديد بمشرف-منفرد. |
-| **إسقاط الموافقات القديمة عند الالتزامات الجديدة** | ✅ | الدفع القسري (force-push) بعد الموافقة يُعيد إطلاق المراجعة. |
-| **اشتراط مراجعة من Code Owners** | مؤجَّل | تفعيل هذا قبل انضمام مشرف ثانٍ قد يُوقِع طلبات سحب المشرف-المنفرد في طريق مسدود. |
-| **اشتراط موافقة أحدث دفعة قابلة للمراجعة** | ✅ | يجب أن يحمل أحدث التزام مدفوع موافقةً. |
-| **اشتراط حلّ المحادثات** | ✅ | خيوط المراجعة المفتوحة تَحجب الدمج. |
-| **اشتراط نجاح فحوص الحالة** | ✅ | سير عمل CI + Scorecard + CodeQL + pip-audit. |
-| **فحوص الحالة المطلوبة** | الفحوص الأساسية الحالية | تُحدَّث القائمة المطلوبة من أحدث التزام إصدار أخضر. |
-| **اشتراط تحديث الفروع** | ✅ | يمنع انحدارات الدمج القديم. |
-| **اشتراط التزامات موقَّعة** | مُوصًى به | التزامات الإصدار المحلّية موقَّعة؛ الفرض الكامل ينتظر حتى تَصِف وثائق إدماج المساهمين إعداد <bdi>SSH/GPG</bdi>. |
-| **اشتراط تاريخ خطّي** | ✅ | يُبقي التاريخ العام أحادي-الخط مفهومًا. |
-| **حجب الدفع القسري** | ✅ | إعادة كتابة التاريخ على <bdi>`main`</bdi> محظورة. |
-| **السماح بالحذف** | ❌ | لا يمكن حذف فرع <bdi>`main`</bdi>. |
+| <bdi>`quality / <os> / py<ver>`</bdi> (10) | <bdi>`ci.yml`</bdi>، المهمة <bdi>`quality`</bdi> | يعمل <bdi>`ci.yml`</bdi> عندما يمسّ طلب السحب مسار شيفرة أو إعدادات. ويُبلِغ <bdi>`ci-docs-stub.yml`</bdi> عن السياقات نفسها في طلب سحب يقتصر على الوثائق. |
+| <bdi>`coverage`</bdi> | <bdi>`ci.yml`</bdi>، المهمة <bdi>`coverage`</bdi> | مثل <bdi>`quality`</bdi>. |
+| <bdi>`Require Signed-off-by`</bdi> | <bdi>`dco.yml`</bdi>، المهمة <bdi>`dco`</bdi> | لا يحمل مُشغِّل طلبات السحب الخاص به مُرشِّح <bdi>`paths`</bdi>، لذا يعمل على كل طلب سحب إلى <bdi>`main`</bdi>. |
 
-## قيد المشرف-المنفرد
+تعمل خلية الإصدار التمهيدي <bdi>`quality / ubuntu-latest / py3.15`</bdi> في <bdi>`ci.yml`</bdi> مع <bdi>`continue-on-error`</bdi> وهي غير مطلوبة. ويجوز لأي سير عمل آخر، بما في ذلك <bdi>CodeQL</bdi> و<bdi>Scorecard</bdi> و<bdi>pip-audit</bdi>، أن يُبلِغ عن حالة، لكن نتيجته لا تكون شرطًا للدمج ما لم يُضَف سياقه إلى هذه القائمة.
 
-لا يسمح GitHub لملفات المستودع بإنشاء تاريخ مراجعة بشرية. لذلك يُطبّق المستودع أقوى حماية فرع لا تُسبِّب طريقًا مسدودًا لنموذج مشرفه الحالي: مراجعة مُوافِقة واحدة، إسقاط المراجعة القديمة، موافقة آخر دفعة، حلّ المحادثات، فحوص الحالة، تاريخ خطّي، ودون حذف فرع أو دفع قسري. عندما ينضمّ مشرف ثانٍ، تصبح مراجعة CODEOWNERS والحدّ الأدنى من مُراجِعَين هي الإعداد الأقوى.
+## تغييرات المشرف المعلّقة
 
-## متطلبات فحوص الحالة
+ينوي المشرف إضافة هذه السياقات الـ 25 إلى القائمة المطلوبة. تُعلِن ترويسة كل سير عمل أن المهمة فحصٌ مطلوب، ولا يحمل مُشغِّل طلبات السحب الخاص به مُرشِّح <bdi>`paths`</bdi>، لذا يعمل على كل طلب سحب إلى <bdi>`main`</bdi>. وإلى أن يُضاف سياقٌ ما، لا يحجب الفشلُ فيه الدمج.
 
-فحوص الحالة الأربعة ذات البوْبَنة الصارمة المُعلَنة أعلاه:
+<bdi>`clean-install-gate.yml`</bdi>، 7 سياقات:
 
-- **<bdi>`ci`</bdi>** — مصفوفة اختبار كاملة + ruff + mypy + bandit + Trivy + pip-audit على شجرة التبعيات المُحلَّلة
-- **<bdi>`Scorecard`</bdi>** — تشغيل OpenSSF Scorecard دون انحدار لكل-فحص
-- **<bdi>`CodeQL`</bdi>** — حِزَم استعلام <bdi>`security-extended`</bdi> لِـ <bdi>`python`</bdi> + <bdi>`actions`</bdi>
-- **<bdi>`pip-audit`</bdi>** — مسح ثغرات أسبوعي + لكل-طلب-سحب مقابل شجرة التبعيات المُحلَّلة
+```text
+installer-shell-compat / ubuntu-latest
+installer-shell-compat / macos-latest
+installer-shell-compat / windows-latest
+clean-install-gate / ubuntu-latest
+clean-install-gate / windows-latest
+wheel-smoke / ubuntu-latest
+wheel-smoke / windows-latest
+```
 
-قد يُبلِّغ أي سير عمل آخر عن حالة، لكن نتيجته لا تُبوْبِن الدمج ما لم تُرَقَّ إلى قائمة الفحوص المطلوبة.
+<bdi>`harness-matrix.yml`</bdi>، 17 سياقًا، سياق <bdi>`matrix (<adapter>)`</bdi> واحد لكل محوّل في مصفوفة المهمة:
 
-## إيقاع التدقيق
+```text
+matrix (antigravity)
+matrix (claude-code)
+matrix (codebuddy)
+matrix (codex)
+matrix (cursor)
+matrix (gemini-cli)
+matrix (github-copilot)
+matrix (glm)
+matrix (hermes)
+matrix (kimi-code)
+matrix (kiro)
+matrix (open-claw)
+matrix (opencode)
+matrix (qwen-code)
+matrix (trae)
+matrix (windsurf)
+matrix (zed)
+```
 
-تُراجَع هذه الملفّ في كل تدقيق أمني وعند كل نقطة تفتيش لهندسة-الإصدار. الانحراف بين هذا الملفّ والتهيئة الفعلية لحماية الفرع هو اكتشاف عالي الخطورة.
+<bdi>`installer-lint.yml`</bdi>، سياق واحد:
+
+```text
+installer-lint
+```
+
+بمجرد أن تصبح سياقات <bdi>`harness-matrix.yml`</bdi> مطلوبة، يضيف تسجيل محوّل جديد سياق <bdi>`matrix (<adapter>)`</bdi>، وتكتسبه القائمة المطلوبة في التغيير نفسه. ويبقى الإعداد «اشتراط أن تكون الفروع مُحدَّثة قبل الدمج» مُعطَّلًا. وعند تطبيق تغيير معلّق، انقله إلى الأقسام الفعّالة أعلاه في التغيير نفسه.
+
+## وتيرة التدقيق
+
+يُراجَع هذا الملف في كل تدقيق أمني وعند كل نقطة تفتيش لهندسة الإصدار. الانحراف بين هذا الملف والتهيئة الفعلية لحماية الفرع اكتشافٌ عالي الخطورة. اقرأ التهيئة الفعّالة باستخدام:
+
+```bash
+gh api repos/ahmed-g-gad/apothem/branches/main/protection
+gh api repos/ahmed-g-gad/apothem/rulesets
+```
 
 ## المراجع
 
-- [OpenSSF Scorecard — Branch-Protection check](https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection)
-- [GitHub — About protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
-- [Apothem CODEOWNERS](https://github.com/ahmed-g-gad/apothem/blob/main/.github/CODEOWNERS) — ملكية مراجعة بنطاق-لكل-مسار
-- <bdi>`rules/production-ready-prs.md`</bdi> §1 — انضباط مجموعة-التغيير-نفسها الذي تَفرِضه مجموعة القواعد هذه
+- [<bdi>OpenSSF Scorecard</bdi> — فحص <bdi>Branch-Protection</bdi>](https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection)
+- [<bdi>GitHub</bdi> — حول الفروع المحمية](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
+- [<bdi>GitHub</bdi> — إدارة قاعدة حماية فرع](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule)
+- [<bdi>GitHub</bdi> — الموافقة على طلب سحب يتطلّب مراجعات](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/approving-a-pull-request-with-required-reviews)
+- [<bdi>CODEOWNERS</bdi> في <bdi>Apothem</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/.github/CODEOWNERS) — ملكية المراجعة بحسب المسار
+- [سِيَر عمل <bdi>CI</bdi> في <bdi>Apothem</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/README.md) — سِيَر العمل التي يأتي منها كل سياق مطلوب
+- <bdi>`rules/production-ready-prs.md`</bdi> القسم 1 — انضباط مجموعة التغييرات نفسها الذي تفرضه هذه الحماية

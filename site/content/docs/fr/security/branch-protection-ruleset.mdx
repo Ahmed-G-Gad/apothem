@@ -1,55 +1,130 @@
 ---
 title: "Protection de branche"
-description: "Protection de branche d'Apothem sur main — porte de revue, contrôle par vérifications de statut et restrictions de push."
+description: "Protection de branche d'Apothem sur main : la règle de protection en vigueur, ses vérifications de statut requises et les vérifications en attente d'ajout."
 machineTranslated: true
-sourceHash: "57b3290928ce6bcc"
+sourceHash: "7d54aae6581f03ec"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-La branche `main` d'Apothem est protégée par la protection de branche de GitHub après la publication de l'unique commit de release neuf. La protection applique la discipline d'ensemble de modifications déclarée dans `rules/production-ready-prs.md` et alimente les vérifications **Branch-Protection** et **Code-Review** d'OpenSSF Scorecard pour les travaux futurs.
+La branche `main` d'Apothem est protégée par une règle de protection de branche GitHub classique. Le dépôt ne comporte aucun jeu de règles. La protection applique la discipline d'ensemble de modifications déclarée dans `rules/production-ready-prs.md` et alimente les vérifications **Branch-Protection** et **Code-Review** d'OpenSSF Scorecard.
 
-## Déclaration du jeu de règles
+Cette page consigne exactement les paramètres en vigueur, tels que lus pour la dernière fois depuis l'API GitHub le 2026-10-07. Un paramètre que le mainteneur prévoit mais n'a pas encore appliqué n'apparaît que sous [Modifications en attente du mainteneur](#modifications-en-attente-du-mainteneur).
 
-| Paramètre | Valeur | Justification |
+## Paramètres de protection
+
+| Paramètre | Champ d'API | Valeur en vigueur | Effet |
+|---|---|---|---|
+| **Exiger une pull request avant la fusion** | `required_pull_request_reviews` (présent) | ✅ | Les changements atteignent `main` via une pull request. |
+| **Revues d'approbation requises** | `required_approving_review_count` | **0** | Une pull request est fusionnée sans revue d'approbation. Voir [Modèle à mainteneur unique](#modèle-à-mainteneur-unique). |
+| **Rejeter les approbations obsolètes lors de nouveaux commits** | `dismiss_stale_reviews` | ✅ | Une approbation donnée avant un nouveau push ne compte plus. |
+| **Exiger une revue des Code Owners** | `require_code_owner_reviews` | ❌ | L'activer avant l'arrivée d'un deuxième mainteneur bloque les pull requests du mainteneur unique. |
+| **Exiger l'approbation du push révisable le plus récent** | `require_last_push_approval` | ❌ | GitHub exige que cette approbation vienne d'une personne autre que l'auteur du push, ce qu'un mainteneur unique ne peut pas fournir. |
+| **Exiger que les vérifications de statut réussissent** | `required_status_checks` | ✅ | Les 12 contextes listés sous [Vérifications de statut requises](#vérifications-de-statut-requises) doivent réussir. |
+| **Exiger que les branches soient à jour avant la fusion** | `required_status_checks.strict` | ❌ | Une pull request peut être fusionnée lorsque ses vérifications requises ont réussi par rapport à un `main` plus ancien. Les workflows qui s'exécutent lors d'un push sur `main` testent ensuite le résultat fusionné. |
+| **Exiger la résolution des conversations avant la fusion** | `required_conversation_resolution` | ✅ | Les fils de revue ouverts bloquent la fusion. |
+| **Exiger des commits signés** | `required_signatures` | ❌ | Les commits de publication sont signés localement. L'application obligatoire de cette règle attend que la documentation d'intégration des contributeurs décrive la configuration de la signature SSH ou GPG. |
+| **Exiger un historique linéaire** | `required_linear_history` | ✅ | Maintient l'historique public de `main` sur une seule ligne. |
+| **Verrouiller la branche** | `lock_branch` | ❌ | `main` accepte les fusions. |
+| **Ne pas autoriser le contournement des paramètres ci-dessus** | `enforce_admins` | ❌ | Les paramètres ci-dessus ne s'imposent pas à un administrateur du dépôt. Un administrateur peut fusionner sans les vérifications requises ou pousser directement sur `main`. |
+| **Autoriser les force-pushes** | `allow_force_pushes` | ❌ | Les force-pushes vers `main` sont bloqués pour tout le monde, administrateurs compris. |
+| **Autoriser les suppressions** | `allow_deletions` | ❌ | Personne ne peut supprimer `main`, administrateurs compris. |
+
+## Modèle à mainteneur unique
+
+Le dépôt a un seul mainteneur. GitHub indique : « Les auteurs d'une pull request ne peuvent pas approuver leurs propres pull requests. » Un nombre d'approbations requises supérieur à 0 bloquerait donc chaque pull request du mainteneur. La règle en vigueur exige une pull request avec 0 approbation et laisse `enforce_admins` désactivé.
+
+Pour toute personne sans permission d'administrateur, une fusion exige toujours des vérifications de statut requises au vert, des conversations de revue résolues et un historique linéaire. Les force-pushes et la suppression de `main` restent bloqués pour tous les comptes.
+
+Lorsqu'un deuxième mainteneur rejoint le projet, les paramètres plus forts sont au moins une approbation requise, l'approbation du dernier push, la revue CODEOWNERS et `enforce_admins` activé. La [cérémonie de fusion pour mainteneur unique](/docs/runbooks/solo-maintainer-merge) ne s'applique qu'à une protection qui exige une approbation et l'applique aux administrateurs.
+
+## Vérifications de statut requises
+
+Chacun de ces 12 contextes est requis, avec GitHub Actions (ID d'application `15368`) comme source :
+
+```text
+quality / ubuntu-latest / py3.10
+quality / ubuntu-latest / py3.11
+quality / ubuntu-latest / py3.12
+quality / ubuntu-latest / py3.13
+quality / ubuntu-latest / py3.14
+quality / windows-latest / py3.10
+quality / windows-latest / py3.11
+quality / windows-latest / py3.12
+quality / windows-latest / py3.13
+quality / windows-latest / py3.14
+coverage
+Require Signed-off-by
+```
+
+| Contexte | Workflow et job | Comment il rend compte sur chaque pull request |
 |---|---|---|
-| **Cible** | `main` | Protège la branche par défaut publique. |
-| **Statut d'application** | `active` | N'est pas en mode simulation. |
-| **Exiger une pull request avant la fusion** | ✅ | Les pushes directs vers `main` sont bloqués. |
-| **Revues d'approbation requises** | **1** | Porte minimale de revue humaine pour un nouveau projet à mainteneur unique. |
-| **Rejeter les approbations obsolètes sur les nouveaux commits** | ✅ | Un force-push après approbation redéclenche la revue. |
-| **Exiger une revue des Code Owners** | Reporté | Activer ceci avant l'arrivée d'un deuxième mainteneur peut bloquer les PR à mainteneur unique. |
-| **Exiger l'approbation du push révisable le plus récent** | ✅ | Le dernier commit poussé doit porter une approbation. |
-| **Résolution de conversation requise** | ✅ | Les fils de revue ouverts bloquent la fusion. |
-| **Exiger que les vérifications de statut réussissent** | ✅ | Workflow CI + Scorecard + CodeQL + pip-audit. |
-| **Vérifications de statut requises** | Vérifications cœur actuelles | La liste requise est rafraîchie depuis le dernier commit de release au vert. |
-| **Exiger que les branches soient à jour** | ✅ | Empêche les régressions par fusion obsolète. |
-| **Exiger des commits signés** | Recommandé | Les commits de release locaux sont signés ; l'application complète attend que la documentation d'intégration des contributeurs décrive la configuration SSH/GPG. |
-| **Exiger un historique linéaire** | ✅ | Garde l'historique public à ligne unique compréhensible. |
-| **Bloquer les force-pushes** | ✅ | La réécriture d'historique sur `main` est bloquée. |
-| **Autoriser la suppression** | ❌ | La branche `main` ne peut pas être supprimée. |
+| `quality / <os> / py<ver>` (10) | `ci.yml`, job `quality` | `ci.yml` s'exécute lorsqu'une pull request touche un chemin de code ou de configuration. `ci-docs-stub.yml` rapporte les mêmes contextes sur une pull request limitée à la documentation. |
+| `coverage` | `ci.yml`, job `coverage` | Comme `quality`. |
+| `Require Signed-off-by` | `dco.yml`, job `dco` | Son déclencheur de pull request n'a pas de filtre `paths` ; il s'exécute donc sur chaque pull request vers `main`. |
 
-## Contrainte de mainteneur unique
+La cellule de préversion `quality / ubuntu-latest / py3.15` s'exécute dans `ci.yml` avec `continue-on-error` et n'est pas requise. Tout autre workflow, y compris CodeQL, Scorecard et pip-audit, peut rapporter un statut, mais son résultat ne conditionne pas la fusion à moins que son contexte ne soit ajouté à cette liste.
 
-GitHub ne permet pas aux fichiers du dépôt de créer un historique de revue humaine. Le dépôt applique donc la protection de branche la plus forte qui ne crée pas de blocage pour son modèle de mainteneur actuel : une revue d'approbation, rejet des revues obsolètes, approbation du dernier push, résolution de conversation, vérifications de statut, historique linéaire, et aucune suppression de branche ni force-push. Lorsqu'un deuxième mainteneur rejoindra, la revue CODEOWNERS et un minimum de deux relecteurs deviendront le réglage le plus fort.
+## Modifications en attente du mainteneur
 
-## Exigences des vérifications de statut
+Le mainteneur prévoit d'ajouter ces 25 contextes à la liste des vérifications requises. L'en-tête de chaque workflow déclare le job comme vérification requise, et son déclencheur de pull request n'a pas de filtre `paths` ; il s'exécute donc sur chaque pull request vers `main`. Tant qu'un contexte n'a pas été ajouté, un échec de celui-ci ne bloque pas la fusion.
 
-Les quatre vérifications de statut à contrôle strict déclarées ci-dessus :
+`clean-install-gate.yml`, 7 contextes :
 
-- **`ci`** — matrice de tests complète + ruff + mypy + bandit + Trivy + pip-audit sur l'arbre de dépendances résolu
-- **`Scorecard`** — exécution d'OpenSSF Scorecard sans régression par vérification
-- **`CodeQL`** — packs de requêtes `security-extended` pour `python` + `actions`
-- **`pip-audit`** — analyse de vulnérabilités hebdomadaire + par PR contre l'arbre de dépendances résolu
+```text
+installer-shell-compat / ubuntu-latest
+installer-shell-compat / macos-latest
+installer-shell-compat / windows-latest
+clean-install-gate / ubuntu-latest
+clean-install-gate / windows-latest
+wheel-smoke / ubuntu-latest
+wheel-smoke / windows-latest
+```
 
-Tout autre workflow peut rapporter un statut, mais son résultat ne contrôle pas la fusion à moins qu'il ne soit promu dans la liste des vérifications requises.
+`harness-matrix.yml`, 17 contextes, un `matrix (<adapter>)` par adaptateur dans la matrice du job :
+
+```text
+matrix (antigravity)
+matrix (claude-code)
+matrix (codebuddy)
+matrix (codex)
+matrix (cursor)
+matrix (gemini-cli)
+matrix (github-copilot)
+matrix (glm)
+matrix (hermes)
+matrix (kimi-code)
+matrix (kiro)
+matrix (open-claw)
+matrix (opencode)
+matrix (qwen-code)
+matrix (trae)
+matrix (windsurf)
+matrix (zed)
+```
+
+`installer-lint.yml`, 1 contexte :
+
+```text
+installer-lint
+```
+
+Une fois les contextes de `harness-matrix.yml` requis, l'enregistrement d'un nouvel adaptateur ajoute un contexte `matrix (<adapter>)`, et la liste requise l'intègre dans le même changement. « Exiger que les branches soient à jour avant la fusion » reste désactivé. Lorsqu'une modification en attente est appliquée, déplacez-la dans les sections en vigueur ci-dessus, dans le même changement.
 
 ## Cadence d'audit
 
-Ce fichier est revu à chaque audit de sécurité et à chaque point de contrôle d'ingénierie de release. La dérive entre ce fichier et la configuration réelle de protection de branche est un constat de haute sévérité.
+Ce fichier est revu à chaque audit de sécurité et à chaque point de contrôle d'ingénierie de publication. Toute dérive entre ce fichier et la configuration réelle de protection de branche est un constat de haute sévérité. Lisez la configuration en vigueur avec :
+
+```bash
+gh api repos/ahmed-g-gad/apothem/branches/main/protection
+gh api repos/ahmed-g-gad/apothem/rulesets
+```
 
 ## Références
 
-- [OpenSSF Scorecard — Branch-Protection check](https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection)
-- [GitHub — About protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
-- [Apothem CODEOWNERS](https://github.com/ahmed-g-gad/apothem/blob/main/.github/CODEOWNERS) — propriété de revue à portée par chemin
-- `rules/production-ready-prs.md` §1 — discipline de même ensemble de modifications que ce jeu de règles applique
+- [OpenSSF Scorecard — vérification Branch-Protection](https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection)
+- [GitHub — À propos des branches protégées](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
+- [GitHub — Gérer une règle de protection de branche](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule)
+- [GitHub — Approuver une pull request avec des revues requises](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/approving-a-pull-request-with-required-reviews)
+- [CODEOWNERS d'Apothem](https://github.com/ahmed-g-gad/apothem/blob/main/.github/CODEOWNERS) — propriété de revue à portée par chemin
+- [Workflows CI d'Apothem](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/README.md) — les workflows dont provient chaque contexte requis
+- `rules/production-ready-prs.md` §1 — discipline de même ensemble de modifications que cette protection applique
