@@ -17,6 +17,12 @@
 # hostname is served without an extra step. The packaged JSON schemas
 # (src/apothem/schemas/*.schema.json) are copied into site/dist/schemas/ the
 # same way, so each schema's $id URL serves the packaged file.
+# The two "Validate synced" steps lint the staged install scripts before the
+# deploy. installer-lint.yml runs the same two commands on scripts/installer/
+# for every pull request, so a lint finding fails the pull request before it
+# can stop this build, and tests/integration/test_installer_lint_workflow.py
+# keeps the commands in lockstep. PSScriptAnalyzer takes its severities and
+# rule exclusions from PSScriptAnalyzerSettings.psd1 alone.
 # Deployment runs through the official GitHub Pages Actions toolchain —
 # actions/configure-pages, actions/upload-pages-artifact,
 # actions/deploy-pages — with OIDC + minimum permissions.
@@ -63,7 +69,11 @@ jobs:
 
   build:
     name: build
-    runs-on: ubuntu-latest
+    # Pinned, not ubuntu-latest: the two "Validate synced" steps lint with
+    # this image's preinstalled shellcheck and PSScriptAnalyzer, and
+    # installer-lint.yml must lint pull requests on the same image. Bump both
+    # labels together.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
       contents: read
@@ -178,12 +188,17 @@ jobs:
           cp src/apothem/schemas/*.schema.json site/dist/schemas/
 
       - name: Validate synced shell scripts
+        # installer-lint.yml runs this command on scripts/installer/ for every
+        # pull request; change both together.
         run: shellcheck --severity=error site/dist/*.sh
 
       - name: Validate synced PowerShell scripts
+        # installer-lint.yml runs this command on scripts/installer/ for every
+        # pull request; change both together. Severities and rule exclusions
+        # live in PSScriptAnalyzerSettings.psd1, not on this command line.
         shell: pwsh
         run: |
-          $findings = Invoke-ScriptAnalyzer -Path site/dist/ -Settings PSScriptAnalyzerSettings.psd1 -Severity Error,Warning -ExcludeRule PSUseBOMForUnicodeEncodedFile,PSAvoidUsingWriteHost,PSUseShouldProcessForStateChangingFunctions
+          $findings = Invoke-ScriptAnalyzer -Path site/dist/ -Settings PSScriptAnalyzerSettings.psd1
           if ($findings) {
             $findings | Format-Table -AutoSize
             exit 1

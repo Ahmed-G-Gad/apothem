@@ -21,6 +21,8 @@ from typing import Final, NoReturn
 
 import pytest
 
+from tests._shared.git_env import hermetic_git_env
+
 _REPO_ROOT: Final[Path] = Path(__file__).resolve().parents[3]
 _GREP_PATH: Final[Path] = (
     _REPO_ROOT / "src" / "apothem" / "conformity" / "conventional_commit_grep.py"
@@ -104,10 +106,13 @@ def test_genuine_non_imperative_still_flagged(subject: str) -> None:
 
 
 def _init_git_repo(root: Path, subject: str) -> None:
+    # Host git config stays out: a signing setting or a global commit-msg
+    # hook would break the commit, the drifting subjects most of all.
     def _git(*args: str) -> None:
         subprocess.run(
             ["git", *args],
             cwd=str(root),
+            env=hermetic_git_env(),
             check=True,
             capture_output=True,
             text=True,

@@ -28,6 +28,7 @@ from pathlib import Path
 import pytest
 
 from apothem.conformity import gate
+from tests._shared.git_env import hermetic_git_env
 
 # The canonical SPDX header lines the fixtures prepend so the planted fixture
 # files pass the file-header matcher. Held as standalone constants (no trailing
@@ -91,10 +92,12 @@ _CLEAN_PY = f"{_SPDX_HASH}\n\ndef h(x: int) -> int:\n    return x\n"
 
 
 def _git(repo: Path, *args: str) -> None:
-    """Run a git subcommand in *repo* (test-local; never the live tree)."""
+    """Run a git subcommand in *repo* (test-local; never the live tree),
+    without host git config, so a global hooks path cannot reject the commit."""
     subprocess.run(
         ["git", *args],
         cwd=str(repo),
+        env=hermetic_git_env(),
         check=True,
         capture_output=True,
         encoding="utf-8",
