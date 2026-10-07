@@ -20,8 +20,21 @@ repos:
       - id: check-added-large-files
         args: [--maxkb=500]
       - id: check-merge-conflict
+      # Line endings mirror .gitattributes: LF everywhere except the Windows
+      # scripts it pins to `text eol=crlf`, which check out as CRLF on every
+      # platform. Forcing those to LF rewrote every freshly checked-out script.
       - id: mixed-line-ending
         args: [--fix=lf]
+        exclude: '\.(ps1|bat|cmd)$'
+      # Windows scripts fail only when one file mixes endings, and are rewritten
+      # to that file's majority ending. Uniform CRLF (a checkout) and uniform LF
+      # (what regen-behavior-goldens.py and regenerate-completions.ps1 write) both
+      # pass. The index is LF either way.
+      - id: mixed-line-ending
+        alias: mixed-line-ending-windows
+        name: mixed line ending (Windows scripts)
+        args: [--fix=auto]
+        files: '\.(ps1|bat|cmd)$'
 
   # ---------------------------------------------------------------------------
   # Python — ruff (lint + format)

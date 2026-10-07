@@ -67,7 +67,7 @@ All four targets are wired into CI; running them locally catches the common fail
 
 Pre-commit installation is part of the **One-time setup** above (the `pre-commit install` line). With the hooks installed, every `git commit` runs the ratified hook set from `.pre-commit-config.yaml`:
 
-- **Generic hygiene** — `trailing-whitespace`, `end-of-file-fixer`, `check-yaml`, `check-json`, `check-toml`, `check-added-large-files`, `check-merge-conflict`, `mixed-line-ending` (normalizes to LF).
+- **Generic hygiene** — `trailing-whitespace`, `end-of-file-fixer`, `check-yaml`, `check-json`, `check-toml`, `check-added-large-files`, `check-merge-conflict`, `mixed-line-ending` (normalizes to LF, except the CRLF Windows scripts described under [Line endings](#line-endings)).
 - **Python** — `ruff` (lint, `--fix`) and `ruff-format`, then `mypy`.
 - **Markdown / YAML** — `markdownlint` and `yamllint`.
 - **Secrets** — `gitleaks`.
@@ -84,6 +84,8 @@ pre-commit run --all-files
 ### Line endings
 
 The repository normalizes line endings to **LF** in the index for every text file via `.gitattributes` (`* text=auto eol=lf` plus per-extension reinforcement on shell scripts, Python, Markdown, YAML, and so on). `shellcheck` reads the working-tree bytes directly and surfaces SC1017 literal-CR errors when those bytes are CRLF; consequently the working tree must also be LF for the gate at `src/apothem/rules/code-craft-shell.md` M13.7 to pass clean.
+
+**Windows scripts are the one exception.** `.gitattributes` pins `*.ps1`, `*.bat`, and `*.cmd` to `text eol=crlf`. The index stays LF, but those files check out as CRLF on every platform, whatever `core.autocrlf` is set to. The `mixed-line-ending` hook accepts them when every line ends the same way, CRLF or LF. It fails a file that mixes the two and rewrites it to that file's majority ending.
 
 **Windows contributors:** before cloning, set the local Git config so the working tree honors the LF index without per-checkout CRLF conversion:
 
