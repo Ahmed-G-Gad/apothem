@@ -12,16 +12,31 @@ must exercise Linux dash + macOS sh + Windows PowerShell 5.1 so a reintroduced
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 from pathlib import Path
 
+import pytest
 import yaml
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _WORKFLOW = _REPO_ROOT / ".github" / "workflows" / "clean-install-gate.yml"
+_SCRIPTS = _REPO_ROOT / "scripts"
+_REQUIRES_PS_5_1 = re.compile(r"^#Requires\s+-Version\s+5\.1\b", re.I | re.M)
 
 
 def _load() -> dict:
     return yaml.safe_load(_WORKFLOW.read_text(encoding="utf-8"))
+
+
+def _step(prefix: str) -> dict:
+    steps = _load()["jobs"]["installer-shell-compat"]["steps"]
+    matches = [s for s in steps if s.get("name", "").startswith(prefix)]
+    assert len(matches) == 1, f"expected exactly one {prefix!r} step"
+    return matches[0]
+
+
+def _repo_paths(paths: Iterable[Path]) -> set[str]:
+    return {path.relative_to(_REPO_ROOT).as_posix() for path in paths}
 
 
 def _on(doc: dict) -> dict:
@@ -68,24 +83,56 @@ def test_windows_leg_parses_every_installer_script() -> None:
     # The Pages build serves the installer scripts and lints them with
     # PSScriptAnalyzer on pwsh 7, whose parser accepts 7.x-only syntax such as
     # `??`. This 5.1 AST parse is the only check that rejects it, so it must
-    # cover every scripts/installer/*.ps1, including any added later.
-    steps = _load()["jobs"]["installer-shell-compat"]["steps"]
-    parse_steps = [
-        s for s in steps if s.get("name", "").startswith("PowerShell 5.1 parse")
-    ]
-    assert len(parse_steps) == 1, "expected exactly one PowerShell 5.1 parse step"
-    file_list = re.search(r"\$files\s*=\s*@\((.*?)\)", parse_steps[0]["run"], re.S)
+    # cover every scripts/installer/*.ps1 and every script under scripts/ that
+    # declares the 5.1 floor (the scripts/apothem.ps1 router), including any
+    # added later.
+    run = _step("PowerShell 5.1 parse")["run"]
+    file_list = re.search(r"\$files\s*=\s*@\((.*?)\)", run, re.S)
     assert file_list, "the PowerShell 5.1 parse step must declare a $files list"
     parsed = set(re.findall(r"'([^']+)'", file_list.group(1)))
-    installers = {
-        path.relative_to(_REPO_ROOT).as_posix()
-        for path in (_REPO_ROOT / "scripts" / "installer").glob("*.ps1")
-    }
+    installers = _repo_paths((_SCRIPTS / "installer").glob("*.ps1"))
     assert installers, "found no scripts/installer/*.ps1"
-    missing = sorted(installers - parsed)
+    floor_scripts = _repo_paths(
+        path
+        for path in _SCRIPTS.rglob("*.ps1")
+        if _REQUIRES_PS_5_1.search(path.read_text(encoding="utf-8"))
+    )
+    assert "scripts/apothem.ps1" in floor_scripts, (
+        "the #Requires -Version 5.1 scan no longer finds scripts/apothem.ps1"
+    )
+    missing = sorted((installers | floor_scripts) - parsed)
     assert not missing, f"the PowerShell 5.1 parse step skips {missing}"
     for path in sorted(parsed):
         assert (_REPO_ROOT / path).is_file(), f"parse list names a missing {path}"
+
+
+@pytest.mark.parametrize(
+    ("check", "file_list"),
+    [
+        pytest.param("sh -n", r'for f in (.*?);\s*do\s+"\$SH" -n "\$f"', id="sh-n"),
+        pytest.param(
+            "shellcheck -s sh",
+            r"shellcheck -s sh --severity=warning((?:[^\n]*\\\n)*[^\n]*)",
+            id="shellcheck",
+        ),
+    ],
+)
+def test_posix_leg_checks_every_installer_script(check: str, file_list: str) -> None:
+    # The Pages build serves the POSIX installers. It and installer-lint.yml
+    # lint them with `shellcheck --severity=error` and no `-s sh`, so the root
+    # .shellcheckrc's `shell=bash` applies and no SC3xxx bashism finding is
+    # reported. This step's `sh -n` parse and `shellcheck -s sh
+    # --severity=warning` are the only checks that report them, so both file
+    # lists must cover every scripts/installer/*.sh, including any added later.
+    match = re.search(file_list, _step("POSIX shell syntax")["run"], re.S)
+    assert match, f"the POSIX gate must run {check} over a file list"
+    listed = set(match.group(1).replace("\\", " ").split())
+    installers = _repo_paths((_SCRIPTS / "installer").glob("*.sh"))
+    assert installers, "found no scripts/installer/*.sh"
+    missing = sorted(installers - listed)
+    assert not missing, f"the POSIX {check} list skips {missing}"
+    for path in sorted(listed):
+        assert (_REPO_ROOT / path).is_file(), f"{check} list names a missing {path}"
 
 
 def test_posix_leg_runs_a_bashism_gate() -> None:

@@ -1,31 +1,38 @@
 ---
 title: "Solo-Maintainer PR-Merge Ceremony"
-description: "Ceremony to self-merge pull requests when branch protection and enforce_admins rules would otherwise deadlock a solo maintainer."
+description: "When the maintainer can merge their own pull request directly, and the ceremony for a branch protection that requires an approval and enforces it for admins."
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Canonical reference for self-merging PRs under the project's branch-protection invariant.** When the maintainer is the sole contributor with write access, GitHub's branch-protection rules `enforce_admins=true` + `required_approving_review_count=1` create a self-merge deadlock that this page documents the resolution for.
+> **Canonical reference for self-merging PRs under the project's branch protection.** The live protection on `main` requires 0 approving reviews and leaves `enforce_admins` off, as recorded on the [Branch protection](/docs/security/branch-protection-ruleset) page. The maintainer therefore merges their own pull request directly. The temp-toggle ceremony on this page applies only when the protection requires an approval and enforces it for admins.
 
 ---
 
 ## 1. The Deadlock
 
-The repository's `main` branch carries the protection set:
+The live `main` protection carries:
+
+- `required_pull_request_reviews.required_approving_review_count: 0`
+- `enforce_admins: false`
+
+Under these settings there is no deadlock. A maintainer pull request merges with `gh pr merge <pr-number> --squash --delete-branch` once its required status checks are green and its review conversations are resolved.
+
+A deadlock exists only when the protection carries both of these stricter settings:
 
 - `required_pull_request_reviews.required_approving_review_count: 1`
 - `enforce_admins: true`
 
-These rules are correct for multi-maintainer scenarios (every change reaches `main` through a peer-reviewed PR; admins are not exempt). They produce a deadlock for solo maintainers: GitHub's policy disallows self-approval on a PR you authored, and `enforce_admins=true` blocks the `gh pr merge --admin` override of the review-approval requirement.
+These rules are correct for multi-maintainer scenarios (every change reaches `main` through a peer-reviewed PR; admins are not exempt). They produce a deadlock for solo maintainers: GitHub's policy disallows self-approval on a PR you authored, and `enforce_admins=true` blocks the `gh pr merge --admin` override of the review-approval requirement. With `enforce_admins: false`, `--admin` bypasses the approval requirement and no toggle is needed, but it bypasses red required checks too, so confirm they are green before using it.
 
 Three resolution paths exist:
 
 | Path | When to use |
 |------|-------------|
-| **Temp-toggle ceremony (canonical for this repo)** | Default for solo-maintainer self-merges; preserves the protection invariant outside the merge window |
+| Permanently set `required_approving_review_count: 0` (**live setting**) | Adopt only if the repo will remain solo-maintainer indefinitely; reverses the protection's review intent |
+| **Temp-toggle ceremony** | Solo-maintainer self-merges while the protection requires an approval with `enforce_admins=true`; preserves the protection invariant outside the merge window |
 | Provision a CI-bot identity with write access | Adopt only if multi-maintainer onboarding is imminent; bot-approval undermines the human-review intent of the protection |
-| Permanently set `required_approving_review_count: 0` | Adopt only if the repo will remain solo-maintainer indefinitely; reverses the protection's review intent |
 
-This repository ratifies the **temp-toggle ceremony** as the canonical path. The other two are documented escape hatches, not the default.
+This repository currently uses the **permanent zero-approval** path. The **temp-toggle ceremony** is the canonical path whenever the protection requires an approval and enforces it for admins.
 
 ## 2. The Temp-Toggle Ceremony
 
@@ -61,10 +68,12 @@ python scripts/dev/admin_merge.py <pr-number>
 
 - **Toggle window minimized.** Steps 2 → 3 → 4 execute in a single non-interactive sequence. The protection is in its relaxed state for the merge API call's duration only — under one second on every observed run.
 - **Restore is unconditional.** Step 4 runs even when step 3 fails (the wrapper's `try` / `finally` clause ensures restoration on any exit path). A failed merge attempt does not leave the protection relaxed.
-- **CI gating preserved throughout.** `required_status_checks` is unaffected by the toggle; the merge still requires the configured status-check contexts to be green.
+- **CI gating preserved throughout, while `enforce_admins` is on.** `required_status_checks` is unaffected by the toggle; with `enforce_admins: true` the merge still requires the configured status-check contexts to be green. With `enforce_admins: false`, the step-3 `--admin` merge also bypasses red required checks, so do not run the ceremony in that state.
 - **Audit trail visible.** The `gh pr merge --admin` annotation appears in the PR's merge metadata; the protection-API toggles appear in the repo's audit log under the maintainer's identity.
 
 ## 4. When NOT to Use the Ceremony
+
+While the protection requires 0 approving reviews or leaves `enforce_admins` off, the ceremony is unnecessary: merge directly as section 1 describes.
 
 The ceremony is for **self-merge** of the maintainer's own PRs. When a peer reviewer is available (a contributor with write access), the standard `gh pr review --approve` + `gh pr merge --squash --delete-branch` path is correct and the ceremony is unnecessary.
 

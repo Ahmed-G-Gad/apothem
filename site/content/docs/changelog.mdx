@@ -261,6 +261,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **The one-shot installer installs and verifies in one run**, and the
   installers emit no ANSI codes when output is not a terminal.
 - **Piped output and `--help` epilogs keep their line structure.**
+- **`apothem completion <shell>` no longer ends the script with a blank
+  line.** The output for `bash`, `zsh`, `fish`, and `powershell` now ends in
+  a single newline, so appending it to a shell profile adds no extra line.
 - **Profiles without a version are read as version 1.**
 - **Qwen Code hook timeouts are written in seconds** and the interpreter path
   is quoted.
@@ -290,6 +293,18 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   exists, and the README said each release attaches a signed `.vsix`, which
   v1.1.0 does not. Both now say how to install the package and how to build
   it from a checkout.
+- **The branch protection page matches the settings on `main`.** It described
+  a ruleset with four required checks (`ci`, `Scorecard`, `CodeQL`,
+  `pip-audit`), one required approval, latest-push approval, and "require
+  branches to be up to date". `main` uses a classic protection rule that
+  requires 12 checks (the ten `quality` cells, `coverage`, and
+  `Require Signed-off-by`) and 0 approvals, does not bind admins, and does not
+  require an up-to-date branch. The page now lists those exact settings and,
+  separately, the clean-install, harness-matrix, and installer-lint checks
+  still to be added. The solo-maintainer merge runbook, `CONTRIBUTING.md`, and
+  the Scorecard page now describe the same review settings, and the runbook
+  and `admin_merge.py` warn that an `--admin` merge also bypasses red required
+  checks while `enforce_admins` is off.
 - **The wheel and sdist carry the full hook corpus.** They left out
   `hooks/hooks.json` and the hook READMEs that every other channel ships.
 - **Path-filtered rules no longer load in every Claude Code session.** Claude
@@ -342,9 +357,23 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   reported the signed tag as possibly tampered with, because they matched
   GnuPG's English text. They now read GnuPG's status lines
   (`[GNUPG:] NO_PUBKEY`), which do not change with the language.
-- **`apothem completion <shell>` no longer ends the script with a blank
-  line.** The output for `bash`, `zsh`, `fish`, and `powershell` now ends in
-  a single newline, so appending it to a shell profile adds no extra line.
+- **The shell rules' PowerShell lint command reports syntax errors.** The
+  `code-craft-shell` and `performance-discipline` rules ran
+  `Invoke-ScriptAnalyzer -Severity Error,Warning`. PSScriptAnalyzer reports
+  a syntax error at severity `ParseError`, and an explicit `-Severity` list
+  without it drops the error, so a script that did not parse passed clean.
+  Both rules now pass `-Severity Error,Warning,ParseError`.
+- **The shell rules' PowerShell lint check fails on a finding.** The
+  `code-craft-shell` rule said `Invoke-ScriptAnalyzer ...` "exits 0" and that
+  the host's `PSScriptAnalyzerSettings.psd1` "is honored". Without
+  `-EnableExit` the cmdlet exits 0 even when it reports findings, and without
+  `-Settings` it reads a settings file only from the `-Path` folder, never a
+  parent folder. The rule now passes when the analyzer returns no records,
+  runs a command that exits 1 on any record, and passes `-Settings` when the
+  host has a settings file. The command also exits 1 when the script, the
+  settings file or the PSScriptAnalyzer module is missing, under both
+  `pwsh -Command` and `pwsh -File`. The `performance-discipline` §1.1
+  verifier exits 1 on any record in the same way.
 
 ### Security
 
