@@ -336,6 +336,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   the plugin tree's vendored code to its authors.
 - **SECURITY.md lists 1.1.x as supported**, the release badge reads the tag
   from full history, and the CHANGELOG links resolve.
+- **The shell rules' PowerShell lint command reports syntax errors.** The
+  `code-craft-shell` and `performance-discipline` rules ran
+  `Invoke-ScriptAnalyzer -Severity Error,Warning`. PSScriptAnalyzer reports
+  a syntax error at severity `ParseError`, and an explicit `-Severity` list
+  without it drops the error, so a script that did not parse passed clean.
+  Both rules now pass `-Severity Error,Warning,ParseError`.
 
 ### Security
 
