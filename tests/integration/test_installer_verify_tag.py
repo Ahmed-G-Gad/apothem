@@ -14,6 +14,8 @@ abort classes:
   override on a possible-tampering signal.
 
 Both tests assert the abort happens before any configuration materializes.
+A stub verifier replays GnuPG's German output for both classes, to show the
+split rests on GnuPG's status lines rather than its translated messages.
 The fixture repository is minimal: the gate runs right after the
 ``is_apothem_source`` shape check (``src/apothem`` + ``pyproject.toml``), so
 no working engine tree is required.
@@ -22,6 +24,7 @@ no working engine tree is required.
 from __future__ import annotations
 
 import os
+import shlex
 import shutil
 import subprocess
 import sys
@@ -40,6 +43,26 @@ OVERRIDE_SUGGESTION = "Set APOTHEM_ALLOW_UNVERIFIED=1"
 
 # Subprocess wall-clock ceiling: local clone + abort, no materialization.
 INSTALL_TIMEOUT_SECONDS = 120
+
+# GnuPG 2.4.4 verification results under de_DE.UTF-8, abridged:
+# (status lines, stderr). git passes --status-fd=1, so the status lines arrive
+# on stdout; they read the same in every locale, while the stderr text is
+# translated.
+LOCALIZED_GPG_RESULTS = {
+    "missing-key": (
+        "[GNUPG:] NEWSIG signer@example.invalid\n"
+        "[GNUPG:] ERRSIG 984AE72EA84995CA 22 10 00 1791351771 9 "
+        "C2CD460ED9DCEF33C51123AE984AE72EA84995CA\n"
+        "[GNUPG:] NO_PUBKEY 984AE72EA84995CA\n",
+        "gpg: Signatur kann nicht geprüft werden: Kein öffentlicher Schlüssel\n",
+    ),
+    "bad-signature": (
+        "[GNUPG:] NEWSIG signer@example.invalid\n"
+        "[GNUPG:] BADSIG 984AE72EA84995CA Fixture Signer <signer@example.invalid>\n",
+        'gpg: FALSCHE Signatur von "Fixture Signer <signer@example.invalid>"'
+        " [ultimativ]\n",
+    ),
+}
 
 pytestmark = pytest.mark.skipif(
     shutil.which("bash") is None or sys.platform == "win32",
@@ -140,6 +163,61 @@ def _run_installer(env: dict[str, str]) -> subprocess.CompletedProcess[str]:
         text=True,
         timeout=INSTALL_TIMEOUT_SECONDS,
     )
+
+
+def _make_stub_signed_tag(fixture: Path, tag: str) -> None:
+    """Point TAG at a tag object that carries an OpenPGP signature block.
+
+    The block is never checked: the installer's git hands it to the stub
+    verifier, which replays a canned GnuPG result. No key or gpg is needed.
+    """
+    commit = _git(["rev-parse", "HEAD"], cwd=fixture).strip()
+    tag_file = fixture.parent / f"{tag}.tag"
+    tag_file.write_text(
+        f"object {commit}\n"
+        "type commit\n"
+        f"tag {tag}\n"
+        "tagger Fixture <fixture@example.invalid> 1700000000 +0000\n"
+        "\n"
+        "signed release\n"
+        "-----BEGIN PGP SIGNATURE-----\n"
+        "\n"
+        "c3R1Yg==\n"
+        "-----END PGP SIGNATURE-----\n",
+        encoding="utf-8",
+    )
+    tag_sha = _git(["hash-object", "-t", "tag", "-w", str(tag_file)], cwd=fixture)
+    _git(["update-ref", f"refs/tags/{tag}", tag_sha.strip()], cwd=fixture)
+
+
+def _use_stub_gpg(env: dict[str, str], status: str, human: str) -> None:
+    """Make the installer's git verify signatures with a stub gpg program.
+
+    The stub drains the payload git writes to its stdin, prints STATUS on
+    stdout (git's --status-fd=1) and HUMAN on stderr, and exits 1, as gpg
+    does when a signature does not verify. It is set as gpg.program in the
+    isolated HOME's global git config.
+    """
+    stub_dir = Path(env["HOME"]).parent / "stub-gpg"
+    stub_dir.mkdir()
+    (stub_dir / "status.txt").write_text(status, encoding="utf-8")
+    (stub_dir / "human.txt").write_text(human, encoding="utf-8")
+    stub = stub_dir / "gpg"
+    stub.write_text(
+        "#!/bin/sh\n"
+        "cat >/dev/null\n"
+        f"cat {shlex.quote(str(stub_dir / 'status.txt'))}\n"
+        f"cat {shlex.quote(str(stub_dir / 'human.txt'))} >&2\n"
+        "exit 1\n",
+        encoding="utf-8",
+    )
+    stub.chmod(0o755)
+    gitconfig = Path(env["HOME"]) / ".gitconfig"
+    _git(
+        ["config", "--file", str(gitconfig), "gpg.program", str(stub)],
+        cwd=stub_dir,
+    )
+    env["GIT_CONFIG_GLOBAL"] = str(gitconfig)
 
 
 def _assert_aborted_before_materialization(env: dict[str, str]) -> None:
@@ -248,6 +326,51 @@ def test_signed_tag_with_absent_key_prints_import_guidance(tmp_path: Path) -> No
     assert MISSING_KEY_MARKER in combined, combined
     assert KEY_IMPORT_MARKER in combined, combined
     assert BAD_SIGNATURE_MARKER not in combined, combined
+    assert OVERRIDE_SUGGESTION not in combined, combined
+    _assert_aborted_before_materialization(env)
+
+
+@pytest.mark.parametrize(
+    ("gpg_result", "expected", "unexpected"),
+    [
+        pytest.param(
+            "missing-key",
+            (MISSING_KEY_MARKER, KEY_IMPORT_MARKER),
+            (BAD_SIGNATURE_MARKER,),
+            id="missing-key",
+        ),
+        pytest.param(
+            "bad-signature",
+            (BAD_SIGNATURE_MARKER,),
+            (MISSING_KEY_MARKER, KEY_IMPORT_MARKER),
+            id="bad-signature",
+        ),
+    ],
+)
+def test_abort_class_does_not_depend_on_gpg_language(
+    tmp_path: Path,
+    gpg_result: str,
+    expected: tuple[str, ...],
+    unexpected: tuple[str, ...],
+) -> None:
+    """GnuPG translates its messages, so a missing key reads "Kein
+    öffentlicher Schlüssel" under a German locale. The installer must still
+    tell a missing key from a bad signature, so it reads the status lines,
+    which GnuPG does not translate."""
+    fixture = _make_fixture_repo(tmp_path)
+    _make_stub_signed_tag(fixture, "v9.9.7")
+    env = _installer_env(tmp_path, fixture, "v9.9.7")
+    status, human = LOCALIZED_GPG_RESULTS[gpg_result]
+    _use_stub_gpg(env, status, human)
+
+    result = _run_installer(env)
+
+    combined = result.stdout + result.stderr
+    assert result.returncode != 0, f"installer should abort\n{combined}"
+    for marker in expected:
+        assert marker in combined, combined
+    for marker in unexpected:
+        assert marker not in combined, combined
     assert OVERRIDE_SUGGESTION not in combined, combined
     _assert_aborted_before_materialization(env)
 
