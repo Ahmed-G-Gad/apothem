@@ -351,6 +351,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `APOTHEM_ALLOW_UNVERIFIED=1`. Under Windows PowerShell 5.1, which
   `update.bat` runs, the check no longer stops the update on GnuPG's
   output, which it did even for a validly signed tag.
+- **`install.ps1` can verify a release tag under Windows PowerShell 5.1.**
+  Under Windows PowerShell 5.1, which `install.bat` runs, the signature check
+  stopped the install on GnuPG's first output line, even for a validly signed
+  tag, so an install that clones a release could not finish. The check now
+  gives the same result as on PowerShell 7.2 and later: a valid signature
+  passes, a missing maintainer key gets key-import guidance, and an unsigned
+  or tampered tag aborts.
 
 ### Security
 
