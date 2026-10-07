@@ -16,41 +16,55 @@ New-Item -ItemType Directory -Force -Path $Out | Out-Null
 #
 # Every golden is the SPDX header followed by `apothem completion <shell>`.
 # That command pins the `apothem` program name and the _APOTHEM_COMPLETE
-# variable, so the emitted script is the same whichever shim runs it. Click's
-# `<shell>_source` env-var protocol is not used here: it derives the program
-# name from the invocation, so under a `python -m apothem` shim it emitted
-# `_python_mapothem_completion` functions bound to `python -m apothem`.
+# variable, so the emitted script does not depend on how the interpreter was
+# invoked. Click's `<shell>_source` env-var protocol is not used here: it
+# derives the program name from the invocation, so under a `python -m apothem`
+# shim it emitted `_python_mapothem_completion` functions bound to
+# `python -m apothem`.
+#
+# The command always runs from this checkout: src/ goes first on PYTHONPATH and
+# nothing is resolved from PATH. An `apothem` on PATH is usually the installer's
+# shim, which puts the installed engine's src/ first on PYTHONPATH, so the
+# goldens would come from whatever release is installed rather than from the
+# tree being committed. APOTHEM_PYTHON overrides the interpreter, as it does for
+# the npm shim. PYTHONPATH is restored on exit because $env: changes outlive the
+# script in the calling session.
+$Python = if ($env:APOTHEM_PYTHON) { $env:APOTHEM_PYTHON } else { "python" }
 $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 $Header = "# SPDX-License-Identifier: MIT`n`n"
 $Extensions = [ordered]@{ bash = "bash"; zsh = "zsh"; fish = "fish"; powershell = "ps1" }
-foreach ($shell in $Extensions.Keys) {
-    $name = "apothem.$($Extensions[$shell])"
-    $target = Join-Path $Out $name
-    $output = $null
-    try {
-        $output = & apothem completion $shell
-    } catch {
-        # Command name did not resolve (apothem not on PATH).
-        $LASTEXITCODE = 1
-    }
-    if ($LASTEXITCODE -ne 0) {
-        # Falls back on both an unresolved command name and a non-zero exit, so a
-        # broken CLI triggers the python entry point rather than truncating the golden.
-        Write-Host "apothem unavailable on PATH; falling back to: python -m apothem"
-        $output = & python -m apothem completion $shell
-        if ($LASTEXITCODE -ne 0) {
-            throw "failed to regenerate $name (apothem off PATH and the python fallback failed; run under PYTHONPATH=src)"
+$SavedPythonPath = $env:PYTHONPATH
+$SrcDir = Join-Path $Root "src"
+$env:PYTHONPATH = if ($SavedPythonPath) {
+    $SrcDir + [System.IO.Path]::PathSeparator + $SavedPythonPath
+} else {
+    $SrcDir
+}
+try {
+    foreach ($shell in $Extensions.Keys) {
+        $name = "apothem.$($Extensions[$shell])"
+        $target = Join-Path $Out $name
+        $output = $null
+        try {
+            $output = & $Python -m apothem completion $shell
+        } catch {
+            throw "failed to regenerate $name ($Python could not run: $($_.Exception.Message); set APOTHEM_PYTHON to an interpreter that provides click and rich)"
         }
+        if ($LASTEXITCODE -ne 0) {
+            throw "failed to regenerate $name ($Python -m apothem completion $shell exited $LASTEXITCODE; set APOTHEM_PYTHON to an interpreter that provides click and rich)"
+        }
+        # Refuse before the write, matching the .sh sibling: a generator that
+        # resolves and exits 0 while emitting nothing would otherwise put a
+        # header-only file over the committed golden, which the byte-identical
+        # verification check then treats as canonical.
+        if (-not $output) {
+            throw "$name generated empty; refusing to overwrite the golden"
+        }
+        [System.IO.File]::WriteAllText($target, ($Header + ($output -join "`n") + "`n"), $Utf8NoBom)
+        Write-Host "  + $name"
     }
-    # Refuse before the write, matching the .sh sibling: a generator that
-    # resolves and exits 0 while emitting nothing would otherwise put a
-    # header-only file over the committed golden, which the byte-identical
-    # verification check then treats as canonical.
-    if (-not $output) {
-        throw "$name generated empty; refusing to overwrite the golden"
-    }
-    [System.IO.File]::WriteAllText($target, ($Header + ($output -join "`n") + "`n"), $Utf8NoBom)
-    Write-Host "  + $name"
+} finally {
+    $env:PYTHONPATH = $SavedPythonPath
 }
 
 Write-Host "Regeneration complete -> $Out"
