@@ -1,24 +1,31 @@
 # SPDX-License-Identifier: MIT
 
-"""Mechanical parity guard for the paired install.sh / install.ps1 installers.
+"""Mechanical parity guard for the paired POSIX / PowerShell installers.
 
-``scripts/installer/install.sh`` (POSIX) and ``install.ps1`` (PowerShell) are
-hand-duplicated: each independently reimplements the same trust model — release-
-tag recognition, the verification-bypass opt-out, and the source-precedence
-order. The two drifted once already (the POSIX ``is_release_tag`` accepted
-pre-release and malformed tags that the anchored PowerShell ``Test-ReleaseTag``
-regex rejected), taking a pinned pre-release down the wrong verify branch.
+``scripts/installer/install.sh`` and ``update.sh`` (POSIX) and their
+``install.ps1`` / ``update.ps1`` siblings (PowerShell) are hand-duplicated:
+each independently reimplements the same trust model — release-tag
+recognition, the verification-bypass opt-out, and the source-precedence
+order. The pairs drifted already: the POSIX ``is_release_tag`` accepted
+pre-release and malformed tags that the anchored PowerShell
+``Test-ReleaseTag`` regex rejected, taking a pinned pre-release down the wrong
+verify branch, and once install.sh was fixed, update.sh kept the loose copy.
 
-Full unification of the two scripts is out of scope. These tests are a drift
-guard over the extractable decision-table constants: they read both scripts and
+Full unification of the scripts is out of scope. These tests are a drift
+guard over the extractable decision-table constants: they read the scripts and
 assert that the SemVer recognition shape, the verification-bypass environment
-variable name, and the source-precedence order agree. A future edit to one
-script that does not mirror the other trips a finding here instead of shipping
-a silent divergence.
+variable name, and the source-precedence order agree. The release-tag shape is
+guarded for both the install and the update pair; the other checks cover the
+install pair. A future edit to one script that does not mirror its sibling
+trips a finding here instead of shipping a silent divergence.
 """
 
 from __future__ import annotations
 
+import re
+import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -26,59 +33,144 @@ import pytest
 REPO_ROOT: Path = Path(__file__).resolve().parents[2]
 INSTALLER: Path = REPO_ROOT / "scripts" / "installer"
 
-SH: str = (INSTALLER / "install.sh").read_text(encoding="utf-8")
-PS1: str = (INSTALLER / "install.ps1").read_text(encoding="utf-8")
+SCRIPTS: dict[str, str] = {
+    name: (INSTALLER / name).read_text(encoding="utf-8")
+    for name in ("install.sh", "install.ps1", "update.sh", "update.ps1")
+}
+SH: str = SCRIPTS["install.sh"]
+PS1: str = SCRIPTS["install.ps1"]
+
+# Each POSIX script beside the PowerShell sibling whose Test-ReleaseTag its
+# is_release_tag mirrors.
+RELEASE_TAG_PAIRS: tuple[tuple[str, str], ...] = (
+    ("install.sh", "install.ps1"),
+    ("update.sh", "update.ps1"),
+)
+
+# The anchored regex both PowerShell scripts' Test-ReleaseTag match against.
+PS1_RELEASE_TAG_REGEX = r"^v[0-9]+\.[0-9]+\.[0-9]+$"
+
+VALID_TAGS: tuple[str, ...] = ("v1.2.3", "v10.20.30", "v0.0.1")
+NON_RELEASE_REFS: tuple[str, ...] = (
+    "v1.2.3-rc1",
+    "v1x.2.3",
+    "main",
+    "abc123",
+    "v1.2",
+)
 
 
-def test_release_tag_recognition_is_strict_semver_in_both() -> None:
-    """Both installers recognise a release tag as strict, anchored SemVer.
+@pytest.mark.parametrize(("sh_name", "ps1_name"), RELEASE_TAG_PAIRS)
+def test_release_tag_recognition_is_strict_semver_in_both(
+    sh_name: str, ps1_name: str
+) -> None:
+    """Each pair recognises a release tag as strict, anchored SemVer.
 
-    install.ps1's ``Test-ReleaseTag`` uses the anchored regex
-    ``^v[0-9]+\\.[0-9]+\\.[0-9]+$``. install.sh's ``is_release_tag`` cannot use
+    The ``.ps1`` ``Test-ReleaseTag`` uses the anchored regex
+    ``^v[0-9]+\\.[0-9]+\\.[0-9]+$``. The ``.sh`` ``is_release_tag`` cannot use
     a regex (POSIX ``case`` globs have no anchors or ``+`` quantifier), so it
     pairs the ``v[0-9]*.[0-9]*.[0-9]*`` shape glob with a ``*[!v0-9.]*`` reject
     gate that drops any tag carrying a character outside the strict ``v``/digit/
-    dot set — the same acceptance set as the PowerShell regex. Both surfaces
-    must be present so neither script silently loosens back to matching
-    pre-release (``v1.2.3-rc1``) or malformed (``v1x.2.3``) tags.
+    dot set. Both surfaces must be present so neither script silently loosens
+    back to matching pre-release (``v1.2.3-rc1``) or malformed (``v1x.2.3``)
+    tags.
     """
+    sh, ps1 = SCRIPTS[sh_name], SCRIPTS[ps1_name]
     # PowerShell: the anchored strict-SemVer regex.
-    assert r"^v[0-9]+\.[0-9]+\.[0-9]+$" in PS1, (
-        "install.ps1 no longer anchors Test-ReleaseTag to strict SemVer"
+    assert PS1_RELEASE_TAG_REGEX in ps1, (
+        f"{ps1_name} no longer anchors Test-ReleaseTag to strict SemVer"
     )
     # POSIX: the reject gate that rejects any non-[v0-9.] character, plus the
     # digit-anchored component shape. Together they mirror the ps1 regex.
-    assert "*[!v0-9.]*)" in SH, (
-        "install.sh lost the non-SemVer-character reject gate in is_release_tag; "
+    assert "*[!v0-9.]*)" in sh, (
+        f"{sh_name} lost the non-SemVer-character reject gate in is_release_tag; "
         "without it the case glob matches v1.2.3-rc1 and v1x.2.3"
     )
-    assert "v[0-9]*.[0-9]*.[0-9]*)" in SH, (
-        "install.sh lost the three-component SemVer shape glob in is_release_tag"
+    assert "v[0-9]*.[0-9]*.[0-9]*)" in sh, (
+        f"{sh_name} lost the three-component SemVer shape glob in is_release_tag"
     )
 
 
-@pytest.mark.parametrize("tag", ["v1.2.3", "v10.20.30", "v0.0.1"])
+def test_install_and_update_define_the_same_is_release_tag() -> None:
+    """update.sh carries install.sh's ``is_release_tag`` unchanged.
+
+    update.sh says its tag helpers mirror install.sh's. It kept the loose
+    single-glob copy after install.sh gained the reject gate, and so sent
+    ``v1.2.3-rc1`` to ``git verify-tag`` where update.ps1 refused it.
+    """
+    assert _sh_function(SCRIPTS["update.sh"], "is_release_tag") == (
+        _sh_function(SH, "is_release_tag")
+    ), "update.sh's is_release_tag has drifted from install.sh's"
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32" or shutil.which("sh") is None,
+    reason="runs the POSIX is_release_tag under sh",
+)
+@pytest.mark.parametrize(("sh_name", "ps1_name"), RELEASE_TAG_PAIRS)
+def test_posix_is_release_tag_agrees_with_the_ps1_regex(
+    sh_name: str, ps1_name: str
+) -> None:
+    """Each script's own ``is_release_tag``, run under sh, agrees with the
+    ``.ps1`` regex on every ref.
+
+    The substring checks and the Python model in :func:`_sh_is_release_tag`
+    can pass while the shell function behaves differently, for example with
+    its gates reordered. This runs the definition the script ships.
+    """
+    refs = (*VALID_TAGS, *NON_RELEASE_REFS)
+    program = (
+        _sh_function(SCRIPTS[sh_name], "is_release_tag")
+        + '\nfor ref in "$@"; do\n'
+        + '    if is_release_tag "$ref"; then echo release; else echo other; fi\n'
+        + "done\n"
+    )
+    result = subprocess.run(
+        ["sh", "-c", program, "sh", *refs],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    verdicts = dict(zip(refs, result.stdout.splitlines(), strict=True))
+    disagreements = {
+        ref: verdict
+        for ref, verdict in verdicts.items()
+        if (verdict == "release") != bool(re.search(PS1_RELEASE_TAG_REGEX, ref))
+    }
+    assert not disagreements, (
+        f"{sh_name}'s is_release_tag disagrees with {ps1_name}'s Test-ReleaseTag "
+        f"(ref: {sh_name} verdict): {disagreements}"
+    )
+
+
+def _sh_function(script: str, name: str) -> str:
+    """Return the definition of shell function NAME, from ``NAME() {`` to the
+    closing ``}`` at column 0, as SCRIPT carries it."""
+    match = re.search(rf"^{name}\(\) \{{\n.*?^\}}$", script, re.MULTILINE | re.DOTALL)
+    assert match, f"no {name}() definition found"
+    return match.group(0)
+
+
+@pytest.mark.parametrize("tag", VALID_TAGS)
 def test_strict_semver_tags_are_accepted_by_both_shapes(tag: str) -> None:
     """A well-formed release tag is accepted by both recognition shapes."""
     # POSIX acceptance: no non-[v0-9.] character present AND the shape matches.
     assert _sh_is_release_tag(tag), f"install.sh shape rejects valid tag {tag}"
     # PowerShell acceptance: the anchored regex matches.
-    import re
-
     assert re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+", tag), (
         f"install.ps1 regex rejects valid tag {tag}"
     )
 
 
-@pytest.mark.parametrize("tag", ["v1.2.3-rc1", "v1x.2.3", "main", "abc123", "v1.2"])
+@pytest.mark.parametrize("tag", NON_RELEASE_REFS)
 def test_non_release_refs_are_rejected_by_both_shapes(tag: str) -> None:
     """Pre-release, malformed, branch, and SHA refs are rejected by both.
 
     This is the exact class the original POSIX glob mis-accepted; the reject
     gate now makes install.sh agree with install.ps1's anchored regex.
     """
-    import re
-
     assert not _sh_is_release_tag(tag), f"install.sh shape wrongly accepts {tag}"
     assert not re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+", tag), (
         f"install.ps1 regex wrongly accepts {tag}"
