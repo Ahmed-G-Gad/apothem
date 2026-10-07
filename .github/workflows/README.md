@@ -19,6 +19,7 @@ top-level `.github/README.md` would, and none exists.
 | `ci-docs-stub.yml` | PR (main) | Documentation-only PR stub that reports the required `quality` / `coverage` contexts green; self-gates and fails if a gated code/config surface is present. |
 | `npm-shim.yml` | push (main), PR (main), dispatch | npm shim runtime-floor gate — runs `bin/apothem.mjs` on Node 18, 20, 22 and 24 with Python 3.10: the missing-prerequisite error, `--version`, an isolated dry-run install, and the packed tarball through `npx`. |
 | `clean-install-gate.yml` | push (main), PR (main), dispatch | Clean-machine install gate — one-shot installer shell-compat across documented shells, plus a hermetic clean-runner install and built-wheel smoke. |
+| `installer-lint.yml` | PR (main), dispatch | Runs the Static Site build's two installer lint commands on `scripts/installer/` for every PR: `shellcheck --severity=error` on the `.sh` scripts and `Invoke-ScriptAnalyzer` with `PSScriptAnalyzerSettings.psd1` on the `.ps1` scripts. A finding fails the PR instead of stopping the Pages deploy after merge. `tests/integration/test_installer_lint_workflow.py` keeps the two workflows' commands identical. |
 | `channel-smoke.yml` | schedule (weekly), dispatch | Runs every documented install channel the way an anonymous new user would — clean runner, documented prerequisites only, isolated home, no credentials — via `scripts/dev/channel_smoke.py`. The harness CLIs install with `npm ci` from `.github/channel-smoke/package-lock.json`. Run it after a visibility change, a release, or an install-docs change. |
 | `harness-matrix.yml` | push (main), PR (main), dispatch | Per-harness install + verify matrix fanning across all 17 registered adapters (build wheel → install → verify → uninstall in a sandbox home). |
 | `conformity.yml` | push (main), PR (main), schedule (weekly), dispatch | Outward-conformity fixture sweep in strict mode over the user-scope ecosystem tree; fails on any per-fixture per-mandate `fail` cell. |
@@ -36,7 +37,7 @@ top-level `.github/README.md` would, and none exists.
 | `release.yml` | push (tag `v*.*.*`) | Release orchestration — check the harness convention pins, build sdist + wheel, package the VS Code extension (`apothem.vsix`) in its own job with vsce from the `.github/vsce` lockfile, SBOM, cosign signature, SLSA provenance, then publish the GitHub Release with every artifact attached. |
 | `publish-npm.yml` | push (tag `v*.*.*`), dispatch | Publishes `@ahmed-g-gad/apothem` to registry.npmjs.org via npm trusted publishing (OIDC) with provenance; no registry token is stored or read. |
 | `publish-vscode.yml` | push (tag `v*.*.*`), dispatch | Packages the extension into a `.vsix` with vsce from the `.github/vsce` lockfile and publishes to the Visual Studio Marketplace; gated on the `VSCE_PAT` secret and the `VSCODE_MARKETPLACE_READY` variable. |
-| `publish-static-site.yml` | push (main), dispatch | Builds the Next.js + Fumadocs site, stages the canonical install scripts and badges, and deploys to apothem.ahmedgad.com via GitHub Pages. Only a run on `main` deploys. A dispatch from another branch runs the build job alone, as a dry run. |
+| `publish-static-site.yml` | push (main), dispatch | Builds the Next.js + Fumadocs site, stages the canonical install scripts and badges, lints the staged scripts with the commands `installer-lint.yml` runs on every PR, and deploys to apothem.ahmedgad.com via GitHub Pages. Only a run on `main` deploys. A dispatch from another branch runs the build job alone, as a dry run. |
 | `harness-convention-monitor.yml` | schedule (weekly), dispatch | Enforces the 90-day freshness cadence on each adapter's `STANDARD-CONVENTION-PIN.md`; reports a drift alert when a pin is missing, malformed, future-dated, or stale. A second job runs `scripts/dev/check_vendor_urls.py` over every vendor URL the pins and harness templates cite and reports any that has moved or died; a timeout or a passing outage is listed but does not count. Each job keeps one open issue and comments on it rather than filing another. |
 | `reusable-python-setup.yml` | workflow_call, dispatch | Reusable Python setup + dependency-install building block callers invoke via `uses: ./.github/workflows/reusable-python-setup.yml`; not a standalone gate. |
 
@@ -50,15 +51,17 @@ top-level `.github/README.md` would, and none exists.
   (Sigstore policy forbids SHA-pinning trusted reusable workflows), and that
   `uses:` line carries an `action-pinning-exempt:` marker. `.github/zizmor.yml`
   records the same exception as zizmor's only `ref-pin` policy.
-- **Branch-protection required checks.** Three workflows declare, in their own
-  headers, that a job is a `main` required status check: `ci.yml` (the
-  `quality / <os> / py<ver>` matrix and `coverage`), `clean-install-gate.yml`,
-  and `harness-matrix.yml` (`matrix (<name>)`). A required check is never gated
-  by a `paths:` filter on its pull-request trigger — a skipped required check
-  can never report and would silently gate nothing — which is why
-  `clean-install-gate.yml` and the `harness-matrix.yml` pull-request trigger run
-  on every PR to `main`, and `ci-docs-stub.yml` reports the required contexts
-  green on a documentation-only PR that never runs the real jobs.
+- **Branch-protection required checks.** `ci.yml`'s `quality / <os> / py<ver>`
+  matrix and `coverage` are `main` required status checks, as the
+  `ci-docs-stub.yml` header records. Three more workflows declare, in their own
+  headers, that a job is one: `clean-install-gate.yml`, `harness-matrix.yml`
+  (`matrix (<name>)`), and `installer-lint.yml` (`installer-lint`). A required
+  check is never gated by a `paths:` filter on its pull-request trigger — a
+  skipped required check can never report and would silently gate nothing —
+  which is why `clean-install-gate.yml`, `installer-lint.yml`, and the
+  `harness-matrix.yml` pull-request trigger run on every PR to `main`, and
+  `ci-docs-stub.yml` reports the required contexts green on a
+  documentation-only PR that never runs the real jobs.
 - **Public-only security scans.** Code scanning and dependency review are free
   on public repositories and need GitHub Code Security on private ones, and
   Scorecard needs public access to the repository. The jobs and steps that
@@ -75,10 +78,10 @@ top-level `.github/README.md` would, and none exists.
   it. No job uses write-all.
 - **Runner hardening.** Every job's first step is `step-security/harden-runner`;
   jobs with a small, stable endpoint set (`dco.yml`, `dependency-review.yml`,
-  `scorecard.yml`) set `egress-policy: block` with an explicit allowlist, and
-  the rest run `audit`. `zizmor.yml` and `license-audit.yml` stay on `audit`
-  because their endpoint sets are not stable enough to allowlist without
-  false-failing the job.
+  `installer-lint.yml`, `scorecard.yml`) set `egress-policy: block` with an
+  explicit allowlist, and the rest run `audit`. `zizmor.yml` and
+  `license-audit.yml` stay on `audit` because their endpoint sets are not
+  stable enough to allowlist without false-failing the job.
 - **Concurrency.** Each workflow declares a `concurrency` group keyed on the ref;
   release and publish workflows set `cancel-in-progress: false` so a
   publication run is never cancelled mid-flight, while gate and scan workflows
