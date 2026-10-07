@@ -17,6 +17,13 @@ Both tests assert the abort happens before any configuration materializes.
 The fixture repository is minimal: the gate runs right after the
 ``is_apothem_source`` shape check (``src/apothem`` + ``pyproject.toml``), so
 no working engine tree is required.
+
+Every git process here, the fixture setup's and the installer's, runs without
+the host's git configuration (``tests._shared.git_env``). A developer's
+``gpg.format ssh`` would otherwise turn the fixture's ``git tag -s`` into an
+SSH signature, which ``git verify-tag`` rejects for want of an allowed-signers
+file instead of reporting the missing OpenPGP key. An autouse fixture plants
+such configuration on every layer git reads, so a leak fails on any host.
 """
 
 from __future__ import annotations
@@ -28,6 +35,8 @@ import sys
 from pathlib import Path
 
 import pytest
+
+from tests._shared.git_env import hermetic_git_env
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 INSTALLER = REPO_ROOT / "scripts" / "installer" / "install.sh"
@@ -51,12 +60,47 @@ pytestmark = pytest.mark.skipif(
 )
 
 
+@pytest.fixture(autouse=True)
+def _host_git_config_that_must_not_leak(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Plant host git configuration that derails these tests if it leaks in.
+
+    CI runners carry no such configuration, so without this a regression in
+    the hermetic environment would pass there. The global and system files,
+    the ``git -c`` and ``GIT_CONFIG_COUNT`` environment channels, and the
+    legacy ``GIT_CONFIG`` file override all carry ``gpg.format ssh``, which
+    makes the fixture's ``git tag -s`` sign with SSH, and a ``gpg.program``
+    that does not exist, which makes ``git verify-tag`` fail before gpg can
+    report the absent key. A leaked ``GIT_CONFIG`` also sends the fixture's
+    ``git config`` writes to that file instead of the fixture repository.
+    """
+    missing = (tmp_path / "no-such-signing-program").as_posix()
+    hostile = tmp_path / "host-gitconfig"
+    hostile.write_text(
+        f"[gpg]\n\tformat = ssh\n\tprogram = {missing}\n", encoding="utf-8"
+    )
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(hostile))
+    monkeypatch.setenv("GIT_CONFIG_SYSTEM", str(hostile))
+    monkeypatch.delenv("GIT_CONFIG_NOSYSTEM", raising=False)
+    monkeypatch.setenv("GIT_CONFIG", str(hostile))
+    monkeypatch.setenv(
+        "GIT_CONFIG_PARAMETERS", f"'gpg.format'='ssh' 'gpg.program'='{missing}'"
+    )
+    monkeypatch.setenv("GIT_CONFIG_COUNT", "2")
+    monkeypatch.setenv("GIT_CONFIG_KEY_0", "gpg.format")
+    monkeypatch.setenv("GIT_CONFIG_VALUE_0", "ssh")
+    monkeypatch.setenv("GIT_CONFIG_KEY_1", "gpg.program")
+    monkeypatch.setenv("GIT_CONFIG_VALUE_1", missing)
+
+
 def _git(args: list[str], cwd: Path, env: dict[str, str] | None = None) -> str:
-    """Run a git command in CWD and return stdout, failing loudly."""
+    """Run a git command in CWD, without host git config, and return stdout,
+    failing loudly. ENV (default ``os.environ``) is the base environment."""
     result = subprocess.run(
         ["git", *args],
         cwd=str(cwd),
-        env=env,
+        env=hermetic_git_env(env),
         capture_output=True,
         text=True,
         timeout=60,
@@ -95,10 +139,11 @@ def _make_fixture_repo(root: Path) -> Path:
 
 
 def _installer_env(tmp_path: Path, fixture: Path, ref: str) -> dict[str, str]:
-    """Hermetic environment: isolated HOME, fixture repo as the clone remote."""
+    """Hermetic environment: isolated HOME, no host git config, fixture repo
+    as the clone remote."""
     home = tmp_path / "home"
     home.mkdir(exist_ok=True)
-    env = dict(os.environ)
+    env = hermetic_git_env()
     for key in list(env):
         if key.startswith("APOTHEM_"):
             del env[key]
