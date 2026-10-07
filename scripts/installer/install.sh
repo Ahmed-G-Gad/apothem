@@ -238,20 +238,26 @@ verify_tag_missing_key() {
 
 # is_release_tag REF — return 0 when REF is a strict vMAJOR.MINOR.PATCH release
 # tag (the verifiable shape), non-zero otherwise (a branch like main, a SHA, a
-# pre-release tag like v1.2.3-rc1, or a malformed form like v1x.2.3). Drives
-# whether tag verification applies to the fetched ref. This mirrors the anchored
-# `^v[0-9]+\.[0-9]+\.[0-9]+$` regex in install.ps1's Test-ReleaseTag: a POSIX
-# `case` glob cannot express "one-or-more digits" or reject trailing junk on its
-# own (a bare `v[0-9]*.[0-9]*.[0-9]*` matches v1.2.3-rc1 and v1x.2.3, since `*`
-# absorbs any characters). The shape gate below pins each component to start
-# with a digit; the negative gate then rejects any REF carrying a character
-# outside the strict `v`/digit/dot set, so a pre-release or malformed tag falls
-# through to the unverifiable branch — matching install.ps1 exactly.
+# pre-release tag like v1.2.3-rc1, or a malformed form like v1x.2.3 or
+# v1.2.3.4). Drives whether tag verification applies to the fetched ref. This
+# mirrors the anchored `^v[0-9]+\.[0-9]+\.[0-9]+$` regex in install.ps1's
+# Test-ReleaseTag: a POSIX `case` glob cannot express "one-or-more digits" or
+# reject trailing junk on its own (a bare `v[0-9]*.[0-9]*.[0-9]*` matches
+# v1.2.3-rc1, v1x.2.3 and v1.2.3.4, since `*` absorbs any characters). The
+# reject gates run first. They drop any REF that carries a character outside
+# the strict `v`/digit/dot set, a `v` after the first character, or a third
+# dot. The shape gate then requires a leading `v`, two dots, and a digit at the
+# start of each component, so it accepts exactly what the install.ps1 regex
+# matches with case respected. PowerShell's -match ignores case, so install.ps1
+# also accepts V1.2.3, which this function rejects.
 is_release_tag() {
     case "$1" in
         # Reject anything containing a character outside [v0-9.]; this drops
         # the `-rc1` suffix (hyphen/letters) and the stray `x` in v1x.2.3.
         *[!v0-9.]*) return 1 ;;
+        # Reject a `v` after the first character (v1.2.3v) and a third dot
+        # (v1.2.3.4, v1..2.3, v1.2.3.); the shape glob's `*` absorbs both.
+        ?*v* | *.*.*.*) return 1 ;;
     esac
     case "$1" in
         v[0-9]*.[0-9]*.[0-9]*) return 0 ;;

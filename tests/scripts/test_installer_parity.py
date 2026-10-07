@@ -57,6 +57,14 @@ NON_RELEASE_REFS: tuple[str, ...] = (
     "main",
     "abc123",
     "v1.2",
+    # Refs of only `v`, digits, and dots, which the first reject gate passes.
+    "v1.2.3.4",
+    "v1..2.3",
+    "v1.2.3.",
+    "v1.2.3v",
+    "vv1.2.3",
+    "v.1.2.3",
+    "",
 )
 
 
@@ -69,11 +77,12 @@ def test_release_tag_recognition_is_strict_semver_in_both(
     The ``.ps1`` ``Test-ReleaseTag`` uses the anchored regex
     ``^v[0-9]+\\.[0-9]+\\.[0-9]+$``. The ``.sh`` ``is_release_tag`` cannot use
     a regex (POSIX ``case`` globs have no anchors or ``+`` quantifier), so it
-    pairs the ``v[0-9]*.[0-9]*.[0-9]*`` shape glob with a ``*[!v0-9.]*`` reject
-    gate that drops any tag carrying a character outside the strict ``v``/digit/
-    dot set. Both surfaces must be present so neither script silently loosens
-    back to matching pre-release (``v1.2.3-rc1``) or malformed (``v1x.2.3``)
-    tags.
+    pairs the ``v[0-9]*.[0-9]*.[0-9]*`` shape glob with two reject gates: a
+    ``*[!v0-9.]*`` gate that drops any tag carrying a character outside the
+    strict ``v``/digit/dot set, and a ``?*v* | *.*.*.*`` gate that drops a
+    ``v`` after the first character or a third dot. All three must be present
+    so neither script silently loosens back to matching pre-release
+    (``v1.2.3-rc1``) or malformed (``v1x.2.3``, ``v1.2.3.4``) tags.
     """
     sh, ps1 = SCRIPTS[sh_name], SCRIPTS[ps1_name]
     # PowerShell: the anchored strict-SemVer regex.
@@ -85,6 +94,10 @@ def test_release_tag_recognition_is_strict_semver_in_both(
     assert "*[!v0-9.]*)" in sh, (
         f"{sh_name} lost the non-SemVer-character reject gate in is_release_tag; "
         "without it the case glob matches v1.2.3-rc1 and v1x.2.3"
+    )
+    assert "?*v* | *.*.*.*)" in sh, (
+        f"{sh_name} lost the extra-v / third-dot reject gate in is_release_tag; "
+        "without it the case glob matches v1.2.3.4 and v1.2.3v"
     )
     assert "v[0-9]*.[0-9]*.[0-9]*)" in sh, (
         f"{sh_name} lost the three-component SemVer shape glob in is_release_tag"
@@ -169,7 +182,7 @@ def test_non_release_refs_are_rejected_by_both_shapes(tag: str) -> None:
     """Pre-release, malformed, branch, and SHA refs are rejected by both.
 
     This is the exact class the original POSIX glob mis-accepted; the reject
-    gate now makes install.sh agree with install.ps1's anchored regex.
+    gates now make install.sh agree with install.ps1's anchored regex.
     """
     assert not _sh_is_release_tag(tag), f"install.sh shape wrongly accepts {tag}"
     assert not re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+", tag), (
@@ -178,20 +191,26 @@ def test_non_release_refs_are_rejected_by_both_shapes(tag: str) -> None:
 
 
 def _sh_is_release_tag(ref: str) -> bool:
-    """Model install.sh's ``is_release_tag`` two-gate logic in Python.
+    """Model install.sh's ``is_release_tag`` three-gate logic in Python.
 
-    Mirrors the shell function exactly: (1) reject any ref containing a
-    character outside the ``v``/digit/dot set; (2) require the three-component
+    Mirrors the shell function: (1) reject any ref containing a character
+    outside the ``v``/digit/dot set; (2) reject a ``v`` after the first
+    character or a third dot; (3) require the three-component
     ``v<digits>.<digits>.<digits>`` shape. Kept in lockstep with the shell
     source by the presence assertions in
-    :func:`test_release_tag_recognition_is_strict_semver_in_both`.
+    :func:`test_release_tag_recognition_is_strict_semver_in_both`, and checked
+    against the real function by
+    :func:`test_posix_is_release_tag_agrees_with_the_ps1_regex`.
     """
     import fnmatch
 
     # Gate 1: reject a character outside [v0-9.] (POSIX `case *[!v0-9.]* `).
     if fnmatch.fnmatchcase(ref, "*[!v0-9.]*"):
         return False
-    # Gate 2: the three-component shape (POSIX `v[0-9]*.[0-9]*.[0-9]*`).
+    # Gate 2: reject a later `v` or a third dot (POSIX `?*v* | *.*.*.*`).
+    if fnmatch.fnmatchcase(ref, "?*v*") or fnmatch.fnmatchcase(ref, "*.*.*.*"):
+        return False
+    # Gate 3: the three-component shape (POSIX `v[0-9]*.[0-9]*.[0-9]*`).
     return fnmatch.fnmatchcase(ref, "v[0-9]*.[0-9]*.[0-9]*")
 
 

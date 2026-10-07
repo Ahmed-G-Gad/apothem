@@ -343,10 +343,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   reported the signed tag as possibly tampered with, because they matched
   GnuPG's English text. They now read GnuPG's status lines
   (`[GNUPG:] NO_PUBKEY`), which do not change with the language.
-- **`update.sh` no longer treats a pre-release tag as a release tag.** Its
-  release-tag check matched `v1.2.3-rc1` and `v1x.2.3`, so a ref pinned to
-  either went to `git verify-tag`, where `update.ps1` stops with "not a signed
-  release tag". It now uses `install.sh`'s check.
+- **`install.sh` and `update.sh` treat only `vMAJOR.MINOR.PATCH` tags as
+  release tags**, as `install.ps1` and `update.ps1` do. Both scripts matched
+  `v1.2.3.4`, `v1..2.3`, and `v1.2.3v`, and `update.sh` also matched
+  `v1.2.3-rc1` and `v1x.2.3`. A ref pinned to one of these went to
+  `git verify-tag` instead of stopping as "not a signed release tag", and
+  `install.sh` accepted the first three for `APOTHEM_VERIFY=checksum`. Both
+  scripts now use the same check.
 
 ### Security
 
