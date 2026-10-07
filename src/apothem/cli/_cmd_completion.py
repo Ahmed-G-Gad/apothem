@@ -132,4 +132,9 @@ def completion(shell: str) -> None:
             f"Supported shells: {', '.join(_COMPLETION_SHELLS)}."
         )
     comp = completion_cls(main, {}, _COMPLETION_PROG_NAME, _COMPLETION_COMPLETE_VAR)
-    click.echo(comp.source())
+    # Every completion template (Click's and the PowerShell one above) already
+    # ends with its own newline. Echoing with Click's default ``nl=True`` added
+    # a second one, so the script ended in a blank line that end-of-file-fixer
+    # trims from the committed goldens. ``nl=False`` matches Click's own
+    # ``<shell>_source`` emission.
+    click.echo(comp.source(), nl=False)

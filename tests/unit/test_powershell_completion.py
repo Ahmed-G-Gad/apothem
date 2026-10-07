@@ -80,3 +80,15 @@ def test_committed_script_matches_generated_source() -> None:
     expected = "# SPDX-License-Identifier: MIT\n\n" + result.output
     committed = _COMMITTED_SCRIPT.read_text(encoding="utf-8")
     assert committed == expected
+
+
+def test_committed_script_ends_with_one_newline() -> None:
+    """The golden is a fixed point of pre-commit's end-of-file-fixer.
+
+    The hook trims a trailing blank line, so a golden that ended in one was
+    rewritten by ``pre-commit run --all-files`` and then failed the
+    byte-for-byte check above.
+    """
+    committed = _COMMITTED_SCRIPT.read_text(encoding="utf-8")
+    assert committed.endswith("\n")
+    assert not committed.endswith("\n\n")

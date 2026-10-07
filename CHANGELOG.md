@@ -332,6 +332,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   reported the signed tag as possibly tampered with, because they matched
   GnuPG's English text. They now read GnuPG's status lines
   (`[GNUPG:] NO_PUBKEY`), which do not change with the language.
+- **`apothem completion` scripts end with a single newline.** Every shell's
+  script ended in a blank line, and pre-commit's `end-of-file-fixer` rewrote
+  the committed PowerShell completion script, which then failed its
+  byte-for-byte regeneration test.
 
 ### Security
 
