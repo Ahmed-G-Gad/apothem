@@ -248,8 +248,7 @@ verify_tag_missing_key() {
 # the strict `v`/digit/dot set, a `v` after the first character, or a third
 # dot. The shape gate then requires a leading `v`, two dots, and a digit at the
 # start of each component, so it accepts exactly what the install.ps1 regex
-# matches with case respected. PowerShell's -match ignores case, so install.ps1
-# also accepts V1.2.3, which this function rejects.
+# matches with case respected.
 is_release_tag() {
     case "$1" in
         # Reject anything containing a character outside [v0-9.]; this drops

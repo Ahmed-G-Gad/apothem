@@ -10,6 +10,8 @@ order. The pairs drifted already: the POSIX ``is_release_tag`` accepted
 pre-release and malformed tags that the anchored PowerShell
 ``Test-ReleaseTag`` regex rejected, taking a pinned pre-release down the wrong
 verify branch, and once install.sh was fixed, update.sh kept the loose copy.
+In the other direction, ``Test-ReleaseTag`` applied its regex with ``-match``,
+which ignores case, so ``V1.2.3`` passed it and failed ``is_release_tag``.
 
 Full unification of the scripts is out of scope. These tests are a drift
 guard over the extractable decision-table constants: they read the scripts and
@@ -22,6 +24,8 @@ trips a finding here instead of shipping a silent divergence.
 
 from __future__ import annotations
 
+import json
+import os
 import re
 import shutil
 import subprocess
@@ -57,6 +61,9 @@ NON_RELEASE_REFS: tuple[str, ...] = (
     "main",
     "abc123",
     "v1.2",
+    # An upper-case `V`. Both checks are case-sensitive: the `case` glob in
+    # is_release_tag, and Test-ReleaseTag's -cmatch.
+    "V1.2.3",
     # Refs of only `v`, digits, and dots, which the first reject gate passes.
     "v1.2.3.4",
     "v1..2.3",
@@ -163,6 +170,108 @@ def _sh_function(script: str, name: str) -> str:
     closing ``}`` at column 0, as SCRIPT carries it."""
     match = re.search(rf"^{name}\(\) \{{\n.*?^\}}$", script, re.MULTILINE | re.DOTALL)
     assert match, f"no {name}() definition found"
+    return match.group(0)
+
+
+@pytest.mark.parametrize("ps1_name", [ps1_name for _, ps1_name in RELEASE_TAG_PAIRS])
+def test_ps1_test_release_tag_matches_case_sensitively(ps1_name: str) -> None:
+    """Each ``.ps1`` ``Test-ReleaseTag`` applies the regex with ``-cmatch``.
+
+    PowerShell's ``-match`` and ``-imatch`` ignore case, so with either one the
+    ``.ps1`` took ``V1.2.3`` for a release tag while the POSIX ``case`` glob in
+    ``is_release_tag`` rejected it. PowerShell reads operator names without
+    case, so ``-CMatch`` passes too.
+    """
+    function = _ps1_function(SCRIPTS[ps1_name], "Test-ReleaseTag")
+    pattern = r"(?i:-cmatch)\s+'" + re.escape(PS1_RELEASE_TAG_REGEX) + "'"
+    assert re.search(pattern, function), (
+        f"{ps1_name}'s Test-ReleaseTag no longer applies the release-tag regex "
+        "with the case-sensitive -cmatch; -match accepts V1.2.3, which "
+        "is_release_tag rejects"
+    )
+
+
+_PWSH = shutil.which("pwsh") or shutil.which("powershell")
+# Parse the script named by $env:RELEASE_TAG_SCRIPT, take its Test-ReleaseTag
+# definition, and print "release" or "other" for each ref in the JSON array
+# $env:RELEASE_TAG_REFS. The script is parsed, not run, so none of its
+# top-level code executes. The inputs arrive through the environment, so no
+# value is quoted into PowerShell source.
+_CLASSIFY_REFS = "; ".join(
+    (
+        "$ErrorActionPreference = 'Stop'",
+        "$tokens = $null",
+        "$parseErrors = $null",
+        "$ast = [Management.Automation.Language.Parser]::ParseFile("
+        "$env:RELEASE_TAG_SCRIPT, [ref]$tokens, [ref]$parseErrors)",
+        "if ($parseErrors) { throw ($parseErrors -join ' | ') }",
+        "$definition = $ast.Find({ param($node) "
+        "$node -is [Management.Automation.Language.FunctionDefinitionAst] "
+        "-and $node.Name -eq 'Test-ReleaseTag' }, $true)",
+        "if (-not $definition) { throw 'no Test-ReleaseTag definition' }",
+        "$test = $definition.Body.GetScriptBlock()",
+        "foreach ($candidate in ($env:RELEASE_TAG_REFS | ConvertFrom-Json)) "
+        "{ if (& $test $candidate) { 'release' } else { 'other' } }",
+    )
+)
+
+
+@pytest.mark.skipif(_PWSH is None, reason="no PowerShell on this host")
+@pytest.mark.parametrize("ps1_name", [ps1_name for _, ps1_name in RELEASE_TAG_PAIRS])
+def test_powershell_test_release_tag_accepts_only_release_tags(ps1_name: str) -> None:
+    """Each script's own ``Test-ReleaseTag``, run under PowerShell, accepts
+    every valid tag and rejects every other ref, ``V1.2.3`` included.
+
+    :func:`test_ps1_test_release_tag_matches_case_sensitively` reads the source,
+    and the Python regex the other tests use models ``-cmatch``. Both can pass
+    while the shipped function behaves differently, so this runs it.
+    """
+    assert _PWSH is not None
+    refs = (*VALID_TAGS, *NON_RELEASE_REFS)
+    result = subprocess.run(
+        [
+            _PWSH,
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            _CLASSIFY_REFS,
+        ],
+        env={
+            **os.environ,
+            "RELEASE_TAG_SCRIPT": str(INSTALLER / ps1_name),
+            "RELEASE_TAG_REFS": json.dumps(refs),
+            "NO_COLOR": "1",
+            "POWERSHELL_TELEMETRY_OPTOUT": "1",
+        },
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    verdicts = dict(zip(refs, result.stdout.splitlines(), strict=True))
+    wrong = {
+        ref: verdict
+        for ref, verdict in verdicts.items()
+        if (verdict == "release") != (ref in VALID_TAGS)
+    }
+    assert not wrong, (
+        f"{ps1_name}'s Test-ReleaseTag misclassifies (ref: verdict): {wrong}"
+    )
+
+
+def _ps1_function(script: str, name: str) -> str:
+    """Return the definition of PowerShell function NAME, from
+    ``function NAME {`` to the closing ``}`` at column 0, as SCRIPT carries it.
+    """
+    match = re.search(
+        rf"^function {re.escape(name)} \{{\n.*?^\}}$",
+        script,
+        re.MULTILINE | re.DOTALL,
+    )
+    assert match, f"no function {name} definition found"
     return match.group(0)
 
 
