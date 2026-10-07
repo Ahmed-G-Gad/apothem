@@ -83,7 +83,7 @@ identifier, so the same record applies across every installation target.
 | [`profile.example.yaml`](profile.example.yaml) | Worked example of a shared profile — copy to `~/.config/apothem/profile.yaml` and edit; validated against `profile.schema.json`. |
 | [`profile.minimal.yaml`](profile.minimal.yaml) | Minimal valid shared profile — the smallest profile that validates against `profile.schema.json`; consumed by `../cli/_helpers.py`, `__init__.py`, and the profile / rollback / learning tests. |
 | [`freshness-token-denylist.txt`](freshness-token-denylist.txt) | Denylist of legacy / deferral / replacement narrative tokens — read by `../conformity/freshness_token_grep.py` to enforce the current-version-only facade. |
-| [`reference-token-denylist.txt`](reference-token-denylist.txt) | Denylist of reference-platform brand / identifier tokens — read by `../conformity/reference_token_grep.py` to enforce own-voice reimplementation. |
+| [`reference-token-denylist.txt`](reference-token-denylist.txt) | SHA-256 digests of reference-platform brand / identifier tokens, not the tokens — read by `../conformity/reference_token_grep.py` to enforce own-voice reimplementation. A digest keeps a token out of readable, searchable text but does not hide it: a short name can be recovered by exhaustive search. |
 
 ## Other contents
 
@@ -100,6 +100,7 @@ identifier, so the same record applies across every installation target.
 
 - **Resolve-by-package-path ripple.** Matchers, installers, and the PreToolUse hooks resolve these files by package path, so a change here ripples to every consumer.
 - **Byte-exact fixtures are contracts.** `authorship-header.txt`, `header-exceptions.txt`, and the denylist fixtures are consumed verbatim by matchers and installers; their content is a contract, not free prose. A whitespace or line change ripples to every consumer — treat a fixture edit as a contract change and verify its matchers and installers still pass.
+- **The reference-token denylist has a digest grammar.** Every non-comment line of `reference-token-denylist.txt` is `word sha256:<64 hex>` or `literal <n> sha256:<64 hex>`; `reference_token_grep` reports any other line as a malformed entry and does not match it. Add entries only with `scripts/dev/hash_reference_tokens.py`: run it in a terminal, where it prompts for each token without echoing it, or redirect its input from a file kept outside the repository. A token passed as an argument or through `echo` lands in shell history; never commit one.
 - **Schema ↔ consumer agreement.** The cohort-metadata vocabulary and the live schemas must agree; a drift on either surface fails the gate. Change a frontmatter schema and its consuming validator in the same change-set.
 - **Agnostic data surfaces.** The memory / context / learning record schemas carry no tool-specific or vendor-specific identifier; keep them portable across every installation target.
 - **Adding or modifying a schema:** edit the `.json` / `.yaml` file (no SPDX line), update `NOTICE.md` if a new file class arrives, and update every consumer in the same change-set (the PreToolUse frontmatter check, the audit surface, or a validator that reads the schema).
