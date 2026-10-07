@@ -187,13 +187,26 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 
 **पूर्वापेक्षाएँ:** VS Code, Node.js 18+, और `PATH` पर सिस्टम Python 3.10+।
 
-**Apothem** एक्सटेंशन
-[Visual Studio Marketplace](https://marketplace.visualstudio.com/) से इंस्टॉल
-होता है — एक ही एक्सटेंशन VS Code और उसके इन-एडिटर साथी सहायक सतह को कवर करता है।
-इसके पैलेट कमांड (`Apothem: Install`, `Verify`, `Update`, `Uninstall`, `Doctor`)
-वही इंजन कॉन्फ़िगर किए गए रनर के माध्यम से चलाते हैं (डिफ़ॉल्ट रूप से
-`npx @ahmed-g-gad/apothem`; स्रोत से चलाने के लिए `apothem.runner` सेटिंग को किसी
-स्थानीय चेकआउट की ओर इंगित करें)।
+**Apothem** एक्सटेंशन एक `apothem.vsix` पैकेज से इंस्टॉल होता है:
+`code --install-extension apothem.vsix`, या संपादक का *Install from VSIX…*
+कमांड। रिलीज़ वर्कफ़्लो पैकेज पर हस्ताक्षर करता है और उसे हर GitHub Release के
+साथ संलग्न करता है। वर्कफ़्लो द्वारा एक्सटेंशन को पैकेज करना शुरू करने से पहले
+प्रकाशित रिलीज़ में यह पैकेज नहीं होता; जब नवीनतम रिलीज़ में यह न हो, तो
+`.github/vsce/` में लॉक की गई vsce रिलीज़ से किसी चेकआउट से पैकेज बनाएँ, जिसके
+लिए Node.js 22 या नया चाहिए: `npm ci --prefix .github/vsce --ignore-scripts`
+चलाएँ, फिर
+`cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`
+चलाएँ। [Visual Studio Marketplace](https://marketplace.visualstudio.com/) पर
+लिस्टिंग अभी प्रकाशित नहीं हुई है। एक ही एक्सटेंशन VS Code और उसके इन-एडिटर साथी
+सहायक सतह को कवर करता है। इसके पैलेट कमांड (`Apothem: Install`, `Verify`,
+`Update`, `Uninstall`, `Doctor`) वही इंजन कॉन्फ़िगर किए गए रनर के माध्यम से
+चलाते हैं (डिफ़ॉल्ट रूप से `npx @ahmed-g-gad/apothem@<extension version>`, ताकि
+एक्सटेंशन वही इंजन संस्करण चलाए जिसके साथ वह शिप हुआ था; स्रोत से चलाने के लिए
+`apothem.runner` उपयोगकर्ता सेटिंग को किसी स्थानीय चेकआउट की ओर इंगित करें)।
+Install, Verify, Update और Uninstall पूछते हैं कि किस हार्नेस पर काम करना है, और
+संपादक का अपना हार्नेस पहले प्रस्तुत करते हैं; `all` एक विकल्प है, कभी डिफ़ॉल्ट
+नहीं। `apothem.runner` सेटिंग मशीन-स्कोप वाली है, इसलिए कोई वर्कस्पेस इसे बदल
+नहीं सकता, और एक्सटेंशन केवल विश्वसनीय वर्कस्पेस में चलता है।
 
 **सत्यापित करें:** संपादक के कमांड पैलेट से **Apothem: Verify** कमांड चलाएँ, या
 किसी टर्मिनल से:

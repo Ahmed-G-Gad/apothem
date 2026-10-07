@@ -2,7 +2,7 @@
 title: "Apothem v1.0.1 — Launch-Veröffentlichung"
 description: "Apothem v1.0.1 ist verfügbar — ein gemeinsames Profil, materialisiert in siebzehn KI-Assistenz-Harnesses, mehrere Installationswege und eine signierte, attestierte Veröffentlichung."
 machineTranslated: true
-sourceHash: "ea09bd4e5d932400"
+sourceHash: "8078642da3930d22"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -75,10 +75,12 @@ Mehrere Installationswege, eine CLI darunter:
 
 4. **Werkzeug-native Plugins und Erweiterungen** — eine Gemini CLI-Erweiterung
    (`gemini extensions install https://github.com/ahmed-g-gad/apothem`), eine
-   Qwen Code-Erweiterung (`qwen extensions install ahmed-g-gad/apothem`), ein
-   Codex-Plugin (`codex plugin marketplace add ahmed-g-gad/apothem`) und eine
-   Erweiterung der VS Code-Familie (Visual Studio Marketplace, die
-   VS Code und GitHub Copilot abdeckt).
+   Qwen Code-Erweiterung (`qwen extensions install ahmed-g-gad/apothem`) und ein
+   Codex-Plugin (`codex plugin marketplace add ahmed-g-gad/apothem`). Der
+   Quellcode einer Erweiterung der VS Code-Familie, die VS Code und GitHub
+   Copilot abdeckt, liegt im Ordner `vscode-extension/` des Repositorys. Sie ist
+   nicht im Visual Studio Marketplace gelistet, und dieser Veröffentlichung ist
+   kein gepacktes `.vsix` beigefügt.
 
 ## Lieferketten-Haltung
 
@@ -87,13 +89,15 @@ trägt den vollständigen Nachweissatz neben dem Code:
 
 - sdist und wheel, vor der Veröffentlichung geprüft.
 - Eine CycloneDX-SBOM.
-- Schlüssellose Sigstore cosign-Signaturbundles für jedes Artefakt.
+- Schlüssellose Sigstore cosign-Signaturbundles für sdist, wheel und die
+  Plattformarchive.
 - SLSA-3-Build-Provenienz, im Veröffentlichungs-Workflow selbst verifiziert.
 - Plattform-Laufzeitarchive (darwin / linux / windows) mit einem signierten
   `SHA256SUMS`-Manifest.
 
-Das Versions-Tag ist GPG-signiert, und das npm-Paket wird über Trusted
-Publishing (OIDC) mit automatischer Provenienz veröffentlicht.
+Der Versions-Commit ist GPG-signiert (`v1.0.1` ist ein leichtgewichtiges Tag
+ohne eigene Signatur), und das npm-Paket wurde mit Sigstore-Build-Provenienz
+aus GitHub Actions veröffentlicht.
 
 ## Was in der Schachtel ist
 

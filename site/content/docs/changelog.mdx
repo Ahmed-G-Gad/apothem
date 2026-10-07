@@ -379,17 +379,6 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [1.1.0] - 2026-08-16
 
-### Added
-
-- **Per-folder README file coverage is now gated.** A folder's README is its
-  operating contract, so its file table is load-bearing: a reader who cannot
-  find a module there concludes it does not exist. Nothing held that table
-  against the folder's actual contents, and the drift is invisible from both
-  sides — you do not notice a missing row while reading, nor the README while
-  adding a file. `scripts/dev/check_readme_file_coverage.py` reports every
-  shipped file its folder's README never names, and runs `--strict` in CI
-  across all 31 folders.
-
 ### Fixed
 
 - **`status` and `verify` no longer swallow a profile that fails to load.**
@@ -405,28 +394,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   with an unguarded `Join-Path $env:ProgramFiles`, which is unset under
   PowerShell on Linux and macOS. The list was built eagerly, so the throw
   pre-empted even the PATH probe that would have succeeded.
-- **A duplicate `run:` key made the CI workflow unparseable.** Adding the README
-  coverage gate consumed the `Install release toolchain` step header and left
-  its `run:` line attached to the new step. GitHub rejects a workflow file with
-  a duplicate mapping key outright, so runs ended immediately with no jobs and
-  no logs, and the release build lost its toolchain install.
-- **`migrate-workspace` honored a custom directory name for its target but not
-  its discovery**, so a non-default workspace name was written correctly and
-  then never found again.
+- **`migrate-workspace` reports a legacy data home it failed to remove.** The
+  removal ignored errors, so when a locked file or a denied permission kept the
+  directory on disk, the command still reported a clean migration and the next
+  run found the same directory again. It now adds a note that names the
+  directory: its records are already merged into the shared store and kept in
+  the backup, so the directory can be deleted by hand.
 - Documentation corrections across the conformity gate's hook scope, the design
   tokens' consumers, the OpenCode example's provenance, two harness convention
   pins, and four architecture pages that were unreachable from ten locale
   indexes.
-
-### Changed
-
-- **Kimi Code's uninstall routes through the shared project-scope factory.** It
-  was the one project-scope adapter still deriving its project root by walking
-  up from the output path — the hardcoded ascent the factory exists to remove.
-- **`LearningStore._append` is now `append_signal`.** It was reached across a
-  module boundary by `workspace_migration` and four test modules while named
-  private; the rename matches how it is actually used, and its docstring now
-  states what it deliberately does not do.
 
 ## [1.0.2] - 2026-08-14
 
@@ -451,10 +428,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   installed plugin files.
 - **The detection pseudocode in the canonical option-shapes rule is fenced as
   text rather than Python.** The block uses the hyphenated schema field names the
-  same document defines in its field table, so formatting it as Python rewrote
-  `read(probe-record-path)` into a subtraction expression and changed what the
-  documentation said. Correcting the fence language leaves the pseudocode
-  byte-identical and restores the format gate to green.
+  same document defines in its field table, which are not valid Python.
+  Correcting the fence language leaves the pseudocode byte-identical.
 
 ## [1.0.1] - 2026-07-07
 
@@ -489,10 +464,12 @@ harnesses behind a conformity governance gate and signed, reproducible releases.
   its cited peer — before any surface is materialized.
 - **Install paths.** The Claude Code plugin
   (`/plugin marketplace add ahmed-g-gad/apothem`), a Gemini CLI extension, a
-  Qwen Code extension, a Codex plugin, a VS Code-family extension on the Visual
-  Studio Marketplace, the npm shim (`npx @ahmed-g-gad/apothem <command>`), and
-  the one-shot POSIX and PowerShell installers (`install.sh` / `install.ps1`)
-  with matching update and uninstall scripts.
+  Qwen Code extension, a Codex plugin, the npm shim
+  (`npx @ahmed-g-gad/apothem <command>`), and the one-shot POSIX and PowerShell
+  installers (`install.sh` / `install.ps1`) with matching update and uninstall
+  scripts. The source of a VS Code-family extension is in `vscode-extension/`;
+  this release attaches no packaged `.vsix`, and the extension is not listed on
+  the Visual Studio Marketplace.
 
 ### Changed
 

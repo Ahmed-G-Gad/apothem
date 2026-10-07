@@ -71,10 +71,11 @@ Several install paths, one CLI underneath:
 
 4. **Tool-native plugins and extensions** — a Gemini CLI extension
    (`gemini extensions install https://github.com/ahmed-g-gad/apothem`), a
-   Qwen Code extension (`qwen extensions install ahmed-g-gad/apothem`), a
-   Codex plugin (`codex plugin marketplace add ahmed-g-gad/apothem`), and a
-   VS Code-family extension (Visual Studio Marketplace, covering
-   VS Code and GitHub Copilot).
+   Qwen Code extension (`qwen extensions install ahmed-g-gad/apothem`), and a
+   Codex plugin (`codex plugin marketplace add ahmed-g-gad/apothem`). The
+   source of a VS Code-family extension, covering VS Code and GitHub Copilot,
+   is in the repository's `vscode-extension/` folder. It is not listed on the
+   Visual Studio Marketplace, and this release attaches no packaged `.vsix`.
 
 ## Supply-chain posture
 
@@ -83,13 +84,15 @@ carries the full evidence set alongside the code:
 
 - sdist and wheel, validated before publish.
 - A CycloneDX SBOM.
-- Sigstore cosign keyless signature bundles for every artifact.
+- Sigstore cosign keyless signature bundles for the sdist, the wheel, and the
+  platform archives.
 - SLSA-3 build provenance, verified inside the release workflow itself.
 - Platform runtime archives (darwin / linux / windows) with a signed
   `SHA256SUMS` manifest.
 
-The release tag is GPG-signed, and the npm package publishes through Trusted
-Publishing (OIDC) with automatic provenance.
+The release commit is GPG-signed (`v1.0.1` is a lightweight tag, with no
+signature of its own), and the npm package is published with Sigstore build
+provenance from GitHub Actions.
 
 ## What's in the box
 

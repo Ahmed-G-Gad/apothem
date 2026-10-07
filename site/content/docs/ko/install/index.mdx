@@ -181,12 +181,24 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 
 **사전 요건:** VS Code, Node.js 18+, 그리고 `PATH`에 있는 시스템 Python 3.10+.
 
-**Apothem** 확장은
-[Visual Studio Marketplace](https://marketplace.visualstudio.com/)에서
-설치합니다 — 하나의 확장이 VS Code와 그 에디터 내 컴패니언 어시스턴트 표면을
-커버합니다. 팔레트 명령(`Apothem: Install`, `Verify`, `Update`, `Uninstall`,
-`Doctor`)은 구성된 러너(기본값 `npx @ahmed-g-gad/apothem`; `apothem.runner` 설정을
-로컬 체크아웃으로 가리키면 소스에서 실행)를 통해 동일한 엔진을 실행합니다.
+**Apothem** 확장은 `apothem.vsix` 패키지로 설치합니다.
+`code --install-extension apothem.vsix`를 실행하거나 에디터의
+*Install from VSIX…* 명령을 사용하세요. 릴리스 워크플로가 패키지에 서명하고 각
+GitHub Release에 첨부합니다. 워크플로가 확장을 패키징하기 전에 게시된 릴리스에는
+패키지가 없습니다. 최신 릴리스에 없으면 `.github/vsce/`에 고정된 vsce 릴리스로
+체크아웃에서 패키지를 빌드하세요. 이 vsce 릴리스에는 Node.js 22 이상이 필요합니다.
+`npm ci --prefix .github/vsce --ignore-scripts`를 실행한 다음
+`cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`를
+실행하세요. [Visual Studio Marketplace](https://marketplace.visualstudio.com/)
+등록은 아직 게시되지 않았습니다. 하나의 확장이 VS Code와 그 에디터 내 컴패니언
+어시스턴트 표면을 커버합니다. 팔레트 명령(`Apothem: Install`, `Verify`, `Update`,
+`Uninstall`, `Doctor`)은 구성된 러너를 통해 동일한 엔진을 실행합니다(기본값은
+`npx @ahmed-g-gad/apothem@<extension version>`이므로 확장은 함께 배포된 엔진
+버전을 실행합니다. 소스에서 실행하려면 사용자 설정 `apothem.runner`를 로컬
+체크아웃으로 가리키세요). Install, Verify, Update, Uninstall은 어떤 하니스에
+적용할지 묻고, 에디터 자체의 하니스를 먼저 제시합니다. `all`은 선택지 중 하나이며
+기본값이 되지 않습니다. `apothem.runner` 설정은 머신 범위이므로 워크스페이스에서
+변경할 수 없으며, 확장은 신뢰할 수 있는 워크스페이스에서만 실행됩니다.
 
 **검증:** 에디터의 명령 팔레트에서 **Apothem: Verify** 명령을 실행하거나,
 터미널에서 실행하세요.

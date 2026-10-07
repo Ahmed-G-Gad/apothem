@@ -2,7 +2,7 @@
 title: "Apothem v1.0.1 — rilis peluncuran"
 description: "Apothem v1.0.1 telah tersedia — satu profil bersama yang dimaterialisasi ke dalam tujuh belas harness asisten AI, beberapa jalur pemasangan, dan rilis yang ditandatangani dan diatestasi."
 machineTranslated: true
-sourceHash: "ea09bd4e5d932400"
+sourceHash: "8078642da3930d22"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -75,10 +75,11 @@ Beberapa jalur pemasangan, satu CLI di bawahnya:
 
 4. **Plugin dan ekstensi asli-alat** — ekstensi Gemini CLI
    (`gemini extensions install https://github.com/ahmed-g-gad/apothem`),
-   ekstensi Qwen Code (`qwen extensions install ahmed-g-gad/apothem`), plugin
-   Codex (`codex plugin marketplace add ahmed-g-gad/apothem`), dan ekstensi
-   keluarga VS Code (Visual Studio Marketplace, mencakup VS Code
-   dan GitHub Copilot).
+   ekstensi Qwen Code (`qwen extensions install ahmed-g-gad/apothem`), dan
+   plugin Codex (`codex plugin marketplace add ahmed-g-gad/apothem`). Kode
+   sumber ekstensi keluarga VS Code, yang mencakup VS Code dan GitHub Copilot,
+   ada di folder `vscode-extension/` repositori. Ekstensi ini tidak tercantum di
+   Visual Studio Marketplace, dan rilis ini tidak melampirkan paket `.vsix`.
 
 ## Postur rantai pasok
 
@@ -87,13 +88,15 @@ membawa perangkat bukti lengkap di samping kode:
 
 - sdist dan wheel, diperiksa sebelum dipublikasikan.
 - Sebuah SBOM CycloneDX.
-- Bundel tanda tangan tanpa-kunci Sigstore cosign untuk setiap artefak.
+- Bundel tanda tangan tanpa-kunci Sigstore cosign untuk sdist, wheel, dan
+  arsip per-platform.
 - Provenans build SLSA-3, diverifikasi di dalam alur kerja rilis itu sendiri.
 - Arsip runtime per-platform (darwin / linux / windows) dengan manifes
   `SHA256SUMS` yang ditandatangani.
 
-Tag rilis ditandatangani dengan GPG, dan paket npm dipublikasikan melalui
-Trusted Publishing (OIDC) dengan provenans otomatis.
+Commit rilis ditandatangani dengan GPG (`v1.0.1` adalah tag ringan tanpa tanda
+tangan sendiri), dan paket npm dipublikasikan dengan provenans build Sigstore
+dari GitHub Actions.
 
 ## Apa isi kotaknya
 
