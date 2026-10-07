@@ -8,7 +8,7 @@
 - Snapshot note: refreshed against `kiro.dev/docs` (steering, MCP configuration, skills, hooks). Steering inclusion modes (`always`, `fileMatch` with `fileMatchPattern`, `manual`, `auto`), `AGENTS.md` support (workspace root and `~/.kiro/steering/`), MCP at `.kiro/settings/mcp.json` and `~/.kiro/settings/mcp.json`, and agent files in `.kiro/agents` are confirmed. Previous 2026-06-25.
 - Adapter source: `src/apothem/harnesses/kiro/`
 - Evidence level: vendor-doc pinned (living docs; no-immutable-source exception). No vendor-native UI claim is made here.
-- Vendor doc URL: https://kiro.dev/docs/steering/
+- Vendor doc URL: <https://kiro.dev/docs/steering/>
 - Canonical filename: `.kiro/steering/apothem-rules.md`
 
 ## Official Surface Refresh

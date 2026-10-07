@@ -31,7 +31,7 @@ bypass the Write-route guard.
 
 | Pattern class | Examples |
 |---------------|----------|
-| **POSIX redirect** | `cmd > path` · `cmd >> path` · `cmd 2> path` · `cmd 2>> path` · `cmd &> path` · `cmd >| path` |
+| **POSIX redirect** | `cmd > path` · `cmd >> path` · `cmd 2> path` · `cmd 2>> path` · `cmd &> path` · `cmd >\| path` |
 | **Heredoc emission** | `cat > path <<EOF` · `cat >> path <<'EOF'` · `tee path <<EOF` (with or without `-a`) |
 | **`tee` invocations** | `cmd \| tee path` · `cmd \| tee -a path` · `cmd \| tee path1 path2` |
 | **File-creation utilities** | `touch path` · `cp src path` · `mv src path` · `install -m … src path` |

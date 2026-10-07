@@ -73,7 +73,20 @@ repos:
     hooks:
       # Rule policy lives in .markdownlint.json (auto-discovered by
       # markdownlint-cli); no args here so the policy is declared once.
+      # JSON carries no comments, so the policy's reasons live here:
+      # - MD024 siblings_only: CHANGELOG.md repeats Added / Changed / Fixed /
+      #   Security under each release, the Keep a Changelog layout.
+      # - MD038 off: the option-label postfix is the literal ` (Recommended)`,
+      #   leading space included. CommonMark keeps a one-sided space in a code
+      #   span, so the rule's only hits in the corpus were that intended form.
+      # - MD060 off: markdownlint 0.39.0 added it after the corpus settled on
+      #   compact cells with a tight |---| delimiter row. No MD060 style accepts
+      #   that valid GFM table form, and it renders the same as the others.
+      # The exclude skips test fixtures: install-output goldens, validator
+      # pass/fail inputs, and scenario documents whose bytes the tests dictate.
+      # Their sources (src/, plugins/, docs) are linted.
       - id: markdownlint
+        exclude: ^tests/(fixtures|conformity|conformity-scenarios/fixtures|scripts/inject-header/fixtures)/
 
   # ---------------------------------------------------------------------------
   # YAML lint

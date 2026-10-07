@@ -8,7 +8,7 @@
 - Adapter source: `src/apothem/harnesses/zed/`
 - Evidence level: vendor-doc pinned (living docs; no-immutable-source exception). No vendor-native UI claim is made here.
 - canonical-filename: `.rules`
-- vendor-doc-url: https://zed.dev/docs/ai/instructions
+- vendor-doc-url: <https://zed.dev/docs/ai/instructions>
 
 ## Official Surface Refresh
 

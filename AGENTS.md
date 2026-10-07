@@ -120,7 +120,7 @@ flowchart TD
 
 ## Source Layout
 
-```
+```text
 src/apothem/
   cli/            — Click CLI (quickstart, install, update, uninstall, verify, status, diff, rollback, backups, migrate-workspace, harnesses, profile, doctor, completion)
   harnesses/      — one sub-package per harness adapter (__init__.py adapter class + install/uninstall/update/verify.py; adapters with rendered single-file config also carry materializer.py)

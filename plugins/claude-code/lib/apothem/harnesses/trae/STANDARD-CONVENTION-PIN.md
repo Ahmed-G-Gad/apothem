@@ -15,7 +15,7 @@
   (project scope); global rules live under `~/.trae/user_rules`
   (`%userprofile%/.trae/user_rules` on Windows), and the rules directory reads
   subfolders up to three levels deep. Re-checked 2026-10-02 and 2026-10-03
-  against https://docs.trae.ai/ide/rules, which no longer names a
+  against <https://docs.trae.ai/ide/rules>, which no longer names a
   `project_rules.md` anchor. The adapter is project-scope and writes only a dedicated
   `<project>/.trae/rules/apothem-rules.md` file; it never clobbers other rule
   files in that directory or the global rules.
