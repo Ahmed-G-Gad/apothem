@@ -25,6 +25,8 @@ from pathlib import Path
 
 import pytest
 
+from tests._shared.git_env import hermetic_git_env
+
 _GIT = shutil.which("git")
 requires_git = pytest.mark.skipif(_GIT is None, reason="git not available")
 
@@ -119,10 +121,14 @@ class TestCollectMembers:
 
 
 def _init_git_repo(root: Path, files: dict[str, bytes]) -> None:
-    """Create a committed git repo at *root* with the given files."""
+    """Create a committed git repo at *root* with the given files, without
+    host git config (a signing or hook setting would break the commit)."""
     _make_tree(root, files)
     run = lambda *a: subprocess.run(  # noqa: E731
-        [_GIT, "-C", str(root), *a], check=True, capture_output=True
+        [_GIT, "-C", str(root), *a],
+        check=True,
+        capture_output=True,
+        env=hermetic_git_env(),
     )
     run("init", "-q")
     run("config", "user.email", "test@example.invalid")
