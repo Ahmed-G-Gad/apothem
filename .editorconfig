@@ -35,7 +35,10 @@ indent_style = space
 indent_size = 2
 
 # Windows scripts: CRLF, to agree with .gitattributes (`*.ps1/*.bat/*.cmd text eol=crlf`).
-[*.{ps1,psm1,psd1,bat,cmd}]
+# PowerShell data and module files (.psd1, .psm1) stay LF under [*]. Keep this
+# set in sync with .gitattributes and the mixed-line-ending exclude in
+# .pre-commit-config.yaml.
+[*.{ps1,bat,cmd}]
 end_of_line = crlf
 
 [Makefile]
