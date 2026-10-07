@@ -377,15 +377,15 @@ form — it never advertises a bare `apothem` command the run did not resolve.
 |---|---|---|
 | `APOTHEM_HOME` | `$HOME/.apothem` | Install destination for the cloned source |
 | `APOTHEM_REPO` | `https://github.com/ahmed-g-gad/apothem` | Git remote to clone |
-| `APOTHEM_REF` | _(latest signed tag)_ | Git ref to check out; unset resolves the latest release tag, or set a tag to pin / `main` for the moving branch |
-| `APOTHEM_ALLOW_UNVERIFIED` | _(unset)_ | Set to `1` to downgrade a tag-verification failure to a warning and proceed |
-| `APOTHEM_SOURCE` | _(unset)_ | Explicit local source tree to use instead of cloning (skips tag resolution and verification) |
+| `APOTHEM_REF` | *(latest signed tag)* | Git ref to check out; unset resolves the latest release tag, or set a tag to pin / `main` for the moving branch |
+| `APOTHEM_ALLOW_UNVERIFIED` | *(unset)* | Set to `1` to downgrade a tag-verification failure to a warning and proceed |
+| `APOTHEM_SOURCE` | *(unset)* | Explicit local source tree to use instead of cloning (skips tag resolution and verification) |
 | `APOTHEM_HARNESS` | `claude-code` | Harness to materialize |
 | `APOTHEM_PROFILE` | `$HOME/.config/apothem/profile.yaml` | Shared profile path |
 | `APOTHEM_BIN_DIR` | POSIX `$HOME/.local/bin`, Windows `%LOCALAPPDATA%\Microsoft\WindowsApps` | Directory the `apothem` shim is written into |
-| `APOTHEM_SKIP_VERIFY` | _(unset)_ | Set to `1` to skip post-install verification |
-| `APOTHEM_AUTO_INSTALL_DEPS` | _(unset)_ | Set to `1` to install the missing `click` / `rich` prerequisites automatically, without prompting |
-| `NO_COLOR` | _(unset)_ | Set to any value to turn off coloured output. Colour is also off whenever the output is not a terminal (a pipe, a file, a CI log) |
+| `APOTHEM_SKIP_VERIFY` | *(unset)* | Set to `1` to skip post-install verification |
+| `APOTHEM_AUTO_INSTALL_DEPS` | *(unset)* | Set to `1` to install the missing `click` / `rich` prerequisites automatically, without prompting |
+| `NO_COLOR` | *(unset)* | Set to any value to turn off coloured output. Colour is also off whenever the output is not a terminal (a pipe, a file, a CI log) |
 
 **Updating.** Re-run the installer, or run `scripts/installer/update.sh` /
 `scripts/installer/update.ps1` to re-check-out the latest signed tag (verified)

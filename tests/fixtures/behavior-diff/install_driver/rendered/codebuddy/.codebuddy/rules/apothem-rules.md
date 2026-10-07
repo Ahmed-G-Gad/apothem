@@ -7,7 +7,7 @@ description: "Apothem governance and convention surface for the CodeBuddy harnes
 
 # Apothem — CodeBuddy Bootstrap
 
-This file is materialised by `apothem install --harness codebuddy --project <path>` and lands at `<project>/.codebuddy/rules/apothem-rules.md`, the current CodeBuddy project rules surface per https://www.codebuddy.ai/docs/ide/Rules. It is a dedicated apothem rules file: it never clobbers operator-authored rules in the same directory.
+This file is materialised by `apothem install --harness codebuddy --project <path>` and lands at `<project>/.codebuddy/rules/apothem-rules.md`, the current CodeBuddy project rules surface per <https://www.codebuddy.ai/docs/ide/Rules>. It is a dedicated apothem rules file: it never clobbers operator-authored rules in the same directory.
 
 ## What Apothem governs in this project
 

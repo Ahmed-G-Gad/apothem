@@ -207,6 +207,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **Shipped Markdown renders as written.** A row in the Bash plan-guard hook
+  message no longer splits on an unescaped pipe, two trace-matrix template
+  cells and the host-discovery default marker keep their nested code spans
+  whole, and the `plan-execute` resume note is no longer folded into its last
+  option. The rule files the CodeBuddy, GitHub Copilot, Kiro, Trae, Windsurf,
+  and Zed installs write link their vendor docs as autolinks.
 - **OpenCode receives the operator profile.** The projected profile document
   was never in the `instructions` list, so OpenCode saw neither the
   operator's identity and preferences nor the support-file locations.

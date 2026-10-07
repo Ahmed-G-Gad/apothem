@@ -7,7 +7,7 @@ description: "Apothem governance and convention surface for the Windsurf harness
 
 # Apothem — Windsurf Bootstrap
 
-This file is materialised by `apothem install --harness windsurf --project <path>` and lands at `<project>/.devin/rules/apothem-rules.md`, the preferred workspace-rules surface per the vendor's current docs (https://docs.devin.ai/desktop/cascade/memories). The windsurf harness rebranded to Devin Desktop (OTA 2026-06-02); `.devin/rules/` now takes precedence over the retained backward-compat fallback at `.windsurf/rules/`. The legacy single-file `.windsurfrules` target is excluded because Apothem targets the multi-file project rules directory.
+This file is materialised by `apothem install --harness windsurf --project <path>` and lands at `<project>/.devin/rules/apothem-rules.md`, the preferred workspace-rules surface per the vendor's current docs (<https://docs.devin.ai/desktop/cascade/memories>). The windsurf harness rebranded to Devin Desktop (OTA 2026-06-02); `.devin/rules/` now takes precedence over the retained backward-compat fallback at `.windsurf/rules/`. The legacy single-file `.windsurfrules` target is excluded because Apothem targets the multi-file project rules directory.
 
 ## What Apothem governs in this project
 

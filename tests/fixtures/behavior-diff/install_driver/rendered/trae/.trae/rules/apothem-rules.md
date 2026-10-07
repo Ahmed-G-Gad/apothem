@@ -7,7 +7,7 @@ description: "Apothem governance and convention surface for the Trae harness —
 
 # Apothem — Trae Bootstrap
 
-This file is materialised by `apothem install --harness trae --project <path>` and lands at `<project>/.trae/rules/apothem-rules.md`, a dedicated Apothem rules file inside the current Trae project rules directory per https://docs.trae.ai/ide/rules. It sits alongside any rule files the operator authors in `.trae/rules/` (and the global rules under `~/.trae/user_rules`) and never clobbers them.
+This file is materialised by `apothem install --harness trae --project <path>` and lands at `<project>/.trae/rules/apothem-rules.md`, a dedicated Apothem rules file inside the current Trae project rules directory per <https://docs.trae.ai/ide/rules>. It sits alongside any rule files the operator authors in `.trae/rules/` (and the global rules under `~/.trae/user_rules`) and never clobbers them.
 
 ## What Apothem governs in this project
 

@@ -80,7 +80,7 @@ Emit: **Description** (the Project's one-surface summary), **Instruction** (the 
 
 Compute, per platform, the measurable SLO:
 
-```
+```text
 knowledge_file_token_sum / platform_context_limit  <=  0.02
 ```
 

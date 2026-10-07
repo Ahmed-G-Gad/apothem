@@ -71,9 +71,9 @@ regenerated from them by `scripts/dev/rebuild-assets-resvg.py` (see
 
 Two ramps carry the brand — a cool **slate** neutral and an **emerald** accent —
 plus three semantic hues. Every step is named `--apothem-color-{ramp}-{step}`.
-The brand anchors (`slate-900 #0f172a`, `slate-50 #f8fafc`, `emerald-500
-#10b981`, `emerald-400 #34d399`) are preserved from the prior identity; the
-ramps fill in around them.
+The brand anchors (`slate-900 #0f172a`, `slate-50 #f8fafc`,
+`emerald-500 #10b981`, `emerald-400 #34d399`) are preserved from the prior
+identity; the ramps fill in around them.
 
 ### Slate (neutral)
 
