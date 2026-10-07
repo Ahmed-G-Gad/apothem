@@ -24,4 +24,3 @@ Register-ArgumentCompleter -Native -CommandName apothem -ScriptBlock {
         Remove-Item Env:COMP_CWORD
     }
 }
-
