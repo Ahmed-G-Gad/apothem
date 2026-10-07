@@ -50,6 +50,15 @@ The operator-facing bootstrap, update, and uninstall ceremonies — paired acros
 | `update.sh` / `update.ps1` / `update.bat` | Update an existing install in place. Driven by environment overrides only (no CLI flags), so the `.bat` forwards its arguments verbatim. |
 | `uninstall.sh` / `uninstall.ps1` / `uninstall.bat` | Remove the materialized harness config (via the engine) and the `apothem` PATH shim; confirms before removal unless `--yes`. Optional `--remove-source` deletes the managed clone. The `.bat` translates these POSIX flags — plus `--harness NAME` — to their PowerShell parameters, then delegates to the `.ps1`. |
 
+Every pull request lints these scripts with the commands the Pages build runs on its served copies (`.github/workflows/installer-lint.yml`). To run the same lint locally, from the repository root:
+
+```bash
+shellcheck --severity=error scripts/installer/*.sh
+pwsh -NoProfile -Command 'Invoke-ScriptAnalyzer -Path scripts/installer/ -Settings PSScriptAnalyzerSettings.psd1'
+```
+
+Any `Invoke-ScriptAnalyzer` output is a finding. CI runs both linters on the `ubuntu-24.04` image and logs their versions in its "Show linter versions" step; a newer local shellcheck can report findings CI does not. On Windows, PSScriptAnalyzer can report more alias findings, because names such as `ls` are aliases there.
+
 ## `release/` — release-engineering recipes
 
 Invoked by the release engineer and by `.github/workflows/release.yml`. Each ships a POSIX `.sh` and a PowerShell `.ps1` parity sibling (the `.py` scripts and `requirements-build-linux.txt` are single-file siblings: Python runs on every host).

@@ -1,0 +1,119 @@
+# SPDX-License-Identifier: MIT
+
+# Installer lint: the Static Site build's installer lint, run on every pull
+# request.
+#
+# publish-static-site.yml copies scripts/installer/{install,update,uninstall}
+# into site/dist/ and, before it deploys GitHub Pages, lints those copies:
+# shellcheck at error severity on the .sh scripts and PSScriptAnalyzer on the
+# .ps1 scripts. That workflow runs on pushes to main that touch its paths and
+# on manual dispatch, never on a pull request, so a lint finding first
+# surfaced after the merge, where it stopped the build and skipped the Pages
+# deploy. This workflow runs the same two commands on scripts/installer/ for
+# every pull request to main, so the finding fails the pull request instead.
+#
+# Parity contract, asserted by tests/integration/test_installer_lint_workflow.py:
+#   - Each lint step's `run:` text equals the matching Static Site step's text
+#     with site/dist/ replaced by scripts/installer/, under the same shell and
+#     working directory, and no step condition can skip it on a pull request.
+#   - Both jobs pin the same runner image, not a `-latest` label, and lint with
+#     its preinstalled shellcheck and PSScriptAnalyzer. A `-latest` label moves
+#     to a new image over weeks, so a pull request and the next Pages build
+#     could lint with different versions. Bump both labels in one change.
+#   - Both run from the repository root, so `-Settings` resolves to the same
+#     PSScriptAnalyzerSettings.psd1, the only place PSScriptAnalyzer severities
+#     and rule exclusions are set.
+#   - shellcheck reads the nearest .shellcheckrc or shellcheckrc at or above
+#     each script's own directory, not the working directory. No rc file sits
+#     in scripts/installer/, scripts/, site/ or site/public/ (which the export
+#     copies into site/dist/), so both lints read the root .shellcheckrc.
+#
+# The image installs PSScriptAnalyzer from the PowerShell Gallery unpinned, so
+# a weekly image update can still change its version between a pull request
+# and the next Pages build. The "Show linter versions" step records it.
+#
+# REQUIRED-CHECK POLICY (tracked note, not asserted against live GitHub):
+# The `installer-lint` job MUST be configured as a branch-protection required
+# status check for `main`. Its pull_request trigger therefore carries NO
+# `paths`/`paths-ignore` filter. GitHub leaves the check of a workflow that a
+# paths filter skipped "Pending", which blocks every pull request that does not
+# touch the filtered paths, and a paths filter can also skip the workflow on a
+# diff of more than 3,000 files. Do not add a path filter here without also
+# removing the check from the required set.
+#
+# SHA-pinning policy: every `uses:` reference is pinned by 40-character commit
+# SHA followed by a `# vMAJOR.MINOR.PATCH` comment, identical to the canonical
+# policy documented in ci.yml.
+
+name: Installer Lint
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: installer-lint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  installer-lint:
+    name: installer-lint
+    # Must equal the Static Site build job's runner, which ships the same
+    # linters. PSScriptAnalyzer reports different findings on Windows, where
+    # names such as `ls` are aliases.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      # pwsh sends startup telemetry to dc.services.visualstudio.com unless
+      # this is set before it starts. The lint itself makes no network call.
+      POWERSHELL_TELEMETRY_OPTOUT: '1'
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          # Block egress: after this step only checkout reaches the network, to
+          # fetch the commit from github.com. The runner downloads the actions
+          # before this step runs, harden-runner allows its own endpoints, and
+          # both linters are preinstalled on the image.
+          egress-policy: block
+          allowed-endpoints: >
+            github.com:443
+
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Show linter versions
+        # The image installs the newest PSScriptAnalyzer from the PowerShell
+        # Gallery when it is built, with no version pin, so record what this
+        # run used.
+        shell: pwsh
+        run: |
+          "pwsh $($PSVersionTable.PSVersion)"
+          $analyzer = Get-Module -ListAvailable -Name PSScriptAnalyzer |
+            Sort-Object -Property Version -Descending |
+            Select-Object -First 1
+          "PSScriptAnalyzer $($analyzer.Version) at $($analyzer.ModuleBase)"
+          shellcheck --version
+
+      - name: Validate installer shell scripts
+        # Static Site step "Validate synced shell scripts", on the sources.
+        run: shellcheck --severity=error scripts/installer/*.sh
+
+      - name: Validate installer PowerShell scripts
+        # Static Site step "Validate synced PowerShell scripts", on the sources.
+        # Runs after a shellcheck failure too, so one run reports both linters.
+        if: ${{ !cancelled() }}
+        shell: pwsh
+        run: |
+          $findings = Invoke-ScriptAnalyzer -Path scripts/installer/ -Settings PSScriptAnalyzerSettings.psd1
+          if ($findings) {
+            $findings | Format-Table -AutoSize
+            exit 1
+          }

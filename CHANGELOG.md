@@ -326,6 +326,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   the plugin tree's vendored code to its authors.
 - **SECURITY.md lists 1.1.x as supported**, the release badge reads the tag
   from full history, and the CHANGELOG links resolve.
+- **The installers give key-import guidance in any language.** When the
+  maintainer key was missing from the local keyring and GnuPG printed its
+  messages in another language, `install.sh`, `install.ps1` and `update.sh`
+  reported the signed tag as possibly tampered with, because they matched
+  GnuPG's English text. They now read GnuPG's status lines
+  (`[GNUPG:] NO_PUBKEY`), which do not change with the language.
 - **`apothem completion <shell>` no longer ends the script with a blank
   line.** The output for `bash`, `zsh`, `fish`, and `powershell` now matches
   Click's own completion source byte for byte, so appending it to a shell
