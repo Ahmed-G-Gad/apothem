@@ -13,15 +13,18 @@ verify branch, and once install.sh was fixed, update.sh kept the loose copy.
 In the other direction, ``Test-ReleaseTag`` applied its regex with ``-match``,
 which ignores case, so ``V1.2.3`` passed it and failed ``is_release_tag``. Its
 ``$`` anchor also matched before a final newline, so ``v1.2.3`` with a
-trailing newline passed it and failed ``is_release_tag`` too.
+trailing newline passed it and failed ``is_release_tag`` too. With no ref
+pinned, ``Resolve-LatestTag`` also filtered ``git ls-remote`` output with
+``-match``, so it resolved a ``V9.9.9`` tag that ``resolve_latest_tag`` skips.
 
 Full unification of the scripts is out of scope. These tests are a drift
 guard over the extractable decision-table constants: they read the scripts and
-assert that the SemVer recognition shape, the verification-bypass environment
-variable name, and the source-precedence order agree. The release-tag shape is
-guarded for both the install and the update pair; the other checks cover the
-install pair. A future edit to one script that does not mirror its sibling
-trips a finding here instead of shipping a silent divergence.
+assert that the SemVer recognition shape, the latest-tag filter, the
+verification-bypass environment variable name, and the source-precedence order
+agree. The release-tag shape and the latest-tag filter are guarded for both
+the install and the update pair; the other checks cover the install pair. A
+future edit to one script that does not mirror its sibling trips a finding
+here instead of shipping a silent divergence.
 """
 
 from __future__ import annotations
@@ -60,6 +63,10 @@ PS1_RELEASE_TAG_MODEL = re.compile(r"v[0-9]+\.[0-9]+\.[0-9]+")
 # The anchored .NET regex both PowerShell scripts' Test-ReleaseTag match
 # against. `\z` matches only at the end of the string.
 PS1_RELEASE_TAG_REGEX = "^" + PS1_RELEASE_TAG_MODEL.pattern + r"\z"
+# The .NET regex both PowerShell scripts' Resolve-LatestTag match against each
+# `git ls-remote --tags` line. `$` suffices here, since PowerShell hands over
+# each line of a native command's output without its newline.
+PS1_LS_REMOTE_TAG_REGEX = r"refs/tags/(v[0-9]+\.[0-9]+\.[0-9]+)(\^\{\})?$"
 
 VALID_TAGS: tuple[str, ...] = ("v1.2.3", "v10.20.30", "v0.0.1")
 NON_RELEASE_REFS: tuple[str, ...] = (
@@ -209,13 +216,19 @@ def test_ps1_test_release_tag_matches_case_sensitively(ps1_name: str) -> None:
 
 
 _PWSH = shutil.which("pwsh") or shutil.which("powershell")
-# Parse the script named by $env:RELEASE_TAG_SCRIPT, take its Test-ReleaseTag
-# definition, and print "release" or "other" for each ref in the JSON array
-# $env:RELEASE_TAG_REFS. The script is parsed, not run, so none of its
-# top-level code executes. The inputs arrive through the environment, so no
-# value is quoted into PowerShell source.
-_CLASSIFY_REFS = "; ".join(
-    (
+
+
+def _ps1_load_function(name: str) -> tuple[str, ...]:
+    """Return PowerShell statements that parse the script named by
+    ``$env:RELEASE_TAG_SCRIPT`` and store the body of its function NAME, as a
+    script block, in ``$body``.
+
+    The script is parsed, not run, so none of its top-level code executes.
+    The statements set the strict mode and error preference both installer
+    scripts set, so the function runs as it does inside them.
+    """
+    return (
+        "Set-StrictMode -Version Latest",
         "$ErrorActionPreference = 'Stop'",
         "$tokens = $null",
         "$parseErrors = $null",
@@ -224,11 +237,53 @@ _CLASSIFY_REFS = "; ".join(
         "if ($parseErrors) { throw ($parseErrors -join ' | ') }",
         "$definition = $ast.Find({ param($node) "
         "$node -is [Management.Automation.Language.FunctionDefinitionAst] "
-        "-and $node.Name -eq 'Test-ReleaseTag' }, $true)",
-        "if (-not $definition) { throw 'no Test-ReleaseTag definition' }",
-        "$test = $definition.Body.GetScriptBlock()",
+        f"-and $node.Name -eq '{name}' }}, $true)",
+        f"if (-not $definition) {{ throw 'no {name} definition' }}",
+        "$body = $definition.Body.GetScriptBlock()",
+    )
+
+
+def _run_powershell(
+    command: str, ps1_name: str, **env: str
+) -> subprocess.CompletedProcess[str]:
+    """Run COMMAND under PowerShell, with ``$env:RELEASE_TAG_SCRIPT`` naming
+    the installer script PS1_NAME and ENV added to the environment.
+
+    The inputs arrive through the environment, so no value is quoted into
+    PowerShell source.
+    """
+    assert _PWSH is not None
+    return subprocess.run(
+        [
+            _PWSH,
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            command,
+        ],
+        env={
+            **os.environ,
+            **env,
+            "RELEASE_TAG_SCRIPT": str(INSTALLER / ps1_name),
+            "NO_COLOR": "1",
+            "POWERSHELL_TELEMETRY_OPTOUT": "1",
+        },
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=False,
+    )
+
+
+# Print "release" or "other" for each ref in the JSON array
+# $env:RELEASE_TAG_REFS, as the script's Test-ReleaseTag classifies it.
+_CLASSIFY_REFS = "; ".join(
+    (
+        *_ps1_load_function("Test-ReleaseTag"),
         "foreach ($candidate in ($env:RELEASE_TAG_REFS | ConvertFrom-Json)) "
-        "{ if (& $test $candidate) { 'release' } else { 'other' } }",
+        "{ if (& $body $candidate) { 'release' } else { 'other' } }",
     )
 )
 
@@ -245,29 +300,9 @@ def test_powershell_test_release_tag_accepts_only_release_tags(ps1_name: str) ->
     Python. Both can pass while the shipped function behaves differently, so
     this runs it. The refs travel as JSON, so the newline arrives intact.
     """
-    assert _PWSH is not None
     refs = (*VALID_TAGS, *NON_RELEASE_REFS)
-    result = subprocess.run(
-        [
-            _PWSH,
-            "-NoProfile",
-            "-NonInteractive",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-Command",
-            _CLASSIFY_REFS,
-        ],
-        env={
-            **os.environ,
-            "RELEASE_TAG_SCRIPT": str(INSTALLER / ps1_name),
-            "RELEASE_TAG_REFS": json.dumps(refs),
-            "NO_COLOR": "1",
-            "POWERSHELL_TELEMETRY_OPTOUT": "1",
-        },
-        capture_output=True,
-        text=True,
-        timeout=120,
-        check=False,
+    result = _run_powershell(
+        _CLASSIFY_REFS, ps1_name, RELEASE_TAG_REFS=json.dumps(refs)
     )
     assert result.returncode == 0, result.stdout + result.stderr
     verdicts = dict(zip(refs, result.stdout.splitlines(), strict=True))
@@ -292,6 +327,132 @@ def _ps1_function(script: str, name: str) -> str:
     )
     assert match, f"no function {name} definition found"
     return match.group(0)
+
+
+@pytest.mark.parametrize("ps1_name", [ps1_name for _, ps1_name in RELEASE_TAG_PAIRS])
+def test_ps1_resolve_latest_tag_filters_case_sensitively(ps1_name: str) -> None:
+    """Each ``.ps1`` ``Resolve-LatestTag`` filters ``git ls-remote`` lines with
+    ``-cmatch``.
+
+    With ``-match``, which ignores case, it took a ``V9.9.9`` tag above the
+    newest release for the latest release tag, while the ``sed`` filter in the
+    POSIX ``resolve_latest_tag`` respects case and skipped it.
+    """
+    function = _ps1_function(SCRIPTS[ps1_name], "Resolve-LatestTag")
+    pattern = r"(?i:-cmatch)\s+'" + re.escape(PS1_LS_REMOTE_TAG_REGEX) + "'"
+    assert re.search(pattern, function), (
+        f"{ps1_name}'s Resolve-LatestTag no longer filters git ls-remote lines "
+        "with the case-sensitive -cmatch; -match resolves V9.9.9, which "
+        "resolve_latest_tag skips"
+    )
+
+
+# `git ls-remote --tags` output, one "<sha>\trefs/tags/<tag>" line per tag plus
+# a "<tag>^{}" peel line per annotated tag, beside the tag both resolvers must
+# pick from it, or None for none. Neither script's release-tag check accepts a
+# `V` tag, so neither resolver may pick one, whatever its number. `v1.10.0`
+# outranks `v1.2.3` by number, not by text.
+_SHA = "0123456789abcdef0123456789abcdef01234567"
+LS_REMOTE_TAG_CASES = (
+    pytest.param(
+        (
+            f"{_SHA}\trefs/tags/V9.9.9",
+            f"{_SHA}\trefs/tags/V9.9.9^{{}}",
+            f"{_SHA}\trefs/tags/v1.2.3",
+            f"{_SHA}\trefs/tags/v1.2.3^{{}}",
+            f"{_SHA}\trefs/tags/v1.10.0",
+            f"{_SHA}\trefs/tags/v2.0.0-rc1",
+        ),
+        "v1.10.0",
+        id="upper-case-tag-above-the-releases",
+    ),
+    pytest.param(
+        (f"{_SHA}\trefs/tags/V1.0.0", f"{_SHA}\trefs/tags/V1.0.0^{{}}"),
+        None,
+        id="upper-case-tag-only",
+    ),
+)
+
+
+@pytest.mark.skipif(
+    _PWSH is None or sys.platform == "win32" or shutil.which("sh") is None,
+    reason="runs Resolve-LatestTag under PowerShell and resolve_latest_tag under sh",
+)
+@pytest.mark.parametrize(("sh_name", "ps1_name"), RELEASE_TAG_PAIRS)
+@pytest.mark.parametrize(("lines", "expected"), LS_REMOTE_TAG_CASES)
+def test_resolve_latest_tag_picks_the_same_tag_in_both(
+    sh_name: str, ps1_name: str, lines: tuple[str, ...], expected: str | None
+) -> None:
+    """Each script's own ``Resolve-LatestTag``, run under PowerShell, picks
+    the same tag as its POSIX sibling's ``resolve_latest_tag``, run under sh,
+    from the same ``git ls-remote --tags`` lines.
+
+    :func:`test_ps1_resolve_latest_tag_filters_case_sensitively` reads the
+    source, which can pass while the shipped function behaves differently, so
+    this runs both functions. Each one calls a stub ``git`` that prints LINES,
+    so no repository or network is involved.
+    """
+    resolved = {
+        ps1_name: _ps1_resolve_latest_tag(ps1_name, lines),
+        sh_name: _sh_resolve_latest_tag(sh_name, lines),
+    }
+    assert resolved == {ps1_name: expected, sh_name: expected}, (
+        f"{ps1_name}'s Resolve-LatestTag and {sh_name}'s resolve_latest_tag "
+        f"should both resolve {expected!r} (script: tag): {resolved}"
+    )
+
+
+# Run the script's Resolve-LatestTag with `git` shadowed by a function, which
+# PowerShell resolves ahead of git on PATH. The stub writes each element of
+# the JSON array $env:LS_REMOTE_LINES as one output line and sets
+# $LASTEXITCODE to 0, as a successful `git ls-remote --tags` does.
+_RESOLVE_LATEST_TAG = "; ".join(
+    (
+        *_ps1_load_function("Resolve-LatestTag"),
+        "function git { $global:LASTEXITCODE = 0; "
+        "foreach ($line in ($env:LS_REMOTE_LINES | ConvertFrom-Json)) { $line } }",
+        "& $body 'https://example.invalid/apothem.git'",
+    )
+)
+
+
+def _ps1_resolve_latest_tag(ps1_name: str, lines: tuple[str, ...]) -> str | None:
+    """Return the tag PS1_NAME's own ``Resolve-LatestTag`` picks from the
+    ``git ls-remote --tags`` output LINES, or None when it returns ``$null``."""
+    result = _run_powershell(
+        _RESOLVE_LATEST_TAG, ps1_name, LS_REMOTE_LINES=json.dumps(lines)
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    return _only_line(result.stdout)
+
+
+def _sh_resolve_latest_tag(sh_name: str, lines: tuple[str, ...]) -> str | None:
+    """Return the tag SH_NAME's own ``resolve_latest_tag``, run under sh,
+    picks from the ``git ls-remote --tags`` output LINES, or None when it
+    prints nothing. A shell function named ``git`` takes the place of git on
+    PATH."""
+    program = (
+        "git() { printf '%s\\n' \"$LS_REMOTE_LINES\"; }\n"
+        + _sh_function(SCRIPTS[sh_name], "resolve_latest_tag")
+        + "\nresolve_latest_tag https://example.invalid/apothem.git\n"
+    )
+    result = subprocess.run(
+        ["sh", "-c", program],
+        env={**os.environ, "LS_REMOTE_LINES": "\n".join(lines)},
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    return _only_line(result.stdout)
+
+
+def _only_line(output: str) -> str | None:
+    """Return the one line of OUTPUT, or None when OUTPUT is empty."""
+    lines = output.splitlines()
+    assert len(lines) <= 1, f"expected one tag at most, got {lines}"
+    return lines[0] if lines else None
 
 
 @pytest.mark.parametrize("tag", VALID_TAGS)
