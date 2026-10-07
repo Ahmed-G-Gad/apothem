@@ -11,7 +11,9 @@ pre-release and malformed tags that the anchored PowerShell
 ``Test-ReleaseTag`` regex rejected, taking a pinned pre-release down the wrong
 verify branch, and once install.sh was fixed, update.sh kept the loose copy.
 In the other direction, ``Test-ReleaseTag`` applied its regex with ``-match``,
-which ignores case, so ``V1.2.3`` passed it and failed ``is_release_tag``.
+which ignores case, so ``V1.2.3`` passed it and failed ``is_release_tag``. Its
+``$`` anchor also matched before a final newline, so ``v1.2.3`` with a
+trailing newline passed it and failed ``is_release_tag`` too.
 
 Full unification of the scripts is out of scope. These tests are a drift
 guard over the extractable decision-table constants: they read the scripts and
@@ -51,8 +53,13 @@ RELEASE_TAG_PAIRS: tuple[tuple[str, str], ...] = (
     ("update.sh", "update.ps1"),
 )
 
-# The anchored regex both PowerShell scripts' Test-ReleaseTag match against.
-PS1_RELEASE_TAG_REGEX = r"^v[0-9]+\.[0-9]+\.[0-9]+$"
+# Python's model of Test-ReleaseTag. Python's `$`, like .NET's, also matches
+# before a final newline, and Python's `re` has no `\z` before 3.14, so the
+# model takes a full match of the unanchored pattern instead.
+PS1_RELEASE_TAG_MODEL = re.compile(r"v[0-9]+\.[0-9]+\.[0-9]+")
+# The anchored .NET regex both PowerShell scripts' Test-ReleaseTag match
+# against. `\z` matches only at the end of the string.
+PS1_RELEASE_TAG_REGEX = "^" + PS1_RELEASE_TAG_MODEL.pattern + r"\z"
 
 VALID_TAGS: tuple[str, ...] = ("v1.2.3", "v10.20.30", "v0.0.1")
 NON_RELEASE_REFS: tuple[str, ...] = (
@@ -64,6 +71,10 @@ NON_RELEASE_REFS: tuple[str, ...] = (
     # An upper-case `V`. Both checks are case-sensitive: the `case` glob in
     # is_release_tag, and Test-ReleaseTag's -cmatch.
     "V1.2.3",
+    # A trailing newline, as `Get-Content -Raw` keeps from a file. The first
+    # reject gate in is_release_tag drops it, and Test-ReleaseTag's `\z` does
+    # too, where `$` would match before the newline.
+    "v1.2.3\n",
     # Refs of only `v`, digits, and dots, which the first reject gate passes.
     "v1.2.3.4",
     "v1..2.3",
@@ -82,7 +93,7 @@ def test_release_tag_recognition_is_strict_semver_in_both(
     """Each pair recognises a release tag as strict, anchored SemVer.
 
     The ``.ps1`` ``Test-ReleaseTag`` uses the anchored regex
-    ``^v[0-9]+\\.[0-9]+\\.[0-9]+$``. The ``.sh`` ``is_release_tag`` cannot use
+    ``^v[0-9]+\\.[0-9]+\\.[0-9]+\\z``. The ``.sh`` ``is_release_tag`` cannot use
     a regex (POSIX ``case`` globs have no anchors or ``+`` quantifier), so it
     pairs the ``v[0-9]*.[0-9]*.[0-9]*`` shape glob with two reject gates: a
     ``*[!v0-9.]*`` gate that drops any tag carrying a character outside the
@@ -136,7 +147,9 @@ def test_posix_is_release_tag_agrees_with_the_ps1_regex(
 
     The substring checks and the Python model in :func:`_sh_is_release_tag`
     can pass while the shell function behaves differently, for example with
-    its gates reordered. This runs the definition the script ships.
+    its gates reordered. This runs the definition the script ships. The
+    ``.ps1`` side is :data:`PS1_RELEASE_TAG_MODEL`, since Python cannot run
+    the ``\\z`` in :data:`PS1_RELEASE_TAG_REGEX` on every supported version.
     """
     refs = (*VALID_TAGS, *NON_RELEASE_REFS)
     program = (
@@ -157,7 +170,7 @@ def test_posix_is_release_tag_agrees_with_the_ps1_regex(
     disagreements = {
         ref: verdict
         for ref, verdict in verdicts.items()
-        if (verdict == "release") != bool(re.search(PS1_RELEASE_TAG_REGEX, ref))
+        if (verdict == "release") != bool(PS1_RELEASE_TAG_MODEL.fullmatch(ref))
     }
     assert not disagreements, (
         f"{sh_name}'s is_release_tag disagrees with {ps1_name}'s Test-ReleaseTag "
@@ -175,18 +188,22 @@ def _sh_function(script: str, name: str) -> str:
 
 @pytest.mark.parametrize("ps1_name", [ps1_name for _, ps1_name in RELEASE_TAG_PAIRS])
 def test_ps1_test_release_tag_matches_case_sensitively(ps1_name: str) -> None:
-    """Each ``.ps1`` ``Test-ReleaseTag`` applies the regex with ``-cmatch``.
+    """Each ``.ps1`` ``Test-ReleaseTag`` applies the ``\\z``-anchored regex
+    with ``-cmatch``.
 
     PowerShell's ``-match`` and ``-imatch`` ignore case, so with either one the
     ``.ps1`` took ``V1.2.3`` for a release tag while the POSIX ``case`` glob in
     ``is_release_tag`` rejected it. PowerShell reads operator names without
-    case, so ``-CMatch`` passes too.
+    case, so ``-CMatch`` passes too. A ``$`` anchor in place of ``\\z`` also
+    matches before a final newline, so the ``.ps1`` took ``v1.2.3`` with a
+    trailing newline for a release tag.
     """
     function = _ps1_function(SCRIPTS[ps1_name], "Test-ReleaseTag")
     pattern = r"(?i:-cmatch)\s+'" + re.escape(PS1_RELEASE_TAG_REGEX) + "'"
     assert re.search(pattern, function), (
         f"{ps1_name}'s Test-ReleaseTag no longer applies the release-tag regex "
-        "with the case-sensitive -cmatch; -match accepts V1.2.3, which "
+        "with the case-sensitive -cmatch and the \\z end anchor; -match "
+        "accepts V1.2.3 and $ accepts a trailing newline, which "
         "is_release_tag rejects"
     )
 
@@ -220,11 +237,13 @@ _CLASSIFY_REFS = "; ".join(
 @pytest.mark.parametrize("ps1_name", [ps1_name for _, ps1_name in RELEASE_TAG_PAIRS])
 def test_powershell_test_release_tag_accepts_only_release_tags(ps1_name: str) -> None:
     """Each script's own ``Test-ReleaseTag``, run under PowerShell, accepts
-    every valid tag and rejects every other ref, ``V1.2.3`` included.
+    every valid tag and rejects every other ref, ``V1.2.3`` and ``v1.2.3``
+    with a trailing newline included.
 
     :func:`test_ps1_test_release_tag_matches_case_sensitively` reads the source,
-    and the Python regex the other tests use models ``-cmatch``. Both can pass
-    while the shipped function behaves differently, so this runs it.
+    and :data:`PS1_RELEASE_TAG_MODEL` models ``-cmatch`` and ``\\z`` in
+    Python. Both can pass while the shipped function behaves differently, so
+    this runs it. The refs travel as JSON, so the newline arrives intact.
     """
     assert _PWSH is not None
     refs = (*VALID_TAGS, *NON_RELEASE_REFS)
@@ -281,7 +300,7 @@ def test_strict_semver_tags_are_accepted_by_both_shapes(tag: str) -> None:
     # POSIX acceptance: no non-[v0-9.] character present AND the shape matches.
     assert _sh_is_release_tag(tag), f"install.sh shape rejects valid tag {tag}"
     # PowerShell acceptance: the anchored regex matches.
-    assert re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+", tag), (
+    assert PS1_RELEASE_TAG_MODEL.fullmatch(tag), (
         f"install.ps1 regex rejects valid tag {tag}"
     )
 
@@ -294,7 +313,7 @@ def test_non_release_refs_are_rejected_by_both_shapes(tag: str) -> None:
     gates now make install.sh agree with install.ps1's anchored regex.
     """
     assert not _sh_is_release_tag(tag), f"install.sh shape wrongly accepts {tag}"
-    assert not re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+", tag), (
+    assert not PS1_RELEASE_TAG_MODEL.fullmatch(tag), (
         f"install.ps1 regex wrongly accepts {tag}"
     )
 

@@ -24,7 +24,7 @@ if (-not $env:GH_TOKEN) {
     exit 1
 }
 
-if ($Tag -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$') {
+if ($Tag -cnotmatch '^v[0-9]+\.[0-9]+\.[0-9]+\z') {
     Write-Error "check-release-ready: $Tag is not a vMAJOR.MINOR.PATCH tag"
     exit 1
 }
