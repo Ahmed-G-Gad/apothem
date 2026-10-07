@@ -17,6 +17,10 @@ Both tests assert the abort happens before any configuration materializes.
 The fixture repository is minimal: the gate runs right after the
 ``is_apothem_source`` shape check (``src/apothem`` + ``pyproject.toml``), so
 no working engine tree is required.
+
+Every git subprocess, fixture and installer alike, runs with the host's
+global and system git config switched off, and each test also runs under a
+hostile global config, so the outcome does not depend on the host's git setup.
 """
 
 from __future__ import annotations
@@ -41,6 +45,14 @@ OVERRIDE_SUGGESTION = "Set APOTHEM_ALLOW_UNVERIFIED=1"
 # Subprocess wall-clock ceiling: local clone + abort, no materialization.
 INSTALL_TIMEOUT_SECONDS = 120
 
+# Host git config the module's git subprocesses must not inherit. A global
+# gpg.format=ssh makes `git tag -s` SSH-sign the fixture tag, so verify-tag
+# reports a missing allowed-signers file instead of gpg's missing key. A global
+# core.hooksPath pre-commit hook can block the fixture commit. Setting
+# GIT_CONFIG_GLOBAL skips both ~/.gitconfig and $XDG_CONFIG_HOME/git/config,
+# and GIT_CONFIG_NOSYSTEM skips the system file.
+GIT_CONFIG_ISOLATION = {"GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}
+
 pytestmark = pytest.mark.skipif(
     shutil.which("bash") is None or sys.platform == "win32",
     reason=(
@@ -52,11 +64,12 @@ pytestmark = pytest.mark.skipif(
 
 
 def _git(args: list[str], cwd: Path, env: dict[str, str] | None = None) -> str:
-    """Run a git command in CWD and return stdout, failing loudly."""
+    """Run a git command in CWD, without the host's global or system git
+    config, and return stdout, failing loudly."""
     result = subprocess.run(
         ["git", *args],
         cwd=str(cwd),
-        env=env,
+        env={**(os.environ if env is None else env), **GIT_CONFIG_ISOLATION},
         capture_output=True,
         text=True,
         timeout=60,
@@ -95,7 +108,14 @@ def _make_fixture_repo(root: Path) -> Path:
 
 
 def _installer_env(tmp_path: Path, fixture: Path, ref: str) -> dict[str, str]:
-    """Hermetic environment: isolated HOME, fixture repo as the clone remote."""
+    """Hermetic environment: isolated HOME and git config, fixture repo as the
+    clone remote.
+
+    The isolated HOME hides ~/.gitconfig, but an inherited GIT_CONFIG_GLOBAL,
+    $XDG_CONFIG_HOME/git/config, and the system config would still reach the
+    installer's git (its verify-tag reads gpg.program from them), so the git
+    config isolation applies here too.
+    """
     home = tmp_path / "home"
     home.mkdir(exist_ok=True)
     env = dict(os.environ)
@@ -103,6 +123,7 @@ def _installer_env(tmp_path: Path, fixture: Path, ref: str) -> dict[str, str]:
         if key.startswith("APOTHEM_"):
             del env[key]
     env.pop("PYTHONPATH", None)
+    env.update(GIT_CONFIG_ISOLATION)
     env["HOME"] = str(home)
     env["USERPROFILE"] = str(home)
     env["APOTHEM_REPO"] = str(fixture)
@@ -147,6 +168,46 @@ def _assert_aborted_before_materialization(env: dict[str, str]) -> None:
     assert not materialized.exists(), (
         f"config materialized despite verification abort: {materialized}"
     )
+
+
+@pytest.fixture(autouse=True, params=["host-config", "hostile-global-config"])
+def _host_git_config(
+    request: pytest.FixtureRequest, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Run each test under the host's git config and under a hostile one.
+
+    CI runners carry no global git config, so the hostile run is what
+    exercises GIT_CONFIG_ISOLATION and the signing pins there. It points
+    GIT_CONFIG_GLOBAL at a config that SSH-signs through a missing program,
+    names a missing gpg binary, and blocks every commit with a global
+    pre-commit hook, and it injects gpg.format=ssh at command scope through
+    GIT_CONFIG_COUNT. A leak into any fixture or installer git call fails the
+    test.
+    """
+    if request.param == "host-config":
+        return
+    hooks = tmp_path / "hostile-hooks"
+    hooks.mkdir()
+    pre_commit = hooks / "pre-commit"
+    pre_commit.write_text(
+        "#!/bin/sh\necho 'hostile global pre-commit hook ran' >&2\nexit 1\n",
+        encoding="utf-8",
+    )
+    pre_commit.chmod(0o755)
+    missing = tmp_path / "missing-program"
+    hostile = tmp_path / "hostile-gitconfig"
+    hostile.write_text(
+        f"[gpg]\n\tformat = ssh\n\tprogram = {missing}\n"
+        f'[gpg "ssh"]\n\tprogram = {missing}\n'
+        "[commit]\n\tgpgsign = true\n"
+        f"[core]\n\thooksPath = {hooks}\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(hostile))
+    index = int(os.environ.get("GIT_CONFIG_COUNT") or "0")
+    monkeypatch.setenv(f"GIT_CONFIG_KEY_{index}", "gpg.format")
+    monkeypatch.setenv(f"GIT_CONFIG_VALUE_{index}", "ssh")
+    monkeypatch.setenv("GIT_CONFIG_COUNT", str(index + 1))
 
 
 def test_unsigned_tag_aborts_without_advertising_override(tmp_path: Path) -> None:
@@ -207,8 +268,16 @@ def test_signed_tag_with_absent_key_prints_import_guidance(tmp_path: Path) -> No
     if keygen.returncode != 0:
         pytest.skip(f"gpg key generation unavailable: {keygen.stderr.strip()}")
 
+    # Pin the OpenPGP backend and the gpg binary that minted the key. Config
+    # injected through GIT_CONFIG_COUNT or GIT_CONFIG_PARAMETERS is command
+    # scope, which GIT_CONFIG_ISOLATION does not reach, and only `-c` overrides
+    # it. An SSH-signed tag would never hit the missing-key branch.
     _git(
         [
+            "-c",
+            "gpg.format=openpgp",
+            "-c",
+            "gpg.program=gpg",
             "-c",
             "user.signingkey=signer@example.invalid",
             "-c",
