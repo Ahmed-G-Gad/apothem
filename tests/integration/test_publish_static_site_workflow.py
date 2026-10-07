@@ -5,10 +5,9 @@
 These assertions read the in-tree workflow, not live GitHub. The workflow runs
 on ``workflow_dispatch``, which can start on any branch, and its per-ref
 concurrency group does not queue such a run behind main's deploy. Every job
-that can publish to GitHub Pages must therefore carry a job-level guard that
-holds only on ``refs/heads/main``, whatever the ``github-pages`` environment's
-branch rule allows. The build job stays unguarded, so a dispatch on any other
-branch is a dry run that builds without deploying.
+that can publish to GitHub Pages must therefore carry the job-level guard
+``if: github.ref == 'refs/heads/main'``. The build job stays unguarded, so a
+dispatch on any other branch is a dry run that builds without deploying.
 """
 
 from __future__ import annotations
@@ -30,14 +29,19 @@ _MAIN_ONLY = "github.ref == 'refs/heads/main'"
 def _jobs() -> dict:
     assert _WORKFLOW.is_file(), f"missing workflow: {_WORKFLOW}"
     doc = yaml.safe_load(_WORKFLOW.read_text(encoding="utf-8"))
-    return doc["jobs"]
+    # A job without its own `permissions:` inherits the workflow-level grant.
+    root = doc.get("permissions")
+    return {
+        name: job if "permissions" in job else {**job, "permissions": root}
+        for name, job in doc["jobs"].items()
+    }
 
 
 def _condition(job: dict) -> str | None:
     raw = job.get("if")
     if raw is None:
         return None
-    # A job-level `if:` may wrap its expression in `${{ }}`; both forms are equal.
+    # A job-level `if:` may wrap its expression in `${{ }}`. Both forms are equal.
     text = str(raw).strip()
     wrapped = re.fullmatch(r"\$\{\{(.*)\}\}", text, flags=re.DOTALL)
     if wrapped:
@@ -51,7 +55,8 @@ def _publishes_to_pages(job: dict) -> bool:
         environment = environment.get("name")
     permissions = job.get("permissions")
     return (
-        environment == "github-pages"
+        # GitHub environment names are not case sensitive.
+        str(environment).lower() == "github-pages"
         or permissions == "write-all"
         or (isinstance(permissions, dict) and permissions.get("pages") == "write")
         or any(
@@ -69,7 +74,7 @@ def test_every_pages_deploy_job_runs_from_main_only() -> None:
     for name, job in publishers.items():
         assert _condition(job) == _MAIN_ONLY, (
             f"job {name!r} can publish to Pages, so it must carry "
-            f"`if: {_MAIN_ONLY}`; found {job.get('if')!r}"
+            f"`if: {_MAIN_ONLY}`, found {job.get('if')!r}"
         )
 
 
