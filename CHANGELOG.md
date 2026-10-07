@@ -341,6 +341,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   the plugin tree's vendored code to its authors.
 - **SECURITY.md lists 1.1.x as supported**, the release badge reads the tag
   from full history, and the CHANGELOG links resolve.
+- **`install.sh` and `update.sh` treat only `vMAJOR.MINOR.PATCH` tags as
+  release tags**, as `install.ps1` and `update.ps1` do. Both scripts matched
+  `v1.2.3.4`, `v1..2.3`, and `v1.2.3v`, and `update.sh` also matched
+  `v1.2.3-rc1` and `v1x.2.3`. A ref pinned to one of these went to
+  `git verify-tag` instead of stopping as "not a signed release tag", and
+  `install.sh` accepted the first three for `APOTHEM_VERIFY=checksum`. Both
+  scripts now use the same check.
 - **The installers give key-import guidance in any language.** When the
   maintainer key was missing from the local keyring and GnuPG printed its
   messages in another language, `install.sh`, `install.ps1` and `update.sh`
