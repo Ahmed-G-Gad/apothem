@@ -67,7 +67,7 @@ All four targets are wired into CI; running them locally catches the common fail
 
 Pre-commit installation is part of the **One-time setup** above (the `pre-commit install` line). With the hooks installed, every `git commit` runs the ratified hook set from `.pre-commit-config.yaml`:
 
-- **Generic hygiene** — `trailing-whitespace`, `end-of-file-fixer`, `check-yaml`, `check-json`, `check-toml`, `check-added-large-files`, `check-merge-conflict`, `mixed-line-ending` (normalizes to LF).
+- **Generic hygiene** — `trailing-whitespace`, `end-of-file-fixer`, `check-yaml`, `check-json`, `check-toml`, `check-added-large-files`, `check-merge-conflict`, `mixed-line-ending` (normalizes to LF, except the CRLF files listed under [Line endings](#line-endings)).
 - **Python** — `ruff` (lint, `--fix`) and `ruff-format`, then `mypy`.
 - **Markdown / YAML** — `markdownlint` and `yamllint`.
 - **Secrets** — `gitleaks`.
@@ -84,6 +84,12 @@ pre-commit run --all-files
 ### Line endings
 
 The repository normalizes line endings to **LF** in the index for every text file via `.gitattributes` (`* text=auto eol=lf` plus per-extension reinforcement on shell scripts, Python, Markdown, YAML, and so on). `shellcheck` reads the working-tree bytes directly and surfaces SC1017 literal-CR errors when those bytes are CRLF; consequently the working tree must also be LF for the gate at `src/apothem/rules/code-craft-shell.md` M13.7 to pass clean.
+
+Windows batch and PowerShell script files are the one working-tree exception. `.gitattributes` checks out `*.ps1`, `*.bat`, and `*.cmd` with CRLF (`text eol=crlf`), whatever `core.autocrlf` is set to; their index copies stay LF. PowerShell data and module files (`*.psd1`, `*.psm1`) are not in this set and stay LF. Three files name this CRLF set, and a change to it must update all three together (`tests/unit/test_crlf_set_sync.py` fails when they disagree):
+
+- `.gitattributes`: the `text eol=crlf` lines.
+- `.editorconfig`: the `[*.{ps1,bat,cmd}]` section with `end_of_line = crlf`.
+- `.pre-commit-config.yaml`: the `mixed-line-ending` hook's `exclude: '\.(bat|cmd|ps1)$'`, so the hook does not rewrite those files to LF.
 
 **Windows contributors:** before cloning, set the local Git config so the working tree honors the LF index without per-checkout CRLF conversion:
 
