@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: MIT
 
-"""Installer tag-verification abort branches (clone path).
+"""Release-tag verification abort branches (clone path).
 
-Exercises the fail-closed signature gate in ``scripts/installer/install.sh``
-against a local fixture repository — no network. The gate distinguishes two
-abort classes:
+Exercises the fail-closed signature gate in ``scripts/installer/install.sh``,
+``update.sh`` and ``update.ps1`` against a local fixture repository — no
+network. The gate distinguishes two abort classes:
 
 - **missing key** — the tag is signed but the maintainer public key is absent
   from the local keyring; the abort prints key-import guidance (fingerprint
@@ -13,14 +13,16 @@ abort classes:
   and deliberately does not advertise the ``APOTHEM_ALLOW_UNVERIFIED``
   override on a possible-tampering signal.
 
-Both tests assert the abort happens before any configuration materializes.
+Each abort-class test runs every script against the same fixture, so the
+three keep the same classes and messages. Every test asserts the abort happens
+before any configuration materializes.
 A stub verifier replays GnuPG's German output for both classes, to show the
 split rests on GnuPG's status lines rather than its translated messages.
-The fixture repository is minimal: the gate runs right after the
-``is_apothem_source`` shape check (``src/apothem`` + ``pyproject.toml``), so
-no working engine tree is required.
+The fixture repository is minimal: the gate runs right after the source-shape
+check (``src/apothem`` + ``pyproject.toml``), so no working engine tree is
+required.
 
-Every git process here, the fixture setup's and the installer's, runs without
+Every git process here, the fixture setup's and the scripts', runs without
 the host's git configuration (``tests._shared.git_env``). A developer's
 ``gpg.format ssh`` would otherwise turn the fixture's ``git tag -s`` into an
 SSH signature, which ``git verify-tag`` rejects for want of an allowed-signers
@@ -31,10 +33,12 @@ such configuration on every layer git reads, so a leak fails on any host.
 from __future__ import annotations
 
 import os
+import re
 import shlex
 import shutil
 import subprocess
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -43,8 +47,16 @@ from tests._shared.git_env import hermetic_git_env
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 INSTALLER = REPO_ROOT / "scripts" / "installer" / "install.sh"
+UPDATER_SH = REPO_ROOT / "scripts" / "installer" / "update.sh"
+UPDATER_PS1 = REPO_ROOT / "scripts" / "installer" / "update.ps1"
 
-# Message markers mirrored from install.sh's verification gate.
+_PWSH = shutil.which("pwsh")
+_ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
+
+# Runs one script's verification gate in the environment it is given.
+GateRunner = Callable[[dict[str, str]], subprocess.CompletedProcess[str]]
+
+# Message markers mirrored from the scripts' verification gates.
 BAD_SIGNATURE_MARKER = "did not verify (possible tampering)"
 MISSING_KEY_MARKER = "public key is not in the local keyring"
 KEY_IMPORT_MARKER = "gpg --recv-keys"
@@ -52,6 +64,9 @@ OVERRIDE_SUGGESTION = "Set APOTHEM_ALLOW_UNVERIFIED=1"
 
 # Subprocess wall-clock ceiling: local clone + abort, no materialization.
 INSTALL_TIMEOUT_SECONDS = 120
+
+# Permission bits for the stub programs the scripts run (owner rwx, others rx).
+EXECUTABLE_MODE = 0o755
 
 # GnuPG 2.4.4 verification results under de_DE.UTF-8, abridged:
 # (status lines, stderr). git passes --status-fd=1, so the status lines arrive
@@ -74,12 +89,18 @@ LOCALIZED_GPG_RESULTS = {
 }
 
 pytestmark = pytest.mark.skipif(
-    shutil.which("bash") is None or sys.platform == "win32",
+    sys.platform == "win32",
     reason=(
-        "exercises the POSIX install.sh; skipped on Windows (install.ps1 is "
-        "the Windows path, and `bash` there resolves to the WSL launcher, "
-        "not git-bash) and when bash is absent from PATH"
+        "runs the scripts with POSIX sh stubs (gpg.program, python3); skipped "
+        "on Windows, where install.ps1 is the install path and `bash` "
+        "resolves to the WSL launcher, not git-bash"
     ),
+)
+requires_bash = pytest.mark.skipif(
+    shutil.which("bash") is None, reason="install.sh runs under bash; no bash on PATH"
+)
+requires_pwsh = pytest.mark.skipif(
+    _PWSH is None, reason="update.ps1 runs under PowerShell 7; no pwsh on PATH"
 )
 
 
@@ -210,6 +231,90 @@ def _run_installer(env: dict[str, str]) -> subprocess.CompletedProcess[str]:
     )
 
 
+def _prepare_update(env: dict[str, str]) -> None:
+    """Give an updater what a prior install leaves behind.
+
+    The updaters re-check-out an existing clone at APOTHEM_HOME, so this
+    clones the fixture there. They also refuse to run without click and rich,
+    which the interpreter running this test has, so a ``python3`` that runs
+    that interpreter goes first on PATH. The host's own ``python3`` may lack
+    them.
+    """
+    _git(
+        ["clone", "--quiet", env["APOTHEM_REPO"], env["APOTHEM_HOME"]],
+        cwd=Path(env["HOME"]),
+    )
+    shim_dir = Path(env["HOME"]).parent / "python-shim"
+    shim_dir.mkdir(exist_ok=True)
+    shim = shim_dir / "python3"
+    shim.write_text(
+        f'#!/bin/sh\nexec {shlex.quote(sys.executable)} "$@"\n', encoding="utf-8"
+    )
+    shim.chmod(EXECUTABLE_MODE)
+    env["PATH"] = f"{shim_dir}{os.pathsep}{env.get('PATH', '')}"
+
+
+def _run_updater_sh(env: dict[str, str]) -> subprocess.CompletedProcess[str]:
+    _prepare_update(env)
+    return subprocess.run(
+        ["sh", str(UPDATER_SH)],
+        cwd=env["HOME"],
+        env=env,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=INSTALL_TIMEOUT_SECONDS,
+        check=False,
+    )
+
+
+def _run_updater_ps1(env: dict[str, str]) -> subprocess.CompletedProcess[str]:
+    _prepare_update(env)
+    assert _PWSH is not None
+    return subprocess.run(
+        [
+            _PWSH,
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(UPDATER_PS1),
+        ],
+        cwd=env["HOME"],
+        env=env,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=INSTALL_TIMEOUT_SECONDS,
+        check=False,
+    )
+
+
+@pytest.fixture(
+    params=[
+        pytest.param(_run_installer, id="install.sh", marks=requires_bash),
+        pytest.param(_run_updater_sh, id="update.sh"),
+        pytest.param(_run_updater_ps1, id="update.ps1", marks=requires_pwsh),
+    ]
+)
+def run_gate(request: pytest.FixtureRequest) -> GateRunner:
+    """Each script whose verification gate the abort-class tests exercise."""
+    runner: GateRunner = request.param
+    return runner
+
+
+def _plain(output: str) -> str:
+    """Return script output as single-spaced words, as a reader sees them.
+
+    ``update.ps1`` aborts through ``Write-Error``. PowerShell renders the
+    record in its concise error view, which can colour the text and wrap it at
+    the console width behind a ``|`` gutter, so a marker can span lines.
+    """
+    words = _ANSI_ESCAPE.sub("", output).split()
+    return " ".join(word for word in words if word != "|")
+
+
 def _make_stub_signed_tag(fixture: Path, tag: str) -> None:
     """Point TAG at a tag object that carries an OpenPGP signature block.
 
@@ -256,7 +361,7 @@ def _use_stub_gpg(env: dict[str, str], status: str, human: str) -> None:
         "exit 1\n",
         encoding="utf-8",
     )
-    stub.chmod(0o755)
+    stub.chmod(EXECUTABLE_MODE)
     gitconfig = Path(env["HOME"]) / ".gitconfig"
     _git(
         ["config", "--file", str(gitconfig), "gpg.program", str(stub)],
@@ -272,7 +377,9 @@ def _assert_aborted_before_materialization(env: dict[str, str]) -> None:
     )
 
 
-def test_unsigned_tag_aborts_without_advertising_override(tmp_path: Path) -> None:
+def test_unsigned_tag_aborts_without_advertising_override(
+    tmp_path: Path, run_gate: GateRunner
+) -> None:
     """An unsigned annotated tag hits the hard bad-signature abort.
 
     The abort names possible tampering, prints no key-import guidance (the
@@ -283,18 +390,21 @@ def test_unsigned_tag_aborts_without_advertising_override(tmp_path: Path) -> Non
     _git(["tag", "-a", "v9.9.9", "-m", "unsigned release"], cwd=fixture)
     env = _installer_env(tmp_path, fixture, "v9.9.9")
 
-    result = _run_installer(env)
+    result = run_gate(env)
 
     combined = result.stdout + result.stderr
-    assert result.returncode != 0, f"installer should abort\n{combined}"
-    assert BAD_SIGNATURE_MARKER in combined, combined
-    assert MISSING_KEY_MARKER not in combined, combined
-    assert KEY_IMPORT_MARKER not in combined, combined
-    assert OVERRIDE_SUGGESTION not in combined, combined
+    plain = _plain(combined)
+    assert result.returncode != 0, f"script should abort\n{combined}"
+    assert BAD_SIGNATURE_MARKER in plain, combined
+    assert MISSING_KEY_MARKER not in plain, combined
+    assert KEY_IMPORT_MARKER not in plain, combined
+    assert OVERRIDE_SUGGESTION not in plain, combined
     _assert_aborted_before_materialization(env)
 
 
-def test_signed_tag_with_absent_key_prints_import_guidance(tmp_path: Path) -> None:
+def test_signed_tag_with_absent_key_prints_import_guidance(
+    tmp_path: Path, run_gate: GateRunner
+) -> None:
     """A signed tag verified in a keyring lacking the key prints key-import
     guidance — a different abort than the bad-signature case."""
     if shutil.which("gpg") is None:
@@ -364,14 +474,15 @@ def test_signed_tag_with_absent_key_prints_import_guidance(tmp_path: Path) -> No
     env = _installer_env(tmp_path, fixture, "v9.9.8")
     env["GNUPGHOME"] = str(empty_gnupghome)
 
-    result = _run_installer(env)
+    result = run_gate(env)
 
     combined = result.stdout + result.stderr
-    assert result.returncode != 0, f"installer should abort\n{combined}"
-    assert MISSING_KEY_MARKER in combined, combined
-    assert KEY_IMPORT_MARKER in combined, combined
-    assert BAD_SIGNATURE_MARKER not in combined, combined
-    assert OVERRIDE_SUGGESTION not in combined, combined
+    plain = _plain(combined)
+    assert result.returncode != 0, f"script should abort\n{combined}"
+    assert MISSING_KEY_MARKER in plain, combined
+    assert KEY_IMPORT_MARKER in plain, combined
+    assert BAD_SIGNATURE_MARKER not in plain, combined
+    assert OVERRIDE_SUGGESTION not in plain, combined
     _assert_aborted_before_materialization(env)
 
 
@@ -394,12 +505,13 @@ def test_signed_tag_with_absent_key_prints_import_guidance(tmp_path: Path) -> No
 )
 def test_abort_class_does_not_depend_on_gpg_language(
     tmp_path: Path,
+    run_gate: GateRunner,
     gpg_result: str,
     expected: tuple[str, ...],
     unexpected: tuple[str, ...],
 ) -> None:
     """GnuPG translates its messages, so a missing key reads "Kein
-    öffentlicher Schlüssel" under a German locale. The installer must still
+    öffentlicher Schlüssel" under a German locale. The script must still
     tell a missing key from a bad signature, so it reads the status lines,
     which GnuPG does not translate."""
     fixture = _make_fixture_repo(tmp_path)
@@ -408,18 +520,20 @@ def test_abort_class_does_not_depend_on_gpg_language(
     status, human = LOCALIZED_GPG_RESULTS[gpg_result]
     _use_stub_gpg(env, status, human)
 
-    result = _run_installer(env)
+    result = run_gate(env)
 
     combined = result.stdout + result.stderr
-    assert result.returncode != 0, f"installer should abort\n{combined}"
+    plain = _plain(combined)
+    assert result.returncode != 0, f"script should abort\n{combined}"
     for marker in expected:
-        assert marker in combined, combined
+        assert marker in plain, combined
     for marker in unexpected:
-        assert marker not in combined, combined
-    assert OVERRIDE_SUGGESTION not in combined, combined
+        assert marker not in plain, combined
+    assert OVERRIDE_SUGGESTION not in plain, combined
     _assert_aborted_before_materialization(env)
 
 
+@requires_bash
 def test_existing_nonclone_home_is_refused_without_yes(tmp_path: Path) -> None:
     """A pre-existing non-clone APOTHEM_HOME with content survives.
 
@@ -451,6 +565,7 @@ def test_existing_nonclone_home_is_refused_without_yes(tmp_path: Path) -> None:
     assert sentinel.is_file(), "sentinel must survive the refused install"
 
 
+@requires_bash
 def test_yes_authorizes_replacing_nonclone_home(tmp_path: Path) -> None:
     """--yes authorizes the replacement: the non-clone directory gives way
     to the clone (this run still aborts later, at the verification gate,

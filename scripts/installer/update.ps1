@@ -137,11 +137,37 @@ function Resolve-LatestTag {
 }
 
 # Test-TagSignature DIR REF - return $true when `git verify-tag` succeeds in
-# DIR (a GPG-signed tag whose key is trusted), $false otherwise.
+# DIR (a GPG-signed tag whose key is trusted), $false otherwise. The verifier's
+# output is captured in $script:VerifyTagOutput so callers can tell a missing
+# public key (no local trust root yet - remediation: import the maintainer
+# key) from a bad or absent signature (hard abort). `--raw` captures GnuPG's
+# status lines ("[GNUPG:] KEYWORD ...") instead of its human-readable
+# messages, which GnuPG translates into the host's language. git writes both
+# to stderr, which Windows PowerShell (and PowerShell before 7.2) turns into
+# a TERMINATING NativeCommandError under $ErrorActionPreference='Stop' once it
+# is redirected - for a valid signature too - so the preference is localized
+# to 'Continue' around the call, as in Test-PythonImport.
+$script:VerifyTagOutput = ''
 function Test-TagSignature {
     param([string]$Dir, [string]$Ref)
-    & git -C $Dir verify-tag $Ref 2>$null | Out-Null
-    return ($LASTEXITCODE -eq 0)
+    $prior = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $Lines = & git -C $Dir verify-tag --raw $Ref 2>&1
+        $code = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $prior
+    }
+    $script:VerifyTagOutput = ($Lines | ForEach-Object { $_.ToString() }) -join "`n"
+    return ($code -eq 0)
+}
+
+# Test-VerifyTagMissingKey - $true when the captured status lines show the
+# signing public key is absent from the local keyring, so the signature was
+# not checked (GnuPG's NO_PUBKEY status), $false for any other failure
+# (unsigned tag, BAD signature).
+function Test-VerifyTagMissingKey {
+    return ($script:VerifyTagOutput -match '\[GNUPG:\] NO_PUBKEY ')
 }
 
 # Test-ReleaseTag REF - return $true when REF is a vMAJOR.MINOR.PATCH release
@@ -225,8 +251,10 @@ if ($env:APOTHEM_SOURCE) {
             Write-Ok "Tag $ApothemRef carries a valid signature"
         } elseif ($ApothemAllowUnverified -eq '1') {
             Write-Warn "Tag $ApothemRef is unsigned or its signature did not verify - proceeding because APOTHEM_ALLOW_UNVERIFIED=1"
+        } elseif (Test-VerifyTagMissingKey) {
+            Write-Fail "Tag $ApothemRef is signed, but the maintainer public key is not in the local keyring, so the signature cannot be checked. Import the key first: look up the maintainer signing-key fingerprint in SECURITY.md at the repository root, run 'gpg --recv-keys <fingerprint>', confirm the imported key's fingerprint matches the published value, then re-run this updater."
         } else {
-            Write-Fail "Tag $ApothemRef is unsigned or its signature did not verify. Aborting before re-materialization. Set APOTHEM_ALLOW_UNVERIFIED=1 to proceed without verification."
+            Write-Fail "Tag $ApothemRef is unsigned or its signature did not verify (possible tampering). Aborting before re-materialization."
         }
     } else {
         if ($ApothemAllowUnverified -eq '1') {
