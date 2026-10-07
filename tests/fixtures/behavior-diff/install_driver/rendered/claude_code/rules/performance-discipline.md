@@ -52,10 +52,12 @@ Hook bootstrap stubs run synchronously on the critical path between hook-fire an
 | Bootstrap stub — `hooks/lib/bootstrap.ps1` | 1500ms | stub invocation to dispatcher exit | `Measure-Command { pwsh -NoProfile -File hooks/lib/bootstrap.ps1 -Event SessionStart }` |
 | Interpreter locator — `find-python.{sh,ps1}` | 200ms | dot-source to first PATH probe success | included in the bootstrap-stub measurements above |
 | Shell linter — `shellcheck` over `hooks/lib/*.sh` | 5s | `shellcheck` invocation to exit | `shellcheck hooks/lib/*.sh` |
-| Shell linter — `Invoke-ScriptAnalyzer` over `hooks/lib/*.ps1` | 10s | analyzer invocation to exit | `pwsh -NoProfile -Command "Invoke-ScriptAnalyzer -Path hooks/lib -Severity Error,Warning"` |
+| Shell linter — `Invoke-ScriptAnalyzer` over `hooks/lib/*.ps1` | 10s | analyzer invocation to exit | `pwsh -NoProfile -Command "Invoke-ScriptAnalyzer -Path hooks/lib -Severity Error,Warning,ParseError"` |
 | Python linter — `ruff check` over the ecosystem | 5s | `ruff` invocation to exit | `ruff check hooks/ tools/ tests/` |
 
 The PowerShell budget is wider than POSIX-bash because PowerShell's startup cost dominates on Windows hosts; the dispatcher accommodates this by running its work asynchronously after the stub's `exec` boundary. The Windows Git Bash / mingw64 row carries the same 1500ms budget as PowerShell for the same reason: on Windows, `bash` is the mingw64 port and pays a per-invocation `fork()`-emulation cost that lifts baseline bash startup from ~50ms (POSIX) to ~800ms (mingw64). The POSIX-bash row remains the canonical 500ms budget for Linux / macOS / WSL hosts; the per-platform classification is enforced at audit time by the bench driver's host-detection logic. Empirical evidence: a 5-run mean of 1004ms (min 960ms, max 1042ms) on a Windows Git Bash mingw64 host against the prior 500ms uniform budget.
+
+The `Invoke-ScriptAnalyzer` verifier lists `ParseError` in `-Severity` because PSScriptAnalyzer reports syntax errors at that severity. A list of only `Error,Warning` drops them, so a script that does not parse would lint clean.
 
 ### 2. Quantitative Gates
 
