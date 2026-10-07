@@ -144,12 +144,13 @@ _PWSH = shutil.which("pwsh") or shutil.which("powershell")
 # The lint steps' analyzer call, run from the repository root under the 'Stop'
 # preference the runner's pwsh shell prepends. The folder arrives through the
 # environment, so no path is quoted into PowerShell source, and it is escaped
-# because -Path expands wildcards: a '[' in the name would match no file.
-# Exit 3 marks a PowerShell without PSScriptAnalyzer.
+# because -Path expands wildcards: a '[' in the name would be read as a pattern
+# and match no file or fail as invalid. Exit 3 marks a PowerShell that cannot
+# load PSScriptAnalyzer: missing, or older than the module supports.
 _ANALYZE = "; ".join(
     (
         "$ErrorActionPreference = 'Stop'",
-        "if (-not (Get-Module -ListAvailable PSScriptAnalyzer)) { exit 3 }",
+        "try { Import-Module PSScriptAnalyzer } catch { exit 3 }",
         "$dir = [Management.Automation.WildcardPattern]::Escape($env:LINT_DIR)",
         f"Invoke-ScriptAnalyzer -Path $dir {_SETTINGS}"
         " | ForEach-Object { '{0} {1}' -f $_.Severity, $_.RuleName }",
@@ -186,7 +187,7 @@ def test_settings_make_the_analyzer_report_parse_errors(tmp_path: Path) -> None:
         check=False,
     )
     if result.returncode == 3:
-        pytest.skip("PSScriptAnalyzer is not installed for this PowerShell")
+        pytest.skip("PSScriptAnalyzer does not load in this PowerShell")
     assert result.returncode == 0, result.stdout + result.stderr
     findings = result.stdout.splitlines()
     assert any(line.startswith("ParseError ") for line in findings), (
