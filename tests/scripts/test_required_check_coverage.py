@@ -4,7 +4,7 @@
 
 `ci.yml` runs the REAL `quality / <os> / py<ver>` matrix + `coverage`; the
 `ci-docs-stub.yml` workflow echoes those same context names green for
-documentation-only PRs so they can satisfy the `main` ruleset without the full
+documentation-only PRs so they can satisfy `main`'s branch protection without the full
 Python matrix.
 
 Two mechanisms keep the stub honest, and these tests pin both:
