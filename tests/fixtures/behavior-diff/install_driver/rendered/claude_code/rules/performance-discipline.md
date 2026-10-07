@@ -22,7 +22,7 @@ Establish per-class performance budgets and quantitative gates; close the Perfor
 
 ### 1. Per-Class Performance Budgets
 
-Per-class runtime budgets; operator-editorial at apply time; baselines align with the hooks pipeline hook-timeout values. Every row's verifier exits 0 on budget compliance.
+Per-class runtime budgets; operator-editorial at apply time; baselines align with the hooks pipeline hook-timeout values. Every row's verifier exits 0 on budget compliance. A linter row's verifier in §1.1 also exits non-zero on a lint finding.
 
 | Class | Budget | Measurement boundary | Verifier |
 |-------|-------:|---------------------|----------|
@@ -63,7 +63,7 @@ The verifier exits 1 when the analyzer returns any diagnostic record. A bare `In
 
 ### 2. Quantitative Gates
 
-Every code change touching an artifact class above runs the relevant verifier; exit code 0 attests budget compliance. A budget exceedance surfaces as a high-priority finding under the Performance axis and routes to `memory/expertise-gap-log.md` for closure tracking.
+Every code change touching an artifact class above runs the relevant verifier; exit code 0 attests budget compliance, and for a linter row it also attests a clean lint. A budget exceedance surfaces as a high-priority finding under the Performance axis and routes to `memory/expertise-gap-log.md` for closure tracking.
 
 ### 3. Benchmark Suite
 

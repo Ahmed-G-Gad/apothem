@@ -345,8 +345,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `-Settings` it reads a settings file only from the `-Path` folder, never a
   parent folder. The rule now passes when the analyzer returns no records,
   runs a command that exits 1 on any record, and passes `-Settings` when the
-  host has a settings file. The `performance-discipline` §1.1 verifier exits 1
-  on any record in the same way.
+  host has a settings file. The command also exits 1 when the script, the
+  settings file or the PSScriptAnalyzer module is missing, under both
+  `pwsh -Command` and `pwsh -File`. The `performance-discipline` §1.1
+  verifier exits 1 on any record in the same way.
 
 ### Security
 
