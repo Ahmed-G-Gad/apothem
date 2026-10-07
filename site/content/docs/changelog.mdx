@@ -336,6 +336,21 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   the plugin tree's vendored code to its authors.
 - **SECURITY.md lists 1.1.x as supported**, the release badge reads the tag
   from full history, and the CHANGELOG links resolve.
+- **The shell rules' PowerShell lint command reports syntax errors.** The
+  `code-craft-shell` and `performance-discipline` rules ran
+  `Invoke-ScriptAnalyzer -Severity Error,Warning`. PSScriptAnalyzer reports
+  a syntax error at severity `ParseError`, and an explicit `-Severity` list
+  without it drops the error, so a script that did not parse passed clean.
+  Both rules now pass `-Severity Error,Warning,ParseError`.
+- **The shell rules' PowerShell lint check fails on a finding.** The
+  `code-craft-shell` rule said `Invoke-ScriptAnalyzer ...` "exits 0" and that
+  the host's `PSScriptAnalyzerSettings.psd1` "is honored". Without
+  `-EnableExit` the cmdlet exits 0 even when it reports findings, and without
+  `-Settings` it reads a settings file only from the `-Path` folder, never a
+  parent folder. The rule now passes when the analyzer returns no records,
+  runs a command that exits 1 on any record, and passes `-Settings` when the
+  host has a settings file. The `performance-discipline` §1.1 verifier exits 1
+  on any record in the same way.
 
 ### Security
 
