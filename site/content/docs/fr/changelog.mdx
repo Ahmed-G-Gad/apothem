@@ -213,7 +213,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   cells and the host-discovery default marker keep their nested code spans
   whole, and the `plan-execute` resume note is no longer folded into its last
   option. The rule files the CodeBuddy, GitHub Copilot, Kiro, Trae, Windsurf,
-  and Zed installs write link their vendor docs as autolinks.
+  and Zed installs write link their vendor docs as autolinks, and Claude
+  Code's default output style links the Apothem repository the same way. The
+  `plan-execute`, `plan-generate`, and `plan-review` option lists and the
+  `projectify` skill change layout only. After you upgrade, `apothem diff`
+  lists these installed files as pending updates for every harness except
+  Cursor and GLM until the next `apothem update`. `apothem verify` and
+  `apothem status` still report them in sync.
 - **OpenCode receives the operator profile.** The projected profile document
   was never in the `instructions` list, so OpenCode saw neither the
   operator's identity and preferences nor the support-file locations.
