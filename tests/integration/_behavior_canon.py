@@ -2,13 +2,21 @@
 
 """Cross-platform canonicalization for the behavior-diff golden comparison.
 
-Rich renders CLI output against the live console width, so it bakes the *real*
-temporary-home path length into table column widths and free-text wrap points.
-A Windows runner's ``C:\\Users\\runner\\AppData\\Local\\Temp\\...`` home is far
-longer than a Linux runner's ``/tmp/...``, so a byte-exact golden is otherwise
-machine-specific: it matches only the host that captured it. Add path-separator
-(``\\`` vs ``/``), line-ending (CRLF vs LF), and platform-dependent array
-ordering, and byte-exactness across the dev / CI matrix is unattainable.
+Left unpinned, Rich renders CLI output against the live console width, so it
+bakes the *real* temporary-home path length into table column widths and
+free-text wrap points. A Windows runner's
+``C:\\Users\\runner\\AppData\\Local\\Temp\\...`` home is far longer than a Linux
+runner's ``/tmp/...``, so an unpinned capture matches only the host that
+captured it. Path separators (``\\`` vs ``/``), line endings (CRLF vs LF), the
+legacy-Windows box substitution, and platform-dependent array ordering diverge
+the same way.
+
+The oracles pin those dimensions at capture time (``_cli_oracle`` and
+``_install_driver_oracle``), so a fresh capture is byte-identical on Windows
+and Linux and ``scripts/dev/regen-behavior-goldens.py`` produces no churn
+between them. This module stays as the comparison-side tolerance, so a corpus
+captured before those pins, or a working tree with CRLF endings, still
+compares equal.
 
 These helpers normalize exactly those platform-divergent dimensions while
 preserving the content the regression guard must still catch (every command's
