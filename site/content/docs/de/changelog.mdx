@@ -292,6 +292,18 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   exists, and the README said each release attaches a signed `.vsix`, which
   v1.1.0 does not. Both now say how to install the package and how to build
   it from a checkout.
+- **The branch protection page matches the settings on `main`.** It described
+  a ruleset with four required checks (`ci`, `Scorecard`, `CodeQL`,
+  `pip-audit`), one required approval, latest-push approval, and "require
+  branches to be up to date". `main` uses a classic protection rule that
+  requires 12 checks (the ten `quality` cells, `coverage`, and
+  `Require Signed-off-by`) and 0 approvals, does not bind admins, and does not
+  require an up-to-date branch. The page now lists those exact settings and,
+  separately, the clean-install, harness-matrix, and installer-lint checks
+  still to be added. The solo-maintainer merge runbook, `CONTRIBUTING.md`, and
+  the Scorecard page now describe the same review settings, and the runbook
+  and `admin_merge.py` warn that an `--admin` merge also bypasses red required
+  checks while `enforce_admins` is off.
 - **The wheel and sdist carry the full hook corpus.** They left out
   `hooks/hooks.json` and the hook READMEs that every other channel ships.
 - **Path-filtered rules no longer load in every Claude Code session.** Claude

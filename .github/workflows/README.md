@@ -51,17 +51,26 @@ top-level `.github/README.md` would, and none exists.
   (Sigstore policy forbids SHA-pinning trusted reusable workflows), and that
   `uses:` line carries an `action-pinning-exempt:` marker. `.github/zizmor.yml`
   records the same exception as zizmor's only `ref-pin` policy.
-- **Branch-protection required checks.** `ci.yml`'s `quality / <os> / py<ver>`
-  matrix and `coverage` are `main` required status checks, as the
-  `ci-docs-stub.yml` header records. Three more workflows declare, in their own
-  headers, that a job is one: `clean-install-gate.yml`, `harness-matrix.yml`
-  (`matrix (<name>)`), and `installer-lint.yml` (`installer-lint`). A required
-  check is never gated by a `paths:` filter on its pull-request trigger — a
-  skipped required check can never report and would silently gate nothing —
-  which is why `clean-install-gate.yml`, `installer-lint.yml`, and the
-  `harness-matrix.yml` pull-request trigger run on every PR to `main`, and
-  `ci-docs-stub.yml` reports the required contexts green on a
-  documentation-only PR that never runs the real jobs.
+- **Branch-protection required checks.** `main` uses a classic branch
+  protection rule, not a ruleset. The
+  [Branch protection](https://apothem.ahmedgad.com/docs/security/branch-protection-ruleset/)
+  page (`site/content/docs/security/branch-protection-ruleset.mdx`) lists the
+  exact required contexts and is the authoritative record. The live required
+  checks are `ci.yml`'s `quality / <os> / py<ver>` matrix (`ubuntu-latest` and
+  `windows-latest`, Python 3.10 to 3.14; the prerelease `py3.15` cell is not
+  required), `ci.yml`'s `coverage`, and `dco.yml`'s `Require Signed-off-by`.
+  Three more workflows declare, in their own headers, that their jobs are
+  required checks, and the maintainer intends to add them, but they are not in
+  the live set yet: `clean-install-gate.yml` (the `installer-shell-compat`,
+  `clean-install-gate`, and `wheel-smoke` cells), `harness-matrix.yml`
+  (`matrix (<name>)`), and `installer-lint.yml` (`installer-lint`). Until then
+  a failure in them does not block a merge. A required check is never gated by
+  a `paths:` filter on its pull-request trigger — a skipped required check can
+  never report and would silently gate nothing — which is why `dco.yml`,
+  `clean-install-gate.yml`, `installer-lint.yml`, and the `harness-matrix.yml`
+  pull-request trigger run on every PR to `main`, and `ci-docs-stub.yml`
+  reports the required contexts green on a documentation-only PR that never
+  runs the real jobs.
 - **Public-only security scans.** Code scanning and dependency review are free
   on public repositories and need GitHub Code Security on private ones, and
   Scorecard needs public access to the repository. The jobs and steps that
@@ -96,8 +105,8 @@ To add or change a workflow: write the top-of-file comment header first (it is
 the authoritative description), pin every new `uses:` reference by 40-character
 SHA with a version comment, keep the `contents: read` baseline with justified
 per-job escalation, and add a row to the table above. If the change adds,
-renames, or removes a `main` required status check, keep the required-check set
-and the `ci-docs-stub.yml` complement in lockstep —
+renames, or removes a `main` required status check, keep the required-check set,
+the Branch protection page, and the `ci-docs-stub.yml` complement in lockstep —
 `tests/scripts/test_required_check_coverage.py` asserts the stub's `paths-ignore`
 is the exact complement of `ci.yml`'s trigger `paths`. Validate before handoff:
 
