@@ -51,8 +51,34 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def _git(args: list[str], cwd: Path, env: dict[str, str] | None = None) -> str:
-    """Run a git command in CWD and return stdout, failing loudly."""
+def _git_env(tmp_path: Path) -> dict[str, str]:
+    """Return the caller's environment with every inherited git config source cut off.
+
+    A developer's own git config otherwise reaches these git calls: a global
+    ``gpg.format = ssh`` turns the fixture's ``tag -s`` into an SSH signature
+    or a signing failure, and the signed-tag test then misses the installer's
+    GPG missing-key branch. Isolating HOME is not enough, because an exported
+    ``GIT_CONFIG_GLOBAL`` or ``XDG_CONFIG_HOME`` still names the developer's
+    global file, ``/etc/gitconfig`` ignores HOME, and ``GIT_CONFIG_COUNT`` /
+    ``GIT_CONFIG_PARAMETERS`` inject settings directly. Dropping every
+    inherited ``GIT_CONFIG*`` variable, pointing ``GIT_CONFIG_GLOBAL`` at an
+    empty file, and setting ``GIT_CONFIG_NOSYSTEM`` leaves repository-local
+    config and explicit ``-c`` flags as the only config git reads.
+    """
+    empty_config = tmp_path / "gitconfig-empty"
+    empty_config.touch()
+    env = {
+        key: value
+        for key, value in os.environ.items()
+        if not key.startswith("GIT_CONFIG")
+    }
+    env["GIT_CONFIG_GLOBAL"] = str(empty_config)
+    env["GIT_CONFIG_NOSYSTEM"] = "1"
+    return env
+
+
+def _git(args: list[str], cwd: Path, env: dict[str, str]) -> str:
+    """Run a git command in CWD under ENV and return stdout, failing loudly."""
     result = subprocess.run(
         ["git", *args],
         cwd=str(cwd),
@@ -84,21 +110,28 @@ def _make_fixture_repo(root: Path) -> Path:
     (fixture / "pyproject.toml").write_text(
         '[project]\nname = "fixture"\nversion = "0.0.0"\n', encoding="utf-8"
     )
-    _git(["init", "--quiet", "--initial-branch", "main"], cwd=fixture)
-    _git(["config", "user.name", "Fixture"], cwd=fixture)
-    _git(["config", "user.email", "fixture@example.invalid"], cwd=fixture)
-    _git(["config", "commit.gpgsign", "false"], cwd=fixture)
-    _git(["config", "tag.gpgSign", "false"], cwd=fixture)
-    _git(["add", "-A"], cwd=fixture)
-    _git(["commit", "--quiet", "-m", "fixture source"], cwd=fixture)
+    env = _git_env(root)
+    _git(["init", "--quiet", "--initial-branch", "main"], cwd=fixture, env=env)
+    _git(["config", "user.name", "Fixture"], cwd=fixture, env=env)
+    _git(["config", "user.email", "fixture@example.invalid"], cwd=fixture, env=env)
+    _git(["config", "commit.gpgsign", "false"], cwd=fixture, env=env)
+    _git(["config", "tag.gpgSign", "false"], cwd=fixture, env=env)
+    _git(["add", "-A"], cwd=fixture, env=env)
+    _git(["commit", "--quiet", "-m", "fixture source"], cwd=fixture, env=env)
     return fixture
 
 
 def _installer_env(tmp_path: Path, fixture: Path, ref: str) -> dict[str, str]:
-    """Hermetic environment: isolated HOME, fixture repo as the clone remote."""
+    """Hermetic environment: isolated HOME, fixture repo as the clone remote.
+
+    The installer's own git calls (clone, checkout, verify-tag) get the same
+    config isolation as the fixture's (see ``_git_env``): an isolated HOME
+    alone still lets a developer's ``gpg.openpgp.program`` reach
+    ``git verify-tag`` and change its output.
+    """
     home = tmp_path / "home"
     home.mkdir(exist_ok=True)
-    env = dict(os.environ)
+    env = _git_env(tmp_path)
     for key in list(env):
         if key.startswith("APOTHEM_"):
             del env[key]
@@ -157,7 +190,11 @@ def test_unsigned_tag_aborts_without_advertising_override(tmp_path: Path) -> Non
     APOTHEM_ALLOW_UNVERIFIED override on a tamper signal.
     """
     fixture = _make_fixture_repo(tmp_path)
-    _git(["tag", "-a", "v9.9.9", "-m", "unsigned release"], cwd=fixture)
+    _git(
+        ["tag", "-a", "v9.9.9", "-m", "unsigned release"],
+        cwd=fixture,
+        env=_git_env(tmp_path),
+    )
     env = _installer_env(tmp_path, fixture, "v9.9.9")
 
     result = _run_installer(env)
@@ -182,7 +219,7 @@ def test_signed_tag_with_absent_key_prints_import_guidance(tmp_path: Path) -> No
     # Ephemeral signing key in an isolated keyring.
     signer_gnupghome = tmp_path / "gnupg-signer"
     signer_gnupghome.mkdir(mode=0o700)
-    gpg_env = dict(os.environ)
+    gpg_env = _git_env(tmp_path)
     gpg_env["GNUPGHOME"] = str(signer_gnupghome)
     keygen = subprocess.run(
         [
@@ -207,8 +244,12 @@ def test_signed_tag_with_absent_key_prints_import_guidance(tmp_path: Path) -> No
     if keygen.returncode != 0:
         pytest.skip(f"gpg key generation unavailable: {keygen.stderr.strip()}")
 
+    # Pin the OpenPGP format: the installer's missing-key branch matches GPG's
+    # "No public key" text, so the fixture tag must carry an OpenPGP signature.
     _git(
         [
+            "-c",
+            "gpg.format=openpgp",
             "-c",
             "user.signingkey=signer@example.invalid",
             "-c",
@@ -248,7 +289,11 @@ def test_existing_nonclone_home_is_refused_without_yes(tmp_path: Path) -> None:
     when --yes is absent.
     """
     fixture = _make_fixture_repo(tmp_path)
-    _git(["tag", "-a", "v9.9.9", "-m", "unsigned release"], cwd=fixture)
+    _git(
+        ["tag", "-a", "v9.9.9", "-m", "unsigned release"],
+        cwd=fixture,
+        env=_git_env(tmp_path),
+    )
     env = _installer_env(tmp_path, fixture, "v9.9.9")
     apothem_home = Path(env["APOTHEM_HOME"])
     apothem_home.mkdir(parents=True)
@@ -276,7 +321,11 @@ def test_yes_authorizes_replacing_nonclone_home(tmp_path: Path) -> None:
     to the clone (this run still aborts later, at the verification gate,
     which is fine — the guard under test sits before the clone)."""
     fixture = _make_fixture_repo(tmp_path)
-    _git(["tag", "-a", "v9.9.9", "-m", "unsigned release"], cwd=fixture)
+    _git(
+        ["tag", "-a", "v9.9.9", "-m", "unsigned release"],
+        cwd=fixture,
+        env=_git_env(tmp_path),
+    )
     env = _installer_env(tmp_path, fixture, "v9.9.9")
     apothem_home = Path(env["APOTHEM_HOME"])
     apothem_home.mkdir(parents=True)
