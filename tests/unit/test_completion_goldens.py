@@ -34,7 +34,9 @@ _GOLDENS = {
 def _emit(shell: str) -> str:
     result = CliRunner().invoke(main, ["completion", shell])
     assert result.exit_code == 0, result.output
-    return result.output
+    # stdout only: Click's bash source warns on stderr when the host bash is
+    # older than 4.4 (macOS ships 3.2), and that warning is not script text.
+    return result.stdout
 
 
 @pytest.mark.parametrize("shell", sorted(_GOLDENS))
