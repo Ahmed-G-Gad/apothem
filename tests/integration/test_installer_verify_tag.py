@@ -3,8 +3,8 @@
 """Release-tag verification abort branches (clone path).
 
 Exercises the fail-closed signature gate in ``scripts/installer/install.sh``,
-``update.sh`` and ``update.ps1`` against a local fixture repository — no
-network. The gate distinguishes two abort classes:
+``install.ps1``, ``update.sh`` and ``update.ps1`` against a local fixture
+repository — no network. The gate distinguishes two abort classes:
 
 - **missing key** — the tag is signed but the maintainer public key is absent
   from the local keyring; the abort prints key-import guidance (fingerprint
@@ -14,7 +14,7 @@ network. The gate distinguishes two abort classes:
   override on a possible-tampering signal.
 
 Each abort-class test runs every script against the same fixture, so the
-three keep the same classes and messages. Every test asserts the abort happens
+four keep the same classes and messages. Every test asserts the abort happens
 before any configuration materializes.
 A stub verifier replays GnuPG's German output for both classes, to show the
 split rests on GnuPG's status lines rather than its translated messages.
@@ -47,6 +47,7 @@ from tests._shared.git_env import hermetic_git_env
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 INSTALLER = REPO_ROOT / "scripts" / "installer" / "install.sh"
+INSTALLER_PS1 = REPO_ROOT / "scripts" / "installer" / "install.ps1"
 UPDATER_SH = REPO_ROOT / "scripts" / "installer" / "update.sh"
 UPDATER_PS1 = REPO_ROOT / "scripts" / "installer" / "update.ps1"
 
@@ -92,15 +93,15 @@ pytestmark = pytest.mark.skipif(
     sys.platform == "win32",
     reason=(
         "runs the scripts with POSIX sh stubs (gpg.program, python3); skipped "
-        "on Windows, where install.ps1 is the install path and `bash` "
-        "resolves to the WSL launcher, not git-bash"
+        "on Windows, where `bash` resolves to the WSL launcher, not git-bash"
     ),
 )
 requires_bash = pytest.mark.skipif(
     shutil.which("bash") is None, reason="install.sh runs under bash; no bash on PATH"
 )
 requires_pwsh = pytest.mark.skipif(
-    _PWSH is None, reason="update.ps1 runs under PowerShell 7; no pwsh on PATH"
+    _PWSH is None,
+    reason="install.ps1 and update.ps1 run under PowerShell 7; no pwsh on PATH",
 )
 
 
@@ -200,8 +201,8 @@ def _installer_env(tmp_path: Path, fixture: Path, ref: str) -> dict[str, str]:
     return env
 
 
-def _stage_installer(env: dict[str, str]) -> Path:
-    """Copy install.sh OUTSIDE the repo tree and return the staged path.
+def _stage_installer(env: dict[str, str], installer: Path = INSTALLER) -> Path:
+    """Copy INSTALLER OUTSIDE the repo tree and return the staged path.
 
     The installer's source-detection walks up from its own directory looking
     for a surrounding apothem checkout; run in place (under scripts/installer/)
@@ -211,11 +212,11 @@ def _stage_installer(env: dict[str, str]) -> Path:
     dir, outside the repo) makes that walk find nothing, so the installer
     deterministically takes the fetch + clone branch on every host.
     """
-    assert INSTALLER.is_file(), f"installer missing: {INSTALLER}"
+    assert installer.is_file(), f"installer missing: {installer}"
     staging = Path(env["HOME"]).parent / "installer-under-test"
     staging.mkdir(parents=True, exist_ok=True)
-    installer_copy = staging / "install.sh"
-    shutil.copy2(INSTALLER, installer_copy)
+    installer_copy = staging / installer.name
+    shutil.copy2(installer, installer_copy)
     return installer_copy
 
 
@@ -231,19 +232,43 @@ def _run_installer(env: dict[str, str]) -> subprocess.CompletedProcess[str]:
     )
 
 
-def _prepare_update(env: dict[str, str]) -> None:
-    """Give an updater what a prior install leaves behind.
+def _run_installer_ps1(env: dict[str, str]) -> subprocess.CompletedProcess[str]:
+    """Run install.ps1 the way ``_run_installer`` runs install.sh.
 
-    The updaters re-check-out an existing clone at APOTHEM_HOME, so this
-    clones the fixture there. They also refuse to run without click and rich,
-    which the interpreter running this test has, so a ``python3`` that runs
-    that interpreter goes first on PATH. The host's own ``python3`` may lack
-    them.
+    ``-Yes`` mirrors install.sh's ``--yes``. It also auto-confirms a pip
+    install of a missing click or rich, so ``_put_python3_first`` makes the
+    prerequisite probe find them and that install never runs.
     """
-    _git(
-        ["clone", "--quiet", env["APOTHEM_REPO"], env["APOTHEM_HOME"]],
-        cwd=Path(env["HOME"]),
+    _put_python3_first(env)
+    installer_copy = _stage_installer(env, INSTALLER_PS1)
+    assert _PWSH is not None
+    return subprocess.run(
+        [
+            _PWSH,
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(installer_copy),
+            "-Yes",
+        ],
+        cwd=str(installer_copy.parent),
+        env=env,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=INSTALL_TIMEOUT_SECONDS,
+        check=False,
     )
+
+
+def _put_python3_first(env: dict[str, str]) -> None:
+    """Put a ``python3`` that runs this test's interpreter first on PATH.
+
+    The scripts refuse to run without click and rich, which the interpreter
+    running this test has. The host's own ``python3`` may lack them.
+    """
     shim_dir = Path(env["HOME"]).parent / "python-shim"
     shim_dir.mkdir(exist_ok=True)
     shim = shim_dir / "python3"
@@ -252,6 +277,19 @@ def _prepare_update(env: dict[str, str]) -> None:
     )
     shim.chmod(EXECUTABLE_MODE)
     env["PATH"] = f"{shim_dir}{os.pathsep}{env.get('PATH', '')}"
+
+
+def _prepare_update(env: dict[str, str]) -> None:
+    """Give an updater what a prior install leaves behind.
+
+    The updaters re-check-out an existing clone at APOTHEM_HOME, so this
+    clones the fixture there, then puts this test's ``python3`` first.
+    """
+    _git(
+        ["clone", "--quiet", env["APOTHEM_REPO"], env["APOTHEM_HOME"]],
+        cwd=Path(env["HOME"]),
+    )
+    _put_python3_first(env)
 
 
 def _run_updater_sh(env: dict[str, str]) -> subprocess.CompletedProcess[str]:
@@ -294,6 +332,7 @@ def _run_updater_ps1(env: dict[str, str]) -> subprocess.CompletedProcess[str]:
 @pytest.fixture(
     params=[
         pytest.param(_run_installer, id="install.sh", marks=requires_bash),
+        pytest.param(_run_installer_ps1, id="install.ps1", marks=requires_pwsh),
         pytest.param(_run_updater_sh, id="update.sh"),
         pytest.param(_run_updater_ps1, id="update.ps1", marks=requires_pwsh),
     ]
@@ -307,9 +346,10 @@ def run_gate(request: pytest.FixtureRequest) -> GateRunner:
 def _plain(output: str) -> str:
     """Return script output as single-spaced words, as a reader sees them.
 
-    ``update.ps1`` aborts through ``Write-Error``. PowerShell renders the
-    record in its concise error view, which can colour the text and wrap it at
-    the console width behind a ``|`` gutter, so a marker can span lines.
+    ``install.ps1`` and ``update.ps1`` abort through ``Write-Error``.
+    PowerShell renders the record in its concise error view, which can colour
+    the text and wrap it at the console width behind a ``|`` gutter, so a
+    marker can span lines.
     """
     words = _ANSI_ESCAPE.sub("", output).split()
     return " ".join(word for word in words if word != "|")
