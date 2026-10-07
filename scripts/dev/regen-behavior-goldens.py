@@ -13,13 +13,16 @@ produced by two deterministic, HOME-isolated oracles:
 - ``_cli_oracle.capture`` — every CLI matrix invocation (self-clears + rewrites
   ``cli/``).
 
-Both oracles normalize machine-specific paths (``_normalize_text`` /
-``_path_variants``) and write LF line-endings, and the comparison layer
-(``_behavior_canon``) collapses the remaining platform-divergent dimensions
-(Rich heavy-vs-light box-drawing, path-length-driven column widths, backslash
-vs forward-slash, array ordering). Together these make the corpus portable: a
-capture taken on ANY platform — Windows included — compares equal on every
-platform. This script is therefore safe to run from a Windows checkout.
+Both oracles emit platform-independent bytes. They tokenize machine-specific
+paths (``_normalize_text`` / ``_path_variants``), rewrite Windows separators to
+forward slashes in tokenized paths and in the relative adapter paths the CLI
+prints, pin Rich's rendering (no legacy-Windows box substitution, no color, a
+fixed width, table cells measured after tokenization), store ledger targets in
+code-point path order, and write LF line-endings. A capture taken on Windows or
+Linux is therefore byte-identical, and this script is safe to run from a
+Windows checkout. The comparison layer (``_behavior_canon``)
+additionally collapses box-drawing, padding, separators, and array order, so the
+tests also accept a corpus captured before those pins existed.
 
 Workflow:
 
@@ -28,11 +31,8 @@ Workflow:
                      tests/integration/test_cli_behavior_diff.py             # verify
     git diff --stat tests/fixtures/behavior-diff/          # review churn
 
-A non-empty ``git diff`` after regeneration means the committed corpus was
-captured on a different platform than this run; the canonicalized comparison
-still passes, but the stored bytes flip to this platform's form. Prefer
-regenerating on the platform that owns the committed corpus, or accept the
-one-time churn — the tests stay green either way.
+A non-empty ``git diff`` after regeneration is a real change in captured
+behavior, on any platform. Review it as part of the change-set that caused it.
 
 The ``--dest DIR`` flag writes to an alternate directory instead of the
 committed corpus, so a capture can be diffed without touching the working tree.

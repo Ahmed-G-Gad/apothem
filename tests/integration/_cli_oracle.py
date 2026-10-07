@@ -17,12 +17,15 @@ scratch tree, so ``status`` / ``verify`` / ``diff`` / ``doctor`` /
 ``harnesses list`` see an empty, deterministic world independent of the
 operator's real ``~/.claude`` / ``~/.apothem`` / ``$HOME``. The Rich render
 width is pinned via ``COLUMNS`` so table columns never truncate a path on the
-random ``mkdtemp`` suffix.
+random ``mkdtemp`` suffix, and :func:`_pinned_rich_rendering` removes the
+console-, platform-, and path-length-dependent choices Rich would otherwise
+bake into a table, so a capture is byte-identical on Windows and Linux.
 """
 
 from __future__ import annotations
 
 import contextlib
+import functools
 import json
 import os
 import platform
@@ -34,9 +37,14 @@ from collections.abc import Iterator, Sequence
 from pathlib import Path
 from typing import Any
 
+import rich.console
 from click.testing import CliRunner
+from rich.console import RenderableType
+from rich.style import StyleType
+from rich.table import Table
 
 import apothem
+import apothem.cli
 from apothem.cli import main
 from apothem.harnesses._shared import install_driver
 from apothem.lib import install_ledger
@@ -127,11 +135,84 @@ def _normalize_text(text: str, *, home: Path) -> str:
     text = _VERSION_RE.sub(TOK_VERSION, text)
     text = text.replace(_PLATFORM, _TOK_PLATFORM)
     text = text.replace(_PYVER, _TOK_PYVER)
-    return collapse_token_paths(text, "HOME|ROOT|APOTHEM_SRC")
+    text = collapse_token_paths(text, "HOME|ROOT|APOTHEM_SRC")
+    for native, posix in _relative_output_path_spellings():
+        text = text.replace(native, posix)
+    return text
+
+
+@functools.cache
+def _relative_output_path_spellings() -> tuple[tuple[str, str], ...]:
+    """Pair each native spelling of a relative adapter output path with its POSIX form.
+
+    ``harnesses list`` prints every adapter's ``output_path`` through ``str()``.
+    A project-scope adapter's path is relative, so no token prefixes it and
+    :func:`collapse_token_paths` never reaches it: Windows prints
+    ``.cursor\\rules\\apothem-rules.mdc`` where POSIX prints
+    ``.cursor/rules/apothem-rules.mdc``. Each native spelling maps to the POSIX
+    one, both bare (the table cell and the parsed ``--json`` value) and
+    JSON-escaped (the raw ``--json`` stdout), longest first. The paths come
+    from the CLI's own adapter enumeration, so the mapping covers exactly what
+    the command prints. On POSIX the spellings coincide and the tuple is empty.
+    """
+    adapters, _failures = apothem.cli._all_adapters()
+    spellings: dict[str, str] = {}
+    for adapter in adapters:
+        path = adapter.output_path
+        native, posix = str(path), path.as_posix()
+        if path.is_absolute() or native == posix:
+            continue
+        spellings[native.replace("\\", "\\\\")] = posix
+        spellings[native] = posix
+    return tuple(sorted(spellings.items(), key=lambda pair: len(pair[0]), reverse=True))
 
 
 def _normalize_obj(obj: Any, *, home: Path) -> Any:  # noqa: ANN401  # Any: recurses over arbitrary JSON-like envelopes
     return normalize_obj(obj, lambda s: _normalize_text(s, home=home))
+
+
+@contextlib.contextmanager
+def _pinned_rich_rendering(home: Path) -> Iterator[None]:
+    """Make every Rich table render the same bytes on every machine.
+
+    Rich makes two per-machine choices when it draws a table:
+
+    - On a Windows console without VT support (Git Bash and other mintty
+      terminals, where stdout is a pipe), ``detect_legacy_windows()`` is true
+      and Rich swaps the heavy-head box (``┏━┳┓``) for the square one
+      (``┌─┬┐``) and sizes the console one column narrower. Detection is
+      forced off, so the capture keeps the box and width the command asked for.
+    - A column is as wide as its widest cell, measured before the oracle
+      tokenizes the output, so the real scratch-home length (the machine's
+      temp directory and user name) sets the padding of every row. Each
+      ``str`` cell is tokenized as it is added, so Rich measures the text the
+      golden stores and the column geometry no longer depends on the machine.
+
+    The terminal and color decision is pinned separately by ``TTY_COMPATIBLE``
+    in :func:`_isolated_home`. Both patches are restored on exit.
+    """
+    saved_detect = rich.console.detect_legacy_windows
+    saved_add_row = Table.add_row
+
+    def add_row(
+        self: Table,
+        *renderables: RenderableType | None,
+        style: StyleType | None = None,
+        end_section: bool = False,
+    ) -> None:
+        cells = (
+            _normalize_text(cell, home=home) if isinstance(cell, str) else cell
+            for cell in renderables
+        )
+        saved_add_row(self, *cells, style=style, end_section=end_section)
+
+    try:
+        rich.console.detect_legacy_windows = lambda: False
+        Table.add_row = add_row  # type: ignore[method-assign]
+        yield
+    finally:
+        rich.console.detect_legacy_windows = saved_detect
+        Table.add_row = saved_add_row  # type: ignore[method-assign]
 
 
 @contextlib.contextmanager
@@ -148,6 +229,7 @@ def _isolated_home() -> Iterator[Path]:
             "APOTHEM_HOME",
             "COLUMNS",
             "LINES",
+            "TTY_COMPATIBLE",
         )
     }
     saved_home_fn = Path.home
@@ -164,6 +246,10 @@ def _isolated_home() -> Iterator[Path]:
         # into the golden. 1000 columns clears the longest realistic temp path.
         os.environ["COLUMNS"] = "1000"
         os.environ["LINES"] = "50"
+        # Rich treats stdout as a terminal, and writes ANSI color codes into
+        # the capture, when the operator's shell exports FORCE_COLOR.
+        # TTY_COMPATIBLE=0 outranks FORCE_COLOR, so the capture is plain text.
+        os.environ["TTY_COMPATIBLE"] = "0"
         Path.home = classmethod(lambda cls: home)  # type: ignore[assignment]
         install_driver.BACKUP_ROOT = scratch / "backups"
         install_ledger.STATE_ROOT = scratch / "ledger-state"
@@ -185,7 +271,7 @@ def capture_one(
 ) -> None:
     """Capture one invocation's normalized record to ``out_root/<slug>.json``."""
     runner = CliRunner()
-    with _isolated_home() as home:
+    with _isolated_home() as home, _pinned_rich_rendering(home):
         if seed_profile:
             init = runner.invoke(main, ["profile", "init"], catch_exceptions=False)
             if init.exit_code != 0:  # pragma: no cover - defensive
