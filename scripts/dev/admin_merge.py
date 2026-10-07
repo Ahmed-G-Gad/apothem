@@ -2,13 +2,21 @@
 
 """Solo-maintainer self-merge ceremony for PRs.
 
-Why this exists. The repository's main-branch protection requires PR
-review approval (``required_approving_review_count=1``) and is
-admin-enforced (``enforce_admins=true``). This combination intentionally
-prevents the maintainer from merging their own PR via plain ``--admin``
-override. The canonical resolution is the temp-toggle ceremony documented
-at ``site/content/docs/runbooks/solo-maintainer-merge.mdx``: relax the approver-count to 0,
+Why this exists. When the main-branch protection requires PR review
+approval (``required_approving_review_count=1``) and is admin-enforced
+(``enforce_admins=true``), this combination intentionally prevents the
+maintainer from merging their own PR via plain ``--admin`` override. The
+canonical resolution is the temp-toggle ceremony documented at
+``site/content/docs/runbooks/solo-maintainer-merge.mdx``: relax the approver-count to 0,
 merge with admin override, restore to the original count.
+
+While the protection requires no approval, a plain ``gh pr merge`` works;
+while it requires one but is not admin-enforced, ``gh pr merge --admin``
+works; either way the ceremony is unnecessary. Do not run this wrapper
+while ``enforce_admins`` is off: its ``--admin`` merge then also bypasses
+required status checks that are red.
+``site/content/docs/security/branch-protection-ruleset.mdx`` records the
+live settings.
 
 This wrapper executes the toggle-merge-restore sequence atomically with
 ``try``/``finally`` rollback safety so the protection is never left in
