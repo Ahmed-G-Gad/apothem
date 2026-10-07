@@ -25,7 +25,10 @@
 # rule exclusions from PSScriptAnalyzerSettings.psd1 alone.
 # Deployment runs through the official GitHub Pages Actions toolchain —
 # actions/configure-pages, actions/upload-pages-artifact,
-# actions/deploy-pages — with OIDC + minimum permissions.
+# actions/deploy-pages — with OIDC + minimum permissions. Only a run on main
+# deploys. A workflow_dispatch from any other branch runs the build job alone,
+# as a dry run that tests and builds the site and lints the staged install
+# scripts, without publishing anything.
 #
 # Mechanism: GitHub Pages. The apothem.ahmedgad.com CNAME is committed
 # at site/public/CNAME (the canonical Pages signal). The badges CI workflow
@@ -217,6 +220,13 @@ jobs:
     needs: [build]
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Deploy from main only. workflow_dispatch can run on any branch, and the
+    # per-ref concurrency group does not queue it behind main, so without this
+    # guard a feature-branch dispatch would publish that branch to
+    # apothem.ahmedgad.com. Other branches still run the build job. A dispatch
+    # runs its branch's own copy of this file, so for a branch without this
+    # guard the github-pages environment's branch rule is the only check.
+    if: github.ref == 'refs/heads/main'
     permissions:
       pages: write       # deploy-pages needs to publish the artifact
       id-token: write    # OIDC for tokenless deploy authentication
