@@ -58,7 +58,7 @@
 |---|---|---|---|
 | Orphan requirement | `R-NNNN` | `[one-sentence summary of what is unaddressed]` | `[author phase / retire with deferral / amend matrix]` |
 | Orphan phase | `P-NN` | `[one-sentence summary of unsourced scope]` | `[author requirement / re-scope / retire]` |
-| Stale partial coverage | `R-NNNN × P-NN` | `[one-sentence summary of why the cell stayed `◐` past its expected resolution]` | `[upgrade to ✓ via verification, downgrade to ✗ pending re-audit, or mark `N/A` with rationale]` |
+| Stale partial coverage | `R-NNNN × P-NN` | `` [one-sentence summary of why the cell stayed `◐` past its expected resolution] `` | `` [upgrade to ✓ via verification, downgrade to ✗ pending re-audit, or mark `N/A` with rationale] `` |
 
 ---
 

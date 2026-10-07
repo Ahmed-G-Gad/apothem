@@ -41,7 +41,7 @@ The discovery record and any inquiry-driven choices are disclosed per `rules/dis
 
 - `[Discovery — source: <path>; value: <discovered>; honored]` for every discovered convention applied.
 - `[Inquiry — id: <inquiry-id>; outcome: <user-choice|fallback-to-recommended>]` for every inquiry-resolved choice.
-- `[Default — applied: <auto-decision>; class: <carve-out class per `authority-inquiry.md`>]` for the carve-out class (pure validity, pure rigor, universally-safe security, pure formatting normalization, internal reference repair).
+- `` [Default — applied: <auto-decision>; class: <carve-out class per `authority-inquiry.md`>] `` for the carve-out class (pure validity, pure rigor, universally-safe security, pure formatting normalization, internal reference repair).
 
 ## Derived Project Context Block
 
