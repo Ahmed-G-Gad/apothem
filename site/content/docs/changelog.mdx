@@ -343,9 +343,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   GnuPG's English text. They now read GnuPG's status lines
   (`[GNUPG:] NO_PUBKEY`), which do not change with the language.
 - **`apothem completion <shell>` no longer ends the script with a blank
-  line.** The output for `bash`, `zsh`, `fish`, and `powershell` now matches
-  Click's own completion source byte for byte, so appending it to a shell
-  profile adds no extra line.
+  line.** The output for `bash`, `zsh`, `fish`, and `powershell` now ends in
+  a single newline, so appending it to a shell profile adds no extra line.
 
 ### Security
 
