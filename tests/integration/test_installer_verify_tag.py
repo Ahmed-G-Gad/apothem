@@ -207,8 +207,16 @@ def test_signed_tag_with_absent_key_prints_import_guidance(tmp_path: Path) -> No
     if keygen.returncode != 0:
         pytest.skip(f"gpg key generation unavailable: {keygen.stderr.strip()}")
 
+    # Pin the OpenPGP format and the gpg binary that generated the key. A host
+    # whose git config signs with SSH (gpg.format=ssh) or routes signing
+    # through another program would otherwise leave an SSH signature here,
+    # which the installer reports as a bad signature, not a missing key.
     _git(
         [
+            "-c",
+            "gpg.format=openpgp",
+            "-c",
+            "gpg.program=gpg",
             "-c",
             "user.signingkey=signer@example.invalid",
             "-c",
@@ -221,6 +229,10 @@ def test_signed_tag_with_absent_key_prints_import_guidance(tmp_path: Path) -> No
         ],
         cwd=fixture,
         env=gpg_env,
+    )
+    tag_object = _git(["cat-file", "tag", "v9.9.8"], cwd=fixture)
+    assert "-----BEGIN PGP SIGNATURE-----" in tag_object, (
+        f"fixture tag is not OpenPGP-signed\n{tag_object}"
     )
 
     # Verify against a keyring that lacks the signer's public key.
