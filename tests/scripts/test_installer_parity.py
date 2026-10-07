@@ -351,7 +351,8 @@ def test_ps1_resolve_latest_tag_filters_case_sensitively(ps1_name: str) -> None:
 # a "<tag>^{}" peel line per annotated tag, beside the tag both resolvers must
 # pick from it, or None for none. Neither script's release-tag check accepts a
 # `V` tag, so neither resolver may pick one, whatever its number. `v1.10.0`
-# outranks `v1.2.3` by number, not by text.
+# outranks `v1.2.3` by number, not by text. A remote with one release tag
+# resolves to that tag, not to its last character.
 _SHA = "0123456789abcdef0123456789abcdef01234567"
 LS_REMOTE_TAG_CASES = (
     pytest.param(
@@ -370,6 +371,11 @@ LS_REMOTE_TAG_CASES = (
         (f"{_SHA}\trefs/tags/V1.0.0", f"{_SHA}\trefs/tags/V1.0.0^{{}}"),
         None,
         id="upper-case-tag-only",
+    ),
+    pytest.param(
+        (f"{_SHA}\trefs/tags/v1.1.0", f"{_SHA}\trefs/tags/v1.1.0^{{}}"),
+        "v1.1.0",
+        id="one-release-tag",
     ),
 )
 

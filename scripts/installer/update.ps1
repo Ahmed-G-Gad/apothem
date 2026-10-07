@@ -136,7 +136,9 @@ function Resolve-LatestTag {
         }
     }
     if ($tags.Count -eq 0) { return $null }
-    $sorted = $tags | Sort-Object -Unique | Sort-Object { [version]($_.Substring(1)) }
+    # @() keeps the result an array when one tag remains. A bare string
+    # would make $sorted[-1] its last character.
+    $sorted = @($tags | Sort-Object -Unique | Sort-Object { [version]($_.Substring(1)) })
     return $sorted[-1]
 }
 

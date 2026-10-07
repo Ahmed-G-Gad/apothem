@@ -394,6 +394,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `APOTHEM_ALLOW_UNVERIFIED=1`, it went on with that tag's tree. The POSIX
   scripts skip such a tag and take the newest release. `Resolve-LatestTag` now
   uses `-cmatch`.
+- **`install.ps1` and `update.ps1` resolve a remote's only release tag.** With
+  `APOTHEM_REF` unset and one `vX.Y.Z` tag on the remote, `Resolve-LatestTag`
+  returned the tag's last character, such as `0` for `v1.1.0`. A pipeline that
+  emits one string yields that string, not an array, and indexing a string
+  returns a character. The run then stopped with "Could not check out 0", or
+  with "needs a vMAJOR.MINOR.PATCH release tag" under
+  `APOTHEM_VERIFY=checksum`. `install.sh` and `update.sh` resolve the tag.
+  `Resolve-LatestTag` now wraps the sorted tags in `@()`.
 - **The installers give key-import guidance in any language.** When the
   maintainer key was missing from the local keyring and GnuPG printed its
   messages in another language, `install.sh`, `install.ps1` and `update.sh`
