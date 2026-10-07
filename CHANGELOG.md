@@ -251,6 +251,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **The one-shot installer installs and verifies in one run**, and the
   installers emit no ANSI codes when output is not a terminal.
 - **Piped output and `--help` epilogs keep their line structure.**
+- **`apothem completion <shell>` no longer ends the script with a blank
+  line.** The output for `bash`, `zsh`, `fish`, and `powershell` now ends in
+  a single newline, so appending it to a shell profile adds no extra line.
 - **Profiles without a version are read as version 1.**
 - **Qwen Code hook timeouts are written in seconds** and the interpreter path
   is quoted.

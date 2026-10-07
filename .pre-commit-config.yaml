@@ -20,8 +20,18 @@ repos:
       - id: check-added-large-files
         args: [--maxkb=500]
       - id: check-merge-conflict
+      # .gitattributes owns the line-ending policy: the index stores LF for every
+      # text file, and the working tree checks out *.bat, *.cmd, and *.ps1 with
+      # CRLF. --fix=lf rewrote those CRLF checkouts on every all-files run, and
+      # Git turned them back on the next checkout, so the hook excludes exactly
+      # the eol=crlf patterns and keeps --fix=lf for everything else. --fix=auto
+      # is not used because it accepts any file with one ending style, so an
+      # all-CRLF .py or .md would pass. An excluded file still cannot commit
+      # mixed endings, because Git stores those patterns as LF in the index.
+      # Lockstep: keep the regex in sync with the eol=crlf lines in .gitattributes.
       - id: mixed-line-ending
         args: [--fix=lf]
+        exclude: '\.(bat|cmd|ps1)$'
 
   # ---------------------------------------------------------------------------
   # Python — ruff (lint + format)
