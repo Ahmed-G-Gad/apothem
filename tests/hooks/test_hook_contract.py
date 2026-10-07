@@ -28,6 +28,16 @@ and Qwen Code runs hooks through cmd.exe, so on Windows the Codex and Qwen rows
 check the dispatcher and its handlers, not those hosts' own command lines. A
 separate check holds every Codex ``commandWindows`` to the command run here.
 
+Interpreter. The Codex ``command`` names ``python3``, which resolves on the
+host's PATH. On a Windows host that ``python3`` is often the Microsoft Store
+alias, which exits 49 instead of running the dispatcher. Every Codex row
+therefore runs with a shim for this test's interpreter first on PATH
+(``tests._shared.python_shim``), on every platform. The other surfaces need no
+shim: the engine writes an absolute interpreter into the Claude Code and Qwen
+Code commands, and the plugin's bootstrap locates an interpreter and skips
+Store stubs. An autouse fixture puts a ``python3`` that behaves like the Store
+alias first on the host PATH, so a leak fails on any host.
+
 Clauses. (1) executes: exit 0 and stdout empty or one JSON object. (2)
 termination: Stop and PostToolUse emissions are bounded per session. (3) output
 bound: no emitted string exceeds 10,000 characters, the Claude Code cap. (4)
@@ -45,6 +55,7 @@ from __future__ import annotations
 
 import json
 import os
+import shlex
 import shutil
 import stat
 import subprocess
@@ -57,6 +68,7 @@ from pathlib import Path
 import pytest
 
 from tests._shared.bash_resolver import SKIP_REASON, find_test_bash
+from tests._shared.python_shim import write_python_shim
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PLUGIN_TREE = REPO_ROOT / "plugins" / "claude-code"
@@ -85,6 +97,14 @@ _MAX_POSTTOOLUSE_EMISSIONS = 2
 #: weight that suggests a delivery that never happens.
 _CLAUDE_DISCARDED_EVENTS = frozenset({"PreCompact", "PostCompact"})
 _HOSTILE_MARKER = "APOTHEM-CONTRACT-HOSTILE-PROJECT-CODE"
+#: What the Windows Store "App execution alias" for ``python3`` prints to stderr
+#: before it exits 49 when no Python from the Store is installed.
+_STORE_ALIAS_MESSAGE = (
+    "Python was not found; run without arguments to install from the Microsoft "
+    "Store, or disable this shortcut from Settings > Apps > Advanced app "
+    "settings > App execution aliases."
+)
+_STORE_ALIAS_EXIT = 49
 
 
 @dataclass(frozen=True)
@@ -106,6 +126,34 @@ class HookEntry:
                 return name[:-3]
         tail = self.label.split()[-1]
         return tail.rsplit("/", 1)[-1].removesuffix(".md")
+
+
+@pytest.fixture(autouse=True)
+def _host_python3_that_must_not_be_used(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Put a host ``python3`` that behaves like the Windows Store alias first on PATH.
+
+    CI runners resolve ``python3`` to a real interpreter, so without this a
+    Codex row that reached the host's ``python3`` would pass there and fail on
+    a Windows host whose ``python3`` is the Store alias. This one prints the
+    alias's message and exits as the alias does. The plugin's interpreter
+    locator skips it, as it skips the alias, for being under 1024 bytes, so
+    only a Codex row that bypasses the shim reaches it.
+    """
+    host_bin = tmp_path / "host-python-bin"
+    host_bin.mkdir()
+    stub = host_bin / "python3"
+    stub.write_text(
+        f"#!/bin/sh\necho {shlex.quote(_STORE_ALIAS_MESSAGE)} >&2\n"
+        f"exit {_STORE_ALIAS_EXIT}\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    stub.chmod(0o755)
+    monkeypatch.setenv(
+        "PATH", f"{host_bin}{os.pathsep}{os.environ.get('PATH', os.defpath)}"
+    )
 
 
 def _strip_exec_bits(root: Path) -> None:
@@ -329,7 +377,16 @@ def workspace(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
     (hostile / "hooks" / "dispatch.py").write_text(
         f"print('{_HOSTILE_MARKER}')\n", encoding="utf-8"
     )
-    return {"plugin": plugin, "home": home, "project": project, "hostile": hostile}
+    codex_python = base / "codex-python"
+    codex_python.mkdir()
+    write_python_shim(codex_python / "python3")
+    return {
+        "plugin": plugin,
+        "home": home,
+        "project": project,
+        "hostile": hostile,
+        "codex_python": codex_python,
+    }
 
 
 def _all_entries(ws: dict[str, Path]) -> list[HookEntry]:
@@ -351,6 +408,12 @@ def _env_for(
     env = _isolated_env(ws["home"], CLAUDE_PROJECT_DIR=str(project), **extra)
     if entry.surface == "plugin":
         env["CLAUDE_PLUGIN_ROOT"] = str(ws["plugin"])
+    if entry.surface == "codex":
+        # The Codex command names python3: this test's interpreter answers it,
+        # not the host's (see "Interpreter" in the module docstring).
+        env["PATH"] = os.pathsep.join(
+            [str(ws["codex_python"]), env.get("PATH", os.defpath)]
+        )
     return env
 
 
