@@ -206,13 +206,24 @@ function Resolve-LatestTag {
 # public key (no local trust root yet - remediation: import the maintainer
 # key) from a bad or absent signature (hard abort). `--raw` captures GnuPG's
 # status lines ("[GNUPG:] KEYWORD ...") instead of its human-readable
-# messages, which GnuPG translates into the host's language.
+# messages, which GnuPG translates into the host's language. git writes both
+# to stderr, which Windows PowerShell (and PowerShell before 7.2) turns into
+# a TERMINATING NativeCommandError under $ErrorActionPreference='Stop' once it
+# is redirected - for a valid signature too - so the preference is localized
+# to 'Continue' around the call, as in Test-PythonImport.
 $script:VerifyTagOutput = ''
 function Test-TagSignature {
     param([string]$Dir, [string]$Ref)
-    $Lines = & git -C $Dir verify-tag --raw $Ref 2>&1
+    $prior = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $Lines = & git -C $Dir verify-tag --raw $Ref 2>&1
+        $code = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $prior
+    }
     $script:VerifyTagOutput = ($Lines | ForEach-Object { $_.ToString() }) -join "`n"
-    return ($LASTEXITCODE -eq 0)
+    return ($code -eq 0)
 }
 
 # Test-VerifyTagMissingKey - $true when the captured status lines show the
