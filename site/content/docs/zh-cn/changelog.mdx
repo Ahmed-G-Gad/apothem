@@ -391,6 +391,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   already refused the ref on every platform before the check ran.
   `Test-ReleaseTag` now ends with `\z`, which matches only at the end of the
   string.
+- **`check-release-ready.ps1` checks the tag as `check-release-ready.sh`
+  does.** It used `-notmatch` with a regex ending in `$`, so it accepted
+  `V1.2.3` and `v1.2.3` followed by a newline, which the Bash script rejects.
+  It now uses `-cnotmatch` and `\z`.
 - **The installers give key-import guidance in any language.** When the
   maintainer key was missing from the local keyring and GnuPG printed its
   messages in another language, `install.sh`, `install.ps1` and `update.sh`
