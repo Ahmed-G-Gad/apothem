@@ -173,10 +173,12 @@ function Test-VerifyTagMissingKey {
 # Test-ReleaseTag REF - return $true when REF is a vMAJOR.MINOR.PATCH release
 # tag (the verifiable shape), $false otherwise (a branch, a SHA, a pre-release).
 # -cmatch keeps the match case-sensitive, as update.sh's is_release_tag is:
-# -match ignores case and would also accept V1.2.3.
+# -match ignores case and would also accept V1.2.3. \z matches only at the
+# end of the string: $ also matches before a final newline, so it would
+# accept "v1.2.3`n", which is_release_tag rejects.
 function Test-ReleaseTag {
     param([string]$Ref)
-    return ($Ref -cmatch '^v[0-9]+\.[0-9]+\.[0-9]+$')
+    return ($Ref -cmatch '^v[0-9]+\.[0-9]+\.[0-9]+\z')
 }
 
 Write-Bold "Apothem updater"

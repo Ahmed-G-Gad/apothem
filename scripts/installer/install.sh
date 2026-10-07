@@ -240,15 +240,15 @@ verify_tag_missing_key() {
 # tag (the verifiable shape), non-zero otherwise (a branch like main, a SHA, a
 # pre-release tag like v1.2.3-rc1, or a malformed form like v1x.2.3 or
 # v1.2.3.4). Drives whether tag verification applies to the fetched ref. This
-# mirrors the anchored `^v[0-9]+\.[0-9]+\.[0-9]+$` regex in install.ps1's
+# mirrors the anchored `^v[0-9]+\.[0-9]+\.[0-9]+\z` regex in install.ps1's
 # Test-ReleaseTag: a POSIX `case` glob cannot express "one-or-more digits" or
 # reject trailing junk on its own (a bare `v[0-9]*.[0-9]*.[0-9]*` matches
 # v1.2.3-rc1, v1x.2.3 and v1.2.3.4, since `*` absorbs any characters). The
 # reject gates run first. They drop any REF that carries a character outside
-# the strict `v`/digit/dot set, a `v` after the first character, or a third
-# dot. The shape gate then requires a leading `v`, two dots, and a digit at the
-# start of each component, so it accepts exactly what the install.ps1 regex
-# matches with case respected.
+# the strict `v`/digit/dot set (a trailing newline included), a `v` after the
+# first character, or a third dot. The shape gate then requires a leading `v`,
+# two dots, and a digit at the start of each component, so it accepts exactly
+# what the install.ps1 regex matches with case respected.
 is_release_tag() {
     case "$1" in
         # Reject anything containing a character outside [v0-9.]; this drops

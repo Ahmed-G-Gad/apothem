@@ -370,6 +370,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   ref pinned to `V1.2.3` went to `git verify-tag` instead of stopping as "not
   a signed release tag", and `install.ps1` accepted it for
   `APOTHEM_VERIFY=checksum`. `Test-ReleaseTag` now uses `-cmatch`.
+- **`install.ps1` and `update.ps1` reject a ref that ends in a newline**, as
+  `install.sh` and `update.sh` do. `Test-ReleaseTag` ended its regex with `$`,
+  which in .NET also matches before a final newline, so it took `v1.2.3`
+  followed by a newline for a release tag. A ref read with `Get-Content -Raw`
+  keeps that newline. With `APOTHEM_VERIFY=checksum`, `install.ps1` then
+  tried to download a release archive for that ref instead of stopping with
+  "needs a vMAJOR.MINOR.PATCH release tag". In signature mode, `git checkout`
+  already refused the ref on every platform before the check ran.
+  `Test-ReleaseTag` now ends with `\z`, which matches only at the end of the
+  string.
 - **The installers give key-import guidance in any language.** When the
   maintainer key was missing from the local keyring and GnuPG printed its
   messages in another language, `install.sh`, `install.ps1` and `update.sh`
