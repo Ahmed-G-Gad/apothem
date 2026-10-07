@@ -20,7 +20,8 @@
     # A command-line `-Severity` or `-ExcludeRule` is merged with the values
     # below and can only widen them, so set a severity or a rule exclusion
     # here, never at a call site.
-    Severity = @('Error', 'Warning')
+    # Without 'ParseError', a script with a syntax error passes the lint.
+    Severity = @('Error', 'Warning', 'ParseError')
     ExcludeRules = @(
         # Install scripts produce styled, user-facing console output
         # (banners, progress markers, success/failure indicators).
