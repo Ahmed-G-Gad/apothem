@@ -17,6 +17,7 @@ let a finding pass the pull request and then fail the deploy.
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -137,6 +138,61 @@ def test_analyzer_filters_live_only_in_the_settings_file(
         assert flag not in run, (
             f"{step!r} passes {flag}; set it in PSScriptAnalyzerSettings.psd1"
         )
+
+
+_PWSH = shutil.which("pwsh") or shutil.which("powershell")
+# The lint steps' analyzer call, run from the repository root under the 'Stop'
+# preference the runner's pwsh shell prepends. The folder arrives through the
+# environment, so no path is quoted into PowerShell source, and it is escaped
+# because -Path expands wildcards: a '[' in the name would match no file.
+# Exit 3 marks a PowerShell without PSScriptAnalyzer.
+_ANALYZE = "; ".join(
+    (
+        "$ErrorActionPreference = 'Stop'",
+        "if (-not (Get-Module -ListAvailable PSScriptAnalyzer)) { exit 3 }",
+        "$dir = [Management.Automation.WildcardPattern]::Escape($env:LINT_DIR)",
+        f"Invoke-ScriptAnalyzer -Path $dir {_SETTINGS}"
+        " | ForEach-Object { '{0} {1}' -f $_.Severity, $_.RuleName }",
+    )
+)
+
+
+@pytest.mark.skipif(_PWSH is None, reason="no PowerShell on this host")
+def test_settings_make_the_analyzer_report_parse_errors(tmp_path: Path) -> None:
+    # The analyzer reports a script that does not parse only as a ParseError
+    # record, so a Severity list without that value lets it pass both lints.
+    (tmp_path / "broken.ps1").write_text("function Broken {\n", encoding="utf-8")
+    assert _PWSH is not None
+    result = subprocess.run(
+        [
+            _PWSH,
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            _ANALYZE,
+        ],
+        cwd=_REPO_ROOT,
+        env={
+            **os.environ,
+            "LINT_DIR": str(tmp_path),
+            "NO_COLOR": "1",
+            "POWERSHELL_TELEMETRY_OPTOUT": "1",
+        },
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=False,
+    )
+    if result.returncode == 3:
+        pytest.skip("PSScriptAnalyzer is not installed for this PowerShell")
+    assert result.returncode == 0, result.stdout + result.stderr
+    findings = result.stdout.splitlines()
+    assert any(line.startswith("ParseError ") for line in findings), (
+        f"no ParseError finding for a script that does not parse ({findings}); "
+        "keep 'ParseError' in Severity in PSScriptAnalyzerSettings.psd1"
+    )
 
 
 _BASH = find_test_bash()
