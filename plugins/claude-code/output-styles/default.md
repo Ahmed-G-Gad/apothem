@@ -91,7 +91,7 @@ If no project root is resolvable, halt with a structured-inquiry invocation surf
 
 ## File-Authoring Contract
 
-Any response that creates a new file routes through the apothem header-injector (`scripts/inject-header.sh` / `scripts/inject-header.py` in the apothem source repo at https://github.com/ahmed-g-gad/apothem) so the canonical single-line SPDX license header is injected at the file's head per `site/content/docs/reference/authorship-header.mdx`. The byte-exact header fixture is at `src/apothem/schemas/authorship-header.txt`; the per-comment-family variant is detected automatically by the injector.
+Any response that creates a new file routes through the apothem header-injector (`scripts/inject-header.sh` / `scripts/inject-header.py` in the apothem source repo at <https://github.com/ahmed-g-gad/apothem>) so the canonical single-line SPDX license header is injected at the file's head per `site/content/docs/reference/authorship-header.mdx`. The byte-exact header fixture is at `src/apothem/schemas/authorship-header.txt`; the per-comment-family variant is detected automatically by the injector.
 
 The exempt classes (LICENSE, JSON configuration files, lockfiles, generated assets, vendored trees, `.audit/` ephemera, `<project-root>/.apothem/` working-directory ephemera, `.keep` / `.gitkeep` markers, binary files) are enumerated at `src/apothem/schemas/header-exceptions.txt`. The chat surface confirms header injection in its file-creation summary, naming the comment-family variant emitted and the injector's exit code.
 

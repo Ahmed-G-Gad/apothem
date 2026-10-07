@@ -16,10 +16,14 @@
 *.cfg  text eol=lf
 *.ini  text eol=lf
 
-# Windows-specific script files keep CRLF.
+# Windows-specific script files keep CRLF. Keep this set in step with the
+# CRLF section of .editorconfig and the Windows-script mixed-line-ending hook
+# in .pre-commit-config.yaml.
 *.bat  text eol=crlf
-*.ps1  text eol=crlf
 *.cmd  text eol=crlf
+*.ps1  text eol=crlf
+*.psm1 text eol=crlf
+*.psd1 text eol=crlf
 
 # Binary assets — no line-ending normalization.
 *.png   binary

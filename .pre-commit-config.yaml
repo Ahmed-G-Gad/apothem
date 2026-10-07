@@ -20,8 +20,19 @@ repos:
       - id: check-added-large-files
         args: [--maxkb=500]
       - id: check-merge-conflict
+      # Line endings follow .gitattributes. Git stores every text file LF and
+      # checks the Windows script family (`text eol=crlf`) out CRLF, so the
+      # LF instance must leave that family alone. The second instance only
+      # repairs a Windows script whose endings are genuinely mixed: a pure-LF
+      # copy written by a generator (regen-behavior-goldens.py,
+      # regenerate-completions.*) commits the same LF bytes, so it passes.
       - id: mixed-line-ending
         args: [--fix=lf]
+        exclude: \.(bat|cmd|ps1|psm1|psd1)$
+      - id: mixed-line-ending
+        name: mixed line ending (Windows scripts)
+        args: [--fix=auto]
+        files: \.(bat|cmd|ps1|psm1|psd1)$
 
   # ---------------------------------------------------------------------------
   # Python — ruff (lint + format)
@@ -63,7 +74,19 @@ repos:
     hooks:
       # Rule policy lives in .markdownlint.json (auto-discovered by
       # markdownlint-cli); no args here so the policy is declared once.
+      # Beyond the long-standing MD013/MD033/MD041 opt-outs it turns off
+      # MD038, because the ` (Recommended)` label postfix is a deliberate
+      # leading-space literal, and MD060 (added in markdownlint 0.39.0),
+      # because the house table style pads cells but not the `|---|`
+      # delimiter row, which none of its styles accept. MD024 checks sibling
+      # headings only, so CHANGELOG releases can each carry `### Added`.
+      # Scope mirrors ruff's extend-exclude: generated trees are fixed at
+      # their source and regenerated (plugins/claude-code/ via
+      # assemble_plugin_tree.py, the behavior-diff corpus via
+      # regen-behavior-goldens.py); conformity fixtures are validator inputs;
+      # _vendor is upstream.
       - id: markdownlint
+        exclude: ^(plugins/claude-code/|tests/fixtures/|tests/conformity/|tests/conformity-scenarios/fixtures/|src/apothem/_vendor/)
 
   # ---------------------------------------------------------------------------
   # YAML lint

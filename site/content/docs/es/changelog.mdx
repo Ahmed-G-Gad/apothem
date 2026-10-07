@@ -372,6 +372,17 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   temp dir, created with default permissions. State now lives in a per-user
   directory created with mode `0700`, and session ids are sanitized before use
   as file names. `APOTHEM_HOOK_STATE_DIR` overrides the location.
+- **`apothem completion <shell>` no longer ends with a blank line.** The
+  command printed each script with an extra newline after the template's own.
+  It now emits the script exactly as Click's `<shell>_source` protocol does,
+  so the committed `apothem.ps1` matches its bash, zsh, and fish siblings.
+- **`pre-commit run --all-files` passes on a fresh checkout.** The LF
+  line-ending hook no longer rewrites the Windows scripts that
+  `.gitattributes` checks out as CRLF, and `.gitattributes` now lists `.psm1`
+  and `.psd1` with them, as `.editorconfig` already did. markdownlint skips
+  generated and fixture trees, turns off MD038 and MD060, and checks sibling
+  headings only for MD024. `scripts/dev/regenerate-completions.sh` and `.ps1`
+  regenerate all four completion scripts byte for byte from a plain checkout.
 
 ## [1.1.0] - 2026-08-16
 

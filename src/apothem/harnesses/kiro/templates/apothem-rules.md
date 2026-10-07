@@ -6,7 +6,7 @@ inclusion: always
 
 # Apothem — Kiro Bootstrap
 
-This file is materialised by `apothem install --harness kiro --project <path>` and lands at `<project>/.kiro/steering/apothem-rules.md`, a dedicated Apothem steering file inside Kiro's documented steering directory per https://kiro.dev/docs/steering/. Kiro's foundation steering files (`product.md`, `tech.md`, `structure.md`) are operator-authored; this Apothem steering file is separate and never clobbers them. The `inclusion: always` front matter applies this governance surface on every interaction; `always` is the safe default because Apothem's mandates hold project-wide rather than for a file-pattern subset.
+This file is materialised by `apothem install --harness kiro --project <path>` and lands at `<project>/.kiro/steering/apothem-rules.md`, a dedicated Apothem steering file inside Kiro's documented steering directory per <https://kiro.dev/docs/steering/>. Kiro's foundation steering files (`product.md`, `tech.md`, `structure.md`) are operator-authored; this Apothem steering file is separate and never clobbers them. The `inclusion: always` front matter applies this governance surface on every interaction; `always` is the safe default because Apothem's mandates hold project-wide rather than for a file-pattern subset.
 
 ## What Apothem governs in this project
 

@@ -116,19 +116,21 @@ This registry is the verification checklist. Every in-scope item is individually
 ### Step 2: Prose Fidelity Audit (CM-11A)
 
 > Skip if `--focus` excludes `prose-fidelity` / `completeness` / `all`. Skip at EXPLORING seriousness. **Focus-seriousness conflict check:** after resolving `--focus` dimensions, if the current seriousness level would skip ALL focused dimensions (e.g., `--focus prose-fidelity` at EXPLORING), invoke the structured-inquiry channel: question `At the current seriousness level, the focused dimensions are skipped by default; how should the review proceed?`; header `Scope conflict`; options:
->   - `Raise seriousness (Recommended)`:
->     rationale: Temporarily escalates the seriousness tier for this review so the focused dimensions run; the original tier restores after the review completes.
->     recommendation: recommended — cites class 5 rule citation: the seriousness-scaling discipline (Seriousness-Scaled Governance — escalating to satisfy a focused-dimension audit preserves the audit's evidence requirement) and class 6 observed-state: the operator explicitly named the focused dimensions, indicating they want those dimensions audited.
->     default-pointer: Raise seriousness — safe because the escalation is scoped to this review only and produces the audit evidence the operator requested.
->   - `Broaden focus`:
->     rationale: Expands `--focus` to include dimensions available at the current tier; the originally-named dimensions are dropped from the audited set.
->     recommendation: acceptable
->     default-pointer: Raise seriousness — broadening focus drops the operator's named dimensions from coverage; raising seriousness preserves coverage of the named dimensions.
->   - `Abort`:
->     rationale: Halts the review; the next invocation can resume with adjusted parameters.
->     recommendation: acceptable
->     default-pointer: Raise seriousness — aborting forces a re-bootstrap; raising seriousness completes the review in the same session.
->   `multiSelect: false`. At PERSONAL_USE: spot-check mode — select 5 representative requirements spanning different functional areas, trace forward only (Step 2.1), produce a scorecard on the sample. At SHARED+: full exhaustive audit as specified below.
+>
+> - `Raise seriousness (Recommended)`:
+>   rationale: Temporarily escalates the seriousness tier for this review so the focused dimensions run; the original tier restores after the review completes.
+>   recommendation: recommended — cites class 5 rule citation: the seriousness-scaling discipline (Seriousness-Scaled Governance — escalating to satisfy a focused-dimension audit preserves the audit's evidence requirement) and class 6 observed-state: the operator explicitly named the focused dimensions, indicating they want those dimensions audited.
+>   default-pointer: Raise seriousness — safe because the escalation is scoped to this review only and produces the audit evidence the operator requested.
+> - `Broaden focus`:
+>   rationale: Expands `--focus` to include dimensions available at the current tier; the originally-named dimensions are dropped from the audited set.
+>   recommendation: acceptable
+>   default-pointer: Raise seriousness — broadening focus drops the operator's named dimensions from coverage; raising seriousness preserves coverage of the named dimensions.
+> - `Abort`:
+>   rationale: Halts the review; the next invocation can resume with adjusted parameters.
+>   recommendation: acceptable
+>   default-pointer: Raise seriousness — aborting forces a re-bootstrap; raising seriousness completes the review in the same session.
+>
+> `multiSelect: false`. At PERSONAL_USE: spot-check mode — select 5 representative requirements spanning different functional areas, trace forward only (Step 2.1), produce a scorecard on the sample. At SHARED+: full exhaustive audit as specified below.
 
 Deploy an Audit Team (CM-25A) — parallel per-phase traceability. Each agent returns traceability findings with evidence citations (CM-25C).
 
@@ -356,19 +358,21 @@ Identify the single most impactful revision — the one change that fixes the mo
 - Clear instruction that no changes will be made until the user approves
 
 Invoke the structured-inquiry channel: question `Which proposed revisions should apply to the plan suite?`; header `Revisions`; options:
-  - `Approve all (Recommended)`:
-    rationale: Applies every proposed revision in Step 10; the revision-impact map and post-revision verification cover the entire revision set as one cohesive cohort.
-    recommendation: recommended — cites class 5 rule citation: `commands/plan-review.md` Step 8 (Propose Revisions — every revision is documented with severity, rationale, and blast radius, satisfying the prerequisite for cohesive application) and class 6 observed-state: Step 6's Findings Registry surfaces every finding with evidence, indicating the proposed revision set is the operator-reviewable cohesive cohort.
-    default-pointer: Approve all — safe because Step 11 Final Verification re-scores every audited dimension, catching any regression introduced by the revisions.
-  - `Approve a subset`:
-    rationale: User specifies which revisions to apply and which to reject via Other-text or follow-up; only approved revisions apply in Step 10, rejected revisions are logged with rationale in PLAN-NOTES.md, and Step 11 re-runs on the partial revision set.
-    recommendation: acceptable
-    default-pointer: Approve all — partial approval requires the operator to map per-revision dispositions, while the cohesive revision set is the operator-reviewable cohort.
-  - `Reject all revisions`:
-    rationale: Proceeds to the Step 6.5 path; the existing plan suite is preserved at its current state with the operator's rationale logged in PLAN-NOTES.md.
-    recommendation: discouraged — cites class 5 rule citation: `rules/operational-mandates.md` CM-1 (Critical Evaluation — push back when suboptimal) and class 6 observed-state: Step 6 surfaced findings with severity classifications, indicating substantive defects exist that rejection leaves unresolved.
-    default-pointer: Approve all — rejecting all revisions leaves the surfaced findings unresolved, propagating risk into downstream execution; approval addresses the findings cohesively.
-  `multiSelect: false`.
+
+- `Approve all (Recommended)`:
+  rationale: Applies every proposed revision in Step 10; the revision-impact map and post-revision verification cover the entire revision set as one cohesive cohort.
+  recommendation: recommended — cites class 5 rule citation: `commands/plan-review.md` Step 8 (Propose Revisions — every revision is documented with severity, rationale, and blast radius, satisfying the prerequisite for cohesive application) and class 6 observed-state: Step 6's Findings Registry surfaces every finding with evidence, indicating the proposed revision set is the operator-reviewable cohesive cohort.
+  default-pointer: Approve all — safe because Step 11 Final Verification re-scores every audited dimension, catching any regression introduced by the revisions.
+- `Approve a subset`:
+  rationale: User specifies which revisions to apply and which to reject via Other-text or follow-up; only approved revisions apply in Step 10, rejected revisions are logged with rationale in PLAN-NOTES.md, and Step 11 re-runs on the partial revision set.
+  recommendation: acceptable
+  default-pointer: Approve all — partial approval requires the operator to map per-revision dispositions, while the cohesive revision set is the operator-reviewable cohort.
+- `Reject all revisions`:
+  rationale: Proceeds to the Step 6.5 path; the existing plan suite is preserved at its current state with the operator's rationale logged in PLAN-NOTES.md.
+  recommendation: discouraged — cites class 5 rule citation: `rules/operational-mandates.md` CM-1 (Critical Evaluation — push back when suboptimal) and class 6 observed-state: Step 6 surfaced findings with severity classifications, indicating substantive defects exist that rejection leaves unresolved.
+  default-pointer: Approve all — rejecting all revisions leaves the surfaced findings unresolved, propagating risk into downstream execution; approval addresses the findings cohesively.
+
+`multiSelect: false`.
 
 ### Step 10: Apply Revisions
 

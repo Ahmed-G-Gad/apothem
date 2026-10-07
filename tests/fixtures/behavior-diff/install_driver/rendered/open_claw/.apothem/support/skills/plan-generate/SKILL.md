@@ -144,23 +144,25 @@ Deploy a Research Team (CM-25A) for parallel discovery. Externalize decisions to
 ### Step 4: Create Plan Folder
 
 Confirm discovery is externalized. Create the plan suite folder `<project-root>/.apothem/plans/[REPO_NAME]-[CONTEXT]-[MISSION]/` with a `phases/` subdirectory. If a folder with that name already exists, invoke the structured-inquiry channel: question `A plan suite folder already exists at this path; how should generation proceed?`; header `Suite exists`; options:
-  - `Resume`:
-    rationale: Detects which infrastructure / phase files exist, skips completed ones, and continues from the first missing artifact.
-    recommendation: acceptable
-    default-pointer: no-default: user decision required
-  - `Append suffix`:
-    rationale: Creates a new suite alongside the existing one with `-2` or the next numeric suffix; leaves the existing suite untouched.
-    recommendation: acceptable
-    default-pointer: no-default: user decision required
-  - `Abort`:
-    rationale: Halts generation; the existing suite is preserved at its current path.
-    recommendation: acceptable
-    default-pointer: no-default: user decision required
-  - `Overwrite`:
-    rationale: Replaces the existing suite content at the path; prior phase files, infrastructure files, and reports are removed.
-    recommendation: destructive-no-default — cites class 5 rule citation: `rules/interactive-questions.md` §6 (Per-File Destructive-Op Confirmation — irreversible operations require the no-default floor) and class 6 observed-state: the existing suite contains operator-authored content that overwrite would destroy without recovery.
-    default-pointer: no-default: user decision required
-  `multiSelect: false` (per §6.8 of the canonical-channel rule — destructive-op invocations forbid `multiSelect: true`).
+
+- `Resume`:
+  rationale: Detects which infrastructure / phase files exist, skips completed ones, and continues from the first missing artifact.
+  recommendation: acceptable
+  default-pointer: no-default: user decision required
+- `Append suffix`:
+  rationale: Creates a new suite alongside the existing one with `-2` or the next numeric suffix; leaves the existing suite untouched.
+  recommendation: acceptable
+  default-pointer: no-default: user decision required
+- `Abort`:
+  rationale: Halts generation; the existing suite is preserved at its current path.
+  recommendation: acceptable
+  default-pointer: no-default: user decision required
+- `Overwrite`:
+  rationale: Replaces the existing suite content at the path; prior phase files, infrastructure files, and reports are removed.
+  recommendation: destructive-no-default — cites class 5 rule citation: `rules/interactive-questions.md` §6 (Per-File Destructive-Op Confirmation — irreversible operations require the no-default floor) and class 6 observed-state: the existing suite contains operator-authored content that overwrite would destroy without recovery.
+  default-pointer: no-default: user decision required
+
+`multiSelect: false` (per §6.8 of the canonical-channel rule — destructive-op invocations forbid `multiSelect: true`).
 
 ### Step 5: Generate Infrastructure Files
 
@@ -237,19 +239,21 @@ The selection routes the post-synthesis flow: `All clear` proceeds directly to S
 Present the plan suite for user approval. **Do NOT proceed to implementation.**
 
 Invoke the structured-inquiry channel: question `Is the generated plan suite ready for review and execution, or should it iterate?`; header `Plan output`; options:
-  - `Approve (Recommended)`:
-    rationale: Proceeds to `/plan-review` or `/plan-execute`; the generated suite is treated as the operator-ratified baseline for downstream commands.
-    recommendation: recommended — cites class 5 rule citation: `commands/plan-review.md` Step 1 (Forensic audit consumes the generated suite as authoritative input) and class 6 observed-state: Step 7 Final Sweep returns PASS scorecards on all audited dimensions.
-    default-pointer: Approve — safe because the next pipeline step is review, which is non-destructive and produces additional verification evidence.
-  - `Revise`:
-    rationale: Specifies the phases or sections to rework via Other-text; re-derives affected sections from the updated specification under the clean-room barrier — does not patch existing text — then re-runs the Step 7 sweep on affected files.
-    recommendation: acceptable
-    default-pointer: Approve — revising is appropriate when the operator has identified specific defects; the Step 7 Final Sweep already verifies the generated suite passes the gate criteria.
-  - `Reject`:
-    rationale: Starts over with revised prose or aborts; the existing suite is preserved at its current path until the operator explicitly retires it.
-    recommendation: discouraged — cites class 5 rule citation: `rules/clean-room-generation.md` §3 (Re-Writing Protocol — restart preserving raw input is appropriate only when the draft is fundamentally unsalvageable) and class 6 observed-state: Step 7 returns PASS scorecards, so the suite meets the gate criteria.
-    default-pointer: Approve — rejection is appropriate only when the suite is fundamentally unsalvageable, which the Step 7 Final Sweep PASS does not indicate.
-  `multiSelect: false`.
+
+- `Approve (Recommended)`:
+  rationale: Proceeds to `/plan-review` or `/plan-execute`; the generated suite is treated as the operator-ratified baseline for downstream commands.
+  recommendation: recommended — cites class 5 rule citation: `commands/plan-review.md` Step 1 (Forensic audit consumes the generated suite as authoritative input) and class 6 observed-state: Step 7 Final Sweep returns PASS scorecards on all audited dimensions.
+  default-pointer: Approve — safe because the next pipeline step is review, which is non-destructive and produces additional verification evidence.
+- `Revise`:
+  rationale: Specifies the phases or sections to rework via Other-text; re-derives affected sections from the updated specification under the clean-room barrier — does not patch existing text — then re-runs the Step 7 sweep on affected files.
+  recommendation: acceptable
+  default-pointer: Approve — revising is appropriate when the operator has identified specific defects; the Step 7 Final Sweep already verifies the generated suite passes the gate criteria.
+- `Reject`:
+  rationale: Starts over with revised prose or aborts; the existing suite is preserved at its current path until the operator explicitly retires it.
+  recommendation: discouraged — cites class 5 rule citation: `rules/clean-room-generation.md` §3 (Re-Writing Protocol — restart preserving raw input is appropriate only when the draft is fundamentally unsalvageable) and class 6 observed-state: Step 7 returns PASS scorecards, so the suite meets the gate criteria.
+  default-pointer: Approve — rejection is appropriate only when the suite is fundamentally unsalvageable, which the Step 7 Final Sweep PASS does not indicate.
+
+`multiSelect: false`.
 
 **Pipeline Handoff (CM-20):** recommend `/plan-review` next. If the user declines, recommend `/plan-execute`.
 
