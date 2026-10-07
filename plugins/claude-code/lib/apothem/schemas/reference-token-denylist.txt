@@ -3,23 +3,27 @@
 # Reference-token denylist loaded by reference_token_grep.
 #
 # Apothem reimplements a peer platform's feature-set in its own voice with
-# zero branding leak. This file enumerates the reference platform's slug and
-# brand variants so the mechanical sweep can prove no in-scope authored
-# surface leaks them. The matcher loads every non-empty, non-comment line as
-# a forbidden token and asserts zero hits across the authored surface set.
+# zero branding leak. Each entry below forbids one of the reference
+# platform's slug or brand variants. An entry holds the SHA-256 digest of the
+# case-folded token rather than the token, so Apothem does not ship the tokens
+# in readable, searchable form. A digest does not hide a token: a short name
+# can be recovered by exhaustive search, or confirmed by hashing a guess.
 #
-# This data file is OUT of the sweep's in-scope set (it lives under
-# src/apothem/schemas/, which the matcher exempts), so it safely contains the
-# tokens it forbids elsewhere.
+#   word sha256:<hex>        a pure-alpha token; matches a whole word.
+#   literal <n> sha256:<hex> an n-character token carrying '.' or '-';
+#                            matches anywhere, as an escaped literal does.
 #
-# One token per line. '#' begins a comment line. Pure-alpha slugs are matched
-# at word boundaries; punctuation-bearing tokens are matched as escaped
-# literals. All matching is case-insensitive.
-ECC
-ecc.tools
-ecc-tools
-affaan
-agentshield
-ecc-agentshield
-ecc-universal
-ecc-install
+# All matching is case-insensitive. Any other non-comment line is reported as
+# a malformed entry. Generate entries with scripts/dev/hash_reference_tokens.py.
+# Run it in a terminal, where it prompts for each token without echoing it, or
+# redirect its input from a file kept outside the repository. Never pass a
+# token on a command line or through echo, which records it in shell history,
+# and never commit a plaintext token.
+word sha256:2f7875656a69466cfdff4d57082ce7bbb1ef49284e5b5d26de2d0e0662e0ba31
+word sha256:74da4e3e2157f79acd54b1d3d377d8edaebcbe0a6d4d6bedfb4b73fba386924a
+word sha256:f6a323f201ad81833f37b7332a91fdc7995f6efa2f35e1748e72447f60aa3403
+literal 9 sha256:3bb9cae91032ea59d5bfca216afe2275036864c514f79b120dde30802da5206c
+literal 9 sha256:f041413ac26ba6556c92105203eb9d6e2ada179790014ee1ac2924a5400016c5
+literal 11 sha256:80104613adb0ffefe587441698cd357af8211e516199b2025553ad59a778a528
+literal 13 sha256:c032e516bf781d3b3811d95ebfc50025ffb0931348c595cf6722a6cb0c6b2303
+literal 15 sha256:1209d042daa47f4cae3c6f4fd8da0ecd2fe8dd293c5261daa0b15a8303847a68

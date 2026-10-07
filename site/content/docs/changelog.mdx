@@ -203,6 +203,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   it. The release policy and runbooks describe one additive release model.
 - **The repository-root plugin manifest is removed.** The marketplace serves
   `plugins/claude-code`, whose manifest validates in strict mode.
+- **The reference-token denylist now holds SHA-256 digests rather than the
+  tokens.** Apothem no longer ships them in readable, searchable form, but a
+  digest of a short name can be reversed by search, and earlier releases,
+  published npm versions and git history still carry the plaintext.
 
 ### Fixed
 

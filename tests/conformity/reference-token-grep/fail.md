@@ -2,8 +2,8 @@
 
 # Leaky Fixture
 
-This page leaks reference-platform branding. It mentions ECC and the
-ecc.tools domain, the ecc-tools slug, and the maintainer affaan, plus
-the agentshield product line. None of these belong in apothem's own
-voice. This fixture lives under tests/, which the live sweep exempts, so
-it is safe to carry the tokens here for the matcher's fail-path coverage.
+This page leaks reference-platform branding. It names Skivorn and its Quimble
+add-on, links the skivorn.example domain, and uses the skivorn-quimble and
+quill-mark slugs. None of these belong in apothem's own voice. The tokens are
+invented, and the live denylist stores digests rather than tokens. The tests
+hash these tokens into a scratch denylist to cover the matcher's fail path.
