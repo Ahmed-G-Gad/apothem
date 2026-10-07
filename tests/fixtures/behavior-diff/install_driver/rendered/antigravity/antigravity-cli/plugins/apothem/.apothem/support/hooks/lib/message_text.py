@@ -20,8 +20,23 @@ from typing import Final
 
 __all__ = ["strip_maintainer_text"]
 
-_MAINTAINER_COMMENT_RE: Final[re.Pattern[str]] = re.compile(r"^\s*<!--.*-->\s*$")
+_COMMENT_OPEN: Final[str] = "<!--"
+_COMMENT_CLOSE: Final[str] = "-->"
 _BINDINGS_HEADING_RE: Final[re.Pattern[str]] = re.compile(r"^##\s+Bindings\b")
+
+
+def _is_maintainer_comment(line: str) -> bool:
+    """Return whether *line* is one whole HTML comment and nothing else.
+
+    The length floor keeps the opener and the closer from sharing characters:
+    ``<!-->`` starts with one and ends with the other, yet it is not a comment.
+    """
+    stripped = line.strip()
+    return (
+        len(stripped) >= len(_COMMENT_OPEN) + len(_COMMENT_CLOSE)
+        and stripped.startswith(_COMMENT_OPEN)
+        and stripped.endswith(_COMMENT_CLOSE)
+    )
 
 
 def strip_maintainer_text(text: str) -> str:
@@ -35,7 +50,7 @@ def strip_maintainer_text(text: str) -> str:
     for line in text.splitlines():
         if _BINDINGS_HEADING_RE.match(line):
             break
-        if _MAINTAINER_COMMENT_RE.match(line):
+        if _is_maintainer_comment(line):
             continue
         kept.append(line)
     return "\n".join(kept).strip()
