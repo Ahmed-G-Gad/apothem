@@ -166,6 +166,11 @@ def test_locator_skips_stub_finds_real_pwsh(tmp_path: Path) -> None:
         pytest.skip(
             "pwsh on PATH resolves to the WindowsApps stub; no real pwsh-7 to test against"
         )
+    # The locator's stub-size guard runs `wc -c` and rejects the candidate when
+    # `wc` is missing, so the restricted PATH below must also reach `wc`.
+    wc = shutil.which("wc")
+    if not wc:
+        pytest.skip("No wc on this host; the locator's stub-size guard needs it")
 
     stub_dir = tmp_path / "WindowsApps"
     stub_dir.mkdir()
@@ -173,12 +178,19 @@ def test_locator_skips_stub_finds_real_pwsh(tmp_path: Path) -> None:
     stub.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
     stub.chmod(0o755)
     real_dir = Path(real_pwsh).parent
+    wc_dir = Path(wc).parent
 
-    # Inherit the full environment but override PATH to just the stub + real
-    # pwsh dir. The locator's version probe actually launches pwsh, which needs
-    # HOME / TMPDIR / etc. to initialize; a PATH-only env makes pwsh fail to
-    # start on macOS, so the candidate would be wrongly rejected.
-    env = {**os.environ, "PATH": f"{stub_dir}{os.pathsep}{real_dir}"}
+    # Inherit the full environment but override PATH to the stub dir, then the
+    # real pwsh dir, then the `wc` dir. The stub stays first, so the test still
+    # proves it is skipped. The `wc` dir is listed on its own because pwsh from
+    # the release tarball (/usr/local/bin) or a snap (/snap/bin) does not sit
+    # beside coreutils. The locator's version probe actually launches pwsh, which
+    # needs HOME / TMPDIR / etc. to initialize; a PATH-only env makes pwsh fail
+    # to start on macOS, so the candidate would be wrongly rejected.
+    env = {
+        **os.environ,
+        "PATH": os.pathsep.join([str(stub_dir), str(real_dir), str(wc_dir)]),
+    }
     result = _run_locator(env)
     assert result.returncode == 0, (
         f"locator failed to resolve a real pwsh; stdout={result.stdout!r} "
