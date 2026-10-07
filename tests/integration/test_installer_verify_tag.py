@@ -28,6 +28,16 @@ the host's git configuration (``tests._shared.git_env``). A developer's
 SSH signature, which ``git verify-tag`` rejects for want of an allowed-signers
 file instead of reporting the missing OpenPGP key. An autouse fixture plants
 such configuration on every layer git reads, so a leak fails on any host.
+
+The scripts run on the interpreter running these tests, never on the host's
+``python3``. Given ``--yes``, install.sh pip-installs a missing click or rich
+into the first ``python3`` on PATH, and install.ps1 does the same given
+``-Yes``, so a host ``python3`` without rich would gain packages from this
+file, and the run without ``--yes`` would pass only after a ``--yes`` run had
+installed rich. A shim for ``sys.executable`` leads every script's PATH, pip
+gets no package source, and the tests skip when that interpreter cannot import
+click and rich. An autouse fixture puts a ``python3`` without them first on
+the host PATH, so a leak fails on any host.
 """
 
 from __future__ import annotations
@@ -139,6 +149,38 @@ def _host_git_config_that_must_not_leak(
     monkeypatch.setenv("GIT_CONFIG_VALUE_1", missing)
 
 
+@pytest.fixture(autouse=True)
+def _host_python3_that_must_not_be_used(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Put a host ``python3`` without click, rich, or pip first on PATH.
+
+    CI's ``python3`` carries click and rich, so without this an installer run
+    that reached the host's ``python3`` would pass there. This one passes the
+    installer's version check but starts the interpreter with ``-S``, which
+    leaves out site-packages: a run that reaches it stops at the prerequisite
+    check, and it has no pip to install with.
+    """
+    host_bin = tmp_path / "host-python-bin"
+    host_bin.mkdir()
+    _write_python_shim(host_bin / "python3", "-S")
+    monkeypatch.setenv(
+        "PATH", f"{host_bin}{os.pathsep}{os.environ.get('PATH', os.defpath)}"
+    )
+
+
+def _write_python_shim(shim: Path, *options: str) -> None:
+    """Write SHIM, a script that runs this test's interpreter with OPTIONS.
+
+    It execs rather than links: a venv interpreter finds its packages through
+    the pyvenv.cfg beside the path it was started from, so a symlink placed
+    elsewhere would run the base interpreter.
+    """
+    command = shlex.join([sys.executable, *options])
+    shim.write_text(f'#!/bin/sh\nexec {command} "$@"\n', encoding="utf-8")
+    shim.chmod(EXECUTABLE_MODE)
+
+
 def _git(args: list[str], cwd: Path, env: dict[str, str] | None = None) -> str:
     """Run a git command in CWD, without host git config, and return stdout,
     failing loudly. ENV (default ``os.environ``) is the base environment."""
@@ -184,8 +226,9 @@ def _make_fixture_repo(root: Path) -> Path:
 
 
 def _installer_env(tmp_path: Path, fixture: Path, ref: str) -> dict[str, str]:
-    """Hermetic environment: isolated HOME, no host git config, fixture repo
-    as the clone remote."""
+    """Hermetic environment: isolated HOME, no host git config, this test's
+    interpreter as the installer's python3, fixture repo as the clone
+    remote."""
     home = tmp_path / "home"
     home.mkdir(exist_ok=True)
     env = hermetic_git_env()
@@ -198,7 +241,45 @@ def _installer_env(tmp_path: Path, fixture: Path, ref: str) -> dict[str, str]:
     env["APOTHEM_REPO"] = str(fixture)
     env["APOTHEM_REF"] = ref
     env["APOTHEM_HOME"] = str(tmp_path / "apothem-home")
+    _use_test_python(env, tmp_path / "python-shim")
     return env
+
+
+def _use_test_python(env: dict[str, str], shim_dir: Path) -> None:
+    """Make this test's interpreter the installer's ``python3`` and leave pip
+    no package source; skip when that interpreter lacks click or rich.
+
+    The scripts run the first ``python3`` on PATH, so a shim for
+    ``sys.executable`` goes first. Should a run still reach pip, it inherits
+    no ``PIP_*`` setting, reads no configuration file, and uses no index, so
+    the install fails instead of changing an interpreter. The probe repeats
+    the scripts' import check with the same interpreter and environment.
+    """
+    shim_dir.mkdir(exist_ok=True)
+    shim = shim_dir / "python3"
+    _write_python_shim(shim)
+    env["PATH"] = f"{shim_dir}{os.pathsep}{env.get('PATH', os.defpath)}"
+    for key in [name for name in env if name.startswith("PIP_")]:
+        del env[key]
+    env["PIP_CONFIG_FILE"] = os.devnull
+    env["PIP_NO_INDEX"] = "1"
+    probe = subprocess.run(
+        [str(shim), "-c", "import click, rich"],
+        cwd=str(shim_dir),
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    if probe.returncode != 0:
+        lines = probe.stderr.strip().splitlines()
+        cause = lines[-1] if lines else f"exit code {probe.returncode}"
+        pytest.skip(
+            f"the scripts need click and rich, and {sys.executable} cannot "
+            "import them with the installer's isolated HOME and no PYTHONPATH "
+            f"({cause}); install the dev dependencies into it"
+        )
 
 
 def _stage_installer(env: dict[str, str], installer: Path = INSTALLER) -> Path:
@@ -235,11 +316,10 @@ def _run_installer(env: dict[str, str]) -> subprocess.CompletedProcess[str]:
 def _run_installer_ps1(env: dict[str, str]) -> subprocess.CompletedProcess[str]:
     """Run install.ps1 the way ``_run_installer`` runs install.sh.
 
-    ``-Yes`` mirrors install.sh's ``--yes``. It also auto-confirms a pip
-    install of a missing click or rich, so ``_put_python3_first`` makes the
-    prerequisite probe find them and that install never runs.
+    ``-Yes`` mirrors install.sh's ``--yes``. Like ``--yes``, it auto-confirms
+    a pip install of a missing click or rich, so the shim and pip lockout
+    from ``_installer_env`` matter here as much as for install.sh.
     """
-    _put_python3_first(env)
     installer_copy = _stage_installer(env, INSTALLER_PS1)
     assert _PWSH is not None
     return subprocess.run(
@@ -263,33 +343,16 @@ def _run_installer_ps1(env: dict[str, str]) -> subprocess.CompletedProcess[str]:
     )
 
 
-def _put_python3_first(env: dict[str, str]) -> None:
-    """Put a ``python3`` that runs this test's interpreter first on PATH.
-
-    The scripts refuse to run without click and rich, which the interpreter
-    running this test has. The host's own ``python3`` may lack them.
-    """
-    shim_dir = Path(env["HOME"]).parent / "python-shim"
-    shim_dir.mkdir(exist_ok=True)
-    shim = shim_dir / "python3"
-    shim.write_text(
-        f'#!/bin/sh\nexec {shlex.quote(sys.executable)} "$@"\n', encoding="utf-8"
-    )
-    shim.chmod(EXECUTABLE_MODE)
-    env["PATH"] = f"{shim_dir}{os.pathsep}{env.get('PATH', '')}"
-
-
 def _prepare_update(env: dict[str, str]) -> None:
     """Give an updater what a prior install leaves behind.
 
     The updaters re-check-out an existing clone at APOTHEM_HOME, so this
-    clones the fixture there, then puts this test's ``python3`` first.
+    clones the fixture there.
     """
     _git(
         ["clone", "--quiet", env["APOTHEM_REPO"], env["APOTHEM_HOME"]],
         cwd=Path(env["HOME"]),
     )
-    _put_python3_first(env)
 
 
 def _run_updater_sh(env: dict[str, str]) -> subprocess.CompletedProcess[str]:
