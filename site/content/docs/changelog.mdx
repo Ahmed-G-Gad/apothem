@@ -358,6 +358,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `git verify-tag` instead of stopping as "not a signed release tag", and
   `install.sh` accepted the first three for `APOTHEM_VERIFY=checksum`. Both
   scripts now use the same check.
+- **`install.ps1` and `update.ps1` match release tags case-sensitively**, as
+  `install.sh` and `update.sh` do. `Test-ReleaseTag` used `-match`, which
+  ignores case, so the PowerShell scripts took `V1.2.3` for a release tag. A
+  ref pinned to `V1.2.3` went to `git verify-tag` instead of stopping as "not
+  a signed release tag", and `install.ps1` accepted it for
+  `APOTHEM_VERIFY=checksum`. `Test-ReleaseTag` now uses `-cmatch`.
 - **The installers give key-import guidance in any language.** When the
   maintainer key was missing from the local keyring and GnuPG printed its
   messages in another language, `install.sh`, `install.ps1` and `update.sh`
