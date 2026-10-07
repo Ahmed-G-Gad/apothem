@@ -17,7 +17,7 @@ Establish per-class performance budgets and quantitative gates; close the Perfor
 
 ### 1. Per-Class Performance Budgets
 
-Per-class runtime budgets; operator-editorial at apply time; baselines align with the hooks pipeline hook-timeout values. Every row's verifier exits 0 on budget compliance.
+Per-class runtime budgets; operator-editorial at apply time; baselines align with the hooks pipeline hook-timeout values. Every row's verifier exits 0 on budget compliance. A linter row's verifier in §1.1 also exits non-zero on a lint finding.
 
 | Class | Budget | Measurement boundary | Verifier |
 |-------|-------:|---------------------|----------|
@@ -47,14 +47,18 @@ Hook bootstrap stubs run synchronously on the critical path between hook-fire an
 | Bootstrap stub — `hooks/lib/bootstrap.ps1` | 1500ms | stub invocation to dispatcher exit | `Measure-Command { pwsh -NoProfile -File hooks/lib/bootstrap.ps1 -Event SessionStart }` |
 | Interpreter locator — `find-python.{sh,ps1}` | 200ms | dot-source to first PATH probe success | included in the bootstrap-stub measurements above |
 | Shell linter — `shellcheck` over `hooks/lib/*.sh` | 5s | `shellcheck` invocation to exit | `shellcheck hooks/lib/*.sh` |
-| Shell linter — `Invoke-ScriptAnalyzer` over `hooks/lib/*.ps1` | 10s | analyzer invocation to exit | `pwsh -NoProfile -Command "Invoke-ScriptAnalyzer -Path hooks/lib -Severity Error,Warning"` |
+| Shell linter — `Invoke-ScriptAnalyzer` over `hooks/lib/*.ps1` | 10s | analyzer invocation to exit | `pwsh -NoProfile -Command '$f = Invoke-ScriptAnalyzer -Path hooks/lib -Severity Error,Warning,ParseError; if ($f) { $f; exit 1 }'` |
 | Python linter — `ruff check` over the ecosystem | 5s | `ruff` invocation to exit | `ruff check hooks/ tools/ tests/` |
 
 The PowerShell budget is wider than POSIX-bash because PowerShell's startup cost dominates on Windows hosts; the dispatcher accommodates this by running its work asynchronously after the stub's `exec` boundary. The Windows Git Bash / mingw64 row carries the same 1500ms budget as PowerShell for the same reason: on Windows, `bash` is the mingw64 port and pays a per-invocation `fork()`-emulation cost that lifts baseline bash startup from ~50ms (POSIX) to ~800ms (mingw64). The POSIX-bash row remains the canonical 500ms budget for Linux / macOS / WSL hosts; the per-platform classification is enforced at audit time by the bench driver's host-detection logic. Empirical evidence: a 5-run mean of 1004ms (min 960ms, max 1042ms) on a Windows Git Bash mingw64 host against the prior 500ms uniform budget.
 
+The `Invoke-ScriptAnalyzer` verifier lists `ParseError` in `-Severity` because PSScriptAnalyzer reports syntax errors at that severity. A list of only `Error,Warning` drops them, so a script that does not parse would lint clean.
+
+The verifier exits 1 when the analyzer returns any diagnostic record. A bare `Invoke-ScriptAnalyzer` call exits 0 even when it reports findings, and `-EnableExit` exits 0 at 256 findings on Linux and macOS, so neither fails reliably on a finding. When the host has a `PSScriptAnalyzerSettings.psd1`, add `-Settings <path-to-file>`. Without it, PSScriptAnalyzer does not read a settings file outside `hooks/lib`, per `rules/code-craft-shell.md` §7.
+
 ### 2. Quantitative Gates
 
-Every code change touching an artifact class above runs the relevant verifier; exit code 0 attests budget compliance. A budget exceedance surfaces as a high-priority finding under the Performance axis and routes to `memory/expertise-gap-log.md` for closure tracking.
+Every code change touching an artifact class above runs the relevant verifier; exit code 0 attests budget compliance, and for a linter row it also attests a clean lint. A budget exceedance surfaces as a high-priority finding under the Performance axis and routes to `memory/expertise-gap-log.md` for closure tracking.
 
 ### 3. Benchmark Suite
 

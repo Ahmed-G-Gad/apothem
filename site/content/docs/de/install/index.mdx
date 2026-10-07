@@ -197,13 +197,28 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 
 **Voraussetzungen:** VS Code, Node.js 18+ und System-Python 3.10+ im `PATH`.
 
-Die **Apothem**-Erweiterung installiert sich aus dem
-[Visual Studio Marketplace](https://marketplace.visualstudio.com/) — eine
-Erweiterung deckt VS Code und seine im Editor eingebettete Begleitassistenz-
-Oberfläche ab. Ihre Paletten-Befehle (`Apothem: Install`, `Verify`, `Update`,
-`Uninstall`, `Doctor`) führen dieselbe Engine über den konfigurierten Runner
-aus (standardmäßig `npx @ahmed-g-gad/apothem`; richte die Einstellung
-`apothem.runner` auf einen lokalen Checkout, um aus dem Quellcode zu laufen).
+Die **Apothem**-Erweiterung installiert sich aus einem `apothem.vsix`-Paket:
+`code --install-extension apothem.vsix` oder der Befehl *Install from VSIX…*
+des Editors. Der Release-Workflow signiert das Paket und hängt es an jedes
+GitHub-Release an. Releases, die erschienen sind, bevor der Workflow die
+Erweiterung paketierte, enthalten keines; fehlt es im neuesten Release, baue das
+Paket aus einem Checkout mit der in `.github/vsce/` festgeschriebenen
+vsce-Version, die Node.js 22 oder neuer benötigt: führe
+`npm ci --prefix .github/vsce --ignore-scripts` aus, dann
+`cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
+Ein Eintrag im [Visual Studio Marketplace](https://marketplace.visualstudio.com/)
+ist noch nicht veröffentlicht. Eine Erweiterung deckt VS Code und seine im Editor
+eingebettete Begleitassistenz-Oberfläche ab. Ihre Paletten-Befehle
+(`Apothem: Install`, `Verify`, `Update`, `Uninstall`, `Doctor`) führen dieselbe
+Engine über den konfigurierten Runner aus (standardmäßig
+`npx @ahmed-g-gad/apothem@<extension version>`, sodass die Erweiterung die
+Engine-Version ausführt, mit der sie ausgeliefert wurde; richte die
+Benutzereinstellung `apothem.runner` auf einen lokalen Checkout, um aus dem
+Quellcode zu laufen). Install, Verify, Update und Uninstall fragen, auf welches
+Harness sie wirken sollen, und bieten das Harness des Editors zuerst an; `all`
+ist eine Auswahl, nie die Vorgabe. Die Einstellung `apothem.runner` gilt
+maschinenweit, sodass ein Workspace sie nicht ändern kann, und die Erweiterung
+läuft nur in einem vertrauenswürdigen Workspace.
 
 **Verifizieren:** führe den Befehl **Apothem: Verify** aus der Befehlspalette
 des Editors aus oder aus einem Terminal:

@@ -2,7 +2,7 @@
 title: "Apothem v1.0.1 — version de lancement"
 description: "Apothem v1.0.1 est disponible — un unique profil partagé matérialisé dans dix-sept environnements d'assistant d'IA, plusieurs chemins d'installation et une version signée et attestée."
 machineTranslated: true
-sourceHash: "ea09bd4e5d932400"
+sourceHash: "8078642da3930d22"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -75,10 +75,12 @@ Plusieurs chemins d'installation, une seule CLI en dessous :
 
 4. **Plugins et extensions natifs des outils** — une extension Gemini CLI
    (`gemini extensions install https://github.com/ahmed-g-gad/apothem`), une
-   extension Qwen Code (`qwen extensions install ahmed-g-gad/apothem`), un
-   plugin Codex (`codex plugin marketplace add ahmed-g-gad/apothem`) et une
-   extension de la famille VS Code (Visual Studio Marketplace,
-   couvrant VS Code et GitHub Copilot).
+   extension Qwen Code (`qwen extensions install ahmed-g-gad/apothem`) et un
+   plugin Codex (`codex plugin marketplace add ahmed-g-gad/apothem`). Le code
+   source d'une extension de la famille VS Code, couvrant VS Code et GitHub
+   Copilot, se trouve dans le dossier `vscode-extension/` du dépôt. Elle n'est
+   pas publiée sur le Visual Studio Marketplace, et cette version ne joint aucun
+   paquet `.vsix`.
 
 ## Posture de chaîne d'approvisionnement
 
@@ -87,14 +89,16 @@ porte l'ensemble complet des preuves aux côtés du code :
 
 - sdist et wheel, vérifiés avant la publication.
 - Un SBOM CycloneDX.
-- Des bundles de signature sans clé Sigstore cosign pour chaque artefact.
+- Des bundles de signature sans clé Sigstore cosign pour le sdist, le wheel et
+  les archives par plateforme.
 - Une provenance de build SLSA-3, vérifiée à l'intérieur du flux de travail de
   la version lui-même.
 - Des archives de runtime par plateforme (darwin / linux / windows) avec un
   manifeste `SHA256SUMS` signé.
 
-L'étiquette de version est signée GPG, et le paquet npm est publié via Trusted
-Publishing (OIDC) avec provenance automatique.
+Le commit de version est signé GPG (`v1.0.1` est une étiquette légère, sans
+signature propre), et le paquet npm a été publié avec une provenance de build
+Sigstore produite dans GitHub Actions.
 
 ## Ce qu'il y a dans la boîte
 

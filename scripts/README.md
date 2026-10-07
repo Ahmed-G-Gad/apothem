@@ -17,7 +17,7 @@ Operator-, release-, install-, and dev-facing executables for the `apothem` repo
 | Script | Purpose |
 |--------|---------|
 | `rebuild-assets-resvg.py` | The single canonical asset generator: regenerate the raster brand assets in [`assets/`](../assets/) from the editable SVG sources in `assets/src/` via a `resvg` binary plus Pillow. Supports a `--check-only` mode; `tests/unit/test_assets_manifest_coverage.py` asserts it produces every icon the PWA manifest references. |
-| `regenerate-completions.sh` / `.ps1` | Re-emit the shell-completion scripts (`bash` / `zsh` / `fish`) into `src/apothem/cli/completions/` after a CLI surface change; byte-identical regeneration is the verification check. |
+| `regenerate-completions.sh` / `.ps1` | Re-emit the shell-completion scripts (`bash` / `zsh` / `fish` / `powershell`) into `src/apothem/cli/completions/` after a CLI surface change. Each golden is the SPDX header followed by `apothem completion <shell>`; byte-identical regeneration is the verification check. |
 | `regen-behavior-goldens.py` | Regenerate the behavior-diff golden corpus under `tests/fixtures/behavior-diff/` from the deterministic HOME-isolated install-driver and CLI oracles after an intended behavior change; the canonicalized comparison stays portable across platforms, so a non-empty `git diff` flags platform-form churn to review. |
 | `check_pip_pin_drift.py` | Assert every workflow's `PIP_PIN_VERSION` matches the canonical pin and no raw `pip==<version>` literal has been reintroduced. Invoked by CI. |
 | `check_site_version_parity.py` | Assert `site/package.json`'s version matches `pyproject.toml`'s. Both are hand-maintained and the site renders its copy in the landing footer, so drift is silent — the site simply advertises a release that is no longer shipping. Invoked by CI beside the pin-drift check. |
@@ -37,7 +37,7 @@ Operator-, release-, install-, and dev-facing executables for the `apothem` repo
 | `audit_all.py` | One-shot quality orchestrator: `ruff check`, `ruff format --check`, `mypy`, `pytest`, `validate_ecosystem`, `chaos_pass`, in that order. Aborts on the first failure unless `--continue-on-error` aggregates them. |
 | `auto_update.py` | Report the latest signed release tag the checkout has not incorporated; `--apply` fast-forwards to it. Updates target a signed tag rather than a moving branch, and `--apply` refuses an unsigned or tampered tag unless `APOTHEM_ALLOW_UNVERIFIED=1` downgrades the refusal to a warning. |
 | `memory_audit.py` | Health audit of the harness memory tiers — each `MEMORY.md` index's line budget, topic-index integrity, orphan topic files, and frontmatter-date freshness. `--fix` is the only mutating path and truncates an over-budget index, nothing else. |
-| `admin_merge.py` | Solo-maintainer self-merge ceremony. Main-branch protection requires one approving review and is admin-enforced, which by design stops the maintainer merging their own PR even with `--admin`. This runs the documented relax → merge → restore toggle inside `try`/`finally` so the protection is never left relaxed on failure. |
+| `admin_merge.py` | Solo-maintainer self-merge ceremony for a main-branch protection that requires an approving review and is admin-enforced, which by design stops the maintainer merging their own PR even with `--admin`. This runs the documented relax → merge → restore toggle inside `try`/`finally` so the protection is never left relaxed on failure. While the protection requires no approval, a plain `gh pr merge` works; while it requires one but is not admin-enforced, `gh pr merge --admin` works; either way the ceremony is unnecessary. Do not run it while `enforce_admins` is off: its `--admin` merge then also bypasses required status checks that are red. The [Branch protection](https://apothem.ahmedgad.com/docs/security/branch-protection-ruleset/) page records the live settings. |
 | `per-claim-register.md` | Not a script: the evidence register backing every threshold- or measurement-bearing claim in `src/apothem/rules/*.md`, one row per claim with its evidence pointer and verification stamp. |
 
 ## `installer/` — the canonical install scripts
@@ -49,6 +49,15 @@ The operator-facing bootstrap, update, and uninstall ceremonies — paired acros
 | `install.sh` / `install.ps1` / `install.bat` | Bootstrap the `apothem` package and materialize harness config. Idempotent; honors `APOTHEM_HARNESS` / `APOTHEM_REF` and sibling environment overrides. The `.bat` translates the documented POSIX flags (`--clean`, `--fresh`, `--dry-run`, `--yes`) to their PowerShell parameters, then delegates to the `.ps1`. |
 | `update.sh` / `update.ps1` / `update.bat` | Update an existing install in place. Driven by environment overrides only (no CLI flags), so the `.bat` forwards its arguments verbatim. |
 | `uninstall.sh` / `uninstall.ps1` / `uninstall.bat` | Remove the materialized harness config (via the engine) and the `apothem` PATH shim; confirms before removal unless `--yes`. Optional `--remove-source` deletes the managed clone. The `.bat` translates these POSIX flags — plus `--harness NAME` — to their PowerShell parameters, then delegates to the `.ps1`. |
+
+Every pull request lints these scripts with the commands the Pages build runs on its served copies (`.github/workflows/installer-lint.yml`). To run the same lint locally, from the repository root:
+
+```bash
+shellcheck --severity=error scripts/installer/*.sh
+pwsh -NoProfile -Command 'Invoke-ScriptAnalyzer -Path scripts/installer/ -Settings PSScriptAnalyzerSettings.psd1'
+```
+
+Any `Invoke-ScriptAnalyzer` output is a finding. CI runs both linters on the `ubuntu-24.04` image and logs their versions in its "Show linter versions" step; a newer local shellcheck can report findings CI does not. On Windows, PSScriptAnalyzer can report more alias findings, because names such as `ls` are aliases there.
 
 ## `release/` — release-engineering recipes
 

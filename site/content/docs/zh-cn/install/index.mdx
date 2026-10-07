@@ -168,12 +168,21 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 
 **前置条件：** VS Code、Node.js 18+，以及 `PATH` 上的系统 Python 3.10+。
 
-**Apothem** 扩展可从
-[Visual Studio Marketplace](https://marketplace.visualstudio.com/) 安装 ——一个
-扩展即覆盖 VS Code 及其编辑器内的伴随助手界面。它的命令面板命令（`Apothem: Install`、
-`Verify`、`Update`、`Uninstall`、`Doctor`）通过所配置的运行器执行同一个引擎
-（默认是 `npx @ahmed-g-gad/apothem`；将 `apothem.runner` 设置指向本地检出即可
-从源码运行）。
+**Apothem** 扩展通过 `apothem.vsix` 包安装：运行
+`code --install-extension apothem.vsix`，或使用编辑器的 *Install from VSIX…*
+命令。发布工作流会为该包签名，并将其附加到每个 GitHub Release。在工作流开始打包扩展
+之前发布的版本不含该包；如果最新版本缺少它，请使用 `.github/vsce/` 中锁定的 vsce
+版本（需要 Node.js 22 或更高版本）从检出构建该包：先运行
+`npm ci --prefix .github/vsce --ignore-scripts`，再运行
+`cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`。
+[Visual Studio Marketplace](https://marketplace.visualstudio.com/) 上的条目尚未发布。
+一个扩展即覆盖 VS Code 及其编辑器内的伴随助手界面。它的命令面板命令（`Apothem: Install`、
+`Verify`、`Update`、`Uninstall`、`Doctor`）通过所配置的运行器执行同一个引擎（默认是
+`npx @ahmed-g-gad/apothem@<extension version>`，因此扩展运行的是随其发布的引擎版本；
+将用户设置 `apothem.runner` 指向本地检出即可从源码运行）。Install、Verify、Update 和
+Uninstall 会询问要作用于哪个 harness，并优先提供编辑器自身的 harness；`all` 是一个选项，
+但从不是默认值。`apothem.runner` 设置的作用域为机器级，因此工作区无法更改它，并且扩展
+只在受信任的工作区中运行。
 
 **验证：** 从编辑器命令面板运行 **Apothem: Verify** 命令，或从终端运行：
 

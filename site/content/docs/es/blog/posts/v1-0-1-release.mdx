@@ -2,7 +2,7 @@
 title: "Apothem v1.0.1 — versión de lanzamiento"
 description: "Apothem v1.0.1 ya está disponible: un único perfil compartido materializado en diecisiete entornos de asistente de IA, varias rutas de instalación y una versión firmada y atestiguada."
 machineTranslated: true
-sourceHash: "ea09bd4e5d932400"
+sourceHash: "8078642da3930d22"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -75,10 +75,12 @@ Varias rutas de instalación, una sola CLI por debajo:
 4. **Plugins y extensiones nativos de cada herramienta** — una extensión de
    Gemini CLI
    (`gemini extensions install https://github.com/ahmed-g-gad/apothem`), una
-   extensión de Qwen Code (`qwen extensions install ahmed-g-gad/apothem`), un
-   plugin de Codex (`codex plugin marketplace add ahmed-g-gad/apothem`) y una
-   extensión de la familia VS Code (Visual Studio Marketplace, que
-   cubre VS Code y GitHub Copilot).
+   extensión de Qwen Code (`qwen extensions install ahmed-g-gad/apothem`) y un
+   plugin de Codex (`codex plugin marketplace add ahmed-g-gad/apothem`). El
+   código fuente de una extensión de la familia VS Code, que cubre VS Code y
+   GitHub Copilot, está en la carpeta `vscode-extension/` del repositorio. No
+   figura en el Visual Studio Marketplace, y esta versión no adjunta ningún
+   paquete `.vsix`.
 
 ## Postura de cadena de suministro
 
@@ -87,14 +89,16 @@ lleva el conjunto completo de evidencia junto al código:
 
 - sdist y wheel, verificados antes de publicar.
 - Un SBOM CycloneDX.
-- Paquetes de firma sin clave de Sigstore cosign para cada artefacto.
+- Paquetes de firma sin clave de Sigstore cosign para el sdist, el wheel y los
+  archivos por plataforma.
 - Procedencia de compilación SLSA-3, verificada dentro del propio flujo de
   trabajo de la versión.
 - Archivos de runtime por plataforma (darwin / linux / windows) con un
   manifiesto `SHA256SUMS` firmado.
 
-La etiqueta de la versión está firmada con GPG, y el paquete npm se publica
-mediante Trusted Publishing (OIDC) con procedencia automática.
+El commit de la versión está firmado con GPG (`v1.0.1` es una etiqueta ligera,
+sin firma propia), y el paquete npm se publicó con procedencia de compilación
+de Sigstore generada en GitHub Actions.
 
 ## Qué hay en la caja
 

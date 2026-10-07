@@ -184,13 +184,26 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 
 **前提条件：** VS Code、Node.js 18+、および `PATH` 上のシステム Python 3.10+。
 
-**Apothem** 拡張機能は
-[Visual Studio Marketplace](https://marketplace.visualstudio.com/)
-からインストールできます——1 つの拡張機能で VS Code とそのエディター内コンパニオン
+**Apothem** 拡張機能は `apothem.vsix` パッケージからインストールします。
+`code --install-extension apothem.vsix` を実行するか、エディターの
+*Install from VSIX…* コマンドを使います。リリースワークフローがパッケージに署名し、
+各 GitHub Release に添付します。ワークフローが拡張機能をパッケージ化する前に公開された
+リリースには含まれません。最新のリリースに含まれていない場合は、`.github/vsce/` に
+ロックされた vsce リリース（Node.js 22 以降が必要）を使ってチェックアウトから
+パッケージをビルドします。`npm ci --prefix .github/vsce --ignore-scripts` を実行し、
+続いて
+`cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`
+を実行します。[Visual Studio Marketplace](https://marketplace.visualstudio.com/)
+への掲載はまだ公開されていません。1 つの拡張機能で VS Code とそのエディター内コンパニオン
 アシスタント面をカバーします。そのパレットコマンド（`Apothem: Install`、`Verify`、
-`Update`、`Uninstall`、`Doctor`）は、設定されたランナー（デフォルトでは
-`npx @ahmed-g-gad/apothem`。`apothem.runner` 設定をローカルチェックアウトに向ければ
-ソースから実行できます）を通して同じエンジンを実行します。
+`Update`、`Uninstall`、`Doctor`）は、設定されたランナーを通して同じエンジンを実行します
+（デフォルトは `npx @ahmed-g-gad/apothem@<extension version>` で、拡張機能は出荷時と
+同じバージョンのエンジンを実行します。ソースから実行するには、ユーザー設定
+`apothem.runner` をローカルチェックアウトに向けます）。Install、Verify、Update、
+Uninstall は対象のハーネスを尋ね、エディター自身のハーネスを最初に提示します。`all` は
+選択肢の 1 つであり、デフォルトにはなりません。`apothem.runner` 設定はマシンスコープの
+ため、ワークスペースからは変更できません。また、拡張機能は信頼されたワークスペースでのみ
+動作します。
 
 **検証：** エディターのコマンドパレットから **Apothem: Verify** コマンドを実行するか、
 ターミナルから実行します。

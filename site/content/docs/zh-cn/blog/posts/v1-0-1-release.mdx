@@ -2,7 +2,7 @@
 title: "Apothem v1.0.1 —— 发布版本"
 description: "Apothem v1.0.1 现已发布 —— 一份共享配置档案物化为十七种编码助手、多条安装路径，以及一个已签名、带凭证的版本。"
 machineTranslated: true
-sourceHash: "ea09bd4e5d932400"
+sourceHash: "8078642da3930d22"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -70,10 +70,11 @@ Apothem 会干净地卸载 —— 不留下任何遗留文件。
 
 4. **工具原生插件与扩展** —— 一个 Gemini CLI 扩展
    （`gemini extensions install https://github.com/ahmed-g-gad/apothem`）、一个
-   Qwen Code 扩展（`qwen extensions install ahmed-g-gad/apothem`）、一个
-   Codex 插件（`codex plugin marketplace add ahmed-g-gad/apothem`），以及一个
-   VS Code 系扩展（Visual Studio Marketplace，覆盖
-   VS Code 与 GitHub Copilot）。
+   Qwen Code 扩展（`qwen extensions install ahmed-g-gad/apothem`），以及一个
+   Codex 插件（`codex plugin marketplace add ahmed-g-gad/apothem`）。覆盖
+   VS Code 与 GitHub Copilot 的 VS Code 系扩展，其源代码位于仓库的
+   `vscode-extension/` 目录中。该扩展未在 Visual Studio Marketplace 上架，
+   本次发布也未附带打包好的 `.vsix`。
 
 ## 供应链态势
 
@@ -82,12 +83,13 @@ Apothem 会干净地卸载 —— 不留下任何遗留文件。
 
 - sdist 与 wheel，在发布前校验过。
 - 一份 CycloneDX SBOM。
-- 为每个产物生成的 Sigstore cosign 无密钥签名包。
+- 为 sdist、wheel 与各平台运行时归档生成的 Sigstore cosign 无密钥签名包。
 - SLSA-3 构建溯源，在发布工作流内部本身已经过验证。
 - 平台运行时归档（darwin / linux / windows），附带一份已签名的
   `SHA256SUMS` 清单。
 
-版本标签经 GPG 签名，npm 包通过受信任发布（OIDC）发布，并自动附带溯源。
+版本提交经 GPG 签名（`v1.0.1` 是轻量标签，本身没有签名），npm 包发布时附带在
+GitHub Actions 中生成的 Sigstore 构建溯源。
 
 ## 箱内之物
 

@@ -2,7 +2,7 @@
 title: "Apothem v1.0.1 —— ローンチリリース"
 description: "Apothem v1.0.1 が利用可能になりました —— 1 つの共有プロファイルを 17 の AI アシスタントハーネスへマテリアライズし、複数のインストール経路と、署名・証明されたリリースを備えています。"
 machineTranslated: true
-sourceHash: "ea09bd4e5d932400"
+sourceHash: "8078642da3930d22"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -75,9 +75,11 @@ Apothem は `~/.config/apothem/profile.yaml` にある単一の共有プロフ�
 4. **ツールネイティブなプラグインと拡張機能** —— Gemini CLI 拡張機能
    （`gemini extensions install https://github.com/ahmed-g-gad/apothem`）、
    Qwen Code 拡張機能（`qwen extensions install ahmed-g-gad/apothem`）、
-   Codex プラグイン（`codex plugin marketplace add ahmed-g-gad/apothem`）、
-   そして VS Code 系の拡張機能（Visual Studio Marketplace。
-   VS Code と GitHub Copilot をカバー）。
+   そして Codex プラグイン（`codex plugin marketplace add ahmed-g-gad/apothem`）。
+   VS Code と GitHub Copilot をカバーする VS Code 系の拡張機能のソースは、
+   リポジトリの `vscode-extension/` フォルダーにあります。この拡張機能は
+   Visual Studio Marketplace には掲載されておらず、このリリースにはパッケージ済みの
+   `.vsix` は添付されていません。
 
 ## サプライチェーンの姿勢
 
@@ -86,13 +88,15 @@ Apothem は `~/.config/apothem/profile.yaml` にある単一の共有プロフ�
 
 - sdist と wheel。公開前に検査済み。
 - CycloneDX SBOM。
-- すべての成果物に対する Sigstore cosign のキーレス署名バンドル。
+- sdist、wheel、各プラットフォームアーカイブに対する Sigstore cosign の
+  キーレス署名バンドル。
 - SLSA-3 ビルド来歴。リリースワークフローの内部そのもので検証済み。
 - プラットフォームランタイムアーカイブ（darwin / linux / windows）。署名付き
   `SHA256SUMS` マニフェスト付き。
 
-リリースタグは GPG 署名され、npm パッケージは Trusted Publishing（OIDC）を通じて
-自動的な来歴付きで公開されます。
+リリースのコミットは GPG 署名されています（`v1.0.1` は軽量タグで、タグ自体には
+署名がありません）。npm パッケージは、GitHub Actions で生成された Sigstore の
+ビルド来歴付きで公開されました。
 
 ## 箱の中身
 

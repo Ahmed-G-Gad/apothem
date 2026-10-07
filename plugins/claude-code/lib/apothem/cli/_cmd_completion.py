@@ -132,4 +132,7 @@ def completion(shell: str) -> None:
             f"Supported shells: {', '.join(_COMPLETION_SHELLS)}."
         )
     comp = completion_cls(main, {}, _COMPLETION_PROG_NAME, _COMPLETION_COMPLETE_VAR)
-    click.echo(comp.source())
+    # Every source template already ends in a newline. Click's own
+    # ``<shell>_source`` instruction prints it with nl=False, so do the same:
+    # a second newline left a trailing blank line in the emitted script.
+    click.echo(comp.source(), nl=False)

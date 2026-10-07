@@ -14,20 +14,41 @@ abort classes:
   override on a possible-tampering signal.
 
 Both tests assert the abort happens before any configuration materializes.
+A stub verifier replays GnuPG's German output for both classes, to show the
+split rests on GnuPG's status lines rather than its translated messages.
 The fixture repository is minimal: the gate runs right after the
 ``is_apothem_source`` shape check (``src/apothem`` + ``pyproject.toml``), so
 no working engine tree is required.
+
+Every git process here, the fixture setup's and the installer's, runs without
+the host's git configuration (``tests._shared.git_env``). A developer's
+``gpg.format ssh`` would otherwise turn the fixture's ``git tag -s`` into an
+SSH signature, which ``git verify-tag`` rejects for want of an allowed-signers
+file instead of reporting the missing OpenPGP key. An autouse fixture plants
+such configuration on every layer git reads, so a leak fails on any host.
+
+The installer runs on the interpreter running these tests, never on the
+host's ``python3``. Given ``--yes``, install.sh pip-installs a missing click or
+rich into the first ``python3`` on PATH, so a host ``python3`` without rich
+would gain packages from this file, and the run without ``--yes`` would pass
+only after a ``--yes`` run had installed rich. A shim for ``sys.executable``
+leads the installer's PATH, pip gets no package source, and the tests skip
+when that interpreter cannot import click and rich. An autouse fixture puts a
+``python3`` without them first on the host PATH, so a leak fails on any host.
 """
 
 from __future__ import annotations
 
 import os
+import shlex
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
+
+from tests._shared.git_env import hermetic_git_env
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 INSTALLER = REPO_ROOT / "scripts" / "installer" / "install.sh"
@@ -41,6 +62,26 @@ OVERRIDE_SUGGESTION = "Set APOTHEM_ALLOW_UNVERIFIED=1"
 # Subprocess wall-clock ceiling: local clone + abort, no materialization.
 INSTALL_TIMEOUT_SECONDS = 120
 
+# GnuPG 2.4.4 verification results under de_DE.UTF-8, abridged:
+# (status lines, stderr). git passes --status-fd=1, so the status lines arrive
+# on stdout; they read the same in every locale, while the stderr text is
+# translated.
+LOCALIZED_GPG_RESULTS = {
+    "missing-key": (
+        "[GNUPG:] NEWSIG signer@example.invalid\n"
+        "[GNUPG:] ERRSIG 984AE72EA84995CA 22 10 00 1791351771 9 "
+        "C2CD460ED9DCEF33C51123AE984AE72EA84995CA\n"
+        "[GNUPG:] NO_PUBKEY 984AE72EA84995CA\n",
+        "gpg: Signatur kann nicht geprüft werden: Kein öffentlicher Schlüssel\n",
+    ),
+    "bad-signature": (
+        "[GNUPG:] NEWSIG signer@example.invalid\n"
+        "[GNUPG:] BADSIG 984AE72EA84995CA Fixture Signer <signer@example.invalid>\n",
+        'gpg: FALSCHE Signatur von "Fixture Signer <signer@example.invalid>"'
+        " [ultimativ]\n",
+    ),
+}
+
 pytestmark = pytest.mark.skipif(
     shutil.which("bash") is None or sys.platform == "win32",
     reason=(
@@ -51,12 +92,79 @@ pytestmark = pytest.mark.skipif(
 )
 
 
+@pytest.fixture(autouse=True)
+def _host_git_config_that_must_not_leak(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Plant host git configuration that derails these tests if it leaks in.
+
+    CI runners carry no such configuration, so without this a regression in
+    the hermetic environment would pass there. The global and system files,
+    the ``git -c`` and ``GIT_CONFIG_COUNT`` environment channels, and the
+    legacy ``GIT_CONFIG`` file override all carry ``gpg.format ssh``, which
+    makes the fixture's ``git tag -s`` sign with SSH, and a ``gpg.program``
+    that does not exist, which makes ``git verify-tag`` fail before gpg can
+    report the absent key. A leaked ``GIT_CONFIG`` also sends the fixture's
+    ``git config`` writes to that file instead of the fixture repository.
+    """
+    missing = (tmp_path / "no-such-signing-program").as_posix()
+    hostile = tmp_path / "host-gitconfig"
+    hostile.write_text(
+        f"[gpg]\n\tformat = ssh\n\tprogram = {missing}\n", encoding="utf-8"
+    )
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(hostile))
+    monkeypatch.setenv("GIT_CONFIG_SYSTEM", str(hostile))
+    monkeypatch.delenv("GIT_CONFIG_NOSYSTEM", raising=False)
+    monkeypatch.setenv("GIT_CONFIG", str(hostile))
+    monkeypatch.setenv(
+        "GIT_CONFIG_PARAMETERS", f"'gpg.format'='ssh' 'gpg.program'='{missing}'"
+    )
+    monkeypatch.setenv("GIT_CONFIG_COUNT", "2")
+    monkeypatch.setenv("GIT_CONFIG_KEY_0", "gpg.format")
+    monkeypatch.setenv("GIT_CONFIG_VALUE_0", "ssh")
+    monkeypatch.setenv("GIT_CONFIG_KEY_1", "gpg.program")
+    monkeypatch.setenv("GIT_CONFIG_VALUE_1", missing)
+
+
+@pytest.fixture(autouse=True)
+def _host_python3_that_must_not_be_used(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Put a host ``python3`` without click, rich, or pip first on PATH.
+
+    CI's ``python3`` carries click and rich, so without this an installer run
+    that reached the host's ``python3`` would pass there. This one passes the
+    installer's version check but starts the interpreter with ``-S``, which
+    leaves out site-packages: a run that reaches it stops at the prerequisite
+    check, and it has no pip to install with.
+    """
+    host_bin = tmp_path / "host-python-bin"
+    host_bin.mkdir()
+    _write_python_shim(host_bin / "python3", "-S")
+    monkeypatch.setenv(
+        "PATH", f"{host_bin}{os.pathsep}{os.environ.get('PATH', os.defpath)}"
+    )
+
+
+def _write_python_shim(shim: Path, *options: str) -> None:
+    """Write SHIM, a script that runs this test's interpreter with OPTIONS.
+
+    It execs rather than links: a venv interpreter finds its packages through
+    the pyvenv.cfg beside the path it was started from, so a symlink placed
+    elsewhere would run the base interpreter.
+    """
+    command = shlex.join([sys.executable, *options])
+    shim.write_text(f'#!/bin/sh\nexec {command} "$@"\n', encoding="utf-8")
+    shim.chmod(0o755)
+
+
 def _git(args: list[str], cwd: Path, env: dict[str, str] | None = None) -> str:
-    """Run a git command in CWD and return stdout, failing loudly."""
+    """Run a git command in CWD, without host git config, and return stdout,
+    failing loudly. ENV (default ``os.environ``) is the base environment."""
     result = subprocess.run(
         ["git", *args],
         cwd=str(cwd),
-        env=env,
+        env=hermetic_git_env(env),
         capture_output=True,
         text=True,
         timeout=60,
@@ -95,10 +203,12 @@ def _make_fixture_repo(root: Path) -> Path:
 
 
 def _installer_env(tmp_path: Path, fixture: Path, ref: str) -> dict[str, str]:
-    """Hermetic environment: isolated HOME, fixture repo as the clone remote."""
+    """Hermetic environment: isolated HOME, no host git config, this test's
+    interpreter as the installer's python3, fixture repo as the clone
+    remote."""
     home = tmp_path / "home"
     home.mkdir(exist_ok=True)
-    env = dict(os.environ)
+    env = hermetic_git_env()
     for key in list(env):
         if key.startswith("APOTHEM_"):
             del env[key]
@@ -108,7 +218,45 @@ def _installer_env(tmp_path: Path, fixture: Path, ref: str) -> dict[str, str]:
     env["APOTHEM_REPO"] = str(fixture)
     env["APOTHEM_REF"] = ref
     env["APOTHEM_HOME"] = str(tmp_path / "apothem-home")
+    _use_test_python(env, tmp_path / "python-shim")
     return env
+
+
+def _use_test_python(env: dict[str, str], shim_dir: Path) -> None:
+    """Make this test's interpreter the installer's ``python3`` and leave pip
+    no package source; skip when that interpreter lacks click or rich.
+
+    install.sh runs the first ``python3`` on PATH, so a shim for
+    ``sys.executable`` goes first. Should a run still reach pip, it inherits
+    no ``PIP_*`` setting, reads no configuration file, and uses no index, so
+    the install fails instead of changing an interpreter. The probe repeats
+    install.sh's import check with the same interpreter and environment.
+    """
+    shim_dir.mkdir(exist_ok=True)
+    shim = shim_dir / "python3"
+    _write_python_shim(shim)
+    env["PATH"] = f"{shim_dir}{os.pathsep}{env.get('PATH', os.defpath)}"
+    for key in [name for name in env if name.startswith("PIP_")]:
+        del env[key]
+    env["PIP_CONFIG_FILE"] = os.devnull
+    env["PIP_NO_INDEX"] = "1"
+    probe = subprocess.run(
+        [str(shim), "-c", "import click, rich"],
+        cwd=str(shim_dir),
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    if probe.returncode != 0:
+        lines = probe.stderr.strip().splitlines()
+        cause = lines[-1] if lines else f"exit code {probe.returncode}"
+        pytest.skip(
+            f"install.sh needs click and rich, and {sys.executable} cannot "
+            "import them with the installer's isolated HOME and no PYTHONPATH "
+            f"({cause}); install the dev dependencies into it"
+        )
 
 
 def _stage_installer(env: dict[str, str]) -> Path:
@@ -140,6 +288,61 @@ def _run_installer(env: dict[str, str]) -> subprocess.CompletedProcess[str]:
         text=True,
         timeout=INSTALL_TIMEOUT_SECONDS,
     )
+
+
+def _make_stub_signed_tag(fixture: Path, tag: str) -> None:
+    """Point TAG at a tag object that carries an OpenPGP signature block.
+
+    The block is never checked: the installer's git hands it to the stub
+    verifier, which replays a canned GnuPG result. No key or gpg is needed.
+    """
+    commit = _git(["rev-parse", "HEAD"], cwd=fixture).strip()
+    tag_file = fixture.parent / f"{tag}.tag"
+    tag_file.write_text(
+        f"object {commit}\n"
+        "type commit\n"
+        f"tag {tag}\n"
+        "tagger Fixture <fixture@example.invalid> 1700000000 +0000\n"
+        "\n"
+        "signed release\n"
+        "-----BEGIN PGP SIGNATURE-----\n"
+        "\n"
+        "c3R1Yg==\n"
+        "-----END PGP SIGNATURE-----\n",
+        encoding="utf-8",
+    )
+    tag_sha = _git(["hash-object", "-t", "tag", "-w", str(tag_file)], cwd=fixture)
+    _git(["update-ref", f"refs/tags/{tag}", tag_sha.strip()], cwd=fixture)
+
+
+def _use_stub_gpg(env: dict[str, str], status: str, human: str) -> None:
+    """Make the installer's git verify signatures with a stub gpg program.
+
+    The stub drains the payload git writes to its stdin, prints STATUS on
+    stdout (git's --status-fd=1) and HUMAN on stderr, and exits 1, as gpg
+    does when a signature does not verify. It is set as gpg.program in the
+    isolated HOME's global git config.
+    """
+    stub_dir = Path(env["HOME"]).parent / "stub-gpg"
+    stub_dir.mkdir()
+    (stub_dir / "status.txt").write_text(status, encoding="utf-8")
+    (stub_dir / "human.txt").write_text(human, encoding="utf-8")
+    stub = stub_dir / "gpg"
+    stub.write_text(
+        "#!/bin/sh\n"
+        "cat >/dev/null\n"
+        f"cat {shlex.quote(str(stub_dir / 'status.txt'))}\n"
+        f"cat {shlex.quote(str(stub_dir / 'human.txt'))} >&2\n"
+        "exit 1\n",
+        encoding="utf-8",
+    )
+    stub.chmod(0o755)
+    gitconfig = Path(env["HOME"]) / ".gitconfig"
+    _git(
+        ["config", "--file", str(gitconfig), "gpg.program", str(stub)],
+        cwd=stub_dir,
+    )
+    env["GIT_CONFIG_GLOBAL"] = str(gitconfig)
 
 
 def _assert_aborted_before_materialization(env: dict[str, str]) -> None:
@@ -207,8 +410,16 @@ def test_signed_tag_with_absent_key_prints_import_guidance(tmp_path: Path) -> No
     if keygen.returncode != 0:
         pytest.skip(f"gpg key generation unavailable: {keygen.stderr.strip()}")
 
+    # Pin the OpenPGP format and the gpg binary that generated the key. A host
+    # whose git config signs with SSH (gpg.format=ssh) or routes signing
+    # through another program would otherwise leave an SSH signature here,
+    # which the installer reports as a bad signature, not a missing key.
     _git(
         [
+            "-c",
+            "gpg.format=openpgp",
+            "-c",
+            "gpg.program=gpg",
             "-c",
             "user.signingkey=signer@example.invalid",
             "-c",
@@ -221,6 +432,10 @@ def test_signed_tag_with_absent_key_prints_import_guidance(tmp_path: Path) -> No
         ],
         cwd=fixture,
         env=gpg_env,
+    )
+    tag_object = _git(["cat-file", "tag", "v9.9.8"], cwd=fixture)
+    assert "-----BEGIN PGP SIGNATURE-----" in tag_object, (
+        f"fixture tag is not OpenPGP-signed\n{tag_object}"
     )
 
     # Verify against a keyring that lacks the signer's public key.
@@ -236,6 +451,51 @@ def test_signed_tag_with_absent_key_prints_import_guidance(tmp_path: Path) -> No
     assert MISSING_KEY_MARKER in combined, combined
     assert KEY_IMPORT_MARKER in combined, combined
     assert BAD_SIGNATURE_MARKER not in combined, combined
+    assert OVERRIDE_SUGGESTION not in combined, combined
+    _assert_aborted_before_materialization(env)
+
+
+@pytest.mark.parametrize(
+    ("gpg_result", "expected", "unexpected"),
+    [
+        pytest.param(
+            "missing-key",
+            (MISSING_KEY_MARKER, KEY_IMPORT_MARKER),
+            (BAD_SIGNATURE_MARKER,),
+            id="missing-key",
+        ),
+        pytest.param(
+            "bad-signature",
+            (BAD_SIGNATURE_MARKER,),
+            (MISSING_KEY_MARKER, KEY_IMPORT_MARKER),
+            id="bad-signature",
+        ),
+    ],
+)
+def test_abort_class_does_not_depend_on_gpg_language(
+    tmp_path: Path,
+    gpg_result: str,
+    expected: tuple[str, ...],
+    unexpected: tuple[str, ...],
+) -> None:
+    """GnuPG translates its messages, so a missing key reads "Kein
+    öffentlicher Schlüssel" under a German locale. The installer must still
+    tell a missing key from a bad signature, so it reads the status lines,
+    which GnuPG does not translate."""
+    fixture = _make_fixture_repo(tmp_path)
+    _make_stub_signed_tag(fixture, "v9.9.7")
+    env = _installer_env(tmp_path, fixture, "v9.9.7")
+    status, human = LOCALIZED_GPG_RESULTS[gpg_result]
+    _use_stub_gpg(env, status, human)
+
+    result = _run_installer(env)
+
+    combined = result.stdout + result.stderr
+    assert result.returncode != 0, f"installer should abort\n{combined}"
+    for marker in expected:
+        assert marker in combined, combined
+    for marker in unexpected:
+        assert marker not in combined, combined
     assert OVERRIDE_SUGGESTION not in combined, combined
     _assert_aborted_before_materialization(env)
 

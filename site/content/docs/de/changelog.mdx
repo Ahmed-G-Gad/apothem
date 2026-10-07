@@ -269,6 +269,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **The one-shot installer installs and verifies in one run**, and the
   installers emit no ANSI codes when output is not a terminal.
 - **Piped output and `--help` epilogs keep their line structure.**
+- **`apothem completion <shell>` no longer ends the script with a blank
+  line.** The output for `bash`, `zsh`, `fish`, and `powershell` now ends in
+  a single newline, so appending it to a shell profile adds no extra line.
 - **Profiles without a version are read as version 1.**
 - **Qwen Code hook timeouts are written in seconds** and the interpreter path
   is quoted.
@@ -298,6 +301,18 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   exists, and the README said each release attaches a signed `.vsix`, which
   v1.1.0 does not. Both now say how to install the package and how to build
   it from a checkout.
+- **The branch protection page matches the settings on `main`.** It described
+  a ruleset with four required checks (`ci`, `Scorecard`, `CodeQL`,
+  `pip-audit`), one required approval, latest-push approval, and "require
+  branches to be up to date". `main` uses a classic protection rule that
+  requires 12 checks (the ten `quality` cells, `coverage`, and
+  `Require Signed-off-by`) and 0 approvals, does not bind admins, and does not
+  require an up-to-date branch. The page now lists those exact settings and,
+  separately, the clean-install, harness-matrix, and installer-lint checks
+  still to be added. The solo-maintainer merge runbook, `CONTRIBUTING.md`, and
+  the Scorecard page now describe the same review settings, and the runbook
+  and `admin_merge.py` warn that an `--admin` merge also bypasses red required
+  checks while `enforce_admins` is off.
 - **The wheel and sdist carry the full hook corpus.** They left out
   `hooks/hooks.json` and the hook READMEs that every other channel ships.
 - **Path-filtered rules no longer load in every Claude Code session.** Claude
@@ -344,6 +359,29 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   the plugin tree's vendored code to its authors.
 - **SECURITY.md lists 1.1.x as supported**, the release badge reads the tag
   from full history, and the CHANGELOG links resolve.
+- **The installers give key-import guidance in any language.** When the
+  maintainer key was missing from the local keyring and GnuPG printed its
+  messages in another language, `install.sh`, `install.ps1` and `update.sh`
+  reported the signed tag as possibly tampered with, because they matched
+  GnuPG's English text. They now read GnuPG's status lines
+  (`[GNUPG:] NO_PUBKEY`), which do not change with the language.
+- **The shell rules' PowerShell lint command reports syntax errors.** The
+  `code-craft-shell` and `performance-discipline` rules ran
+  `Invoke-ScriptAnalyzer -Severity Error,Warning`. PSScriptAnalyzer reports
+  a syntax error at severity `ParseError`, and an explicit `-Severity` list
+  without it drops the error, so a script that did not parse passed clean.
+  Both rules now pass `-Severity Error,Warning,ParseError`.
+- **The shell rules' PowerShell lint check fails on a finding.** The
+  `code-craft-shell` rule said `Invoke-ScriptAnalyzer ...` "exits 0" and that
+  the host's `PSScriptAnalyzerSettings.psd1` "is honored". Without
+  `-EnableExit` the cmdlet exits 0 even when it reports findings, and without
+  `-Settings` it reads a settings file only from the `-Path` folder, never a
+  parent folder. The rule now passes when the analyzer returns no records,
+  runs a command that exits 1 on any record, and passes `-Settings` when the
+  host has a settings file. The command also exits 1 when the script, the
+  settings file or the PSScriptAnalyzer module is missing, under both
+  `pwsh -Command` and `pwsh -File`. The `performance-discipline` §1.1
+  verifier exits 1 on any record in the same way.
 
 ### Security
 
@@ -381,17 +419,6 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [1.1.0] - 2026-08-16
 
-### Added
-
-- **Per-folder README file coverage is now gated.** A folder's README is its
-  operating contract, so its file table is load-bearing: a reader who cannot
-  find a module there concludes it does not exist. Nothing held that table
-  against the folder's actual contents, and the drift is invisible from both
-  sides — you do not notice a missing row while reading, nor the README while
-  adding a file. `scripts/dev/check_readme_file_coverage.py` reports every
-  shipped file its folder's README never names, and runs `--strict` in CI
-  across all 31 folders.
-
 ### Fixed
 
 - **`status` and `verify` no longer swallow a profile that fails to load.**
@@ -407,28 +434,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   with an unguarded `Join-Path $env:ProgramFiles`, which is unset under
   PowerShell on Linux and macOS. The list was built eagerly, so the throw
   pre-empted even the PATH probe that would have succeeded.
-- **A duplicate `run:` key made the CI workflow unparseable.** Adding the README
-  coverage gate consumed the `Install release toolchain` step header and left
-  its `run:` line attached to the new step. GitHub rejects a workflow file with
-  a duplicate mapping key outright, so runs ended immediately with no jobs and
-  no logs, and the release build lost its toolchain install.
-- **`migrate-workspace` honored a custom directory name for its target but not
-  its discovery**, so a non-default workspace name was written correctly and
-  then never found again.
+- **`migrate-workspace` reports a legacy data home it failed to remove.** The
+  removal ignored errors, so when a locked file or a denied permission kept the
+  directory on disk, the command still reported a clean migration and the next
+  run found the same directory again. It now adds a note that names the
+  directory: its records are already merged into the shared store and kept in
+  the backup, so the directory can be deleted by hand.
 - Documentation corrections across the conformity gate's hook scope, the design
   tokens' consumers, the OpenCode example's provenance, two harness convention
   pins, and four architecture pages that were unreachable from ten locale
   indexes.
-
-### Changed
-
-- **Kimi Code's uninstall routes through the shared project-scope factory.** It
-  was the one project-scope adapter still deriving its project root by walking
-  up from the output path — the hardcoded ascent the factory exists to remove.
-- **`LearningStore._append` is now `append_signal`.** It was reached across a
-  module boundary by `workspace_migration` and four test modules while named
-  private; the rename matches how it is actually used, and its docstring now
-  states what it deliberately does not do.
 
 ## [1.0.2] - 2026-08-14
 
@@ -453,10 +468,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   installed plugin files.
 - **The detection pseudocode in the canonical option-shapes rule is fenced as
   text rather than Python.** The block uses the hyphenated schema field names the
-  same document defines in its field table, so formatting it as Python rewrote
-  `read(probe-record-path)` into a subtraction expression and changed what the
-  documentation said. Correcting the fence language leaves the pseudocode
-  byte-identical and restores the format gate to green.
+  same document defines in its field table, which are not valid Python.
+  Correcting the fence language leaves the pseudocode byte-identical.
 
 ## [1.0.1] - 2026-07-07
 
@@ -491,10 +504,12 @@ harnesses behind a conformity governance gate and signed, reproducible releases.
   its cited peer — before any surface is materialized.
 - **Install paths.** The Claude Code plugin
   (`/plugin marketplace add ahmed-g-gad/apothem`), a Gemini CLI extension, a
-  Qwen Code extension, a Codex plugin, a VS Code-family extension on the Visual
-  Studio Marketplace, the npm shim (`npx @ahmed-g-gad/apothem <command>`), and
-  the one-shot POSIX and PowerShell installers (`install.sh` / `install.ps1`)
-  with matching update and uninstall scripts.
+  Qwen Code extension, a Codex plugin, the npm shim
+  (`npx @ahmed-g-gad/apothem <command>`), and the one-shot POSIX and PowerShell
+  installers (`install.sh` / `install.ps1`) with matching update and uninstall
+  scripts. The source of a VS Code-family extension is in `vscode-extension/`;
+  this release attaches no packaged `.vsix`, and the extension is not listed on
+  the Visual Studio Marketplace.
 
 ### Changed
 

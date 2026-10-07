@@ -193,13 +193,27 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 
 **Prasyarat:** VS Code, Node.js 18+, dan Python sistem 3.10+ pada `PATH`.
 
-Ekstensi **Apothem** dipasang dari
-[Visual Studio Marketplace](https://marketplace.visualstudio.com/) — satu
-ekstensi mencakup VS Code dan permukaan asisten pendampingnya di dalam editor.
-Perintah paletnya (`Apothem: Install`, `Verify`, `Update`, `Uninstall`,
-`Doctor`) menjalankan mesin yang sama melalui runner yang dikonfigurasi
-(`npx @ahmed-g-gad/apothem` secara bawaan; arahkan pengaturan `apothem.runner`
-ke checkout lokal untuk berjalan dari sumber).
+Ekstensi **Apothem** dipasang dari paket `apothem.vsix`:
+`code --install-extension apothem.vsix`, atau perintah *Install from VSIX…* di
+editor. Alur kerja rilis menandatangani paket tersebut dan melampirkannya ke
+setiap GitHub Release. Rilis yang terbit sebelum alur kerja mengemas ekstensi
+tidak menyertakannya; jika rilis terbaru tidak memilikinya, bangun paket dari
+checkout dengan rilis vsce yang dikunci di `.github/vsce/`, yang memerlukan
+Node.js 22 atau lebih baru: jalankan
+`npm ci --prefix .github/vsce --ignore-scripts`, lalu
+`cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
+Listing di [Visual Studio Marketplace](https://marketplace.visualstudio.com/)
+belum diterbitkan. Satu ekstensi mencakup VS Code dan permukaan asisten
+pendampingnya di dalam editor. Perintah paletnya (`Apothem: Install`, `Verify`,
+`Update`, `Uninstall`, `Doctor`) menjalankan mesin yang sama melalui runner yang
+dikonfigurasi (`npx @ahmed-g-gad/apothem@<extension version>` secara bawaan,
+sehingga ekstensi menjalankan versi mesin yang dikirim bersamanya; arahkan
+pengaturan pengguna `apothem.runner` ke checkout lokal untuk berjalan dari
+sumber). Install, Verify, Update, dan Uninstall menanyakan harness mana yang
+akan ditangani dan menawarkan harness milik editor itu sendiri lebih dulu;
+`all` adalah salah satu pilihan, tidak pernah menjadi bawaan. Pengaturan
+`apothem.runner` berlingkup mesin, sehingga workspace tidak dapat mengubahnya,
+dan ekstensi hanya berjalan di workspace tepercaya.
 
 **Verifikasi:** jalankan perintah **Apothem: Verify** dari palet perintah editor,
 atau dari terminal:

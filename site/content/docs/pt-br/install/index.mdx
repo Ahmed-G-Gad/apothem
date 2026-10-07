@@ -197,13 +197,26 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 
 **Pré-requisitos:** VS Code, Node.js 18+ e o Python 3.10+ do sistema no `PATH`.
 
-A extensão **Apothem** é instalada a partir do
-[Visual Studio Marketplace](https://marketplace.visualstudio.com/) — uma única
-extensão cobre o VS Code e sua superfície de assistente companheiro no editor.
-Seus comandos de paleta (`Apothem: Install`, `Verify`, `Update`, `Uninstall`,
-`Doctor`) executam o mesmo motor por meio do executor configurado
-(`npx @ahmed-g-gad/apothem` por padrão; aponte a configuração `apothem.runner`
-para um checkout local para executar a partir do código-fonte).
+A extensão **Apothem** é instalada a partir de um pacote `apothem.vsix`:
+`code --install-extension apothem.vsix`, ou o comando *Install from VSIX…* do
+editor. O workflow de release assina o pacote e o anexa a cada GitHub Release.
+As versões publicadas antes de o workflow empacotar a extensão não trazem
+nenhum; quando a mais recente não o traz, gere o pacote a partir de um checkout
+com a versão do vsce fixada em `.github/vsce/`, que exige Node.js 22 ou
+posterior: execute `npm ci --prefix .github/vsce --ignore-scripts` e depois
+`cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
+Uma listagem no [Visual Studio Marketplace](https://marketplace.visualstudio.com/)
+ainda não foi publicada. Uma única extensão cobre o VS Code e sua superfície de
+assistente companheiro no editor. Seus comandos de paleta (`Apothem: Install`,
+`Verify`, `Update`, `Uninstall`, `Doctor`) executam o mesmo motor por meio do
+executor configurado (`npx @ahmed-g-gad/apothem@<extension version>` por padrão,
+de modo que a extensão executa a versão do motor com que foi distribuída; aponte
+a configuração de usuário `apothem.runner` para um checkout local para executar a
+partir do código-fonte). Install, Verify, Update e Uninstall perguntam sobre qual
+harness agir, oferecendo primeiro o harness do próprio editor; `all` é uma
+opção, nunca o padrão. A configuração `apothem.runner` tem escopo de máquina,
+então um workspace não pode alterá-la, e a extensão só é executada em um
+workspace confiável.
 
 **Verifique:** execute o comando **Apothem: Verify** a partir da paleta de
 comandos do editor, ou de um terminal:

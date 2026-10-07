@@ -81,12 +81,19 @@ jobs:
 
       - name: POSIX shell syntax + bashism gate (Linux/macOS)
         if: runner.os != 'Windows'
+        # Both file lists cover every scripts/installer/*.sh
+        # (test_clean_install_gate_workflow.py asserts it). `-s sh` overrides
+        # the root .shellcheckrc's `shell=bash`. The Pages lint and
+        # installer-lint.yml pass no `-s` and run at --severity=error, so
+        # neither reports an SC3xxx bashism finding and this step is the only
+        # check that does.
         shell: bash
         run: |
           set -euo pipefail
           if command -v dash >/dev/null 2>&1; then SH='dash'; else SH='sh'; fi
           echo "::group::$SH -n parse"
-          for f in scripts/installer/install.sh scripts/installer/update.sh \
+          for f in scripts/installer/install.sh scripts/installer/uninstall.sh \
+                   scripts/installer/update.sh \
                    src/apothem/hooks/lib/find-python.sh; do
             "$SH" -n "$f" && echo "parse OK: $f"
           done
@@ -97,6 +104,7 @@ jobs:
             echo "::group::shellcheck -s sh"
             shellcheck -s sh --severity=warning \
               scripts/installer/install.sh \
+              scripts/installer/uninstall.sh \
               scripts/installer/update.sh \
               src/apothem/hooks/lib/find-python.sh
             echo "::endgroup::"
@@ -118,7 +126,11 @@ jobs:
       - name: PowerShell 5.1 parse + dry-run smoke (Windows)
         if: runner.os == 'Windows'
         # `shell: powershell` selects Windows PowerShell 5.1 (the #Requires floor),
-        # NOT pwsh 7+, so a reintroduced `??` fails here.
+        # NOT pwsh 7+, so a reintroduced `??` fails here. The parse covers every
+        # scripts/installer/*.ps1 and every script under scripts/ that declares
+        # `#Requires -Version 5.1`, such as the scripts/apothem.ps1 router
+        # (test_clean_install_gate_workflow.py asserts it); only install.ps1
+        # has a -DryRun mode, so it alone gets the smoke.
         shell: powershell
         env:
           APOTHEM_SOURCE: ${{ github.workspace }}
@@ -126,8 +138,10 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $files = @(
+            'scripts/apothem.ps1',
             'scripts/installer/install.ps1',
             'scripts/installer/uninstall.ps1',
+            'scripts/installer/update.ps1',
             'src/apothem/hooks/lib/find-python.ps1'
           )
           foreach ($f in $files) {

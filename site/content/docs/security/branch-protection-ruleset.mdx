@@ -1,53 +1,128 @@
 ---
 title: "Branch protection"
-description: "Apothem branch protection on main — review gate, status-check gating, and push restrictions."
+description: "Apothem branch protection on main: the live protection rule, its required status checks, and the checks pending addition."
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Apothem's `main` branch is protected by GitHub branch protection after the single fresh release commit is published. The protection enforces the change-set discipline declared at `rules/production-ready-prs.md` and feeds the OpenSSF Scorecard **Branch-Protection** and **Code-Review** checks for future work.
+Apothem's `main` branch is protected by a classic GitHub branch protection rule. The repository has no rulesets. The protection enforces the change-set discipline declared at `rules/production-ready-prs.md` and feeds the OpenSSF Scorecard **Branch-Protection** and **Code-Review** checks.
 
-## Ruleset declaration
+This page records the live settings exactly, as last read from the GitHub API on 2026-10-07. A setting the maintainer intends but has not applied yet appears only under [Pending maintainer changes](#pending-maintainer-changes).
 
-| Setting | Value | Rationale |
+## Protection settings
+
+| Setting | API field | Live value | Effect |
+|---|---|---|---|
+| **Require a pull request before merging** | `required_pull_request_reviews` (present) | ✅ | Changes reach `main` through a pull request. |
+| **Required approving reviews** | `required_approving_review_count` | **0** | A pull request merges without an approving review. See [Solo-maintainer model](#solo-maintainer-model). |
+| **Dismiss stale approvals on new commits** | `dismiss_stale_reviews` | ✅ | An approval given before a new push no longer counts. |
+| **Require review from Code Owners** | `require_code_owner_reviews` | ❌ | Enabling this before a second maintainer joins deadlocks solo-maintainer pull requests. |
+| **Require approval of the most recent reviewable push** | `require_last_push_approval` | ❌ | GitHub requires that approval to come from someone other than the pusher, which a solo maintainer cannot supply. |
+| **Require status checks to pass** | `required_status_checks` | ✅ | The 12 contexts listed under [Required status checks](#required-status-checks) must pass. |
+| **Require branches to be up to date before merging** | `required_status_checks.strict` | ❌ | A pull request can merge when its required checks passed against an older `main`. The workflows that run on a push to `main` then test the merged result. |
+| **Require conversation resolution before merging** | `required_conversation_resolution` | ✅ | Open review threads block merge. |
+| **Require signed commits** | `required_signatures` | ❌ | Release commits are signed locally. Enforcement waits until contributor onboarding documents SSH or GPG signing setup. |
+| **Require linear history** | `required_linear_history` | ✅ | Keeps the public history of `main` a single line. |
+| **Lock branch** | `lock_branch` | ❌ | `main` accepts merges. |
+| **Do not allow bypassing the above settings** | `enforce_admins` | ❌ | The settings above do not bind a repository admin. An admin can merge without the required checks or push to `main` directly. |
+| **Allow force pushes** | `allow_force_pushes` | ❌ | Force pushes to `main` are blocked for everyone, admins included. |
+| **Allow deletions** | `allow_deletions` | ❌ | No one can delete `main`, admins included. |
+
+## Solo-maintainer model
+
+The repository has one maintainer. GitHub states: "Pull request authors cannot approve their own pull requests." A required approval count above 0 would therefore block every maintainer pull request. The live rule requires a pull request with 0 approvals and leaves `enforce_admins` off.
+
+For anyone without admin permission, a merge still needs the required status checks green, review conversations resolved, and a linear history. Force pushes and deletion of `main` stay blocked for every account.
+
+When a second maintainer joins, the stronger settings are at least one required approval, latest-push approval, CODEOWNERS review, and `enforce_admins` on. The [solo-maintainer merge ceremony](/docs/runbooks/solo-maintainer-merge) applies only to a protection that requires an approval and enforces it for admins.
+
+## Required status checks
+
+Each of these 12 contexts is required, with GitHub Actions (app ID `15368`) as its source:
+
+```text
+quality / ubuntu-latest / py3.10
+quality / ubuntu-latest / py3.11
+quality / ubuntu-latest / py3.12
+quality / ubuntu-latest / py3.13
+quality / ubuntu-latest / py3.14
+quality / windows-latest / py3.10
+quality / windows-latest / py3.11
+quality / windows-latest / py3.12
+quality / windows-latest / py3.13
+quality / windows-latest / py3.14
+coverage
+Require Signed-off-by
+```
+
+| Context | Workflow and job | How it reports on every pull request |
 |---|---|---|
-| **Target** | `main` | Protects the public default branch. |
-| **Enforcement status** | `active` | Not in dry-run mode. |
-| **Require pull request before merging** | ✅ | Direct pushes to `main` blocked. |
-| **Required approving reviews** | **1** | Minimum human-review gate for a new solo-maintainer project. |
-| **Dismiss stale approvals on new commits** | ✅ | A force-push after approval re-triggers review. |
-| **Require review from Code Owners** | Deferred | Enabling this before a second maintainer joins can deadlock solo-maintainer PRs. |
-| **Require approval of the most recent reviewable push** | ✅ | The latest pushed commit must carry approval. |
-| **Required conversation resolution** | ✅ | Open review threads block merge. |
-| **Require status checks to pass** | ✅ | CI workflow + Scorecard + CodeQL + pip-audit. |
-| **Required status checks** | Current core checks | The required list is refreshed from the latest green release commit. |
-| **Require branches to be up to date** | ✅ | Prevents stale-merge regressions. |
-| **Require signed commits** | Recommended | Local release commits are signed; full enforcement waits until contributor onboarding documents SSH/GPG setup. |
-| **Require linear history** | ✅ | Keeps the single-line public history understandable. |
-| **Block force-pushes** | ✅ | History rewrite on `main` is blocked. |
-| **Allow deletion** | ❌ | The `main` branch cannot be deleted. |
+| `quality / <os> / py<ver>` (10) | `ci.yml`, job `quality` | `ci.yml` runs when a pull request touches a code or config path. `ci-docs-stub.yml` reports the same contexts on a documentation-only pull request. |
+| `coverage` | `ci.yml`, job `coverage` | Same as `quality`. |
+| `Require Signed-off-by` | `dco.yml`, job `dco` | Its pull-request trigger has no `paths` filter, so it runs on every pull request to `main`. |
 
-## Solo-maintainer constraint
+The `quality / ubuntu-latest / py3.15` prerelease cell runs in `ci.yml` with `continue-on-error` and is not required. Any other workflow, including CodeQL, Scorecard, and pip-audit, may report status, but its outcome does not gate merge unless its context is added to this list.
 
-GitHub does not let repository files create human review history. The repository therefore applies the strongest non-deadlocking branch protection for its current maintainer model: one approving review, stale-review dismissal, latest-push approval, conversation resolution, status checks, linear history, and no branch deletion or force-push. When a second maintainer joins, CODEOWNERS review and a two-reviewer minimum become the stronger setting.
+## Pending maintainer changes
 
-## Status-check requirements
+The maintainer intends to add these 25 contexts to the required list. Each workflow's header declares the job a required check, and its pull-request trigger has no `paths` filter, so it runs on every pull request to `main`. Until a context is added, a failure in it does not block merge.
 
-The four hard-gating status checks declared above:
+`clean-install-gate.yml`, 7 contexts:
 
-- **`ci`** — full test matrix + ruff + mypy + bandit + Trivy + pip-audit on the resolved dependency tree
-- **`Scorecard`** — OpenSSF Scorecard run with no per-check regression
-- **`CodeQL`** — `security-extended` query packs for `python` + `actions`
-- **`pip-audit`** — weekly + per-PR vulnerability scan against the resolved dep tree
+```text
+installer-shell-compat / ubuntu-latest
+installer-shell-compat / macos-latest
+installer-shell-compat / windows-latest
+clean-install-gate / ubuntu-latest
+clean-install-gate / windows-latest
+wheel-smoke / ubuntu-latest
+wheel-smoke / windows-latest
+```
 
-Any other workflow may report status, but its outcome does not gate merge unless it is promoted into the required-check list.
+`harness-matrix.yml`, 17 contexts, one `matrix (<adapter>)` per adapter in the job's matrix:
+
+```text
+matrix (antigravity)
+matrix (claude-code)
+matrix (codebuddy)
+matrix (codex)
+matrix (cursor)
+matrix (gemini-cli)
+matrix (github-copilot)
+matrix (glm)
+matrix (hermes)
+matrix (kimi-code)
+matrix (kiro)
+matrix (open-claw)
+matrix (opencode)
+matrix (qwen-code)
+matrix (trae)
+matrix (windsurf)
+matrix (zed)
+```
+
+`installer-lint.yml`, 1 context:
+
+```text
+installer-lint
+```
+
+Once the `harness-matrix.yml` contexts are required, registering a new adapter adds a `matrix (<adapter>)` context, and the required list gains it in the same change. "Require branches to be up to date before merging" stays off. When a pending change is applied, move it into the live sections above in the same change.
 
 ## Audit cadence
 
-This file is reviewed on every security audit and at every release-engineering checkpoint. Drift between this file and the actual branch protection configuration is a high-severity finding.
+This file is reviewed on every security audit and at every release-engineering checkpoint. Drift between this file and the actual branch protection configuration is a high-severity finding. Read the live configuration with:
+
+```bash
+gh api repos/ahmed-g-gad/apothem/branches/main/protection
+gh api repos/ahmed-g-gad/apothem/rulesets
+```
 
 ## References
 
 - [OpenSSF Scorecard — Branch-Protection check](https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection)
 - [GitHub — About protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
+- [GitHub — Managing a branch protection rule](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule)
+- [GitHub — Approving a pull request with required reviews](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/approving-a-pull-request-with-required-reviews)
 - [Apothem CODEOWNERS](https://github.com/ahmed-g-gad/apothem/blob/main/.github/CODEOWNERS) — path-scoped review ownership
-- `rules/production-ready-prs.md` §1 — same-change-set discipline this ruleset enforces
+- [Apothem CI workflows](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/README.md) — the workflows each required context comes from
+- `rules/production-ready-prs.md` §1 — same-change-set discipline this protection enforces
