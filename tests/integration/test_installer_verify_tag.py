@@ -207,8 +207,12 @@ def test_signed_tag_with_absent_key_prints_import_guidance(tmp_path: Path) -> No
     if keygen.returncode != 0:
         pytest.skip(f"gpg key generation unavailable: {keygen.stderr.strip()}")
 
+    # Pin OpenPGP: a global gpg.format=ssh would route signing through the SSH
+    # signer, and the missing-key branch matches only gpg's verify-tag output.
     _git(
         [
+            "-c",
+            "gpg.format=openpgp",
             "-c",
             "user.signingkey=signer@example.invalid",
             "-c",
