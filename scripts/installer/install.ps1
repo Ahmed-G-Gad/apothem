@@ -191,12 +191,18 @@ function Resolve-LatestTag {
     foreach ($line in $raw) {
         # Each line is "<sha>\trefs/tags/<tag>"; annotated tags also emit a
         # "<tag>^{}" peel line. Match the final-release shape and strip "^{}".
-        if ($line -match 'refs/tags/(v[0-9]+\.[0-9]+\.[0-9]+)(\^\{\})?$') {
+        # -cmatch keeps the match case-sensitive, as install.sh's sed filter
+        # is: -match ignores case and would also take a V9.9.9 tag, which
+        # Test-ReleaseTag rejects. $ is safe here: each line arrives without
+        # its newline.
+        if ($line -cmatch 'refs/tags/(v[0-9]+\.[0-9]+\.[0-9]+)(\^\{\})?$') {
             $tags += $matches[1]
         }
     }
     if ($tags.Count -eq 0) { return $null }
-    $sorted = $tags | Sort-Object -Unique | Sort-Object { [version]($_.Substring(1)) }
+    # @() keeps the result an array when one tag remains. A bare string
+    # would make $sorted[-1] its last character.
+    $sorted = @($tags | Sort-Object -Unique | Sort-Object { [version]($_.Substring(1)) })
     return $sorted[-1]
 }
 
