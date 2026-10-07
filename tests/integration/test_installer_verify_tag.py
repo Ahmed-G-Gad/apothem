@@ -34,10 +34,10 @@ The scripts run on the interpreter running these tests, never on the host's
 into the first ``python3`` on PATH, and install.ps1 does the same given
 ``-Yes``, so a host ``python3`` without rich would gain packages from this
 file, and the run without ``--yes`` would pass only after a ``--yes`` run had
-installed rich. A shim for ``sys.executable`` leads every script's PATH, pip
-gets no package source, and the tests skip when that interpreter cannot import
-click and rich. An autouse fixture puts a ``python3`` without them first on
-the host PATH, so a leak fails on any host.
+installed rich. A shim for ``sys.executable`` (``tests._shared.python_shim``)
+leads every script's PATH, pip gets no package source, and the tests skip when
+that interpreter cannot import click and rich. An autouse fixture puts a
+``python3`` without them first on the host PATH, so a leak fails on any host.
 """
 
 from __future__ import annotations
@@ -54,6 +54,7 @@ from pathlib import Path
 import pytest
 
 from tests._shared.git_env import hermetic_git_env
+from tests._shared.python_shim import write_python_shim
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 INSTALLER = REPO_ROOT / "scripts" / "installer" / "install.sh"
@@ -163,22 +164,10 @@ def _host_python3_that_must_not_be_used(
     """
     host_bin = tmp_path / "host-python-bin"
     host_bin.mkdir()
-    _write_python_shim(host_bin / "python3", "-S")
+    write_python_shim(host_bin / "python3", "-S")
     monkeypatch.setenv(
         "PATH", f"{host_bin}{os.pathsep}{os.environ.get('PATH', os.defpath)}"
     )
-
-
-def _write_python_shim(shim: Path, *options: str) -> None:
-    """Write SHIM, a script that runs this test's interpreter with OPTIONS.
-
-    It execs rather than links: a venv interpreter finds its packages through
-    the pyvenv.cfg beside the path it was started from, so a symlink placed
-    elsewhere would run the base interpreter.
-    """
-    command = shlex.join([sys.executable, *options])
-    shim.write_text(f'#!/bin/sh\nexec {command} "$@"\n', encoding="utf-8")
-    shim.chmod(EXECUTABLE_MODE)
 
 
 def _git(args: list[str], cwd: Path, env: dict[str, str] | None = None) -> str:
@@ -257,7 +246,7 @@ def _use_test_python(env: dict[str, str], shim_dir: Path) -> None:
     """
     shim_dir.mkdir(exist_ok=True)
     shim = shim_dir / "python3"
-    _write_python_shim(shim)
+    write_python_shim(shim)
     env["PATH"] = f"{shim_dir}{os.pathsep}{env.get('PATH', os.defpath)}"
     for key in [name for name in env if name.startswith("PIP_")]:
         del env[key]
