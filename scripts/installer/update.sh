@@ -82,12 +82,12 @@ resolve_latest_tag() {
 
 VERIFY_TAG_OUTPUT=""
 verify_tag() {
-    VERIFY_TAG_OUTPUT="$(git -C "$1" verify-tag "$2" 2>&1)"
+    VERIFY_TAG_OUTPUT="$(git -C "$1" verify-tag --raw "$2" 2>&1)"
 }
 
 verify_tag_missing_key() {
     case "$VERIFY_TAG_OUTPUT" in
-        *"No public key"*|*"public key not found"*) return 0 ;;
+        *"[GNUPG:] NO_PUBKEY "*) return 0 ;;
         *) return 1 ;;
     esac
 }

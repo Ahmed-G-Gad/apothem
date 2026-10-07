@@ -214,22 +214,24 @@ resolve_latest_tag() {
 # non-zero on an unsigned / tampered / unknown-key tag. The verifier's output
 # is captured in VERIFY_TAG_OUTPUT so callers can tell a missing public key
 # (no local trust root yet — remediation: import the maintainer key) from a
-# bad or absent signature (hard abort). Callers decide whether a non-zero
+# bad or absent signature (hard abort). `--raw` captures GnuPG's status lines
+# ("[GNUPG:] KEYWORD ...") instead of its human-readable messages, which GnuPG
+# translates into the host's language. Callers decide whether a non-zero
 # result aborts (default) or downgrades to a warning
 # (APOTHEM_ALLOW_UNVERIFIED=1). A branch ref (e.g. main) is not a tag object and
 # cannot be verify-tag'd; callers gate on the ref shape before calling this.
 VERIFY_TAG_OUTPUT=""
 verify_tag() {
-    VERIFY_TAG_OUTPUT="$(git -C "$1" verify-tag "$2" 2>&1)"
+    VERIFY_TAG_OUTPUT="$(git -C "$1" verify-tag --raw "$2" 2>&1)"
 }
 
-# verify_tag_missing_key — return 0 when the captured verify-tag output shows
-# the signature could not be checked because the signing public key is absent
-# from the local keyring ("Can't check signature: No public key"), non-zero
-# for any other failure (unsigned tag, BAD signature).
+# verify_tag_missing_key — return 0 when the captured status lines show the
+# signature could not be checked because the signing public key is absent
+# from the local keyring (GnuPG's NO_PUBKEY status), non-zero for any other
+# failure (unsigned tag, BAD signature).
 verify_tag_missing_key() {
     case "$VERIFY_TAG_OUTPUT" in
-        *"No public key"*|*"public key not found"*) return 0 ;;
+        *"[GNUPG:] NO_PUBKEY "*) return 0 ;;
         *) return 1 ;;
     esac
 }

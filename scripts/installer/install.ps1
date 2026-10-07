@@ -204,21 +204,23 @@ function Resolve-LatestTag {
 # DIR (a GPG-signed tag whose key is trusted), $false otherwise. The verifier's
 # output is captured in $script:VerifyTagOutput so callers can tell a missing
 # public key (no local trust root yet - remediation: import the maintainer
-# key) from a bad or absent signature (hard abort).
+# key) from a bad or absent signature (hard abort). `--raw` captures GnuPG's
+# status lines ("[GNUPG:] KEYWORD ...") instead of its human-readable
+# messages, which GnuPG translates into the host's language.
 $script:VerifyTagOutput = ''
 function Test-TagSignature {
     param([string]$Dir, [string]$Ref)
-    $Lines = & git -C $Dir verify-tag $Ref 2>&1
+    $Lines = & git -C $Dir verify-tag --raw $Ref 2>&1
     $script:VerifyTagOutput = ($Lines | ForEach-Object { $_.ToString() }) -join "`n"
     return ($LASTEXITCODE -eq 0)
 }
 
-# Test-VerifyTagMissingKey - $true when the captured verify-tag output shows
-# the signature could not be checked because the signing public key is absent
-# from the local keyring, $false for any other failure (unsigned tag, BAD
-# signature).
+# Test-VerifyTagMissingKey - $true when the captured status lines show the
+# signature could not be checked because the signing public key is absent
+# from the local keyring (GnuPG's NO_PUBKEY status), $false for any other
+# failure (unsigned tag, BAD signature).
 function Test-VerifyTagMissingKey {
-    return ($script:VerifyTagOutput -match 'No public key|public key not found')
+    return ($script:VerifyTagOutput -match '\[GNUPG:\] NO_PUBKEY ')
 }
 
 # Test-ReleaseTag REF - return $true when REF is a vMAJOR.MINOR.PATCH release

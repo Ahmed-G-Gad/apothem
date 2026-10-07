@@ -11,16 +11,13 @@ must exercise Linux dash + macOS sh + Windows PowerShell 5.1 so a reintroduced
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import yaml
 
-_WORKFLOW = (
-    Path(__file__).resolve().parents[2]
-    / ".github"
-    / "workflows"
-    / "clean-install-gate.yml"
-)
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_WORKFLOW = _REPO_ROOT / ".github" / "workflows" / "clean-install-gate.yml"
 
 
 def _load() -> dict:
@@ -65,6 +62,30 @@ def test_windows_leg_uses_powershell_5_1_not_pwsh() -> None:
     # `shell: powershell` is Windows PowerShell 5.1; `pwsh` would be 7+ and miss
     # the `??`/5.1-floor regressions C4 guards against.
     assert all(step.get("shell") == "powershell" for step in windows_steps)
+
+
+def test_windows_leg_parses_every_installer_script() -> None:
+    # The Pages build serves the installer scripts and lints them with
+    # PSScriptAnalyzer on pwsh 7, whose parser accepts 7.x-only syntax such as
+    # `??`. This 5.1 AST parse is the only check that rejects it, so it must
+    # cover every scripts/installer/*.ps1, including any added later.
+    steps = _load()["jobs"]["installer-shell-compat"]["steps"]
+    parse_steps = [
+        s for s in steps if s.get("name", "").startswith("PowerShell 5.1 parse")
+    ]
+    assert len(parse_steps) == 1, "expected exactly one PowerShell 5.1 parse step"
+    file_list = re.search(r"\$files\s*=\s*@\((.*?)\)", parse_steps[0]["run"], re.S)
+    assert file_list, "the PowerShell 5.1 parse step must declare a $files list"
+    parsed = set(re.findall(r"'([^']+)'", file_list.group(1)))
+    installers = {
+        path.relative_to(_REPO_ROOT).as_posix()
+        for path in (_REPO_ROOT / "scripts" / "installer").glob("*.ps1")
+    }
+    assert installers, "found no scripts/installer/*.ps1"
+    missing = sorted(installers - parsed)
+    assert not missing, f"the PowerShell 5.1 parse step skips {missing}"
+    for path in sorted(parsed):
+        assert (_REPO_ROOT / path).is_file(), f"parse list names a missing {path}"
 
 
 def test_posix_leg_runs_a_bashism_gate() -> None:
