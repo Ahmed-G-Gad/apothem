@@ -2,7 +2,7 @@
 title: "Apothem v1.0.1 — إصدار الإطلاق"
 description: "أصبح Apothem v1.0.1 متاحًا — ملف تعريف مشترك واحد يُجسَّد في سبع عشرة أداة برمجية، ومسارات تثبيت متعددة، وإصدار موقَّع ومُوثَّق."
 machineTranslated: true
-sourceHash: "ea09bd4e5d932400"
+sourceHash: "8078642da3930d22"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -74,9 +74,11 @@ sourceHash: "ea09bd4e5d932400"
 4. **مُلحَقات وامتدادات أصليّة للأدوات** — امتداد <bdi>Gemini CLI</bdi>
    (<bdi>`gemini extensions install https://github.com/ahmed-g-gad/apothem`</bdi>)،
    وامتداد <bdi>Qwen Code</bdi> (<bdi>`qwen extensions install ahmed-g-gad/apothem`</bdi>)،
-   ومُلحَق <bdi>Codex</bdi> (<bdi>`codex plugin marketplace add ahmed-g-gad/apothem`</bdi>)،
-   وامتداد من عائلة <bdi>VS Code</bdi> (على <bdi>Visual Studio Marketplace</bdi>،
-   يغطّي <bdi>VS Code</bdi> و<bdi>GitHub Copilot</bdi>).
+   ومُلحَق <bdi>Codex</bdi> (<bdi>`codex plugin marketplace add ahmed-g-gad/apothem`</bdi>).
+   وتوجد الشفرة المصدرية لامتداد من عائلة <bdi>VS Code</bdi>، يغطّي <bdi>VS Code</bdi>
+   و<bdi>GitHub Copilot</bdi>، في المجلّد <bdi>`vscode-extension/`</bdi> في المستودع.
+   هذا الامتداد غير مُدرَج في <bdi>Visual Studio Marketplace</bdi>، ولا يُرفِق هذا
+   الإصدار حزمة <bdi>`.vsix`</bdi> جاهزة.
 
 ## وضعيّة سلسلة التوريد
 
@@ -85,13 +87,15 @@ sourceHash: "ea09bd4e5d932400"
 
 - ‏<bdi>sdist</bdi> و<bdi>wheel</bdi>، مُتحقَّق منهما قبل النشر.
 - قائمة موادّ برمجيّة <bdi>CycloneDX SBOM</bdi>.
-- حزم توقيع بلا مفتاح من <bdi>Sigstore cosign</bdi> لكلّ مُنتَج.
+- حزم توقيع بلا مفتاح من <bdi>Sigstore cosign</bdi> لكلٍّ من <bdi>sdist</bdi>
+  و<bdi>wheel</bdi> وأرشيفات المنصّات.
 - مَنشأ بناء <bdi>SLSA-3</bdi>، مُتحقَّق منه داخل سير عمل الإصدار نفسه.
 - أرشيفات زمن التشغيل لكلّ منصّة (<bdi>darwin / linux / windows</bdi>) مع بيان
   <bdi>`SHA256SUMS`</bdi> موقَّع.
 
-وَسم الإصدار موقَّع بـ<bdi>GPG</bdi>، وتُنشَر حزمة <bdi>npm</bdi> عبر النشر
-الموثوق (<bdi>OIDC</bdi>) مع مَنشأ تلقائي.
+إيداع الإصدار موقَّع بـ<bdi>GPG</bdi> (<bdi>`v1.0.1`</bdi> وَسم خفيف لا يحمل
+توقيعًا خاصًّا به)، ونُشِرت حزمة <bdi>npm</bdi> مع مَنشأ بناء من <bdi>Sigstore</bdi>
+أُنشئ في <bdi>GitHub Actions</bdi>.
 
 ## ما في الصندوق
 

@@ -187,12 +187,25 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 **المتطلّبات المُسبقة:** <bdi>VS Code</bdi>، و<bdi>Node.js</bdi> 18+،
 و<bdi>Python</bdi> 3.10+ على `PATH` الخاص بالنظام.
 
-يُثبَّت ملحق **Apothem** من
-[سوق Visual Studio](https://marketplace.visualstudio.com/) — ملحق واحد يغطّي
+يُثبَّت ملحق **Apothem** من حزمة `apothem.vsix`:
+`code --install-extension apothem.vsix`، أو أمر *Install from VSIX…* في المحرِّر.
+يوقّع سير عمل الإصدار الحزمةَ ويرفقها بكل إصدار على <bdi>GitHub Releases</bdi>.
+الإصدارات المنشورة قبل أن يبدأ سير العمل بتحزيم الملحق لا تحمل أي حزمة؛ وعندما
+يفتقر إليها أحدث إصدار، ابنِ الحزمة من نسخة مسحوبة باستخدام إصدار <bdi>vsce</bdi>
+المقفل في `.github/vsce/`، والذي يتطلّب <bdi>Node.js</bdi> 22 أو أحدث: شغِّل
+`npm ci --prefix .github/vsce --ignore-scripts`، ثم
+`cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
+لم تُنشَر بعدُ صفحة للملحق في
+[سوق Visual Studio](https://marketplace.visualstudio.com/). ملحق واحد يغطّي
 <bdi>VS Code</bdi> وسطح المساعد المرافق داخل المحرِّر. تشغّل أوامره في لوحة الأوامر
 (`Apothem: Install`، و`Verify`، و`Update`، و`Uninstall`، و`Doctor`) المحرّكَ
-نفسه عبر المُشغِّل المُهيَّأ (`npx @ahmed-g-gad/apothem` افتراضيًا؛ وجّه الإعداد
-`apothem.runner` إلى نسخة مسحوبة محلّية للتشغيل من الشفرة المصدرية).
+نفسه عبر المُشغِّل المُهيَّأ (`npx @ahmed-g-gad/apothem@<extension version>`
+افتراضيًا، فيشغّل الملحق إصدار المحرّك الذي شُحن معه؛ وجّه إعداد المستخدم
+`apothem.runner` إلى نسخة مسحوبة محلّية للتشغيل من الشفرة المصدرية). تسأل الأوامر
+`Install` و`Verify` و`Update` و`Uninstall` عن إطار العمل الذي تعمل عليه، وتعرض
+إطار عمل المحرِّر نفسه أولًا؛ و`all` خيار متاح، لكنه ليس الافتراضي أبدًا. إعداد
+`apothem.runner` على نطاق الجهاز، فلا تستطيع مساحة العمل تغييره، ولا يعمل الملحق
+إلا في مساحة عمل موثوقة.
 
 **التحقّق:** شغِّل أمر **Apothem: Verify** من لوحة أوامر المحرِّر، أو من الطرفية:
 

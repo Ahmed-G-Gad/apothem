@@ -2,7 +2,7 @@
 title: "Apothem v1.0.1 — выпуск запуска"
 description: "Apothem v1.0.1 доступен — один общий профиль, материализуемый в семнадцать окружений ИИ-ассистентов, несколько путей установки и подписанный, заверенный выпуск."
 machineTranslated: true
-sourceHash: "ea09bd4e5d932400"
+sourceHash: "8078642da3930d22"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -75,10 +75,12 @@ Apothem читает один общий профиль по адресу `~/.co
 
 4. **Нативные плагины и расширения инструментов** — расширение Gemini CLI
    (`gemini extensions install https://github.com/ahmed-g-gad/apothem`),
-   расширение Qwen Code (`qwen extensions install ahmed-g-gad/apothem`), плагин
-   Codex (`codex plugin marketplace add ahmed-g-gad/apothem`) и расширение
-   семейства VS Code (Visual Studio Marketplace, охватывающее
-   VS Code и GitHub Copilot).
+   расширение Qwen Code (`qwen extensions install ahmed-g-gad/apothem`) и плагин
+   Codex (`codex plugin marketplace add ahmed-g-gad/apothem`). Исходный код
+   расширения семейства VS Code, охватывающего VS Code и GitHub Copilot,
+   находится в папке `vscode-extension/` репозитория. Этого расширения нет в
+   Visual Studio Marketplace, и к этому выпуску не приложен собранный пакет
+   `.vsix`.
 
 ## Положение цепочки поставок
 
@@ -87,14 +89,16 @@ Apothem читает один общий профиль по адресу `~/.co
 
 - sdist и wheel, проверенные перед публикацией.
 - SBOM в формате CycloneDX.
-- Бесключевые пакеты подписи Sigstore cosign для каждого артефакта.
+- Бесключевые пакеты подписи Sigstore cosign для sdist, wheel и архивов
+  платформенной среды выполнения.
 - Происхождение сборки SLSA-3, проверенное внутри самого рабочего процесса
   выпуска.
 - Архивы платформенной среды выполнения (darwin / linux / windows) с
   подписанным манифестом `SHA256SUMS`.
 
-Тег выпуска подписан GPG, а npm-пакет публикуется через Trusted Publishing
-(OIDC) с автоматическим происхождением.
+Коммит выпуска подписан GPG (`v1.0.1` — легковесный тег без собственной
+подписи), а npm-пакет опубликован с происхождением сборки Sigstore, созданным
+в GitHub Actions.
 
 ## Что в коробке
 

@@ -191,13 +191,29 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 **Предварительные требования:** VS Code, Node.js 18+ и системный Python 3.10+ в
 `PATH`.
 
-Расширение **Apothem** устанавливается из
-[Visual Studio Marketplace](https://marketplace.visualstudio.com/) — одно
-расширение покрывает VS Code и его внутриредакторную поверхность
-ассистента-компаньона. Его команды палитры (`Apothem: Install`, `Verify`,
-`Update`, `Uninstall`, `Doctor`) запускают тот же движок через настроенный
-исполнитель (по умолчанию `npx @ahmed-g-gad/apothem`; укажите в настройке
-`apothem.runner` локальный чекаут, чтобы запускать из исходного кода).
+Расширение **Apothem** устанавливается из пакета `apothem.vsix`:
+`code --install-extension apothem.vsix` или командой редактора
+*Install from VSIX…*. Релизный workflow подписывает пакет и прикладывает его к
+каждому GitHub Release. В выпусках, опубликованных до того, как workflow начал
+собирать расширение, пакета нет; если его нет в последнем выпуске, соберите
+пакет из чекаута с версией vsce, зафиксированной в `.github/vsce/`, которой
+нужен Node.js 22 или новее: выполните
+`npm ci --prefix .github/vsce --ignore-scripts`, затем
+`cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
+Страница расширения в
+[Visual Studio Marketplace](https://marketplace.visualstudio.com/) пока не
+опубликована. Одно расширение покрывает VS Code и его внутриредакторную
+поверхность ассистента-компаньона. Его команды палитры (`Apothem: Install`,
+`Verify`, `Update`, `Uninstall`, `Doctor`) запускают тот же движок через
+настроенный исполнитель (по умолчанию
+`npx @ahmed-g-gad/apothem@<extension version>`, поэтому расширение запускает
+ту версию движка, с которой оно поставлялось; укажите в пользовательской
+настройке `apothem.runner` локальный чекаут, чтобы запускать из исходного
+кода). Install, Verify, Update и Uninstall спрашивают, с какой средой работать,
+и первой предлагают среду самого редактора; `all` можно выбрать, но он никогда
+не выбран по умолчанию. Настройка `apothem.runner` действует на уровне машины,
+поэтому рабочая область не может её изменить, а расширение работает только в
+доверенной рабочей области.
 
 **Проверка:** запустите команду **Apothem: Verify** из палитры команд редактора
 или из терминала:

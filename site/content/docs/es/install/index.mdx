@@ -194,13 +194,28 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
 **Requisitos previos:** VS Code, Node.js 18+ y el Python 3.10+ del sistema en el
 `PATH`.
 
-La extensión **Apothem** se instala desde el
-[Visual Studio Marketplace](https://marketplace.visualstudio.com/) — una sola
+La extensión **Apothem** se instala desde un paquete `apothem.vsix`:
+`code --install-extension apothem.vsix`, o el comando *Install from VSIX…* del
+editor. El flujo de trabajo de publicación firma el paquete y lo adjunta a cada
+GitHub Release. Las versiones publicadas antes de que el flujo empaquetara la
+extensión no incluyen ninguno; cuando la más reciente no lo incluye, construye el
+paquete desde un checkout con la versión de vsce fijada en `.github/vsce/`, que
+requiere Node.js 22 o posterior: ejecuta
+`npm ci --prefix .github/vsce --ignore-scripts` y luego
+`cd vscode-extension && ../.github/vsce/node_modules/.bin/vsce package --no-dependencies --out apothem.vsix`.
+Aún no hay una ficha publicada en el
+[Visual Studio Marketplace](https://marketplace.visualstudio.com/). Una sola
 extensión cubre VS Code y su superficie de asistente companion dentro del editor.
 Sus comandos de paleta (`Apothem: Install`, `Verify`, `Update`, `Uninstall`,
 `Doctor`) ejecutan el mismo motor a través del ejecutor configurado
-(`npx @ahmed-g-gad/apothem` por defecto; apunta la configuración `apothem.runner`
-a un checkout local para ejecutar desde el código fuente).
+(`npx @ahmed-g-gad/apothem@<extension version>` por defecto, de modo que la
+extensión ejecuta la versión del motor con la que se distribuyó; apunta la
+configuración de usuario `apothem.runner` a un checkout local para ejecutar desde
+el código fuente). Install, Verify, Update y Uninstall preguntan sobre qué
+harness actuar y ofrecen primero el harness del propio editor; `all` es una
+opción, nunca el valor por defecto. La configuración `apothem.runner` tiene
+alcance de máquina, así que un espacio de trabajo no puede cambiarla, y la
+extensión solo se ejecuta en un espacio de trabajo de confianza.
 
 **Verifica:** ejecuta el comando **Apothem: Verify** desde la paleta de comandos
 del editor, o desde una terminal:

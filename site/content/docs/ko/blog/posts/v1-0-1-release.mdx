@@ -2,7 +2,7 @@
 title: "Apothem v1.0.1 — 출시 릴리스"
 description: "Apothem v1.0.1이 출시되었습니다 — 하나의 공유 프로필을 열일곱 개의 AI 어시스턴트 하니스로 머티리얼라이즈하고, 여러 설치 경로와 서명·증명된 릴리스를 제공합니다."
 machineTranslated: true
-sourceHash: "ea09bd4e5d932400"
+sourceHash: "8078642da3930d22"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -73,10 +73,11 @@ Apothem은 `~/.config/apothem/profile.yaml`에 있는 단일 공유 프로필을
 
 4. **도구 네이티브 플러그인과 확장** — Gemini CLI 확장
    (`gemini extensions install https://github.com/ahmed-g-gad/apothem`),
-   Qwen Code 확장 (`qwen extensions install ahmed-g-gad/apothem`),
-   Codex 플러그인 (`codex plugin marketplace add ahmed-g-gad/apothem`), 그리고
-   VS Code 계열 확장 (Visual Studio Marketplace. VS Code와 GitHub
-   Copilot을 포괄).
+   Qwen Code 확장 (`qwen extensions install ahmed-g-gad/apothem`), 그리고
+   Codex 플러그인 (`codex plugin marketplace add ahmed-g-gad/apothem`).
+   VS Code와 GitHub Copilot을 포괄하는 VS Code 계열 확장의 소스는 저장소의
+   `vscode-extension/` 폴더에 있습니다. 이 확장은 Visual Studio Marketplace에
+   등록되어 있지 않으며, 이 릴리스에는 패키징된 `.vsix`가 첨부되어 있지 않습니다.
 
 ## 공급망 자세
 
@@ -85,13 +86,14 @@ Apothem은 `~/.config/apothem/profile.yaml`에 있는 단일 공유 프로필을
 
 - sdist와 wheel. 게시 전에 확인됨.
 - CycloneDX SBOM.
-- 모든 아티팩트에 대한 Sigstore cosign 키리스 서명 번들.
+- sdist, wheel, 플랫폼 런타임 아카이브에 대한 Sigstore cosign 키리스 서명 번들.
 - SLSA-3 빌드 출처. 릴리스 워크플로 내부 자체에서 검증됨.
 - 플랫폼 런타임 아카이브 (darwin / linux / windows). 서명된 `SHA256SUMS`
   매니페스트 포함.
 
-릴리스 태그는 GPG로 서명되며, npm 패키지는 Trusted Publishing(OIDC)을 통해
-자동 출처와 함께 게시됩니다.
+릴리스 커밋은 GPG로 서명되어 있으며(`v1.0.1`은 자체 서명이 없는 경량
+태그입니다), npm 패키지는 GitHub Actions에서 생성된 Sigstore 빌드 출처와 함께
+게시되었습니다.
 
 ## 상자 안에 든 것
 

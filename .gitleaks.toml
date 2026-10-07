@@ -33,11 +33,6 @@ paths = [
   # as fake at a glance; gitleaks is allowlisted for these paths.
   '''(?i)tests/conformity/.*''',
   '''(?i)tests/conformity-scenarios/.*''',
-  # The branch archive/pre-publish keeps the history from before the
-  # public release, when the same fixtures sat under tests/conformance/.
-  # CI's full-depth checkout fetches that branch, so the fixtures are
-  # allowlisted under their original directory too.
-  '''(?i)tests/conformance/.*''',
   # The conformance/security auditor's unit tests embed high-entropy,
   # secret-shaped fixtures (e.g. a 44-char opaque token) to verify that
   # detect_secrets flags them. The literals are fake test data, not live
