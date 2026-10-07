@@ -2,7 +2,7 @@
 title: "Keamanan"
 description: "Postur keamanan Apothem — target OpenSSF Scorecard, pelaporan kerentanan, permukaan pengerasan."
 machineTranslated: true
-sourceHash: "2a6a18e7bda879b7"
+sourceHash: "1bc24c695dbc976f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -10,50 +10,50 @@ Postur keamanan Apothem dibangun di atas lima pilar: pengerasan rantai pasok, re
 
 ## Model ancaman
 
-Apothem adalah materializer konfigurasi. Ia membaca profil bersama dan menulis
-berkas konfigurasi khusus-harness ke dalam direktori yang dibaca oleh setiap
-harness. Fungsi tunggal itu membatasi apa yang ia percayai
-dan apa yang tidak.
+Apothem adalah materializer konfigurasi. Apothem membaca profil bersama dan
+menulis berkas konfigurasi native-harness ke dalam direktori yang dibaca oleh
+setiap harness. Fungsi tunggal itu membatasi apa yang dipercayainya dan apa
+yang tidak.
 
-- **Apa yang Apothem percayai.** Profil bersama yang Anda tulis dan pohon sumber
-  terbundel yang ditempatkan oleh penginstal. Profil adalah niat Anda yang
-  dideklarasikan; mesin memperlakukannya sebagai masukan otoritatif setelah
+- **Apa yang dipercayai Apothem.** Profil bersama yang Anda tulis dan pohon
+  sumber terbundel yang ditempatkan oleh pemasang. Profil adalah niat yang Anda
+  deklarasikan; mesin memperlakukannya sebagai masukan otoritatif setelah
   validasi skema.
-- **Apa yang Apothem tidak percayai.** Isi profil mencapai sistem berkas hanya
-  setelah validasi: kegagalan skema, ID harness yang tidak dikenal, jalur proyek
-  yang tidak aman, sumber manifes yang hilang, traversal target, dan penyeberangan
-  symlink semuanya berhenti sebelum penulisan apa pun dan mengembalikan diagnostik
-  terstruktur dengan `files_written: []`.
-- **Apa yang keluaran termaterialisasi tidak pernah bawa.** Tidak ada rahasia.
-  Diagnostik profil meredaksi kunci yang menyerupai rahasia dan nilai berbentuk
-  token sebelum mencapai keluaran teks polos, JSON, log, cuplikan dokumentasi,
-  atau pengujian, dan contoh publik menggunakan identitas dan domain placeholder
-  palsu. Konfigurasi termaterialisasi dimaksudkan untuk di-commit dan dibagikan;
-  ia tidak membawa kredensial.
+- **Apa yang tidak dipercayai Apothem.** Isi profil mencapai sistem berkas
+  hanya setelah validasi: kegagalan skema, ID harness yang tidak dikenal, jalur
+  proyek yang tidak aman, sumber manifest yang hilang, traversal target, dan
+  penyeberangan symlink semuanya berhenti sebelum penulisan apa pun dan
+  mengembalikan diagnostik terstruktur dengan `files_written: []`.
+- **Apa yang tidak pernah dibawa keluaran termaterialisasi.** Tidak ada
+  rahasia. Diagnostik profil meredaksi kunci yang menyerupai rahasia dan nilai
+  berbentuk token sebelum mencapai keluaran teks polos, JSON, log, cuplikan
+  dokumentasi, atau pengujian, dan contoh publik menggunakan identitas dan
+  domain placeholder palsu. Konfigurasi termaterialisasi dimaksudkan untuk
+  di-commit dan dibagikan; konfigurasi itu tidak membawa kredensial.
 - **Lantai penolakan universal.** Aturan yang dimaterialisasi Apothem membawa
-  lantai penolakan yang tidak dapat ditawar terlepas dari daftar-izin per-harness
-  mana pun — jalur rahasia (`.env*`, `~/.ssh/**`, penyimpanan kredensial), operasi
-  shell destruktif (`rm -rf`, `sudo`, force-push ke branch terproteksi), dan
-  eksekusi masukan tepercaya. Tidak ada daftar-izin yang memperluas lantai ini
-  secara diam-diam.
-- **Radius dampak.** Penulisan dibatasi pada direktori harness dan subpohon
-  pendukung milik Apothem. Target terkelola yang ada dicadangkan sebelum
-  penggantian dan direktori penemuan bersama digabungkan anak-demi-anak, sehingga
-  berkas tak terkait yang ditulis operator tetap di tempatnya.
+  lantai penolakan yang tidak dapat ditawar terlepas dari daftar-izin
+  per-harness mana pun — jalur rahasia (`.env*`, `~/.ssh/**`, penyimpanan
+  kredensial), operasi shell destruktif (`rm -rf`, `sudo`, force-push ke
+  branch terproteksi), dan eksekusi masukan yang tidak tepercaya. Tidak ada
+  daftar-izin yang diam-diam memperluas lantai ini.
+- **Radius dampak.** Penulisan dibatasi pada direktori harness dan support
+  subtree milik Apothem. Target terkelola yang ada dicadangkan sebelum
+  penggantian dan direktori penemuan bersama digabungkan anak demi anak,
+  sehingga berkas tak terkait yang ditulis operator tetap di tempatnya.
 
 ## Postur keselamatan runtime
 
-Perintah siklus hidup harness dan penulisan profil memvalidasi sebelum menulis.
-Kegagalan skema profil, ID harness yang tidak dikenal, jalur proyek yang tidak
-aman, sumber manifes yang hilang, traversal target, dan penyeberangan symlink
-berhenti sebelum penulisan sistem berkas dan mengembalikan diagnostik terstruktur
-dengan `files_written: []`.
+Perintah siklus hidup harness dan penulisan profil memvalidasi sebelum
+menulis. Kegagalan skema profil, ID harness yang tidak dikenal, jalur proyek
+yang tidak aman, sumber manifest yang hilang, traversal target, dan
+penyeberangan symlink berhenti sebelum penulisan sistem berkas dan
+mengembalikan diagnostik terstruktur dengan `files_written: []`.
 
-Operasi pemasangan dan pembaruan mempertahankan target terkelola yang ada dengan
-mencadangkannya sebelum penggantian. Direktori penemuan bersama digabungkan
-anak-demi-anak sehingga berkas tak terkait yang ditulis operator tetap di
-tempatnya. `--dry-run` melakukan validasi yang sama dan melaporkan hasil yang
-direncanakan tanpa membuat direktori atau berkas.
+Operasi pemasangan dan pembaruan mempertahankan target terkelola yang ada
+dengan mencadangkannya sebelum penggantian. Direktori penemuan bersama
+digabungkan anak demi anak sehingga berkas tak terkait yang ditulis operator
+tetap di tempatnya. `--dry-run` melakukan validasi yang sama dan melaporkan
+hasil yang direncanakan tanpa membuat direktori atau berkas.
 
 Diagnostik profil meredaksi kunci yang menyerupai rahasia dan nilai berbentuk
 token sebelum mencapai keluaran teks polos, keluaran JSON, log, cuplikan
@@ -62,25 +62,93 @@ placeholder palsu.
 
 ## Tautan cepat
 
-- [**Postur OpenSSF Scorecard**](/docs/security/openssf-scorecard-target) — bukti per-pemeriksaan dan batasan platform yang diketahui
+- [**Postur OpenSSF Scorecard**](/docs/security/openssf-scorecard-target) — bukti per pemeriksaan dan batasan platform yang diketahui
 - [**Audit webhook**](/docs/security/webhooks-audit) — bukti higiene rahasia webhook
-- [**Proteksi branch**](/docs/security/branch-protection-ruleset) — gerbang tinjauan, pemeriksaan status, dan pembatasan push
-- [**Sapuan artefak biner**](/docs/security/binary-artifacts-sweep) — bukti rilis tanpa biner di kode sumber
+- [**Proteksi branch**](/docs/security/branch-protection-ruleset) — persyaratan pull request, pemeriksaan status wajib, serta pemblokiran force-push dan penghapusan
+- [**Sapuan artefak biner**](/docs/security/binary-artifacts-sweep) — bukti rilis nol-biner-di-sumber
 - [Kebijakan keamanan](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) — pelaporan kerentanan & versi yang didukung
-- [Lencana OpenSSF Scorecard](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem) — skor langsung
+- [Lencana OpenSSF Scorecard](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem) — skor aktual
 
 ## Melaporkan kerentanan
 
-Gunakan [Pelaporan Kerentanan Privat](https://github.com/ahmed-g-gad/apothem/security) pada tab Security repositori. Kebijakan lengkap, matriks versi yang didukung, dan garis waktu respons ada di [`SECURITY.md`](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
+Gunakan [Pelaporan Kerentanan Privat](https://github.com/ahmed-g-gad/apothem/security) pada tab Security repositori. Kebijakan lengkap, matriks versi yang didukung, dan lini masa respons ada di [`SECURITY.md`](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
 
 ## Bukti rilis rantai pasok
 
-Setiap artefak rilis dikirim dengan:
+Setiap artefak rilis disertai:
 
-- **Provenans build SLSA-3** melalui [`slsa-framework/slsa-github-generator`](https://github.com/slsa-framework/slsa-github-generator)
+- **Provenance build SLSA-3** melalui [`slsa-framework/slsa-github-generator`](https://github.com/slsa-framework/slsa-github-generator)
 - **Tanda tangan Sigstore** melalui [`sigstore/cosign-installer`](https://github.com/sigstore/cosign-installer)
-- **SBOM CycloneDX** melalui [`anchore/sbom-action`](https://github.com/anchore/sbom-action)
-- **Pernyataan provenans npm** melalui OIDC Trusted Publishing pada `@ahmed-g-gad/apothem`
+- **SBOM CycloneDX** dari wheel dan sdist yang dirilis, ditulis oleh `scripts/release/generate_sbom.py`: paket apothem, setiap paket yang di-vendor di bawah `apothem/_vendor` beserta lisensinya, persyaratan runtime yang dideklarasikan, dan SHA-256 setiap distribusi. SBOM ditandatangani dan dicakup oleh provenance build seperti halnya distribusi
+- **Pernyataan provenance npm** melalui OIDC Trusted Publishing pada `@ahmed-g-gad/apothem`
 - **Tag git bertanda tangan GPG** (kunci EDDSA `70396FED9C634163`)
 
-Resep verifikasi didokumentasikan inline di [Siklus rilis](/docs/runbooks/release-cycle) dan [Pemulihan rilis](/docs/runbooks/release-recovery); runbook verifikasi-rilis khusus sedang disiapkan.
+## Verifikasi rilis
+
+Unduh setiap aset dari sebuah rilis ke direktori kosong, lalu periksa tanda
+tangan dan provenance build. Ganti `vX.Y.Z` dan `X.Y.Z` dengan rilis yang Anda
+unduh.
+
+```bash
+gh release download vX.Y.Z --repo ahmed-g-gad/apothem
+cosign verify-blob \
+  --bundle apothem-X.Y.Z-py3-none-any.whl.cosign.bundle \
+  --certificate-identity https://github.com/Ahmed-G-Gad/apothem/.github/workflows/release.yml@refs/tags/vX.Y.Z \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  apothem-X.Y.Z-py3-none-any.whl
+slsa-verifier verify-artifact \
+  --provenance-path provenance.intoto.jsonl \
+  --source-uri github.com/Ahmed-G-Gad/apothem \
+  --source-tag vX.Y.Z \
+  apothem-X.Y.Z-py3-none-any.whl apothem-X.Y.Z.tar.gz
+```
+
+`cosign` mencetak `Verified OK` dan `slsa-verifier` mencetak `PASSED: SLSA
+verification passed`. Ulangi perintah `cosign` untuk aset lain mana pun dengan
+`<asset>.cosign.bundle`-nya (rilis sebelumnya menamai bundel arsip platform dan
+`SHA256SUMS` sebagai `<asset>.sig`). Arsip darwin dan linux adalah byte yang
+sama dengan dua nama, sehingga `SHA256SUMS` mencantumkan satu digest dua kali.
+Dari sebuah klon, `bash scripts/release/verify-provenance.sh <download-dir>`
+menjalankan ketiga pemeriksaan, termasuk manifest `SHA256SUMS`, dalam satu
+pass.
+
+Dua detail menentukan apakah verifikasi bermakna:
+
+- **Huruf besar-kecil pemilik.** Pemeriksaan identitas peka huruf besar-kecil,
+  dan sertifikat membawa pemilik sebagaimana dilaporkan GitHub: `Ahmed-G-Gad`.
+  Pemilik dengan huruf kecil gagal di kedua alat.
+- **Identitas persis.** Utamakan `--certificate-identity` dengan subjek lengkap
+  di atas. Untuk menerima tag rilis apa pun, jangkarkan pola di kedua ujungnya:
+
+  ```bash
+  --certificate-identity-regexp '^https://github\.com/Ahmed-G-Gad/apothem/\.github/workflows/release\.yml@refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$'
+  ```
+
+  Pola tanpa jangkar seperti `github.com/Ahmed-G-Gad/apothem` juga cocok
+  dengan subjek palsu yang hanya memuat teks tersebut, misalnya alur kerja di
+  repositori lain pada branch yang dinamai menurut repositori ini.
+
+[Runbook siklus rilis](/docs/runbooks/release-cycle) mencatat perintah yang
+sama sebagai pemeriksaan pascarilis pemelihara.
+
+### Bangun ulang rilis dan bandingkan
+
+Wheel dan sdist dapat direproduksi: membangun ulang tag dengan toolchain rilis
+menghasilkan digest SHA-256 yang dipublikasikan. Gunakan Python 3.12 di Linux,
+seperti yang dilakukan rilis:
+
+```bash
+git clone https://github.com/ahmed-g-gad/apothem && cd apothem
+git checkout vX.Y.Z
+python3.12 -m venv .build && . .build/bin/activate
+pip install --require-hashes -r scripts/release/requirements-build-linux.txt
+export SOURCE_DATE_EPOCH="$(git log -1 --pretty=%ct)"
+python -m build --no-isolation
+python scripts/release/normalize_sdist.py dist/*.tar.gz
+sha256sum dist/*
+```
+
+Bandingkan digest tersebut dengan wheel dan sdist yang dipublikasikan. Build
+menggunakan setuptools yang dikunci-hash yang dipatok `pyproject.toml`, dan
+`normalize_sdist.py` menghapus waktu build, pemilik berkas, dan cap waktu
+checkout dari sdist.

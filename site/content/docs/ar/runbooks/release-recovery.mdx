@@ -1,106 +1,111 @@
 ---
 title: "دليل تشغيل استرداد الإصدار"
-description: "إجراءات الاسترداد لإعادة المستودع إلى حالة عاملة عندما يفشل تسلسل إصدار في منتصف الطريق، مع تشخيصات مرحلة بمرحلة."
+description: "إجراءات استرداد إصدار يفشل أثناء تنفيذه ضمن نموذج الإصدار التراكمي، مرحلةً بمرحلة، دون إعادة كتابة التاريخ المنشور."
 machineTranslated: true
-sourceHash: "ffe06eaee53259e5"
+sourceHash: "5d706b629803179a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-يعيد دليل التشغيل هذا <bdi>`ahmed-g-gad/apothem`</bdi> إلى حالة عاملة عندما يفشل
-تسلسل إصدار من نوع التطهير الكامل في المكان في منتصف الطريق. لا يُحذف المستودع
-العام ولا يُعاد إنشاؤه أثناء الإصدار. يعتمد الاسترداد على وسم أمان التاريخ
-الخاص بالإصدار، والنسخة المحلية للمشرف، وحالة مدير الحِزَم في المراحل اللاحقة.
+يستعيد دليل التشغيل هذا حالةً عاملة عندما يفشل إصدار <bdi>`vX.Y.Z`</bdi> من
+<bdi>`ahmed-g-gad/apothem`</bdi> في منتصف الطريق. ويتبع نموذج الإصدار نفسه الذي
+يتبعه [دليل تشغيل دورة الإصدار](/docs/runbooks/release-cycle): نموذجًا **تراكميًا**.
+يضيف كل إصدار كوميتًا واحدًا على <bdi>`main`</bdi> ووسمًا واحدًا موقَّعًا ومُعلَّقًا؛
+ويُشغِّل دفعُ الوسم سيرَي عمل الإصدار و<bdi>npm</bdi>. لا يُدفَع أي شيء بالقوة،
+ولا يُعاد أبدًا كتابة التاريخ على <bdi>`main`</bdi>.
+
+التاريخ المنشور دائم. يبقى منشورًا كلُّ وسم إصدار، وكلُّ إصدار <bdi>GitHub</bdi>،
+وكلُّ نسخة <bdi>npm</bdi> نشرها المشروع: للمشروع ثلاثة إصدارات، لكلٍّ منها وسمه
+وإصدار <bdi>GitHub</bdi> الخاص به ونسخة <bdi>npm</bdi> الخاصة به. نسخ <bdi>npm</bdi>
+غير قابلة للتغيير: لا يمكن أبدًا استبدال <bdi>`name@version`</bdi> منشور، ولا يمكن
+أبدًا استخدام رقم نسخة أُلغي نشره مرة أخرى. لذلك يمضي الاسترداد إلى الأمام بإصدار
+تصحيحي جديد؛ فهو لا يحذف ولا يُعيد توجيه أي شيء ربما يكون المستخدم قد ثبّته بالفعل.
 
 ## 1. تصنيف المراحل
 
-| المرحلة | الإجراء | وضع الفشل | مسار الاسترداد |
+| المرحلة | الإجراء | نمط الفشل | مسار الاسترداد |
 |---|---|---|---|
-| 1 | التقاط وسم أمان التاريخ ودفعه | الوسم مفقود، أو غير موقَّع، أو يشير إلى الرسم البياني الخطأ | أعد إنشاء الوسم من نقطة الدمج قبل السحق قبل تحريك <bdi>`main`</bdi> |
-| 2 | التحقق من <bdi>CI</bdi> وقلعة التدقيق وحالة الحِزَم وسجل التغييرات | فشل أيّ بوابة | توقَّف؛ أصلِح محليًا؛ لا تُحرِّك <bdi>`main`</bdi> |
-| 3 | تحريك <bdi>`main`</bdi> إلى كوميت الإصدار الموقَّع الواحد | فشل <bdi>force-with-lease</bdi>، أو الكوميت غير موقَّع، أو رسالة الكوميت خاطئة | أعِد ضبط <bdi>`main`</bdi> المحلي إلى الكوميت الموقَّع المقصود وأعِد المحاولة بِـ<bdi>lease</bdi> جديد |
-| 4 | نشر إصدار <bdi>GitHub</bdi> و<bdi>Pages</bdi> و<bdi>npm</bdi> والبيانات الوصفية | فشل ناشر أو سطح تحقُّق | احتفظ بكوميت الإصدار؛ أعِد تشغيل الناشر الفاشل وحده بعد تسجيل الفشل |
+| 1 | إنزال كوميت الإصدار على <bdi>`main`</bdi> (القسم 2.1 من دليل تشغيل دورة الإصدار) | يفشل <bdi>CI</bdi> على كوميت الإصدار | أصلِح إلى الأمام بكوميت آخر على <bdi>`main`</bdi>؛ لا تضع الوسم حتى يصبح <bdi>CI</bdi> أخضر |
+| 2 | دفع الوسم الموقَّع والمُعلَّق | يُرفَض الدفع، أو يكون الوسم غير موقَّع أو على الكوميت الخطأ | القسم 2 أدناه |
+| 3 | يبني <bdi>`release.yml`</bdi> إصدار <bdi>GitHub</bdi> ويوقّعه وينشره | تفشل إحدى المهام، أو تكون الأصول مفقودة | القسم 3 أدناه |
+| 4 | ينشر <bdi>`publish-npm.yml`</bdi> الحزمة <bdi>`@ahmed-g-gad/apothem`</bdi> (ويعمل على دفع الوسم نفسه) | يفشل النشر | القسم 3 أدناه |
+| 5 | <bdi>Pages</bdi> والبيانات الوصفية للمستودع | الموقع أو البيانات الوصفية قديمة | القسم 3 أدناه |
 
-كل إجراء استرداد عديم الأثر (idempotent). تشغيله على حالة نظيفة لا يفعل شيئًا؛
-وتشغيله على حالة جزئية يعيد الشرط المتوقَّع لما بعد المرحلة.
+كل إجراء استرداد متماثل الأثر عند تكراره. تشغيله على حالة نظيفة لا يفعل شيئًا؛
+وتشغيله على حالة جزئية يستعيد الحالة المتوقَّعة لما بعد المرحلة.
 
-## 2. استرداد وسم الأمان
+## 2. استرداد الوسم
 
-تحقَّق من وسم الأمان قبل أيّ إعادة كتابة للتاريخ:
+شخِّص الوسم:
 
 ```bash
 git fetch origin --tags
-git show --summary --show-signature <history-safety-tag>
-git merge-base --is-ancestor origin/main <history-safety-tag>
+git ls-remote origin refs/tags/vX.Y.Z
+git cat-file -t vX.Y.Z      # "tag" for an annotated tag
+git tag -v vX.Y.Z           # signature check
 ```
 
-المتوقَّع: الوسم موجود، ويَنجح التحقُّق من التوقيع عندما يكون الوسم موقَّعًا،
-ويمكن الوصول إلى الرسم البياني الكامل قبل السحق من الوسم. إذا كان الوسم مفقودًا
-محليًا لكنه موجود عن بُعد، فاجلِبه. وإذا كان مفقودًا عن بُعد، فأوقِف الإصدار
-وأعِد إنشاءه قبل لمس <bdi>`main`</bdi>:
+يتوقف ما تفعله على ما إذا كان أي شيء قد نُشِر من الوسم:
 
-```bash
-git tag -s <history-safety-tag> <pre-squash-commit>
-git push origin <history-safety-tag>
-```
+- **لم يُنشَر شيء بعد** (فشل سير عمل الإصدار قبل مهمة النشر الخاصة به، ولم ينشر
+  <bdi>`publish-npm.yml`</bdi> شيئًا): احذف الوسم وأعِد وضع الوسم على الكوميت نفسه
+  باستخدام <bdi>`-a -s`</bdi>.
 
-## 3. استرداد الفرع الرئيسي
+  ```bash
+  git push --delete origin vX.Y.Z
+  git tag -d vX.Y.Z
+  git tag -a -s vX.Y.Z -m "vX.Y.Z" <release-commit-sha>
+  git push origin vX.Y.Z
+  ```
 
-شخِّص حالة <bdi>`main`</bdi> العامة:
+- **نُشِر أي شيء** (إصدار <bdi>GitHub</bdi> بأصول، أو نسخة <bdi>npm</bdi>):
+  لا تنقل الوسم أبدًا، ولا تحذفه، ولا تُعِد استخدامه. أصلِح إلى الأمام بـ
+  <bdi>`vX.Y.(Z+1)`</bdi>.
 
-```bash
-gh api repos/ahmed-g-gad/apothem/commits/main \
-  --jq '.sha, .commit.message, .commit.verification.verified, .commit.verification.reason'
-```
+لا يُعاد أبدًا استخدام اسم وسم لكوميت مختلف.
 
-المتوقَّع بعد التبديل: الرسالة هي بالضبط
-<bdi>`release: Apothem <release-version>`</bdi> و<bdi>`verification.verified`</bdi>
-هي <bdi>`true`</bdi>.
+## 3. استرداد الناشرين
 
-إذا فشل دفع <bdi>force-with-lease</bdi> قبل تغيير <bdi>GitHub</bdi>، فاترك
-المستودع البعيد كما هو، واجلِبه، وأعِد بناء كوميت الإصدار الموقَّع محليًا، ولا
-تُعِد المحاولة إلا بعد أن يتطابق الـ<bdi>lease</bdi>:
-
-```bash
-git fetch origin main
-git push --force-with-lease=main:<expected-remote-sha> origin main
-```
-
-إذا هبط الدفع بكوميت غير موقَّع أو غير مُتحقَّق منه، فأصلِح إعداد التوقيع
-المحلي، وأعِد إنشاء كوميت الإصدار من الشجرة نفسها، وادفع بالقوة مرة أخرى
-بِـ<bdi>lease</bdi>. لا تحذف وسم الأمان.
-
-## 4. استرداد الناشرين
-
-يُعاد تشغيل كل ناشر بشكل مستقل بعد التحقُّق من كوميت إصدار <bdi>GitHub</bdi>:
+يُعاد تشغيل كل ناشر بمفرده:
 
 | السطح | التشخيص | الاسترداد |
 |---|---|---|
-| إصدار <bdi>GitHub</bdi> | <bdi>`gh release view <release-tag> --json tagName,isDraft,isPrerelease,assets`</bdi> | احذف فقط المسودّة المُشوَّهة؛ وإلا فارفع الأصول المفقودة بِـ<bdi>`gh release upload --clobber`</bdi> |
-| وسم الإصدار | <bdi>`git ls-remote origin refs/tags/<release-tag>`</bdi> و<bdi>`git tag -v <release-tag>`</bdi> | أعِد الوسم من نفس الـ<bdi>SHA</bdi> بِـ<bdi>`-a -s`</bdi> إذا كان الوسم مفقودًا أو غير موقَّع؛ ولا تُعِد أبدًا استخدام اسم وسم لكوميت مختلف |
-| <bdi>npm</bdi> | <bdi>`npm view @ahmed-g-gad/apothem version`</bdi> و<bdi>`npx @ahmed-g-gad/apothem@<version> --version`</bdi> | أعِد تشغيل <bdi>`publish-npm.yml`</bdi> لِـ<bdi>`<release-tag>`</bdi> بعد تأكيد <bdi>npm Trusted Publishing</bdi> لِـ<bdi>`@ahmed-g-gad/apothem`</bdi> |
-| <bdi>Pages</bdi> | <bdi>`gh run list --workflow=publish-static-site.yml --limit=1`</bdi> و<bdi>`curl -sSI https://apothem.ahmedgad.com/`</bdi> | أعِد تشغيل <bdi>`publish-static-site.yml`</bdi>؛ وتحقَّق من أن الـ<bdi>CNAME</bdi> لا يزال يُحَلّ إلى <bdi>`ahmed-g-gad.github.io`</bdi> |
-| البيانات الوصفية لـ<bdi>GitHub</bdi> | <bdi>`gh repo view ahmed-g-gad/apothem --json description,homepageUrl,repositoryTopics,visibility`</bdi> | رقِّع الوصف والصفحة الرئيسية والمواضيع في المكان؛ لا تُعِد إنشاء المستودع |
+| سير عمل الإصدار | يُسمّي <bdi>`gh run view <run-id> --log`</bdi> المهمة الفاشلة | <bdi>`gh run rerun <run-id> --failed`</bdi>. يعني الفشل عند <bdi>`Check the plugin version changed with the plugin`</bdi> أن رقم النسخة لم يُرفَع: راجع جدول حالات الفشل في دليل تشغيل دورة الإصدار |
+| إصدار <bdi>GitHub</bdi> | <bdi>`gh release view vX.Y.Z --json tagName,isDraft,isPrerelease,assets`</bdi> | أعِد تشغيل مهمة <bdi>`publish GitHub Release`</bdi>؛ فهي تُعدِّل الإصدار الموجود وتُعيد رفع الأصول باستخدام <bdi>`--clobber`</bdi> |
+| <bdi>npm</bdi> | <bdi>`npm view @ahmed-g-gad/apothem version`</bdi> و<bdi>`npx @ahmed-g-gad/apothem@X.Y.Z --version`</bdi> | أعِد تشغيل <bdi>`publish-npm.yml`</bdi> لـ <bdi>`vX.Y.Z`</bdi> (<bdi>`gh workflow run publish-npm.yml --field tag=vX.Y.Z`</bdi>) بعد التأكد من تفعيل النشر الموثوق في <bdi>npm</bdi> للحزمة. إذا كانت النسخة موجودة بالفعل في السجلّ، يتخطّى سير العمل النشر، لأن نسخ <bdi>npm</bdi> غير قابلة للتغيير |
+| <bdi>Pages</bdi> | <bdi>`gh run list --workflow=publish-static-site.yml --limit=1`</bdi> و<bdi>`curl -sSI https://apothem.ahmedgad.com/`</bdi> | أعِد تشغيل <bdi>`publish-static-site.yml`</bdi>؛ وتحقّق من أن سجلّ <bdi>CNAME</bdi> لا يزال يُحَلّ إلى <bdi>`ahmed-g-gad.github.io`</bdi> |
+| البيانات الوصفية للمستودع | <bdi>`gh repo view ahmed-g-gad/apothem --json description,homepageUrl,repositoryTopics,visibility`</bdi> | رقِّع الوصف والصفحة الرئيسية والمواضيع في مكانها؛ لا تُعِد إنشاء المستودع أبدًا |
 
-## 5. التراجع
+## 4. التراجع
 
-التراجع هو الملاذ الأخير. فضِّل استرداد الناشرين الموجَّه أولًا. إذا تعيَّن
-التراجع عن كوميت الإصدار الواحد، فاستعِد <bdi>`main`</bdi> من وسم الأمان:
+يُتراجَع عن الإصدار المعيب بإصدار إصلاحه، لا بإزالته:
 
-```bash
-git fetch origin --tags
-git switch main
-git reset --hard <history-safety-tag>
-git push --force-with-lease origin main
-```
+1. اعكِس الكوميتات المُسبِّبة للخلل على <bdi>`main`</bdi> (كوميت عكس عادي).
+2. أصدِر <bdi>`vX.Y.(Z+1)`</bdi> باتباع دليل تشغيل دورة الإصدار.
+3. علِّم النسخة المعيبة: أضِف ملاحظة <bdi>`### Yanked`</bdi> إلى قسمها في
+   <bdi>`CHANGELOG.md`</bdi>، وعدِّل ملاحظات إصدار <bdi>GitHub</bdi> الخاص بها لتشير
+   إلى الإصلاح، وأعلِن إهمالها على <bdi>npm</bdi>:
 
-بعد التراجع، أعِد تشغيل <bdi>CI</bdi>، وأعِد تطبيق حماية الفرع إذا أبلغ
-<bdi>GitHub</bdi> عن انحراف، وسجِّل التراجع بوصفه حادثًا يحجب الإصدار. احتفظ بوسم
-الإصدار فقط إذا ظلَّت مُخرَجات الإصدار صالحة؛ وإلا فاحذف الإصدار والوسم
-المُشوَّهين قبل إعادة المحاولة.
+   ```bash
+   npm deprecate @ahmed-g-gad/apothem@X.Y.Z "Contains <defect>; use X.Y.(Z+1)"
+   ```
+
+يبقى الوسم المعيب وإصدار <bdi>GitHub</bdi> ونسخة <bdi>npm</bdi> منشورة، بحيث تظل
+عمليات التثبيت المقيّدة بنسخة محدّدة وعمليات البناء القابلة لإعادة الإنتاج قابلةً
+للحلّ. سجِّل التراجع بوصفه حادثة إصدار.
+
+## 5. قاعدة واجهة الإصدار
+
+تطلب قاعدة واجهة الإصدار في المستودع (قسم <bdi>Release Facade</bdi> في تعليمات
+المساهمين) وسم إصدار مرئيًا واحدًا وإصدار <bdi>GitHub</bdi> واحدًا. أمّا الممارسة
+فتحتفظ بكل إصدار، ولا يستطيع <bdi>npm</bdi> الامتثال: فنسخه غير قابلة للتغيير. وإلى
+أن يحسم المشرف تلك القاعدة، يتبع دليل التشغيل هذا النموذج التراكمي أعلاه، ولا يحذف
+أبدًا الوسوم المنشورة أو إصدارات <bdi>GitHub</bdi> أو نسخ <bdi>npm</bdi> ولا يعيد
+كتابتها للوفاء بها.
 
 ## 6. الإحالات المرجعية
 
+- إجراء الإصدار: [دليل تشغيل دورة الإصدار](/docs/runbooks/release-cycle).
+- سياسة الإصدار: [سياسة هندسة الإصدار](/docs/governance/release-engineering-policy).
+- كائنات الوسوم وكيفية التحقق من كلٍّ منها: قسم توقيع الإصدارات في
+  [<bdi>SECURITY.md</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
 - إعداد <bdi>Pages</bdi>: <bdi>`site/content/docs/runbooks/pages-enablement.mdx`</bdi>.
-- إجراء الإصدار: <bdi>`site/content/docs/runbooks/release-cycle.mdx`</bdi>.
-- وصفات التحزيم: <bdi>`packaging/README.md`</bdi>.
-- مرساة الاسترداد: وسم أمان التاريخ الخاص بالإصدار.

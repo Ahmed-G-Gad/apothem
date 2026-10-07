@@ -1,112 +1,119 @@
 ---
-title: "Runbook de recuperación de versión"
-description: "Procedimientos de recuperación para restaurar el repositorio cuando una secuencia de versión falla a mitad de camino, con diagnósticos etapa por etapa."
+title: "Runbook de recuperación de lanzamientos"
+description: "Procedimientos de recuperación, etapa por etapa, para un lanzamiento que falla a mitad de camino bajo el modelo de lanzamiento aditivo, sin reescribir el historial publicado."
 machineTranslated: true
-sourceHash: "ffe06eaee53259e5"
+sourceHash: "5d706b629803179a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Este runbook restaura `ahmed-g-gad/apothem` a un estado funcional cuando una
-secuencia de versión de borrón-y-cuenta-nueva-en-el-sitio falla a mitad de
-camino. El repositorio público no se elimina ni se recrea durante la versión. La
-recuperación depende de la etiqueta de seguridad de historial específica de la
-versión, el clon local del mantenedor y el estado de los gestores de paquetes
-aguas abajo.
+Este runbook restaura un estado funcional cuando un lanzamiento `vX.Y.Z` de
+`ahmed-g-gad/apothem` falla a mitad de camino. Sigue el mismo modelo de
+lanzamiento que el [runbook del ciclo de lanzamiento](/docs/runbooks/release-cycle):
+un modelo **aditivo**. Cada lanzamiento agrega un commit en `main` y una
+etiqueta anotada y firmada; el push de la etiqueta ejecuta los flujos de trabajo
+de lanzamiento y de npm. No se hace force-push de nada, y el historial de `main`
+nunca se reescribe.
+
+El historial publicado es permanente. Cada etiqueta de lanzamiento, GitHub
+Release y versión de npm que el proyecto ha publicado sigue publicada: el
+proyecto tiene tres lanzamientos, cada uno con su etiqueta, su GitHub Release y
+su versión de npm. Las versiones de npm son inmutables: un `name@version`
+publicado nunca puede reemplazarse, y un número de versión cuya publicación se
+retiró nunca puede volver a usarse. Por lo tanto, la recuperación avanza con un
+nuevo lanzamiento de parche; no elimina ni redirige nada que un usuario ya pueda
+haber instalado.
 
 ## 1. Taxonomía de etapas
 
 | Etapa | Acción | Modo de fallo | Ruta de recuperación |
 |---|---|---|---|
-| 1 | Capturar y empujar la etiqueta de seguridad de historial | La etiqueta falta, no está firmada o apunta al grafo equivocado | Recrear la etiqueta desde el punto de fusión previo al aplastamiento antes de mover `main` |
-| 2 | Verificar CI, fortaleza de auditoría, estado de paquetes y changelog | Cualquier puerta falla | Detente; arregla en local; no muevas `main` |
-| 3 | Mover `main` al único commit de versión firmado | El force-with-lease falla, el commit no está firmado o el mensaje del commit es incorrecto | Restablece `main` local al commit firmado previsto y reintenta con un lease nuevo |
-| 4 | Publicar GitHub Release, Pages, npm y metadatos | Un publicador o una superficie de verificación falla | Conserva el commit de versión; vuelve a ejecutar solo el publicador fallido tras registrar el fallo |
+| 1 | Llevar el commit de lanzamiento a `main` (§2.1 del runbook del ciclo de lanzamiento) | CI falla en el commit de lanzamiento | Corrige hacia adelante con otro commit en `main`; no etiquetes hasta que CI esté en verde |
+| 2 | Hacer push de la etiqueta anotada y firmada | El push se rechaza, o la etiqueta no está firmada o está en el commit equivocado | §2 más abajo |
+| 3 | `release.yml` compila, firma y publica el GitHub Release | Un trabajo falla, o faltan recursos | §3 más abajo |
+| 4 | `publish-npm.yml` publica `@ahmed-g-gad/apothem` (se ejecuta con el mismo push de la etiqueta) | La publicación falla | §3 más abajo |
+| 5 | Pages y metadatos del repositorio | El sitio o los metadatos están desactualizados | §3 más abajo |
 
 Cada acción de recuperación es idempotente. Ejecutarla sobre un estado limpio no
-hace nada; ejecutarla sobre un estado parcial restaura la condición esperada
-tras la etapa.
+tiene ningún efecto; ejecutarla sobre un estado parcial restaura la condición
+esperada posterior a la etapa.
 
-## 2. Recuperación de la etiqueta de seguridad
+## 2. Recuperación de la etiqueta
 
-Verifica la etiqueta de seguridad antes de cualquier reescritura de historial:
+Diagnostica la etiqueta:
 
 ```bash
 git fetch origin --tags
-git show --summary --show-signature <history-safety-tag>
-git merge-base --is-ancestor origin/main <history-safety-tag>
+git ls-remote origin refs/tags/vX.Y.Z
+git cat-file -t vX.Y.Z      # "tag" for an annotated tag
+git tag -v vX.Y.Z           # signature check
 ```
 
-Esperado: la etiqueta existe, la verificación de firma tiene éxito cuando la
-etiqueta está firmada, y el grafo completo previo al aplastamiento es alcanzable
-desde la etiqueta. Si la etiqueta falta en local pero está presente en remoto,
-tráela. Si falta en remoto, detén la versión y recréala antes de tocar `main`:
+Qué hacer depende de si se publicó algo a partir de la etiqueta:
 
-```bash
-git tag -s <history-safety-tag> <pre-squash-commit>
-git push origin <history-safety-tag>
-```
+- **Todavía no se publicó nada** (el flujo de trabajo de lanzamiento falló antes
+  de su trabajo de publicación, y `publish-npm.yml` no publicó): elimina la
+  etiqueta y vuelve a etiquetar el mismo commit con `-a -s`.
 
-## 3. Recuperación de la rama principal
+  ```bash
+  git push --delete origin vX.Y.Z
+  git tag -d vX.Y.Z
+  git tag -a -s vX.Y.Z -m "vX.Y.Z" <release-commit-sha>
+  git push origin vX.Y.Z
+  ```
 
-Diagnostica el estado de `main` público:
+- **Se publicó algo** (un GitHub Release con recursos, o la versión de npm):
+  nunca muevas, elimines ni reutilices la etiqueta. Corrige hacia adelante con
+  `vX.Y.(Z+1)`.
 
-```bash
-gh api repos/ahmed-g-gad/apothem/commits/main \
-  --jq '.sha, .commit.message, .commit.verification.verified, .commit.verification.reason'
-```
+Un nombre de etiqueta nunca se reutiliza para un commit distinto.
 
-Esperado tras la migración: el mensaje es exactamente
-`release: Apothem <release-version>` y `verification.verified` es `true`.
+## 3. Recuperación de publicadores
 
-Si el push con force-with-lease falló antes de cambiar GitHub, deja el remoto
-como está, tráelo, reconstruye el commit de versión firmado en local y reintenta
-solo después de que el lease coincida:
-
-```bash
-git fetch origin main
-git push --force-with-lease=main:<expected-remote-sha> origin main
-```
-
-Si el push aterrizó con un commit sin firmar o no verificado, arregla la
-configuración de firma local, vuelve a crear el commit de versión desde el mismo
-árbol y haz force-push de nuevo con un lease. No elimines la etiqueta de
-seguridad.
-
-## 4. Recuperación de publicadores
-
-Cada publicador se reintenta de forma independiente después de que el commit de
-versión de GitHub se verifica:
+Cada publicador se reintenta por separado:
 
 | Superficie | Diagnóstico | Recuperación |
 |---|---|---|
-| GitHub Release | `gh release view <release-tag> --json tagName,isDraft,isPrerelease,assets` | Elimina solo un borrador mal formado; en caso contrario, sube los recursos faltantes con `gh release upload --clobber` |
-| Etiqueta de versión | `git ls-remote origin refs/tags/<release-tag>` y `git tag -v <release-tag>` | Vuelve a etiquetar desde el mismo SHA con `-a -s` si la etiqueta falta o no está firmada; nunca reutilices un nombre de etiqueta para un commit distinto |
-| npm | `npm view @ahmed-g-gad/apothem version` y `npx @ahmed-g-gad/apothem@<version> --version` | Vuelve a ejecutar `publish-npm.yml` para `<release-tag>` tras confirmar npm Trusted Publishing para `@ahmed-g-gad/apothem` |
+| Flujo de trabajo de lanzamiento | `gh run view <run-id> --log` nombra el trabajo que falla | `gh run rerun <run-id> --failed`. Un fallo en `Check the plugin version changed with the plugin` significa que la versión no se incrementó: consulta la tabla de fallos del runbook del ciclo de lanzamiento |
+| GitHub Release | `gh release view vX.Y.Z --json tagName,isDraft,isPrerelease,assets` | Vuelve a ejecutar el trabajo `publish GitHub Release`; este edita el lanzamiento existente y vuelve a subir los recursos con `--clobber` |
+| npm | `npm view @ahmed-g-gad/apothem version` y `npx @ahmed-g-gad/apothem@X.Y.Z --version` | Vuelve a ejecutar `publish-npm.yml` para `vX.Y.Z` (`gh workflow run publish-npm.yml --field tag=vX.Y.Z`) después de confirmar la publicación de confianza de npm para el paquete. Si la versión ya está en el registro, el flujo de trabajo omite la publicación, ya que las versiones de npm son inmutables |
 | Pages | `gh run list --workflow=publish-static-site.yml --limit=1` y `curl -sSI https://apothem.ahmedgad.com/` | Vuelve a ejecutar `publish-static-site.yml`; verifica que el CNAME siga resolviendo a `ahmed-g-gad.github.io` |
-| Metadatos de GitHub | `gh repo view ahmed-g-gad/apothem --json description,homepageUrl,repositoryTopics,visibility` | Parchea descripción, página de inicio y temas en el sitio; no recrees el repositorio |
+| Metadatos del repositorio | `gh repo view ahmed-g-gad/apothem --json description,homepageUrl,repositoryTopics,visibility` | Corrige en su lugar la descripción, la página de inicio y los temas; nunca recrees el repositorio |
 
-## 5. Reversión
+## 4. Reversión
 
-La reversión es el último recurso. Prefiere primero la recuperación dirigida de
-publicadores. Si hay que deshacer el único commit de versión, restaura `main`
-desde la etiqueta de seguridad:
+Un lanzamiento defectuoso se revierte lanzando su corrección, no eliminándolo:
 
-```bash
-git fetch origin --tags
-git switch main
-git reset --hard <history-safety-tag>
-git push --force-with-lease origin main
-```
+1. Revierte los commits problemáticos en `main` (un commit de reversión
+   ordinario).
+2. Crea el lanzamiento `vX.Y.(Z+1)` con el runbook del ciclo de lanzamiento.
+3. Marca la versión defectuosa: agrega una nota `### Yanked` a su sección de
+   `CHANGELOG.md`, edita las notas de su GitHub Release para que apunten a la
+   corrección y márcala como obsoleta en npm:
 
-Tras la reversión, vuelve a ejecutar CI, vuelve a aplicar la protección de rama
-si GitHub reporta desviación, y registra la reversión como un incidente que
-bloquea la versión. Conserva la etiqueta de versión solo si los artefactos de la
-versión siguen siendo válidos; en caso contrario, elimina la versión y la
-etiqueta mal formadas antes de reintentar.
+   ```bash
+   npm deprecate @ahmed-g-gad/apothem@X.Y.Z "Contains <defect>; use X.Y.(Z+1)"
+   ```
+
+La etiqueta, el GitHub Release y la versión de npm defectuosos siguen
+publicados, de modo que las instalaciones fijadas y las compilaciones
+reproducibles se siguen resolviendo. Registra la reversión como un incidente de
+lanzamiento.
+
+## 5. La regla de fachada de lanzamiento
+
+La regla de fachada de lanzamiento del repositorio (la sección Release Facade de
+las instrucciones para colaboradores) pide una sola etiqueta de lanzamiento
+visible y un solo GitHub Release. La práctica conserva todos los lanzamientos, y npm no puede
+cumplirla: sus versiones son inmutables. Hasta que el mantenedor resuelva esa
+regla, este runbook sigue el modelo aditivo descrito arriba y nunca elimina ni
+reescribe etiquetas, GitHub Releases ni versiones de npm publicadas para
+cumplirla.
 
 ## 6. Referencias cruzadas
 
+- Procedimiento de lanzamiento: [runbook del ciclo de lanzamiento](/docs/runbooks/release-cycle).
+- Política de lanzamiento: [política de ingeniería de lanzamientos](/docs/governance/release-engineering-policy).
+- Los objetos de etiqueta y cómo verificar cada uno: la sección de firma de
+  lanzamientos de
+  [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
 - Configuración de Pages: `site/content/docs/runbooks/pages-enablement.mdx`.
-- Procedimiento de versión: `site/content/docs/runbooks/release-cycle.mdx`.
-- Recetas de empaquetado: `packaging/README.md`.
-- Ancla de recuperación: la etiqueta de seguridad de historial específica de la versión.

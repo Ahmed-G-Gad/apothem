@@ -1,79 +1,144 @@
 ---
 title: "보안"
-description: "Apothem의 보안 태세 — OpenSSF Scorecard 목표, 취약점 보고, 강화 표면."
+description: "Apothem 보안 태세 — OpenSSF Scorecard 목표, 취약점 보고, 강화 표면."
 machineTranslated: true
-sourceHash: "2a6a18e7bda879b7"
+sourceHash: "1bc24c695dbc976f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Apothem의 보안 태세는 공급망 강화, 취약점 대응, 브랜치 보호, 릴리스 서명, 지속적 보안 분석이라는 다섯 가지 기둥 위에 세워져 있습니다. 이 섹션은 각 표면을 문서화합니다.
+Apothem의 보안 태세는 공급망 강화, 취약점 대응, 브랜치 보호, 릴리스 서명, 지속적인 보안 분석이라는 다섯 가지 기둥 위에 세워져 있습니다. 이 섹션은 각 표면을 문서화합니다.
 
 ## 위협 모델
 
-Apothem은 구성 물질화기입니다. 공유 프로필을 읽어, 각
-하니스가 읽는 디렉터리에 하니스별 구성 파일을 씁니다. 이 단일 기능이 무엇을
-신뢰하고 무엇을 신뢰하지 않는지를 한정합니다.
+Apothem은 구성 머티리얼라이저입니다. 공유 프로필을 읽고, 각 하니스가 읽는
+디렉터리에 하니스 네이티브 구성 파일을 씁니다. 이 단일 기능이 Apothem이 무엇을
+신뢰하고 무엇을 신뢰하지 않는지의 경계를 정합니다.
 
 - **Apothem이 신뢰하는 것.** 여러분이 작성하는 공유 프로필과 설치 프로그램이
-  배치하는 번들 소스 트리입니다. 프로필은 여러분이 선언한 의도이며, 엔진은
-  스키마 검증을 거친 후 이를 권위 있는 입력으로 취급합니다.
-- **Apothem이 신뢰하지 않는 것.** 프로필 내용은 검증을 거친 후에야 파일
+  배치한 번들 소스 트리입니다. 프로필은 여러분이 선언한 의도이며, 엔진은 스키마
+  검증 후 이를 권위 있는 입력으로 취급합니다.
+- **Apothem이 신뢰하지 않는 것.** 프로필 내용은 검증을 거친 후에만 파일
   시스템에 도달합니다. 스키마 실패, 알 수 없는 하니스 ID, 안전하지 않은
-  프로젝트 경로, 누락된 매니페스트 소스, 대상 순회, 심볼릭 링크 횡단은 모두
-  어떠한 쓰기보다 먼저 중단되며 `files_written: []`를 포함한 구조화된 진단을
-  반환합니다.
-- **물질화된 출력이 결코 운반하지 않는 것.** 어떤 비밀도 없습니다. 프로필
-  진단은 일반 텍스트 출력, JSON, 로그, 문서 스니펫, 테스트에 도달하기 전에
-  비밀처럼 보이는 키와 토큰 모양의 값을 가리며, 공개 예시에는 가짜 자리표시자
-  신원과 도메인을 사용합니다. 물질화된 구성은 커밋되고 공유되도록 의도되어
-  있으며, 자격 증명을 운반하지 않습니다.
-- **보편적 거부 하한선.** Apothem이 물질화하는 규칙은 하니스별 허용 목록에
-  관계없이 협상 불가능한 거부 하한선을 지닙니다 — 비밀 경로(`.env*`,
-  `~/.ssh/**`, 자격 증명 저장소), 파괴적 셸 작업(`rm -rf`, `sudo`, 보호된
-  브랜치로의 강제 푸시), 신뢰할 수 없는 입력의 실행입니다. 어떤 허용 목록도
-  이 하한선을 조용히 넓히지 않습니다.
-- **영향 반경.** 쓰기는 하니스 디렉터리와 Apothem 소유의 지원 하위 트리로
-  범위가 한정됩니다. 기존 관리 대상은 교체 전에 백업되며 공유 디스커버리
-  디렉터리는 자식 단위로 병합되므로, 무관한 운영자 작성 파일은 그대로
-  남습니다.
+  프로젝트 경로, 누락된 매니페스트 소스, 대상 경로 순회, 심볼릭 링크 경계
+  넘기는 모두 어떤 쓰기보다 먼저 중단되며 `files_written: []`가 포함된 구조화된
+  진단을 반환합니다.
+- **머티리얼라이즈된 출력이 절대 담지 않는 것.** 시크릿은 담지 않습니다. 프로필
+  진단은 시크릿처럼 보이는 키와 토큰 형태의 값이 일반 출력, JSON, 로그, 문서
+  스니펫, 테스트에 도달하기 전에 가리며, 공개 예시는 가짜 플레이스홀더 신원과
+  도메인을 사용합니다. 머티리얼라이즈된 구성은 커밋되고 공유되도록 만들어지며,
+  자격 증명을 담지 않습니다.
+- **보편적 거부 하한선.** Apothem이 머티리얼라이즈하는 규칙은 하니스별 허용
+  목록과 관계없이 협상 불가능한 거부 하한선을 지닙니다 — 시크릿 경로(`.env*`,
+  `~/.ssh/**`, 자격 증명 저장소), 파괴적인 셸 작업(`rm -rf`, `sudo`, 보호된
+  브랜치로의 강제 푸시), 신뢰할 수 없는 입력의 실행. 어떤 허용 목록도 이
+  하한선을 조용히 넓히지 않습니다.
+- **영향 반경.** 쓰기는 하니스 디렉터리와 Apothem 소유 지원 하위 트리로 범위가
+  한정됩니다. 기존 관리 대상은 교체 전에 백업되고 공유 디스커버리 디렉터리는
+  하위 항목 단위로 병합되므로, 관련 없는 운영자 작성 파일은 그대로 남습니다.
 
 ## 런타임 안전 태세
 
-하니스 라이프사이클 및 프로필 쓰기 명령은 쓰기 전에 검증합니다. 프로필
+하니스 라이프사이클 명령과 프로필 쓰기 명령은 쓰기 전에 검증합니다. 프로필
 스키마 실패, 알 수 없는 하니스 ID, 안전하지 않은 프로젝트 경로, 누락된
-매니페스트 소스, 대상 순회, 심볼릭 링크 횡단은 파일 시스템 쓰기보다 먼저
-중단되며 `files_written: []`를 포함한 구조화된 진단을 반환합니다.
+매니페스트 소스, 대상 경로 순회, 심볼릭 링크 경계 넘기는 파일 시스템 쓰기 전에
+중단되며 `files_written: []`가 포함된 구조화된 진단을 반환합니다.
 
 설치 및 업데이트 작업은 기존 관리 대상을 교체 전에 백업하여 보존합니다. 공유
-디스커버리 디렉터리는 자식 단위로 병합되므로 무관한 운영자 작성 파일은 그대로
-남습니다. `--dry-run`은 동일한 검증을 수행하고 디렉터리나 파일을 만들지 않은
-채 계획된 결과를 보고합니다.
+디스커버리 디렉터리는 하위 항목 단위로 병합되므로 관련 없는 운영자 작성 파일은
+그대로 남습니다. `--dry-run`은 같은 검증을 수행하고, 디렉터리나 파일을 만들지
+않은 채 계획된 결과를 보고합니다.
 
-프로필 진단은 일반 텍스트 출력, JSON 출력, 로그, 문서 스니펫, 테스트에
-도달하기 전에 비밀처럼 보이는 키와 토큰 모양의 값을 가립니다. 공개 예시에는
-가짜 자리표시자 신원과 도메인을 사용합니다.
+프로필 진단은 시크릿처럼 보이는 키와 토큰 형태의 값이 일반 출력, JSON 출력,
+로그, 문서 스니펫, 테스트에 도달하기 전에 가립니다. 공개 예시는 가짜
+플레이스홀더 신원과 도메인을 사용합니다.
 
 ## 빠른 링크
 
-- [**OpenSSF Scorecard 태세**](/docs/security/openssf-scorecard-target) — 점검별 증거와 알려진 플랫폼 한계
-- [**Webhooks 감사**](/docs/security/webhooks-audit) — webhook 비밀 위생 증거
-- [**브랜치 보호**](/docs/security/branch-protection-ruleset) — 리뷰 게이트, 상태 점검, 푸시 제한
-- [**바이너리 산출물 스윕**](/docs/security/binary-artifacts-sweep) — 소스에 바이너리 제로 릴리스 증명
+- [**OpenSSF Scorecard 태세**](/docs/security/openssf-scorecard-target) — 검사별 증거와 알려진 플랫폼 한계
+- [**웹훅 감사**](/docs/security/webhooks-audit) — 웹훅 시크릿 위생 증거
+- [**브랜치 보호**](/docs/security/branch-protection-ruleset) — 풀 리퀘스트 요구 사항, 필수 상태 검사, 강제 푸시 및 삭제 차단
+- [**바이너리 산출물 스윕**](/docs/security/binary-artifacts-sweep) — 소스 내 바이너리 0개 릴리스 증명
 - [보안 정책](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) — 취약점 보고 및 지원 버전
-- [OpenSSF Scorecard 배지](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem) — 실시간 점수
+- [OpenSSF Scorecard 배지](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem) — 현재 점수
 
 ## 취약점 보고
 
-리포지터리의 Security 탭에 있는 [비공개 취약점 보고](https://github.com/ahmed-g-gad/apothem/security)를 사용하세요. 전체 정책, 지원 버전 매트릭스, 응답 타임라인은 [`SECURITY.md`](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)에 있습니다.
+저장소의 Security 탭에서 [비공개 취약점 보고](https://github.com/ahmed-g-gad/apothem/security)를 사용하세요. 전체 정책, 지원 버전 매트릭스, 대응 타임라인은 [`SECURITY.md`](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)에 있습니다.
 
 ## 공급망 릴리스 증명
 
-모든 릴리스 산출물에는 다음이 함께 제공됩니다.
+모든 릴리스 아티팩트에는 다음이 함께 제공됩니다.
 
-- **SLSA-3 빌드 출처**, [`slsa-framework/slsa-github-generator`](https://github.com/slsa-framework/slsa-github-generator) 경유
-- **Sigstore 서명**, [`sigstore/cosign-installer`](https://github.com/sigstore/cosign-installer) 경유
-- **CycloneDX SBOM**, [`anchore/sbom-action`](https://github.com/anchore/sbom-action) 경유
-- **npm 출처 명세**, `@ahmed-g-gad/apothem`의 Trusted Publishing OIDC 경유
-- **GPG 서명 git 태그**(EDDSA 키 `70396FED9C634163`)
+- [`slsa-framework/slsa-github-generator`](https://github.com/slsa-framework/slsa-github-generator)를 통한 **SLSA-3 빌드 출처**
+- [`sigstore/cosign-installer`](https://github.com/sigstore/cosign-installer)를 통한 **Sigstore 서명**
+- 배포되는 wheel과 sdist의 **CycloneDX SBOM**. `scripts/release/generate_sbom.py`가 작성하며, apothem 패키지, `apothem/_vendor` 아래에 벤더링된 모든 패키지와 그 라이선스, 선언된 런타임 요구 사항, 각 배포판의 SHA-256을 담습니다. SBOM은 배포판과 마찬가지로 서명되고 빌드 출처의 적용을 받습니다
+- `@ahmed-g-gad/apothem`의 Trusted Publishing OIDC를 통한 **npm 출처 명세**
+- **GPG로 서명된 git 태그**(EDDSA 키 `70396FED9C634163`)
 
-검증 방법은 [릴리스 주기](/docs/runbooks/release-cycle)와 [릴리스 복구](/docs/runbooks/release-recovery)에 인라인으로 기록되어 있습니다. 전용 릴리스 검증 런북은 곧 제공될 예정입니다.
+## 릴리스 검증
+
+릴리스의 모든 자산을 빈 디렉터리에 다운로드한 다음 서명과 빌드 출처를
+검사합니다. `vX.Y.Z`와 `X.Y.Z`를 다운로드한 릴리스로 바꾸세요.
+
+```bash
+gh release download vX.Y.Z --repo ahmed-g-gad/apothem
+cosign verify-blob \
+  --bundle apothem-X.Y.Z-py3-none-any.whl.cosign.bundle \
+  --certificate-identity https://github.com/Ahmed-G-Gad/apothem/.github/workflows/release.yml@refs/tags/vX.Y.Z \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  apothem-X.Y.Z-py3-none-any.whl
+slsa-verifier verify-artifact \
+  --provenance-path provenance.intoto.jsonl \
+  --source-uri github.com/Ahmed-G-Gad/apothem \
+  --source-tag vX.Y.Z \
+  apothem-X.Y.Z-py3-none-any.whl apothem-X.Y.Z.tar.gz
+```
+
+`cosign`은 `Verified OK`를, `slsa-verifier`는 `PASSED: SLSA
+verification passed`를 출력합니다. 다른 자산에 대해서는 해당
+`<asset>.cosign.bundle`로 `cosign` 명령을 반복합니다(이전 릴리스에서는 플랫폼
+아카이브와 `SHA256SUMS` 번들의 이름이 `<asset>.sig`). darwin 아카이브와 linux
+아카이브는 두 이름 아래의 같은 바이트이므로 `SHA256SUMS`에는 같은 다이제스트가
+두 번 나열됩니다. 클론에서 `bash scripts/release/verify-provenance.sh <download-dir>`를
+실행하면 `SHA256SUMS` 매니페스트를 포함한 세 가지 검사를 한 번에 모두
+수행합니다.
+
+검증이 의미를 가지는지는 두 가지 세부 사항이 결정합니다.
+
+- **소유자 대소문자.** 신원 검사는 대소문자를 구분하며, 인증서에는 GitHub가
+  보고하는 대로의 소유자 `Ahmed-G-Gad`가 담겨 있습니다. 소문자 소유자는 두 도구
+  모두에서 실패합니다.
+- **정확한 신원.** 위의 전체 주체와 함께 `--certificate-identity`를 사용하는
+  것이 좋습니다. 모든 릴리스 태그를 허용하려면 패턴의 양 끝을 고정하세요.
+
+  ```bash
+  --certificate-identity-regexp '^https://github\.com/Ahmed-G-Gad/apothem/\.github/workflows/release\.yml@refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$'
+  ```
+
+  `github.com/Ahmed-G-Gad/apothem` 같은 고정되지 않은 패턴은 그 텍스트를
+  포함하기만 하는 위조된 주체와도 일치합니다. 예를 들어 이 저장소의 이름을 딴
+  브랜치에 있는 다른 저장소의 워크플로가 그렇습니다.
+
+[릴리스 주기 런북](/docs/runbooks/release-cycle)은 같은 명령을 메인테이너의
+릴리스 후 점검으로 기록합니다.
+
+### 릴리스 재빌드와 비교
+
+wheel과 sdist는 재현 가능합니다. 릴리스 툴체인으로 태그를 다시 빌드하면 게시된
+SHA-256 다이제스트가 나옵니다. 릴리스와 마찬가지로 Linux에서 Python 3.12를
+사용하세요.
+
+```bash
+git clone https://github.com/ahmed-g-gad/apothem && cd apothem
+git checkout vX.Y.Z
+python3.12 -m venv .build && . .build/bin/activate
+pip install --require-hashes -r scripts/release/requirements-build-linux.txt
+export SOURCE_DATE_EPOCH="$(git log -1 --pretty=%ct)"
+python -m build --no-isolation
+python scripts/release/normalize_sdist.py dist/*.tar.gz
+sha256sum dist/*
+```
+
+다이제스트를 게시된 wheel 및 sdist와 비교합니다. 빌드는 `pyproject.toml`이
+고정하는 해시 잠금된 setuptools를 사용하며, `normalize_sdist.py`는 sdist에서
+빌드 시간, 파일 소유자, 체크아웃 타임스탬프를 제거합니다.

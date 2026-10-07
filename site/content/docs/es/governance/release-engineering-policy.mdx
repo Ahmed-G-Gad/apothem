@@ -1,104 +1,152 @@
 ---
-title: "Política de ingeniería de publicación"
-description: "Cinco políticas canónicas para el versionado, el etiquetado de publicaciones, los ciclos de obsolescencia, los cambios incompatibles y los procedimientos de reversión."
+title: "Política de ingeniería de lanzamientos"
+description: "Cinco políticas canónicas para el versionado, el etiquetado de lanzamientos, los ciclos de obsolescencia, los cambios incompatibles y los procedimientos de reversión."
 machineTranslated: true
-sourceHash: "f74f29a93205cc10"
+sourceHash: "29b59b2934ad73e3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Cinco políticas rigen cómo se publica `apothem`.
+Cinco políticas rigen los lanzamientos de `apothem`.
 
 ## 1. Versionado semántico
 
-El proyecto se publica bajo [Versionado Semántico 2.0](https://semver.org/).
+El proyecto se distribuye bajo [Versionado Semántico 2.0](https://semver.org/).
 Los números de versión adoptan la forma `MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]`.
 
 | Incremento | Desencadenantes |
-|------------|-----------------|
+|------|----------|
 | **MAJOR** | Cambios incompatibles en los esquemas de artefactos, los identificadores de mandato (CM-N / TM-N / CP-N) o los contratos de hooks |
-| **MINOR** | Nuevas reglas, trabajadores delegados, comandos, habilidades, eventos de hook o extensiones de esquema no incompatibles |
-| **PATCH** | Aclaraciones, adiciones de antipatrones, correcciones de documentación y ediciones que no cambian el comportamiento |
+| **MINOR** | Nuevas reglas, trabajadores delegados, comandos, skills, eventos de hook o extensiones de esquema que no rompen la compatibilidad |
+| **PATCH** | Aclaraciones, adiciones de antipatrones, correcciones de documentación, ediciones que no cambian el comportamiento |
 
-Las etiquetas candidatas usan el formato `vX.Y.Z-rc.N` (candidata a publicación)
+Las etiquetas candidatas usan el formato `vX.Y.Z-rc.N` (candidata a lanzamiento)
 o `vX.Y.Z-alpha.N` / `vX.Y.Z-beta.N` (acceso anticipado).
 
-## 2. Etiquetas de publicación
+## 2. Etiquetas de lanzamiento
 
-Cada publicación deposita en `main` una etiqueta git firmada de la forma
-`vMAJOR.MINOR.PATCH`. La etiqueta desencadena `.github/workflows/release.yml`, que
-construye, firma, genera el SBOM y la procedencia SLSA-3, y
-publica la página de GitHub Release.
+Cada lanzamiento coloca en `main` una etiqueta de git firmada de la forma
+`vMAJOR.MINOR.PATCH`. La etiqueta desencadena `.github/workflows/release.yml`,
+que compila, firma, genera el SBOM y la procedencia SLSA-3, y publica la página
+del GitHub Release.
 
 Convenciones de las etiquetas:
 
 - **Formato** — exactamente `vMAJOR.MINOR.PATCH`. Sin prefijo `release-`,
   sin sufijo `-final`.
 - **Anotación** — cada etiqueta es una etiqueta anotada (`git tag -a -s`)
-  que lleva el resumen de las notas de publicación en el mensaje de la etiqueta.
-- **Firma** — cada etiqueta está firmada con GPG. El flujo de trabajo de publicación
-  además produce una firma cosign sin clave de Sigstore en
-  cada artefacto y una prueba de procedencia de publicación SLSA-3, ambas
-  adjuntas a la página de GitHub Release.
+  que lleva el resumen de las notas de lanzamiento en el mensaje de la etiqueta.
+- **Firma** — cada etiqueta está firmada con GPG. Además, el flujo de trabajo de
+  lanzamiento produce una firma cosign sin clave de Sigstore en cada artefacto y
+  una prueba de lanzamiento de procedencia SLSA-3, ambas adjuntas a la página
+  del GitHub Release.
+
+### Modelo de lanzamiento: aditivo
+
+Los lanzamientos son aditivos. Cada lanzamiento agrega un commit en `main` y una
+etiqueta; nunca se hace force-push sobre `main`, y ninguna etiqueta, GitHub
+Release o versión de npm publicada se elimina, se mueve ni se reutiliza. El
+proyecto tiene tres lanzamientos, cada uno con su etiqueta, su GitHub Release y
+su versión de npm, y los tres siguen publicados. Las versiones de npm son
+inmutables: un `name@version` publicado nunca puede reemplazarse, y un número
+cuya publicación se retiró nunca puede volver a usarse. Las instalaciones
+fijadas y las compilaciones reproducibles dependen de cada etiqueta publicada.
+Los runbooks de [ciclo de lanzamiento](/docs/runbooks/release-cycle) y de
+[recuperación de lanzamientos](/docs/runbooks/release-recovery) siguen ambos
+este modelo.
+
+La regla de fachada de lanzamiento del repositorio (la sección Release Facade de
+las instrucciones para colaboradores, reflejada en la regla freshness-facade)
+pide «una sola etiqueta de lanzamiento visible, un solo GitHub Release». Eso
+contradice este modelo: existen tres lanzamientos, y npm no puede retirar una
+versión publicada. La regla permanece sin cambios hasta que el mantenedor la
+resuelva. Hasta entonces rige el modelo aditivo, y nada de lo publicado se
+elimina ni se reescribe para cumplir la regla.
 
 ## 3. Política de obsolescencia
 
-La línea de soporte público actual es la última versión menor publicada. Cuando
-el proyecto tiene varias versiones menores públicas, la matriz de versiones
+La línea de soporte público actual es la última versión menor lanzada. Cuando el
+proyecto tiene varias versiones menores públicas, la matriz de versiones
 admitidas de [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
-es la fuente de verdad para cualquier ventana adicional de soporte
-solo de correcciones críticas.
+es la fuente de verdad para cualquier ventana de soporte adicional limitada a
+correcciones críticas.
 
 Cadencia de obsolescencia:
 
-- **Anuncio** — un símbolo o comportamiento obsoleto se
-  anuncia en la sección `### Deprecated` de `CHANGELOG.md` de
-  la publicación en la que aterriza la obsolescencia. Las notas de publicación
-  reflejan el anuncio de obsolescencia.
-- **Ventana de gracia** — los símbolos obsoletos permanecen disponibles durante
+- **Anuncio** — un símbolo o comportamiento obsoleto se anuncia en la sección
+  `### Deprecated` de `CHANGELOG.md` del lanzamiento en el que se introduce la
+  obsolescencia. Las notas de lanzamiento reflejan el anuncio de
+  obsolescencia.
+- **Período de gracia** — los símbolos obsoletos permanecen disponibles durante
   un mínimo de un ciclo menor completo antes de su eliminación.
-- **Eliminación** — la eliminación aterriza en un incremento `MAJOR`. Cada símbolo
-  eliminado lleva una línea `### Removed` en `CHANGELOG.md` y una
-  entrada de guía de migración en
+- **Eliminación** — la eliminación llega en un incremento `MAJOR`. Cada símbolo
+  eliminado lleva una línea `### Removed` en `CHANGELOG.md` y una entrada de
+  guía de migración en
   [Guías prácticas](/docs/how-to-guides).
+
+### Versiones mínimas de tiempo de ejecución
+
+Apothem declara dos versiones mínimas de tiempo de ejecución:
+`requires-python = ">=3.10"` en `pyproject.toml` y
+`"engines": {"node": ">=18"}` en `package.json`.
+
+- **Cada versión mínima declarada se prueba.** La versión mínima de Python se
+  ejecuta en la matriz `quality` de CI y en el flujo de trabajo `CI Matrix`. El
+  flujo de trabajo `npm Shim` ejecuta el shim de npm en la versión mínima de
+  Node y en cada versión mayor LTS posterior: comprueba el error de requisito
+  previo faltante, `node bin/apothem.mjs --version`, una instalación en modo
+  dry-run en un directorio de inicio aislado y el tarball empaquetado a través
+  de `npx`. Un tiempo de ejecución que no se prueba no se declara.
+- **El fin de vida se divulga.** Cuando un tiempo de ejecución que sigue siendo
+  una versión mínima declarada alcanza el fin de vida en su proyecto de origen,
+  la [guía de instalación](/docs/install#requisitos-previos-de-un-vistazo) lo
+  indica y nombra las versiones que conviene preferir. Python 3.10 alcanzó el
+  fin de vida el 2026-10-01; Node.js 18 y 20, el 2025-04-30 y el 2026-04-30.
+  Los tres siguen siendo versiones mínimas admitidas.
+- **Elevar una versión mínima es una obsolescencia.** Sigue la cadencia
+  anterior: un anuncio bajo `### Deprecated`, al menos un ciclo menor completo
+  en el que la versión mínima anterior se sigue probando, y después el
+  lanzamiento que la eleva registra el cambio. `requires-python`,
+  `engines.node`, las comprobaciones de versión de los instaladores y las
+  matrices de CI cambian juntos en ese lanzamiento.
 
 ## 4. Política de cambios incompatibles
 
 Los cambios incompatibles requieren:
 
-1. **Una incidencia RFC** — abierta contra la etiqueta de incidencia `rfcs`
-   que describa el cambio incompatible, la ruta de migración y la
-   estrategia de reversión.
-2. **Una ventana de comentarios de 30 días** — la RFC permanece abierta durante al menos
-   30 días antes de la fusión. Los mantenedores pueden ampliar la ventana cuando
-   los comentarios lo justifiquen.
-3. **Un incremento MAJOR** — la publicación que aterriza el cambio
+1. **Un issue de RFC** — abierto con la etiqueta de issue `rfcs`, que describe
+   el cambio incompatible, la ruta de migración y la estrategia de reversión.
+2. **Una ventana de comentarios de 30 días** — el RFC permanece abierto durante
+   al menos 30 días antes de la fusión. Los mantenedores pueden ampliar la
+   ventana cuando los comentarios lo justifiquen.
+3. **Un incremento MAJOR** — el lanzamiento que introduce el cambio
    incompatible incrementa el componente MAJOR.
-4. **Una guía de migración** — el cambio se entrega con una
-   entrada de [Guías prácticas](/docs/how-to-guides) que guía al
-   operador a través de la migración.
+4. **Una guía de migración** — el cambio se entrega con una entrada de
+   [Guías prácticas](/docs/how-to-guides) que guía al operador a través de la
+   migración.
 
 ## 5. Política de reversión
 
-Si una publicación presenta una regresión que bloquea la adopción:
+Si un lanzamiento presenta una regresión que bloquea la adopción:
 
 1. **Revertir** — los commits problemáticos se revierten en `main`.
-2. **Reetiquetado menos uno** — una publicación de seguimiento aterriza como
-   `vMAJOR.MINOR.PATCH+1` que lleva la reversión más cualquier
-   corrección incremental. La publicación defectuosa anterior **no** se
-   elimina de GitHub Releases — una anotación `### Yanked` en
-   `CHANGELOG.md` documenta la situación para que las
-   compilaciones reproducibles permanezcan ancladas.
-3. **Comunicación** — un aviso de security-advisories (cuando
-   sea relevante para la seguridad) o una publicación de Discussions (cuando
-   sea relevante para la fiabilidad) acompaña a la reversión.
+2. **Lanzamiento de corrección hacia adelante** — un lanzamiento de seguimiento
+   llega como `vMAJOR.MINOR.PATCH+1` con la reversión más cualquier corrección
+   incremental. El lanzamiento defectuoso anterior **no** se elimina de GitHub
+   Releases, y su versión de npm sigue publicada (las versiones de npm son
+   inmutables) y se marca con `npm deprecate`. Una anotación `### Yanked` en
+   `CHANGELOG.md` documenta la situación para que las compilaciones
+   reproducibles sigan ancladas.
+3. **Comunicación** — un aviso de security-advisories (cuando es relevante para
+   la seguridad) o un issue de GitHub fijado para el incidente (cuando es
+   relevante para la fiabilidad) acompaña la reversión.
 
 ## Véase también
 
 - [CHANGELOG.md](https://github.com/ahmed-g-gad/apothem/blob/main/CHANGELOG.md)
-  — el libro mayor canónico de publicaciones.
+  — el registro canónico de lanzamientos.
 - [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
-  — la matriz de versiones admitidas y los canales de notificación.
+  — la matriz de versiones admitidas y los canales de reporte.
 - [cicd-pipeline.md](/docs/architecture/cicd-pipeline) — las clases de
-  comprobaciones de CI que protegen cada publicación.
-- [deployment-checklist.md](/docs/runbooks/deployment-checklist) — el barrido de
-  preparación para producción por publicación.
+  comprobaciones de CI que controlan cada lanzamiento.
+- [deployment-checklist.md](/docs/runbooks/deployment-checklist) — la revisión
+  de preparación para producción de cada lanzamiento.

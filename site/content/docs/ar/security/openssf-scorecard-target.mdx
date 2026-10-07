@@ -1,51 +1,51 @@
 ---
-title: "موقف OpenSSF Scorecard"
-description: "هدف Apothem في OpenSSF Scorecard وأسطح الأدلة المستخدمة لإبقاء الدرجة في تحسّن مستمر."
+title: "وضعية OpenSSF Scorecard"
+description: "هدف Apothem في OpenSSF Scorecard وأسطح الأدلّة المُستخدَمة لإبقاء الدرجة في تحسّن."
 machineTranslated: true
-sourceHash: "be47d3429bfb74c5"
+sourceHash: "5e9567b9ec6c681e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-يستهدف <bdi>Apothem</bdi> أعلى درجة في <bdi>OpenSSF Scorecard</bdi> مع إبقاء الواجهة العامة صادقة بشأن ما يمكن وما لا يمكن لـ<bdi>Scorecard</bdi> استنتاجه من مستودع جديد بمشرف وحيد. يُعدّد هذا المستند كل فحص، وسطح الدليل الذي يسنده، والضابط الذي يُبقي الموقف محدّثًا.
+يستهدف <bdi>Apothem</bdi> أعلى درجة في <bdi>OpenSSF Scorecard</bdi> مع إبقاء الواجهة العامة صادقة بشأن ما يستطيع <bdi>Scorecard</bdi> استنتاجه وما لا يستطيع من مستودع جديد بمشرف واحد. يُعدّد هذا المستند كل فحص، وسطح الأدلّة الذي يسنده، والضابط الذي يُبقي الوضعية محدّثة.
 
-الدرجة الحيّة موجودة في [عارض Scorecard](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem)؛ والشارة موجودة في [ترويسة README](https://github.com/ahmed-g-gad/apothem/blob/main/README.md).
+الدرجة الحيّة موجودة في [عارض <bdi>Scorecard</bdi>](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem)؛ والشارة موجودة في [ترويسة <bdi>README</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/README.md).
 
-## مصفوفة الأدلة لكل فحص
+## مصفوفة الأدلّة لكل فحص
 
-| الفحص | سطح الدليل | ملاحظات |
+| الفحص | سطح الأدلّة | ملاحظات |
 |---|---|---|
-| **Binary-Artifacts** | [binary-artifacts-sweep.md](/docs/security/binary-artifacts-sweep) | لا تُتبَّع أي ثنائيات قابلة للتنفيذ في المصدر؛ تبقى أرشيفات التوزيع المُولَّدة في `dist/`. |
-| **Branch-Protection** | [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) | يكون `main` محميًّا قبل الترقية إلى إصدار عام؛ وتُحظَر عمليات الدفع القسري والحذف بعد هبوط كوميت الإصدار الجديد. |
-| **CI-Tests** | [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) | مصفوفة <bdi>Pytest</bdi>، و<bdi>ruff</bdi>، و<bdi>mypy</bdi>، و<bdi>CodeQL</bdi>، و<bdi>Trivy</bdi>، وبناء التوثيق، وفحوص دخان التحزيم. |
-| **CII-Best-Practices** | تسجيل <bdi>OpenSSF Best Practices</bdi> | يتطلّب تسجيلًا من جانب المشرف على موقع <bdi>OpenSSF Best Practices</bdi>؛ ولا يمكن إتمامه بملفات المستودع وحدها. |
-| **Code-Review** | حماية الفروع + <bdi>CODEOWNERS</bdi> | يُفرَض على طلبات السحب المستقبلية؛ ويبقى سجل <bdi>Scorecard</bdi> محدودًا إلى أن تُوجَد طلبات سحب مُراجَعة. |
-| **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | لا يمكن لمشروع جديد بمشرف منفرد اصطناع سجل مساهمات متعدّد المؤسسات؛ ويتحسّن هذا طبيعيًّا مع انضمام المساهمين. |
-| **Dangerous-Workflow** | تدقيق سير العمل | لا يوجد `pull_request_target`؛ و<bdi>Actions</bdi> مُثبَّتة بـ<bdi>SHA</bdi> ومحصورة بصلاحيات صريحة. |
-| **Dependency-Update-Tool** | [`renovate.json`](https://github.com/ahmed-g-gad/apothem/blob/main/renovate.json) | يغطّي <bdi>Renovate</bdi> كلًّا من <bdi>GitHub Actions</bdi> وبيانات <bdi>Python</bdi> ومتطلبات الإصدار المقفولة بالتجزئة وأسطح <bdi>npm</bdi>، مع إبقاء طلبات سحب التبعيات المُجمَّعة متاحة. |
-| **Fuzzing** | [`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | تختبر اختبارات خصائص <bdi>Hypothesis</bdi> ثوابت المُحلِّل والواجهة الأمامية؛ وقد لا يحتسب <bdi>Scorecard</bdi> المنبع <bdi>Hypothesis</bdi> كتكامل تشويش. |
-| **License** | [LICENSE](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) | رخصة <bdi>MIT</bdi> في جذر المستودع. |
-| **Maintained** | سجل <bdi>Git</bdi> | يُظهِر كوميت الإصدار الحالي وإيقاع سير العمل النشط الصيانة؛ وقد تتلقّى المستودعات الحديثة جدًّا تحذير عُمر. |
-| **Packaging** | [`.github/workflows/`](https://github.com/ahmed-g-gad/apothem/tree/main/.github/workflows) | سير عمل <bdi>Release</bdi> و<bdi>Pages</bdi> و<bdi>npmjs.com</bdi> التي تُنتِج <bdi>sdist</bdi> و<bdi>wheel</bdi> و<bdi>SBOM</bdi> ومَنشأ <bdi>SLSA</bdi> وتواقيع <bdi>Sigstore</bdi>. |
-| **Pinned-Dependencies** | تدقيق سير العمل + متطلبات مقفولة بالتجزئة | <bdi>Actions</bdi> مُثبَّتة بـ<bdi>SHA</bdi>؛ وتستخدم عمليات تثبيت أدوات الإصدار `--require-hashes`؛ وتستخدم أدوات <bdi>pip</bdi> الخاصة بسير العمل تثبيتات دقيقة. |
-| **SAST** | [`.github/workflows/codeql.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/codeql.yml) | استعلامات `security-extended` من <bdi>CodeQL</bdi> عبر <bdi>Python</bdi> و<bdi>Actions</bdi>. |
-| **Security-Policy** | [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) | سياسة الإفصاح المنسّق، ومصفوفة الإصدارات المدعومة، والجدول الزمني للاستجابة. |
-| **Signed-Releases** | [`.github/workflows/release.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/release.yml) | تواقيع <bdi>Sigstore</bdi> بلا مفاتيح، ومَنشأ <bdi>SLSA</bdi>، و<bdi>SBOM</bdi>، ومجاميع تحقق، وقِطَع الإصدار. |
-| **Token-Permissions** | تدقيق سير العمل | تستخدم سير العمل صلاحيات قراءة فقط افتراضيًّا؛ ونطاقات الكتابة محلية للمهمة ومرتبطة بعمليات النشر/التحزيم. |
-| **Vulnerabilities** | [`.github/workflows/pip-audit.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/pip-audit.yml) + [`.github/workflows/dependency-review.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/dependency-review.yml) | فحص أسبوعي للثغرات وفحص <bdi>CI</bdi> مع رفع <bdi>SARIF</bdi>؛ وتمنع بوّابة <bdi>dependency-review</bdi> طلبات السحب التي تُدخِل تبعيات مُعرَّضة أو ذات تراخيص غير مسموح بها. |
+| **<bdi>Binary-Artifacts</bdi>** | [<bdi>binary-artifacts-sweep.md</bdi>](/docs/security/binary-artifacts-sweep) | لا يُتتبَّع أي ملف ثنائي قابل للتنفيذ في المصدر؛ وتبقى أرشيفات التوزيع المُولَّدة في <bdi>`dist/`</bdi>. |
+| **<bdi>Branch-Protection</bdi>** | [<bdi>branch-protection-ruleset.md</bdi>](/docs/security/branch-protection-ruleset) | يكون <bdi>`main`</bdi> محميًّا قبل الترقية إلى إصدار عام؛ وتُحظَر عمليات الدفع بالقوة والحذف بعد وصول كوميت الإصدار الجديد. |
+| **<bdi>CI-Tests</bdi>** | [<bdi>`.github/workflows/ci.yml`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) | مصفوفة <bdi>Pytest</bdi>، و<bdi>ruff</bdi>، و<bdi>mypy</bdi>، و<bdi>CodeQL</bdi>، و<bdi>Trivy</bdi>، وبناء الوثائق، وفحوص دخان التحزيم. |
+| **<bdi>CII-Best-Practices</bdi>** | التسجيل في <bdi>OpenSSF Best Practices</bdi> | يتطلّب تسجيلًا من جانب المشرف على موقع <bdi>OpenSSF Best Practices</bdi>؛ ولا يمكن إتمام ذلك بملفات المستودع وحدها. |
+| **<bdi>Code-Review</bdi>** | حماية الفرع + <bdi>CODEOWNERS</bdi> | طلبات السحب مطلوبة لـ <bdi>`main`</bdi> للجميع باستثناء مسؤولي المستودع، وتشترط حماية الفرع 0 مراجعات موافِقة ما دام للمشروع مشرف واحد (راجع [<bdi>branch-protection-ruleset.md</bdi>](/docs/security/branch-protection-ruleset))؛ ويبقى سجلّ <bdi>Scorecard</bdi> محدودًا إلى أن توجد طلبات سحب مُراجَعة. |
+| **<bdi>Contributors</bdi>** | [<bdi>AUTHORS</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | لا يستطيع مشروع جديد بمشرف منفرد اصطناع سجلّ مساهمات من مؤسسات متعدّدة؛ ويتحسّن هذا طبيعيًا مع انضمام المساهمين. |
+| **<bdi>Dangerous-Workflow</bdi>** | تدقيق سِيَر العمل | لا يوجد <bdi>`pull_request_target`</bdi>؛ و<bdi>Actions</bdi> مُثبَّتة ببصمات <bdi>SHA</bdi> ومحصورة بصلاحيات صريحة. |
+| **<bdi>Dependency-Update-Tool</bdi>** | [<bdi>`renovate.json`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/renovate.json) | يغطّي <bdi>Renovate</bdi> كلًّا من <bdi>GitHub Actions</bdi>، وبيانات <bdi>Python</bdi>، ومتطلّبات الإصدار المقفولة بالبصمات، وأسطح <bdi>npm</bdi>، مع إبقاء طلبات السحب المُجمَّعة للاعتماديات متاحة. |
+| **<bdi>Fuzzing</bdi>** | [<bdi>`tests/property/`</bdi>](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | تختبر اختبارات الخصائص في <bdi>Hypothesis</bdi> ثوابت المُحلِّل والـ <bdi>frontmatter</bdi>؛ وقد لا يحتسب <bdi>Scorecard</bdi> في المصدر الأصلي <bdi>Hypothesis</bdi> بوصفه تكاملًا لاختبار التشويش. |
+| **<bdi>License</bdi>** | [<bdi>LICENSE</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) | رخصة <bdi>MIT</bdi> في جذر المستودع. |
+| **<bdi>Maintained</bdi>** | تاريخ <bdi>Git</bdi> | يُظهِر كوميت الإصدار الحالي ووتيرة سِيَر العمل النشطة الصيانةَ؛ وقد تتلقّى المستودعات الحديثة جدًا تحذيرًا بشأن العمر. |
+| **<bdi>Packaging</bdi>** | [<bdi>`.github/workflows/`</bdi>](https://github.com/ahmed-g-gad/apothem/tree/main/.github/workflows) | سِيَر عمل الإصدار و<bdi>Pages</bdi> و<bdi>npmjs.com</bdi> التي تُنتِج الـ <bdi>sdist</bdi> والـ <bdi>wheel</bdi> والـ <bdi>SBOM</bdi> وإثبات المنشأ <bdi>SLSA</bdi> وتواقيع <bdi>Sigstore</bdi>. |
+| **<bdi>Pinned-Dependencies</bdi>** | تدقيق سِيَر العمل + متطلّبات مقفولة بالبصمات | <bdi>Actions</bdi> مُثبَّتة ببصمات <bdi>SHA</bdi>؛ وتستخدم عمليات تثبيت أدوات الإصدار <bdi>`--require-hashes`</bdi>؛ وتستخدم أدوات <bdi>pip</bdi> الخاصة بسِيَر العمل فقط تثبيتات دقيقة للنسخ. |
+| **<bdi>SAST</bdi>** | [<bdi>`.github/workflows/codeql.yml`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/codeql.yml) | استعلامات <bdi>`security-extended`</bdi> في <bdi>CodeQL</bdi> عبر <bdi>Python</bdi> و<bdi>Actions</bdi>. |
+| **<bdi>Security-Policy</bdi>** | [<bdi>SECURITY.md</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) | سياسة الإفصاح المنسّق، ومصفوفة النسخ المدعومة، والجدول الزمني للاستجابة. |
+| **<bdi>Signed-Releases</bdi>** | [<bdi>`.github/workflows/release.yml`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/release.yml) | تواقيع <bdi>Sigstore</bdi> بلا مفاتيح، وإثبات المنشأ <bdi>SLSA</bdi>، و<bdi>SBOM</bdi>، ومجاميع التحقّق، ومُنتَجات الإصدار. |
+| **<bdi>Token-Permissions</bdi>** | تدقيق سِيَر العمل | تعتمد سِيَر العمل افتراضيًا صلاحيات القراءة فقط؛ ونطاقات الكتابة محلّية للمهمة ومرتبطة بعمليات النشر/التحزيم. |
+| **<bdi>Vulnerabilities</bdi>** | [<bdi>`.github/workflows/pip-audit.yml`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/pip-audit.yml) + [<bdi>`.github/workflows/dependency-review.yml`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/dependency-review.yml) | فحص أسبوعي للثغرات وفحص في <bdi>CI</bdi> مع رفع <bdi>SARIF</bdi>؛ وتحجب بوابة <bdi>dependency-review</bdi> طلبات السحب التي تُدخِل اعتماديات معرّضة للثغرات أو ذات تراخيص غير مسموح بها. |
 
 ## تفسير الدرجة
 
-يُسجّل <bdi>Scorecard</bdi> كل فحص على مقياس من 0 إلى 10، والدرجة الإجمالية متوسط مرجَّح. تُتبَّع الضوابط التي تعتمد على سجل المستودع أو التسجيل لدى طرف ثالث أو تنوع المساهمين تتبّعًا صريحًا بدلًا من المبالغة في ادّعائها. ويؤدّي الانحراف في أي فحص خاضع للملفات إلى تشغيل معالجة فورية.
+يمنح <bdi>Scorecard</bdi> كل فحص درجة على مقياس من 0 إلى 10، والدرجة الإجمالية متوسط مرجَّح. تُتتبَّع الضوابط التي تعتمد على تاريخ المستودع أو التسجيل لدى طرف ثالث أو تنوّع المساهمين تتبّعًا صريحًا بدلًا من المبالغة في ادّعائها. ويُطلِق الانحراف في أي فحص خاضع للتحكّم عبر الملفات معالجةً فورية.
 
-## إيقاع التحديث
+## وتيرة التحديث
 
-- **مع كل دفع:** يُعاد تشغيل سير عمل <bdi>Scorecard</bdi> مع كل دفع إلى `main`.
-- **أسبوعيًّا:** الإثنين الساعة 02:30 <bdi>UTC</bdi> — يلتقط التغيّرات في منهجية التسجيل المنبع + الثغرات المُكتشَفة حديثًا ضد التبعيات المُثبَّتة الحالية.
+- **مع كل دفع:** يُعاد تشغيل سير عمل <bdi>Scorecard</bdi> مع كل دفع إلى <bdi>`main`</bdi>.
+- **أسبوعيًا:** أيام الاثنين الساعة 02:30 <bdi>UTC</bdi> — يلتقط التغييرات في منهجية التقييم لدى المصدر الأصلي + الثغرات الجديدة المُفصَح عنها في الاعتماديات المُثبَّتة الحالية.
 - **مع كل إصدار:** قبل الترقية العامة، يتحقّق المشرف من سطح عارض <bdi>Scorecard</bdi> الحيّ ويُسجّل أي حدود لحالة المنصّة.
 
-## مراجع
+## المراجع
 
-- [OpenSSF Scorecard](https://github.com/ossf/scorecard) — المشروع المنبع
-- [مرجع فحوص Scorecard](https://github.com/ossf/scorecard/blob/main/docs/checks.md) — دلالات كل فحص
-- [`ossf/scorecard-action`](https://github.com/ossf/scorecard-action) — غلاف <bdi>GitHub Actions</bdi>
-- [إطار SLSA](https://slsa.dev/) — مستويات سلسلة التوريد (يُشحَن <bdi>apothem</bdi> عند <bdi>SLSA-3</bdi>)
+- [<bdi>OpenSSF Scorecard</bdi>](https://github.com/ossf/scorecard) — المشروع الأصلي
+- [مرجع فحوص <bdi>Scorecard</bdi>](https://github.com/ossf/scorecard/blob/main/docs/checks.md) — دلالات كل فحص
+- [<bdi>`ossf/scorecard-action`</bdi>](https://github.com/ossf/scorecard-action) — غلاف <bdi>GitHub Actions</bdi>
+- [إطار <bdi>SLSA</bdi>](https://slsa.dev/) — مستويات سلسلة التوريد (يُشحَن <bdi>apothem</bdi> عند المستوى <bdi>SLSA-3</bdi>)

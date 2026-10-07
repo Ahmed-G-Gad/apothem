@@ -1,100 +1,104 @@
 ---
 title: "إعداد حساب الناشر"
-description: "تكوين الناشر الموثوق على npmjs.com لـ @ahmed-g-gad/apothem والمتطلبات المسبقة للإصدار على جانب GitHub."
+description: "تهيئة الناشر الموثوق على npmjs.com للحزمة @ahmed-g-gad/apothem والمتطلّبات المسبقة للإصدار على جانب GitHub."
 machineTranslated: true
-sourceHash: "7261839cafc59c09"
+sourceHash: "c0ff17cce209d1d0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-يُكوِّن دليل التشغيل هذا جانب الناشر من سطح الإصدار. حكاية التوزيع لها سجل
-واحد: حزمة <bdi>npm</bdi> ذات النطاق <bdi>`@ahmed-g-gad/apothem`</bdi> على
-<bdi>npmjs.com</bdi>، يَنشُرها سير العمل <bdi>`publish-npm.yml`</bdi> المُرسَل
-يدويًا بعد أن تصبح أسطح عمل <bdi>GitHub Release</bdi> و<bdi>Pages</bdi>
-و<bdi>CI</bdi> و<bdi>conformity</bdi> و<bdi>harness</bdi> خضراء. كل أثر آخر
-يُشحَن على صفحة <bdi>GitHub Release</bdi> نفسها ولا يحتاج إلى أي حساب ناشر
-خارجي.
+يُهيّئ دليل التشغيل هذا جانب الناشر من سطح الإصدار. لقصة التوزيع سجلّ واحد: حزمة
+<bdi>npm</bdi> ذات النطاق <bdi>`@ahmed-g-gad/apothem`</bdi> على <bdi>npmjs.com</bdi>،
+التي ينشرها سير العمل <bdi>`publish-npm.yml`</bdi> المُشغَّل يدويًا بعد أن تصبح سِيَر
+عمل إصدار <bdi>GitHub</bdi> و<bdi>Pages</bdi> و<bdi>CI</bdi> والمطابقة وأُطُر العمل
+خضراء. وكل مُنتَج آخر يُشحَن على صفحة إصدار <bdi>GitHub</bdi> نفسها ولا يحتاج إلى
+أي حساب ناشر خارجي.
 
-## خريطة الهوية
+## خريطة الهويات
 
 | السطح | الحساب | هوية الحزمة |
 |---|---|---|
 | <bdi>GitHub</bdi> | <bdi>`ahmed-g-gad`</bdi> | <bdi>`ahmed-g-gad/apothem`</bdi> |
-| <bdi>npm (npmjs.com)</bdi> | <bdi>`ahmed-g-gad`</bdi> | <bdi>`@ahmed-g-gad/apothem`</bdi> |
+| <bdi>npm</bdi> (<bdi>npmjs.com</bdi>) | <bdi>`ahmed-g-gad`</bdi> | <bdi>`@ahmed-g-gad/apothem`</bdi> |
 
-يُسمح لمالك <bdi>GitHub</bdi> بالتغيُّر في المستقبل. تقرأ منطقُ سير العمل
-والمُثبِّت <bdi>`github.repository`</bdi> أو <bdi>`github.repository_owner`</bdi>
-أو <bdi>`APOTHEM_GITHUB_REPOSITORY`</bdi> حيث تسمح المنصة بالحل الديناميكي.
-يبقى مُعرِّف حزمة السجل مستقرًا لأن المستخدمين يُثبِّتون اسم الحزمة، لا اسم حساب
+يُسمَح لمالك <bdi>GitHub</bdi> بالتغيّر مستقبلًا. يقرأ منطق سير العمل والمُثبِّت
+<bdi>`github.repository`</bdi> أو <bdi>`github.repository_owner`</bdi> أو
+<bdi>`APOTHEM_GITHUB_REPOSITORY`</bdi> حيث تسمح المنصّة بالحلّ الديناميكي. ويبقى
+مُعرِّف الحزمة في السجلّ مستقرًا لأن المستخدمين يُثبّتون اسم الحزمة، لا اسم حساب
 المشرف.
 
-## npm (npmjs.com)
+## <bdi>npm</bdi> (<bdi>npmjs.com</bdi>)
 
-1. سجِّل الدخول إلى <bdi>`https://www.npmjs.com/`</bdi> بصفتك
-   <bdi>`ahmed-g-gad`</bdi>.
+1. سجِّل الدخول إلى <bdi>`https://www.npmjs.com/`</bdi> بصفتك <bdi>`ahmed-g-gad`</bdi>.
 2. فعِّل المصادقة الثنائية على الحساب.
-3. أكِّد اسم الحزمة ذات النطاق:
+3. تأكّد من اسم الحزمة ذات النطاق:
 
    ```bash
    npm view @ahmed-g-gad/apothem name
    ```
 
-   يعني <bdi>`404`</bdi> أن الحزمة ذات النطاق لم تُنشَر بعد. يجب أن تطابق أي
-   استجابة حزمة أخرى هذا المستودع وهذا الحساب قبل النشر.
-4. أنشئ الحزمة على <bdi>npm</bdi> إذا كانت الواجهة تتطلب أول سجل حزمة. أبقِ
+   تعني الاستجابة <bdi>`404`</bdi> أن الحزمة ذات النطاق لم تُنشَر بعد. وأي استجابة
+   أخرى عن الحزمة يجب أن تطابق هذا المستودع والحساب قبل النشر.
+4. أنشئ الحزمة على <bdi>npm</bdi> إذا كانت الواجهة تتطلّب سجلّ حزمة أوليًا. أبقِ
    الاسم ذا نطاق: <bdi>`@ahmed-g-gad/apothem`</bdi>.
-5. كوِّن النشر الموثوق (<bdi>Trusted Publishing</bdi>) لـ
-   <bdi>`@ahmed-g-gad/apothem`</bdi> من <bdi>GitHub Actions</bdi>:
+5. هيّئ <bdi>Trusted Publishing</bdi> للحزمة <bdi>`@ahmed-g-gad/apothem`</bdi> من
+   <bdi>GitHub Actions</bdi>:
    - مالك <bdi>GitHub</bdi>: <bdi>`ahmed-g-gad`</bdi>
    - المستودع: <bdi>`apothem`</bdi>
    - اسم ملف سير العمل: <bdi>`publish-npm.yml`</bdi>
-   - البيئة: <bdi>`npmjs`</bdi>
-   - الإجراء المسموح: <bdi>`npm publish`</bdi>.
-6. في <bdi>GitHub</bdi>، تحقَّق من أن بيئة <bdi>`npmjs`</bdi> موجودة على
-   <bdi>`ahmed-g-gad/apothem`</bdi> وتتطلب موافقة يدوية للنشر.
-7. أبقِ سطح <bdi>npm</bdi> على حزمة سجل عامة واحدة:
+   - البيئة: <bdi>`release`</bdi> (قيمة <bdi>`environment:`</bdi> لمهمة النشر في
+     <bdi>`publish-npm.yml`</bdi>؛ ويجب أن تتطابق القيمتان)
+   - الإجراء المسموح به: <bdi>`npm publish`</bdi>.
+6. في <bdi>GitHub</bdi>، تحقّق من أن البيئة <bdi>`release`</bdi> موجودة على
+   <bdi>`ahmed-g-gad/apothem`</bdi> وأنها تتطلّب موافقة يدوية لعملية النشر.
+7. اقصر سطح <bdi>npm</bdi> على حزمة سجلّ عامة واحدة:
    <bdi>`@ahmed-g-gad/apothem`</bdi> على <bdi>npmjs.com</bdi>.
-8. أكِّد جاهزية الإصدار:
+8. تأكّد من جاهزية الإصدار:
 
    ```bash title="Release readiness"
    bash scripts/release/check-release-ready.sh <release-tag>
    ```
 
-9. شغِّل <bdi>`Publish — npm`</bdi> (<bdi>`publish-npm.yml`</bdi>) من علامة
-   تبويب <bdi>GitHub Actions</bdi> مع <bdi>`tag=<release-tag>`</bdi> ووافق على
-   نشر بيئة <bdi>`npmjs`</bdi>.
-10. تحقَّق من الحزمة الحية:
+9. شغِّل <bdi>`Publish — npm`</bdi> (<bdi>`publish-npm.yml`</bdi>) من تبويب
+   <bdi>GitHub Actions</bdi> مع <bdi>`tag=<release-tag>`</bdi>، ووافِق على عملية
+   النشر إلى بيئة <bdi>`release`</bdi>.
+10. تحقّق من الحزمة المنشورة فعليًا:
 
     ```bash title="npm verification"
     npm view @ahmed-g-gad/apothem version
     npx @ahmed-g-gad/apothem@<version> --version
     ```
 
-لا يلزم أي سر <bdi>`NPM_TOKEN`</bdi> أو اسم مستخدم أو كلمة مرور. يَنشُر سير
-العمل عبر <bdi>npm Trusted Publishing (OIDC)</bdi> مع تثبيت إصدار
-<bdi>Node</bdi> وأرضية <bdi>OIDC</bdi> الخاصة بواجهة سطر أوامر <bdi>npm</bdi>
-داخل <bdi>`.github/workflows/publish-npm.yml`</bdi>. يُشغِّل
+لا يلزم أي سرّ <bdi>`NPM_TOKEN`</bdi> أو اسم مستخدم أو كلمة مرور. ينشر سير العمل
+عبر <bdi>npm Trusted Publishing</bdi> (<bdi>OIDC</bdi>) بنسخة <bdi>Node</bdi>
+وبالحدّ الأدنى لدعم <bdi>OIDC</bdi> في <bdi>npm CLI</bdi>، المُثبَّتين داخل
+<bdi>`.github/workflows/publish-npm.yml`</bdi>. ويُشغِّل
 <bdi>`npm publish --access public`</bdi> مقابل <bdi>npmjs.com</bdi>؛ ويُصدِر
-<bdi>npm</bdi> تلقائيًا المنشأ (<bdi>provenance</bdi>) للحزم العامة المنشورة من
-سير عمل <bdi>GitHub Actions</bdi> عام. <bdi>`404`</bdi> من السجل أثناء
-<bdi>`PUT`</bdi> يعني أن الناشر الموثوق على جانب <bdi>npm</bdi> أو نطاق الحزمة
-أو تفويض الحساب لم يتوائم بعد؛ أصلح إعدادات حزمة <bdi>npm</bdi> قبل إعادة
+<bdi>npm</bdi> تلقائيًا إثبات المنشأ للحزم العامة المنشورة من سير عمل عام في
+<bdi>GitHub Actions</bdi>. يعني الخطأ <bdi>`404`</bdi> من السجلّ أثناء
+<bdi>`PUT`</bdi> أن الناشر الموثوق على جانب <bdi>npm</bdi>، أو نطاق الحزمة، أو
+تفويض الحساب لم يُضبَط بعد؛ أصلِح إعدادات الحزمة على <bdi>npm</bdi> قبل إعادة
 محاولة سير العمل.
 
-المراجع: [الناشرون الموثوقون في npm](https://docs.npmjs.com/trusted-publishers/) و[منشأ npm](https://docs.npmjs.com/generating-provenance-statements/) و[نطاقات npm](https://docs.npmjs.com/about-scopes/).
+بمجرد نجاح نشر موثوق، أغلِق مسار الرموز المميّزة نهائيًا: في
+**<bdi>Settings → Publishing access</bdi>** الخاصة بالحزمة على <bdi>npmjs.com</bdi>،
+اختر **<bdi>Require two-factor authentication and disallow tokens</bdi>**، واحذف أي
+سرّ لرمز <bdi>npm</bdi> مميّز متبقٍّ في المستودع. لم يعد سير العمل يقرأ أي رمز.
 
-## المتطلبات المسبقة للإصدار على جانب GitHub
+المراجع: [الناشرون الموثوقون في <bdi>npm</bdi>](https://docs.npmjs.com/trusted-publishers/)، و[إثبات المنشأ في <bdi>npm</bdi>](https://docs.npmjs.com/generating-provenance-statements/)، و[النطاقات في <bdi>npm</bdi>](https://docs.npmjs.com/about-scopes/).
 
-أسطح الإصدار المتبقية أصيلة في <bdi>GitHub</bdi> وتُصادِق باستخدام
-<bdi>`GITHUB_TOKEN`</bdi> ذي نطاق المستودع؛ ولا يشارك أي حساب خارجي.
+## المتطلّبات المسبقة للإصدار على جانب <bdi>GitHub</bdi>
 
-1. **<bdi>GitHub Release</bdi>.** يعمل <bdi>`.github/workflows/release.yml`</bdi>
-   على وسم الإصدار ولا يحتاج إلا إلى إذنه المحلي للمهمة <bdi>`contents: write`</bdi>.
-   أكِّد أن ملف سير العمل موجود على <bdi>`main`</bdi> قبل الوسم.
-2. **نطاق <bdi>Pages</bdi> المخصص.** يُنشَر موقع التوثيق عبر
-   <bdi>`publish-static-site.yml`</bdi> إلى النطاق المخصص
-   <bdi>`apothem.ahmedgad.com`</bdi>. النطاق و<bdi>DNS</bdi> وفرض
-   <bdi>HTTPS</bdi> يُؤسِّسها [دليل تشغيل تمكين Pages](/docs/runbooks/pages-enablement)؛
-   تحقَّق:
+أسطح الإصدار المتبقّية أصلية في <bdi>GitHub</bdi> وتُصادِق باستخدام
+<bdi>`GITHUB_TOKEN`</bdi> ذي نطاق المستودع؛ ولا يدخل فيها أي حساب خارجي.
+
+1. **إصدار <bdi>GitHub</bdi>.** يعمل <bdi>`.github/workflows/release.yml`</bdi> على
+   وسم النسخة ولا يحتاج إلا إلى صلاحية <bdi>`contents: write`</bdi> المحلّية
+   لمهمّته. تأكّد من وجود ملف سير العمل على <bdi>`main`</bdi> قبل وضع الوسم.
+2. **النطاق المخصّص لـ <bdi>Pages</bdi>.** يُنشَر موقع الوثائق عبر
+   <bdi>`publish-static-site.yml`</bdi> إلى النطاق المخصّص
+   <bdi>`apothem.ahmedgad.com`</bdi>. يُؤسِّس
+   [دليل تشغيل تفعيل <bdi>Pages</bdi>](/docs/runbooks/pages-enablement) النطاقَ
+   و<bdi>DNS</bdi> وفرض <bdi>HTTPS</bdi>؛ تحقّق:
 
    ```bash title="Pages verification"
    gh api repos/ahmed-g-gad/apothem/pages --jq '.cname, .https_enforced'
@@ -103,15 +107,15 @@ sourceHash: "7261839cafc59c09"
 
 3. **مُثبِّتات السكربت.** يُقدَّم <bdi>`install.sh`</bdi> و<bdi>`install.ps1`</bdi>
    من موقع <bdi>Pages</bdi> (<bdi>`https://apothem.ahmedgad.com/install.sh`</bdi>
-   و<bdi>`https://apothem.ahmedgad.com/install.ps1`</bdi>). يَنشُرهما نشر
-   <bdi>Pages</bdi> نفسه؛ ولا يلزم حساب أو رمز منفصل.
+   و<bdi>`https://apothem.ahmedgad.com/install.ps1`</bdi>). وتنشرهما عملية النشر
+   نفسها إلى <bdi>Pages</bdi>؛ ولا يلزم حساب أو رمز مميّز منفصل.
 
-## مصفوفة التحقق
+## مصفوفة التحقّق
 
-بعد الإعداد، يُجيب كل سطح ناشر على فحصه المعياري:
+بعد الإعداد، يستجيب كل سطح ناشر لفحصه المرجعي:
 
 | السطح | الفحص |
 |---|---|
-| <bdi>npmjs.com</bdi> | <bdi>`npm view @ahmed-g-gad/apothem version`</bdi> يُرجِع الإصدار المنشور |
-| <bdi>GitHub Release</bdi> | <bdi>`gh release view <release-tag> --json assets --jq '.assets[].name'`</bdi> يُدرِج <bdi>sdist</bdi> و<bdi>wheel</bdi> و<bdi>SBOM</bdi> وحُزم <bdi>cosign</bdi> والمنشأ وأرشيفات المنصة |
-| <bdi>Pages</bdi> | <bdi>`curl -sSI https://apothem.ahmedgad.com/`</bdi> يُرجِع <bdi>`200`</bdi> على النطاق المخصص |
+| <bdi>npmjs.com</bdi> | يُرجِع <bdi>`npm view @ahmed-g-gad/apothem version`</bdi> النسخة الصادرة |
+| إصدار <bdi>GitHub</bdi> | يسرد <bdi>`gh release view <release-tag> --json assets --jq '.assets[].name'`</bdi> الـ <bdi>sdist</bdi> والـ <bdi>wheel</bdi> والـ <bdi>SBOM</bdi> وحِزم <bdi>cosign</bdi> وإثبات المنشأ وأرشيفات المنصّات |
+| <bdi>Pages</bdi> | يُرجِع <bdi>`curl -sSI https://apothem.ahmedgad.com/`</bdi> الرمز <bdi>`200`</bdi> على النطاق المخصّص |

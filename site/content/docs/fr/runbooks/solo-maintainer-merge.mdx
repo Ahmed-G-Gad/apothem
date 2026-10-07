@@ -1,33 +1,40 @@
 ---
 title: "Cérémonie de fusion de PR pour mainteneur unique"
-description: "Cérémonie pour fusionner soi-même des pull requests lorsque les règles de protection de branche et enforce_admins bloqueraient sinon un mainteneur unique."
+description: "Quand le mainteneur peut fusionner directement sa propre pull request, et la cérémonie pour une protection de branche qui exige une approbation et l'applique aux administrateurs."
 machineTranslated: true
-sourceHash: "13c2dbd96642df48"
+sourceHash: "a71e0b9bd24c0df8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Référence canonique pour fusionner soi-même des PR sous l'invariant de protection de branche du projet.** Lorsque le mainteneur est le seul contributeur disposant d'un accès en écriture, les règles de protection de branche de GitHub `enforce_admins=true` + `required_approving_review_count=1` créent un blocage d'auto-fusion dont cette page documente la résolution.
+> **Référence canonique pour fusionner soi-même des PR sous la protection de branche du projet.** La protection en vigueur sur `main` exige 0 revue d'approbation et laisse `enforce_admins` désactivé, comme le consigne la page [Protection de branche](/docs/security/branch-protection-ruleset). Le mainteneur fusionne donc directement sa propre pull request. La cérémonie de bascule temporaire de cette page ne s'applique que lorsque la protection exige une approbation et l'applique aux administrateurs.
 
 ---
 
 ## 1. Le blocage
 
-La branche `main` du dépôt porte cet ensemble de protection :
+La protection en vigueur sur `main` porte :
+
+- `required_pull_request_reviews.required_approving_review_count: 0`
+- `enforce_admins: false`
+
+Avec ces paramètres, il n'y a pas de blocage. Une pull request du mainteneur se fusionne avec `gh pr merge <pr-number> --squash --delete-branch` dès que ses vérifications de statut requises sont au vert et que ses conversations de revue sont résolues.
+
+Un blocage n'existe que lorsque la protection porte ces deux paramètres plus stricts :
 
 - `required_pull_request_reviews.required_approving_review_count: 1`
 - `enforce_admins: true`
 
-Ces règles sont correctes pour les scénarios à plusieurs mainteneurs (chaque changement atteint `main` via une PR relue par un pair ; les administrateurs ne sont pas exemptés). Elles produisent un blocage pour les mainteneurs uniques : la politique de GitHub interdit l'auto-approbation d'une PR que vous avez vous-même créée, et `enforce_admins=true` bloque le contournement `gh pr merge --admin` de l'exigence d'approbation de la revue.
+Ces règles sont correctes pour les scénarios à plusieurs mainteneurs (chaque changement atteint `main` via une PR relue par un pair ; les administrateurs ne sont pas exemptés). Elles produisent un blocage pour les mainteneurs uniques : la politique de GitHub interdit l'auto-approbation d'une PR que vous avez créée, et `enforce_admins=true` bloque le contournement `gh pr merge --admin` de l'exigence d'approbation de revue. Avec `enforce_admins: false`, `--admin` contourne l'exigence d'approbation et aucune bascule n'est nécessaire, mais il contourne aussi les vérifications requises en rouge ; confirmez donc qu'elles sont au vert avant de l'utiliser.
 
 Trois voies de résolution existent :
 
 | Voie | Quand l'utiliser |
 |------|-------------|
-| **Cérémonie de bascule temporaire (canonique pour ce dépôt)** | Par défaut pour les auto-fusions de mainteneur unique ; préserve l'invariant de protection en dehors de la fenêtre de fusion |
+| Définir `required_approving_review_count: 0` de façon permanente (**paramètre en vigueur**) | À adopter seulement si le dépôt restera à mainteneur unique indéfiniment ; inverse l'intention de revue de la protection |
+| **Cérémonie de bascule temporaire** | Auto-fusions du mainteneur unique tant que la protection exige une approbation avec `enforce_admins=true` ; préserve l'invariant de protection en dehors de la fenêtre de fusion |
 | Provisionner une identité de bot CI avec accès en écriture | À adopter seulement si l'intégration de plusieurs mainteneurs est imminente ; l'approbation par bot affaiblit l'intention de revue humaine de la protection |
-| Définir `required_approving_review_count: 0` de façon permanente | À adopter seulement si le dépôt restera à mainteneur unique indéfiniment ; cela inverse l'intention de revue de la protection |
 
-Ce dépôt ratifie la **cérémonie de bascule temporaire** comme voie canonique. Les deux autres sont des issues de secours documentées, pas l'option par défaut.
+Ce dépôt utilise actuellement la voie **zéro approbation permanente**. La **cérémonie de bascule temporaire** est la voie canonique chaque fois que la protection exige une approbation et l'applique aux administrateurs.
 
 ## 2. La cérémonie de bascule temporaire
 
@@ -61,12 +68,14 @@ python scripts/dev/admin_merge.py <pr-number>
 
 ## 3. Invariants
 
-- **Fenêtre de bascule minimisée.** Les étapes 2 → 3 → 4 s'exécutent en une seule séquence non interactive. La protection n'est dans son état assoupli que pour la durée de l'appel à l'API de fusion — moins d'une seconde à chaque exécution observée.
+- **Fenêtre de bascule minimisée.** Les étapes 2 → 3 → 4 s'exécutent en une seule séquence non interactive. La protection n'est dans son état assoupli que pendant la durée de l'appel à l'API de fusion — moins d'une seconde à chaque exécution observée.
 - **La restauration est inconditionnelle.** L'étape 4 s'exécute même lorsque l'étape 3 échoue (la clause `try` / `finally` de l'enveloppe garantit la restauration sur tout chemin de sortie). Une tentative de fusion échouée ne laisse pas la protection assouplie.
-- **Le contrôle CI est préservé en permanence.** `required_status_checks` n'est pas affecté par la bascule ; la fusion exige toujours que les contextes de vérification de statut configurés soient au vert.
+- **Le contrôle CI est préservé tout du long, tant que `enforce_admins` est activé.** `required_status_checks` n'est pas affecté par la bascule ; avec `enforce_admins: true`, la fusion exige toujours que les contextes de vérification de statut configurés soient au vert. Avec `enforce_admins: false`, la fusion `--admin` de l'étape 3 contourne aussi les vérifications requises en rouge ; n'exécutez donc pas la cérémonie dans cet état.
 - **Piste d'audit visible.** L'annotation `gh pr merge --admin` apparaît dans les métadonnées de fusion de la PR ; les bascules de l'API de protection apparaissent dans le journal d'audit du dépôt sous l'identité du mainteneur.
 
 ## 4. Quand NE PAS utiliser la cérémonie
+
+Tant que la protection exige 0 revue d'approbation ou laisse `enforce_admins` désactivé, la cérémonie est inutile : fusionnez directement comme le décrit la section 1.
 
 La cérémonie sert à l'**auto-fusion** des PR du mainteneur lui-même. Lorsqu'un relecteur pair est disponible (un contributeur avec accès en écriture), la voie standard `gh pr review --approve` + `gh pr merge --squash --delete-branch` est la bonne et la cérémonie est inutile.
 
@@ -74,10 +83,10 @@ Si le dépôt intègre un second mainteneur, retirez la cérémonie : le flux st
 
 ## 5. Auditer une exécution passée
 
-Chaque invocation de la cérémonie se dépose sur trois surfaces durables qu'un opérateur peut inspecter après coup :
+Chaque invocation de la cérémonie laisse une trace sur trois surfaces durables qu'un opérateur peut inspecter après coup :
 
 - **Les métadonnées de fusion de la PR.** `gh pr view <pr-number> --json mergedBy,mergedAt,mergeCommit` renvoie l'acteur de la fusion, l'horodatage de la fusion et le SHA du commit de squash. L'acteur `mergedBy` correspond à l'identité du mainteneur qui a exécuté l'étape 3.
-- **Le journal d'audit du dépôt.** `gh api /repos/<owner>/<repo>/actions/runs --jq '.workflow_runs[] | select(.event=="push")'` corrèle l'exécution CI post-fusion au commit de fusion ; le journal d'audit des règles de protection du dépôt (historique de `gh api /repos/<owner>/<repo>/branches/main/protection` via l'interface Settings → Branches) montre les bascules de l'étape 2 et de l'étape 4 encadrant la fenêtre de fusion.
+- **Le journal d'audit du dépôt.** `gh api /repos/<owner>/<repo>/actions/runs --jq '.workflow_runs[] | select(.event=="push")'` met en correspondance l'exécution CI post-fusion et le commit de fusion ; le journal d'audit des règles de protection du dépôt (historique de `gh api /repos/<owner>/<repo>/branches/main/protection` via l'interface Settings → Branches) montre les bascules de l'étape 2 et de l'étape 4 qui encadrent la fenêtre de fusion.
 - **L'historique git du mainteneur.** `git log main --merges --first-parent` liste chaque commit de squash-merge sur `main` avec le numéro de PR correspondant dans l'objet du commit (suffixe `(#<pr-number>)` selon la valeur par défaut de `gh pr merge --squash`), ce qui permet à l'opérateur de retracer tout atterrissage passé jusqu'à sa PR et à son invocation de cérémonie.
 
-Lorsque `scripts/dev/admin_merge.py` est le point d'entrée, son journal non interactif (stdout) nomme les trois appels à l'API de protection et l'appel à l'API de fusion en séquence ; rediriger l'enveloppe vers `tee` capture un fragment d'audit par exécution sans dépendre de la rétention du journal côté GitHub.
+Lorsque `scripts/dev/admin_merge.py` est le point d'entrée, son journal non interactif (stdout) nomme en séquence les trois appels à l'API de protection et l'appel à l'API de fusion ; rediriger l'enveloppe vers `tee` capture un fragment d'audit par exécution sans dépendre de la rétention du journal côté GitHub.

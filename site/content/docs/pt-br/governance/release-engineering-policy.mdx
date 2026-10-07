@@ -1,8 +1,8 @@
 ---
 title: "Política de engenharia de lançamento"
-description: "Cinco políticas canônicas para versionamento, marcação de lançamentos, ciclos de descontinuação, mudanças incompatíveis e procedimentos de reversão."
+description: "Cinco políticas canônicas para versionamento, tags de lançamento, ciclos de descontinuação, mudanças incompatíveis e procedimentos de reversão."
 machineTranslated: true
-sourceHash: "f74f29a93205cc10"
+sourceHash: "29b59b2934ad73e3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,39 +14,61 @@ O projeto é distribuído sob o [Versionamento Semântico 2.0](https://semver.or
 Os números de versão assumem a forma `MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]`.
 
 | Incremento | Gatilhos |
-|------------|----------|
-| **MAJOR** | Mudanças incompatíveis em esquemas de artefatos, identificadores de mandato (CM-N / TM-N / CP-N) ou contratos de hooks |
-| **MINOR** | Novas regras, trabalhadores delegados, comandos, habilidades, eventos de hook ou extensões de esquema não incompatíveis |
-| **PATCH** | Esclarecimentos, adições de antipadrões, correções de documentação e edições que não alteram o comportamento |
+|------|----------|
+| **MAJOR** | Mudanças incompatíveis em schemas de artefatos, identificadores de mandato (CM-N / TM-N / CP-N) ou contratos de hooks |
+| **MINOR** | Novas regras, trabalhadores delegados, comandos, skills, eventos de hook ou extensões de schema não incompatíveis |
+| **PATCH** | Esclarecimentos, adições de antipadrões, correções de documentação, edições que não alteram o comportamento |
 
 As tags candidatas usam o formato `vX.Y.Z-rc.N` (candidata a lançamento)
 ou `vX.Y.Z-alpha.N` / `vX.Y.Z-beta.N` (acesso antecipado).
 
 ## 2. Tags de lançamento
 
-Cada lançamento deposita em `main` uma tag git assinada da forma
+Todo lançamento aplica em `main` uma tag git assinada da forma
 `vMAJOR.MINOR.PATCH`. A tag dispara o `.github/workflows/release.yml`, que
-constrói, assina, gera SBOM e procedência SLSA-3, e
-publica a página de GitHub Release.
+compila, assina, gera o SBOM e a procedência SLSA-3, e
+publica a página do GitHub Release.
 
 Convenções de tags:
 
 - **Formato** — exatamente `vMAJOR.MINOR.PATCH`. Sem prefixo `release-`,
   sem sufixo `-final`.
-- **Anotação** — cada tag é uma tag anotada (`git tag -a -s`)
+- **Anotação** — toda tag é uma tag anotada (`git tag -a -s`)
   que carrega o resumo das notas de lançamento na mensagem da tag.
-- **Assinatura** — cada tag é assinada com GPG. O fluxo de trabalho de lançamento
-  adicionalmente produz uma assinatura cosign sem chave do Sigstore em
+- **Assinatura** — toda tag é assinada com GPG. O fluxo de trabalho de
+  lançamento também produz uma assinatura cosign sem chave do Sigstore em
   cada artefato e uma prova de procedência de lançamento SLSA-3, ambas
-  anexadas à página de GitHub Release.
+  anexadas à página do GitHub Release.
+
+### Modelo de lançamento: aditivo
+
+Os lançamentos são aditivos. Cada lançamento adiciona um commit em `main` e uma
+tag; `main` nunca recebe force-push, e nenhuma tag, GitHub Release ou versão do
+npm publicada é excluída, movida ou reutilizada. O projeto tem três lançamentos,
+cada um com sua tag, seu GitHub Release e sua versão do npm, e todos os três
+permanecem publicados. As versões do npm são imutáveis: um `name@version`
+publicado nunca pode ser substituído, e um número despublicado nunca pode ser
+usado novamente. As instalações fixadas e os builds reproduzíveis dependem de
+cada tag publicada. Os runbooks de
+[ciclo de lançamento](/docs/runbooks/release-cycle) e de
+[recuperação de lançamento](/docs/runbooks/release-recovery) seguem ambos este
+modelo.
+
+A regra de fachada de lançamento do repositório (a seção Release Facade das
+instruções para contribuidores, espelhada na regra freshness-facade) pede "uma
+única tag de lançamento visível, um único GitHub Release". Isso contradiz este
+modelo: existem três lançamentos, e o npm não consegue remover uma versão
+publicada. A regra permanece inalterada até que o mantenedor a resolva. Até lá,
+o modelo aditivo prevalece, e nada do que foi publicado é excluído ou reescrito
+para satisfazer a regra.
 
 ## 3. Política de descontinuação
 
 A linha de suporte público atual é a versão menor mais recente lançada. Quando
-o projeto tem várias versões menores públicas, a matriz de versões
-suportadas do [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
-é a fonte de verdade para quaisquer janelas adicionais de suporte
-somente para correções críticas.
+o projeto tem várias versões menores públicas, a matriz de versões suportadas do
+[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
+é a fonte de verdade para quaisquer janelas adicionais de suporte somente para
+correções críticas.
 
 Cadência de descontinuação:
 
@@ -54,51 +76,76 @@ Cadência de descontinuação:
   anunciado na seção `### Deprecated` do `CHANGELOG.md` do
   lançamento em que a descontinuação ocorre. As notas de lançamento
   espelham o anúncio de descontinuação.
-- **Janela de tolerância** — símbolos descontinuados permanecem disponíveis por
-  no mínimo um ciclo menor completo antes da remoção.
+- **Janela de tolerância** — os símbolos descontinuados permanecem disponíveis
+  por no mínimo um ciclo menor completo antes da remoção.
 - **Remoção** — a remoção ocorre em um incremento `MAJOR`. Cada símbolo
   removido carrega uma linha `### Removed` no `CHANGELOG.md` e uma
   entrada de guia de migração em
   [Guias práticos](/docs/how-to-guides).
 
+### Pisos de runtime
+
+O Apothem declara dois pisos de runtime: `requires-python = ">=3.10"` em
+`pyproject.toml` e `"engines": {"node": ">=18"}` em `package.json`.
+
+- **Todo piso declarado é testado.** O piso do Python é executado na matriz
+  `quality` do CI e no fluxo de trabalho `CI Matrix`. O fluxo de trabalho
+  `npm Shim` executa o shim do npm no piso do Node e em cada versão major LTS
+  posterior: ele verifica o erro de pré-requisito ausente,
+  `node bin/apothem.mjs --version`, uma instalação em modo dry-run em um
+  diretório home isolado e o tarball empacotado via `npx`. Um runtime que não é
+  testado não é declarado.
+- **O fim de vida é divulgado.** Quando um runtime que ainda é um piso declarado
+  chega ao fim de vida upstream, o
+  [guia de instalação](/docs/install#pré-requisitos-de-relance) informa isso e
+  nomeia as versões a preferir. O Python 3.10 chegou ao fim de vida em
+  2026-10-01; o Node.js 18 e o 20, em 2025-04-30 e 2026-04-30. Os três
+  continuam sendo pisos suportados.
+- **Elevar um piso é uma descontinuação.** Isso segue a cadência acima: um
+  anúncio em `### Deprecated`, pelo menos um ciclo menor completo no qual o piso
+  antigo continua sendo testado, e então o lançamento que o eleva registra a
+  mudança. `requires-python`, `engines.node`, as sondagens de versão dos
+  instaladores e as matrizes de CI mudam juntos nesse lançamento.
+
 ## 4. Política de mudanças incompatíveis
 
 Mudanças incompatíveis exigem:
 
-1. **Uma issue RFC** — aberta com o rótulo de issue `rfcs`
+1. **Uma issue de RFC** — aberta com o rótulo de issue `rfcs`,
    descrevendo a mudança incompatível, o caminho de migração e a
    estratégia de reversão.
-2. **Uma janela de comentários de 30 dias** — a RFC permanece aberta por pelo menos
-   30 dias antes do merge. Os mantenedores podem estender a janela quando
+2. **Uma janela de comentários de 30 dias** — a RFC permanece aberta por pelo
+   menos 30 dias antes do merge. Os mantenedores podem estender a janela quando
    o feedback justificar.
 3. **Um incremento MAJOR** — o lançamento que aplica a mudança
    incompatível incrementa o componente MAJOR.
 4. **Um guia de migração** — a mudança é entregue com uma
-   entrada de [Guias práticos](/docs/how-to-guides) que orienta o
+   entrada em [Guias práticos](/docs/how-to-guides) que orienta o
    operador na migração.
 
 ## 5. Política de reversão
 
-Se um lançamento exibir uma regressão que bloqueia a adoção:
+Se um lançamento apresentar uma regressão que bloqueia a adoção:
 
-1. **Reverter** — o(s) commit(s) problemático(s) são revertidos em `main`.
-2. **Reetiquetagem menos um** — um lançamento subsequente ocorre como
-   `vMAJOR.MINOR.PATCH+1` carregando a reversão mais quaisquer
+1. **Reverter** — o(s) commit(s) problemático(s) é(são) revertido(s) em `main`.
+2. **Lançamento de correção para frente** — um lançamento subsequente é feito
+   como `vMAJOR.MINOR.PATCH+1`, carregando a reversão mais quaisquer
    correções incrementais. O lançamento defeituoso anterior **não** é
-   excluído do GitHub Releases — uma anotação `### Yanked` no
-   `CHANGELOG.md` documenta a situação para que as
-   compilações reproduzíveis permaneçam ancoradas.
-3. **Comunicação** — um aviso de security-advisories (quando
-   for relevante para a segurança) ou uma postagem em Discussions (quando
-   for relevante para a confiabilidade) acompanha a reversão.
+   excluído do GitHub Releases, e sua versão do npm permanece
+   publicada (as versões do npm são imutáveis) e é marcada com
+   `npm deprecate`. Uma anotação `### Yanked` no `CHANGELOG.md`
+   documenta a situação para que os builds reproduzíveis permaneçam ancorados.
+3. **Comunicação** — um aviso de security-advisories (quando for
+   relevante para a segurança) ou uma issue do GitHub fixada para o incidente
+   (quando for relevante para a confiabilidade) acompanha a reversão.
 
 ## Veja também
 
 - [CHANGELOG.md](https://github.com/ahmed-g-gad/apothem/blob/main/CHANGELOG.md)
-  — o livro-razão canônico de lançamentos.
+  — o registro canônico de lançamentos.
 - [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
-  — a matriz de versões suportadas e os canais de notificação.
+  — a matriz de versões suportadas e os canais de relato.
 - [cicd-pipeline.md](/docs/architecture/cicd-pipeline) — as classes de
-  verificações de CI que protegem cada lançamento.
-- [deployment-checklist.md](/docs/runbooks/deployment-checklist) — a varredura de
-  prontidão para produção por lançamento.
+  verificação de CI que protegem cada lançamento.
+- [deployment-checklist.md](/docs/runbooks/deployment-checklist) — a varredura
+  de prontidão para produção por lançamento.

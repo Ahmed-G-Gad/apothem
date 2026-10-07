@@ -1,55 +1,130 @@
 ---
 title: "分支保护"
-description: "main 分支上的 Apothem 分支保护——审查门控、状态检查门控以及推送限制。"
+description: "main 上的 Apothem 分支保护：当前生效的保护规则、其必需状态检查，以及待添加的检查。"
 machineTranslated: true
-sourceHash: "57b3290928ce6bcc"
+sourceHash: "7d54aae6581f03ec"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-在发布单个崭新的发布提交之后，Apothem 的 `main` 分支受 GitHub 分支保护的保护。该保护强制执行 `rules/production-ready-prs.md` 中声明的变更集纪律，并为后续工作驱动 OpenSSF Scorecard 的 **Branch-Protection** 与 **Code-Review** 检查。
+Apothem 的 `main` 分支受一条经典的 GitHub 分支保护规则保护。该仓库没有规则集。该保护强制执行 `rules/production-ready-prs.md` 中声明的变更集纪律，并为 OpenSSF Scorecard 的 **Branch-Protection** 和 **Code-Review** 检查提供输入。
 
-## 规则集声明
+本页准确记录当前生效的设置，以 2026-10-07 最后一次从 GitHub API 读取的结果为准。维护者打算应用但尚未应用的设置只出现在[待维护者实施的变更](#待维护者实施的变更)之下。
 
-| 设置 | 值 | 理由 |
+## 保护设置
+
+| 设置 | API 字段 | 当前值 | 效果 |
+|---|---|---|---|
+| **合并前要求拉取请求** | `required_pull_request_reviews`（存在） | ✅ | 变更通过拉取请求进入 `main`。 |
+| **所需批准评审数** | `required_approving_review_count` | **0** | 拉取请求无需批准评审即可合并。参见[单人维护者模型](#单人维护者模型)。 |
+| **有新提交时撤销过时的批准** | `dismiss_stale_reviews` | ✅ | 在一次新的推送之前给出的批准不再计数。 |
+| **要求来自 Code Owners 的评审** | `require_code_owner_reviews` | ❌ | 在第二位维护者加入之前启用此项，会使单人维护者的拉取请求陷入死锁。 |
+| **要求对最近一次可评审推送进行批准** | `require_last_push_approval` | ❌ | GitHub 要求该批准来自推送者以外的人，而单人维护者无法提供。 |
+| **要求状态检查通过** | `required_status_checks` | ✅ | [必需状态检查](#必需状态检查)下列出的 12 个上下文必须通过。 |
+| **要求分支在合并前保持最新** | `required_status_checks.strict` | ❌ | 当拉取请求的必需检查是针对较旧的 `main` 通过的时，它仍可以合并。随后，在推送到 `main` 时运行的工作流会测试合并后的结果。 |
+| **要求在合并前解决对话** | `required_conversation_resolution` | ✅ | 未解决的评审讨论串会阻止合并。 |
+| **要求签名提交** | `required_signatures` | ❌ | 发布提交在本地签名。强制执行要等到贡献者入门文档说明 SSH 或 GPG 签名设置之后。 |
+| **要求线性历史** | `required_linear_history` | ✅ | 使 `main` 的公开历史保持为一条直线。 |
+| **锁定分支** | `lock_branch` | ❌ | `main` 接受合并。 |
+| **不允许绕过上述设置** | `enforce_admins` | ❌ | 上述设置不约束仓库管理员。管理员可以在没有必需检查的情况下合并，或直接推送到 `main`。 |
+| **允许强制推送** | `allow_force_pushes` | ❌ | 对 `main` 的强制推送对所有人都被阻止，包括管理员。 |
+| **允许删除** | `allow_deletions` | ❌ | 任何人都不能删除 `main`，包括管理员。 |
+
+## 单人维护者模型
+
+该仓库只有一位维护者。GitHub 声明：“拉取请求作者不能批准自己的拉取请求。”因此，大于 0 的所需批准数会阻止维护者的每一个拉取请求。当前生效的规则要求通过拉取请求合并、所需批准数为 0，并让 `enforce_admins` 保持关闭。
+
+对于没有管理员权限的任何人，合并仍然需要必需状态检查为绿色、评审对话已解决以及线性历史。对 `main` 的强制推送和删除对每个账户都保持阻止。
+
+当第二位维护者加入时，更强的设置是：至少一个必需批准、最新推送批准、CODEOWNERS 评审，以及开启 `enforce_admins`。[单人维护者合并仪式](/docs/runbooks/solo-maintainer-merge)仅适用于要求一次批准并对管理员强制执行的保护。
+
+## 必需状态检查
+
+以下 12 个上下文中的每一个都是必需的，其来源为 GitHub Actions（应用 ID `15368`）：
+
+```text
+quality / ubuntu-latest / py3.10
+quality / ubuntu-latest / py3.11
+quality / ubuntu-latest / py3.12
+quality / ubuntu-latest / py3.13
+quality / ubuntu-latest / py3.14
+quality / windows-latest / py3.10
+quality / windows-latest / py3.11
+quality / windows-latest / py3.12
+quality / windows-latest / py3.13
+quality / windows-latest / py3.14
+coverage
+Require Signed-off-by
+```
+
+| 上下文 | 工作流和作业 | 如何在每个拉取请求上报告 |
 |---|---|---|
-| **目标** | `main` | 保护公共默认分支。 |
-| **强制执行状态** | `active` | 非演练模式。 |
-| **合并前要求拉取请求** | ✅ | 阻止直接推送到 `main`。 |
-| **所需批准审查数** | **1** | 新的单人维护项目的最低人工审查门控。 |
-| **新提交时撤销过时批准** | ✅ | 批准后的强制推送将重新触发审查。 |
-| **要求来自 Code Owners 的审查** | 已推迟 | 在第二位维护者加入之前启用此项可能会使单人维护者的 PR 陷入死锁。 |
-| **要求对最近一次可审查推送的批准** | ✅ | 最新推送的提交必须携带批准。 |
-| **要求会话解决** | ✅ | 未解决的审查讨论串会阻止合并。 |
-| **要求状态检查通过** | ✅ | CI 工作流 + Scorecard + CodeQL + pip-audit。 |
-| **所需状态检查** | 当前核心检查 | 所需列表会从最新的绿色发布提交中刷新。 |
-| **要求分支处于最新状态** | ✅ | 防止过时合并回归。 |
-| **要求签名提交** | 推荐 | 本地发布提交已签名；完整强制执行将等到贡献者引导文档说明 SSH/GPG 设置之后。 |
-| **要求线性历史** | ✅ | 保持单线公共历史的可理解性。 |
-| **阻止强制推送** | ✅ | 阻止在 `main` 上重写历史。 |
-| **允许删除** | ❌ | `main` 分支不可被删除。 |
+| `quality / <os> / py<ver>`（10 个） | `ci.yml`，作业 `quality` | 当拉取请求触及代码或配置路径时，`ci.yml` 会运行。在仅涉及文档的拉取请求上，`ci-docs-stub.yml` 会报告相同的上下文。 |
+| `coverage` | `ci.yml`，作业 `coverage` | 与 `quality` 相同。 |
+| `Require Signed-off-by` | `dco.yml`，作业 `dco` | 其拉取请求触发器没有 `paths` 过滤器，因此它会在每个指向 `main` 的拉取请求上运行。 |
 
-## 单人维护者约束
+`quality / ubuntu-latest / py3.15` 预发布单元在 `ci.yml` 中以 `continue-on-error` 运行，且不是必需的。任何其他工作流，包括 CodeQL、Scorecard 和 pip-audit，都可以报告状态，但除非其上下文被添加到此列表中，否则其结果不会对合并构成门禁。
 
-GitHub 不允许仓库文件创建人工审查历史。因此该仓库为其当前维护者模型应用最强的不会死锁的分支保护：一次批准审查、过时审查撤销、最新推送批准、会话解决、状态检查、线性历史，以及禁止分支删除或强制推送。当第二位维护者加入时，CODEOWNERS 审查与两名审查者最低要求将成为更强的设置。
+## 待维护者实施的变更
 
-## 状态检查要求
+维护者打算将以下 25 个上下文添加到必需列表中。每个工作流的头部都声明该作业为必需检查，且其拉取请求触发器没有 `paths` 过滤器，因此它会在每个指向 `main` 的拉取请求上运行。在某个上下文被添加之前，它的失败不会阻止合并。
 
-上文声明的四项硬门控状态检查：
+`clean-install-gate.yml`，7 个上下文：
 
-- **`ci`** — 完整测试矩阵 + ruff + mypy + bandit + Trivy + 针对已解析依赖树的 pip-audit
-- **`Scorecard`** — OpenSSF Scorecard 运行，无逐项检查回归
-- **`CodeQL`** — 针对 `python` + `actions` 的 `security-extended` 查询包
-- **`pip-audit`** — 针对已解析依赖树的每周 + 逐 PR 漏洞扫描
+```text
+installer-shell-compat / ubuntu-latest
+installer-shell-compat / macos-latest
+installer-shell-compat / windows-latest
+clean-install-gate / ubuntu-latest
+clean-install-gate / windows-latest
+wheel-smoke / ubuntu-latest
+wheel-smoke / windows-latest
+```
 
-任何其他工作流均可报告状态，但其结果不会门控合并，除非它被提升进入所需检查列表。
+`harness-matrix.yml`，17 个上下文，作业矩阵中的每个适配器各对应一个 `matrix (<adapter>)`：
+
+```text
+matrix (antigravity)
+matrix (claude-code)
+matrix (codebuddy)
+matrix (codex)
+matrix (cursor)
+matrix (gemini-cli)
+matrix (github-copilot)
+matrix (glm)
+matrix (hermes)
+matrix (kimi-code)
+matrix (kiro)
+matrix (open-claw)
+matrix (opencode)
+matrix (qwen-code)
+matrix (trae)
+matrix (windsurf)
+matrix (zed)
+```
+
+`installer-lint.yml`，1 个上下文：
+
+```text
+installer-lint
+```
+
+一旦 `harness-matrix.yml` 的上下文成为必需，注册一个新适配器就会添加一个 `matrix (<adapter>)` 上下文，而必需列表会在同一变更中加入它。“要求分支在合并前保持最新”保持关闭。当某项待定变更被应用时，在同一变更中将其移入上方记录当前生效设置的各节。
 
 ## 审计节奏
 
-本文件在每次安全审计以及每个发布工程检查点都会被审查。本文件与实际分支保护配置之间的偏移是高严重性发现。
+本文件在每次安全审计时以及每个发布工程检查点都会被审查。本文件与实际分支保护配置之间的偏差属于高严重性发现。使用以下命令读取当前生效的配置：
+
+```bash
+gh api repos/ahmed-g-gad/apothem/branches/main/protection
+gh api repos/ahmed-g-gad/apothem/rulesets
+```
 
 ## 参考资料
 
-- [OpenSSF Scorecard — Branch-Protection check](https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection)
-- [GitHub — About protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
-- [Apothem CODEOWNERS](https://github.com/ahmed-g-gad/apothem/blob/main/.github/CODEOWNERS) — 路径范围的审查所有权
-- `rules/production-ready-prs.md` §1 — 本规则集强制执行的同一变更集纪律
+- [OpenSSF Scorecard — Branch-Protection 检查](https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection)
+- [GitHub — 关于受保护分支](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
+- [GitHub — 管理分支保护规则](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule)
+- [GitHub — 批准需要评审的拉取请求](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/approving-a-pull-request-with-required-reviews)
+- [Apothem CODEOWNERS](https://github.com/ahmed-g-gad/apothem/blob/main/.github/CODEOWNERS)——按路径划分的评审所有权
+- [Apothem CI 工作流](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/README.md)——每个必需上下文所来自的工作流
+- `rules/production-ready-prs.md` §1——本保护所强制执行的同一变更集纪律
