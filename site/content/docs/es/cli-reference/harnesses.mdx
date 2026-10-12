@@ -2,11 +2,11 @@
 title: "harnesses"
 description: "Referencia de la CLI para el grupo de comandos apothem harnesses."
 machineTranslated: true
-sourceHash: "07231c50da1f355d"
+sourceHash: "ce8d5647426c475c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Lista e inspecciona los adaptadores de harness registrados.
+Lista e inspecciona los adaptadores de entorno registrados.
 
 `harnesses` es un grupo de comandos con dos subcomandos: `list` y `show`.
 
@@ -24,7 +24,7 @@ apothem harnesses show NAME
 
 ### `harnesses list`
 
-Lista todos los adaptadores de harness registrados.
+Lista todos los adaptadores de entorno registrados.
 
 | Opción | Descripción |
 |---|---|
@@ -37,12 +37,13 @@ Lista todos los adaptadores de harness registrados.
 
 ### `harnesses show NAME`
 
-Muestra los detalles de un adaptador de harness específico. `NAME` es el identificador
-del harness en kebab-case; ejecuta `apothem harnesses list` para ver los identificadores disponibles.
+Muestra los detalles de un adaptador de entorno específico. `NAME` es el
+identificador del entorno en kebab-case; ejecuta `apothem harnesses list` para
+ver los identificadores disponibles.
 
 | Opción | Descripción |
 |---|---|
-| `NAME` | Adaptador de harness a inspeccionar (argumento posicional obligatorio). |
+| `NAME` | Adaptador de entorno que se inspecciona (argumento posicional obligatorio). |
 | `--quiet`, `-q` | Suprime la salida informativa; solo se emiten errores. |
 | `--verbose`, `-v` | Emite salida de diagnóstico adicional. |
 | `--format plain\|json` | Formato de salida (por defecto: `plain`). |
@@ -59,7 +60,7 @@ apothem harnesses show claude-code
 apothem harnesses show claude-code --json
 ```
 
-Los ID de harness registrados son:
+Los ID de entorno registrados son:
 
 ```text
 antigravity
@@ -86,9 +87,11 @@ zed
 | Código | Significado |
 |---|---|
 | 0 | Éxito |
-| 1 | Harness no encontrado (`harnesses show` con un `NAME` desconocido) |
+| 1 | Entorno no encontrado (`harnesses show` con un `NAME` desconocido), o todos los adaptadores fallaron al cargarse o al informar (`harnesses list`) |
+| 2 | Se listó al menos un adaptador, pero al menos uno falló al informar (`harnesses list`) |
+| 64 | Error de uso: una opción o un comando desconocidos, o un valor de opción ausente o no válido. Con `--json`, el error es un sobre JSON con el código `cli.usage`. |
 
 ## Véase también
 
 - [apothem doctor](/docs/cli-reference/doctor) — ejecuta diagnósticos de instalación de todo el sistema
-- [apothem verify](/docs/cli-reference/verify) — comprueba la instalación de un harness específico
+- [apothem verify](/docs/cli-reference/verify) — comprueba la instalación de un entorno específico

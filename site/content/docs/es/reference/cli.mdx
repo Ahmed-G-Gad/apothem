@@ -1,17 +1,17 @@
 ---
 title: "Referencia de la CLI"
-description: "Referencia de la CLI de Apothem — todos los subcomandos y flags."
+description: "Referencia de la CLI de Apothem — todos los subcomandos e indicadores."
 machineTranslated: true
-sourceHash: "37bca5003b78dc78"
+sourceHash: "8b8d7dc1647136bd"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 La CLI `apothem` es la interfaz principal del operador para gestionar el perfil
 compartido y los adaptadores de entorno.
 
-## Flags globales
+## Indicadores globales
 
-| Flag | Descripción |
+| Indicador | Descripción |
 |------|-------------|
 | `--version` | Imprime la versión de Apothem y sale |
 | `--help` | Imprime la ayuda del comando |
@@ -20,18 +20,20 @@ compartido y los adaptadores de entorno.
 
 ### `apothem install`
 
-Instala un adaptador de entorno desde el perfil compartido.
+Instala un adaptador de entorno a partir del perfil compartido.
 
 ```bash
-apothem install --harness <name|all> [--profile PATH] [--project PATH] [--dry-run]
+apothem install --harness <name|all> [--profile PATH] [--project PATH] [--dry-run] [--clean|--fresh] [--yes]
 ```
 
 | Opción | Descripción |
 |--------|-------------|
 | `--harness <name>` | Nombre del adaptador de entorno (consulta los valores canónicos más abajo). Obligatorio. |
 | `--profile PATH` | Ruta al YAML del perfil compartido. Por defecto, `~/.config/apothem/profile.yaml`. |
-| `--project PATH` | Raíz del proyecto para entornos con ámbito de proyecto. |
+| `--project PATH` | Raíz del proyecto para los entornos con alcance de proyecto. |
 | `--dry-run` | Previsualiza la instalación sin escribir archivos. |
+| `--clean`, `--fresh` | Borrón y cuenta nueva opcional: respalda y elimina el estado de la instalación anterior (`~/.claude`, `~/.codex`, `~/.agents`, `~/.config/apothem`) antes de instalar. |
+| `--yes` | Omite la confirmación por destino durante una eliminación con borrón y cuenta nueva (obligatorio para las ejecuciones no interactivas de `--clean`). |
 
 Valores canónicos de `--harness`:
 
@@ -43,7 +45,9 @@ codex
 cursor
 gemini-cli
 github-copilot
+glm
 hermes
+kimi-code
 kiro
 open-claw
 opencode
@@ -70,7 +74,7 @@ apothem update --harness <name|all> [--profile PATH] [--project PATH] [--dry-run
 |--------|-------------|
 | `--harness <name>` | Nombre del adaptador de entorno. Obligatorio. |
 | `--profile PATH` | Ruta al YAML del perfil compartido. |
-| `--project PATH` | Raíz del proyecto para entornos con ámbito de proyecto. |
+| `--project PATH` | Raíz del proyecto para los entornos con alcance de proyecto. |
 | `--dry-run` | Previsualiza la actualización sin escribir archivos. |
 
 `update` vuelve a materializar la salida del entorno. No actualiza el paquete de
@@ -88,25 +92,65 @@ apothem uninstall --harness <name|all> [--project PATH] [--yes]
 | Opción | Descripción |
 |--------|-------------|
 | `--harness <name>` | Nombre del adaptador de entorno. Obligatorio. |
-| `--project PATH` | Raíz del proyecto para entornos con ámbito de proyecto. |
+| `--project PATH` | Raíz del proyecto para los entornos con alcance de proyecto. |
 | `--yes` | Omite el aviso de confirmación. |
 
 ### `apothem verify`
 
-Verifica que un adaptador de entorno esté instalado y que su ruta de salida
-exista.
+Verifica que los destinos gestionados de un adaptador de entorno estén presentes
+y sean válidos.
 
 ```bash
-apothem verify --harness <name|all> [--project PATH]
+apothem verify --harness <name|all> [--profile PATH] [--project PATH]
 ```
 
 | Opción | Descripción |
 |--------|-------------|
 | `--harness <name>` | Nombre del adaptador de entorno o `all`. Obligatorio. |
-| `--project PATH` | Raíz del proyecto para entornos con ámbito de proyecto. |
+| `--profile PATH` | YAML del perfil compartido contra el que se comprueba la fidelidad. Sin esta opción, la comprobación es puramente estructural. |
+| `--project PATH` | Raíz del proyecto para los entornos con alcance de proyecto. |
 
-El código de salida es `0` cuando el adaptador está instalado y `1` cuando no lo
-está.
+Sin `--profile`, la comprobación es estructural: cada destino gestionado debe
+estar presente y ser válido. Con `--profile`, también exige fidelidad, de modo
+que una instalación que existe pero se ha desviado de ese perfil no supera
+verify — úsala para confirmar que un perfil concreto está instalado fielmente.
+
+El código de salida es `0` cuando el entorno se verifica (y, con `--profile`, es
+fiel a él), y `1` cuando falta un destino o no es válido, o cuando se pasa
+`--profile` y la instalación se ha desviado.
+
+### `apothem status`
+
+Informa el estado de instalación, de verificación y de desviación de cada
+entorno registrado.
+
+```bash
+apothem status [--profile PATH] [--project PATH]
+```
+
+| Opción | Descripción |
+|--------|-------------|
+| `--profile PATH` | Perfil compartido que se usa como referencia de desviación. Un perfil predeterminado ilegible degrada la desviación a `unknown` en lugar de abortar el barrido. |
+| `--project PATH` | Raíz del proyecto para los entornos con alcance de proyecto. Sin esta opción, esos entornos informan `needs-project`. |
+
+Cada fila combina un indicador `installed` con un indicador `verified`, y ambos
+se combinan en el estado de desviación:
+
+| Estado | Significado |
+|-------|---------|
+| `absent` | Apothem no se ha instalado en este entorno. |
+| `in-sync` | Instalado y coincide con el perfil de referencia. |
+| `drift` | Instalado, pero ya no coincide — corrígelo con `apothem update`. |
+| `unknown` | Instalado, pero no se pudo leer el perfil de referencia. |
+
+`installed` responde a «¿Apothem se instaló aquí?», no a «¿este entorno está
+presente en la máquina?». Se basa en los propios artefactos de Apothem — el
+bloque gestionado dentro de un ancla de instrucciones y el contenido bajo el
+subárbol `.apothem/` propiedad de Apothem —, nunca en un archivo propiedad del
+proveedor que el entorno escribe para sí mismo. Un entorno cuyo directorio de
+configuración existe pero que Apothem nunca tocó informa `absent`, y uno que se
+ha desinstalado informa `absent` aunque sigan existiendo los directorios
+vaciados.
 
 ### `apothem profile`
 
@@ -123,8 +167,8 @@ apothem profile edit [--profile PATH]
 |------------|-------------|
 | `profile init` | Crea un andamiaje de perfil mínimo válido según el esquema. |
 | `profile show` | Imprime el perfil resuelto (YAML) en stdout. |
-| `profile set <key> <value>` | Establece un campo del perfil. El valor se analiza como YAML (se aceptan cadenas, números, booleanos, listas y mapas). |
-| `profile edit` | Abre el perfil en `$EDITOR` (recurre al editor por defecto de la plataforma). |
+| `profile set <key> <value>` | Establece un campo del perfil. El valor se almacena como una cadena literal — las palabras sueltas no se convierten, de modo que `no` sigue siendo `"no"` y `1.0` sigue siendo una cadena —, excepto `true`/`false` y una entrada explícita de lista y mapa `[...]` / `{...}`. El perfil ensamblado se valida contra el esquema antes de escribirse. |
+| `profile edit` | Abre el perfil en `$EDITOR` (recurre al editor predeterminado de la plataforma). |
 
 La opción `--profile PATH` apunta cada subcomando a un archivo de perfil
 alternativo. Por defecto, `~/.config/apothem/profile.yaml`.
@@ -140,7 +184,7 @@ apothem harnesses show <name>
 
 | Subcomando | Descripción |
 |------------|-------------|
-| `harnesses list` | Imprime una tabla de cada adaptador registrado con su flag de estado de instalación y su ruta de salida. |
+| `harnesses list` | Imprime una tabla de cada adaptador registrado con su indicador de estado de instalación y su ruta de salida. |
 | `harnesses show <name>` | Imprime el nombre, el estado de instalación y la ruta de salida de un adaptador. |
 
 ### `apothem doctor`
@@ -153,10 +197,11 @@ apothem doctor
 
 Imprime la versión de Apothem, el intérprete de Python, la plataforma, la ruta
 del perfil resuelto y una tabla de estado de instalación por entorno. El código
-de salida es `0` cuando cada adaptador registrado informa que está instalado; en
-caso contrario, `1`.
+de salida es `0` solo cuando se superan todas las comprobaciones; un perfil no
+válido, un entorno desinstalado o un adaptador que no se pudo sondear fuerzan,
+cada uno, una salida distinta de cero.
 
-## Referencia generada de comandos y flags
+## Referencia generada de comandos e indicadores
 
 {/* apothem:generated-reference:start */}
 

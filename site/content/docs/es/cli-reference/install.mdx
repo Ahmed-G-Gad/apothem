@@ -2,56 +2,139 @@
 title: "install"
 description: "Referencia de la CLI para el comando apothem install."
 machineTranslated: true
-sourceHash: "71088e5120c4f3ba"
+sourceHash: "aaa373f458e002f9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Instala la configuración de un adaptador de harness a partir del perfil compartido.
+Instala la configuración de un adaptador de entorno a partir del perfil compartido.
 
 ## Sinopsis
 
 ```
 apothem install --harness NAME|all [--profile PATH] [--dry-run]
-                 [--project PATH]
+                 [--clean|--fresh] [--yes] [--project PATH]
                  [--quiet|-q] [--verbose|-v]
                  [--format plain|json] [--json] [--no-color]
 ```
 
-Carga y valida el perfil compartido, selecciona un adaptador con nombre o el conjunto `all` de todo el registro, valida el plan de materialización y escribe la configuración nativa del harness más las cohortes de soporte. Los adaptadores con alcance de proyecto requieren `--project PATH`.
+Carga y valida el perfil compartido, selecciona un adaptador por su nombre o el
+conjunto `all` de todo el registro, valida el plan de materialización y escribe
+la configuración nativa del entorno junto con las cohortes de soporte. Los
+adaptadores de alcance de proyecto requieren `--project PATH`.
 
-El alias en forma continua `apothem installing` se resuelve al mismo manejador.
+El alias en forma continua `apothem installing` se resuelve en el mismo
+manejador.
+
+## Primera ejecución sin perfil
+
+Cuando se omite `--profile` y no existe ningún perfil en la ruta predeterminada
+(`~/.config/apothem/profile.yaml`), `install` escribe primero allí el perfil
+inicial, imprime `Created a starter profile at <path>` y continúa. El perfil
+inicial lleva campos de identidad de marcador de posición, así que la instalación
+imprime también la nota de identidad de marcador de posición; personaliza el
+perfil y luego ejecuta [`update`](/docs/cli-reference/update) para aplicarlo. Con
+`--json`, la creación se informa como una entrada de `warnings` con
+`"operation": "profile_created"`.
+
+- `--dry-run` nunca escribe el perfil: la vista previa usa el perfil inicial en
+  memoria e informa `"operation": "profile_scaffold_preview"`.
+- Un `--profile PATH` explícito que no existe nunca se crea; el comando sale con
+  1 y `profile.not_found`.
 
 ## Vista previa del radio de impacto
 
-`install --harness all` se ramifica en alcances mixtos: los adaptadores con alcance de proyecto escriben bajo la raíz `--project` proporcionada, mientras que los adaptadores con alcance de usuario escriben bajo tu directorio personal — fuera de esa raíz. Antes de escribir cualquier archivo, el comando imprime los destinos concretos agrupados bajo dos encabezados: los que están dentro de la raíz del proyecto y los que están bajo tu directorio personal.
+`install --harness all` se despliega en alcances mixtos: los adaptadores de
+alcance de proyecto escriben bajo la raíz `--project` proporcionada, mientras que
+los adaptadores de alcance de usuario escriben bajo tu directorio personal —
+fuera de esa raíz. Antes de escribir cualquier archivo, el comando imprime los
+destinos concretos agrupados bajo dos encabezados: los que están dentro de la
+raíz del proyecto y los que están bajo tu directorio personal.
 
-Cuando la selección escribe fuera de la raíz del proyecto, una confirmación interactiva protege las escrituras con raíz en el directorio personal. `--yes`, una shell no interactiva (sin TTY), `--dry-run` y `--format json` proceden cada uno sin preguntar; `--dry-run` y `--format json` no escriben nada. Rechazar la solicitud aborta antes de escribir cualquier archivo.
+Cuando la selección escribe fuera de la raíz del proyecto, una confirmación
+interactiva protege las escrituras con raíz en el directorio personal. `--yes`,
+una shell no interactiva (sin TTY), `--dry-run` y `--format json` proceden cada
+uno sin preguntar. Solo `--dry-run` no escribe nada; `--format json` omite la
+vista previa y la solicitud de confirmación, pero aun así realiza las escrituras.
+Rechazar la solicitud aborta antes de escribir cualquier archivo.
 
 ## Notas sobre capacidades
 
-Cada adaptador proyecta solo las capacidades que su harness admite de forma nativa; las capacidades sin superficie nativa se informan, no se descartan en silencio. En modo plain esto es una única nota agrupada por harness (por ejemplo `Note: <harness> - 9 capabilities not projected; pass --verbose for detail`); con `--verbose` cada capacidad imprime su propia línea de justificación. El sobre `--format json` siempre lleva el arreglo `warnings` completo independientemente del nivel de detalle.
+Cada adaptador proyecta solo las capacidades que su entorno admite de forma
+nativa; las capacidades sin superficie nativa se informan, no se descartan en
+silencio. En modo plain, esto es una única nota agrupada por entorno (por ejemplo
+`Note: <harness> - 9 capabilities not projected; pass --verbose for detail`);
+con `--verbose`, cada capacidad imprime su propia línea de justificación.
+Cualquier otra advertencia del adaptador se imprime también en modo plain en su
+propia línea `Warning:`, por ejemplo la advertencia de Zed que nombra un archivo
+de instrucciones que el nuevo `.rules` oculta. El sobre de `--format json`
+siempre lleva el arreglo `warnings` completo, independientemente del nivel de
+detalle.
+
+Install y update también imprimen avisos como líneas `Note:`. Un aviso nunca
+cambia lo que escribe la instalación. Cuando una instalación escribe una raíz
+compartida, una ruta que otras herramientas también cargan (por ejemplo la
+carpeta de skills `~/.agents/skills/`), la nota nombra esas herramientas.
+Cuando una instalación apunta a una herramienta que ya carga contenido de
+Apothem desde la raíz compartida de otra instalación, la nota nombra esa
+instalación. En el sobre de `--format json`, cada aviso es una entrada de
+`warnings` con `"outcome": "advisory"` y `"operation": "shared_root"`.
+
+Los servidores MCP del perfil reciben tres avisos, cada uno de los cuales nombra
+el campo del perfil:
+
+| Operación | Condición | Corrección |
+| --- | --- | --- |
+| `mcp_deprecated_transport` | `transport: sse` (la especificación de MCP declara obsoleto HTTP+SSE) | Usa `streamable-http` cuando el servidor lo admita. |
+| `mcp_plain_http` | una URL `http://` hacia un host que no es de loopback | Usa una URL `https://`. |
+| `mcp_literal_credential` | un valor de `headers` o `env` con forma de token (`ghp_`, `github_pat_`, `sk-`, `xox*-` o `Bearer` con un token largo) | Guarda el secreto en una variable de entorno y escribe referencias del estilo `${GITHUB_TOKEN}`. |
+
+El aviso de credenciales nunca imprime el valor que encontró. Un valor que
+contiene una referencia `${...}` nunca se marca.
+
+## Configuraciones del operador con comentarios
+
+Algunas configuraciones de entorno son archivos que tú también editas, como
+`settings.json`, `opencode.json` (que puede ser JSONC), `openclaw.json` (JSON5)
+y `config.yaml`. La instalación fusiona sus claves en estos archivos y conserva
+cada clave que agregaste.
+
+Una fusión reescribe el archivo como JSON o YAML simple, lo que eliminaría los
+comentarios, las comas finales y la sintaxis JSON5. Por eso:
+
+- Cuando la fusión no cambiaría ningún valor (por ejemplo, porque tú mismo ya
+  agregaste las claves de Apothem), el archivo se deja byte a byte como está.
+- Cuando la fusión debe cambiar un valor en un archivo que lleva comentarios o
+  sintaxis JSON5, o en un archivo que no se puede analizar en absoluto, la
+  instalación no escribe nada para ese entorno y sale con 1 y el código de error
+  `config.unparseable`. El campo `fix` nombra las claves que la instalación
+  agregaría, de modo que puedas convertir el archivo a JSON o YAML simple, o
+  agregar esas claves a mano y volver a ejecutar.
 
 ## Opciones
 
 | Opción | Descripción |
 |---|---|
-| `--harness NAME` | Adaptador de harness a instalar, o `all` para el conjunto de todo el registro (obligatorio). Ejecuta `apothem harnesses list` para ver los nombres registrados. |
-| `--profile PATH` | Ruta al YAML del perfil compartido. Por defecto es `~/.config/apothem/profile.yaml`. |
+| `--harness NAME` | Adaptador de entorno que se instala, o `all` para el conjunto de todo el registro (obligatorio). Ejecuta `apothem harnesses list` para ver los nombres registrados. |
+| `--profile PATH` | Ruta al YAML del perfil compartido. Valor predeterminado: `~/.config/apothem/profile.yaml`. |
 | `--dry-run` | Previsualiza la instalación sin escribir archivos. |
-| `--project PATH` | Raíz del proyecto para los harness con alcance de proyecto. |
+| `--clean`, `--fresh` | Borrón y cuenta nueva opcional: respalda y elimina el estado de instalación anterior por entorno antes de instalar. |
+| `--yes` | Omite la confirmación por destino durante una eliminación de borrón y cuenta nueva (obligatorio en ejecuciones no interactivas de `--clean`). |
+| `--project PATH` | Raíz del proyecto para los entornos de alcance de proyecto. |
 | `--quiet`, `-q` | Suprime la salida informativa; solo se emiten errores. |
-| `--verbose`, `-v` | Imprime la justificación de cada capacidad no proyectada en lugar de la nota agrupada por harness. |
-| `--format plain\|json` | Formato de salida (por defecto: `plain`). |
+| `--verbose`, `-v` | Imprime la justificación de cada capacidad no proyectada en lugar de la nota agrupada por entorno. |
+| `--format plain\|json` | Formato de salida (predeterminado: `plain`). |
 | `--json` | Abreviatura de `--format json`. |
 | `--no-color` | Desactiva los códigos de color ANSI en la salida. |
 | `-h`, `--help` | Muestra la ayuda y sale. |
 
 ## Salida JSON
 
-Cuando se proporciona `--json` (o `--format json`), se escribe un único documento JSON en stdout:
+Cuando se proporciona `--json` (o `--format json`), se escribe un único
+documento JSON en stdout:
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "install",
   "action": "installed",
@@ -66,10 +149,15 @@ Cuando se proporciona `--json` (o `--format json`), se escribe un único documen
 }
 ```
 
-Para `--dry-run`:
+Con `--dry-run` no se escribe nada y `results` lista cada ruta que la
+instalación escribiría, cada una con el resultado que tendría (`created`,
+`updated` o `unchanged`) y, para un archivo que tú también editas, el diff
+unificado en `detail.diff` — el mismo plan que muestra
+[`apothem diff`](/docs/cli-reference/diff):
 
 ```json
 {
+  "schema_version": 1,
   "status": "dry_run",
   "command": "install",
   "action": "dry_run",
@@ -81,10 +169,38 @@ Para `--dry-run`:
 }
 ```
 
-Los errores de validación esperados usan el mismo sobre e incluyen un objeto error:
+Cuando se proporciona `--clean`, el sobre lleva además un objeto `clean` que
+describe la fase de eliminación — la lista de disposiciones por destino, si la
+ejecución fue una vista previa y el directorio de copia de seguridad con marca de
+tiempo (`null` en una ejecución en seco):
 
 ```json
 {
+  "clean": {
+    "dry_run": true,
+    "backup_dir": null,
+    "targets": [
+      {
+        "path": "C:\\Users\\Example\\.claude",
+        "present": true,
+        "removed": false,
+        "skipped_reason": null
+      }
+    ]
+  }
+}
+```
+
+Una ejecución en seco con limpieza previsualiza ambas fases en un único
+documento: la vista previa de la eliminación bajo `clean` y la vista previa de la
+escritura nueva bajo `results`.
+
+Los errores de validación previstos usan el mismo sobre e incluyen un objeto de
+error:
+
+```json
+{
+  "schema_version": 1,
   "status": "error",
   "command": "install",
   "harness": "all",
@@ -92,7 +208,7 @@ Los errores de validación esperados usan el mismo sobre e incluyen un objeto er
   "error": {
     "code": "project.required",
     "field": "project",
-    "reason": "project-scope harnesses require --project: cursor, gemini-cli, github-copilot, windsurf.",
+    "reason": "project-scope harnesses require --project: cursor, gemini-cli, github-copilot, kimi-code, windsurf, codebuddy, kiro, trae, zed, glm.",
     "fix": "Pass --project PATH or select only user-scope harnesses."
   }
 }
@@ -113,13 +229,14 @@ apothem installing --harness claude-code   # lowercase variant
 
 | Código | Significado |
 |---|---|
-| 0 | Adaptador instalado correctamente o dry-run planificado sin problemas |
-| 1 | Error esperado de validación, perfil, harness, proyecto o adaptador |
-| 2 | Materialización parcial del lote tras al menos una escritura |
+| 0 | Adaptador instalado correctamente o ejecución en seco planificada sin problemas |
+| 1 | Error previsto de validación, de perfil, de entorno, de proyecto o de adaptador |
+| 2 | Materialización parcial del lote después de al menos una escritura |
+| 64 | Error de uso: una opción o un comando desconocidos, o un valor de opción ausente o no válido. Con `--json`, el error es un sobre JSON con el código `cli.usage`. |
 
 ## Véase también
 
 - `apothem installing` — alias en forma continua de este comando (documentado aquí; la CLI acepta ambas formas)
-- [apothem update](/docs/cli-reference/update) — vuelve a aplicar el perfil actual a un harness
+- [apothem update](/docs/cli-reference/update) — vuelve a aplicar el perfil actual a un entorno
 - [apothem verify](/docs/cli-reference/verify) — confirma que el adaptador está activo
 - [Primeros pasos](/docs/install) — guía de instalación completa

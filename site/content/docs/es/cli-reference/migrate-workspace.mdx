@@ -2,11 +2,12 @@
 title: "migrate-workspace"
 description: "Referencia de la CLI para el comando apothem migrate-workspace."
 machineTranslated: true
-sourceHash: "61e082f5e4bcbe9b"
+sourceHash: "1e58ce8231c9aa87"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Migra un espacio de trabajo heredado por harness al diseño compartido `.apothem`.
+Migra un espacio de trabajo heredado por entorno a la estructura compartida
+`.apothem`.
 
 ## Sinopsis
 
@@ -16,26 +17,26 @@ apothem migrate-workspace [--project PATH] [--dry-run]
                           [--format plain|json] [--json] [--no-color]
 ```
 
-`migrate-workspace` colapsa un directorio de datos heredado por harness
-(`.apothem/<harness>/...`) y un árbol `.plans/` heredado en el único directorio de
-trabajo compartido `.apothem/{plans,memory,learning,contexts}`. La base es la raíz
-`--project` resuelta cuando se proporciona, de lo contrario el directorio de
-trabajo actual (el valor predeterminado local del proyecto).
+`migrate-workspace` consolida un directorio de datos heredado por entorno
+(`.apothem/<harness>/...`) y un árbol `.plans/` heredado en el único directorio
+de trabajo compartido `.apothem/{plans,memory,learning,contexts}`. La base es la
+raíz de `--project` resuelta cuando se proporciona; en caso contrario, el
+directorio de trabajo actual (el valor predeterminado local al proyecto).
 
-La memoria, los contextos y los almacenes de aprendizaje por harness se fusionan
-por unión en el almacén compartido por id; las señales de aprendizaje se
+Los almacenes de memoria, de contextos y de aprendizaje por entorno se fusionan
+por unión en el almacén compartido según el id; las señales de aprendizaje se
 concatenan y se deduplican; un registro en conflicto (mismo id, cuerpo distinto)
 se omite, nunca se sobrescribe. Un árbol `.plans/` heredado se mueve bajo
-`.apothem/plans/`. Cada fuente consumida se respalda primero. La migración es
-idempotente — volver a ejecutarla sobre un árbol ya migrado es una operación
-sin efecto.
+`.apothem/plans/`. De cada origen consumido se hace primero una copia de
+seguridad. La migración es idempotente: volver a ejecutarla sobre un árbol ya
+migrado no tiene ningún efecto.
 
 ## Opciones
 
 | Opción | Descripción |
 |---|---|
-| `--project PATH` | Raíz del proyecto para los adaptadores con alcance de proyecto que se materializan en un árbol de proyecto en lugar de en un directorio de configuración con alcance de usuario. |
-| `--dry-run` | Detecta el diseño heredado e informa qué se migraría sin escribir. |
+| `--project PATH` | Raíz del proyecto para los adaptadores con alcance de proyecto que materializan en un árbol de proyecto en lugar de en un directorio de configuración con alcance de usuario. |
+| `--dry-run` | Detecta la estructura heredada e informa qué se migraría, sin escribir. |
 | `--quiet`, `-q` | Suprime la salida informativa; solo se emiten errores. |
 | `--verbose`, `-v` | Emite salida de diagnóstico adicional. |
 | `--format plain\|json` | Formato de salida (por defecto: `plain`). |
@@ -47,12 +48,13 @@ sin efecto.
 
 El sobre `--json` lleva el resultado de la migración. En una migración
 completada, `status` es `success` y la carga útil informa los recuentos de
-registros fusionados, si se reubicó un árbol `.plans/`, la raíz de respaldo y
-cualquier conflicto omitido. Una invocación `--dry-run` informa en su lugar
-`legacy_layout_detected`.
+registros fusionados, si se reubicó un árbol `.plans/`, la raíz de las copias de
+seguridad y cualquier conflicto omitido. Una invocación con `--dry-run` informa
+en su lugar `legacy_layout_detected`.
 
 ```json
 {
+  "schema_version": 1,
   "command": "migrate-workspace",
   "status": "success",
   "base": "/home/example/project",
@@ -67,12 +69,13 @@ cualquier conflicto omitido. Una invocación `--dry-run` informa en su lugar
 }
 ```
 
-Cuando no hay diseño heredado presente, `migrated` es `false` y no se escribe
-nada. El sobre `--dry-run` omite los recuentos de resultados e informa solo la
-detección:
+Cuando no hay ninguna estructura heredada presente, `migrated` es `false` y no
+se escribe nada. El sobre de `--dry-run` omite los recuentos del resultado e
+informa solo de la detección:
 
 ```json
 {
+  "schema_version": 1,
   "command": "migrate-workspace",
   "base": "/home/example/project",
   "dry_run": true,
@@ -92,11 +95,12 @@ apothem migrate-workspace --dry-run --json
 
 | Código | Significado |
 |---|---|
-| 0 | Migración completada, o no se encontró diseño heredado (nada que migrar) |
-| 1 | Error esperado — un error de validación o de raíz de proyecto, o un fallo de migración |
+| 0 | Migración completada, o no se encontró ninguna estructura heredada (nada que migrar) |
+| 1 | Error esperado: un error de validación o de raíz del proyecto, o un fallo de la migración |
+| 64 | Error de uso: una opción o un comando desconocidos, o un valor de opción ausente o no válido. Con `--json`, el error es un sobre JSON con el código `cli.usage`. |
 
 ## Véase también
 
-- [apothem install](/docs/cli-reference/install) — materializa un harness a partir del perfil compartido
-- [apothem status](/docs/cli-reference/status) — informa el estado de instalación, verificación y desviación
-- [Disciplina de planes](/docs/reference/plans-discipline) — el diseño compartido `.apothem/plans/`
+- [apothem install](/docs/cli-reference/install) — materializa un entorno a partir del perfil compartido
+- [apothem status](/docs/cli-reference/status) — informa el estado de instalación, de verificación y de desviación
+- [Disciplina de planes](/docs/reference/plans-discipline) — la estructura compartida `.apothem/plans/`

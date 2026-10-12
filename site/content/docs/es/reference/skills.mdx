@@ -1,22 +1,24 @@
 ---
-title: "Habilidades"
-description: "Técnicas reutilizables y detectables en archivos SKILL.md con señales de detección, procedimientos y ganchos de aplicación para suites de planes y auditorías del ecosistema."
+title: "Skills"
+description: "Técnicas reutilizables y detectables en archivos SKILL.md, con señales de detección, procedimientos y hooks de aplicación para suites de plan y auditorías del ecosistema."
 machineTranslated: true
-sourceHash: "4ee010515edd9e45"
+sourceHash: "a79c145dd94e1f10"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Las habilidades viven como carpetas bajo `src/apothem/skills/`, cada una con un
-punto de entrada `SKILL.md`. Las habilidades capturan técnicas reutilizables y
-detectables: tienen una señal de detección, un procedimiento y un gancho de
+Las skills residen como carpetas bajo `src/apothem/skills/`, cada una con un
+punto de entrada `SKILL.md`. Las skills capturan técnicas reutilizables y
+detectables: tienen una señal de detección, un procedimiento y un hook de
 aplicación.
 
-El catálogo completo de habilidades se genera más abajo, en la sección
-«Inventario de habilidades generado» al pie de esta página.
+El catálogo completo de skills se genera más abajo, en el [Inventario de skills
+generado](#inventario-de-skills-generado).
 
 ## Contrato de frontmatter
 
-`SKILL.md` lleva:
+`SKILL.md` lleva el frontmatter canónico de ocho claves. El contrato legible por
+máquina es [`skill.schema.json`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/skill.schema.json)
+(`additionalProperties: false`); este bloque lo refleja:
 
 ```yaml
 ---
@@ -31,16 +33,34 @@ allowed-tools: <comma-separated read-only tools and scoped rules, e.g. "Read, Gl
 ---
 ```
 
+## Emisión por entorno
+
+Las skills de origen usan las claves de arriba. Algunos entornos leen claves
+distintas, así que la instalación las traduce solo para ese entorno:
+
+| Entorno | Qué cambia la instalación |
+| --- | --- |
+| Claude Code (instalación y plugin) | Renombra `userInvocable` a `user-invocable`, la clave que lee Claude Code. Claude Code ignora la clave en camelCase, así que, sin el cambio de nombre, una skill marcada con `userInvocable: false` seguiría apareciendo en el menú `/`. |
+| Codex | Deja `SKILL.md` tal cual y escribe `agents/openai.yaml` con `policy.allow_implicit_invocation: false` junto a cada skill cuyo origen establece `disable-model-invocation: true`, porque Codex ignora esa clave. |
+| Otros entornos | Ningún cambio. |
+
+`skill.schema.json` acepta cualquiera de las dos grafías del indicador de
+invocabilidad por el usuario y exige exactamente una de ellas.
+
 ## Disciplina de autoría
 
-- **Una carpeta por habilidad.** Cada habilidad es su propia carpeta con el
-  punto de entrada en `SKILL.md`.
-- **Señal de detección.** Los cuerpos de las habilidades abren con la señal de
+- **Una carpeta por skill.** Cada skill es su propia carpeta, con el punto de
+  entrada en `SKILL.md`.
+- **Señal de detección.** Los cuerpos de las skills comienzan con la señal de
   detección que dispara la técnica.
-- **Procedimiento + aplicación.** Las habilidades llevan tanto el procedimiento
-  a aplicar como la señal de aplicación que cierra el bucle.
+- **Procedimiento + aplicación.** Las skills llevan tanto el procedimiento que
+  se debe aplicar como la señal de aplicación que cierra el ciclo.
+- **Longitud de la descripción.** `description` tiene como máximo 1,024
+  caracteres, el límite de [Agent Skills](https://agentskills.io/specification).
+  Las herramientas más estrictas rechazan o recortan una más larga, y el esquema
+  impone el límite.
 
-## Inventario de habilidades generado
+## Inventario de skills generado
 
 {/* apothem:generated-reference:start */}
 
