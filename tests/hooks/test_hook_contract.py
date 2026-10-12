@@ -463,7 +463,11 @@ def test_clause2_posttooluse_advisory_is_capped(workspace: dict[str, Path]) -> N
                 payload["tool_response"] = "y" * 8_192
                 result, _ = _run(entry, payload, env, workspace["project"])
                 # _parse reads a dead command's empty stdout as no emission.
-                assert result.returncode == 0, (entry.label, result.stderr[-300:])
+                assert result.returncode == 0, (
+                    entry.label,
+                    switch,
+                    result.stderr[-300:],
+                )
                 emitted += _context_chars(_parse(result.stdout)) > 0
             assert emitted <= ceiling, (entry.surface, switch, emitted)
 
@@ -496,6 +500,8 @@ def test_clause4_claude_surfaces_use_valid_channels(workspace: dict[str, Path]) 
                 entry, workspace, workspace["project"], APOTHEM_CONFORMITY_STRICT=strict
             )
             result, _ = _run(entry, payload, env, workspace["project"])
+            # Exit 2 blocks a PreToolUse call whatever its JSON says.
+            assert result.returncode == 0, (entry.label, strict, result.stderr[-300:])
             output = _parse(result.stdout)
             assert "decision" not in output, output
             specific = output.get("hookSpecificOutput")
