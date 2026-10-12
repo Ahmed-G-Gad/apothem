@@ -1,24 +1,24 @@
 ---
-title: "Схема Frontmatter"
-description: "Справочное руководство по структуре блока frontmatter YAML, обязательным ключам для каждого класса и правилам применения валидатора по классам артефактов."
+title: "Схема фронтматтера"
+description: "Справочное руководство по структуре блока YAML-фронтматтера, обязательным ключам по классам и правилам их применения валидаторами для всех классов артефактов."
 machineTranslated: true
-sourceHash: "9c6a607ba1dd7651"
+sourceHash: "79d900f52578b1b0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Каноническая справка по frontmatter YAML для каждого класса артефактов.** Сводка в [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Соглашения — это встроенное объявление; JSON Schema по классам в [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) — машиночитаемый контракт; эта страница — самостоятельный справочник, на который ссылаются нижестоящие участники.
+> **Каноническая справка по YAML-фронтматтеру для каждого класса артефактов.** Сводка в разделе «Conventions» файла [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) — это встроенное объявление; JSON Schema по классам в [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) (`additionalProperties` отклоняет неизвестные ключи) — машиночитаемый контракт, который имеет приоритет при любом расхождении. Эта страница — указатель обязательных ключей, а [`artifact-schema.mdx`](/docs/reference/artifact-schema) содержит шаблоны и разобранные примеры по классам; обе страницы — человекочитаемые проекции этих схем.
 
 ---
 
-## 1. Структура блока frontmatter
+## 1. Форма блока фронтматтера
 
-Каждый артефакт несёт frontmatter YAML в начале, ограниченный строками `---`. Канонический баннер заголовка авторства согласно [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) располагается над frontmatter в файлах семейства Markdown; frontmatter следует сразу за ним.
+Каждый артефакт несёт YAML-фронтматтер в начале, ограниченный строками `---`. Канонический баннер заголовка авторства согласно [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) располагается над фронтматтером в файлах семейства Markdown; фронтматтер следует сразу за ним.
 
-Ключи используют `kebab-case`. Скалярные значения либо без кавычек, либо в двойных кавычках; строковые значения, содержащие двоеточия, знаки решётки или другие значимые для YAML символы, заключаются в кавычки.
+Ключи записываются в `kebab-case`. Скалярные значения указываются либо без кавычек, либо в двойных кавычках; строковые значения, содержащие двоеточия, знаки решётки или другие значимые для YAML символы, заключаются в кавычки.
 
 ## 2. Обязательные поля по классам
 
-Набор обязательных ключей зависит от класса артефакта. Авторитетную структуру обеспечивают `scripts/dev/validate_ecosystem.py` и JSON Schema по классам в каталоге `schemas/` (один файл схемы на класс артефакта).
+Набор обязательных ключей зависит от класса артефакта. Авторитетную форму обеспечивают `scripts/dev/validate_ecosystem.py` и JSON Schema по классам в каталоге `schemas/` (по одному файлу схемы на класс артефакта).
 
 ```text
 schemas/agent.schema.json
@@ -32,12 +32,13 @@ schemas/plan.schema.json
 |-------|---------------|
 | `CLAUDE.md` (корневая конфигурация) | `name`, `version`, `updated`, `description`, `scope`, `portability` |
 | Правила (`src/apothem/rules/*.md`) | `name`, `description`, `pathFilter`, `alwaysApply` |
-| Команды (`src/apothem/commands/*.md`) | `name`, `version`, `updated`, `description`, `argument-hint`, `disable-model-invocation` |
-| Ассистенты (канонический каталог показан ниже) | `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns`, `effort` |
-| Навыки (`src/apothem/skills/*/SKILL.md`) | `name`, `description`, `archetype`, `userInvocable` |
+| Команды (`src/apothem/commands/*.md`) | `name`, `version`, `updated`, `description`, `argument-hint`, `disable-model-invocation`, `portability`, `allowed-tools` |
+| Делегированные исполнители (канонический каталог показан ниже) | `name`, `version`, `updated`, `description`, `tools`, `disallowedTools`, `maxTurns`, `effort` |
+| Навыки (`src/apothem/skills/*/SKILL.md`) | `name`, `version`, `updated`, `description`, `archetype`, `userInvocable`, `disable-model-invocation`, `allowed-tools`; установка для Claude Code и плагин переименовывают `userInvocable` в `user-invocable`, а схема принимает ровно одно из двух написаний |
+| Стили вывода (`src/apothem/output-styles/*.md`) | `name`, `description`; каждый поставляемый стиль также задаёт `keep-coding-instructions: true`, чтобы Claude Code сохранял свои инструкции по программной инженерии |
 
-Схемы по классам в [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) несут полный набор ограничений, включая ограничения типа, формата, enum и шаблона.
+Схемы по классам в [`schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas) содержат полный набор ограничений, включая ограничения типа, формата, enum и шаблона, а также ограничения длины: `description` навыка или команды — не более 1024 символов, это предел [Agent Skills](https://agentskills.io/specification).
 
 ## 3. Валидаторы
 
-`scripts/dev/validate_ecosystem.py` обходит дерево артефактов, применяет приведённые выше наборы обязательных ключей и сообщает `[FAIL]` по любому артефакту, в котором отсутствует обязательное поле. Пописьменный `frontmatter-grep` в `src/apothem/conformity/frontmatter_grep.py` обеспечивает ту же структуру на границах хука PreToolUse Write/Edit.
+`scripts/dev/validate_ecosystem.py` обходит дерево артефактов, применяет приведённые выше наборы обязательных ключей и сообщает `[FAIL]` для любого артефакта, в котором отсутствует обязательное поле. Проверка `frontmatter-grep` при каждой записи, расположенная в `src/apothem/conformity/frontmatter_grep.py`, обеспечивает ту же форму на границах хука PreToolUse для Write/Edit.
