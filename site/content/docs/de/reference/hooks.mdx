@@ -1,52 +1,127 @@
 ---
 title: "Hooks"
-description: "Werkzeug-Ereignishandler, die bei SessionStart, PreToolUse und Stop auslösen und Nachrichtenkontexte laden, die die git-Isolation und die Plan-Disziplin durchsetzen."
+description: "Werkzeug-Ereignishandler, die bei SessionStart, PreToolUse, PostToolUse und Stop auslösen und Nachrichtenkontexte laden, die die Git-Isolation und die Plan-Disziplin durchsetzen, mit einem getesteten Laufzeitvertrag und benutzerspezifischem Zustand."
 machineTranslated: true
-sourceHash: "aaf14191bbb63219"
+sourceHash: "3a6c32f33850537e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Hooks lösen bei Werkzeugereignissen aus und laden Nachrichtenkontexte, die der
 Assistent als zusätzliche System-Prompts behandelt. Die Verdrahtung liegt im
-Hook-Block der `settings.json` von Claude Code, der Hook-Datei `hooks.json` von Codex
-und der Hook-Zuordnung der `settings.json` von Qwen Code.
+Hook-Block der Claude Code-`settings.json` (Engine-Installation) oder in der
+`hooks.json` des Plugins (Plugin-Installation), in der Codex-Hook-Datei
+`hooks.json` und in der Hooks-Map der Qwen Code-`settings.json`.
 
 | Ereignis | Timeout | Zweck |
 |-------|--------:|---------|
-| SessionStart | 30 Sekunden | Speicher lesen, Plan-Status prüfen, Bereitschaft melden |
-| PreCompact | 30 Sekunden | Vor der Kompaktierung prüfen, ob der Zustand externalisiert ist |
-| PostCompact | 30 Sekunden | Arbeitszustand nach der Kompaktierung wiederherstellen |
-| Stop | 60 Sekunden | Externalisierung am Sitzungsende |
-| PreToolUse (Bash) | 10 Sekunden | Bash-Validierung — Isolation von git-Artefakten |
-| PreToolUse (Write/Edit/NotebookEdit/apply_patch) | 10 Sekunden | Isolation von Plan-Referenzen, Frontmatter-Prüfungen |
+| SessionStart | 30 Sekunden | Memory lesen, Planzustand prüfen, Bereitschaft melden; nach einer Kompaktierung den Wiederherstellungskontext liefern |
+| PreCompact | 30 Sekunden | Vor der Kompaktierung prüfen, ob der Zustand externalisiert ist (Codex, Qwen Code; auf Claude Code nicht registriert) |
+| PostCompact | 30 Sekunden | Arbeitszustand nach der Kompaktierung wiederherstellen (Codex, Qwen Code; auf Claude Code nicht registriert) |
+| Stop | 60 Sekunden | Sitzungsende-Protokoll, Opt-in |
+| PostToolUse | 10 Sekunden | Hinweis zur proaktiven Kompaktierung, höchstens zweimal pro Sitzung |
+| PreToolUse (Shell: Bash, PowerShell, `run_shell_command`) | 10 Sekunden | Isolation von Git-Artefakten, Lokalität der Pläne, Dynamic-Eval-Wächter |
+| PreToolUse (Write/Edit/NotebookEdit/apply_patch) | 10 Sekunden | Isolation von Plan-Referenzen, Autorschafts-Header, Lokalität der Pläne, Abhängigkeits- und Dynamic-Eval-Wächter |
+| PreToolUse (AskUserQuestion) | 10 Sekunden | Wohlgeformtheit der `(Recommended)`-Markierung |
 
 ## Dispatcher
 
-Installierte Hook-Einträge rufen den Dispatcher über den absoluten Skriptpfad auf.
-Die Einstellungsvorlagen tragen das Token `${HARNESS_ROOT}` —
-`python "${HARNESS_ROOT}/apothem/hooks/dispatch.py" <event> [<message-name>]`
-— das der Installer zur Installationszeit zum realen Pfad des harness-Stammverzeichnisses
-rendert (Claude Code und Qwen Code materialisieren den Dispatcher unter
-`<harness-root>/apothem/hooks/`; Codex unter `<harness-root>/hooks/`). Der
-Dispatcher ist ein eigenständiges Standardbibliotheks-Skript: Er initialisiert seinen eigenen `sys.path`,
-sodass auf dem Host kein importierbares `apothem`-Paket benötigt wird. Aus einem
-Quell-Checkout führt die Modulform `python -m apothem.hooks.dispatch <event>` (mit
-`PYTHONPATH=src`) denselben Code für die Entwicklung aus. Der Dispatcher lädt
-`hooks/lib/resolve_root.py` für die Auflösung des Ökosystem-Stammverzeichnisses und delegiert an
-`hooks/emit_hook_context.py` und `hooks/session_start_bootstrap.py`.
+Von der Engine installierte Hook-Einträge rufen den Dispatcher über den
+absoluten Skriptpfad mit einem bei der Installation aufgelösten Interpreter auf.
+Die Templates tragen die Tokens `${PYTHON_BIN}` und `${HARNESS_ROOT}`, die der
+Installer zur Installationszeit rendert. Claude Code und Qwen Code
+materialisieren den Dispatcher unter `<harness-root>/.apothem/support/hooks/`,
+Codex unter `<harness-root>/hooks/`. Claude Code-Einträge verwenden die
+Exec-Form (`command` plus `args`) und benötigen daher keine Shell. Das Claude
+Code-Plugin führt jeden Hook als
+`bash "${CLAUDE_PLUGIN_ROOT}/lib/apothem/hooks/lib/bootstrap.sh" <event> [<message-file>]`
+in der Standard-Hook-Shell von Claude Code aus (`sh` unter macOS und Linux, Git
+Bash unter Windows); der Bootstrap sucht einen Python-3.10+-Interpreter und
+führt den gebündelten Dispatcher aus. Verwenden Sie unter Windows ohne Git for
+Windows die Engine-Installation (`apothem install --harness claude-code`), deren
+Exec-Form-Hooks keine Shell benötigen. Der Dispatcher ist ein eigenständiges
+Skript, das nur die Standardbibliothek nutzt: Er initialisiert seinen eigenen
+`sys.path`, sodass auf dem Host kein importierbares `apothem`-Paket benötigt
+wird. Aus einem Quell-Checkout führt die Modulform
+`python -m apothem.hooks.dispatch <event>` (mit `PYTHONPATH=src`) denselben Code
+für die Entwicklung aus. Der Dispatcher lädt `hooks/lib/resolve_root.py` zur
+Auflösung der Ökosystem-Wurzel und delegiert an `hooks/emit_hook_context.py`
+und `hooks/session_start_bootstrap.py`.
 
 ## Nachrichtenkontexte
 
 Die ereignisbezogenen Markdown-Kontexte liegen unter `src/apothem/hooks/messages/`:
 
-- `postcompact.md`, `precompact.md`, `stop.md`
-- `pretooluse-bash.md`, `pretooluse-write.md`, `pretooluse-edit.md`,
-  `pretooluse-notebookedit.md`
+- Sitzungslebenszyklus: `sessionstart.md`, `precompact.md`, `postcompact.md`,
+  `stop.md`, `posttooluse-proactive-compaction.md`
+- Shell-Aufrufe: `pretooluse-bash.md`, `pretooluse-bash-plan-guard.md`
+- Dateischreibvorgänge: `pretooluse-write.md`, `pretooluse-edit.md`,
+  `pretooluse-notebookedit.md`, `pretooluse-write-plan-guard.md`,
+  `pretooluse-write-header-guard.md`, `pretooluse-edit-header-guard.md`,
+  `pretooluse-conformity.md`
+- Wächter für Inhalte: `pretooluse-dependency-guard.md`,
+  `pretooluse-eval-guard.md`
+- Fragen: `pretooluse-askuserquestion-recommended.md`
 
-Jede Kontextdatei wird vom Dispatcher geladen, wenn ihr Ereignis auslöst
-und ihr Kontextargument in der Einstellungsdatei registriert ist.
+Auf Claude Code liefert der SessionStart-Hook `postcompact.md` aus, wenn die
+Sitzung nach einer Kompaktierung fortgesetzt wird, weil Claude Code die Ausgabe
+der PreCompact- und PostCompact-Hooks nicht an den Assistenten weitergibt.
 
-## Generiertes Hook-Nachrichtenverzeichnis
+Jede Kontextdatei wird vom Dispatcher geladen, wenn ihr Ereignis auslöst und ihr
+Kontextargument in der Settings-Datei registriert ist. Die Lizenzkommentarzeile
+und der abschließende Abschnitt `## Bindings` werden entfernt, bevor der Text
+den Assistenten erreicht; beide existieren für Maintainer und das
+Konformitäts-Gate.
+
+## Laufzeitvertrag
+
+Jeder registrierte Hook-Befehl erfüllt denselben Vertrag, den
+`tests/hooks/test_hook_contract.py` für das Plugin, die Claude
+Code-Engine-Installation, Codex und Qwen Code prüft:
+
+- **Läuft aus einem schlichten Checkout.** Exit 0, und die Standardausgabe ist
+  leer oder ein einzelnes JSON-Objekt. Kein Hook hängt vom Ausführungsbit einer
+  Datei ab.
+- **Einmal registriert.** Jede Kombination aus Ereignis, Matcher und Nachricht
+  erscheint einmal pro Oberfläche, sodass ein Hook nie zweimal bei einem
+  Werkzeugaufruf läuft.
+- **Begrenzt.** Kein ausgegebener Text überschreitet 10.000 Zeichen. Der
+  Abhängigkeitswächter meldet sich nur, wenn ein Schreibvorgang auf ein
+  Abhängigkeitsmanifest oder eine Lock-Datei zielt, und der Dynamic-Eval-Wächter
+  nur, wenn der Inhalt oder Befehl ein Auswertungs- oder unsicheres
+  Deserialisierungsprimitiv enthält. Der Kompaktierungshinweis löst höchstens
+  zweimal pro Sitzung aus.
+- **Nutzt Kanäle, die der Harness zustellt.** PreToolUse-Hinweise werden in
+  `hookSpecificOutput` übermittelt; der AskUserQuestion-Wächter gibt
+  `additionalContext` zurück oder, unter dem strikten Opt-in,
+  `permissionDecision: deny`. Claude Code verwirft die Ausgabe von PreCompact
+  und PostCompact, daher kommt auf Claude Code der Wiederherstellungskontext
+  nach der Kompaktierung mit dem SessionStart-Ereignis an, dessen Quelle
+  `compact` ist.
+- **Führt niemals Projektcode aus.** Der Bootstrap löst seinen eigenen
+  installierten Baum auf und übernimmt niemals ein Skript aus dem geöffneten
+  Projekt. Hinweise zum Sitzungsstart werden aus dem installierten Baum gelesen;
+  das Projektverzeichnis wird nur für Plan- und Memory-Zusammenfassungen
+  gelesen.
+- **Fail-open.** Eine fehlende Nachrichtendatei, ein fehlender Interpreter oder
+  ein beschädigter Zustand ergibt Exit 0 und einen gültigen Umschlag.
+
+| Variable | Standard | Wirkung |
+| --- | --- | --- |
+| `APOTHEM_HOOKS_DISABLE` | nicht gesetzt | `1`, `true`, `yes` oder `on` schaltet jeden über den Dispatcher geleiteten Hook und den Konformitäts-Gate-Hook der Engine-Installation stumm |
+| `APOTHEM_SESSION_END_ENABLED` | aus | `1`, `true`, `yes` oder `on` aktiviert das Sitzungsende-Protokoll bei Stop. Ein Stop-Hook, der Kontext zurückgibt, lässt den Assistenten weiterarbeiten, daher kostet das Protokoll einen zusätzlichen Turn pro Sitzung; es löst niemals bei einem Stopp aus, der bereits auf eine hookgesteuerte Fortsetzung folgt |
+| `APOTHEM_SESSION_END_MIN_STOPS` | `3` | Turn-Enden, bevor das Sitzungsende-Protokoll auslösen darf |
+| `APOTHEM_PROACTIVE_COMPACTION_ENABLED` | an | `0`, `false`, `no` oder `off` schaltet den Kompaktierungshinweis stumm |
+| `APOTHEM_PROACTIVE_COMPACTION_TOOL_THRESHOLD` | `18` | Werkzeugaufrufe pro Hinweisfenster |
+| `APOTHEM_PROACTIVE_COMPACTION_OUTPUT_THRESHOLD` | `20000` | Bytes an Werkzeugausgabe pro Hinweisfenster |
+| `APOTHEM_HOOK_STATE_DIR` | siehe unten | Verzeichnis für den Hook-Zustand pro Sitzung |
+
+Der Hook-Zustand pro Sitzung liegt in einem benutzerspezifischen Verzeichnis,
+das mit dem Modus `0700` angelegt wird: `APOTHEM_HOOK_STATE_DIR`, wenn gesetzt,
+sonst `${CLAUDE_PLUGIN_DATA}/state` für das Claude Code-Plugin, sonst
+`$XDG_STATE_HOME/apothem`, sonst `~/.local/state/apothem`
+(`%LOCALAPPDATA%\apothem\state` unter Windows).
+
+## Generiertes Hook-Nachrichteninventar
 
 {/* apothem:generated-reference:start */}
 

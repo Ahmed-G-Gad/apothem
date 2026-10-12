@@ -2,33 +2,43 @@
 title: "Artefakt-Schema-Spezifikation"
 description: "Kanonisches YAML-Frontmatter-Schema und Pflichtfelder für alle Artefakttypen im Apothem-Quellbaum, mit Vorlagen pro Klasse und Validierungsregeln."
 machineTranslated: true
-sourceHash: "78472bdb279c1cb4"
+sourceHash: "0a94086b9eaf12b9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**Kanonisches YAML-Frontmatter und Pflichtfelder für alle Artefakte des Apothem-Ökosystems.**
+**YAML-Frontmatter-Vorlagen pro Klasse und Pflichtfelder für alle Artefakte des Apothem-Ökosystems.**
+
+> **Maßgebliche Quelle.** Der maschinenlesbare, vom Gate erzwungene Vertrag sind
+> die JSON-Schemas pro Klasse unter [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas)
+> (`agent.schema.json`, `command.schema.json`, `skill.schema.json`, …), die
+> jeweils `additionalProperties` deklarieren, sodass das Konformitäts-Gate
+> unbekannte Schlüssel ablehnt. Diese Seite und [`frontmatter-schema.mdx`](/docs/reference/frontmatter-schema)
+> sind die beiden menschenlesbaren Projektionen dieser Schemas — diese Seite
+> enthält die **Vorlagen und ausgearbeiteten Beispiele** pro Klasse,
+> frontmatter-schema den knappen **Index der Pflichtschlüssel**. Wo eine Seite
+> den JSON-Schemas widerspricht, haben die Schemas Vorrang.
 
 ## Überblick
 
-Alle Artefakte im Apothem-Quellbaum (unter `src/apothem/` und der
-Wurzelkonfigurationsoberfläche) müssen einen YAML-Frontmatter-Block (zwischen
-den `---`-Trennzeichen) enthalten, mit für ihren Artefakttyp spezifischen
-Pflicht- und optionalen Feldern. Dieses Dokument definiert das kanonische Schema
-für jeden Typ.
+Alle Artefakte im Apothem-Quellbaum (unter `src/apothem/` und in der
+Konfigurationsoberfläche der Wurzel) müssen einen YAML-Frontmatter-Block
+(zwischen `---`-Trennzeichen) enthalten, mit Pflicht- und optionalen Feldern,
+die für ihren Artefakttyp spezifisch sind. Dieses Dokument definiert das
+kanonische Schema für jeden Typ.
 
 **Universelle Regeln:**
 
 - Das Frontmatter ist YAML-1.2-konform
-- Alle Zeichenkettenwerte verwenden doppelte Anführungszeichen, außer wenn leer
-- Feldreihenfolge: Pflichtfelder zuerst, optionale nach Relevanz gruppiert
+- Alle Zeichenkettenwerte verwenden doppelte Anführungszeichen, sofern sie nicht leer sind
+- Feldreihenfolge: Pflichtfelder zuerst, optionale Felder nach Relevanz gruppiert
 - Kommentare im Frontmatter verwenden `#` mit Leerzeichen: `# comment`
-- Pfadwerte müssen relativ sein (ohne führenden `/`) und Schrägstriche (`/`) für plattformübergreifende Kompatibilität verwenden
+- Pfadwerte müssen relativ sein (kein führender `/`) und für plattformübergreifende Kompatibilität Schrägstriche (`/`) verwenden
 
-**Versionierungskonvention (universell über alle Artefakttypen):**
+**Versionierungskonvention (versionierte Artefaktklassen — Commands, Helfer, Skills, CLAUDE.md):**
 
-- `version` ist **semantisch** (`MAJOR.MINOR.PATCH`). Erhöhe MAJOR bei brechenden Schema- oder Vertragsänderungen; MINOR bei additiven, nicht brechenden Änderungen (neue optionale Felder, zusätzliche Abschnitte, zusätzliche Antipatterns); PATCH bei Klarstellungen, Formatierungskorrekturen oder reinen Dokumentationsbearbeitungen ohne Verhaltensänderung.
-- `updated` ist das **ISO-8601-Datum** (`YYYY-MM-DD`) der jüngsten Bearbeitung. Es muss sich mit jeder `version`-Erhöhung ändern und kann unabhängig für nicht versionserhöhende Link-Auffrischungen aktualisiert werden.
-- Neue Artefakte starten bei `v0.Y.Z`. Die Erhebung auf `vX.Y.Z` zeigt an, dass der Vertrag des Artefakts stabil genug für eine öffentliche Zusage ist.
+- `version` ist **semantisch** (`MAJOR.MINOR.PATCH`). Erhöhen Sie MAJOR bei inkompatiblen Schema- oder Vertragsänderungen; MINOR bei additiven, nicht inkompatiblen Änderungen (neue optionale Felder, zusätzliche Abschnitte, zusätzliche Antimuster); PATCH bei Klarstellungen, Formatierungskorrekturen oder reinen Dokumentationsbearbeitungen ohne Verhaltensänderung.
+- `updated` ist das **ISO-8601-Datum** (`YYYY-MM-DD`) der jüngsten Bearbeitung. Es muss sich mit jeder Anhebung von `version` ändern und darf für Link-Auffrischungen ohne Versionsanhebung unabhängig davon aktualisiert werden.
+- Neue Artefakte beginnen bei `v0.Y.Z`. Die Hochstufung auf `vX.Y.Z` zeigt an, dass der Vertrag des Artefakts stabil genug ist, um eine öffentliche Zusage zu sein.
 
 ---
 
@@ -52,15 +62,13 @@ alwaysApply: true | false
 | Feld | Typ | Zweck | Beispiel |
 | ----- | ---- | ------- | ------- |
 | `name` | string | Maschinenlesbarer Bezeichner | `"operational-mandates"` |
-| `version` | string | Semantische Version | `"X.Y.Z"` |
-| `updated` | string (ISO 8601) | Datum der letzten Aktualisierung | `"2026-04-20"` |
-| `description` | string | Einzeilige Beschreibung für die Registries | `"Operational mandates CM-1–10"` |
-| `scope` | enum | `always-on` (gilt überall) oder `path-filtered` (abhängig vom Dateipfad) | `"always-on"` |
-| `portability` | enum | Garantie der Umgebungskompatibilität | `"universal"` |
+| `description` | string | Einzeilige Beschreibung für Registries | `"Operational mandates CM-1–10"` |
+| `pathFilter` | string | Kommagetrennte Glob-Liste, die den Geltungsbereich einer pfadgefilterten Regel festlegt; bei stets aktiven Regeln die leere Zeichenkette (`""`) | `"**/*.py, **/*.toml"` |
+| `alwaysApply` | boolean | `true` für stets aktive Regeln (überall geladen); `false` für pfadgefilterte Regeln (geladen, wenn `pathFilter` zutrifft) | `true` |
 
-### Optionale Felder (falls zutreffend)
+### Optionale Felder
 
-Rules carry no optional frontmatter fields, and — unlike other artifact classes — no `version` / `updated` / `scope` / `portability` fields either. The four mandatory fields above are the complete rule frontmatter contract enforced by `frontmatter_grep`.
+Regeln haben keine optionalen Frontmatter-Felder und — anders als andere Artefaktklassen — auch keine Felder `version` / `updated` / `scope` / `portability`. Die vier obigen Pflichtfelder sind der vollständige Frontmatter-Vertrag für Regeln, den `frontmatter_grep` erzwingt.
 
 ### Beispiel
 
@@ -105,12 +113,14 @@ allowed-tools: "Read, Glob, Grep"
 | `version` | string | Semantische Version | `"X.Y.Z"` |
 | `updated` | string (ISO 8601) | Datum der letzten Aktualisierung | `"2026-04-20"` |
 | `description` | string | Kurzbeschreibung | `"Executes a phase with quality gates"` |
-| `argument-hint` | string | Verwendungsmuster, oder `"[args...]"`, falls keines | `"[path/to/plan] [phase-id]"` |
-| `disable-model-invocation` | boolean | Falls true, ist der Command nicht dafür gedacht, von einer Laufzeit eines Harnesses aufgerufen zu werden | `true` |
+| `argument-hint` | string | Verwendungsmuster oder `"[args...]"`, falls es keines gibt | `"[path/to/plan] [phase-id]"` |
+| `disable-model-invocation` | boolean | Falls true, startet nur der Operator den Command; das Modell ruft ihn niemals von sich aus auf | `true` |
+| `portability` | string | Portabilitätsklassifizierung über die Harness-Adapter hinweg | `"universal"` |
+| `allowed-tools` | string | Tools, die während der Ausführung des Commands vorab genehmigt sind: nur lesende Tools, dazu Tools mit Nebenwirkungen nur als eingegrenzte Regeln wie `Bash(git log *)`. Der bloße Platzhalter `"*"` wird abgelehnt | `"Read, Glob, Grep"` |
 
 ### Optionale Felder
 
-Commands carry no optional frontmatter fields — the eight mandatory fields above are the complete command frontmatter contract enforced by `command.schema.json` (`additionalProperties: false`).
+Commands haben keine optionalen Frontmatter-Felder — die acht obigen Pflichtfelder sind der vollständige Frontmatter-Vertrag für Commands, den `command.schema.json` (`additionalProperties: false`) erzwingt.
 
 ### Beispiel
 
@@ -140,8 +150,8 @@ allowed-tools: "Read, Glob, Grep"
 src/apothem/agents/*.md
 ```
 
-**Zweck:** Persistente Helfer-Definitionen für parallele Exploration, Audit und
-Qualitätsbarrieren.
+**Zweck:** Persistente Helfer-Definitionen für parallele Exploration, Audits
+und Qualitäts-Gates.
 
 ### Pflichtfelder
 
@@ -166,7 +176,7 @@ effort: "high" | "medium" | "low"
 | `description` | string | Beschreibung der Spezialisierung | `"Deep codebase exploration"` |
 | `tools` | string (kommagetrennt) | Erlaubte Tools | `"Read, Glob, Grep, Bash"` |
 | `disallowedTools` | string (kommagetrennt) | Verbotene Tools | `"Write, Edit, TodoWrite"` |
-| `maxTurns` | integer | Maximale Anzahl an Gesprächsrunden (typischerweise 5–20; Werte über 20 erfordern einen Inline-Begründungskommentar) | `20` |
+| `maxTurns` | integer | Maximale Anzahl an Gesprächsrunden (typisch 5–20; Werte über 20 erfordern einen Inline-Kommentar mit Begründung) | `20` |
 | `effort` | enum | Rechenumfang | `"high"` |
 
 ### Optionale Felder
@@ -227,7 +237,10 @@ allowed-tools: "Read, Glob, Grep"
 | `version` | string | Semantische Version | `"X.Y.Z"` |
 | `updated` | string (ISO 8601) | Datum der letzten Aktualisierung | `"2026-04-20"` |
 | `description` | string | Was der Skill bereitstellt | `"Master Plan Suite template"` |
-| `user-invocable` | boolean | Falls true, kann der Nutzer diesen Skill ausdrücklich anfordern | `false` |
+| `archetype` | string | Formklasse, ein Kebab-Case-Bezeichner der Form `<class>-template` | `"workflow-template"` |
+| `userInvocable` | boolean | Falls true, kann der Benutzer diesen Skill ausdrücklich anfordern | `false` |
+| `disable-model-invocation` | boolean | Falls true, wird der Skill nur durch ausdrücklichen Aufruf erreicht | `true` |
+| `allowed-tools` | string | Tools, die während der Ausführung des Skills vorab genehmigt sind: nur lesende Tools, dazu Tools mit Nebenwirkungen nur als eingegrenzte Regeln wie `Bash(git log *)`. Der bloße Platzhalter `"*"` wird abgelehnt | `"Read, Glob, Grep"` |
 
 ### Optionale Felder
 
@@ -258,15 +271,17 @@ argument-hint: "[--focus area] [--fix]"
 
 ## Schema: Hooks
 
-**Pfadmuster:** Der `hooks`-Block von `settings.json` plus die Python-Implementierungen
-unter `src/apothem/hooks/`.
+**Pfadmuster:** der `hooks`-Block in `settings.json` plus die
+Python-Implementierungen unter `src/apothem/hooks/`.
 
-**Zweck:** Ereignisgesteuerte Validatoren und Zustandsverwaltungs-Handler
-deklarieren, die der Host an genau definierten Lebenszykluspunkten aufruft.
+**Zweck:** Ereignisgesteuerte Validatoren und Handler für die
+Zustandsverwaltung deklarieren, die der Host an klar definierten Punkten des
+Lebenszyklus aufruft.
 
-### Schema der Einstellungsdatei
+### Schema der Settings-Datei
 
-Der oberste Schlüssel `hooks` ordnet Ereignisnamen Arrays von Matcher-Blöcken zu:
+Der Schlüssel `hooks` der obersten Ebene ordnet Ereignisnamen Arrays von
+Matcher-Blöcken zu:
 
 ```json
 "hooks": {
@@ -289,44 +304,45 @@ Der oberste Schlüssel `hooks` ordnet Ereignisnamen Arrays von Matcher-Blöcken 
 
 | Feld | Typ | Zweck | Beispiel |
 | ----- | ---- | ------- | ------- |
-| `matcher` | string | Tool-Namens-Muster (oder `"*"` für tool-agnostische Ereignisse) | `"Write"` |
-| `hooks[].type` | Literal `"command"` | Der heute einzige unterstützte Hook-Handler-Typ | `"command"` |
+| `matcher` | string | Tool-Namensmuster (oder `"*"` für tool-agnostische Ereignisse) | `"Write"` |
+| `hooks[].type` | Literal `"command"` | Der derzeit einzige unterstützte Hook-Handler-Typ | `"command"` |
 | `hooks[].command` | string | Ausführbarer Befehl; Apothem verwendet `python` | `"python"` |
 | `hooks[].args` | Array von Strings | Argumente in Exec-Form, die `-m apothem.hooks.dispatch` oder `-m apothem.conformity.gate` aufrufen | `["-m", "apothem.hooks.dispatch", "SessionStart"]` |
-| `hooks[].timeout` | integer Sekunden | Maximale Laufzeit, bevor der Host den Hook beendet | `30` |
-| `hooks[].statusMessage` | string | Kurzes, in der Host-Oberfläche angezeigtes Label | `"Session start"` |
+| `hooks[].timeout` | integer (Sekunden) | Maximale Laufzeit, bevor der Host den Hook beendet | `30` |
+| `hooks[].statusMessage` | string | Kurzes Label, das in der Host-Oberfläche angezeigt wird | `"Session start"` |
 
 ### Erforderliche Ereignisse
 
-Die ausgelieferten Vorlagen registrieren die folgenden Ereignisse. Alle fünf sind
-erforderlich, damit die Validatoren PASS melden:
+Die ausgelieferten Vorlagen registrieren die folgenden Ereignisse. Alle fünf
+sind erforderlich, damit die Validatoren PASS melden:
 
-> **Die Timeout-Werte spiegeln die kanonischen Hook-Ereignis-Budgets wider** — die
-> Tabelle unten reproduziert sie der Bequemlichkeit des Lesers halber; die kanonische Quelle ist maßgeblich.
+> **Die Timeout-Werte spiegeln die kanonischen Budgets der Hook-Ereignisse
+> wider** — die Tabelle unten gibt sie zur Bequemlichkeit der Lesenden wieder;
+> maßgeblich ist die kanonische Quelle.
 
 | Ereignis | Typisches Timeout | Zweck |
 | ----- | --------------- | ------- |
-| `SessionStart` | 30 Sekunden | Liest den Speicher, prüft den Plan-Zustand, meldet die Bereitschaft |
-| `PreToolUse` | 10 Sekunden | Validiert Schreibvorgänge auf Richtlinien zur Inhaltsisolierung + Frontmatter |
-| `PreCompact` | 30 Sekunden | Stellt sicher, dass der Zustand vor der Kontextverdichtung externalisiert wurde |
-| `PostCompact` | 30 Sekunden | Stellt den Arbeitszustand nach der Kontextverdichtung wieder her |
+| `SessionStart` | 30 Sekunden | Speicher lesen, Plan-Zustand prüfen, Bereitschaft melden |
+| `PreToolUse` | 10 Sekunden | Schreibvorgänge gegen Richtlinien zur Inhaltsisolierung + Frontmatter validieren |
+| `PreCompact` | 30 Sekunden | Verifizieren, dass der Zustand vor der Kontextverdichtung externalisiert wurde |
+| `PostCompact` | 30 Sekunden | Arbeitszustand nach der Kontextverdichtung wiederherstellen |
 | `Stop` | 60 Sekunden | Externalisierung am Sitzungsende — Wiederaufnahmezustand, Ausgaben, Entscheidungen |
 
-`dispatch.py` akzeptiert auch `UserPromptSubmit` und `Notification` in seiner
-Ereignis-Whitelist zur Vorwärtskompatibilität; keiner ist in den ausgelieferten
-Vorlagen verdrahtet. Füge einen Matcher-Block mit demselben Exec-Form-Muster
-hinzu, um sie zu aktivieren.
+`dispatch.py` akzeptiert zur Vorwärtskompatibilität auch `UserPromptSubmit` und
+`Notification` auf seiner Ereignis-Whitelist; keines der beiden ist in den
+ausgelieferten Vorlagen verdrahtet. Fügen Sie zum Aktivieren einen
+Matcher-Block mit demselben Exec-Form-Muster hinzu.
 
 ### Python-Schicht
 
-Jeder Hook-Command wird über denselben Python-Dispatcher geleitet:
+Jeder Hook-Befehl läuft über denselben Python-Dispatcher:
 
 | Datei | Rolle |
 | ---- | ---- |
-| `src/apothem/hooks/dispatch.py` | Leitet `SessionStart` an `session_start_bootstrap.main()` und jedes andere Whitelist-Ereignis an `emit_hook_context.main()`. Beendet sich stets mit 0. |
-| `src/apothem/hooks/session_start_bootstrap.py` | Sitzungsstart-Hook-Skript — gibt den Kontext aus Speicher- und Plan-Suite-Zusammenfassung aus. |
+| `src/apothem/hooks/dispatch.py` | Leitet `SessionStart` an `session_start_bootstrap.main()` und jedes andere Ereignis der Whitelist an `emit_hook_context.main()` weiter. Beendet sich immer mit 0. |
+| `src/apothem/hooks/session_start_bootstrap.py` | Hook-Skript für den Sitzungsstart — gibt Kontext mit einer Zusammenfassung von Speicher und Plan-Suite aus. |
 | `src/apothem/hooks/emit_hook_context.py` | Standard-Hook-Emitter — schreibt einen gültigen Umschlag, der die registrierte `--context-file`-Nutzlast trägt. |
-| `src/apothem/hooks/messages/*.md` | Statische Kontext-Nutzlast, referenziert durch `--context-file`. |
+| `src/apothem/hooks/messages/*.md` | Statische Kontext-Nutzlast, auf die `--context-file` verweist. |
 
 ### Validierung
 
@@ -334,9 +350,9 @@ Jeder Hook-Command wird über denselben Python-Dispatcher geleitet:
 
 - `settings.json` lässt sich als JSON parsen und deklariert jedes erforderliche Ereignis.
 - Alle drei Python-Skripte existieren und lassen sich als gültiges Python parsen.
-- Alle durch `--context-file`-Argumente referenzierten Nachrichtendateien existieren.
-- In `src/apothem/hooks/**.py` erscheinen keine fest codierten absoluten Nutzerpfade (`C:\Users\...` usw.).
-- Shell-Artefakte unter `src/apothem/hooks/` und `scripts/` beschränken sich auf die genehmigten Locator- / Bootstrap-Stubs.
+- Alle Nachrichtendateien, auf die `--context-file`-Argumente verweisen, existieren.
+- In `src/apothem/hooks/**.py` erscheinen keine fest codierten absoluten Benutzerpfade (`C:\Users\...` usw.).
+- Shell-Artefakte unter `src/apothem/hooks/` und `scripts/` sind auf die genehmigten Locator- / Bootstrap-Stubs beschränkt.
 
 ---
 
@@ -344,9 +360,9 @@ Jeder Hook-Command wird über denselben Python-Dispatcher geleitet:
 
 **Pfad:** `CLAUDE.md` (Wurzel)
 
-**Zweck:** Globaler Ökosystem-Konfigurationsindex.
+**Zweck:** Globaler Konfigurationsindex des Ökosystems.
 
-### Erforderliches YAML-Frontmatter
+### Verpflichtendes YAML-Frontmatter
 
 ```yaml
 ---
@@ -359,15 +375,15 @@ portability: "universal"
 ---
 ```
 
-### Erforderliche Abschnitte (in Reihenfolge)
+### Erforderliche Abschnitte (in dieser Reihenfolge)
 
-1. **§1 Plan-Suite** — Verweis auf den Vorlagenort
+1. **§1 Plan-Suite** — Verweis auf den Ablageort der Vorlage
 2. **§2 Kognitive Identität** — Mandat zur kreativen Architektur
 3. **§3 Artefaktverzeichnisse** — Tabelle der Pfade und Zwecke
 4. **§4 Nach Ernsthaftigkeit skalierte Governance** — Definition der vier Stufen
 5. **§5 Operative Direktiven** — Problemlösung, Kommunikationsprinzipien
 6. **§6 Übergreifende Mandate** — Überblick über CM-1–28
-7. **§7 Registries** — Artefakttabellen:
+7. **§7 Registries** — Tabellen der Artefakte:
    - 7.1 Commands
    - 7.2 Regeln
    - 7.3 Helfer
@@ -379,7 +395,7 @@ portability: "universal"
 
 ## Validierungs-Checkliste
 
-Jedes Artefakt muss diese Prüfungen erfüllen:
+Jedes Artefakt muss diese Prüfungen bestehen:
 
 ### Frontmatter-Validierung
 
@@ -390,28 +406,34 @@ Jedes Artefakt muss diese Prüfungen erfüllen:
 - [ ] `updated` liegt im ISO-8601-Datumsformat vor (`YYYY-MM-DD`)
 - [ ] `description` ist eine nicht leere, einzeilige Zeichenkette
 - [ ] Optionale Felder entsprechen den erwarteten Enum-Werten (falls zutreffend)
-- [ ] Keine Tippfehler in den Feldnamen (verwende die kanonischen Namen aus dem Schema)
-- [ ] Kein zusätzlicher Leerraum oder Formatierungsproblem
+- [ ] Keine Tippfehler in Feldnamen (verwenden Sie die kanonischen Namen aus dem Schema)
+- [ ] Kein überflüssiger Leerraum und keine Formatierungsprobleme
 
 ### Inhaltsvalidierung
 
 - [ ] Der Inhalt beginnt unmittelbar nach dem schließenden `---` in einer neuen Zeile
 - [ ] Keine plan-internen Verweise (CM-7-Konformität)
-- [ ] Querverweise lösen sich auf (falls andere Artefakte aufgelistet werden)
+- [ ] Querverweise lassen sich auflösen (falls andere Artefakte aufgeführt werden)
 - [ ] Links verwenden relative Pfade mit Schrägstrichen
 
 ### Portabilitätsvalidierung
 
 - [ ] Keine fest codierten absoluten Pfade (relative verwenden)
 - [ ] Keine Windows-spezifische Syntax in Artefakten mit universellem Geltungsbereich
-- [ ] Pfadtrennzeichen verwenden Schrägstriche
-- [ ] Umgebungsvariablen verwenden ein plattformagnostisches Format (`${VAR}` oder tool-nativ)
+- [ ] Pfadtrennzeichen sind Schrägstriche
+- [ ] Umgebungsvariablen verwenden ein plattformunabhängiges Format (`${VAR}` oder tool-nativ)
 
 ---
 
 ## Hinweise
 
-- **Konsistenz als Sicherheit:** Kanonisches Frontmatter ermöglicht automatisierte Validierung, Tooling und artefaktübergreifende Überprüfung. Abweichungen summieren sich schnell.
-- **Portabilitätserklärung:** Nicht alle Artefakte können universell sein. Deklariere Einschränkungen explizit — besser einen Vorbehalt dokumentieren als einen stillen Fehler ausliefern.
-- **Kebab-Case für Namen:** Leicht in URLs, Skripten und Kommandozeilenkontexten zu verwenden. Vermeide Leerzeichen, Unterstriche und camelCase bei Namen.
-- **Hygiene der Versionserhöhung:** Jede verhaltensändernde Bearbeitung muss `version` und `updated` gemeinsam erhöhen. Reine Formatierungs- oder Tippfehlerkorrekturen erhöhen PATCH; neue optionale Abschnitte oder Antipatterns erhöhen MINOR; strukturelle Reorganisation oder Vertragsänderungen erhöhen MAJOR.
+- **Konsistenz als Sicherheit:** Kanonisches Frontmatter ermöglicht
+  automatisierte Validierung, Tooling und artefaktübergreifende Verifikation.
+  Abweichungen summieren sich schnell.
+- **Portabilitätserklärung:** Nicht alle Artefakte können universell sein.
+  Deklarieren Sie Einschränkungen explizit — besser einen Vorbehalt
+  dokumentieren als einen stillen Fehler ausliefern.
+- **Kebab-Case für Namen:** Leicht in URLs, Skripten und
+  Kommandozeilenkontexten zu verwenden. Vermeiden Sie Leerzeichen, Unterstriche
+  und camelCase in Namen.
+- **Hygiene bei Versionsanhebungen:** Jede verhaltensändernde Bearbeitung muss `version` und `updated` gemeinsam anheben. Reine Formatierungs- oder Tippfehlerkorrekturen heben PATCH an; neue optionale Abschnitte oder Antimuster heben MINOR an; strukturelle Reorganisation oder Vertragsänderungen heben MAJOR an.

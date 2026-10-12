@@ -1,121 +1,141 @@
 ---
 title: "Badge-Richtlinie"
-description: "Quellen für dynamische und statische Badges für die README festlegen, abdeckend GitHub-nativen Workflow-Status, shields.io-Endpoint-JSON und statische Badge-Formen."
+description: "Legt dynamische und statische Badge-Quellen für die README fest und deckt GitHub-nativen Workflow-Status, shields.io-Endpoint-JSON und statische Badge-Formen ab."
 machineTranslated: true
-sourceHash: "0d5dc98b969aecd5"
+sourceHash: "e3ae990f58d3dd8e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Dieses Dokument ist die kanonische Referenz für die Badge-Leiste der README und
-die Infrastruktur, die ihre dynamischen Datenquellen veröffentlicht. Jeder
-Badge in der README des Projekts wird über eine der drei hier festgelegten
-Formen aufgelöst; künftig hinzugefügte neue Badges folgen denselben Formen oder
-werden in der Prüfung abgelehnt.
+die Infrastruktur, die deren dynamische Datenquellen veröffentlicht. Jeder Badge
+in der README des Projekts wird über eine der drei hier festgelegten Formen
+aufgelöst; künftig hinzugefügte neue Badges folgen denselben Formen oder werden
+im Review abgelehnt.
 
 ## 1. Hintergrund
 
-Statische `https://img.shields.io/badge/X-Y-Z`-URLs ändern sich nie von selbst,
-sodass sie sich vom realen Zustand des Projekts entfernen — ein
-`release-vN-blue`-Badge zeigt noch lange `vN` an, nachdem `vN+1`
-ausgeliefert wurde. Die Richtlinie verlangt daher dynamische Formen für jeden
-Wert, der sich bewegt, und reserviert statische Badges für die kleine Menge von
-Werten (Lizenz, Python-Zielversion), die sich selten ändern, wo die statische
-Form ehrlich ist.
+Statische `https://img.shields.io/badge/X-Y-Z`-URLs ändern sich niemals von
+selbst und entfernen sich daher vom tatsächlichen Zustand des Projekts — ein
+`release-vN-blue`-Badge zeigt noch lange `vN` an, nachdem `vN+1` ausgeliefert
+wurde. Die Richtlinie verlangt daher dynamische Formen für jeden Wert, der sich
+bewegt, und reserviert statische Badges für die kleine Menge von Werten (Lizenz,
+Python-Zielversion), die sich selten ändern und bei denen die statische Form
+ehrlich ist.
 
 ## 2. Architektur
 
-Drei Formen decken jeden Badge des Projekts ab:
+Vier Formen decken jeden Badge des Projekts ab:
 
 1. **GitHub-native Workflow-Status-Badges.** Die Badge-URL eines Workflows hat
    die Form
-   `https://github.com/<owner>/<repo>/actions/workflows/<file>/badge.svg` und
-   spiegelt den letzten Lauf auf dem Standard-Branch wider. GitHub liefert den
-   Badge aus den öffentlichen Metadaten des Repositorys aus.
+   `https://github.com/<owner>/<repo>/actions/workflows/<file>/badge.svg`
+   und spiegelt den neuesten Lauf auf dem Standard-Branch wider. GitHub liefert
+   den Badge aus den öffentlichen Metadaten des Repositorys aus.
 2. **shields.io-Endpoint-Badges.** Ein shields.io-Endpoint-Badge löst eine
-   `https://img.shields.io/endpoint?url=<published-json>`-URL auf, wobei das
-   JSON dem shields.io-Endpoint-Schema entspricht (`schemaVersion`, `label`,
+   `https://img.shields.io/endpoint?url=<published-json>`-URL auf, deren JSON
+   dem shields.io-Endpoint-Schema entspricht (`schemaVersion`, `label`,
    `message`, `color`). Das veröffentlichte JSON liegt unter
    `apothem.ahmedgad.com/badges/*.json`; sein Inhalt wird von einem
-   CI-Workflow bei jedem erfolgreichen CI-Lauf generiert. Endpoint-Badges
-   halten Metriken unter projektkontrollierter Veröffentlichung statt in einem
-   veränderlichen Drittanbieter-Speicher.
+   CI-Workflow bei jedem erfolgreichen CI-Lauf erzeugt. Endpoint-Badges halten
+   Metriken unter projektkontrollierter Veröffentlichung statt in einem
+   veränderlichen Speicher eines Drittanbieters.
 3. **Statische shields.io-Badges.** Ein statischer Badge hat die Form
    `https://img.shields.io/badge/<label>-<message>-<color>` ohne reaktive
-   Datenquelle. Reserviert für Werte, die sich wirklich selten ändern
+   Datenquelle. Reserviert für Werte, die sich tatsächlich selten ändern
    (Lizenzkennung, Python-Zielversion).
+4. **Registry- und Scorecard-Badges.** Ein Badge, dessen Wert ein Dritter aus
+   öffentlichen Daten berechnet, die er bereits vorhält: die npm-Registry
+   (Version und Downloads, gerendert von shields.io) und die OpenSSF Scorecard
+   API. Das Projekt veröffentlicht für diese nichts; der Dritte ist die Quelle.
 
-Die Veröffentlichung von Projektmetriken über öffentliche Gists ist
-absichtlich ausgeschlossen. shields.io-Endpoints über die projektkontrollierte
-Domain sind der kanonische Ersatz.
+Die Veröffentlichung von Projektmetriken über öffentliche Gists ist bewusst
+ausgeschlossen. shields.io-Endpoints über die projektkontrollierte Domain sind
+der kanonische Ersatz.
 
-## 3. Spezifikation pro Badge
+## 3. Spezifikation je Badge
 
-| Badge | Form | Quelle | URL-Form |
-|---|---|---|---|
-| CI-Status | GitHub-nativ | `.github/workflows/ci.yml` | `https://github.com/ahmed-g-gad/apothem/actions/workflows/ci.yml/badge.svg?branch=main` |
-| Letzter Commit | GitHub-nativ | Repository-Metadaten | `https://img.shields.io/github/last-commit/ahmed-g-gad/apothem` |
-| Lizenz | shields.io statisch | `LICENSE` (MIT) | `https://img.shields.io/badge/License-MIT-yellow.svg` |
-| Neueste Veröffentlichung | shields.io-Endpoint | `badges/release.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/release.json` |
-| Abdeckung | shields.io-Endpoint | `badges/coverage.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/coverage.json` |
-| Sicherheit | shields.io-Endpoint | `badges/security.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/security.json` |
-| Lieferkette | shields.io-Endpoint | `badges/supply-chain.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/supply-chain.json` |
-| Dokumentation | shields.io-Endpoint | `badges/docs.json` | `https://img.shields.io/endpoint?url=https://apothem.ahmedgad.com/badges/docs.json` |
-| Python-Version | shields.io statisch | `pyproject.toml` `python_requires` | `https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white` |
+Die Tabelle listet die Badge-Leiste der README in ihrer Reihenfolge. Die letzte
+Spalte kennzeichnet die Badges, deren Bild nur gerendert wird, solange das
+Repository öffentlich ist: GitHub liefert einen Workflow-Badge für ein privates
+Repository nur an angemeldete Mitglieder aus, und Scorecard scannt nur
+öffentliche Repositorys.
 
-CodeQL läuft als dedizierter `.github/workflows/codeql.yml`-Workflow, der die
-Python- und Actions-Oberflächen analysiert; der security-scan-Job in `ci.yml`
-führt nur bandit aus und überlässt die CodeQL-SARIF-Veröffentlichung
-`codeql.yml`. Der Sicherheits-Badge konsumiert das vom badges-Workflow
+| Badge | Form | Quelle | URL-Form | Benötigt ein öffentliches Repository |
+|---|---|---|---|---|
+| Neuestes Release | shields.io-Endpoint | `badges/release.json` | `https://img.shields.io/endpoint?url=https%3A%2F%2Fapothem.ahmedgad.com%2Fbadges%2Frelease.json` | Nein |
+| CI-Status | GitHub-nativ | `.github/workflows/ci.yml` | `https://github.com/ahmed-g-gad/apothem/actions/workflows/ci.yml/badge.svg?branch=main` | Ja |
+| Lizenz | shields.io statisch | `LICENSE` (MIT) | `https://img.shields.io/badge/license-MIT-0F172A` | Nein |
+| npm-Version | Registry | npm-Registry | `https://img.shields.io/npm/v/%40ahmed-g-gad%2Fapothem?color=10B981&label=npm` | Nein |
+| Abdeckungs-Gate | shields.io statisch | `pyproject.toml` `fail_under = 80` | `https://img.shields.io/badge/coverage%20gate-%E2%89%A580%25-2563EB` | Nein |
+| OpenSSF Scorecard | Scorecard | Ergebnisse von `.github/workflows/scorecard.yml` | `https://api.securityscorecards.dev/projects/github.com/ahmed-g-gad/apothem/badge` | Ja |
+| Feedback | shields.io statisch | GitHub Issues | `https://img.shields.io/badge/feedback-GitHub%20issues-7C3AED` | Nein |
+| Dokumentation | shields.io statisch | die Dokumentationsseite | `https://img.shields.io/badge/docs-Fumadocs-0F172A` | Nein |
+| npm-Downloads | Registry | npm-Registry | `https://img.shields.io/npm/dm/%40ahmed-g-gad%2Fapothem?color=10B981&label=downloads` | Nein |
+
+Das Linkziel jedes Badges auf `github.com` (Releases, der Workflow, die
+Lizenzdatei, Issues) öffnet sich nur, solange das Repository öffentlich ist.
+
+Der badges-Workflow veröffentlicht außerdem die Endpoint-Dateien
+`coverage.json`, `security.json`, `supply-chain.json` und `docs.json` für
+künftige Badges; die README zeigt sie derzeit nicht an.
+
+CodeQL läuft als dedizierter Workflow `.github/workflows/codeql.yml`, der die
+Python- und Actions-Oberflächen analysiert; der Job `security-scan` in `ci.yml`
+führt nur bandit aus und überlässt die Veröffentlichung der CodeQL-SARIF
+`codeql.yml`. Der Sicherheits-Badge nutzt das vom badges-Workflow
 veröffentlichte Endpoint-JSON statt eines GitHub-nativen Workflow-Badges und
 bleibt so über die zugrunde liegende Scanner-Topologie hinweg stabil.
 
-## 4. JSON-Veröffentlichungsmechanismus
+## 4. Mechanismus der JSON-Veröffentlichung
 
-Die Endpoint-JSONs werden von `.github/workflows/badges.yml` produziert. Der
+Die Endpoint-JSONs werden von `.github/workflows/badges.yml` erzeugt. Der
 Workflow:
 
-- Wird über `workflow_run` ausgelöst, nachdem der `ci`-Workflow abgeschlossen
-  ist (und über manuelles `workflow_dispatch` zur erneuten Veröffentlichung
-  ohne CI-Lauf).
-- Löst das neueste Tag aus `git describe --tags --abbrev=0` und das
-  übergeordnete CI-Ergebnis aus dem `workflow_run`-Ereignis auf.
-- Generiert jedes JSON über `jq -n`, sodass die Ausgabe strikt dem
-  shields.io-Endpoint-Schema entspricht (`schemaVersion: 1` plus `label`,
+- Wird über `workflow_run` ausgelöst, nachdem der Workflow `ci` abgeschlossen
+  ist (und über ein manuelles `workflow_dispatch` zur erneuten
+  Veröffentlichung ohne CI-Lauf).
+- Ermittelt das neueste Release-Tag mit
+  `git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*'` auf einem
+  Checkout mit vollständigem Verlauf (`fetch-depth: 0`; auf einem Checkout der
+  Tiefe 1 ist kein getaggter Commit erreichbar, und der Badge zeigt
+  `unreleased`) sowie das Ergebnis des übergeordneten CI-Laufs aus dem
+  `workflow_run`-Ereignis.
+- Erzeugt jedes JSON über `jq -n`, sodass die Ausgabe strikt dem
+  shields.io-Endpoint-Schema entspricht (`schemaVersion: 1` sowie `label`,
   `message`, `color`).
-- Validiert jedes ausgegebene JSON mit `jq -e` vor dem Hochladen.
-- Lädt das Verzeichnis als Workflow-Artefakt namens `badges` hoch.
+- Validiert jedes ausgegebene JSON vor dem Hochladen mit `jq -e`.
+- Lädt das Verzeichnis als Workflow-Artefakt mit dem Namen `badges` hoch.
 
-Die Bereitstellung der Artefakte unter `apothem.ahmedgad.com/badges/` wird von
-`.github/workflows/publish-static-site.yml` übernommen. Während des Site-Builds
-lädt dieser Workflow das neueste erfolgreiche `badges`-Artefakt herunter und
-stellt es unter `site/dist/badges/` bereit. Falls das Artefakt fehlt oder
-abgelaufen ist, wird die Site dennoch bereitgestellt und das fehlende
-Badge-Artefakt in den Workflow-Protokollen vermerkt, anstatt kaputtes JSON zu
-veröffentlichen.
+Das Deployment der Artefakte nach `apothem.ahmedgad.com/badges/` übernimmt
+`.github/workflows/publish-static-site.yml`. Während des Builds der Website lädt
+dieser Workflow das neueste erfolgreiche `badges`-Artefakt herunter und legt es
+unter `site/dist/badges/` bereit. Fehlt das Artefakt oder ist es abgelaufen,
+wird die Website dennoch deployt, und das fehlende Badge-Artefakt wird in den
+Workflow-Protokollen vermerkt, statt fehlerhaftes JSON zu veröffentlichen.
 
 ## 5. Wartungsprotokoll
 
-Fügen Sie einen neuen Badge hinzu, indem Sie zuerst die Form entscheiden:
+Fügen Sie einen neuen Badge hinzu, indem Sie zuerst die Form festlegen:
 
-- Falls der Badge den Laufzustand eines CI-Workflows widerspiegelt, bevorzugen
+- Wenn der Badge den Laufzustand eines CI-Workflows widerspiegelt, bevorzugen
   Sie die GitHub-native Form. Die URL des Badges ist durch die Workflow-Datei
   festgelegt; es ist keine Veröffentlichungsinfrastruktur erforderlich.
-- Falls der Badge eine Metrik widerspiegelt (ein Zähler, ein Prozentsatz, eine
-  Versionszeichenfolge, ein abgestuftes Etikett), die sich im Laufe der Zeit
-  aktualisiert, verwenden Sie die shields.io-Endpoint-Form. Fügen Sie einen
-  JSON-Generierungsschritt zu `.github/workflows/badges.yml` neben den
-  bestehenden fünf hinzu und fügen Sie die Verbraucher-URL
+- Wenn der Badge eine Metrik widerspiegelt (eine Anzahl, einen Prozentsatz,
+  eine Versionszeichenkette, eine abgestufte Bezeichnung), die sich im Lauf der
+  Zeit ändert, verwenden Sie die shields.io-Endpoint-Form. Fügen Sie
+  `.github/workflows/badges.yml` neben den bestehenden fünf einen Schritt zur
+  JSON-Erzeugung hinzu, und fügen Sie die Konsumenten-URL
   `apothem.ahmedgad.com/badges/<name>.json` zur Badge-Leiste der README hinzu.
-- Falls der Badge einen Wert widerspiegelt, der sich wirklich selten ändert
-  (Lizenz, Sprachziel, Governance-Modus), verwenden Sie die statische
-  shields.io-Form. Dokumentieren Sie die Änderungskadenz in der Tabelle pro
-  Badge in dieser Datei beim Hinzufügen des Badges.
+- Wenn der Badge einen Wert widerspiegelt, der sich tatsächlich selten ändert
+  (Lizenz, Zielsprache, Governance-Modus), verwenden Sie die statische
+  shields.io-Form. Dokumentieren Sie beim Hinzufügen des Badges den
+  Änderungsrhythmus in der Tabelle je Badge in dieser Datei.
 
-Setzen Sie einen Badge außer Betrieb, indem Sie ihn zuerst aus der README
-entfernen, dann seinen JSON-Generierungsschritt aus dem badges-Workflow
-entfernen und schließlich seine Zeile aus der Tabelle pro Badge oben entfernen.
-Halten Sie die Löschung atomisch, damit die README niemals auf ein
-JSON-Artefakt verweist, das der Workflow nicht produziert.
+Nehmen Sie einen Badge außer Betrieb, indem Sie ihn zuerst aus der README
+entfernen, dann seinen Schritt zur JSON-Erzeugung aus dem badges-Workflow und
+schließlich seine Zeile aus der obigen Tabelle je Badge. Halten Sie die Löschung
+atomar, damit die README niemals auf ein JSON-Artefakt verweist, das der
+Workflow nicht erzeugt.
 
 ## 6. Querverweise
 
@@ -123,7 +143,7 @@ JSON-Artefakt verweist, das der Workflow nicht produziert.
   `.github/workflows/ci.yml`.
 - Der badges-Workflow, der die Endpoint-JSONs veröffentlicht:
   `.github/workflows/badges.yml`.
-- Die Domain der statischen Site, die die JSONs ausliefert:
+- Die Domain der statischen Website, die die JSONs ausliefert:
   `apothem.ahmedgad.com`.
 - Die Referenz für das shields.io-Endpoint-Schema:
   [https://shields.io/badges/endpoint-badge](https://shields.io/badges/endpoint-badge).

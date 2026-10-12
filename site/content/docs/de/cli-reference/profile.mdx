@@ -2,15 +2,15 @@
 title: "profile"
 description: "CLI-Referenz für die Befehlsgruppe apothem profile."
 machineTranslated: true
-sourceHash: "475e2c6491a0f7a8"
+sourceHash: "012b17d6a7a7bc49"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Verwaltet das geteilte Apothem-Profil.
+Verwaltet das gemeinsame Apothem-Profil.
 
 `profile` ist eine Befehlsgruppe mit vier Unterbefehlen: `init`, `show`, `set` und `edit`.
-Das geteilte Profil ist die einzige Quelle der Wahrheit, die jeder Harness-Adapter
-in seine native Konfiguration materialisiert.
+Das gemeinsame Profil ist die einzige maßgebliche Quelle, die jeder
+Harness-Adapter in seine native Konfiguration materialisiert.
 
 ## Übersicht
 
@@ -29,25 +29,33 @@ apothem profile edit [--profile PATH] [--quiet|-q] [--verbose|-v]
 
 ## Gemeinsame Optionen
 
-Jeder Unterbefehl akzeptiert die unten aufgeführten geteilten Optionen.
+Jeder Unterbefehl akzeptiert die folgenden gemeinsamen Optionen.
 
 | Option | Beschreibung |
 |---|---|
-| `--profile PATH` | Pfad zur YAML-Datei des geteilten Profils (Standard ist der Standard-Profilort). |
-| `--quiet`, `-q` | Unterdrückt informative Ausgabe; nur Fehler werden ausgegeben. |
-| `--verbose`, `-v` | Gibt zusätzliche Diagnoseausgabe aus. |
+| `--profile PATH` | Pfad zur YAML-Datei des gemeinsamen Profils (Standard ist der Standardspeicherort des Profils). |
+| `--quiet`, `-q` | Unterdrückt informative Ausgaben; nur Fehler werden ausgegeben. |
+| `--verbose`, `-v` | Gibt zusätzliche Diagnoseausgaben aus. |
 | `--format plain\|json` | Ausgabeformat (Standard: `plain`). |
 | `--json` | Kurzform für `--format json`. |
 | `--no-color` | Deaktiviert ANSI-Farbcodes in der Ausgabe. |
-| `-h`, `--help` | Zeigt Hilfe an und beendet. |
+| `-h`, `--help` | Zeigt die Hilfe an und beendet den Befehl. |
 
 ## Unterbefehle
 
 ### `profile init`
 
-Erstellt ein schemagültiges minimales Profilgerüst unter
-`~/.config/apothem/profile.yaml` oder `--profile PATH`. Vorhandene Dateien werden
-beibehalten, sofern `--force` nicht angegeben wird.
+Erstellt ein schemagültiges, minimales Profilgerüst unter
+`~/.config/apothem/profile.yaml` oder `--profile PATH`. Vorhandene Dateien
+bleiben erhalten, sofern nicht `--force` angegeben wird.
+
+Die erste Zeile des Gerüsts ist eine `yaml-language-server`-Modeline, die die
+`$id` des Profilschemas nennt,
+`https://apothem.ahmedgad.com/schemas/profile.schema.json`. Die Website stellt
+das mitgelieferte Schema unter dieser Adresse bereit, sodass ein Editor mit
+YAML-Sprachunterstützung das Profil validiert, während Sie es bearbeiten. Jedes
+mitgelieferte Schema unter `src/apothem/schemas/` wird auf dieselbe Weise unter
+`https://apothem.ahmedgad.com/schemas/<file>` bereitgestellt.
 
 | Option | Beschreibung |
 |---|---|
@@ -55,27 +63,63 @@ beibehalten, sofern `--force` nicht angegeben wird.
 
 ### `profile show`
 
-Zeigt das validierte, mit Standardwerten erweiterte geteilte Profil an.
+Zeigt das validierte, um Standardwerte erweiterte gemeinsame Profil an. Mit
+`--json` ist das Dokument das Profil selbst, angeführt von `schema_version`:
+der Version des Profilschemas, nach der die Engine es gelesen hat (siehe den
+[JSON-Ausgabevertrag](/docs/cli-reference#json-ausgabevertrag)).
 
 ### `profile set KEY VALUE`
 
-Setzt einen Schlüssel im geteilten Profil. `KEY` ist ein punktgetrennter Pfad, der in das
-verschachtelte Profil absteigt (`identity.name`, `preferences.style`, `enforcement.sprints`,
-`harnesses.<harness>.preferences.style`); ein einzelner Schlüssel ohne Punkt setzt einen
-Knoten auf oberster Ebene. `VALUE` wird als wörtliche Zeichenkette gespeichert — nackte Wörter werden nicht
-umgewandelt (`no` bleibt `"no"`, `2024-01-01` und `1.0` bleiben Zeichenketten) — außer
-`true`/`false` (die booleschen Durchsetzungs-Flags) und explizite `[...]`/`{...}`
-Listen-/Map-Eingabe. Das vollständig zusammengesetzte Profil wird vor dem Schreiben gegen das Schema
-validiert; ein ungültiges set wird abgelehnt und das Profil auf der Festplatte bleibt unverändert.
+Setzt einen Schlüssel im gemeinsamen Profil. `KEY` ist ein punktgetrennter
+Pfad, der in das verschachtelte Profil absteigt (`identity.name`,
+`preferences.style`, `enforcement.sprints`,
+`harnesses.<harness>.preferences.style`); ein einzelner Schlüssel ohne Punkt
+setzt einen Knoten der obersten Ebene. `VALUE` wird als wörtliche Zeichenkette
+gespeichert — bloße Wörter werden nicht umgewandelt (`no` bleibt `"no"`,
+`2024-01-01` und `1.0` bleiben Zeichenketten) — mit Ausnahme von
+`true`/`false` (den booleschen Durchsetzungs-Flags) und expliziter
+`[...]`/`{...}`-Listen-/Map-Eingabe. Das vollständig zusammengesetzte Profil
+wird vor dem Schreiben gegen das Schema validiert; ein ungültiges Setzen wird
+abgelehnt, und das Profil auf der Festplatte bleibt unverändert.
 
 | Argument | Beschreibung |
 |---|---|
-| `KEY` | Punktgetrennter Pfad in das zu setzende Profil (erforderlich). |
-| `VALUE` | Wörtlicher zuzuweisender Wert; vor dem Schreiben validiert (erforderlich). |
+| `KEY` | Punktgetrennter Pfad in das Profil, der gesetzt werden soll (erforderlich). |
+| `VALUE` | Zuzuweisender wörtlicher Wert; wird vor dem Schreiben validiert (erforderlich). |
 
 ### `profile edit`
 
-Öffnet das geteilte Profil im System-Editor.
+Öffnet das gemeinsame Profil im Systemeditor.
+
+## Validierungsfehler
+
+Jeder Befehl, der das Profil liest, validiert es gegen das mitgelieferte Schema
+und meldet in einem Durchlauf **jedes** gefundene Problem, sodass eine einzige
+Bearbeitung sie alle beheben kann:
+
+- **Klartextausgabe** nennt das erste Problem vollständig (`Field`, `Reason`,
+  `Fix` und `Offending value (redacted)`: die Eingabe, die fehlgeschlagen ist,
+  wobei geheimnisartige Werte durch `<redacted>` ersetzt sind; es ist niemals
+  ein vorgeschlagener Ersatz) und listet dann bis zu zehn weitere unter
+  `Other problems` auf.
+- **JSON-Ausgabe** behält das erste Problem in den Feldern der obersten Ebene
+  des `error`-Objekts und fügt ein `errors`-Array mit jedem Problem hinzu
+  (`code`, `field`, `reason`, `fix`, `safe_value`).
+- **Unbekannte Schlüssel** geben nur den unerwarteten Schlüssel und seinen
+  geschwärzten Wert wieder, nicht das gesamte Profil.
+- **Markierungen verwalteter Blöcke.** Kein Schlüssel und kein Textwert darf
+  `<!-- BEGIN APOTHEM MANAGED BLOCK -->` oder `<!-- END APOTHEM MANAGED BLOCK -->`
+  enthalten. Apothem schreibt diese Markierungen um den Block, den es in
+  Anweisungsdateien verwaltet, und Profiltext landet innerhalb dieses Blocks;
+  eine Markierung darin würde den Block daher teilen. Jedes solche Feld schlägt
+  mit `profile.managed_block_marker` fehl: `field` ist sein punktgetrennter Pfad
+  (zum Beispiel `rules.2` oder `mcp_servers.search.env.SEARCH_MODE`), und
+  `reason` nennt die Markierung. Der Wert selbst wird niemals wiedergegeben
+  (`safe_value` ist `null`), da es sich um Anmeldedaten handeln kann.
+
+`profile init` (und jeder andere Befehl, der ein Profilgerüst anlegt) schreibt
+`schema_version: 1`. Ein Profil ohne `schema_version` wird als Version 1
+gelesen.
 
 ## Beispiele
 
@@ -94,7 +138,8 @@ apothem profile edit
 | Code | Bedeutung |
 |---|---|
 | 0 | Erfolg (oder, bei `edit`, der Editor wurde normal beendet) |
-| 1 | Profil fehlt, ist ungültig, existiert bereits ohne `--force`, oder kann nicht geschrieben werden |
+| 1 | Profil fehlt, ist ungültig, existiert bereits ohne `--force` oder kann nicht geschrieben werden |
+| 64 | Verwendungsfehler: eine unbekannte Option oder ein unbekannter Befehl oder ein fehlender oder ungültiger Optionswert. Unter `--json` ist der Fehler ein JSON-Umschlag mit dem Code `cli.usage`. |
 
 ## Siehe auch
 

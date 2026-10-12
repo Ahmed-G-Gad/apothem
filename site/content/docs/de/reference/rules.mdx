@@ -2,12 +2,12 @@
 title: "Regeln"
 description: "Always-on- und pfadgefilterte Verhaltensregeln, die Problemlösung, Code-Handwerk, saubere Architektur, Planung und Qualität über das gesamte Verhaltensregelwerk steuern."
 machineTranslated: true
-sourceHash: "8e2637435d5ab460"
+sourceHash: "84db4f5243d1ad02"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Verhaltensregeln leben als flache Dateien unter `src/apothem/rules/` mit dem
-Suffix `*.md`. Jede Regel ist in sich geschlossen — Purpose,
+Verhaltensregeln liegen als flache Dateien mit dem Suffix `*.md` unter
+`src/apothem/rules/`. Jede Regel ist in sich geschlossen — Purpose,
 Obligations, Seriousness Scaling, Anti-Patterns, Enforcement, Bindings — und
 entweder always-on oder pfadgefiltert.
 
@@ -46,9 +46,31 @@ alwaysApply: <true | false>
 ---
 ```
 
-Das `pathFilter`-Feld entfällt bei Always-on-Regeln und ist bei
-pfadgefilterten Regeln vorhanden. Die `frontmatter-cohort`-Prüfung des
-Validators verifiziert den Vertrag bei jeder Regeldatei.
+Bei einer Always-on-Regel ist `pathFilter` die leere Zeichenkette (`""`) und
+`alwaysApply` ist `true`; bei einer pfadgefilterten Regel trägt `pathFilter` die
+Glob-Liste und `alwaysApply` ist `false`. Der maschinenlesbare Vertrag ist
+[`frontmatter_grep`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/frontmatter_grep.py)
+(`{name, description, pathFilter, alwaysApply}`); die `frontmatter-cohort`-Prüfung
+des Validators verifiziert ihn bei jeder Regeldatei.
+
+`pathFilter` und `alwaysApply` sind harness-neutral. Jeder Adapter übersetzt sie
+dort, wo sein Harness ein natives Feld zur Eingrenzung hat. Claude Code liest aus
+einer Regel nur `paths:` und lädt jede Regel ohne dieses Feld beim Start, daher
+schreibt die Engine-Installation (`apothem install --harness claude-code`) jede
+pfadgefilterte Regel mit einer aus ihrem `pathFilter` gebildeten `paths:`-Liste
+nach `~/.claude/rules/` und kopiert Always-on-Regeln unverändert. Die 28
+Always-on-Regeln werden in jeder Sitzung geladen; die 63 pfadgefilterten
+Begleiter werden geladen, wenn der Assistent eine passende Datei liest.
+
+OpenCode hat kein Eingrenzungsfeld pro Regel: Es fügt jede Datei, die die
+`instructions`-Liste seiner `opencode.json` nennt, in jede Sitzung ein. Die
+OpenCode-Installation (`apothem install --harness opencode`) listet daher Ihr
+Profildokument und nur die Regeln, deren `alwaysApply` `true` ist, mit einem
+expliziten `~/.config/opencode/...`-Pfad pro Datei, ausgelesen aus den
+Regeldateien, wenn die Konfiguration geschrieben wird. Jede Regel,
+pfadgefilterte eingeschlossen, wird dennoch unter
+`~/.config/opencode/.apothem/support/rules/` installiert, wo eine Regel, ein
+Skill oder ein Befehl, der sie zitiert, sie bei Bedarf liest.
 
 ## Autorendisziplin
 

@@ -2,7 +2,7 @@
 title: "verify"
 description: "CLI-Referenz für den Befehl apothem verify."
 machineTranslated: true
-sourceHash: "0fe3ea35a885265b"
+sourceHash: "d9d421ce85d96684"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,30 +11,46 @@ Verifiziert die Installation eines Harness-Adapters.
 ## Übersicht
 
 ```
-apothem verify --harness NAME|all [--project PATH]
+apothem verify --harness NAME|all [--profile PATH] [--project PATH]
                 [--quiet|-q] [--verbose|-v]
                 [--format plain|json] [--json] [--no-color]
 ```
 
-Ruft die `verify()`-Implementierung jedes ausgewählten Adapters auf. Beendet sich nur dann mit 0, wenn alle ausgewählten Adapter melden, dass ihre verwalteten Ziele vorhanden und gültig sind.
+Ruft die `verify()`-Implementierung jedes ausgewählten Adapters auf. Endet nur
+dann mit Exit-Code 0, wenn alle ausgewählten Adapter melden, dass ihre
+verwalteten Ziele vorhanden und gültig sind. Ohne `--profile` ist die Prüfung
+**strukturell** — jedes verwaltete Ziel muss vorhanden und gültig sein. Mit
+`--profile` verlangt die Prüfung zusätzlich **Profiltreue**, sodass eine
+vorhandene, aber abgedriftete Installation bei verify durchfällt; die Prüfung
+beantwortet also „Ist DIESES Profil originalgetreu installiert?“ statt nur
+„Existiert es?“.
+
+Ein Durchlauf mit `--harness all` berücksichtigt `exclude_harnesses` im Profil —
+dieselben Ausschlüsse, die der `install`/`update`-Batch angewendet hat —, sodass
+verify einen bewusst ausgeschlossenen Harness niemals als fehlend meldet. Die
+Ausschlüsse stammen aus `--profile`, wenn angegeben, andernfalls aus dem
+Standardprofil; ist das Standardprofil nicht lesbar oder fehlt es, fällt der
+Durchlauf auf die vollständige Registry zurück.
 
 ## Optionen
 
 | Option | Beschreibung |
 |---|---|
-| `--harness NAME` | Zu verifizierender Harness-Adapter oder `all` für die registryweite Menge (erforderlich). |
-| `--project PATH` | Projektstamm für Harnesses mit Projektumfang. |
+| `--harness NAME` | Zu verifizierender Harness-Adapter oder `all` für die registry-weite Menge (erforderlich). |
+| `--profile PATH` | YAML-Datei des gemeinsamen Profils, gegen die die Treue geprüft wird. Ohne die Option ist die Prüfung rein strukturell. |
+| `--project PATH` | Projektwurzel für Harnesses mit Projekt-Geltungsbereich. |
 | `--quiet`, `-q` | Unterdrückt informative Ausgaben; nur Fehler werden ausgegeben. |
 | `--verbose`, `-v` | Gibt zusätzliche Diagnoseausgaben aus. |
 | `--format plain\|json` | Ausgabeformat (Standard: `plain`). |
 | `--json` | Kurzform für `--format json`. |
 | `--no-color` | Deaktiviert ANSI-Farbcodes in der Ausgabe. |
-| `-h`, `--help` | Zeigt die Hilfe an und beendet sich. |
+| `-h`, `--help` | Zeigt die Hilfe an und beendet den Befehl. |
 
 ## JSON-Ausgabe
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "verify",
   "action": "verified",
@@ -59,7 +75,9 @@ Ruft die `verify()`-Implementierung jedes ausgewählten Adapters auf. Beendet si
 }
 ```
 
-Wenn ein ausgewählter Harness fehlt oder ungültig ist, lautet `status` `error`, die fehlschlagende Ergebniszeile trägt `verified: false` und der Prozess beendet sich mit dem Code 1.
+Wenn ein ausgewählter Harness fehlt oder ungültig ist, lautet `status` `error`,
+die fehlschlagende Ergebniszeile trägt `verified: false`, und der Prozess endet
+mit dem Code 1.
 
 ## Beispiele
 
@@ -73,11 +91,12 @@ apothem verify --harness all --project .
 
 | Code | Bedeutung |
 |---|---|
-| 0 | Harness ist installiert |
-| 1 | Harness ist nicht installiert |
+| 0 | Harness verifiziert — alle verwalteten Ziele vorhanden und gültig |
+| 1 | Harness nicht verifiziert — verwaltete Ziele fehlen oder sind ungültig |
+| 64 | Verwendungsfehler: eine unbekannte Option oder ein unbekannter Befehl oder ein fehlender oder ungültiger Optionswert. Unter `--json` ist der Fehler ein JSON-Umschlag mit dem Code `cli.usage`. |
 
 ## Siehe auch
 
 - [apothem install](/docs/cli-reference/install) — installiert eine Harness-Konfiguration
 - [apothem update](/docs/cli-reference/update) — wendet das aktuelle Profil erneut auf einen Harness an
-- [apothem doctor](/docs/install/concepts) — systemweite Installationsdiagnose
+- [apothem doctor](/docs/cli-reference/doctor) — systemweite Installationsdiagnose

@@ -2,7 +2,7 @@
 title: "harnesses"
 description: "CLI-Referenz für die Befehlsgruppe apothem harnesses."
 machineTranslated: true
-sourceHash: "07231c50da1f355d"
+sourceHash: "ce8d5647426c475c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,12 +33,13 @@ Listet alle registrierten Harness-Adapter auf.
 | `--format plain\|json` | Ausgabeformat (Standard: `plain`). |
 | `--json` | Kurzform für `--format json`. |
 | `--no-color` | Deaktiviert ANSI-Farbcodes in der Ausgabe. |
-| `-h`, `--help` | Zeigt die Hilfe an und beendet. |
+| `-h`, `--help` | Zeigt die Hilfe an und beendet den Befehl. |
 
 ### `harnesses show NAME`
 
-Zeigt Details zu einem bestimmten Harness-Adapter an. `NAME` ist der Harness-Bezeichner
-in kebab-case; führe `apothem harnesses list` aus, um die verfügbaren Bezeichner zu sehen.
+Zeigt Details zu einem bestimmten Harness-Adapter an. `NAME` ist der
+Harness-Bezeichner in Kebab-Case; führen Sie `apothem harnesses list` aus, um
+die verfügbaren Bezeichner zu sehen.
 
 | Option | Beschreibung |
 |---|---|
@@ -48,7 +49,7 @@ in kebab-case; führe `apothem harnesses list` aus, um die verfügbaren Bezeichn
 | `--format plain\|json` | Ausgabeformat (Standard: `plain`). |
 | `--json` | Kurzform für `--format json`. |
 | `--no-color` | Deaktiviert ANSI-Farbcodes in der Ausgabe. |
-| `-h`, `--help` | Zeigt die Hilfe an und beendet. |
+| `-h`, `--help` | Zeigt die Hilfe an und beendet den Befehl. |
 
 ## Beispiele
 
@@ -86,9 +87,11 @@ zed
 | Code | Bedeutung |
 |---|---|
 | 0 | Erfolg |
-| 1 | Harness nicht gefunden (`harnesses show` mit unbekanntem `NAME`) |
+| 1 | Harness nicht gefunden (`harnesses show` mit einem unbekannten `NAME`), oder alle Adapter sind beim Laden oder Melden gescheitert (`harnesses list`) |
+| 2 | Mindestens ein Adapter wurde aufgelistet, aber mindestens einer konnte nicht melden (`harnesses list`) |
+| 64 | Verwendungsfehler: eine unbekannte Option oder ein unbekannter Befehl oder ein fehlender oder ungültiger Optionswert. Unter `--json` ist der Fehler ein JSON-Umschlag mit dem Code `cli.usage`. |
 
 ## Siehe auch
 
 - [apothem doctor](/docs/cli-reference/doctor) — führt systemweite Installationsdiagnosen aus
-- [apothem verify](/docs/cli-reference/verify) — prüft eine bestimmte Harness-Installation
+- [apothem verify](/docs/cli-reference/verify) — prüft die Installation eines bestimmten Harness

@@ -1,37 +1,41 @@
 ---
 title: "Markdown-Konventionen"
-description: "Markdown-Variante, Überschriftenstruktur, Codeblock-Deklarationen, interne Linkformate, Autorschafts-Banner und die Durchsetzung durch Validatoren standardisieren."
+description: "Markdown-Variante, Überschriftenstruktur, Sprachdeklarationen von Codeblöcken, Formate interner Links, Autorschafts-Banner und die Durchsetzung durch Validatoren vereinheitlichen."
 machineTranslated: true
-sourceHash: "80b6f4a49d92f47b"
+sourceHash: "f23d6b35db5b9a17"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Kanonische Referenz für Markdown-Form und -Formatierung über jedes verfasste `.md`-Artefakt hinweg.** Die Zusammenfassung in [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) Konventionen ist die Inline-Deklaration; diese Seite ist die eigenständige Referenz, die nachgelagerte Mitwirkende zitieren.
+> **Kanonische Referenz für Form und Formatierung von Markdown in jedem verfassten `.md`-Artefakt.** Die Zusammenfassung im Abschnitt „Conventions“ von [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) ist die Inline-Deklaration; diese Seite ist die eigenständige Referenz, die nachgelagerte Mitwirkende zitieren.
 
 ---
 
 ## 1. Variante
 
-GitHub-Flavored Markdown (GFM) ist die Host-Variante. Jedes Artefakt rendert korrekt in der Web-Oberfläche von GitHub, auf der Fumadocs-Dokumentationssite und in standardmäßigen Markdown-fähigen Editoren.
+GitHub-Flavored Markdown (GFM) ist die Host-Variante. Jedes Artefakt wird in der Weboberfläche von GitHub, auf der Fumadocs-Dokumentationssite und in gängigen Markdown-fähigen Editoren korrekt gerendert.
 
 ## 2. Überschriftenhierarchie
 
-Ein H1 pro Datei. Nachfolgende Überschriften steigen monoton ab (H2 → H3 → H4), ohne Ebenen zu überspringen. Überschriften in Satz-Großschreibung; keine GROSSBUCHSTABEN, kein Title Case Über Jedes Wort. Das H1 trägt den Haupttitel des Dokuments und IST der Anker des Dokuments in der Navigation der Dokumentationssite.
+Ein H1 pro Datei. Nachfolgende Überschriften steigen monoton ab (H2 → H3 → H4), ohne Ebenen zu überspringen. Überschriften in Satzschreibung; keine GROSSBUCHSTABEN, kein Title Case Für Jedes Einzelne Wort. Das H1 trägt den Haupttitel des Dokuments und IST der Anker des Dokuments in der Navigation der Dokumentationssite.
 
 ## 3. Codeblöcke
 
-Eingezäunte Codeblöcke deklarieren ihre Sprache (` ```python `, ` ```bash `, ` ```yaml `, ` ```json `, ` ```mermaid `). Blöcke ohne Tag unterdrücken die Syntaxhervorhebung und signalisieren eine Verfassungsabweichung; die markdownlint-Regel MD040 in [`.markdownlint.jsonc`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.jsonc) erzwingt das Sprach-Tag.
+Umzäunte Codeblöcke deklarieren ihre Sprache (` ```python `, ` ```bash `, ` ```yaml `, ` ```json `, ` ```mermaid `). Blöcke ohne Tag unterdrücken die Syntaxhervorhebung und signalisieren Drift beim Verfassen; die markdownlint-Regel MD040, konfiguriert in [`.markdownlint.json`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.json), erzwingt das Sprach-Tag.
 
 ## 4. Interne Links
 
-Interne Querverweise verwenden **site-root-relative Pfade** (z. B. `[Authorship header](/docs/reference/authorship-header)`). Reine repository-relative Pfade mit einer `.md`/`.mdx`-Erweiterung (`/docs/foo.md`) und vollständige URLs zum selben Repository (`https://github.com/ahmed-g-gad/apothem/blob/main/...`) werden für seiteninterne Links vermieden, weil sie Seitenumbenennungen und Abschnittsumstrukturierungen schlecht standhalten.
+Interne Querverweise verwenden **Pfade ab der Site-Wurzel** (z. B. `[Authorship header](/docs/reference/authorship-header)`). Bloße repository-relative Pfade mit einer `.md`/`.mdx`-Endung (`/docs/foo.md`) und vollständige URLs auf dasselbe Repository (`https://github.com/ahmed-g-gad/apothem/blob/main/...`) werden für Links innerhalb der Site vermieden, weil sie Umbenennungen von Seiten und Umstrukturierungen von Abschnitten schlecht überstehen.
 
-Externe Links zu veränderlichen Refs (`main`, `master`, `latest`, `HEAD`) werden auf Commit-SHAs oder Release-Tags festgelegt, wann immer die Stabilität des verlinkten Inhalts wichtig ist; volatile Referenzen werden mit einem angrenzenden `{/* volatile */}`-Kommentar als solche dokumentiert.
+Diese `/docs/...`-Pfade ab der Site-Wurzel — und die Form `/<locale>/docs/...` für die Nicht-Standard-Locales der Kohorte — löst der Validator `link-check` gegen die Seitenmenge auf der Festplatte unter `site/content/docs/` auf: `/docs/a/b` wird auf `site/content/docs/a/b.mdx` oder den Ordnerindex `site/content/docs/a/b/index.mdx` abgebildet, und die Locale-Form wird unterhalb des Teilbaums `site/content/docs/<locale>/` abgebildet. Ein Link auf eine entfernte oder umbenannte Route löst sich zu keiner der beiden Dateien auf und wird als tote Route (ein für Benutzer sichtbarer 404) am Konformitäts-Gate erkannt und nicht erst beim Site-Build.
+
+Externe Links auf veränderliche Refs (`main`, `master`, `latest`, `HEAD`) werden auf Commit-SHAs oder Release-Tags festgelegt, wann immer die Stabilität des verlinkten Inhalts wichtig ist; volatile Verweise werden mit einem angrenzenden `{/* volatile */}`-Kommentar als solche dokumentiert.
 
 ## 5. Autorschafts-Banner
 
-Jedes Markdown-Artefakt (mit den in [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas/header-exceptions.txt) aufgezählten Ausnahmen) trägt das kanonische Autorschafts-Header-Banner an Byte 0, in der HTML-Kommentar-Variante gemäß [Authorship header](/docs/reference/authorship-header). Das Banner sitzt über dem YAML-Frontmatter, wo beide vorhanden sind.
+Jedes Markdown-Artefakt (mit den unter [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas/header-exceptions.txt) aufgezählten Ausnahmen) trägt das kanonische Autorschafts-Header-Banner ab Byte 0, in der HTML-Kommentar-Variante gemäß [Autorschafts-Header](/docs/reference/authorship-header). Das Banner steht über dem YAML-Frontmatter, wo beide vorhanden sind.
 
 ## 6. Validatoren
 
-Der `markdownlint-cli2`-Aufruf in [`.markdownlint.jsonc`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.jsonc) erzwingt den Großteil der Regeln aus §§1–4. Der `file-header-grep` unter `src/apothem/conformity/file_header_grep.py` erzwingt §5. Beide sind in die Pre-Commit-Hook-Kette in [`.pre-commit-config.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/.pre-commit-config.yaml) und in den CI-Qualitätsjob in [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) eingebunden.
+Der Pre-Commit-Hook `markdownlint` in [`.pre-commit-config.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/.pre-commit-config.yaml) führt `markdownlint-cli` mit der Regelrichtlinie in [`.markdownlint.json`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.json) aus und erzwingt den Großteil der Regeln aus §§1–4. CI führt markdownlint nicht aus, daher läuft es im Hook. Die Richtlinie schaltet MD013 (Zeilenlänge), MD033 (Inline-HTML) und MD041 (Überschrift in der ersten Zeile) ab. Sie schaltet außerdem MD038 ab, weil das kanonische Options-Label-Postfix ` (Recommended)` sein führendes Leerzeichen innerhalb eines Code-Spans behält, sowie MD060, weil kein Tabellenspalten-Stil die Tabellen mit kompakten Zellen und enger `|---|`-Trennzeile akzeptiert, die der Korpus verwendet. MD024 prüft nur Geschwister-Überschriften, sodass die Überschriften Added, Changed, Fixed und Security, die jedes Release in `CHANGELOG.md` wiederholt, die Prüfung bestehen. Die Begründung jeder Entscheidung steht neben dem Hook. Der Hook überspringt die Testfixture-Bäume `tests/fixtures/`, `tests/conformity/`, `tests/conformity-scenarios/fixtures/` und `tests/scripts/inject-header/fixtures/`, deren Bytes die Tests festlegen. `plugins/claude-code/`, das aus `src/apothem/` generiert wird, prüft er dennoch; beheben Sie einen Befund dort daher in seiner Quelle unter `src/apothem/` und erzeugen Sie den Plugin-Baum mit `python scripts/dev/assemble_plugin_tree.py` neu.
+
+Der `file-header-grep` in `src/apothem/conformity/file_header_grep.py` prüft §5. Der Validator `link-check` in `src/apothem/conformity/link_check.py` prüft die Disziplin der Linkauflösung aus §4 — er löst relative Links gegen das Verzeichnis der Quelldatei und Site-Routen der Form `/docs/...` (und `/<locale>/docs/...`) gegen die Seitenmenge von `site/content/docs/` auf und markiert jeden Link, der sich zu keiner Seite auf der Festplatte auflöst. Beide sind beratende Matcher pro Write. Sie laufen im Pre-Commit-Hook `conformity-corpus-perwrite` und im Job `corpus-perwrite-gate` des Conformity-Workflows in [`.github/workflows/conformity.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/conformity.yml), und an beiden Stellen melden sie Befunde, ohne den Lauf fehlschlagen zu lassen. Das `python -m apothem.conformity.gate --all . --strict` des CI-Qualitätsjobs in [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) deckt nur die eigenständigen Validatoren ab und führt daher keinen der beiden aus.
