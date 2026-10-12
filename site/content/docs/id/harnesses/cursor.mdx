@@ -1,8 +1,8 @@
 ---
 title: "Cursor"
-description: "Adaptor alat Apothem untuk Cursor (GA)."
+description: "Adapter harness Apothem untuk Cursor (GA)."
 machineTranslated: true
-sourceHash: "592a5617c82b9316"
+sourceHash: "28f38f63de0795cc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,25 +17,34 @@ sourceHash: "592a5617c82b9316"
 apothem install --harness cursor --project /path/to/project
 ```
 
-Adaptor merender satu berkas aturan `.mdc` dengan cakupan proyek dari aturan
-bersama Apothem dan permukaan tata kelola.
+Adapter merender satu berkas aturan `.mdc` berlingkup proyek dari permukaan
+aturan dan tata kelola Apothem bersama.
 
 **Berkas yang ditulis:** `<project>/.cursor/rules/apothem-rules.mdc`
 
+Berkas itu adalah keseluruhan instalasi: tidak ada berkas aturan, skill,
+command, templat, atau hook yang ditempatkan di sampingnya, sehingga berkas
+tersebut menyatakan hal itu alih-alih menunjuk ke berkas Apothem yang tidak ada
+di proyek.
+
 ## Pemetaan profil ke konfigurasi native
 
-Adaptor membaca profil bersama Apothem dan merender berkas aturan proyek pada
-setiap kali `apothem install` atau `apothem update` dijalankan. Profil bersama
-adalah sumber kebenaran; suntingan lokal proyek pada berkas yang dihasilkan
-dicadangkan sebelum sinkronisasi berikutnya mengganti konten yang dikelola
-Apothem.
+Adapter membaca profil bersama Apothem dan merender berkas aturan proyek pada
+setiap eksekusi `apothem install` atau `apothem update`. Profil bersama adalah
+sumber kebenaran; suntingan lokal-proyek pada berkas yang dihasilkan dicadangkan
+sebelum sinkronisasi berikutnya mengganti konten yang dikelola Apothem.
+
+Berkas diawali dengan frontmatter YAML-nya (`description`, `globs`,
+`alwaysApply: true`), karena Cursor membaca tipe sebuah aturan hanya dari
+frontmatter di awal berkas. Blok yang dikelola Apothem mengikutinya; teks yang
+Anda tambahkan setelah blok tersebut dipertahankan pada setiap sinkronisasi.
 
 ## Catatan kompatibilitas
 
-Cursor 0.45+ mendukung instruksi tingkat proyek melalui `.cursor/rules/`. Adaptor
-menulis ke direktori `.cursor/rules/` dengan cakupan proyek secara bawaan; Cursor
-tidak memiliki jalur aturan global pengguna berbasis berkas yang terdokumentasi
-untuk dikelola oleh adaptor ini.
+Cursor 0.45+ mendukung instruksi tingkat proyek melalui `.cursor/rules/`.
+Adapter menulis ke direktori `.cursor/rules/` berlingkup proyek secara default;
+Cursor tidak memiliki jalur aturan global-pengguna berbasis berkas yang
+terdokumentasi untuk dikelola oleh adapter ini.
 
 ## Verifikasi
 
@@ -43,11 +52,11 @@ untuk dikelola oleh adaptor ini.
 apothem verify --harness cursor --project /path/to/project
 ```
 
-Perintah verify mengonfirmasi bahwa:
+Perintah verify memastikan bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Semua bidang wajib dari profil bersama hadir.
-3. Rutin verifikasi khusus adaptor melaporkan keberhasilan.
+2. Semua bidang wajib dari profil bersama ada.
+3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
 ## Pembaruan
 
@@ -55,15 +64,15 @@ Perintah verify mengonfirmasi bahwa:
 apothem update --harness cursor --project /path/to/project
 ```
 
-Menurunkan ulang berkas aturan proyek dari keadaan profil bersama saat ini.
+Menurunkan ulang berkas aturan proyek dari status profil bersama saat ini.
 
-## Menghapus instalasi
+## Pencopotan
 
 ```bash
 apothem uninstall --harness cursor --project /path/to/project
 ```
 
-Menghapus berkas konfigurasi native yang ditulis oleh adaptor.
+Menghapus berkas konfigurasi native yang ditulis oleh adapter.
 YAML profil bersama dan mesin Apothem tidak terpengaruh.
 
 ## Gerbang konformitas
@@ -82,6 +91,12 @@ python -m apothem.conformity.gate --all .
 
 ## Tombol konfigurasi
 
-| Tanda | Bawaan | Deskripsi |
+| Flag | Default | Deskripsi |
 |------|---------|-------------|
 | `--dry-run` | `false` | Pratinjau instalasi tanpa menulis berkas. |
+
+## Lihat juga
+
+- [Semua harness](/docs/harnesses) — katalog lengkap alat yang didukung
+- [Panduan instalasi](/docs/install) — pasang Apothem ke dalam harness ini
+- [Referensi `apothem harnesses`](/docs/cli-reference/harnesses) — tampilkan daftar dan periksa adapter dari CLI

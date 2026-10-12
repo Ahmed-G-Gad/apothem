@@ -1,37 +1,38 @@
 ---
 title: "Registri harness"
-description: "Referensi registri teknis untuk adaptor harness Apothem bawaan."
+description: "Referensi registri teknis untuk adapter harness bawaan Apothem."
 machineTranslated: true
-sourceHash: "b555b7671a67df8c"
+sourceHash: "6cbb079a39c14ed9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Registri harness adalah inventaris adaptor sumber-kebenaran yang digunakan oleh CLI,
-dokumentasi, uji fixture, dan validasi pin konvensi. Sumber saat runtime adalah
-`src/apothem/lib/harness_registry.py`; setiap baris di bawah dapat dilacak ke registri itu,
-ke `capabilities.yml` setiap adaptor, dan ke `STANDARD-CONVENTION-PIN.md` setiap adaptor.
+Registri harness adalah inventaris adapter yang menjadi sumber kebenaran, yang
+digunakan oleh CLI, dokumentasi, pengujian fixture, dan validasi pin konvensi.
+Sumber runtime-nya adalah `src/apothem/lib/harness_registry.py`; setiap baris di
+bawah dapat dilacak ke registri itu, ke `capabilities.yml` per adapter, dan ke
+`STANDARD-CONVENTION-PIN.md` milik setiap adapter.
 
 ## Matriks registri
 
 | Harness | Nama instal | Cakupan | Format | Target | MCP | Pin konvensi |
 | --- | --- | --- | --- | --- | --- | --- |
 | Antigravity | `antigravity` | user | markdown | `~/.gemini/GEMINI.md`; `~/.gemini/antigravity-cli/plugins/apothem/` | discovery-pending | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
-| Claude Code | `claude-code` | user | json | `~/.claude/settings.json`; `agents`, `rules`, `skills`, `statuslines`, `output-styles` native; `~/.claude/.apothem/support/` | native | `src/apothem/harnesses/claude_code/STANDARD-CONVENTION-PIN.md` |
-| CodeBuddy | `codebuddy` | project | markdown | `<project>/.codebuddy/rules/apothem-rules.md` | native | `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` |
+| Claude Code | `claude-code` | user | json | `~/.claude/settings.json`; `~/.claude/CLAUDE.md`; `agents`, `rules`, `skills`, `statuslines`, `output-styles` native; `~/.claude/.apothem/support/` | discovery-pending | `src/apothem/harnesses/claude_code/STANDARD-CONVENTION-PIN.md` |
+| CodeBuddy | `codebuddy` | project | markdown | `<project>/.codebuddy/rules/apothem-rules.md` | discovery-pending | `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` |
 | Codex | `codex` | user | markdown | `~/.codex/AGENTS.md`; `hooks.json`; `hooks/`; `agents/*.toml`; `~/.agents/skills/`; `~/.config/apothem/` | discovery-pending | `src/apothem/harnesses/codex/STANDARD-CONVENTION-PIN.md` |
-| Cursor | `cursor` | project | mdc | `<project>/.cursor/rules/apothem-rules.mdc` | native | `src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md` |
-| Gemini CLI | `gemini-cli` | project | markdown | `<project>/GEMINI.md`; `<project>/.gemini/{commands,skills,agents}/` | discovery-pending | `src/apothem/harnesses/gemini_cli/STANDARD-CONVENTION-PIN.md` |
+| Cursor | `cursor` | project | mdc | `<project>/.cursor/rules/apothem-rules.mdc` | discovery-pending | `src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md` |
+| Gemini CLI | `gemini-cli` | project | markdown | `<project>/GEMINI.md`; `<project>/.gemini/{commands,skills,agents}/`; `<project>/.gemini/.apothem/support/` | discovery-pending | `src/apothem/harnesses/gemini_cli/STANDARD-CONVENTION-PIN.md` |
 | GitHub Copilot | `github-copilot` | project | markdown | `<project>/.github/copilot-instructions.md` | unsupported | `src/apothem/harnesses/github_copilot/STANDARD-CONVENTION-PIN.md` |
 | GLM (Z.ai) | `glm` | project | toml | `<project>/.apothem/providers/glm.toml` | unsupported | `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md` |
-| Hermes | `hermes` | user | yaml | `~/.hermes/config.yaml`; `~/.hermes/.apothem/support/` | unsupported | `src/apothem/harnesses/hermes/STANDARD-CONVENTION-PIN.md` |
+| Hermes | `hermes` | user | yaml | `~/.hermes/config.yaml`; `~/.hermes/.apothem/support/` | native | `src/apothem/harnesses/hermes/STANDARD-CONVENTION-PIN.md` |
 | Kimi Code | `kimi-code` | project | markdown | `<project>/AGENTS.md`; `<project>/.kimi-code/.apothem/support/` | discovery-pending | `src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md` |
-| Kiro | `kiro` | project | markdown | `<project>/.kiro/steering/apothem-rules.md` | native | `src/apothem/harnesses/kiro/STANDARD-CONVENTION-PIN.md` |
+| Kiro | `kiro` | project | markdown | `<project>/.kiro/steering/apothem-rules.md` | discovery-pending | `src/apothem/harnesses/kiro/STANDARD-CONVENTION-PIN.md` |
 | Open-Claw | `open-claw` | user | json | `~/.openclaw/openclaw.json`; `~/.openclaw/.apothem/support/` | unsupported | `src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md` |
-| OpenCode | `opencode` | user | json | `~/.config/opencode/opencode.json`; `commands`, `skills`, `agents` native; `.apothem/support/` | native | `src/apothem/harnesses/opencode/STANDARD-CONVENTION-PIN.md` |
-| Qwen Code | `qwen-code` | user | json | `~/.qwen/settings.json`; `~/.qwen/QWEN.md`; `commands`, `skills`, `agents` native; `.apothem/support/` | native | `src/apothem/harnesses/qwen_code/STANDARD-CONVENTION-PIN.md` |
-| Trae | `trae` | project | markdown | `<project>/.trae/rules/apothem-rules.md` | native | `src/apothem/harnesses/trae/STANDARD-CONVENTION-PIN.md` |
-| Windsurf | `windsurf` | project | markdown | `<project>/.devin/rules/apothem-rules.md` | unsupported | `src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md` |
-| Zed | `zed` | project | markdown | `<project>/.rules` | native | `src/apothem/harnesses/zed/STANDARD-CONVENTION-PIN.md` |
+| OpenCode | `opencode` | user | json | `~/.config/opencode/opencode.json`; `commands`, `skills`, `agents` native; `~/.config/opencode/.apothem/support/` | native | `src/apothem/harnesses/opencode/STANDARD-CONVENTION-PIN.md` |
+| Qwen Code | `qwen-code` | user | json | `~/.qwen/settings.json`; `~/.qwen/QWEN.md`; `commands`, `skills`, `agents` native; `~/.qwen/.apothem/support/` | native | `src/apothem/harnesses/qwen_code/STANDARD-CONVENTION-PIN.md` |
+| Trae | `trae` | project | markdown | `<project>/.trae/rules/apothem-rules.md` | discovery-pending | `src/apothem/harnesses/trae/STANDARD-CONVENTION-PIN.md` |
+| Windsurf | `windsurf` | project | markdown | `<project>/.devin/rules/apothem-rules.md` | discovery-pending | `src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md` |
+| Zed | `zed` | project | markdown | `<project>/.rules` | discovery-pending | `src/apothem/harnesses/zed/STANDARD-CONVENTION-PIN.md` |
 
 ## Dukungan kohor payload
 
@@ -39,25 +40,69 @@ Nilai status adalah `native`, `converted`, `support-tree`,
 `profile-projected`, `unsupported`, `not-applicable`, dan
 `discovery-pending`.
 
-| Harness | Payload native atau yang dikonversi | Payload pohon dukungan | Peringatan tidak didukung atau tertunda |
+Kohor `converted` ditulis ulang ke dalam format milik harness itu sendiri, dan
+sebagian field sumber tidak memiliki tempat di dalamnya. Untuk setiap kohor
+command, agen, atau aturan yang dikonversi, `capabilities.yml` milik adapter
+membawa map `conversion_losses` yang menyatakan apa yang terjadi pada setiap
+field frontmatter sumber:
+
+| Nilai | Arti |
+| --- | --- |
+| `native:<field>` | Harness membacanya di bawah field tersebut. |
+| `sidecar:<path>` | Field ditulis ke berkas terpisah di samping berkas hasil konversi, misalnya `agents/openai.yaml` milik Codex. |
+| `filename` | Field dibawa oleh nama berkas atau folder. |
+| `inlined` | Field dipindahkan ke dalam teks prompt atau isi. |
+| `ignored` | Field tetap ada di berkas, tetapi harness tidak membacanya. |
+| `dropped` | Field dihilangkan. |
+
+Sebuah pengujian merender setiap berkas hasil konversi dan memeriksa map
+tersebut terhadap keluarannya.
+
+| Harness | Payload native atau yang dikonversi | Payload pohon pendukung | Peringatan tidak didukung atau tertunda |
 | --- | --- | --- | --- |
-| Antigravity | command dan pekerja terdelegasi yang dikonversi; skill, dispatch sub-pekerja, dan template prompt sistem native; pembatasan tool yang diproyeksikan dari profil | hook, rule, template | statusline, output style; penemuan MCP dan memori tertunda |
-| Claude Code | command yang dikonversi; skill, hook, pekerja terdelegasi, rule, statusline, output style, MCP, dispatch sub-pekerja, pembatasan tool, dan memori native | template | `CLAUDE.md` tetap milik operator; tidak ada template prompt sistem yang ditulis adaptor |
-| CodeBuddy | rule, MCP, template prompt sistem, dan memori native; pembatasan tool yang diproyeksikan dari profil | tidak ada | command, skill, hook, pekerja terdelegasi, statusline, output style, dispatch sub-pekerja |
-| Codex | command dan pekerja terdelegasi yang dikonversi; skill, hook, dispatch sub-pekerja, template prompt sistem, dan memori native; pembatasan tool yang diproyeksikan dari profil | rule, template | statusline, output style; penemuan MCP tertunda karena Apothem tidak menimpa `config.toml` |
-| Cursor | rule, MCP, dan template prompt sistem native; pembatasan tool yang diproyeksikan dari profil | tidak ada | command, skill, hook, pekerja terdelegasi, statusline, output style, dispatch sub-pekerja, memori |
-| Gemini CLI | command dan pekerja terdelegasi yang dikonversi; skill, dispatch sub-pekerja, dan template prompt sistem native; pembatasan tool yang diproyeksikan dari profil | hook, rule, template | statusline, output style; penemuan MCP dan memori tertunda |
-| GitHub Copilot | rule dan template prompt sistem native; pembatasan tool yang diproyeksikan dari profil | tidak ada | command, skill, hook, pekerja terdelegasi, statusline, output style, MCP, dispatch sub-pekerja, memori |
-| GLM (Z.ai) | tidak ada | tidak ada | command, skill, hook, pekerja terdelegasi, rule, template, statusline, output style, MCP, dispatch sub-pekerja, pembatasan tool, template prompt sistem, memori — GLM adalah backend model tanpa permukaan konfigurasi native |
-| Hermes | command yang dikonversi; template prompt sistem native; pembatasan tool yang diproyeksikan dari profil | skill, hook, pekerja terdelegasi, rule, template | statusline, output style, MCP, dispatch sub-pekerja |
-| Kimi Code | dispatch sub-pekerja, template prompt sistem, dan memori native | command, skill, hook, pekerja terdelegasi, rule, template | statusline, output style; penemuan MCP dan pembatasan tool tertunda |
-| Kiro | rule, MCP, template prompt sistem, dan memori native; pembatasan tool yang diproyeksikan dari profil | tidak ada | command, skill, hook, pekerja terdelegasi, statusline, output style, dispatch sub-pekerja |
-| Open-Claw | command yang dikonversi; template prompt sistem native; pembatasan tool yang diproyeksikan dari profil | skill, hook, pekerja terdelegasi, rule, template | statusline, output style, MCP, dispatch sub-pekerja |
-| OpenCode | command dan pekerja terdelegasi yang dikonversi; skill, MCP, dispatch sub-pekerja, dan template prompt sistem native; pembatasan tool yang diproyeksikan dari profil | hook, rule, template | statusline, output style |
-| Qwen Code | command dan pekerja terdelegasi yang dikonversi; skill, hook, MCP, dispatch sub-pekerja, template prompt sistem, dan memori native; pembatasan tool yang diproyeksikan dari profil | rule, template | statusline, output style |
-| Trae | rule, MCP, dan template prompt sistem native; pembatasan tool yang diproyeksikan dari profil | tidak ada | command, skill, hook, pekerja terdelegasi, statusline, output style, dispatch sub-pekerja, memori |
-| Windsurf | rule dan template prompt sistem native; pembatasan tool yang diproyeksikan dari profil | tidak ada | command, skill, hook, pekerja terdelegasi, statusline, output style, MCP, dispatch sub-pekerja, memori |
-| Zed | rule, MCP, dan template prompt sistem native; pembatasan tool yang diproyeksikan dari profil | tidak ada | command, skill, hook, pekerja terdelegasi, statusline, output style, dispatch sub-pekerja, memori |
+| Antigravity | command, agen, dan aturan yang dikonversi; skill, dispatch sub-agen, templat prompt sistem native; pembatasan tool yang diproyeksikan dari profil | hook, templat | statusline, output style; penemuan MCP dan memori tertunda |
+| Claude Code | command yang dikonversi; skill, hook, agen, aturan, statusline, output style, dispatch sub-agen, pembatasan tool, memori native | templat | `CLAUDE.md` tetap milik operator; tidak ada templat prompt sistem yang ditulis adapter; penemuan MCP tertunda |
+| CodeBuddy | aturan, templat prompt sistem, memori native; pembatasan tool yang diproyeksikan dari profil | tidak ada | command, skill, hook, agen, statusline, output style, dispatch sub-agen; penemuan MCP tertunda |
+| Codex | command dan agen yang dikonversi; skill, hook, dispatch sub-agen, templat prompt sistem, memori native; pembatasan tool yang diproyeksikan dari profil | aturan, templat | statusline, output style; penemuan MCP tertunda karena Apothem tidak menimpa `config.toml` |
+| Cursor | aturan, templat prompt sistem native; pembatasan tool yang diproyeksikan dari profil | tidak ada | command, skill, hook, agen, statusline, output style, dispatch sub-agen, memori; penemuan MCP tertunda |
+| Gemini CLI | command dan agen yang dikonversi; skill, dispatch sub-agen, templat prompt sistem, memori native; pembatasan tool yang diproyeksikan dari profil | hook, aturan, templat | statusline, output style; penemuan MCP tertunda |
+| GitHub Copilot | aturan dan templat prompt sistem native; pembatasan tool yang diproyeksikan dari profil | tidak ada | command, skill, hook, agen, statusline, output style, MCP, dispatch sub-agen, memori |
+| GLM (Z.ai) | tidak ada | tidak ada | command, skill, hook, agen, aturan, templat, statusline, output style, MCP, dispatch sub-agen, pembatasan tool, templat prompt sistem, memori — GLM adalah backend model tanpa permukaan konfigurasi native |
+| Hermes | command yang dikonversi; templat prompt sistem, MCP native; pembatasan tool yang diproyeksikan dari profil | skill, hook, agen, aturan, templat | statusline, output style, dispatch sub-agen |
+| Kimi Code | dispatch sub-agen, templat prompt sistem, memori native | command, skill, hook, agen, aturan, templat | statusline, output style; penemuan MCP dan pembatasan tool tertunda |
+| Kiro | aturan, templat prompt sistem, memori native; pembatasan tool yang diproyeksikan dari profil | tidak ada | command, skill, hook, agen, statusline, output style, dispatch sub-agen; penemuan MCP tertunda |
+| Open-Claw | command yang dikonversi; templat prompt sistem native; pembatasan tool yang diproyeksikan dari profil | skill, hook, agen, aturan, templat | statusline, output style, MCP, dispatch sub-agen |
+| OpenCode | command dan agen yang dikonversi; skill, MCP, dispatch sub-agen, templat prompt sistem native; pembatasan tool yang diproyeksikan dari profil | hook, aturan, templat | statusline, output style |
+| Qwen Code | command dan agen yang dikonversi; skill, hook, MCP, dispatch sub-agen, templat prompt sistem, memori native; pembatasan tool yang diproyeksikan dari profil | aturan, templat | statusline, output style |
+| Trae | aturan, templat prompt sistem native; pembatasan tool yang diproyeksikan dari profil | tidak ada | command, skill, hook, agen, statusline, output style, dispatch sub-agen, memori; penemuan MCP tertunda |
+| Windsurf | aturan dan templat prompt sistem native; pembatasan tool yang diproyeksikan dari profil | tidak ada | command, skill, hook, agen, statusline, output style, dispatch sub-agen, memori; penemuan MCP tertunda |
+| Zed | aturan, MCP, templat prompt sistem native; pembatasan tool yang diproyeksikan dari profil | tidak ada | command, skill, hook, agen, statusline, output style, dispatch sub-agen, memori |
+
+## Root bersama
+
+Sebagian target pemasangan dimuat oleh harness selain harness yang menulisnya.
+Registri mencatat setiap jalur semacam itu di `SHARED_ROOTS` dengan satu pemilik
+(satu-satunya adapter yang menulisnya) dan para pembaca yang dokumentasi
+vendornya memuat jalur itu secara bawaan, dengan halaman vendor sebagai bukti.
+Memasang pemilik menempatkan konten Apothem di hadapan setiap pembaca, dan
+mencopot pemilik menghapusnya dari setiap pembaca.
+
+| Jalur | Pemilik | Pembaca |
+| --- | --- | --- |
+| `~/.agents/skills/` | Codex | Cursor, Gemini CLI, GitHub Copilot, Kimi Code, Open-Claw, OpenCode, Windsurf, Zed |
+| `~/.claude/skills/` | Claude Code | Cursor, OpenCode |
+| `~/.claude/CLAUDE.md` | Claude Code | OpenCode |
+| `<project>/AGENTS.md` | Kimi Code | Antigravity, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
+| `<project>/GEMINI.md` | Gemini CLI | Antigravity, GitHub Copilot, Zed |
+| `~/.gemini/GEMINI.md` | Antigravity | Gemini CLI |
+| `<project>/.github/copilot-instructions.md` | GitHub Copilot | Zed |
+
+Blok Apothem yang ditulis pemilik ke dalam berkas instruksi bersama tidak
+menyebut satu tool tunggal pun sebagai pembacanya.
+`tests/unit/test_shared_roots.py` gagal ketika sebuah target registri ditulis
+oleh dua adapter, atau dinamai seperti berkas instruksi lintas tool
+(`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `copilot-instructions.md`), tanpa
+pemilik yang dideklarasikan.
 
 ## Hook validasi
 
@@ -65,11 +110,12 @@ Registri tetap tersinkronisasi melalui pemeriksaan berikut:
 
 | Pemeriksaan | Tujuan |
 | --- | --- |
-| `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | Memastikan setiap adaptor memiliki pin konvensi terkini dan registri masih menyebutkan tujuh belas adaptor. |
+| `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | Memastikan setiap adapter memiliki pin konvensi berusia kurang dari 90 hari yang mengutip setidaknya satu URL vendor dan tidak memiliki target penemuan yang lewat tenggat. CI menjalankannya pada setiap pull request, setiap minggu, dan sebelum rilis. |
+| `python scripts/dev/check_vendor_urls.py` | Mengambil setiap URL vendor yang dikutip pin dan templat harness, dan gagal pada halaman yang dipindahkan atau mati, termasuk nama host yang tidak lagi ter-resolve atau sertifikat yang gagal verifikasi; timeout, koneksi yang ditolak atau di-reset, atau galat server 5xx dilaporkan sebagai tidak terjangkau dan tidak menggagalkannya. Monitor konvensi mingguan menjalankannya. |
 | `python -m apothem.conformity.gate --all .` | Menjalankan pemeriksaan konformitas dokumentasi dan implementasi. |
-| `python -m pytest` | Menjalankan uji fixture registri dan uji kontrak adaptor. |
+| `python -m pytest` | Menjalankan pengujian fixture registri dan pengujian kontrak adapter. |
 
-## Referensi adaptor harness yang dihasilkan
+## Referensi Adapter Harness yang Dihasilkan
 
 {/* apothem:generated-reference:start */}
 

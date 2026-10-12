@@ -1,113 +1,137 @@
 ---
 title: "Internasionalisasi (i18n)"
-description: "Cara situs dokumentasi Apothem mendeklarasikan kohor lokalnya, memancarkan tautan bahasa-alternatif hreflang, menangani render kanan-ke-kiri, dan memunculkan kesenjangan terjemahan secara jujur."
+description: "Cara situs dokumentasi Apothem mendeklarasikan kohor lokalnya, memancarkan tautan bahasa alternatif hreflang, dan merender kanan-ke-kiri, di seluruh dua belas bahasa."
 machineTranslated: true
-sourceHash: "69e3445d33601f7f"
+sourceHash: "b3eb706603e79d8b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Halaman ini mendokumentasikan cara situs dokumentasi Apothem menangani banyak
-bahasa: kohor lokal yang dideklarasikannya, mekanisme `hreflang` yang dipancarkannya,
-kesiapan kanan-ke-kirinya, dan keadaan jujur terjemahan per-lokal.
+bahasa: kohor lokal yang dideklarasikannya, mekanisme `hreflang` yang
+dipancarkannya, render kanan-ke-kirinya, dan cara halaman setiap bahasa
+dihubungkan ke perutean.
 
 ## Ringkasan keputusan
 
 - **Platform: Next.js App Router + Fumadocs.** Situs dibangun dari `site/`.
-  Kohor lokal dideklarasikan di `site/lib/i18n.ts`, dan mekanisme
-  tautan bahasa-alternatif berada di `site/lib/hreflang.ts`.
-- **Kohor lokal: dideklarasikan.** Modern Dev Cohort yang terdiri dari dua belas lokal
-  dideklarasikan sebagai sumber kebenaran kanonik, dengan bahasa Inggris sebagai lokal sumber.
-- **Perutean per-lokal: belum diaktifkan.** Mengaktifkan rute berawalan-lokal
-  di seluruh kohor sementara hanya konten bahasa Inggris yang ada akan menciptakan sebelas
-  rute tanpa-konten yang diam-diam jatuh kembali ke sumber bahasa Inggris. Itu
-  adalah jenis penyimpangan-Inggris-saja yang diam-diam yang dilarang disiplin i18n, jadi perutean
-  tetap satu-lokal sampai konten terjemahan yang ditinjau tiba.
-- **Mekanisme `hreflang`: aktif.** Setiap halaman memancarkan himpunan `<link rel="alternate">`
-  yang mencakup setiap lokal yang memiliki konten tertulis, plus fallback `x-default`.
-  Lokal yang masih menunggu terjemahan dihilangkan — tidak pernah diarahkan ke
-  fallback bahasa Inggris — sehingga mesin pencari diberitahu secara akurat bahwa tidak ada
-  terjemahan.
-- **Kesiapan kanan-ke-kiri: tersedia.** Lembar gaya bersama menggunakan properti CSS
-  logis di seluruhnya, sehingga halaman bahasa Arab dirender dengan benar di bawah `dir="rtl"`
-  begitu konten bahasa Arab tiba.
-- **Kebijakan terjemahan mesin: tidak ada yang dikirim tanpa ditinjau.** Tidak ada prosa halaman
-  yang diterjemahkan-mesin yang dipublikasikan. Terjemahan disemai oleh mesin dan digerbangi pada
-  peninjauan manusia sebelum lokal mana pun ditandai sebagai diterjemahkan.
+  Kohor lokal dideklarasikan di `site/lib/i18n.ts`, dan mekanisme tautan
+  bahasa alternatif berada di `site/lib/hreflang.ts`.
+- **Kohor lokal: dua belas bahasa.** Modern Dev Cohort yang terdiri atas dua
+  belas lokal adalah sumber kebenaran kanonik, dengan bahasa Inggris sebagai
+  lokal sumber dan masing-masing dari sebelas target disemai secara mesin dari
+  kumpulan halaman bahasa Inggris; tinjauan manusia per lokal sedang
+  berlangsung, dan `fallbackLanguage: 'en'` mencakup halaman mana pun yang
+  belum ditulis oleh sebuah lokal.
+- **Perutean per lokal: diaktifkan di seluruh kohor.** Setiap lokal
+  dihubungkan ke perutean dan dapat dijangkau pada awalan URL-nya sendiri
+  (`/es/`, `/zh-cn/`, …); bahasa Inggris dilayani di akar situs.
+- **Mekanisme `hreflang`: aktif.** Setiap halaman memancarkan himpunan
+  `<link rel="alternate">` yang mencakup setiap lokal ditambah fallback
+  `x-default`, sehingga mesin pencari melihat klaster bahasa alternatif yang
+  lengkap. Tautan-tautan itu di-resolve per berkas dari sistem berkas,
+  sehingga sebuah halaman diiklankan dalam suatu lokal hanya ketika lokal
+  tersebut memilikinya.
+- **Render kanan-ke-kiri: aktif.** Lembar gaya bersama menggunakan properti
+  CSS logis di seluruhnya, sehingga halaman bahasa Arab dirender dengan benar
+  di bawah `dir="rtl"`.
+- **Kesegaran terjemahan: dilacak per halaman.** Setiap halaman lokal mencatat
+  teks bahasa Inggris yang menjadi sumber terjemahannya. Ketika halaman bahasa
+  Inggris kemudian berubah, halaman terjemahan menampilkan catatan satu baris
+  yang menautkan ke halaman bahasa Inggris, yang tetap otoritatif.
 
 ## Kohor lokal
 
-Modern Dev Cohort mendeklarasikan dua belas lokal. Bahasa Inggris dilayani di akar
-situs; sebelas target dideklarasikan agar tumpukan siap-internasionalisasi
-dan kesenjangan terjemahan eksplisit ketimbang diam-diam.
+Modern Dev Cohort mendeklarasikan dua belas lokal. Bahasa Inggris dilayani di
+akar situs; masing-masing dari sebelas target disemai secara mesin dari
+kumpulan halaman bahasa Inggris pada awalan URL-nya sendiri, dengan
+`fallbackLanguage: 'en'` yang mencakup halaman mana pun yang belum ditulis.
 
-| Kode | Jalur | Bahasa | Arah | Konten |
-|------|------|----------|-----------|---------|
-| `en` | `/` | Inggris | LTR | Diterjemahkan (sumber) |
-| `zh-CN` | `/zh-cn/` | Tionghoa Sederhana | LTR | Tertunda |
-| `es` | `/es/` | Spanyol | LTR | Tertunda |
-| `pt-BR` | `/pt-br/` | Portugis Brasil | LTR | Tertunda |
-| `fr` | `/fr/` | Prancis | LTR | Tertunda |
-| `de` | `/de/` | Jerman | LTR | Tertunda |
-| `ja` | `/ja/` | Jepang | LTR | Tertunda |
-| `ko` | `/ko/` | Korea | LTR | Tertunda |
-| `ru` | `/ru/` | Rusia | LTR | Tertunda |
-| `id` | `/id/` | Indonesia | LTR | Tertunda |
-| `ar` | `/ar/` | Arab | RTL | Tertunda |
-| `hi` | `/hi/` | Hindi | LTR | Tertunda |
+| Kode | Jalur | Bahasa | Arah |
+|------|------|----------|-----------|
+| `en` | `/` | Inggris | LTR |
+| `zh-CN` | `/zh-cn/` | Tionghoa Sederhana | LTR |
+| `es` | `/es/` | Spanyol | LTR |
+| `pt-BR` | `/pt-br/` | Portugis Brasil | LTR |
+| `fr` | `/fr/` | Prancis | LTR |
+| `de` | `/de/` | Jerman | LTR |
+| `ja` | `/ja/` | Jepang | LTR |
+| `ko` | `/ko/` | Korea | LTR |
+| `ru` | `/ru/` | Rusia | LTR |
+| `id` | `/id/` | Indonesia | LTR |
+| `ar` | `/ar/` | Arab | RTL |
+| `hi` | `/hi/` | Hindi | LTR |
 
-Kohor adalah sumber kebenaran tunggal; amendemen terhadapnya melewati
-keputusan yang disengaja, tidak pernah suntingan diam-diam.
+Kohor ini adalah satu-satunya sumber kebenaran; perubahan terhadapnya melalui
+keputusan yang disengaja, tidak pernah melalui suntingan diam-diam.
 
 ## Cara kerja `hreflang`
 
-`site/lib/hreflang.ts` membangun peta `alternates.languages` yang dirender Next.js
-ke dalam `<head>` setiap halaman. Konstruksinya menghormati satu aturan: tautan
-bahasa-alternatif sebuah lokal dipancarkan **hanya** ketika lokal itu memiliki konten
-tertulis. Karena bahasa Inggris adalah satu-satunya lokal yang diterjemahkan hari ini, setiap halaman memancarkan
-persis dua tautan:
+`site/lib/hreflang.ts` membangun peta `alternates.languages` yang dirender
+Next.js ke dalam `<head>` setiap halaman. Konstruksinya mematuhi satu aturan:
+tautan bahasa alternatif sebuah lokal dipancarkan **hanya** ketika lokal
+tersebut telah menulis halaman itu, yang di-resolve per berkas dari sistem
+berkas (`site/lib/translated-pages.ts`). Karena itu, halaman yang sepenuhnya
+diterjemahkan memancarkan klaster lengkap:
 
 ```html
 <link rel="alternate" hreflang="en" href="https://apothem.ahmedgad.com/..." />
+<link rel="alternate" hreflang="es" href="https://apothem.ahmedgad.com/es/..." />
+<link rel="alternate" hreflang="ar" href="https://apothem.ahmedgad.com/ar/..." dir="rtl" />
+<!-- … one per cohort locale … -->
 <link rel="alternate" hreflang="x-default" href="https://apothem.ahmedgad.com/..." />
 ```
 
-Tautan `canonical` halaman selalu URL-nya sendiri — ia tidak pernah mengarah lintas
-lokal. Saat konten sebuah lokal tiba dan statusnya beralih menjadi diterjemahkan di
-`site/lib/i18n.ts`, tautan `hreflang` lokal itu mulai dipancarkan otomatis,
-dan perutean per-lokal diaktifkan dalam change-set yang sama.
+Tautan `canonical` halaman selalu merupakan URL-nya sendiri — tautan itu
+tidak pernah mengarah lintas lokal.
 
 ## Render kanan-ke-kiri
 
-Bahasa Arab adalah lokal kanan-ke-kiri kohor ini. Situs siap untuknya:
+Bahasa Arab adalah lokal kanan-ke-kiri dalam kohor ini, dan situs merendernya
+dengan benar:
 
 - **Hanya properti CSS logis.** Lembar gaya dan komponen bersama menggunakan
   properti logis (`margin-inline-start`, `padding-inline-end`,
-  `text-align: start`, `inset-inline-start`) ketimbang properti fisik
-  (`margin-left`, `text-align: left`). Properti logis membalik otomatis
-  di bawah `dir="rtl"`, sehingga lembar gaya yang sama melayani kedua arah dengan benar.
-- **Atribut arah.** Halaman bahasa Arab menyetel `dir="rtl"` pada elemen `<html>`
-  bersama `lang="ar"` begitu konten bahasa Arab tiba.
-- **Konten dwiarah.** String berarah-campur — misalnya sebuah command
-  bahasa Inggris di dalam paragraf bahasa Arab — dibungkus dalam `<bdi>` agar rentang
-  kiri-ke-kanan yang tersemat dirender dengan benar dalam alur kanan-ke-kiri.
+  `text-align: start`, `inset-inline-start`) alih-alih properti fisik
+  (`margin-left`, `text-align: left`). Properti logis berbalik secara otomatis
+  di bawah `dir="rtl"`, sehingga lembar gaya yang sama melayani kedua arah
+  dengan benar.
+- **Atribut arah.** Halaman bahasa Arab menetapkan `dir="rtl"` pada elemen
+  `<html>` bersama `lang="ar"`.
+- **Konten dwiarah.** String dengan arah campuran — misalnya sebuah command
+  bahasa Inggris di dalam paragraf bahasa Arab — dibungkus dalam `<bdi>` agar
+  rangkaian kiri-ke-kanan yang tersemat dirender dengan benar di dalam alur
+  kanan-ke-kiri.
 
-## Menambah terjemahan
+## Menambah atau memperbarui lokal
 
-Untuk menerjemahkan situs ke sebuah lokal kohor:
+Kohor dan perutean digerakkan oleh `site/lib/i18n.ts`:
 
-1. Tulis halaman terjemahan yang ditinjau untuk lokal itu.
-2. Balik status konten lokal menjadi diterjemahkan di `site/lib/i18n.ts`.
-3. Tautan `hreflang`-nya mulai dipancarkan dan rute-rutenya menjadi dapat dijangkau.
+1. Tulis halaman di bawah `content/docs/<locale>/` dengan mencerminkan sumber
+   bahasa Inggris.
+2. Catat teks bahasa Inggris yang diterjemahkannya: dari `site/`, jalankan
+   `node scripts/translation-sources.mjs --stamp <locale>/<path>.mdx`, yang
+   menulis hash halaman bahasa Inggris ke dalam frontmatter `sourceHash`
+   halaman lokal.
+3. Pastikan lokal tersebut tercantum dalam `ROUTED_LOCALES` (kedua belas lokal
+   kohor dirutekan saat ini).
+4. Tautan `hreflang` dan rute-rutenya di-resolve secara otomatis dari sistem
+   berkas.
 
-Pertahankan halaman bahasa Inggris sebagai sumber kebenaran sampai terjemahan sebuah lokal
-ditulis dan ditinjau. Tidak ada konten yang diterjemahkan-mesin yang dikirim tanpa ditinjau.
+## Terjemahan usang
 
-## Keadaan saat ini dan jalur menuju korpus terjemahan
+`sourceHash` sebuah halaman lokal adalah hash dari halaman bahasa Inggris yang
+menjadi sumber terjemahannya, yang mencakup frontmatter dan prosa bahasa
+Inggris tetapi tidak mencakup tabel hasil generator yang ditulis ulang oleh
+generator referensi dalam setiap bahasa sekaligus. Saat build, situs
+menghitung hash halaman bahasa Inggris saat ini; ketika keduanya berbeda,
+halaman terjemahan menampilkan catatan bahwa halaman bahasa Inggris telah
+berubah sejak terjemahan dibuat, beserta tautan ke halaman tersebut. Jalankan
+`node scripts/translation-sources.mjs` dari `site/` untuk mencantumkan halaman
+usang per lokal, lalu perbarui setiap terjemahan dan beri cap seperti pada
+langkah 2 di atas. Halaman yang sama sekali belum diterjemahkan oleh sebuah
+lokal dilayani dari sumber bahasa Inggris, dengan tanda sebagai teks bahasa
+Inggris.
 
-Hari ini situs siap-internasionalisasi tetapi berkonten-Inggris-saja.
-Infrastruktur — deklarasi kohor, mekanisme `hreflang`, kesiapan
-kanan-ke-kiri CSS-logis — tersedia; korpus terjemahan per-lokal tidak.
-Korpus yang sepenuhnya diterjemahkan adalah pekerjaan tingkat-fitur: halaman setiap lokal
-disemai-mesin lalu ditinjau-manusia, dan sebuah rilis siap-produksi
-secara internasionalisasi hanya setelah setiap lokal melewati ambang peninjauannya. Sampai saat itu,
-kohor dideklarasikan, kesenjangan terlihat, dan tidak ada terjemahan tanpa-tinjauan yang dikirim.
+Bahasa Inggris tetap menjadi sumber kebenaran; setiap halaman lokal
+mencerminkan struktur, tautan, dan contoh kode padanannya dalam bahasa Inggris
+secara verbatim.

@@ -1,50 +1,119 @@
 ---
 title: "Hook"
-description: "Penangan event alat yang terpicu pada SessionStart, PreToolUse, dan Stop, memuat konteks pesan yang menegakkan isolasi git dan disiplin rencana."
+description: "Penangan peristiwa tool yang terpicu pada SessionStart, PreToolUse, PostToolUse, dan Stop, memuat konteks pesan yang menegakkan isolasi git dan disiplin rencana, dengan kontrak runtime yang teruji dan status per pengguna."
 machineTranslated: true
-sourceHash: "aaf14191bbb63219"
+sourceHash: "3a6c32f33850537e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Hook terpicu pada event alat dan memuat konteks pesan yang diperlakukan
-asisten sebagai prompt sistem tambahan. Pengabelan berada di
-blok hook `settings.json` Claude Code, file hook `hooks.json` Codex,
-dan peta hook `settings.json` Qwen Code.
+Hook terpicu pada peristiwa tool dan memuat konteks pesan yang diperlakukan
+asisten sebagai prompt sistem tambahan. Pengabelannya berada di blok hook
+`settings.json` Claude Code (pemasangan mesin) atau `hooks.json` milik plugin
+(pemasangan plugin), berkas hook `hooks.json` Codex, dan map hook
+`settings.json` Qwen Code.
 
-| Event | Timeout | Tujuan |
+| Peristiwa | Batas waktu | Tujuan |
 |-------|--------:|---------|
-| SessionStart | 30 detik | Baca memori, periksa status rencana, laporkan kesiapan |
-| PreCompact | 30 detik | Verifikasi status telah dieksternalisasi sebelum pemadatan |
-| PostCompact | 30 detik | Pulihkan status kerja setelah pemadatan |
-| Stop | 60 detik | Eksternalisasi di akhir sesi |
-| PreToolUse (Bash) | 10 detik | Validasi Bash — isolasi artefak git |
-| PreToolUse (Write/Edit/NotebookEdit/apply_patch) | 10 detik | Isolasi referensi rencana, pemeriksaan frontmatter |
+| SessionStart | 30 detik | Membaca memori, memeriksa status rencana, melaporkan kesiapan; setelah pemadatan, mengirimkan konteks pemulihan |
+| PreCompact | 30 detik | Memverifikasi status telah dieksternalisasi sebelum pemadatan (Codex, Qwen Code; tidak didaftarkan di Claude Code) |
+| PostCompact | 30 detik | Memulihkan status kerja setelah pemadatan (Codex, Qwen Code; tidak didaftarkan di Claude Code) |
+| Stop | 60 detik | Protokol akhir sesi, opt-in |
+| PostToolUse | 10 detik | Saran pemadatan proaktif, paling banyak dua kali per sesi |
+| PreToolUse (shell: Bash, PowerShell, `run_shell_command`) | 10 detik | Isolasi artefak git, lokalitas rencana, penjaga eval dinamis |
+| PreToolUse (Write/Edit/NotebookEdit/apply_patch) | 10 detik | Isolasi referensi rencana, header kepengarangan, lokalitas rencana, penjaga dependensi dan eval dinamis |
+| PreToolUse (AskUserQuestion) | 10 detik | Kebenaran bentuk penanda `(Recommended)` |
 
 ## Dispatcher
 
-Entri hook yang terpasang memanggil dispatcher melalui jalur skrip absolut.
-Template pengaturan membawa token `${HARNESS_ROOT}` —
-`python "${HARNESS_ROOT}/apothem/hooks/dispatch.py" <event> [<message-name>]`
-— yang dirender oleh pemasang menjadi jalur asli root harness pada saat
-pemasangan (Claude Code dan Qwen Code mematerialkan dispatcher di bawah
-`<harness-root>/apothem/hooks/`; Codex di bawah `<harness-root>/hooks/`).
-Dispatcher adalah skrip pustaka standar yang mandiri: ia mem-bootstrap `sys.path`-nya sendiri,
-sehingga tidak diperlukan paket `apothem` yang dapat diimpor pada host. Dari sebuah
-checkout sumber, bentuk modul `python -m apothem.hooks.dispatch <event>` (dengan
-`PYTHONPATH=src`) menjalankan kode yang sama untuk pengembangan. Dispatcher memuat
-`hooks/lib/resolve_root.py` untuk resolusi root ekosistem dan mendelegasikan ke
-`hooks/emit_hook_context.py` dan `hooks/session_start_bootstrap.py`.
+Entri hook yang dipasang mesin memanggil dispatcher melalui jalur skrip absolut
+dengan interpreter yang di-resolve saat pemasangan. Templatnya membawa token
+`${PYTHON_BIN}` dan `${HARNESS_ROOT}`, yang dirender pemasang pada saat
+pemasangan. Claude Code dan Qwen Code mematerialisasi dispatcher di bawah
+`<harness-root>/.apothem/support/hooks/`; Codex di bawah `<harness-root>/hooks/`.
+Entri Claude Code menggunakan bentuk exec (`command` ditambah `args`), sehingga
+tidak memerlukan shell. Plugin Claude Code menjalankan setiap hook sebagai
+`bash "${CLAUDE_PLUGIN_ROOT}/lib/apothem/hooks/lib/bootstrap.sh" <event> [<message-file>]`,
+di shell hook bawaan Claude Code (`sh` di macOS dan Linux, Git Bash di
+Windows); bootstrap menemukan interpreter Python 3.10+ dan menjalankan
+dispatcher yang dibundel. Di Windows tanpa Git for Windows, gunakan pemasangan
+mesin (`apothem install --harness claude-code`), yang hook bentuk exec-nya tidak
+memerlukan shell. Dispatcher adalah skrip stdlib mandiri: ia mem-bootstrap
+`sys.path`-nya sendiri, sehingga host tidak memerlukan paket `apothem` yang dapat
+diimpor. Dari checkout sumber, bentuk modul `python -m apothem.hooks.dispatch <event>`
+(dengan `PYTHONPATH=src`) menjalankan kode yang sama untuk pengembangan.
+Dispatcher memuat `hooks/lib/resolve_root.py` untuk resolusi root ekosistem dan
+mendelegasikan ke `hooks/emit_hook_context.py` dan
+`hooks/session_start_bootstrap.py`.
 
 ## Konteks pesan
 
-Konteks Markdown per-event berada di bawah `src/apothem/hooks/messages/`:
+Konteks Markdown per peristiwa berada di bawah `src/apothem/hooks/messages/`:
 
-- `postcompact.md`, `precompact.md`, `stop.md`
-- `pretooluse-bash.md`, `pretooluse-write.md`, `pretooluse-edit.md`,
-  `pretooluse-notebookedit.md`
+- Siklus hidup sesi: `sessionstart.md`, `precompact.md`, `postcompact.md`,
+  `stop.md`, `posttooluse-proactive-compaction.md`
+- Panggilan shell: `pretooluse-bash.md`, `pretooluse-bash-plan-guard.md`
+- Penulisan berkas: `pretooluse-write.md`, `pretooluse-edit.md`,
+  `pretooluse-notebookedit.md`, `pretooluse-write-plan-guard.md`,
+  `pretooluse-write-header-guard.md`, `pretooluse-edit-header-guard.md`,
+  `pretooluse-conformity.md`
+- Penjaga atas konten: `pretooluse-dependency-guard.md`,
+  `pretooluse-eval-guard.md`
+- Pertanyaan: `pretooluse-askuserquestion-recommended.md`
 
-Setiap file konteks dimuat oleh dispatcher ketika event-nya terpicu
-dan argumen konteksnya terdaftar dalam file pengaturan.
+Di Claude Code, `postcompact.md` dikirimkan oleh hook SessionStart ketika sesi
+dilanjutkan setelah pemadatan, karena Claude Code tidak meneruskan keluaran hook
+PreCompact atau PostCompact ke asisten.
+
+Setiap berkas konteks dimuat oleh dispatcher ketika peristiwanya terpicu dan
+argumen konteksnya terdaftar di berkas pengaturan. Baris komentar lisensi dan
+bagian penutup `## Bindings` dihapus sebelum teks mencapai asisten; keduanya ada
+untuk pemelihara dan gerbang konformitas.
+
+## Kontrak runtime
+
+Setiap perintah hook yang terdaftar memenuhi kontrak yang sama, yang diperiksa
+oleh `tests/hooks/test_hook_contract.py` pada plugin, pemasangan mesin Claude
+Code, Codex, dan Qwen Code:
+
+- **Berjalan dari checkout biasa.** Keluar dengan kode 0, dan keluaran standar
+  kosong atau berupa satu objek JSON. Tidak ada hook yang bergantung pada bit
+  executable sebuah berkas.
+- **Didaftarkan sekali.** Setiap pasangan peristiwa, matcher, dan pesan muncul
+  sekali per permukaan, sehingga sebuah hook tidak pernah berjalan dua kali pada
+  satu panggilan tool.
+- **Terbatas.** Tidak ada teks yang dipancarkan melebihi 10.000 karakter. Penjaga
+  dependensi hanya bersuara ketika sebuah penulisan menargetkan manifest
+  dependensi atau lockfile, dan penjaga eval dinamis hanya ketika konten atau
+  perintah mengandung primitif evaluasi atau deserialisasi tidak aman. Saran
+  pemadatan terpicu paling banyak dua kali per sesi.
+- **Menggunakan kanal yang diteruskan harness.** Panduan PreToolUse dibawa di
+  `hookSpecificOutput`; penjaga AskUserQuestion mengembalikan
+  `additionalContext`, atau `permissionDecision: deny` di bawah opt-in ketat.
+  Claude Code membuang keluaran PreCompact dan PostCompact, sehingga di Claude
+  Code konteks pemulihan pasca-pemadatan tiba bersama peristiwa SessionStart
+  yang sumbernya `compact`.
+- **Tidak pernah menjalankan kode proyek.** Bootstrap me-resolve pohon
+  terpasangnya sendiri dan tidak pernah mengambil skrip dari proyek yang dibuka.
+  Panduan awal sesi dibaca dari pohon terpasang; direktori proyek dibaca hanya
+  untuk ringkasan rencana dan memori.
+- **Gagal terbuka.** Berkas pesan yang hilang, interpreter yang hilang, atau
+  status yang rusak menghasilkan kode keluar 0 dan amplop yang valid.
+
+| Variabel | Bawaan | Efek |
+| --- | --- | --- |
+| `APOTHEM_HOOKS_DISABLE` | tidak diatur | `1`, `true`, `yes` atau `on` membungkam setiap hook yang dirutekan dispatcher dan hook gerbang konformitas milik pemasangan mesin |
+| `APOTHEM_SESSION_END_ENABLED` | nonaktif | `1`, `true`, `yes` atau `on` mengaktifkan protokol akhir sesi pada Stop. Hook Stop yang mengembalikan konteks membuat asisten melanjutkan, sehingga protokol ini memakan satu giliran tambahan per sesi; protokol ini tidak pernah terpicu pada penghentian yang sudah mengikuti kelanjutan yang digerakkan hook |
+| `APOTHEM_SESSION_END_MIN_STOPS` | `3` | Jumlah akhir giliran sebelum protokol akhir sesi boleh terpicu |
+| `APOTHEM_PROACTIVE_COMPACTION_ENABLED` | aktif | `0`, `false`, `no` atau `off` membungkam saran pemadatan |
+| `APOTHEM_PROACTIVE_COMPACTION_TOOL_THRESHOLD` | `18` | Panggilan tool per jendela saran |
+| `APOTHEM_PROACTIVE_COMPACTION_OUTPUT_THRESHOLD` | `20000` | Byte keluaran tool per jendela saran |
+| `APOTHEM_HOOK_STATE_DIR` | lihat di bawah | Direktori untuk status hook per sesi |
+
+Status hook per sesi berada di direktori per pengguna yang dibuat dengan mode
+`0700`: `APOTHEM_HOOK_STATE_DIR` bila diatur, jika tidak
+`${CLAUDE_PLUGIN_DATA}/state` untuk plugin Claude Code, jika tidak
+`$XDG_STATE_HOME/apothem`, jika tidak `~/.local/state/apothem`
+(`%LOCALAPPDATA%\apothem\state` di Windows).
 
 ## Inventaris Pesan Hook yang Dihasilkan
 

@@ -2,35 +2,80 @@
 title: "Peta jalan"
 description: "Peta jalan publik Apothem — fitur mendatang dan peningkatan yang direncanakan."
 machineTranslated: true
-sourceHash: "28a767b07e7d897d"
+sourceHash: "66086baa5064d245"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
+{/* apothem:roadmap:start */}
+
+Peta jalan ini menjelaskan ke mana Apothem menuju. Peta jalan ini adalah
+pernyataan niat, bukan komitmen; prioritas bergeser seiring berkembangnya
+proyek dan penggunanya. Untuk hal-hal yang sudah dirilis, lihat
+[changelog](https://github.com/ahmed-g-gad/apothem/blob/main/CHANGELOG.md).
+[ROADMAP.md](https://github.com/ahmed-g-gad/apothem/blob/main/ROADMAP.md)
+milik repositori adalah satu-satunya peta jalan;
+[halaman peta jalan](https://apothem.ahmedgad.com/docs/community/roadmap) di
+situs web proyek dihasilkan darinya.
+
+Legenda status: **direncanakan** · **sedang dikerjakan** · **dirilis**.
+
 ## Rilis saat ini
 
-- Menstabilkan ketujuh belas adapter perkakas.
-- Menyelesaikan infrastruktur audit peninjauan.
-- Menstabilkan permukaan CLI Apothem.
-- Membangun pipeline CI/CD GitHub Actions.
+Lini saat ini menghadirkan pengelola konfigurasi harness yang tidak bergantung
+pada host: sebuah profil bersama (`~/.config/apothem/profile.yaml`) yang
+dimaterialisasikan menjadi konfigurasi native-harness untuk adapter-adapter
+yang terdaftar, digerakkan oleh baris perintah `apothem` (`quickstart` ·
+`install` · `update` · `uninstall` · `rollback` · `verify` · `status` · `diff` ·
+`harnesses` · `profile` · `doctor` · `migrate-workspace` · `completion`).
+
+| Butir | Status | Catatan |
+| ---- | ------ | ----- |
+| Tujuh belas adapter harness | dirilis | Masing-masing dengan pemasangan, pencopotan, pembaruan, dan verifikasi; halaman [harness yang didukung](https://apothem.ahmedgad.com/docs/harnesses) mencantumkannya |
+| Propagasi templat berbasis manifest | dirilis | Satu sumber kebenaran propagasi di `src/apothem/lib/propagation-manifest.yaml` |
+| Situs dokumentasi | dirilis | Situs publik dengan indeks referensi yang dihasilkan, aset merek, indeks situs yang dapat dibaca mesin, dan runbook rilis |
+| Rilis bertanda tangan | dirilis | Setiap GitHub Release membawa artefak bertanda tangan, SBOM, dan provenance build |
+| Pipeline `/plan` dan `/research` | dirilis | Pipeline perencanaan bertahap — spesifikasi, pembuatan, tinjauan, dan eksekusi — ditambah pipeline riset tiga belas tahap |
+| Perintah audit dan loop `/fortress` | dirilis | Audit sesuai permintaan untuk keamanan, kode, aksesibilitas, kinerja, dependensi, rantai pasok, model ancaman, arsitektur, tinjauan kode, tinjauan dokumentasi, dan UX, yang dibungkus oleh loop pengerasan `/fortress` |
+| Infrastruktur audit dan tinjauan penyimpangan | dirilis | Pemindai inventaris dan penyimpangan di balik perintah audit |
+| Gerbang konformitas | dirilis | Validator untuk header kepengarangan, penamaan, mutu penulisan kode, kata-kata pengelak (hedging), dan resiprositas binding di atas setiap permukaan yang dimaterialisasikan, dengan golden behavior-diff yang mengunci keluaran setiap adapter |
+| Memori tahan lama dan pembelajaran berkelanjutan opt-in | dirilis | Tingkat memori persisten dan loop pembelajaran opt-in yang membawa konvensi yang telah dikonfirmasi lintas sesi |
+| Pipeline CI/CD dan rantai pasok rilis bertanda tangan | dirilis | Setiap perubahan digerbang oleh lint, pengujian, pemeriksaan tipe, build dokumentasi, dan pemeriksaan rantai pasok sebelum rilis |
 
 ## Jangka pendek
 
-- Mematangkan distribusi npm / npx: jaga entry point `@ahmed-g-gad/apothem`
-  selaras dengan setiap rilis dan memperluas cakupan platformnya.
-- Mengembangkan daftar plugin Claude Code saat permukaan marketplace stabil.
-- Pembaruan-otomatis adapter perkakas via `apothem update --watch`.
-- Perkakas versioning dan migrasi profil.
-- Validasi skema profil-bersama di gerbang kesesuaian.
-- Adapter perkakas tambahan berdasarkan permintaan komunitas.
+| Butir | Status | Catatan |
+| ---- | ------ | ----- |
+| Panduan dokumentasi | sedang dikerjakan | Lebih banyak panduan yang berfokus pada tugas, diagram, dan contoh untuk penyiapan harness nyata |
+| Distribusi npm / npx | direncanakan | Menjaga entry point npx `@ahmed-g-gad/apothem` tetap selaras dengan setiap rilis dan memperluas cakupan platformnya |
+| Daftar plugin Claude Code | direncanakan | Mengembangkan daftar plugin seiring stabilnya permukaan marketplace |
+| Lebih banyak adapter harness | direncanakan | Harness tambahan seiring konvensi konfigurasinya stabil dan pengguna memintanya |
+| Peningkatan skema profil | direncanakan | Permukaan override per harness yang lebih kaya dan diagnostik validasi yang lebih ketat |
+| Validasi profil di gerbang konformitas | direncanakan | Memvalidasi profil bersama terhadap skemanya sebagai pemeriksaan gerbang |
+| Versioning dan migrasi profil | direncanakan | Memberi versi pada format profil dan memigrasikan profil yang lebih lama ke versi baru |
+| `apothem update --watch` | direncanakan | Mematerialisasikan ulang konfigurasi harness ketika profil berubah |
 
-## Jangka panjang
+## Jangka lebih panjang
 
-- Sinkronisasi profil ter-host-awan (opsional, dikendalikan-operator).
-- Ekstensi VS Code untuk umpan-balik kesesuaian waktu-nyata.
-- Pengelolaan profil yang dibagi-tim.
+| Butir | Status | Catatan |
+| ---- | ------ | ----- |
+| Sinkronisasi profil yang di-host di cloud | direncanakan | Opsional dan dikendalikan operator |
+| Pengelolaan profil bersama tim | direncanakan | Satu profil yang dibagikan ke seluruh tim |
+| Ekstensi editor dengan umpan balik konformitas langsung | direncanakan | Temuan konformitas saat Anda menyunting, di editor keluarga VS Code |
 
-## Permintaan dan umpan balik
+## Visi jangka panjang
 
-Kirim permintaan peta jalan via
-[GitHub Discussions](https://github.com/ahmed-g-gad/apothem/discussions).
-Peta jalan diinformasikan-komunitas; permintaan populer bergerak lebih cepat.
+Apothem bertujuan menjadi cara default bagi siapa pun untuk mengelola
+konfigurasi harness di semua alat yang mereka gunakan: tulis konvensi sekali,
+materialisasikan di mana saja, dan jaga agar tetap sinkron seiring
+berkembangnya preferensi maupun harness.
+
+## Cara memengaruhi peta jalan
+
+- Buka atau beri suara dukungan (upvote) pada sebuah isu di
+  [pelacak isu](https://github.com/ahmed-g-gad/apothem/issues); permintaan
+  fitur di sana adalah cara untuk mengusulkan butir peta jalan. Permintaan
+  yang populer bergerak lebih cepat.
+- Lihat [CONTRIBUTING.md](https://github.com/ahmed-g-gad/apothem/blob/main/CONTRIBUTING.md)
+  untuk cara mengusulkan dan mendaratkan perubahan.
+
+{/* apothem:roadmap:end */}

@@ -1,48 +1,53 @@
 ---
 title: "Perintah"
-description: "Definisi slash-command yang mengimplementasikan pipeline plan-suite plus audit untuk tinjauan kode, arsitektur, keamanan, dependensi, dan dokumentasi."
+description: "Definisi slash-command yang mengimplementasikan pipeline plan-suite beserta audit untuk tinjauan kode, arsitektur, keamanan, dependensi, dan dokumentasi."
 machineTranslated: true
-sourceHash: "eb6dba8f23c178b0"
+sourceHash: "9efa4c5a74f0b51f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Definisi slash-command tersimpan sebagai berkas `.md` datar di bawah `src/apothem/commands/`. Kumpulan
-kanonis dipimpin oleh pipeline plan-suite yang sadar-arsitektur, yang dikirim
-sebagai tujuh perintah kelas-satu — satu per tahap, masing-masing dapat dipanggil langsung sebagai
-`/plan-<stage>`. Tidak ada dispatcher monolitik; setiap tahap adalah berkas
-perintah terdaftarnya sendiri di `src/apothem/commands/plan-<stage>.md`.
+Definisi slash-command berada sebagai berkas `.md` datar di bawah `src/apothem/commands/`.
+Kumpulan kanonisnya dipimpin oleh pipeline plan-suite yang sadar arsitektur, yang
+dikirim sebagai tujuh perintah kelas satu — satu per tahap, masing-masing dapat
+dipanggil langsung sebagai `/plan-<stage>`. Tidak ada dispatcher monolitik; setiap
+tahap adalah berkas perintah terdaftar tersendiri di
+`src/apothem/commands/plan-<stage>.md`.
 
 | Pemanggilan | Berkas perintah | Deskripsi |
 |------------|--------------|-------------|
-| `/plan-spec` | `src/apothem/commands/plan-spec.md` | Menyempurnakan konten tak terstruktur menjadi prosa berkualitas spesifikasi |
-| `/plan-generate` | `src/apothem/commands/plan-generate.md` | Mematerialisasikan plan suite dari prosa / kebutuhan |
+| `/plan-spec` | `src/apothem/commands/plan-spec.md` | Menyempurnakan konten tak terstruktur menjadi prosa bermutu spesifikasi |
+| `/plan-generate` | `src/apothem/commands/plan-generate.md` | Mematerialisasi plan suite dari prosa / kebutuhan |
 | `/plan-review` | `src/apothem/commands/plan-review.md` | Audit forensik dengan scorecard |
-| `/plan-design` | `src/apothem/commands/plan-design.md` | Memancarkan `_inputs/design.md` untuk suite yang mengandung arsitektur |
+| `/plan-design` | `src/apothem/commands/plan-design.md` | Memancarkan `_inputs/design.md` untuk suite yang memuat arsitektur |
 | `/plan-execute` | `src/apothem/commands/plan-execute.md` | Mengeksekusi sebuah fase dengan gerbang kualitas |
 | `/plan-status` | `src/apothem/commands/plan-status.md` | Laporan kemajuan hanya-baca |
 | `/plan-amend` | `src/apothem/commands/plan-amend.md` | Mengubah, memperluas, menyempurnakan, atau mengembalikan suite yang ada tanpa kehilangan keputusan yang sudah ditetapkan |
-| `/plan-audit` | `src/apothem/commands/plan-audit.md` | Pembungkus loop-tertutup dari spec → generate → review dengan remediasi aktif (ortogonal, pra-execute) |
+| `/plan-audit` | `src/apothem/commands/plan-audit.md` | Pembungkus loop tertutup atas spec → generate → review dengan remediasi aktif (ortogonal, pra-execute) |
 
-Di luar pipeline plan, perintah harness seluruh-proyek dikirim bersamanya —
+Di luar pipeline plan, perintah harness seluruh proyek dikirim bersamanya —
 `/freshify`, `/github-deploy-fresh`, `/github-deploy-next`, dan `/elevate` untuk
 penyegaran dan rilis; `/audit`, `/fortress`, dan `/workflow` untuk tinjauan dan
-orkestrasi multi-agen; `/projectify` untuk peningkatan Proyek aplikasi obrolan —
-ditambah sebelas lintasan audit/tinjauan dan pipeline `/research`:
+orkestrasi multi-agen; `/projectify` untuk peningkatan ke Project aplikasi
+obrolan — ditambah sebelas lintasan audit/tinjauan (code-review, code-audit,
+architecture-review, docs-review, security-audit, dependency-audit,
+supply-chain-audit, threat-model-audit, perf-audit, a11y-audit, ux-review) dan
+pipeline `/research`:
 
 | Pemanggilan | Berkas perintah | Deskripsi |
 |------------|--------------|-------------|
-| `/freshify` | `src/apothem/commands/freshify.md` | Membuat proyek menjadi segar, bebas-jejak, dan siap-produksi; setiap langkah destruktif terkonfirmasi melalui gerbang |
-| `/github-deploy-fresh` | `src/apothem/commands/github-deploy-fresh.md` | Spesialisasi GitHub dari `/freshify` yang menghasilkan satu rilis versi-pertama yang segar |
-| `/github-deploy-next` | `src/apothem/commands/github-deploy-next.md` | Menjalankan satu siklus rilis-berikutnya penuh pada permukaan rilis GitHub |
+| `/freshify` | `src/apothem/commands/freshify.md` | Menjadikan proyek segar, bebas jejak, dan siap produksi; setiap langkah destruktif dijaga konfirmasi |
+| `/github-deploy-fresh` | `src/apothem/commands/github-deploy-fresh.md` | Spesialisasi GitHub dari `/freshify` yang menghasilkan satu rilis versi pertama yang segar |
+| `/github-deploy-next` | `src/apothem/commands/github-deploy-next.md` | Menjalankan satu siklus rilis berikutnya secara penuh pada permukaan rilis GitHub |
 | `/elevate` | `src/apothem/commands/elevate.md` | Mengangkat setiap permukaan proyek ke SOTA terkini melalui agen kritik independen, lalu menyerahkan ke `/freshify` |
 
-Kumpulan perintah lengkap yang menjadi sumber-kebenaran — termasuk urutan audit-review —
-adalah inventaris yang dihasilkan di bagian akhir halaman ini.
+Kumpulan perintah yang lengkap dan menjadi sumber kebenaran — termasuk setiap
+lintasan audit-tinjauan — adalah inventaris yang dihasilkan di bagian akhir
+halaman ini.
 
 ## Kontrak frontmatter
 
-Setiap berkas perintah membawa frontmatter delapan-kunci kanonis. Kontrak
-yang dapat-dibaca-mesin adalah [`command.schema.json`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/command.schema.json)
+Setiap berkas perintah membawa frontmatter delapan kunci yang kanonis. Kontrak
+yang dapat dibaca mesin adalah [`command.schema.json`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/command.schema.json)
 (`additionalProperties: false`); blok ini mencerminkannya:
 
 ```yaml
@@ -58,16 +63,24 @@ allowed-tools: <comma-separated read-only tools and scoped rules, e.g. "Read, Gl
 ---
 ```
 
-Pemeriksaan `frontmatter-cohort` validator (cabang Command) memverifikasi
-kontrak pada setiap berkas perintah.
+Pemeriksaan `frontmatter-cohort` milik validator (cabang Command) memverifikasi
+kontrak tersebut pada setiap berkas perintah. `allowed-tools` mencantumkan tool
+yang boleh dijalankan harness tanpa bertanya selama perintah aktif, sehingga
+secara bawaan tetap hanya-baca: tool yang menimbulkan efek samping (Bash,
+PowerShell, Write, Edit, NotebookEdit, WebFetch) muncul hanya sebagai aturan
+berlingkup seperti `Bash(git log *)`, dan wildcard `"*"` polos ditolak oleh
+skema. Perintah dengan efek samping yang tidak dapat dibatalkan (`freshify`,
+`github-deploy-fresh`, `github-deploy-next`) menetapkan
+`disable-model-invocation: true`, sehingga hanya operator yang memulainya.
 
 ## Disiplin penulisan
 
-- **Alur kerja mandiri.** Tubuh setiap perintah mencantumkan alur kerja sebagai
-  langkah bernomor sehingga asisten dapat mengeksekusi dari keadaan dingin.
-- **Blok Bindings.** Setiap perintah diakhiri dengan blok Bindings
-  lima-arah kanonis.
-- **Bahasa domain saja.** Tidak ada referensi internal-plan dalam tubuh.
+- **Alur kerja mandiri.** Isi setiap perintah mencantumkan alur kerja sebagai
+  langkah bernomor sehingga asisten dapat mengeksekusinya dari awal tanpa
+  konteks sebelumnya.
+- **Blok Bindings.** Setiap perintah diakhiri dengan blok Bindings lima arah
+  yang kanonis.
+- **Hanya bahasa domain.** Tidak ada referensi internal-rencana di dalam isi.
 
 ## Inventaris Perintah yang Dihasilkan
 

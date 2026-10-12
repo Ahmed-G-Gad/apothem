@@ -1,25 +1,26 @@
 ---
 title: "Tata letak sumber"
-description: "Mengapa Apothem menggunakan tata letak src/ dan bagaimana pohon ini diorganisasikan."
+description: "Mengapa Apothem menggunakan tata letak src/ dan bagaimana pohonnya diorganisasikan."
 machineTranslated: true
-sourceHash: "c6664406630c0ff3"
+sourceHash: "4620a2bd8d95e2cd"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Apothem mengadopsi [src-layout PyPA](https://packaging.python.org/en/latest/discussions/src-layout-vs-flat-layout/), menempatkan semua Python yang dapat diimpor di bawah `src/apothem/`.
+Apothem mengadopsi [src-layout PyPA](https://packaging.python.org/en/latest/discussions/src-layout-vs-flat-layout/), dengan menempatkan semua Python yang dapat diimpor di bawah `src/apothem/`.
 
 ## Mengapa src-layout
 
-- **Isolasi impor.** `import apothem` hanya bisa di-resolve saat `src/` ada di path
-  (mesin berjalan sebagai `PYTHONPATH=src python -m apothem`), mencegah impor
-  pohon kerja yang tidak disengaja dari direktori yang tidak berkaitan.
-- **Runtime mandiri.** Apothem berjalan langsung dari checkout dengan dependensinya
-  di-vendor di bawah `src/apothem/_vendor/` — tanpa perlu langkah instalasi.
-  src-layout menjaga permukaan yang dapat diimpor itu terpisah rapi dari perkakas,
-  pengujian, dan skrip repositori.
-- **Distribusi yang bersih.** Tata letak yang sama menghasilkan sdist dan wheel yang
-  terbentuk baik (serta instalasi editable `pip install -e .` opsional) yang isinya
-  persis cocok dengan apa yang dikirim, tanpa modul tingkat-atas yang tercecer masuk.
+- **Isolasi impor.** `import apothem` hanya ter-resolve ketika `src/` ada di path
+  (mesin berjalan sebagai `PYTHONPATH=src python -m apothem`), sehingga mencegah
+  impor working tree yang tidak disengaja dari direktori yang tidak berkaitan.
+- **Runtime mandiri.** Apothem berjalan langsung dari checkout dengan
+  dependensinya di-vendor di bawah `src/apothem/_vendor/` — tidak diperlukan
+  langkah pemasangan. src-layout menjaga permukaan yang dapat diimpor itu
+  terpisah dengan rapi dari perkakas, pengujian, dan skrip repositori.
+- **Distribusi yang bersih.** Tata letak yang sama menghasilkan sdist dan wheel
+  yang terbentuk dengan baik (serta pemasangan editable `pip install -e .` yang
+  opsional) yang isinya persis sama dengan apa yang dikirimkan, tanpa modul
+  tingkat atas liar yang ikut bocor masuk.
 
 ## Struktur pohon
 
@@ -28,9 +29,9 @@ src/apothem/
     agents/         persistent agent definitions (*.md)
     audit/          inventory and provenance tools
     benchmarks/     performance benchmarks
-    cli/            Click CLI (quickstart, install, update, uninstall, verify, status, diff, rollback, harnesses, profile, doctor, completion)
+    cli/            Click CLI (top-level commands listed below the tree)
     commands/       slash command definitions (*.md)
-    conformity/     mechanical gate checkers (*-grep.py)
+    conformity/     mechanical gate checkers (*_grep.py)
     harnesses/      one sub-package per harness adapter (17 adapters)
     hooks/          hook dispatcher + message files
     lib/            shared Python library
@@ -42,13 +43,38 @@ src/apothem/
     templates/      reusable template artifacts
 ```
 
+### Command CLI
+
+Daftar di bawah ini dihasilkan dari pohon command Click.
+
+{/* apothem:generated-reference:start */}
+
+The `cli/` package registers 14 top-level commands:
+
+- [`apothem backups`](/docs/cli-reference/backups)
+- [`apothem completion`](/docs/cli-reference/completion)
+- [`apothem diff`](/docs/cli-reference/diff)
+- [`apothem doctor`](/docs/cli-reference/doctor)
+- [`apothem harnesses`](/docs/cli-reference/harnesses)
+- [`apothem install`](/docs/cli-reference/install)
+- [`apothem migrate-workspace`](/docs/cli-reference/migrate-workspace)
+- [`apothem profile`](/docs/cli-reference/profile)
+- [`apothem quickstart`](/docs/cli-reference/quickstart)
+- [`apothem rollback`](/docs/cli-reference/rollback)
+- [`apothem status`](/docs/cli-reference/status)
+- [`apothem uninstall`](/docs/cli-reference/uninstall)
+- [`apothem update`](/docs/cli-reference/update)
+- [`apothem verify`](/docs/cli-reference/verify)
+
+{/* apothem:generated-reference:end */}
+
 ## Artefak yang dapat diimpor vs. artefak konfigurasi
 
 Banyak item di bawah `src/apothem/` adalah artefak konfigurasi Markdown, bukan
 modul Python. Permukaan Python yang dapat diimpor adalah:
 
-- `src/apothem/cli/` (Click CLI yang diekspos sebagai titik masuk `apothem`)
-- `src/apothem/harnesses/` (17 subpaket adapter harness)
+- `src/apothem/cli/` (CLI Click yang diekspos sebagai entry point `apothem`)
+- `src/apothem/harnesses/` (17 sub-paket adapter harness)
 - `src/apothem/lib/` (pustaka bersama: profil, registri, materializer, propagasi)
 - `src/apothem/hooks/` (dispatch.py, lib/)
 - `src/apothem/conformity/` (skrip grep mekanis)

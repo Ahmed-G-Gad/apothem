@@ -1,37 +1,37 @@
 ---
 title: "Aturan"
-description: "Aturan perilaku yang selalu-aktif dan tersaring-jalur yang mengatur pemecahan masalah, kecakapan kode, arsitektur bersih, perencanaan, dan kualitas di seluruh kumpulan aturan perilaku."
+description: "Aturan perilaku yang selalu aktif dan yang tersaring jalur, yang mengatur pemecahan masalah, keterampilan kode, arsitektur bersih, perencanaan, dan kualitas di seluruh kumpulan aturan perilaku."
 machineTranslated: true
-sourceHash: "8e2637435d5ab460"
+sourceHash: "84db4f5243d1ad02"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Aturan perilaku tersimpan sebagai berkas datar di bawah `src/apothem/rules/` dengan
-sufiks `*.md`. Setiap aturan bersifat mandiri — Purpose,
-Obligations, Seriousness Scaling, Anti-Patterns, Enforcement, Bindings — dan
-bersifat selalu-aktif atau tersaring-jalur.
+Aturan perilaku berada sebagai berkas datar di bawah `src/apothem/rules/` dengan
+akhiran `*.md`. Setiap aturan bersifat mandiri — Purpose, Obligations,
+Seriousness Scaling, Anti-Patterns, Enforcement, Bindings — dan bersifat selalu
+aktif atau tersaring jalur.
 
 ## Aturan aktif
 
-Registri kanonis adalah kohort rules. Kumpulan yang sama dalam bentuk datar:
+Registri kanonisnya adalah kohor aturan. Kumpulan yang sama dalam bentuk datar:
 
 | Aturan | Cakupan | Mengimplementasikan |
 |------|-------|------------|
-| Auto Memory | Selalu-aktif | CM-26 |
-| Clean-Room Generation | Selalu-aktif | CM-5 / CM-7 / CM-21 |
-| Cognitive Identity | Selalu-aktif | CM-21 |
-| Context Management | Selalu-aktif | CM-12 / CM-14 / CM-18 / CM-19 / CM-24 |
-| Context Management Scratch | Tersaring-jalur | CM-12 / CM-24 (pendamping) |
-| Conventions Vigilance | Selalu-aktif | CM-22 |
-| Interactive Questions | Selalu-aktif | CM-2 extension |
-| Interactive Questions Sweep Matchers | Tersaring-jalur | CM-2 extension (pendamping) |
-| Operational Mandates | Selalu-aktif | CM-1–10 |
-| Worker Orchestration | Selalu-aktif | CM-17 / CM-25 |
-| Clean Architecture | Tersaring-jalur | CM-27 |
-| Large File Generation | Tersaring-jalur | CM-23 |
-| Performance Discipline | Tersaring-jalur | Sumbu performa |
-| Planning Techniques | Tersaring-jalur | CM-20 / CM-21 |
-| Python Senior Architect | Tersaring-jalur | CM-28 |
+| Auto Memory | Selalu aktif | CM-26 |
+| Clean-Room Generation | Selalu aktif | CM-5 / CM-7 / CM-21 |
+| Cognitive Identity | Selalu aktif | CM-21 |
+| Context Management | Selalu aktif | CM-12 / CM-14 / CM-18 / CM-19 / CM-24 |
+| Context Management Scratch | Tersaring jalur | CM-12 / CM-24 (pendamping) |
+| Conventions Vigilance | Selalu aktif | CM-22 |
+| Interactive Questions | Selalu aktif | Ekstensi CM-2 |
+| Interactive Questions Sweep Matchers | Tersaring jalur | Ekstensi CM-2 (pendamping) |
+| Operational Mandates | Selalu aktif | CM-1–10 |
+| Worker Orchestration | Selalu aktif | CM-17 / CM-25 |
+| Clean Architecture | Tersaring jalur | CM-27 |
+| Large File Generation | Tersaring jalur | CM-23 |
+| Performance Discipline | Tersaring jalur | Sumbu kinerja |
+| Planning Techniques | Tersaring jalur | CM-20 / CM-21 |
+| Python Senior Architect | Tersaring jalur | CM-28 |
 
 ## Kontrak frontmatter
 
@@ -46,21 +46,45 @@ alwaysApply: <true | false>
 ---
 ```
 
-Bidang `pathFilter` dihilangkan pada aturan selalu-aktif dan hadir pada aturan
-tersaring-jalur. Pemeriksaan `frontmatter-cohort` validator memverifikasi
-kontrak pada setiap berkas aturan.
+Pada aturan yang selalu aktif, `pathFilter` berupa string kosong (`""`) dan
+`alwaysApply` bernilai `true`; pada aturan yang tersaring jalur, `pathFilter`
+membawa daftar glob dan `alwaysApply` bernilai `false`. Kontrak yang dapat
+dibaca mesin adalah
+[`frontmatter_grep`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/frontmatter_grep.py)
+(`{name, description, pathFilter, alwaysApply}`); pemeriksaan
+`frontmatter-cohort` milik validator memverifikasinya pada setiap berkas aturan.
+
+`pathFilter` dan `alwaysApply` bersifat netral terhadap harness. Setiap adapter
+menerjemahkannya bila harness-nya memiliki field cakupan native. Claude Code
+hanya membaca `paths:` dari sebuah aturan dan memuat setiap aturan yang tidak
+memilikinya saat diluncurkan, sehingga pemasangan mesin
+(`apothem install --harness claude-code`) menulis setiap aturan yang tersaring
+jalur ke `~/.claude/rules/` dengan daftar `paths:` yang dibangun dari
+`pathFilter`-nya, dan menyalin aturan yang selalu aktif tanpa perubahan. Ke-28
+aturan yang selalu aktif dimuat di setiap sesi; ke-63 pendamping yang tersaring
+jalur dimuat ketika asisten membaca berkas yang cocok.
+
+OpenCode tidak memiliki field cakupan per aturan: OpenCode menggabungkan setiap
+berkas yang disebut daftar `instructions` di `opencode.json` miliknya ke dalam
+setiap sesi. Karena itu, pemasangan OpenCode
+(`apothem install --harness opencode`) mencantumkan dokumen profil Anda dan
+hanya aturan yang `alwaysApply`-nya bernilai `true`, satu jalur
+`~/.config/opencode/...` eksplisit per berkas, yang dibaca dari berkas aturan
+saat konfigurasi ditulis. Setiap aturan, termasuk yang tersaring jalur, tetap
+dipasang di bawah `~/.config/opencode/.apothem/support/rules/`, tempat aturan,
+skill, atau perintah yang mengutip sebuah aturan membacanya sesuai kebutuhan.
 
 ## Disiplin penulisan
 
-- **Mandiri.** Setiap aturan memiliki bagian Purpose, Obligations, Anti-Patterns,
-  dan Enforcement-nya sendiri.
-- **Blok Bindings.** Setiap aturan diakhiri dengan blok Bindings lima-arah
+- **Mandiri.** Setiap aturan memiliki bagian Purpose, Obligations,
+  Anti-Patterns, dan Enforcement-nya sendiri.
+- **Blok Bindings.** Setiap aturan diakhiri dengan blok Bindings lima arah yang
   kanonis (Drives → / Satisfies → / Established by ↑ / Gated by ← /
   Cross-bound with ↔).
-- **Bahasa domain saja.** Tidak ada referensi internal-plan — lihat
+- **Hanya bahasa domain.** Tidak ada referensi internal-rencana — lihat
   `CLAUDE.md` CM-7.
 
-## Generated Rule Inventory
+## Inventaris Aturan yang Dihasilkan
 
 {/* apothem:generated-reference:start */}
 

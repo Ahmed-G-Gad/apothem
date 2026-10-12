@@ -2,11 +2,11 @@
 title: "update"
 description: "Referensi CLI untuk perintah apothem update."
 machineTranslated: true
-sourceHash: "fc03f27749f2a77a"
+sourceHash: "e6bb232cf7e7fd02"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Memasang ulang konfigurasi adapter asisten-pengkodean dari profil bersama saat ini.
+Memasang ulang konfigurasi adapter harness dari profil bersama saat ini.
 
 ## Ringkasan
 
@@ -17,7 +17,9 @@ apothem update --harness NAME|all [--profile PATH] [--dry-run]
                 [--format plain|json] [--json] [--no-color]
 ```
 
-`update` mematerialisasi ulang keluaran asisten-pengkodean dari profil bersama saat ini. Perintah ini menggunakan validasi profil, pemilihan `--harness all`, pemeriksaan lingkup-proyek, perilaku dry-run, dan amplop JSON yang sama dengan `install`.
+`update` mematerialisasi ulang keluaran harness dari profil bersama saat ini.
+Perintah ini menggunakan validasi profil, pemilihan `--harness all`, pemeriksaan
+cakupan proyek, perilaku dry-run, dan amplop JSON yang sama dengan `install`.
 
 Alias bentuk-kontinu `apothem updating` di-resolve ke handler yang sama.
 
@@ -25,12 +27,12 @@ Alias bentuk-kontinu `apothem updating` di-resolve ke handler yang sama.
 
 | Opsi | Deskripsi |
 |---|---|
-| `--harness NAME` | Adapter asisten-pengkodean yang akan diperbarui, atau `all` untuk set selingkup-registri (wajib). |
-| `--profile PATH` | Path ke profil bersama YAML. Default-nya `~/.config/apothem/profile.yaml`. |
-| `--dry-run` | Pratinjau pembaruan tanpa menulis berkas. |
-| `--project PATH` | Root proyek untuk asisten-pengkodean berlingkup-proyek. Wajib ketika set asisten-pengkodean yang dipilih mencakup adapter berlingkup-proyek. |
-| `--quiet`, `-q` | Menekan keluaran informasi; hanya galat yang dikeluarkan. |
-| `--verbose`, `-v` | Mengeluarkan keluaran diagnostik tambahan. |
+| `--harness NAME` | Adapter harness yang akan diperbarui, atau `all` untuk himpunan selingkup registri (wajib). |
+| `--profile PATH` | Jalur ke YAML profil bersama. Default-nya `~/.config/apothem/profile.yaml`. |
+| `--dry-run` | Mempratinjau pembaruan tanpa menulis berkas. |
+| `--project PATH` | Root proyek untuk harness berlingkup-proyek. Wajib ketika himpunan harness yang dipilih mencakup adapter berlingkup-proyek. |
+| `--quiet`, `-q` | Menekan keluaran informatif; hanya galat yang dipancarkan. |
+| `--verbose`, `-v` | Memancarkan keluaran diagnostik tambahan. |
 | `--format plain\|json` | Format keluaran (default: `plain`). |
 | `--json` | Singkatan untuk `--format json`. |
 | `--no-color` | Menonaktifkan kode warna ANSI dalam keluaran. |
@@ -40,6 +42,7 @@ Alias bentuk-kontinu `apothem updating` di-resolve ke handler yang sama.
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "update",
   "action": "updated",
@@ -71,8 +74,9 @@ apothem updating --harness claude-code   # lowercase variant
 | Kode | Arti |
 |---|---|
 | 0 | Adapter berhasil diperbarui atau dry-run direncanakan dengan bersih |
-| 1 | Galat validasi, profil, asisten-pengkodean, proyek, atau adapter yang diharapkan |
+| 1 | Galat validasi, profil, harness, proyek, atau adapter yang diharapkan |
 | 2 | Materialisasi batch parsial setelah setidaknya satu penulisan |
+| 64 | Galat penggunaan: opsi atau perintah yang tidak dikenal, atau nilai opsi yang hilang atau tidak valid. Di bawah `--json`, galat berupa amplop JSON dengan kode `cli.usage`. |
 
 ## Lihat juga
 

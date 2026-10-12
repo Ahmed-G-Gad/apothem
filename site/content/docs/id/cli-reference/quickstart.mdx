@@ -1,12 +1,13 @@
 ---
 title: "quickstart"
-description: "Referensi CLI untuk perintah jalankan-pertama terpandu apothem quickstart."
+description: "Referensi CLI untuk perintah eksekusi pertama terpandu apothem quickstart."
 machineTranslated: true
-sourceHash: "2de815559e9e2e4e"
+sourceHash: "f564c70124345bea"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Jalankan-pertama terpandu: memastikan sebuah profil ada, melakukan pratinjau penulisan, lalu memasang.
+Eksekusi pertama terpandu: memastikan profil ada, mempratinjau penulisan, lalu
+memasang.
 
 ## Ringkasan
 
@@ -16,27 +17,55 @@ apothem quickstart [--harness NAME|all] [--project PATH] [--profile PATH]
                    [--format plain|json] [--json] [--no-color]
 ```
 
-`quickstart` adalah satu-satunya titik masuk terpandu bagi operator baru. Dalam satu alur linear, ia: (1) memastikan sebuah profil bersama ada — membuat profil awal dengan dorongan untuk personalisasi jika tidak ada yang ditemukan; (2) melakukan pratinjau file konkret yang akan ditulis oleh asisten-pengkodean terpilih, dikelompokkan menurut akar proyek versus direktori beranda Anda; (3) meminta konfirmasi; (4) memasang dengan keluaran catatan kapabilitas yang dikelompokkan dan bebas-bising; dan (5) mencetak perintah lanjutan yang direkomendasikan.
+`quickstart` adalah satu-satunya titik masuk terpandu bagi operator baru. Dalam
+satu alur linear, perintah ini: (1) memastikan profil bersama ada — membuat
+profil awal disertai dorongan untuk mempersonalisasinya jika tidak ditemukan;
+(2) mempratinjau berkas konkret yang akan ditulis oleh harness terpilih,
+dikelompokkan menurut root proyek versus direktori home Anda;
+(3) meminta konfirmasi; (4) memasang dengan keluaran catatan kemampuan yang
+terkelompok dan bebas derau; dan (5) mencetak perintah lanjutan yang
+direkomendasikan.
 
-Ia menyusun blok pembangun yang sama dengan yang digunakan perintah `install` — ia tidak mengimplementasikannya ulang. `--harness` secara default `all` dan `--project` ke direktori saat ini.
+Perintah ini menyusun blok pembangun yang sama dengan yang digunakan perintah
+`install` — perintah ini tidak mengimplementasikannya ulang. `--project`
+default-nya direktori saat ini. `--harness` tidak memiliki default: ketika
+dihilangkan, `quickstart` menanyakan harness mana yang akan dipasang, sehingga
+eksekusi pertama menulis konfigurasi satu harness. `--harness all` memasang
+setiap harness yang didukung dan selalu merupakan pilihan eksplisit.
 
 ## Perilaku
 
-- **Profil** — jika jalur profil yang teratasi tidak memiliki file, `quickstart` menawarkan untuk membuat profil awal (membuat otomatis di bawah `--yes`, shell non-interaktif, atau `--format json`) dan menyebutkan bidang identitas placeholder yang perlu dipersonalisasi.
-- **Pratinjau + konfirmasi** — sebelum penulisan apa pun, target dicantumkan di bawah dua judul (akar proyek versus direktori beranda Anda); jalannya interaktif mengonfirmasi sebelum menulis di luar proyek. `--yes`, shell non-interaktif, dan `--format json` melanjutkan tanpa meminta. Menolak akan membatalkan sebelum penulisan apa pun.
-- **Pasang** — kapabilitas yang tidak didukung secara native oleh suatu asisten-pengkodean diringkas sebagai satu catatan yang dikelompokkan per asisten-pengkodean (berikan `--verbose` untuk detail per kapabilitas); set lengkap selalu ada dalam array warnings pada `--format json`.
-- **Langkah berikutnya** — keluaran terminal menyebutkan perintah lanjutan (`apothem verify …`, `apothem doctor`).
+- **Harness** — tanpa `--harness`, eksekusi interaktif mencantumkan nama-nama
+  yang didukung (ditambah `all`) dan meminta satu nama sebelum apa pun ditulis.
+  Eksekusi yang tidak dapat bertanya — `--yes`, `--format json`, atau tanpa
+  terminal — berhenti dengan galat penggunaan yang menyebutkan opsi
+  `--harness`, dan tidak menulis apa pun.
+- **Profil** — jika jalur profil yang di-resolve tidak memiliki berkas,
+  `quickstart` menawarkan untuk membuat profil awal (membuatnya otomatis di
+  bawah `--yes`, shell non-interaktif, atau `--format json`) dan menyebutkan
+  bidang identitas placeholder yang perlu dipersonalisasi.
+- **Pratinjau + konfirmasi** — sebelum penulisan apa pun, target dicantumkan di
+  bawah dua judul (root proyek versus direktori home Anda); eksekusi interaktif
+  meminta konfirmasi sebelum menulis di luar proyek. `--yes`, shell
+  non-interaktif, dan `--format json` melanjutkan tanpa meminta konfirmasi.
+  Menolak membatalkan proses sebelum penulisan apa pun.
+- **Pemasangan** — kemampuan yang tidak didukung secara native oleh sebuah
+  harness diringkas sebagai satu catatan terkelompok per harness (berikan
+  `--verbose` untuk detail per kemampuan); himpunan lengkapnya selalu ada di
+  larik warnings `--format json`.
+- **Langkah berikutnya** — keluaran terminal menyebutkan perintah lanjutan
+  (`apothem verify …`, `apothem doctor`).
 
 ## Opsi
 
 | Opsi | Deskripsi |
 |---|---|
-| `--harness NAME` | Adapter asisten-pengkodean yang akan dipasang, atau `all` untuk set selingkup-registri (default: `all`). |
+| `--harness NAME` | Adapter harness yang akan dipasang, atau `all` untuk himpunan selingkup registri. Tanpa default: eksekusi interaktif menanyakannya; eksekusi non-interaktif wajib memberikannya. |
 | `--profile PATH` | Jalur ke YAML profil bersama. Default-nya `~/.config/apothem/profile.yaml`. |
-| `--project PATH` | Akar proyek untuk asisten-pengkodean berlingkup-proyek. Default-nya direktori saat ini. |
-| `--yes` | Menjalankan urutan terpandu penuh secara non-interaktif (lewati setiap prompt). |
-| `--quiet`, `-q` | Menekan keluaran informasional; hanya kesalahan yang dipancarkan. |
-| `--verbose`, `-v` | Mencetak alasan setiap kapabilitas yang tidak diproyeksikan alih-alih catatan yang dikelompokkan. |
+| `--project PATH` | Root proyek untuk harness berlingkup-proyek. Default-nya direktori saat ini. |
+| `--yes` | Menjalankan urutan terpandu lengkap secara non-interaktif (melewati setiap prompt). |
+| `--quiet`, `-q` | Menekan keluaran informatif; hanya galat yang dipancarkan. |
+| `--verbose`, `-v` | Mencetak alasan setiap kemampuan yang tidak diproyeksikan alih-alih catatan terkelompok. |
 | `--format plain\|json` | Format keluaran (default: `plain`). |
 | `--json` | Singkatan untuk `--format json`. |
 | `--no-color` | Menonaktifkan kode warna ANSI dalam keluaran. |
@@ -44,10 +73,12 @@ Ia menyusun blok pembangun yang sama dengan yang digunakan perintah `install` �
 
 ## Keluaran JSON
 
-`--format json` memancarkan satu dokumen tunggal yang meringkas setiap langkah terpandu:
+`--format json` memancarkan satu dokumen yang meringkas setiap langkah
+terpandu:
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "quickstart",
   "profile_path": "C:\\Users\\Example\\.config\\apothem\\profile.yaml",
@@ -63,23 +94,24 @@ Ia menyusun blok pembangun yang sama dengan yang digunakan perintah `install` �
 ## Contoh
 
 ```bash
-apothem quickstart
-apothem quickstart --harness all --project . --yes
-apothem quickstart --harness claude-code
-apothem quickstart --json
+apothem quickstart                                  # asks which harness
+apothem quickstart --harness claude-code --yes
+apothem quickstart --harness all --project . --yes  # every harness, explicitly
+apothem quickstart --harness claude-code --json
 ```
 
 ## Kode keluar
 
 | Kode | Arti |
 |---|---|
-| 0 | Jalannya terpandu selesai |
-| 1 | Kesalahan validasi, profil, asisten-pengkodean, proyek, atau adapter yang diharapkan |
+| 0 | Eksekusi terpandu selesai |
+| 1 | Galat validasi, profil, harness, proyek, atau adapter yang diharapkan |
 | 2 | Materialisasi batch parsial setelah setidaknya satu penulisan |
+| 64 | Galat penggunaan: opsi atau perintah yang tidak dikenal, atau nilai opsi yang hilang atau tidak valid. Di bawah `--json`, galat berupa amplop JSON dengan kode `cli.usage`. |
 
 ## Lihat juga
 
-- [apothem install](/docs/cli-reference/install) — mematerialisasi suatu asisten-pengkodean dari profil bersama
-- [apothem verify](/docs/cli-reference/verify) — mengonfirmasi suatu pemasangan aktif
+- [apothem install](/docs/cli-reference/install) — mematerialisasi sebuah harness dari profil bersama
+- [apothem verify](/docs/cli-reference/verify) — memastikan sebuah pemasangan aktif
 - [apothem doctor](/docs/cli-reference/doctor) — kesehatan lingkungan dan pemasangan
 - [Memulai](/docs/install) — panduan pemasangan lengkap

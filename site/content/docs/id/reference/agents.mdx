@@ -1,12 +1,12 @@
 ---
 title: "Pembantu"
-description: "Pekerja pembantu persisten untuk riset, audit, kualitas, dan orkestrasi dengan kontrak frontmatter dan protokol isolasi penyebaran."
+description: "Agen pembantu persisten untuk riset, audit, kualitas, dan orkestrasi dengan kontrak frontmatter dan protokol isolasi penyebaran."
 machineTranslated: true
-sourceHash: "5c1fa12b4b90df83"
+sourceHash: "9aeb014bc69c5163"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Pembantu persisten hidup sebagai berkas datar di bawah direktori pembantu
+Pembantu persisten berada sebagai berkas datar di bawah direktori pembantu
 kanonis dengan akhiran `<name>.md`. Jalur kanonisnya adalah:
 
 ```text
@@ -18,10 +18,10 @@ pembatasan tool dan system prompt-nya sendiri.
 
 | Pembantu | Berkas | Pola | Kebijakan Model |
 |-------|------|---------|--------------|
-| Codebase Explorer | lihat jalur manifes di bawah | Riset | dipilih-host |
-| Convention Auditor | lihat jalur manifes di bawah | Audit | dipilih-host |
-| Quality Gate | lihat jalur manifes di bawah | Kualitas | dipilih-host |
-| Memory Auditor | lihat jalur manifes di bawah | Audit | dipilih-host |
+| Codebase Explorer | lihat jalur manifes di bawah | Riset | dipilih host |
+| Convention Auditor | lihat jalur manifes di bawah | Audit | dipilih host |
+| Quality Gate | lihat jalur manifes di bawah | Kualitas | dipilih host |
+| Memory Auditor | lihat jalur manifes di bawah | Audit | dipilih host |
 
 Jalur manifes kanonis:
 
@@ -46,10 +46,29 @@ maxTurns: <integer>
 ---
 ```
 
+## Konversi per harness
+
+Pembantu yang pemberian `tools`-nya, setelah `disallowedTools` diterapkan, tidak
+menyertakan `Write` maupun `Edit` bersifat hanya-baca. Setiap harness yang
+mengonversi pembantu menegakkan batas itu secara native atau menghapus label
+hanya-baca:
+
+| Harness | Batas tool | Batas giliran | Model dan tingkat upaya |
+| --- | --- | --- | --- |
+| Claude Code | `tools` / `disallowedTools` sebagaimana ditulis | `maxTurns` | diwarisi (tidak diatur) |
+| Codex | `sandbox_mode = "read-only"` untuk pembantu hanya-baca | tidak tersedia | diwarisi (tidak diatur) |
+| Gemini CLI | daftar-izin `tools` berisi nama tool Gemini | `max_turns` | diwarisi (tidak diatur) |
+| Qwen Code | `tools` / `disallowedTools` dalam nama tool Qwen | tidak dipetakan | `model: inherit` |
+| OpenCode | `permission` (`allow` / `deny` per tool) | tidak dipetakan | diwarisi (tidak diatur) |
+| Antigravity | tidak ada yang dipancarkan; deskripsi kehilangan kata "read-only" | tidak tersedia | diwarisi (tidak diatur) |
+
+Hermes, Open-Claw, dan Kimi Code menerima berkas pembantu sebagai materi
+pendukung, bukan sebagai pembantu native.
+
 ## Orkestrasi
 
-Penyebaran pembantu, protokol peluncuran-paralel, penegakan kontrak-return,
-dan disiplin isolasi berada di aturan orkestrasi. Pohon dispatch per-pekerja
+Penyebaran pembantu, protokol peluncuran paralel, penegakan kontrak kembalian,
+dan disiplin isolasi berada di aturan orkestrasi. Pohon dispatch per pekerja
 berada di aturan pola orkestrasi, §Decision Tree. Jalur kanonis:
 
 ```text

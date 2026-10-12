@@ -2,15 +2,15 @@
 title: "profile"
 description: "Referensi CLI untuk grup perintah apothem profile."
 machineTranslated: true
-sourceHash: "475e2c6491a0f7a8"
+sourceHash: "012b17d6a7a7bc49"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Mengelola profil Apothem bersama.
 
 `profile` adalah grup perintah dengan empat subperintah: `init`, `show`, `set`, dan `edit`.
-Profil bersama adalah satu-satunya sumber kebenaran yang dimaterialisasikan oleh setiap adapter asisten-pengkodean
-ke dalam konfigurasi aslinya.
+Profil bersama adalah satu-satunya sumber kebenaran yang dimaterialisasikan oleh
+setiap adapter harness ke dalam konfigurasi native-nya.
 
 ## Ringkasan
 
@@ -33,7 +33,7 @@ Setiap subperintah menerima opsi bersama di bawah ini.
 
 | Opsi | Deskripsi |
 |---|---|
-| `--profile PATH` | Path ke YAML profil bersama (default-nya lokasi profil standar). |
+| `--profile PATH` | Jalur ke YAML profil bersama (default-nya lokasi profil standar). |
 | `--quiet`, `-q` | Menekan keluaran informatif; hanya galat yang dipancarkan. |
 | `--verbose`, `-v` | Memancarkan keluaran diagnostik tambahan. |
 | `--format plain\|json` | Format keluaran (default: `plain`). |
@@ -49,33 +49,74 @@ Membuat kerangka profil minimal yang valid menurut skema di
 `~/.config/apothem/profile.yaml` atau `--profile PATH`. Berkas yang sudah ada
 dipertahankan kecuali `--force` diberikan.
 
+Baris pertama kerangka tersebut adalah modeline `yaml-language-server` yang
+menyebutkan `$id` skema profil,
+`https://apothem.ahmedgad.com/schemas/profile.schema.json`. Situs ini menyajikan
+skema yang dipaket di alamat tersebut, sehingga editor dengan dukungan bahasa
+YAML memvalidasi profil saat Anda menyuntingnya. Setiap skema yang dipaket di
+bawah `src/apothem/schemas/` disajikan dengan cara yang sama di
+`https://apothem.ahmedgad.com/schemas/<file>`.
+
 | Opsi | Deskripsi |
 |---|---|
 | `--force` | Menimpa kerangka profil yang sudah ada. |
 
 ### `profile show`
 
-Menampilkan profil bersama yang telah divalidasi dan nilai default-nya diperluas.
+Menampilkan profil bersama yang telah divalidasi dan diperluas dengan nilai
+default. Dengan `--json`, dokumennya adalah profil itu sendiri, diawali oleh
+`schema_version`: versi skema profil yang digunakan mesin saat membacanya (lihat
+[kontrak keluaran JSON](/docs/cli-reference#kontrak-keluaran-json)).
 
 ### `profile set KEY VALUE`
 
-Menetapkan sebuah kunci di profil bersama. `KEY` adalah path bertitik yang menurun ke dalam
-profil bersarang (`identity.name`, `preferences.style`, `enforcement.sprints`,
-`harnesses.<harness>.preferences.style`); satu kunci tanpa titik menetapkan
-node tingkat-atas. `VALUE` disimpan sebagai string literal — kata polos tidak
-dikoersi (`no` tetap `"no"`, `2024-01-01` dan `1.0` tetap string) — kecuali
-`true`/`false` (flag penegakan boolean) dan input list/map eksplisit `[...]`/`{...}`.
-Profil yang dirakit penuh divalidasi terhadap skema
-sebelum penulisan; set yang tidak valid ditolak dan profil di disk tidak berubah.
+Menetapkan sebuah kunci di profil bersama. `KEY` adalah jalur bertitik yang
+menurun ke dalam profil bersarang (`identity.name`, `preferences.style`,
+`enforcement.sprints`, `harnesses.<harness>.preferences.style`); satu kunci
+tanpa titik menetapkan node tingkat-atas. `VALUE` disimpan sebagai string
+literal — kata polos tidak dikoersi (`no` tetap `"no"`, `2024-01-01` dan `1.0`
+tetap string) — kecuali `true`/`false` (flag penegakan boolean) dan masukan
+list/map eksplisit `[...]`/`{...}`. Profil yang telah dirakit sepenuhnya
+divalidasi terhadap skema sebelum penulisan; penetapan yang tidak valid ditolak
+dan profil di disk tidak berubah.
 
 | Argumen | Deskripsi |
 |---|---|
-| `KEY` | Path bertitik ke dalam profil yang akan ditetapkan (wajib). |
+| `KEY` | Jalur bertitik ke dalam profil yang akan ditetapkan (wajib). |
 | `VALUE` | Nilai literal yang akan ditetapkan; divalidasi sebelum penulisan (wajib). |
 
 ### `profile edit`
 
 Membuka profil bersama di editor sistem.
+
+## Galat validasi
+
+Setiap perintah yang membaca profil memvalidasinya terhadap skema yang dipaket
+dan melaporkan **setiap** masalah yang ditemukannya dalam satu kali jalan,
+sehingga satu kali penyuntingan dapat memperbaiki semuanya:
+
+- **Keluaran polos** menyebutkan masalah pertama secara lengkap (`Field`,
+  `Reason`, `Fix`, dan `Offending value (redacted)`: masukan yang gagal, dengan
+  nilai berbentuk rahasia diganti oleh `<redacted>`; nilai ini tidak pernah
+  berupa saran pengganti), lalu mencantumkan hingga sepuluh masalah lainnya di
+  bawah `Other problems`.
+- **Keluaran JSON** mempertahankan masalah pertama di bidang tingkat-atas objek
+  `error` dan menambahkan larik `errors` yang berisi setiap masalah (`code`,
+  `field`, `reason`, `fix`, `safe_value`).
+- **Kunci yang tidak dikenal** hanya menggemakan kunci yang tidak terduga itu
+  dan nilainya yang telah diredaksi, bukan seluruh profil.
+- **Penanda blok terkelola.** Tidak ada kunci atau nilai teks yang boleh berisi
+  `<!-- BEGIN APOTHEM MANAGED BLOCK -->` atau `<!-- END APOTHEM MANAGED BLOCK -->`.
+  Apothem menulis penanda-penanda tersebut di sekitar blok yang dikelolanya
+  dalam berkas instruksi, dan teks profil mendarat di dalam blok itu, sehingga
+  penanda di dalamnya akan memecah blok tersebut. Setiap bidang semacam itu
+  gagal dengan `profile.managed_block_marker`: `field` adalah jalur bertitiknya
+  (misalnya `rules.2` atau `mcp_servers.search.env.SEARCH_MODE`) dan `reason`
+  menyebutkan penandanya. Nilainya sendiri tidak pernah digemakan (`safe_value`
+  bernilai `null`), karena nilai tersebut mungkin berupa kredensial.
+
+`profile init` (dan setiap perintah lain yang membuat kerangka profil) menulis
+`schema_version: 1`. Profil tanpa `schema_version` dibaca sebagai versi 1.
 
 ## Contoh
 
@@ -95,8 +136,9 @@ apothem profile edit
 |---|---|
 | 0 | Berhasil (atau, untuk `edit`, editor keluar secara normal) |
 | 1 | Profil hilang, tidak valid, sudah ada tanpa `--force`, atau tidak dapat ditulis |
+| 64 | Galat penggunaan: opsi atau perintah yang tidak dikenal, atau nilai opsi yang hilang atau tidak valid. Di bawah `--json`, galat berupa amplop JSON dengan kode `cli.usage`. |
 
 ## Lihat juga
 
-- [apothem install](/docs/cli-reference/install) — memateriallisasikan profil ke dalam asisten-pengkodean
-- [apothem doctor](/docs/cli-reference/doctor) — menjalankan diagnostik pemasangan seluruh sistem
+- [apothem install](/docs/cli-reference/install) — mematerialisasikan profil ke dalam sebuah harness
+- [apothem doctor](/docs/cli-reference/doctor) — menjalankan diagnostik pemasangan di seluruh sistem
