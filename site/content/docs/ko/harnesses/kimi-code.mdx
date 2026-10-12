@@ -1,110 +1,123 @@
 ---
 title: "Kimi Code"
-description: "Apothem harness adapter for Kimi Code (GA)."
+description: "Kimi Code(GA)를 위한 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "f8cfda1978e7aeae"
+sourceHash: "4bcd687aeabc46b7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**Vendor:** Moonshot
-**Install name:** `kimi-code`
-**Status:** GA
-**Native config:** `<project>/AGENTS.md` plus `<project>/.kimi-code/.apothem/support/`
+**공급업체:** Moonshot
+**설치 이름:** `kimi-code`
+**상태:** GA
+**네이티브 구성:** `<project>/AGENTS.md` 및 `<project>/.kimi-code/.apothem/support/`
 
-## Installation
+## 설치
 
 ```bash
 apothem install --harness kimi-code --project /path/to/project
 ```
 
-The adapter writes the shared Apothem governance surface into the project-root
-`AGENTS.md` as a sentinel-delimited managed block (operator prose outside the
-sentinels is preserved) and keeps the non-native Markdown cohorts under the
-Apothem-owned support tree at `<project>/.kimi-code/.apothem/support/`.
+어댑터는 공유 Apothem 거버넌스 표면을 프로젝트 루트의 `AGENTS.md`에 센티널로
+구분된 관리 블록으로 작성하고(센티널 바깥의 운영자 작성 문장은 보존됨),
+네이티브가 아닌 Markdown 코호트는 `<project>/.kimi-code/.apothem/support/`에
+있는 Apothem 소유 지원 트리 아래에 둡니다. 프로젝트 `AGENTS.md`는 Kimi Code
+외에도 많은 코딩 도구가 읽으므로, 이 블록은 어느 한 도구도 독자로 지칭하지 않는
+프로젝트 전체 지침으로 작성됩니다.
 
-Kimi Code reads the project-root `AGENTS.md` instruction file following the
-universal AGENTS.md convention, and project configuration lives under
-`<project>/.kimi-code/`. The `<project>/.kimi-code/mcp.json` surface is
-operator-owned; Apothem names it but authors no entries.
+Kimi Code는 범용 AGENTS.md 규약에 따라 프로젝트 루트의 `AGENTS.md` 지침 파일을
+읽으며, 프로젝트 구성은 `<project>/.kimi-code/` 아래에 있습니다.
+`<project>/.kimi-code/mcp.json` 표면은 운영자 소유입니다. Apothem은 이 표면을
+명시하지만 항목은 작성하지 않습니다.
 
-**Files written:** `<project>/AGENTS.md` (managed block) and the commands,
-skills, hooks, agents, rules, and templates cohorts under
-`<project>/.kimi-code/.apothem/support/`.
+**작성되는 파일:** `<project>/AGENTS.md`(관리 블록), 그리고
+`<project>/.kimi-code/.apothem/support/` 아래의 명령, 스킬, 훅, 에이전트, 규칙,
+템플릿 코호트.
 
-## Profile-to-native-config mapping
+## 프로필에서 네이티브 구성으로의 매핑
 
-The adapter reads Apothem's shared profile and renders the project-root
-`AGENTS.md` instruction surface on every `apothem install` or `apothem update`
-run. The behavioral rules and governance corpus land in the managed block of
-`AGENTS.md`; the commands, skills, hooks, agents, rules, and templates cohorts
-are placed under `.kimi-code/.apothem/support/` and referenced from the instruction
-surface, because Kimi Code exposes no matching native primitive for each of
-those cohorts yet.
+어댑터는 Apothem의 공유 프로필을 읽고 매 `apothem install` 또는 `apothem update`
+실행마다 프로젝트 루트의 `AGENTS.md` 지침 표면을 렌더링합니다. 동작 규칙과
+거버넌스 코퍼스는 `AGENTS.md`의 관리 블록에 안착하고, 명령, 스킬, 훅, 에이전트,
+규칙, 템플릿 코호트는 `.kimi-code/.apothem/support/` 아래에 배치되어 지침
+표면에서 참조됩니다. 이는 Kimi Code의 공백이 아니라 어댑터가 선택한
+레이아웃입니다. Kimi Code는 스킬을 `.kimi-code/skills/`와 `.agents/skills/`에서,
+사용자 정의 에이전트를 `.kimi-code/agents/`와 `.agents/agents/`에서, 훅을
+`~/.kimi-code/config.toml`의 `[[hooks]]` 배열에서 로드하지만, 지원 트리에서는
+로드하지 않습니다. 따라서 그곳에 있는 Apothem 사본은 `AGENTS.md` 블록이
+가리키는 참조 자료입니다. 블록은 Apothem 지원 파일 섹션으로 끝납니다. 이 섹션은
+저장소 스타일의 각 인용(`rules/<name>.md`, `templates/...`, `hooks/...`)이
+해석되는 기준인 `.kimi-code/.apothem/support/` 아래의 디렉터리를 프로젝트 루트
+기준 상대 경로로 명시하므로, 커밋된 `AGENTS.md`에는 머신별 경로가 담기지
+않습니다. (Kimi Code의 동작은
+[스킬](https://moonshotai.github.io/kimi-code/en/customization/skills),
+[서브에이전트](https://moonshotai.github.io/kimi-code/en/customization/agents),
+[훅](https://moonshotai.github.io/kimi-code/en/customization/hooks)에 관한 Kimi
+Code 사용자 지정 페이지에 따른 것이며, 2026-10-02에 확인했습니다.)
 
-## Compatibility notes
+## 호환성 참고 사항
 
-Kimi Code reads `AGENTS.md` from the project root and recognizes
-`.kimi-code/mcp.json` as the operator-owned MCP surface; Apothem names that
-surface but authors no entries into it. The rendered instruction surface drives
-the project directly. Kimi Code exposes no statusline or output-style file
-surface, so those cohorts are not materialized.
+Kimi Code는 `AGENTS.md` 또는 `.kimi-code/AGENTS.md`에서 프로젝트 지침을 읽고,
+`.kimi-code/mcp.json`을 운영자 소유 MCP 표면으로 인식합니다. Apothem은 그
+표면을 명시하지만 그 안에 어떤 항목도 작성하지 않습니다. 렌더링된 지침 표면이
+프로젝트를 직접 구동합니다. Kimi Code는 상태 표시줄이나 출력 스타일 파일 표면을
+노출하지 않으므로, 해당 코호트는 머티리얼라이즈되지 않습니다.
 
-Kimi Code runs on the Kimi model family from Moonshot; see the
-[vendor configuration reference](https://moonshotai.github.io/kimi-code/en/configuration/config-files.html)
-for the current model and configuration surface.
+Kimi Code는 Moonshot의 Kimi 모델 제품군에서 실행됩니다. 현재 모델과 구성 표면은
+[공급업체 구성 레퍼런스](https://moonshotai.github.io/kimi-code/en/configuration/config-files)를
+참조하세요.
 
-## Verification
+## 검증
 
 ```bash
 apothem verify --harness kimi-code --project /path/to/project
 ```
 
-The verify command confirms that:
+verify 명령은 다음을 확인합니다.
 
-1. The native config exists at the expected path.
-2. All mandatory fields from the shared profile are present.
-3. The adapter-specific verification routine reports success.
+1. 네이티브 구성이 예상 경로에 존재합니다.
+2. 공유 프로필의 모든 필수 필드가 존재합니다.
+3. 어댑터별 검증 루틴이 성공을 보고합니다.
 
-## Updating
+## 업데이트
 
 ```bash
 apothem update --harness kimi-code --project /path/to/project
 ```
 
-Re-derives the project-root `AGENTS.md` managed block and the support cohorts
-from the current shared profile state.
+현재 공유 프로필 상태에서 프로젝트 루트의 `AGENTS.md` 관리 블록과 지원 코호트를
+다시 도출합니다.
 
-## Uninstalling
+## 제거
 
 ```bash
 apothem uninstall --harness kimi-code --project /path/to/project
 ```
 
-Removes the native config files written by the adapter.
-The shared profile YAML and Apothem engine are unaffected.
+어댑터가 작성한 네이티브 구성 파일을 제거합니다.
+공유 프로필 YAML과 Apothem 엔진은 영향을 받지 않습니다.
 
-## Conformity gate
+## 적합성 게이트
 
 ```bash
 python -m apothem.conformity.gate --all .
 ```
 
-## Troubleshooting
+## 문제 해결
 
-| Symptom | Fix |
+| 증상 | 해결 |
 |---------|-----|
-| Config file not found | Re-run `apothem install --harness kimi-code --project /path/to/project` |
-| Verification failed | Run `apothem update --harness kimi-code --project /path/to/project`, then verify again |
-| Unexpected config content | Check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run `apothem update --harness kimi-code --project /path/to/project` |
+| 구성 파일을 찾을 수 없음 | `apothem install --harness kimi-code --project /path/to/project`를 다시 실행 |
+| 검증 실패 | `apothem update --harness kimi-code --project /path/to/project`를 실행한 다음 다시 검증 |
+| 예기치 않은 구성 내용 | `~/.config/apothem/profile.yaml` 또는 `--profile PATH`를 확인한 다음 `apothem update --harness kimi-code --project /path/to/project`를 다시 실행 |
 
-## Configuration knobs
+## 구성 노브
 
-| Flag | Default | Description |
+| 플래그 | 기본값 | 설명 |
 |------|---------|-------------|
-| `--dry-run` | `false` | Preview install without writing files. |
+| `--dry-run` | `false` | 파일을 작성하지 않고 설치를 미리 봅니다. |
 
-## See also
+## 함께 보기
 
-- [All harnesses](/docs/harnesses) — the full catalog of supported tools
-- [Install guide](/docs/install) — install Apothem into this harness
-- [`apothem harnesses` reference](/docs/cli-reference/harnesses) — list and inspect adapters from the CLI
+- [전체 하니스](/docs/harnesses) — 지원되는 도구의 전체 카탈로그
+- [설치 가이드](/docs/install) — 이 하니스에 Apothem 설치
+- [`apothem harnesses` 참조](/docs/cli-reference/harnesses) — CLI에서 어댑터를 나열하고 검사

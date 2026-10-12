@@ -1,74 +1,90 @@
 ---
 title: "설치 프로그램 환경 변수"
-description: "환경 변수로 스크립트 설치 프로그램(대상, 소스, 도구, 프로파일, 검증)을 제어합니다."
+description: "환경 변수로 스크립트 설치 프로그램(대상 위치, 소스, 하니스, 프로필, 검증)을 제어합니다."
 machineTranslated: true
-sourceHash: "d68d326f61c80d62"
+sourceHash: "4a6a53ca733a16ef"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-목표: 스크립트를 편집하지 않고, 실행 전에 환경 변수를 설정하여 `install.sh` /
-`install.ps1`을 구동합니다.
+목표: 실행하기 전에 환경 변수를 설정하여, 스크립트를 편집하지 않고
+`install.sh` / `install.ps1`을 제어합니다.
 
-## 사전 요건
+## 전제 조건
 
 - POSIX 셸(`bash`) 또는 PowerShell 5.1+.
-- 변수는 설치 프로그램 상단에서 한 번 읽히므로, 동일한 명령에서 설정하거나
-  (먼저 export 한 뒤) 설치 프로그램을 실행하십시오.
+- 변수는 설치 프로그램 맨 앞에서 한 번만 읽히므로, 같은 명령 안에서
+  설정한(또는 먼저 export한) 다음 설치 프로그램을 실행하세요.
 
 ## 설치 프로그램 변수
 
 | 변수 | 제어 대상 | 기본값 |
 | --- | --- | --- |
-| `APOTHEM_HOME` | 복제된 소스 트리의 설치 대상 | `$HOME/.apothem` |
-| `APOTHEM_REPO` | 복제할 Git 원격 | `https://github.com/ahmed-g-gad/apothem` |
-| `APOTHEM_REF` | 체크아웃할 Git 레퍼런스. 설정하지 않으면 최신 서명 `vMAJOR.MINOR.PATCH` 태그로 해석되고, 태그 값은 그것에 고정하며, `main`은 이동하는 브랜치를 선택합니다 | 설정 안 함 (최신 서명 태그) |
-| `APOTHEM_ALLOW_UNVERIFIED` | `1`로 설정 시 태그 서명 검증 실패를 치명적 중단에서 경고로 강등 | `0` (검증, fail-closed) |
-| `APOTHEM_SOURCE` | 복제 대신 사용할 명시적 로컬 소스 트리 | 설정 안 함 (복제) |
-| `APOTHEM_HARNESS` | 설치할 도구 | `claude-code` |
-| `APOTHEM_PROFILE` | 공유 프로파일 YAML 경로 | `$HOME/.config/apothem/profile.yaml` |
-| `APOTHEM_SKIP_VERIFY` | `1`로 설정 시 설치 후 검증 단계 건너뛰기 | `0` (검증 실행) |
-| `APOTHEM_AUTO_INSTALL_DEPS` | `1`로 설정하면 누락된 전제 조건 `click` / `rich`를 묻지 않고 자동으로 설치합니다 | `0`(묻기, 비대화형 파이프에서는 거부) |
-| `APOTHEM_BIN_DIR` | 배치된 `apothem` 명령 shim의 디렉터리 | `$HOME/.local/bin`(POSIX); `%LOCALAPPDATA%\Microsoft\WindowsApps`(Windows) |
+| `APOTHEM_HOME` | 클론한 소스 트리의 설치 대상 위치 | `$HOME/.apothem` |
+| `APOTHEM_REPO` | 클론할 Git 원격 저장소 | `https://github.com/ahmed-g-gad/apothem` |
+| `APOTHEM_REF` | 체크아웃할 Git ref. 설정하지 않으면 서명된 최신 `vMAJOR.MINOR.PATCH` 태그로 해석되고, 태그 값은 그 태그로 고정하며, `main`은 움직이는 브랜치를 선택합니다 | 설정 안 함(서명된 최신 태그) |
+| `APOTHEM_ALLOW_UNVERIFIED` | `1`로 설정하면 태그 서명 검증 실패를 치명적인 중단에서 경고로 낮춥니다 | `0`(검증, 실패 시 차단) |
+| `APOTHEM_VERIFY` | `signature`는 릴리스 태그의 GPG 서명을 검증합니다. `checksum`은 릴리스의 플랫폼 아카이브의 SHA-256을 릴리스의 `SHA256SUMS`와 대조한 다음 그 아카이브를 설치합니다(무결성 확인이며, 누가 게시했는지에 대한 증명은 아닙니다) | `signature` |
+| `APOTHEM_RELEASE_BASE` | 체크섬 모드의 다운로드 기본 경로 | `<APOTHEM_REPO>/releases/download` |
+| `APOTHEM_SOURCE` | 클론하는 대신 사용할 명시적 로컬 소스 트리 | 설정 안 함(클론) |
+| `APOTHEM_HARNESS` | 설치할 하니스 | `claude-code` |
+| `APOTHEM_PROFILE` | 공유 프로필 YAML의 경로 | `$HOME/.config/apothem/profile.yaml` |
+| `APOTHEM_SKIP_VERIFY` | `1`로 설정하면 설치 후 검증 단계를 건너뜁니다 | `0`(검증 실행) |
+| `APOTHEM_AUTO_INSTALL_DEPS` | `1`로 설정하면 누락된 `click` / `rich` 전제 조건을 묻지 않고 자동으로 설치합니다 | `0`(묻기, 비대화형 파이프에서는 거부) |
+| `APOTHEM_BIN_DIR` | 배치되는 `apothem` 명령 심(shim)의 디렉터리 | `$HOME/.local/bin`(POSIX); `%LOCALAPPDATA%\Microsoft\WindowsApps`(Windows) |
+| `NO_COLOR` | 아무 값으로나 설정하면 색상 출력을 끕니다([no-color.org](https://no-color.org/)). 출력이 터미널이 아닐 때(파이프, 파일, CI 로그)에도 색상은 항상 꺼집니다 | 설정 안 함(대화형 터미널에서만 색상 사용) |
 
-`APOTHEM_SOURCE`는 복제보다 우선합니다. `src/apothem`을 포함하는 체크아웃으로
-설정되면 설치 프로그램은 그것을 직접 사용하고, `APOTHEM_REPO` /
-`APOTHEM_REF`는 결코 건드리지 않으며, 태그 해석과 서명 검증을 건너뜁니다
-(검증할 항목을 가져오지 않습니다).
+`APOTHEM_SOURCE`는 클론보다 우선합니다. `src/apothem`을 포함하는 체크아웃으로
+설정하면 설치 프로그램은 그 체크아웃을 직접 사용하고, `APOTHEM_REPO` /
+`APOTHEM_REF`는 절대 건드리지 않으며, 태그 해석과 서명 검증을 건너뜁니다(검증할
+대상을 가져오지 않기 때문입니다).
+
+`APOTHEM_HOME`이 git 클론이 아닌 기존 디렉터리를 가리키면, 설치 프로그램은 그
+디렉터리를 삭제하기를 거부합니다. 디렉터리를 다른 곳으로 옮기거나,
+`APOTHEM_HOME`이 다른 곳을 가리키게 하거나, `--yes`(Windows에서는 `-Yes`)를
+전달하여 교체를 승인하세요. 오래된 빈 디렉터리는 이 플래그 없이도 교체됩니다.
 
 ## 신뢰 모델
 
-`APOTHEM_REF`가 설정되지 않은 경우, 설치 프로그램은 최신 서명 릴리스 태그를
-해석하고 구성을 머티리얼라이즈하기 전에 `git verify-tag`로 서명을 검증합니다.
-서명되지 않았거나 변조된 태그는 설치를 중단합니다. 알려진 릴리스를
-`APOTHEM_REF=<tag>`로 고정하거나(역시 검증됨;
-[릴리스 페이지](https://github.com/ahmed-g-gad/apothem/releases)의 태그),
-`APOTHEM_REF=main`으로 이동하는 브랜치를 선택하거나(검증 안 됨),
-`APOTHEM_ALLOW_UNVERIFIED=1`을 설정하여 경고와 함께 검증 실패를 넘어 진행할 수
-있습니다(에어갭, 로컬, 서명 전 릴리스 사용).
+`APOTHEM_REF`가 설정되지 않은 경우, 설치 프로그램은 서명된 최신 릴리스 태그를
+해석하고, 구성을 머티리얼라이즈하기 전에 `git verify-tag`로 그 서명을 검증합니다.
+서명되지 않았거나 변조된 태그는 설치를 중단시킵니다. 메인테이너 공개 키가 로컬
+키링에 없는 서명된 태그는 대신 키 가져오기 안내와 함께 중단됩니다. 키를 가져온
+다음, 그 지문을
+[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)에
+게시된 값과 대조하세요.
+알려진 릴리스를 `APOTHEM_REF=<tag>`로 고정하거나(이 경우에도 검증됩니다.
+[릴리스 페이지](https://github.com/ahmed-g-gad/apothem/releases)의 태그를
+사용하세요), `APOTHEM_REF=main`으로 움직이는 브랜치를 선택하거나(검증되지
+않음), `APOTHEM_ALLOW_UNVERIFIED=1`을 설정하여 검증 실패를 경고와 함께 넘기고
+진행할 수 있습니다(에어갭, 로컬, 또는 서명 이전 릴리스 사용).
 
-```bash title="고정된 검증 설치"
+```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH bash install.sh
 ```
 
-```bash title="검증 없이 진행 (임시 / 에어갭)"
+```bash title="Check the archive digest when the signing key is not imported"
+APOTHEM_VERIFY=checksum bash install.sh
+```
+
+```bash title="Proceed without verification (interim / air-gapped)"
 APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 ```
 
 ## 단계 (POSIX bash)
 
-1. 기본값이 아닌 도구를 설치합니다:
+1. 기본값이 아닌 하니스를 설치합니다.
 
    ```bash
    APOTHEM_HARNESS=cursor bash install.sh
    ```
 
-2. 소스 레퍼런스와 설치 대상을 고정합니다:
+2. 소스 ref와 설치 대상 위치를 고정합니다.
 
    ```bash
    APOTHEM_REF=main APOTHEM_HOME=/opt/apothem bash install.sh
    ```
 
-3. 로컬 체크아웃과 사용자 지정 프로파일을 사용하고 검증을 건너뜁니다:
+3. 로컬 체크아웃과 사용자 지정 프로필을 사용하고, 검증을 건너뜁니다.
 
    ```bash
    APOTHEM_SOURCE=/work/apothem \
@@ -79,7 +95,7 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 
 ## 단계 (PowerShell)
 
-설치 프로그램을 실행하기 전에 각 변수를 `$env:`에 설정합니다:
+설치 프로그램을 실행하기 전에 각 변수를 `$env:`에 설정하세요.
 
 ```powershell
 $env:APOTHEM_HARNESS = 'cursor'
@@ -101,19 +117,23 @@ pwsh -NoProfile -File install.ps1
 
 ## 검증
 
-설치 프로그램은 `✓ Harness <name> installed`를 출력한 뒤
-(`APOTHEM_SKIP_VERIFY=1`이 아닌 한) `✓ verify passed`를 출력합니다. 독립적으로
-확인하십시오:
+설치 프로그램은 `✓ Harness <name> installed`를 출력한 다음
+(`APOTHEM_SKIP_VERIFY=1`이 아니면) `✓ verify passed`를 출력합니다. 별도로
+확인하세요.
 
 ```bash
 apothem verify --harness cursor
 ```
 
-프로파일이 아직 존재하지 않았다면, 설치 프로그램은 예시로부터 하나를 생성하고
-일찍 종료합니다 — `$APOTHEM_PROFILE`을 편집한 뒤 다시 실행하십시오.
+프로필이 아직 없었다면, 설치 프로그램은 예시에서 프로필을 만들고 같은 실행에서
+설치와 검증을 계속 진행합니다. 예시의 신원 필드는 플레이스홀더이므로 설치 과정에서
+안내 메시지가 출력됩니다. `$APOTHEM_PROFILE`을 편집한 다음
+`apothem update --harness <name>`을 실행하여 자신의 신원 정보를 적용하세요.
+프로필이 없는 상태에서 `--dry-run`을 실행하면 예시를 프로필 자리에 둔 채 미리
+보기를 하며 아무것도 쓰지 않습니다.
 
 ## 관련 항목
 
-- [설치하기](/docs/install)는 원샷 네트워크 설치를 다룹니다.
-- 첫 설치 이후 CLI를 통해 도구를 추가하려면
-  [도구 추가하기](/docs/how-to/adding-a-harness)를 참조하십시오.
+- [설치](/docs/install)는 원샷 네트워크 설치를 다룹니다.
+- [하니스 추가하기](/docs/how-to/adding-a-harness)는 첫 설치 이후 CLI로 하니스를
+  추가하는 방법을 다룹니다.

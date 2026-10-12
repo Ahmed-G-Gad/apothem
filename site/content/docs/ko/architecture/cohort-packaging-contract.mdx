@@ -1,105 +1,111 @@
 ---
-title: "Cohort 패키징 계약"
-description: "Cohort 패키징과 플러그인 매니페스트를 위한 안정적이고 다운스트림에서 소비 가능한 계약 — 매핑을 다시 도출하지 않고 cohort를 열거하고 하니스별 네이티브 타깃을 해석한다."
+title: "코호트 패키징 계약"
+description: "코호트 패키징과 플러그인 매니페스트에 대한 안정적이고 다운스트림에서 소비할 수 있는 계약입니다. 매핑을 다시 도출하지 않고 코호트를 열거하고 하니스별 네이티브 대상을 해석합니다."
 machineTranslated: true
-sourceHash: "da87b3596b66d733"
+sourceHash: "ef3a145a60ec6690"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-# Cohort 패키징 계약
+# 코호트 패키징 계약
 
-이 문서는 cohort 패키징과 플러그인 매니페스트를 위한 안정적이고 다운스트림에서
-소비 가능한 계약을 규정합니다. 소비자는 이 계약을 읽어 cohort를 열거하고
-하니스별 네이티브 타깃을 **매핑을 다시 도출하지 않고** 해석합니다.
+이 문서는 코호트 패키징과 플러그인 매니페스트에 대한 안정적이고 다운스트림에서
+소비할 수 있는 계약을 규정합니다. 소비자는 이 계약을 읽어 코호트를 열거하고,
+**매핑을 다시 도출하지 않고** 하니스별 네이티브 대상을 해석합니다.
 
 ## 아티팩트
 
 | 아티팩트 | 역할 |
 | -------- | ---- |
-| `src/apothem/schemas/cohort.schema.json` | cohort 매니페스트 문서의 JSON Schema. |
-| `src/apothem/schemas/cohort-manifest.yaml` | cohort 매니페스트 인스턴스 — 여섯 개의 모든 cohort(`core`, `developer`, `security`, `research`, `ai-engineering`, `full`)가 각자의 멤버 집합으로 채워져 있으며, `full`은 나머지 다섯 개의 합집합입니다. |
-| `src/apothem/schemas/plugin.schema.json` | 번들별 플러그인 매니페스트(`plugin.json`)의 JSON Schema. |
-| `src/apothem/lib/propagation-manifest.yaml` | 하니스별 네이티브 타깃의 **정보원**. |
+| `src/apothem/schemas/cohort.schema.json` | 코호트 매니페스트 문서의 JSON 스키마입니다. |
+| `src/apothem/schemas/cohort-manifest.yaml` | 코호트 매니페스트 인스턴스입니다. 여섯 개 코호트(`core`, `developer`, `security`, `research`, `ai-engineering`, `full`) 모두가 각자의 멤버 집합으로 채워져 있으며, `full`은 나머지 다섯 개의 합집합입니다. |
+| `src/apothem/schemas/plugin.schema.json` | 번들별 플러그인 매니페스트(`plugin.json`)의 JSON 스키마입니다. |
+| `src/apothem/lib/propagation-manifest.yaml` | 하니스별 네이티브 대상의 **기준 출처**입니다. |
 
-## cohort 매니페스트의 형태
+## 코호트 매니페스트의 형태
 
-cohort 매니페스트는 세 개의 키를 가진 최상위 객체입니다.
+코호트 매니페스트는 세 개의 키를 가진 최상위 객체입니다.
 
-- `version` — 매니페스트의 SemVer 문자열.
-- `cohorts[]` — cohort당 하나의 항목. 각 항목은 `id`(닫힌 집합
-  `core | developer | security | research | ai-engineering | full`에서),
-  `name`, `description`, 그리고 `members`(멤버 식별자를 카탈로그 타입별로
-  그룹화하는 객체: `skills` / `agents` / `commands` / `rules` / `hooks`)를
-  가집니다.
-- `per_harness_targets` — 해석 계약(아래).
+- `version` — 매니페스트의 SemVer 문자열입니다.
+- `cohorts[]` — 코호트마다 항목 하나입니다. 각 항목은 `id`(닫힌 집합
+  `core | developer | security | research | ai-engineering | full` 중 하나),
+  `name`, `description`, `members`(멤버 식별자를 카탈로그 유형별로 묶는 객체:
+  `skills` / `agents` / `commands` / `rules` / `hooks`)를 가집니다.
+- `per_harness_targets` — 해석 계약입니다(아래 참조).
 
-각 멤버 식별자는 `src/apothem/` 아래의 실제 아티팩트(`skills/<name>/`,
-`agents/<name>.md`, `commands/<name>.md`, `rules/<name>.md`, 또는 `hooks/`
-항목)에 대응하는 안정적인 kebab-case 이름입니다.
+각 멤버 식별자는 `src/apothem/` 아래의 실제 아티팩트에 대응하는 안정적인
+케밥 케이스 이름입니다. 해당 아티팩트는 `skills/<name>/`, `agents/<name>.md`,
+`commands/<name>.md`, `rules/<name>.md`, 또는 훅 항목입니다. 훅 항목은 실행
+가능한 `hooks/<name>.py`이거나, 디스패처를 통해 전달되는
+`hooks/messages/<name>.md`의 권고 메시지 컨텍스트입니다.
 
-## cohort 열거
+## 코호트 열거
 
-소비자는 `cohort-manifest.yaml`을 로드하고 `cohort.schema.json`에 대해
-검증한 다음 `cohorts[]`를 반복합니다. 각 cohort에 대해 `members.<type>`를
-읽어 각 카탈로그 타입의 멤버 식별자를 얻습니다.
+소비자는 `cohort-manifest.yaml`을 로드하고, `cohort.schema.json`에 대해
+검증한 다음, `cohorts[]`를 순회합니다. 각 코호트에 대해 `members.<type>`을
+읽어 카탈로그 유형별 멤버 식별자를 얻습니다.
 
-## 하니스별 네이티브 타깃 해석(재도출 없음)
+## 하니스별 네이티브 대상 해석(재도출 없음)
 
-cohort 매니페스트는 하니스 매핑을 **다시 진술하지 않습니다**. 대신
-`per_harness_targets.source`가 유일한 정보원인 `lib/propagation-manifest.yaml`을
-가리킵니다. 해석 규칙:
+코호트 매니페스트는 하니스 매핑을 다시 기술하지 **않습니다**. 대신
+`per_harness_targets.source`가 유일한 기준 출처인 `lib/propagation-manifest.yaml`을
+가리킵니다. 해석 규칙은 다음과 같습니다.
 
-> 카탈로그 타입 `T`(`skills`, `agents`, `commands`, `rules`, `hooks` 중 하나)의
-> cohort 멤버와 대상 하니스 `H`(`per_harness_targets.harnesses`에 나열된 것
-> 중 하나)에 대해, 네이티브 플러그인 타깃은 `lib/propagation-manifest.yaml`의
-> `harnesses.H.install` 아래에서 `source`가 `T/`와 일치하는 항목의 `target`
-> 필드입니다.
+> 카탈로그 유형 `T`(`skills`, `agents`, `commands`, `rules`, `hooks` 중
+> 하나)의 코호트 멤버와 대상 하니스 `H`(`per_harness_targets.harnesses`에
+> 나열된 하니스 중 하나)에 대해, 네이티브 플러그인 대상은
+> `lib/propagation-manifest.yaml`의 `harnesses.H.install` 아래에서 `source`가
+> `T/`와 일치하는 항목의 `target` 필드입니다.
 
-예를 들어, `claude_code`용으로 설치된 `core` cohort skill은 `source: "skills/"`를
-가진 `harnesses.claude_code.install` 항목을 통해 `target: "${HARNESS_ROOT}/skills/"`로
-해석됩니다. 동일한 skill은 `opencode`의 경우 `${HARNESS_ROOT}/skills/`로,
-`gemini_cli`의 경우 `${PROJECT_ROOT}/.gemini/skills/`로 해석됩니다. 소비자는
-하니스 타깃을 결코 지어내지 않으며 — 그것을 조회합니다.
+예를 들어 `claude_code`용으로 설치되는 `core` 코호트 스킬은
+`source: "skills/"`를 가진 `harnesses.claude_code.install` 항목을 거쳐
+`target: "${HARNESS_ROOT}/skills/"`로 해석됩니다. 같은 스킬이 `opencode`에서는
+`${HARNESS_ROOT}/skills/`로, `gemini_cli`에서는 `${PROJECT_ROOT}/.gemini/skills/`로
+해석됩니다. 소비자는 하니스 대상을 절대 지어내지 않습니다. 대상을 조회합니다.
 
-`${HARNESS_ROOT}` / `${PROJECT_ROOT}` 자리표시자는 각 하니스 어댑터가 설치
-시점에 해석합니다. cohort 소비자는 해석된 `target`을 그대로 다룹니다.
+`${HARNESS_ROOT}` / `${PROJECT_ROOT}` 플레이스홀더는 설치 시점에 각 하니스
+어댑터가 해석합니다. 코호트 소비자는 해석된 `target`을 그대로 사용합니다.
 
 ## 플러그인 매니페스트의 역할
 
-`plugin.schema.json`은 `plugin.json`을 기술합니다 — 이는 필수 `name`,
-SemVer `version`, `description`을 가진, 카탈로그 멤버(`skills` / `commands` /
-`agents` / `hooks` / `rules`)의 자기 기술적 번들입니다. 플러그인 매니페스트는
-하니스 어댑터가 자신의 네이티브 플러그인 표면으로 물질화하는 단위입니다.
-cohort는 플러그인이 어떤 멤버를 운반하는지 선택하고, 전파 매니페스트는 그
-멤버들이 하니스별로 어디에 안착하는지 해석합니다.
+`plugin.schema.json`은 `plugin.json`을 기술합니다. 이 파일은 카탈로그
+멤버(`skills` / `commands` / `agents` / `hooks` / `rules`)로 이루어진 자기
+기술적 번들이며, 필수 `name`, SemVer `version`, `description`을 가집니다.
+선택적 메타데이터는 `displayName`(`name` 대신 표시되는 이름)과 플러그인
+디렉터리 목록 필드를 다룹니다. 목록 필드는 각각 `https://` URL인
+`documentationUrl`, `supportUrl`, `privacyPolicyUrl`, `termsOfServiceUrl`과,
+플러그인 내부의 `icon` 경로입니다. 생성된 Claude Code 패키지는 `displayName`,
+`documentationUrl`, `supportUrl`을 설정합니다. 플러그인 매니페스트는 하니스
+어댑터가 자신의 네이티브 플러그인 표면으로 머티리얼라이즈하는 단위입니다.
+코호트는 플러그인이 어떤 멤버를 담을지 선택하고, 전파 매니페스트는 그 멤버들이
+하니스별로 어디에 안착하는지 해석합니다.
 
-## 패키징 결정 — 하나의 우산 번들, 논리적 cohort
+## 패키징 결정 — 하나의 우산 번들, 논리적 코호트
 
-cohort는 **논리적 선택 계층**(이 매니페스트)이지, 개별적으로 설치 가능한
-분리된 번들 집합이 아닙니다. Apothem은 전체 카탈로그를 운반하는 **하나의
-우산 번들**을 배포합니다. cohort 매니페스트는 소비자가 일관된 서브셋을 고를 수
-있게 하고, 전파 매니페스트는 선택된 각 멤버가 하니스별로 어디에 안착하는지
+코호트는 **논리적 선택 계층**(이 매니페스트)이며, 각각 독립적으로 설치할 수
+있는 분리된 번들의 집합이 아닙니다. Apothem은 전체 카탈로그를 담은 **하나의
+우산 번들**을 배포합니다. 코호트 매니페스트는 소비자가 일관된 부분 집합을
+고르게 하고, 전파 매니페스트는 선택된 각 멤버가 하니스별로 어디에 안착하는지
 해석합니다.
 
-카탈로그를 cohort별 분리 번들(예: `developer` / `security` / `research`
-계열별로 하나의 번들)로 나누는 것은, 주요 배포 표면이 문서화한 **메타
-플러그인 심볼릭 링크 패턴**을 통해 **리포지토리 수준의 중복 없이 달성
-가능**합니다. 하나의 마켓플레이스 카탈로그가 여러 cohort 플러그인을 나열하고,
-각 cohort 플러그인 디렉터리는 복사본이 아니라 단일 소스의 공유 카탈로그로의
-**심볼릭 링크**를 보유합니다. cohort가 설치되면 하니스는 마켓플레이스 내의 각
-심볼릭 링크를 역참조하여 — 타깃의 콘텐츠를 해당 cohort의 *캐시*로 복사하므로 —
-설치된 cohort는 자기 완결적인 반면, **리포지토리는 심볼릭 링크로 배선된 단일
-정보원을 유지합니다**(중복이 아니라 배선, 정확히 중복 제거 규율이 선호하는
-대로). cohort 번들이 카탈로그를 "기계적으로 중복시킨다"는 이전의 해석은
-*설치 시점 캐시* 중복(하니스의 정상적인 플러그인별 복사)과 *리포지토리* 중복을
-혼동했습니다. 심볼릭 링크 패턴은 후자를 회피합니다.
+카탈로그를 코호트별 분리 번들(예: `developer` / `security` / `research`
+계열마다 번들 하나)로 나누는 것은, 주요 배포 표면이 문서화한 **메타 플러그인
+심볼릭 링크 패턴**을 통해 **저장소 수준의 중복 없이 달성할 수 있습니다**.
+하나의 마켓플레이스 카탈로그가 여러 코호트 플러그인을 나열하고, 각 코호트
+플러그인 디렉터리는 복사본 대신 단일 소스 공유 카탈로그를 가리키는 **심볼릭
+링크**를 담습니다. 코호트가 설치되면 하니스는 마켓플레이스 내부의 각 심볼릭
+링크를 역참조하여 대상의 콘텐츠를 해당 코호트의 *캐시*로 복사합니다. 따라서
+설치된 코호트는 자체 완결적이며, **저장소는 심볼릭 링크로 연결된 하나의 기준
+출처를 유지합니다**(중복 제거 규율이 선호하는 그대로, 중복보다 연결). 코호트
+번들이 카탈로그를 "기계적으로 중복시킨다"는 이전 해석은 *설치 시점 캐시*
+중복(하니스의 일반적인 플러그인별 복사)을 *저장소* 중복과 혼동한 것입니다.
+심볼릭 링크 패턴은 후자를 피합니다.
 
-Apothem은 현재 **하나의 우산 번들**을 배포하는데, 이는 cohort가 기계적으로
-불가능하기 때문이 아니라 그것이 가장 단순한 배포 표면이기 때문입니다. cohort별
-형태를 채택하는 것은 중복 제거 위반이 아니라 진정한 **UX 및 유지보수
-트레이드오프**입니다. 이점은 "이 계열만 설치" 경험이 더 세분화된다는 것이고,
-비용은 N개의 cohort 심볼릭 링크 디렉터리와 그 마켓플레이스 항목의 유지, 더
-큰 적합성 / 테스트 / golden 표면, 그리고 cohort별 설치 시점 캐시 복사본입니다.
-위의 논리적 cohort 계층은 이미 단일 번들에서 "필요한 것만 설치" *선택* 결과를
-제공합니다. cohort별 *패키징*은 더 세분화된 설치 UX가 필요할 때의 다음
+Apothem이 현재 **하나의 우산 번들**을 배포하는 이유는 그것이 가장 단순한 배포
+표면이기 때문이며, 코호트가 기계적으로 불가능하기 때문이 아닙니다. 코호트별
+형태를 채택하는 것은 중복 제거 위반이 아니라 실제 **UX와 유지 관리 사이의
+트레이드오프**입니다. 이점은 더 세분화된 "이 계열만 설치" 경험입니다. 비용은
+N개의 코호트 심볼릭 링크 디렉터리와 그 마켓플레이스 항목의 유지 관리, 더 넓은
+적합성 / 테스트 / 골든 표면, 그리고 코호트별 설치 시점 캐시 복사본입니다. 위의
+논리적 코호트 계층은 이미 단일 번들에서 "필요한 것만 설치"라는 *선택* 결과를
+제공합니다. 코호트별 *패키징*은 더 세분화된 설치 UX가 필요해질 때 밟을 다음
 단계입니다.

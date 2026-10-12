@@ -2,15 +2,15 @@
 title: "profile"
 description: "apothem profile 명령 그룹에 대한 CLI 참조."
 machineTranslated: true
-sourceHash: "475e2c6491a0f7a8"
+sourceHash: "012b17d6a7a7bc49"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 공유 Apothem 프로필을 관리합니다.
 
-`profile`은 네 개의 하위 명령을 가진 명령 그룹입니다: `init`, `show`, `set`, `edit`.
-공유 프로필은 단일 진실 공급원이며, 각 하니스 어댑터가
-이를 자신의 네이티브 구성으로 구체화합니다.
+`profile`은 `init`, `show`, `set`, `edit`의 네 하위 명령을 가진 명령 그룹입니다.
+공유 프로필은 모든 하니스 어댑터가 자신의 네이티브 구성으로 머티리얼라이즈하는
+단일 진실 공급원입니다.
 
 ## 개요
 
@@ -29,13 +29,13 @@ apothem profile edit [--profile PATH] [--quiet|-q] [--verbose|-v]
 
 ## 공통 옵션
 
-각 하위 명령은 아래의 공유 옵션을 받습니다.
+모든 하위 명령은 아래의 공유 옵션을 받습니다.
 
 | 옵션 | 설명 |
 |---|---|
 | `--profile PATH` | 공유 프로필 YAML 경로(기본값은 표준 프로필 위치). |
-| `--quiet`, `-q` | 정보성 출력을 억제하고 오류만 발행합니다. |
-| `--verbose`, `-v` | 추가 진단 출력을 발행합니다. |
+| `--quiet`, `-q` | 정보성 출력을 억제하고 오류만 내보냅니다. |
+| `--verbose`, `-v` | 추가 진단 출력을 내보냅니다. |
 | `--format plain\|json` | 출력 형식(기본값: `plain`). |
 | `--json` | `--format json`의 단축형. |
 | `--no-color` | 출력에서 ANSI 색상 코드를 비활성화합니다. |
@@ -45,9 +45,15 @@ apothem profile edit [--profile PATH] [--quiet|-q] [--verbose|-v]
 
 ### `profile init`
 
-`~/.config/apothem/profile.yaml` 또는 `--profile PATH`에 스키마에 유효한
-최소 프로필 스캐폴드를 생성합니다. `--force`를 제공하지 않는 한 기존 파일은
-보존됩니다.
+`~/.config/apothem/profile.yaml` 또는 `--profile PATH`에 스키마에 유효한 최소
+프로필 스캐폴드를 만듭니다. `--force`를 제공하지 않으면 기존 파일은 보존됩니다.
+
+스캐폴드의 첫 줄은 프로필 스키마의 `$id`인
+`https://apothem.ahmedgad.com/schemas/profile.schema.json`을 지정하는
+`yaml-language-server` 모드라인입니다. 사이트가 그 주소에서 패키지된 스키마를
+제공하므로, YAML 언어 지원이 있는 편집기는 여러분이 프로필을 편집하는 동안
+프로필을 검증합니다. `src/apothem/schemas/` 아래의 모든 패키지된 스키마는 같은
+방식으로 `https://apothem.ahmedgad.com/schemas/<file>`에서 제공됩니다.
 
 | 옵션 | 설명 |
 |---|---|
@@ -55,27 +61,57 @@ apothem profile edit [--profile PATH] [--quiet|-q] [--verbose|-v]
 
 ### `profile show`
 
-검증되고 기본값이 확장된 공유 프로필을 표시합니다.
+검증되고 기본값이 확장된 공유 프로필을 표시합니다. `--json`을 사용하면 문서는
+프로필 자체이며, 맨 앞에 `schema_version`이 옵니다. 이 값은 엔진이 프로필을 읽을
+때 적용한 프로필 스키마 버전입니다
+([JSON 출력 계약](/docs/cli-reference#json-출력-계약) 참조).
 
 ### `profile set KEY VALUE`
 
-공유 프로필에서 키를 설정합니다. `KEY`는 중첩된 프로필로 내려가는 점-구분 경로입니다
-(`identity.name`, `preferences.style`, `enforcement.sprints`,
-`harnesses.<harness>.preferences.style`). 점이 없는 단일 키는 최상위
-노드를 설정합니다. `VALUE`는 리터럴 문자열로 저장됩니다 — 맨 단어는
-강제 변환되지 않습니다(`no`는 `"no"`로 유지되고, `2024-01-01`과 `1.0`은 문자열로 유지됨) — 단
-`true`/`false`(불리언 강제 플래그)와 명시적인 `[...]`/`{...}` 리스트/맵 입력은
-예외입니다. 완전히 조립된 프로필은 기록 전에 스키마에 대해 검증됩니다.
-유효하지 않은 set은 거부되고 디스크의 프로필은 변경되지 않습니다.
+공유 프로필의 키를 설정합니다. `KEY`는 중첩된 프로필 안으로 내려가는 점 구분
+경로입니다(`identity.name`, `preferences.style`, `enforcement.sprints`,
+`harnesses.<harness>.preferences.style`). 점이 없는 단일 키는 최상위 노드를
+설정합니다. `VALUE`는 리터럴 문자열로 저장되며, 따옴표 없는 단어는 강제 변환되지
+않습니다(`no`는 `"no"`로 유지되고, `2024-01-01`과 `1.0`은 문자열로 유지됨). 단,
+`true`/`false`(불리언 강제 적용 플래그)와 명시적인 `[...]`/`{...}` 리스트/맵
+입력은 예외입니다. 완전히 조립된 프로필은 쓰기 전에 스키마로 검증되며, 유효하지
+않은 설정은 거부되고 디스크의 프로필은 변경되지 않습니다.
 
 | 인수 | 설명 |
 |---|---|
-| `KEY` | 설정할 프로필 내의 점-구분 경로(필수). |
-| `VALUE` | 할당할 리터럴 값; 기록 전에 검증됨(필수). |
+| `KEY` | 설정할 프로필 내 점 구분 경로(필수). |
+| `VALUE` | 할당할 리터럴 값. 쓰기 전에 검증됨(필수). |
 
 ### `profile edit`
 
 시스템 편집기에서 공유 프로필을 엽니다.
+
+## 검증 오류
+
+프로필을 읽는 모든 명령은 패키지된 스키마로 프로필을 검증하고 발견한 **모든**
+문제를 한 번에 보고하므로, 한 번의 편집으로 모두 고칠 수 있습니다.
+
+- **plain 출력**은 첫 번째 문제를 전부 보여 주고(`Field`, `Reason`, `Fix`, 그리고
+  `Offending value (redacted)`: 실패한 입력이며, 시크릿처럼 보이는 값은
+  `<redacted>`로 대체됩니다. 이 값은 절대 제안된 대체 값이 아닙니다), 이어서
+  최대 10개의 문제를 `Other problems` 아래에 더 나열합니다.
+- **JSON 출력**은 첫 번째 문제를 `error` 객체의 최상위 필드에 유지하고, 모든
+  문제를 담은 `errors` 배열(`code`, `field`, `reason`, `fix`, `safe_value`)을
+  추가합니다.
+- **알 수 없는 키**는 프로필 전체가 아니라 예상하지 못한 키와 가려진 값만 다시
+  보여 줍니다.
+- **관리 블록 마커.** 어떤 키나 텍스트 값도
+  `<!-- BEGIN APOTHEM MANAGED BLOCK -->` 또는 `<!-- END APOTHEM MANAGED BLOCK -->`를
+  포함해서는 안 됩니다. Apothem은 지침 파일에서 자신이 관리하는 블록 주위에 이
+  마커를 쓰고 프로필 텍스트는 그 블록 안에 들어가므로, 텍스트 안의 마커는 블록을
+  분할하게 됩니다. 그러한 각 필드는 `profile.managed_block_marker`로 실패합니다.
+  `field`는 그 필드의 점 구분 경로(예: `rules.2` 또는
+  `mcp_servers.search.env.SEARCH_MODE`)이고, `reason`은 해당 마커를 지정합니다.
+  값 자체는 자격 증명일 수 있으므로 절대 다시 보여 주지 않습니다(`safe_value`는
+  `null`).
+
+`profile init`(그리고 프로필 스캐폴드를 만드는 다른 모든 명령)은
+`schema_version: 1`을 씁니다. `schema_version`이 없는 프로필은 버전 1로 읽힙니다.
 
 ## 예시
 
@@ -94,9 +130,10 @@ apothem profile edit
 | 코드 | 의미 |
 |---|---|
 | 0 | 성공(또는 `edit`의 경우 편집기가 정상적으로 종료됨) |
-| 1 | 프로필이 없음, 유효하지 않음, `--force` 없이 이미 존재함, 또는 기록할 수 없음 |
+| 1 | 프로필이 없거나, 유효하지 않거나, `--force` 없이 이미 존재하거나, 쓸 수 없음 |
+| 64 | 사용법 오류: 알 수 없는 옵션이나 명령, 또는 누락되었거나 잘못된 옵션 값. `--json`에서는 오류가 코드 `cli.usage`를 담은 JSON 봉투로 반환됩니다. |
 
 ## 함께 보기
 
-- [apothem install](/docs/cli-reference/install) — 프로필을 하니스로 구체화합니다
+- [apothem install](/docs/cli-reference/install) — 프로필을 하니스로 머티리얼라이즈합니다
 - [apothem doctor](/docs/cli-reference/doctor) — 시스템 전역 설치 진단을 실행합니다

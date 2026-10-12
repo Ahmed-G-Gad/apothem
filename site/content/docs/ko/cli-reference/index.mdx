@@ -2,31 +2,78 @@
 title: "CLI 참조"
 description: "Apothem CLI 참조 — apothem 명령줄 인터페이스의 명령별 개요, 옵션, 종료 코드."
 machineTranslated: true
-sourceHash: "70842f71e4070248"
+sourceHash: "4012ab11dba3c29d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-`apothem` 명령줄 인터페이스는 공유 프로필에서 하니스 어댑터 구성을 관리합니다. 아래의 각 페이지는 하나의 하위 명령을 문서화합니다. 그 개요, 옵션, 동작, 종료 코드입니다.
+`apothem` 명령줄 인터페이스는 공유 프로필로부터 하니스 어댑터 구성을
+관리합니다. 아래의 각 페이지는 하위 명령 하나를 문서화합니다. 그 개요, 옵션,
+동작, 종료 코드입니다.
 
-`install`, `update`, `uninstall` 각각은 플래그와 동작이 기본 명령과 동일한 연속형 별칭(`installing`, `updating`, `uninstalling`)도 받습니다. 설치 채널 — Claude Code 플러그인, `npx`, 단일 단계 설치 스크립트 — 을 통한 업데이트와 제거는 별칭 자체가 아니라 [업데이트](/docs/install/updating) 및 [제거](/docs/install/uninstalling) 설치 가이드에 문서화되어 있습니다.
+`install`, `update`, `uninstall`은 각각 연속형 별칭(`installing`, `updating`,
+`uninstalling`)도 받으며, 이 별칭은 플래그와 동작이 기본 명령과 동일합니다.
+설치 채널 — Claude Code 플러그인, `npx`, 원샷 설치 스크립트 — 을 통한
+업데이트와 제거는 별칭 자체가 아니라 [업데이트](/docs/install/updating) 및
+[제거](/docs/install/uninstalling) 설치 가이드에 문서화되어 있습니다.
 
 ## 명령
 
 | 명령 | 설명 |
 |---------|-------------|
-| [quickstart](/docs/cli-reference/quickstart) | 안내형 첫 실행: 프로필을 확보하고, 작성을 미리 본 다음, 설치합니다. |
-| [install](/docs/cli-reference/install) | 공유 프로필에서 하니스 어댑터 구성을 설치합니다(별칭: `installing`). |
-| [update](/docs/cli-reference/update) | 현재 공유 프로필에서 하니스 어댑터 구성을 다시 설치합니다(별칭: `updating`). |
+| [quickstart](/docs/cli-reference/quickstart) | 안내형 첫 실행: 프로필을 확보하고, 쓰기를 미리 본 다음, 설치합니다. |
+| [install](/docs/cli-reference/install) | 공유 프로필로부터 하니스 어댑터 구성을 설치합니다(별칭: `installing`). |
+| [update](/docs/cli-reference/update) | 현재 공유 프로필로부터 하니스 어댑터 구성을 다시 설치합니다(별칭: `updating`). |
 | [uninstall](/docs/cli-reference/uninstall) | 하니스 어댑터 구성을 제거합니다(별칭: `uninstalling`). |
-| [rollback](/docs/cli-reference/rollback) | 하니스를 기록된 설치 직전 상태로 복원합니다. |
+| [rollback](/docs/cli-reference/rollback) | 하니스를 기록된 설치 이전의 상태로 복원합니다. |
+| [backups](/docs/cli-reference/backups) | Apothem이 보관하는 설치 백업과 원장 이력을 정리합니다(`backups prune`). |
 | [verify](/docs/cli-reference/verify) | 하니스 어댑터 설치를 검증합니다. |
-| [status](/docs/cli-reference/status) | 등록된 각 하니스의 설치, 검증, 드리프트 상태를 보고합니다. |
+| [status](/docs/cli-reference/status) | 등록된 모든 하니스의 설치, 검증, 드리프트 상태를 보고합니다. |
 | [diff](/docs/cli-reference/diff) | 단일 하니스의 보류 중인 구성 변경을 미리 봅니다. |
 | [harnesses](/docs/cli-reference/harnesses) | 등록된 하니스 어댑터를 나열하고 검사합니다. |
 | [profile](/docs/cli-reference/profile) | 공유 Apothem 프로필을 관리합니다. |
+| [migrate-workspace](/docs/cli-reference/migrate-workspace) | 레거시 하니스별 작업 공간을 공유 `.apothem` 레이아웃으로 마이그레이션합니다. |
 | [doctor](/docs/cli-reference/doctor) | Apothem 설치에 대한 시스템 진단을 실행합니다. |
-| [completion](/docs/cli-reference/completion) | source로 로드 가능한 셸 자동 완성 스크립트를 출력합니다(bash, zsh, fish, powershell). |
+| [completion](/docs/cli-reference/completion) | source로 불러올 수 있는 셸 자동 완성 스크립트를 출력합니다(bash, zsh, fish, powershell). |
 
-슬래시 명령과 상위 수준 CLI 개요는
+## JSON 출력 계약
+
+모든 명령은 `--json`(`--format json`의 축약형)을 받으며, 그 경우 stdout에
+정확히 하나의 JSON 문서를 씁니다. 각 문서는 최상위 `schema_version` 키로
+시작하며, 이 키는 현재 `1`인 정수입니다.
+
+```json
+{"schema_version": 1, "status": "success", "command": "verify", "...": "..."}
+```
+
+- **안정성.** 하나의 `schema_version` 안에서 변경은 추가형입니다. 새 키가
+  나타날 수는 있지만, 어떤 키도 이름이 바뀌거나 제거되지 않으며 어떤 값도
+  타입이 바뀌지 않습니다. 그 밖의 모든 변경은 `schema_version`을 올립니다.
+- **버전이 매겨진 아티팩트.** `profile show --json`은 프로필 자체를 출력하므로,
+  그 `schema_version`은 프로필 스키마 버전입니다(이 역시 현재 `1`).
+- **하나의 예외.** `harnesses list --json`은 예전부터 그래 왔듯이 JSON
+  배열(하니스당 객체 하나)을 출력하므로, 버전을 담을 최상위 키가 없습니다.
+  이를 객체로 감싸면 기존 파서가 깨집니다. 버전 증가로 그렇게 바뀔 때까지는 그
+  형태를 `schema_version` `1`로 취급하세요.
+- **오류.** 예상된 실패는 같은 문서 형태에 `"status": "error"`와 `code`,
+  `field`, `reason`, `fix`를 담은 `error` 객체를 사용합니다.
+
+## 종료 코드
+
+모든 명령은 같은 소수의 종료 코드 집합을 사용합니다. 각 페이지는 그 명령이
+반환할 수 있는 코드를 나열합니다.
+
+| 코드 | 의미 |
+|---|---|
+| 0 | 성공 |
+| 1 | 예상된 실패: 검증, 프로필, 하니스, 프로젝트, 또는 어댑터 오류 |
+| 2 | 부분 결과: 일괄 작업이 실패 전에 무언가를 쓰거나 제거함(해당 코드가 페이지에 나열된 명령만) |
+| 64 | 사용법 오류: 알 수 없는 옵션이나 명령, 누락된 필수 옵션, 또는 잘못된 옵션 값 |
+
+사용법 오류는 절대 파일 시스템을 건드리지 않습니다. `--json`(또는
+`--format json`)에서는 일반 사용법 텍스트 대신 `"code": "cli.usage"`가 담긴
+오류 문서 하나를 출력하므로, 자동화가 잘못 입력한 플래그와 부분 쓰기를 구별할
+수 있습니다.
+
+슬래시 명령과 상위 수준의 CLI 개요는
 [CLI 개요](/docs/reference/cli) 및 [슬래시 명령](/docs/reference/commands)
 참조 페이지를 확인하세요.

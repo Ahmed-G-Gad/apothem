@@ -1,28 +1,58 @@
 ---
 title: "MCP 서버"
-description: "Model Context Protocol 서버 구성 — 운영자 소유이며 각 도구의 네이티브 MCP 메커니즘을 통해 등록됩니다. Apothem 은 공유 프로필에서 인벤토리를 동기화하지만 서버 항목은 전혀 작성하지 않습니다."
+description: "Model Context Protocol 서버 구성 — 운영자 소유이며 각 도구의 네이티브 MCP 메커니즘을 통해 등록됩니다. 몇몇 어댑터는 공유 프로필의 MCP 인벤토리를 투영하고, 나머지는 서버 항목을 작성하지 않습니다."
 machineTranslated: true
-sourceHash: "47fd8ec2c4c5bef7"
+sourceHash: "493b667087182d32"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Model Context Protocol (MCP) 서버는 **운영자 소유**입니다. Apothem 은 공유
-프로필에 MCP 인벤토리를 담아 각 도구의 네이티브 MCP 표면으로 투영하지만, 자체
-서버 항목은 전혀 작성하지 않습니다 — 이 표면은 관리 대상으로서 여러분의 것으로
-남습니다.
+Model Context Protocol(MCP) 서버는 **운영자 소유**입니다. Apothem은 공유
+프로필(`mcp_servers`)에 MCP 인벤토리를 담습니다. Apothem이 이미 쓰는 구성 파일에
+도구가 MCP 서버를 보관하는 어댑터는 그 인벤토리를 해당 파일에 투영합니다. 다른
+모든 어댑터는 서버 항목을 작성하지 않으며, 서버는 여러분이 도구를 통해 등록할
+몫으로 남습니다.
+
+## 인벤토리를 투영하는 어댑터
+
+아래 표는 하니스 레지스트리에서 각 어댑터의 `mcp_servers` 기능 셀로부터
+생성됩니다.
+
+{/* apothem:generated-reference:start */}
+
+| Harness | MCP inventory | Note |
+| --- | --- | --- |
+| Antigravity (`antigravity`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Claude Code (`claude-code`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| CodeBuddy (`codebuddy`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Codex (`codex`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Cursor (`cursor`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Gemini CLI (`gemini-cli`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| GitHub Copilot (`github-copilot`) | Not projected (unsupported) | Copilot MCP is configured in repository settings, the IDE, the Copilot CLI, or a custom agent profile; the adapter authors none of them. |
+| GLM (Z.ai) (`glm`) | Not projected (unsupported) | GLM is a model backend configured via Anthropic/OpenAI-compatible env; it exposes no native MCP-server surface. |
+| Hermes (`hermes`) | Projected: written into the tool's MCP config | — |
+| Kimi Code (`kimi-code`) | Not projected (discovery-pending) | `.kimi-code/mcp.json` is the recognized operator-owned MCP surface; Apothem names it but defers authoring entries. |
+| Kiro (`kiro`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Open-Claw (`open-claw`) | Not projected (unsupported) | Open-Claw MCP lives in the mcp.servers config block managed via the openclaw mcp CLI; the adapter authors no entries. |
+| OpenCode (`opencode`) | Projected: written into the tool's MCP config | — |
+| Qwen Code (`qwen-code`) | Projected: written into the tool's MCP config | — |
+| Trae (`trae`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Windsurf (`windsurf`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+| Zed (`zed`) | Not projected (discovery-pending) | MCP lives in an operator-owned config surface (file / CLI / service state); the adapter names it but authors no entries. |
+
+{/* apothem:generated-reference:end */}
 
 ## MCP 서버가 등록되는 곳
 
-각 도구는 자체 네이티브 메커니즘을 통해 MCP 서버를 등록하며, Apothem 은 그
-표면을 덮어쓰는 대신 존중합니다. Claude Code 어댑터(여럿 중 하나)에서는 서버가
-`claude mcp add` 로 `~/.claude.json`(사용자 또는 로컬 스코프)과 프로젝트 수준의
-`.mcp.json` 에 등록됩니다. 다른 어댑터는 각자의 네이티브 표면으로 투영합니다.
-Apothem 의 관리 대상 설정은 결코 `mcpServers` 블록을 담지 않습니다.
+각 도구는 자체 네이티브 메커니즘을 통해 MCP 서버를 등록하며, Apothem은 그
+표면을 덮어쓰지 않고 존중합니다. Claude Code에서는 서버가 `claude mcp add`로
+`~/.claude.json`(사용자 또는 로컬 범위)과 프로젝트 수준의 `.mcp.json`에
+등록됩니다. Claude Code 어댑터는 두 파일 중 어느 것도 쓰지 않으며, Apothem이
+관리하는 Claude Code 설정은 `mcpServers` 블록을 절대 담지 않습니다.
 
-## 서버 추가하기
+## 서버 추가
 
-도구의 네이티브 메커니즘을 통해 서버를 등록하세요. 정규 항목 형태는 `mcpServers`
-아래의 키 하나입니다:
+도구의 네이티브 메커니즘을 통해 서버를 등록하세요. 정규 항목 형태는
+`mcpServers` 아래의 키 하나입니다.
 
 ```json
 {
@@ -35,10 +65,10 @@ Apothem 의 관리 대상 설정은 결코 `mcpServers` 블록을 담지 않습�
 }
 ```
 
-도구의 런타임은 세션 시작 시 등록된 서버를 로드합니다. 새 서버를 받아들이려면
-도구를 재시작하세요.
+도구의 런타임은 세션 시작 시 등록된 서버를 로드합니다. 새 서버를 반영하려면
+도구를 다시 시작하세요.
 
 ## 명명 규약
 
-MCP 도구는 도구의 표준 MCP-도구 명명 규약에 따라 `mcp__<server>__<tool>`
-형태로 어시스턴트에 표면화됩니다.
+MCP 도구는 도구의 표준 MCP 도구 명명 규약에 따라 `mcp__<server>__<tool>`
+형태로 어시스턴트에 노출됩니다.
