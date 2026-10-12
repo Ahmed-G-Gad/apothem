@@ -2,15 +2,15 @@
 title: "profile"
 description: "Referência da CLI para o grupo de comandos apothem profile."
 machineTranslated: true
-sourceHash: "475e2c6491a0f7a8"
+sourceHash: "012b17d6a7a7bc49"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Gerencia o perfil compartilhado do Apothem.
 
-`profile` é um grupo de comandos com quatro subcomandos: `init`, `show`, `set` e `edit`.
-O perfil compartilhado é a única fonte de verdade que cada adaptador de harness
-materializa em sua configuração nativa.
+`profile` é um grupo de comandos com quatro subcomandos: `init`, `show`, `set` e
+`edit`. O perfil compartilhado é a única fonte de verdade que cada adaptador de
+harness materializa em sua configuração nativa.
 
 ## Sinopse
 
@@ -29,7 +29,7 @@ apothem profile edit [--profile PATH] [--quiet|-q] [--verbose|-v]
 
 ## Opções comuns
 
-Cada subcomando aceita as opções compartilhadas abaixo.
+Todo subcomando aceita as opções compartilhadas abaixo.
 
 | Opção | Descrição |
 |---|---|
@@ -45,9 +45,17 @@ Cada subcomando aceita as opções compartilhadas abaixo.
 
 ### `profile init`
 
-Cria um esqueleto de perfil mínimo e válido segundo o esquema em
-`~/.config/apothem/profile.yaml` ou `--profile PATH`. Os arquivos existentes são
-preservados a menos que `--force` seja fornecido.
+Cria um esqueleto de perfil mínimo e válido segundo o schema em
+`~/.config/apothem/profile.yaml` ou em `--profile PATH`. Os arquivos existentes
+são preservados, a menos que `--force` seja fornecido.
+
+A primeira linha do esqueleto é uma modeline `yaml-language-server` que nomeia o
+`$id` do schema do perfil,
+`https://apothem.ahmedgad.com/schemas/profile.schema.json`. O site serve o
+schema empacotado nesse endereço, de modo que um editor com suporte à linguagem
+YAML valida o perfil enquanto você o edita. Todo schema empacotado em
+`src/apothem/schemas/` é servido da mesma forma em
+`https://apothem.ahmedgad.com/schemas/<file>`.
 
 | Opção | Descrição |
 |---|---|
@@ -55,27 +63,62 @@ preservados a menos que `--force` seja fornecido.
 
 ### `profile show`
 
-Exibe o perfil compartilhado validado e com os valores padrão expandidos.
+Exibe o perfil compartilhado validado, com os valores padrão expandidos. Com
+`--json`, o documento é o próprio perfil, encabeçado por `schema_version`: a
+versão do schema do perfil com a qual o motor o leu (consulte o
+[contrato da saída JSON](/docs/cli-reference#contrato-da-saída-json)).
 
 ### `profile set KEY VALUE`
 
-Define uma chave no perfil compartilhado. `KEY` é um caminho com pontos que desce pelo
-perfil aninhado (`identity.name`, `preferences.style`, `enforcement.sprints`,
-`harnesses.<harness>.preferences.style`); uma única chave sem ponto define um
-nó de nível superior. `VALUE` é armazenado como uma string literal — palavras simples não são
-coagidas (`no` permanece `"no"`, `2024-01-01` e `1.0` permanecem strings) — exceto
-`true`/`false` (as flags booleanas de imposição) e a entrada explícita `[...]`/`{...}`
-de lista/mapa. O perfil totalmente montado é validado contra o esquema
-antes de escrever; um set inválido é recusado e o perfil em disco permanece inalterado.
+Define uma chave no perfil compartilhado. `KEY` é um caminho com pontos que
+desce pelo perfil aninhado (`identity.name`, `preferences.style`,
+`enforcement.sprints`, `harnesses.<harness>.preferences.style`); uma única chave
+sem ponto define um nó de nível superior. `VALUE` é armazenado como uma string
+literal — palavras simples não são convertidas (`no` continua `"no"`,
+`2024-01-01` e `1.0` continuam strings) — exceto `true`/`false` (os
+sinalizadores booleanos de imposição) e a entrada explícita de lista/mapa
+`[...]`/`{...}`. O perfil totalmente montado é validado em relação ao schema
+antes da gravação; uma definição inválida é recusada e o perfil em disco
+permanece inalterado.
 
 | Argumento | Descrição |
 |---|---|
 | `KEY` | Caminho com pontos dentro do perfil a definir (obrigatório). |
-| `VALUE` | Valor literal a atribuir; validado antes de escrever (obrigatório). |
+| `VALUE` | Valor literal a atribuir; validado antes da gravação (obrigatório). |
 
 ### `profile edit`
 
 Abre o perfil compartilhado no editor do sistema.
+
+## Erros de validação
+
+Todo comando que lê o perfil o valida em relação ao schema empacotado e relata
+**todos** os problemas que encontra em uma única passagem, de modo que uma única
+edição pode corrigir todos eles:
+
+- **A saída em texto simples** nomeia o primeiro problema por completo (`Field`,
+  `Reason`, `Fix` e `Offending value (redacted)`: a entrada que falhou, com os
+  valores com formato de segredo substituídos por `<redacted>`; ela nunca é uma
+  sugestão de substituição) e, em seguida, lista até mais dez em
+  `Other problems`.
+- **A saída JSON** mantém o primeiro problema nos campos de nível superior do
+  objeto `error` e adiciona um array `errors` com todos os problemas (`code`,
+  `field`, `reason`, `fix`, `safe_value`).
+- **As chaves desconhecidas** ecoam apenas a chave inesperada e o seu valor
+  ocultado, não o perfil inteiro.
+- **Marcadores de bloco gerenciado.** Nenhuma chave ou valor de texto pode
+  conter `<!-- BEGIN APOTHEM MANAGED BLOCK -->` ou
+  `<!-- END APOTHEM MANAGED BLOCK -->`. O Apothem grava esses marcadores em torno
+  do bloco que gerencia nos arquivos de instruções, e o texto do perfil vai
+  parar dentro desse bloco, de modo que um marcador nele dividiria o bloco. Cada
+  campo desse tipo falha com `profile.managed_block_marker`: `field` é o seu
+  caminho com pontos (por exemplo `rules.2` ou
+  `mcp_servers.search.env.SEARCH_MODE`) e `reason` nomeia o marcador. O próprio
+  valor nunca é ecoado (`safe_value` é `null`), pois ele pode ser uma
+  credencial.
+
+`profile init` (e todo outro comando que cria o esqueleto de um perfil) grava
+`schema_version: 1`. Um perfil sem `schema_version` é lido como versão 1.
 
 ## Exemplos
 
@@ -94,7 +137,8 @@ apothem profile edit
 | Código | Significado |
 |---|---|
 | 0 | Sucesso (ou, para `edit`, o editor saiu normalmente) |
-| 1 | Perfil ausente, inválido, já existe sem `--force`, ou não pode ser escrito |
+| 1 | O perfil está ausente, é inválido, já existe sem `--force` ou não pode ser gravado |
+| 64 | Erro de uso: uma opção ou um comando desconhecido, ou um valor de opção ausente ou inválido. Com `--json`, o erro é um envelope JSON com o código `cli.usage`. |
 
 ## Veja também
 

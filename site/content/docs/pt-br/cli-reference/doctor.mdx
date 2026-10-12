@@ -1,38 +1,89 @@
 ---
 title: "doctor"
-description: "Referência de CLI para o comando apothem doctor."
+description: "Referência da CLI para o comando apothem doctor."
 machineTranslated: true
-sourceHash: "a861c516017e0b45"
+sourceHash: "9f6e0ade5485e0a9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Executa diagnósticos do sistema para a instalação do Apothem.
+Verifica a saúde do que está instalado. Enquanto o
+[`apothem verify`](/docs/cli-reference/verify) verifica um único harness
+nomeado, `doctor` verifica todos os harnesses instalados e o perfil compartilhado
+em uma única passagem.
 
 ## Sinopse
 
 ```
-apothem doctor [--quiet|-q] [--verbose|-v]
+apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
                [--format plain|json] [--json] [--no-color]
 ```
 
-Verifica a instalação do Apothem e relata o status de cada adaptador de harness
-registrado. Quando há um perfil compartilhado presente, ele é validado em relação
-ao esquema empacotado — não apenas verificado quanto à existência —, de modo que
-um perfil malformado é exposto como uma falha de diagnóstico em vez de um
-"encontrado" verde. A saída JSON traz um campo `profile_valid` (`true` / `false`,
-ou `null` quando nenhum perfil está presente) e um campo `profile_error` quando a
-validação falha. Sai com 0 quando todas as verificações passam, e com 1 quando um
-ou mais harnesses não estão instalados ou quando o perfil presente não passa na
-validação do esquema.
+## O que ele verifica
+
+- **Perfil compartilhado.** Um perfil presente é validado em relação ao schema
+  empacotado; um perfil malformado falha com o seu código de diagnóstico. Um
+  perfil ausente é relatado, não tratado como falha (`install` cria um).
+- **Somente harnesses instalados.** Um harness que não está instalado é relatado
+  como `not_installed` e não é uma falha, de modo que uma máquina com um harness
+  saudável passa. Os harnesses com escopo de projeto são verificados
+  quando `--project` nomeia a raiz deles; sem ele, são relatados como
+  `needs_project`.
+- **Verificação.** Cada harness instalado deve passar na mesma verificação que o
+  [`verify`](/docs/cli-reference/verify).
+- **Runtime de hooks.** Para cada harness verificado, o doctor lê os arquivos que
+  a instalação mais recente dele gravou, encontra os comandos de hook que o
+  Apothem registrou ali e inicia cada interpretador e cada script de hook uma vez
+  com uma carga útil sem efeito (os argumentos registrados mais `--help`, `{}` no
+  stdin, um diretório de trabalho temporário e `PYTHONPATH` removido). Nada é
+  gravado. Um interpretador ausente, um script ausente ou uma falha no momento da
+  importação reprova a verificação.
+
+Toda verificação que falha nomeia uma correção. Sai com 0 quando nenhuma
+verificação falha e com 1 caso contrário.
+
+## Saída JSON
+
+`--json` mantém os campos anteriores (`version`, `python`, `platform`,
+`profile_path`, `profile_exists`, `profile_valid`, `harnesses`, `all_ok`
+e `profile_error` quando o perfil é inválido) e adiciona:
+
+- `profile_error_code` — o código de diagnóstico do perfil, quando o perfil é
+  inválido.
+- `project` — a raiz de `--project` resolvida, ou `null`.
+- `harnesses[].status` — `ok`, `not_installed`, `needs_project`,
+  `verify_failed`, `hook_failed` ou `error`; além de `verified` e `hooks`
+  (`{"probed": N, "failed": [...]}`, ou `null` quando não existe nenhum registro
+  de instalação).
+- `checks` — um registro por verificação: `code` (por exemplo
+  `harness.verify_failed`, `hook.start_failed`, `ledger.unreadable` ou um código
+  `profile.*`), `status` (`pass`, `fail` ou `info`), `harness`, `message` e
+  `fix`.
+
+```json
+{
+  "schema_version": 1,
+  "all_ok": false,
+  "checks": [
+    {
+      "code": "hook.start_failed",
+      "status": "fail",
+      "harness": "claude-code",
+      "message": "claude-code: a registered hook command cannot start: …",
+      "fix": "Check that the interpreter in the hook command exists and runs, then …"
+    }
+  ]
+}
+```
 
 ## Opções
 
 | Opção | Descrição |
 |---|---|
+| `--project PATH` | Raiz do projeto para os harnesses com escopo de projeto; sem ela, eles são relatados como `needs_project`. |
 | `--quiet`, `-q` | Suprime a saída informativa; apenas erros são emitidos. |
 | `--verbose`, `-v` | Emite saída de diagnóstico adicional. |
 | `--format plain\|json` | Formato de saída (padrão: `plain`). |
-| `--json` | Atalho para `--format json`. |
+| `--json` | Abreviação de `--format json`. |
 | `--no-color` | Desativa os códigos de cor ANSI na saída. |
 | `-h`, `--help` | Mostra a ajuda e sai. |
 
@@ -40,15 +91,21 @@ validação do esquema.
 
 ```bash
 apothem doctor
+apothem doctor --project .
 apothem doctor --json
 ```
+
+O formato padrão `plain` imprime diagnósticos legíveis por humanos; `--json`
+(equivalente a `--format json`) emite um documento legível por máquina em
+stdout, adequado para ser encaminhado por pipe a outras ferramentas.
 
 ## Códigos de saída
 
 | Código | Significado |
 |---|---|
-| 0 | Todas as verificações passaram |
-| 1 | Um harness não está instalado, ou um perfil presente não passou na validação do esquema |
+| 0 | Todas as verificações passaram (também quando nenhum harness está instalado ainda) |
+| 1 | Um harness instalado não passa na verificação, um comando de hook registrado não consegue iniciar, um adaptador não pôde ser carregado ou sondado, ou um perfil presente falhou na validação de schema |
+| 64 | Erro de uso: uma opção ou um comando desconhecido, ou um valor de opção ausente ou inválido. Com `--json`, o erro é um envelope JSON com o código `cli.usage`. |
 
 ## Veja também
 

@@ -1,8 +1,8 @@
 ---
 title: "Trae"
-description: "Adaptador de ferramenta do Apothem para o Trae (GA)."
+description: "Adaptador de harness do Apothem para o Trae (GA)."
 machineTranslated: true
-sourceHash: "229e541ddce9cc3e"
+sourceHash: "f55f43bb42d94d1d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,27 +17,33 @@ sourceHash: "229e541ddce9cc3e"
 apothem install --harness trae --project /path/to/project
 ```
 
-O adaptador escreve um arquivo de regras do Trae com escopo de projeto a partir da
+O adaptador grava um arquivo de regras do Trae com escopo de projeto a partir da
 superfície compartilhada de regras e governança do Apothem.
 
-**Arquivos escritos:** `<project>/.trae/rules/apothem-rules.md`
+**Arquivos gravados:** `<project>/.trae/rules/apothem-rules.md`
 
-## Mapeamento de perfil para configuração nativa
+## Mapeamento do perfil para a configuração nativa
 
-O adaptador lê o perfil compartilhado do Apothem e renderiza o arquivo de regras do
-projeto a cada execução de `apothem install` ou `apothem update`. O perfil
-compartilhado é a fonte da verdade; edições locais do projeto no arquivo gerado são
-salvas em backup antes que a próxima sincronização substitua o conteúdo gerenciado
-pelo Apothem.
+O adaptador lê o perfil compartilhado do Apothem e renderiza o arquivo de regras
+do projeto a cada execução de `apothem install` ou `apothem update`. O perfil
+compartilhado é a fonte da verdade; as edições locais do projeto no arquivo
+gerado recebem backup antes que a próxima sincronização substitua o conteúdo
+gerenciado pelo Apothem.
+
+O arquivo começa com um frontmatter YAML que define `alwaysApply: true` e uma
+`description`, o que corresponde ao modo Always Apply do Trae conforme a
+[documentação de regras do Trae](https://docs.trae.ai/ide/rules). O bloco
+gerenciado pelo Apothem vem em seguida; o texto que você adiciona depois do
+bloco é mantido a cada sincronização.
 
 ## Notas de compatibilidade
 
-A superfície de regras atual do Trae tem escopo de projeto sob `.trae/rules/`. O
-adaptador escreve um arquivo `apothem-rules.md` dedicado que coexiste com as âncoras
-`project_rules.md` e `user_rules.md` de propriedade do operador e nunca as
-sobrescreve. A superfície de servidores de ferramentas `.trae/mcp.json` e a
-superfície de skills `.trae/skills/` são propriedade do operador; o Apothem não as
-escreve.
+A superfície de regras atual do Trae tem escopo de projeto sob `.trae/rules/`;
+as regras globais ficam sob `~/.trae/user_rules`. O adaptador grava um arquivo
+`apothem-rules.md` dedicado e nunca sobrescreve os outros arquivos de regras
+desse diretório nem as suas regras globais. A
+superfície de servidores de ferramentas `.trae/mcp.json` e a superfície de
+skills `.trae/skills/` pertencem ao operador; o Apothem não as grava.
 
 ## Verificação
 
@@ -49,7 +55,7 @@ O comando verify confirma que:
 
 1. A configuração nativa existe no caminho esperado.
 2. Todos os campos obrigatórios do perfil compartilhado estão presentes.
-3. A rotina de verificação específica do adaptador relata sucesso.
+3. A rotina de verificação específica do adaptador informa sucesso.
 
 ## Atualização
 
@@ -57,8 +63,8 @@ O comando verify confirma que:
 apothem update --harness trae --project /path/to/project
 ```
 
-Rederiva o arquivo de regras do projeto a partir do estado atual do perfil
-compartilhado.
+Deriva novamente o arquivo de regras do projeto a partir do estado atual do
+perfil compartilhado.
 
 ## Desinstalação
 
@@ -66,10 +72,10 @@ compartilhado.
 apothem uninstall --harness trae --project /path/to/project
 ```
 
-Remove os arquivos de configuração nativa escritos pelo adaptador.
+Remove os arquivos de configuração nativa gravados pelo adaptador.
 O YAML do perfil compartilhado e o motor do Apothem não são afetados.
 
-## Portão de conformidade
+## Conformity gate
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -80,11 +86,17 @@ python -m apothem.conformity.gate --all .
 | Sintoma | Correção |
 |---------|-----|
 | Arquivo de configuração não encontrado | Execute novamente `apothem install --harness trae --project /path/to/project` |
-| Verificação falhou | Execute `apothem update --harness trae --project /path/to/project` e verifique novamente |
-| Conteúdo de configuração inesperado | Verifique `~/.config/apothem/profile.yaml` ou `--profile PATH`, e execute novamente `apothem update --harness trae --project /path/to/project` |
+| Falha na verificação | Execute `apothem update --harness trae --project /path/to/project` e depois verifique novamente |
+| Conteúdo de configuração inesperado | Verifique `~/.config/apothem/profile.yaml` ou `--profile PATH` e depois execute novamente `apothem update --harness trae --project /path/to/project` |
 
 ## Ajustes de configuração
 
-| Flag | Padrão | Descrição |
+| Sinalizador | Padrão | Descrição |
 |------|---------|-------------|
-| `--dry-run` | `false` | Pré-visualiza a instalação sem escrever arquivos. |
+| `--dry-run` | `false` | Pré-visualiza a instalação sem gravar arquivos. |
+
+## Veja também
+
+- [Todos os harnesses](/docs/harnesses) — o catálogo completo de ferramentas suportadas
+- [Guia de instalação](/docs/install) — instale o Apothem neste harness
+- [Referência de `apothem harnesses`](/docs/cli-reference/harnesses) — liste e inspecione adaptadores pela CLI

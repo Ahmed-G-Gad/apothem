@@ -2,11 +2,12 @@
 title: "quickstart"
 description: "Referência da CLI para o comando guiado de primeira execução apothem quickstart."
 machineTranslated: true
-sourceHash: "2de815559e9e2e4e"
+sourceHash: "f564c70124345bea"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Primeira execução guiada: garante que exista um perfil, previsualiza as escritas e então instala.
+Primeira execução guiada: garante que exista um perfil, mostra uma prévia das
+gravações e depois instala.
 
 ## Sinopse
 
@@ -16,26 +17,53 @@ apothem quickstart [--harness NAME|all] [--project PATH] [--profile PATH]
                    [--format plain|json] [--json] [--no-color]
 ```
 
-`quickstart` é o único ponto de entrada guiado para um novo operador. Em um fluxo linear, ele: (1) garante que exista um perfil compartilhado — criando um perfil inicial com um aviso de personalização se nenhum for encontrado; (2) previsualiza os arquivos concretos que os harness selecionados escreverão, agrupados por raiz do projeto versus seu diretório pessoal; (3) pede confirmação; (4) instala com a saída de notas de capacidade agrupada e sem ruído; e (5) imprime os comandos seguintes recomendados.
+`quickstart` é o único ponto de entrada guiado para um novo operador. Em um
+único fluxo linear, ele: (1) garante que exista um perfil compartilhado —
+criando um perfil inicial com um lembrete para personalizá-lo, se nenhum for
+encontrado; (2) mostra uma prévia dos arquivos concretos que os harnesses
+selecionados vão gravar, agrupados por raiz do projeto versus o seu diretório
+pessoal; (3) pede confirmação; (4) instala com a saída de notas de capacidade
+agrupada e sem ruído; e (5) imprime os próximos comandos recomendados.
 
-Ele compõe os mesmos blocos de construção que o comando `install` usa — não os reimplementa. `--harness` tem como padrão `all` e `--project` o diretório atual.
+Ele compõe os mesmos blocos de construção que o comando `install` usa — não os
+reimplementa. `--project` tem como padrão o diretório atual. `--harness` não tem
+padrão: quando é omitido, `quickstart` pergunta qual harness instalar, de modo
+que uma primeira execução grava a configuração de um único harness.
+`--harness all` instala todos os harnesses suportados e é sempre uma escolha
+explícita.
 
 ## Comportamento
 
-- **Perfil** — se o caminho de perfil resolvido não tiver arquivo, `quickstart` oferece criar um perfil inicial (cria automaticamente com `--yes`, em um shell não interativo ou com `--format json`) e nomeia os campos de identidade de espaço reservado a personalizar.
-- **Previsualizar + confirmar** — antes de qualquer escrita, os destinos são listados sob dois cabeçalhos (raiz do projeto versus seu diretório pessoal); uma execução interativa confirma antes de escrever fora do projeto. `--yes`, um shell não interativo e `--format json` prosseguem sem perguntar. Recusar aborta antes de qualquer escrita.
-- **Instalar** — as capacidades que um harness não suporta nativamente são resumidas como uma nota agrupada por harness (passe `--verbose` para o detalhe por capacidade); o conjunto completo está sempre no arranjo warnings de `--format json`.
-- **Próximo passo** — a saída do terminal nomeia os comandos subsequentes (`apothem verify …`, `apothem doctor`).
+- **Harness** — sem `--harness`, uma execução interativa lista os nomes
+  suportados (mais `all`) e pede um deles antes que qualquer coisa seja gravada.
+  Uma execução que não pode perguntar — `--yes`, `--format json` ou sem
+  terminal — para com um erro de uso que nomeia a opção `--harness` e não grava
+  nada.
+- **Perfil** — se o caminho de perfil resolvido não tiver arquivo, `quickstart`
+  oferece criar um perfil inicial (cria automaticamente com `--yes`, em um shell
+  não interativo ou com `--format json`) e nomeia os campos de identidade com
+  marcadores de posição a personalizar.
+- **Prévia + confirmação** — antes de qualquer gravação, os destinos são
+  listados sob dois títulos (raiz do projeto versus o seu diretório pessoal); uma
+  execução interativa pede confirmação antes de gravar fora do projeto. `--yes`,
+  um shell não interativo e `--format json` prosseguem sem perguntar. Recusar
+  aborta a operação antes de qualquer gravação.
+- **Instalação** — as capacidades que um harness não suporta nativamente são
+  resumidas como uma única nota agrupada por harness (passe `--verbose` para ver
+  o detalhe por capacidade); o conjunto completo está sempre no array de
+  warnings de `--format json`.
+- **Próximo passo** — a saída do terminal nomeia os comandos seguintes
+  (`apothem verify …`, `apothem doctor`).
 
 ## Opções
 
 | Opção | Descrição |
 |---|---|
-| `--harness NAME` | Adaptador de harness a instalar, ou `all` para o conjunto de todo o registro (padrão: `all`). |
+| `--harness NAME` | Adaptador de harness a instalar, ou `all` para o conjunto de todo o registro. Sem padrão: uma execução interativa pergunta; uma execução não interativa precisa fornecê-lo. |
 | `--profile PATH` | Caminho para o YAML do perfil compartilhado. O padrão é `~/.config/apothem/profile.yaml`. |
-| `--project PATH` | Raiz do projeto para os harness com escopo de projeto. O padrão é o diretório atual. |
-| `--yes` | Executa a sequência guiada completa de forma não interativa (pula cada prompt). |
-| `--quiet`, `-q` | Suprime a saída informativa; apenas erros são emitidos. |
+| `--project PATH` | Raiz do projeto para os harnesses com escopo de projeto. O padrão é o diretório atual. |
+| `--yes` | Executa a sequência guiada completa de forma não interativa (pula todos os prompts). |
+| `--quiet`, `-q` | Suprime a saída informativa; apenas os erros são emitidos. |
 | `--verbose`, `-v` | Imprime a justificativa de cada capacidade não projetada em vez da nota agrupada. |
 | `--format plain\|json` | Formato de saída (padrão: `plain`). |
 | `--json` | Abreviação de `--format json`. |
@@ -48,6 +76,7 @@ Ele compõe os mesmos blocos de construção que o comando `install` usa — nã
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "quickstart",
   "profile_path": "C:\\Users\\Example\\.config\\apothem\\profile.yaml",
@@ -63,10 +92,10 @@ Ele compõe os mesmos blocos de construção que o comando `install` usa — nã
 ## Exemplos
 
 ```bash
-apothem quickstart
-apothem quickstart --harness all --project . --yes
-apothem quickstart --harness claude-code
-apothem quickstart --json
+apothem quickstart                                  # asks which harness
+apothem quickstart --harness claude-code --yes
+apothem quickstart --harness all --project . --yes  # every harness, explicitly
+apothem quickstart --harness claude-code --json
 ```
 
 ## Códigos de saída
@@ -74,8 +103,9 @@ apothem quickstart --json
 | Código | Significado |
 |---|---|
 | 0 | Execução guiada concluída |
-| 1 | Erro esperado de validação, perfil, harness, projeto ou adaptador |
-| 2 | Materialização parcial do lote após ao menos uma escrita |
+| 1 | Erro esperado de validação, de perfil, de harness, de projeto ou de adaptador |
+| 2 | Materialização parcial do lote após pelo menos uma gravação |
+| 64 | Erro de uso: uma opção ou um comando desconhecido, ou um valor de opção ausente ou inválido. Com `--json`, o erro é um envelope JSON com o código `cli.usage`. |
 
 ## Veja também
 

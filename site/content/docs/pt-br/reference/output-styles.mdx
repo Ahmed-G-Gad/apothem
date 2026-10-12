@@ -1,22 +1,33 @@
 ---
-title: "Estilos de saída"
-description: "Perfis de tom de operador (Arquiteto Sênior, Engenheiro Conciso, Auditor Forense) ativados por sessão via comando /output-style."
+title: "Output-styles"
+description: "Perfis de tom de operador (Arquiteto Sênior, Engenheiro Conciso, Auditor Forense) ativados por sessão pelo comando /output-style."
 machineTranslated: true
-sourceHash: "91c2cdeeb74ee50b"
+sourceHash: "10398ef985dd81e8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Os perfis de estilo de saída vivem sob `src/apothem/output-styles/` e carregam a
-orientação de tom de operador por estilo. O runtime do harness
-host ativa um estilo por sessão via `/output-style <name>`.
+Os perfis de output-style ficam em `src/apothem/output-styles/` e carregam
+orientações de tom de operador por estilo. O harness host ativa um
+estilo por sessão via `/output-style <name>`.
 
 ## Perfis canônicos
 
 | Perfil | Arquivo | Tom |
 |---------|------|------|
-| Arquiteto padrão | `src/apothem/output-styles/default-architect.md` | Tom de Arquiteto de Software Sênior (padrão) |
-| Engenheiro conciso | `src/apothem/output-styles/concise-engineer.md` | Tom de engenharia de formato curto |
+| Padrão | `src/apothem/output-styles/default.md` | Tom de base que todos os outros estilos complementam |
+| Arquiteto padrão | `src/apothem/output-styles/default-architect.md` | Tom de Arquiteto de Software Sênior |
+| Engenheiro conciso | `src/apothem/output-styles/concise-engineer.md` | Tom de engenharia em formato curto |
 | Auditor forense | `src/apothem/output-styles/forensic-auditor.md` | Tom de auditoria achado por achado |
+
+## Onde os estilos são instalados
+
+`apothem install --harness claude-code` copia os estilos para
+`~/.claude/output-styles/`. O plugin do Claude Code distribui os mesmos arquivos
+na sua pasta `output-styles/`, que o Claude Code varre em busca de output-styles
+de plugins ([referência de plugins](https://code.claude.com/docs/en/plugins-reference)),
+de modo que os estilos podem ser selecionados com apenas o plugin instalado.
+Nenhum outro harness tem uma superfície de output-style, então nenhuma outra
+instalação os distribui.
 
 ## Contrato de frontmatter
 
@@ -24,12 +35,22 @@ host ativa um estilo por sessão via `/output-style <name>`.
 ---
 name: <style name>
 description: <one-line tone summary>
-type: output-style
+keep-coding-instructions: true
 ---
 ```
 
-## Criar um novo perfil
+`name` e `description` são obrigatórios. Todo estilo distribuído também define
+`keep-coding-instructions: true`. O Claude Code deixa as suas instruções
+internas de engenharia de software (como delimitar o escopo de mudanças, escrever
+comentários e verificar o trabalho) fora de qualquer output-style personalizado,
+a menos que esta chave seja `true`; o padrão dela é `false`. Os estilos do
+Apothem mudam a forma como o trabalho é apresentado, não a forma como ele é
+feito, por isso mantêm essas instruções. Consulte a
+[referência de output-styles do Claude Code](https://code.claude.com/docs/en/output-styles).
 
-Crie um novo arquivo `<name>.md` sob `src/apothem/output-styles/` com o
-frontmatter canônico, declare o tom no corpo e ratifique invocando
-`/output-style <name>` no início da sua próxima sessão.
+## Redigir um novo perfil
+
+Crie um novo arquivo `<name>.md` em `src/apothem/output-styles/` com o
+frontmatter canônico, incluindo `keep-coding-instructions: true`, a menos que o
+estilo não se destine a trabalho de engenharia; declare o tom no corpo e
+ratifique invocando `/output-style <name>` no início da sua próxima sessão.

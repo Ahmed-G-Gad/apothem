@@ -1,8 +1,8 @@
 ---
 title: "OpenCode"
-description: "Adaptador de ferramenta do Apothem para o OpenCode (Beta)."
+description: "Adaptador de harness do Apothem para o OpenCode (Beta)."
 machineTranslated: true
-sourceHash: "4469c3fbcf489bd8"
+sourceHash: "1d807fc5d00e08ca"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,10 +17,10 @@ sourceHash: "4469c3fbcf489bd8"
 apothem install --harness opencode
 ```
 
-O adaptador grava a configuração JSON do OpenCode, instala as habilidades do
-Apothem na superfície de habilidades do OpenCode, converte os prompts de comandos
-em arquivos de comandos Markdown do OpenCode e normaliza as definições de
-assistentes do Apothem como subassistentes do OpenCode.
+O adaptador grava a configuração JSON do OpenCode, instala as skills do Apothem
+na superfície de skills do OpenCode, converte os prompts de comando em arquivos
+de comando Markdown do OpenCode e normaliza as definições de auxiliares do
+Apothem como subauxiliares do OpenCode.
 
 **Arquivos gravados:**
 
@@ -34,18 +34,39 @@ assistentes do Apothem como subassistentes do OpenCode.
 
 ## Mapeamento do perfil para a configuração nativa
 
-O adaptador renderiza `opencode.json` com uma lista de arquivos `instructions` que
-aponta para as regras instaladas do Apothem e, em seguida, propaga cada conjunto
-compartilhado do Apothem para uma superfície nativa do OpenCode ou para uma
-subárvore de suporte pertencente ao Apothem. Os filhos correspondentes já
-gerenciados pelo Apothem são copiados em backup antes da substituição.
+O adaptador renderiza `opencode.json` com uma lista de arquivos `instructions`
+que nomeia o seu documento de perfil e as regras sempre ativas do Apothem e, em
+seguida, propaga cada cohort compartilhado do Apothem para uma superfície nativa
+do OpenCode ou para uma subárvore de suporte de propriedade do Apothem. Os
+filhos existentes correspondentes gerenciados pelo Apothem recebem backup antes
+da substituição.
 
 ## Notas de compatibilidade
 
-As regras são referenciadas pela lista nativa `instructions`. Os modelos e os
-prompts de ganchos (hooks) são material de referência em
-`~/.config/opencode/.apothem/support/`; os comandos, as habilidades e as definições de
-assistentes usam locais de descoberta nativos.
+O OpenCode combina todos os arquivos que a lista `instructions` nomeia em todas
+as sessões ([regras do OpenCode](https://opencode.ai/docs/rules/)). Por isso, a
+lista nomeia primeiro o seu documento de perfil e depois apenas as regras cujo
+`alwaysApply` é `true`, cada uma com um caminho explícito
+`~/.config/opencode/.apothem/support/rules/<name>.md`; o OpenCode expande o `~/`
+inicial em relação ao seu diretório home. As regras filtradas por caminho, os
+templates e os prompts de hook permanecem instalados como material de
+referência sob `~/.config/opencode/.apothem/support/`, onde uma regra, skill ou
+comando que cite um deles o lê sob demanda. Os comandos, as skills e as
+definições de auxiliares usam locais de descoberta nativos.
+
+O documento de perfil `~/.config/opencode/apothem/rules/00-apothem-profile.md`
+carrega a sua identidade e as suas preferências do perfil compartilhado e
+termina com uma seção de arquivos de suporte do Apothem que nomeia o diretório
+absoluto sob `~/.config/opencode/.apothem/support/` em relação ao qual cada
+citação no estilo do repositório (`rules/<name>.md`, `templates/...`,
+`hooks/...`) é resolvida. Ele é a primeira entrada de `instructions`, então o
+OpenCode o carrega em todas as sessões.
+
+Um `opencode.json` gravado por um lançamento anterior lista o glob único
+`~/.config/opencode/.apothem/support/rules/*.md`, que carrega todas as regras.
+`apothem install` e `apothem update` o substituem pela lista de regras sempre
+ativas, e `apothem uninstall` remove ambas as formas. As suas próprias entradas
+de `instructions` são mantidas em todos os casos.
 
 ## Verificação
 
@@ -65,8 +86,8 @@ O comando verify confirma que:
 apothem update --harness opencode
 ```
 
-Atualiza `opencode.json`, os comandos nativos, as habilidades, as definições de
-assistentes e a árvore de suporte do Apothem.
+Atualiza `opencode.json`, os comandos nativos, as skills, as definições de
+auxiliares e a árvore de suporte do Apothem.
 
 ## Desinstalação
 
@@ -77,7 +98,7 @@ apothem uninstall --harness opencode
 Remove os arquivos de configuração nativa gravados pelo adaptador.
 O YAML do perfil compartilhado e o motor do Apothem não são afetados.
 
-## Portão de conformidade
+## Conformity gate
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -87,12 +108,18 @@ python -m apothem.conformity.gate --all .
 
 | Sintoma | Correção |
 |---------|-----|
-| Arquivo de configuração não encontrado | Reexecute `apothem install --harness opencode` |
-| Verificação falhou | Execute `apothem update --harness opencode` e verifique novamente |
-| Conteúdo de configuração inesperado | Verifique `~/.config/apothem/profile.yaml` ou `--profile PATH`, depois reexecute `apothem update --harness opencode` |
+| Arquivo de configuração não encontrado | Execute novamente `apothem install --harness opencode` |
+| Falha na verificação | Execute `apothem update --harness opencode` e depois verifique novamente |
+| Conteúdo de configuração inesperado | Verifique `~/.config/apothem/profile.yaml` ou `--profile PATH` e depois execute novamente `apothem update --harness opencode` |
 
-## Botões de configuração
+## Ajustes de configuração
 
 | Sinalizador | Padrão | Descrição |
 |------|---------|-------------|
 | `--dry-run` | `false` | Pré-visualiza a instalação sem gravar arquivos. |
+
+## Veja também
+
+- [Todos os harnesses](/docs/harnesses) — o catálogo completo de ferramentas suportadas
+- [Guia de instalação](/docs/install) — instale o Apothem neste harness
+- [Referência de `apothem harnesses`](/docs/cli-reference/harnesses) — liste e inspecione adaptadores pela CLI

@@ -1,31 +1,85 @@
 ---
 title: "Referência da CLI"
-description: "Referência da CLI do Apothem — sinopse por comando, opções e códigos de saída da interface de linha de comando apothem."
+description: "Referência da CLI do Apothem — sinopse, opções e códigos de saída de cada comando da interface de linha de comando apothem."
 machineTranslated: true
-sourceHash: "70842f71e4070248"
+sourceHash: "4012ab11dba3c29d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-A interface de linha de comando `apothem` gerencia as configurações de adaptadores de harness a partir do perfil compartilhado. Cada página abaixo documenta um subcomando: sua sinopse, opções, comportamento e códigos de saída.
+A interface de linha de comando `apothem` gerencia as configurações de
+adaptadores de harness a partir do perfil compartilhado. Cada página abaixo
+documenta um subcomando: sua sinopse, suas opções, seu comportamento e seus
+códigos de saída.
 
-Cada um de `install`, `update` e `uninstall` também aceita um alias na forma contínua (`installing`, `updating`, `uninstalling`) que é idêntico em flags e comportamento ao comando base. Atualizar e desinstalar pelos canais de instalação — o plugin do Claude Code, `npx` e os scripts do instalador de uma única etapa — está documentado nos guias de instalação [Atualizar](/docs/install/updating) e [Desinstalar](/docs/install/uninstalling), não pelos aliases em si.
+Cada um dos comandos `install`, `update` e `uninstall` também aceita um alias na
+forma contínua (`installing`, `updating`, `uninstalling`) idêntico ao comando
+base em sinalizadores e comportamento. A atualização e a desinstalação pelos
+canais de instalação — o plugin do Claude Code, `npx` e os scripts instaladores
+de uma única etapa — são documentadas nos guias de instalação
+[Atualização](/docs/install/updating) e [Desinstalação](/docs/install/uninstalling),
+e não pelos próprios aliases.
 
 ## Comandos
 
 | Comando | Descrição |
 |---------|-------------|
-| [quickstart](/docs/cli-reference/quickstart) | Primeira execução guiada: garante um perfil, prévia as escritas e depois instala. |
+| [quickstart](/docs/cli-reference/quickstart) | Primeira execução guiada: garante um perfil, mostra uma prévia das gravações e depois instala. |
 | [install](/docs/cli-reference/install) | Instala a configuração de um adaptador de harness a partir do perfil compartilhado (alias: `installing`). |
 | [update](/docs/cli-reference/update) | Reinstala a configuração de um adaptador de harness a partir do perfil compartilhado atual (alias: `updating`). |
 | [uninstall](/docs/cli-reference/uninstall) | Remove a configuração de um adaptador de harness (alias: `uninstalling`). |
-| [rollback](/docs/cli-reference/rollback) | Restaura um adaptador de harness ao estado anterior à sua instalação registrada. |
+| [rollback](/docs/cli-reference/rollback) | Restaura um harness ao estado anterior à sua instalação registrada. |
+| [backups](/docs/cli-reference/backups) | Poda os backups de instalação e o histórico do ledger que o Apothem mantém (`backups prune`). |
 | [verify](/docs/cli-reference/verify) | Verifica a instalação de um adaptador de harness. |
-| [status](/docs/cli-reference/status) | Relata o estado de instalação, verificação e desvio de cada harness registrado. |
-| [diff](/docs/cli-reference/diff) | Prévia as alterações de configuração pendentes para um único harness. |
+| [status](/docs/cli-reference/status) | Relata o estado de instalação, de verificação e de desvio de cada harness registrado. |
+| [diff](/docs/cli-reference/diff) | Mostra uma prévia das alterações de configuração pendentes de um único harness. |
 | [harnesses](/docs/cli-reference/harnesses) | Lista e inspeciona os adaptadores de harness registrados. |
 | [profile](/docs/cli-reference/profile) | Gerencia o perfil compartilhado do Apothem. |
+| [migrate-workspace](/docs/cli-reference/migrate-workspace) | Migra um espaço de trabalho legado por harness para o layout compartilhado `.apothem`. |
 | [doctor](/docs/cli-reference/doctor) | Executa diagnósticos do sistema para a instalação do Apothem. |
 | [completion](/docs/cli-reference/completion) | Emite um script de autocompletar de shell que pode ser carregado com source (bash, zsh, fish, powershell). |
 
-Para os comandos slash e a visão geral da CLI de nível superior, consulte as páginas de referência
-[Visão geral da CLI](/docs/reference/cli) e [Comandos slash](/docs/reference/commands).
+## Contrato da saída JSON
+
+Todo comando aceita `--json` (abreviação de `--format json`) e, nesse caso,
+grava exatamente um documento JSON em stdout. Cada documento começa com uma
+chave `schema_version` de nível superior, um inteiro que hoje vale `1`:
+
+```json
+{"schema_version": 1, "status": "success", "command": "verify", "...": "..."}
+```
+
+- **Estabilidade.** Dentro de uma mesma `schema_version`, as mudanças são
+  aditivas: uma nova chave pode aparecer, mas nenhuma chave é renomeada ou
+  removida e nenhum valor muda de tipo. Qualquer outra mudança incrementa
+  `schema_version`.
+- **Artefatos versionados.** `profile show --json` emite o próprio perfil, então
+  sua `schema_version` é a versão do schema do perfil (também `1` hoje).
+- **Uma exceção.** `harnesses list --json` emite um array JSON (um objeto por
+  harness), como sempre fez, então não tem uma chave de nível superior para
+  carregar a versão. Envolvê-lo em um objeto quebraria os parsers existentes;
+  até que um incremento de versão faça isso, trate seu formato como
+  `schema_version` `1`.
+- **Erros.** As falhas esperadas usam o mesmo formato de documento com
+  `"status": "error"` e um objeto `error` que carrega `code`, `field`,
+  `reason` e `fix`.
+
+## Códigos de saída
+
+Todos os comandos usam o mesmo pequeno conjunto de códigos de saída; cada página
+lista os que o comando pode retornar.
+
+| Código | Significado |
+|---|---|
+| 0 | Sucesso |
+| 1 | Falha esperada: um erro de validação, de perfil, de harness, de projeto ou de adaptador |
+| 2 | Resultado parcial: um lote gravou ou removeu algo antes de uma falha (somente os comandos cuja página o lista) |
+| 64 | Erro de uso: uma opção ou um comando desconhecido, uma opção obrigatória ausente ou um valor de opção inválido |
+
+Um erro de uso nunca toca o sistema de arquivos. Com `--json` (ou
+`--format json`), ele imprime um documento de erro com `"code": "cli.usage"`
+em vez do texto de uso simples, para que a automação consiga distinguir um
+sinalizador digitado errado de uma gravação parcial.
+
+Para os comandos slash e a visão geral da CLI de nível mais alto, consulte as
+páginas de referência [Visão geral da CLI](/docs/reference/cli) e
+[Comandos slash](/docs/reference/commands).

@@ -1,19 +1,19 @@
 ---
 title: "Regras"
-description: "Regras comportamentais sempre ativas e filtradas por caminho que governam a resolução de problemas, o artesanato de código, a arquitetura limpa, o planejamento e a qualidade em todo o conjunto de regras comportamentais."
+description: "Regras comportamentais sempre ativas e filtradas por caminho que governam a resolução de problemas, o ofício do código, a arquitetura limpa, o planejamento e a qualidade em todo o conjunto de regras comportamentais."
 machineTranslated: true
-sourceHash: "8e2637435d5ab460"
+sourceHash: "84db4f5243d1ad02"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-As regras comportamentais vivem como arquivos planos sob `src/apothem/rules/` com o
-sufixo `*.md`. Cada regra é autocontida — Purpose,
+As regras comportamentais residem como arquivos planos sob `src/apothem/rules/`,
+com o sufixo `*.md`. Cada regra é autocontida — Purpose,
 Obligations, Seriousness Scaling, Anti-Patterns, Enforcement, Bindings — e é
 sempre ativa ou filtrada por caminho.
 
 ## Regras ativas
 
-O registro canônico é o conjunto de regras. O mesmo conjunto em forma plana:
+O registro canônico é o cohort de regras. O mesmo conjunto em forma plana:
 
 | Regra | Escopo | Implementa |
 |------|-------|------------|
@@ -46,21 +46,43 @@ alwaysApply: <true | false>
 ---
 ```
 
-O campo `pathFilter` é omitido nas regras sempre ativas e presente nas
-filtradas por caminho. A verificação `frontmatter-cohort` do validador confere o
-contrato em cada arquivo de regra.
+Em uma regra sempre ativa, `pathFilter` é a string vazia (`""`) e `alwaysApply`
+é `true`; em uma regra filtrada por caminho, `pathFilter` carrega a lista de
+globs e `alwaysApply` é `false`. O contrato legível por máquina é
+[`frontmatter_grep`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/frontmatter_grep.py)
+(`{name, description, pathFilter, alwaysApply}`); a verificação
+`frontmatter-cohort` do validador o confere em cada arquivo de regra.
+
+`pathFilter` e `alwaysApply` são neutros em relação ao harness. Cada adaptador
+os traduz onde seu harness tem um campo nativo de escopo. O Claude Code lê
+somente `paths:` de uma regra e carrega na inicialização toda regra que não o
+tenha, então a instalação pelo motor (`apothem install --harness claude-code`)
+grava cada regra filtrada por caminho em `~/.claude/rules/` com uma lista
+`paths:` construída a partir de seu `pathFilter`, e copia as regras sempre
+ativas sem alterações. As 28 regras sempre ativas carregam em toda sessão; as 63
+companheiras filtradas por caminho carregam quando o assistente lê um arquivo
+correspondente.
+
+O OpenCode não tem campo de escopo por regra: ele combina em toda sessão cada
+arquivo que a lista `instructions` do seu `opencode.json` nomeia. Por isso, a
+instalação do OpenCode (`apothem install --harness opencode`) lista o seu
+documento de perfil e somente as regras cujo `alwaysApply` é `true`, um caminho
+`~/.config/opencode/...` explícito por arquivo, conforme lido nos arquivos de
+regra quando a configuração é gravada. Toda regra, incluindo as filtradas por
+caminho, ainda é instalada sob `~/.config/opencode/.apothem/support/rules/`,
+onde uma regra, skill ou comando que cite uma delas a lê sob demanda.
 
 ## Disciplina de autoria
 
 - **Autocontida.** Cada regra tem suas próprias seções Purpose, Obligations,
   Anti-Patterns e Enforcement.
-- **Bloco de Bindings.** Cada regra termina com o bloco de Bindings canônico de
-  cinco direções (Drives → / Satisfies → / Established by ↑ / Gated by ← /
+- **Bloco Bindings.** Cada regra termina com o bloco Bindings canônico de cinco
+  direções (Drives → / Satisfies → / Established by ↑ / Gated by ← /
   Cross-bound with ↔).
-- **Apenas linguagem de domínio.** Sem referências internas a planos — veja
+- **Somente linguagem de domínio.** Nenhuma referência interna a planos — veja
   `CLAUDE.md` CM-7.
 
-## Inventário de Regras Gerado
+## Inventário de regras gerado
 
 {/* apothem:generated-reference:start */}
 

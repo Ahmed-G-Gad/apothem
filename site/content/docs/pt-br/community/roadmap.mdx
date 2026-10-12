@@ -2,35 +2,81 @@
 title: "Roteiro"
 description: "Roteiro público do Apothem — recursos futuros e melhorias planejadas."
 machineTranslated: true
-sourceHash: "28a767b07e7d897d"
+sourceHash: "66086baa5064d245"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
+{/* apothem:roadmap:start */}
+
+Este roteiro descreve para onde o Apothem está indo. Ele é uma declaração de
+intenção, não um compromisso; as prioridades mudam à medida que o projeto e seus
+usuários evoluem. Para o que já foi entregue, consulte o
+[registro de alterações](https://github.com/ahmed-g-gad/apothem/blob/main/CHANGELOG.md).
+O
+[ROADMAP.md](https://github.com/ahmed-g-gad/apothem/blob/main/ROADMAP.md) do
+repositório é o único roteiro; a
+[página do roteiro](https://apothem.ahmedgad.com/docs/community/roadmap) no site
+do projeto é gerada a partir dele.
+
+Legenda de status: **planejado** · **em andamento** · **entregue**.
+
 ## Lançamento atual
 
-- Estabilizar os dezessete adaptadores de ferramentas.
-- Concluir a infraestrutura de auditoria de revisão.
-- Estabilizar a superfície da CLI do Apothem.
-- Estabelecer o pipeline de CI/CD do GitHub Actions.
+A linha atual entrega o gerenciador de configuração de harnesses agnóstico ao
+host: um perfil compartilhado (`~/.config/apothem/profile.yaml`) materializado
+em configuração nativa de harness para os adaptadores registrados, conduzido
+pela linha de comando `apothem` (`quickstart` · `install` · `update` ·
+`uninstall` · `rollback` · `verify` · `status` · `diff` · `harnesses` ·
+`profile` · `doctor` · `migrate-workspace` · `completion`).
+
+| Item | Status | Notas |
+| ---- | ------ | ----- |
+| Dezessete adaptadores de harness | entregue | Cada um com instalação, desinstalação, atualização e verificação; as páginas de [harnesses suportados](https://apothem.ahmedgad.com/docs/harnesses) os listam |
+| Propagação de templates orientada por manifesto | entregue | Uma única fonte da verdade da propagação em `src/apothem/lib/propagation-manifest.yaml` |
+| Site de documentação | entregue | Site público com índices de referência gerados, ativos de marca, um índice do site legível por máquina e runbooks de lançamento |
+| Lançamentos assinados | entregue | Todo GitHub Release carrega artefatos assinados, um SBOM e procedência de build |
+| Pipelines `/plan` e `/research` | entregue | O pipeline de planejamento em etapas de especificação, geração, revisão e execução, mais o pipeline de pesquisa de treze etapas |
+| Comandos de auditoria e o laço `/fortress` | entregue | Auditorias sob demanda de segurança, código, acessibilidade, desempenho, dependências, cadeia de suprimentos, modelo de ameaças, arquitetura, revisão de código, revisão de documentação e UX, envolvidas pelo laço de endurecimento `/fortress` |
+| Infraestrutura de auditoria e de revisão de desvio | entregue | Scanners de inventário e de desvio por trás dos comandos de auditoria |
+| Conformity gate | entregue | Validadores de cabeçalhos de autoria, nomenclatura, qualidade de código, linguagem evasiva e reciprocidade de vínculos sobre cada superfície materializada, com goldens de diff de comportamento travando a saída de cada adaptador |
+| Memória durável e aprendizado contínuo opcional | entregue | Uma camada de memória persistente e um laço de aprendizado opcional (opt-in) que carregam convenções confirmadas entre sessões |
+| Pipeline de CI/CD e cadeia de suprimentos de lançamentos assinados | entregue | Toda mudança precisa passar por lint, testes, verificações de tipo, um build da documentação e verificações da cadeia de suprimentos antes do lançamento |
 
 ## Curto prazo
 
-- Amadurecer a distribuição npm / npx: manter o ponto de entrada
-  `@ahmed-g-gad/apothem` alinhado a cada lançamento e ampliar sua cobertura de plataforma.
-- Expandir a listagem do plugin do Claude Code conforme a superfície do marketplace estabiliza.
-- Atualização automática de adaptadores de ferramentas via `apothem update --watch`.
-- Versionamento de perfil e ferramentas de migração.
-- Validação do esquema do perfil compartilhado no portão de conformidade.
-- Adaptadores de ferramentas adicionais com base em solicitações da comunidade.
+| Item | Status | Notas |
+| ---- | ------ | ----- |
+| Guias de documentação | em andamento | Mais guias focados em tarefas, diagramas e exemplos para configurações reais de harness |
+| Distribuição npm / npx | planejado | Manter o ponto de entrada npx `@ahmed-g-gad/apothem` alinhado a cada lançamento e ampliar sua cobertura de plataformas |
+| Listagem do plugin do Claude Code | planejado | Expandir a listagem do plugin à medida que a superfície do marketplace se estabiliza |
+| Mais adaptadores de harness | planejado | Harnesses adicionais à medida que suas convenções de configuração se estabilizam e os usuários os solicitam |
+| Melhorias no schema do perfil | planejado | Superfícies de substituição por harness mais ricas e diagnósticos de validação mais rigorosos |
+| Validação do perfil no conformity gate | planejado | Validar o perfil compartilhado contra seu schema como uma verificação do gate |
+| Versionamento e migração do perfil | planejado | Versionar o formato do perfil e migrar perfis mais antigos para o formato atual |
+| `apothem update --watch` | planejado | Rematerializar a configuração de harness quando o perfil muda |
 
-## Longo prazo
+## Prazo mais longo
 
-- Sincronização de perfil hospedada na nuvem (opcional, controlada pelo operador).
-- Extensão do VS Code para feedback de conformidade em tempo real.
-- Gerenciamento de perfil compartilhado por equipes.
+| Item | Status | Notas |
+| ---- | ------ | ----- |
+| Sincronização de perfil hospedada na nuvem | planejado | Opcional e controlada pelo operador |
+| Gerenciamento de perfil compartilhado por equipes | planejado | Um perfil compartilhado por toda uma equipe |
+| Extensão de editor com feedback de conformidade em tempo real | planejado | Achados de conformidade enquanto você edita, em editores da família VS Code |
 
-## Solicitações e feedback
+## Visão de longo prazo
 
-Envie solicitações de roteiro via
-[GitHub Discussions](https://github.com/ahmed-g-gad/apothem/discussions).
-O roteiro é informado pela comunidade; solicitações populares avançam mais rápido.
+O Apothem pretende ser a forma padrão pela qual qualquer pessoa gerencia a
+configuração de harness em todas as ferramentas que usa: escrever convenções uma
+vez, materializá-las em todos os lugares e mantê-las sincronizadas à medida que
+tanto as preferências quanto os harnesses evoluem.
+
+## Como influenciar o roteiro
+
+- Abra uma issue ou vote a favor de uma no
+  [rastreador de issues](https://github.com/ahmed-g-gad/apothem/issues); uma
+  solicitação de recurso ali é a forma de propor um item do roteiro.
+  Solicitações populares avançam mais rápido.
+- Consulte o [CONTRIBUTING.md](https://github.com/ahmed-g-gad/apothem/blob/main/CONTRIBUTING.md)
+  para saber como propor e integrar mudanças.
+
+{/* apothem:roadmap:end */}

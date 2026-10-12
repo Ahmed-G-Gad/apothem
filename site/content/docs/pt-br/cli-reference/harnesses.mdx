@@ -2,7 +2,7 @@
 title: "harnesses"
 description: "Referência da CLI para o grupo de comandos apothem harnesses."
 machineTranslated: true
-sourceHash: "07231c50da1f355d"
+sourceHash: "ce8d5647426c475c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -37,8 +37,9 @@ Lista todos os adaptadores de harness registrados.
 
 ### `harnesses show NAME`
 
-Mostra os detalhes de um adaptador de harness específico. `NAME` é o identificador
-do harness em kebab-case; execute `apothem harnesses list` para ver os identificadores disponíveis.
+Mostra os detalhes de um adaptador de harness específico. `NAME` é o
+identificador do harness em kebab-case; execute `apothem harnesses list` para
+ver os identificadores disponíveis.
 
 | Opção | Descrição |
 |---|---|
@@ -86,7 +87,9 @@ zed
 | Código | Significado |
 |---|---|
 | 0 | Sucesso |
-| 1 | Harness não encontrado (`harnesses show` com um `NAME` desconhecido) |
+| 1 | Harness não encontrado (`harnesses show` com um `NAME` desconhecido), ou todos os adaptadores falharam ao carregar ou ao relatar (`harnesses list`) |
+| 2 | Pelo menos um adaptador foi listado, mas pelo menos um falhou ao relatar (`harnesses list`) |
+| 64 | Erro de uso: uma opção ou um comando desconhecido, ou um valor de opção ausente ou inválido. Com `--json`, o erro é um envelope JSON com o código `cli.usage`. |
 
 ## Veja também
 

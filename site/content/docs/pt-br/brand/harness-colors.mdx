@@ -1,27 +1,30 @@
 ---
-title: "Cores de marca das ferramentas"
-description: "Paleta de cores de marca por ferramenta usada em todo o site do projeto Apothem, no símbolo do Apothem e em cada diagrama de arquitetura. Uma única fonte de verdade — dezessete cores de marca, um hub apothem."
+title: "Cores de marca dos harnesses"
+description: "Paleta de cores por harness usada em todo o site do projeto Apothem e em cada diagrama de arquitetura. Uma única fonte da verdade: uma cor por harness, um hub apothem."
 machineTranslated: true
-sourceHash: "768e5d5df16f7fa9"
+sourceHash: "7a191edb550076ef"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-As enumerações canônicas de nome-de-marca × código-de-cor abaixo estão envoltas em uma cerca `text` para preservar os identificadores literais por ferramenta exigidos pelo propósito de catálogo da paleta.
+As enumerações canônicas de nome de marca × código de cor abaixo estão envoltas em um bloco cercado `text` para preservar literalmente os identificadores por harness exigidos pelo propósito de catálogo da paleta.
 
 ## Núcleo do Apothem
 
 | Token | Claro | Escuro | Uso |
 |---|---|---|---|
-| `apothem-hub` | `#0F172A` | `#F1F5F9` | O nó central de distribuição ("apothem") em cada diagrama de arquitetura e o hub central do símbolo do Apothem. |
-| `shared-profile` | `#10B981` | `#34D399` | O perfil fonte-de-verdade que alimenta o núcleo do apothem. |
+| `apothem-hub` | `#0F172A` | `#F1F5F9` | O nó central de distribuição ("apothem") em cada diagrama de arquitetura. |
+| `shared-profile` | `#10B981` | `#34D399` | O perfil que é a fonte da verdade e alimenta o núcleo do apothem. |
 
-## Paleta das ferramentas
+## Paleta dos harnesses
 
-Quinze das dezessete ferramentas são coloridas para combinar com sua
-identidade de marca principal. As duas restantes — `glm` e `kimi-code` — ainda
-não têm uma cor de marca definida; suas linhas são adicionadas assim que a cor
-de marca a montante for definida, conforme a etapa de propagação em
-[Atualizações](#updates).
+Quinze dos dezessete harnesses são coloridos para combinar com sua identidade de
+marca principal, de modo que o leitor consiga distinguir as ferramentas em um
+diagrama. O próprio símbolo do Apothem usa apenas as cores ardósia e esmeralda
+da página de [paleta](/docs/brand/palette); ele não carrega nenhuma cor de
+harness. Os dois restantes — `glm` e `kimi-code` — ainda não têm uma cor de
+marca definida; suas linhas são adicionadas assim que a cor de marca a montante
+for definida, conforme a etapa de propagação em
+[Atualizações](#atualizações).
 
 ```text
 | Token             | Light     | Dark      | Source                                                                                                                                              |
@@ -31,7 +34,7 @@ de marca a montante for definida, conforme a etapa de propagação em
 | `codebuddy`       | `#0052D9` | `#5E8EF7` | Tencent CodeBuddy blue.                                                                                                                             |
 | `codex`           | `#10A37F` | `#19C796` | OpenAI signature teal.                                                                                                                              |
 | `cursor`          | `#6E56CF` | `#9B85E3` | Cursor brand purple.                                                                                                                                |
-| `gemini-cli`      | `#4285F4` | `#6BA4F7` | Google blue (primary); the Apothem mark renders the node with all four Google brand hues `#4285F4` / `#34A853` / `#FBBC04` / `#EA4335`.             |
+| `gemini-cli`      | `#4285F4` | `#6BA4F7` | Google blue.                                                                                                                                        |
 | `github-copilot`  | `#0A3069` | `#5B8FE3` | GitHub Mona deep-blue.                                                                                                                              |
 | `hermes`          | `#71717A` | `#A1A1AA` | Community silver-grey.                                                                                                                              |
 | `kiro`            | `#790ECB` | `#A862DD` | Kiro violet.                                                                                                                                        |
@@ -43,13 +46,23 @@ de marca a montante for definida, conforme a etapa de propagação em
 | `zed`             | `#084CCF` | `#5E8BE0` | Zed Industries blue.                                                                                                                                |
 ```
 
+## Marcas comerciais
+
+Os nomes de harness, os nomes de produtos e as cores de marca nesta página e em
+todo o site pertencem aos seus proprietários e são marcas comerciais de seus
+respectivos proprietários. O Apothem nomeia uma ferramenta apenas para dizer
+qual delas ele configura e usa a cor de uma ferramenta apenas para distingui-la
+em um diagrama. O Apothem é um projeto independente; ele não é afiliado a,
+patrocinado por nem endossado por nenhuma dessas empresas ou projetos, e não
+distribui nenhum dos seus logotipos.
+
 ## Justificativa dos nomes
 
 - **`apothem-hub`** — o centro geométrico que o nome evoca (o apótema de um polígono regular aponta para dentro, em direção ao seu núcleo).
-- **`shared-profile`** — a fonte a montante, distinta da cor de qualquer ferramenta isolada para que se leia como a seta de "entrada" em cada diagrama.
-- **Tokens por ferramenta** espelham o slug da ferramenta usado em toda a base de código (`harnesses/<slug>/`, a chave do ponto de entrada, o argumento `--harness <slug>` da CLI). Uma palavra por conceito; a mesma string em todos os lugares.
+- **`shared-profile`** — a fonte a montante, distinta da cor de qualquer harness isolado, para que se leia como a seta de "entrada" em cada diagrama.
+- **Tokens por harness** espelham o slug do harness usado em toda a base de código (`harnesses/<slug>/`, a chave do ponto de entrada, o argumento `--harness <slug>` da CLI). Uma palavra por conceito; a mesma string em todos os lugares.
 
-## Uso do Mermaid
+## Uso no Mermaid
 
 ```mermaid
 graph LR
@@ -91,8 +104,8 @@ graph LR
 
 ## Acessibilidade
 
-Cada token de modo claro atende ao contraste WCAG 2.2 AA contra texto branco (≥4,5 : 1) onde o contraste permite sem distorcer a cor de marca. Quando a cor de marca nativa de uma ferramenta fica abaixo do limiar AA contra texto branco por si só (notadamente a família âmbar / laranja e a família azul-celeste / verde-azulado de tokens enumerada acima), os diagramas que precisam de contraste WCAG AA de texto-sobre-cor usam a **variante de modo escuro** (o tom realçado) como preenchimento do diagrama para que o texto branco se leia com clareza. A coluna de modo escuro é calibrada para essa finalidade: cada token de modo escuro supera o AA contra texto branco.
+Cada token de modo claro atende ao contraste WCAG 2.2 AA contra texto branco (≥4.5 : 1) onde o contraste permite isso sem distorcer a cor de marca. Quando a cor de marca nativa de um harness fica, por si só, abaixo do limiar AA contra texto branco (notadamente a família âmbar / laranja e a família azul-celeste / verde-azulado dos tokens enumerados acima), os diagramas que precisam de contraste WCAG AA de texto sobre cor usam a **variante de modo escuro** (o tom clareado) como preenchimento do diagrama, para que o texto branco seja lido com nitidez. A coluna de modo escuro é calibrada para essa finalidade: cada token de modo escuro atinge o AA contra texto branco.
 
 ## Atualizações
 
-A paleta é atualizada somente quando uma ferramenta ratifica uma mudança de marca a montante. As mudanças de marca por ferramenta se propagam atomicamente por `site/app/global.css`, esta página e cada máster SVG afetado em `assets/src/`.
+A paleta é atualizada somente quando um harness ratifica uma mudança de marca a montante. As mudanças de marca por harness se propagam atomicamente por `site/app/global.css`, por esta página e por cada SVG mestre afetado em `assets/src/`.
