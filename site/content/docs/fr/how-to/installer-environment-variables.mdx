@@ -1,20 +1,20 @@
 ---
 title: "Variables d'environnement de l'installateur"
-description: "Contrôler l'installateur en script (destination, source, environnement, profil, vérification) avec des variables d'environnement."
+description: "Piloter l'installateur par script (destination, source, environnement, profil, vérification) avec des variables d'environnement."
 machineTranslated: true
-sourceHash: "d68d326f61c80d62"
+sourceHash: "4a6a53ca733a16ef"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Objectif : piloter `install.sh` / `install.ps1` sans modifier le script en
+Objectif : piloter `install.sh` / `install.ps1` sans modifier le script, en
 définissant des variables d'environnement avant de l'exécuter.
 
 ## Prérequis
 
 - Un shell POSIX (`bash`) ou PowerShell 5.1+.
-- Les variables sont lues une seule fois en tête de l'installateur ; définissez-les
-  donc dans la même commande (ou exportez-les d'abord), puis exécutez
-  l'installateur.
+- Les variables sont lues une seule fois, au début de l'installateur ;
+  définissez-les donc dans la même commande (ou exportez-les d'abord), puis
+  exécutez l'installateur.
 
 ## Les variables de l'installateur
 
@@ -22,38 +22,56 @@ définissant des variables d'environnement avant de l'exécuter.
 | --- | --- | --- |
 | `APOTHEM_HOME` | Destination d'installation de l'arborescence source clonée | `$HOME/.apothem` |
 | `APOTHEM_REPO` | Dépôt Git distant à cloner | `https://github.com/ahmed-g-gad/apothem` |
-| `APOTHEM_REF` | Réf Git à extraire ; non défini résout le dernier tag signé `vMAJOR.MINOR.PATCH`, une valeur de tag l'épingle, `main` sélectionne la branche mobile | non défini (dernier tag signé) |
-| `APOTHEM_ALLOW_UNVERIFIED` | Rétrograde un échec de vérification de signature de tag d'un arrêt fatal à un avertissement lorsqu'elle vaut `1` | `0` (vérifier, échec fermé) |
-| `APOTHEM_SOURCE` | Arborescence source locale explicite à utiliser au lieu de cloner | non défini (cloner) |
+| `APOTHEM_REF` | Ref Git à extraire ; non définie, elle résout la dernière étiquette signée `vMAJOR.MINOR.PATCH`, une valeur d'étiquette l'épingle, `main` sélectionne la branche mouvante | non définie (dernière étiquette signée) |
+| `APOTHEM_ALLOW_UNVERIFIED` | Lorsqu'elle vaut `1`, rétrograde un échec de vérification de la signature de l'étiquette d'un arrêt fatal à un avertissement | `0` (vérification, échec fermé) |
+| `APOTHEM_VERIFY` | `signature` vérifie la signature GPG de l'étiquette de publication ; `checksum` installe l'archive de plateforme de la publication après avoir contrôlé son SHA-256 par rapport au `SHA256SUMS` de la publication (intégrité, et non preuve de l'identité de qui l'a publiée) | `signature` |
+| `APOTHEM_RELEASE_BASE` | Base de téléchargement pour le mode checksum | `<APOTHEM_REPO>/releases/download` |
+| `APOTHEM_SOURCE` | Arborescence source locale explicite à utiliser au lieu de cloner | non définie (clonage) |
 | `APOTHEM_HARNESS` | Environnement à installer | `claude-code` |
 | `APOTHEM_PROFILE` | Chemin vers le YAML du profil partagé | `$HOME/.config/apothem/profile.yaml` |
-| `APOTHEM_SKIP_VERIFY` | Saute l'étape de vérification post-installation lorsqu'elle vaut `1` | `0` (la vérification s'exécute) |
-| `APOTHEM_AUTO_INSTALL_DEPS` | Installe automatiquement les prérequis `click` / `rich` manquants, sans demander, lorsqu'il vaut `1` | `0` (demande, ou refuse dans un pipe non interactif) |
-| `APOTHEM_BIN_DIR` | Répertoire du shim de commande `apothem` installé | `$HOME/.local/bin` (POSIX) ; `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) |
+| `APOTHEM_SKIP_VERIFY` | Lorsqu'elle vaut `1`, ignore l'étape de vérification post-installation | `0` (la vérification s'exécute) |
+| `APOTHEM_AUTO_INSTALL_DEPS` | Lorsqu'elle vaut `1`, installe automatiquement les prérequis `click` / `rich` manquants, sans demande de confirmation | `0` (demande, ou refus dans un pipe non interactif) |
+| `APOTHEM_BIN_DIR` | Répertoire du shim de commande `apothem` mis en place | `$HOME/.local/bin` (POSIX) ; `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) |
+| `NO_COLOR` | Désactive la sortie en couleur lorsqu'elle est définie, quelle que soit sa valeur ([no-color.org](https://no-color.org/)) ; la couleur est aussi désactivée chaque fois que la sortie n'est pas un terminal (un pipe, un fichier, un journal de CI) | non définie (couleur uniquement dans un terminal interactif) |
 
-`APOTHEM_SOURCE` a priorité sur un clonage : lorsqu'elle pointe vers une copie
+`APOTHEM_SOURCE` a priorité sur un clonage : lorsqu'elle pointe vers un checkout
 qui contient `src/apothem`, l'installateur l'utilise directement, ne touche
-jamais à `APOTHEM_REPO` / `APOTHEM_REF`, et saute la résolution de tag et la
-vérification de signature (rien n'est récupéré à vérifier).
+jamais à `APOTHEM_REPO` / `APOTHEM_REF`, et ignore la résolution de l'étiquette
+et la vérification de la signature (rien n'est récupéré, donc il n'y a rien à
+vérifier).
+
+Lorsque `APOTHEM_HOME` pointe vers un répertoire existant qui n'est pas un clone
+git, l'installateur refuse de le supprimer : déplacez-le, faites pointer
+`APOTHEM_HOME` ailleurs, ou passez `--yes` (`-Yes` sous Windows) pour autoriser
+le remplacement. Un répertoire vide obsolète est remplacé sans cette option.
 
 ## Modèle de confiance
 
-Sans `APOTHEM_REF` défini, l'installateur résout le dernier tag de version signé
-et vérifie sa signature avec `git verify-tag` avant de matérialiser quelque
-configuration que ce soit ; un tag non signé ou altéré interrompt
-l'installation. Épinglez une version connue avec `APOTHEM_REF=<tag>` (vérifiée
-aussi ; un tag de la
-[page des versions](https://github.com/ahmed-g-gad/apothem/releases)),
-sélectionnez la branche mobile avec `APOTHEM_REF=main` (non vérifiée), ou
+Lorsque `APOTHEM_REF` n'est pas définie, l'installateur résout la dernière
+étiquette de publication signée et vérifie sa signature avec `git verify-tag`
+avant de matérialiser la moindre configuration ; une étiquette non signée ou
+altérée interrompt l'installation. Une étiquette signée dont la clé publique du
+mainteneur est absente du trousseau local interrompt plutôt l'installation avec
+des indications pour importer la clé : importez la clé et comparez son
+empreinte avec la valeur publiée dans
+[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
+Épinglez une publication connue avec `APOTHEM_REF=<tag>` (également vérifiée ;
+une étiquette issue de la
+[page des publications](https://github.com/ahmed-g-gad/apothem/releases)),
+sélectionnez la branche mouvante avec `APOTHEM_REF=main` (non vérifiée), ou
 définissez `APOTHEM_ALLOW_UNVERIFIED=1` pour passer outre un échec de
-vérification avec un avertissement (usage isolé du réseau, local, ou
-pré-version-signée).
+vérification avec un avertissement (usage isolé du réseau, local, ou antérieur
+aux publications signées).
 
-```bash title="Installation épinglée et vérifiée"
+```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH bash install.sh
 ```
 
-```bash title="Poursuivre sans vérification (provisoire / isolé du réseau)"
+```bash title="Check the archive digest when the signing key is not imported"
+APOTHEM_VERIFY=checksum bash install.sh
+```
+
+```bash title="Proceed without verification (interim / air-gapped)"
 APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 ```
 
@@ -65,13 +83,13 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
    APOTHEM_HARNESS=cursor bash install.sh
    ```
 
-2. Épingler la réf source et la destination d'installation :
+2. Épingler la ref source et la destination d'installation :
 
    ```bash
    APOTHEM_REF=main APOTHEM_HOME=/opt/apothem bash install.sh
    ```
 
-3. Utiliser une copie locale et un profil personnalisé, en sautant la
+3. Utiliser un checkout local et un profil personnalisé, en ignorant la
    vérification :
 
    ```bash
@@ -113,11 +131,16 @@ apothem verify --harness cursor
 ```
 
 Lorsque le profil n'existait pas encore, l'installateur en crée un à partir de
-l'exemple et se termine prématurément — modifiez `$APOTHEM_PROFILE`, puis
-ré-exécutez.
+l'exemple et poursuit l'installation et la vérification au cours de la même
+exécution. Les champs d'identité de l'exemple sont des espaces réservés ;
+l'installation affiche donc une remarque. Modifiez `$APOTHEM_PROFILE`, puis
+exécutez `apothem update --harness <name>` pour appliquer votre identité. Un
+`--dry-run` sans profil effectue l'aperçu avec l'exemple en place et n'écrit
+rien.
 
-## Connexes
+## Voir aussi
 
-- [Installation](/docs/install) couvre l'installation réseau en une seule fois.
+- [Installation](/docs/install) couvre l'installation réseau en une seule
+  commande.
 - [Ajouter un environnement](/docs/how-to/adding-a-harness) couvre l'ajout
   d'environnements via la CLI après la première installation.

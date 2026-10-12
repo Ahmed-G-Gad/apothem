@@ -1,24 +1,24 @@
 ---
-title: "Travailleurs délégués"
-description: "Travailleurs délégués persistants pour la recherche, l'audit, la qualité et l'orchestration, avec contrats de frontmatter et protocoles d'isolation de déploiement."
+title: "Auxiliaires"
+description: "Agents auxiliaires persistants pour la recherche, l'audit, la qualité et l'orchestration, avec contrats de frontmatter et protocoles d'isolation de déploiement."
 machineTranslated: true
-sourceHash: "5c1fa12b4b90df83"
+sourceHash: "9aeb014bc69c5163"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Les travailleurs délégués persistants vivent sous forme de fichiers plats dans le
-répertoire canonique des travailleurs délégués, avec le suffixe `<name>.md`. Le
-chemin canonique est :
+Les auxiliaires persistants vivent sous forme de fichiers plats dans le
+répertoire canonique des auxiliaires, avec le suffixe `<name>.md`. Le chemin
+canonique est :
 
 ```text
 src/apothem/agents/
 ```
 
-Chaque travailleur délégué est un rôle de recherche, d'audit, de qualité ou
-d'orchestration, doté de ses propres restrictions d'outils et de son propre prompt
-système.
+Chaque auxiliaire est un rôle de recherche, d'audit, de qualité ou
+d'orchestration, doté de ses propres restrictions d'outils et de son propre
+prompt système.
 
-| Travailleur délégué | Fichier | Motif | Politique de modèle |
+| Auxiliaire | Fichier | Motif | Politique de modèle |
 |-------|------|---------|--------------|
 | Codebase Explorer | voir le chemin du manifeste ci-dessous | Recherche | sélectionné par l'hôte |
 | Convention Auditor | voir le chemin du manifeste ci-dessous | Audit | sélectionné par l'hôte |
@@ -48,9 +48,28 @@ maxTurns: <integer>
 ---
 ```
 
+## Conversion par environnement
+
+Un auxiliaire dont l'octroi `tools`, après application de `disallowedTools`,
+n'inclut ni `Write` ni `Edit` est en lecture seule. Chaque environnement qui
+convertit les auxiliaires applique cette limite nativement ou retire la mention
+de lecture seule :
+
+| Environnement | Limite d'outils | Limite de tours | Modèle et effort |
+| --- | --- | --- | --- |
+| Claude Code | `tools` / `disallowedTools` tels qu'écrits | `maxTurns` | hérité (non défini) |
+| Codex | `sandbox_mode = "read-only"` pour les auxiliaires en lecture seule | non disponible | hérité (non défini) |
+| Gemini CLI | liste d'autorisation `tools` de noms d'outils Gemini | `max_turns` | hérité (non défini) |
+| Qwen Code | `tools` / `disallowedTools` en noms d'outils Qwen | non mappé | `model: inherit` |
+| OpenCode | `permission` (`allow` / `deny` par outil) | non mappé | hérité (non défini) |
+| Antigravity | aucune émise ; la description retire « read-only » | non disponible | hérité (non défini) |
+
+Hermes, Open-Claw et Kimi Code reçoivent les fichiers des auxiliaires comme
+matériel de support, et non comme auxiliaires natifs.
+
 ## Orchestration
 
-Le déploiement des travailleurs délégués, le protocole de lancement en parallèle,
+Le déploiement des auxiliaires, le protocole de lancement en parallèle,
 l'application du contrat de retour et la discipline d'isolation vivent dans la
 règle d'orchestration. L'arbre de répartition par travailleur vit dans la règle
 des motifs d'orchestration, §Decision Tree. Chemins canoniques :
@@ -60,7 +79,7 @@ src/apothem/rules/agent-orchestration.md
 src/apothem/rules/agent-orchestration-patterns.md
 ```
 
-## Inventaire généré des travailleurs délégués
+## Inventaire généré des agents
 
 {/* apothem:generated-reference:start */}
 

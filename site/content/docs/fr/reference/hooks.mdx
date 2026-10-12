@@ -1,50 +1,125 @@
 ---
 title: "Hooks"
-description: "Gestionnaires d'événements d'outils qui se déclenchent sur SessionStart, PreToolUse et Stop, chargeant des contextes de message imposant l'isolation de git et la discipline des plans."
+description: "Gestionnaires d'événements d'outils qui se déclenchent sur SessionStart, PreToolUse, PostToolUse et Stop, et chargent des contextes de message imposant l'isolation de git et la discipline des plans, avec un contrat d'exécution testé et un état par utilisateur."
 machineTranslated: true
-sourceHash: "aaf14191bbb63219"
+sourceHash: "3a6c32f33850537e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Les hooks se déclenchent sur les événements d'outils et chargent des contextes de message que
-l'assistant traite comme des prompts système supplémentaires. Le câblage vit dans
-le bloc de hooks du `settings.json` de Claude Code, le fichier de hooks `hooks.json` de Codex
-et la table de hooks du `settings.json` de Qwen Code.
+Les hooks se déclenchent sur les événements d'outils et chargent des contextes
+de message que l'assistant traite comme des prompts système supplémentaires. Le
+câblage vit dans le bloc de hooks du `settings.json` de Claude Code
+(installation par le moteur) ou dans le `hooks.json` du plugin (installation par
+plugin), dans le fichier de hooks `hooks.json` de Codex et dans la table de
+hooks du `settings.json` de Qwen Code.
 
 | Événement | Délai d'attente | Objectif |
 |-------|--------:|---------|
-| SessionStart | 30 secondes | Lire la mémoire, vérifier l'état du plan, signaler la disponibilité |
-| PreCompact | 30 secondes | Vérifier que l'état est externalisé avant la compaction |
-| PostCompact | 30 secondes | Restaurer l'état de travail après la compaction |
-| Stop | 60 secondes | Externalisation en fin de session |
-| PreToolUse (Bash) | 10 secondes | Validation de Bash — isolation des artefacts git |
-| PreToolUse (Write/Edit/NotebookEdit/apply_patch) | 10 secondes | Isolation des références aux plans, vérifications de frontmatter |
+| SessionStart | 30 secondes | Lire la mémoire, vérifier l'état du plan, signaler la disponibilité ; après une compaction, fournir le contexte de récupération |
+| PreCompact | 30 secondes | Vérifier que l'état est externalisé avant la compaction (Codex, Qwen Code ; non enregistré sur Claude Code) |
+| PostCompact | 30 secondes | Restaurer l'état de travail après la compaction (Codex, Qwen Code ; non enregistré sur Claude Code) |
+| Stop | 60 secondes | Protocole de fin de session, activé sur demande |
+| PostToolUse | 10 secondes | Avis de compaction proactive, au plus deux fois par session |
+| PreToolUse (shell : Bash, PowerShell, `run_shell_command`) | 10 secondes | Isolation des artefacts git, localité des plans, garde contre l'évaluation dynamique |
+| PreToolUse (Write/Edit/NotebookEdit/apply_patch) | 10 secondes | Isolation des références aux plans, en-tête de paternité, localité des plans, gardes de dépendances et d'évaluation dynamique |
+| PreToolUse (AskUserQuestion) | 10 secondes | Bonne formation du marqueur `(Recommended)` |
 
 ## Répartiteur
 
-Les entrées de hook installées invoquent le répartiteur par le chemin absolu du script.
-Les modèles de réglages portent le jeton `${HARNESS_ROOT}` —
-`python "${HARNESS_ROOT}/apothem/hooks/dispatch.py" <event> [<message-name>]`
-— que l'installateur rend en chemin réel de la racine du harness au moment
-de l'installation (Claude Code et Qwen Code matérialisent le répartiteur sous
-`<harness-root>/apothem/hooks/` ; Codex sous `<harness-root>/hooks/`). Le
-répartiteur est un script autonome de la bibliothèque standard : il amorce son propre `sys.path`,
-de sorte qu'aucun paquet `apothem` importable n'est nécessaire sur l'hôte. Depuis un
-checkout des sources, la forme de module `python -m apothem.hooks.dispatch <event>` (avec
-`PYTHONPATH=src`) exécute le même code pour le développement. Le répartiteur charge
-`hooks/lib/resolve_root.py` pour la résolution de la racine de l'écosystème et délègue à
-`hooks/emit_hook_context.py` et `hooks/session_start_bootstrap.py`.
+Les entrées de hook installées par le moteur invoquent le répartiteur par le
+chemin absolu du script, avec un interpréteur résolu à l'installation. Les
+templates portent les jetons `${PYTHON_BIN}` et `${HARNESS_ROOT}`, que
+l'installateur rend au moment de l'installation. Claude Code et Qwen Code
+matérialisent le répartiteur sous `<harness-root>/.apothem/support/hooks/` ;
+Codex, sous `<harness-root>/hooks/`. Les entrées de Claude Code utilisent la
+forme exec (`command` plus `args`) et n'ont donc besoin d'aucun shell. Le plugin
+Claude Code exécute chaque hook sous la forme
+`bash "${CLAUDE_PLUGIN_ROOT}/lib/apothem/hooks/lib/bootstrap.sh" <event> [<message-file>]`,
+dans le shell de hook par défaut de Claude Code (`sh` sur macOS et Linux, Git
+Bash sur Windows) ; l'amorce localise un interpréteur Python 3.10+ et exécute le
+répartiteur fourni. Sous Windows sans Git for Windows, utilisez l'installation
+par le moteur (`apothem install --harness claude-code`), dont les hooks en forme
+exec n'ont besoin d'aucun shell. Le répartiteur est un script autonome de la
+bibliothèque standard : il amorce son propre `sys.path`, de sorte qu'aucun
+paquet `apothem` importable n'est nécessaire sur l'hôte. Depuis un checkout des
+sources, la forme de module `python -m apothem.hooks.dispatch <event>` (avec
+`PYTHONPATH=src`) exécute le même code pour le développement. Le répartiteur
+charge `hooks/lib/resolve_root.py` pour la résolution de la racine de
+l'écosystème et délègue à `hooks/emit_hook_context.py` et
+`hooks/session_start_bootstrap.py`.
 
 ## Contextes de message
 
 Les contextes Markdown par événement vivent sous `src/apothem/hooks/messages/` :
 
-- `postcompact.md`, `precompact.md`, `stop.md`
-- `pretooluse-bash.md`, `pretooluse-write.md`, `pretooluse-edit.md`,
-  `pretooluse-notebookedit.md`
+- Cycle de vie de la session : `sessionstart.md`, `precompact.md`,
+  `postcompact.md`, `stop.md`, `posttooluse-proactive-compaction.md`
+- Appels shell : `pretooluse-bash.md`, `pretooluse-bash-plan-guard.md`
+- Écritures de fichiers : `pretooluse-write.md`, `pretooluse-edit.md`,
+  `pretooluse-notebookedit.md`, `pretooluse-write-plan-guard.md`,
+  `pretooluse-write-header-guard.md`, `pretooluse-edit-header-guard.md`,
+  `pretooluse-conformity.md`
+- Gardes sur le contenu : `pretooluse-dependency-guard.md`,
+  `pretooluse-eval-guard.md`
+- Questions : `pretooluse-askuserquestion-recommended.md`
 
-Chaque fichier de contexte est chargé par le répartiteur lorsque son événement se déclenche
-et que son argument de contexte est enregistré dans le fichier de réglages.
+Sur Claude Code, `postcompact.md` est fourni par le hook SessionStart lorsque la
+session reprend après une compaction, car Claude Code ne transmet pas la sortie
+des hooks PreCompact ou PostCompact à l'assistant.
+
+Chaque fichier de contexte est chargé par le répartiteur lorsque son événement
+se déclenche et que son argument de contexte est enregistré dans le fichier de
+réglages. La ligne de commentaire de licence et la section finale `## Bindings`
+sont retirées avant que le texte n'atteigne l'assistant ; toutes deux existent
+pour les mainteneurs et le portail de conformité.
+
+## Contrat d'exécution
+
+Chaque commande de hook enregistrée respecte le même contrat, vérifié par
+`tests/hooks/test_hook_contract.py` sur le plugin, l'installation de Claude Code
+par le moteur, Codex et Qwen Code :
+
+- **S'exécute depuis un simple checkout.** Code de sortie 0, et la sortie
+  standard est vide ou contient un seul objet JSON. Aucun hook ne dépend du bit
+  exécutable d'un fichier.
+- **Enregistré une seule fois.** Chaque association d'événement, de matcher et
+  de message apparaît une seule fois par surface, de sorte qu'un hook ne
+  s'exécute jamais deux fois sur un même appel d'outil.
+- **Borné.** Aucun texte émis ne dépasse 10 000 caractères. La garde de
+  dépendances ne s'exprime que lorsqu'une écriture cible un manifeste de
+  dépendances ou un fichier de verrouillage, et la garde d'évaluation dynamique
+  uniquement lorsque le contenu ou la commande contient une primitive
+  d'évaluation ou de désérialisation non sûre. L'avis de compaction se déclenche
+  au plus deux fois par session.
+- **Utilise les canaux que l'environnement transmet.** Les consignes PreToolUse
+  transitent dans `hookSpecificOutput` ; la garde AskUserQuestion renvoie
+  `additionalContext`, ou `permissionDecision: deny` sous l'activation stricte
+  sur demande. Claude Code ignore la sortie de PreCompact et de PostCompact ;
+  sur Claude Code, le contexte de récupération post-compaction arrive donc avec
+  l'événement SessionStart dont la source est `compact`.
+- **N'exécute jamais le code du projet.** L'amorce résout sa propre arborescence
+  installée et ne prend jamais de script dans le projet ouvert. Les consignes de
+  démarrage de session sont lues depuis l'arborescence installée ; le répertoire
+  du projet n'est lu que pour les résumés de plan et de mémoire.
+- **Échoue en mode ouvert.** Un fichier de message manquant, un interpréteur
+  manquant ou un état corrompu produit un code de sortie 0 et une enveloppe
+  valide.
+
+| Variable | Défaut | Effet |
+| --- | --- | --- |
+| `APOTHEM_HOOKS_DISABLE` | non définie | `1`, `true`, `yes` ou `on` réduit au silence chaque hook routé par le répartiteur ainsi que le hook du portail de conformité de l'installation par le moteur |
+| `APOTHEM_SESSION_END_ENABLED` | désactivé | `1`, `true`, `yes` ou `on` active le protocole de fin de session sur Stop. Un hook Stop qui renvoie du contexte fait continuer l'assistant, de sorte que le protocole coûte un tour supplémentaire par session ; il ne se déclenche jamais sur un arrêt qui suit déjà une continuation déclenchée par un hook |
+| `APOTHEM_SESSION_END_MIN_STOPS` | `3` | Fins de tour avant que le protocole de fin de session puisse se déclencher |
+| `APOTHEM_PROACTIVE_COMPACTION_ENABLED` | activé | `0`, `false`, `no` ou `off` réduit au silence l'avis de compaction |
+| `APOTHEM_PROACTIVE_COMPACTION_TOOL_THRESHOLD` | `18` | Appels d'outils par fenêtre d'avis |
+| `APOTHEM_PROACTIVE_COMPACTION_OUTPUT_THRESHOLD` | `20000` | Octets de sortie d'outil par fenêtre d'avis |
+| `APOTHEM_HOOK_STATE_DIR` | voir ci-dessous | Répertoire de l'état de hook par session |
+
+L'état de hook par session vit dans un répertoire par utilisateur créé avec le
+mode `0700` : `APOTHEM_HOOK_STATE_DIR` s'il est défini, sinon
+`${CLAUDE_PLUGIN_DATA}/state` pour le plugin Claude Code, sinon
+`$XDG_STATE_HOME/apothem`, sinon `~/.local/state/apothem`
+(`%LOCALAPPDATA%\apothem\state` sous Windows).
 
 ## Inventaire généré des messages de hook
 

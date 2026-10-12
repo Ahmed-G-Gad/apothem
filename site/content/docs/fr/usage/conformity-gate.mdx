@@ -1,50 +1,110 @@
 ---
-title: "Porte de conformité"
-description: "Exécutez la porte de conformité d'Apothem pour vérifier la santé de l'écosystème."
+title: "Portail de conformité"
+description: "Exécutez le portail de conformité d'Apothem pour vérifier la santé de l'écosystème."
 machineTranslated: true
-sourceHash: "9e8082c92412b0a9"
+sourceHash: "ea155671db71b76d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-La porte de conformité dans `src/apothem/conformity/gate.py` exécute quinze
-vérifications mécaniques sur chaque artefact que l'opérateur rédige.
+Le portail de conformité, à `src/apothem/conformity/gate.py`, exécute la
+fraction mécanique du portail de pré-émission à quinze barres (M1-M15) sur
+chaque artefact que rédige l'opérateur.
 
-## Exécuter la porte
+## Exécuter le portail
+
+Le portail est **consultatif par défaut** : il signale les constats et se
+termine avec le code `0`, de sorte qu'une exécution locale ne vous bloque
+jamais. Ajoutez `--strict` (ou définissez `APOTHEM_CONFORMITY_STRICT=1`) pour
+obtenir un code de sortie non nul en présence d'un constat bloquant — le mode
+qu'utilisent la CI et pre-commit pour faire échouer une modification en
+infraction.
 
 ```bash
-python -m apothem.conformity.gate
+# Advisory: report every validator's findings across the repo, exit 0
+python -m apothem.conformity.gate --all .
+
+# Strict: exit non-zero (code 2) when a blocking finding is present
+python -m apothem.conformity.gate --all --strict .
 ```
 
-## Barres de la porte
+Codes de sortie : `0` propre (ou consultatif), `2` un blocage par constats en
+mode strict, `3` une erreur d'utilisation : un drapeau ou un nom de validateur
+inconnu, un fichier qui n'existe pas, ou un répertoire racine qui n'existe pas.
+`--help` affiche l'utilisation complète et se termine avec le code `0`. Chaque
+validateur autonome accepte le même `--help` et se termine avec le code `3` sur
+un drapeau inconnu ou une racine manquante.
+
+Une racine relative telle que `.` est résolue en chemin absolu avant
+l'exécution de tout validateur ; `--all .` et `--all "$PWD"` inspectent donc la
+même arborescence. Chaque validateur signale `inspected` — le nombre de cibles
+qu'il a examinées — et `--all` recopie ce nombre dans chaque entrée de
+résultat. Un validateur qui n'a rien inspecté signale `passed: false`, de sorte
+qu'un mauvais répertoire de travail ne peut pas réussir silencieusement. Les
+deux validateurs de suites de planification font exception : les suites de
+planification vivent dans l'arborescence `.apothem/plans/` ignorée par git ;
+ils signalent donc `empty_scope_expected: true` sur un checkout propre et
+réussissent malgré tout. Les validateurs de flux de travail font de même
+lorsque le projet n'a pas encore de répertoire `.github/workflows/`, et le
+validateur des sujets de commit également lorsque le répertoire n'a aucun
+historique de commits.
+
+## Barres du portail
 
 | Barre | Vérification | Type |
 |-----|-------|------|
-| M1 | Alignement de la portée | Raisonnée |
-| M2 | Isolation interne du plan (CM-7) | Mécanique |
-| M3 | Conformité aux normes | Raisonnée |
-| M4 | Validité du frontmatter | Mécanique |
-| M5 | Aucune formulation interdite | Mécanique |
-| M6 | Divulgation éditoriale | Raisonnée |
-| M7 | Aucune référence de plan dans les artefacts | Mécanique |
-| M8 | En-tête de paternité présent | Mécanique |
-| M9 | Évaluation honnête | Raisonnée |
-| M10 | Discipline de nommage | Mécanique |
-| M11 | Dispositif de sprint | Raisonnée |
-| M12 | Disposition canonique | Mécanique |
-| M13 | Soin du code | Raisonnée |
-| M14 | Participation systémique | Raisonnée |
-| M15 | Paternité humaine | Mécanique |
+| M1 | Agnosticisme vis-à-vis du projet hôte | Raisonnée |
+| M2 | Divulgation éditoriale | Mécanique |
+| M3 | Dix dimensions de qualité | Raisonnée |
+| M4 | Auto-application | Mécanique |
+| M5 | Autorité (aucune identité / aucun point de terminaison / aucun secret fabriqués) | Mécanique |
+| M6 | Incorporation d'expertise | Raisonnée |
+| M7 | Annotation des options | Mécanique |
+| M8 | Caractère définitif | Mécanique |
+| M9 | Levier visuel | Raisonnée |
+| M10 | Liaison bidirectionnelle | Mécanique |
+| M11 | Sprints agiles | Raisonnée |
+| M12 | Rapports de phase et agencement canonique | Mécanique |
+| M13 | Métier du code | Mécanique |
+| M14 | Systémicité | Raisonnée |
+| M15 | Prêt pour la production | Mécanique |
 
 ## Vérifications ciblées
 
 ```bash
-# Exécuter une seule vérification
+# List every registered validator
+python -m apothem.conformity.gate --list
+
+# Run a single named validator
 python -m apothem.conformity.gate --check multi-surface-coherence
 
-# Exécuter sur un fichier spécifique
+# Run every validator against one file
 python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 ```
 
+Le mode `--hook` (`python -m apothem.conformity.gate --hook`) est le point
+d'entrée appelé par l'environnement : il lit sur stdin une charge utile JSON
+d'entrée d'outil et exécute la chaîne de matchers par écriture sur l'écriture
+en attente. C'est la forme qu'invoque le hook `PreToolUse` déployé ; vous
+l'appelez rarement à la main.
+
+Le mode hook est **limité à un ensemble de répertoires**. Il n'exécute la
+chaîne de matchers que sur les écritures dont la cible relève de l'un d'eux ;
+une écriture située hors de toutes les portées est court-circuitée en une
+réussite silencieuse. Les valeurs par défaut sont les racines d'environnement
+de portée utilisateur, compatibles avec les hooks, dans lesquelles Apothem
+s'installe — la page de chaque environnement, dans la section Adaptateurs
+d'environnement, nomme sa propre racine. Définissez `APOTHEM_CONFORMITY_SCOPE`
+sur un répertoire pour les remplacer :
+
+```bash
+# Run the per-write matcher chain against one project tree instead
+export APOTHEM_CONFORMITY_SCOPE=/path/to/project
+```
+
+Un hook qui semble ne rien faire relève généralement d'une écriture hors portée
+plutôt que d'un échec — comparez d'abord la cible de l'écriture aux portées
+ci-dessus.
+
 ## Intégration CI
 
-La porte s'exécute en CI via `.github/workflows/conformity.yml` à chaque push.
+Le portail s'exécute en CI via `.github/workflows/conformity.yml` à chaque push.

@@ -2,18 +2,19 @@
 title: "Règles"
 description: "Règles comportementales toujours actives et filtrées par chemin régissant la résolution de problèmes, l'artisanat du code, l'architecture propre, la planification et la qualité à travers l'ensemble des règles comportementales."
 machineTranslated: true
-sourceHash: "8e2637435d5ab460"
+sourceHash: "84db4f5243d1ad02"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Les règles comportementales sont des fichiers plats sous `src/apothem/rules/` avec le
-suffixe `*.md`. Chaque règle est autonome — Purpose,
-Obligations, Seriousness Scaling, Anti-Patterns, Enforcement, Bindings — et
-est soit toujours active, soit filtrée par chemin.
+Les règles comportementales vivent sous forme de fichiers plats sous
+`src/apothem/rules/`, avec le suffixe `*.md`. Chaque règle est autonome —
+Purpose, Obligations, Seriousness Scaling, Anti-Patterns, Enforcement,
+Bindings — et est soit toujours active, soit filtrée par chemin.
 
 ## Règles actives
 
-Le registre canonique est la cohorte de règles. Le même ensemble sous forme plate :
+Le registre canonique est la cohorte de règles. Le même ensemble sous forme
+plate :
 
 | Règle | Portée | Implémente |
 |------|-------|------------|
@@ -46,13 +47,37 @@ alwaysApply: <true | false>
 ---
 ```
 
-Le champ `pathFilter` est omis sur les règles toujours actives et présent sur les
-règles filtrées par chemin. La vérification `frontmatter-cohort` du validateur
-vérifie le contrat sur chaque fichier de règle.
+Sur une règle toujours active, `pathFilter` est la chaîne vide (`""`) et
+`alwaysApply` vaut `true` ; sur une règle filtrée par chemin, `pathFilter` porte
+la liste de globs et `alwaysApply` vaut `false`. Le contrat lisible par machine
+est
+[`frontmatter_grep`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/frontmatter_grep.py)
+(`{name, description, pathFilter, alwaysApply}`) ; la vérification
+`frontmatter-cohort` du validateur le vérifie sur chaque fichier de règle.
+
+`pathFilter` et `alwaysApply` sont neutres vis-à-vis de l'environnement. Chaque
+adaptateur les traduit là où son environnement dispose d'un champ de portée
+natif. Claude Code ne lit que `paths:` dans une règle et charge au lancement
+toute règle qui en est dépourvue ; l'installation par le moteur
+(`apothem install --harness claude-code`) écrit donc chaque règle filtrée par
+chemin dans `~/.claude/rules/` avec une liste `paths:` construite à partir de
+son `pathFilter`, et copie les règles toujours actives sans modification. Les 28
+règles toujours actives se chargent à chaque session ; les 63 compagnons filtrés
+par chemin se chargent lorsque l'assistant lit un fichier correspondant.
+
+OpenCode ne dispose d'aucun champ de portée par règle : il combine dans chaque
+session tous les fichiers que nomme la liste `instructions` de son
+`opencode.json`. L'installation OpenCode (`apothem install --harness opencode`)
+liste donc votre document de profil et uniquement les règles dont `alwaysApply`
+vaut `true`, à raison d'un chemin `~/.config/opencode/...` explicite par
+fichier, lu depuis les fichiers de règles au moment où la configuration est
+écrite. Chaque règle, y compris les règles filtrées par chemin, est tout de même
+installée sous `~/.config/opencode/.apothem/support/rules/`, où une règle, une
+skill ou une commande qui en cite une la lit à la demande.
 
 ## Discipline de rédaction
 
-- **Autonome.** Chaque règle a ses propres sections Purpose, Obligations,
+- **Autonome.** Chaque règle possède ses propres sections Purpose, Obligations,
   Anti-Patterns et Enforcement.
 - **Bloc Bindings.** Chaque règle se termine par le bloc Bindings canonique à
   cinq directions (Drives → / Satisfies → / Established by ↑ / Gated by ← /
@@ -60,7 +85,7 @@ vérifie le contrat sur chaque fichier de règle.
 - **Langage de domaine uniquement.** Aucune référence interne au plan — voir
   `CLAUDE.md` CM-7.
 
-## Inventaire de Règles généré
+## Inventaire généré des règles
 
 {/* apothem:generated-reference:start */}
 

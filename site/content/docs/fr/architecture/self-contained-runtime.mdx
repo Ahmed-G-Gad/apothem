@@ -2,7 +2,7 @@
 title: "Runtime autonome"
 description: "Comment le moteur d'Apothem s'exécute depuis n'importe quel checkout — dépendances internalisées, le modèle d'invocation PYTHONPATH=src et le bootstrap de l'arbre du plugin."
 machineTranslated: true
-sourceHash: "8237c82eddaa9422"
+sourceHash: "c2671b7c39fdd8dd"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,8 +17,8 @@ besoin d'aucun script de console installé.
 ## Arbre de dépendances internalisées
 
 La pile de validation et de sérialisation est internalisée sous forme de code
-Python pur sous `src/apothem/_vendor/`, chaque paquet à côté de son fichier de
-licence d'origine :
+source Python pur sous `src/apothem/_vendor/`, chaque paquet à côté du fichier
+de licence de son projet d'origine :
 
 - `yaml` (le parseur/émetteur en Python pur ; l'extension C optionnelle libyaml
   n'est pas embarquée)
@@ -30,43 +30,50 @@ licence d'origine :
 - `typing_extensions`
 
 Les copies internalisées priment sur toute version installée sur le système : le
-bootstrap place le répertoire du vendor en tête de `sys.path`, devant
-site-packages. La politique de sélection — ce qui est internalisé, ce qui ne
-l'est pas et comment les paquets internalisés sont rafraîchis — est documentée
-dans la
+bootstrap du plugin, le shim npm, les installateurs et le point d'entrée
+`python -m apothem` lui-même placent chacun le répertoire du vendor dans
+`sys.path` devant site-packages. La politique de sélection — ce qui est
+internalisé, ce qui ne l'est pas et comment les paquets internalisés sont
+rafraîchis — est documentée dans la
 [stratégie d'internalisation des dépendances](/docs/architecture/vendoring-strategy).
 
 Deux dépendances restent hors de l'arbre : **`click`** et **`rich`**, les
 bibliothèques orientées terminal qu'importe la CLI. Elles doivent être
 importables sous l'interpréteur qui exécute le moteur ; les installateurs
-vérifient les deux, nomment toute dépendance manquante et proposent de
-l'installer pour vous — avec votre confirmation, ou automatiquement avec `--yes` /
-`APOTHEM_AUTO_INSTALL_DEPS=1`.
+vérifient les deux, nomment celle qui manque et proposent de l'installer pour
+vous — avec votre confirmation, ou automatiquement avec `--yes` /
+`APOTHEM_AUTO_INSTALL_DEPS=1`. Sur tous les autres canaux, le point d'entrée
+vérifie les deux avec la bibliothèque standard avant d'importer la CLI, et une
+dépendance manquante l'arrête avec une erreur qui nomme la commande `pip` exacte
+pour l'interpréteur en cours d'exécution (une enveloppe JSON avec le code
+`runtime.dependency_missing` sous `--json`).
 
 ## Le modèle d'invocation `python -m`
 
 Apothem ne déclare intentionnellement aucun script de console dans
-`pyproject.toml` — les scripts de console n'existent que lorsqu'un gestionnaire de
-paquets les place sur le `PATH`, et le runtime autonome n'en suppose jamais un. Le
-moteur a en revanche deux surfaces d'invocation :
+`pyproject.toml` — les scripts de console n'existent que lorsqu'un gestionnaire
+de paquets les place sur le `PATH`, et le runtime autonome n'en suppose jamais
+un. Le moteur dispose plutôt de deux surfaces d'invocation :
 
 | Surface | Invocation | Contexte |
 | ------- | ---------- | ------- |
 | CLI du moteur | `python -m apothem <command>` | Un arbre de code avec `src/` sur le `PYTHONPATH` (checkout, cache npx, arbre du plugin) |
-| Runtime des hooks | `python "<harness-root>/apothem/hooks/dispatch.py" <event>` | La copie matérialisée sous la racine de l'environnement, par chemin absolu |
+| Runtime des hooks | `python "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | La copie matérialisée sous l'arborescence partagée `.apothem/support/` de la racine de l'environnement, par chemin absolu |
 
-- `python -m apothem` exécute `src/apothem/__main__.py`, qui appelle
-  `apothem.cli:main` — le groupe de commandes Click.
-- Les entrées de hook dans le `settings.json` / `hooks.json` matérialisé
-  invoquent le dispatcheur (et, pour Claude Code, le gate de conformité à
-  `<harness-root>/apothem/conformity/gate.py`) par chemin de script absolu. Tous
-  deux sont des scripts autonomes de la stdlib qui amorcent leur propre
-  `sys.path`, et les fixtures de schéma du gate voyagent à côté de lui dans
-  `<harness-root>/apothem/schemas/`, de sorte que les hooks s'exécutent **sans
-  aucun paquet `apothem` importable sur l'hôte**. Les modèles portent un token
-  `${HARNESS_ROOT}` qu'`apothem install` rend en chemin réel de la racine de
-  l'environnement sous forme de barre oblique avant.
-- Depuis un checkout de code, les formes de module
+- `python -m apothem` exécute `src/apothem/__main__.py`, qui place
+  `src/apothem/_vendor` dans `sys.path`, vérifie que `click` et `rich` sont
+  importables, puis appelle `apothem.cli:main` — le groupe de commandes Click.
+- Les entrées de hook du `settings.json` / `hooks.json` matérialisé invoquent
+  le répartiteur (et, pour Claude Code, le portail de conformité à
+  `<harness-root>/.apothem/support/conformity/gate.py`) par chemin de script
+  absolu. Tous deux sont des scripts autonomes de la bibliothèque standard qui
+  amorcent leur propre `sys.path`, et les fixtures de schéma du portail
+  voyagent à côté de lui dans `<harness-root>/.apothem/support/schemas/`, de
+  sorte que les hooks s'exécutent **sans aucun paquet `apothem` importable sur
+  l'hôte**. Les templates portent un jeton `${HARNESS_ROOT}` qu'`apothem install`
+  rend en chemin réel de la racine de l'environnement, sous forme à barres
+  obliques.
+- Depuis un checkout du code source, les formes de module
   `python -m apothem.hooks.dispatch` et
   `python -m apothem.conformity.gate` exécutent le même code pour le
   développement.
@@ -94,33 +101,34 @@ plutôt que d'importer silencieusement une copie système périmée.
 
 Les installateurs par script déposent un clone git de l'arbre de code à
 `~/.apothem` (remplaçable par `APOTHEM_HOME`) et exécutent le moteur depuis lui —
-aucun paquet Python n'est installé dans `site-packages` au-delà de l'offre
-optionnelle des prérequis `click` / `rich`. Le clone est le dépôt complet, y
-compris la suite de tests et le site de documentation que le runtime n'importe
-jamais, pour deux raisons délibérées : le moteur **matérialise ses cohortes** —
-règles, compétences, commandes et modèles — directement depuis l'arbre vers
-chaque environnement, de sorte que l'arbre est la source vivante de vérité et pas
-seulement un runtime ; et le répertoire `.git` reste en place pour qu'`apothem
-update` fasse un fast-forward du clone existant au lieu de retélécharger.
+aucun paquet Python n'est installé dans `site-packages` au-delà de la
+proposition optionnelle des prérequis `click` / `rich`. Le clone est le dépôt
+complet, y compris la suite de tests et le site de documentation que le runtime
+n'importe jamais, pour deux raisons délibérées : le moteur **matérialise ses
+cohortes** — règles, skills, commandes et templates — directement depuis l'arbre
+dans chaque environnement, de sorte que l'arbre est la source de vérité vivante
+et pas seulement un runtime ; et le répertoire `.git` reste en place pour
+qu'`apothem update` fasse avancer le clone existant en fast-forward au lieu de
+le retélécharger.
 
-Cette disposition d'exécution depuis le code est le même motif que celui
-qu'utilisent des outils comme `nvm`, `pyenv` et `oh-my-zsh` — quelques mégaoctets
-de code plus l'historique, supprimables en une seule étape avec le
-désinstallateur (il n'y a aucun état système à défaire). Une empreinte plus
-légère — un checkout superficiel ou partiel qui omet `tests/` et `site/` — est
-possible, mais échangerait le chemin de mise à jour sur place, vérifié par
-signature et basé sur `git` ; la disposition actuelle privilégie une mise à jour
-simple et vérifiable plutôt qu'un disque minimal.
+Cette disposition d'exécution depuis le code source suit le même motif que des
+outils comme `nvm`, `pyenv` et `oh-my-zsh` — quelques mégaoctets de code source
+plus l'historique, supprimables en une seule étape avec le désinstallateur (il
+n'y a aucun état système à défaire). Une empreinte plus légère — un checkout
+superficiel ou partiel qui omet `tests/` et `site/` — est possible, mais
+sacrifierait le chemin de mise à jour sur place, vérifié par signature et fondé
+sur `git` ; la disposition actuelle privilégie une mise à jour simple et
+vérifiable plutôt qu'un espace disque minimal.
 
 ## Comment le runtime trouve Python
 
 Les installateurs en une étape et le shim npx localisent un interpréteur de la
 même façon : ils sondent `python3`, `python`, les noms versionnés (`python3.14`
 jusqu'à `python3.10`) et `py -3` sous Windows ; ils rejettent les shims du
-lanceur Microsoft Store ; et acceptent le premier candidat rapportant la version
-3.10 ou plus récente. Lorsqu'ils sont exécutés depuis un arbre de code, les
-installateurs réutilisent le localisateur embarqué `hooks/lib/find-python`, qui
-applique le même plancher.
+lanceur Microsoft Store ; et ils acceptent le premier candidat qui signale la
+version 3.10 ou une version plus récente. Lorsqu'ils sont exécutés depuis un
+arbre de code source, les installateurs réutilisent le localisateur embarqué
+`hooks/lib/find-python`, qui applique le même plancher.
 
 ## Prochaine étape recommandée
 

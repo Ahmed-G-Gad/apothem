@@ -1,31 +1,60 @@
 ---
 title: "Paramètres"
-description: "Configuration du harness Claude Code dans settings.json, couvrant les permissions d'outils, le câblage des hooks, les variables d'environnement et les modèles de ligne d'état."
+description: "Configuration de l'environnement Claude Code dans settings.json : permissions des outils, câblage des hooks, variables d'environnement et modèles de ligne d'état."
 machineTranslated: true
-sourceHash: "e188546f5bc44c6a"
+sourceHash: "986e09594ded6bad"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-`settings.json` porte la configuration du harness Claude Code : câblage des hooks,
-permissions d'outils, variables d'environnement et réglages de la ligne d'état.
+`settings.json` porte la configuration de l'environnement Claude Code : câblage
+des hooks, permissions des outils, variables d'environnement et réglages de la
+ligne d'état.
 
-La référence canonique complète vit dans
+La référence canonique complète se trouve dans
 [settings-reference.md](/docs/reference/settings-reference). Cette page résume le contrat
-et pointe vers la référence plus approfondie.
+et renvoie à la référence détaillée.
 
 ## Sections
 
 | Section | Objet |
 |---------|---------|
-| `permissions` | Listes blanches et noires d'outils par matcher |
-| `hooks` | Table de commandes de hook indexée par événement (le câblage canonique) |
+| `permissions` | Listes blanches et listes noires d'outils par matcher |
+| `hooks` | Table des commandes de hook indexée par événement (le câblage canonique) |
 | `env` | Variables d'environnement par session |
-| `statusLine` | Modèle de ligne d'état que l'hôte rend |
+| `statusLine` | Modèle de ligne d'état que l'hôte affiche |
 
-## Invariant de modèle unique
+## Invariant du modèle unique
 
 L'adaptateur Claude Code livre un seul modèle `settings.json`. Les commandes de
-hook utilisent la forme exec (`command` plus `args`) au lieu de chaînes de commande
-spécifiques au shell, de sorte que le comportement multi-OS est revu au sein d'un
-unique fichier. Les nouvelles entrées de permissions et les événements de hook
-atterrissent dans ce fichier de façon atomique.
+hook utilisent la forme exec (`command` plus `args`) au lieu de chaînes de
+commande propres à un shell, de sorte que le comportement multi-OS est revu dans
+un seul fichier. Les nouvelles entrées de permissions et les nouveaux événements
+de hook arrivent dans ce fichier de façon atomique.
+
+## Fusion dans votre propre fichier de settings
+
+`settings.json` est aussi votre fichier. L'installation y fusionne le modèle
+plutôt que de le remplacer, et consigne dans le journal d'installation
+(`~/.apothem/state/<harness>/ledger.jsonl`) exactement quelles clés et quelles
+entrées de liste elle a ajoutées :
+
+- `permissions.allow` et `permissions.deny` sont fusionnés par union : vos règles
+  restent en premier et celles d'Apothem sont ajoutées à la suite. Une règle de
+  refus que vous avez écrite est toujours conservée, et Claude Code applique les
+  règles de refus avant les règles d'autorisation.
+- Vos propres gestionnaires de hook restent en place. Un gestionnaire n'est
+  considéré comme appartenant à Apothem que lorsqu'il exécute un script
+  qu'Apothem a installé sous la racine de l'environnement ; un gestionnaire qui
+  appelle un autre `hooks/dispatch.py` est donc le vôtre.
+- Une réinstallation ne remplace que ce qu'Apothem a ajouté la fois précédente :
+  une entrée que le modèle abandonne est supprimée, et une entrée que vous avez
+  ajoutée est conservée.
+- La désinstallation ne supprime que les entrées que le journal enregistre comme
+  appartenant à Apothem. Une règle qui se trouve être identique à l'une de celles
+  d'Apothem (par exemple `Read` dans votre propre liste `allow` avant la première
+  installation) reste en place. Le fichier n'est supprimé que si Apothem l'a créé
+  et qu'il n'y reste plus rien qui vous appartienne.
+
+Les mêmes règles s'appliquent aux autres fichiers de settings dans lesquels
+Apothem fusionne son contenu, comme les tables de serveurs MCP du `settings.json`
+de Qwen Code et de l'`opencode.json` d'OpenCode.

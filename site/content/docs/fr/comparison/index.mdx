@@ -2,79 +2,108 @@
 title: "Comparaison"
 description: "Comment évaluer Apothem face à une configuration d'environnement maintenue à la main et à d'autres approches de configuration, avec une matrice de fonctionnalités et des pages par environnement."
 machineTranslated: true
-sourceHash: "feb753ba49e3a2c5"
+sourceHash: "bb767de9bd99533a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Apothem est un gestionnaire de configuration d'environnements d'IA indépendant
-de l'hôte. Un seul profil partagé dans `~/.config/apothem/profile.yaml` est
-matérialisé dans dix-sept surfaces de configuration natives d'environnement. Cette
-section pose le cadre pour évaluer Apothem face aux alternatives que vous
+de l'hôte. Un seul profil partagé à `~/.config/apothem/profile.yaml` se
+matérialise dans dix-sept surfaces de configuration natives des environnements.
+Cette section pose le cadre pour évaluer Apothem face aux alternatives que vous
 utilisez déjà.
 
 ## Comment Apothem se compare
 
-D'autres outils résolvent des tranches adjacentes de ce problème. Les
+Les faits concernant les pairs sur cette page datent du **2026-10-02** et sont
+tirés du README ou de la documentation propre à chaque projet (voir
+[Sources](#sources)) ; revérifiez-les à chaque version mineure.
+
+D'autres outils résolvent des tranches voisines de ce problème. Les
 gestionnaires de configuration basés sur des fichiers comme **chezmoi** et
-**GNU Stow** placent ou modèlent des fichiers mais ne traduisent jamais une
-source vers la configuration *native* de chaque outil. Les CLI
-de synchronisation de règles inter-outils comme **rulesync** génèrent bien des
-fichiers natifs par outil pour un plus grand nombre d'outils que les dix-sept
-d'Apothem, et une unité synchronisée d'ampleur comparable. La distinction
-d'Apothem est la **discipline de gouvernance et de cycle de vie distribuée
-autour de la synchronisation** — un portail mécanique de conformité, des flux
-déterministes, une forteresse d'audit et un cycle de vie réversible et vérifié.
+**GNU Stow** placent des fichiers, les lient ou les génèrent à partir de
+templates, mais ne traduisent jamais une source unique vers le schéma de
+configuration *natif* de chaque environnement. Les CLI de synchronisation
+inter-outils génèrent des fichiers par outil à partir d'une source unique :
+**rulesync** génère une configuration native pour 60 outils de codage et deux
+standards ouverts, sur une unité synchronisée plus large que celle d'Apothem ;
+**ruler** distribue un répertoire `.ruler/` unique vers 33 cibles, en
+concaténant les règles dans le fichier d'instructions de chaque outil et en
+traduisant les serveurs MCP, les skills et les sous-agents en configuration
+native. Ce qui distingue Apothem, c'est la **discipline de gouvernance et de
+cycle de vie livrée autour de la synchronisation** : un portail de conformité
+mécanisé, des pipelines déterministes, une forteresse d'audit et un cycle de
+vie réversible et vérifié.
 
-| Capacité | Apothem | Gestionnaires de config. de fichiers (chezmoi, Stow) | Synchro. de règles inter-outils (rulesync) | Config. native par outil |
-| ---------- | :-----: | :----------------------------------: | :-----------------------------: | :--------------------: |
-| Une source vers les schémas natifs de nombreux outils | Oui — dix-sept adaptateurs d'environnement | Non — copie / lien symbolique, sans traduction | Oui | Non — un seul outil |
-| Unité synchronisée | règles, skills, hooks, commandes slash, MCP | fichiers arbitraires | règles, ignore, MCP, commandes, sous-agents, skills, hooks, permissions | — |
-| Corpus de gouvernance (règles de comportement plus un portail mécanique de conformité) | Oui — `python -m apothem.conformity.gate` | Non | Non | Non |
-| Flux déterministes de planification et d'investigation | Oui — de `/plan-spec` à `/plan-execute`, `/research` en treize étapes | Non | Non | Non |
-| Forteresse d'audit qui détecte et remédie | Oui — balayage de onze commandes, boucle de réaudit `/fortress` | Non | Non | Non |
-| Versions renforcées face à la chaîne d'approvisionnement | Oui — SBOM, Sigstore, SLSA, cible Scorecard | Non | varie | Non |
-| Cycle de vie réversible et vérifié | Oui — sauvegarde, `apothem verify --json`, désinstallation sans orphelins | varie | varie | — |
+| Capacité | Apothem | Gestionnaires de configuration par fichiers (chezmoi, Stow) | rulesync | ruler |
+| ---------- | :-----: | :----------------------------------: | :------: | :---: |
+| Une source vers les schémas natifs de nombreux outils | Oui — dix-sept adaptateurs d'environnement | Non — copie, lien symbolique ou template, sans traduction | Oui — 60 outils plus les standards AGENTS.md et Agent Skills | En partie — règles concaténées dans le fichier d'instructions de chaque outil ; MCP, skills et sous-agents écrits sous forme native |
+| Unité synchronisée | règles, skills, hooks, commandes slash, MCP | fichiers arbitraires | règles, ignore, MCP, commandes, sous-agents, skills, hooks, permissions, checks (instructions de vérification pour la revue de code) | règles, MCP, skills, sous-agents |
+| Corpus de gouvernance (règles comportementales plus un portail de conformité mécanique) | Oui — `python -m apothem.conformity.gate` | Non | Non — sa fonctionnalité `checks` synchronise des vérifications de revue de code vers les outils ; aucun portail de conformité sur les règles | Non |
+| Pipelines déterministes de planification et de recherche | Oui — de `/plan-spec` à `/plan-execute`, `/research` en treize étapes | Non | Non | Non |
+| Forteresse d'audit qui détecte et corrige | Oui — balayage à onze commandes, boucle de ré-audit `/fortress` | Non | Non | Non |
+| Publications durcies pour la chaîne d'approvisionnement | Oui — SBOM, Sigstore, SLSA, objectif Scorecard | Non comparé | Non indiqué dans son README | Non indiqué dans son README |
+| Cycle de vie réversible et vérifié | Oui — sauvegarde, `apothem verify --json`, désinstallation sans orphelin | chezmoi : `chezmoi verify` vérifie chaque cible ; Stow : liens symboliques uniquement | Non indiqué dans son README | sauvegardes `.bak` et `ruler revert` ; aucune commande de vérification dans son README |
 
-Là où un concurrent est plus fort, il est nommé : **rulesync** atteint plus
-d'outils et porte une unité synchronisée d'ampleur comparable, et plusieurs
-outils de synchronisation matérialisent des schémas natifs. Apothem échange le
-décompte brut d'outils contre la discipline de gouvernance, d'audit et de cycle
-de vie distribuée autour de la synchronisation — un portail de conformité, des
-flux déterministes `/plan` et `/research`, une forteresse d'audit de onze
-commandes, une mémoire durable et un cycle de vie réversible et vérifié — qu'un
-outil de synchronisation de règles ne porte pas.
+Là où un pair est plus fort, il est nommé : **rulesync** atteint plus de trois
+fois plus d'outils et synchronise une unité plus large (permissions et
+vérifications de revue comprises), et **ruler** atteint près de deux fois plus
+d'outils, avec sa propre commande de retour arrière. Apothem échange le nombre
+brut d'outils contre la discipline de gouvernance, d'audit et de cycle de vie
+livrée autour de la synchronisation — un portail de conformité, des pipelines
+déterministes de planification et de recherche, une forteresse d'audit à onze
+commandes, une mémoire durable et un cycle de vie réversible et vérifié —
+qu'aucun des deux outils de synchronisation ne porte.
+
+### Sources
+
+Toutes consultées le 2026-10-02, sur la dernière publication de chaque projet à
+cette date.
+
+- rulesync (npm `rulesync`) : [README](https://github.com/dyoshikawa/rulesync#readme)
+  (tableau des outils pris en charge : 60 outils de codage et deux standards
+  ouverts) et
+  [référence des formats de fichiers](https://github.com/dyoshikawa/rulesync/blob/main/docs/reference/file-formats.md)
+  (la fonctionnalité `checks`).
+- ruler (npm `@intellectronica/ruler`) : [README](https://github.com/intellectronica/ruler#readme)
+  (tableau des agents pris en charge, `--backup`, `revert`).
+- chezmoi : [page d'accueil](https://www.chezmoi.io/) et
+  [`chezmoi verify`](https://www.chezmoi.io/reference/commands/verify/).
+- GNU Stow : [page du projet](https://www.gnu.org/software/stow/)
+  (« un gestionnaire de fermes de liens symboliques »).
 
 ## Comment comparer
 
 Comparez selon trois axes :
 
 1. **Source de vérité.** Où vivent vos règles, agents, commandes et paramètres ?
-   Apothem conserve un seul corpus partagé et en restitue le format natif de
-   chaque environnement. La configuration maintenue à la main garde une copie
+   Apothem conserve un seul corpus partagé et en génère le format natif de
+   chaque environnement. Une configuration maintenue à la main garde une copie
    par outil.
-2. **Coût de la dérive.** Que se passe-t-il quand vous modifiez une règle ?
+2. **Coût de la dérive.** Que se passe-t-il lorsque vous modifiez une règle ?
    Apothem propage le changement à chaque environnement installé lors de
-   `apothem update`. La configuration maintenue à la main exige d'éditer le
-   fichier natif de chaque outil séparément et de les garder alignés de mémoire.
+   `apothem update`. Une configuration maintenue à la main vous oblige à
+   modifier séparément le fichier natif de chaque outil et à les garder alignés
+   de mémoire.
 3. **Vérification.** Comment savez-vous que chaque environnement est
    correctement configuré ? Apothem fournit `apothem verify --harness <name>` et
-   `apothem doctor`. La configuration maintenue à la main n'a aucune
+   `apothem doctor`. Une configuration maintenue à la main n'a aucune
    vérification intégrée.
 
 ## Matrice de fonctionnalités
 
-La matrice oppose Apothem aux deux alternatives vers lesquelles les opérateurs se
-tournent en premier : maintenir à la main la configuration native de chaque
-environnement, et gérer ces fichiers via un gestionnaire de dotfiles polyvalent.
+La matrice oppose Apothem aux deux alternatives vers lesquelles les opérateurs
+se tournent en premier : maintenir à la main la configuration native de chaque
+environnement, et gérer ces fichiers via un gestionnaire de dotfiles
+généraliste.
 
-| Capacité | Config. maintenue à la main | Gestionnaire de dotfiles | Apothem |
+| Capacité | Configuration maintenue à la main | Gestionnaire de dotfiles | Apothem |
 | ---------- | ---------------------- | --------------- | ------- |
-| Une seule source de vérité partagée | Non (une copie par outil) | Non (suit des fichiers, pas un profil) | Oui (un profil) |
-| Restitue les formats natifs de l'environnement | Manuel | Non | Oui (matérialiseur par adaptateur) |
-| Prévention de la dérive inter-environnements | Alignement manuel | Synchro. de fichiers uniquement | Oui (`apothem update`) |
-| Installation/désinstallation par environnement | Manuel | Partiel (lien/copie) | Oui (`install` / `uninstall`) |
+| Source de vérité unique et partagée | Non (une copie par outil) | Non (suit des fichiers, pas un profil) | Oui (un profil) |
+| Génère les formats natifs des environnements | Manuel | Non | Oui (materializer par adaptateur) |
+| Prévention de la dérive entre environnements | Alignement manuel | Synchronisation de fichiers uniquement | Oui (`apothem update`) |
+| Installation/désinstallation par environnement | Manuel | Partiel (lien symbolique/copie) | Oui (`install` / `uninstall`) |
 | Vérification intégrée | Aucune | Aucune | Oui (`verify` / `doctor`) |
-| Traduction de format par outil | Aucune | Aucune | Oui (`.mdc`, `.toml`, `.md` intégré) |
+| Traduction de format par outil | Aucune | Aucune | Oui (`.mdc`, `.toml`, `.md` embarqué) |
 | Dix-sept environnements à partir d'une seule entrée | Non | Non | Oui |
 
 ## Pages de comparaison
