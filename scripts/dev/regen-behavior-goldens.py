@@ -13,28 +13,30 @@ produced by two deterministic, HOME-isolated oracles:
 - ``_cli_oracle.capture`` — every CLI matrix invocation (self-clears + rewrites
   ``cli/``).
 
-Both oracles emit platform-independent bytes. They tokenize machine-specific
-paths (``_normalize_text`` / ``_path_variants``, including their JSON-escaped
-spellings), rewrite Windows separators to forward slashes in tokenized paths and
-in the relative adapter paths the CLI prints, pin Rich's rendering (no
-legacy-Windows box substitution, no color, a fixed width, table cells measured
-after tokenization), skip Click's probe of the host's bash, ignore the
-operator's ``CODEX_HOME``, store ledger targets in code-point path order, and
-write LF line-endings. A capture taken on Windows or Linux is therefore
-byte-identical, and this script is safe to run from a Windows checkout. The
-comparison layer (``_behavior_canon``) additionally collapses box-drawing,
-padding, separators, and array order, so the tests also accept a corpus
-captured before those pins existed.
+Both oracles emit platform-independent bytes: they tokenize machine-specific
+paths (``_normalize_text`` / ``_path_variants``), rewrite Windows separators in
+tokenized paths to forward slashes, and write LF line-endings. The install
+oracle also stores ledger targets in code-point path order. The CLI oracle also
+tokenizes the JSON- and markup-escaped spellings of those paths, spells the
+relative adapter paths ``harnesses list`` prints with forward slashes, pins
+Rich's rendering (no legacy-Windows box substitution, no color, a fixed width,
+table cells measured after tokenization), skips Click's probe of the host's
+bash, and ignores the operator's ``CODEX_HOME``. A capture taken on Windows or
+Linux is therefore byte-identical, and this script is safe to run from a
+Windows checkout. The comparison layer (``_behavior_canon``) additionally
+collapses box-drawing, padding, separators, and array order, so the tests also
+accept a corpus captured before those pins existed.
 
 Before it captures anything, the script stops when the result would depend on
 the machine rather than the source: an interpreter started with ``-OO`` or
 ``-v``, a Click or Rich version outside the ``pyproject.toml`` requirement, or
-ignored files and ignored-only directories under ``src/apothem`` (a Finder
-``.DS_Store``, an editor backup, a directory left holding only ``__pycache__``
-after a branch switch), which the installer would copy and the ledger would
-record. It captures into a staging directory beside the destination and swaps
-it in only after both oracles succeed, so a failed run leaves the committed
-corpus as it was.
+entries git ignores inside the source directories the installer copies (a
+Finder ``.DS_Store``, an editor backup, a directory left holding only
+``__pycache__`` after a branch switch), which an install would copy and the
+ledger would record. It captures into a staging directory inside the
+destination and swaps each subtree in by rename, restoring the committed
+subtrees if any step fails, so a failed run leaves the committed corpus as it
+was.
 
 Workflow:
 
@@ -176,76 +178,140 @@ def _installer_skips(path: PurePosixPath) -> bool:
     )
 
 
-def stray_source_paths(repo_root: Path) -> list[str] | None:
-    """Return the ignored entries under ``src/apothem`` that a capture would install.
+class SourceCheckError(RuntimeError):
+    """git is present but could not list the source tree."""
 
-    The installer copies every file a cohort directory holds, minus the
+
+def installed_source_roots(repo_root: Path) -> list[PurePosixPath]:
+    """Return the repository-relative directories the install manifest copies from.
+
+    Every harness's install entries name their sources relative to
+    ``src/apothem``; the directory sources (agents, commands, hooks, rules,
+    skills, templates and the like) are the trees an install walks, so an
+    entry outside them cannot reach a capture.
+    """
+    from apothem.lib.propagation import load_manifest
+
+    roots = {
+        SOURCE_ROOT / entry.source.rstrip("/")
+        for rules in load_manifest().values()
+        for entry in rules.install
+        if (repo_root / SOURCE_ROOT / entry.source).is_dir()
+    }
+    return sorted(roots)
+
+
+def stray_source_paths(repo_root: Path, roots: list[PurePosixPath]) -> list[str] | None:
+    """Return the ignored entries in *roots* that an install would copy.
+
+    The installer copies every file a source directory holds, minus the
     manifest's exclude list, without consulting git. A file git ignores (a
     Finder ``.DS_Store``, an editor ``~`` or ``.swp`` file, a mergetool
     ``.orig``) and a directory holding no file git would keep (left with only
-    ``__pycache__`` after a branch switch, or empty) therefore reach the
-    ledger and envelope goldens although ``git status`` shows nothing. Returns
-    the repository-relative POSIX paths, directories with a trailing ``/``,
-    sorted; ``None`` when git is unavailable or *repo_root* is not a work tree.
+    ``__pycache__`` after a branch switch, or emptied by a plain ``rm``)
+    therefore reach the ledger and envelope goldens although ``git status``
+    shows nothing. Returns the repository-relative POSIX paths, directories
+    with a trailing ``/``, sorted. Returns ``None`` when git is not on PATH or
+    *repo_root* has no ``.git``; raises :class:`SourceCheckError` with git's
+    message when git fails on the work tree.
     """
     git = shutil.which("git")
-    if git is None:
+    if git is None or not (repo_root / ".git").exists():
         return None
+    pathspecs = [str(root) for root in roots]
 
-    def ls_files(*options: str) -> list[str] | None:
+    def ls_files(*options: str) -> list[str]:
         result = subprocess.run(  # noqa: S603 — trusted invocation: literal argv against a `shutil.which`-resolved git, no shell
-            [git, "ls-files", "-z", *options, "--", str(SOURCE_ROOT)],
+            [git, "ls-files", "-z", *options, "--", *pathspecs],
             cwd=repo_root,
             capture_output=True,
             check=False,
         )
         if result.returncode != 0:
-            return None
+            lines = os.fsdecode(result.stderr).strip().splitlines()
+            raise SourceCheckError(
+                lines[0] if lines else f"git ls-files exited {result.returncode}"
+            )
         return [os.fsdecode(entry) for entry in result.stdout.split(b"\0") if entry]
 
     ignored = ls_files("--others", "--ignored", "--exclude-standard")
-    kept = ls_files("--cached", "--others", "--exclude-standard")
-    if ignored is None or kept is None:
-        return None
+    # A tracked file deleted from the working tree is still in the index; it
+    # keeps no directory on disk alive, so only files that exist count.
+    kept = [
+        path
+        for path in ls_files("--cached", "--others", "--exclude-standard")
+        if os.path.lexists(repo_root / path)
+    ]
     stray = {path for path in ignored if not _installer_skips(PurePosixPath(path))}
     kept_dirs = {
         parent.as_posix() for path in kept for parent in PurePosixPath(path).parents
     }
-    for dirpath, dirnames, _filenames in os.walk(repo_root / SOURCE_ROOT):
-        relative = Path(dirpath).relative_to(repo_root).as_posix()
-        if relative != str(SOURCE_ROOT) and relative not in kept_dirs:
-            stray.add(f"{relative}/")
-            dirnames.clear()
-            continue
-        dirnames[:] = [
-            name for name in dirnames if name not in _INSTALLER_SKIPPED_PARTS
-        ]
+    for root in roots:
+        for dirpath, dirnames, _filenames in os.walk(repo_root / root):
+            relative = Path(dirpath).relative_to(repo_root).as_posix()
+            if relative not in kept_dirs:
+                stray.add(f"{relative}/")
+                dirnames.clear()
+                continue
+            dirnames[:] = [
+                name for name in dirnames if name not in _INSTALLER_SKIPPED_PARTS
+            ]
     return sorted(stray)
+
+
+_SUBTREES = ("install_driver", "cli")
 
 
 def capture_staged(
     dest: Path, install_oracle: ModuleType, cli_oracle: ModuleType
 ) -> int:
-    """Capture both corpora beside *dest* and swap them in only on success.
+    """Capture both corpora into a staging directory and swap them in by rename.
 
     Each oracle clears its output directory before it captures, so capturing
     straight into the committed corpus left it deleted whenever a capture
-    raised. The staging directory sits beside *dest*, so the swap is a rename
-    on the same file system, and it is removed whether or not the run
-    succeeds. Returns the number of CLI captures.
+    raised. The staging directory sits inside *dest* (resolved), so every
+    swap is a rename on one file system even when *dest* is a symlink, a
+    junction or a mount point. Each committed subtree is renamed aside before
+    its replacement is renamed in; any failure, an interrupt included, renames
+    the committed subtrees back before the error propagates. The staging
+    directory is removed afterwards, unless that rollback itself failed, in
+    which case it is kept and named so nothing is lost. Returns the number of
+    CLI captures.
     """
     dest.mkdir(parents=True, exist_ok=True)
-    staging = Path(tempfile.mkdtemp(prefix=f".{dest.name}.regen-", dir=dest.parent))
+    staging = Path(tempfile.mkdtemp(prefix=".r", dir=dest.resolve()))
+    keep_staging = False
+    moved_aside: list[str] = []
+    swapped_in: list[str] = []
     try:
         install_oracle.capture_full(staging / "install_driver")
         cli_count = int(cli_oracle.capture(staging / "cli"))
-        for subtree in ("install_driver", "cli"):
+        for subtree in _SUBTREES:
             target = dest / subtree
             if target.exists():
-                shutil.rmtree(target)
+                target.replace(staging / f"committed-{subtree}")
+                moved_aside.append(subtree)
             (staging / subtree).replace(target)
+            swapped_in.append(subtree)
+    except BaseException:
+        try:
+            for subtree in reversed(swapped_in):
+                (dest / subtree).replace(staging / subtree)
+            for subtree in reversed(moved_aside):
+                (staging / f"committed-{subtree}").replace(dest / subtree)
+        except OSError:
+            keep_staging = True
+            print(
+                f"[FAIL] could not restore the corpus; the committed subtrees "
+                f"are in {staging} as committed-<name>",
+                file=sys.stderr,
+            )
+        raise
     finally:
-        shutil.rmtree(staging, ignore_errors=True)
+        if not keep_staging:
+            shutil.rmtree(staging, ignore_errors=True)
+            if staging.exists():
+                print(f"[WARN] could not remove {staging}", file=sys.stderr)
     return cli_count
 
 
@@ -261,7 +327,7 @@ def main() -> int:
 
     Post-conditions: both subtrees are rewritten from the current source, so
     the corpus reflects it exactly rather than accumulating stale entries; a
-    failed capture leaves the destination unchanged. ``--dest`` redirects the
+    failed capture or swap leaves the destination unchanged. ``--dest`` redirects the
     write to an alternate root, leaving the committed corpus untouched for a
     diff-only comparison. Returns ``0``.
     """
@@ -288,19 +354,26 @@ def main() -> int:
         (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"),
         importlib.metadata.version,
     )
-    stray = stray_source_paths(REPO_ROOT)
-    if stray is None:
-        print(
-            "[WARN] git is unavailable; skipped the check for ignored files "
-            "under src/apothem",
-            file=sys.stderr,
-        )
-    elif stray:
-        listed = "\n".join(f"      {path}" for path in stray)
+    try:
+        stray = stray_source_paths(REPO_ROOT, installed_source_roots(REPO_ROOT))
+    except SourceCheckError as error:
         problems.append(
-            "these ignored entries under src/apothem would be installed into "
-            f"the captures; delete or move them:\n{listed}"
+            f"git could not list the source tree ({error}), so the check for "
+            "ignored entries in the installed source directories could not run"
         )
+    else:
+        if stray is None:
+            print(
+                "[WARN] git or the .git directory is missing; skipped the check "
+                "for ignored entries in the installed source directories",
+                file=sys.stderr,
+            )
+        elif stray:
+            listed = "\n".join(f"      {path}" for path in stray)
+            problems.append(
+                "git ignores these entries, but they sit in source directories "
+                f"the installer copies; delete or move them:\n{listed}"
+            )
     if problems:
         print(
             "[FAIL] the capture would depend on this machine, not on the source:",

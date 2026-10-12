@@ -47,9 +47,12 @@ _ULID_RE = re.compile(r"\b[0-9A-HJKMNP-TV-Z]{26}\b")
 # "python3" carries no separator, so it is left intact: replacing it would
 # mangle the surrounding JSON string. The basename also covers the builds a
 # contributor may capture with: free-threaded (python3.14t), debug (python3.13d,
-# python_d.exe, python3.12-dbg), nogil, pythonw and PyPy. Only those suffixes
-# are accepted, so a path such as ".../skills/python-testing" never matches.
-_PYBIN_NAME = r"(?:[Pp]ython|[Pp]y[Pp]y)[0-9.]*(?:t|d|td|w|_d|-dbg|-nogil)?(?:\.exe)?"
+# python_d.exe, python3.14t_d.exe, python3.12-dbg), nogil, pythonw (also
+# pythonw3.14t.exe) and PyPy. Only those suffixes are accepted, so a path such
+# as ".../skills/python-testing" never matches.
+_PYBIN_NAME = (
+    r"(?:[Pp]ython|[Pp]y[Pp]y)w?[0-9.]*(?:t|d|td)?(?:_d|-dbg|-nogil)?(?:\.exe)?"
+)
 _PYBIN_RE = re.compile(r'"[^"\n]*[/\\]' + _PYBIN_NAME + '"')
 # The same path inside a JSON string that is itself carried in JSON (the
 # unified diff of settings.json that ``diff --format json`` prints): its quotes

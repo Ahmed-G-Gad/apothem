@@ -52,12 +52,12 @@ from typing import Any
 _BOX = re.compile(rb"\xe2(?:\x94[\x80-\xbf]|\x95[\x80-\xbf])")
 _SPACE_RUN = re.compile(rb"[ \t]{2,}")
 
-# Click probes the runtime bash version (a `bash --version` subprocess) when it
-# generates `completion bash`, and PREPENDS this notice when bash < 4.4 — which
-# is exactly macOS's system bash 3.2. The notice is environment-dependent (it
-# reflects the runner's bash, not the apothem CLI), so strip it with its
-# trailing escaped newline before comparing, so the generated script that
-# follows is what's diffed.
+# Click probes the host's bash (`bash --norc -c 'echo "${BASH_VERSION}"'`) when
+# it generates `completion bash`, and PREPENDS this notice when bash < 4.4 —
+# which is exactly macOS's system bash 3.2. The CLI oracle now disables that
+# probe while it captures, so a fresh capture never carries the notice; it is
+# still stripped, with its trailing escaped newline, so a golden captured
+# before that pin compares equal.
 _BASH_COMPAT_NOTICE = (
     b"Shell completion is not supported for Bash versions older than 4.4.\\n"
 )

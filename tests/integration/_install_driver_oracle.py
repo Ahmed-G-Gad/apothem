@@ -67,6 +67,11 @@ TOK_BACKUP_TS = "<BACKUP_TS>"
 
 ALL_ADAPTERS: list[str] = [entry.package_key for entry in HARNESS_REGISTRY]
 
+# Real-install byte-replay subset, chosen for adapter-shape diversity: user-scope
+# settings + interpreter, project-scope rules-dir, TOML agent conversion, and
+# project-scope TOML commands.
+REAL_SUBSET: list[str] = ["claude_code", "cursor", "codex", "gemini_cli"]
+
 
 def _scope_kwarg(name: str, root: Path) -> dict[str, Path]:
     entry = next(e for e in HARNESS_REGISTRY if e.package_key == name)

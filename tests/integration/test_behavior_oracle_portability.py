@@ -33,7 +33,6 @@ import apothem.cli
 from . import _cli_oracle
 from . import _install_driver_oracle as install_oracle
 from ._oracle_norm import TOK_PYBIN, tokenize_python_bin
-from .test_install_driver_behavior_diff import REAL_SUBSET
 
 GOLDEN = Path(__file__).resolve().parents[1] / "fixtures" / "behavior-diff"
 _MATRIX = {slug: (argv, seed) for slug, argv, seed in _cli_oracle.matrix()}
@@ -68,13 +67,19 @@ def test_windows_relative_output_path_is_captured_with_forward_slashes(
 def test_cli_capture_ignores_console_environment_and_host_tools(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, slug: str
 ) -> None:
-    """No console, color, temp-root, Codex-home or host-bash trait reaches a capture."""
+    """No console, color, temp-root, Codex-home or host-bash trait reaches a capture.
+
+    ``tmp_path`` is already longer than the temp root of any machine that
+    captures the golden, so the scratch home under it exercises the
+    column-width pin without padding that could push the install rows past the
+    Windows path limit.
+    """
     monkeypatch.setattr(rich.console, "detect_legacy_windows", lambda: True)
     monkeypatch.setenv("FORCE_COLOR", "1")
     monkeypatch.setenv("CODEX_HOME", str(tmp_path / "codex-elsewhere"))
-    longer_temp_root = tmp_path / ("t" * 40)
-    longer_temp_root.mkdir()
-    monkeypatch.setattr(tempfile, "tempdir", str(longer_temp_root))
+    temp_root = tmp_path / "temp"
+    temp_root.mkdir()
+    monkeypatch.setattr(tempfile, "tempdir", str(temp_root))
 
     def old_bash_notice() -> None:
         click.echo(
@@ -111,19 +116,30 @@ def test_escaped_spellings_of_a_machine_path_are_tokenized(tmp_path: Path) -> No
     )
 
 
+@pytest.mark.parametrize(
+    "release",
+    [f"Darwin 2{_cli_oracle._VERSION}", f"Linux {_cli_oracle._VERSION}-45-generic"],
+)
 def test_platform_release_containing_the_engine_version_is_tokenized(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, release: str
 ) -> None:
-    """A release such as ``Darwin 21.1.0`` against engine 1.1.0 stays whole."""
-    release = f"Darwin 2{_cli_oracle._VERSION}"
+    """A release that contains the engine version stays one platform token."""
     monkeypatch.setattr(_cli_oracle, "_PLATFORM", release)
     text = f"Apothem v{_cli_oracle._VERSION}\nPlatform:  {release}"
 
     assert _cli_oracle._normalize_text(text, home=tmp_path) == (
         "Apothem v<VERSION>\nPlatform:  <PLATFORM>"
     )
-    longer = f"{_cli_oracle._PYVER}0"
-    assert _cli_oracle._normalize_text(longer, home=tmp_path) == longer
+
+
+def test_versions_inside_a_longer_number_are_left_alone(tmp_path: Path) -> None:
+    """A digit after, or a digit or dot before, the version blocks the token."""
+    pyver = _cli_oracle._PYVER
+    for text in (f"{pyver}0", f"1{pyver}", f"1.{pyver}"):
+        assert _cli_oracle._normalize_text(text, home=tmp_path) == text
+    assert _cli_oracle._normalize_text(f"Python {pyver}.", home=tmp_path) == (
+        "Python <PYVER>."
+    )
 
 
 @pytest.mark.parametrize(
@@ -134,10 +150,12 @@ def test_platform_release_containing_the_engine_version_is_tokenized(
         "/usr/bin/python3.14t",
         "C:/Python314/python3.14t.exe",
         "C:/Python313/python_d.exe",
+        "C:/Python314/python3.14t_d.exe",
         "/usr/bin/python3.13d",
         "/usr/bin/python3.12-dbg",
         "/opt/python/bin/python3.13-nogil",
         "C:/Python313/pythonw.exe",
+        "C:/Python314/pythonw3.14t.exe",
         "/usr/bin/pypy3.10",
     ],
 )
@@ -178,7 +196,7 @@ def test_ledger_targets_are_stored_in_code_point_order() -> None:
     )
 
 
-@pytest.mark.parametrize("name", REAL_SUBSET)
+@pytest.mark.parametrize("name", install_oracle.REAL_SUBSET)
 def test_real_install_ledger_and_envelope_match_golden_exactly(
     tmp_path: Path, name: str
 ) -> None:

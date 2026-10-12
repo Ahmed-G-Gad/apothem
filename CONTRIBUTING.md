@@ -205,10 +205,11 @@ Step 3 writes the same bytes on Windows and Linux, so a regeneration
 changes only the goldens your edit affects. It stops without writing anything
 when the capture would depend on your machine: an interpreter started with
 `-OO` or `-v` (or `PYTHONOPTIMIZE=2` / `PYTHONVERBOSE`), a Click or Rich version
-outside the `pyproject.toml` requirement, or files git ignores under
-`src/apothem/` that the installer would still copy (a `.DS_Store`, an editor
+outside the `pyproject.toml` requirement, or entries git ignores in the
+`src/apothem/` directories the installer copies (a `.DS_Store`, an editor
 backup, a directory left holding only `__pycache__` after a branch switch). It
-names each problem; fix it and run the step again.
+names each problem; fix it and run the step again. When git is not on `PATH`,
+or the tree has no `.git`, it skips the ignored-entry check with a warning.
 
 ## Issue Filing
 

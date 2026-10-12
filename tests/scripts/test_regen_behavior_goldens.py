@@ -1,13 +1,14 @@
 # SPDX-License-Identifier: MIT
 
-"""The golden regeneration script refuses machine-dependent runs and never half-writes.
+"""The golden regeneration script refuses machine-dependent runs and keeps the corpus.
 
 ``scripts/dev/regen-behavior-goldens.py`` checks the interpreter, the rendering
-libraries and the source tree before it captures, then captures into a staging
-directory and swaps it in only when both oracles succeed. These tests drive
-those pieces directly: the flag and version checks with fixed inputs, the
-source-tree check against a hermetic git repository, and the staged capture
-with stand-in oracles.
+libraries and the installed source directories before it captures, then
+captures into a staging directory and swaps each subtree in by rename,
+restoring the committed subtrees when a capture or a swap fails. These tests
+drive those pieces directly: the flag and version checks with fixed inputs, the
+source-tree check against a hermetic git repository, the staged capture with
+stand-in oracles, and ``main`` end to end for a refused run.
 """
 
 from __future__ import annotations
@@ -17,7 +18,8 @@ import importlib.util
 import os
 import shutil
 import subprocess
-from pathlib import Path
+import sys
+from pathlib import Path, PurePosixPath
 from types import ModuleType
 
 import pytest
@@ -52,26 +54,28 @@ def test_interpreter_flags_that_change_captures_are_named(
 
 
 @pytest.mark.parametrize(
-    ("versions", "named"),
+    ("pyproject", "versions", "named"),
     [
-        ({"click": "8.4.2", "rich": "15.0.0"}, []),
-        ({"click": "8.4.2", "rich": "15.3.1"}, []),
-        ({"click": "8.4.1", "rich": "15.0.0"}, ["click 8.4.1"]),
-        ({"click": "8.4.2", "rich": "14.3.4"}, ["rich 14.3.4"]),
-        ({"click": "8.4.2"}, ["rich is not installed"]),
+        (_PYPROJECT, {"click": "8.4.2", "rich": "15.0.0"}, []),
+        (_PYPROJECT, {"click": "8.4.2", "rich": "15.3.1"}, []),
+        (_PYPROJECT, {"click": "8.4.1", "rich": "15.0.0"}, ["click 8.4.1"]),
+        (_PYPROJECT, {"click": "8.4.2", "rich": "14.3.4"}, ["rich 14.3.4"]),
+        (_PYPROJECT, {"click": "8.4.2", "rich": "9.0.0"}, ["rich 9.0.0"]),
+        ('"rich>=15.9.0"', {"rich": "15.10.0"}, []),
+        (_PYPROJECT, {"click": "8.4.2"}, ["rich is not installed"]),
     ],
 )
 def test_rendering_library_versions_outside_pyproject_are_named(
-    versions: dict[str, str], named: list[str]
+    pyproject: str, versions: dict[str, str], named: list[str]
 ) -> None:
-    """Click must match its pin exactly; Rich must meet its floor."""
+    """Click must match its pin exactly; Rich must meet its floor numerically."""
 
     def version_of(name: str) -> str:
         if name not in versions:
             raise importlib.metadata.PackageNotFoundError(name)
         return versions[name]
 
-    problems = regen.library_problems(_PYPROJECT, version_of)
+    problems = regen.library_problems(pyproject, version_of)
 
     assert len(problems) == len(named)
     for fragment, problem in zip(named, problems, strict=True):
@@ -85,6 +89,14 @@ def test_pyproject_declares_both_rendering_libraries() -> None:
     problems = regen.library_problems(pyproject, lambda _name: "0.0.0")
 
     assert [problem.split()[0] for problem in problems] == ["click", "rich"]
+
+
+def test_installed_source_roots_are_the_manifest_directories() -> None:
+    """The check scans the cohort directories an install copies, not all of src."""
+    roots = {root.as_posix() for root in regen.installed_source_roots(_REPO_ROOT)}
+
+    assert {"src/apothem/hooks", "src/apothem/skills", "src/apothem/rules"} <= roots
+    assert not roots & {"src/apothem/cli", "src/apothem/lib", "src/apothem/_vendor"}
 
 
 def _git(repo: Path, *args: str) -> None:
@@ -117,15 +129,22 @@ def _write(path: Path, data: bytes = b"x\n") -> None:
     path.write_bytes(data)
 
 
+_ROOTS = [
+    PurePosixPath(f"src/apothem/{name}") for name in ("hooks", "skills", "templates")
+]
+
+
 @_needs_git
 @pytest.mark.usefixtures("hermetic_git")
 def test_ignored_files_and_ignored_only_directories_are_named(tmp_path: Path) -> None:
-    """Stray files and dirs are named; caches and new unignored files are not."""
+    """Strays in the roots are named; caches, new files and other dirs are not."""
     repo = tmp_path / "repo"
     source = repo / "src" / "apothem"
     _write(repo / ".gitignore", b".DS_Store\n*~\n__pycache__/\n")
     _write(source / "hooks" / "dispatch.py")
     _write(source / "skills" / "kept" / "SKILL.md")
+    _write(source / "skills" / "removed" / "SKILL.md")
+    _write(source / "cli" / "main.py")
     _git(repo, "init", "-q")
     _git(repo, "add", "-A")
     _git(
@@ -143,22 +162,53 @@ def test_ignored_files_and_ignored_only_directories_are_named(tmp_path: Path) ->
     _write(source / "hooks" / "dispatch.py~")
     _write(source / "hooks" / "__pycache__" / "dispatch.cpython-313.pyc")
     _write(source / "skills" / "retired" / "__pycache__" / "old.cpython-313.pyc")
+    (source / "skills" / "removed" / "SKILL.md").unlink()
     (source / "templates" / "empty").mkdir(parents=True)
     _write(source / "skills" / "new-skill" / "SKILL.md")
+    _write(source / "cli" / ".DS_Store")
 
-    assert regen.stray_source_paths(repo) == [
+    assert regen.stray_source_paths(repo, _ROOTS) == [
         "src/apothem/hooks/.DS_Store",
         "src/apothem/hooks/dispatch.py~",
+        "src/apothem/skills/removed/",
         "src/apothem/skills/retired/",
         "src/apothem/templates/",
     ]
 
 
+def test_source_check_is_skipped_without_a_git_directory(tmp_path: Path) -> None:
+    """A tree with no .git reports that the check could not run."""
+    assert regen.stray_source_paths(tmp_path, _ROOTS) is None
+
+
 @_needs_git
 @pytest.mark.usefixtures("hermetic_git")
-def test_source_check_is_skipped_outside_a_git_work_tree(tmp_path: Path) -> None:
-    """Without a work tree the check reports that it could not run."""
-    assert regen.stray_source_paths(tmp_path) is None
+def test_git_failure_on_the_work_tree_is_raised_with_its_message(
+    tmp_path: Path,
+) -> None:
+    """git present but failing stops the run instead of skipping the check."""
+    (tmp_path / ".git").write_text(
+        f"gitdir: {tmp_path / 'missing'}\n", encoding="utf-8"
+    )
+
+    with pytest.raises(regen.SourceCheckError, match="not a git repository"):
+        regen.stray_source_paths(tmp_path, _ROOTS)
+
+
+def test_refused_run_exits_1_and_writes_nothing(tmp_path: Path) -> None:
+    """main names the -OO problem, exits 1 and never creates the destination."""
+    dest = tmp_path / "corpus"
+
+    result = subprocess.run(
+        [sys.executable, "-OO", str(_SCRIPT), "--dest", str(dest)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 1, result.stderr
+    assert "-OO" in result.stderr
+    assert not dest.exists()
 
 
 def _oracle(**functions: object) -> ModuleType:
@@ -195,7 +245,7 @@ def test_failed_capture_leaves_the_destination_unchanged(tmp_path: Path) -> None
         )
 
     assert _tree(dest) == before
-    assert [entry.name for entry in tmp_path.iterdir()] == ["behavior-diff"]
+    assert sorted(entry.name for entry in dest.iterdir()) == ["cli", "install_driver"]
 
 
 def test_successful_capture_replaces_both_subtrees(tmp_path: Path) -> None:
@@ -220,4 +270,36 @@ def test_successful_capture_replaces_both_subtrees(tmp_path: Path) -> None:
         "cli/doctor.json": b"fresh\n",
         "install_driver/plan/x.json": b"fresh\n",
     }
-    assert [entry.name for entry in tmp_path.iterdir()] == ["behavior-diff"]
+    assert sorted(entry.name for entry in dest.iterdir()) == ["cli", "install_driver"]
+
+
+def test_failed_swap_restores_the_committed_subtrees(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A rename that fails midway puts every committed subtree back."""
+    dest = tmp_path / "behavior-diff"
+    _write(dest / "install_driver" / "plan" / "x.json", b"committed\n")
+    _write(dest / "cli" / "doctor.json", b"committed\n")
+    before = _tree(dest)
+    real_replace = Path.replace
+
+    def replace(self: Path, target: Path) -> Path:
+        if self.name == "cli" and self.parent.name.startswith(".r"):
+            raise OSError("simulated rename failure")
+        return real_replace(self, target)
+
+    def capture_full(out_root: Path) -> None:
+        _write(out_root / "plan" / "x.json", b"fresh\n")
+
+    def capture(out_root: Path) -> int:
+        _write(out_root / "doctor.json", b"fresh\n")
+        return 1
+
+    monkeypatch.setattr(Path, "replace", replace)
+    with pytest.raises(OSError, match="simulated rename failure"):
+        regen.capture_staged(
+            dest, _oracle(capture_full=capture_full), _oracle(capture=capture)
+        )
+
+    assert _tree(dest) == before
+    assert sorted(entry.name for entry in dest.iterdir()) == ["cli", "install_driver"]
