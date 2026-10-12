@@ -30,7 +30,10 @@ _SRC = _REPO_ROOT / "src"
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
 
-from apothem.conformity.gate import main  # noqa: E402, I001 — import deliberately placed after the sys.path bootstrap above (the package is only importable once src/ is on the path); E402 allows the late import, I001 keeps ruff from reordering it back above the bootstrap
+# The import sits after the sys.path bootstrap above on purpose: the package is
+# importable only once src/ is on the path. pyproject.toml exempts this file from
+# E402 (late import) and I001 (import sorting would move it above the bootstrap).
+from apothem.conformity.gate import main
 
 if __name__ == "__main__":
     raise SystemExit(main(sys.argv))
