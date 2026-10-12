@@ -2,14 +2,14 @@
 title: "Claude Code"
 description: "适用于 Claude Code（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "3e22dcf3597b4cc3"
+sourceHash: "8dec50c1d13fe4aa"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **厂商：** Anthropic
 **安装名称：** `claude-code`
 **状态：** GA
-**平台原生配置：** `~/.claude/`
+**原生配置：** `~/.claude/`
 
 ## 安装
 
@@ -17,38 +17,29 @@ sourceHash: "3e22dcf3597b4cc3"
 apothem install --harness claude-code
 ```
 
-`claude-code` 适配器将共享的 Apothem 套组安装到 Claude
-Code 的原生发现树中。Markdown 智能体、规则、技能、输出样式、
-状态栏辅助工具和设置都安装到它们的原生位置；命令提示词
-还会额外封装为技能，使可复用的工作流通过当前的 Claude Code
-技能界面保持可见。
+`claude-code` 适配器将共享的 Apothem 语料安装到 Claude Code 的原生发现树中。Markdown 智能体、规则、技能、输出样式和设置都安装到其原生位置；命令提示词会被转换为技能，使可复用的工作流通过当前的 Claude Code 技能表面保持可见。状态栏渲染器会被复制到 `~/.claude/statuslines/`，但不会被接入：Claude Code 从 `statusLine` 设置读取其状态栏，而适配器不设置该项。要启用它，请在 `settings.json` 中添加一个带有 `"type": "command"` 的 `statusLine` 条目，让它运行 `~/.claude/statuslines/render.py`。
 
-**写入的文件：** `~/.claude/` 下的 `settings.json`、`agents/`、`rules/`、
-`skills/`、`statuslines/`、`output-styles/` 以及 `apothem/` 支持子树
-（`apothem/hooks/`、`apothem/conformity/`、`apothem/schemas/`、
-`apothem/templates/`）。命令文件被转换为子技能目录。钩子调度器和合规门从
-它们的具现化副本中运行——`settings.json` 的钩子条目通过绝对路径调用
-`~/.claude/.apothem/support/hooks/dispatch.py` 和
-`~/.claude/.apothem/support/conformity/gate.py`，因此主机上无需任何可导入的
-`apothem` 包。
+**写入的文件：** `~/.claude/` 下的 `settings.json`、`CLAUDE.md` 中的 Apothem 区块、`agents/`、`rules/`、`skills/`、`statuslines/`、`output-styles/`，以及 `.apothem/support/` 支持子树（`.apothem/support/hooks/`、`.apothem/support/conformity/`、`.apothem/support/schemas/`、`.apothem/support/templates/`）。命令文件被转换为子技能目录。钩子调度器和合规闸门从它们的物化副本运行——`settings.json` 中的钩子条目通过绝对路径调用 `~/.claude/.apothem/support/hooks/dispatch.py` 和 `~/.claude/.apothem/support/conformity/gate.py`，因此主机上不需要任何可导入的 `apothem` 包。
 
-该适配器**不**管理 `CLAUDE.md`——该文件是操作者自有的
-领地。Apothem 治理界面通过传播的 `rules/` 树和 SessionStart 钩子触达 Claude
-Code，而非通过具现化的 `CLAUDE.md`。
+`~/.claude/CLAUDE.md` 仍由操作者所有。适配器向其中写入一个由哨兵标记界定的 Apothem 区块，其中包含配置档案投射（身份、偏好、规则、严肃度以及已选择启用的行为）和一个 Apothem 支持文件小节，并逐字保留哨兵标记之外的每一行。支持文件小节写明已安装的规则、技能和智能体中每种仓库风格的引用所解析到的绝对目录：`rules/<name>.md` 位于 `~/.claude/rules/` 下，`templates/...`、`schemas/...`、`hooks/...` 和 `conformity/...` 位于 `~/.claude/.apothem/support/` 下。Apothem 治理表面的其余部分通过传播的 `rules/` 树和 SessionStart 钩子触达 Claude Code。当不存在 `~/.config/opencode/AGENTS.md` 时，OpenCode 也会加载 `~/.claude/CLAUDE.md`，因此该区块不把任何单一工具指定为其读者。
 
-## 配置档案到平台原生配置的映射
+## 配置档案到原生配置的映射
 
-在每次 `apothem install` 或 `apothem update` 时，适配器都会按传播清单将
-共享的 `apothem` 套组传播到 `~/.claude/` 中。适配器在可能的情况下
-直接使用原生目录，并将命令提示词转换为技能文件夹。在替换之前，会先备份
-现有的、由 Apothem 管理的匹配子项；不相关的、操作者自行编写的条目会
-被保留。`settings.json` 会被合并，以便操作者自行编写的键仍可恢复。
+在每次 `apothem install` 或 `apothem update` 时，适配器按照传播清单将共享的 `apothem` 语料传播到 `~/.claude/` 中。适配器在可能的情况下直接使用原生目录，并将命令提示词转换为技能文件夹。现有的、相匹配的 Apothem 托管子项会在替换之前被备份；无关的、由操作者编写的条目会被保留。`settings.json` 会被合并，因此由操作者编写的键仍可恢复。
+
+已安装的技能以及 Claude Code 插件中捆绑的技能都携带 `user-invocable`，而不是源语料中的 `userInvocable`，因为 Claude Code 只读取带连字符的键。两个模板容器（`plan-suite`、`research-suite`）将其设为 `false`，因此它们不会出现在 `/` 菜单中。每种输出样式都设置了 `keep-coding-instructions: true`，因此选择其中任意一种都会保留 Claude Code 内置的软件工程指令。
 
 ## 兼容性说明
 
-不发生任何转换。安装会校验配置档案格式良好，且 settings.json 中所有钩子绑定均可解析。
+命令提示词被转换为技能目录；智能体、规则、技能和输出样式按原样复制。安装会校验配置档案格式良好，且 settings.json 中的所有钩子绑定均可解析。适配器不编写任何 MCP 服务器条目：请使用 `claude mcp add` 注册服务器（参见 [MCP 服务器](/docs/reference/mcp)）。
 
 Claude Code 在每次会话启动时应用 settings.json 中的所有钩子绑定。每个适配器都针对其自身的原生工具进行验证——不存在享有特权的“参考”工具。
+
+### 权限规则的限制
+
+设置模板对机密路径和缓存路径（例如 `.env*` 和 `~/.ssh/**`）拒绝 `Read(...)`。Claude Code 将 `Read` 拒绝规则应用于其文件工具、它在 Bash 中识别的文件命令（`cat`、`head`、`tail`、`sed`、`tee`）以及重定向目标。它不会将该拒绝规则应用于在不指明文件的情况下读取文件的搜索（例如 `grep -r pattern .`），也不会应用于自行打开文件的脚本（[权限参考](https://code.claude.com/docs/en/permissions)）。在 macOS、Linux 和 WSL 上，Claude Code 将 `Glob` 和 `Grep` 工具排除在默认工具集之外，转而通过 Bash 进行搜索，因此模板中 `Glob` 和 `Grep` 的允许条目只在这些工具存在的地方生效。要阻止所有进程读取某个路径，请启用 Claude Code 沙箱。
+
+提及 `TodoWrite` 的技能和辅助程序定义也会提及 `TaskCreate`、`TaskGet`、`TaskList` 和 `TaskUpdate`，因为 Claude Code 默认关闭 `TodoWrite`，转而使用这些工具。
 
 ## 验证
 
@@ -58,7 +49,7 @@ apothem verify --harness claude-code
 
 verify 命令确认：
 
-1. 平台原生配置存在于预期路径。
+1. 原生配置存在于预期路径。
 2. 来自共享配置档案的所有必填字段都存在。
 3. 适配器专属的验证例程报告成功。
 
@@ -68,9 +59,7 @@ verify 命令确认：
 apothem update --harness claude-code
 ```
 
-从当前的共享配置档案重新派生平台原生配置。在已安装的
-`apothem` 包更新之后运行，使传播的约定界面（智能体、规则、技能、状态栏、
-输出样式）反映新版本。`CLAUDE.md` 由操作者自有，适配器从不触碰它。
+根据当前的共享配置档案重新派生原生配置。在已安装的 `apothem` 包更新之后运行，使传播的约定表面（智能体、规则、技能、状态栏、输出样式）反映新版本。在 `CLAUDE.md` 中，更新只会重写位于其哨兵标记之间的 Apothem 区块。
 
 ## 卸载
 
@@ -78,10 +67,10 @@ apothem update --harness claude-code
 apothem uninstall --harness claude-code
 ```
 
-移除适配器写入的平台原生配置文件。
+移除适配器写入的原生配置文件，并从 `CLAUDE.md` 中剥离 Apothem 区块，保留你自己编写的文字。
 已安装的 `apothem` 包和源代码仓库不受影响。
 
-## 合规门
+## 合规闸门
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -93,10 +82,16 @@ python -m apothem.conformity.gate --all .
 |---------|-----|
 | 找不到配置文件 | 重新运行 `apothem install --harness claude-code` |
 | 验证失败 | 运行 `apothem update --harness claude-code`，然后再次验证 |
-| 意外的配置内容 | 重新运行 `apothem update`；共享的 `apothem` 配置档案才是真实来源，而非 `~/.claude/` |
+| 意外的配置内容 | 重新运行 `apothem update`；共享的 `apothem` 配置档案才是事实来源，而不是 `~/.claude/` |
 
 ## 配置开关
 
 | 标志 | 默认值 | 说明 |
 |------|---------|-------------|
 | `--dry-run` | `false` | 预览安装而不写入文件。 |
+
+## 另请参阅
+
+- [所有工具](/docs/harnesses)——受支持工具的完整目录
+- [安装指南](/docs/install)——将 Apothem 安装到此工具中
+- [`apothem harnesses` 参考](/docs/cli-reference/harnesses)——从 CLI 列出并检查适配器

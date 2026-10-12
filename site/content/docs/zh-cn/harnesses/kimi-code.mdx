@@ -1,110 +1,88 @@
 ---
 title: "Kimi Code"
-description: "Apothem harness adapter for Kimi Code (GA)."
+description: "适用于 Kimi Code（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "f8cfda1978e7aeae"
+sourceHash: "4bcd687aeabc46b7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**Vendor:** Moonshot
-**Install name:** `kimi-code`
-**Status:** GA
-**Native config:** `<project>/AGENTS.md` plus `<project>/.kimi-code/.apothem/support/`
+**厂商：** Moonshot
+**安装名称：** `kimi-code`
+**状态：** GA
+**原生配置：** `<project>/AGENTS.md` 以及 `<project>/.kimi-code/.apothem/support/`
 
-## Installation
+## 安装
 
 ```bash
 apothem install --harness kimi-code --project /path/to/project
 ```
 
-The adapter writes the shared Apothem governance surface into the project-root
-`AGENTS.md` as a sentinel-delimited managed block (operator prose outside the
-sentinels is preserved) and keeps the non-native Markdown cohorts under the
-Apothem-owned support tree at `<project>/.kimi-code/.apothem/support/`.
+适配器将共享的 Apothem 治理表面以一个由哨兵标记分隔的受管块写入项目根目录的 `AGENTS.md`（哨兵标记之外由操作者编写的文字会被保留），并将非原生的 Markdown 集合保存在位于 `<project>/.kimi-code/.apothem/support/` 的 Apothem 自有支持树下。除 Kimi Code 之外，还有许多编码工具会读取项目的 `AGENTS.md`，因此该块被写成面向整个项目的指导，不把任何单一工具指定为其读者。
 
-Kimi Code reads the project-root `AGENTS.md` instruction file following the
-universal AGENTS.md convention, and project configuration lives under
-`<project>/.kimi-code/`. The `<project>/.kimi-code/mcp.json` surface is
-operator-owned; Apothem names it but authors no entries.
+Kimi Code 遵循通用的 AGENTS.md 约定读取项目根目录的 `AGENTS.md` 指令文件，项目配置位于 `<project>/.kimi-code/` 下。`<project>/.kimi-code/mcp.json` 表面归操作者所有；Apothem 会指明它，但不编写任何条目。
 
-**Files written:** `<project>/AGENTS.md` (managed block) and the commands,
-skills, hooks, agents, rules, and templates cohorts under
-`<project>/.kimi-code/.apothem/support/`.
+**写入的文件：** `<project>/AGENTS.md`（受管块），以及 `<project>/.kimi-code/.apothem/support/` 下的命令、技能、钩子、委托、规则和模板集合。
 
-## Profile-to-native-config mapping
+## 配置档案到原生配置的映射
 
-The adapter reads Apothem's shared profile and renders the project-root
-`AGENTS.md` instruction surface on every `apothem install` or `apothem update`
-run. The behavioral rules and governance corpus land in the managed block of
-`AGENTS.md`; the commands, skills, hooks, agents, rules, and templates cohorts
-are placed under `.kimi-code/.apothem/support/` and referenced from the instruction
-surface, because Kimi Code exposes no matching native primitive for each of
-those cohorts yet.
+适配器读取 Apothem 的共享配置档案，并在每次 `apothem install` 或 `apothem update` 运行时渲染项目根目录的 `AGENTS.md` 指令表面。行为规则和治理语料落在 `AGENTS.md` 的受管块中；命令、技能、钩子、委托、规则和模板集合被放置在 `.kimi-code/.apothem/support/` 下，并从指令表面引用。这是适配器所选择的布局，而不是 Kimi Code 的缺口：Kimi Code 从 `.kimi-code/skills/` 和 `.agents/skills/` 加载技能，从 `.kimi-code/agents/` 和 `.agents/agents/` 加载自定义智能体，并从 `~/.kimi-code/config.toml` 中的 `[[hooks]]` 数组加载钩子，但它不会从支持树加载这些内容，因此 Apothem 放在那里的副本是 `AGENTS.md` 块所指向的参考材料。该块以一个 Apothem 支持文件部分结尾，该部分以相对于项目根目录的形式，指明每条仓库式引用（`rules/<name>.md`、`templates/...`、`hooks/...`）据以解析的 `.kimi-code/.apothem/support/` 下的目录，因此已提交的 `AGENTS.md` 不携带任何特定于机器的路径。（Kimi Code 的行为依据其关于[技能](https://moonshotai.github.io/kimi-code/en/customization/skills)、[子智能体](https://moonshotai.github.io/kimi-code/en/customization/agents)和[钩子](https://moonshotai.github.io/kimi-code/en/customization/hooks)的自定义页面，读取于 2026-10-02。）
 
-## Compatibility notes
+## 兼容性说明
 
-Kimi Code reads `AGENTS.md` from the project root and recognizes
-`.kimi-code/mcp.json` as the operator-owned MCP surface; Apothem names that
-surface but authors no entries into it. The rendered instruction surface drives
-the project directly. Kimi Code exposes no statusline or output-style file
-surface, so those cohorts are not materialized.
+Kimi Code 从 `AGENTS.md` 或 `.kimi-code/AGENTS.md` 读取项目指令，并将 `.kimi-code/mcp.json` 识别为归操作者所有的 MCP 表面；Apothem 会指明该表面，但不向其中编写任何条目。渲染出的指令表面直接驱动该项目。Kimi Code 不暴露状态栏或输出样式文件表面，因此这些集合不会被物化。
 
-Kimi Code runs on the Kimi model family from Moonshot; see the
-[vendor configuration reference](https://moonshotai.github.io/kimi-code/en/configuration/config-files.html)
-for the current model and configuration surface.
+Kimi Code 运行在 Moonshot 的 Kimi 模型系列上；当前的模型和配置表面参见[厂商配置参考](https://moonshotai.github.io/kimi-code/en/configuration/config-files)。
 
-## Verification
+## 验证
 
 ```bash
 apothem verify --harness kimi-code --project /path/to/project
 ```
 
-The verify command confirms that:
+verify 命令确认：
 
-1. The native config exists at the expected path.
-2. All mandatory fields from the shared profile are present.
-3. The adapter-specific verification routine reports success.
+1. 原生配置存在于预期路径。
+2. 共享配置档案中的所有必填字段都已存在。
+3. 适配器特定的验证例程报告成功。
 
-## Updating
+## 更新
 
 ```bash
 apothem update --harness kimi-code --project /path/to/project
 ```
 
-Re-derives the project-root `AGENTS.md` managed block and the support cohorts
-from the current shared profile state.
+根据当前的共享配置档案状态，重新派生项目根目录 `AGENTS.md` 的受管块和支持集合。
 
-## Uninstalling
+## 卸载
 
 ```bash
 apothem uninstall --harness kimi-code --project /path/to/project
 ```
 
-Removes the native config files written by the adapter.
-The shared profile YAML and Apothem engine are unaffected.
+移除适配器写入的原生配置文件。共享配置档案 YAML 和 Apothem 引擎不受影响。
 
-## Conformity gate
+## 合规闸门
 
 ```bash
 python -m apothem.conformity.gate --all .
 ```
 
-## Troubleshooting
+## 故障排查
 
-| Symptom | Fix |
+| 症状 | 修复方法 |
 |---------|-----|
-| Config file not found | Re-run `apothem install --harness kimi-code --project /path/to/project` |
-| Verification failed | Run `apothem update --harness kimi-code --project /path/to/project`, then verify again |
-| Unexpected config content | Check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run `apothem update --harness kimi-code --project /path/to/project` |
+| 找不到配置文件 | 重新运行 `apothem install --harness kimi-code --project /path/to/project` |
+| 验证失败 | 运行 `apothem update --harness kimi-code --project /path/to/project`，然后再次验证 |
+| 意外的配置内容 | 检查 `~/.config/apothem/profile.yaml` 或 `--profile PATH`，然后重新运行 `apothem update --harness kimi-code --project /path/to/project` |
 
-## Configuration knobs
+## 配置开关
 
-| Flag | Default | Description |
+| 标志 | 默认值 | 说明 |
 |------|---------|-------------|
-| `--dry-run` | `false` | Preview install without writing files. |
+| `--dry-run` | `false` | 预览安装而不写入文件。 |
 
-## See also
+## 另请参阅
 
-- [All harnesses](/docs/harnesses) — the full catalog of supported tools
-- [Install guide](/docs/install) — install Apothem into this harness
-- [`apothem harnesses` reference](/docs/cli-reference/harnesses) — list and inspect adapters from the CLI
+- [所有工具](/docs/harnesses)——受支持工具的完整目录
+- [安装指南](/docs/install)——将 Apothem 安装到此工具中
+- [`apothem harnesses` 参考](/docs/cli-reference/harnesses)——从 CLI 列出并检查适配器

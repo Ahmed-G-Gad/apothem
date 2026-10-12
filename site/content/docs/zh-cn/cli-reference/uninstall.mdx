@@ -2,11 +2,11 @@
 title: "uninstall"
 description: "apothem uninstall 命令的 CLI 参考。"
 machineTranslated: true
-sourceHash: "702473c5586ee896"
+sourceHash: "2928176181100844"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-移除某个harness适配器配置。
+移除一个工具适配器配置。
 
 ## 概要
 
@@ -16,19 +16,21 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
                    [--format plain|json] [--json] [--no-color]
 ```
 
-移除适配器所管理的harness目标。除非提供 `--yes`，否则会提示确认。如果所选harness未安装，该命令会成功（退出码 0）并给出“nothing to remove”提示。
+移除由适配器管理的工具目标，然后在安装所创建的目录变为空之后移除这些目录（存放着任何属于你的内容的目录会被保留）。除非提供 `--yes`，否则会提示确认。当无法提示时——`--format json`（提示文本会破坏那单个 JSON 文档）或非交互式 shell（无 TTY）——除非提供 `--yes`，否则该命令会预先拒绝，并给出一个结构化的 `uninstall.confirmation_required` 错误（退出码 1）。如果所选工具未安装，该命令会成功（退出码 0），并给出“没有可移除的内容”提示。
 
-连续式别名 `apothem uninstalling` 解析到同一处理程序。
+`--harness all` 移除有意做到穷尽：它覆盖每个已注册的工具，包括配置档案的 `exclude_harnesses` 在安装期间跳过的工具——清理会触及先前范围更广的一次安装可能遗留下的状态。从未安装过的工具会报告“没有可移除的内容”。
+
+连续式别名 `apothem uninstalling` 解析到同一个处理程序。
 
 ## 选项
 
 | 选项 | 描述 |
 |---|---|
-| `--harness NAME` | 要移除的harness适配器，或用 `all` 表示注册表范围的集合（必填）。 |
+| `--harness NAME` | 要移除的工具适配器，或用 `all` 表示覆盖整个注册表的集合（必填）。 |
 | `--yes` | 跳过确认提示。 |
-| `--project PATH` | 项目范围harness的项目根目录。 |
-| `--quiet`, `-q` | 抑制信息性输出；仅发出错误。 |
-| `--verbose`, `-v` | 发出额外的诊断输出。 |
+| `--project PATH` | 项目作用域工具的项目根目录。 |
+| `--quiet`, `-q` | 抑制信息性输出；只输出错误。 |
+| `--verbose`, `-v` | 输出额外的诊断信息。 |
 | `--format plain\|json` | 输出格式（默认：`plain`）。 |
 | `--json` | `--format json` 的简写。 |
 | `--no-color` | 在输出中禁用 ANSI 颜色码。 |
@@ -36,16 +38,16 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
 
 ## JSON 输出
 
-当适配器已安装并成功移除时：
+当适配器已安装并被成功移除时：
 
 ```json
-{"action": "uninstalled", "harness": "claude-code", "output_path": "..."}
+{"schema_version": 1, "action": "uninstalled", "harness": "claude-code", "output_path": "..."}
 ```
 
-当适配器未安装时：
+当适配器未曾安装时：
 
 ```json
-{"status": "not_installed", "harness": "claude-code"}
+{"schema_version": 1, "status": "not_installed", "harness": "claude-code"}
 ```
 
 ## 示例
@@ -60,13 +62,15 @@ apothem Uninstalling --harness cursor --project . --yes   # continuous-form alia
 
 ## 退出码
 
-| 码 | 含义 |
+| 代码 | 含义 |
 |---|---|
 | 0 | 适配器已卸载，或本就未安装 |
-| 1 | 未找到harness，或用户中止了确认提示 |
+| 1 | 未找到工具、确认被拒绝或无法进行确认（在未提供 `--yes` 的非交互式或 JSON 模式下），或每一项移除都失败了 |
+| 2 | 部分移除——在失败之前至少有一个工具已被移除 |
+| 64 | 用法错误：未知的选项或命令，或缺失或无效的选项值。在 `--json` 下，该错误是一个代码为 `cli.usage` 的 JSON 信封。 |
 
 ## 另请参阅
 
-- `apothem uninstalling` — 此命令的连续式别名（此处有文档说明；CLI 接受两种形式）
-- [apothem install](/docs/cli-reference/install) — 安装某个harness配置
-- [apothem verify](/docs/cli-reference/verify) — 确认安装状态
+- `apothem uninstalling`——此命令的连续式别名（在此处记录；CLI 接受两种形式）
+- [apothem install](/docs/cli-reference/install)——安装一个工具配置
+- [apothem verify](/docs/cli-reference/verify)——确认安装状态

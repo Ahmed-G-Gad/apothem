@@ -2,14 +2,14 @@
 title: "Qwen Code"
 description: "适用于 Qwen Code（测试版）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "0ba705985aed7ff1"
+sourceHash: "437b67b49cf5a7ee"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**厂商：** 阿里云
+**厂商：** Alibaba Cloud
 **安装名称：** `qwen-code`
 **状态：** 测试版
-**平台原生配置：** `~/.qwen/`
+**原生配置：** `~/.qwen/`
 
 ## 安装
 
@@ -17,9 +17,7 @@ sourceHash: "0ba705985aed7ff1"
 apothem install --harness qwen-code
 ```
 
-该适配器写入 Qwen Code 设置，安装一个 `QWEN.md` 上下文锚点，注册 Apothem
-钩子分发器，将 Apothem 命令转换为 Qwen Markdown 命令文件，将技能作为 SKILL.md
-目录安装，并将辅助工具定义改造为 Qwen 子代理。
+适配器写入 Qwen Code 设置，安装一个 `QWEN.md` 上下文锚点，注册 Apothem 钩子调度器，将 Apothem 命令转换为 Qwen Markdown 命令文件，将技能安装为 SKILL.md 目录，并将辅助器定义改编为 Qwen 子智能体。
 
 **写入的文件：**
 
@@ -32,16 +30,13 @@ apothem install --harness qwen-code
 ~/.qwen/.apothem/support/{rules,templates,hooks}/
 ```
 
-## 配置档案到平台原生配置的映射
+## 配置档案到原生配置的映射
 
-适配器为上下文和钩子渲染已记录的 `settings.json` 键，写入 `QWEN.md`，并将
-Apothem 命令、技能和辅助工具定义编织进 Qwen Code 的原生发现目录中。规则、模板
-和钩子源材料则作为支持材料保留在 `~/.qwen/.apothem/support/` 之下。
+适配器为上下文和钩子渲染有文档记载的 `settings.json` 键，写入 `QWEN.md`，并将 Apothem 命令、技能和辅助器定义编入 Qwen Code 的原生发现目录。规则、模板和钩子源材料仍作为支持材料保留在 `~/.qwen/.apothem/support/` 下。
 
 ## 兼容性说明
 
-`~/.qwen/.apothem/support/` 是由 `QWEN.md` 和设置中的钩子命令引用的支持材料；它并非由
-厂商所拥有的发现命名空间。
+`~/.qwen/.apothem/support/` 是由 `QWEN.md` 和设置中的钩子命令引用的支持材料；它不是厂商拥有的发现命名空间。`QWEN.md` 中的 Apothem 块以一个 Apothem 支持文件部分结尾，该部分指明每条仓库式引用（`rules/<name>.md`、`templates/...`、`hooks/...`）据以解析的 `~/.qwen/.apothem/support/` 下的绝对目录。
 
 ## 验证
 
@@ -51,9 +46,9 @@ apothem verify --harness qwen-code
 
 verify 命令确认：
 
-1. 平台原生配置存在于预期路径。
-2. 共享配置档案中的所有必需字段均存在。
-3. 适配器专属的验证例程报告成功。
+1. 原生配置存在于预期路径。
+2. 共享配置档案中的所有必填字段都已存在。
+3. 适配器特定的验证例程报告成功。
 
 ## 更新
 
@@ -61,7 +56,7 @@ verify 命令确认：
 apothem update --harness qwen-code
 ```
 
-刷新 `settings.json`、`QWEN.md`、原生命令、技能、子代理以及 Apothem 支持树。
+刷新 `settings.json`、`QWEN.md`、原生命令、技能、子智能体以及 Apothem 支持树。
 
 ## 卸载
 
@@ -69,10 +64,9 @@ apothem update --harness qwen-code
 apothem uninstall --harness qwen-code
 ```
 
-移除适配器写入的平台原生配置文件。
-共享配置档案 YAML 和 Apothem 引擎不受影响。
+移除适配器写入的原生配置文件。共享配置档案 YAML 和 Apothem 引擎不受影响。
 
-## 合规门
+## 合规闸门
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -91,3 +85,9 @@ python -m apothem.conformity.gate --all .
 | 标志 | 默认值 | 说明 |
 |------|---------|-------------|
 | `--dry-run` | `false` | 预览安装而不写入文件。 |
+
+## 另请参阅
+
+- [所有工具](/docs/harnesses)——受支持工具的完整目录
+- [安装指南](/docs/install)——将 Apothem 安装到此工具中
+- [`apothem harnesses` 参考](/docs/cli-reference/harnesses)——从 CLI 列出并检查适配器

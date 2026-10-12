@@ -1,47 +1,64 @@
 ---
 title: "钩子"
-description: "在 SessionStart、PreToolUse 和 Stop 上触发的工具事件处理器，加载用于强制执行 git 隔离和计划纪律的消息上下文。"
+description: "在 SessionStart、PreToolUse、PostToolUse 和 Stop 上触发的工具事件处理器，加载用于强制执行 git 隔离和计划纪律的消息上下文，并具有经过测试的运行时契约和按用户划分的状态。"
 machineTranslated: true
-sourceHash: "aaf14191bbb63219"
+sourceHash: "3a6c32f33850537e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-钩子在工具事件上触发，并加载助手将其视为附加系统提示词的消息上下文。接线位于
-Claude Code 的 `settings.json` 钩子块、Codex 的 `hooks.json` 钩子文件
-以及 Qwen Code 的 `settings.json` 钩子映射中。
+钩子在工具事件上触发，并加载助手视为附加系统提示词的消息上下文。接线位于 Claude Code 的 `settings.json` 钩子区块（引擎安装）或插件的 `hooks.json`（插件安装）、Codex 的 `hooks.json` 钩子文件，以及 Qwen Code 的 `settings.json` 钩子映射中。
 
 | 事件 | 超时 | 用途 |
 |-------|--------:|---------|
-| SessionStart | 30 秒 | 读取内存、检查计划状态、报告就绪情况 |
-| PreCompact | 30 秒 | 在压缩前验证状态已外部化 |
-| PostCompact | 30 秒 | 压缩后恢复工作状态 |
-| Stop | 60 秒 | 会话结束时的外部化 |
-| PreToolUse (Bash) | 10 秒 | Bash 校验——git 产物隔离 |
-| PreToolUse (Write/Edit/NotebookEdit/apply_patch) | 10 秒 | 计划引用隔离、frontmatter 检查 |
+| SessionStart | 30 秒 | 读取记忆、检查计划状态、报告就绪情况；在压缩之后，提供恢复上下文 |
+| PreCompact | 30 秒 | 在压缩之前验证状态已外部化（Codex、Qwen Code；不在 Claude Code 上注册） |
+| PostCompact | 30 秒 | 在压缩之后恢复工作状态（Codex、Qwen Code；不在 Claude Code 上注册） |
+| Stop | 60 秒 | 会话结束协议，需主动选择启用 |
+| PostToolUse | 10 秒 | 主动压缩建议，每个会话最多两次 |
+| PreToolUse（shell：Bash、PowerShell、`run_shell_command`） | 10 秒 | Git 工件隔离、计划本地性、动态求值防护 |
+| PreToolUse（Write/Edit/NotebookEdit/apply_patch） | 10 秒 | 计划引用隔离、署名头、计划本地性、依赖防护与动态求值防护 |
+| PreToolUse（AskUserQuestion） | 10 秒 | `(Recommended)` 标记的格式正确性 |
 
-## 分发器
+## 调度器
 
-已安装的钩子条目通过绝对脚本路径调用分发器。设置模板携带 `${HARNESS_ROOT}` 令牌——
-`python "${HARNESS_ROOT}/apothem/hooks/dispatch.py" <event> [<message-name>]`
-——安装程序在安装时将其渲染为 harness 根目录的真实路径
-（Claude Code 和 Qwen Code 将分发器物化于
-`<harness-root>/apothem/hooks/` 下；Codex 则在 `<harness-root>/hooks/` 下）。
-分发器是一个独立的标准库脚本：它会自行引导 `sys.path`，
-因此宿主上无需可导入的 `apothem` 包。从源码检出运行时，模块形式
-`python -m apothem.hooks.dispatch <event>`（配合 `PYTHONPATH=src`）
-为开发运行相同的代码。分发器加载
-`hooks/lib/resolve_root.py` 进行生态根目录解析，并委托给
-`hooks/emit_hook_context.py` 和 `hooks/session_start_bootstrap.py`。
+由引擎安装的钩子条目使用安装时解析出的解释器，通过绝对脚本路径调用调度器。模板携带 `${PYTHON_BIN}` 和 `${HARNESS_ROOT}` 令牌，安装程序会在安装时渲染它们。Claude Code 和 Qwen Code 将调度器物化到 `<harness-root>/.apothem/support/hooks/` 下；Codex 则物化到 `<harness-root>/hooks/` 下。Claude Code 条目使用 exec 形式（`command` 加 `args`），因此不需要 shell。Claude Code 插件以 `bash "${CLAUDE_PLUGIN_ROOT}/lib/apothem/hooks/lib/bootstrap.sh" <event> [<message-file>]` 的形式运行每个钩子，所用的是 Claude Code 的默认钩子 shell（在 macOS 和 Linux 上为 `sh`，在 Windows 上为 Git Bash）；该引导脚本会找到一个 Python 3.10+ 解释器并运行捆绑的调度器。在未安装 Git for Windows 的 Windows 上，请使用引擎安装（`apothem install --harness claude-code`），其 exec 形式的钩子不需要 shell。调度器是一个独立的标准库脚本：它会自行引导 `sys.path`，因此宿主上无需可导入的 `apothem` 包。在源码检出中，模块形式 `python -m apothem.hooks.dispatch <event>`（配合 `PYTHONPATH=src`）会为开发运行相同的代码。调度器加载 `hooks/lib/resolve_root.py` 以进行生态根目录解析，并委托给 `hooks/emit_hook_context.py` 和 `hooks/session_start_bootstrap.py`。
 
 ## 消息上下文
 
-每个事件的 Markdown 上下文位于 `src/apothem/hooks/messages/` 下：
+按事件划分的 Markdown 上下文位于 `src/apothem/hooks/messages/` 下：
 
-- `postcompact.md`、`precompact.md`、`stop.md`
-- `pretooluse-bash.md`、`pretooluse-write.md`、`pretooluse-edit.md`、
-  `pretooluse-notebookedit.md`
+- 会话生命周期：`sessionstart.md`、`precompact.md`、`postcompact.md`、`stop.md`、`posttooluse-proactive-compaction.md`
+- Shell 调用：`pretooluse-bash.md`、`pretooluse-bash-plan-guard.md`
+- 文件写入：`pretooluse-write.md`、`pretooluse-edit.md`、`pretooluse-notebookedit.md`、`pretooluse-write-plan-guard.md`、`pretooluse-write-header-guard.md`、`pretooluse-edit-header-guard.md`、`pretooluse-conformity.md`
+- 针对内容的防护：`pretooluse-dependency-guard.md`、`pretooluse-eval-guard.md`
+- 提问：`pretooluse-askuserquestion-recommended.md`
 
-每个上下文文件在其事件触发且其上下文参数在设置文件中注册时由分发器加载。
+在 Claude Code 上，`postcompact.md` 由 SessionStart 钩子在会话于压缩后恢复时提供，因为 Claude Code 不会将 PreCompact 或 PostCompact 钩子的输出传递给助手。
+
+当某个上下文文件的事件触发、且其上下文参数已在设置文件中注册时，调度器会加载该文件。许可证注释行和结尾的 `## Bindings` 部分会在文本到达助手之前被移除；两者都是为维护者和合规闸门而存在的。
+
+## 运行时契约
+
+每个已注册的钩子命令都满足同一份契约，由 `tests/hooks/test_hook_contract.py` 在插件、Claude Code 引擎安装、Codex 和 Qwen Code 上进行检查：
+
+- **可从普通检出运行。** 以 0 退出，且标准输出为空或为一个 JSON 对象。没有任何钩子依赖文件的可执行位。
+- **只注册一次。** 每个事件、匹配器与消息的组合在每个表面上只出现一次，因此一个钩子绝不会在一次工具调用上运行两次。
+- **有界。** 任何输出的文本都不超过 10,000 个字符。依赖防护仅在写入的目标是依赖清单或锁文件时才发声，动态求值防护仅在内容或命令包含求值原语或不安全的反序列化原语时才发声。压缩建议每个会话最多触发两次。
+- **使用工具会传递的通道。** PreToolUse 指引通过 `hookSpecificOutput` 传递；AskUserQuestion 防护返回 `additionalContext`，或在选择启用严格模式时返回 `permissionDecision: deny`。Claude Code 会丢弃 PreCompact 和 PostCompact 的输出，因此在 Claude Code 上，压缩后的恢复上下文会随来源为 `compact` 的 SessionStart 事件一同到达。
+- **绝不运行项目代码。** 引导脚本解析其自身的已安装树，绝不从已打开的项目中获取脚本。会话开始指引从已安装树中读取；项目目录仅用于读取计划和记忆摘要。
+- **失败时放行。** 缺失的消息文件、缺失的解释器或损坏的状态都会产生退出码 0 和一个有效的信封。
+
+| 变量 | 默认值 | 效果 |
+| --- | --- | --- |
+| `APOTHEM_HOOKS_DISABLE` | 未设置 | `1`、`true`、`yes` 或 `on` 会使每个经调度器路由的钩子以及引擎安装的合规闸门钩子静默 |
+| `APOTHEM_SESSION_END_ENABLED` | 关闭 | `1`、`true`、`yes` 或 `on` 会在 Stop 时启用会话结束协议。返回上下文的 Stop 钩子会让助手继续，因此该协议每个会话会多花费一个轮次；在紧随一次由钩子驱动的继续之后的停止上，它绝不会触发 |
+| `APOTHEM_SESSION_END_MIN_STOPS` | `3` | 会话结束协议可以触发之前所需的轮次结束次数 |
+| `APOTHEM_PROACTIVE_COMPACTION_ENABLED` | 开启 | `0`、`false`、`no` 或 `off` 会使压缩建议静默 |
+| `APOTHEM_PROACTIVE_COMPACTION_TOOL_THRESHOLD` | `18` | 每个建议窗口内的工具调用次数 |
+| `APOTHEM_PROACTIVE_COMPACTION_OUTPUT_THRESHOLD` | `20000` | 每个建议窗口内的工具输出字节数 |
+| `APOTHEM_HOOK_STATE_DIR` | 见下文 | 存放按会话钩子状态的目录 |
+
+按会话的钩子状态位于一个以模式 `0700` 创建的按用户目录中：设置了 `APOTHEM_HOOK_STATE_DIR` 时使用它，否则对 Claude Code 插件使用 `${CLAUDE_PLUGIN_DATA}/state`，否则使用 `$XDG_STATE_HOME/apothem`，否则使用 `~/.local/state/apothem`（在 Windows 上为 `%LOCALAPPDATA%\apothem\state`）。
 
 ## 生成的钩子消息清单
 

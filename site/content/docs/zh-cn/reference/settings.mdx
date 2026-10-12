@@ -1,25 +1,35 @@
 ---
 title: "设置"
-description: "settings.json 中的 Claude Code harness 配置，涵盖工具权限、钩子接线、环境变量和状态行模板。"
+description: "settings.json 中的 Claude Code 工具配置，涵盖工具权限、钩子接线、环境变量和状态行模板。"
 machineTranslated: true
-sourceHash: "e188546f5bc44c6a"
+sourceHash: "986e09594ded6bad"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-`settings.json` 承载 Claude Code harness 的配置：钩子接线、工具权限、环境变量和状态行设置。
+`settings.json` 承载 Claude Code 的工具配置：钩子接线、工具权限、环境变量和状态行设置。
 
-完整的规范参考位于
-[settings-reference.md](/docs/reference/settings-reference)。本页概述该契约并指向更深入的参考。
+完整的规范参考位于 [settings-reference.md](/docs/reference/settings-reference)。本页概述该契约，并指向更深入的参考。
 
 ## 各节
 
 | 节 | 用途 |
 |---------|---------|
-| `permissions` | 每个匹配器的工具白名单与黑名单 |
-| `hooks` | 事件键控的钩子命令表（规范接线） |
+| `permissions` | 按匹配器划分的工具白名单与黑名单 |
+| `hooks` | 以事件为键的钩子命令表（规范接线） |
 | `env` | 每会话环境变量 |
 | `statusLine` | 宿主渲染的状态行模板 |
 
 ## 单模板不变式
 
-Claude Code 适配器只发布一个 `settings.json` 模板。钩子命令使用 exec 形式（`command` 加 `args`），而非特定于 shell 的命令字符串，因此跨操作系统行为在同一个文件中审查。新的权限条目和钩子事件原子地落入该文件。
+Claude Code 适配器随附一个 `settings.json` 模板。钩子命令使用 exec 形式（`command` 加 `args`），而不是特定于 shell 的命令字符串，因此跨操作系统的行为在同一个文件内评审。新的权限条目和钩子事件以原子方式落入该文件。
+
+## 合并到你自己的设置文件
+
+`settings.json` 也是你的文件。安装会将模板合并到其中，而不是替换它，并在安装台账（`~/.apothem/state/<harness>/ledger.jsonl`）中准确记录它添加了哪些键和列表条目：
+
+- `permissions.allow` 和 `permissions.deny` 以并集方式合并：你的规则保持在前，Apothem 的规则追加在后。你编写的拒绝规则始终保留，并且 Claude Code 会先应用拒绝规则，再应用允许规则。
+- 你自己的钩子处理器保持原位。只有当一个处理器运行的是 Apothem 安装在工具根目录下的脚本时，它才算作 Apothem 的处理器，因此调用其他某个 `hooks/dispatch.py` 的处理器属于你。
+- 重新安装只替换 Apothem 上一次添加的内容，因此模板删去的条目会被移除，而你添加的条目会被保留。
+- 卸载只移除台账记录为 Apothem 所有的条目。恰好与 Apothem 的某条规则相同的规则（例如在首次安装之前就已位于你自己的 `allow` 列表中的 `Read`）会保留。只有当该文件由 Apothem 创建、且其中已不剩任何属于你的内容时，才会删除该文件。
+
+同样的规则也适用于 Apothem 合并写入的其他设置文件，例如 Qwen Code 的 `settings.json` 和 OpenCode 的 `opencode.json` 中的 MCP 服务器映射。

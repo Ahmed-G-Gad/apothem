@@ -2,11 +2,11 @@
 title: "diff"
 description: "apothem diff 命令的 CLI 参考。"
 machineTranslated: true
-sourceHash: "8c85e7aad9699fef"
+sourceHash: "5a48bbf5c36bbcdf"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-预览单个harness的待定配置更改。
+预览单个工具待应用的配置更改。
 
 ## 概要
 
@@ -16,39 +16,37 @@ apothem diff --harness NAME [--profile PATH] [--project PATH]
              [--format plain|json] [--json] [--no-color]
 ```
 
-`diff` 是一个只读的检查命令。它运行与 `install` 命令相同的具现化流程，但处于
-试运行模式——不会向磁盘写入任何内容。然后，它会按计划的目标渲染操作、目标路径、
-结果，以及（对于将被合并的、操作者自有的锚点）该更改的统一差异。它回答的是
-“此刻 `apothem install` 会对这个harness做什么？”——而不实际做出更改。
+`diff` 是一个只读的检查命令。它运行与 `install` 命令相同的物化过程，但处于试运行模式——不会向磁盘写入任何内容。对于每个待应用的目标，它会渲染一条通俗易懂的操作说明（例如 `Write file`、`Merge directory`、`Install skills` 或 `Prune stale files`）、目标路径、一个预览状态（`would create`、`would update`、`would remove` 或 `no change`），以及——对于将被合并的操作者自有锚点——该更改的统一差异。该状态通过将源内容与磁盘上当前的目标进行比较计算得出，因此已经一致的目标显示为 `no change`，并在默认视图中隐藏。它回答的是“`apothem install` 此刻会对这个工具做什么？”，而不实际做出更改。
 
-对于操作者自有的目标——同时携带你自己的内容和一个由 Apothem 管理的块的文件——
-差异会显示将要更改的确切行。对于其他目标，则会汇总计划的操作和结果。
+该计划覆盖安装所写入的每一条路径：清单条目、工具自身的配置文件（例如 `opencode.json` 或 `config.yaml`）、共享配置档案所投射到的指令锚点或配置档案文档（例如 `CLAUDE.md`），以及 `.apothem/` 下的共享数据存储。安装刚完成后，`diff` 不会报告任何待应用的更改；此时重新安装不会写入任何内容，也不会创建新的备份。`install --dry-run` 显示相同的计划。
 
-`diff` 作用于单个harness。与 `status` 不同，它不接受 `all`；请传入一个harness
-名称。
+对于操作者自有的目标——同时携带你自己的内容和一个由 Apothem 管理的块的文件——差异会显示将要更改的确切行。对于其他目标，则汇总计划的操作和预览状态。
+
+默认视图只列出待应用的更改。传入 `--verbose` 可查看完整计划，包括未更改的目标，并标注原始的内部操作类型和结果。`--json` 信封不受显示层影响：它始终为机器使用者携带原始的 `operation` 和 `outcome` 字段。
+
+`diff` 作用于单个工具。与 `status` 不同，它不接受 `all`；请传入一个工具名称。
 
 ## 选项
 
 | 选项 | 描述 |
 |---|---|
-| `--harness NAME` | 要预览的harness适配器（必填；单个harness，而非 `all`）。 |
-| `--profile PATH` | 共享配置文件 YAML 的路径。默认为 `~/.config/apothem/profile.yaml`。 |
-| `--project PATH` | 项目范围harness的项目根目录。当所选harness为项目范围时必填。 |
-| `--quiet`, `-q` | 抑制信息性输出；仅发出错误。 |
-| `--verbose`, `-v` | 发出额外的诊断输出。 |
+| `--harness NAME` | 要预览的工具适配器（必需；单个工具，而非 `all`）。 |
+| `--profile PATH` | 共享配置档案 YAML 的路径。默认为 `~/.config/apothem/profile.yaml`。 |
+| `--project PATH` | 项目范围工具的项目根目录。当所选工具为项目范围时必需。 |
+| `--quiet`, `-q` | 抑制信息性输出；只输出错误。 |
+| `--verbose`, `-v` | 显示完整计划，包括未更改的目标，并标注原始的操作类型和结果。 |
 | `--format plain\|json` | 输出格式（默认：`plain`）。 |
 | `--json` | `--format json` 的简写。 |
-| `--no-color` | 在输出中禁用 ANSI 颜色码。 |
+| `--no-color` | 在输出中禁用 ANSI 颜色代码。 |
 | `-h`, `--help` | 显示帮助并退出。 |
 
 ## JSON 输出
 
-`--json` 信封镜像试运行 install 的信封。`status` 为 `dry_run`，`files_written`
-始终为空，而 `materialization` 块以及 `results` 列表携带完整的计划目标细节。每个
-操作者自有的结果行的 `detail.diff` 字段携带统一差异字符串。
+`--json` 信封镜像试运行安装的信封。`status` 为 `dry_run`，`files_written` 始终为空，`materialization` 块和 `results` 列表携带完整的计划目标详情。每个操作者自有结果行的 `detail.diff` 字段携带统一差异字符串。
 
 ```json
 {
+  "schema_version": 1,
   "status": "dry_run",
   "command": "diff",
   "action": "dry_run",
@@ -83,13 +81,14 @@ apothem diff --harness claude-code --json
 
 ## 退出码
 
-| 码 | 含义 |
+| 代码 | 含义 |
 |---|---|
-| 0 | 已报告差异（待定更改会被报告，而非错误） |
-| 1 | 预期的校验、配置文件、harness或项目错误 |
+| 0 | 已报告差异（待应用的更改会被报告，而不是错误） |
+| 1 | 预期内的校验、配置档案、工具或项目错误 |
+| 64 | 用法错误：未知的选项或命令，或者缺失或无效的选项值。在 `--json` 下，该错误是一个代码为 `cli.usage` 的 JSON 信封。 |
 
 ## 另请参阅
 
-- [apothem status](/docs/cli-reference/status) — 报告每个harness的安装/校验/漂移状态
-- [apothem verify](/docs/cli-reference/verify) — 校验单个harness安装
-- [apothem install](/docs/cli-reference/install) — 应用已预览的更改
+- [apothem status](/docs/cli-reference/status)——报告每个工具的安装/验证/漂移状态
+- [apothem verify](/docs/cli-reference/verify)——验证单个工具的安装
+- [apothem install](/docs/cli-reference/install)——应用已预览的更改

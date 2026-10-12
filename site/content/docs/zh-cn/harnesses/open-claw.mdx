@@ -2,14 +2,14 @@
 title: "Open-Claw"
 description: "适用于 Open-Claw（预览版）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "84ea02c4a5281c11"
+sourceHash: "435a8075d4d83b4f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **厂商：** Open-Claw
 **安装名称：** `open-claw`
 **状态：** 预览版
-**平台原生配置：** `~/.openclaw/openclaw.json`
+**原生配置：** `~/.openclaw/openclaw.json`
 
 ## 安装
 
@@ -17,22 +17,19 @@ sourceHash: "84ea02c4a5281c11"
 apothem install --harness open-claw
 ```
 
-适配器将共享配置档案翻译为 OpenClaw 的用户全局配置文件，并在工具根目录下安装
-Apothem 支持队列。OpenClaw 的原生配置是 JSON；materializer 渲染 JSON 以与之匹配。
+适配器将共享配置档案转换为 OpenClaw 的用户全局配置文件，并在工具根目录下安装 Apothem 支持集合。OpenClaw 的原生配置是 JSON；物化器相应地渲染 JSON。
 
-**写入的文件：** `~/.openclaw/openclaw.json` 以及 `~/.openclaw/.apothem/support/`
-下的支持文件
+**写入的文件：** `~/.openclaw/openclaw.json`、配置档案文档 `~/.openclaw/apothem/rules/00-apothem-profile.md`，以及 `~/.openclaw/.apothem/support/` 下的支持文件
 
-## 配置档案到平台原生配置的映射
+配置档案文档以一个 Apothem 支持文件部分结尾，该部分指明每条仓库式引用（`rules/<name>.md`、`templates/...`、`hooks/...`）据以解析的 `~/.openclaw/.apothem/support/` 下的绝对目录。
 
-适配器读取 Apothem 的共享配置档案。OpenClaw 的原生 skills 字段是一个名称白名单
-（而非目录加载器），而 MCP 是一个 CLI 界面，因此 Apothem 不写入任何配置键。共享
-的命令、技能、规则、模板和钩子提示作为支持材料安装在 `~/.openclaw/.apothem/support/` 下。
+## 配置档案到原生配置的映射
+
+适配器读取 Apothem 的共享配置档案，但不编写任何配置键：`openclaw.json` 被写为一个空对象。配置档案中的身份、偏好和规则进入配置档案文档。共享的命令、技能、规则、模板和钩子提示词作为支持材料安装在 `~/.openclaw/.apothem/support/` 下。
 
 ## 兼容性说明
 
-预览版适配器。原生 JSON 配置是 Open-Claw 的活动界面；Apothem 使用文档化的额外
-skill-directory 钩子来处理技能，并将其他队列保留为已安装指引的参考材料。
+预览版适配器。OpenClaw 不会自行加载支持树或配置档案文档：它的任何技能位置、工作区指令文件或配置都不指向那里，因此安装之后，OpenClaw 运行时不带有 Apothem 的规则、技能或 MCP 服务器。OpenClaw 从其工作区的 `skills/` 和 `.agents/skills/` 文件夹、`~/.agents/skills`、其状态目录，以及 `skills.load.extraDirs` 中列出的任何文件夹读取技能；若要使用 Apothem 技能，请自行将 `~/.openclaw/.apothem/support/skills` 添加到该列表中；`apothem update` 会保留你添加到 `openclaw.json` 中的键。MCP 服务器位于 OpenClaw 配置的 `mcp.servers` 块中，你通过 `openclaw mcp add` 及相关子命令管理它；适配器不在那里写入任何条目。（OpenClaw 的行为依据其[技能](https://docs.openclaw.ai/tools/skills)和 [MCP CLI](https://docs.openclaw.ai/cli/mcp) 文档，读取于 2026-10-02。）
 
 ## 验证
 
@@ -42,9 +39,9 @@ apothem verify --harness open-claw
 
 verify 命令确认：
 
-1. 平台原生配置存在于预期路径。
-2. 共享配置档案中所有必需字段均存在。
-3. 适配器专属的验证例程报告成功。
+1. 原生配置存在于预期路径。
+2. 共享配置档案中的所有必填字段都已存在。
+3. 适配器特定的验证例程报告成功。
 
 ## 更新
 
@@ -52,8 +49,7 @@ verify 命令确认：
 apothem update --harness open-claw
 ```
 
-从当前的共享配置档案状态重新派生平台原生配置。
-在编辑 `~/.config/apothem/profile.yaml` 或升级已安装的 Apothem 包后运行。
+根据当前的共享配置档案状态重新派生原生配置。在编辑 `~/.config/apothem/profile.yaml` 或升级已安装的 Apothem 包之后运行。
 
 ## 卸载
 
@@ -61,10 +57,9 @@ apothem update --harness open-claw
 apothem uninstall --harness open-claw
 ```
 
-移除适配器写入的平台原生配置文件。
-共享配置档案 YAML 和 Apothem 引擎不受影响。
+移除适配器写入的原生配置文件。共享配置档案 YAML 和 Apothem 引擎不受影响。
 
-## 合规门
+## 合规闸门
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -83,3 +78,9 @@ python -m apothem.conformity.gate --all .
 | 标志 | 默认值 | 说明 |
 |------|---------|-------------|
 | `--dry-run` | `false` | 预览安装而不写入文件。 |
+
+## 另请参阅
+
+- [所有工具](/docs/harnesses)——受支持工具的完整目录
+- [安装指南](/docs/install)——将 Apothem 安装到此工具中
+- [`apothem harnesses` 参考](/docs/cli-reference/harnesses)——从 CLI 列出并检查适配器
