@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 
+# REUSE-IgnoreStart
 """Tests for the reference-token leak matcher.
 
 The matcher proves zero reference-platform branding leaks across authored
@@ -379,3 +380,6 @@ def test_missing_denylist_is_a_vacuous_scan(
     # validator, so a deleted denylist cannot pass the repository's own gate.
     assert rtg._main(["reference-token-grep", str(tmp_path)]) == rtg.EXIT_FAIL
     assert json.loads(capsys.readouterr().out)["passed"] is False
+
+
+# REUSE-IgnoreEnd

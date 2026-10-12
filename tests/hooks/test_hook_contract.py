@@ -487,6 +487,8 @@ def test_clause2_stop_is_bounded_and_off_by_default(workspace: dict[str, Path]) 
                 "Stop", "", workspace["project"], f"stop-{entry.surface}"
             )
             result, _ = _run(entry, payload, env, workspace["project"])
+            # _parse reads a dead command's empty stdout as no emission.
+            assert result.returncode == 0, (entry.label, result.stderr[-300:])
             emitted += _context_chars(_parse(result.stdout)) > 0
         assert emitted <= _MAX_STOP_EMISSIONS, (entry.surface, emitted)
         assert emitted == 0, f"{entry.surface}: session-end protocol must be opt-in"
@@ -497,6 +499,7 @@ def test_clause2_stop_is_bounded_and_off_by_default(workspace: dict[str, Path]) 
         )
         for _ in range(5):
             result, _ = _run(entry, active, opt_in, workspace["project"])
+            assert result.returncode == 0, (entry.label, result.stderr[-300:])
             assert _context_chars(_parse(result.stdout)) == 0
 
 
@@ -522,6 +525,12 @@ def test_clause2_posttooluse_advisory_is_capped(workspace: dict[str, Path]) -> N
                 )
                 payload["tool_response"] = "y" * 8_192
                 result, _ = _run(entry, payload, env, workspace["project"])
+                # _parse reads a dead command's empty stdout as no emission.
+                assert result.returncode == 0, (
+                    entry.label,
+                    switch,
+                    result.stderr[-300:],
+                )
                 emitted += _context_chars(_parse(result.stdout)) > 0
             assert emitted <= ceiling, (entry.surface, switch, emitted)
 
@@ -554,6 +563,8 @@ def test_clause4_claude_surfaces_use_valid_channels(workspace: dict[str, Path]) 
                 entry, workspace, workspace["project"], APOTHEM_CONFORMITY_STRICT=strict
             )
             result, _ = _run(entry, payload, env, workspace["project"])
+            # Exit 2 blocks a PreToolUse call whatever its JSON says.
+            assert result.returncode == 0, (entry.label, strict, result.stderr[-300:])
             output = _parse(result.stdout)
             assert "decision" not in output, output
             specific = output.get("hookSpecificOutput")
@@ -668,6 +679,8 @@ def test_hooks_never_run_project_supplied_code(workspace: dict[str, Path]) -> No
         result, _ = _run(entry, payload, env, workspace["hostile"])
         combined = result.stdout + result.stderr
         assert _HOSTILE_MARKER not in combined, entry.label
+        # A command that cannot start never prints the marker either.
+        assert result.returncode == 0, (entry.label, result.stderr[-300:])
 
 
 def test_guards_are_silent_on_benign_payloads(workspace: dict[str, Path]) -> None:
