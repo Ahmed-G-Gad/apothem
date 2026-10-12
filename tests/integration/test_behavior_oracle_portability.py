@@ -3,13 +3,16 @@
 """The behavior-diff oracles capture the same bytes on Windows and Linux.
 
 ``scripts/dev/regen-behavior-goldens.py`` rewrites the committed corpus from
-these oracles, so any platform-dependent byte in a capture becomes churn in an
-unrelated change-set. Three such bytes were observed on Windows: Rich's
-legacy-console box substitution, native backslash separators in relative
-paths, and a case-insensitive ledger target order. The comparison layer
-(``_behavior_canon``) tolerates all three, so these tests compare the parsed
-capture against the committed golden exactly, with the perturbations a
-Windows shell introduces applied on any host.
+these oracles, so any machine-dependent byte in a capture becomes churn in an
+unrelated change-set. Observed sources: Rich's legacy-console box substitution,
+native backslash separators in relative paths, a case-insensitive ledger target
+order, table widths that track the temp-path length, ``FORCE_COLOR``, Click's
+probe of the host's bash, the operator's ``CODEX_HOME``, JSON- and
+markup-escaped spellings of machine paths, a platform release that contains the
+engine version, and free-threaded or debug interpreter names. The comparison
+layer (``_behavior_canon``) tolerates several of these, so these tests compare
+captures against the committed golden exactly, with those conditions applied on
+any host.
 """
 
 from __future__ import annotations
@@ -19,15 +22,21 @@ import tempfile
 from pathlib import Path, PureWindowsPath
 from types import SimpleNamespace
 
+import click
 import pytest
 import rich.console
+import rich.markup
+from click.shell_completion import BashComplete
 
 import apothem.cli
 
 from . import _cli_oracle
 from . import _install_driver_oracle as install_oracle
+from ._oracle_norm import TOK_PYBIN, tokenize_python_bin
+from .test_install_driver_behavior_diff import REAL_SUBSET
 
 GOLDEN = Path(__file__).resolve().parents[1] / "fixtures" / "behavior-diff"
+_MATRIX = {slug: (argv, seed) for slug, argv, seed in _cli_oracle.matrix()}
 
 
 def test_windows_relative_output_path_is_captured_with_forward_slashes(
@@ -55,18 +64,26 @@ def test_windows_relative_output_path_is_captured_with_forward_slashes(
     assert escape == '"note": ".cursor\\nrules"'
 
 
-@pytest.mark.parametrize("slug", ["doctor", "harnesses-list", "harnesses-list-json"])
-def test_table_capture_ignores_console_color_and_temp_root(
+@pytest.mark.parametrize("slug", sorted(_MATRIX))
+def test_cli_capture_ignores_console_environment_and_host_tools(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, slug: str
 ) -> None:
-    """A legacy console, FORCE_COLOR, and a longer temp root leave the capture unchanged."""
+    """No console, color, temp-root, Codex-home or host-bash trait reaches a capture."""
     monkeypatch.setattr(rich.console, "detect_legacy_windows", lambda: True)
     monkeypatch.setenv("FORCE_COLOR", "1")
+    monkeypatch.setenv("CODEX_HOME", str(tmp_path / "codex-elsewhere"))
     longer_temp_root = tmp_path / ("t" * 40)
     longer_temp_root.mkdir()
     monkeypatch.setattr(tempfile, "tempdir", str(longer_temp_root))
-    rows = {row_slug: (argv, seed) for row_slug, argv, seed in _cli_oracle.matrix()}
-    argv, seed = rows[slug]
+
+    def old_bash_notice() -> None:
+        click.echo(
+            "Shell completion is not supported for Bash versions older than 4.4.",
+            err=True,
+        )
+
+    monkeypatch.setattr(BashComplete, "_check_version", staticmethod(old_bash_notice))
+    argv, seed = _MATRIX[slug]
 
     _cli_oracle.capture_one(tmp_path / "cli", slug, argv, seed_profile=seed)
 
@@ -75,6 +92,67 @@ def test_table_capture_ignores_console_color_and_temp_root(
     )
     golden = json.loads((GOLDEN / "cli" / f"{slug}.json").read_text(encoding="utf-8"))
     assert captured == golden
+
+
+def test_escaped_spellings_of_a_machine_path_are_tokenized(tmp_path: Path) -> None:
+    """The JSON-escaped and Rich-markup-escaped spellings of the home tokenize too."""
+    home = tmp_path / "jos\u00e9 [ci]"
+    home.mkdir()
+    settings = home / ".claude" / "settings.json"
+    json_stdout = json.dumps({"output_path": str(settings)})
+    markup_cell = rich.markup.escape(str(settings))
+
+    assert "\\u00e9" in json_stdout
+    assert _cli_oracle._normalize_text(json_stdout, home=home) == (
+        '{"output_path": "<HOME>/.claude/settings.json"}'
+    )
+    assert _cli_oracle._normalize_text(markup_cell, home=home) == (
+        "<HOME>/.claude/settings.json"
+    )
+
+
+def test_platform_release_containing_the_engine_version_is_tokenized(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A release such as ``Darwin 21.1.0`` against engine 1.1.0 stays whole."""
+    release = f"Darwin 2{_cli_oracle._VERSION}"
+    monkeypatch.setattr(_cli_oracle, "_PLATFORM", release)
+    text = f"Apothem v{_cli_oracle._VERSION}\nPlatform:  {release}"
+
+    assert _cli_oracle._normalize_text(text, home=tmp_path) == (
+        "Apothem v<VERSION>\nPlatform:  <PLATFORM>"
+    )
+    longer = f"{_cli_oracle._PYVER}0"
+    assert _cli_oracle._normalize_text(longer, home=tmp_path) == longer
+
+
+@pytest.mark.parametrize(
+    "interpreter",
+    [
+        "/usr/bin/python3",
+        "C:/Python314/python.exe",
+        "/usr/bin/python3.14t",
+        "C:/Python314/python3.14t.exe",
+        "C:/Python313/python_d.exe",
+        "/usr/bin/python3.13d",
+        "/usr/bin/python3.12-dbg",
+        "/opt/python/bin/python3.13-nogil",
+        "C:/Python313/pythonw.exe",
+        "/usr/bin/pypy3.10",
+    ],
+)
+def test_interpreter_paths_of_every_build_are_tokenized(interpreter: str) -> None:
+    """Free-threaded, debug, nogil, pythonw and PyPy interpreters all tokenize."""
+    assert tokenize_python_bin(f'"{interpreter}"') == f'"{TOK_PYBIN}"'
+    assert tokenize_python_bin(f'\\"{interpreter}\\"') == f'\\"{TOK_PYBIN}\\"'
+
+
+@pytest.mark.parametrize(
+    "path", ["/x/skills/python-testing", "/x/pythonista", "/x/python3.14tx"]
+)
+def test_paths_that_only_resemble_an_interpreter_are_kept(path: str) -> None:
+    """A quoted path that does not end in an interpreter name is left alone."""
+    assert tokenize_python_bin(f'"{path}"') == f'"{path}"'
 
 
 def test_ledger_targets_are_stored_in_code_point_order() -> None:
@@ -100,15 +178,22 @@ def test_ledger_targets_are_stored_in_code_point_order() -> None:
     )
 
 
-def test_real_install_ledger_capture_matches_golden_order(tmp_path: Path) -> None:
-    """The claude_code ledger capture keeps the committed target order exactly."""
+@pytest.mark.parametrize("name", REAL_SUBSET)
+def test_real_install_ledger_and_envelope_match_golden_exactly(
+    tmp_path: Path, name: str
+) -> None:
+    """A real-install capture keeps the committed ledger order and envelope bytes."""
     out = tmp_path / "corpus"
-    install_oracle.capture(out, fast_adapters=[], real_adapters=["claude_code"])
+    install_oracle.capture(out, fast_adapters=[], real_adapters=[name])
 
     def records(path: Path) -> list[object]:
         lines = path.read_text(encoding="utf-8").splitlines()
         return [json.loads(line) for line in lines if line.strip()]
 
-    assert records(out / "ledger" / "claude_code.jsonl") == records(
-        GOLDEN / "install_driver" / "ledger" / "claude_code.jsonl"
+    golden = GOLDEN / "install_driver"
+    assert records(out / "ledger" / f"{name}.jsonl") == records(
+        golden / "ledger" / f"{name}.jsonl"
     )
+    assert json.loads(
+        (out / "envelope" / f"{name}.json").read_text(encoding="utf-8")
+    ) == json.loads((golden / "envelope" / f"{name}.json").read_text(encoding="utf-8"))

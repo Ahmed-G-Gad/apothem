@@ -38,6 +38,8 @@ from pathlib import Path
 from typing import Any
 
 import rich.console
+import rich.markup
+from click.shell_completion import BashComplete
 from click.testing import CliRunner
 from rich.console import RenderableType
 from rich.style import StyleType
@@ -66,7 +68,6 @@ TOK_VERSION = "<VERSION>"
 TOK_HOME = "<HOME>"
 
 _VERSION = apothem.__version__
-_VERSION_RE = re.compile(re.escape(_VERSION))
 
 # `doctor` reports the live interpreter version and OS; both vary by machine, so
 # neutralize the exact values this capture's interpreter would emit (they appear
@@ -75,6 +76,20 @@ _TOK_PYVER = "<PYVER>"
 _TOK_PLATFORM = "<PLATFORM>"
 _PYVER = sys.version.split()[0]
 _PLATFORM = f"{platform.system()} {platform.release()}"
+
+
+def _version_pattern(version: str) -> re.Pattern[str]:
+    """Match *version* only where no digit or dot extends it on either side.
+
+    Without the anchors, ``1.1.0`` also matches inside ``Darwin 21.1.0`` and
+    ``3.12.1`` inside ``3.12.10``, which leaves a machine-specific fragment
+    next to the token.
+    """
+    return re.compile(r"(?<![0-9.])" + re.escape(version) + r"(?![0-9])")
+
+
+_VERSION_RE = _version_pattern(_VERSION)
+_PYVER_RE = _version_pattern(_PYVER)
 
 _SAMPLE_HARNESS = "claude-code"
 _COMPLETION_SHELLS = ("bash", "zsh", "fish", "powershell")
@@ -103,6 +118,11 @@ def _path_variants(value: Path) -> set[str]:
         variants.add(base.replace("\\", "/"))
         variants.add(base.replace("\\", "\\\\"))
     variants.add(value.resolve().as_posix())
+    # `--json` stdout escapes every non-ASCII character (`José`) as well as
+    # the backslash, and `harnesses list` escapes Rich markup in a table cell
+    # (`[ci]` becomes `\[ci]`) before the cell reaches the oracle.
+    variants |= {json.dumps(v)[1:-1] for v in list(variants)}
+    variants |= {rich.markup.escape(v) for v in list(variants)}
     return {v for v in variants if v}
 
 
@@ -132,9 +152,11 @@ def _normalize_text(text: str, *, home: Path) -> str:
     text = _TS_RE.sub(TOK_TIMESTAMP, text)
     text = _ULID_RE.sub(TOK_INSTALL_ID, text)
     text = tokenize_python_bin(text)
-    text = _VERSION_RE.sub(TOK_VERSION, text)
+    # The platform string goes first: a release such as `Darwin 21.1.0` or a
+    # kernel such as `6.8.0-45-generic` can contain the engine version.
     text = text.replace(_PLATFORM, _TOK_PLATFORM)
-    text = text.replace(_PYVER, _TOK_PYVER)
+    text = _PYVER_RE.sub(_TOK_PYVER, text)
+    text = _VERSION_RE.sub(TOK_VERSION, text)
     text = collapse_token_paths(text, "HOME|ROOT|APOTHEM_SRC")
     for native, posix in _relative_output_path_spellings():
         text = text.replace(native, posix)
@@ -216,6 +238,27 @@ def _pinned_rich_rendering(home: Path) -> Iterator[None]:
 
 
 @contextlib.contextmanager
+def _pinned_bash_probe() -> Iterator[None]:
+    """Generate the bash completion script without probing the host's bash.
+
+    Click's ``BashComplete.source`` first runs the ``bash`` on PATH to read its
+    version and writes a notice to stderr when that bash is older than 4.4
+    (macOS ships 3.2), when there is none, or when its reply does not parse
+    (a ``BASH_ENV`` that prints). CliRunner mixes stderr into the capture, so
+    the notice reached ``completion-bash.json`` on those hosts only, and a
+    reply that is not UTF-8 (a localized WSL launcher) aborted the capture. The
+    script Click emits does not depend on the host's bash, so the probe is a
+    no-op while the oracle captures. Restored on exit.
+    """
+    saved = BashComplete.__dict__["_check_version"]
+    try:
+        BashComplete._check_version = staticmethod(lambda: None)  # type: ignore[method-assign]
+        yield
+    finally:
+        BashComplete._check_version = saved  # type: ignore[method-assign]
+
+
+@contextlib.contextmanager
 def _isolated_home() -> Iterator[Path]:
     scratch = Path(tempfile.mkdtemp(prefix="dx2-cli-"))
     home = scratch / "home"
@@ -230,6 +273,7 @@ def _isolated_home() -> Iterator[Path]:
             "COLUMNS",
             "LINES",
             "TTY_COMPATIBLE",
+            "CODEX_HOME",
         )
     }
     saved_home_fn = Path.home
@@ -250,6 +294,10 @@ def _isolated_home() -> Iterator[Path]:
         # the capture, when the operator's shell exports FORCE_COLOR.
         # TTY_COMPATIBLE=0 outranks FORCE_COLOR, so the capture is plain text.
         os.environ["TTY_COMPATIBLE"] = "0"
+        # The codex adapter reads its home from CODEX_HOME before Path.home(),
+        # so an operator's own Codex setup would otherwise show in
+        # `harnesses list`, `doctor` and `status`.
+        os.environ.pop("CODEX_HOME", None)
         Path.home = classmethod(lambda cls: home)  # type: ignore[assignment]
         install_driver.BACKUP_ROOT = scratch / "backups"
         install_ledger.STATE_ROOT = scratch / "ledger-state"
@@ -271,7 +319,11 @@ def capture_one(
 ) -> None:
     """Capture one invocation's normalized record to ``out_root/<slug>.json``."""
     runner = CliRunner()
-    with _isolated_home() as home, _pinned_rich_rendering(home):
+    with (
+        _isolated_home() as home,
+        _pinned_rich_rendering(home),
+        _pinned_bash_probe(),
+    ):
         if seed_profile:
             init = runner.invoke(main, ["profile", "init"], catch_exceptions=False)
             if init.exit_code != 0:  # pragma: no cover - defensive
