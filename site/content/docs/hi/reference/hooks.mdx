@@ -1,52 +1,120 @@
 ---
 title: "हुक"
-description: "SessionStart, PreToolUse और Stop पर फायर होने वाले टूल इवेंट हैंडलर, जो git आइसोलेशन और प्लान अनुशासन को लागू करने वाले संदेश संदर्भ लोड करते हैं।"
+description: "SessionStart, PreToolUse, PostToolUse और Stop पर सक्रिय होने वाले टूल इवेंट हैंडलर, जो git आइसोलेशन और प्लान अनुशासन लागू करने वाले संदेश संदर्भ लोड करते हैं, परीक्षित रनटाइम अनुबंध और प्रति-उपयोगकर्ता स्थिति के साथ।"
 machineTranslated: true
-sourceHash: "aaf14191bbb63219"
+sourceHash: "3a6c32f33850537e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-हुक टूल इवेंट पर फायर होते हैं और ऐसे संदेश संदर्भ लोड करते हैं जिन्हें सहायक
+हुक टूल इवेंट पर सक्रिय होते हैं और ऐसे संदेश संदर्भ लोड करते हैं जिन्हें सहायक
 अतिरिक्त सिस्टम प्रॉम्प्ट के रूप में मानता है। वायरिंग Claude Code के
-`settings.json` हुक ब्लॉक, Codex की `hooks.json` हुक फ़ाइल, और Qwen Code के
-`settings.json` हुक मैप में रहती है।
+`settings.json` हुक ब्लॉक (इंजन इंस्टॉल) या प्लगइन के `hooks.json` (प्लगइन
+इंस्टॉल), Codex की `hooks.json` हुक फ़ाइल, और Qwen Code के `settings.json` हुक
+मैप में रहती है।
 
 | इवेंट | टाइमआउट | उद्देश्य |
 |-------|--------:|---------|
-| SessionStart | 30 सेकंड | मेमोरी पढ़ें, प्लान स्थिति जाँचें, तत्परता की रिपोर्ट दें |
-| PreCompact | 30 सेकंड | संपीड़न से पहले सत्यापित करें कि स्थिति बाह्यीकृत है |
-| PostCompact | 30 सेकंड | संपीड़न के बाद कार्यशील स्थिति बहाल करें |
-| Stop | 60 सेकंड | सत्र-समाप्ति पर बाह्यीकरण |
-| PreToolUse (Bash) | 10 सेकंड | Bash सत्यापन — git आर्टिफ़ैक्ट आइसोलेशन |
-| PreToolUse (Write/Edit/NotebookEdit/apply_patch) | 10 सेकंड | प्लान-संदर्भ आइसोलेशन, frontmatter जाँच |
+| SessionStart | 30 सेकंड | मेमोरी पढ़ें, प्लान स्थिति जाँचें, तत्परता की रिपोर्ट करें; कॉम्पैक्शन के बाद, रिकवरी संदर्भ पहुँचाएँ |
+| PreCompact | 30 सेकंड | सत्यापित करें कि कॉम्पैक्शन से पहले स्थिति बाहर सहेजी जा चुकी है (Codex, Qwen Code; Claude Code पर पंजीकृत नहीं) |
+| PostCompact | 30 सेकंड | कॉम्पैक्शन के बाद कार्यशील स्थिति बहाल करें (Codex, Qwen Code; Claude Code पर पंजीकृत नहीं) |
+| Stop | 60 सेकंड | सत्र-समाप्ति प्रोटोकॉल, ऑप्ट-इन |
+| PostToolUse | 10 सेकंड | अग्रसक्रिय-कॉम्पैक्शन सलाह, प्रति सत्र अधिकतम दो बार |
+| PreToolUse (शेल: Bash, PowerShell, `run_shell_command`) | 10 सेकंड | Git-आर्टिफ़ैक्ट आइसोलेशन, प्लान स्थानीयता, डायनेमिक-eval गार्ड |
+| PreToolUse (Write/Edit/NotebookEdit/apply_patch) | 10 सेकंड | प्लान-संदर्भ आइसोलेशन, लेखकत्व हेडर, प्लान स्थानीयता, निर्भरता और डायनेमिक-eval गार्ड |
+| PreToolUse (AskUserQuestion) | 10 सेकंड | `(Recommended)`-मार्कर की सुगठितता |
 
 ## डिस्पैचर
 
-इंस्टॉल किए गए हुक एंट्री डिस्पैचर को निरपेक्ष स्क्रिप्ट पथ द्वारा आह्वान करते हैं।
-सेटिंग्स टेम्पलेट `${HARNESS_ROOT}` टोकन रखते हैं —
-`python "${HARNESS_ROOT}/apothem/hooks/dispatch.py" <event> [<message-name>]`
-— जिसे इंस्टॉलर इंस्टॉल समय पर harness रूट के वास्तविक पथ में रेंडर करता है
-(Claude Code और Qwen Code डिस्पैचर को `<harness-root>/apothem/hooks/` के नीचे,
-Codex को `<harness-root>/hooks/` के नीचे मूर्त रूप देते हैं)। डिस्पैचर एक स्वतंत्र
-स्टैंडर्ड-लाइब्रेरी स्क्रिप्ट है: यह अपना स्वयं का `sys.path` बूटस्ट्रैप करता है,
-इसलिए होस्ट पर कोई आयात-योग्य `apothem` पैकेज आवश्यक नहीं है। स्रोत चेकआउट से,
-मॉड्यूल रूप `python -m apothem.hooks.dispatch <event>` (`PYTHONPATH=src` के साथ)
-विकास के लिए वही कोड चलाता है। डिस्पैचर इकोसिस्टम-रूट समाधान के लिए
+इंजन द्वारा इंस्टॉल की गई हुक प्रविष्टियाँ डिस्पैचर को उसके निरपेक्ष स्क्रिप्ट पथ
+से, इंस्टॉल के समय हल किए गए इंटरप्रेटर के साथ, बुलाती हैं। टेम्पलेट
+`${PYTHON_BIN}` और `${HARNESS_ROOT}` टोकन रखते हैं, जिन्हें इंस्टॉलर इंस्टॉल के
+समय रेंडर करता है। Claude Code और Qwen Code डिस्पैचर को
+`<harness-root>/.apothem/support/hooks/` के अंतर्गत मूर्त रूप देते हैं; Codex
+`<harness-root>/hooks/` के अंतर्गत। Claude Code प्रविष्टियाँ exec रूप (`command`
+और `args`) का उपयोग करती हैं, इसलिए उन्हें किसी शेल की आवश्यकता नहीं होती।
+Claude Code प्लगइन प्रत्येक हुक को
+`bash "${CLAUDE_PLUGIN_ROOT}/lib/apothem/hooks/lib/bootstrap.sh" <event> [<message-file>]`
+के रूप में, Claude Code के डिफ़ॉल्ट हुक शेल (macOS और Linux पर `sh`, Windows पर
+Git Bash) में चलाता है; बूटस्ट्रैप एक Python 3.10+ इंटरप्रेटर ढूँढता है और बंडल
+किए गए डिस्पैचर को चलाता है। Git for Windows के बिना Windows पर, इंजन इंस्टॉल
+(`apothem install --harness claude-code`) का उपयोग करें, जिसके exec-रूप हुक को
+किसी शेल की आवश्यकता नहीं होती। डिस्पैचर एक स्वतंत्र stdlib स्क्रिप्ट है: यह
+अपना `sys.path` स्वयं बूटस्ट्रैप करता है, इसलिए होस्ट पर किसी आयात-योग्य
+`apothem` पैकेज की आवश्यकता नहीं होती। किसी स्रोत चेकआउट से, मॉड्यूल रूप
+`python -m apothem.hooks.dispatch <event>` (`PYTHONPATH=src` के साथ) विकास के लिए
+वही कोड चलाता है। डिस्पैचर इकोसिस्टम-रूट निर्धारण के लिए
 `hooks/lib/resolve_root.py` लोड करता है और `hooks/emit_hook_context.py` तथा
-`hooks/session_start_bootstrap.py` को सौंपता है।
+`hooks/session_start_bootstrap.py` को कार्य सौंपता है।
 
 ## संदेश संदर्भ
 
-प्रति-इवेंट Markdown संदर्भ `src/apothem/hooks/messages/` के नीचे रहते हैं:
+प्रति-इवेंट Markdown संदर्भ `src/apothem/hooks/messages/` के अंतर्गत रहते हैं:
 
-- `postcompact.md`, `precompact.md`, `stop.md`
-- `pretooluse-bash.md`, `pretooluse-write.md`, `pretooluse-edit.md`,
-  `pretooluse-notebookedit.md`
+- सत्र जीवनचक्र: `sessionstart.md`, `precompact.md`, `postcompact.md`,
+  `stop.md`, `posttooluse-proactive-compaction.md`
+- शेल कॉल: `pretooluse-bash.md`, `pretooluse-bash-plan-guard.md`
+- फ़ाइल लेखन: `pretooluse-write.md`, `pretooluse-edit.md`,
+  `pretooluse-notebookedit.md`, `pretooluse-write-plan-guard.md`,
+  `pretooluse-write-header-guard.md`, `pretooluse-edit-header-guard.md`,
+  `pretooluse-conformity.md`
+- सामग्री पर गार्ड: `pretooluse-dependency-guard.md`,
+  `pretooluse-eval-guard.md`
+- प्रश्न: `pretooluse-askuserquestion-recommended.md`
 
-प्रत्येक संदर्भ फ़ाइल को डिस्पैचर तब लोड करता है जब उसका इवेंट फायर होता है और
-उसका संदर्भ तर्क सेटिंग्स फ़ाइल में पंजीकृत होता है।
+Claude Code पर, `postcompact.md` को SessionStart हुक तब पहुँचाता है जब सत्र
+कॉम्पैक्शन के बाद फिर से शुरू होता है, क्योंकि Claude Code PreCompact या
+PostCompact हुक आउटपुट को सहायक तक नहीं पहुँचाता।
 
-## उत्पन्न हुक संदेश सूची
+प्रत्येक संदर्भ फ़ाइल को डिस्पैचर तब लोड करता है जब उसका इवेंट सक्रिय होता है और
+उसका संदर्भ आर्गुमेंट सेटिंग्स फ़ाइल में पंजीकृत होता है। पाठ के सहायक तक पहुँचने
+से पहले लाइसेंस टिप्पणी पंक्ति और समापन `## Bindings` अनुभाग हटा दिए जाते हैं;
+दोनों अनुरक्षकों और अनुरूपता गेट के लिए मौजूद हैं।
+
+## रनटाइम अनुबंध
+
+हर पंजीकृत हुक कमांड एक ही अनुबंध पूरा करता है, जिसकी जाँच
+`tests/hooks/test_hook_contract.py` प्लगइन, Claude Code इंजन इंस्टॉल, Codex, और
+Qwen Code पर करता है:
+
+- **सादे चेकआउट से चलता है।** एग्ज़िट 0, और मानक आउटपुट खाली या एक JSON
+  ऑब्जेक्ट होता है। कोई भी हुक किसी फ़ाइल के निष्पादन-योग्य बिट पर निर्भर नहीं
+  करता।
+- **एक बार पंजीकृत।** प्रत्येक इवेंट, मैचर और संदेश युग्म प्रति सतह एक बार आता
+  है, इसलिए कोई हुक एक टूल कॉल पर कभी दो बार नहीं चलता।
+- **सीमित।** कोई भी उत्सर्जित पाठ 10,000 वर्णों से अधिक नहीं होता। निर्भरता गार्ड
+  केवल तब बोलता है जब कोई लेखन किसी निर्भरता मैनिफ़ेस्ट या लॉकफ़ाइल को लक्षित
+  करता है, और डायनेमिक-eval गार्ड केवल तब जब सामग्री या कमांड में कोई मूल्यांकन
+  या असुरक्षित-डीसीरियलाइज़ेशन प्रिमिटिव हो। कॉम्पैक्शन सलाह प्रति सत्र अधिकतम दो
+  बार सक्रिय होती है।
+- **उन्हीं चैनलों का उपयोग करता है जिन्हें हार्नेस पहुँचाता है।** PreToolUse
+  मार्गदर्शन `hookSpecificOutput` में जाता है; AskUserQuestion गार्ड
+  `additionalContext` लौटाता है, या सख़्त ऑप्ट-इन के अंतर्गत
+  `permissionDecision: deny`। Claude Code PreCompact और PostCompact आउटपुट को
+  त्याग देता है, इसलिए Claude Code पर कॉम्पैक्शन-पश्चात रिकवरी संदर्भ उस
+  SessionStart इवेंट के साथ आता है जिसका स्रोत `compact` है।
+- **कभी प्रोजेक्ट कोड नहीं चलाता।** बूटस्ट्रैप अपने स्वयं के इंस्टॉल किए गए ट्री
+  को हल करता है और खोले गए प्रोजेक्ट से कभी कोई स्क्रिप्ट नहीं लेता। सत्र-आरंभ
+  मार्गदर्शन इंस्टॉल किए गए ट्री से पढ़ा जाता है; प्रोजेक्ट डायरेक्टरी केवल प्लान
+  और मेमोरी सारांशों के लिए पढ़ी जाती है।
+- **विफलता में खुला रहता है।** अनुपस्थित संदेश फ़ाइल, अनुपस्थित इंटरप्रेटर, या
+  दूषित स्थिति का परिणाम एग्ज़िट 0 और एक वैध एनवेलप होता है।
+
+| चर | डिफ़ॉल्ट | प्रभाव |
+| --- | --- | --- |
+| `APOTHEM_HOOKS_DISABLE` | सेट नहीं | `1`, `true`, `yes` या `on` हर डिस्पैचर-रूटेड हुक और इंजन इंस्टॉल के अनुरूपता-गेट हुक को मौन कर देता है |
+| `APOTHEM_SESSION_END_ENABLED` | बंद | `1`, `true`, `yes` या `on` Stop पर सत्र-समाप्ति प्रोटोकॉल को सक्षम करता है। संदर्भ लौटाने वाला Stop हुक सहायक से कार्य जारी रखवाता है, इसलिए प्रोटोकॉल की लागत प्रति सत्र एक अतिरिक्त टर्न है; यह कभी ऐसे stop पर सक्रिय नहीं होता जो पहले से किसी हुक-चालित निरंतरता के बाद आता है |
+| `APOTHEM_SESSION_END_MIN_STOPS` | `3` | सत्र-समाप्ति प्रोटोकॉल के सक्रिय हो सकने से पहले की टर्न-समाप्तियाँ |
+| `APOTHEM_PROACTIVE_COMPACTION_ENABLED` | चालू | `0`, `false`, `no` या `off` कॉम्पैक्शन सलाह को मौन कर देता है |
+| `APOTHEM_PROACTIVE_COMPACTION_TOOL_THRESHOLD` | `18` | प्रति सलाह विंडो टूल कॉल |
+| `APOTHEM_PROACTIVE_COMPACTION_OUTPUT_THRESHOLD` | `20000` | प्रति सलाह विंडो टूल-आउटपुट बाइट |
+| `APOTHEM_HOOK_STATE_DIR` | नीचे देखें | प्रति-सत्र हुक स्थिति के लिए डायरेक्टरी |
+
+प्रति-सत्र हुक स्थिति एक प्रति-उपयोगकर्ता डायरेक्टरी में रहती है जो मोड `0700`
+के साथ बनाई जाती है: सेट होने पर `APOTHEM_HOOK_STATE_DIR`, अन्यथा Claude Code
+प्लगइन के लिए `${CLAUDE_PLUGIN_DATA}/state`, अन्यथा `$XDG_STATE_HOME/apothem`,
+अन्यथा `~/.local/state/apothem` (Windows पर `%LOCALAPPDATA%\apothem\state`)।
+
+## जनित हुक संदेश इन्वेंट्री
 
 {/* apothem:generated-reference:start */}
 

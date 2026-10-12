@@ -1,14 +1,14 @@
 ---
 title: "Codex"
-description: "Codex (Beta) के लिए Apothem हार्नेस एडॉप्टर।"
+description: "Codex (बीटा) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "edfd294e5a2d6324"
+sourceHash: "1fc0b9dae2c44d90"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **विक्रेता:** OpenAI
 **इंस्टॉल नाम:** `codex`
-**स्थिति:** Beta
+**स्थिति:** बीटा
 **नेटिव कॉन्फ़िग:** `~/.codex/AGENTS.md`, `~/.codex/hooks.json`,
 `~/.codex/hooks/`, `~/.codex/agents/*.toml`, और `~/.agents/skills/`
 
@@ -18,27 +18,57 @@ sourceHash: "edfd294e5a2d6324"
 apothem install --harness codex
 ```
 
-एडॉप्टर Codex-नेटिव निर्देश और हुक स्थापित करता है, Apothem एजेंटों को Codex TOML एजेंटों
-में परिवर्तित करता है, और पुन: उपयोग योग्य कमांड प्रॉम्प्ट को Codex स्किल के रूप में लपेटता
-है।
+अडैप्टर Codex-नेटिव निर्देश और हुक इंस्टॉल करता है, Apothem एजेंटों को Codex
+TOML एजेंटों में परिवर्तित करता है, और पुनः प्रयोज्य कमांड प्रॉम्प्ट को Codex
+स्किल के रूप में लपेटता है।
 
 **लिखी गई फ़ाइलें:** `~/.codex/AGENTS.md`, `~/.codex/hooks.json`,
 `~/.codex/hooks/`, `~/.codex/agents/*.toml`,
-`~/.agents/skills/*/SKILL.md`, और `~/.config/apothem/{rules,templates}/` के अंतर्गत
-समर्थन फ़ाइलें।
+`~/.agents/skills/*/SKILL.md`, उपयोगकर्ता-आह्वानित स्किल के लिए
+`~/.agents/skills/*/agents/openai.yaml`, और
+`~/.config/apothem/{rules,templates}/` के अंतर्गत समर्थन फ़ाइलें।
+
+`AGENTS.md` में Apothem ब्लॉक एक Apothem समर्थन फ़ाइल अनुभाग के साथ समाप्त होता
+है, जो इंस्टॉल किए गए स्किल और नियमों में प्रत्येक रिपॉज़िटरी-शैली उद्धरण के लिए
+वह निरपेक्ष डायरेक्टरी बताता है जिसके सापेक्ष वह उद्धरण हल होता है:
+`rules/<name>.md` और `templates/...` `~/.config/apothem/` के अंतर्गत, और
+`hooks/...` `~/.codex/hooks/` के अंतर्गत। Codex इंस्टॉल कोई `schemas/` या
+`conformity/` वृक्ष शिप नहीं करता, इसलिए अनुभाग इनमें से किसी को भी सूचीबद्ध नहीं
+करता।
+
+**उपयोगकर्ता-आह्वानित स्किल।** Codex `disable-model-invocation` कुंजी को अनदेखा
+करता है। हर उस स्किल या कमांड के लिए जिसका स्रोत
+`disable-model-invocation: true` सेट करता है, अडैप्टर उसकी `SKILL.md` के बगल में
+`policy.allow_implicit_invocation: false` के साथ `agents/openai.yaml` लिखता है,
+ताकि Codex उस स्किल को अपने आप न चुने; आप फिर भी उसे `$skill-name` से स्पष्ट रूप
+से चला सकते हैं।
+[Codex स्किल दस्तावेज़](https://developers.openai.com/codex/skills) देखें।
 
 ## प्रोफ़ाइल-से-नेटिव-कॉन्फ़िग मैपिंग
 
-एडॉप्टर Apothem के साझा समूहों को पढ़ता है और प्रत्येक को सही Codex सतह में स्थापित करता है:
-निर्देश `AGENTS.md` में, हुक `hooks.json` और `hooks/` में, एजेंट TOML में, स्किल
-`~/.agents/skills/` में, और गैर-नेटिव Markdown नियम/टेम्पलेट `~/.config/apothem/` में समर्थन
-सामग्री के रूप में।
+अडैप्टर Apothem के साझा समूहों को पढ़ता है और प्रत्येक को सही Codex सतह में
+इंस्टॉल करता है: निर्देश `AGENTS.md` में, हुक `hooks.json` और `hooks/` में, एजेंट
+TOML में, स्किल `~/.agents/skills/` में, और गैर-नेटिव Markdown नियम/टेम्पलेट
+समर्थन सामग्री के रूप में `~/.config/apothem/` में।
+
+प्रत्येक परिवर्तित सहायक `name`, `description`, और `developer_instructions` सेट
+करता है। जिस सहायक का टूल अनुदान फ़ाइलें नहीं लिख सकता, वह
+`sandbox_mode = "read-only"` भी सेट करता है, जो Codex का अपना लेखन प्रतिबंध है।
+कोई मॉडल या तर्क-प्रयास सेट नहीं किया जाता, इसलिए प्रत्येक सहायक सत्र के विकल्प
+विरासत में लेता है। Codex में प्रति-सहायक टूल सूची या टर्न सीमा नहीं होती, इसलिए
+किसी सहायक के `tools` और `maxTurns` आगे नहीं ले जाए जाते।
 
 ## संगतता टिप्पणियाँ
 
-Codex `~/.codex/rules/` को `.rules` निष्पादन नीतियों के लिए आरक्षित रखता है। Apothem वहाँ
-Markdown व्यवहार नियम नहीं रखता; यह उन्हें `~/.config/apothem/` में रखता है और उन्हें
-`AGENTS.md` तथा स्थापित स्किल से संदर्भित करता है।
+`~/.agents/skills/` एक साझा रूट है जिसका स्वामी Codex है: आठ अन्य समर्थित टूल भी
+इसे लोड करते हैं ([हार्नेस रजिस्ट्री](/docs/reference/harness-registry) उन्हें
+सूचीबद्ध करती है), इसलिए कोई Codex इंस्टॉल वहाँ जो Apothem स्किल लिखता है, वे उन
+टूल्स में भी दिखाई देते हैं, और कोई Codex अनइंस्टॉल उन्हें उन टूल्स से हटा देता
+है। इंस्टॉल एक नोट प्रिंट करता है जो उन टूल्स के नाम बताता है।
+
+Codex `.rules` निष्पादन नीतियों के लिए `~/.codex/rules/` आरक्षित रखता है। Apothem
+वहाँ Markdown व्यवहार नियम नहीं रखता; वह उन्हें `~/.config/apothem/` में रखता है
+और `AGENTS.md` तथा इंस्टॉल किए गए स्किल से उनका संदर्भ देता है।
 
 ## सत्यापन
 
@@ -50,7 +80,7 @@ verify कमांड पुष्टि करता है कि:
 
 1. नेटिव कॉन्फ़िग अपेक्षित पथ पर मौजूद है।
 2. साझा प्रोफ़ाइल के सभी अनिवार्य फ़ील्ड मौजूद हैं।
-3. एडॉप्टर-विशिष्ट सत्यापन रूटीन सफलता की रिपोर्ट करता है।
+3. अडैप्टर-विशिष्ट सत्यापन रूटीन सफलता की रिपोर्ट करता है।
 
 ## अपडेट करना
 
@@ -66,10 +96,10 @@ Codex बूटस्ट्रैप, परिवर्तित एजें�
 apothem uninstall --harness codex
 ```
 
-एडॉप्टर द्वारा लिखी गई नेटिव कॉन्फ़िग फ़ाइलों को हटाता है। साझा प्रोफ़ाइल YAML और Apothem
-इंजन अप्रभावित रहते हैं।
+अडैप्टर द्वारा लिखी गई नेटिव कॉन्फ़िग फ़ाइलों को हटाता है।
+साझा प्रोफ़ाइल YAML और Apothem इंजन अप्रभावित रहते हैं।
 
-## कन्फ़ॉर्मिटी गेट
+## अनुरूपता गेट
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -79,12 +109,18 @@ python -m apothem.conformity.gate --all .
 
 | लक्षण | समाधान |
 |---------|-----|
-| कॉन्फ़िग फ़ाइल नहीं मिली | `apothem install --harness codex` को फिर से चलाएँ |
-| सत्यापन विफल | `apothem update --harness codex` चलाएँ, फिर दोबारा सत्यापित करें |
-| अप्रत्याशित कॉन्फ़िग सामग्री | `~/.config/apothem/profile.yaml` या `--profile PATH` जाँचें, फिर `apothem update --harness codex` को फिर से चलाएँ |
+| कॉन्फ़िग फ़ाइल नहीं मिली | `apothem install --harness codex` फिर से चलाएँ |
+| सत्यापन विफल रहा | `apothem update --harness codex` चलाएँ, फिर दोबारा सत्यापित करें |
+| अप्रत्याशित कॉन्फ़िग सामग्री | `~/.config/apothem/profile.yaml` या `--profile PATH` जाँचें, फिर `apothem update --harness codex` फिर से चलाएँ |
 
 ## कॉन्फ़िगरेशन नॉब
 
 | फ़्लैग | डिफ़ॉल्ट | विवरण |
 |------|---------|-------------|
 | `--dry-run` | `false` | फ़ाइलें लिखे बिना इंस्टॉल का पूर्वावलोकन करें। |
+
+## यह भी देखें
+
+- [सभी हार्नेस](/docs/harnesses) — समर्थित टूल्स का पूरा कैटलॉग
+- [इंस्टॉल गाइड](/docs/install) — इस हार्नेस में Apothem इंस्टॉल करें
+- [`apothem harnesses` संदर्भ](/docs/cli-reference/harnesses) — CLI से अडैप्टरों को सूचीबद्ध करें और उनका निरीक्षण करें

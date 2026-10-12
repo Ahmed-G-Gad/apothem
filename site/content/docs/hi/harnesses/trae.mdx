@@ -1,8 +1,8 @@
 ---
 title: "Trae"
-description: "Trae (GA) के लिए Apothem हार्नेस एडॉप्टर।"
+description: "Trae (GA) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "229e541ddce9cc3e"
+sourceHash: "f55f43bb42d94d1d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,25 +17,30 @@ sourceHash: "229e541ddce9cc3e"
 apothem install --harness trae --project /path/to/project
 ```
 
-एडॉप्टर साझा Apothem नियम और गवर्नेंस सतह से एक प्रोजेक्ट-स्कोप्ड Trae नियम फ़ाइल लिखता
-है।
+अडैप्टर साझा Apothem नियमों और शासन सतह से प्रोजेक्ट-स्कोप वाली एक Trae नियम
+फ़ाइल लिखता है।
 
 **लिखी गई फ़ाइलें:** `<project>/.trae/rules/apothem-rules.md`
 
 ## प्रोफ़ाइल-से-नेटिव-कॉन्फ़िग मैपिंग
 
-एडॉप्टर Apothem की साझा प्रोफ़ाइल पढ़ता है और प्रत्येक `apothem install` या
-`apothem update` रन पर प्रोजेक्ट नियम फ़ाइल को रेंडर करता है। साझा प्रोफ़ाइल सत्य का
-स्रोत है; उत्पन्न फ़ाइल पर प्रोजेक्ट-स्थानीय संपादनों का बैकअप अगले सिंक द्वारा
-Apothem-प्रबंधित सामग्री को प्रतिस्थापित करने से पहले लिया जाता है।
+अडैप्टर Apothem की साझा प्रोफ़ाइल पढ़ता है और हर `apothem install` या
+`apothem update` रन पर प्रोजेक्ट नियम फ़ाइल रेंडर करता है। साझा प्रोफ़ाइल सत्य
+का स्रोत है; जनित फ़ाइल में किए गए प्रोजेक्ट-स्थानीय संपादनों का बैकअप अगली
+सिंक द्वारा Apothem-प्रबंधित सामग्री को बदलने से पहले ले लिया जाता है।
+
+फ़ाइल YAML फ़्रंट मैटर से शुरू होती है, जो `alwaysApply: true` और एक
+`description` सेट करता है; [Trae नियम दस्तावेज़](https://docs.trae.ai/ide/rules)
+के अनुसार यह Trae का Always Apply मोड है। Apothem-प्रबंधित ब्लॉक उसके बाद आता है;
+ब्लॉक के बाद आप जो टेक्स्ट जोड़ते हैं, वह हर सिंक पर बना रहता है।
 
 ## संगतता टिप्पणियाँ
 
-Trae की वर्तमान नियम सतह `.trae/rules/` के अंतर्गत प्रोजेक्ट-स्कोप्ड है। एडॉप्टर एक
-समर्पित `apothem-rules.md` फ़ाइल लिखता है जो ऑपरेटर के स्वामित्व वाले `project_rules.md`
-और `user_rules.md` एंकरों के साथ सह-अस्तित्व में रहती है और उन्हें कभी अधिलेखित नहीं
-करती। `.trae/mcp.json` टूल-सर्वर सतह और `.trae/skills/` स्किल सतह ऑपरेटर के स्वामित्व
-में हैं; Apothem उन्हें नहीं लिखता।
+Trae की वर्तमान नियम सतह `.trae/rules/` के अंतर्गत प्रोजेक्ट-स्कोप वाली है;
+वैश्विक नियम `~/.trae/user_rules` के अंतर्गत रहते हैं। अडैप्टर एक समर्पित
+`apothem-rules.md` फ़ाइल लिखता है और उस डायरेक्टरी की अन्य नियम फ़ाइलों या आपके
+वैश्विक नियमों को कभी अधिलेखित नहीं करता। `.trae/mcp.json` टूल-सर्वर सतह और
+`.trae/skills/` स्किल सतह ऑपरेटर-स्वामित्व वाली हैं; Apothem उन्हें नहीं लिखता।
 
 ## सत्यापन
 
@@ -47,7 +52,7 @@ verify कमांड पुष्टि करता है कि:
 
 1. नेटिव कॉन्फ़िग अपेक्षित पथ पर मौजूद है।
 2. साझा प्रोफ़ाइल के सभी अनिवार्य फ़ील्ड मौजूद हैं।
-3. एडॉप्टर-विशिष्ट सत्यापन रूटीन सफलता की रिपोर्ट करता है।
+3. अडैप्टर-विशिष्ट सत्यापन रूटीन सफलता की रिपोर्ट करता है।
 
 ## अपडेट करना
 
@@ -55,7 +60,7 @@ verify कमांड पुष्टि करता है कि:
 apothem update --harness trae --project /path/to/project
 ```
 
-वर्तमान साझा प्रोफ़ाइल स्थिति से प्रोजेक्ट नियम फ़ाइल को फिर से व्युत्पन्न करता है।
+वर्तमान साझा प्रोफ़ाइल स्थिति से प्रोजेक्ट नियम फ़ाइल को पुनः व्युत्पन्न करता है।
 
 ## अनइंस्टॉल करना
 
@@ -63,10 +68,10 @@ apothem update --harness trae --project /path/to/project
 apothem uninstall --harness trae --project /path/to/project
 ```
 
-एडॉप्टर द्वारा लिखी गई नेटिव कॉन्फ़िग फ़ाइलों को हटाता है।
+अडैप्टर द्वारा लिखी गई नेटिव कॉन्फ़िग फ़ाइलों को हटाता है।
 साझा प्रोफ़ाइल YAML और Apothem इंजन अप्रभावित रहते हैं।
 
-## कन्फ़ॉर्मिटी गेट
+## अनुरूपता गेट
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -76,12 +81,18 @@ python -m apothem.conformity.gate --all .
 
 | लक्षण | समाधान |
 |---------|-----|
-| कॉन्फ़िग फ़ाइल नहीं मिली | `apothem install --harness trae --project /path/to/project` को फिर से चलाएँ |
-| सत्यापन विफल | `apothem update --harness trae --project /path/to/project` चलाएँ, फिर दोबारा सत्यापित करें |
-| अप्रत्याशित कॉन्फ़िग सामग्री | `~/.config/apothem/profile.yaml` या `--profile PATH` जाँचें, फिर `apothem update --harness trae --project /path/to/project` को फिर से चलाएँ |
+| कॉन्फ़िग फ़ाइल नहीं मिली | `apothem install --harness trae --project /path/to/project` फिर से चलाएँ |
+| सत्यापन विफल रहा | `apothem update --harness trae --project /path/to/project` चलाएँ, फिर दोबारा सत्यापित करें |
+| अप्रत्याशित कॉन्फ़िग सामग्री | `~/.config/apothem/profile.yaml` या `--profile PATH` जाँचें, फिर `apothem update --harness trae --project /path/to/project` फिर से चलाएँ |
 
 ## कॉन्फ़िगरेशन नॉब
 
 | फ़्लैग | डिफ़ॉल्ट | विवरण |
 |------|---------|-------------|
 | `--dry-run` | `false` | फ़ाइलें लिखे बिना इंस्टॉल का पूर्वावलोकन करें। |
+
+## यह भी देखें
+
+- [सभी हार्नेस](/docs/harnesses) — समर्थित टूल्स का पूरा कैटलॉग
+- [इंस्टॉल गाइड](/docs/install) — इस हार्नेस में Apothem इंस्टॉल करें
+- [`apothem harnesses` संदर्भ](/docs/cli-reference/harnesses) — CLI से अडैप्टरों को सूचीबद्ध करें और उनका निरीक्षण करें

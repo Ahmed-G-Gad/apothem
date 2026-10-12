@@ -1,49 +1,52 @@
 ---
 title: "कमांड"
-description: "प्लान-सूट पाइपलाइन को लागू करने वाली स्लैश-कमांड परिभाषाएँ, साथ ही कोड, आर्किटेक्चर, सुरक्षा, निर्भरताओं, और दस्तावेज़ीकरण समीक्षा के लिए ऑडिट।"
+description: "प्लान-सूट पाइपलाइन को लागू करने वाली स्लैश-कमांड परिभाषाएँ, साथ ही कोड, आर्किटेक्चर, सुरक्षा, निर्भरताओं और दस्तावेज़ीकरण समीक्षा के लिए ऑडिट।"
 machineTranslated: true
-sourceHash: "eb6dba8f23c178b0"
+sourceHash: "9efa4c5a74f0b51f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-स्लैश-कमांड परिभाषाएँ `src/apothem/commands/` के अंतर्गत सपाट `.md` फ़ाइलों के रूप में रहती हैं।
-विहित सेट का नेतृत्व आर्किटेक्चर-जागरूक प्लान-सूट पाइपलाइन करती है, जो सात
-प्रथम-श्रेणी कमांड के रूप में शिप होती है — प्रति चरण एक, प्रत्येक सीधे
-`/plan-<stage>` के रूप में आह्वान-योग्य। कोई अखंड डिस्पैचर नहीं है; हर चरण
-`src/apothem/commands/plan-<stage>.md` पर अपनी स्वयं की पंजीकृत कमांड फ़ाइल है।
+स्लैश-कमांड परिभाषाएँ `src/apothem/commands/` के अंतर्गत सपाट `.md` फ़ाइलों के
+रूप में रहती हैं। विहित सेट में सबसे ऊपर आर्किटेक्चर-जागरूक प्लान-सूट पाइपलाइन
+है, जो सात प्रथम-श्रेणी कमांड के रूप में शिप होती है — प्रति चरण एक, और प्रत्येक
+को सीधे `/plan-<stage>` के रूप में बुलाया जा सकता है। कोई एकल अखंड डिस्पैचर नहीं
+है; हर चरण `src/apothem/commands/plan-<stage>.md` पर अपनी स्वयं की पंजीकृत कमांड
+फ़ाइल है।
 
 | आह्वान | कमांड फ़ाइल | विवरण |
 |------------|--------------|-------------|
-| `/plan-spec` | `src/apothem/commands/plan-spec.md` | असंरचित सामग्री को स्पेक-श्रेणी की गद्य में परिष्कृत करें |
-| `/plan-generate` | `src/apothem/commands/plan-generate.md` | गद्य / आवश्यकताओं से एक प्लान सूट मूर्त रूप दें |
-| `/plan-review` | `src/apothem/commands/plan-review.md` | स्कोरकार्ड के साथ फ़ोरेंसिक ऑडिट |
-| `/plan-design` | `src/apothem/commands/plan-design.md` | आर्किटेक्चर-धारक सूट के लिए `_inputs/design.md` उत्सर्जित करें |
+| `/plan-spec` | `src/apothem/commands/plan-spec.md` | असंरचित सामग्री को विनिर्देश-स्तरीय गद्य में परिष्कृत करें |
+| `/plan-generate` | `src/apothem/commands/plan-generate.md` | गद्य / आवश्यकताओं से एक प्लान सूट मूर्त रूप में तैयार करें |
+| `/plan-review` | `src/apothem/commands/plan-review.md` | स्कोरकार्ड के साथ फ़ॉरेंसिक ऑडिट |
+| `/plan-design` | `src/apothem/commands/plan-design.md` | आर्किटेक्चर-युक्त सूट के लिए `_inputs/design.md` उत्सर्जित करें |
 | `/plan-execute` | `src/apothem/commands/plan-execute.md` | गुणवत्ता गेट के साथ एक चरण निष्पादित करें |
 | `/plan-status` | `src/apothem/commands/plan-status.md` | केवल-पठन प्रगति रिपोर्ट |
-| `/plan-amend` | `src/apothem/commands/plan-amend.md` | हल किए गए निर्णयों को खोए बिना किसी मौजूदा सूट को संशोधित, विस्तारित, परिष्कृत, या प्रत्यावर्तित करें |
-| `/plan-audit` | `src/apothem/commands/plan-audit.md` | सक्रिय उपचार के साथ spec → generate → review का बंद-लूप आवरण (लंबवत, पूर्व-निष्पादन) |
+| `/plan-amend` | `src/apothem/commands/plan-amend.md` | हल किए गए निर्णयों को खोए बिना किसी मौजूदा सूट में संशोधन, विस्तार, परिष्करण या प्रत्यावर्तन करें |
+| `/plan-audit` | `src/apothem/commands/plan-audit.md` | सक्रिय सुधार के साथ spec → generate → review का बंद-लूप आवरण (ऑर्थोगोनल, निष्पादन-पूर्व) |
 
-प्लान पाइपलाइन से परे, इसके साथ संपूर्ण-प्रोजेक्ट टूल कमांड शिप होते हैं —
-ताज़गी और रिलीज़ के लिए `/freshify`, `/github-deploy-fresh`, `/github-deploy-next`
-और `/elevate`; बहु-एजेंट समीक्षा और संयोजन के लिए `/audit`, `/fortress` और
-`/workflow`; चैट-ऐप प्रोजेक्ट उन्नयन के लिए `/projectify` — साथ ही ग्यारह
-ऑडिट/समीक्षा पास और `/research` पाइपलाइन:
+प्लान पाइपलाइन के अतिरिक्त, उसके साथ पूरे-प्रोजेक्ट वाले हार्नेस कमांड भी शिप
+होते हैं — ताज़गी और रिलीज़ के लिए `/freshify`, `/github-deploy-fresh`,
+`/github-deploy-next`, और `/elevate`; मल्टी-एजेंट समीक्षा और ऑर्केस्ट्रेशन के लिए
+`/audit`, `/fortress`, और `/workflow`; चैट-ऐप Project उन्नयन के लिए `/projectify`
+— साथ ही ग्यारह ऑडिट/समीक्षा पास (code-review, code-audit, architecture-review,
+docs-review, security-audit, dependency-audit, supply-chain-audit,
+threat-model-audit, perf-audit, a11y-audit, ux-review) और `/research` पाइपलाइन:
 
 | आह्वान | कमांड फ़ाइल | विवरण |
 |------------|--------------|-------------|
-| `/freshify` | `src/apothem/commands/freshify.md` | किसी प्रोजेक्ट को ताज़ा, ट्रेस-मुक्त, और उत्पादन-तैयार बनाएँ; हर विनाशकारी कदम पुष्टि-द्वारबद्ध |
-| `/github-deploy-fresh` | `src/apothem/commands/github-deploy-fresh.md` | एकल ताज़ा प्रथम-संस्करण रिलीज़ उत्पन्न करने वाला `/freshify` का GitHub विशेषीकरण |
+| `/freshify` | `src/apothem/commands/freshify.md` | किसी प्रोजेक्ट को ताज़ा, निशान-मुक्त और उत्पादन-तैयार बनाएँ; हर विनाशकारी चरण पुष्टि-नियंत्रित है |
+| `/github-deploy-fresh` | `src/apothem/commands/github-deploy-fresh.md` | `/freshify` का GitHub विशेषीकरण, जो एक एकल ताज़ा प्रथम-संस्करण रिलीज़ उत्पन्न करता है |
 | `/github-deploy-next` | `src/apothem/commands/github-deploy-next.md` | GitHub रिलीज़ सतह पर एक पूर्ण अगला-रिलीज़ चक्र चलाएँ |
-| `/elevate` | `src/apothem/commands/elevate.md` | स्वतंत्र समीक्षकों के माध्यम से हर प्रोजेक्ट सतह को वर्तमान SOTA तक उठाएँ, फिर `/freshify` को सौंप दें |
+| `/elevate` | `src/apothem/commands/elevate.md` | स्वतंत्र समालोचना एजेंटों के माध्यम से हर प्रोजेक्ट सतह को वर्तमान SOTA तक उठाएँ, फिर `/freshify` को सौंपें |
 
-संपूर्ण, सत्य-स्रोत कमांड सेट — ऑडिट-समीक्षा अनुक्रम सहित —
-इस पृष्ठ के निचले हिस्से में उत्पन्न सूची है।
+पूर्ण, सत्य-स्रोत कमांड सेट — हर ऑडिट-समीक्षा पास सहित — इस पृष्ठ के अंत में दी
+गई जनित इन्वेंट्री है।
 
-## Frontmatter कॉन्ट्रैक्ट
+## Frontmatter अनुबंध
 
-हर कमांड फ़ाइल विहित आठ-कुंजी frontmatter धारण करती है। मशीन-पठनीय
-कॉन्ट्रैक्ट [`command.schema.json`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/command.schema.json)
-(`additionalProperties: false`) है; यह ब्लॉक उसे प्रतिबिंबित करता है:
+हर कमांड फ़ाइल विहित आठ-कुंजी frontmatter रखती है। मशीन-पठनीय अनुबंध
+[`command.schema.json`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/command.schema.json)
+(`additionalProperties: false`) है; यह ब्लॉक उसी को प्रतिबिंबित करता है:
 
 ```yaml
 ---
@@ -58,17 +61,25 @@ allowed-tools: <comma-separated read-only tools and scoped rules, e.g. "Read, Gl
 ---
 ```
 
-वैलिडेटर की `frontmatter-cohort` जाँच (Command शाखा) हर कमांड फ़ाइल पर
-कॉन्ट्रैक्ट को सत्यापित करती है।
+वैलिडेटर की `frontmatter-cohort` जाँच (Command शाखा) हर कमांड फ़ाइल पर अनुबंध को
+सत्यापित करती है। `allowed-tools` उन टूल की सूची देता है जिन्हें कमांड सक्रिय रहते
+हुए कोई हार्नेस बिना पूछे चला सकता है, इसलिए यह डिफ़ॉल्ट रूप से केवल-पठन रहता है:
+कोई साइड-इफ़ेक्ट वाला टूल (Bash, PowerShell, Write, Edit, NotebookEdit, WebFetch)
+केवल `Bash(git log *)` जैसे दायरा-सीमित नियम के रूप में आता है, और स्कीमा सादे
+`"*"` वाइल्डकार्ड को अस्वीकार करता है। अपरिवर्तनीय साइड इफ़ेक्ट वाले कमांड
+(`freshify`, `github-deploy-fresh`, `github-deploy-next`)
+`disable-model-invocation: true` सेट करते हैं, ताकि उन्हें केवल ऑपरेटर ही शुरू
+करे।
 
 ## लेखन अनुशासन
 
 - **स्व-निहित वर्कफ़्लो।** हर कमांड का मुख्य भाग वर्कफ़्लो को क्रमांकित चरणों के
-  रूप में सूचीबद्ध करता है ताकि सहायक ठंडी शुरुआत से निष्पादित कर सके।
-- **Bindings ब्लॉक।** हर कमांड विहित पाँच-दिशा Bindings ब्लॉक के साथ समाप्त होता है।
+  रूप में सूचीबद्ध करता है, ताकि सहायक कोल्ड स्टार्ट से निष्पादन कर सके।
+- **Bindings ब्लॉक।** हर कमांड विहित पाँच-दिशा Bindings ब्लॉक के साथ समाप्त होता
+  है।
 - **केवल डोमेन भाषा।** मुख्य भागों में कोई प्लान-आंतरिक संदर्भ नहीं।
 
-## उत्पन्न कमांड सूची
+## जनित कमांड इन्वेंट्री
 
 {/* apothem:generated-reference:start */}
 

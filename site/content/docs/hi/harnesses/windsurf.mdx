@@ -1,15 +1,18 @@
 ---
 title: "Windsurf"
-description: "Windsurf (GA) के लिए Apothem टूल अडैप्टर।"
+description: "Windsurf (GA) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "82c627f8c28608f2"
+sourceHash: "0146944b97b5e33f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**विक्रेता:** Codeium
+**विक्रेता:** Devin Desktop (पूर्व में Codeium Windsurf)
 **इंस्टॉल नाम:** `windsurf`
 **स्थिति:** GA
 **नेटिव कॉन्फ़िग:** `<project>/.devin/rules/apothem-rules.md`
+
+Windsurf अब Devin Desktop है, और `.devin/rules/` पसंदीदा वर्कस्पेस-नियम स्थान है
+(यह `.windsurf/rules/` पर प्राथमिकता लेता है)।
 
 ## इंस्टॉलेशन
 
@@ -17,23 +20,28 @@ sourceHash: "82c627f8c28608f2"
 apothem install --harness windsurf --project /path/to/project
 ```
 
-अडैप्टर साझा Apothem नियमों और शासन-तल से एक प्रोजेक्ट-स्तरीय Windsurf नियम फ़ाइल
-लिखता है।
+अडैप्टर साझा Apothem नियमों और शासन सतह से प्रोजेक्ट-स्कोप वाली एक Windsurf नियम
+फ़ाइल लिखता है।
 
 **लिखी गई फ़ाइलें:** `<project>/.devin/rules/apothem-rules.md`
 
-## प्रोफ़ाइल से नेटिव कॉन्फ़िग में मानचित्रण
+## प्रोफ़ाइल-से-नेटिव-कॉन्फ़िग मैपिंग
 
-अडैप्टर Apothem की साझा प्रोफ़ाइल पढ़ता है और प्रत्येक `apothem install` या
-`apothem update` रन पर प्रोजेक्ट नियम फ़ाइल रेंडर करता है। साझा प्रोफ़ाइल सत्य का
-स्रोत है; जनरेट की गई फ़ाइल में प्रोजेक्ट-स्थानीय संपादनों का बैकअप, अगली
-सिंक्रनाइज़ेशन के Apothem-प्रबंधित सामग्री को बदलने से पहले, ले लिया जाता है।
+अडैप्टर Apothem की साझा प्रोफ़ाइल पढ़ता है और हर `apothem install` या
+`apothem update` रन पर प्रोजेक्ट नियम फ़ाइल रेंडर करता है। साझा प्रोफ़ाइल सत्य
+का स्रोत है; जनित फ़ाइल में किए गए प्रोजेक्ट-स्थानीय संपादनों का बैकअप अगली
+सिंक द्वारा Apothem-प्रबंधित सामग्री को बदलने से पहले ले लिया जाता है।
+
+फ़ाइल अपने `trigger: always_on` फ़्रंट मैटर से शुरू होती है, जो नियम का सक्रियण
+मोड सेट करता है। Apothem-प्रबंधित ब्लॉक उसके बाद आता है; ब्लॉक के बाद आप जो
+टेक्स्ट जोड़ते हैं, वह हर सिंक पर बना रहता है।
 
 ## संगतता टिप्पणियाँ
 
-Windsurf का वर्तमान नियम-तल `.devin/rules/` के अंतर्गत प्रोजेक्ट-स्तरीय है।
-वर्कफ़्लो और मशीन-स्थानीय मेमोरी ऑपरेटर के स्वामित्व में हैं; Apothem उन्हें नहीं
-लिखता। एकल-फ़ाइल रूप `.windsurfrules` जानबूझकर नहीं लिखा जाता।
+Windsurf की वर्तमान नियम सतह `.devin/rules/` के अंतर्गत प्रोजेक्ट-स्कोप वाली है
+(पसंदीदा स्थान, जो `.windsurf/rules/` पश्च-संगतता फ़ॉलबैक पर प्राथमिकता लेता
+है)। वर्कफ़्लो और मशीन-स्थानीय मेमोरी ऑपरेटर-स्वामित्व वाली हैं; Apothem उन्हें
+नहीं लिखता। एकल-फ़ाइल `.windsurfrules` रूप जानबूझकर नहीं लिखा जाता।
 
 ## सत्यापन
 
@@ -64,7 +72,7 @@ apothem uninstall --harness windsurf --project /path/to/project
 अडैप्टर द्वारा लिखी गई नेटिव कॉन्फ़िग फ़ाइलों को हटाता है।
 साझा प्रोफ़ाइल YAML और Apothem इंजन अप्रभावित रहते हैं।
 
-## अनुरूपता द्वार
+## अनुरूपता गेट
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -74,12 +82,18 @@ python -m apothem.conformity.gate --all .
 
 | लक्षण | समाधान |
 |---------|-----|
-| कॉन्फ़िग फ़ाइल नहीं मिली | `apothem install --harness windsurf --project /path/to/project` पुनः चलाएँ |
-| सत्यापन विफल रहा | `apothem update --harness windsurf --project /path/to/project` चलाएँ, फिर पुनः सत्यापित करें |
-| अप्रत्याशित कॉन्फ़िग सामग्री | `~/.config/apothem/profile.yaml` या `--profile PATH` जाँचें, फिर `apothem update --harness windsurf --project /path/to/project` पुनः चलाएँ |
+| कॉन्फ़िग फ़ाइल नहीं मिली | `apothem install --harness windsurf --project /path/to/project` फिर से चलाएँ |
+| सत्यापन विफल रहा | `apothem update --harness windsurf --project /path/to/project` चलाएँ, फिर दोबारा सत्यापित करें |
+| अप्रत्याशित कॉन्फ़िग सामग्री | `~/.config/apothem/profile.yaml` या `--profile PATH` जाँचें, फिर `apothem update --harness windsurf --project /path/to/project` फिर से चलाएँ |
 
 ## कॉन्फ़िगरेशन नॉब
 
 | फ़्लैग | डिफ़ॉल्ट | विवरण |
 |------|---------|-------------|
-| `--dry-run` | `false` | फ़ाइलें लिखे बिना इंस्टॉलेशन का पूर्वावलोकन करें। |
+| `--dry-run` | `false` | फ़ाइलें लिखे बिना इंस्टॉल का पूर्वावलोकन करें। |
+
+## यह भी देखें
+
+- [सभी हार्नेस](/docs/harnesses) — समर्थित टूल्स का पूरा कैटलॉग
+- [इंस्टॉल गाइड](/docs/install) — इस हार्नेस में Apothem इंस्टॉल करें
+- [`apothem harnesses` संदर्भ](/docs/cli-reference/harnesses) — CLI से अडैप्टरों को सूचीबद्ध करें और उनका निरीक्षण करें

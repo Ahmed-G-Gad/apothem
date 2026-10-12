@@ -2,11 +2,14 @@
 title: "completion"
 description: "apothem completion कमांड के लिए CLI संदर्भ।"
 machineTranslated: true
-sourceHash: "eba23204384a65f8"
+sourceHash: "660a40ccf40c550b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-अनुरोधित shell के लिए एक shell-completion स्क्रिप्ट को stdout पर प्रिंट करता है। completion सक्षम करना **opt-in** है: यह कमांड केवल स्क्रिप्ट प्रिंट करता है — यह कभी भी आपकी shell स्टार्टअप फ़ाइलों को संपादित नहीं करता। आउटपुट को shell की completion फ़ाइल में जोड़ना आप स्वयं करते हैं।
+अनुरोधित शेल के लिए एक शेल-कम्प्लीशन स्क्रिप्ट stdout पर प्रिंट करें। कम्प्लीशन
+सक्षम करना **ऑप्ट-इन** है: यह कमांड केवल स्क्रिप्ट प्रिंट करता है — यह आपकी
+शेल स्टार्टअप फ़ाइलों को कभी संपादित नहीं करता। आउटपुट को शेल की कम्प्लीशन
+फ़ाइल में आप स्वयं जोड़ते हैं।
 
 ## सारांश
 
@@ -14,44 +17,53 @@ sourceHash: "eba23204384a65f8"
 apothem completion bash|zsh|fish|powershell
 ```
 
-उत्पन्न स्क्रिप्ट `apothem` सबकमांड, फ़्लैग, और — `--harness` विकल्प के लिए — पंजीकृत harness id तथा `all` के `<TAB>` completion को सक्षम करती है।
+उत्सर्जित स्क्रिप्ट `apothem` सबकमांड, फ़्लैग, और — `--harness` विकल्प के लिए
+— पंजीकृत हार्नेस ID तथा `all` का `<TAB>` कम्प्लीशन सक्षम करती है।
 
-## समर्थित shell
+## समर्थित शेल
 
-| Shell | स्क्रिप्ट कैसे उत्पन्न होती है |
+| शेल | स्क्रिप्ट कैसे बनाई जाती है |
 |---|---|
-| `bash` | Click की मूल bash completion स्क्रिप्ट। |
-| `zsh` | Click की मूल zsh completion स्क्रिप्ट। |
-| `fish` | Click की मूल fish completion स्क्रिप्ट। |
-| `powershell` | एक `Register-ArgumentCompleter` स्निपेट जो Click के completion प्रोटोकॉल से जोड़ता है (Click कोई मूल PowerShell स्क्रिप्ट साथ नहीं देता, इसलिए यह स्निपेट उसी प्रोटोकॉल को PowerShell में जोड़ता है)। |
+| `bash` | Click की नेटिव bash कम्प्लीशन स्क्रिप्ट। |
+| `zsh` | Click की नेटिव zsh कम्प्लीशन स्क्रिप्ट। |
+| `fish` | Click की नेटिव fish कम्प्लीशन स्क्रिप्ट। |
+| `powershell` | एक `Register-ArgumentCompleter` स्क्रिप्ट, जिसे वह PowerShell कम्प्लीशन क्लास बनाती है जिसे Apothem, Click के साथ पंजीकृत करता है (Click नेटिव रूप से ऐसी कोई क्लास शिप नहीं करता), और जो अन्य शेल जैसा ही कम्प्लीशन प्रोटोकॉल चलाती है। |
 
-किसी भी अन्य shell का अनुरोध करने पर यह समर्थित-shell सूची के साथ `64` से बाहर निकलता है।
+किसी भी अन्य शेल का अनुरोध करने पर कमांड समर्थित-शेल सूची के साथ `64` पर बाहर
+निकलता है।
 
-## प्रति shell completion सक्षम करना
+## प्रति शेल कम्प्लीशन सक्षम करना
 
-पहले `apothem` कमांड का आपके `PATH` पर होना आवश्यक है (वन-शॉट इंस्टॉलर इसे वहाँ रखते हैं)। फिर स्क्रिप्ट को shell की completion फ़ाइल में जोड़कर और shell को पुनः आरंभ करके completion सक्षम करें:
+पहले `apothem` कमांड का आपके `PATH` पर होना अनिवार्य है (वन-शॉट इंस्टॉलर इसे
+वहाँ रखते हैं)। फिर स्क्रिप्ट को शेल की कम्प्लीशन फ़ाइल में जोड़कर और शेल को
+पुनः आरंभ करके कम्प्लीशन सक्षम करें:
 
 ```bash
-# bash — अपनी bashrc में जोड़ें
+# bash — append to your bashrc
 apothem completion bash >> ~/.bashrc
 
-# zsh — अपनी zshrc में जोड़ें
+# zsh — append to your zshrc
 apothem completion zsh >> ~/.zshrc
 
-# fish — fish completions डायरेक्टरी में लिखें
+# fish — write to the fish completions directory
 apothem completion fish > ~/.config/fish/completions/apothem.fish
 ```
 
 ```powershell
-# PowerShell — completer पंजीकरण को अपनी profile में जोड़ें
+# PowerShell — append the completer registration to your profile
 apothem completion powershell >> $PROFILE
 ```
 
-किसी फ़ाइल को संपादित किए बिना केवल वर्तमान सत्र के लिए completion आज़माने के लिए, स्क्रिप्ट को सीधे source करें (bash/zsh): `source <(apothem completion bash)`।
+किसी भी फ़ाइल को संपादित किए बिना केवल वर्तमान सत्र के लिए कम्प्लीशन आज़माने
+हेतु, स्क्रिप्ट को सीधे सोर्स करें (bash/zsh): `source <(apothem completion bash)`।
 
-## यह opt-in क्यों है
+## यह ऑप्ट-इन क्यों है
 
-Apothem किसी ऑपरेटर की shell स्टार्टअप फ़ाइलों को कभी चुपचाप संपादित नहीं करता। इंस्टॉलर इस कमांड की ओर इशारा करता एक-पंक्ति का संकेत प्रिंट करते हैं; ऑपरेटर तय करता है कि completion सक्षम करना है या नहीं और किस फ़ाइल में जोड़ना है। यह इंस्टॉल फ़ुटप्रिंट को पूर्वानुमेय और प्रतिवर्ती रखता है — जोड़े गए ब्लॉक को हटाने से completion निष्क्रिय हो जाता है।
+Apothem किसी ऑपरेटर की शेल स्टार्टअप फ़ाइलों को कभी चुपचाप संपादित नहीं करता।
+इंस्टॉलर इस कमांड की ओर इंगित करता एक-पंक्ति का संकेत प्रिंट करते हैं; ऑपरेटर
+तय करता है कि कम्प्लीशन सक्षम करना है या नहीं और किस फ़ाइल में जोड़ना है। इससे
+इंस्टॉल फ़ुटप्रिंट पूर्वानुमेय और प्रतिवर्ती रहता है — जोड़े गए ब्लॉक को हटाने
+से कम्प्लीशन अक्षम हो जाता है।
 
 ## विकल्प
 
@@ -64,11 +76,11 @@ Apothem किसी ऑपरेटर की shell स्टार्टअप
 
 | कोड | अर्थ |
 |---|---|
-| 0 | completion स्क्रिप्ट उत्पन्न की गई |
-| 2 | असमर्थित shell का अनुरोध किया गया |
+| 0 | कम्प्लीशन स्क्रिप्ट उत्सर्जित हुई |
+| 64 | असमर्थित शेल का अनुरोध किया गया, या कोई अन्य उपयोग त्रुटि (`--json` के अंतर्गत, एक `cli.usage` त्रुटि एनवेलप) |
 
 ## यह भी देखें
 
-- [apothem install](/docs/cli-reference/install) — एक harness कॉन्फ़िगरेशन इंस्टॉल करें
-- [apothem harnesses](/docs/cli-reference/harnesses) — harness id जो `--harness` completion प्रदान करता है
+- [apothem install](/docs/cli-reference/install) — एक हार्नेस कॉन्फ़िगरेशन इंस्टॉल करें
+- [apothem harnesses](/docs/cli-reference/harnesses) — वे हार्नेस ID जो `--harness` कम्प्लीशन प्रस्तुत करता है
 - [CLI संदर्भ](/docs/cli-reference) — सभी सबकमांड
