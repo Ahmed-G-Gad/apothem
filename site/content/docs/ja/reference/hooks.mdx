@@ -1,52 +1,116 @@
 ---
 title: "フック"
-description: "SessionStart、PreToolUse、Stop で発火するツールイベントハンドラ。git 隔離と計画規律を強制するメッセージコンテキストを読み込みます。"
+description: "SessionStart、PreToolUse、PostToolUse、Stop で発火するツールイベントハンドラー。git の隔離とプラン規律を強制するメッセージコンテキストを読み込み、テスト済みのランタイム契約とユーザーごとの状態を備えます。"
 machineTranslated: true
-sourceHash: "aaf14191bbb63219"
+sourceHash: "3a6c32f33850537e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 フックはツールイベントで発火し、アシスタントが追加のシステムプロンプトとして扱う
-メッセージコンテキストを読み込みます。配線は Claude Code の `settings.json` フックブロック、
-Codex の `hooks.json` フックファイル、Qwen Code の `settings.json` フックマップに
-存在します。
+メッセージコンテキストを読み込みます。配線は、Claude Code の `settings.json` のフックブロック
+（エンジンインストール）またはプラグインの `hooks.json`（プラグインインストール）、
+Codex の `hooks.json` フックファイル、そして Qwen Code の `settings.json` のフックマップにあります。
 
 | イベント | タイムアウト | 目的 |
 |-------|--------:|---------|
-| SessionStart | 30 秒 | メモリの読み取り、計画状態の確認、準備完了の報告 |
-| PreCompact | 30 秒 | 圧縮前に状態が外部化されていることを検証 |
-| PostCompact | 30 秒 | 圧縮後に作業状態を復元 |
-| Stop | 60 秒 | セッション終了時の外部化 |
-| PreToolUse (Bash) | 10 秒 | Bash の検証 — git 成果物の隔離 |
-| PreToolUse (Write/Edit/NotebookEdit/apply_patch) | 10 秒 | 計画参照の隔離、frontmatter のチェック |
+| SessionStart | 30 秒 | メモリを読み取り、プランの状態を確認し、準備状況を報告する。圧縮の後には、復旧コンテキストを届ける |
+| PreCompact | 30 秒 | 圧縮の前に状態が外部化されていることを検証する（Codex、Qwen Code。Claude Code には登録されない） |
+| PostCompact | 30 秒 | 圧縮の後に作業状態を復元する（Codex、Qwen Code。Claude Code には登録されない） |
+| Stop | 60 秒 | セッション終了プロトコル、オプトイン |
+| PostToolUse | 10 秒 | 予防的圧縮のアドバイザリー、セッションごとに最大 2 回 |
+| PreToolUse（シェル: Bash、PowerShell、`run_shell_command`） | 10 秒 | git 成果物の隔離、プランの局所性、動的評価ガード |
+| PreToolUse (Write/Edit/NotebookEdit/apply_patch) | 10 秒 | プラン参照の隔離、著作者ヘッダー、プランの局所性、依存関係ガードと動的評価ガード |
+| PreToolUse (AskUserQuestion) | 10 秒 | `(Recommended)` マーカーの整形式性 |
 
-## ディスパッチャ
+## ディスパッチャー
 
-インストールされたフックエントリは、絶対スクリプトパスでディスパッチャを呼び出します。
-設定テンプレートは `${HARNESS_ROOT}` トークンを保持し——
-`python "${HARNESS_ROOT}/apothem/hooks/dispatch.py" <event> [<message-name>]`
-——インストーラはインストール時にこれを harness ルートの実パスへとレンダリングします
-（Claude Code と Qwen Code はディスパッチャを `<harness-root>/apothem/hooks/` の下に、
-Codex は `<harness-root>/hooks/` の下に具現化します）。ディスパッチャは自己完結型の
-標準ライブラリスクリプトです。自身の `sys.path` をブートストラップするため、
-ホスト上にインポート可能な `apothem` パッケージは不要です。ソースチェックアウトからは、
-モジュール形式 `python -m apothem.hooks.dispatch <event>`（`PYTHONPATH=src` 付き）が
-開発用に同じコードを実行します。ディスパッチャはエコシステムルートの解決のために
-`hooks/lib/resolve_root.py` を読み込み、`hooks/emit_hook_context.py` および
+エンジンがインストールしたフックエントリは、インストール時に解決されたインタープリターを使い、
+絶対スクリプトパスでディスパッチャーを呼び出します。テンプレートは `${PYTHON_BIN}` と
+`${HARNESS_ROOT}` のトークンを持ち、インストーラーがインストール時にそれらをレンダリングします。
+Claude Code と Qwen Code はディスパッチャーを `<harness-root>/.apothem/support/hooks/` 配下に、
+Codex は `<harness-root>/hooks/` 配下にマテリアライズします。
+Claude Code のエントリは exec 形式（`command` と `args`）を使うため、シェルを必要としません。
+Claude Code プラグインは、各フックを Claude Code のデフォルトのフックシェル（macOS と Linux では
+`sh`、Windows では Git Bash）で
+`bash "${CLAUDE_PLUGIN_ROOT}/lib/apothem/hooks/lib/bootstrap.sh" <event> [<message-file>]`
+として実行します。ブートストラップは Python 3.10 以降のインタープリターを見つけ、同梱の
+ディスパッチャーを実行します。Git for Windows のない Windows では、エンジンインストール
+（`apothem install --harness claude-code`）を使用してください。その exec 形式のフックは
+シェルを必要としません。
+ディスパッチャーは標準ライブラリのみのスタンドアロンスクリプトです。自身の
+`sys.path` をブートストラップするため、ホスト上にインポート可能な `apothem` パッケージは
+必要ありません。ソースチェックアウトからは、モジュール形式の
+`python -m apothem.hooks.dispatch <event>`（`PYTHONPATH=src` を指定）が、開発用に
+同じコードを実行します。ディスパッチャーは、エコシステムルートの解決のために
+`hooks/lib/resolve_root.py` を読み込み、`hooks/emit_hook_context.py` と
 `hooks/session_start_bootstrap.py` に委譲します。
 
 ## メッセージコンテキスト
 
-イベントごとの Markdown コンテキストは `src/apothem/hooks/messages/` の下に存在します。
+イベントごとの Markdown コンテキストは `src/apothem/hooks/messages/` 配下に置かれます。
 
-- `postcompact.md`、`precompact.md`、`stop.md`
-- `pretooluse-bash.md`、`pretooluse-write.md`、`pretooluse-edit.md`、
-  `pretooluse-notebookedit.md`
+- セッションのライフサイクル: `sessionstart.md`、`precompact.md`、`postcompact.md`、
+  `stop.md`、`posttooluse-proactive-compaction.md`
+- シェル呼び出し: `pretooluse-bash.md`、`pretooluse-bash-plan-guard.md`
+- ファイル書き込み: `pretooluse-write.md`、`pretooluse-edit.md`、
+  `pretooluse-notebookedit.md`、`pretooluse-write-plan-guard.md`、
+  `pretooluse-write-header-guard.md`、`pretooluse-edit-header-guard.md`、
+  `pretooluse-conformity.md`
+- コンテンツに対するガード: `pretooluse-dependency-guard.md`、
+  `pretooluse-eval-guard.md`
+- 質問: `pretooluse-askuserquestion-recommended.md`
 
-各コンテキストファイルは、そのイベントが発火し、そのコンテキスト引数が設定ファイルに
-登録されているときに、ディスパッチャによって読み込まれます。
+Claude Code では、Claude Code が PreCompact と PostCompact のフック出力をアシスタントに
+渡さないため、`postcompact.md` は、圧縮の後にセッションが再開したときに SessionStart フックに
+よって届けられます。
 
-## 生成されたフックメッセージのインベントリ
+各コンテキストファイルは、そのイベントが発火し、かつそのコンテキスト引数が設定ファイルに
+登録されているときに、ディスパッチャーによって読み込まれます。ライセンスのコメント行と末尾の
+`## Bindings` セクションは、テキストがアシスタントに届く前に取り除かれます。どちらも
+メンテナーとコンフォーミティゲートのために存在します。
+
+## ランタイム契約
+
+登録されたすべてのフックコマンドは、同じ契約を満たします。この契約は、プラグイン、
+Claude Code のエンジンインストール、Codex、Qwen Code に対して
+`tests/hooks/test_hook_contract.py` によってチェックされます。
+
+- **素のチェックアウトから実行される。** 終了コード 0 で終了し、標準出力は空か 1 つの
+  JSON オブジェクトです。ファイルの実行ビットに依存するフックはありません。
+- **1 回だけ登録される。** イベント、マッチャー、メッセージの各組は面ごとに 1 回だけ現れるため、
+  1 回のツール呼び出しでフックが 2 回実行されることは決してありません。
+- **上限がある。** 出力されるテキストが 10,000 文字を超えることはありません。依存関係ガードは、
+  書き込みが依存関係マニフェストまたはロックファイルを対象とする場合にのみ発言し、動的評価ガードは、
+  コンテンツまたはコマンドが評価または安全でないデシリアライズのプリミティブを含む場合にのみ
+  発言します。圧縮アドバイザリーは、セッションごとに最大 2 回発火します。
+- **ハーネスが届けるチャネルを使う。** PreToolUse のガイダンスは
+  `hookSpecificOutput` で運ばれます。AskUserQuestion ガードは `additionalContext` を返すか、
+  厳格なオプトインのもとでは `permissionDecision: deny` を返します。Claude Code は
+  PreCompact と PostCompact の出力を破棄するため、Claude Code では、圧縮後の復旧コンテキストは、
+  ソースが `compact` である SessionStart イベントとともに届きます。
+- **プロジェクトのコードを決して実行しない。** ブートストラップは自身のインストール済みツリーを
+  解決し、開かれたプロジェクトからスクリプトを取得することは決してありません。セッション開始時の
+  ガイダンスはインストール済みツリーから読み取られます。プロジェクトディレクトリが読み取られるのは、
+  プランとメモリの要約のためだけです。
+- **フェイルオープンする。** メッセージファイルの欠落、インタープリターの欠落、破損した状態は、
+  終了コード 0 と有効なエンベロープをもたらします。
+
+| 変数 | デフォルト | 効果 |
+| --- | --- | --- |
+| `APOTHEM_HOOKS_DISABLE` | 未設定 | `1`、`true`、`yes`、`on` のいずれかで、ディスパッチャー経由のすべてのフックと、エンジンインストールのコンフォーミティゲートフックを抑止します |
+| `APOTHEM_SESSION_END_ENABLED` | オフ | `1`、`true`、`yes`、`on` のいずれかで、Stop でのセッション終了プロトコルを有効にします。コンテキストを返す Stop フックはアシスタントに処理を続行させるため、このプロトコルはセッションごとに 1 ターン余分にかかります。フックによる続行の後にすでに続いている停止では、決して発火しません |
+| `APOTHEM_SESSION_END_MIN_STOPS` | `3` | セッション終了プロトコルが発火できるようになるまでのターン終了の回数 |
+| `APOTHEM_PROACTIVE_COMPACTION_ENABLED` | オン | `0`、`false`、`no`、`off` のいずれかで、圧縮アドバイザリーを抑止します |
+| `APOTHEM_PROACTIVE_COMPACTION_TOOL_THRESHOLD` | `18` | アドバイザリーウィンドウあたりのツール呼び出し数 |
+| `APOTHEM_PROACTIVE_COMPACTION_OUTPUT_THRESHOLD` | `20000` | アドバイザリーウィンドウあたりのツール出力のバイト数 |
+| `APOTHEM_HOOK_STATE_DIR` | 下記を参照 | セッションごとのフック状態を置くディレクトリ |
+
+セッションごとのフック状態は、モード `0700` で作成されるユーザーごとのディレクトリに置かれます。
+設定されていれば `APOTHEM_HOOK_STATE_DIR`、そうでなければ Claude Code プラグインでは
+`${CLAUDE_PLUGIN_DATA}/state`、そうでなければ `$XDG_STATE_HOME/apothem`、それもなければ
+`~/.local/state/apothem`（Windows では `%LOCALAPPDATA%\apothem\state`）です。
+
+## 生成されたフックメッセージインベントリ
 
 {/* apothem:generated-reference:start */}
 

@@ -2,54 +2,90 @@
 title: "doctor"
 description: "apothem doctor コマンドの CLI リファレンス。"
 machineTranslated: true
-sourceHash: "a861c516017e0b45"
+sourceHash: "9f6e0ade5485e0a9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Apothem インストールのシステム診断を実行します。
+インストールされているものの健全性をチェックします。
+[`apothem verify`](/docs/cli-reference/verify) が名前を指定した単一のハーネスをチェックするのに対し、`doctor` はインストール済みのすべてのハーネスと共有プロファイルを 1 回でチェックします。
 
-## 概要
+## 構文
 
 ```
-apothem doctor [--quiet|-q] [--verbose|-v]
+apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
                [--format plain|json] [--json] [--no-color]
 ```
 
-Apothem のインストールを確認し、登録済みの各環境アダプターの状態を報告します。
-共有プロファイルが存在する場合は、その存在を確認するだけでなく、同梱のスキーマに
-照らして検証されます。これにより、不正なプロファイルは緑色の「検出」ではなく診断
-失敗として表面化します。JSON 出力には `profile_valid` フィールド（`true` /
-`false`、プロファイルが存在しない場合は `null`）と、検証が失敗した場合の
-`profile_error` フィールドが含まれます。すべてのチェックに合格すると 0 で終了し、
-1 つ以上の環境が未インストールの場合、または存在するプロファイルがスキーマ検証に
-失敗した場合は 1 で終了します。
+## チェック内容
+
+- **共有プロファイル。** 存在するプロファイルは、同梱のスキーマに照らして検証されます。不正な形式のプロファイルは、その診断コードとともに失敗します。
+  プロファイルが存在しない場合は報告されますが、失敗にはなりません（`install` が作成します）。
+- **インストール済みのハーネスのみ。** インストールされていないハーネスは `not_installed` として報告され、失敗にはならないため、健全なハーネスが 1 つあるマシンは合格します。
+  プロジェクトスコープのハーネスは、`--project` がそのルートを指定した場合にチェックされます。指定がない場合は `needs_project` として報告されます。
+- **検証。** インストール済みの各ハーネスは、[`verify`](/docs/cli-reference/verify) と同じチェックに合格しなければなりません。
+- **フックランタイム。** 検証された各ハーネスについて、doctor はその最新のインストールが書き込んだファイルを読み取り、Apothem がそこに登録したフックコマンドを見つけ、各インタープリターとフックスクリプトを何もしないペイロード（登録された引数に `--help` を加えたもの、stdin 上の `{}`、スクラッチの作業ディレクトリ、そして `PYTHONPATH` の除去）で 1 回ずつ起動します。
+  何も書き込まれません。
+  インタープリターの欠落、スクリプトの欠落、またはインポート時のクラッシュは、チェックを失敗させます。
+
+失敗した各チェックは、修正方法を示します。
+失敗したチェックがない場合は 0 で、それ以外の場合は 1 で終了します。
+
+## JSON 出力
+
+`--json` は従来のフィールド（`version`、`python`、`platform`、`profile_path`、`profile_exists`、`profile_valid`、`harnesses`、`all_ok`、そしてプロファイルが無効な場合の `profile_error`）を維持し、次のフィールドを追加します。
+
+- `profile_error_code` — プロファイルが無効な場合の、プロファイルの診断コード。
+- `project` — 解決された `--project` ルート、または `null`。
+- `harnesses[].status` — `ok`、`not_installed`、`needs_project`、`verify_failed`、`hook_failed`、`error` のいずれか。加えて `verified` と `hooks`（`{"probed": N, "failed": [...]}`、またはインストールレコードが存在しない場合は `null`）。
+- `checks` — チェックごとに 1 つのレコード。`code`（たとえば `harness.verify_failed`、`hook.start_failed`、`ledger.unreadable`、または `profile.*` コード）、`status`（`pass`、`fail`、`info` のいずれか）、`harness`、`message`、`fix` を含みます。
+
+```json
+{
+  "schema_version": 1,
+  "all_ok": false,
+  "checks": [
+    {
+      "code": "hook.start_failed",
+      "status": "fail",
+      "harness": "claude-code",
+      "message": "claude-code: a registered hook command cannot start: …",
+      "fix": "Check that the interpreter in the hook command exists and runs, then …"
+    }
+  ]
+}
+```
 
 ## オプション
 
 | オプション | 説明 |
 |---|---|
+| `--project PATH` | プロジェクトスコープのハーネス向けのプロジェクトルート。指定がない場合、それらは `needs_project` として報告されます。 |
 | `--quiet`, `-q` | 情報出力を抑制し、エラーのみを出力します。 |
-| `--verbose`, `-v` | 追加の診断出力を出します。 |
-| `--format plain\|json` | 出力形式（デフォルト：`plain`）。 |
-| `--json` | `--format json` の省略形。 |
-| `--no-color` | 出力中の ANSI カラーコードを無効化します。 |
+| `--verbose`, `-v` | 追加の診断出力を出力します。 |
+| `--format plain\|json` | 出力形式（デフォルト: `plain`）。 |
+| `--json` | `--format json` の短縮形です。 |
+| `--no-color` | 出力中の ANSI カラーコードを無効にします。 |
 | `-h`, `--help` | ヘルプを表示して終了します。 |
 
 ## 例
 
 ```bash
 apothem doctor
+apothem doctor --project .
 apothem doctor --json
 ```
+
+デフォルトの `plain` 形式は、人間が読める診断を出力します。`--json`（`--format json` と同等）は、機械可読なドキュメントを stdout に出力し、他のツールへのパイプに適しています。
 
 ## 終了コード
 
 | コード | 意味 |
 |---|---|
-| 0 | すべてのチェックに合格 |
-| 1 | 環境が未インストール、または存在するプロファイルがスキーマ検証に失敗 |
+| 0 | すべてのチェックに合格した（まだハーネスが 1 つもインストールされていない場合も含む） |
+| 1 | インストール済みのハーネスが検証に合格しない、登録されたフックコマンドを起動できない、アダプターを読み込めなかったかプローブできなかった、または存在するプロファイルがスキーマ検証に失敗した |
+| 64 | 使用法エラー: 不明なオプションまたはコマンド、あるいは欠落した、または無効なオプション値。`--json` の下では、エラーはコード `cli.usage` を持つ JSON エンベロープになります。 |
 
 ## 関連項目
 
-- [apothem harnesses](/docs/cli-reference/harnesses) — 登録済みの環境を一覧表示・検査する
-- [apothem verify](/docs/cli-reference/verify) — 特定の環境のインストールを確認する
+- [apothem harnesses](/docs/cli-reference/harnesses) — 登録済みのハーネスを一覧表示・検査する
+- [apothem verify](/docs/cli-reference/verify) — 特定のハーネスのインストールをチェックする

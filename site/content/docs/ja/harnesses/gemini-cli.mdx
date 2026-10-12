@@ -1,15 +1,15 @@
 ---
 title: "Gemini CLI"
-description: "Gemini CLI（GA）向けの Apothem ツールアダプター。"
+description: "Gemini CLI（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "eed143307202f636"
+sourceHash: "84593cdc3207e035"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **ベンダー：** Google
 **インストール名：** `gemini-cli`
 **ステータス：** GA
-**ネイティブ構成：** プロジェクトローカルの `GEMINI.md` と `.gemini/`
+**ネイティブ設定：** プロジェクトローカルの `GEMINI.md` と `.gemini/`
 
 ## インストール
 
@@ -17,10 +17,11 @@ sourceHash: "eed143307202f636"
 apothem install --harness gemini-cli --project /path/to/project
 ```
 
-このアダプターはプロジェクトスコープです。プロジェクトの `GEMINI.md` を
-インストールし、Apothem コマンドを Gemini の TOML スラッシュコマンドに変換し、
-ローカルヘルパー定義を正規化し、ネイティブでないサポート套組を
-`.gemini/.apothem/support/` 下に配置します。
+このアダプターはプロジェクトスコープです。プロジェクトの `GEMINI.md` をインストールし、Apothem の
+コマンドを Gemini の TOML スラッシュコマンドに変換し、ローカルヘルパー定義を正規化し、ネイティブで
+ないサポートコホートを `.gemini/.apothem/support/` 配下に配置します。
+他のコーディングツールもプロジェクトの `GEMINI.md` を読み取るため、その中の Apothem ブロックは、
+単一のツールを読み手として名指ししない、プロジェクト全体のガイダンスとして書かれます。
 
 **書き込まれるファイル：**
 
@@ -32,18 +33,31 @@ GEMINI.md
 .gemini/.apothem/support/
 ```
 
-## プロファイルからネイティブ構成へのマッピング
+## プロファイルからネイティブ設定へのマッピング
 
-アダプターは Apothem の共有套組を読み取り、それぞれを Gemini 互換のサーフェスを
-通じてルーティングします。Markdown ルール、テンプレート、フック素材は、Gemini
-ネイティブのルールディレクトリではなくサポート素材であるため、`.gemini/.apothem/support/`
-下に残ります。
+アダプターは Apothem の共有コホートを読み取り、それぞれを Gemini 互換の面を通じて振り分けます。
+Markdown のルール、テンプレート、フック素材は、Gemini ネイティブのルールディレクトリではなく
+サポート素材であるため、`.gemini/.apothem/support/` 配下に残ります。
+`GEMINI.md` 内の Apothem ブロックは、Apothem サポートファイルのセクションで終わります。この
+セクションは、リポジトリ形式の各参照（`rules/<name>.md`、`templates/...`、`hooks/...`）が解決
+される先の `.gemini/.apothem/support/` 配下のディレクトリを、プロジェクトルートからの相対パスで
+示します。パスが相対であるため、コミットされた `GEMINI.md` にはマシン固有のパスが含まれません。
+
+`.gemini/commands/` 内の変換された各コマンドは、`description` と `prompt` を持ちます。プロンプトは
+コマンドの命令のみです。ソースファイル先頭の Apothem メタデータ（バージョン、ツールリスト、および
+同様のフィールド）は除外されるため、モデルがそれを命令として読むことは決してありません。Gemini が
+カスタムコマンドを実行するのは、あなたがそれを入力した場合のみです。
+
+`.gemini/agents/` 内のヘルパー定義は、ツールの制限とターン数の上限を保持します。ソースの `tools`
+の付与から `disallowedTools` を差し引いたものが、Gemini のツール名による Gemini の `tools`
+許可リストになり、`maxTurns` は `max_turns` になります。そのため、読み取り専用のヘルパーには
+`write_file` ツールも `replace` ツールも与えられません。モデルは設定されないため、各ヘルパーは
+セッションのモデルを継承します。
 
 ## 互換性に関する注意
 
-`~/.gemini/` は、グローバルな Gemini プロファイルを使用するツールのための
-ユーザースコープの領域のままです。Gemini CLI アダプターは、`--project` で渡された
-プロジェクトにのみ書き込みます。
+`~/.gemini/` は、グローバルな Gemini プロファイルを使用するツールのためのユーザースコープの領域の
+ままです。Gemini CLI アダプターは、`--project` で渡されたプロジェクトにのみ書き込みます。
 
 ## 検証
 
@@ -53,7 +67,7 @@ apothem verify --harness gemini-cli --project /path/to/project
 
 verify コマンドは次のことを確認します。
 
-1. ネイティブ構成が想定パスに存在すること。
+1. ネイティブ設定が想定されたパスに存在すること。
 2. 共有プロファイルのすべての必須フィールドが存在すること。
 3. アダプター固有の検証ルーチンが成功を報告すること。
 
@@ -63,8 +77,8 @@ verify コマンドは次のことを確認します。
 apothem update --harness gemini-cli --project /path/to/project
 ```
 
-`GEMINI.md`、変換されたコマンド、ローカルヘルパー定義、インストール済みのスキル、
-および `.gemini/.apothem/support/` サポートツリーを更新します。
+`GEMINI.md`、変換されたコマンド、ローカルヘルパー定義、インストールされたスキル、および
+`.gemini/.apothem/support/` サポートツリーを更新します。
 
 ## アンインストール
 
@@ -72,10 +86,10 @@ apothem update --harness gemini-cli --project /path/to/project
 apothem uninstall --harness gemini-cli --project /path/to/project
 ```
 
-アダプターが書き込んだネイティブ構成ファイルを削除します。
+アダプターが書き込んだネイティブ設定ファイルを削除します。
 共有プロファイルの YAML と Apothem エンジンには影響しません。
 
-## 適合ゲート
+## コンフォーミティゲート
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -83,14 +97,20 @@ python -m apothem.conformity.gate --all .
 
 ## トラブルシューティング
 
-| 症状 | 修正 |
+| 症状 | 対処 |
 |---------|-----|
-| 構成ファイルが見つからない | `apothem install --harness gemini-cli --project /path/to/project` を再実行する |
-| 検証が失敗した | `apothem update --harness gemini-cli --project /path/to/project` を実行し、再度検証する |
-| 予期しない構成内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、`apothem update --harness gemini-cli --project /path/to/project` を再実行する |
+| 設定ファイルが見つからない | `apothem install --harness gemini-cli --project /path/to/project` を再実行する |
+| 検証が失敗した | `apothem update --harness gemini-cli --project /path/to/project` を実行してから、再度検証する |
+| 想定外の設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認してから、`apothem update --harness gemini-cli --project /path/to/project` を再実行する |
 
-## 構成ノブ
+## 設定ノブ
 
 | フラグ | デフォルト | 説明 |
 |------|---------|-------------|
 | `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューする。 |
+
+## 関連項目
+
+- [すべてのハーネス](/docs/harnesses) — サポート対象ツールの完全なカタログ
+- [インストールガイド](/docs/install) — このハーネスに Apothem をインストールする
+- [`apothem harnesses` リファレンス](/docs/cli-reference/harnesses) — CLI からアダプターを一覧表示して調べる

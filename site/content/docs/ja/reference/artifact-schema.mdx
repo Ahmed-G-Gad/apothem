@@ -1,41 +1,42 @@
 ---
 title: "アーティファクトスキーマ仕様"
-description: "Apothem ソースツリー内のすべてのアーティファクトタイプに対する正規の YAML フロントマタースキーマと必須フィールド。クラスごとのテンプレートと検証ルールつき。"
+description: "Apothem ソースツリー内のすべてのアーティファクトタイプに対する正規の YAML フロントマタースキーマと必須フィールド。クラスごとのテンプレートと検証ルールを含みます。"
 machineTranslated: true
-sourceHash: "78472bdb279c1cb4"
+sourceHash: "0a94086b9eaf12b9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**Apothem エコシステムのすべてのアーティファクトに対する正規の YAML フロントマターと必須フィールド。**
+**Apothem エコシステムのすべてのアーティファクトに対する、クラスごとの YAML フロントマターテンプレートと必須フィールド。**
+
+> **信頼できる情報源。** 機械可読でゲートによって強制される契約は、[`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas) 配下のクラスごとの JSON Schema（`agent.schema.json`、`command.schema.json`、`skill.schema.json`、…）であり、それぞれが `additionalProperties` を宣言しているため、コンフォーミティゲートは未知のキーを拒否します。
+> このページと [`frontmatter-schema.mdx`](/docs/reference/frontmatter-schema) は、それらのスキーマを人間が読める形にした 2 つの投影です — このページはクラスごとの**テンプレートと実例**を、frontmatter-schema は簡潔な**必須キーの索引**を扱います。
+> ページが JSON Schema と食い違う場合は、スキーマが優先されます。
 
 ## 概要
 
-Apothem ソースツリー内（`src/apothem/` 配下とルート設定サーフェス）のすべての
-アーティファクトは、そのアーティファクトタイプに固有の必須フィールドおよび
-任意フィールドを持つ YAML フロントマターブロック（`---` デリミタ間）を
-含まなければなりません。本ドキュメントは各タイプの正規スキーマを定義します。
+Apothem ソースツリー内（`src/apothem/` 配下とルートの設定面）のすべてのアーティファクトは、そのアーティファクトタイプに固有の必須フィールドと任意フィールドを持つ YAML フロントマターブロック（`---` 区切り文字の間）を含まなければなりません。このドキュメントは、各タイプの正規スキーマを定義します。
 
-**普遍的ルール：**
+**普遍的なルール:**
 
-- フロントマターは YAML 1.2 準拠
-- すべての文字列値は、空でない限りダブルクォートを使用
-- フィールド順序：必須フィールドを先頭に、任意フィールドは関連性ごとにグループ化
-- フロントマター内のコメントはスペースつきの `#` を使用：`# comment`
-- パス値は相対（先頭の `/` なし）でなければならず、クロスプラットフォーム互換のためにスラッシュ（`/`）を使用する
+- フロントマターは YAML 1.2 に準拠する
+- すべての文字列値は、空の場合を除きダブルクォートを使用する
+- フィールドの順序: 必須フィールドを先頭に置き、任意フィールドは関連性ごとにグループ化する
+- フロントマター内のコメントは、スペースを伴う `#` を使用する: `# comment`
+- パス値は相対パス（先頭に `/` を付けない）でなければならず、クロスプラットフォーム互換性のためにスラッシュ（`/`）を使用しなければならない
 
-**バージョニング規約（アーティファクトタイプを問わず普遍的）：**
+**バージョニング規約（バージョンを持つアーティファクトクラス — コマンド、ヘルパー、スキル、CLAUDE.md）:**
 
-- `version` は**セマンティック**（`MAJOR.MINOR.PATCH`）です。破壊的なスキーマまたは契約の変更では MAJOR を、後方互換のある追加的変更（新しい任意フィールド、追加のセクション、追加のアンチパターン）では MINOR を、振る舞いを変えない明確化・整形修正・ドキュメントのみの編集では PATCH を上げます。
-- `updated` は最も最近の編集の **ISO 8601 日付**（`YYYY-MM-DD`）です。`version` を上げるたびに変更されなければならず、バージョンを上げないリンク更新では独立して更新してかまいません。
-- 新しいアーティファクトは `v0.Y.Z` で開始します。`vX.Y.Z` への昇格は、そのアーティファクトの契約が公開コミットメントとなるに十分なほど安定したことを示します。
+- `version` は**セマンティック**（`MAJOR.MINOR.PATCH`）です。互換性のないスキーマまたは契約の変更では MAJOR を、互換性を壊さない追加的な変更（新しい任意フィールド、セクションの追加、アンチパターンの追加）では MINOR を、動作を変更しない明確化、整形の修正、ドキュメントのみの編集では PATCH を上げます。
+- `updated` は、最新の編集の **ISO 8601 日付**（`YYYY-MM-DD`）です。`version` を上げるたびに変更しなければならず、バージョンを上げないリンクの更新では単独で更新してもかまいません。
+- 新しいアーティファクトは `v0.Y.Z` から始まります。`vX.Y.Z` への昇格は、そのアーティファクトの契約が公開のコミットメントとなるのに十分なほど安定していることを示します。
 
 ---
 
-## スキーマ：ルール
+## スキーマ: ルール
 
-**パスパターン：** `src/apothem/rules/*.md`
+**パスパターン:** `src/apothem/rules/*.md`
 
-**目的：** 振る舞いの命令および運用上の指令。
+**目的:** 振る舞いに関するマンデートと運用上の指令。
 
 ### 必須フィールド
 
@@ -51,15 +52,13 @@ alwaysApply: true | false
 | フィールド | 型 | 目的 | 例 |
 | ----- | ---- | ------- | ------- |
 | `name` | string | 機械可読な識別子 | `"operational-mandates"` |
-| `version` | string | セマンティックバージョン | `"X.Y.Z"` |
-| `updated` | string (ISO 8601) | 最終更新日 | `"2026-04-20"` |
-| `description` | string | レジストリ向けの一行説明 | `"Operational mandates CM-1–10"` |
-| `scope` | enum | `always-on`（どこでも適用）または `path-filtered`（ファイルパスに条件づけ） | `"always-on"` |
-| `portability` | enum | 環境互換性の保証 | `"universal"` |
+| `description` | string | レジストリ向けの 1 行の説明 | `"Operational mandates CM-1–10"` |
+| `pathFilter` | string | パスフィルター付きルールの適用範囲を定める、カンマ区切りの glob リスト。常時適用のルールでは空文字列（`""`） | `"**/*.py, **/*.toml"` |
+| `alwaysApply` | boolean | 常時適用のルール（どこでも読み込まれる）では `true`、パスフィルター付きルール（`pathFilter` が一致したときに読み込まれる）では `false` | `true` |
 
-### 任意フィールド（該当する場合）
+### 任意フィールド
 
-Rules carry no optional frontmatter fields, and — unlike other artifact classes — no `version` / `updated` / `scope` / `portability` fields either. The four mandatory fields above are the complete rule frontmatter contract enforced by `frontmatter_grep`.
+ルールには任意のフロントマターフィールドがなく、また他のアーティファクトクラスとは異なり、`version` / `updated` / `scope` / `portability` フィールドもありません。上記の 4 つの必須フィールドが、`frontmatter_grep` によって強制されるルールのフロントマター契約のすべてです。
 
 ### 例
 
@@ -77,11 +76,11 @@ alwaysApply: true
 
 ---
 
-## スキーマ：コマンド
+## スキーマ: コマンド
 
-**パスパターン：** `src/apothem/commands/*.md`
+**パスパターン:** `src/apothem/commands/*.md`
 
-**目的：** スラッシュコマンド定義（`/plan-execute`、`/freshify` など）。
+**目的:** スラッシュコマンドの定義（`/plan-execute`、`/freshify` など）。
 
 ### 必須フィールド
 
@@ -104,12 +103,14 @@ allowed-tools: "Read, Glob, Grep"
 | `version` | string | セマンティックバージョン | `"X.Y.Z"` |
 | `updated` | string (ISO 8601) | 最終更新日 | `"2026-04-20"` |
 | `description` | string | 短い説明 | `"Executes a phase with quality gates"` |
-| `argument-hint` | string | 使用パターン、なければ `"[args...]"` | `"[path/to/plan] [phase-id]"` |
-| `disable-model-invocation` | boolean | true の場合、コマンドはハーネスランタイムから呼び出されることを意図しない | `true` |
+| `argument-hint` | string | 使用パターン。引数がない場合は `"[args...]"` | `"[path/to/plan] [phase-id]"` |
+| `disable-model-invocation` | boolean | true の場合、コマンドを開始するのはオペレーターだけであり、モデルが自らそれを呼び出すことは決してない | `true` |
+| `portability` | string | ハーネスアダプター間でのポータビリティの分類 | `"universal"` |
+| `allowed-tools` | string | コマンドの実行中に事前承認されるツール: 読み取り専用ツールに加え、副作用のあるツールは `Bash(git log *)` のようなスコープ付きルールとしてのみ。素の `"*"` ワイルドカードは拒否される | `"Read, Glob, Grep"` |
 
 ### 任意フィールド
 
-Commands carry no optional frontmatter fields — the eight mandatory fields above are the complete command frontmatter contract enforced by `command.schema.json` (`additionalProperties: false`).
+コマンドには任意のフロントマターフィールドがありません — 上記の 8 つの必須フィールドが、`command.schema.json`（`additionalProperties: false`）によって強制されるコマンドのフロントマター契約のすべてです。
 
 ### 例
 
@@ -131,15 +132,15 @@ allowed-tools: "Read, Glob, Grep"
 
 ---
 
-## スキーマ：ヘルパー
+## スキーマ: ヘルパー
 
-**パスパターン：**
+**パスパターン:**
 
 ```text
 src/apothem/agents/*.md
 ```
 
-**目的：** 並列探索、監査、品質ゲートのための永続的なヘルパー定義。
+**目的:** 並列探索、監査、品質ゲートのための永続的なヘルパー定義。
 
 ### 必須フィールド
 
@@ -158,14 +159,14 @@ effort: "high" | "medium" | "low"
 
 | フィールド | 型 | 目的 | 例 |
 | ----- | ---- | ------- | ------- |
-| `name` | string | ヘルパー識別子 | `"codebase-explorer"` |
+| `name` | string | ヘルパーの識別子 | `"codebase-explorer"` |
 | `version` | string | セマンティックバージョン | `"X.Y.Z"` |
 | `updated` | string (ISO 8601) | 最終更新日 | `"2026-04-20"` |
 | `description` | string | 専門分野の説明 | `"Deep codebase exploration"` |
-| `tools` | string（カンマ区切り） | 許可されたツール | `"Read, Glob, Grep, Bash"` |
-| `disallowedTools` | string（カンマ区切り） | 禁止されたツール | `"Write, Edit, TodoWrite"` |
-| `maxTurns` | integer | 最大会話ターン数（標準は 5〜20、20 を超える値にはインラインの根拠コメントが必要） | `20` |
-| `effort` | enum | 計算スコープ | `"high"` |
+| `tools` | string（カンマ区切り） | 許可されるツール | `"Read, Glob, Grep, Bash"` |
+| `disallowedTools` | string（カンマ区切り） | 禁止されるツール | `"Write, Edit, TodoWrite"` |
+| `maxTurns` | integer | 最大会話ターン数（通常は 5–20。20 を超える値にはインラインの根拠コメントが必要） | `20` |
+| `effort` | enum | 計算の範囲 | `"high"` |
 
 ### 任意フィールド
 
@@ -197,11 +198,11 @@ You are a codebase exploration specialist...
 
 ---
 
-## スキーマ：スキル
+## スキーマ: スキル
 
-**パスパターン：** `src/apothem/skills/*/SKILL.md`
+**パスパターン:** `src/apothem/skills/*/SKILL.md`
 
-**目的：** 検出シグナルと実行手順を備えた再利用可能なテクニック定義。
+**目的:** 検出シグナルと実行手順を備えた、再利用可能なテクニックの定義。
 
 ### 必須フィールド
 
@@ -220,11 +221,14 @@ allowed-tools: "Read, Glob, Grep"
 
 | フィールド | 型 | 目的 | 例 |
 | ----- | ---- | ------- | ------- |
-| `name` | string | スキル識別子 | `"plan-suite"` |
+| `name` | string | スキルの識別子 | `"plan-suite"` |
 | `version` | string | セマンティックバージョン | `"X.Y.Z"` |
 | `updated` | string (ISO 8601) | 最終更新日 | `"2026-04-20"` |
-| `description` | string | スキルが提供する内容 | `"Master Plan Suite template"` |
-| `user-invocable` | boolean | true の場合、ユーザーがこのスキルを明示的に要求できる | `false` |
+| `description` | string | スキルが提供するもの | `"Master Plan Suite template"` |
+| `archetype` | string | 形状のクラス。kebab-case の `<class>-template` 識別子 | `"workflow-template"` |
+| `userInvocable` | boolean | true の場合、ユーザーはこのスキルを明示的に要求できる | `false` |
+| `disable-model-invocation` | boolean | true の場合、スキルには明示的な呼び出しによってのみ到達する | `true` |
+| `allowed-tools` | string | スキルの実行中に事前承認されるツール: 読み取り専用ツールに加え、副作用のあるツールは `Bash(git log *)` のようなスコープ付きルールとしてのみ。素の `"*"` ワイルドカードは拒否される | `"Read, Glob, Grep"` |
 
 ### 任意フィールド
 
@@ -253,17 +257,15 @@ argument-hint: "[--focus area] [--fix]"
 
 ---
 
-## スキーマ：フック
+## スキーマ: フック
 
-**パスパターン：** `settings.json` の `hooks` ブロックと、`src/apothem/hooks/`
-配下の Python 実装。
+**パスパターン:** `settings.json` の `hooks` ブロックと、`src/apothem/hooks/` 配下の Python 実装。
 
-**目的：** ホストが明確に定義されたライフサイクルポイントで呼び出す、
-イベントトリガーのバリデーターと状態管理ハンドラーを宣言する。
+**目的:** 明確に定義されたライフサイクルの時点でホストが呼び出す、イベントトリガー型のバリデーターと状態管理ハンドラーを宣言する。
 
-### 設定ファイルスキーマ
+### 設定ファイルのスキーマ
 
-`hooks` トップレベルキーは、イベント名をマッチャーブロックの配列にマッピングします：
+トップレベルキー `hooks` は、イベント名をマッチャーブロックの配列に対応付けます:
 
 ```json
 "hooks": {
@@ -286,63 +288,60 @@ argument-hint: "[--focus area] [--fix]"
 
 | フィールド | 型 | 目的 | 例 |
 | ----- | ---- | ------- | ------- |
-| `matcher` | string | ツール名パターン（ツール非依存イベントでは `"*"`） | `"Write"` |
-| `hooks[].type` | リテラル `"command"` | 現時点で唯一サポートされるフックハンドラータイプ | `"command"` |
-| `hooks[].command` | string | 実行可能コマンド。Apothem は `python` を使用 | `"python"` |
+| `matcher` | string | ツール名のパターン（ツールに依存しないイベントでは `"*"`） | `"Write"` |
+| `hooks[].type` | リテラル `"command"` | 現時点でサポートされる唯一のフックハンドラータイプ | `"command"` |
+| `hooks[].command` | string | 実行可能なコマンド。Apothem は `python` を使用する | `"python"` |
 | `hooks[].args` | string の配列 | `-m apothem.hooks.dispatch` または `-m apothem.conformity.gate` を呼び出す exec 形式の引数 | `["-m", "apothem.hooks.dispatch", "SessionStart"]` |
-| `hooks[].timeout` | integer 秒 | ホストがフックを停止するまでの最大実行時間 | `30` |
-| `hooks[].statusMessage` | string | ホスト UI に表示される短いラベル | `"Session start"` |
+| `hooks[].timeout` | integer（秒） | ホストがフックを強制終了するまでの最大実行時間 | `30` |
+| `hooks[].statusMessage` | string | ホストの UI に表示される短いラベル | `"Session start"` |
 
 ### 必須イベント
 
-出荷されるテンプレートは以下のイベントを登録します。バリデーターが PASS を
-報告するには、5 つすべてが必須です：
+出荷されるテンプレートは、以下のイベントを登録します。バリデーターが PASS を報告するには、5 つすべてが必要です:
 
-> **タイムアウト値は正規のフックイベント予算を反映します** — 以下のテーブルは
-> 読者の便宜のためにそれらを再掲したものです。正規のソースが支配します。
+> **タイムアウト値は正規のフックイベント予算を反映しています** — 下の表は読者の便宜のためにそれらを再掲したものであり、正規のソースが優先されます。
 
-| イベント | 標準タイムアウト | 目的 |
+| イベント | 標準的なタイムアウト | 目的 |
 | ----- | --------------- | ------- |
-| `SessionStart` | 30 秒 | メモリ読み込み、プラン状態の確認、準備状況の報告 |
-| `PreToolUse` | 10 秒 | コンテンツ分離ポリシー + フロントマターに対する書き込みの検証 |
-| `PreCompact` | 30 秒 | コンテキスト圧縮の前に状態が外部化されていることを検証 |
-| `PostCompact` | 30 秒 | コンテキスト圧縮の後に作業状態を復元 |
-| `Stop` | 60 秒 | セッション終了時の外部化 — 再開状態、出力、決定 |
+| `SessionStart` | 30 秒 | メモリを読み込み、プランの状態を確認し、準備状況を報告する |
+| `PreToolUse` | 10 秒 | コンテンツ分離ポリシー + フロントマターについて書き込みを検証する |
+| `PreCompact` | 30 秒 | コンテキスト圧縮の前に状態が外部化されていることを検証する |
+| `PostCompact` | 30 秒 | コンテキスト圧縮の後に作業状態を復元する |
+| `Stop` | 60 秒 | セッション終了時の外部化 — 再開用の状態、出力、決定事項 |
 
-`dispatch.py` は、前方互換性のために `UserPromptSubmit` と `Notification` も
-イベントホワイトリストで受け付けます。どちらも出荷テンプレートでは配線されて
-いません。同じ exec 形式パターンのマッチャーブロックを追加して有効化します。
+`dispatch.py` は、前方互換性のために、イベントのホワイトリストで `UserPromptSubmit` と `Notification` も受け付けます。出荷されるテンプレートでは、どちらも接続されていません。
+有効にするには、同じ exec 形式のパターンでマッチャーブロックを追加します。
 
 ### Python レイヤー
 
-すべてのフックコマンドは同じ Python ディスパッチャーを経由します：
+すべてのフックコマンドは、同じ Python ディスパッチャーを経由します:
 
 | ファイル | 役割 |
 | ---- | ---- |
-| `src/apothem/hooks/dispatch.py` | `SessionStart` を `session_start_bootstrap.main()` に、その他すべてのホワイトリスト化されたイベントを `emit_hook_context.main()` にルーティング。常に 0 で終了。 |
-| `src/apothem/hooks/session_start_bootstrap.py` | セッション開始フックスクリプト — メモリとプランスイートの要約コンテキストを発行。 |
-| `src/apothem/hooks/emit_hook_context.py` | デフォルトのフックエミッター — 登録された `--context-file` ペイロードを運ぶ有効なエンベロープを書き込む。 |
-| `src/apothem/hooks/messages/*.md` | `--context-file` が参照する静的コンテキストペイロード。 |
+| `src/apothem/hooks/dispatch.py` | `SessionStart` を `session_start_bootstrap.main()` に、ホワイトリストにあるその他すべてのイベントを `emit_hook_context.main()` にルーティングします。常に 0 で終了します。 |
+| `src/apothem/hooks/session_start_bootstrap.py` | セッション開始フックスクリプト — メモリとプランスイートの要約コンテキストを出力します。 |
+| `src/apothem/hooks/emit_hook_context.py` | デフォルトのフックエミッター — 登録された `--context-file` ペイロードを運ぶ有効なエンベロープを書き込みます。 |
+| `src/apothem/hooks/messages/*.md` | `--context-file` によって参照される静的なコンテキストペイロード。 |
 
 ### 検証
 
-`scripts/dev/validate_hooks.py` はフック契約を強制します：
+`scripts/dev/validate_hooks.py` は、フック契約を強制します:
 
-- `settings.json` が JSON としてパースされ、すべての必須イベントを宣言している。
-- 3 つすべての Python スクリプトが存在し、有効な Python としてパースされる。
-- `--context-file` 引数が参照するすべてのメッセージファイルが存在する。
+- `settings.json` が JSON としてパースでき、すべての必須イベントを宣言している。
+- 3 つの Python スクリプトがすべて存在し、有効な Python としてパースできる。
+- `--context-file` 引数によって参照されるすべてのメッセージファイルが存在する。
 - ハードコードされた絶対ユーザーパス（`C:\Users\...` など）が `src/apothem/hooks/**.py` に現れない。
-- `src/apothem/hooks/` と `scripts/` 配下のシェルアーティファクトは、承認されたロケーター／ブートストラップスタブに限定される。
+- `src/apothem/hooks/` と `scripts/` 配下のシェルアーティファクトは、承認されたロケーター / ブートストラップのスタブに限られる。
 
 ---
 
-## スキーマ：CLAUDE.md
+## スキーマ: CLAUDE.md
 
-**パス：** `CLAUDE.md`（ルート）
+**パス:** `CLAUDE.md`（ルート）
 
-**目的：** グローバルなエコシステム設定インデックス。
+**目的:** グローバルなエコシステム設定の索引。
 
-### 必須 YAML フロントマター
+### 必須の YAML フロントマター
 
 ```yaml
 ---
@@ -358,62 +357,58 @@ portability: "universal"
 ### 必須セクション（順序どおり）
 
 1. **§1 プランスイート** — テンプレートの場所への参照
-2. **§2 認知アイデンティティ** — 創造的アーキテクチャの命令
-3. **§3 アーティファクトディレクトリ** — パスと目的のテーブル
-4. **§4 シリアスネススケール統治** — 4 レベルの定義
-5. **§5 運用指令** — 問題解決、コミュニケーションの原則
-6. **§6 横断的命令** — CM-1–28 の概観
-7. **§7 レジストリ** — アーティファクトのテーブル：
+2. **§2 認知アイデンティティ** — 創造的アーキテクチャのマンデート
+3. **§3 アーティファクトディレクトリ** — パスと目的の表
+4. **§4 シリアスネスに応じたガバナンス** — 4 つのレベルの定義
+5. **§5 運用指令** — 問題解決とコミュニケーションの原則
+6. **§6 横断的マンデート** — CM-1–28 の概要
+7. **§7 レジストリ** — アーティファクトの表:
    - 7.1 コマンド
    - 7.2 ルール
    - 7.3 ヘルパー
    - 7.4 フック
    - 7.5 スキル
-   - 7.6 アーティファクト進化
+   - 7.6 アーティファクトの進化
 
 ---
 
 ## 検証チェックリスト
 
-すべてのアーティファクトは以下のチェックを満たさなければなりません：
+すべてのアーティファクトは、以下のチェックを満たさなければなりません:
 
-### フロントマター検証
+### フロントマターの検証
 
-- [ ] YAML が構文的に有効（パースエラーなし）
-- [ ] アーティファクトタイプに対するすべての必須フィールドが存在
-- [ ] `name` が kebab-case 規約に従う
-- [ ] `version` がセマンティック（`MAJOR.MINOR.PATCH`）
-- [ ] `updated` が ISO 8601 日付形式（`YYYY-MM-DD`）
-- [ ] `description` が空でない単一行の文字列
-- [ ] 任意フィールドが期待される enum 値に一致（該当する場合）
-- [ ] フィールド名にタイポがない（スキーマの正規名を使用）
+- [ ] YAML が構文的に有効である（パースエラーがない）
+- [ ] アーティファクトタイプのすべての必須フィールドが存在する
+- [ ] `name` が kebab-case の規約に従っている
+- [ ] `version` がセマンティック（`MAJOR.MINOR.PATCH`）である
+- [ ] `updated` が ISO 8601 の日付形式（`YYYY-MM-DD`）である
+- [ ] `description` が空でない単一行の文字列である
+- [ ] 任意フィールドが期待される enum 値に一致する（該当する場合）
+- [ ] フィールド名にタイポがない（スキーマの正規名を使用する）
 - [ ] 余分な空白や整形上の問題がない
 
-### コンテンツ検証
+### コンテンツの検証
 
-- [ ] コンテンツが閉じる `---` の直後の新しい行から始まる
-- [ ] プラン内部の参照がない（CM-7 準拠）
-- [ ] クロスリファレンスが解決する（他のアーティファクトを列挙する場合）
-- [ ] リンクがスラッシュ付きの相対パスを使用
+- [ ] コンテンツが、閉じる `---` の直後の新しい行から始まる
+- [ ] プラン内部への参照がない（CM-7 準拠）
+- [ ] 相互参照が解決する（他のアーティファクトを列挙する場合）
+- [ ] リンクがスラッシュ区切りの相対パスを使用している
 
-### ポータビリティ検証
+### ポータビリティの検証
 
-- [ ] ハードコードされた絶対パスがない（相対を使用）
+- [ ] ハードコードされた絶対パスがない（相対パスを使用する）
 - [ ] universal スコープのアーティファクトに Windows 固有の構文がない
-- [ ] パス区切り文字がスラッシュを使用
-- [ ] 環境変数がプラットフォーム非依存の形式（`${VAR}` またはツールネイティブ）を使用
+- [ ] パス区切り文字にスラッシュを使用している
+- [ ] 環境変数がプラットフォームに依存しない形式（`${VAR}` またはツールネイティブ）を使用している
 
 ---
 
 ## 注記
 
-- **セキュリティとしての一貫性：** 正規のフロントマターは、自動検証、ツーリング、
-  クロスアーティファクト検証を可能にします。逸脱は急速に蓄積します。
-- **ポータビリティ宣言：** すべてのアーティファクトが universal になれるわけでは
-  ありません。制約を明示的に宣言してください — サイレントなバグを出荷するよりも
-  注意点を文書化するほうが良いのです。
-- **名前には kebab-case：** URL、スクリプト、コマンドラインコンテキストで使いやすい。
-  名前にスペース、アンダースコア、camelCase を避けてください。
-- **バージョンバンプの衛生：** すべての振る舞いを変える編集は `version` と `updated` を
-  一緒に上げなければなりません。純粋な整形やタイポ修正は PATCH を、新しい任意セクションや
-  アンチパターンは MINOR を、構造的な再編成や契約の変更は MAJOR を上げます。
+- **セキュリティとしての一貫性:** 正規のフロントマターは、自動検証、ツール化、アーティファクト横断の検証を可能にします。逸脱はすぐに積み重なります。
+- **ポータビリティの宣言:** すべてのアーティファクトが universal になれるわけではありません。
+  制約を明示的に宣言してください — 気づかれないバグを出荷するよりも、注意事項を文書化するほうが良いのです。
+- **名前には kebab-case:** URL、スクリプト、コマンドラインの文脈で使いやすいためです。
+  名前にはスペース、アンダースコア、camelCase を使わないでください。
+- **バージョン引き上げの衛生:** 動作を変更するすべての編集は、`version` と `updated` を一緒に上げなければなりません。純粋な整形やタイポの修正は PATCH を、新しい任意セクションやアンチパターンは MINOR を、構造の再編成や契約の変更は MAJOR を上げます。

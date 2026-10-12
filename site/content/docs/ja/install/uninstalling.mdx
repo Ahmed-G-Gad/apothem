@@ -1,17 +1,15 @@
 ---
 title: "アンインストール"
-description: "Apothem を削除し、ハーネス設定をクリーンアップする。"
+description: "Apothem を削除し、ハーネス設定をクリーンアップします。"
 machineTranslated: true
-sourceHash: "e96d67dfc6af5311"
+sourceHash: "11d7a265fc5e60b9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 ## 最初にハーネス設定を削除する
 
-Apothem をアンインストールする前に、各ハーネスアダプターの設定を削除して、
-ツールをクリーンな状態にしておきます。現在どのアダプターがインストールされているかを確認するには
-`apothem harnesses list` を実行し、それから 1 つずつ削除するか、レジストリ全体のセレクターを
-使用します。
+Apothem をアンインストールする前に、各ハーネスアダプターの設定を削除して、ハーネスをクリーンな状態にしておきます。
+`apothem harnesses list` を実行して現在どのアダプターがインストールされているかを確認し、それらを 1 つずつ削除するか、レジストリ全体のセレクターを使用します。
 
 ```bash
 apothem uninstall --harness claude-code
@@ -25,24 +23,28 @@ apothem uninstall --harness all --project /path/to/project --yes
 
 削除方法は、使用したインストールチャネルに対応します。
 
-- **Claude Code プラグイン** — Claude Code 内からプラグインを削除します。
-  `/plugin uninstall apothem@apothem`（マーケットプレイスのエントリは
-  `/plugin marketplace remove ahmed-g-gad/apothem` で削除できます）。
-- **npx** — 削除するものはありません。`npx` はキャッシュから実行されます。キャッシュされたコピーを
-  消したい場合は `npm cache clean --force` でクリアしてください。
-- **ワンショットインストーラー** — チェックアウトから対応するアンインストールスクリプトを
-  実行します。`scripts/installer/uninstall.sh`（POSIX）または
-  `scripts/installer/uninstall.ps1`（PowerShell）。どちらも削除前に確認し、安全でない対象を拒否します。
-- **バックアップと状態** — インストールのバックアップは `~/.apothem/backups/` にあります。
-  不要になったら `~/.apothem/` を削除してください。
+- **Claude Code プラグイン** —— Claude Code 内からプラグインを削除します: `/plugin uninstall apothem@apothem`（マーケットプレイスのエントリは `/plugin marketplace remove ahmed-g-gad/apothem` で削除できます）。
+- **npx** —— 削除するものはありません。`npx` は自身のキャッシュから実行されます。
+  キャッシュされたコピーを消したい場合は、`npm cache clean --force` でキャッシュをクリアしてください。
+- **ワンショットインストーラー** —— チェックアウトから対応するアンインストールスクリプトを実行します: `scripts/installer/uninstall.sh`（POSIX）または `scripts/installer/uninstall.ps1`（PowerShell）。
+  どちらも削除の前に確認を求め、安全でない対象を拒否します。
+- **バックアップと状態** —— インストールのバックアップは `~/.apothem/backups/` 配下に、インストール台帳は `~/.apothem/state/` 配下にあります。
+  どちらも上限内に保たれます。インストール、アンインストール、ロールバックのたびに、Apothem はインストールルートごとに最新 10 件のインストール記録と、ハーネスごとに最新 10 件のバックアップセットを保持し、保持された記録がまだ必要とするバックアップは決して削除しません。そのため、直近 10 回のインストールは引き続きロールバックできます。
+  保持数を減らすには [`apothem backups prune --keep N`](/docs/cli-reference/backups) を実行します（何が削除されるかを先に確認するには `--dry-run` を追加します）。このコマンドは、ハーネスの最新のインストールをロールバックする際の復元元となるバックアップを決して削除しません。
+  エンジンを削除し、履歴がまったく不要になったら、`~/.apothem/` を削除してください。
 
 ## 削除されないもの
 
-- `~/.config/apothem/profile.yaml` または `--profile PATH` にある共有プロファイル YAML は、
-  `apothem uninstall` によって削除されることはありません。
-- ハーネスディレクトリ内の、無関係なオペレーター作成ファイルは保持されます。
-- `<project>/.apothem/plans/`（および旧来の `<project>/.plans/`）配下のプランスイートは影響を受けません。
+- `~/.config/apothem/profile.yaml` または `--profile PATH` にある共有プロファイル YAML は、`apothem uninstall` によって削除されることは決してありません。
+- ハーネスディレクトリ内の、無関係なオペレーター作成のファイルは保持されます。
+- 共有の設定ファイルにあなたが追加したエントリは保持されます。あなた自身の権限ルール、MCP サーバー、フックハンドラーはそのまま残ります。
+  アンインストールが削除するのは、インストール台帳が Apothem のものとして記録しているキーとリストエントリだけです（[設定](/docs/reference/settings#自分の設定ファイルへのマージ)を参照）。
+- `<project>/.apothem/plans/`（およびレガシーの `<project>/.plans/`）配下のプランスイートは影響を受けません。
 
-ハーネスルートを完全にクリーンアップするには、保持したいカスタムルール、ヘルパー、または
-プロファイルファイルをバックアップしたことを確認したうえで、[ハーネスリファレンスページ](/docs/harnesses)に
-記載されているハーネスネイティブのパスを削除してください。
+## ディレクトリ
+
+アンインストールは、インストールが作成したディレクトリ（たとえば、最初のインストールの前には存在しなかった `~/.claude/`）も、空になった時点で削除します。
+あなたのファイル、または別のインストール済みハーネスが使用するデータがまだ残っているディレクトリは、そのまま残ります。
+インストールの前から存在していたディレクトリが削除されることは決してありません。
+
+ハーネスルートを完全にクリーンアップするには、保持したいカスタムルール、ヘルパー、プロファイルファイルをバックアップしたことを確認したうえで、[ハーネスリファレンスページ](/docs/harnesses)に記載されているハーネスネイティブのパスを削除してください。

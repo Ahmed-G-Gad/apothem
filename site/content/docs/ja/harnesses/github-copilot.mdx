@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "GitHub Copilot（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "65affe4b2cf2a340"
+sourceHash: "4482a306f9f119b5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,29 +17,35 @@ sourceHash: "65affe4b2cf2a340"
 apothem install --harness github-copilot --project /path/to/project
 ```
 
-このアダプターは、共有された Apothem のルールとガバナンス面からプロジェクト指示
-ファイルを派生させます。
+このアダプターは、共有の Apothem のルールとガバナンス面から、プロジェクトの命令ファイルを
+導出します。
 
 **書き込まれるファイル：** `<project>/.github/copilot-instructions.md`
 
 ## プロファイルからネイティブ設定へのマッピング
 
-アダプターは、`apothem install` または `apothem update` を実行するたびに、Apothem
-の共有プロファイルを読み取り、リポジトリ全体に適用される Copilot 指示ファイルを
-レンダリングします。共有プロファイルが真実の源です。生成されたファイルに対する
-プロジェクトローカルな編集は、次回の同期が Apothem 管理下のコンテンツを置き換える
-前にバックアップされます。
+アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または `apothem update` を
+実行するたびに、リポジトリ全体に適用される Copilot の命令ファイルをレンダリングします。信頼できる
+情報源は共有プロファイルです。生成されたファイルへのプロジェクトローカルな編集は、次回の同期が
+Apothem の管理するコンテンツを置き換える前にバックアップされます。
+
+Apothem ブロック内では、あなたのプロファイルからレンダリングされるセクション（オペレーター、
+プリファレンス、カスタムルール、オプトインした振る舞い、MCP サーバー名）が、共有のガバナンス
+テキストより前の先頭に置かれます。GitHub は、短い命令ファイルほどコードレビューで全体が処理
+される可能性が高いと述べているため
+（[コードレビューのカスタマイズ](https://docs.github.com/en/copilot/tutorials/customize-code-review)）、
+あなたに固有の部分をファイルの先頭に置いています。
 
 ## 互換性に関する注意
 
-GitHub Copilot は、このアダプターが管理できるファイルベースのユーザーグローバル指示
-パスを公開していません。Apothem はドキュメント化されたプロジェクトスコープの指示
-ファイルを対象とし、IDE レベルのユーザー設定はオペレーターの所有のままにします。
+GitHub Copilot は、このアダプターが管理できる、ファイルベースのユーザーグローバルな命令パスを
+公開していません。Apothem は文書化されたプロジェクトスコープの命令ファイルを対象とし、IDE レベルの
+ユーザー設定はオペレーターの所有のままにします。
 
-Apothem は `copilot-instructions.md` を、プロジェクトのアシスタント指示面の中の
-一つの声として扱います。適合ゲートのマルチサーフェス整合性チェックは、その共有された
-主張がプロジェクトの他の指示ファイルと意味的に整合し続けることを検証するため、Copilot
-がツールチェーンの他の部分が読み取る内容と矛盾する指示を受け取ることは決してありません。
+Apothem は `copilot-instructions.md` を、プロジェクトのアシスタント命令面の中の 1 つの声として
+扱います。コンフォーミティゲートの複数面整合性チェックは、その共有された主張がプロジェクトの他の
+命令ファイルと意味的に整合し続けることを検証するため、Copilot がツールチェーンの他の部分が読み取る
+内容と矛盾するガイダンスを受け取ることは決してありません。
 
 ## 検証
 
@@ -47,10 +53,10 @@ Apothem は `copilot-instructions.md` を、プロジェクトのアシスタン
 apothem verify --harness github-copilot --project /path/to/project
 ```
 
-verify コマンドは、次のことを確認します。
+verify コマンドは次のことを確認します。
 
-1. ネイティブ設定が期待されるパスに存在すること。
-2. 共有プロファイルからのすべての必須フィールドが存在すること。
+1. ネイティブ設定が想定されたパスに存在すること。
+2. 共有プロファイルのすべての必須フィールドが存在すること。
 3. アダプター固有の検証ルーチンが成功を報告すること。
 
 ## 更新
@@ -59,7 +65,7 @@ verify コマンドは、次のことを確認します。
 apothem update --harness github-copilot --project /path/to/project
 ```
 
-現在の共有プロファイルの状態からプロジェクト指示ファイルを再導出します。
+現在の共有プロファイルの状態からプロジェクトの命令ファイルを再導出します。
 
 ## アンインストール
 
@@ -67,10 +73,10 @@ apothem update --harness github-copilot --project /path/to/project
 apothem uninstall --harness github-copilot --project /path/to/project
 ```
 
-アダプターによって書き込まれたネイティブ設定ファイルを削除します。
-共有プロファイルの YAML と Apothem エンジンは影響を受けません。
+アダプターが書き込んだネイティブ設定ファイルを削除します。
+共有プロファイルの YAML と Apothem エンジンには影響しません。
 
-## 適合ゲート
+## コンフォーミティゲート
 
 ```bash
 python -m apothem.conformity.gate --all .
@@ -81,11 +87,17 @@ python -m apothem.conformity.gate --all .
 | 症状 | 対処 |
 |---------|-----|
 | 設定ファイルが見つからない | `apothem install --harness github-copilot --project /path/to/project` を再実行する |
-| 検証に失敗した | `apothem update --harness github-copilot --project /path/to/project` を実行してから、再度検証する |
-| 予期しない設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、`apothem update --harness github-copilot --project /path/to/project` を再実行する |
+| 検証が失敗した | `apothem update --harness github-copilot --project /path/to/project` を実行してから、再度検証する |
+| 想定外の設定内容 | `~/.config/apothem/profile.yaml` または `--profile PATH` を確認してから、`apothem update --harness github-copilot --project /path/to/project` を再実行する |
 
 ## 設定ノブ
 
 | フラグ | デフォルト | 説明 |
 |------|---------|-------------|
 | `--dry-run` | `false` | ファイルを書き込まずにインストールをプレビューする。 |
+
+## 関連項目
+
+- [すべてのハーネス](/docs/harnesses) — サポート対象ツールの完全なカタログ
+- [インストールガイド](/docs/install) — このハーネスに Apothem をインストールする
+- [`apothem harnesses` リファレンス](/docs/cli-reference/harnesses) — CLI からアダプターを一覧表示して調べる

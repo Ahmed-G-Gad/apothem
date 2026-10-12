@@ -1,32 +1,64 @@
 ---
 title: "CLI リファレンス"
-description: "Apothem CLI リファレンス——apothem コマンドラインインターフェースのコマンドごとの構文、オプション、終了コード。"
+description: "Apothem CLI リファレンス — apothem コマンドラインインターフェースのコマンドごとの構文、オプション、終了コード。"
 machineTranslated: true
-sourceHash: "70842f71e4070248"
+sourceHash: "4012ab11dba3c29d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-`apothem` コマンドラインインターフェースは、共有プロファイルからハーネスアダプターの構成を管理します。以下の各ページは 1 つのサブコマンドを記載します。その構文、オプション、動作、終了コードです。
+`apothem` コマンドラインインターフェースは、共有プロファイルからハーネスアダプターの設定を管理します。
+以下の各ページは 1 つのサブコマンドについて、その構文、オプション、動作、終了コードを記載します。
 
-`install`、`update`、`uninstall` はそれぞれ、フラグと動作がベースコマンドと同一の連続形エイリアス（`installing`、`updating`、`uninstalling`）も受け付けます。インストールチャネル——Claude Code プラグイン、`npx`、ワンステップインストーラースクリプト——を介した更新とアンインストールは、エイリアス自体ではなく、[更新](/docs/install/updating) と [アンインストール](/docs/install/uninstalling) のインストールガイドに記載されています。
+`install`、`update`、`uninstall` はそれぞれ、フラグと動作が基本コマンドと同一の進行形エイリアス（`installing`、`updating`、`uninstalling`）も受け付けます。
+インストールチャネル —— Claude Code プラグイン、`npx`、ワンショットインストーラースクリプト —— を介した更新とアンインストールは、エイリアス自体ではなく、[更新](/docs/install/updating)と[アンインストール](/docs/install/uninstalling)のインストールガイドで説明されています。
 
 ## コマンド
 
 | コマンド | 説明 |
 |---------|-------------|
-| [quickstart](/docs/cli-reference/quickstart) | ガイド付き初回実行：プロファイルを確保し、書き込みをプレビューしてから、インストールします。 |
-| [install](/docs/cli-reference/install) | 共有プロファイルからハーネスアダプターの構成をインストールします（エイリアス：`installing`）。 |
-| [update](/docs/cli-reference/update) | 現在の共有プロファイルからハーネスアダプターの構成を再インストールします（エイリアス：`updating`）。 |
-| [uninstall](/docs/cli-reference/uninstall) | ハーネスアダプターの構成を削除します（エイリアス：`uninstalling`）。 |
-| [rollback](/docs/cli-reference/rollback) | ハーネスを、記録されたインストール前の状態に復元します。 |
+| [quickstart](/docs/cli-reference/quickstart) | ガイド付きの初回実行: プロファイルを確保し、書き込みをプレビューしてから、インストールします。 |
+| [install](/docs/cli-reference/install) | 共有プロファイルからハーネスアダプターの設定をインストールします（エイリアス: `installing`）。 |
+| [update](/docs/cli-reference/update) | 現在の共有プロファイルからハーネスアダプターの設定を再インストールします（エイリアス: `updating`）。 |
+| [uninstall](/docs/cli-reference/uninstall) | ハーネスアダプターの設定を削除します（エイリアス: `uninstalling`）。 |
+| [rollback](/docs/cli-reference/rollback) | ハーネスを、記録されたインストールより前の状態に復元します。 |
+| [backups](/docs/cli-reference/backups) | Apothem が保持するインストールバックアップと台帳履歴を刈り込みます（`backups prune`）。 |
 | [verify](/docs/cli-reference/verify) | ハーネスアダプターのインストールを検証します。 |
-| [status](/docs/cli-reference/status) | 登録された各ハーネスのインストール、検証、ドリフトの状態を報告します。 |
-| [diff](/docs/cli-reference/diff) | 単一のハーネスの保留中の構成変更をプレビューします。 |
+| [status](/docs/cli-reference/status) | 登録されたすべてのハーネスについて、インストール、検証、ドリフトの状態を報告します。 |
+| [diff](/docs/cli-reference/diff) | 単一のハーネスについて、保留中の設定変更をプレビューします。 |
 | [harnesses](/docs/cli-reference/harnesses) | 登録されたハーネスアダプターを一覧表示し、検査します。 |
 | [profile](/docs/cli-reference/profile) | 共有の Apothem プロファイルを管理します。 |
-| [doctor](/docs/cli-reference/doctor) | Apothem インストールのシステム診断を実行します。 |
-| [completion](/docs/cli-reference/completion) | source で読み込み可能なシェル補完スクリプトを出力します（bash、zsh、fish、powershell）。 |
+| [migrate-workspace](/docs/cli-reference/migrate-workspace) | レガシーなハーネスごとのワークスペースを、共有の `.apothem` レイアウトへ移行します。 |
+| [doctor](/docs/cli-reference/doctor) | Apothem のインストールに対してシステム診断を実行します。 |
+| [completion](/docs/cli-reference/completion) | source で読み込めるシェル補完スクリプトを出力します（bash、zsh、fish、powershell）。 |
 
-スラッシュコマンドと上位レベルの CLI 概要については、
-[CLI 概要](/docs/reference/cli) と [スラッシュコマンド](/docs/reference/commands)
-のリファレンスページを参照してください。
+## JSON 出力の契約
+
+すべてのコマンドは `--json`（`--format json` の短縮形）を受け付け、その場合は正確に 1 つの JSON ドキュメントを stdout に書き出します。
+各ドキュメントはトップレベルの `schema_version` キーで始まります。これは整数で、現在は `1` です。
+
+```json
+{"schema_version": 1, "status": "success", "command": "verify", "...": "..."}
+```
+
+- **安定性。** 1 つの `schema_version` の範囲内では、変更は追加的です。新しいキーが現れることはありますが、キーの名前が変更されたり削除されたりすることはなく、値の型が変わることもありません。
+  それ以外の変更はすべて `schema_version` を引き上げます。
+- **バージョン付きのアーティファクト。** `profile show --json` はプロファイルそのものを出力するため、その `schema_version` はプロファイルスキーマのバージョンです（こちらも現在は `1`）。
+- **1 つの例外。** `harnesses list --json` は、これまでどおり JSON 配列（ハーネスごとに 1 つのオブジェクト）を出力するため、バージョンを保持するトップレベルのキーがありません。オブジェクトでラップすると既存のパーサーが壊れます。
+  バージョンの引き上げによってそれが行われるまでは、その形状を `schema_version` `1` として扱ってください。
+- **エラー。** 想定された失敗は同じドキュメント形状を使用し、`"status": "error"` と、`code`、`field`、`reason`、`fix` を持つ `error` オブジェクトを含みます。
+
+## 終了コード
+
+すべてのコマンドは同じ少数の終了コードを使用します。各ページには、そのコマンドが返しうるものが記載されています。
+
+| コード | 意味 |
+|---|---|
+| 0 | 成功 |
+| 1 | 想定された失敗: 検証、プロファイル、ハーネス、プロジェクト、またはアダプターのエラー |
+| 2 | 部分的な結果: バッチが失敗の前に何かを書き込んだか削除した（そのページに記載されているコマンドのみ） |
+| 64 | 使用法エラー: 不明なオプションまたはコマンド、必須オプションの欠落、または無効なオプション値 |
+
+使用法エラーがファイルシステムに触れることは決してありません。
+`--json`（または `--format json`）のもとでは、プレーンな使用法テキストの代わりに `"code": "cli.usage"` を含むエラードキュメントを 1 つ出力するため、自動化はフラグの打ち間違いと部分的な書き込みを区別できます。
+
+スラッシュコマンドと上位レベルの CLI 概要については、[CLI 概要](/docs/reference/cli)と[スラッシュコマンド](/docs/reference/commands)のリファレンスページを参照してください。

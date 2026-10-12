@@ -2,56 +2,103 @@
 title: "install"
 description: "apothem install コマンドの CLI リファレンス。"
 machineTranslated: true
-sourceHash: "71088e5120c4f3ba"
+sourceHash: "aaa373f458e002f9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-共有プロファイルからハーネスアダプターの構成をインストールします。
+共有プロファイルからハーネスアダプターの設定をインストールします。
 
 ## 構文
 
 ```
 apothem install --harness NAME|all [--profile PATH] [--dry-run]
-                 [--project PATH]
+                 [--clean|--fresh] [--yes] [--project PATH]
                  [--quiet|-q] [--verbose|-v]
                  [--format plain|json] [--json] [--no-color]
 ```
 
-共有プロファイルを読み込んで検証し、名前付きのアダプターまたはレジストリ全体の `all` セットを選択し、物質化計画を検証して、ハーネスのネイティブ構成とサポートコホートを書き込みます。プロジェクトスコープのアダプターには `--project PATH` が必要です。
+共有プロファイルを読み込んで検証し、名前で指定されたアダプターまたはレジストリ全体の `all` セットを選択し、マテリアライズ計画を検証して、ハーネスネイティブの設定とサポートコホートを書き込みます。
+プロジェクトスコープのアダプターには `--project PATH` が必要です。
 
-連続形のエイリアス `apothem installing` は同じハンドラーに解決されます。
+進行形のエイリアス `apothem installing` は、同じハンドラーに解決されます。
 
-## 影響範囲プレビュー
+## プロファイルがない状態での初回実行
 
-`install --harness all` は混在したスコープへ展開されます。プロジェクトスコープのアダプターは指定された `--project` ルートの下に書き込み、ユーザースコープのアダプターはホームディレクトリの下——つまりそのルートの外側——に書き込みます。いずれかのファイルが書き込まれる前に、コマンドは具体的なターゲットを 2 つの見出しの下にグループ化して出力します。プロジェクトルート内のものと、ホームディレクトリ下のものです。
+`--profile` が省略され、デフォルトのパス（`~/.config/apothem/profile.yaml`）にプロファイルが存在しない場合、`install` はまずそこにスタータープロファイルを書き込み、`Created a starter profile at <path>` を出力してから続行します。
+スタータープロファイルはプレースホルダーのアイデンティティフィールドを持つため、インストールはプレースホルダーのアイデンティティに関する注記も出力します。プロファイルを自分用に書き換えてから、[`update`](/docs/cli-reference/update) を実行して適用してください。
+`--json` のもとでは、この作成は `"operation": "profile_created"` を持つ `warnings` エントリとして報告されます。
 
-選択がプロジェクトルートの外側に書き込む場合、対話的な確認がホームを起点とする書き込みを保護します。`--yes`、非対話的シェル（TTY なし）、`--dry-run`、`--format json` はそれぞれ確認を求めずに続行します。`--dry-run` と `--format json` は何も書き込みません。プロンプトを拒否すると、いずれかのファイルが書き込まれる前に中止します。
+- `--dry-run` がプロファイルを書き込むことは決してありません。プレビューはメモリ上のスタータープロファイルを使用し、`"operation": "profile_scaffold_preview"` を報告します。
+- 明示的に指定された `--profile PATH` が存在しない場合、それが作成されることは決してありません。コマンドは `profile.not_found` とともに 1 で終了します。
+
+## 影響範囲のプレビュー
+
+`install --harness all` は、混在したスコープへ展開されます。プロジェクトスコープのアダプターは指定された `--project` ルートの下に書き込み、ユーザースコープのアダプターはホームディレクトリの下 —— つまりそのルートの外側 —— に書き込みます。
+いずれかのファイルが書き込まれる前に、コマンドは具体的なターゲットを 2 つの見出しの下にグループ化して出力します。プロジェクトルートの内側にあるものと、ホームディレクトリの下にあるものです。
+
+選択がプロジェクトルートの外側に書き込む場合、対話的な確認がホームを起点とする書き込みを保護します。
+`--yes`、非対話シェル（TTY なし）、`--dry-run`、`--format json` は、いずれも確認を求めずに続行します。
+何も書き込まないのは `--dry-run` だけです。`--format json` はプレビューと確認プロンプトをスキップしますが、書き込みは実行します。
+プロンプトを拒否すると、どのファイルも書き込まれる前に中止します。
 
 ## 機能に関する注記
 
-各アダプターは、そのハーネスがネイティブにサポートする機能のみを投射します。ネイティブな表面を持たない機能は、黙って破棄されるのではなく報告されます。plain モードでは、これはハーネスごとに 1 つのグループ化された注記です（例: `Note: <harness> - 9 capabilities not projected; pass --verbose for detail`）。`--verbose` の場合、各機能は独自の理由行を出力します。`--format json` のエンベロープは、詳細度に関係なく常に完全な `warnings` 配列を保持します。
+各アダプターは、そのハーネスがネイティブにサポートする機能だけを投影します。ネイティブな面を持たない機能は、黙って破棄されるのではなく報告されます。
+plain モードでは、これはハーネスごとに 1 つのグループ化された注記になります（例: `Note: <harness> - 9 capabilities not projected; pass --verbose for detail`）。`--verbose` のもとでは、各機能がそれぞれ独自の理由の行を出力します。
+その他のアダプターの警告も、plain モードではそれぞれ独自の `Warning:` 行に出力されます。たとえば、新しい `.rules` によって隠される命令ファイルの名前を挙げる Zed の警告です。
+`--format json` のエンベロープは、詳細度にかかわらず、常に完全な `warnings` 配列を含みます。
+
+インストールと更新は、勧告も `Note:` 行として出力します。勧告がインストールの書き込む内容を変えることは決してありません。
+インストールが共有ルート —— 他のツールも読み込むパス（たとえばスキルフォルダー `~/.agents/skills/`）—— に書き込む場合、注記はそれらのツールの名前を挙げます。
+インストールの対象が、別のインストールの共有ルートからすでに Apothem のコンテンツを読み込んでいるツールである場合、注記はそのインストールの名前を挙げます。
+`--format json` のエンベロープでは、各勧告は `"outcome": "advisory"` と `"operation": "shared_root"` を持つ `warnings` エントリです。
+
+プロファイルの MCP サーバーには 3 つの勧告があり、それぞれが該当するプロファイルフィールドの名前を挙げます。
+
+| 操作 | 条件 | 修正 |
+| --- | --- | --- |
+| `mcp_deprecated_transport` | `transport: sse`（MCP 仕様は HTTP+SSE を非推奨としています） | サーバーがサポートしている場合は `streamable-http` を使用してください。 |
+| `mcp_plain_http` | ループバックではないホストへの `http://` URL | `https://` URL を使用してください。 |
+| `mcp_literal_credential` | トークンのような形をした `headers` または `env` の値（`ghp_`、`github_pat_`、`sk-`、`xox*-`、または長いトークンを伴う `Bearer`） | シークレットは環境変数に保持し、`${GITHUB_TOKEN}` 形式の参照を書いてください。 |
+
+認証情報の勧告が、検出した値を出力することは決してありません。
+`${...}` 参照を含む値にフラグが立てられることは決してありません。
+
+## コメントを含むオペレーターの設定
+
+ハーネスの設定の中には、`settings.json`、`opencode.json`（JSONC の場合があります）、`openclaw.json`（JSON5）、`config.yaml` のように、あなた自身も編集するファイルがあります。
+インストールは自身のキーをこれらのファイルにマージし、あなたが追加したすべてのキーを保持します。
+
+マージはファイルをプレーンな JSON または YAML として書き直すため、コメント、末尾のカンマ、JSON5 構文が失われてしまいます。そのため:
+
+- マージによってどの値も変わらない場合（たとえば、Apothem のキーをすでに自分で追加している場合）、ファイルはバイト単位でそのまま残されます。
+- コメントや JSON5 構文を含むファイル、またはまったく解析できないファイルで、マージが値を変更しなければならない場合、インストールはそのハーネスに対して何も書き込まず、エラーコード `config.unparseable` とともに 1 で終了します。
+  `fix` フィールドはインストールが追加するキーの名前を挙げるため、ファイルをプレーンな JSON または YAML に変換するか、それらのキーを手作業で追加して再実行できます。
 
 ## オプション
 
 | オプション | 説明 |
 |---|---|
-| `--harness NAME` | インストールするハーネスアダプター、またはレジストリ全体のセットを表す `all`（必須）。登録された名前については `apothem harnesses list` を実行してください。 |
-| `--profile PATH` | 共有プロファイル YAML へのパス。デフォルトは `~/.config/apothem/profile.yaml`。 |
+| `--harness NAME` | インストールするハーネスアダプター、またはレジストリ全体のセットを表す `all`（必須）。登録されている名前は `apothem harnesses list` を実行して確認してください。 |
+| `--profile PATH` | 共有プロファイル YAML へのパス。デフォルトは `~/.config/apothem/profile.yaml` です。 |
 | `--dry-run` | ファイルを書き込まずにインストールをプレビューします。 |
+| `--clean`, `--fresh` | オプトインのクリーンスレート: インストールの前に、以前のハーネスごとのインストール状態をバックアップして削除します。 |
+| `--yes` | クリーンスレートの削除中に、ターゲットごとの確認をスキップします（非対話の `--clean` 実行では必須）。 |
 | `--project PATH` | プロジェクトスコープのハーネス向けのプロジェクトルート。 |
-| `--quiet`, `-q` | 情報出力を抑制します。エラーのみを出力します。 |
-| `--verbose`, `-v` | ハーネスごとのグループ化された注記の代わりに、投射されなかった各機能の理由を出力します。 |
+| `--quiet`, `-q` | 情報出力を抑制します。エラーのみが出力されます。 |
+| `--verbose`, `-v` | ハーネスごとのグループ化された注記の代わりに、投影されなかった各機能の理由を出力します。 |
 | `--format plain\|json` | 出力形式（デフォルト: `plain`）。 |
-| `--json` | `--format json` の省略形。 |
+| `--json` | `--format json` の短縮形。 |
 | `--no-color` | 出力中の ANSI カラーコードを無効にします。 |
 | `-h`, `--help` | ヘルプを表示して終了します。 |
 
 ## JSON 出力
 
-`--json`（または `--format json`）が指定されると、単一の JSON ドキュメントが stdout に書き込まれます。
+`--json`（または `--format json`）が指定されると、単一の JSON ドキュメントが stdout に書き出されます。
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "install",
   "action": "installed",
@@ -66,10 +113,12 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
 }
 ```
 
-`--dry-run` の場合:
+`--dry-run` の場合、何も書き込まれず、`results` にはインストールが書き込むはずのすべてのパスが列挙されます。
+各パスには、そうなるはずの結果（`created`、`updated`、または `unchanged`）と、あなた自身も編集するファイルについては `detail.diff` の unified diff が付きます。これは [`apothem diff`](/docs/cli-reference/diff) が表示するのと同じ計画です。
 
 ```json
 {
+  "schema_version": 1,
   "status": "dry_run",
   "command": "install",
   "action": "dry_run",
@@ -81,10 +130,33 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
 }
 ```
 
-予期される検証エラーは同じエンベロープを使用し、error オブジェクトを含みます。
+`--clean` が指定されると、エンベロープはさらに、削除フェーズを記述する `clean` オブジェクトを含みます。
+その内容は、ターゲットごとの処理結果のリスト、実行がプレビューだったかどうか、タイムスタンプ付きのバックアップディレクトリ（ドライランでは `null`）です。
 
 ```json
 {
+  "clean": {
+    "dry_run": true,
+    "backup_dir": null,
+    "targets": [
+      {
+        "path": "C:\\Users\\Example\\.claude",
+        "present": true,
+        "removed": false,
+        "skipped_reason": null
+      }
+    ]
+  }
+}
+```
+
+クリーンスレートのドライランは、両方のフェーズを 1 つのドキュメントでプレビューします。`clean` の下に削除のプレビュー、`results` の下に新規書き込みのプレビューです。
+
+想定された検証エラーは同じエンベロープを使用し、エラーオブジェクトを含みます。
+
+```json
+{
+  "schema_version": 1,
   "status": "error",
   "command": "install",
   "harness": "all",
@@ -92,7 +164,7 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
   "error": {
     "code": "project.required",
     "field": "project",
-    "reason": "project-scope harnesses require --project: cursor, gemini-cli, github-copilot, windsurf.",
+    "reason": "project-scope harnesses require --project: cursor, gemini-cli, github-copilot, kimi-code, windsurf, codebuddy, kiro, trae, zed, glm.",
     "fix": "Pass --project PATH or select only user-scope harnesses."
   }
 }
@@ -113,13 +185,14 @@ apothem installing --harness claude-code   # lowercase variant
 
 | コード | 意味 |
 |---|---|
-| 0 | アダプターが正常にインストールされた、または dry-run が問題なく計画された |
-| 1 | 予期される検証、プロファイル、ハーネス、プロジェクト、またはアダプターのエラー |
-| 2 | 少なくとも 1 回の書き込み後の部分的なバッチ物質化 |
+| 0 | アダプターが正常にインストールされた、またはドライランが問題なく計画された |
+| 1 | 想定された検証、プロファイル、ハーネス、プロジェクト、またはアダプターのエラー |
+| 2 | 少なくとも 1 回の書き込みの後の、部分的なバッチのマテリアライズ |
+| 64 | 使用法エラー: 不明なオプションまたはコマンド、あるいは欠落した、または無効なオプション値。`--json` のもとでは、エラーはコード `cli.usage` を持つ JSON エンベロープになります。 |
 
 ## 関連項目
 
-- `apothem installing` — このコマンドの連続形エイリアス（ここに記載。CLI は両方の形式を受け付けます）
+- `apothem installing` — このコマンドの進行形エイリアス（ここに記載。CLI は両方の形式を受け付けます）
 - [apothem update](/docs/cli-reference/update) — 現在のプロファイルをハーネスに再適用する
 - [apothem verify](/docs/cli-reference/verify) — アダプターが有効であることを確認する
 - [はじめに](/docs/install) — 完全なインストールガイド

@@ -2,31 +2,38 @@
 title: "verify"
 description: "apothem verify コマンドの CLI リファレンス。"
 machineTranslated: true
-sourceHash: "0fe3ea35a885265b"
+sourceHash: "d9d421ce85d96684"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-ハーネスのアダプターのインストールを検証します。
+ハーネスアダプターのインストールを検証します。
 
 ## 構文
 
 ```
-apothem verify --harness NAME|all [--project PATH]
+apothem verify --harness NAME|all [--profile PATH] [--project PATH]
                 [--quiet|-q] [--verbose|-v]
                 [--format plain|json] [--json] [--no-color]
 ```
 
-選択された各アダプターの `verify()` 実装を呼び出します。選択されたすべてのアダプターが、管理対象が存在し有効であると報告した場合にのみ、0 で終了します。
+選択された各アダプターの `verify()` 実装を呼び出します。
+選択されたすべてのアダプターが、管理対象ターゲットが存在し有効であると報告した場合にのみ、0 で終了します。
+`--profile` がない場合、チェックは**構造的**です —— すべての管理対象ターゲットが存在し、有効でなければなりません。
+`--profile` がある場合、チェックはさらに**プロファイルへの忠実性**を要求するため、存在してはいるもののドリフトしたインストールは verify に失敗します。これにより、単に「存在するか？」ではなく、「まさにこのプロファイルが忠実にインストールされているか？」に答えます。
+
+`--harness all` のスイープは、プロファイルの `exclude_harnesses` —— `install`/`update` のバッチが適用したのと同じ除外 —— に従うため、verify が意図的に除外されたハーネスを欠落として報告することは決してありません。
+除外は、`--profile` が指定されている場合はそこから、そうでない場合はデフォルトのプロファイルから取得されます。デフォルトが読み取れないか存在しない場合は、レジストリ全体にフォールバックします。
 
 ## オプション
 
 | オプション | 説明 |
 |---|---|
-| `--harness NAME` | 検証するハーネスのアダプター、またはレジストリ全体の集合を表す `all`（必須）。 |
-| `--project PATH` | プロジェクト範囲のハーネス向けのプロジェクトルート。 |
-| `--quiet`, `-q` | 情報出力を抑制します。エラーのみを発行します。 |
-| `--verbose`, `-v` | 追加の診断出力を発行します。 |
-| `--format plain\|json` | 出力形式（デフォルト：`plain`）。 |
+| `--harness NAME` | 検証するハーネスアダプター、またはレジストリ全体のセットを表す `all`（必須）。 |
+| `--profile PATH` | 忠実性をチェックする基準となる共有プロファイル YAML。これがない場合、チェックは純粋に構造的なものになります。 |
+| `--project PATH` | プロジェクトスコープのハーネス向けのプロジェクトルート。 |
+| `--quiet`, `-q` | 情報出力を抑制します。エラーのみが出力されます。 |
+| `--verbose`, `-v` | 追加の診断出力を出力します。 |
+| `--format plain\|json` | 出力形式（デフォルト: `plain`）。 |
 | `--json` | `--format json` の短縮形。 |
 | `--no-color` | 出力中の ANSI カラーコードを無効にします。 |
 | `-h`, `--help` | ヘルプを表示して終了します。 |
@@ -35,6 +42,7 @@ apothem verify --harness NAME|all [--project PATH]
 
 ```json
 {
+  "schema_version": 1,
   "status": "success",
   "command": "verify",
   "action": "verified",
@@ -59,7 +67,7 @@ apothem verify --harness NAME|all [--project PATH]
 }
 ```
 
-選択されたハーネスのいずれかが見つからないか無効な場合、`status` は `error` になり、失敗した結果行は `verified: false` を持ち、プロセスはコード 1 で終了します。
+選択されたハーネスのいずれかが欠落しているか無効な場合、`status` は `error` になり、失敗した結果の行は `verified: false` を持ち、プロセスはコード 1 で終了します。
 
 ## 例
 
@@ -73,11 +81,12 @@ apothem verify --harness all --project .
 
 | コード | 意味 |
 |---|---|
-| 0 | ハーネスがインストールされている |
-| 1 | ハーネスがインストールされていない |
+| 0 | ハーネスが検証された — すべての管理対象ターゲットが存在し、有効である |
+| 1 | ハーネスが検証されなかった — 管理対象ターゲットが欠落しているか無効である |
+| 64 | 使用法エラー: 不明なオプションまたはコマンド、あるいは欠落した、または無効なオプション値。`--json` のもとでは、エラーはコード `cli.usage` を持つ JSON エンベロープになります。 |
 
 ## 関連項目
 
-- [apothem install](/docs/cli-reference/install) — ハーネスの構成をインストールする
+- [apothem install](/docs/cli-reference/install) — ハーネスの設定をインストールする
 - [apothem update](/docs/cli-reference/update) — 現在のプロファイルをハーネスに再適用する
-- [apothem doctor](/docs/install/concepts) — システム全体のインストール診断
+- [apothem doctor](/docs/cli-reference/doctor) — システム全体のインストール診断
