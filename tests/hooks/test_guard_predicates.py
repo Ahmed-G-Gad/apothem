@@ -44,6 +44,29 @@ class TestStripMaintainerText:
     def test_keeps_text_without_maintainer_blocks(self) -> None:
         assert message_text.strip_maintainer_text("A\n\nB\n") == "A\n\nB"
 
+    @pytest.mark.parametrize("line", ["<!-- note -->", "  <!-- note -->\t", "<!---->"])
+    def test_drops_a_line_that_is_one_whole_comment(self, line: str) -> None:
+        assert message_text.strip_maintainer_text(f"A\n{line}\nB\n") == "A\nB"
+
+    @pytest.mark.parametrize(
+        "line",
+        [
+            "<!-->",
+            "<!--->",
+            "<!-- note --> trailing",
+            "leading <!-- note -->",
+            "<!-- never closed",
+        ],
+    )
+    def test_keeps_a_line_that_is_not_one_whole_comment(self, line: str) -> None:
+        assert message_text.strip_maintainer_text(f"A\n{line}\nB\n") == f"A\n{line}\nB"
+
+    def test_keeps_a_comment_that_spans_lines(self) -> None:
+        # The stripper works a line at a time: the comment it removes is the
+        # one-line SPDX header every message file opens with.
+        body = "A\n<!-- first\nsecond -->\nB"
+        assert message_text.strip_maintainer_text(body) == body
+
     def test_every_shipped_message_loses_its_spdx_line(self) -> None:
         for path in _MESSAGES.glob("*.md"):
             stripped = message_text.strip_maintainer_text(
