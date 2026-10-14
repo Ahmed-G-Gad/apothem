@@ -191,7 +191,10 @@ def test_git_failure_on_the_work_tree_is_raised_with_its_message(
         f"gitdir: {tmp_path / 'missing'}\n", encoding="utf-8"
     )
 
-    with pytest.raises(regen.SourceCheckError, match="not a git repository"):
+    # git words this differently across builds ("not a git repository" on some,
+    # "gitfile does not point to a valid repository" on others), so pin git's
+    # own "fatal:" prefix rather than the rest of its sentence.
+    with pytest.raises(regen.SourceCheckError, match=r"^fatal: "):
         regen.stray_source_paths(tmp_path, _ROOTS)
 
 
