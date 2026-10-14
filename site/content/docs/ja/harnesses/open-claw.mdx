@@ -2,7 +2,7 @@
 title: "Open-Claw"
 description: "Open-Claw（プレビュー）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "a5897223a356aaf3"
+sourceHash: "3325613cf689ffc6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,40 +17,30 @@ sourceHash: "a5897223a356aaf3"
 apothem install --harness open-claw
 ```
 
-アダプターは共有プロファイルを OpenClaw のユーザーグローバル設定ファイルへ変換し、
-Apothem のサポートコホートをハーネスルート配下にインストールします。OpenClaw の
-ネイティブ設定は JSON であり、マテリアライザーはそれに合わせて JSON をレンダリングします。
+アダプターは OpenClaw のユーザーグローバル設定ファイルを書き込み、共有プロファイルをプロファイルドキュメントへ投影し、Apothem のサポートコホートをハーネスルート配下にインストールします。
+OpenClaw のネイティブ設定は JSON であり、マテリアライザーは空の JSON オブジェクトをレンダリングし、既存のファイルはそのキーを保持します。
 
 **書き込まれるファイル：** `~/.openclaw/openclaw.json`、プロファイルドキュメント
 `~/.openclaw/apothem/rules/00-apothem-profile.md`、および
 `~/.openclaw/.apothem/support/` 配下のサポートファイル
 
-プロファイルドキュメントは Apothem サポートファイルのセクションで終わります。このセクションは、
-リポジトリ形式の各参照（`rules/<name>.md`、`templates/...`、`hooks/...`）が解決される先の、
-`~/.openclaw/.apothem/support/` 配下の絶対ディレクトリを示します。
+プロファイルドキュメントは Apothem サポートファイルのセクションで終わります。
+このセクションは、リポジトリ形式の各参照（`rules/<name>.md`、`templates/...`、`hooks/...`）が解決される先の、`~/.openclaw/.apothem/support/` 配下の絶対ディレクトリを示します。
 
 ## プロファイルからネイティブ設定へのマッピング
 
 アダプターは Apothem の共有プロファイルを読み取りますが、設定キーは一切作成しません。
-`openclaw.json` は空のオブジェクトとして書き込まれます。プロファイルのアイデンティティ、
-プリファレンス、ルールはプロファイルドキュメントに入ります。共有のコマンド、スキル、ルール、
-テンプレート、フックプロンプトは、`~/.openclaw/.apothem/support/` 配下にサポート素材として
-インストールされます。
+新規または空の `openclaw.json` は空のオブジェクトとして書き込まれ、既存のファイルはそのキーを保持します。
+プロファイルのアイデンティティ、プリファレンス、ルールはプロファイルドキュメントに入ります。
+共有のコマンド、スキル、ルール、テンプレート、フックプロンプトは、`~/.openclaw/.apothem/support/` 配下にサポート素材としてインストールされます。
 
 ## 互換性に関する注意
 
-プレビュー版のアダプターです。OpenClaw は、サポートツリーもプロファイルドキュメントも
-自力では読み込みません。スキルの場所、ワークスペースの命令ファイル、設定のいずれも
-そこを指していないため、インストール後の OpenClaw は Apothem のルール、スキル、MCP サーバー
-なしで動作します。OpenClaw は、ワークスペースの `skills/` フォルダーと `.agents/skills/`
-フォルダー、`~/.agents/skills`、自身の状態ディレクトリ、そして `skills.load.extraDirs` に
-列挙された任意のフォルダーからスキルを読み込みます。Apothem のスキルを使うには、
-`~/.openclaw/.apothem/support/skills` をそのリストに自分で追加してください。`apothem update` は、
-あなたが `openclaw.json` に追加したキーを保持します。MCP サーバーは OpenClaw 設定の
-`mcp.servers` ブロックに置かれ、`openclaw mcp add` と関連するサブコマンドで管理します。
-アダプターはそこにエントリを一切書き込みません。（OpenClaw の振る舞いは、
-[スキル](https://docs.openclaw.ai/tools/skills)と [MCP CLI](https://docs.openclaw.ai/cli/mcp) に
-関するドキュメントに基づきます。2026-10-02 に参照。）
+プレビュー版のアダプターです。
+OpenClaw は、サポートツリーもプロファイルドキュメントも自力では読み込みません。スキルの場所、ワークスペースの命令ファイル、設定のいずれもそこを指していないため、インストール後の OpenClaw は Apothem のルール、スキル、MCP サーバーなしで動作します。
+OpenClaw は、ワークスペースの `skills/` フォルダーと `.agents/skills/` フォルダー、`~/.agents/skills`、自身の状態ディレクトリ、そして `skills.load.extraDirs` に列挙された任意のフォルダーからスキルを読み込みます。Apothem のスキルを使うには、`~/.openclaw/.apothem/support/skills` をそのリストに自分で追加してください。`apothem update` は、あなたが `openclaw.json` に追加したキーを保持します。
+MCP サーバーは OpenClaw 設定の `mcp.servers` ブロックに置かれ、`openclaw mcp add` と関連するサブコマンドで管理します。アダプターはそこにエントリを一切書き込みません。
+（OpenClaw の振る舞いは、[スキル](https://docs.openclaw.ai/tools/skills)と [MCP CLI](https://docs.openclaw.ai/cli/mcp) に関するドキュメントに基づき、2026-10-02 に参照したものです。）
 
 ## 検証
 
@@ -70,9 +60,8 @@ verify コマンドは次のことを確認します。
 apothem update --harness open-claw
 ```
 
-現在の共有プロファイルの状態からネイティブ設定を再導出します。
-`~/.config/apothem/profile.yaml` を編集した後、またはインストール済みの Apothem
-パッケージをアップグレードした後に実行してください。
+現在の共有プロファイルの状態からプロファイルドキュメントを再導出し、サポートファイルを更新します。`openclaw.json` は、すでに持っているキーを保持します。
+`~/.config/apothem/profile.yaml` を編集した後、またはインストール済みの Apothem パッケージをアップグレードした後に実行してください。
 
 ## アンインストール
 
