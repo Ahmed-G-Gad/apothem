@@ -2,7 +2,7 @@
 title: "GLM (Z.ai)"
 description: "Apothem-Harness-Adapter für GLM (Z.ai) als konfigurierbares Modell-Backend."
 machineTranslated: true
-sourceHash: "c222107e05bf1ef2"
+sourceHash: "3e05b3a651ffe5da"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -46,7 +46,8 @@ Sie durch Ihren eigenen Z.ai-Schlüssel ersetzen — Apothem schreibt niemals ei
 echtes Geheimnis. Modell-IDs ändern sich von Version zu Version, daher pinnt
 Apothem keine; die Datei enthält `<GLM_MODEL_ID>`-Platzhalter, die Sie anhand
 der aktuellen
-[Z.ai-Dokumentation](https://docs.z.ai/devpack/tool/claude) ausfüllen.
+[Z.ai-Dokumentation](https://docs.z.ai/devpack/tool/claude) ausfüllen. Aus dem
+gemeinsamen Profil fließt nichts in diese Datei; sie ist eine feste Vorlage.
 
 ## Kompatibilitätshinweise
 
@@ -110,8 +111,8 @@ python -m apothem.conformity.gate --all .
 | Symptom | Behebung |
 |---------|-----|
 | Konfigurationsdatei nicht gefunden | Führen Sie `apothem install --harness glm --project /path/to/project` erneut aus |
-| Verifizierung fehlgeschlagen | Führen Sie `apothem update --harness glm --project /path/to/project` aus und verifizieren Sie dann erneut |
-| Unerwarteter Konfigurationsinhalt | Prüfen Sie `~/.config/apothem/profile.yaml` oder `--profile PATH` und führen Sie dann `apothem update --harness glm --project /path/to/project` erneut aus |
+| Verifizierung fehlgeschlagen | Die Provider-Datei fehlt oder ist leer. Fehlt sie, führen Sie `apothem update --harness glm --project /path/to/project` aus. Ist sie leer, verschieben Sie zuerst `.apothem/providers/glm.toml` beiseite, führen Sie dann `update` aus und verifizieren Sie erneut |
+| Unerwarteter Konfigurationsinhalt | Bearbeiten Sie `.apothem/providers/glm.toml` direkt; Apothem schreibt eine bestehende Datei niemals neu, und das gemeinsame Profil trägt nichts zu ihr bei. Für eine frische Vorlage verschieben Sie die Datei beiseite und führen `apothem update --harness glm --project /path/to/project` aus |
 
 ## Konfigurationsschalter
 

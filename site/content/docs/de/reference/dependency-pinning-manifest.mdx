@@ -2,7 +2,7 @@
 title: "Manifest zur Abhängigkeitsfixierung"
 description: "Richtlinie zur Abhängigkeitsdeklaration, die Python-Laufzeitbereiche, Entwicklungswerkzeuge, Lock-Dateien der Release-Werkzeuge und ratifizierte Versionsuntergrenzen für jede Build-Oberfläche abdeckt."
 machineTranslated: true
-sourceHash: "4f9e328e15ccfe72"
+sourceHash: "6a526875e42d6686"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -36,10 +36,10 @@ aktualisiert.
 | Laufzeitabhängigkeiten | Aktuelle Untergrenzen leben in `pyproject.toml` `[project.dependencies]` | Aktuelle stabile Untergrenzen vor dem Release ratifiziert; kein bekannter Laufzeit-CVE-Blocker |
 | Entwicklungswerkzeuge | Aktuelle Untergrenzen leben im `dev`-Extra von `pyproject.toml` | Neueste stabile Untergrenzen vor dem Release ratifiziert |
 | Sicherheitswerkzeuge | Aktuelle Untergrenzen leben im `security`-Extra von `pyproject.toml` | Aktuelle Scanner-Untergrenzen vor dem Release ratifiziert |
-| Release-Werkzeuge | Die hash-gesperrte Hülle lebt in `scripts/release/requirements-build-linux.txt` | Der Release-Workflow installiert mit `--require-hashes`; lokale Skripte verlangen, dass `build` bereits vorhanden sind, statt schwankende Abhängigkeiten stillschweigend zu installieren |
-| Dokumentationswerkzeuge | Aktuelle Bereiche leben in `site/package.json`; die exakte Auflösung lebt in `site/package-lock.json` | `npm outdated` liefert nach der Lock-Datei-Aktualisierung keine veraltete Dokumentationsabhängigkeit |
-| GitHub Actions | Bestehende SHA-Fixierungen werden für das aktuelle Release beibehalten; der wiederverwendbare SLSA-Workflow bleibt die dokumentierte Tag-fixierte Ausnahme | Der öffentliche CI-Neulauf ist grün; breite Major-Upgrades von Actions werden absichtlich den Abhängigkeits-Automatisierungs-PRs überlassen, um Aufruhr an der Release-Oberfläche zu vermeiden |
-| npm-Paketierung | Nur manueller `publish-npm.yml`-Workflow; kein automatischer Release-Auslöser | Das einzige öffentliche npm-Paket ist `@ahmed-g-gad/apothem`; die Veröffentlichung läuft, nachdem die Release-Bereitschaft bestanden ist |
+| Release-Werkzeuge | Die hash-gesperrte Hülle lebt in `scripts/release/requirements-build-linux.txt` | Der Release-Workflow installiert mit `--require-hashes`; lokale Skripte verlangen, dass `build` bereits vorhanden ist, statt schwankende Abhängigkeiten stillschweigend zu installieren |
+| Dokumentationswerkzeuge | Aktuelle Bereiche leben in `site/package.json`; die exakte Auflösung lebt in `site/package-lock.json` | `npm outdated` liefert nach der Aktualisierung der Lock-Datei keine veraltete Dokumentationsabhängigkeit |
+| GitHub Actions | Bestehende SHA-Fixierungen werden für das aktuelle Release beibehalten; der wiederverwendbare SLSA-Workflow bleibt die dokumentierte Tag-fixierte Ausnahme | Der öffentliche CI-Neulauf ist grün; breite Major-Upgrades von Actions werden absichtlich den Pull Requests der Abhängigkeitsautomatisierung überlassen, um unnötige Unruhe an der Release-Oberfläche zu vermeiden |
+| npm-Paketierung | Der Workflow `publish-npm.yml` läuft beim Push eines `v*.*.*`-Tags, mit `workflow_dispatch` als Ausweichweg | Das einzige öffentliche npm-Paket ist `@ahmed-g-gad/apothem`; die Veröffentlichung läuft, nachdem die Release-Bereitschaft bestanden ist |
 
 ## Sperrung
 
@@ -74,5 +74,5 @@ Node-Hülle hat.
   statisches Artefakt; die Lock-Datei liefert deterministische `npm ci`-Builds
   für diese öffentliche Oberfläche.
 - **Warum SHA-fixierte Actions?** Tags sind veränderlich; SHAs sind
-  unveränderlich. Renovate aktualisiert die fixierten SHAs, während die
-  Release-Schranke jeden absichtlichen Aufschub festhält.
+  unveränderlich. Renovate aktualisiert die fixierten SHAs, während das
+  Release-Gate jede absichtliche Zurückstellung festhält.

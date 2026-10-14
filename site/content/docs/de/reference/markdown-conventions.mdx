@@ -2,7 +2,7 @@
 title: "Markdown-Konventionen"
 description: "Markdown-Variante, Überschriftenstruktur, Sprachdeklarationen von Codeblöcken, Formate interner Links, Autorschafts-Banner und die Durchsetzung durch Validatoren vereinheitlichen."
 machineTranslated: true
-sourceHash: "f23d6b35db5b9a17"
+sourceHash: "940c41973c1d1e98"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,13 +26,13 @@ Umzäunte Codeblöcke deklarieren ihre Sprache (` ```python `, ` ```bash `, ` ``
 
 Interne Querverweise verwenden **Pfade ab der Site-Wurzel** (z. B. `[Authorship header](/docs/reference/authorship-header)`). Bloße repository-relative Pfade mit einer `.md`/`.mdx`-Endung (`/docs/foo.md`) und vollständige URLs auf dasselbe Repository (`https://github.com/ahmed-g-gad/apothem/blob/main/...`) werden für Links innerhalb der Site vermieden, weil sie Umbenennungen von Seiten und Umstrukturierungen von Abschnitten schlecht überstehen.
 
-Diese `/docs/...`-Pfade ab der Site-Wurzel — und die Form `/<locale>/docs/...` für die Nicht-Standard-Locales der Kohorte — löst der Validator `link-check` gegen die Seitenmenge auf der Festplatte unter `site/content/docs/` auf: `/docs/a/b` wird auf `site/content/docs/a/b.mdx` oder den Ordnerindex `site/content/docs/a/b/index.mdx` abgebildet, und die Locale-Form wird unterhalb des Teilbaums `site/content/docs/<locale>/` abgebildet. Ein Link auf eine entfernte oder umbenannte Route löst sich zu keiner der beiden Dateien auf und wird als tote Route (ein für Benutzer sichtbarer 404) am Konformitäts-Gate erkannt und nicht erst beim Site-Build.
+Diese `/docs/...`-Pfade ab der Site-Wurzel — und die Form `/<locale>/docs/...` für die Nicht-Standard-Locales der Kohorte — löst der Validator `link-check` gegen die Seitenmenge auf der Festplatte unter `site/content/docs/` auf: `/docs/a/b` wird auf `site/content/docs/a/b.mdx` oder den Ordnerindex `site/content/docs/a/b/index.mdx` abgebildet, und die Locale-Form wird unterhalb des Teilbaums `site/content/docs/<locale>/` abgebildet. Ein Link auf eine entfernte oder umbenannte Route löst sich zu keiner der beiden Dateien auf und wird von `link-check`, einem beratenden Matcher, der den Lauf nicht fehlschlagen lässt, als tote Route (ein für Benutzer sichtbarer 404) gemeldet (siehe §6).
 
 Externe Links auf veränderliche Refs (`main`, `master`, `latest`, `HEAD`) werden auf Commit-SHAs oder Release-Tags festgelegt, wann immer die Stabilität des verlinkten Inhalts wichtig ist; volatile Verweise werden mit einem angrenzenden `{/* volatile */}`-Kommentar als solche dokumentiert.
 
 ## 5. Autorschafts-Banner
 
-Jedes Markdown-Artefakt (mit den unter [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas/header-exceptions.txt) aufgezählten Ausnahmen) trägt das kanonische Autorschafts-Header-Banner ab Byte 0, in der HTML-Kommentar-Variante gemäß [Autorschafts-Header](/docs/reference/authorship-header). Das Banner steht über dem YAML-Frontmatter, wo beide vorhanden sind.
+Jedes Markdown-Artefakt (mit den unter [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt) aufgezählten Ausnahmen) trägt das kanonische Autorschafts-Header-Banner in der HTML-Kommentar-Variante gemäß [Autorschafts-Header](/docs/reference/authorship-header). Ohne Frontmatter ist das Banner Zeile 1. Mit YAML-Frontmatter bleibt das Frontmatter bei Byte 0, und das Banner folgt auf das schließende `---`.
 
 ## 6. Validatoren
 

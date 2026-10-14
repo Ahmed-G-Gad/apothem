@@ -2,7 +2,7 @@
 title: "Harness-Markenfarben"
 description: "Farbpalette je Harness, die auf der gesamten Apothem-Projektwebsite und in jedem Architekturdiagramm verwendet wird. Eine einzige Quelle der Wahrheit: eine Farbe je Harness, ein apothem-Hub."
 machineTranslated: true
-sourceHash: "7a191edb550076ef"
+sourceHash: "8bd8ae0d07b55675"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -104,8 +104,21 @@ graph LR
 
 ## Barrierefreiheit
 
-Jedes Token für den hellen Modus erfüllt den WCAG-2.2-AA-Kontrast gegenüber weißem Text (≥4,5 : 1), soweit der Kontrast dies zulässt, ohne die Markenfarbe zu verzerren. Wo die native Markenfarbe eines Harness für sich allein gegenüber weißem Text unter den AA-Schwellenwert fällt (insbesondere die Bernstein-/Orange-Familie und die Himmelblau-/Türkis-Familie der oben aufgeführten Tokens), verwenden Diagramme, die einen WCAG-AA-Kontrast für Text auf Farbe benötigen, die **Variante für den dunklen Modus** (den aufgehellten Farbton) als Diagrammfüllung, damit der weiße Text sauber lesbar ist. Die Spalte für den dunklen Modus ist für diesen Zweck kalibriert: Jedes Token für den dunklen Modus erreicht AA gegenüber weißem Text.
+Jedes Token für den hellen Modus behält seine Markenfarbe unverzerrt, daher liegen acht davon unter dem WCAG-2.2-AA-Kontrast gegenüber weißem Text (≥4,5 : 1). Die übrigen Token für den hellen Modus erreichen ihn. Die acht, mit ihrem Kontrast gegenüber Weiß:
+
+```text
+shared-profile   2.54 : 1
+claude-code      3.28 : 1
+codex            3.20 : 1
+gemini-cli       3.56 : 1
+opencode         2.15 : 1
+qwen-code        2.87 : 1
+trae             3.86 : 1
+windsurf         2.77 : 1
+```
+
+Die Spalte für den dunklen Modus ist für dunkle Hintergründe gedacht, und keines ihrer Tokens erreicht gegenüber weißem Text 4,5 : 1. Ein Diagramm, das auf einer dieser acht Füllungen einen WCAG-AA-Kontrast für Text auf Farbe benötigt, MUSS statt weißem Text dunklen Text (`#0F172A`, der auf ihnen 4,63 : 1 bis 8,31 : 1 misst) verwenden.
 
 ## Aktualisierungen
 
-Die Palette wird nur aktualisiert, wenn ein Harness vorgelagert eine Markenänderung ratifiziert. Markenänderungen je Harness werden atomar in `site/app/global.css`, in diese Seite und in jeden betroffenen SVG-Master unter `assets/src/` übernommen.
+Die Palette wird nur aktualisiert, wenn ein Harness vorgelagert eine Markenänderung ratifiziert. Die Harness-Farben sind auf dieser Seite definiert, nicht in `assets/design-tokens.css` oder `site/app/global.css`. Markenänderungen je Harness werden atomar in diese Seite und in jeden betroffenen SVG-Master unter `assets/src/` übernommen.

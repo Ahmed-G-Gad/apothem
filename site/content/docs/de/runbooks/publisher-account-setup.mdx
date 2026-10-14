@@ -2,17 +2,18 @@
 title: "Einrichtung des Publisher-Kontos"
 description: "Den vertrauenswürdigen npmjs.com-Publisher für @ahmed-g-gad/apothem und die GitHub-seitigen Release-Voraussetzungen konfigurieren."
 machineTranslated: true
-sourceHash: "c0ff17cce209d1d0"
+sourceHash: "4f750a0f9fdb2429"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Dieses Runbook konfiguriert die Publisher-Seite der Release-Oberfläche. Die
 Distributionsgeschichte hat eine einzige Registry: das Scoped-npm-Paket
-`@ahmed-g-gad/apothem` auf npmjs.com, veröffentlicht vom manuell ausgelösten
-Workflow `publish-npm.yml`, nachdem die Workflows für GitHub Release, Pages, CI,
-Konformität und Harness grün sind. Jedes andere Artefakt wird auf der
-GitHub-Release-Seite selbst ausgeliefert und benötigt kein externes
-Publisher-Konto.
+`@ahmed-g-gad/apothem` auf npmjs.com, veröffentlicht vom Workflow
+`publish-npm.yml` (er läuft beim Push eines `v*.*.*`-Tags; ein manueller
+Dispatch mit einer `tag`-Eingabe ist der Ausweichweg), nachdem die Workflows für
+GitHub Release, Pages, CI, Konformität und Harness grün sind. Jedes andere
+Artefakt wird auf der GitHub-Release-Seite selbst ausgeliefert und benötigt kein
+externes Publisher-Konto.
 
 ## Identitätszuordnung
 
@@ -61,9 +62,10 @@ installieren, nicht den Kontonamen des Maintainers.
    bash scripts/release/check-release-ready.sh <release-tag>
    ```
 
-9. Führen Sie `Publish — npm` (`publish-npm.yml`) über den Tab GitHub Actions
-   mit `tag=<release-tag>` aus und genehmigen Sie das Deployment der Umgebung
-   `release`.
+9. Genehmigen Sie das Deployment der Umgebung `release` für den Lauf von
+   `Publish npm` (`publish-npm.yml`), den der Tag-Push startet. Falls dieser
+   Lauf nicht gestartet wurde, lösen Sie den Workflow über den Tab GitHub Actions
+   mit `tag=<release-tag>` aus.
 10. Verifizieren Sie das Live-Paket:
 
     ```bash title="npm verification"
@@ -76,7 +78,7 @@ Workflow veröffentlicht über npm Trusted Publishing (OIDC), wobei die
 Node-Version und der OIDC-Mindeststand der npm-CLI in
 `.github/workflows/publish-npm.yml` gepinnt sind. Er führt
 `npm publish --access public` gegen npmjs.com aus; npm erzeugt automatisch
-Provenance für öffentliche Pakete, die aus einem öffentlichen
+Provenienz für öffentliche Pakete, die aus einem öffentlichen
 GitHub-Actions-Workflow veröffentlicht werden. Ein Registry-`404` während `PUT`
 bedeutet, dass der vertrauenswürdige Publisher auf npm-Seite, der Paket-Scope
 oder die Kontoautorisierung noch nicht abgestimmt ist; korrigieren Sie die
@@ -88,7 +90,7 @@ Pakets auf npmjs.com die Option **Require two-factor authentication and
 disallow tokens**, und löschen Sie jedes npm-Token-Secret, das noch im
 Repository liegt. Der Workflow liest keines mehr.
 
-Referenzen: [npm Trusted Publishers](https://docs.npmjs.com/trusted-publishers/), [npm-Provenance](https://docs.npmjs.com/generating-provenance-statements/) und [npm-Scopes](https://docs.npmjs.com/about-scopes/).
+Referenzen: [npm Trusted Publishers](https://docs.npmjs.com/trusted-publishers/), [npm-Provenienz](https://docs.npmjs.com/generating-provenance-statements/) und [npm-Scopes](https://docs.npmjs.com/about-scopes/).
 
 ## GitHub-seitige Release-Voraussetzungen
 
@@ -126,5 +128,5 @@ Prüfung:
 | Oberfläche | Prüfung |
 |---|---|
 | npmjs.com | `npm view @ahmed-g-gad/apothem version` gibt die veröffentlichte Version zurück |
-| GitHub Release | `gh release view <release-tag> --json assets --jq '.assets[].name'` listet sdist, Wheel, SBOM, cosign-Bundles, Provenance und Plattformarchive auf |
+| GitHub Release | `gh release view <release-tag> --json assets --jq '.assets[].name'` listet sdist, Wheel, SBOM, cosign-Bundles, Provenienz und Plattformarchive auf |
 | Pages | `curl -sSI https://apothem.ahmedgad.com/` gibt `200` auf der benutzerdefinierten Domain zurück |
