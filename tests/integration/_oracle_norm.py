@@ -45,14 +45,21 @@ _ULID_RE = re.compile(r"\b[0-9A-HJKMNP-TV-Z]{26}\b")
 # "python"), e.g. "C:/.../python.exe" or "/usr/bin/python3" — the value an
 # adapter resolves ${PYTHON_BIN} to at install time. A bare command word like
 # "python3" carries no separator, so it is left intact: replacing it would
-# mangle the surrounding JSON string.
-_PYBIN_RE = re.compile(r'"[^"\n]*[/\\][Pp]ython[0-9.]*(?:\.exe)?"')
+# mangle the surrounding JSON string. The basename also covers the builds a
+# contributor may capture with: free-threaded (python3.14t), debug (python3.13d,
+# python_d.exe, python3.14t_d.exe, python3.12-dbg), nogil, pythonw (also
+# pythonw3.14t.exe) and PyPy. Only those suffixes are accepted, so a path such
+# as ".../skills/python-testing" never matches.
+_PYBIN_NAME = (
+    r"(?:[Pp]ython|[Pp]y[Pp]y)w?[0-9.]*(?:t|d|td)?(?:_d|-dbg|-nogil)?(?:\.exe)?"
+)
+_PYBIN_RE = re.compile(r'"[^"\n]*[/\\]' + _PYBIN_NAME + '"')
 # The same path inside a JSON string that is itself carried in JSON (the
 # unified diff of settings.json that ``diff --format json`` prints): its quotes
 # arrive escaped as \" and the pattern above, anchored on a bare quote, misses
 # it, which put the capturing interpreter's own path into the golden. A match
 # cannot cross a string boundary, since every escaped quote holds a bare one.
-_PYBIN_ESCAPED_RE = re.compile(r'\\"[^"\n]*?[/\\][Pp]ython[0-9.]*(?:\.exe)?\\"')
+_PYBIN_ESCAPED_RE = re.compile(r'\\"[^"\n]*?[/\\]' + _PYBIN_NAME + r'\\"')
 
 
 def tokenize_python_bin(text: str) -> str:

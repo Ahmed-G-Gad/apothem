@@ -24,7 +24,7 @@
     {
       "installed": false,
       "name": "cursor",
-      "output_path": ".cursor\\rules\\apothem-rules.mdc"
+      "output_path": ".cursor/rules/apothem-rules.mdc"
     },
     {
       "installed": false,
@@ -34,7 +34,7 @@
     {
       "installed": false,
       "name": "github-copilot",
-      "output_path": ".github\\copilot-instructions.md"
+      "output_path": ".github/copilot-instructions.md"
     },
     {
       "installed": false,
@@ -64,22 +64,22 @@
     {
       "installed": false,
       "name": "windsurf",
-      "output_path": ".devin\\rules\\apothem-rules.md"
+      "output_path": ".devin/rules/apothem-rules.md"
     },
     {
       "installed": false,
       "name": "codebuddy",
-      "output_path": ".codebuddy\\rules\\apothem-rules.md"
+      "output_path": ".codebuddy/rules/apothem-rules.md"
     },
     {
       "installed": false,
       "name": "kiro",
-      "output_path": ".kiro\\steering\\apothem-rules.md"
+      "output_path": ".kiro/steering/apothem-rules.md"
     },
     {
       "installed": false,
       "name": "trae",
-      "output_path": ".trae\\rules\\apothem-rules.md"
+      "output_path": ".trae/rules/apothem-rules.md"
     },
     {
       "installed": false,
@@ -89,8 +89,8 @@
     {
       "installed": false,
       "name": "glm",
-      "output_path": ".apothem\\providers\\glm.toml"
+      "output_path": ".apothem/providers/glm.toml"
     }
   ],
-  "stdout": "[{\"name\": \"antigravity\", \"installed\": false, \"output_path\": \"<HOME>/.gemini/GEMINI.md\"}, {\"name\": \"claude-code\", \"installed\": false, \"output_path\": \"<HOME>/.claude/settings.json\"}, {\"name\": \"codex\", \"installed\": false, \"output_path\": \"<HOME>/.codex/AGENTS.md\"}, {\"name\": \"cursor\", \"installed\": false, \"output_path\": \".cursor\\\\rules\\\\apothem-rules.mdc\"}, {\"name\": \"gemini-cli\", \"installed\": false, \"output_path\": \"GEMINI.md\"}, {\"name\": \"github-copilot\", \"installed\": false, \"output_path\": \".github\\\\copilot-instructions.md\"}, {\"name\": \"hermes\", \"installed\": false, \"output_path\": \"<HOME>/.hermes/config.yaml\"}, {\"name\": \"kimi-code\", \"installed\": false, \"output_path\": \"AGENTS.md\"}, {\"name\": \"open-claw\", \"installed\": false, \"output_path\": \"<HOME>/.openclaw/openclaw.json\"}, {\"name\": \"opencode\", \"installed\": false, \"output_path\": \"<HOME>/.config/opencode/opencode.json\"}, {\"name\": \"qwen-code\", \"installed\": false, \"output_path\": \"<HOME>/.qwen/settings.json\"}, {\"name\": \"windsurf\", \"installed\": false, \"output_path\": \".devin\\\\rules\\\\apothem-rules.md\"}, {\"name\": \"codebuddy\", \"installed\": false, \"output_path\": \".codebuddy\\\\rules\\\\apothem-rules.md\"}, {\"name\": \"kiro\", \"installed\": false, \"output_path\": \".kiro\\\\steering\\\\apothem-rules.md\"}, {\"name\": \"trae\", \"installed\": false, \"output_path\": \".trae\\\\rules\\\\apothem-rules.md\"}, {\"name\": \"zed\", \"installed\": false, \"output_path\": \".rules\"}, {\"name\": \"glm\", \"installed\": false, \"output_path\": \".apothem\\\\providers\\\\glm.toml\"}]\n"
+  "stdout": "[{\"name\": \"antigravity\", \"installed\": false, \"output_path\": \"<HOME>/.gemini/GEMINI.md\"}, {\"name\": \"claude-code\", \"installed\": false, \"output_path\": \"<HOME>/.claude/settings.json\"}, {\"name\": \"codex\", \"installed\": false, \"output_path\": \"<HOME>/.codex/AGENTS.md\"}, {\"name\": \"cursor\", \"installed\": false, \"output_path\": \".cursor/rules/apothem-rules.mdc\"}, {\"name\": \"gemini-cli\", \"installed\": false, \"output_path\": \"GEMINI.md\"}, {\"name\": \"github-copilot\", \"installed\": false, \"output_path\": \".github/copilot-instructions.md\"}, {\"name\": \"hermes\", \"installed\": false, \"output_path\": \"<HOME>/.hermes/config.yaml\"}, {\"name\": \"kimi-code\", \"installed\": false, \"output_path\": \"AGENTS.md\"}, {\"name\": \"open-claw\", \"installed\": false, \"output_path\": \"<HOME>/.openclaw/openclaw.json\"}, {\"name\": \"opencode\", \"installed\": false, \"output_path\": \"<HOME>/.config/opencode/opencode.json\"}, {\"name\": \"qwen-code\", \"installed\": false, \"output_path\": \"<HOME>/.qwen/settings.json\"}, {\"name\": \"windsurf\", \"installed\": false, \"output_path\": \".devin/rules/apothem-rules.md\"}, {\"name\": \"codebuddy\", \"installed\": false, \"output_path\": \".codebuddy/rules/apothem-rules.md\"}, {\"name\": \"kiro\", \"installed\": false, \"output_path\": \".kiro/steering/apothem-rules.md\"}, {\"name\": \"trae\", \"installed\": false, \"output_path\": \".trae/rules/apothem-rules.md\"}, {\"name\": \"zed\", \"installed\": false, \"output_path\": \".rules\"}, {\"name\": \"glm\", \"installed\": false, \"output_path\": \".apothem/providers/glm.toml\"}]\n"
 }

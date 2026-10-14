@@ -201,6 +201,16 @@ included, drifts from its output. Steps 2 and 3 are run by `node` and the dev sc
 respectively. The behavior-diff and docs-drift gates run in CI and will block a
 PR whose generated surfaces drifted from the source cohorts.
 
+Step 3 writes the same bytes on Windows and Linux, so a regeneration
+changes only the goldens your edit affects. It stops without writing anything
+when the capture would depend on your machine: an interpreter started with
+`-OO` or `-v` (or `PYTHONOPTIMIZE=2` / `PYTHONVERBOSE`), a Click or Rich version
+outside the `pyproject.toml` requirement, or entries git ignores in the
+`src/apothem/` directories the installer copies (a `.DS_Store`, an editor
+backup, a directory left holding only `__pycache__` after a branch switch). It
+names each problem; fix it and run the step again. When git is not on `PATH`,
+or the tree has no `.git`, it skips the ignored-entry check with a warning.
+
 ## Issue Filing
 
 Before opening a new issue, search the existing issues — including closed ones — to confirm the topic is not already tracked. Templates live under [`.github/ISSUE_TEMPLATE/`](./.github/ISSUE_TEMPLATE/) and cover four classes:

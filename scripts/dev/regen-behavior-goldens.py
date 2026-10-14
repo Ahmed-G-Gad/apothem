@@ -13,13 +13,30 @@ produced by two deterministic, HOME-isolated oracles:
 - ``_cli_oracle.capture`` — every CLI matrix invocation (self-clears + rewrites
   ``cli/``).
 
-Both oracles normalize machine-specific paths (``_normalize_text`` /
-``_path_variants``) and write LF line-endings, and the comparison layer
-(``_behavior_canon``) collapses the remaining platform-divergent dimensions
-(Rich heavy-vs-light box-drawing, path-length-driven column widths, backslash
-vs forward-slash, array ordering). Together these make the corpus portable: a
-capture taken on ANY platform — Windows included — compares equal on every
-platform. This script is therefore safe to run from a Windows checkout.
+Both oracles emit platform-independent bytes: they tokenize machine-specific
+paths (``_normalize_text`` / ``_path_variants``), rewrite Windows separators in
+tokenized paths to forward slashes, and write LF line-endings. The install
+oracle also stores ledger targets in code-point path order. The CLI oracle also
+tokenizes the JSON- and markup-escaped spellings of those paths, spells the
+relative adapter paths ``harnesses list`` prints with forward slashes, pins
+Rich's rendering (no legacy-Windows box substitution, no color, a fixed width,
+table cells measured after tokenization), skips Click's probe of the host's
+bash, and ignores the operator's ``CODEX_HOME``. A capture taken on Windows or
+Linux is therefore byte-identical, and this script is safe to run from a
+Windows checkout. The comparison layer (``_behavior_canon``) additionally
+collapses box-drawing, padding, separators, and array order, so the tests also
+accept a corpus captured before those pins existed.
+
+Before it captures anything, the script stops when the result would depend on
+the machine rather than the source: an interpreter started with ``-OO`` or
+``-v``, a Click or Rich version outside the ``pyproject.toml`` requirement, or
+entries git ignores inside the source directories the installer copies (a
+Finder ``.DS_Store``, an editor backup, a directory left holding only
+``__pycache__`` after a branch switch), which an install would copy and the
+ledger would record. It captures into a staging directory inside the
+destination and swaps each subtree in by rename, restoring the committed
+subtrees if any step fails, so a failed run leaves the committed corpus as it
+was.
 
 Workflow:
 
@@ -28,11 +45,8 @@ Workflow:
                      tests/integration/test_cli_behavior_diff.py             # verify
     git diff --stat tests/fixtures/behavior-diff/          # review churn
 
-A non-empty ``git diff`` after regeneration means the committed corpus was
-captured on a different platform than this run; the canonicalized comparison
-still passes, but the stored bytes flip to this platform's form. Prefer
-regenerating on the platform that owns the committed corpus, or accept the
-one-time churn — the tests stay green either way.
+A non-empty ``git diff`` after regeneration is a real change in captured
+behavior, on any platform. Review it as part of the change-set that caused it.
 
 The ``--dest DIR`` flag writes to an alternate directory instead of the
 committed corpus, so a capture can be diffed without touching the working tree.
@@ -41,14 +55,32 @@ committed corpus, so a capture can be diffed without touching the working tree.
 from __future__ import annotations
 
 import argparse
+import importlib.metadata
 import importlib.util
+import os
+import re
+import shutil
+import subprocess
 import sys
-from pathlib import Path
+import tempfile
+from collections.abc import Callable
+from pathlib import Path, PurePosixPath
 from types import ModuleType
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 INTEGRATION = REPO_ROOT / "tests" / "integration"
 GOLDEN_ROOT = REPO_ROOT / "tests" / "fixtures" / "behavior-diff"
+SOURCE_ROOT = PurePosixPath("src/apothem")
+
+# The libraries whose output the CLI goldens embed: Click writes the help text
+# and the completion scripts, Rich draws the tables and decides on color.
+_RENDERING_LIBRARIES = ("click", "rich")
+
+# What the installer already drops: the propagation manifest's exclude list
+# (src/apothem/lib/propagation-manifest.yaml) less README.md and AGENTS.md,
+# which are tracked. Their presence under src/apothem cannot change a capture.
+_INSTALLER_SKIPPED_PARTS = frozenset({"__pycache__", ".mypy_cache", ".pytest_cache"})
+_INSTALLER_SKIPPED_SUFFIX = ".pyc"
 
 
 def _load_oracle(module_name: str) -> ModuleType:
@@ -78,18 +110,226 @@ def _load_oracle(module_name: str) -> ModuleType:
     return module
 
 
+def interpreter_problems(*, optimize: int, verbose: int) -> list[str]:
+    """Name each interpreter setting that would change the captured bytes.
+
+    ``-OO`` (``PYTHONOPTIMIZE=2``) strips the docstrings Click builds every
+    ``--help`` text from. ``-v`` (``PYTHONVERBOSE``) writes import traces, with
+    memory addresses, into the captured CLI output. ``-O`` changes nothing.
+    """
+    problems: list[str] = []
+    if optimize >= 2:
+        problems.append(
+            "the interpreter runs with -OO or PYTHONOPTIMIZE=2, which strips "
+            "the docstrings Click builds --help text from"
+        )
+    if verbose:
+        problems.append(
+            "the interpreter runs with -v or PYTHONVERBOSE, which writes import "
+            "traces into the CLI captures"
+        )
+    return problems
+
+
+def _version_key(version: str) -> tuple[int, ...]:
+    return tuple(int(part) for part in re.findall(r"\d+", version)[:3])
+
+
+def library_problems(
+    pyproject_text: str, version_of: Callable[[str], str]
+) -> list[str]:
+    """Name each rendering library whose installed version misses pyproject.toml.
+
+    Click's completion templates and Rich's table titles and color handling
+    change between releases (Click 8.4.1 writes a different fish script, Rich
+    before 14.3 pads table titles, Rich 13 ignores ``TTY_COMPATIBLE``), and a
+    ``PYTHONPATH=src`` run uses whatever the host interpreter has installed.
+    The requirement is read from the ``dependencies`` strings; ``==`` must match
+    exactly and ``>=`` is compared on the numeric release parts.
+    """
+    problems: list[str] = []
+    for name in _RENDERING_LIBRARIES:
+        match = re.search(rf'"{name}\s*(==|>=)\s*([0-9][^"\s]*)"', pyproject_text)
+        if match is None:
+            continue
+        operator, required = match.groups()
+        wanted = f"{name}{operator}{required}"
+        try:
+            found = version_of(name)
+        except importlib.metadata.PackageNotFoundError:
+            problems.append(
+                f"{name} is not installed; pyproject.toml requires {wanted}"
+            )
+            continue
+        if operator == "==":
+            satisfied = found == required
+        else:
+            satisfied = _version_key(found) >= _version_key(required)
+        if not satisfied:
+            problems.append(
+                f"{name} {found} is installed; pyproject.toml requires {wanted}"
+            )
+    return problems
+
+
+def _installer_skips(path: PurePosixPath) -> bool:
+    return path.suffix == _INSTALLER_SKIPPED_SUFFIX or any(
+        part in _INSTALLER_SKIPPED_PARTS for part in path.parts
+    )
+
+
+class SourceCheckError(RuntimeError):
+    """git is present but could not list the source tree."""
+
+
+def installed_source_roots(repo_root: Path) -> list[PurePosixPath]:
+    """Return the repository-relative directories the install manifest copies from.
+
+    Every harness's install entries name their sources relative to
+    ``src/apothem``; the directory sources (agents, commands, hooks, rules,
+    skills, templates and the like) are the trees an install walks, so an
+    entry outside them cannot reach a capture.
+    """
+    from apothem.lib.propagation import load_manifest
+
+    roots = {
+        SOURCE_ROOT / entry.source.rstrip("/")
+        for rules in load_manifest().values()
+        for entry in rules.install
+        if (repo_root / SOURCE_ROOT / entry.source).is_dir()
+    }
+    return sorted(roots)
+
+
+def stray_source_paths(repo_root: Path, roots: list[PurePosixPath]) -> list[str] | None:
+    """Return the ignored entries in *roots* that an install would copy.
+
+    The installer copies every file a source directory holds, minus the
+    manifest's exclude list, without consulting git. A file git ignores (a
+    Finder ``.DS_Store``, an editor ``~`` or ``.swp`` file, a mergetool
+    ``.orig``) and a directory holding no file git would keep (left with only
+    ``__pycache__`` after a branch switch, or emptied by a plain ``rm``)
+    therefore reach the ledger and envelope goldens although ``git status``
+    shows nothing. Returns the repository-relative POSIX paths, directories
+    with a trailing ``/``, sorted. Returns ``None`` when git is not on PATH or
+    *repo_root* has no ``.git``; raises :class:`SourceCheckError` with git's
+    message when git fails on the work tree.
+    """
+    git = shutil.which("git")
+    if git is None or not (repo_root / ".git").exists():
+        return None
+    pathspecs = [str(root) for root in roots]
+
+    def ls_files(*options: str) -> list[str]:
+        result = subprocess.run(  # noqa: S603 — trusted invocation: literal argv against a `shutil.which`-resolved git, no shell
+            [git, "ls-files", "-z", *options, "--", *pathspecs],
+            cwd=repo_root,
+            capture_output=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            lines = os.fsdecode(result.stderr).strip().splitlines()
+            raise SourceCheckError(
+                lines[0] if lines else f"git ls-files exited {result.returncode}"
+            )
+        return [os.fsdecode(entry) for entry in result.stdout.split(b"\0") if entry]
+
+    ignored = ls_files("--others", "--ignored", "--exclude-standard")
+    # A tracked file deleted from the working tree is still in the index; it
+    # keeps no directory on disk alive, so only files that exist count.
+    kept = [
+        path
+        for path in ls_files("--cached", "--others", "--exclude-standard")
+        if os.path.lexists(repo_root / path)
+    ]
+    stray = {path for path in ignored if not _installer_skips(PurePosixPath(path))}
+    kept_dirs = {
+        parent.as_posix() for path in kept for parent in PurePosixPath(path).parents
+    }
+    for root in roots:
+        for dirpath, dirnames, _filenames in os.walk(repo_root / root):
+            relative = Path(dirpath).relative_to(repo_root).as_posix()
+            if relative not in kept_dirs:
+                stray.add(f"{relative}/")
+                dirnames.clear()
+                continue
+            dirnames[:] = [
+                name for name in dirnames if name not in _INSTALLER_SKIPPED_PARTS
+            ]
+    return sorted(stray)
+
+
+_SUBTREES = ("install_driver", "cli")
+
+
+def capture_staged(
+    dest: Path, install_oracle: ModuleType, cli_oracle: ModuleType
+) -> int:
+    """Capture both corpora into a staging directory and swap them in by rename.
+
+    Each oracle clears its output directory before it captures, so capturing
+    straight into the committed corpus left it deleted whenever a capture
+    raised. The staging directory sits inside *dest* (resolved), so every
+    swap is a rename on one file system even when *dest* is a symlink, a
+    junction or a mount point. Each committed subtree is renamed aside before
+    its replacement is renamed in; any failure, an interrupt included, renames
+    the committed subtrees back before the error propagates. The staging
+    directory is removed afterwards, unless that rollback itself failed, in
+    which case it is kept and named so nothing is lost. Returns the number of
+    CLI captures.
+    """
+    dest.mkdir(parents=True, exist_ok=True)
+    staging = Path(tempfile.mkdtemp(prefix=".r", dir=dest.resolve()))
+    keep_staging = False
+    moved_aside: list[str] = []
+    swapped_in: list[str] = []
+    try:
+        install_oracle.capture_full(staging / "install_driver")
+        cli_count = int(cli_oracle.capture(staging / "cli"))
+        for subtree in _SUBTREES:
+            target = dest / subtree
+            if target.exists():
+                target.replace(staging / f"committed-{subtree}")
+                moved_aside.append(subtree)
+            (staging / subtree).replace(target)
+            swapped_in.append(subtree)
+    except BaseException:
+        try:
+            for subtree in reversed(swapped_in):
+                (dest / subtree).replace(staging / subtree)
+            for subtree in reversed(moved_aside):
+                (staging / f"committed-{subtree}").replace(dest / subtree)
+        except OSError:
+            keep_staging = True
+            print(
+                f"[FAIL] could not restore the corpus; the committed subtrees "
+                f"are in {staging} as committed-<name>",
+                file=sys.stderr,
+            )
+        raise
+    finally:
+        if not keep_staging:
+            shutil.rmtree(staging, ignore_errors=True)
+            if staging.exists():
+                print(f"[WARN] could not remove {staging}", file=sys.stderr)
+    return cli_count
+
+
 def main() -> int:
     """Recapture both golden corpora from the oracles; return the exit code.
 
     Pre-conditions: the ``apothem`` package must be importable — either the
     dedicated virtualenv install or a ``PYTHONPATH=src`` invocation satisfies
     this; the function inserts the checkout's ``src`` onto ``sys.path`` when it
-    is absent.
+    is absent. The interpreter, library, and source-tree checks above must
+    pass; otherwise the function names each problem and returns ``1`` without
+    touching the destination.
 
-    Post-conditions: both oracles self-clear and rewrite their subtree, so the
-    corpus reflects the current source exactly rather than accumulating stale
-    entries. ``--dest`` redirects the write to an alternate root, leaving the
-    committed corpus untouched for a diff-only comparison. Returns ``0``.
+    Post-conditions: both subtrees are rewritten from the current source, so
+    the corpus reflects it exactly rather than accumulating stale entries; a
+    failed capture or swap leaves the destination unchanged. ``--dest`` redirects the
+    write to an alternate root, leaving the committed corpus untouched for a
+    diff-only comparison. Returns ``0``.
     """
     parser = argparse.ArgumentParser(
         description="Regenerate the behavior-diff golden corpus (Windows-capable)."
@@ -107,17 +347,51 @@ def main() -> int:
     if str(REPO_ROOT / "src") not in sys.path:
         sys.path.insert(0, str(REPO_ROOT / "src"))
 
+    problems = interpreter_problems(
+        optimize=sys.flags.optimize, verbose=sys.flags.verbose
+    )
+    problems += library_problems(
+        (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"),
+        importlib.metadata.version,
+    )
+    try:
+        stray = stray_source_paths(REPO_ROOT, installed_source_roots(REPO_ROOT))
+    except SourceCheckError as error:
+        problems.append(
+            f"git could not list the source tree ({error}), so the check for "
+            "ignored entries in the installed source directories could not run"
+        )
+    else:
+        if stray is None:
+            print(
+                "[WARN] git or the .git directory is missing; skipped the check "
+                "for ignored entries in the installed source directories",
+                file=sys.stderr,
+            )
+        elif stray:
+            listed = "\n".join(f"      {path}" for path in stray)
+            problems.append(
+                "git ignores these entries, but they sit in source directories "
+                f"the installer copies; delete or move them:\n{listed}"
+            )
+    if problems:
+        print(
+            "[FAIL] the capture would depend on this machine, not on the source:",
+            file=sys.stderr,
+        )
+        for problem in problems:
+            print(f"  - {problem}", file=sys.stderr)
+        return 1
+
     install_oracle = _load_oracle("_install_driver_oracle")
     cli_oracle = _load_oracle("_cli_oracle")
 
     dest: Path = args.dest
-    install_oracle.capture_full(dest / "install_driver")
+    cli_count = capture_staged(dest, install_oracle, cli_oracle)
     print(
         f"[OK] install_driver corpus -> {dest / 'install_driver'} "
         f"({len(install_oracle.ALL_ADAPTERS)} adapters)"
     )
-
-    cli_count = cli_oracle.capture(dest / "cli")
     print(f"[OK] cli corpus -> {dest / 'cli'} ({cli_count} captures)")
 
     print(
