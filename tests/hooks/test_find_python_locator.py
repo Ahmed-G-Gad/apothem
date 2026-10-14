@@ -77,12 +77,16 @@ def test_empty_segment_skipped_but_explicit_dot_honored(tmp_path: Path) -> None:
     # establishes that the host shell reports the cwd file as executable under
     # ``[ -x ]`` — the precondition the empty-segment contrast depends on.
     baseline = _list_candidates(".", cwd=tmp_path)
+    # Check the exit code before the skip decision: a locator that cannot be
+    # sourced must fail here, not skip with the [ -x ] reason below.
+    assert baseline.returncode == 0, (
+        f"the locator did not run cleanly (stderr={baseline.stderr!r})"
+    )
     if "python3" not in baseline.stdout:
         pytest.skip(
             "host shell does not report the cwd file as executable under [ -x ]; "
             "the empty-segment contrast is untestable here"
         )
-    assert baseline.returncode == 0
 
     # The fix: a doubled (empty) PATH segment is SKIPPED, not resolved to cwd,
     # so the same cwd interpreter is not discovered through it. The two probe
