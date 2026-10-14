@@ -2,7 +2,7 @@
 title: "Portão de conformidade"
 description: "Portão de conformidade do Apothem — a fração mecânica do portão de pré-emissão de quinze barras (M1-M15) pelo qual todo artefato emitido precisa passar."
 machineTranslated: true
-sourceHash: "0c45cd7185de5190"
+sourceHash: "56cca9f8f53e7f52"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,8 +11,8 @@ sourceHash: "0c45cd7185de5190"
 | Barra | ID | Mandato | Classe de verificação | Falha → ação |
 |---|---|---|---|---|
 | 1 | M1 | Agnosticismo quanto ao projeto anfitrião | Raciocinada | Revisar para seguir as convenções do anfitrião |
-| 2 | M2 | Disciplina editorial (registro de divulgação) | Mecânica | Adicionar marcadores de divulgação |
-| 3 | M3 | Dez dimensões de qualidade | Raciocinada | Revisar nas dimensões que falham |
+| 2 | M2 | Disciplina editorial (registro de divulgação) | Raciocinada | Adicionar marcadores de divulgação |
+| 3 | M3 | Dez dimensões de qualidade | Mecânica + raciocinada | Revisar nas dimensões que falham |
 | 4 | M4 | Autoaplicação (registro assinado do portão presente) | Mecânica | Registrar o bloco de registro assinado |
 | 5 | M5 | Princípio de autoridade (nenhuma identidade / endpoint / segredo fabricados) | Mecânica | Encaminhar para consulta |
 | 6 | M6 | Incorporação de expertise (lacunas expostas) | Raciocinada | Expor as lacunas; citar os refinamentos |
@@ -21,23 +21,23 @@ sourceHash: "0c45cd7185de5190"
 | 9 | M9 | Alavancagem visual (temas estruturais trazem diagramas) | Raciocinada | Criar / atualizar o diagrama |
 | 10 | M10 | Vinculação bidirecional (ponteiros de retorno recíprocos fechados) | Mecânica | Fechar as meias-arestas |
 | 11 | M11 | Sprints ágeis (Objetivo / Backlog / DoR / DoD / Revisão / Retrospectiva) | Raciocinada | Reestruturar como sprints |
-| 12 | M12 | Relatórios de fase e disposição canônica | Mecânica | Redigir o consolidado; realocar para a disposição canônica |
+| 12 | M12 | Relatórios de fase e disposição canônica | Mecânica + raciocinada | Redigir o consolidado; realocar para a disposição canônica |
 | 13 | M13 | Ofício de código (lint / formatação / verificação de tipos; número mágico; bare-except) | Mecânica | Aplicar as regras de ofício de código de cada linguagem |
 | 14 | M14 | Sistemicidade (declara upstream / downstream / pares / aplicadores) | Raciocinada | Declarar; indexar nos registros |
-| 15 | M15 | Pronto para produção (testes + documentação + CHANGELOG + commit conforme + CI em verde + estabilidade semver) | Mecânica | Adicionar as superfícies ausentes |
+| 15 | M15 | Pronto para produção (testes + documentação + CHANGELOG + commit conforme + CI em verde + estabilidade semver) | Mecânica + raciocinada | Adicionar as superfícies ausentes |
 
 ## Escala de severidade
 
-O portão não tem a escala Crítica, Importante ou Consultiva e não tem limite de dois achados. Sem `--strict` (ou `APOTHEM_CONFORMITY_STRICT=1`), o portão relata os achados e sai com `0`. Com `--strict`, uma verificação de arquivo único ou de hook sai com `2` quando qualquer comparador falha, e uma execução sobre o corpus (`--all-perwrite`) sai com `2` quando um comparador bloqueante falha; comparadores consultivos são apenas relatados. O hook de Write/Edit instalado não passa `--strict`, então ele relata os achados e a gravação prossegue, a menos que `APOTHEM_CONFORMITY_STRICT=1` esteja definido no ambiente do hook.
+O portão não tem a escala Crítica, Importante ou Consultiva e não tem limite de dois achados. Sem `--strict` (ou `APOTHEM_CONFORMITY_STRICT=1`), o portão relata os achados e sai com `0`. Com `--strict`, uma verificação de arquivo único ou de hook sai com `2` quando qualquer matcher falha, e uma execução sobre o corpus (`--all-perwrite`) sai com `2` quando um matcher bloqueante falha; os matchers consultivos são apenas relatados. O hook de Write/Edit instalado não passa `--strict`, então ele relata os achados e a gravação prossegue, a menos que `APOTHEM_CONFORMITY_STRICT=1` esteja definido no ambiente do hook.
 
 ## Validadores
 
 A fração mecânica fica em [`src/apothem/conformity/`](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/conformity), orquestrada por [`src/apothem/conformity/gate.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/gate.py).
-O portão executa cada validador de uma de três maneiras:
+Cada validador é executado de uma de três maneiras:
 
 - **per-write**: em cada gravação pendente (`--hook`), ou em cada arquivo rastreado com `--all-perwrite`.
 - **standalone**: no repositório inteiro com `--all`, ou um de cada vez com `--check <name>`.
-- **change-set**: contra um diff preparado (staged), fora das varreduras do portão.
+- **change-set**: contra um diff preparado (staged), executado diretamente como `python -m apothem.conformity.semver_stability_grep --staged`, e não por meio do portão.
 
 A tabela abaixo é gerada a partir dos módulos dos validadores.
 

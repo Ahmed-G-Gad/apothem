@@ -1,8 +1,8 @@
 ---
 title: "Paleta de marca"
-description: "Cores de marca centrais do Apothem e as dezessete cores de marca das ferramentas. A única fonte da verdade são os tokens de design canônicos em assets/design-tokens.css; o site espelha esses valores."
+description: "Cores de marca centrais do Apothem e as dezessete cores de marca dos harnesses. Os tokens de design canônicos em assets/design-tokens.css são a única fonte da verdade para as cores centrais; o site espelha esses valores."
 machineTranslated: true
-sourceHash: "d2f51368ea153e97"
+sourceHash: "64e22fc5ac4c9da8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -24,24 +24,14 @@ valor abaixo remonta a um passo de rampa canônico.
 | Fundo do corpo | `--apothem-surface` | slate-50 `#f8fafc` | slate-900 `#0f172a` | Fundo padrão. |
 | Fundo de navegação | `--apothem-surface-sunken` | slate-100 `#eef2f7` | slate-950 `#080c15` | Faixas de cabeçalho e navegação. |
 
-## Paleta de ferramentas
+## Paleta dos harnesses
 
-As cores das ferramentas vivem em [Cores das ferramentas](/docs/brand/harness-colors). O
-mapeamento geométrico sobre o hexágono da marca Apothem — seu nó central e seu nó
-terminal — está integrado à seção de marca. A fonte da verdade CSS em
-[`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
-conecta cada token à sua variável CSS.
+As cores dos harnesses estão em [Cores dos harnesses](/docs/brand/harness-colors). O mapeamento geométrico sobre o hexágono da marca Apothem — seu nó central e seu nó terminal — está integrado à seção de marca. As cores dos harnesses são definidas nessa página, não nos tokens de design nem em [`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css), que trazem apenas a paleta central.
 
 ## Uso na documentação
 
-A paleta é conectada por meio da folha de estilos global `site/app/global.css`,
-importada pelo layout raiz. As variantes de modo claro e escuro alternam com o estado da
-classe `.dark` do tema.
+A paleta é conectada por meio da folha de estilos global `site/app/global.css`, importada pelo layout raiz. As variantes de modo claro e escuro alternam com o estado da classe `.dark` do tema.
 
 ## Atualizações
 
-A paleta é atualizada apenas quando uma cor central muda (slate / emerald) ou uma
-ferramenta ratifica uma mudança de cor de marca a montante. As mudanças por ferramenta se
-propagam atomicamente por `site/app/global.css`,
-[Cores das ferramentas](/docs/brand/harness-colors) e cada mestre SVG afetado sob
-`assets/src/`.
+A paleta é atualizada apenas quando uma cor central muda (slate / emerald) ou um harness ratifica uma mudança de cor de marca a montante. As mudanças por harness se propagam atomicamente por [Cores dos harnesses](/docs/brand/harness-colors) e por cada mestre SVG afetado sob `assets/src/`.
