@@ -2,7 +2,7 @@
 title: "Apothem versus a configuração manual do Hermes"
 description: "Manter à mão a configuração do Hermes versus gerenciá-la por meio do perfil compartilhado do Apothem."
 machineTranslated: true
-sourceHash: "8cbfaa7f64491754"
+sourceHash: "d6119faf3efef70e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ permanecem como material de suporte do Apothem.
 
 ## Comparação de esforço
 
-| Tarefa | Configuração manual bruta | Gerenciada pelo Apothem |
+| Tarefa | Configuração manual | Gerenciada pelo Apothem |
 | ---- | --------------- | --------------- |
 | Redigir skills reutilizáveis | Editar à mão a configuração e os diretórios de skills | Escrever uma vez no corpus compartilhado |
 | Manter os cohorts alinhados com outros harnesses | Manual, por ferramenta | Automático no `apothem update` |
@@ -30,9 +30,11 @@ permanecem como material de suporte do Apothem.
 ## O que o Apothem gerencia
 
 O adaptador do Hermes grava `config.yaml`, encapsula os comandos de barra do
-Apothem como skills, copia as skills do Apothem para o diretório de suporte
-referenciado e mantém as regras, os templates, os agentes e o material de hooks
-na subárvore de suporte do Apothem.
+Apothem como skills, copia as skills do Apothem para o diretório de suporte e
+mantém as regras, os templates, os agentes e o material de hooks na subárvore de
+suporte do Apothem. O Hermes carrega essas skills somente depois que você
+adiciona `~/.hermes/.apothem/support/skills` a `skills.external_dirs` em
+`config.yaml`.
 
 ## Caminho de migração
 
