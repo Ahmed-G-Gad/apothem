@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Adaptateur d'environnement Apothem pour Hermes (préversion)."
 machineTranslated: true
-sourceHash: "71abe825552bafc8"
+sourceHash: "3f8418d01d08fe73"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -52,10 +52,11 @@ L'adaptateur écrit l'inventaire MCP du profil sous la clé de premier niveau
 `mcp_servers`, où Hermes lit les serveurs MCP. Les publications antérieures
 d'Apothem l'écrivaient sous `auxiliary.mcp`, que Hermes lit comme le modèle
 auxiliaire chargé de répartir les appels d'outils MCP ; `apothem update` comme
-`apothem uninstall` retirent ce bloc tant qu'il contient exactement ce qu'une
-telle publication a écrit (voir [Désinstallation](#désinstallation)).
-(Comportement de Hermes d'après les pages de son guide utilisateur consacrées
-aux [skills](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)
+`apothem uninstall` retirent ce bloc tant qu'il correspond encore à ce qu'une
+telle publication écrirait à partir de votre profil partagé (voir
+[Désinstallation](#désinstallation)). (Comportement de Hermes d'après les pages
+de son guide utilisateur consacrées aux
+[skills](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)
 et au [MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md),
 consultées le 2026-10-02.)
 
@@ -68,7 +69,10 @@ apothem verify --harness hermes
 La commande verify confirme que :
 
 1. La configuration native existe au chemin attendu.
-2. Chaque cible gérée existe ; les fichiers gérés ne sont pas vides, et les configurations JSON ou YAML s'analysent correctement. Ajoutez `--profile PATH` pour vérifier en plus que les fichiers installés correspondent à ce profil.
+2. Chaque cible gérée existe ; les fichiers gérés ne sont pas vides, et les
+   configurations JSON ou YAML s'analysent correctement. Ajoutez
+   `--profile PATH` pour vérifier en plus que les fichiers installés
+   correspondent à ce profil.
 3. La routine de vérification propre à l'adaptateur signale un succès.
 
 ## Mise à jour
@@ -95,13 +99,14 @@ partagé et le moteur Apothem ne sont pas affectés.
 
 Pour une installation effectuée par une publication antérieure, qui écrivait
 les serveurs du profil sous `auxiliary.mcp`, ce bloc est également retiré
-lorsqu'il contient toujours exactement ce que cette publication a écrit, tel
-que rendu à partir du profil partagé situé à `~/.config/apothem/profile.yaml`.
-C'est la même règle que celle qu'applique `apothem update` ; désinstaller sans
-mettre à jour au préalable ne laisse donc aucun bloc obsolète. Un bloc que vous
-avez modifié, ou un bloc pour lequel aucun profil partagé lisible ne permet la
-comparaison, reste en place, et le reste de vos paramètres `auxiliary` est
-toujours conservé.
+lorsqu'il correspond encore à ce que cette publication écrirait à partir de
+votre profil partagé actuel, situé à `~/.config/apothem/profile.yaml`. C'est la
+même règle que celle qu'applique `apothem update` ; désinstaller sans mettre à
+jour au préalable ne laisse donc aucun bloc obsolète tant que les serveurs MCP
+du profil restent inchangés. Un bloc que vous avez modifié, un bloc qui ne
+correspond plus aux serveurs MCP de votre profil actuel, ou un bloc pour lequel
+aucun profil partagé lisible ne permet la comparaison, reste en place, et le
+reste de vos paramètres `auxiliary` est toujours conservé.
 
 ## Portail de conformité
 

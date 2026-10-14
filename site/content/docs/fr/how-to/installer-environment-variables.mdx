@@ -2,7 +2,7 @@
 title: "Variables d'environnement de l'installateur"
 description: "Piloter l'installateur par script (destination, source, environnement, profil, vérification) avec des variables d'environnement."
 machineTranslated: true
-sourceHash: "b69fe1c566ac13fb"
+sourceHash: "ac08049d8506b135"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,7 +11,10 @@ définissant des variables d'environnement avant de l'exécuter.
 
 ## Prérequis
 
-- Un shell POSIX (`bash`) ou PowerShell 5.1+.
+- Un shell POSIX (`bash`) ou PowerShell 5.1+. Les exemples PowerShell
+  ci-dessous exécutent `pwsh` (PowerShell 7+). Sous Windows PowerShell 5.1,
+  exécutez plutôt
+  `powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1`.
 - Les variables sont lues une seule fois, au début de l'installateur ;
   définissez-les donc dans la même commande (ou exportez-les d'abord), puis
   exécutez l'installateur.
@@ -24,7 +27,7 @@ définissant des variables d'environnement avant de l'exécuter.
 | `APOTHEM_REPO` | Dépôt Git distant à cloner | `https://github.com/ahmed-g-gad/apothem` |
 | `APOTHEM_REF` | Ref Git à extraire ; non définie, elle résout la dernière étiquette signée `vMAJOR.MINOR.PATCH`, une valeur d'étiquette l'épingle, `main` sélectionne la branche mouvante. Une ref qui n'est pas une étiquette, comme `main`, interrompt l'opération sauf si `APOTHEM_ALLOW_UNVERIFIED=1`. | non définie (dernière étiquette signée) |
 | `APOTHEM_ALLOW_UNVERIFIED` | Lorsqu'elle vaut `1`, rétrograde un échec de vérification de la signature de l'étiquette d'un arrêt fatal à un avertissement | `0` (vérification, échec fermé) |
-| `APOTHEM_VERIFY` | `signature` vérifie la signature GPG de l'étiquette de publication ; `checksum` installe l'archive de plateforme de la publication après avoir contrôlé son SHA-256 par rapport au `SHA256SUMS` de la publication (intégrité, et non preuve de l'identité de son auteur) | `signature` |
+| `APOTHEM_VERIFY` | `signature` vérifie la signature GPG de l'étiquette de publication ; `checksum` installe l'archive de plateforme de la publication après avoir contrôlé son SHA-256 par rapport au `SHA256SUMS` de la publication (intégrité, et non preuve de l'identité de son éditeur) | `signature` |
 | `APOTHEM_RELEASE_BASE` | Base de téléchargement pour le mode checksum | `<APOTHEM_REPO>/releases/download` |
 | `APOTHEM_SOURCE` | Arborescence source locale explicite à utiliser au lieu de cloner | non définie (clonage) |
 | `APOTHEM_HARNESS` | Environnement à installer | `claude-code` |
@@ -83,7 +86,9 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
    APOTHEM_HARNESS=cursor bash install.sh
    ```
 
-2. Épinglez la destination d'installation et sélectionnez la branche mouvante `main`. Une branche n'est pas une étiquette signée : l'installateur a donc aussi besoin de `APOTHEM_ALLOW_UNVERIFIED=1` :
+2. Épingler la destination d'installation et sélectionner la branche mouvante
+   `main`. Une branche n'est pas une étiquette signée : l'installateur a donc
+   aussi besoin de `APOTHEM_ALLOW_UNVERIFIED=1` :
 
    ```bash
    APOTHEM_REF=main APOTHEM_ALLOW_UNVERIFIED=1 APOTHEM_HOME=/opt/apothem bash install.sh
@@ -142,6 +147,6 @@ rien.
 ## Voir aussi
 
 - [Installation](/docs/install) couvre l'installation réseau en une seule
-  commande.
+  étape.
 - [Ajouter un environnement](/docs/how-to/adding-a-harness) couvre l'ajout
   d'environnements via la CLI après la première installation.
