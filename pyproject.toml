@@ -284,6 +284,11 @@ max-complexity = 20
 # covers test-side `git` invocations resolved via PATH (the no-global-
 # plans-grep self-tests use `git init` / `git config` / `git add` /
 # `git commit` against ephemeral tmp_path repos).
+# run_corpus_gate.py imports the package after it puts src/ on sys.path, so the
+# late import (E402) and its unsorted position (I001) are intended. Listing the
+# codes here instead of in an inline noqa keeps RUF100 quiet on every ruff
+# version: 0.17 no longer reports I001 on that line, and earlier versions do.
+"scripts/dev/run_corpus_gate.py" = ["E402", "I001"]
 "tests/**/*.py" = ["S101", "S603", "S607", "ANN001", "ANN002", "ANN201", "ANN202", "N802"]
 # Conformity fixtures intentionally exhibit the patterns the
 # corresponding mechanical greps detect (bare-except, hard-coded

@@ -317,7 +317,7 @@ claims:
   # --- Release Facade --------------------------------------------------------
 
   - id: release.current-version-only
-    claim: "Public release surfaces remain current-version-only: one visible release tag, one GitHub Release, one Pages deployment."
+    claim: "Public release surfaces remain current-version-only in their narrative, with one Pages deployment; releases are additive, so every published release tag, GitHub Release, and npm version stays published."
     required-in:
       - AGENTS.md
       - CLAUDE.md
@@ -331,9 +331,10 @@ claims:
       - release tag
       - GitHub Release
       - Pages deployment
+      - additive
 
   - id: release.distribution-paths
-    claim: "Apothem distributes through several install paths — tool-native plugins and extensions (the Claude Code plugin, a Gemini CLI extension, a Qwen Code extension, a Codex plugin, and a VS Code-family extension), the npx @ahmed-g-gad/apothem shim, and the one-shot script installers — and each tagged release attaches its signed artifacts to the single GitHub Release page."
+    claim: "Apothem distributes through several install paths — tool-native plugins and extensions (the Claude Code plugin, a Gemini CLI extension, a Qwen Code extension, a Codex plugin, and a VS Code-family extension), the npx @ahmed-g-gad/apothem shim, and the one-shot script installers — and each tagged release attaches its signed artifacts to its own GitHub Release page."
     required-in:
       - AGENTS.md
       - CLAUDE.md

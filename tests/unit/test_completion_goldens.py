@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 
+# REUSE-IgnoreStart
 """Shell-completion goldens stay byte-identical to ``apothem completion``.
 
 ``scripts/dev/regenerate-completions.{sh,ps1}`` writes each golden under
@@ -52,3 +53,6 @@ def test_committed_golden_matches_completion_output(shell: str) -> None:
     """Each committed golden is the SPDX header plus ``completion <shell>``."""
     committed = (_COMPLETIONS / _GOLDENS[shell]).read_text(encoding="utf-8")
     assert committed == _HEADER + _emit(shell)
+
+
+# REUSE-IgnoreEnd

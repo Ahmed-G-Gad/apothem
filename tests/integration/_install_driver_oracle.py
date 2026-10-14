@@ -67,6 +67,11 @@ TOK_BACKUP_TS = "<BACKUP_TS>"
 
 ALL_ADAPTERS: list[str] = [entry.package_key for entry in HARNESS_REGISTRY]
 
+# Real-install byte-replay subset, chosen for adapter-shape diversity: user-scope
+# settings + interpreter, project-scope rules-dir, TOML agent conversion, and
+# project-scope TOML commands.
+REAL_SUBSET: list[str] = ["claude_code", "cursor", "codex", "gemini_cli"]
+
 
 def _scope_kwarg(name: str, root: Path) -> dict[str, Path]:
     entry = next(e for e in HARNESS_REGISTRY if e.package_key == name)
@@ -109,6 +114,33 @@ def _normalize_text(text: str, *, root: Path, outer: Path | None = None) -> str:
 
 def _normalize_obj(obj: Any, *, root: Path, outer: Path | None = None) -> Any:  # noqa: ANN401  # Any: recurses over arbitrary JSON-like structures (build_plan / to_dict output)
     return normalize_obj(obj, lambda s: _normalize_text(s, root=root, outer=outer))
+
+
+def _ledger_target_key(target: dict[str, Any]) -> tuple[str, str]:
+    """Order ledger targets by tokenized POSIX path, then by full content.
+
+    Python compares ``str`` by code point, independent of platform and locale.
+    The path is unique within a record (the ledger drops duplicate paths); the
+    canonical JSON tie-breaker keeps the order total regardless.
+    """
+    return (str(target["path"]), json.dumps(target, sort_keys=True))
+
+
+def _sort_ledger_targets(record: dict[str, Any]) -> dict[str, Any]:
+    """Return *record* with its ``targets`` in one platform-independent order.
+
+    The ledger lists targets in install order, and the installer walks each
+    source directory with ``sorted()`` over ``Path`` objects. A Windows path
+    compares case-insensitively and a POSIX path by code point, so
+    ``schemas/NOTICE.md`` installs before ``__init__.py`` on POSIX and after
+    ``advisory-finding.schema.json`` on Windows. Sorting the normalized
+    targets gives every platform the same bytes. The comparison side already
+    ignores array order (``canon_ledger`` deep-sorts), so no assertion changes.
+    """
+    targets = record.get("targets")
+    if isinstance(targets, list):
+        record["targets"] = sorted(targets, key=_ledger_target_key)
+    return record
 
 
 def _dump_json(obj: Any, dest: Path) -> None:  # noqa: ANN401  # Any: serializes arbitrary JSON-like structures
@@ -205,7 +237,9 @@ def _capture_real_install(name: str, out_root: Path) -> None:
                         if not line.strip():
                             continue
                         norm = _normalize_obj(json.loads(line), root=install_root)
-                        norm = _normalize_obj(norm, root=backup_root)
+                        norm = _sort_ledger_targets(
+                            _normalize_obj(norm, root=backup_root)
+                        )
                         ledger_lines.append(
                             json.dumps(norm, sort_keys=True, ensure_ascii=False)
                         )

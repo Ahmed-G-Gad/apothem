@@ -28,6 +28,16 @@ and Qwen Code runs hooks through cmd.exe, so on Windows the Codex and Qwen rows
 check the dispatcher and its handlers, not those hosts' own command lines. A
 separate check holds every Codex ``commandWindows`` to the command run here.
 
+Interpreter. The Codex ``command`` names ``python3``, which resolves on the
+host's PATH. On a Windows host that ``python3`` is often the Microsoft Store
+alias, which exits 49 instead of running the dispatcher. Every Codex row
+therefore runs with a shim for this test's interpreter first on PATH
+(``tests._shared.python_shim``), on every platform. The other surfaces need no
+shim: the engine writes an absolute interpreter into the Claude Code and Qwen
+Code commands, and the plugin's bootstrap locates an interpreter and skips
+Store stubs. An autouse fixture puts a ``python3`` that behaves like the Store
+alias first on the host PATH, so a leak fails on any host.
+
 Clauses. (1) executes: exit 0 and stdout empty or one JSON object. (2)
 termination: Stop and PostToolUse emissions are bounded per session. (3) output
 bound: no emitted string exceeds 10,000 characters, the Claude Code cap. (4)
@@ -45,6 +55,7 @@ from __future__ import annotations
 
 import json
 import os
+import shlex
 import shutil
 import stat
 import subprocess
@@ -57,6 +68,7 @@ from pathlib import Path
 import pytest
 
 from tests._shared.bash_resolver import SKIP_REASON, find_test_bash
+from tests._shared.python_shim import write_python_shim
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PLUGIN_TREE = REPO_ROOT / "plugins" / "claude-code"
@@ -85,6 +97,14 @@ _MAX_POSTTOOLUSE_EMISSIONS = 2
 #: weight that suggests a delivery that never happens.
 _CLAUDE_DISCARDED_EVENTS = frozenset({"PreCompact", "PostCompact"})
 _HOSTILE_MARKER = "APOTHEM-CONTRACT-HOSTILE-PROJECT-CODE"
+#: What the Windows Store "App execution alias" for ``python3`` prints to stderr
+#: before it exits 49 when no Python from the Store is installed.
+_STORE_ALIAS_MESSAGE = (
+    "Python was not found; run without arguments to install from the Microsoft "
+    "Store, or disable this shortcut from Settings > Apps > Advanced app "
+    "settings > App execution aliases."
+)
+_STORE_ALIAS_EXIT = 49
 
 
 @dataclass(frozen=True)
@@ -106,6 +126,34 @@ class HookEntry:
                 return name[:-3]
         tail = self.label.split()[-1]
         return tail.rsplit("/", 1)[-1].removesuffix(".md")
+
+
+@pytest.fixture(autouse=True)
+def _host_python3_that_must_not_be_used(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Put a host ``python3`` that behaves like the Windows Store alias first on PATH.
+
+    CI runners resolve ``python3`` to a real interpreter, so without this a
+    Codex row that reached the host's ``python3`` would pass there and fail on
+    a Windows host whose ``python3`` is the Store alias. This one prints the
+    alias's message and exits as the alias does. The plugin's interpreter
+    locator skips it, as it skips the alias, for being under 1024 bytes, so
+    only a Codex row that bypasses the shim reaches it.
+    """
+    host_bin = tmp_path / "host-python-bin"
+    host_bin.mkdir()
+    stub = host_bin / "python3"
+    stub.write_text(
+        f"#!/bin/sh\necho {shlex.quote(_STORE_ALIAS_MESSAGE)} >&2\n"
+        f"exit {_STORE_ALIAS_EXIT}\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    stub.chmod(0o755)
+    monkeypatch.setenv(
+        "PATH", f"{host_bin}{os.pathsep}{os.environ.get('PATH', os.defpath)}"
+    )
 
 
 def _strip_exec_bits(root: Path) -> None:
@@ -329,7 +377,16 @@ def workspace(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
     (hostile / "hooks" / "dispatch.py").write_text(
         f"print('{_HOSTILE_MARKER}')\n", encoding="utf-8"
     )
-    return {"plugin": plugin, "home": home, "project": project, "hostile": hostile}
+    codex_python = base / "codex-python"
+    codex_python.mkdir()
+    write_python_shim(codex_python / "python3")
+    return {
+        "plugin": plugin,
+        "home": home,
+        "project": project,
+        "hostile": hostile,
+        "codex_python": codex_python,
+    }
 
 
 def _all_entries(ws: dict[str, Path]) -> list[HookEntry]:
@@ -351,6 +408,12 @@ def _env_for(
     env = _isolated_env(ws["home"], CLAUDE_PROJECT_DIR=str(project), **extra)
     if entry.surface == "plugin":
         env["CLAUDE_PLUGIN_ROOT"] = str(ws["plugin"])
+    if entry.surface == "codex":
+        # The Codex command names python3: this test's interpreter answers it,
+        # not the host's (see "Interpreter" in the module docstring).
+        env["PATH"] = os.pathsep.join(
+            [str(ws["codex_python"]), env.get("PATH", os.defpath)]
+        )
     return env
 
 
@@ -424,6 +487,8 @@ def test_clause2_stop_is_bounded_and_off_by_default(workspace: dict[str, Path]) 
                 "Stop", "", workspace["project"], f"stop-{entry.surface}"
             )
             result, _ = _run(entry, payload, env, workspace["project"])
+            # _parse reads a dead command's empty stdout as no emission.
+            assert result.returncode == 0, (entry.label, result.stderr[-300:])
             emitted += _context_chars(_parse(result.stdout)) > 0
         assert emitted <= _MAX_STOP_EMISSIONS, (entry.surface, emitted)
         assert emitted == 0, f"{entry.surface}: session-end protocol must be opt-in"
@@ -434,6 +499,7 @@ def test_clause2_stop_is_bounded_and_off_by_default(workspace: dict[str, Path]) 
         )
         for _ in range(5):
             result, _ = _run(entry, active, opt_in, workspace["project"])
+            assert result.returncode == 0, (entry.label, result.stderr[-300:])
             assert _context_chars(_parse(result.stdout)) == 0
 
 
@@ -459,6 +525,12 @@ def test_clause2_posttooluse_advisory_is_capped(workspace: dict[str, Path]) -> N
                 )
                 payload["tool_response"] = "y" * 8_192
                 result, _ = _run(entry, payload, env, workspace["project"])
+                # _parse reads a dead command's empty stdout as no emission.
+                assert result.returncode == 0, (
+                    entry.label,
+                    switch,
+                    result.stderr[-300:],
+                )
                 emitted += _context_chars(_parse(result.stdout)) > 0
             assert emitted <= ceiling, (entry.surface, switch, emitted)
 
@@ -491,6 +563,8 @@ def test_clause4_claude_surfaces_use_valid_channels(workspace: dict[str, Path]) 
                 entry, workspace, workspace["project"], APOTHEM_CONFORMITY_STRICT=strict
             )
             result, _ = _run(entry, payload, env, workspace["project"])
+            # Exit 2 blocks a PreToolUse call whatever its JSON says.
+            assert result.returncode == 0, (entry.label, strict, result.stderr[-300:])
             output = _parse(result.stdout)
             assert "decision" not in output, output
             specific = output.get("hookSpecificOutput")
@@ -605,6 +679,8 @@ def test_hooks_never_run_project_supplied_code(workspace: dict[str, Path]) -> No
         result, _ = _run(entry, payload, env, workspace["hostile"])
         combined = result.stdout + result.stderr
         assert _HOSTILE_MARKER not in combined, entry.label
+        # A command that cannot start never prints the marker either.
+        assert result.returncode == 0, (entry.label, result.stderr[-300:])
 
 
 def test_guards_are_silent_on_benign_payloads(workspace: dict[str, Path]) -> None:

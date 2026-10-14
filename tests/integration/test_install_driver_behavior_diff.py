@@ -33,8 +33,7 @@ GOLDEN = (
     / "install_driver"
 )
 
-# Real-install byte-replay subset, chosen for adapter-shape diversity.
-REAL_SUBSET = ["claude_code", "cursor", "codex", "gemini_cli"]
+REAL_SUBSET = oracle.REAL_SUBSET
 
 
 def _assert_tree_matches(actual_dir: Path, golden_dir: Path, label: str) -> None:
