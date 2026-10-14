@@ -12,10 +12,10 @@ that needs one reads it on demand.
 
 An entry starting with ``~/`` is expanded against the home directory, and an
 absolute entry is matched as a glob on its final segment, so an explicit file
-path names exactly that file (``Instruction.systemPaths`` in
-https://raw.githubusercontent.com/sst/opencode/dev/packages/opencode/src/session/instruction.ts,
-retrieved 2026-10-03). A relative entry is resolved against the project
+path names exactly that file. A relative entry is resolved against the project
 directory, not the config file, which is why every entry is home-anchored.
+These semantics were observed at opencode-ai 1.19.0 on 2026-10-14. The
+upstream source moved, and the vendor docs do not describe them.
 """
 
 from __future__ import annotations
