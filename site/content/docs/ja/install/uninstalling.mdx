@@ -2,7 +2,7 @@
 title: "アンインストール"
 description: "Apothem を削除し、ハーネス設定をクリーンアップします。"
 machineTranslated: true
-sourceHash: "11d7a265fc5e60b9"
+sourceHash: "39bf18da03eaad73"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,6 +28,18 @@ apothem uninstall --harness all --project /path/to/project --yes
   キャッシュされたコピーを消したい場合は、`npm cache clean --force` でキャッシュをクリアしてください。
 - **ワンショットインストーラー** —— チェックアウトから対応するアンインストールスクリプトを実行します: `scripts/installer/uninstall.sh`（POSIX）または `scripts/installer/uninstall.ps1`（PowerShell）。
   どちらも削除の前に確認を求め、安全でない対象を拒否します。
+- **VS Code 系拡張機能** —— 最初に、コマンドパレットから **Apothem: Uninstall** を実行してハーネス設定を削除します。
+  その後、拡張機能ビューから、または `code --uninstall-extension ahmed-g-gad.apothem` で拡張機能を削除します。
+  デフォルトでは、拡張機能は `npx` を介してエンジンを実行するため、キャッシュについては上の **npx** の項目が該当します。
+- **コマンドラインブートストラップ（チャネル 5–7）** —— ハーネス設定がなくなった後で、そのホストツールを使って拡張機能またはプラグインを削除します。
+  ブートストラップが追加するのは、`npx` を介してエンジンを呼び出すアシスタントのコンテキスト（コンテキストファイル、コマンド、またはスキル）だけであるため、それ以外に残るものはありません。
+  チャネル 5 と 6 の拡張機能ホストにはアンインストールコマンドがあります。チャネル 7 のプラグインホストでは、そのプラグインブラウザーで `apothem` をアンインストールします。
+
+  ```bash
+  gemini extensions uninstall apothem   # channel 5
+  qwen extensions uninstall apothem     # channel 6
+  ```
+- **直接エンジン** —— アンインストールするものはありません。ハーネス設定を削除した後で、クローンを削除します。
 - **バックアップと状態** —— インストールのバックアップは `~/.apothem/backups/` 配下に、インストール台帳は `~/.apothem/state/` 配下にあります。
   どちらも上限内に保たれます。インストール、アンインストール、ロールバックのたびに、Apothem はインストールルートごとに最新 10 件のインストール記録と、ハーネスごとに最新 10 件のバックアップセットを保持し、保持された記録がまだ必要とするバックアップは決して削除しません。そのため、直近 10 回のインストールは引き続きロールバックできます。
   保持数を減らすには [`apothem backups prune --keep N`](/docs/cli-reference/backups) を実行します（何が削除されるかを先に確認するには `--dry-run` を追加します）。このコマンドは、ハーネスの最新のインストールをロールバックする際の復元元となるバックアップを決して削除しません。

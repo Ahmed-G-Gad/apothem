@@ -1,50 +1,41 @@
 ---
-title: "Apothem vs. raw GLM backend wiring"
-description: "Why route GLM (Z.ai) backend configuration through Apothem instead of hand-wiring environment variables per project."
+title: "Apothem と手作業の GLM バックエンド配線の比較"
+description: "プロジェクトごとに環境変数を手作業で配線するのではなく、GLM (Z.ai) のバックエンド設定を Apothem 経由にする理由。"
 machineTranslated: true
-sourceHash: "ae1dbfedf034219a"
+sourceHash: "869ef5c768dfec73"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-GLM (Z.ai) is a model backend a compatible harness points at by setting a
-base URL and a key. You can export those environment variables by hand, per
-project, per machine, forever. Apothem's glm adapter records the backend
-endpoints and operator-configurable placeholders in one provider file and keeps
-that file consistent across every project. This page contrasts hand-wiring that
-backend against managing it with Apothem.
+GLM (Z.ai) は、互換性のあるハーネスがベース URL とキーを設定することで向けられる、モデルバックエンドです。
+それらの環境変数は、プロジェクトごと、マシンごとに、永遠に手作業でエクスポートできます。
+Apothem の glm アダプターは、バックエンドのエンドポイントとオペレーターが設定可能なプレースホルダーを 1 つのプロバイダーファイルに記録し、同じテンプレートをすべてのプロジェクトに書き込みます。
+このページでは、そのバックエンドを手作業で配線する方法と、Apothem で管理する方法を対比します。
 
-## Effort comparison
+## 作業量の比較
 
-| Task | Raw hand-config | Apothem-managed |
+| 作業 | 素の手作業設定 | Apothem 管理 |
 | ---- | --------------- | --------------- |
-| Record the backend URLs | Memorize and re-export per project | Written into one provider file |
-| Source of truth | Each shell's own exports | One canonical provider file |
-| Keep backends aligned across projects | Re-wire per project | Rendered the same way every time |
-| Update the config | Hand-edit every project | `apothem update --harness glm --project <path>` |
-| Remove the config | Manual delete | `apothem uninstall` with a backup |
+| バックエンド URL を記録する | 覚えておき、プロジェクトごとに再エクスポートする | 1 つのプロバイダーファイルに書き込まれる |
+| 信頼できる情報源 | 各シェル自身のエクスポート | 1 つの正規のプロバイダーファイル |
+| プロジェクト間でバックエンドの整合を保つ | プロジェクトごとに配線し直す | 同じテンプレートが各プロジェクトに書き込まれる |
+| 設定を復元する | すべてのプロジェクトで再エクスポートする | `apothem update --harness glm --project <path>` は、ファイルが存在しない場合にのみ、そのファイルを再び書き込む |
+| 設定を削除する | 手動で削除 | バックアップ付きの `apothem uninstall` |
 
-## What Apothem manages
+## Apothem が管理するもの
 
-The glm adapter renders a single provider file at
-`<project>/.apothem/providers/glm.toml` and writes nothing else. It records the
-Anthropic-compatible base URL (`https://api.z.ai/api/anthropic`), the
-OpenAI-compatible base URL (`https://api.z.ai/api/coding/paas/v4`), an
-auth-token placeholder, and model-mapping placeholders. Your Z.ai key and your
-model-id choices stay operator-owned — Apothem never writes a real secret and
-pins no version-volatile model id.
+glm アダプターは、`<project>/.apothem/providers/glm.toml` に単一のプロバイダーファイルをレンダリングし、それ以外は何も書き込みません。
+このファイルには、Anthropic 互換のベース URL（`https://api.z.ai/api/anthropic`）、OpenAI 互換のベース URL（`https://api.z.ai/api/coding/paas/v4`）、認証トークンのプレースホルダー、そしてモデル対応付けのプレースホルダーが記録されます。
+あなたの Z.ai キーとモデル ID の選択は、オペレーターの所有のままです。Apothem が本物のシークレットを書き込むことは決してなく、バージョンによって変わりやすいモデル ID をピン留めすることもありません。
 
-## Migration path
+## 移行パス
 
-1. Run `apothem profile init` to create the shared profile if you have not yet.
-2. Run `apothem install --harness glm --project <path>` to render the
-   `glm.toml` provider file.
-3. Fill in your Z.ai key and the model ids you want from the current
-   [Z.ai documentation](https://docs.z.ai/devpack/tool/claude).
-4. Run `apothem verify --harness glm --project <path>` to confirm the config
-   landed.
-5. Use `apothem update --harness glm --project <path>` for every later change.
+1. まだ共有プロファイルを作成していない場合は、`apothem profile init` を実行して作成します。
+2. `apothem install --harness glm --project <path>` を実行して、`glm.toml` プロバイダーファイルをレンダリングします。
+3. 最新の [Z.ai ドキュメント](https://docs.z.ai/devpack/tool/claude)を参照して、あなたの Z.ai キーと、使いたいモデル ID を記入します。
+4. `apothem verify --harness glm --project <path>` を実行して、設定が配置されたことを確認します。
+5. 以降の変更はすべて `.apothem/providers/glm.toml` を編集して行います。Apothem が既存のプロバイダーファイルを書き換えることは決してありません。`apothem update --harness glm --project <path>` がそのファイルを再び書き込むのは、ファイルが存在しない場合のみです。
 
-## Read next
+## 次に読む
 
-- [GLM adapter reference](/docs/harnesses/glm)
-- [Comparison overview](/docs/comparison)
+- [GLM アダプターリファレンス](/docs/harnesses/glm)
+- [比較の概要](/docs/comparison)

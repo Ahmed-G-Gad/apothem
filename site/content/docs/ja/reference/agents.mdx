@@ -2,7 +2,7 @@
 title: "ヘルパー"
 description: "リサーチ、監査、品質、オーケストレーション向けの永続的なヘルパーエージェント。frontmatter 契約とデプロイ隔離プロトコルを備えます。"
 machineTranslated: true
-sourceHash: "9aeb014bc69c5163"
+sourceHash: "b44b145680fe03f7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -48,8 +48,9 @@ maxTurns: <integer>
 
 ## ハーネスごとの変換
 
-`disallowedTools` を適用した後の `tools` の付与に `Write` も `Edit` も含まれないヘルパーは、
-読み取り専用です。ヘルパーを変換する各ハーネスは、その制限をネイティブに強制するか、
+`disallowedTools` を適用した後の `tools` の付与に、ファイル編集ツール
+（`Write`、`Edit`、`MultiEdit`、`NotebookEdit`）が 1 つも含まれないヘルパーは、読み取り専用です。
+ヘルパーを変換する各ハーネスは、その制限をネイティブに強制するか、
 読み取り専用のラベルを外すかのいずれかを行います。
 
 | ハーネス | ツール制限 | ターン制限 | モデルとエフォート |
@@ -59,7 +60,7 @@ maxTurns: <integer>
 | Gemini CLI | Gemini のツール名による `tools` 許可リスト | `max_turns` | 継承（設定しない） |
 | Qwen Code | Qwen のツール名による `tools` / `disallowedTools` | マッピングなし | `model: inherit` |
 | OpenCode | `permission`（ツールごとに `allow` / `deny`） | マッピングなし | 継承（設定しない） |
-| Antigravity | 出力しない。説明から「read-only」が除かれる | 利用不可 | 継承（設定しない） |
+| Antigravity | 出力しない。説明から「読み取り専用」が除かれる | 利用不可 | 継承（設定しない） |
 
 Hermes、Open-Claw、Kimi Code は、ヘルパーファイルをネイティブなヘルパーとしてではなく、
 サポート素材として受け取ります。

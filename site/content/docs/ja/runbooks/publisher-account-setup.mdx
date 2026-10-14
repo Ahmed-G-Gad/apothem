@@ -2,12 +2,13 @@
 title: "パブリッシャーアカウントのセットアップ"
 description: "@ahmed-g-gad/apothem 向けの npmjs.com 信頼済みパブリッシャーと、GitHub 側のリリース前提条件を構成します。"
 machineTranslated: true
-sourceHash: "c0ff17cce209d1d0"
+sourceHash: "4f750a0f9fdb2429"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 このランブックは、リリース面のパブリッシャー側を構成します。
-配布の構成にはレジストリが 1 つだけあります。npmjs.com 上のスコープ付き npm パッケージ `@ahmed-g-gad/apothem` で、GitHub Release、Pages、CI、コンフォーミティ、ハーネスの各ワークフローがグリーンになった後に、手動でディスパッチされる `publish-npm.yml` ワークフローによって公開されます。
+配布の構成にはレジストリが 1 つだけあります。npmjs.com 上のスコープ付き npm パッケージ `@ahmed-g-gad/apothem` で、GitHub Release、Pages、CI、コンフォーミティ、ハーネスの各ワークフローがグリーンになった後に、`publish-npm.yml` ワークフローによって公開されます。
+このワークフローは `v*.*.*` のタグのプッシュで実行されます。`tag` 入力を指定した手動ディスパッチは、そのフォールバックです。
 その他のすべての成果物は GitHub Release ページ自体で配布され、外部のパブリッシャーアカウントを必要としません。
 
 ## アイデンティティマップ
@@ -52,8 +53,9 @@ GitHub のオーナーは、将来変わることが許容されています。
    bash scripts/release/check-release-ready.sh <release-tag>
    ```
 
-9. GitHub Actions タブから `Publish — npm`（`publish-npm.yml`）を
-   `tag=<release-tag>` で実行し、`release` 環境のデプロイを承認します。
+9. タグのプッシュが開始する `Publish npm`（`publish-npm.yml`）の実行について、
+   `release` 環境のデプロイを承認します。その実行が開始されなかった場合は、
+   GitHub Actions タブから `tag=<release-tag>` を指定してワークフローをディスパッチします。
 10. 公開されたパッケージを検証します。
 
     ```bash title="npm verification"
