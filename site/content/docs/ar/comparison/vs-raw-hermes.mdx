@@ -2,7 +2,7 @@
 title: "Apothem مقابل إعداد Hermes الخام"
 description: "صيانة إعداد Hermes يدويًا مقابل إدارته عبر الملف التعريفي المشترك في Apothem."
 machineTranslated: true
-sourceHash: "8cbfaa7f64491754"
+sourceHash: "d6119faf3efef70e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,8 +30,10 @@ sourceHash: "8cbfaa7f64491754"
 
 يكتب محوّل <bdi>Hermes</bdi> الملف <bdi>`config.yaml`</bdi>، ويغلّف أوامر الشرطة
 المائلة في <bdi>Apothem</bdi> بوصفها مهارات، وينسخ مهارات <bdi>Apothem</bdi> إلى دليل
-الدعم المُشار إليه، ويُبقي القواعد والقوالب والعوامل ومادة الخطّافات تحت شجرة دعم
-<bdi>Apothem</bdi> الفرعية.
+الدعم، ويُبقي القواعد والقوالب والعوامل ومادة الخطّافات تحت شجرة دعم
+<bdi>Apothem</bdi> الفرعية. ولا يحمّل <bdi>Hermes</bdi> تلك المهارات إلا بعد أن تضيف
+<bdi>`~/.hermes/.apothem/support/skills`</bdi> إلى <bdi>`skills.external_dirs`</bdi> في
+<bdi>`config.yaml`</bdi>.
 
 ## مسار الترحيل
 

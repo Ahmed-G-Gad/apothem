@@ -2,7 +2,7 @@
 title: "سجلّ التفويضات الشاملة (CM-1–CM-28)"
 description: "السجلّ الكامل لتعريفات التفويضات الشاملة الداخلية في المنظومة (CM-1–CM-28) التي تحكم جميع التفاعلات وعمليات خط الأنابيب."
 machineTranslated: true
-sourceHash: "9a7b4e8966abd05f"
+sourceHash: "4e3a5448c3273d05"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,7 +18,7 @@ sourceHash: "9a7b4e8966abd05f"
 
 ## التفعيل
 
-تحكم <bdi>CM-1–10</bdi> + الهوية المعرفية جميع التفاعلات. وتسري <bdi>CM-11، CM-13، CM-15، CM-16، CM-20</bdi> داخل خط الأنابيب <bdi>`/plan`</bdi> فقط. وتسري <bdi>CM-12، CM-14، CM-17–19، CM-21–22، CM-24–26</bdi> على نحو شامل (مفعّلة دائمًا). وتسري <bdi>CM-23، CM-27، CM-28</bdi> على نحو شامل ضمن نطاق مُرشِّح المسارات المُعلَن لكلٍّ منها. مستوى الجدّية الافتراضي للعمل المرتجل: <bdi>PERSONAL_USE</bdi>.
+تحكم <bdi>CM-1–10</bdi> + الهوية المعرفية جميع التفاعلات. وتسري <bdi>CM-11, CM-13</bdi> (القواعد الفرعية من <bdi>A</bdi> إلى <bdi>C</bdi>)، و<bdi>CM-15, CM-16, CM-20</bdi> داخل خط الأنابيب <bdi>`/plan`</bdi> فقط. وتسري القاعدة الفرعية <bdi>D</bdi> من <bdi>CM-13</bdi> على كل عملية كتابة في <bdi>git</bdi>، والقاعدة الفرعية <bdi>E</bdi> على أهداف <bdi>`git mv`</bdi> / <bdi>`git rm`</bdi> ومسارات متن الكوميت، داخل خط الأنابيب هذا أو خارجه. وتسري <bdi>CM-12, CM-14, CM-17–19, CM-21–22, CM-24–26</bdi> على نحو شامل (مفعّلة دائمًا). وتسري <bdi>CM-23, CM-27, CM-28</bdi> على نحو شامل ضمن نطاق مُرشِّح المسارات المُعلَن لكلٍّ منها. مستوى الجدّية الافتراضي للعمل المرتجل: <bdi>PERSONAL_USE</bdi>.
 
 ## <bdi>CM-1–10</bdi> (تشغيلية)
 
@@ -28,7 +28,7 @@ sourceHash: "9a7b4e8966abd05f"
 
 > هذا هو وجه <bdi>CM-7</bdi> المتعلّق بقاعدة الشيفرة؛ أمّا وجه اكتمال المنتج فموثَّق بوصفه **منتج متّسق (←<bdi>TM-11</bdi>)** في <bdi>`src/apothem/rules/operational-mandates.md §CM-7`</bdi>. والتسميتان كلتاهما تشيران إلى التفويض نفسه.
 
-يجب ألّا تحتوي مُنتَجات قاعدة الشيفرة أبدًا على إحالات داخلية للخطة. **المصطلحات المحظورة (الكتلة المرجعية — يُحيل إليها المستهلِكون الأشقّاء بدلًا من إعادة تعدادها):** <bdi>TM-N</bdi>، و<bdi>CM-N</bdi>، و<bdi>CP-N</bdi>، و«<bdi>Resumption Contract</bdi>»، و«<bdi>Phase Output Registry</bdi>»، و«<bdi>convention anchors</bdi>»، وأسماء مجلّدات المراحل، وأسماء ملفات حزمة الخطة (<bdi>PROGRESS.md، PLAN-NOTES.md، PREAMBLE، MASTER-PLAN</bdi>)، وأسماء مستويات الجدّية (<bdi>EXPLORING، PERSONAL_USE، SHARED، PUBLIC_LAUNCH</bdi>). **المُنتَجات المحميّة:** الشيفرة المصدرية، والاختبارات، والإعدادات، والمخططات، وسكربتات البناء، والبيانات، والأصول، ورسائل الكوميتات، وأسماء الفروع، وعناوين طلبات السحب وأوصافها، و<bdi>README</bdi>، و<bdi>CONTRIBUTING</bdi>، ووثائق <bdi>API</bdi>، وسجلّات التغييرات — أي مُنتَج مرئي خارج شجرة مصدر <bdi>Apothem</bdi> (وجهات التثبيت الخاصة بكل إطار عمل، مثل <bdi>`~/.claude/`</bdi> لـ <bdi>Claude Code</bdi>). لغة المجال الطبيعية فقط. **المستهلِكون الأشقّاء** (يستشهد كلٌّ منهم بهذه الكتلة بالإحالة بدلًا من إعادة التعداد): <bdi>`src/apothem/hooks/messages/pretooluse-bash.md`</bdi>، و<bdi>`src/apothem/hooks/messages/pretooluse-write.md`</bdi>، و<bdi>`src/apothem/hooks/messages/pretooluse-edit.md`</bdi>، و<bdi>`src/apothem/hooks/messages/pretooluse-notebookedit.md`</bdi>، ومؤشرات المخالفة في <bdi>`src/apothem/rules/operational-mandates.md`</bdi> <bdi>§CM-7</bdi>.
+يجب ألّا تحتوي مُنتَجات قاعدة الشيفرة أبدًا على إحالات داخلية للخطة. **المصطلحات المحظورة (الكتلة المرجعية — يُحيل المستهلِكون الأشقّاء إلى هذا التعداد):** <bdi>TM-N</bdi>، و<bdi>CM-N</bdi>، و<bdi>CP-N</bdi>، و«<bdi>Resumption Contract</bdi>»، و«<bdi>Phase Output Registry</bdi>»، و«<bdi>convention anchors</bdi>»، وأسماء مجلّدات المراحل، وأسماء ملفات حزمة الخطة (<bdi>PROGRESS.md, PLAN-NOTES.md, PREAMBLE, MASTER-PLAN</bdi>)، وأسماء مستويات الجدّية (<bdi>EXPLORING, PERSONAL_USE, SHARED, PUBLIC_LAUNCH</bdi>). **المُنتَجات المحميّة:** الشيفرة المصدرية، والاختبارات، والإعدادات، والمخططات، وسكربتات البناء، والبيانات، والأصول، ورسائل الكوميتات، وأسماء الفروع، وعناوين طلبات السحب وأوصافها، و<bdi>README</bdi>، و<bdi>CONTRIBUTING</bdi>، ووثائق <bdi>API</bdi>، وسجلّات التغييرات — أي مُنتَج مرئي خارج شجرة مصدر <bdi>Apothem</bdi> (وجهات التثبيت الخاصة بكل إطار عمل، مثل <bdi>`~/.claude/`</bdi> لـ <bdi>Claude Code</bdi>). لغة المجال الطبيعية فقط. **المستهلِكون الأشقّاء** (يستشهد كلٌّ منهم بهذه الكتلة بالإحالة بدلًا من إعادة التعداد): <bdi>`src/apothem/hooks/messages/pretooluse-bash.md`</bdi>، و<bdi>`src/apothem/hooks/messages/pretooluse-write.md`</bdi>، و<bdi>`src/apothem/hooks/messages/pretooluse-edit.md`</bdi>، و<bdi>`src/apothem/hooks/messages/pretooluse-notebookedit.md`</bdi>، ومؤشرات المخالفة في <bdi>`src/apothem/rules/operational-mandates.md`</bdi> <bdi>§CM-7</bdi>.
 
 ## <bdi>CM-11</bdi> (سلامة الخطة)
 
@@ -78,7 +78,7 @@ sourceHash: "9a7b4e8966abd05f"
 
 ## التفويضات المُفوَّضة إلى القواعد مقابل المُعرَّفة في هذا السجلّ
 
-- **المُفوَّضة إلى القواعد** (المواصفة الكاملة في <bdi>`src/apothem/rules/`</bdi>): راجع عمود «<bdi>Implements</bdi>» في جدول القواعد في سجلّات المُنتَجات. وتغطّي <bdi>CM-1–10، CM-12، CM-14، CM-17–28</bdi>.
+- **المُفوَّضة إلى القواعد** (المواصفة الكاملة في <bdi>`src/apothem/rules/`</bdi>): راجع عمود «<bdi>Implements</bdi>» في جدول القواعد في سجلّات المُنتَجات. وتغطّي <bdi>CM-1–10, CM-12, CM-14, CM-17–28</bdi>.
 - **المُعرَّفة في هذا السجلّ** (المواصفة الكاملة هنا، دون قاعدة منفصلة): <bdi>CM-11</bdi> (سلامة الخطة)، و<bdi>CM-13</bdi> (الكوميتات)، و<bdi>CM-15</bdi> (التماسك الجماعي)، و<bdi>CM-16</bdi> (التنفيذ الذاتي).
 
 ## اصطلاح الإحالة الفرعية

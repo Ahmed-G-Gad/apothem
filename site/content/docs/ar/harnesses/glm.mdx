@@ -2,7 +2,7 @@
 title: "GLM (Z.ai)"
 description: "محوّل إطار عمل Apothem لـ GLM (Z.ai) بوصفه واجهة خلفية للنماذج قابلة للضبط."
 machineTranslated: true
-sourceHash: "c222107e05bf1ef2"
+sourceHash: "3e05b3a651ffe5da"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -44,7 +44,8 @@ apothem install --harness glm --project /path/to/project
 عنصر نائب تستبدله بمفتاح <bdi>Z.ai</bdi> الخاص بك — لا يكتب <bdi>Apothem</bdi> سرًّا
 حقيقيًا أبدًا. مُعرِّفات النماذج متقلّبة بتغيّر النسخ، لذا لا يُثبِّت
 <bdi>Apothem</bdi> أيًّا منها؛ ويحمل الملف عناصر نائبة <bdi>`<GLM_MODEL_ID>`</bdi>
-تملؤها من [وثائق <bdi>Z.ai</bdi>](https://docs.z.ai/devpack/tool/claude) الحالية.
+تملؤها من [وثائق <bdi>Z.ai</bdi>](https://docs.z.ai/devpack/tool/claude) الحالية. لا
+شيء من الملف التعريفي المشترك يدخل هذا الملف؛ فهو قالب ثابت.
 
 ## ملاحظات التوافق
 
@@ -105,8 +106,8 @@ python -m apothem.conformity.gate --all .
 | العَرَض | الإصلاح |
 |---------|-----|
 | ملف الإعداد غير موجود | أعد تشغيل <bdi>`apothem install --harness glm --project /path/to/project`</bdi> |
-| فشل التحقّق | شغّل <bdi>`apothem update --harness glm --project /path/to/project`</bdi>، ثم تحقّق مجدّدًا |
-| محتوى إعداد غير متوقَّع | افحص <bdi>`~/.config/apothem/profile.yaml`</bdi> أو <bdi>`--profile PATH`</bdi>، ثم أعد تشغيل <bdi>`apothem update --harness glm --project /path/to/project`</bdi> |
+| فشل التحقّق | ملف المزوّد مفقود أو فارغ. إذا كان مفقودًا، فشغّل <bdi>`apothem update --harness glm --project /path/to/project`</bdi>. وإذا كان فارغًا، فانقل <bdi>`.apothem/providers/glm.toml`</bdi> جانبًا أولًا، ثم شغّل <bdi>`update`</bdi> وتحقّق مجدّدًا |
+| محتوى إعداد غير متوقَّع | عدّل <bdi>`.apothem/providers/glm.toml`</bdi> مباشرةً؛ فـ<bdi>Apothem</bdi> لا يُعيد كتابة ملف موجود أبدًا، ولا يضيف الملف التعريفي المشترك إليه شيئًا. وللحصول على قالب جديد، انقل الملف جانبًا وشغّل <bdi>`apothem update --harness glm --project /path/to/project`</bdi> |
 
 ## مفاتيح الضبط
 

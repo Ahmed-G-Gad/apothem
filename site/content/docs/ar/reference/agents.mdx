@@ -2,7 +2,7 @@
 title: "المساعِدون"
 description: "عوامل مساعِدة دائمة للبحث والتدقيق والجودة والتنسيق، مع عقود البيانات الأمامية وبروتوكولات لعزل النشر."
 machineTranslated: true
-sourceHash: "9aeb014bc69c5163"
+sourceHash: "b44b145680fe03f7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -49,13 +49,14 @@ maxTurns: <integer>
 ## التحويل لكل إطار عمل
 
 المساعِد الذي لا تتضمّن منحةُ <bdi>`tools`</bdi> الخاصة به، بعد <bdi>`disallowedTools`</bdi>،
-الأداةَ <bdi>`Write`</bdi> ولا <bdi>`Edit`</bdi> هو مساعِد للقراءة فقط. وكل إطار عمل
-يحوّل المساعِدين إمّا أن يفرض هذا القيد أصليًا أو يُسقِط وسم «للقراءة فقط»:
+أي أداة لتحرير الملفات (<bdi>`Write`</bdi>، أو <bdi>`Edit`</bdi>، أو <bdi>`MultiEdit`</bdi>، أو
+<bdi>`NotebookEdit`</bdi>) هو مساعِد للقراءة فقط. وكل إطار عمل يحوّل المساعِدين إمّا أن
+يفرض هذا القيد أصليًا أو يُسقِط وسم «للقراءة فقط»:
 
 | إطار العمل | قيد الأدوات | قيد الأدوار | النموذج والجهد |
 | --- | --- | --- | --- |
 | <bdi>Claude Code</bdi> | <bdi>`tools`</bdi> / <bdi>`disallowedTools`</bdi> كما كُتبت | <bdi>`maxTurns`</bdi> | موروث (غير مضبوط) |
-| <bdi>Codex</bdi> | <bdi>`sandbox_mode = "read-only"`</bdi> للمساعِدين للقراءة فقط | غير متاح | موروث (غير مضبوط) |
+| <bdi>Codex</bdi> | <bdi>`sandbox_mode = "read-only"`</bdi> للمساعِدين المخصّصين للقراءة فقط | غير متاح | موروث (غير مضبوط) |
 | <bdi>Gemini CLI</bdi> | قائمة سماح <bdi>`tools`</bdi> بأسماء أدوات <bdi>Gemini</bdi> | <bdi>`max_turns`</bdi> | موروث (غير مضبوط) |
 | <bdi>Qwen Code</bdi> | <bdi>`tools`</bdi> / <bdi>`disallowedTools`</bdi> بأسماء أدوات <bdi>Qwen</bdi> | بلا مقابل | <bdi>`model: inherit`</bdi> |
 | <bdi>OpenCode</bdi> | <bdi>`permission`</bdi> (<bdi>`allow`</bdi> / <bdi>`deny`</bdi> لكل أداة) | بلا مقابل | موروث (غير مضبوط) |

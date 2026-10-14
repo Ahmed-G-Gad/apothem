@@ -2,16 +2,17 @@
 title: "إعداد حساب الناشر"
 description: "تهيئة الناشر الموثوق على npmjs.com للحزمة @ahmed-g-gad/apothem والمتطلّبات المسبقة للإصدار على جانب GitHub."
 machineTranslated: true
-sourceHash: "c0ff17cce209d1d0"
+sourceHash: "4f750a0f9fdb2429"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 يُهيّئ دليل التشغيل هذا جانب الناشر من سطح الإصدار. لقصة التوزيع سجلّ واحد: حزمة
 <bdi>npm</bdi> ذات النطاق <bdi>`@ahmed-g-gad/apothem`</bdi> على <bdi>npmjs.com</bdi>،
-التي ينشرها سير العمل <bdi>`publish-npm.yml`</bdi> المُشغَّل يدويًا بعد أن تصبح سِيَر
-عمل إصدار <bdi>GitHub</bdi> و<bdi>Pages</bdi> و<bdi>CI</bdi> والمطابقة وأُطُر العمل
-خضراء. وكل مُنتَج آخر يُشحَن على صفحة إصدار <bdi>GitHub</bdi> نفسها ولا يحتاج إلى
-أي حساب ناشر خارجي.
+التي ينشرها سير العمل <bdi>`publish-npm.yml`</bdi> (يعمل عند دفع الوسم
+<bdi>`v*.*.*`</bdi>؛ والتشغيل اليدوي مع المُدخَل <bdi>`tag`</bdi> هو البديل
+الاحتياطي) بعد أن تصبح سِيَر عمل إصدار <bdi>GitHub</bdi> و<bdi>Pages</bdi>
+و<bdi>CI</bdi> والمطابقة وأُطُر العمل خضراء. وكل مُنتَج آخر يُشحَن على صفحة إصدار
+<bdi>GitHub</bdi> نفسها ولا يحتاج إلى أي حساب ناشر خارجي.
 
 ## خريطة الهويات
 
@@ -58,9 +59,10 @@ sourceHash: "c0ff17cce209d1d0"
    bash scripts/release/check-release-ready.sh <release-tag>
    ```
 
-9. شغِّل <bdi>`Publish — npm`</bdi> (<bdi>`publish-npm.yml`</bdi>) من تبويب
-   <bdi>GitHub Actions</bdi> مع <bdi>`tag=<release-tag>`</bdi>، ووافِق على عملية
-   النشر إلى بيئة <bdi>`release`</bdi>.
+9. وافِق على عملية النشر إلى بيئة <bdi>`release`</bdi> الخاصة بتشغيل
+   <bdi>`Publish npm`</bdi> (<bdi>`publish-npm.yml`</bdi>) الذي يبدأه دفعُ الوسم. وإن
+   لم يبدأ ذلك التشغيل، فشغِّل سير العمل يدويًا من تبويب <bdi>GitHub Actions</bdi>
+   مع <bdi>`tag=<release-tag>`</bdi>.
 10. تحقّق من الحزمة المنشورة فعليًا:
 
     ```bash title="npm verification"
