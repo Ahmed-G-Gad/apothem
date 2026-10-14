@@ -2,7 +2,7 @@
 title: "Comparaison"
 description: "Comment évaluer Apothem face à une configuration d'environnement maintenue à la main et à d'autres approches de configuration, avec une matrice de fonctionnalités et des pages par environnement."
 machineTranslated: true
-sourceHash: "bb767de9bd99533a"
+sourceHash: "4a833217abbbb01d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -37,7 +37,7 @@ vie réversible et vérifié.
 | Capacité | Apothem | Gestionnaires de configuration par fichiers (chezmoi, Stow) | rulesync | ruler |
 | ---------- | :-----: | :----------------------------------: | :------: | :---: |
 | Une source vers les schémas natifs de nombreux outils | Oui — dix-sept adaptateurs d'environnement | Non — copie, lien symbolique ou template, sans traduction | Oui — 60 outils plus les standards AGENTS.md et Agent Skills | En partie — règles concaténées dans le fichier d'instructions de chaque outil ; MCP, skills et sous-agents écrits sous forme native |
-| Unité synchronisée | règles, skills, hooks, commandes slash, MCP | fichiers arbitraires | règles, ignore, MCP, commandes, sous-agents, skills, hooks, permissions, checks (instructions de vérification pour la revue de code) | règles, MCP, skills, sous-agents |
+| Unité synchronisée | règles, skills, sous-agents, hooks, commandes slash, output-styles, paramètres, MCP | fichiers arbitraires | règles, ignore, MCP, commandes, sous-agents, skills, hooks, permissions, checks (instructions de vérification pour la revue de code) | règles, MCP, skills, sous-agents |
 | Corpus de gouvernance (règles comportementales plus un portail de conformité mécanique) | Oui — `python -m apothem.conformity.gate` | Non | Non — sa fonctionnalité `checks` synchronise des vérifications de revue de code vers les outils ; aucun portail de conformité sur les règles | Non |
 | Pipelines déterministes de planification et de recherche | Oui — de `/plan-spec` à `/plan-execute`, `/research` en treize étapes | Non | Non | Non |
 | Forteresse d'audit qui détecte et corrige | Oui — balayage à onze commandes, boucle de ré-audit `/fortress` | Non | Non | Non |

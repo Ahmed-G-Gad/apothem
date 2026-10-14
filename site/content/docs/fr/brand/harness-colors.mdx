@@ -2,7 +2,7 @@
 title: "Couleurs de marque des environnements"
 description: "Palette de couleurs par environnement utilisée sur tout le site web du projet Apothem et dans chaque diagramme d'architecture. Une source de vérité unique : une couleur par environnement, un concentrateur apothem."
 machineTranslated: true
-sourceHash: "7a191edb550076ef"
+sourceHash: "8bd8ae0d07b55675"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -105,8 +105,21 @@ graph LR
 
 ## Accessibilité
 
-Chaque jeton du mode clair atteint le contraste WCAG 2.2 AA face à un texte blanc (≥4.5 : 1) là où le contraste le permet sans dénaturer la couleur de marque. Lorsque la couleur de marque native d'un environnement passe à elle seule sous le seuil AA face à un texte blanc (notamment la famille ambre / orange et la famille bleu ciel / sarcelle des jetons énumérés ci-dessus), les diagrammes qui exigent un contraste WCAG AA du texte sur la couleur utilisent la **variante du mode sombre** (la teinte éclaircie) comme remplissage du diagramme, afin que le texte blanc se lise nettement. La colonne du mode sombre est calibrée à cette fin : chaque jeton du mode sombre franchit le seuil AA face à un texte blanc.
+Chaque jeton du mode clair conserve sa couleur de marque sans la déformer ; huit d'entre eux se situent donc sous le contraste WCAG 2.2 AA face à un texte blanc (≥4.5 : 1). Les autres jetons du mode clair l'atteignent. Les huit, avec leur contraste face au blanc :
+
+```text
+shared-profile   2.54 : 1
+claude-code      3.28 : 1
+codex            3.20 : 1
+gemini-cli       3.56 : 1
+opencode         2.15 : 1
+qwen-code        2.87 : 1
+trae             3.86 : 1
+windsurf         2.77 : 1
+```
+
+La colonne du mode sombre est destinée aux fonds sombres, et aucun de ses jetons n'atteint 4.5 : 1 face à un texte blanc. Un diagramme qui exige un contraste WCAG AA du texte sur la couleur pour l'un de ces huit remplissages DOIT utiliser un texte sombre (`#0F172A`, qui mesure de 4.63 : 1 à 8.31 : 1 sur ceux-ci) au lieu du blanc.
 
 ## Mises à jour
 
-La palette n'est mise à jour que lorsqu'un environnement ratifie un changement de marque en amont. Les changements de marque d'un environnement se propagent de manière atomique dans `site/app/global.css`, dans cette page et dans chaque master SVG concerné sous `assets/src/`.
+La palette n'est mise à jour que lorsqu'un environnement ratifie un changement de marque en amont. Les couleurs des environnements sont définies sur cette page, et non dans `assets/design-tokens.css` ni dans `site/app/global.css`. Les changements de marque d'un environnement se propagent de manière atomique dans cette page et dans chaque master SVG concerné sous `assets/src/`.
