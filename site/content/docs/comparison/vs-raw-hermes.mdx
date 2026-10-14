@@ -26,8 +26,10 @@ skill-discovery surface. Non-skill cohorts remain Apothem support material.
 ## What Apothem manages
 
 The Hermes adapter writes `config.yaml`, wraps Apothem slash commands as
-skills, copies Apothem skills into the referenced support directory, and keeps
-rules, templates, agents, and hook material under the Apothem support subtree.
+skills, copies Apothem skills into the support directory, and keeps rules,
+templates, agents, and hook material under the Apothem support subtree. Hermes
+loads those skills only after you add `~/.hermes/.apothem/support/skills` to
+`skills.external_dirs` in `config.yaml`.
 
 ## Migration path
 

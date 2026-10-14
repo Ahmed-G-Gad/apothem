@@ -47,9 +47,9 @@ keeps keys you add to `config.yaml`. The adapter writes the profile's MCP
 inventory under the top-level `mcp_servers` key, where Hermes reads MCP servers.
 Earlier Apothem releases wrote it under `auxiliary.mcp`, which Hermes reads as
 the auxiliary model for MCP tool dispatch; both `apothem update` and
-`apothem uninstall` remove that block while it still holds exactly what such a
-release wrote (see [Uninstalling](#uninstalling)). (Hermes behavior per its user
-guide pages on
+`apothem uninstall` remove that block while it still matches what such a
+release would write from your shared profile (see
+[Uninstalling](#uninstalling)). (Hermes behavior per its user guide pages on
 [skills](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)
 and [MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md),
 read 2026-10-02.)
@@ -90,12 +90,14 @@ created it and nothing of yours is left), the profile document, and the support
 tree. The shared profile YAML and Apothem engine are unaffected.
 
 An install made by an earlier release, which wrote the profile's servers under
-`auxiliary.mcp`, also has that block removed when it still holds exactly what
-that release wrote, as rendered from the shared profile at
+`auxiliary.mcp`, also has that block removed when it still matches what that
+release would write from your current shared profile at
 `~/.config/apothem/profile.yaml`. This is the same rule `apothem update` applies,
-so uninstalling without updating first leaves no stale block. A block you have
-edited, or one with no readable shared profile to compare against, stays in
-place, and the rest of your `auxiliary` settings always stay.
+so uninstalling without updating first leaves no stale block while the profile's
+MCP servers are unchanged. A block you have edited, one that no longer matches
+your current profile's MCP servers, or one with no readable shared profile to
+compare against, stays in place, and the rest of your `auxiliary` settings
+always stay.
 
 ## Conformity gate
 

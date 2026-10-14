@@ -46,8 +46,8 @@ maxTurns: <integer>
 
 ## Per-harness conversion
 
-A helper whose `tools` grant, after `disallowedTools`, includes no `Write` or
-`Edit` is read-only. Each harness that converts helpers either enforces that
+A helper whose `tools` grant, after `disallowedTools`, includes no file-editing
+tool (`Write`, `Edit`, `MultiEdit`, or `NotebookEdit`) is read-only. Each harness that converts helpers either enforces that
 limit natively or drops the read-only label:
 
 | Harness | Tool limit | Turn limit | Model and effort |

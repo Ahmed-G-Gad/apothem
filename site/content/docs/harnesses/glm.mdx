@@ -40,7 +40,8 @@ URL `https://api.z.ai/api/coding/paas/v4`. The auth token is a placeholder you
 replace with your own Z.ai key — Apothem never writes a real secret. Model ids
 are version-volatile, so Apothem pins none; the file carries `<GLM_MODEL_ID>`
 placeholders you fill from the current
-[Z.ai documentation](https://docs.z.ai/devpack/tool/claude).
+[Z.ai documentation](https://docs.z.ai/devpack/tool/claude). Nothing from the
+shared profile goes into this file; it is a fixed template.
 
 ## Compatibility notes
 
@@ -101,8 +102,8 @@ python -m apothem.conformity.gate --all .
 | Symptom | Fix |
 |---------|-----|
 | Config file not found | Re-run `apothem install --harness glm --project /path/to/project` |
-| Verification failed | Run `apothem update --harness glm --project /path/to/project`, then verify again |
-| Unexpected config content | Check `~/.config/apothem/profile.yaml` or `--profile PATH`, then re-run `apothem update --harness glm --project /path/to/project` |
+| Verification failed | The provider file is missing or empty. If it is missing, run `apothem update --harness glm --project /path/to/project`. If it is empty, move `.apothem/providers/glm.toml` aside first, then run `update` and verify again |
+| Unexpected config content | Edit `.apothem/providers/glm.toml` directly; Apothem never rewrites an existing file, and the shared profile adds nothing to it. For a fresh template, move the file aside and run `apothem update --harness glm --project /path/to/project` |
 
 ## Configuration knobs
 
