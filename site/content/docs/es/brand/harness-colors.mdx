@@ -2,7 +2,7 @@
 title: "Colores de marca de los entornos"
 description: "Paleta de colores por entorno usada en el sitio web del proyecto Apothem y en cada diagrama de arquitectura. Una única fuente de verdad: un color por entorno, un concentrador apothem."
 machineTranslated: true
-sourceHash: "7a191edb550076ef"
+sourceHash: "8bd8ae0d07b55675"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,8 +21,8 @@ Quince de los diecisiete entornos están coloreados para coincidir con su
 identidad de marca principal, de modo que un lector pueda distinguir las
 herramientas en un diagrama. La propia marca de Apothem usa solo los colores
 pizarra y esmeralda de la página de [paleta](/docs/brand/palette); no lleva
-ningún color de entorno. Los dos restantes — `glm` y `kimi-code` — aún no tienen
-un color de marca definido; sus filas se añaden una vez que se fija el color de
+ningún color de entorno. Los dos restantes — `glm` y `kimi-code` — aún no tienen un
+color de marca definido; sus filas se añaden una vez que se fija el color de
 marca aguas arriba, según el paso de propagación de
 [Actualizaciones](#actualizaciones).
 
@@ -104,8 +104,21 @@ graph LR
 
 ## Accesibilidad
 
-Cada token de modo claro cumple el contraste WCAG 2.2 AA frente a texto blanco (≥4.5 : 1) donde el contraste lo permite sin distorsionar el color de marca. Cuando el color de marca nativo de un entorno, por sí solo, queda por debajo del umbral AA frente a texto blanco (en particular, la familia ámbar / naranja y la familia azul cielo / verde azulado de los tokens enumerados arriba), los diagramas que necesitan un contraste WCAG AA de texto sobre color usan la **variante de modo oscuro** (el tono elevado) como relleno del diagrama para que el texto blanco se lea con claridad. La columna de modo oscuro está calibrada para este fin: cada token de modo oscuro supera AA frente a texto blanco.
+Cada token de modo claro conserva su color de marca sin distorsionarlo, por lo que ocho de ellos quedan por debajo del contraste WCAG 2.2 AA frente a texto blanco (≥4.5 : 1). Los demás tokens de modo claro lo cumplen. Los ocho, con su contraste frente al blanco:
+
+```text
+shared-profile   2.54 : 1
+claude-code      3.28 : 1
+codex            3.20 : 1
+gemini-cli       3.56 : 1
+opencode         2.15 : 1
+qwen-code        2.87 : 1
+trae             3.86 : 1
+windsurf         2.77 : 1
+```
+
+La columna de modo oscuro es para fondos oscuros, y ninguno de sus tokens alcanza 4.5 : 1 frente a texto blanco. Un diagrama que necesite un contraste WCAG AA de texto sobre color en uno de esos ocho rellenos DEBE usar texto oscuro (`#0F172A`, que mide de 4.63 : 1 a 8.31 : 1 sobre ellos) en lugar de blanco.
 
 ## Actualizaciones
 
-La paleta se actualiza solo cuando un entorno ratifica un cambio de marca aguas arriba. Los cambios de marca por entorno se propagan de forma atómica a `site/app/global.css`, a esta página y a cada SVG maestro afectado bajo `assets/src/`.
+La paleta se actualiza solo cuando un entorno ratifica un cambio de marca aguas arriba. Los colores de los entornos se definen en esta página, no en `assets/design-tokens.css` ni en `site/app/global.css`. Los cambios de marca por entorno se propagan de forma atómica a esta página y a cada SVG maestro afectado bajo `assets/src/`.
