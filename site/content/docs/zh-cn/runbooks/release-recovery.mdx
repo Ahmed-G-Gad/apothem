@@ -2,7 +2,7 @@
 title: "发布恢复操作手册"
 description: "在追加式发布模型下，针对执行途中失败的发布逐阶段给出的恢复流程，不改写已发布的历史。"
 machineTranslated: true
-sourceHash: "5d706b629803179a"
+sourceHash: "263f18e3216bf674"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -76,7 +76,7 @@ git tag -v vX.Y.Z           # signature check
 
 ## 5. 发布门面规则
 
-仓库的发布门面规则（贡献者说明中的 Release Facade 一节）要求一个可见的发布标签和一个 GitHub Release。实际做法保留了每一个发布，而 npm 无法遵从该规则：其版本不可变。在维护者对该规则作出决定之前，本操作手册遵循上述追加式模型，绝不为满足该规则而删除或改写已发布的标签、GitHub Release 或 npm 版本。
+仓库的发布门面规则（贡献者说明中的 Release Facade 一节）阐明了上述追加式模型：所有已发布的标签、GitHub Release 和 npm 版本都保持已发布状态。其仅限当前版本的要求适用于公开表面上的说法。本操作手册绝不删除或改写已发布的标签、GitHub Release 或 npm 版本。
 
 ## 6. 交叉引用
 

@@ -2,7 +2,7 @@
 title: "Runbook de recuperação de lançamento"
 description: "Procedimentos de recuperação, estágio por estágio, para um lançamento que falha no meio do processo sob o modelo de lançamento aditivo, sem reescrever o histórico publicado."
 machineTranslated: true
-sourceHash: "5d706b629803179a"
+sourceHash: "263f18e3216bf674"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -97,11 +97,11 @@ resolvidos. Registre a reversão como um incidente de lançamento.
 ## 5. A regra de fachada de lançamento
 
 A regra de fachada de lançamento do repositório (a seção Release Facade das
-instruções para contribuidores) pede uma única tag de lançamento visível e um
-único GitHub Release. A prática mantém todos os lançamentos, e o npm não consegue cumpri-la:
-suas versões são imutáveis. Até que o mantenedor resolva essa regra, este
-runbook segue o modelo aditivo acima e nunca exclui nem reescreve tags, GitHub
-Releases ou versões do npm publicados para atendê-la.
+instruções para contribuidores) estabelece o modelo aditivo acima: todas as
+tags, todos os GitHub Releases e todas as versões do npm publicadas permanecem
+publicadas. O requisito de apenas a versão atual abrange o que as superfícies
+públicas afirmam. Este runbook nunca exclui nem reescreve tags, GitHub Releases
+ou versões do npm publicados.
 
 ## 6. Referências cruzadas
 

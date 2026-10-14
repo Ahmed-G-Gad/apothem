@@ -2,7 +2,7 @@
 title: "Runbook zur Release-Wiederherstellung"
 description: "Wiederherstellungsverfahren für ein Release, das unter dem additiven Release-Modell mitten im Ablauf fehlschlägt, Stufe für Stufe und ohne veröffentlichten Verlauf umzuschreiben."
 machineTranslated: true
-sourceHash: "5d706b629803179a"
+sourceHash: "263f18e3216bf674"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -105,12 +105,12 @@ weiterhin aufgelöst werden. Protokollieren Sie den Rollback als Release-Vorfall
 ## 5. Die Release-Facade-Regel
 
 Die Release-Facade-Regel des Repositorys (der Abschnitt Release Facade der
-Anweisungen für Mitwirkende) verlangt ein sichtbares Release-Tag und ein GitHub
-Release. Die Praxis behält jedes Release, und npm kann dem nicht entsprechen:
-Seine Versionen sind unveränderlich. Bis der Maintainer diese Regel klärt, folgt
-dieses Runbook dem obigen additiven Modell und löscht niemals veröffentlichte
-Tags, GitHub Releases oder npm-Versionen und schreibt sie niemals um, um ihr zu
-genügen.
+Anweisungen für Mitwirkende) gibt das oben beschriebene additive Modell wieder:
+Jedes veröffentlichte Tag, jedes GitHub Release und jede npm-Version bleibt
+bestehen. Die Anforderung, nur die aktuelle Version auszuweisen, betrifft, was
+öffentliche Oberflächen aussagen. Dieses Runbook löscht niemals ein
+veröffentlichtes Tag, ein GitHub Release oder eine npm-Version und schreibt keines
+davon um.
 
 ## 6. Querverweise
 

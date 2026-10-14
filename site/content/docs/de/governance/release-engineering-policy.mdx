@@ -2,7 +2,7 @@
 title: "Release-Engineering-Richtlinie"
 description: "Fünf kanonische Richtlinien für Versionierung, Release-Tagging, Veraltungszyklen, inkompatible Änderungen und Rollback-Verfahren."
 machineTranslated: true
-sourceHash: "29b59b2934ad73e3"
+sourceHash: "b030ea8b958faa67"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -57,12 +57,10 @@ veröffentlichten Tag ab. Die Runbooks zum
 diesem Modell.
 
 Die Release-Facade-Regel des Repositorys (der Abschnitt Release Facade der
-Anweisungen für Mitwirkende, gespiegelt in der Freshness-Facade-Regel) verlangt
-„ein sichtbares Release-Tag, ein GitHub Release“. Das widerspricht diesem
-Modell: Es existieren drei Releases, und npm kann eine veröffentlichte Version
-nicht entfernen. Die Regel bleibt unverändert, bis der Maintainer sie klärt.
-Bis dahin gilt das additive Modell, und nichts Veröffentlichtes wird gelöscht
-oder umgeschrieben, um der Regel zu genügen.
+Anweisungen für Mitwirkende) gibt dieses Modell wieder. Die Anforderung, nur die
+aktuelle Version auszuweisen (in der Freshness-Facade-Regel gespiegelt),
+betrifft, was öffentliche Oberflächen aussagen. Die Regel begrenzt nicht, welche
+Releases veröffentlicht bleiben.
 
 ## 3. Veraltungsrichtlinie
 

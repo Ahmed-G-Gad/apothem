@@ -2,7 +2,7 @@
 title: "Politique d'ingénierie de publication"
 description: "Cinq politiques canoniques pour le versionnage, l'étiquetage des publications, les cycles d'obsolescence, les changements incompatibles et les procédures de retour arrière."
 machineTranslated: true
-sourceHash: "29b59b2934ad73e3"
+sourceHash: "b030ea8b958faa67"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -55,12 +55,10 @@ de [récupération de publication](/docs/runbooks/release-recovery) suivent tous
 deux ce modèle.
 
 La règle de façade de publication du dépôt (la section Release Facade des
-instructions destinées aux contributeurs, reprise dans la règle de façade de
-fraîcheur) demande « une seule étiquette de publication visible, un seul GitHub
-Release ». Cela contredit ce modèle : trois publications existent, et npm ne
-peut pas retirer une version publiée. La règle reste inchangée jusqu'à ce que le
-mainteneur la tranche. D'ici là, le modèle additif prévaut, et rien de ce qui a
-été publié n'est supprimé ni réécrit pour satisfaire la règle.
+instructions destinées aux contributeurs) énonce ce modèle. Son exigence de
+n'afficher que la version courante, reprise dans la règle de façade de
+fraîcheur, porte sur ce qu'affichent les surfaces publiques. Elle ne limite pas
+les publications qui restent publiées.
 
 ## 3. Politique d'obsolescence
 

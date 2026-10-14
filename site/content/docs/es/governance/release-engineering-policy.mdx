@@ -2,7 +2,7 @@
 title: "Política de ingeniería de lanzamientos"
 description: "Cinco políticas canónicas para el versionado, el etiquetado de lanzamientos, los ciclos de obsolescencia, los cambios incompatibles y los procedimientos de reversión."
 machineTranslated: true
-sourceHash: "29b59b2934ad73e3"
+sourceHash: "b030ea8b958faa67"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -55,12 +55,9 @@ Los runbooks de [ciclo de lanzamiento](/docs/runbooks/release-cycle) y de
 este modelo.
 
 La regla de fachada de lanzamiento del repositorio (la sección Release Facade de
-las instrucciones para colaboradores, reflejada en la regla freshness-facade)
-pide «una sola etiqueta de lanzamiento visible, un solo GitHub Release». Eso
-contradice este modelo: existen tres lanzamientos, y npm no puede retirar una
-versión publicada. La regla permanece sin cambios hasta que el mantenedor la
-resuelva. Hasta entonces rige el modelo aditivo, y nada de lo publicado se
-elimina ni se reescribe para cumplir la regla.
+las instrucciones para colaboradores) enuncia este modelo. Su requisito de solo la
+versión actual, reflejado en la regla freshness-facade, abarca lo que dicen las
+superficies públicas. No limita qué lanzamientos siguen publicados.
 
 ## 3. Política de obsolescencia
 

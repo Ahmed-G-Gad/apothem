@@ -2,7 +2,7 @@
 title: "发布工程策略"
 description: "关于版本管理、发布标签、弃用周期、破坏性变更和回滚流程的五项规范策略。"
 machineTranslated: true
-sourceHash: "29b59b2934ad73e3"
+sourceHash: "b030ea8b958faa67"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,7 +34,7 @@ sourceHash: "29b59b2934ad73e3"
 
 发布是追加式的。每次发布在 `main` 上添加一个提交和一个标签；`main` 绝不会被强制推送，任何已发布的标签、GitHub Release 或 npm 版本都不会被删除、移动或复用。项目有三个发布，每个发布都有其标签、其 GitHub Release 和其 npm 版本，这三个发布全部保持已发布状态。npm 版本不可变：已发布的 `name@version` 永远无法被替换，已被撤销发布的版本号也永远不能再次使用。固定版本的安装和可复现构建依赖于每一个已发布的标签。[发布周期](/docs/runbooks/release-cycle)和[发布恢复](/docs/runbooks/release-recovery)这两份操作手册都遵循此模型。
 
-仓库的发布门面规则（贡献者说明中的 Release Facade 一节，并在 freshness-facade 规则中有镜像）要求“一个可见的发布标签，一个 GitHub Release”。这与本模型相矛盾：已经存在三个发布，而 npm 无法撤下已发布的版本。在维护者对该规则作出决定之前，该规则保持不变。在此之前，由追加式模型管辖，任何已发布的内容都不会为了满足该规则而被删除或改写。
+仓库的发布门面规则（贡献者说明中的 Release Facade 一节）阐明了本模型。其仅限当前版本的要求（在 freshness-facade 规则中有镜像）适用于公开表面上的说法。它不限制哪些发布仍保持已发布状态。
 
 ## 3. 弃用策略
 

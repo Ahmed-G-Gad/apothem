@@ -2,7 +2,7 @@
 title: "Política de engenharia de lançamento"
 description: "Cinco políticas canônicas para versionamento, tags de lançamento, ciclos de descontinuação, mudanças incompatíveis e procedimentos de reversão."
 machineTranslated: true
-sourceHash: "29b59b2934ad73e3"
+sourceHash: "b030ea8b958faa67"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -55,12 +55,9 @@ cada tag publicada. Os runbooks de
 modelo.
 
 A regra de fachada de lançamento do repositório (a seção Release Facade das
-instruções para contribuidores, espelhada na regra freshness-facade) pede "uma
-única tag de lançamento visível, um único GitHub Release". Isso contradiz este
-modelo: existem três lançamentos, e o npm não consegue remover uma versão
-publicada. A regra permanece inalterada até que o mantenedor a resolva. Até lá,
-o modelo aditivo prevalece, e nada do que foi publicado é excluído ou reescrito
-para satisfazer a regra.
+instruções para contribuidores) estabelece este modelo. Seu requisito de apenas a
+versão atual, espelhado na regra freshness-facade, abrange o que as superfícies
+públicas afirmam. Ele não limita quais lançamentos permanecem publicados.
 
 ## 3. Política de descontinuação
 

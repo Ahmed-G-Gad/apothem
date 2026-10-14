@@ -2,7 +2,7 @@
 title: "릴리스 복구 런북"
 description: "추가형 릴리스 모델에서 진행 도중 실패한 릴리스를 게시된 히스토리를 다시 쓰지 않고 단계별로 복구하는 절차입니다."
 machineTranslated: true
-sourceHash: "5d706b629803179a"
+sourceHash: "263f18e3216bf674"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -95,12 +95,11 @@ git tag -v vX.Y.Z           # signature check
 
 ## 5. 릴리스 파사드 규칙
 
-저장소의 릴리스 파사드 규칙(기여자 지침의 Release Facade 섹션)은 보이는 릴리스
-태그 하나와 GitHub Release 하나를 요구합니다. 실제 운영에서는 모든 릴리스를
-유지하며, npm은 이 규칙을 따를 수 없습니다. npm 버전은 변경할 수 없기
-때문입니다. 메인테이너가 그 규칙을 확정할 때까지, 이 런북은 위의 추가형 모델을
-따르며 그 규칙을 충족하기 위해 게시된 태그, GitHub Release, npm 버전을 절대
-삭제하거나 다시 쓰지 않습니다.
+저장소의 릴리스 파사드 규칙(기여자 지침의 Release Facade 섹션)은 위의
+추가형 모델을 명시합니다. 게시된 모든 태그, GitHub Release, npm 버전은
+게시된 상태로 남습니다. 현재 버전만 나타내야 한다는 요건은 공개 표면이
+말하는 내용에 적용됩니다. 이 런북은 게시된 태그, GitHub Release 또는
+npm 버전을 절대 삭제하거나 다시 쓰지 않습니다.
 
 ## 6. 상호 참조
 

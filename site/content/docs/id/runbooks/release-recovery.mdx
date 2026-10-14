@@ -2,7 +2,7 @@
 title: "Runbook pemulihan rilis"
 description: "Prosedur pemulihan untuk rilis yang gagal di tengah jalan di bawah model rilis aditif, tahap demi tahap, tanpa menulis ulang riwayat yang telah dipublikasikan."
 machineTranslated: true
-sourceHash: "5d706b629803179a"
+sourceHash: "263f18e3216bf674"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -101,12 +101,11 @@ Catat rollback sebagai insiden rilis.
 ## 5. Aturan fasad rilis
 
 Aturan fasad rilis repositori (bagian Release Facade dari instruksi
-kontributor) meminta satu tag rilis yang terlihat dan satu GitHub Release.
-Praktik yang berjalan mempertahankan setiap rilis, dan npm tidak dapat
-mematuhinya: versinya tidak dapat diubah. Sampai pemelihara memutuskan aturan
-tersebut, runbook ini mengikuti model aditif di atas dan tidak pernah menghapus
-atau menulis ulang tag, GitHub Release, atau versi npm yang telah
-dipublikasikan untuk memenuhinya.
+kontributor) menyatakan model aditif di atas: setiap tag, GitHub Release, dan
+versi npm yang telah dipublikasikan tetap terpublikasi. Persyaratan untuk hanya
+menampilkan versi saat ini berlaku untuk apa yang dinyatakan permukaan publik.
+Runbook ini tidak pernah menghapus atau menulis ulang tag, GitHub Release, atau
+versi npm yang telah dipublikasikan.
 
 ## 6. Referensi silang
 

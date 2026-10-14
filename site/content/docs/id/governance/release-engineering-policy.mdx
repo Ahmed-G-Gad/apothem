@@ -2,7 +2,7 @@
 title: "Kebijakan rekayasa rilis"
 description: "Lima kebijakan kanonik untuk versioning, penandaan rilis, siklus penghentian, perubahan yang tidak kompatibel, dan prosedur rollback."
 machineTranslated: true
-sourceHash: "29b59b2934ad73e3"
+sourceHash: "b030ea8b958faa67"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -56,12 +56,10 @@ tag yang telah dipublikasikan. Runbook
 ini.
 
 Aturan fasad rilis repositori (bagian Release Facade dari instruksi
-kontributor, dicerminkan dalam aturan freshness-facade) meminta "satu tag rilis
-yang terlihat, satu GitHub Release". Hal itu bertentangan dengan model ini: tiga
-rilis sudah ada, dan npm tidak dapat menghapus versi yang telah dipublikasikan.
-Aturan tersebut tetap tidak berubah sampai pemelihara memutuskannya. Sampai saat
-itu, model aditif yang berlaku, dan tidak ada yang telah dipublikasikan yang
-dihapus atau ditulis ulang untuk memenuhi aturan tersebut.
+kontributor) menyatakan model ini. Persyaratan untuk hanya menampilkan versi
+saat ini, yang dicerminkan dalam aturan freshness-facade, berlaku untuk apa yang
+dinyatakan permukaan publik. Persyaratan itu tidak membatasi rilis mana yang
+tetap terpublikasi.
 
 ## 3. Kebijakan penghentian
 

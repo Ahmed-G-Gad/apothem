@@ -2,7 +2,7 @@
 title: "Runbook de récupération de publication"
 description: "Procédures de récupération, étape par étape, pour une publication qui échoue en cours de route sous le modèle de publication additif, sans réécrire l'historique publié."
 machineTranslated: true
-sourceHash: "5d706b629803179a"
+sourceHash: "263f18e3216bf674"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -103,12 +103,11 @@ publication.
 ## 5. La règle de façade de publication
 
 La règle de façade de publication du dépôt (la section Release Facade des
-instructions destinées aux contributeurs) demande une seule étiquette de
-publication visible et un seul GitHub Release. La pratique conserve chaque
-publication, et npm ne peut pas s'y conformer : ses versions sont immuables.
-Tant que le mainteneur n'a pas tranché cette règle, ce runbook suit le modèle
-additif ci-dessus et ne supprime ni ne réécrit jamais des étiquettes, des GitHub
-Releases ou des versions npm publiés pour la satisfaire.
+instructions destinées aux contributeurs) énonce le modèle additif ci-dessus :
+chaque étiquette publiée, chaque GitHub Release et chaque version npm publiée
+restent en place. Son exigence de n'afficher que la version courante porte sur
+ce qu'affichent les surfaces publiques. Ce runbook ne supprime ni ne réécrit
+jamais une étiquette publiée, un GitHub Release ou une version npm publiée.
 
 ## 6. Références croisées
 
