@@ -414,8 +414,9 @@ function generateConformityBlock() {
 	return [
 		START,
 		'',
-		`The gate registers ${payload.validators.length} validators: ${counts['per-write']} per-write, ` +
-			`${counts.standalone} standalone and ${counts['change-set']} change-set.`,
+		`The conformity package ships ${payload.validators.length} validators: ${counts['per-write']} per-write, ` +
+			`${counts.standalone} standalone and ${counts['change-set']} change-set. ` +
+			'The gate registers the per-write and standalone ones.',
 		'',
 		'| Validator | Runs | Rule anchor | What it checks |',
 		'| --- | --- | --- | --- |',

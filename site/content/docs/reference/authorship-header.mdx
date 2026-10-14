@@ -95,8 +95,8 @@ The SPDX line declares the project's license machine-readably; the LICENSE file 
 ## 5. Insertion Position
 
 - The SPDX line is the **first content** of the file, with one and only one exception: a shebang line (`#!/usr/bin/env bash`, `#!/usr/bin/env python3`, etc.), which always remains line 1; the SPDX line begins on line 2.
-- For Markdown / MDX files with YAML frontmatter, the SPDX comment sits at the very top, the YAML frontmatter follows, then the H1 and body. The rendered output begins with an invisible comment, then the frontmatter is parsed by tooling, then the visible content flows.
-- A single blank line separates the SPDX line from the next content (frontmatter `---`, shebang's successor, H1, etc.).
+- For Markdown / MDX files with YAML frontmatter, the frontmatter stays at byte 0 so tooling can parse it, and the SPDX comment follows the closing `---`, then the H1 and body. `scripts/inject-header.py` places the comment this way.
+- A single blank line separates the SPDX line from the next content (the H1, the body, etc.).
 
 ---
 
