@@ -481,6 +481,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   had pointed at English heading names the translated pages do not use. The
   translated source-layout, conformity-gate and pipeline pages now show the
   generated tables their English pages carry.
+- **Install runs under a Microsoft Store Python.** The interpreter resolver
+  rejected the Python that was running it whenever its path contained
+  `WindowsApps`, which is the path the Store build of CPython reports for
+  itself. So `apothem install`, `update` and `diff` for Claude Code and Qwen
+  Code stopped with a traceback ending in `no real CPython >= 3.10 interpreter
+  found`. The resolver now uses that interpreter as it reports itself. Its
+  search of `PATH` still skips the Store launcher stub.
 
 ### Security
 

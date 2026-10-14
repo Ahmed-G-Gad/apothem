@@ -15,7 +15,16 @@ Resolution order:
    ``requires-python = ">=3.10"``, so a WindowsApps stub (which cannot import or
    run apothem at all) can never be the running interpreter; ``sys.executable``
    is therefore guaranteed a real CPython that satisfies the floor whenever it
-   is populated and points at a real file.
+   is populated and points at a real file. One ``WindowsApps`` path is exactly
+   that real interpreter: the Microsoft Store build of CPython reports
+   ``...\\Microsoft\\WindowsApps\\PythonSoftwareFoundation.Python.<version>_<id>\\
+   python.exe`` (``PC/python_uwp.cpp`` in CPython), an app-execution alias. It
+   is returned as reported, without the stub test, the size floor, or symlink
+   resolution. The alias is a reparse point, not an ordinary executable file,
+   so the size floor says nothing against it. It is not resolved because it is
+   the path CPython reports and other processes launch, and what resolution
+   does to a reparse point was not checked on Windows. Every other
+   ``WindowsApps`` path stays rejected.
 2. A ``PATH`` walk mirroring ``hooks/lib/find-python.sh`` — every candidate name
    probed in ``PATH`` order, ``WindowsApps`` shims and (on Windows)
    sub-1024-byte stubs rejected, each survivor version-probed against the
@@ -59,6 +68,11 @@ _CANDIDATE_NAMES: Final[tuple[str, ...]] = (
 # are legitimate interpreters and must not be rejected by size.
 _MIN_INTERPRETER_BYTES: Final[int] = 1024
 
+# Package family prefix of the Microsoft Store build of CPython, compared
+# case-folded. The trailing dot keeps the Python install manager's own
+# ``PythonSoftwareFoundation.PythonManager_*`` package out of the match.
+_STORE_PACKAGE_PREFIX: Final[str] = "pythonsoftwarefoundation.python."
+
 # Probe program: print ``"<major> <minor>"`` for the running interpreter.
 _VERSION_PROBE: Final[str] = (
     "import sys; "
@@ -89,6 +103,32 @@ def _is_windowsapps_stub(path: Path) -> bool:
     except OSError:
         return True
     return _is_windows() and size < _MIN_INTERPRETER_BYTES
+
+
+def _is_store_python_alias(path: Path) -> bool:
+    """Return True when *path* is the Microsoft Store CPython's own alias.
+
+    The Store build reports ``sys.executable`` as
+    ``<LocalAppData>\\Microsoft\\WindowsApps\\<package family>\\python.exe``. That
+    file is an app-execution alias (a reparse point) and it is the interpreter
+    running the process, so the stub and size tests do not apply to it. The
+    shape is positive evidence only. The not-installed launcher stub (directly
+    in ``WindowsApps``), the redirector's own package, other apps, the Python
+    install manager, and the package install directory all fail it. The
+    ``WindowsApps`` segment alone never matches. Names compare case-folded, as
+    Windows paths do.
+    """
+    parts = path.parts
+    if len(parts) < 4:
+        return False
+    microsoft, windowsapps, family, name = (part.casefold() for part in parts[-4:])
+    return (
+        microsoft == "microsoft"
+        and windowsapps == "windowsapps"
+        and family.startswith(_STORE_PACKAGE_PREFIX)
+        and name.startswith("python")
+        and name.endswith(".exe")
+    )
 
 
 def _probe_version(executable: Path) -> tuple[int, int] | None:
@@ -181,16 +221,23 @@ def resolve_python_bin() -> Path:
 
     Prefers ``sys.executable`` (guaranteed a real, floor-satisfying interpreter
     whenever it is populated and points at a real file, because apothem cannot
-    run under a WindowsApps stub). Falls back to a ``PATH`` walk that rejects
-    Store shims. Raises :class:`RuntimeError` when no real interpreter can be
-    found — the adapter surfaces that as an install-time failure rather than
-    wiring a bare ``python`` that could resolve to a stub at hook-run time.
+    run under a WindowsApps stub). The Microsoft Store build of CPython reports
+    its own ``WindowsApps`` alias there, which is returned as reported; any
+    other ``WindowsApps`` path is skipped. Falls back to a ``PATH`` walk that
+    rejects Store shims. Raises :class:`RuntimeError` when no real interpreter
+    can be found — the adapter surfaces that as an install-time failure rather
+    than wiring a bare ``python`` that could resolve to a stub at hook-run time.
     """
     running = sys.executable
     if running:
         running_path = Path(running)
-        if running_path.is_file() and not _is_windowsapps_stub(running_path):
-            return running_path.resolve()
+        if running_path.is_file():
+            if _is_store_python_alias(running_path):
+                # Keep the alias path as reported: see the module docstring for
+                # why it is neither size-checked nor resolved.
+                return running_path.absolute()
+            if not _is_windowsapps_stub(running_path):
+                return running_path.resolve()
 
     resolved = _resolve_from_path()
     if resolved is not None:

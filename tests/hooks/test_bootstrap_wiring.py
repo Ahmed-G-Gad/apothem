@@ -26,6 +26,19 @@ from apothem.harnesses.claude_code import ClaudeCodeAdapter
 from apothem.lib import python_resolver
 
 
+def _is_store_launcher_stub(path: Path) -> bool:
+    """True for a ``WindowsApps`` path that is not the Store CPython's own alias.
+
+    The Microsoft Store build of CPython reports an alias under ``WindowsApps``
+    as ``sys.executable``. That alias is a real interpreter, so a developer
+    running this suite under a Store Python must not trip the stub assertions
+    below.
+    """
+    return "WindowsApps" in path.parts and not python_resolver._is_store_python_alias(
+        path
+    )
+
+
 def _hook_commands(settings: dict[str, object]) -> list[str]:
     """Return every hook ``command`` string across every event in *settings*."""
     commands: list[str] = []
@@ -82,8 +95,9 @@ def test_installed_command_is_absolute_real_interpreter(
 ) -> None:
     """Every hook command is an absolute path to a real CPython >= 3.10.
 
-    The resolved interpreter is never under ``WindowsApps`` (a Store launcher
-    stub) and satisfies the version floor.
+    The resolved interpreter is never a Store launcher stub (a ``WindowsApps``
+    path other than the Store CPython's own alias) and satisfies the version
+    floor.
     """
     settings = json.loads(
         (installed_root / "settings.json").read_text(encoding="utf-8")
@@ -91,7 +105,7 @@ def test_installed_command_is_absolute_real_interpreter(
     for command in _hook_commands(settings):
         path = Path(command)
         assert path.is_absolute(), f"hook command is not absolute: {command!r}"
-        assert "WindowsApps" not in path.parts
+        assert not _is_store_launcher_stub(path)
 
 
 def test_install_is_idempotent_for_hook_commands(
@@ -144,4 +158,4 @@ def test_resolver_prefers_running_interpreter() -> None:
     """When sys.executable is real, the resolver returns it (the floor holds)."""
     resolved = python_resolver.resolve_python_bin()
     assert resolved.is_absolute()
-    assert "WindowsApps" not in resolved.parts
+    assert not _is_store_launcher_stub(resolved)
