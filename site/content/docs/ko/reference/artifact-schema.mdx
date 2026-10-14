@@ -2,13 +2,13 @@
 title: "아티팩트 스키마 명세"
 description: "Apothem 소스 트리의 모든 아티팩트 타입에 대한 정식 YAML 프런트매터 스키마와 필수 필드, 그리고 클래스별 템플릿과 검증 규칙입니다."
 machineTranslated: true
-sourceHash: "376d3a98ba3102c6"
+sourceHash: "6c16d090e185c86c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 **Apothem 생태계의 모든 아티팩트에 대한 클래스별 YAML 프런트매터 템플릿과 필수 필드.**
 
-> **기준 출처.** 기계가 읽을 수 있고 게이트가 강제하는 계약은
+> **진실 공급원.** 기계가 읽을 수 있고 게이트가 강제하는 계약은
 > [`src/apothem/schemas/`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas)
 > 아래의 클래스별 JSON 스키마(`agent.schema.json`, `command.schema.json`,
 > `skill.schema.json`, …)이며, 각 스키마는 `additionalProperties`를 선언하므로
@@ -27,7 +27,7 @@ Apothem 소스 트리(`src/apothem/` 아래와 루트 구성 표면)의 모든 �
 **공통 규칙:**
 
 - 프런트매터는 YAML 1.2를 준수합니다
-- 모든 문자열 값은 비어 있지 않은 한 큰따옴표를 사용합니다
+- 비어 있는 경우를 제외하고 모든 문자열 값은 큰따옴표를 사용합니다
 - 필드 순서: 필수 필드를 먼저 두고, 선택 필드는 관련성에 따라 묶습니다
 - 프런트매터의 주석은 뒤에 공백이 오는 `#`를 사용합니다: `# comment`
 - 경로 값은 상대 경로여야 하며(앞에 `/` 없음), 크로스 플랫폼 호환성을 위해 슬래시(`/`)를 사용해야 합니다
@@ -112,7 +112,7 @@ allowed-tools: "Read, Glob, Grep"
 | `updated` | string (ISO 8601) | 최종 업데이트 날짜 | `"2026-04-20"` |
 | `description` | string | 짧은 설명 | `"Executes a phase with quality gates"` |
 | `argument-hint` | string | 사용 패턴, 없으면 `"[args...]"` | `"[path/to/plan] [phase-id]"` |
-| `disable-model-invocation` | boolean | true이면 운영자만 명령을 시작하며, 모델은 절대 스스로 호출하지 않음 | `true` |
+| `disable-model-invocation` | boolean | true이면 운영자만 명령을 시작하며, 모델은 스스로 절대 호출하지 않음 | `true` |
 | `portability` | string | 하니스 어댑터 전반의 이식성 분류 | `"universal"` |
 | `allowed-tools` | string | 명령이 실행되는 동안 사전 승인되는 도구: 읽기 전용 도구, 그리고 부작용이 있는 도구는 `Bash(git log *)` 같은 범위 지정 규칙으로만 허용. 단독 `"*"` 와일드카드는 거부됨 | `"Read, Glob, Grep"` |
 
@@ -277,7 +277,7 @@ Python 구현.
 
 ### 설정 파일 스키마
 
-`hooks` 최상위 키는 이벤트 이름을 매처 블록 배열에 매핑합니다.
+`hooks` 최상위 키는 이벤트 이름을 매처 블록의 배열에 매핑합니다.
 
 ```json
 "hooks": {
@@ -311,7 +311,7 @@ Python 구현.
 
 ### 필수 이벤트
 
-Claude Code 템플릿은 SessionStart, PreToolUse, PostToolUse, Stop 이벤트를 등록합니다. PreCompact와 PostCompact는 Claude Code에 등록되지 않으며([훅 참조](/docs/reference/hooks)), `scripts/dev/validate_hooks.py`는 각각을 누락된 것으로 경고로 보고합니다. 아래 표는 `validate_hooks.py`가 확인하는 다섯 개 이벤트를 나열합니다:
+Claude Code 템플릿은 SessionStart, PreToolUse, PostToolUse, Stop 이벤트를 등록합니다. PreCompact와 PostCompact는 Claude Code에 등록되지 않으며([훅 참조](/docs/reference/hooks)), `scripts/dev/validate_hooks.py`는 각각이 누락되었음을 경고로 보고합니다. 아래 표는 `validate_hooks.py`가 확인하는 다섯 개 이벤트를 나열합니다:
 
 > **타임아웃 값은 정식 훅 이벤트 예산을 그대로 따릅니다** — 아래 표는 독자의
 > 편의를 위해 이를 재현한 것이며, 정식 출처가 우선합니다.
@@ -324,7 +324,7 @@ Claude Code 템플릿은 SessionStart, PreToolUse, PostToolUse, Stop 이벤트�
 | `PostCompact` | 30초 | 컨텍스트 압축 후 작업 상태 복원 |
 | `Stop` | 60초 | 세션 종료 외부화 — 재개 상태, 출력, 결정 |
 
-`dispatch.py`는 향후 호환성을 위해 이벤트 화이트리스트에서
+`dispatch.py`는 향후 호환성을 위해 이벤트 허용 목록에서
 `UserPromptSubmit`과 `Notification`도 받아들입니다. 둘 다 배포되는 템플릿에는
 연결되어 있지 않습니다. 활성화하려면 같은 exec 형식 패턴으로 매처 블록을
 추가하세요.
@@ -335,7 +335,7 @@ Claude Code 템플릿은 SessionStart, PreToolUse, PostToolUse, Stop 이벤트�
 
 | 파일 | 역할 |
 | ---- | ---- |
-| `src/apothem/hooks/dispatch.py` | `SessionStart`는 `session_start_bootstrap.main()`으로, 화이트리스트에 있는 다른 모든 이벤트는 `emit_hook_context.main()`으로 라우팅합니다. 항상 0으로 종료합니다. |
+| `src/apothem/hooks/dispatch.py` | `SessionStart`는 `session_start_bootstrap.main()`으로, 허용 목록에 있는 다른 모든 이벤트는 `emit_hook_context.main()`으로 라우팅합니다. 항상 0으로 종료합니다. |
 | `src/apothem/hooks/session_start_bootstrap.py` | 세션 시작 훅 스크립트 — 메모리와 플랜 스위트 요약 컨텍스트를 내보냅니다. |
 | `src/apothem/hooks/emit_hook_context.py` | 기본 훅 이미터 — 등록된 `--context-file` 페이로드를 담은 유효한 엔벨로프를 씁니다. |
 | `src/apothem/hooks/messages/*.md` | `--context-file`이 참조하는 정적 컨텍스트 페이로드. |
@@ -356,7 +356,7 @@ Claude Code 템플릿은 SessionStart, PreToolUse, PostToolUse, Stop 이벤트�
 
 **경로:** `CLAUDE.md`(루트)
 
-**목적:** 전역 생태계 구성 인덱스.
+**목적:** 프로젝트 범위의 Claude Code 지침.
 
 ### 필수 YAML 프런트매터
 
@@ -365,27 +365,15 @@ Claude Code 템플릿은 SessionStart, PreToolUse, PostToolUse, Stop 이벤트�
 name: "CLAUDE"
 version: "MAJOR.MINOR.PATCH"
 updated: "YYYY-MM-DD"
-description: "Global Claude Code ecosystem configuration and mandate index"
-scope: "always-on"
-portability: "universal"
+description: "Project-scoped Claude Code instructions for the Apothem source repository"
+scope: "project"
+portability: "project-local"
 ---
 ```
 
-### 필수 섹션(순서대로)
+### 섹션
 
-1. **§1 플랜 스위트** — 템플릿 위치 참조
-2. **§2 인지적 정체성** — 창의적 아키텍처 맨데이트
-3. **§3 아티팩트 디렉터리** — 경로와 목적의 표
-4. **§4 심각도 비례 거버넌스** — 네 가지 수준 정의
-5. **§5 운영 지침** — 문제 해결, 커뮤니케이션 원칙
-6. **§6 횡단 맨데이트** — CM-1–28 개요
-7. **§7 레지스트리** — 아티팩트 표:
-   - 7.1 명령
-   - 7.2 규칙
-   - 7.3 헬퍼
-   - 7.4 훅
-   - 7.5 스킬
-   - 7.6 아티팩트 진화
+`CLAUDE.md`는 산문 섹션으로 작성되며, [`CLAUDE.md`](/docs/reference/claude-md)에 설명되어 있습니다. 고정된 섹션 목록을 요구하는 검증기는 없습니다. `scripts/dev/validate_ecosystem.py`는 위의 프런트매터 키를 검사합니다.
 
 ---
 
@@ -407,7 +395,7 @@ portability: "universal"
 
 ### 콘텐츠 검증
 
-- [ ] 콘텐츠가 닫는 `---` 바로 다음 새 줄에서 시작함
+- [ ] 콘텐츠가 닫는 `---` 뒤의 새 줄에서 시작하며, Markdown 계열 파일에서는 작성자 헤더 배너가 그 뒤의 첫 콘텐츠임
 - [ ] 플랜 내부 참조가 없음(CM-7 준수)
 - [ ] 상호 참조가 해석됨(다른 아티팩트를 나열하는 경우)
 - [ ] 링크가 슬래시를 쓰는 상대 경로를 사용함

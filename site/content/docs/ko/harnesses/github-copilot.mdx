@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "GitHub Copilot(GA)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "27caa0629e01c5e8"
+sourceHash: "7759dbb2505688c7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -42,11 +42,13 @@ GitHub Copilot은 이 어댑터가 관리할 수 있는 파일 기반 사용자 
 노출하지 않습니다. Apothem은 문서화된 프로젝트 범위 지침 파일을 대상으로 하며,
 IDE 수준의 사용자 설정은 운영자 소유로 남겨 둡니다.
 
-Apothem은 `copilot-instructions.md`를 프로젝트의 어시스턴트 지침 표면 가운데
-하나의 목소리로 취급합니다. 적합성 게이트의 다중 표면 일관성 검사는 이 파일의
-공유 주장이 프로젝트의 다른 지침 파일과 의미상 일치한 상태로 유지되는지
-검증하므로, Copilot은 도구 체인의 나머지가 읽는 내용과 모순되는 지침을 절대 받지
-않습니다.
+Apothem 저장소 안에서 `.github/copilot-instructions.md`는 프로젝트의 어시스턴트
+지침 표면 가운데 하나의 목소리입니다. Apothem 체크아웃에서 적합성 게이트의 다중
+표면 일관성 검사는 `AGENTS.md`, `CLAUDE.md`, `.github/copilot-instructions.md`에
+담긴 공유 주장을 비교하고, 이 가운데 하나가 누락하거나 모순되는 주장을
+보고합니다. 이 검사는 Apothem이 여러분의 프로젝트에 작성하는 지침 파일을 읽지
+않습니다. 이 게이트는 기본적으로 권고용입니다. 결과를 보고하고 `0`으로
+종료합니다.
 
 ## 검증
 
@@ -57,7 +59,9 @@ apothem verify --harness github-copilot --project /path/to/project
 verify 명령은 다음을 확인합니다.
 
 1. 네이티브 구성이 예상 경로에 존재합니다.
-2. 각 관리 대상이 존재하고, 관리되는 파일은 비어 있지 않으며, JSON 또는 YAML 구성은 파싱됩니다. 설치된 파일이 그 프로필과도 일치하는지 확인하려면 `--profile PATH`를 추가하세요.
+2. 각 관리 대상이 존재하고, 관리되는 파일은 비어 있지 않으며, JSON 또는 YAML
+   구성은 파싱됩니다. 설치된 파일이 그 프로필과도 일치하는지 확인하려면
+   `--profile PATH`를 추가하세요.
 3. 어댑터별 검증 루틴이 성공을 보고합니다.
 
 ## 업데이트

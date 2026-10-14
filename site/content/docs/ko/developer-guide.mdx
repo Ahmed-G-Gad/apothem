@@ -2,7 +2,7 @@
 title: "Apothem에 기여하기 — 개발자 가이드"
 description: "정식 스키마, 프런트매터 요구 사항, 검증 절차에 따라 규칙, 명령, 헬퍼, 스킬, 훅을 작성하여 Apothem 생태계를 유지 관리하고 확장합니다."
 machineTranslated: true
-sourceHash: "782e178598975d52"
+sourceHash: "04ae410c0eeaf642"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Apothem 생태계에는 다섯 가지 아티팩트 유형이 있으며, 각 유�
 | **명령** | `src/apothem/commands/*.md` | 복잡한 워크플로를 위한 슬래시 명령(`/command-name`) | 새 다단계 사용자 워크플로 |
 | **헬퍼** | `src/apothem/agents/*.md` | 병렬 작업을 위한 영속적인 위임 작업자 정의 | 새로운 반복적 전문 작업(감사, 탐색, 품질 검사) |
 | **스킬** | `src/apothem/skills/{name}/SKILL.md` | 탐지 신호가 있는 재사용 가능한 기법 | 탐지 가능하고 재사용 가능한 새 기법 패턴 |
-| **훅** | `src/apothem/hooks/` + `settings.json` | 이벤트로 트리거되는 검증 또는 상태 관리 | 새 라이프사이클 이벤트 또는 검증 필요 |
+| **훅** | `src/apothem/hooks/` + `hooks.json` + `settings.json` | 이벤트로 트리거되는 검증 또는 상태 관리 | 새 라이프사이클 이벤트 또는 검증 필요 |
 
 ## 하니스 어댑터 계약
 
@@ -81,7 +81,9 @@ authorization, auth, header 형태의 필드를 가립니다. 문서, 픽스처,
 
 ## 프런트매터 빠른 점검
 
-모든 아티팩트 프런트매터는 다음 검사를 통과해야 합니다.
+모든 아티팩트 프런트매터는 다음 검사를 통과해야 합니다. `version`, `updated`,
+`portability` 검사는 해당 키를 지니는 클래스에만 적용하세요. 규칙에는 이 셋이
+모두 없고, 스킬에는 `portability`가 없습니다.
 
 ```yaml
 ✓ Valid YAML syntax (use tools: `yamllint` or PowerShell `ConvertFrom-Yaml` where available)
@@ -110,10 +112,26 @@ authorization, auth, header 형태의 필드를 가립니다. 문서, 픽스처,
 ### 파일 명명
 
 - **규칙:** `{name}.md`
-- **커맨드:** `{name}.md`
+- **명령:** `{name}.md`
 - **헬퍼:** `{name}.md`
 - **스킬:** 폴더 `src/apothem/skills/{name}/SKILL.md` 안 (정확한 대소문자: `SKILL.md`)
-- **훅:** 폴더 `src/apothem/hooks/` 안. 모든 이벤트 핸들러는 Python입니다. `settings.json`의 모든 훅 명령은 exec 형식을 사용합니다. `command`는 설치 시점에 해석되는 인터프리터 자리표시자 `${PYTHON_BIN}`이고, `args`에는 스크립트 경로와 그 인수가 들어 있습니다. Claude Code 템플릿은 `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]`과 `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook`을 절대 경로로 실행합니다. 따라서 설치된 사본에는 가져올 수 있는 `apothem` 패키지가 필요하지 않습니다. `dispatch.py`는 `SessionStart`를 `session_start_bootstrap.main()`으로, 허용 목록에 있는 그 밖의 모든 이벤트를 `emit_hook_context.main()`으로 라우팅합니다. `src/apothem/hooks/` 또는 `scripts/` 아래에 허용되는 셸 스텁은 여섯 개의 로케이터 및 부트스트랩 파일(`find-python.{ps1,sh}`, `find-pwsh.{ps1,sh}`, `bootstrap.{ps1,sh}`)뿐이며, 그 밖의 `.ps1` / `.sh` 파일은 `scripts/dev/validate_hooks.py` 위생 검사에 실패합니다.
+- **훅:** 폴더 `src/apothem/hooks/` 안. 모든 이벤트 핸들러는 Python입니다. Claude Code
+  `settings.json` 템플릿의 모든 훅 명령은 exec 형식을 사용합니다. `command`는 설치
+  시점에 해석되는 인터프리터 자리표시자 `${PYTHON_BIN}`이고, `args`에는 스크립트
+  경로와 그 인수가 들어 있습니다. 이 템플릿은
+  `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]`과
+  `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook`을 절대 경로로
+  실행하므로, 설치된 사본에는 가져올 수 있는 `apothem` 패키지가 필요하지 않습니다.
+  Claude Code 플러그인은 대신 `src/apothem/hooks/hooks.json`에 훅을 등록하는데,
+  이 훅은 `bash`를 통해 `hooks/lib/bootstrap.sh`를 실행하는 셸 명령입니다. 새
+  훅은 `hooks.json`과 Claude Code `settings.json` 템플릿에 등록하세요.
+  `dispatch.py`는 `SessionStart`를
+  `session_start_bootstrap.main()`으로, 허용 목록에 있는
+  그 밖의 모든 이벤트를 `emit_hook_context.main()`으로 라우팅합니다. `src/apothem/hooks/`
+  또는 `scripts/` 아래에 허용되는 셸 스텁은 여섯 개의 로케이터 및 부트스트랩
+  파일(`find-python.{ps1,sh}`, `find-pwsh.{ps1,sh}`, `bootstrap.{ps1,sh}`)뿐이며,
+  그 밖의 `.ps1` / `.sh` 파일은 `scripts/dev/validate_hooks.py` 위생 검사에
+  실패합니다.
 
 ### 상호 참조
 
@@ -128,7 +146,9 @@ authorization, auth, header 형태의 필드를 가립니다. 문서, 픽스처,
 
 ## 이식성: Windows 대 Unix
 
-모든 아티팩트는 자신의 이식성 상태를 명시적으로 선언해야 합니다.
+모든 명령은 `portability` 필드에 자신의 이식성 상태를 명시적으로 선언해야
+하며(MUST), 헬퍼는 선언할 수 있습니다(MAY). 스킬, 규칙, 출력 스타일에는
+`portability` 필드가 없습니다.
 
 ### 범용 (기본값)
 
@@ -165,7 +185,7 @@ portability: "universal-with-windows-caveats"
 portability: "unix-only"
 ```
 
-그 이유를 규칙의 첫 번째 섹션에 문서화하세요.
+그 이유를 아티팩트의 첫 번째 섹션에 문서화하세요.
 
 ## 범위: 상시 적용 대 경로 필터링
 
@@ -174,7 +194,8 @@ portability: "unix-only"
 규칙이 모든 곳에 적용됩니다.
 
 ```yaml
-scope: "always-on"
+pathFilter: ""
+alwaysApply: true
 ```
 
 ### 경로 필터링
@@ -182,8 +203,8 @@ scope: "always-on"
 규칙이 파일 경로에 따라 조건부로 적용됩니다.
 
 ```yaml
-scope: "path-filtered"
 pathFilter: "**/*.py, **/*.toml"
+alwaysApply: false
 ```
 
 `pathFilter`는 glob 패턴(`.gitignore`와 같은 형식)을 사용합니다. 파일이
@@ -191,31 +212,33 @@ pathFilter: "**/*.py, **/*.toml"
 
 ## 버전 의미 체계
 
-모든 아티팩트는 자체 시맨틱 버전(`MAJOR.MINOR.PATCH`)을 지닙니다.
+버전이 매겨지는 각 아티팩트는 자체 시맨틱 버전(`MAJOR.MINOR.PATCH`)을
+지닙니다. 명령과 스킬에는 필수이고, 헬퍼와 출력 스타일은 지닐 수 있으며(MAY),
+규칙에는 없습니다.
 
 - **PATCH** — 오타 수정, 서식, 링크 갱신, 주석만 바꾸는 편집. 동작은 변하지 않습니다.
-- **MINOR** — 호환성을 깨지 않는 추가 변경: 새 선택 섹션, 추가 안티패턴, 새 선택 프런트매터 필드, 새 예시. 기존 소비자는 변경 없이 계속 작동합니다.
+- **MINOR** — 호환성을 깨지 않는 추가 변경: 새 선택 섹션, 새 선택 프런트매터 필드, 새 예시. 기존 소비자는 변경 없이 계속 작동합니다.
 - **MAJOR** — 호환성을 깨는 스키마 또는 계약 변경: 섹션 제거, 필드 이름 변경, 기존 지침의 동작 변경, 다운스트림 아티팩트의 적응이 필요한 변경.
 
 예시:
 
 - `vX.Y.Z` → `vX.Y.(Z+1)` (PATCH: 오타 수정)
-- `vX.Y.Z` → `vX.(Y+1).0` (MINOR: 새 Anti-Patterns 항목 추가)
+- `vX.Y.Z` → `vX.(Y+1).0` (MINOR: 새 선택 섹션 추가)
 - `vX.Y.Z` → `v(X+1).0.0` (MAJOR: 계약을 안정 상태로 선언)
 - `vX.Y.Z` → `v(X+1).0.0` (MAJOR: 필수 프런트매터 필드 제거)
 
-동작을 바꾸는 모든 편집에서 `version`과 `updated`를 함께 올리세요. 아티팩트
-변경을 묶는 릴리스에 대해서는 생태계 수준의 `CHANGELOG.md`에 그에 맞는 행을
-추가하세요.
+이 필드들을 지닌 아티팩트의 동작을 바꾸는 모든 편집에서는 `version`과 `updated`를
+함께 올리세요. 아티팩트 변경을 묶는 릴리스에 대해서는 생태계 수준의
+`CHANGELOG.md`에 그에 맞는 행을 추가하세요.
 
 ## 아티팩트를 편집해야 할 때
 
 ### 규칙
 
 - 의무/선택 구조를 하중을 지탱하는 구조로 취급하세요 — 이를 재구성하면
-  모든 종속 아티팩트에 영향이 파급됩니다(MAJOR 올림 필요).
+  모든 종속 아티팩트에 영향이 파급됩니다.
 - 이해가 깊어짐에 따라 Anti-Patterns, Seriousness Scaling 예시, 인용을
-  다듬으세요(MINOR 올림).
+  다듬으세요.
 - 모든 구조적 변경의 근거를 관련 메모리 토픽 파일에 기록하세요.
 
 ### 명령
@@ -283,15 +306,16 @@ alwaysApply: true
 ---
 ```
 
-### 4. CLAUDE.md 업데이트
+### 4. 규칙 README 업데이트
 
-`§7.2 Rules` 레지스트리 표에 항목을 추가하세요.
+`src/apothem/rules/README.md`의 Rule families 섹션에서, 해당 규칙이 속한 계열의
+표에 행을 추가하세요.
 
 ```markdown
-| My New Rule | `src/apothem/rules/my-new-rule.md` | Always-on | CM-5/CM-21 |
+| `my-new-rule.md` | One-line concern of the new rule. |
 ```
 
-표 안에서 알파벳 순서를 유지하세요.
+다루는 사안이 해당 규칙과 맞는 계열 표를 고르세요.
 
 ### 5. CHANGELOG.md에 추가
 
@@ -344,13 +368,13 @@ allowed-tools: "Read, Glob, Grep"
 
 `disable-model-invocation: true`는 명령을 운영자만 호출할 수 있게 합니다.
 `false`이면 요청이 명령의 설명과 일치할 때 모델이 명령을 실행할 수 있습니다.
-대부분의 명령은 `true`를 사용하지만, 계획 및 리서치 파이프라인 단계는 대부분
+대부분의 명령은 `true`를 사용하지만, 대부분의 계획 및 리서치 파이프라인 단계는
 `false`를 사용합니다. `src/apothem/commands/README.md`의 호출 표에는 모든
 명령의 설정이 나열되어 있으니, 새 명령에 대한 행을 추가하세요.
-`allowed-tools`는 읽기 전용으로 유지하세요. 이를 준수하는 하니스는 해당 도구를
-묻지 않고 실행합니다. 부작용이 있는 도구는 `Bash(git log *)`처럼 범위가 지정된
-규칙으로만 허용하세요. 스키마는 `"*"`와 단독 `Bash`, `PowerShell`,
-`Write`, `Edit`, `NotebookEdit`, `WebFetch`를 거부합니다.
+`allowed-tools`는 읽기 전용으로 유지하세요. 이 필드를 따르는 하니스는 해당
+도구를 묻지 않고 실행합니다. 부작용이 있는 도구는 `Bash(git log *)`처럼 범위가
+지정된 규칙으로만 허용하세요. 스키마는 `"*"`와, 범위 없이 쓴 `Bash`,
+`PowerShell`, `Write`, `Edit`, `NotebookEdit`, `WebFetch`를 거부합니다.
 
 ### 3. 내용 작성
 
@@ -362,9 +386,10 @@ allowed-tools: "Read, Glob, Grep"
 - 단계가 포함된 Workflow 섹션
 - 반환 계약 / 출력 형식
 
-### 4. CLAUDE.md 및 CHANGELOG.md 업데이트
+### 4. README와 CHANGELOG.md 업데이트
 
-`§7.1 Commands`에 레지스트리 행, 다음 릴리스의 `### Added` 섹션 아래에 CHANGELOG 행.
+`src/apothem/commands/README.md`에서 해당하는 명령 표에 행을 추가하고, 다음
+릴리스의 `### Added` 섹션 아래에 CHANGELOG 행을 추가하세요.
 
 ### 5. 검증
 
@@ -424,9 +449,10 @@ portability: "universal"
 - Workflow (번호가 매겨진 단계)
 - Return Contract (최대 토큰, 구조, 필수 필드)
 
-### 4. CLAUDE.md 및 CHANGELOG.md 업데이트
+### 4. README와 CHANGELOG.md 업데이트
 
-`§7.3 Helpers`에 레지스트리 행, 다음 릴리스의 `### Added` 섹션 아래에 CHANGELOG 행.
+`src/apothem/agents/README.md`의 Index 표에 행을 추가하고, 다음 릴리스의
+`### Added` 섹션 아래에 CHANGELOG 행을 추가하세요.
 
 ### 5. 테스트
 
@@ -454,8 +480,8 @@ portability: "universal"
 %% provenance: site/content/docs/reference/artifact-schema.mdx (skill artifact schema) %%
 %% cross-reference: src/apothem/skills/plan-suite/SKILL.md (canonical example) %%
 flowchart TD
-    accTitle: New harness adapter directory structure
-    accDescr: Top-down flowchart of the canonical directory and file structure for a new apothem harness adapter under src/apothem/harnesses including init, install, uninstall, update, verify modules and the templates subdirectory.
+    accTitle: New skill directory structure
+    accDescr: Top-down flowchart of the directory structure for a new skill under src/apothem/skills: a {skill-name} folder holding the required SKILL.md plus optional examples and templates subfolders.
     SKILLS["src/apothem/skills/"]
     SKILLS --> NAME["{skill-name}/"]
     NAME --> SKILLMD["SKILL.md<br/>(main definition · required)"]
@@ -490,9 +516,10 @@ argument-hint: "[args]"               # optional; if userInvocable
 - Common Mistakes
 - Examples
 
-### 4. CLAUDE.md 및 CHANGELOG.md 업데이트
+### 4. README와 CHANGELOG.md 업데이트
 
-`§7.5 Skills`에 레지스트리 행, 다음 릴리스의 `### Added` 섹션 아래에 CHANGELOG 행.
+`src/apothem/skills/README.md`의 Index 표와 Folder contents 표에 행을 추가하고,
+다음 릴리스의 `### Added` 섹션 아래에 CHANGELOG 행을 추가하세요.
 
 ### 5. 검증
 
@@ -507,13 +534,13 @@ Invoke the ecosystem-audit skill with --focus skills --fix
 - [ ] 프런트매터가 YAML 구문 검사를 통과함
 - [ ] 스키마에 따른 모든 필수 필드가 있음
 - [ ] `name` 필드가 kebab-case를 사용함
-- [ ] `version`이 시맨틱(`MAJOR.MINOR.PATCH`)이며, 동작이 바뀌었다면 올렸음
-- [ ] 수정한 모든 아티팩트에서 `updated`가 오늘 날짜와 일치함
-- [ ] `portability` 필드가 설정되어 있고 유효함
+- [ ] `version`(버전이 매겨지는 클래스에만 해당, 규칙에는 없음)이 시맨틱(`MAJOR.MINOR.PATCH`)이며, 동작이 바뀌었다면 올렸음
+- [ ] 수정한 아티팩트 중 해당 필드를 지닌 모든 아티팩트에서 `updated`가 오늘 날짜와 일치함
+- [ ] `portability` 필드가 설정되어 있고 유효함 (명령과 헬퍼에만 해당)
 - [ ] CHANGELOG.md에 다음 릴리스 섹션 아래 적절한 범주로 변경 사항이 기록됨
 - [ ] 플랜 내부 참조 없음 (CM-7 준수)
 - [ ] 상호 참조가 다른 아티팩트와 일관됨
-- [ ] 새 아티팩트가 CLAUDE.md 레지스트리에 등록됨
+- [ ] 새 아티팩트가 자기 폴더의 README 색인에 등록됨
 - [ ] 아티팩트를 테스트함 (해당하는 경우)
 - [ ] `ecosystem-audit` 스킬이 오류 없이 실행됨
 - [ ] 내용이 구조적 규약(제목 형식, 섹션 등)을 따름
@@ -553,8 +580,8 @@ In prose: The plan-suite skill provides the Master Plan Suite template.
 ### CLAUDE.md 섹션 참조
 
 ```markdown
-See CLAUDE.md § 7.2 (Rules registry).
-Or: Section 4 (Seriousness-Scaled Governance).
+See CLAUDE.md § Harness Adapter Pattern.
+Or: § Plans Discipline.
 ```
 
 ## 린팅과 서식
@@ -580,7 +607,7 @@ python -m pytest tests/property       # Hypothesis properties (profile loader, f
 ```
 
 이 스위트는 외부 환경에 의존하지 않습니다. 통합 테스트가 pytest를 실행하는
-인터프리터를 사용하고, 중첩된 임시 경로와 소스 경로를 가장 긴 것부터
+인터프리터를 실행하고, 중첩된 임시 경로와 소스 경로를 가장 긴 것부터
 토큰화하므로, 체크아웃이 `$TMPDIR` 아래에 있을 때에도, `PATH`에 있는
 `python`에 CLI 사전 요구 사항이 없을 때에도 스위트가 통과합니다.
 
@@ -617,7 +644,7 @@ CI `metrics` 작업은 모든 푸시와 풀 리퀘스트에서 `scripts/dev/coll
 | --- | --- |
 | `coverage.engine`, `coverage.conformity`, `coverage.audit` | 패키지별 라인 및 브랜치 백분율과 `coverage_floors`. |
 | `always_on_bytes[harness]`, `always_on_files[harness]` | 17개 하니스 각각에 대해, 스크래치 `HOME`과 프로젝트에 `profile init`과 `install --harness <id>`를 실행한 후: 해당 하니스가 시작 시 전체를 로드하는 지침 파일의 디스크상 바이트 수. |
-| `cli_coldstart_ms` | `python -m apothem --version`의 중앙값(`--help`는 `cli_coldstart_detail_ms` 아래). |
+| `cli_coldstart_ms` | `python -m apothem --version`의 중앙값(`--help`의 경우는 `cli_coldstart_detail_ms` 아래). |
 | `hook_e2e_ms[event]`, `hook_injected_chars[event]` | 등록된 이벤트와 매처(`PreToolUse:Write`, `Stop`, …)별: 실제 페이로드에서 훅 체인의 총 소요 시간 중앙값과, 훅 체인이 주입하는 컨텍스트 문자 수. |
 
 어떤 파일을 시작 시 로드된 것으로 셀지는 각 벤더의 문서화된 지침 표면에서

@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "apothem uninstall 명령에 대한 CLI 참조."
 machineTranslated: true
-sourceHash: "a6cddf09b4a1ec27"
+sourceHash: "4803f58a031908d1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,13 +22,13 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
 `--format json`(프롬프트 텍스트가 단일 JSON 문서를 손상시킴) 또는 비대화형
 셸(TTY 없음) — `--yes`를 지정하지 않으면 명령은 처음부터 구조화된
 `uninstall.confirmation_required` 오류(종료 코드 1)와 함께 거부합니다.
-선택한 하니스가 설치되어 있지 않으면, 명령은 "nothing to remove" 알림과 함께
+선택한 하니스가 설치되어 있지 않으면, 명령은 "제거할 것이 없음" 알림과 함께
 성공합니다(종료 코드 0).
 
 `--harness all` 제거는 의도적으로 빠짐없이 수행됩니다. 이 제거는 프로필의
 `exclude_harnesses`가 설치 중에 건너뛰는 하니스를 포함하여 등록된 모든 하니스를
 다룹니다. 정리 작업은 이전의 더 넓은 범위의 설치가 남겼을 수 있는 상태까지
-닿습니다. 한 번도 설치되지 않은 하니스는 "nothing to remove"를 보고합니다.
+닿습니다. 한 번도 설치되지 않은 하니스는 "제거할 것이 없음"을 보고합니다.
 
 연속형 별칭 `apothem uninstalling`은 같은 핸들러로 해석됩니다.
 
@@ -51,10 +51,32 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
 어댑터가 설치되어 있었고 성공적으로 제거된 경우:
 
 ```json
-{"schema_version": 1, "action": "uninstalled", "harness": "claude-code", "output_path": "..."}
+{
+  "schema_version": 1,
+  "status": "success",
+  "command": "uninstall",
+  "action": "uninstalled",
+  "harness": "claude-code",
+  "profile_path": null,
+  "project": null,
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "updated",
+      "operation": "uninstall",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "managed files removed"
+    }
+  ],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
 ```
 
-어댑터가 설치되어 있지 않았던 경우 명령은 `0`으로 종료합니다. JSON 출력에서 엔벨로프는 `"status": "success"`와 `"action": "uninstalled"`를 가지며, results 행은 `"outcome": "skipped"`와 메시지 `"not installed; no files removed"`를 가집니다. `status` 필드는 결코 `"not_installed"`가 아닙니다.
+어댑터가 설치되어 있지 않았던 경우 명령은 `0`으로 종료합니다. JSON 출력에서 봉투는 `"status": "success"`와 `"action": "uninstalled"`를 가지며, results 행은 `"outcome": "skipped"`와 메시지 `"not installed; no files
+removed"`를 가집니다. `status` 필드는 결코 `"not_installed"`가 아닙니다.
 
 ## 예제
 
