@@ -2,7 +2,7 @@
 title: "Apothem vs. rohe GitHub-Copilot-Konfiguration"
 description: "GitHub Copilots copilot-instructions.md von Hand pflegen versus sie aus Apothems gemeinsamem Profil rendern."
 machineTranslated: true
-sourceHash: "52a8af5e9d74e6da"
+sourceHash: "8619aad7bba087e4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -16,9 +16,9 @@ Apothem gegenüber.
 | Aufgabe | Rohe Handkonfiguration | Von Apothem verwaltet |
 | ---- | --------------- | --------------- |
 | Anweisungen verfassen | `.github/copilot-instructions.md` von Hand bearbeiten | Gerendert: gemeinsame Regeln in die Datei eingebettet |
-| Anweisungen mit anderen Harnesses ausgerichtet halten | Manuell, pro Werkzeug | Automatisch bei `apothem update` |
+| Anweisungen mit anderen Harnesses abgestimmt halten | Manuell, pro Werkzeug | Automatisch bei `apothem update` |
 | Konfiguration installieren / entfernen | Die Datei von Hand schreiben und löschen | `apothem install` / `apothem uninstall` |
-| Prüfen, ob die Konfiguration korrekt ist | Manuelle Inspektion | `apothem verify --harness github-copilot` |
+| Prüfen, ob die Konfiguration korrekt ist | Manuelle Inspektion | `apothem verify --harness github-copilot --project <path>` |
 
 ## Was Apothem verwaltet
 
@@ -30,15 +30,14 @@ gemeinsamen Regeln rendert die Datei beim nächsten `apothem update` neu.
 
 ## Migrationspfad
 
-1. Führe `apothem profile init` aus, um das gemeinsame Profil zu erstellen, falls
-   noch nicht geschehen.
-2. Verschiebe den Inhalt deiner bestehenden `.github/copilot-instructions.md` in
-   den gemeinsamen Korpus.
-3. Führe `apothem install --harness github-copilot` aus, um die Anweisungsdatei
+1. Führe `apothem profile init` aus, um das gemeinsame Profil zu erstellen, falls noch nicht geschehen.
+2. Verschiebe den Inhalt deiner bestehenden `.github/copilot-instructions.md` in den gemeinsamen
+   Korpus.
+3. Führe `apothem install --harness github-copilot --project <path>` aus, um die Anweisungsdatei
    zu rendern.
-4. Führe `apothem verify --harness github-copilot` aus, um zu bestätigen, dass
-   die Konfiguration angekommen ist.
-5. Verwende `apothem update --harness github-copilot` für jede spätere Änderung.
+4. Führe `apothem verify --harness github-copilot --project <path>` aus, um zu bestätigen, dass die
+   Konfiguration angekommen ist.
+5. Verwende `apothem update --harness github-copilot --project <path>` für jede spätere Änderung.
 
 ## Weiterlesen
 

@@ -2,7 +2,7 @@
 title: "Antigravity"
 description: "Antigravity(미리 보기)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "43dc91cbb7358f2c"
+sourceHash: "5c4311df7cdf88b7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -83,8 +83,7 @@ apothem verify --harness antigravity
 verify 명령은 다음을 확인합니다.
 
 1. 네이티브 컨텍스트 파일이 예상 경로에 존재합니다.
-2. Apothem Antigravity CLI 플러그인 메타데이터가 존재하며 `apothem` 플러그인
-   이름을 선언합니다.
+2. 플러그인 매니페스트 `plugin.json`이 존재하고, 비어 있지 않으며, JSON으로 파싱됩니다. 검증은 플러그인 이름을 확인하지 않으므로, 이름을 바꾼 뒤에는 그 필드를 직접 확인하세요.
 
 ## 업데이트
 

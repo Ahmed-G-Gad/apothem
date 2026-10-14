@@ -2,7 +2,7 @@
 title: "कस्टम नियम"
 description: "अपनी परियोजना के लिए एक कस्टम सदैव-सक्रिय नियम लिखना।"
 machineTranslated: true
-sourceHash: "7575376db8d658ec"
+sourceHash: "9afb0e5eed8c4fd2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,17 +31,29 @@ no camelCase, no PascalCase).
 When in doubt, err on the side of more hyphens.
 ```
 
-इसे अपने harness इंस्टॉल रूट के भीतर `rules/kebab-filenames.md` में सहेजें (Claude Code अडैप्टर के लिए `~/.claude/`; अन्यथा harness-नेटिव पथ प्रतिस्थापित करें)।
+इसे अपने हार्नेस इंस्टॉल रूट के भीतर `rules/kebab-filenames.md` में सहेजें (Claude Code अडैप्टर के लिए `~/.claude/`; अन्यथा हार्नेस-नेटिव पथ प्रतिस्थापित करें)।
 
-## सत्यापित करें कि नियम लोड हुआ है
+## नियम सही रूप में बना है, इसकी पुष्टि करें
+
+अभी लिखी गई नियम फ़ाइल पर frontmatter वैलिडेटर चलाएँ। Apothem चेकआउट से, कमांड के आगे `PYTHONPATH=src` लगाएँ; स्क्रिप्ट इंस्टॉल के बाद, उसके आगे `PYTHONPATH="$HOME/.apothem/src"` लगाएँ:
 
 ```bash
-python -m apothem.conformity.gate --check frontmatter
+python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
 ```
 
-## harness में प्रचारित करें
+सही रूप में बना नियम एक साफ़ पास रिपोर्ट करता है:
 
-प्रत्येक इंस्टॉल किए गए harness के लिए एक बार अपडेट आदेश चलाएँ:
+```json
+{
+  "orchestrator": "conformity-gate",
+  "passed": true,
+  "grep_count": 1
+}
+```
+
+## हार्नेस में प्रसारित करें
+
+हर इंस्टॉल किए गए हार्नेस के लिए अपडेट कमांड एक बार चलाएँ:
 
 ```bash
 apothem update --harness claude-code

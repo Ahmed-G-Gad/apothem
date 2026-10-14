@@ -2,7 +2,7 @@
 title: "Apothem frente a la configuración manual de Claude Code"
 description: "Mantener a mano todo el árbol de configuración nativa de Claude Code frente a gestionarlo a través del perfil compartido de Apothem."
 machineTranslated: true
-sourceHash: "3eb017220814891b"
+sourceHash: "71c12697cb396172"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -27,20 +27,15 @@ El adaptador propaga reglas, agentes, comandos, skills, output-styles,
 statuslines y `settings.json` a `~/.claude/`. Los hooks nativos PreToolUse,
 PostToolUse, Stop y SessionStart se configuran desde el corpus compartido.
 
-Apothem **no** gestiona `CLAUDE.md`: ese archivo es territorio del operador. Tus
-instrucciones de proyecto y personales en `CLAUDE.md` siguen siendo tuyas;
-Apothem gobierna las superficies propagadas que lo rodean.
+Apothem escribe un único bloque gestionado delimitado por centinelas en tu `~/.claude/CLAUDE.md` de ámbito de usuario. `apothem update` reescribe solo ese bloque y conserva tu texto fuera de él. Los `CLAUDE.md` de proyecto no se tocan. Apothem gobierna las superficies propagadas que lo rodean.
 
 ## Ruta de migración
 
-1. Ejecuta `apothem profile init` para crear el perfil compartido si aún no lo
-   tienes.
-2. Mueve tus reglas, agentes, comandos y skills existentes de `~/.claude/` al
-   corpus compartido.
-3. Deja `CLAUDE.md` en su sitio: Apothem no lo tocará.
+1. Ejecuta `apothem profile init` para crear el perfil compartido si aún no lo tienes.
+2. Mueve tus reglas, agentes, comandos y skills existentes de `~/.claude/` al corpus compartido.
+3. Deja `CLAUDE.md` en su sitio. Apothem conserva tu texto fuera de su bloque gestionado y solo reescribe ese bloque.
 4. Ejecuta `apothem install --harness claude-code` para propagar el corpus.
-5. Ejecuta `apothem verify --harness claude-code` para confirmar que la
-   configuración se instaló.
+5. Ejecuta `apothem verify --harness claude-code` para confirmar que la configuración quedó instalada.
 6. Usa `apothem update --harness claude-code` para cada cambio posterior.
 
 ## Lee a continuación

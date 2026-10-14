@@ -2,7 +2,7 @@
 title: "Apothem dibandingkan konfigurasi Gemini CLI manual"
 description: "Memelihara secara manual berkas aturan GEMINI.md milik Gemini CLI dibandingkan merendernya dari profil bersama Apothem."
 machineTranslated: true
-sourceHash: "c50d2b16083b08a0"
+sourceHash: "1571985a6318fd28"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,26 +14,22 @@ konfigurasi itu secara manual dengan mengelolanya menggunakan Apothem.
 
 | Tugas | Konfigurasi manual | Dikelola Apothem |
 | ---- | --------------- | --------------- |
-| Menulis aturan | Menyunting satu `GEMINI.md` secara manual | Dirender: aturan bersama disematkan ke dalam `GEMINI.md` |
-| Menjaga aturan tetap selaras dengan lingkungan lain | Manual, per alat | Otomatis saat `apothem update` |
-| Memasang / menghapus konfigurasi | Menulis dan menghapus `GEMINI.md` secara manual | `apothem install` / `apothem uninstall` |
-| Memverifikasi konfigurasi sudah benar | Inspeksi manual | `apothem verify --harness gemini-cli` |
+| Menulis aturan | Menyunting satu `GEMINI.md` dengan tangan | Dirender: panduan untuk seluruh proyek di `GEMINI.md`; aturan di `.gemini/.apothem/support/` |
+| Menjaga aturan selaras dengan harness lain | Manual, per alat | Otomatis pada `apothem update` |
+| Memasang / menghapus konfigurasi | Menulis dan menghapus `GEMINI.md` dengan tangan | `apothem install` / `apothem uninstall` |
+| Memverifikasi konfigurasi sudah benar | Inspeksi manual | `apothem verify --harness gemini-cli --project <path>` |
 
 ## Apa yang dikelola Apothem
 
-Adaptor gemini-cli menyematkan aturan bersama ke dalam satu `GEMINI.md`. Gemini
-CLI tidak memiliki hook PreToolUse, jadi maksud pagar pengaman diekspresikan
-dalam prosa aturan alih-alih sebuah titik intersepsi pemanggilan alat. Setiap
-perubahan pada aturan bersama merender ulang `GEMINI.md` pada `apothem update`
-berikutnya.
+Adapter gemini-cli menulis blok Apothem yang dibatasi sentinel ke dalam `<project>/GEMINI.md` yang memuat panduan untuk seluruh proyek dan menunjuk ke materi Apothem. Aturan, templat, dan hook mendarat sebagai berkas pendukung di bawah `<project>/.gemini/.apothem/support/`, sedangkan command, skill, dan agen mendarat di bawah `<project>/.gemini/`. Gemini CLI tidak memiliki hook PreToolUse, sehingga maksud pagar pengaman diekspresikan dalam prosa aturan, bukan sebagai titik intersepsi pemanggilan alat. Setiap perubahan pada aturan bersama merender ulang `GEMINI.md` pada `apothem update` berikutnya.
 
 ## Jalur migrasi
 
-1. Jalankan `apothem profile init` untuk membuat profil bersama jika belum punya.
-2. Pindahkan aturan dari `GEMINI.md` Anda yang ada ke korpus bersama.
-3. Jalankan `apothem install --harness gemini-cli` untuk merender dan menulis `GEMINI.md`.
-4. Jalankan `apothem verify --harness gemini-cli` untuk memastikan konfigurasi terpasang.
-5. Gunakan `apothem update --harness gemini-cli` untuk setiap perubahan berikutnya.
+1. Jalankan `apothem profile init` untuk membuat profil bersama jika Anda belum memilikinya.
+2. Pindahkan aturan dari `GEMINI.md` yang sudah ada ke korpus bersama.
+3. Jalankan `apothem install --harness gemini-cli --project <path>` untuk merender dan menulis `GEMINI.md`.
+4. Jalankan `apothem verify --harness gemini-cli --project <path>` untuk memastikan konfigurasi sudah terpasang.
+5. Gunakan `apothem update --harness gemini-cli --project <path>` untuk setiap perubahan berikutnya.
 
 ## Baca berikutnya
 

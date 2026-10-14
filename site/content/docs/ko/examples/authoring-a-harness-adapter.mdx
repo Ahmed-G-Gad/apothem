@@ -2,7 +2,7 @@
 title: "하니스 어댑터 작성하기"
 description: "새 Apothem 하니스 어댑터를 처음부터 작성하는 단계별 가이드."
 machineTranslated: true
-sourceHash: "c24c9b0721f6cd1d"
+sourceHash: "6a5252c560462438"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,10 +28,6 @@ cd apothem-myadapter
 name = "apothem-myadapter"
 version = "X.Y.Z"
 requires-python = ">=3.10"
-dependencies = ["apothem>=X.Y.Z"]  # pin the floor to the apothem release you target
-
-[project.entry-points."apothem.harnesses"]
-my-harness = "apothem_myadapter.adapter:MyHarnessAdapter"
 ```
 
 ## 2단계: 어댑터 구현하기
@@ -87,10 +83,11 @@ class MyHarnessAdapter(HarnessAdapter):
         return "\n\n".join(str(rule) for rule in rules)
 ```
 
+Apothem은 서드파티 어댑터를 자동으로 찾지 않습니다. 먼저 Apothem 체크아웃의 `src/apothem/lib/harness_registry.py`에 있는 정적 레지스트리에 어댑터를 추가하세요. 그 전까지 `apothem install --harness my-harness`는 그 식별자를 거부합니다.
+
 ## 3단계: 설치하고 테스트하기
 
 ```bash
-pip install -e .
 apothem install --harness my-harness
 apothem verify --harness my-harness
 ```

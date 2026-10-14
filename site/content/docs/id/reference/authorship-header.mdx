@@ -2,7 +2,7 @@
 title: "Header Kepengarangan — Baris Lisensi SPDX Per-File"
 description: "Mendefinisikan dan menegakkan penanda identifier lisensi SPDX per-file menggunakan header satu-baris kanonis dalam sintaks komentar yang sesuai untuk tiap tipe file."
 machineTranslated: true
-sourceHash: "f8a8cbfe9b2c940f"
+sourceHash: "c30711b821380cee"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -120,7 +120,7 @@ CLI deterministik yang:
 - Beroperasi dalam tiga mode: `fix-in-place` (menulis), `emit-patch` (mencetak diff terpadu), `check` (exit-non-zero pada penyimpangan apa pun — dipakai oleh CI).
 - Idempoten: menjalankan dua kali adalah no-op.
 
-Injektor dipanggil oleh target Make yang menyiapkan file baru dengan baris SPDX terpra-sisip (`make headers-fix` dan scaffold `make new-*`) dan oleh hook pre-commit dalam mode `--fix`.
+Injektor dipanggil oleh target `make headers-fix`, yang menjalankan `scripts/inject-header.py --mode fix-in-place`.
 
 ---
 

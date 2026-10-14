@@ -2,7 +2,7 @@
 title: "CodeBuddy"
 description: "Adaptateur d'environnement Apothem pour Tencent CodeBuddy (GA)."
 machineTranslated: true
-sourceHash: "12cdb066aabd7caf"
+sourceHash: "84f84790325354af"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -82,9 +82,7 @@ le fichier géré avec le dernier contenu rendu.
 apothem uninstall --harness codebuddy --project /path/to/project
 ```
 
-Supprime les fichiers de configuration native écrits par l'adaptateur, en
-renommant le fichier de règles géré en une sauvegarde horodatée. Le YAML du
-profil partagé et le moteur Apothem ne sont pas affectés.
+Supprime le bloc Apothem de `apothem-rules.md` et conserve tout autre texte qui s'y trouve. Le fichier n'est supprimé que si rien d'autre ne subsiste. Avant la modification, une copie horodatée du fichier est enregistrée sous `~/.apothem/backups/` ; aucun fichier de sauvegarde ne reste dans le projet. Le YAML du profil partagé et le moteur Apothem ne sont pas affectés.
 
 ## Portail de conformité
 

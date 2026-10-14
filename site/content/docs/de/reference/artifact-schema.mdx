@@ -2,7 +2,7 @@
 title: "Artefakt-Schema-Spezifikation"
 description: "Kanonisches YAML-Frontmatter-Schema und Pflichtfelder für alle Artefakttypen im Apothem-Quellbaum, mit Vorlagen pro Klasse und Validierungsregeln."
 machineTranslated: true
-sourceHash: "0a94086b9eaf12b9"
+sourceHash: "376d3a98ba3102c6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -291,8 +291,8 @@ Matcher-Blöcken zu:
       "hooks": [
         {
           "type": "command",
-          "command": "python",
-          "args": ["-m", "apothem.hooks.dispatch", "<EventName>", "<message-name>"],
+          "command": "${PYTHON_BIN}",
+          "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "<EventName>", "<message-name>"],
           "timeout": <seconds>,
           "statusMessage": "<short human-readable label>"
         }
@@ -302,19 +302,20 @@ Matcher-Blöcken zu:
 }
 ```
 
+Die Form `-m apothem.hooks.dispatch` ist für die Entwicklung aus einem Quell-Checkout mit `PYTHONPATH=src` gedacht.
+
 | Feld | Typ | Zweck | Beispiel |
 | ----- | ---- | ------- | ------- |
-| `matcher` | string | Tool-Namensmuster (oder `"*"` für tool-agnostische Ereignisse) | `"Write"` |
+| `matcher` | string | Werkzeugnamensmuster (oder `"*"` für werkzeugunabhängige Ereignisse) | `"Write"` |
 | `hooks[].type` | Literal `"command"` | Der derzeit einzige unterstützte Hook-Handler-Typ | `"command"` |
-| `hooks[].command` | string | Ausführbarer Befehl; Apothem verwendet `python` | `"python"` |
-| `hooks[].args` | Array von Strings | Argumente in Exec-Form, die `-m apothem.hooks.dispatch` oder `-m apothem.conformity.gate` aufrufen | `["-m", "apothem.hooks.dispatch", "SessionStart"]` |
-| `hooks[].timeout` | integer (Sekunden) | Maximale Laufzeit, bevor der Host den Hook beendet | `30` |
+| `hooks[].command` | string | Ausführbarer Befehl; Apothem verwendet den Platzhalter `${PYTHON_BIN}`, der bei der Installation aufgelöst wird | `"${PYTHON_BIN}"` |
+| `hooks[].args` | Array von Strings | Argumente in Exec-Form: ein Skriptpfad unter `${HARNESS_ROOT}/.apothem/support/`, danach seine Argumente | `["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
+| `hooks[].timeout` | Ganzzahl in Sekunden | Maximale Laufzeit, bevor der Host den Hook beendet | `30` |
 | `hooks[].statusMessage` | string | Kurzes Label, das in der Host-Oberfläche angezeigt wird | `"Session start"` |
 
 ### Erforderliche Ereignisse
 
-Die ausgelieferten Vorlagen registrieren die folgenden Ereignisse. Alle fünf
-sind erforderlich, damit die Validatoren PASS melden:
+Die Claude-Code-Vorlage registriert SessionStart, PreToolUse, PostToolUse und Stop. PreCompact und PostCompact sind für Claude Code nicht registriert ([Hook-Referenz](/docs/reference/hooks)), und `scripts/dev/validate_hooks.py` meldet jedes von ihnen als fehlend, jeweils als Warnung. Die Tabelle listet die fünf Ereignisse auf, die `validate_hooks.py` prüft:
 
 > **Die Timeout-Werte spiegeln die kanonischen Budgets der Hook-Ereignisse
 > wider** — die Tabelle unten gibt sie zur Bequemlichkeit der Lesenden wieder;

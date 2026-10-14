@@ -2,7 +2,7 @@
 title: "아티팩트 스키마 명세"
 description: "Apothem 소스 트리의 모든 아티팩트 타입에 대한 정식 YAML 프런트매터 스키마와 필수 필드, 그리고 클래스별 템플릿과 검증 규칙입니다."
 machineTranslated: true
-sourceHash: "0a94086b9eaf12b9"
+sourceHash: "376d3a98ba3102c6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -287,8 +287,8 @@ Python 구현.
       "hooks": [
         {
           "type": "command",
-          "command": "python",
-          "args": ["-m", "apothem.hooks.dispatch", "<EventName>", "<message-name>"],
+          "command": "${PYTHON_BIN}",
+          "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "<EventName>", "<message-name>"],
           "timeout": <seconds>,
           "statusMessage": "<short human-readable label>"
         }
@@ -298,19 +298,20 @@ Python 구현.
 }
 ```
 
+`-m apothem.hooks.dispatch` 형식은 `PYTHONPATH=src`를 설정한 소스 체크아웃에서 개발할 때 사용합니다.
+
 | 필드 | 타입 | 목적 | 예시 |
 | ----- | ---- | ------- | ------- |
 | `matcher` | string | 도구 이름 패턴(도구와 무관한 이벤트에는 `"*"`) | `"Write"` |
-| `hooks[].type` | 리터럴 `"command"` | 현재 지원되는 유일한 훅 핸들러 타입 | `"command"` |
-| `hooks[].command` | string | 실행 가능한 명령. Apothem은 `python`을 사용 | `"python"` |
-| `hooks[].args` | string 배열 | `-m apothem.hooks.dispatch` 또는 `-m apothem.conformity.gate`를 호출하는 exec 형식 인수 | `["-m", "apothem.hooks.dispatch", "SessionStart"]` |
-| `hooks[].timeout` | integer(초) | 호스트가 훅을 종료하기 전까지의 최대 실행 시간 | `30` |
+| `hooks[].type` | 리터럴 `"command"` | 현재 지원되는 유일한 훅 핸들러 유형 | `"command"` |
+| `hooks[].command` | string | 실행 가능한 명령. Apothem은 설치 시 해석되는 `${PYTHON_BIN}` 자리표시자를 사용 | `"${PYTHON_BIN}"` |
+| `hooks[].args` | 문자열 배열 | exec 형식 인수: `${HARNESS_ROOT}/.apothem/support/` 아래의 스크립트 경로, 그다음 그 인수들 | `["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
+| `hooks[].timeout` | 정수(초) | 호스트가 훅을 종료하기 전까지의 최대 실행 시간 | `30` |
 | `hooks[].statusMessage` | string | 호스트 UI에 표시되는 짧은 레이블 | `"Session start"` |
 
 ### 필수 이벤트
 
-배포되는 템플릿은 다음 이벤트를 등록합니다. 검증기가 PASS를 보고하려면 다섯 개
-모두 필요합니다.
+Claude Code 템플릿은 SessionStart, PreToolUse, PostToolUse, Stop 이벤트를 등록합니다. PreCompact와 PostCompact는 Claude Code에 등록되지 않으며([훅 참조](/docs/reference/hooks)), `scripts/dev/validate_hooks.py`는 각각을 누락된 것으로 경고로 보고합니다. 아래 표는 `validate_hooks.py`가 확인하는 다섯 개 이벤트를 나열합니다:
 
 > **타임아웃 값은 정식 훅 이벤트 예산을 그대로 따릅니다** — 아래 표는 독자의
 > 편의를 위해 이를 재현한 것이며, 정식 출처가 우선합니다.

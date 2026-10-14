@@ -2,7 +2,7 @@
 title: "rollback"
 description: "Referencia de la CLI para el comando apothem rollback."
 machineTranslated: true
-sourceHash: "3a5ce4dc40c52bfe"
+sourceHash: "6c0c49f541075b0c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -32,11 +32,7 @@ historial, empezando por el cambio más reciente:
   que la instalación creó, a menos que otro entorno instalado todavía los use;
 - elimina los directorios que la instalación creó, una vez que están vacíos.
 
-Todo lo que rollback elimina o reemplaza se copia primero en la raíz de copias
-de seguridad de Apothem (`~/.apothem/backups/`), de modo que una reversión puede, a
-su vez, deshacerse a mano. Después agrega un registro `rollback` al historial del
-entorno. Revertir una instalación más antigua también deshace cada instalación
-posterior a ella en la misma raíz.
+Todo lo que rollback elimina o reemplaza se copia primero en la raíz de copias de seguridad de Apothem (`~/.apothem/backups/`), de modo que una reversión puede a su vez deshacerse a mano. Después añade un registro `rollback` al historial del entorno. Revertir una instalación anterior restaura o elimina solo los destinos que esa instalación registró, y descarta del registro activo, en la misma raíz, cada instalación posterior. Los archivos que una instalación posterior añadió fuera de esos destinos se mantienen en su sitio.
 
 El historial conserva los 10 registros de instalación más recientes por raíz de
 instalación (con las copias de seguridad a las que hacen referencia); una

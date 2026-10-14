@@ -2,13 +2,15 @@
 title: "بوابة المطابقة"
 description: "شغّل بوابة المطابقة في Apothem للتحقّق من سلامة المنظومة."
 machineTranslated: true
-sourceHash: "ea155671db71b76d"
+sourceHash: "bbf19e4d148c511e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 تُشغِّل بوابة المطابقة في <bdi>`src/apothem/conformity/gate.py`</bdi> الجزء الميكانيكي
 من بوابة ما قبل الإصدار ذات الخمسة عشر شريطًا (<bdi>M1-M15</bdi>) على كل مُنتَج
 يؤلّفه المُشغِّل.
+
+تفترض الأوامر في هذه الصفحة وجود نسخة مسحوبة من <bdi>Apothem</bdi>، لذا ابدأ كلًّا منها بـ <bdi>`PYTHONPATH=src`</bdi>. وبعد التثبيت عبر النص البرمجي، استخدم <bdi>`PYTHONPATH="$HOME/.apothem/src"`</bdi> بدلًا من <bdi>`src`</bdi>.
 
 ## تشغيل البوابة
 
@@ -19,10 +21,10 @@ sourceHash: "ea155671db71b76d"
 
 ```bash
 # Advisory: report every validator's findings across the repo, exit 0
-python -m apothem.conformity.gate --all .
+PYTHONPATH=src python -m apothem.conformity.gate --all .
 
 # Strict: exit non-zero (code 2) when a blocking finding is present
-python -m apothem.conformity.gate --all --strict .
+PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 ```
 
 رموز الخروج: <bdi>`0`</bdi> نظيف (أو استشاري)، و<bdi>`2`</bdi> حجب بسبب نتائج في الوضع
@@ -67,13 +69,13 @@ python -m apothem.conformity.gate --all --strict .
 
 ```bash
 # List every registered validator
-python -m apothem.conformity.gate --list
+PYTHONPATH=src python -m apothem.conformity.gate --list
 
 # Run a single named validator
-python -m apothem.conformity.gate --check multi-surface-coherence
+PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence
 
 # Run every validator against one file
-python -m apothem.conformity.gate src/apothem/rules/my-rule.md
+PYTHONPATH=src python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 ```
 
 وضع <bdi>`--hook`</bdi> (<bdi>`python -m apothem.conformity.gate --hook`</bdi>) هو نقطة
@@ -99,5 +101,4 @@ export APOTHEM_CONFORMITY_SCOPE=/path/to/project
 
 ## التكامل مع <bdi>CI</bdi>
 
-تعمل البوابة في <bdi>CI</bdi> عبر <bdi>`.github/workflows/conformity.yml`</bdi> عند كل
-دفع.
+تُشغِّل مهمّة الجودة في <bdi>`.github/workflows/ci.yml`</bdi> البوابة في الوضع الصارم (<bdi>`python -m apothem.conformity.gate --all . --strict`</bdi>) عند الدفع إلى <bdi>`main`</bdi>، وعند طلبات الدمج إلى <bdi>`main`</bdi> التي تمسّ المسارات التي تراقبها تلك المهمّة. أما سير العمل المنفصل <bdi>`.github/workflows/conformity.yml`</bdi> فيُشغِّل مسح التركيبات الاختبارية (<bdi>`tests/conformity-scenarios/verify.py --strict`</bdi>).

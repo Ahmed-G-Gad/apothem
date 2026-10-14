@@ -2,7 +2,7 @@
 title: "著作者ヘッダー — ファイルごとの SPDX ライセンス行"
 description: "各ファイルタイプに適したコメント構文で、規範的な単一行ヘッダーを用いて、ファイルごとの SPDX ライセンス識別子マーカーを定義し、強制します。"
 machineTranslated: true
-sourceHash: "f8a8cbfe9b2c940f"
+sourceHash: "c30711b821380cee"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -120,7 +120,7 @@ SPDX 行はプロジェクトのライセンスを機械可読に宣言し、LIC
 - 3 つのモードで動作します。`fix-in-place`（書き込み）、`emit-patch`（統合 diff を出力）、`check`（いかなる乖離でも非ゼロ終了——CI が使用）。
 - 冪等。2 回実行しても no-op です。
 
-インジェクターは、SPDX 行を事前挿入して新しいファイルを足場づくりする Make ターゲット（`make headers-fix` と `make new-*` の足場）、および `--fix` モードの pre-commit フックによって呼び出されます。
+インジェクターは、`make headers-fix` ターゲットによって呼び出されます。このターゲットは `scripts/inject-header.py --mode fix-in-place` を実行します。
 
 ---
 

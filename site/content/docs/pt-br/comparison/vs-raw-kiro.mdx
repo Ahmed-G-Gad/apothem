@@ -2,7 +2,7 @@
 title: "Apothem versus a configuração manual do Kiro"
 description: "Manter à mão os arquivos de direcionamento do Kiro sob .kiro/steering/ versus renderizá-los a partir do perfil compartilhado do Apothem."
 machineTranslated: true
-sourceHash: "9c89a85385335fc3"
+sourceHash: "a4a26f280f1271a3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -15,10 +15,10 @@ configuração à mão com gerenciá-la com o Apothem.
 
 | Tarefa | Configuração manual | Gerenciada pelo Apothem |
 | ---- | --------------- | --------------- |
-| Escrever regras de direcionamento | Escrever à mão cada arquivo sob `.kiro/steering/` | Renderizadas a partir do corpus compartilhado |
+| Escrever regras de direcionamento | Escrever à mão cada arquivo em `.kiro/steering/` | Renderizadas a partir do corpus compartilhado |
 | Manter os arquivos de base intactos | Lembrar de não sobrescrever `product.md` / `tech.md` / `structure.md` | O adaptador escreve apenas `apothem-rules.md` |
-| Manter as regras alinhadas com outros ambientes | Manual, por ferramenta | Automático no `apothem update` |
-| Verificar se a configuração está correta | Inspeção manual | `apothem verify --harness kiro` |
+| Manter as regras alinhadas com outros harnesses | Manual, por ferramenta | Automático no `apothem update` |
+| Verificar se a configuração está correta | Inspeção manual | `apothem verify --harness kiro --project <path>` |
 
 ## O que o Apothem gerencia
 
@@ -31,11 +31,11 @@ re-renderiza o arquivo no próximo `apothem update`.
 
 ## Caminho de migração
 
-1. Execute `apothem profile init` para criar o perfil compartilhado se você ainda não tiver.
+1. Execute `apothem profile init` para criar o perfil compartilhado, caso ainda não o tenha.
 2. Mova as regras do seu `.kiro/steering/` existente para o corpus compartilhado.
-3. Execute `apothem install --harness kiro` para renderizar o arquivo de direcionamento `apothem-rules.md`.
-4. Execute `apothem verify --harness kiro` para confirmar que a configuração foi instalada.
-5. Use `apothem update --harness kiro` para cada mudança posterior.
+3. Execute `apothem install --harness kiro --project <path>` para renderizar o arquivo de direcionamento `apothem-rules.md`.
+4. Execute `apothem verify --harness kiro --project <path>` para confirmar que a configuração foi gravada.
+5. Use `apothem update --harness kiro --project <path>` para cada mudança posterior.
 
 ## Leia a seguir
 

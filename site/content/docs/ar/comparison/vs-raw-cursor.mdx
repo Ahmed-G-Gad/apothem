@@ -2,7 +2,7 @@
 title: "Apothem مقابل تهيئة Cursor اليدوية"
 description: "صيانة قواعد MDC الخاصة بـ Cursor تحت .cursor/rules/ يدويًّا، مقابل تحويلها من ملف التعريف المشترك لـ Apothem."
 machineTranslated: true
-sourceHash: "129cd7c149852366"
+sourceHash: "c2a9e94f668e10b1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ sourceHash: "129cd7c149852366"
 | كتابة <bdi>frontmatter</bdi> لـ <bdi>MDC</bdi> | كتابة <bdi>`description`</bdi> / <bdi>`globs`</bdi> / <bdi>`alwaysApply`</bdi> يدويًّا لكل ملف | يولّدها المحوِّل |
 | الحفاظ على صيغة قواعد واحدة | الاختيار يدويًّا بين قواعد <bdi>MDC</bdi> وملف <bdi>`.cursorrules`</bdi> واحد | يكتب المحوِّل ملفات <bdi>MDC</bdi> في <bdi>`.cursor/rules/`</bdi> فقط |
 | إبقاء القواعد متوائمة مع البيئات الأخرى | يدويًّا، لكل أداة | تلقائيًّا عند <bdi>`apothem update`</bdi> |
-| التحقّق من صحّة التهيئة | فحص يدوي | <bdi>`apothem verify --harness cursor`</bdi> |
+| التحقّق من صحّة التهيئة | فحص يدوي | <bdi>`apothem verify --harness cursor --project <path>`</bdi> |
 
 ## ما الذي يديره Apothem
 
@@ -34,13 +34,11 @@ sourceHash: "129cd7c149852366"
 
 ## مسار الترحيل
 
-1. شغّل <bdi>`apothem profile init`</bdi> لإنشاء ملف التعريف المشترك إن لم تكن قد فعلت بعد.
-2. انقل القواعد من <bdi>`.cursor/rules/`</bdi> الموجود لديك (وأيّ <bdi>`.cursorrules`</bdi>)
-   إلى الذخيرة المشتركة.
-3. شغّل <bdi>`apothem install --harness cursor`</bdi> لتحويل ملفات <bdi>`.mdc`</bdi>
-   بـ <bdi>frontmatter</bdi> الـ <bdi>MDC</bdi> الصحيح.
-4. شغّل <bdi>`apothem verify --harness cursor`</bdi> للتأكّد من نزول التهيئة.
-5. استخدم <bdi>`apothem update --harness cursor`</bdi> لكل تغيير لاحق.
+1. شغّل <bdi>`apothem profile init`</bdi> لإنشاء الملف التعريفي المشترك إن لم تكن قد فعلت بعد.
+2. انقل القواعد من <bdi>`.cursor/rules/`</bdi> الموجود لديك (وأيّ <bdi>`.cursorrules`</bdi>) إلى الذخيرة المشتركة.
+3. شغّل <bdi>`apothem install --harness cursor --project <path>`</bdi> لتصيير ملفات <bdi>`.mdc`</bdi> مع <bdi>frontmatter</bdi> صحيح لـ <bdi>MDC</bdi>.
+4. شغّل <bdi>`apothem verify --harness cursor --project <path>`</bdi> للتأكّد من وصول التهيئة.
+5. استخدم <bdi>`apothem update --harness cursor --project <path>`</bdi> مع كل تغيير لاحق.
 
 ## اقرأ تاليًا
 

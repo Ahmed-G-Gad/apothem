@@ -2,7 +2,7 @@
 title: "Skema Frontmatter"
 description: "Panduan referensi untuk struktur blok frontmatter YAML, kunci wajib per kelas, dan aturan penegakan validator di seluruh kelas artefak."
 machineTranslated: true
-sourceHash: "79d900f52578b1b0"
+sourceHash: "f89ff828715e6fe4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,7 @@ sourceHash: "79d900f52578b1b0"
 
 Setiap artefak membawa frontmatter YAML di bagian kepala, yang dibatasi oleh baris `---`. Banner header kepengarangan kanonik sesuai [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) berada di atas frontmatter pada berkas keluarga Markdown; frontmatter mengikuti tepat setelahnya.
 
-Kunci menggunakan `kebab-case`. Nilai skalar ditulis polos atau dengan tanda kutip ganda; nilai string yang mengandung titik dua, tanda pagar, atau karakter lain yang bermakna dalam YAML diberi tanda kutip.
+Kunci command menggunakan `kebab-case`. Kunci skill menggunakan `kebab-case` kecuali `userInvocable`, ejaan camelCase yang dipakai korpus sumber (instalasi Claude Code mengganti namanya menjadi `user-invocable`). Kunci aturan dan pekerja terdelegasi menggunakan camelCase, sebagaimana tercantum dalam tabel kunci wajib di bagian 2. Nilai skalar ditulis polos atau dengan tanda kutip ganda; nilai string yang mengandung titik dua, tanda pagar, atau karakter YAML penting lainnya diberi tanda kutip.
 
 ## 2. Field Wajib per Kelas
 

@@ -2,7 +2,7 @@
 title: "Apothem im Vergleich zur manuellen Trae-Konfiguration"
 description: "Die Regeln von Trae unter .trae/rules/ von Hand pflegen, verglichen mit dem Rendern aus dem geteilten Profil von Apothem."
 machineTranslated: true
-sourceHash: "d31ccc1fd80cb48e"
+sourceHash: "065945ba50500576"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -16,10 +16,10 @@ gegenüber.
 
 | Aufgabe | Manuelle Konfiguration | Von Apothem verwaltet |
 | ---- | --------------- | --------------- |
-| Regeln schreiben | Jede Datei unter `.trae/rules/` von Hand schreiben | Aus dem geteilten Korpus gerendert |
+| Regeln verfassen | Jede Datei unter `.trae/rules/` von Hand schreiben | Aus dem gemeinsamen Korpus gerendert |
 | Die Apothem-Oberfläche getrennt halten | Daran denken, `project_rules.md` nicht zu überladen | Der Adapter schreibt eine dedizierte `apothem-rules.md` |
-| Regeln mit anderen Umgebungen ausgerichtet halten | Manuell, pro Werkzeug | Automatisch bei `apothem update` |
-| Verifizieren, dass die Konfiguration korrekt ist | Manuelle Inspektion | `apothem verify --harness trae` |
+| Regeln mit anderen Harnesses abgestimmt halten | Manuell, pro Werkzeug | Automatisch bei `apothem update` |
+| Prüfen, ob die Konfiguration korrekt ist | Manuelle Inspektion | `apothem verify --harness trae --project <path>` |
 
 ## Was Apothem verwaltet
 
@@ -32,11 +32,13 @@ beim nächsten `apothem update` neu.
 
 ## Migrationspfad
 
-1. Führen Sie `apothem profile init` aus, um das geteilte Profil zu erstellen, falls noch nicht geschehen.
-2. Verschieben Sie die Regeln aus Ihren vorhandenen `.trae/rules/`-Dateien in das geteilte Korpus.
-3. Führen Sie `apothem install --harness trae` aus, um die `apothem-rules.md`-Datei zu rendern.
-4. Führen Sie `apothem verify --harness trae` aus, um zu bestätigen, dass die Konfiguration angekommen ist.
-5. Verwenden Sie `apothem update --harness trae` für jede spätere Änderung.
+1. Führen Sie `apothem profile init` aus, um das gemeinsame Profil zu erstellen, falls noch nicht geschehen.
+2. Verschieben Sie die Regeln aus Ihren vorhandenen `.trae/rules/`-Dateien in das gemeinsame Korpus.
+3. Führen Sie `apothem install --harness trae --project <path>` aus, um die Datei
+   `apothem-rules.md` zu rendern.
+4. Führen Sie `apothem verify --harness trae --project <path>` aus, um zu bestätigen, dass die
+   Konfiguration angekommen ist.
+5. Verwenden Sie `apothem update --harness trae --project <path>` für jede spätere Änderung.
 
 ## Als Nächstes lesen
 

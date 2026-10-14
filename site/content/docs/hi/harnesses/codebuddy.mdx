@@ -2,7 +2,7 @@
 title: "CodeBuddy"
 description: "Tencent CodeBuddy (GA) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "12cdb066aabd7caf"
+sourceHash: "84f84790325354af"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -79,9 +79,7 @@ apothem update --harness codebuddy --project /path/to/project
 apothem uninstall --harness codebuddy --project /path/to/project
 ```
 
-अडैप्टर द्वारा लिखी गई नेटिव कॉन्फ़िग फ़ाइलों को हटाता है, और प्रबंधित नियम फ़ाइल
-का नाम बदलकर उसे एक टाइमस्टैम्प-युक्त बैकअप बना देता है। साझा प्रोफ़ाइल YAML और
-Apothem इंजन अप्रभावित रहते हैं।
+`apothem-rules.md` से Apothem ब्लॉक हटाता है और उसमें मौजूद किसी भी अन्य टेक्स्ट को रखता है। फ़ाइल तभी हटाई जाती है जब उसमें कुछ और न बचे। बदलाव से पहले फ़ाइल की एक टाइमस्टैम्प-युक्त प्रति `~/.apothem/backups/` के अंतर्गत सहेजी जाती है; प्रोजेक्ट में कोई बैकअप फ़ाइल नहीं छोड़ी जाती। साझा प्रोफ़ाइल YAML और Apothem इंजन अप्रभावित रहते हैं।
 
 ## अनुरूपता गेट
 

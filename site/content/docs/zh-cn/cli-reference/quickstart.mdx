@@ -2,7 +2,7 @@
 title: "quickstart"
 description: "apothem quickstart 引导式首次运行命令的 CLI 参考。"
 machineTranslated: true
-sourceHash: "f564c70124345bea"
+sourceHash: "951e6d6877611c54"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,10 +22,10 @@ apothem quickstart [--harness NAME|all] [--project PATH] [--profile PATH]
 
 ## 行为
 
-- **工具**——未提供 `--harness` 时，交互式运行会列出受支持的名称（外加 `all`），并在写入任何内容之前要求选择一个。无法询问的运行——`--yes`、`--format json` 或没有终端——会以一个指出 `--harness` 选项的用法错误停止，并且不写入任何内容。
+- **工具**——未提供 `--harness` 时，交互式运行会列出受支持的名称（外加 `all`），并在写入任何内容之前要求选择一个。无法询问的运行（`--yes`、`--format json` 或没有终端）会以一个指出 `--harness` 选项的用法错误停止，并且不写入任何内容。
 - **配置档案**——如果解析出的配置档案路径下没有文件，`quickstart` 会提议创建一个起始配置档案（在 `--yes`、非交互式 shell 或 `--format json` 下自动创建），并指出需要个性化的占位身份字段。
-- **预览 + 确认**——在任何写入之前，目标会列在两个标题下（项目根目录与你的主目录）；交互式运行会在写入项目之外的内容之前进行确认。`--yes`、非交互式 shell 和 `--format json` 会在不提示的情况下继续。拒绝会在任何写入之前中止。
-- **安装**——工具原生不支持的能力会被汇总为每个工具一条分组说明（传入 `--verbose` 可获取逐项能力的详情）；完整集合始终位于 `--format json` 的 warnings 数组中。
+- **预览 + 确认**——对于 `--harness all`，目标会按两个标题列出（项目根目录与你的主目录），交互式运行会在写入项目之外的内容之前进行确认。单个指定的工具会直接安装，不做预览或提示。`--yes`、非交互式 shell 和 `--format json` 会在不提示的情况下继续。拒绝 `--harness all` 的预览会在安装写入之前中止；第 1 步中创建的起始配置档案会被保留。
+- **安装**——工具原生不支持的能力会按工具汇总为一条分组说明（传入 `--verbose` 可查看逐项能力的详情）；完整列表始终位于 `--format json` 的 warnings 数组中。
 - **下一步**——终端输出会指出后续命令（`apothem verify …`、`apothem doctor`）。
 
 ## 选项

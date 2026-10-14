@@ -2,7 +2,7 @@
 title: "Antigravity"
 description: "适用于 Antigravity（预览版）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "43dc91cbb7358f2c"
+sourceHash: "5c4311df7cdf88b7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -50,7 +50,7 @@ apothem verify --harness antigravity
 verify 命令确认：
 
 1. 原生上下文文件存在于预期路径。
-2. Apothem Antigravity CLI 插件元数据存在，并声明了 `apothem` 插件名称。
+2. 插件清单 `plugin.json` 存在、非空，并且可以解析为 JSON。验证不会检查插件名称；更改该字段后请自行检查。
 
 ## 更新
 

@@ -2,7 +2,7 @@
 title: "更新"
 description: "Apothem とハーネスアダプターを更新する。"
 machineTranslated: true
-sourceHash: "306446b4fef2d5d8"
+sourceHash: "f659c0450ac5624c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,15 +40,7 @@ bash scripts/installer/update.sh
 pwsh -NoProfile -File scripts/installer/update.ps1
 ```
 
-更新スクリプトは `APOTHEM_HOME`（デフォルトは `~/.apothem`）にあるソースツリーを `APOTHEM_REF`
-へ再チェックアウトします — 未設定の場合は最新の署名済み `vMAJOR.MINOR.PATCH` リリースタグへ
-解決し、タグ値はそれを固定し、`main` は移動するブランチを選択します。再マテリアライズの前に
-`git verify-tag` でタグの署名を検証します。署名されていない、または改ざんされたタグは、
-`APOTHEM_ALLOW_UNVERIFIED=1` が中断を警告へ格下げしない限り中断します。その後、リフレッシュ
-されたツリーから `apothem update` を実行して、`APOTHEM_HARNESS` で指定されたハーネス
-（デフォルトは[インストーラー環境変数](/docs/how-to/installer-environment-variables)の表に従う）を
-再マテリアライズします。事前のインストールが必要です。`APOTHEM_HOME` にツリーが存在せず
-`APOTHEM_SOURCE` が未設定の場合は、まずインストーラーを案内するメッセージを表示して終了します。
+更新スクリプトは、`APOTHEM_HOME`（既定は `~/.apothem`）にあるソースツリーを、`APOTHEM_REF` にチェックアウトし直します。未設定の場合は、最新の署名付き `vMAJOR.MINOR.PATCH` リリースタグに解決されます。タグの値を指定するとそのタグに固定され、`main` は `APOTHEM_ALLOW_UNVERIFIED=1` も設定されている場合にのみ、移動するブランチを選択します。このオーバーライドがない場合、更新はその ref をチェックアウトしたあとで、再マテリアライズの前に中止します。ブランチは署名付きリリースタグではないためです。再マテリアライズの前に、`git verify-tag` でタグの署名を検証します。署名のないタグ、または改ざんされたタグは、`APOTHEM_ALLOW_UNVERIFIED=1` で中止を警告に格下げしない限り中止します。メンテナーの公開鍵がローカルのキーリングにない署名付きタグは、[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) に公開されているフィンガープリントを示す、鍵のインポートに関する案内とともに中止します。その後、更新されたツリーから `apothem update` を実行して、`APOTHEM_HARNESS` で指定されたハーネスを再マテリアライズします（ハーネスの既定値は、[インストーラーの環境変数](/docs/how-to/installer-environment-variables)の表に従います）。事前のインストールが必要です。`APOTHEM_HOME` にツリーがなく、かつ `APOTHEM_SOURCE` が未設定の場合は、まずインストーラーを実行するよう案内するメッセージを表示して終了します。
 
 ## ハーネス出力を再マテリアライズする
 

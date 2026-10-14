@@ -2,7 +2,7 @@
 title: "Cursor"
 description: "Adapter harness Apothem untuk Cursor (GA)."
 machineTranslated: true
-sourceHash: "28f38f63de0795cc"
+sourceHash: "79efcc04715286ff"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -55,7 +55,7 @@ apothem verify --harness cursor --project /path/to/project
 Perintah verify memastikan bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Semua bidang wajib dari profil bersama ada.
+2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
 3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
 ## Pembaruan

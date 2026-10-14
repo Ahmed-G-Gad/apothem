@@ -2,7 +2,7 @@
 title: "Apothem face à la configuration manuelle de Claude Code"
 description: "Maintenir à la main tout l'arbre de configuration native de Claude Code face à le gérer via le profil partagé d'Apothem."
 machineTranslated: true
-sourceHash: "3eb017220814891b"
+sourceHash: "71c12697cb396172"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,22 +28,16 @@ output-styles, les statuslines et `settings.json` dans `~/.claude/`. Les hooks
 natifs PreToolUse, PostToolUse, Stop et SessionStart sont configurés depuis le
 corpus partagé.
 
-Apothem **ne** gère **pas** `CLAUDE.md` — ce fichier est le territoire de
-l'opérateur. Vos instructions de projet et personnelles dans `CLAUDE.md`
-restent les vôtres ; Apothem gouverne les surfaces propagées autour de lui.
+Apothem écrit un bloc géré, délimité par des marqueurs sentinelles, dans votre `~/.claude/CLAUDE.md` à portée utilisateur. `apothem update` ne réécrit que ce bloc et conserve votre texte en dehors de celui-ci. Les fichiers `CLAUDE.md` de projet ne sont pas modifiés. Apothem gouverne les surfaces propagées qui l'entourent.
 
 ## Chemin de migration
 
-1. Exécutez `apothem profile init` pour créer le profil partagé si vous ne
-   l'avez pas encore.
-2. Déplacez vos règles, agents, commandes et skills existants de `~/.claude/`
-   vers le corpus partagé.
-3. Laissez `CLAUDE.md` en place — Apothem n'y touchera pas.
+1. Exécutez `apothem profile init` pour créer le profil partagé si vous ne l'avez pas encore fait.
+2. Déplacez vos règles, agents, commandes et skills existants de `~/.claude/` vers le corpus partagé.
+3. Laissez `CLAUDE.md` en place. Apothem conserve votre texte en dehors de son bloc géré et ne réécrit que ce bloc.
 4. Exécutez `apothem install --harness claude-code` pour propager le corpus.
-5. Exécutez `apothem verify --harness claude-code` pour confirmer que la
-   configuration a été installée.
-6. Utilisez `apothem update --harness claude-code` pour chaque modification
-   ultérieure.
+5. Exécutez `apothem verify --harness claude-code` pour confirmer que la configuration est bien en place.
+6. Utilisez `apothem update --harness claude-code` pour chaque modification ultérieure.
 
 ## À lire ensuite
 

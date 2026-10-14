@@ -2,7 +2,7 @@
 title: "Gemini CLI"
 description: "Apothem-Harness-Adapter für Gemini CLI (GA)."
 machineTranslated: true
-sourceHash: "84593cdc3207e035"
+sourceHash: "05c030cc3a187fcb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -76,9 +76,9 @@ apothem verify --harness gemini-cli --project /path/to/project
 
 Der Befehl verify bestätigt, dass:
 
-1. die native Konfiguration am erwarteten Pfad existiert.
-2. alle Pflichtfelder aus dem gemeinsamen Profil vorhanden sind.
-3. die adapterspezifische Verifizierungsroutine Erfolg meldet.
+1. Die native Konfiguration liegt am erwarteten Pfad.
+2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH` hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem Profil passen.
+3. Die adapterspezifische Verifizierungsroutine meldet Erfolg.
 
 ## Aktualisierung
 

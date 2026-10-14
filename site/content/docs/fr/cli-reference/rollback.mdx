@@ -2,7 +2,7 @@
 title: "rollback"
 description: "Référence de la CLI pour la commande apothem rollback."
 machineTranslated: true
-sourceHash: "3a5ce4dc40c52bfe"
+sourceHash: "6c0c49f541075b0c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -37,11 +37,7 @@ elle :
 - supprime les répertoires que l'installation a créés, une fois qu'ils sont
   vides.
 
-Tout ce que rollback supprime ou remplace est d'abord copié dans la racine de
-sauvegarde d'Apothem (`~/.apothem/backups/`) ; un rollback peut donc lui-même
-être annulé à la main. Il ajoute ensuite un enregistrement `rollback` au journal
-de l'environnement. Annuler une installation plus ancienne annule aussi chaque
-installation qui l'a suivie à la même racine.
+Tout ce que rollback supprime ou remplace est d'abord copié dans la racine de sauvegarde d'Apothem (`~/.apothem/backups/`) ; un rollback peut donc lui-même être annulé à la main. Il ajoute ensuite un enregistrement `rollback` au journal de l'environnement. Annuler une installation plus ancienne ne restaure ou ne supprime que les cibles enregistrées par cette installation, et retire de l'enregistrement actif, à la même racine, chaque installation qui l'a suivie. Les fichiers qu'une installation ultérieure a ajoutés en dehors de ces cibles restent en place.
 
 Le journal conserve les 10 enregistrements d'installation les plus récents par
 racine d'installation (avec les sauvegardes qu'ils référencent) ; une

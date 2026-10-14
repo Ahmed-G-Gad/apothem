@@ -2,7 +2,7 @@
 title: "Harness-Einrichtung"
 description: "Harness-Adapter für Plattformen hinzufügen und konfigurieren."
 machineTranslated: true
-sourceHash: "e6bc4ceedf7d7137"
+sourceHash: "1f7d9a2a473395a7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,9 +40,7 @@ apothem verify --harness <name>
 apothem verify --harness all --project /path/to/project
 ```
 
-Um jeden registrierten Adapter in einem Durchgang zu prüfen, führen Sie `apothem doctor` aus. Es gibt
-eine Installationsstatus-Tabelle pro Harness aus und beendet sich mit einem Code ungleich null, wenn ein Adapter
-als nicht installiert gemeldet wird.
+Um jeden registrierten Adapter in einem Durchgang zu prüfen, führen Sie `apothem doctor` aus. Der Befehl gibt eine Installationsstatus-Tabelle je Harness aus und endet nur dann mit einem Code ungleich null, wenn eine Prüfung fehlschlägt, etwa ein installierter Harness, der die Verifizierung nicht besteht, ein Hook-Befehl, der nicht starten kann, oder ein vorhandenes Profil, das nicht validiert. Ein Harness, der nicht installiert ist, wird aufgeführt, lässt `doctor` aber nicht fehlschlagen.
 
 ## Installierte Harnesses anzeigen
 

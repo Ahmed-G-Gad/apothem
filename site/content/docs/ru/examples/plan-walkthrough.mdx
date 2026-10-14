@@ -2,7 +2,7 @@
 title: "Прохождение плана"
 description: "Сквозное прохождение конвейера /plan для реальной задачи."
 machineTranslated: true
-sourceHash: "a046160921a5a9b1"
+sourceHash: "474f591d305c3c7e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,7 +25,7 @@ human-readable by default.
 /plan-spec prose.md --suite-name apothem-status-command
 ```
 
-Это запускает шестифазный Forge, задаёт уточняющие вопросы и производит `plans/apothem-status-command/_spec/spec.md`.
+Это запускает шестифазный Forge: он задаёт уточняющие вопросы и создаёт `.apothem/plans/apothem-status-command/_spec/spec.md`.
 
 ## Шаг 3: Сгенерировать план
 
@@ -33,7 +33,7 @@ human-readable by default.
 /plan-generate
 ```
 
-Производит PREAMBLE.md, MASTER-PLAN.md, PROGRESS.md, PLAN-NOTES.md и файлы PHASE.md для каждой фазы под `plans/apothem-status-command/phases/`.
+Создаёт PREAMBLE.md, MASTER-PLAN.md, PROGRESS.md, PLAN-NOTES.md и отдельные файлы PHASE.md для каждой фазы в `.apothem/plans/apothem-status-command/phases/`.
 
 ## Шаг 4: Проверить план
 

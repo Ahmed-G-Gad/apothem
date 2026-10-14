@@ -2,7 +2,7 @@
 title: "Referensi CLI"
 description: "Referensi CLI Apothem — semua subperintah dan flag."
 machineTranslated: true
-sourceHash: "8b8d7dc1647136bd"
+sourceHash: "60add6555ac816ea"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -165,7 +165,7 @@ apothem profile edit [--profile PATH]
 | Subperintah | Deskripsi |
 |------------|-------------|
 | `profile init` | Membuat kerangka profil minimal yang valid menurut skema. |
-| `profile show` | Mencetak profil yang telah di-resolve (YAML) ke stdout. |
+| `profile show` | Mencetak profil yang telah di-resolve sebagai JSON ke stdout. Dengan `--json`, dokumen diawali dengan `schema_version`. |
 | `profile set <key> <value>` | Menetapkan sebuah field profil. Nilainya disimpan sebagai string literal — kata polos tidak dikonversi, sehingga `no` tetap `"no"` dan `1.0` tetap string — kecuali `true`/`false` serta masukan daftar dan map eksplisit `[...]` / `{...}`. Profil yang telah dirakit divalidasi terhadap skema sebelum ditulis. |
 | `profile edit` | Membuka profil di `$EDITOR` (beralih ke bawaan platform sebagai cadangan). |
 
@@ -194,11 +194,7 @@ Menjalankan diagnostik sistem untuk pemasangan Apothem.
 apothem doctor
 ```
 
-Mencetak versi Apothem, interpreter Python, platform, jalur profil yang telah
-di-resolve, dan tabel status pemasangan per harness. Kode keluar adalah `0`
-hanya saat setiap pemeriksaan lolos; profil yang tidak valid, harness yang
-tidak terpasang, atau adapter yang tidak dapat diperiksa masing-masing memaksa
-kode keluar bukan nol.
+Mencetak versi Apothem, interpreter Python, platform, jalur profil yang telah di-resolve, dan tabel status pemasangan per harness. Kode keluar adalah `1` ketika ada pemeriksaan yang gagal: profil tidak valid, harness yang terpasang tetapi tidak lolos verifikasi, perintah hook terdaftar yang tidak dapat dimulai, adapter yang tidak dapat dimuat atau diperiksa, atau ledger yang tidak dapat dibaca. Harness yang belum terpasang dilaporkan dan bukan kegagalan, serta catatan informasional tidak mengubah kode keluar.
 
 ## Referensi Perintah dan Flag yang Dihasilkan
 

@@ -2,7 +2,7 @@
 title: "アーティファクトレジストリ"
 description: "Apothem エコシステムのアーティファクトの完全な一覧：コマンド、ルール、委任ワーカー、フック、スキル、出力スタイル、アーティファクト進化の規律、および空のアーティファクトクラスの宣言。"
 machineTranslated: true
-sourceHash: "497e545938ce858d"
+sourceHash: "45aeec5fdf08bdfd"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -90,24 +90,7 @@ Test Runner         src/apothem/agents/test-runner.md         Quality         ho
 
 ## 4. フック
 
-登録されたすべてのフックコマンドは、Claude Code の exec 形式のコマンド形態
-（`command: "python"` に `args` 配列を加えたもの）を使用し、
-`-m apothem.hooks.dispatch` または `-m apothem.conformity.gate` のいずれかを呼び出します。ディスパッチャーは
-エコシステムルートの解決のために `src/apothem/hooks/lib/resolve_root.py` をインポートし、
-それと並んで `src/apothem/hooks/` 自体の配下にある 2 つのヘルパーに委任します：
-`src/apothem/hooks/emit_hook_context.py` はアシスタント向けにイベントペイロードを整形し、
-`src/apothem/hooks/session_start_bootstrap.py` は、ディスパッチャーがそのイベントをルーティングする際に
-引き渡す SessionStart の準備作業を担います。サポートされるイベントが発火したときにアシスタントに
-表示されるフックメッセージは、`src/apothem/hooks/messages/` 配下に Markdown コンテキストファイルとして
-存在します——イベントバリアントごとに 1 つ：`postcompact.md`、`precompact.md`、
-`pretooluse-bash.md`、`pretooluse-bash-plan-guard.md`、`pretooluse-conformity.md`、
-`pretooluse-dependency-guard.md`、`pretooluse-edit.md`、`pretooluse-edit-header-guard.md`、
-`pretooluse-eval-guard.md`、`pretooluse-notebookedit.md`、`pretooluse-write.md`、
-`pretooluse-write-header-guard.md`、`pretooluse-write-plan-guard.md`、`sessionstart.md`、
-`stop.md`。各ルーティング済みコンテキストファイルは、そのイベントが発火し、かつそのコンテキスト引数が
-`settings.json` に登録されているときにディスパッチャーによってロードされます。3 つのコンテキストファイル
-（`pretooluse-conformity.md`、`pretooluse-dependency-guard.md`、`pretooluse-eval-guard.md`）は、
-現在の `settings.json` ルーティングエントリを持たない利用可能なバリアントとして出荷されています。
+インストールされた Claude Code のフックエントリーは exec 形式を使います。`command` は `${PYTHON_BIN}` で、`args` には `${HARNESS_ROOT}/.apothem/support/` 配下のスクリプトパス（例：`hooks/dispatch.py` と `conformity/gate.py`）が入ります。`-m apothem.hooks.dispatch` 形式は、`PYTHONPATH=src` を使ってソースチェックアウトから開発する場合のものです。ディスパッチャーは、エコシステムルートの解決のために `src/apothem/hooks/lib/resolve_root.py` をインポートし、それと並んで `src/apothem/hooks/` 自体の配下にある 2 つのヘルパーに処理を委譲します。`src/apothem/hooks/emit_hook_context.py` は、アシスタント向けにイベントのペイロードを整形します。`src/apothem/hooks/session_start_bootstrap.py` は、ディスパッチャーがそのイベントをルーティングする際に引き渡す SessionStart の準備作業を担います。サポートされるイベントが発火したときにアシスタントへ提示されるフックメッセージは、`src/apothem/hooks/messages/` 配下の Markdown コンテキストファイルとして保存されています。イベントのバリアントごとに 1 つです：`postcompact.md`、`precompact.md`、`pretooluse-bash.md`、`pretooluse-bash-plan-guard.md`、`pretooluse-conformity.md`、`pretooluse-dependency-guard.md`、`pretooluse-edit.md`、`pretooluse-edit-header-guard.md`、`pretooluse-eval-guard.md`、`pretooluse-notebookedit.md`、`pretooluse-write.md`、`pretooluse-write-header-guard.md`、`pretooluse-write-plan-guard.md`、`sessionstart.md`、`stop.md`。ルーティングされる各コンテキストファイルは、そのイベントが発火し、コンテキスト引数が `settings.json` に登録されているときに、ディスパッチャーによって読み込まれます。`pretooluse-conformity.md` は、現在の `settings.json` のルーティングエントリーを持たない、利用可能なバリアントとして同梱されています。`pretooluse-dependency-guard.md` は Write と Edit のマッチャーでルーティングされ、`pretooluse-eval-guard.md` は Write、Edit、`Bash|PowerShell` のマッチャーでルーティングされます。
 
 ```text
 Event             Automates                Timeout  Purpose

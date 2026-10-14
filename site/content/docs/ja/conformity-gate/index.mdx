@@ -2,7 +2,7 @@
 title: "コンフォーミティゲート"
 description: "Apothem のコンフォーミティゲート — 出力されるすべてのアーティファクトが合格しなければならない、15 バーの事前出力ゲート（M1-M15）のうち機械的に判定される部分。"
 machineTranslated: true
-sourceHash: "c3c719c0c1a0e92e"
+sourceHash: "0c45cd7185de5190"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,31 +28,7 @@ sourceHash: "c3c719c0c1a0e92e"
 
 ## 重大度の段階
 
-| 重大度 | ゲートへの影響 |
-|---|---|
-| **クリティカル** | ゲート FAIL — 出力は無条件にブロックされる |
-| **重要** | 重要のバーが 2 つ以上同時に不合格の場合にゲート FAIL |
-| **助言** | ゲート WARN — 署名済み記録にログされる。出力はブロックしない |
-
-機械的部分のマッチャーのほとんどは、デフォルトで**重要**です。M5（権威 — シークレット、捏造されたエンドポイント）と M12（孤立した出力）は**クリティカル**です。
-
-```mermaid
-%% provenance: hand-authored %%
-%% verified: 2026-07-06 %%
-%% cross-reference: the Severity ladder table above; src/apothem/conformity/gate.py (severity aggregation) %%
-flowchart TD
-    accTitle: Conformity-gate severity-to-verdict decision flow
-    accDescr: A finding's severity determines the gate verdict. A Critical finding — M5 authority or M12 orphan output — fails the gate and blocks emission unconditionally. Important findings block only when two or more fail simultaneously; a single Important finding does not block. Advisory findings are logged in the signed record and never block emission.
-    F["Finding raised<br/>by a matcher"] --> S{"Severity?"}
-    S -->|Critical| C["Critical<br/>M5 authority · M12 orphan output"]
-    S -->|Important| I["Important<br/>most mechanical matchers"]
-    S -->|Advisory| A["Advisory"]
-    C --> FAIL["Gate FAIL<br/>emission blocked"]
-    I --> Q{"2+ Important<br/>bars failing?"}
-    Q -->|yes| FAIL
-    Q -->|no| WARN["Gate WARN<br/>logged in signed record<br/>emission proceeds"]
-    A --> WARN
-```
+このゲートには、クリティカル・重要・助言の重大度の段階も、2 件以上の検出によって不合格となるしきい値もありません。`--strict`（または `APOTHEM_CONFORMITY_STRICT=1`）を付けない場合、ゲートは検出事項を報告し、`0` で終了します。`--strict` を付けると、単一ファイルまたはフックのチェックは、いずれかのマッチャーが不合格のとき `2` で終了し、コーパス実行（`--all-perwrite`）は、ブロッキングのマッチャーが不合格のとき `2` で終了します。助言のマッチャーは報告のみです。インストールされた Write/Edit フックは `--strict` を渡さないため、検出事項を報告したうえで書き込みを続行します。ただし、そのフックの環境で `APOTHEM_CONFORMITY_STRICT=1` が設定されている場合は除きます。
 
 ## バリデーター
 

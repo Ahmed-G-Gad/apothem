@@ -2,7 +2,7 @@
 title: "Apothem में योगदान — डेवलपर मार्गदर्शिका"
 description: "कैनोनिकल स्कीमा, फ़्रंटमैटर आवश्यकताओं और सत्यापन प्रक्रियाओं के साथ नियम, कमांड, हेल्पर, स्किल और हुक लिखकर Apothem इकोसिस्टम का रखरखाव और विस्तार करें।"
 machineTranslated: true
-sourceHash: "ae3392672e01c783"
+sourceHash: "782e178598975d52"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -117,15 +117,18 @@ Apothem इकोसिस्टम में पाँच आर्टिफ़
 - **कमांड:** `{name}.md`
 - **हेल्पर:** `{name}.md`
 - **स्किल:** फ़ोल्डर `src/apothem/skills/{name}/SKILL.md` के अंदर (सटीक केस: `SKILL.md`)
-- **हुक:** फ़ोल्डर `src/apothem/hooks/` के अंदर। सभी इवेंट हैंडलर Python में हैं।
-  हर `settings.json` हुक कमांड
-  `-m apothem.hooks.dispatch <event> [<message-name>]` या
-  `-m apothem.conformity.gate --hook` को चलाने के लिए exec रूप (`python` और साथ में
-  `args`) का उपयोग करता है। `dispatch.py` `SessionStart` को
-  `session_start_bootstrap.main()` पर और हर अन्य अनुमत-सूची वाले इवेंट को
-  `emit_hook_context.main()` पर रूट करता है। `src/apothem/hooks/` या `scripts/` के
-  अंतर्गत अनुमत एकमात्र शेल स्टब चार लोकेटर + बूटस्ट्रैप फ़ाइलें
-  (`find-python.{ps1,sh}`, `bootstrap.{ps1,sh}`) हैं; कोई भी अन्य `.ps1` /
+- **हुक:** फ़ोल्डर `src/apothem/hooks/` के अंदर। सभी इवेंट हैंडलर Python में हैं। हर
+  `settings.json` हुक कमांड exec रूप का उपयोग करता है: `command` इंस्टॉल के समय हल होने
+  वाला इंटरप्रेटर प्लेसहोल्डर `${PYTHON_BIN}` है, और `args` में स्क्रिप्ट पथ तथा उसके
+  आर्ग्युमेंट होते हैं। Claude Code टेम्पलेट
+  `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` और
+  `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook` को पूर्ण पथ से चलाता है, इसलिए
+  इंस्टॉल की गई प्रति को आयात-योग्य `apothem` पैकेज की आवश्यकता नहीं होती। `dispatch.py`
+  `SessionStart` को
+  `session_start_bootstrap.main()` पर, और हर अन्य अनुमत-सूची वाले इवेंट को
+  `emit_hook_context.main()` पर रूट करता है। `src/apothem/hooks/` या `scripts/` के अंतर्गत
+  अनुमत शेल स्टब केवल छह लोकेटर और बूटस्ट्रैप फ़ाइलें हैं
+  (`find-python.{ps1,sh}`, `find-pwsh.{ps1,sh}`, `bootstrap.{ps1,sh}`); कोई भी अन्य `.ps1` /
   `.sh` फ़ाइल `scripts/dev/validate_hooks.py` स्वच्छता जाँच में विफल होती है।
 
 ### क्रॉस-संदर्भ

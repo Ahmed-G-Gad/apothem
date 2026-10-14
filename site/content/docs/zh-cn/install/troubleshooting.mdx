@@ -2,7 +2,7 @@
 title: "故障排查"
 description: "针对插件、npx 和安装程序各路径下常见的 Apothem 安装失败和运行时问题的解决方案。"
 machineTranslated: true
-sourceHash: "5dad4c6e337cead2"
+sourceHash: "7deb3ca475c3bc89"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,7 +26,7 @@ sourceHash: "5dad4c6e337cead2"
 
 ### 运行安装程序后找不到 `apothem`
 
-安装程序将源代码树放在 `~/.apothem`，并不会向你的 `PATH` 添加 `apothem` 可执行文件。请通过安装程序在完成时打印的调用方式运行引擎：
+安装程序默认将源码树放在 `~/.apothem`，并在 `~/.local/bin`（POSIX）或 `%LOCALAPPDATA%\Microsoft\WindowsApps`（Windows）中写入一个 `apothem` 垫片。它不会修改你的 `PATH`。如果找不到 `apothem`，说明该目录不在 `PATH` 上；请将其加入 `PATH`，或在此之前使用下面的 `PYTHONPATH` 形式。请通过安装程序完成时打印的调用方式运行引擎：
 
 ```bash
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>

@@ -2,7 +2,7 @@
 title: "作者署名头——逐文件 SPDX 许可行"
 description: "使用规范的单行头部，以每种文件类型相应的注释语法，定义并强制执行逐文件的 SPDX 许可标识符标记。"
 machineTranslated: true
-sourceHash: "f8a8cbfe9b2c940f"
+sourceHash: "c30711b821380cee"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -120,7 +120,7 @@ SPDX 行以机器可读方式声明项目的许可；LICENSE 文件以权威方�
 - 以三种模式运行：`fix-in-place`（写入）、`emit-patch`（打印统一 diff）、`check`（在任何偏离时以非零退出——供 CI 使用）。
 - 幂等：运行两次是无操作。
 
-注入器由那些以预先插入的 SPDX 行来搭建新文件的 Make 目标（`make headers-fix` 和 `make new-*` 脚手架）以及处于 `--fix` 模式的预提交钩子调用。
+注入器由 `make headers-fix` 目标调用，该目标运行 `scripts/inject-header.py --mode fix-in-place`。
 
 ---
 

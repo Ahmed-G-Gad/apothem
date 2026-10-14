@@ -2,7 +2,7 @@
 title: "아티팩트 레지스트리"
 description: "Apothem 생태계 아티팩트의 완전한 열거: 명령어, 규칙, 헬퍼, 훅, 스킬, 출력 스타일, 아티팩트 진화 규율, 빈 아티팩트 클래스 선언."
 machineTranslated: true
-sourceHash: "497e545938ce858d"
+sourceHash: "45aeec5fdf08bdfd"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -90,24 +90,7 @@ Test Runner         src/apothem/agents/test-runner.md         Quality         ho
 
 ## 4. 훅
 
-등록된 모든 훅 명령어는 Claude Code의 exec 형식 명령어 형태
-(`command: "python"`에 `args` 배열 추가)를 사용하며,
-`-m apothem.hooks.dispatch` 또는 `-m apothem.conformity.gate` 중 하나를 호출합니다. 디스패처는
-생태계 루트 해석을 위해 `src/apothem/hooks/lib/resolve_root.py`를 임포트하고,
-그것과 나란히 `src/apothem/hooks/` 자체 아래에 있는 두 헬퍼에 위임합니다:
-`src/apothem/hooks/emit_hook_context.py`는 어시스턴트를 위해 이벤트 페이로드를 포맷하고,
-`src/apothem/hooks/session_start_bootstrap.py`는 디스패처가 해당 이벤트를 라우팅할 때
-넘기는 SessionStart 준비 작업을 담당합니다. 지원되는 이벤트가 발화될 때 어시스턴트에게
-표시되는 훅 메시지는 `src/apothem/hooks/messages/` 아래에 Markdown 컨텍스트 파일로
-존재합니다 — 이벤트 변형마다 하나씩: `postcompact.md`, `precompact.md`,
-`pretooluse-bash.md`, `pretooluse-bash-plan-guard.md`, `pretooluse-conformity.md`,
-`pretooluse-dependency-guard.md`, `pretooluse-edit.md`, `pretooluse-edit-header-guard.md`,
-`pretooluse-eval-guard.md`, `pretooluse-notebookedit.md`, `pretooluse-write.md`,
-`pretooluse-write-header-guard.md`, `pretooluse-write-plan-guard.md`, `sessionstart.md`,
-`stop.md`. 각 라우팅된 컨텍스트 파일은 해당 이벤트가 발화되고 그 컨텍스트 인자가
-`settings.json`에 등록되어 있을 때 디스패처에 의해 로드됩니다. 세 컨텍스트 파일
-(`pretooluse-conformity.md`, `pretooluse-dependency-guard.md`, `pretooluse-eval-guard.md`)은
-현재 `settings.json` 라우팅 엔트리 없이 가용한 변형으로 출하됩니다.
+설치된 Claude Code 훅 항목은 exec 형식을 사용합니다. `command`는 `${PYTHON_BIN}`이고, `args`에는 `${HARNESS_ROOT}/.apothem/support/` 아래의 스크립트 경로가 들어갑니다(예: `hooks/dispatch.py`와 `conformity/gate.py`). `-m apothem.hooks.dispatch` 형식은 `PYTHONPATH=src`를 설정한 소스 체크아웃에서 개발할 때 사용합니다. 디스패처는 생태계 루트 해석을 위해 `src/apothem/hooks/lib/resolve_root.py`를 임포트하고, `src/apothem/hooks/` 바로 아래에 있는 두 헬퍼에 위임합니다. `src/apothem/hooks/emit_hook_context.py`는 이벤트 페이로드를 어시스턴트용으로 포맷하고, `src/apothem/hooks/session_start_bootstrap.py`는 디스패처가 해당 이벤트를 라우팅할 때 넘기는 SessionStart 준비 작업을 담당합니다. 지원되는 이벤트가 발생할 때 어시스턴트에게 표시되는 훅 메시지는 `src/apothem/hooks/messages/` 아래에 Markdown 컨텍스트 파일로 저장되며, 이벤트 변형마다 하나씩 있습니다: `postcompact.md`, `precompact.md`, `pretooluse-bash.md`, `pretooluse-bash-plan-guard.md`, `pretooluse-conformity.md`, `pretooluse-dependency-guard.md`, `pretooluse-edit.md`, `pretooluse-edit-header-guard.md`, `pretooluse-eval-guard.md`, `pretooluse-notebookedit.md`, `pretooluse-write.md`, `pretooluse-write-header-guard.md`, `pretooluse-write-plan-guard.md`, `sessionstart.md`, `stop.md`. 각 라우팅된 컨텍스트 파일은 해당 이벤트가 발생하고 그 컨텍스트 인수가 `settings.json`에 등록되어 있을 때 디스패처가 로드합니다. `pretooluse-conformity.md`는 현재 `settings.json` 라우팅 항목 없이 사용 가능한 변형으로 제공됩니다. `pretooluse-dependency-guard.md`는 Write 및 Edit 매처에 라우팅되고, `pretooluse-eval-guard.md`는 Write, Edit, `Bash|PowerShell` 매처에 라우팅됩니다.
 
 ```text
 Event             Automates                Timeout  Purpose

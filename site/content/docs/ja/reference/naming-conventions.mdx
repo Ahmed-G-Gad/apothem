@@ -2,7 +2,7 @@
 title: "命名規則"
 description: "kebab-case のファイル名、frontmatter キーの形式、タイプ接頭辞付きのブランチ命名、および順序付き成果物シーケンスの数字接頭辞のセマンティクスを規定します。"
 machineTranslated: true
-sourceHash: "a918d7ecd9f0ef65"
+sourceHash: "361e9dd9832f3f45"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,7 +18,7 @@ sourceHash: "a918d7ecd9f0ef65"
 
 ## 2. frontmatter キー
 
-YAML frontmatter のキーは `kebab-case` を使用します（例: `argument-hint`、`disable-model-invocation`）。kebab-case の規則は、ルール、コマンド、委譲ワーカー、スキル、および `CLAUDE.md` 自体にわたって一様に適用されます。
+コマンドの frontmatter のキーは `kebab-case` を使います（例：`argument-hint`、`disable-model-invocation`、`allowed-tools`）。スキルのキーは、ソースコーパスが使う camelCase の表記である `userInvocable` を除き、`kebab-case` を使います。Claude Code のインストールでは、これを `user-invocable` に名前変更します。ルールと委譲ワーカーのキーは camelCase です（例：`pathFilter`、`alwaysApply`、`maxTurns`、`disallowedTools`）。各クラスのキーは、[frontmatter スキーマ](/docs/reference/frontmatter-schema)の必須キー表に挙げられています。
 
 ## 3. ブランチ名
 

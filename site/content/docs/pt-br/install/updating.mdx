@@ -2,7 +2,7 @@
 title: "Atualização"
 description: "Atualize o Apothem e os adaptadores de ferramenta."
 machineTranslated: true
-sourceHash: "306446b4fef2d5d8"
+sourceHash: "f659c0450ac5624c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,17 +41,7 @@ bash scripts/installer/update.sh
 pwsh -NoProfile -File scripts/installer/update.ps1
 ```
 
-O script de atualização refaz o checkout da árvore de fonte em `APOTHEM_HOME` (padrão
-`~/.apothem`) para `APOTHEM_REF` — quando não definido, resolve a tag de release
-`vMAJOR.MINOR.PATCH` assinada mais recente, um valor de tag a fixa, e `main` seleciona o
-branch móvel. Ele verifica a assinatura da tag com `git verify-tag` antes de
-rematerializar; uma tag não assinada ou adulterada aborta a operação, a menos que
-`APOTHEM_ALLOW_UNVERIFIED=1` rebaixe o aborto para um aviso. Em seguida, ele
-rematerializa a ferramenta nomeada por `APOTHEM_HARNESS` (com padrões conforme a
-tabela de [variáveis de ambiente do instalador](/docs/how-to/installer-environment-variables))
-executando `apothem update` a partir da árvore atualizada. Ele exige uma instalação prévia: quando
-não existe árvore em `APOTHEM_HOME` e `APOTHEM_SOURCE` não está definido, ele sai com
-uma mensagem direcionando você ao instalador primeiro.
+O script de atualização refaz o checkout da árvore de código-fonte em `APOTHEM_HOME` (padrão `~/.apothem`) para `APOTHEM_REF`: quando não definido, resolve a tag de lançamento `vMAJOR.MINOR.PATCH` assinada mais recente; um valor de tag a fixa; e `main` seleciona a branch móvel somente quando `APOTHEM_ALLOW_UNVERIFIED=1` também está definido. Sem essa substituição, a atualização faz o checkout da ref e então aborta antes de rematerializar, porque uma branch não é uma tag de lançamento assinada. Ele verifica a assinatura da tag com `git verify-tag` antes de rematerializar; uma tag não assinada ou adulterada aborta a operação, a menos que `APOTHEM_ALLOW_UNVERIFIED=1` rebaixe o aborto para um aviso. Uma tag assinada cuja chave pública do mantenedor está ausente do chaveiro local aborta com orientação para importar a chave, apontando para a impressão digital publicada em [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md). Em seguida, ele rematerializa o harness nomeado por `APOTHEM_HARNESS`, executando `apothem update` a partir da árvore atualizada (os padrões do harness seguem a tabela de [variáveis de ambiente do instalador](/docs/how-to/installer-environment-variables)). Ele exige uma instalação prévia: quando não existe árvore em `APOTHEM_HOME` e `APOTHEM_SOURCE` não está definido, ele sai com uma mensagem que direciona você ao instalador primeiro.
 
 ## Rematerializar a saída de ferramenta
 

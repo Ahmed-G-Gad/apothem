@@ -2,7 +2,7 @@
 title: "Konvensi Harness Multi-Permukaan"
 description: "Referensi normatif kanonik untuk konfigurasi dan koherensi harness multi-permukaan di seluruh runtime chat, pelengkapan IDE, dan tinjauan PR."
 machineTranslated: true
-sourceHash: "027929e7268f780c"
+sourceHash: "a28eacc8acd8ae94"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -122,7 +122,7 @@ Tiga validator bersama-sama mengimplementasikan kontrak koherensi:
 
 ## 8. Siklus Hidup Permukaan
 
-- **Menambahkan permukaan.** Operator memilih ikut melalui kanal kueri terstruktur atau melalui `make surfaces-add <name>` setelahnya. Generator menulis permukaan tersebut berdasarkan daftar klaim, menjalankan validator, dan mengajukan ADR jika diperlukan penimpaan khusus permukaan.
+- **Menambahkan permukaan.** Operator memilih ikut melalui kanal kueri terstruktur. Generator menulis permukaan tersebut berdasarkan daftar klaim, menjalankan validator, dan mengajukan ADR jika diperlukan penimpaan khusus permukaan.
 - **Menghapus permukaan.** Kueri terstruktur mengonfirmasi penghapusan, ADR mencatat dasar pemikirannya, dan daftar required-in milik validator diubah.
 - **Deteksi penyimpangan.** Setiap commit yang menyimpang dari daftar klaim ditolak oleh pre-commit / CI; penulis commit tersebut menulis ulang permukaannya untuk memulihkan koherensi.
 

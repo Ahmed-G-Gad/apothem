@@ -2,13 +2,15 @@
 title: "Gerbang konformitas"
 description: "Jalankan gerbang konformitas Apothem untuk memverifikasi kesehatan ekosistem."
 machineTranslated: true
-sourceHash: "ea155671db71b76d"
+sourceHash: "bbf19e4d148c511e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Gerbang konformitas di `src/apothem/conformity/gate.py` menjalankan bagian
 mekanis dari gerbang pra-emisi lima-belas-bar (M1-M15) terhadap setiap artefak
 yang ditulis operator.
+
+Perintah pada halaman ini mengasumsikan checkout Apothem, sehingga awali setiap perintah dengan `PYTHONPATH=src`. Setelah pemasangan skrip, gunakan `PYTHONPATH="$HOME/.apothem/src"` sebagai pengganti `src`.
 
 ## Menjalankan gerbang
 
@@ -20,10 +22,10 @@ pre-commit untuk menggagalkan perubahan yang melanggar.
 
 ```bash
 # Advisory: report every validator's findings across the repo, exit 0
-python -m apothem.conformity.gate --all .
+PYTHONPATH=src python -m apothem.conformity.gate --all .
 
 # Strict: exit non-zero (code 2) when a blocking finding is present
-python -m apothem.conformity.gate --all --strict .
+PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 ```
 
 Kode keluar: `0` bersih (atau advisori), `2` pemblokiran temuan mode strict,
@@ -70,13 +72,13 @@ commit.
 
 ```bash
 # List every registered validator
-python -m apothem.conformity.gate --list
+PYTHONPATH=src python -m apothem.conformity.gate --list
 
 # Run a single named validator
-python -m apothem.conformity.gate --check multi-surface-coherence
+PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence
 
 # Run every validator against one file
-python -m apothem.conformity.gate src/apothem/rules/my-rule.md
+PYTHONPATH=src python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 ```
 
 Mode `--hook` (`python -m apothem.conformity.gate --hook`) adalah entry point
@@ -104,5 +106,4 @@ cakupan di atas.
 
 ## Integrasi CI
 
-Gerbang berjalan di CI melalui `.github/workflows/conformity.yml` pada setiap
-push.
+Job quality di `.github/workflows/ci.yml` menjalankan gerbang dalam mode strict (`python -m apothem.conformity.gate --all . --strict`) pada push ke `main` dan pada pull request ke `main` yang menyentuh jalur yang dipantau job tersebut. Workflow terpisah `.github/workflows/conformity.yml` menjalankan sapuan fixture (`tests/conformity-scenarios/verify.py --strict`).

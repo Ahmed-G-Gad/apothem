@@ -2,7 +2,7 @@
 title: "CodeBuddy"
 description: "Adaptador de harness do Apothem para o Tencent CodeBuddy (GA)."
 machineTranslated: true
-sourceHash: "12cdb066aabd7caf"
+sourceHash: "84f84790325354af"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -81,9 +81,7 @@ recente.
 apothem uninstall --harness codebuddy --project /path/to/project
 ```
 
-Remove os arquivos de configuração nativa gravados pelo adaptador, renomeando o
-arquivo de regras gerenciado para um backup com carimbo de data e hora. O YAML
-do perfil compartilhado e o motor do Apothem não são afetados.
+Remove o bloco do Apothem de `apothem-rules.md` e mantém qualquer outro texto que haja nele. O arquivo só é excluído quando nada mais permanece nele. Antes da mudança, uma cópia com carimbo de data e hora do arquivo é salva em `~/.apothem/backups/`; nenhum arquivo de backup fica no projeto. O YAML do perfil compartilhado e o motor do Apothem não são afetados.
 
 ## Conformity gate
 

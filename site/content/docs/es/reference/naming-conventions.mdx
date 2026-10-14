@@ -2,7 +2,7 @@
 title: "Convenciones de nomenclatura"
 description: "Prescribe nombres de archivo en kebab-case, formato de claves de frontmatter, nomenclatura de ramas con prefijos de tipo y la semántica de los prefijos numéricos para secuencias de artefactos ordenadas."
 machineTranslated: true
-sourceHash: "a918d7ecd9f0ef65"
+sourceHash: "361e9dd9832f3f45"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,7 +18,7 @@ Las excepciones canónicas en mayúsculas se reservan para los archivos singleto
 
 ## 2. Claves de frontmatter
 
-Las claves del frontmatter YAML usan `kebab-case` (por ejemplo, `argument-hint`, `disable-model-invocation`). La regla kebab-case se aplica de manera uniforme en reglas, comandos, trabajadores delegados, habilidades y el propio `CLAUDE.md`.
+Las claves del frontmatter de los comandos usan `kebab-case` (por ejemplo, `argument-hint`, `disable-model-invocation`, `allowed-tools`). Las claves de las skills usan `kebab-case`, salvo `userInvocable`, la escritura en camelCase que usa el corpus fuente; la instalación de Claude Code la renombra como `user-invocable`. Las claves de reglas y de trabajadores delegados son camelCase (por ejemplo, `pathFilter`, `alwaysApply`, `maxTurns`, `disallowedTools`). La tabla de claves obligatorias del [esquema de frontmatter](/docs/reference/frontmatter-schema) enumera las claves de cada clase.
 
 ## 3. Nombres de ramas
 

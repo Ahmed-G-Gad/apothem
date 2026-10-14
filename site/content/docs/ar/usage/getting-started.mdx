@@ -2,7 +2,7 @@
 title: "سير العمل الأساسية"
 description: "سير عمل Apothem الأساسية الأربعة — ملف التعريف، والقواعد، والخطط، وبوابة المطابقة."
 machineTranslated: true
-sourceHash: "a0e26da50122053a"
+sourceHash: "53658e5bd065d27f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -65,10 +65,16 @@ apothem verify --harness claude-code
 
 ## بوابة المطابقة
 
-شغّلها من جذر المستودع:
+من نسخة مسحوبة من <bdi>Apothem</bdi>، شغّل:
 
 ```bash
-python -m apothem.conformity.gate --all .
+PYTHONPATH=src python -m apothem.conformity.gate --all .
+```
+
+بعد التثبيت عبر النص البرمجي، شغّل:
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python3 -m apothem.conformity.gate --all .
 ```
 
 تُجري جميع فحوص المطابقة الآلية وتُبلِّغ بالنجاح/الفشل لكل شريط.

@@ -2,12 +2,11 @@
 title: "Rule kustom"
 description: "Menulis sebuah rule selalu-aktif kustom untuk proyek Anda."
 machineTranslated: true
-sourceHash: "7575376db8d658ec"
+sourceHash: "9afb0e5eed8c4fd2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Contoh ini menambahkan sebuah rule selalu-aktif khusus-proyek yang menegakkan
-sebuah konvensi penamaan di seluruh berkas.
+Contoh ini menambahkan rule selalu-aktif khusus proyek yang menegakkan konvensi penamaan di seluruh berkas.
 
 ## Berkas rule
 
@@ -33,15 +32,27 @@ When in doubt, err on the side of more hyphens.
 
 Simpan ini ke `rules/kebab-filenames.md` di dalam akar instalasi harness Anda (`~/.claude/` untuk adapter Claude Code; ganti dengan jalur native harness jika tidak).
 
-## Verifikasi rule telah dimuat
+## Verifikasi bahwa rule valid
+
+Jalankan validator frontmatter terhadap berkas rule yang baru saja Anda tulis. Dari checkout Apothem, awali perintah dengan `PYTHONPATH=src`; setelah pemasangan skrip, awali dengan `PYTHONPATH="$HOME/.apothem/src"`:
 
 ```bash
-python -m apothem.conformity.gate --check frontmatter
+python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
+```
+
+Rule yang valid melaporkan lolos bersih:
+
+```json
+{
+  "orchestrator": "conformity-gate",
+  "passed": true,
+  "grep_count": 1
+}
 ```
 
 ## Propagasikan ke harness
 
-Jalankan perintah update satu kali per harness terpasang:
+Jalankan perintah update sekali untuk setiap harness yang terpasang:
 
 ```bash
 apothem update --harness claude-code

@@ -2,7 +2,7 @@
 title: "CodeBuddy"
 description: "Адаптер окружения Apothem для Tencent CodeBuddy (GA)."
 machineTranslated: true
-sourceHash: "12cdb066aabd7caf"
+sourceHash: "84f84790325354af"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -81,9 +81,7 @@ apothem update --harness codebuddy --project /path/to/project
 apothem uninstall --harness codebuddy --project /path/to/project
 ```
 
-Удаляет файлы нативной конфигурации, записанные адаптером, переименовывая
-управляемый файл правил в резервную копию с меткой времени. YAML общего
-профиля и движок Apothem не затрагиваются.
+Удаляет блок Apothem из `apothem-rules.md` и сохраняет любой другой текст в нём. Файл удаляется, только если в нём ничего не осталось. Перед изменением копия файла с отметкой времени сохраняется в `~/.apothem/backups/`; резервного файла в проекте не остаётся. YAML общего профиля и движок Apothem не затрагиваются.
 
 ## Шлюз соответствия
 

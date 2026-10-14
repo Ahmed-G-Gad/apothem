@@ -2,7 +2,7 @@
 title: "Zed"
 description: "Zed(GA)를 위한 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "03b431e47b5d9acd"
+sourceHash: "62b3de71f4c3ce39"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -69,7 +69,7 @@ apothem verify --harness zed --project /path/to/project
 verify 명령은 다음을 확인합니다.
 
 1. 네이티브 구성이 예상 경로에 존재합니다.
-2. 공유 프로필의 모든 필수 필드가 존재합니다.
+2. 각 관리 대상이 존재하고, 관리되는 파일은 비어 있지 않으며, JSON 또는 YAML 구성은 파싱됩니다. 설치된 파일이 그 프로필과도 일치하는지 확인하려면 `--profile PATH`를 추가하세요.
 3. 어댑터별 검증 루틴이 성공을 보고합니다.
 
 ## 업데이트
@@ -86,9 +86,7 @@ apothem update --harness zed --project /path/to/project
 apothem uninstall --harness zed --project /path/to/project
 ```
 
-어댑터가 작성한 네이티브 구성 파일을 제거하며, 제거에 앞서 먼저 이 파일의 이름을
-타임스탬프가 붙은 백업으로 변경합니다. 공유 프로필 YAML과 Apothem 엔진은 영향을
-받지 않습니다.
+네이티브 구성 파일 `.rules`에서 Apothem의 관리 블록을 제거하고 사용자 고유의 텍스트는 유지합니다. 파일에 다른 내용이 남지 않은 경우에만 파일을 삭제합니다. 변경 전에 파일의 타임스탬프가 찍힌 사본을 `~/.apothem/backups/` 아래에 저장하며, 프로젝트에는 백업 파일이 남지 않습니다. 공유 프로필 YAML과 Apothem 엔진은 영향을 받지 않습니다.
 
 ## 적합성 게이트
 

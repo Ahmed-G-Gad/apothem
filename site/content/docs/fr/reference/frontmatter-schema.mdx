@@ -2,7 +2,7 @@
 title: "Schéma du frontmatter"
 description: "Guide de référence sur la structure du bloc de frontmatter YAML, les clés requises par classe et les règles d'application des validateurs pour l'ensemble des classes d'artefacts."
 machineTranslated: true
-sourceHash: "79d900f52578b1b0"
+sourceHash: "f89ff828715e6fe4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,7 @@ sourceHash: "79d900f52578b1b0"
 
 Chaque artefact porte un frontmatter YAML en tête, délimité par des lignes `---`. La bannière canonique d'en-tête de paternité définie dans [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) se place au-dessus du frontmatter dans les fichiers de la famille Markdown ; le frontmatter suit immédiatement.
 
-Les clés utilisent le `kebab-case`. Les valeurs scalaires sont soit nues, soit entre guillemets doubles ; les valeurs de chaîne contenant des deux-points, des dièses ou d'autres caractères significatifs en YAML sont mises entre guillemets.
+Les clés de commande utilisent `kebab-case`. Les clés de skill utilisent `kebab-case`, à l'exception de `userInvocable`, orthographe camelCase employée par le corpus source (l'installation Claude Code la renomme en `user-invocable`). Les clés des règles et des travailleurs délégués sont en camelCase, comme l'indique le tableau des clés obligatoires de la section 2. Les valeurs scalaires sont soit nues, soit entre guillemets doubles ; les valeurs de chaîne contenant des deux-points, des dièses ou d'autres caractères significatifs en YAML sont mises entre guillemets.
 
 ## 2. Champs requis par classe
 

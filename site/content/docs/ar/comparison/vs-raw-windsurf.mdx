@@ -2,7 +2,7 @@
 title: "Apothem مقابل تهيئة Windsurf الخام"
 description: "صيانة قواعد Windsurf يدويًا ضمن .devin/rules/ مقابل رسمها من ملف تعريف apothem المشترك."
 machineTranslated: true
-sourceHash: "797edb954c5a2435"
+sourceHash: "e3bc9da3b1b1af38"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -15,10 +15,10 @@ sourceHash: "797edb954c5a2435"
 
 | المهمة | تهيئة يدوية خام | مُدارة بـ Apothem |
 | ---- | --------------- | --------------- |
-| تأليف القواعد | كتابة كل ملف يدويًا ضمن `.windsurf/rules/` | مرسومة من المجموعة المشتركة |
+| تأليف القواعد | كتابة كل ملف يدويًا ضمن `.windsurf/rules/` | مُصيَّرة من المجموعة المشتركة |
 | الإبقاء على صيغة قواعد واحدة | الاختيار يدويًا بين `.windsurf/rules/` وملف `.windsurfrules` المفرد | يكتب المحوِّل `.devin/rules/` فقط |
 | إبقاء القواعد متوائمة مع بيئات أخرى | يدويًا، لكل أداة | تلقائيًا عند `apothem update` |
-| التحقّق من صحة التهيئة | فحص يدوي | `apothem verify --harness windsurf` |
+| التحقّق من صحة التهيئة | فحص يدوي | `apothem verify --harness windsurf --project <path>` |
 
 ## ما الذي يديره apothem
 
@@ -30,12 +30,11 @@ sourceHash: "797edb954c5a2435"
 
 ## مسار الترحيل
 
-1. شغّل `apothem profile init` لإنشاء ملف التعريف المشترك إن لم تكن قد فعلت بعد.
-2. انقل القواعد من `.windsurf/rules/` الحالي لديك (وأي ملف `.windsurfrules`
-   مفرد) إلى المجموعة المشتركة.
-3. شغّل `apothem install --harness windsurf` لرسم مجلد `.devin/rules/`.
-4. شغّل `apothem verify --harness windsurf` للتأكد من أن التهيئة قد حُطّت.
-5. استخدم `apothem update --harness windsurf` لكل تغيير لاحق.
+1. شغّل `apothem profile init` لإنشاء الملف التعريفي المشترك إن لم تكن قد فعلت بعد.
+2. انقل القواعد من `.windsurf/rules/` الموجود لديك (وأي ملف `.windsurfrules` مفرد) إلى المجموعة المشتركة.
+3. شغّل `apothem install --harness windsurf --project <path>` لتصيير مجلد `.devin/rules/`.
+4. شغّل `apothem verify --harness windsurf --project <path>` للتأكّد من وصول التهيئة.
+5. استخدم `apothem update --harness windsurf --project <path>` مع كل تغيير لاحق.
 
 ## اقرأ بعد ذلك
 

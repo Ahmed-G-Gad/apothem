@@ -2,7 +2,7 @@
 title: "Référence de la CLI"
 description: "Référence de la CLI d'Apothem — toutes les sous-commandes et options."
 machineTranslated: true
-sourceHash: "8b8d7dc1647136bd"
+sourceHash: "60add6555ac816ea"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -167,8 +167,8 @@ apothem profile edit [--profile PATH]
 | Sous-commande | Description |
 |------------|-------------|
 | `profile init` | Crée un échafaudage de profil minimal valide selon le schéma. |
-| `profile show` | Affiche le profil résolu (YAML) sur stdout. |
-| `profile set <key> <value>` | Définit un champ du profil. La valeur est stockée sous forme de chaîne littérale — les mots nus ne sont pas convertis, donc `no` reste `"no"` et `1.0` reste une chaîne —, sauf `true`/`false` et les saisies explicites de liste et de mappage `[...]` / `{...}`. Le profil assemblé est validé selon le schéma avant d'être écrit. |
+| `profile show` | Affiche le profil résolu en JSON sur stdout. Avec `--json`, le document commence par `schema_version`. |
+| `profile set <key> <value>` | Définit un champ du profil. La valeur est stockée comme chaîne littérale — les mots nus ne sont pas convertis, donc `no` reste `"no"` et `1.0` reste une chaîne —, sauf `true`/`false` et les saisies explicites de liste et de mappage `[...]` / `{...}`. Le profil assemblé est validé selon le schéma avant d'être écrit. |
 | `profile edit` | Ouvre le profil dans `$EDITOR` (à défaut, l'éditeur par défaut de la plateforme). |
 
 L'option `--profile PATH` dirige chaque sous-commande vers un autre fichier de
@@ -196,11 +196,7 @@ Exécute les diagnostics système pour l'installation d'Apothem.
 apothem doctor
 ```
 
-Affiche la version d'Apothem, l'interpréteur Python, la plateforme, le chemin du
-profil résolu et un tableau d'état d'installation par environnement. Le code de
-sortie n'est `0` que lorsque chaque contrôle réussit ; un profil invalide, un
-environnement désinstallé ou un adaptateur qui n'a pas pu être sondé forcent
-chacun une sortie non nulle.
+Affiche la version d'Apothem, l'interpréteur Python, la plateforme, le chemin du profil résolu et un tableau de l'état d'installation par environnement. Le code de sortie vaut `1` dès qu'un contrôle échoue : profil invalide, environnement installé qui ne passe pas la vérification, commande de hook enregistrée qui ne peut pas démarrer, adaptateur qui ne peut pas être chargé ou sondé, ou journal illisible. Un environnement non installé est signalé sans constituer un échec, et les notes informatives ne modifient pas le code de sortie.
 
 ## Référence générée des commandes et options
 

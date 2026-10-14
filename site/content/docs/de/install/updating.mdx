@@ -2,7 +2,7 @@
 title: "Aktualisieren"
 description: "Apothem und Harness-Adapter aktualisieren."
 machineTranslated: true
-sourceHash: "306446b4fef2d5d8"
+sourceHash: "f659c0450ac5624c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,18 +41,7 @@ bash scripts/installer/update.sh
 pwsh -NoProfile -File scripts/installer/update.ps1
 ```
 
-Das Update-Skript checkt den Quellbaum unter `APOTHEM_HOME` (Standard
-`~/.apothem`) erneut auf `APOTHEM_REF` aus — bleibt der Wert ungesetzt, wird der neueste signierte
-`vMAJOR.MINOR.PATCH`-Release-Tag aufgelöst, ein Tag-Wert fixiert ihn, und `main` wählt den
-beweglichen Branch. Es überprüft die Signatur des Tags mit `git verify-tag` vor der
-Neu-Materialisierung; ein unsignierter oder manipulierter Tag bricht den Vorgang ab, sofern nicht
-`APOTHEM_ALLOW_UNVERIFIED=1` den Abbruch zu einer Warnung herabstuft. Anschließend
-materialisiert es den durch `APOTHEM_HARNESS` benannten Harness neu, indem
-`apothem update` aus dem aktualisierten Baum ausgeführt wird (Standardwerte
-gemäß der Tabelle
-[Installer-Umgebungsvariablen](/docs/how-to/installer-environment-variables)). Es setzt eine vorherige Installation voraus: Wenn
-kein Baum unter `APOTHEM_HOME` existiert und `APOTHEM_SOURCE` ungesetzt ist, beendet es sich mit
-einer Meldung, die Sie zunächst auf den Installer verweist.
+Das Update-Skript checkt den Quellbaum unter `APOTHEM_HOME` (Standard `~/.apothem`) erneut auf `APOTHEM_REF` aus. Ist `APOTHEM_REF` ungesetzt, wird das neueste signierte Release-Tag `vMAJOR.MINOR.PATCH` aufgelöst; ein Tag-Wert fixiert `APOTHEM_REF`, und `main` wählt den beweglichen Branch nur dann, wenn zusätzlich `APOTHEM_ALLOW_UNVERIFIED=1` gesetzt ist. Ohne diese Überschreibung checkt das Update die Ref aus und bricht dann ab, bevor es erneut materialisiert, weil ein Branch kein signiertes Release-Tag ist. Vor dem erneuten Materialisieren prüft es die Signatur des Tags mit `git verify-tag`; ein unsigniertes oder manipuliertes Tag bricht den Vorgang ab, sofern nicht `APOTHEM_ALLOW_UNVERIFIED=1` den Abbruch zu einer Warnung herabstuft. Ein signiertes Tag, dessen öffentlicher Schlüssel des Maintainers im lokalen Schlüsselbund fehlt, bricht mit einer Anleitung zum Schlüsselimport ab, die auf den Fingerprint verweist, der in [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) veröffentlicht ist. Danach materialisiert es den durch `APOTHEM_HARNESS` benannten Harness neu, indem es `apothem update` aus dem aktualisierten Baum ausführt (Standardwerte für den Harness gemäß der Tabelle [Installer-Umgebungsvariablen](/docs/how-to/installer-environment-variables)). Es setzt eine vorherige Installation voraus: Existiert unter `APOTHEM_HOME` kein Baum und ist `APOTHEM_SOURCE` nicht gesetzt, beendet es sich mit einer Meldung, die Sie zunächst auf den Installer verweist.
 
 ## Harness-Ausgabe neu materialisieren
 

@@ -2,7 +2,7 @@
 title: "install"
 description: "CLI-Referenz für den Befehl apothem install."
 machineTranslated: true
-sourceHash: "aaa373f458e002f9"
+sourceHash: "4297dc7c69065630"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -50,13 +50,7 @@ schreiben — außerhalb dieser Wurzel. Bevor eine Datei geschrieben wird, gibt 
 Befehl die konkreten Ziele aus, gruppiert unter zwei Überschriften: die Ziele
 innerhalb der Projektwurzel und die Ziele unter Ihrem Home-Verzeichnis.
 
-Wenn die Auswahl außerhalb der Projektwurzel schreibt, schützt eine interaktive
-Bestätigung die Schreibvorgänge im Home-Verzeichnis. `--yes`, eine nicht
-interaktive Shell (kein TTY), `--dry-run` und `--format json` fahren jeweils
-ohne Nachfrage fort. Nur `--dry-run` schreibt nichts; `--format json`
-überspringt die Vorschau und die Bestätigungsabfrage, führt die Schreibvorgänge
-aber dennoch aus. Das Ablehnen der Abfrage bricht ab, bevor eine Datei
-geschrieben wird.
+Wenn die Auswahl außerhalb der Projektwurzel schreibt, schützt eine interaktive Bestätigung die Schreibvorgänge im Home-Verzeichnis. `--yes`, eine nicht interaktive Shell (kein TTY), `--dry-run` und `--format json` fahren jeweils ohne Nachfrage fort. Nur `--dry-run` schreibt nichts; `--format json` überspringt die Vorschau und die Bestätigungsabfrage, führt die Schreibvorgänge aber dennoch aus. Lehnen Sie die Abfrage zum Home-Verzeichnis ab, bricht die Installation ab, bevor sie schreibt. Mit `--clean` läuft der Bereinigungsschritt zuerst, mit einer eigenen Bestätigung pro Ziel: Er schreibt eine Sicherung unter `~/.apothem/backups` und entfernt die Ziele, die Sie bestätigen. Diese Entfernungen und die Sicherung bleiben bestehen, wenn die Installationsabfrage abgelehnt wird.
 
 ## Hinweise zu Fähigkeiten
 

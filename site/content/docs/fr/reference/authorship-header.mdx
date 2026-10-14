@@ -2,7 +2,7 @@
 title: "En-tête de paternité — Ligne de licence SPDX par fichier"
 description: "Définir et faire respecter des marqueurs d'identifiant de licence SPDX par fichier à l'aide d'en-têtes canoniques d'une seule ligne, dans la syntaxe de commentaire appropriée à chaque type de fichier."
 machineTranslated: true
-sourceHash: "f8a8cbfe9b2c940f"
+sourceHash: "c30711b821380cee"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -120,7 +120,7 @@ Une CLI déterministe qui :
 - Opère en trois modes : `fix-in-place` (écrit), `emit-patch` (imprime un diff unifié), `check` (sort avec un code non nul en cas de divergence — utilisé par CI).
 - Idempotente : l'exécuter deux fois est une non-opération.
 
-L'injecteur est invoqué par les cibles Make qui échafaudent les nouveaux fichiers avec la ligne SPDX pré-insérée (`make headers-fix` et les échafaudages `make new-*`) et par le hook de pre-commit en mode `--fix`.
+L'injecteur est invoqué par la cible `make headers-fix`, qui exécute `scripts/inject-header.py --mode fix-in-place`.
 
 ---
 

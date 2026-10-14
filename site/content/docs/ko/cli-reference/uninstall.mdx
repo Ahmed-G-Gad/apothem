@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "apothem uninstall 명령에 대한 CLI 참조."
 machineTranslated: true
-sourceHash: "2928176181100844"
+sourceHash: "a6cddf09b4a1ec27"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -54,11 +54,7 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
 {"schema_version": 1, "action": "uninstalled", "harness": "claude-code", "output_path": "..."}
 ```
 
-어댑터가 설치되어 있지 않았던 경우:
-
-```json
-{"schema_version": 1, "status": "not_installed", "harness": "claude-code"}
-```
+어댑터가 설치되어 있지 않았던 경우 명령은 `0`으로 종료합니다. JSON 출력에서 엔벨로프는 `"status": "success"`와 `"action": "uninstalled"`를 가지며, results 행은 `"outcome": "skipped"`와 메시지 `"not installed; no files removed"`를 가집니다. `status` 필드는 결코 `"not_installed"`가 아닙니다.
 
 ## 예제
 

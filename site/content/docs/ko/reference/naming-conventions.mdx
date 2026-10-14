@@ -2,7 +2,7 @@
 title: "명명 규칙"
 description: "kebab-case 파일명, frontmatter 키 형식, 타입 접두사가 있는 브랜치 명명, 그리고 순서가 있는 아티팩트 시퀀스에 대한 숫자 접두사 의미를 규정합니다."
 machineTranslated: true
-sourceHash: "a918d7ecd9f0ef65"
+sourceHash: "361e9dd9832f3f45"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,7 +18,7 @@ sourceHash: "a918d7ecd9f0ef65"
 
 ## 2. frontmatter 키
 
-YAML frontmatter 키는 `kebab-case`를 사용합니다(예: `argument-hint`, `disable-model-invocation`). kebab-case 규칙은 규칙, 명령, 위임 작업자, 스킬, 그리고 `CLAUDE.md` 자체에 걸쳐 균일하게 적용됩니다.
+커맨드 frontmatter 키는 `kebab-case`를 사용합니다(예: `argument-hint`, `disable-model-invocation`, `allowed-tools`). 스킬 키는 `kebab-case`를 사용하되, 소스 코퍼스가 쓰는 camelCase 표기인 `userInvocable`만 예외입니다. Claude Code 설치는 이를 `user-invocable`로 이름 바꿉니다. 규칙과 위임 작업자의 키는 camelCase입니다(예: `pathFilter`, `alwaysApply`, `maxTurns`, `disallowedTools`). [frontmatter 스키마](/docs/reference/frontmatter-schema)의 필수 키 표에 각 클래스의 키가 나열되어 있습니다.
 
 ## 3. 브랜치 이름
 

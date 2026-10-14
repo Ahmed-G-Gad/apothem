@@ -2,7 +2,7 @@
 title: "Berkontribusi ke Apothem — Panduan Pengembang"
 description: "Pelihara dan perluas ekosistem Apothem dengan menulis aturan, command, helper, skill, dan hook menggunakan skema kanonis, persyaratan frontmatter, dan prosedur validasi."
 machineTranslated: true
-sourceHash: "ae3392672e01c783"
+sourceHash: "782e178598975d52"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -119,15 +119,7 @@ Pola: huruf kecil, tanda hubung di antara kata, tanpa spasi atau garis bawah.
 - **Command:** `{name}.md`
 - **Helper:** `{name}.md`
 - **Skill:** Di dalam folder `src/apothem/skills/{name}/SKILL.md` (huruf besar-kecil persis: `SKILL.md`)
-- **Hook:** Di dalam folder `src/apothem/hooks/`. Semua penangan peristiwa ditulis dalam Python. Setiap
-  command hook di `settings.json` menggunakan bentuk exec (`python` ditambah `args`) untuk memanggil
-  `-m apothem.hooks.dispatch <event> [<message-name>]` atau
-  `-m apothem.conformity.gate --hook`. `dispatch.py` merutekan `SessionStart` ke
-  `session_start_bootstrap.main()` dan
-  setiap peristiwa lain yang masuk daftar izin ke `emit_hook_context.main()`. Satu-satunya stub
-  shell yang diizinkan di bawah `src/apothem/hooks/` atau `scripts/` adalah empat berkas pelokasi + bootstrap
-  (`find-python.{ps1,sh}`, `bootstrap.{ps1,sh}`); berkas `.ps1` /
-  `.sh` lain mana pun gagal dalam pemeriksaan higiene `scripts/dev/validate_hooks.py`.
+- **Hook:** Di dalam folder `src/apothem/hooks/`. Semua penangan peristiwa ditulis dengan Python. Setiap command hook `settings.json` menggunakan bentuk exec: `command` adalah placeholder interpreter `${PYTHON_BIN}`, yang di-resolve saat pemasangan, dan `args` berisi jalur skrip beserta argumennya. Templat Claude Code menjalankan `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` dan `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook` dengan jalur absolut, sehingga salinan yang terpasang tidak memerlukan paket `apothem` yang dapat diimpor. `dispatch.py` merutekan `SessionStart` ke `session_start_bootstrap.main()` dan setiap peristiwa lain yang masuk daftar izin ke `emit_hook_context.main()`. Satu-satunya stub shell yang diizinkan di bawah `src/apothem/hooks/` atau `scripts/` adalah enam berkas pelokasi dan bootstrap (`find-python.{ps1,sh}`, `find-pwsh.{ps1,sh}`, `bootstrap.{ps1,sh}`); berkas `.ps1` / `.sh` lain mana pun gagal dalam pemeriksaan higiene `scripts/dev/validate_hooks.py`.
 
 ### Rujukan Silang
 

@@ -2,7 +2,7 @@
 title: "Configuración del entorno"
 description: "Añade y configura adaptadores de entorno para plataformas."
 machineTranslated: true
-sourceHash: "e6bc4ceedf7d7137"
+sourceHash: "1f7d9a2a473395a7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,9 +40,7 @@ apothem verify --harness <name>
 apothem verify --harness all --project /path/to/project
 ```
 
-Para comprobar todos los adaptadores registrados de una sola vez, ejecuta `apothem doctor`. Imprime
-una tabla del estado de instalación por entorno y sale con un código distinto de cero si algún adaptador
-informa de que no está instalado.
+Para comprobar todos los adaptadores registrados de una vez, ejecuta `apothem doctor`. Imprime una tabla de estado de instalación por entorno y termina con un código distinto de cero solo cuando falla una comprobación, por ejemplo un entorno instalado que no supera la verificación, un comando de hook que no puede arrancar o un perfil presente que no se valida. Un entorno que no está instalado aparece en la lista, pero no hace fallar `doctor`.
 
 ## Consulta los entornos instalados
 

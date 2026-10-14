@@ -2,7 +2,7 @@
 title: "Démarrage rapide"
 description: "Installez Apothem, rédigez un profil, matérialisez votre premier environnement et vérifiez-le — une visite à copier-coller avec la sortie attendue."
 machineTranslated: true
-sourceHash: "d7ba900b686729d3"
+sourceHash: "cabe19810d3aad3a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -144,11 +144,7 @@ apothem install --harness cursor --project . --dry-run
 apothem install --harness cursor --project .
 ```
 
-Installez d'un coup l'ensemble complet adossé au registre avec
-`--harness all`. Comme cette sélection écrit à la fois des fichiers à portée
-projet et à portée utilisateur, la commande affiche les cibles concrètes
-regroupées par emplacement et demande confirmation avant d'écrire en dehors de
-la racine du projet :
+Installez d'un coup l'ensemble complet adossé au registre avec `--harness all`. Comme cette sélection écrit à la fois des fichiers à portée projet et à portée utilisateur, la commande affiche les cibles concrètes regroupées par emplacement. Dans un terminal interactif, elle demande confirmation avant d'écrire en dehors de la racine du projet. Une exécution sans terminal, une exécution avec `--yes` ou une exécution avec `--format json` écrit sans demander ; `--dry-run` n'écrit rien. Exécutez l'ensemble complet avec :
 
 ```bash
 apothem install --harness all --project .
@@ -160,9 +156,7 @@ pour l'ensemble complet des options.
 
 ## 4. Vérifier
 
-Matérialiser n'est que la moitié du travail : `verify` confirme que les fichiers
-de configuration attendus de l'environnement sont bien en place et
-correspondent à ce que déclare le profil :
+Matérialiser n'est que la moitié du travail : `verify` confirme que les fichiers de configuration attendus de l'environnement sont bien en place et valides :
 
 ```bash
 apothem verify --harness claude-code
@@ -172,10 +166,7 @@ apothem verify --harness claude-code
 ✓ claude-code is verified at /home/you/.claude/settings.json
 ```
 
-`verify` se termine avec un code non nul si la configuration est absente ou a
-dérivé ; il sert donc aussi de portail dans un script de configuration. Pour un
-contrôle de santé de toute la machine sur chaque adaptateur enregistré,
-exécutez :
+`verify` se termine avec un code non nul si une cible gérée est absente, si un fichier géré est vide, ou si une configuration JSON ou YAML ne s'analyse pas. Ajoutez `--profile PATH` pour que la commande échoue aussi lorsqu'un fichier installé diffère de ce profil ; `verify` devient alors un contrôle de dérive. Sans cette option, une configuration périmée passe quand même la vérification. Cela lui permet de servir de portail dans un script de configuration. Pour un contrôle de santé de toute la machine sur chaque adaptateur enregistré, exécutez :
 
 ```bash
 apothem doctor

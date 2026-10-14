@@ -2,7 +2,7 @@
 title: "rollback"
 description: "apothem rollback 명령에 대한 CLI 참조."
 machineTranslated: true
-sourceHash: "3a5ce4dc40c52bfe"
+sourceHash: "6c0c49f541075b0c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,10 +30,7 @@ apothem rollback --harness NAME|all [--install-id ULID | --last] [--yes]
   단, 설치된 다른 하니스가 아직 사용 중이면 제거하지 않습니다.
 - 설치가 만든 디렉터리가 비게 되면 해당 디렉터리를 제거합니다.
 
-rollback이 제거하거나 교체하는 모든 항목은 먼저 Apothem 백업
-루트(`~/.apothem/backups/`)에 복사되므로, 롤백 자체도 수동으로 되돌릴 수
-있습니다. 그런 다음 하니스 원장에 `rollback` 기록을 추가합니다. 이전 설치를
-롤백하면 같은 루트에서 그 이후에 이루어진 모든 설치도 함께 되돌려집니다.
+rollback이 제거하거나 교체하는 모든 대상은 먼저 Apothem 백업 루트(`~/.apothem/backups/`)에 복사되므로, 롤백 자체도 수동으로 되돌릴 수 있습니다. 그런 다음 하니스 원장에 `rollback` 기록을 추가합니다. 이전 설치를 롤백하면 그 설치가 기록한 대상만 복원하거나 제거하며, 같은 루트에서 그 이후의 모든 설치를 활성 기록에서 제외합니다. 이후 설치가 그 대상 바깥에 추가한 파일은 그대로 남습니다.
 
 원장은 설치 루트마다 가장 최근의 설치 기록 10개(그리고 그 기록이 참조하는
 백업)를 보관합니다. 그보다 오래된 설치는 더 이상 id로 롤백할 수 없으며

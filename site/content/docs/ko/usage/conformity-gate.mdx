@@ -2,12 +2,14 @@
 title: "적합성 게이트"
 description: "Apothem 적합성 게이트를 실행하여 생태계 상태를 검증합니다."
 machineTranslated: true
-sourceHash: "ea155671db71b76d"
+sourceHash: "bbf19e4d148c511e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 `src/apothem/conformity/gate.py`에 있는 적합성 게이트는 운영자가 작성하는 모든
 아티팩트에 대해 15개 막대 사전 방출 게이트(M1-M15)의 기계적 부분을 실행합니다.
+
+이 페이지의 명령은 Apothem 체크아웃을 전제로 하므로, 각 명령 앞에 `PYTHONPATH=src`를 붙이세요. 스크립트로 설치한 뒤에는 `src` 대신 `PYTHONPATH="$HOME/.apothem/src"`를 사용하세요.
 
 ## 게이트 실행
 
@@ -19,10 +21,10 @@ sourceHash: "ea155671db71b76d"
 
 ```bash
 # Advisory: report every validator's findings across the repo, exit 0
-python -m apothem.conformity.gate --all .
+PYTHONPATH=src python -m apothem.conformity.gate --all .
 
 # Strict: exit non-zero (code 2) when a blocking finding is present
-python -m apothem.conformity.gate --all --strict .
+PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 ```
 
 종료 코드: `0`은 깨끗함(또는 권고 모드), `2`는 strict 모드의 발견 사항 차단,
@@ -66,13 +68,13 @@ python -m apothem.conformity.gate --all --strict .
 
 ```bash
 # List every registered validator
-python -m apothem.conformity.gate --list
+PYTHONPATH=src python -m apothem.conformity.gate --list
 
 # Run a single named validator
-python -m apothem.conformity.gate --check multi-surface-coherence
+PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence
 
 # Run every validator against one file
-python -m apothem.conformity.gate src/apothem/rules/my-rule.md
+PYTHONPATH=src python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 ```
 
 `--hook` 모드(`python -m apothem.conformity.gate --hook`)는 하니스가 디스패치하는
@@ -96,5 +98,4 @@ export APOTHEM_CONFORMITY_SCOPE=/path/to/project
 
 ## CI 통합
 
-게이트는 모든 푸시마다 `.github/workflows/conformity.yml`을 통해 CI에서
-실행됩니다.
+`.github/workflows/ci.yml`의 quality 작업은 `main`에 푸시할 때와, 이 작업이 감시하는 경로를 건드리는 `main` 대상 풀 리퀘스트에서 게이트를 엄격 모드로 실행합니다(`python -m apothem.conformity.gate --all . --strict`). 별도의 `.github/workflows/conformity.yml` 워크플로는 픽스처 스위프(`tests/conformity-scenarios/verify.py --strict`)를 실행합니다.

@@ -2,7 +2,7 @@
 title: "Codex"
 description: "Apothem-Harness-Adapter für Codex (Beta)."
 machineTranslated: true
-sourceHash: "1fc0b9dae2c44d90"
+sourceHash: "99a652853bf9a864"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -83,9 +83,9 @@ apothem verify --harness codex
 
 Der Befehl verify bestätigt, dass:
 
-1. die native Konfiguration am erwarteten Pfad existiert.
-2. alle Pflichtfelder aus dem gemeinsamen Profil vorhanden sind.
-3. die adapterspezifische Verifizierungsroutine Erfolg meldet.
+1. Die native Konfiguration liegt am erwarteten Pfad.
+2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH` hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem Profil passen.
+3. Die adapterspezifische Verifizierungsroutine meldet Erfolg.
 
 ## Aktualisierung
 

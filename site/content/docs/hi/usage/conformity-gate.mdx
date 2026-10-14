@@ -2,13 +2,15 @@
 title: "अनुरूपता गेट"
 description: "इकोसिस्टम का स्वास्थ्य सत्यापित करने के लिए Apothem अनुरूपता गेट चलाएँ।"
 machineTranslated: true
-sourceHash: "ea155671db71b76d"
+sourceHash: "bbf19e4d148c511e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 `src/apothem/conformity/gate.py` पर स्थित अनुरूपता गेट, ऑपरेटर द्वारा लिखे गए
 हर आर्टिफ़ैक्ट के विरुद्ध पंद्रह-बार प्री-एमिशन गेट (M1-M15) का यांत्रिक अंश
 चलाता है।
+
+इस पृष्ठ की कमांड एक Apothem चेकआउट मानती हैं, इसलिए उनमें से हर एक के आगे `PYTHONPATH=src` लगाएँ। स्क्रिप्ट इंस्टॉल के बाद `src` की जगह `PYTHONPATH="$HOME/.apothem/src"` का उपयोग करें।
 
 ## गेट चलाना
 
@@ -20,10 +22,10 @@ pre-commit किसी उल्लंघनकारी बदलाव को
 
 ```bash
 # Advisory: report every validator's findings across the repo, exit 0
-python -m apothem.conformity.gate --all .
+PYTHONPATH=src python -m apothem.conformity.gate --all .
 
 # Strict: exit non-zero (code 2) when a blocking finding is present
-python -m apothem.conformity.gate --all --strict .
+PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 ```
 
 निकास कोड: `0` स्वच्छ (या सलाहकारी), `2` सख़्त मोड में निष्कर्ष-अवरोध, `3` एक
@@ -68,13 +70,13 @@ python -m apothem.conformity.gate --all --strict .
 
 ```bash
 # List every registered validator
-python -m apothem.conformity.gate --list
+PYTHONPATH=src python -m apothem.conformity.gate --list
 
 # Run a single named validator
-python -m apothem.conformity.gate --check multi-surface-coherence
+PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence
 
 # Run every validator against one file
-python -m apothem.conformity.gate src/apothem/rules/my-rule.md
+PYTHONPATH=src python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 ```
 
 `--hook` मोड (`python -m apothem.conformity.gate --hook`) हार्नेस-प्रेषित एंट्री
@@ -99,4 +101,4 @@ export APOTHEM_CONFORMITY_SCOPE=/path/to/project
 
 ## CI एकीकरण
 
-गेट हर पुश पर `.github/workflows/conformity.yml` के माध्यम से CI में चलता है।
+`.github/workflows/ci.yml` का quality जॉब `main` पर पुश पर, और `main` की ओर उन पुल रिक्वेस्ट पर जो उस जॉब द्वारा देखे जाने वाले पथों को छूती हैं, गेट को सख़्त मोड में चलाता है (`python -m apothem.conformity.gate --all . --strict`)। अलग `.github/workflows/conformity.yml` वर्कफ़्लो फ़िक्स्चर स्वीप चलाता है (`tests/conformity-scenarios/verify.py --strict`)।

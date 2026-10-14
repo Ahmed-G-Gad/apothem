@@ -2,7 +2,7 @@
 title: "Documentação do settings.json"
 description: "Configure a execução de hooks do Claude Code, permissões, eventos, tempos limite, runtime Python, validação e precedência de configurações em camadas para o ecossistema Apothem."
 machineTranslated: true
-sourceHash: "09e70625ff5e0caf"
+sourceHash: "e5e617ed964a9419"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,14 +21,13 @@ carrega `~/.claude/settings.json` em todas as plataformas suportadas.
 
 ## Runtime apenas Python
 
-Cada hook configurado usa a forma de comando exec do Claude Code. O
-modelo distribuído carrega o token `${HARNESS_ROOT}`:
+Todo hook configurado usa o formato de comando em forma exec do Claude Code. O template distribuído traz os tokens `${PYTHON_BIN}` e `${HARNESS_ROOT}`; `apothem install` substitui `${PYTHON_BIN}` pelo interpretador absoluto resolvido:
 
 ```json
 {
   "type": "command",
-  "command": "python",
-  "args": ["${HARNESS_ROOT}/apothem/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
+  "command": "${PYTHON_BIN}",
+  "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
 }
 ```
 
@@ -150,8 +149,8 @@ ordem crescente de precedência:
 | Camada | Localização | Versionado? | Justificativa |
 |------|----------|------------|-----------|
 | 1. **Sistema** | Padrões do harness compilados dentro do próprio Claude Code | n/a (controlado pelo fornecedor) | O piso; todo operador herda a mesma linha de base. |
-| 2. **Projeto** | `<harness-root>/settings.json` | ✅ Versionado | Convenções compartilhadas do projeto: hooks, permissões, servidores MCP, fiação da barra de status. O modelo do código-fonte do Apothem vive dentro do diretório de templates do adaptador do Claude Code. |
-| 3. **Local do usuário** | `<harness-root>/settings.local.json` (gitignored) — modelado como `settings.local.example.json` na raiz do repositório | ❌ Gitignored | Substituições específicas do operador: tokens de API, caminhos locais da máquina, recursos opt-in. |
+| 2. **Projeto** | `<harness-root>/settings.json` | ✅ Versionado | Convenções compartilhadas do projeto: hooks, permissões, servidores MCP, fiação da barra de status. O template de origem do Apothem fica dentro do diretório de templates do adaptador do Claude Code. |
+| 3. **Local do usuário** | `<harness-root>/settings.local.json` (gitignored) — modelado como `settings.local.example.json` em `examples/harnesses/claude-code/` | ❌ Gitignored | Substituições específicas do operador: tokens de API, caminhos locais da máquina, recursos opt-in. |
 
 Valores de camada superior substituem valores de camada inferior **no nível da chave-folha** — quando
 tanto a camada de projeto quanto a local do usuário declaram uma entrada `permissions.allow`, a
@@ -160,10 +159,7 @@ exata de mesclagem por chave pertence ao harness do Claude Code.
 
 ### Criar uma substituição local do usuário
 
-1. Copie `settings.local.example.json` (raiz do repositório) para `<harness-root>/settings.local.json`.
-   O nome de arquivo `settings.local.json` corresponde ao padrão do `.gitignore`, então o arquivo nunca
-   aterrissa no controle de versão.
-2. Edite a cópia local — mantenha apenas as chaves a substituir; o harness compõe as camadas,
-   então chaves ausentes herdam da camada de projeto.
-3. Verifique se o arquivo é analisado como JSON válido antes de salvar — o harness rejeita
-   JSON malformado no início da sessão.
+1. Copie `examples/harnesses/claude-code/settings.local.example.json` para `<harness-root>/settings.local.json`.
+   O nome de arquivo `settings.local.json` corresponde ao padrão do `.gitignore`, então o arquivo nunca entra no controle de versão.
+2. Edite a cópia local: mantenha apenas as chaves a substituir; o harness compõe as camadas, então chaves ausentes herdam da camada de projeto.
+3. Verifique se o arquivo é um JSON válido antes de salvar; o harness rejeita JSON malformado no início da sessão.

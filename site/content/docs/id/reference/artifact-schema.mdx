@@ -2,7 +2,7 @@
 title: "Spesifikasi Skema Artefak"
 description: "Skema frontmatter YAML kanonik dan field wajib untuk semua tipe artefak di pohon sumber Apothem, dengan templat per-kelas dan aturan validasi."
 machineTranslated: true
-sourceHash: "0a94086b9eaf12b9"
+sourceHash: "376d3a98ba3102c6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -290,8 +290,8 @@ Kunci tingkat atas `hooks` memetakan nama peristiwa ke array blok matcher:
       "hooks": [
         {
           "type": "command",
-          "command": "python",
-          "args": ["-m", "apothem.hooks.dispatch", "<EventName>", "<message-name>"],
+          "command": "${PYTHON_BIN}",
+          "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "<EventName>", "<message-name>"],
           "timeout": <seconds>,
           "statusMessage": "<short human-readable label>"
         }
@@ -301,19 +301,20 @@ Kunci tingkat atas `hooks` memetakan nama peristiwa ke array blok matcher:
 }
 ```
 
+Bentuk `-m apothem.hooks.dispatch` diperuntukkan bagi pengembangan dari checkout sumber dengan `PYTHONPATH=src`.
+
 | Field | Tipe | Tujuan | Contoh |
 | ----- | ---- | ------- | ------- |
 | `matcher` | string | Pola nama tool (atau `"*"` untuk peristiwa yang tidak bergantung pada tool) | `"Write"` |
 | `hooks[].type` | literal `"command"` | Satu-satunya tipe handler hook yang didukung saat ini | `"command"` |
-| `hooks[].command` | string | Perintah yang dapat dieksekusi; Apothem menggunakan `python` | `"python"` |
-| `hooks[].args` | array string | Argumen bentuk-exec yang memanggil `-m apothem.hooks.dispatch` atau `-m apothem.conformity.gate` | `["-m", "apothem.hooks.dispatch", "SessionStart"]` |
+| `hooks[].command` | string | Perintah yang dapat dieksekusi; Apothem menggunakan placeholder `${PYTHON_BIN}`, yang di-resolve saat pemasangan | `"${PYTHON_BIN}"` |
+| `hooks[].args` | array string | Argumen bentuk exec: jalur skrip di bawah `${HARNESS_ROOT}/.apothem/support/`, lalu argumennya | `["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
 | `hooks[].timeout` | integer detik | Waktu jalan maksimum sebelum host menghentikan hook | `30` |
 | `hooks[].statusMessage` | string | Label singkat yang ditampilkan di UI host | `"Session start"` |
 
 ### Peristiwa Wajib
 
-Templat yang dikirimkan mendaftarkan peristiwa berikut. Kelimanya wajib agar
-validator melaporkan PASS:
+Templat Claude Code mendaftarkan SessionStart, PreToolUse, PostToolUse, dan Stop. PreCompact dan PostCompact tidak didaftarkan pada Claude Code ([referensi hook](/docs/reference/hooks)), dan `scripts/dev/validate_hooks.py` melaporkan masing-masing sebagai peringatan karena hilang. Tabel berikut mencantumkan lima peristiwa yang diperiksa oleh `validate_hooks.py`:
 
 > **Nilai timeout mencerminkan anggaran peristiwa hook kanonik** — tabel di
 > bawah mereproduksinya demi kemudahan pembaca; sumber kanonik yang berlaku.

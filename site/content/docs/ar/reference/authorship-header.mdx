@@ -2,7 +2,7 @@
 title: "ترويسة الكِتابة (Authorship Header) — سطر رخصة SPDX لكل ملف"
 description: "تعريف وفرض علامات مُعرِّف رخصة SPDX لكل ملف باستخدام ترويسات أحادية السطر كنسية بصيغة التعليق المناسبة لكل نوع ملف."
 machineTranslated: true
-sourceHash: "f8a8cbfe9b2c940f"
+sourceHash: "c30711b821380cee"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -120,7 +120,7 @@ sourceHash: "f8a8cbfe9b2c940f"
 - تعمل في ثلاثة أنماط: <bdi>`fix-in-place`</bdi> (تكتب)، <bdi>`emit-patch`</bdi> (تطبع <bdi>diff</bdi> موحَّدًا)، <bdi>`check`</bdi> (خروج بقيمة غير صفرية عند أي انحراف — يستخدمه <bdi>CI</bdi>).
 - عديمة الأثر التراكمي: تشغيلها مرّتين عملية فارغة.
 
-يُستدعى الحاقن من أهداف <bdi>Make</bdi> التي تُهيكِل ملفات جديدة بسطر <bdi>SPDX</bdi> مُدرَجًا مسبقًا (<bdi>`make headers-fix`</bdi> وهياكل <bdi>`make new-*`</bdi>) ومن خطّاف <bdi>pre-commit</bdi> في نمط <bdi>`--fix`</bdi>.
+يُستدعى الحاقن من هدف <bdi>`make headers-fix`</bdi>، الذي يُشغِّل <bdi>`scripts/inject-header.py --mode fix-in-place`</bdi>.
 
 ---
 
