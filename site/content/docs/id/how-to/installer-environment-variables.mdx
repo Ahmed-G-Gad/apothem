@@ -2,7 +2,7 @@
 title: "Variabel lingkungan pemasang"
 description: "Kendalikan pemasang skrip (tujuan, sumber, harness, profil, verifikasi) dengan variabel lingkungan."
 machineTranslated: true
-sourceHash: "b69fe1c566ac13fb"
+sourceHash: "ac08049d8506b135"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,7 +11,10 @@ menyetel variabel lingkungan sebelum Anda menjalankannya.
 
 ## Prasyarat
 
-- Shell POSIX (`bash`) atau PowerShell 5.1+.
+- Shell POSIX (`bash`) atau PowerShell 5.1+. Contoh PowerShell di bawah ini
+  menjalankan `pwsh` (PowerShell 7+). Di Windows PowerShell 5.1, jalankan
+  `powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1` sebagai
+  gantinya.
 - Variabel dibaca satu kali di bagian atas pemasang, jadi setel variabel tersebut
   dalam perintah yang sama (atau ekspor terlebih dahulu), lalu jalankan pemasang.
 
@@ -54,10 +57,9 @@ tidak ada di keyring lokal justru membatalkan instalasi dengan panduan impor
 kunci — impor kunci tersebut dan periksa sidik jarinya terhadap nilai yang
 dipublikasikan di
 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
-Patok rilis yang
-diketahui dengan `APOTHEM_REF=<tag>` (juga diverifikasi; sebuah tag dari
-[halaman rilis](https://github.com/ahmed-g-gad/apothem/releases)), pilih branch
-yang bergerak dengan `APOTHEM_REF=main` (tidak diverifikasi), atau setel
+Patok rilis yang diketahui dengan `APOTHEM_REF=<tag>` (juga diverifikasi; sebuah
+tag dari [halaman rilis](https://github.com/ahmed-g-gad/apothem/releases)), pilih
+branch yang bergerak dengan `APOTHEM_REF=main` (tidak diverifikasi), atau setel
 `APOTHEM_ALLOW_UNVERIFIED=1` untuk melanjutkan melewati kegagalan verifikasi
 dengan peringatan (penggunaan air-gapped, lokal, atau rilis
 pra-penandatanganan).
@@ -82,7 +84,9 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
    APOTHEM_HARNESS=cursor bash install.sh
    ```
 
-2. Patok tujuan instalasi dan pilih branch `main` yang bergerak. Branch bukan tag bertanda tangan, sehingga installer juga memerlukan `APOTHEM_ALLOW_UNVERIFIED=1`:
+2. Patok tujuan instalasi dan pilih branch `main` yang bergerak. Branch bukan tag
+   bertanda tangan, sehingga pemasang juga memerlukan
+   `APOTHEM_ALLOW_UNVERIFIED=1`:
 
    ```bash
    APOTHEM_REF=main APOTHEM_ALLOW_UNVERIFIED=1 APOTHEM_HOME=/opt/apothem bash install.sh

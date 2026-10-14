@@ -2,7 +2,7 @@
 title: "Codex"
 description: "Adapter harness Apothem untuk Codex (Beta)."
 machineTranslated: true
-sourceHash: "99a652853bf9a864"
+sourceHash: "cda00c0b540ac6fb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -52,17 +52,20 @@ agen ke TOML, skill ke `~/.agents/skills/`, dan aturan/templat Markdown
 non-native ke `~/.config/apothem/` sebagai materi pendukung.
 
 Setiap helper yang dikonversi menyetel `name`, `description`, dan
-`developer_instructions`. Helper yang izin alatnya tidak dapat menulis berkas
-juga menyetel `sandbox_mode = "read-only"`, pembatasan penulisan milik Codex
-sendiri. Tidak ada model atau upaya penalaran yang disetel, sehingga setiap
-helper mewarisi pilihan sesi. Codex tidak memiliki daftar alat atau batas
-giliran per helper, sehingga `tools` dan `maxTurns` milik helper tidak
-terbawa.
+`developer_instructions`. Helper yang izin alatnya, setelah daftar tolaknya
+diterapkan, tidak menyertakan alat penyunting berkas apa pun (`Write`, `Edit`,
+`MultiEdit`, atau `NotebookEdit`) juga menyetel `sandbox_mode = "read-only"`,
+pembatasan penulisan milik Codex sendiri. `Bash` tidak dihitung sebagai alat
+penyunting berkas, sehingga helper yang diberi `Bash` tanpa satu pun alat
+tersebut tetap bersifat read-only. Tidak ada model atau upaya penalaran yang
+disetel, sehingga setiap helper mewarisi pilihan sesi. Codex tidak memiliki
+daftar alat atau batas giliran per helper, sehingga `tools` dan `maxTurns`
+milik helper tidak terbawa.
 
 ## Catatan kompatibilitas
 
-`~/.agents/skills/` adalah direktori akar bersama yang dimiliki Codex: delapan alat lain
-yang didukung juga memuatnya
+`~/.agents/skills/` adalah direktori akar bersama yang dimiliki Codex: delapan
+alat lain yang didukung juga memuatnya
 ([registri harness](/docs/reference/harness-registry) mencantumkannya),
 sehingga skill Apothem yang ditulis instalasi Codex di sana juga muncul di
 alat-alat tersebut, dan pencopotan Codex menghapusnya dari alat-alat tersebut.
@@ -81,7 +84,9 @@ apothem verify --harness codex
 Perintah verify memastikan bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
+2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi
+   JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga
+   memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
 3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
 ## Pembaruan
