@@ -292,10 +292,15 @@ jobs:
         # source tree), validates a real profile end-to-end, and asserts the
         # built wheel/sdist carry the full vendored runtime data set — the
         # data-loss footgun the source-tree clean-install gate cannot catch.
+        #
+        # Runs serially (-n 0): the repo's pytest addopts default to -n auto,
+        # and both tests build from the repository root with `python -m build`,
+        # so parallel workers contend for src/apothem.egg-info. On Windows that
+        # surfaces as WinError 5.
         shell: bash
         env:
           PYTHONPATH: ${{ github.workspace }}/src
         run: |
           set -euo pipefail
           python -m pytest tests/packaging/test_wheel_install.py \
-            tests/packaging/test_wheel_payload.py -v --color=yes
+            tests/packaging/test_wheel_payload.py -n 0 -v --color=yes
