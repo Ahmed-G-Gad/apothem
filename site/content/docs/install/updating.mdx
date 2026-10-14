@@ -42,7 +42,9 @@ pwsh -NoProfile -File scripts/installer/update.ps1
 The update script re-checks-out the source tree at `APOTHEM_HOME` (default
 `~/.apothem`) to `APOTHEM_REF` — unset resolves the latest signed
 `vMAJOR.MINOR.PATCH` release tag, a tag value pins it, and `main` selects the
-moving branch. It verifies the tag's signature with `git verify-tag` before
+moving branch only when `APOTHEM_ALLOW_UNVERIFIED=1` is also set. Without that
+override, the update checks out the ref and then aborts before re-materializing,
+because a branch is not a signed release tag. It verifies the tag's signature with `git verify-tag` before
 re-materializing; an unsigned or tampered tag aborts unless
 `APOTHEM_ALLOW_UNVERIFIED=1` downgrades the abort to a warning. A signed tag
 whose maintainer public key is missing from the local keyring aborts with

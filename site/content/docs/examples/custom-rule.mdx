@@ -33,10 +33,12 @@ Save this to `rules/kebab-filenames.md` inside your harness install root (`~/.cl
 
 ## Verify the rule is well-formed
 
-Run the frontmatter validator against the rule file you just wrote:
+Run the frontmatter validator against the rule file you just wrote. From an
+Apothem checkout, prefix the command with `PYTHONPATH=src`; after a script
+install, prefix it with `PYTHONPATH="$HOME/.apothem/src"`:
 
 ```bash
-python -m apothem.conformity.gate --check frontmatter-grep rules/kebab-filenames.md
+python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
 ```
 
 A well-formed rule reports a clean pass:

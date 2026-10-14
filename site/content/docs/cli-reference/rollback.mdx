@@ -32,7 +32,9 @@ first, it:
 Everything rollback removes or replaces is first copied into the Apothem backup
 root (`~/.apothem/backups/`), so a rollback can itself be undone by hand. It
 then appends a `rollback` record to the harness ledger. Rolling back an older
-install also undoes every install after it at the same root.
+install restores or removes only the targets that older install recorded, and
+drops every install after it from the active record at the same root. Files a
+later install added outside those targets stay in place.
 
 The ledger keeps the newest 10 install records per install root (with the
 backups they reference); an older install can no longer be rolled back by id

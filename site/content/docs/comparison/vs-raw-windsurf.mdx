@@ -17,7 +17,7 @@ hand-maintaining that config against managing it with apothem.
 | Author rules | Hand-write each file under `.windsurf/rules/` | Rendered from the shared corpus |
 | Keep one rule format | Hand-pick between `.windsurf/rules/` and a single `.windsurfrules` file | The adapter writes only `.devin/rules/` |
 | Keep rules aligned with other harnesses | Manual, per tool | Automatic on `apothem update` |
-| Verify the config is correct | Manual inspection | `apothem verify --harness windsurf` |
+| Verify the config is correct | Manual inspection | `apothem verify --harness windsurf --project <path>` |
 
 ## What Apothem manages
 
@@ -32,10 +32,12 @@ directory on the next `apothem update`.
 1. Run `apothem profile init` to create the shared profile if you have not yet.
 2. Move the rules from your existing `.windsurf/rules/` (and any
    single-file `.windsurfrules`) into the shared corpus.
-3. Run `apothem install --harness windsurf` to render the `.devin/rules/`
-   directory.
-4. Run `apothem verify --harness windsurf` to confirm the config landed.
-5. Use `apothem update --harness windsurf` for every later change.
+3. Run `apothem install --harness windsurf --project <path>` to render the
+   `.devin/rules/` directory.
+4. Run `apothem verify --harness windsurf --project <path>` to confirm the config
+   landed.
+5. Use `apothem update --harness windsurf --project <path>` for every later
+   change.
 
 ## Read next
 

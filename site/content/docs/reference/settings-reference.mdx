@@ -20,13 +20,14 @@ loads `~/.claude/settings.json` across supported platforms.
 ## Python-Only Runtime
 
 Every configured hook uses Claude Code's exec-form command shape. The
-shipped template carries the `${HARNESS_ROOT}` token:
+shipped template carries the `${PYTHON_BIN}` and `${HARNESS_ROOT}` tokens;
+`apothem install` replaces `${PYTHON_BIN}` with the resolved absolute interpreter:
 
 ```json
 {
   "type": "command",
-  "command": "python",
-  "args": ["${HARNESS_ROOT}/apothem/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
+  "command": "${PYTHON_BIN}",
+  "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
 }
 ```
 
@@ -149,7 +150,7 @@ increasing order of precedence:
 |------|----------|------------|-----------|
 | 1. **System** | Harness defaults compiled into Claude Code itself | n/a (vendor-controlled) | The floor; every operator inherits the same baseline. |
 | 2. **Project** | `<harness-root>/settings.json` | ✅ Committed | Project-shared conventions: hooks, permissions, MCP servers, statusline wiring. The Apothem-source template lives inside the Claude Code adapter's templates directory. |
-| 3. **User-local** | `<harness-root>/settings.local.json` (gitignored) — templated as `settings.local.example.json` at the repository root | ❌ Gitignored | Operator-specific overrides: API tokens, machine-local paths, opt-in features. |
+| 3. **User-local** | `<harness-root>/settings.local.json` (gitignored) — templated as `settings.local.example.json` under `examples/harnesses/claude-code/` | ❌ Gitignored | Operator-specific overrides: API tokens, machine-local paths, opt-in features. |
 
 Higher-tier values override lower-tier values **at the leaf-key level** — when both
 the project and user-local layers declare a `permissions.allow` entry, the union is
@@ -158,7 +159,7 @@ per-key merge semantics are owned by the Claude Code harness.
 
 ### Creating a user-local override
 
-1. Copy `settings.local.example.json` (repository root) to `<harness-root>/settings.local.json`.
+1. Copy `examples/harnesses/claude-code/settings.local.example.json` to `<harness-root>/settings.local.json`.
    The `settings.local.json` filename matches the `.gitignore` pattern, so the file never
    lands in version control.
 2. Edit the local copy — keep only the keys to override; the harness composes the layers,

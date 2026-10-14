@@ -120,7 +120,7 @@ Three validators co-implement the coherence contract:
 
 ## 8. Surface Lifecycle
 
-- **Add a surface.** Operator opts in via the structured-inquiry channel or via subsequent `make surfaces-add <name>`. The generator authors the surface against the claim list, runs the validator, files an ADR if a surface-specific override is needed.
+- **Add a surface.** Operator opts in via the structured-inquiry channel. The generator authors the surface against the claim list, runs the validator, files an ADR if a surface-specific override is needed.
 - **Remove a surface.** structured inquiry confirms removal, ADR records the rationale, validator's required-in list is amended.
 - **Drift detection.** Any commit that diverges from the claim list is rejected by pre-commit / CI; the commit's author rewrites the surface to restore coherence.
 

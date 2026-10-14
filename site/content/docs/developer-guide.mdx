@@ -116,13 +116,17 @@ Pattern: lowercase, hyphens between words, no spaces or underscores.
 - **Helpers:** `{name}.md`
 - **Skills:** Inside folder `src/apothem/skills/{name}/SKILL.md` (exact case: `SKILL.md`)
 - **Hooks:** Inside folder `src/apothem/hooks/`. All event handlers are Python. Every
-  `settings.json` hook command uses exec form (`python` plus `args`) to invoke
-  `-m apothem.hooks.dispatch <event> [<message-name>]` or
-  `-m apothem.conformity.gate --hook`. `dispatch.py` routes `SessionStart` to
+  `settings.json` hook command uses exec form: `command` is the interpreter
+  placeholder `${PYTHON_BIN}`, resolved at install time, and `args` holds the
+  script path and its arguments. The Claude Code template runs
+  `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` and
+  `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook` by absolute path, so
+  the installed copy needs no importable `apothem` package. `dispatch.py` routes
+  `SessionStart` to
   `session_start_bootstrap.main()` and
   every other whitelisted event to `emit_hook_context.main()`. The only shell
-  stubs permitted under `src/apothem/hooks/` or `scripts/` are the four locator + bootstrap
-  files (`find-python.{ps1,sh}`, `bootstrap.{ps1,sh}`); any other `.ps1` /
+  stubs permitted under `src/apothem/hooks/` or `scripts/` are the six locator and bootstrap
+  files (`find-python.{ps1,sh}`, `find-pwsh.{ps1,sh}`, `bootstrap.{ps1,sh}`); any other `.ps1` /
   `.sh` file fails the `scripts/dev/validate_hooks.py` hygiene check.
 
 ### Cross-References

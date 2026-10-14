@@ -63,10 +63,16 @@ plan suite under `<project-root>/.apothem/plans/{suite}/`. See the
 
 ## Conformity gate
 
-Run from the repository root:
+From an Apothem checkout, run:
 
 ```bash
-python -m apothem.conformity.gate --all .
+PYTHONPATH=src python -m apothem.conformity.gate --all .
+```
+
+After a script install, run:
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python3 -m apothem.conformity.gate --all .
 ```
 
 Runs all mechanical conformity checks and reports pass/fail per bar.

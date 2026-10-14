@@ -159,7 +159,7 @@ apothem profile edit [--profile PATH]
 | Subcommand | Description |
 |------------|-------------|
 | `profile init` | Create a schema-valid minimal profile scaffold. |
-| `profile show` | Print the resolved profile (YAML) to stdout. |
+| `profile show` | Print the resolved profile as JSON to stdout. With `--json`, the document is led by `schema_version`. |
 | `profile set <key> <value>` | Set a profile field. The value is stored as a literal string — bare words are not coerced, so `no` stays `"no"` and `1.0` stays a string — except `true`/`false` and explicit `[...]` / `{...}` list and map input. The assembled profile is schema-validated before it is written. |
 | `profile edit` | Open the profile in `$EDITOR` (falls back to the platform default). |
 
@@ -189,9 +189,11 @@ apothem doctor
 ```
 
 Prints the Apothem version, Python interpreter, platform, resolved profile
-path, and a per-harness install-status table. Exit code is `0` only when every
-check passes; an invalid profile, a harness that is uninstalled, or an adapter
-that could not be probed each force a non-zero exit.
+path, and a per-harness install-status table. Exit code is `1` when any check
+fails: an invalid profile, an installed harness that does not verify, a
+registered hook command that cannot start, an adapter that cannot be loaded or
+probed, or an unreadable ledger. A harness that is not installed is reported
+and is not a failure, and informational notes do not change the exit code.
 
 ## Generated Command and Flag Reference
 

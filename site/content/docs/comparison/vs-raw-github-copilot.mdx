@@ -15,7 +15,7 @@ page contrasts hand-maintaining that config against managing it with Apothem.
 | Author instructions | Hand-edit `.github/copilot-instructions.md` | Rendered: shared rules embedded into the file |
 | Keep instructions aligned with other harnesses | Manual, per tool | Automatic on `apothem update` |
 | Install / remove the config | Write and delete the file by hand | `apothem install` / `apothem uninstall` |
-| Verify the config is correct | Manual inspection | `apothem verify --harness github-copilot` |
+| Verify the config is correct | Manual inspection | `apothem verify --harness github-copilot --project <path>` |
 
 ## What Apothem manages
 
@@ -30,9 +30,12 @@ the next `apothem update`.
 1. Run `apothem profile init` to create the shared profile if you have not yet.
 2. Move the content of your existing `.github/copilot-instructions.md` into the
    shared corpus.
-3. Run `apothem install --harness github-copilot` to render the instructions file.
-4. Run `apothem verify --harness github-copilot` to confirm the config landed.
-5. Use `apothem update --harness github-copilot` for every later change.
+3. Run `apothem install --harness github-copilot --project <path>` to render the
+   instructions file.
+4. Run `apothem verify --harness github-copilot --project <path>` to confirm the
+   config landed.
+5. Use `apothem update --harness github-copilot --project <path>` for every later
+   change.
 
 ## Read next
 

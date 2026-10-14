@@ -39,8 +39,10 @@ apothem verify --harness all --project /path/to/project
 ```
 
 To check every registered adapter in one shot, run `apothem doctor`. It prints
-a per-harness install-status table and exits non-zero if any adapter reports
-not-installed.
+a per-harness install-status table and exits non-zero only when a check fails,
+such as an installed harness that does not verify, a hook command that cannot
+start, or a present profile that does not validate. A harness that is not
+installed is listed but does not fail `doctor`.
 
 ## View installed harnesses
 

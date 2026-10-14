@@ -118,7 +118,7 @@ A deterministic CLI that:
 - Operates in three modes: `fix-in-place` (writes), `emit-patch` (prints unified diff), `check` (exit-non-zero on any divergence — used by CI).
 - Idempotent: running twice is a no-op.
 
-The injector is invoked by the Make targets that scaffold new files with the SPDX line pre-inserted (`make headers-fix` and the `make new-*` scaffolds) and by the pre-commit hook in `--fix` mode.
+The injector is invoked by the `make headers-fix` target, which runs `scripts/inject-header.py --mode fix-in-place`.
 
 ---
 

@@ -21,7 +21,7 @@ against managing it with Apothem.
 | Keep rules, commands, skills, agents in sync | Manual copy per project | Materialized under `<project>/.kimi-code/.apothem/support/` on every install |
 | Preserve operator prose on refresh | Manual merge | Sentinel-delimited block; operator prose outside it is preserved |
 | Keep rules aligned with other harnesses | Manual, per tool | Automatic on `apothem update` |
-| Verify the config is correct | Manual inspection | `apothem verify --harness kimi-code` |
+| Verify the config is correct | Manual inspection | `apothem verify --harness kimi-code --project <path>` |
 
 ## What Apothem manages
 
@@ -36,10 +36,13 @@ rules re-renders the files on the next `apothem update`.
 
 1. Run `apothem profile init` to create the shared profile if you have not yet.
 2. Move the rules from your existing `AGENTS.md` into the shared corpus.
-3. Run `apothem install --harness kimi-code` to render the `AGENTS.md`
-   instruction surface and the `.kimi-code/.apothem/support/` support tree.
-4. Run `apothem verify --harness kimi-code` to confirm the config landed.
-5. Use `apothem update --harness kimi-code` for every later change.
+3. Run `apothem install --harness kimi-code --project <path>` to render the
+   `AGENTS.md` instruction surface and the `.kimi-code/.apothem/support/` support
+   tree.
+4. Run `apothem verify --harness kimi-code --project <path>` to confirm the config
+   landed.
+5. Use `apothem update --harness kimi-code --project <path>` for every later
+   change.
 
 ## Read next
 
