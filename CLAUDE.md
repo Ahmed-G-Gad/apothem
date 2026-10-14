@@ -186,10 +186,13 @@ Planning artifacts are written to <project-root>/.apothem/plans/ — the sole ca
 
 ## Release Facade
 
-Public release surfaces must remain fresh and current-version-only: one
-visible release tag, one GitHub Release, and one Pages deployment, with no
-public-facing narrative that references internal planning history or earlier
-launch work. Apothem distributes through several install paths — tool-native
+Public release surfaces must remain fresh and current-version-only in their
+narrative: the one Pages deployment and every other public-facing surface
+describe the current version, with no narrative that references internal
+planning history or earlier launch work. Releases themselves are additive:
+every published release tag, GitHub Release, and npm version stays published,
+and none is deleted, moved, or reused. Apothem distributes through several
+install paths — tool-native
 plugins and extensions (the Claude Code plugin via
 `/plugin marketplace add ahmed-g-gad/apothem`, a Gemini CLI extension via
 `gemini extensions install`, a Qwen Code extension via
@@ -200,7 +203,7 @@ workflow attaches to each new GitHub Release), the npm shim
 other adapter-only tool, which expose no harness-native plugin surface), and
 the one-shot script installers (`install.sh`
 / `install.ps1`) — and each tagged release attaches its signed artifacts
-(sdist + wheel + SBOM + cosign signature + SLSA provenance) to the single
+(sdist + wheel + SBOM + cosign signature + SLSA provenance) to its own
 GitHub Release page as verification evidence. Publish the GitHub Release only
 after local gates and the CI, Clean Install Gate, Harness Matrix, and
 Conformity workflows are green.

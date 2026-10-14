@@ -191,9 +191,12 @@ transcript that ends up pasted into source.
 
 ## Release Facade
 
-Public release surfaces must remain current-version-only: one visible release
-tag, one GitHub Release, and one Pages deployment, with no public-facing
-narrative that references earlier release work or internal planning history.
+Public release surfaces must remain current-version-only in their narrative:
+the one Pages deployment and every other public-facing surface describe the
+current version, with no narrative that references earlier release work or
+internal planning history. Releases themselves are additive: every published
+release tag, GitHub Release, and npm version stays published, and none is
+deleted, moved, or reused.
 Apothem distributes through several install paths — tool-native plugins and
 extensions (the Claude Code plugin via `/plugin marketplace add ahmed-g-gad/apothem`,
 a Gemini CLI extension via `gemini extensions install`, a Qwen Code extension
@@ -205,7 +208,7 @@ install path for OpenCode and every other adapter-only tool, which expose no
 harness-native plugin surface), and the
 one-shot script installers (`install.sh` / `install.ps1`) — and each
 tagged release attaches its signed artifacts (sdist + wheel + SBOM + cosign
-signature + SLSA provenance) to the single GitHub Release page as
+signature + SLSA provenance) to its own GitHub Release page as
 verification evidence. The GitHub Release is published only after local gates
 and the CI, Clean Install Gate, Harness Matrix, and Conformity workflows are
 green; publication is never the first validation step.

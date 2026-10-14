@@ -93,11 +93,10 @@ and reproducible builds keep resolving. Log the rollback as a release incident.
 ## 5. The release-facade rule
 
 The repository's release-facade rule (the Release Facade section of the
-contributor instructions) asks for one visible release tag and one GitHub
-Release. Practice keeps every release, and npm cannot comply: its versions are
-immutable. Until the maintainer settles that rule, this runbook follows the
-additive model above and never deletes or rewrites published tags, GitHub
-Releases or npm versions to meet it.
+contributor instructions) states the additive model above: every published
+tag, GitHub Release and npm version stays. Its current-version-only
+requirement covers what public surfaces say. This runbook never deletes or
+rewrites a published tag, GitHub Release or npm version.
 
 ## 6. Cross-references
 
