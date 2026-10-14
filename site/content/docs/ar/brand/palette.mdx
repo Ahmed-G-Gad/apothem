@@ -1,20 +1,20 @@
 ---
 title: "لوحة العلامة"
-description: "ألوان علامة Apothem الأساسية وألوان العلامة الخمسة عشر للهارنسات. المصدر الوحيد للحقيقة هو رموز التصميم القانونية في assets/design-tokens.css؛ ويعكس الموقع تلك القيم."
+description: "ألوان علامة Apothem الأساسية وألوان علامة أُطُر العمل السبعة عشر. المصدر الوحيد للحقيقة بالنسبة إلى الألوان الأساسية هو رموز التصميم المرجعية في assets/design-tokens.css؛ ويعكس الموقع تلك القيم."
 machineTranslated: true
-sourceHash: "d2f51368ea153e97"
+sourceHash: "64e22fc5ac4c9da8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 ## اللوحة الأساسية
 
-اللوحة القانونية — مدرّج <bdi>slate</bdi> المحايد، ومدرّج التمييز <bdi>emerald</bdi>،
-والدرجات الدلالية — يملكها رموز التصميم في
-[`assets/design-tokens.css`](https://github.com/ahmed-g-gad/apothem/blob/main/assets/design-tokens.css)
-(ومرآتها <bdi>`assets/design-tokens.json`</bdi>). أمّا سمة الموقع في
-[`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
-فتعكس قيم تلك الرموز إلى متغيّرات <bdi>CSS</bdi> التي تستهلكها سمة <bdi>Fumadocs</bdi>. وكل
-قيمة أدناه تتتبّع إلى خطوة مدرّج قانونية.
+تعود ملكية اللوحة المرجعية — مدرّج <bdi>slate</bdi> المحايد، ومدرّج التمييز <bdi>emerald</bdi>،
+والدرجات الدلالية — إلى رموز التصميم في
+[<bdi>`assets/design-tokens.css`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/assets/design-tokens.css)
+(ومرآتها <bdi>`assets/design-tokens.json`</bdi>). وتعكس سمة الموقع في
+[<bdi>`site/app/global.css`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
+قيم تلك الرموز في متغيّرات <bdi>CSS</bdi> التي تستهلكها سمة <bdi>Fumadocs</bdi>. وكل
+قيمة أدناه تعود إلى خطوة من مدرّج مرجعي.
 
 | الدور | الرمز (<bdi>CSS</bdi>) | الوضع الفاتح | الوضع الداكن | الاستخدام |
 |---|---|---|---|---|
@@ -24,13 +24,13 @@ sourceHash: "d2f51368ea153e97"
 | أرضية المتن | <bdi>`--apothem-surface`</bdi> | <bdi>slate-50</bdi> <bdi>`#f8fafc`</bdi> | <bdi>slate-900</bdi> <bdi>`#0f172a`</bdi> | الخلفية الافتراضية. |
 | أرضية التنقّل | <bdi>`--apothem-surface-sunken`</bdi> | <bdi>slate-100</bdi> <bdi>`#eef2f7`</bdi> | <bdi>slate-950</bdi> <bdi>`#080c15`</bdi> | أشرطة الترويسة والتنقّل. |
 
-## لوحة الهارنس
+## لوحة أُطُر العمل
 
-تعيش ألوان الهارنس في [ألوان الهارنس](/docs/brand/harness-colors). أمّا التعيين الهندسي
-على سداسي علامة <bdi>Apothem</bdi> — عُقدتها المركزية وعُقدتها الطرفية — فمطويٌّ ضمن قسم
-العلامة. ومصدر الحقيقة بصيغة <bdi>CSS</bdi> في
-[`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
-يربط كل رمز بمتغيّر <bdi>CSS</bdi> الخاص به.
+تعيش ألوان أُطُر العمل في [ألوان علامات أُطُر العمل](/docs/brand/harness-colors). أمّا التعيين
+الهندسي على سداسي علامة <bdi>Apothem</bdi> — عُقدتها المركزية وعُقدتها الطرفية — فمطويٌّ
+ضمن قسم العلامة. وألوان أُطُر العمل مُعرَّفة في تلك الصفحة، لا في رموز التصميم ولا في
+[<bdi>`site/app/global.css`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)،
+وكلاهما لا يحمل إلا اللوحة الأساسية.
 
 ## الاستخدام في التوثيق
 
@@ -41,6 +41,6 @@ sourceHash: "d2f51368ea153e97"
 ## التحديثات
 
 لا تُحدَّث اللوحة إلا عندما يتغيّر لون أساسي (<bdi>slate</bdi> / <bdi>emerald</bdi>) أو
-يصادق هارنس على تغيير في لون العلامة في المنبع. وتنتشر التغييرات لكل هارنس انتشارًا ذرّيًّا
-عبر <bdi>`site/app/global.css`</bdi> و[ألوان الهارنس](/docs/brand/harness-colors)
-وكل قالب <bdi>SVG</bdi> أساسي متأثّر تحت <bdi>`assets/src/`</bdi>.
+يصادق إطار عمل على تغيير في لون العلامة في المنبع. وتنتشر التغييرات الخاصة بكل إطار عمل
+انتشارًا ذرّيًّا عبر [ألوان علامات أُطُر العمل](/docs/brand/harness-colors) وكل ملف
+<bdi>SVG</bdi> رئيسي متأثّر تحت <bdi>`assets/src/`</bdi>.

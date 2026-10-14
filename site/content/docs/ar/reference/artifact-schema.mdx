@@ -2,7 +2,7 @@
 title: "مواصفة مخطط المُنتَجات"
 description: "مخطط البيانات الأمامية المرجعي بصيغة YAML والحقول المطلوبة لكل أنواع المُنتَجات في شجرة مصدر Apothem، مع قوالب لكل صنف وقواعد تحقّق."
 machineTranslated: true
-sourceHash: "376d3a98ba3102c6"
+sourceHash: "6c16d090e185c86c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -355,7 +355,7 @@ argument-hint: "[--focus area] [--fix]"
 
 **المسار:** <bdi>`CLAUDE.md`</bdi> (الجذر)
 
-**الغرض:** فهرس الإعداد العام للمنظومة.
+**الغرض:** تعليمات <bdi>Claude Code</bdi> بنطاق المشروع.
 
 ### البيانات الأمامية الإلزامية بصيغة <bdi>YAML</bdi>
 
@@ -364,27 +364,15 @@ argument-hint: "[--focus area] [--fix]"
 name: "CLAUDE"
 version: "MAJOR.MINOR.PATCH"
 updated: "YYYY-MM-DD"
-description: "Global Claude Code ecosystem configuration and mandate index"
-scope: "always-on"
-portability: "universal"
+description: "Project-scoped Claude Code instructions for the Apothem source repository"
+scope: "project"
+portability: "project-local"
 ---
 ```
 
-### الأقسام المطلوبة (بالترتيب)
+### الأقسام
 
-1. **§1 حزمة الخطّة** — إشارة إلى موقع القالب
-2. **§2 الهوية المعرفية** — تفويض المعمارية الإبداعية
-3. **§3 أدلّة المُنتَجات** — جدول المسارات وأغراضها
-4. **§4 الحوكمة المتدرّجة بحسب الجدّية** — تعريف المستويات الأربعة
-5. **§5 التوجيهات التشغيلية** — مبادئ حلّ المشكلات والتواصل
-6. **§6 التفويضات الشاملة** — نظرة عامة على <bdi>CM-1–28</bdi>
-7. **§7 السجلّات** — جداول المُنتَجات:
-   - 7.1 الأوامر
-   - 7.2 القواعد
-   - 7.3 المساعِدات
-   - 7.4 الخطّافات
-   - 7.5 المهارات
-   - 7.6 تطوّر المُنتَجات
+يُؤلَّف <bdi>`CLAUDE.md`</bdi> في أقسام نثرية، موصوفة في [<bdi>`CLAUDE.md`</bdi>](/docs/reference/claude-md). لا يشترط أي مدقّق قائمة أقسام ثابتة: يفحص <bdi>`scripts/dev/validate_ecosystem.py`</bdi> مفاتيح البيانات الأمامية أعلاه.
 
 ---
 
@@ -406,7 +394,7 @@ portability: "universal"
 
 ### التحقّق من المحتوى
 
-- [ ] يبدأ المحتوى مباشرةً بعد <bdi>`---`</bdi> الختامي في سطر جديد
+- [ ] يبدأ المحتوى في سطر جديد بعد <bdi>`---`</bdi> الختامي؛ وفي ملفات عائلة <bdi>Markdown</bdi> تكون لافتة ترويسة التأليف هي أول محتوى بعده
 - [ ] لا إشارات داخلية للخطط (امتثالًا لـ <bdi>CM-7</bdi>)
 - [ ] تُحَلّ الإحالات المتقاطعة (إن كان المُنتَج يسرد مُنتَجات أخرى)
 - [ ] تستخدم الروابط مسارات نسبية بشرطات مائلة أمامية

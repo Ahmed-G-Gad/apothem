@@ -2,7 +2,7 @@
 title: "البدء السريع"
 description: "ثبِّت Apothem، وألِّف ملفًا تعريفيًا، وجسِّد أول إطار عمل لك وتحقَّق منه — جولة بالنسخ واللصق مع المخرجات المتوقَّعة."
 machineTranslated: true
-sourceHash: "cabe19810d3aad3a"
+sourceHash: "56906098563144c2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,7 +35,7 @@ sourceHash: "cabe19810d3aad3a"
 curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 ```
 
-```powershell title="Windows · PowerShell 7+"
+```powershell title="Windows · PowerShell 5.1+"
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
@@ -133,7 +133,12 @@ apothem install --harness cursor --project . --dry-run
 apothem install --harness cursor --project .
 ```
 
-ثبِّت المجموعة الكاملة المستندة إلى السجلّ دفعةً واحدة بالخيار <bdi>`--harness all`</bdi>. ولأن هذا الاختيار يكتب ملفات بنطاق المشروع وملفات بنطاق المستخدم معًا، يطبع الأمر الأهداف الفعلية مُجمَّعةً حسب الموقع. وفي الطرفية التفاعلية يطلب التأكيد قبل الكتابة خارج جذر المشروع. ويكتب التشغيل بلا طرفية، أو التشغيل مع <bdi>`--yes`</bdi>، أو التشغيل مع <bdi>`--format json`</bdi> دون سؤال؛ أما <bdi>`--dry-run`</bdi> فلا يكتب شيئًا. وشغّل المجموعة الكاملة بالأمر:
+ثبِّت المجموعة الكاملة المستندة إلى السجلّ دفعةً واحدة بالخيار
+<bdi>`--harness all`</bdi>. ولأن هذا الاختيار يكتب ملفات بنطاق المشروع وملفات بنطاق
+المستخدم معًا، يطبع الأمر الأهداف الفعلية مُجمَّعةً حسب الموقع. وفي الطرفية
+التفاعلية يطلب التأكيد قبل الكتابة خارج جذر المشروع. ويكتب التشغيل بلا طرفية، أو
+التشغيل مع <bdi>`--yes`</bdi>، أو التشغيل مع <bdi>`--format json`</bdi> دون سؤال؛
+أما <bdi>`--dry-run`</bdi> فلا يكتب شيئًا. وشغّل المجموعة الكاملة بالأمر:
 
 ```bash
 apothem install --harness all --project .
@@ -145,7 +150,8 @@ apothem install --harness all --project .
 
 ## 4. تحقَّق
 
-التجسيد نصف العمل فقط؛ إذ يؤكّد <bdi>`verify`</bdi> أن ملفات الإعداد المتوقَّعة لإطار العمل قد وصلت وأنها صالحة:
+التجسيد نصف العمل فقط؛ إذ يؤكّد <bdi>`verify`</bdi> أن ملفات الإعداد المتوقَّعة
+لإطار العمل قد وصلت وأنها صالحة:
 
 ```bash
 apothem verify --harness claude-code
@@ -155,7 +161,12 @@ apothem verify --harness claude-code
 ✓ claude-code is verified at /home/you/.claude/settings.json
 ```
 
-يخرج <bdi>`verify`</bdi> برمز غير صفري إذا فُقد هدف مُدار، أو كان ملف مُدار فارغًا، أو لم يُحلَّل إعداد <bdi>JSON</bdi> أو <bdi>YAML</bdi>. وأضِف <bdi>`--profile PATH`</bdi> ليفشل أيضًا عندما يختلف ملف مثبّت عن ذلك الملف التعريفي، فيصبح <bdi>`verify`</bdi> فحصًا للانحراف؛ ومن دونه يبقى الإعداد القديم ناجحًا في التحقّق. وبذلك يصلح <bdi>`verify`</bdi> بوابةً في نص إعداد. وللتحقّق من صحّة الجهاز كله عبر كل محوّل مُسجَّل، شغّل:
+يخرج <bdi>`verify`</bdi> برمز غير صفري إذا فُقد هدف مُدار، أو كان ملف مُدار فارغًا،
+أو لم يُحلَّل إعداد <bdi>JSON</bdi> أو <bdi>YAML</bdi>. وأضِف
+<bdi>`--profile PATH`</bdi> ليفشل أيضًا عندما يختلف ملف مثبّت عن ذلك الملف
+التعريفي، فيصبح <bdi>`verify`</bdi> فحصًا للانحراف؛ ومن دونه يبقى الإعداد القديم
+ناجحًا في التحقّق. وهذا يتيح استخدامه بوابةً في سكربت إعداد. وللتحقّق
+من صحّة الجهاز كله عبر كل محوّل مُسجَّل، شغّل:
 
 ```bash
 apothem doctor
