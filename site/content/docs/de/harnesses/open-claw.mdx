@@ -2,7 +2,7 @@
 title: "Open-Claw"
 description: "Apothem-Harness-Adapter für Open-Claw (Vorschau)."
 machineTranslated: true
-sourceHash: "a5897223a356aaf3"
+sourceHash: "3325613cf689ffc6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,10 +17,11 @@ sourceHash: "a5897223a356aaf3"
 apothem install --harness open-claw
 ```
 
-Der Adapter übersetzt das gemeinsame Profil in die benutzerglobale
-Konfigurationsdatei von OpenClaw und installiert Apothem-Unterstützungs-Kohorten
-unter dem Stammverzeichnis des Harness. Die native Konfiguration von OpenClaw ist
-JSON; der Materializer rendert passend dazu JSON.
+Der Adapter schreibt die benutzerweite globale Konfigurationsdatei von OpenClaw,
+projiziert das gemeinsame Profil in ein Profildokument und installiert die
+Apothem-Unterstützungskohorten unter dem Harness-Wurzelverzeichnis. Die native
+Konfiguration von OpenClaw ist JSON; der Materializer rendert ein leeres
+JSON-Objekt, und eine bestehende Datei behält ihre Schlüssel.
 
 **Geschriebene Dateien:** `~/.openclaw/openclaw.json`, das Profildokument
 `~/.openclaw/apothem/rules/00-apothem-profile.md` und Unterstützungsdateien unter
@@ -28,14 +29,15 @@ JSON; der Materializer rendert passend dazu JSON.
 
 Das Profildokument endet mit einem Abschnitt zu den Apothem-Unterstützungsdateien,
 der das absolute Verzeichnis unter `~/.openclaw/.apothem/support/` nennt, gegen
-das jedes Zitat im Repository-Stil (`rules/<name>.md`, `templates/...`,
+das jeder Verweis im Repository-Stil (`rules/<name>.md`, `templates/...`,
 `hooks/...`) aufgelöst wird.
 
 ## Zuordnung von Profil zu nativer Konfiguration
 
 Der Adapter liest Apothems gemeinsames Profil, verfasst aber keine
-Konfigurationsschlüssel: `openclaw.json` wird als leeres Objekt geschrieben.
-Identität, Präferenzen und Regeln des Profils gehen in das Profildokument.
+Konfigurationsschlüssel: Eine neue oder leere `openclaw.json` wird als leeres
+Objekt geschrieben, und eine bestehende Datei behält ihre Schlüssel. Identität,
+Präferenzen und Regeln des Profils gehen in das Profildokument.
 Gemeinsame Commands, Skills, Regeln, Templates und Hook-Prompts werden als
 Unterstützungsmaterial unter `~/.openclaw/.apothem/support/` installiert.
 
@@ -62,9 +64,9 @@ Dokumentation zu [Skills](https://docs.openclaw.ai/tools/skills) und zur
 apothem verify --harness open-claw
 ```
 
-Der verify-Befehl bestätigt, dass:
+Der Befehl verify bestätigt Folgendes:
 
-1. Die native Konfiguration liegt am erwarteten Pfad.
+1. Die native Konfiguration existiert am erwarteten Pfad.
 2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH` hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem Profil passen.
 3. Die adapterspezifische Verifizierungsroutine meldet Erfolg.
 
@@ -74,9 +76,11 @@ Der verify-Befehl bestätigt, dass:
 apothem update --harness open-claw
 ```
 
-Leitet die native Konfiguration aus dem aktuellen Zustand des gemeinsamen Profils
-neu ab. Führen Sie dies aus, nachdem Sie `~/.config/apothem/profile.yaml`
-bearbeitet oder das installierte Apothem-Paket aktualisiert haben.
+Leitet das Profildokument aus dem aktuellen Zustand des gemeinsamen Profils neu
+ab und aktualisiert die Unterstützungsdateien; `openclaw.json` behält die
+Schlüssel, die bereits darin stehen. Führen Sie den Befehl aus, nachdem Sie
+`~/.config/apothem/profile.yaml` bearbeitet oder das installierte Apothem-Paket
+aktualisiert haben.
 
 ## Deinstallation
 
@@ -85,7 +89,7 @@ apothem uninstall --harness open-claw
 ```
 
 Entfernt die vom Adapter geschriebenen nativen Konfigurationsdateien.
-Das YAML des gemeinsamen Profils und die Apothem-Engine bleiben unberührt.
+Die YAML-Datei des gemeinsamen Profils und die Apothem-Engine bleiben unberührt.
 
 ## Konformitäts-Gate
 
@@ -105,7 +109,7 @@ python -m apothem.conformity.gate --all .
 
 | Flag | Standard | Beschreibung |
 |------|---------|-------------|
-| `--dry-run` | `false` | Installation in der Vorschau anzeigen, ohne Dateien zu schreiben. |
+| `--dry-run` | `false` | Vorschau der Installation, ohne Dateien zu schreiben. |
 
 ## Siehe auch
 

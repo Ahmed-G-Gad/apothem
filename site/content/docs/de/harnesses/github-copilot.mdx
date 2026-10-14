@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "Apothem-Harness-Adapter für GitHub Copilot (GA)."
 machineTranslated: true
-sourceHash: "27caa0629e01c5e8"
+sourceHash: "7759dbb2505688c7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -45,12 +45,14 @@ Anweisungspfad bereit, den dieser Adapter verwalten könnte. Apothem zielt auf
 die dokumentierte Anweisungsdatei auf Projektebene und überlässt die
 Benutzereinstellungen auf IDE-Ebene dem Operator.
 
-Apothem behandelt `copilot-instructions.md` als eine Stimme unter den
-Assistenten-Anweisungsoberflächen des Projekts: Die oberflächenübergreifende
-Kohärenzprüfung des Konformitäts-Gates verifiziert, dass die gemeinsamen
-Aussagen dieser Datei semantisch mit den anderen Anweisungsdateien des Projekts
-übereinstimmen, sodass Copilot niemals Anleitungen erhält, die dem
-widersprechen, was der Rest der Toolchain liest.
+Innerhalb des Apothem-Repositorys ist `.github/copilot-instructions.md` eine
+Stimme unter den Assistenten-Anweisungsoberflächen des Projekts. In einem
+Apothem-Checkout vergleicht die oberflächenübergreifende Kohärenzprüfung des
+Konformitäts-Gates die gemeinsamen Aussagen in `AGENTS.md`, `CLAUDE.md` und
+`.github/copilot-instructions.md` und meldet eine Aussage, die eine dieser
+Dateien auslässt oder der sie widerspricht. Die Prüfung liest nicht die
+Anweisungsdatei, die Apothem in Ihr Projekt schreibt. Das Gate ist
+standardmäßig beratend: Es meldet Befunde und endet mit `0`.
 
 ## Verifizierung
 
@@ -58,9 +60,9 @@ widersprechen, was der Rest der Toolchain liest.
 apothem verify --harness github-copilot --project /path/to/project
 ```
 
-Der Befehl verify bestätigt, dass:
+Der Befehl verify bestätigt Folgendes:
 
-1. Die native Konfiguration liegt am erwarteten Pfad.
+1. Die native Konfiguration existiert am erwarteten Pfad.
 2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH` hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem Profil passen.
 3. Die adapterspezifische Verifizierungsroutine meldet Erfolg.
 

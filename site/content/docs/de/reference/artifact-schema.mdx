@@ -2,7 +2,7 @@
 title: "Artefakt-Schema-Spezifikation"
 description: "Kanonisches YAML-Frontmatter-Schema und Pflichtfelder für alle Artefakttypen im Apothem-Quellbaum, mit Vorlagen pro Klasse und Validierungsregeln."
 machineTranslated: true
-sourceHash: "376d3a98ba3102c6"
+sourceHash: "6c16d090e185c86c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -116,7 +116,7 @@ allowed-tools: "Read, Glob, Grep"
 | `argument-hint` | string | Verwendungsmuster oder `"[args...]"`, falls es keines gibt | `"[path/to/plan] [phase-id]"` |
 | `disable-model-invocation` | boolean | Falls true, startet nur der Operator den Command; das Modell ruft ihn niemals von sich aus auf | `true` |
 | `portability` | string | Portabilitätsklassifizierung über die Harness-Adapter hinweg | `"universal"` |
-| `allowed-tools` | string | Tools, die während der Ausführung des Commands vorab genehmigt sind: nur lesende Tools, dazu Tools mit Nebenwirkungen nur als eingegrenzte Regeln wie `Bash(git log *)`. Der bloße Platzhalter `"*"` wird abgelehnt | `"Read, Glob, Grep"` |
+| `allowed-tools` | string | Tools, die während der Ausführung des Commands vorab genehmigt sind: lesende Tools, dazu Tools mit Nebenwirkungen nur als eingegrenzte Regeln wie `Bash(git log *)`. Der bloße Platzhalter `"*"` wird abgelehnt | `"Read, Glob, Grep"` |
 
 ### Optionale Felder
 
@@ -240,7 +240,7 @@ allowed-tools: "Read, Glob, Grep"
 | `archetype` | string | Formklasse, ein Kebab-Case-Bezeichner der Form `<class>-template` | `"workflow-template"` |
 | `userInvocable` | boolean | Falls true, kann der Benutzer diesen Skill ausdrücklich anfordern | `false` |
 | `disable-model-invocation` | boolean | Falls true, wird der Skill nur durch ausdrücklichen Aufruf erreicht | `true` |
-| `allowed-tools` | string | Tools, die während der Ausführung des Skills vorab genehmigt sind: nur lesende Tools, dazu Tools mit Nebenwirkungen nur als eingegrenzte Regeln wie `Bash(git log *)`. Der bloße Platzhalter `"*"` wird abgelehnt | `"Read, Glob, Grep"` |
+| `allowed-tools` | string | Tools, die während der Ausführung des Skills vorab genehmigt sind: lesende Tools, dazu Tools mit Nebenwirkungen nur als eingegrenzte Regeln wie `Bash(git log *)`. Der bloße Platzhalter `"*"` wird abgelehnt | `"Read, Glob, Grep"` |
 
 ### Optionale Felder
 
@@ -361,7 +361,7 @@ Jeder Hook-Befehl läuft über denselben Python-Dispatcher:
 
 **Pfad:** `CLAUDE.md` (Wurzel)
 
-**Zweck:** Globaler Konfigurationsindex des Ökosystems.
+**Zweck:** Projektbezogene Anweisungen für Claude Code.
 
 ### Verpflichtendes YAML-Frontmatter
 
@@ -370,27 +370,15 @@ Jeder Hook-Befehl läuft über denselben Python-Dispatcher:
 name: "CLAUDE"
 version: "MAJOR.MINOR.PATCH"
 updated: "YYYY-MM-DD"
-description: "Global Claude Code ecosystem configuration and mandate index"
-scope: "always-on"
-portability: "universal"
+description: "Project-scoped Claude Code instructions for the Apothem source repository"
+scope: "project"
+portability: "project-local"
 ---
 ```
 
-### Erforderliche Abschnitte (in dieser Reihenfolge)
+### Abschnitte
 
-1. **§1 Plan-Suite** — Verweis auf den Ablageort der Vorlage
-2. **§2 Kognitive Identität** — Mandat zur kreativen Architektur
-3. **§3 Artefaktverzeichnisse** — Tabelle der Pfade und Zwecke
-4. **§4 Nach Ernsthaftigkeit skalierte Governance** — Definition der vier Stufen
-5. **§5 Operative Direktiven** — Problemlösung, Kommunikationsprinzipien
-6. **§6 Übergreifende Mandate** — Überblick über CM-1–28
-7. **§7 Registries** — Tabellen der Artefakte:
-   - 7.1 Commands
-   - 7.2 Regeln
-   - 7.3 Helfer
-   - 7.4 Hooks
-   - 7.5 Skills
-   - 7.6 Artefaktevolution
+`CLAUDE.md` ist in Prosa-Abschnitten verfasst und unter [`CLAUDE.md`](/docs/reference/claude-md) beschrieben. Kein Validator verlangt eine feste Abschnittsliste: `scripts/dev/validate_ecosystem.py` prüft die oben genannten Frontmatter-Schlüssel.
 
 ---
 
@@ -412,7 +400,7 @@ Jedes Artefakt muss diese Prüfungen bestehen:
 
 ### Inhaltsvalidierung
 
-- [ ] Der Inhalt beginnt unmittelbar nach dem schließenden `---` in einer neuen Zeile
+- [ ] Der Inhalt beginnt in einer neuen Zeile nach dem schließenden `---`; bei Dateien der Markdown-Familie ist das Banner des Autorschafts-Headers der erste Inhalt danach
 - [ ] Keine plan-internen Verweise (CM-7-Konformität)
 - [ ] Querverweise lassen sich auflösen (falls andere Artefakte aufgeführt werden)
 - [ ] Links verwenden relative Pfade mit Schrägstrichen
