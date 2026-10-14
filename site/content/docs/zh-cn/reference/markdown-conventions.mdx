@@ -2,21 +2,21 @@
 title: "Markdown 约定"
 description: "统一 Markdown 风格、标题结构、代码围栏声明、内部链接格式、作者署名横幅以及校验器的强制执行。"
 machineTranslated: true
-sourceHash: "f23d6b35db5b9a17"
+sourceHash: "940c41973c1d1e98"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **所有编写的 `.md` 制品中 Markdown 形态与格式的规范参考。** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) 的 Conventions 部分中的摘要是内联声明；本页是下游贡献者所引用的独立参考。
+> **所有已编写的 `.md` 工件中 Markdown 形态与格式的规范参考。** [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) 中 Conventions 一节的摘要是内联声明；本页是下游贡献者所引用的独立参考。
 
 ---
 
 ## 1. 风格
 
-GitHub 风格 Markdown（GFM）是宿主风格。每个制品都能在 GitHub 的网页 UI、Fumadocs 文档站点以及标准的支持 Markdown 的编辑器中正确渲染。
+GitHub 风格 Markdown（GFM）是宿主风格。每个工件在 GitHub 的网页 UI、Fumadocs 文档站点以及支持 Markdown 的标准编辑器中都能正确渲染。
 
 ## 2. 标题层级
 
-每个文件一个 H1。后续标题单调递降（H2 → H3 → H4），不跳级。标题采用句子大小写；不用全大写（ALL-CAPS），不用 Title Case Across Every Word。H1 承载文档的主标题，并且正是该文档在文档站点导航中的锚点。
+每个文件只有一个 H1。后续标题单调递降（H2 → H3 → H4），不跳级。标题采用句首大写；不使用全大写（ALL-CAPS），不使用 Title Case Across Every Word。H1 承载文档的主标题，并且就是该文档在文档站点导航中的锚点。
 
 ## 3. 代码块
 
@@ -26,16 +26,16 @@ GitHub 风格 Markdown（GFM）是宿主风格。每个制品都能在 GitHub �
 
 内部交叉引用使用**站点根路径**（例如 `[Authorship header](/docs/reference/authorship-header)`）。站内链接避免使用带 `.md`/`.mdx` 扩展名的裸仓库相对路径（`/docs/foo.md`）以及指向同一仓库的完整 URL（`https://github.com/ahmed-g-gad/apothem/blob/main/...`），因为它们经不起页面重命名和章节重组。
 
-这些 `/docs/...` 站点根路径——以及集合中非默认语言区域所用的 `/<locale>/docs/...` 形式——由 `link-check` 校验器针对 `site/content/docs/` 下磁盘上的页面集合进行解析：`/docs/a/b` 映射到 `site/content/docs/a/b.mdx` 或文件夹索引 `site/content/docs/a/b/index.mdx`，而语言区域形式映射到 `site/content/docs/<locale>/` 子树之下。指向已移除或已重命名路由的链接不会解析到上述任一文件，并会在合规闸门处被捕获为死路由（一个面向用户的 404），而不只是由站点构建捕获。
+这些 `/docs/...` 站点根路径——以及集合中非默认语言区域所用的 `/<locale>/docs/...` 形式——由 `link-check` 校验器对照 `site/content/docs/` 下磁盘上的页面集合进行解析：`/docs/a/b` 映射到 `site/content/docs/a/b.mdx` 或文件夹索引 `site/content/docs/a/b/index.mdx`，而语言区域形式映射到 `site/content/docs/<locale>/` 子树之下。指向已被移除或已被重命名的路由的链接，不会解析到这两个文件中的任何一个，并由 `link-check`——一个不会使运行失败的建议性匹配器（见 §6）——报告为死路由（面向用户的 404）。
 
-指向可变引用（`main`、`master`、`latest`、`HEAD`）的外部链接，只要所链接内容的稳定性很重要，就会被固定到提交 SHA 或发布标签；易变引用会通过一条相邻的 `{/* volatile */}` 注释标明其易变性质。
+指向可变引用（`main`、`master`、`latest`、`HEAD`）的外部链接，只要所链接内容的稳定性很重要，就会被固定到提交 SHA 或发布标签；易变的引用会以相邻的 `{/* volatile */}` 注释标明其易变性质。
 
 ## 5. 作者署名横幅
 
-每个 Markdown 制品（[`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/schemas/header-exceptions.txt) 中列举的例外除外）都在字节 0 处带有规范的作者署名头横幅，并按照[作者署名头](/docs/reference/authorship-header)采用 HTML 注释变体。当两者同时存在时，横幅位于 YAML frontmatter 之上。
+每个 Markdown 工件（[`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt) 中列举的例外除外）都带有规范的作者署名头横幅，并按照[作者署名头](/docs/reference/authorship-header)采用 HTML 注释变体。没有 frontmatter 时，横幅位于第 1 行。有 YAML frontmatter 时，frontmatter 保持在字节 0 处，横幅紧随结束的 `---` 之后。
 
 ## 6. 校验器
 
-[`.pre-commit-config.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/.pre-commit-config.yaml) 中的 pre-commit `markdownlint` 钩子以 [`.markdownlint.json`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.json) 中的规则策略运行 `markdownlint-cli`，并强制执行 §§1–4 中的大部分规则。CI 不运行 markdownlint，因此该钩子就是它运行的地方。该策略关闭了 MD013（行长度）、MD033（内联 HTML）和 MD041（首行标题）。它还关闭了 MD038，因为规范的选项标签后缀 ` (Recommended)` 在代码跨度内保留了其前导空格；还关闭了 MD060，因为没有任何表格列样式能接受语料库所使用的、带有紧凑 `|---|` 分隔行的紧凑单元格表格。MD024 只检查同级标题，因此 `CHANGELOG.md` 中每个发布都会重复的 Added、Changed、Fixed 和 Security 标题能够通过。每项选择的理由都写在该钩子旁边。该钩子会跳过测试夹具树 `tests/fixtures/`、`tests/conformity/`、`tests/conformity-scenarios/fixtures/` 和 `tests/scripts/inject-header/fixtures/`，这些树的字节由测试设定。它仍然会检查 `plugins/claude-code/`，该目录由 `src/apothem/` 生成，因此要在其 `src/apothem/` 源头修复那里的发现项，并用 `python scripts/dev/assemble_plugin_tree.py` 重新生成插件树。
+[`.pre-commit-config.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/.pre-commit-config.yaml) 中的 pre-commit `markdownlint` 钩子使用 [`.markdownlint.json`](https://github.com/ahmed-g-gad/apothem/blob/main/.markdownlint.json) 中的规则策略运行 `markdownlint-cli`，并强制执行 §§1–4 中的大部分规则。CI 不运行 markdownlint，因此该钩子就是它运行的地方。该策略关闭了 MD013（行长度）、MD033（内联 HTML）和 MD041（首行标题）。它还关闭了 MD038，因为规范的选项标签后缀 ` (Recommended)` 在代码跨度内保留其前导空格；并关闭了 MD060，因为没有任何表格列样式能接受语料库所使用的、带有紧凑 `|---|` 分隔行的紧凑单元格表格。MD024 只检查同级标题，因此每个发布在 `CHANGELOG.md` 中重复出现的 Added、Changed、Fixed 和 Security 标题都能通过。每项选择的理由都写在该钩子旁边。该钩子会跳过测试夹具目录树 `tests/fixtures/`、`tests/conformity/`、`tests/conformity-scenarios/fixtures/` 和 `tests/scripts/inject-header/fixtures/`，这些目录树的字节由测试设定。它仍然会检查 `plugins/claude-code/`，该目录由 `src/apothem/` 生成，因此要在其 `src/apothem/` 源头修复那里的发现项，并用 `python scripts/dev/assemble_plugin_tree.py` 重新生成插件树。
 
-位于 `src/apothem/conformity/file_header_grep.py` 的 `file-header-grep` 检查 §5。位于 `src/apothem/conformity/link_check.py` 的 `link-check` 校验器检查 §4 的链接解析纪律——它针对源文件所在目录解析相对链接，并针对 `site/content/docs/` 页面集合解析 `/docs/...`（以及 `/<locale>/docs/...`）站点路由，标记任何无法解析到磁盘上页面的链接。两者都是建议性的逐次写入匹配器。它们在 pre-commit 的 `conformity-corpus-perwrite` 钩子中运行，也在 [`.github/workflows/conformity.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/conformity.yml) 中 Conformity 工作流的 `corpus-perwrite-gate` 作业中运行，并且在这两个地方都只报告发现项，而不会使运行失败。[`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) 中 CI 质量作业的 `python -m apothem.conformity.gate --all . --strict` 只覆盖独立校验器，因此这两者都不会由它运行。
+位于 `src/apothem/conformity/file_header_grep.py` 的 `file-header-grep` 检查 §5。位于 `src/apothem/conformity/link_check.py` 的 `link-check` 校验器检查 §4 的链接解析纪律——它针对源文件所在的目录解析相对链接，并针对 `site/content/docs/` 页面集合解析 `/docs/...`（以及 `/<locale>/docs/...`）站点路由，标记任何无法解析到磁盘上页面的链接。两者都是建议性的逐次写入匹配器。它们在 pre-commit 的 `conformity-corpus-perwrite` 钩子中运行，也在 [`.github/workflows/conformity.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/conformity.yml) 中 Conformity 工作流的 `corpus-perwrite-gate` 作业中运行，并且在这两个地方都只报告发现项，而不会使运行失败。[`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) 中 CI 质量作业的 `python -m apothem.conformity.gate --all . --strict` 只覆盖独立校验器，因此这两者它都不会运行。

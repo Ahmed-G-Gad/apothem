@@ -2,11 +2,11 @@
 title: "发布者账户设置"
 description: "为 @ahmed-g-gad/apothem 配置 npmjs.com 受信任发布者，以及 GitHub 侧的发布前置条件。"
 machineTranslated: true
-sourceHash: "c0ff17cce209d1d0"
+sourceHash: "4f750a0f9fdb2429"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-本操作手册配置发布表面的发布者一侧。分发形态只有一个注册表：npmjs.com 上的作用域 npm 包 `@ahmed-g-gad/apothem`，在 GitHub Release、Pages、CI、合规工作流和工具工作流都变绿之后，由手动调度的 `publish-npm.yml` 工作流发布。其余每个产物都直接在 GitHub Release 页面上发布，无需外部发布者账户。
+本操作手册配置发布表面的发布者一侧。分发形态只有一个注册表：npmjs.com 上的作用域 npm 包 `@ahmed-g-gad/apothem`，在 GitHub Release、Pages、CI、合规工作流和工具工作流都变绿之后，由 `publish-npm.yml` 工作流发布（该工作流在 `v*.*.*` 标签推送时运行；带 `tag` 输入的手动调度是后备方式）。其余每个产物都直接在 GitHub Release 页面上发布，无需外部发布者账户。
 
 ## 身份映射
 
@@ -43,7 +43,7 @@ GitHub 所有者将来允许变动。在平台允许动态解析之处，工作�
    bash scripts/release/check-release-ready.sh <release-tag>
    ```
 
-9. 从 GitHub Actions 标签页运行 `Publish — npm`（`publish-npm.yml`），带上 `tag=<release-tag>`，并批准 `release` 环境部署。
+9. 为标签推送所启动的 `Publish npm`（`publish-npm.yml`）运行批准 `release` 环境部署。如果该运行没有启动，请从 GitHub Actions 标签页调度该工作流，并带上 `tag=<release-tag>`。
 10. 验证已上线的包：
 
     ```bash title="npm verification"
