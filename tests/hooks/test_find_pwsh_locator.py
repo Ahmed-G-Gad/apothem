@@ -100,12 +100,16 @@ def test_empty_segment_skipped_but_explicit_dot_honored(tmp_path: Path) -> None:
     # Control: an explicit "." entry resolves the cwd interpreter, establishing
     # that the host shell reports the cwd file as executable under ``[ -x ]``.
     baseline = _list_candidates(".", cwd=tmp_path)
+    # Check the exit code before the skip decision: a locator that cannot be
+    # sourced must fail here, not skip with the [ -x ] reason below.
+    assert baseline.returncode == 0, (
+        f"the locator did not run cleanly (stderr={baseline.stderr!r})"
+    )
     if "pwsh" not in baseline.stdout:
         pytest.skip(
             "host shell does not report the cwd file as executable under [ -x ]; "
             "the empty-segment contrast is untestable here"
         )
-    assert baseline.returncode == 0
 
     # The fix: a doubled (empty) PATH segment is SKIPPED, not resolved to cwd.
     # The two probe directories do not exist, so the only would-be match is cwd
@@ -132,7 +136,30 @@ def stub_only_path(tmp_path: Path) -> dict[str, str]:
     return env
 
 
+def _assert_locator_defines_find_real_pwsh(env: dict[str, str]) -> None:
+    """Fail unless find-pwsh.sh defines ``find_real_pwsh``.
+
+    An empty result from ``_run_locator`` proves nothing on its own: a locator
+    that never loaded also exits 1 with empty stdout. ``type -t`` prints
+    ``function`` only when the sourced file defined the function.
+    """
+    if _BASH is None:
+        pytest.skip(SKIP_REASON)
+    probe = subprocess.run(
+        [_BASH, "-c", f". {LOCATOR_SH.as_posix()} && type -t find_real_pwsh"],
+        capture_output=True,
+        text=True,
+        env=env,
+        check=False,
+    )
+    assert probe.stdout.strip() == "function", (
+        "find-pwsh.sh did not define find_real_pwsh, so an empty result proves "
+        f"nothing (rc={probe.returncode}, stderr={probe.stderr!r})"
+    )
+
+
 def test_stub_only_path_returns_no_candidate(stub_only_path: dict[str, str]) -> None:
+    _assert_locator_defines_find_real_pwsh(stub_only_path)
     result = _run_locator(stub_only_path)
     assert result.returncode == 1, (
         f"Expected exit 1 when only WindowsApps stub is on PATH, got "
@@ -239,6 +266,7 @@ def test_help_path_returns_no_candidate_when_pwsh_absent() -> None:
     env = {"PATH": "/nonexistent-path-fragment-for-test"}
     if "SYSTEMROOT" in os.environ:
         env["SYSTEMROOT"] = os.environ["SYSTEMROOT"]
+    _assert_locator_defines_find_real_pwsh(env)
     result = _run_locator(env)
     assert result.returncode == 1
     assert result.stdout.strip() == ""
