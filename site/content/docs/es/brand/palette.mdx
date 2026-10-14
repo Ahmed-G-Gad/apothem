@@ -1,8 +1,8 @@
 ---
 title: "Paleta de marca"
-description: "Colores de marca centrales de Apothem y los diecisiete colores de marca de los entornos. La única fuente de verdad son los tokens de diseño canónicos en assets/design-tokens.css; el sitio refleja esos valores."
+description: "Colores de marca centrales de Apothem y los diecisiete colores de marca de los entornos. La única fuente de verdad de los colores centrales son los tokens de diseño canónicos en assets/design-tokens.css; el sitio refleja esos valores."
 machineTranslated: true
-sourceHash: "d2f51368ea153e97"
+sourceHash: "64e22fc5ac4c9da8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,9 +28,10 @@ valor a continuación se remonta a un paso de rampa canónico.
 
 Los colores de los entornos viven en [Colores de entornos](/docs/brand/harness-colors).
 El mapeo geométrico sobre el hexágono de la marca Apothem —su nodo central y su nodo
-terminal— está integrado en la sección de marca. La fuente de verdad CSS en
-[`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css)
-conecta cada token a su variable CSS.
+terminal— está integrado en la sección de marca. Los colores de los entornos se definen
+en esa página, no en los tokens de diseño ni en
+[`site/app/global.css`](https://github.com/ahmed-g-gad/apothem/blob/main/site/app/global.css),
+que contienen solo la paleta central.
 
 ## Uso en la documentación
 
@@ -42,6 +43,5 @@ de la clase `.dark` del tema.
 
 La paleta se actualiza solo cuando un color central cambia (slate / emerald) o un entorno
 ratifica un cambio de color de marca aguas arriba. Los cambios por entorno se propagan
-atómicamente a través de `site/app/global.css`,
-[Colores de entornos](/docs/brand/harness-colors) y cada maestro SVG afectado bajo
-`assets/src/`.
+atómicamente a través de [Colores de entornos](/docs/brand/harness-colors) y cada maestro
+SVG afectado bajo `assets/src/`.

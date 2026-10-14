@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "Adaptador de entorno de Apothem para GitHub Copilot (GA)."
 machineTranslated: true
-sourceHash: "27caa0629e01c5e8"
+sourceHash: "7759dbb2505688c7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -46,12 +46,14 @@ basada en archivos que este adaptador pueda gestionar. Apothem se dirige al
 archivo de instrucciones documentado con alcance de proyecto y deja los ajustes
 de usuario a nivel de IDE como propiedad del operador.
 
-Apothem trata `copilot-instructions.md` como una voz más entre las superficies
-de instrucciones de asistente del proyecto: la comprobación de coherencia
-multisuperficie de la puerta de conformidad verifica que sus afirmaciones
-compartidas permanecen semánticamente alineadas con los demás archivos de
-instrucciones del proyecto, de modo que Copilot nunca recibe una guía que
-contradiga lo que lee el resto de la cadena de herramientas.
+Dentro del repositorio de Apothem, `.github/copilot-instructions.md` es una voz
+más entre las superficies de instrucciones de asistente del proyecto. En un
+checkout de Apothem, la comprobación de coherencia multisuperficie de la puerta
+de conformidad compara las afirmaciones compartidas de `AGENTS.md`, `CLAUDE.md`
+y `.github/copilot-instructions.md`, e informa de una afirmación que uno de
+ellos omite o contradice. La comprobación no lee el archivo de instrucciones que
+Apothem escribe en tu proyecto. La puerta es consultiva de forma predeterminada:
+informa de los hallazgos y termina con `0`.
 
 ## Verificación
 
@@ -62,7 +64,10 @@ apothem verify --harness github-copilot --project /path/to/project
 El comando verify confirma que:
 
 1. La configuración nativa existe en la ruta esperada.
-2. Cada destino gestionado existe; los archivos gestionados no están vacíos y las configuraciones JSON o YAML se analizan correctamente. Añade `--profile PATH` para confirmar también que los archivos instalados coinciden con ese perfil.
+2. Cada destino gestionado existe; los archivos gestionados no están vacíos y
+   las configuraciones JSON o YAML se analizan correctamente. Añade
+   `--profile PATH` para confirmar también que los archivos instalados coinciden
+   con ese perfil.
 3. La rutina de verificación específica del adaptador informa de éxito.
 
 ## Actualización

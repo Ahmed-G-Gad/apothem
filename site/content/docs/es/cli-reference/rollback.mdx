@@ -2,7 +2,7 @@
 title: "rollback"
 description: "Referencia de la CLI para el comando apothem rollback."
 machineTranslated: true
-sourceHash: "6c0c49f541075b0c"
+sourceHash: "96531a4a5fa4a15e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,27 +19,33 @@ apothem rollback --harness NAME|all [--install-id ULID | --last] [--yes]
 
 `rollback` devuelve cada entorno seleccionado al estado en el que estaba antes
 de la pasada de instalación registrada: la más reciente por defecto, o la
-indicada por `--install-id`. Recorriendo el registro de esa instalación en el
-historial, empezando por el cambio más reciente:
+indicada por `--install-id`. Al recorrer el registro de esa instalación en el
+libro mayor, empezando por el cambio más reciente, el comando:
 
 - restaura cada archivo y cada directorio que la instalación sobrescribió a
   partir de la copia de seguridad que la instalación capturó, en su ruta
   registrada (un directorio que la instalación reemplazó se restaura
-  exactamente, sin los archivos que la instalación le agregó);
-- elimina cada archivo y cada directorio que la instalación creó, y vuelve a
-  colocar cualquier ruta de la estructura heredada que la instalación barrió;
+  exactamente, sin los archivos que la instalación agregó en él);
+- elimina cada archivo y cada directorio que la instalación creó, y devuelve a
+  su lugar cualquier ruta de la estructura heredada que la instalación barrió;
 - elimina los almacenes de datos compartidos (`memory`, `contexts`, `learning`)
   que la instalación creó, a menos que otro entorno instalado todavía los use;
 - elimina los directorios que la instalación creó, una vez que están vacíos.
 
-Todo lo que rollback elimina o reemplaza se copia primero en la raíz de copias de seguridad de Apothem (`~/.apothem/backups/`), de modo que una reversión puede a su vez deshacerse a mano. Después añade un registro `rollback` al historial del entorno. Revertir una instalación anterior restaura o elimina solo los destinos que esa instalación registró, y descarta del registro activo, en la misma raíz, cada instalación posterior. Los archivos que una instalación posterior añadió fuera de esos destinos se mantienen en su sitio.
+Todo lo que rollback elimina o reemplaza se copia primero en la raíz de copias
+de seguridad de Apothem (`~/.apothem/backups/`), de modo que una reversión puede
+a su vez deshacerse a mano. Después agrega un registro `rollback` al libro mayor
+del entorno. Revertir una instalación anterior restaura o elimina solo los
+destinos que esa instalación anterior registró, y descarta cada instalación
+posterior del registro activo de esa misma raíz. Los archivos que una
+instalación posterior agregó fuera de esos destinos se mantienen en su lugar.
 
-El historial conserva los 10 registros de instalación más recientes por raíz de
-instalación (con las copias de seguridad a las que hacen referencia); una
-instalación más antigua ya no puede revertirse por su id e informa
+El libro mayor conserva los 10 registros de instalación más recientes por raíz
+de instalación (con las copias de seguridad a las que hacen referencia); una
+instalación más antigua ya no puede revertirse por id e informa
 `rollback.no_record`. [`apothem backups prune`](/docs/cli-reference/backups)
-reduce ese límite a petición, y nunca elimina la copia de seguridad a partir de
-la cual restaura la instalación más reciente.
+reduce ese límite a petición, y nunca elimina la copia de seguridad desde la
+cual restaura la instalación más reciente.
 
 Los registros escritos por un lanzamiento de Apothem anterior a que se agregara
 este comportamiento no indican qué archivos creó la instalación; revertir uno de
@@ -55,10 +61,12 @@ instalación y son mutuamente excluyentes.
 
 Una reversión con `--harness all` es exhaustiva de forma deliberada: abarca cada
 entorno registrado, incluidos los que `exclude_harnesses` del perfil omite
-durante la instalación. Restaurar el estado previo a la instalación es una
-operación de limpieza, así que alcanza los registros que una instalación anterior
-de mayor alcance pueda haber dejado. Los entornos sin ninguna instalación
-registrada informan, por entorno, «nada que revertir».
+durante la instalación — restaurar el estado previo a la instalación es una
+operación de limpieza, así que alcanza los registros que una instalación
+anterior de mayor alcance pueda haber dejado. Un entorno sin ninguna instalación
+registrada falla con `rollback.no_record` (una fila `"outcome": "error"` en
+`results`), y la ejecución continúa con los demás entornos. Después el comando
+termina con el código 1, o con el 2 cuando se revirtió algún otro entorno.
 
 ## Opciones
 

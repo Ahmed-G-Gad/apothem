@@ -2,7 +2,7 @@
 title: "Puerta de conformidad"
 description: "Ejecuta la puerta de conformidad de Apothem para verificar la salud del ecosistema."
 machineTranslated: true
-sourceHash: "bbf19e4d148c511e"
+sourceHash: "882e6fbc7b8fa34c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -10,7 +10,9 @@ La puerta de conformidad en `src/apothem/conformity/gate.py` ejecuta la
 fracción mecánica de la puerta de pre-emisión de quince barras (M1-M15)
 contra cada artefacto que redacta el operador.
 
-Los comandos de esta página suponen un checkout de Apothem, así que antepón `PYTHONPATH=src` a cada uno. Tras una instalación con script, usa `PYTHONPATH="$HOME/.apothem/src"` en lugar de `src`.
+Los comandos de esta página suponen un checkout de Apothem, así que antepón
+`PYTHONPATH=src` a cada uno. Tras una instalación con script, usa
+`PYTHONPATH="$HOME/.apothem/src"` en lugar de `src`.
 
 ## Ejecutar la puerta
 
@@ -52,20 +54,20 @@ asuntos de commit lo hace cuando el directorio no tiene historial de commits.
 | Barra | Comprobación | Tipo |
 |-----|-------|------|
 | M1 | Agnosticismo respecto al proyecto anfitrión | Razonada |
-| M2 | Divulgación editorial | Mecánica |
-| M3 | Diez dimensiones de calidad | Razonada |
+| M2 | Divulgación editorial | Razonada |
+| M3 | Diez dimensiones de calidad | Mecánica + razonada |
 | M4 | Autoaplicación | Mecánica |
 | M5 | Autoridad (sin identidad / endpoint / secreto fabricados) | Mecánica |
 | M6 | Incorporación de pericia | Razonada |
 | M7 | Anotación de opciones | Mecánica |
-| M8 | Definitividad | Mecánica |
+| M8 | Carácter definitivo | Mecánica |
 | M9 | Aprovechamiento visual | Razonada |
 | M10 | Vinculación bidireccional | Mecánica |
 | M11 | Sprints ágiles | Razonada |
-| M12 | Informes de fase y disposición canónica | Mecánica |
+| M12 | Informes de fase y disposición canónica | Mecánica + razonada |
 | M13 | Oficio de código | Mecánica |
 | M14 | Sistemicidad | Razonada |
-| M15 | Lista para producción | Mecánica |
+| M15 | Listo para producción | Mecánica + razonada |
 
 ## Comprobaciones dirigidas
 
@@ -82,12 +84,12 @@ PYTHONPATH=src python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 
 El modo `--hook` (`python -m apothem.conformity.gate --hook`) es el punto de
 entrada que despacha el entorno: lee desde stdin una carga útil JSON de entrada
-de herramienta y ejecuta la cadena de emparejadores por escritura contra la
+de herramienta y ejecuta la cadena de comparadores por escritura contra la
 escritura pendiente. Esta es la forma que invoca el hook `PreToolUse`
 desplegado; rara vez lo llamas a mano.
 
 El modo hook está **limitado a un conjunto de directorios**. Ejecuta la cadena
-de emparejadores solo en las escrituras cuyo destino está dentro de alguno de
+de comparadores solo en las escrituras cuyo destino está dentro de alguno de
 ellos; una escritura fuera de todos los alcances termina de inmediato como un
 pase silencioso. Los valores predeterminados son las raíces de entorno de
 alcance de usuario con capacidad de hooks en las que Apothem instala — la página
@@ -105,4 +107,8 @@ anteriores.
 
 ## Integración con CI
 
-El trabajo de calidad de `.github/workflows/ci.yml` ejecuta la puerta en modo estricto (`python -m apothem.conformity.gate --all . --strict`) en los push a `main` y en las pull requests a `main` que tocan las rutas que ese trabajo vigila. El flujo de trabajo independiente `.github/workflows/conformity.yml` ejecuta el barrido de fixtures (`tests/conformity-scenarios/verify.py --strict`).
+El trabajo de calidad de `.github/workflows/ci.yml` ejecuta la puerta en modo
+estricto (`python -m apothem.conformity.gate --all . --strict`) en los push a
+`main` y en las pull requests a `main` que tocan las rutas que ese trabajo
+vigila. El flujo de trabajo independiente `.github/workflows/conformity.yml`
+ejecuta el barrido de fixtures (`tests/conformity-scenarios/verify.py --strict`).

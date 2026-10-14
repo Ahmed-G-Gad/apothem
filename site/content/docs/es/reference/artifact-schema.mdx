@@ -2,7 +2,7 @@
 title: "Especificación del esquema de artefactos"
 description: "Esquema canónico de frontmatter YAML y campos obligatorios para todos los tipos de artefacto del árbol de fuentes de Apothem, con plantillas por clase y reglas de validación."
 machineTranslated: true
-sourceHash: "376d3a98ba3102c6"
+sourceHash: "6c16d090e185c86c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -359,7 +359,7 @@ Cada comando de hook pasa por el mismo despachador de Python:
 
 **Ruta:** `CLAUDE.md` (raíz)
 
-**Propósito:** Índice global de configuración del ecosistema.
+**Propósito:** Instrucciones de Claude Code acotadas al proyecto.
 
 ### Frontmatter YAML obligatorio
 
@@ -368,27 +368,15 @@ Cada comando de hook pasa por el mismo despachador de Python:
 name: "CLAUDE"
 version: "MAJOR.MINOR.PATCH"
 updated: "YYYY-MM-DD"
-description: "Global Claude Code ecosystem configuration and mandate index"
-scope: "always-on"
-portability: "universal"
+description: "Project-scoped Claude Code instructions for the Apothem source repository"
+scope: "project"
+portability: "project-local"
 ---
 ```
 
-### Secciones obligatorias (en orden)
+### Secciones
 
-1. **§1 Suite de plan** — Referencia a la ubicación de la plantilla
-2. **§2 Identidad cognitiva** — Mandato de arquitectura creativa
-3. **§3 Directorios de artefactos** — Tabla de rutas y propósitos
-4. **§4 Gobernanza escalada según la seriedad** — Definición de los cuatro niveles
-5. **§5 Directivas operativas** — Resolución de problemas, principios de comunicación
-6. **§6 Mandatos transversales** — Visión general de CM-1–28
-7. **§7 Registros** — Tablas de artefactos:
-   - 7.1 Comandos
-   - 7.2 Reglas
-   - 7.3 Ayudantes
-   - 7.4 Hooks
-   - 7.5 Skills
-   - 7.6 Evolución de los artefactos
+`CLAUDE.md` se redacta en secciones de prosa, descritas en [`CLAUDE.md`](/docs/reference/claude-md). Ningún validador exige una lista fija de secciones: `scripts/dev/validate_ecosystem.py` comprueba las claves de frontmatter anteriores.
 
 ---
 
@@ -410,7 +398,7 @@ Cada artefacto debe superar estas comprobaciones:
 
 ### Validación del contenido
 
-- [ ] El contenido comienza inmediatamente después del `---` de cierre, en una nueva línea
+- [ ] El contenido comienza en una línea nueva después del `---` de cierre; en los archivos de la familia Markdown, el banner del encabezado de autoría es el primer contenido que le sigue
 - [ ] No hay referencias internas del plan (cumplimiento de CM-7)
 - [ ] Las referencias cruzadas se resuelven (si se listan otros artefactos)
 - [ ] Los enlaces usan rutas relativas con barras diagonales

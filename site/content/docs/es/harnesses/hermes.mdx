@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Adaptador de entorno de Apothem para Hermes (vista previa)."
 machineTranslated: true
-sourceHash: "71abe825552bafc8"
+sourceHash: "3f8418d01d08fe73"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -53,8 +53,8 @@ escribe el inventario MCP del perfil bajo la clave de nivel superior
 `mcp_servers`, donde Hermes lee los servidores MCP. Los lanzamientos anteriores
 de Apothem lo escribían bajo `auxiliary.mcp`, que Hermes lee como el modelo
 auxiliar para el despacho de herramientas MCP; tanto `apothem update` como
-`apothem uninstall` eliminan ese bloque mientras siga conteniendo exactamente lo
-que escribió uno de esos lanzamientos (consulta
+`apothem uninstall` eliminan ese bloque mientras siga coincidiendo con lo que
+escribiría uno de esos lanzamientos a partir de tu perfil compartido (consulta
 [Desinstalación](#desinstalación)). (Comportamiento de Hermes según las páginas
 de su guía de usuario sobre
 [skills](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md)
@@ -70,7 +70,10 @@ apothem verify --harness hermes
 El comando verify confirma que:
 
 1. La configuración nativa existe en la ruta esperada.
-2. Cada destino gestionado existe; los archivos gestionados no están vacíos y las configuraciones JSON o YAML se analizan correctamente. Añade `--profile PATH` para confirmar también que los archivos instalados coinciden con ese perfil.
+2. Cada destino gestionado existe; los archivos gestionados no están vacíos y
+   las configuraciones JSON o YAML se analizan correctamente. Añade
+   `--profile PATH` para confirmar también que los archivos instalados coinciden
+   con ese perfil.
 3. La rutina de verificación específica del adaptador informa de éxito.
 
 ## Actualización
@@ -98,13 +101,13 @@ motor de Apothem no se ven afectados.
 
 En una instalación hecha por un lanzamiento anterior, que escribía los
 servidores del perfil bajo `auxiliary.mcp`, también se elimina ese bloque
-cuando sigue conteniendo exactamente lo que escribió ese lanzamiento, tal como
-se renderiza a partir del perfil compartido en
-`~/.config/apothem/profile.yaml`. Es la misma regla que aplica
-`apothem update`, así que desinstalar sin actualizar antes no deja ningún bloque
-obsoleto. Un bloque que hayas editado, o uno sin un perfil compartido legible
-con el que compararlo, se queda en su lugar, y el resto de tus ajustes de
-`auxiliary` siempre se conserva.
+cuando sigue coincidiendo con lo que escribiría ese lanzamiento a partir de tu
+perfil compartido actual en `~/.config/apothem/profile.yaml`. Es la misma regla
+que aplica `apothem update`, así que desinstalar sin actualizar antes no deja
+ningún bloque obsoleto mientras los servidores MCP del perfil no cambien. Un
+bloque que hayas editado, uno que ya no coincide con los servidores MCP de tu
+perfil actual, o uno sin un perfil compartido legible con el que compararlo, se
+queda en su lugar, y el resto de tus ajustes de `auxiliary` siempre se conserva.
 
 ## Puerta de conformidad
 
