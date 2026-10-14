@@ -40,8 +40,9 @@ Eight install channels are available. Pick by how you already work.
   command-line extensions (5–7) install a small **bootstrap** that shells out
   to the engine (`npx @ahmed-g-gad/apothem install`) to materialize the full
   harness — they are the entry point, not the full delivery by themselves. The
-  Claude Code plugin (1) and the VS Code-family extension (4) carry the engine
-  and run it directly.
+  Claude Code plugin (1) carries the engine and runs it directly. The
+  VS Code-family extension (4) carries no engine of its own: its commands run
+  the engine through the npm shim by default.
 </Callout>
 
 Every path is idempotent: re-running is safe and converges to the same state.
@@ -89,9 +90,11 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 The shim locates the interpreter and forwards every CLI command to the bundled
 engine — nothing is placed permanently on your system. It tries `python3`,
 `python`, then `py -3` in that order; set **`APOTHEM_PYTHON`** to an
-interpreter path to skip the probe, which is what you need when Python is
+interpreter path to try it first, which is what you need when Python is
 installed but not on `PATH`, or when several versions are and you want a
-specific one.
+specific one. The interpreter you name still has to pass the Python 3.10+
+check; when it does not, the shim falls back to `python3`, `python`, then
+`py -3`.
 
 ```bash title="npx"
 npx @ahmed-g-gad/apothem install --harness claude-code
