@@ -2,7 +2,7 @@
 title: "Основные рабочие процессы"
 description: "Четыре основных рабочих процесса Apothem — профиль, правила, планы и шлюз соответствия."
 machineTranslated: true
-sourceHash: "a0e26da50122053a"
+sourceHash: "53658e5bd065d27f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -67,10 +67,16 @@ apothem verify --harness claude-code
 
 ## Шлюз соответствия
 
-Запустите из корня репозитория:
+Из чекаута Apothem выполните:
 
 ```bash
-python -m apothem.conformity.gate --all .
+PYTHONPATH=src python -m apothem.conformity.gate --all .
+```
+
+После установки через скрипт выполните:
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python3 -m apothem.conformity.gate --all .
 ```
 
 Выполняет все механические проверки соответствия и сообщает о прохождении/сбое по

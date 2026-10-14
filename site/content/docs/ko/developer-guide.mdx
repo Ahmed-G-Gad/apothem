@@ -2,7 +2,7 @@
 title: "Apothem에 기여하기 — 개발자 가이드"
 description: "정식 스키마, 프런트매터 요구 사항, 검증 절차에 따라 규칙, 명령, 헬퍼, 스킬, 훅을 작성하여 Apothem 생태계를 유지 관리하고 확장합니다."
 machineTranslated: true
-sourceHash: "ae3392672e01c783"
+sourceHash: "782e178598975d52"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -110,19 +110,10 @@ authorization, auth, header 형태의 필드를 가립니다. 문서, 픽스처,
 ### 파일 명명
 
 - **규칙:** `{name}.md`
-- **명령:** `{name}.md`
+- **커맨드:** `{name}.md`
 - **헬퍼:** `{name}.md`
 - **스킬:** 폴더 `src/apothem/skills/{name}/SKILL.md` 안 (정확한 대소문자: `SKILL.md`)
-- **훅:** 폴더 `src/apothem/hooks/` 안. 모든 이벤트 핸들러는 Python입니다. 모든
-  `settings.json` 훅 명령은 exec 형식(`python`과 `args`)을 사용하여
-  `-m apothem.hooks.dispatch <event> [<message-name>]` 또는
-  `-m apothem.conformity.gate --hook`을 호출합니다. `dispatch.py`는
-  `SessionStart`를 `session_start_bootstrap.main()`으로, 허용 목록에 있는 그
-  밖의 모든 이벤트를 `emit_hook_context.main()`으로 라우팅합니다.
-  `src/apothem/hooks/` 또는 `scripts/` 아래에 허용되는 셸 스텁은 네 개의
-  로케이터 + 부트스트랩 파일(`find-python.{ps1,sh}`, `bootstrap.{ps1,sh}`)뿐이며,
-  그 밖의 `.ps1` / `.sh` 파일은 모두 `scripts/dev/validate_hooks.py` 위생
-  검사에 실패합니다.
+- **훅:** 폴더 `src/apothem/hooks/` 안. 모든 이벤트 핸들러는 Python입니다. `settings.json`의 모든 훅 명령은 exec 형식을 사용합니다. `command`는 설치 시점에 해석되는 인터프리터 자리표시자 `${PYTHON_BIN}`이고, `args`에는 스크립트 경로와 그 인수가 들어 있습니다. Claude Code 템플릿은 `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]`과 `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook`을 절대 경로로 실행합니다. 따라서 설치된 사본에는 가져올 수 있는 `apothem` 패키지가 필요하지 않습니다. `dispatch.py`는 `SessionStart`를 `session_start_bootstrap.main()`으로, 허용 목록에 있는 그 밖의 모든 이벤트를 `emit_hook_context.main()`으로 라우팅합니다. `src/apothem/hooks/` 또는 `scripts/` 아래에 허용되는 셸 스텁은 여섯 개의 로케이터 및 부트스트랩 파일(`find-python.{ps1,sh}`, `find-pwsh.{ps1,sh}`, `bootstrap.{ps1,sh}`)뿐이며, 그 밖의 `.ps1` / `.sh` 파일은 `scripts/dev/validate_hooks.py` 위생 검사에 실패합니다.
 
 ### 상호 참조
 

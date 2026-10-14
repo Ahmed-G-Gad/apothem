@@ -2,12 +2,11 @@
 title: "Règle personnalisée"
 description: "Rédiger une règle permanente personnalisée pour votre projet."
 machineTranslated: true
-sourceHash: "7575376db8d658ec"
+sourceHash: "9afb0e5eed8c4fd2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Cet exemple ajoute une règle permanente propre au projet qui impose une
-convention de nommage sur tous les fichiers.
+Cet exemple ajoute une règle permanente propre au projet qui impose une convention de nommage à tous les fichiers.
 
 ## Fichier de la règle
 
@@ -31,17 +30,29 @@ no camelCase, no PascalCase).
 When in doubt, err on the side of more hyphens.
 ```
 
-Enregistrez ceci dans `rules/kebab-filenames.md` au sein de la racine d'installation de votre harness (`~/.claude/` pour l'adaptateur Claude Code ; substituez le chemin natif du harness sinon).
+Enregistrez ceci dans `rules/kebab-filenames.md` au sein de la racine d'installation de votre environnement (`~/.claude/` pour l'adaptateur Claude Code ; pour les autres environnements, remplacez-la par leur chemin natif).
 
-## Vérifier que la règle est chargée
+## Vérifier que la règle est bien formée
+
+Lancez le validateur de frontmatter sur le fichier de règle que vous venez d'écrire. Depuis un checkout d'Apothem, faites précéder la commande de `PYTHONPATH=src` ; après une installation par script, faites-la précéder de `PYTHONPATH="$HOME/.apothem/src"` :
 
 ```bash
-python -m apothem.conformity.gate --check frontmatter
+python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
 ```
 
-## Propager vers les harnesses
+Une règle bien formée signale une réussite sans réserve :
 
-Exécutez la commande de mise à jour une fois par harness installé :
+```json
+{
+  "orchestrator": "conformity-gate",
+  "passed": true,
+  "grep_count": 1
+}
+```
+
+## Propager vers les environnements
+
+Exécutez la commande de mise à jour une fois par environnement installé :
 
 ```bash
 apothem update --harness claude-code

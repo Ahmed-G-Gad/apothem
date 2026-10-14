@@ -2,7 +2,7 @@
 title: "Autorschafts-Header — SPDX-Lizenzzeile pro Datei"
 description: "Definieren und erzwingen Sie SPDX-Lizenzbezeichner-Marker pro Datei mit kanonischen einzeiligen Headern in der für jeden Dateityp passenden Kommentarsyntax."
 machineTranslated: true
-sourceHash: "f8a8cbfe9b2c940f"
+sourceHash: "c30711b821380cee"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -120,7 +120,7 @@ Eine deterministische CLI, die:
 - In drei Modi arbeitet: `fix-in-place` (schreibt), `emit-patch` (gibt ein einheitliches Diff aus), `check` (beendet mit Nicht-Null bei jeder Abweichung — von CI genutzt).
 - Idempotent: zweimaliges Ausführen ist eine No-Op.
 
-Der Injektor wird von den Make-Zielen aufgerufen, die neue Dateien mit voreingefügter SPDX-Zeile gerüsten (`make headers-fix` und die `make new-*`-Gerüste), sowie vom Pre-Commit-Hook im `--fix`-Modus.
+Der Injektor wird vom Make-Ziel `make headers-fix` aufgerufen, das `scripts/inject-header.py --mode fix-in-place` ausführt.
 
 ---
 

@@ -2,7 +2,7 @@
 title: "Frontmatter 模式"
 description: "YAML frontmatter 块结构、逐类必需键，以及各制品类别校验器强制规则的参考指南。"
 machineTranslated: true
-sourceHash: "79d900f52578b1b0"
+sourceHash: "f89ff828715e6fe4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,7 @@ sourceHash: "79d900f52578b1b0"
 
 每个制品都在头部带有 YAML frontmatter，由 `---` 行分隔。在 Markdown 系列文件上，按照 [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) 的规范作者署名头横幅位于 frontmatter 之上；frontmatter 紧随其后。
 
-键使用 `kebab-case`。标量值要么不加引号，要么使用双引号；包含冒号、井号或其他在 YAML 中有特殊含义的字符的字符串值要加引号。
+命令键使用 `kebab-case`。技能键使用 `kebab-case`，但 `userInvocable` 除外；它是源语料库所用的 camelCase 拼写（Claude Code 安装时会将其重命名为 `user-invocable`）。规则与委托工作者的键使用 camelCase，如第 2 节的必填键表所列。标量值可以不加引号，也可以使用双引号；包含冒号、井号或其他对 YAML 有特殊含义字符的字符串值需要加引号。
 
 ## 2. 逐类必需字段
 

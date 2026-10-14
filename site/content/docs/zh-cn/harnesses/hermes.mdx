@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "适用于 Hermes（预览版）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "f077a9851e126be5"
+sourceHash: "71abe825552bafc8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,7 +40,7 @@ apothem verify --harness hermes
 verify 命令确认：
 
 1. 原生配置存在于预期路径。
-2. 来自共享配置档案的所有必填字段都存在。
+2. 每个受管目标都存在；受管文件非空，并且 JSON 或 YAML 配置可以解析。添加 `--profile PATH` 还可以确认已安装的文件与该配置档案相符。
 3. 适配器专属的验证例程报告成功。
 
 ## 更新

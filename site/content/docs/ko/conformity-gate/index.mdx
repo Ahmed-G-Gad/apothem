@@ -2,7 +2,7 @@
 title: "적합성 게이트"
 description: "Apothem 적합성 게이트는 방출되는 모든 아티팩트가 통과해야 하는 15개 막대 사전 방출 게이트(M1-M15)의 기계적 부분입니다."
 machineTranslated: true
-sourceHash: "c3c719c0c1a0e92e"
+sourceHash: "0c45cd7185de5190"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,31 +28,7 @@ sourceHash: "c3c719c0c1a0e92e"
 
 ## 심각도 단계
 
-| 심각도 | 게이트에 미치는 영향 |
-|---|---|
-| **치명** | 게이트 FAIL — 방출이 무조건 차단됨 |
-| **중요** | 중요 막대 2개 이상이 동시에 실패하면 게이트 FAIL |
-| **권고** | 게이트 WARN — 서명 기록에 기록되며, 방출을 차단하지 않음 |
-
-기계적 부분의 매처는 대부분 기본값이 **중요**입니다. M5(권한 — 시크릿, 조작된 엔드포인트)와 M12(고아 출력)는 **치명**입니다.
-
-```mermaid
-%% provenance: hand-authored %%
-%% verified: 2026-07-06 %%
-%% cross-reference: the Severity ladder table above; src/apothem/conformity/gate.py (severity aggregation) %%
-flowchart TD
-    accTitle: Conformity-gate severity-to-verdict decision flow
-    accDescr: A finding's severity determines the gate verdict. A Critical finding — M5 authority or M12 orphan output — fails the gate and blocks emission unconditionally. Important findings block only when two or more fail simultaneously; a single Important finding does not block. Advisory findings are logged in the signed record and never block emission.
-    F["Finding raised<br/>by a matcher"] --> S{"Severity?"}
-    S -->|Critical| C["Critical<br/>M5 authority · M12 orphan output"]
-    S -->|Important| I["Important<br/>most mechanical matchers"]
-    S -->|Advisory| A["Advisory"]
-    C --> FAIL["Gate FAIL<br/>emission blocked"]
-    I --> Q{"2+ Important<br/>bars failing?"}
-    Q -->|yes| FAIL
-    Q -->|no| WARN["Gate WARN<br/>logged in signed record<br/>emission proceeds"]
-    A --> WARN
-```
+게이트에는 치명, 중요, 권고로 나뉘는 등급 체계나 두 건 이상이라는 임계값이 없습니다. `--strict`(또는 `APOTHEM_CONFORMITY_STRICT=1`)가 없으면 게이트는 발견 사항을 보고하고 `0`으로 종료합니다. `--strict`를 지정하면 단일 파일 또는 훅 검사는 어떤 매처든 실패할 때 `2`로 종료하고, 코퍼스 실행(`--all-perwrite`)은 차단 매처가 실패할 때 `2`로 종료합니다. 권고 매처는 보고만 합니다. 설치된 Write/Edit 훅은 `--strict`를 전달하지 않으므로, 그 환경에 `APOTHEM_CONFORMITY_STRICT=1`이 설정되어 있지 않은 한 발견 사항을 보고하고 쓰기는 그대로 진행됩니다.
 
 ## 검증기
 

@@ -2,7 +2,7 @@
 title: "ハーネスのセットアップ"
 description: "プラットフォーム向けのハーネスアダプターを追加・設定する。"
 machineTranslated: true
-sourceHash: "e6bc4ceedf7d7137"
+sourceHash: "1f7d9a2a473395a7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,9 +41,7 @@ apothem verify --harness <name>
 apothem verify --harness all --project /path/to/project
 ```
 
-登録済みのすべてのアダプターを一度に確認するには、`apothem doctor` を実行します。
-ハーネスごとのインストール状況の表を出力し、いずれかのアダプターが未インストールを
-報告した場合は非ゼロで終了します。
+登録済みのすべてのアダプターを一度に確認するには、`apothem doctor` を実行します。このコマンドはハーネスごとのインストール状況の表を出力し、検査が失敗した場合にのみ非ゼロで終了します。たとえば、インストール済みのハーネスが検証に通らない場合、フックコマンドが起動できない場合、存在するプロファイルが検証に通らない場合が該当します。インストールされていないハーネスは一覧に表示されますが、`doctor` を失敗させることはありません。
 
 ## インストール済みのハーネスを表示する
 

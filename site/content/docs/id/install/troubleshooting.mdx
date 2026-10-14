@@ -2,7 +2,7 @@
 title: "Pemecahan masalah"
 description: "Solusi untuk kegagalan instalasi dan masalah runtime Apothem yang umum di seluruh jalur plugin, npx, dan installer."
 machineTranslated: true
-sourceHash: "5dad4c6e337cead2"
+sourceHash: "7deb3ca475c3bc89"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,9 +40,7 @@ jalankan ulang.
 
 ### `apothem` tidak ditemukan setelah menjalankan installer
 
-Installer menempatkan pohon sumber di `~/.apothem` dan tidak menambahkan
-eksekutabel `apothem` ke `PATH` Anda. Jalankan engine melalui pemanggilan
-yang dicetak installer saat selesai:
+Installer menempatkan pohon sumber di `~/.apothem` dan menulis shim `apothem` ke `~/.local/bin` secara bawaan (POSIX) atau `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows). Installer tidak mengubah `PATH` Anda. Jika `apothem` tidak ditemukan, direktori tersebut tidak ada di `PATH`; tambahkan direktori itu, atau gunakan bentuk `PYTHONPATH` di bawah ini sampai Anda melakukannya. Jalankan engine melalui pemanggilan yang dicetak installer saat selesai:
 
 ```bash
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>

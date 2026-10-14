@@ -2,7 +2,7 @@
 title: "Apothem vs konfigurasi Windsurf mentah"
 description: "Memelihara aturan Windsurf secara manual di .devin/rules/ versus merendernya dari profil bersama apothem."
 machineTranslated: true
-sourceHash: "797edb954c5a2435"
+sourceHash: "e3bc9da3b1b1af38"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -15,10 +15,10 @@ melalui apothem.
 
 | Tugas | Konfigurasi manual mentah | Dikelola Apothem |
 | ---- | --------------- | --------------- |
-| Menulis aturan | Menulis tangan setiap berkas di bawah `.windsurf/rules/` | Dirender dari korpus bersama |
-| Menjaga satu format aturan | Memilih manual antara `.windsurf/rules/` dan berkas tunggal `.windsurfrules` | Adaptor hanya menulis `.devin/rules/` |
-| Menjaga aturan selaras dengan lingkungan lain | Manual, per alat | Otomatis saat `apothem update` |
-| Memverifikasi konfigurasi sudah benar | Inspeksi manual | `apothem verify --harness windsurf` |
+| Menulis aturan | Menulis dengan tangan setiap berkas di bawah `.windsurf/rules/` | Dirender dari korpus bersama |
+| Menjaga satu format aturan | Memilih dengan tangan antara `.windsurf/rules/` dan satu berkas `.windsurfrules` | Adapter hanya menulis `.devin/rules/` |
+| Menjaga aturan selaras dengan harness lain | Manual, per alat | Otomatis pada `apothem update` |
+| Memverifikasi konfigurasi sudah benar | Inspeksi manual | `apothem verify --harness windsurf --project <path>` |
 
 ## Apa yang dikelola apothem
 
@@ -30,16 +30,11 @@ ulang direktori pada `apothem update` berikutnya.
 
 ## Jalur migrasi
 
-1. Jalankan `apothem profile init` untuk membuat profil bersama jika Anda belum
-   melakukannya.
-2. Pindahkan aturan dari `.windsurf/rules/` yang ada (dan berkas tunggal
-   `.windsurfrules` mana pun) ke korpus bersama.
-3. Jalankan `apothem install --harness windsurf` untuk merender direktori
-   `.devin/rules/`.
-4. Jalankan `apothem verify --harness windsurf` untuk memastikan konfigurasi
-   sudah terpasang.
-5. Gunakan `apothem update --harness windsurf` untuk setiap perubahan
-   berikutnya.
+1. Jalankan `apothem profile init` untuk membuat profil bersama jika Anda belum memilikinya.
+2. Pindahkan aturan dari `.windsurf/rules/` yang sudah ada (dan `.windsurfrules` berkas-tunggal apa pun) ke korpus bersama.
+3. Jalankan `apothem install --harness windsurf --project <path>` untuk merender direktori `.devin/rules/`.
+4. Jalankan `apothem verify --harness windsurf --project <path>` untuk memastikan konfigurasi sudah terpasang.
+5. Gunakan `apothem update --harness windsurf --project <path>` untuk setiap perubahan berikutnya.
 
 ## Baca berikutnya
 

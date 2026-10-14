@@ -2,7 +2,7 @@
 title: "フロントマタースキーマ"
 description: "アーティファクトクラス全体にわたる、YAML フロントマターブロックの構造、クラスごとの必須キー、バリデーターによる強制ルールのリファレンスガイド。"
 machineTranslated: true
-sourceHash: "79d900f52578b1b0"
+sourceHash: "f89ff828715e6fe4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,7 @@ sourceHash: "79d900f52578b1b0"
 
 すべてのアーティファクトは、先頭に `---` 行で区切られた YAML フロントマターを持ちます。[`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) に従う正規の著作者ヘッダーバナーは、Markdown 系のファイルではフロントマターの上に置かれ、フロントマターはその直後に続きます。
 
-キーには `kebab-case` を使用します。スカラー値は、引用符なしか、ダブルクォートで囲むかのいずれかです。コロン、ハッシュ記号、その他 YAML で意味を持つ文字を含む文字列値は、引用符で囲みます。
+コマンドのキーは `kebab-case` を使います。スキルのキーは、ソースコーパスが使う camelCase の表記である `userInvocable` を除き、`kebab-case` を使います（Claude Code のインストールでは `user-invocable` に名前が変わります）。ルールと委譲ワーカーのキーは、セクション 2 の必須キー表に示されるとおり camelCase です。スカラー値は、引用符なしか、ダブルクォートで囲むかのどちらかです。コロン、ハッシュ記号、その他 YAML で意味を持つ文字を含む文字列値は、引用符で囲みます。
 
 ## 2. クラスごとの必須フィールド
 

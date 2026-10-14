@@ -2,7 +2,7 @@
 title: "Apothem versus konfigurasi Kiro manual"
 description: "Memelihara file pengarah Kiro di bawah .kiro/steering/ dengan tangan versus merendernya dari profil bersama Apothem."
 machineTranslated: true
-sourceHash: "9c89a85385335fc3"
+sourceHash: "a4a26f280f1271a3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,8 +17,8 @@ terhadap pengelolaannya dengan Apothem.
 | ---- | --------------- | --------------- |
 | Menulis aturan pengarah | Menulis tiap file di bawah `.kiro/steering/` dengan tangan | Dirender dari korpus bersama |
 | Menjaga file fondasi tetap utuh | Ingat untuk tidak menimpa `product.md` / `tech.md` / `structure.md` | Adapter hanya menulis `apothem-rules.md` |
-| Menjaga aturan selaras dengan lingkungan lain | Manual, per alat | Otomatis saat `apothem update` |
-| Memverifikasi konfigurasi sudah benar | Inspeksi manual | `apothem verify --harness kiro` |
+| Menjaga aturan selaras dengan harness lain | Manual, per alat | Otomatis pada `apothem update` |
+| Memverifikasi konfigurasi sudah benar | Inspeksi manual | `apothem verify --harness kiro --project <path>` |
 
 ## Apa yang dikelola Apothem
 
@@ -31,10 +31,10 @@ perubahan pada aturan bersama merender ulang file pada `apothem update` berikutn
 ## Jalur migrasi
 
 1. Jalankan `apothem profile init` untuk membuat profil bersama jika Anda belum memilikinya.
-2. Pindahkan aturan dari `.kiro/steering/` Anda yang sudah ada ke korpus bersama.
-3. Jalankan `apothem install --harness kiro` untuk merender file pengarah `apothem-rules.md`.
-4. Jalankan `apothem verify --harness kiro` untuk memastikan konfigurasi sudah terpasang.
-5. Gunakan `apothem update --harness kiro` untuk setiap perubahan berikutnya.
+2. Pindahkan aturan dari `.kiro/steering/` yang sudah ada ke korpus bersama.
+3. Jalankan `apothem install --harness kiro --project <path>` untuk merender berkas pengarah `apothem-rules.md`.
+4. Jalankan `apothem verify --harness kiro --project <path>` untuk memastikan konfigurasi sudah terpasang.
+5. Gunakan `apothem update --harness kiro --project <path>` untuk setiap perubahan berikutnya.
 
 ## Baca berikutnya
 

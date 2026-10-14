@@ -2,7 +2,7 @@
 title: "Codex"
 description: "Codex(베타)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "1fc0b9dae2c44d90"
+sourceHash: "99a652853bf9a864"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -75,7 +75,7 @@ apothem verify --harness codex
 verify 명령은 다음을 확인합니다.
 
 1. 네이티브 구성이 예상 경로에 존재합니다.
-2. 공유 프로필의 모든 필수 필드가 존재합니다.
+2. 각 관리 대상이 존재하고, 관리되는 파일은 비어 있지 않으며, JSON 또는 YAML 구성은 파싱됩니다. 설치된 파일이 그 프로필과도 일치하는지 확인하려면 `--profile PATH`를 추가하세요.
 3. 어댑터별 검증 루틴이 성공을 보고합니다.
 
 ## 업데이트

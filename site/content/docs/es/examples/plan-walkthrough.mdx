@@ -2,7 +2,7 @@
 title: "Recorrido de un plan"
 description: "Recorrido de extremo a extremo del pipeline /plan para una tarea real."
 machineTranslated: true
-sourceHash: "a046160921a5a9b1"
+sourceHash: "474f591d305c3c7e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,7 +25,7 @@ human-readable by default.
 /plan-spec prose.md --suite-name apothem-status-command
 ```
 
-Esto ejecuta el Forge de seis fases, formula preguntas aclaratorias y produce `plans/apothem-status-command/_spec/spec.md`.
+Esto ejecuta el Forge de seis fases, formula preguntas aclaratorias y produce `.apothem/plans/apothem-status-command/_spec/spec.md`.
 
 ## Paso 3: Generar el plan
 
@@ -33,7 +33,7 @@ Esto ejecuta el Forge de seis fases, formula preguntas aclaratorias y produce `p
 /plan-generate
 ```
 
-Produce PREAMBLE.md, MASTER-PLAN.md, PROGRESS.md, PLAN-NOTES.md y los archivos PHASE.md por fase bajo `plans/apothem-status-command/phases/`.
+Produce PREAMBLE.md, MASTER-PLAN.md, PROGRESS.md, PLAN-NOTES.md y los archivos PHASE.md de cada fase bajo `.apothem/plans/apothem-status-command/phases/`.
 
 ## Paso 4: Revisar el plan
 

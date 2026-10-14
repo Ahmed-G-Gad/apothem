@@ -2,7 +2,7 @@
 title: "为 Apothem 做贡献——开发者指南"
 description: "依照规范 schema、frontmatter 要求与验证流程编写规则、命令、辅助器、技能和钩子，以维护并扩展 Apothem 生态。"
 machineTranslated: true
-sourceHash: "ae3392672e01c783"
+sourceHash: "782e178598975d52"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -106,15 +106,8 @@ authorization、auth 和 header 的字段进行脱敏。文档、夹具、示例
 - **规则：** `{name}.md`
 - **命令：** `{name}.md`
 - **辅助器：** `{name}.md`
-- **技能：** 位于文件夹 `src/apothem/skills/{name}/SKILL.md` 内（大小写须精确：`SKILL.md`）
-- **钩子：** 位于文件夹 `src/apothem/hooks/` 内。所有事件处理器都用 Python 编写。每条
-  `settings.json` 钩子命令都使用 exec 形式（`python` 加 `args`）来调用
-  `-m apothem.hooks.dispatch <event> [<message-name>]` 或
-  `-m apothem.conformity.gate --hook`。`dispatch.py` 将 `SessionStart` 路由到
-  `session_start_bootstrap.main()`，并将其他每个白名单内的事件路由到
-  `emit_hook_context.main()`。`src/apothem/hooks/` 或 `scripts/` 下唯一允许的 shell
-  存根是四个定位器 + 引导文件（`find-python.{ps1,sh}`、`bootstrap.{ps1,sh}`）；任何其他 `.ps1` /
-  `.sh` 文件都无法通过 `scripts/dev/validate_hooks.py` 卫生检查。
+- **技能：** 位于文件夹 `src/apothem/skills/{name}/SKILL.md` 中（大小写须精确：`SKILL.md`）
+- **钩子：** 位于文件夹 `src/apothem/hooks/` 中。所有事件处理器都用 Python 编写。每条 `settings.json` 钩子命令都使用 exec 形式：`command` 是在安装时解析的解释器占位符 `${PYTHON_BIN}`，`args` 则保存脚本路径及其参数。Claude Code 模板通过绝对路径运行 `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` 和 `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook`，因此已安装的副本无需可导入的 `apothem` 包。`dispatch.py` 将 `SessionStart` 路由到 `session_start_bootstrap.main()`，并将其他每个白名单内的事件路由到 `emit_hook_context.main()`。`src/apothem/hooks/` 或 `scripts/` 下唯一允许的 shell 存根是六个定位器与引导文件（`find-python.{ps1,sh}`、`find-pwsh.{ps1,sh}`、`bootstrap.{ps1,sh}`）；任何其他 `.ps1` / `.sh` 文件都无法通过 `scripts/dev/validate_hooks.py` 的卫生检查。
 
 ### 交叉引用
 

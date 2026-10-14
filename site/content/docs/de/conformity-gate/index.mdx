@@ -2,7 +2,7 @@
 title: "Konformitäts-Gate"
 description: "Apothems Konformitäts-Gate — der mechanische Anteil des fünfzehnstufigen Pre-Emission-Gates (M1-M15), den jedes ausgegebene Artefakt bestehen muss."
 machineTranslated: true
-sourceHash: "c3c719c0c1a0e92e"
+sourceHash: "0c45cd7185de5190"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,31 +28,7 @@ sourceHash: "c3c719c0c1a0e92e"
 
 ## Schweregradleiter
 
-| Schweregrad | Wirkung auf das Gate |
-|---|---|
-| **Kritisch** | Gate FAIL — Ausgabe bedingungslos blockiert |
-| **Wichtig** | Gate FAIL, wenn 2+ wichtige Stufen gleichzeitig nicht bestanden werden |
-| **Beratend** | Gate WARN — im signierten Eintrag protokolliert; blockiert die Ausgabe nicht |
-
-Die meisten Matcher des mechanischen Anteils sind standardmäßig **Wichtig**. M5 (Autorität — Geheimnisse, erfundene Endpunkte) und M12 (verwaiste Ausgaben) sind **Kritisch**.
-
-```mermaid
-%% provenance: hand-authored %%
-%% verified: 2026-07-06 %%
-%% cross-reference: the Severity ladder table above; src/apothem/conformity/gate.py (severity aggregation) %%
-flowchart TD
-    accTitle: Conformity-gate severity-to-verdict decision flow
-    accDescr: A finding's severity determines the gate verdict. A Critical finding — M5 authority or M12 orphan output — fails the gate and blocks emission unconditionally. Important findings block only when two or more fail simultaneously; a single Important finding does not block. Advisory findings are logged in the signed record and never block emission.
-    F["Finding raised<br/>by a matcher"] --> S{"Severity?"}
-    S -->|Critical| C["Critical<br/>M5 authority · M12 orphan output"]
-    S -->|Important| I["Important<br/>most mechanical matchers"]
-    S -->|Advisory| A["Advisory"]
-    C --> FAIL["Gate FAIL<br/>emission blocked"]
-    I --> Q{"2+ Important<br/>bars failing?"}
-    Q -->|yes| FAIL
-    Q -->|no| WARN["Gate WARN<br/>logged in signed record<br/>emission proceeds"]
-    A --> WARN
-```
+Das Gate kennt keine Stufenleiter aus Kritisch, Wichtig und Beratend und keinen Schwellenwert von zwei Befunden. Ohne `--strict` (oder `APOTHEM_CONFORMITY_STRICT=1`) meldet das Gate Befunde und endet mit `0`. Mit `--strict` endet eine Prüfung einer einzelnen Datei oder eines Hooks mit `2`, sobald ein Matcher fehlschlägt, und ein Korpuslauf (`--all-perwrite`) endet mit `2`, wenn ein blockierender Matcher fehlschlägt; beratende Matcher werden nur gemeldet. Der installierte Write/Edit-Hook übergibt kein `--strict`. Er meldet daher Befunde, und der Schreibvorgang läuft weiter, sofern nicht `APOTHEM_CONFORMITY_STRICT=1` in seiner Umgebung gesetzt ist.
 
 ## Validatoren
 

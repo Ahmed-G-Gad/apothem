@@ -2,7 +2,7 @@
 title: "بوابة المطابقة"
 description: "بوابة المطابقة في Apothem — الجزء الميكانيكي من بوابة ما قبل الإصدار ذات الخمسة عشر شريطًا (M1-M15) التي يجب أن يجتازها كل مُخرَج يُصدَر."
 machineTranslated: true
-sourceHash: "c3c719c0c1a0e92e"
+sourceHash: "0c45cd7185de5190"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,31 +28,7 @@ sourceHash: "c3c719c0c1a0e92e"
 
 ## سُلّم الخطورة
 
-| الخطورة | الأثر على البوابة |
-|---|---|
-| **حرجة** | البوابة <bdi>FAIL</bdi> — الإصدار محجوب دون أي شرط |
-| **مهمّة** | البوابة <bdi>FAIL</bdi> عندما يُخفِق شريطان مهمّان أو أكثر في آن واحد |
-| **استشارية** | البوابة <bdi>WARN</bdi> — تُسجَّل في السجلّ الموقَّع؛ ولا تحجب الإصدار |
-
-معظم مُطابِقات الجزء الميكانيكي تكون **مهمّة** افتراضيًا. أمّا <bdi>M5</bdi> (المرجعية — الأسرار، ونقاط النهاية المُختلَقة) و<bdi>M12</bdi> (المُخرَجات اليتيمة) فهما **حرجان**.
-
-```mermaid
-%% provenance: hand-authored %%
-%% verified: 2026-07-06 %%
-%% cross-reference: the Severity ladder table above; src/apothem/conformity/gate.py (severity aggregation) %%
-flowchart TD
-    accTitle: Conformity-gate severity-to-verdict decision flow
-    accDescr: A finding's severity determines the gate verdict. A Critical finding — M5 authority or M12 orphan output — fails the gate and blocks emission unconditionally. Important findings block only when two or more fail simultaneously; a single Important finding does not block. Advisory findings are logged in the signed record and never block emission.
-    F["Finding raised<br/>by a matcher"] --> S{"Severity?"}
-    S -->|Critical| C["Critical<br/>M5 authority · M12 orphan output"]
-    S -->|Important| I["Important<br/>most mechanical matchers"]
-    S -->|Advisory| A["Advisory"]
-    C --> FAIL["Gate FAIL<br/>emission blocked"]
-    I --> Q{"2+ Important<br/>bars failing?"}
-    Q -->|yes| FAIL
-    Q -->|no| WARN["Gate WARN<br/>logged in signed record<br/>emission proceeds"]
-    A --> WARN
-```
+لا تملك البوابة سلّم الخطورة (حرجة، ومهمّة، واستشارية) ولا عتبة النتيجتين. ومن دون <bdi>`--strict`</bdi> (أو <bdi>`APOTHEM_CONFORMITY_STRICT=1`</bdi>) تُبلغ البوابة عن النتائج وتخرج برمز <bdi>`0`</bdi>. ومع <bdi>`--strict`</bdi> يخرج فحص الملف الواحد أو الخطّاف برمز <bdi>`2`</bdi> عند فشل أي مُطابِق، ويخرج تشغيل المجموعة (<bdi>`--all-perwrite`</bdi>) برمز <bdi>`2`</bdi> عند فشل مُطابِق مانع؛ ولا تُبلَّغ المُطابِقات الاستشارية إلا تقريرًا. ولا يمرّر خطّاف <bdi>Write/Edit</bdi> المثبَّت <bdi>`--strict`</bdi>، فيُبلغ عن النتائج وتمضي الكتابة ما لم يُضبط <bdi>`APOTHEM_CONFORMITY_STRICT=1`</bdi> في بيئته.
 
 ## أدوات التحقّق
 

@@ -2,11 +2,13 @@
 title: "合规闸门"
 description: "运行 Apothem 合规闸门以验证生态系统的健康状况。"
 machineTranslated: true
-sourceHash: "ea155671db71b76d"
+sourceHash: "bbf19e4d148c511e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 位于 `src/apothem/conformity/gate.py` 的合规闸门会针对操作者编写的每个工件，运行十五道预发布闸门（M1-M15）中的机械部分。
+
+本页上的命令假定位于 Apothem 检出中，因此请在每条命令前加上 `PYTHONPATH=src`。脚本安装之后，请使用 `PYTHONPATH="$HOME/.apothem/src"` 替代 `src`。
 
 ## 运行闸门
 
@@ -14,10 +16,10 @@ sourceHash: "ea155671db71b76d"
 
 ```bash
 # Advisory: report every validator's findings across the repo, exit 0
-python -m apothem.conformity.gate --all .
+PYTHONPATH=src python -m apothem.conformity.gate --all .
 
 # Strict: exit non-zero (code 2) when a blocking finding is present
-python -m apothem.conformity.gate --all --strict .
+PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 ```
 
 退出码：`0` 表示干净（或建议性模式），`2` 表示严格模式下的发现项阻断，`3` 表示用法错误：未知的标志或校验器名称、不存在的文件，或不存在的根目录。`--help` 打印完整用法并以 `0` 退出。每个独立校验器都接受同样的 `--help`，并在遇到未知标志或缺失的根目录时以 `3` 退出。
@@ -48,13 +50,13 @@ python -m apothem.conformity.gate --all --strict .
 
 ```bash
 # List every registered validator
-python -m apothem.conformity.gate --list
+PYTHONPATH=src python -m apothem.conformity.gate --list
 
 # Run a single named validator
-python -m apothem.conformity.gate --check multi-surface-coherence
+PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence
 
 # Run every validator against one file
-python -m apothem.conformity.gate src/apothem/rules/my-rule.md
+PYTHONPATH=src python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 ```
 
 `--hook` 模式（`python -m apothem.conformity.gate --hook`）是由工具调度的入口点：它从 stdin 读取一个工具输入 JSON 载荷，并针对待处理的写入运行逐写入匹配器链。部署后的 `PreToolUse` 钩子调用的就是这种形式；你很少需要手动调用它。
@@ -70,4 +72,4 @@ export APOTHEM_CONFORMITY_SCOPE=/path/to/project
 
 ## CI 集成
 
-闸门通过 `.github/workflows/conformity.yml` 在每次推送时于 CI 中运行。
+`.github/workflows/ci.yml` 中的 quality 作业，会在推送到 `main` 的提交，以及针对 `main` 且涉及该作业所监视路径的拉取请求上，以严格模式运行闸门（`python -m apothem.conformity.gate --all . --strict`）。独立的 `.github/workflows/conformity.yml` 工作流则运行夹具扫描（`tests/conformity-scenarios/verify.py --strict`）。

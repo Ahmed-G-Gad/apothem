@@ -2,7 +2,7 @@
 title: "rollback"
 description: "CLI-Referenz für den Befehl apothem rollback."
 machineTranslated: true
-sourceHash: "3a5ce4dc40c52bfe"
+sourceHash: "6c0c49f541075b0c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -37,12 +37,7 @@ Ledger-Eintrag dieser Installation ab, die neueste Änderung zuerst, und:
 - entfernt die Verzeichnisse, die die Installation angelegt hat, sobald sie
   leer sind.
 
-Alles, was rollback entfernt oder ersetzt, wird zuerst in die
-Apothem-Sicherungswurzel (`~/.apothem/backups/`) kopiert, sodass sich ein
-Rollback seinerseits von Hand rückgängig machen lässt. Anschließend hängt es
-einen `rollback`-Eintrag an das Harness-Ledger an. Das Zurücksetzen einer
-älteren Installation macht auch jede spätere Installation an derselben Wurzel
-rückgängig.
+Alles, was rollback entfernt oder ersetzt, wird zuerst in die Apothem-Sicherungswurzel (`~/.apothem/backups/`) kopiert, sodass sich ein Rollback selbst von Hand rückgängig machen lässt. Anschließend hängt es einen `rollback`-Eintrag an das Harness-Ledger an. Das Zurücksetzen einer älteren Installation stellt nur die Ziele, die diese ältere Installation erfasst hat, wieder her oder entfernt sie, und nimmt jede spätere Installation an derselben Wurzel aus dem aktiven Datensatz heraus. Dateien, die eine spätere Installation außerhalb dieser Ziele hinzugefügt hat, bleiben an ihrem Ort.
 
 Das Ledger behält die neuesten 10 Installationseinträge pro Installationswurzel
 (mit den Sicherungen, auf die sie verweisen); eine ältere Installation lässt

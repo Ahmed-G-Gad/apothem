@@ -2,7 +2,7 @@
 title: "Referência da CLI"
 description: "Referência da CLI do Apothem — todos os subcomandos e flags."
 machineTranslated: true
-sourceHash: "8b8d7dc1647136bd"
+sourceHash: "60add6555ac816ea"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -166,7 +166,7 @@ apothem profile edit [--profile PATH]
 | Subcomando | Descrição |
 |------------|-------------|
 | `profile init` | Cria um esqueleto de perfil mínimo válido conforme o schema. |
-| `profile show` | Imprime o perfil resolvido (YAML) no stdout. |
+| `profile show` | Imprime o perfil resolvido como JSON no stdout. Com `--json`, o documento começa com `schema_version`. |
 | `profile set <key> <value>` | Define um campo do perfil. O valor é armazenado como uma string literal — palavras sem aspas não sofrem conversão de tipo, de modo que `no` continua `"no"` e `1.0` continua uma string —, exceto `true`/`false` e entradas explícitas de lista e mapa `[...]` / `{...}`. O perfil montado é validado conforme o schema antes de ser gravado. |
 | `profile edit` | Abre o perfil no `$EDITOR` (recorre ao padrão da plataforma). |
 
@@ -195,11 +195,7 @@ Executa diagnósticos do sistema para a instalação do Apothem.
 apothem doctor
 ```
 
-Imprime a versão do Apothem, o interpretador Python, a plataforma, o caminho do
-perfil resolvido e uma tabela de status de instalação por harness. O código de
-saída é `0` somente quando todas as verificações passam; um perfil inválido, um
-harness desinstalado ou um adaptador que não pôde ser sondado forçam, cada um,
-uma saída diferente de zero.
+Imprime a versão do Apothem, o interpretador Python, a plataforma, o caminho do perfil resolvido e uma tabela de status de instalação por harness. O código de saída é `1` quando qualquer verificação falha: um perfil inválido, um harness instalado que não passa na verificação, um comando de hook registrado que não consegue iniciar, um adaptador que não pôde ser carregado ou sondado, ou um ledger ilegível. Um harness que não está instalado é relatado e não constitui uma falha, e notas informativas não alteram o código de saída.
 
 ## Referência gerada de comandos e flags
 

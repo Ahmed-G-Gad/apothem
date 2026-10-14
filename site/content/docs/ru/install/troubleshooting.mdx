@@ -2,7 +2,7 @@
 title: "Устранение неполадок"
 description: "Решения для распространённых сбоев установки Apothem и проблем времени выполнения в путях через плагин, npx и инсталлятор."
 machineTranslated: true
-sourceHash: "5dad4c6e337cead2"
+sourceHash: "7deb3ca475c3bc89"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,9 +40,7 @@ PowerShell) или задайте `APOTHEM_AUTO_INSTALL_DEPS=1` для авто�
 
 ### `apothem` не найден после запуска инсталлятора
 
-Инсталлятор размещает дерево исходного кода в `~/.apothem` и не добавляет
-исполняемый файл `apothem` в ваш `PATH`. Запускайте движок через вызов,
-который инсталлятор выводит по завершении:
+Инсталлятор по умолчанию размещает дерево исходного кода в `~/.apothem`, а shim `apothem` записывает в `~/.local/bin` (POSIX) или `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows). Он не редактирует ваш `PATH`. Если `apothem` не найден, значит, этот каталог не входит в `PATH`: добавьте его или используйте форму с `PYTHONPATH` ниже, пока не сделаете этого. Запускайте движок через вызов, который инсталлятор выводит по завершении:
 
 ```bash
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>

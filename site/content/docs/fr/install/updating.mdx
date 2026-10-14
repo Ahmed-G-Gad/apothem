@@ -2,7 +2,7 @@
 title: "Mise à jour"
 description: "Mettre à jour Apothem et les adaptateurs d'environnement."
 machineTranslated: true
-sourceHash: "306446b4fef2d5d8"
+sourceHash: "f659c0450ac5624c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,18 +41,7 @@ bash scripts/installer/update.sh
 pwsh -NoProfile -File scripts/installer/update.ps1
 ```
 
-Le script de mise à jour réextrait l'arborescence source à `APOTHEM_HOME` (par défaut
-`~/.apothem`) vers `APOTHEM_REF` — laissé vide, il résout le dernier tag de version signé
-`vMAJOR.MINOR.PATCH`, une valeur de tag l'épingle, et `main` sélectionne la
-branche mobile. Il vérifie la signature du tag avec `git verify-tag` avant
-de re-matérialiser ; un tag non signé ou altéré interrompt l'opération à moins que
-`APOTHEM_ALLOW_UNVERIFIED=1` ne rétrograde l'interruption en avertissement. Il
-re-matérialise ensuite l'environnement nommé par `APOTHEM_HARNESS` en exécutant
-`apothem update` depuis l'arborescence actualisée (l'environnement prend sa
-valeur par défaut selon le tableau des
-[variables d'environnement de l'installeur](/docs/how-to/installer-environment-variables)). Il requiert une installation préalable : lorsqu'
-aucune arborescence n'existe à `APOTHEM_HOME` et que `APOTHEM_SOURCE` est vide, il se termine avec
-un message vous orientant d'abord vers l'installeur.
+Le script de mise à jour réextrait l'arborescence source dans `APOTHEM_HOME` (par défaut `~/.apothem`) à la ref `APOTHEM_REF` — non définie, il résout la dernière étiquette de publication signée `vMAJOR.MINOR.PATCH`, une valeur d'étiquette l'épingle, et `main` sélectionne la branche mouvante uniquement lorsque `APOTHEM_ALLOW_UNVERIFIED=1` est aussi défini. Sans cette dérogation, la mise à jour extrait la ref puis s'interrompt avant de re-matérialiser, car une branche n'est pas une étiquette de publication signée. Elle vérifie la signature de l'étiquette avec `git verify-tag` avant de re-matérialiser ; une étiquette non signée ou altérée interrompt l'opération, sauf si `APOTHEM_ALLOW_UNVERIFIED=1` rétrograde l'interruption en avertissement. Une étiquette signée dont la clé publique du mainteneur est absente du trousseau local interrompt l'opération avec des instructions d'importation de clé, qui renvoient à l'empreinte publiée dans [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md). Elle re-matérialise ensuite l'environnement nommé par `APOTHEM_HARNESS` en exécutant `apothem update` depuis l'arborescence actualisée (la valeur par défaut de l'environnement suit le tableau des [variables d'environnement de l'installeur](/docs/how-to/installer-environment-variables)). Elle exige une installation préalable : lorsqu'aucune arborescence n'existe à `APOTHEM_HOME` et que `APOTHEM_SOURCE` n'est pas défini, elle se termine avec un message vous renvoyant d'abord vers l'installeur.
 
 ## Re-matérialiser la sortie de l'environnement
 

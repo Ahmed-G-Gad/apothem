@@ -2,7 +2,7 @@
 title: "Apothem frente a la configuración manual de Trae"
 description: "Mantener a mano las reglas de Trae bajo .trae/rules/ frente a renderizarlas desde el perfil compartido de Apothem."
 machineTranslated: true
-sourceHash: "d31ccc1fd80cb48e"
+sourceHash: "065945ba50500576"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,8 +17,8 @@ página contrasta mantener esa configuración a mano frente a gestionarla con Ap
 | ---- | --------------- | --------------- |
 | Escribir reglas | Escribir a mano cada archivo bajo `.trae/rules/` | Renderizadas desde el corpus compartido |
 | Mantener separada la superficie de Apothem | Recordar no sobrecargar `project_rules.md` | El adaptador escribe un `apothem-rules.md` dedicado |
-| Mantener las reglas alineadas con otros entornos | Manual, por herramienta | Automático en `apothem update` |
-| Verificar que la configuración es correcta | Inspección manual | `apothem verify --harness trae` |
+| Mantener las reglas alineadas con otros entornos | Manual, por herramienta | Automático con `apothem update` |
+| Verificar que la configuración es correcta | Inspección manual | `apothem verify --harness trae --project <path>` |
 
 ## Qué gestiona Apothem
 
@@ -33,9 +33,9 @@ vuelve a renderizar el archivo en el siguiente `apothem update`.
 
 1. Ejecuta `apothem profile init` para crear el perfil compartido si aún no lo tienes.
 2. Mueve las reglas de tus archivos `.trae/rules/` existentes al corpus compartido.
-3. Ejecuta `apothem install --harness trae` para renderizar el archivo `apothem-rules.md`.
-4. Ejecuta `apothem verify --harness trae` para confirmar que la configuración se instaló.
-5. Usa `apothem update --harness trae` para cada cambio posterior.
+3. Ejecuta `apothem install --harness trae --project <path>` para renderizar el archivo `apothem-rules.md`.
+4. Ejecuta `apothem verify --harness trae --project <path>` para confirmar que la configuración quedó instalada.
+5. Usa `apothem update --harness trae --project <path>` para cada cambio posterior.
 
 ## Lee a continuación
 

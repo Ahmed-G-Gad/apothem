@@ -2,7 +2,7 @@
 title: "settings.json 문서"
 description: "Apothem 생태계를 위해 Claude Code 훅 실행, 권한, 이벤트, 타임아웃, Python 런타임, 검증, 계층화된 설정 우선순위를 구성합니다."
 machineTranslated: true
-sourceHash: "09e70625ff5e0caf"
+sourceHash: "e5e617ed964a9419"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,14 +21,13 @@ sourceHash: "09e70625ff5e0caf"
 
 ## Python 전용 런타임
 
-구성된 각 훅은 Claude Code 의 exec 형식 명령 구조를 사용합니다.
-배포된 템플릿은 `${HARNESS_ROOT}` 토큰을 담고 있습니다.
+구성된 모든 훅은 Claude Code의 exec 형식 명령 구조를 사용합니다. 배포되는 템플릿에는 `${PYTHON_BIN}`과 `${HARNESS_ROOT}` 토큰이 들어 있으며, `apothem install`은 `${PYTHON_BIN}`을 해석된 절대 인터프리터 경로로 바꿉니다:
 
 ```json
 {
   "type": "command",
-  "command": "python",
-  "args": ["${HARNESS_ROOT}/apothem/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
+  "command": "${PYTHON_BIN}",
+  "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
 }
 ```
 
@@ -149,9 +148,9 @@ Claude Code 는 우선순위가 증가하는 순서로 세 계층을 합성하�
 
 | 계층 | 위치 | 커밋됨? | 근거 |
 |------|----------|------------|-----------|
-| 1. **시스템** | Claude Code 자체에 컴파일된 harness 기본값 | 해당 없음(벤더 제어) | 바닥; 모든 오퍼레이터가 동일한 기준선을 상속합니다. |
-| 2. **프로젝트** | `<harness-root>/settings.json` | ✅ 커밋됨 | 프로젝트 공유 규약: 훅, 권한, MCP 서버, 상태줄 배선. Apothem 소스 템플릿은 Claude Code 어댑터의 templates 디렉터리 안에 있습니다. |
-| 3. **사용자 로컬** | `<harness-root>/settings.local.json`(gitignored) — 리포지토리 루트에 `settings.local.example.json` 으로 템플릿화 | ❌ Gitignored | 오퍼레이터별 오버라이드: API 토큰, 머신 로컬 경로, 옵트인 기능. |
+| 1. **시스템** | Claude Code 자체에 컴파일된 하니스 기본값 | 해당 없음(벤더 관리) | 바닥선. 모든 운영자가 같은 기준선을 상속합니다. |
+| 2. **프로젝트** | `<harness-root>/settings.json` | ✅ 커밋됨 | 프로젝트 공유 규약: 훅, 권한, MCP 서버, 상태줄 연결. Apothem 소스 템플릿은 Claude Code 어댑터의 templates 디렉터리 안에 있습니다. |
+| 3. **사용자 로컬** | `<harness-root>/settings.local.json`(gitignored) — `examples/harnesses/claude-code/` 아래에 `settings.local.example.json`으로 템플릿화 | ❌ Gitignored | 운영자별 재정의: API 토큰, 머신 로컬 경로, 옵트인 기능. |
 
 상위 계층 값은 **리프 키 수준에서** 하위 계층 값을 오버라이드합니다 — 프로젝트
 계층과 사용자 로컬 계층 모두 `permissions.allow` 항목을 선언하면 합집합이
@@ -160,10 +159,6 @@ Claude Code 는 우선순위가 증가하는 순서로 세 계층을 합성하�
 
 ### 사용자 로컬 오버라이드 만들기
 
-1. `settings.local.example.json`(리포지토리 루트)을 `<harness-root>/settings.local.json` 으로 복사합니다.
-   파일명 `settings.local.json` 은 `.gitignore` 패턴과 일치하므로 이 파일은 결코
-   버전 관리에 들어가지 않습니다.
-2. 로컬 복사본을 편집합니다 — 오버라이드할 키만 남기세요. harness 가 계층을 합성하므로
-   부재하는 키는 프로젝트 계층에서 상속됩니다.
-3. 저장하기 전에 파일이 유효한 JSON 으로 파싱되는지 확인하세요 — harness 는 세션 시작 시
-   잘못된 형식의 JSON 을 거부합니다.
+1. `examples/harnesses/claude-code/settings.local.example.json`을 `<harness-root>/settings.local.json`으로 복사합니다. `settings.local.json` 파일 이름은 `.gitignore` 패턴과 일치하므로, 이 파일은 버전 관리에 올라가지 않습니다.
+2. 로컬 사본을 편집합니다. 재정의할 키만 남기세요. 하니스가 계층을 합성하므로, 없는 키는 프로젝트 계층에서 상속됩니다.
+3. 저장하기 전에 파일이 유효한 JSON으로 파싱되는지 확인하세요. 하니스는 세션 시작 시 잘못된 형식의 JSON을 거부합니다.

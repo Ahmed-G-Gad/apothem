@@ -2,7 +2,7 @@
 title: "Configuração de ferramenta"
 description: "Adicione e configure adaptadores de ferramenta para plataformas."
 machineTranslated: true
-sourceHash: "e6bc4ceedf7d7137"
+sourceHash: "1f7d9a2a473395a7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,9 +40,7 @@ apothem verify --harness <name>
 apothem verify --harness all --project /path/to/project
 ```
 
-Para verificar todos os adaptadores registrados de uma só vez, execute `apothem doctor`. Ele imprime
-uma tabela de status de instalação por ferramenta e sai com código diferente de zero se algum adaptador relatar
-não-instalado.
+Para verificar todos os adaptadores registrados de uma só vez, execute `apothem doctor`. Ele imprime uma tabela de status de instalação por harness e sai com código diferente de zero somente quando alguma verificação falha, como um harness instalado que não passa na verificação, um comando de hook que não consegue iniciar ou um perfil presente que não é válido. Um harness que não está instalado aparece na lista, mas não faz o `doctor` falhar.
 
 ## Ver ferramentas instaladas
 

@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Adapter harness Apothem untuk Claude Code (GA)."
 machineTranslated: true
-sourceHash: "8dec50c1d13fe4aa"
+sourceHash: "2d1e8e48ff1f54c6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -108,7 +108,7 @@ apothem verify --harness claude-code
 Perintah verify memastikan bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Semua bidang wajib dari profil bersama ada.
+2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
 3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
 ## Pembaruan

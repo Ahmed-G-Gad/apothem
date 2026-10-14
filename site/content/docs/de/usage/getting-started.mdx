@@ -2,7 +2,7 @@
 title: "Kern-Workflows"
 description: "Die vier Kern-Workflows von Apothem — Profil, Regeln, Pläne und das Konformitätsgate."
 machineTranslated: true
-sourceHash: "a0e26da50122053a"
+sourceHash: "53658e5bd065d27f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -68,10 +68,16 @@ installiert ist, starte einen Plan aus dem Chat des Werkzeugs:
 
 ## Konformitätsgate
 
-Vom Repository-Stammverzeichnis ausführen:
+Führen Sie vom Apothem-Checkout aus Folgendes aus:
 
 ```bash
-python -m apothem.conformity.gate --all .
+PYTHONPATH=src python -m apothem.conformity.gate --all .
+```
+
+Nach einer Skript-Installation führen Sie Folgendes aus:
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python3 -m apothem.conformity.gate --all .
 ```
 
 Führt alle mechanischen Konformitätsprüfungen aus und meldet bestanden/nicht

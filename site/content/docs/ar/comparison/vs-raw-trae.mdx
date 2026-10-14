@@ -2,7 +2,7 @@
 title: "Apothem مقابل تهيئة Trae اليدوية"
 description: "صيانة قواعد Trae ضمن .trae/rules/ يدويًّا، مقابل تصييرها من ملف التعريف المشترك لـ Apothem."
 machineTranslated: true
-sourceHash: "d31ccc1fd80cb48e"
+sourceHash: "065945ba50500576"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,7 +19,7 @@ sourceHash: "d31ccc1fd80cb48e"
 | كتابة القواعد | كتابة كلّ ملفّ ضمن <bdi>`.trae/rules/`</bdi> يدويًّا | مُصيَّرة من المتن المشترك |
 | الحفاظ على فصل سطح Apothem | تذكُّر عدم إثقال <bdi>`project_rules.md`</bdi> | يكتب المحوِّل ملفّ <bdi>`apothem-rules.md`</bdi> مخصّصًا |
 | إبقاء القواعد متوائمة مع البيئات الأخرى | يدويًّا، لكل أداة | تلقائيًّا عند <bdi>`apothem update`</bdi> |
-| التحقّق من صحّة التهيئة | فحص يدوي | <bdi>`apothem verify --harness trae`</bdi> |
+| التحقّق من صحّة التهيئة | فحص يدوي | <bdi>`apothem verify --harness trae --project <path>`</bdi> |
 
 ## ما الذي يديره Apothem
 
@@ -32,11 +32,11 @@ sourceHash: "d31ccc1fd80cb48e"
 
 ## مسار الترحيل
 
-1. شغّل <bdi>`apothem profile init`</bdi> لإنشاء ملف التعريف المشترك إن لم تكن قد فعلت بعد.
+1. شغّل <bdi>`apothem profile init`</bdi> لإنشاء الملف التعريفي المشترك إن لم تكن قد فعلت بعد.
 2. انقل القواعد من ملفّات <bdi>`.trae/rules/`</bdi> الموجودة لديك إلى المتن المشترك.
-3. شغّل <bdi>`apothem install --harness trae`</bdi> لتصيير ملفّ <bdi>`apothem-rules.md`</bdi>.
-4. شغّل <bdi>`apothem verify --harness trae`</bdi> للتأكّد من وصول التهيئة.
-5. استخدم <bdi>`apothem update --harness trae`</bdi> مع كل تغيير لاحق.
+3. شغّل <bdi>`apothem install --harness trae --project <path>`</bdi> لتصيير ملفّ <bdi>`apothem-rules.md`</bdi>.
+4. شغّل <bdi>`apothem verify --harness trae --project <path>`</bdi> للتأكّد من وصول التهيئة.
+5. استخدم <bdi>`apothem update --harness trae --project <path>`</bdi> مع كل تغيير لاحق.
 
 ## اقرأ تاليًا
 

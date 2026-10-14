@@ -2,7 +2,7 @@
 title: "Documentation de settings.json"
 description: "Configurez l'exécution des hooks de Claude Code, les permissions, les événements, les délais d'attente, le runtime Python, la validation et la précédence des réglages en couches pour l'écosystème Apothem."
 machineTranslated: true
-sourceHash: "09e70625ff5e0caf"
+sourceHash: "e5e617ed964a9419"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,14 +21,13 @@ charge `~/.claude/settings.json` sur toutes les plateformes prises en charge.
 
 ## Runtime Python uniquement
 
-Chaque hook configuré utilise la forme de commande exec de Claude Code. Le
-modèle livré porte le jeton `${HARNESS_ROOT}` :
+Chaque hook configuré utilise la forme de commande exec de Claude Code. Le modèle livré porte les jetons `${PYTHON_BIN}` et `${HARNESS_ROOT}` ; `apothem install` remplace `${PYTHON_BIN}` par l'interpréteur absolu résolu :
 
 ```json
 {
   "type": "command",
-  "command": "python",
-  "args": ["${HARNESS_ROOT}/apothem/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
+  "command": "${PYTHON_BIN}",
+  "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
 }
 ```
 
@@ -149,9 +148,9 @@ ordre croissant de précédence :
 
 | Niveau | Emplacement | Versionné ? | Justification |
 |------|----------|------------|-----------|
-| 1. **Système** | Valeurs par défaut du harness compilées dans Claude Code lui-même | s.o. (contrôlé par le fournisseur) | Le plancher ; chaque opérateur hérite de la même base de référence. |
+| 1. **Système** | Valeurs par défaut de l'environnement compilées dans Claude Code lui-même | s.o. (contrôlé par le fournisseur) | Le plancher ; chaque opérateur hérite de la même base de référence. |
 | 2. **Projet** | `<harness-root>/settings.json` | ✅ Versionné | Conventions partagées du projet : hooks, permissions, serveurs MCP, câblage de la barre d'état. Le modèle des sources Apothem vit dans le répertoire templates de l'adaptateur Claude Code. |
-| 3. **Local utilisateur** | `<harness-root>/settings.local.json` (gitignored) — gabarit `settings.local.example.json` à la racine du dépôt | ❌ Gitignored | Surcharges propres à l'opérateur : jetons d'API, chemins locaux à la machine, fonctionnalités opt-in. |
+| 3. **Local utilisateur** | `<harness-root>/settings.local.json` (ignoré par git) — gabarit `settings.local.example.json` sous `examples/harnesses/claude-code/` | ❌ Ignoré par git | Surcharges propres à l'opérateur : jetons d'API, chemins propres à la machine, fonctionnalités opt-in. |
 
 Les valeurs de niveau supérieur surchargent les valeurs de niveau inférieur **au niveau de la clé-feuille** — lorsque
 les couches projet et local utilisateur déclarent toutes deux une entrée `permissions.allow`, l'union
@@ -160,10 +159,6 @@ exacte de fusion par clé appartient au harness Claude Code.
 
 ### Créer une surcharge local utilisateur
 
-1. Copiez `settings.local.example.json` (racine du dépôt) vers `<harness-root>/settings.local.json`.
-   Le nom de fichier `settings.local.json` correspond au motif de `.gitignore`, de sorte que le fichier n'atterrit jamais
-   dans le contrôle de version.
-2. Modifiez la copie locale — ne gardez que les clés à surcharger ; le harness compose les couches,
-   donc les clés absentes héritent de la couche projet.
-3. Vérifiez que le fichier s'analyse comme du JSON valide avant de l'enregistrer — le harness rejette
-   le JSON malformé au démarrage de la session.
+1. Copiez `examples/harnesses/claude-code/settings.local.example.json` vers `<harness-root>/settings.local.json`. Le nom de fichier `settings.local.json` correspond au motif de `.gitignore`, de sorte que le fichier n'entre jamais dans le contrôle de version.
+2. Modifiez la copie locale — ne gardez que les clés à surcharger ; l'environnement compose les couches, donc les clés absentes héritent de la couche projet.
+3. Vérifiez que le fichier s'analyse comme du JSON valide avant de l'enregistrer — l'environnement rejette le JSON mal formé au démarrage de la session.

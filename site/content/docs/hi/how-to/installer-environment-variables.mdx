@@ -2,7 +2,7 @@
 title: "इंस्टॉलर पर्यावरण चर"
 description: "पर्यावरण चरों से स्क्रिप्ट इंस्टॉलर (गंतव्य, स्रोत, हार्नेस, प्रोफ़ाइल, सत्यापन) को नियंत्रित करें।"
 machineTranslated: true
-sourceHash: "4a6a53ca733a16ef"
+sourceHash: "b69fe1c566ac13fb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,17 +21,17 @@ sourceHash: "4a6a53ca733a16ef"
 | --- | --- | --- |
 | `APOTHEM_HOME` | क्लोन किए गए स्रोत ट्री के लिए इंस्टॉल गंतव्य | `$HOME/.apothem` |
 | `APOTHEM_REPO` | क्लोन करने के लिए Git रिमोट | `https://github.com/ahmed-g-gad/apothem` |
-| `APOTHEM_REF` | चेक आउट करने के लिए Git ref; अनसेट होने पर नवीनतम हस्ताक्षरित `vMAJOR.MINOR.PATCH` टैग रिज़ॉल्व होता है, कोई टैग मान उसे पिन करता है, `main` चलती ब्रांच चुनता है | अनसेट (नवीनतम हस्ताक्षरित टैग) |
-| `APOTHEM_ALLOW_UNVERIFIED` | `1` पर सेट होने पर किसी टैग-हस्ताक्षर-सत्यापन विफलता को घातक निरस्तीकरण से घटाकर चेतावनी बनाता है | `0` (सत्यापन, विफल होने पर बंद) |
-| `APOTHEM_VERIFY` | `signature` रिलीज़ टैग के GPG हस्ताक्षर का सत्यापन करता है; `checksum` रिलीज़ के प्लेटफ़ॉर्म आर्काइव का SHA-256 रिलीज़ के `SHA256SUMS` से जाँचने के बाद उसे इंस्टॉल करता है (अखंडता, इस बात का प्रमाण नहीं कि उसे किसने प्रकाशित किया) | `signature` |
+| `APOTHEM_REF` | चेक आउट करने के लिए Git ref; अनसेट होने पर नवीनतम हस्ताक्षरित `vMAJOR.MINOR.PATCH` टैग रिज़ॉल्व होता है, कोई टैग मान उसे पिन करता है, `main` चलती ब्रांच चुनता है। `main` जैसा गैर-टैग ref `APOTHEM_ALLOW_UNVERIFIED=1` के बिना निरस्त हो जाता है। | अनसेट (नवीनतम हस्ताक्षरित टैग) |
+| `APOTHEM_ALLOW_UNVERIFIED` | `1` पर सेट होने पर टैग-हस्ताक्षर-सत्यापन की विफलता को घातक निरस्तीकरण के बजाय चेतावनी में घटाता है | `0` (सत्यापन, विफल होने पर बंद) |
+| `APOTHEM_VERIFY` | `signature` रिलीज़ टैग के GPG हस्ताक्षर का सत्यापन करता है; `checksum` रिलीज़ का प्लेटफ़ॉर्म आर्काइव उसके SHA-256 को रिलीज़ के `SHA256SUMS` से मिलाने के बाद इंस्टॉल करता है (यह अखंडता की जाँच है, इस बात का प्रमाण नहीं कि उसे किसने प्रकाशित किया) | `signature` |
 | `APOTHEM_RELEASE_BASE` | चेकसम मोड के लिए डाउनलोड आधार | `<APOTHEM_REPO>/releases/download` |
 | `APOTHEM_SOURCE` | क्लोन करने के बजाय उपयोग करने के लिए स्पष्ट स्थानीय स्रोत ट्री | अनसेट (क्लोन) |
 | `APOTHEM_HARNESS` | इंस्टॉल करने के लिए हार्नेस | `claude-code` |
 | `APOTHEM_PROFILE` | साझा प्रोफ़ाइल YAML का पथ | `$HOME/.config/apothem/profile.yaml` |
 | `APOTHEM_SKIP_VERIFY` | `1` पर सेट होने पर इंस्टॉल-पश्चात सत्यापन चरण छोड़ता है | `0` (सत्यापन चलता है) |
-| `APOTHEM_AUTO_INSTALL_DEPS` | `1` पर सेट होने पर गायब `click` / `rich` पूर्वापेक्षाओं को बिना पूछे स्वचालित रूप से इंस्टॉल करता है | `0` (पूछता है, या गैर-इंटरैक्टिव पाइप में मना करता है) |
+| `APOTHEM_AUTO_INSTALL_DEPS` | `1` पर सेट होने पर गायब `click` / `rich` पूर्वापेक्षाएँ बिना पूछे अपने-आप इंस्टॉल करता है | `0` (पूछता है, या गैर-इंटरैक्टिव पाइप में मना करता है) |
 | `APOTHEM_BIN_DIR` | रखे गए `apothem` कमांड शिम के लिए डायरेक्टरी | `$HOME/.local/bin` (POSIX); `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) |
-| `NO_COLOR` | किसी भी मान पर सेट होने पर रंगीन आउटपुट बंद करता है ([no-color.org](https://no-color.org/)); जब भी आउटपुट टर्मिनल न हो (एक पाइप, एक फ़ाइल, एक CI लॉग), तब भी रंग बंद रहता है | अनसेट (रंग केवल इंटरैक्टिव टर्मिनल पर) |
+| `NO_COLOR` | किसी भी मान पर सेट होने पर रंगीन आउटपुट बंद करता है ([no-color.org](https://no-color.org/)); जब भी आउटपुट टर्मिनल न हो (पाइप, फ़ाइल, CI लॉग), तब भी रंग बंद रहता है | अनसेट (रंग केवल इंटरैक्टिव टर्मिनल पर) |
 
 `APOTHEM_SOURCE` क्लोन पर प्राथमिकता लेता है: जब इसे ऐसे चेकआउट पर सेट किया जाता
 है जिसमें `src/apothem` हो, तो इंस्टॉलर उसका सीधे उपयोग करता है,
@@ -79,10 +79,10 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
    APOTHEM_HARNESS=cursor bash install.sh
    ```
 
-2. स्रोत ref और इंस्टॉल गंतव्य पिन करें:
+2. इंस्टॉल गंतव्य पिन करें और चलती हुई `main` ब्रांच चुनें। ब्रांच हस्ताक्षरित टैग नहीं होती, इसलिए इंस्टॉलर को `APOTHEM_ALLOW_UNVERIFIED=1` भी चाहिए:
 
    ```bash
-   APOTHEM_REF=main APOTHEM_HOME=/opt/apothem bash install.sh
+   APOTHEM_REF=main APOTHEM_ALLOW_UNVERIFIED=1 APOTHEM_HOME=/opt/apothem bash install.sh
    ```
 
 3. सत्यापन छोड़ते हुए, एक स्थानीय चेकआउट और एक कस्टम प्रोफ़ाइल का उपयोग करें:
@@ -104,6 +104,7 @@ pwsh -NoProfile -File install.ps1
 ```
 
 ```powershell
+$env:APOTHEM_ALLOW_UNVERIFIED = '1'
 $env:APOTHEM_REF = 'main'
 $env:APOTHEM_HOME = 'C:\opt\apothem'
 pwsh -NoProfile -File install.ps1

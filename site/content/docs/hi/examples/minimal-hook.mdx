@@ -2,7 +2,7 @@
 title: "न्यूनतम हुक"
 description: "न्यूनतम Apothem हुक उदाहरण — हर फ़ाइल लेखन पर एक जाँच सक्रिय करें।"
 machineTranslated: true
-sourceHash: "d1337398a00a9c83"
+sourceHash: "714a1269e07cc416"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,7 +18,7 @@ import json, sys
 data = json.load(sys.stdin)
 path = data.get("tool_input", {}).get("file_path", "unknown")
 print(f"[apothem] Writing to: {path}", file=sys.stderr)
-sys.exit(0)  # exit 0 = proceed; non-zero = block
+sys.exit(0)  # always exit 0; block with the deny envelope below
 ```
 
 ## settings.json में पंजीकरण
@@ -47,9 +47,9 @@ Claude Code में कोई भी फ़ाइल लेखन करें
 
 ## लेखन को अवरुद्ध करना
 
-`sys.exit(0)` को `sys.exit(1)` में बदलें और stdout पर एक JSON ब्लॉक प्रिंट करें:
+लेखन को ब्लॉक करने के लिए, deny एनवेलप को stdout पर प्रिंट करें और फिर भी 0 के साथ बाहर निकलें, जैसा Apothem के अपने हुक करते हैं:
 
 ```python
-print(json.dumps({"decision": "block", "reason": "blocked by log_writes"}))
-sys.exit(1)
+print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": "blocked by log_writes"}}))
+sys.exit(0)
 ```

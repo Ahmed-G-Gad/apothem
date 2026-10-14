@@ -2,7 +2,7 @@
 title: "Apothem versus konfigurasi Trae manual"
 description: "Memelihara aturan Trae di bawah .trae/rules/ dengan tangan versus merendernya dari profil bersama Apothem."
 machineTranslated: true
-sourceHash: "d31ccc1fd80cb48e"
+sourceHash: "065945ba50500576"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,8 +18,8 @@ dengan Apothem.
 | ---- | --------------- | --------------- |
 | Menulis aturan | Menulis tiap file di bawah `.trae/rules/` dengan tangan | Dirender dari korpus bersama |
 | Menjaga permukaan Apothem tetap terpisah | Ingat untuk tidak membebani `project_rules.md` | Adapter menulis `apothem-rules.md` khusus |
-| Menjaga aturan selaras dengan lingkungan lain | Manual, per alat | Otomatis saat `apothem update` |
-| Memverifikasi konfigurasi sudah benar | Inspeksi manual | `apothem verify --harness trae` |
+| Menjaga aturan selaras dengan harness lain | Manual, per alat | Otomatis pada `apothem update` |
+| Memverifikasi konfigurasi sudah benar | Inspeksi manual | `apothem verify --harness trae --project <path>` |
 
 ## Apa yang dikelola Apothem
 
@@ -32,10 +32,10 @@ perubahan pada aturan bersama merender ulang file pada `apothem update` berikutn
 ## Jalur migrasi
 
 1. Jalankan `apothem profile init` untuk membuat profil bersama jika Anda belum memilikinya.
-2. Pindahkan aturan dari file `.trae/rules/` Anda yang sudah ada ke korpus bersama.
-3. Jalankan `apothem install --harness trae` untuk merender file `apothem-rules.md`.
-4. Jalankan `apothem verify --harness trae` untuk memastikan konfigurasi sudah terpasang.
-5. Gunakan `apothem update --harness trae` untuk setiap perubahan berikutnya.
+2. Pindahkan aturan dari berkas `.trae/rules/` yang sudah ada ke korpus bersama.
+3. Jalankan `apothem install --harness trae --project <path>` untuk merender berkas `apothem-rules.md`.
+4. Jalankan `apothem verify --harness trae --project <path>` untuk memastikan konfigurasi sudah terpasang.
+5. Gunakan `apothem update --harness trae --project <path>` untuk setiap perubahan berikutnya.
 
 ## Baca berikutnya
 

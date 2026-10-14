@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Adaptateur d'environnement Apothem pour Hermes (préversion)."
 machineTranslated: true
-sourceHash: "f077a9851e126be5"
+sourceHash: "71abe825552bafc8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -68,7 +68,7 @@ apothem verify --harness hermes
 La commande verify confirme que :
 
 1. La configuration native existe au chemin attendu.
-2. Tous les champs obligatoires du profil partagé sont présents.
+2. Chaque cible gérée existe ; les fichiers gérés ne sont pas vides, et les configurations JSON ou YAML s'analysent correctement. Ajoutez `--profile PATH` pour vérifier en plus que les fichiers installés correspondent à ce profil.
 3. La routine de vérification propre à l'adaptateur signale un succès.
 
 ## Mise à jour

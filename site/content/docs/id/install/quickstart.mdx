@@ -2,7 +2,7 @@
 title: "Mulai cepat"
 description: "Pasang Apothem, tulis profil, materialisasikan harness pertama Anda, dan verifikasi — tur salin-tempel dengan keluaran yang diharapkan."
 machineTranslated: true
-sourceHash: "d7ba900b686729d3"
+sourceHash: "cabe19810d3aad3a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -137,10 +137,7 @@ apothem install --harness cursor --project . --dry-run
 apothem install --harness cursor --project .
 ```
 
-Pasang seluruh set yang didukung registri sekaligus dengan `--harness all`. Karena
-pilihan itu menulis berkas bercakupan proyek dan berkas bercakupan pengguna,
-perintah mencetak target konkret yang dikelompokkan menurut lokasi dan meminta
-konfirmasi sebelum menulis di luar akar proyek:
+Pasang seluruh set yang didukung registri sekaligus dengan `--harness all`. Karena pilihan itu menulis berkas berlingkup proyek dan berkas berlingkup pengguna, perintah mencetak target konkret yang dikelompokkan menurut lokasi. Di terminal interaktif, perintah meminta konfirmasi sebelum menulis di luar root proyek. Eksekusi tanpa terminal, eksekusi dengan `--yes`, atau eksekusi dengan `--format json` menulis tanpa bertanya; `--dry-run` tidak menulis apa pun. Jalankan seluruh set dengan:
 
 ```bash
 apothem install --harness all --project .
@@ -151,9 +148,7 @@ dan [referensi install](/docs/cli-reference/install) untuk set opsi lengkap.
 
 ## 4. Verifikasi
 
-Materialisasi hanyalah separuh pekerjaan — `verify` mengonfirmasi bahwa berkas
-konfigurasi yang diharapkan harness telah mendarat dan cocok dengan apa yang
-dideklarasikan profil:
+Materialisasi hanyalah separuh pekerjaan — `verify` memastikan berkas konfigurasi yang diharapkan harness sudah terpasang dan valid:
 
 ```bash
 apothem verify --harness claude-code
@@ -163,9 +158,7 @@ apothem verify --harness claude-code
 ✓ claude-code is verified at /home/you/.claude/settings.json
 ```
 
-`verify` keluar dengan kode bukan-nol jika konfigurasi hilang atau telah
-menyimpang, sehingga juga berfungsi sebagai gerbang dalam skrip penyiapan. Untuk
-pemeriksaan kesehatan seluruh mesin di setiap adapter terdaftar, jalankan:
+`verify` keluar dengan kode bukan-nol jika target terkelola hilang, berkas terkelola kosong, atau konfigurasi JSON atau YAML tidak dapat diurai. Tambahkan `--profile PATH` untuk juga gagal ketika berkas yang terpasang berbeda dari profil tersebut, sehingga `verify` berfungsi sebagai pemeriksaan penyimpangan; tanpanya, konfigurasi yang usang tetap lolos verifikasi. Dengan demikian ia dapat berfungsi sebagai gerbang dalam skrip penyiapan. Untuk pemeriksaan kesehatan seluruh mesin di setiap adapter terdaftar, jalankan:
 
 ```bash
 apothem doctor

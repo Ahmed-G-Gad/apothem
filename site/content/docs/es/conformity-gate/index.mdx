@@ -2,7 +2,7 @@
 title: "Puerta de conformidad"
 description: "Puerta de conformidad de Apothem — la fracción mecánica de la puerta de pre-emisión de quince barras (M1-M15) que todo artefacto emitido debe superar."
 machineTranslated: true
-sourceHash: "c3c719c0c1a0e92e"
+sourceHash: "0c45cd7185de5190"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,31 +28,7 @@ sourceHash: "c3c719c0c1a0e92e"
 
 ## Escala de severidad
 
-| Severidad | Efecto sobre la puerta |
-|---|---|
-| **Crítica** | La puerta da FAIL — la emisión se bloquea incondicionalmente |
-| **Importante** | La puerta da FAIL cuando fallan 2+ barras Importantes a la vez |
-| **Consultiva** | La puerta da WARN — se anota en el registro firmado; no bloquea la emisión |
-
-La mayoría de los comparadores de la fracción mecánica tienen **Importante** como severidad predeterminada. M5 (autoridad — secretos, endpoints inventados) y M12 (salidas huérfanas) son **Críticas**.
-
-```mermaid
-%% provenance: hand-authored %%
-%% verified: 2026-07-06 %%
-%% cross-reference: the Severity ladder table above; src/apothem/conformity/gate.py (severity aggregation) %%
-flowchart TD
-    accTitle: Conformity-gate severity-to-verdict decision flow
-    accDescr: A finding's severity determines the gate verdict. A Critical finding — M5 authority or M12 orphan output — fails the gate and blocks emission unconditionally. Important findings block only when two or more fail simultaneously; a single Important finding does not block. Advisory findings are logged in the signed record and never block emission.
-    F["Finding raised<br/>by a matcher"] --> S{"Severity?"}
-    S -->|Critical| C["Critical<br/>M5 authority · M12 orphan output"]
-    S -->|Important| I["Important<br/>most mechanical matchers"]
-    S -->|Advisory| A["Advisory"]
-    C --> FAIL["Gate FAIL<br/>emission blocked"]
-    I --> Q{"2+ Important<br/>bars failing?"}
-    Q -->|yes| FAIL
-    Q -->|no| WARN["Gate WARN<br/>logged in signed record<br/>emission proceeds"]
-    A --> WARN
-```
+La puerta de conformidad no tiene escala Crítica, Importante ni Consultiva, y tampoco umbral de dos hallazgos. Sin `--strict` (o `APOTHEM_CONFORMITY_STRICT=1`), la puerta informa de los hallazgos y termina con `0`. Con `--strict`, una comprobación de un archivo o de hook termina con `2` cuando falla cualquier comparador, y una ejecución sobre el corpus (`--all-perwrite`) termina con `2` cuando falla un comparador bloqueante; los comparadores consultivos solo se informan. El hook de Write/Edit instalado no pasa `--strict`, así que informa de los hallazgos y la escritura continúa, salvo que `APOTHEM_CONFORMITY_STRICT=1` esté definido en el entorno de ese hook.
 
 ## Validadores
 

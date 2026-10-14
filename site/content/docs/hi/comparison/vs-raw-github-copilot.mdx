@@ -2,7 +2,7 @@
 title: "Apothem बनाम कच्चा GitHub Copilot कॉन्फ़िगरेशन"
 description: "GitHub Copilot की copilot-instructions.md को हाथ से अनुरक्षित करने बनाम उसे Apothem की साझा प्रोफ़ाइल से रेंडर करने की तुलना।"
 machineTranslated: true
-sourceHash: "52a8af5e9d74e6da"
+sourceHash: "8619aad7bba087e4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -13,12 +13,12 @@ Apothem का github-copilot अडैप्टर उस फ़ाइल क�
 
 ## प्रयास की तुलना
 
-| कार्य | कच्चा हस्त-कॉन्फ़िगरेशन | Apothem-प्रबंधित |
+| कार्य | हस्तचालित कॉन्फ़िग | Apothem-प्रबंधित |
 | ---- | --------------- | --------------- |
-| निर्देश लिखना | `.github/copilot-instructions.md` को हाथ से संपादित करें | रेंडर: साझा नियम फ़ाइल में अंतःस्थापित |
+| निर्देश लिखना | `.github/copilot-instructions.md` को हाथ से संपादित करें | रेंडर किया गया: साझा नियम फ़ाइल में अंतःस्थापित |
 | निर्देशों को अन्य हार्नेसों के साथ संरेखित रखना | मैनुअल, प्रति टूल | `apothem update` पर स्वचालित |
-| कॉन्फ़िगरेशन स्थापित / हटाना | फ़ाइल को हाथ से लिखें और हटाएँ | `apothem install` / `apothem uninstall` |
-| कॉन्फ़िगरेशन सही है इसकी पुष्टि | मैनुअल निरीक्षण | `apothem verify --harness github-copilot` |
+| कॉन्फ़िग इंस्टॉल / हटाना | फ़ाइल को हाथ से लिखें और हटाएँ | `apothem install` / `apothem uninstall` |
+| कॉन्फ़िग सही है, यह सत्यापित करना | मैनुअल निरीक्षण | `apothem verify --harness github-copilot --project <path>` |
 
 ## Apothem क्या प्रबंधित करता है
 
@@ -31,14 +31,10 @@ github-copilot अडैप्टर साझा नियमों को `.gi
 ## माइग्रेशन पथ
 
 1. यदि आपने अभी तक साझा प्रोफ़ाइल नहीं बनाई है, तो `apothem profile init` चलाएँ।
-2. अपनी मौजूदा `.github/copilot-instructions.md` की सामग्री को साझा कॉर्पस में ले
-   जाएँ।
-3. निर्देश फ़ाइल को रेंडर करने के लिए
-   `apothem install --harness github-copilot` चलाएँ।
-4. कॉन्फ़िगरेशन स्थापित हुआ इसकी पुष्टि के लिए
-   `apothem verify --harness github-copilot` चलाएँ।
-5. हर बाद के बदलाव के लिए `apothem update --harness github-copilot` का उपयोग
-   करें।
+2. अपनी मौजूदा `.github/copilot-instructions.md` की सामग्री को साझा कॉर्पस में ले जाएँ।
+3. निर्देश फ़ाइल रेंडर करने के लिए `apothem install --harness github-copilot --project <path>` चलाएँ।
+4. कॉन्फ़िग सही जगह पहुँची है, इसकी पुष्टि के लिए `apothem verify --harness github-copilot --project <path>` चलाएँ।
+5. हर बाद के बदलाव के लिए `apothem update --harness github-copilot --project <path>` का उपयोग करें।
 
 ## आगे पढ़ें
 

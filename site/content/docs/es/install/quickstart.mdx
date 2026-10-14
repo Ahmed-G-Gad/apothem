@@ -2,7 +2,7 @@
 title: "Guía rápida"
 description: "Instala Apothem, redacta un perfil, materializa tu primer entorno y verifícalo: un recorrido para copiar y pegar con la salida esperada."
 machineTranslated: true
-sourceHash: "d7ba900b686729d3"
+sourceHash: "cabe19810d3aad3a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -140,11 +140,7 @@ apothem install --harness cursor --project . --dry-run
 apothem install --harness cursor --project .
 ```
 
-Instala de una vez el conjunto completo respaldado por el registro con
-`--harness all`. Como esa selección escribe archivos tanto de ámbito de proyecto
-como de ámbito de usuario, el comando imprime los destinos concretos agrupados
-por ubicación y pide confirmación antes de escribir fuera de la raíz del
-proyecto:
+Instala de una vez todo el conjunto respaldado por el registro con `--harness all`. Como esa selección escribe archivos tanto de ámbito de proyecto como de ámbito de usuario, el comando imprime los destinos concretos agrupados por ubicación. En una terminal interactiva, pide confirmación antes de escribir fuera de la raíz del proyecto. Una ejecución sin terminal, una ejecución con `--yes` o una ejecución con `--format json` escribe sin preguntar; `--dry-run` no escribe nada. Ejecuta el conjunto completo con:
 
 ```bash
 apothem install --harness all --project .
@@ -156,9 +152,7 @@ para el conjunto completo de opciones.
 
 ## 4. Verificar
 
-Materializar es solo la mitad del trabajo: `verify` confirma que los archivos de
-configuración esperados del entorno se escribieron y coinciden con lo que
-declara el perfil:
+Materializar es solo la mitad del trabajo: `verify` confirma que los archivos de configuración esperados del entorno se escribieron y son válidos:
 
 ```bash
 apothem verify --harness claude-code
@@ -168,10 +162,7 @@ apothem verify --harness claude-code
 ✓ claude-code is verified at /home/you/.claude/settings.json
 ```
 
-`verify` sale con un código distinto de cero si la configuración falta o se ha
-desviado, por lo que también sirve como puerta en un script de configuración.
-Para una comprobación de salud de toda la máquina en todos los adaptadores
-registrados, ejecuta:
+`verify` termina con un código distinto de cero si falta un destino gestionado, si un archivo gestionado está vacío o si una configuración JSON o YAML no se analiza. Añade `--profile PATH` para que también falle cuando un archivo instalado difiera de ese perfil, lo que convierte a `verify` en una comprobación de deriva; sin él, una configuración obsoleta sigue superando la verificación. Así puede servir de puerta en un script de configuración. Para una comprobación del estado de toda la máquina en todos los adaptadores registrados, ejecuta:
 
 ```bash
 apothem doctor

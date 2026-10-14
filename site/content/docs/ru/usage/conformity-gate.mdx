@@ -2,13 +2,15 @@
 title: "Шлюз соответствия"
 description: "Запустите шлюз соответствия Apothem, чтобы проверить состояние экосистемы."
 machineTranslated: true
-sourceHash: "ea155671db71b76d"
+sourceHash: "bbf19e4d148c511e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Шлюз соответствия в `src/apothem/conformity/gate.py` выполняет механическую
 долю пятнадцатипунктного шлюза предэмиссии (M1-M15) для каждого артефакта,
 который создаёт оператор.
+
+Команды на этой странице предполагают чекаут Apothem, поэтому перед каждой из них добавляйте `PYTHONPATH=src`. После установки через скрипт вместо `src` используйте `PYTHONPATH="$HOME/.apothem/src"`.
 
 ## Запуск шлюза
 
@@ -20,10 +22,10 @@ pre-commit, чтобы отклонить изменение с нарушени
 
 ```bash
 # Advisory: report every validator's findings across the repo, exit 0
-python -m apothem.conformity.gate --all .
+PYTHONPATH=src python -m apothem.conformity.gate --all .
 
 # Strict: exit non-zero (code 2) when a blocking finding is present
-python -m apothem.conformity.gate --all --strict .
+PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 ```
 
 Коды выхода: `0` — чисто (или рекомендательный режим), `2` — блокировка по
@@ -69,13 +71,13 @@ python -m apothem.conformity.gate --all --strict .
 
 ```bash
 # List every registered validator
-python -m apothem.conformity.gate --list
+PYTHONPATH=src python -m apothem.conformity.gate --list
 
 # Run a single named validator
-python -m apothem.conformity.gate --check multi-surface-coherence
+PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence
 
 # Run every validator against one file
-python -m apothem.conformity.gate src/apothem/rules/my-rule.md
+PYTHONPATH=src python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 ```
 
 Режим `--hook` (`python -m apothem.conformity.gate --hook`) — это точка входа,
@@ -103,4 +105,4 @@ export APOTHEM_CONFORMITY_SCOPE=/path/to/project
 
 ## Интеграция с CI
 
-Шлюз запускается в CI через `.github/workflows/conformity.yml` при каждом push.
+Задача quality в `.github/workflows/ci.yml` запускает шлюз в строгом режиме (`python -m apothem.conformity.gate --all . --strict`) при push в `main` и при pull request в `main`, которые затрагивают пути, отслеживаемые этой задачей. Отдельный рабочий процесс `.github/workflows/conformity.yml` выполняет прогон фикстур (`tests/conformity-scenarios/verify.py --strict`).

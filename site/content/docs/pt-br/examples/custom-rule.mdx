@@ -2,7 +2,7 @@
 title: "Regra personalizada"
 description: "Criar uma regra permanente personalizada para o seu projeto."
 machineTranslated: true
-sourceHash: "7575376db8d658ec"
+sourceHash: "9afb0e5eed8c4fd2"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,17 +31,29 @@ no camelCase, no PascalCase).
 When in doubt, err on the side of more hyphens.
 ```
 
-Salve isto em `rules/kebab-filenames.md` dentro da raiz de instalação do seu harness (`~/.claude/` para o adaptador do Claude Code; substitua pelo caminho nativo do harness caso contrário).
+Salve isto em `rules/kebab-filenames.md` dentro da raiz de instalação do seu harness (`~/.claude/` para o adaptador do Claude Code; caso contrário, substitua pelo caminho nativo do harness).
 
-## Verifique se a regra foi carregada
+## Verifique se a regra está bem formada
+
+Execute o validador de frontmatter sobre o arquivo de regra que você acabou de escrever. A partir de um checkout do Apothem, prefixe o comando com `PYTHONPATH=src`; após uma instalação por script, prefixe-o com `PYTHONPATH="$HOME/.apothem/src"`:
 
 ```bash
-python -m apothem.conformity.gate --check frontmatter
+python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
+```
+
+Uma regra bem formada gera uma aprovação limpa:
+
+```json
+{
+  "orchestrator": "conformity-gate",
+  "passed": true,
+  "grep_count": 1
+}
 ```
 
 ## Propagar para os harnesses
 
-Execute o comando de atualização uma vez por harness instalado:
+Execute o comando de atualização uma vez para cada harness instalado:
 
 ```bash
 apothem update --harness claude-code

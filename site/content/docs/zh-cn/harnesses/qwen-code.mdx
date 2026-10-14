@@ -2,7 +2,7 @@
 title: "Qwen Code"
 description: "适用于 Qwen Code（测试版）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "437b67b49cf5a7ee"
+sourceHash: "4052897d8ab07b22"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -47,8 +47,8 @@ apothem verify --harness qwen-code
 verify 命令确认：
 
 1. 原生配置存在于预期路径。
-2. 共享配置档案中的所有必填字段都已存在。
-3. 适配器特定的验证例程报告成功。
+2. 每个受管目标都存在；受管文件非空，并且 JSON 或 YAML 配置可以解析。添加 `--profile PATH` 还可以确认已安装的文件与该配置档案相符。
+3. 适配器专属的验证例程报告成功。
 
 ## 更新
 

@@ -2,7 +2,7 @@
 title: "Multi-Surface-Harness-Konventionen"
 description: "Kanonische normative Referenz für die Multi-Surface-Konfiguration von Harnesses und ihre Kohärenz über die Laufzeitumgebungen für Chat, IDE-Vervollständigung und PR-Review hinweg."
 machineTranslated: true
-sourceHash: "027929e7268f780c"
+sourceHash: "a28eacc8acd8ae94"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -122,8 +122,8 @@ Drei Validatoren implementieren den Kohärenzvertrag gemeinsam:
 
 ## 8. Lebenszyklus einer Oberfläche
 
-- **Eine Oberfläche hinzufügen.** Der Operator entscheidet sich über den Kanal der strukturierten Rückfrage oder über ein nachfolgendes `make surfaces-add <name>` dafür. Der Generator verfasst die Oberfläche anhand der Aussagenliste, führt den Validator aus und legt einen ADR an, falls eine oberflächenspezifische Überschreibung nötig ist.
-- **Eine Oberfläche entfernen.** Die strukturierte Rückfrage bestätigt die Entfernung, ein ADR hält die Begründung fest, die required-in-Liste des Validators wird angepasst.
+- **Eine Oberfläche hinzufügen.** Der Operator entscheidet sich über den Kanal der strukturierten Rückfrage dafür. Der Generator verfasst die Oberfläche anhand der Aussagenliste, führt den Validator aus und legt einen ADR an, falls eine oberflächenspezifische Überschreibung nötig ist.
+- **Eine Oberfläche entfernen.** Eine strukturierte Rückfrage bestätigt die Entfernung, ein ADR hält die Begründung fest, und die required-in-Liste des Validators wird angepasst.
 - **Drift-Erkennung.** Jeder Commit, der von der Aussagenliste abweicht, wird von Pre-Commit / CI abgelehnt; der Autor des Commits schreibt die Oberfläche um, um die Kohärenz wiederherzustellen.
 
 ---

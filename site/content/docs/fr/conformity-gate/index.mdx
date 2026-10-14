@@ -2,7 +2,7 @@
 title: "Portail de conformité"
 description: "Portail de conformité d'Apothem — la fraction mécanique du portail de pré-émission à quinze barres (M1-M15) que chaque artefact émis doit franchir."
 machineTranslated: true
-sourceHash: "c3c719c0c1a0e92e"
+sourceHash: "0c45cd7185de5190"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,31 +28,7 @@ sourceHash: "c3c719c0c1a0e92e"
 
 ## Échelle de sévérité
 
-| Sévérité | Effet sur le portail |
-|---|---|
-| **Critique** | Portail FAIL — émission bloquée inconditionnellement |
-| **Importante** | Portail FAIL lorsque 2 barres Importantes ou plus échouent simultanément |
-| **Consultative** | Portail WARN — consigné dans l'enregistrement signé ; ne bloque pas l'émission |
-
-La plupart des détecteurs de la fraction mécanique ont par défaut la sévérité **Importante**. M5 (autorité — secrets, endpoints fabriqués) et M12 (sorties orphelines) sont de sévérité **Critique**.
-
-```mermaid
-%% provenance: hand-authored %%
-%% verified: 2026-07-06 %%
-%% cross-reference: the Severity ladder table above; src/apothem/conformity/gate.py (severity aggregation) %%
-flowchart TD
-    accTitle: Conformity-gate severity-to-verdict decision flow
-    accDescr: A finding's severity determines the gate verdict. A Critical finding — M5 authority or M12 orphan output — fails the gate and blocks emission unconditionally. Important findings block only when two or more fail simultaneously; a single Important finding does not block. Advisory findings are logged in the signed record and never block emission.
-    F["Finding raised<br/>by a matcher"] --> S{"Severity?"}
-    S -->|Critical| C["Critical<br/>M5 authority · M12 orphan output"]
-    S -->|Important| I["Important<br/>most mechanical matchers"]
-    S -->|Advisory| A["Advisory"]
-    C --> FAIL["Gate FAIL<br/>emission blocked"]
-    I --> Q{"2+ Important<br/>bars failing?"}
-    Q -->|yes| FAIL
-    Q -->|no| WARN["Gate WARN<br/>logged in signed record<br/>emission proceeds"]
-    A --> WARN
-```
+Le portail ne comporte ni échelle de sévérité Critique, Importante ou Consultative, ni seuil de deux constats. Sans `--strict` (ou `APOTHEM_CONFORMITY_STRICT=1`), le portail signale les constats et se termine avec le code `0`. Avec `--strict`, un contrôle sur un seul fichier ou un hook se termine avec le code `2` dès qu'un matcher échoue, et une exécution sur le corpus (`--all-perwrite`) se termine avec le code `2` lorsqu'un matcher bloquant échoue ; les matchers consultatifs ne sont que signalés. Le hook Write/Edit installé ne passe pas `--strict` : il signale les constats et l'écriture se poursuit, sauf si `APOTHEM_CONFORMITY_STRICT=1` est défini dans son environnement.
 
 ## Validateurs
 

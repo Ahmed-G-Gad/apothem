@@ -2,7 +2,7 @@
 title: "Apothem と手作業の Kiro 構成の比較"
 description: "Kiro の .kiro/steering/ 配下のステアリングファイルを手作業で維持するのと、Apothem の共有プロファイルからレンダリングするのとの比較。"
 machineTranslated: true
-sourceHash: "9c89a85385335fc3"
+sourceHash: "a4a26f280f1271a3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -15,10 +15,10 @@ Apothem で管理するのとを対比します。
 
 | タスク | 手作業の構成 | Apothem 管理 |
 | ---- | --------------- | --------------- |
-| ステアリングルールを書く | `.kiro/steering/` 配下の各ファイルを手書き | 共有コーパスからレンダリング |
-| 基盤ファイルを触れずに保つ | `product.md` / `tech.md` / `structure.md` を上書きしないよう注意 | アダプターは `apothem-rules.md` だけを書き込む |
-| ルールを他の環境と揃えて保つ | 手作業、ツールごと | `apothem update` で自動 |
-| 構成が正しいか検証する | 手作業の検査 | `apothem verify --harness kiro` |
+| ステアリングルールを書く | `.kiro/steering/` 配下の各ファイルを手で書く | 共有コーパスからレンダリング |
+| 基盤ファイルに触れずに保つ | `product.md` / `tech.md` / `structure.md` を上書きしないよう注意する | アダプターが書き込むのは `apothem-rules.md` のみ |
+| ルールを他のハーネスと揃えて保つ | 手作業、ツールごと | `apothem update` で自動 |
+| 構成が正しいか検証する | 手作業での確認 | `apothem verify --harness kiro --project <path>` |
 
 ## Apothem が管理するもの
 
@@ -30,11 +30,11 @@ kiro アダプターは共有ルールを `inclusion: always` フロントマタ
 
 ## 移行手順
 
-1. 共有プロファイルをまだ作成していなければ、`apothem profile init` を実行します。
-2. 既存の `.kiro/steering/` のルールを共有コーパスへ移します。
-3. `apothem install --harness kiro` を実行して `apothem-rules.md` ステアリングファイルをレンダリングします。
-4. `apothem verify --harness kiro` を実行して構成が配置されたことを確認します。
-5. 以降の変更には毎回 `apothem update --harness kiro` を使います。
+1. まだ作成していなければ、`apothem profile init` を実行して共有プロファイルを作成します。
+2. 既存の `.kiro/steering/` のルールを、共有コーパスへ移します。
+3. `apothem install --harness kiro --project <path>` を実行して、`apothem-rules.md` ステアリングファイルをレンダリングします。
+4. `apothem verify --harness kiro --project <path>` を実行して、構成が配置されたことを確認します。
+5. 以降の変更には毎回 `apothem update --harness kiro --project <path>` を使います。
 
 ## 次に読む
 

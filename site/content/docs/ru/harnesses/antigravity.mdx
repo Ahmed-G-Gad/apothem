@@ -2,7 +2,7 @@
 title: "Antigravity"
 description: "Адаптер окружения Apothem для Antigravity (предварительная версия)."
 machineTranslated: true
-sourceHash: "43dc91cbb7358f2c"
+sourceHash: "5c4311df7cdf88b7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -90,8 +90,7 @@ apothem verify --harness antigravity
 Команда verify подтверждает, что:
 
 1. Нативный файл контекста существует по ожидаемому пути.
-2. Метаданные плагина Apothem для Antigravity CLI существуют и объявляют имя
-   плагина `apothem`.
+2. Файл манифеста плагина `plugin.json` существует, не пуст и разбирается как JSON. Проверка не проверяет имя плагина, поэтому после его изменения проверьте это поле самостоятельно.
 
 ## Обновление
 

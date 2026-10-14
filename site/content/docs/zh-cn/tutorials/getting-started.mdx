@@ -2,7 +2,7 @@
 title: "入门：从零到一个可用的工具"
 description: "从一台空白机器到一份已物化、已验证的工具配置的端到端演练。"
 machineTranslated: true
-sourceHash: "0ca03fcd4603a084"
+sourceHash: "35d8b7420a9a02a8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -23,9 +23,9 @@ sourceHash: "0ca03fcd4603a084"
 
 ## 你首先需要准备什么
 
-- 一个类 Unix 的 shell（macOS、Linux 或 WSL）。PowerShell 安装器覆盖 Windows；本教程展示 `bash` 路径。
-- 你的 `PATH` 上有 Python 3.10 或更新版本。使用 `python3 --version` 检查。
-- 引擎从你的解释器中导入的两个运行时库：`click` 和 `rich`。技术栈的其余部分（`pyyaml`、`jsonschema`）已 vendored 到源码树中，因此只有这两个需要可被导入。安装器会检查它们，指出任何缺失项，并提出为你安装缺失的部分——这样你可以确认后继续。
+- 类 Unix 的 shell（macOS、Linux 或 WSL）。PowerShell 安装程序覆盖 Windows；本教程展示 `bash` 路径。
+- `PATH` 上的 Python 3.10 或更高版本。使用 `python3 --version` 检查。
+- 引擎从你的解释器中导入的两个运行时库：`click` 和 `rich`。技术栈的其余部分（`pyyaml`、`jsonschema`）已内置（vendored）到源码树中，因此只需要这两个库可以被导入。如果缺少 `click` 或 `rich`，安装程序会停止并打印安装命令。单行命令会把脚本通过管道交给 bash，因此无法提示；请设置 `APOTHEM_AUTO_INSTALL_DEPS=1`（例如 `curl -fsSL https://apothem.ahmedgad.com/install.sh | APOTHEM_AUTO_INSTALL_DEPS=1 bash`），或者先安装这两个包。
 
 Apothem 以捆绑的源码树形式发布，而不是以已发布的软件包形式发布——没有 `pip install` 步骤。安装器会克隆该源码树，并直接从中运行引擎。
 
@@ -39,9 +39,9 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 
 安装器执行以下步骤：
 
-1. **前置条件检查。** 安装器会找到一个真实的 Python 3.10+ 解释器，并确认两个运行时库（`click` 和 `rich`）可被导入。如果缺少其中一个，它会指出该库并提出为你安装——或者设置 `APOTHEM_AUTO_INSTALL_DEPS=1`，在不提示的情况下安装。
-2. **源码放置。** 捆绑的源码树会被克隆到 `~/.apothem`（可用 `APOTHEM_HOME` 环境变量覆盖）。重新运行会快进现有的克隆，而不是再复制一份。
-3. **配置档案引导。** 如果你还没有配置档案，安装器会将示例配置档案复制到 `~/.config/apothem/profile.yaml`，然后**停下来，请你先编辑它**再继续。这是有意为之——示例使用占位身份数据，你应当在写入任何工具配置之前将它改成你自己的。我们会在第 2 步中完成这一点。
+1. **前置条件检查。** 安装程序会找到真正的 Python 3.10+ 解释器，并确认两个运行时库（`click` 和 `rich`）可以被导入。如果缺少其中之一，它会指出缺失的库并停止，同时打印安装命令；设置 `APOTHEM_AUTO_INSTALL_DEPS=1` 可以不经提示直接安装，因为通过管道运行时无法提示。
+2. **源码放置。** 随附的源码树会被克隆到 `~/.apothem`（可通过 `APOTHEM_HOME` 环境变量覆盖）。重新运行时会快进已有的克隆，而不是重复复制。
+3. **配置档案引导。** 如果你还没有配置档案，安装程序会将示例配置档案复制到 `~/.config/apothem/profile.yaml`，并在同一次运行中据此安装并验证 Claude Code，同时警告身份字段是占位内容。
 
 你可以通过环境变量来引导安装。你最可能用到的几个：
 
@@ -52,7 +52,7 @@ APOTHEM_PROFILE="$HOME/.config/apothem/profile.yaml" \
   curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 ```
 
-其他可识别的变量有 `APOTHEM_REPO` 和 `APOTHEM_REF`（克隆哪个远程仓库，以及检出哪个 git ref——未设置时会解析并验证最新的已签名发布标签；设置为某个标签可将其固定，设置为 `main` 则跟随不断前进的分支）、`APOTHEM_ALLOW_UNVERIFIED=1`（将标签签名验证失败降级为警告）、`APOTHEM_SOURCE`（使用现有的本地检出，而不是克隆），以及 `APOTHEM_SKIP_VERIFY=1`（跳过安装后的验证，而我们希望运行该验证，因此请保持它未设置）。
+其他可识别的变量包括 `APOTHEM_REPO` 和 `APOTHEM_REF`（克隆哪个远程仓库，以及检出哪个 git ref：未设置时会解析并验证最新的已签名发布标签；设置为某个标签可将其固定，设置为 `main` 则跟随会持续变动的分支（分支不是已签名的标签，因此还需要 `APOTHEM_ALLOW_UNVERIFIED=1`））、`APOTHEM_ALLOW_UNVERIFIED=1`（将标签签名验证失败降级为警告，并允许 `main` 这类非标签 ref）、`APOTHEM_SOURCE`（使用现有的本地检出，而不是克隆），以及 `APOTHEM_SKIP_VERIFY=1`（跳过安装后的验证；我们希望运行该验证，因此请保持它未设置）。
 
 当安装器完成一次完整运行时，它会打印一个横幅，展示如何调用引擎。它会在你的 `PATH` 上放置一个 `apothem` 垫片（POSIX：`$HOME/.local/bin`；Windows：`%LOCALAPPDATA%\Microsoft\WindowsApps`），因此一旦该目录加入 `PATH`，你就可以直接运行引擎：
 
@@ -101,7 +101,11 @@ apothem profile show --json
 
 ## 第 3 步——物化一份工具配置
 
-如果你在第 1 步中的运行完成了一次完整流程——也就是说，你原本已有配置档案，因此安装器没有在引导阶段停下——它已经为你物化了默认工具。首次运行时，它则会停在配置档案引导阶段，因此现在运行 `install`，从你刚编辑的配置档案物化该工具（这也会添加第二个工具）：
+如果第 1 步的运行创建了配置档案，它已经根据占位身份安装了 Claude Code。请在第 2 步中编辑配置档案，然后运行以下命令应用你的身份：
+
+```bash
+apothem update --harness claude-code
+```
 
 ```bash
 apothem install --harness claude-code

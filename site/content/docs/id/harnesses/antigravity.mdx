@@ -2,7 +2,7 @@
 title: "Antigravity"
 description: "Adapter harness Apothem untuk Antigravity (Pratinjau)."
 machineTranslated: true
-sourceHash: "43dc91cbb7358f2c"
+sourceHash: "5c4311df7cdf88b7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -87,8 +87,7 @@ apothem verify --harness antigravity
 Perintah verify memastikan bahwa:
 
 1. Berkas konteks native ada di jalur yang diharapkan.
-2. Metadata plugin Antigravity CLI milik Apothem ada dan mendeklarasikan nama
-   plugin `apothem`.
+2. Manifest plugin `plugin.json` ada, tidak kosong, dan dapat diurai sebagai JSON. Verifikasi tidak memeriksa nama plugin; periksa bidang tersebut sendiri setelah mengubahnya.
 
 ## Pembaruan
 

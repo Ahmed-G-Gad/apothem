@@ -2,7 +2,7 @@
 title: "Apothem vs raw Kimi Code config"
 description: "Hand-maintaining Kimi Code's project-root AGENTS.md and .kimi-code/ support files versus rendering them from Apothem's shared profile."
 machineTranslated: true
-sourceHash: "5f69887592d86e7a"
+sourceHash: "3973fe015cf877a5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,13 +17,13 @@ against managing it with Apothem.
 
 ## Effort comparison
 
-| Task | Raw hand-config | Apothem-managed |
+| Aufgabe | Manuelle Konfiguration | Von Apothem verwaltet |
 | ---- | --------------- | --------------- |
-| Author the `AGENTS.md` instruction surface | Hand-write and re-sync per project | One managed block rendered from the shared profile |
-| Keep rules, commands, skills, agents in sync | Manual copy per project | Materialized under `<project>/.kimi-code/.apothem/support/` on every install |
-| Preserve operator prose on refresh | Manual merge | Sentinel-delimited block; operator prose outside it is preserved |
-| Keep rules aligned with other harnesses | Manual, per tool | Automatic on `apothem update` |
-| Verify the config is correct | Manual inspection | `apothem verify --harness kimi-code` |
+| Die Anweisungsoberfläche `AGENTS.md` verfassen | Von Hand schreiben und je Projekt neu synchronisieren | Ein verwalteter Block, aus dem gemeinsamen Profil gerendert |
+| Regeln, Befehle, Skills und Agenten synchron halten | Manuelles Kopieren je Projekt | Bei jeder Installation unter `<project>/.kimi-code/.apothem/support/` materialisiert |
+| Vom Operator verfassten Text beim Aktualisieren bewahren | Manuelles Zusammenführen | Durch Sentinel-Marker begrenzter Block; vom Operator verfasster Text außerhalb davon bleibt erhalten |
+| Regeln mit anderen Harnesses abgestimmt halten | Manuell, pro Werkzeug | Automatisch bei `apothem update` |
+| Prüfen, ob die Konfiguration korrekt ist | Manuelle Inspektion | `apothem verify --harness kimi-code --project <path>` |
 
 ## What Apothem manages
 
@@ -36,12 +36,13 @@ rules re-renders the files on the next `apothem update`.
 
 ## Migration path
 
-1. Run `apothem profile init` to create the shared profile if you have not yet.
-2. Move the rules from your existing `AGENTS.md` into the shared corpus.
-3. Run `apothem install --harness kimi-code` to render the `AGENTS.md`
-   instruction surface and the `.kimi-code/.apothem/support/` support tree.
-4. Run `apothem verify --harness kimi-code` to confirm the config landed.
-5. Use `apothem update --harness kimi-code` for every later change.
+1. Führen Sie `apothem profile init` aus, um das gemeinsame Profil zu erstellen, falls noch nicht geschehen.
+2. Verschieben Sie die Regeln aus Ihrer vorhandenen `AGENTS.md` in das gemeinsame Korpus.
+3. Führen Sie `apothem install --harness kimi-code --project <path>` aus, um die Anweisungsoberfläche
+   `AGENTS.md` und den Unterstützungs-Teilbaum `.kimi-code/.apothem/support/` zu rendern.
+4. Führen Sie `apothem verify --harness kimi-code --project <path>` aus, um zu bestätigen, dass die
+   Konfiguration angekommen ist.
+5. Verwenden Sie `apothem update --harness kimi-code --project <path>` für jede spätere Änderung.
 
 ## Read next
 

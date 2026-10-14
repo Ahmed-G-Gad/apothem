@@ -2,7 +2,7 @@
 title: "トラブルシューティング"
 description: "プラグイン、npx、インストーラーの各経路における、よくある Apothem のインストール失敗と実行時の問題への対処法。"
 machineTranslated: true
-sourceHash: "5dad4c6e337cead2"
+sourceHash: "7deb3ca475c3bc89"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -39,8 +39,7 @@ PATH` で停止します。python.org または OS のパッケージリポジ�
 
 ### インストーラー実行後に `apothem` が見つからない
 
-インストーラーはソースツリーを `~/.apothem` に配置し、`apothem` 実行ファイルを `PATH` に
-追加しません。完了時にインストーラーが出力する呼び出し方法でエンジンを実行してください。
+インストーラーは、既定でソースツリーを `~/.apothem` に配置し、`apothem` の shim を `~/.local/bin`（POSIX）または `%LOCALAPPDATA%\Microsoft\WindowsApps`（Windows）に書き込みます。`PATH` は編集しません。`apothem` が見つからない場合、そのディレクトリは `PATH` に含まれていません。そのディレクトリを追加するか、追加するまでは下記の `PYTHONPATH` 形式を使ってください。エンジンは、インストーラーが完了時に表示する呼び出し方法で実行します。
 
 ```bash
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>

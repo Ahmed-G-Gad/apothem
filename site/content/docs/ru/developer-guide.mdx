@@ -2,7 +2,7 @@
 title: "Вклад в Apothem — руководство разработчика"
 description: "Сопровождайте и расширяйте экосистему Apothem, создавая правила, команды, помощников, навыки и хуки с каноническими схемами, требованиями к фронтматтеру и процедурами проверки."
 machineTranslated: true
-sourceHash: "ae3392672e01c783"
+sourceHash: "782e178598975d52"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -120,15 +120,7 @@ Schema, приоритет у схем.
 - **Команды:** `{name}.md`
 - **Помощники:** `{name}.md`
 - **Навыки:** внутри папки `src/apothem/skills/{name}/SKILL.md` (точный регистр: `SKILL.md`)
-- **Хуки:** внутри папки `src/apothem/hooks/`. Все обработчики событий написаны
-  на Python. Каждая команда хука в `settings.json` использует exec-форму
-  (`python` плюс `args`) для вызова `-m apothem.hooks.dispatch <event> [<message-name>]` или
-  `-m apothem.conformity.gate --hook`. `dispatch.py` направляет `SessionStart` в
-  `session_start_bootstrap.main()`, а
-  каждое другое событие из белого списка — в `emit_hook_context.main()`.
-  Единственные shell-заглушки, разрешённые в `src/apothem/hooks/` или `scripts/`, — это четыре
-  файла локатора и начальной загрузки (`find-python.{ps1,sh}`, `bootstrap.{ps1,sh}`); любой другой файл `.ps1` /
-  `.sh` не проходит проверку гигиены `scripts/dev/validate_hooks.py`.
+- **Хуки:** внутри папки `src/apothem/hooks/`. Все обработчики событий написаны на Python. Каждая команда хука в `settings.json` использует exec-форму: `command` — это плейсхолдер интерпретатора `${PYTHON_BIN}`, который разрешается при установке, а `args` содержит путь к скрипту и его аргументы. Шаблон Claude Code запускает `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` и `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook` по абсолютному пути, поэтому установленной копии не нужен импортируемый пакет `apothem`. `dispatch.py` направляет `SessionStart` в `session_start_bootstrap.main()`, а каждое другое разрешённое событие — в `emit_hook_context.main()`. Единственные shell-заглушки, разрешённые в `src/apothem/hooks/` или `scripts/`, — это шесть файлов локатора и начальной загрузки (`find-python.{ps1,sh}`, `find-pwsh.{ps1,sh}`, `bootstrap.{ps1,sh}`); любой другой файл `.ps1` / `.sh` не проходит проверку гигиены `scripts/dev/validate_hooks.py`.
 
 ### Перекрёстные ссылки
 

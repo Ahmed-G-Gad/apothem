@@ -2,7 +2,7 @@
 title: "Zed"
 description: "محوّل إطار عمل Apothem لـ Zed (إصدار عام)."
 machineTranslated: true
-sourceHash: "03b431e47b5d9acd"
+sourceHash: "62b3de71f4c3ce39"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -71,7 +71,7 @@ apothem verify --harness zed --project /path/to/project
 يؤكّد أمر التحقّق ما يلي:
 
 1. الإعداد الأصلي موجود في المسار المتوقَّع.
-2. جميع الحقول الإلزامية من الملف التعريفي المشترك موجودة.
+2. كل هدف مُدار موجود؛ والملفات المُدارة غير فارغة، وتُحلَّل إعدادات <bdi>JSON</bdi> أو <bdi>YAML</bdi>. أضِف <bdi>`--profile PATH`</bdi> لتتحقّق كذلك من أن الملفات المثبّتة تطابق ذلك الملف التعريفي.
 3. روتين التحقّق الخاص بالمحوّل يُبلِغ عن النجاح.
 
 ## التحديث
@@ -89,9 +89,7 @@ apothem update --harness zed --project /path/to/project
 apothem uninstall --harness zed --project /path/to/project
 ```
 
-يُزيل ملف الإعداد الأصلي الذي كتبه المحوّل، بعد أن يُعيد تسميته أولًا إلى نسخة
-احتياطية تحمل طابعًا زمنيًا. لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي
-المشترك ولا محرّك <bdi>Apothem</bdi>.
+يُزيل الكتلة المُدارة الخاصة بـ <bdi>Apothem</bdi> من ملف الإعداد الأصلي <bdi>`.rules`</bdi> ويُبقي نصّك الخاص. ولا يُحذف الملف إلا إذا لم يبقَ فيه شيء آخر. وقبل التغيير تُحفَظ نسخة من الملف بطابع زمني تحت <bdi>`~/.apothem/backups/`</bdi>؛ ولا تبقى أي نسخة احتياطية في المشروع. ولا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
 
 ## بوابة المطابقة
 

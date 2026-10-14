@@ -2,7 +2,7 @@
 title: "quickstart"
 description: "Référence de la CLI pour la commande de première exécution guidée apothem quickstart."
 machineTranslated: true
-sourceHash: "f564c70124345bea"
+sourceHash: "951e6d6877611c54"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,27 +35,11 @@ environnement pris en charge et relève toujours d'un choix explicite.
 
 ## Comportement
 
-- **Environnement** — sans `--harness`, une exécution interactive liste les
-  noms pris en charge (plus `all`) et en demande un avant toute écriture. Une
-  exécution qui ne peut pas poser la question — `--yes`, `--format json` ou
-  absence de terminal — s'arrête sur une erreur d'utilisation qui nomme
-  l'option `--harness`, et n'écrit rien.
-- **Profil** — si le chemin de profil résolu ne contient aucun fichier,
-  `quickstart` propose de créer un profil de démarrage (création automatique
-  sous `--yes`, dans un shell non interactif ou sous `--format json`) et nomme
-  les champs d'identité provisoires à personnaliser.
-- **Aperçu + confirmation** — avant toute écriture, les cibles sont listées
-  sous deux en-têtes (racine du projet ou votre répertoire personnel) ; une
-  exécution interactive demande confirmation avant d'écrire en dehors du
-  projet. `--yes`, un shell non interactif et `--format json` poursuivent sans
-  demander de confirmation. Un refus interrompt la commande avant toute
-  écriture.
-- **Installation** — les capacités qu'un environnement ne prend pas en charge
-  nativement sont résumées en une note groupée par environnement (passez
-  `--verbose` pour le détail par capacité) ; l'ensemble complet figure toujours
-  dans le tableau warnings de `--format json`.
-- **Étape suivante** — la sortie du terminal nomme les commandes à exécuter
-  ensuite (`apothem verify …`, `apothem doctor`).
+- **Environnement** — sans `--harness`, une exécution interactive liste les noms pris en charge (plus `all`) et en demande un avant toute écriture. Une exécution qui ne peut pas poser la question — `--yes`, `--format json` ou absence de terminal — s'arrête sur une erreur d'utilisation qui nomme l'option `--harness`, et n'écrit rien.
+- **Profil** — si le chemin de profil résolu ne contient aucun fichier, `quickstart` propose de créer un profil de démarrage (création automatique avec `--yes`, dans un shell non interactif ou avec `--format json`) et nomme les champs d'identité provisoires à personnaliser.
+- **Aperçu + confirmation** — pour `--harness all`, les cibles sont listées sous deux en-têtes (racine du projet et répertoire personnel) ; une exécution interactive demande confirmation avant d'écrire en dehors du projet. Un environnement nommé seul est installé sans aperçu ni invite. `--yes`, un shell non interactif et `--format json` poursuivent sans demander de confirmation. Refuser l'aperçu de `--harness all` interrompt l'installation avant toute écriture ; un profil de démarrage créé à l'étape 1 est conservé.
+- **Installation** — les capacités qu'un environnement ne prend pas en charge nativement sont résumées en une note groupée par environnement (passez `--verbose` pour le détail par capacité) ; l'ensemble complet figure toujours dans le tableau des avertissements (`warnings`) de la sortie `--format json`.
+- **Étape suivante** — la sortie du terminal nomme les commandes à lancer ensuite (`apothem verify …`, `apothem doctor`).
 
 ## Options
 

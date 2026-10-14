@@ -2,7 +2,7 @@
 title: "Frontmatter-Schema"
 description: "Referenzleitfaden zur Struktur des YAML-Frontmatter-Blocks, zu den Pflichtschlüsseln pro Klasse und zu den Durchsetzungsregeln der Validatoren über alle Artefaktklassen hinweg."
 machineTranslated: true
-sourceHash: "79d900f52578b1b0"
+sourceHash: "f89ff828715e6fe4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,7 @@ sourceHash: "79d900f52578b1b0"
 
 Jedes Artefakt trägt am Kopf YAML-Frontmatter, begrenzt durch `---`-Zeilen. Das kanonische Autorschafts-Header-Banner gemäß [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) steht bei Dateien der Markdown-Familie über dem Frontmatter; das Frontmatter folgt unmittelbar darauf.
 
-Schlüssel verwenden `kebab-case`. Skalare Werte stehen entweder ohne Anführungszeichen oder in doppelten Anführungszeichen; Zeichenkettenwerte, die Doppelpunkte, Rautezeichen oder andere in YAML bedeutsame Zeichen enthalten, werden in Anführungszeichen gesetzt.
+Befehlsschlüssel verwenden `kebab-case`. Skill-Schlüssel verwenden `kebab-case`, mit Ausnahme von `userInvocable`, der camelCase-Schreibweise des Quell-Korpus (die Installation für Claude Code benennt sie in `user-invocable` um). Schlüssel für Regeln und delegierte Worker sind camelCase, wie die Tabelle der Pflichtschlüssel in Abschnitt 2 auflistet. Skalare Werte stehen entweder ohne Anführungszeichen oder in doppelten Anführungszeichen; Zeichenkettenwerte, die Doppelpunkte, Rautezeichen oder andere in YAML bedeutsame Zeichen enthalten, werden in Anführungszeichen gesetzt.
 
 ## 2. Pflichtfelder pro Klasse
 

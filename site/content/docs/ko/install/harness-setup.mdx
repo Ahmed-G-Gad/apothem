@@ -2,7 +2,7 @@
 title: "하니스 설정"
 description: "플랫폼용 하니스 어댑터를 추가하고 구성합니다."
 machineTranslated: true
-sourceHash: "e6bc4ceedf7d7137"
+sourceHash: "1f7d9a2a473395a7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -39,7 +39,7 @@ apothem verify --harness <name>
 apothem verify --harness all --project /path/to/project
 ```
 
-등록된 모든 어댑터를 한 번에 확인하려면 `apothem doctor`를 실행하세요. 하니스별 설치 상태 표를 출력하며, 어댑터 중 하나라도 미설치 상태를 보고하면 0이 아닌 코드로 종료됩니다.
+등록된 모든 어댑터를 한 번에 확인하려면 `apothem doctor`를 실행하세요. 이 명령은 하니스별 설치 상태 표를 출력하며, 점검이 실패할 때에만 0이 아닌 코드로 종료합니다. 예를 들면 검증되지 않는 설치된 하니스, 시작할 수 없는 훅 명령, 또는 존재하지만 유효성 검사를 통과하지 못하는 프로필입니다. 설치되지 않은 하니스는 목록에 표시되지만 `doctor`를 실패시키지 않습니다.
 
 ## 설치된 하니스 보기
 

@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "apothem uninstall コマンドの CLI リファレンス。"
 machineTranslated: true
-sourceHash: "2928176181100844"
+sourceHash: "a6cddf09b4a1ec27"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -48,11 +48,8 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
 {"schema_version": 1, "action": "uninstalled", "harness": "claude-code", "output_path": "..."}
 ```
 
-アダプターがインストールされていなかった場合:
-
-```json
-{"schema_version": 1, "status": "not_installed", "harness": "claude-code"}
-```
+アダプターがインストールされていなかった場合、コマンドは `0` で終了します。JSON 出力では、エンベロープに `"status": "success"` と `"action": "uninstalled"` が含まれ、結果の行には `"outcome": "skipped"` と、メッセージ `"not installed; no files
+removed"` が含まれます。`status` フィールドが `"not_installed"` になることはありません。
 
 ## 例
 
