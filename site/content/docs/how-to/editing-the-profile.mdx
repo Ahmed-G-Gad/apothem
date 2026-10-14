@@ -78,8 +78,9 @@ apothem profile show
 apothem verify --harness all
 ```
 
-`profile show` reflects your edit; `verify` confirms the materialized config
-matches the updated profile.
+`profile show` reflects your edit.
+
+`apothem verify --harness all` checks every registered harness, so it exits non-zero unless all of them are installed. Project-scope harnesses also need `--project PATH`; without it the batch stops with a `project.required` error. To check only the harness you updated, run `apothem verify --harness claude-code`. For a whole-system view that tolerates harnesses you have not installed, run `apothem doctor`.
 
 ## Related
 

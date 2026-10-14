@@ -49,7 +49,10 @@ When the selection writes outside the project root, an interactive confirmation
 guards the home-rooted writes. `--yes`, a non-interactive shell (no TTY),
 `--dry-run`, and `--format json` each proceed without prompting. Only `--dry-run`
 writes nothing; `--format json` skips the preview and the confirmation prompt but
-still performs the writes. Declining the prompt aborts before any file is written.
+still performs the writes. Declining the home-directory prompt aborts before the install writes. With
+`--clean`, the clean-slate step runs first under its own per-target confirmation:
+it writes a backup under `~/.apothem/backups` and removes the targets it confirms.
+Those removals and the backup stay in place when the install prompt is declined.
 
 ## Capability notes
 

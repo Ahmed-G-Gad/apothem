@@ -38,9 +38,11 @@ Debian-family hosts, or `pip install click rich`) and re-run.
 
 ### `apothem` not found after running the installer
 
-The installer places the source tree at `~/.apothem` and does not add an
-`apothem` executable to your `PATH`. Run the engine through the invocation
-the installer prints at completion:
+The installer places the source tree at `~/.apothem` and writes an `apothem`
+shim to `~/.local/bin` by default (POSIX) or `%LOCALAPPDATA%\Microsoft\WindowsApps`
+(Windows). It does not edit your `PATH`. If `apothem` is not found, that
+directory is not on `PATH`; add it, or use the `PYTHONPATH` form below until you
+do. Run the engine through the invocation the installer prints at completion:
 
 ```bash
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>

@@ -69,7 +69,9 @@ apothem verify --harness zed --project /path/to/project
 The verify command confirms that:
 
 1. The native config exists at the expected path.
-2. All mandatory fields from the shared profile are present.
+2. Each managed target exists; managed files are non-empty, and JSON or YAML
+   configs parse. Add `--profile PATH` to also confirm that the installed files
+   match that profile.
 3. The adapter-specific verification routine reports success.
 
 ## Updating
@@ -86,8 +88,10 @@ Re-derives the project `.rules` file from the current shared profile state.
 apothem uninstall --harness zed --project /path/to/project
 ```
 
-Removes the native config file written by the adapter, renaming it to a
-timestamped backup first. The shared profile YAML and Apothem engine
+Removes Apothem's managed block from the native config file `.rules` and keeps
+your own text. The file is deleted only when nothing else remains in it. Before
+the change, a timestamped copy of the file is saved under `~/.apothem/backups/`;
+no backup file is left in the project. The shared profile YAML and Apothem engine
 are unaffected.
 
 ## Conformity gate

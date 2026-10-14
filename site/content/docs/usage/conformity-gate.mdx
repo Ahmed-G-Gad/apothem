@@ -8,6 +8,10 @@ The conformity gate at `src/apothem/conformity/gate.py` runs the
 mechanical fraction of the fifteen-bar pre-emission gate (M1-M15)
 against every artifact the operator authors.
 
+The commands on this page assume an Apothem checkout, so prefix each one with
+`PYTHONPATH=src`. After a script install, use `PYTHONPATH="$HOME/.apothem/src"`
+in place of `src`.
+
 ## Running the gate
 
 The gate is **advisory by default**: it reports findings and exits `0`, so a
@@ -17,10 +21,10 @@ CI and pre-commit use to fail a violating change.
 
 ```bash
 # Advisory: report every validator's findings across the repo, exit 0
-python -m apothem.conformity.gate --all .
+PYTHONPATH=src python -m apothem.conformity.gate --all .
 
 # Strict: exit non-zero (code 2) when a blocking finding is present
-python -m apothem.conformity.gate --all --strict .
+PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 ```
 
 Exit codes: `0` clean (or advisory), `2` a strict findings-block, `3` a
@@ -64,13 +68,13 @@ when the directory has no commit history.
 
 ```bash
 # List every registered validator
-python -m apothem.conformity.gate --list
+PYTHONPATH=src python -m apothem.conformity.gate --list
 
 # Run a single named validator
-python -m apothem.conformity.gate --check multi-surface-coherence
+PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence
 
 # Run every validator against one file
-python -m apothem.conformity.gate src/apothem/rules/my-rule.md
+PYTHONPATH=src python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 ```
 
 `--hook` mode (`python -m apothem.conformity.gate --hook`) is the
@@ -95,4 +99,8 @@ failure — check the write's target against the scopes above first.
 
 ## CI integration
 
-The gate runs in CI via `.github/workflows/conformity.yml` on every push.
+The quality job in `.github/workflows/ci.yml` runs the gate in strict mode
+(`python -m apothem.conformity.gate --all . --strict`) on pushes to `main` and
+on pull requests to `main` that touch the paths that job watches. The separate
+`.github/workflows/conformity.yml` workflow runs the fixture sweep
+(`tests/conformity-scenarios/verify.py --strict`).

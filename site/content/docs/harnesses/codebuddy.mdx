@@ -77,9 +77,11 @@ file with the latest rendered content.
 apothem uninstall --harness codebuddy --project /path/to/project
 ```
 
-Removes the native config files written by the adapter, renaming the managed
-rules file to a timestamped backup. The shared profile YAML and the Apothem
-engine are unaffected.
+Removes the Apothem block from `apothem-rules.md` and keeps any other text in
+it. The file is deleted only when nothing else remains in it. Before the change,
+a timestamped copy of the file is saved under `~/.apothem/backups/`; no backup
+file is left in the project. The shared profile YAML and the Apothem engine are
+unaffected.
 
 ## Conformity gate
 

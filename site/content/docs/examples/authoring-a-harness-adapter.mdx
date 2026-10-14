@@ -26,10 +26,6 @@ cd apothem-myadapter
 name = "apothem-myadapter"
 version = "X.Y.Z"
 requires-python = ">=3.10"
-dependencies = ["apothem>=X.Y.Z"]  # pin the floor to the apothem release you target
-
-[project.entry-points."apothem.harnesses"]
-my-harness = "apothem_myadapter.adapter:MyHarnessAdapter"
 ```
 
 ## Step 2: Implement the adapter
@@ -85,10 +81,11 @@ class MyHarnessAdapter(HarnessAdapter):
         return "\n\n".join(str(rule) for rule in rules)
 ```
 
+Apothem does not discover third-party adapters. Add the adapter to the static registry in `src/apothem/lib/harness_registry.py` in an Apothem checkout first. Until then, `apothem install --harness my-harness` rejects the id.
+
 ## Step 3: Install and test
 
 ```bash
-pip install -e .
 apothem install --harness my-harness
 apothem verify --harness my-harness
 ```

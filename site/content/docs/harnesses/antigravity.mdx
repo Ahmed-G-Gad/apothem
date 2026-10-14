@@ -81,8 +81,9 @@ apothem verify --harness antigravity
 The verify command confirms that:
 
 1. The native context file exists at the expected path.
-2. The Apothem Antigravity CLI plugin metadata exists and declares the
-   `apothem` plugin name.
+2. The plugin manifest `plugin.json` exists, is non-empty, and parses as JSON.
+   Verify does not check the plugin name; inspect that field yourself after
+   changing it.
 
 ## Updating
 

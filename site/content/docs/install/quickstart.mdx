@@ -134,8 +134,10 @@ apothem install --harness cursor --project .
 
 Install the whole registry-backed set at once with `--harness all`. Because that
 selection writes both project-scope and user-scope files, the command prints the
-concrete targets grouped by location and confirms before writing outside the
-project root:
+concrete targets grouped by location. In an interactive terminal it asks before
+writing outside the project root. A run with no terminal, a run given `--yes`, or
+a run with `--format json` writes without asking; `--dry-run` writes nothing. Run
+the full set with:
 
 ```bash
 apothem install --harness all --project .
@@ -147,7 +149,7 @@ See the [full harness list](/docs/harnesses) for every supported name, and the
 ## 4. Verify
 
 Materializing is only half the job — `verify` confirms the harness's expected
-config files landed and match what the profile declares:
+config files landed and are valid:
 
 ```bash
 apothem verify --harness claude-code
@@ -157,9 +159,12 @@ apothem verify --harness claude-code
 ✓ claude-code is verified at /home/you/.claude/settings.json
 ```
 
-`verify` exits non-zero if the configuration is missing or has drifted, so it
-doubles as a gate in a setup script. For a whole-machine health check across
-every registered adapter, run:
+`verify` exits non-zero if a managed target is missing, a managed file is empty,
+or a JSON or YAML config does not parse. Add `--profile PATH` to also fail when
+an installed file differs from that profile, which makes `verify` a drift check;
+without it, a stale config still verifies. This lets it serve as a gate in a
+setup script. For a whole-machine health check across every registered adapter,
+run:
 
 ```bash
 apothem doctor

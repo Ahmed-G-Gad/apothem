@@ -19,7 +19,7 @@ environment variables before you run it.
 | --- | --- | --- |
 | `APOTHEM_HOME` | Install destination for the cloned source tree | `$HOME/.apothem` |
 | `APOTHEM_REPO` | Git remote to clone | `https://github.com/ahmed-g-gad/apothem` |
-| `APOTHEM_REF` | Git ref to check out; unset resolves the latest signed `vMAJOR.MINOR.PATCH` tag, a tag value pins it, `main` selects the moving branch | unset (latest signed tag) |
+| `APOTHEM_REF` | Git ref to check out; unset resolves the latest signed `vMAJOR.MINOR.PATCH` tag, a tag value pins it, `main` selects the moving branch. A non-tag ref such as `main` aborts unless `APOTHEM_ALLOW_UNVERIFIED=1`. | unset (latest signed tag) |
 | `APOTHEM_ALLOW_UNVERIFIED` | Downgrade a tag-signature-verification failure from a fatal abort to a warning when set to `1` | `0` (verify, fail-closed) |
 | `APOTHEM_VERIFY` | `signature` verifies the release tag's GPG signature; `checksum` installs the release's platform archive after checking its SHA-256 against the release's `SHA256SUMS` (integrity, not proof of who published it) | `signature` |
 | `APOTHEM_RELEASE_BASE` | Download base for checksum mode | `<APOTHEM_REPO>/releases/download` |
@@ -78,10 +78,11 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
    APOTHEM_HARNESS=cursor bash install.sh
    ```
 
-2. Pin the source ref and the install destination:
+2. Pin the install destination and select the moving `main` branch. A branch is
+   not a signed tag, so the installer also needs `APOTHEM_ALLOW_UNVERIFIED=1`:
 
    ```bash
-   APOTHEM_REF=main APOTHEM_HOME=/opt/apothem bash install.sh
+   APOTHEM_REF=main APOTHEM_ALLOW_UNVERIFIED=1 APOTHEM_HOME=/opt/apothem bash install.sh
    ```
 
 3. Use a local checkout and a custom profile, skipping verify:
@@ -103,6 +104,7 @@ pwsh -NoProfile -File install.ps1
 ```
 
 ```powershell
+$env:APOTHEM_ALLOW_UNVERIFIED = '1'
 $env:APOTHEM_REF = 'main'
 $env:APOTHEM_HOME = 'C:\opt\apothem'
 pwsh -NoProfile -File install.ps1

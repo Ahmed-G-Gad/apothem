@@ -16,7 +16,7 @@ The canonical-uppercase exceptions are reserved for the publication-surface sing
 
 ## 2. Frontmatter Keys
 
-YAML frontmatter keys use `kebab-case` (e.g., `argument-hint`, `disable-model-invocation`). The kebab-case rule applies uniformly across rules, commands, delegated workers, skills, and `CLAUDE.md` itself.
+Command frontmatter keys use `kebab-case` (for example, `argument-hint`, `disable-model-invocation`, `allowed-tools`). Skill keys use `kebab-case` except `userInvocable`, the camelCase spelling the source corpus uses; the Claude Code install renames it to `user-invocable`. Rule and delegated-worker keys are camelCase (for example, `pathFilter`, `alwaysApply`, `maxTurns`, `disallowedTools`). The [frontmatter schema](/docs/reference/frontmatter-schema) required-key table lists the keys for each class.
 
 ## 3. Branch Names
 

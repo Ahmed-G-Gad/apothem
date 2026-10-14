@@ -26,31 +26,7 @@ description: "Apothem conformity gate — the mechanical fraction of the fifteen
 
 ## Severity ladder
 
-| Severity | Effect on gate |
-|---|---|
-| **Critical** | Gate FAIL — emission blocked unconditionally |
-| **Important** | Gate FAIL when 2+ Important bars fail simultaneously |
-| **Advisory** | Gate WARN — logged in the signed record; does not block emission |
-
-Most mechanical-fraction matchers default to **Important**. M5 (authority — secrets, fabricated endpoints) and M12 (orphan outputs) are **Critical**.
-
-```mermaid
-%% provenance: hand-authored %%
-%% verified: 2026-07-06 %%
-%% cross-reference: the Severity ladder table above; src/apothem/conformity/gate.py (severity aggregation) %%
-flowchart TD
-    accTitle: Conformity-gate severity-to-verdict decision flow
-    accDescr: A finding's severity determines the gate verdict. A Critical finding — M5 authority or M12 orphan output — fails the gate and blocks emission unconditionally. Important findings block only when two or more fail simultaneously; a single Important finding does not block. Advisory findings are logged in the signed record and never block emission.
-    F["Finding raised<br/>by a matcher"] --> S{"Severity?"}
-    S -->|Critical| C["Critical<br/>M5 authority · M12 orphan output"]
-    S -->|Important| I["Important<br/>most mechanical matchers"]
-    S -->|Advisory| A["Advisory"]
-    C --> FAIL["Gate FAIL<br/>emission blocked"]
-    I --> Q{"2+ Important<br/>bars failing?"}
-    Q -->|yes| FAIL
-    Q -->|no| WARN["Gate WARN<br/>logged in signed record<br/>emission proceeds"]
-    A --> WARN
-```
+The gate has no Critical, Important or Advisory ladder and no two-finding threshold. Without `--strict` (or `APOTHEM_CONFORMITY_STRICT=1`), the gate reports findings and exits `0`. With `--strict`, a single-file or hook check exits `2` when any matcher fails, and a corpus run (`--all-perwrite`) exits `2` when a blocking matcher fails; advisory matchers are reported only. The installed Write/Edit hook does not pass `--strict`, so it reports findings and the write proceeds unless `APOTHEM_CONFORMITY_STRICT=1` is set in its environment.
 
 ## Validators
 

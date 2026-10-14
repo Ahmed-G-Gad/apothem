@@ -16,7 +16,7 @@ against managing it with Apothem.
 | Author steering rules | Hand-write each file under `.kiro/steering/` | Rendered from the shared corpus |
 | Keep foundation files untouched | Remember not to overwrite `product.md` / `tech.md` / `structure.md` | The adapter writes only `apothem-rules.md` |
 | Keep rules aligned with other harnesses | Manual, per tool | Automatic on `apothem update` |
-| Verify the config is correct | Manual inspection | `apothem verify --harness kiro` |
+| Verify the config is correct | Manual inspection | `apothem verify --harness kiro --project <path>` |
 
 ## What Apothem manages
 
@@ -31,10 +31,11 @@ Every change to the shared rules re-renders the file on the next
 
 1. Run `apothem profile init` to create the shared profile if you have not yet.
 2. Move the rules from your existing `.kiro/steering/` into the shared corpus.
-3. Run `apothem install --harness kiro` to render the `apothem-rules.md`
-   steering file.
-4. Run `apothem verify --harness kiro` to confirm the config landed.
-5. Use `apothem update --harness kiro` for every later change.
+3. Run `apothem install --harness kiro --project <path>` to render the
+   `apothem-rules.md` steering file.
+4. Run `apothem verify --harness kiro --project <path>` to confirm the config
+   landed.
+5. Use `apothem update --harness kiro --project <path>` for every later change.
 
 ## Read next
 
