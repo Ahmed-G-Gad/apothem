@@ -193,8 +193,9 @@ def test_git_failure_on_the_work_tree_is_raised_with_its_message(
 
     # git words a gitfile that points nowhere differently across builds ("not a
     # git repository: ..." on Linux git 2.43, "gitfile does not point to a valid
-    # repository: ..." on the macOS runners), so pin only that the message is
-    # git's own fatal line and not the "git ls-files exited N" fallback.
+    # repository: ..." on some macOS and Windows runners), so pin only that the
+    # message is git's own fatal line and not the "git ls-files exited N"
+    # fallback.
     with pytest.raises(regen.SourceCheckError, match=r"^fatal: "):
         regen.stray_source_paths(tmp_path, _ROOTS)
 
