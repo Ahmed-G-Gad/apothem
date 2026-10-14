@@ -2,7 +2,7 @@
 title: "Переменные окружения установщика"
 description: "Управляйте скриптовым установщиком (место установки, источник, окружение, профиль, проверка) с помощью переменных окружения."
 machineTranslated: true
-sourceHash: "b69fe1c566ac13fb"
+sourceHash: "ac08049d8506b135"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -11,7 +11,10 @@ sourceHash: "b69fe1c566ac13fb"
 
 ## Предварительные условия
 
-- POSIX-оболочка (`bash`) или PowerShell 5.1+.
+- POSIX-оболочка (`bash`) или PowerShell 5.1+. Приведённые ниже примеры для
+  PowerShell запускают `pwsh` (PowerShell 7+). В Windows PowerShell 5.1 вместо
+  этого выполните
+  `powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1`.
 - Переменные читаются один раз в начале установщика, поэтому задайте их в той
   же команде (или сначала экспортируйте их), затем запустите установщик.
 
@@ -30,7 +33,7 @@ sourceHash: "b69fe1c566ac13fb"
 | `APOTHEM_PROFILE` | Путь к YAML-файлу общего профиля | `$HOME/.config/apothem/profile.yaml` |
 | `APOTHEM_SKIP_VERIFY` | При значении `1` пропускает шаг проверки после установки | `0` (проверка выполняется) |
 | `APOTHEM_AUTO_INSTALL_DEPS` | При значении `1` автоматически, без запроса, устанавливает недостающие предварительные требования `click` / `rich` | `0` (запрос; в неинтерактивном конвейере — отказ) |
-| `APOTHEM_BIN_DIR` | Каталог для размещаемого shim команды `apothem` | `$HOME/.local/bin` (POSIX); `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) |
+| `APOTHEM_BIN_DIR` | Каталог для размещаемого шима команды `apothem` | `$HOME/.local/bin` (POSIX); `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) |
 | `NO_COLOR` | Отключает цветной вывод, если задана с любым значением ([no-color.org](https://no-color.org/)); цвет также всегда отключён, когда вывод направлен не в терминал (в конвейер, файл или журнал CI) | не задана (цвет только в интерактивном терминале) |
 
 `APOTHEM_SOURCE` имеет приоритет над клонированием: если переменная указывает
@@ -59,7 +62,7 @@ Windows), чтобы разрешить замену. Устаревший пу�
 выберите подвижную ветку с помощью `APOTHEM_REF=main` (без проверки) или задайте
 `APOTHEM_ALLOW_UNVERIFIED=1`, чтобы продолжить после сбоя проверки с
 предупреждением (для изолированной от сети среды, локального использования или
-релизов, выпущенных до появления подписи).
+использования до появления подписанного релиза).
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH bash install.sh
@@ -81,7 +84,9 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
    APOTHEM_HARNESS=cursor bash install.sh
    ```
 
-2. Закрепите место установки и выберите подвижную ветку `main`. Ветка не является подписанным тегом, поэтому инсталлятору также нужен `APOTHEM_ALLOW_UNVERIFIED=1`:
+2. Закрепите место установки и выберите подвижную ветку `main`. Ветка не
+   является подписанным тегом, поэтому установщику также нужен
+   `APOTHEM_ALLOW_UNVERIFIED=1`:
 
    ```bash
    APOTHEM_REF=main APOTHEM_ALLOW_UNVERIFIED=1 APOTHEM_HOME=/opt/apothem bash install.sh

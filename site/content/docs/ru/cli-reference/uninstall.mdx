@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "Справочник CLI для команды apothem uninstall."
 machineTranslated: true
-sourceHash: "a6cddf09b4a1ec27"
+sourceHash: "4803f58a031908d1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -24,13 +24,13 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
 сразу отказывается выполняться со структурированной ошибкой
 `uninstall.confirmation_required` (код выхода 1), если не указан `--yes`.
 Если выбранное окружение не установлено, команда завершается успешно (код
-выхода 0) с уведомлением «nothing to remove».
+выхода 0) с уведомлением «нечего удалять».
 
 Удаление с `--harness all` намеренно исчерпывающее: оно охватывает каждое
 зарегистрированное окружение, включая те, которые `exclude_harnesses` профиля
 пропускает при установке, — очистка добирается до состояния, которое могла
 оставить ранее выполненная более широкая установка. Окружения, которые никогда
-не устанавливались, сообщают «nothing to remove».
+не устанавливались, сообщают «нечего удалять».
 
 Псевдоним в продолженной форме `apothem uninstalling` разрешается в тот же
 обработчик.
@@ -54,10 +54,33 @@ apothem uninstall --harness NAME|all [--yes] [--project PATH]
 Когда адаптер установлен и успешно удалён:
 
 ```json
-{"schema_version": 1, "action": "uninstalled", "harness": "claude-code", "output_path": "..."}
+{
+  "schema_version": 1,
+  "status": "success",
+  "command": "uninstall",
+  "action": "uninstalled",
+  "harness": "claude-code",
+  "profile_path": null,
+  "project": null,
+  "files_written": [],
+  "results": [
+    {
+      "harness": "claude-code",
+      "outcome": "updated",
+      "operation": "uninstall",
+      "path": "C:\\Users\\Example\\.claude\\settings.json",
+      "message": "managed files removed"
+    }
+  ],
+  "warnings": [],
+  "error": null,
+  "output_path": "C:\\Users\\Example\\.claude\\settings.json"
+}
 ```
 
-Когда адаптер не был установлен, команда завершается с кодом `0`. В выводе JSON конверт содержит `"status": "success"` и `"action": "uninstalled"`, а строка результатов содержит `"outcome": "skipped"` с сообщением `"not installed; no files
+Когда адаптер не был установлен, команда завершается с кодом `0`. В выводе JSON
+конверт содержит `"status": "success"` и `"action": "uninstalled"`, а строка
+результатов содержит `"outcome": "skipped"` с сообщением `"not installed; no files
 removed"`. Поле `status` никогда не принимает значение `"not_installed"`.
 
 ## Примеры

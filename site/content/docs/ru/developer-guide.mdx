@@ -2,7 +2,7 @@
 title: "Вклад в Apothem — руководство разработчика"
 description: "Сопровождайте и расширяйте экосистему Apothem, создавая правила, команды, помощников, навыки и хуки с каноническими схемами, требованиями к фронтматтеру и процедурами проверки."
 machineTranslated: true
-sourceHash: "782e178598975d52"
+sourceHash: "04ae410c0eeaf642"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ Apothem по стандартам качества уровня SOTA.
 | **Команда** | `src/apothem/commands/*.md` | Слеш-команда (`/command-name`) для сложных рабочих процессов | Новый многошаговый пользовательский рабочий процесс |
 | **Помощник** | `src/apothem/agents/*.md` | Постоянное определение делегированного исполнителя для параллельных задач | Новая повторяющаяся специализированная задача (аудит, исследование, проверка качества) |
 | **Навык** | `src/apothem/skills/{name}/SKILL.md` | Переиспользуемая методика с сигналом обнаружения | Новый обнаруживаемый переиспользуемый шаблон методики |
-| **Хук** | `src/apothem/hooks/` + `settings.json` | Проверка или управление состоянием, запускаемые событием | Новое событие жизненного цикла или потребность в проверке |
+| **Хук** | `src/apothem/hooks/` + `hooks.json` + `settings.json` | Проверка или управление состоянием, запускаемые событием | Новое событие жизненного цикла или потребность в проверке |
 
 ## Контракт адаптера окружения
 
@@ -74,7 +74,7 @@ API key, private key, authorization, auth, а также поля в форме 
 **Машиночитаемый контракт, который применяет шлюз, — это JSON Schema для
 каждого класса в `src/apothem/schemas/*.schema.json`: `additionalProperties`
 отклоняет неизвестные ключи, поэтому последнее слово за шлюзом
-соответствия.** Их отслеживают две проекции для чтения человеком:
+соответствия.** Их отражают две проекции для чтения человеком:
 `site/content/docs/reference/frontmatter-schema.mdx` (указатель обязательных
 ключей) и `site/content/docs/reference/artifact-schema.mdx` (шаблоны и
 разобранные примеры для каждого класса). Если страница расходится с JSON
@@ -88,7 +88,10 @@ Schema, приоритет у схем.
 
 ## Быстрая проверка фронтматтера
 
-Фронтматтер каждого артефакта должен проходить эти проверки:
+Фронтматтер каждого артефакта должен проходить эти проверки. Применяйте
+проверки `version`, `updated` и `portability` только к тому классу, который
+несёт этот ключ: правила не несут ни одного из них, а навыки не несут
+`portability`.
 
 ```yaml
 ✓ Valid YAML syntax (use tools: `yamllint` or PowerShell `ConvertFrom-Yaml` where available)
@@ -120,7 +123,21 @@ Schema, приоритет у схем.
 - **Команды:** `{name}.md`
 - **Помощники:** `{name}.md`
 - **Навыки:** внутри папки `src/apothem/skills/{name}/SKILL.md` (точный регистр: `SKILL.md`)
-- **Хуки:** внутри папки `src/apothem/hooks/`. Все обработчики событий написаны на Python. Каждая команда хука в `settings.json` использует exec-форму: `command` — это плейсхолдер интерпретатора `${PYTHON_BIN}`, который разрешается при установке, а `args` содержит путь к скрипту и его аргументы. Шаблон Claude Code запускает `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` и `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook` по абсолютному пути, поэтому установленной копии не нужен импортируемый пакет `apothem`. `dispatch.py` направляет `SessionStart` в `session_start_bootstrap.main()`, а каждое другое разрешённое событие — в `emit_hook_context.main()`. Единственные shell-заглушки, разрешённые в `src/apothem/hooks/` или `scripts/`, — это шесть файлов локатора и начальной загрузки (`find-python.{ps1,sh}`, `find-pwsh.{ps1,sh}`, `bootstrap.{ps1,sh}`); любой другой файл `.ps1` / `.sh` не проходит проверку гигиены `scripts/dev/validate_hooks.py`.
+- **Хуки:** внутри папки `src/apothem/hooks/`. Все обработчики событий написаны на Python.
+  Каждая команда хука в шаблоне `settings.json` для Claude Code использует exec-форму:
+  `command` — это плейсхолдер интерпретатора `${PYTHON_BIN}`, который разрешается при
+  установке, а `args` содержит путь к скрипту и его аргументы. Этот шаблон запускает
+  `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` и
+  `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook` по абсолютному пути, поэтому
+  установленной копии не нужен импортируемый пакет `apothem`. Плагин Claude Code вместо
+  этого регистрирует хуки в `src/apothem/hooks/hooks.json`, как shell-команды, которые
+  запускают `hooks/lib/bootstrap.sh` через `bash`. Новый хук регистрируйте в `hooks.json`
+  и в шаблоне `settings.json` для Claude Code. `dispatch.py` направляет `SessionStart` в
+  `session_start_bootstrap.main()`, а каждое другое разрешённое событие — в
+  `emit_hook_context.main()`. Единственные shell-заглушки, разрешённые в
+  `src/apothem/hooks/` или `scripts/`, — это шесть файлов локатора и начальной загрузки
+  (`find-python.{ps1,sh}`, `find-pwsh.{ps1,sh}`, `bootstrap.{ps1,sh}`); любой другой файл
+  `.ps1` / `.sh` не проходит проверку гигиены `scripts/dev/validate_hooks.py`.
 
 ### Перекрёстные ссылки
 
@@ -135,7 +152,9 @@ Schema, приоритет у схем.
 
 ## Переносимость: Windows и Unix
 
-Каждый артефакт должен явно объявлять свой статус переносимости.
+Каждая команда ДОЛЖНА явно объявлять свой статус переносимости в поле
+`portability`, а помощник МОЖЕТ. Навыки, правила и output-стили не несут поля
+`portability`.
 
 ### Универсальный (по умолчанию)
 
@@ -171,7 +190,7 @@ portability: "universal-with-windows-caveats"
 portability: "unix-only"
 ```
 
-Документируйте причину в первом разделе правила.
+Документируйте причину в первом разделе артефакта.
 
 ## Область действия: всегда активные или с фильтрацией по пути
 
@@ -180,7 +199,8 @@ portability: "unix-only"
 Правило применяется везде.
 
 ```yaml
-scope: "always-on"
+pathFilter: ""
+alwaysApply: true
 ```
 
 ### С фильтрацией по пути
@@ -188,8 +208,8 @@ scope: "always-on"
 Правило применяется условно, в зависимости от пути файла.
 
 ```yaml
-scope: "path-filtered"
 pathFilter: "**/*.py, **/*.toml"
+alwaysApply: false
 ```
 
 `pathFilter` использует glob-шаблоны (тот же формат, что и в `.gitignore`).
@@ -197,31 +217,34 @@ pathFilter: "**/*.py, **/*.toml"
 
 ## Семантика версий
 
-Каждый артефакт несёт собственную семантическую версию (`MAJOR.MINOR.PATCH`):
+Каждый версионируемый артефакт несёт собственную семантическую версию
+(`MAJOR.MINOR.PATCH`). Команды и навыки требуют её, помощники и output-стили
+МОГУТ её нести, а правила её не несут:
 
 - **PATCH** — исправления опечаток, форматирование, обновление ссылок, правки только в комментариях. Поведение не меняется.
-- **MINOR** — аддитивные изменения без нарушения совместимости: новые необязательные разделы, дополнительные антипаттерны, новые необязательные поля фронтматтера, новые примеры. Существующие потребители продолжают работать без изменений.
+- **MINOR** — аддитивные изменения без нарушения совместимости: новые необязательные разделы, новые необязательные поля фронтматтера, новые примеры. Существующие потребители продолжают работать без изменений.
 - **MAJOR** — ломающие изменения схемы или контракта: удалённые разделы, переименованные поля, изменённое поведение существующей директивы, изменения, которые требуют адаптации зависимых артефактов.
 
 Примеры:
 
 - `vX.Y.Z` → `vX.Y.(Z+1)` (PATCH: исправление опечатки)
-- `vX.Y.Z` → `vX.(Y+1).0` (MINOR: добавлена новая запись в Anti-Patterns)
+- `vX.Y.Z` → `vX.(Y+1).0` (MINOR: добавлен новый необязательный раздел)
 - `vX.Y.Z` → `v(X+1).0.0` (MAJOR: контракт объявлен стабильным)
 - `vX.Y.Z` → `v(X+1).0.0` (MAJOR: удалено обязательное поле фронтматтера)
 
-Повышайте `version` и обновляйте `updated` вместе при каждой правке, меняющей
-поведение. Для релизов, которые объединяют изменения артефактов, добавляйте
-соответствующую строку в `CHANGELOG.md` уровня экосистемы.
+Повышайте `version` и обновляйте `updated` вместе при каждой правке,
+меняющей поведение артефакта, который несёт эти поля. Для релизов, которые
+объединяют изменения артефактов, добавляйте соответствующую строку в
+`CHANGELOG.md` уровня экосистемы.
 
 ## Когда редактировать артефакт
 
 ### Правила
 
-- Считайте структуру Mandatory/Optional несущей: её перестройка затрагивает
-  каждый зависимый артефакт (требуется повышение MAJOR).
+- Считайте структуру Mandatory/Optional несущей — её перестройка затрагивает
+  каждый зависимый артефакт.
 - Уточняйте Anti-Patterns, примеры Seriousness Scaling и цитаты по мере
-  углубления понимания (повышение MINOR).
+  углубления понимания.
 - Фиксируйте обоснование любого структурного изменения в соответствующем
   тематическом файле памяти.
 
@@ -292,15 +315,17 @@ alwaysApply: true
 ---
 ```
 
-### 4. Обновите CLAUDE.md
+### 4. Обновите README правил
 
-Добавьте запись в таблицу реестра `§7.2 Rules`:
+Добавьте строку в таблицу семейства этого правила в разделе Rule families файла
+`src/apothem/rules/README.md`:
 
 ```markdown
-| My New Rule | `src/apothem/rules/my-new-rule.md` | Always-on | CM-5/CM-21 |
+| `my-new-rule.md` | One-line concern of the new rule. |
 ```
 
-Соблюдайте алфавитный порядок внутри таблицы.
+Выберите таблицу того семейства, чья область ответственности соответствует
+правилу.
 
 ### 5. Дополните CHANGELOG.md
 
@@ -373,9 +398,9 @@ allowed-tools: "Read, Glob, Grep"
 - Раздел Workflow с шагами
 - Контракт возврата / формат вывода
 
-### 4. Обновите CLAUDE.md и CHANGELOG.md
+### 4. Обновите README и CHANGELOG.md
 
-Строка реестра в `§7.1 Commands`; строка CHANGELOG в разделе `### Added` следующего релиза.
+Добавьте строку в соответствующую таблицу команд в `src/apothem/commands/README.md`; добавьте строку CHANGELOG в раздел `### Added` следующего релиза.
 
 ### 5. Проверьте
 
@@ -436,9 +461,9 @@ portability: "universal"
 - Workflow (нумерованные шаги)
 - Return Contract (максимум токенов, структура, обязательные поля)
 
-### 4. Обновите CLAUDE.md и CHANGELOG.md
+### 4. Обновите README и CHANGELOG.md
 
-Строка реестра в `§7.3 Helpers`; строка CHANGELOG в разделе `### Added` следующего релиза.
+Добавьте строку в таблицу Index в `src/apothem/agents/README.md`; добавьте строку CHANGELOG в раздел `### Added` следующего релиза.
 
 ### 5. Протестируйте
 
@@ -467,8 +492,8 @@ portability: "universal"
 %% provenance: site/content/docs/reference/artifact-schema.mdx (skill artifact schema) %%
 %% cross-reference: src/apothem/skills/plan-suite/SKILL.md (canonical example) %%
 flowchart TD
-    accTitle: New harness adapter directory structure
-    accDescr: Top-down flowchart of the canonical directory and file structure for a new apothem harness adapter under src/apothem/harnesses including init, install, uninstall, update, verify modules and the templates subdirectory.
+    accTitle: New skill directory structure
+    accDescr: Top-down flowchart of the directory structure for a new skill under src/apothem/skills: a {skill-name} folder holding the required SKILL.md plus optional examples and templates subfolders.
     SKILLS["src/apothem/skills/"]
     SKILLS --> NAME["{skill-name}/"]
     NAME --> SKILLMD["SKILL.md<br/>(main definition · required)"]
@@ -503,9 +528,9 @@ argument-hint: "[args]"               # optional; if userInvocable
 - Common Mistakes
 - Examples
 
-### 4. Обновите CLAUDE.md и CHANGELOG.md
+### 4. Обновите README и CHANGELOG.md
 
-Строка реестра в `§7.5 Skills`; строка CHANGELOG в разделе `### Added` следующего релиза.
+Добавьте строку в таблицы Index и Folder contents в `src/apothem/skills/README.md`; добавьте строку CHANGELOG в раздел `### Added` следующего релиза.
 
 ### 5. Проверьте
 
@@ -520,13 +545,13 @@ Invoke the ecosystem-audit skill with --focus skills --fix
 - [ ] Фронтматтер проходит проверку синтаксиса YAML
 - [ ] Все обязательные поля присутствуют согласно схеме
 - [ ] Поле `name` использует kebab-case
-- [ ] `version` семантическая (`MAJOR.MINOR.PATCH`) и была повышена, если поведение изменилось
-- [ ] `updated` совпадает с сегодняшней датой у каждого артефакта, который вы изменили
-- [ ] Поле `portability` задано и корректно
+- [ ] `version` (только у версионируемых классов; правила её не несут) семантическая (`MAJOR.MINOR.PATCH`) и была повышена, если поведение изменилось
+- [ ] `updated` совпадает с сегодняшней датой у каждого изменённого вами артефакта, который несёт это поле
+- [ ] Поле `portability` задано и корректно (только у команд и помощников)
 - [ ] CHANGELOG.md содержит изменение в соответствующей категории в разделе следующего релиза
 - [ ] Нет ссылок на внутренние элементы планов (соответствие CM-7)
 - [ ] Перекрёстные ссылки согласованы с другими артефактами
-- [ ] Новый артефакт зарегистрирован в реестре CLAUDE.md
+- [ ] Новый артефакт зарегистрирован в индексе README своей папки
 - [ ] Артефакт протестирован (если применимо)
 - [ ] Навык `ecosystem-audit` выполняется без ошибок
 - [ ] Содержимое следует структурным соглашениям (формат заголовка, разделы и т. д.)
@@ -566,8 +591,8 @@ In prose: The plan-suite skill provides the Master Plan Suite template.
 ### Ссылка на разделы CLAUDE.md
 
 ```markdown
-See CLAUDE.md § 7.2 (Rules registry).
-Or: Section 4 (Seriousness-Scaled Governance).
+See CLAUDE.md § Harness Adapter Pattern.
+Or: § Plans Discipline.
 ```
 
 ## Линтинг и форматирование
