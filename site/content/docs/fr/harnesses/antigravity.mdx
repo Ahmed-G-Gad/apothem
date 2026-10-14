@@ -2,7 +2,7 @@
 title: "Antigravity"
 description: "Adaptateur d'environnement Apothem pour Antigravity (préversion)."
 machineTranslated: true
-sourceHash: "43dc91cbb7358f2c"
+sourceHash: "5c4311df7cdf88b7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -91,8 +91,7 @@ apothem verify --harness antigravity
 La commande verify confirme que :
 
 1. Le fichier de contexte natif existe au chemin attendu.
-2. Les métadonnées du plugin Apothem de la CLI Antigravity existent et déclarent
-   le nom de plugin `apothem`.
+2. Le manifeste de plugin `plugin.json` existe, n'est pas vide et s'analyse comme du JSON. La vérification ne contrôle pas le nom du plugin ; inspectez ce champ vous-même après l'avoir modifié.
 
 ## Mise à jour
 

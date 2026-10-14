@@ -2,7 +2,7 @@
 title: "CodeBuddy"
 description: "适用于 Tencent CodeBuddy（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "12cdb066aabd7caf"
+sourceHash: "84f84790325354af"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -55,7 +55,7 @@ apothem update --harness codebuddy --project /path/to/project
 apothem uninstall --harness codebuddy --project /path/to/project
 ```
 
-移除适配器写入的原生配置文件，并将受管规则文件重命名为带时间戳的备份。共享配置档案 YAML 和 Apothem 引擎不受影响。
+移除 `apothem-rules.md` 中的 Apothem 块，并保留其中的其他文本。只有当文件中已无其他内容时才会删除该文件。在变更之前，会在 `~/.apothem/backups/` 下保存一份带时间戳的文件副本；项目中不会留下备份文件。共享配置档案 YAML 与 Apothem 引擎不受影响。
 
 ## 合规闸门
 

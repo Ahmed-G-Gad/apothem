@@ -2,7 +2,7 @@
 title: "Contribuer à Apothem — Guide du développeur"
 description: "Maintenir et étendre l'écosystème Apothem en rédigeant des règles, des commandes, des auxiliaires, des skills et des hooks à l'aide de schémas canoniques, d'exigences de frontmatter et de procédures de validation."
 machineTranslated: true
-sourceHash: "ae3392672e01c783"
+sourceHash: "782e178598975d52"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -123,17 +123,7 @@ soulignement.
 - **Commandes :** `{name}.md`
 - **Auxiliaires :** `{name}.md`
 - **Skills :** dans le dossier `src/apothem/skills/{name}/SKILL.md` (casse exacte : `SKILL.md`)
-- **Hooks :** dans le dossier `src/apothem/hooks/`. Tous les gestionnaires
-  d'événements sont en Python. Chaque commande de hook de `settings.json`
-  utilise la forme exec (`python` plus `args`) pour invoquer
-  `-m apothem.hooks.dispatch <event> [<message-name>]` ou
-  `-m apothem.conformity.gate --hook`. `dispatch.py` achemine `SessionStart`
-  vers `session_start_bootstrap.main()` et
-  tout autre événement de la liste blanche vers `emit_hook_context.main()`. Les
-  seuls stubs shell autorisés sous `src/apothem/hooks/` ou `scripts/` sont les
-  quatre fichiers de localisation + bootstrap (`find-python.{ps1,sh}`,
-  `bootstrap.{ps1,sh}`) ; tout autre fichier `.ps1` /
-  `.sh` échoue à la vérification d'hygiène de `scripts/dev/validate_hooks.py`.
+- **Hooks :** dans le dossier `src/apothem/hooks/`. Tous les gestionnaires d'événements sont en Python. Chaque commande de hook de `settings.json` utilise la forme exec : `command` est le marqueur d'interpréteur `${PYTHON_BIN}`, résolu au moment de l'installation, et `args` contient le chemin du script et ses arguments. Le modèle Claude Code exécute `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` et `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook` par chemin absolu, de sorte que la copie installée n'a pas besoin d'un paquet `apothem` importable. `dispatch.py` achemine `SessionStart` vers `session_start_bootstrap.main()` et tout autre événement de la liste blanche vers `emit_hook_context.main()`. Les seuls stubs shell autorisés sous `src/apothem/hooks/` ou `scripts/` sont les six fichiers de localisation et d'amorçage (`find-python.{ps1,sh}`, `find-pwsh.{ps1,sh}`, `bootstrap.{ps1,sh}`) ; tout autre fichier `.ps1` / `.sh` échoue à la vérification d'hygiène de `scripts/dev/validate_hooks.py`.
 
 ### Références croisées
 

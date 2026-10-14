@@ -2,7 +2,7 @@
 title: "Спецификация схемы артефактов"
 description: "Каноническая схема YAML-фронтматтера и обязательные поля для всех типов артефактов в дереве исходного кода Apothem, с шаблонами по классам и правилами валидации."
 machineTranslated: true
-sourceHash: "0a94086b9eaf12b9"
+sourceHash: "376d3a98ba3102c6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -290,8 +290,8 @@ argument-hint: "[--focus area] [--fix]"
       "hooks": [
         {
           "type": "command",
-          "command": "python",
-          "args": ["-m", "apothem.hooks.dispatch", "<EventName>", "<message-name>"],
+          "command": "${PYTHON_BIN}",
+          "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "<EventName>", "<message-name>"],
           "timeout": <seconds>,
           "statusMessage": "<short human-readable label>"
         }
@@ -301,19 +301,20 @@ argument-hint: "[--focus area] [--fix]"
 }
 ```
 
+Форма `-m apothem.hooks.dispatch` предназначена для разработки из чекаута исходного кода с `PYTHONPATH=src`.
+
 | Поле | Тип | Назначение | Пример |
 | ----- | ---- | ------- | ------- |
-| `matcher` | string | Шаблон имени инструмента (или `"*"` для событий, не зависящих от инструмента) | `"Write"` |
-| `hooks[].type` | литерал `"command"` | Единственный тип обработчика хуков, поддерживаемый на сегодня | `"command"` |
-| `hooks[].command` | string | Исполняемая команда; Apothem использует `python` | `"python"` |
-| `hooks[].args` | массив строк | Аргументы в exec-форме, вызывающие `-m apothem.hooks.dispatch` или `-m apothem.conformity.gate` | `["-m", "apothem.hooks.dispatch", "SessionStart"]` |
-| `hooks[].timeout` | целое число секунд | Максимальное время выполнения, после которого хост принудительно завершает хук | `30` |
-| `hooks[].statusMessage` | string | Краткая метка, отображаемая в интерфейсе хоста | `"Session start"` |
+| `matcher` | строка | Шаблон имени инструмента (или `"*"` для событий, не зависящих от инструмента) | `"Write"` |
+| `hooks[].type` | литерал `"command"` | Единственный тип обработчика хуков, поддерживаемый сейчас | `"command"` |
+| `hooks[].command` | строка | Исполняемая команда; Apothem использует плейсхолдер `${PYTHON_BIN}`, который разрешается при установке | `"${PYTHON_BIN}"` |
+| `hooks[].args` | массив строк | Аргументы в exec-форме: путь к скрипту в `${HARNESS_ROOT}/.apothem/support/`, затем его аргументы | `["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
+| `hooks[].timeout` | целое число секунд | Максимальное время выполнения, после которого хост завершает хук | `30` |
+| `hooks[].statusMessage` | строка | Короткая метка, показываемая в интерфейсе хоста | `"Session start"` |
 
 ### Обязательные события
 
-Поставляемые шаблоны регистрируют следующие события. Все пять обязательны,
-чтобы валидаторы сообщили PASS:
+Шаблон Claude Code регистрирует SessionStart, PreToolUse, PostToolUse и Stop. PreCompact и PostCompact не регистрируются в Claude Code ([справочник по хукам](/docs/reference/hooks)), и `scripts/dev/validate_hooks.py` сообщает об отсутствии каждого из них как о предупреждении. В таблице перечислены пять событий, которые проверяет `validate_hooks.py`:
 
 > **Значения тайм-аутов повторяют канонические бюджеты событий хуков** — таблица ниже
 > воспроизводит их для удобства читателя; определяющим остаётся канонический источник.

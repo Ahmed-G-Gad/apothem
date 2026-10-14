@@ -2,7 +2,7 @@
 title: "Apothem बनाम हस्तचालित Trae कॉन्फ़िगरेशन"
 description: ".trae/rules/ के अंतर्गत Trae के नियमों को हाथ से बनाए रखना बनाम उन्हें Apothem के साझा प्रोफ़ाइल से रेंडर करना।"
 machineTranslated: true
-sourceHash: "d31ccc1fd80cb48e"
+sourceHash: "065945ba50500576"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,8 +17,8 @@ Trae एक `.trae/rules/` डायरेक्टरी से नियम �
 | ---- | --------------- | --------------- |
 | नियम लिखना | `.trae/rules/` के अंतर्गत हर फ़ाइल हाथ से लिखें | साझा कॉर्पस से रेंडर |
 | Apothem सतह को अलग रखना | `project_rules.md` को अतिभारित न करना याद रखें | अडैप्टर एक समर्पित `apothem-rules.md` लिखता है |
-| नियमों को अन्य एनवायरनमेंट के साथ संरेखित रखना | मैनुअल, प्रति टूल | `apothem update` पर स्वचालित |
-| कॉन्फ़िग सही है यह सत्यापित करना | मैनुअल निरीक्षण | `apothem verify --harness trae` |
+| नियमों को अन्य हार्नेसों के साथ संरेखित रखना | मैनुअल, प्रति टूल | `apothem update` पर स्वचालित |
+| कॉन्फ़िग सही है, यह सत्यापित करना | मैनुअल निरीक्षण | `apothem verify --harness trae --project <path>` |
 
 ## Apothem क्या प्रबंधित करता है
 
@@ -30,11 +30,11 @@ trae अडैप्टर साझा नियमों को `.trae/rules/`
 
 ## माइग्रेशन पथ
 
-1. यदि आपने अभी तक नहीं बनाया है तो साझा प्रोफ़ाइल बनाने के लिए `apothem profile init` चलाएँ।
+1. यदि आपने अभी तक साझा प्रोफ़ाइल नहीं बनाई है, तो `apothem profile init` चलाएँ।
 2. अपनी मौजूदा `.trae/rules/` फ़ाइलों के नियमों को साझा कॉर्पस में ले जाएँ।
-3. `apothem-rules.md` फ़ाइल रेंडर करने के लिए `apothem install --harness trae` चलाएँ।
-4. कॉन्फ़िग पहुँच गया इसकी पुष्टि के लिए `apothem verify --harness trae` चलाएँ।
-5. हर बाद के बदलाव के लिए `apothem update --harness trae` का उपयोग करें।
+3. `apothem-rules.md` फ़ाइल रेंडर करने के लिए `apothem install --harness trae --project <path>` चलाएँ।
+4. कॉन्फ़िग सही जगह पहुँची है, इसकी पुष्टि के लिए `apothem verify --harness trae --project <path>` चलाएँ।
+5. हर बाद के बदलाव के लिए `apothem update --harness trae --project <path>` का उपयोग करें।
 
 ## आगे पढ़ें
 

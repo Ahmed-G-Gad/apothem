@@ -2,7 +2,7 @@
 title: "Antigravity"
 description: "محوّل إطار عمل Apothem لـ Antigravity (معاينة)."
 machineTranslated: true
-sourceHash: "43dc91cbb7358f2c"
+sourceHash: "5c4311df7cdf88b7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -90,8 +90,7 @@ apothem verify --harness antigravity
 يؤكّد أمر التحقّق ما يلي:
 
 1. ملف السياق الأصلي موجود في المسار المتوقَّع.
-2. بيانات تعريف إضافة <bdi>Apothem</bdi> لـ <bdi>Antigravity CLI</bdi> موجودة وتُعلِن
-   اسم الإضافة <bdi>`apothem`</bdi>.
+2. ملف بيان الإضافة <bdi>`plugin.json`</bdi> موجود وغير فارغ، ويُحلَّل بوصفه <bdi>JSON</bdi>. ولا يتحقّق <bdi>`verify`</bdi> من اسم الإضافة؛ افحص هذا الحقل بنفسك بعد تغييره.
 
 ## التحديث
 

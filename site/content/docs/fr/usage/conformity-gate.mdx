@@ -2,13 +2,15 @@
 title: "Portail de conformité"
 description: "Exécutez le portail de conformité d'Apothem pour vérifier la santé de l'écosystème."
 machineTranslated: true
-sourceHash: "ea155671db71b76d"
+sourceHash: "bbf19e4d148c511e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Le portail de conformité, à `src/apothem/conformity/gate.py`, exécute la
 fraction mécanique du portail de pré-émission à quinze barres (M1-M15) sur
 chaque artefact que rédige l'opérateur.
+
+Les commandes de cette page supposent un checkout d'Apothem : faites précéder chacune d'elles de `PYTHONPATH=src`. Après une installation par script, utilisez `PYTHONPATH="$HOME/.apothem/src"` à la place de `src`.
 
 ## Exécuter le portail
 
@@ -21,10 +23,10 @@ infraction.
 
 ```bash
 # Advisory: report every validator's findings across the repo, exit 0
-python -m apothem.conformity.gate --all .
+PYTHONPATH=src python -m apothem.conformity.gate --all .
 
 # Strict: exit non-zero (code 2) when a blocking finding is present
-python -m apothem.conformity.gate --all --strict .
+PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 ```
 
 Codes de sortie : `0` propre (ou consultatif), `2` un blocage par constats en
@@ -72,13 +74,13 @@ historique de commits.
 
 ```bash
 # List every registered validator
-python -m apothem.conformity.gate --list
+PYTHONPATH=src python -m apothem.conformity.gate --list
 
 # Run a single named validator
-python -m apothem.conformity.gate --check multi-surface-coherence
+PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence
 
 # Run every validator against one file
-python -m apothem.conformity.gate src/apothem/rules/my-rule.md
+PYTHONPATH=src python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 ```
 
 Le mode `--hook` (`python -m apothem.conformity.gate --hook`) est le point
@@ -107,4 +109,4 @@ ci-dessus.
 
 ## Intégration CI
 
-Le portail s'exécute en CI via `.github/workflows/conformity.yml` à chaque push.
+Le job de qualité de `.github/workflows/ci.yml` exécute le portail en mode strict (`python -m apothem.conformity.gate --all . --strict`) sur les pushes vers `main` et sur les pull requests vers `main` qui touchent les chemins que ce job surveille. Le workflow distinct `.github/workflows/conformity.yml` exécute le balayage des fixtures (`tests/conformity-scenarios/verify.py --strict`).

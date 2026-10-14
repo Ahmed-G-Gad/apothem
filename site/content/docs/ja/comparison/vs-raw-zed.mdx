@@ -2,7 +2,7 @@
 title: "Apothem と手作業の Zed 構成の比較"
 description: "Zed の扁平な .rules 指示ファイルを手作業で維持するのと、Apothem の共有プロファイルから生成するのとの比較。"
 machineTranslated: true
-sourceHash: "4314b16c52ba6c2e"
+sourceHash: "2c5b5e0dd0dfe386"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -15,10 +15,10 @@ Zed はプロジェクトルートにある単一の扁平な `.rules` ファイ
 
 | タスク | 手作業の構成 | Apothem 管理 |
 | ---- | --------------- | --------------- |
-| 指示を書く | `.rules` ファイルを手書き | 共有コーパスから生成 |
-| 以前の `.rules` を保つ | 自分でわきへコピーするのを忘れないようにする | アダプターが置き換え前に既存ファイルをバックアップ |
-| ルールを他の環境と揃えて保つ | 手作業、ツールごと | `apothem update` で自動 |
-| 構成が正しいか検証する | 手作業の検査 | `apothem verify --harness zed` |
+| 指示を書く | `.rules` ファイルを手で書く | 共有コーパスからレンダリング |
+| 以前の `.rules` を保持する | 自分でわきへコピーするのを忘れないようにする | アダプターが、置き換え前に既存ファイルをバックアップする |
+| ルールを他のハーネスと揃えて保つ | 手作業、ツールごと | `apothem update` で自動 |
+| 構成が正しいか検証する | 手作業での確認 | `apothem verify --harness zed --project <path>` |
 
 ## Apothem が管理するもの
 
@@ -31,13 +31,11 @@ Zed には PreToolUse フックがないため、ガードレールの意図は�
 
 ## 移行手順
 
-1. 共有プロファイルをまだ作成していなければ、`apothem profile init` を実行します。
-2. 既存の `.rules` の指示（および共有したいプロジェクト固有の `AGENTS.md`
-   コンテンツ）を共有コーパスへ移します。
-3. `apothem install --harness zed` を実行して `.rules` ファイルを生成します。
-   以前の `.rules` は先にバックアップされます。
-4. `apothem verify --harness zed` を実行して構成が配置されたことを確認します。
-5. 以降の変更には毎回 `apothem update --harness zed` を使います。
+1. まだ作成していなければ、`apothem profile init` を実行して共有プロファイルを作成します。
+2. 既存の `.rules` の指示（および共有したいプロジェクト固有の `AGENTS.md` の内容）を、共有コーパスへ移します。
+3. `apothem install --harness zed --project <path>` を実行して `.rules` ファイルをレンダリングします。以前の `.rules` は、先にバックアップされます。
+4. `apothem verify --harness zed --project <path>` を実行して、構成が配置されたことを確認します。
+5. 以降の変更には毎回 `apothem update --harness zed --project <path>` を使います。
 
 ## 次に読む
 

@@ -2,7 +2,7 @@
 title: "Dépannage"
 description: "Solutions aux échecs d'installation et aux problèmes d'exécution courants d'Apothem sur les voies plugin, npx et installeur."
 machineTranslated: true
-sourceHash: "5dad4c6e337cead2"
+sourceHash: "7deb3ca475c3bc89"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,9 +40,7 @@ paquets de votre OS — installez vous-même les paquets nommés (par exemple
 
 ### `apothem` introuvable après l'exécution de l'installeur
 
-L'installeur place l'arborescence source à `~/.apothem` et n'ajoute pas d'exécutable
-`apothem` à votre `PATH`. Exécutez le moteur via l'invocation
-que l'installeur affiche à la fin :
+L'installeur place l'arborescence source dans `~/.apothem` et écrit un shim `apothem` dans `~/.local/bin` par défaut (POSIX), ou dans `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows). Il ne modifie pas votre `PATH`. Si `apothem` est introuvable, ce répertoire ne figure pas dans `PATH` : ajoutez-le, ou utilisez la forme `PYTHONPATH` ci-dessous jusqu'à ce que vous le fassiez. Exécutez le moteur avec l'invocation qu'affiche l'installeur à la fin :
 
 ```bash
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>

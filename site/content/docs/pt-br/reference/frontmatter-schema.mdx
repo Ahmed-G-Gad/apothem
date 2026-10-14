@@ -2,7 +2,7 @@
 title: "Schema de frontmatter"
 description: "Guia de referência para a estrutura do bloco de frontmatter YAML, as chaves obrigatórias por classe e as regras de imposição dos validadores entre as classes de artefato."
 machineTranslated: true
-sourceHash: "79d900f52578b1b0"
+sourceHash: "f89ff828715e6fe4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,7 @@ sourceHash: "79d900f52578b1b0"
 
 Todo artefato carrega frontmatter YAML no início, delimitado por linhas `---`. O banner canônico do cabeçalho de autoria conforme [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) fica acima do frontmatter nos arquivos da família Markdown; o frontmatter vem imediatamente depois.
 
-As chaves usam `kebab-case`. Os valores escalares ficam sem aspas ou entre aspas duplas; valores de string que contêm dois-pontos, cerquilhas ou outros caracteres significativos em YAML ficam entre aspas.
+As chaves de comando usam `kebab-case`. As chaves de skill usam `kebab-case`, exceto `userInvocable`, a grafia em camelCase que o corpus de origem usa (a instalação do Claude Code a renomeia para `user-invocable`). As chaves de regra e de trabalhador delegado são em camelCase, como lista a tabela de chaves obrigatórias da seção 2. Os valores escalares ficam sem aspas ou entre aspas duplas; valores de string que contêm dois-pontos, cerquilhas ou outros caracteres significativos em YAML ficam entre aspas.
 
 ## 2. Campos obrigatórios por classe
 

@@ -2,7 +2,7 @@
 title: "Konvensi penamaan"
 description: "Menetapkan nama berkas kebab-case, format kunci frontmatter, penamaan branch dengan prefiks tipe, dan semantik prefiks numerik untuk urutan artefak terurut."
 machineTranslated: true
-sourceHash: "a918d7ecd9f0ef65"
+sourceHash: "361e9dd9832f3f45"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,7 +18,7 @@ Pengecualian huruf besar kanonik disediakan untuk berkas singleton permukaan pub
 
 ## 2. Kunci frontmatter
 
-Kunci frontmatter YAML menggunakan `kebab-case` (misalnya, `argument-hint`, `disable-model-invocation`). Aturan kebab-case berlaku secara seragam di seluruh aturan, perintah, pekerja terdelegasi, keterampilan, dan `CLAUDE.md` itu sendiri.
+Kunci frontmatter command menggunakan `kebab-case` (misalnya, `argument-hint`, `disable-model-invocation`, `allowed-tools`). Kunci skill menggunakan `kebab-case` kecuali `userInvocable`, ejaan camelCase yang dipakai korpus sumber; instalasi Claude Code mengganti namanya menjadi `user-invocable`. Kunci aturan dan pekerja terdelegasi menggunakan camelCase (misalnya, `pathFilter`, `alwaysApply`, `maxTurns`, `disallowedTools`). Tabel kunci wajib pada [skema frontmatter](/docs/reference/frontmatter-schema) mencantumkan kunci untuk setiap kelas.
 
 ## 3. Nama branch
 

@@ -2,7 +2,7 @@
 title: "Hermes"
 description: "Apothem-Harness-Adapter für Hermes (Vorschau)."
 machineTranslated: true
-sourceHash: "f077a9851e126be5"
+sourceHash: "71abe825552bafc8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -69,9 +69,9 @@ apothem verify --harness hermes
 
 Der Befehl verify bestätigt, dass:
 
-1. die native Konfiguration am erwarteten Pfad existiert.
-2. alle Pflichtfelder aus dem gemeinsamen Profil vorhanden sind.
-3. die adapterspezifische Verifizierungsroutine Erfolg meldet.
+1. Die native Konfiguration liegt am erwarteten Pfad.
+2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH` hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem Profil passen.
+3. Die adapterspezifische Verifizierungsroutine meldet Erfolg.
 
 ## Aktualisierung
 

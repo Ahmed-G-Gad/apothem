@@ -2,7 +2,7 @@
 title: "quickstart"
 description: "Referencia de la CLI para el comando guiado de primera ejecución apothem quickstart."
 machineTranslated: true
-sourceHash: "f564c70124345bea"
+sourceHash: "951e6d6877611c54"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,25 +34,11 @@ admitidos y es siempre una elección explícita.
 
 ## Comportamiento
 
-- **Entorno** — sin `--harness`, una ejecución interactiva lista los nombres
-  admitidos (además de `all`) y pide uno antes de escribir nada. Una ejecución
-  que no puede preguntar — `--yes`, `--format json` o sin terminal — se detiene
-  con un error de uso que nombra la opción `--harness`, y no escribe nada.
-- **Perfil** — si la ruta de perfil resuelta no tiene archivo, `quickstart`
-  ofrece crear un perfil inicial (lo crea automáticamente con `--yes`, en una
-  shell no interactiva o con `--format json`) y nombra los campos de identidad
-  de marcador de posición que hay que personalizar.
-- **Vista previa + confirmación** — antes de cualquier escritura, los destinos
-  se listan bajo dos encabezados (raíz del proyecto frente a tu directorio
-  personal); una ejecución interactiva pide confirmación antes de escribir fuera
-  del proyecto. `--yes`, una shell no interactiva y `--format json` continúan
-  sin preguntar. Rechazar aborta antes de cualquier escritura.
-- **Instalación** — las capacidades que un entorno no admite de forma nativa se
-  resumen como una nota agrupada por entorno (pasa `--verbose` para ver el
-  detalle por capacidad); el conjunto completo está siempre en el arreglo
-  warnings de `--format json`.
-- **Paso siguiente** — la salida de la terminal nombra los comandos posteriores (`apothem
-  verify …`, `apothem doctor`).
+- **Entorno** — sin `--harness`, una ejecución interactiva lista los nombres admitidos (además de `all`) y pide uno antes de escribir nada. Una ejecución que no puede preguntar — `--yes`, `--format json` o sin terminal — se detiene con un error de uso que nombra la opción `--harness`, y no escribe nada.
+- **Perfil** — si la ruta de perfil resuelta no tiene archivo, `quickstart` ofrece crear un perfil inicial (lo crea automáticamente con `--yes`, en una shell no interactiva o con `--format json`) y nombra los campos de identidad de marcador de posición que hay que personalizar.
+- **Vista previa + confirmación** — con `--harness all`, los destinos se listan bajo dos encabezados (raíz del proyecto frente a tu directorio personal), y una ejecución interactiva confirma antes de escribir fuera del proyecto. Un único entorno indicado por nombre se instala sin vista previa ni solicitud. `--yes`, una shell no interactiva y `--format json` continúan sin preguntar. Rechazar la vista previa de `--harness all` aborta antes de las escrituras de instalación; un perfil inicial creado en el paso 1 se conserva.
+- **Instalación** — las capacidades que un entorno no admite de forma nativa se resumen en una nota agrupada por entorno (pasa `--verbose` para ver el detalle por capacidad); el conjunto completo siempre está en el arreglo warnings de `--format json`.
+- **Siguiente paso** — la salida de la terminal nombra los comandos siguientes (`apothem verify …`, `apothem doctor`).
 
 ## Opciones
 

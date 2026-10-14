@@ -2,7 +2,7 @@
 title: "Convenciones de entorno multi-superficie"
 description: "Referencia normativa canónica para la configuración de entornos multi-superficie y su coherencia entre los entornos de ejecución de chat, de autocompletado en el IDE y de revisión de PR."
 machineTranslated: true
-sourceHash: "027929e7268f780c"
+sourceHash: "a28eacc8acd8ae94"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -122,7 +122,7 @@ Tres validadores implementan conjuntamente el contrato de coherencia:
 
 ## 8. Ciclo de vida de las superficies
 
-- **Agregar una superficie.** El operador la activa mediante el canal de indagación estructurada o mediante un `make surfaces-add <name>` posterior. El generador redacta la superficie a partir de la lista de afirmaciones, ejecuta el validador y registra un ADR si se necesita una anulación específica de la superficie.
+- **Añadir una superficie.** El operador la activa mediante el canal de indagación estructurada. El generador redacta la superficie según la lista de afirmaciones, ejecuta el validador y registra un ADR si hace falta una anulación específica de la superficie.
 - **Eliminar una superficie.** La indagación estructurada confirma la eliminación, un ADR registra la justificación y se modifica la lista required-in del validador.
 - **Detección de deriva.** El pre-commit / CI rechaza cualquier commit que se desvíe de la lista de afirmaciones; el autor del commit reescribe la superficie para restaurar la coherencia.
 

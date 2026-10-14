@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "Referência da CLI para o comando apothem uninstall."
 machineTranslated: true
-sourceHash: "2928176181100844"
+sourceHash: "a6cddf09b4a1ec27"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -56,11 +56,8 @@ Quando o adaptador está instalado e é removido com sucesso:
 {"schema_version": 1, "action": "uninstalled", "harness": "claude-code", "output_path": "..."}
 ```
 
-Quando o adaptador não estava instalado:
-
-```json
-{"schema_version": 1, "status": "not_installed", "harness": "claude-code"}
-```
+Quando o adaptador não estava instalado, o comando sai com `0`. Na saída JSON, o envelope tem `"status": "success"` e `"action": "uninstalled"`, e a linha de resultados tem `"outcome": "skipped"` com a mensagem `"not installed; no files
+removed"`. O campo `status` nunca é `"not_installed"`.
 
 ## Exemplos
 

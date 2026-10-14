@@ -2,7 +2,7 @@
 title: "Início rápido"
 description: "Instale o Apothem, escreva um perfil, materialize seu primeiro harness e verifique-o — um roteiro de copiar e colar com a saída esperada."
 machineTranslated: true
-sourceHash: "d7ba900b686729d3"
+sourceHash: "cabe19810d3aad3a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -139,10 +139,7 @@ apothem install --harness cursor --project . --dry-run
 apothem install --harness cursor --project .
 ```
 
-Instale de uma vez todo o conjunto respaldado pelo registro com
-`--harness all`. Como essa seleção grava arquivos tanto de escopo de projeto
-quanto de escopo de usuário, o comando imprime os alvos concretos agrupados por
-local e pede confirmação antes de gravar fora da raiz do projeto:
+Instale de uma vez todo o conjunto respaldado pelo registro com `--harness all`. Como essa seleção grava arquivos tanto de escopo de projeto quanto de escopo de usuário, o comando imprime os destinos concretos agrupados por local. Em um terminal interativo, ele pede confirmação antes de gravar fora da raiz do projeto. Uma execução sem terminal, uma execução com `--yes` ou uma execução com `--format json` grava sem perguntar; `--dry-run` não grava nada. Execute o conjunto completo com:
 
 ```bash
 apothem install --harness all --project .
@@ -154,9 +151,7 @@ conjunto completo de opções.
 
 ## 4. Verificar
 
-Materializar é só metade do trabalho — `verify` confirma que os arquivos de
-configuração esperados do harness foram gravados e correspondem ao que o perfil
-declara:
+Materializar é só metade do trabalho: `verify` confirma que os arquivos de configuração esperados do harness foram gravados e são válidos:
 
 ```bash
 apothem verify --harness claude-code
@@ -166,10 +161,7 @@ apothem verify --harness claude-code
 ✓ claude-code is verified at /home/you/.claude/settings.json
 ```
 
-`verify` sai com código diferente de zero se a configuração estiver ausente ou
-tiver sofrido desvio, então também serve como portão em um script de
-configuração. Para uma verificação de saúde da máquina inteira, abrangendo todos
-os adaptadores registrados, execute:
+`verify` sai com código diferente de zero se um destino gerenciado estiver ausente, se um arquivo gerenciado estiver vazio ou se uma configuração JSON ou YAML não for analisada sem erros. Adicione `--profile PATH` para também falhar quando um arquivo instalado diferir desse perfil, o que faz do `verify` uma verificação de desvio; sem ele, uma configuração desatualizada ainda passa na verificação. Isso permite usá-lo como portão em um script de configuração. Para uma verificação de saúde da máquina inteira, abrangendo todos os adaptadores registrados, execute:
 
 ```bash
 apothem doctor

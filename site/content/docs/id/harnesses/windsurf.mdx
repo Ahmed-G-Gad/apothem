@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "Adaptor harness Apothem untuk Windsurf (GA)."
 machineTranslated: true
-sourceHash: "0146944b97b5e33f"
+sourceHash: "454c37fe1917092f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -55,8 +55,8 @@ apothem verify --harness windsurf --project /path/to/project
 Perintah verify mengonfirmasi bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Semua bidang wajib dari profil bersama hadir.
-3. Rutin verifikasi khusus adaptor melaporkan keberhasilan.
+2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
+3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
 ## Pembaruan
 

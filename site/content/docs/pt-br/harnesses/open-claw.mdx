@@ -2,7 +2,7 @@
 title: "Open-Claw"
 description: "Adaptador de harness do Apothem para o Open-Claw (Prévia)."
 machineTranslated: true
-sourceHash: "435a8075d4d83b4f"
+sourceHash: "a5897223a356aaf3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -65,7 +65,7 @@ apothem verify --harness open-claw
 O comando verify confirma que:
 
 1. A configuração nativa existe no caminho esperado.
-2. Todos os campos obrigatórios do perfil compartilhado estão presentes.
+2. Cada destino gerenciado existe; os arquivos gerenciados não estão vazios, e as configurações JSON ou YAML são analisadas sem erros. Adicione `--profile PATH` para também confirmar que os arquivos instalados correspondem a esse perfil.
 3. A rotina de verificação específica do adaptador informa sucesso.
 
 ## Atualização

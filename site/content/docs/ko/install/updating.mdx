@@ -2,7 +2,7 @@
 title: "업데이트"
 description: "Apothem과 하니스 어댑터를 업데이트합니다."
 machineTranslated: true
-sourceHash: "306446b4fef2d5d8"
+sourceHash: "f659c0450ac5624c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -36,7 +36,7 @@ bash scripts/installer/update.sh
 pwsh -NoProfile -File scripts/installer/update.ps1
 ```
 
-업데이트 스크립트는 `APOTHEM_HOME`(기본값 `~/.apothem`)의 소스 트리를 `APOTHEM_REF`로 다시 체크아웃합니다 — 설정하지 않으면 최신 서명된 `vMAJOR.MINOR.PATCH` 릴리스 태그로 해석되고, 태그 값은 이를 고정하며, `main`은 움직이는 브랜치를 선택합니다. 다시 구체화하기 전에 `git verify-tag`로 태그의 서명을 검증합니다. 서명되지 않았거나 변조된 태그는 `APOTHEM_ALLOW_UNVERIFIED=1`이 중단을 경고로 격하하지 않는 한 중단됩니다. 그런 다음 새로 고쳐진 트리에서 `apothem update`를 실행하여 `APOTHEM_HARNESS`로 지정된 하니스(기본값은 [설치 프로그램 환경 변수](/docs/how-to/installer-environment-variables) 표에 따름)를 다시 구체화합니다. 이는 사전 설치를 필요로 합니다. `APOTHEM_HOME`에 트리가 없고 `APOTHEM_SOURCE`가 설정되지 않은 경우, 먼저 설치 프로그램으로 안내하는 메시지와 함께 종료됩니다.
+업데이트 스크립트는 `APOTHEM_HOME`(기본값 `~/.apothem`)의 소스 트리를 `APOTHEM_REF`로 다시 체크아웃합니다. 이 값을 설정하지 않으면 서명된 최신 `vMAJOR.MINOR.PATCH` 릴리스 태그로 해석되고, 태그 값을 지정하면 그 태그로 고정되며, `main`은 `APOTHEM_ALLOW_UNVERIFIED=1`도 함께 설정된 경우에만 움직이는 브랜치를 선택합니다. 이 재정의가 없으면 업데이트는 ref를 체크아웃한 뒤 중단하고 다시 머티리얼라이즈하지 않습니다. 브랜치는 서명된 릴리스 태그가 아니기 때문입니다. 다시 머티리얼라이즈하기 전에 `git verify-tag`로 태그 서명을 검증합니다. 서명되지 않았거나 변조된 태그는 `APOTHEM_ALLOW_UNVERIFIED=1`이 중단을 경고로 낮추지 않는 한 중단됩니다. 관리자 공개 키가 로컬 키링에 없는 서명된 태그는 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)에 게시된 지문을 가리키는 키 가져오기 안내와 함께 중단됩니다. 그런 다음 새로 고쳐진 트리에서 `apothem update`를 실행해 `APOTHEM_HARNESS`로 지정된 하니스를 다시 머티리얼라이즈합니다(하니스 기본값은 [설치 프로그램 환경 변수](/docs/how-to/installer-environment-variables) 표를 따릅니다). 이 명령은 사전 설치가 필요합니다. `APOTHEM_HOME`에 트리가 없고 `APOTHEM_SOURCE`도 설정되지 않은 경우, 먼저 설치 프로그램을 실행하라는 메시지와 함께 종료합니다.
 
 ## 하니스 출력 재구체화
 

@@ -2,7 +2,7 @@
 title: "설치"
 description: "Apothem 설치 개요 — 여덟 개의 설치 채널과 각 채널의 사전 요건, 복사해서 바로 쓸 수 있는 명령 하나, 검증 단계: Claude Code 플러그인, npm 심, 원샷 설치 프로그램, VS Code 계열 확장, 세 개의 명령줄 부트스트랩 확장, 직접 엔진."
 machineTranslated: true
-sourceHash: "2230f3bafafb1452"
+sourceHash: "439520c91c9a9ee0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -174,10 +174,7 @@ APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/
 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)의
 릴리스 서명 섹션에 각 태그와 그 검증 방법이 나열되어 있습니다.
 
-두 가지 명시적 재정의가 기본 동작을 완화합니다. `APOTHEM_REF=main`은 움직이는
-브랜치를 (검증 없이) 체크아웃하고, `APOTHEM_ALLOW_UNVERIFIED=1`은 검증 실패를
-경고로 격하하고 계속 진행합니다 — 에어갭, 로컬, 또는 서명 도입 이전 릴리스 용도입니다.
-`APOTHEM_SOURCE`를 통한 로컬 체크아웃은 아무것도 가져오지 않으며 검증을 건너뜁니다.
+명시적 재정의는 기본 동작을 완화합니다. `APOTHEM_ALLOW_UNVERIFIED=1`은 검증 실패를 경고로 낮추고 계속 진행합니다. 에어갭, 로컬, 또는 서명 도입 이전 릴리스 용도입니다. `APOTHEM_REF=main`은 `APOTHEM_ALLOW_UNVERIFIED=1`과 함께 있을 때에만 검증 없이 움직이는 브랜치를 체크아웃합니다. `APOTHEM_REF=main`만 지정하면 브랜치는 서명된 릴리스 태그가 아니므로, 설치 프로그램은 `main`을 `APOTHEM_HOME`으로 가져온 뒤 구성을 머티리얼라이즈하기 전에 중단합니다. `APOTHEM_SOURCE`를 통한 로컬 체크아웃은 아무것도 가져오지 않고 검증도 건너뜁니다.
 
 `APOTHEM_VERIFY=checksum`은 메인테이너의 공개 키를 아직 보유하지 않은 호스트를 위한
 중간 경로입니다. 설치 프로그램은 클론하는 대신 릴리스의 플랫폼 아카이브와 그

@@ -2,7 +2,7 @@
 title: "合规闸门"
 description: "Apothem 合规闸门——每个发布的工件都必须通过的十五道预发布闸门关卡（M1-M15）中的机械部分。"
 machineTranslated: true
-sourceHash: "c3c719c0c1a0e92e"
+sourceHash: "0c45cd7185de5190"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,31 +28,7 @@ sourceHash: "c3c719c0c1a0e92e"
 
 ## 严重级别阶梯
 
-| 严重级别 | 对闸门的影响 |
-|---|---|
-| **关键** | 闸门 FAIL——无条件阻止发布 |
-| **重要** | 当 2 道及以上“重要”关卡同时失败时，闸门 FAIL |
-| **建议性** | 闸门 WARN——记录在签署记录中；不阻止发布 |
-
-大多数机械部分的匹配器默认为**重要**。M5（权威——机密、编造的端点）和 M12（孤儿输出）为**关键**。
-
-```mermaid
-%% provenance: hand-authored %%
-%% verified: 2026-07-06 %%
-%% cross-reference: the Severity ladder table above; src/apothem/conformity/gate.py (severity aggregation) %%
-flowchart TD
-    accTitle: Conformity-gate severity-to-verdict decision flow
-    accDescr: A finding's severity determines the gate verdict. A Critical finding — M5 authority or M12 orphan output — fails the gate and blocks emission unconditionally. Important findings block only when two or more fail simultaneously; a single Important finding does not block. Advisory findings are logged in the signed record and never block emission.
-    F["Finding raised<br/>by a matcher"] --> S{"Severity?"}
-    S -->|Critical| C["Critical<br/>M5 authority · M12 orphan output"]
-    S -->|Important| I["Important<br/>most mechanical matchers"]
-    S -->|Advisory| A["Advisory"]
-    C --> FAIL["Gate FAIL<br/>emission blocked"]
-    I --> Q{"2+ Important<br/>bars failing?"}
-    Q -->|yes| FAIL
-    Q -->|no| WARN["Gate WARN<br/>logged in signed record<br/>emission proceeds"]
-    A --> WARN
-```
+闸门没有关键、重要或建议性的分级，也没有两项发现的阈值。不带 `--strict`（或 `APOTHEM_CONFORMITY_STRICT=1`）时，闸门只报告发现，并以 `0` 退出。带 `--strict` 时，单文件或钩子检查在任一匹配器失败时以 `2` 退出；语料库运行（`--all-perwrite`）在阻断性匹配器失败时以 `2` 退出；建议性匹配器只报告。已安装的 Write/Edit 钩子不传递 `--strict`，因此它只报告发现，写入会继续进行，除非其环境中设置了 `APOTHEM_CONFORMITY_STRICT=1`。
 
 ## 校验器
 

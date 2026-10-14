@@ -2,7 +2,7 @@
 title: "Apothem frente a la configuración de Windsurf en bruto"
 description: "Mantener a mano las reglas de Windsurf en .devin/rules/ frente a renderizarlas desde el perfil compartido de apothem."
 machineTranslated: true
-sourceHash: "797edb954c5a2435"
+sourceHash: "e3bc9da3b1b1af38"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -13,12 +13,12 @@ frente a gestionarla con apothem.
 
 ## Comparación de esfuerzo
 
-| Tarea | Configuración manual en bruto | Gestionada por Apothem |
+| Tarea | Configuración manual | Gestionada por Apothem |
 | ---- | --------------- | --------------- |
 | Escribir reglas | Escribir a mano cada archivo bajo `.windsurf/rules/` | Renderizadas desde el corpus compartido |
-| Mantener un único formato de reglas | Elegir a mano entre `.windsurf/rules/` y un único archivo `.windsurfrules` | El adaptador escribe solo `.devin/rules/` |
-| Mantener las reglas alineadas con otros entornos | Manual, por herramienta | Automático en `apothem update` |
-| Verificar que la configuración es correcta | Inspección manual | `apothem verify --harness windsurf` |
+| Mantener un solo formato de reglas | Elegir a mano entre `.windsurf/rules/` y un único archivo `.windsurfrules` | El adaptador escribe solo `.devin/rules/` |
+| Mantener las reglas alineadas con otros entornos | Manual, por herramienta | Automático con `apothem update` |
+| Verificar que la configuración es correcta | Inspección manual | `apothem verify --harness windsurf --project <path>` |
 
 ## Qué gestiona apothem
 
@@ -31,15 +31,11 @@ directorio en el siguiente `apothem update`.
 
 ## Ruta de migración
 
-1. Ejecuta `apothem profile init` para crear el perfil compartido si aún no lo
-   tienes.
-2. Mueve las reglas de tu `.windsurf/rules/` existente (y de cualquier archivo
-   único `.windsurfrules`) al corpus compartido.
-3. Ejecuta `apothem install --harness windsurf` para renderizar el directorio
-   `.devin/rules/`.
-4. Ejecuta `apothem verify --harness windsurf` para confirmar que la
-   configuración quedó instalada.
-5. Usa `apothem update --harness windsurf` para cada cambio posterior.
+1. Ejecuta `apothem profile init` para crear el perfil compartido si aún no lo tienes.
+2. Mueve las reglas de tu `.windsurf/rules/` existente (y de cualquier archivo único `.windsurfrules`) al corpus compartido.
+3. Ejecuta `apothem install --harness windsurf --project <path>` para renderizar el directorio `.devin/rules/`.
+4. Ejecuta `apothem verify --harness windsurf --project <path>` para confirmar que la configuración quedó instalada.
+5. Usa `apothem update --harness windsurf --project <path>` para cada cambio posterior.
 
 ## Sigue leyendo
 

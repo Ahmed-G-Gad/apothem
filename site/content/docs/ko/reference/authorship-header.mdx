@@ -2,7 +2,7 @@
 title: "저작권 헤더 — 파일별 SPDX 라이선스 라인"
 description: "각 파일타입에 적합한 주석 구문의 정규 단일 라인 헤더를 사용하여 파일별 SPDX 라이선스 식별자 마커를 정의하고 강제합니다."
 machineTranslated: true
-sourceHash: "f8a8cbfe9b2c940f"
+sourceHash: "c30711b821380cee"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -120,7 +120,7 @@ SPDX 라인은 프로젝트의 라이선스를 기계 판독 가능하게 선언
 - 세 가지 모드로 작동합니다: `fix-in-place`(쓰기), `emit-patch`(통합 diff 출력), `check`(불일치 시 exit-non-zero — CI에서 사용).
 - 멱등적: 두 번 실행해도 no-op.
 
-인젝터는 SPDX 라인이 사전 삽입된 새 파일을 스캐폴딩하는 Make 타깃(`make headers-fix`와 `make new-*` 스캐폴드)과 `--fix` 모드의 pre-commit 훅에 의해 호출됩니다.
+인젝터는 `make headers-fix` 타깃이 호출하며, 이 타깃은 `scripts/inject-header.py --mode fix-in-place`를 실행합니다.
 
 ---
 

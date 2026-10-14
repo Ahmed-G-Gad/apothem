@@ -2,7 +2,7 @@
 title: "核心工作流"
 description: "Apothem 的四个核心工作流——配置档案、规则、计划与合规闸门。"
 machineTranslated: true
-sourceHash: "a0e26da50122053a"
+sourceHash: "53658e5bd065d27f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -64,10 +64,16 @@ apothem verify --harness claude-code
 
 ## 合规闸门
 
-从仓库根目录运行：
+在 Apothem 检出目录中运行：
 
 ```bash
-python -m apothem.conformity.gate --all .
+PYTHONPATH=src python -m apothem.conformity.gate --all .
+```
+
+脚本安装之后，运行：
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python3 -m apothem.conformity.gate --all .
 ```
 
 运行所有机械化合规检查，并逐条报告通过/失败。

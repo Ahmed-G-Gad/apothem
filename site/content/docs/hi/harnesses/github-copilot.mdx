@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "GitHub Copilot (GA) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "4482a306f9f119b5"
+sourceHash: "27caa0629e01c5e8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -58,7 +58,9 @@ apothem verify --harness github-copilot --project /path/to/project
 verify कमांड पुष्टि करता है कि:
 
 1. नेटिव कॉन्फ़िग अपेक्षित पथ पर मौजूद है।
-2. साझा प्रोफ़ाइल के सभी अनिवार्य फ़ील्ड मौजूद हैं।
+2. हर प्रबंधित टारगेट मौजूद है; प्रबंधित फ़ाइलें खाली नहीं हैं, और JSON या YAML
+   कॉन्फ़िग पार्स होते हैं। `--profile PATH` जोड़ने पर यह भी पुष्टि होती है कि
+   इंस्टॉल की गई फ़ाइलें उस प्रोफ़ाइल से मेल खाती हैं।
 3. अडैप्टर-विशिष्ट सत्यापन रूटीन सफलता की रिपोर्ट करता है।
 
 ## अपडेट करना

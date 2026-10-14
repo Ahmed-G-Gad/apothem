@@ -2,7 +2,7 @@
 title: "Qwen Code"
 description: "Apothem-Harness-Adapter für Qwen Code (Beta)."
 machineTranslated: true
-sourceHash: "437b67b49cf5a7ee"
+sourceHash: "4052897d8ab07b22"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -59,9 +59,9 @@ apothem verify --harness qwen-code
 
 Der verify-Befehl bestätigt, dass:
 
-1. Die native Konfiguration am erwarteten Pfad existiert.
-2. Alle Pflichtfelder aus dem gemeinsamen Profil vorhanden sind.
-3. Die adapterspezifische Verifizierungsroutine Erfolg meldet.
+1. Die native Konfiguration liegt am erwarteten Pfad.
+2. Jedes verwaltete Ziel existiert; verwaltete Dateien sind nicht leer, und JSON- oder YAML-Konfigurationen lassen sich parsen. Fügen Sie `--profile PATH` hinzu, um außerdem zu bestätigen, dass die installierten Dateien zu diesem Profil passen.
+3. Die adapterspezifische Verifizierungsroutine meldet Erfolg.
 
 ## Aktualisierung
 

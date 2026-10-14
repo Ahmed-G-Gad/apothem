@@ -2,7 +2,7 @@
 title: "Kimi Code"
 description: "Kimi Code（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "4bcd687aeabc46b7"
+sourceHash: "ea49d4cc0938d230"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -75,7 +75,7 @@ apothem verify --harness kimi-code --project /path/to/project
 verify コマンドは次のことを確認します。
 
 1. ネイティブ設定が想定されたパスに存在すること。
-2. 共有プロファイルのすべての必須フィールドが存在すること。
+2. 管理対象の各ターゲットが存在すること。管理対象のファイルは空ではなく、JSON または YAML の設定は解析できること。`--profile PATH` を追加すると、インストールされたファイルがそのプロファイルと一致することも確認します。
 3. アダプター固有の検証ルーチンが成功を報告すること。
 
 ## 更新

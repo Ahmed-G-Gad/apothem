@@ -2,7 +2,7 @@
 title: "Penyiapan harness"
 description: "Tambah dan konfigurasikan adaptor harness untuk platform."
 machineTranslated: true
-sourceHash: "e6bc4ceedf7d7137"
+sourceHash: "1f7d9a2a473395a7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,9 +40,7 @@ apothem verify --harness <name>
 apothem verify --harness all --project /path/to/project
 ```
 
-Untuk memeriksa setiap adaptor terdaftar sekaligus, jalankan `apothem doctor`. Perintah ini mencetak
-tabel status-instal per-harness dan keluar dengan kode bukan-nol jika ada adaptor yang melaporkan
-belum-terinstal.
+Untuk memeriksa setiap adapter terdaftar sekaligus, jalankan `apothem doctor`. Perintah ini mencetak tabel status pemasangan per harness dan keluar dengan kode bukan-nol hanya ketika sebuah pemeriksaan gagal, misalnya harness yang terpasang tetapi tidak lolos verifikasi, perintah hook yang tidak dapat dijalankan, atau profil yang ada tetapi tidak tervalidasi. Harness yang belum terpasang tetap dicantumkan tetapi tidak menggagalkan `doctor`.
 
 ## Lihat harness yang terpasang
 

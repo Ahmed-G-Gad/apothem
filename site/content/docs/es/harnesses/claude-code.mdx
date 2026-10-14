@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Adaptador de entorno de Apothem para Claude Code (GA)."
 machineTranslated: true
-sourceHash: "8dec50c1d13fe4aa"
+sourceHash: "2d1e8e48ff1f54c6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -110,8 +110,8 @@ apothem verify --harness claude-code
 El comando verify confirma que:
 
 1. La configuración nativa existe en la ruta esperada.
-2. Todos los campos obligatorios del perfil compartido están presentes.
-3. La rutina de verificación específica del adaptador informa éxito.
+2. Cada destino gestionado existe; los archivos gestionados no están vacíos y las configuraciones JSON o YAML se analizan correctamente. Añade `--profile PATH` para confirmar también que los archivos instalados coinciden con ese perfil.
+3. La rutina de verificación específica del adaptador informa de éxito.
 
 ## Actualización
 

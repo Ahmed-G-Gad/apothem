@@ -2,7 +2,7 @@
 title: "Apothem versus konfigurasi manual Cursor"
 description: "Memelihara aturan MDC Cursor di bawah .cursor/rules/ dengan tangan versus merendernya dari profil bersama Apothem."
 machineTranslated: true
-sourceHash: "129cd7c149852366"
+sourceHash: "c2a9e94f668e10b1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,9 +18,9 @@ mengelolanya dengan Apothem.
 | ---- | --------------- | --------------- |
 | Menulis aturan | Menulis tiap file `.mdc` di bawah `.cursor/rules/` dengan tangan | Dirender dari korpus bersama |
 | Menulis frontmatter MDC | Menyusun `description` / `globs` / `alwaysApply` per file dengan tangan | Dihasilkan oleh adapter |
-| Menjaga satu format aturan | Memilih dengan tangan antara aturan MDC dan satu file `.cursorrules` | Adapter hanya menulis file MDC `.cursor/rules/` |
-| Menjaga aturan selaras dengan lingkungan lain | Manual, per alat | Otomatis pada `apothem update` |
-| Memverifikasi konfigurasi sudah benar | Inspeksi manual | `apothem verify --harness cursor` |
+| Menjaga satu format aturan | Memilih dengan tangan antara aturan MDC dan satu file `.cursorrules` | Adapter hanya menulis file MDC di `.cursor/rules/` |
+| Menjaga aturan selaras dengan harness lain | Manual, per alat | Otomatis pada `apothem update` |
+| Memverifikasi konfigurasi sudah benar | Inspeksi manual | `apothem verify --harness cursor --project <path>` |
 
 ## Apa yang dikelola Apothem
 
@@ -33,13 +33,11 @@ dalam prosa aturan.
 
 ## Jalur migrasi
 
-1. Jalankan `apothem profile init` untuk membuat profil bersama jika Anda belum punya.
-2. Pindahkan aturan dari `.cursor/rules/` Anda yang ada (dan `.cursorrules` apa pun)
-   ke korpus bersama.
-3. Jalankan `apothem install --harness cursor` untuk merender file `.mdc`
-   dengan frontmatter MDC yang benar.
-4. Jalankan `apothem verify --harness cursor` untuk memastikan konfigurasi telah mendarat.
-5. Gunakan `apothem update --harness cursor` untuk setiap perubahan berikutnya.
+1. Jalankan `apothem profile init` untuk membuat profil bersama jika Anda belum memilikinya.
+2. Pindahkan aturan dari `.cursor/rules/` yang sudah ada (dan `.cursorrules` apa pun) ke korpus bersama.
+3. Jalankan `apothem install --harness cursor --project <path>` untuk merender berkas `.mdc` dengan frontmatter MDC yang benar.
+4. Jalankan `apothem verify --harness cursor --project <path>` untuk memastikan konfigurasi sudah terpasang.
+5. Gunakan `apothem update --harness cursor --project <path>` untuk setiap perubahan berikutnya.
 
 ## Baca berikutnya
 

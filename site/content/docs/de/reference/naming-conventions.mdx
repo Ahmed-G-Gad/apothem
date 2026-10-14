@@ -2,7 +2,7 @@
 title: "Namenskonventionen"
 description: "Schreibt kebab-case-Dateinamen, das Frontmatter-Schlüsselformat, die Branch-Benennung mit Typ-Präfixen und die Semantik numerischer Präfixe für geordnete Artefaktsequenzen vor."
 machineTranslated: true
-sourceHash: "a918d7ecd9f0ef65"
+sourceHash: "361e9dd9832f3f45"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,7 +18,7 @@ Die kanonischen Großbuchstaben-Ausnahmen sind den Singleton-Dateien der Veröff
 
 ## 2. Frontmatter-Schlüssel
 
-YAML-Frontmatter-Schlüssel verwenden `kebab-case` (zum Beispiel `argument-hint`, `disable-model-invocation`). Die kebab-case-Regel gilt einheitlich für Regeln, Befehle, delegierte Worker, Skills und `CLAUDE.md` selbst.
+Die Frontmatter-Schlüssel von Befehlen verwenden `kebab-case` (zum Beispiel `argument-hint`, `disable-model-invocation`, `allowed-tools`). Skill-Schlüssel verwenden `kebab-case`, mit Ausnahme von `userInvocable`, der camelCase-Schreibweise des Quell-Korpus; die Installation für Claude Code benennt sie in `user-invocable` um. Schlüssel für Regeln und delegierte Worker sind camelCase (zum Beispiel `pathFilter`, `alwaysApply`, `maxTurns`, `disallowedTools`). Die Tabelle der Pflichtschlüssel im [Frontmatter-Schema](/docs/reference/frontmatter-schema) listet die Schlüssel für jede Klasse auf.
 
 ## 3. Branch-Namen
 

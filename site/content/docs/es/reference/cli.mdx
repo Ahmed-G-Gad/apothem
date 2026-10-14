@@ -2,7 +2,7 @@
 title: "Referencia de la CLI"
 description: "Referencia de la CLI de Apothem — todos los subcomandos e indicadores."
 machineTranslated: true
-sourceHash: "8b8d7dc1647136bd"
+sourceHash: "60add6555ac816ea"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -166,9 +166,9 @@ apothem profile edit [--profile PATH]
 | Subcomando | Descripción |
 |------------|-------------|
 | `profile init` | Crea un andamiaje de perfil mínimo válido según el esquema. |
-| `profile show` | Imprime el perfil resuelto (YAML) en stdout. |
-| `profile set <key> <value>` | Establece un campo del perfil. El valor se almacena como una cadena literal — las palabras sueltas no se convierten, de modo que `no` sigue siendo `"no"` y `1.0` sigue siendo una cadena —, excepto `true`/`false` y una entrada explícita de lista y mapa `[...]` / `{...}`. El perfil ensamblado se valida contra el esquema antes de escribirse. |
-| `profile edit` | Abre el perfil en `$EDITOR` (recurre al editor predeterminado de la plataforma). |
+| `profile show` | Imprime el perfil resuelto como JSON en stdout. Con `--json`, el documento empieza por `schema_version`. |
+| `profile set <key> <value>` | Establece un campo del perfil. El valor se guarda como cadena literal: las palabras sueltas no se convierten, de modo que `no` sigue siendo `"no"` y `1.0` sigue siendo una cadena; hacen excepción `true`/`false` y la entrada explícita de listas y mapas `[...]` / `{...}`. El perfil ensamblado se valida contra el esquema antes de escribirse. |
+| `profile edit` | Abre el perfil en `$EDITOR` (recurre al valor predeterminado de la plataforma). |
 
 La opción `--profile PATH` apunta cada subcomando a un archivo de perfil
 alternativo. Por defecto, `~/.config/apothem/profile.yaml`.
@@ -195,11 +195,7 @@ Ejecuta diagnósticos del sistema para la instalación de Apothem.
 apothem doctor
 ```
 
-Imprime la versión de Apothem, el intérprete de Python, la plataforma, la ruta
-del perfil resuelto y una tabla de estado de instalación por entorno. El código
-de salida es `0` solo cuando se superan todas las comprobaciones; un perfil no
-válido, un entorno desinstalado o un adaptador que no se pudo sondear fuerzan,
-cada uno, una salida distinta de cero.
+Imprime la versión de Apothem, el intérprete de Python, la plataforma, la ruta del perfil resuelto y una tabla de estado de instalación por entorno. El código de salida es `1` cuando falla cualquier comprobación: un perfil no válido, un entorno instalado que no supera la verificación, un comando de hook registrado que no puede arrancar, un adaptador que no puede cargarse o sondearse, o un historial de instalación ilegible. Un entorno que no está instalado se informa, pero no es un fallo, y las notas informativas no cambian el código de salida.
 
 ## Referencia generada de comandos e indicadores
 

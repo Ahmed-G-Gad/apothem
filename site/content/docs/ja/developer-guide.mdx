@@ -2,7 +2,7 @@
 title: "Apothem への貢献 — 開発者ガイド"
 description: "正規スキーマ、フロントマターの要件、検証手順に沿ってルール、コマンド、ヘルパー、スキル、フックを作成し、Apothem エコシステムを保守・拡張します。"
 machineTranslated: true
-sourceHash: "ae3392672e01c783"
+sourceHash: "782e178598975d52"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -98,10 +98,7 @@ Apothem エコシステムには 5 種類のアーティファクトがあり、
 - **コマンド:** `{name}.md`
 - **ヘルパー:** `{name}.md`
 - **スキル:** フォルダ `src/apothem/skills/{name}/SKILL.md` の中（大文字小文字は厳密に `SKILL.md`）
-- **フック:** フォルダ `src/apothem/hooks/` の中。すべてのイベントハンドラーは Python です。
-  すべての `settings.json` のフックコマンドは、exec 形式（`python` と `args`）を使って `-m apothem.hooks.dispatch <event> [<message-name>]` または `-m apothem.conformity.gate --hook` を呼び出します。
-  `dispatch.py` は、`SessionStart` を `session_start_bootstrap.main()` へ、許可リストにあるそれ以外のすべてのイベントを `emit_hook_context.main()` へルーティングします。
-  `src/apothem/hooks/` または `scripts/` 配下で許可されるシェルスタブは、4 つのロケーター + ブートストラップファイル（`find-python.{ps1,sh}`、`bootstrap.{ps1,sh}`）だけです。それ以外の `.ps1` / `.sh` ファイルは、`scripts/dev/validate_hooks.py` の衛生チェックで不合格になります。
+- **フック:** フォルダ `src/apothem/hooks/` の中。すべてのイベントハンドラーは Python です。`settings.json` のすべてのフックコマンドは exec 形式を使い、`command` はインストール時に解決されるインタープリターのプレースホルダー `${PYTHON_BIN}`、`args` にはスクリプトのパスと引数が入ります。Claude Code のテンプレートは、`${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` と `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook` を絶対パスで実行するため、インストール済みのコピーにはインポート可能な `apothem` パッケージは不要です。`dispatch.py` は、`SessionStart` を `session_start_bootstrap.main()` へ、許可リストにあるそのほかのすべてのイベントを `emit_hook_context.main()` へルーティングします。`src/apothem/hooks/` または `scripts/` の下で許可されるシェルスタブは、6 つのロケーターおよびブートストラップファイル（`find-python.{ps1,sh}`、`find-pwsh.{ps1,sh}`、`bootstrap.{ps1,sh}`）だけです。それ以外の `.ps1` / `.sh` ファイルは、`scripts/dev/validate_hooks.py` の衛生チェックで不合格になります。
 
 ### 相互参照
 

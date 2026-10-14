@@ -2,7 +2,7 @@
 title: "문제 해결"
 description: "플러그인, npx, 설치 프로그램 경로 전반에 걸친 일반적인 Apothem 설치 실패 및 런타임 문제에 대한 해결책."
 machineTranslated: true
-sourceHash: "5dad4c6e337cead2"
+sourceHash: "7deb3ca475c3bc89"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,7 +26,7 @@ sourceHash: "5dad4c6e337cead2"
 
 ### 설치 프로그램 실행 후 `apothem`을 찾을 수 없음
 
-설치 프로그램은 소스 트리를 `~/.apothem`에 배치하며 `apothem` 실행 파일을 `PATH`에 추가하지 않습니다. 설치 프로그램이 완료 시 출력하는 호출 방법을 통해 엔진을 실행하세요.
+설치 프로그램은 소스 트리를 `~/.apothem`에 배치하고, 기본적으로 `apothem` 심을 `~/.local/bin`(POSIX) 또는 `%LOCALAPPDATA%\Microsoft\WindowsApps`(Windows)에 씁니다. `PATH`는 수정하지 않습니다. `apothem`을 찾을 수 없다면 그 디렉터리가 `PATH`에 없는 것입니다. 디렉터리를 추가하거나, 그렇게 할 때까지 아래의 `PYTHONPATH` 형식을 사용하세요. 설치 프로그램이 완료될 때 출력하는 호출 방식으로 엔진을 실행하세요:
 
 ```bash
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>

@@ -2,7 +2,7 @@
 title: "Fehlerbehebung"
 description: "Lösungen für häufige Apothem-Installationsfehler und Laufzeitprobleme über die Plugin-, npx- und Installer-Pfade hinweg."
 machineTranslated: true
-sourceHash: "5dad4c6e337cead2"
+sourceHash: "7deb3ca475c3bc89"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,9 +41,7 @@ erneut aus.
 
 ### `apothem` nach Ausführung des Installers nicht gefunden
 
-Der Installer legt den Quellbaum unter `~/.apothem` ab und fügt Ihrem `PATH` keine
-ausführbare `apothem`-Datei hinzu. Führen Sie die Engine über den Aufruf aus,
-den der Installer am Ende ausgibt:
+Der Installer legt den Quellbaum unter `~/.apothem` ab und schreibt standardmäßig einen `apothem`-Shim nach `~/.local/bin` (POSIX) bzw. nach `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows). Er ändert Ihren `PATH` nicht. Wird `apothem` nicht gefunden, ist dieses Verzeichnis nicht im `PATH` enthalten; nehmen Sie es auf oder verwenden Sie bis dahin die `PYTHONPATH`-Form weiter unten. Führen Sie die Engine über den Aufruf aus, den der Installer am Ende ausgibt:
 
 ```bash
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>

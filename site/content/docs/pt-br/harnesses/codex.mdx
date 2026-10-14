@@ -2,7 +2,7 @@
 title: "Codex"
 description: "Adaptador de harness do Apothem para o Codex (Beta)."
 machineTranslated: true
-sourceHash: "1fc0b9dae2c44d90"
+sourceHash: "99a652853bf9a864"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -81,8 +81,8 @@ apothem verify --harness codex
 O comando verify confirma que:
 
 1. A configuração nativa existe no caminho esperado.
-2. Todos os campos obrigatórios do perfil compartilhado estão presentes.
-3. A rotina de verificação específica do adaptador relata sucesso.
+2. Cada destino gerenciado existe; os arquivos gerenciados não estão vazios, e as configurações JSON ou YAML são analisadas sem erros. Adicione `--profile PATH` para também confirmar que os arquivos instalados correspondem a esse perfil.
+3. A rotina de verificação específica do adaptador informa sucesso.
 
 ## Atualização
 

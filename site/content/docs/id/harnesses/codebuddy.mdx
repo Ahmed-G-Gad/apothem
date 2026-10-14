@@ -2,7 +2,7 @@
 title: "CodeBuddy"
 description: "Adapter harness Apothem untuk Tencent CodeBuddy (GA)."
 machineTranslated: true
-sourceHash: "12cdb066aabd7caf"
+sourceHash: "84f84790325354af"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -81,9 +81,7 @@ terkelola dengan konten hasil render terbaru.
 apothem uninstall --harness codebuddy --project /path/to/project
 ```
 
-Menghapus berkas konfigurasi native yang ditulis oleh adapter, dengan mengganti
-nama berkas aturan terkelola menjadi cadangan bertanda waktu. YAML profil
-bersama dan mesin Apothem tidak terpengaruh.
+Menghapus blok Apothem dari `apothem-rules.md` dan mempertahankan teks lain di dalamnya. Berkas dihapus hanya ketika tidak ada yang tersisa di dalamnya. Sebelum perubahan, salinan berkas yang diberi cap waktu disimpan di bawah `~/.apothem/backups/`; tidak ada berkas cadangan yang tertinggal di proyek. YAML profil bersama dan mesin Apothem tidak terpengaruh.
 
 ## Gerbang konformitas
 

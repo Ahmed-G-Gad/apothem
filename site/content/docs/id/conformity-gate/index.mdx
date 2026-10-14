@@ -2,7 +2,7 @@
 title: "Gerbang konformitas"
 description: "Gerbang konformitas Apothem — bagian mekanis dari gerbang pra-emisi lima-belas-bar (M1-M15) yang wajib dilalui setiap artefak yang dipancarkan."
 machineTranslated: true
-sourceHash: "c3c719c0c1a0e92e"
+sourceHash: "0c45cd7185de5190"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,31 +28,7 @@ sourceHash: "c3c719c0c1a0e92e"
 
 ## Tangga tingkat keparahan
 
-| Tingkat keparahan | Efek pada gerbang |
-|---|---|
-| **Kritis** | Gerbang FAIL — emisi diblokir tanpa syarat |
-| **Penting** | Gerbang FAIL ketika 2+ bar Penting gagal secara bersamaan |
-| **Anjuran** | Gerbang WARN — dicatat dalam catatan bertanda tangan; tidak memblokir emisi |
-
-Sebagian besar pencocok bagian mekanis secara default bertingkat **Penting**. M5 (otoritas — rahasia, endpoint yang dikarang) dan M12 (keluaran yatim) bertingkat **Kritis**.
-
-```mermaid
-%% provenance: hand-authored %%
-%% verified: 2026-07-06 %%
-%% cross-reference: the Severity ladder table above; src/apothem/conformity/gate.py (severity aggregation) %%
-flowchart TD
-    accTitle: Conformity-gate severity-to-verdict decision flow
-    accDescr: A finding's severity determines the gate verdict. A Critical finding — M5 authority or M12 orphan output — fails the gate and blocks emission unconditionally. Important findings block only when two or more fail simultaneously; a single Important finding does not block. Advisory findings are logged in the signed record and never block emission.
-    F["Finding raised<br/>by a matcher"] --> S{"Severity?"}
-    S -->|Critical| C["Critical<br/>M5 authority · M12 orphan output"]
-    S -->|Important| I["Important<br/>most mechanical matchers"]
-    S -->|Advisory| A["Advisory"]
-    C --> FAIL["Gate FAIL<br/>emission blocked"]
-    I --> Q{"2+ Important<br/>bars failing?"}
-    Q -->|yes| FAIL
-    Q -->|no| WARN["Gate WARN<br/>logged in signed record<br/>emission proceeds"]
-    A --> WARN
-```
+Gerbang ini tidak memiliki tangga Kritis, Penting, atau Anjuran dan tidak memiliki ambang dua-temuan. Tanpa `--strict` (atau `APOTHEM_CONFORMITY_STRICT=1`), gerbang melaporkan temuan dan keluar dengan `0`. Dengan `--strict`, pemeriksaan berkas-tunggal atau hook keluar dengan `2` ketika matcher mana pun gagal, dan eksekusi korpus (`--all-perwrite`) keluar dengan `2` ketika matcher pemblokir gagal; matcher anjuran hanya dilaporkan. Hook Write/Edit yang terpasang tidak menyertakan `--strict`, sehingga ia hanya melaporkan temuan dan penulisan tetap dilanjutkan kecuali `APOTHEM_CONFORMITY_STRICT=1` disetel di lingkungannya.
 
 ## Validator
 

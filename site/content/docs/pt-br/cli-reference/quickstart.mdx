@@ -2,7 +2,7 @@
 title: "quickstart"
 description: "Referência da CLI para o comando guiado de primeira execução apothem quickstart."
 machineTranslated: true
-sourceHash: "f564c70124345bea"
+sourceHash: "951e6d6877611c54"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,26 +34,11 @@ explícita.
 
 ## Comportamento
 
-- **Harness** — sem `--harness`, uma execução interativa lista os nomes
-  suportados (mais `all`) e pede um deles antes que qualquer coisa seja gravada.
-  Uma execução que não pode perguntar — `--yes`, `--format json` ou sem
-  terminal — para com um erro de uso que nomeia a opção `--harness` e não grava
-  nada.
-- **Perfil** — se o caminho de perfil resolvido não tiver arquivo, `quickstart`
-  oferece criar um perfil inicial (cria automaticamente com `--yes`, em um shell
-  não interativo ou com `--format json`) e nomeia os campos de identidade com
-  marcadores de posição a personalizar.
-- **Prévia + confirmação** — antes de qualquer gravação, os destinos são
-  listados sob dois títulos (raiz do projeto versus o seu diretório pessoal); uma
-  execução interativa pede confirmação antes de gravar fora do projeto. `--yes`,
-  um shell não interativo e `--format json` prosseguem sem perguntar. Recusar
-  aborta a operação antes de qualquer gravação.
-- **Instalação** — as capacidades que um harness não suporta nativamente são
-  resumidas como uma única nota agrupada por harness (passe `--verbose` para ver
-  o detalhe por capacidade); o conjunto completo está sempre no array de
-  warnings de `--format json`.
-- **Próximo passo** — a saída do terminal nomeia os comandos seguintes
-  (`apothem verify …`, `apothem doctor`).
+- **Harness** — sem `--harness`, uma execução interativa lista os nomes suportados (mais `all`) e pede um deles antes que qualquer coisa seja gravada. Uma execução que não pode perguntar — `--yes`, `--format json` ou sem terminal — para com um erro de uso que nomeia a opção `--harness` e não grava nada.
+- **Perfil** — se o caminho de perfil resolvido não tiver arquivo, o `quickstart` oferece criar um perfil inicial (cria automaticamente com `--yes`, em um shell não interativo ou com `--format json`) e nomeia os campos de identidade com marcadores de posição a personalizar.
+- **Prévia + confirmação** — para `--harness all`, os destinos são listados sob dois títulos (raiz do projeto e seu diretório pessoal), e uma execução interativa pede confirmação antes de gravar fora do projeto. Um único harness nomeado é instalado sem prévia nem prompt. `--yes`, um shell não interativo e `--format json` prosseguem sem perguntar. Recusar a prévia de `--harness all` aborta a operação antes das gravações da instalação; um perfil inicial criado na etapa 1 é mantido.
+- **Instalação** — as capacidades que um harness não suporta nativamente são resumidas em uma única nota agrupada por harness (passe `--verbose` para ver o detalhe por capacidade); o conjunto completo está sempre no array de warnings de `--format json`.
+- **Próximo passo** — a saída do terminal nomeia os comandos seguintes (`apothem verify …`, `apothem doctor`).
 
 ## Opções
 

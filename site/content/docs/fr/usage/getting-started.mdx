@@ -2,7 +2,7 @@
 title: "Flux de travail principaux"
 description: "Les quatre flux de travail principaux d'Apothem — profil, règles, plans et la porte de conformité."
 machineTranslated: true
-sourceHash: "a0e26da50122053a"
+sourceHash: "53658e5bd065d27f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -68,10 +68,16 @@ matérialise une suite de plans sous `<project-root>/.apothem/plans/{suite}/`. C
 
 ## Porte de conformité
 
-Exécutez depuis la racine du dépôt :
+Depuis un checkout d'Apothem, exécutez :
 
 ```bash
-python -m apothem.conformity.gate --all .
+PYTHONPATH=src python -m apothem.conformity.gate --all .
+```
+
+Après une installation par script, exécutez :
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python3 -m apothem.conformity.gate --all .
 ```
 
 Exécute toutes les vérifications mécaniques de conformité et rapporte

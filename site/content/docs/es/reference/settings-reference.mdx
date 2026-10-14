@@ -2,7 +2,7 @@
 title: "Documentación de settings.json"
 description: "Configura la ejecución de hooks de Claude Code, permisos, eventos, tiempos de espera, runtime de Python, validación y precedencia de ajustes por capas para el ecosistema Apothem."
 machineTranslated: true
-sourceHash: "09e70625ff5e0caf"
+sourceHash: "e5e617ed964a9419"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,14 +21,13 @@ carga `~/.claude/settings.json` en todas las plataformas compatibles.
 
 ## Runtime solo Python
 
-Cada hook configurado usa la forma de comando exec de Claude Code. La
-plantilla distribuida lleva el token `${HARNESS_ROOT}`:
+Cada hook configurado usa la forma de comando exec de Claude Code. La plantilla distribuida lleva los tokens `${PYTHON_BIN}` y `${HARNESS_ROOT}`; `apothem install` sustituye `${PYTHON_BIN}` por el intérprete absoluto resuelto:
 
 ```json
 {
   "type": "command",
-  "command": "python",
-  "args": ["${HARNESS_ROOT}/apothem/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
+  "command": "${PYTHON_BIN}",
+  "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
 }
 ```
 
@@ -149,9 +148,9 @@ orden creciente de precedencia:
 
 | Nivel | Ubicación | ¿Versionado? | Justificación |
 |------|----------|------------|-----------|
-| 1. **Sistema** | Valores por defecto del harness compilados dentro del propio Claude Code | n/a (controlado por el proveedor) | El piso; todo operador hereda la misma línea base. |
-| 2. **Proyecto** | `<harness-root>/settings.json` | ✅ Versionado | Convenciones compartidas del proyecto: hooks, permisos, servidores MCP, cableado de la barra de estado. La plantilla del código fuente de Apothem vive dentro del directorio de templates del adaptador de Claude Code. |
-| 3. **Local de usuario** | `<harness-root>/settings.local.json` (gitignored) — plantillado como `settings.local.example.json` en la raíz del repositorio | ❌ Gitignored | Anulaciones específicas del operador: tokens de API, rutas locales de la máquina, funciones opt-in. |
+| 1. **Sistema** | Valores predeterminados del entorno compilados en el propio Claude Code | n/a (controlado por el proveedor) | La base mínima; todo operador hereda la misma línea base. |
+| 2. **Proyecto** | `<harness-root>/settings.json` | ✅ Versionado | Convenciones compartidas del proyecto: hooks, permisos, servidores MCP y cableado de la barra de estado. La plantilla del código fuente de Apothem vive dentro del directorio de plantillas del adaptador de Claude Code. |
+| 3. **Local de usuario** | `<harness-root>/settings.local.json` (ignorado por git), plantillado como `settings.local.example.json` bajo `examples/harnesses/claude-code/` | ❌ Ignorado por git | Anulaciones específicas del operador: tokens de API, rutas locales de la máquina y funciones opcionales. |
 
 Los valores de nivel superior anulan los de nivel inferior **a nivel de clave hoja** — cuando
 tanto la capa de proyecto como la local de usuario declaran una entrada `permissions.allow`, se toma la
@@ -160,10 +159,6 @@ exacta de fusión por clave es propiedad del harness de Claude Code.
 
 ### Crear una anulación local de usuario
 
-1. Copia `settings.local.example.json` (raíz del repositorio) a `<harness-root>/settings.local.json`.
-   El nombre de archivo `settings.local.json` coincide con el patrón de `.gitignore`, así que el archivo nunca
-   aterriza en el control de versiones.
-2. Edita la copia local — conserva solo las claves a anular; el harness compone las capas,
-   así que las claves ausentes heredan de la capa de proyecto.
-3. Verifica que el archivo se analiza como JSON válido antes de guardar — el harness rechaza
-   JSON mal formado al inicio de la sesión.
+1. Copia `examples/harnesses/claude-code/settings.local.example.json` a `<harness-root>/settings.local.json`. El nombre de archivo `settings.local.json` coincide con el patrón de `.gitignore`, así que el archivo nunca llega al control de versiones.
+2. Edita la copia local: conserva solo las claves que quieras anular. El entorno compone las capas, así que las claves ausentes heredan de la capa de proyecto.
+3. Verifica que el archivo se analiza como JSON válido antes de guardarlo. El entorno rechaza el JSON mal formado al iniciar la sesión.

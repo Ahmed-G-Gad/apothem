@@ -2,7 +2,7 @@
 title: "मुख्य वर्कफ़्लो"
 description: "Apothem के चार मुख्य वर्कफ़्लो — प्रोफ़ाइल, नियम, योजनाएँ, और अनुरूपता गेट।"
 machineTranslated: true
-sourceHash: "a0e26da50122053a"
+sourceHash: "53658e5bd065d27f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -64,10 +64,16 @@ apothem verify --harness claude-code
 
 ## अनुरूपता गेट
 
-रिपॉज़िटरी रूट से चलाएँ:
+Apothem चेकआउट से, चलाएँ:
 
 ```bash
-python -m apothem.conformity.gate --all .
+PYTHONPATH=src python -m apothem.conformity.gate --all .
+```
+
+स्क्रिप्ट इंस्टॉल के बाद, चलाएँ:
+
+```bash
+PYTHONPATH="$HOME/.apothem/src" python3 -m apothem.conformity.gate --all .
 ```
 
 सभी यांत्रिक अनुरूपता जाँचें चलाता है और प्रति बार पास/फ़ेल की रिपोर्ट करता है।

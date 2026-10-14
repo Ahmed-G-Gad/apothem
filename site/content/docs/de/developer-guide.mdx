@@ -2,7 +2,7 @@
 title: "Zu Apothem beitragen — Entwicklerhandbuch"
 description: "Pflegen und erweitern Sie das Apothem-Ökosystem, indem Sie Regeln, Befehle, Helfer, Skills und Hooks mit kanonischen Schemas, Frontmatter-Anforderungen und Validierungsverfahren verfassen."
 machineTranslated: true
-sourceHash: "ae3392672e01c783"
+sourceHash: "782e178598975d52"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -123,16 +123,18 @@ Unterstriche.
 - **Befehle:** `{name}.md`
 - **Helfer:** `{name}.md`
 - **Skills:** Im Ordner `src/apothem/skills/{name}/SKILL.md` (exakte Schreibweise: `SKILL.md`)
-- **Hooks:** Im Ordner `src/apothem/hooks/`. Alle Event-Handler sind Python. Jeder
-  `settings.json`-Hook-Befehl verwendet die Exec-Form (`python` plus `args`), um
-  `-m apothem.hooks.dispatch <event> [<message-name>]` oder
-  `-m apothem.conformity.gate --hook` aufzurufen. `dispatch.py` leitet
-  `SessionStart` an `session_start_bootstrap.main()` und
-  jedes andere zugelassene Ereignis an `emit_hook_context.main()` weiter. Die
-  einzigen Shell-Stubs, die unter `src/apothem/hooks/` oder `scripts/` zulässig
-  sind, sind die vier Locator- und Bootstrap-Dateien (`find-python.{ps1,sh}`,
-  `bootstrap.{ps1,sh}`); jede andere `.ps1`- /
-  `.sh`-Datei fällt bei der Hygieneprüfung `scripts/dev/validate_hooks.py` durch.
+- **Hooks:** Im Ordner `src/apothem/hooks/`. Alle Ereignis-Handler sind Python-Skripte. Jeder
+  Hook-Befehl in `settings.json` verwendet die Exec-Form: `command` ist der
+  Interpreter-Platzhalter `${PYTHON_BIN}`, der bei der Installation aufgelöst wird, und
+  `args` enthält den Skriptpfad und seine Argumente. Die Vorlage für Claude Code ruft
+  `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` und
+  `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook` über absolute Pfade auf, daher
+  benötigt die installierte Kopie kein importierbares `apothem`-Paket. `dispatch.py` leitet
+  `SessionStart` an `session_start_bootstrap.main()` weiter und jedes andere zugelassene Ereignis
+  an `emit_hook_context.main()`. Die einzigen Shell-Stubs, die unter `src/apothem/hooks/` oder
+  `scripts/` zulässig sind, sind die sechs Locator- und Bootstrap-Dateien (`find-python.{ps1,sh}`,
+  `find-pwsh.{ps1,sh}`, `bootstrap.{ps1,sh}`); jede andere `.ps1`- oder `.sh`-Datei fällt bei der
+  Hygieneprüfung `scripts/dev/validate_hooks.py` durch.
 
 ### Querverweise
 

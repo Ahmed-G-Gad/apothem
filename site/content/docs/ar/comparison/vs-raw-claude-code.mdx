@@ -2,7 +2,7 @@
 title: "Apothem مقابل تهيئة Claude Code اليدوية"
 description: "صيانة شجرة التهيئة الأصلية الكاملة لـ Claude Code يدويًّا، مقابل إدارتها عبر ملف التعريف المشترك لـ Apothem."
 machineTranslated: true
-sourceHash: "3eb017220814891b"
+sourceHash: "71c12697cb396172"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,18 +28,14 @@ sourceHash: "3eb017220814891b"
 <bdi>PreToolUse</bdi> و<bdi>PostToolUse</bdi> و<bdi>Stop</bdi> و<bdi>SessionStart</bdi> من المتن
 المشترك.
 
-و<bdi>Apothem</bdi> **لا** يدير <bdi>`CLAUDE.md`</bdi> — فذلك الملف أرضٌ مملوكة للمشغّل.
-تبقى تعليماتك الخاصة بالمشروع والشخصية في <bdi>`CLAUDE.md`</bdi> ملكًا لك؛ ويحكم
-<bdi>Apothem</bdi> الأسطح المنشورة من حوله.
+يكتب <bdi>Apothem</bdi> كتلة مُدارة واحدة محدَّدة بعلامات داخل <bdi>`~/.claude/CLAUDE.md`</bdi> على مستوى المستخدم. ويعيد <bdi>`apothem update`</bdi> كتابة تلك الكتلة وحدها، ويُبقي نصّك خارجها. أما ملفات <bdi>`CLAUDE.md`</bdi> الخاصّة بالمشروع فلا تُمسّ. ويحكم <bdi>Apothem</bdi> الأسطح المنشورة من حولها.
 
 ## مسار الترحيل
 
-1. شغّل <bdi>`apothem profile init`</bdi> لإنشاء ملف التعريف المشترك إن لم تكن قد فعلت
-   بعد.
-2. انقل قواعدك ووكلاءك وأوامرك ومهاراتك القائمة من <bdi>`~/.claude/`</bdi> إلى المتن
-   المشترك.
-3. اترك <bdi>`CLAUDE.md`</bdi> في مكانه — لن يمسّه <bdi>Apothem</bdi>.
-4. شغّل <bdi>`apothem install --harness claude-code`</bdi> لنشر المتن.
+1. شغّل <bdi>`apothem profile init`</bdi> لإنشاء الملف التعريفي المشترك إن لم تكن قد فعلت بعد.
+2. انقل قواعدك ووكلاءك وأوامرك ومهاراتك الموجودة في <bdi>`~/.claude/`</bdi> إلى المتن المشترك.
+3. اترك <bdi>`CLAUDE.md`</bdi> في مكانه. يُبقي <bdi>Apothem</bdi> نصّك خارج كتلته المُدارة، ولا يُعيد كتابة إلا تلك الكتلة.
+4. شغّل <bdi>`apothem install --harness claude-code`</bdi> لنشر المتن المشترك.
 5. شغّل <bdi>`apothem verify --harness claude-code`</bdi> للتأكّد من وصول التهيئة.
 6. استخدم <bdi>`apothem update --harness claude-code`</bdi> مع كل تغيير لاحق.
 

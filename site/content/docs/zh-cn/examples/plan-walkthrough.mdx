@@ -2,7 +2,7 @@
 title: "计划演练"
 description: "针对真实任务的 /plan 流水线端到端演练。"
 machineTranslated: true
-sourceHash: "a046160921a5a9b1"
+sourceHash: "474f591d305c3c7e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,7 +25,7 @@ human-readable by default.
 /plan-spec prose.md --suite-name apothem-status-command
 ```
 
-这会运行六阶段的 Forge，提出澄清问题并产出 `plans/apothem-status-command/_spec/spec.md`。
+这会运行六阶段的 Forge，提出澄清问题，并生成 `.apothem/plans/apothem-status-command/_spec/spec.md`。
 
 ## 第 3 步：生成计划
 
@@ -33,7 +33,7 @@ human-readable by default.
 /plan-generate
 ```
 
-在 `plans/apothem-status-command/phases/` 下产出 PREAMBLE.md、MASTER-PLAN.md、PROGRESS.md、PLAN-NOTES.md 以及各阶段的 PHASE.md 文件。
+生成 PREAMBLE.md、MASTER-PLAN.md、PROGRESS.md、PLAN-NOTES.md，以及位于 `.apothem/plans/apothem-status-command/phases/` 下的各阶段 PHASE.md 文件。
 
 ## 第 4 步：审查计划
 

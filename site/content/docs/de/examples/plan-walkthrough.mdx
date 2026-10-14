@@ -2,7 +2,7 @@
 title: "Plan-Durchlauf"
 description: "End-to-End-Durchlauf der /plan-Pipeline für eine reale Aufgabe."
 machineTranslated: true
-sourceHash: "a046160921a5a9b1"
+sourceHash: "474f591d305c3c7e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,7 +25,8 @@ human-readable by default.
 /plan-spec prose.md --suite-name apothem-status-command
 ```
 
-Dies führt den sechsphasigen Forge aus, stellt Klärungsfragen und erzeugt `plans/apothem-status-command/_spec/spec.md`.
+Dies führt den sechsphasigen Forge aus, stellt Klärungsfragen und erzeugt
+`.apothem/plans/apothem-status-command/_spec/spec.md`.
 
 ## Schritt 3: Den Plan generieren
 
@@ -33,7 +34,8 @@ Dies führt den sechsphasigen Forge aus, stellt Klärungsfragen und erzeugt `pla
 /plan-generate
 ```
 
-Erzeugt PREAMBLE.md, MASTER-PLAN.md, PROGRESS.md, PLAN-NOTES.md und die PHASE.md-Dateien pro Phase unter `plans/apothem-status-command/phases/`.
+Erzeugt PREAMBLE.md, MASTER-PLAN.md, PROGRESS.md, PLAN-NOTES.md sowie die PHASE.md-Dateien je Phase unter
+`.apothem/plans/apothem-status-command/phases/`.
 
 ## Schritt 4: Den Plan prüfen
 

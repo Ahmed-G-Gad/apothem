@@ -2,7 +2,7 @@
 title: "Convenções de harness multissuperfície"
 description: "Referência normativa canônica para a configuração e a coerência de harnesses multissuperfície entre os runtimes de chat, de autocompletar no IDE e de revisão de PR."
 machineTranslated: true
-sourceHash: "027929e7268f780c"
+sourceHash: "a28eacc8acd8ae94"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -122,8 +122,8 @@ Três validadores implementam em conjunto o contrato de coerência:
 
 ## 8. Ciclo de vida das superfícies
 
-- **Adicionar uma superfície.** O operador adere pelo canal de indagação estruturada ou por um `make surfaces-add <name>` posterior. O gerador redige a superfície com base na lista de afirmações, executa o validador e registra um ADR se for necessária uma substituição específica da superfície.
-- **Remover uma superfície.** A indagação estruturada confirma a remoção, um ADR registra a justificativa e a lista required-in do validador é alterada.
+- **Adicionar uma superfície.** O operador adere pelo canal de indagação estruturada. O gerador redige a superfície com base na lista de afirmações, executa o validador e registra um ADR se for necessária uma substituição específica da superfície.
+- **Remover uma superfície.** A indagação estruturada confirma a remoção, um ADR registra a justificativa, e a lista required-in do validador é alterada.
 - **Detecção de desvio.** Qualquer commit que divirja da lista de afirmações é rejeitado pelo pre-commit / CI; o autor do commit reescreve a superfície para restaurar a coerência.
 
 ---

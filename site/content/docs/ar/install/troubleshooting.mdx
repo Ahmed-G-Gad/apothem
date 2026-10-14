@@ -2,7 +2,7 @@
 title: "استكشاف الأخطاء وإصلاحها"
 description: "حلول لإخفاقات تثبيت Apothem الشائعة ومشكلات زمن التشغيل عبر مسارات المُلحَق وnpx والمُثبِّت."
 machineTranslated: true
-sourceHash: "5dad4c6e337cead2"
+sourceHash: "7deb3ca475c3bc89"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -39,9 +39,7 @@ PATH` عندما لا يستوفي أي مرشّح حدّ 3.10. ثبّت CPython
 
 ### لم يُعثَر على `apothem` بعد تشغيل المُثبِّت
 
-يضع المُثبِّت شجرة المصدر في `~/.apothem` ولا يضيف
-ملفًا تنفيذيًا باسم `apothem` إلى `PATH`. شغّل المحرّك عبر صيغة الاستدعاء
-التي يطبعها المُثبِّت عند الاكتمال:
+يضع المُثبِّت شجرة المصدر في <bdi>`~/.apothem`</bdi>، ويكتب غلافًا باسم <bdi>`apothem`</bdi> في <bdi>`~/.local/bin`</bdi> افتراضيًا (<bdi>POSIX</bdi>)، أو في <bdi>`%LOCALAPPDATA%\Microsoft\WindowsApps`</bdi> (<bdi>Windows</bdi>). ولا يعدّل <bdi>`PATH`</bdi> لديك. وإذا لم يُعثَر على <bdi>`apothem`</bdi>، فذلك الدليل ليس على <bdi>`PATH`</bdi>؛ أضِفه، أو استخدم صيغة <bdi>`PYTHONPATH`</bdi> الواردة أدناه حتى تفعل ذلك. شغّل المحرّك عبر صيغة الاستدعاء التي يطبعها المُثبِّت عند الاكتمال:
 
 ```bash
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>

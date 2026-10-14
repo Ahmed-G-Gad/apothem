@@ -2,13 +2,15 @@
 title: "コンフォーミティゲート"
 description: "Apothem のコンフォーミティゲートを実行して、エコシステムの健全性を検証します。"
 machineTranslated: true
-sourceHash: "ea155671db71b76d"
+sourceHash: "bbf19e4d148c511e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 `src/apothem/conformity/gate.py` にあるコンフォーミティゲートは、15 バーの事前出力ゲート
 （M1-M15）のうち機械的に判定される部分を、オペレーターが作成するすべてのアーティファクトに
 対して実行します。
+
+このページのコマンドは Apothem のチェックアウトを前提とするため、それぞれの先頭に `PYTHONPATH=src` を付けてください。スクリプトでインストールした後は、`src` の代わりに `PYTHONPATH="$HOME/.apothem/src"` を使います。
 
 ## ゲートの実行
 
@@ -20,10 +22,10 @@ sourceHash: "ea155671db71b76d"
 
 ```bash
 # Advisory: report every validator's findings across the repo, exit 0
-python -m apothem.conformity.gate --all .
+PYTHONPATH=src python -m apothem.conformity.gate --all .
 
 # Strict: exit non-zero (code 2) when a blocking finding is present
-python -m apothem.conformity.gate --all --strict .
+PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 ```
 
 終了コード: `0` はクリーン（または助言モード）、`2` は strict モードでの検出事項によるブロック、
@@ -66,13 +68,13 @@ gitignore された `.apothem/plans/` ツリーに置かれるため、これら
 
 ```bash
 # List every registered validator
-python -m apothem.conformity.gate --list
+PYTHONPATH=src python -m apothem.conformity.gate --list
 
 # Run a single named validator
-python -m apothem.conformity.gate --check multi-surface-coherence
+PYTHONPATH=src python -m apothem.conformity.gate --check multi-surface-coherence
 
 # Run every validator against one file
-python -m apothem.conformity.gate src/apothem/rules/my-rule.md
+PYTHONPATH=src python -m apothem.conformity.gate src/apothem/rules/my-rule.md
 ```
 
 `--hook` モード（`python -m apothem.conformity.gate --hook`）は、ハーネスからディスパッチ
@@ -97,4 +99,4 @@ export APOTHEM_CONFORMITY_SCOPE=/path/to/project
 
 ## CI 統合
 
-ゲートは、プッシュのたびに `.github/workflows/conformity.yml` を介して CI で実行されます。
+`.github/workflows/ci.yml` の quality ジョブは、`main` へのプッシュ時と、`main` へのプルリクエストのうちそのジョブが監視するパスに触れるものに対して、ゲートを厳格モード（`python -m apothem.conformity.gate --all . --strict`）で実行します。別のワークフロー `.github/workflows/conformity.yml` は、フィクスチャのスイープ（`tests/conformity-scenarios/verify.py --strict`）を実行します。

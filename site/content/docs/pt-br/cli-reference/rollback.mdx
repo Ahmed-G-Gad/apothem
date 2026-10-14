@@ -2,7 +2,7 @@
 title: "rollback"
 description: "Referência da CLI para o comando apothem rollback."
 machineTranslated: true
-sourceHash: "3a5ce4dc40c52bfe"
+sourceHash: "6c0c49f541075b0c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,11 +33,7 @@ mais recente para a mais antiga, ele:
   os use;
 - remove os diretórios que a instalação criou, assim que estiverem vazios.
 
-Tudo o que o rollback remove ou substitui é primeiro copiado para a raiz de
-backup do Apothem (`~/.apothem/backups/`), de modo que o próprio rollback pode
-ser desfeito manualmente. Em seguida, ele anexa um registro `rollback` ao ledger
-do harness. Reverter uma instalação mais antiga também desfaz todas as
-instalações posteriores a ela na mesma raiz.
+Tudo o que o rollback remove ou substitui é primeiro copiado para a raiz de backup do Apothem (`~/.apothem/backups/`), de modo que o próprio rollback pode ser desfeito manualmente. Em seguida, ele anexa um registro `rollback` ao ledger do harness. Reverter uma instalação mais antiga restaura ou remove apenas os destinos que essa instalação registrou e descarta do registro ativo, na mesma raiz, todas as instalações posteriores a ela. Os arquivos que uma instalação posterior adicionou fora desses destinos permanecem no lugar.
 
 O ledger mantém os 10 registros de instalação mais recentes por raiz de
 instalação (com os backups que eles referenciam); uma instalação mais antiga não

@@ -2,7 +2,7 @@
 title: "Schnellstart"
 description: "Apothem installieren, ein Profil verfassen, den ersten Harness materialisieren und verifizieren — eine Tour zum Kopieren und Einfügen mit erwarteter Ausgabe."
 machineTranslated: true
-sourceHash: "d7ba900b686729d3"
+sourceHash: "cabe19810d3aad3a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -140,11 +140,7 @@ apothem install --harness cursor --project . --dry-run
 apothem install --harness cursor --project .
 ```
 
-Installieren Sie mit `--harness all` den gesamten registry-gestützten Satz auf
-einmal. Da diese Auswahl sowohl Dateien im Projektbereich als auch Dateien im
-Benutzerbereich schreibt, gibt der Befehl die konkreten Ziele nach Ort gruppiert
-aus und fragt nach einer Bestätigung, bevor er außerhalb der Projektwurzel
-schreibt:
+Installieren Sie den gesamten durch die Harness-Registry gestützten Satz auf einmal mit `--harness all`. Da diese Auswahl sowohl Dateien mit Projektumfang als auch Dateien mit Benutzerumfang schreibt, gibt der Befehl die konkreten Ziele nach Ort gruppiert aus. In einem interaktiven Terminal fragt er nach, bevor er außerhalb der Projektwurzel schreibt. Ein Lauf ohne Terminal, ein Lauf mit `--yes` oder ein Lauf mit `--format json` schreibt ohne Nachfrage; `--dry-run` schreibt nichts. Führen Sie den vollständigen Satz so aus:
 
 ```bash
 apothem install --harness all --project .
@@ -156,9 +152,7 @@ der [install-Referenz](/docs/cli-reference/install).
 
 ## 4. Verifizieren
 
-Das Materialisieren ist nur die halbe Arbeit — `verify` bestätigt, dass die
-erwarteten Konfigurationsdateien des Harness angekommen sind und dem entsprechen,
-was das Profil deklariert:
+Das Materialisieren ist nur die halbe Arbeit: `verify` bestätigt, dass die erwarteten Konfigurationsdateien des Harness angekommen und gültig sind:
 
 ```bash
 apothem verify --harness claude-code
@@ -168,10 +162,7 @@ apothem verify --harness claude-code
 ✓ claude-code is verified at /home/you/.claude/settings.json
 ```
 
-`verify` endet mit einem Exit-Code ungleich null, wenn die Konfiguration fehlt
-oder abgedriftet ist, und dient damit zugleich als Gate in einem
-Einrichtungsskript. Für eine Zustandsprüfung der gesamten Maschine über jeden
-registrierten Adapter führen Sie Folgendes aus:
+`verify` endet mit einem Code ungleich null, wenn ein verwaltetes Ziel fehlt, eine verwaltete Datei leer ist oder eine JSON- oder YAML-Konfiguration nicht geparst werden kann. Mit `--profile PATH` schlägt die Prüfung außerdem fehl, wenn sich eine installierte Datei von diesem Profil unterscheidet; damit wird `verify` zu einer Drift-Prüfung. Ohne diese Angabe besteht eine veraltete Konfiguration die Prüfung weiterhin. So kann es als Gate in einem Einrichtungsskript dienen. Für eine Zustandsprüfung der gesamten Maschine über jeden registrierten Adapter führen Sie Folgendes aus:
 
 ```bash
 apothem doctor

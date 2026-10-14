@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "Adaptateur d'environnement Apothem pour GitHub Copilot (GA)."
 machineTranslated: true
-sourceHash: "4482a306f9f119b5"
+sourceHash: "27caa0629e01c5e8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -61,7 +61,7 @@ apothem verify --harness github-copilot --project /path/to/project
 La commande verify confirme que :
 
 1. La configuration native existe au chemin attendu.
-2. Tous les champs obligatoires du profil partagé sont présents.
+2. Chaque cible gérée existe ; les fichiers gérés ne sont pas vides, et les configurations JSON ou YAML s'analysent correctement. Ajoutez `--profile PATH` pour vérifier en plus que les fichiers installés correspondent à ce profil.
 3. La routine de vérification propre à l'adaptateur signale un succès.
 
 ## Mise à jour

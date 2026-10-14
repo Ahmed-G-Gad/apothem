@@ -2,7 +2,7 @@
 title: "OpenCode"
 description: "Adaptador de harness do Apothem para o OpenCode (Beta)."
 machineTranslated: true
-sourceHash: "1d807fc5d00e08ca"
+sourceHash: "2c4709aed2cf9905"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -77,7 +77,7 @@ apothem verify --harness opencode
 O comando verify confirma que:
 
 1. A configuração nativa existe no caminho esperado.
-2. Todos os campos obrigatórios do perfil compartilhado estão presentes.
+2. Cada destino gerenciado existe; os arquivos gerenciados não estão vazios, e as configurações JSON ou YAML são analisadas sem erros. Adicione `--profile PATH` para também confirmar que os arquivos instalados correspondem a esse perfil.
 3. A rotina de verificação específica do adaptador informa sucesso.
 
 ## Atualização

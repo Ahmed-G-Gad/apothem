@@ -2,7 +2,7 @@
 title: "rollback"
 description: "Referensi CLI untuk perintah apothem rollback."
 machineTranslated: true
-sourceHash: "3a5ce4dc40c52bfe"
+sourceHash: "6c0c49f541075b0c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,11 +35,7 @@ dimulai dari perubahan terbaru, perintah ini:
 - menghapus direktori yang dibuat oleh pemasangan, setelah direktori tersebut
   kosong.
 
-Segala sesuatu yang dihapus atau diganti oleh rollback terlebih dahulu disalin
-ke root cadangan Apothem (`~/.apothem/backups/`), sehingga sebuah rollback itu
-sendiri dapat dibatalkan secara manual. Perintah ini kemudian menambahkan
-catatan `rollback` ke ledger harness. Me-rollback pemasangan yang lebih lama
-juga membatalkan setiap pemasangan sesudahnya pada root yang sama.
+Segala sesuatu yang dihapus atau diganti oleh rollback terlebih dahulu disalin ke root cadangan Apothem (`~/.apothem/backups/`), sehingga rollback itu sendiri dapat dibatalkan secara manual. Perintah ini kemudian menambahkan catatan `rollback` ke ledger harness. Me-rollback pemasangan yang lebih lama hanya memulihkan atau menghapus target yang dicatat oleh pemasangan lama tersebut, dan mengeluarkan setiap pemasangan sesudahnya dari catatan aktif pada root yang sama. Berkas yang ditambahkan oleh pemasangan yang lebih baru di luar target tersebut tetap berada di tempatnya.
 
 Ledger menyimpan 10 catatan pemasangan terbaru per root pemasangan (beserta
 cadangan yang dirujuknya); pemasangan yang lebih lama tidak lagi dapat

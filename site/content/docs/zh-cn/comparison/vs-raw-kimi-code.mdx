@@ -2,7 +2,7 @@
 title: "Apothem vs raw Kimi Code config"
 description: "Hand-maintaining Kimi Code's project-root AGENTS.md and .kimi-code/ support files versus rendering them from Apothem's shared profile."
 machineTranslated: true
-sourceHash: "5f69887592d86e7a"
+sourceHash: "3973fe015cf877a5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,13 +17,13 @@ against managing it with Apothem.
 
 ## Effort comparison
 
-| Task | Raw hand-config | Apothem-managed |
+| 任务 | 手工配置 | Apothem 管理 |
 | ---- | --------------- | --------------- |
-| Author the `AGENTS.md` instruction surface | Hand-write and re-sync per project | One managed block rendered from the shared profile |
-| Keep rules, commands, skills, agents in sync | Manual copy per project | Materialized under `<project>/.kimi-code/.apothem/support/` on every install |
-| Preserve operator prose on refresh | Manual merge | Sentinel-delimited block; operator prose outside it is preserved |
-| Keep rules aligned with other harnesses | Manual, per tool | Automatic on `apothem update` |
-| Verify the config is correct | Manual inspection | `apothem verify --harness kimi-code` |
+| 编写 `AGENTS.md` 指令表面 | 每个项目手工编写并重新同步 | 由共享配置档案渲染出的一个受管块 |
+| 让规则、命令、技能、代理保持同步 | 每个项目手工复制 | 每次安装时物化到 `<project>/.kimi-code/.apothem/support/` 下 |
+| 刷新时保留操作者的文字 | 手工合并 | 由哨兵标记界定的块；块外的操作者文字会被保留 |
+| 让规则与其他工具保持对齐 | 手工，逐工具 | 在 `apothem update` 时自动完成 |
+| 验证配置是否正确 | 手工检查 | `apothem verify --harness kimi-code --project <path>` |
 
 ## What Apothem manages
 
@@ -36,12 +36,11 @@ rules re-renders the files on the next `apothem update`.
 
 ## Migration path
 
-1. Run `apothem profile init` to create the shared profile if you have not yet.
-2. Move the rules from your existing `AGENTS.md` into the shared corpus.
-3. Run `apothem install --harness kimi-code` to render the `AGENTS.md`
-   instruction surface and the `.kimi-code/.apothem/support/` support tree.
-4. Run `apothem verify --harness kimi-code` to confirm the config landed.
-5. Use `apothem update --harness kimi-code` for every later change.
+1. 如果你还没有创建共享配置档案，运行 `apothem profile init`。
+2. 把现有 `AGENTS.md` 中的规则移入共享语料库。
+3. 运行 `apothem install --harness kimi-code --project <path>`，以渲染 `AGENTS.md` 指令表面和 `.kimi-code/.apothem/support/` 支持树。
+4. 运行 `apothem verify --harness kimi-code --project <path>` 来确认配置已落地。
+5. 之后的每次更改都使用 `apothem update --harness kimi-code --project <path>`。
 
 ## Read next
 

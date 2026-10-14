@@ -2,7 +2,7 @@
 title: "अनुरूपता गेट"
 description: "Apothem अनुरूपता गेट — पंद्रह-बार प्री-एमिशन गेट (M1-M15) का यांत्रिक अंश, जिसे हर एमिट किए गए आर्टिफ़ैक्ट को पास करना ही होगा।"
 machineTranslated: true
-sourceHash: "c3c719c0c1a0e92e"
+sourceHash: "0c45cd7185de5190"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,31 +28,7 @@ sourceHash: "c3c719c0c1a0e92e"
 
 ## गंभीरता सीढ़ी
 
-| गंभीरता | गेट पर प्रभाव |
-|---|---|
-| **गंभीर** | गेट FAIL — एमिशन बिना शर्त अवरुद्ध |
-| **महत्वपूर्ण** | गेट FAIL जब 2+ महत्वपूर्ण बार एक साथ विफल हों |
-| **परामर्शी** | गेट WARN — हस्ताक्षरित रिकॉर्ड में दर्ज; एमिशन को अवरुद्ध नहीं करता |
-
-यांत्रिक-अंश के अधिकांश मैचर डिफ़ॉल्ट रूप से **महत्वपूर्ण** होते हैं। M5 (प्राधिकार — सीक्रेट, गढ़े हुए एंडपॉइंट) और M12 (अनाथ आउटपुट) **गंभीर** हैं।
-
-```mermaid
-%% provenance: hand-authored %%
-%% verified: 2026-07-06 %%
-%% cross-reference: the Severity ladder table above; src/apothem/conformity/gate.py (severity aggregation) %%
-flowchart TD
-    accTitle: Conformity-gate severity-to-verdict decision flow
-    accDescr: A finding's severity determines the gate verdict. A Critical finding — M5 authority or M12 orphan output — fails the gate and blocks emission unconditionally. Important findings block only when two or more fail simultaneously; a single Important finding does not block. Advisory findings are logged in the signed record and never block emission.
-    F["Finding raised<br/>by a matcher"] --> S{"Severity?"}
-    S -->|Critical| C["Critical<br/>M5 authority · M12 orphan output"]
-    S -->|Important| I["Important<br/>most mechanical matchers"]
-    S -->|Advisory| A["Advisory"]
-    C --> FAIL["Gate FAIL<br/>emission blocked"]
-    I --> Q{"2+ Important<br/>bars failing?"}
-    Q -->|yes| FAIL
-    Q -->|no| WARN["Gate WARN<br/>logged in signed record<br/>emission proceeds"]
-    A --> WARN
-```
+गेट में गंभीर, महत्वपूर्ण या परामर्शी स्तर की कोई सीढ़ी नहीं है, और दो-निष्कर्ष की कोई सीमा नहीं है। `--strict` (या `APOTHEM_CONFORMITY_STRICT=1`) के बिना गेट निष्कर्ष रिपोर्ट करता है और `0` के साथ बाहर निकलता है। `--strict` के साथ, एकल-फ़ाइल या हुक जाँच किसी भी मैचर के विफल होने पर `2` के साथ बाहर निकलती है, और कॉर्पस रन (`--all-perwrite`) जब कोई ब्लॉकिंग मैचर विफल होता है तो `2` के साथ बाहर निकलता है; परामर्शी मैचर केवल रिपोर्ट किए जाते हैं। इंस्टॉल किया गया Write/Edit हुक `--strict` पास नहीं करता, इसलिए वह निष्कर्ष रिपोर्ट करता है और लेखन आगे बढ़ता है, जब तक उसके एनवायरनमेंट में `APOTHEM_CONFORMITY_STRICT=1` सेट न हो।
 
 ## वैलिडेटर
 

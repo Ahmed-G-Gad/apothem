@@ -2,7 +2,7 @@
 title: "Cabeçalho de autoria — Linha de licença SPDX por arquivo"
 description: "Define e aplica marcadores de identificador de licença SPDX por arquivo usando cabeçalhos canônicos de uma única linha na sintaxe de comentário adequada para cada tipo de arquivo."
 machineTranslated: true
-sourceHash: "f8a8cbfe9b2c940f"
+sourceHash: "c30711b821380cee"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -120,7 +120,7 @@ Uma CLI determinística que:
 - Opera em três modos: `fix-in-place` (grava), `emit-patch` (imprime um diff unificado), `check` (sai com código diferente de zero em qualquer divergência — usado pelo CI).
 - Idempotente: executar duas vezes é uma não-operação.
 
-O injetor é invocado pelos alvos Make que andaimam arquivos novos com a linha SPDX pré-inserida (`make headers-fix` e os andaimes `make new-*`) e pelo hook de pre-commit em modo `--fix`.
+O injetor é invocado pelo alvo `make headers-fix`, que executa `scripts/inject-header.py --mode fix-in-place`.
 
 ---
 

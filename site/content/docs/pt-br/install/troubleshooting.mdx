@@ -2,7 +2,7 @@
 title: "Resolução de problemas"
 description: "Soluções para falhas comuns de instalação do Apothem e problemas em tempo de execução nos caminhos do plugin, npx e instalador."
 machineTranslated: true
-sourceHash: "5dad4c6e337cead2"
+sourceHash: "7deb3ca475c3bc89"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,9 +40,7 @@ pacotes do seu SO — instale os pacotes nomeados você mesmo (por exemplo,
 
 ### `apothem` não encontrado após executar o instalador
 
-O instalador coloca a árvore de fonte em `~/.apothem` e não adiciona um
-executável `apothem` ao seu `PATH`. Execute o motor através da invocação
-que o instalador imprime ao concluir:
+O instalador coloca a árvore de código-fonte em `~/.apothem` e grava um shim `apothem` em `~/.local/bin` por padrão (POSIX) ou em `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows). Ele não altera o seu `PATH`. Se `apothem` não for encontrado, esse diretório não está no `PATH`; adicione-o, ou use a forma `PYTHONPATH` abaixo até fazer isso. Execute o motor pela invocação que o instalador imprime ao concluir:
 
 ```bash
 PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>

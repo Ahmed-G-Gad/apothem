@@ -2,7 +2,7 @@
 title: "Editar o perfil"
 description: "Altere o perfil compartilhado e rematerialize todas as ferramentas instaladas."
 machineTranslated: true
-sourceHash: "aef30135c731008d"
+sourceHash: "24dfc028806d15cb"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -79,8 +79,15 @@ apothem profile show
 apothem verify --harness all
 ```
 
-`profile show` reflete sua edição; `verify` confirma que a configuração materializada
-corresponde ao perfil atualizado.
+`profile show` reflete a sua edição.
+
+`apothem verify --harness all` verifica todos os harnesses registrados, por isso ele sai com código diferente de zero, a menos que todos estejam instalados. Harnesses de escopo de projeto também exigem `--project PATH`; sem ele, o lote para com um erro `project.required`. Para verificar apenas o harness que você atualizou, execute o mesmo comando com o nome desse harness:
+
+```bash
+apothem verify --harness <name>
+```
+
+Para uma visão do sistema inteiro que tolera harnesses que você não instalou, execute `apothem doctor`.
 
 ## Relacionado
 

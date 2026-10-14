@@ -2,7 +2,7 @@
 title: "quickstart"
 description: "CLI-Referenz für den geführten Erstlauf-Befehl apothem quickstart."
 machineTranslated: true
-sourceHash: "f564c70124345bea"
+sourceHash: "951e6d6877611c54"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -36,24 +36,26 @@ installiert jeden unterstützten Harness und ist immer eine explizite Wahl.
 ## Verhalten
 
 - **Harness** — ohne `--harness` listet ein interaktiver Lauf die unterstützten
-  Namen (plus `all`) auf und fragt nach einem davon, bevor irgendetwas
-  geschrieben wird. Ein Lauf, der nicht fragen kann — `--yes`, `--format json`
-  oder kein Terminal —, stoppt mit einem Verwendungsfehler, der die Option
-  `--harness` benennt, und schreibt nichts.
-- **Profil** — wenn am aufgelösten Profilpfad keine Datei existiert, bietet
-  `quickstart` an, ein Starterprofil anzulegen (legt es unter `--yes`, in einer
-  nicht interaktiven Shell oder unter `--format json` automatisch an), und
-  benennt die Platzhalter-Identitätsfelder, die anzupassen sind.
-- **Vorschau + Bestätigung** — vor jedem Schreibvorgang werden die Ziele unter
-  zwei Überschriften aufgeführt (Projektwurzel gegenüber Ihrem Home-Verzeichnis);
-  ein interaktiver Lauf fragt nach Bestätigung, bevor er außerhalb des Projekts
-  schreibt. `--yes`, eine nicht interaktive Shell und `--format json` fahren
-  ohne Nachfrage fort. Ein Ablehnen bricht vor jedem Schreibvorgang ab.
-- **Installation** — Fähigkeiten, die ein Harness nicht nativ unterstützt,
-  werden als ein gruppierter Hinweis je Harness zusammengefasst (übergeben Sie
-  `--verbose` für die Details je Fähigkeit); die vollständige Menge steht immer
-  im warnings-Array von `--format json`.
-- **Nächster Schritt** — die Terminalausgabe benennt die Folgebefehle (`apothem
+  Namen (plus `all`) auf und fragt nach einem davon, bevor etwas geschrieben wird.
+  Ein Lauf, der nicht nachfragen kann — `--yes`, `--format json` oder kein
+  Terminal —, bricht mit einem Verwendungsfehler ab, der die Option `--harness`
+  nennt, und schreibt nichts.
+- **Profil** — existiert am aufgelösten Profilpfad keine Datei, bietet `quickstart`
+  an, ein Starterprofil anzulegen (unter `--yes`, in einer nicht interaktiven Shell
+  oder mit `--format json` geschieht das automatisch), und benennt die
+  Platzhalter-Identitätsfelder, die Sie anpassen sollten.
+- **Vorschau + Bestätigung** — bei `--harness all` werden die Ziele unter zwei
+  Überschriften aufgeführt (Projektwurzel bzw. Ihr Home-Verzeichnis), und ein
+  interaktiver Lauf bestätigt, bevor er außerhalb des Projekts schreibt. Ein einzeln
+  benannter Harness wird ohne Vorschau und ohne Nachfrage installiert. `--yes`, eine
+  nicht interaktive Shell und `--format json` fahren ohne Nachfrage fort. Lehnen Sie
+  die Vorschau für `--harness all` ab, bricht die Installation ab, bevor sie schreibt;
+  ein in Schritt 1 angelegtes Starterprofil bleibt erhalten.
+- **Installation** — Fähigkeiten, die ein Harness nicht nativ unterstützt, werden als
+  ein gruppierter Hinweis je Harness zusammengefasst (übergeben Sie `--verbose` für die
+  Details je Fähigkeit); die vollständige Menge steht immer im warnings-Array von
+  `--format json`.
+- **Nächster Schritt** — die Terminalausgabe nennt die Folgebefehle (`apothem
   verify …`, `apothem doctor`).
 
 ## Optionen

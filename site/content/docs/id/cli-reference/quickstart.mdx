@@ -2,7 +2,7 @@
 title: "quickstart"
 description: "Referensi CLI untuk perintah eksekusi pertama terpandu apothem quickstart."
 machineTranslated: true
-sourceHash: "f564c70124345bea"
+sourceHash: "951e6d6877611c54"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,26 +35,11 @@ setiap harness yang didukung dan selalu merupakan pilihan eksplisit.
 
 ## Perilaku
 
-- **Harness** — tanpa `--harness`, eksekusi interaktif mencantumkan nama-nama
-  yang didukung (ditambah `all`) dan meminta satu nama sebelum apa pun ditulis.
-  Eksekusi yang tidak dapat bertanya — `--yes`, `--format json`, atau tanpa
-  terminal — berhenti dengan galat penggunaan yang menyebutkan opsi
-  `--harness`, dan tidak menulis apa pun.
-- **Profil** — jika jalur profil yang di-resolve tidak memiliki berkas,
-  `quickstart` menawarkan untuk membuat profil awal (membuatnya otomatis di
-  bawah `--yes`, shell non-interaktif, atau `--format json`) dan menyebutkan
-  bidang identitas placeholder yang perlu dipersonalisasi.
-- **Pratinjau + konfirmasi** — sebelum penulisan apa pun, target dicantumkan di
-  bawah dua judul (root proyek versus direktori home Anda); eksekusi interaktif
-  meminta konfirmasi sebelum menulis di luar proyek. `--yes`, shell
-  non-interaktif, dan `--format json` melanjutkan tanpa meminta konfirmasi.
-  Menolak membatalkan proses sebelum penulisan apa pun.
-- **Pemasangan** — kemampuan yang tidak didukung secara native oleh sebuah
-  harness diringkas sebagai satu catatan terkelompok per harness (berikan
-  `--verbose` untuk detail per kemampuan); himpunan lengkapnya selalu ada di
-  larik warnings `--format json`.
-- **Langkah berikutnya** — keluaran terminal menyebutkan perintah lanjutan
-  (`apothem verify …`, `apothem doctor`).
+- **Harness** — tanpa `--harness`, eksekusi interaktif mencantumkan nama-nama yang didukung (ditambah `all`) dan meminta satu nama sebelum apa pun ditulis. Eksekusi yang tidak dapat bertanya — `--yes`, `--format json`, atau tanpa terminal — berhenti dengan galat penggunaan yang menyebutkan opsi `--harness`, dan tidak menulis apa pun.
+- **Profil** — jika jalur profil yang di-resolve tidak memiliki berkas, `quickstart` menawarkan untuk membuat profil awal (membuatnya otomatis di bawah `--yes`, shell non-interaktif, atau `--format json`) dan menyebutkan bidang identitas placeholder yang perlu dipersonalisasi.
+- **Pratinjau + konfirmasi** — untuk `--harness all`, target dicantumkan di bawah dua judul (root proyek versus direktori home Anda), dan eksekusi interaktif meminta konfirmasi sebelum menulis di luar proyek. Satu harness bernama dipasang tanpa pratinjau atau prompt. `--yes`, shell non-interaktif, dan `--format json` melanjutkan tanpa meminta konfirmasi. Menolak pratinjau `--harness all` membatalkan proses sebelum penulisan instalasi; profil awal yang dibuat pada langkah 1 tetap dipertahankan.
+- **Pemasangan** — kemampuan yang tidak didukung secara native oleh sebuah harness diringkas sebagai satu catatan terkelompok per harness (berikan `--verbose` untuk detail per kemampuan); himpunan lengkapnya selalu ada di larik warnings `--format json`.
+- **Langkah berikutnya** — keluaran terminal menyebutkan perintah lanjutan (`apothem verify …`, `apothem doctor`).
 
 ## Opsi
 

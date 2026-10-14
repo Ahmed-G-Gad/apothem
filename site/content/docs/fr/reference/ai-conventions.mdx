@@ -2,7 +2,7 @@
 title: "Conventions d'environnements multi-surfaces"
 description: "Référence normative canonique pour la configuration des environnements multi-surfaces et leur cohérence entre les environnements d'exécution de chat, de complétion dans l'IDE et de revue de PR."
 machineTranslated: true
-sourceHash: "027929e7268f780c"
+sourceHash: "a28eacc8acd8ae94"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -122,8 +122,8 @@ Trois validateurs mettent en œuvre conjointement le contrat de cohérence :
 
 ## 8. Cycle de vie des surfaces
 
-- **Ajouter une surface.** L'opérateur l'active via le canal d'enquête structurée ou via un `make surfaces-add <name>` ultérieur. Le générateur rédige la surface d'après la liste d'affirmations, exécute le validateur et dépose un ADR si une dérogation propre à la surface est nécessaire.
-- **Retirer une surface.** L'enquête structurée confirme le retrait, un ADR consigne la justification, la liste required-in du validateur est modifiée.
+- **Ajouter une surface.** L'opérateur l'active via le canal d'enquête structurée. Le générateur rédige la surface d'après la liste d'affirmations, exécute le validateur et dépose un ADR si une dérogation propre à la surface est nécessaire.
+- **Retirer une surface.** L'enquête structurée confirme le retrait, un ADR consigne la justification, et la liste required-in du validateur est modifiée.
 - **Détection de dérive.** Tout commit qui s'écarte de la liste d'affirmations est rejeté par le pre-commit / la CI ; l'auteur du commit réécrit la surface pour rétablir la cohérence.
 
 ---

@@ -2,7 +2,7 @@
 title: "프런트매터 스키마"
 description: "아티팩트 클래스 전반의 YAML 프런트매터 블록 구조, 클래스별 필수 키, 검증기 강제 규칙에 관한 참조 가이드입니다."
 machineTranslated: true
-sourceHash: "79d900f52578b1b0"
+sourceHash: "f89ff828715e6fe4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,7 @@ sourceHash: "79d900f52578b1b0"
 
 모든 아티팩트는 맨 앞에 `---` 줄로 구분된 YAML 프런트매터를 둡니다. Markdown 계열 파일에서는 [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header)에 따른 정식 작성자 헤더 배너가 프런트매터 위에 놓이고, 프런트매터가 그 바로 뒤에 옵니다.
 
-키는 `kebab-case`를 사용합니다. 스칼라 값은 따옴표 없이 쓰거나 큰따옴표로 묶으며, 콜론, 해시 기호, 그 밖에 YAML에서 의미를 갖는 문자가 들어 있는 문자열 값은 따옴표로 묶습니다.
+커맨드 키는 `kebab-case`를 사용합니다. 스킬 키는 `kebab-case`를 사용하되, 소스 코퍼스가 쓰는 camelCase 표기인 `userInvocable`만 예외입니다(Claude Code 설치는 이를 `user-invocable`로 이름 바꿉니다). 규칙과 위임 작업자의 키는 2절의 필수 키 표에 나열된 대로 camelCase입니다. 스칼라 값은 따옴표 없이 쓰거나 큰따옴표로 묶으며, 콜론, 해시 기호 또는 그 밖의 YAML에서 의미를 갖는 문자가 들어 있는 문자열 값은 따옴표로 묶습니다.
 
 ## 2. 클래스별 필수 필드
 

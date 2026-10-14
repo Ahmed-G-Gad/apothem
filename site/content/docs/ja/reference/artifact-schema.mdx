@@ -2,7 +2,7 @@
 title: "アーティファクトスキーマ仕様"
 description: "Apothem ソースツリー内のすべてのアーティファクトタイプに対する正規の YAML フロントマタースキーマと必須フィールド。クラスごとのテンプレートと検証ルールを含みます。"
 machineTranslated: true
-sourceHash: "0a94086b9eaf12b9"
+sourceHash: "376d3a98ba3102c6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -275,8 +275,8 @@ argument-hint: "[--focus area] [--fix]"
       "hooks": [
         {
           "type": "command",
-          "command": "python",
-          "args": ["-m", "apothem.hooks.dispatch", "<EventName>", "<message-name>"],
+          "command": "${PYTHON_BIN}",
+          "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "<EventName>", "<message-name>"],
           "timeout": <seconds>,
           "statusMessage": "<short human-readable label>"
         }
@@ -286,18 +286,20 @@ argument-hint: "[--focus area] [--fix]"
 }
 ```
 
+`-m apothem.hooks.dispatch` 形式は、`PYTHONPATH=src` を使ってソースチェックアウトから開発する場合のものです。
+
 | フィールド | 型 | 目的 | 例 |
 | ----- | ---- | ------- | ------- |
 | `matcher` | string | ツール名のパターン（ツールに依存しないイベントでは `"*"`） | `"Write"` |
-| `hooks[].type` | リテラル `"command"` | 現時点でサポートされる唯一のフックハンドラータイプ | `"command"` |
-| `hooks[].command` | string | 実行可能なコマンド。Apothem は `python` を使用する | `"python"` |
-| `hooks[].args` | string の配列 | `-m apothem.hooks.dispatch` または `-m apothem.conformity.gate` を呼び出す exec 形式の引数 | `["-m", "apothem.hooks.dispatch", "SessionStart"]` |
-| `hooks[].timeout` | integer（秒） | ホストがフックを強制終了するまでの最大実行時間 | `30` |
+| `hooks[].type` | リテラル `"command"` | 現時点でサポートされる唯一のフックハンドラーの種類 | `"command"` |
+| `hooks[].command` | string | 実行可能なコマンド。Apothem は `${PYTHON_BIN}` プレースホルダーを使い、インストール時に解決されます | `"${PYTHON_BIN}"` |
+| `hooks[].args` | 文字列の配列 | exec 形式の引数：`${HARNESS_ROOT}/.apothem/support/` 配下のスクリプトパスに、その引数が続きます | `["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
+| `hooks[].timeout` | 整数（秒） | ホストがフックを強制終了するまでの最大実行時間 | `30` |
 | `hooks[].statusMessage` | string | ホストの UI に表示される短いラベル | `"Session start"` |
 
 ### 必須イベント
 
-出荷されるテンプレートは、以下のイベントを登録します。バリデーターが PASS を報告するには、5 つすべてが必要です:
+Claude Code テンプレートは SessionStart、PreToolUse、PostToolUse、Stop を登録します。PreCompact と PostCompact は Claude Code には登録されておらず（[フックのリファレンス](/docs/reference/hooks)）、`scripts/dev/validate_hooks.py` は、それぞれが欠けていることを警告として報告します。次の表は、`validate_hooks.py` が確認する 5 つのイベントを示しています。
 
 > **タイムアウト値は正規のフックイベント予算を反映しています** — 下の表は読者の便宜のためにそれらを再掲したものであり、正規のソースが優先されます。
 

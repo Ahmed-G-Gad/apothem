@@ -2,7 +2,7 @@
 title: "Installation"
 description: "Aperçu de l'installation d'Apothem — huit canaux d'installation, chacun avec ses prérequis, une commande prête à copier et une étape de vérification : le plugin Claude Code, le shim npm, les installateurs en une seule étape, l'extension de la famille VS Code, les trois extensions d'amorçage en ligne de commande et le moteur direct."
 machineTranslated: true
-sourceHash: "2230f3bafafb1452"
+sourceHash: "439520c91c9a9ee0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -193,12 +193,7 @@ ultérieure est annotée et signée. La section de
 consacrée à la signature des publications liste chaque étiquette et la manière
 de la vérifier.
 
-Deux dérogations explicites assouplissent le comportement par défaut :
-`APOTHEM_REF=main` extrait la branche mouvante (non vérifiée), et
-`APOTHEM_ALLOW_UNVERIFIED=1` rétrograde un échec de vérification en
-avertissement et poursuit — pour un usage isolé du réseau, local ou avec des
-publications antérieures à la signature. Un checkout local via `APOTHEM_SOURCE`
-ne récupère rien et ignore la vérification.
+Des dérogations explicites assouplissent le comportement par défaut. `APOTHEM_ALLOW_UNVERIFIED=1` rétrograde un échec de vérification en avertissement et poursuit l'opération, pour un usage isolé du réseau, local, ou avec une publication antérieure à la signature. `APOTHEM_REF=main` extrait la branche mouvante sans vérification, et seulement avec `APOTHEM_ALLOW_UNVERIFIED=1`. Avec `APOTHEM_REF=main` seul, l'installateur récupère `main` dans `APOTHEM_HOME`, puis s'interrompt avant que la configuration ne soit matérialisée, car une branche n'est pas une étiquette de publication signée. Un checkout local via `APOTHEM_SOURCE` ne récupère rien et ignore la vérification.
 
 `APOTHEM_VERIFY=checksum` est la voie intermédiaire pour un hôte qui ne détient
 pas encore la clé publique du mainteneur : au lieu de cloner, l'installateur

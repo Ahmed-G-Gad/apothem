@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "Adapter harness Apothem untuk GitHub Copilot (GA)."
 machineTranslated: true
-sourceHash: "4482a306f9f119b5"
+sourceHash: "27caa0629e01c5e8"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -61,7 +61,7 @@ apothem verify --harness github-copilot --project /path/to/project
 Perintah verify memastikan bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Semua bidang wajib dari profil bersama ada.
+2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
 3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
 ## Pembaruan

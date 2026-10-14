@@ -2,7 +2,7 @@
 title: "Especificação do schema de artefatos"
 description: "Schema canônico de frontmatter YAML e campos obrigatórios para todos os tipos de artefato na árvore de código-fonte do Apothem, com templates por classe e regras de validação."
 machineTranslated: true
-sourceHash: "0a94086b9eaf12b9"
+sourceHash: "376d3a98ba3102c6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -289,8 +289,8 @@ A chave de nível superior `hooks` mapeia nomes de eventos para arrays de blocos
       "hooks": [
         {
           "type": "command",
-          "command": "python",
-          "args": ["-m", "apothem.hooks.dispatch", "<EventName>", "<message-name>"],
+          "command": "${PYTHON_BIN}",
+          "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "<EventName>", "<message-name>"],
           "timeout": <seconds>,
           "statusMessage": "<short human-readable label>"
         }
@@ -300,19 +300,20 @@ A chave de nível superior `hooks` mapeia nomes de eventos para arrays de blocos
 }
 ```
 
+A forma `-m apothem.hooks.dispatch` serve ao desenvolvimento a partir de um checkout do código-fonte com `PYTHONPATH=src`.
+
 | Campo | Tipo | Propósito | Exemplo |
 | ----- | ---- | ------- | ------- |
 | `matcher` | string | Padrão de nome de ferramenta (ou `"*"` para eventos independentes de ferramenta) | `"Write"` |
 | `hooks[].type` | literal `"command"` | O único tipo de manipulador de hook suportado atualmente | `"command"` |
-| `hooks[].command` | string | Comando executável; o Apothem usa `python` | `"python"` |
-| `hooks[].args` | array de strings | Argumentos em forma exec que invocam `-m apothem.hooks.dispatch` ou `-m apothem.conformity.gate` | `["-m", "apothem.hooks.dispatch", "SessionStart"]` |
-| `hooks[].timeout` | integer em segundos | Tempo máximo de execução antes que o host encerre o hook | `30` |
+| `hooks[].command` | string | Comando executável; o Apothem usa o marcador de posição `${PYTHON_BIN}`, resolvido na instalação | `"${PYTHON_BIN}"` |
+| `hooks[].args` | array de strings | Argumentos em forma exec: um caminho de script em `${HARNESS_ROOT}/.apothem/support/`, seguido dos seus argumentos | `["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
+| `hooks[].timeout` | inteiro em segundos | Tempo máximo de execução antes de o host encerrar o hook | `30` |
 | `hooks[].statusMessage` | string | Rótulo curto exibido na interface do host | `"Session start"` |
 
 ### Eventos obrigatórios
 
-Os templates distribuídos registram os eventos a seguir. Todos os cinco são
-obrigatórios para que os validadores reportem PASS:
+O template do Claude Code registra SessionStart, PreToolUse, PostToolUse e Stop. PreCompact e PostCompact não são registrados no Claude Code ([referência de hooks](/docs/reference/hooks)), e `scripts/dev/validate_hooks.py` relata cada um como ausente, em forma de aviso. A tabela lista os cinco eventos que `validate_hooks.py` verifica:
 
 > **Os valores de timeout espelham os orçamentos canônicos dos eventos de hook** — a
 > tabela abaixo os reproduz para conveniência do leitor; a fonte canônica prevalece.

@@ -2,7 +2,7 @@
 title: "Apothem frente a la configuración de GitHub Copilot en bruto"
 description: "Mantener a mano el copilot-instructions.md de GitHub Copilot frente a renderizarlo desde el perfil compartido de Apothem."
 machineTranslated: true
-sourceHash: "52a8af5e9d74e6da"
+sourceHash: "8619aad7bba087e4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -13,12 +13,12 @@ frente a gestionarla con Apothem.
 
 ## Comparación de esfuerzo
 
-| Tarea | Configuración manual en bruto | Gestionada por Apothem |
+| Tarea | Configuración manual | Gestionada por Apothem |
 | ---- | --------------- | --------------- |
-| Escribir instrucciones | Editar a mano `.github/copilot-instructions.md` | Renderizada: reglas compartidas incrustadas en el archivo |
-| Mantener las instrucciones alineadas con otros entornos | Manual, por herramienta | Automático en `apothem update` |
-| Instalar / eliminar la configuración | Escribir y borrar el archivo a mano | `apothem install` / `apothem uninstall` |
-| Verificar que la configuración es correcta | Inspección manual | `apothem verify --harness github-copilot` |
+| Escribir instrucciones | Editar a mano `.github/copilot-instructions.md` | Renderizadas: las reglas compartidas se incrustan en el archivo |
+| Mantener las instrucciones alineadas con otros entornos | Manual, por herramienta | Automático con `apothem update` |
+| Instalar / quitar la configuración | Escribir y borrar el archivo a mano | `apothem install` / `apothem uninstall` |
+| Verificar que la configuración es correcta | Inspección manual | `apothem verify --harness github-copilot --project <path>` |
 
 ## Qué gestiona Apothem
 
@@ -31,15 +31,11 @@ cambio en las reglas compartidas vuelve a renderizar el archivo en el siguiente
 
 ## Ruta de migración
 
-1. Ejecuta `apothem profile init` para crear el perfil compartido si aún no lo
-   tienes.
-2. Mueve el contenido de tu `.github/copilot-instructions.md` existente al
-   corpus compartido.
-3. Ejecuta `apothem install --harness github-copilot` para renderizar el archivo
-   de instrucciones.
-4. Ejecuta `apothem verify --harness github-copilot` para confirmar que la
-   configuración quedó instalada.
-5. Usa `apothem update --harness github-copilot` para cada cambio posterior.
+1. Ejecuta `apothem profile init` para crear el perfil compartido si aún no lo tienes.
+2. Mueve el contenido de tu `.github/copilot-instructions.md` existente al corpus compartido.
+3. Ejecuta `apothem install --harness github-copilot --project <path>` para renderizar el archivo de instrucciones.
+4. Ejecuta `apothem verify --harness github-copilot --project <path>` para confirmar que la configuración quedó instalada.
+5. Usa `apothem update --harness github-copilot --project <path>` para cada cambio posterior.
 
 ## Sigue leyendo
 

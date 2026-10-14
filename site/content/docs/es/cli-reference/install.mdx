@@ -2,7 +2,7 @@
 title: "install"
 description: "Referencia de la CLI para el comando apothem install."
 machineTranslated: true
-sourceHash: "aaa373f458e002f9"
+sourceHash: "4297dc7c69065630"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -50,12 +50,7 @@ fuera de esa raíz. Antes de escribir cualquier archivo, el comando imprime los
 destinos concretos agrupados bajo dos encabezados: los que están dentro de la
 raíz del proyecto y los que están bajo tu directorio personal.
 
-Cuando la selección escribe fuera de la raíz del proyecto, una confirmación
-interactiva protege las escrituras con raíz en el directorio personal. `--yes`,
-una shell no interactiva (sin TTY), `--dry-run` y `--format json` proceden cada
-uno sin preguntar. Solo `--dry-run` no escribe nada; `--format json` omite la
-vista previa y la solicitud de confirmación, pero aun así realiza las escrituras.
-Rechazar la solicitud aborta antes de escribir cualquier archivo.
+Cuando la selección escribe fuera de la raíz del proyecto, una confirmación interactiva protege las escrituras con raíz en el directorio personal. `--yes`, una shell no interactiva (sin TTY), `--dry-run` y `--format json` proceden cada uno sin preguntar. Solo `--dry-run` no escribe nada; `--format json` omite la vista previa y la solicitud de confirmación, pero aun así realiza las escrituras. Rechazar la solicitud del directorio personal aborta antes de las escrituras de la instalación. Con `--clean`, el paso de limpieza completa se ejecuta primero bajo su propia confirmación por destino: escribe una copia de seguridad en `~/.apothem/backups` y elimina los destinos que confirma. Esas eliminaciones y la copia de seguridad se mantienen cuando se rechaza la solicitud de instalación.
 
 ## Notas sobre capacidades
 

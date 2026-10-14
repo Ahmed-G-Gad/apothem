@@ -2,7 +2,7 @@
 title: "Zed"
 description: "Adaptor harness Apothem untuk Zed (GA)."
 machineTranslated: true
-sourceHash: "03b431e47b5d9acd"
+sourceHash: "62b3de71f4c3ce39"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -72,8 +72,8 @@ apothem verify --harness zed --project /path/to/project
 Perintah verify mengonfirmasi bahwa:
 
 1. Konfigurasi native ada di jalur yang diharapkan.
-2. Semua bidang wajib dari profil bersama hadir.
-3. Rutin verifikasi khusus adaptor melaporkan keberhasilan.
+2. Setiap target terkelola ada; berkas terkelola tidak kosong, dan konfigurasi JSON atau YAML dapat diurai. Tambahkan `--profile PATH` untuk juga memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
+3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
 ## Pembaruan
 
@@ -89,9 +89,7 @@ Menurunkan ulang berkas `.rules` proyek dari keadaan profil bersama saat ini.
 apothem uninstall --harness zed --project /path/to/project
 ```
 
-Menghapus berkas konfigurasi native yang ditulis oleh adaptor, dengan terlebih
-dahulu mengganti namanya menjadi cadangan bertanda waktu. YAML profil bersama
-dan mesin Apothem tidak terpengaruh.
+Menghapus blok terkelola Apothem dari berkas konfigurasi native `.rules` dan mempertahankan teks Anda sendiri. Berkas dihapus hanya ketika tidak ada yang tersisa di dalamnya. Sebelum perubahan, salinan berkas yang diberi cap waktu disimpan di bawah `~/.apothem/backups/`; tidak ada berkas cadangan yang tertinggal di proyek. YAML profil bersama dan mesin Apothem tidak terpengaruh.
 
 ## Gerbang konformitas
 

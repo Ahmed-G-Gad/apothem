@@ -2,7 +2,7 @@
 title: "Contribuindo com o Apothem — Guia do Desenvolvedor"
 description: "Mantenha e estenda o ecossistema do Apothem criando regras, comandos, auxiliares, skills e hooks com schemas canônicos, requisitos de frontmatter e procedimentos de validação."
 machineTranslated: true
-sourceHash: "ae3392672e01c783"
+sourceHash: "782e178598975d52"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -119,15 +119,7 @@ Padrão: letras minúsculas, hífens entre as palavras, sem espaços nem sublinh
 - **Comandos:** `{name}.md`
 - **Auxiliares:** `{name}.md`
 - **Skills:** Dentro da pasta `src/apothem/skills/{name}/SKILL.md` (capitalização exata: `SKILL.md`)
-- **Hooks:** Dentro da pasta `src/apothem/hooks/`. Todos os manipuladores de evento são em Python. Todo
-  comando de hook do `settings.json` usa a forma exec (`python` mais `args`) para invocar
-  `-m apothem.hooks.dispatch <event> [<message-name>]` ou
-  `-m apothem.conformity.gate --hook`. `dispatch.py` encaminha `SessionStart` para
-  `session_start_bootstrap.main()` e
-  todos os demais eventos da lista de permissões para `emit_hook_context.main()`. Os únicos stubs de shell
-  permitidos em `src/apothem/hooks/` ou `scripts/` são os quatro arquivos de localizador + bootstrap
-  (`find-python.{ps1,sh}`, `bootstrap.{ps1,sh}`); qualquer outro arquivo `.ps1` /
-  `.sh` reprova na verificação de higiene de `scripts/dev/validate_hooks.py`.
+- **Hooks:** Dentro da pasta `src/apothem/hooks/`. Todos os manipuladores de evento são em Python. Todo comando de hook do `settings.json` usa a forma exec: `command` é o marcador de posição do interpretador `${PYTHON_BIN}`, resolvido no momento da instalação, e `args` contém o caminho do script e os respectivos argumentos. O template do Claude Code executa `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` e `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook` pelo caminho absoluto, de modo que a cópia instalada não precisa de um pacote `apothem` importável. `dispatch.py` encaminha `SessionStart` para `session_start_bootstrap.main()` e todos os demais eventos da lista de permissões para `emit_hook_context.main()`. Os únicos stubs de shell permitidos em `src/apothem/hooks/` ou `scripts/` são os seis arquivos de localizador e bootstrap (`find-python.{ps1,sh}`, `find-pwsh.{ps1,sh}`, `bootstrap.{ps1,sh}`); qualquer outro arquivo `.ps1` / `.sh` reprova na verificação de higiene de `scripts/dev/validate_hooks.py`.
 
 ### Referências cruzadas
 

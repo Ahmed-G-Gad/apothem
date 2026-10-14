@@ -2,7 +2,7 @@
 title: "安装"
 description: "Apothem 安装概览——八条安装渠道，每条都附有其前置条件、一条可直接复制的命令和一个验证步骤：Claude Code 插件、npm 垫片、一键安装器、VS Code 系扩展、三个命令行引导扩展，以及直接引擎。"
 machineTranslated: true
-sourceHash: "2230f3bafafb1452"
+sourceHash: "439520c91c9a9ee0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -106,7 +106,7 @@ APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/
 
 将 `vMAJOR.MINOR.PATCH` 替换为[发布页面](https://github.com/ahmed-g-gad/apothem/releases)上的某个标签。最早的发布标签是一个轻量标签，本身没有签名，因此即使其提交已签名，标签检查也会在它上面中止；此后的每个发布标签都是经过签名的附注标签。[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) 的发布签名部分列出了每个标签及其验证方法。
 
-有两个显式覆盖项会放宽默认行为：`APOTHEM_REF=main` 会检出移动中的分支（不验证），`APOTHEM_ALLOW_UNVERIFIED=1` 会将验证失败降级为警告并继续——适用于隔离网络、本地或早于签名发布的版本等场景。通过 `APOTHEM_SOURCE` 使用的本地检出不获取任何内容，并跳过验证。
+显式覆盖项会放宽默认行为。`APOTHEM_ALLOW_UNVERIFIED=1` 会把验证失败降级为警告并继续，适用于隔离网络、本地或早于签名发布的版本等场景。`APOTHEM_REF=main` 只有在同时设置 `APOTHEM_ALLOW_UNVERIFIED=1` 时，才会在不验证的情况下检出移动中的分支。仅设置 `APOTHEM_REF=main` 时，安装程序会把 `main` 拉取到 `APOTHEM_HOME`，然后在物化任何配置之前中止，因为分支不是已签名的发布标签。通过 `APOTHEM_SOURCE` 使用本地检出时不会拉取任何内容，并会跳过验证。
 
 `APOTHEM_VERIFY=checksum` 是为尚未持有维护者公钥的主机提供的折中路径：安装器不进行克隆，而是下载该发布的平台归档及其 `SHA256SUMS`，在解压任何内容之前若摘要不匹配即中止，并发出警告：摘要匹配只能证明该归档是发布所列出的那一个，而不能证明是谁发布了它。
 

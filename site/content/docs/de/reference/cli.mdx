@@ -2,7 +2,7 @@
 title: "CLI-Referenz"
 description: "Apothem-CLI-Referenz — alle Unterbefehle und Flags."
 machineTranslated: true
-sourceHash: "8b8d7dc1647136bd"
+sourceHash: "60add6555ac816ea"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -166,8 +166,8 @@ apothem profile edit [--profile PATH]
 | Unterbefehl | Beschreibung |
 |------------|-------------|
 | `profile init` | Erstellt ein schema-gültiges minimales Profilgerüst. |
-| `profile show` | Gibt das aufgelöste Profil (YAML) auf stdout aus. |
-| `profile set <key> <value>` | Setzt ein Profilfeld. Der Wert wird als literale Zeichenkette gespeichert — bloße Wörter werden nicht umgewandelt, sodass `no` als `"no"` erhalten bleibt und `1.0` eine Zeichenkette bleibt —, ausgenommen `true`/`false` und explizite `[...]`- / `{...}`-Eingaben für Listen und Maps. Das zusammengesetzte Profil wird vor dem Schreiben gegen das Schema validiert. |
+| `profile show` | Gibt das aufgelöste Profil als JSON auf stdout aus. Mit `--json` beginnt das Dokument mit `schema_version`. |
+| `profile set <key> <value>` | Setzt ein Profilfeld. Der Wert wird als literale Zeichenkette gespeichert: Bloße Wörter werden nicht umgewandelt, sodass `no` als `"no"` erhalten bleibt und `1.0` eine Zeichenkette bleibt. Ausgenommen sind `true`/`false` sowie explizite `[...]`- und `{...}`-Eingaben für Listen und Maps. Das zusammengesetzte Profil wird vor dem Schreiben gegen das Schema validiert. |
 | `profile edit` | Öffnet das Profil in `$EDITOR` (greift ersatzweise auf den Plattformstandard zurück). |
 
 Die Option `--profile PATH` richtet jeden Unterbefehl auf eine alternative
@@ -195,11 +195,7 @@ Führt Systemdiagnosen für die Apothem-Installation aus.
 apothem doctor
 ```
 
-Gibt die Apothem-Version, den Python-Interpreter, die Plattform, den aufgelösten
-Profilpfad und eine Installationsstatustabelle je Harness aus. Der Exit-Code ist
-nur dann `0`, wenn jede Prüfung besteht; ein ungültiges Profil, ein
-deinstallierter Harness oder ein Adapter, der nicht geprüft werden konnte,
-erzwingt jeweils einen Exit-Code ungleich null.
+Gibt die Apothem-Version, den Python-Interpreter, die Plattform, den aufgelösten Profilpfad und eine Installationsstatus-Tabelle je Harness aus. Der Exit-Code ist `1`, sobald eine Prüfung fehlschlägt: ein ungültiges Profil, ein installierter Harness, der nicht verifiziert, ein registrierter Hook-Befehl, der nicht starten kann, ein Adapter, der sich nicht laden oder prüfen lässt, oder ein nicht lesbares Ledger. Ein nicht installierter Harness wird gemeldet und gilt nicht als Fehler; Informationshinweise ändern den Exit-Code nicht.
 
 ## Generierte Befehls- und Flag-Referenz
 

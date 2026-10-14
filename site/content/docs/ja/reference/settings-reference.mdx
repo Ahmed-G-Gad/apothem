@@ -2,7 +2,7 @@
 title: "settings.json ドキュメント"
 description: "Apothem エコシステム向けに、Claude Code のフック実行・権限・イベント・タイムアウト・Python ランタイム・検証・レイヤー化された設定の優先順位を構成します。"
 machineTranslated: true
-sourceHash: "09e70625ff5e0caf"
+sourceHash: "e5e617ed964a9419"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,14 +21,13 @@ sourceHash: "09e70625ff5e0caf"
 
 ## Python 専用ランタイム
 
-構成された各フックは、Claude Code の exec 形式のコマンド構造を使用します。
-同梱テンプレートは `${HARNESS_ROOT}` トークンを保持します。
+設定されたフックはすべて、Claude Code の exec 形式のコマンド構造を使います。同梱のテンプレートは `${PYTHON_BIN}` と `${HARNESS_ROOT}` のトークンを保持します。`apothem install` は、`${PYTHON_BIN}` を解決済みの絶対パスのインタープリターに置き換えます。
 
 ```json
 {
   "type": "command",
-  "command": "python",
-  "args": ["${HARNESS_ROOT}/apothem/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
+  "command": "${PYTHON_BIN}",
+  "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "PreToolUse", "pretooluse-write"]
 }
 ```
 
@@ -147,11 +146,11 @@ harness ルートにインストールされていることを確認し、ファ
 Claude Code は、優先順位の昇順で 3 つのレイヤーを合成することで、有効な設定オブジェクトを
 解決します。
 
-| 段階 | 場所 | コミットされる？ | 根拠 |
+| 段階 | 場所 | コミットされるか | 根拠 |
 |------|----------|------------|-----------|
-| 1. **システム** | Claude Code 自体にコンパイルされた harness のデフォルト値 | 該当なし（ベンダー管理） | 床。すべてのオペレータが同じベースラインを継承します。 |
-| 2. **プロジェクト** | `<harness-root>/settings.json` | ✅ コミットされる | プロジェクト共有の規約：フック、権限、MCP サーバー、ステータスラインの配線。Apothem ソースのテンプレートは Claude Code アダプタの templates ディレクトリ内にあります。 |
-| 3. **ユーザーローカル** | `<harness-root>/settings.local.json`（gitignored）— リポジトリルートに `settings.local.example.json` としてテンプレート化 | ❌ Gitignored | オペレータ固有のオーバーライド：API トークン、マシンローカルのパス、オプトイン機能。 |
+| 1. **システム** | Claude Code 自体にコンパイルされたハーネスの既定値 | 該当なし（ベンダー管理） | 基準となる床。すべてのオペレーターが同じベースラインを継承します。 |
+| 2. **プロジェクト** | `<harness-root>/settings.json` | ✅ コミットされる | プロジェクトで共有する規約：フック、権限、MCP サーバー、ステータスラインの配線。Apothem のソーステンプレートは、Claude Code アダプターのテンプレートディレクトリ内にあります。 |
+| 3. **ユーザーローカル** | `<harness-root>/settings.local.json`（gitignored）。`examples/harnesses/claude-code/` の下に `settings.local.example.json` としてテンプレート化 | ❌ Gitignored | オペレーター固有の上書き：API トークン、マシンローカルのパス、オプトイン機能。 |
 
 上位段階の値は **リーフキーレベルで** 下位段階の値を上書きします — プロジェクト
 レイヤーとユーザーローカルレイヤーの両方が `permissions.allow` エントリを宣言する場合は和集合が
@@ -160,10 +159,7 @@ Claude Code は、優先順位の昇順で 3 つのレイヤーを合成する�
 
 ### ユーザーローカルオーバーライドの作成
 
-1. `settings.local.example.json`（リポジトリルート）を `<harness-root>/settings.local.json` にコピーします。
-   ファイル名 `settings.local.json` は `.gitignore` パターンに一致するため、このファイルは決して
-   バージョン管理に入りません。
-2. ローカルコピーを編集します — オーバーライドするキーのみを残します。harness がレイヤーを合成するため、
-   不在のキーはプロジェクトレイヤーから継承されます。
-3. 保存前にファイルが有効な JSON としてパースされることを確認してください — harness はセッション開始時に
-   不正な形式の JSON を拒否します。
+1. `examples/harnesses/claude-code/settings.local.example.json` を `<harness-root>/settings.local.json` にコピーします。
+   ファイル名 `settings.local.json` は `.gitignore` のパターンに一致するため、このファイルがバージョン管理に入ることは決してありません。
+2. ローカルのコピーを編集します。上書きするキーだけを残してください。ハーネスはレイヤーを合成するため、存在しないキーはプロジェクトのレイヤーから継承されます。
+3. 保存する前に、ファイルが有効な JSON として解析できることを確認してください。ハーネスは、セッション開始時に不正な形式の JSON を拒否します。
